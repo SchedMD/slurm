@@ -1914,7 +1914,8 @@ static char **_load_env_cache(const char *username)
  *    Depending upon the user's login scripts, this may take a very
  *    long time to complete or possibly never return
  * 2. Load the user environment from a cache file. This is used
- *    in the event that option 1 times out.
+ *    in the event that option 1 times out.  This only happens if no_cache isn't
+ *    set.  If it is set then NULL will be returned if the normal load fails.
  *
  * timeout value is in seconds or zero for default (2 secs)
  * mode is 1 for short ("su <user>"), 2 for long ("su - <user>")
@@ -1923,7 +1924,8 @@ static char **_load_env_cache(const char *username)
  * NOTE: The calling process must have an effective uid of root for
  * this function to succeed.
  */
-char **env_array_user_default(const char *username, int timeout, int mode)
+char **env_array_user_default(const char *username, int timeout, int mode,
+			      bool no_cache)
 {
 	char *line = NULL, *last = NULL, name[MAXPATHLEN], *value, *buffer;
 	char **env = NULL;
@@ -1946,8 +1948,9 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 	snprintf(stepd_path, sizeof(stepd_path), "%s/sbin/slurmstepd",
 		 SLURM_PREFIX);
 	config_timeout = slurm_get_env_timeout();
+
 	if (config_timeout == 0)	/* just read directly from cache */
-		 return _load_env_cache(username);
+		return _load_env_cache(username);
 
 	if (stat(SUCMD, &buf))
 		fatal("Could not locate command: "SUCMD);
@@ -2080,7 +2083,7 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 	if (!found) {
 		error("Failed to load current user environment variables");
 		xfree(buffer);
-		return _load_env_cache(username);
+		return no_cache ? _load_env_cache(username) : NULL;
 	}
 
 	/* First look for the start token in the output */
@@ -2097,7 +2100,7 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 	if (!found) {
 		error("Failed to get current user environment variables");
 		xfree(buffer);
-		return _load_env_cache(username);
+		return no_cache ? _load_env_cache(username) : NULL;
 	}
 
 	/* Process environment variables until we find the stop token */
@@ -2137,7 +2140,7 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 	if (!found) {
 		error("Failed to get all user environment variables");
 		env_array_free(env);
-		return _load_env_cache(username);
+		return no_cache ? _load_env_cache(username) : NULL;
 	}
 
 	return env;

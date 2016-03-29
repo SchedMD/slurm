@@ -1377,6 +1377,16 @@ _get_user_env(batch_job_launch_msg_t *req)
 	char pwd_buf[PW_BUF_SIZE];
 	char **new_env;
 	int i;
+	static time_t config_update = 0;
+	static bool no_env_cache = false;
+
+	if (config_update != conf->last_update) {
+		char *sched_params = slurm_get_sched_params();
+		no_env_cache = (sched_params &&
+				strstr(sched_params, "no_env_cache"));
+		xfree(sched_params);
+		config_update = conf->last_update;
+	}
 
 	for (i=0; i<req->envc; i++) {
 		if (xstrcmp(req->environment[i], "SLURM_GET_USER_ENV=1") == 0)
@@ -1393,10 +1403,11 @@ _get_user_env(batch_job_launch_msg_t *req)
 	verbose("%s: get env for user %s here", __func__, pwd.pw_name);
 
 	/* Permit up to 120 second delay before using cache file */
-	new_env = env_array_user_default(pwd.pw_name, 120, 0);
+	new_env = env_array_user_default(pwd.pw_name, 120, 0, no_env_cache);
 	if (! new_env) {
-		error("%s: Unable to get user's local environment, "
-		      "running only with passed environment", __func__);
+		error("%s: Unable to get user's local environment%s",
+		      __func__, no_env_cache ?
+		      "" : ", running only with passed environment");
 		return -1;
 	}
 
@@ -6238,16 +6249,17 @@ static void _launch_complete_wait(uint32_t job_id)
 static bool
 _requeue_setup_env_fail(void)
 {
-	char *sched_params = slurm_get_sched_params();
+	static time_t config_update = 0;
+	static bool requeue = false;
 
-	if (! sched_params)
-		return false;
-
-	if (strstr(sched_params,"requeue_setup_env_fail")) {
+	if (config_update != conf->last_update) {
+		char *sched_params = slurm_get_sched_params();
+		requeue = (sched_params &&
+			   (strstr(sched_params, "no_env_cache") ||
+			    strstr(sched_params, "requeue_setup_env_fail")));
 		xfree(sched_params);
-		return true;
+		config_update = conf->last_update;
 	}
 
-	xfree(sched_params);
-	return false;
+	return requeue;
 }

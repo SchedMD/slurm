@@ -218,14 +218,24 @@ int main(int argc, char *argv[])
 	}
 
 	if (opt.get_user_env_time >= 0) {
+		bool no_env_cache = false;
+		char *sched_params;
 		char *user = uid_to_string(opt.uid);
+
 		if (xstrcmp(user, "nobody") == 0) {
 			error("Invalid user id %u: %m", (uint32_t)opt.uid);
 			exit(error_exit);
 		}
+
+		sched_params = slurm_get_sched_params();
+		no_env_cache = (sched_params &&
+				strstr(sched_params, "no_env_cache"));
+		xfree(sched_params);
+
 		env = env_array_user_default(user,
 					     opt.get_user_env_time,
-					     opt.get_user_env_mode);
+					     opt.get_user_env_mode,
+					     no_env_cache);
 		xfree(user);
 		if (env == NULL)
 			exit(error_exit);    /* error already logged */

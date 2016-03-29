@@ -293,7 +293,8 @@ char **env_array_from_file(const char *filename);
  *    Depending upon the user's login scripts, this may take a very
  *    long time to complete or possibly never return
  * 2. Load the user environment from a cache file. This is used
- *    in the event that option 1 times out.
+ *    in the event that option 1 times out.  This only happens if no_cache isn't
+ *    set.  If it is set then NULL will be returned if the normal load fails.
  *
  * timeout value is in seconds or zero for default (8 secs)
  * mode is 1 for short ("su <user>"), 2 for long ("su - <user>")
@@ -302,7 +303,8 @@ char **env_array_from_file(const char *filename);
  * NOTE: The calling process must have an effective uid of root for
  * this function to succeed.
  */
-char **env_array_user_default(const char *username, int timeout, int mode);
+char **env_array_user_default(const char *username, int timeout, int mode,
+			      bool no_cache);
 
 /*
  * The cpus-per-node representation in SLURM (and perhaps tasks-per-node

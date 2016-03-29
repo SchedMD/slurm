@@ -2652,6 +2652,11 @@ won't schedule new jobs. This is useful in Cray environments when the backup
 controller resides on an external Cray node.  A restart is required to alter
 this option. This is explicitly set on a Cray/ALPS system.
 .TP
+\fBno_env_cache\fR
+If used, any job started on node that fails to load the env from a node will
+fail instead of using the cached env.  This will also implicitly imply the
+requeue_setup_env_fail option as well.
+.TP
 \fBpack_serial_at_end\fR
 If used with the select/cons_res plugin then put serial jobs at the end of
 the available nodes rather than using a best fit algorithm.
