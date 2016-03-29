@@ -991,6 +991,13 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	int status = 0;
 	pid_t pid;
 
+	debug2("%s: Before call to spank_init()", __func__);
+	if (spank_init(job) < 0) {
+		error("%s: Plugin stack initialization failed.", __func__);
+		return SLURM_PLUGIN_NAME_INVALID;
+	}
+	debug2("%s: After call to spank_init()", __func__);
+
 	set_oom_adj(0);	/* the tasks may be killed by OOM */
 	if (task_g_pre_setuid(job)) {
 		error("%s: Failed to invoke task plugins: one of "
@@ -1061,6 +1068,11 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	/* Notify srun of completion AFTER frequency reset to avoid race
 	 * condition starting another job on these CPUs. */
 	while (_send_pending_exit_msgs(job)) {;}
+
+	debug2("%s: Before call to spank_fini()", __func__);
+	if (spank_fini(job) < 0)
+		error("spank_fini failed");
+	debug2("%s: After call to spank_fini()", __func__);
 
 	return SLURM_SUCCESS;
 }
