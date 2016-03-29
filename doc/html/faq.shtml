@@ -182,6 +182,7 @@ script for Slurm?</a></li>
     configuration be copied from an existing cluster to the new cluster?</a></li>
 <li><a href="#cray_dvs">How can I update Slurm on a Cray DVS file system without
 rebooting the nodes?</a></li>
+<li><a href="#dbd_rebuild">How can I rebuild the database hierarchy?</a></li>
 </ol>
 
 <h2>For Management</h2>
@@ -2149,8 +2150,19 @@ before starting the slurmds again.</p>
 <p>(Information courtesy of Douglas Jacobsen, NERSC,
 Lawrence Berkeley National Laboratory)</p>
 
+<p><a name="dbd_rebuild"><b>65. How can I rebuild the database hierarchy?</b></a><br>
+If you see errors of this sort:</p>
+<pre>
+error: Can't find parent id 3358 for assoc 1504, this should never happen.
+</pre>
+<p>in the slurmctld log file, this is indicative that the database hierarchy
+information has been corrupted, typically due to a hardware failure of
+administrator error in directly modifying the database. In order to rebuild
+the database information, start the slurmdbd daemon with the "-R" option
+followed by an optional comma separated list of cluster names to operate on.</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 13 January 2016</p>
+<p style="text-align:center;">Last modified 29 March 2016</p>
 
 <!--#include virtual="footer.txt"-->
