@@ -5,6 +5,8 @@ documents those changes that are of interest to users and administrators.
 ===========================
  -- Fix issue where if a slurmdbd rollup lasted longer than 1 hour the
     rollup would effectively never run again.
+ -- Make error message in the pmi2 code to debug as the issue can be expected
+    and retries are done making the error message a little misleading.
 
 * Changes in Slurm 15.08.9
 ==========================
