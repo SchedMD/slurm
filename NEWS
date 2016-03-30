@@ -9,6 +9,11 @@ documents those changes that are of interest to users and administrators.
     to initiate any lower priority jobs in that partition. Setting this can
     decrease system throughput and utlization, but avoid potentially starving
     larger jobs by preventing them from launching indefinitely.
+ -- Update a node's socket and cores per socket counts as needed after a node
+    boot to reflect configuration changes which can occur on KNL processors.
+    Note that the node's total core count must not change, only the distribution
+    of cores across varying socket counts (KNL NUMA nodes treated as sockets by
+    Slurm).
 
 * Changes in Slurm 16.05.0pre2
 ==============================

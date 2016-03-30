@@ -915,6 +915,22 @@ _read_config(void)
 		conf->sockets = conf->actual_sockets;
 		conf->cores   = conf->actual_cores;
 		conf->threads = conf->actual_threads;
+	} else if ((cf->fast_schedule == 1) && (cr_flag || gang_flag) &&
+		   (conf->actual_sockets != conf->conf_sockets) &&
+		   (conf->actual_cores != conf->conf_cores) &&
+		   ((conf->actual_sockets * conf->actual_cores) ==
+		    (conf->conf_sockets * conf->conf_cores))) {
+		/* Socket and core count can be changed when KNL node reboots
+		 * in a different NUMA configuration */
+		info("Node reconfigured socket/core boundaries "
+		     "SocketsPerBoard=%u:%u(hw) CoresPerSocket=%u:%u(hw)",
+		     conf->conf_sockets, conf->actual_sockets,
+		     conf->conf_cores, conf->actual_cores);
+		conf->cpus    = conf->conf_cpus;
+		conf->boards  = conf->conf_boards;
+		conf->sockets = conf->actual_sockets;
+		conf->cores   = conf->actual_cores;
+		conf->threads = conf->conf_threads;
 	} else {
 		conf->cpus    = conf->conf_cpus;
 		conf->boards  = conf->conf_boards;

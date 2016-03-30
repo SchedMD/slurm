@@ -2198,6 +2198,43 @@ extern int update_node_record_acct_gather_data(
 	return SLURM_SUCCESS;
 }
 
+/* A node's socket/core configuration has changed could be due to KNL NUMA
+ * mode change and reboot. Update this node's config record, splitting an
+ * existing record if needed. */
+static void _split_node_config(struct node_record *node_ptr,
+			       slurm_node_registration_status_msg_t *reg_msg)
+{
+	struct config_record *config_ptr, *new_config_ptr;
+	int node_inx;
+
+	if (!node_ptr)
+		return;
+	config_ptr = node_ptr->config_ptr;
+	if (!config_ptr)
+		return;
+
+	node_inx = node_ptr - node_record_table_ptr;
+	if ((bit_set_count(config_ptr->node_bitmap) > 1) &&
+	    bit_test(config_ptr->node_bitmap, node_inx)) {
+		new_config_ptr = create_config_record();
+		memcpy(new_config_ptr, config_ptr, sizeof(struct config_record));
+		new_config_ptr->cpu_spec_list =
+			xstrdup(config_ptr->cpu_spec_list);
+		new_config_ptr->feature = xstrdup(config_ptr->feature);
+		new_config_ptr->gres = xstrdup(config_ptr->gres);
+		bit_clear(config_ptr->node_bitmap, node_inx);
+		xfree(config_ptr->nodes);
+		config_ptr->nodes = bitmap2node_name(config_ptr->node_bitmap);
+		new_config_ptr->node_bitmap = bit_alloc(node_record_count);
+		bit_set(new_config_ptr->node_bitmap, node_inx);
+		new_config_ptr->nodes = xstrdup(node_ptr->name);
+		node_ptr->config_ptr = new_config_ptr;
+		config_ptr = new_config_ptr;
+	}
+	config_ptr->cores = reg_msg->cores;
+	config_ptr->sockets = reg_msg->sockets;
+}
+
 /*
  * validate_node_specs - validate the node's specifications as valid,
  *	if not set state to down, in any case update last_response
@@ -2344,6 +2381,13 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 			      reg_msg->node_name, reg_msg->cpus,
 			      config_ptr->cpus);
 			reg_msg->cpus    = config_ptr->cpus;
+		}
+		if ((error_code == SLURM_SUCCESS) && (cr_flag == 1) &&
+		    (reg_msg->sockets != config_ptr->sockets) &&
+		    (reg_msg->cores   != config_ptr->cores) &&
+		    ((reg_msg->sockets * reg_msg->cores) ==
+		     (config_ptr->sockets * config_ptr->cores))) {
+			_split_node_config(node_ptr, reg_msg);
 		}
 	}
 
