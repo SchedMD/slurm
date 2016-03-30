@@ -271,10 +271,19 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	info("CORE = %d SOCKET = %d actual_cpus = %d nobj[CORE] = %d",
 	     CORE, SOCKET, actual_cpus, nobj[CORE]);
 #endif
-	nobj[PU]     = actual_cpus/nobj[CORE];  /* threads per core */
-	nobj[CORE]  /= nobj[SOCKET];            /* cores per socket */
+	if ((actual_cpus % nobj[CORE]) != 0) {
+		error("Thread count (%d) not multiple of core count (%d)",
+		      actual_cpus, nobj[CORE]);
+	}
+	nobj[PU] = actual_cpus / nobj[CORE];	/* threads per core */
 
-	debug("CPUs:%d Boards:%u Sockets:%d CoresPerSocket:%d ThreadsPerCore:%d",
+	if ((nobj[CORE] % nobj[SOCKET]) != 0) {
+		error("Core count (%d) not multiple of socket count (%d)",
+		      nobj[CORE], nobj[SOCKET]);
+	}
+	nobj[CORE] /= nobj[SOCKET];		/* cores per socket */
+
+	debug("CPUs:%d Boards:%d Sockets:%d CoresPerSocket:%d ThreadsPerCore:%d",
 	      actual_cpus, actual_boards, nobj[SOCKET], nobj[CORE], nobj[PU]);
 
 	/* allocate block_map */

@@ -147,6 +147,13 @@ copied from the node's "Features" configuration in "slurm.conf" to both the
 available and active feature fields and not modified by the NodeFeatures
 plugin.</p>
 
+<p>Slurm version 16.05 does not support the concept of multiple NUMA nodes
+within a single socket. If a KNL node is booted with multiple NUMA, then each
+NUMA node will appear in Slurm as a separate socket.
+In addition, Slurm version 16.05 does not support the concept of differing
+numbers of cores in each socket (or NUMA node). We are currently working to
+address these issues.</p>
+
 <h3>Mode of Operation</h3>
 
 <ol>
@@ -220,6 +227,6 @@ NodeName=nid[00000-00127] State=UNKNOWN
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 8 March 2016</p>
+<p style="text-align:center;">Last modified 30 March 2016</p>
 
 <!--#include virtual="footer.txt"-->
