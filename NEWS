@@ -169,6 +169,13 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 15.08.10
 ===========================
+ -- Fix issue where if a slurmdbd rollup lasted longer than 1 hour the
+    rollup would effectively never run again.
+ -- Make error message in the pmi2 code to debug as the issue can be expected
+    and retries are done making the error message a little misleading.
+ -- Power/cray: Don't specify NID list to Cray APIs. If any of those nodes are
+    not in a ready state, the API returned an error for ALL nodes rather than
+    valid data for nodes in ready state.
 
 * Changes in Slurm 15.08.9
 ==========================

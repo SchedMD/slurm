@@ -649,24 +649,26 @@ static void *_rollup_handler(void *db_conn)
 		running_rollup = 0;
 		slurm_mutex_unlock(&rollup_lock);
 
-		/* sleep for an hour */
+		/* get the time now we have rolled usage */
+		start_time = time(NULL);
+
+		if (!slurm_localtime_r(&start_time, &tm)) {
+			fatal("Couldn't get localtime for rollup handler %ld",
+			      (long)start_time);
+			return NULL;
+		}
+
+		/* sleep until the next hour */
 		tm.tm_sec = 0;
 		tm.tm_min = 0;
 		tm.tm_hour++;
 		tm.tm_isdst = -1;
 		next_time = slurm_mktime(&tm);
 
-		/* get the time now we have rolled usage */
-		start_time = time(NULL);
+		sleep((next_time - start_time));
 
-		sleep((next_time-start_time));
+		start_time = next_time;
 
-		start_time = time(NULL);
-		if (!slurm_localtime_r(&start_time, &tm)) {
-			fatal("Couldn't get localtime for rollup handler %ld",
-			      (long)start_time);
-			return NULL;
-		}
 		/* Just in case some new uids were added to the system
 		   pick them up here. */
 		assoc_mgr_set_missing_uids();
