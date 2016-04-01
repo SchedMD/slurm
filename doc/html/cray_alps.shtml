@@ -195,7 +195,7 @@ will not be propagated to <i>aprun</i>.</p>
 <div id="slurmtable">
 <div id="row"><div id="slurmtd"><b>srun option</b></div><div id="slurmtd"><b>aprun option</b></div></div>
 <div id="row"><div id="slurmtd">-c, --cpus-per-task</div><div id="slurmtd">-d</div></div>
-<div id="row"><div id="slurmtd">-s, --share</div><div id="slurmtd">-F share</div></div>
+<div id="row"><div id="slurmtd">-s, --oversubscribe</div><div id="slurmtd">-F share</div></div>
 <div id="row"><div id="slurmtd">--exclusive</div><div id="slurmtd">-F exclusive</div></div>
 <div id="row"><div id="slurmtd">-w, --nodelist</div><div id="slurmtd">-L</div></div>
 <div id="row"><div id="slurmtd">--mem-per-cpu</div><div id="slurmtd">-m</div></div>
@@ -560,7 +560,7 @@ MaxMemPerNode=32000
 # defaults common to all partitions
 PartitionName=DEFAULT Nodes=nid00[002-013,018-159,162-173,178-189]
 PartitionName=DEFAULT MaxNodes=178
-PartitionName=DEFAULT Shared=EXCLUSIVE State=UP DefaultTime=60
+PartitionName=DEFAULT OverSubscribe=EXCLUSIVE State=UP DefaultTime=60
 
 # "User Support" partition with a higher priority
 PartitionName=usup Hidden=YES Priority=10 MaxTime=720 AllowGroups=staff
@@ -708,6 +708,6 @@ Stop the <i>slurmctld</i> daemon, delete the files, and restart the daemon.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 15 April 2015</p>
+<p style="text-align:center;">Last modified 31 March 2016</p>
 
 <!--#include virtual="footer.txt"-->

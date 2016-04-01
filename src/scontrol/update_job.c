@@ -1022,7 +1022,8 @@ scontrol_update_job (int argc, char *argv[])
 			}
 			update_cnt++;
 		}
-		else if (strncasecmp(tag, "Shared", MAX(taglen, 2)) == 0) {
+		else if (!strncasecmp(tag, "OverSubscribe", MAX(taglen, 2)) ||
+			 !strncasecmp(tag, "Shared", MAX(taglen, 2))) {
 			if (strncasecmp(val, "YES", MAX(vallen, 1)) == 0)
 				job_msg.shared = 1;
 			else if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0)

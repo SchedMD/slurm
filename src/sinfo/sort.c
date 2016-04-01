@@ -72,6 +72,7 @@ static int _sort_by_node_list(void *void1, void *void2);
 static int _sort_by_node_addr(void *void1, void *void2);
 static int _sort_by_nodes_ai(void *void1, void *void2);
 static int _sort_by_nodes(void *void1, void *void2);
+static int _sort_by_oversubscribe(void *void1, void *void2);
 static int _sort_by_partition(void *void1, void *void2);
 static int _sort_by_preempt_mode(void *void1, void *void2);
 static int _sort_by_priority_job_factor(void *void1, void *void2);
@@ -80,7 +81,6 @@ static int _sort_by_reason(void *void1, void *void2);
 static int _sort_by_reason_time(void *void1, void *void2);
 static int _sort_by_reason_user(void *void1, void *void2);
 static int _sort_by_root(void *void1, void *void2);
-static int _sort_by_share(void *void1, void *void2);
 static int _sort_by_state(void *void1, void *void2);
 static int _sort_by_weight(void *void1, void *void2);
 
@@ -131,7 +131,7 @@ void sort_sinfo_list(List sinfo_list)
 		else if (params.sort[i] == 'g')
 			list_sort(sinfo_list, _sort_by_groups);
 		else if (params.sort[i] == 'h')
-			list_sort(sinfo_list, _sort_by_share);
+			list_sort(sinfo_list, _sort_by_oversubscribe);
 		else if (params.sort[i] == 'H')
 			list_sort(sinfo_list, _sort_by_reason_time);
 		else if (params.sort[i] == 'l')
@@ -777,7 +777,7 @@ static int _sort_by_root(void *void1, void *void2)
 	return diff;
 }
 
-static int _sort_by_share(void *void1, void *void2)
+static int _sort_by_oversubscribe(void *void1, void *void2)
 {
 	int diff;
 	sinfo_data_t *sinfo1;

@@ -691,7 +691,8 @@ Default real memory size available per allocated node in MegaBytes.
 Used to avoid over\-subscribing memory and causing paging.
 \fBDefMemPerNode\fR would generally be used if whole nodes
 are allocated to jobs (\fBSelectType=select/linear\fR) and
-resources are shared (\fBShared=yes\fR or \fBShared=force\fR).
+resources are over\-subscribed (\fBOverSubscribe=yes\fR or
+\fBOverSubscribe=force\fR).
 The default value is 0 (unlimited).
 Also see \fBDefMemPerCPU\fR and \fBMaxMemPerNode\fR.
 \fBDefMemPerCPU\fR and \fBDefMemPerNode\fR are mutually exclusive.
@@ -1244,7 +1245,7 @@ The default value is 30 seconds.
 The value may not exceed 65533.
 
 .TP
-\fNodeFeaturesPlugins\fR
+\fBNodeFeaturesPlugins\fR
 Identifies the plugins to be used for support of node features which can
 change through time. For example, a node which might be booted with various
 BIOS setting. This is supported through the use of a node's active_features
@@ -1380,7 +1381,8 @@ Maximum real memory size available per allocated node in MegaBytes.
 Used to avoid over\-subscribing memory and causing paging.
 \fBMaxMemPerNode\fR would generally be used if whole nodes
 are allocated to jobs (\fBSelectType=select/linear\fR) and
-resources are shared (\fBShared=yes\fR or \fBShared=force\fR).
+resources are over\-subscribed (\fBOverSubscribe=yes\fR or
+\fBOverSubscribe=force\fR).
 The default value is 0 (unlimited).
 Also see \fBDefMemPerNode\fR and \fBMaxMemPerCPU\fR.
 \fBMaxMemPerCPU\fR and \fBMaxMemPerNode\fR are mutually exclusive.
@@ -1501,9 +1503,8 @@ aggregation are the node registration, batch script completion,
 step completion, and epilog complete messages.
 .br
 .br
-.RE
 The format for this parameter is as follows:
-.br
+.RE
 .RS
 .TP 12
 \fBMsgAggregationParams=\fR\fI<option>\fR\fB=\fR\fI<value>\fR
@@ -2800,8 +2801,8 @@ The default value is "select/bluegene" for BlueGene systems.
 The resources within a node are individually allocated as
 consumable resources.
 Note that whole nodes can be allocated to jobs for selected
-partitions by using the \fIShared=Exclusive\fR option.
-See the partition \fBShared\fR parameter for more information.
+partitions by using the \fIOverSubscribe=Exclusive\fR option.
+See the partition \fBOverSubscribe\fR parameter for more information.
 .TP
 \fBselect/cray\fR
 for a Cray system.
@@ -2943,7 +2944,8 @@ Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 .TP
 \fBCR_Memory\fR
 Memory is a consumable resource.
-NOTE: This implies \fIShared=YES\fR or \fIShared=FORCE\fR for all partitions.
+NOTE: This implies \fIOverSubscribe=YES\fR or \fIOverSubscribe=FORCE\fR for
+all partitions.
 Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 .RE
 .RE
@@ -4236,7 +4238,8 @@ Default real memory size available per allocated node in MegaBytes.
 Used to avoid over\-subscribing memory and causing paging.
 \fBDefMemPerNode\fR would generally be used if whole nodes
 are allocated to jobs (\fBSelectType=select/linear\fR) and
-resources are shared (\fBShared=yes\fR or \fBShared=force\fR).
+resources are over\-subscribed (\fBOverSubscribe=yes\fR or
+\fBOverSubscribe=force\fR).
 If not set, the \fBDefMemPerNode\fR value for the entire cluster will be used.
 Also see \fBDefMemPerCPU\fR and \fBMaxMemPerNode\fR.
 \fBDefMemPerCPU\fR and \fBDefMemPerNode\fR are mutually exclusive.
@@ -4339,7 +4342,8 @@ Maximum real memory size available per allocated node in MegaBytes.
 Used to avoid over\-subscribing memory and causing paging.
 \fBMaxMemPerNode\fR would generally be used if whole nodes
 are allocated to jobs (\fBSelectType=select/linear\fR) and
-resources are shared (\fBShared=yes\fR or \fBShared=force\fR).
+resources are over\-subscribed (\fBOverSubscribe=yes\fR or
+\fBOverSubscribe=force\fR).
 If not set, the \fBMaxMemPerNode\fR value for the entire cluster will be used.
 Also see \fBDefMemPerNode\fR and \fBMaxMemPerCPU\fR.
 \fBMaxMemPerCPU\fR and \fBMaxMemPerNode\fR are mutually exclusive.
@@ -4382,6 +4386,75 @@ described above. A blank list of nodes
 (i.e. "Nodes= ") can be used if one wants a partition to exist,
 but have no resources (possibly on a temporary basis).
 A value of "ALL" is mapped to all nodes configured in the cluster.
+
+.TP
+\fBOverSubscribe\fR
+Controls the ability of the partition to execute more than one job at a
+time on each resource (node, socket or core depending upon the value
+of \fBSelectTypeParameters\fR).
+If resources are to be over\-subscribed, avoiding memory over\-subscription
+is very important.
+\fBSelectTypeParameters\fR should be configured to treat
+memory as a consumable resource and the \fB\-\-mem\fR option
+should be used for job allocations.
+Sharing of resources is typically useful only when using gang scheduling
+(\fBPreemptMode=suspend,gang\fR).
+Possible values for \fBOverSubscribe\fR are "EXCLUSIVE", "FORCE", "YES", and "NO".
+Note that a value of "YES" or "FORCE" can negatively impact performance
+for systems with many thousands of running jobs.
+The default value is "NO".
+For more information see the following web pages:
+.br
+.na
+\fIhttp://slurm.schedmd.com/cons_res.html\fR,
+.br
+\fIhttp://slurm.schedmd.com/cons_res_share.html\fR,
+.br
+\fIhttp://slurm.schedmd.com/gang_scheduling.html\fR, and
+.br
+\fIhttp://slurm.schedmd.com/preempt.html\fR.
+.ad
+
+.RS
+.TP 12
+\fBEXCLUSIVE\fR
+Allocates entire nodes to jobs even with select/cons_res configured.
+Jobs that run in partitions with "OverSubscribe=EXCLUSIVE" will have
+exclusive access to all allocated nodes.
+.TP
+\fBFORCE\fR
+Makes all resources in the partition available for sharing
+without any means for users to disable it.
+May be followed with a colon and maximum number of jobs in
+running or suspended state.
+For example "OverSubscribe=FORCE:4" enables each node, socket or
+core to execute up to four jobs at once.
+Recommended only for BlueGene systems configured with
+small blocks or for systems running
+with gang scheduling (\fBPreemptMode=suspend,gang\fR).
+NOTE: \fIPreemptType=QOS\fR will permit one additional job to be run
+on the partition if started due to job preemption. For example, a configuration
+of \fIBOverSubscribe=FORCE:1\fR will only permit one job per resources normally,
+but a second job can be started if done so through preemption based upon QOS.
+The use of \fIPreemptType=QOS\fR and \fIPreemptType=Suspend\fR only applies
+with \fISelectType=cons_res\fR.
+.TP
+\fBYES\fR
+Makes all resources in the partition available for sharing upon request by
+the job.
+Resources will only be over\-subscribed when explicitly requested
+by the user using the "\-\-share" option on job submission.
+May be followed with a colon and maximum number of jobs in
+running or suspended state.
+For example "OverSubscribe=YES:4" enables each node, socket or
+core to execute up to four jobs at once.
+Recommended only for systems running with gang scheduling
+(\fBPreemptMode=suspend,gang\fR).
+.TP
+\fBNO\fR
+Selected resources are allocated to a single job. No resource will be
+allocated to more than one job.
+.RE
 
 .TP
 \fBPartitionName\fR
@@ -4463,72 +4536,8 @@ Use requires the system\-wide \fBSelectTypeParameters\fR value be set.
 
 .TP
 \fBShared\fR
-Controls the ability of the partition to execute more than one job at a
-time on each resource (node, socket or core depending upon the value
-of \fBSelectTypeParameters\fR).
-If resources are to be shared, avoiding memory over\-subscription
-is very important.
-\fBSelectTypeParameters\fR should be configured to treat
-memory as a consumable resource and the \fB\-\-mem\fR option
-should be used for job allocations.
-Sharing of resources is typically useful only when using gang scheduling
-(\fBPreemptMode=suspend,gang\fR).
-Possible values for \fBShared\fR are "EXCLUSIVE", "FORCE", "YES", and "NO".
-Note that a value of "YES" or "FORCE" can negatively impact performance
-for systems with many thousands of running jobs.
-The default value is "NO".
-For more information see the following web pages:
-.br
-.na
-\fIhttp://slurm.schedmd.com/cons_res.html\fR,
-.br
-\fIhttp://slurm.schedmd.com/cons_res_share.html\fR,
-.br
-\fIhttp://slurm.schedmd.com/gang_scheduling.html\fR, and
-.br
-\fIhttp://slurm.schedmd.com/preempt.html\fR.
-.ad
-
-.RS
-.TP 12
-\fBEXCLUSIVE\fR
-Allocates entire nodes to jobs even with select/cons_res configured.
-Jobs that run in partitions with "Shared=EXCLUSIVE" will have
-exclusive access to all allocated nodes.
-.TP
-\fBFORCE\fR
-Makes all resources in the partition available for sharing
-without any means for users to disable it.
-May be followed with a colon and maximum number of jobs in
-running or suspended state.
-For example "Shared=FORCE:4" enables each node, socket or
-core to execute up to four jobs at once.
-Recommended only for BlueGene systems configured with
-small blocks or for systems running
-with gang scheduling (\fBPreemptMode=suspend,gang\fR).
-NOTE: \fIPreemptType=QOS\fR will permit one additional job to be run
-on the partition if started due to job preemption. For example, a configuration
-of \fIShared=FORCE:1\fR will only permit one job per resources normally,
-but a second job can be started if done so through preemption based upon QOS.
-The use of \fIPreemptType=QOS\fR and \fIPreemptType=Suspend\fR only applies
-with \fISelectType=cons_res\fR.
-.TP
-\fBYES\fR
-Makes all resources in the partition available for sharing upon request by
-the job.
-Resources will only be over\-subscribed when explicitly requested
-by the user using the "\-\-share" option on job submission.
-May be followed with a colon and maximum number of jobs in
-running or suspended state.
-For example "Shared=YES:4" enables each node, socket or
-core to execute up to four jobs at once.
-Recommended only for systems running with gang scheduling
-(\fBPreemptMode=suspend,gang\fR).
-.TP
-\fBNO\fR
-Selected resources are allocated to a single job. No resource will be
-allocated to more than one job.
-.RE
+The \fBShared\fR configuration parameter has been replaced by the
+\fBOverSubscribe\fR parameter described above.
 
 .TP
 \fBState\fR

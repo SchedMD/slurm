@@ -288,13 +288,13 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	force = part_ptr->max_share & SHARED_FORCE;
 	val = part_ptr->max_share & (~SHARED_FORCE);
 	if (val == 0)
-		xstrcat(out, " Shared=EXCLUSIVE");
+		xstrcat(out, " OverSubscribe=EXCLUSIVE");
 	else if (force)
-		xstrfmtcat(out, " Shared=FORCE:%u", val);
+		xstrfmtcat(out, " OverSubscribe=FORCE:%u", val);
 	else if (val == 1)
-		xstrcat(out, " Shared=NO");
+		xstrcat(out, " OverSubscribe=NO");
 	else
-		xstrfmtcat(out, " Shared=YES:%u", val);
+		xstrfmtcat(out, " OverSubscribe=YES:%u", val);
 
 	preempt_mode = part_ptr->preempt_mode;
 	if (preempt_mode == (uint16_t) NO_VAL)

@@ -134,7 +134,7 @@ void sort_job_list(List job_list)
 		else if (params.sort[i] == 'G')
 			list_sort(job_list, _sort_job_by_group_id);
 		else if (params.sort[i] == 'h')
-			;	/* sort_job_by_shared */
+			;	/* sort_job_by_over_subscribe, not supported */
 		else if (params.sort[i] == 'H')
 			list_sort(job_list, _sort_job_by_sockets);
 		else if (params.sort[i] == 'i')

@@ -311,10 +311,10 @@ a minimum node count and optionally a maximum node count. A command line of</p>
 <p>would result in the request being rejected. If the <b>--overcommit</b> option
 is added to either command line, then only one node will be allocated for all
 four tasks to use.</p>
-<p>More than one job can execute simultaneously on the same nodes through the use
-of srun's <b>--shared</b> option in conjunction with the <b>Shared</b> parameter
-in Slurm's partition configuration. See the man pages for srun and slurm.conf for
-more information.</p>
+<p>More than one job can execute simultaneously on the same compute resource
+(e.g. CPU) through the use of srun's <b>--oversubscribe</b> option in
+conjunction with the <b>OverSubscribe</b> parameter in Slurm's partition
+configuration. See the man pages for srun and slurm.conf for more information.</p>
 
 <p><a name="purge"><b>5. Why is my job killed prematurely?</b></a><br>
 Slurm has a job purging mechanism to remove inactive jobs (resource allocations)
@@ -1002,7 +1002,8 @@ using the command "scontrol show node" and looking at the values of
 "ThreadsPerCore".</p>
 <p>Note that even on systems with hyperthreading enabled, the resources will
 generally be allocated to jobs at the level of a core (see NOTE below).
-Two different jobs will not share a core.
+Two different jobs will not share a core except through the use of a partition
+OverSubscribe configuration parameter.
 For example, a job requesting resources for three tasks on a node with
 ThreadsPerCore=2 will be allocated two full cores.
 Note that Slurm commands contain a multitude of options to control
@@ -1108,7 +1109,7 @@ See <a href="cons_res.html">Consumable Resources in Slurm</a>
 for details about this configuration.
 If you want to allocate whole nodes to jobs, configure
 configure <i>SelectType=select/linear</i>.
-Each partition also has a configuration parameter <i>Shared</i>
+Each partition also has a configuration parameter <i>OverSubscribe</i>
 that enables more than one job to execute on each node.
 See <i>man slurm.conf</i> for more information about these
 configuration parameters.</p>
@@ -2163,6 +2164,6 @@ followed by an optional comma separated list of cluster names to operate on.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 29 March 2016</p>
+<p style="text-align:center;">Last modified 31 March 2016</p>
 
 <!--#include virtual="footer.txt"-->

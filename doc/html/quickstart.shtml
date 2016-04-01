@@ -105,7 +105,7 @@ and maximum node count, processor count, specific nodes to use or not use, and
 specific node characteristics (so much memory, disk space, certain required
 features, etc.).
 A job can contain multiple job steps executing sequentially or in parallel on
-independent or shared nodes within the job's node allocation.</p>
+independent or shared resources within the job's node allocation.</p>
 
 <p><span class="commandline"><b>strigger</b></span> is used to set, get or
 view event triggers. Event triggers include things such as nodes going down
@@ -183,13 +183,13 @@ below. See the man page for more information.</p>
 <pre>
 adev0: scontrol show partition
 PartitionName=debug TotalNodes=5 TotalCPUs=40 RootOnly=NO
-   Default=YES Shared=FORCE:4 Priority=1 State=UP
+   Default=YES OverSubscribe=FORCE:4 Priority=1 State=UP
    MaxTime=00:30:00 Hidden=NO
    MinNodes=1 MaxNodes=26 DisableRootJobs=NO AllowGroups=ALL
    Nodes=adev[1-5] NodeIndices=0-4
 
 PartitionName=batch TotalNodes=10 TotalCPUs=80 RootOnly=NO
-   Default=NO Shared=FORCE:4 Priority=1 State=UP
+   Default=NO OverSubscribe=FORCE:4 Priority=1 State=UP
    MaxTime=16:00:00 Hidden=NO
    MinNodes=1 MaxNodes=26 DisableRootJobs=NO AllowGroups=ALL
    Nodes=adev[6-15] NodeIndices=5-14
@@ -210,7 +210,7 @@ JobId=65672 UserId=phil(5136) GroupId=phil(5136)
    StartTime=06/02-15:27:11 EndTime=06/02-15:37:11
    JobState=PENDING NodeList=(null) NodeListIndices=
    NumCPUs=24 ReqNodes=1 ReqS:C:T=1-65535:1-65535:1-65535
-   Shared=1 Contiguous=0 CPUs/task=0 Licenses=(null)
+   OverSubscribe=1 Contiguous=0 CPUs/task=0 Licenses=(null)
    MinCPUs=1 MinSockets=1 MinCores=1 MinThreads=1
    MinMemory=0 MinTmpDisk=0 Features=(null)
    Dependency=(null) Account=(null) Requeue=1
@@ -395,6 +395,6 @@ with Slurm are provided below.
 <li><a href="mpi_guide.html#quadrics_mpi">Quadrics MPI</a></li>
 </ul></p>
 
-<p style="text-align:center;">Last modified 13 August 2014</p>
+<p style="text-align:center;">Last modified 31 March 2016</p>
 
 <!--#include virtual="footer.txt"-->

@@ -1,4 +1,4 @@
-.TH squeue "1" "Slurm Commands" "April 2015" "Slurm Commands"
+.TH squeue "1" "Slurm Commands" "April 2016" "Slurm Commands"
 
 .SH "NAME"
 squeue \- view information about jobs located in the Slurm scheduling queue.
@@ -220,13 +220,16 @@ Group ID of the job.
 (Valid for jobs only)
 .TP
 \fB%h\fR
-Can the resources allocated to the job be shared with other jobs.
-The resources to be shared can be nodes, sockets, cores, or hyperthreads
-depending upon configuration.
-The value will be "yes" if the job was submitted with the shared option or
-the partition is configured with Shared=Force,
-"no" if the job requires exclusive node access, and
-"unknwn" otherwise (typically allocated dedicated CPUs).
+Can the compute resources allocated to the job be over subscribed by other jobs.
+The resources to be over subscribed can be nodes, sockets, cores, or
+hyperthreads depending upon configuration.
+The value will be "YES" if the job was submitted with the oversubscribe option
+or the partition is configured with OverSubscribe=Force,
+"NO" if the job requires exclusive node access,
+"USER" if the allocated compute nodes are dedicated to a single user,
+"MCS" if the allocated compute nodes are dedicated to a single security class
+(See MCSPlugin and MCSParameters configuration parameters for more information),
+"OK" otherwise (typically allocated dedicated CPUs),
 (Valid for jobs only)
 .TP
 \fB%H\fR
@@ -682,6 +685,19 @@ Number of tasks requested by a job or job step.
 This reports the value of the \fB\-\-ntasks\fR option.
 (Valid for jobs and job steps)
 .TP
+\fBoversubscribe\fR
+Can the compute resources allocated to the job be over subscribed by other jobs.
+The resources to be over subscribed can be nodes, sockets, cores, or
+hyperthreads depending upon configuration.
+The value will be "YES" if the job was submitted with the oversubscribe option
+or the partition is configured with OverSubscribe=Force,
+"NO" if the job requires exclusive node access,
+"USER" if the allocated compute nodes are dedicated to a single user,
+"MCS" if the allocated compute nodes are dedicated to a single security class
+(See MCSPlugin and MCSParameters configuration parameters for more information),
+"OK" otherwise (typically allocated dedicated CPUs),
+(Valid for jobs only)
+.TP
 \fBpartition\fR
 Partition of the job or job step.
 (Valid for jobs and job steps)
@@ -771,15 +787,6 @@ Geometry requirement of resource allocation (X,Y,Z dimensions),
 Connection type (TORUS, MESH, or NAV == torus else mesh),
 Permit rotation of geometry (yes or no),
 Node use (VIRTUAL or COPROCESSOR), etc.
-(Valid for jobs only)
-.TP
-\fBshared\fR
-Can the resources allocated to the job be shared with other jobs.
-Possible values are "no" (job allocated whole node only),
-"yes" (job can share allocated resources with other jobs), and
-"unknwn" (not specified by job or configuration, job will normally be allocated
-dedicated CPUs).
-
 (Valid for jobs only)
 .TP
 \fBsockets\fR
@@ -1300,7 +1307,7 @@ Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
 Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 .br
-Copyright (C) 2010\-2014 SchedMD LLC.
+Copyright (C) 2010\-2016 SchedMD LLC.
 .LP
 This file is part of Slurm, a resource management program.
 For details, see <http://slurm.schedmd.com/>.

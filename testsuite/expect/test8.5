@@ -182,9 +182,9 @@ if {[string compare [get_bluegene_layout] Dynamic]} {
 }
 
 set part_name [default_partition]
-set shared [partition_shared $part_name]
-if {[string compare $shared FORCE]} {
-	send_user "\nFAILURE: System configured Dynamic, but Partition $part_name has Shared=$shared\n"
+set oversubscribe [partition_oversubscribe $part_name]
+if {[string compare $oversubscribe FORCE]} {
+	send_user "\nFAILURE: System configured Dynamic, but Partition $part_name has OverSubscribe=$oversubscribe\n"
 	exit 1
 }
 

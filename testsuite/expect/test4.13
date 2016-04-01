@@ -69,7 +69,7 @@ array set part_info {
 	PreemptMode        preemptmode
 	PriorityJobFactor  priorityjobfactor
 	PriorityTier       prioritytier
-	Shared             share
+	OverSubscribe      oversubscribe
 	RootOnly           root
 }
 

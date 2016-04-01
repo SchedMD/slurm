@@ -14,6 +14,10 @@ documents those changes that are of interest to users and administrators.
     Note that the node's total core count must not change, only the distribution
     of cores across varying socket counts (KNL NUMA nodes treated as sockets by
     Slurm).
+ -- Rename partition configuration from "Shared" to "OverSubscribe". Rename
+    salloc, sbatch, srun option from "--shared" to "--oversubscribe". The old
+    options will continue to function. Output field names also changed in
+    scontrol, sinfo, squeue and sview.
 
 * Changes in Slurm 16.05.0pre2
 ==============================

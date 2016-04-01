@@ -75,6 +75,7 @@
 strong_alias(preempt_mode_string, slurm_preempt_mode_string);
 strong_alias(preempt_mode_num, slurm_preempt_mode_num);
 strong_alias(job_reason_string, slurm_job_reason_string);
+strong_alias(job_share_string, slurm_job_share_string);
 strong_alias(job_state_string, slurm_job_state_string);
 strong_alias(job_state_string_compact, slurm_job_state_string_compact);
 strong_alias(job_state_num, slurm_job_state_num);
@@ -1825,6 +1826,20 @@ extern uint16_t log_string2num(char *name)
 		return (uint16_t) 9;
 
 	return (uint16_t) NO_VAL;
+}
+
+extern char *job_share_string(uint16_t shared)
+{
+	if (shared == JOB_SHARED_NONE)
+		return "NO";
+	else if (shared == JOB_SHARED_OK)
+		return "YES";
+	else if (shared == JOB_SHARED_USER)
+		return "USER";
+	else if (shared == JOB_SHARED_MCS)
+		return "MCS";
+	else
+		return "OK";
 }
 
 extern char *job_state_string(uint32_t inx)

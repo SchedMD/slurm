@@ -1017,8 +1017,8 @@ int _print_root(sinfo_data_t * sinfo_data, int width,
 	return SLURM_SUCCESS;
 }
 
-int _print_share(sinfo_data_t * sinfo_data, int width,
-			bool right_justify, char *suffix)
+int _print_oversubscribe(sinfo_data_t * sinfo_data, int width,
+			 bool right_justify, char *suffix)
 {
 	char id[FORMAT_STRING_SIZE];
 
@@ -1035,7 +1035,7 @@ int _print_share(sinfo_data_t * sinfo_data, int width,
 			snprintf(id, sizeof(id), "YES:%u", val);
 		_print_str(id, width, right_justify, true);
 	} else
-		_print_str("SHARE", width, right_justify, true);
+		_print_str("OVERSUBSCRIBE", width, right_justify, true);
 
 	if (suffix)
 		printf("%s", suffix);

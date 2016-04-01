@@ -1,4 +1,4 @@
-.TH sinfo "1" "Slurm Commands" "February 2016" "Slurm Commands"
+.TH sinfo "1" "Slurm Commands" "March 2016" "Slurm Commands"
 
 .SH "NAME"
 sinfo \- view information about Slurm nodes and partitions.
@@ -179,7 +179,8 @@ Groups which may use the nodes
 Generic resources (gres) associated with the nodes
 .TP
 \fB%h\fR
-Jobs may share nodes, "yes", "no", or "force"
+Jobs may oversubscribe compute resources (i.e. CPUs), "yes", "no", "exclusive"
+or "force"
 .TP
 \fB%H\fR
 Print the timestamp of the reason a node is unavailable.
@@ -368,6 +369,10 @@ List of node hostnames.
 \fBnodelist\fR
 List of node names.
 .TP
+\fBoversubscribe\fR
+Jobs may oversubscribe compute resources (i.e. CPUs), "yes", "no", "exclusive"
+or "force".
+.TP
 \fBpartition\fR
 Partition name followed by "*" for the default partition, also see \fB%R\fR.
 .TP
@@ -388,9 +393,6 @@ The reason a node is unavailable (down, drained, or draining states).
 .TP
 \fBroot\fR
 Only user root may initiate jobs, "yes" or "no".
-.TP
-\fBshare\fR
-Jobs may share nodes, "yes", "no", or "force".
 .TP
 \fBsize\fR
 Maximum job size in nodes.
@@ -567,15 +569,15 @@ default partition.
 Is the ability to allocate resources in this partition
 restricted to user root, \fByes\fR or \fBno\fR.
 .TP
-\fBSHARE\fR
-Will jobs allocated resources in this partition share those
-resources.
-\fBno\fR indicates resources are never shared.
+\fBOVERSUBSCRIBE\fR
+Will jobs allocated resources in this partition oversubscribe those
+compute resources (i.e. CPUs).
+\fBno\fR indicates resources are never oversubscribed.
 \fBexclusive\fR indicates whole nodes are dedicated to jobs
 (equivalent to srun \-\-exclusive option, may be used even
-with shared/cons_res managing individual processors).
-\fBforce\fR indicates resources are always available to be shared.
-\fByes\fR indicates resource may be shared or not
+with select/cons_res managing individual processors).
+\fBforce\fR indicates resources are always available to be oversubscribed.
+\fByes\fR indicates resource may be oversubscribed or not
 per job's resource allocation.
 .TP
 \fBSTATE\fR
@@ -773,8 +775,8 @@ Report more complete information about the partition debug:
 .nf
 
 > sinfo --long --partition=debug
-PARTITION AVAIL TIMELIMIT JOB_SIZE ROOT SHARE GROUPS NODES STATE NODELIST
-debug*    up        30:00        8 no   no    all        8 idle  dev[0-7]
+PARTITION AVAIL TIMELIMIT JOB_SIZE ROOT OVERSUBS GROUPS NODES STATE NODELIST
+debug*    up        30:00        8 no   no       all        8 idle  dev[0-7]
 .fi
 
 Report only those nodes that are in state DRAINED:

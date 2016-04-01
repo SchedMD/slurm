@@ -44,9 +44,9 @@ if { [test_xcpu] } {
 }
 
 # NOTE: One CPU per task emulation is not scalable to do via srun
-# so we use "--share" as a no-op for this argument
+# so we use "--oversubscribe" as a no-op for this argument
 if { [test_bluegene] } {
-	set srun_opts "--share"
+	set srun_opts "--oversubscribe"
 } else {
 	set srun_opts "-c1"
 }

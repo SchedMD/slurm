@@ -41,7 +41,7 @@ Slurm allocate the individual processors, memory, and other
 consumable resources.
 Alternately, <i>SelectType=select/linear</i> or
 <i>SelectType=select/bluegene</i> can be used with the
-<i>Shared=yes</i> or <i>Shared=force</i> parameter in
+<i>OverSubscribe=yes</i> or <i>OverSubscribe=force</i> parameter in
 partition configuration specifications.</p>
 
 <p>The default value of <i>SchedulerPort</i> is 7321.</p>
@@ -281,6 +281,6 @@ Write the output to a file with the same name as the user in the
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 15 April 2015</p>
+<p style="text-align:center;">Last modified 31 March 2016</p>
 
 <!--#include virtual="footer.txt"-->

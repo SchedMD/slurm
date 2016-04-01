@@ -2272,12 +2272,12 @@ proc available_nodes { partition state } {
 
 ################################################################
 #
-# Proc: partition_shared
+# Proc: partition_oversubscribe
 #
-# Purpose: Determine the shared configuration of the specified
+# Purpose: Determine the oversubscribe configuration of the specified
 #          partition
 #
-# Returns: Return the shared configuration of the specified
+# Returns: Return the oversubscribe configuration of the specified
 #          partition
 #
 #
@@ -2285,16 +2285,16 @@ proc available_nodes { partition state } {
 #
 ################################################################
 
-proc partition_shared { partition } {
+proc partition_oversubscribe { partition } {
 	global sinfo
 
-	set shared "No"
+	set oversubscribe "NO"
 	send_user "$sinfo --noheader --partition $partition --format %h\n"
 	set fd [open "|$sinfo --noheader --partition $partition --format %h"]
 	gets $fd line
 	catch {close $fd}
-	regexp {[a-zA-Z]+} $line shared
-	return $shared
+	regexp {[a-zA-Z]+} $line oversubscribe
+	return $oversubscribe
 }
 
 ################################################################
@@ -2340,8 +2340,8 @@ proc default_partition {} {
 
 proc default_part_exclusive {} {
 	set def_part [default_partition]
-	set shared [partition_shared $def_part]
-	if {[string compare $shared "EXCLUSIVE"] == 0} {
+	set oversubscribe [partition_oversubscribe $def_part]
+	if {[string compare $oversubscribe "EXCLUSIVE"] == 0} {
 		return 1
 	} else {
 		return 0

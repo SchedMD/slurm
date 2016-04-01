@@ -553,15 +553,14 @@ test17.10  Test of processors, memory, and temporary disk space
 	   constraints options (--mincpus, --mem, and --tmp options).
 	   Also test that priority zero job is not started (--hold
 	   option).
-test17.11  Test of shared and contiguous options (--share and --contiguous).
-	   Also uses --hold option.
+test17.11  Test of oversubscribe and contiguous options, also uses --hold option.
 test17.12  Verify node configuration specification (--constraint option)
 test17.13  Verify the appropriate job environment variables are set
 test17.14  Verify that user environment variables are propagated to the job
 test17.15  Verify that user user limits are propagated to the job
 test17.16  Verify that command line arguments get forwarded to job script
-test17.17  Confirm that node sharing flags are respected  (--nodelist and
-	   --share options)
+test17.17  Confirm that oversubscribe flags are respected  (--nodelist and
+	   --oversubscribe options)
 test17.18  Test of job dependencies and deferred begin time (--dependency
 	   and --begin options).
 test17.19  Test of job submit to multiple partitions (--partition).
@@ -583,7 +582,7 @@ test17.32  Test of --overcommit option.
 test17.33  Test of --open-mode option.
 test17.34  Test of --core-spec option.
 test17.35  Test performance/timing of job submissions.
-test17.36  Test that the shared option in partitions is enforced.
+test17.36  Test that the OverSubscribe option in partitions is enforced.
 test17.37  Validate that afternotok dependency is enforced.
 test17.38  Test for sbatch --signal.
 test17.39  Validate dependecy OR option.

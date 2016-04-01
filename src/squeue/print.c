@@ -1142,27 +1142,14 @@ int _print_job_num_tasks(job_info_t * job, int width, bool right, char* suffix)
 	return SLURM_SUCCESS;
 }
 
-int _print_job_shared(job_info_t * job, int width, bool right_justify,
-		      char* suffix)
+int _print_job_over_subscribe(job_info_t * job, int width, bool right_justify,
+			      char* suffix)
 {
-	if (job == NULL)	/* Print the Header instead */
-		_print_str("SHARED", width, right_justify, true);
-	else {
-		switch (job->shared) {
-		case 0:
-			_print_str("no", width, right_justify, true);
-			break;
-		case 1:
-			_print_str("yes", width, right_justify, true);
-			break;
-		case 2:
-			_print_str("user", width, right_justify, true);
-			break;
-		case (uint16_t)NO_VAL:
-		default:
-			_print_str("unknwn", width, right_justify, true);
-			break;
-		}
+	if (job == NULL) {	/* Print the Header instead */
+		_print_str("OVER_SUBSCRIBE", width, right_justify, true);
+	} else {
+		_print_str(job_share_string(job->shared),
+			   width, right_justify, true);
 	}
 	if (suffix)
 		printf("%s", suffix);

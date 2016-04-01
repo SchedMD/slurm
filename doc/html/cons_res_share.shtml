@@ -9,15 +9,15 @@ does not include memory. The management of memory as a consumable resource is
 discussed in it's own section below.)
 </P>
 <P>
-The per-partition <CODE>Shared</CODE> setting applies to the <U>entity
+The per-partition <CODE>OverSubscribe</CODE> setting applies to the <U>entity
 being selected for scheduling</U>:
 <UL><LI><P>
 When the default <CODE>select/linear</CODE> plugin is enabled, the
-per-partition <CODE>Shared</CODE> setting controls whether or not the
+per-partition <CODE>OverSubscribe</CODE> setting controls whether or not the
 <B>nodes</B> are shared among jobs.
 </P></LI><LI><P>
 When the <CODE>select/cons_res</CODE> plugin is enabled, the per-partition
-<CODE>Shared</CODE> setting controls whether or not the <B>configured consumable
+<CODE>OverSubscribe</CODE> setting controls whether or not the <B>configured consumable
 resources</B> are shared among jobs. When a consumable resource such as a core,
 socket, or CPU is shared, it means that more than one job can be assigned to it.
 </P></LI></UL>
@@ -27,20 +27,20 @@ The following table describes this new functionality in more detail:
 </P>
 <TABLE CELLPADDING=3 CELLSPACING=1 BORDER=1>
 <TR><TH>Selection Setting</TH>
-<TH>Per-partition <CODE>Shared</CODE> Setting</TH>
+<TH>Per-partition <CODE>OverSubscribe</CODE> Setting</TH>
 <TH>Resulting Behavior</TH>
 </TR><TR>
 <TD ROWSPAN=3>SelectType=<B>select/linear</B></TD>
-<TD>Shared=NO</TD>
+<TD>OverSubscribe=NO</TD>
 <TD>Whole nodes are allocated to jobs. No node will run more than one job
 per partition/queue.</TD>
 </TR><TR>
-<TD>Shared=YES</TD>
-<TD>By default same as Shared=NO. Nodes allocated to a job may be shared with
+<TD>OverSubscribe=YES</TD>
+<TD>By default same as OverSubscribe=NO. Nodes allocated to a job may be shared with
 other jobs if each job allows sharing via the <CODE>srun --shared</CODE>
 option.</TD>
 </TR><TR>
-<TD>Shared=FORCE</TD>
+<TD>OverSubscribe=FORCE</TD>
 <TD>Each whole node can be allocated to multiple jobs up to the count specified
 per partition/queue (default 4 jobs per node)</TD>
 </TR><TR>
@@ -48,16 +48,16 @@ per partition/queue (default 4 jobs per node)</TD>
 Plus one of the following:<BR>
 SelectTypeParameters=<B>CR_Core</B><BR>
 SelectTypeParameters=<B>CR_Core_Memory</B></TD>
-<TD>Shared=NO</TD>
+<TD>OverSubscribe=NO</TD>
 <TD>Cores are allocated to jobs. No core will run more than one job
 per partition/queue.</TD>
 </TR><TR>
-<TD>Shared=YES</TD>
-<TD>By default same as Shared=NO. Cores allocated to a job may be shared with
+<TD>OverSubscribe=YES</TD>
+<TD>By default same as OverSubscribe=NO. Cores allocated to a job may be shared with
 other jobs if each job allows sharing via the <CODE>srun --shared</CODE>
 option.</TD>
 </TR><TR>
-<TD>Shared=FORCE</TD>
+<TD>OverSubscribe=FORCE</TD>
 <TD>Each core can be allocated to multple jobs up to the count specified
 per partition/queue (default 4 jobs per core).</TD>
 </TR><TR>
@@ -65,16 +65,16 @@ per partition/queue (default 4 jobs per core).</TD>
 Plus one of the following:<BR>
 SelectTypeParameters=<B>CR_CPU</B><BR>
 SelectTypeParameters=<B>CR_CPU_Memory</B></TD>
-<TD>Shared=NO</TD>
+<TD>OverSubscribe=NO</TD>
 <TD>CPUs are allocated to jobs. No CPU will run more than one job
 per partition/queue.</TD>
 </TR><TR>
-<TD>Shared=YES</TD>
-<TD>By default same as Shared=NO. CPUs allocated to a job may be shared with
+<TD>OverSubscribe=YES</TD>
+<TD>By default same as OverSubscribe=NO. CPUs allocated to a job may be shared with
 other jobs if each job allows sharing via the <CODE>srun --shared</CODE>
 option.</TD>
 </TR><TR>
-<TD>Shared=FORCE</TD>
+<TD>OverSubscribe=FORCE</TD>
 <TD>Each CPU can be allocated to multple jobs up to the count specified
 per partition/queue (default 4 jobs per CPU).</TD>
 </TR><TR>
@@ -82,21 +82,21 @@ per partition/queue (default 4 jobs per CPU).</TD>
 Plus one of the following:<BR>
 SelectTypeParameters=<B>CR_Socket</B><BR>
 SelectTypeParameters=<B>CR_Socket_Memory</B></TD>
-<TD>Shared=NO</TD>
+<TD>OverSubscribe=NO</TD>
 <TD>Sockets are allocated to jobs. No Socket will run more than one job
 per partition/queue.</TD>
 </TR><TR>
-<TD>Shared=YES</TD>
-<TD>By default same as Shared=NO. Sockets allocated to a job may be shared with
+<TD>OverSubscribe=YES</TD>
+<TD>By default same as OverSubscribe=NO. Sockets allocated to a job may be shared with
 other jobs if each job allows sharing via the <CODE>srun --shared</CODE>
 option.</TD>
 </TR><TR>
-<TD>Shared=FORCE</TD>
+<TD>OverSubscribe=FORCE</TD>
 <TD>Each socket can be allocated to multple jobs up to the count specified
 per partition/queue (default 4 jobs per socket).</TD>
 </TR>
 </TABLE>
-<P>When <CODE>Shared=FORCE</CODE> is configured, the consumable resources are
+<P>When <CODE>OverSubscribe=FORCE</CODE> is configured, the consumable resources are
 scheduled for jobs using a <B>least-loaded</B> algorithm. Thus, idle
 CPUs|cores|sockets will be allocated to a job before busy ones, and
 CPUs|cores|sockets running one job will be allocated to a job before ones
@@ -106,7 +106,7 @@ running two or more jobs. This is the same approach that the
 <P>
 Note that the <B>granularity</B> of the "least-loaded" algorithm is what
 distinguishes the two selection plugins (<CODE>cons_res</CODE> and
-<CODE>linear</CODE>) when <CODE>Shared=FORCE</CODE> is configured. With the
+<CODE>linear</CODE>) when <CODE>OverSubscribe=FORCE</CODE> is configured. With the
 <CODE>select/cons_res</CODE> plugin enabled, the CPUs of a node are not
 overcommitted until <B>all</B> of the rest of the CPUs are overcommitted on the
 other nodes. Thus if one job allocates half of the CPUs on a node and then a
@@ -117,7 +117,7 @@ busy nodes that have more than half of the CPUs available for use. The
 track the CPU usage on each node.
 </P><P>
 This new sharing functionality in the select/cons_res plugin also supports the
-new <CODE>Shared=FORCE:&lt;num&gt;</CODE> syntax. If <CODE>Shared=FORCE:3</CODE>
+new <CODE>OverSubscribe=FORCE:&lt;num&gt;</CODE> syntax. If <CODE>OverSubscribe=FORCE:3</CODE>
 is configured with <CODE>select/cons_res</CODE> and <CODE>CR_Core</CODE> or
 <CODE>CR_Core_Memory</CODE>, then the <CODE>select/cons_res</CODE> plugin will
 run up to 3 jobs on each <U>core</U> of each node in the partition. If
@@ -129,12 +129,12 @@ of each node in the partition.
 <P>
 Slurm has supported configuring nodes in more than one partition since version
 0.7.0. The following table describes how nodes configured in two partitions with
-different <CODE>Shared</CODE> settings will be allocated to jobs. Note that
+different <CODE>OverSubscribe</CODE> settings will be allocated to jobs. Note that
 "shared" jobs are jobs that are submitted to partitions configured with
-<CODE>Shared=FORCE</CODE> or with <CODE>Shared=YES</CODE> and the job requested
+<CODE>OverSubscribe=FORCE</CODE> or with <CODE>OverSubscribe=YES</CODE> and the job requested
 sharing with the <CODE>srun --shared</CODE> option. Conversely, "non-shared"
 jobs are jobs that are submitted to partitions configured with
-<CODE>Shared=NO</CODE> or <CODE>Shared=YES</CODE> and the job did <U>not</U>
+<CODE>OverSubscribe=NO</CODE> or <CODE>OverSubscribe=YES</CODE> and the job did <U>not</U>
 request sharable resources.
 </P>
 <TABLE CELLPADDING=3 CELLSPACING=1 BORDER=1>
@@ -149,32 +149,32 @@ share resources</TD><TD>Jobs do not run on the same nodes</TD></TR>
 The next table contains several
 scenarios with the <CODE>select/cons_res</CODE> plugin enabled to further
 clarify how a node is used when it is configured in more than one partition and
-the partitions have different "Shared" policies:
+the partitions have different "OverSubscribe" policies:
 </P>
 <TABLE CELLPADDING=3 CELLSPACING=1 BORDER=1>
 <TR><TH>Slurm configuration</TH>
 <TH>Resulting Behavior</TH>
 </TR><TR>
-<TD>Two <CODE>Shared=NO</CODE> partitions assigned the same set of nodes</TD>
+<TD>Two <CODE>OverSubscribe=NO</CODE> partitions assigned the same set of nodes</TD>
 <TD>Jobs from either partition will be assigned to all available consumable
 resources. No consumable resource will be shared. One node could have 2 jobs
 running on it, and each job could be from a different partition.</TD>
 </TR><TR>
 <TD>Two partitions assigned the same set of nodes: one partition is
-<CODE>Shared=FORCE</CODE>, and the other is <CODE>Shared=NO</CODE></TD>
+<CODE>OverSubscribe=FORCE</CODE>, and the other is <CODE>OverSubscribe=NO</CODE></TD>
 <TD>A node will only run jobs from one partition at a time. If a node is
-running jobs from the <CODE>Shared=NO</CODE> partition, then none of it's
+running jobs from the <CODE>OverSubscribe=NO</CODE> partition, then none of it's
 consumable resources will be shared. If a node is running jobs from the
-<CODE>Shared=FORCE</CODE> partition, then it's consumable resources can be
+<CODE>OverSubscribe=FORCE</CODE> partition, then it's consumable resources can be
 shared.</TD>
 </TR><TR>
-<TD>Two <CODE>Shared=FORCE</CODE> partitions assigned the same set of nodes</TD>
+<TD>Two <CODE>OverSubscribe=FORCE</CODE> partitions assigned the same set of nodes</TD>
 <TD>Jobs from either partition will be assigned consumable resources. All
 consumable resources can be shared. One node could have 2 jobs running on it,
 and each job could be from a different partition.</TD>
 </TR><TR>
 <TD>Two partitions assigned the same set of nodes: one partition is
-<CODE>Shared=FORCE:3</CODE>, and the other is <CODE>Shared=FORCE:5</CODE></TD>
+<CODE>OverSubscribe=FORCE:3</CODE>, and the other is <CODE>OverSubscribe=FORCE:5</CODE></TD>
 <TD>Generally the same behavior as above. However no consumable resource will
 ever run more than 3 jobs from the first partition, and no consumable resource
 will ever run more than 5 jobs from the second partition. A consumable resource
@@ -184,11 +184,11 @@ could have up to 8 jobs running on it at one time.</TD>
 <P>
 Note that the "mixed shared setting" configuration (row #2 above) introduces the
 possibility of <B>starvation</B> between jobs in each partition. If a set of
-nodes are running jobs from the <CODE>Shared=NO</CODE> partition, then these
+nodes are running jobs from the <CODE>OverSubscribe=NO</CODE> partition, then these
 nodes will continue to only be available to jobs from that partition, even if
-jobs submitted to the <CODE>Shared=FORCE</CODE> partition have a higher
+jobs submitted to the <CODE>OverSubscribe=FORCE</CODE> partition have a higher
 priority. This works in reverse also, and in fact it's easier for jobs from the
-<CODE>Shared=FORCE</CODE> partition to hold onto the nodes longer because the
+<CODE>OverSubscribe=FORCE</CODE> partition to hold onto the nodes longer because the
 consumable resource "sharing" provides more resource availability for new jobs
 to begin running "on top of" the existing jobs. This happens with the
 <CODE>select/linear</CODE> plugin also, so it's not specific to the
@@ -262,6 +262,6 @@ values suitable for your system.</P>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 17 September 2012</p>
+<p style="text-align:center;">Last modified 31 March 2016</p>
 
 <!--#include virtual="footer.txt"-->

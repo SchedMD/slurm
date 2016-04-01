@@ -1073,6 +1073,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"MaxNodes", S_P_UINT32}, /* INFINITE or a number */
 		{"MinNodes", S_P_UINT32},
 		{"Nodes", S_P_STRING},
+		{"OverSubscribe", S_P_STRING}, /* YES, NO, or FORCE */
 		{"PreemptMode", S_P_STRING},
 		{"Priority", S_P_UINT16},
 		{"PriorityJobFactor", S_P_UINT16},
@@ -1331,7 +1332,9 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		} else
 			p->cr_type = 0;
 
-		if (s_p_get_string(&tmp, "Shared", tbl) ||
+		if (s_p_get_string(&tmp, "OverSubscribe", tbl) ||
+		    s_p_get_string(&tmp, "OverSubscribe", dflt) ||
+		    s_p_get_string(&tmp, "Shared", tbl) ||
 		    s_p_get_string(&tmp, "Shared", dflt)) {
 			if (xstrcasecmp(tmp, "NO") == 0)
 				p->max_share = 1;
@@ -1340,7 +1343,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			else if (strncasecmp(tmp, "YES:", 4) == 0) {
 				int i = strtol(&tmp[4], (char **) NULL, 10);
 				if (i <= 1) {
-					error("Ignoring bad Shared value: %s",
+					error("Ignoring bad OverSubscribe value: %s",
 					      tmp);
 					p->max_share = 1; /* Shared=NO */
 				} else
@@ -1350,7 +1353,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			else if (strncasecmp(tmp, "FORCE:", 6) == 0) {
 				int i = strtol(&tmp[6], (char **) NULL, 10);
 				if (i < 1) {
-					error("Ignoring bad Shared value: %s",
+					error("Ignoring bad OverSubscribe value: %s",
 					      tmp);
 					p->max_share = 1; /* Shared=NO */
 				} else

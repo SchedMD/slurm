@@ -743,6 +743,7 @@ static struct option long_options[] = {
 	{"nodes",         required_argument, 0, 'N'},
 	{"output",        required_argument, 0, 'o'},
 	{"overcommit",    no_argument,       0, 'O'},
+	{"oversubscribe", no_argument,       0, 's'},
 	{"partition",     required_argument, 0, 'p'},
 	{"quiet",         no_argument,       0, 'Q'},
 	{"no-rotate",     no_argument,       0, 'R'},
@@ -3192,7 +3193,7 @@ static void _usage(void)
 "              [-D path] [--immediate] [--no-kill] [--overcommit]\n"
 "              [--input file] [--output file] [--error file]\n"
 "              [--time-min=minutes] [--licenses=names] [--clusters=cluster_names]\n"
-"              [--workdir=directory] [--share] [-m dist] [-J jobname]\n"
+"              [--workdir=directory] [--oversubscibe] [-m dist] [-J jobname]\n"
 "              [--jobid=id] [--verbose] [--gid=group] [--uid=user]\n"
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "              [--account=name] [--dependency=type:jobid] [--comment=name]\n"
@@ -3289,7 +3290,7 @@ static void _help(void)
 "  -Q, --quiet                 quiet mode (suppress informational messages)\n"
 "      --reboot                reboot compute nodes before starting job\n"
 "      --requeue               if set, permit the job to be requeued\n"
-"  -s, --share                 share nodes with other jobs\n"
+"  -s, --oversubscribe         over subscribe resources with other jobs\n"
 "  -S, --core-spec=cores       count of reserved cores\n"
 "      --signal=[B:]num[@time] send signal when time limit within time seconds\n"
 "      --switches=max-switches{@max-time-to-wait}\n"

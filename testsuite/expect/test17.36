@@ -1,7 +1,7 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test that the shared option in partitions is being enforced.
+#          Test that the OverSubscribe option in partitions is being enforced.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -42,7 +42,7 @@ set cr_socket     0
 set cpu_cnt       0
 set socket_cnt    0
 set thread_cnt    0
-set shared_j_cnt  2
+set oversubscribe_j_cnt  2
 set job_id        0
 set node_name     ""
 set exit_code     0
@@ -128,11 +128,11 @@ proc cr_core_cpu { node } {
 
 }
 
-proc create_part {part shared node} {
+proc create_part {part oversubscribe node} {
 
 	global scontrol exit_code
 
-	spawn $scontrol create partitionname=$part shared=$shared nodes=$node
+	spawn $scontrol create partitionname=$part OverSubscribe=$oversubscribe nodes=$node
 	expect {
 		timeout {
 			send_user "\nFAILURE: scontrol is not responding\n"
@@ -160,12 +160,12 @@ proc delete_part {part} {
 	}
 }
 
-proc sub_job { job shared part } {
+proc sub_job { job oversubscribe part } {
 	global sbatch file_in number job_id exit_code job_mem_opt
 
 	set job_id 0
-	if { $shared } {
-		spawn $sbatch -a$job -t1 $job_mem_opt -p$part --share -o/dev/null $file_in
+	if { $oversubscribe } {
+		spawn $sbatch -a$job -t1 $job_mem_opt -p$part --oversubscribe -o/dev/null $file_in
 		expect {
 			-re "Submitted batch job ($number)" {
 				set job_id $expect_out(1,string)
@@ -322,10 +322,10 @@ cancel_job $job_id
 
 ####################################
 #
-# Test partition with shared=NO
+# Test partition with oversubscribe=NO
 #
 ####################################
-send_user "\n\nTest partition with shared=NO\n"
+send_user "\n\nTest partition with overoubscribe=NO\n"
 
 # Determine the number of cores or CPUs
 set num_jobs [cr_core_cpu $node_name]
@@ -333,14 +333,14 @@ set num_jobs [cr_core_cpu $node_name]
 # Create first test partition
 create_part $test_part_1 NO $node_name
 
-# Submit a job with shared
+# Submit a job with oversubscribe
 sub_job "0-$num_jobs" 1 $test_part_1
 
 # Check that the correct number of jobs are running
 check_job $num_jobs
 cancel_job $job_id
 
-# Submit a job without shared
+# Submit a job without oversubscribe
 sub_job "0-$num_jobs" 0 $test_part_1
 check_job $num_jobs
 cancel_job $job_id
@@ -348,23 +348,23 @@ delete_part $test_part_1
 
 ####################################
 #
-# Test partition with shared=YES:2
+# Test partition with oversubscribe=YES:2
 #
 ####################################
 if { [test_gang] == 1 } {
-	send_user "\n\nTest partition with shared=YES:2 incompatible with gang scheduling\n"
+	send_user "\n\nTest partition with oversubscribe=YES:2 incompatible with gang scheduling\n"
 } else {
-	send_user "\n\nTest partition with shared=YES:2\n"
-#	Make a new partition with shared=yes:2
-	create_part $test_part_2 "YES:$shared_j_cnt" $node_name
+	send_user "\n\nTest partition with oversubscribe=YES:2\n"
+#	Make a new partition with oversubscribe=yes:2
+	create_part $test_part_2 "YES:$oversubscribe_j_cnt" $node_name
 
-#	Submit a job with shared (expect 2 jobs per core/CPU)
+#	Submit a job with oversubscribe (expect 2 jobs per core/CPU)
 	set new_job_limit [expr $num_jobs * 2]
 	sub_job "0-$new_job_limit" 1 $test_part_2
 	check_job $new_job_limit
 	cancel_job $job_id
 
-#	Submit a job without shared (expect 1 job per core/CPU)
+#	Submit a job without oversubscribe (expect 1 job per core/CPU)
 	sub_job "0-$num_jobs" 0 $test_part_2
 	check_job $num_jobs
 	cancel_job $job_id
@@ -373,20 +373,20 @@ if { [test_gang] == 1 } {
 
 ########################################
 #
-# Test partition with shared=EXCLUSIVE
+# Test partition with oversubscribe=EXCLUSIVE
 #
 ########################################
-send_user "\n\nTest partition with shared=EXCLUSIVE\n"
+send_user "\n\nTest partition with oversubscribe=EXCLUSIVE\n"
 
-# Make a new partition with shared=EXCLUSIVE
+# Make a new partition with oversubscribe=EXCLUSIVE
 create_part $test_part_3 "EXCLUSIVE" $node_name
 
-# Submit a job with shared (expected 1 job per node)
+# Submit a job with oversubscribe (expected 1 job per node)
 sub_job "0-$num_jobs" 1 $test_part_3
 check_job 1
 cancel_job $job_id
 
-# Submit a job with shared (expected 1 job per node)
+# Submit a job with oversubscribe (expected 1 job per node)
 sub_job "0-$num_jobs" 0 $test_part_3
 check_job 1
 cancel_job $job_id

@@ -2,7 +2,7 @@
 ############################################################################
 # Purpose: Test of SLURM functionality
 #          Confirm that node sharing flags are respected  (--nodelist and
-#          --share options).
+#          --oversubscribe options).
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "WARNING: ..." with an explanation of why the test can't be made, OR
@@ -118,7 +118,7 @@ if {$job_id1 == 0} {
 set partition "dummy"
 set waited 1
 set timeout [expr $max_job_delay + 5]
-set srun_pid [spawn $srun -N1 --nodelist=$nodelist_name -t1 --share $scontrol -o show job $job_id1]
+set srun_pid [spawn $srun -N1 --nodelist=$nodelist_name -t1 --oversubscribe $scontrol -o show job $job_id1]
 expect {
 	-re "JobState=RUN" {
 		set waited 0
@@ -141,8 +141,8 @@ expect {
 if {$waited == 0} {
 	spawn $scontrol show partition
 	expect {
-		-re "Shared=FORCE" {
-			send_user "\nWARNING: Test incompatible with Shared=FORCE\n"
+		-re "OverSubscribe=FORCE" {
+			send_user "\nWARNING: Test incompatible with OverSubscribe=FORCE\n"
 			set waited 1
 			exp_continue
 		}

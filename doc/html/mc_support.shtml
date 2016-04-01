@@ -858,7 +858,7 @@ JobId=20 UserId=(30352) GroupId=users(1051)
    NodeList=hydra[12-14] NodeListIndices=0,2,-1
    <u>AllocCPUs=1,2,1</u>
    NumCPUs=4 ReqNodes=2 <u>ReqS:C:T=2:1:*</u>
-   Shared=0 Contiguous=0 CPUs/task=0
+   OverSubscribe=0 Contiguous=0 CPUs/task=0
    MinCPUs=0 MinMemory=0 MinTmpDisk=0 Features=(null)
    Dependency=0 Account=(null) Reason=None Network=(null)
    ReqNodeList=(null) ReqNodeListIndices=-1
@@ -922,7 +922,7 @@ NodeName=dualcore[01-16] CPUs=4 CoresPerSocket=2 ThreadsPerCore=1
 <p>For a more complete description of the various node configuration options
 see the slurm.conf man page.</p>
 <!-------------------------------------------------------------------------->
-<p style="text-align:center;">Last modified 1 April 2015</p>
+<p style="text-align:center;">Last modified 31 March 2016</p>
 
 <!--#include virtual="footer.txt"-->
 

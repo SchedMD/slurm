@@ -336,7 +336,7 @@ note the following environment variables:</p>
 <p>Slurm can be configured to gang schedule (time slice) parallel jobs by
 alternately suspending and resuming them. Depending upon the the number of
 jobs configured to time slice and the time slice interval (as specified in
-the <i>slurm.conf</i> file using the <b>Shared</b> and <b>SchedulerTimeSlice</b>
+the <i>slurm.conf</i> file using the <b>OverSubscribe</b> and <b>SchedulerTimeSlice</b>
 options), the job may experience communication timeouts. Set the environment
 variable <b>MP_TIMEOUT</b> to specify an appropriate communication timeout
 value. Note that the default timeout is 150 seconds. See
@@ -455,7 +455,7 @@ Slurm (without jobs). The procedure is as follows:</p>
 <p>Slurm can be configured to gang schedule (time slice) parallel jobs by
 alternately suspending and resuming them. Depending upon the the number of
 jobs configured to time slice and the time slice interval (as specified in
-the <i>slurm.conf</i> file using the <b>Shared</b> and <b>SchedulerTimeSlice</b>
+the <i>slurm.conf</i> file using the <b>OverSubscribe</b> and <b>SchedulerTimeSlice</b>
 options), the job may experience communication timeouts. Set the environment
 variable <b>MP_TIMEOUT</b> to specify an appropriate communication timeout
 value. Note that the default timeout is 150 seconds. See
@@ -567,6 +567,6 @@ startsrc -s pnsd -a -D
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 22 July 2013</p></td>
+<p style="text-align:center;">Last modified 31 March 2016</p>
 
 <!--#include virtual="footer.txt"-->

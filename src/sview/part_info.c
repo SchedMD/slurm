@@ -114,6 +114,7 @@ enum {
 	SORTID_NODES_MAX,
 	SORTID_NODES_MIN,
 	SORTID_ONLY_LINE,
+	SORTID_OVER_SUBSCRIBE,
 	SORTID_PART_STATE,
 	SORTID_PREEMPT_MODE,
 	SORTID_PRIORITY_JOB_FACTOR,
@@ -121,7 +122,6 @@ enum {
 	SORTID_QOS_CHAR,
 	SORTID_REASON,
 	SORTID_ROOT,
-	SORTID_SHARE,
 	SORTID_TMP_DISK,
 	SORTID_TIMELIMIT,
 	SORTID_UPDATED,
@@ -174,9 +174,9 @@ static display_data_t display_data_part[] = {
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_MAX_CPUS_PER_NODE, "Max CPUs Per Node", FALSE,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_OVER_SUBSCRIBE, "OverSubscribe", FALSE,
+	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_ROOT, "Root", FALSE, EDIT_MODEL, refresh_part,
-	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_SHARE, "Share", FALSE, EDIT_MODEL, refresh_part,
 	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_QOS_CHAR, "Qos", FALSE,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
@@ -254,7 +254,7 @@ static display_data_t create_data_part[] = {
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_ROOT, "Root", FALSE,
 	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
-	{G_TYPE_STRING, SORTID_SHARE, "Share", FALSE,
+	{G_TYPE_STRING, SORTID_OVER_SUBSCRIBE, "OverSubscribe", FALSE,
 	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_ALLOW_ACCOUNTS, "Accounts Allowed", FALSE,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
@@ -388,7 +388,7 @@ static void _set_active_combo_part(GtkComboBox *combo,
 			action = 0;
 
 		break;
-	case SORTID_SHARE:
+	case SORTID_OVER_SUBSCRIBE:
 		if (!xstrncmp(temp_char, "force", 5))
 			action = 0;
 		else if (!xstrcmp(temp_char, "no"))
@@ -455,7 +455,7 @@ end_it:
 
 }
 
-static uint16_t _set_part_share_popup()
+static uint16_t _set_part_over_subscribe_popup(void)
 {
 	GtkWidget *table = gtk_table_new(1, 2, FALSE);
 	GtkWidget *label = NULL;
@@ -477,7 +477,7 @@ static uint16_t _set_part_share_popup()
 				      GTK_STOCK_OK, GTK_RESPONSE_OK);
 	gtk_window_set_default(GTK_WINDOW(popup), label);
 
-	label = gtk_label_new("Shared Job Count ");
+	label = gtk_label_new("OverSubscribe Job Count ");
 
 	gtk_container_set_border_width(GTK_CONTAINER(table), 10);
 
@@ -637,19 +637,19 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 
 		type = "root";
 		break;
-	case SORTID_SHARE:
+	case SORTID_OVER_SUBSCRIBE:
 		if (!xstrcasecmp(new_text, "yes")) {
-			part_msg->max_share = _set_part_share_popup();
+			part_msg->max_share = _set_part_over_subscribe_popup();
 		} else if (!xstrcasecmp(new_text, "exclusive")) {
 			part_msg->max_share = 0;
 		} else if (!xstrcasecmp(new_text, "force")) {
-			part_msg->max_share =
-				_set_part_share_popup() | SHARED_FORCE;
+			part_msg->max_share = _set_part_over_subscribe_popup()
+					      | SHARED_FORCE;
 		} else if (!xstrcasecmp(new_text, "no"))
 			part_msg->max_share = 1;
 		else
 			goto return_error;
-		type = "share";
+		type = "oversubscribe";
 		break;
 	case SORTID_ALLOW_ACCOUNTS:
 		type = "accounts";
@@ -1123,7 +1123,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 			else
 				yes_no = 0;
 			break;
-		case SORTID_SHARE:
+		case SORTID_OVER_SUBSCRIBE:
 			if (part_ptr->max_share & SHARED_FORCE) {
 				snprintf(tmp_buf, sizeof(tmp_buf), "force:%u",
 					 (part_ptr->max_share
@@ -1205,13 +1205,13 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 				GtkTreeStore *treestore)
 {
 	char tmp_prio_job_factor[40], tmp_prio_tier[40];
-	char tmp_size[40], tmp_share_buf[40], tmp_time[40];
+	char tmp_size[40], tmp_over_subscribe_buf[40], tmp_time[40];
 	char tmp_max_nodes[40], tmp_min_nodes[40], tmp_grace[40];
 	char tmp_cpu_cnt[40], tmp_node_cnt[40], tmp_max_cpus_per_node[40];
 	char *tmp_alt, *tmp_default, *tmp_accounts, *tmp_groups, *tmp_hidden;
 	char *tmp_deny_accounts, *tmp_qos_char, *tmp_exc_user;
 	char *tmp_qos, *tmp_deny_qos;
-	char *tmp_root, *tmp_share, *tmp_state;
+	char *tmp_root, *tmp_over_subscribe, *tmp_state;
 	uint16_t tmp_preempt;
 	partition_info_t *part_ptr = sview_part_info->part_ptr;
 	GtkTreeIter sub_iter;
@@ -1338,17 +1338,18 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 			 working_sview_config.convert_flags);
 
 	if (part_ptr->max_share & SHARED_FORCE) {
-		snprintf(tmp_share_buf, sizeof(tmp_share_buf), "force:%u",
-			 (part_ptr->max_share & ~(SHARED_FORCE)));
-		tmp_share = tmp_share_buf;
+		snprintf(tmp_over_subscribe_buf, sizeof(tmp_over_subscribe_buf),
+			 "force:%u", (part_ptr->max_share & ~(SHARED_FORCE)));
+		tmp_over_subscribe = tmp_over_subscribe_buf;
 	} else if (part_ptr->max_share == 0) {
-		tmp_share = "exclusive";
+		tmp_over_subscribe = "exclusive";
 	} else if (part_ptr->max_share > 1) {
-		snprintf(tmp_share_buf, sizeof(tmp_share_buf), "yes:%u",
+		snprintf(tmp_over_subscribe_buf,
+			 sizeof(tmp_over_subscribe_buf), "yes:%u",
 			 part_ptr->max_share);
-		tmp_share = tmp_share_buf;
+		tmp_over_subscribe = tmp_over_subscribe_buf;
 	} else
-		tmp_share = "no";
+		tmp_over_subscribe = "no";
 
 	if (part_ptr->max_time == INFINITE)
 		snprintf(tmp_time, sizeof(tmp_time), "infinite");
@@ -1395,6 +1396,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 			   SORTID_NODES_MIN,  tmp_min_nodes,
 			   SORTID_NODELIST,   part_ptr->nodes,
 			   SORTID_ONLY_LINE,  0,
+			   SORTID_OVER_SUBSCRIBE, tmp_over_subscribe,
 			   SORTID_PART_STATE, tmp_state,
 			   SORTID_PREEMPT_MODE,
 				preempt_mode_string(tmp_preempt),
@@ -1402,7 +1404,6 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 			   SORTID_PRIORITY_TIER, tmp_prio_tier,
 			   SORTID_REASON,     "",
 			   SORTID_ROOT,       tmp_root,
-			   SORTID_SHARE,      tmp_share,
 			   SORTID_TIMELIMIT,  tmp_time,
 			   SORTID_TMP_DISK,   "",
 			   SORTID_UPDATED,    1,
@@ -2264,20 +2265,20 @@ static GtkListStore *_create_model_part2(int type)
 		gtk_list_store_set(model, &iter,
 				   0, "no", 1, SORTID_DEFAULT, -1);
 		break;
-	case SORTID_SHARE:
+	case SORTID_OVER_SUBSCRIBE:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
 		gtk_list_store_append(model, &iter);
-		gtk_list_store_set(model, &iter,
-				   0, "no (default)", 1, SORTID_SHARE, -1);
+		gtk_list_store_set(model, &iter, 0, "no (default)",
+				   1, SORTID_OVER_SUBSCRIBE, -1);
 		gtk_list_store_append(model, &iter);
-		gtk_list_store_set(model, &iter,
-				   0, "yes", 1, SORTID_SHARE, -1);
+		gtk_list_store_set(model, &iter,  0, "yes",
+				  1, SORTID_OVER_SUBSCRIBE, -1);
 		gtk_list_store_append(model, &iter);
-		gtk_list_store_set(model, &iter,
-				   0, "force", 1, SORTID_SHARE, -1);
+		gtk_list_store_set(model, &iter, 0, "force",
+				   1, SORTID_OVER_SUBSCRIBE, -1);
 		gtk_list_store_append(model, &iter);
-		gtk_list_store_set(model, &iter,
-				   0, "exclusive", 1, SORTID_SHARE, -1);
+		gtk_list_store_set(model, &iter, 0, "exclusive",
+				   1, SORTID_OVER_SUBSCRIBE, -1);
 		break;
 	case SORTID_PART_STATE:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
@@ -2368,20 +2369,20 @@ extern GtkListStore *create_model_part(int type)
 	case SORTID_NODES_MAX:
 	case SORTID_MAX_CPUS_PER_NODE:
 		break;
-	case SORTID_SHARE:
+	case SORTID_OVER_SUBSCRIBE:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
 		gtk_list_store_append(model, &iter);
-		gtk_list_store_set(model, &iter,
-				   0, "force", 1, SORTID_SHARE, -1);
+		gtk_list_store_set(model, &iter, 0, "force",
+				   1, SORTID_OVER_SUBSCRIBE, -1);
 		gtk_list_store_append(model, &iter);
-		gtk_list_store_set(model, &iter,
-				   0, "no", 1, SORTID_SHARE, -1);
+		gtk_list_store_set(model, &iter, 0, "no",
+				   1, SORTID_OVER_SUBSCRIBE, -1);
 		gtk_list_store_append(model, &iter);
-		gtk_list_store_set(model, &iter,
-				   0, "yes", 1, SORTID_SHARE, -1);
+		gtk_list_store_set(model, &iter, 0, "yes",
+				   1, SORTID_OVER_SUBSCRIBE, -1);
 		gtk_list_store_append(model, &iter);
-		gtk_list_store_set(model, &iter,
-				   0, "exclusive", 1, SORTID_SHARE, -1);
+		gtk_list_store_set(model, &iter, 0, "exclusive",
+				   1, SORTID_OVER_SUBSCRIBE, -1);
 		break;
 	case SORTID_ALLOW_ACCOUNTS:
 		break;
@@ -2797,7 +2798,7 @@ display_it:
 	while ((sview_part_info_ptr = list_next(itr))) {
 		i++;
 		part_ptr = sview_part_info_ptr->part_ptr;
-		switch(spec_info->type) {
+		switch (spec_info->type) {
 		case RESV_PAGE:
 		case NODE_PAGE:
 			if (!part_ptr->nodes)

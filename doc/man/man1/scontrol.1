@@ -689,6 +689,11 @@ new allocation. Also see the \fINodeList\fP parameter above.
 \fINumTasks\fP=<count>
 Set the job's count of required tasks to the specified value.
 .TP
+\fIOverSubscribe\fP=<yes|no>
+Set the job's ability to share compute resources (i.e. individual CPUs)
+with other jobs. Possible values are "YES" and "NO".
+This option can only be changed for pending jobs.
+.TP
 \fIPartition\fP=<name>
 Set the job's partition to the specified value.
 .TP
@@ -725,9 +730,7 @@ Permit the job's geometry to be rotated.
 Possible values are "YES" and "NO".
 .TP
 \fIShared\fP=<yes|no>
-Set the job's ability to share nodes with other jobs.
-Possible values are "YES" and "NO".
-This option can only be changed for pending jobs.
+See \fIOverSubscribe\fP option above.
 .TP
 \fIStartTime\fP=<time_spec>
 Set the job's earliest initiation time.
@@ -1213,6 +1216,14 @@ Changing the \fINodes\fP in a partition has no effect upon jobs that
 have already begun execution.
 
 .TP
+\fIOverSubscribe\fP=<yes|no|exclusive|force>[:<job_count>]
+Specify if compute resources (i.e. individual CPUs) in this partition can be
+shared by multiple jobs.
+Possible values are "YES", "NO", "EXCLUSIVE" and "FORCE".
+An optional job count specifies how many jobs can be allocated to use
+each resource.
+
+.TP
 \fIPartitionName\fP=<name>
 Identify the partition to be updated. This specification is required.
 
@@ -1252,6 +1263,7 @@ Possible values are "YES" and "NO".
 
 .TP
 \fIShared\fP=<yes|no|exclusive|force>[:<job_count>]
+See \fIOverSubscribe\fP option above.
 Specify if nodes in this partition can be shared by multiple jobs.
 Possible values are "YES", "NO", "EXCLUSIVE" and "FORCE".
 An optional job count specifies how many jobs can be allocated to use
@@ -1822,7 +1834,7 @@ PartitionName=debug
 .br
    Nodes=snowflake[0-48]
 .br
-   Priority=1 RootOnly=NO Shared=YES:4
+   Priority=1 RootOnly=NO OverSubscribe=YES:4
 .br
    State=UP TotalCPUs=694 TotalNodes=49
 .br
@@ -1858,7 +1870,7 @@ JobId=71701 Name=hostname
 .br
    Features=(null) Reservation=(null)
 .br
-   Shared=OK Contiguous=0 Licenses=(null) Network=(null)
+   OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null)
 .br
 scontrol: update JobId=71701 TimeLimit=30:00 Priority=500
 .br

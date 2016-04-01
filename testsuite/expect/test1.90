@@ -71,7 +71,7 @@ log_user 0
 set force 0
 spawn $scontrol show partition [default_partition]
 expect {
-	-re "Shared=FORCE" {
+	-re "OverSubscribe=FORCE" {
 		set force 1
 		exp_continue
 	}

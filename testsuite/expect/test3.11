@@ -51,9 +51,9 @@ set res_nodes		""
 set res_nodecnt		0
 set res_thread_cnt	0
 set user_name		""
+set def_oversubscribe_force 0
 set def_partition 	""
 set def_node		""
-set def_share_force     0
 set def_node_name	""
 set def_node_inx_min	-1
 set def_node_inx_max	-1
@@ -327,8 +327,8 @@ if {[string compare $def_partition ""] == 0} {
 
 spawn $scontrol show partition $def_partition
 expect {
-	-re " Shared=FORCE" {
-		set def_share_force 1
+	-re " OverSubscribe=FORCE" {
+		set def_oversubscribe_force 1
 		exp_continue
 	}
 	eof {
@@ -437,7 +437,7 @@ expect {
 }
 
 set cons_res_actived 0
-if {$def_share_force == 0} {
+if {$def_oversubscribe_force == 0} {
 	set select_type [test_select_type]
 	if {![string compare $select_type "cons_res"]} {
 		set cons_res_actived 1

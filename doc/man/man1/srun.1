@@ -1669,15 +1669,19 @@ Allocate resources for the job from the named reservation.
 Specifies the directory from which the job or job step's checkpoint should
 be read (used by the checkpoint/blcrm and checkpoint/xlch plugins only).
 
+\fB\-\-share\fR
+The \fB\-\-share\fR option has been replaced by the \fB\-\-oversubscribe\fR
+option described below.
+
 .TP
-\fB\-s\fR, \fB\-\-share\fR
-The job allocation can share resources with other running jobs.
-The resources to be shared can be nodes, sockets, cores, or hyperthreads
-depending upon configuration.
-The default shared behavior depends on system configuration and the partition's
-\fBShared\fR option takes precedence over the job's option.
+\fB\-s\fR, \fB\-\-oversubscribe\fR
+The job allocation can over\-subscribe resources with other running jobs.
+The resources to be over\-subscribed can be nodes, sockets, cores, and/or
+hyperthreads depending upon configuration.
+The default over\-subscribe behavior depends on system configuration and the
+partition's \fBOverSubscribe\fR option takes precedence over the job's option.
 This option may result in the allocation being granted sooner than if the
-\-\-share option was not set and allow higher system utilization, but
+\-\-oversubscribe option was not set and allow higher system utilization, but
 application performance will likely suffer due to competition for resources.
 Also see the \-\-exclusive option.
 

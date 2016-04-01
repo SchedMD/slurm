@@ -163,8 +163,8 @@ int job_format_add_function(List list, int width, bool right_justify,
 	job_format_add_function(list,wid,right,suffix,_print_job_num_sct)
 #define job_format_add_num_tasks(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_num_tasks)
-#define job_format_add_shared(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_job_shared)
+#define job_format_add_over_subscribe(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_over_subscribe)
 #define job_format_add_contiguous(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_contiguous)
 #define job_format_add_min_cpus(list,wid,right,suffix) \
@@ -358,8 +358,8 @@ int _print_job_num_sct(job_info_t * job, int width, bool right_justify,
 		       char* suffix);
 int _print_job_num_tasks(job_info_t * job, int width, bool right_justify,
 		         char* suffix);
-int _print_job_shared(job_info_t * job, int width, bool right_justify,
-		      char* suffix);
+int _print_job_over_subscribe(job_info_t * job, int width, bool right_justify,
+			      char* suffix);
 int _print_job_contiguous(job_info_t * job, int width, bool right_justify,
 			  char* suffix);
 int _print_pn_min_cpus(job_info_t * job, int width, bool right_justify,

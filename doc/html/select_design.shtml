@@ -34,8 +34,9 @@ generic resource (GRES) allocations, making use of the GRES plugins.</p>
 GRES (configured and allocated, in a List data structure), plus a flag
 indicating if the node has been allocated using an exclusive option (preventing
 other jobs from being allocated resources on that same node). The other key
-data structure is used to enforce the per-partition <i>Shared</i> configuration
-parameter and tracks how many jobs have been allocated each resource in each
+data structure is used to enforce the per-partition <i>OverSubscribe</i>
+configuration parameter and tracks how many jobs have been allocated each
+compute resource (e.g. CPU) in each
 partition. This data structure is different between the plugins based upon
 the resolution of the resource allocation (e.g. nodes or CPUs).</p>
 
@@ -99,6 +100,6 @@ jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 31 May 2011</p>
+<p style="text-align:center;">Last modified 31 March 2016</p>
 
 <!--#include virtual="footer.txt"-->

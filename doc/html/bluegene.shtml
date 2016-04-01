@@ -734,10 +734,10 @@ Using this mechanism, up to 32 independent jobs each consisting of
 simultaneously on a one-rack BlueGene system.
 If defining blocks of <i>Type=SMALL</i>, the Slurm partition
 containing them as defined in <i>slurm.conf</i> must have the
-parameter <i>Shared=force</i> to enable scheduling of multiple
-jobs on wha. Slurm considers a single node.
+parameter <i>OverSubscribe=force</i> to enable scheduling of multiple
+jobs on what Slurm considers a single node.
 Slurm partitions that do not contain blocks of <i>Type=SMALL</i>
-may have the parameter <i>Shared=no</i> for a slight improvement in
+may have the parameter <i>OverSubscribe=no</i> for a slight improvement in
 scheduler performance.
 As in all Slurm configuration files, parameters and values
 are case insensitive.</p>
@@ -855,6 +855,6 @@ scheduling logic, etc. </p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 15 April 2015</p>
+<p style="text-align:center;">Last modified 31 March 2016</p>
 
 <!--#include virtual="footer.txt"-->

@@ -631,7 +631,7 @@ JobId=475 UserId=bob(6885) Name=sleep JobState=COMPLETED
    AllocNode:Sid=adevi:21432 TimeLimit=UNLIMITED
    StartTime=03/19-12:53:41 EndTime=03/19-12:53:59
    NodeList=adev8 NodeListIndecies=-1
-   NumCPUs=0 MinNodes=0 Shared=0 Contiguous=0
+   NumCPUs=0 MinNodes=0 OverSubscribe=0 Contiguous=0
    MinCPUs=0 MinMemory=0 Features=(null) MinTmpDisk=0
    ReqNodeList=(null) ReqNodeListIndecies=-1
 
@@ -640,7 +640,7 @@ JobId=476 UserId=bob(6885) Name=sleep JobState=RUNNING
    AllocNode:Sid=adevi:21432 TimeLimit=UNLIMITED
    StartTime=03/19-12:54:01 EndTime=NONE
    NodeList=adev8 NodeListIndecies=8,8,-1
-   NumCPUs=0 MinNodes=0 Shared=0 Contiguous=0
+   NumCPUs=0 MinNodes=0 OverSubscribe=0 Contiguous=0
    MinCPUs=0 MinMemory=0 Features=(null) MinTmpDisk=0
    ReqNodeList=(null) ReqNodeListIndecies=-1
 </pre> <p>Print the detailed state of job 477 and change its priority to
@@ -843,6 +843,6 @@ options such as mysql and gui tools via a configuration menu.</p>
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 23 October 2015</p>
+<p style="text-align:center;">Last modified 31 March 2016</p>
 
 <!--#include virtual="footer.txt"-->

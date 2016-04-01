@@ -671,6 +671,7 @@ void set_options(const int argc, char **argv)
 		{"ntasks",        required_argument, 0, 'n'},
 		{"nodes",         required_argument, 0, 'N'},
 		{"overcommit",    no_argument,       0, 'O'},
+		{"oversubscribe", no_argument,       0, 's'},
 		{"partition",     required_argument, 0, 'p'},
 		{"quiet",         no_argument,       0, 'Q'},
 		{"no-rotate",     no_argument,       0, 'R'},
@@ -1503,7 +1504,7 @@ static bool _opt_verify(void)
 		return false;
 	}
 	if (opt.shared && opt.shared != (uint16_t)NO_VAL) {
-		info("Space sharing nodes is not supported on Cray systems");
+		info("Oversubscribing resources is not supported on Cray/ALPS systems");
 		opt.shared = false;
 	}
 	if (opt.overcommit) {
@@ -2001,7 +2002,7 @@ static void _usage(void)
 "Usage: salloc [-N numnodes|[min nodes]-[max nodes]] [-n num-processors]\n"
 "              [[-c cpus-per-node] [-r n] [-p partition] [--hold] [-t minutes]\n"
 "              [--immediate[=secs]] [--no-kill] [--overcommit] [-D path]\n"
-"              [--share] [-J jobname] [--jobid=id]\n"
+"              [--oversubscribe] [-J jobname] [--jobid=id]\n"
 "              [--verbose] [--gid=group] [--uid=user] [--licenses=names]\n"
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "              [--account=name] [--dependency=type:jobid] [--comment=name]\n"
@@ -2085,7 +2086,7 @@ static void _help(void)
 "      --qos=qos               quality of service\n"
 "  -Q, --quiet                 quiet mode (suppress informational messages)\n"
 "      --reboot                reboot compute nodes before starting job\n"
-"  -s, --share                 share nodes with other jobs\n"
+"  -s, --oversubscribe         oversubscribe resources with other jobs\n"
 "      --signal=[B:]num[@time] send signal when time limit within time seconds\n"
 "      --switches=max-switches{@max-time-to-wait}\n"
 "                              Optimum switches and max time to wait for optimum\n"

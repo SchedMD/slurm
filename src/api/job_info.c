@@ -817,19 +817,9 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	xstrcat(out, line_end);
 
 	/****** Line 20 ******/
-	if (job_ptr->shared == JOB_SHARED_NONE)
-		tmp6_ptr = "0";
-	else if (job_ptr->shared == JOB_SHARED_OK)
-		tmp6_ptr = "1";
-	else if (job_ptr->shared == JOB_SHARED_USER)
-		tmp6_ptr = "USER";
-	else if (job_ptr->shared == JOB_SHARED_MCS)
-		tmp6_ptr = "MCS";
-	else
-		tmp6_ptr = "OK";
-	xstrfmtcat(out, "Shared=%s Contiguous=%d Licenses=%s Network=%s",
-		   tmp6_ptr, job_ptr->contiguous, job_ptr->licenses,
-		   job_ptr->network);
+	xstrfmtcat(out, "OverSubscribe=%s Contiguous=%d Licenses=%s Network=%s",
+		   job_share_string(job_ptr->shared), job_ptr->contiguous,
+		   job_ptr->licenses, job_ptr->network);
 	xstrcat(out, line_end);
 
 	/****** Line 21 ******/

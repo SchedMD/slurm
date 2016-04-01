@@ -146,18 +146,18 @@ of the two partitions are equal then no preemption will occur. The default
 partition <I>Priority</I> is not critical.
 </LI>
 <LI>
-<B>Shared</B>: Configure the partition's <I>Shared</I> setting to
+<B>OverSubscribe</B>: Configure the partition's <I>OverSubscribe</I> setting to
 <I>FORCE</I> for all partitions in which job preemption using a suspend/resume
 mechanism is used or <I>NO</I> otherwise.
 The <I>FORCE</I> option supports an additional parameter that controls
-how many jobs can share a resource (FORCE[:max_share]). By default the
+how many jobs can oversubscribe a compute resource (FORCE[:max_share]). By default the
 max_share value is 4. In order to preempt jobs (and not gang schedule them),
 always set max_share to 1. To allow up to 2 jobs from this partition to be
 allocated to a common resource (and gang scheduled), set
-<I>Shared=FORCE:2</I>.
+<I>OverSubscribe=FORCE:2</I>.
 NOTE: <I>PreemptType=QOS</I> will permit one additional job to be run
 on the partition if started due to job preemption. For example, a configuration
-of <I>Shared=FORCE:1</I> will only permit one job per resources normally,
+of <I>OverSubscribe=FORCE:1</I> will only permit one job per resources normally,
 but a second job can be started if done so through preemption based upon QOS.
 The use of <I>PreemptType=QOS</I> and <I>PreemptType=Suspend</I> only applies
 with <I>SelectType=cons_res</I>.
@@ -167,7 +167,7 @@ with <I>SelectType=cons_res</I>.
 To enable preemption after making the configuration changes described above,
 restart Slurm if it is already running. Any change to the plugin settings in
 Slurm requires a full restart of the daemons. If you just change the partition
-<I>Priority</I> or <I>Shared</I> setting, this can be updated with
+<I>Priority</I> or <I>OverSubscribe</I> setting, this can be updated with
 <I>scontrol reconfig</I>.
 </P>
 
@@ -279,7 +279,7 @@ Here are the Partition settings:
 </P>
 <PRE>
 [user@n16 ~]$ <B>grep PartitionName /shared/slurm/slurm.conf</B>
-PartitionName=DEFAULT Shared=FORCE:1 Nodes=n[12-16]
+PartitionName=DEFAULT OverSubscribe=FORCE:1 Nodes=n[12-16]
 PartitionName=active Priority=1 Default=YES
 PartitionName=hipri  Priority=2
 </PRE>
@@ -348,9 +348,9 @@ job preemption mechanisms.
 </P>
 <PRE>
 # Excerpt from slurm.conf
-PartitionName=low Nodes=linux Default=YES Shared=NO      Priority=10 PreemptMode=requeue
-PartitionName=med Nodes=linux Default=NO  Shared=FORCE:1 Priority=20 PreemptMode=suspend
-PartitionName=hi  Nodes=linux Default=NO  Shared=FORCE:1 Priority=30 PreemptMode=off
+PartitionName=low Nodes=linux Default=YES OverSubscribe=NO      Priority=10 PreemptMode=requeue
+PartitionName=med Nodes=linux Default=NO  OverSubscribe=FORCE:1 Priority=20 PreemptMode=suspend
+PartitionName=hi  Nodes=linux Default=NO  OverSubscribe=FORCE:1 Priority=30 PreemptMode=off
 </PRE>
 <PRE>
 $ sbatch tmp
@@ -383,7 +383,7 @@ with the other jobs on overlapping resources.
 # Excerpt from slurm.conf
 PreemptMode=Suspend,Gang
 PreemptType=preempt/qos
-PartitionName=normal Nodes=linux Default=NO  Shared=FORCE:1
+PartitionName=normal Nodes=linux Default=NO  OverSubscribe=FORCE:1
 </PRE>
 
 <H2><A NAME="future_work">Future Ideas</A></H2>
@@ -433,6 +433,6 @@ order to support ideal placements such as this, which can quickly complicate
 the design. Any and all help is welcome here!
 </P>
 
-<p style="text-align:center;">Last modified 20 October 2015</p>
+<p style="text-align:center;">Last modified 31 March 2016</p>
 
 <!--#include virtual="footer.txt"-->

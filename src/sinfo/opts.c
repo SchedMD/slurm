@@ -676,11 +676,11 @@ _parse_format( char* format )
 					right_justify,
 					suffix );
 		} else if (field[0] == 'h') {
-			params.match_flags.share_flag = true;
-			format_add_share( params.format_list,
-					field_size,
-					right_justify,
-					suffix );
+			params.match_flags.oversubscribe_flag = true;
+			format_add_oversubscribe( params.format_list,
+						  field_size,
+						  right_justify,
+						  suffix );
 		} else if (field[0] == 'H') {
 			params.match_flags.reason_timestamp_flag = true;
 			format_add_timestamp( params.format_list,
@@ -1048,12 +1048,13 @@ static int _parse_long_format (char* format_long)
 					 field_size,
 					 right_justify,
 					 suffix );
-		} else if (!xstrcasecmp(token, "share")) {
-			params.match_flags.share_flag = true;
-			format_add_share( params.format_list,
-					  field_size,
-					  right_justify,
-					  suffix );
+		} else if (!xstrcasecmp(token, "oversubscribe") ||
+			   !xstrcasecmp(token, "share")) {
+			params.match_flags.oversubscribe_flag = true;
+			format_add_oversubscribe( params.format_list,
+						  field_size,
+						  right_justify,
+						  suffix );
 		} else if (!xstrcasecmp(token, "size")) {
 			params.match_flags.job_size_flag = true;
 			format_add_size( params.format_list,
@@ -1291,7 +1292,8 @@ void _print_options( void )
 			"true" : "false");
 	printf("root_flag       = %s\n", params.match_flags.root_flag ?
 			"true" : "false");
-	printf("share_flag      = %s\n", params.match_flags.share_flag ?
+	printf("oversubscribe_flag      = %s\n",
+			params.match_flags.oversubscribe_flag ?
 			"true" : "false");
 	printf("state_flag      = %s\n", params.match_flags.state_flag ?
 			"true" : "false");

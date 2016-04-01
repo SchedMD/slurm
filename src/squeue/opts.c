@@ -697,7 +697,8 @@ extern int parse_format( char* format )
 							 right_justify,
 							 suffix );
 			else if (field[0] == 'h')
-				job_format_add_shared( params.format_list,
+				job_format_add_over_subscribe(
+						       params.format_list,
 						       field_size,
 						       right_justify,
 						       suffix );
@@ -1130,8 +1131,10 @@ extern int parse_long_format( char* format_long )
 							 field_size,
 							 right_justify,
 							 suffix );
-			else if (!xstrcasecmp(token,"shared"))
-				job_format_add_shared( params.format_list,
+			else if (!xstrcasecmp(token, "oversubscribe") ||
+				 !xstrcasecmp(token, "shared"))
+				job_format_add_over_subscribe(
+						       params.format_list,
 						       field_size,
 						       right_justify,
 						       suffix );

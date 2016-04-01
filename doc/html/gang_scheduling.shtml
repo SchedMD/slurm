@@ -89,13 +89,13 @@ to one minute, set <I>SchedulerTimeSlice=60</I>. Short values can increase
 the overhead of gang scheduling.
 </LI>
 <LI>
-<B>Shared</B>: Configure the partition's <I>Shared</I> setting to
+<B>OverSubscribe</B>: Configure the partition's <I>OverSubscribe</I> setting to
 <I>FORCE</I> for all partitions in which timeslicing is to take place.
 The <I>FORCE</I> option supports an additional parameter that controls
-how many jobs can share a resource (FORCE[:max_share]). By default the
+how many jobs can share a compute resource (FORCE[:max_share]). By default the
 max_share value is 4. To allow up to 6 jobs from this partition to be
-allocated to a common resource, set <I>Shared=FORCE:6</I>. To only let 2 jobs
-timeslice on the same resources, set <I>Shared=FORCE:2</I>.
+allocated to a common resource, set <I>OverSubscribe=FORCE:6</I>. To only let 2 jobs
+timeslice on the same resources, set <I>OverSubscribe=FORCE:2</I>.
 NOTE: Gang scheduling is performed independently for each partition, so
 configuring partitions with overlapping nodes and gang scheduling is generally
 not recommended.
@@ -105,7 +105,7 @@ not recommended.
 In order to enable gang scheduling after making the configuration changes
 described above, restart Slurm if it is already running. Any change to the
 plugin settings in Slurm requires a full restart of the daemons. If you
-just change the partition <I>Shared</I> setting, this can be updated with
+just change the partition <I>OverSubscribe</I> setting, this can be updated with
 <I>scontrol reconfig</I>.
 </P>
 
@@ -152,7 +152,7 @@ equal to <I>SchedulerTimeSlice</I>.
 <H2>A Simple Example</H2>
 
 <P>
-The following example is configured with <I>select/linear</I> and <I>Shared=FORCE</I>.
+The following example is configured with <I>select/linear</I> and <I>OverSubscribe=FORCE</I>.
 This example takes place on a small cluster of 5 nodes:
 </P>
 <PRE>
@@ -314,7 +314,7 @@ wait for job 13 to finish.
 This is called "local" backfilling because the backfilling only occurs with
 jobs close enough in the queue to get allocated by the scheduler as part of
 oversubscribing the resources. Recall that the number of jobs that can
-overcommit a resource is controlled by the <I>Shared=FORCE:max_share</I> value,
+overcommit a resource is controlled by the <I>OverSubscribe=FORCE:max_share</I> value,
 so this value effectively controls the scope of "local backfilling".
 </P>
 <P>
@@ -508,6 +508,6 @@ Use of the scancel command to send SIGSTOP and SIGCONT signals would stop a
 job without releasing its CPUs for allocaiton to other jobs and would be a
 preferable mechanism in many cases.</P>
 
-<p style="text-align:center;">Last modified 20 October 2015</p>
+<p style="text-align:center;">Last modified 31 March 2016</p>
 
 <!--#include virtual="footer.txt"-->

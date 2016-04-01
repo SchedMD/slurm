@@ -103,7 +103,7 @@ Step 1 is performed by slurmctld and the select plugin.
 				<p align="LEFT"><font style="font-size: 8pt" size="1">Defines
 				a partition. Several parameters of the partition definition
 				affect the selection of nodes (e.g., Nodes,
-				Shared, MaxNodes)</font></p>
+				OverSubscribe, MaxNodes)</font></p>
 			</td>
 		</tr>
 		<tr>
@@ -391,7 +391,7 @@ CR_Core_Memory | CR_Socket | CR_Socket_Memory</font><br><br>Plus additional opti
 		<tr>
 			<td height="18" width="20%">
 				<p align="LEFT"><font face="Courier New, monospace"><font style="font-size: 8pt" size="1">
-				<a href="srun.html#OPT_share">-s, --share</a></font></font></p>
+				<a href="srun.html#OPT_share">-s, --oversubscribe</a></font></font></p>
 			</td>
 			<td width="20%">
 				<p align="LEFT"><font style="font-size: 8pt" size="1">N/A</font></p>
@@ -540,7 +540,7 @@ Step 2 is performed by slurmctld and the select plugin.
 				<p align="LEFT"><font style="font-size: 8pt" size="1">Defines
 				a partition. Several parameters of the partition definition
 				affect the allocation of CPU resources to jobs (e.g., Nodes,
-				Shared, MaxNodes)</font></p>
+				OverSubscribe, MaxNodes)</font></p>
 			</td>
 		</tr>
 		<tr>
@@ -842,7 +842,7 @@ CR_Core_Memory | CR_Socket | CR_Socket_Memory</font><br><br>Plus additional opti
 		<tr>
 			<td height="18" width="20%">
 				<p align="LEFT"><font face="Courier New, monospace"><font style="font-size: 8pt" size="1">
-				<a href="srun.html#OPT_share">-s, --share</a></font></font></p>
+				<a href="srun.html#OPT_share">-s, --oversubscribe</a></font></font></p>
 			</td>
 			<td width="20%">
 				<p align="LEFT"><font style="font-size: 8pt" size="1">N/A</font></p>
@@ -1559,7 +1559,7 @@ multi-thread job</a>
 Nodename=n1 NodeAddr=node1 Sockets=2 CoresPerSocket=4 ThreadsPerCore=1 Procs=8 State=IDLE
 Nodename=n2 NodeAddr=node2 Sockets=2 CoresPerSocket=4 ThreadsPerCore=1 Procs=8 State=IDLE
 Nodename=n3 NodeAddr=node3 Sockets=2 CoresPerSocket=4 ThreadsPerCore=2 Procs=16 State=IDLE
-PartitionName=regnodes Nodes=n0,n1,n2 Shared=YES Default=YES State=UP
+PartitionName=regnodes Nodes=n0,n1,n2 OverSubscribe=YES Default=YES State=UP
 PartitionName=hypernode Nodes=n3 State=UP
 </pre>
 <br>
@@ -2110,15 +2110,15 @@ Run both jobs simultaneously in a single node.
 SelectTypeParameters=CR_Core
 </pre>
 <p>Command line:</p>
-<pre>srun --nodes=1-1 --nodelist=n0 --ntasks=6 --share ...
-srun --nodes=1-1 --nodelist=n0 --ntasks=6 --share ...
+<pre>srun --nodes=1-1 --nodelist=n0 --ntasks=6 --oversubscribe ...
+srun --nodes=1-1 --nodelist=n0 --ntasks=6 --oversubscribe ...
 </pre>
 <p>Comments:</p>
 <p>The <font face="Courier New, monospace">--nodes=1-1</font> and <font face="Courier New, monospace">--nodelist=n0</font>
 srun options together restrict both jobs to node n0. The
-<font face="Courier New, monospace">Shared=YES</font> option in the partition definition plus
-the <font face="Courier New, monospace">--share</font> srun option allows the two
-jobs to share CPUs on the node.
+<font face="Courier New, monospace">OverSubscribe=YES</font> option in the partition definition plus
+the <font face="Courier New, monospace">--oversubscribe</font> srun option allows the two
+jobs to oversubscribe CPUs on the node.
 </p><br>
 <a name="Example9"></a>
 <h3>Example 9: Consumable resources on multithreaded node, allocating only one thread per core</h3>
@@ -3536,6 +3536,6 @@ and binding for this job. For example, task id 2 is bound to CPU id 2.
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 15 April 2015</p>
+<p style="text-align:center;">Last modified 31 March 2016</p>
 
 <!--#include virtual="footer.txt"-->

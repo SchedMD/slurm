@@ -174,6 +174,7 @@ enum {
 /* 	SORTID_NTASKS_PER_CORE, */
 /* 	SORTID_NTASKS_PER_NODE, */
 /* 	SORTID_NTASKS_PER_SOCKET, */
+	SORTID_OVER_SUBSCRIBE,
 	SORTID_PARTITION,
 	SORTID_PREEMPT_TIME,
 	SORTID_PRIORITY,
@@ -184,7 +185,6 @@ enum {
 	SORTID_RESV_NAME,
 	SORTID_RESTARTS,
 	SORTID_ROTATE,
-	SORTID_SHARED,
 /* 	SORTID_SOCKETS_MAX, */
 /* 	SORTID_SOCKETS_MIN, */
 	SORTID_STATE,
@@ -379,7 +379,7 @@ static display_data_t display_data_job[] = {
 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_TASKS, "Task Count",
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_SHARED, "Shared", FALSE,
+	{G_TYPE_STRING, SORTID_OVER_SUBSCRIBE, "OverSubscribe", FALSE,
 	 EDIT_MODEL, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_STD_ERR, "Standard Error",
 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
@@ -732,14 +732,13 @@ static void _set_active_combo_job(GtkComboBox *combo,
 	case SORTID_REBOOT:
 	case SORTID_REQUEUE:
 	case SORTID_ROTATE:
-	case SORTID_SHARED:
+	case SORTID_OVER_SUBSCRIBE:
 		if (!xstrcasecmp(temp_char, "yes"))
 			action = 0;
 		else if (!xstrcasecmp(temp_char, "no"))
 			action = 1;
 		else
 			action = 0;
-
 		break;
 	case SORTID_CONNECTION:
 		if (!xstrcasecmp(temp_char, "Torus"))
@@ -946,13 +945,13 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		job_msg->wckey = xstrdup(new_text);
 		type = "wckey";
 		break;
-	case SORTID_SHARED:
+	case SORTID_OVER_SUBSCRIBE:
 		if (!xstrcasecmp(new_text, "yes"))
 			job_msg->shared = 1;
 		else
 			job_msg->shared = 0;
 
-		type = "shared";
+		type = "oversubscribe";
 		break;
 	case SORTID_CONTIGUOUS:
 		if (!xstrcasecmp(new_text, "yes"))
@@ -1809,6 +1808,11 @@ static void _layout_job_record(GtkTreeView *treeview,
 
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
+						 SORTID_OVER_SUBSCRIBE),
+				   job_share_string(job_ptr->shared));
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
 						 SORTID_PARTITION),
 				   job_ptr->partition);
 
@@ -1878,21 +1882,6 @@ static void _layout_job_record(GtkTreeView *treeview,
 						   tmp_char,
 						   sizeof(tmp_char),
 						   SELECT_PRINT_ROTATE));
-
-	if (job_ptr->shared == JOB_SHARED_NONE)
-		sprintf(tmp_char, "no");
-	else if (job_ptr->shared == JOB_SHARED_OK)
-		sprintf(tmp_char, "no");
-	else if (job_ptr->shared == JOB_SHARED_USER)
-		sprintf(tmp_char, "user");
-	else if (job_ptr->shared == JOB_SHARED_MCS)
-		sprintf(tmp_char, "mcs");
-	else
-		sprintf(tmp_char, "ok");
-	add_display_treestore_line(update, treestore, &iter,
-				   find_col_name(display_data_job,
-						 SORTID_SHARED),
-				   tmp_char);
 
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
@@ -2039,7 +2028,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	char tmp_rqswitch[40],  tmp_core_spec[40],   tmp_job_id[400];
 	char tmp_std_err[128],  tmp_std_in[128],     tmp_std_out[128];
 	char tmp_thread_spec[40], tmp_time_deadline[40];
-	char *tmp_batch,  *tmp_cont, *tmp_shared, *tmp_requeue, *tmp_uname;
+	char *tmp_batch,  *tmp_cont, *tmp_requeue, *tmp_uname;
 	char *tmp_reboot, *tmp_reason, *tmp_nodes;
 	char time_buf[32];
 	time_t now_time = time(NULL);
@@ -2237,11 +2226,6 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	else
 		tmp_requeue =  "no";
 
-	if (job_ptr->shared)
-		tmp_shared = "yes";
-	else
-		tmp_shared = "no";
-
 	snprintf(tmp_nice, sizeof(tmp_nice), "%"PRIi64,
 		 (((int64_t)job_ptr->nice) - NICE_OFFSET));
 
@@ -2419,6 +2403,8 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SORTID_NODES,        tmp_node_cnt,
 				   SORTID_NODES_MAX,    tmp_nodes_max,
 				   SORTID_NODES_MIN,    tmp_nodes_min,
+				   SORTID_OVER_SUBSCRIBE,
+				   job_share_string(job_ptr->shared),
 				   SORTID_PARTITION,    job_ptr->partition,
 				   SORTID_PREEMPT_TIME, tmp_preempt_time,
 				   SORTID_PRIORITY,     tmp_prio,
@@ -2428,7 +2414,6 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SORTID_REQUEUE,      tmp_requeue,
 				   SORTID_RESTARTS,     job_ptr->restart_cnt,
 				   SORTID_RESV_NAME,    job_ptr->resv_name,
-				   SORTID_SHARED,       tmp_shared,
 				   SORTID_STATE,
 				   job_state_string(job_ptr->job_state),
 				   SORTID_STATE_NUM,    job_ptr->job_state,
@@ -3733,7 +3718,7 @@ extern GtkListStore *create_model_job(int type)
 	case SORTID_REBOOT:
 	case SORTID_REQUEUE:
 	case SORTID_ROTATE:
-	case SORTID_SHARED:
+	case SORTID_OVER_SUBSCRIBE:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,

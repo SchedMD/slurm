@@ -897,7 +897,7 @@ static bool _match_part_data(sinfo_data_t *sinfo_ptr,
 	     (sinfo_ptr->part_info->flags & PART_FLAG_ROOT_ONLY)))
 		return false;
 
-	if (params.match_flags.share_flag &&
+	if (params.match_flags.oversubscribe_flag &&
 	    (part_ptr->max_share != sinfo_ptr->part_info->max_share))
 		return false;
 

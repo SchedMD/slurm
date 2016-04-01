@@ -124,8 +124,8 @@ void print_sinfo_reservation(reserve_info_msg_t *resv_ptr);
 	format_add_function(list,wid,right,suffix,_print_reason)
 #define format_add_root(list,wid,right,prefix) \
 	format_add_function(list,wid,right,prefix,_print_root)
-#define format_add_share(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_share)
+#define format_add_oversubscribe(list,wid,right,suffix) \
+	format_add_function(list,wid,right,suffix,_print_oversubscribe)
 #define format_add_size(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_size)
 #define format_add_state_compact(list,wid,right,suffix) \
@@ -201,6 +201,8 @@ int _print_nodes_ai(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_nodes_aiot(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
+int _print_oversubscribe(sinfo_data_t * sinfo_data, int width,
+			bool right_justify, char *suffix);
 int _print_partition(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_partition_name(sinfo_data_t * sinfo_data, int width,
@@ -216,8 +218,6 @@ int _print_priority_tier(sinfo_data_t * sinfo_data, int width,
 int _print_reason(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_root(sinfo_data_t * sinfo_data, int width,
-			bool right_justify, char *suffix);
-int _print_share(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_size(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);

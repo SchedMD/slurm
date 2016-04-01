@@ -120,7 +120,7 @@ typedef struct {
 	hostlist_t ionodes;
 
 	/* part_info contains partition, avail, max_time, job_size,
-	 * root, share, groups, priority */
+	 * root, share/oversubscribe, groups, priority */
 	partition_info_t* part_info;
 	uint16_t part_inx;
 } sinfo_data_t;
@@ -152,7 +152,7 @@ struct sinfo_match_flags {
 	bool priority_tier_flag;
 	bool reason_flag;
 	bool root_flag;
-	bool share_flag;
+	bool oversubscribe_flag;
 	bool state_flag;
 	bool weight_flag;
 	bool reason_timestamp_flag;

@@ -227,7 +227,8 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(tag, "Shared", MAX(taglen, 2)) == 0) {
+		else if (!strncasecmp(tag, "OverSubscribe", MAX(taglen, 2)) ||
+			 !strncasecmp(tag, "Shared", MAX(taglen, 2))) {
 			char *colon_pos = strchr(val, ':');
 			if (colon_pos) {
 				*colon_pos = '\0';
@@ -263,7 +264,7 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			} else {
 				exit_code = 1;
 				error("Invalid input: %s", argv[i]);
-				error("Acceptable Shared values are "
+				error("Acceptable OverSubscribe values are "
 					"NO, EXCLUSIVE, YES:#, and FORCE:#");
 				return -1;
 			}

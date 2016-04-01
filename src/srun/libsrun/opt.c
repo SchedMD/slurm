@@ -923,6 +923,7 @@ static void _set_options(const int argc, char **argv)
 		{"nodes",         required_argument, 0, 'N'},
 		{"output",        required_argument, 0, 'o'},
 		{"overcommit",    no_argument,       0, 'O'},
+		{"oversubscribe", no_argument,       0, 's'},
 		{"partition",     required_argument, 0, 'p'},
 		{"quit-on-interrupt", no_argument,   0, 'q'},
 		{"quiet",            no_argument,    0, 'Q'},
@@ -2554,7 +2555,7 @@ static void _opt_list(void)
 		info("bcast          : %s", tf_(opt.bcast_flag));
 	info("qos            : %s", opt.qos);
 	if (opt.shared != (uint16_t) NO_VAL)
-		info("shared         : %u", opt.shared);
+		info("oversubscribe  : %u", opt.shared);
 	str = print_constraints();
 	info("constraints    : %s", str);
 	xfree(str);
@@ -2687,7 +2688,7 @@ static void _usage(void)
 "Usage: srun [-N nnodes] [-n ntasks] [-i in] [-o out] [-e err]\n"
 "            [-c ncpus] [-r n] [-p partition] [--hold] [-t minutes]\n"
 "            [-D path] [--immediate[=secs]] [--overcommit] [--no-kill]\n"
-"            [--share] [--label] [--unbuffered] [-m dist] [-J jobname]\n"
+"            [--oversubscribe] [--label] [--unbuffered] [-m dist] [-J jobname]\n"
 "            [--jobid=id] [--verbose] [--slurmd_debug=#] [--gres=list]\n"
 "            [-T threads] [-W sec] [--checkpoint=time] [--gres-flags=opts]\n"
 "            [--checkpoint-dir=dir]  [--licenses=names]\n"
@@ -2812,7 +2813,7 @@ static void _help(void)
 "  -r, --relative=n            run job step relative to node n of allocation\n"
 "      --restart-dir=dir       directory of checkpoint image files to restart\n"
 "                              from\n"
-"  -s, --share                 share nodes with other jobs\n"
+"  -s, --oversubscribe         over-subscribe resources with other jobs\n"
 "  -S, --core-spec=cores       count of reserved cores\n"
 "      --signal=[B:]num[@time] send signal when time limit within time seconds\n"
 "      --slurmd-debug=level    slurmd debug level\n"
