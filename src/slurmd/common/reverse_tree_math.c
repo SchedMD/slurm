@@ -64,7 +64,8 @@ static inline int int_pow(int num, int power)
 
 static inline int geometric_series(int width, int depth)
 {
-	return (1 - (int_pow(width, (depth+1)))) / (1 - width);
+	return (width == 1) ?
+		1 : (1 - (int_pow(width, (depth+1)))) / (1 - width);
 }
 
 static inline int dep(int total, int width)
