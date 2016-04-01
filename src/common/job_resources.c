@@ -253,6 +253,7 @@ extern int valid_job_resources(job_resources_t *job_resrcs,
 {
 	int i, bitmap_len;
 	int sock_inx = 0, sock_cnt = 0;
+	int total_job_cores, total_node_cores;
 	uint32_t cores, socks;
 	struct node_record *node_ptr, *node_record_table;
 
@@ -284,15 +285,16 @@ extern int valid_job_resources(job_resources_t *job_resrcs,
 			sock_inx++;
 			sock_cnt = 0;
 		}
-		if ((socks != job_resrcs->sockets_per_node[sock_inx]) ||
-		    (cores != job_resrcs->cores_per_socket[sock_inx])) {
-			error("valid_job_resources: "
-			      "%s sockets:%u,%u, cores %u,%u",
+		/* KNL nodes can should maintain a constant total core count,
+		 * but the socket/NUMA count can change on reboot */
+		total_job_cores = job_resrcs->sockets_per_node[sock_inx] *
+				  job_resrcs->cores_per_socket[sock_inx];
+		total_node_cores = socks * cores;
+		if (total_job_cores != total_node_cores) {
+			error("valid_job_resources: %s sockets:%u,%u, cores %u,%u",
 			      node_ptr->name,
-			      socks,
-			      job_resrcs->sockets_per_node[sock_inx],
-			      cores,
-			      job_resrcs->cores_per_socket[sock_inx]);
+			      socks, job_resrcs->sockets_per_node[sock_inx],
+			      cores, job_resrcs->cores_per_socket[sock_inx]);
 			return SLURM_ERROR;
 		}
 		sock_cnt++;
