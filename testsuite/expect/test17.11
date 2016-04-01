@@ -86,11 +86,8 @@ set matches 0
 if {$job_id != 0} {
 	spawn $scontrol show job $job_id
 	expect {
-		-re "OverSubscribe=($number)" {
-			set oversubscribe_val $expect_out(1,string)
-			if {$oversubscribe_val == 1} {
-				incr matches
-			}
+		-re "OverSubscribe=YES" {
+			incr matches
 			exp_continue
 		}
 		-re "Contiguous=($number)" {
@@ -147,7 +144,7 @@ set match_cont  0
 if {$job_id != 0} {
 	spawn $scontrol show job $job_id
 	expect {
-		-re "OverSubscribe=0" {
+		-re "OverSubscribe=NO" {
 			set match_oversubscribe 1
 			exp_continue
 		}
