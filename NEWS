@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
     not in a ready state, the API returned an error for ALL nodes rather than
     valid data for nodes in ready state.
  -- Fix potential divide by zero when tree_width=1.
+ -- checkpoint/blcr plugin: Fix memory leak.
 
 * Changes in Slurm 15.08.9
 ==========================
