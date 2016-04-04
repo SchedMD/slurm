@@ -14,6 +14,7 @@ documents those changes that are of interest to users and administrators.
  -- checkpoint/blcr plugin: Fix memory leak.
  -- If using PrologFlags=contain: Don't launch the extern step if a job is
     cancelled while launching.
+ -- Remove duplicates from AccountingStorageTRES
 
 * Changes in Slurm 15.08.9
 ==========================

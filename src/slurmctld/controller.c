@@ -2103,6 +2103,7 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 	struct node_record *node_ptr;
 	slurmdb_tres_rec_t *tres_rec, *cpu_tres = NULL, *mem_tres = NULL;
 	int i;
+	char *unique_tres = NULL;
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 				   WRITE_LOCK, NO_LOCK, NO_LOCK };
 
@@ -2120,6 +2121,14 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 			      tres_rec->id);
 			continue; /* this should never happen */
 		}
+
+		if (unique_tres)
+			xstrfmtcat(unique_tres, ",%s",
+				   assoc_mgr_tres_name_array[i]);
+		else
+			unique_tres = xstrdup(assoc_mgr_tres_name_array[i]);
+
+
 		/* reset them now since we are about to add to them */
 		tres_rec->count = 0;
 		if (tres_rec->id == TRES_CPU) {
@@ -2141,6 +2150,9 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 		}
 		/* FIXME: set up the other tres here that aren't specific */
 	}
+
+	slurm_set_accounting_storage_tres(unique_tres);
+	xfree(unique_tres);
 
 	cluster_cpus = 0;
 
