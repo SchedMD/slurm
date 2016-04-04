@@ -12,6 +12,8 @@ documents those changes that are of interest to users and administrators.
     valid data for nodes in ready state.
  -- Fix potential divide by zero when tree_width=1.
  -- checkpoint/blcr plugin: Fix memory leak.
+ -- If using PrologFlags=contain: Don't launch the extern step if a job is
+    cancelled while launching.
 
 * Changes in Slurm 15.08.9
 ==========================
