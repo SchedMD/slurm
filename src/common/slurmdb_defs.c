@@ -3269,6 +3269,23 @@ extern int slurmdb_sort_tres_by_id_asc(void *v1, void *v2)
 	slurmdb_tres_rec_t *tres_a = *(slurmdb_tres_rec_t **)v1;
 	slurmdb_tres_rec_t *tres_b = *(slurmdb_tres_rec_t **)v2;
 
+	if ((tres_a->id > TRES_STATIC_CNT) &&
+	    (tres_b->id > TRES_STATIC_CNT)) {
+		int diff = xstrcmp(tres_a->type, tres_b->type);
+
+		if (diff < 0)
+			return -1;
+		else if (diff > 0)
+			return 1;
+
+		diff = xstrcmp(tres_a->name, tres_b->name);
+
+		if (diff < 0)
+			return -1;
+		else if (diff > 0)
+			return 1;
+	}
+
 	if (tres_a->id < tres_b->id)
 		return -1;
 	else if (tres_a->id > tres_b->id)
