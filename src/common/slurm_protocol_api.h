@@ -531,6 +531,12 @@ char *slurm_get_accounting_storage_type(void);
  */
 char *slurm_get_accounting_storage_tres(void);
 
+/* slurm_set_accounting_storage_tres
+ * sets the value of accounting_storage_tres in slurmctld_conf object
+ * RET 0 or error_code
+ */
+extern int slurm_set_accounting_storage_tres(char *tres);
+
 /* slurm_get_accounting_storage_user
  * returns the storage user from slurmctld_conf object
  * RET char *    - storage user,  MUST be xfreed by caller

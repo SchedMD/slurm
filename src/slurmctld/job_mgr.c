@@ -7962,6 +7962,7 @@ static void _list_delete_job(void *job_entry)
 	}
 	xfree(job_ptr->batch_host);
 	xfree(job_ptr->burst_buffer);
+	checkpoint_free_jobinfo(job_ptr->check_job);
 	xfree(job_ptr->comment);
 	free_job_resources(&job_ptr->job_resrcs);
 	xfree(job_ptr->gres);

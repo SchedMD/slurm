@@ -6706,10 +6706,10 @@ extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked)
 				* (uint64_t)gres_data_ptr->node_cnt;
 		}
 
-		for (i=0; i < gres_context_cnt; i++) {
+		for (i = 0; i < gres_context_cnt; i++) {
 			if (gres_context[i].plugin_id ==
 			    gres_state_ptr->plugin_id) {
-				tres_req.name =	gres_context[i].gres_name;
+				tres_req.name = gres_context[i].gres_name;
 				break;
 			}
 		}

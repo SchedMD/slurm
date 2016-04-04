@@ -1689,11 +1689,20 @@ static void _spawn_prolog_stepd(slurm_msg_t *msg)
 	}
 
 	slurm_get_stream_addr(msg->conn_fd, &self);
-
-	debug3("%s: call to _forkexec_slurmstepd", __func__);
-	(void) _forkexec_slurmstepd(LAUNCH_TASKS, (void *)launch_req, cli,
-				     &self, NULL, msg->protocol_version);
-	debug3("%s: return from _forkexec_slurmstepd", __func__);
+	/* Since job could have been killed while the prolog was
+	 * running (especially on BlueGene, which can take minutes
+	 * for partition booting). Test if the credential has since
+	 * been revoked and exit as needed. */
+	if (slurm_cred_revoked(conf->vctx, req->cred)) {
+		info("Job %u already killed, do not launch extern step",
+		     req->job_id);
+	} else {
+		debug3("%s: call to _forkexec_slurmstepd", __func__);
+		(void) _forkexec_slurmstepd(
+			LAUNCH_TASKS, (void *)launch_req, cli,
+			&self, NULL, msg->protocol_version);
+		debug3("%s: return from _forkexec_slurmstepd", __func__);
+	}
 
 	for (i = 0; i < req->nnodes; i++)
 		xfree(launch_req->global_task_ids[i]);
