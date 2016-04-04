@@ -1508,7 +1508,6 @@ extern int slurm_set_accounting_storage_tres(char *tres)
 		conf = slurm_conf_lock();
 		xfree(conf->accounting_storage_tres);
 		conf->accounting_storage_tres = xstrdup(tres);
-		info("%p setting it new to %s", conf, conf->accounting_storage_tres);
 		slurm_conf_unlock();
 	}
 	return 0;
