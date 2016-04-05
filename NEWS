@@ -185,6 +185,8 @@ documents those changes that are of interest to users and administrators.
  -- If using PrologFlags=contain: Don't launch the extern step if a job is
     cancelled while launching.
  -- Remove duplicates from AccountingStorageTRES
+ -- Fix backfill scheduler race condition that could cause invalid pointer in
+    select/cons_res plugin. Bug introduced in 15.08.9.
 
 * Changes in Slurm 15.08.9
 ==========================
