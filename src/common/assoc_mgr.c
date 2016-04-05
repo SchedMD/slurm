@@ -1128,7 +1128,7 @@ static int _post_tres_list(List new_list, int new_cnt)
 				continue;
 			}
 
-			pos = slurmdb_get_new_tres_pos(
+			pos = slurmdb_get_old_tres_pos(
 				new_array, assoc_mgr_tres_array, i, max_cnt);
 
 			if (pos == NO_VAL)

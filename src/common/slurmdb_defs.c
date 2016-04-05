@@ -3553,7 +3553,7 @@ extern void slurmdb_transfer_tres_time(
 	FREE_NULL_LIST(job_tres_list);
 }
 
-extern int slurmdb_get_new_tres_pos(slurmdb_tres_rec_t **new_array,
+extern int slurmdb_get_old_tres_pos(slurmdb_tres_rec_t **new_array,
 				    slurmdb_tres_rec_t **old_array,
 				    int cur_pos, int max_cnt)
 {
@@ -3594,7 +3594,7 @@ extern void slurmdb_set_new_tres_cnt(uint64_t **tres_cnt_in,
 		if (!new_array[i])
 			break;
 
-		pos = slurmdb_get_new_tres_pos(
+		pos = slurmdb_get_old_tres_pos(
 			new_array, old_array, i, max_cnt);
 
 		if (pos != i)
