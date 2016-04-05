@@ -703,6 +703,7 @@ _send_slurmstepd_init(int fd, int type, void *req,
 			tmp32 = (uint32_t)gids->gids[i];
 			safe_write(fd, &tmp32, sizeof(uint32_t));
 		}
+		xfree(gids);
 	} else {
 		len = 0;
 		safe_write(fd, &len, sizeof(int));
@@ -5666,7 +5667,7 @@ typedef struct gid_cache_s {
 
 #define GIDS_HASH_LEN 64
 static gids_cache_t *gids_hashtbl[GIDS_HASH_LEN] = {NULL};
-
+static pthread_mutex_t gids_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static gids_t *
 _alloc_gids(int n, gid_t *gids)
@@ -5684,6 +5685,19 @@ _dealloc_gids(gids_t *p)
 {
 	xfree(p->gids);
 	xfree(p);
+}
+
+/* Duplicate a gids_t struct.  */
+static gids_t *
+_gids_dup(gids_t *g)
+{
+	int buf_size;
+	gids_t *n = xmalloc(sizeof(gids_t));
+	n->ngids = g->ngids;
+	buf_size = g->ngids * sizeof(gid_t);
+	n->gids = xmalloc(buf_size);
+	memcpy(n->gids, g->gids, buf_size);
+	return n;
 }
 
 static gids_cache_t *
@@ -5727,6 +5741,7 @@ gids_cache_purge(void)
 	int i;
 	gids_cache_t *p, *q;
 
+	pthread_mutex_lock(&gids_mutex);
 	for (i=0; i<GIDS_HASH_LEN; i++) {
 		p = gids_hashtbl[i];
 		while (p) {
@@ -5736,6 +5751,7 @@ gids_cache_purge(void)
 		}
 		gids_hashtbl[i] = NULL;
 	}
+	pthread_mutex_unlock(&gids_mutex);
 }
 
 static void
@@ -5760,20 +5776,25 @@ _gids_cache_lookup(char *user, gid_t gid)
 	time_t now = 0;
 	int ngroups = 0;
 	gid_t *groups;
+	gids_t *ret_gids = NULL;
 
 	idx = _gids_hashtbl_idx(user);
+	pthread_mutex_lock(&gids_mutex);
 	p = gids_hashtbl[idx];
 	while (p) {
 		if (xstrcmp(p->user, user) == 0 && p->gid == gid) {
 			slurm_ctl_conf_t *cf = slurm_conf_lock();
 			int group_ttl = cf->group_info & GROUP_TIME_MASK;
 			slurm_conf_unlock();
-			if (!group_ttl)
-				return p->gids;
+			if (!group_ttl) {
+				ret_gids = _gids_dup(p->gids);
+				goto done;
+			}
 			now = time(NULL);
-			if (difftime(now, p->timestamp) < group_ttl)
-				return p->gids;
-			else {
+			if (difftime(now, p->timestamp) < group_ttl) {
+				ret_gids = _gids_dup(p->gids);
+				goto done;
+			} else {
 				found_but_old = true;
 				break;
 			}
@@ -5791,12 +5812,15 @@ _gids_cache_lookup(char *user, gid_t gid)
 		p->gids->gids = groups;
 		p->gids->ngids = ngroups;
 		p->timestamp = now;
-		return p->gids;
+		ret_gids = _gids_dup(p->gids);
 	} else {
 		gids_t *gids = _alloc_gids(ngroups, groups);
 		_gids_cache_register(user, gid, gids);
-		return gids;
+		ret_gids = _gids_dup(gids);
 	}
+done:
+	pthread_mutex_unlock(&gids_mutex);
+	return ret_gids;
 }
 
 
