@@ -10289,7 +10289,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			new_qos_ptr = _determine_and_validate_qos(
 				resv_name, job_ptr->assoc_ptr,
 				authorized, &qos_rec, &error_code, false);
-			if (error_code == SLURM_SUCCESS) {
+			if ((error_code == SLURM_SUCCESS) && new_qos_ptr) {
 				info("%s: setting QOS to %s for job_id %u",
 				     __func__, new_qos_ptr->name,
 				     job_ptr->job_id);

@@ -101,7 +101,7 @@ The system <span class="commandline">_init()</span> is called before the SLURM
 <p style="margin-left:.2in"><b>Description</b>: Save any global switch state to a file
 within the specified directory. The actual file name used is plugin specific. It is recommended
 that the global switch state contain a magic number for validation purposes. This function
-is called by the slurmctld deamon on shutdown. Note that if the slurmctld daemon fails,
+is called by the slurmctld daemon on shutdown. Note that if the slurmctld daemon fails,
 this function will not be called. The plugin may save state independently and/or make
 use of the switch_p_job_step_allocated function to restore state.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<span class="commandline"> dir_name</span>&nbsp;
@@ -115,7 +115,7 @@ to indicate the reason for failure.</p>
 <p style="margin-left:.2in"><b>Description</b>: Restore any global switch state from a file
 within the specified directory. The actual file name used is plugin specific. It is recommended
 that any magic number associated with the global switch state be verified. This function
-is called by the slurmctld deamon on startup.</p>
+is called by the slurmctld daemon on startup.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline"> dir_name</span>&nbsp;
 &nbsp;&nbsp;(input) fully-qualified pathname of a directory containing a state information file
