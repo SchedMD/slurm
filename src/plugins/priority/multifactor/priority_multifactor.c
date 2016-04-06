@@ -1118,8 +1118,9 @@ static int _apply_new_usage(struct job_record *job_ptr,
 					  job_ptr->job_id, qos);
 	}
 
-	/* sanity check, there should always be a part_ptr here */
-	if (job_ptr->part_ptr)
+	/* sanity check, there should always be a part_ptr here, but only do
+	 * the qos if it isn't the same qos as the job is using */
+	if (job_ptr->part_ptr && (job_ptr->part_ptr->qos_ptr != qos))
 		qos = (slurmdb_qos_rec_t *)job_ptr->part_ptr->qos_ptr;
 	else
 		qos = NULL;
