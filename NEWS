@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 15.08.11
 ===========================
+ -- Fix for job "--contiguous" option that could cause job allocation/launch
+    failure or slurmctld crash.
 
 * Changes in Slurm 15.08.10
 ===========================

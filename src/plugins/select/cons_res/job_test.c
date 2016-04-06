@@ -1396,8 +1396,7 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 			xfree(cpus_array);
 		}
 
-		if (details_ptr->contiguous ||
-		    ((rem_nodes <= 0) && (rem_cpus <= 0))) {
+		if ((rem_nodes <= 0) && (rem_cpus <= 0)) {
 			error_code = SLURM_SUCCESS;
 			break;
 		}
