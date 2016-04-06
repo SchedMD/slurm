@@ -10090,6 +10090,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 	acct_limit_already_set = false;
 	if (!authorized && (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
+		uint32_t orig_time_limit = job_specs->time_limit;
 		if (!acct_policy_validate(job_specs, job_ptr->part_ptr,
 					  job_ptr->assoc_ptr, job_ptr->qos_ptr,
 					  NULL, &acct_policy_limit_set, 1)) {
@@ -10098,6 +10099,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			      __func__, job_specs->user_id);
 			acct_limit_already_set = true;
 		}
+		if ((orig_time_limit == NO_VAL) &&
+		    (job_ptr->time_limit < job_specs->time_limit))
+			job_specs->time_limit = NO_VAL;
 	}
 
 	if (!wiki_sched_test) {
@@ -10480,6 +10484,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		goto fini;
 
 	if (!authorized && (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
+		uint32_t orig_time_limit = job_specs->time_limit;
 		if (!acct_policy_validate(job_specs, job_ptr->part_ptr,
 					  job_ptr->assoc_ptr, job_ptr->qos_ptr,
 					  NULL, &acct_policy_limit_set, 1)
@@ -10490,6 +10495,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			error_code = ESLURM_ACCOUNTING_POLICY;
 			goto fini;
 		}
+		if ((orig_time_limit == NO_VAL) &&
+		    (job_ptr->time_limit < job_specs->time_limit))
+			job_specs->time_limit = NO_VAL;
 
 		/* Perhaps the limit was removed, so we will remove it
 		 * since it was imposed previously.
