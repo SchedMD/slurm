@@ -1269,7 +1269,6 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	bool nodes_busy = false;
 	int shared = 0, select_mode;
 	List preemptee_cand;
-	uint32_t orig_req_mem = job_ptr->details->pn_min_memory;
 
 	if (test_only)
 		select_mode = SELECT_MODE_TEST_ONLY;
@@ -1530,17 +1529,6 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 						      preemptee_cand,
 						      preemptee_job_list,
 						      exc_core_bitmap);
-			/* If no memory is requested but we are running with
-			 * CR_*_MEMORY and the request is for
-			 * nodes of different memory sizes we need to reset the
-			 * pn_min_memory as select_g_job_test can
-			 * alter that making it so the order of contraints
-			 * matter since the first pass through this will set the
-			 * pn_min_memory based on that first constraint and if
-			 * it isn't smaller than all the other requests they
-			 * will fail.
-			 */
-			job_ptr->details->pn_min_memory = orig_req_mem;
 #if 0
 {
 			char *tmp_str1 = bitmap2node_name(backup_bitmap);
