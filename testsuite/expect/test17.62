@@ -110,6 +110,7 @@ foreach option [array names check_list] {
 	# Check that each value is found
 	if {$match != 1} {
 		send_user "\nFAILURE: $option was not found\n"
+		send_user "\nFAILURE: Could be due to small configured MinJobAge value\n"
 		set exit_code 1
 	}
 }
