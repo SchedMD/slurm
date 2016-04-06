@@ -1510,6 +1510,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	bool nodes_busy = false;
 	int shared = 0, select_mode;
 	List preemptee_cand;
+	uint32_t smallest_min_mem = INFINITE;
+	uint32_t orig_req_mem = job_ptr->details->pn_min_memory;
 
 	if (test_only)
 		select_mode = SELECT_MODE_TEST_ONLY;
@@ -1782,6 +1784,23 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 						      preemptee_cand,
 						      preemptee_job_list,
 						      exc_core_bitmap);
+			/* If no memory is requested but we are running with
+			 * CR_*_MEMORY and the request is for
+			 * nodes of different memory sizes we need to reset the
+			 * pn_min_memory as select_g_job_test can
+			 * alter that making it so the order of contraints
+			 * matter since the first pass through this will set the
+			 * pn_min_memory based on that first constraint and if
+			 * it isn't smaller than all the other requests they
+			 * will fail.  We have to keep track of the
+			 * memory for accounting, we will use it after
+			 * the loop.
+			 */
+			if (job_ptr->details->pn_min_memory < smallest_min_mem)
+				smallest_min_mem =
+					job_ptr->details->pn_min_memory;
+			job_ptr->details->pn_min_memory = orig_req_mem;
+
 #if 0
 {
 			char *tmp_str1 = bitmap2node_name(backup_bitmap);
@@ -1891,6 +1910,14 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		if (error_code != SLURM_SUCCESS)
 			break;
 	}
+
+	/* Since you could potentially have multiple features and the
+	 * job didn't have a memory request lets set it to a minimum
+	 * from the selected features.  This is to fulfill commit
+	 * 700e7b1d4e9.
+	 */
+	if (smallest_min_mem != INFINITE)
+		job_ptr->details->pn_min_memory = smallest_min_mem;
 
 	/* The job is not able to start right now, return a
 	 * value indicating when the job can start */
