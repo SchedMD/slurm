@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix backfill scheduler race condition that could cause invalid pointer in
     select/cons_res plugin. Bug introduced in 15.08.9.
  -- Avoid double calculation on partition QOS if the job is using the same QOS.
+ -- Do not change a job's time limit when updating unrelated field in a job.
 
 * Changes in Slurm 15.08.9
 ==========================
