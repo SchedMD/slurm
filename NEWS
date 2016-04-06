@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
     salloc, sbatch, srun option from "--shared" to "--oversubscribe". The old
     options will continue to function. Output field names also changed in
     scontrol, sinfo, squeue and sview.
+ -- Add SLURM_UMASK environment variable to user job.
 
 * Changes in Slurm 16.05.0pre2
 ==============================
