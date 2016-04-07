@@ -75,6 +75,7 @@
 
 /* Static variables */
 static char *capmc_path = NULL;
+static uint32_t capmc_poll_freq = 45;   /* capmc state polling frequency */
 static uint32_t capmc_timeout = DEFAULT_CAPMC_TIMEOUT;
 static char *log_file = NULL;
 static char *prog_name = NULL;
@@ -90,6 +91,7 @@ static s_p_options_t knl_conf_file_options[] = {
 	{"AllowNUMA", S_P_STRING},
 	{"AllowUserBoot", S_P_STRING},
 	{"CapmcPath", S_P_STRING},
+	{"CapmcPollFreq", S_P_UINT32},
 	{"CapmcTimeout", S_P_UINT32},
 	{"DefaultMCDRAM", S_P_STRING},
 	{"DefaultNUMA", S_P_STRING},
@@ -137,6 +139,7 @@ static void _read_config(void)
 	knl_conf_file = get_extra_conf_path("knl_cray.conf");
 	if ((tbl = _config_make_tbl(knl_conf_file))) {
 		(void) s_p_get_string(&capmc_path, "CapmcPath", tbl);
+		(void) s_p_get_uint32(&capmc_poll_freq, "CapmcPollFreq", tbl);
 		(void) s_p_get_uint32(&capmc_timeout, "CapmcTimeout", tbl);
 		(void) s_p_get_string(&log_file, "LogFile", tbl);
 	}
@@ -370,7 +373,7 @@ static void *_node_update(void *args)
 
 	/* Wait for node in "off" state */
 	while (!node_state_ok) {
-		sleep(2);
+		sleep(capmc_poll_freq);
 		node_state_ok = _check_node_state(nid, nid_str, "off");
 	}
 

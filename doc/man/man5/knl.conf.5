@@ -1,4 +1,4 @@
-.TH "knl.conf" "5" "Slurm Configuration File" "February 2016" "Slurm Configuration File"
+.TH "knl.conf" "5" "Slurm Configuration File" "April 2016" "Slurm Configuration File"
 
 .SH "NAME"
 knl.conf \- Slurm configuration file for Intel Knights Landing processor.
@@ -76,7 +76,14 @@ If not specified then any user can change a node's state and reboot it.
 \fBCapmcPath\fR
 Fully qualified path to the \fBcapmc\fR program.
 The default value is "/opt/cray/capmc/default/bin/capmc".
-This parameter is used only by the "knl_cray.conf" plugin.
+This parameter is used only by the "knl_cray" plugin.
+
+.TP
+\fBCapmcPollFreq\fR
+Time interval between when the \fBcapmc\fR program should poll for node state
+changes, in seconds.
+The default value is 45 seconds.
+This parameter is used only by the "knl_cray" plugin.
 
 .TP
 \fBCapmcTimeout\fR

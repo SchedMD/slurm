@@ -19,6 +19,7 @@ documents those changes that are of interest to users and administrators.
     options will continue to function. Output field names also changed in
     scontrol, sinfo, squeue and sview.
  -- Add SLURM_UMASK environment variable to user job.
+ -- knl_conf: Added new configuration parameter of CapmcPollFreq.
 
 * Changes in Slurm 16.05.0pre2
 ==============================

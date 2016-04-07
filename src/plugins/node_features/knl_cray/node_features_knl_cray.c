@@ -133,6 +133,7 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 /* Configuration Paramters */
 static char *capmc_path = NULL;
+static uint32_t capmc_poll_freq = 45;	/* capmc state polling frequency */
 static uint32_t capmc_timeout = 0;	/* capmc command timeout in msec */
 static bool  debug_flag = false;
 static uint16_t allow_mcdram = KNL_MCDRAM_FLAG;
@@ -156,6 +157,7 @@ static s_p_options_t knl_conf_file_options[] = {
 	{"AllowNUMA", S_P_STRING},
 	{"AllowUserBoot", S_P_STRING},
 	{"CapmcPath", S_P_STRING},
+	{"CapmcPollFreq", S_P_UINT32},
 	{"CapmcTimeout", S_P_UINT32},
 	{"DefaultMCDRAM", S_P_STRING},
 	{"DefaultNUMA", S_P_STRING},
@@ -1249,6 +1251,7 @@ extern int init(void)
 	xfree(allowed_uid);
 	allowed_uid_cnt = 0;
 	xfree(capmc_path);
+	capmc_poll_freq = 45;
 	capmc_timeout = 1000;
 	debug_flag = false;
 	default_mcdram = KNL_CACHE;
@@ -1279,6 +1282,7 @@ extern int init(void)
 			xfree(tmp_str);
 		}
 		(void) s_p_get_string(&capmc_path, "CapmcPath", tbl);
+		(void) s_p_get_uint32(&capmc_poll_freq, "CapmcPollFreq", tbl);
 		(void) s_p_get_uint32(&capmc_timeout, "CapmcTimeout", tbl);
 		if (s_p_get_string(&tmp_str, "DefaultMCDRAM", tbl)) {
 			default_mcdram = _knl_mcdram_parse(tmp_str, ",");
@@ -1321,6 +1325,7 @@ extern int init(void)
 		     allow_mcdram_str, allow_numa_str);
 		info("AllowUserBoot=%s", allow_user_str);
 		info("CapmcPath=%s", capmc_path);
+		info("CapmcPollFreq=%u sec", capmc_poll_freq);
 		info("CapmcTimeout=%u msec", capmc_timeout);
 		info("DefaultMCDRAM=%s DefaultNUMA=%s",
 		     default_mcdram_str, default_numa_str);
