@@ -5,6 +5,7 @@ documents those changes that are of interest to users and administrators.
 ===========================
  -- Fix for job "--contiguous" option that could cause job allocation/launch
     failure or slurmctld crash.
+ -- Fix to setup logs for single-character program names correctly.
 
 * Changes in Slurm 15.08.10
 ===========================
