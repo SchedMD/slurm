@@ -555,6 +555,11 @@ static void _load_config(void)
 		      max_backfill_job_per_part);
 		max_backfill_job_per_part = 0;
 	}
+	if ((max_backfill_job_per_part != 0) &&
+	    (max_backfill_job_per_part >= max_backfill_job_cnt)) {
+		error("bf_max_job_part >= bf_max_job_test (%u >= %u)",
+		      max_backfill_job_per_part, max_backfill_job_cnt);
+	}
 
 	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_max_job_start=")))
 		max_backfill_jobs_start = atoi(tmp_ptr + 17);
@@ -570,6 +575,11 @@ static void _load_config(void)
 		error("Invalid SchedulerParameters bf_max_job_user: %d",
 		      max_backfill_job_per_user);
 		max_backfill_job_per_user = 0;
+	}
+	if ((max_backfill_job_per_user != 0) &&
+	    (max_backfill_job_per_user >= max_backfill_job_cnt)) {
+		error("bf_max_job_user >= bf_max_job_test (%u >= %u)",
+		      max_backfill_job_per_user, max_backfill_job_cnt);
 	}
 
 	if (sched_params &&
@@ -1551,6 +1561,19 @@ next_task:
 			if (debug_flags & DEBUG_FLAG_BACKFILL) {
 				info("backfill: table size limit of %u reached",
 				     max_backfill_job_cnt);
+			}
+			if ((max_backfill_job_per_part != 0) &&
+			    (max_backfill_job_per_part >=
+			     max_backfill_job_cnt)) {
+				error("bf_max_job_part >= bf_max_job_test (%u >= %u)",
+				      max_backfill_job_per_part,
+				      max_backfill_job_cnt);
+			} else if ((max_backfill_job_per_user != 0) &&
+				   (max_backfill_job_per_user >=
+				    max_backfill_job_cnt)) {
+				error("bf_max_job_user >= bf_max_job_test (%u >= %u)",
+				      max_backfill_job_per_user,
+				      max_backfill_job_cnt);
 			}
 			break;
 		}

@@ -2444,7 +2444,8 @@ scheduler. This can be especially helpful for systems with large numbers of
 partitions and jobs.
 The default value is 0, which means no limit.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
-Also see the \fBpartition_job_depth\fR option.
+Also see the \fBpartition_job_depth\fR and \fBbf_max_job_test\fR options.
+Set \fBbf_max_job_test\fR to a value much higher than \fBbf_max_job_part\fR.
 .TP
 \fBbf_max_job_start=#\fR
 The maximum number of jobs which can be initiated in a single iteration
@@ -2470,6 +2471,8 @@ queue with jobs that cannot start and that prevent jobs from other users
 to start.  This is similar to the MAXIJOB limit in Maui.
 The default value is 0, which means no limit.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
+Also see the \fBbf_max_job_part\fR and \fBbf_max_job_test\fR options.
+Set \fBbf_max_job_test\fR to a value much higher than \fBbf_max_job_user\fR.
 .TP
 \fBbf_min_age_reserve=#\fR
 The backfill and main scheduling logic will not reserve resources for pending
