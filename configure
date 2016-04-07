@@ -670,11 +670,11 @@ HAVE_LUA_FALSE
 HAVE_LUA_TRUE
 lua_LIBS
 lua_CFLAGS
+HAVE_NETLOC_FALSE
+HAVE_NETLOC_TRUE
 NETLOC_LDFLAGS
 NETLOC_CPPFLAGS
 NETLOC_LIBS
-HAVE_NETLOC_FALSE
-HAVE_NETLOC_TRUE
 HAVE_SGI_JOB_FALSE
 HAVE_SGI_JOB_TRUE
 HAVE_NRT
@@ -19432,25 +19432,31 @@ $as_echo "#define SLURM_BIGENDIAN 1" >>confdefs.h
 
 # Check whether --with-json was given.
 if test "${with_json+set}" = set; then :
-  withval=$with_json; x_ac_json_dirs="$withval"
+  withval=$with_json; if test "x$with_json" != xno; then :
+  _x_ac_json_dirs="$with_json $_x_ac_json_dirs"
+fi
 fi
 
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for json installation" >&5
+  if test "x$with_json" = xno; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: support for json disabled" >&5
+$as_echo "$as_me: WARNING: support for json disabled" >&2;}
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for json installation" >&5
 $as_echo_n "checking for json installation... " >&6; }
 if ${x_ac_cv_json_dir+:} false; then :
   $as_echo_n "(cached) " >&6
 else
 
-     for d in $x_ac_json_dirs; do
-       test -d "$d" || continue
-       test -d "$d/include" || continue
-       test -f "$d/include/json-c/json_object.h" || test -f "$d/include/json/json_object.h" || continue
-       for bit in $x_ac_json_libs; do
-         test -d "$d/$bit" || continue
-         _x_ac_json_libs_save="$LIBS"
-         LIBS="-L$d/$bit -ljson-c $LIBS"
-         cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+        for d in $x_ac_json_dirs; do
+          test -d "$d" || continue
+          test -d "$d/include" || continue
+          test -f "$d/include/json-c/json_object.h" || test -f "$d/include/json/json_object.h" || continue
+          for bit in $x_ac_json_libs; do
+            test -d "$d/$bit" || continue
+            _x_ac_json_libs_save="$LIBS"
+            LIBS="-L$d/$bit -ljson-c $LIBS"
+            cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 /* Override any GCC internal prototype to avoid an error.
@@ -19473,38 +19479,40 @@ if ac_fn_c_try_link "$LINENO"; then :
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-        LIBS="$_x_ac_json_libs_save"
-        test -n "$x_ac_cv_json_dir" && break
-     done
-     test -n "$x_ac_cv_json_dir" && break
-  done
+            LIBS="$_x_ac_json_libs_save"
+            test -n "$x_ac_cv_json_dir" && break
+          done
+          test -n "$x_ac_cv_json_dir" && break
+        done
 
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_json_dir" >&5
 $as_echo "$x_ac_cv_json_dir" >&6; }
 
-  if test -z "$x_ac_cv_json_dir"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate json parser library" >&5
+    if test -z "$x_ac_cv_json_dir"; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate json parser library" >&5
 $as_echo "$as_me: WARNING: unable to locate json parser library" >&2;}
-  else
-    if test -f "$d/include/json-c/json_object.h" ; then
+    else
+      if test -f "$d/include/json-c/json_object.h" ; then
 
 $as_echo "#define HAVE_JSON_C_INC 1" >>confdefs.h
 
-    fi
-    if test -f "$d/include/json/json_object.h" ; then
+      fi
+      if test -f "$d/include/json/json_object.h" ; then
 
 $as_echo "#define HAVE_JSON_INC 1" >>confdefs.h
 
-    fi
+      fi
 
 $as_echo "#define HAVE_JSON 1" >>confdefs.h
 
-    JSON_CPPFLAGS="-I$x_ac_cv_json_dir/include"
-    JSON_LDFLAGS="-L$x_ac_cv_json_dir/$bit -ljson-c"
+      JSON_CPPFLAGS="-I$x_ac_cv_json_dir/include"
+      JSON_LDFLAGS="-L$x_ac_cv_json_dir/$bit -ljson-c"
+    fi
+
+
+
   fi
-
-
 
    if test -n "$x_ac_cv_json_dir"; then
   WITH_JSON_PARSER_TRUE=
@@ -20258,33 +20266,40 @@ $as_echo "not set" >&6; };
 
 
 
+
   _x_ac_ofed_dirs="/usr /usr/local"
   _x_ac_ofed_libs="lib64 lib"
 
 
 # Check whether --with-ofed was given.
 if test "${with_ofed+set}" = set; then :
-  withval=$with_ofed; _x_ac_ofed_dirs="$withval"
+  withval=$with_ofed; if test "x$with_ofed" != xno; then :
+  _x_ac_ofed_dirs="$with_ofed $_x_ac_ofed_dirs"
+fi
 fi
 
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ofed installation" >&5
+  if test "x$with_ofed" = xno; then
+     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: support for ofed disabled" >&5
+$as_echo "$as_me: WARNING: support for ofed disabled" >&2;}
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ofed installation" >&5
 $as_echo_n "checking for ofed installation... " >&6; }
 if ${x_ac_cv_ofed_dir+:} false; then :
   $as_echo_n "(cached) " >&6
 else
 
-      for d in $_x_ac_ofed_dirs; do
-        test -d "$d" || continue
-        test -d "$d/include/infiniband" || continue
-        test -f "$d/include/infiniband/mad.h" || continue
-        for bit in $_x_ac_ofed_libs; do
-          test -d "$d/$bit" || continue
-          _x_ac_ofed_cppflags_save="$CPPFLAGS"
-          CPPFLAGS="-I$d/include $CPPFLAGS"
-          _x_ac_ofed_libs_save="$LIBS"
-          LIBS="-L$d/$bit -libmad -libumad $LIBS"
-	  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+        for d in $_x_ac_ofed_dirs; do
+          test -d "$d" || continue
+          test -d "$d/include/infiniband" || continue
+          test -f "$d/include/infiniband/mad.h" || continue
+          for bit in $_x_ac_ofed_libs; do
+            test -d "$d/$bit" || continue
+            _x_ac_ofed_cppflags_save="$CPPFLAGS"
+            CPPFLAGS="-I$d/include $CPPFLAGS"
+            _x_ac_ofed_libs_save="$LIBS"
+            LIBS="-L$d/$bit -libmad -libumad $LIBS"
+            cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 /* Override any GCC internal prototype to avoid an error.
@@ -20307,7 +20322,7 @@ if ac_fn_c_try_link "$LINENO"; then :
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-	  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+            cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 /* Override any GCC internal prototype to avoid an error.
@@ -20333,40 +20348,41 @@ $as_echo "Using old libmad" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-          CPPFLAGS="$_x_ac_ofed_cppflags_save"
-          LIBS="$_x_ac_ofed_libs_save"
+            CPPFLAGS="$_x_ac_ofed_cppflags_save"
+            LIBS="$_x_ac_ofed_libs_save"
+            test -n "$x_ac_cv_ofed_dir" && break
+          done
           test -n "$x_ac_cv_ofed_dir" && break
         done
-        test -n "$x_ac_cv_ofed_dir" && break
-      done
 
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_ofed_dir" >&5
 $as_echo "$x_ac_cv_ofed_dir" >&6; }
 
-  if test -z "$x_ac_cv_ofed_dir"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate ofed installation" >&5
+    if test -z "$x_ac_cv_ofed_dir"; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate ofed installation" >&5
 $as_echo "$as_me: WARNING: unable to locate ofed installation" >&2;}
-  else
-    OFED_CPPFLAGS="-I$x_ac_cv_ofed_dir/include/infiniband"
-    if test "$ac_with_rpath" = "yes"; then
-      OFED_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_ofed_dir/$bit -L$x_ac_cv_ofed_dir/$bit"
     else
-      OFED_LDFLAGS="-L$x_ac_cv_ofed_dir/$bit"
-    fi
-    OFED_LIBS="-libmad -libumad"
+      OFED_CPPFLAGS="-I$x_ac_cv_ofed_dir/include/infiniband"
+      if test "$ac_with_rpath" = "yes"; then
+        OFED_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_ofed_dir/$bit -L$x_ac_cv_ofed_dir/$bit"
+      else
+        OFED_LDFLAGS="-L$x_ac_cv_ofed_dir/$bit"
+      fi
+      OFED_LIBS="-libmad -libumad"
 
 $as_echo "#define HAVE_OFED 1" >>confdefs.h
 
-    if test ! -z "$have_pma_query_via" ; then
+      if test ! -z "$have_pma_query_via" ; then
 
 $as_echo "#define HAVE_OFED_PMA_QUERY_VIA 1" >>confdefs.h
 
+      fi
     fi
+
+
+
   fi
-
-
-
 
    if test -n "$x_ac_cv_ofed_dir"; then
   BUILD_OFED_TRUE=
@@ -20375,7 +20391,6 @@ else
   BUILD_OFED_TRUE='#'
   BUILD_OFED_FALSE=
 fi
-
 
 
 
@@ -20994,27 +21009,33 @@ fi
 
 # Check whether --with-hwloc was given.
 if test "${with_hwloc+set}" = set; then :
-  withval=$with_hwloc; _x_ac_hwloc_dirs="$withval"
+  withval=$with_hwloc; if test "x$with_hwloc" != xno; then :
+  _x_ac_hwloc_dirs="$with_hwloc $_x_ac_hwloc_dirs"
+fi
 fi
 
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for hwloc installation" >&5
+  if test "x$with_hwloc" = xno; then
+     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: support for hwloc disabled" >&5
+$as_echo "$as_me: WARNING: support for hwloc disabled" >&2;}
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for hwloc installation" >&5
 $as_echo_n "checking for hwloc installation... " >&6; }
 if ${x_ac_cv_hwloc_dir+:} false; then :
   $as_echo_n "(cached) " >&6
 else
 
-      for d in $_x_ac_hwloc_dirs; do
-        test -d "$d" || continue
-        test -d "$d/include" || continue
-        test -f "$d/include/hwloc.h" || continue
-	for bit in $_x_ac_hwloc_libs; do
-          test -d "$d/$bit" || continue
-          _x_ac_hwloc_cppflags_save="$CPPFLAGS"
-          CPPFLAGS="-I$d/include $CPPFLAGS"
- 	  _x_ac_hwloc_libs_save="$LIBS"
-          LIBS="-L$d/$bit -lhwloc $LIBS"
-          cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+        for d in $_x_ac_hwloc_dirs; do
+          test -d "$d" || continue
+          test -d "$d/include" || continue
+          test -f "$d/include/hwloc.h" || continue
+          for bit in $_x_ac_hwloc_libs; do
+            test -d "$d/$bit" || continue
+            _x_ac_hwloc_cppflags_save="$CPPFLAGS"
+            CPPFLAGS="-I$d/include $CPPFLAGS"
+            _x_ac_hwloc_libs_save="$LIBS"
+            LIBS="-L$d/$bit -lhwloc $LIBS"
+            cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 /* Override any GCC internal prototype to avoid an error.
@@ -21037,7 +21058,7 @@ if ac_fn_c_try_link "$LINENO"; then :
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-          cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+            cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <hwloc.h>
 int
@@ -21053,41 +21074,42 @@ if ac_fn_c_try_link "$LINENO"; then :
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-          CPPFLAGS="$_x_ac_hwloc_cppflags_save"
-          LIBS="$_x_ac_hwloc_libs_save"
+            CPPFLAGS="$_x_ac_hwloc_cppflags_save"
+            LIBS="$_x_ac_hwloc_libs_save"
+            test -n "$x_ac_cv_hwloc_dir" && break
+          done
           test -n "$x_ac_cv_hwloc_dir" && break
-	done
-        test -n "$x_ac_cv_hwloc_dir" && break
-      done
+        done
 
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_hwloc_dir" >&5
 $as_echo "$x_ac_cv_hwloc_dir" >&6; }
 
-  if test -z "$x_ac_cv_hwloc_dir"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate hwloc installation" >&5
+    if test -z "$x_ac_cv_hwloc_dir"; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate hwloc installation" >&5
 $as_echo "$as_me: WARNING: unable to locate hwloc installation" >&2;}
-  else
-    HWLOC_CPPFLAGS="-I$x_ac_cv_hwloc_dir/include"
-    if test "$ac_with_rpath" = "yes"; then
-      HWLOC_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_hwloc_dir/$bit -L$x_ac_cv_hwloc_dir/$bit"
     else
-      HWLOC_LDFLAGS="-L$x_ac_cv_hwloc_dir/$bit"
-    fi
-    HWLOC_LIBS="-lhwloc"
+      HWLOC_CPPFLAGS="-I$x_ac_cv_hwloc_dir/include"
+      if test "$ac_with_rpath" = "yes"; then
+        HWLOC_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_hwloc_dir/$bit -L$x_ac_cv_hwloc_dir/$bit"
+      else
+        HWLOC_LDFLAGS="-L$x_ac_cv_hwloc_dir/$bit"
+      fi
+      HWLOC_LIBS="-lhwloc"
 
 $as_echo "#define HAVE_HWLOC 1" >>confdefs.h
 
-    if test "$x_ac_cv_hwloc_pci" = "yes"; then
+      if test "$x_ac_cv_hwloc_pci" = "yes"; then
 
 $as_echo "#define HAVE_HWLOC_PCI 1" >>confdefs.h
 
+      fi
     fi
+
+
+
+
   fi
-
-
-
-
 
 
   _x_ac_pmix_dirs="/usr /usr/local"
@@ -21096,28 +21118,34 @@ $as_echo "#define HAVE_HWLOC_PCI 1" >>confdefs.h
 
 # Check whether --with-pmix was given.
 if test "${with_pmix+set}" = set; then :
-  withval=$with_pmix; _x_ac_pmix_dirs="$withval"
+  withval=$with_pmix; if test "x$with_pmix" != xno; then :
+  _x_ac_pmix_dirs="$with_pmix $_x_ac_pmix_dirs"
+fi
 fi
 
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pmix installation" >&5
+  if test "x$with_pmix" = xno; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: support for pmix disabled" >&5
+$as_echo "$as_me: WARNING: support for pmix disabled" >&2;}
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pmix installation" >&5
 $as_echo_n "checking for pmix installation... " >&6; }
 if ${x_ac_cv_pmix_dir+:} false; then :
   $as_echo_n "(cached) " >&6
 else
 
-      for d in $_x_ac_pmix_dirs; do
-        test -d "$d" || continue
-        test -d "$d/include" || continue
-        test -f "$d/include/pmix/pmix_common.h" || continue
-        test -f "$d/include/pmix_server.h" || continue
-        for d1 in $_x_ac_pmix_libs; do
-          test -d "$d/$d1" || continue
-          _x_ac_pmix_cppflags_save="$CPPFLAGS"
-          CPPFLAGS="-I$d/include $CPPFLAGS"
-          _x_ac_pmix_libs_save="$LIBS"
-          LIBS="-L$d/$d1 -lpmix $LIBS"
-          cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+        for d in $_x_ac_pmix_dirs; do
+          test -d "$d" || continue
+          test -d "$d/include" || continue
+          test -f "$d/include/pmix/pmix_common.h" || continue
+          test -f "$d/include/pmix_server.h" || continue
+          for d1 in $_x_ac_pmix_libs; do
+            test -d "$d/$d1" || continue
+            _x_ac_pmix_cppflags_save="$CPPFLAGS"
+            CPPFLAGS="-I$d/include $CPPFLAGS"
+            _x_ac_pmix_libs_save="$LIBS"
+            LIBS="-L$d/$d1 -lpmix $LIBS"
+            cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 /* Override any GCC internal prototype to avoid an error.
@@ -21140,35 +21168,35 @@ if ac_fn_c_try_link "$LINENO"; then :
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-          CPPFLAGS="$_x_ac_pmix_cppflags_save"
-          LIBS="$_x_ac_pmix_libs_save"
+            CPPFLAGS="$_x_ac_pmix_cppflags_save"
+            LIBS="$_x_ac_pmix_libs_save"
+            test -n "$x_ac_cv_pmix_dir" && break
+          done
           test -n "$x_ac_cv_pmix_dir" && break
         done
-        test -n "$x_ac_cv_pmix_dir" && break
-      done
 
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_pmix_dir" >&5
 $as_echo "$x_ac_cv_pmix_dir" >&6; }
 
-  if test -z "$x_ac_cv_pmix_dir"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate pmix installation" >&5
+    if test -z "$x_ac_cv_pmix_dir"; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate pmix installation" >&5
 $as_echo "$as_me: WARNING: unable to locate pmix installation" >&2;}
-  else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pmix library directory" >&5
+    else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pmix library directory" >&5
 $as_echo_n "checking for pmix library directory... " >&6; }
 if ${x_ac_cv_pmix_libdir+:} false; then :
   $as_echo_n "(cached) " >&6
 else
 
-        for d1 in $_x_ac_pmix_libs; do
-          d="$x_ac_cv_pmix_dir/$d1"
-          test -d "$d" || continue
-          _x_ac_pmix_cppflags_save="$CPPFLAGS"
-          CPPFLAGS="-I$x_ac_cv_pmix_dir/include $CPPFLAGS"
-          _x_ac_pmix_libs_save="$LIBS"
-          LIBS="-L$d -lpmix $LIBS"
-          cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+          for d1 in $_x_ac_pmix_libs; do
+            d="$x_ac_cv_pmix_dir/$d1"
+            test -d "$d" || continue
+            _x_ac_pmix_cppflags_save="$CPPFLAGS"
+            CPPFLAGS="-I$x_ac_cv_pmix_dir/include $CPPFLAGS"
+            _x_ac_pmix_libs_save="$LIBS"
+            LIBS="-L$d -lpmix $LIBS"
+            cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 /* Override any GCC internal prototype to avoid an error.
@@ -21191,28 +21219,30 @@ if ac_fn_c_try_link "$LINENO"; then :
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-          CPPFLAGS="$_x_ac_pmix_cppflags_save"
-          LIBS="$_x_ac_pmix_libs_save"
-          test -n "$x_ac_cv_pmix_libdir" && break
-        done
+            CPPFLAGS="$_x_ac_pmix_cppflags_save"
+            LIBS="$_x_ac_pmix_libs_save"
+            test -n "$x_ac_cv_pmix_libdir" && break
+          done
 
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_pmix_libdir" >&5
 $as_echo "$x_ac_cv_pmix_libdir" >&6; }
-    PMIX_CPPFLAGS="-I$x_ac_cv_pmix_dir/include"
-    if test "$ac_with_rpath" = "yes"; then
-      PMIX_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_pmix_libdir -L$x_ac_cv_pmix_libdir"
-    else
-      PMIX_LDFLAGS="-L$x_ac_cv_pmix_libdir"
-    fi
-    PMIX_LIBS="-lpmix"
+      PMIX_CPPFLAGS="-I$x_ac_cv_pmix_dir/include"
+      if test "$ac_with_rpath" = "yes"; then
+        PMIX_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_pmix_libdir -L$x_ac_cv_pmix_libdir"
+      else
+        PMIX_LDFLAGS="-L$x_ac_cv_pmix_libdir"
+      fi
+      PMIX_LIBS="-lpmix"
 
 $as_echo "#define HAVE_PMIX 1" >>confdefs.h
 
+    fi
+
+
+
+
   fi
-
-
-
 
    if test -n "$x_ac_cv_pmix_dir"; then
   HAVE_PMIX_TRUE=
@@ -21230,36 +21260,42 @@ fi
 
 # Check whether --with-freeipmi was given.
 if test "${with_freeipmi+set}" = set; then :
-  withval=$with_freeipmi; _x_ac_freeipmi_dirs="$withval"
+  withval=$with_freeipmi; if test "x$with_freeipmi" != xno; then :
+  _x_ac_freeipmi_dirs="$with_freeipmi $_x_ac_freeipmi_dirs"
+fi
 fi
 
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for freeipmi installation" >&5
+  if test "x$with_freeipmi" = xno; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: support for freeipmi disabled" >&5
+$as_echo "$as_me: WARNING: support for freeipmi disabled" >&2;}
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for freeipmi installation" >&5
 $as_echo_n "checking for freeipmi installation... " >&6; }
 if ${x_ac_cv_freeipmi_dir+:} false; then :
   $as_echo_n "(cached) " >&6
 else
 
-      for d in $_x_ac_freeipmi_dirs; do
-        test -d "$d" || continue
-        test -d "$d/include" || continue
-        test -f "$d/include/ipmi_monitoring.h" || continue
-	for bit in $_x_ac_freeipmi_libs; do
-          test -d "$d/$bit" || continue
-          _x_ac_freeipmi_cppflags_save="$CPPFLAGS"
-          CPPFLAGS="-I$d/include $CPPFLAGS"
- 	  _x_ac_freeipmi_libs_save="$LIBS"
-          LIBS="-L$d/$bit -lipmimonitoring $LIBS"
-          cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+        for d in $_x_ac_freeipmi_dirs; do
+          test -d "$d" || continue
+          test -d "$d/include" || continue
+          test -f "$d/include/ipmi_monitoring.h" || continue
+          for bit in $_x_ac_freeipmi_libs; do
+            test -d "$d/$bit" || continue
+            _x_ac_freeipmi_cppflags_save="$CPPFLAGS"
+            CPPFLAGS="-I$d/include $CPPFLAGS"
+            _x_ac_freeipmi_libs_save="$LIBS"
+            LIBS="-L$d/$bit -lipmimonitoring $LIBS"
+            cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <ipmi_monitoring.h>
-#include <ipmi_monitoring_bitmasks.h>
+              #include <ipmi_monitoring_bitmasks.h>
 int
 main ()
 {
 int err;
-unsigned int flag = 0;
-return ipmi_monitoring_init (flag, &err);
+              unsigned int flag = 0;
+              return ipmi_monitoring_init (flag, &err);
   ;
   return 0;
 }
@@ -21269,35 +21305,37 @@ if ac_fn_c_try_link "$LINENO"; then :
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-          CPPFLAGS="$_x_ac_freeipmi_cppflags_save"
-          LIBS="$_x_ac_freeipmi_libs_save"
+            CPPFLAGS="$_x_ac_freeipmi_cppflags_save"
+            LIBS="$_x_ac_freeipmi_libs_save"
+            test -n "$x_ac_cv_freeipmi_dir" && break
+          done
           test -n "$x_ac_cv_freeipmi_dir" && break
-	done
-        test -n "$x_ac_cv_freeipmi_dir" && break
-      done
+        done
 
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_freeipmi_dir" >&5
 $as_echo "$x_ac_cv_freeipmi_dir" >&6; }
 
-  if test -z "$x_ac_cv_freeipmi_dir"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate freeipmi installation" >&5
+    if test -z "$x_ac_cv_freeipmi_dir"; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate freeipmi installation" >&5
 $as_echo "$as_me: WARNING: unable to locate freeipmi installation" >&2;}
-  else
-    FREEIPMI_CPPFLAGS="-I$x_ac_cv_freeipmi_dir/include"
-    if test "$ac_with_rpath" = "yes"; then
-      FREEIPMI_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_freeipmi_dir/$bit -L$x_ac_cv_freeipmi_dir/$bit"
     else
-      FREEIPMI_LDFLAGS="-L$x_ac_cv_freeipmi_dir/$bit"
-    fi
-    FREEIPMI_LIBS="-lipmimonitoring"
+      FREEIPMI_CPPFLAGS="-I$x_ac_cv_freeipmi_dir/include"
+      if test "$ac_with_rpath" = "yes"; then
+        FREEIPMI_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_freeipmi_dir/$bit -L$x_ac_cv_freeipmi_dir/$bit"
+      else
+        FREEIPMI_LDFLAGS="-L$x_ac_cv_freeipmi_dir/$bit"
+      fi
+      FREEIPMI_LIBS="-lipmimonitoring"
 
 $as_echo "#define HAVE_FREEIPMI 1" >>confdefs.h
 
+    fi
+
+
+
+
   fi
-
-
-
 
    if test -n "$x_ac_cv_freeipmi_dir"; then
   BUILD_IPMI_TRUE=
@@ -21306,7 +21344,6 @@ else
   BUILD_IPMI_TRUE='#'
   BUILD_IPMI_FALSE=
 fi
-
 
 
 
@@ -21368,16 +21405,17 @@ fi
 
 # Check whether --with-rrdtool was given.
 if test "${with_rrdtool+set}" = set; then :
-  withval=$with_rrdtool; _x_ac_rrdtool_dirs="$withval"
-else
-  with_rrdtool=check
+  withval=$with_rrdtool; if test "x$with_rrdtool" != xno; then :
+  _x_ac_rrdtool_dirs="$with_rrdtool $_x_ac_rrdtool_dirs"
+fi
 fi
 
 
-#  echo with rrdtool $with_rrdtool
-#  echo without rrdtool $without_rrdtool
-  if test "x$with_rrdtool" != "xno"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for rrdtool installation" >&5
+  if test "x$with_rrdtool" = xno; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: support for rrdtool disabled" >&5
+$as_echo "$as_me: WARNING: support for rrdtool disabled" >&2;}
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for rrdtool installation" >&5
 $as_echo_n "checking for rrdtool installation... " >&6; }
 if ${x_ac_cv_rrdtool_dir+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -21420,24 +21458,24 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_rrdtool_dir" >&5
 $as_echo "$x_ac_cv_rrdtool_dir" >&6; }
 
-fi
-
-#  echo x_ac_cv_rrdtool_dir $x_ac_cv_rrdtool_dir
-  if test -z "$x_ac_cv_rrdtool_dir"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate rrdtool installation" >&5
+    # echo x_ac_cv_rrdtool_dir $x_ac_cv_rrdtool_dir
+    if test -z "$x_ac_cv_rrdtool_dir"; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate rrdtool installation" >&5
 $as_echo "$as_me: WARNING: unable to locate rrdtool installation" >&2;}
-  else
-    RRDTOOL_CPPFLAGS="-I$x_ac_cv_rrdtool_dir/include"
-    if test "$ac_with_rpath" = "yes"; then
-      RRDTOOL_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_rrdtool_dir/$bit -L$x_ac_cv_rrdtool_dir/$bit"
     else
-      RRDTOOL_LDFLAGS="-L$x_ac_cv_rrdtool_dir/$bit"
+      RRDTOOL_CPPFLAGS="-I$x_ac_cv_rrdtool_dir/include"
+      if test "$ac_with_rpath" = "yes"; then
+        RRDTOOL_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_rrdtool_dir/$bit -L$x_ac_cv_rrdtool_dir/$bit"
+      else
+        RRDTOOL_LDFLAGS="-L$x_ac_cv_rrdtool_dir/$bit"
+      fi
+      RRDTOOL_LIBS="-lrrd"
     fi
-    RRDTOOL_LIBS="-lrrd"
+
+
+
+
   fi
-
-
-
 
    if test -n "$x_ac_cv_rrdtool_dir"; then
   BUILD_RRD_TRUE=
@@ -23666,35 +23704,41 @@ fi
 
 # Check whether --with-netloc was given.
 if test "${with_netloc+set}" = set; then :
-  withval=$with_netloc; _x_ac_netloc_dirs="$withval"
+  withval=$with_netloc; if test "x$with_netloc" != xno; then :
+  _x_ac_netloc_dirs="$with_netloc $_x_ac_netloc_dirs"
+fi
 fi
 
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for netloc installation" >&5
+  if test "x$with_netloc" = xno; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: support for netloc disabled" >&5
+$as_echo "$as_me: WARNING: support for netloc disabled" >&2;}
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for netloc installation" >&5
 $as_echo_n "checking for netloc installation... " >&6; }
 if ${x_ac_cv_netloc_dir+:} false; then :
   $as_echo_n "(cached) " >&6
 else
 
-      for d in $_x_ac_netloc_dirs; do
-        test -d "$d" || continue
-        test -d "$d/include" || continue
-        test -f "$d/include/netloc.h" || continue
-        for bit in $_x_ac_netloc_libs; do
-          test -d "$d/$bit" || continue
-          _x_ac_netloc_cppflags_save="$CPPFLAGS"
-          CPPFLAGS="-I$d/include $CPPFLAGS"
-          _x_ac_netloc_libs_save="$LIBS"
-          LIBS="-L$d/$bit -lnetloc $LIBS"
-          cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+        for d in $_x_ac_netloc_dirs; do
+          test -d "$d" || continue
+          test -d "$d/include" || continue
+          test -f "$d/include/netloc.h" || continue
+          for bit in $_x_ac_netloc_libs; do
+            test -d "$d/$bit" || continue
+            _x_ac_netloc_cppflags_save="$CPPFLAGS"
+            CPPFLAGS="-I$d/include $CPPFLAGS"
+            _x_ac_netloc_libs_save="$LIBS"
+            LIBS="-L$d/$bit -lnetloc $LIBS"
+            cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <netloc.h>
-                              #include <netloc/map.h>
+                                #include <netloc/map.h>
 int
 main ()
 {
 netloc_map_t map;
-                              netloc_map_create(&map);
+                                netloc_map_create(&map);
   ;
   return 0;
 }
@@ -23704,56 +23748,61 @@ if ac_fn_c_try_link "$LINENO"; then :
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-          cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+              cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <netloc.h>
-                              #include <netloc_map.h>
+                                #include <netloc_map.h>
 int
 main ()
 {
 netloc_map_t map;
-                              netloc_map_create(&map)
+                                netloc_map_create(&map)
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
   x_ac_cv_netloc_dir=$d
-            x_ac_cv_netloc_nosub="yes"
+              x_ac_cv_netloc_nosub="yes"
 
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-          CPPFLAGS="$_x_ac_netloc_cppflags_save"
-          LIBS="$_x_ac_netloc_libs_save"
+            CPPFLAGS="$_x_ac_netloc_cppflags_save"
+            LIBS="$_x_ac_netloc_libs_save"
+            test -n "$x_ac_cv_netloc_dir" && break
+          done
           test -n "$x_ac_cv_netloc_dir" && break
         done
-        test -n "$x_ac_cv_netloc_dir" && break
-      done
 
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_netloc_dir" >&5
 $as_echo "$x_ac_cv_netloc_dir" >&6; }
 
-  if test -z "$x_ac_cv_netloc_dir"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate netloc installation" >&5
+    if test -z "$x_ac_cv_netloc_dir"; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate netloc installation" >&5
 $as_echo "$as_me: WARNING: unable to locate netloc installation" >&2;}
-  else
-    NETLOC_CPPFLAGS="-I$x_ac_cv_netloc_dir/include"
-    if test "$ac_with_rpath" = "yes"; then
-      NETLOC_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_netloc_dir/$bit -L$x_ac_cv_netloc_dir/$bit"
     else
-      NETLOC_LDFLAGS="-L$x_ac_cv_netloc_dir/$bit"
-    fi
-    NETLOC_LIBS="-lnetloc"
+      NETLOC_CPPFLAGS="-I$x_ac_cv_netloc_dir/include"
+      if test "$ac_with_rpath" = "yes"; then
+        NETLOC_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_netloc_dir/$bit -L$x_ac_cv_netloc_dir/$bit"
+      else
+        NETLOC_LDFLAGS="-L$x_ac_cv_netloc_dir/$bit"
+      fi
+      NETLOC_LIBS="-lnetloc"
 
 $as_echo "#define HAVE_NETLOC 1" >>confdefs.h
 
-    if test "$x_ac_cv_netloc_nosub" = "yes"; then
+      if test "$x_ac_cv_netloc_nosub" = "yes"; then
 
 $as_echo "#define HAVE_NETLOC_NOSUB 1" >>confdefs.h
 
+      fi
     fi
+
+
+
+
   fi
 
    if test -n "$x_ac_cv_netloc_dir"; then
@@ -23763,9 +23812,6 @@ else
   HAVE_NETLOC_TRUE='#'
   HAVE_NETLOC_FALSE=
 fi
-
-
-
 
 
 
@@ -24304,26 +24350,31 @@ fi
 
 # Check whether --with-munge was given.
 if test "${with_munge+set}" = set; then :
-  withval=$with_munge; _x_ac_munge_dirs="$withval"
+  withval=$with_munge; if test "x$with_munge" != xno; then :
+  _x_ac_munge_dirs="$with_munge $_x_ac_munge_dirs"
+fi
 fi
 
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for munge installation" >&5
+  if test "x$with_munge" = xno; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: support for munge disabled" >&5
+$as_echo "$as_me: WARNING: support for munge disabled" >&2;}
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for munge installation" >&5
 $as_echo_n "checking for munge installation... " >&6; }
 if ${x_ac_cv_munge_dir+:} false; then :
   $as_echo_n "(cached) " >&6
 else
 
-      for d in $_x_ac_munge_dirs; do
-        test -d "$d" || continue
-        test -d "$d/include" || continue
-        test -f "$d/include/munge.h" || continue
-	for bit in $_x_ac_munge_libs; do
-          test -d "$d/$bit" || continue
-
- 	  _x_ac_munge_libs_save="$LIBS"
-          LIBS="-L$d/$bit -lmunge $LIBS"
-          cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+        for d in $_x_ac_munge_dirs; do
+          test -d "$d" || continue
+          test -d "$d/include" || continue
+          test -f "$d/include/munge.h" || continue
+          for bit in $_x_ac_munge_libs; do
+            test -d "$d/$bit" || continue
+            _x_ac_munge_libs_save="$LIBS"
+            LIBS="-L$d/$bit -lmunge $LIBS"
+            cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 /* Override any GCC internal prototype to avoid an error.
@@ -24346,34 +24397,35 @@ if ac_fn_c_try_link "$LINENO"; then :
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-          LIBS="$_x_ac_munge_libs_save"
+            LIBS="$_x_ac_munge_libs_save"
+            test -n "$x_ac_cv_munge_dir" && break
+          done
           test -n "$x_ac_cv_munge_dir" && break
-	done
-        test -n "$x_ac_cv_munge_dir" && break
-      done
+        done
 
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_munge_dir" >&5
 $as_echo "$x_ac_cv_munge_dir" >&6; }
 
-  if test -z "$x_ac_cv_munge_dir"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate munge installation" >&5
+    if test -z "$x_ac_cv_munge_dir"; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate munge installation" >&5
 $as_echo "$as_me: WARNING: unable to locate munge installation" >&2;}
-  else
-    MUNGE_LIBS="-lmunge"
-    MUNGE_CPPFLAGS="-I$x_ac_cv_munge_dir/include"
-    MUNGE_DIR="$x_ac_cv_munge_dir"
-    if test "$ac_with_rpath" = "yes"; then
-      MUNGE_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_munge_dir/$bit -L$x_ac_cv_munge_dir/$bit"
     else
-      MUNGE_LDFLAGS="-L$x_ac_cv_munge_dir/$bit"
+      MUNGE_LIBS="-lmunge"
+      MUNGE_CPPFLAGS="-I$x_ac_cv_munge_dir/include"
+      MUNGE_DIR="$x_ac_cv_munge_dir"
+      if test "$ac_with_rpath" = "yes"; then
+        MUNGE_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_munge_dir/$bit -L$x_ac_cv_munge_dir/$bit"
+      else
+        MUNGE_LDFLAGS="-L$x_ac_cv_munge_dir/$bit"
+      fi
     fi
+
+
+
+
+
   fi
-
-
-
-
-
 
    if test -n "$x_ac_cv_munge_dir"; then
   WITH_MUNGE_TRUE=
@@ -24469,26 +24521,31 @@ LIBS="$savedLIBS"
 
 # Check whether --with-blcr was given.
 if test "${with_blcr+set}" = set; then :
-  withval=$with_blcr; _x_ac_blcr_dirs="$withval"
+  withval=$with_blcr; if test "x$with_blcr" != xno; then :
+  _x_ac_blcr_dirs="$with_blcr $_x_ac_blcr_dirs"
+fi
 fi
 
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for blcr installation" >&5
+  if test "x$with_blcr" = xno; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: support for blcr disabled" >&5
+$as_echo "$as_me: WARNING: support for blcr disabled" >&2;}
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for blcr installation" >&5
 $as_echo_n "checking for blcr installation... " >&6; }
 if ${x_ac_cv_blcr_dir+:} false; then :
   $as_echo_n "(cached) " >&6
 else
 
-      for d in $_x_ac_blcr_dirs; do
-	test -d "$d" || continue
-	test -d "$d/include" || continue
-	test -f "$d/include/libcr.h" || continue
-	for bit in $_x_ac_blcr_libs; do
-	  test -d "$d/$bit" || continue
-
- 	  _x_ac_blcr_libs_save="$LIBS"
-	  LIBS="-L$d/$bit -lcr $LIBS"
-	  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+        for d in $_x_ac_blcr_dirs; do
+          test -d "$d" || continue
+          test -d "$d/include" || continue
+          test -f "$d/include/libcr.h" || continue
+          for bit in $_x_ac_blcr_libs; do
+            test -d "$d/$bit" || continue
+            _x_ac_blcr_libs_save="$LIBS"
+            LIBS="-L$d/$bit -lcr $LIBS"
+            cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 /* Override any GCC internal prototype to avoid an error.
@@ -24511,25 +24568,25 @@ if ac_fn_c_try_link "$LINENO"; then :
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-	  LIBS="$_x_ac_blcr_libs_save"
-	  test -n "$x_ac_cv_blcr_dir" && break
-	done
-	test -n "$x_ac_cv_blcr_dir" && break
-      done
+            LIBS="$_x_ac_blcr_libs_save"
+            test -n "$x_ac_cv_blcr_dir" && break
+          done
+          test -n "$x_ac_cv_blcr_dir" && break
+        done
 
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_blcr_dir" >&5
 $as_echo "$x_ac_cv_blcr_dir" >&6; }
 
-  if test -z "$x_ac_cv_blcr_dir"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate blcr installation" >&5
+    if test -z "$x_ac_cv_blcr_dir"; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate blcr installation" >&5
 $as_echo "$as_me: WARNING: unable to locate blcr installation" >&2;}
-  else
-    BLCR_HOME="$x_ac_cv_blcr_dir"
-    BLCR_LIBS="-lcr"
-    BLCR_CPPFLAGS="-I$x_ac_cv_blcr_dir/include"
-    BLCR_LDFLAGS="-L$x_ac_cv_blcr_dir/$bit"
-  fi
+    else
+      BLCR_HOME="$x_ac_cv_blcr_dir"
+      BLCR_LIBS="-lcr"
+      BLCR_CPPFLAGS="-I$x_ac_cv_blcr_dir/include"
+      BLCR_LDFLAGS="-L$x_ac_cv_blcr_dir/$bit"
+    fi
 
 
 cat >>confdefs.h <<_ACEOF
@@ -24540,7 +24597,7 @@ _ACEOF
 
 
 
-
+  fi
 
    if test -n "$x_ac_cv_blcr_dir"; then
   WITH_BLCR_TRUE=
