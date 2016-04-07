@@ -637,8 +637,24 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 			avail_mem -= node_usage[node_i].alloc_memory;
 		if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
 			/* memory is per-cpu */
-			while ((cpus > 0) && ((req_mem * cpus) > avail_mem))
-				cpus -= cpu_alloc_size;
+			if ((cr_type & CR_CORE) &&
+			    job_ptr->details && job_ptr->details->mc_ptr &&
+			    job_ptr->details->mc_ptr->ntasks_per_core == 1 &&
+			    job_ptr->details->cpus_per_task == 1) {
+				/* In this scenario, cpus represents cores and
+				 * the cpu/core count will be inflated later on
+				 * to include all of the threads on a core. So
+				 * we need to compare apples to apples and only
+				 * remove 1 cpu/core at a time. */
+				while ((cpus > 0) &&
+				       ((req_mem *
+					 (cpus * cpu_alloc_size)) > avail_mem))
+					cpus -= 1;
+			} else {
+				while ((cpus > 0) &&
+				       ((req_mem * cpus) > avail_mem))
+					cpus -= cpu_alloc_size;
+			}
 			if (job_ptr->details->cpus_per_task > 1) {
 				i = cpus % job_ptr->details->cpus_per_task;
 				cpus -= i;
