@@ -1081,6 +1081,9 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	    (job_ptr->details->req_node_layout == NULL)) {
 		ListIterator feat_iter;
 		job_feature_t *feat_ptr;
+		uint32_t smallest_min_mem = INFINITE;
+		uint32_t orig_req_mem = job_ptr->details->pn_min_memory;
+
 		feat_iter = list_iterator_create(
 				job_ptr->details->feature_list);
 		while ((feat_ptr = (job_feature_t *) list_next(feat_iter))) {
@@ -1157,6 +1160,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 			job_ptr->details->min_nodes = feat_ptr->count;
 			job_ptr->details->min_cpus = feat_ptr->count;
 			FREE_NULL_LIST(*preemptee_job_list);
+			job_ptr->details->pn_min_memory = orig_req_mem;
 			error_code = _pick_best_nodes(tmp_node_set_ptr,
 					tmp_node_set_size, &feature_bitmap,
 					job_ptr, part_ptr, min_nodes,
@@ -1164,6 +1168,15 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 					preemptee_candidates,
 					preemptee_job_list, false,
 					exc_core_bitmap, resv_overlap);
+			if (job_ptr->details->pn_min_memory) {
+				if (job_ptr->details->pn_min_memory <
+				    smallest_min_mem)
+					smallest_min_mem =
+						job_ptr->details->pn_min_memory;
+				else
+					job_ptr->details->pn_min_memory =
+						smallest_min_mem;
+			}
 #if 0
 {
 			char *tmp_str = bitmap2node_name(feature_bitmap);
