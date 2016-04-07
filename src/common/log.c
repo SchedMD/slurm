@@ -312,7 +312,7 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 	}
 
 	/* Only take the first one here.  In some situations it can change. */
-	if (!slurm_prog_name && log->argv0 && (strlen(log->argv0) > 1))
+	if (!slurm_prog_name && log->argv0 && (strlen(log->argv0) > 0))
 		slurm_prog_name = xstrdup(log->argv0);
 
 	if (!log->fpfx)
