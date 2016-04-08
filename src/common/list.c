@@ -794,6 +794,25 @@ list_next (ListIterator i)
 	return (p ? p->data : NULL);
 }
 
+/* list_peek_next()
+ */
+void *
+list_peek_next (ListIterator i)
+{
+	ListNode p;
+
+	assert(i != NULL);
+	assert(i->magic == LIST_MAGIC);
+	list_mutex_lock(&i->list->mutex);
+	assert(i->list->magic == LIST_MAGIC);
+
+	p = i->pos;
+
+	list_mutex_unlock(&i->list->mutex);
+
+	return (p ? p->data : NULL);
+}
+
 /* list_insert()
  */
 void *
