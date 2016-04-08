@@ -1884,6 +1884,8 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 					break;
 				}
 			}
+			if (!last_job_ptr)
+				break;
 			time_window += 60;
 			rc = cr_job_test(job_ptr, bitmap, min_nodes,
 					 max_nodes, req_nodes,
