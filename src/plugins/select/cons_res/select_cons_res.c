@@ -1739,7 +1739,8 @@ static bool _job_cleaning(struct job_record *job_ptr)
 
 /* _will_run_test - determine when and where a pending job can start, removes
  *	jobs from node table at termination time and run _test_job() after
- *	each one. Used by SLURM's sched/backfill plugin and Moab. */
+ *	each job (or a few jobs that end close in time). Used by SLURM's
+ *	sched/backfill plugin and Moab. */
 static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes,
 			  uint32_t req_nodes, uint16_t job_node_req,
@@ -1843,21 +1844,47 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		}
 	}
 
-	/* Remove the running jobs one at a time from exp_node_cr and try
-	 * scheduling the pending job after each one. */
+	/* Remove the running jobs from exp_node_cr and try scheduling the
+	 * pending job after each one (or a few jobs that end close in time). */
 	if (rc != SLURM_SUCCESS) {
+		int time_window = 0;
+		bool more_jobs = true;
 		list_sort(cr_job_list, _cr_job_list_sort);
 		job_iterator = list_iterator_create(cr_job_list);
-		while ((tmp_job_ptr = list_next(job_iterator))) {
-		        int ovrlap;
-			bit_or(bitmap, orig_map);
-			ovrlap = bit_overlap(bitmap, tmp_job_ptr->node_bitmap);
-			if (ovrlap == 0)	/* job has no usable nodes */
-				continue;	/* skip it */
-			debug2("cons_res: _will_run_test, job %u: overlap=%d",
-			       tmp_job_ptr->job_id, ovrlap);
-			_rm_job_from_res(future_part, future_usage,
-					 tmp_job_ptr, 0);
+		while (more_jobs) {
+			struct job_record *first_job_ptr = NULL;
+			struct job_record *last_job_ptr = NULL;
+			struct job_record *next_job_ptr = NULL;
+			int overlap;
+			while (true) {
+				tmp_job_ptr = list_next(job_iterator);
+				if (!tmp_job_ptr) {
+					more_jobs = false;
+					break;
+				}
+				bit_or(bitmap, orig_map);
+				overlap = bit_overlap(bitmap,
+						      tmp_job_ptr->node_bitmap);
+				if (overlap == 0)  /* job has no usable nodes */
+					continue;  /* skip it */
+				debug2("cons_res: _will_run_test, job %u: overlap=%d",
+				       tmp_job_ptr->job_id, overlap);
+				if (!first_job_ptr)
+					first_job_ptr = tmp_job_ptr;
+				last_job_ptr = tmp_job_ptr;
+				_rm_job_from_res(future_part, future_usage,
+						 tmp_job_ptr, 0);
+				next_job_ptr = list_peek_next(job_iterator);
+				if (!next_job_ptr) {
+					more_jobs = false;
+					break;
+				} else if (next_job_ptr->end_time >
+				 	   (first_job_ptr->end_time +
+					    time_window)) {
+					break;
+				}
+			}
+			time_window += 60;
 			rc = cr_job_test(job_ptr, bitmap, min_nodes,
 					 max_nodes, req_nodes,
 					 SELECT_MODE_WILL_RUN, tmp_cr_type,
@@ -1866,12 +1893,13 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 					 exc_core_bitmap, backfill_busy_nodes,
 					 qos_preemptor, true);
 			if (rc == SLURM_SUCCESS) {
-				if (tmp_job_ptr->end_time <= now) {
+				if (last_job_ptr->end_time <= now) {
 					job_ptr->start_time =
-						_guess_job_end(tmp_job_ptr,now);
+						_guess_job_end(last_job_ptr,
+							       now);
 				} else {
-					job_ptr->start_time = tmp_job_ptr->
-						end_time;
+					job_ptr->start_time =
+						last_job_ptr->end_time;
 				}
 				break;
 			}
