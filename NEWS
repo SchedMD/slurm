@@ -9,6 +9,7 @@ documents those changes that are of interest to users and administrators.
  -- Backfill scheduling performance enhancement with large number of running
     jobs.
  -- Reset job's prolog_running counter on slurmctld restart or reconfigure.
+ -- burst_buffer/cray - Update job's prolog_running counter if pre_run fails.
 
 * Changes in Slurm 15.08.10
 ===========================
