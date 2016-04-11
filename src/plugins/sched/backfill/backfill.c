@@ -872,7 +872,7 @@ static int _attempt_backfill(void)
 	node_space_map_t *node_space;
 	struct timeval bf_time1, bf_time2;
 	int rc = 0;
-	int job_test_count = 0, pend_time;
+	int job_test_count = 0, test_time_count = 0, pend_time;
 	uint32_t *uid = NULL, nuser = 0, bf_parts = 0, *bf_part_jobs = NULL;
 	uint16_t *njobs = NULL;
 	bool already_counted;
@@ -996,8 +996,8 @@ static int _attempt_backfill(void)
 		    (_delta_tv(&start_tv) >= sched_timeout)) {
 			if (debug_flags & DEBUG_FLAG_BACKFILL) {
 				END_TIMER;
-				info("backfill: completed yielding locks "
-				     "after testing %u(%d) jobs, %s",
+				info("backfill: yielding locks after testing "
+				     "%u(%d) jobs, %s",
 				     slurmctld_diag_stats.bf_last_depth,
 				     job_test_count, TIME_STR);
 			}
@@ -1019,6 +1019,7 @@ static int _attempt_backfill(void)
 			sched_start = time(NULL);
 			gettimeofday(&start_tv, NULL);
 			job_test_count = 0;
+			test_time_count = 0;
 			START_TIMER;
 		}
 
@@ -1307,6 +1308,7 @@ next_task:
 			_set_job_time_limit(job_ptr, orig_time_limit);
 			break;
 		}
+		test_time_count++;
 		if (((defer_rpc_cnt > 0) &&
 		     (slurmctld_config.server_thread_count >= defer_rpc_cnt)) ||
 		    (_delta_tv(&start_tv) >= sched_timeout)) {
@@ -1315,10 +1317,10 @@ next_task:
 			_set_job_time_limit(job_ptr, orig_time_limit);
 			if (debug_flags & DEBUG_FLAG_BACKFILL) {
 				END_TIMER;
-				info("backfill: completed yielding locks "
-				     "after testing %u(%d) jobs, %s",
+				info("backfill: yielding locks after testing "
+				     "%u(%d) jobs tested, %u time slots, %s",
 				     slurmctld_diag_stats.bf_last_depth,
-				     job_test_count, TIME_STR);
+				     job_test_count, test_time_count, TIME_STR);
 			}
 			if ((_yield_locks(yield_sleep) && !backfill_continue) ||
 			    (slurmctld_conf.last_update != config_update) ||
@@ -1352,6 +1354,7 @@ next_task:
 			sched_start = time(NULL);
 			gettimeofday(&start_tv, NULL);
 			job_test_count = 1;
+			test_time_count = 0;
 			START_TIMER;
 		}
 

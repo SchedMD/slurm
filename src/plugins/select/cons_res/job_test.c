@@ -913,6 +913,7 @@ bitstr_t *_make_core_bitmap(bitstr_t *node_map, uint16_t core_spec)
 {
 	uint32_t n, c, nodes, size;
 	int spec_cores, res_core, res_sock, res_off;
+	int n_first, n_last;
 	uint32_t coff;
 	uint16_t i;
 	struct node_record *node_ptr;
@@ -925,8 +926,12 @@ bitstr_t *_make_core_bitmap(bitstr_t *node_map, uint16_t core_spec)
 	    (core_spec & CORE_SPEC_THREAD))	/* Reserving threads */
 		core_spec = (uint16_t) NO_VAL;	/* Don't remove cores */
 
-	nodes = bit_size(node_map);
-	for (n = 0; n < nodes; n++) {
+	n_first = bit_ffs(node_map);
+	if (n_first == -1)
+		n_last = -2;
+	else
+		n_last = bit_fls(node_map);
+	for (n = n_first; n <= n_last; n++) {
 		if (!bit_test(node_map, n))
 			continue;
 		c    = cr_get_coremap_offset(n);

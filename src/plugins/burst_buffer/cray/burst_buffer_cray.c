@@ -3473,9 +3473,9 @@ static void *_start_pre_run(void *x)
 		}
 		_queue_teardown(pre_run_args->job_id, pre_run_args->user_id,
 				true);
-	} else {
-		prolog_running_decr(job_ptr);
 	}
+	if (job_ptr)
+		prolog_running_decr(job_ptr);
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 	if (run_kill_job)
 		_kill_job(job_ptr);

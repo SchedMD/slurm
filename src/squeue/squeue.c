@@ -60,9 +60,9 @@
 struct squeue_parameters params;
 int max_line_size;
 
-/************
- * Funtions *
- ************/
+/*************
+ * Functions *
+ *************/
 static int  _get_info(bool clear_old);
 static int  _get_window_width( void );
 static void _print_date( void );

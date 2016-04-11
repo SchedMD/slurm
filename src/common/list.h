@@ -296,6 +296,12 @@ void * list_next (ListIterator i);
  *  Example: i=list_iterator_create(i); while ((x=list_next(i))) {...}
  */
 
+void * list_peek_next (ListIterator i);
+/*
+ *  Returns a ptr to the next item's data WITHOUT advancing the pointer,
+ *    or NULL once the end of the list is reached.
+ */
+
 void * list_insert (ListIterator i, void *x);
 /*
  *  Inserts data [x] immediately before the last item returned via list

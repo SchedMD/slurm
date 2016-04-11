@@ -67,9 +67,9 @@ static pthread_mutex_t sinfo_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  sinfo_cnt_cond  = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t sinfo_list_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-/************
- * Funtions *
- ************/
+/*************
+ * Functions *
+ *************/
 static int  _bg_report(block_info_msg_t *block_ptr);
 void *      _build_part_info(void *args);
 static int  _build_sinfo_data(List sinfo_list,
