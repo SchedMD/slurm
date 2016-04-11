@@ -392,7 +392,10 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		type = "name";
 		break;
 	case SORTID_NODE_CNT:
-		type = "Node Count";
+		if (cluster_flags & CLUSTER_FLAG_BG)
+			type = "Midplane Count";
+		else
+			type = "Node Count";
 		block_inx = 0;
 		tmp_text = xstrdup(new_text);
 		tok = strtok_r(tmp_text, ",", &last);
@@ -416,7 +419,10 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		break;
 	case SORTID_NODELIST:
 		resv_msg->node_list = xstrdup(new_text);
-		type = "node list";
+		if (cluster_flags & CLUSTER_FLAG_BG)
+			type = "Midplane List";
+		else
+			type = "Node List";
 		break;
 	case SORTID_PARTITION:
 		resv_msg->partition = xstrdup(new_text);
