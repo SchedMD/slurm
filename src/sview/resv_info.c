@@ -321,12 +321,14 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 				 int column)
 {
 	char *type = "", *temp_str;
-	char *tmp_text, *last = NULL, *tok, *core_cnt = NULL;
+	char *tmp_text, *last = NULL, *tok;
 	int block_inx, temp_int = 0;
 	uint32_t f;
 
 	/* need to clear global_edit_error here (just in case) */
 	global_edit_error = 0;
+	if (global_edit_error_msg)
+		g_free(global_edit_error_msg);
 
 	if (!resv_msg)
 		return NULL;
@@ -348,13 +350,16 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		type = "burst_buffer";
 		break;
         case SORTID_CORE_CNT:
-                type = "core count";
-		core_cnt = xstrdup(new_text);
-                if (_parse_resv_core_cnt(resv_msg, core_cnt) == SLURM_ERROR) {
-			xfree(core_cnt);
+		if (cluster_flags & CLUSTER_FLAG_BG)
+			type = "Cnode Count";
+		else
+			type = "Core Count";
+                if (_parse_resv_core_cnt(resv_msg, new_text) == SLURM_ERROR) {
+			global_edit_error_msg = g_strdup_printf(
+				"Can't use %s when system "
+				"is not running cons_res select plugin", type);
 			goto return_error;
                 }
-		xfree(core_cnt);
                 break;
 	case SORTID_DURATION:
 		temp_int = time_str2mins((char *)new_text);
@@ -502,9 +507,7 @@ static gboolean _admin_focus_out_resv(GtkEntry *entry,
 		const char *name = gtk_entry_get_text(entry);
 		type -= DEFAULT_ENTRY_LENGTH;
 		col_name = _set_resv_msg(resv_msg, name, type);
-		if (global_edit_error) {
-			if (global_edit_error_msg)
-				g_free(global_edit_error_msg);
+		if (global_edit_error && !global_edit_error_msg) {
 			global_edit_error_msg = g_strdup_printf(
 				"Reservation %s %s can't be set to %s",
 				resv_msg->name,
@@ -1709,7 +1712,13 @@ static void _admin_resv(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 			if (got_edit_signal)
 				goto end_it;
 
-			if (!global_send_update_msg) {
+			if (global_edit_error) {
+				temp = g_strdup_printf(
+					"Something was wrong with the "
+					"values you wanted to change: %s",
+					global_edit_error_msg ?
+					global_edit_error_msg : "unknown");
+			} else if (!global_send_update_msg) {
 				temp = g_strdup_printf("No change detected.");
 			} else if (slurm_update_reservation(resv_msg)
 				   == SLURM_SUCCESS) {
