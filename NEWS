@@ -20,6 +20,7 @@ documents those changes that are of interest to users and administrators.
     scontrol, sinfo, squeue and sview.
  -- Add SLURM_UMASK environment variable to user job.
  -- knl_conf: Added new configuration parameter of CapmcPollFreq.
+ -- squeue: remove errant spaces in column formats for "squeue -o %all".
 
 * Changes in Slurm 16.05.0pre2
 ==============================
