@@ -543,7 +543,7 @@ extern int parse_format( char* format )
 		for (i = 'b'; i <= 'z'; i++)
 			xstrfmtcat(tmp_format, "|%c%c", '%', (char) i);
 		for (i = 'A'; i <= 'Z'; i++)
-			xstrfmtcat(tmp_format, "|%c%c ", '%', (char) i);
+			xstrfmtcat(tmp_format, "|%c%c", '%', (char) i);
 		format_all = true;
 	} else {
 		tmp_format = xstrdup(format);
