@@ -36,10 +36,10 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#define _GNU_SOURCE
 #include "src/scontrol/scontrol.h"
 #include "src/slurmctld/reservation.h"
 #include "src/common/proc_args.h"
+#include "src/common/slurm_strcasestr.h"
 
 /*
  *  _process_plus_minus is used to convert a string like
@@ -122,7 +122,7 @@ static int _parse_resv_core_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
 	int node_inx = 0;
 
 	type = slurm_get_select_type();
-	if (strcasestr(type, "cray")) {
+	if (slurm_strcasestr(type, "cray")) {
 		int param;
 		param = slurm_get_select_type_param();
 		if (! (param & CR_OTHER_CONS_RES)) {
@@ -133,7 +133,7 @@ static int _parse_resv_core_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
 			xfree(type);
 			return SLURM_ERROR;
 		}
-	} else if (strcasestr(type, "cons_res") == NULL) {
+	} else if (slurm_strcasestr(type, "cons_res") == NULL) {
 		error("CoreCnt or CPUCnt is only "
 		      "supported when "
 		      "SelectType includes "

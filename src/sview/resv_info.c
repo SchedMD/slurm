@@ -27,17 +27,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#define _GNU_SOURCE
 #include "src/common/uid.h"
 #include "src/sview/sview.h"
 #include "src/common/parse_time.h"
 #include "src/common/proc_args.h"
-#ifdef HAVE_STRING_H
-#  include <string.h>
-#endif
-#ifdef HAVE_STRINGS_H
-#  include <strings.h>
-#endif
+#include "src/common/slurm_strcasestr.h"
 
 #define _DEBUG 0
 
@@ -293,13 +287,13 @@ static int _parse_resv_core_cnt(resv_desc_msg_t *resv_msg_ptr, char *val)
         int node_inx = 0, param;
 
         type = slurm_get_select_type();
-        if (strcasestr(type, "cray")) {
+        if (slurm_strcasestr(type, "cray")) {
                 param = slurm_get_select_type_param();
                 if (!(param & CR_OTHER_CONS_RES)) {
                         xfree(type);
                         return SLURM_ERROR;
                 }
-        } else if (strcasestr(type, "cons_res") == NULL) {
+        } else if (slurm_strcasestr(type, "cons_res") == NULL) {
                 xfree(type);
                 return SLURM_ERROR;
         }
