@@ -461,9 +461,18 @@ extern int as_mysql_remove_resv(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	}
 
-	if (!resv->id || !resv->time_start || !resv->cluster) {
-		error("Need an id, start time, and cluster "
-		      "name to remove a reservation.");
+	if (!resv->id) {
+		error("An id is needed to remove a reservation.");
+		return SLURM_ERROR;
+	}
+
+	if (!resv->time_start) {
+		error("A start time is needed to remove a reservation.");
+		return SLURM_ERROR;
+	}
+
+	if (!resv->cluster || !resv->cluster[0]) {
+		error("A cluster name is needed to remove a reservation.");
 		return SLURM_ERROR;
 	}
 
