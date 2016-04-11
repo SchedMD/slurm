@@ -90,7 +90,7 @@ typedef enum slurm_socket_type {
  **  MIDDLE LAYER FUNCTIONS  **
  \*******************************/
 
-/* The must have funtions are required to implement a low level plugin
+/* The must have functions are required to implement a low level plugin
  * for the slurm protocol the general purpose functions just wrap
  * standard socket calls, so if the underlying layer implements a
  * socket like interface, it can be used as a low level transport
