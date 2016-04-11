@@ -927,7 +927,7 @@ extern void bb_sleep(bb_state_t *state_ptr, int add_secs)
 		pthread_cond_timedwait(&state_ptr->term_cond,
 				       &state_ptr->term_mutex, &ts);
 	}
-	pthread_mutex_unlock(&state_ptr->term_mutex);
+	slurm_mutex_unlock(&state_ptr->term_mutex);
 }
 
 
@@ -1081,7 +1081,7 @@ extern int bb_proc_count(void)
 
 	slurm_mutex_lock(&proc_count_mutex);
 	cnt = child_proc_count;
-	pthread_mutex_unlock(&proc_count_mutex);
+	slurm_mutex_unlock(&proc_count_mutex);
 
 	return cnt;
 }
@@ -1132,7 +1132,7 @@ extern char *bb_run_script(char *script_type, char *script_path,
 	}
 	slurm_mutex_lock(&proc_count_mutex);
 	child_proc_count++;
-	pthread_mutex_unlock(&proc_count_mutex);
+	slurm_mutex_unlock(&proc_count_mutex);
 	if ((cpid = fork()) == 0) {
 		int cc;
 
@@ -1169,7 +1169,7 @@ extern char *bb_run_script(char *script_type, char *script_path,
 		error("%s: fork(): %m", __func__);
 		slurm_mutex_lock(&proc_count_mutex);
 		child_proc_count--;
-		pthread_mutex_unlock(&proc_count_mutex);
+		slurm_mutex_unlock(&proc_count_mutex);
 	} else if (max_wait != -1) {
 		struct pollfd fds;
 		struct timeval tstart;
@@ -1231,7 +1231,7 @@ extern char *bb_run_script(char *script_type, char *script_path,
 		close(pfd[0]);
 		slurm_mutex_lock(&proc_count_mutex);
 		child_proc_count--;
-		pthread_mutex_unlock(&proc_count_mutex);
+		slurm_mutex_unlock(&proc_count_mutex);
 	} else {
 		waitpid(cpid, status, 0);
 	}
