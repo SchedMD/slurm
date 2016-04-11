@@ -59,6 +59,8 @@ const char *ccm_prolog_path;
 const char *ccm_epilog_path;
 ccm_config_t ccm_config;
 
+static char *_get_ccm_partition(ccm_config_t *ccm_config);
+static void _free_ccm_info(ccm_info_t *ccm_info);
 static int *_ccm_convert_nodelist(char *nodelist, int *node_cnt);
 static char *_ccm_create_nidlist_file(ccm_info_t *ccm_info);
 static char * _ccm_create_unique_file(char *uniqnm, int *fd,
@@ -71,7 +73,7 @@ static int _run_ccm_prolog_epilog(ccm_info_t *ccm_info, char *ccm_type,
  * Get the CCM configuration information.
  *
  */
-void _ccm_get_config()
+extern void ccm_get_config()
 {
 	char *err_msg = NULL, *ccm_env;
 
@@ -109,7 +111,7 @@ void _ccm_get_config()
  *
  * Upon success, returns NULL; otherwise, an error string is returned.
  */
-char *_get_ccm_partition(ccm_config_t *ccm_config)
+static char *_get_ccm_partition(ccm_config_t *ccm_config)
 {
 	FILE *fp;
 	size_t num_read, len;
@@ -215,7 +217,7 @@ static int _parse_ccm_config(char *entry, char **ccm_partition)
 /*
  * Free the malloc'd fields within a ccm_info structure.
  */
-static void free_ccm_info(ccm_info_t *ccm_info)
+static void _free_ccm_info(ccm_info_t *ccm_info)
 {
 	xfree(ccm_info->cpu_count_reps);
 	xfree(ccm_info->cpus_per_node);
@@ -392,7 +394,7 @@ static char *_ccm_create_nidlist_file(ccm_info_t *ccm_info)
  * activities.  This is only called if CCM is enabled and the batch job has
  * been identified as coming from a CCM partition.
  */
-void _spawn_ccm_thread(
+extern void spawn_ccm_thread(
 	void *obj_ptr, void *(*start_routine) (void *))
 {
 	pthread_attr_t attr_agent;
@@ -539,7 +541,7 @@ static int _run_ccm_prolog_epilog(ccm_info_t *ccm_info, char *ccm_type,
  * Check if this batch job is being started from a CCM partition.
  * Returns 1 if so, otherwise 0.
  */
-int _ccm_check_partitions(struct job_record *job_ptr)
+extern int ccm_check_partitions(struct job_record *job_ptr)
 {
 	int i, ccm_partition;
 	char *partition = NULL;
@@ -562,7 +564,7 @@ int _ccm_check_partitions(struct job_record *job_ptr)
  * CCM prolog activities.  If the CCM prolog fails, the job will be
  * killed.
  */
-void *_ccm_begin(void *args)
+extern void *ccm_begin(void *args)
 {
 	int i, j, num_ents, kill = 1;
 	size_t copysz;
@@ -661,7 +663,7 @@ void *_ccm_begin(void *args)
 		(void) job_signal(job_ptr->job_id, SIGKILL, 0, 0, false);
 	}
 	/* Free the malloc'd fields within this structure */
-	free_ccm_info(&ccm_info);
+	_free_ccm_info(&ccm_info);
 	return NULL;
 }
 
@@ -672,7 +674,7 @@ void *_ccm_begin(void *args)
  * to prevent bad interactions between the two.  Delay up to
  * CCM_MAX_EPILOG_DELAY seconds.
  */
-void *_ccm_fini(void *args)
+extern void *ccm_fini(void *args)
 {
 	int rc;
 	ccm_info_t ccm_info;
