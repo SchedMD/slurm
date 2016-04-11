@@ -788,7 +788,7 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 	struct node_record *node_ptr;
 	struct part_res_record *p_ptr;
 	List gres_list;
-	int i, n;
+	int i, i_first, i_last, n;
 	bitstr_t *core_bitmap;
 
 	if (!job || !job->core_bitmap) {
@@ -803,7 +803,12 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		_dump_job_res(job);
 
-	for (i = 0, n = -1; i < select_node_cnt; i++) {
+	i_first = bit_ffs(job->node_bitmap);
+	if (i_first == -1)
+		i_last = -2;
+	else
+		i_last = bit_fls(job->node_bitmap);
+	for (i = i_first, n = -1; i <= i_last; i++) {
 		if (!bit_test(job->node_bitmap, i))
 			continue;
 		n++;
@@ -882,7 +887,7 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 			/* No row available to record this job */
 		}
 		/* update the node state */
-		for (i = 0, n = -1; i < select_node_cnt; i++) {
+		for (i = i_first, n = -1; i <= i_last; i++) {
 			if (bit_test(job->node_bitmap, i)) {
 				n++;
 				if (job->cpus[n] == 0)
@@ -1249,16 +1254,14 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 				break;
 			}
 		}
-
 		if (n) {
 			/* job was found and removed, so refresh the bitmaps */
 			_build_row_bitmaps(p_ptr, job_ptr);
-
 			/* Adjust the node_state of all nodes affected by
 			 * the removal of this job. If all cores are now
 			 * available, set node_state = NODE_CR_AVAILABLE
 			 */
-			for (i = 0, n = -1; i < select_node_cnt; i++) {
+			for (i = first_bit, n = -1; i <= last_bit; i++) {
 				if (bit_test(job->node_bitmap, i) == 0)
 					continue;
 				n++;
@@ -1855,7 +1858,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			struct job_record *first_job_ptr = NULL;
 			struct job_record *last_job_ptr = NULL;
 			struct job_record *next_job_ptr = NULL;
-			int overlap;
+			int overlap, rm_job_cnt = 0;
 			while (true) {
 				tmp_job_ptr = list_next(job_iterator);
 				if (!tmp_job_ptr) {
@@ -1874,6 +1877,8 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				last_job_ptr = tmp_job_ptr;
 				_rm_job_from_res(future_part, future_usage,
 						 tmp_job_ptr, 0);
+				if (rm_job_cnt++ > 20)
+					break;
 				next_job_ptr = list_peek_next(job_iterator);
 				if (!next_job_ptr) {
 					more_jobs = false;
@@ -2273,7 +2278,7 @@ extern int select_p_job_ready(struct job_record *job_ptr)
 		return READY_NODE_STATE;
 	i_last  = bit_fls(job_ptr->node_bitmap);
 
-	for (i=i_first; i<=i_last; i++) {
+	for (i = i_first; i <= i_last; i++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
 		node_ptr = node_record_table_ptr + i;
@@ -2768,8 +2773,9 @@ extern int select_p_reconfigure(void)
 /* Adding a filter for setting cores based on avail bitmap */
 bitstr_t *_make_core_bitmap_filtered(bitstr_t *node_map, int filter)
 {
-	uint32_t n, c, nodes, size;
+	uint32_t c, size;
 	uint32_t coff;
+	int n, n_first, n_last, nodes;
 
 	nodes = bit_size(node_map);
 	size = cr_get_coremap_offset(nodes);
@@ -2780,11 +2786,15 @@ bitstr_t *_make_core_bitmap_filtered(bitstr_t *node_map, int filter)
 	if (!filter)
 		return core_map;
 
-	nodes = bit_size(node_map);
-	for (n = 0; n < nodes; n++) {
+	n_first = bit_ffs(node_map);
+	if (n_first == -1)
+		n_last = -2;
+	else
+		n_last = bit_fls(node_map);
+	for (n = n_first; n <= n_last; n++) {
 		if (bit_test(node_map, n)) {
 			c = cr_get_coremap_offset(n);
-			coff = cr_get_coremap_offset(n+1);
+			coff = cr_get_coremap_offset(n + 1);
 			while (c < coff) {
 				bit_set(core_map, c++);
 			}
