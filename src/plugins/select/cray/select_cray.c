@@ -37,19 +37,6 @@
 
 #define _GNU_SOURCE 1
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#  if HAVE_STDINT_H
-#    include <stdint.h>
-#  endif
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  endif
-#  if WITH_PTHREADS
-#    include <pthread.h>
-#  endif
-#endif
-
 #include <stdio.h>
 #include <poll.h>
 #include <sys/types.h>
@@ -63,6 +50,7 @@
 #include "src/slurmctld/burst_buffer.h"
 #include "src/slurmctld/locks.h"
 #include "other_select.h"
+#include "ccm.h"
 
 #ifdef HAVE_NATIVE_CRAY
 #include "alpscomm_sn.h"
@@ -626,21 +614,21 @@ static void _initialize_event(alpsc_ev_app_t *event,
  */
 static void _copy_event(alpsc_ev_app_t *dest, alpsc_ev_app_t *src)
 {
-        dest->apid = src->apid;
-        dest->uid = src->uid;
-        dest->app_name = xstrdup(src->app_name);
-        dest->batch_id = xstrdup(src->batch_id);
-        dest->state = src->state;
-        if (src->num_nodes > 0 && src->nodes != NULL) {
-                dest->nodes = xmalloc(src->num_nodes * sizeof(int32_t));
-                memcpy(dest->nodes, src->nodes,
+	dest->apid = src->apid;
+	dest->uid = src->uid;
+	dest->app_name = xstrdup(src->app_name);
+	dest->batch_id = xstrdup(src->batch_id);
+	dest->state = src->state;
+	if (src->num_nodes > 0 && src->nodes != NULL) {
+		dest->nodes = xmalloc(src->num_nodes * sizeof(int32_t));
+		memcpy(dest->nodes, src->nodes,
 		       src->num_nodes * sizeof(int32_t));
-                dest->num_nodes = src->num_nodes;
-        } else {
-                dest->nodes = NULL;
-                dest->num_nodes = 0;
-        }
-        return;
+		dest->num_nodes = src->num_nodes;
+	} else {
+		dest->nodes = NULL;
+		dest->num_nodes = 0;
+	}
+	return;
 }
 
 /*
@@ -1249,6 +1237,13 @@ extern int init ( void )
 		plugin_id = SELECT_PLUGIN_CRAY_CONS_RES;
 	debug_flags = slurm_get_debug_flags();
 
+#if defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
+	/* Read and store the CCM configured partition name(s). */
+	if (run_in_daemon("slurmctld")) {
+		/* Get any CCM configuration information */
+		_ccm_get_config();
+	}
+#endif
 	if (!slurmctld_primary && run_in_daemon("slurmctld")) {
 		START_TIMER;
 		if (slurmctld_config.scheduling_disabled) {
@@ -1494,7 +1489,7 @@ extern int select_p_state_restore(char *dir_name)
 			for (j=0; j<blade_cnt; j++) {
 				if (blade_info.id == blade_array[j].id) {
 					/* blade_array[j].job_cnt = */
-					/* 	blade_info.job_cnt; */
+					/*	blade_info.job_cnt; */
 					if (!bit_equal(blade_array[j].
 						       node_bitmap,
 						       blade_info.node_bitmap))
@@ -1879,13 +1874,52 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 	/* xfree(tmp3); */
 	slurm_mutex_unlock(&blade_mutex);
 
+#if defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
+	if (ccm_config.ccm_enabled) {
+		/*
+		 * Create a thread to do setup activity before running the
+		 * CCM prolog for a CCM partition.
+		 */
+		if (_ccm_check_partitions(job_ptr)) {
+			if (job_ptr->details == NULL) {
+				/* This info is required; abort the launch */
+				CRAY_ERR("CCM prolog missing job details, "
+					"job %u killed", job_ptr->job_id);
+				srun_user_message(job_ptr,
+				      "CCM prolog missing job details, killed");
+				(void) job_signal(job_ptr->job_id, SIGKILL, 0,
+					0, false);
+			} else {
+				/* Delay job launch until CCM prolog is done */
+				debug("CCM job %u increment prolog_running, "
+					"current %d", job_ptr->job_id,
+					job_ptr->details->prolog_running);
+				job_ptr->details->prolog_running++;
+				/* Cleared in prolog_running_decr() */
+				debug("CCM job %u setting JOB_CONFIGURING",
+					job_ptr->job_id);
+				job_ptr->job_state |= JOB_CONFIGURING;
+				_spawn_ccm_thread(job_ptr, _ccm_begin);
+			}
+		}
+	}
+#endif
 	return other_job_begin(job_ptr);
 }
 
 extern int select_p_job_ready(struct job_record *job_ptr)
 {
 	xassert(job_ptr);
-
+#if defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
+	if (_ccm_check_partitions(job_ptr)) {
+		/* Delay CCM job launch until CCM prolog is done */
+		if (IS_JOB_CONFIGURING(job_ptr)) {
+			debug("CCM job %u job configuring set; job not ready",
+				job_ptr->job_id);
+			return READY_JOB_ERROR;
+		}
+	}
+#endif
 	return other_job_ready(job_ptr);
 }
 
@@ -1917,7 +1951,14 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 {
 	select_jobinfo_t *jobinfo = job_ptr->select_jobinfo->data;
 
-
+#if defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
+	/* Create a thread to run the CCM epilog for a CCM partition */
+	if (ccm_config.ccm_enabled) {
+		if (_ccm_check_partitions(job_ptr)) {
+			_spawn_ccm_thread(job_ptr, _ccm_fini);
+		}
+	}
+#endif
 	if (slurmctld_conf.select_type_param & CR_NHC_NO) {
 		debug3("NHC_No set, not running NHC after allocations");
 		other_job_fini(job_ptr);
