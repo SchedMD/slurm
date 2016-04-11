@@ -10,6 +10,8 @@ documents those changes that are of interest to users and administrators.
     jobs.
  -- Reset job's prolog_running counter on slurmctld restart or reconfigure.
  -- burst_buffer/cray - Update job's prolog_running counter if pre_run fails.
+ -- MYSQL - Make the error message more specific when removing a reservation
+    and it doesn't meet basic requirements.
 
 * Changes in Slurm 15.08.10
 ===========================
