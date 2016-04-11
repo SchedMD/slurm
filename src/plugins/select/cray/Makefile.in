@@ -174,7 +174,7 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 select_cray_la_DEPENDENCIES = ../other/libother_select.la
-am_select_cray_la_OBJECTS = select_cray.lo
+am_select_cray_la_OBJECTS = ccm.lo select_cray.lo
 select_cray_la_OBJECTS = $(am_select_cray_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -509,7 +509,7 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common \
 pkglib_LTLIBRARIES = select_cray.la
 
 # Cray node selection plugin.
-select_cray_la_SOURCES = select_cray.c
+select_cray_la_SOURCES = ccm.c ccm.h select_cray.c
 select_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(CRAY_SELECT_LDFLAGS)
 select_cray_la_LIBADD = ../other/libother_select.la
 all: all-am
@@ -590,6 +590,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ccm.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/select_cray.Plo@am__quote@
 
 .c.o:
