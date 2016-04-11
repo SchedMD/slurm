@@ -245,7 +245,7 @@ static uint64_t debug_flags = 0;
  */
 const char plugin_name[]	= "Cray node selection plugin";
 const char plugin_type[]	= "select/cray";
-uint32_t plugin_id		= 107;
+uint32_t plugin_id		= SELECT_PLUGIN_CRAY_LINEAR;
 const uint32_t plugin_version	= SLURM_VERSION_NUMBER;
 
 extern int select_p_select_jobinfo_free(select_jobinfo_t *jobinfo);
@@ -1246,7 +1246,7 @@ extern int init ( void )
 	 */
 	uint16_t select_type_param = slurm_get_select_type_param();
 	if (select_type_param & CR_OTHER_CONS_RES)
-		plugin_id = 108;
+		plugin_id = SELECT_PLUGIN_CRAY_CONS_RES;
 	debug_flags = slurm_get_debug_flags();
 
 	if (!slurmctld_primary && run_in_daemon("slurmctld")) {

@@ -117,7 +117,7 @@ List assoc_mgr_qos_list = NULL;
  */
 const char plugin_name[]       	= "BlueGene node selection plugin";
 const char plugin_type[]       	= "select/bluegene";
-const uint32_t plugin_id	= 100;
+const uint32_t plugin_id	= SELECT_PLUGIN_BLUEGENE;
 const uint32_t plugin_version	= SLURM_VERSION_NUMBER;
 
 /* Global variables */

@@ -169,7 +169,7 @@ uint32_t *cr_node_cores_offset;
  */
 const char plugin_name[] = "Consumable Resources (CR) Node Selection plugin";
 const char plugin_type[] = "select/cons_res";
-const uint32_t plugin_id      = 101;
+const uint32_t plugin_id      = SELECT_PLUGIN_CONS_RES;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 const uint32_t pstate_version = 7;	/* version control on saved state */
 
