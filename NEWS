@@ -186,6 +186,8 @@ documents those changes that are of interest to users and administrators.
  -- burst_buffer/cray - Update job's prolog_running counter if pre_run fails.
  -- MYSQL - Make the error message more specific when removing a reservation
     and it doesn't meet basic requirements.
+ -- burst_buffer/cray - Fix for script creating or deleting persistent buffer
+    would fail "paths" operation and hold the job.
 
 * Changes in Slurm 15.08.10
 ===========================

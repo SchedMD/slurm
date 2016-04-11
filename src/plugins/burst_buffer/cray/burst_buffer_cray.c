@@ -3341,15 +3341,12 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 		info("%s: paths ran for %s", __func__, TIME_STR);
 	_log_script_argv(script_argv, resp_msg);
 #if 1
-	//FIXME: Cray API returning valid response, but exit 1 in some cases
+	//FIXME: Cray API returning "job_file_valid True" but exit 1 in some cases
 	if ((!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) &&
-	    (resp_msg && !strncmp(resp_msg, "job_file_valid True", 19))) {
-		error("%s: paths for job %u status:%u response:%s",
-		      __func__, job_ptr->job_id, status, resp_msg);
-		_update_job_env(job_ptr, path_file);
-	} else
-#endif
+	    (!resp_msg || strncmp(resp_msg, "job_file_valid True", 19))) {
+#else
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+#endif
 		error("%s: paths for job %u status:%u response:%s",
 		      __func__, job_ptr->job_id, status, resp_msg);
 		rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
