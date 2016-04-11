@@ -638,7 +638,7 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 		if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
 			/* memory is per-cpu */
 			if (!(cr_type & CR_CPU) &&
-			    job_ptr->details && job_ptr->details->mc_ptr &&
+			    job_ptr->details->mc_ptr &&
 			    job_ptr->details->mc_ptr->ntasks_per_core == 1 &&
 			    job_ptr->details->cpus_per_task == 1) {
 				/* In this scenario, cpus represents cores and

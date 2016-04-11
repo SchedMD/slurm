@@ -130,14 +130,14 @@ extern int as_mysql_fix_lost_jobs(mysql_conn_t *mysql_conn, uint32_t uid,
 	mysql_db_query(mysql_conn, query);
 	xfree(query);
 	xfree(job_ids);
-	if (rc != SLURM_SUCCESS) {
-		error("Failed to fix lost jobs");
-		return SLURM_ERROR;
-	}
 
 	/* Set rollup to the the last day of the previous month of the first
 	 * lost job */
 	rc = _first_job_roll_up(mysql_conn, first_job->start);
+	if (rc != SLURM_SUCCESS) {
+		error("Failed to fix lost jobs");
+		return SLURM_ERROR;
+	}
 
 	return rc;
 }

@@ -5741,7 +5741,7 @@ gids_cache_purge(void)
 	int i;
 	gids_cache_t *p, *q;
 
-	pthread_mutex_lock(&gids_mutex);
+	slurm_mutex_lock(&gids_mutex);
 	for (i=0; i<GIDS_HASH_LEN; i++) {
 		p = gids_hashtbl[i];
 		while (p) {
@@ -5751,7 +5751,7 @@ gids_cache_purge(void)
 		}
 		gids_hashtbl[i] = NULL;
 	}
-	pthread_mutex_unlock(&gids_mutex);
+	slurm_mutex_unlock(&gids_mutex);
 }
 
 static void
@@ -5779,7 +5779,7 @@ _gids_cache_lookup(char *user, gid_t gid)
 	gids_t *ret_gids = NULL;
 
 	idx = _gids_hashtbl_idx(user);
-	pthread_mutex_lock(&gids_mutex);
+	slurm_mutex_lock(&gids_mutex);
 	p = gids_hashtbl[idx];
 	while (p) {
 		if (xstrcmp(p->user, user) == 0 && p->gid == gid) {
@@ -5819,7 +5819,7 @@ _gids_cache_lookup(char *user, gid_t gid)
 		ret_gids = _gids_dup(gids);
 	}
 done:
-	pthread_mutex_unlock(&gids_mutex);
+	slurm_mutex_unlock(&gids_mutex);
 	return ret_gids;
 }
 
