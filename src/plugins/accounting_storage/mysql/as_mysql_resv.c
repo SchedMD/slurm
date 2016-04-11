@@ -454,16 +454,16 @@ extern int as_mysql_remove_resv(mysql_conn_t *mysql_conn,
 				slurmdb_reservation_rec_t *resv)
 {
 	int rc = SLURM_SUCCESS;
-	char *query = NULL;//, *tmp_extra = NULL;
+	char *query = NULL;
 
 	if (!resv) {
-		error("No reservation was given to edit");
+		error("No reservation was given to remove");
 		return SLURM_ERROR;
 	}
 
 	if (!resv->id || !resv->time_start || !resv->cluster) {
-		error("We need an id, start time, and cluster "
-		      "name to edit a reservation.");
+		error("Need an id, start time, and cluster "
+		      "name to remove a reservation.");
 		return SLURM_ERROR;
 	}
 
