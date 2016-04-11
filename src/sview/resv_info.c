@@ -27,10 +27,17 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#define _GNU_SOURCE
 #include "src/common/uid.h"
 #include "src/sview/sview.h"
 #include "src/common/parse_time.h"
 #include "src/common/proc_args.h"
+#ifdef HAVE_STRING_H
+#  include <string.h>
+#endif
+#ifdef HAVE_STRINGS_H
+#  include <strings.h>
+#endif
 
 #define _DEBUG 0
 
@@ -277,13 +284,56 @@ static uint32_t _parse_watts(char * watts_str)
 	return watts_num;
 }
 
+/* Inspired by same func in src/scontrol/create_res.c, without error msgs */
+static int _parse_resv_core_cnt(resv_desc_msg_t *resv_msg_ptr, char *val)
+{
+
+        char *endptr = NULL, *core_cnt = NULL, *tok = NULL;
+	char *type = NULL, *ptrptr = NULL;
+        int node_inx = 0, param;
+
+        type = slurm_get_select_type();
+        if (strcasestr(type, "cray")) {
+                param = slurm_get_select_type_param();
+                if (!(param & CR_OTHER_CONS_RES)) {
+                        xfree(type);
+                        return SLURM_ERROR;
+                }
+        } else if (strcasestr(type, "cons_res") == NULL) {
+                xfree(type);
+                return SLURM_ERROR;
+        }
+
+        xfree(type);
+        core_cnt = xstrdup(val);
+        tok = strtok_r(core_cnt, ",", &ptrptr);
+        while (tok) {
+                xrealloc(resv_msg_ptr->core_cnt,
+                         sizeof(uint32_t) * (node_inx + 2));
+                resv_msg_ptr->core_cnt[node_inx] =
+                        strtol(tok, &endptr, 10);
+                if ((endptr == NULL) ||
+                    (endptr[0] != '\0') ||
+                    (tok[0] == '\0')) {
+                        xfree(core_cnt);
+                        return SLURM_ERROR;
+                }
+                node_inx++;
+                tok = strtok_r(NULL, ",", &ptrptr);
+        }
+
+        xfree(core_cnt);
+        return SLURM_SUCCESS;
+}
+
+
 /* don't free this char */
 static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 				 const char *new_text,
 				 int column)
 {
 	char *type = "", *temp_str;
-	char *tmp_text, *last = NULL, *tok;
+	char *tmp_text, *last = NULL, *tok, *core_cnt = NULL;
 	int block_inx, temp_int = 0;
 	uint32_t f;
 
@@ -309,6 +359,15 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		resv_msg->burst_buffer = xstrdup(new_text);
 		type = "burst_buffer";
 		break;
+        case SORTID_CORE_CNT:
+                type = "core count";
+		core_cnt = xstrdup(new_text);
+                if (_parse_resv_core_cnt(resv_msg, core_cnt) == SLURM_ERROR) {
+			xfree(core_cnt);
+			goto return_error;
+                }
+		xfree(core_cnt);
+                break;
 	case SORTID_DURATION:
 		temp_int = time_str2mins((char *)new_text);
 		if (temp_int <= 0)
