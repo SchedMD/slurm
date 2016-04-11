@@ -39,7 +39,6 @@
 #include "src/scontrol/scontrol.h"
 #include "src/slurmctld/reservation.h"
 #include "src/common/proc_args.h"
-#include "src/common/slurm_strcasestr.h"
 
 /*
  *  _process_plus_minus is used to convert a string like
@@ -118,31 +117,19 @@ static int _parse_resv_core_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
 {
 
 	char *endptr = NULL, *core_cnt, *tok, *ptrptr = NULL;
-	char *type;
 	int node_inx = 0;
+	uint32_t select_type = slurmdb_setup_plugin_id_select();
 
-	type = slurm_get_select_type();
-	if (slurm_strcasestr(type, "cray")) {
-		int param;
-		param = slurm_get_select_type_param();
-		if (! (param & CR_OTHER_CONS_RES)) {
-			error("CoreCnt or CPUCnt is only "
-			      "supported when "
-			      "SelectTypeParameters "
-			      "includes OTHER_CONS_RES");
-			xfree(type);
-			return SLURM_ERROR;
-		}
-	} else if (slurm_strcasestr(type, "cons_res") == NULL) {
+	/* only have this on a cons_res machine */
+	if (select_type != SELECT_PLUGIN_CONS_RES &&
+	    select_type != SELECT_PLUGIN_CRAY_CONS_RES) {
 		error("CoreCnt or CPUCnt is only "
-		      "supported when "
-		      "SelectType includes "
-		      "select/cons_res");
-		xfree(type);
+		      "supported when SelectType includes "
+		      "select/cons_res or SelectTypeParameters "
+		      "includes OTHER_CONS_RES on a Cray.");
 		return SLURM_ERROR;
 	}
 
-	xfree(type);
 	core_cnt = xstrdup(val);
 	tok = strtok_r(core_cnt, ",", &ptrptr);
 	while (tok) {

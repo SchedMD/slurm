@@ -279,24 +279,18 @@ static uint32_t _parse_watts(char * watts_str)
 }
 
 /* Inspired by same func in src/scontrol/create_res.c, without error msgs */
-static int _parse_resv_core_cnt(resv_desc_msg_t *resv_msg_ptr, char *val)
+static int _parse_resv_core_cnt(resv_desc_msg_t *resv_msg_ptr, const char *val)
 {
 
         char *endptr = NULL, *core_cnt = NULL, *tok = NULL;
 	char *type = NULL, *ptrptr = NULL;
-        int node_inx = 0, param;
+        int node_inx = 0;
+	uint32_t select_type = slurmdb_setup_plugin_id_select();
 
-        type = slurm_get_select_type();
-        if (slurm_strcasestr(type, "cray")) {
-                param = slurm_get_select_type_param();
-                if (!(param & CR_OTHER_CONS_RES)) {
-                        xfree(type);
-                        return SLURM_ERROR;
-                }
-        } else if (slurm_strcasestr(type, "cons_res") == NULL) {
-                xfree(type);
-                return SLURM_ERROR;
-        }
+	/* only have this on a cons_res machine */
+	if (select_type != SELECT_PLUGIN_CONS_RES &&
+	    select_type != SELECT_PLUGIN_CRAY_CONS_RES)
+		return SLURM_ERROR;
 
         xfree(type);
         core_cnt = xstrdup(val);
