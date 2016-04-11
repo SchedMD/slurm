@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix to setup logs for single-character program names correctly.
  -- Backfill scheduling performance enhancement with large number of running
     jobs.
+ -- Reset job's prolog_running counter on slurmctld restart or reconfigure.
 
 * Changes in Slurm 15.08.10
 ===========================

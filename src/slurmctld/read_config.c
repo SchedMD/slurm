@@ -1809,13 +1809,17 @@ static int _sync_nodes_to_jobs(void)
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (job_ptr->node_bitmap == NULL)
-			continue;
+		if (job_ptr->details && job_ptr->details->prolog_running &&
+		    !IS_JOB_CONFIGURING(job_ptr))
+			job_ptr->details->prolog_running = 0;
 
-		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_COMPLETING(job_ptr))
+		if (job_ptr->node_bitmap == NULL)
+			;
+		else if (IS_JOB_RUNNING(job_ptr) || IS_JOB_COMPLETING(job_ptr))
 			update_cnt += _sync_nodes_to_active_job(job_ptr);
 		else if (IS_JOB_SUSPENDED(job_ptr))
 			_sync_nodes_to_suspended_job(job_ptr);
+
 	}
 	list_iterator_destroy(job_iterator);
 
