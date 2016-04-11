@@ -88,8 +88,9 @@ expect {
 	-re "JobState=DEADLINE" {
 		exp_continue
 	}
-	-re "JobState=" {
-		send_user "\nFAILURE: invalid job state\n"
+	-re "JobState=($alpha)" {
+		set current_state $expect_out(1,string)
+		send_user "\nFAILURE: invalid job state ($current_state != DEADLINE)\n"
 		set exit_code 1
 		exp_continue
 	}
@@ -144,7 +145,7 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 
 if {$not_support != 0} {
 	send_user "\nWARNING: can not test without accounting enabled\n"
-	exit 0
+	exit $exit_code
 }
 if {$exit_code == 1} {
 	send_user "\nFAILURE: batch submitted with a deadline too short\n"
