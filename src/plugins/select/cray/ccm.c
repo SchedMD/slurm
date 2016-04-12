@@ -36,8 +36,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#define _GNU_SOURCE 1
-
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -46,11 +44,11 @@
 #include <fcntl.h>
 
 #include "src/common/pack.h"
+#include "src/common/slurm_strcasestr.h"
 #include "src/slurmctld/locks.h"
 #include "ccm.h"
 
 /* CCM use */
-#include <string.h>
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/srun_comm.h"
 
@@ -366,7 +364,7 @@ static int _run_ccm_prolog_epilog(ccm_info_t *ccm_info, char *ccm_type,
 	DEF_TIMERS;
 
 	START_TIMER;
-	if (strcasecmp(ccm_type, "prolog") == 0) {
+	if (!xstrcasecmp(ccm_type, "prolog")) {
 		nid_list_file = _ccm_create_nidlist_file(ccm_info);
 		if (nid_list_file == NULL) {
 			CRAY_ERR("CCM job %u unable to create nidlist file",
@@ -518,8 +516,7 @@ extern void spawn_ccm_thread(
 		CRAY_ERR("CCM job_id %u pthread_create error %m",
 			 job_ptr->job_id);
 		if (++retries > CCM_MAX_PTHREAD_RETRIES) {
-			if (strcasecmp((char *)start_routine,
-				       "_ccm_begin") == 0) {
+			if (!xstrcasecmp((char *)start_routine, "ccm_begin")) {
 				/* Decrement so job launch can continue */
 				debug("CCM job %u prolog_running_decr, cur %d",
 				      job_ptr->job_id,
@@ -546,10 +543,10 @@ extern int ccm_check_partitions(struct job_record *job_ptr)
 
 	ccm_partition = 0;
 	partition = job_ptr->partition;
-	debug2("CCM job %u _ccm_check_partitions partition %s",
+	debug2("CCM job %u ccm_check_partitions partition %s",
 	       job_ptr->job_id, partition);
 	for (i = 0; i < ccm_config.num_ccm_partitions; i++) {
-		if (!strcasecmp(partition, ccm_config.ccm_partition[i])) {
+		if (!xstrcasecmp(partition, ccm_config.ccm_partition[i])) {
 			ccm_partition = 1;
 			break;
 		}
@@ -649,7 +646,7 @@ extern void *ccm_begin(void *args)
 		snprintf(err_str_buf, sizeof(err_str_buf),
 			 "prolog failed");
 	}
-	debug("CCM _ccm_begin job %u prolog_running_decr, cur %d",
+	debug("CCM ccm_begin job %u prolog_running_decr, cur %d",
 	      ccm_info.job_id, job_ptr->details->prolog_running);
 	prolog_running_decr(job_ptr);
 	if (kill) {
