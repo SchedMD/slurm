@@ -215,7 +215,7 @@ extern int as_mysql_add_resv(mysql_conn_t *mysql_conn,
 		*query = NULL;
 
 	if (!resv) {
-		error("No reservation was given to edit");
+		error("No reservation was given to add.");
 		return SLURM_ERROR;
 	}
 

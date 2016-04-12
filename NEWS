@@ -17,6 +17,8 @@ documents those changes that are of interest to users and administrators.
  -- power/cray - Prevent possible divide by zero.
  -- power/cray - Fix bug introduced in 15.08.10 preventin operation in many
     cases.
+ -- Prevent deadlock for flow of data to the slurmdbd when sending reservation
+    that wasn't set up correctly.
 
 * Changes in Slurm 15.08.10
 ===========================
