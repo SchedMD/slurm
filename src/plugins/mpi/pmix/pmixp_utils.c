@@ -270,8 +270,8 @@ bool pmixp_fd_write_ready(int fd, int *shutdown)
 }
 
 int pmixp_stepd_send(char *nodelist, const char *address, char *data,
-		     uint32_t len, unsigned int start_delay, unsigned int retry_cnt,
-		     int silent)
+		     uint32_t len, unsigned int start_delay,
+		     unsigned int retry_cnt, int silent)
 {
 
 	int retry = 0, rc;
@@ -286,13 +286,13 @@ int pmixp_stepd_send(char *nodelist, const char *address, char *data,
 		rc = slurm_forward_data(
 			&copy_of_nodelist, (char *)address, len, data);
 
-		if (rc == SLURM_SUCCESS){
+		if (rc == SLURM_SUCCESS)
 			break;
-		}
+
 		retry++;
-		if (retry >= retry_cnt){
+		if (retry >= retry_cnt)
 			break;
-		}
+
 		/* wait with constantly increasing delay */
 		struct timespec ts =
 			{(delay / 1000), ((delay % 1000) * 1000000)};
