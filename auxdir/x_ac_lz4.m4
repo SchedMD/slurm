@@ -59,7 +59,7 @@ then
   fi
   AC_LANG_SAVE
   AC_LANG_C
-  AC_CHECK_LIB([lz4], [LZ4_compressBound], [ac_cv_lz4=yes], [ac_cv_lz4=no])
+  AC_CHECK_LIB([lz4], [LZ4_compress_destSize], [ac_cv_lz4=yes], [ac_cv_lz4=no])
   AC_CHECK_HEADER([lz4.h], [ac_cv_lz4_h=yes], [ac_cv_lz4_h=no])
   AC_LANG_RESTORE
 
