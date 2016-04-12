@@ -136,6 +136,7 @@ static char *capmc_path = NULL;
 static uint32_t cap_watts = DEFAULT_CAP_WATTS;
 static uint32_t set_watts = 0;
 static uint64_t debug_flag = 0;
+static char *full_nid_string = NULL;
 static uint32_t decrease_rate = DEFAULT_DECREASE_RATE;
 static uint32_t increase_rate = DEFAULT_INCREASE_RATE;
 static uint32_t job_level = NO_VAL;
@@ -153,6 +154,7 @@ static pthread_mutex_t term_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  term_cond = PTHREAD_COND_INITIALIZER;
 
 /*********************** local functions *********************/
+static void _build_full_nid_string(void);
 static void _clear_node_caps(void);
 static void _get_capabilities(void);
 static void _get_caps(void);
@@ -369,6 +371,7 @@ static void _load_config(void)
 	}
 
 	xfree(sched_params);
+	xfree(full_nid_string);
 	if (debug_flag & DEBUG_FLAG_POWER) {
 		char *level_str = "";
 		if (job_level == 0)
@@ -658,6 +661,45 @@ static void _json_parse_capabilities(json_object *jobj,
 	}
 }
 
+static void _build_full_nid_string(void)
+{
+	/* Read nodes */
+	slurmctld_lock_t read_node_lock = {
+		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
+	struct node_record *node_ptr;
+	hostset_t hs = NULL;
+	char *sep, *tmp_str;
+	int i, num_ent = 0;
+
+	if (full_nid_string)
+		return;
+
+	lock_slurmctld(read_node_lock);
+	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
+	     i++, node_ptr++) {
+		if (!hs)
+			hs = hostset_create(_node_name2nid(node_ptr->name));
+		else
+			hostset_insert(hs, _node_name2nid(node_ptr->name));
+		num_ent++;
+	}
+	unlock_slurmctld(read_node_lock);
+	if (!hs) {
+		error("%s: No nodes found", __func__);
+		return;
+	}
+	tmp_str = xmalloc(node_record_count * 6 + 2);
+	(void) hostset_ranged_string(hs, num_ent * 6, tmp_str);
+	hostset_destroy(hs);
+	if ((sep = strrchr(tmp_str, ']')))
+		sep[0] = '\0';
+	if (tmp_str[0] == '[')
+		full_nid_string = xstrdup(tmp_str + 1);
+	else
+		full_nid_string = xstrdup(tmp_str);
+	xfree(tmp_str);
+}
+
 static void _get_caps(void)
 {
 	/* Write nodes */
@@ -713,7 +755,7 @@ static void _get_caps(void)
 	for (i = 0; i < num_ent; i++) {
 		node_ptr = find_node_record2(ents[i].node_name[0]);
 		if (!node_ptr) {
-			debug("%s: Node %s not in Slurm config",
+			debug2("%s: Node %s not in Slurm config",
 			      __func__, ents[i].node_name[0]);
 		} else {
 			if (!node_ptr->power) {
@@ -722,7 +764,7 @@ static void _get_caps(void)
 			}
 			node_ptr->power->cap_watts = ents[i].cap_watts;
 		}
-		xfree(ents[i].node_name[0]);
+		xfree(ents[i].node_name[0]);   /* FUTURE: array of node names */
 		xfree(ents[i].node_name);
 	}
 	xfree(ents);
@@ -1020,20 +1062,28 @@ static void _get_node_energy_counter(void)
 	struct node_record *node_ptr;
 	DEF_TIMERS;
 
+	_build_full_nid_string();
+	if (!full_nid_string)
+		return;
+
 	script_argv[0] = capmc_path;
 	script_argv[1] = "get_node_energy_counter";
-	script_argv[2] = NULL;
+	script_argv[2] = "--nids";
+	script_argv[3] = full_nid_string;
+	script_argv[4] = NULL;
 
 	START_TIMER;
 	cmd_resp = power_run_script("capmc", capmc_path, script_argv,
 				    get_timeout, NULL, &status);
 	END_TIMER;
 	if (status != 0) {
-		error("%s: capmc %s: %s",  __func__, script_argv[1], cmd_resp);
+		error("%s: capmc %s %s %s: %s",  __func__,
+		      script_argv[1], script_argv[2], script_argv[3], cmd_resp);
 		xfree(cmd_resp);
 		return;
 	} else if (debug_flag & DEBUG_FLAG_POWER) {
-		info("%s: capmc %s %s",  __func__, script_argv[1], TIME_STR);
+		info("%s: capmc %s %s %s %s",  __func__,
+		     script_argv[1], script_argv[2], script_argv[3], TIME_STR);
 	}
 	if ((cmd_resp == NULL) || (cmd_resp[0] == '\0')) {
 		xfree(cmd_resp);
@@ -1698,6 +1748,7 @@ extern void fini(void)
 		pthread_join(power_thread, NULL);
 		power_thread = 0;
 		xfree(capmc_path);
+		xfree(full_nid_string);
 	}
 	slurm_mutex_unlock(&thread_flag_mutex);
 }
