@@ -1437,13 +1437,16 @@ static void _rebalance_node_power(void)
 	if ((alloc_power > cap_watts) || (node_power_needed > avail_power)) {
 		/* When CapWatts changes, we might need to lower nodes more
 		 * than the configured change rate specifications */
-		uint32_t red1 = 0, red2 = 0;
+		uint32_t red1 = 0, red2 = 0, node_num;
 		if (alloc_power > cap_watts)
 			red1 = alloc_power - cap_watts;
 		if (node_power_needed > avail_power)
 			red2 = node_power_needed - avail_power;
 		red1 = MAX(red1, red2);
-		red1 /= (node_power_lower_cnt + node_power_same_cnt);
+		node_num = node_power_lower_cnt + node_power_same_cnt;
+		if (node_num == 0)
+			node_num = node_record_count;
+		red1 /= node_num;
 		for (i = 0, node_ptr = node_record_table_ptr;
 		     i < node_record_count; i++, node_ptr++) {
 			if (!node_ptr->power || !node_ptr->power->new_cap_watts)
