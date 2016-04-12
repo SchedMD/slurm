@@ -80,15 +80,14 @@ static char *_get_ccm_partition(ccm_config_t *ccm_config)
 	FILE *fp;
 	size_t num_read, len;
 	char *entry = NULL, *err_mesg = NULL, extra[2];
-	char *ccm_file_name = "/etc/opt/cray/ccm/ccm.conf";
 	static char err_buf[256];
 	int i, num_ents = 0;
 
 	ccm_config->num_ccm_partitions = 0;
-	fp = fopen(ccm_file_name, "r");
+	fp = fopen(CCM_CONF_PATH, "r");
 	if (fp == NULL) {
 		snprintf(err_buf, sizeof(err_buf),
-			 "CCM unable to open %s, %m\n", ccm_file_name);
+			 "CCM unable to open %s, %m\n", CCM_CONF_PATH);
 		err_mesg = err_buf;
 		return err_mesg;
 	}
@@ -97,7 +96,7 @@ static char *_get_ccm_partition(ccm_config_t *ccm_config)
 			if (entry[num_read - 1] == '\n') {
 				entry[num_read - 1] = '\0';
 			}
-			if (strcasestr(entry, "CCM_QUEUES") == 0) {
+			if (slurm_strcasestr(entry, "CCM_QUEUES") == 0) {
 				continue;
 			}
 			/* Ignore a comment line */
@@ -109,7 +108,7 @@ static char *_get_ccm_partition(ccm_config_t *ccm_config)
 			if (num_ents <= 0) {
 				snprintf(err_buf, sizeof(err_buf),
 					 "CCM bad CCM_QUEUES %s in %s\n",
-					 entry, ccm_file_name);
+					 entry, CCM_CONF_PATH);
 				err_mesg = err_buf;
 				free(entry);
 				return err_mesg;

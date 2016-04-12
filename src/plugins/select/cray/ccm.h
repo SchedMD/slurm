@@ -67,6 +67,7 @@
 #define CCM_CRAY_UNIQUE_FILENAME  "/tmp/crayCCMXXXXXX"
 #define CCM_PROLOG_PATH		"/opt/cray/ccm/default/etc/ccm-prologue"
 #define CCM_EPILOG_PATH		"/opt/cray/ccm/default/etc/ccm-epilogue"
+#define CCM_CONF_PATH           "/etc/opt/cray/ccm/ccm.conf"
 
 typedef struct {
 	char *ccm_partition[CCM_PARTITION_MAX];
