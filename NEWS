@@ -188,6 +188,7 @@ documents those changes that are of interest to users and administrators.
     and it doesn't meet basic requirements.
  -- burst_buffer/cray - Fix for script creating or deleting persistent buffer
     would fail "paths" operation and hold the job.
+ -- power/cray - Prevent possible divide by zero.
 
 * Changes in Slurm 15.08.10
 ===========================
