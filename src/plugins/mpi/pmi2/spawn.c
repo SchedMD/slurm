@@ -356,7 +356,6 @@ spawn_resp_send_to_stepd(spawn_resp_t *resp, char *node)
 	Buf buf;
 	int rc;
 	uint16_t cmd;
-	hostlist_t hl;
 
 	buf = init_buf(1024);
 
@@ -364,11 +363,9 @@ spawn_resp_send_to_stepd(spawn_resp_t *resp, char *node)
 	pack16(cmd, buf);
 	spawn_resp_pack(resp, buf);
 
-	hl = hostlist_create(node);
-	rc = tree_msg_to_stepds(hl, 
+	rc = slurm_forward_data(&node, tree_sock_addr,
 				get_buf_offset(buf),
 				get_buf_data(buf));
-	hostlist_destroy(hl);
 	free_buf(buf);
 	return rc;
 }

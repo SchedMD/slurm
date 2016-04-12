@@ -686,58 +686,6 @@ rwfail:
 }
 
 extern int
-tree_msg_to_stepds(hostlist_t hl, uint32_t len, char *data)
-{
-	List ret_list = NULL;
-	int temp_rc = 0, rc = 0;
-	ret_data_info_t *ret_data_info = NULL;
-	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
-	forward_data_msg_t req;
-	char *nodelist = NULL;
-
-	slurm_msg_t_init(msg);
-	req.address = tree_sock_addr;
-	req.len = len;
-	req.data = data;
-
-	msg->msg_type = REQUEST_FORWARD_DATA;
-	msg->data = &req;
-
-	nodelist = hostlist_ranged_string_xmalloc(hl);
-
-	debug("tree_msg_to_stepds: send to %s", nodelist);
-
-	if ((ret_list = slurm_send_recv_msgs(nodelist, msg, 0, false))) {
-		while ((ret_data_info = list_pop(ret_list))) {
-			temp_rc = slurm_get_return_code(ret_data_info->type,
-							ret_data_info->data);
-			if (temp_rc){
-				rc = temp_rc;
-				/* This is retried outside of the function, so
-				 * don't note this as an error since it is
-				 * handled outside this function.
-				 */
-				debug("tree_msg_to_stepds: host=%s, rc = %d",
-				      ret_data_info->node_name, rc);
-			} else {
-				hostlist_delete_host(hl, ret_data_info->node_name);
-			}
-		}
-	} else {
-		error("tree_msg_to_stepds: no list was returned");
-		rc = SLURM_ERROR;
-	}
-
-	/* slurm_free_msg will try to free data which is on our stack,
-	 * so we need to NULL it out before it gets sent out.
-	 */
-	msg->data = NULL;
-	slurm_free_msg(msg);
-	xfree(nodelist);
-	return rc;
-}
-
-extern int
 tree_msg_to_spawned_sruns(uint32_t len, char *msg)
 {
 	int i = 0, rc = SLURM_SUCCESS, fd = -1, sent=0;
