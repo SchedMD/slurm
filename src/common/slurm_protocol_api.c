@@ -4639,45 +4639,70 @@ static void _print_data(char *data, int len)
 
 /*
  * slurm_forward_data - forward arbitrary data to unix domain sockets on nodes
- * IN nodelist: nodes to forward data to
+ * IN/OUT nodelist: Nodes to forward data to (if failure this list is changed to
+ *                  reflect the failed nodes).
  * IN address: address of unix domain socket
  * IN len: length of data
  * IN data: real data
  * RET: error code
  */
-extern int
-slurm_forward_data(char *nodelist, char *address, uint32_t len, char *data)
+extern int slurm_forward_data(
+	char **nodelist, char *address, uint32_t len, const char *data)
 {
 	List ret_list = NULL;
 	int temp_rc = 0, rc = 0;
 	ret_data_info_t *ret_data_info = NULL;
-	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
+	slurm_msg_t msg;
 	forward_data_msg_t req;
+	hostlist_t hl = NULL;
+	bool redo_nodelist = false;
+	slurm_msg_t_init(&msg);
 
-	slurm_msg_t_init(msg);
-
-	debug("slurm_forward_data: nodelist=%s, address=%s, len=%u",
-	      nodelist, address, len);
+	debug2("slurm_forward_data: nodelist=%s, address=%s, len=%u",
+	       *nodelist, address, len);
 	req.address = address;
 	req.len = len;
-	req.data = data;
+	req.data = (char *)data;
 
-	msg->msg_type = REQUEST_FORWARD_DATA;
-	msg->data = &req;
+	msg.msg_type = REQUEST_FORWARD_DATA;
+	msg.data = &req;
 
-	if ((ret_list = slurm_send_recv_msgs(nodelist, msg, 0, false))) {
+	if ((ret_list = slurm_send_recv_msgs(*nodelist, &msg, 0, false))) {
+		if (list_count(ret_list) > 1)
+			redo_nodelist = true;
+
 		while ((ret_data_info = list_pop(ret_list))) {
 			temp_rc = slurm_get_return_code(ret_data_info->type,
 							ret_data_info->data);
-			if (temp_rc)
+			if (temp_rc != SLURM_SUCCESS) {
 				rc = temp_rc;
+				if (redo_nodelist) {
+					if (!hl)
+						hl = hostlist_create(
+							ret_data_info->
+							node_name);
+					else
+						hostlist_push_host(
+							hl, ret_data_info->
+							node_name);
+				}
+			}
+			destroy_data_info(ret_data_info);
 		}
 	} else {
 		error("slurm_forward_data: no list was returned");
 		rc = SLURM_ERROR;
 	}
 
-	slurm_free_msg(msg);
+	if (hl) {
+		xfree(*nodelist);
+		hostlist_sort(hl);
+		*nodelist = hostlist_ranged_string_xmalloc(hl);
+		hostlist_destroy(hl);
+	}
+
+	FREE_NULL_LIST(ret_list);
+
 	return rc;
 }
 

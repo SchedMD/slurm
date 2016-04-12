@@ -1290,14 +1290,15 @@ extern int slurm_job_step_create (
 /* Should this be in <slurm/slurm.h> ? */
 /*
  * slurm_forward_data - forward arbitrary data to unix domain sockets on nodes
- * IN nodelist: nodes to forward data to
+ * IN/OUT nodelist: Nodes to forward data to (if failure this list is changed to
+ *                  reflect the failed nodes).
  * IN address: address of unix domain socket
  * IN len: length of data
  * IN data: real data
  * RET: error code
  */
-extern int slurm_forward_data(char *nodelist, char *address, uint32_t len,
-			      char *data);
+extern int slurm_forward_data(
+	char **nodelist, char *address, uint32_t len, const char *data);
 
 /*
  * slurm_setup_sockaddr - setup a sockaddr_in struct to be used for

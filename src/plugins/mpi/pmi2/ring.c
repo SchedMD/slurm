@@ -219,7 +219,7 @@ static int pmix_stepd_send(const char* buf, uint32_t size, int rank)
 	int retries = 0;
 	while (1) {
 		/* attempt to send message */
-		rc = slurm_forward_data(host, tree_sock_addr, size, (char*) buf);
+		rc = slurm_forward_data(&host, tree_sock_addr, size, buf);
 		if (rc == SLURM_SUCCESS) {
 			/* message sent successfully, we're done */
 			break;
