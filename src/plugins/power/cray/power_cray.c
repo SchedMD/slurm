@@ -305,7 +305,7 @@ static void _load_config(void)
 	if ((tmp_ptr = strstr(sched_params, "get_timeout="))) {
 		get_timeout = atoi(tmp_ptr + 12);
 		if (get_timeout < 1) {
-			error("PowerParameters: get_timeout=%u invalid",
+			error("PowerParameters: get_timeout=%d invalid",
 			      get_timeout);
 			get_timeout = DEFAULT_GET_TIMEOUT;
 		}
@@ -338,7 +338,7 @@ static void _load_config(void)
 	if ((tmp_ptr = strstr(sched_params, "set_timeout="))) {
 		set_timeout = atoi(tmp_ptr + 12);
 		if (set_timeout < 1) {
-			error("PowerParameters: set_timeout=%u invalid",
+			error("PowerParameters: set_timeout=%d invalid",
 			      set_timeout);
 			set_timeout = DEFAULT_SET_TIMEOUT;
 		}
