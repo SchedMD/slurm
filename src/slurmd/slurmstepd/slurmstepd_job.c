@@ -317,6 +317,11 @@ stepd_step_rec_create(launch_tasks_request_msg_t *msg, uint16_t protocol_version
 
 	job->eio     = eio_handle_create(0);
 	job->sruns   = list_create((ListDelF) _srun_info_destructor);
+
+	/* Based on my testing the next 3 lists here could use the
+	 * eio_obj_destroy, but if you do you can get an invalid read.  Since
+	 * these stay until the end of the job it isn't that big of a deal.
+	 */
 	job->clients = list_create(NULL); /* FIXME! Needs destructor */
 	job->stdout_eio_objs = list_create(NULL); /* FIXME! Needs destructor */
 	job->stderr_eio_objs = list_create(NULL); /* FIXME! Needs destructor */
@@ -576,7 +581,14 @@ stepd_step_rec_destroy(stepd_step_rec_t *job)
 
 	for (i = 0; i < job->node_tasks; i++)
 		_task_info_destroy(job->task[i], job->multi_prog);
+	eio_handle_destroy(job->eio);
 	FREE_NULL_LIST(job->sruns);
+	FREE_NULL_LIST(job->clients);
+	FREE_NULL_LIST(job->stdout_eio_objs);
+	FREE_NULL_LIST(job->stderr_eio_objs);
+	FREE_NULL_LIST(job->free_incoming);
+	FREE_NULL_LIST(job->free_outgoing);
+	FREE_NULL_LIST(job->outgoing_cache);
 	xfree(job->envtp);
 	xfree(job->node_name);
 	mpmd_free(job);

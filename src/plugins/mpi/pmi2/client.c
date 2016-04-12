@@ -186,6 +186,7 @@ client_req_free(client_req_t *req)
 {
 	if (req) {
 		xfree(req->buf);
+		xfree(req->pairs);
 		xfree(req);
 	}
 }

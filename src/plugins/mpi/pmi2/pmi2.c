@@ -252,6 +252,9 @@ _handle_ring(int fd, int lrank, client_req_t *req)
 
         rc = pmix_ring_in(ring_id, count, left, right);
 
+	xfree(left);
+	xfree(right);
+
         /* the repsonse is sent back to client from the pmix_ring_out call */
 
 	debug3("mpi/pmi2: out _handle_ring");
@@ -272,6 +275,8 @@ _handle_kvs_put(int fd, int lrank, client_req_t *req)
 
 	/* no need to add k-v to hash. just get it ready to be up-forward */
 	rc = temp_kvs_add(key, val);
+	xfree(key);
+	xfree(val);
 
 	resp = client_resp_new();
 	client_resp_append(resp, CMD_KEY"="KVSPUTRESP_CMD";" RC_KEY"=%d;", rc);
@@ -322,7 +327,7 @@ _handle_kvs_get(int fd, int lrank, client_req_t *req)
 {
 	int rc;
 	client_resp_t *resp;
-	char *key, *val;
+	char *key = NULL, *val;
 
 	debug3("mpi/pmi2: in _handle_kvs_get");
 
@@ -330,6 +335,7 @@ _handle_kvs_get(int fd, int lrank, client_req_t *req)
 	client_req_get_str(req, KEY_KEY, &key);
 
 	val = kvs_get(key);
+	xfree(key);
 
 	resp = client_resp_new();
 	if (val != NULL) {
@@ -352,7 +358,7 @@ _handle_info_getnodeattr(int fd, int lrank, client_req_t *req)
 {
 	int rc = 0;
 	client_resp_t *resp;
-	char *key, *val;
+	char *key = NULL, *val;
 	bool wait = false;
 
 	debug3("mpi/pmi2: in _handle_info_getnodeattr from lrank %d", lrank);
@@ -378,7 +384,7 @@ _handle_info_getnodeattr(int fd, int lrank, client_req_t *req)
 	} else {
 		rc = enqueue_nag_req(fd, lrank, key);
 	}
-
+	xfree(key);
 	debug3("mpi/pmi2: out _handle_info_getnodeattr");
 	return rc;
 }
@@ -398,8 +404,12 @@ _handle_info_putnodeattr(int fd, int lrank, client_req_t *req)
 
 	rc = node_attr_put(key, val);
 
+	xfree(key);
+	xfree(val);
+
 	resp = client_resp_new();
-	client_resp_append(resp, CMD_KEY"="PUTNODEATTRRESP_CMD";" RC_KEY"=%d;", rc);
+	client_resp_append(resp,
+			   CMD_KEY"="PUTNODEATTRRESP_CMD";" RC_KEY"=%d;", rc);
 	rc = client_resp_send(resp, fd);
 	client_resp_free(resp);
 
@@ -410,7 +420,7 @@ _handle_info_putnodeattr(int fd, int lrank, client_req_t *req)
 static int
 _handle_info_getjobattr(int fd, int lrank, client_req_t *req)
 {
-	char *key, *val;
+	char *key = NULL, *val;
 	client_resp_t *resp;
 	int rc;
 
@@ -419,11 +429,13 @@ _handle_info_getjobattr(int fd, int lrank, client_req_t *req)
 	client_req_get_str(req, KEY_KEY, &key);
 
 	val = job_attr_get(key);
+	xfree(key);
 
 	resp = client_resp_new();
 	client_resp_append(resp, CMD_KEY"="GETJOBATTRRESP_CMD";" RC_KEY"=0;");
 	if (val != NULL) {
-		client_resp_append(resp, FOUND_KEY"="TRUE_VAL";" VALUE_KEY"=%s;",
+		client_resp_append(resp,
+				   FOUND_KEY"="TRUE_VAL";" VALUE_KEY"=%s;",
 				   val);
 	} else {
 		client_resp_append(resp, FOUND_KEY"="FALSE_VAL";");
@@ -448,7 +460,7 @@ _handle_name_publish(int fd, int lrank, client_req_t *req)
 	client_req_parse_body(req);
 	client_req_get_str(req, NAME_KEY, &name);
 	client_req_get_str(req, PORT_KEY, &port);
-	
+
 	rc = name_publish_up(name, port);
 	xfree(name);
 	xfree(port);
@@ -474,7 +486,7 @@ _handle_name_unpublish(int fd, int lrank, client_req_t *req)
 
 	client_req_parse_body(req);
 	client_req_get_str(req, NAME_KEY, &name);
-	
+
 	rc = name_unpublish_up(name);
 	xfree(name);
 
