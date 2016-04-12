@@ -13170,6 +13170,7 @@ extern void job_completion_logger(struct job_record *job_ptr, bool requeue)
 
 	if (!IS_JOB_RESIZING(job_ptr) &&
 	    ((job_ptr->array_task_id == NO_VAL) ||
+	     (job_ptr->mail_type & MAIL_ARRAY_TASKS) ||
 	     test_job_array_finished(job_ptr->array_job_id))) {
 		/* Remove configuring state just to make sure it isn't there
 		 * since it will throw off displays of the job. */

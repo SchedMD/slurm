@@ -1757,7 +1757,8 @@ extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type)
 		mi->user_name = xstrdup(job_ptr->mail_user);
 
 	/* Use job array master record, if available */
-	if ((job_ptr->array_task_id != NO_VAL) && !job_ptr->array_recs) {
+	if (!(job_ptr->mail_type & MAIL_ARRAY_TASKS) &&
+	    (job_ptr->array_task_id != NO_VAL) && !job_ptr->array_recs) {
 		struct job_record *master_job_ptr;
 		master_job_ptr = find_job_record(job_ptr->array_job_id);
 		if (master_job_ptr && master_job_ptr->array_recs)
@@ -1766,7 +1767,7 @@ extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type)
 
 	_set_job_time(job_ptr, mail_type, job_time, sizeof(job_time));
 	_set_job_term_info(job_ptr, mail_type, term_msg, sizeof(term_msg));
-	if (job_ptr->array_recs) {
+	if (job_ptr->array_recs && !(job_ptr->mail_type & MAIL_ARRAY_TASKS)) {
 		mi->message = xstrdup_printf("SLURM Job_id=%u_* (%u) Name=%s "
 					     "%s%s%s",
 					     job_ptr->array_job_id,

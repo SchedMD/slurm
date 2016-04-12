@@ -991,7 +991,10 @@ uint16_t parse_mail_type(const char *arg)
 		if (xstrcasecmp(tok, "NONE") == 0) {
 			rc = 0;
 			break;
-		} else if (xstrcasecmp(tok, "BEGIN") == 0)
+		}
+		else if (xstrcasecmp(tok, "ARRAY_TASKS") == 0)
+			rc |= MAIL_ARRAY_TASKS;
+		else if (xstrcasecmp(tok, "BEGIN") == 0)
 			rc |= MAIL_JOB_BEGIN;
 		else if  (xstrcasecmp(tok, "END") == 0)
 			rc |= MAIL_JOB_END;
@@ -1027,6 +1030,11 @@ char *print_mail_type(const uint16_t type)
 	if (type == 0)
 		return "NONE";
 
+	if (type & MAIL_ARRAY_TASKS) {
+		if (buf[0])
+			strcat(buf, ",");
+		strcat(buf, "ARRAY_TASKS");
+	}
 	if (type & MAIL_JOB_BEGIN) {
 		if (buf[0])
 			strcat(buf, ",");

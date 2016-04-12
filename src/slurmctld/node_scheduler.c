@@ -2518,7 +2518,9 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		error("select_g_select_nodeinfo_set(%u): %m", job_ptr->job_id);
 		/* not critical ... by now */
 	}
-	if ((job_ptr->mail_type & MAIL_JOB_BEGIN) && _first_array_task(job_ptr))
+	if ((job_ptr->mail_type & MAIL_JOB_BEGIN) &&
+	    ((job_ptr->mail_type & MAIL_ARRAY_TASKS) ||
+	     _first_array_task(job_ptr)))
 		mail_job_info(job_ptr, MAIL_JOB_BEGIN);
 
 	slurmctld_diag_stats.jobs_started++;

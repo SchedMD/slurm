@@ -21,6 +21,7 @@ documents those changes that are of interest to users and administrators.
  -- Add SLURM_UMASK environment variable to user job.
  -- knl_conf: Added new configuration parameter of CapmcPollFreq.
  -- squeue: remove errant spaces in column formats for "squeue -o %all".
+ -- Add ARRAY_TASKS mail option to send emails to each task in a job array.
 
 * Changes in Slurm 16.05.0pre2
 ==============================
