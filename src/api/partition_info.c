@@ -222,8 +222,8 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 		xstrcat(out, "MaxNodes=UNLIMITED");
 	else {
 		if (cluster_flags & CLUSTER_FLAG_BG) {
-			convert_num_unit((float)part_ptr->max_nodes,
-					 tmp, sizeof(tmp), UNIT_NONE,
+			convert_num_unit((float)part_ptr->max_nodes, tmp,
+					 sizeof(tmp), UNIT_NONE, NO_VAL,
 					 CONVERT_NUM_UNIT_EXACT);
 			xstrfmtcat(out, "MaxNodes=%s", tmp);
 		} else
@@ -242,8 +242,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 
 	if (cluster_flags & CLUSTER_FLAG_BG) {
 		convert_num_unit((float)part_ptr->min_nodes, tmp, sizeof(tmp),
-				 UNIT_NONE,
-				 CONVERT_NUM_UNIT_EXACT);
+				 UNIT_NONE, NO_VAL, CONVERT_NUM_UNIT_EXACT);
 		xstrfmtcat(out, " MinNodes=%s", tmp);
 	} else
 		xstrfmtcat(out, " MinNodes=%u", part_ptr->min_nodes);
@@ -317,18 +316,16 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 		xstrcat(out, "State=UNKNOWN");
 
 	if (cluster_flags & CLUSTER_FLAG_BG) {
-		convert_num_unit((float)part_ptr->total_cpus, tmp,
-				 sizeof(tmp), UNIT_NONE,
-				 CONVERT_NUM_UNIT_EXACT);
+		convert_num_unit((float)part_ptr->total_cpus, tmp, sizeof(tmp),
+				 UNIT_NONE, NO_VAL, CONVERT_NUM_UNIT_EXACT);
 		xstrfmtcat(out, " TotalCPUs=%s", tmp);
 	} else
 		xstrfmtcat(out, " TotalCPUs=%u", part_ptr->total_cpus);
 
 
 	if (cluster_flags & CLUSTER_FLAG_BG) {
-		convert_num_unit((float)part_ptr->total_nodes, tmp,
-				 sizeof(tmp), UNIT_NONE,
-				 CONVERT_NUM_UNIT_EXACT);
+		convert_num_unit((float)part_ptr->total_nodes, tmp, sizeof(tmp),
+				 UNIT_NONE, NO_VAL, CONVERT_NUM_UNIT_EXACT);
 		xstrfmtcat(out, " TotalNodes=%s", tmp);
 	} else
 		xstrfmtcat(out, " TotalNodes=%u", part_ptr->total_nodes);

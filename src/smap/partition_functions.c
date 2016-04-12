@@ -557,7 +557,7 @@ static int _print_text_part(partition_info_t *part_ptr,
 
 	if (params.cluster_flags & CLUSTER_FLAG_BG)
 		convert_num_unit((float)part_ptr->total_nodes, tmp_cnt,
-				 sizeof(tmp_cnt), UNIT_NONE,
+				 sizeof(tmp_cnt), UNIT_NONE, NO_VAL,
 				 CONVERT_NUM_UNIT_EXACT);
 	else
 		snprintf(tmp_cnt, sizeof(tmp_cnt), "%u", part_ptr->total_nodes);

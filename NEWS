@@ -26,6 +26,7 @@ documents those changes that are of interest to users and administrators.
  -- select/cray - Initiate step node health check at start of step termination
     rather than after application completely ends so that NHC can capture
     information about hung (non-killable) processes.
+ -- Add --units=[KMGP] option to sacct to display values in specific unit type.
 
 * Changes in Slurm 16.05.0pre2
 ==============================

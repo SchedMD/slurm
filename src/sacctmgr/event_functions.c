@@ -559,8 +559,8 @@ extern int sacctmgr_list_event(int argc, char *argv[])
 				convert_num_unit(
 					(float)slurmdb_find_tres_count_in_string(
 						event->tres_str, TRES_CPU),
-					tmp, sizeof(tmp),
-					UNIT_NONE, CONVERT_NUM_UNIT_EXACT);
+					tmp, sizeof(tmp), UNIT_NONE, NO_VAL,
+					CONVERT_NUM_UNIT_EXACT);
 
 				field->print_routine(
 					field,

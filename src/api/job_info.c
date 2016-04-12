@@ -286,15 +286,15 @@ static void _sprint_range(char *str, uint32_t str_size,
 
 	if (cluster_flags & CLUSTER_FLAG_BG) {
 		convert_num_unit((float)lower, tmp, sizeof(tmp), UNIT_NONE,
-			CONVERT_NUM_UNIT_EXACT);
+				 NO_VAL, CONVERT_NUM_UNIT_EXACT);
 	} else {
 		snprintf(tmp, sizeof(tmp), "%u", lower);
 	}
 	if (upper > 0) {
     		char tmp2[128];
 		if (cluster_flags & CLUSTER_FLAG_BG) {
-			convert_num_unit((float)upper, tmp2,
-					 sizeof(tmp2), UNIT_NONE,
+			convert_num_unit((float)upper, tmp2, sizeof(tmp2),
+					 UNIT_NONE, NO_VAL,
 					 CONVERT_NUM_UNIT_EXACT);
 		} else {
 			snprintf(tmp2, sizeof(tmp2), "%u", upper);
@@ -796,8 +796,8 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		tmp6_ptr = "Node";
 
 	if (cluster_flags & CLUSTER_FLAG_BG) {
-		convert_num_unit((float)job_ptr->pn_min_cpus,
-				 tmp1, sizeof(tmp1), UNIT_NONE,
+		convert_num_unit((float)job_ptr->pn_min_cpus, tmp1,
+				 sizeof(tmp1), UNIT_NONE, NO_VAL,
 				 CONVERT_NUM_UNIT_EXACT);
 		xstrfmtcat(out, "MinCPUsNode=%s ", tmp1);
 	} else {
@@ -805,9 +805,9 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	}
 
 	convert_num_unit((float)job_ptr->pn_min_memory, tmp1, sizeof(tmp1),
-			 UNIT_MEGA, CONVERT_NUM_UNIT_EXACT);
+			 UNIT_MEGA, NO_VAL, CONVERT_NUM_UNIT_EXACT);
 	convert_num_unit((float)job_ptr->pn_min_tmp_disk, tmp2, sizeof(tmp2),
-			 UNIT_MEGA, CONVERT_NUM_UNIT_EXACT);
+			 UNIT_MEGA, NO_VAL, CONVERT_NUM_UNIT_EXACT);
 	xstrfmtcat(out, "MinMemory%s=%s MinTmpDiskNode=%s", tmp6_ptr, tmp1, tmp2);
 	xstrcat(out, line_end);
 

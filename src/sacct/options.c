@@ -42,6 +42,7 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_time.h"
 #include "src/common/uid.h"
+#include "src/common/slurm_strcasestr.h"
 #include "sacct.h"
 #include <time.h>
 
@@ -49,6 +50,7 @@
 #define OPT_LONG_NAME	   0x100
 #define OPT_LONG_DELIMITER 0x101
 #define OPT_LONG_NOCONVERT 0x102
+#define OPT_LONG_UNITS     0x103
 
 void _help_fields_msg(void);
 void _help_msg(void);
@@ -423,6 +425,7 @@ void _init_params()
 	params.job_cond = xmalloc(sizeof(slurmdb_job_cond_t));
 	params.job_cond->without_usage_truncation = 1;
 	params.convert_flags = CONVERT_NUM_UNIT_EXACT;
+	params.units = NO_VAL;
 }
 
 int get_data(void)
@@ -526,6 +529,7 @@ void parse_command_line(int argc, char **argv)
                 {"clusters",       required_argument, 0,    'M'},
                 {"nodelist",       required_argument, 0,    'N'},
                 {"noconvert",      no_argument,       0,    OPT_LONG_NOCONVERT},
+                {"units",          required_argument, 0,    OPT_LONG_UNITS},
                 {"noheader",       no_argument,       0,    'n'},
                 {"fields",         required_argument, 0,    'o'},
                 {"format",         required_argument, 0,    'o'},
@@ -672,6 +676,14 @@ void parse_command_line(int argc, char **argv)
 			break;
 		case OPT_LONG_NOCONVERT:
 			params.convert_flags |= CONVERT_NUM_UNIT_NO;
+			break;
+		case OPT_LONG_UNITS:
+		{
+			char *unit = "\0KMGTP?";
+			char *tmp_str = slurm_strcasestr(unit + 1, optarg);
+			if (tmp_str)
+				params.units = tmp_str - unit;
+		}
 			break;
 		case 'n':
 			print_fields_have_header = 0;

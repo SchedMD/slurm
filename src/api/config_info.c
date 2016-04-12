@@ -340,9 +340,10 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 		if (p[i].max_nodes != INFINITE) {
 			char tmp1[16];
 		        if (cluster_flags & CLUSTER_FLAG_BG)
-		                convert_num_unit((float)p[i].max_nodes, tmp1,
-		                                 sizeof(tmp1), UNIT_NONE,
-		                                 CONVERT_NUM_UNIT_EXACT);
+				convert_num_unit((float)p[i].max_nodes, tmp1,
+						 sizeof(tmp1), UNIT_NONE,
+						 NO_VAL,
+						 CONVERT_NUM_UNIT_EXACT);
 		        else
 		                snprintf(tmp1, sizeof(tmp1), "%u",
 					 p[i].max_nodes);
@@ -360,9 +361,10 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 		if (p[i].min_nodes != 1) {
 			char tmp1[16];
 			if (cluster_flags & CLUSTER_FLAG_BG)
-			        convert_num_unit((float)p[i].min_nodes, tmp1,
+				convert_num_unit((float)p[i].min_nodes, tmp1,
 						 sizeof(tmp1), UNIT_NONE,
-			                         CONVERT_NUM_UNIT_EXACT);
+						 NO_VAL,
+						 CONVERT_NUM_UNIT_EXACT);
 			else
 			        snprintf(tmp1, sizeof(tmp1), "%u",
 					 p[i].min_nodes);

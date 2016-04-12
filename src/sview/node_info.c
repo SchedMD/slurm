@@ -274,7 +274,7 @@ static void _layout_node_record(GtkTreeView *treeview,
 						 node_ptr->mcs_label),
 
 	convert_num_unit((float)node_ptr->cpus, tmp_cnt, sizeof(tmp_cnt),
-			 UNIT_NONE, working_sview_config.convert_flags);
+			 UNIT_NONE, NO_VAL, working_sview_config.convert_flags);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
 						 SORTID_CPUS),
@@ -316,7 +316,7 @@ static void _layout_node_record(GtkTreeView *treeview,
 	}
 	idle_cpus -= alloc_cpus;
 	convert_num_unit((float)alloc_cpus, tmp_cnt,
-			 sizeof(tmp_cnt), UNIT_NONE,
+			 sizeof(tmp_cnt), UNIT_NONE, NO_VAL,
 			 working_sview_config.convert_flags);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
@@ -333,14 +333,14 @@ static void _layout_node_record(GtkTreeView *treeview,
 
 	idle_cpus -= err_cpus;
 	convert_num_unit((float)err_cpus, tmp_cnt, sizeof(tmp_cnt), UNIT_NONE,
-			 working_sview_config.convert_flags);
+			 NO_VAL, working_sview_config.convert_flags);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
 						 SORTID_ERR_CPUS),
 				   tmp_cnt);
 
 	convert_num_unit((float)idle_cpus, tmp_cnt, sizeof(tmp_cnt), UNIT_NONE,
-			 working_sview_config.convert_flags);
+			 NO_VAL, working_sview_config.convert_flags);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
 						 SORTID_IDLE_CPUS),
@@ -356,35 +356,35 @@ static void _layout_node_record(GtkTreeView *treeview,
 	xfree(lower);
 
 	convert_num_unit((float)node_ptr->boards, tmp_cnt, sizeof(tmp_cnt),
-			 UNIT_NONE, working_sview_config.convert_flags);
+			 UNIT_NONE, NO_VAL, working_sview_config.convert_flags);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
 						 SORTID_BOARDS),
 				   tmp_cnt);
 
 	convert_num_unit((float)node_ptr->sockets, tmp_cnt, sizeof(tmp_cnt),
-			 UNIT_NONE, working_sview_config.convert_flags);
+			 UNIT_NONE, NO_VAL, working_sview_config.convert_flags);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
 						 SORTID_SOCKETS),
 				   tmp_cnt);
 
 	convert_num_unit((float)node_ptr->cores, tmp_cnt, sizeof(tmp_cnt),
-			 UNIT_NONE, working_sview_config.convert_flags);
+			 UNIT_NONE, NO_VAL, working_sview_config.convert_flags);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
 						 SORTID_CORES),
 				   tmp_cnt);
 
 	convert_num_unit((float)node_ptr->threads, tmp_cnt, sizeof(tmp_cnt),
-			 UNIT_NONE, working_sview_config.convert_flags);
+			 UNIT_NONE, NO_VAL, working_sview_config.convert_flags);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
 						 SORTID_THREADS),
 				   tmp_cnt);
 
 	convert_num_unit((float)node_ptr->real_memory, tmp_cnt, sizeof(tmp_cnt),
-			 UNIT_MEGA, working_sview_config.convert_flags);
+			 UNIT_MEGA, NO_VAL, working_sview_config.convert_flags);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
 						 SORTID_REAL_MEMORY),
@@ -401,7 +401,7 @@ static void _layout_node_record(GtkTreeView *treeview,
 				   tmp_cnt);
 
 	convert_num_unit((float)node_ptr->tmp_disk, tmp_cnt, sizeof(tmp_cnt),
-			 UNIT_MEGA, working_sview_config.convert_flags);
+			 UNIT_MEGA, NO_VAL, working_sview_config.convert_flags);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
 						 SORTID_TMP_DISK),
@@ -546,7 +546,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 	}
 
 	convert_num_unit((float)node_ptr->cpus, tmp_cpus,
-			 sizeof(tmp_cpus), UNIT_NONE,
+			 sizeof(tmp_cpus), UNIT_NONE, NO_VAL,
 			 working_sview_config.convert_flags);
 
 	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
@@ -563,7 +563,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 	}
 	idle_cpus = node_ptr->cpus - alloc_cpus;
 	convert_num_unit((float)alloc_cpus, tmp_used_cpus,
-			 sizeof(tmp_used_cpus), UNIT_NONE,
+			 sizeof(tmp_used_cpus), UNIT_NONE, NO_VAL,
 			 working_sview_config.convert_flags);
 
 	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
@@ -573,7 +573,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 	snprintf(tmp_used_memory, sizeof(tmp_used_memory), "%uM", alloc_memory);
 
 	convert_num_unit((float)alloc_cpus, tmp_used_cpus,
-			 sizeof(tmp_used_cpus), UNIT_NONE,
+			 sizeof(tmp_used_cpus), UNIT_NONE, NO_VAL,
 			 working_sview_config.convert_flags);
 
 	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
@@ -584,10 +584,10 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 		err_cpus *= cpus_per_node;
 	idle_cpus -= err_cpus;
 	convert_num_unit((float)err_cpus, tmp_err_cpus, sizeof(tmp_err_cpus),
-			 UNIT_NONE, working_sview_config.convert_flags);
+			 UNIT_NONE, NO_VAL, working_sview_config.convert_flags);
 
 	convert_num_unit((float)idle_cpus, tmp_idle_cpus, sizeof(tmp_idle_cpus),
-			 UNIT_NONE, working_sview_config.convert_flags);
+			 UNIT_NONE, NO_VAL, working_sview_config.convert_flags);
 
 	if (IS_NODE_DRAIN(node_ptr)) {
 		/* don't worry about mixed since the
@@ -601,10 +601,10 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 	tmp_state_lower = str_tolower(tmp_state_upper);
 
 	convert_num_unit((float)node_ptr->real_memory, tmp_mem, sizeof(tmp_mem),
-			 UNIT_MEGA, working_sview_config.convert_flags);
+			 UNIT_MEGA, NO_VAL, working_sview_config.convert_flags);
 
 	convert_num_unit((float)node_ptr->tmp_disk, tmp_disk, sizeof(tmp_disk),
-			 UNIT_MEGA, working_sview_config.convert_flags);
+			 UNIT_MEGA, NO_VAL, working_sview_config.convert_flags);
 
 	if (node_ptr->version == NULL) {
 		snprintf(tmp_version, sizeof(tmp_version), "N/A");

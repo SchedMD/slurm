@@ -349,12 +349,12 @@ static void _layout_block_record(GtkTreeView *treeview,
 							 SORTID_USE),
 					   node_use_string(
 						   block_ptr->bg_node_use));
-	}
-	convert_num_unit((float)block_ptr->cnode_cnt, tmp_cnt, sizeof(tmp_cnt),
-			 UNIT_NONE, working_sview_config.convert_flags);
+	} convert_num_unit((float)block_ptr->cnode_cnt, tmp_cnt,
+			   sizeof(tmp_cnt), UNIT_NONE, NO_VAL,
+			   working_sview_config.convert_flags);
 	if (cluster_flags & CLUSTER_FLAG_BGQ) {
 		convert_num_unit((float)block_ptr->cnode_err_cnt, tmp_cnt2,
-				 sizeof(tmp_cnt2), UNIT_NONE,
+				 sizeof(tmp_cnt2), UNIT_NONE, NO_VAL,
 				 working_sview_config.convert_flags);
 		tmp_char = xstrdup_printf("%s/%s", tmp_cnt, tmp_cnt2);
 	} else
@@ -386,11 +386,11 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 	char *tmp_char = NULL, *tmp_char2 = NULL, *tmp_char3 = NULL;
 
 	convert_num_unit((float)block_ptr->cnode_cnt, cnode_cnt,
-			 sizeof(cnode_cnt), UNIT_NONE,
+			 sizeof(cnode_cnt), UNIT_NONE, NO_VAL,
 			 working_sview_config.convert_flags);
 	if (cluster_flags & CLUSTER_FLAG_BGQ) {
 		convert_num_unit((float)block_ptr->cnode_err_cnt, cnode_cnt2,
-				 sizeof(cnode_cnt), UNIT_NONE,
+				 sizeof(cnode_cnt), UNIT_NONE, NO_VAL,
 				 working_sview_config.convert_flags);
 		tmp_char3 = xstrdup_printf("%s/%s", cnode_cnt, cnode_cnt2);
 	} else

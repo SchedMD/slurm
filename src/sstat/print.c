@@ -86,7 +86,7 @@ static void _print_small_double(
 		return;
 
 	if (dub > 1)
-		convert_num_unit((double)dub, outbuf, buf_size, units,
+		convert_num_unit((double)dub, outbuf, buf_size, units, NO_VAL,
 				 params.convert_flags);
 	else if (dub > 0)
 		snprintf(outbuf, buf_size, "%.2fM", dub);
@@ -118,9 +118,9 @@ void print_fields(slurmdb_step_rec_t *step)
 		case PRINT_ACT_CPUFREQ:
 
 			convert_num_unit2((double)step->stats.act_cpufreq,
-					  outbuf, sizeof(outbuf),
-					  UNIT_KILO, 1000, params.convert_flags
-					  & (~CONVERT_NUM_UNIT_EXACT));
+					  outbuf, sizeof(outbuf), UNIT_KILO,
+					  NO_VAL, 1000, params.convert_flags &
+					  (~CONVERT_NUM_UNIT_EXACT));
 
 			field->print_routine(field,
 					     outbuf,
@@ -131,7 +131,7 @@ void print_fields(slurmdb_step_rec_t *step)
 				convert_num_unit2((double)
 						  step->stats.consumed_energy,
 						  outbuf, sizeof(outbuf),
-						  UNIT_NONE, 1000,
+						  UNIT_NONE, NO_VAL, 1000,
 						  params.convert_flags &
 						  (~CONVERT_NUM_UNIT_EXACT));
 			}
@@ -163,27 +163,27 @@ void print_fields(slurmdb_step_rec_t *step)
 					     (curr_inx == field_count));
 			break;
 		case PRINT_AVEPAGES:
-			convert_num_unit((double)step->stats.pages_ave,
-					 outbuf, sizeof(outbuf),
-					 UNIT_KILO, params.convert_flags);
+			convert_num_unit((double)step->stats.pages_ave, outbuf,
+					 sizeof(outbuf), UNIT_KILO, NO_VAL,
+					 params.convert_flags);
 
 			field->print_routine(field,
 					     outbuf,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_AVERSS:
-			convert_num_unit((double)step->stats.rss_ave,
-					 outbuf, sizeof(outbuf),
-					 UNIT_KILO, params.convert_flags);
+			convert_num_unit((double)step->stats.rss_ave, outbuf,
+					 sizeof(outbuf), UNIT_KILO, NO_VAL,
+					 params.convert_flags);
 
 			field->print_routine(field,
 					     outbuf,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_AVEVSIZE:
-			convert_num_unit((double)step->stats.vsize_ave,
-					 outbuf, sizeof(outbuf),
-					 UNIT_KILO, params.convert_flags);
+			convert_num_unit((double)step->stats.vsize_ave, outbuf,
+					 sizeof(outbuf), UNIT_KILO, NO_VAL,
+					 params.convert_flags);
 
 			field->print_routine(field,
 					     outbuf,
@@ -249,9 +249,9 @@ void print_fields(slurmdb_step_rec_t *step)
 					     (curr_inx == field_count));
 			break;
 		case PRINT_MAXPAGES:
-			convert_num_unit((double)step->stats.pages_max,
-					 outbuf, sizeof(outbuf),
-					 UNIT_KILO, params.convert_flags);
+			convert_num_unit((double)step->stats.pages_max, outbuf,
+					 sizeof(outbuf), UNIT_KILO, NO_VAL,
+					 params.convert_flags);
 
 			field->print_routine(field,
 					     outbuf,
@@ -272,9 +272,9 @@ void print_fields(slurmdb_step_rec_t *step)
 					     (curr_inx == field_count));
 			break;
 		case PRINT_MAXRSS:
-			convert_num_unit((double)step->stats.rss_max,
-					 outbuf, sizeof(outbuf),
-					 UNIT_KILO, params.convert_flags);
+			convert_num_unit((double)step->stats.rss_max, outbuf,
+					 sizeof(outbuf), UNIT_KILO, NO_VAL,
+					 params.convert_flags);
 
 			field->print_routine(field,
 					     outbuf,
@@ -295,9 +295,9 @@ void print_fields(slurmdb_step_rec_t *step)
 					     (curr_inx == field_count));
 			break;
 		case PRINT_MAXVSIZE:
-			convert_num_unit((double)step->stats.vsize_max,
-					 outbuf, sizeof(outbuf),
-					 UNIT_KILO, params.convert_flags);
+			convert_num_unit((double)step->stats.vsize_max, outbuf,
+					 sizeof(outbuf), UNIT_KILO, NO_VAL,
+					 params.convert_flags);
 
 			field->print_routine(field,
 					     outbuf,

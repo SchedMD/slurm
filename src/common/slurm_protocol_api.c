@@ -4538,8 +4538,23 @@ extern int nodelist_find(const char *nodelist, const char *name)
 	return id;
 }
 
+/*
+ * Convert number from one unit to another.
+ * By default, Will convert num to largest divisible unit.
+ * Appends unit type suffix -- if applicable.
+ *
+ * IN num: number to convert.
+ * OUT buf: buffer to copy converted number into.
+ * IN buf_size: size of buffer.
+ * IN orig_type: The original type of num.
+ * IN spec_type: Type to convert num to. If specified, num will be converted up
+ * or down to to this unit type.
+ * IN divisor: size of type
+ * IN flags: flags to control whether to convert exactly or not at all.
+ */
 extern void convert_num_unit2(double num, char *buf, int buf_size,
-			      int orig_type, int divisor, uint32_t flags)
+			      int orig_type, int spec_type, int divisor,
+			      uint32_t flags)
 {
 	char *unit = "\0KMGTP?";
 	uint64_t i;
@@ -4547,7 +4562,7 @@ extern void convert_num_unit2(double num, char *buf, int buf_size,
 	if ((int64_t)num == 0) {
 		snprintf(buf, buf_size, "0");
 		return;
-	} else if (flags & CONVERT_NUM_UNIT_EXACT) {
+	} else if (spec_type == NO_VAL && (flags & CONVERT_NUM_UNIT_EXACT)) {
 		i = (uint64_t)num % (divisor / 2);
 
 		if (i > 0) {
@@ -4557,7 +4572,19 @@ extern void convert_num_unit2(double num, char *buf, int buf_size,
 		}
 	}
 
-	if (!(flags & CONVERT_NUM_UNIT_NO)) {
+	if (spec_type != NO_VAL) {
+		if (spec_type < orig_type) {
+			while (spec_type < orig_type) {
+				num *= divisor;
+				orig_type--;
+			}
+		} else if (spec_type > orig_type) {
+			while (spec_type > orig_type) {
+				num /= divisor;
+				orig_type++;
+			}
+		}
+	} else if (!(flags & CONVERT_NUM_UNIT_NO)) {
 		while (num > divisor) {
 			num /= divisor;
 			orig_type++;
@@ -4578,9 +4605,10 @@ extern void convert_num_unit2(double num, char *buf, int buf_size,
 }
 
 extern void convert_num_unit(double num, char *buf, int buf_size,
-			     int orig_type, uint32_t flags)
+			     int orig_type, int spec_type, uint32_t flags)
 {
-	convert_num_unit2(num, buf, buf_size, orig_type, 1024, flags);
+	convert_num_unit2(num, buf, buf_size, orig_type, spec_type, 1024,
+			  flags);
 }
 
 extern int revert_num_unit(const char *buf)

@@ -1267,9 +1267,10 @@ extern void slurm_free_msg(slurm_msg_t * msg);
 extern char *nodelist_nth_host(const char *nodelist, int inx);
 extern int nodelist_find(const char *nodelist, const char *name);
 extern void convert_num_unit2(double num, char *buf, int buf_size,
-			      int orig_type, int divisor, uint32_t flags);
+			      int orig_type, int spec_type, int divisor,
+			      uint32_t flags);
 extern void convert_num_unit(double num, char *buf, int buf_size,
-			     int orig_type, uint32_t flags);
+			     int orig_type, int spec_type, uint32_t flags);
 extern int revert_num_unit(const char *buf);
 extern int get_convert_unit_val(int base_type, char convert_to);
 extern void parse_int_to_array(int in, int *out);
