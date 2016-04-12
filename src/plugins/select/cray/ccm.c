@@ -49,7 +49,6 @@
 #include "src/slurmctld/locks.h"
 #include "ccm.h"
 
-#if defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
 /* CCM use */
 #include <string.h>
 #include "src/slurmctld/job_scheduler.h"
@@ -716,4 +715,3 @@ extern void *ccm_fini(void *args)
 	}
 	return NULL;
 }
-#endif

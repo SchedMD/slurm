@@ -52,7 +52,6 @@
 #  endif
 #endif
 
-#if defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
 /* CCM use */
 #include <string.h>
 #include "src/slurmctld/job_scheduler.h"
@@ -102,7 +101,5 @@ extern void spawn_ccm_thread(void *obj_ptr, void *(*start_routine) (void *));
 extern int ccm_check_partitions(struct job_record *job_ptr);
 extern void *ccm_begin(void *args);
 extern void *ccm_fini(void *args);
-
-#endif
 
 #endif /* CRAY_SELECT_CCM_H */
