@@ -15,7 +15,7 @@ documents those changes that are of interest to users and administrators.
  -- burst_buffer/cray - Fix for script creating or deleting persistent buffer
     would fail "paths" operation and hold the job.
  -- power/cray - Prevent possible divide by zero.
- -- power/cray - Fix bug introduced in 15.08.10 preventin operation in many
+ -- power/cray - Fix bug introduced in 15.08.10 preventing operation in many
     cases.
  -- Prevent deadlock for flow of data to the slurmdbd when sending reservation
     that wasn't set up correctly.
