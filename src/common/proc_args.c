@@ -1724,12 +1724,21 @@ parse_resv_flags(const char *flagstr, const char *msg)
 	return outflags;
 }
 
-/* parse --compress for a compression type, set to default zlib if not found */
+/* parse --compress for a compression type, set to default type if not found */
 uint16_t parse_compress_type(const char *arg)
 {
 	/* if called with null string return default compression type */
-	if (!arg)
+	if (!arg) {
+#if HAVE_LZ4
+		return COMPRESS_LZ4;
+#elif HAVE_LIBZ
 		return COMPRESS_ZLIB;
+#else
+		error("No compression library available,"
+		      " compression disabled.");
+		return COMPRESS_OFF;
+#endif
+	}
 
 	if (!strcasecmp(arg, "zlib"))
 		return COMPRESS_ZLIB;
