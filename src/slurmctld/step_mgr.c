@@ -231,7 +231,7 @@ static void _internal_step_complete(struct job_record *job_ptr,
 		/* This operations are needed for Cray systems and also provide
 		 * a cleaner state for requeued jobs. */
 		step_ptr->state = JOB_COMPLETING;
-		select_g_step_finish(step_ptr);
+		select_g_step_finish(step_ptr, false);
 #if !defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
 		/* On native Cray, post_job_step is called after NHC completes.
 		 * IF SIMULATING A CRAY THIS NEEDS TO BE COMMENTED OUT!!!! */
@@ -553,6 +553,7 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 	if (signal == SIGKILL) {
 		step_ptr->requid = uid;
 		srun_step_complete(step_ptr);
+		select_g_step_finish(step_ptr, true);
 	}
 
 #ifdef HAVE_FRONT_END
@@ -4129,8 +4130,9 @@ static void _signal_step_timelimit(struct job_record *job_ptr,
 	}
 
 	step_ptr->state = JOB_TIMEOUT;
+	(void) select_g_step_finish(step_ptr, true);
 
-	if (notify_srun) {
+	if (notify_srun) {	/* Handle termination from srun, not slurmd */
 		srun_step_timeout(step_ptr, now);
 		return;
 	}

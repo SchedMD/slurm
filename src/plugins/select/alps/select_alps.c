@@ -497,9 +497,9 @@ extern int select_p_step_start(struct step_record *step_ptr)
 	return other_step_start(step_ptr);
 }
 
-extern int select_p_step_finish(struct step_record *step_ptr)
+extern int select_p_step_finish(struct step_record *step_ptr, bool killing_step)
 {
-	return other_step_finish(step_ptr);
+	return other_step_finish(step_ptr, killing_step);
 }
 
 extern int select_p_pack_select_info(time_t last_query_time,

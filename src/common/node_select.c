@@ -768,14 +768,16 @@ extern int select_g_step_start(struct step_record *step_ptr)
 /*
  * clear what happened in select_g_step_pick_nodes
  * IN/OUT step_ptr - Flush the resources from the job and step.
+ * IN killing_step - if true then we are just starting to kill the step
+ *                   if false, the step is completely terminated
  */
-extern int select_g_step_finish(struct step_record *step_ptr)
+extern int select_g_step_finish(struct step_record *step_ptr, bool killing_step)
 {
 	if (slurm_select_init(0) < 0)
 		return SLURM_ERROR;
 
 	return (*(ops[select_context_default].step_finish))
-		(step_ptr);
+		(step_ptr, killing_step);
 }
 
 extern int select_g_pack_select_info(time_t last_query_time,

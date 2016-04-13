@@ -23,6 +23,9 @@ documents those changes that are of interest to users and administrators.
  -- squeue: remove errant spaces in column formats for "squeue -o %all".
  -- Add ARRAY_TASKS mail option to send emails to each task in a job array.
  -- Change default compression library for sbcast to lz4.
+ -- select/cray - Initiate step node health check at start of step termination
+    rather than after application completely ends so that NHC can capture
+    information about hung (non-killable) processes.
 
 * Changes in Slurm 16.05.0pre2
 ==============================

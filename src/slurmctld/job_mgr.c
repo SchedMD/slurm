@@ -4356,6 +4356,8 @@ extern int job_fail(uint32_t job_id, uint32_t job_state)
 static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 		       uint16_t flags, uid_t uid, bool preempt)
 {
+	ListIterator step_iterator;
+	struct step_record *step_ptr;
 	uint16_t job_term_state;
 	char jbuf[JBUFSIZ];
 	time_t now = time(NULL);
@@ -4396,6 +4398,15 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 		verbose("%s: of pending %s successful",
 			__func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)));
 		return SLURM_SUCCESS;
+	}
+
+	if ((IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) &&
+	    (signal == SIGKILL)) {
+		step_iterator = list_iterator_create(job_ptr->step_list);
+		while ((step_ptr =
+		       (struct step_record *) list_next(step_iterator)))
+			select_g_step_finish(step_ptr, true);
+		list_iterator_destroy(step_iterator);
 	}
 
 	if (preempt)
@@ -7724,7 +7735,15 @@ extern int job_update_tres_cnt(struct job_record *job_ptr, int node_inx)
 /* Terminate a job that has exhausted its time limit */
 static void _job_timed_out(struct job_record *job_ptr)
 {
+	ListIterator step_iterator;
+	struct step_record *step_ptr;
+
 	xassert(job_ptr);
+
+	step_iterator = list_iterator_create(job_ptr->step_list);
+	while ((step_ptr = (struct step_record *) list_next(step_iterator)))
+		select_g_step_finish(step_ptr, true);
+	list_iterator_destroy(step_iterator);
 
 	srun_timeout(job_ptr);
 	if (job_ptr->details) {
