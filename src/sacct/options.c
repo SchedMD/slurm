@@ -679,10 +679,10 @@ void parse_command_line(int argc, char **argv)
 			break;
 		case OPT_LONG_UNITS:
 		{
-			char *unit = "\0KMGTP?";
-			char *tmp_str = slurm_strcasestr(unit + 1, optarg);
-			if (tmp_str)
-				params.units = tmp_str - unit;
+			int type = get_unit_type(*optarg);
+			if (type == SLURM_ERROR)
+				fatal("Invalid unit type");
+			params.units = type;
 		}
 			break;
 		case 'n':
