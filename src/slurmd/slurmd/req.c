@@ -59,14 +59,6 @@
 #include <unistd.h>
 #include <utime.h>
 
-#if HAVE_LIBZ
-# include <zlib.h>
-#endif
-
-#if HAVE_LZ4
-# include <lz4.h>
-#endif
-
 #include "src/common/callerid.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/env.h"
