@@ -2052,7 +2052,8 @@ void print_fields(type_t type, void *object)
 			}
 
 			tmp_char = slurmdb_make_tres_string_from_simple(
-				tmp_char, g_tres_list);
+				tmp_char, g_tres_list, params.units,
+				params.convert_flags);
 
 			field->print_routine(field,
 					     tmp_char,
@@ -2081,7 +2082,8 @@ void print_fields(type_t type, void *object)
 			}
 
 			tmp_char = slurmdb_make_tres_string_from_simple(
-				tmp_char, g_tres_list);
+				tmp_char, g_tres_list, params.units,
+				params.convert_flags);
 
 			field->print_routine(field,
 					     tmp_char,

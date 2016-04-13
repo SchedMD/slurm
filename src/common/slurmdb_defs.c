@@ -3115,7 +3115,8 @@ extern char *slurmdb_make_tres_string_from_arrays(char **tres_names,
 }
 
 extern char *slurmdb_make_tres_string_from_simple(
-	char *tres_in, List full_tres_list)
+	char *tres_in, List full_tres_list, int spec_unit,
+	uint32_t convert_flags)
 {
 	char *tres_str = NULL;
 	char *tmp_str = tres_in;
@@ -3159,9 +3160,19 @@ extern char *slurmdb_make_tres_string_from_simple(
 				   tres_rec->type,
 				   tres_rec->name ? "/" : "",
 				   tres_rec->name ? tres_rec->name : "");
-		if (count != INFINITE64)
-			xstrfmtcat(tres_str, "%"PRIu64, count);
-		else
+		if (count != INFINITE64) {
+			if ((tres_rec->id == TRES_MEM) ||
+			    (tres_rec->type &&
+			     !xstrcasecmp(tres_rec->type, "bb"))) {
+				char outbuf[FORMAT_STRING_SIZE];
+				convert_num_unit((double)count, outbuf,
+						 sizeof(outbuf), UNIT_MEGA,
+						 spec_unit, convert_flags);
+				xstrfmtcat(tres_str, "%s", outbuf);
+			} else {
+				xstrfmtcat(tres_str, "%"PRIu64, count);
+			}
+		} else
 			xstrfmtcat(tres_str, "NONE");
 
 

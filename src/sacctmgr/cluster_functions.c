@@ -483,7 +483,8 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 				sacctmgr_initialize_g_tres_list();
 
 				tmp_char = slurmdb_make_tres_string_from_simple(
-					cluster->tres_str, g_tres_list);
+					cluster->tres_str, g_tres_list, NO_VAL,
+					CONVERT_NUM_UNIT_EXACT);
 				field->print_routine(field,
 						     tmp_char,
 						     (curr_inx == field_count));
