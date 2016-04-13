@@ -843,17 +843,6 @@ static int _get_tres_id(char *type, char *name)
 	return assoc_mgr_find_tres_pos(&tres_rec, false);
 }
 
-static int _get_tres_base_unit(char *tres_type)
-{
-	int ret_unit = UNIT_NONE;
-	if ((!xstrcasecmp(tres_type, "mem")) ||
-	    (!xstrcasecmp(tres_type, "bb"))) {
-		ret_unit = UNIT_MEGA;
-	}
-
-	return ret_unit;
-}
-
 static int _tres_weight_item(double *weights, char *item_str)
 {
 	char *type = NULL, *value_str = NULL, *val_unit = NULL, *name = NULL;
@@ -889,7 +878,7 @@ static int _tres_weight_item(double *weights, char *item_str)
 	}
 
 	if (val_unit && *val_unit) {
-		int base_unit = _get_tres_base_unit(type);
+		int base_unit = slurmdb_get_tres_base_unit(type);
 		int convert_val = get_convert_unit_val(base_unit, *val_unit);
 		if (convert_val == SLURM_ERROR)
 			return SLURM_ERROR;
@@ -4634,16 +4623,11 @@ extern int revert_num_unit(const char *buf)
 
 extern int get_convert_unit_val(int base_unit, char convert_to)
 {
-	char *unit = "\0KMGTP?";
 	int conv_unit = 0, conv_value = 0;
-	char *tmp_char = strchr(unit + 1, toupper(convert_to));
-	if (!tmp_char) {
-		error("Conversion suffix '%c' not found in '%s'",
-		      convert_to, unit + 1);
-		return SLURM_ERROR;
-	}
 
-	conv_unit = tmp_char - unit;
+	if (!(conv_unit = get_unit_type(convert_to)))
+		return SLURM_ERROR;
+
 	while (base_unit++ < conv_unit) {
 		if (!conv_value)
 			conv_value = 1024;
@@ -4652,6 +4636,26 @@ extern int get_convert_unit_val(int base_unit, char convert_to)
 	}
 
 	return conv_value;
+}
+
+extern int get_unit_type(char unit)
+{
+	char *units = "\0KMGTP";
+	char *tmp_char = NULL;
+
+	if (unit == '\0') {
+		error("Invalid unit type '%c'. Possible options are '%s'",
+		      unit, units + 1);
+		return SLURM_ERROR;
+	}
+
+	tmp_char = strchr(units + 1, toupper(unit));
+	if (!tmp_char) {
+		error("Invalid unit type '%c'. Possible options are '%s'",
+		      unit, units + 1);
+		return SLURM_ERROR;
+	}
+	return tmp_char - units;
 }
 
 #if _DEBUG

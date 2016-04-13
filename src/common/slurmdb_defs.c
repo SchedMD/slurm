@@ -3189,6 +3189,7 @@ extern char *slurmdb_format_tres_str(
 	char *tres_in, List full_tres_list, bool simple)
 {
 	char *tres_str = NULL;
+	char *val_unit = NULL;
 	char *tmp_str = tres_in;
 	uint64_t count;
 	slurmdb_tres_rec_t *tres_rec;
@@ -3246,7 +3247,16 @@ extern char *slurmdb_format_tres_str(
 			      "no value found");
 			break;
 		}
-		count = slurm_atoull(++tmp_str);
+		count = strtoull(++tmp_str, &val_unit, 10);
+		if (val_unit && *val_unit != ',' && *val_unit != '\0' &&
+		    tres_rec->type) {
+			int base_unit =
+				slurmdb_get_tres_base_unit(tres_rec->type);
+			int convert_val =
+				get_convert_unit_val(base_unit, *val_unit);
+			if (convert_val > 0)
+				count *= convert_val;
+		}
 
 		if (tres_str)
 			xstrcat(tres_str, ",");
@@ -3808,4 +3818,15 @@ extern void slurmdb_set_new_tres_cnt(uint64_t **tres_cnt_in,
 	memcpy(*tres_cnt_in, tres_cnt, i);
 
 	return;
+}
+
+extern int slurmdb_get_tres_base_unit(char *tres_type)
+{
+	int ret_unit = UNIT_NONE;
+	if ((!xstrcasecmp(tres_type, "mem")) ||
+	    (!xstrcasecmp(tres_type, "bb"))) {
+		ret_unit = UNIT_MEGA;
+	}
+
+	return ret_unit;
 }
