@@ -145,7 +145,7 @@ extern int fini(void)
  */
 extern int route_p_split_hostlist(hostlist_t hl,
 				  hostlist_t** sp_hl,
-				  int* count)
+				  int* count, uint16_t tree_width)
 {
 	int i, j, k, hl_ndx, msg_count, sw_count, lst_count;
 	char  *buf;
@@ -210,13 +210,15 @@ extern int route_p_split_hostlist(hostlist_t hl,
 		}
 		FREE_NULL_BITMAP(nodes_bitmap);
 		xfree(*sp_hl);
-		return route_split_hostlist_treewidth(hl, sp_hl, count);
+		return route_split_hostlist_treewidth(
+			hl, sp_hl, count, tree_width);
 	}
 	if (switch_record_table[j].level == 0) {
 		/* This is a leaf switch. Construct list based on TreeWidth */
 		FREE_NULL_BITMAP(nodes_bitmap);
 		xfree(*sp_hl);
-		return route_split_hostlist_treewidth(hl, sp_hl, count);
+		return route_split_hostlist_treewidth(
+			hl, sp_hl, count, tree_width);
 	}
 	/* loop through children, construction a hostlist for each child switch
 	 * with nodes in the message list */

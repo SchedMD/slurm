@@ -398,6 +398,7 @@ typedef struct forward {
 	char      *nodelist;	/* ranged string of who to forward the
 				 * message to */
 	uint32_t   timeout;	/* original timeout increments */
+	uint16_t   tree_width;  /* what the treewidth should be */
 } forward_t;
 
 /*core api protocol message structures */

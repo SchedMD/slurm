@@ -72,6 +72,7 @@ extern int route_fini(void);
  *                                as similar code replaced in forward.c
  * OUT: sp_hl    - hostlist_t** - the array of hostlists that will be malloced
  * OUT: count    - int*         - the count of created hostlists
+ * IN: tree_width- int          - Max width of each branch on the tree.
  * RET: SLURM_SUCCESS - int
  *
  * Note: created hostlist will have to be freed independently using
@@ -80,7 +81,7 @@ extern int route_fini(void);
  */
 extern int route_g_split_hostlist(hostlist_t hl,
 				  hostlist_t** sp_hl,
-				  int* count);
+				  int* count, uint16_t tree_width);
 
 /*
  * route_g_reconfigure - reset during reconfigure
@@ -123,6 +124,7 @@ extern slurm_addr_t* route_g_next_collector_backup ( void );
  *                                as similar code replaced in forward.c
  * OUT: sp_hl    - hostlist_t** - the array of hostlists that will be malloced
  * OUT: count    - int*         - the count of created hostlists
+ * IN: tree_width- int          - Max width of each branch on the tree.
  * RET: SLURM_SUCCESS - int
  *
  * Note: created hostlist will have to be freed independently using
@@ -131,7 +133,7 @@ extern slurm_addr_t* route_g_next_collector_backup ( void );
  */
 extern int route_split_hostlist_treewidth(hostlist_t hl,
 					  hostlist_t** sp_hl,
-					  int* count);
+					  int* count, uint16_t tree_width);
 
 /*
  * route_next_collector - return address of next collector

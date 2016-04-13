@@ -3690,6 +3690,10 @@ int slurm_send_node_msg(slurm_fd_t fd, slurm_msg_t * msg)
 		forward_init(&msg->forward, NULL);
 		msg->ret_list = NULL;
 	}
+
+	if (!msg->forward.tree_width)
+		msg->forward.tree_width = slurm_get_tree_width();
+
 	forward_wait(msg);
 
 	if (difftime(time(NULL), start_time) >= 60) {
@@ -4071,7 +4075,6 @@ _send_and_recv_msgs(slurm_fd_t fd, slurm_msg_t *req, int timeout)
 	int retry = 0;
 	List ret_list = NULL;
 	int steps = 0;
-	int width;
 
 	if (!req->forward.timeout) {
 		if (!timeout)
@@ -4086,11 +4089,14 @@ _send_and_recv_msgs(slurm_fd_t fd, slurm_msg_t *req, int timeout)
 			 * (timeout+message_timeout sec per step)
 			 * to let the child timeout */
 			if (message_timeout < 0)
-				message_timeout = slurm_get_msg_timeout() * 1000;
+				message_timeout =
+					slurm_get_msg_timeout() * 1000;
 			steps = req->forward.cnt + 1;
-			width = slurm_get_tree_width();
-			if (width)
-				steps /= width;
+			if (!req->forward.tree_width)
+				req->forward.tree_width =
+					slurm_get_tree_width();
+			if (req->forward.tree_width)
+				steps /= req->forward.tree_width;
 			timeout = (message_timeout * steps);
 			steps++;
 

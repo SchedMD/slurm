@@ -120,9 +120,9 @@ extern int fini(void)
  */
 extern int route_p_split_hostlist(hostlist_t hl,
 				  hostlist_t** sp_hl,
-				  int* count)
+				  int* count, uint16_t tree_width)
 {
-	return route_split_hostlist_treewidth(hl, sp_hl, count);
+	return route_split_hostlist_treewidth(hl, sp_hl, count, tree_width);
 }
 
 /*
