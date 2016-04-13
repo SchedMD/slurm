@@ -1046,7 +1046,6 @@ static int _attempt_backfill(void)
 
 		part_ptr = job_queue_rec->part_ptr;
 		job_ptr->part_ptr = part_ptr;
-		job_ptr->part_ptr = part_ptr;
 		job_ptr->priority = job_queue_rec->priority;
 		mcs_select = slurm_mcs_get_select(job_ptr);
 
