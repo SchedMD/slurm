@@ -47,26 +47,29 @@
 struct bcast_parameters {
 	uint32_t block_size;
 	uint16_t compress;
+	char *dst_fname;
 	int  fanout;
 	bool force;
 	uint32_t job_id;
-	uint32_t step_id;
 	bool preserve;
+	char *src_fname;
+	uint32_t step_id;
 	int  timeout;
 	int  verbose;
-	char *src_fname;
-	char *dst_fname;
 };
 
 typedef struct file_bcast_info {
-	uid_t uid;		/* uid of owner */
-	char *fname;		/* filename */
-	int fd;			/* file descriptor */
-	time_t start_time;	/* transfer start time */
-	time_t last_update;	/* transfer last block received */
-	int received_blocks;	/* number of blocks received */
-	int max_blocks;		/* highest block number (when known) */
 	void *data;		/* mmap of file data */
+	int fd;			/* file descriptor */
+	uint64_t file_size;	/* file size */
+	char *fname;		/* filename */
+	gid_t gid;		/* gid of owner */
+	uint32_t job_id;	/* job id */
+	time_t last_update;	/* transfer last block received */
+	int max_blocks;		/* highest block number (when known) */
+	int received_blocks;	/* number of blocks received */
+	time_t start_time;	/* transfer start time */
+	uid_t uid;		/* uid of owner */
 } file_bcast_info_t;
 
 extern int bcast_file(struct bcast_parameters *params);

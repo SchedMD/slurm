@@ -32,6 +32,7 @@ documents those changes that are of interest to users and administrators.
  -- Replace hash function with more modern SipHash functions.
  -- Add "--with-cray_dir" build/configure option.
  -- BB- Only send stage_out email when stage_out is set in script.
+ -- Add r/w locking to file_bcast receive functions in slurmd.
 
 * Changes in Slurm 16.05.0pre2
 ==============================

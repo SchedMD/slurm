@@ -351,6 +351,7 @@ main (int argc, char *argv[])
 	if (conf->cleanstart && switch_g_clear_node_state())
 		fatal("Unable to clear interconnect state.");
 	switch_g_slurmd_init();
+	file_bcast_init();
 
 	_create_msg_socket();
 
@@ -396,6 +397,7 @@ main (int argc, char *argv[])
 	_destroy_conf();
 	slurm_crypto_fini();	/* must be after _destroy_conf() */
 	gids_cache_purge();
+	file_bcast_purge();
 
 	info("Slurmd shutdown completing");
 	log_fini();

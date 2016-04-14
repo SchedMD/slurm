@@ -54,4 +54,7 @@ void gids_cache_purge(void);
 /* Add record for every launched job so we know they are ready for suspend */
 extern void record_launched_jobs(void);
 
+void file_bcast_init(void);
+void file_bcast_purge(void);
+
 #endif

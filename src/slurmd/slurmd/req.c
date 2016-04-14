@@ -189,10 +189,9 @@ static void _rpc_reconfig(slurm_msg_t *msg);
 static void _rpc_reboot(slurm_msg_t *msg);
 static void _rpc_pid2jid(slurm_msg_t *msg);
 static int  _rpc_file_bcast(slurm_msg_t *msg);
-static int _file_bcast_register_file(slurm_msg_t *msg,
-				     uid_t req_uid,
-				     gid_t req_gid,
-				     uint32_t job_id);
+static void _file_bcast_cleanup(void);
+static int  _file_bcast_register_file(slurm_msg_t *msg,
+				      file_bcast_info_t *key);
 static int  _rpc_ping(slurm_msg_t *);
 static int  _rpc_health_check(slurm_msg_t *);
 static int  _rpc_acct_gather_update(slurm_msg_t *);
@@ -270,6 +269,10 @@ static uint32_t active_job_id[JOB_STATE_CNT];
 
 static pthread_mutex_t prolog_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+#define FILE_BCAST_TIMEOUT 300
+static pthread_mutex_t file_bcast_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t  file_bcast_cond  = PTHREAD_COND_INITIALIZER;
+static int fb_read_lock = 0, fb_write_wait_lock = 0, fb_write_lock = 0;
 static List file_bcast_list = NULL;
 
 void
@@ -2544,6 +2547,8 @@ _rpc_ping(slurm_msg_t *msg)
 
 	/* Take this opportunity to enforce any job memory limits */
 	_enforce_job_mem_limit();
+	/* Clear up any stalled file transfers as well */
+	_file_bcast_cleanup();
 	return rc;
 }
 
@@ -2577,6 +2582,8 @@ _rpc_health_check(slurm_msg_t *msg)
 
 	/* Take this opportunity to enforce any job memory limits */
 	_enforce_job_mem_limit();
+	/* Clear up any stalled file transfers as well */
+	_file_bcast_cleanup();
 	return rc;
 }
 
@@ -3485,37 +3492,74 @@ _valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid, uint16_t block_no,
 	return rc;
 }
 
-static file_bcast_info_t *_bcast_lookup_file(uid_t uid, char *fname)
+static void _fb_rdlock(void)
 {
-	file_bcast_info_t *file_info;
-	ListIterator itr = list_iterator_create(file_bcast_list);
-
-	while ((file_info = list_next(itr))) {
-		if ((uid == file_info->uid)
-		    && (!xstrcmp(fname, file_info->fname))) {
-			/* found */
+	slurm_mutex_lock(&file_bcast_mutex);
+	while (1) {
+		if ((fb_write_wait_lock == 0) && (fb_write_lock == 0)) {
+			fb_read_lock++;
 			break;
+		} else {	/* wait for state change and retry */
+			pthread_cond_wait(&file_bcast_cond, &file_bcast_mutex);
 		}
 	}
-	list_iterator_destroy(itr);
-
-	return file_info;
+	slurm_mutex_unlock(&file_bcast_mutex);
 }
 
-static void _file_bcast_close_file(uid_t uid, char *fname)
+static void _fb_rdunlock(void)
 {
-	file_bcast_info_t *file_info;
-	ListIterator itr = list_iterator_create(file_bcast_list);
+	slurm_mutex_lock(&file_bcast_mutex);
+	fb_read_lock--;
+	pthread_cond_broadcast(&file_bcast_cond);
+	slurm_mutex_unlock(&file_bcast_mutex);
+}
 
-	while ((file_info = list_next(itr))) {
-		if ((uid == file_info->uid)
-		    && (!xstrcmp(fname, file_info->fname))) {
-			list_delete_item(itr);
+static void _fb_wrlock(void)
+{
+	slurm_mutex_lock(&file_bcast_mutex);
+	fb_write_wait_lock++;
+	while (1) {
+		if ((fb_read_lock == 0) && (fb_write_lock == 0)) {
+			fb_write_lock++;
+			fb_write_wait_lock--;
 			break;
+		} else {	/* wait for state change and retry */
+			pthread_cond_wait(&file_bcast_cond, &file_bcast_mutex);
 		}
 	}
+	slurm_mutex_unlock(&file_bcast_mutex);
+}
 
-	list_iterator_destroy(itr);
+static void _fb_wrunlock(void)
+{
+	slurm_mutex_lock(&file_bcast_mutex);
+	fb_write_lock--;
+	pthread_cond_broadcast(&file_bcast_cond);
+	slurm_mutex_unlock(&file_bcast_mutex);
+}
+
+static int _bcast_find_in_list(void *x, void *y)
+{
+	file_bcast_info_t *info = (file_bcast_info_t *)x;
+	file_bcast_info_t *key = (file_bcast_info_t *)y;
+	/* uid, job_id, and fname must match */
+	return ((info->uid == key->uid)
+		&& (info->job_id == key->job_id)
+		&& (!xstrcmp(info->fname, key->fname)));
+}
+
+/* must have read lock */
+static file_bcast_info_t *_bcast_lookup_file(file_bcast_info_t *key)
+{
+	return list_find_first(file_bcast_list, _bcast_find_in_list, key);
+}
+
+/* must not have read lock, will get write lock */
+static void _file_bcast_close_file(file_bcast_info_t *key)
+{
+	_fb_wrlock();
+	list_delete_all(file_bcast_list, _bcast_find_in_list, key);
+	_fb_wrunlock();
 }
 
 static void _free_file_bcast_info_t(file_bcast_info_t *f)
@@ -3526,19 +3570,56 @@ static void _free_file_bcast_info_t(file_bcast_info_t *f)
 	xfree(f);
 }
 
+static int _bcast_find_in_list_to_remove(void *x, void *y)
+{
+	file_bcast_info_t *f = (file_bcast_info_t *)x;
+	time_t *now = (time_t *) y;
+
+	if (f->last_update + FILE_BCAST_TIMEOUT < *now) {
+		error("Removing stalled file_bcast transfer from uid "
+		      "%u to file `%s`", f->uid, f->fname);
+		return true;
+	}
+
+	return false;
+}
+
+/* remove transfers that have stalled */
+static void _file_bcast_cleanup(void)
+{
+	time_t now = time(NULL);
+
+	_fb_wrlock();
+	list_delete_all(file_bcast_list, _bcast_find_in_list_to_remove, &now);
+	_fb_wrunlock();
+}
+
+void file_bcast_init(void)
+{
+	/* skip locks during slurmd init */
+	file_bcast_list = list_create((ListDelF) _free_file_bcast_info_t);
+}
+
+void file_bcast_purge(void)
+{
+	_fb_wrlock();
+	list_destroy(file_bcast_list);
+	/* destroying list before exit, no need to unlock */
+}
+
 static int _rpc_file_bcast(slurm_msg_t *msg)
 {
-	int rc, offset,inx;
+	int rc, offset, inx;
 	file_bcast_info_t *file_info;
 	file_bcast_msg_t *req = msg->data;
-	uint32_t job_id;
-	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred,
-					     slurm_get_auth_info());
-	gid_t req_gid = g_slurm_auth_get_gid(msg->auth_cred,
-					     slurm_get_auth_info());
+	file_bcast_info_t key;
 
-	rc = _valid_sbcast_cred(req, req_uid, req->block_no, &job_id);
-	if ((rc != SLURM_SUCCESS) && !_slurm_authorized_user(req_uid))
+	key.uid = g_slurm_auth_get_uid(msg->auth_cred, slurm_get_auth_info());
+	key.gid = g_slurm_auth_get_gid(msg->auth_cred, slurm_get_auth_info());
+	key.fname = req->fname;
+
+	rc = _valid_sbcast_cred(req, key.uid, req->block_no, &key.job_id);
+	if ((rc != SLURM_SUCCESS) && !_slurm_authorized_user(key.uid))
 		return rc;
 
 #if 0
@@ -3556,29 +3637,31 @@ static int _rpc_file_bcast(slurm_msg_t *msg)
 
 	if (req->block_no == 1) {
 		info("sbcast req_uid=%u job_id=%u fname=%s block_no=%u",
-		     req_uid, job_id, req->fname, req->block_no);
+		     key.uid, key.job_id, key.fname, req->block_no);
 	} else {
 		debug("sbcast req_uid=%u job_id=%u fname=%s block_no=%u",
-		      req_uid, job_id, req->fname, req->block_no);
+		      key.uid, key.job_id, key.fname, req->block_no);
 	}
 
 	/* first block must register the file and open fd/mmap */
 	if (req->block_no == 1) {
-		if ((rc = _file_bcast_register_file(msg, req_uid, req_gid,
-						    job_id)))
+		if ((rc = _file_bcast_register_file(msg, &key)))
 			return rc;
 	}
 
-	if (!(file_info = _bcast_lookup_file(req_uid, req->fname))) {
+	_fb_rdlock();
+	if (!(file_info = _bcast_lookup_file(&key))) {
 		error("No registered file transfer for uid %u file `%s`.",
-		      req_uid, req->fname);
+		      key.uid, key.fname);
+		_fb_rdunlock();
 		return SLURM_ERROR;
 	}
 
 	/* now decompress file */
 	if (bcast_decompress_data(req) < 0) {
 		error("sbcast: data decompression error for UID %u, file %s",
-		      req_uid, req->fname);
+		      key.uid, key.fname);
+		_fb_rdunlock();
 		return SLURM_FAILURE;
 	}
 
@@ -3589,8 +3672,9 @@ static int _rpc_file_bcast(slurm_msg_t *msg)
 		if (inx == -1) {
 			if ((errno == EINTR) || (errno == EAGAIN))
 				continue;
-			error("sbcast: uid:%u can't write `%s`: %s",
-			      req_uid, req->fname, strerror(errno));
+			error("sbcast: uid:%u can't write `%s`: %m",
+			      key.uid, key.fname);
+			_fb_rdunlock();
 			return SLURM_FAILURE;
 		}
 		offset += inx;
@@ -3599,29 +3683,32 @@ static int _rpc_file_bcast(slurm_msg_t *msg)
 	file_info->last_update = time(NULL);
 
 	if (req->last_block && fchmod(file_info->fd, (req->modes & 0777))) {
-		error("sbcast: uid:%u can't chmod `%s`: %s",
-		      req_uid, req->fname, strerror(errno));
+		error("sbcast: uid:%u can't chmod `%s`: %m",
+		      key.uid, key.fname);
 	}
-	if (req->last_block && fchown(file_info->fd, req_uid, req_gid)) {
-		error("sbcast: uid:%u gid:%u can't chown `%s`: %s",
-		      req_uid, req_gid, req->fname, strerror(errno));
+	if (req->last_block && fchown(file_info->fd, key.uid, key.gid)) {
+		error("sbcast: uid:%u gid:%u can't chown `%s`: %m",
+		      key.uid, key.gid, key.fname);
 	}
 	if (req->last_block && req->atime) {
 		struct utimbuf time_buf;
 		time_buf.actime  = req->atime;
 		time_buf.modtime = req->mtime;
-		if (utime(req->fname, &time_buf)) {
-			error("sbcast: uid:%u can't utime `%s`: %s",
-			      req_uid, req->fname, strerror(errno));
+		if (utime(key.fname, &time_buf)) {
+			error("sbcast: uid:%u can't utime `%s`: %m",
+			      key.uid, key.fname);
 		}
 	}
 
+	_fb_rdunlock();
+
 	if (req->last_block) {
-		_file_bcast_close_file(req_uid, req->fname);
+		_file_bcast_close_file(&key);
 	}
 	return SLURM_SUCCESS;
 }
 
+/* pass an open file descriptor back to the parent process */
 static void _send_back_fd(int socket, int fd)
 {
 	struct msghdr msg = { 0 };
@@ -3646,6 +3733,7 @@ static void _send_back_fd(int socket, int fd)
 		error("%s: failed to send fd: %m", __func__);
 }
 
+/* receive an open file descriptor from fork()'d child over unix socket */
 static int _receive_fd(int socket)
 {
 	struct msghdr msg = {0};
@@ -3669,9 +3757,7 @@ static int _receive_fd(int socket)
 
 
 static int _file_bcast_register_file(slurm_msg_t *msg,
-				     uid_t req_uid,
-				     gid_t req_gid,
-				     uint32_t job_id)
+				     file_bcast_info_t *key)
 {
 	file_bcast_msg_t *req = msg->data;
 	int fd, flags, rc;
@@ -3681,14 +3767,15 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 	pid_t child;
 	file_bcast_info_t *file_info;
 
-	if ((rc = _get_grouplist(&req->user_name, req_uid,
-				 req_gid, &ngroups, &groups)) < 0) {
-		error("sbcast: getgrouplist(%u): %m", req_uid);
+	if ((rc = _get_grouplist(&req->user_name, key->uid,
+				 key->gid, &ngroups, &groups)) < 0) {
+		error("sbcast: getgrouplist(%u): %m", key->uid);
 		return rc;
 	}
 
-	if ((rc = container_g_create(job_id))) {
-		error("sbcast: container_g_create(%u): %m", job_id);
+	if ((rc = container_g_create(key->job_id))) {
+		error("sbcast: container_g_create(%u): %m", key->job_id);
+		xfree(groups);
 		return rc;
 	}
 
@@ -3697,6 +3784,7 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 
 	if (socketpair(AF_UNIX, SOCK_DGRAM, 0, pipe) != 0) {
 		error("%s: Failed to open pipe: %m", __func__);
+		xfree(groups);
 		return SLURM_ERROR;
 	}
 
@@ -3713,20 +3801,19 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 			return WEXITSTATUS(rc);
 
 		fd = _receive_fd(pipe[1]);
-		if (!file_bcast_list) {
-			file_bcast_list =
-				list_create((ListDelF) _free_file_bcast_info_t);
-		}
 
 		file_info = xmalloc(sizeof(file_bcast_info_t));
 		file_info->fd = fd;
 		file_info->fname = xstrdup(req->fname);
-		file_info->uid = req_uid;
+		file_info->uid = key->uid;
+		file_info->gid = key->gid;
+		file_info->job_id = key->job_id;
 		file_info->start_time = time(NULL);
 
 		//TODO: mmap the file here
-
+		_fb_wrlock();
 		list_append(file_bcast_list, file_info);
+		_fb_wrunlock();
 
 		return SLURM_SUCCESS;
 	}
@@ -3739,8 +3826,10 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 	   detacts itself from a child before we add the pid
 	   to the container in the parent of the fork.
 	*/
-	if (container_g_add_pid(job_id, getpid(), req_uid) != SLURM_SUCCESS)
-		error("container_g_add_pid(%u): %m", job_id);
+	if (container_g_add_pid(key->job_id, getpid(), key->uid)) {
+		error("container_g_add_pid(%u): %m", key->job_id);
+		exit(SLURM_ERROR);
+	}
 
 	/* The child actually performs the I/O and exits with
 	 * a return code, do not return! */
@@ -3757,18 +3846,16 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 	\*********************************************************************/
 
 	if (setgroups(ngroups, groups) < 0) {
-		error("sbcast: uid: %u setgroups: %s", req_uid,
-		      strerror(errno));
+		error("sbcast: uid: %u setgroups: %m", key->uid);
 		exit(errno);
 	}
 
-	if (setgid(req_gid) < 0) {
-		error("sbcast: uid:%u setgid(%u): %s", req_uid, req_gid,
-		      strerror(errno));
+	if (setgid(key->gid) < 0) {
+		error("sbcast: uid:%u setgid(%u): %m", key->uid, key->gid);
 		exit(errno);
 	}
-	if (setuid(req_uid) < 0) {
-		error("sbcast: getuid(%u): %s", req_uid, strerror(errno));
+	if (setuid(key->uid) < 0) {
+		error("sbcast: getuid(%u): %m", key->uid);
 		exit(errno);
 	}
 
@@ -3778,10 +3865,10 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 	else
 		flags |= O_EXCL;
 
-	fd = open(req->fname, flags, 0700);
+	fd = open(key->fname, flags, 0700);
 	if (fd == -1) {
-		error("sbcast: uid:%u can't open `%s`: %s",
-		      req_uid, req->fname, strerror(errno));
+		error("sbcast: uid:%u can't open `%s`: %m",
+		      key->uid, key->fname);
 		exit(errno);
 	}
 	_send_back_fd(pipe[0], fd);
