@@ -27,6 +27,8 @@ documents those changes that are of interest to users and administrators.
     rather than after application completely ends so that NHC can capture
     information about hung (non-killable) processes.
  -- Add --units=[KMGTP] option to sacct to display values in specific unit type.
+ -- Modify sacct and sacctmgr to display TRES values in converted units.
+ -- Modify sacctmgr to accept TRES values with [KMGTP] suffixes.
 
 * Changes in Slurm 16.05.0pre2
 ==============================
