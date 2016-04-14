@@ -81,10 +81,10 @@
 #include "src/common/pack.h"
 #include "src/common/parse_spec.h"
 #include "src/common/parse_time.h"
+#include "src/common/plugstack.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
-#include "src/slurmd/common/set_oomadj.h"
-#include "src/slurmd/common/setproctitle.h"
+#include "src/common/siphash.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_acct_gather_energy.h"
@@ -100,18 +100,19 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/xsignal.h"
-#include "src/common/plugstack.h"
 
 #include "src/slurmd/common/core_spec_plugin.h"
+#include "src/slurmd/slurmd/get_mach_stat.h"
 #include "src/slurmd/common/job_container_plugin.h"
 #include "src/slurmd/common/proctrack.h"
-#include "src/slurmd/common/run_script.h"
-#include "src/slurmd/common/slurmd_cgroup.h"
-#include "src/slurmd/common/xcpuinfo.h"
-#include "src/slurmd/slurmd/get_mach_stat.h"
 #include "src/slurmd/slurmd/req.h"
+#include "src/slurmd/common/run_script.h"
+#include "src/slurmd/common/set_oomadj.h"
+#include "src/slurmd/common/setproctitle.h"
 #include "src/slurmd/slurmd/slurmd.h"
+#include "src/slurmd/common/slurmd_cgroup.h"
 #include "src/slurmd/slurmd/slurmd_plugstack.h"
+#include "src/slurmd/common/xcpuinfo.h"
 
 #define GETOPT_ARGS	"bcCd:Df:hL:Mn:N:vV"
 
@@ -243,6 +244,9 @@ main (int argc, char *argv[])
 	} else {
 		debug("Not running as root. Can't drop supplementary groups");
 	}
+
+	/* Initialize the key for the hash function. */
+	siphash_init();
 
 	/*
 	 * Create and set default values for the slurmd global

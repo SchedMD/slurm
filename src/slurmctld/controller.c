@@ -77,6 +77,7 @@
 #include "src/common/power.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
+#include "src/common/siphash.h"
 #include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_auth.h"
@@ -259,6 +260,9 @@ int main(int argc, char *argv[])
 	cnt = sysconf(_SC_OPEN_MAX);
 	for (i = 3; i < cnt; i++)
 		close(i);
+
+	/* Initialize hash function key.  */
+	siphash_init();
 
 	/*
 	 * Establish initial configuration

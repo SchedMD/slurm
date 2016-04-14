@@ -135,7 +135,8 @@ libcommon_la_SOURCES = 			\
 	mapping.c mapping.h		\
 	xcgroup_read_config.c xcgroup_read_config.h \
 	xlua.c xlua.h			\
-	callerid.c callerid.h
+	callerid.c callerid.h		\
+	siphash24.c siphash_slurm.c siphash.h
 
 EXTRA_libcommon_la_SOURCES = 		\
 	$(extra_unsetenv_src)		\

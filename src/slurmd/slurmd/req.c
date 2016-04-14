@@ -73,6 +73,7 @@
 #include "src/common/node_select.h"
 #include "src/common/plugstack.h"
 #include "src/common/read_config.h"
+#include "src/common/siphash.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_acct_gather_energy.h"
@@ -5714,16 +5715,10 @@ _dealloc_gids_cache(gids_cache_t *p)
 	xfree(p);
 }
 
-static int
-_gids_hashtbl_idx(char *user)
+static size_t
+_gids_hashtbl_idx(const char *user)
 {
-	unsigned char *p = (unsigned char *)user;
-	unsigned int x = 0;
-
-	while (*p) {
-		x += (unsigned int)*p;
-		p++;
-	}
+	uint64_t x = siphash_str(user);
 	return x % GIDS_HASH_LEN;
 }
 
@@ -5749,7 +5744,7 @@ gids_cache_purge(void)
 static void
 _gids_cache_register(char *user, gid_t gid, gids_t *gids)
 {
-	int idx;
+	size_t idx;
 	gids_cache_t *p, *q;
 
 	idx = _gids_hashtbl_idx(user);
@@ -5762,7 +5757,7 @@ _gids_cache_register(char *user, gid_t gid, gids_t *gids)
 static gids_t *
 _gids_cache_lookup(char *user, gid_t gid)
 {
-	int idx;
+	size_t idx;
 	gids_cache_t *p;
 	bool found_but_old = false;
 	time_t now = 0;

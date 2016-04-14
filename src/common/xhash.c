@@ -34,10 +34,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "src/common/xmalloc.h"
-#include "src/common/uthash/uthash.h"
-#include "src/common/xstring.h"
+#include "src/common/siphash.h"
 #include "src/common/xhash.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+#include "src/common/uthash/uthash.h"
 
 #if 0
 /* undefine default allocators */
@@ -204,7 +205,6 @@ static struct hash_entry *_hash_lookup(struct hash_tab *, const char *);
 static void _rehash(struct hash_tab *, int);
 static int _find_closest_prime(int);
 static int _is_prime(int);
-static int _pjw_hash(const char *, uint32_t);
 
 static int primes[] = {
 	293,
@@ -288,7 +288,7 @@ void *
 hash_remove(struct hash_tab *t, const char *key)
 {
 	struct hash_entry *e;
-	int cc;
+	size_t cc;
 	void *v;
 
 	if (t == NULL
@@ -297,7 +297,7 @@ hash_remove(struct hash_tab *t, const char *key)
 
 	slurm_mutex_lock(&hash_mutex);
 
-	cc = _pjw_hash(key, t->size);
+	cc = siphash_str(key) % t->size;
 	if (t->lists[cc] == NULL) {
 		slurm_mutex_unlock(&hash_mutex);
 		return NULL;
@@ -433,35 +433,13 @@ _is_prime(int s)
 	return 1;
 }
 
-/* _pjw_hash()
- *
- * Hash a string using an algorithm taken from Aho, Sethi, and Ullman,
- * "Compilers: Principles, Techniques, and Tools," Addison-Wesley,
- * 1985, p. 436.  PJW stands for Peter J. Weinberger, who apparently
- * originally suggested the function.
- */
-static int
-_pjw_hash(const char *x, uint32_t size)
-{
-	const char *s = x;
-	unsigned int h = 0;
-	unsigned int g;
-
-	while (*s != 0)	 {
-		h = (h << 4) + *s++;
-		if ((g = h & (unsigned int) 0xf0000000) != 0)
-			h = (h ^ (g >> 24)) ^ g;
-	}
-
-	return h % size;
-}
 
 /* _hash_install()
  */
 static int
 _hash_install(struct hash_tab *t, const char *key, void *data)
 {
-	int cc;
+	size_t cc;
 	struct hash_entry *e;
 
 	if (t == NULL
@@ -480,7 +458,7 @@ _hash_install(struct hash_tab *t, const char *key, void *data)
 	}
 	e->data = data;
 
-	cc = _pjw_hash(key, t->size);
+	cc = siphash_str(key) % t->size;
 	if (t->lists[cc] == NULL)
 		t->lists[cc] = list_make_("");
 	list_push_(t->lists[cc], (struct list_ *)e);
@@ -495,13 +473,13 @@ static struct hash_entry *
 _hash_lookup(struct hash_tab *t, const char *key)
 {
 	struct hash_entry *e;
-	int cc;
+	size_t cc;
 
 	if (t == NULL
 	    || key == NULL)
 		return NULL;
 
-	cc = _pjw_hash(key, t->size);
+	cc = siphash_str(key) % t->size;
 	if (t->lists[cc] == NULL)
 		return NULL;
 

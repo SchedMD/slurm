@@ -29,6 +29,7 @@ documents those changes that are of interest to users and administrators.
  -- Add --units=[KMGTP] option to sacct to display values in specific unit type.
  -- Modify sacct and sacctmgr to display TRES values in converted units.
  -- Modify sacctmgr to accept TRES values with [KMGTP] suffixes.
+ -- Replace hash function with more modern SipHash functions.
 
 * Changes in Slurm 16.05.0pre2
 ==============================

@@ -44,6 +44,8 @@
 #  include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#include <fcntl.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
