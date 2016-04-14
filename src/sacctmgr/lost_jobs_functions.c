@@ -60,7 +60,7 @@ static void _print_lost_jobs(List jobs)
 	int field_count;
 	List format_list = list_create(slurm_destroy_char);
 	slurm_addto_char_list(format_list,
-			      "JobID,JobName,Part,Cluster,State%10,Start,End");
+			      "ID%-12,Name,Part,Cluster,State%10,Start,End");
 	print_fields_list = sacctmgr_process_format_list(format_list);
 	FREE_NULL_LIST(format_list);
 
@@ -75,13 +75,13 @@ static void _print_lost_jobs(List jobs)
 		int curr_inx = 1;
 		while((field = list_next(field_itr))) {
 			switch(field->type) {
-			case PRINT_JOBID:
+			case PRINT_ID:
 				field->print_routine(
 					field,
 					job->jobid,
 					(curr_inx == field_count));
 				break;
-			case PRINT_JOBNAME:
+			case PRINT_NAME:
 				field->print_routine(
 					field,
 					job->jobname,
@@ -107,13 +107,13 @@ static void _print_lost_jobs(List jobs)
 					outbuf,
 					(curr_inx == field_count));
 				break;
-			case PRINT_START:
+			case PRINT_TIMESTART:
 				field->print_routine(
 					field,
 					job->start,
 					(curr_inx == field_count));
 				break;
-			case PRINT_END:
+			case PRINT_TIMEEND:
 				field->print_routine(
 					field,
 					job->end,

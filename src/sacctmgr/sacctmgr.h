@@ -207,12 +207,6 @@ typedef enum {
 	/* RESERVATION */
 	PRINT_ASSOC_NAME = 10000,
 
-	/* JOBS */
-	PRINT_JOBID = 10100,
-	PRINT_JOBNAME,
-	PRINT_START,
-	PRINT_END,
-
 } sacctmgr_print_t;
 
 
