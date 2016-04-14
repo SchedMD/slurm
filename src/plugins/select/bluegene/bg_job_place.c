@@ -478,8 +478,8 @@ static bg_record_t *_find_matching_block(List block_list,
 				    & DEBUG_FLAG_BG_PICK) {
 					convert_num_unit(
 						(float)bg_record->cpu_cnt,
-						tmp_char,
-						sizeof(tmp_char), UNIT_NONE,
+						tmp_char, sizeof(tmp_char),
+						UNIT_NONE, NO_VAL,
 						CONVERT_NUM_UNIT_EXACT);
 					info("block %s CPU count (%u) "
 					     "not suitable, asking for %u-%u",
