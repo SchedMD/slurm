@@ -31,6 +31,7 @@ documents those changes that are of interest to users and administrators.
  -- Modify sacctmgr to accept TRES values with [KMGTP] suffixes.
  -- Replace hash function with more modern SipHash functions.
  -- Add "--with-cray_dir" build/configure option.
+ -- BB- Only send stage_out email when stage_out is set in script.
 
 * Changes in Slurm 16.05.0pre2
 ==============================
