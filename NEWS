@@ -30,6 +30,7 @@ documents those changes that are of interest to users and administrators.
  -- Modify sacct and sacctmgr to display TRES values in converted units.
  -- Modify sacctmgr to accept TRES values with [KMGTP] suffixes.
  -- Replace hash function with more modern SipHash functions.
+ -- Add "--with-cray_dir" build/configure option.
 
 * Changes in Slurm 16.05.0pre2
 ==============================

@@ -92,6 +92,10 @@ AC_DEFUN([X_AC_CRAY],
     _x_ac_cray_alpscomm_dir="alpscomm/default"
 
     _x_ac_cray_dirs="/opt/cray"
+    AC_ARG_WITH(
+      [cray_dir],
+      AS_HELP_STRING(--with-cray_dir=PATH,Specify path to Cray file installation - /opt/cray by default),
+      [AS_IF([test "x$with_cray_dir" != xno],[_x_ac_cray_dirs="$with_cray_dir $_x_ac_cray_dirs"])])
 
     for d in $_x_ac_cray_dirs; do
       test -d "$d" || continue

@@ -1024,6 +1024,7 @@ enable_cray_emulation
 enable_native_cray
 enable_cray_network
 enable_really_no_cray
+with_cray_dir
 with_datawarp
 enable_developer
 enable_debug
@@ -1772,6 +1773,8 @@ Optional Packages:
                           Specify path to mysql_config binary
   --with-alps-emulation   Run SLURM against an emulated ALPS system - requires
                           option cray.conf [default=no]
+  --with-cray_dir=PATH    Specify path to Cray file installation - /opt/cray
+                          by default
   --with-datawarp=PATH    Specify path to DataWarp installation
   --with-slurmctld-port=N set slurmctld default port [6817]
   --with-slurmd-port=N    set slurmd default port [6818]
@@ -22715,6 +22718,14 @@ $as_echo "#define HAVE_ALPS_CRAY_EMULATION 1" >>confdefs.h
     _x_ac_cray_alpscomm_dir="alpscomm/default"
 
     _x_ac_cray_dirs="/opt/cray"
+
+# Check whether --with-cray_dir was given.
+if test "${with_cray_dir+set}" = set; then :
+  withval=$with_cray_dir; if test "x$with_cray_dir" != xno; then :
+  _x_ac_cray_dirs="$with_cray_dir $_x_ac_cray_dirs"
+fi
+fi
+
 
     for d in $_x_ac_cray_dirs; do
       test -d "$d" || continue
