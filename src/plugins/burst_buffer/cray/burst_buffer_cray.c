@@ -2280,7 +2280,7 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 	char *end_ptr = NULL, *sub_tok, *tok;
 	uint64_t tmp_cnt;
 	int rc = SLURM_SUCCESS, swap_cnt = 0;
-	bool enable_persist = false, have_bb = false;
+	bool enable_persist = false, have_bb = false, have_stage_out = false;
 
 	xassert(bb_size);
 	*bb_size = 0;
@@ -2413,6 +2413,8 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 					rc =ESLURM_INVALID_BURST_BUFFER_REQUEST;
 				*bb_size += _set_granularity(tmp_cnt, bb_pool);
 				xfree(bb_pool);
+			} else if (!xstrncmp(tok, "stage_out", 9)) {
+				have_stage_out = true;
 			}
 		}
 		tok = strtok_r(NULL, "\n", &save_ptr);
@@ -2421,6 +2423,11 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 
 	if (!have_bb)
 		rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
+
+	if (!have_stage_out) {
+		/* prevent sending stage out email */
+		job_desc->mail_type &= (~MAIL_JOB_STAGE_OUT);
+	}
 
 	return rc;
 }
