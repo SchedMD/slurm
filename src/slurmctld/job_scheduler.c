@@ -225,6 +225,7 @@ static bool _job_runnable_test1(struct job_record *job_ptr, bool sched_plugin)
 		job_ptr->start_time = (time_t) 0;
 	if (job_ptr->priority == 0)	{ /* held */
 		if (job_ptr->state_reason != FAIL_BAD_CONSTRAINTS
+		    && (job_ptr->state_reason != FAIL_BURST_BUFFER_OP)
 		    && (job_ptr->state_reason != WAIT_HELD)
 		    && (job_ptr->state_reason != WAIT_HELD_USER)
 		    && job_ptr->state_reason != WAIT_MAX_REQUEUE) {

@@ -9570,6 +9570,7 @@ static bool _top_priority(struct job_record *job_ptr)
 	if ((!top) && detail_ptr) {	/* not top prio */
 		if (job_ptr->priority == 0) {		/* user/admin hold */
 			if (job_ptr->state_reason != FAIL_BAD_CONSTRAINTS
+			    && (job_ptr->state_reason != FAIL_BURST_BUFFER_OP)
 			    && (job_ptr->state_reason != WAIT_HELD)
 			    && (job_ptr->state_reason != WAIT_HELD_USER)
 			    && job_ptr->state_reason != WAIT_MAX_REQUEUE) {
