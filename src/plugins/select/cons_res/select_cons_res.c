@@ -91,6 +91,10 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#ifndef   _GNU_SOURCE
+#  define _GNU_SOURCE
+#endif
+
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
 #  if HAVE_STDINT_H
@@ -100,6 +104,8 @@
 #    include <inttypes.h>
 #  endif
 #endif
+
+#include <string.h>
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/slurm_selecttype_info.h"
@@ -182,6 +188,7 @@ bool     preempt_by_part      = false;
 bool     preempt_by_qos       = false;
 uint64_t select_debug_flags   = 0;
 uint16_t select_fast_schedule = 0;
+bool     topo_optional        = false;
 
 struct part_res_record *select_part_record = NULL;
 struct node_res_record *select_node_record = NULL;
@@ -1965,9 +1972,13 @@ extern int init(void)
 	select_debug_flags = slurm_get_debug_flags();
 
 	topo_param = slurm_get_topology_param();
-	if (topo_param && strstr(topo_param, "dragonfly"))
-		have_dragonfly = true;
-	xfree(topo_param);
+	if (topo_param) {
+		if (strcasestr(topo_param, "dragonfly"))
+			have_dragonfly = true;
+		if (strcasestr(topo_param, "TopoOptional"))
+			topo_optional = true;
+		xfree(topo_param);
+	}
 
 	return SLURM_SUCCESS;
 }

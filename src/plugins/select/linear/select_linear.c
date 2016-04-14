@@ -41,6 +41,10 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#ifndef   _GNU_SOURCE
+#  define _GNU_SOURCE
+#endif
+
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
 #  if HAVE_STDINT_H
@@ -52,10 +56,11 @@
 #endif
 
 #include <stdio.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
@@ -223,6 +228,7 @@ static int select_node_cnt = 0;
 static uint16_t select_fast_schedule;
 static uint16_t cr_type;
 static bool have_dragonfly = false;
+static bool topo_optional = false;
 
 /* Record of resources consumed on each node including job details */
 static struct cr_record *cr_ptr = NULL;
@@ -748,7 +754,8 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 					   min_nodes, max_nodes, req_nodes);
 	}
 	
-	if (switch_record_cnt && switch_record_table) {
+	if (switch_record_cnt && switch_record_table &&
+	    ((topo_optional == false) || job_ptr->req_switch)) {
 		/* Perform optimized resource selection based upon topology */
 		if (have_dragonfly) {
 			return _job_test_dfly(job_ptr, bitmap,
@@ -3465,9 +3472,13 @@ extern int init ( void )
 		verbose("%s loaded with argument %u", plugin_name, cr_type);
 
 	topo_param = slurm_get_topology_param();
-	if (topo_param && strstr(topo_param, "dragonfly"))
-		have_dragonfly = true;
-	xfree(topo_param);
+	if (topo_param) {
+		if (strcasestr(topo_param, "dragonfly"))
+			have_dragonfly = true;
+		if (strcasestr(topo_param, "TopoOptional"))
+			topo_optional = true;
+		xfree(topo_param);
+	}
 
 	return rc;
 }

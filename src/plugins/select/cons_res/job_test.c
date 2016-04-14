@@ -1264,7 +1264,8 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 					  cr_node_cnt, cpu_cnt);
 	}
 
-	if (switch_record_cnt && switch_record_table) {
+	if (switch_record_cnt && switch_record_table &&
+	    ((topo_optional == false) || job_ptr->req_switch)) {
 		/* Perform optimized resource selection based upon topology */
 		if (have_dragonfly) {
 			return _eval_nodes_dfly(job_ptr, node_map,
