@@ -359,13 +359,13 @@ fini:
 #else
 	if (debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		if (nhc_info->is_step) {
-			info("simluating calling NHC for step %u.%u "
+			info("simulating call to NHC for step %u.%u "
 			     "and apid %"PRIu64" on nodes %s",
 			     nhc_info->jobid,
 			     SLURM_ID_HASH_STEP_ID(nhc_info->apid),
 			     nhc_info->apid, nhc_info->nodelist);
 		} else {
-			info("simluating calling NHC for job %u "
+			info("simulating call to NHC for job %u "
 			     "and apid %"PRIu64" on nodes %s",
 			     nhc_info->jobid, nhc_info->apid,
 			     nhc_info->nodelist);
