@@ -1196,10 +1196,9 @@ static void *_step_kill(void *args)
 	nhc_info.exit_code = SIGKILL;
 	nhc_info.user_id = step_ptr->job_ptr->user_id;
 
-	if (!step_ptr->step_layout || !step_ptr->step_layout->node_list) {
-		if (step_ptr->job_ptr)
-			nhc_info.nodelist = xstrdup(step_ptr->job_ptr->nodes);
-	} else
+	if (!step_ptr->step_layout || !step_ptr->step_layout->node_list)
+		nhc_info.nodelist = xstrdup(step_ptr->job_ptr->nodes);
+	else
 		nhc_info.nodelist = xstrdup(step_ptr->step_layout->node_list);
 	unlock_slurmctld(job_read_lock);
 
