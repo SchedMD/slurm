@@ -2317,12 +2317,17 @@ static void _resource_spec_fini(void)
  */
 static void _wait_health_check(void)
 {
-	while (!_shutdown &&
-	       (conf->health_check_interval != 0) &&
-	       (run_script_health_check() != SLURM_SUCCESS)) {
-		info("Node Health Check failed, retrying in %d secs",
-		     HEALTH_RETRY_DELAY);
-		sleep(HEALTH_RETRY_DELAY);
+	int last_check_time = 0;
+	while (!_shutdown && (conf->health_check_interval != 0) ) {
+		if (time(NULL) - last_check_time > HEALTH_RETRY_DELAY) {
+			if (run_script_health_check() == SLURM_SUCCESS) {
+				break;
+			}
+			last_check_time = time(NULL);
+			info ("Health Check failed, retrying in %ds...",
+				HEALTH_RETRY_DELAY);
+		}
+		usleep(10000);
 	}
 }
 
