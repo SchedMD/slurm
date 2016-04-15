@@ -74,7 +74,7 @@ make_bash_script $file_in "
   $bin_sleep 10
 "
 
-spawn $sbatch -N1 $file_in
+spawn $sbatch -N1 -o /dev/null -t1 $file_in
 expect {
         -re "Submitted batch job ($number)" {
                 set job_id $expect_out(1,string)
@@ -114,8 +114,8 @@ expect {
 	}
 }
 
+cancel_job $job_id
 if {$exit_code == 0} {
-	cancel_job $job_id
 	if {$job_found == 1} {
 		send_user "\nSUCCESS\n"
 	} else {
