@@ -88,8 +88,11 @@ wait_for_job $job_id DONE
 
 foreach option [array names check_list] {
 	#send_user "\n$option=$check_list($option)\n"
-	set match 0
+	if {[string compare $option "BatchHost"] == 0 && [test_front_end] != 0} {
+		continue
+	}
 
+	set match 0
 	log_user 0
 	spawn $scontrol show job $job_id
 	expect {
@@ -115,6 +118,7 @@ foreach option [array names check_list] {
 	}
 }
 
+cancel_job $job_id
 if {$exit_code == 0} {
 	exec $bin_rm -fr $file_in
 	send_user "\nSUCCESS\n"
