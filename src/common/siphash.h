@@ -62,9 +62,6 @@
  * siphash_str() for a simple to use thing for string hashing.  */
 int siphash(uint8_t *out, const uint8_t *in, uint64_t inlen, const uint8_t *k);
 
-/* Initialize the siphash key.  */
-void siphash_init(void);
-
 /* Hash a string.  */
 uint64_t siphash_str(const char* str);
 

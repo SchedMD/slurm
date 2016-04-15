@@ -84,7 +84,6 @@
 #include "src/common/plugstack.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
-#include "src/common/siphash.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_acct_gather_energy.h"
@@ -244,9 +243,6 @@ main (int argc, char *argv[])
 	} else {
 		debug("Not running as root. Can't drop supplementary groups");
 	}
-
-	/* Initialize the key for the hash function. */
-	siphash_init();
 
 	/*
 	 * Create and set default values for the slurmd global

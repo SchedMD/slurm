@@ -58,7 +58,6 @@
 #include "src/common/log.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
-#include "src/common/siphash.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_time.h"
@@ -127,9 +126,6 @@ int main(int argc, char *argv[])
 	char node_name_long[128];
 	void *db_conn = NULL;
 	assoc_init_args_t assoc_init_arg;
-
-	/* Initialize hash function key.  */
-	siphash_init();
 
 	_init_config();
 	log_init(argv[0], log_opts, LOG_DAEMON, NULL);

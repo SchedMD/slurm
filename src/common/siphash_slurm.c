@@ -37,23 +37,13 @@
 #include "src/common/siphash.h"
 
 
-/* Use a default value for the key in case initializing from
- * /dev/urandom fails or is forgotten.  */
+/* Use a default value for the key */
+/* Note: Slurm is intentially fixing the key value, and not initializing it
+ * from /dev/urandom as is commonly recommended. Slurm does not rely on
+ * the hash function for any cryptographic functionality, and randomness
+ * would make debugging harder if the hash key changed on each start. */
 static uint8_t siphash_key[KEYLEN] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
                                        12, 13, 14, 15 };
-
-
-/* Initialize the key from /dev/urandom. Should be called once at
- * process startup, before any threads etc. are created.  */
-void siphash_init()
-{
-	int fd = open_cloexec("/dev/urandom", O_RDONLY);
-	if (fd == -1)
-		return;
-	read(fd, siphash_key, KEYLEN);
-	close(fd);
-}
-
 
 uint64_t siphash_str(const char* str)
 {
