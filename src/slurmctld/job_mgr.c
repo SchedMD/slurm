@@ -5898,6 +5898,9 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	    != SLURM_SUCCESS)
 		goto cleanup_fail;
 
+	if (job_desc->deadline && (job_desc->time_limit == NO_VAL) &&
+	    (job_desc->time_min == NO_VAL))
+		job_desc->time_min = 1;
 	if ((accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
 	    (!acct_policy_validate(job_desc, part_ptr,
 				   assoc_ptr, qos_ptr, NULL,
