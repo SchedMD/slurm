@@ -132,7 +132,7 @@ if {[test_using_slurmdbd] != 1} {
 
 make_bash_script $file_in "sleep 2"
 
-# Start a batch job to get a  usable node
+# Start a batch job to identify a usable node
 spawn $sbatch -t1 --exclusive -o/dev/null $file_in
 expect {
 	-re "Submitted batch job ($number)" {
@@ -147,7 +147,6 @@ expect {
 		wait
 	}
 }
-
 if {$job_id == 0} {
 	send_user "\nFAILURE: sbatch did not submit job\n"
 	exit 1
@@ -171,9 +170,8 @@ expect {
 		wait
 	}
 }
-
 if {$found != 1} {
-	send_user "\nFAILURE: was not able to get usable node\n"
+	send_user "\nFAILURE: was not able to identify a usable node\n"
 	exit 1
 }
 
@@ -182,6 +180,7 @@ cancel_job $job_id
 make_bash_script $file_in "sleep 20"
 
 # Submit job to be requeued
+send_user "\n\nTest 1\n"
 set job_id 0
 spawn $sbatch -N1 -w$node --exclusive -o/dev/null --requeue $file_in
 expect {
@@ -204,6 +203,8 @@ if {$job_id == 0} {
 }
 
 wait_for_job $job_id RUNNING
+# Wait for batch script to start (after message delays, prologs, etc.)
+sleep 5
 
 # Set the node that the job is running on to down
 mod_state "down" "test$test_id"
@@ -215,10 +216,11 @@ sleep 5
 mod_state "resume" "test$test_id"
 
 # Check the number of steps
-check_step 0
+check_step 1
+
 
 # Check the job state
-send_user "\n\nTest 1\n"
+send_user "\n\nTest 2\n"
 wait_for_job $job_id PENDING
 set fail_count [check_sacct_states "NODE_FAIL" 1]
 if {$fail_count != 1} {
@@ -235,10 +237,14 @@ if {$exit_code == 0} {
 }
 
 wait_for_job $job_id RUNNING
+# Wait for batch script to start (after message delays, prologs, etc.)
+sleep 5
 
 # Check the number of steps after job is running
-check_step 0
-send_user "\n\nTest 2\n"
+check_step 1
+
+
+send_user "\n\nTest 3\n"
 set fail_count [check_sacct_states "NODE_FAIL" 1]
 if {$fail_count != 1} {
 	send_user "\nFAILURE: Bad NODE_FAIL count ($fail_count != 1)\n"
@@ -267,35 +273,6 @@ expect {
 
 # Wait a bit for the job to be requeued then check its state
 sleep 8
-send_user "\n\nTest 3\n"
-set fail_count [check_sacct_states "NODE_FAIL" 1]
-if {$fail_count != 1} {
-	send_user "\nFAILURE: Bad NODE_FAIL count ($fail_count != 1)\n"
-	set exit_code 1
-}
-set req_count [check_sacct_states "REQUEUE" 0]
-if {$req_count != 1} {
-	send_user "\nFAILURE: Bad REQUEUE count ($req_count != 1)\n"
-	set exit_code 1
-}
-set canc_count [check_sacct_states "CANCELLED" 0]
-if {$canc_count != 1} {
-	send_user "\nFAILURE: Bad CANCELLED count ($canc_count != 1)\n"
-	set exit_code 1
-}
-set pend_count [check_sacct_states "PENDING" 0]
-if {$pend_count != 1} {
-	send_user "\nFAILURE: Bad PENDING count ($pend_count != 1)\n"
-	set exit_code 1
-}
-if {$exit_code == 0} {
-	send_user "So far, so good\n\n"
-}
-
-wait_for_job $job_id RUNNING
-
-# Check for steps after requeue
-check_step 1
 send_user "\n\nTest 4\n"
 set fail_count [check_sacct_states "NODE_FAIL" 1]
 if {$fail_count != 1} {
@@ -308,7 +285,40 @@ if {$req_count != 1} {
 	set exit_code 1
 }
 set canc_count [check_sacct_states "CANCELLED" 0]
-if {$canc_count != 1} {
+if {$canc_count != 2} {
+	send_user "\nFAILURE: Bad CANCELLED count ($canc_count != 2)\n"
+	set exit_code 1
+}
+set pend_count [check_sacct_states "PENDING" 0]
+if {$pend_count != 1} {
+	send_user "\nFAILURE: Bad PENDING count ($pend_count != 1)\n"
+	set exit_code 1
+}
+if {$exit_code == 0} {
+	send_user "So far, so good\n\n"
+}
+
+wait_for_job $job_id RUNNING
+# Wait for batch script to start (after message delays, prologs, etc.)
+sleep 5
+
+# Check for steps after requeue
+check_step 2
+
+
+send_user "\n\nTest 5\n"
+set fail_count [check_sacct_states "NODE_FAIL" 1]
+if {$fail_count != 1} {
+	send_user "\nFAILURE: Bad NODE_FAIL count ($fail_count != 1)\n"
+	set exit_code 1
+}
+set req_count [check_sacct_states "REQUEUE" 0]
+if {$req_count != 1} {
+	send_user "\nFAILURE: Bad REQUEUE count ($req_count != 1)\n"
+	set exit_code 1
+}
+set canc_count [check_sacct_states "CANCELLED" 0]
+if {$canc_count != 2} {
 	send_user "\nFAILURE: Bad CANCELLED count ($canc_count != 1)\n"
 	set exit_code 1
 }
@@ -324,8 +334,8 @@ if {$exit_code == 0} {
 wait_for_job $job_id DONE
 
 # Check steps after job has completed
-check_step 2
-send_user "\n\nTest 5\n"
+check_step 3
+send_user "\n\nTest 6\n"
 set fail_count [check_sacct_states "NODE_FAIL" 1]
 if {$fail_count != 1} {
 	send_user "\nFAILURE: Bad NODE_FAIL count ($fail_count != 1)\n"
@@ -337,8 +347,8 @@ if {$req_count != 1} {
 	set exit_code 1
 }
 set canc_count [check_sacct_states "CANCELLED" 0]
-if {$canc_count != 1} {
-	send_user "\nFAILURE: Bad CANCELLED count ($canc_count != 1)\n"
+if {$canc_count != 2} {
+	send_user "\nFAILURE: Bad CANCELLED count ($canc_count != 2)\n"
 	set exit_code 1
 }
 set comp_count [check_sacct_states "COMPLETED" 0]
