@@ -3019,13 +3019,13 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	bitstr_t *orig_map, *avail_cores, *free_cores, *part_core_map = NULL;
 	bitstr_t *tmpcore = NULL, *reqmap = NULL;
 	bool test_only;
-	uint32_t c, i, j, k, n, csize, total_cpus, save_mem = 0;
+	uint32_t c, j, k, n, csize, total_cpus, save_mem = 0;
 	int32_t build_cnt;
 	job_resources_t *job_res;
 	struct job_details *details_ptr;
 	struct part_res_record *p_ptr, *jp_ptr;
 	uint16_t *cpu_count;
-	int first, last;
+	int i, first, last;
 
 	if (gang_mode == -1) {
 		if (slurm_get_preempt_mode() & PREEMPT_MODE_GANG)
