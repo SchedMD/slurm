@@ -4212,7 +4212,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		return rc;
 	}
 
-	test_only = will_run || (allocate == 0);
+	test_only = will_run || job_ptr->deadline || (allocate == 0);
 
 	no_alloc = test_only || too_fragmented || _has_deadline(job_ptr) ||
 		   (!top_prio) || (!independent) || !avail_front_end(job_ptr);
