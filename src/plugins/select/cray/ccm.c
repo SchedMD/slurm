@@ -235,7 +235,6 @@ static int * _ccm_convert_nodelist(char *nodelist, int *nid_cnt)
 static char * _ccm_create_unique_file(char *uniqnm, int *uniq_fd,
 				      ccm_info_t *ccm_info)
 {
-	mode_t um;
 	int fd = -1;
 	char *tmpfilenm = NULL;
 
@@ -245,9 +244,7 @@ static char * _ccm_create_unique_file(char *uniqnm, int *uniq_fd,
 	 */
 	*uniq_fd = -1;
 	tmpfilenm = xstrdup(uniqnm);
-	um = umask(0);
 	fd = mkstemp(tmpfilenm);
-	(void)umask(um);
 	if (fd < 0) {
 		CRAY_ERR("CCM job %u unable to mkstemp %s, %m",
 			 ccm_info->job_id, uniqnm);
