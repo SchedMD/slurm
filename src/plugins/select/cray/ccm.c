@@ -149,7 +149,6 @@ static int _parse_ccm_config(char *entry, char **ccm_partition)
 		return num_ents;
 	}
 	/* Move past initial " and ignore anything after the end matching " */
-	tmp = part_list;
 	tmp = strchr(part_list + 1, '"');
 	if (tmp == NULL) {
 		debug("CCM tmp invalid config entry %s", part_list + 1);
