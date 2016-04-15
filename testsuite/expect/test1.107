@@ -40,7 +40,7 @@ print_header $test_id
 # Spawn a job with a deadline and no time
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun -v  -N1 --deadline now+1hour --time-min 20 -t180 $bin_sleep 1]
+set srun_pid [spawn $srun -v  -N1 --deadline now+1hour --time-min 20 -t120 $bin_sleep 1]
 expect {
 	-re "Requested time limit is invalid" {
 		send_user "\nFAILURE: time limit error\n"
@@ -61,6 +61,7 @@ expect {
 }
 if {$job_id == 0} {
 	send_user "\nFAILURE: job not submitted\n"
+	send_user "FAILURE: This can be due to QOS or account time limit <120 minutes\n"
 	exit 1
 }
 

@@ -48,7 +48,7 @@ make_bash_script $file_in "$bin_sleep 5"
 # Spawn a batch job with a deadline and no time
 #
 set timeout $max_job_delay
-spawn $sbatch --output=/dev/null --error=/dev/null --deadline now+1hour --time-min 20 -t 180 $file_in
+spawn $sbatch --output=/dev/null --error=/dev/null --deadline now+1hour --time-min 20 -t 120 $file_in
 expect {
 	-re "Requested time limit is invalid (missing or exceeds some limit)" {
 		set exit_code 1
@@ -77,7 +77,9 @@ if {$job_id == 0} {
 # verify time limit
 #
 if {[wait_for_job $job_id DONE] != 0} {
+	cancel_job $job_id
 	send_user "\nFAILURE: job failed to run to completion\n"
+	send_user "FAILURE: This can be due to QOS or account time limit <120 minutes\n"
 	exit 1
 }
 spawn $scontrol show job $job_id
