@@ -1681,6 +1681,20 @@ extern int select_p_job_init(List job_list)
 						job_ptr, _job_fini);
 				}
 			}
+#if defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
+			/* As applicable, rerun CCM prologue during recovery */
+			if ((ccm_config.ccm_enabled) &&
+			    ccm_check_partitions(job_ptr)) {
+				if ((job_ptr->details) &&
+				    ((job_ptr->details->prolog_running) ||
+				     IS_JOB_CONFIGURING(job_ptr))) {
+					debug("CCM job %u recovery rerun "
+					      "prologue", job_ptr->job_id);
+					job_ptr->job_state |= JOB_CONFIGURING;
+					spawn_ccm_thread(job_ptr, ccm_begin);
+				}
+			}
+#endif
 		}
 		list_iterator_destroy(itr);
 	}
