@@ -226,9 +226,7 @@ struct hostlist {
 #define HOSTLIST_MAGIC    57005
 	int magic;
 #endif
-#if    WITH_PTHREADS
 	pthread_mutex_t mutex;
-#endif                /* WITH_PTHREADS */
 
 	/* current number of elements available in array */
 	int size;
@@ -389,66 +387,16 @@ static int hostset_find_host(hostset_t, const char *);
 
 /* ------[ macros ]------ */
 
-#ifdef WITH_PTHREADS
-#  define mutex_init(mutex)						\
-	do {								\
-		int e = pthread_mutex_init(mutex, NULL);		\
-		if (e) {						\
-			errno = e;					\
-			lsd_fatal_error(__FILE__, __LINE__, "hostlist mutex init:"); \
-			abort();					\
-		}							\
-	} while (0)
-
-#  define mutex_lock(mutex)						\
-	do {								\
- 		int e = pthread_mutex_lock(mutex);			\
-		if (e) {						\
-			errno = e;					\
-			lsd_fatal_error(__FILE__, __LINE__, "hostlist mutex lock:"); \
- 			abort();					\
-		}							\
-	} while (0)
-
-#  define mutex_unlock(mutex)						\
-	do {								\
-		int e = pthread_mutex_unlock(mutex);			\
-		if (e) {						\
-			errno = e;					\
-			lsd_fatal_error(__FILE__, __LINE__, "hostlist mutex unlock:"); \
-			abort();					\
-		}							\
-	} while (0)
-
-#  define mutex_destroy(mutex)						\
-	do {								\
-		int e = pthread_mutex_destroy(mutex);			\
-		if (e) {						\
-			errno = e;					\
-			lsd_fatal_error(__FILE__, __LINE__, "hostlist mutex destroy:");	\
-			abort();					\
-		}							\
-	} while (0)
-
-#else                /* !WITH_PTHREADS */
-
-#  define mutex_init(mutex)
-#  define mutex_lock(mutex)
-#  define mutex_unlock(mutex)
-#  define mutex_destroy(mutex)
-
-#endif                /* WITH_PTHREADS */
-
 #define LOCK_HOSTLIST(_hl)				\
 	do {						\
 		assert(_hl != NULL);			\
-		mutex_lock(&(_hl)->mutex);		\
+		slurm_mutex_lock(&(_hl)->mutex);		\
 		assert((_hl)->magic == HOSTLIST_MAGIC);	\
 	} while (0)
 
 #define UNLOCK_HOSTLIST(_hl)			\
 	do {					\
-		mutex_unlock(&(_hl)->mutex);	\
+		slurm_mutex_unlock(&(_hl)->mutex);	\
 	} while (0)
 
 #define seterrno_ret(_errno, _rc)		\
@@ -1316,7 +1264,7 @@ static hostlist_t hostlist_new(void)
 		goto fail1;
 
 	assert(new->magic = HOSTLIST_MAGIC);
-	mutex_init(&new->mutex);
+	slurm_mutex_init(&new->mutex);
 
 	new->hr = (hostrange_t *) malloc(HOSTLIST_CHUNK * sizeof(hostrange_t));
 	if (!new->hr)
@@ -2029,16 +1977,16 @@ void hostlist_destroy(hostlist_t hl)
 		return;
 	LOCK_HOSTLIST(hl);
 	while (hl->ilist) {
-		mutex_unlock(&hl->mutex);
+		slurm_mutex_unlock(&hl->mutex);
 		hostlist_iterator_destroy(hl->ilist);
-		mutex_lock(&hl->mutex);
+		slurm_mutex_lock(&hl->mutex);
 	}
 	for (i = 0; i < hl->nranges; i++)
 		hostrange_destroy(hl->hr[i]);
 	free(hl->hr);
 	assert(hl->magic = 0x1);
 	UNLOCK_HOSTLIST(hl);
-	mutex_destroy(&hl->mutex);
+	slurm_mutex_destroy(&hl->mutex);
 	free(hl);
 }
 
@@ -2052,9 +2000,9 @@ int hostlist_push(hostlist_t hl, const char *hosts)
 	new = hostlist_create(hosts);
 	if (!new)
 		return 0;
-	mutex_lock(&new->mutex);
+	slurm_mutex_lock(&new->mutex);
 	retval = new->nhosts;
-	mutex_unlock(&new->mutex);
+	slurm_mutex_unlock(&new->mutex);
 	hostlist_push_list(hl, new);
 	hostlist_destroy(new);
 	return retval;
