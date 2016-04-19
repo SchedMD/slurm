@@ -43,13 +43,10 @@
 #endif
 
 #include <fcntl.h>
+#include <pthread.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <sys/time.h>
-
-#if WITH_PTHREADS
-#  include <pthread.h>
-#endif /* WITH_PTHREADS */
 
 #include "slurm/slurm_errno.h"
 #include "src/common/bitstring.h"
@@ -141,9 +138,7 @@ struct slurm_cred_context {
 #  define CRED_CTX_MAGIC 0x0c0c0c
 	int magic;
 #endif
-#if WITH_PTHREADS
 	pthread_mutex_t mutex;
-#endif
 	enum ctx_type  type;       /* type of context (creator or verifier) */
 	void          *key;        /* private or public key                 */
 	List           job_list;   /* List of used jobids (for verifier)    */
@@ -164,9 +159,7 @@ struct slurm_job_credential {
 #  define CRED_MAGIC 0x0b0b0b
 	int      magic;
 #endif
-#ifdef  WITH_PTHREADS
 	pthread_mutex_t mutex;
-#endif
 	uint32_t  jobid;	/* Job ID associated with this cred	*/
 	uint32_t  stepid;	/* Job step ID for this credential	*/
 	uid_t     uid;		/* user for which this cred is valid	*/

@@ -42,10 +42,11 @@
 #endif
 
 #include <errno.h>
+#include <pthread.h>
 #include <stdio.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #include "slurm/slurm.h"
 
@@ -57,9 +58,6 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_interface.h"
 
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif /* WITH_PTHREADS */
 
 #define MAX_RETRIES 3
 

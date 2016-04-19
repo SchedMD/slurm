@@ -43,22 +43,16 @@
 #  include "config.h"
 #endif
 
-#include <string.h>
+#include <ctype.h>
+#include <errno.h>
+#include <pthread.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
-#if 	HAVE_UNISTD_H
-#  include <unistd.h>
-#endif
-
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif
-
-#include <stdarg.h>
-#include <ctype.h>
-#include <sys/time.h>
+#include <string.h>
 #include <time.h>
+#include <sys/time.h>
+#include <unistd.h>
 
 #include "slurm/slurm_errno.h"
 

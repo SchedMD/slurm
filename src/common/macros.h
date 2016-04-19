@@ -124,9 +124,7 @@
 #  define __NORETURN_ATTR			((void)0)
 #endif /* __GNUC__ */
 
-#ifdef WITH_PTHREADS
-
-#  define slurm_mutex_init(mutex)					\
+#define slurm_mutex_init(mutex)					\
 	do {								\
 		int err = pthread_mutex_init(mutex, NULL);		\
 		if (err) {						\
@@ -137,7 +135,7 @@
 		}							\
 	} while (0)
 
-#  define slurm_mutex_destroy(mutex)					\
+#define slurm_mutex_destroy(mutex)					\
 	do {								\
 		int err = pthread_mutex_destroy(mutex);			\
 		if (err) {						\
@@ -148,7 +146,7 @@
 		}							\
 	} while (0)
 
-#  define slurm_mutex_lock(mutex)					\
+#define slurm_mutex_lock(mutex)					\
 	do {								\
 		int err = pthread_mutex_lock(mutex);			\
 		if (err) {						\
@@ -159,7 +157,7 @@
 		}							\
 	} while (0)
 
-#  define slurm_mutex_unlock(mutex)					\
+#define slurm_mutex_unlock(mutex)					\
 	do {								\
 		int err = pthread_mutex_unlock(mutex);			\
 		if (err) {						\
@@ -170,7 +168,7 @@
 		}							\
 	} while (0)
 
-#  ifdef PTHREAD_SCOPE_SYSTEM
+#ifdef PTHREAD_SCOPE_SYSTEM
 #  define slurm_attr_init(attr)						\
 	do {								\
 		if (pthread_attr_init(attr))				\
@@ -181,7 +179,7 @@
 		if (pthread_attr_setstacksize(attr, 1024*1024))		\
 			error("pthread_attr_setstacksize: %m");		\
 	 } while (0)
-#  else
+#else
 #  define slurm_attr_init(attr)						\
 	do {								\
 		if (pthread_attr_init(attr))				\
@@ -189,25 +187,14 @@
 		if (pthread_attr_setstacksize(attr, 1024*1024))		\
 			error("pthread_attr_setstacksize: %m");		\
 	} while (0)
-#  endif
+#endif
 
-#  define slurm_attr_destroy(attr)					\
+#define slurm_attr_destroy(attr)					\
 	do {								\
 		if (pthread_attr_destroy(attr))				\
 			error("pthread_attr_destroy failed, "		\
 				"possible memory leak!: %m");		\
 	} while (0)
-
-#else /* !WITH_PTHREADS */
-
-#  define slurm_mutex_init(mutex)
-#  define slurm_mutex_destroy(mutex)
-#  define slurm_mutex_lock(mutex)
-#  define slurm_mutex_unlock(mutex)
-#  define slurm_attr_init(attr)
-#  define slurm_attr_destroy(attr)
-
-#endif /* WITH_PTHREADS */
 
 #define slurm_atoul(str) strtoul(str, NULL, 10)
 #define slurm_atoull(str) strtoull(str, NULL, 10)

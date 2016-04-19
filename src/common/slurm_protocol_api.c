@@ -45,11 +45,9 @@
 
 /* GLOBAL INCLUDES */
 
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif /* WITH_PTHREADS */
-
+#include <ctype.h>
 #include <errno.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -57,7 +55,6 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
-#include <ctype.h>
 
 /* PROJECT INCLUDES */
 #include "src/common/assoc_mgr.h"

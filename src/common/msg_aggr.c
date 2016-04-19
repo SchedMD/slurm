@@ -43,6 +43,8 @@
 #  include "config.h"
 #endif
 
+#include <pthread.h>
+
 #include "slurm/slurm.h"
 
 #include "src/common/msg_aggr.h"
@@ -54,10 +56,6 @@
 #include "src/common/slurm_protocol_interface.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
-
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif /* WITH_PTHREADS */
 
 typedef struct {
 	pthread_mutex_t	aggr_mutex;

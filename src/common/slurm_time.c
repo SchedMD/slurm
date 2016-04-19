@@ -40,12 +40,10 @@
 #  include "config.h"
 #endif
 
+#include <pthread.h>
 #include <time.h>
 
 #include "src/common/macros.h"
-
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
 
 static pthread_mutex_t  time_lock = PTHREAD_MUTEX_INITIALIZER;
 static void _atfork_child()  { pthread_mutex_init(&time_lock, NULL); }
@@ -58,13 +56,6 @@ inline static void _init(void)
 		at_forked = true;
 	}
 }
-#else
-
-inline static void _init(void)
-{
-	;
-}
-#endif
 
 extern char *slurm_asctime(const struct tm *tp)
 {
