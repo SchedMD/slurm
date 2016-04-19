@@ -38,9 +38,7 @@
 #ifndef _RES_INFO_H
 #define _RES_INFO_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <stdint.h>
 

@@ -39,11 +39,10 @@
 #ifndef _SRUN_MPI_H
 #define _SRUN_MPI_H
 
-#if HAVE_CONFIG_H
-# include "config.h"
-#endif
+#include "config.h"
 
 #include <stdbool.h>
+
 #include "slurm/slurm.h"
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"

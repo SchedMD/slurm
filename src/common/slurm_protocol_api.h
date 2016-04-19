@@ -42,9 +42,7 @@
 #ifndef _SLURM_PROTOCOL_API_H
 #define _SLURM_PROTOCOL_API_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <inttypes.h>
 #include <sys/types.h>

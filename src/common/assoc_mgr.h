@@ -44,9 +44,7 @@
 #ifndef _SLURM_ASSOC_MGR_H
 #define _SLURM_ASSOC_MGR_H
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include "src/common/list.h"
 #include "src/common/slurm_accounting_storage.h"

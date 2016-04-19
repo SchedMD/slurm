@@ -39,12 +39,9 @@
 #ifndef _PARSE_TIME_H_
 #define _PARSE_TIME_H_
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <inttypes.h>
-
 #include <time.h>
 
 /* Convert string to equivalent time value

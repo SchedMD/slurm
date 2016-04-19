@@ -66,9 +66,7 @@
 #ifndef __SLURM_XLATOR_H__
 #define __SLURM_XLATOR_H__
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #if USE_ALIAS
 

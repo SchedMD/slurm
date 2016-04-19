@@ -28,16 +28,10 @@
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#  if HAVE_STRING_H
-#    include <string.h>
-#  endif
-#else                /* !HAVE_CONFIG_H */
-#  include <string.h>
-#endif                /* HAVE_CONFIG_H */
+#include "config.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"

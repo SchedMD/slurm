@@ -34,15 +34,11 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
 
-#if HAVE_STRING_H
-#  include <string.h>
-#endif
+#include "config.h"
 
 #include <ctype.h>
+#include <string.h>
 #include <sys/types.h>
 
 #include "slurm/slurm.h"

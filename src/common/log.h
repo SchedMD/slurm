@@ -46,9 +46,7 @@
 #ifndef _LOG_H
 #define _LOG_H
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #ifdef HAVE_SYS_SYSLOG_H
 #  include <sys/syslog.h>

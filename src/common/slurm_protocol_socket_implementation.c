@@ -38,27 +38,24 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #define _USE_IRS 1	/* Required for AIX and hstrerror() */
 
-#include <unistd.h>
-#include <string.h>
-#include <netdb.h>
+#include <arpa/inet.h>
 #include <errno.h>
+#include <netdb.h>
 #include <netinet/in.h>
 #include <poll.h>
+#include <signal.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/param.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <signal.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <stdlib.h>
-#include <arpa/inet.h>
-#include <sys/param.h>
-#include <stdlib.h>
+#include <unistd.h>
 
 #if HAVE_SYS_SOCKET_H
 #  include <sys/socket.h>

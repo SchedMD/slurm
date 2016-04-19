@@ -35,11 +35,9 @@
 \*****************************************************************************/
 
 #ifndef _SLURM_POWER_H
-#define _SLURM_POWER_H 	1
+#define _SLURM_POWER_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include "src/common/macros.h"
 #include "src/common/pack.h"

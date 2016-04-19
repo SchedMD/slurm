@@ -35,14 +35,10 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-
 #ifndef _FD_H
 #define _FD_H
 
-
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif /* HAVE_CONFIG_H */
+#include "config.h"
 
 #include <fcntl.h>
 #include <sys/stat.h>

@@ -16,12 +16,12 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#  if (!HAVE_STRLCPY)
+#include "config.h"
 
-#include <sys/types.h>
+#if (!HAVE_STRLCPY)
+
 #include <string.h>
+#include <sys/types.h>
 
 #include "src/common/macros.h"
 #include "src/common/strlcpy.h"
@@ -63,5 +63,4 @@ strlcpy(char *dst, const char *src, size_t siz)
 	return(s - src - 1);	/* count does not include NUL */
 }
 
-#  endif /* !HAVE_STRLCPY */
-#endif /* HAVE_CONFIG_H */
+#endif /* !HAVE_STRLCPY */

@@ -39,9 +39,7 @@
 #ifndef _HAVE_IO_HDR_H
 #define _HAVE_IO_HDR_H
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <inttypes.h>
 

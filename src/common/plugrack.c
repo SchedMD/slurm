@@ -37,50 +37,14 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
+#include "config.h"
 
-#  if HAVE_DIRENT_H
-#    include <dirent.h>
-#    define NAMLEN(dirent) strlen((dirent)->d_name)
-#  else /* ! HAVE_DIRENT_H */
-#    define dirent direct
-#    define NAMLEN(dirent) (dirent)->d_namlen
-#  endif /* HAVE_DIRENT_H */
-
-#  if STDC_HEADERS
-#    include <string.h>
-#  else /* ! STDC_HEADERS */
-#    if !HAVE_STRCHR
-#      define strchr index
-#      define strrchr rindex
-char *strchr(), *strrchr();
-#    endif /* HAVE_STRCHR */
-#  endif /* STDC_HEADERS */
-
-#  if HAVE_UNISTD_H
-#    include <unistd.h>
-#  endif /* HAVE_UNISTD_H */
-#  if HAVE_SYS_TYPES_H
-#    include <sys/types.h>
-#  endif
-#  if HAVE_SYS_STAT_H
-#    include <sys/stat.h>
-#  endif
-
-#  if HAVE_STDLIB_H
-#    include <stdlib.h>
-#  endif
-
-#else /* ! HAVE_CONFIG_H */
-#  include <dirent.h>
-#  include <string.h>
-#  include <stdlib.h>
-#  include <unistd.h>
-#  include <dirent.h>
-#  include <sys/types.h>
-#  include <sys/stat.h>
-#endif /* HAVE_CONFIG_H */
+#include <dirent.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "src/common/macros.h"
 #include "src/common/xassert.h"

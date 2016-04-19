@@ -40,13 +40,9 @@
 #ifndef _HAVE_SLURM_CRED_H
 #define _HAVE_SLURM_CRED_H
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
-#if HAVE_UNISTD_H
-#  include <unistd.h>
-#endif
+#include <unistd.h>
 
 #if HAVE_SYS_TYPES_H
 #  include <sys/types.h>

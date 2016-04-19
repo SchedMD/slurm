@@ -38,9 +38,7 @@
 #ifndef __SLURM_ACCT_GATHER_INFINIBAND_H__
 #define __SLURM_ACCT_GATHER_INFINIBAND_H__
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <inttypes.h>
 #include <sys/resource.h>

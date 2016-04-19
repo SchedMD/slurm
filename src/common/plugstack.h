@@ -38,9 +38,7 @@
 #ifndef _PLUGSTACK_H
 #define _PLUGSTACK_H
 
-#if HAVE_CONFIG_H
-#  include <config.h>
-#endif
+#include <config.h>
 
 #ifndef   _GNU_SOURCE
 #  define _GNU_SOURCE

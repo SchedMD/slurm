@@ -38,9 +38,7 @@
 #ifndef _OPTZ_H
 #define _OPTZ_H
 
-#if HAVE_CONFIG_H
-#  include <config.h>
-#endif
+#include "config.h"
 
 #ifndef   _GNU_SOURCE
 #  define _GNU_SOURCE

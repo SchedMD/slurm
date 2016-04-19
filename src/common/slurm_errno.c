@@ -44,13 +44,11 @@
  *  their description strings.
  */
 
-#if HAVE_CONFIG_H
 #include "config.h"
-#endif
 
-#include <stdlib.h>
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "slurm/slurm_errno.h"

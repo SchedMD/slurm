@@ -41,9 +41,7 @@
 #ifndef _PACK_INCLUDED
 #define _PACK_INCLUDED
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <assert.h>
 #include <inttypes.h>

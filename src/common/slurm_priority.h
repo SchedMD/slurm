@@ -39,9 +39,7 @@
 #ifndef _SLURM_PRIORITY_H
 #define _SLURM_PRIORITY_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <inttypes.h>
 

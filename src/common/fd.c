@@ -35,10 +35,7 @@
  *  Refer to "fd.h" for documentation on public functions.
 \*****************************************************************************/
 
-
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif /* HAVE_CONFIG_H */
+#include "config.h"
 
 #include <assert.h>
 #include <errno.h>

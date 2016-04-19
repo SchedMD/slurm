@@ -37,11 +37,9 @@
 \*****************************************************************************/
 
 #ifndef _MACROS_H
-#define _MACROS_H 	1
+#define _MACROS_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <errno.h>              /* for errno   */
 #include <pthread.h>

@@ -40,16 +40,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
-#if HAVE_STDLIB_H
-#  include <stdlib.h>
-#endif
-
-#include <stdio.h>
 #include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "src/common/forward.h"
 #include "src/common/job_options.h"

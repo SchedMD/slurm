@@ -35,15 +35,14 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-#if HAVE_CONFIG_H
-#  include <config.h>
-#endif
 
+#include <config.h>
+
+#include <errno.h>
 #include <poll.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <errno.h>
 
 #include "src/common/fd.h"
 #include "src/common/eio.h"

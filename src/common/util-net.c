@@ -35,10 +35,7 @@
  *  Refer to "util-net.h" for documentation on public functions.
 \*****************************************************************************/
 
-
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif /* HAVE_CONFIG_H */
+#include "config.h"
 
 #ifndef   _GNU_SOURCE
 #  define _GNU_SOURCE

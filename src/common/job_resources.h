@@ -39,9 +39,7 @@
 #ifndef _JOB_RESOURCES_H
 #define _JOB_RESOURCES_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <inttypes.h>
 

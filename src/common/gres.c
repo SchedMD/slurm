@@ -37,10 +37,9 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "config.h"
+
 #define _GNU_SOURCE
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
 
 #ifdef __FreeBSD__
 #  include <sys/param.h>

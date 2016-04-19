@@ -39,9 +39,7 @@
 #ifndef _JOB_OPTIONS_H
 #define _JOB_OPTIONS_H
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include "src/common/pack.h"
 

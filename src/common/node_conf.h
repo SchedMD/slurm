@@ -42,9 +42,7 @@
 #ifndef _HAVE_NODE_CONF_H
 #define _HAVE_NODE_CONF_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <inttypes.h>
 #include <time.h>

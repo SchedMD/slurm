@@ -39,13 +39,10 @@
 #ifndef __SLURM_AUTHENTICATION_H__
 #define __SLURM_AUTHENTICATION_H__
 
-#include <stdio.h>
-
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <inttypes.h>
+#include <stdio.h>
 
 #include "src/common/plugrack.h"
 #include "src/common/pack.h"

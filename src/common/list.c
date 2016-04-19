@@ -35,10 +35,7 @@
  *  Refer to "list.h" for documentation on public functions.
  *****************************************************************************/
 
-
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif /* HAVE_CONFIG_H */
+#include "config.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -46,10 +43,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include "list.h"
+#include "log.h"
 #include "macros.h"
 #include "xmalloc.h"
-#include "src/common/log.h"
 
 /*
 ** Define slurm-specific aliases for use by plugins, see slurm_xlator.h

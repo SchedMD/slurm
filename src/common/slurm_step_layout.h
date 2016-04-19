@@ -31,9 +31,7 @@
 #ifndef _SLURM_STEP_LAYOUT_H
 #define _SLURM_STEP_LAYOUT_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <inttypes.h>
 

@@ -38,10 +38,7 @@
 #ifndef _PROC_ARGS_H
 #define _PROC_ARGS_H
 
-
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <sys/types.h>
 #include <unistd.h>

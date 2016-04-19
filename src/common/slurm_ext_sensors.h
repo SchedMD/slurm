@@ -38,9 +38,7 @@
 #ifndef __SLURM_EXT_SENSORS_H__
 #define __SLURM_EXT_SENSORS_H__
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <inttypes.h>
 #include <sys/resource.h>

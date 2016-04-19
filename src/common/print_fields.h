@@ -39,15 +39,13 @@
 #ifndef __PRINT_FIELDS_H__
 #define __PRINT_FIELDS_H__
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <ctype.h>
 #include <errno.h>
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <getopt.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>

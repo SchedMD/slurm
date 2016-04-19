@@ -35,14 +35,10 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-
 #ifndef _UTIL_NET_H
 #define _UTIL_NET_H
 
-
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif /* HAVE_CONFIG_H */
+#include "config.h"
 
 #ifndef   _GNU_SOURCE
 #  define _GNU_SOURCE

@@ -39,9 +39,7 @@
 #ifndef _SLURM_PARSE_H_
 #define	_SLURM_PARSE_H_
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <inttypes.h>
 

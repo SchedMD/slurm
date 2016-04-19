@@ -40,9 +40,7 @@
 #ifndef _SLURM_PROTOCOL_COMMON_H
 #define _SLURM_PROTOCOL_COMMON_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <sys/time.h>
 #include <time.h>
