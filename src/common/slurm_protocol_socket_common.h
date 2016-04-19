@@ -47,9 +47,6 @@
 #include <inttypes.h>
 #include <netinet/in.h>
 
-#define AF_SLURM AF_INET
-#define SLURM_INADDR_ANY 0x00000000
-
 /* LINUX SPECIFIC */
 /* this is the slurm equivalent of the operating system file descriptor,
  * which in linux is just an int */

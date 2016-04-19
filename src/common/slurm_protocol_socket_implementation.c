@@ -722,7 +722,7 @@ extern void slurm_set_addr_char (slurm_addr_t * addr, uint16_t port, char *host)
 	/*
 	 * If NULL hostname passed in, we only update the port of addr
 	 */
-	addr->sin_family = AF_SLURM;
+	addr->sin_family = AF_INET;
 	addr->sin_port   = htons(port);
 	if (host == NULL)
 		return;
@@ -747,7 +747,7 @@ extern void slurm_set_addr_char (slurm_addr_t * addr, uint16_t port, char *host)
 	/*
 	 * If NULL hostname passed in, we only update the port of addr
 	 */
-	addr->sin_family = AF_SLURM;
+	addr->sin_family = AF_INET;
 	addr->sin_port   = htons(port);
 	if (host == NULL)
 		return;
@@ -782,7 +782,7 @@ extern void slurm_get_addr (slurm_addr_t *addr, uint16_t *port, char *host,
 	char * tmp_s_addr = (char *) &addr->sin_addr.s_addr;
 	int    len    = sizeof(addr->sin_addr.s_addr);
 
-	he = get_host_by_addr( tmp_s_addr, len, AF_SLURM,
+	he = get_host_by_addr( tmp_s_addr, len, AF_INET,
 			       (void *) &h_buf, sizeof(h_buf), &h_err );
 
 	if (he != NULL) {
@@ -819,7 +819,7 @@ extern void slurm_pack_slurm_addr(slurm_addr_t *addr, Buf buffer)
 
 extern int slurm_unpack_slurm_addr_no_alloc(slurm_addr_t *addr, Buf buffer)
 {
-	addr->sin_family = AF_SLURM ;
+	addr->sin_family = AF_INET;
 	safe_unpack32(&addr->sin_addr.s_addr, buffer);
 	safe_unpack16(&addr->sin_port, buffer);
 

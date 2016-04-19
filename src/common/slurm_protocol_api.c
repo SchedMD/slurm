@@ -4746,7 +4746,7 @@ extern void slurm_setup_sockaddr(struct sockaddr_in *sin, uint16_t port)
 	static uint32_t s_addr = NO_VAL;
 
 	memset(sin, 0, sizeof(struct sockaddr_in));
-	sin->sin_family = AF_SLURM;
+	sin->sin_family = AF_INET;
 	sin->sin_port = htons(port);
 
 	if (s_addr == NO_VAL) {
