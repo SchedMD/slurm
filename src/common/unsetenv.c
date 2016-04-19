@@ -53,7 +53,7 @@ extern int unsetenv (const char *name)
 	len = strlen(name);
 	tmp = malloc(len + 3);
 	if (!tmp) {
-		log_oom(__FILE__, __LINE__, __CURRENT_FUNC__);
+		log_oom(__FILE__, __LINE__, __func__);
 		abort();
 	}
 	strcpy(tmp, name);

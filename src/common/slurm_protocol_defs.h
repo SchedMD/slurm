@@ -1457,16 +1457,16 @@ extern char *rpc_num2string(uint16_t opcode);
 			rc = read(fd, ptr, remaining);			\
 			if ((rc == 0) && (remaining == size)) {		\
 				debug("%s:%d: %s: safe_read EOF",	\
-				      __FILE__, __LINE__, __CURRENT_FUNC__); \
+				      __FILE__, __LINE__, __func__); \
 				goto rwfail;				\
 			} else if (rc == 0) {				\
 				debug("%s:%d: %s: safe_read (%d of %d) EOF", \
-				      __FILE__, __LINE__, __CURRENT_FUNC__, \
+				      __FILE__, __LINE__, __func__, \
 				      remaining, (int)size);		\
 				goto rwfail;				\
 			} else if (rc < 0) {				\
 				debug("%s:%d: %s: safe_read (%d of %d) failed: %m", \
-				      __FILE__, __LINE__, __CURRENT_FUNC__, \
+				      __FILE__, __LINE__, __func__, \
 				      remaining, (int)size);		\
 				goto rwfail;				\
 			} else {					\
@@ -1474,7 +1474,7 @@ extern char *rpc_num2string(uint16_t opcode);
 				remaining -= rc;			\
 				if (remaining > 0)			\
 					debug3("%s:%d: %s: safe_read (%d of %d) partial read", \
-					       __FILE__, __LINE__, __CURRENT_FUNC__, \
+					       __FILE__, __LINE__, __func__, \
 					       remaining, (int)size);	\
 			}						\
 		}							\
@@ -1488,7 +1488,7 @@ extern char *rpc_num2string(uint16_t opcode);
 			rc = write(fd, ptr, remaining);			\
  			if (rc < 0) {					\
 				debug("%s:%d: %s: safe_write (%d of %d) failed: %m", \
-				      __FILE__, __LINE__, __CURRENT_FUNC__, \
+				      __FILE__, __LINE__, __func__, \
 				      remaining, (int)size);		\
 				goto rwfail;				\
 			} else {					\
@@ -1496,7 +1496,7 @@ extern char *rpc_num2string(uint16_t opcode);
 				remaining -= rc;			\
 				if (remaining > 0)			\
 					debug3("%s:%d: %s: safe_write (%d of %d) partial write", \
-					       __FILE__, __LINE__, __CURRENT_FUNC__, \
+					       __FILE__, __LINE__, __func__, \
 					       remaining, (int)size);	\
 			}						\
 		}							\

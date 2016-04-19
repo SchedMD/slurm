@@ -165,7 +165,7 @@ bit_alloc(bitoff_t nbits)
 	_assert_valid_size(nbits);
 	new = (bitstr_t *)xmalloc(_bitstr_words(nbits) * sizeof(bitstr_t));
 	if (!new) {
-		log_oom(__FILE__, __LINE__, __CURRENT_FUNC__);
+		log_oom(__FILE__, __LINE__, __func__);
 		abort();
 	}
 
@@ -189,7 +189,7 @@ bit_realloc(bitstr_t *b, bitoff_t nbits)
 	_assert_valid_size(nbits);
 	new = xrealloc(b, _bitstr_words(nbits) * sizeof(bitstr_t));
 	if (!new) {
-		log_oom(__FILE__, __LINE__, __CURRENT_FUNC__);
+		log_oom(__FILE__, __LINE__, __func__);
 		abort();
 	}
 

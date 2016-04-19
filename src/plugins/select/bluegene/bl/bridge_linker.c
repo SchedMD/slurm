@@ -2236,7 +2236,7 @@ extern status_t bridge_get_block_info(char *bg_block_id,
 	else if (rc) {
 		errno = rc;
 		error("%s:%d %s: pthread_mutex_trylock(): %m",
-		      __FILE__, __LINE__, __CURRENT_FUNC__);
+		      __FILE__, __LINE__, __func__);
 	}
 
 	//slurm_mutex_lock(&api_file_mutex);

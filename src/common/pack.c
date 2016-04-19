@@ -761,7 +761,7 @@ int unpackmem_malloc(char **valp, uint32_t * size_valp, Buf buffer)
 			return SLURM_ERROR;
 		*valp = malloc(*size_valp);
 		if (*valp == NULL) {
-			log_oom(__FILE__, __LINE__, __CURRENT_FUNC__);
+			log_oom(__FILE__, __LINE__, __func__);
 			abort();
 		}
 		memcpy(*valp, &buffer->head[buffer->processed],

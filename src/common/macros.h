@@ -43,20 +43,10 @@
 #  include "config.h"
 #endif
 
-#ifndef NULL
-#  include <stddef.h>	/* for NULL */
-#endif
-
-#if HAVE_STDBOOL_H
-#  include <stdbool.h>
-#else
-#  ifndef bool
-     typedef enum {false, true} bool;
-#  endif
-#endif /* !HAVE_STDBOOL_H */
-
 #include <errno.h>              /* for errno   */
 #include <pthread.h>
+#include <stdbool.h>		/* for bool type */
+#include <stddef.h>		/* for NULL */
 #include <stdlib.h>		/* for abort() */
 
 #include "src/common/log.h"	/* for error() */
@@ -118,21 +108,6 @@
 # define NTOH_uint64(x)   UINT64_SWAP_LE_BE (x)
 #endif	/* SLURM_BIGENDIAN */
 
-
-
-/*
-** define __CURRENT_FUNC__ macro for returning current function
-*/
-#if defined (__GNUC__) && (__GNUC__ < 3)
-#  define __CURRENT_FUNC__	__PRETTY_FUNCTION__
-#else  /* !__GNUC__ */
-#  ifdef _AIX
-#    define __CURRENT_FUNC__	__func__
-#  else
-#    define __CURRENT_FUNC__    ""
-#  endif /* _AIX */
-#endif /* __GNUC__ */
-
 #ifndef __STRING
 #  define __STRING(arg)		#arg
 #endif
@@ -157,7 +132,7 @@
 		if (err) {						\
 			errno = err;					\
 			fatal("%s:%d %s: pthread_mutex_init(): %m",	\
-				__FILE__, __LINE__, __CURRENT_FUNC__);	\
+				__FILE__, __LINE__, __func__);		\
 			abort();					\
 		}							\
 	} while (0)
@@ -168,7 +143,7 @@
 		if (err) {						\
 			errno = err;					\
 			fatal("%s:%d %s: pthread_mutex_destroy(): %m",	\
-				__FILE__, __LINE__, __CURRENT_FUNC__);	\
+				__FILE__, __LINE__, __func__);		\
 			abort();					\
 		}							\
 	} while (0)
@@ -179,7 +154,7 @@
 		if (err) {						\
 			errno = err;					\
 			fatal("%s:%d %s: pthread_mutex_lock(): %m",	\
-				__FILE__, __LINE__, __CURRENT_FUNC__);	\
+				__FILE__, __LINE__, __func__);		\
 			abort();					\
 		}							\
 	} while (0)
@@ -190,7 +165,7 @@
 		if (err) {						\
 			errno = err;					\
 			fatal("%s:%d %s: pthread_mutex_unlock(): %m",	\
-				__FILE__, __LINE__, __CURRENT_FUNC__);	\
+				__FILE__, __LINE__, __func__);		\
 			abort();					\
 		}							\
 	} while (0)

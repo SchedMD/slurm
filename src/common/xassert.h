@@ -55,7 +55,7 @@
 
 #  define xassert(__ex)  do { \
      (__ex) ? ((void)0) : \
-     __xassert_failed(__STRING(__ex), __FILE__,  __LINE__, __CURRENT_FUNC__);\
+     __xassert_failed(__STRING(__ex), __FILE__,  __LINE__, __func__);\
      } while (0)
 
 /*  This prints the assertion failed message to the slurm log facility
