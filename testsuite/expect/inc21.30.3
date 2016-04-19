@@ -35,7 +35,7 @@ proc inc21_30_3 {} {
 
 	set jobmatch 0
 	for {set inx 0} {$inx <= $check_num} {incr inx} {
-		spawn $salloc --account=$acct -n1 $srun $bin_sleep 100
+		spawn $salloc --account=$acct -n1 -t1 $srun $bin_sleep 60
 		expect {
 			-re "Granted job allocation ($number)" {
 				set job_id($inx) $expect_out(1,string)

@@ -39,7 +39,7 @@ proc inc21_30_8 {} {
 
 	set jobmatch 0
 	for {set inx 0} {$inx <= $check_num} {incr inx} {
-		spawn $salloc --account=$acct -n1 $srun $bin_sleep 100
+		spawn $salloc --account=$acct -t1 -n1 $srun $bin_sleep 100
 		expect {
 			-re "Granted job allocation ($number)" {
 				set job_id($inx) $expect_out(1,string)
@@ -85,7 +85,7 @@ proc inc21_30_8 {} {
 
 	set upper_lim [expr $check_num - 1]
 	# Test limit with job array
-	spawn $sbatch --account=$acct -a0-$upper_lim -o/dev/null $file_in
+	spawn $sbatch --account=$acct -t1 -a0-$upper_lim -o/dev/null $file_in
 	expect {
 		-re "Submitted batch job ($number)" {
 			set tmp_job_id $expect_out(1,string)
@@ -106,7 +106,7 @@ proc inc21_30_8 {} {
 
 	# Add one more job, and check for error message
 	set match 0
-	spawn $sbatch --account=$acct -a0-$upper_lim -o/dev/null $file_in
+	spawn $sbatch --account=$acct -t1 -a0-$upper_lim -o/dev/null $file_in
 	expect {
 		-re "Job violates accounting/QOS policy" {
 			set match 1

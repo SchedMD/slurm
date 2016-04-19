@@ -34,7 +34,7 @@ proc inc21_30_1 {} {
 	send_user "\nStarting GrpNode limit test (Within: inc21.30.1)\n\n"
 	set job_id1  0
 	set job_id2  0
-	spawn $salloc -N$grn_num --account=$acct --exclusive $srun $bin_sleep 10
+	spawn $salloc -N$grn_num --account=$acct --exclusive -t1 $srun $bin_sleep 10
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
@@ -63,7 +63,7 @@ proc inc21_30_1 {} {
 		return
 	}
 
-	spawn $salloc -N1 --account=$acct --exclusive $srun $bin_sleep 10
+	spawn $salloc -N1 --account=$acct --exclusive -t1 $srun $bin_sleep 10
 	expect {
 		-re "Pending job allocation ($number)" {
 			set job_id2 $expect_out(1,string)
