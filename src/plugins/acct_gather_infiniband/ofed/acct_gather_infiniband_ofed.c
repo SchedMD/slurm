@@ -37,17 +37,14 @@
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <fcntl.h>
-#include <sys/stat.h>
-#include <signal.h>
-
-#include <unistd.h>
 #include <getopt.h>
 #include <netinet/in.h>
-
+#include <signal.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/slurm_acct_gather_infiniband.h"

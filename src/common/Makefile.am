@@ -107,7 +107,6 @@ libcommon_la_SOURCES = 			\
 	arg_desc.c arg_desc.h		\
 	macros.h			\
 	malloc.c malloc.h		\
-	getopt.h getopt.c getopt1.c     \
 	$(build_unsetenv_src)		\
 	slurm_selecttype_info.c 	\
 	slurm_selecttype_info.h		\

@@ -39,22 +39,14 @@
 #  include "config.h"
 #endif
 
-#if HAVE_STDINT_H
-#  include <stdint.h>
-#endif
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#endif
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif
-
+#include <inttypes.h>
+#include <libgen.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
-#include <libgen.h>
 #include <sys/types.h>
 #include <sys/param.h>
 #include <sys/stat.h>

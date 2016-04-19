@@ -39,22 +39,14 @@
 #   include "config.h"
 #endif
 
-#if HAVE_STDINT_H
-#  include <stdint.h>
-#endif
-
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#endif
-
-#include <stdio.h>
-
-#include <sys/types.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include <dlfcn.h>
+#include <inttypes.h>
 #include <pthread.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"

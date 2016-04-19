@@ -97,22 +97,17 @@
 
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
-#  if HAVE_STDINT_H
-#    include <stdint.h>
-#  endif
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  endif
 #endif
 
+#include <inttypes.h>
 #include <string.h>
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/slurm_selecttype_info.h"
 #include "select_cons_res.h"
+
 #include "dist_tasks.h"
 #include "job_test.h"
-
 
 #define NODEINFO_MAGIC 0x82aa
 

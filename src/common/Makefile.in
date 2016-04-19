@@ -193,20 +193,20 @@ am__libcommon_la_SOURCES_DIST = assoc_mgr.c assoc_mgr.h \
 	slurm_acct_gather_filesystem.h slurm_jobcomp.c slurm_jobcomp.h \
 	slurm_route.c slurm_route.h slurm_time.c slurm_time.h \
 	slurm_topology.c slurm_topology.h switch.c switch.h arg_desc.c \
-	arg_desc.h macros.h malloc.c malloc.h getopt.h getopt.c \
-	getopt1.c unsetenv.c unsetenv.h slurm_selecttype_info.c \
-	slurm_selecttype_info.h slurm_resource_info.c \
-	slurm_resource_info.h hostlist.c hostlist.h \
-	slurm_step_layout.c slurm_step_layout.h checkpoint.c \
-	checkpoint.h job_resources.c job_resources.h parse_time.c \
-	parse_time.h job_options.c job_options.h global_defaults.c \
-	timers.c timers.h slurm_xlator.h stepd_api.c stepd_api.h \
-	write_labelled_message.c write_labelled_message.h proc_args.c \
-	proc_args.h slurm_strcasestr.c slurm_strcasestr.h node_conf.h \
-	node_conf.c gres.h gres.c entity.h entity.c layout.h layout.c \
-	layouts_mgr.h layouts_mgr.c mapping.c mapping.h \
-	xcgroup_read_config.c xcgroup_read_config.h xlua.c xlua.h \
-	callerid.c callerid.h siphash24.c siphash_slurm.c siphash.h
+	arg_desc.h macros.h malloc.c malloc.h unsetenv.c unsetenv.h \
+	slurm_selecttype_info.c slurm_selecttype_info.h \
+	slurm_resource_info.c slurm_resource_info.h hostlist.c \
+	hostlist.h slurm_step_layout.c slurm_step_layout.h \
+	checkpoint.c checkpoint.h job_resources.c job_resources.h \
+	parse_time.c parse_time.h job_options.c job_options.h \
+	global_defaults.c timers.c timers.h slurm_xlator.h stepd_api.c \
+	stepd_api.h write_labelled_message.c write_labelled_message.h \
+	proc_args.c proc_args.h slurm_strcasestr.c slurm_strcasestr.h \
+	node_conf.h node_conf.c gres.h gres.c entity.h entity.c \
+	layout.h layout.c layouts_mgr.h layouts_mgr.c mapping.c \
+	mapping.h xcgroup_read_config.c xcgroup_read_config.h xlua.c \
+	xlua.h callerid.c callerid.h siphash24.c siphash_slurm.c \
+	siphash.h
 @HAVE_UNSETENV_FALSE@am__objects_1 = unsetenv.lo
 am_libcommon_la_OBJECTS = assoc_mgr.lo cpu_frequency.lo \
 	node_features.lo xmalloc.lo xassert.lo xstring.lo xsignal.lo \
@@ -226,7 +226,7 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo cpu_frequency.lo \
 	slurm_acct_gather_infiniband.lo \
 	slurm_acct_gather_filesystem.lo slurm_jobcomp.lo \
 	slurm_route.lo slurm_time.lo slurm_topology.lo switch.lo \
-	arg_desc.lo malloc.lo getopt.lo getopt1.lo $(am__objects_1) \
+	arg_desc.lo malloc.lo $(am__objects_1) \
 	slurm_selecttype_info.lo slurm_resource_info.lo hostlist.lo \
 	slurm_step_layout.lo checkpoint.lo job_resources.lo \
 	parse_time.lo job_options.lo global_defaults.lo timers.lo \
@@ -679,7 +679,6 @@ libcommon_la_SOURCES = \
 	arg_desc.c arg_desc.h		\
 	macros.h			\
 	malloc.c malloc.h		\
-	getopt.h getopt.c getopt1.c     \
 	$(build_unsetenv_src)		\
 	slurm_selecttype_info.c 	\
 	slurm_selecttype_info.h		\
@@ -827,8 +826,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/env.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fd.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/forward.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getopt.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getopt1.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/global_defaults.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gres.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hostlist.Plo@am__quote@

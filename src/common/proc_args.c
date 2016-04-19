@@ -40,12 +40,6 @@
 #  include "config.h"
 #endif
 
-#include <string.h>		/* strcpy, strncasecmp */
-
-#ifdef HAVE_STRINGS_H
-#  include <strings.h>
-#endif
-
 #ifndef __USE_ISOC99
 #define __USE_ISOC99
 #endif
@@ -62,18 +56,18 @@
 #  define SYSTEM_DIMENSIONS 1
 #endif
 
+#include <ctype.h>		/* isdigit    */
 #include <fcntl.h>
+#include <pwd.h>		/* getpwuid   */
 #include <stdarg.h>		/* va_start   */
 #include <stdio.h>
 #include <stdlib.h>		/* getenv, strtoll */
-#include <pwd.h>		/* getpwuid   */
-#include <ctype.h>		/* isdigit    */
+#include <string.h>		/* strcpy, strncasecmp */
 #include <sys/param.h>		/* MAXPATHLEN */
-#include <sys/stat.h>
-#include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
+#include <unistd.h>
 
 #include "src/common/gres.h"
 #include "src/common/list.h"

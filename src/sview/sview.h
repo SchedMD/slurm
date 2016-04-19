@@ -36,21 +36,9 @@
 #  include "config.h"
 #endif
 
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#else				/* !HAVE_INTTYPES_H */
-#  if HAVE_STDINT_H
-#    include <stdint.h>
-#  endif
-#endif				/* HAVE_INTTYPES_H */
-
-#if HAVE_GETOPT_H
-#  include <getopt.h>
-#else
-#  include "src/common/getopt.h"
-#endif
-
 #include <ctype.h>
+#include <inttypes.h>
+#include <getopt.h>
 #include <pwd.h>
 #include <stdlib.h>
 #include <stdio.h>

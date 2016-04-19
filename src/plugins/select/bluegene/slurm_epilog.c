@@ -42,13 +42,12 @@
 #  include "config.h"
 #endif
 
-#include <stdlib.h>
 #include <errno.h>
 #include <stdio.h>
-#include <unistd.h>
+#include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #include "slurm/slurm.h"
 

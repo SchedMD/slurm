@@ -38,22 +38,15 @@
 #ifndef SELECT_CRAY_CCM_H
 #define SELECT_CRAY_CCM_H
 
-#include "src/common/slurm_xlator.h"
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
-#  if HAVE_STDINT_H
-#    include <stdint.h>
-#  endif
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  endif
-#  if WITH_PTHREADS
-#    include <pthread.h>
-#  endif
 #endif
 
-/* CCM use */
+#include <inttypes.h>
+#include <pthread.h>
 #include <string.h>
+
+#include "src/common/slurm_xlator.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/srun_comm.h"
 

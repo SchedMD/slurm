@@ -40,14 +40,9 @@
 
 #if HAVE_CONFIG_H
 #  include "config.h"
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif			/* HAVE_INTTYPES_H */
 #endif
+
+#include <stdint.h>
 
 void slurm_print_cpu_bind_help(void);
 void slurm_print_mem_bind_help(void);

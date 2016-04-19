@@ -41,28 +41,16 @@
 #ifndef _HAVE_SLURMCTLD_H
 #define _HAVE_SLURMCTLD_H
 
-
 #if HAVE_CONFIG_H
 #  include "config.h"
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif			/* HAVE_INTTYPES_H */
 #endif
 
+#include <inttypes.h>
 #include <pthread.h>
-/* #include <stdlib.h> */
 #include <time.h>
-#include <strings.h>
+#include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
-
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif				/* WITH_PTHREADS */
 
 #include "slurm/slurm.h"
 

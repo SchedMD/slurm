@@ -40,17 +40,12 @@
 #   include "config.h"
 #endif
 
-#if HAVE_STDINT_H
-#  include <stdint.h>
-#endif
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#endif
-
 #include <fcntl.h>
-#include <pwd.h>
 #include <grp.h>
+#include <inttypes.h>
+#include <pwd.h>
 #include <unistd.h>
+
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/parse_time.h"

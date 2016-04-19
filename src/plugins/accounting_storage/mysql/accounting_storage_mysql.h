@@ -39,7 +39,7 @@
 #ifndef _HAVE_ACCOUNTING_STORAGE_MYSQL_H
 #define _HAVE_ACCOUNTING_STORAGE_MYSQL_H
 
-#include <strings.h>
+#include <string.h>
 #include <stdlib.h>
 
 /* we can't include common/slurm_xlator.h here since it contains

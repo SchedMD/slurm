@@ -39,21 +39,13 @@
 
 #if HAVE_CONFIG_H
 #  include "config.h"
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif  /* HAVE_INTTYPES_H */
-#else   /* !HAVE_CONFIG_H */
-#  include <inttypes.h>
-#endif  /*  HAVE_CONFIG_H */
+#endif
 
+#include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "./msg.h"
+#include "msg.h"
 #include "src/common/hostlist.h"
 #include "src/common/node_select.h"
 #include "src/common/xmalloc.h"

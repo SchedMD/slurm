@@ -44,22 +44,13 @@
 #  include "config.h"
 #endif
 
-#if HAVE_GETOPT_H
-#  include <getopt.h>
-#else
-#  include "src/common/getopt.h"
-#endif
-
 #include <ctype.h>
 #include <errno.h>
+#include <getopt.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef HAVE_STRING_H
-#  include <string.h>
-#endif
-#ifdef HAVE_STRINGS_H
-#  include <strings.h>
-#endif
+#include <string.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -67,14 +58,6 @@
 #  include <readline/readline.h>
 #  include <readline/history.h>
 #endif
-
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#else  /* !HAVE_INTTYPES_H */
-#  if HAVE_STDINT_H
-#    include <stdint.h>
-#  endif
-#endif  /* HAVE_INTTYPES_H */
 
 #include "slurm/slurm.h"
 

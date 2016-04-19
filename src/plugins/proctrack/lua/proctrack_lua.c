@@ -37,22 +37,16 @@
 \*****************************************************************************/
 
 #if HAVE_CONFIG_H
-#   include "config.h"
+#  include "config.h"
 #endif
 
-#if HAVE_STDINT_H
-#  include <stdint.h>
-#endif
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#endif
-
-#include <sys/types.h>
+#include <dlfcn.h>
+#include <inttypes.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <sys/types.h>
 #include <unistd.h>
-#include <dlfcn.h>
-#include <pthread.h>
 
 #include <lua.h>
 #include <lauxlib.h>
@@ -65,7 +59,6 @@
 #include "src/common/macros.h"
 #include "src/common/xlua.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
-
 
 const char plugin_name[]            = "LUA proctrack module";
 const char plugin_type[]            = "proctrack/lua";

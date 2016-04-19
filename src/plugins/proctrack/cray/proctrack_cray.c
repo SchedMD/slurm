@@ -42,20 +42,14 @@
 #   include "config.h"
 #endif
 
-#if HAVE_STDINT_H
-#  include <stdint.h>
-#endif
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#endif
-
+#include <dlfcn.h>
 #include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
+#include <inttypes.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
-#include <dlfcn.h>
 
 #include <job.h>	/* Cray's job module component */
 

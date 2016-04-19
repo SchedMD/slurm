@@ -38,7 +38,7 @@
 \*****************************************************************************/
 
 #include "./msg.h"
-#include <strings.h>
+#include <string.h>
 #include "src/common/gres.h"
 #include "src/common/node_select.h"
 #include "src/common/assoc_mgr.h"

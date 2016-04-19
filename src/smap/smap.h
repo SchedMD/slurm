@@ -48,20 +48,6 @@
 #  include "config.h"
 #endif
 
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#else				/* !HAVE_INTTYPES_H */
-#  if HAVE_STDINT_H
-#    include <stdint.h>
-#  endif
-#endif				/* HAVE_INTTYPES_H */
-
-#if HAVE_GETOPT_H
-#  include <getopt.h>
-#else
-#  include "src/common/getopt.h"
-#endif
-
 /*
  * The following define is necessary for OS X 10.6. The apple supplied
  * ncurses.h sets NCURSES_OPAQUE to 1 and then we can't get to the WINDOW
@@ -90,14 +76,17 @@
 #ifdef lines
 #  undef lines
 #endif
+
 #ifndef SYSTEM_DIMENSIONS
 #  define SYSTEM_DIMENSIONS 1
 #endif
 
-#include <stdlib.h>
-#include <pwd.h>
 #include <ctype.h>
+#include <getopt.h>
+#include <inttypes.h>
+#include <pwd.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 

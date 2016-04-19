@@ -46,11 +46,7 @@
 #  define _GNU_SOURCE
 #endif
 
-#if HAVE_GETOPT_H
-#  include <getopt.h>
-#else
-#  include "src/common/getopt.h"
-#endif
+#include <getopt.h>
 
 #include "src/common/job_options.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"

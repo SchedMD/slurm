@@ -51,18 +51,13 @@
 #  include "config.h"
 #endif
 
-#if HAVE_GETOPT_H
-#  include <getopt.h>
-#else
-#  include "src/common/getopt.h"
-#endif
-
 #include <dirent.h>
-#include <sys/stat.h>
 #include <fcntl.h>
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/time.h>
 
 #include "src/common/uid.h"

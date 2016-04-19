@@ -40,15 +40,9 @@
 #   include "config.h"
 #endif
 
-#if HAVE_STDINT_H
-#  include <stdint.h>
-#endif
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#endif
-
 #include <curl/curl.h>
 #include <fcntl.h>
+#include <inttypes.h>
 #include <grp.h>
 #include <pwd.h>
 #include <stdlib.h>
@@ -56,6 +50,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
 #include "src/common/assoc_mgr.h"
 #include "src/common/fd.h"
 #include "src/common/list.h"

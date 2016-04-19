@@ -40,16 +40,11 @@
 
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
-#  if HAVE_STDINT_H
-#    include <stdint.h>
-#  endif
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  endif
 #endif
 
 #include "slurm/slurm.h"
 
+#include <inttypes.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>

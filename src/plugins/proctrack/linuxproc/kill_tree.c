@@ -41,17 +41,16 @@
 #  include "config.h"
 #endif
 
-#include <sys/types.h>
 #include <dirent.h>
-#include <sys/stat.h>
 #include <fcntl.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <signal.h>
-#include <strings.h>
-#include <unistd.h>
-#include <string.h>
 #include <limits.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"

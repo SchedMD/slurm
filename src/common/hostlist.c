@@ -38,33 +38,20 @@
 
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif  /* HAVE_INTTYPES_H */
-#  if HAVE_STRING_H
-#    include <string.h>
-#  endif
-#  if HAVE_PTHREAD_H
-#    include <pthread.h>
-#  endif
-#else                /* !HAVE_CONFIG_H */
-#  include <inttypes.h>
-#  include <string.h>
-#  include <pthread.h>
-#endif                /* HAVE_CONFIG_H */
+#endif
 
+#include <assert.h>
+#include <ctype.h>
+#include <errno.h>
+#include <inttypes.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include <assert.h>
-#include <errno.h>
-#include <ctype.h>
+#include <string.h>
 #include <sys/param.h>
 #include <unistd.h>
+
 #include <slurm/slurmdb.h>
 
 #include "src/common/bitstring.h"

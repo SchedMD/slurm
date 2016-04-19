@@ -55,12 +55,10 @@
 #  endif
 #endif /* !HAVE_STDBOOL_H */
 
-#if HAVE_PTHREAD_H
-#  include <pthread.h>
-#endif
-
 #include <errno.h>              /* for errno   */
+#include <pthread.h>
 #include <stdlib.h>		/* for abort() */
+
 #include "src/common/log.h"	/* for error() */
 
 #ifndef FALSE

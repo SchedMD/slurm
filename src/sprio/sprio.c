@@ -40,14 +40,6 @@
 #  include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#if HAVE_STDINT_H
-#  include <stdint.h>
-#endif
-
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#endif
-
 #ifdef HAVE_TERMCAP_H
 #  include <termcap.h>
 #endif

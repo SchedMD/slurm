@@ -37,7 +37,7 @@
 \*****************************************************************************/
 
 #include "./msg.h"
-#include <strings.h>
+#include <string.h>
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"

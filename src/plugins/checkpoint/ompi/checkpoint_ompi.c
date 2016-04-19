@@ -41,13 +41,7 @@
 #  include "config.h"
 #endif
 
-#if HAVE_STDINT_H
-#  include <stdint.h>
-#endif
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#endif
-
+#include <inttypes.h>
 #include <stdio.h>
 
 #include "slurm/slurm.h"

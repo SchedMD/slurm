@@ -45,21 +45,14 @@
 #  include "config.h"
 #endif
 
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif				/* WITH_PTHREADS */
-
-#if HAVE_STDINT_H
-#  include <stdint.h>
-#endif
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#endif
-
+#include <inttypes.h>
+#include <pthread.h>
 #include <stdio.h>
+
 #include "slurm/slurm_errno.h"
 #include "src/common/list.h"
 #include "src/common/xstring.h"
+
 #include <mysql.h>
 #include <mysqld_error.h>
 

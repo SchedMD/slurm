@@ -51,7 +51,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "src/common/getopt.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/list.h"

@@ -40,20 +40,14 @@
 #  include "config.h"
 #endif
 
-#if HAVE_STDINT_H
-#  include <stdint.h>
-#endif
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#endif
-
 #if HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
 #endif
 
+#include <inttypes.h>
+#include <pwd.h>
 #include <stdio.h>
 #include <sys/types.h>
-#include <pwd.h>
 
 #include "slurm/slurm_errno.h"
 

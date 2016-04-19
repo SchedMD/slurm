@@ -49,7 +49,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <strings.h>
+#include <string.h>
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/net.h"

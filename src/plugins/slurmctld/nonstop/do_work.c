@@ -36,16 +36,10 @@
 
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif
 #endif
 
 #include <fcntl.h>
+#include <inttypes.h>
 #include <poll.h>
 #include <pthread.h>
 #include <stdlib.h>
@@ -55,8 +49,8 @@
 #include <time.h>
 #include <unistd.h>
 
-//#include "slurm/slurmdb.h"
 #include "slurm/smd_ns.h"
+
 #include "src/common/slurm_xlator.h"	/* Must be first */
 #include "src/common/bitstring.h"
 #include "src/common/job_resources.h"

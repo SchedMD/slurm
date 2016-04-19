@@ -40,44 +40,23 @@
 #define _GNU_SOURCE
 #if HAVE_CONFIG_H
 #  include "config.h"
-#  if STDC_HEADERS
-#    include <string.h>
-#  endif
-#  if HAVE_SYS_TYPES_H
-#    include <sys/types.h>
-#  endif /* HAVE_SYS_TYPES_H */
-#  if HAVE_UNISTD_H
-#    include <unistd.h>
-#  endif
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else /* ! HAVE_INTTYPES_H */
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif /* HAVE_INTTYPES_H */
-#  ifdef HAVE_LIMITS_H
-#    include <limits.h>
-#  endif
-#else /* ! HAVE_CONFIG_H */
-#  include <limits.h>
-#  include <sys/types.h>
-#  include <stdint.h>
-#  include <stdlib.h>
-#  include <string.h>
-#endif /* HAVE_CONFIG_H */
+#endif
 
 #ifdef __FreeBSD__
-#include <sys/param.h>
-#include <sys/cpuset.h>
+#  include <sys/param.h>
+#  include <sys/cpuset.h>
 typedef cpuset_t cpu_set_t;
 #endif
 
 #include <ctype.h>
+#include <inttypes.h>
+#include <limits.h>
 #include <sched.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <math.h>
 
 #include "slurm/slurm.h"

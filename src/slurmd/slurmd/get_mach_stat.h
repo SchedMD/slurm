@@ -40,16 +40,9 @@
 #define _GET_MACH_STAT_H
 #if HAVE_CONFIG_H
 #  include "config.h"
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif  /* HAVE_INTTYPES_H */
-#else   /* !HAVE_CONFIG_H */
-#  include <inttypes.h>
-#endif  /*  HAVE_CONFIG_H */
+#endif
+
+#include <inttypes.h>
 
 extern int get_cpu_load(uint32_t *cpu_load);
 extern int get_free_mem(uint32_t *free_mem);

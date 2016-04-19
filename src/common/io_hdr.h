@@ -39,17 +39,11 @@
 #ifndef _HAVE_IO_HDR_H
 #define _HAVE_IO_HDR_H
 
-
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
 #endif
 
-#if HAVE_STDINT_H
-#  include <stdint.h>
-#endif
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#endif
+#include <inttypes.h>
 
 #include "src/common/macros.h"   /* Containes SLURM_CRED_SIGLEN */
 #include "src/common/pack.h"

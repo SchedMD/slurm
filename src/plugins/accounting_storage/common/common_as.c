@@ -36,11 +36,12 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include <strings.h>
+#include <fcntl.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <fcntl.h>
+
 #include "src/common/env.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurm_auth.h"

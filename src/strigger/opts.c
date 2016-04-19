@@ -45,12 +45,7 @@
 #  define _GNU_SOURCE
 #endif
 
-#if HAVE_GETOPT_H
-#  include <getopt.h>
-#else
-#  include "src/common/getopt.h"
-#endif
-
+#include <getopt.h>
 #include <limits.h>
 #include <pwd.h>
 #include <stdlib.h>

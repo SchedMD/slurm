@@ -36,37 +36,24 @@
 
 #if HAVE_CONFIG_H
 #  include "config.h"
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif  /* HAVE_INTTYPES_H */
-#else   /* !HAVE_CONFIG_H */
-#  include <inttypes.h>
-#endif  /*  HAVE_CONFIG_H */
-
+#endif
 
 #ifndef _GNU_SOURCE
-#define _GNU_SOURCE
+#  define _GNU_SOURCE
 #endif
-#include <arpa/inet.h>
-#include <ctype.h>
 
 #ifdef __FreeBSD__
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #define s6_addr32 __u6_addr.__u6_addr32
 #endif
 
-#if HAVE_DIRENT_H
-#  include <dirent.h>
-#endif
+#include <arpa/inet.h>
+#include <ctype.h>
+#include <dirent.h>
+#include <inttypes.h>
 #include <libgen.h>
 #include <stddef.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>

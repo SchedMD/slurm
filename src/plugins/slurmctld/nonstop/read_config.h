@@ -40,24 +40,12 @@
 
 #if HAVE_CONFIG_H
 #  include "config.h"
-#  if HAVE_STDBOOL_H
-#    include <stdbool.h>
-#  else
-     typedef enum {false, true} bool;
-#  endif			/* !HAVE_STDBOOL_H */
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif			/* HAVE_INTTYPES_H */
 #endif
 
-#define GPL_LICENSED 1
+#include <inttypes.h>
 #include <munge.h>
-#include <unistd.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #define DEFAULT_NONSTOP_PORT		6820
 

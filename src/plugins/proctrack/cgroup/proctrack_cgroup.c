@@ -38,18 +38,12 @@
 #include "config.h"
 #endif
 
-#if HAVE_STDINT_H
-#include <stdint.h>
-#endif
-#if HAVE_INTTYPES_H
-#include <inttypes.h>
-#endif
-
 #include <fcntl.h>
+#include <inttypes.h>
 #include <signal.h>
 #include <stdlib.h>
-#include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"

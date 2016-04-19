@@ -43,15 +43,11 @@
 #  include "config.h"
 #endif
 
-#if HAVE_GETOPT_H
-#  include <getopt.h>
-#else
-#  include "src/common/getopt.h"
-#endif
-
+#include <getopt.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>		/* getenv     */
+#include <unistd.h>
 
 #include "slurm/slurm.h"
 #include "../bg_enums.h"

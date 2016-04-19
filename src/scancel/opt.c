@@ -46,22 +46,13 @@
 #  include "config.h"
 #endif
 
-#if HAVE_GETOPT_H
-#  include <getopt.h>
-#else
-#  include "src/common/getopt.h"
-#endif
-
+#include <getopt.h>
 #include <pwd.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
-
-#ifdef HAVE_STRINGS_H
-#  include <strings.h>
-#endif
 
 #include "src/common/log.h"
 #include "src/common/macros.h"

@@ -42,31 +42,21 @@
 #  include "config.h"
 #endif
 
-#include <string.h>		/* strcpy, strncasecmp */
-#include <ctype.h>      /* isdigit() */
-
-#ifdef HAVE_STRINGS_H
-#  include <strings.h>
-#endif
-
 #ifndef _GNU_SOURCE
 #  define _GNU_SOURCE
-#endif
-
-#if HAVE_GETOPT_H
-#  include <getopt.h>
-#else
-#  include "src/common/getopt.h"
 #endif
 
 #ifdef HAVE_LIMITS_H
 #  include <limits.h>
 #endif
 
+#include <ctype.h>		/* isdigit() */
 #include <fcntl.h>
+#include <getopt.h>
 #include <stdarg.h>		/* va_start   */
 #include <stdio.h>
 #include <stdlib.h>		/* getenv     */
+#include <string.h>		/* strcpy, strncasecmp */
 #include <sys/param.h>		/* MAXPATHLEN */
 #include <sys/stat.h>
 #include <sys/types.h>

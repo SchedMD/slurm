@@ -33,14 +33,9 @@
 
 #if HAVE_CONFIG_H
 #  include "config.h"
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif			/* HAVE_INTTYPES_H */
 #endif
+
+#include <inttypes.h>
 
 #include "src/common/hostlist.h"
 #include "src/common/pack.h"

@@ -42,20 +42,8 @@
 #  include "config.h"
 #endif
 
-#include <string.h>		/* strcpy, strncasecmp */
-
-#ifdef HAVE_STRINGS_H
-#  include <strings.h>
-#endif
-
 #ifndef _GNU_SOURCE
 #  define _GNU_SOURCE
-#endif
-
-#if HAVE_GETOPT_H
-#  include <getopt.h>
-#else
-#  include "src/common/getopt.h"
 #endif
 
 #ifdef HAVE_LIMITS_H
@@ -64,16 +52,16 @@
 
 #include <ctype.h>
 #include <fcntl.h>
+#include <getopt.h>
 #include <stdarg.h>		/* va_start   */
 #include <stdio.h>
 #include <stdlib.h>		/* getenv     */
-#include <ctype.h>		/* isdigit    */
+#include <string.h>		/* strcpy, strncasecmp */
 #include <sys/param.h>		/* MAXPATHLEN */
-#include <sys/stat.h>
-#include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
+#include <unistd.h>
 
 #include "src/common/cpu_frequency.h"
 #include "src/common/list.h"

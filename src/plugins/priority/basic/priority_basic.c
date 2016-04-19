@@ -40,15 +40,9 @@
 #  include "config.h"
 #endif
 
-#if HAVE_STDINT_H
-#  include <stdint.h>
-#endif
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#endif
-
-#include <stdio.h>
+#include <inttypes.h>
 #include <math.h>
+#include <stdio.h>
 
 #include "slurm/slurm_errno.h"
 

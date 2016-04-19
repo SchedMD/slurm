@@ -43,22 +43,12 @@
 #  include "config.h"
 #endif
 
-#if HAVE_GETOPT_H
-#  include <getopt.h>
-#else
-#  include "src/common/getopt.h"
-#endif
-
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef HAVE_STRING_H
-#  include <string.h>
-#endif
-#ifdef HAVE_STRINGS_H
-#  include <strings.h>
-#endif
+#include <getopt.h>
+#include <string.h>
 #include <time.h>
 #include <unistd.h>
 

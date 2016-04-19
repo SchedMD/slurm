@@ -42,17 +42,17 @@
 #endif
 
 #include <fcntl.h>
-#include <stdio.h>
+#include <poll.h>
+#include <signal.h>
 #include <stdarg.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
-#include <unistd.h>
-#include <signal.h>
-#include <poll.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/param.h>		/* MAXPATHLEN */
+#include <unistd.h>
+
 #include "slurm/slurm.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/log.h"

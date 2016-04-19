@@ -41,37 +41,18 @@
 
 #if HAVE_CONFIG_H
 #  include "config.h"
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif  /* HAVE_INTTYPES_H */
-#else   /* !HAVE_CONFIG_H */
-#  include <inttypes.h>
-#endif  /*  HAVE_CONFIG_H */
-
-/* WHAT ABOUT THESE INCLUDES */
-#include <netdb.h>
-#include <netinet/in.h>
-#include <sys/time.h>
-
-
-#if HAVE_SYS_SOCKET_H
-#  include <sys/socket.h>
-#else
-#  if HAVE_SOCKET_H
-#    include <socket.h>
-#  endif
 #endif
 
-
-#include <sys/types.h>
-#include <sys/ioctl.h>
-#include <unistd.h>
 #include <fcntl.h>
+#include <inttypes.h>
+#include <netdb.h>
+#include <netinet/in.h>
 #include <stdarg.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "src/common/macros.h"
 #include "src/common/pack.h"

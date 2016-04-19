@@ -41,6 +41,7 @@
 
 #include <ctype.h>
 #include <errno.h>
+#include <getopt.h>
 #include <grp.h>
 #include <pwd.h>
 #include <stdio.h>
@@ -52,7 +53,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "src/common/getopt.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/list.h"

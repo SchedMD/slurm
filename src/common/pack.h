@@ -43,20 +43,13 @@
 
 #if HAVE_CONFIG_H
 #  include "config.h"
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#else  /* !HAVE_INTTYPES_H */
-#  if HAVE_STDINT_H
-#    include <stdint.h>
-#  endif
-#endif  /* HAVE_INTTYPES_H */
-#else   /* !HAVE_CONFIG_H */
-#include <stdint.h>
-#endif  /* HAVE_CONFIG_H */
+#endif
 
 #include <assert.h>
+#include <inttypes.h>
 #include <time.h>
 #include <string.h>
+
 #include "src/common/bitstring.h"
 
 #define BUF_MAGIC 0x42554545

@@ -40,18 +40,12 @@
 #   include "config.h"
 #endif
 
-#if HAVE_STDINT_H
-#  include <stdint.h>
-#endif
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#endif
-
-#include <sys/types.h>
+#include <inttypes.h>
+#include <proctrack.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <sys/types.h>
 #include <unistd.h>
-#include <proctrack.h>
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"

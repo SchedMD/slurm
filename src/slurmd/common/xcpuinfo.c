@@ -36,27 +36,21 @@
 \*****************************************************************************/
 
 #if HAVE_CONFIG_H
-#   include "config.h"
+#  include "config.h"
 #endif
 
 #ifndef   _GNU_SOURCE
 #  define _GNU_SOURCE
 #endif
 
-#if HAVE_STDINT_H
-#  include <stdint.h>
-#endif
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#endif
-
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <ctype.h>
 #include <fcntl.h>
+#include <inttypes.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"

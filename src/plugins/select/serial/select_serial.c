@@ -34,13 +34,9 @@
 
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
-#  if HAVE_STDINT_H
-#    include <stdint.h>
-#  endif
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  endif
 #endif
+
+#include <inttypes.h>
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/slurm_selecttype_info.h"

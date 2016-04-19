@@ -47,30 +47,17 @@
 #  include "config.h"
 #endif
 
-#if HAVE_FLOAT_H
-#  include <float.h>
-#endif
-#if HAVE_STDINT_H
-#  include <stdint.h>
-#endif
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#endif
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif				/* WITH_PTHREADS */
-#if HAVE_VALUES_H
-#  include <values.h>
-#endif
 #if HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
 #endif
 
-#include <sys/stat.h>
-#include <stdio.h>
 #include <fcntl.h>
-
+#include <limits.h>
 #include <math.h>
+#include <pthread.h>
+#include <stdio.h>
+#include <sys/stat.h>
+
 #include "slurm/slurm_errno.h"
 
 #include "src/common/parse_time.h"

@@ -44,12 +44,7 @@
 #  include "config.h"
 #endif
 
-#if HAVE_GETOPT_H
-#  include <getopt.h>
-#else
-#  include "src/common/getopt.h"
-#endif
-
+#include <getopt.h>
 #include <pwd.h>
 #include <stdlib.h>
 #include <string.h>

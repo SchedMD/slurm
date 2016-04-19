@@ -37,19 +37,16 @@
 
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
-#  if HAVE_STDINT_H
-#    include <stdint.h>
-#  endif
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  endif
 #endif
+
+#include <inttypes.h>
 #include <stdlib.h>
 #include <unistd.h>
 
 #include "src/common/log.h"
 #include "src/common/node_conf.h"
 #include "src/common/xmalloc.h"
+
 #include "../basil_alps.h"
 #include "../parser_common.h"
 #include "hilbert.h"
