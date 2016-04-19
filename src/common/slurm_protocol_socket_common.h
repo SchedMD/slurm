@@ -59,16 +59,4 @@ typedef int32_t slurm_fd_t ;
    typedef struct sockaddr_in slurm_addr_t ;
 #endif
 
-/* this is the slurm equivalent of the BSD sockets fd_set */
-typedef fd_set slurm_fd_set ;
-typedef fd_set _slurm_fd_set ;
-/*{
-	int16_t family ;
-	uint16_t port ;
-	uint32_t address ;
-	char pad[16 - sizeof ( int16_t ) - sizeof (uint16_t) -
-	         sizeof (uint32_t) ] ;
-} ;
-*/
-
 #endif
