@@ -40,12 +40,9 @@
 #  include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif /* WITH_PTHREADS */
-
 #include <assert.h>
 #include <errno.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -174,9 +171,7 @@ struct list {
 	struct listIterator  *iNext;        /* iterator chain for list_destroy() */
 	ListDelF              fDel;         /* function to delete node data      */
 	int                   count;        /* number of nodes in list           */
-#ifdef WITH_PTHREADS
 	pthread_mutex_t       mutex;        /* mutex to protect access to list   */
-#endif /* WITH_PTHREADS */
 #ifndef NDEBUG
 	unsigned int          magic;        /* sentinel for asserting validity   */
 #endif /* !NDEBUG */
@@ -210,70 +205,14 @@ static List list_free_lists = NULL;
 static ListNode list_free_nodes = NULL;
 static ListIterator list_free_iterators = NULL;
 
-#ifdef WITH_PTHREADS
 static pthread_mutex_t list_free_lock = PTHREAD_MUTEX_INITIALIZER;
-#endif /* WITH_PTHREADS */
 
 
 /************
  *  Macros  *
  ************/
 
-#ifdef WITH_PTHREADS
-
-#  define list_mutex_init(mutex)	  \
-	do { \
-		int e = pthread_mutex_init(mutex, NULL); \
-		if (e != 0) { \
-			errno = e; \
-			lsd_fatal_error(__FILE__, __LINE__, "list mutex init"); \
-			abort(); \
-		} \
-	} while (0)
-
-#  define list_mutex_lock(mutex)	  \
-	do { \
-		int e = pthread_mutex_lock(mutex); \
-		if (e != 0) { \
-			errno = e; \
-			lsd_fatal_error(__FILE__, __LINE__, "list mutex lock"); \
-			abort(); \
-		} \
-	} while (0)
-
-#  define list_mutex_unlock(mutex)	  \
-	do { \
-		int e = pthread_mutex_unlock(mutex); \
-		if (e != 0) { \
-			errno = e; \
-			lsd_fatal_error(__FILE__, __LINE__, "list mutex unlock"); \
-			abort(); \
-		} \
-	} while (0)
-
-#  define list_mutex_destroy(mutex)	  \
-	do { \
-		int e = pthread_mutex_destroy(mutex); \
-		if (e != 0) { \
-			errno = e; \
-			lsd_fatal_error(__FILE__, __LINE__, "list mutex destroy"); \
-			abort(); \
-		} \
-	} while (0)
-
-#  ifndef NDEBUG
 static int list_mutex_is_locked (pthread_mutex_t *mutex);
-#  endif /* !NDEBUG */
-
-#else /* !WITH_PTHREADS */
-
-#  define list_mutex_init(mutex)
-#  define list_mutex_lock(mutex)
-#  define list_mutex_unlock(mutex)
-#  define list_mutex_destroy(mutex)
-#  define list_mutex_is_locked(mutex) (1)
-
-#endif /* !WITH_PTHREADS */
 
 
 /***************
@@ -295,7 +234,7 @@ list_create (ListDelF f)
 	l->iNext = NULL;
 	l->fDel = f;
 	l->count = 0;
-	list_mutex_init(&l->mutex);
+	slurm_mutex_init(&l->mutex);
 	assert(l->magic = LIST_MAGIC);      /* set magic via assert abuse */
 
 	return l;
@@ -310,7 +249,7 @@ list_destroy (List l)
 	ListNode p, pTmp;
 
 	assert(l != NULL);
-	list_mutex_lock(&l->mutex);
+	slurm_mutex_lock(&l->mutex);
 	assert(l->magic == LIST_MAGIC);
 
 	i = l->iNext;
@@ -330,8 +269,8 @@ list_destroy (List l)
 		p = pTmp;
 	}
 	assert(l->magic = ~LIST_MAGIC);     /* clear magic via assert abuse */
-	list_mutex_unlock(&l->mutex);
-	list_mutex_destroy(&l->mutex);
+	slurm_mutex_unlock(&l->mutex);
+	slurm_mutex_destroy(&l->mutex);
 	list_free(l);
 }
 
@@ -343,10 +282,10 @@ list_is_empty (List l)
 	int n;
 
 	assert(l != NULL);
-	list_mutex_lock(&l->mutex);
+	slurm_mutex_lock(&l->mutex);
 	assert(l->magic == LIST_MAGIC);
 	n = l->count;
-	list_mutex_unlock(&l->mutex);
+	slurm_mutex_unlock(&l->mutex);
 
 	return (n == 0);
 }
@@ -359,10 +298,10 @@ list_count (List l)
 	int n;
 
 	assert(l != NULL);
-	list_mutex_lock(&l->mutex);
+	slurm_mutex_lock(&l->mutex);
 	assert(l->magic == LIST_MAGIC);
 	n = l->count;
-	list_mutex_unlock(&l->mutex);
+	slurm_mutex_unlock(&l->mutex);
 
 	return n;
 }
@@ -376,10 +315,10 @@ list_append (List l, void *x)
 
 	assert(l != NULL);
 	assert(x != NULL);
-	list_mutex_lock(&l->mutex);
+	slurm_mutex_lock(&l->mutex);
 	assert(l->magic == LIST_MAGIC);
 	v = _list_append_locked(l, x);
-	list_mutex_unlock(&l->mutex);
+	slurm_mutex_unlock(&l->mutex);
 
 	return v;
 }
@@ -441,11 +380,11 @@ list_prepend (List l, void *x)
 
 	assert(l != NULL);
 	assert(x != NULL);
-	list_mutex_lock(&l->mutex);
+	slurm_mutex_lock(&l->mutex);
 	assert(l->magic == LIST_MAGIC);
 
 	v = list_node_create(l, &l->head, x);
-	list_mutex_unlock(&l->mutex);
+	slurm_mutex_unlock(&l->mutex);
 
 	return v;
 }
@@ -461,7 +400,7 @@ list_find_first (List l, ListFindF f, void *key)
 	assert(l != NULL);
 	assert(f != NULL);
 	assert(key != NULL);
-	list_mutex_lock(&l->mutex);
+	slurm_mutex_lock(&l->mutex);
 	assert(l->magic == LIST_MAGIC);
 
 	for (p = l->head; p; p = p->next) {
@@ -470,7 +409,7 @@ list_find_first (List l, ListFindF f, void *key)
 			break;
 		}
 	}
-	list_mutex_unlock(&l->mutex);
+	slurm_mutex_unlock(&l->mutex);
 
 	return v;
 }
@@ -486,7 +425,7 @@ list_delete_all (List l, ListFindF f, void *key)
 
 	assert(l != NULL);
 	assert(f != NULL);
-	list_mutex_lock(&l->mutex);
+	slurm_mutex_lock(&l->mutex);
 	assert(l->magic == LIST_MAGIC);
 
 	pp = &l->head;
@@ -502,7 +441,7 @@ list_delete_all (List l, ListFindF f, void *key)
 			pp = &(*pp)->next;
 		}
 	}
-	list_mutex_unlock(&l->mutex);
+	slurm_mutex_unlock(&l->mutex);
 
 	return n;
 }
@@ -517,7 +456,7 @@ list_for_each (List l, ListForF f, void *arg)
 
 	assert(l != NULL);
 	assert(f != NULL);
-	list_mutex_lock(&l->mutex);
+	slurm_mutex_lock(&l->mutex);
 	assert(l->magic == LIST_MAGIC);
 
 	for (p = l->head; p; p = p->next) {
@@ -527,7 +466,7 @@ list_for_each (List l, ListForF f, void *arg)
 			break;
 		}
 	}
-	list_mutex_unlock(&l->mutex);
+	slurm_mutex_unlock(&l->mutex);
 
 	return n;
 }
@@ -542,7 +481,7 @@ list_flush (List l)
 	int n = 0;
 
 	assert(l != NULL);
-	list_mutex_lock(&l->mutex);
+	slurm_mutex_lock(&l->mutex);
 	assert(l->magic == LIST_MAGIC);
 
 	pp = &l->head;
@@ -553,7 +492,7 @@ list_flush (List l)
 			n++;
 		}
 	}
-	list_mutex_unlock(&l->mutex);
+	slurm_mutex_unlock(&l->mutex);
 
 	return n;
 }
@@ -567,11 +506,11 @@ list_push (List l, void *x)
 
 	assert(l != NULL);
 	assert(x != NULL);
-	list_mutex_lock(&l->mutex);
+	slurm_mutex_lock(&l->mutex);
 	assert(l->magic == LIST_MAGIC);
 
 	v = list_node_create(l, &l->head, x);
-	list_mutex_unlock(&l->mutex);
+	slurm_mutex_unlock(&l->mutex);
 
 	return v;
 }
@@ -593,17 +532,17 @@ list_sort(List l, ListCmpF f)
 	assert(l != NULL);
 	assert(f != NULL);
 	assert(l->magic == LIST_MAGIC);
-	list_mutex_lock(&l->mutex);
+	slurm_mutex_lock(&l->mutex);
 
 	if (l->count <= 1) {
-		list_mutex_unlock(&l->mutex);
+		slurm_mutex_unlock(&l->mutex);
 		return;
 	}
 
 	lsize = l->count;
 	v = xmalloc(lsize * sizeof(char *));
 	if (v == NULL) {
-		list_mutex_unlock(&l->mutex);
+		slurm_mutex_unlock(&l->mutex);
 		lsd_nomem_error(__FILE__, __LINE__, "list_sort");
 		return;
 	}
@@ -631,7 +570,7 @@ list_sort(List l, ListCmpF f)
 		i->prev = &i->list->head;
 	}
 
-	list_mutex_unlock(&l->mutex);
+	slurm_mutex_unlock(&l->mutex);
 }
 
 /* list_pop()
@@ -642,11 +581,11 @@ list_pop (List l)
 	void *v;
 
 	assert(l != NULL);
-	list_mutex_lock(&l->mutex);
+	slurm_mutex_lock(&l->mutex);
 	assert(l->magic == LIST_MAGIC);
 
 	v = _list_pop_locked(l);
-	list_mutex_unlock(&l->mutex);
+	slurm_mutex_unlock(&l->mutex);
 
 	return v;
 }
@@ -659,11 +598,11 @@ list_peek (List l)
 	void *v;
 
 	assert(l != NULL);
-	list_mutex_lock(&l->mutex);
+	slurm_mutex_lock(&l->mutex);
 	assert(l->magic == LIST_MAGIC);
 
 	v = (l->head) ? l->head->data : NULL;
-	list_mutex_unlock(&l->mutex);
+	slurm_mutex_unlock(&l->mutex);
 
 	return v;
 }
@@ -677,11 +616,11 @@ list_enqueue (List l, void *x)
 
 	assert(l != NULL);
 	assert(x != NULL);
-	list_mutex_lock(&l->mutex);
+	slurm_mutex_lock(&l->mutex);
 	assert(l->magic == LIST_MAGIC);
 
 	v = list_node_create(l, l->tail, x);
-	list_mutex_unlock(&l->mutex);
+	slurm_mutex_unlock(&l->mutex);
 
 	return v;
 }
@@ -694,11 +633,11 @@ list_dequeue (List l)
 	void *v;
 
 	assert(l != NULL);
-	list_mutex_lock(&l->mutex);
+	slurm_mutex_lock(&l->mutex);
 	assert(l->magic == LIST_MAGIC);
 
 	v = list_node_destroy(l, &l->head);
-	list_mutex_unlock(&l->mutex);
+	slurm_mutex_unlock(&l->mutex);
 
 	return v;
 }
@@ -715,7 +654,7 @@ list_iterator_create (List l)
 		return(lsd_nomem_error(__FILE__, __LINE__, "list iterator create"));
 
 	i->list = l;
-	list_mutex_lock(&l->mutex);
+	slurm_mutex_lock(&l->mutex);
 	assert(l->magic == LIST_MAGIC);
 
 	i->pos = l->head;
@@ -724,7 +663,7 @@ list_iterator_create (List l)
 	l->iNext = i;
 	assert(i->magic = LIST_MAGIC);      /* set magic via assert abuse */
 
-	list_mutex_unlock(&l->mutex);
+	slurm_mutex_unlock(&l->mutex);
 
 	return i;
 }
@@ -736,13 +675,13 @@ list_iterator_reset (ListIterator i)
 {
 	assert(i != NULL);
 	assert(i->magic == LIST_MAGIC);
-	list_mutex_lock(&i->list->mutex);
+	slurm_mutex_lock(&i->list->mutex);
 	assert(i->list->magic == LIST_MAGIC);
 
 	i->pos = i->list->head;
 	i->prev = &i->list->head;
 
-	list_mutex_unlock(&i->list->mutex);
+	slurm_mutex_unlock(&i->list->mutex);
 }
 
 /* list_iterator_destroy()
@@ -754,7 +693,7 @@ list_iterator_destroy (ListIterator i)
 
 	assert(i != NULL);
 	assert(i->magic == LIST_MAGIC);
-	list_mutex_lock(&i->list->mutex);
+	slurm_mutex_lock(&i->list->mutex);
 	assert(i->list->magic == LIST_MAGIC);
 
 	for (pi = &i->list->iNext; *pi; pi = &(*pi)->iNext) {
@@ -764,7 +703,7 @@ list_iterator_destroy (ListIterator i)
 			break;
 		}
 	}
-	list_mutex_unlock(&i->list->mutex);
+	slurm_mutex_unlock(&i->list->mutex);
 
 	assert(i->magic = ~LIST_MAGIC);     /* clear magic via assert abuse */
 	list_iterator_free(i);
@@ -779,7 +718,7 @@ list_next (ListIterator i)
 
 	assert(i != NULL);
 	assert(i->magic == LIST_MAGIC);
-	list_mutex_lock(&i->list->mutex);
+	slurm_mutex_lock(&i->list->mutex);
 	assert(i->list->magic == LIST_MAGIC);
 
 	if ((p = i->pos))
@@ -787,7 +726,7 @@ list_next (ListIterator i)
 	if (*i->prev != p)
 		i->prev = &(*i->prev)->next;
 
-	list_mutex_unlock(&i->list->mutex);
+	slurm_mutex_unlock(&i->list->mutex);
 
 	return (p ? p->data : NULL);
 }
@@ -801,12 +740,12 @@ list_peek_next (ListIterator i)
 
 	assert(i != NULL);
 	assert(i->magic == LIST_MAGIC);
-	list_mutex_lock(&i->list->mutex);
+	slurm_mutex_lock(&i->list->mutex);
 	assert(i->list->magic == LIST_MAGIC);
 
 	p = i->pos;
 
-	list_mutex_unlock(&i->list->mutex);
+	slurm_mutex_unlock(&i->list->mutex);
 
 	return (p ? p->data : NULL);
 }
@@ -821,11 +760,11 @@ list_insert (ListIterator i, void *x)
 	assert(i != NULL);
 	assert(x != NULL);
 	assert(i->magic == LIST_MAGIC);
-	list_mutex_lock(&i->list->mutex);
+	slurm_mutex_lock(&i->list->mutex);
 	assert(i->list->magic == LIST_MAGIC);
 
 	v = list_node_create(i->list, i->prev, x);
-	list_mutex_unlock(&i->list->mutex);
+	slurm_mutex_unlock(&i->list->mutex);
 
 	return v;
 }
@@ -856,12 +795,12 @@ list_remove (ListIterator i)
 
 	assert(i != NULL);
 	assert(i->magic == LIST_MAGIC);
-	list_mutex_lock(&i->list->mutex);
+	slurm_mutex_lock(&i->list->mutex);
 	assert(i->list->magic == LIST_MAGIC);
 
 	if (*i->prev != i->pos)
 		v = list_node_destroy(i->list, i->prev);
-	list_mutex_unlock(&i->list->mutex);
+	slurm_mutex_unlock(&i->list->mutex);
 
 	return v;
 }
@@ -1033,7 +972,7 @@ list_alloc_aux (int size, void *pfreelist)
 	assert(size >= sizeof(void *));
 	assert(pfreelist != NULL);
 	assert(LIST_ALLOC > 0);
-	list_mutex_lock(&list_free_lock);
+	slurm_mutex_lock(&list_free_lock);
 
 	if (!*pfree) {
 		if ((*pfree = xmalloc(LIST_ALLOC * size))) {
@@ -1048,7 +987,7 @@ list_alloc_aux (int size, void *pfreelist)
 		*pfree = *px;
 	else
 		errno = ENOMEM;
-	list_mutex_unlock(&list_free_lock);
+	slurm_mutex_unlock(&list_free_lock);
 
 	return px;
 }
@@ -1068,20 +1007,19 @@ list_free_aux (void *x, void *pfreelist)
 
 	assert(x != NULL);
 	assert(pfreelist != NULL);
-	list_mutex_lock(&list_free_lock);
+	slurm_mutex_lock(&list_free_lock);
 
 	*px = *pfree;
 	*pfree = px;
 
-	list_mutex_unlock(&list_free_lock);
+	slurm_mutex_unlock(&list_free_lock);
 #endif
 }
 
-#ifdef WITH_PTHREADS
 static void
 list_reinit_mutexes (void)
 {
-	list_mutex_init(&list_free_lock);
+	slurm_mutex_init(&list_free_lock);
 }
 
 void list_install_fork_handlers (void)
@@ -1092,15 +1030,8 @@ void list_install_fork_handlers (void)
 		abort();
 	}
 }
-#else
-void list_install_fork_handlers (void)
-{
-	return;
-}
-#endif
 
 #ifndef NDEBUG
-#ifdef WITH_PTHREADS
 static int
 list_mutex_is_locked (pthread_mutex_t *mutex)
 {
@@ -1112,7 +1043,6 @@ list_mutex_is_locked (pthread_mutex_t *mutex)
 	rc = pthread_mutex_trylock(mutex);
 	return(rc == EBUSY ? 1 : 0);
 }
-#endif /* WITH_PTHREADS */
 #endif /* !NDEBUG */
 
 /* _list_pop_locked

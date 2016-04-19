@@ -61,7 +61,7 @@
  *  lsd_nomem_error(file,line,mesg) is a macro definition that returns NULL.
  *  This macro may be redefined to invoke another routine instead.
  *
- *  If WITH_PTHREADS is defined, these routines will be thread-safe.
+ *  These routines are thread-safe.
  *
  *  SLURM's versions of these functions write directly to the log file, using
  *  fprintf to avoid consuming more memory.
@@ -337,7 +337,7 @@ int list_delete_item (ListIterator i);
 
 void list_install_fork_handlers (void);
 /*
- *  Install pthread_atfork() handlers if WITH_PTHREADS is defined.
+ *  Install pthread_atfork() handlers.
  *   These handlers will ensure that any mutexes internal to the list
  *   functions are in a proper state after a fork.
  */
