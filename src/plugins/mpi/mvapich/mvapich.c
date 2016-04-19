@@ -40,24 +40,18 @@
 #  include "config.h"
 #endif
 
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif
-
-#include <stdlib.h>
-#include <signal.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <string.h>
-#include <poll.h>
-#include <sys/time.h>
-
 #include <arpa/inet.h>
 #include <errno.h>
-
-/* include munge and syslog to log authentication faiulres */
-#include <munge.h>
+#include <netinet/in.h>
+#include <munge.h>	/* include munge and syslog to log auth failures */
+#include <poll.h>
+#include <pthread.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/time.h>
 #include <syslog.h>
 
 #include "src/common/slurm_xlator.h"

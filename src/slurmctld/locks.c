@@ -41,11 +41,8 @@
 #  include "config.h"
 #endif
 
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif
-
 #include <errno.h>
+#include <pthread.h>
 #include <string.h>
 #include <sys/types.h>
 

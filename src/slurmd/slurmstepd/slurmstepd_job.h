@@ -41,10 +41,7 @@
 #ifndef _SLURMSTEPD_JOB_H
 #define _SLURMSTEPD_JOB_H
 
-#if WITH_PTHREADS
 #include <pthread.h>
-#endif
-
 #include <pwd.h>
 
 #include "src/common/macros.h"

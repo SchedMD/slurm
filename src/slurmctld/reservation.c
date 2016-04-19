@@ -41,18 +41,15 @@
 #  include "config.h"
 #endif
 
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif				/* WITH_PTHREADS */
-
 #include <fcntl.h>
+#include <pthread.h>
 #include <signal.h>
 #include <string.h>
 #include <stdlib.h>
-#include <time.h>
-#include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"

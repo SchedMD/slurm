@@ -20865,10 +20865,6 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
-# Always define WITH_PTHREADS if we make it this far
-
-$as_echo "#define WITH_PTHREADS 1" >>confdefs.h
-
 LDFLAGS="$LDFLAGS "
 CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 LIBS="$PTHREAD_LIBS $LIBS"

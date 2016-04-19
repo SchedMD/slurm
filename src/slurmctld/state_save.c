@@ -45,9 +45,7 @@
 #include <sys/prctl.h>
 #endif
 
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif                          /* WITH_PTHREADS */
+#include <pthread.h>
 
 #include "src/common/macros.h"
 #include "src/slurmctld/front_end.h"

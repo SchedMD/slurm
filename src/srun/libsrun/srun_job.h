@@ -38,11 +38,8 @@
 #ifndef _HAVE_JOB_H
 #define _HAVE_JOB_H
 
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif
-
 #include <netinet/in.h>
+#include <pthread.h>
 
 #include "slurm/slurm.h"
 

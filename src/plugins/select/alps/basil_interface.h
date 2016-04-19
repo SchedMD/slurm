@@ -11,9 +11,7 @@
 # include "config.h"
 #endif	/* HAVE_CONFIG_H */
 
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif				/* WITH_PTHREADS */
+#include <pthread.h>
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"

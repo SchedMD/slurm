@@ -71,9 +71,7 @@ static lua_State *L = NULL;
  *  Mutex for protecting multi-threaded access to this plugin.
  *   (Only 1 thread at a time should be in here)
  */
-#ifdef WITH_PTHREADS
 static pthread_mutex_t lua_lock = PTHREAD_MUTEX_INITIALIZER;
-#endif
 
 /*
  *  Lua interface to SLURM log facility:

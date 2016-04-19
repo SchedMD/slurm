@@ -42,16 +42,13 @@
 #  include "config.h"
 #endif
 
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif				/* WITH_PTHREADS */
-
 #if HAVE_SYS_PRCTL_H
 #  include <sys/prctl.h>
 #endif
 
 #include <grp.h>
 #include <errno.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -781,17 +778,10 @@ static void  _init_config(void)
 	slurmctld_config.shutdown_time  = (time_t) 0;
 	slurmctld_config.thread_id_main = pthread_self();
 	slurmctld_config.scheduling_disabled = false;
-#ifdef WITH_PTHREADS
 	slurm_mutex_init(&slurmctld_config.thread_count_lock);
 	slurmctld_config.thread_id_main    = (pthread_t) 0;
 	slurmctld_config.thread_id_sig     = (pthread_t) 0;
 	slurmctld_config.thread_id_rpc     = (pthread_t) 0;
-#else
-	slurmctld_config.thread_count_lock = 0;
-	slurmctld_config.thread_id_main    = 0;
-	slurmctld_config.thread_id_sig     = 0;
-	slurmctld_config.thread_id_rpc     = 0;
-#endif
 }
 
 /* Read configuration file.

@@ -40,16 +40,13 @@
 #  include "config.h"
 #endif
 
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif
-
+#include <netinet/in.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
-#include <string.h>
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/net.h"

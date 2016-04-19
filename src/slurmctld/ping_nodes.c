@@ -41,10 +41,7 @@
 #  include "config.h"
 #endif
 
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif
-
+#include <pthread.h>
 #include <time.h>
 #include <string.h>
 

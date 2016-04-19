@@ -645,9 +645,6 @@
 /* Define the project's version. */
 #undef VERSION
 
-/* Define if you have pthreads. */
-#undef WITH_PTHREADS
-
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */
 #if defined AC_APPLE_UNIVERSAL_BUILD

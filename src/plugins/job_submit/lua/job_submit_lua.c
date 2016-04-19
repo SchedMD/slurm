@@ -109,9 +109,7 @@ time_t last_lua_resv_update = (time_t) 0;
  *  Mutex for protecting multi-threaded access to this plugin.
  *   (Only 1 thread at a time should be in here)
  */
-#ifdef WITH_PTHREADS
 static pthread_mutex_t lua_lock = PTHREAD_MUTEX_INITIALIZER;
-#endif
 
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get

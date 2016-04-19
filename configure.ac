@@ -221,8 +221,6 @@ AM_CONDITIONAL(HAVE_UNSETENV, test "x$have_unsetenv" = "xyes")
 
 ACX_PTHREAD([], AC_MSG_ERROR([Error: Cannot figure out how to use pthreads!]))
 
-# Always define WITH_PTHREADS if we make it this far
-AC_DEFINE(WITH_PTHREADS,1,[Define if you have pthreads.])
 LDFLAGS="$LDFLAGS "
 CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 LIBS="$PTHREAD_LIBS $LIBS"

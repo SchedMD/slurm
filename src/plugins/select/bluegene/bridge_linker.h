@@ -51,10 +51,7 @@
 #endif
 
 #include <dlfcn.h>
-
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif				/* WITH_PTHREADS */
+#include <pthread.h>
 
 #include "src/common/node_select.h"
 #include "src/common/read_config.h"
