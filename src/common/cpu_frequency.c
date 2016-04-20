@@ -4,6 +4,8 @@
  *  Copyright (C) 2012 Bull
  *  Written by Don Albert, <don.albert@bull.com>
  *  Modified by Rod Schultz, <rod.schultz@bull.com> for min-max:gov
+ *  Modified by Janne Blomqvist, <janne.blomqvist@aalto.fi> for
+ *  intel_pstate support
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://slurm.schedmd.com/>.
@@ -208,11 +210,9 @@ _cpu_freq_cpu_avail(int cpuidx)
 	snprintf(path, sizeof(path),  PATH_TO_CPU
 		 "cpu%u/cpufreq/scaling_available_frequencies", cpuidx);
 	if ( ( fp = fopen(path, "r") ) == NULL ) {
-		static bool open_err_log = true;	/* Log once */
-		if (open_err_log) {
-			error("%s: Could not open %s", __func__, path);
-			open_err_log = false;
-		}
+		/* Don't log an error here,
+		 * scaling_available_frequencies does not exist when
+		 * using the intel_pstate driver.  */
 		return SLURM_FAILURE;
 	}
 	for (i = 0; i < (FREQ_LIST_MAX-1); i++) {
@@ -761,9 +761,12 @@ _cpu_freq_current_state(int cpuidx)
 	 * than the 'cpuinfo' values.
 	 * The 'cpuinfo' values are read only. min/max seem to be raw
 	 * hardware capability.
-	 * The 'scaling' values are set by the governor
+	 * The 'scaling' values are set by the governor.
+	 * For the current frequency, use the cpuinfo_cur_freq file
+	 * since the intel_pstate driver doesn't necessarily create
+	 * the scaling_cur_freq file.
 	 */
-	freq = _cpu_freq_get_scaling_freq(cpuidx, "scaling_cur_freq");
+	freq = _cpu_freq_get_scaling_freq(cpuidx, "cpuinfo_cur_freq");
 	if (freq == 0)
 		return SLURM_FAILURE;
 	cpufreq[cpuidx].org_frequency = freq;
@@ -898,13 +901,18 @@ _cpu_freq_setup_data(stepd_step_rec_t *job, int cpx)
 	if (   (job->cpu_freq_min == NO_VAL || job->cpu_freq_min==0)
 	    && (job->cpu_freq_max == NO_VAL || job->cpu_freq_max==0)
 	    && (job->cpu_freq_gov == NO_VAL || job->cpu_freq_gov==0)) {
-		return; /* No --cpu-freq */
+		/* If no --cpu-freq, use default governor from conf file.  */
+		slurm_ctl_conf_t *conf = slurm_conf_lock();
+		job->cpu_freq_gov = conf->cpu_freq_def;
+		slurm_conf_unlock();
+		if (job->cpu_freq_gov == NO_VAL)
+			return;
 	}
 
 	/* Get current state */
 	if (_cpu_freq_current_state(cpx) == SLURM_FAILURE)
 		return;
-	
+
 	if (job->cpu_freq_min == NO_VAL &&
 	    job->cpu_freq_max != NO_VAL &&
 	    job->cpu_freq_gov == NO_VAL) {
@@ -1020,6 +1028,7 @@ cpu_freq_set(stepd_step_rec_t *job)
 
 	if ((!cpu_freq_count) || (!cpufreq))
 		return;
+
 	for (i = 0; i < cpu_freq_count; i++) {
 		if (cpufreq[i].new_frequency == NO_VAL
 		    && cpufreq[i].new_min_freq == NO_VAL
@@ -1377,14 +1386,8 @@ cpu_freq_verify_def(const char *arg, uint32_t *freq)
 		*freq = cpufreq;
 		return 0;
 	}
-	cpufreq = _cpu_freq_check_freq(arg);
-	if (cpufreq == 0) {
-		error("cpu_freq_verify_def: CpuFreqDef=%s invalid", arg);
-		return -1;
-	}
-	debug3("cpu_freq_verify_def: %s set", arg);
-	*freq = cpufreq;
-	return 0;
+	error("%s: CpuFreqDef=%s invalid", __func__, arg);
+	return -1;
 }
 
 /*

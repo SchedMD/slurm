@@ -528,8 +528,7 @@ TaskPlugin=task/cgroup with the "ConstrainCores" option) is not
 configured, this parameter is ignored.
 
 \fBNOTE\fR: When the step completes, the frequency and governor of each
-selected CPU is reset to the configured \fBCpuFreqDef\fR value with a
-default value of the OnDemand CPU governor.
+selected CPU is reset to the previous values.
 
 \fBNOTE\fR: When submitting jobs with  the \fB\-\-cpu\-freq\fR option
 with linuxproc as the ProctrackType can cause jobs to run too quickly before

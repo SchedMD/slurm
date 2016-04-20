@@ -474,29 +474,16 @@ used for all other system types
 
 .TP
 \fBCpuFreqDef\fR
-Default CPU frequency to be set when no jobs are running.
-The CPU frequency can also be set to this value after a catastrophic failure
-when state information has been lost.
+Default CPU frequency governor to use when running a job step if it
+has not been explicitly set with the \-\-cpu\-freq option.
 Acceptable values at present include:
 .RS
 .TP 14
-\fBLow\fR
-the lowest available frequency
-.TP
-\fBHigh\fR
-the highest available frequency
-.TP
-\fBHighM1\fR
-(high minus one) will select the next highest available frequency
-.TP
-\fBMedium\fR
-attempts to set a frequency in the middle of the available range
-.TP
 \fBConservative\fR
 attempts to use the Conservative CPU governor
 .TP
 \fBOnDemand\fR
-attempts to use the OnDemand CPU governor (the default value)
+attempts to use the OnDemand CPU governor
 .TP
 \fBPerformance\fR
 attempts to use the Performance CPU governor
@@ -504,6 +491,8 @@ attempts to use the Performance CPU governor
 \fBPowerSave\fR
 attempts to use the PowerSave CPU governor
 .RE
+There is no default value. If unset, no attempt to set the governor is
+made if the \-\-cpu\-freq option has not been set.
 
 .TP
 \fBCpuFreqGovernors\fR
@@ -519,7 +508,7 @@ attempts to use the Conservative CPU governor
 attempts to use the OnDemand CPU governor (the default value)
 .TP
 \fBPerformance\fR
-attempts to use the Performance CPU governor
+attempts to use the Performance CPU governor (the default value)
 .TP
 \fBPowerSave\fR
 attempts to use the PowerSave CPU governor
@@ -527,7 +516,7 @@ attempts to use the PowerSave CPU governor
 \fBUserSpace\fR
 attempts to use the UserSpace CPU governor
 .RE
-The default is OnDemand.
+The default is OnDemand, Performance.
 .TP
 \fBCryptoType\fR
 The cryptographic signature tool to be used in the creation of

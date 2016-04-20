@@ -36,6 +36,8 @@ documents those changes that are of interest to users and administrators.
  -- Add TopologyParam option of "TopoOptional" to optimize network topology
     only for jobs requesting it.
  -- Fix build on FreeBSD.
+ -- Configuration parameter "CpuFreqDef" used to set default governor for job
+    step not specifying --cpu-freq (previously the parameter was unused).
 
 * Changes in Slurm 16.05.0pre2
 ==============================
