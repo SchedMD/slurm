@@ -553,7 +553,6 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 	if (signal == SIGKILL) {
 		step_ptr->requid = uid;
 		srun_step_complete(step_ptr);
-		select_g_step_finish(step_ptr, true);
 	}
 
 #ifdef HAVE_FRONT_END
@@ -564,6 +563,11 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 	if (front_end && !notify_slurmd) {
 	} else if ((signal == SIGKILL) || notify_slurmd)
 		signal_step_tasks(step_ptr, signal, REQUEST_SIGNAL_TASKS);
+
+	/* This has to be done last or we have a race condition with the
+	 * step_ptr not being around after this is called.  */
+	if (signal == SIGKILL)
+		select_g_step_finish(step_ptr, true);
 
 	return SLURM_SUCCESS;
 }
@@ -4131,10 +4135,10 @@ static void _signal_step_timelimit(struct job_record *job_ptr,
 	}
 
 	step_ptr->state = JOB_TIMEOUT;
-	(void) select_g_step_finish(step_ptr, true);
 
 	if (notify_srun) {	/* Handle termination from srun, not slurmd */
 		srun_step_timeout(step_ptr, now);
+		(void) select_g_step_finish(step_ptr, true);
 		return;
 	}
 
@@ -4175,6 +4179,8 @@ static void _signal_step_timelimit(struct job_record *job_ptr,
 		agent_args->node_count++;
 	}
 #endif
+
+	(void) select_g_step_finish(step_ptr, true);
 
 	if (agent_args->node_count == 0) {
 		hostlist_destroy(agent_args->hostlist);
