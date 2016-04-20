@@ -544,6 +544,7 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 				bb_job->buf_ptr[inx].size = tmp_cnt;
 				bb_job->buf_ptr[inx].state = BB_STATE_PENDING;
 				bb_job->buf_ptr[inx].type = bb_type;
+				//bb_job->buf_ptr[inx].use = false;
 				bb_job->persist_add += tmp_cnt;
 			} else if (!xstrncmp(tok, "destroy_persistent", 17) ||
 				   !xstrncmp(tok, "delete_persistent", 16)) {
@@ -575,6 +576,7 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 				//bb_job->buf_ptr[inx].size = 0;
 				bb_job->buf_ptr[inx].state = BB_STATE_PENDING;
 				//bb_job->buf_ptr[inx].type = NULL;
+				//bb_job->buf_ptr[inx].use = false;
 			} else {
 				/* Ignore other (future) options */
 			}
@@ -624,6 +626,7 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 				//bb_job->buf_ptr[inx].size = 0;
 				bb_job->buf_ptr[inx].state = BB_STATE_PENDING;
 				//bb_job->buf_ptr[inx].type = NULL;
+				bb_job->buf_ptr[inx].use = true;
 			} else if (!xstrncmp(tok, "swap", 4)) {
 				have_bb = true;
 				tok += 4;
@@ -2923,7 +2926,7 @@ static bool _have_dw_cmd_opts(bb_job_t *bb_job)
 
 	for (i = 0, bb_buf = bb_job->buf_ptr; i < bb_job->buf_cnt;
 	     i++, bb_buf++) {
-		if (!bb_buf->create && !bb_buf->destroy)
+		if (bb_buf->use)
 			return true;
 	}
 

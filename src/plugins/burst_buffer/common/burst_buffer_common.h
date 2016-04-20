@@ -137,6 +137,7 @@ typedef struct {
 	uint64_t size;		/* Buffer size in bytes */
 	uint16_t state;		/* Buffer state, see BB_STATE_* in slurm.h.in */
 	char    *type;		/* Buffer type */
+	bool     use;		/* Set if persistent buffer use requested */
 } bb_buf_t;
 
 /* Burst buffer resources required for a job, based upon a job record's
