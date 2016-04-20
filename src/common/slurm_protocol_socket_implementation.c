@@ -53,17 +53,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/param.h>
+#include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
-
-#if HAVE_SYS_SOCKET_H
-#  include <sys/socket.h>
-#else
-#  if HAVE_SOCKET_H
-#    include <socket.h>
-#  endif
-#endif
 
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_protocol_api.h"

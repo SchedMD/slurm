@@ -38,12 +38,7 @@
 
 #include "config.h"
 
-#if HAVE_UNISTD_H
-#  if HAVE_SETRESUID
-#    define _GNU_SOURCE /* for setresuid(3) */
-#  endif
-#  include <unistd.h>
-#endif
+#define _GNU_SOURCE /* for setresuid(3) */
 
 #ifdef HAVE_PTY_H
 #  include <pty.h>

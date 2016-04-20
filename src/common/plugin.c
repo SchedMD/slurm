@@ -44,8 +44,11 @@
 #include <dlfcn.h>
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #include "src/common/xmalloc.h"
 #include "src/common/log.h"
@@ -53,20 +56,6 @@
 #include "src/common/xstring.h"
 #include "src/common/slurm_protocol_api.h"
 #include "slurm/slurm_errno.h"
-
-#  if HAVE_UNISTD_H
-#    include <unistd.h>
-#  endif /* HAVE_UNISTD_H */
-#  if HAVE_SYS_TYPES_H
-#    include <sys/types.h>
-#  endif
-#  if HAVE_SYS_STAT_H
-#    include <sys/stat.h>
-#  endif
-
-#  if HAVE_STDLIB_H
-#    include <stdlib.h>
-#  endif
 
 strong_alias(plugin_get_syms,         slurm_plugin_get_syms);
 strong_alias(plugin_load_and_link,    slurm_plugin_load_and_link);

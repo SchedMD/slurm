@@ -76,9 +76,7 @@
 #ifndef _XMALLOC_H
 #define _XMALLOC_H
 
-#if HAVE_SYS_TYPES_H
-#  include <sys/types.h>
-#endif
+#include <sys/types.h>
 
 #include "macros.h"
 

@@ -42,11 +42,8 @@
 
 #include "config.h"
 
+#include <sys/types.h>
 #include <unistd.h>
-
-#if HAVE_SYS_TYPES_H
-#  include <sys/types.h>
-#endif
 
 #include "src/common/bitstring.h"
 #include "src/common/macros.h"
