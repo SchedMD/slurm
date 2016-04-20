@@ -35,9 +35,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <inttypes.h>
 #include <libgen.h>
@@ -45,11 +43,11 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
-#include <unistd.h>
 #include <sys/types.h>
 #include <sys/param.h>
 #include <sys/stat.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"

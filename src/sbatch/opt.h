@@ -42,12 +42,10 @@
 #ifndef _HAVE_OPT_H
 #define _HAVE_OPT_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
-#include <time.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "src/common/macros.h" /* true and false */

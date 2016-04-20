@@ -39,9 +39,7 @@
 #ifndef _SLURMD_STEP_INIT_H
 #define _SLURMD_STEP_INIT_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include "src/common/slurm_protocol_defs.h"
 

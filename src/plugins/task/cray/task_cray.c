@@ -35,28 +35,24 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if     HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
-#ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
+#define _GNU_SOURCE
 
+#include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
+#include <sched.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <sys/param.h>
-#include <errno.h>
-#include "limits.h"
-#include <sched.h>
 
 #ifdef HAVE_NUMA
-#include <numa.h>
+#  include <numa.h>
 #endif
 
 #include "slurm/slurm_errno.h"
@@ -64,7 +60,7 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 #ifdef HAVE_NATIVE_CRAY
-#include "alpscomm_cn.h"
+#  include "alpscomm_cn.h"
 #endif
 
 static uint64_t debug_flags = 0;

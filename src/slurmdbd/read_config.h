@@ -40,9 +40,7 @@
 #ifndef _DBD_READ_CONFIG_H
 #define _DBD_READ_CONFIG_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <inttypes.h>
 #include <time.h>

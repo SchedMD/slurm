@@ -37,9 +37,7 @@
 \*****************************************************************************/
 
 #if !(defined(__FreeBSD__) || defined(__NetBSD__))
-#if HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #define _GNU_SOURCE
 #include <ctype.h>

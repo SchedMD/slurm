@@ -34,12 +34,10 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#   include "config.h"
-#endif
-
 #ifndef _XCPUINFO_H_
 #define _XCPUINFO_H_
+
+#include "config.h"
 
 #define XCPUINFO_ERROR    1
 #define XCPUINFO_SUCCESS  0

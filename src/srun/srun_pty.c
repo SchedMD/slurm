@@ -37,18 +37,13 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
-#if HAVE_PTHREAD
+#include <poll.h>
 #include <pthread.h>
-#endif
-
 #include <signal.h>
 #include <string.h>
 #include <sys/ioctl.h>
-#include <poll.h>
 
 #include "slurm/slurm_errno.h"
 

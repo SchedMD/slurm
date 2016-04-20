@@ -38,9 +38,7 @@
 #ifndef _PMI_H
 #define _PMI_H
 
-#if     HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 /***********************************************************\
  * PMI1 definitions

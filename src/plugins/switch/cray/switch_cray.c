@@ -36,24 +36,23 @@
 \*****************************************************************************/
 
 #if !(defined(__FreeBSD__) || defined(__NetBSD__))
-#if     HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #define _GNU_SOURCE
+
+#include <errno.h>
+#include <fcntl.h>
+#include <inttypes.h>
+#include <limits.h>
+#include <linux/limits.h>
+#include <math.h>
+#include <sched.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <signal.h>
 #include <string.h>
-#include <unistd.h>
-#include <errno.h>
-#include <inttypes.h>
-#include <fcntl.h>
-#include "limits.h"
-#include <linux/limits.h>
-#include <sched.h>
 #include <sys/stat.h>
-#include <math.h>
+#include <unistd.h>
 
 #include "switch_cray.h"
 #include "slurm/slurm.h"

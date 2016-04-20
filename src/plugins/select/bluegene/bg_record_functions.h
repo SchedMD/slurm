@@ -38,13 +38,11 @@
 #ifndef _BLUEGENE_BG_RECORD_FUNCTIONS_H_
 #define _BLUEGENE_BG_RECORD_FUNCTIONS_H_
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
+#include <pwd.h>
 #include <stdlib.h>
 #include <sys/stat.h>
-#include <pwd.h>
 
 #include "src/common/xstring.h"
 #include "src/common/bitstring.h"

@@ -43,12 +43,10 @@
  *
 \*****************************************************************************/
 
+#include "config.h"
+
 #ifndef _GNU_SOURCE
 #  define _GNU_SOURCE
-#endif
-
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
 #endif
 
 #include <dirent.h>

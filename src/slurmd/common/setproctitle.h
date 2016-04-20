@@ -39,9 +39,7 @@
 #ifndef _BSD_SETPROCTITLE_H
 #define _BSD_SETPROCTITLE_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #if defined(__FreeBSD__)
 extern void setproctitle(const char *fmt, ...)

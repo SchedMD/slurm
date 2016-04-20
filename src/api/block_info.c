@@ -36,21 +36,19 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #ifdef HAVE_SYS_SYSLOG_H
 #  include <sys/syslog.h>
 #endif
 
+#include <arpa/inet.h>
 #include <errno.h>
+#include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 #include <unistd.h>
 
 #include "slurm/slurm.h"

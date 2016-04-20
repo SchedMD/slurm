@@ -36,23 +36,13 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #if HAVE_UNISTD_H
 #  if HAVE_SETRESUID
 #    define _GNU_SOURCE /* for setresuid(3) */
 #  endif
 #  include <unistd.h>
-#endif
-
-#if HAVE_STRING_H
-#  include <string.h>
-#endif
-
-#if HAVE_STDLIB_H
-#  include <stdlib.h>
 #endif
 
 #ifdef HAVE_PTY_H
@@ -63,13 +53,15 @@
 #  include <utmp.h>
 #endif
 
+#include <errno.h>
+#include <fcntl.h>
 #include <poll.h>
-#include <sys/types.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
-#include <fcntl.h>
+#include <sys/types.h>
 #include <unistd.h>
-#include <errno.h>
 
 #include "src/common/cbuf.h"
 #include "src/common/eio.h"

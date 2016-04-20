@@ -39,15 +39,11 @@
 #ifndef _TASK_H
 #define _TASK_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
+
+#include <sys/types.h>
 
 #include "slurm/slurm_errno.h"
-
-#if HAVE_SYS_TYPES_H
-#  include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 

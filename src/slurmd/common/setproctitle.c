@@ -77,12 +77,7 @@
  *--------------------------------------------------------------------
  */
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#  if !HAVE_MALLOC
-#    include "src/common/malloc.h"
-#  endif
-#endif
+#include "config.h"
 
 #include <errno.h>
 #if defined(__NetBSD__)

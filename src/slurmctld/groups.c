@@ -37,16 +37,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
+
 /* needed for getgrent_r */
-#ifndef   _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
-#ifndef   __USE_GNU
-#  define   __USE_GNU
-#endif
+#define _GNU_SOURCE
+#define   __USE_GNU
 
 #include <grp.h>
 #include <pthread.h>

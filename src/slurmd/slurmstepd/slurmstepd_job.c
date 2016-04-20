@@ -38,17 +38,12 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#if HAVE_STRING_H
-#  include <string.h>
-#endif
+#include "config.h"
 
 #include <grp.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 
 #include "src/common/eio.h"

@@ -28,20 +28,16 @@
 #ifndef _SVIEW_H
 #define _SVIEW_H
 
-#ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
+#include "config.h"
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#define _GNU_SOURCE
 
 #include <ctype.h>
 #include <inttypes.h>
 #include <getopt.h>
 #include <pwd.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>

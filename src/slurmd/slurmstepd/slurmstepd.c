@@ -38,13 +38,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
-#include <unistd.h>
-#include <stdlib.h>
 #include <signal.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #include "src/common/cpu_frequency.h"
 #include "src/common/gres.h"

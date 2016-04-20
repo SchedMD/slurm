@@ -39,9 +39,7 @@
 #ifndef _FNAME_H
 #define _FNAME_H
 
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
+#include "config.h"
 
 #include "srun_job.h"
 

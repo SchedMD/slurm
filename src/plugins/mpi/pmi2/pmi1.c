@@ -35,9 +35,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if     HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #if defined(__FreeBSD__)
 #include <roken.h>
@@ -46,11 +44,12 @@
 
 #include <fcntl.h>
 #include <signal.h>
-#include <sys/types.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
 
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm_errno.h"
+
 #include "src/common/slurm_xlator.h"
 #include "src/common/xmalloc.h"
 #include "src/common/log.h"

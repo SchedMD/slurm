@@ -36,14 +36,12 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <errno.h>
 #include <stdio.h>
-#include <unistd.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #ifndef __USE_XOPEN_EXTENDED
 extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */

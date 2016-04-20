@@ -36,16 +36,15 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <fcntl.h>
 #include <pthread.h>
-#include <unistd.h>
+#include <signal.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <signal.h>
+#include <unistd.h>
+
 #ifdef HAVE_LINUX_SCHED_H
 #  include <linux/sched.h>
 #endif

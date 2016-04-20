@@ -38,24 +38,23 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+
+#include "config.h"
 
 #include <fcntl.h>
 #include <grp.h>
+#include <poll.h>
 #include <pthread.h>
 #include <sched.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include <sys/param.h>
-#include <poll.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/un.h>
 #include <sys/wait.h>
+#include <time.h>
 #include <unistd.h>
 #include <utime.h>
 

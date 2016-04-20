@@ -41,9 +41,7 @@
 #ifndef _HAVE_MYSQL_COMMON_H
 #define _HAVE_MYSQL_COMMON_H
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <inttypes.h>
 #include <pthread.h>

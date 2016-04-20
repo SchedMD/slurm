@@ -39,18 +39,16 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <ctype.h>
 #include <errno.h>
+#include <poll.h>
 #include <signal.h> /* for SIGKILL */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <poll.h>
 
 #if HAVE_SYS_PRCTL_H
 #  include <sys/prctl.h>

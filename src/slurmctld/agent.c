@@ -62,9 +62,7 @@
  *  used by the watchdog thread as well as the communication threads.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #if HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
@@ -74,12 +72,11 @@
 #include <pthread.h>
 #include <pwd.h>
 #include <signal.h>
+#include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <stdlib.h>
 
 #include "src/common/forward.h"
 #include "src/common/list.h"

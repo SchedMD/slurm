@@ -37,25 +37,22 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <ctype.h>
 #include <errno.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <sys/types.h>
+#include <netinet/in.h>			/* for ntohs() */
 #include <poll.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
 #include <time.h>
-#include <netinet/in.h> /* for ntohs() */
+#include <unistd.h>
 
 #ifndef __USE_XOPEN_EXTENDED
 extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
 #endif
-
-#include <stdlib.h>
 
 #include "slurm/slurm.h"
 #include "src/common/read_config.h"

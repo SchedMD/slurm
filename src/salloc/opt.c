@@ -38,22 +38,15 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
-#ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
+#define _GNU_SOURCE
 
-#ifdef HAVE_LIMITS_H
-#  include <limits.h>
-#endif
-
+#include <ctype.h>		/* isdigit    */
 #include <fcntl.h>
 #include <getopt.h>
+#include <limits.h>
 #include <pwd.h>		/* getpwuid   */
-#include <ctype.h>		/* isdigit    */
 #include <stdarg.h>		/* va_start   */
 #include <stdio.h>
 #include <stdlib.h>		/* getenv, strtol, etc. */

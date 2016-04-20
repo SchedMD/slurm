@@ -38,20 +38,18 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if     HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #if defined(__FreeBSD__)
 #include <roken.h>
 #include <sys/socket.h>	/* AF_INET */
 #endif
 
+#include <arpa/inet.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/un.h>
-#include <arpa/inet.h>
 #include <poll.h>
 
 #include "src/common/slurm_xlator.h"

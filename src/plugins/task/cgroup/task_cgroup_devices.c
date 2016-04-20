@@ -34,17 +34,17 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #define _GNU_SOURCE
-#include <sched.h>
 #include <glob.h>
-#include <sys/types.h>
+#include <sched.h>
 #include <sys/stat.h>
-#include <slurm/slurm.h>
-#include <slurm/slurm_errno.h>
+#include <sys/types.h>
+
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
+
 #include "src/common/xstring.h"
 #include "src/common/gres.h"
 #include "src/common/list.h"

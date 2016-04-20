@@ -41,9 +41,7 @@
 #ifndef __SREPORT_H__
 #define __SREPORT_H__
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <ctype.h>
 #include <errno.h>

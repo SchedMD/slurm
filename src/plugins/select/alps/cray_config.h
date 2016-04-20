@@ -1,6 +1,5 @@
 /*****************************************************************************\
  *  cray_config.h
- *
  *****************************************************************************
  *  Copyright (C) 2011 SchedMD LLC <http://www.schedmd.com>.
  *  Supported by the Oak Ridge National Laboratory Extreme Scale Systems Center
@@ -39,9 +38,7 @@
 #ifndef _CRAY_CONFIG_H_
 #define _CRAY_CONFIG_H_
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include "slurm/slurm.h"
 

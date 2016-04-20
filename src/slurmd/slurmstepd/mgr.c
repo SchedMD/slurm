@@ -38,13 +38,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#if HAVE_SYS_TYPES_H
-#  include <sys/types.h>
-#endif
+#include "config.h"
 
 #if HAVE_SYS_PRCTL_H
 #  include <sys/prctl.h>
@@ -63,6 +57,7 @@
 #include <pthread.h>
 #include <pwd.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/param.h>
 #include <sys/stat.h>
@@ -71,10 +66,6 @@
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
-
-#if HAVE_STDLIB_H
-#  include <stdlib.h>
-#endif
 
 #ifdef HAVE_PTY_H
 #  include <pty.h>

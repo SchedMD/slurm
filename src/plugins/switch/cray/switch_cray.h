@@ -38,10 +38,9 @@
 #ifndef SWITCH_CRAY_H
 #define SWITCH_CRAY_H
 
-#include "src/common/slurm_xlator.h"
-#if     HAVE_CONFIG_H
 #include "config.h"
-#endif
+
+#include "src/common/slurm_xlator.h"
 
 #include <stdint.h>
 

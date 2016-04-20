@@ -7,24 +7,20 @@
 #ifndef __BASIL_ALPS_H__
 #define __BASIL_ALPS_H__
 
-#if HAVE_CONFIG_H
-# include "config.h"
-#endif
+#include "config.h"
 
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdbool.h>
-
-#include <sys/types.h>
-#include <ctype.h>
-#include <string.h>
-
-#include <sys/wait.h>
-#include <signal.h>
-#include <fcntl.h>
 #include <assert.h>
+#include <ctype.h>
+#include <fcntl.h>
+#include <inttypes.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 #ifdef HAVE_ALPS_CRAY
 #  include <expat.h>

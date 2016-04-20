@@ -38,9 +38,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #ifdef HAVE_SYS_SYSLOG_H
 #  include <sys/syslog.h>
@@ -53,8 +51,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
-#include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
 

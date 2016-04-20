@@ -39,13 +39,11 @@
 #ifndef _STEP_LAUNCH_H
 #define _STEP_LAUNCH_H
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
-#include <unistd.h>
-#include <stdint.h>
 #include <pthread.h>
+#include <stdint.h>
+#include <unistd.h>
 
 #include "slurm/slurm.h"
 

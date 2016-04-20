@@ -40,13 +40,9 @@
 #ifndef _SMAP_H
 #define _SMAP_H
 
-#ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
+#include "config.h"
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#define _GNU_SOURCE
 
 /*
  * The following define is necessary for OS X 10.6. The apple supplied

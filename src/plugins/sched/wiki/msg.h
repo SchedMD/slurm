@@ -48,9 +48,7 @@
  * Wiki change priorities of jobs as desired to re-order the queue
  */
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <ctype.h>
 #include <inttypes.h>

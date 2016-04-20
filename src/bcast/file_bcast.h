@@ -36,9 +36,7 @@
 #ifndef _FILE_BCAST_H
 #define _FILE_BCAST_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include "slurm/slurm.h"
 #include "src/common/macros.h"

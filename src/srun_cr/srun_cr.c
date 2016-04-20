@@ -34,27 +34,26 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
 
-#include <stdint.h>
-#include <stdio.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
+#include "config.h"
+
 #include <errno.h>
-#include <time.h>
+#include <inttypes.h>
+#include <libcr.h>
 #include <poll.h>
 #include <pthread.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <sys/time.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 #include <sys/resource.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/un.h>
 #include <sys/wait.h>
-#include <libcr.h>
+#include <unistd.h>
 
 #include "slurm/slurm.h"
 

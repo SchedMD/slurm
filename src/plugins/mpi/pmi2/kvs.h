@@ -38,9 +38,7 @@
 #ifndef _KVS_H
 #define _KVS_H
 
-#if     HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <slurm/slurm_errno.h>
 #include "src/common/slurm_xlator.h"

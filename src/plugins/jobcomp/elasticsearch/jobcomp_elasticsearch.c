@@ -36,19 +36,17 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#   include "config.h"
-#endif
+#include "config.h"
 
 #include <curl/curl.h>
 #include <fcntl.h>
 #include <inttypes.h>
 #include <grp.h>
 #include <pwd.h>
-#include <stdlib.h>
 #include <stddef.h>
-#include <sys/types.h>
+#include <stdlib.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "src/common/assoc_mgr.h"

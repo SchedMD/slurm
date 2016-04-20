@@ -35,12 +35,10 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
-#include <stdlib.h>
 #include <ctype.h>
+#include <stdlib.h>
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/parse_time.h"

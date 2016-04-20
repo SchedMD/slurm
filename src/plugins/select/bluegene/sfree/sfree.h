@@ -39,9 +39,7 @@
 #ifndef _SFREE_H
 #define _SFREE_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <getopt.h>
 #include <signal.h>

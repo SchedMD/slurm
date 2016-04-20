@@ -38,20 +38,14 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#include "src/common/slurm_xlator.h"
-
 #ifndef _SLURM_NRT_INCLUDED
 #define _SLURM_NRT_INCLUDED
 
-#if HAVE_NRT_H
-# include <nrt.h>
-#else
-# error "Must have nrt.h to compile this module!"
-#endif
+#include "config.h"
+
+#include <nrt.h>
+
+#include "src/common/slurm_xlator.h"
 
 /* opaque data structures - no peeking! */
 typedef struct slurm_nrt_libstate slurm_nrt_libstate_t;

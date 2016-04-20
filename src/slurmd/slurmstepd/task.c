@@ -37,39 +37,27 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
-#ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
+#define _GNU_SOURCE
 
 #include <assert.h>
 #include <ctype.h>
 #include <fcntl.h>
 #include <grp.h>
 #include <pwd.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/param.h>
+#include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
-#if HAVE_STDLIB_H
-#  include <stdlib.h>
-#endif
-
-#if HAVE_SYS_TYPES_H
-#  include <sys/types.h>
-#endif
-
 #ifdef HAVE_AIX
 #  include <sys/checkpnt.h>
 #endif
-
-#include <sys/resource.h>
 
 #include "slurm/slurm_errno.h"
 

@@ -37,23 +37,20 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
+#include <fcntl.h>
+#include <grp.h>
 #include <netdb.h>
-#include <string.h>
+#include <signal.h>
 #include <stdlib.h>
-#include <unistd.h>
+#include <string.h>
+#include <sys/param.h>           /* MAXPATHLEN */
 #include <sys/resource.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <signal.h>
-#include <sys/param.h>           /* MAXPATHLEN */
-#include <grp.h>
-
+#include <unistd.h>
 
 #include "src/common/bitstring.h"
 #include "src/common/cbuf.h"

@@ -34,15 +34,14 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#   include "config.h"
-#endif
-
 #ifndef _XCGROUP_H_
 #define _XCGROUP_H_
 
-#include <sys/types.h>
+#include "config.h"
+
 #include <dirent.h>
+#include <sys/types.h>
+
 #include "src/common/xcgroup_read_config.h"
 
 #define XCGROUP_ERROR    1

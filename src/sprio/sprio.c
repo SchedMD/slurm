@@ -36,16 +36,14 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif /* HAVE_CONFIG_H */
+#include "config.h"
 
 #ifdef HAVE_TERMCAP_H
 #  include <termcap.h>
 #endif
 
-#include <sys/ioctl.h>
 #include <termios.h>
+#include <sys/ioctl.h>
 
 #include "src/common/slurm_priority.h"
 #include "src/common/xstring.h"

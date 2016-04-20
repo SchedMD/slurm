@@ -1,6 +1,5 @@
 /*****************************************************************************\
  *  bridge_linker.h
- *
  *****************************************************************************
  *  Copyright (C) 2011 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -42,13 +41,9 @@
 /* This must be included first for AIX systems */
 #include "src/common/macros.h"
 
-#ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
+#include "config.h"
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#define _GNU_SOURCE
 
 #include <dlfcn.h>
 #include <pthread.h>

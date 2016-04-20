@@ -34,12 +34,10 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#   include "config.h"
-#endif
-
 #ifndef _TASK_CGROUP_H_
 #define _TASK_CGROUP_H_
+
+#include "config.h"
 
 #include "src/slurmd/common/xcgroup.h"
 

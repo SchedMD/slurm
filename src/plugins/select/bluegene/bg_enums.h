@@ -41,9 +41,7 @@
 #define ATTACH_BGL_H	/* Replacement for attach_bgl.h on BGL */
 #define ATTACH_BG_H	/* Replacement for attach_bg.h on BGP */
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #ifdef HAVE_BG_FILES
 

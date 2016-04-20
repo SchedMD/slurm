@@ -40,9 +40,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
+
 #if HAVE_HWLOC
 #  include <hwloc.h>
 #endif
@@ -54,7 +53,6 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdlib.h>
 #include <sys/mman.h>
 #include <sys/param.h>
 #include <sys/resource.h>

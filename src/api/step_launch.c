@@ -37,30 +37,25 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#ifdef HAVE_LIMITS_H
-#  include <limits.h>
-#endif
+#include "config.h"
 
 #include <errno.h>
 #include <fcntl.h>
 #include <grp.h>
+#include <limits.h>
+#include <netdb.h>		/* for gethostbyname */
+#include <netinet/in.h>
 #include <pthread.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
-#include <netinet/in.h>
 #include <sys/param.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/un.h>
-#include <netdb.h> /* for gethostbyname */
+#include <unistd.h>
 
 #include "slurm/slurm.h"
 

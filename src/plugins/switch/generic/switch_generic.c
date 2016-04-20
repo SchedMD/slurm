@@ -36,22 +36,19 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #if !defined(__FreeBSD__)
 #include <net/if.h>
 #endif
-#include <netinet/in.h>
+
 #include <arpa/inet.h>
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <ifaddrs.h>
 #include <netdb.h>
+#include <netinet/in.h>
 #include <signal.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>

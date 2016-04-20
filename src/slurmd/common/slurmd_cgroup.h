@@ -35,12 +35,11 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \****************************************************************************/
+
 #ifndef _SLURMD_CGROUP_H
 #define _SLURMD_CGROUP_H
 
-#if HAVE_CONFIG_H
-#   include "config.h"
-#endif
+#include "config.h"
 
 /* Initialize slurmd system cpuset cgroup */
 extern int init_system_cpuset_cgroup(void);

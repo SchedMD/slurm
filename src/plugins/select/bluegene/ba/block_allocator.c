@@ -37,13 +37,12 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
+
 #include "block_allocator.h"
 #include "src/common/slurmdb_defs.h"
 #include "src/common/strlcpy.h"

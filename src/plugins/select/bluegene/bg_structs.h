@@ -39,11 +39,9 @@
 #ifndef _BG_STRUCTS_H_
 #define _BG_STRUCTS_H_
 
-#include "bg_enums.h"
+#include "config.h"
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "bg_enums.h"
 
 #include "slurm.h"
 #include "src/common/list.h"

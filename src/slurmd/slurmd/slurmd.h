@@ -39,9 +39,7 @@
 #ifndef _SLURMD_H
 #define _SLURMD_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <inttypes.h>
 #include <pthread.h>

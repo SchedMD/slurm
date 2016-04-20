@@ -36,19 +36,20 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+
 #ifndef _PDEBUG_H
 #define _PDEBUG_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
-#include <unistd.h>
 #include <sys/param.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
 #ifdef HAVE_SYS_PTRACE_H
 #  include <sys/ptrace.h>
 #endif
-#include <sys/wait.h>
+
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 /*

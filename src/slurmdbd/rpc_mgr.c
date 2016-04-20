@@ -37,16 +37,15 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
+
 #include <arpa/inet.h>
+#include <poll.h>
 #include <pthread.h>
 #include <signal.h>
-#include <poll.h>
+#include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <sys/socket.h>
 
 #include "src/common/fd.h"
 #include "src/common/log.h"

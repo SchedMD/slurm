@@ -38,9 +38,7 @@
 #ifndef _INFO_H
 #define _INFO_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <inttypes.h>
 

@@ -1,6 +1,5 @@
 /*****************************************************************************\
  *  shr_64.c - This plug is used by POE to interact with SLURM.
- *
  *****************************************************************************
  *  Copyright (C) 2012 SchedMD LLC.
  *  Written by Danny Auble <da@schedmd.com> et. al.
@@ -35,27 +34,16 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "config.h"
+
+#include <arpa/inet.h>
 #include <ctype.h>
 #include <dlfcn.h>
 #include <fcntl.h>
+#include <nrt.h>
+#include <permapi.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <arpa/inet.h>
-
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#if HAVE_NRT_H
-# include <nrt.h>
-#else
-# error "Must have nrt.h to compile this module!"
-#endif
-#if HAVE_PERMAPI_H
-# include <permapi.h>
-#else
-# error "Must have permapi.h to compile this module!"
-#endif
 
 #include "src/common/slurm_xlator.h"
 #include "slurm/slurm.h"

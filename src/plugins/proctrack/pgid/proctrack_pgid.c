@@ -36,13 +36,9 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#   include "config.h"
-#endif
+#include "config.h"
 
-#ifndef   __USE_XOPEN_EXTENDED
-#  define __USE_XOPEN_EXTENDED /* getpgid */
-#endif
+#define __USE_XOPEN_EXTENDED	/* getpgid */
 
 #include <dirent.h>
 #include <fcntl.h>

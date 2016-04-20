@@ -38,13 +38,9 @@
 #ifndef _SERIAL_DIST_TASKS_H
 #define _SERIAL_DIST_TASKS_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
-#if HAVE_STRING_H
-#  include <string.h>
-#endif
+#include <string.h>
 
 #include "select_serial.h"
 

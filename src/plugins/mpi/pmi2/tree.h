@@ -38,9 +38,7 @@
 #ifndef _TREE_H
 #define _TREE_H
 
-#if     HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 enum {
 	TREE_CMD_KVS_FENCE,

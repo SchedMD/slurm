@@ -38,9 +38,7 @@
 #ifndef SELECT_CRAY_CCM_H
 #define SELECT_CRAY_CCM_H
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <inttypes.h>
 #include <pthread.h>

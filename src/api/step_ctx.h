@@ -28,12 +28,10 @@
 #ifndef _STEP_CTX_H
 #define _STEP_CTX_H
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
+#include <inttypes.h>
 #include <unistd.h>
-#include <stdint.h>
 
 #include "slurm/slurm.h"
 

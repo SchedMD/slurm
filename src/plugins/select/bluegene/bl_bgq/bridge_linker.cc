@@ -1,6 +1,5 @@
 /*****************************************************************************\
  *  bridge_linker.cc
- *
  *****************************************************************************
  *  Copyright (C) 2011 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -36,10 +35,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-/* needed to figure out if HAVE_BG_FILES is set */
-#  include "config.h"
-#endif
+#include "config.h"
 
 #ifdef HAVE_BG_FILES
 /* These need to be the first declared since on line 187 of

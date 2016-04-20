@@ -26,22 +26,21 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
+
+#include <pthread.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <sys/errno.h>
+#include <sys/wait.h>
+#include <time.h>
+
 #include "src/common/macros.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/read_config.h"
 #include "src/slurmd/common/job_container_plugin.h"
 #include "src/slurmd/slurmstepd/step_terminate_monitor.h"
-
-#include <signal.h>
-#include <stdlib.h>
-#include <sys/wait.h>
-#include <sys/errno.h>
-#include <pthread.h>
-#include <time.h>
 
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;

@@ -38,9 +38,7 @@
 #ifndef _RUNJOB_INTERFACE_H_
 #define _RUNJOB_INTERFACE_H_
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #ifdef HAVE_BG_FILES
 

@@ -40,9 +40,7 @@
 #ifndef _HAVE_MPI_MVAPICH_H
 #define _HAVE_MPI_MVAPICH_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/env.h"

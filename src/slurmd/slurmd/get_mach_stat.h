@@ -38,9 +38,8 @@
 
 #ifndef _GET_MACH_STAT_H
 #define _GET_MACH_STAT_H
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+
+#include "config.h"
 
 #include <inttypes.h>
 

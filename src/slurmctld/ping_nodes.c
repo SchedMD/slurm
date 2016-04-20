@@ -37,13 +37,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include "config.h"
 
 #include <pthread.h>
-#include <time.h>
 #include <string.h>
+#include <time.h>
 
 #include "src/common/hostlist.h"
 #include "src/common/node_select.h"

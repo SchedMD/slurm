@@ -50,22 +50,14 @@
  *  put SLURM's libpermapi.so in /usr/lib64. IBM to address later.
 \*****************************************************************************/
 
+#include "config.h"
+
 #include <assert.h>
+#include <arpa/inet.h>
 #include <dlfcn.h>
+#include <nrt.h>
 #include <pthread.h>
 #include <stdlib.h>
-
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#if HAVE_NRT_H
-# include <nrt.h>
-#else
-# error "Must have nrt.h to compile this module!"
-#endif
-
-#include <arpa/inet.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
