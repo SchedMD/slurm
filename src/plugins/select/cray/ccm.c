@@ -36,6 +36,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#define _GNU_SOURCE		/* needed for getline() */
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -385,7 +386,7 @@ static int _run_ccm_prolog_epilog(ccm_info_t *ccm_info, char *ccm_type,
 	} else if (cpid == 0) {
 		/* child */
 		setsid();
-		setpgrp();
+		setpgid(0, 0);
 		snprintf(strval, sizeof(strval), "%u", ccm_info->job_id);
 		setenv("ALPS_PREP_BATCHID", strval, 1);
 		snprintf(strval, sizeof(strval), "%u", ccm_info->user_id);
