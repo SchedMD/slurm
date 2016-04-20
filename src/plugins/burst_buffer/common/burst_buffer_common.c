@@ -418,9 +418,15 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		state_ptr->name = xstrdup(tmp);
 	}
 
+	/* Set default configuration */
 	bb_clear_config(&state_ptr->bb_config, false);
 	if (slurm_get_debug_flags() & DEBUG_FLAG_BURST_BUF)
 		state_ptr->bb_config.debug_flag = true;
+	state_ptr->bb_config.flags |= BB_FLAG_DISABLE_PERSISTENT;
+	state_ptr->bb_config.other_timeout = DEFAULT_OTHER_TIMEOUT;
+	state_ptr->bb_config.stage_in_timeout = DEFAULT_STATE_IN_TIMEOUT;
+	state_ptr->bb_config.stage_out_timeout = DEFAULT_STATE_OUT_TIMEOUT;
+	state_ptr->bb_config.validate_timeout = DEFAULT_VALIDATE_TIMEOUT;
 
 	/* First look for "burst_buffer.conf" then with "type" field,
 	 * for example "burst_buffer_cray.conf" */
@@ -435,9 +441,13 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		bb_conf = get_extra_conf_path(new_path);
 		fd = open(bb_conf, 0);
 		if (fd < 0) {
-			fatal("%s: Unable to find configuration file %s or "
-			      "burst_buffer.conf", __func__, new_path);
+			info("%s: Unable to find configuration file %s or "
+			     "burst_buffer.conf", __func__, new_path);
+			xfree(bb_conf);
+			xfree(new_path);
+			return;
 		}
+		close(fd);
 		xfree(new_path);
 	}
 
@@ -468,8 +478,8 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		xfree(tmp);
 	}
 	/* By default, disable persistent buffer creation by normal users */
-	if ((state_ptr->bb_config.flags & BB_FLAG_ENABLE_PERSISTENT) == 0)
-		state_ptr->bb_config.flags |= BB_FLAG_DISABLE_PERSISTENT;
+	if (state_ptr->bb_config.flags & BB_FLAG_ENABLE_PERSISTENT)
+		state_ptr->bb_config.flags &= (~BB_FLAG_DISABLE_PERSISTENT);
 
 	s_p_get_string(&state_ptr->bb_config.get_sys_state, "GetSysState",
 		       bb_hashtbl);
@@ -508,20 +518,12 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 	}
 #endif
 
-	if (!s_p_get_uint32(&state_ptr->bb_config.other_timeout,
-			    "OtherTimeout", bb_hashtbl)) {
-		state_ptr->bb_config.other_timeout = DEFAULT_OTHER_TIMEOUT;
-	}
-	if (!s_p_get_uint32(&state_ptr->bb_config.stage_in_timeout,
-			    "StageInTimeout", bb_hashtbl)) {
-		state_ptr->bb_config.stage_in_timeout =
-			DEFAULT_STATE_IN_TIMEOUT;
-	}
-	if (!s_p_get_uint32(&state_ptr->bb_config.stage_out_timeout,
-			    "StageOutTimeout", bb_hashtbl)) {
-		state_ptr->bb_config.stage_out_timeout =
-			DEFAULT_STATE_OUT_TIMEOUT;
-	}
+	(void) s_p_get_uint32(&state_ptr->bb_config.other_timeout,
+			     "OtherTimeout", bb_hashtbl);
+	(void) s_p_get_uint32(&state_ptr->bb_config.stage_in_timeout,
+			    "StageInTimeout", bb_hashtbl);
+	(void) s_p_get_uint32(&state_ptr->bb_config.stage_out_timeout,
+			    "StageOutTimeout", bb_hashtbl);
 	s_p_get_string(&state_ptr->bb_config.start_stage_in, "StartStageIn",
 		       bb_hashtbl);
 	s_p_get_string(&state_ptr->bb_config.start_stage_out, "StartStageOut",
@@ -530,11 +532,8 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		       bb_hashtbl);
 	s_p_get_string(&state_ptr->bb_config.stop_stage_out, "StopStageOut",
 		       bb_hashtbl);
-	if (!s_p_get_uint32(&state_ptr->bb_config.validate_timeout,
-			   "ValidateTimeout", bb_hashtbl)) {
-		state_ptr->bb_config.validate_timeout =
-			DEFAULT_VALIDATE_TIMEOUT;
-	}
+	(void) s_p_get_uint32(&state_ptr->bb_config.validate_timeout,
+			     "ValidateTimeout", bb_hashtbl);
 
 	s_p_hashtbl_destroy(bb_hashtbl);
 	xfree(bb_conf);
