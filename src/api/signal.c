@@ -78,6 +78,9 @@ static int _local_send_recv_rc_msgs(const char *nodelist,
 		rc = SLURM_ERROR;
 	}
 
+	/* don't attempt to free a local variable */
+	msg->data = NULL;
+
 	slurm_free_msg(msg);
 	return rc;
 }
