@@ -35,6 +35,7 @@ documents those changes that are of interest to users and administrators.
  -- Add r/w locking to file_bcast receive functions in slurmd.
  -- Add TopologyParam option of "TopoOptional" to optimize network topology
     only for jobs requesting it.
+ -- Fix build on FreeBSD.
 
 * Changes in Slurm 16.05.0pre2
 ==============================
