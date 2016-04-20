@@ -19,6 +19,9 @@ documents those changes that are of interest to users and administrators.
     cases.
  -- Prevent deadlock for flow of data to the slurmdbd when sending reservation
     that wasn't set up correctly.
+ -- burst_buffer/cray - Don't call Datawarp "paths" function if script includes
+    only create or destroy of persistent burst buffer. Some versions of Datawarp
+    software return an error for such scripts, causing the job to be held.
 
 * Changes in Slurm 15.08.10
 ===========================

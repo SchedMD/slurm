@@ -3139,45 +3139,47 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 	}
 
 	/* Run "paths" function, get DataWarp environment variables */
-	if (bb_state.bb_config.validate_timeout)
-		timeout = bb_state.bb_config.validate_timeout * 1000;
-	else
-		timeout = DEFAULT_VALIDATE_TIMEOUT * 1000;
-	script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
-	script_argv[0] = xstrdup("dw_wlm_cli");
-	script_argv[1] = xstrdup("--function");
-	script_argv[2] = xstrdup("paths");
-	script_argv[3] = xstrdup("--job");
-	xstrfmtcat(script_argv[4], "%s/script", job_dir);
-	script_argv[5] = xstrdup("--token");
-	xstrfmtcat(script_argv[6], "%u", job_ptr->job_id);
-	script_argv[7] = xstrdup("--pathfile");
-	xstrfmtcat(script_argv[8], "%s/path", job_dir);
-	path_file = script_argv[8];
-	START_TIMER;
-	resp_msg = bb_run_script("paths",
-				 bb_state.bb_config.get_sys_state,
-				 script_argv, timeout, &status);
-	END_TIMER;
-	if ((DELTA_TIMER > 200000) ||	/* 0.2 secs */
-	    bb_state.bb_config.debug_flag)
-		info("%s: paths ran for %s", __func__, TIME_STR);
-	_log_script_argv(script_argv, resp_msg);
+	if (_have_dw_cmd_opts(bb_job)) {
+		if (bb_state.bb_config.validate_timeout)
+			timeout = bb_state.bb_config.validate_timeout * 1000;
+		else
+			timeout = DEFAULT_VALIDATE_TIMEOUT * 1000;
+		script_argv = xmalloc(sizeof(char *) * 10); /* NULL terminate */
+		script_argv[0] = xstrdup("dw_wlm_cli");
+		script_argv[1] = xstrdup("--function");
+		script_argv[2] = xstrdup("paths");
+		script_argv[3] = xstrdup("--job");
+		xstrfmtcat(script_argv[4], "%s/script", job_dir);
+		script_argv[5] = xstrdup("--token");
+		xstrfmtcat(script_argv[6], "%u", job_ptr->job_id);
+		script_argv[7] = xstrdup("--pathfile");
+		xstrfmtcat(script_argv[8], "%s/path", job_dir);
+		path_file = script_argv[8];
+		START_TIMER;
+		resp_msg = bb_run_script("paths",
+					 bb_state.bb_config.get_sys_state,
+					 script_argv, timeout, &status);
+		END_TIMER;
+		if ((DELTA_TIMER > 200000) ||	/* 0.2 secs */
+		    bb_state.bb_config.debug_flag)
+			info("%s: paths ran for %s", __func__, TIME_STR);
+		_log_script_argv(script_argv, resp_msg);
 #if 1
-	//FIXME: Cray API returning "job_file_valid True" but exit 1 in some cases
-	if ((!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) &&
-	    (!resp_msg || strncmp(resp_msg, "job_file_valid True", 19))) {
+		//FIXME: Cray API returning "job_file_valid True" but exit 1 in some cases
+		if ((!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) &&
+		    (!resp_msg || strncmp(resp_msg, "job_file_valid True", 19))) {
 #else
-	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 #endif
-		error("%s: paths for job %u status:%u response:%s",
-		      __func__, job_ptr->job_id, status, resp_msg);
-		rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
-	} else {
-		_update_job_env(job_ptr, path_file);
+			error("%s: paths for job %u status:%u response:%s",
+			      __func__, job_ptr->job_id, status, resp_msg);
+			rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
+		} else {
+			_update_job_env(job_ptr, path_file);
+		}
+		xfree(resp_msg);
+		_free_script_argv(script_argv);
 	}
-	xfree(resp_msg);
-	_free_script_argv(script_argv);
 
 	pre_run_argv = xmalloc(sizeof(char *) * 10);
 	pre_run_argv[0] = xstrdup("dw_wlm_cli");
