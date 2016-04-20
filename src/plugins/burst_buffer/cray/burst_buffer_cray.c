@@ -239,8 +239,6 @@ static int	_parse_bb_opts(struct job_descriptor *job_desc,
 static void	_parse_config_links(json_object *instance, bb_configs_t *ent);
 static void	_parse_instance_capacity(json_object *instance,
 					 bb_instances_t *ent);
-static int	_xlate_batch(struct job_descriptor *job_desc);
-static int	_xlate_interactive(struct job_descriptor *job_desc);
 static void	_pick_alloc_account(bb_alloc_t *bb_alloc);
 static void	_purge_bb_files(uint32_t job_id, struct job_record *job_ptr);
 static void	_purge_vestigial_bufs(void);
@@ -265,6 +263,8 @@ static void	_timeout_bb_rec(void);
 static int	_write_file(char *file_name, char *buf);
 static int	_write_nid_file(char *file_name, char *node_list,
 				uint32_t job_id);
+static int	_xlate_batch(struct job_descriptor *job_desc);
+static int	_xlate_interactive(struct job_descriptor *job_desc);
 
 /* Convert a Python string to real JSON format. Specifically replace single
  * quotes with double quotes and strip leading "u" before the single quotes.
