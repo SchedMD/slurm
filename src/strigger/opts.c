@@ -45,6 +45,7 @@
 #  define _GNU_SOURCE
 #endif
 
+#include <ctype.h>
 #include <getopt.h>
 #include <limits.h>
 #include <pwd.h>
