@@ -120,6 +120,11 @@ array set mod_qos_vals {
 
 print_header $test_id
 
+if { [string compare [priority_type] multifactor] } {
+	send_user "\nWARNING: This test can't be run without a usable PriorityType\n"
+	exit 0
+}
+
 # Check to see that there are enough resources in the default partition
 set tmpc 0
 set tmpn 0
