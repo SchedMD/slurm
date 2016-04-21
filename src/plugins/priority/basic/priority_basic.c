@@ -200,12 +200,12 @@ extern void priority_p_job_end(struct job_record *job_ptr)
 		for (i=0; i<slurmctld_tres_cnt; i++) {
 			if (unused_tres_run_secs[i] >
 			    qos_ptr->usage->grp_used_tres_run_secs[i]) {
-			qos_ptr->usage->grp_used_tres_run_secs[i] = 0;
-			debug2("acct_policy_job_fini: "
-			       "grp_used_tres_run_secs "
-			       "underflow for qos %s tres %s",
-			       qos_ptr->name,
-			       assoc_mgr_tres_name_array[i]);
+				qos_ptr->usage->grp_used_tres_run_secs[i] = 0;
+				debug2("acct_policy_job_fini: "
+				       "grp_used_tres_run_secs "
+				       "underflow for qos %s tres %s",
+				       qos_ptr->name,
+				       assoc_mgr_tres_name_array[i]);
 			} else
 				qos_ptr->usage->grp_used_tres_run_secs[i] -=
 					unused_tres_run_secs[i];
