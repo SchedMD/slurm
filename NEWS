@@ -38,6 +38,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix build on FreeBSD.
  -- Configuration parameter "CpuFreqDef" used to set default governor for job
     step not specifying --cpu-freq (previously the parameter was unused).
+ -- Fix sshare -o<format> to correctly display new lengths.
 
 * Changes in Slurm 16.05.0pre2
 ==============================

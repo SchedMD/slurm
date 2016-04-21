@@ -182,17 +182,16 @@ extern int process(shares_response_msg_t *resp, uint16_t options)
 	print_fields_list = list_create(NULL);
 	itr = list_iterator_create(format_list);
 	while ((object = list_next(itr))) {
+		int newlen = 0;
+		if ((tmp_char = strstr(object, "\%"))) {
+			tmp_char[0] = '\0';
+			newlen = atoi(tmp_char+1);
+		}
 		for (i = 0; fields[i].name; i++) {
-			if ((tmp_char = strstr(object, "\%")))
-				tmp_char[0] = '\0';
-
 			if (!strncasecmp(fields[i].name,
 					 object, strlen(object))) {
-				if (tmp_char) {
-					int newlen = atoi(tmp_char+1);
-					if (newlen)
-						fields[i].len = newlen;
-				}
+				if (newlen)
+					fields[i].len = newlen;
 
 				list_append(print_fields_list, &fields[i]);
 				break;
