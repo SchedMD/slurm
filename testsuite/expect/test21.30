@@ -141,10 +141,15 @@ expect {
 		wait
 	}
 }
-
 if {$tmpc == 0 || $tmpn == 0} {
 	send_user "\nWARNING: not enough Nodes and/or CPUs\n"
 	exit 0
+}
+
+if { ![string compare [priority_type] "multifactor"] } {
+	set prio_multifactor 1
+} else {
+	set prio_multifactor 0
 }
 
 # Checks the state of the job
@@ -549,15 +554,18 @@ set mod_qos_vals(GrpCpuMin) "-1"
 
 #
 # Test GroupCPURunMins
+# Requires priority/multifactor to properly handle decay well
 #
-set mod_qos_vals(GrpCpuRunMin) $grpcpurunmin_num
-mod_qos $qostest [array get mod_qos_vals]
-sleep $time_spacing
-inc21_30_10
-if {$exit_code != 0 } {
-	endit
+if { $prio_multifactor != 0 } {
+	set mod_qos_vals(GrpCpuRunMin) $grpcpurunmin_num
+	mod_qos $qostest [array get mod_qos_vals]
+	sleep $time_spacing
+	inc21_30_10
+	if {$exit_code != 0 } {
+		endit
+	}
+	set mod_qos_vals(GrpCpuRunMin) "-1"
 }
-set mod_qos_vals(GrpCpuRunMin) "-1"
 
 #
 # Test Group Memory
@@ -573,15 +581,18 @@ set mod_qos_vals(GrpMem) "-1"
 
 #
 # Test Group wall
+# Requires priority/multifactor to properly handle decay well
 #
-set mod_qos_vals(GrpWall) $grpwall_num
-mod_qos $qostest [array get mod_qos_vals]
-sleep $time_spacing
-inc21_30_12
-if {$exit_code != 0 } {
-	endit
+if { $prio_multifactor != 0 } {
+	set mod_qos_vals(GrpWall) $grpwall_num
+	mod_qos $qostest [array get mod_qos_vals]
+	sleep $time_spacing
+	inc21_30_12
+	if {$exit_code != 0 } {
+		endit
+	}
+	set mod_qos_vals(GrpWall) "-1"
 }
-set mod_qos_vals(GrpWall) "-1"
 
 #
 # Test Max Cpu Mins

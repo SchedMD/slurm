@@ -54,7 +54,7 @@ proc part_test { } {
 	global grpcpurunmin_num grpmem_num grpwall_num maxcpumin_num
 	global maxwall_num maxcpuspu_num maxnodespu_num
 	global exit_code part_qos mod_job_qos time_spacing selectparam
-	global nthreads job_qos mod_part_qos
+	global nthreads job_qos mod_part_qos prio_multifactor
 
 	# We will set qostest with the qos that we will test since the some of
 	# the 21.30 inc test require the qostest variable
@@ -207,19 +207,22 @@ proc part_test { } {
 
 	#
 	# Test GroupCPURunMins
+	# Requires priority/multifactor to properly handle decay well
 	#
-	set mod_job_qos(GrpCpuRunMin) 1
-	set mod_part_qos(GrpCpuRunMin) $grpcpurunmin_num
-	mod_qos $part_qos [array get mod_part_qos]
-	mod_qos $job_qos [array get mod_job_qos]
-	sleep $time_spacing
-	inc21_30_10
-	if {$exit_code != 0 } {
-		cleanup
-		exit 1
+	if { $prio_multifactor != 0 } {
+		set mod_job_qos(GrpCpuRunMin) 1
+		set mod_part_qos(GrpCpuRunMin) $grpcpurunmin_num
+		mod_qos $part_qos [array get mod_part_qos]
+		mod_qos $job_qos [array get mod_job_qos]
+		sleep $time_spacing
+		inc21_30_10
+		if {$exit_code != 0 } {
+			cleanup
+			exit 1
+		}
+		set mod_job_qos(GrpCpuRunMin) "-1"
+		set mod_part_qos(GrpCpuRunMin) "-1"
 	}
-	set mod_job_qos(GrpCpuRunMin) "-1"
-	set mod_part_qos(GrpCpuRunMin) "-1"
 
 	#
 	# Test Group Memory
@@ -239,19 +242,22 @@ proc part_test { } {
 
 	#
 	# Test Group wall
+	# Requires priority/multifactor to properly handle decay well
 	#
-	set mod_job_qos(GrpWall) 1
-	set mod_part_qos(GrpWall) $grpwall_num
-	mod_qos $part_qos [array get mod_part_qos]
-	mod_qos $job_qos [array get mod_job_qos]
-	sleep $time_spacing
-	inc21_34_2 $part_qos
-	if {$exit_code != 0 } {
-		cleanup
-		exit 1
+	if { $prio_multifactor != 0 } {
+		set mod_job_qos(GrpWall) 1
+		set mod_part_qos(GrpWall) $grpwall_num
+		mod_qos $part_qos [array get mod_part_qos]
+		mod_qos $job_qos [array get mod_job_qos]
+		sleep $time_spacing
+		inc21_34_2 $part_qos
+		if {$exit_code != 0 } {
+			cleanup
+			exit 1
+		}
+		set mod_job_qos(GrpWall) "-1"
+		set mod_part_qos(GrpWall) "-1"
 	}
-	set mod_job_qos(GrpWall) "-1"
-	set mod_part_qos(GrpWall) "-1"
 
 	#
 	# Test Max Cpu Mins
@@ -355,7 +361,7 @@ proc qos_test { } {
 	global grpcpurunmin_num grpmem_num grpwall_num maxcpumin_num
 	global maxwall_num maxcpuspu_num maxnodespu_num
 	global exit_code job_qos mod_job_qos time_spacing selectparam
-	global nthreads part_qos mod_part_qos
+	global nthreads part_qos mod_part_qos prio_multifactor
 
 	# We will set qostest with the qos that we will test since the some of
 	# the 21.30 inc test require the qostest variable
@@ -508,19 +514,22 @@ proc qos_test { } {
 
 	#
 	# Test GroupCPURunMins
+	# Requires priority/multifactor to properly handle decay well
 	#
-	set mod_job_qos(GrpCpuRunMin) $grpcpurunmin_num
-	set mod_part_qos(GrpCpuRunMin) 1
-	mod_qos $job_qos [array get mod_job_qos]
-	mod_qos $part_qos [array get mod_part_qos]
-	sleep $time_spacing
-	inc21_30_10
-	if {$exit_code != 0 } {
-		cleanup
-		exit 1
+	if { $prio_multifactor != 0 } {
+		set mod_job_qos(GrpCpuRunMin) $grpcpurunmin_num
+		set mod_part_qos(GrpCpuRunMin) 1
+		mod_qos $job_qos [array get mod_job_qos]
+		mod_qos $part_qos [array get mod_part_qos]
+		sleep $time_spacing
+		inc21_30_10
+		if {$exit_code != 0 } {
+			cleanup
+			exit 1
+		}
+		set mod_job_qos(GrpCpuRunMin) "-1"
+		set mod_part_qos(GrpCpuRunMin) "-1"
 	}
-	set mod_job_qos(GrpCpuRunMin) "-1"
-	set mod_part_qos(GrpCpuRunMin) "-1"
 
 	#
 	# Test Group Memory
@@ -540,19 +549,22 @@ proc qos_test { } {
 
 	#
 	# Test Group wall
+	# Requires priority/multifactor to properly handle decay well
 	#
-	set mod_job_qos(GrpWall) $grpwall_num
-	set mod_part_qos(GrpWall) 1
-	mod_qos $job_qos [array get mod_job_qos]
-	mod_qos $part_qos [array get mod_part_qos]
-	sleep $time_spacing
-	inc21_34_2 $job_qos
-	if {$exit_code != 0 } {
-		cleanup
-		exit 1
+	if { $prio_multifactor != 0 } {
+		set mod_job_qos(GrpWall) $grpwall_num
+		set mod_part_qos(GrpWall) 1
+		mod_qos $job_qos [array get mod_job_qos]
+		mod_qos $part_qos [array get mod_part_qos]
+		sleep $time_spacing
+		inc21_34_2 $job_qos
+		if {$exit_code != 0 } {
+			cleanup
+			exit 1
+		}
+		set mod_job_qos(GrpWall) "-1"
+		set mod_part_qos(GrpWall) "-1"
 	}
-	set mod_job_qos(GrpWall) "-1"
-	set mod_part_qos(GrpWall) "-1"
 
 	#
 	# Test Max Cpu Mins
