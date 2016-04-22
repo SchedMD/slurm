@@ -37,10 +37,10 @@ set sql_query_rem    "test$test_id\-query-rem.sql"
 set cluster          "test$test_id\_clus"
 set account          "test$test_id\_acct"
 set user             "test$test_id\_user"
-set conf_script      "test$test_id\_conf.sh"
 set config_dir       ""
+set exit_code        1
 set access_err       0
-set exit_code        0
+set test_conf_file   "/tmp/slurm.conf\_$test_id"
 
 # Cluster requirments
 array set clus_req {}
@@ -52,15 +52,39 @@ set acct_req(cluster) $cluster
 set user_req(account) $account
 set user_req(cluster) $cluster
 
+# Remove pre-existing items
+proc cleanup { } {
+	global cluster account user bin_rm sql_query sql_query_rem
+	remove_cluster "$cluster"
+	remove_acct "" $account
+	remove_user "" "" $user
+	exec $bin_rm -f $sql_query $sql_query_rem
+}
+
+proc endit { } {
+	global exit_code
+	cleanup
+
+	if {$exit_code == 0} {
+		send_user "\nSUCCESS\n"
+	} else {
+		send_user "\nFAILURE\n"
+	}
+
+	exit $exit_code
+}
+
 
 print_header $test_id
 
+# Remove pre-existing items
+cleanup
 
 # DON'T MESS WITH THIS UNLESS YOU REALLY UNDERSTAND WHAT YOU ARE DOING!!!!!
 # THIS COULD SERIOUSLY MESS UP YOUR DATABASE IF YOU ALTER THIS INCORRECTLY
 # JUST A FRIENDLY REMINDER ;)
 
-# Insert a job that has not end time and is still in running state
+# Insert a job that has no end time and is still in running state
 set file [open $sql_query "w"]
 puts $file "insert into job_table (jobid, associd, wckey, wckeyid, uid, gid, `partition`, blockid, cluster, account, eligible, submit, start, end, suspended, name, track_steps, state, comp_code, priority, req_cpus, tres_alloc, nodelist, kill_requid, qos, deleted) values"
 puts $file "('65536', '6', 'test21-36wckey', '1', '1002', '1002', 'debug', '', '$cluster', '$account', 1199170800, 1199170800, 1199170800, 0, '0', 'test21.32_job1', '0', '1', '0', '2', 2, '1=2', 'test21.36_node', '0', '0', '0')"
@@ -74,20 +98,17 @@ close $file
 
 # Add Test Cluster
 if {[add_cluster $cluster [array get clus_req]]} {
-	remove_cluster "$cluster"
-	exit 1
+	endit
 }
 
 # Add Test Account
 if {[add_acct $account [array get acct_req]]} {
-	remove_acct "" $account
-	exit 1
+	endit
 }
 
-# Add Test Usre
+# Add Test User
 if {[add_user $user [array get user_req]]} {
-	remove_user "" "" $user
-	exit 1
+	endit
 }
 
 #
@@ -112,8 +133,9 @@ expect {
 }
 log_user 1
 if {$got_config == 0} {
-    send_user "\nFAILURE: Could not find configuration file location\n"
-    exit 1
+	send_user "\nFAILURE: Could not find configuration file location\n"
+	endit
+
 }
 
 # Get the current working directory
@@ -122,49 +144,62 @@ set cwd "[$bin_pwd]"
 #
 # Copy the original slurm.conf file
 #
-exec $bin_rm -f $cwd/slurm.conf.orig
-spawn $bin_cp -v $config_dir/slurm.conf $cwd/slurm.conf.orig
+spawn $bin_cp -v $config_dir/slurm.conf $test_conf_file
 expect {
 	timeout {
 		send_user "\nFAILURE: slurm.conf was not copied\n"
-		exit 1
+		endit
 	}
 	eof {
 		wait
 	}
 }
-if {![file exists $cwd/slurm.conf.orig]} {
+if {![file exists $test_conf_file]} {
 	send_user "\nFAILURE: slurm.conf was not copied\n"
-	exit 1
+	endit
 }
 
 #
 # Add test cluster name to the slurm.conf
 #
-make_bash_script $conf_script "$bin_echo ClusterName=$cluster >> $config_dir/slurm.conf"
-spawn ./$conf_script
+spawn $bin_sed -i "s/\\(ClusterName=\\).*/\\1$cluster/g" $test_conf_file
 expect {
-	-re "Permission denied" {
-		send_user "\nWARNING: Unable to update slurm.conf\n"
-		set exit_code 1
-		exp_continue
+	-re "sed:" {
+		send_user "\nERROR: Unable to make temp slurm.conf\n"
+		endit
 	}
 	eof {
 		wait
 	}
 }
 
-# Load a job to the database that has not end time.
+# Double check that cluster name was set correctly.
+set match 0
+spawn $bin_grep "^ClusterName=$cluster" $test_conf_file
+expect {
+	"ClusterName=$cluster" {
+		incr match
+	}
+	eof {
+		wait
+	}
+}
+
+if {$match == 0} {
+	send_user "\nERROR: $test_conf_file doesn't have correct cluster name\n"
+	endit
+}
+
+# Load a job to the database that has no end time.
 if {[archive_load $sql_query]} {
 	archive_load $sql_query_rem
-	remove_user "" "" $user
-	remove_acct "" $account
-	remove_cluster $cluster
-	exit 1
+	endit
 }
 
 # Test sacctmgr show lost jobs
 set list_job 0
+# Use temp conf file to use different cluster name.
+set env(SLURM_CONF) $test_conf_file
 spawn $sacctmgr show -i lost jobs
 expect {
 	-re "NOTE: Lost jobs" {
@@ -173,7 +208,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: sacctmgr is not responding\n"
-		set exit_code 1
+		endit
 	}
 	eof {
 		wait
@@ -183,10 +218,10 @@ expect {
 if {$list_job != 1} {
 	send_user "\nFAILURE: sacctmgr did not find any lost jobs when "
 	send_user "it should have\n"
-	set exit_code 1
+	endit
 }
 
-# Check that jobs we fixed
+# Check that jobs were fixed
 set list_job 0
 spawn $sacctmgr show -i lost jobs
 expect {
@@ -196,7 +231,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: sacctmgr is not responding\n"
-		set exit_code 1
+		endit
 	}
 	eof {
 		wait
@@ -206,22 +241,8 @@ expect {
 if {$list_job != 1} {
 	send_user "\nFAILURE: sacctmgr found lost jobs when "
 	send_user "it should not have\n"
-        set exit_code 1
+	endit
 }
 
-# Restore the slurm.conf file back to original values
-exec $bin_cp $cwd/slurm.conf.orig $config_dir/slurm.conf
-
-incr exit_code [archive_load $sql_query_rem]
-incr exit_code [remove_cluster $cluster]
-incr exit_code [remove_acct "" $account]
-incr exit_code [remove_user "" "" $user]
-
-exec $bin_rm -fr $sql_query $sql_query_rem
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-} else {
-	send_user "\nFAILURE\n"
-}
-
-exit $exit_code
+set exit_code 0
+endit
