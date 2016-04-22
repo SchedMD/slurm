@@ -73,6 +73,12 @@
 #define DEFAULT_CAPMC_TIMEOUT 10000	/* 10 seconds */
 #define MIN_CAPMC_TIMEOUT 1000		/* 1 second */
 
+/* Number of times to try performing "node_off" operation */
+#define NODE_OFF_RETRIES 10
+
+/* How long to wait for a node to enter "off" state, in seconds */
+#define NODE_OFF_STATE_WAIT (30 * 60)
+
 /* Static variables */
 static char *capmc_path = NULL;
 static uint32_t capmc_poll_freq = 45;   /* capmc state polling frequency */
@@ -210,6 +216,9 @@ static char *_run_script(char **script_argv, int *status)
 		close(pfd[1]);
 		error("%s: fork(): %s", prog_name,
 		      slurm_strerror(slurm_get_errno()));
+		*status = 127;
+		resp = xstrdup("System error");
+		return resp;
 	} else {
 		struct pollfd fds;
 		struct timeval tstart;
@@ -315,6 +324,8 @@ static bool _check_node_state(int nid, char *nid_str, char *state)
 	if (status != 0) {
 		error("%s: capmc(%s,%s,%s): %d %s", prog_name,
 			argv[1], argv[2], argv[3], status, resp_msg);
+		xfree(resp_msg);
+		return node_state_ok;
 	}
 	j = json_tokener_parse(resp_msg);
 	if (j == NULL) {
@@ -343,7 +354,8 @@ static void *_node_update(void *args)
 	char *node_name = (char *) args;
 	char *argv[10], nid_str[32], *resp_msg;
 	int i, nid = -1, status = 0;
-	bool node_state_ok;
+	bool node_state_ok, node_off_sent = false;
+	time_t poll_start;
 
 	for (i = 0; node_name[i]; i++) {
 		if ((node_name[i] >= '0') && (node_name[i] <= '9')) {
@@ -364,15 +376,24 @@ static void *_node_update(void *args)
 	argv[2] = "-n";
 	argv[3] = nid_str;
 	argv[4] = NULL;
-	resp_msg = _run_script(argv, &status);
-	if (status != 0) {
-		error("%s: capmc(%s,%s,%s): %d %s", prog_name,
-		      argv[1], argv[2], argv[3], status, resp_msg);
+	for (i = 0; ((i < NODE_OFF_RETRIES) && !node_off_sent); i++) {
+		resp_msg = _run_script(argv, &status);
+		if ((status != 0) ||
+		    (resp_msg && (strcasestr(resp_msg, "Success") == NULL))) {
+			error("%s: capmc(%s,%s,%s): %d %s", prog_name,
+			      argv[1], argv[2], argv[3], status, resp_msg);
+			sleep(1);
+		} else {
+			debug("%s: node_off sent to %s", prog_name, nid_str);
+			node_off_sent = true;
+		}
+		xfree(resp_msg);
 	}
-	xfree(resp_msg);
 
 	/* Wait for node in "off" state */
-	while (!node_state_ok) {
+	poll_start = time(NULL);
+	while (!node_state_ok &&
+	      (difftime(time(NULL), poll_start) < NODE_OFF_STATE_WAIT)) {
 		sleep(capmc_poll_freq);
 		node_state_ok = _check_node_state(nid, nid_str, "off");
 	}
