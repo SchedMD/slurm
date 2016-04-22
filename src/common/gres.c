@@ -2127,34 +2127,36 @@ extern void gres_plugin_node_feature(char *node_name,
 	*new_config = new_gres;
 
 	slurm_mutex_lock(&gres_context_lock);
-	if ((gres_context_cnt > 0) && (*gres_list == NULL)) {
-		*gres_list = list_create(_gres_node_list_delete);
-	}
-	gres_iter = list_iterator_create(*gres_list);
-	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
-		if (gres_ptr->plugin_id == plugin_id)
-			break;
-	}
-	list_iterator_destroy(gres_iter);
-	if (gres_ptr == NULL) {
-		gres_ptr = xmalloc(sizeof(gres_state_t));
-		gres_ptr->plugin_id = plugin_id;
-		gres_ptr->gres_data = _build_gres_node_state();
-		list_append(*gres_list, gres_ptr);
-	}
-	gres_node_ptr = gres_ptr->gres_data;
-	if (gres_size >= gres_node_ptr->gres_cnt_alloc) {
-		gres_node_ptr->gres_cnt_avail = gres_size -
+	if (gres_context_cnt > 0) {
+		if (*gres_list == NULL)
+			*gres_list = list_create(_gres_node_list_delete);
+		gres_iter = list_iterator_create(*gres_list);
+		while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
+			if (gres_ptr->plugin_id == plugin_id)
+				break;
+		}
+		list_iterator_destroy(gres_iter);
+		if (gres_ptr == NULL) {
+			gres_ptr = xmalloc(sizeof(gres_state_t));
+			gres_ptr->plugin_id = plugin_id;
+			gres_ptr->gres_data = _build_gres_node_state();
+			list_append(*gres_list, gres_ptr);
+		}
+		gres_node_ptr = gres_ptr->gres_data;
+		if (gres_size >= gres_node_ptr->gres_cnt_alloc) {
+			gres_node_ptr->gres_cnt_avail = gres_size -
 						gres_node_ptr->gres_cnt_alloc;
-	} else {
-		error("%s: Changed size count of GRES %s from %"PRIu64" to %"
-		      PRIu64", resource over allocated", __func__, gres_name,
-		      gres_node_ptr->gres_cnt_avail, gres_size);
-		gres_node_ptr->gres_cnt_avail = 0;
+		} else {
+			error("%s: Changed size count of GRES %s from %"PRIu64
+			      " to %"PRIu64", resource over allocated",
+			      __func__, gres_name,
+			      gres_node_ptr->gres_cnt_avail, gres_size);
+			gres_node_ptr->gres_cnt_avail = 0;
+		}
+		gres_node_ptr->gres_cnt_config = gres_size;
+		gres_node_ptr->gres_cnt_found = gres_size;
+		gres_node_ptr->node_feature = true;
 	}
-	gres_node_ptr->gres_cnt_config = gres_size;
-	gres_node_ptr->gres_cnt_found = gres_size;
-	gres_node_ptr->node_feature = true;
 	slurm_mutex_unlock(&gres_context_lock);
 }
 
