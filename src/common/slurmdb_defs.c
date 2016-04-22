@@ -3778,49 +3778,6 @@ extern int slurmdb_get_old_tres_pos(slurmdb_tres_rec_t **new_array,
 	return pos;
 }
 
-extern void slurmdb_set_new_tres_cnt(uint64_t **tres_cnt_in,
-				     slurmdb_tres_rec_t **new_array,
-				     slurmdb_tres_rec_t **old_array,
-				     int cur_cnt, int max_cnt)
-{
-	int i, pos;
-	uint64_t tres_cnt[cur_cnt];
-	bool changed = false;
-
-	/* This means we don't have to redo the tres */
-	if (!old_array || !new_array || !tres_cnt_in || !*tres_cnt_in)
-		return;
-
-	for (i=0; i<cur_cnt; i++) {
-		/* Done! */
-		if (!new_array[i])
-			break;
-
-		pos = slurmdb_get_old_tres_pos(
-			new_array, old_array, i, max_cnt);
-
-		if (pos != i)
-			changed = true;
-
-		if (pos != NO_VAL)
-			tres_cnt[i] = *tres_cnt_in[pos];
-	}
-
-	if (!changed)
-		return;
-
-	/* get the array the correct size */
-	i = sizeof(uint64_t) * cur_cnt;
-	if (cur_cnt != max_cnt)
-		xrealloc(*tres_cnt_in, i);
-
-	/* copy the data from tres_cnt which should contain
-	 * the new ordered tres values */
-	memcpy(*tres_cnt_in, tres_cnt, i);
-
-	return;
-}
-
 extern int slurmdb_get_tres_base_unit(char *tres_type)
 {
 	int ret_unit = UNIT_NONE;
