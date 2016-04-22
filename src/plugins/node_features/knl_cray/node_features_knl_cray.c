@@ -1243,6 +1243,7 @@ extern int init(void)
 	char *default_mcdram_str, *default_numa_str;
 	char *knl_conf_file, *tmp_str = NULL;
 	s_p_hashtbl_t *tbl;
+	struct stat stat_buf;
 	int i;
 
 	/* Set default values */
@@ -1260,7 +1261,8 @@ extern int init(void)
 		mcdram_pct[i] = -1;
 
 	knl_conf_file = get_extra_conf_path("knl_cray.conf");
-	if ((tbl = _config_make_tbl(knl_conf_file))) {
+	if ((stat(knl_conf_file, &stat_buf) == 0) &&
+	    (tbl = _config_make_tbl(knl_conf_file))) {
 		if (s_p_get_string(&tmp_str, "AllowMCDRAM", tbl)) {
 			allow_mcdram = _knl_mcdram_parse(tmp_str, ",");
 			if (_knl_mcdram_bits_cnt(allow_mcdram) < 1) {
@@ -1301,11 +1303,11 @@ extern int init(void)
 			xfree(tmp_str);
 		}
 		(void) s_p_get_string(&syscfg_path, "SyscfgPath", tbl);
+		s_p_hashtbl_destroy(tbl);
 	} else {
-		error("something wrong with opening/reading knl.conf");
+		error("something wrong with opening/reading knl_cray.conf");
 	}
 	xfree(knl_conf_file);
-	s_p_hashtbl_destroy(tbl);
 	if (!capmc_path)
 		capmc_path = xstrdup("/opt/cray/capmc/default/bin/capmc");
 	capmc_timeout = MAX(capmc_timeout, 500);
