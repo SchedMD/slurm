@@ -1,0 +1,227 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Validates that sacctmgr lost jobs returns lost jobs
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2016 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+source ./globals_accounting
+
+set test_id          21.36
+set sql_query        "test$test_id\-query.sql"
+set sql_query_rem    "test$test_id\-query-rem.sql"
+set cluster          "test$test_id\_clus"
+set account          "test$test_id\_acct"
+set user             "test$test_id\_user"
+set conf_script      "test$test_id\_conf.sh"
+set config_dir       ""
+set access_err       0
+set exit_code        0
+
+# Cluster requirments
+array set clus_req {}
+
+# Account requirments
+set acct_req(cluster) $cluster
+
+# User requirments
+set user_req(account) $account
+set user_req(cluster) $cluster
+
+
+print_header $test_id
+
+
+# DON'T MESS WITH THIS UNLESS YOU REALLY UNDERSTAND WHAT YOU ARE DOING!!!!!
+# THIS COULD SERIOUSLY MESS UP YOUR DATABASE IF YOU ALTER THIS INCORRECTLY
+# JUST A FRIENDLY REMINDER ;)
+
+# Insert a job that has not end time and is still in running state
+set file [open $sql_query "w"]
+puts $file "insert into job_table (jobid, associd, wckey, wckeyid, uid, gid, `partition`, blockid, cluster, account, eligible, submit, start, end, suspended, name, track_steps, state, comp_code, priority, req_cpus, tres_alloc, nodelist, kill_requid, qos, deleted) values"
+puts $file "('65536', '6', 'test21-36wckey', '1', '1002', '1002', 'debug', '', '$cluster', '$account', 1199170800, 1199170800, 1199170800, 0, '0', 'test21.32_job1', '0', '1', '0', '2', 2, '1=2', 'test21.36_node', '0', '0', '0')"
+puts $file "on duplicate key update id=LAST_INSERT_ID(id), eligible=VALUES(eligible), submit=VALUES(submit), start=VALUES(start), end=VALUES(end), associd=VALUES(associd), tres_alloc=VALUES(tres_alloc), wckey=VALUES(wckey), wckeyid=VALUES(wckeyid);"
+close $file
+
+# Make SQL file to remove the inserted job
+set file [open $sql_query_rem "w"]
+puts $file [format "%s%s%s" "truncate table \"" $cluster "_job_table\";"]
+close $file
+
+# Add Test Cluster
+if {[add_cluster $cluster [array get clus_req]]} {
+	remove_cluster "$cluster"
+	exit 1
+}
+
+# Add Test Account
+if {[add_acct $account [array get acct_req]]} {
+	remove_acct "" $account
+	exit 1
+}
+
+# Add Test Usre
+if {[add_user $user [array get user_req]]} {
+	remove_user "" "" $user
+	exit 1
+}
+
+#
+# Get the slurm.conf path
+#
+set got_config 0
+log_user 0
+spawn $scontrol show config
+expect {
+	-re "SLURM_CONF.*= (/.*)/($alpha).*SLURM_VERSION" {
+		set config_dir $expect_out(1,string)
+		set got_config 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+if {$got_config == 0} {
+    send_user "\nFAILURE: Could not find configuration file location\n"
+    exit 1
+}
+
+# Get the current working directory
+set cwd "[$bin_pwd]"
+
+#
+# Copy the original slurm.conf file
+#
+exec $bin_rm -f $cwd/slurm.conf.orig
+spawn $bin_cp -v $config_dir/slurm.conf $cwd/slurm.conf.orig
+expect {
+	timeout {
+		send_user "\nFAILURE: slurm.conf was not copied\n"
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+if {![file exists $cwd/slurm.conf.orig]} {
+	send_user "\nFAILURE: slurm.conf was not copied\n"
+	exit 1
+}
+
+#
+# Add test cluster name to the slurm.conf
+#
+make_bash_script $conf_script "$bin_echo ClusterName=$cluster >> $config_dir/slurm.conf"
+spawn ./$conf_script
+expect {
+	-re "Permission denied" {
+		send_user "\nWARNING: Unable to update slurm.conf\n"
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+
+# Load a job to the database that has not end time.
+if {[archive_load $sql_query]} {
+	archive_load $sql_query_rem
+	remove_user "" "" $user
+	remove_acct "" $account
+	remove_cluster $cluster
+	exit 1
+}
+
+# Test sacctmgr show lost jobs
+set list_job 0
+spawn $sacctmgr show -i lost jobs
+expect {
+	-re "NOTE: Lost jobs" {
+		set list_job 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$list_job != 1} {
+	send_user "\nFAILURE: sacctmgr did not find any lost jobs when "
+	send_user "it should have\n"
+	set exit_code 1
+}
+
+# Check that jobs we fixed
+set list_job 0
+spawn $sacctmgr show -i lost jobs
+expect {
+	-re "No lost jobs found" {
+		set list_job 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$list_job != 1} {
+	send_user "\nFAILURE: sacctmgr found lost jobs when "
+	send_user "it should not have\n"
+        set exit_code 1
+}
+
+# Restore the slurm.conf file back to original values
+exec $bin_cp $cwd/slurm.conf.orig $config_dir/slurm.conf
+
+incr exit_code [archive_load $sql_query_rem]
+incr exit_code [remove_cluster $cluster]
+incr exit_code [remove_acct "" $account]
+incr exit_code [remove_user "" "" $user]
+
+exec $bin_rm -fr $sql_query $sql_query_rem
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+} else {
+	send_user "\nFAILURE\n"
+}
+
+exit $exit_code
