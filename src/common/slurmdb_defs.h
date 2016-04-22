@@ -263,7 +263,7 @@ extern void slurmdb_transfer_tres_time(
  */
 extern int slurmdb_get_old_tres_pos(slurmdb_tres_rec_t **new_array,
 				    slurmdb_tres_rec_t **old_array,
-				    int cur_pos, int max_cnt);
+				    int cur_pos, int old_cnt);
 extern void slurmdb_set_new_tres_cnt(uint64_t **tres_cnt_in,
 				     slurmdb_tres_rec_t **new_array,
 				     slurmdb_tres_rec_t **old_array,

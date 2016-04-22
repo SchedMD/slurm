@@ -1091,7 +1091,7 @@ static int _post_tres_list(List new_list, int new_cnt)
 	slurmdb_tres_rec_t *tres_rec, **new_array;
 	char **new_name_array;
 	bool changed_size = false, changed_pos = false;
-	int i, new_size, new_name_size, max_cnt = MAX(new_cnt, g_tres_count);
+	int i, new_size, new_name_size;
 	int old_pos[new_cnt];
 
 	xassert(new_list);
@@ -1142,8 +1142,9 @@ static int _post_tres_list(List new_list, int new_cnt)
 				continue;
 			}
 
-			pos = slurmdb_get_old_tres_pos(
-				new_array, assoc_mgr_tres_array, i, max_cnt);
+			pos = slurmdb_get_old_tres_pos(new_array,
+						       assoc_mgr_tres_array,
+						       i, g_tres_count);
 
 			if (pos == NO_VAL)
 				old_pos[i] = -1;
