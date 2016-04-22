@@ -101,8 +101,7 @@ proc add_cluster { name clus_req_in } {
 	}
 
 	if {$matches != 1} {
-		send_user "\nFAILURE:  sacctmgr had a problem adding clusters
-	got $matches\n"
+		send_user "\nFAILURE:  sacctmgr had a problem adding clusters got $matches\n"
 		incr exit_code 1
 	}
 
