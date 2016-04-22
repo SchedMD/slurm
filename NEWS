@@ -22,6 +22,8 @@ documents those changes that are of interest to users and administrators.
  -- burst_buffer/cray - Don't call Datawarp "paths" function if script includes
     only create or destroy of persistent burst buffer. Some versions of Datawarp
     software return an error for such scripts, causing the job to be held.
+ -- Fix potential issue when adding and removing TRES which could result
+    in the slurmdbd segfaulting.
 
 * Changes in Slurm 15.08.10
 ===========================
