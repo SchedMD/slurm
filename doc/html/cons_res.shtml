@@ -30,7 +30,7 @@ as well as any combination of the logical processors with Memory:</li>
   <li><b>Socket</b> (<i>CR_Socket</i>): Socket as a consumable resource.</li>
   <li/><b>Core</b> (<i>CR_Core</i>): Core as a consumable resource.</li>
   <li><b>Memory</b> (<i>CR_Memory</i>) Memory <u>only</u> as a
-  consumable resource. Note! CR_Memory assumes Shared=Yes</li>
+  consumable resource. Note! CR_Memory assumes OverSubscribe=Yes</li>
   <li><b>Socket and Memory</b> (<i>CR_Socket_Memory</i>): Socket
   and Memory as consumable resources.</li>
   <li><b>Core and Memory</b> (<i>CR_Core_Memory</i>): Core and
@@ -57,8 +57,8 @@ resource. It is important to specify enough memory since Slurm will not allow
 the application to use more than the requested amount of real memory. The
 default value for --mem is 1 MB. see srun man page for more details.</li>
 
-<li><b>All CR_s assume Shared=No</b> or Shared=Force EXCEPT for
-<b>CR_MEMORY</b> which <b>assumes Shared=Yes</b></li>
+<li><b>All CR_s assume OverSubscribe=No</b> or OverSubscribe=Force EXCEPT for
+<b>CR_MEMORY</b> which <b>assumes OverSubscribe=Yes</b></li>
 
 <li>The consumable resource plugin is enabled via SelectType and
 SelectTypeParameter in the slurm.conf.</li>

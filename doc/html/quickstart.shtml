@@ -183,13 +183,13 @@ below. See the man page for more information.</p>
 <pre>
 adev0: scontrol show partition
 PartitionName=debug TotalNodes=5 TotalCPUs=40 RootOnly=NO
-   Default=YES OverSubscribe=FORCE:4 Priority=1 State=UP
+   Default=YES OverSubscribe=FORCE:4 PriorityTier=1 State=UP
    MaxTime=00:30:00 Hidden=NO
    MinNodes=1 MaxNodes=26 DisableRootJobs=NO AllowGroups=ALL
    Nodes=adev[1-5] NodeIndices=0-4
 
 PartitionName=batch TotalNodes=10 TotalCPUs=80 RootOnly=NO
-   Default=NO OverSubscribe=FORCE:4 Priority=1 State=UP
+   Default=NO OverSubscribe=FORCE:4 PriorityTier=1 State=UP
    MaxTime=16:00:00 Hidden=NO
    MinNodes=1 MaxNodes=26 DisableRootJobs=NO AllowGroups=ALL
    Nodes=adev[6-15] NodeIndices=5-14

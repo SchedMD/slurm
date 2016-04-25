@@ -563,10 +563,10 @@ PartitionName=DEFAULT MaxNodes=178
 PartitionName=DEFAULT OverSubscribe=EXCLUSIVE State=UP DefaultTime=60
 
 # "User Support" partition with a higher priority
-PartitionName=usup Hidden=YES Priority=10 MaxTime=720 AllowGroups=staff
+PartitionName=usup Hidden=YES PriorityTier=10 MaxTime=720 AllowGroups=staff
 
 # normal partition available to all users
-PartitionName=day Default=YES Priority=1 MaxTime=01:00:00
+PartitionName=day Default=YES PriorityTier=1 MaxTime=01:00:00
 </pre>
 
 <p>Slurm supports an optional <i>cray.conf</i> file containing Cray-specific

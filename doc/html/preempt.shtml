@@ -132,18 +132,16 @@ select/cons_res plugin.</LI>
 </UL>
 </LI>
 <LI>
-<B>Priority</B>: Configure the partition's <I>Priority</I> setting relative to
-other partitions to control the preemptive behavior when
+<B>PriorityTier</B>: Configure the partition's <I>PriorityTier</I> setting
+relative to other partitions to control the preemptive behavior when
 <I>PreemptType=preempt/partition_prio</I>.
 This option is not relevant if <I>PreemptType=preempt/qos</I>.
 If two jobs from two
 different partitions are allocated to the same resources, the job in the
-partition with the greater <I>Priority</I> value will preempt the job in the
-partition with the lesser <I>Priority</I> value. If the <I>Priority</I> values
-of the two partitions are equal then no preemption will occur. The default
-<I>Priority</I> value is 1.
-<BR><B>NOTE:</B> Unless <I>PreemptType=preempt/partition_prio</I> the
-partition <I>Priority</I> is not critical.
+partition with the greater <I>PriorityTier</I> value will preempt the job in the
+partition with the lesser <I>PriorityTier</I> value. If the <I>PriorityTier</I>
+values of the two partitions are equal then no preemption will occur. The
+default <I>PriorityTier</I> value is 1.
 </LI>
 <LI>
 <B>OverSubscribe</B>: Configure the partition's <I>OverSubscribe</I> setting to
@@ -167,7 +165,7 @@ with <I>SelectType=cons_res</I>.
 To enable preemption after making the configuration changes described above,
 restart Slurm if it is already running. Any change to the plugin settings in
 Slurm requires a full restart of the daemons. If you just change the partition
-<I>Priority</I> or <I>OverSubscribe</I> setting, this can be updated with
+<I>PriorityTier</I> or <I>OverSubscribe</I> setting, this can be updated with
 <I>scontrol reconfig</I>.
 </P>
 
@@ -280,8 +278,8 @@ Here are the Partition settings:
 <PRE>
 [user@n16 ~]$ <B>grep PartitionName /shared/slurm/slurm.conf</B>
 PartitionName=DEFAULT OverSubscribe=FORCE:1 Nodes=n[12-16]
-PartitionName=active Priority=1 Default=YES
-PartitionName=hipri  Priority=2
+PartitionName=active PriorityTier=1 Default=YES
+PartitionName=hipri  PriorityTier=2
 </PRE>
 <P>
 The <I>runit.pl</I> script launches a simple load-generating app that runs
@@ -348,9 +346,9 @@ job preemption mechanisms.
 </P>
 <PRE>
 # Excerpt from slurm.conf
-PartitionName=low Nodes=linux Default=YES OverSubscribe=NO      Priority=10 PreemptMode=requeue
-PartitionName=med Nodes=linux Default=NO  OverSubscribe=FORCE:1 Priority=20 PreemptMode=suspend
-PartitionName=hi  Nodes=linux Default=NO  OverSubscribe=FORCE:1 Priority=30 PreemptMode=off
+PartitionName=low Nodes=linux Default=YES OverSubscribe=NO      PriorityTier=10 PreemptMode=requeue
+PartitionName=med Nodes=linux Default=NO  OverSubscribe=FORCE:1 PriorityTier=20 PreemptMode=suspend
+PartitionName=hi  Nodes=linux Default=NO  OverSubscribe=FORCE:1 PriorityTier=30 PreemptMode=off
 </PRE>
 <PRE>
 $ sbatch tmp
