@@ -1751,7 +1751,9 @@ fs.suid_dumpable = 2<br>
 or temporarily with:<br>
 sysctl fs.suid_dumpable=2<br>
 On Centos 6, also set "ProcessUnpackaged = yes" in the file
-/etc/abrt/abrt-action-save-package-data.conf.</p>
+/etc/abrt/abrt-action-save-package-data.conf.
+On Red Hat EL6, also set "DAEMON_COREFILE_LIMIT=unlimited" in the file
+rc.d/init.d/functions.</p>
 <p>Once these configuration changes have been made and the slurmstepd aborts,
 you should see message of this type in the file /var/log/messages:</p>
 <pre>Oct 15 11:31:20 knc abrt[21489]: Saved core dump of pid 21477 (/localhome/adam/slurm/16.05/knc/sbin/slurmstepd) to /var/spool/abrt/ccpp-2015-10-15-11:31:20-21477 (6639616 bytes)
@@ -2164,6 +2166,6 @@ followed by an optional comma separated list of cluster names to operate on.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 31 March 2016</p>
+<p style="text-align:center;">Last modified 25 April 2016</p>
 
 <!--#include virtual="footer.txt"-->
