@@ -41,6 +41,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix sshare -o<format> to correctly display new lengths.
  -- Update documentation to rename Shared option to OverSubscribe.
  -- Update documentation to rename partition Priority option to PriorityTier.
+ -- Prevent changing of QOS on running jobs.
 
 * Changes in Slurm 16.05.0pre2
 ==============================
