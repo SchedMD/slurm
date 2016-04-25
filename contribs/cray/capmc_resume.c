@@ -74,17 +74,11 @@
 #define DEFAULT_CAPMC_TIMEOUT 10000	/* 10 seconds */
 #define MIN_CAPMC_TIMEOUT 1000		/* 1 second */
 
-/* Number of times to try performing "node_off" operation */
-#define NODE_OFF_RETRIES 10
-
-/* Number of times to try performing "node_on" operation */
-#define NODE_ON_RETRIES 10
+/* Number of times to try performing "node_reinit" operation */
+#define NODE_REINIT_RETRIES 10
 
 /* Number of times to try performing node state change operation */
 #define NODE_STATE_RETRIES 10
-
-/* How long to wait for a node to enter "off" state, in seconds */
-#define NODE_OFF_STATE_WAIT (30 * 60)
 
 /* Static variables */
 static char *capmc_path = NULL;
@@ -285,56 +279,12 @@ static char *_run_script(char **script_argv, int *status)
 	return resp;
 }
 
-static bool _check_node_state(int nid, char *nid_str, char *state)
-{
-	bool node_state_ok = false;
-	char *argv[10], *resp_msg;
-	int i, nid_cnt, status = 0;
-	uint32_t *nid_array;
-	json_object *j;
-
-	argv[0] = "capmc";
-	argv[1] = "node_status";
-	argv[2] = "-n";
-	argv[3] = nid_str;
-	argv[4] = NULL;
-	resp_msg = _run_script(argv, &status);
-	if (status != 0) {
-		error("%s: capmc(%s,%s,%s): %d %s", prog_name,
-			argv[1], argv[2], argv[3], status, resp_msg);
-		xfree(resp_msg);
-		return node_state_ok;
-	}
-	j = json_tokener_parse(resp_msg);
-	if (j == NULL) {
-		error("%s: json parser failed on %s", prog_name, resp_msg);
-		xfree(resp_msg);
-		return node_state_ok;
-	}
-	xfree(resp_msg);
-
-	nid_cnt = 0;
-	nid_array = _json_parse_nids(j, "off", &nid_cnt);
-	json_object_put(j);	/* Frees json memory */
-	for (i = 0; i < nid_cnt; i++) {
-		if (nid_array[i] == nid) {
-			node_state_ok = true;
-			break;
-		}
-	}
-	xfree(nid_array);
-
-	return node_state_ok;
-}
-
 static void *_node_update(void *args)
 {
 	char *node_name = (char *) args;
 	char *argv[10], nid_str[32], *resp_msg;
 	int i, nid = -1, status = 0;
-	bool node_state_ok;
-	bool node_off_sent = false, node_on_sent = false, node_state_sent;
-	time_t poll_start;
+	bool node_reinit_sent = false, node_state_sent;
 
 	for (i = 0; node_name[i]; i++) {
 		if ((node_name[i] >= '0') && (node_name[i] <= '9')) {
@@ -409,52 +359,16 @@ static void *_node_update(void *args)
 		}
 	}
 
-	/* Test if already in "off" state */
-	node_state_ok = _check_node_state(nid, nid_str, "off");
-
-	/* Request node power down.
-	 * Example: "capmc node_off –n 43" */
-	if (!node_state_ok) {
-		argv[0] = "capmc";
-		argv[1] = "node_off";
-		argv[2] = "-n";
-		argv[3] = nid_str;
-		argv[4] = NULL;
-		for (i = 0; ((i < NODE_OFF_RETRIES) && !node_off_sent); i++) {
-			resp_msg = _run_script(argv, &status);
-			if ((status != 0) ||
-			    (resp_msg &&
-			     (strcasestr(resp_msg, "Success") == NULL))) {
-				error("%s: capmc(%s,%s,%s): %d %s", prog_name,
-				      argv[1], argv[2], argv[3], status,
-				      resp_msg);
-				sleep(1);
-			} else {
-				debug("%s: node_off sent to %s",
-				      prog_name, nid_str);
-				node_off_sent = true;
-			}
-			xfree(resp_msg);
-		}
-	}
-
-	/* Wait for node in "off" state */
-	poll_start = time(NULL);
-	while (!node_state_ok &&
-	      (difftime(time(NULL), poll_start) < NODE_OFF_STATE_WAIT)) {
-		sleep(capmc_poll_freq);
-		node_state_ok = _check_node_state(nid, nid_str, "off");
-	}
-
-
-	/* Request node power up.
-	 * Example: "capmc node_on –n 43" */
+	/* Request node restart.
+	 * Example: "capmc node_reinit –n 43" */
 	argv[0] = "capmc";
-	argv[1] = "node_on";
+	argv[1] = "node_reinit";
 	argv[2] = "-n";
 	argv[3] = nid_str;
 	argv[4] = NULL;
-	for (i = 0; ((i < NODE_ON_RETRIES) && !node_on_sent); i++) {
+//	argv[4] = "-r";	/* Future option: Reason */
+//	argv[5] = "Change KNL mode";
+	for (i = 0; ((i < NODE_REINIT_RETRIES) && !node_reinit_sent); i++) {
 		resp_msg = _run_script(argv, &status);
 		if ((status != 0) ||
 		    (resp_msg && (strcasestr(resp_msg, "Success") == NULL))) {
@@ -462,10 +376,19 @@ static void *_node_update(void *args)
 			      argv[1], argv[2], argv[3], status, resp_msg);
 			sleep(1);
 		} else {
-			debug("%s: node_on sent to %s", prog_name, nid_str);
-			node_on_sent = true;
+			debug("%s: node_reinit sent to %s", prog_name, nid_str);
+			node_reinit_sent = true;
 		}
 		xfree(resp_msg);
+	}
+
+	if (!node_reinit_sent) {
+		char *scontrol_input = NULL;
+		xstrfmtcat(scontrol_input,
+			   "%s/bin/scontrol update nodename=%s state=DOWN Reason=reboot_failure",
+			   SLURM_PREFIX, node_name);
+		(void) system(scontrol_input);
+		xfree(scontrol_input);
 	}
 
 fini:	slurm_mutex_lock(&thread_cnt_mutex);
