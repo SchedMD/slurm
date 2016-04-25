@@ -10321,11 +10321,13 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				     __func__, new_qos_ptr->name,
 				     job_ptr->job_id);
 				if (job_ptr->qos_id != qos_rec.id) {
+					acct_policy_remove_job_submit(job_ptr);
 					job_ptr->qos_id = qos_rec.id;
 					job_ptr->qos_ptr = new_qos_ptr;
 					job_ptr->limit_set.qos =
 						acct_policy_limit_set.qos;
 					update_accounting = true;
+					acct_policy_add_job_submit(job_ptr);
 				} else {
 					debug("sched: %s: new QOS identical "
 					      "to old QOS %u",
