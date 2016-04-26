@@ -24,6 +24,8 @@ documents those changes that are of interest to users and administrators.
     software return an error for such scripts, causing the job to be held.
  -- Fix potential issue when adding and removing TRES which could result
     in the slurmdbd segfaulting.
+ -- Add cast to memory limit calculation to prevent integer overflow for
+    very large memory values.
 
 * Changes in Slurm 15.08.10
 ===========================
@@ -973,6 +975,8 @@ documents those changes that are of interest to users and administrators.
     step functions rather than [0,2,4,6,8,...] .
  -- Associations - prevent hash table corruption if uid initially unset for
     a user, which can cause slurmctld to crash if that user is deleted.
+ -- Add cast to memory limit calculation to prevent integer overflow for
+    very large memory values.
 
 * Changes in Slurm 14.11.11
 ===========================
