@@ -26,6 +26,8 @@ documents those changes that are of interest to users and administrators.
     in the slurmdbd segfaulting.
  -- Add cast to memory limit calculation to prevent integer overflow for
     very large memory values.
+ -- Bluegene - Fix issue with reservations resizing under the covers on a
+    restart of the slurmctld.
 
 * Changes in Slurm 15.08.10
 ===========================
