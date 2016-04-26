@@ -139,10 +139,8 @@ static xcgroup_t job_cpuset_cg;
 static xcgroup_t step_cpuset_cg;
 
 static int _xcgroup_cpuset_init(xcgroup_t* cg);
-char * cpuset_to_str(const cpu_set_t *mask, char *str);
-int str_to_cpuset(cpu_set_t *mask, const char* str);
 
-inline int val_to_char(int v)
+static inline int _val_to_char(int v)
 {
 	if (v >= 0 && v < 10)
 		return '0' + v;
@@ -152,7 +150,7 @@ inline int val_to_char(int v)
 		return -1;
 }
 
-inline int char_to_val(int c)
+static inline int _char_to_val(int c)
 {
 	int cl;
 
@@ -165,7 +163,7 @@ inline int char_to_val(int c)
 		return -1;
 }
 
-char *cpuset_to_str(const cpu_set_t *mask, char *str)
+static char *_cpuset_to_str(const cpu_set_t *mask, char *str)
 {
 	int base;
 	char *ptr = str;
@@ -183,13 +181,13 @@ char *cpuset_to_str(const cpu_set_t *mask, char *str)
 			val |= 8;
 		if (!ret && val)
 			ret = ptr;
-		*ptr++ = val_to_char(val);
+		*ptr++ = _val_to_char(val);
 	}
 	*ptr = '\0';
 	return ret ? ret : ptr - 1;
 }
 
-int str_to_cpuset(cpu_set_t *mask, const char* str)
+static int _str_to_cpuset(cpu_set_t *mask, const char* str)
 {
 	int len = strlen(str);
 	const char *ptr = str + len - 1;
@@ -201,7 +199,7 @@ int str_to_cpuset(cpu_set_t *mask, const char* str)
 
 	CPU_ZERO(mask);
 	while (ptr >= str) {
-		char val = char_to_val(*ptr);
+		char val = _char_to_val(*ptr);
 		if (val == (char) -1)
 			return -1;
 		if (val & 1)
@@ -358,7 +356,7 @@ _slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *job, int statval)
 			task_gid,
 			task_lid,
 			mypid,
-			cpuset_to_str(mask, mstr),
+			_cpuset_to_str(mask, mstr),
 			action,
 			status);
 }
@@ -455,7 +453,7 @@ static int _get_ldom_sched_cpuset(hwloc_topology_t topology,
 	return true;
 }
 
-int _get_sched_cpuset(hwloc_topology_t topology,
+static int _get_sched_cpuset(hwloc_topology_t topology,
 		hwloc_obj_type_t hwtype, hwloc_obj_type_t req_hwtype,
 		cpu_set_t *mask, stepd_step_rec_t *job)
 {
@@ -534,8 +532,8 @@ int _get_sched_cpuset(hwloc_topology_t topology,
 
 	if (job->cpu_bind_type & CPU_BIND_MASK) {
 		/* convert mask string into cpu_set_t mask */
-		if (str_to_cpuset(mask, mstr) < 0) {
-			error("task/cgroup: str_to_cpuset %s", mstr);
+		if (_str_to_cpuset(mask, mstr) < 0) {
+			error("task/cgroup: _str_to_cpuset %s", mstr);
 			return false;
 		}
 		return true;
@@ -562,7 +560,7 @@ int _get_sched_cpuset(hwloc_topology_t topology,
 		if (len > 1 && !memcmp(mstr, "0x", 2L))
 			curstr += 2;
 		while (ptr >= curstr) {
-			char val = char_to_val(*ptr);
+			char val = _char_to_val(*ptr);
 			if (val == (char) -1)
 				return false;
 			if (val & 1)
@@ -1559,12 +1557,12 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 			if ((rc = sched_setaffinity(pid, tssize, &ts))) {
 				error("task/cgroup: task[%u] unable to set "
 				      "mask 0x%s", taskid,
-				      cpuset_to_str(&ts, mstr));
+				      _cpuset_to_str(&ts, mstr));
 				error("sched_setaffinity rc = %d", rc);
 				fstatus = SLURM_ERROR;
 			} else if (bind_verbose) {
 				info("task/cgroup: task[%u] mask 0x%s",
-				     taskid, cpuset_to_str(&ts, mstr));
+				     taskid, _cpuset_to_str(&ts, mstr));
 			}
 			_slurm_chkaffinity(&ts, job, rc);
 		}
