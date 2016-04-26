@@ -28,6 +28,9 @@ documents those changes that are of interest to users and administrators.
     very large memory values.
  -- Bluegene - Fix issue with reservations resizing under the covers on a
     restart of the slurmctld.
+ -- Avoid error message of "Requested cpu_bind option requires entire node to
+    be allocated; disabling affinity" being generated in some cases where
+    task/affinity and task/cgroup plugins used together.
 
 * Changes in Slurm 15.08.10
 ===========================

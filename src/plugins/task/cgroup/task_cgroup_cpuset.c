@@ -431,10 +431,6 @@ static int _task_cgroup_cpuset_dist_block(
 	hwloc_obj_type_t req_hwtype, uint32_t nobj,
 	stepd_step_rec_t *job, int bind_verbose, hwloc_bitmap_t cpuset);
 
-/* The job has specialized cores, synchronize user mask with available cores */
-static void _validate_mask(uint32_t task_id, hwloc_obj_t obj, cpu_set_t *ts);
-
-
 static int _get_ldom_sched_cpuset(hwloc_topology_t topology,
 		hwloc_obj_type_t hwtype, hwloc_obj_type_t req_hwtype,
 		uint32_t ldom, cpu_set_t *mask)
@@ -1378,7 +1374,7 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 	hwloc_obj_type_t hwtype;
 	hwloc_obj_type_t req_hwtype;
 	int bind_verbose = 0;
-	int rc = SLURM_SUCCESS, match;
+	int rc = SLURM_SUCCESS;
 	pid_t    pid = job->envtp->task_pid;
 	size_t tssize;
 	uint32_t nldoms;
@@ -1535,37 +1531,25 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 		 * Bind the taskid in accordance with the specified mode
 		 */
 		obj = hwloc_get_obj_by_type(topology, HWLOC_OBJ_MACHINE, 0);
-		match = hwloc_bitmap_isequal(obj->complete_cpuset,
-					     obj->allowed_cpuset);
-		if ((job->job_core_spec == (uint16_t) NO_VAL) && !match) {
-			info("task/cgroup: entire node must be allocated, "
-			     "disabling affinity, task[%u]", taskid);
-			fprintf(stderr, "Requested cpu_bind option requires "
-				"entire node to be allocated; disabling "
-				"affinity\n");
-		} else {
-			if (bind_verbose) {
-				info("task/cgroup: task[%u] is requesting "
-				     "explicit binding mode", taskid);
-			}
-			_get_sched_cpuset(topology, hwtype, req_hwtype, &ts,
-					  job);
-			tssize = sizeof(cpu_set_t);
-			fstatus = SLURM_SUCCESS;
-			if (job->job_core_spec != (uint16_t) NO_VAL)
-				_validate_mask(taskid, obj, &ts);
-			if ((rc = sched_setaffinity(pid, tssize, &ts))) {
-				error("task/cgroup: task[%u] unable to set "
-				      "mask 0x%s", taskid,
-				      _cpuset_to_str(&ts, mstr));
-				error("sched_setaffinity rc = %d", rc);
-				fstatus = SLURM_ERROR;
-			} else if (bind_verbose) {
-				info("task/cgroup: task[%u] mask 0x%s",
-				     taskid, _cpuset_to_str(&ts, mstr));
-			}
-			_slurm_chkaffinity(&ts, job, rc);
+		if (bind_verbose) {
+			info("task/cgroup: task[%u] is requesting "
+			     "explicit binding mode", taskid);
 		}
+		_get_sched_cpuset(topology, hwtype, req_hwtype, &ts, job);
+		tssize = sizeof(cpu_set_t);
+		fstatus = SLURM_SUCCESS;
+		_validate_mask(taskid, obj, &ts);
+		if ((rc = sched_setaffinity(pid, tssize, &ts))) {
+			error("task/cgroup: task[%u] unable to set "
+			      "mask 0x%s", taskid,
+			      _cpuset_to_str(&ts, mstr));
+			error("sched_setaffinity rc = %d", rc);
+			fstatus = SLURM_ERROR;
+		} else if (bind_verbose) {
+			info("task/cgroup: task[%u] mask 0x%s",
+			     taskid, _cpuset_to_str(&ts, mstr));
+		}
+		_slurm_chkaffinity(&ts, job, rc);
 	} else {
 		/* Bind the detected object to the taskid, respecting the
 		 * granularity, using the designated or default distribution
