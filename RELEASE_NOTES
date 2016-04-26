@@ -50,6 +50,7 @@ HIGHLIGHTS
     If set, the only CPUs available to the job will be those bound to the
     selected GRES (i.e. the CPUs identifed in the gres.conf file will be
     strictly enforced rather than advisory).
+ -- Added wrappers for LSF commands
  -- Added Grid Engine options to qsub.
 
 RPMBUILD CHANGES
