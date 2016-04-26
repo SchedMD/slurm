@@ -117,7 +117,7 @@ proc create_res { res_params failure_expected node_cnt_expected} {
 			}
 			exp_continue
 		}
-		-re "NodeCnt=$node_cnt_expected" {
+		-re "CnodeCnt=$node_cnt_expected" {
 			set node_cnt_match 1
 		}
 		-re "No reservations in the system" {
