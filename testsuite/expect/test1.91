@@ -130,6 +130,14 @@ if {$num_sockets == 0 || $num_cores == 0 || $num_threads == 0} {
 	send_user "\nWARNING: Could not determine number of Sockets:Cores:Threads (saw $num_sockets:$num_cores:$num_threads)\n"
 	exit 0
 }
+# Intel KNL nodes with 272 threads generate huge numeric masks
+# which are too large for expect integer values to manage
+set total_thread_count [expr $num_sockets * $num_cores * $num_threads]
+if {$total_thread_count > 64} {
+	send_user "\nWARNING: Total thread count too large for Expect to process ($total_thread_count > 64)\n"
+	send_user "WARNING: Expect unable to work with more than 32-bit numbers\n"
+	exit 0
+}
 send_user "Node config: Sockets=$num_sockets Cores=$num_cores Threads=$num_threads\n\n"
 
 #
