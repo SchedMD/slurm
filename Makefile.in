@@ -145,10 +145,7 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = config.h $(top_builddir)/slurm/slurm.h
 CONFIG_CLEAN_FILES = contribs/perlapi/libslurm/perl/Makefile.PL \
 	contribs/perlapi/libslurmdb/perl/Makefile.PL \
-	contribs/phpext/slurm_php/config.m4 \
-	etc/cgroup.release_common.example etc/init.d.slurm \
-	etc/init.d.slurmdbd etc/slurmctld.service etc/slurmd.service \
-	etc/slurmdbd.service
+	contribs/phpext/slurm_php/config.m4
 CONFIG_CLEAN_VPATH_FILES =
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -244,12 +241,6 @@ am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/config.h.in \
 	$(top_srcdir)/contribs/perlapi/libslurm/perl/Makefile.PL.in \
 	$(top_srcdir)/contribs/perlapi/libslurmdb/perl/Makefile.PL.in \
 	$(top_srcdir)/contribs/phpext/slurm_php/config.m4.in \
-	$(top_srcdir)/etc/cgroup.release_common.example.in \
-	$(top_srcdir)/etc/init.d.slurm.in \
-	$(top_srcdir)/etc/init.d.slurmdbd.in \
-	$(top_srcdir)/etc/slurmctld.service.in \
-	$(top_srcdir)/etc/slurmd.service.in \
-	$(top_srcdir)/etc/slurmdbd.service.in \
 	$(top_srcdir)/slurm/slurm.h.in AUTHORS COPYING INSTALL NEWS
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 distdir = $(PACKAGE)-$(VERSION)
@@ -552,7 +543,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I auxdir
-SUBDIRS = auxdir src testsuite doc
+SUBDIRS = auxdir src testsuite doc etc
 EXTRA_DIST = \
 	etc/bluegene.conf.example \
 	etc/cgroup.conf.example \
@@ -661,18 +652,6 @@ contribs/perlapi/libslurm/perl/Makefile.PL: $(top_builddir)/config.status $(top_
 contribs/perlapi/libslurmdb/perl/Makefile.PL: $(top_builddir)/config.status $(top_srcdir)/contribs/perlapi/libslurmdb/perl/Makefile.PL.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 contribs/phpext/slurm_php/config.m4: $(top_builddir)/config.status $(top_srcdir)/contribs/phpext/slurm_php/config.m4.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
-etc/cgroup.release_common.example: $(top_builddir)/config.status $(top_srcdir)/etc/cgroup.release_common.example.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
-etc/init.d.slurm: $(top_builddir)/config.status $(top_srcdir)/etc/init.d.slurm.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
-etc/init.d.slurmdbd: $(top_builddir)/config.status $(top_srcdir)/etc/init.d.slurmdbd.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
-etc/slurmctld.service: $(top_builddir)/config.status $(top_srcdir)/etc/slurmctld.service.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
-etc/slurmd.service: $(top_builddir)/config.status $(top_srcdir)/etc/slurmd.service.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
-etc/slurmdbd.service: $(top_builddir)/config.status $(top_srcdir)/etc/slurmdbd.service.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 
 mostlyclean-libtool:

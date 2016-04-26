@@ -1,7 +1,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I auxdir
-SUBDIRS    = auxdir src testsuite doc
+SUBDIRS    = auxdir src testsuite doc etc
 
 EXTRA_DIST =			\
 	etc/bluegene.conf.example \

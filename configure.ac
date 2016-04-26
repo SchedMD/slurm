@@ -463,12 +463,7 @@ AC_CONFIG_FILES([Makefile
 		 doc/html/Makefile
 		 doc/html/configurator.html
 		 doc/html/configurator.easy.html
-		 etc/cgroup.release_common.example
-		 etc/init.d.slurm
-		 etc/init.d.slurmdbd
-		 etc/slurmctld.service
-		 etc/slurmd.service
-		 etc/slurmdbd.service
+		 etc/Makefile
 		 src/Makefile
 		 src/api/Makefile
 		 src/bcast/Makefile

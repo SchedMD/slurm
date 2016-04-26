@@ -44,6 +44,8 @@ documents those changes that are of interest to users and administrators.
  -- Prevent changing of QOS on running jobs.
  -- Update accounting when changing QOS on pending jobs.
  -- Add support to ntasks_per_socket in task/affinity.
+ -- Generate init.d and systemd service scripts in etc/ through Make rather
+    than at configure time to ensure all variable substitutions happen.
 
 * Changes in Slurm 16.05.0pre2
 ==============================
