@@ -2990,7 +2990,7 @@ static void _rebuild_core_bitmap(slurmctld_resv_t *resv_ptr)
 	     resv_ptr->name);
 
 	core_cnt = bit_set_count(resv_ptr->core_bitmap);      /* Cores needed */
-	bit_free(resv_ptr->core_bitmap);
+	FREE_NULL_BITMAP(resv_ptr->core_bitmap);
 
 	_create_cluster_core_bitmap(&resv_ptr->core_bitmap);
 
