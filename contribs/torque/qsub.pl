@@ -1,13 +1,14 @@
 #! /usr/bin/perl -w
 ###############################################################################
 #
-# qsub - submit a batch job in familar pbs format.
+# qsub - submit a batch job in familar pbs/Grid Engine format.
 #
 #
 ###############################################################################
+#  Copyright (C) 2015-2016 SchedMD LLC
 #  Copyright (C) 2007 The Regents of the University of California.
 #  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-#  Written by Danny Auble <auble1@llnl.gov>.
+#  Written by Danny Auble <da@schedmd.com>.
 #  CODE-OCEC-09-009. All rights reserved.
 #
 #  This file is part of SLURM, a resource management program.
@@ -62,10 +63,16 @@ my ($start_time,
     $mail_user_list,
     $job_name,
     $out_path,
+    @pe_ev_opts,
     $priority,
+    $requeue,
     $destination,
+    $sbatchline,
     $variable_list,
     @additional_attributes,
+    $wckey,
+    $workdir,
+    $wrap,
     $help,
     $resp,
     $man);
@@ -76,6 +83,8 @@ my $srun = "${FindBin::Bin}/srun";
 
 GetOptions('a=s'      => \$start_time,
 	   'A=s'      => \$account,
+	   'b=s'      => \$wrap,
+	   'cwd'      => sub { warn "option -cwd is the default\n" },
 	   'e=s'      => \$err_path,
 	   'h'        => \$hold,
 	   'I'        => \$interactive,
@@ -88,15 +97,20 @@ GetOptions('a=s'      => \$start_time,
 	   'N=s'      => \$job_name,
 	   'o=s'      => \$out_path,
 	   'p=i'      => \$priority,
+	   'pe=s{2}'  => \@pe_ev_opts,
+	   'P=s'      => \$wckey,
 	   'q=s'      => \$destination,
+	   'r=s'      => \$requeue,
 	   'S=s'      => sub { warn "option -S is ignored, " .
 				    "specify shell via #!<shell> in the job script\n" },
 	   't=s'      => \$array,
 	   'v=s'      => \$variable_list,
 	   'V'        => \$export_env,
+	   'wd=s'     => \$workdir,
 	   'W=s'      => \@additional_attributes,
 	   'help|?'   => \$help,
 	   'man'      => \$man,
+	   'sbatchline' => \$sbatchline,
 	   )
 	or pod2usage(2);
 
@@ -182,6 +196,26 @@ if ($resource_list) {
 	}
 }
 
+if (@pe_ev_opts) {
+	my %pe_opts = %{parse_pe_opts(@pe_ev_opts)};
+
+	# while((my $key, my $val) = each(%pe_opts)) {
+	# 	print "$key = ";
+	# 	if($val) {
+	# 		print "$val\n";
+	# 	} else {
+	# 		print "\n";
+	# 	}
+	# }
+
+	# From Stanford: This parallel environment is designed to support
+	# applications that use pthreads to manage multiple threads with
+	# access to a single pool of shared memory.  The SGE PE restricts
+	# the slots used to a threads on a single host, so in this, I think
+	# it is equivalent to the --cpus-per-task option of sbatch.
+	$res_opts{mppdepth} = $pe_opts{shm} if $pe_opts{shm};
+}
+
 my $command;
 
 if($interactive) {
@@ -221,6 +255,8 @@ if($interactive) {
 $command .= " -N$node_opts{node_cnt}" if $node_opts{node_cnt};
 $command .= " -n$node_opts{task_cnt}" if $node_opts{task_cnt};
 $command .= " -w$node_opts{hostlist}" if $node_opts{hostlist};
+
+$command .= " -D$workdir" if $workdir;
 
 $command .= " --mincpus=$res_opts{ncpus}"            if $res_opts{ncpus};
 $command .= " --ntasks-per-node=$res_opts{mppnppn}"  if $res_opts{mppnppn};
@@ -296,9 +332,21 @@ $command .= " --mail-user=$mail_user_list" if $mail_user_list;
 $command .= " -J $job_name" if $job_name;
 $command .= " --nice=$priority" if $priority;
 $command .= " -p $destination" if $destination;
-$command .= " $script" if $script;
+$command .= " --wckey=$wckey" if $wckey;
+$command .= " --requeue" if $requeue && $requeue =~ 'y';
 
-# print "$command\n";
+if ($script) {
+	if ($wrap && $wrap =~ 'y') {
+		$command .=" --wrap=\"$script\"";
+	} else {
+		$command .= " $script";
+	}
+}
+
+if ($sbatchline) {
+	print "$command\n";
+	exit;
+}
 
 # Execute the command and capture its stdout, stderr, and exit status. Note
 # that if interactive mode was requested, the standard output and standard
@@ -356,6 +404,8 @@ sub parse_resource_list {
 		   'cput' => "",
 		   'file' => "",
 		   'host' => "",
+		   'h_rt' => "",
+		   'h_vmem' => "",
 		   'mem' => "",
 		   'mpiprocs' => "",
 		   'ncpus' => "",
@@ -400,6 +450,9 @@ sub parse_resource_list {
 		$opt{walltime} =~ s/(\d{1,2})h(\d{2})m(\d{2})s/$1:$2:$3/;
 #		Convert to minutes for SLURM.
 		$opt{walltime} = get_minutes($opt{walltime});
+	} elsif ($opt{h_rt}) {
+		# GridEngine is in seconds, so convert to minutes.
+		$opt{walltime} = $opt{h_rt} / 60;
 	}
 
 	if($opt{accelerator} && $opt{accelerator} =~ /^[Tt]/ && !$opt{naccelerators}) {
@@ -414,7 +467,10 @@ sub parse_resource_list {
 		$opt{mppnppn} = $opt{mpiprocs};
 	}
 
-	if($opt{mppmem}) {
+	if ($opt{h_vmem}) {
+		# Transfer over the GridEngine value (no conversion)
+		$opt{mem} = $opt{h_vmem};
+	} elsif($opt{mppmem}) {
 		$opt{mem} = convert_mb_format($opt{mppmem});
 	} elsif($opt{mem}) {
 		$opt{mem} = convert_mb_format($opt{mem});
@@ -459,6 +515,19 @@ sub parse_node_opts {
 
 	my $hl_cnt = Slurm::Hostlist::count($hl);
 	$opt{node_cnt} = $hl_cnt if $hl_cnt > $opt{node_cnt};
+
+	return \%opt;
+}
+
+sub parse_pe_opts {
+	my (@pe_array) = @_;
+	my %opt = ('shm' => 0,
+		   );
+	my @keys = keys(%opt);
+
+	foreach my $key (@keys) {
+		$opt{$key} = $pe_array[1] if ($key eq $pe_array[0]);
+	}
 
 	return \%opt;
 }
@@ -522,6 +591,7 @@ B<qsub> - submit a batch job in a familiar PBS format
 
 qsub  [-a start_time]
       [-A account]
+      [-b y|n]
       [-e err_path]
       [-I]
       [-l resource_list]
@@ -529,9 +599,13 @@ qsub  [-a start_time]
       [-N job_name]
       [-o out_path]
       [-p priority]
+      [-pe shm task_cnt]
+      [-P wckey]
       [-q destination]
+      [-r y|n]
       [-v variable_list]
       [-V]
+      [-wd workdir]
       [-W additional_attributes]
       [-h]
       [script]
@@ -551,6 +625,10 @@ Earliest start time of job. Format: [HH:MM][MM/DD/YY]
 =item B<-A account>
 
 Specify the account to which the job should be charged.
+
+=item B<-b y|n>
+
+Whether to wrap the command line or not
 
 =item B<-e err_path>
 
@@ -588,9 +666,17 @@ Specify the path to a file to hold the standard output from the job.
 
 Specify the priority under which the job should run.
 
-=item B<-p priority>
+=item B<-pe shm cpus-per-task>
 
-Specify the priority under which the job should run.
+Specify the number of cpus per task.
+
+=item B<-P wckey>
+
+Specify the wckey or project of a job.
+
+=item B<-r y|n>
+
+Whether to allow the job to requeue or not.
 
 =item B<-t job_array>
 
@@ -608,6 +694,10 @@ format.
 
 The -V option to exports the current environment, which is the default mode of
 options unless the -v option is used.
+
+=item B<-wd workdir>
+
+Specify the workdir of a job.  The default is the current work dir.
 
 =item B<-?> | B<--help>
 
