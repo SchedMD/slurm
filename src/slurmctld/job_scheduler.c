@@ -3387,11 +3387,7 @@ static void *_run_epilog(void *arg)
 	if (cpid == 0) {
 		for (i = 0; i < 1024; i++)
 			(void) close(i);
-#ifdef SETPGRP_TWO_ARGS
-		setpgrp(0, 0);
-#else
-		setpgrp();
-#endif
+		setpgid(0, 0);
 		execve(argv[0], argv, epilog_arg->my_env);
 		exit(127);
 	}
@@ -3707,11 +3703,7 @@ static void *_run_prolog(void *arg)
 	if (cpid == 0) {
 		for (i = 0; i < 1024; i++)
 			(void) close(i);
-#ifdef SETPGRP_TWO_ARGS
-		setpgrp(0, 0);
-#else
-		setpgrp();
-#endif
+		setpgid(0, 0);
 		execve(argv[0], argv, my_env);
 		exit(127);
 	}

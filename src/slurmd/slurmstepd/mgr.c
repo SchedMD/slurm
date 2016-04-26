@@ -2796,11 +2796,7 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *job,
 		if (chdir(job->cwd) == -1)
 			error("run_script_as_user: couldn't "
 			      "change working dir to %s: %m", job->cwd);
-#ifdef SETPGRP_TWO_ARGS
-		setpgrp(0, 0);
-#else
-		setpgrp();
-#endif
+		setpgid(0, 0);
 		/*
 		 *  Wait for signal from parent
 		 */

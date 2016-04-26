@@ -558,9 +558,6 @@
 /* Define to 1 if sched_getaffinity takes two arguments. */
 #undef SCHED_GETAFFINITY_TWO_ARGS
 
-/* Define to 1 if setpgrp takes two arguments. */
-#undef SETPGRP_TWO_ARGS
-
 /* Define if you need setproctitle padding */
 #undef SETPROCTITLE_PS_PADDING
 

@@ -298,11 +298,7 @@ static int _run_nhc(nhc_info_t *nhc_info)
 		goto fini;
 	}
 	if (cpid == 0) {
-#ifdef SETPGRP_TWO_ARGS
-		setpgrp(0, 0);
-#else
-		setpgrp();
-#endif
+		setpgid(0, 0);
 		execvp(argv[0], argv);
 		exit(127);
 	}

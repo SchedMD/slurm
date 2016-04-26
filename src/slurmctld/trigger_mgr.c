@@ -1522,11 +1522,7 @@ static void _trigger_run_program(trig_mgr_info_t *trig_in)
 
 		for (i = 0; i < 1024; i++)
 			(void) close(i);
-#ifdef SETPGRP_TWO_ARGS
-		setpgrp(0, 0);
-#else
-		setpgrp();
-#endif
+		setpgid(0, 0);
 		setsid();
 		if ((initgroups(user_name, gid) == -1) && !run_as_self) {
 			error("trigger: initgroups: %m");

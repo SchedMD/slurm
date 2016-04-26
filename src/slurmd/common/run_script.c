@@ -147,11 +147,7 @@ _run_one_script(const char *name, const char *path, uint32_t job_id,
 		argv[0] = (char *)xstrdup(path);
 		argv[1] = NULL;
 
-#ifdef SETPGRP_TWO_ARGS
-		setpgrp(0, 0);
-#else
-		setpgrp();
-#endif
+		setpgid(0, 0);
 		execve(path, argv, env);
 		error("execve(%s): %m", path);
 		exit(127);

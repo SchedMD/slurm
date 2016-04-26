@@ -194,11 +194,7 @@ static int _call_external_program(void)
 		argv[0] = program_name;
 		argv[1] = NULL;
 
-#ifdef SETPGRP_TWO_ARGS
-		setpgrp(0, 0);
-#else
-		setpgrp();
-#endif
+		setpgid(0, 0);
 		execv(program_name, argv);
 		error("step_terminate_monitor execv(): %m");
 		exit(127);

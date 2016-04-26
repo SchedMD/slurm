@@ -207,11 +207,7 @@ static char *_run_script(char **script_argv, int *status)
 			if ((i != STDERR_FILENO) && (i != STDOUT_FILENO))
 				close(i);
 		}
-#ifdef SETPGRP_TWO_ARGS
-		setpgrp(0, 0);
-#else
-		setpgrp();
-#endif
+		setpgid(0, 0);
 		execv(capmc_path, script_argv);
 		error("%s: execv(): %s", prog_name,
 		      slurm_strerror(slurm_get_errno()));

@@ -222,11 +222,7 @@ _run_script_and_set_env(const char *name, const char *path,
 		close(0);
 		close(pfd[0]);
 		close(pfd[1]);
-#ifdef SETPGRP_TWO_ARGS
-		setpgrp(0, 0);
-#else
-		setpgrp();
-#endif
+		setpgid(0, 0);
 		execve(path, argv, job->env);
 		error("execve(%s): %m", path);
 		exit(127);

@@ -5195,11 +5195,7 @@ static void *_fork_script(void *x)
 		goto fini;
 	}
 	if (cpid == 0) {
-#ifdef SETPGRP_TWO_ARGS
-		setpgrp(0, 0);
-#else
-		setpgrp();
-#endif
+		setpgid(0, 0);
 		execve(argv[0], argv, envp);
 		exit(127);
 	}

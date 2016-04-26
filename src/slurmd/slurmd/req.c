@@ -5494,11 +5494,7 @@ _run_spank_job_script (const char *mode, char **env, uint32_t job_id, uid_t uid)
 
 		if (dup2 (pfds[0], STDIN_FILENO) < 0)
 			fatal ("dup2: %m");
-#ifdef SETPGRP_TWO_ARGS
-		setpgrp(0, 0);
-#else
-		setpgrp();
-#endif
+		setpgid(0, 0);
 		if (conf->chos_loc && !access(conf->chos_loc, X_OK))
 			execve(conf->chos_loc, argv, env);
 		else

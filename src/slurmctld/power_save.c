@@ -393,11 +393,7 @@ static pid_t _run_prog(char *prog, char *arg1, char *arg2)
 	if (child == 0) {
 		for (i = 0; i < 1024; i++)
 			(void) close(i);
-#ifdef SETPGRP_TWO_ARGS
-		setpgrp(0, 0);
-#else
-		setpgrp();
-#endif
+		setpgid(0, 0);
 		ctlconf = slurm_conf_lock();
 		setenv("SLURM_CONF", ctlconf->slurm_conf, 1);
 		slurm_conf_unlock();

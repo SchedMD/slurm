@@ -1150,11 +1150,7 @@ extern char *bb_run_script(char *script_type, char *script_path,
 			else if (cpid > 0)
 				exit(0);
 		}
-#ifdef SETPGRP_TWO_ARGS
-		setpgrp(0, 0);
-#else
-		setpgrp();
-#endif
+		setpgid(0, 0);
 		execv(script_path, script_argv);
 		error("%s: execv(%s): %m", __func__, script_path);
 		exit(127);

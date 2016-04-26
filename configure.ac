@@ -156,10 +156,6 @@ dnl Check if ptrace takes four or five arguments
 dnl
 X_AC_PTRACE
 
-dnl Check if setpgrp takes zero or two arguments
-dnl
-X_AC_SETPGRP
-
 dnl Check of sched_getaffinity exists and it's argument count
 dnl
 X_AC_AFFINITY
