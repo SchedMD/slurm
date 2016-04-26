@@ -1371,12 +1371,8 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
  * RET SLURM_SUCCESS or error code */
 static int _get_core_resrcs(slurmctld_resv_t *resv_ptr)
 {
-	int i;
-
-#ifndef HAVE_BG
-	int i_first, i_last, j, node_inx;
+	int i, i_first, i_last, j, node_inx;
 	int c, core_offset_local, core_offset_global, core_end;
-#endif
 
 	if (!resv_ptr->core_resrcs || resv_ptr->core_bitmap ||
 	    (bit_ffs(resv_ptr->core_resrcs->core_bitmap) == -1))
@@ -1403,7 +1399,6 @@ static int _get_core_resrcs(slurmctld_resv_t *resv_ptr)
 	}
 
 	_create_cluster_core_bitmap(&resv_ptr->core_bitmap);
-#ifndef HAVE_BG
 	i_first = bit_ffs(resv_ptr->core_resrcs->node_bitmap);
 	if (i_first >= 0)
 		i_last = bit_fls(resv_ptr->core_resrcs->node_bitmap);
@@ -1424,7 +1419,7 @@ static int _get_core_resrcs(slurmctld_resv_t *resv_ptr)
 			bit_set(resv_ptr->core_bitmap, c);
 		}
 	}
-#endif
+
 	return SLURM_SUCCESS;
 }
 
@@ -1435,12 +1430,9 @@ static int _get_core_resrcs(slurmctld_resv_t *resv_ptr)
  * changing. */
 static void _set_core_resrcs(slurmctld_resv_t *resv_ptr)
 {
-	int rc, i_first;
+	int i, i_first, i_last, j, node_inx, rc;
+	int c, core_offset_local, core_offset_global, core_end;
 
-#ifndef HAVE_BG
-	int i, i_last, j, node_inx;
-	int core_offset_local, core_offset_global, core_end;
-#endif
 	if (!resv_ptr->core_bitmap || resv_ptr->core_resrcs ||
 	    !resv_ptr->node_bitmap ||
 	    ((i_first = bit_ffs(resv_ptr->node_bitmap)) == -1))
@@ -1458,7 +1450,6 @@ static void _set_core_resrcs(slurmctld_resv_t *resv_ptr)
 	}
 	resv_ptr->core_resrcs->cpus = xmalloc(sizeof(uint16_t) *
 					      resv_ptr->core_resrcs->nhosts);
-#ifndef HAVE_BG
 	core_offset_local = -1;
 	node_inx = -1;
 	i_last = bit_fls(resv_ptr->node_bitmap);
@@ -1478,7 +1469,6 @@ static void _set_core_resrcs(slurmctld_resv_t *resv_ptr)
 			resv_ptr->core_resrcs->cpus[node_inx]++;
 		}
 	}
-#endif
 }
 
 /*
