@@ -648,7 +648,8 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 				 * remove 1 cpu/core at a time. */
 				while ((cpus > 0) &&
 				       ((req_mem *
-					 (cpus * cpu_alloc_size)) > avail_mem))
+					 (cpus * select_node_record[node_i].vpus))
+					 > avail_mem))
 					cpus -= 1;
 			} else {
 				while ((cpus > 0) &&
