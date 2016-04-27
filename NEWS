@@ -483,6 +483,8 @@ documents those changes that are of interest to users and administrators.
  -- Add missing job states from the qstat wrapper.
  -- Cleanup output routines to reduce number of fixed-sized buffer function
     calls and allow for unexpectedly large strings.
+ -- Fix version issue when packing GRES information between 2 different versions
+    of Slurm.
 
 * Changes in Slurm 15.08.6
 ==========================

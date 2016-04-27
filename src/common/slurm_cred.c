@@ -1743,10 +1743,10 @@ _pack_cred(slurm_cred_t *cred, Buf buffer, uint16_t protocol_version)
 
 		(void) gres_plugin_job_state_pack(cred->job_gres_list, buffer,
 						  cred->jobid, false,
-						  SLURM_PROTOCOL_VERSION);
+						  protocol_version);
 		gres_plugin_step_state_pack(cred->step_gres_list, buffer,
 					    cred->jobid, cred->stepid,
-					    SLURM_PROTOCOL_VERSION);
+					    protocol_version);
 		pack16(cred->job_core_spec,  buffer);
 		pack32(cred->job_mem_limit,  buffer);
 		pack32(cred->step_mem_limit, buffer);
@@ -1784,10 +1784,10 @@ _pack_cred(slurm_cred_t *cred, Buf buffer, uint16_t protocol_version)
 
 		(void) gres_plugin_job_state_pack(cred->job_gres_list, buffer,
 						  cred->jobid, false,
-						  SLURM_PROTOCOL_VERSION);
+						  protocol_version);
 		gres_plugin_step_state_pack(cred->step_gres_list, buffer,
 					    cred->jobid, cred->stepid,
-					    SLURM_PROTOCOL_VERSION);
+					    protocol_version);
 		pack16(cred->job_core_spec,  buffer);
 		pack32(cred->job_mem_limit,  buffer);
 		pack32(cred->step_mem_limit, buffer);
