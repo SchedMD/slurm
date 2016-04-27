@@ -281,9 +281,9 @@ if {$def_node_cnt >= 512} {
 		{StartTime=now   Duration=5   User=$user_name   NodeCnt=2}
 		{StartTime=now   Duration=5   User=$user_name   NodeCnt=32,2,32}
 	"
-	set good_size(0) "512"
-	set good_size(1) "512"
-	set good_size(2) "512"
+	set good_size(0) "256"
+	set good_size(1) "2"
+	set good_size(2) "128"
 
 	set inx 0
 	foreach test $goodtests {
