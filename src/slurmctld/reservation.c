@@ -1375,6 +1375,7 @@ static int _get_core_resrcs(slurmctld_resv_t *resv_ptr)
 	int c, core_offset_local, core_offset_global, core_end;
 
 	if (!resv_ptr->core_resrcs || resv_ptr->core_bitmap ||
+	    !resv_ptr->core_resrcs->core_bitmap ||
 	    (bit_ffs(resv_ptr->core_resrcs->core_bitmap) == -1))
 		return SLURM_SUCCESS;
 
@@ -1450,6 +1451,7 @@ static void _set_core_resrcs(slurmctld_resv_t *resv_ptr)
 	}
 	resv_ptr->core_resrcs->cpus = xmalloc(sizeof(uint16_t) *
 					      resv_ptr->core_resrcs->nhosts);
+
 	core_offset_local = -1;
 	node_inx = -1;
 	i_last = bit_fls(resv_ptr->node_bitmap);
@@ -1464,8 +1466,9 @@ static void _set_core_resrcs(slurmctld_resv_t *resv_ptr)
 			core_offset_local++;
 			if (!bit_test(resv_ptr->core_bitmap, c))
 				continue;
-			bit_set(resv_ptr->core_resrcs->core_bitmap,
-				core_offset_local);
+			if (resv_ptr->core_resrcs->core_bitmap)
+				bit_set(resv_ptr->core_resrcs->core_bitmap,
+					core_offset_local);
 			resv_ptr->core_resrcs->cpus[node_inx]++;
 		}
 	}
