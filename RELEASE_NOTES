@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 16.05
-29 March 2016 (after 16.05.0-pre2)
+27 April 2016
 
 IMPORTANT NOTES:
 ANY JOBS WITH A JOB ID ABOVE 2,147,463,647 WILL BE PURGED WHEN SLURM IS
@@ -91,6 +91,26 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     connections.
  -- Added SchedulingParameters option of "bf_min_prio_reserve". Jobs below
     the specified threshold will not have resources reserved for them.
+ -- Add SchedulerParameter "no_env_cache", if set no environment cache will be
+    used when launching a job, instead the job will fail and drain the node if
+    the environment isn't loaded normally.
+ -- Remove the SchedulerParameters option of "assoc_limit_continue", making it
+    the default value. Add option of "assoc_limit_stop". If "assoc_limit_stop"
+    is set and a job cannot start due to association limits, then do not attempt
+    to initiate any lower priority jobs in that partition. Setting this can
+    decrease system throughput and utlization, but avoid potentially starving
+    larger jobs by preventing them from launching indefinitely.
+ -- Rename partition configuration from "Shared" to "OverSubscribe". Rename
+    salloc, sbatch, srun option from "--shared" to "--oversubscribe". The old
+    options will continue to function. Output field names also changed in
+    scontrol, sinfo, squeue and sview.
+ -- Add TopologyParam option of "TopoOptional" to optimize network topology
+    only for jobs requesting it.
+ -- Configuration parameter "CpuFreqDef" used to set default governor for job
+    step not specifying --cpu-freq (previously the parameter was unused)
+ -- Use TaskPluginParam for default task binding if no user specified CPU
+    binding. User --cpu_bind option takes precident over default. No longer
+    any error if user --cpu_bind option does not match TaskPluginParam.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
@@ -117,6 +137,7 @@ COMMAND CHANGES (see man pages for details)
  -- Added "sacctmgr show lostjobs" to report any orphaned jobs in the database.
  -- Add reservation flag of "purge_comp" which will purge an advanced
     reservation once it has no more active (pending, suspended or running) jobs.
+ -- Add ARRAY_TASKS mail option to send emails to each task in a job array.
 
 OTHER CHANGES
 =============
@@ -136,6 +157,9 @@ OTHER CHANGES
     of Intel Knights Landing processor.
  -- If NodeHealthCheckProgram configured HealthCheckInterval is non-zero, then
     modify slurmd to run it before registering with slurmctld.
+ -- select/cray - Initiate step node health check at start of step termination
+    rather than after application completely ends so that NHC can capture
+    information about hung (non-killable) processes.
 
 API CHANGES
 ===========
