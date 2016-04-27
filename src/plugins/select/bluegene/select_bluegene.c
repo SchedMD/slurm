@@ -3388,8 +3388,10 @@ extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 		cores = 16;
 #endif
 		job_rec.details->min_cpus *= cores;
-	} else
+	} else {
+		jobinfo->cnode_cnt = node_cnt * cnodes_per_mp;
 		job_rec.details->min_cpus = node_cnt * bg_conf->cpus_per_mp;
+	}
 
 	job_rec.details->max_cpus = job_rec.details->min_cpus;
 	job_rec.details->core_spec = (uint16_t)NO_VAL;
@@ -3434,6 +3436,7 @@ end_it:
 	xfree(job_rec.details);
 
 	if (rc == SLURM_SUCCESS && job_rec.start_time != INFINITE) {
+		xfree(resv_desc_ptr->node_list);
 		resv_desc_ptr->node_list = xstrdup_select_jobinfo(
 			jobinfo, SELECT_PRINT_NODES);
 		if (jobinfo->ionode_str) {
@@ -3451,6 +3454,12 @@ end_it:
 					continue;
 				bit_set(*core_bitmap, i+offset);
 			}
+		} else {
+			/* This means we ended up doing full nodes, so clear out
+			 * anything vestigal that would say otherwise.
+			 */
+			FREE_NULL_BITMAP(*core_bitmap);
+			xfree(resv_desc_ptr->core_cnt);
 		}
 
 		info("Reservation request for %u nodes satisfied with %s",

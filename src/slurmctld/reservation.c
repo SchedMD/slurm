@@ -2197,34 +2197,53 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	if (resv_desc_ptr->node_cnt && cnodes_per_mp) {
 		/* Pack multiple small blocks into midplane rather than
 		 * allocating a whole midplane for each small block */
-		int small_block_nodes = 0, small_block_count = 0;
-		for (i = 0; resv_desc_ptr->node_cnt[i]; i++) {
-			if (resv_desc_ptr->node_cnt[i] < cnodes_per_mp)
-				small_block_nodes += resv_desc_ptr->node_cnt[i];
-		}
-		small_block_count  =  small_block_nodes;
-		small_block_count += (cnodes_per_mp - 1);
-		small_block_count /=  cnodes_per_mp;
+		int small_block_nodes = 0, first_small = -1;
+		bool req_mixed = false;
 
-		/* Convert c-node count to midplane count */
-		total_node_cnt = 0;
 		for (i = 0; resv_desc_ptr->node_cnt[i]; i++) {
 			if (resv_desc_ptr->node_cnt[i] < cnodes_per_mp) {
+				if (first_small == -1)
+					first_small = i;
+				small_block_nodes += resv_desc_ptr->node_cnt[i];
+			} else
+				req_mixed = true;
+		}
+
+		if (small_block_nodes) {
+			if (req_mixed)
+				resv_desc_ptr->node_cnt[first_small] =
+					small_block_nodes < cnodes_per_mp ?
+					cnodes_per_mp : small_block_nodes;
+			else
+				resv_desc_ptr->node_cnt[first_small] =
+					small_block_nodes;
+
+			small_block_nodes = 0;
+			/* Since there will only ever be 1 small block we can
+			 * set the the one after the first small to 0.
+			 */
+			resv_desc_ptr->node_cnt[first_small+1] = 0;
+		}
+
+		/* Convert c-node count to midplane count */
+
+		for (i = 0; resv_desc_ptr->node_cnt[i]; i++) {
+			if (!resv_desc_ptr->node_cnt[i])
+				break;
+
+			if (resv_desc_ptr->node_cnt[i] < cnodes_per_mp) {
+				/* There will only ever be one here */
 				if (!resv_desc_ptr->core_cnt)
 					resv_desc_ptr->core_cnt =
 						xmalloc(sizeof(uint32_t) * 2);
-				resv_desc_ptr->core_cnt[0] +=
+				resv_desc_ptr->core_cnt[0] =
 					resv_desc_ptr->node_cnt[i];
-				if (small_block_count == 0) {
-					resv_desc_ptr->node_cnt[i] = 0;
-					break;
-				}
-				small_block_count--;
+				resv_desc_ptr->node_cnt[i] = 1;
+			} else {
+				resv_desc_ptr->node_cnt[i] +=
+					(cnodes_per_mp - 1);
+				resv_desc_ptr->node_cnt[i] /= cnodes_per_mp;
 			}
-
-			resv_desc_ptr->node_cnt[i] += (cnodes_per_mp - 1);
-			resv_desc_ptr->node_cnt[i] /=  cnodes_per_mp;
-			total_node_cnt += resv_desc_ptr->node_cnt[i];
 		}
 	}
 #endif
@@ -3927,6 +3946,7 @@ static bitstr_t *_pick_idle_nodes(bitstr_t *avail_bitmap,
 	bool resv_debug;
 
 #ifdef HAVE_BG
+	hostlist_t hl = NULL;
 	static uint16_t static_blocks = (uint16_t)NO_VAL;
 	if (static_blocks == (uint16_t)NO_VAL) {
 		/* Since this never changes we can just set it once
@@ -3993,8 +4013,24 @@ static bitstr_t *_pick_idle_nodes(bitstr_t *avail_bitmap,
 		bit_not(tmp_bitmap);
 		bit_and(avail_bitmap, tmp_bitmap);
 		FREE_NULL_BITMAP(tmp_bitmap);
+
+#ifdef HAVE_BG
+		if (!hl)
+			hl = hostlist_create(resv_desc_ptr->node_list);
+		else
+			hostlist_push(hl, resv_desc_ptr->node_list);
+#endif
+	}
+#ifdef HAVE_BG
+	if (hl) {
+		hostlist_uniq(hl);
+		hostlist_sort(hl);
+		xfree(resv_desc_ptr->node_list);
+		resv_desc_ptr->node_list = hostlist_ranged_string_xmalloc(hl);
+		hostlist_destroy(hl);
 	}
 
+#endif
 	return ret_bitmap;
 }
 
