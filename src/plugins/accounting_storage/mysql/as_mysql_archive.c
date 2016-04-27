@@ -2252,7 +2252,8 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 		pack_func = &_pack_archive_events;
 		query = xstrdup_printf("select %s from \"%s_%s\" where "
 				       "time_start <= %ld && time_end != 0 "
-				       "order by time_start asc",
+				       "order by time_start asc "
+				       "for update",
 				       cols, cluster_name, event_table,
 				       period_end);
 		break;
@@ -2260,7 +2261,8 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 		pack_func = &_pack_archive_suspends;
 		query = xstrdup_printf("select %s from \"%s_%s\" where "
 				       "time_start <= %ld && time_end != 0 "
-				       "order by time_start asc",
+				       "order by time_start asc "
+				       "for update",
 				       cols, cluster_name, suspend_table,
 				       period_end);
 		break;
@@ -2268,7 +2270,8 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 		pack_func = &_pack_archive_resvs;
 		query = xstrdup_printf("select %s from \"%s_%s\" where "
 				       "time_start <= %ld && time_end != 0 "
-				       "order by time_start asc",
+				       "order by time_start asc "
+				       "for update",
 				       cols, cluster_name, resv_table,
 				       period_end);
 		break;
@@ -2276,7 +2279,8 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 		pack_func = &_pack_archive_jobs;
 		query = xstrdup_printf("select %s from \"%s_%s\" where "
 				       "time_submit < %ld && time_end != 0 "
-				       "&& !deleted order by time_submit asc",
+				       "&& !deleted order by time_submit asc "
+				       "for update",
 				       cols, cluster_name, job_table,
 				       period_end);
 		break;
@@ -2284,7 +2288,8 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 		pack_func = &_pack_archive_steps;
 		query = xstrdup_printf("select %s from \"%s_%s\" where "
 				       "time_start <= %ld && time_end != 0 "
-				       "&& !deleted order by time_start asc",
+				       "&& !deleted order by time_start asc "
+				       "for update",
 				       cols, cluster_name, step_table,
 				       period_end);
 		break;
