@@ -30,7 +30,7 @@ void sig_handler(int sig)
 	}
 }
 
-main (int argc, char **argv)
+int main (int argc, char **argv)
 {
 	struct sigaction act;
 	time_t begin_time = time(NULL);

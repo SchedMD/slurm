@@ -32,7 +32,7 @@
 #include <sys/resource.h>
 #include <unistd.h>
 
-main (int argc, char **argv)
+int main (int argc, char **argv)
 {
 	struct rlimit u_limit;
 	int exit_code = 0;

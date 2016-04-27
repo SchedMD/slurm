@@ -66,7 +66,7 @@ static uint64_t _mask_to_int(cpu_set_t *mask)
 	return rc;
 }
 
-main (int argc, char **argv)
+int main (int argc, char **argv)
 {
 	char *task_str;
 	cpu_set_t mask;
