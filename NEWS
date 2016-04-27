@@ -278,6 +278,8 @@ documents those changes that are of interest to users and administrators.
     cons_res plugin.
  -- Strip flags from a job state in qstat wrapper before evaluating.
  -- Add missing job states from the qstat wrapper.
+ -- Fix version issue when packing GRES information between 2 different versions
+    of Slurm.
 
 * Changes in Slurm 15.08.6
 ==========================
