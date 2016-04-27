@@ -1103,6 +1103,7 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 	int max_cpus = max_tasks * req->cpus_per_task;
 	bitstr_t *avail_map;
 	bitstr_t **masks = NULL;
+	int sock_inx, pu_per_socket, *socket_tasks = NULL;
 
 	info("_task_layout_lllp_block ");
 
@@ -1137,6 +1138,9 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 	*masks_p = xmalloc(max_tasks * sizeof(bitstr_t*));
 	masks = *masks_p;
 
+	pu_per_socket = hw_cores * hw_threads;
+	socket_tasks = xmalloc(hw_sockets);
+
 	/* block distribution with oversubsciption */
 	c = 0;
 	while (taskcount < max_tasks) {
@@ -1151,6 +1155,11 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 			/* skip unavailable resources */
 			if (bit_test(avail_map, i) == 0)
 				continue;
+
+			sock_inx = i / pu_per_socket;
+			if (socket_tasks[sock_inx] >= req->ntasks_per_socket)
+				continue;  /* Default ntasks_per_socket = INFINITE */
+			socket_tasks[sock_inx]++;
 
 			if (!masks[taskcount])
 				masks[taskcount] = bit_alloc(
@@ -1188,6 +1197,7 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 				break;
 		}
 	}
+	xfree(socket_tasks);
 
 	/* last step: expand the masks to bind each task
 	 * to the requested resource */

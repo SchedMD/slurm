@@ -43,6 +43,7 @@ documents those changes that are of interest to users and administrators.
  -- Update documentation to rename partition Priority option to PriorityTier.
  -- Prevent changing of QOS on running jobs.
  -- Update accounting when changing QOS on pending jobs.
+ -- Add support to ntasks_per_socket in task/affinity.
 
 * Changes in Slurm 16.05.0pre2
 ==============================
