@@ -1600,9 +1600,18 @@ end_it:
 
 	/* go check to see if we archive and purge */
 
-	if (rc == SLURM_SUCCESS)
-		rc = _process_purge(mysql_conn, cluster_name, archive_data,
-				    SLURMDB_PURGE_HOURS);
+	if (rc == SLURM_SUCCESS) {
+		if (mysql_db_commit(mysql_conn)) {
+			char start[25], end[25];
+			error("Couldn't commit cluster (%s) "
+			      "hour rollup for %s - %s",
+			      cluster_name, slurm_ctime2_r(&curr_start, start),
+			      slurm_ctime2_r(&curr_end, end));
+			rc = SLURM_ERROR;
+		} else
+			rc = _process_purge(mysql_conn, cluster_name,
+					    archive_data, SLURMDB_PURGE_HOURS);
+	}
 
 	return rc;
 }

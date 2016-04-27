@@ -2483,11 +2483,24 @@ static int _archive_purge_table(purge_type_t purge_type,
 
 		while ((rc = mysql_db_delete_affected_rows(
 				mysql_conn, query)) > 0) {
+			/* Commit here every time since this could create a huge
+			 * transaction.
+			 */
+			if (mysql_db_commit(mysql_conn)) {
+				error("Couldn't commit cluster (%s) purge",
+				      cluster_name);
+				break;
+			}
+		}
 
 		xfree(query);
 		if (rc != SLURM_SUCCESS) {
 			error("Couldn't remove old event data");
 			return SLURM_ERROR;
+		} else if (mysql_db_commit(mysql_conn)) {
+			error("Couldn't commit cluster (%s) purge",
+			      cluster_name);
+			break;
 		}
 	} while (tmp_end < curr_end);
 
