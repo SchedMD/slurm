@@ -2482,7 +2482,7 @@ static int _archive_purge_table(purge_type_t purge_type,
 			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 
 		while ((rc = mysql_db_delete_affected_rows(
-						mysql_conn,query)) > 0);
+				mysql_conn, query)) > 0) {
 
 		xfree(query);
 		if (rc != SLURM_SUCCESS) {

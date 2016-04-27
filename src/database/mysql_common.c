@@ -780,7 +780,7 @@ extern int mysql_db_delete_affected_rows(mysql_conn_t *mysql_conn, char *query)
 	}
 	slurm_mutex_lock(&mysql_conn->lock);
 	if (!(rc = _mysql_query_internal(mysql_conn->db_conn, query)))
-			rc = mysql_affected_rows(mysql_conn->db_conn);
+		rc = mysql_affected_rows(mysql_conn->db_conn);
 	slurm_mutex_unlock(&mysql_conn->lock);
 	return rc;
 }
