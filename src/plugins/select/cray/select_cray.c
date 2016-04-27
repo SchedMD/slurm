@@ -2216,6 +2216,11 @@ static void _start_killing_step(struct step_record *step_ptr)
 		return;
 	}
 
+	if (!step_ptr->select_jobinfo) {
+		debug3("step never got an allocation.");
+		return;
+	}
+
 	jobinfo = step_ptr->select_jobinfo->data;
 	if (jobinfo && !IS_CLEANING_STARTED(jobinfo)) {
 		jobinfo->cleaning |= CLEANING_STARTED;
