@@ -46,6 +46,9 @@ documents those changes that are of interest to users and administrators.
  -- Add support to ntasks_per_socket in task/affinity.
  -- Generate init.d and systemd service scripts in etc/ through Make rather
     than at configure time to ensure all variable substitutions happen.
+ -- Use TaskPluginParam for default task binding if no user specified CPU
+    binding. User --cpu_bind option takes precident over default. No longer
+    any error if user --cpu_bind option does not match TaskPluginParam.
 
 * Changes in Slurm 16.05.0pre2
 ==============================

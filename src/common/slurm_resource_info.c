@@ -390,10 +390,9 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 			    (CPU_BIND_NONE | CPU_BIND_TO_CORES |
 			     CPU_BIND_TO_THREADS | CPU_BIND_TO_LDOMS |
 			     CPU_BIND_TO_BOARDS)) {
-				error("--cpu_bind=sockets incompatible with "
+				debug("--cpu_bind=sockets incompatible with "
 				      "TaskPluginParam configuration "
 				      "parameter");
-				return -1;
 			}
 			_clear_then_set((int *)flags, bind_to_bits,
 				       CPU_BIND_TO_SOCKETS);
@@ -403,10 +402,9 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 			    (CPU_BIND_NONE | CPU_BIND_TO_SOCKETS |
 			     CPU_BIND_TO_THREADS | CPU_BIND_TO_LDOMS |
 			     CPU_BIND_TO_BOARDS)) {
-				error("--cpu_bind=cores incompatible with "
+				debug("--cpu_bind=cores incompatible with "
 				      "TaskPluginParam configuration "
 				      "parameter");
-				return -1;
 			}
 			_clear_then_set((int *)flags, bind_to_bits,
 				       CPU_BIND_TO_CORES);
@@ -416,10 +414,9 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 			    (CPU_BIND_NONE | CPU_BIND_TO_SOCKETS |
 			     CPU_BIND_TO_CORES | CPU_BIND_TO_LDOMS |
 			     CPU_BIND_TO_BOARDS)) {
-				error("--cpu_bind=threads incompatible with "
+				debug("--cpu_bind=threads incompatible with "
 				      "TaskPluginParam configuration "
 				      "parameter");
-				return -1;
 			}
 			_clear_then_set((int *)flags, bind_to_bits,
 				       CPU_BIND_TO_THREADS);
@@ -429,10 +426,9 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 			    (CPU_BIND_NONE | CPU_BIND_TO_SOCKETS |
 			     CPU_BIND_TO_CORES | CPU_BIND_TO_THREADS |
 			     CPU_BIND_TO_BOARDS)) {
-				error("--cpu_bind=threads incompatible with "
+				debug("--cpu_bind=threads incompatible with "
 				      "TaskPluginParam configuration "
 				      "parameter");
-				return -1;
 			}
 			_clear_then_set((int *)flags, bind_to_bits,
 				       CPU_BIND_TO_LDOMS);
@@ -442,10 +438,9 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 			    (CPU_BIND_NONE | CPU_BIND_TO_SOCKETS |
 			     CPU_BIND_TO_CORES | CPU_BIND_TO_THREADS |
 			     CPU_BIND_TO_LDOMS)) {
-				error("--cpu_bind=threads incompatible with "
+				debug("--cpu_bind=threads incompatible with "
 				      "TaskPluginParam configuration "
 				      "parameter");
-				return -1;
 			}
 			_clear_then_set((int *)flags, bind_to_bits,
 				       CPU_BIND_TO_BOARDS);
@@ -456,6 +451,22 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 		}
 	}
 	xfree(buf);
+
+	/* Set system default CPU binding as needed */
+	if ((*flags & (~CPU_BIND_VERBOSE)) == 0) {
+                if (task_plugin_param & CPU_BIND_NONE)
+                        *flags = CPU_BIND_NONE;
+                else if (task_plugin_param & CPU_BIND_TO_SOCKETS)
+                        *flags = CPU_BIND_TO_SOCKETS;
+                else if (task_plugin_param & CPU_BIND_TO_CORES)
+                        *flags = CPU_BIND_TO_CORES;
+                else if (task_plugin_param & CPU_BIND_TO_THREADS)
+                        *flags |= CPU_BIND_TO_THREADS;
+                else if (task_plugin_param & CPU_BIND_TO_LDOMS)
+                        *flags |= CPU_BIND_TO_LDOMS;
+                else if (task_plugin_param & CPU_BIND_TO_BOARDS)
+                        *flags |= CPU_BIND_TO_BOARDS;
+	}
 
 	return 0;
 }

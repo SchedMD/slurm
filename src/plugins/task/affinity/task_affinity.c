@@ -110,43 +110,44 @@ static void _update_bind_type(launch_tasks_request_msg_t *req)
 {
 	bool set_bind = false;
 
-	if (conf->task_plugin_param & CPU_BIND_NONE) {
-		req->cpu_bind_type |= CPU_BIND_NONE;
-		req->cpu_bind_type &= (~CPU_BIND_TO_SOCKETS);
-		req->cpu_bind_type &= (~CPU_BIND_TO_CORES);
-		req->cpu_bind_type &= (~CPU_BIND_TO_THREADS);
-		req->cpu_bind_type &= (~CPU_BIND_TO_LDOMS);
-		set_bind = true;
-	} else if (conf->task_plugin_param & CPU_BIND_TO_SOCKETS) {
-		req->cpu_bind_type &= (~CPU_BIND_NONE);
-		req->cpu_bind_type |= CPU_BIND_TO_SOCKETS;
-		req->cpu_bind_type &= (~CPU_BIND_TO_CORES);
-		req->cpu_bind_type &= (~CPU_BIND_TO_THREADS);
-		req->cpu_bind_type &= (~CPU_BIND_TO_LDOMS);
-		set_bind = true;
-	} else if (conf->task_plugin_param & CPU_BIND_TO_CORES) {
-		req->cpu_bind_type &= (~CPU_BIND_NONE);
-		req->cpu_bind_type &= (~CPU_BIND_TO_SOCKETS);
-		req->cpu_bind_type |= CPU_BIND_TO_CORES;
-		req->cpu_bind_type &= (~CPU_BIND_TO_THREADS);
-		req->cpu_bind_type &= (~CPU_BIND_TO_LDOMS);
-		set_bind = true;
-	} else if (conf->task_plugin_param & CPU_BIND_TO_THREADS) {
-		req->cpu_bind_type &= (~CPU_BIND_NONE);
-		req->cpu_bind_type &= (~CPU_BIND_TO_SOCKETS);
-		req->cpu_bind_type &= (~CPU_BIND_TO_CORES);
-		req->cpu_bind_type |= CPU_BIND_TO_THREADS;
-		req->cpu_bind_type &= (~CPU_BIND_TO_LDOMS);
-		set_bind = true;
-	} else if (conf->task_plugin_param & CPU_BIND_TO_LDOMS) {
-		req->cpu_bind_type &= (~CPU_BIND_NONE);
-		req->cpu_bind_type &= (~CPU_BIND_TO_SOCKETS);
-		req->cpu_bind_type &= (~CPU_BIND_TO_CORES);
-		req->cpu_bind_type &= (~CPU_BIND_TO_THREADS);
-		req->cpu_bind_type &= CPU_BIND_TO_LDOMS;
-		set_bind = true;
+	if ((req->cpu_bind_type & (~CPU_BIND_VERBOSE)) == 0) {
+		if (conf->task_plugin_param & CPU_BIND_NONE) {
+			req->cpu_bind_type |= CPU_BIND_NONE;
+			req->cpu_bind_type &= (~CPU_BIND_TO_SOCKETS);
+			req->cpu_bind_type &= (~CPU_BIND_TO_CORES);
+			req->cpu_bind_type &= (~CPU_BIND_TO_THREADS);
+			req->cpu_bind_type &= (~CPU_BIND_TO_LDOMS);
+			set_bind = true;
+		} else if (conf->task_plugin_param & CPU_BIND_TO_SOCKETS) {
+			req->cpu_bind_type &= (~CPU_BIND_NONE);
+			req->cpu_bind_type |= CPU_BIND_TO_SOCKETS;
+			req->cpu_bind_type &= (~CPU_BIND_TO_CORES);
+			req->cpu_bind_type &= (~CPU_BIND_TO_THREADS);
+			req->cpu_bind_type &= (~CPU_BIND_TO_LDOMS);
+			set_bind = true;
+		} else if (conf->task_plugin_param & CPU_BIND_TO_CORES) {
+			req->cpu_bind_type &= (~CPU_BIND_NONE);
+			req->cpu_bind_type &= (~CPU_BIND_TO_SOCKETS);
+			req->cpu_bind_type |= CPU_BIND_TO_CORES;
+			req->cpu_bind_type &= (~CPU_BIND_TO_THREADS);
+			req->cpu_bind_type &= (~CPU_BIND_TO_LDOMS);
+			set_bind = true;
+		} else if (conf->task_plugin_param & CPU_BIND_TO_THREADS) {
+			req->cpu_bind_type &= (~CPU_BIND_NONE);
+			req->cpu_bind_type &= (~CPU_BIND_TO_SOCKETS);
+			req->cpu_bind_type &= (~CPU_BIND_TO_CORES);
+			req->cpu_bind_type |= CPU_BIND_TO_THREADS;
+			req->cpu_bind_type &= (~CPU_BIND_TO_LDOMS);
+			set_bind = true;
+		} else if (conf->task_plugin_param & CPU_BIND_TO_LDOMS) {
+			req->cpu_bind_type &= (~CPU_BIND_NONE);
+			req->cpu_bind_type &= (~CPU_BIND_TO_SOCKETS);
+			req->cpu_bind_type &= (~CPU_BIND_TO_CORES);
+			req->cpu_bind_type &= (~CPU_BIND_TO_THREADS);
+			req->cpu_bind_type &= CPU_BIND_TO_LDOMS;
+			set_bind = true;
+		}
 	}
-
 	if (conf->task_plugin_param & CPU_BIND_VERBOSE) {
 		req->cpu_bind_type |= CPU_BIND_VERBOSE;
 		set_bind = true;
