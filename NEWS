@@ -1184,6 +1184,7 @@ documents those changes that are of interest to users and administrators.
     a user, which can cause slurmctld to crash if that user is deleted.
  -- Add cast to memory limit calculation to prevent integer overflow for
     very large memory values.
+ -- Fix test cases to have proper int return signature.
 
 * Changes in Slurm 14.11.11
 ===========================
