@@ -2227,7 +2227,7 @@ static void _start_killing_step(struct step_record *step_ptr)
 		_spawn_cleanup_thread(step_ptr, _step_kill);
 	}
 }
- 
+
 extern int select_p_step_finish(struct step_record *step_ptr, bool killing_step)
 {
 	select_jobinfo_t *jobinfo;
