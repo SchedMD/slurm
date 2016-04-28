@@ -2,88 +2,32 @@
 
 <h1>What's New</h1>
 
-<h2>Index</h2>
+<h2>Major Updates in Slurm Version 16.05</h2>
+<p>Slurm version 16.05 was released in May 2016.
+See the RELEASE_NOTES and NEWS files included with the distribution for a more
+complete description of changes.
+Highlights of that release include:</p>
 <ul>
-<li><a href="#1508">Slurm Version 15.08, August 2015</a></li>
-<li><a href="#1605">Slurm Version 16.05 and beyond</a></li>
+<li>Added --deadline option to salloc, sbatch and srun. Jobs which can not be
+    completed by the user specified deadline will be terminated with a state of
+    "Deadline" or "DL".</li>
+<li>Add an "scontrol top &lt;jobid&gt;" command to re-order the priorities of a user's
+    pending jobs. May be disabled with the "disable_user_top" option in the
+    SchedulerParameters configuration parameter.</li>
+<li>Add Multi-Category Security (MCS) infrastructure to permit nodes to be bound
+    to specific users or groups.</li>
+<li>Add --gres-flags=enforce-binding option to salloc, sbatch and srun commands.
+    If set, the only CPUs available to the job will be those bound to the
+    selected GRES (i.e. the CPUs identifed in the gres.conf file will be
+    strictly enforced rather than advisory).</li>
+<li>Added new job dependency type of "aftercorr" which will start a task of a
+    job array after the corresponding task of another job array completes.</li>
+<li>Implemented and documented PMIX protocol which is used to bootstrap an
+    MPI job. PMIX is an alternative to PMI and PMI2.</li>
+<li>Added wrappers for LSF/OpenLava commands.</li>
+<li>Added Grid Engine options to qsub command wrapper.</li>
 </ul>
 
-<h2><a name="1508">Major Updates Planned for Slurm Version 15.08</a></h2>
-<p>Slurm Version 15.08 was released in August 2015.
-Major enhancement include:
-<ul>
-<li>Added TRES (Trackable resources) to track utilization of memory, GRES,
-    burst buffer, license, and any other configurable resources in the
-    accounting database.</li>
-<li>Add configurable billing weight that takes into consideration any TRES when
-    calculating a job's resource utilization.</li>
-<li>Add configurable prioritization factor that takes into consideration any
-    TRES when calculating a job's resource utilization.</li>
-<li>Add burst buffer support infrastructure. Currently available plugin include
-    burst_buffer/generic (uses administrator supplied programs to manage file
-    staging) and burst_buffer/cray (uses Cray APIs to manage buffers).
-<li>Add power capping support for Cray systems with automatic rebalancing of
-    power allocation between nodes.</li>
-<li>Add support for job dependencies joined with OR operator (e.g.
-    "--depend=afterok:123?afternotok:124").</li>
-<li>Add advance reservation flag of "replace" that causes allocated resources
-    to be replaced with idle resources. This maintains a pool of available
-    resources that maintains a constant size (to the extent possible).</li>
-<li>Permit PreemptType=qos and PreemptMode=suspend,gang to be used together.
-    A high-priority QOS job will now oversubscribe resources and gang schedule,
-    but only if there are insufficient resources for the job to be started
-    without preemption. NOTE: That with PreemptType=qos, the partition's
-    Shared=FORCE:# configuration option will permit one job more per resource
-    to be run than than specified, but only if started by preemption.</li>
-<li>A partition can now have an associated QOS.  This will allow a partition
-    to have all the limits a QOS has.  If a limit is set in both QOS
-    the partition QOS will override the job's QOS unless the job's QOS has the
-    'OverPartQOS' flag set.</li>
-<li>Expanded --cpu-freq parameters to include min-max:governor specifications.
-    --cpu-freq now supported on salloc and sbatch.</li>
-<li>Add support for optimized job allocations with respect to SGI Hypercube
-    topology.</li>
-<li>Optimize resource allocation for systems with dragonfly networks.</li>
-<li>Add the ability for a compute node to be allocated to multiple jobs, but
-    restricted to a single user. Added "--exclusive=user" option to salloc,
-    the scontrol and sview commands. Added new partition configuration parameter
-    "ExclusiveUser=yes|no".</li>
-<li>Added plugin to record job completion information using Elasticsearch.</li>
-<li>Add support for PMI Exascale (PMIx) for improved MPI scalability.</li>
-<li>Add support for communication gateway nodes to improve scalability.</li>
-<li>Add layouts framework, which will be the basis for further developments toward
-    optimizing scheduling with respect to additional parameters such as temperature
-    and power consumption.</li>
-</ul>
-
-<h2><a name="1605">Major Updates in Slurm Version 16.05 and beyond</a></h2>
-<p> Detailed plans for release dates and contents of additional Slurm releases
-have not been finalized. Anyone desiring to perform Slurm development should
-notify <a href="mailto:slurm-dev@schedmd.com">slurm-dev@schedmd.com</a>
-to coordinate activities. Future development plans includes:
-<ul>
-<!-- Bull led -->
-<li>Add support asymmetric resource allocation and MPMD programming. Multiple
-    resource allocation specification (memory, CPUs, GPUs, etc.) will be
-    supported in a single job allocation.</li>
-<!-- Universitat Jaume I & Universitat Politecnica de Valencia -->
-<li>Add support for
-<a href="http://slurm.schedmd.com/SUG14/remote_gpu.pdf">Remote CUDA (rCUDA)</a></li>
-<li>Distributed architecture to support the management of resources with Intel
-    Knight's Landing processors.</li>
-<li>Fault-tolerance and jobs dynamic adaptation through communication protocol
-    between Slurm, MPI libraries and the application.</li>
-<li>Improved support for provisioning and virtualization.</li>
-<!-- <li>IP communications over InfiniBand network for improved performance.</li>
-<li>Integration with
-    <a href="http://en.wikipedia.org/wiki/FlexNet_Publisher">FLEXlm
-    (Flexnet Publisher)</a> license management.</li>
-<li>Improved support for high-throughput computing (e.g. multiple slurmctld
-    daemons on a single cluster).</li>
-<li>Add Kerberos credential support including credential forwarding
-    and refresh.</li>
-<li>Provide a web-based Slurm administration tool.</li> -->
-</ul>
-<p style="text-align:center;">Last modified 22 October 2015</p>
+<p style="text-align:center;">Last modified 28 April 2016</p>
 
 <!--#include virtual="footer.txt"-->
