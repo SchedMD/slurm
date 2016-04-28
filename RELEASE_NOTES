@@ -164,44 +164,63 @@ OTHER CHANGES
 API CHANGES
 ===========
 Removed PARAMS macro from slurm.h.
-Removed BEGIN_C_DECLS and END_C_DECLS macros from slurm/*.h.
-
+Removed BEGIN_C_DECLS and END_C_DECLS macros from slurm.h.
 
 Changed members of the following structs
 ========================================
+In burst_buffer_info_t, Changed gres_cnt to pool_cnt
+	Changed gres_ptr to pool_ptr
+In burst_buffer_pool_t: Changed avail_cnt to total_space
+In job_desc_msg_t: Changed nice from 16 to 32-bits
+In partition_info_t: Split priority into priority_job_factor and priority_tier
+In slurm_job_info_t: Changed nice from 16 to 32-bits
 
 Added members to the following struct definitions
 =================================================
+In burst_buffer_info_t: Added other_timeout and validate_timeout
+In burst_buffer_resv_t: Added pool
+In job_desc_msg_t: Added deadline, mcs_label
+In node_info_t: Added features_act and mcs_label
+In resource_allocation_response_msg_t: Added ntasks_per_board, ntasks_per_core,
+	ntasks_per_socket
+In slurm_job_info_t: Added deadline, num_tasks, mcs_label
+In slurm_ctl_conf_t: Added mcs_plugin, mcs_plugin_params, tcp_timeout, and
+	node_features_plugins
+In slurm_step_launch_params_t: Added ntasks_per_board, ntasks_per_core,
+	ntasks_per_socket
+In update_node_msg_t: Added features_act
 
 Added the following struct definitions
 ======================================
+Added top_job_msg_t for user to reorder his jobs
+
+Removed members from the following struct definitions
+=====================================================
+In burst_buffer_resv_t: Removed gres_cnt and gres_ptr
 
 Changed the following enums and #defines
 ========================================
+Added DEBUG_FLAG_TIME_CRAY and DEBUG_FLAG_NODE_FEATURES
+Added RESERVE_FLAG_PURGE_COMP
+Added JOB_DEADLINE (job state)
+Added MAIL_ARRAY_TASK (mail flag)
+Changed MAX_TASKS_PER_NODE from 128 to 512
+Changed NICE_OFFSET from 10000 to 0x80000000
+Added new job state/wait reasons: FAIL_DEADLINE, WAIT_QOS_MAX_BB_PER_ACCT,
+	WAIT_QOS_MAX_CPU_PER_ACCT, WAIT_QOS_MAX_ENERGY_PER_ACCT,
+	WAIT_QOS_MAX_GRES_PER_ACCT, WAIT_QOS_MAX_NODE_PER_ACCT,
+	WAIT_QOS_MAX_LIC_PER_ACCT, WAIT_QOS_MAX_MEM_PER_ACCT,
+	WAIT_QOS_MAX_UNK_PER_ACCT, WAIT_QOS_MAX_JOB_PER_ACCT,
+	WAIT_QOS_MAX_SUB_JOB_PER_ACCT
+Added new partition limit enforcement flags: PARTITION_ENFORCE_NONE,
+	PARTITION_ENFORCE_ALL, PARTITION_ENFORCE_ANY
+Added select plugin IDs: SELECT_PLUGIN_BLUEGENE, SELECT_PLUGIN_CONS_RES,
+	SELECT_PLUGIN_LINEAR, SELECT_PLUGIN_ALPS, SELECT_PLUGIN_SERIAL,
+	SELECT_PLUGIN_CRAY_LINEAR, SELECT_PLUGIN_CRAY_CONS_RES
+Added job flags: GRES_ENFORCE_BIND and TEST_NOW_ONLY
+Added job resource sharing flags: JOB_SHARED_NONE, JOB_SHARED_OK,
+	JOB_SHARED_USER, JOB_SHARED_MCS
 
 Added the following API's
 =========================
-
-Changed the following API's
-============================
-
-DBD API Changes
-===============
-
-Changed members of the following structs
-========================================
-
-Added the following struct definitions
-======================================
-
-Added members to the following struct definitions
-=================================================
-
-Added the following enums and #defines
-========================================
-
-Added the following API's
-=========================
-
-Changed the following API's
-============================
+Added slurm_top_job() function to reorder a user's jobs
