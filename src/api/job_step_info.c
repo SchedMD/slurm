@@ -384,11 +384,13 @@ slurm_job_step_layout_get(uint32_t job_id, uint32_t step_id)
  * IN job_id
  * IN step_id
  * IN node_list, optional, if NULL then all nodes in step are returned.
+ * IN use_protocol_ver protocol version to use.
  * OUT resp
  * RET SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int slurm_job_step_stat(uint32_t job_id, uint32_t step_id,
 			       char *node_list,
+			       uint16_t use_protocol_ver,
 			       job_step_stat_response_msg_t **resp)
 {
 	slurm_msg_t req_msg;
@@ -413,6 +415,7 @@ extern int slurm_job_step_stat(uint32_t job_id, uint32_t step_id,
 			return rc;
 		}
 		node_list = step_layout->node_list;
+		use_protocol_ver = step_layout->start_protocol_ver;
 	}
 
  	if (!*resp) {
@@ -432,6 +435,7 @@ extern int slurm_job_step_stat(uint32_t job_id, uint32_t step_id,
 	resp_out->job_id = req.job_id = job_id;
 	resp_out->step_id = req.step_id = step_id;
 
+	req_msg.protocol_version = use_protocol_ver;
 	req_msg.msg_type = REQUEST_JOB_STEP_STAT;
         req_msg.data = &req;
 

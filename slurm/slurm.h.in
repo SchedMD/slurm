@@ -1609,6 +1609,9 @@ typedef struct job_info {
 	uint16_t sockets_per_board;/* sockets per board required by job */
 	uint16_t sockets_per_node; /* sockets per node required by job  */
 	time_t start_time;	/* time execution begins, actual or expected */
+	uint16_t start_protocol_ver; /* Slurm version step was started with
+				      *	either srun or the lowest slurmd version
+				      *	it is talking to */
 	char *state_desc;	/* optional details for state_reason */
 	uint16_t state_reason;	/* reason job still pending or failed, see
 				 * slurm.h:enum job_state_reason */
@@ -1665,6 +1668,9 @@ typedef struct slurm_step_layout {
 	char *node_list;        /* list of nodes in step */
 	uint16_t plane_size;	/* plane size when task_dist =
 				 * SLURM_DIST_PLANE */
+	uint16_t start_protocol_ver; /* Slurm version step was started with
+				      *	either srun or the lowest slurmd version
+				      *	it is talking to */
 	/* Array of length "node_cnt". Each element of the array
 	 * is the number of tasks assigned to the corresponding node */
 	uint16_t *tasks;
@@ -1908,6 +1914,9 @@ typedef struct {
 						* slurm_get_select_jobinfo()
 						*/
 	time_t start_time;	/* step start time */
+	uint16_t start_protocol_ver; /* Slurm version step was started with
+				      *	either srun or the lowest slurmd version
+				      *	it is talking to */
 	uint32_t state;		/* state of the step, see enum job_states */
 	uint32_t step_id;	/* step ID */
 	uint32_t task_dist;	/* see enum task_dist_state */
@@ -3834,6 +3843,7 @@ extern char *slurm_sprint_job_step_info(job_step_info_t *step_ptr,
 extern int slurm_job_step_stat(uint32_t job_id,
 			       uint32_t step_id,
 			       char *node_list,
+			       uint16_t use_protocol_ver,
 			       job_step_stat_response_msg_t **resp);
 
 /*

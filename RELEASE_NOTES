@@ -189,6 +189,9 @@ In slurm_ctl_conf_t: Added mcs_plugin, mcs_plugin_params, tcp_timeout, and
 In slurm_step_launch_params_t: Added ntasks_per_board, ntasks_per_core,
 	ntasks_per_socket
 In update_node_msg_t: Added features_act
+In slurm_job_info_t: Added start_protocol_ver
+In slurm_step_layout_t: Added start_protocol_ver
+In job_step_info_t: Added start_protocol_ver
 
 Added the following struct definitions
 ======================================
@@ -224,3 +227,7 @@ Added job resource sharing flags: JOB_SHARED_NONE, JOB_SHARED_OK,
 Added the following API's
 =========================
 Added slurm_top_job() function to reorder a user's jobs
+
+Changed the following API's
+============================
+Added use_protocol_ver parameter to slurm_job_step_stat().

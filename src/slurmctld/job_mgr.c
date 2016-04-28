@@ -8481,6 +8481,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		pack32(dump_job_ptr->bit_flags, buffer);
 		packstr(dump_job_ptr->tres_fmt_alloc_str, buffer);
 		packstr(dump_job_ptr->tres_fmt_req_str, buffer);
+		pack16(dump_job_ptr->start_protocol_ver, buffer);
 	} else if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		uint16_t old_nice;
 		detail_ptr = dump_job_ptr->details;

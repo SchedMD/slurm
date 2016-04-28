@@ -40,7 +40,8 @@
 
 int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
 	     uint32_t req_cpufreq_min, uint32_t req_cpufreq_max,
-	     uint32_t req_cpufreq_gov);
+	     uint32_t req_cpufreq_gov,
+	     uint16_t use_protocol_ver);
 
 /*
  * Globals
@@ -94,7 +95,7 @@ int field_count = 0;
 
 int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
 	     uint32_t req_cpufreq_min, uint32_t req_cpufreq_max,
-	     uint32_t req_cpufreq_gov)
+	     uint32_t req_cpufreq_gov, uint16_t use_protocol_ver)
 {
 	job_step_stat_response_msg_t *step_stat_response = NULL;
 	int rc = SLURM_SUCCESS;
@@ -106,7 +107,7 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
 	hostlist_t hl = NULL;
 
 	debug("requesting info for job %u.%u", jobid, stepid);
-	if ((rc = slurm_job_step_stat(jobid, stepid, nodelist,
+	if ((rc = slurm_job_step_stat(jobid, stepid, nodelist, use_protocol_ver,
 				      &step_stat_response)) != SLURM_SUCCESS) {
 		if (rc == ESLURM_INVALID_JOB_ID) {
 			debug("job step %u.%u has already completed",
@@ -226,6 +227,7 @@ int main(int argc, char **argv)
 	while ((selected_step = list_next(itr))) {
 		char *nodelist = NULL;
 		bool free_nodelist = false;
+		uint16_t use_protocol_ver = (uint16_t)NO_VAL;
 		if (selected_step->stepid == SSTAT_BATCH_STEP) {
 			/* get the batch step info */
 			job_info_msg_t *job_ptr = NULL;
@@ -238,6 +240,8 @@ int main(int argc, char **argv)
 				continue;
 			}
 
+			use_protocol_ver =
+				job_ptr->job_array[0].start_protocol_ver;
 			stepid = NO_VAL;
 			hl = hostlist_create(job_ptr->job_array[0].nodes);
 			nodelist = hostlist_pop(hl);
@@ -255,6 +259,8 @@ int main(int argc, char **argv)
 				continue;
 			}
 
+			use_protocol_ver =
+				job_ptr->job_array[0].start_protocol_ver;
 			stepid = INFINITE;
 			nodelist = job_ptr->job_array[0].nodes;
 			slurm_free_job_info_msg(job_ptr);
@@ -277,7 +283,9 @@ int main(int argc, char **argv)
 					 step_ptr->job_steps[i].nodes,
 					 step_ptr->job_steps[i].cpu_freq_min,
 					 step_ptr->job_steps[i].cpu_freq_max,
-					 step_ptr->job_steps[i].cpu_freq_gov);
+					 step_ptr->job_steps[i].cpu_freq_gov,
+					 step_ptr->job_steps[i].
+					 start_protocol_ver);
 			}
 			slurm_free_job_step_info_response_msg(step_ptr);
 			continue;
@@ -301,9 +309,12 @@ int main(int argc, char **argv)
 			req_cpufreq_min = step_ptr->job_steps[0].cpu_freq_min;
 			req_cpufreq_max = step_ptr->job_steps[0].cpu_freq_max;
 			req_cpufreq_gov = step_ptr->job_steps[0].cpu_freq_gov;
+			use_protocol_ver =
+				step_ptr->job_steps[0].start_protocol_ver;
 		}
 		_do_stat(selected_step->jobid, stepid, nodelist,
-			 req_cpufreq_min, req_cpufreq_max, req_cpufreq_gov);
+			 req_cpufreq_min, req_cpufreq_max, req_cpufreq_gov,
+			 use_protocol_ver);
 		if (free_nodelist && nodelist)
 			free(nodelist);
 	}

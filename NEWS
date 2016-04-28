@@ -49,6 +49,7 @@ documents those changes that are of interest to users and administrators.
  -- Use TaskPluginParam for default task binding if no user specified CPU
     binding. User --cpu_bind option takes precident over default. No longer
     any error if user --cpu_bind option does not match TaskPluginParam.
+ -- Make sacct and sattach work with older slurmd versions.
 
 * Changes in Slurm 16.05.0pre2
 ==============================

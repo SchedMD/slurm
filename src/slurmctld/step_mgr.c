@@ -2533,6 +2533,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 					       uint32_t task_dist,
 					       uint16_t plane_size)
 {
+	slurm_step_layout_t *step_layout = NULL;
 	uint16_t cpus_per_node[node_count];
 	struct job_record *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
@@ -2702,12 +2703,15 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	/* } */
 
 	/* layout the tasks on the nodes */
-	return slurm_step_layout_create(step_node_list,
-					cpus_per_node, cpu_count_reps,
-					node_count, num_tasks,
-					cpus_per_task,
-					task_dist,
-					plane_size);
+	if ((step_layout = slurm_step_layout_create(step_node_list,
+						    cpus_per_node,
+						    cpu_count_reps, node_count,
+						    num_tasks, cpus_per_task,
+						    task_dist, plane_size))) {
+		step_layout->start_protocol_ver = step_ptr->start_protocol_ver;
+	}
+
+	return step_layout;
 }
 
 /* Translate v14.11 CPU frequency data between old and new formats */
@@ -2785,7 +2789,52 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
 	cpu_cnt = step_ptr->cpu_count;
 #endif
 
-	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
+		pack32(step_ptr->job_ptr->array_job_id, buffer);
+		pack32(step_ptr->job_ptr->array_task_id, buffer);
+		pack32(step_ptr->job_ptr->job_id, buffer);
+		pack32(step_ptr->step_id, buffer);
+		pack16(step_ptr->ckpt_interval, buffer);
+		pack32(step_ptr->job_ptr->user_id, buffer);
+		pack32(cpu_cnt, buffer);
+		pack32(step_ptr->cpu_freq_min, buffer);
+		pack32(step_ptr->cpu_freq_max, buffer);
+		pack32(step_ptr->cpu_freq_gov, buffer);
+		pack32(task_cnt, buffer);
+		if (step_ptr->step_layout)
+			pack32(step_ptr->step_layout->task_dist, buffer);
+		else
+			pack32((uint32_t) SLURM_DIST_UNKNOWN, buffer);
+		pack32(step_ptr->time_limit, buffer);
+		pack32(step_ptr->state, buffer);
+
+		pack_time(step_ptr->start_time, buffer);
+		if (IS_JOB_SUSPENDED(step_ptr->job_ptr)) {
+			run_time = step_ptr->pre_sus_time;
+		} else {
+			begin_time = MAX(step_ptr->start_time,
+					 step_ptr->job_ptr->suspend_time);
+			run_time = step_ptr->pre_sus_time +
+				difftime(time(NULL), begin_time);
+		}
+		pack_time(run_time, buffer);
+
+		if (step_ptr->job_ptr->part_ptr)
+			packstr(step_ptr->job_ptr->part_ptr->name, buffer);
+		else
+			packstr(step_ptr->job_ptr->partition, buffer);
+		packstr(step_ptr->resv_ports, buffer);
+		packstr(node_list, buffer);
+		packstr(step_ptr->name, buffer);
+		packstr(step_ptr->network, buffer);
+		pack_bit_fmt(pack_bitstr, buffer);
+		packstr(step_ptr->ckpt_dir, buffer);
+		packstr(step_ptr->gres, buffer);
+		select_g_select_jobinfo_pack(step_ptr->select_jobinfo, buffer,
+					     protocol_version);
+		packstr(step_ptr->tres_fmt_alloc_str, buffer);
+		pack16(step_ptr->start_protocol_ver, buffer);
+	} else if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		pack32(step_ptr->job_ptr->array_job_id, buffer);
 		pack32(step_ptr->job_ptr->array_task_id, buffer);
 		pack32(step_ptr->job_ptr->job_id, buffer);
@@ -3960,7 +4009,11 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	step_ptr->cpu_freq_max = cpu_freq_max;
 	step_ptr->cpu_freq_gov = cpu_freq_gov;
 	step_ptr->state        = state;
-	step_ptr->start_protocol_ver = start_protocol_ver;
+	/* Prior to 16.05, the step_layout->start_protocol_version isn't set on
+	 * creation of the layout. After 16.05 is EOL'ed then the step_layout's
+	 * start_protocol_version doesn't need to be set here anymore. */
+	step_ptr->step_layout->start_protocol_ver = step_ptr->start_protocol_ver
+		= start_protocol_ver;
 
 	if (!step_ptr->ext_sensors)
 		step_ptr->ext_sensors = ext_sensors_alloc();
