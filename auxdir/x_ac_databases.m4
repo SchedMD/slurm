@@ -42,6 +42,14 @@ AC_DEFUN([X_AC_DATABASES],
 	   		AC_MSG_WARN([*** mysql-$mysql_config_major_version.$mysql_config_minor_version.$mysql_config_micro_version available, we need >= mysql-5.0.0 installed for the mysql interface.])
 			ac_have_mysql="no"
 		else
+
+			# In mysql 5.7.4 we can't use the 'IGNORE' option when
+			# altering tables so deal with it then.
+			if test $mysql_config_minor_version -gt 7 ||
+			  (test $mysql_config_minor_version -eq 7 &&
+			   test $mysql_config_micro_version -gt 3); then
+			    AC_DEFINE(NO_ALTER_IGNORE_MYSQL, 1, [Define to 1 if we can't use the alter ignore when messing with a database table])
+			fi
 		# mysql_config puts -I on the front of the dir.  We don't
 		# want that so we remove it.
 			MYSQL_CFLAGS=`$HAVEMYSQLCONFIG --include`
@@ -60,7 +68,7 @@ AC_DEFUN([X_AC_DATABASES],
 			CFLAGS="$save_CFLAGS"
 			LIBS="$save_LIBS"
 			if test "$ac_have_mysql" = yes; then
-				AC_MSG_RESULT([MySQL test program built properly.])
+				AC_MSG_RESULT([MySQL $mysql_config_major_version.$mysql_config_minor_version.$mysql_config_micro_version test program built properly.])
 				AC_SUBST(MYSQL_LIBS)
 				AC_SUBST(MYSQL_CFLAGS)
 				AC_DEFINE(HAVE_MYSQL, 1, [Define to 1 if using MySQL libaries])

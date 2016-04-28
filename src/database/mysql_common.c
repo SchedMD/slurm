@@ -264,8 +264,18 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 
 
 	itr = list_iterator_create(columns);
+#ifdef NO_ALTER_IGNORE_MYSQL
+	/* In MySQL 5.7.4 we lost the ability to run 'alter ignore'.  This was
+	 * needed when converting old tables to new schemas.  If people convert
+	 * in the future from an older version of Slurm that needed the ignore
+	 * to work they will have to downgrade mysql to <= 5.7.3 to make things
+	 * work correctly or manually edit the database to get things to work.
+	 */
+	query = xstrdup_printf("alter table %s", table_name);
+#else
 	query = xstrdup_printf("alter ignore table %s", table_name);
-	correct_query = xstrdup_printf("alter ignore table %s", table_name);
+#endif
+	correct_query = xstrdup(query);
 	START_TIMER;
 	while (fields[i].name) {
 		int found = 0;
