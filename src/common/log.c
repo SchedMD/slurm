@@ -266,7 +266,9 @@ static int _fd_writeable(int fd)
 	 * gone, but getting 0 back from a nonblocking read means just that.
 	 */
 	if ((ufds.revents & POLLHUP) || fstat(fd, &stat_buf) ||
-	    (S_ISSOCK(stat_buf.st_mode) && (recv(fd, &temp, 1, 0) == 0)))
+	    ((S_ISSOCK(stat_buf.st_mode) &&
+	     (rc = recv(fd, &temp, 1, MSG_DONTWAIT) <= 0) &&
+	     (rc == 0 || (errno != EAGAIN)))))
 		return -1;
 	else if ((ufds.revents & POLLNVAL)
 		 || (ufds.revents & POLLERR)
