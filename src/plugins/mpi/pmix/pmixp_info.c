@@ -286,27 +286,12 @@ err_exit:
 static int _env_set(char ***env)
 {
 	char *p = NULL;
+	char *spool = slurm_get_slurmd_spooldir();
 
 	/* ----------- Temp directories settings ------------- */
-
-	/*
-	 * FIXME: This is dangerous to set this from the user environment.
-	 * I was using this to debug in linux containers
-	 * On real hardware each node has it's own separate /tmp directory
-	 */
-
-	/* set server temp directory - change this process environment */
-	p = getenvp(*env, PMIXP_TMPDIR_SRV);
-	if (NULL != p) {
-		setenv(PMIXP_OS_TMPDIR_ENV, p, 1);
-	}
-
-	p = getenv(PMIXP_OS_TMPDIR_ENV);
-	if (NULL == p) {
-		p = PMIXP_TMPDIR_DEFAULT;
-	}
-	_pmixp_job_info.lib_tmpdir = xstrdup_printf("%s/pmix.%d.%d/", p,
+	_pmixp_job_info.lib_tmpdir = xstrdup_printf("%s/pmix.%d.%d/", spool,
 			pmixp_info_jobid(), pmixp_info_stepid());
+	xfree(spool);
 
 	/* save client temp directory if requested
 	 * TODO: We want to get TmpFS value as well if exists.

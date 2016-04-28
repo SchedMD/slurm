@@ -267,16 +267,11 @@ static inline char *pmixp_info_job_host(int nodeid)
 /* namespaces list operations */
 static inline char *pmixp_info_nspace_usock(const char *nspace)
 {
-	char *usock = NULL;
-	/* TODO: provide the right way to set this:
-	 * - slrum.conf
-	 * - what else?
-	 */
-	char *tmpdir = getenv("TMPDIR");
-	if (NULL == tmpdir) {
-		tmpdir = PMIXP_TMPDIR_DEFAULT;
-	}
-	xstrfmtcat(usock, "%s/sock.stepd.%s", tmpdir, nspace);
+	char *spool, *usock = NULL;
+	debug("mpi/pmix: setup sockets");
+	spool = slurm_get_slurmd_spooldir();
+	xstrfmtcat(usock, "%s/stepd.%s", spool, nspace);
+	xfree(spool);
 	return usock;
 }
 
