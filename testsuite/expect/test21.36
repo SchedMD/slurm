@@ -77,6 +77,11 @@ proc endit { } {
 
 print_header $test_id
 
+if {[test_using_slurmdbd] == 0} {
+	send_user "\nThis test can't be run without AccountStorageType=slurmdbd\n"
+	exit 0
+}
+
 # Remove pre-existing items
 cleanup
 
