@@ -234,6 +234,7 @@ documents those changes that are of interest to users and administrators.
     task/affinity and task/cgroup plugins used together.
  -- Fix version issue when packing GRES information between 2 different versions
     of Slurm.
+ -- Fix for srun hanging with OpenMPI and PMIx
 
 * Changes in Slurm 15.08.10
 ===========================
