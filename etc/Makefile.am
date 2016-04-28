@@ -12,8 +12,8 @@ edit = sed \
 
 dist_pkgdata_DATA = $(ETC_FILES)
 
-cgroup.release_common.example: Makefile $(srcdir)/init.d.slurm.in
-	 $(edit) $(srcdir)/cgroup.release_common.example.in >cgroup.release_common.example
+cgroup.release_common.example: Makefile $(srcdir)/cgroup.release_common.example.in
+	$(edit) $(srcdir)/cgroup.release_common.example.in > cgroup.release_common.example
 
 init.d.slurmdbd: Makefile $(srcdir)/init.d.slurmdbd.in
 	$(edit) $(srcdir)/init.d.slurmdbd.in > init.d.slurmdbd
