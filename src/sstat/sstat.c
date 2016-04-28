@@ -38,12 +38,6 @@
 
 #include "sstat.h"
 
-void _destroy_steps(void *object);
-void _print_header(void);
-void *_stat_thread(void *args);
-int _sstat_query(slurm_step_layout_t *step_layout, uint32_t job_id,
-		 uint32_t step_id);
-int _process_results();
 int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
 	     uint32_t req_cpufreq_min, uint32_t req_cpufreq_max,
 	     uint32_t req_cpufreq_gov);
