@@ -10,7 +10,7 @@ edit = sed \
         -e 's|@sysconfdir[@]|$(sysconfdir)|g' \
 	-e 's|@BLUEGENE_LOADED_FALSE[@]|$(BLUEGENE_LOADED_FALSE)|g'
 
-dist_pkgdata_DATA = $(ETC_FILES)
+noinst_DATA = $(ETC_FILES)
 
 cgroup.release_common.example: Makefile $(srcdir)/cgroup.release_common.example.in
 	$(edit) $(srcdir)/cgroup.release_common.example.in > cgroup.release_common.example
