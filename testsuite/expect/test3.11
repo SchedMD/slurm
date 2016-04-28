@@ -52,7 +52,7 @@ set res_nodecnt		0
 set res_thread_cnt	0
 set user_name		""
 set def_oversubscribe_force 0
-set def_partition 	""
+set def_partition	""
 set def_node		""
 set def_node_name	""
 set def_node_inx_min	-1
@@ -423,6 +423,27 @@ if {[test_select_type_params "CR_SOCKET"]} {
 	set cr_socket 1
 }
 
+# Retrieve a node from partition and total cores in partition
+set states "idle"
+set node_list [get_partition_nodes $def_partition $states]
+set part_node_cnt [llength $node_list]
+if {$part_node_cnt == 0} {
+	send_user "\n\033\[34mWARNING: unable to get $states nodes in partition $def_partition"
+	exit $exit_code
+}
+
+set part_node [lindex $node_list 0]
+set part_node_cores [get_node_cores $part_node]
+if {$part_node_cores == -1} {
+	send_user "\n\033\[34mWARNING: unable to get cores from $part_node"
+	exit $exit_code
+}
+set part_cores [get_part_total_cores $def_partition $states]
+if {$part_cores == 0} {
+	send_user "\n\033\[34mWARNING: unable to get cores from $states nodes in $def_partition"
+	exit $exit_code
+}
+
 #
 # Get the user name
 #
@@ -452,11 +473,11 @@ inc3_11_3
 inc3_11_4
 inc3_11_5
 inc3_11_6
-if {$cons_res_actived == 1 && $cores_per_node > 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0} {
+if {$cons_res_actived == 1 && $part_node_cores > 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0} {
 	inc3_11_7
 	inc3_11_8
 }
-if {$cons_res_actived == 1 && $cores_per_node > 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0 && $irregular_node_name == 0} {
+if {$cons_res_actived == 1 && $part_node_cores > 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0 && $irregular_node_name == 0 && $heterogeneous == 0} {
 	inc3_11_9
 }
 
