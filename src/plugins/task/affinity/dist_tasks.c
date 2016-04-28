@@ -1157,8 +1157,9 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 				continue;
 
 			sock_inx = i / pu_per_socket;
-			if (socket_tasks[sock_inx] >= req->ntasks_per_socket)
-				continue;  /* Default ntasks_per_socket = INFINITE */
+			if ((req->ntasks_per_socket != 0) &&
+			    (socket_tasks[sock_inx] >= req->ntasks_per_socket))
+				continue;
 			socket_tasks[sock_inx]++;
 
 			if (!masks[taskcount])
@@ -1196,6 +1197,8 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 			if (++taskcount >= max_tasks)
 				break;
 		}
+		for (i = 0; i < hw_sockets; i++)
+			socket_tasks[i] = 0;
 	}
 	xfree(socket_tasks);
 
