@@ -2013,11 +2013,17 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg, bool locked)
 	}
 
 	/* Send batch step info to accounting, only if the job is
-	 * still completing.  If the job was requeued because of node
-	 * failure (state == pending) an epilog script might not of
-	 * ran so we already finished the last instance of the job so
-	 * this would be put on the requeued instance which is
-	 * incorrect.
+	 * still completing.
+	 *
+	 * When a job is requeued because of node failure, and there is no
+	 * epilog, both EPILOG_COMPLETE and COMPLETE_BATCH_SCRIPT_COMPLETE
+	 * messages are sent at the same time and receieved on different
+	 * threads. EPILOG_COMPLETE will grab a new db_index for the job. So if
+	 * COMPLETE_BATCH_SCRIPT happens after EPILOG_COMPLETE, then adding the
+	 * batch step would happen on the new db instance -- which is incorrect.
+	 * Rather than try to ensure that COMPLETE_BATCH_SCRIPT happens after
+	 * EPILOG_COMPLETE, just throw away the batch step for node failures.
+	 *
 	 * NOTE: Do not use IS_JOB_PENDING since that doesn't take
 	 * into account the COMPLETING FLAG which is valid, but not
 	 * always set yet when the step exits normally.
