@@ -41,10 +41,6 @@
 
 #include "config.h"
 
-#ifdef HAVE_SYS_SYSLOG_H
-#  include <sys/syslog.h>
-#endif
-
 #include <errno.h>
 #include <pthread.h>
 #include <signal.h>
