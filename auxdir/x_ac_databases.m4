@@ -45,7 +45,8 @@ AC_DEFUN([X_AC_DATABASES],
 
 			# In mysql 5.7.4 we can't use the 'IGNORE' option when
 			# altering tables so deal with it then.
-			if test $mysql_config_minor_version -gt 7 ||
+			if test $mysql_config_major_version -ge 6 ||
+			   test $mysql_config_minor_version -gt 7 ||
 			  (test $mysql_config_minor_version -eq 7 &&
 			   test $mysql_config_micro_version -gt 3); then
 			    AC_DEFINE(NO_ALTER_IGNORE_MYSQL, 1, [Define to 1 if we can't use the alter ignore when messing with a database table])
