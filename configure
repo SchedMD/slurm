@@ -23246,7 +23246,7 @@ $as_echo "$as_me: WARNING: *** mysql-$mysql_config_major_version.$mysql_config_m
 			if test $mysql_config_major_version -ge 6 ||
 			   test $mysql_config_minor_version -gt 7 ||
 			  (test $mysql_config_minor_version -eq 7 &&
-			   test $mysql_config_micro_version -gt 3); then
+			   test $mysql_config_micro_version -ge 4); then
 
 $as_echo "#define NO_ALTER_IGNORE_MYSQL 1" >>confdefs.h
 

@@ -48,7 +48,7 @@ AC_DEFUN([X_AC_DATABASES],
 			if test $mysql_config_major_version -ge 6 ||
 			   test $mysql_config_minor_version -gt 7 ||
 			  (test $mysql_config_minor_version -eq 7 &&
-			   test $mysql_config_micro_version -gt 3); then
+			   test $mysql_config_micro_version -ge 4); then
 			    AC_DEFINE(NO_ALTER_IGNORE_MYSQL, 1, [Define to 1 if we can't use the alter ignore when messing with a database table])
 			fi
 		# mysql_config puts -I on the front of the dir.  We don't
