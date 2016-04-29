@@ -37,8 +37,6 @@
 #ifndef _XCGROUP_H_
 #define _XCGROUP_H_
 
-#include "config.h"
-
 #include <dirent.h>
 #include <sys/types.h>
 

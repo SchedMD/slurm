@@ -38,11 +38,7 @@
 #ifndef _OPTZ_H
 #define _OPTZ_H
 
-#include "config.h"
-
-#ifndef   _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
+#define _GNU_SOURCE
 
 #include <getopt.h>
 

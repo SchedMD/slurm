@@ -39,8 +39,6 @@
 #ifndef __GENERIC_PLUGIN_H__
 #define __GENERIC_PLUGIN_H__
 
-#include "config.h"
-
 #include <inttypes.h>
 #include <sys/types.h>
 

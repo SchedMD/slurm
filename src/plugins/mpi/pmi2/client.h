@@ -38,8 +38,6 @@
 #ifndef _CLIENT_H
 #define _CLIENT_H
 
-#include "config.h"
-
 #include <inttypes.h>
 
 #include "spawn.h"

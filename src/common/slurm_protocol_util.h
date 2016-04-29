@@ -39,8 +39,6 @@
 #ifndef _SLURM_PROTOCOL_UTIL_H
 #define _SLURM_PROTOCOL_UTIL_H
 
-#include "config.h"
-
 #include <inttypes.h>
 #include <stdio.h>
 

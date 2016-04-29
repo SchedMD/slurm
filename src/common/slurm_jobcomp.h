@@ -40,8 +40,6 @@
 #ifndef __SLURM_JOBCOMP_H__
 #define __SLURM_JOBCOMP_H__
 
-#include "config.h"
-
 #include <inttypes.h>
 #include <sys/types.h>
 #include <time.h>

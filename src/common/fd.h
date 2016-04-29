@@ -38,8 +38,6 @@
 #ifndef _FD_H
 #define _FD_H
 
-#include "config.h"
-
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>

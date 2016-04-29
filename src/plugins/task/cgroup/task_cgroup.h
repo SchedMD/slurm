@@ -37,8 +37,6 @@
 #ifndef _TASK_CGROUP_H_
 #define _TASK_CGROUP_H_
 
-#include "config.h"
-
 #include "src/slurmd/common/xcgroup.h"
 
 int val_to_char(int v);

@@ -43,8 +43,6 @@
 #ifndef _REVERSE_TREE_MATH_H
 #define _REVERSE_TREE_MATH_H
 
-#include "config.h"
-
 #include <inttypes.h>
 
 #include "src/slurmd/common/reverse_tree.h"

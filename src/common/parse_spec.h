@@ -39,8 +39,6 @@
 #ifndef _SLURM_PARSE_H_
 #define	_SLURM_PARSE_H_
 
-#include "config.h"
-
 #include <inttypes.h>
 
 /*

@@ -39,8 +39,6 @@
 #ifndef _MGR_H
 #define _MGR_H
 
-#include "config.h"
-
 #include "src/common/slurm_protocol_defs.h"
 
 #include "src/slurmd/slurmd/slurmd.h"

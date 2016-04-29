@@ -38,8 +38,6 @@
 #ifndef _PROC_ARGS_H
 #define _PROC_ARGS_H
 
-#include "config.h"
-
 #include <sys/types.h>
 #include <unistd.h>
 

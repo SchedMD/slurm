@@ -37,8 +37,6 @@
 #ifndef _SLURM_MCS_H
 #define _SLURM_MCS_H
 
-#include "config.h"
-
 #include <inttypes.h>
 
 #include "src/slurmctld/slurmctld.h"

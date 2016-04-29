@@ -40,8 +40,6 @@
 #ifndef _SLURM_PROTOCOL_SOCKET_COMMON_H
 #define _SLURM_PROTOCOL_SOCKET_COMMON_H
 
-#include "config.h"
-
 #include <inttypes.h>
 #include <netinet/in.h>
 

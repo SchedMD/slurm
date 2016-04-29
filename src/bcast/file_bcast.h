@@ -36,8 +36,6 @@
 #ifndef _FILE_BCAST_H
 #define _FILE_BCAST_H
 
-#include "config.h"
-
 #include "slurm/slurm.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_defs.h"

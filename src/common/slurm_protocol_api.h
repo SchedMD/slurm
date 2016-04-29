@@ -42,8 +42,6 @@
 #ifndef _SLURM_PROTOCOL_API_H
 #define _SLURM_PROTOCOL_API_H
 
-#include "config.h"
-
 #include <inttypes.h>
 #include <sys/types.h>
 #include <stdarg.h>

@@ -39,8 +39,6 @@
 #ifndef _FNAME_H
 #define _FNAME_H
 
-#include "config.h"
-
 #include "srun_job.h"
 
 /*

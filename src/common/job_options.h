@@ -39,8 +39,6 @@
 #ifndef _JOB_OPTIONS_H
 #define _JOB_OPTIONS_H
 
-#include "config.h"
-
 #include "src/common/pack.h"
 
 typedef struct job_options * job_options_t;	/* opaque data type */

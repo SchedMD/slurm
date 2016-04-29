@@ -39,8 +39,6 @@
 #ifndef _STEP_LAUNCH_H
 #define _STEP_LAUNCH_H
 
-#include "config.h"
-
 #include <pthread.h>
 #include <stdint.h>
 #include <unistd.h>

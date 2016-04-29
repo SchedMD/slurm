@@ -38,8 +38,6 @@
 #ifndef _BLUEGENE_BG_RECORD_FUNCTIONS_H_
 #define _BLUEGENE_BG_RECORD_FUNCTIONS_H_
 
-#include "config.h"
-
 #include <pwd.h>
 #include <stdlib.h>
 #include <sys/stat.h>

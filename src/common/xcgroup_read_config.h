@@ -37,8 +37,6 @@
 #ifndef _CGROUP_READ_CONFIG_H
 #define _CGROUP_READ_CONFIG_H
 
-#include "config.h"
-
 #include <inttypes.h>
 
 /*  Default lower bound on memory limit in MB. This is required so we

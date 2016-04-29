@@ -41,8 +41,6 @@
 #ifndef _SLURM_PROTOCOL_DEFS_H
 #define _SLURM_PROTOCOL_DEFS_H
 
-#include "config.h"
-
 #include <inttypes.h>
 #include <sys/wait.h>
 

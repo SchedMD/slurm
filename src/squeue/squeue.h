@@ -40,8 +40,6 @@
 #ifndef __SQUEUE_H__
 #define __SQUEUE_H__
 
-#include "config.h"
-
 #include <ctype.h>
 #include <inttypes.h>
 #include <stdio.h>

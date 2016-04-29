@@ -44,8 +44,6 @@
 #ifndef _SLURM_ASSOC_MGR_H
 #define _SLURM_ASSOC_MGR_H
 
-#include "config.h"
-
 #include "src/common/list.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurmdbd_defs.h"

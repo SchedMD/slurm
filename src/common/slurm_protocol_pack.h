@@ -40,8 +40,6 @@
 #ifndef _SLURM_PROTOCOL_PACK_H
 #define _SLURM_PROTOCOL_PACK_H
 
-#include "config.h"
-
 #include <inttypes.h>
 
 #include "src/common/pack.h"

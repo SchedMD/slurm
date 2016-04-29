@@ -38,8 +38,6 @@
 #ifndef _KVS_H
 #define _KVS_H
 
-#include "config.h"
-
 #include <slurm/slurm_errno.h>
 #include "src/common/slurm_xlator.h"
 #include "src/common/xstring.h"

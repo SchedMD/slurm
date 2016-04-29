@@ -40,8 +40,6 @@
 #ifndef _SWITCH_H
 #define _SWITCH_H
 
-#include "config.h"
-
 #include <stdio.h>
 #include <sys/types.h>
 #include <unistd.h>

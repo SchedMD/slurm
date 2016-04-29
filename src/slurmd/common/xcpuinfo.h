@@ -37,8 +37,6 @@
 #ifndef _XCPUINFO_H_
 #define _XCPUINFO_H_
 
-#include "config.h"
-
 #define XCPUINFO_ERROR    1
 #define XCPUINFO_SUCCESS  0
 

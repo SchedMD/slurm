@@ -39,8 +39,6 @@
 #ifndef _SLURM_PRIORITY_H
 #define _SLURM_PRIORITY_H
 
-#include "config.h"
-
 #include <inttypes.h>
 
 #include "src/slurmctld/slurmctld.h"

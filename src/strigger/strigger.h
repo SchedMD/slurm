@@ -40,8 +40,6 @@
 #ifndef _STRIGGER_H
 #define _STRIGGER_H
 
-#include "config.h"
-
 #include "slurm/slurm.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_defs.h"

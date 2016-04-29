@@ -41,8 +41,6 @@
 #ifndef _SLURM_NRT_INCLUDED
 #define _SLURM_NRT_INCLUDED
 
-#include "config.h"
-
 #include <nrt.h>
 
 #include "src/common/slurm_xlator.h"

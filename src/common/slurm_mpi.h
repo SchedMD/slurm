@@ -39,8 +39,6 @@
 #ifndef _SRUN_MPI_H
 #define _SRUN_MPI_H
 
-#include "config.h"
-
 #include <stdbool.h>
 
 #include "slurm/slurm.h"

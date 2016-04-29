@@ -40,8 +40,6 @@
 #ifndef _DBD_READ_CONFIG_H
 #define _DBD_READ_CONFIG_H
 
-#include "config.h"
-
 #include <inttypes.h>
 #include <time.h>
 #include <pthread.h>

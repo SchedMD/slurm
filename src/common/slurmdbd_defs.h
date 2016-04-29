@@ -39,8 +39,6 @@
 #ifndef _SLURMDBD_DEFS_H
 #define _SLURMDBD_DEFS_H
 
-#include "config.h"
-
 #include <inttypes.h>
 
 #include "slurm/slurm.h"

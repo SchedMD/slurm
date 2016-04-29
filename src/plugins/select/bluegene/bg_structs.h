@@ -39,8 +39,6 @@
 #ifndef _BG_STRUCTS_H_
 #define _BG_STRUCTS_H_
 
-#include "config.h"
-
 #include "bg_enums.h"
 
 #include "slurm.h"

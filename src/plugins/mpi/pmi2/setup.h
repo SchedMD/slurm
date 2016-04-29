@@ -41,8 +41,6 @@
 #ifndef _SETUP_H
 #define _SETUP_H
 
-#include "config.h"
-
 #include <inttypes.h>
 
 #include "slurm/slurm_errno.h"

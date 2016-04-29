@@ -39,8 +39,6 @@
 #ifndef _JOB_RESOURCES_H
 #define _JOB_RESOURCES_H
 
-#include "config.h"
-
 #include <inttypes.h>
 
 #include "src/common/bitstring.h"

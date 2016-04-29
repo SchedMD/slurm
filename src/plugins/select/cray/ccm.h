@@ -38,8 +38,6 @@
 #ifndef SELECT_CRAY_CCM_H
 #define SELECT_CRAY_CCM_H
 
-#include "config.h"
-
 #include <inttypes.h>
 #include <pthread.h>
 #include <string.h>

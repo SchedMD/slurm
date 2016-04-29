@@ -43,8 +43,6 @@
 #ifndef __ACCT_GATHER_HDF5_OLD_API_H__
 #define __ACCT_GATHER_HDF5_OLD_API_H__
 
-#include "config.h"
-
 #include <inttypes.h>
 #include <stdlib.h>
 

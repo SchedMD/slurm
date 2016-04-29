@@ -38,8 +38,6 @@
 #ifndef _SERIAL_DIST_TASKS_H
 #define _SERIAL_DIST_TASKS_H
 
-#include "config.h"
-
 #include <string.h>
 
 #include "select_serial.h"

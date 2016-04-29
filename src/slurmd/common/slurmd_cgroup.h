@@ -39,8 +39,6 @@
 #ifndef _SLURMD_CGROUP_H
 #define _SLURMD_CGROUP_H
 
-#include "config.h"
-
 /* Initialize slurmd system cpuset cgroup */
 extern int init_system_cpuset_cgroup(void);
 

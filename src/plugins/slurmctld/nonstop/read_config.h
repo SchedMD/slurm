@@ -38,8 +38,6 @@
 #ifndef _HAVE_NONSTOP_READ_CONFIG_H
 #define _HAVE_NONSTOP_READ_CONFIG_H
 
-#include "config.h"
-
 #include <inttypes.h>
 #include <munge.h>
 #include <sys/types.h>

@@ -41,8 +41,6 @@
 #ifndef _PACK_INCLUDED
 #define _PACK_INCLUDED
 
-#include "config.h"
-
 #include <assert.h>
 #include <inttypes.h>
 #include <time.h>

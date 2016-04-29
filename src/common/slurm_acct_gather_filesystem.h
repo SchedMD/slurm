@@ -38,8 +38,6 @@
 #ifndef __SLURM_ACCT_GATHER_FILESYSTEM_H__
 #define __SLURM_ACCT_GATHER_FILESYSTEM_H__
 
-#include "config.h"
-
 #include <inttypes.h>
 #include <sys/resource.h>
 #include <sys/types.h>

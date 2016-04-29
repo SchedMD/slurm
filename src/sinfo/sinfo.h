@@ -41,8 +41,6 @@
 #ifndef _SINFO_H
 #define _SINFO_H
 
-#include "config.h"
-
 #include <ctype.h>
 #include <inttypes.h>
 #include <stdio.h>

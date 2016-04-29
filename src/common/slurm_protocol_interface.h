@@ -39,8 +39,6 @@
 #ifndef _SLURM_PROTOCOL_INTERFACE_H
 #define _SLURM_PROTOCOL_INTERFACE_H
 
-#include "config.h"
-
 #include <fcntl.h>
 #include <inttypes.h>
 #include <netdb.h>

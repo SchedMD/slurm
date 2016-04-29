@@ -32,8 +32,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "config.h"
-
 #include <inttypes.h>
 
 #include "src/common/slurm_xlator.h"

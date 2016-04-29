@@ -39,8 +39,6 @@
 #ifndef __PRINT_FIELDS_H__
 #define __PRINT_FIELDS_H__
 
-#include "config.h"
-
 #include <ctype.h>
 #include <errno.h>
 #include <getopt.h>

@@ -39,8 +39,6 @@
 #ifndef _HAVE_IO_HDR_H
 #define _HAVE_IO_HDR_H
 
-#include "config.h"
-
 #include <inttypes.h>
 
 #include "src/common/macros.h"   /* Containes SLURM_CRED_SIGLEN */

@@ -38,8 +38,6 @@
 #ifndef _RES_INFO_H
 #define _RES_INFO_H
 
-#include "config.h"
-
 #include <stdint.h>
 
 void slurm_print_cpu_bind_help(void);

@@ -38,8 +38,6 @@
 #ifndef _SPAWN_H
 #define _SPAWN_H
 
-#include "config.h"
-
 #include <inttypes.h>
 
 #include "src/common/pack.h"

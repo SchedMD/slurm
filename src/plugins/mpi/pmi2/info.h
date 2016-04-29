@@ -38,8 +38,6 @@
 #ifndef _INFO_H
 #define _INFO_H
 
-#include "config.h"
-
 #include <inttypes.h>
 
 extern char *job_attr_get(char *key);

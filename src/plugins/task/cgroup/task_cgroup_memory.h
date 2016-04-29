@@ -37,8 +37,6 @@
 #ifndef _TASK_CGROUP_MEMORY_H_
 #define _TASK_CGROUP_MEMORY_H_
 
-#include "config.h"
-
 #include "src/common/xcgroup_read_config.h"
 
 /* initialize memory subsystem of task/cgroup */

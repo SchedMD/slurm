@@ -38,8 +38,6 @@
 #ifndef __SLURM_ACCT_GATHER_H__
 #define __SLURM_ACCT_GATHER_H__
 
-#include "config.h"
-
 #include <inttypes.h>
 
 #include "read_config.h"

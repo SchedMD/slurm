@@ -39,8 +39,6 @@
 #ifndef _SLURMD_STEP_INIT_H
 #define _SLURMD_STEP_INIT_H
 
-#include "config.h"
-
 #include "src/common/slurm_protocol_defs.h"
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"

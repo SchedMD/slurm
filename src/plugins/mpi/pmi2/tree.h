@@ -38,8 +38,6 @@
 #ifndef _TREE_H
 #define _TREE_H
 
-#include "config.h"
-
 enum {
 	TREE_CMD_KVS_FENCE,
 	TREE_CMD_KVS_FENCE_RESP,

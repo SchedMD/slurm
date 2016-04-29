@@ -35,8 +35,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "config.h"
-
 #include <ctype.h>
 #include <string.h>
 #include <sys/types.h>
@@ -48,10 +46,6 @@
 #include "src/common/slurm_resource_info.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-
-#if (0)
-#define DEBUG 1
-#endif
 
 /*
  * First clear all of the bits in "*data" which are set in "clear_mask".

@@ -38,8 +38,6 @@
 
 /* FIXME: Enable when kernel support is ready. */
 
-/* #include "config.h" */
-
 /* #include <stdlib.h>		/\* getenv   *\/ */
 /* #include <sys/types.h> */
 

@@ -38,8 +38,6 @@
 #ifndef __SLURM_EXT_SENSORS_H__
 #define __SLURM_EXT_SENSORS_H__
 
-#include "config.h"
-
 #include <inttypes.h>
 #include <sys/resource.h>
 #include <sys/types.h>

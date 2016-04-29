@@ -41,8 +41,6 @@
 #ifndef _HAVE_SCANCEL_H
 #define _HAVE_SCANCEL_H
 
-#include "config.h"
-
 #include "src/common/slurmdb_defs.h"
 
 typedef struct scancel_options {

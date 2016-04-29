@@ -28,8 +28,6 @@
 #ifndef _STEP_CTX_H
 #define _STEP_CTX_H
 
-#include "config.h"
-
 #include <inttypes.h>
 #include <unistd.h>
 

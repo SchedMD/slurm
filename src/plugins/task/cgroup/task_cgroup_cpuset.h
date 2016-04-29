@@ -37,8 +37,6 @@
 #ifndef _TASK_CGROUP_CPUSET_H_
 #define _TASK_CGROUP_CPUSET_H_
 
-#include "config.h"
-
 #include "src/common/xcgroup_read_config.h"
 
 /* initialize cpuset subsystem of task/cgroup */

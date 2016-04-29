@@ -29,8 +29,6 @@
 #ifndef _HAVE_OPT_H
 #define _HAVE_OPT_H
 
-#include "config.h"
-
 #include <time.h>
 #include <sys/types.h>
 #include <unistd.h>

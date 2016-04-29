@@ -40,8 +40,6 @@
 #ifndef _NODE_SELECT_H
 #define _NODE_SELECT_H
 
-#include "config.h"
-
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 #include "src/common/list.h"

@@ -39,8 +39,6 @@
 #ifndef __SLURM_AUTHENTICATION_H__
 #define __SLURM_AUTHENTICATION_H__
 
-#include "config.h"
-
 #include <inttypes.h>
 #include <stdio.h>
 

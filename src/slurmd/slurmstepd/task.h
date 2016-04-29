@@ -39,8 +39,6 @@
 #ifndef _TASK_H
 #define _TASK_H
 
-#include "config.h"
-
 #include <sys/types.h>
 
 #include "slurm/slurm_errno.h"

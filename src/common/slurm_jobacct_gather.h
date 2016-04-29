@@ -50,8 +50,6 @@
 #ifndef __SLURM_JOBACCT_GATHER_H__
 #define __SLURM_JOBACCT_GATHER_H__
 
-#include "config.h"
-
 #include <inttypes.h>
 #include <sys/resource.h>
 #include <sys/types.h>

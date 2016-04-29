@@ -39,8 +39,6 @@
 #ifndef __SPRIO_H__
 #define __SPRIO_H__
 
-#include "config.h"
-
 #include <ctype.h>
 #include <inttypes.h>
 #include <stdio.h>

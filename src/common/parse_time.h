@@ -39,8 +39,6 @@
 #ifndef _PARSE_TIME_H_
 #define _PARSE_TIME_H_
 
-#include "config.h"
-
 #include <inttypes.h>
 #include <time.h>
 

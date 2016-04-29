@@ -28,8 +28,6 @@
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-#include "config.h"
-
 #include <stdlib.h>
 #include <string.h>
 

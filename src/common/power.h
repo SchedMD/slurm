@@ -37,8 +37,6 @@
 #ifndef _SLURM_POWER_H
 #define _SLURM_POWER_H
 
-#include "config.h"
-
 #include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/slurmctld/slurmctld.h"

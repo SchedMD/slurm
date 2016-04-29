@@ -31,8 +31,6 @@
 #ifndef _SLURM_STEP_LAYOUT_H
 #define _SLURM_STEP_LAYOUT_H
 
-#include "config.h"
-
 #include <inttypes.h>
 
 #include "src/common/hostlist.h"

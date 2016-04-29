@@ -38,8 +38,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "config.h"
-
 #define _USE_IRS 1	/* Required for AIX and hstrerror() */
 
 #include <arpa/inet.h>

@@ -39,8 +39,6 @@
 #ifndef _SFREE_H
 #define _SFREE_H
 
-#include "config.h"
-
 #include <getopt.h>
 #include <signal.h>
 #include <stdio.h>

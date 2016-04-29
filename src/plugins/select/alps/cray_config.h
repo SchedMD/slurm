@@ -38,8 +38,6 @@
 #ifndef _CRAY_CONFIG_H_
 #define _CRAY_CONFIG_H_
 
-#include "config.h"
-
 #include "slurm/slurm.h"
 
 /* Location of ALPS apbasil executable (supported on XT/XE CNL) */

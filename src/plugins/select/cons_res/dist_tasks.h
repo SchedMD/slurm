@@ -38,8 +38,6 @@
 #ifndef _CONS_RES_DIST_TASKS_H
 #define _CONS_RES_DIST_TASKS_H
 
-#include "config.h"
-
 #include <string.h>
 
 #include "select_cons_res.h"
