@@ -27,14 +27,6 @@
 #ifndef _DEBUGGER_INCLUDE
 #define _DEBUGGER_INCLUDE
 
-#ifndef VOLATILE
-#if defined(__STDC__) || defined(__cplusplus)
-#define VOLATILE volatile
-#else
-#define VOLATILE
-#endif
-#endif
-
 #include "srun_job.h"
 /*****************************************************************************
 *                                DEBUGGING SUPPORT                           *
@@ -73,7 +65,7 @@ extern int MPIR_proctable_size;
  * 2) inform the process that it has been attached to and is
  *    now free to run.
  */
-extern VOLATILE int MPIR_debug_state;
+extern volatile int MPIR_debug_state;
 extern int          MPIR_being_debugged; /* Cause extra info on internal state
 					  * to be maintained
 					  */

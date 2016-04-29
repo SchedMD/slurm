@@ -65,14 +65,6 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/trigger_mgr.h"
 
-#ifndef VOLATILE
-#if defined(__STDC__) || defined(__cplusplus)
-#define VOLATILE volatile
-#else
-#define VOLATILE
-#endif
-#endif
-
 #define SHUTDOWN_WAIT     2	/* Time to wait for primary server shutdown */
 
 static int          _background_process_msg(slurm_msg_t * msg);
@@ -86,7 +78,7 @@ inline static void  _update_cred_key(void);
 
 /* Local variables */
 static bool          dump_core = false;
-static VOLATILE bool takeover = false;
+static volatile bool takeover = false;
 static time_t last_controller_response;
 
 /*

@@ -58,7 +58,7 @@
  */
 MPIR_PROCDESC *MPIR_proctable;
 int MPIR_proctable_size;
-VOLATILE int MPIR_debug_state;
+volatile int MPIR_debug_state;
 int MPIR_being_debugged;
 int MPIR_i_am_starter;
 int MPIR_acquired_pre_main;
