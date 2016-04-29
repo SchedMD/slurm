@@ -36,8 +36,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "config.h"
-
 #include "src/common/log.h"
 
 #include "src/sattach/attach.h"

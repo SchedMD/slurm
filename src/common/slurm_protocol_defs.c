@@ -40,8 +40,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "config.h"
-
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>

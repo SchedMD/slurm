@@ -48,8 +48,6 @@
  * Wiki change priorities of jobs as desired to re-order the queue
  */
 
-#include "config.h"
-
 #include <ctype.h>
 #include <inttypes.h>
 #include <stdio.h>

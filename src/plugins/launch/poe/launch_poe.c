@@ -40,8 +40,6 @@
  * SCI_DEBUG_FANOUT=#   Fanout of pmdv12 in launching tasks
 \*****************************************************************************/
 
-#include "config.h"
-
 #include <ctype.h>
 #include <stdlib.h>
 #include <sys/file.h>
