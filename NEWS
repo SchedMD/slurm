@@ -50,6 +50,7 @@ documents those changes that are of interest to users and administrators.
     binding. User --cpu_bind option takes precident over default. No longer
     any error if user --cpu_bind option does not match TaskPluginParam.
  -- Make sacct and sattach work with older slurmd versions.
+ -- Fix protocol handling between 15.08 and 16.05 for 'scontrol show config'.
 
 * Changes in Slurm 16.05.0pre2
 ==============================

@@ -7239,10 +7239,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack32(build_ptr->max_mem_per_cpu, buffer);
 		pack32(build_ptr->max_step_cnt, buffer);
 		pack16(build_ptr->max_tasks_per_node, buffer);
-
-		packstr(build_ptr->mcs_plugin, buffer);
-		packstr(build_ptr->mcs_plugin_params, buffer);
-
 		pack16(build_ptr->mem_limit_enforce, buffer);
 		pack32(build_ptr->min_job_age, buffer);
 		packstr(build_ptr->mpi_default, buffer);
@@ -8252,10 +8248,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack32(&build_ptr->max_mem_per_cpu, buffer);
 		safe_unpack32(&build_ptr->max_step_cnt, buffer);
 		safe_unpack16(&build_ptr->max_tasks_per_node, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->mcs_plugin,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->mcs_plugin_params,
-				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->mem_limit_enforce, buffer);
 		safe_unpack32(&build_ptr->min_job_age, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->mpi_default,
