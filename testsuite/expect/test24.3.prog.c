@@ -31,18 +31,11 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-#  include "config.h"
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif			/* HAVE_INTTYPES_H */
 
-#include <time.h>
+#include <inttypes.h>
 #include <strings.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 
 #include <slurm/slurm.h>

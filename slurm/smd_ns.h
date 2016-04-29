@@ -37,42 +37,29 @@
 #ifndef _HAVE_SMD_NS_H
 #define _HAVE_SMD_NS_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-#if HAVE_STDINT_H
-#  include <stdint.h>		/* for uint16_t, uint32_t definitions */
-#endif
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>		/* for uint16_t, uint32_t definitions */
-#endif
-#if HAVE_STDBOOL_H
-#  include <stdbool.h>
-#else
-typedef enum {false, true} bool;
-#endif /* !HAVE_STDBOOL_H */
-
+#include <arpa/inet.h>
 #include <assert.h>
+#include <ctype.h>
 #include <errno.h>
+#include <getopt.h>
+#include <inttypes.h>
 #include <netdb.h>
+#include <netinet/in.h>
 #include <poll.h>
 #include <pthread.h>
+#include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <getopt.h>
-#include <ctype.h>
-#include <time.h>
-#include <stdarg.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
+#include <sys/param.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/wait.h>
-#include <sys/param.h>
 #include <sys/time.h>
+#include <sys/wait.h>
+#include <time.h>
+#include <unistd.h>
 
 /* Faulty can be in state FAILED or FAILING
  * these flags tell the controller which one
