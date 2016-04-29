@@ -109,17 +109,11 @@
    don't. */
 #undef HAVE_DECL_SYS_SIGLIST
 
-/* Define to 1 if you have the <dirent.h> header file. */
-#undef HAVE_DIRENT_H
-
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
 /* Define to 1 if you have the `eaccess' function. */
 #undef HAVE_EACCESS
-
-/* Define to 1 if you have the <errno.h> header file. */
-#undef HAVE_ERRNO_H
 
 /* Define to 1 if function EVP_MD_CTX_cleanup exists. */
 #undef HAVE_EVP_MD_CTX_CLEANUP
@@ -129,9 +123,6 @@
 
 /* Define to 1 if you have the `fdatasync' function. */
 #undef HAVE_FDATASYNC
-
-/* Define to 1 if you have the <float.h> header file. */
-#undef HAVE_FLOAT_H
 
 /* Define to 1 if freeipmi library found */
 #undef HAVE_FREEIPMI
@@ -144,9 +135,6 @@
 
 /* Defined if you have HDF5 support */
 #undef HAVE_HDF5
-
-/* Define to 1 if you have the `hstrerror' function. */
-#undef HAVE_HSTRERROR
 
 /* Define to 1 if hwloc library found */
 #undef HAVE_HWLOC
@@ -184,9 +172,6 @@
 /* Define to 1 if you have `z' library (-lz) */
 #undef HAVE_LIBZ
 
-/* Define to 1 if you have the <limits.h> header file. */
-#undef HAVE_LIMITS_H
-
 /* Define to 1 if you have the <linux/sched.h> header file. */
 #undef HAVE_LINUX_SCHED_H
 
@@ -203,14 +188,8 @@
    to 0 otherwise. */
 #undef HAVE_MALLOC
 
-/* Define to 1 if you have the <mcheck.h> header file. */
-#undef HAVE_MCHECK_H
-
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
-
-/* Define to 1 if you have the `mtrace' function. */
-#undef HAVE_MTRACE
 
 /* Define to 1 if using MySQL libaries */
 #undef HAVE_MYSQL
@@ -227,9 +206,6 @@
 
 /* Define to 1 if you have the <ncurses.h> header file. */
 #undef HAVE_NCURSES_H
-
-/* Define to 1 if you have the <netdb.h> header file. */
-#undef HAVE_NETDB_H
 
 /* Define to 1 if netloc library found */
 #undef HAVE_NETLOC
@@ -279,9 +255,6 @@
 /* Define if you have POSIX threads libraries and header files. */
 #undef HAVE_PTHREAD
 
-/* Define to 1 if you have the <pthread.h> header file. */
-#undef HAVE_PTHREAD_H
-
 /* Have PTHREAD_PRIO_INHERIT. */
 #undef HAVE_PTHREAD_PRIO_INHERIT
 
@@ -300,17 +273,11 @@
 /* Define to 1 if you have the `sched_setaffinity' function. */
 #undef HAVE_SCHED_SETAFFINITY
 
-/* Define to 1 if you have the <security/pam_appl.h> header file. */
-#undef HAVE_SECURITY_PAM_APPL_H
-
 /* Define to 1 if you have the `setproctitle' function. */
 #undef HAVE_SETPROCTITLE
 
 /* Define to 1 if you have the `setresuid' function. */
 #undef HAVE_SETRESUID
-
-/* Define to 1 if you have the <socket.h> header file. */
-#undef HAVE_SOCKET_H
 
 /* Define to 1 if you have the `statfs' function. */
 #undef HAVE_STATFS
@@ -345,32 +312,17 @@
 /* Define to 1 if you have the `strndup' function. */
 #undef HAVE_STRNDUP
 
-/* Define to 1 if you have the `strsignal' function. */
-#undef HAVE_STRSIGNAL
-
 /* Define to 1 if you have the `sysctlbyname' function. */
 #undef HAVE_SYSCTLBYNAME
 
-/* Define to 1 if you have the <sysint.h> header file. */
-#undef HAVE_SYSINT_H
-
 /* Define to 1 if you have the <sys/dr.h> header file. */
 #undef HAVE_SYS_DR_H
-
-/* Define to 1 if you have the <sys/ipc.h> header file. */
-#undef HAVE_SYS_IPC_H
 
 /* Define to 1 if you have the <sys/prctl.h> header file. */
 #undef HAVE_SYS_PRCTL_H
 
 /* Define to 1 if you have the <sys/ptrace.h> header file. */
 #undef HAVE_SYS_PTRACE_H
-
-/* Define to 1 if you have the <sys/sem.h> header file. */
-#undef HAVE_SYS_SEM_H
-
-/* Define to 1 if you have the <sys/shm.h> header file. */
-#undef HAVE_SYS_SHM_H
 
 /* Define to 1 if you have the <sys/socket.h> header file. */
 #undef HAVE_SYS_SOCKET_H
@@ -410,9 +362,6 @@
 
 /* Define to 1 if you have the <utmp.h> header file. */
 #undef HAVE_UTMP_H
-
-/* Define to 1 if you have the <values.h> header file. */
-#undef HAVE_VALUES_H
 
 /* Define if you have __progname. */
 #undef HAVE__PROGNAME
