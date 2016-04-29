@@ -808,6 +808,7 @@ extern struct node_record *create_node_record (
 	node_ptr->energy = acct_gather_energy_alloc(1);
 	node_ptr->ext_sensors = ext_sensors_alloc();
 	node_ptr->owner = NO_VAL;
+	node_ptr->protocol_version = SLURM_MIN_PROTOCOL_VERSION;
 	xassert (node_ptr->magic = NODE_MAGIC)  /* set value */;
 	return node_ptr;
 }
