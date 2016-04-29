@@ -215,9 +215,6 @@ sleep 5
 # Set the node back to resume
 mod_state "resume" "test$test_id"
 
-# Check the number of steps
-check_step 1
-
 
 # Check the job state
 send_user "\n\nTest 2\n"
@@ -239,9 +236,6 @@ if {$exit_code == 0} {
 wait_for_job $job_id RUNNING
 # Wait for batch script to start (after message delays, prologs, etc.)
 sleep 5
-
-# Check the number of steps after job is running
-check_step 1
 
 
 send_user "\n\nTest 3\n"
@@ -285,8 +279,8 @@ if {$req_count != 1} {
 	set exit_code 1
 }
 set canc_count [check_sacct_states "CANCELLED" 0]
-if {$canc_count != 2} {
-	send_user "\nFAILURE: Bad CANCELLED count ($canc_count != 2)\n"
+if {$canc_count != 1} {
+	send_user "\nFAILURE: Bad CANCELLED count ($canc_count != 1)\n"
 	set exit_code 1
 }
 set pend_count [check_sacct_states "PENDING" 0]
@@ -303,7 +297,7 @@ wait_for_job $job_id RUNNING
 sleep 5
 
 # Check for steps after requeue
-check_step 2
+check_step 1
 
 
 send_user "\n\nTest 5\n"
@@ -318,7 +312,7 @@ if {$req_count != 1} {
 	set exit_code 1
 }
 set canc_count [check_sacct_states "CANCELLED" 0]
-if {$canc_count != 2} {
+if {$canc_count != 1} {
 	send_user "\nFAILURE: Bad CANCELLED count ($canc_count != 1)\n"
 	set exit_code 1
 }
@@ -334,7 +328,7 @@ if {$exit_code == 0} {
 wait_for_job $job_id DONE
 
 # Check steps after job has completed
-check_step 3
+check_step 2
 send_user "\n\nTest 6\n"
 set fail_count [check_sacct_states "NODE_FAIL" 1]
 if {$fail_count != 1} {
@@ -347,8 +341,8 @@ if {$req_count != 1} {
 	set exit_code 1
 }
 set canc_count [check_sacct_states "CANCELLED" 0]
-if {$canc_count != 2} {
-	send_user "\nFAILURE: Bad CANCELLED count ($canc_count != 2)\n"
+if {$canc_count != 1} {
+	send_user "\nFAILURE: Bad CANCELLED count ($canc_count != 1)\n"
 	set exit_code 1
 }
 set comp_count [check_sacct_states "COMPLETED" 0]
