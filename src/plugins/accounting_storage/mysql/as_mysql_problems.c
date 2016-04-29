@@ -164,11 +164,12 @@ extern int as_mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
 			xstrfmtcat(query,
 				   "select distinct id_assoc from \"%s_%s\" "
 				   "where deleted=0 && "
-				   "acct='%s' limit 1",
+				   "acct='%s'",
 				   cluster_name, assoc_table, row[0]);
 		}
 		list_iterator_reset(itr);
-
+		if (query)
+			xstrcat(query, " limit 1");
 		if (!(result2 = mysql_db_query_ret(
 			      mysql_conn, query, 0))) {
 			xfree(query);
@@ -367,10 +368,13 @@ extern int as_mysql_user_no_assocs_or_no_uid(
 			xstrfmtcat(query,
 				   "select distinct id_assoc from \"%s_%s\" "
 				   "where deleted=0 && "
-				   "user='%s' limit 1",
+				   "user='%s'",
 				   cluster_name, assoc_table, row[0]);
 		}
 		list_iterator_reset(itr);
+
+		if (query)
+			xstrcat(query, " limit 1");
 
 		if (!(result2 = mysql_db_query_ret(
 			      mysql_conn, query, 0))) {

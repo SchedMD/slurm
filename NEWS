@@ -36,6 +36,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix for srun hanging with OpenMPI and PMIx
  -- Better initialization of node_ptr when dealing with protocol_version.
  -- Fix incorrect type when initializing header of a message.
+ -- MYSQL - Fix incorrect usage of limit and union.
 
 * Changes in Slurm 15.08.10
 ===========================
