@@ -389,7 +389,7 @@ static void _set_procdatas(List lresp)
 		}
 		list_destroy(rankinfo);
 
-		kvp->value.data.array.array = (struct pmix_info_t *)info;
+		kvp->value.data.array.array = (pmix_info_t *)info;
 		info = NULL;
 
 		/* put the complex key to the list */
