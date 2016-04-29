@@ -1534,7 +1534,7 @@ slurm_job_step_layout_get(slurm_t self, uint32_t job_id, uint32_t step_id)
 		RETVAL
 
 HV *
-slurm_job_step_stat(slurm_t self, uint32_t job_id, uint32_t step_id, char *nodelist=NULL)
+slurm_job_step_stat(slurm_t self, uint32_t job_id, uint32_t step_id, char *nodelist=NULL, uint16_t protocol_version)
 	PREINIT:
 		int rc;
 		job_step_stat_response_msg_t *resp_msg;
@@ -1544,7 +1544,8 @@ slurm_job_step_stat(slurm_t self, uint32_t job_id, uint32_t step_id, char *nodel
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-		rc = slurm_job_step_stat(job_id, step_id, nodelist, &resp_msg);
+                rc = slurm_job_step_stat(job_id, step_id, nodelist,
+					 protocol_version, &resp_msg);
 		if (rc == SLURM_SUCCESS) {
 			RETVAL = newHV();
 			sv_2mortal((SV*)RETVAL);
