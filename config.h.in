@@ -318,6 +318,9 @@
 /* Define to 1 if you have the `statvfs' function. */
 #undef HAVE_STATVFS
 
+/* Define to 1 if you have the <stdbool.h> header file. */
+#undef HAVE_STDBOOL_H
+
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
 
@@ -383,6 +386,9 @@
 
 /* Define to 1 if you have the <sys/sysctl.h> header file. */
 #undef HAVE_SYS_SYSCTL_H
+
+/* Define to 1 if you have the <sys/syslog.h> header file. */
+#undef HAVE_SYS_SYSLOG_H
 
 /* Define to 1 if you have the <sys/systemcfg.h> header file. */
 #undef HAVE_SYS_SYSTEMCFG_H

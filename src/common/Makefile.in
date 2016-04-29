@@ -143,7 +143,6 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_zlib.m4 \
 	$(top_srcdir)/auxdir/x_ac_ptrace.m4 \
 	$(top_srcdir)/auxdir/x_ac_readline.m4 \
 	$(top_srcdir)/auxdir/x_ac_rrdtool.m4 \
-	$(top_srcdir)/auxdir/x_ac_setpgrp.m4 \
 	$(top_srcdir)/auxdir/x_ac_setproctitle.m4 \
 	$(top_srcdir)/auxdir/x_ac_sgi_job.m4 \
 	$(top_srcdir)/auxdir/x_ac_slurm_ssl.m4 \
@@ -226,14 +225,14 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo cpu_frequency.lo \
 	slurm_acct_gather_infiniband.lo \
 	slurm_acct_gather_filesystem.lo slurm_jobcomp.lo \
 	slurm_route.lo slurm_time.lo slurm_topology.lo switch.lo \
-	arg_desc.lo $(am__objects_1) \
-	slurm_selecttype_info.lo slurm_resource_info.lo hostlist.lo \
-	slurm_step_layout.lo checkpoint.lo job_resources.lo \
-	parse_time.lo job_options.lo global_defaults.lo timers.lo \
-	stepd_api.lo write_labelled_message.lo proc_args.lo \
-	slurm_strcasestr.lo node_conf.lo gres.lo entity.lo layout.lo \
-	layouts_mgr.lo mapping.lo xcgroup_read_config.lo xlua.lo \
-	callerid.lo siphash24.lo siphash_slurm.lo
+	arg_desc.lo $(am__objects_1) slurm_selecttype_info.lo \
+	slurm_resource_info.lo hostlist.lo slurm_step_layout.lo \
+	checkpoint.lo job_resources.lo parse_time.lo job_options.lo \
+	global_defaults.lo timers.lo stepd_api.lo \
+	write_labelled_message.lo proc_args.lo slurm_strcasestr.lo \
+	node_conf.lo gres.lo entity.lo layout.lo layouts_mgr.lo \
+	mapping.lo xcgroup_read_config.lo xlua.lo callerid.lo \
+	siphash24.lo siphash_slurm.lo
 am__EXTRA_libcommon_la_SOURCES_DIST = unsetenv.c unsetenv.h \
 	uthash/LICENSE uthash/README uthash/uthash.h
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
