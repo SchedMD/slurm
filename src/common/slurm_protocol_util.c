@@ -127,7 +127,7 @@ void init_header(header_t *header, slurm_msg_t *msg, uint16_t flags)
 			working_cluster_rec->rpc_version;
 	else if ((msg->msg_type == ACCOUNTING_UPDATE_MSG) ||
 	         (msg->msg_type == ACCOUNTING_FIRST_REG)) {
-		uint32_t rpc_version =
+		uint16_t rpc_version =
 			((accounting_update_msg_t *)msg->data)->rpc_version;
 		msg->protocol_version = header->version = rpc_version;
 	} else

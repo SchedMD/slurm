@@ -347,7 +347,7 @@ extern int load_all_node_state ( bool state_only )
 	if (ver_str && !xstrcmp(ver_str, NODE_STATE_VERSION))
 		safe_unpack16(&protocol_version, buffer);
 
-	if (protocol_version == (uint16_t)NO_VAL) {
+	if (!protocol_version || (protocol_version == (uint16_t)NO_VAL)) {
 		error("*****************************************************");
 		error("Can not recover node state, data version incompatible");
 		error("*****************************************************");
@@ -660,11 +660,13 @@ extern int load_all_node_state ( bool state_only )
 
 		if (node_ptr) {
 			node_cnt++;
-			if (obj_protocol_version != (uint16_t)NO_VAL)
+			if (obj_protocol_version &&
+			    (obj_protocol_version != (uint16_t)NO_VAL))
 				node_ptr->protocol_version =
 					obj_protocol_version;
 			else
 				node_ptr->protocol_version = protocol_version;
+
 			if (!IS_NODE_POWER_SAVE(node_ptr))
 				node_ptr->last_idle = now;
 			select_g_update_node_state(node_ptr);
