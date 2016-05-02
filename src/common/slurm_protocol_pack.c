@@ -957,7 +957,7 @@ unpack_header(header_t * header, Buf buffer)
 	header->ret_list = NULL;
 	safe_unpack16(&header->version, buffer);
 
-	if (header->version >= SLURM_15_08_PROTOCOL_VERSION) {
+	if (header->version >= SLURM_16_05_PROTOCOL_VERSION) {
 		safe_unpack16(&header->flags, buffer);
 		safe_unpack16(&header->msg_index, buffer);
 		safe_unpack16(&header->msg_type, buffer);
