@@ -429,7 +429,8 @@ node being set to a DOWN state.
 If the EpilogSlurmctld fails (returns a non-zero exit code), this will only
 be logged.
 If the Prolog fails (returns a non-zero exit code), this will result in the
-node being set to a DOWN state and the job requeued to executed on another node.
+node being set to a DRAIN state and the job requeued in a held state
+(unless nohold_on_prolog_fail is configured in SchedulerParameters).
 If the PrologSlurmctld fails (returns a non-zero exit code), this will result
 in the job requeued to executed on another node if possible. Only batch jobs
 can be requeued. Interactive jobs (salloc and srun) will be cancelled if the

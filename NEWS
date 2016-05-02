@@ -38,6 +38,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix incorrect type when initializing header of a message.
  -- MYSQL - Fix incorrect usage of limit and union.
  -- MYSQL - Remove 'ignore' from alter ignore when updating a table.
+ -- Documentation - update prolog_epilog page to reflect current behavior
+    if the Prolog fails.
 
 * Changes in Slurm 15.08.10
 ===========================
