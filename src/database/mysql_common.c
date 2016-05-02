@@ -1,7 +1,6 @@
 /*****************************************************************************\
  *  mysql_common.c - common functions for the mysql storage plugin.
  *****************************************************************************
- *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
@@ -38,6 +37,8 @@
  *  This file is patterned after jobcomp_linux.c, written by Morris Jette and
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
+
+#include "config.h"
 
 #include "mysql_common.h"
 #include "src/common/xstring.h"
