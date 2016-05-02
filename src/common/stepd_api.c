@@ -921,6 +921,10 @@ stepd_completion(int fd, uint16_t protocol_version, step_complete_msg_t *sent)
 		/* Receive the return code and errno */
 		safe_read(fd, &rc, sizeof(int));
 		safe_read(fd, &errnum, sizeof(int));
+	} else {
+		error("%s: bad protocol version %hu",
+		      __func__, protocol_version);
+		rc = SLURM_ERROR;
 	}
 
 	errno = errnum;
