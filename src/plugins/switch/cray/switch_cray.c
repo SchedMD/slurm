@@ -294,18 +294,12 @@ extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 		print_jobinfo(job);
 	}
 
-	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(job->magic, buffer);
 		pack32(job->num_cookies, buffer);
 		packstr_array(job->cookies, job->num_cookies, buffer);
 		pack32_array(job->cookie_ids, job->num_cookies, buffer);
 		pack64(job->apid, buffer);
-	} else {
-		pack32(job->magic, buffer);
-		pack32(job->num_cookies, buffer);
-		packstr_array(job->cookies, job->num_cookies, buffer);
-		pack32_array(job->cookie_ids, job->num_cookies, buffer);
-		pack32(job->port, buffer);
 	}
 
 	return 0;
@@ -326,7 +320,7 @@ extern int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 
 	job = (slurm_cray_jobinfo_t *) switch_job;
 
-	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&job->magic, buffer);
 
 		if (job->magic == CRAY_NULL_JOBINFO_MAGIC) {
@@ -351,37 +345,6 @@ extern int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 			goto unpack_error;
 		}
 		safe_unpack64(&job->apid, buffer);
-	} else {
-		safe_unpack32(&job->magic, buffer);
-
-		if (job->magic == CRAY_NULL_JOBINFO_MAGIC) {
-			CRAY_DEBUG("Nothing to unpack");
-			return SLURM_SUCCESS;
-		}
-
-		xassert(job->magic == CRAY_JOBINFO_MAGIC);
-		safe_unpack32(&(job->num_cookies), buffer);
-		safe_unpackstr_array(&(job->cookies), &num_cookies, buffer);
-		if (num_cookies != job->num_cookies) {
-			CRAY_ERR("Wrong number of cookies received."
-				 " Expected: %" PRIu32 "Received: %" PRIu32,
-				 job->num_cookies, num_cookies);
-			goto unpack_error;
-		}
-		safe_unpack32_array(&(job->cookie_ids), &num_cookies, buffer);
-		if (num_cookies != job->num_cookies) {
-			CRAY_ERR("Wrong number of cookie IDs received."
-				 " Expected: %" PRIu32 "Received: %" PRIu32,
-				 job->num_cookies, num_cookies);
-			goto unpack_error;
-		}
-		safe_unpack32(&job->port, buffer);
-#if 0
-		/* We rely upon switch_p_alloc_jobinfo() to initialize these
-		 * fields, which do not exist in older data structures. */
-		job->num_ports = 1;
-		job->apid = SLURM_ID_HASH(jobid, stepid);
-#endif
 	}
 
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)

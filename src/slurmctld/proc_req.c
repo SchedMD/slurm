@@ -5366,9 +5366,6 @@ static void _pack_rpc_stats(int resp, char **buffer_ptr, int *buffer_size,
 	uint32_t i;
 	Buf buffer;
 
-	if (protocol_version < SLURM_14_11_PROTOCOL_VERSION)
-		return;
-
 	slurm_mutex_lock(&rpc_mutex);
 	buffer = create_buf(*buffer_ptr, *buffer_size);
 	set_buf_offset(buffer, *buffer_size);

@@ -883,14 +883,10 @@ static void _free_blade(blade_info_t *blade_info)
 static void _pack_blade(blade_info_t *blade_info, Buf buffer,
 			uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack64(blade_info->id, buffer);
 		pack32(blade_info->job_cnt, buffer);
 		pack_bit_str_hex(blade_info->node_bitmap, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack64(blade_info->id, buffer);
-		pack32(blade_info->job_cnt, buffer);
-		pack_bit_str(blade_info->node_bitmap, buffer);
 	}
 
 }
@@ -898,14 +894,10 @@ static void _pack_blade(blade_info_t *blade_info, Buf buffer,
 static int _unpack_blade(blade_info_t *blade_info, Buf buffer,
 			 uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack64(&blade_info->id, buffer);
 		safe_unpack32(&blade_info->job_cnt, buffer);
 		unpack_bit_str_hex(&blade_info->node_bitmap, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack64(&blade_info->id, buffer);
-		safe_unpack32(&blade_info->job_cnt, buffer);
-		unpack_bit_str(&blade_info->node_bitmap, buffer);
 	}
 
 	return SLURM_SUCCESS;
@@ -1232,7 +1224,7 @@ static void _spawn_cleanup_thread(
 static void _select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer,
 				 uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!jobinfo) {
 			pack_bit_str_hex(NULL, buffer);
 			pack16(0, buffer);
@@ -1243,18 +1235,6 @@ static void _select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer,
 			pack16(jobinfo->cleaning, buffer);
 			pack8(jobinfo->npc, buffer);
 			pack_bit_str_hex(jobinfo->used_blades, buffer);
-		}
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		if (!jobinfo) {
-			pack_bit_str(NULL, buffer);
-			pack16(0, buffer);
-			pack8(0, buffer);
-			pack_bit_str(NULL, buffer);
-		} else {
-			pack_bit_str(jobinfo->blade_map, buffer);
-			pack16(jobinfo->cleaning, buffer);
-			pack8(jobinfo->npc, buffer);
-			pack_bit_str(jobinfo->used_blades, buffer);
 		}
 	}
 }
@@ -1268,16 +1248,11 @@ static int _select_jobinfo_unpack(select_jobinfo_t **jobinfo_pptr,
 
 	jobinfo->magic = JOBINFO_MAGIC;
 
-	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		unpack_bit_str_hex(&jobinfo->blade_map, buffer);
 		safe_unpack16(&jobinfo->cleaning, buffer);
 		safe_unpack8(&jobinfo->npc, buffer);
 		unpack_bit_str_hex(&jobinfo->used_blades, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		unpack_bit_str(&jobinfo->blade_map, buffer);
-		safe_unpack16(&jobinfo->cleaning, buffer);
-		safe_unpack8(&jobinfo->npc, buffer);
-		unpack_bit_str(&jobinfo->used_blades, buffer);
 	}
 
 	return SLURM_SUCCESS;

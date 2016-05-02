@@ -854,7 +854,7 @@ extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
 
 	no_pack = (!plugin_polling && (protocol_type != PROTOCOL_TYPE_DBD));
 
-	if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!jobacct || no_pack) {
 			pack8((uint8_t) 0, buffer);
 			return;
@@ -889,41 +889,6 @@ extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
 			buffer);
 		_pack_jobacct_id(&jobacct->max_disk_write_id, rpc_version,
 			buffer);
-	} else if (rpc_version >= SLURM_14_11_PROTOCOL_VERSION) {
-		if (!jobacct || no_pack) {
-			pack8((uint8_t) 0, buffer);
-			return;
-		}
-		pack8((uint8_t) 1, buffer);
-
-		pack32((uint32_t)jobacct->user_cpu_sec, buffer);
-		pack32((uint32_t)jobacct->user_cpu_usec, buffer);
-		pack32((uint32_t)jobacct->sys_cpu_sec, buffer);
-		pack32((uint32_t)jobacct->sys_cpu_usec, buffer);
-		pack64(jobacct->max_vsize, buffer);
-		pack64(jobacct->tot_vsize, buffer);
-		pack64(jobacct->max_rss, buffer);
-		pack64(jobacct->tot_rss, buffer);
-		pack64(jobacct->max_pages, buffer);
-		pack64(jobacct->tot_pages, buffer);
-		pack32((uint32_t)jobacct->min_cpu, buffer);
-		pack32((uint32_t)jobacct->tot_cpu, buffer);
-		pack32((uint32_t)jobacct->act_cpufreq, buffer);
-		pack32((uint32_t)jobacct->energy.consumed_energy, buffer);
-
-		packdouble((double)jobacct->max_disk_read, buffer);
-		packdouble((double)jobacct->tot_disk_read, buffer);
-		packdouble((double)jobacct->max_disk_write, buffer);
-		packdouble((double)jobacct->tot_disk_write, buffer);
-
-		_pack_jobacct_id(&jobacct->max_vsize_id, rpc_version, buffer);
-		_pack_jobacct_id(&jobacct->max_rss_id, rpc_version, buffer);
-		_pack_jobacct_id(&jobacct->max_pages_id, rpc_version, buffer);
-		_pack_jobacct_id(&jobacct->min_cpu_id, rpc_version, buffer);
-		_pack_jobacct_id(&jobacct->max_disk_read_id, rpc_version,
-			buffer);
-		_pack_jobacct_id(&jobacct->max_disk_write_id, rpc_version,
-			buffer);
 	} else {
 		info("jobacctinfo_pack version %u not supported", rpc_version);
 		return;
@@ -939,7 +904,7 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 
 	jobacct_gather_init();
 
-	if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp == (uint8_t) 0)
 			return SLURM_SUCCESS;
@@ -963,56 +928,6 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 		safe_unpackdouble(&(*jobacct)->tot_cpu, buffer);
 		safe_unpack32(&(*jobacct)->act_cpufreq, buffer);
 		safe_unpack64(&(*jobacct)->energy.consumed_energy, buffer);
-
-		safe_unpackdouble(&(*jobacct)->max_disk_read, buffer);
-		safe_unpackdouble(&(*jobacct)->tot_disk_read, buffer);
-		safe_unpackdouble(&(*jobacct)->max_disk_write, buffer);
-		safe_unpackdouble(&(*jobacct)->tot_disk_write, buffer);
-
-		if (_unpack_jobacct_id(&(*jobacct)->max_vsize_id, rpc_version,
-			buffer) != SLURM_SUCCESS)
-			goto unpack_error;
-		if (_unpack_jobacct_id(&(*jobacct)->max_rss_id, rpc_version,
-			buffer) != SLURM_SUCCESS)
-			goto unpack_error;
-		if (_unpack_jobacct_id(&(*jobacct)->max_pages_id, rpc_version,
-			buffer) != SLURM_SUCCESS)
-			goto unpack_error;
-		if (_unpack_jobacct_id(&(*jobacct)->min_cpu_id, rpc_version,
-			buffer) != SLURM_SUCCESS)
-			goto unpack_error;
-		if (_unpack_jobacct_id(&(*jobacct)->max_disk_read_id,
-			rpc_version, buffer) != SLURM_SUCCESS)
-			goto unpack_error;
-		if (_unpack_jobacct_id(&(*jobacct)->max_disk_write_id,
-			rpc_version, buffer) != SLURM_SUCCESS)
-			goto unpack_error;
-	} else if (rpc_version >= SLURM_14_11_PROTOCOL_VERSION) {
-		safe_unpack8(&uint8_tmp, buffer);
-		if (uint8_tmp == (uint8_t) 0)
-			return SLURM_SUCCESS;
-		if (alloc)
-			*jobacct = xmalloc(sizeof(struct jobacctinfo));
-		safe_unpack32(&uint32_tmp, buffer);
-		(*jobacct)->user_cpu_sec = uint32_tmp;
-		safe_unpack32(&uint32_tmp, buffer);
-		(*jobacct)->user_cpu_usec = uint32_tmp;
-		safe_unpack32(&uint32_tmp, buffer);
-		(*jobacct)->sys_cpu_sec = uint32_tmp;
-		safe_unpack32(&uint32_tmp, buffer);
-		(*jobacct)->sys_cpu_usec = uint32_tmp;
-		safe_unpack64(&(*jobacct)->max_vsize, buffer);
-		safe_unpack64(&(*jobacct)->tot_vsize, buffer);
-		safe_unpack64(&(*jobacct)->max_rss, buffer);
-		safe_unpack64(&(*jobacct)->tot_rss, buffer);
-		safe_unpack64(&(*jobacct)->max_pages, buffer);
-		safe_unpack64(&(*jobacct)->tot_pages, buffer);
-		safe_unpack32(&(*jobacct)->min_cpu, buffer);
-		safe_unpack32(&uint32_tmp, buffer);
-		(*jobacct)->tot_cpu = (double)uint32_tmp;
-		safe_unpack32(&(*jobacct)->act_cpufreq, buffer);
-		safe_unpack32(&uint32_tmp, buffer);
-		(*jobacct)->energy.consumed_energy = (uint64_t) uint32_tmp;
 
 		safe_unpackdouble(&(*jobacct)->max_disk_read, buffer);
 		safe_unpackdouble(&(*jobacct)->tot_disk_read, buffer);

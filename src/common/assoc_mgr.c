@@ -5404,18 +5404,11 @@ extern int load_assoc_usage(char *state_save_location)
 		uint32_t tmp32;
 		long double usage_tres_raw[g_tres_count];
 
-		if (ver >= SLURM_15_08_PROTOCOL_VERSION) {
-			safe_unpack32(&assoc_id, buffer);
-			safe_unpacklongdouble(&usage_raw, buffer);
-			safe_unpackstr_xmalloc(&tmp_str, &tmp32, buffer);
-			safe_unpack32(&grp_used_wall, buffer);
-		} else {
-			uint64_t tmp64;
-			safe_unpack32(&assoc_id, buffer);
-			safe_unpack64(&tmp64, buffer);
-			safe_unpack32(&grp_used_wall, buffer);
-			usage_raw = (long double)tmp64;
-		}
+		safe_unpack32(&assoc_id, buffer);
+		safe_unpacklongdouble(&usage_raw, buffer);
+		safe_unpackstr_xmalloc(&tmp_str, &tmp32, buffer);
+		safe_unpack32(&grp_used_wall, buffer);
+
 		assoc = _find_assoc_rec_id(assoc_id);
 
 		/* We want to do this all the way up to and including
@@ -5531,18 +5524,11 @@ extern int load_qos_usage(char *state_save_location)
 		slurmdb_qos_rec_t *qos = NULL;
 		char *tmp_str = NULL;
 
-		if (ver >= SLURM_15_08_PROTOCOL_VERSION) {
-			safe_unpack32(&qos_id, buffer);
-			safe_unpacklongdouble(&usage_raw, buffer);
-			safe_unpackstr_xmalloc(&tmp_str, &tmp32, buffer);
-			safe_unpack32(&grp_used_wall, buffer);
-		} else {
-			uint64_t tmp64 = 0;
-			safe_unpack32(&qos_id, buffer);
-			safe_unpack64(&tmp64, buffer);
-			safe_unpack32(&grp_used_wall, buffer);
-			usage_raw = (long double)tmp64;
-		}
+		safe_unpack32(&qos_id, buffer);
+		safe_unpacklongdouble(&usage_raw, buffer);
+		safe_unpackstr_xmalloc(&tmp_str, &tmp32, buffer);
+		safe_unpack32(&grp_used_wall, buffer);
+
 		while ((qos = list_next(itr)))
 			if (qos->id == qos_id)
 				break;

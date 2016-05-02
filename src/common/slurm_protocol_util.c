@@ -65,8 +65,8 @@ int check_header_version(header_t * header)
 
 	if (slurmdbd_conf) {
 		if ((header->version != SLURM_PROTOCOL_VERSION)     &&
-		    (header->version != SLURM_15_08_PROTOCOL_VERSION) &&
-		    (header->version != SLURM_14_11_PROTOCOL_VERSION)) {
+		    (header->version != SLURM_ONE_BACK_PROTOCOL_VERSION) &&
+		    (header->version != SLURM_MIN_PROTOCOL_VERSION)) {
 			debug("unsupported RPC version %hu msg type %s(%u)",
 			      header->version, rpc_num2string(header->msg_type),
 			      header->msg_type);
@@ -90,8 +90,9 @@ int check_header_version(header_t * header)
 			}
 		default:
 			if ((header->version != SLURM_PROTOCOL_VERSION)     &&
-			    (header->version != SLURM_15_08_PROTOCOL_VERSION) &&
-			    (header->version != SLURM_14_11_PROTOCOL_VERSION)) {
+			    (header->version !=
+			     SLURM_ONE_BACK_PROTOCOL_VERSION) &&
+			    (header->version != SLURM_MIN_PROTOCOL_VERSION)) {
 				debug("Unsupported RPC version %hu "
 				      "msg type %s(%u)", header->version,
 				      rpc_num2string(header->msg_type),

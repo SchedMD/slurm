@@ -469,9 +469,7 @@ stepd_attach(int fd, uint16_t protocol_version,
 	safe_write(fd, ioaddr, sizeof(slurm_addr_t));
 	safe_write(fd, respaddr, sizeof(slurm_addr_t));
 	safe_write(fd, job_cred_sig, SLURM_IO_KEY_SIZE);
-
-	if (SLURM_PROTOCOL_VERSION >= SLURM_15_08_PROTOCOL_VERSION)
-		safe_write(fd, &proto, sizeof(int));
+	safe_write(fd, &proto, sizeof(int));
 
 	/* Receive the return code */
 	safe_read(fd, &rc, sizeof(int));
@@ -898,36 +896,8 @@ stepd_completion(int fd, uint16_t protocol_version, step_complete_msg_t *sent)
 	debug("Entering stepd_completion, range_first = %d, range_last = %d",
 	      sent->range_first, sent->range_last);
 
-	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_write(fd, &req, sizeof(int));
-		safe_write(fd, &sent->range_first, sizeof(int));
-		safe_write(fd, &sent->range_last, sizeof(int));
-		safe_write(fd, &sent->step_rc, sizeof(int));
-
-		/*
-		 * We must not use setinfo over a pipe with slurmstepd here
-		 * Indeed, slurmd does a large use of getinfo over a pipe
-		 * with slurmstepd and doing the reverse can result in
-		 * a deadlock scenario with slurmstepd :
-		 * slurmd(lockforread,write)/slurmstepd(write,lockforread)
-		 * Do pack/unpack instead to be sure of independances of
-		 * slurmd and slurmstepd
-		 */
-		jobacctinfo_pack(sent->jobacct, protocol_version,
-				 PROTOCOL_TYPE_SLURM, buffer);
-		len = get_buf_offset(buffer);
-		safe_write(fd, &len, sizeof(int));
-		safe_write(fd, get_buf_data(buffer), len);
-		free_buf(buffer);
-
-		/* Receive the return code and errno */
-		safe_read(fd, &rc, sizeof(int));
-		safe_read(fd, &errnum, sizeof(int));
-	} else {
-		int version = SLURM_PROTOCOL_VERSION;
-
-		safe_write(fd, &req, sizeof(int));
-		safe_write(fd, &version, sizeof(int));
 		safe_write(fd, &sent->range_first, sizeof(int));
 		safe_write(fd, &sent->range_last, sizeof(int));
 		safe_write(fd, &sent->step_rc, sizeof(int));
@@ -1096,17 +1066,12 @@ extern int stepd_get_mem_limits(int fd, uint16_t protocol_version,
 	xassert(stepd_mem_info);
 	memset(stepd_mem_info, 0, sizeof(slurmstepd_mem_info_t));
 
-	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_write(fd, &req, sizeof(int));
 
 		safe_read(fd, &stepd_mem_info->job_mem_limit, sizeof(uint32_t));
 		safe_read(fd, &stepd_mem_info->step_mem_limit,
 			  sizeof(uint32_t));
-	} else {
-		slurmstepd_info_t *step_info = stepd_get_info(fd);
-		stepd_mem_info->job_mem_limit = step_info->job_mem_limit;
-		stepd_mem_info->step_mem_limit = step_info->step_mem_limit;
-		xfree(step_info);
 	}
 
 	return SLURM_SUCCESS;
@@ -1125,14 +1090,10 @@ extern uid_t stepd_get_uid(int fd, uint16_t protocol_version)
 	int req = REQUEST_STEP_UID;
 	uid_t uid = -1;
 
-	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_write(fd, &req, sizeof(int));
 
 		safe_read(fd, &uid, sizeof(uid_t));
-	} else {
-		slurmstepd_info_t *step_info = stepd_get_info(fd);
-		uid = step_info->uid;
-		xfree(step_info);
 	}
 
 	return uid;
@@ -1149,14 +1110,10 @@ extern uint32_t stepd_get_nodeid(int fd, uint16_t protocol_version)
 	int req = REQUEST_STEP_NODEID;
 	uint32_t nodeid = NO_VAL;
 
-	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_write(fd, &req, sizeof(int));
 
 		safe_read(fd, &nodeid, sizeof(uid_t));
-	} else {
-		slurmstepd_info_t *step_info = stepd_get_info(fd);
-		nodeid = step_info->nodeid;
-		xfree(step_info);
 	}
 
 	return nodeid;

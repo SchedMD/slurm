@@ -170,7 +170,7 @@ extern void acct_gather_energy_destroy(acct_gather_energy_t *energy)
 extern void acct_gather_energy_pack(acct_gather_energy_t *energy, Buf buffer,
 				    uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!energy) {
 			pack64(0, buffer);
 			pack32(0, buffer);
@@ -187,28 +187,12 @@ extern void acct_gather_energy_pack(acct_gather_energy_t *energy, Buf buffer,
 		pack32(energy->current_watts, buffer);
 		pack64(energy->previous_consumed_energy, buffer);
 		pack_time(energy->poll_time, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		if (!energy) {
-			int i;
-			for (i=0; i<5; i++)
-				pack32(0, buffer);
-			pack_time(0, buffer);
-			return;
-		}
-
-		pack32((uint32_t) energy->base_consumed_energy, buffer);
-		pack32(energy->base_watts, buffer);
-		pack32((uint32_t) energy->consumed_energy, buffer);
-		pack32(energy->current_watts, buffer);
-		pack32((uint32_t) energy->previous_consumed_energy, buffer);
-		pack_time(energy->poll_time, buffer);
 	}
 }
 
 extern int acct_gather_energy_unpack(acct_gather_energy_t **energy, Buf buffer,
 				     uint16_t protocol_version, bool need_alloc)
 {
-	uint32_t uint32_tmp;
 	acct_gather_energy_t *energy_ptr;
 
 	if (need_alloc) {
@@ -218,22 +202,12 @@ extern int acct_gather_energy_unpack(acct_gather_energy_t **energy, Buf buffer,
 		energy_ptr = *energy;
 	}
 
-	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack64(&energy_ptr->base_consumed_energy, buffer);
 		safe_unpack32(&energy_ptr->base_watts, buffer);
 		safe_unpack64(&energy_ptr->consumed_energy, buffer);
 		safe_unpack32(&energy_ptr->current_watts, buffer);
 		safe_unpack64(&energy_ptr->previous_consumed_energy, buffer);
-		safe_unpack_time(&energy_ptr->poll_time, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&uint32_tmp, buffer);
-		energy_ptr->base_consumed_energy = (uint64_t) uint32_tmp;
-		safe_unpack32(&energy_ptr->base_watts, buffer);
-		safe_unpack32(&uint32_tmp, buffer);
-		energy_ptr->consumed_energy = (uint64_t) uint32_tmp;
-		safe_unpack32(&energy_ptr->current_watts, buffer);
-		safe_unpack32(&uint32_tmp, buffer);
-		energy_ptr->previous_consumed_energy = (uint64_t) uint32_tmp;
 		safe_unpack_time(&energy_ptr->poll_time, buffer);
 	}
 
