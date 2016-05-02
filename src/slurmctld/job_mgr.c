@@ -11287,14 +11287,13 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		assoc_mgr_unlock(&locks);
 	}
 
-	if (job_specs->name
-	    && !xstrcmp(job_specs->name, job_ptr->name)) {
-		debug("sched: update_job: new name identical to "
-		      "old name %u", job_ptr->job_id);
-	} if (job_specs->name) {
+	if (job_specs->name) {
 		if (IS_JOB_FINISHED(job_ptr)) {
 			error_code = ESLURM_JOB_FINISHED;
 			goto fini;
+		} else if (!xstrcmp(job_specs->name, job_ptr->name)) {
+			debug("sched: update_job: new name identical to "
+			      "old name %u", job_ptr->job_id);
 		} else {
 			xfree(job_ptr->name);
 			job_ptr->name = xstrdup(job_specs->name);
