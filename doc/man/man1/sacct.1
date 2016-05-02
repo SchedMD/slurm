@@ -791,6 +791,11 @@ NOTE: The RUNNING state will return suspended jobs as well.  In order
 to print suspended jobs you must request SUSPENDED at a different call
 from RUNNING.
 
+NOTE: The RUNNING state will return any jobs completed (cancelled or otherwise)
+in the time period requested as the job was also RUNNING durning that time.  If
+you are only looking for job that finished please choose the appropriate
+state(s) without the RUNNING state.
+
 .TP
 \f3Submit\fP
 The  time and date stamp (in Universal Time Coordinated, UTC) the job
