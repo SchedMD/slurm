@@ -4664,7 +4664,7 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, Buf buffer,
 	tmp_ptr = xmalloc(sizeof(update_part_msg_t));
 	*msg = tmp_ptr;
 
-	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&tmp_ptr->allow_accounts,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->allow_alloc_nodes,
