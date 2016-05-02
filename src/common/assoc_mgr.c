@@ -5404,7 +5404,7 @@ extern int load_assoc_usage(char *state_save_location)
 		uint32_t tmp32;
 		long double usage_tres_raw[g_tres_count];
 
-		if (ver == SLURM_15_08_PROTOCOL_VERSION) {
+		if (ver >= SLURM_15_08_PROTOCOL_VERSION) {
 			safe_unpack32(&assoc_id, buffer);
 			safe_unpacklongdouble(&usage_raw, buffer);
 			safe_unpackstr_xmalloc(&tmp_str, &tmp32, buffer);
