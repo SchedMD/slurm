@@ -1943,7 +1943,9 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 				while (tmp[i]) {
 					if (!(tmp[i] >= '0' && tmp[i] <= '9') &&
 					    !(tmp[i] >= 'a' && tmp[i] <= 'z') &&
-					    !(tmp[i] >= 'A' && tmp[i] <= 'Z')) {
+					    !(tmp[i] >= 'A' && tmp[i] <= 'Z') &&
+					    tmp[i] != '_' && tmp[i] != '.' &&
+					    tmp[i] != '-' && tmp[i] != '@') {
 						tmp[i] = '\0';
 						break;
 					}
