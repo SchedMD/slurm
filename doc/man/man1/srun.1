@@ -699,7 +699,11 @@ Environment variable names may be specified to propagate the current
 value of those variables (e.g. "\-\-export=EDITOR") or specific values
 for the variables may be exported (e.g.. "\-\-export=EDITOR=/bin/vi")
 in addition to the environment variables that would otherwise be set.
-By default all environment variables are propagated.
+By default all environment variables are propagated. With "\-\-export=NONE"
+no environment variables will be propagated unless explicitly listed (e.g.,
+"\-\-export=NONE,PATH=/bin,SHELL=/bin/bash"). Regardless of this setting,
+the appropriate "SLURM_*" task environment variables are always exported to the
+environment.
 
 .TP
 \fB\-\-gid\fR=<\fIgroup\fR>
