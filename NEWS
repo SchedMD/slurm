@@ -1,7 +1,7 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
-* Changes in Slurm 16.05.0pre3
+* Changes in Slurm 16.05.0rc1
 ==============================
  -- Remove the SchedulerParameters option of "assoc_limit_continue", making it
     the default value. Add option of "assoc_limit_stop". If "assoc_limit_stop"
