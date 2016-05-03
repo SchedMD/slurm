@@ -1933,11 +1933,30 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 		while((object = list_next(itr))) {
 			printf("  %s\n", object);
 			if (cond_set & 2) {
+				char *tmp = strstr(object, "U = ")+4;
+				int i = 0;
+
+				/* If the association has a partition on
+				 * it we need to get only the name portion, so
+				 * break on the first non alphanum char.
+				 */
+				while (tmp[i]) {
+					if (!(tmp[i] >= '0' && tmp[i] <= '9') &&
+					    !(tmp[i] >= 'a' && tmp[i] <= 'z') &&
+					    !(tmp[i] >= 'A' && tmp[i] <= 'Z') &&
+					    tmp[i] != '_' && tmp[i] != '.' &&
+					    tmp[i] != '-' && tmp[i] != '@') {
+						tmp[i] = '\0';
+						break;
+					}
+					i++;
+					continue;
+				}
+
 				if (!del_user_list)
 					del_user_list = list_create(
 						slurm_destroy_char);
-				slurm_addto_char_list(del_user_list,
-						      strstr(object, "U = ")+4);
+				slurm_addto_char_list(del_user_list, tmp);
 			}
 		}
 		list_iterator_destroy(itr);
