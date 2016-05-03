@@ -41,6 +41,7 @@ documents those changes that are of interest to users and administrators.
  -- Documentation - update prolog_epilog page to reflect current behavior
     if the Prolog fails.
  -- Documentation - clarify behavior of 'srun --export=NONE' in man page.
+ -- Fix potential gres underflow on restart of slurmctld.
 
 * Changes in Slurm 15.08.10
 ===========================
