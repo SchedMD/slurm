@@ -1936,8 +1936,8 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 				char *tmp = strstr(object, "U = ")+4;
 				int i = 0;
 
-				/* If the association has a parititon on
-				 * it we need to get only the name portition, so
+				/* If the association has a partition on
+				 * it we need to get only the name portion, so
 				 * break on the first non alphanum char.
 				 */
 				while (tmp[i]) {
