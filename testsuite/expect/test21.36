@@ -167,7 +167,7 @@ if {![file exists $test_conf_file]} {
 #
 # Add test cluster name to the slurm.conf
 #
-spawn $bin_sed -i "s/\\(ClusterName=\\).*/\\1$cluster/g" $test_conf_file
+spawn $bin_sed -i "s/\\(ClusterName=\\).*/\\1$cluster/gI" $test_conf_file
 expect {
 	-re "sed:" {
 		send_user "\nERROR: Unable to make temp slurm.conf\n"
@@ -180,9 +180,9 @@ expect {
 
 # Double check that cluster name was set correctly.
 set match 0
-spawn $bin_grep "^ClusterName=$cluster" $test_conf_file
+spawn $bin_grep -i "^ClusterName=$cluster" $test_conf_file
 expect {
-	"ClusterName=$cluster" {
+        -nocase "ClusterName=$cluster" {
 		incr match
 	}
 	eof {
