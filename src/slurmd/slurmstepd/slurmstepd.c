@@ -218,6 +218,7 @@ static slurmd_conf_t * read_slurmd_conf_lite (int fd)
 
 	free_buf(buffer);
 
+	confl->log_opts.prefix_level = 1;
 	confl->log_opts.stderr_level = confl->debug_level;
 	confl->log_opts.logfile_level = confl->debug_level;
 	confl->log_opts.syslog_level = confl->debug_level;
