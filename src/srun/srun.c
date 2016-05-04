@@ -96,12 +96,6 @@
 #include "src/api/step_ctx.h"
 #include "src/api/step_launch.h"
 
-#if defined (HAVE_DECL_STRSIGNAL) && !HAVE_DECL_STRSIGNAL
-#  ifndef strsignal
- extern char *strsignal(int);
-#  endif
-#endif /* defined HAVE_DECL_STRSIGNAL && !HAVE_DECL_STRSIGNAL */
-
 #ifndef OPEN_MPI_PORT_ERROR
 /* This exit code indicates the launched Open MPI tasks could
  *	not open the reserved port. It was already open by some
