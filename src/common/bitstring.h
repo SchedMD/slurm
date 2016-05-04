@@ -57,8 +57,6 @@
 #ifndef _BITSTRING_H_
 #define	_BITSTRING_H_
 
-#include "config.h"
-
 #include <inttypes.h>
 
 #define BITSTR_SHIFT_WORD8	3

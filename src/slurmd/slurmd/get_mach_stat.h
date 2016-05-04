@@ -39,8 +39,6 @@
 #ifndef _GET_MACH_STAT_H
 #define _GET_MACH_STAT_H
 
-#include "config.h"
-
 #include <inttypes.h>
 
 extern int get_cpu_load(uint32_t *cpu_load);

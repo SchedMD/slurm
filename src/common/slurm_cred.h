@@ -40,8 +40,6 @@
 #ifndef _HAVE_SLURM_CRED_H
 #define _HAVE_SLURM_CRED_H
 
-#include "config.h"
-
 #include <sys/types.h>
 #include <unistd.h>
 
