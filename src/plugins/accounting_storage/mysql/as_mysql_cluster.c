@@ -826,7 +826,7 @@ empty:
 		xstrfmtcat(tmp, ", %s", cluster_req_inx[i]);
 	}
 
-	query = xstrdup_printf("select %s from %s%s",
+	query = xstrdup_printf("select %s from %s%s order by LENGTH(name),name",
 			       tmp, cluster_table, extra);
 	xfree(tmp);
 	xfree(extra);
