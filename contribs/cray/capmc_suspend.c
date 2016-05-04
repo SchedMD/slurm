@@ -113,6 +113,7 @@ static void *_node_update(void *args);
 static void _read_config(void);
 static char *_run_script(char **script_argv, int *status);
 static int _tot_wait(struct timeval *start_time);
+static int _update_all_nodes(char *node_names);
 
 static s_p_hashtbl_t *_config_make_tbl(char *filename)
 {
@@ -378,14 +379,14 @@ static void *_node_update(void *args)
 	argv[4] = NULL;
 	for (i = 0; ((i < NODE_OFF_RETRIES) && !node_off_sent); i++) {
 		resp_msg = _run_script(argv, &status);
-		if ((status != 0) ||
-		    (resp_msg && (strcasestr(resp_msg, "Success") == NULL))) {
+		if ((status == 0) ||
+		    (resp_msg && strcasestr(resp_msg, "Success"))) {
+			debug("%s: node_off sent to %s", prog_name, argv[3]);
+			node_off_sent = true;
+		} else {
 			error("%s: capmc(%s,%s,%s): %d %s", prog_name,
 			      argv[1], argv[2], argv[3], status, resp_msg);
 			sleep(1);
-		} else {
-			debug("%s: node_off sent to %s", prog_name, nid_str);
-			node_off_sent = true;
 		}
 		xfree(resp_msg);
 	}
@@ -405,6 +406,80 @@ static void *_node_update(void *args)
 	return NULL;
 }
 
+/* Convert node name string to equivalent nid string */
+static char *_node_names_2_nid_list(char *node_names)
+{
+	char *nid_list = NULL;
+	int i, last_nid_index = -1;
+	bool is_dash = false;
+	bitstr_t *node_bitmap;
+
+	node_bitmap = bit_alloc(100000);
+	for (i = 0; node_names[i]; i++) {
+		int nid_index = 0;
+		/* skip "nid[" */
+		if ((node_names[i] < '0') || (node_names[i] > '9'))
+			continue;
+		/* skip leading zeros */
+		while (node_names[i] == '0')
+			i++;
+		if ((node_names[i] < '0') || (node_names[i] > '9'))
+			i--;	/* value is all zero's, back up to the last 0 */
+		while ((node_names[i] >= '0') && (node_names[i] <= '9')) {
+			nid_index *= 10;
+			nid_index += (node_names[i++] - '0');
+		}
+		if (is_dash && (nid_index >= last_nid_index)) {
+			bit_nset(node_bitmap, last_nid_index, nid_index);
+		} else {
+			bit_set(node_bitmap, nid_index);
+		}
+		if ((is_dash = (node_names[i] == '-')))
+			last_nid_index = nid_index;
+		else if (node_names[i] == '\0')
+			break;
+	}
+
+	i = strlen(node_names) + 1;
+	nid_list = xmalloc(i);
+	bit_fmt(nid_list, i, node_bitmap);
+	bit_free(node_bitmap);
+
+	return nid_list;
+}
+
+/* Attempt to shutdown all nodes in a single capmc call.
+ * RET 0 on success, -1 on failure */
+static int _update_all_nodes(char *node_names)
+{
+	char *argv[10], *nid_list, *resp_msg;
+	int rc = -1, status = 0;
+
+	nid_list = _node_names_2_nid_list(node_names);
+	if (nid_list == NULL)
+		return -1;
+
+	/* Request node power down.
+	 * Example: "capmc node_off –n 43" */
+	argv[0] = "capmc";
+	argv[1] = "node_off";
+	argv[2] = "-n";
+	argv[3] = nid_list;
+	argv[4] = NULL;
+	resp_msg = _run_script(argv, &status);
+	if ((status == 0) ||
+	    (resp_msg && strcasestr(resp_msg, "Success"))) {
+		debug("%s: node_off sent to %s", prog_name, argv[3]);
+		rc = 0;
+	} else {
+		error("%s: capmc(%s,%s,%s): %d %s", prog_name,
+		      argv[1], argv[2], argv[3], status, resp_msg);
+	}
+	xfree(resp_msg);
+	xfree(nid_list);
+	return rc;
+}
+
 int main(int argc, char *argv[])
 {
 	log_options_t log_opts = LOG_OPTS_INITIALIZER;
@@ -421,31 +496,36 @@ int main(int argc, char *argv[])
 		log_opts.logfile_level += 3;
 	(void) log_init(argv[0], log_opts, LOG_DAEMON, log_file);
 
-	if ((hl = hostlist_create(argv[1])) == NULL) {
-		error("%s: Invalid hostlist (%s)", prog_name, argv[1]);
-		exit(2);
-	}
-	while ((node_name = hostlist_pop(hl))) {
-		slurm_mutex_lock(&thread_cnt_mutex);
-		while (1) {
-			if (thread_cnt <= MAX_THREADS) {
-				thread_cnt++;
-				break;
-			} else {	/* wait for state change and retry */
-				pthread_cond_wait(&thread_cnt_cond,
-						  &thread_cnt_mutex);
+	/* Attempt to shutdown all nodes in a single capmc call,
+	 * attempt to shutdown individual nodes only if that fails. */
+	if (_update_all_nodes(argv[1]) != 0) {
+		if ((hl = hostlist_create(argv[1])) == NULL) {
+			error("%s: Invalid hostlist (%s)", prog_name, argv[1]);
+			exit(2);
+		}
+		while ((node_name = hostlist_pop(hl))) {
+			slurm_mutex_lock(&thread_cnt_mutex);
+			while (1) {
+				if (thread_cnt <= MAX_THREADS) {
+					thread_cnt++;
+					break;
+				} else {   /* wait for state change and retry */
+					pthread_cond_wait(&thread_cnt_cond,
+							  &thread_cnt_mutex);
+				}
 			}
-		}
-		slurm_mutex_unlock(&thread_cnt_mutex);
+			slurm_mutex_unlock(&thread_cnt_mutex);
 
-		slurm_attr_init(&attr_work);
-		(void) pthread_attr_setdetachstate
-			(&attr_work, PTHREAD_CREATE_DETACHED);
-		if (pthread_create(&thread_work, &attr_work, _node_update,
-				   (void *) node_name)) {
-			_node_update((void *) node_name);
+			slurm_attr_init(&attr_work);
+			(void) pthread_attr_setdetachstate
+				(&attr_work, PTHREAD_CREATE_DETACHED);
+			if (pthread_create(&thread_work, &attr_work,
+					    _node_update, (void *) node_name)) {
+				_node_update((void *) node_name);
+			}
+			slurm_attr_destroy(&attr_work);
 		}
-		slurm_attr_destroy(&attr_work);
+		hostlist_destroy(hl);
 	}
 
 	/* Wait for work threads to complete */
@@ -457,7 +537,7 @@ int main(int argc, char *argv[])
 			pthread_cond_wait(&thread_cnt_cond, &thread_cnt_mutex);
 	}
 	slurm_mutex_unlock(&thread_cnt_mutex);
-	hostlist_destroy(hl);
 
+	xfree(prog_name);
 	exit(0);
 }

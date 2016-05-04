@@ -3,8 +3,14 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 17.02.0pre1
 ==============================
+ 
+* Changes in Slurm 16.05.0rc2
+==============================
+ -- Cray node shutdown/reboot scripts, perform operations on all nodes in one
+    capmc command. Only if that fails, issue the operations in parallel on
+    individual nodes. Required for scalability.
 
-* Changes in Slurm 16.05.0pre3
+* Changes in Slurm 16.05.0rc1
 ==============================
  -- Remove the SchedulerParameters option of "assoc_limit_continue", making it
     the default value. Add option of "assoc_limit_stop". If "assoc_limit_stop"
@@ -249,6 +255,7 @@ documents those changes that are of interest to users and administrators.
     if the Prolog fails.
  -- Documentation - clarify behavior of 'srun --export=NONE' in man page.
  -- Fix potential gres underflow on restart of slurmctld.
+ -- Fix sacctmgr to remove a user who has no associations.
 
 * Changes in Slurm 15.08.10
 ===========================
