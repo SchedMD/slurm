@@ -285,10 +285,6 @@ static void _cred_state_pack_one(cred_state_t *s, Buf buffer);
 static void _sbast_cache_add(sbcast_cred_t *sbcast_cred);
 static void _sbcast_cache_del(void *x);
 
-#ifndef DISABLE_LOCALTIME
-static char * timestr (const time_t *tp, char *buf, size_t n);
-#endif
-
 static int _slurm_crypto_init(void)
 {
 	char	*auth_info, *tok;
@@ -1740,21 +1736,11 @@ _credential_replayed(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 	return false;
 }
 
-#ifdef DISABLE_LOCALTIME
-extern char * timestr (const time_t *tp, char *buf, size_t n)
-#else
-	static char * timestr (const time_t *tp, char *buf, size_t n)
-#endif
+static char * timestr (const time_t *tp, char *buf, size_t n)
 {
 	char fmt[] = "%y%m%d%H%M%S";
 	struct tm tmval;
-#ifdef DISABLE_LOCALTIME
-	static int disabled = 0;
-	if (buf == NULL)
-		disabled = 1;
-	if (disabled)
-		return NULL;
-#endif
+
 	if (!slurm_localtime_r (tp, &tmval))
 		error ("localtime_r: %m");
 	slurm_strftime (buf, n, fmt, &tmval);
