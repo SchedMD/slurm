@@ -2,9 +2,6 @@
  *  get_mach_stat.c - Get the status of the current machine
  *
  *  NOTE: Some of these functions are system dependent. Built on RedHat2.4
- *  NOTE: While not currently used by SLURM, this code can also get a node's
- *       OS name and CPU speed. See code ifdef'ed out via USE_OS_NAME and
- *       USE_CPU_SPEED
  *****************************************************************************
  *  Copyright (C) 2006 Hewlett-Packard Development Company, L.P.
  *  Copyright (C) 2002-2006 The Regents of the University of California.
@@ -104,41 +101,6 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmd/slurmd/get_mach_stat.h"
 #include "src/slurmd/slurmd/slurmd.h"
-
-/* #define DEBUG_DETAIL	1 */	/* enable detailed debugging within SLURM */
-
-#ifdef USE_OS_NAME
-/*
- * get_os_name - Return the operating system name and version
- * Input: os_name - buffer for the OS name, must be at least MAX_OS_LEN characters
- * Output: os_name - filled in with OS name, "UNKNOWN" if error
- *         return code - 0 if no error, otherwise errno
- */
-extern int
-get_os_name(char *os_name)
-{
-	int error_code;
-	struct utsname sys_info;
-
-	strcpy(os_name, "UNKNOWN");
-	error_code = uname(&sys_info);
-	if (error_code != 0) {
-		error ("get_os_name: uname error %d", error_code);
-		return error_code;
-	}
-
-	if ((strlen(sys_info.sysname) + strlen(sys_info.release) + 2) >=
-		MAX_OS_LEN) {
-		error ("get_os_name: OS name too long");
-		return error_code;
-	}
-
-	strcpy(os_name, sys_info.sysname);
-	strcat(os_name, ".");
-	strcat(os_name, sys_info.release);
-	return 0;
-}
-#endif
 
 
 /*
@@ -378,92 +340,3 @@ extern int get_free_mem(uint32_t *free_mem)
 #endif
 	return 0;
 }
-
-#ifdef USE_CPU_SPEED
-/* _chk_cpuinfo_str
- *	check a line of cpuinfo data (buffer) for a keyword.  If it
- *	exists, return the string value for that keyword in *valptr.
- * Input:  buffer - single line of cpuinfo data
- *	   keyword - keyword to check for
- * Output: valptr - string value corresponding to keyword
- *         return code - true if keyword found, false if not found
- */
-static int _chk_cpuinfo_str(char *buffer, char *keyword, char **valptr)
-{
-	char *ptr;
-	if (xstrncmp(buffer, keyword, strlen(keyword)))
-		return false;
-
-	ptr = strstr(buffer, ":");
-	if (ptr != NULL)
-		ptr++;
-	*valptr = ptr;
-	return true;
-}
-
-/* _chk_cpuinfo_float
- *	check a line of cpuinfo data (buffer) for a keyword.  If it
- *	exists, return the float value for that keyword in *valptr.
- * Input:  buffer - single line of cpuinfo data
- *	   keyword - keyword to check for
- * Output: valptr - float value corresponding to keyword
- *         return code - true if keyword found, false if not found
- */
-static int _chk_cpuinfo_float(char *buffer, char *keyword, float *val)
-{
-	char *valptr;
-	if (_chk_cpuinfo_str(buffer, keyword, &valptr)) {
-		*val = (float) strtod(valptr, (char **)NULL);
-		return true;
-	} else {
-		return false;
-	}
-}
-
-/*
- * get_speed - Return the speed of procs on this system (MHz clock)
- * Input: procs - buffer for the CPU speed
- * Output: procs - filled in with CPU speed, "1.0" if error
- *         return code - 0 if no error, otherwise errno
- */
-extern int
-get_speed(float *speed)
-{
-#if defined (__sun)
-	kstat_ctl_t   *kc;
-	kstat_t       *ksp;
-	kstat_named_t *knp;
-
-	kc = kstat_open();
-	if (kc == NULL) {
-		error ("get speed: kstat error %d", errno);
-		return errno;
-	}
-
-	ksp = kstat_lookup(kc, "cpu_info", -1, NULL);
-	kstat_read(kc, ksp, NULL);
-	knp = kstat_data_lookup(ksp, "clock_MHz");
-
-	*speed = knp->value.l;
-#else
-	FILE *cpu_info_file;
-	char buffer[128];
-	char* _cpuinfo_path = "/proc/cpuinfo";
-
-	*speed = 1.0;
-	cpu_info_file = fopen(_cpuinfo_path, "r");
-	if (cpu_info_file == NULL) {
-		error("get_speed: error %d opening %s", errno, _cpuinfo_path);
-		return errno;
-	}
-
-	while (fgets(buffer, sizeof(buffer), cpu_info_file) != NULL) {
-		_chk_cpuinfo_float(buffer, "cpu MHz", speed);
-	}
-
-	fclose(cpu_info_file);
-#endif
-	return 0;
-}
-
-#endif

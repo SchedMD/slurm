@@ -50,12 +50,4 @@ extern int get_memory(uint32_t *real_memory);
 extern int get_tmp_disk(uint32_t *tmp_disk, char *tmp_fs);
 extern int get_up_time(uint32_t *up_time);
 
-#ifdef USE_OS_NAME
-extern int get_os_name(char *os_name);
-#endif
-
-#ifdef USE_CPU_SPEED
-extern int get_speed(float *speed);
-#endif
-
 #endif	/* _GET_MACH_STAT_H */
