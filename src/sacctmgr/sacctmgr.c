@@ -39,6 +39,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "config.h"
+
 #include "src/sacctmgr/sacctmgr.h"
 #include "src/common/xsignal.h"
 #include "src/common/proc_args.h"

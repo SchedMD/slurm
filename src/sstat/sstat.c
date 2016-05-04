@@ -36,6 +36,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "config.h"
+
 #include "sstat.h"
 
 int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,

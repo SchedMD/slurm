@@ -26,6 +26,8 @@
 #ifndef _GTHREAD_HELPER_H
 #define _GTHREAD_HELPER_H
 
+#include "config.h"
+
 #if defined(HAVE_AIX)
 /* AIX defines a func_data macro which conflicts with func_data
  * variable names in the gtk.h headers */

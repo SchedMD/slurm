@@ -1,6 +1,8 @@
 #ifndef _STRLCPY_H
 #define _STRLCPY_H
 
+#include "config.h"
+
 #ifndef HAVE_STRLCPY
 
 #  include <sys/types.h>

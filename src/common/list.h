@@ -33,7 +33,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
  *****************************************************************************/
 
-
 #ifndef LSD_LIST_H
 #define LSD_LIST_H
 
@@ -47,9 +46,6 @@
  *  Notes  *
  ***********/
 /*
- *  If NDEBUG is not defined, internal debug code will be enabled.  This is
- *  intended for development use only and production code should define NDEBUG.
- *
  *  If WITH_LSD_FATAL_ERROR_FUNC is defined, the linker will expect to
  *  find an external lsd_fatal_error(file,line,mesg) function.  By default,
  *  lsd_fatal_error(file,line,mesg) is a macro definition that outputs an

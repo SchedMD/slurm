@@ -38,8 +38,8 @@
  *  This file is patterned after jobcomp_linux.c, written by Morris Jette and
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
-#ifndef _HAVE_MYSQL_COMMON_H
-#define _HAVE_MYSQL_COMMON_H
+#ifndef _MYSQL_COMMON_H
+#define _MYSQL_COMMON_H
 
 #include <inttypes.h>
 #include <pthread.h>
@@ -106,6 +106,5 @@ extern int mysql_db_insert_ret_id(mysql_conn_t *mysql_conn, char *query);
 
 extern int mysql_db_create_table(mysql_conn_t *mysql_conn, char *table_name,
 				 storage_field_t *fields, char *ending);
-
 
 #endif

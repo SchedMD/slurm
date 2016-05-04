@@ -39,6 +39,8 @@
 #ifndef _HOSTLIST_H
 #define _HOSTLIST_H
 
+#include "config.h"
+
 #include <unistd.h>		/* load ssize_t definition */
 
 /* Since users can specify a numeric range in the prefix, we need to prevent

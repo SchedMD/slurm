@@ -1,6 +1,5 @@
 /*****************************************************************************\
  *  bridge_linker.c
- *
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -36,6 +35,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "config.h"
 
 #include "../ba/block_allocator.h"
 #include "../bridge_linker.h"

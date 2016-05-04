@@ -43,6 +43,8 @@
 #ifndef _READ_CONFIG_H
 #define _READ_CONFIG_H
 
+#include "config.h"
+
 #include "src/common/list.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_socket_common.h"

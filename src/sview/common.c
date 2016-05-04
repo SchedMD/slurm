@@ -27,6 +27,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "config.h"
+
 #include "src/sview/sview.h"
 #include "src/common/parse_time.h"
 #include <gdk/gdkkeysyms.h>
