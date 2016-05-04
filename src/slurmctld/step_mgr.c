@@ -4039,12 +4039,9 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 		xfree(core_job);
 	}
 
-	if (step_ptr->step_layout->node_list) {
-		switch_g_job_step_allocated(switch_tmp,
-					    step_ptr->step_layout->node_list);
-	} else {
-		switch_g_job_step_allocated(switch_tmp, NULL);
-	}
+	switch_g_job_step_allocated(switch_tmp,
+				    step_ptr->step_layout->node_list);
+
 	info("recovered job step %u.%u", job_ptr->job_id, step_id);
 	return SLURM_SUCCESS;
 
