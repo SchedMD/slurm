@@ -1121,7 +1121,7 @@ lsd_nomem_error(char *file, int line, char *msg)
 }
 
 /*
- * attempt to log message and abort()
+ * attempt to log message and exit()
  */
 void fatal(const char *fmt, ...)
 {
