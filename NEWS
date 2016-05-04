@@ -7,6 +7,8 @@ documents those changes that are of interest to users and administrators.
     capmc command. Only if that fails, issue the operations in parallel on
     individual nodes. Required for scalability.
  -- Cleanup two minor Coverity warnings.
+ -- Make it so the tres units in a job's formatted string are converted like
+    they are in a step.
 
 * Changes in Slurm 16.05.0rc1
 ==============================

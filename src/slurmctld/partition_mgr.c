@@ -133,7 +133,9 @@ static void _calc_part_tres(struct part_record *part_ptr)
 	}
 
 	part_ptr->tres_fmt_str =
-		assoc_mgr_make_tres_str_from_array(part_ptr->tres_cnt, 0, true);
+		assoc_mgr_make_tres_str_from_array(part_ptr->tres_cnt,
+						   TRES_STR_CONVERT_UNITS,
+						   true);
 }
 
 /*

@@ -92,6 +92,7 @@ typedef enum {
 #define TRES_STR_FLAG_COMMA1      0x00000020 /* make a first char a comma */
 #define TRES_STR_FLAG_NO_NULL     0x00000040 /* return blank string
 					      * instead of NULL */
+#define TRES_STR_CONVERT_UNITS    0x00000080 /* Convert number units */
 
 typedef struct {
 	slurmdb_cluster_rec_t *cluster_rec;
