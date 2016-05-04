@@ -42,28 +42,6 @@
 		_X	= NULL; 		\
 	} while (0)
 
-/***********
- *  Notes  *
- ***********/
-/*
- *  If WITH_LSD_FATAL_ERROR_FUNC is defined, the linker will expect to
- *  find an external lsd_fatal_error(file,line,mesg) function.  By default,
- *  lsd_fatal_error(file,line,mesg) is a macro definition that outputs an
- *  error message to stderr.  This macro may be redefined to invoke another
- *  routine instead.
- *
- *  If WITH_LSD_NOMEM_ERROR_FUNC is defined, the linker will expect to
- *  find an external lsd_nomem_error(file,line,mesg) function.  By default,
- *  lsd_nomem_error(file,line,mesg) is a macro definition that returns NULL.
- *  This macro may be redefined to invoke another routine instead.
- *
- *  These routines are thread-safe.
- *
- *  SLURM's versions of these functions write directly to the log file, using
- *  fprintf to avoid consuming more memory.
- */
-
-
 /****************
  *  Data Types  *
  ****************/

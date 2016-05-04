@@ -80,41 +80,6 @@ strong_alias(list_find,		slurm_list_find);
 strong_alias(list_remove,	slurm_list_remove);
 strong_alias(list_delete_item,	slurm_list_delete_item);
 strong_alias(list_install_fork_handlers, slurm_list_install_fork_handlers);
-/*********************
- *  lsd_fatal_error  *
- *********************/
-
-#include <unistd.h>
-#ifdef WITH_LSD_FATAL_ERROR_FUNC
-#  undef lsd_fatal_error
-extern void lsd_fatal_error(char *file, int line, char *mesg);
-#else /* !WITH_LSD_FATAL_ERROR_FUNC */
-#  ifndef lsd_fatal_error
-static void lsd_fatal_error(char *file, int line, char *mesg)
-{
-	log_fatal(file, line, mesg, strerror(errno));
-}
-#  endif /* !lsd_fatal_error */
-#endif /* !WITH_LSD_FATAL_ERROR_FUNC */
-
-/*********************
- *  lsd_nomem_error  *
- *********************/
-
-#ifdef WITH_LSD_NOMEM_ERROR_FUNC
-#  undef lsd_nomem_error
-extern void * lsd_nomem_error(char *file, int line, char *mesg);
-#else /* !WITH_LSD_NOMEM_ERROR_FUNC */
-#  ifndef lsd_nomem_error
-static void * lsd_nomem_error(char *file, int line, char *mesg)
-{
-
-	log_oom(file, line, mesg);
-	abort();
-	return NULL;
-}
-#  endif /* !lsd_nomem_error */
-#endif /* !WITH_LSD_NOMEM_ERROR_FUNC */
 
 
 /***************
@@ -222,10 +187,7 @@ static int list_mutex_is_locked (pthread_mutex_t *mutex);
 List
 list_create (ListDelF f)
 {
-	List l;
-
-	if (!(l = list_alloc()))
-		return(lsd_nomem_error(__FILE__, __LINE__, "list create"));
+	List l = list_alloc();
 
 	l->head = NULL;
 	l->tail = &l->head;
@@ -539,11 +501,6 @@ list_sort(List l, ListCmpF f)
 
 	lsize = l->count;
 	v = xmalloc(lsize * sizeof(char *));
-	if (v == NULL) {
-		slurm_mutex_unlock(&l->mutex);
-		lsd_nomem_error(__FILE__, __LINE__, "list_sort");
-		return;
-	}
 
 	n = 0;
 	while ((e = _list_pop_locked(l))) {
@@ -648,8 +605,7 @@ list_iterator_create (List l)
 	ListIterator i;
 
 	assert(l != NULL);
-	if (!(i = list_iterator_alloc()))
-		return(lsd_nomem_error(__FILE__, __LINE__, "list iterator create"));
+	i = list_iterator_alloc();
 
 	i->list = l;
 	slurm_mutex_lock(&l->mutex);
@@ -841,8 +797,7 @@ list_node_create (List l, ListNode *pp, void *x)
 	assert(pp != NULL);
 	assert(x != NULL);
 
-	if (!(p = list_node_alloc()))
-		return(lsd_nomem_error(__FILE__, __LINE__, "list node create"));
+	p = list_node_alloc();
 
 	p->data = x;
 	if (!(p->next = *pp))
@@ -1022,11 +977,8 @@ list_reinit_mutexes (void)
 
 void list_install_fork_handlers (void)
 {
-	int err;
-	if ((err = pthread_atfork(NULL, NULL, &list_reinit_mutexes))) {
-		lsd_fatal_error(__FILE__, __LINE__, "list atfork install");
-		abort();
-	}
+	if (pthread_atfork(NULL, NULL, &list_reinit_mutexes))
+		fatal("cannot install list atfork handler");
 }
 
 #ifndef NDEBUG
