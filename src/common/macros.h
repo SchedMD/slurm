@@ -113,12 +113,9 @@
 /* define macros for GCC function attributes if we're using gcc */
 
 #if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 4)
-#  define __PRINTF_ATTR( form_idx, arg_idx ) 	\
-          __attribute__((__format__ (__printf__, form_idx, arg_idx)))
 #  define __NORETURN_ATTR				\
           __attribute__((__noreturn__))
 #else  /* !__GNUC__ */
-#  define __PRINTF_ATTR( format_idx, arg_idx )	((void)0)
 #  define __NORETURN_ATTR			((void)0)
 #endif /* __GNUC__ */
 
