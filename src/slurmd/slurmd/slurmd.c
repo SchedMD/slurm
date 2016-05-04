@@ -1624,7 +1624,7 @@ _slurmd_init(void)
 		}
 	}
 
-	if ((devnull = open_cloexec("/dev/null", O_RDWR)) < 0) {
+	if ((devnull = open("/dev/null", O_RDWR | O_CLOEXEC)) < 0) {
 		error("Unable to open /dev/null: %m");
 		return SLURM_FAILURE;
 	}
