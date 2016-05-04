@@ -6,6 +6,7 @@ documents those changes that are of interest to users and administrators.
  -- Cray node shutdown/reboot scripts, perform operations on all nodes in one
     capmc command. Only if that fails, issue the operations in parallel on
     individual nodes. Required for scalability.
+ -- Cleanup two minor Coverity warnings.
 
 * Changes in Slurm 16.05.0rc1
 ==============================
