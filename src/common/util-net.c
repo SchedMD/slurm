@@ -397,7 +397,7 @@ extern char *make_full_path(char *rpath)
 #ifdef HAVE_GET_CURRENT_DIR_NAME
 	cwd = get_current_dir_name();
 #else
-	cwd = xmalloc(PATH_MAX);
+	cwd = malloc(PATH_MAX);
 	cwd = getcwd(cwd, PATH_MAX);
 #endif
 	/* 2 = / + 0
