@@ -2597,15 +2597,6 @@ extern int slurmdb_unpack_user_cond(void **object, uint16_t protocol_version,
 		safe_unpack16(&object_ptr->with_coords, buffer);
 		safe_unpack16(&object_ptr->with_deleted, buffer);
 		safe_unpack16(&object_ptr->with_wckeys, buffer);
-
-		/* If we get the call from an older version of SLURM
-		   just automatically set this to get the defaults */
-		if (protocol_version < 8) {
-			if (!object_ptr->with_assocs)
-				object_ptr->assoc_cond->only_defs = 1;
-			else
-				object_ptr->with_wckeys = 1;
-		}
 	}
 
 	return SLURM_SUCCESS;

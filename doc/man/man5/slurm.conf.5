@@ -1774,6 +1774,7 @@ The keywords below have no associated value
 \fBACCRUE_ALWAYS\fR
 If set, priority age factor will be increased despite job dependencies
 or holds.
+.TP
 \fBCALCULATE_RUNNING\fR
 If set, priorities will be recalculated not only for pending jobs, but also
 running and suspended jobs.
@@ -4442,7 +4443,7 @@ small blocks or for systems running
 with gang scheduling (\fBPreemptMode=suspend,gang\fR).
 NOTE: \fIPreemptType=QOS\fR will permit one additional job to be run
 on the partition if started due to job preemption. For example, a configuration
-of \fIBOverSubscribe=FORCE:1\fR will only permit one job per resources normally,
+of \fIOverSubscribe=FORCE:1\fR will only permit one job per resources normally,
 but a second job can be started if done so through preemption based upon QOS.
 The use of \fIPreemptType=QOS\fR and \fIPreemptType=Suspend\fR only applies
 with \fISelectType=cons_res\fR.
