@@ -46,8 +46,10 @@
 
 #define MAX_FED_CLUSTERS 63
 
-static int _get_fed_cluster_index(mysql_conn_t *mysql_conn, const char *cluster,
-				  const char *federation, int *ret_index)
+extern int as_mysql_get_fed_cluster_index(mysql_conn_t *mysql_conn,
+					  const char *cluster,
+					  const char *federation,
+					  int last_index, int *ret_index)
 {
 	/* find index for cluster in federation.
 	 * don't do anything if cluster is already part of federation
@@ -91,8 +93,8 @@ static int _get_fed_cluster_index(mysql_conn_t *mysql_conn, const char *cluster,
 	xstrfmtcat(query, "SELECT name, federation, fed_inx "
 		   	  "FROM %s "
 		   	  "WHERE name!='%s' AND federation='%s' "
-			  "ORDER BY fed_inx;",
-			  cluster_table, cluster, federation);
+			  "AND fed_inx > %d ORDER BY fed_inx;",
+			  cluster_table, cluster, federation, last_index);
 	if (debug_flags & DEBUG_FLAG_DB_FEDR)
 		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
@@ -102,6 +104,8 @@ static int _get_fed_cluster_index(mysql_conn_t *mysql_conn, const char *cluster,
 	}
 	xfree(query);
 
+	if (last_index >= index)
+		index = last_index + 1;
 	while ((row = mysql_fetch_row(result))) {
 		if (index != slurm_atoul(row[2]))
 			break;
@@ -273,10 +277,10 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 					   QOS_LEVEL_SET, 1);
 
 		if (object->federation) {
-			rc = _get_fed_cluster_index(mysql_conn,
-							 object->name,
-							 object->federation,
-							 &fed_inx);
+			rc = as_mysql_get_fed_cluster_index(mysql_conn,
+							    object->name,
+							    object->federation,
+							    -1, &fed_inx);
 			if (rc) {
 				error("failed to get cluster index for "
 				      "federation");
@@ -556,8 +560,8 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		if (cluster->federation) {
 			int index;
-			rc = _get_fed_cluster_index(mysql_conn, object,
-						    cluster->federation,
+			rc = as_mysql_get_fed_cluster_index(mysql_conn, object,
+						    cluster->federation, -1,
 						    &index);
 			if (rc) {
 				error("failed to get cluster index for "

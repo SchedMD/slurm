@@ -1854,7 +1854,14 @@ extern void sacctmgr_print_federation(slurmdb_federation_rec_t *fed)
 		ListIterator itr = list_iterator_create(fed->cluster_list);
 		slurmdb_cluster_rec_t *cluster = NULL;
 		while ((cluster = list_next(itr))) {
-			printf("  Cluster       = %s\n", cluster->name);
+			char *tmp_name = cluster->name;
+			if (tmp_name &&
+			    (tmp_name[0] == '+' || tmp_name[0] == '-'))
+				printf("  Cluster      %c= %s\n",
+				       tmp_name[0], tmp_name + 1);
+			else
+				printf("  Cluster       = %s\n", tmp_name);
+
 		}
 		list_iterator_destroy(itr);
 	}

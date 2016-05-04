@@ -108,52 +108,157 @@ static int _setup_federation_rec_limits(slurmdb_federation_rec_t *fed,
 	return SLURM_SUCCESS;
 }
 
-static int _assign_clusters_to_federation(mysql_conn_t *mysql_conn,
-					  uint32_t uid, char *federation,
-					  List cluster_list) {
+static int _clear_federation_clusters(mysql_conn_t *mysql_conn, const char *fed)
+{
+	int      rc = SLURM_SUCCESS;
+	char *query = NULL;
+	xstrfmtcat(query, "UPDATE %s SET federation='',fed_inx=0 "
+			  "WHERE deleted=0 AND federation='%s'",
+			  cluster_table, fed);
+	if (debug_flags & DEBUG_FLAG_DB_FEDR)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	rc = mysql_db_query(mysql_conn, query);
+	xfree(query);
+	if (rc)
+		error("Failed to clear federation %s's existing clusters", fed);
+	return rc;
+}
 
-	int          rc       = SLURM_SUCCESS;
-	List         ret_list = NULL;
-	ListIterator itr      = NULL;
+static int _remove_clusters_from_fed(mysql_conn_t *mysql_conn, List clusters)
+{
+	int   rc    = SLURM_SUCCESS;
+	char *query = NULL;
+	char *name  = NULL;
+	char *names = NULL;
+	ListIterator itr = NULL;
+
+	xassert(clusters);
+
+	itr = list_iterator_create(clusters);
+	while ((name = list_next(itr)))
+	       xstrfmtcat(names, "%s'%s'", names ? "," : "", name );
+
+	xstrfmtcat(query, "UPDATE %s "
+		   	  "SET federation='', fed_inx=0 "
+			  "WHERE name IN (%s) and deleted=0",
+		   cluster_table, names);
+
+	if (debug_flags & DEBUG_FLAG_DB_FEDR)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+
+	rc = mysql_db_query(mysql_conn, query);
+	xfree(query);
+	if (rc)
+		error("Failed to clusters %s from federation", names);
+	xfree(names);
+
+	/* TODO: Add to TXN table */
+	/* Have to add indexes */
+
+	return rc;
+}
+
+static int _add_clusters_to_fed(mysql_conn_t *mysql_conn, List clusters,
+				const char *fed)
+{
+	int   rc      = SLURM_SUCCESS;
+	char *query   = NULL;
+	char *name    = NULL;
+	char *names   = NULL;
+	char *indexes = NULL;
+	ListIterator itr = NULL;
+	int   last_index = -1;
+
+	xassert(fed);
+	xassert(clusters);
+
+	itr = list_iterator_create(clusters);
+	while ((name = list_next(itr))) {
+		int index;
+		if ((rc = as_mysql_get_fed_cluster_index(mysql_conn, name, fed,
+							 last_index, &index)))
+			goto end_it;
+		last_index = index;
+		xstrfmtcat(indexes, "WHEN name='%s' THEN %d ",
+			   name, index);
+		xstrfmtcat(names, "%s'%s'", names ? "," : "", name);
+	}
+
+	xstrfmtcat(query, "UPDATE %s "
+		   	  "SET federation='%s', fed_inx = CASE %s END "
+			  "WHERE name IN (%s) and deleted=0",
+		   cluster_table, fed, indexes, names);
+
+	if (debug_flags & DEBUG_FLAG_DB_FEDR)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+
+	rc = mysql_db_query(mysql_conn, query);
+	if (rc)
+		error("Failed to add clusters %s to federation %s",
+		      names, fed);
+
+end_it:
+	xfree(query);
+	xfree(names);
+	xfree(indexes);
+	list_iterator_destroy(itr);
+
+	/* TODO: Add to TXN table */
+	/* Have to add indexes */
+
+	return rc;
+}
+
+static int _assign_clusters_to_federation(mysql_conn_t *mysql_conn,
+					  const char *federation,
+					  List cluster_list)
+{
+	int  rc       = SLURM_SUCCESS;
+	List add_list = NULL;
+	List rem_list = NULL;
+	ListIterator itr    = NULL;
+	bool clear_clusters = false;
 	slurmdb_cluster_rec_t *tmp_cluster = NULL;
-	slurmdb_cluster_rec_t  rec;
-	slurmdb_cluster_cond_t cluster_cond;
+
+	xassert(federation);
+	xassert(cluster_list);
 
 	if (!cluster_list || !federation) {
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
 
-	slurmdb_init_cluster_cond(&cluster_cond, 0);
-	cluster_cond.cluster_list = list_create(slurm_destroy_char);
+	add_list = list_create(slurm_destroy_char);
+	rem_list = list_create(slurm_destroy_char);
 
 	itr = list_iterator_create(cluster_list);
-	while ((tmp_cluster = list_next(itr)))
-		list_append(cluster_cond.cluster_list,
-			    xstrdup(tmp_cluster->name));
-
-	slurmdb_init_cluster_rec(&rec, 0);
-	rec.federation = xstrdup(federation);
-
-	ret_list = as_mysql_modify_clusters(mysql_conn, uid,
-					    &cluster_cond, &rec);
-	xfree(rec.federation);
-	FREE_NULL_LIST(cluster_cond.cluster_list);
+	while ((tmp_cluster = list_next(itr))) {
+		if (!tmp_cluster->name)
+			continue;
+		if (tmp_cluster->name[0] == '-')
+			list_append(rem_list, xstrdup(tmp_cluster->name + 1));
+		else if (tmp_cluster->name[0] == '+')
+			list_append(add_list, xstrdup(tmp_cluster->name + 1));
+		else {
+			list_append(add_list, xstrdup(tmp_cluster->name));
+			clear_clusters = true;
+		}
+	}
 	list_iterator_destroy(itr);
 
-	if (!ret_list) {
-		error("Couldn't assign clusters to federation %s", federation);
-		rc = SLURM_ERROR;
+	if (clear_clusters &&
+	    (rc = _clear_federation_clusters(mysql_conn, federation)))
 		goto end_it;
-	} else if (!list_count(ret_list)) {
-		error("No clusters were assigned to the federation %s",
-		      federation);
-		rc = SLURM_ERROR;
+	if (list_count(rem_list) &&
+	    (rc = _remove_clusters_from_fed(mysql_conn, rem_list)))
 		goto end_it;
-	}
+	if (list_count(add_list) &&
+	    (rc = _add_clusters_to_fed(mysql_conn, add_list, federation)))
+		goto end_it;
 
 end_it:
-	FREE_NULL_LIST(ret_list);
+	list_destroy(add_list);
+	list_destroy(rem_list);
 
 	return rc;
 }
@@ -222,8 +327,7 @@ extern int as_mysql_add_federations(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 
 		if (object->cluster_list &&
-		    _assign_clusters_to_federation(mysql_conn, uid,
-						   object->name,
+		    _assign_clusters_to_federation(mysql_conn, object->name,
 						   object->cluster_list)) {
 			xfree(cols);
 			xfree(vals);
@@ -437,7 +541,7 @@ extern List as_mysql_modify_federations(
 	mysql_free_result(result);
 
 	if (fed->cluster_list &&
-	    (_assign_clusters_to_federation(mysql_conn, uid, object,
+	    (_assign_clusters_to_federation(mysql_conn, object,
 					    fed->cluster_list))) {
 		xfree(vals);
 		xfree(name_char);

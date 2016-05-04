@@ -344,6 +344,150 @@ endit:
 	return count;
 }
 
+/* Parses strings such as stra,+strb,-strc and appends the default mode to each
+ * string in the list if no specific mode is listed. */
+extern int slurm_addto_mode_char_list(List char_list, char *names, int mode)
+{
+	int i=0, start=0;
+	char *m_name = NULL, *name = NULL, *tmp_char = NULL;
+	ListIterator itr = NULL;
+	char quote_c = '\0';
+	int quote = 0;
+	int count = 0;
+	int equal_set = 0;
+	int add_set = 0;
+	char *err_msg = "You can't use '=' and '+' or '-' in the same line";
+
+	if (!char_list) {
+		error("No list was given to fill in");
+		return 0;
+	}
+
+	if (!names) {
+		error("You gave me an empty name list");
+		return 0;
+	}
+
+	itr = list_iterator_create(char_list);
+	if (names[i] == '\"' || names[i] == '\'') {
+		quote_c = names[i];
+		quote = 1;
+		i++;
+	}
+	start = i;
+	while(names[i]) {
+		if (quote && names[i] == quote_c)
+			break;
+		else if (names[i] == '\"' || names[i] == '\'')
+			names[i] = '`';
+		else if (names[i] == ',') {
+			if ((i-start) > 0) {
+				int tmp_mode = mode;
+				if (names[start] == '+' ||
+				    names[start] == '-') {
+					tmp_mode = names[start];
+					start++;
+				}
+				name = xstrndup(names+start, (i-start));
+				if (tmp_mode) {
+					if (equal_set) {
+						count = 0;
+						error("%s", err_msg);
+						goto end_it;
+					}
+					add_set = 1;
+					m_name = xstrdup_printf(
+						  "%c%s", tmp_mode, name);
+				} else {
+					if (add_set) {
+						count = 0;
+						error("%s", err_msg);
+						goto end_it;
+					}
+					equal_set = 1;
+					m_name = xstrdup_printf("%s", name);
+				}
+				while((tmp_char = list_next(itr))) {
+					if (!strcasecmp(tmp_char, m_name))
+						break;
+				}
+				list_iterator_reset(itr);
+
+				if (!tmp_char) {
+					list_append(char_list, m_name);
+					count++;
+				} else
+					xfree(m_name);
+				xfree(name);
+			} else if (!(i-start)) {
+				list_append(char_list, xstrdup(""));
+				count++;
+			}
+
+			i++;
+			start = i;
+			if (!names[i]) {
+				error("There is a problem with "
+				      "your request.  It appears you "
+				      "have spaces inside your list.");
+				break;
+			}
+		}
+		i++;
+	}
+	if ((i-start) > 0) {
+		int tmp_mode = mode;
+		if (names[start] == '+' ||
+		    names[start] == '-') {
+			tmp_mode = names[start];
+			start++;
+		}
+		name = xstrndup(names+start, (i-start));
+		if (tmp_mode) {
+			if (equal_set) {
+				count = 0;
+				error("%s", err_msg);
+				goto end_it;
+			}
+			add_set = 1;
+			m_name = xstrdup_printf(
+				  "%c%s", tmp_mode, name);
+		} else {
+			if (add_set) {
+				count = 0;
+				error("%s", err_msg);
+				goto end_it;
+			}
+			equal_set = 1;
+			m_name = xstrdup_printf("%s", name);
+		}
+		while((tmp_char = list_next(itr))) {
+			if (!strcasecmp(tmp_char, m_name))
+				break;
+		}
+		list_iterator_reset(itr);
+
+		if (!tmp_char) {
+			list_append(char_list, m_name);
+			count++;
+		} else
+			xfree(m_name);
+		xfree(name);
+	} else if (!(i-start)) {
+		list_append(char_list, xstrdup(""));
+		count++;
+	}
+	if (!count) {
+		error("You gave me an empty name list");
+	}
+
+end_it:
+	xfree(name);
+	list_iterator_destroy(itr);
+	return count;
+}
+
+
 static int _addto_step_list_internal(List step_list, char *names,
 				     int start, int end)
 {
