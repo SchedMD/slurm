@@ -1261,6 +1261,12 @@ job_manager(stepd_step_rec_t *job)
 	/* Send job launch response with list of pids */
 	_send_launch_resp(job, 0);
 
+#ifdef PR_SET_DUMPABLE
+	/* RHEL6 requires setting "dumpable" flag again */
+	if (prctl(PR_SET_DUMPABLE, 1) < 0)
+		debug ("Unable to set dumpable to 1");
+#endif /* PR_SET_DUMPABLE */
+
 	_wait_for_all_tasks(job);
 	acct_gather_profile_endpoll();
 	acct_gather_profile_g_node_step_end();
