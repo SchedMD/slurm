@@ -9,6 +9,8 @@ documents those changes that are of interest to users and administrators.
  -- Cleanup two minor Coverity warnings.
  -- Make it so the tres units in a job's formatted string are converted like
     they are in a step.
+ -- Correct partition's MaxCPUsPerNode enforcement when nodes are shared by
+    multiple partitions.
 
 * Changes in Slurm 16.05.0rc1
 ==============================
