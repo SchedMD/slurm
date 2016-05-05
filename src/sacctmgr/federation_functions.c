@@ -286,6 +286,9 @@ static int _verify_clusters_exist(List cluster_list,
 	itr_c = list_iterator_create(cluster_list);
 	while ((cluster_rec = list_next(itr_c))) {
 		char *tmp_name = cluster_rec->name;
+		if (!tmp_name)
+			continue;
+
 		if (tmp_name && (tmp_name[0] == '+' || tmp_name[0] == '-'))
 			tmp_name++;
 		list_append(cluster_cond.cluster_list, xstrdup(tmp_name));

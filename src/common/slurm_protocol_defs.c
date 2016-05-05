@@ -449,7 +449,6 @@ extern int slurm_addto_mode_char_list(List char_list, char *names, int mode)
 				error("%s", err_msg);
 				goto end_it;
 			}
-			add_set = 1;
 			m_name = xstrdup_printf(
 				  "%c%s", tmp_mode, name);
 		} else {
@@ -458,7 +457,6 @@ extern int slurm_addto_mode_char_list(List char_list, char *names, int mode)
 				error("%s", err_msg);
 				goto end_it;
 			}
-			equal_set = 1;
 			m_name = xstrdup_printf("%s", name);
 		}
 		while((tmp_char = list_next(itr))) {
