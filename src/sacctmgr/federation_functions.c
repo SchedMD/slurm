@@ -309,7 +309,10 @@ static int _verify_clusters_exist(List cluster_list,
 	while((cluster_rec = list_next(itr_c))) {
 		slurmdb_cluster_rec_t *tmp_rec = NULL;
 		char *tmp_name = cluster_rec->name;
-		if (tmp_name && (tmp_name[0] == '+' || tmp_name[0] == '-'))
+		if (!tmp_name)
+			continue;
+
+		if (tmp_name[0] == '+' || tmp_name[0] == '-')
 			tmp_name++;
 
 		list_iterator_reset(itr);
