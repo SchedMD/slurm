@@ -185,6 +185,7 @@ static void _do_power_work(time_t now)
 		    (node_ptr->sus_job_cnt == 0)			&&
 		    (!IS_NODE_COMPLETING(node_ptr))			&&
 		    (!IS_NODE_POWER_UP(node_ptr))			&&
+		    (node_ptr->last_idle != 0)				&&
 		    (node_ptr->last_idle < (now - idle_time))		&&
 		    ((exc_node_bitmap == NULL) ||
 		     (bit_test(exc_node_bitmap, i) == 0))) {
