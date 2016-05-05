@@ -1,7 +1,7 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
-* Changes in Slurm 15.08.11
+* Changes in Slurm 15.08.12
 ===========================
  -- Do not attempt to power down a node which has never responded if the
     slurmctld daemon restarts without state.
