@@ -1676,6 +1676,67 @@ if {$exit_code || $matches != 2} {
 }
 
 #####################################
+# TEST: modify federation, clear clusters
+#####################################
+set matches 0
+set my_pid [spawn $sacctmgr -i modify federation $fed1 set clusters=]
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "Cluster\\s+ -= $tc3$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Modified federation...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+$fed1$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 4} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it $exit_code
+}
+
+set matches 0
+set my_pid [spawn $sacctmgr show federation $fed1 format="federation%20,cluster%20"]
+expect {
+	-re "Federation\\s+Cluster $eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+$fed1\\s+(\\S+) $eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 1} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it $exit_code
+}
+
+#####################################
 # TEST: test adding more than 63 clusters to a federation
 #####################################
 # unset clusters
@@ -1840,9 +1901,6 @@ if {$exit_code || $matches != 64} {
 	end_it $exit_code
 }
 
-#####################################
-# TEST: modify federation, clear clusters
-#####################################
 #####################################
 # TEST: add federation with existing clusters
 # verify asking if they want to still set clusters

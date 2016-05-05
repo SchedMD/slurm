@@ -143,6 +143,16 @@ static int _set_rec(int *start, int argc, char *argv[],
 					 MAX(command_len, 2))) {
 			char *name = NULL;
 			ListIterator itr;
+
+			if (*(argv[i]+end) == '\0' &&
+			    (option == '+' || option == '-')) {
+				printf(" You didn't specify any clusters to"
+				       " %s\n",
+				       (option == '-') ? "remove" : "add");
+				exit_code = 1;
+				break;
+			}
+
 			List cluster_names = list_create(slurm_destroy_char);
 			if (!slurm_addto_mode_char_list(cluster_names,
 							argv[i]+end, option)) {
@@ -154,12 +164,15 @@ static int _set_rec(int *start, int argc, char *argv[],
 			fed->cluster_list =
 				list_create(slurmdb_destroy_cluster_rec);
 			while((name = list_next(itr))) {
+				if (name[0] == '\0')
+					continue;
 				slurmdb_cluster_rec_t *cluster =
 					xmalloc(sizeof(slurmdb_cluster_rec_t));
 				slurmdb_init_cluster_rec(cluster, 0);
 				cluster->name = xstrdup(name);
 				list_append(fed->cluster_list, cluster);
 			}
+			list_iterator_destroy(itr);
 			FREE_NULL_LIST(cluster_names);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Flags",
@@ -256,7 +269,9 @@ extern int verify_federations_exist(List name_list)
 	return _verify_federations(name_list, 0);
 }
 
-static int _verify_clusters_exist(List cluster_list, bool *existing_fed)
+static int _verify_clusters_exist(List cluster_list,
+				  char *fed_name,
+				  bool *existing_fed)
 {
 	char        *missing_str  = NULL;
 	char        *existing_str = NULL;
@@ -302,7 +317,9 @@ static int _verify_clusters_exist(List cluster_list, bool *existing_fed)
 		if (!tmp_rec) {
 			xstrfmtcat(missing_str, " The cluster %s doesn't exist."
 				   " Please add first.\n", cluster_rec->name);
-		} else if (tmp_rec->federation && tmp_rec->federation[0]) {
+		} else if (tmp_rec->federation && tmp_rec->federation[0] &&
+			   (!fed_name || strcmp(fed_name, tmp_rec->federation)))
+		{
 			xstrfmtcat(existing_str, " The cluster %s is already "
 				   "assigned to federation %s\n",
 				   tmp_rec->name, tmp_rec->federation);
@@ -383,7 +400,7 @@ extern int sacctmgr_add_federation(int argc, char *argv[])
 
 		/* ensure that clusters exist in db */
 		/* and if the clusters are already assigned to another fed. */
-		if (_verify_clusters_exist(start_fed->cluster_list,
+		if (_verify_clusters_exist(start_fed->cluster_list, NULL,
 					   &existing_feds)) {
 			FREE_NULL_LIST(name_list);
 			slurmdb_destroy_federation_rec(start_fed);
@@ -666,6 +683,41 @@ extern int sacctmgr_list_federation(int argc, char *argv[])
 	return rc;
 }
 
+static int _add_all_clusters_to_remove(List cluster_list, char *federation)
+{
+	/* remove all clusters from federation. */
+	List   temp_list = NULL;
+	ListIterator itr = NULL;
+	slurmdb_federation_cond_t tmp_cond;
+	slurmdb_federation_rec_t *tmp_rec = NULL;
+	slurmdb_cluster_rec_t    *tmp_cluster = NULL;
+
+	slurmdb_init_federation_cond(&tmp_cond, 0);
+	tmp_cond.federation_list = list_create(slurm_destroy_char);
+	list_append(tmp_cond.federation_list, federation);
+
+	temp_list = acct_storage_g_get_federations(db_conn, my_uid, &tmp_cond);
+	if (!temp_list || !list_count(temp_list)) {
+		fprintf(stderr, " Problem getting federations "
+			"from database. Contact your admin.\n");
+		return SLURM_ERROR;
+	}
+	FREE_NULL_LIST(tmp_cond.federation_list);
+	tmp_rec = list_peek(temp_list);
+	itr = list_iterator_create(tmp_rec->cluster_list);
+	while((tmp_cluster = list_next(itr))) {
+		slurmdb_cluster_rec_t *cluster =
+			xmalloc(sizeof(slurmdb_cluster_rec_t));
+		slurmdb_init_cluster_rec(cluster, 0);
+		cluster->name = xstrdup_printf("-%s", tmp_cluster->name);
+		list_append(cluster_list, cluster);
+	}
+	list_iterator_destroy(itr);
+	FREE_NULL_LIST(temp_list);
+
+	return SLURM_SUCCESS;
+}
+
 extern int sacctmgr_modify_federation(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
@@ -698,7 +750,10 @@ extern int sacctmgr_modify_federation(int argc, char *argv[])
 		}
 	}
 
-	if (!rec_set) {
+	if (exit_code) {
+		rc = SLURM_ERROR;
+		goto end_it;
+	} else if (!rec_set) {
 		exit_code=1;
 		fprintf(stderr, " You didn't give me anything to set\n");
 		rc = SLURM_ERROR;
@@ -715,13 +770,11 @@ extern int sacctmgr_modify_federation(int argc, char *argv[])
 					federation_cond->federation_list)) {
 		rc = SLURM_ERROR;
 		goto end_it;
-	} else if (exit_code) {
-		rc = SLURM_ERROR;
-		goto end_it;
 	}
 
-	if (federation->cluster_list && list_count(federation->cluster_list)) {
+	if (federation->cluster_list) {
 		bool existing_feds = false;
+		char *mod_fed = NULL;
 		if (federation_cond->federation_list &&
 		    (list_count(federation_cond->federation_list) > 1)) {
 			fprintf(stderr, " Can't add assign clusters to "
@@ -729,8 +782,15 @@ extern int sacctmgr_modify_federation(int argc, char *argv[])
 			rc = SLURM_ERROR;
 			goto end_it;
 		}
-		if ((rc = _verify_clusters_exist(federation->cluster_list,
-						 &existing_feds))) {
+		mod_fed = list_peek(federation_cond->federation_list);
+
+		if (!list_count(federation->cluster_list) &&
+		    _add_all_clusters_to_remove(federation->cluster_list,
+						xstrdup(mod_fed))) {
+			goto end_it;
+		}  else if ((rc =
+			     _verify_clusters_exist(federation->cluster_list,
+						    mod_fed, &existing_feds))) {
 			goto end_it;
 		} else if (existing_feds) {
 			char *warning = xstrdup_printf(
