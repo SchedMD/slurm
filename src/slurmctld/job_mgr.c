@@ -7352,7 +7352,7 @@ extern void job_set_req_tres(
 		job_ptr->tres_req_cnt, TRES_STR_FLAG_SIMPLE, true);
 
 	job_ptr->tres_fmt_req_str = assoc_mgr_make_tres_str_from_array(
-		job_ptr->tres_req_cnt, 0, true);
+		job_ptr->tres_req_cnt, TRES_STR_CONVERT_UNITS, true);
 
 	if (!assoc_mgr_locked)
 		assoc_mgr_unlock(&locks);
@@ -7418,7 +7418,7 @@ extern void job_set_alloc_tres(struct job_record *job_ptr,
 		job_ptr->tres_alloc_cnt, TRES_STR_FLAG_SIMPLE, true);
 
 	job_ptr->tres_fmt_alloc_str = assoc_mgr_make_tres_str_from_array(
-		job_ptr->tres_alloc_cnt, 0, true);
+		job_ptr->tres_alloc_cnt, TRES_STR_CONVERT_UNITS, true);
 
 	if (!assoc_mgr_locked)
 		assoc_mgr_unlock(&locks);
@@ -10000,7 +10000,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			job_ptr->tres_fmt_req_str =
 				assoc_mgr_make_tres_str_from_array(
 					job_ptr->tres_req_cnt,
-					0, false);
+					TRES_STR_CONVERT_UNITS, false);
 		}
 	}
 	if (job_specs->max_cpus != NO_VAL) {
@@ -10029,7 +10029,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			xfree(job_ptr->tres_fmt_req_str);
 			job_ptr->tres_fmt_req_str =
 				assoc_mgr_make_tres_str_from_array(
-					job_ptr->tres_req_cnt, 0, false);
+					job_ptr->tres_req_cnt,
+					TRES_STR_CONVERT_UNITS, false);
 		}
 		if (save_max_cpus) {
 			detail_ptr->max_cpus = save_max_cpus;
@@ -10165,7 +10166,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		job_ptr->tres_fmt_req_str =
 			assoc_mgr_make_tres_str_from_array(
 				job_ptr->tres_req_cnt,
-				0, false);
+				TRES_STR_CONVERT_UNITS, false);
 		update_accounting = true;
 	}
 	if (save_max_nodes && (save_max_nodes != detail_ptr->max_nodes)) {
@@ -10535,7 +10536,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			xfree(job_ptr->tres_fmt_req_str);
 			job_ptr->tres_fmt_req_str =
 				assoc_mgr_make_tres_str_from_array(
-					job_ptr->tres_req_cnt, 0, false);
+					job_ptr->tres_req_cnt,
+					TRES_STR_CONVERT_UNITS, false);
 		}
 	}
 	if (error_code != SLURM_SUCCESS)
@@ -10711,7 +10713,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 		xfree(job_ptr->tres_fmt_req_str);
 		job_ptr->tres_fmt_req_str = assoc_mgr_make_tres_str_from_array(
-				job_ptr->tres_req_cnt, 0, false);
+				job_ptr->tres_req_cnt,
+				TRES_STR_CONVERT_UNITS, false);
 		assoc_mgr_unlock(&locks);
 	}
 
@@ -10973,7 +10976,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			xfree(job_ptr->tres_fmt_req_str);
 			job_ptr->tres_fmt_req_str =
 				assoc_mgr_make_tres_str_from_array(
-					job_ptr->tres_req_cnt, 0, false);
+					job_ptr->tres_req_cnt,
+					TRES_STR_CONVERT_UNITS, false);
 			assoc_mgr_unlock(&locks);
 		} else if (IS_JOB_RUNNING(job_ptr) &&
 			   (authorized || (license_list == NULL))) {

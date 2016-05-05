@@ -10,6 +10,8 @@ documents those changes that are of interest to users and administrators.
     capmc command. Only if that fails, issue the operations in parallel on
     individual nodes. Required for scalability.
  -- Cleanup two minor Coverity warnings.
+ -- Make it so the tres units in a job's formatted string are converted like
+    they are in a step.
 
 * Changes in Slurm 16.05.0rc1
 ==============================
@@ -214,6 +216,11 @@ documents those changes that are of interest to users and administrators.
  -- For job constraint, convert comma separator to "&".
  -- Add Max*PerAccount options for QOS.
  -- Protect slurm_mutex_* calls with abort() on failure.
+
+* Changes in Slurm 15.08.11
+===========================
+ -- Do not attempt to power down a node which has never responded if the
+    slurmctld daemon restarts without state.
 
 * Changes in Slurm 15.08.11
 ===========================

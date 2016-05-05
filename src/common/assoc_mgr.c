@@ -6071,11 +6071,27 @@ extern char *assoc_mgr_make_tres_str_from_array(
 			xstrfmtcat(tres_str, "%s%u=%"PRIu64,
 				   tres_str ? "," : "",
 				   assoc_mgr_tres_array[i]->id, tres_cnt[i]);
-		else
-			xstrfmtcat(tres_str, "%s%s=%"PRIu64,
-				   tres_str ? "," : "",
-				   assoc_mgr_tres_name_array[i], tres_cnt[i]);
-
+		else {
+			if ((flags & TRES_STR_CONVERT_UNITS) &&
+			    ((assoc_mgr_tres_array[i]->id == TRES_MEM) ||
+			     (assoc_mgr_tres_array[i]->type &&
+			      !xstrcasecmp(
+				      assoc_mgr_tres_array[i]->type, "bb")))) {
+				char outbuf[32];
+				convert_num_unit((double)tres_cnt[i], outbuf,
+						 sizeof(outbuf), UNIT_MEGA,
+						 NO_VAL,
+						 CONVERT_NUM_UNIT_EXACT);
+				xstrfmtcat(tres_str, "%s%s=%s",
+					   tres_str ? "," : "",
+					   assoc_mgr_tres_name_array[i],
+					   outbuf);
+			} else
+				xstrfmtcat(tres_str, "%s%s=%"PRIu64,
+					   tres_str ? "," : "",
+					   assoc_mgr_tres_name_array[i],
+					   tres_cnt[i]);
+		}
 	}
 
 	if (!locked)

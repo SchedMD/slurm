@@ -2206,9 +2206,10 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 							   true);
 		xfree(node_ptr->tres_fmt_str);
 		node_ptr->tres_fmt_str =
-			assoc_mgr_make_tres_str_from_array(node_ptr->tres_cnt,
-							   0,
-							   true);
+			assoc_mgr_make_tres_str_from_array(
+				node_ptr->tres_cnt,
+				TRES_STR_CONVERT_UNITS,
+				true);
 	}
 
 	/* FIXME: cluster_cpus probably needs to be removed and handled
