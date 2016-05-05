@@ -1262,7 +1262,7 @@ job_manager(stepd_step_rec_t *job)
 	_send_launch_resp(job, 0);
 
 #ifdef PR_SET_DUMPABLE
-	/* RHEL6 requires setting "dumpable" flag again */
+	/* RHEL6 requires setting "dumpable" flag AGAIN; after euid changes */
 	if (prctl(PR_SET_DUMPABLE, 1) < 0)
 		debug ("Unable to set dumpable to 1");
 #endif /* PR_SET_DUMPABLE */
