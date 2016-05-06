@@ -1338,6 +1338,7 @@ extern int init(void)
 		xfree(default_mcdram_str);
 		xfree(default_numa_str);
 	}
+	gres_plugin_add("hbm");
 
 	return SLURM_SUCCESS;
 }

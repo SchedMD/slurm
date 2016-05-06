@@ -505,6 +505,27 @@ fini:	slurm_mutex_unlock(&gres_context_lock);
 	return rc;
 }
 
+/* Add a GRES record. This is used by the node_features plugin after the
+ * slurm.conf file is read and the initial GRES records are built by
+ * gres_plugin_init(). */
+extern void gres_plugin_add(char *gres_name)
+{
+	int i;
+
+	for (i = 0; i < gres_context_cnt; i++) {
+		if (!xstrcmp(gres_context[i].gres_name, gres_name))
+			return;
+	}
+
+	xrealloc(gres_context,
+		 (sizeof(slurm_gres_context_t) * (gres_context_cnt + 1)));
+	(void) _load_gres_plugin(gres_name, gres_context + gres_context_cnt);
+	/* Ignore return code. Support gres even without the plugin */
+	gres_context[gres_context_cnt].gres_name = xstrdup(gres_name);
+	gres_context[gres_context_cnt].plugin_id =_build_id(gres_name);
+	gres_context_cnt++;
+}
+
 /*
  * Terminate the gres plugin. Free memory.
  *

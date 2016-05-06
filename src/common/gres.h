@@ -258,6 +258,11 @@ extern void gres_plugin_recv_stepd(int fd);
 extern int gres_plugin_init_node_config(char *node_name, char *orig_config,
 					List *gres_list);
 
+/* Add a GRES record. This is used by the node_features plugin after the
+ * slurm.conf file is read and the initial GRES records are built by
+ * gres_plugin_init(). */
+extern void gres_plugin_add(char *gres_name);
+
 /*
  * Unpack this node's configuration from a buffer (built/packed by slurmd)
  * IN/OUT buffer - message buffer to unpack

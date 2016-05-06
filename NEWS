@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
     they are in a step.
  -- Correct partition's MaxCPUsPerNode enforcement when nodes are shared by
     multiple partitions.
+ -- node_feature/knl_cray - Prevent slurmctld GRES errors for "hbm" references.
 
 * Changes in Slurm 16.05.0rc1
 ==============================
