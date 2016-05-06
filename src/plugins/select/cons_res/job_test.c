@@ -328,11 +328,12 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 		if (bit_test(core_map, c)) {
 			free_cores[i]++;
 			free_core_count++;
-		} else {
+		} else if (!part_core_map) {
 			used_cores[i]++;
-		}
-		if (part_core_map && bit_test(part_core_map, c))
+		} else if (part_core_map && bit_test(part_core_map, c)) {
+			used_cores[i]++;
 			used_cpu_array[i]++;
+		}
 	}
 
 	for (i = 0; i < sockets; i++) {
