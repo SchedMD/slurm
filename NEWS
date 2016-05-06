@@ -5,6 +5,7 @@ documents those changes that are of interest to users and administrators.
 ===========================
  -- Do not attempt to power down a node which has never responded if the
     slurmctld daemon restarts without state.
+ -- Fix for possible slurmstepd segfault on invalid userr ID.
 
 * Changes in Slurm 15.08.11
 ===========================
