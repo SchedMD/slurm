@@ -2625,7 +2625,7 @@ _get_primary_group(const char *user, gid_t *gid)
 	int cc;
 
 	cc = getpwnam_r(user, &pwd, buf, sizeof(buf), &pwd0);
-	if (cc != 0) {
+	if ((cc != 0) || (pwd0 == NULL)) {
 		error("%s: getpwnam_r() failed: %m", __func__);
 		return -1;
 	}
