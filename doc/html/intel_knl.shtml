@@ -46,14 +46,21 @@ value for that configuration will be used.</p>
 <tr><td>NUMA</td><td>a2a</td><td>All to all</td></tr>
 <tr><td>NUMA</td><td>hemi</td><td>Hemisphere</td></tr>
 <tr><td>NUMA</td><td>snc2</td><td>Sub-NUMA cluster 2</td></tr>
-<tr><td>NUMA</td><td>snc4</td><td>Sub-NUMA cluster 4</td></tr>
-<tr><td>NUMA</td><td>quad</td><td>Quadrant</td></tr>
+<tr><td>NUMA</td><td>snc4</td><td>Sub-NUMA cluster 4 (<a href="#note">NOTE</a>)</td></tr>
+<tr><td>NUMA</td><td>quad</td><td>Quadrant (<a href="#note">NOTE</a>)</td></tr>
 </table>
 
 <p>Jobs requiring some or all of the KNL high bandwidth memory (HBM) should
 explicitly request that memory using Slurm's Generic RESource (GRES) options.
 The HBM will always be known by Slurm GRES name of "hbm".
 Examples below demonstrate use of HBM.</p>
+
+<p><a name="note"><b>NOTE</b></a>: Slurm version 16.05 and earlier can only
+support homogeneous nodes (e.g. the same number of cores per NUMA node).
+KNL scn4 and quad modes are not homogeneous, but each each NUMA mode will have
+either 16 or 18 cores. This will result in Slurm using the lower core count,
+finding a total of 256 threads rather than 272 threads and setting the node
+to a DOWN state.</p>
 
 <h3>Accounting</h3>
 
@@ -82,8 +89,8 @@ $ srun --constraint=flat --gres=hbm:2g -n36 a.out
 $ sinfo -o "%30N %20b %f"
 NODELIST       ACTIVE_FEATURES  AVAIL_FEATURES
 nid000[10-11]
-nid000[12-35]  flat,a2a         flat,a2a,snc2,snc4,hemi,quad
-nid000[36-43]  cache,a2a        flat,equal,cache,a2a,hemi,quad
+nid000[12-35]  flat,a2a         flat,a2a,snc2,hemi
+nid000[36-43]  cache,a2a        flat,equal,cache,a2a,hemi
 </pre>
 
 <h3>Network Topology</h3>
@@ -212,8 +219,8 @@ information provided by the capmc program.</p>
 CapmcPath=/opt/cray/capmc/default/bin/capmc
 CapmcTimeout=2000	# msec
 DefaultNUMA=a2a         # NUMA=all2all
+AllowNUMA=a2a,snc2,hemi
 DefaultMCDRAM=cache     # MCDRAM=cache
-</pre>
 
 <h3>Sample slurm.conf File</h3>
 
@@ -233,6 +240,6 @@ NodeName=nid[00000-00127] State=UNKNOWN
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 30 March 2016</p>
+<p style="text-align:center;">Last modified 6 May 2016</p>
 
 <!--#include virtual="footer.txt"-->
