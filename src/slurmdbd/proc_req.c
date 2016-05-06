@@ -874,7 +874,8 @@ static int _add_federations(slurmdbd_conn_t *slurmdbd_conn, Buf in_buffer,
 	rc = acct_storage_g_add_federations(slurmdbd_conn->db_conn, *uid,
 					 get_msg->my_list);
 	if (rc == ESLURM_ACCESS_DENIED)
-		comment = "Your user doesn't have privilege to perform this action";
+		comment = "Your user doesn't have privilege to perform this "
+			  "action";
 	else if (rc != SLURM_SUCCESS)
 		comment = "Failed to add cluster.";
 
