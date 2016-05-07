@@ -198,11 +198,6 @@
 #  endif
 #endif
 
-#ifndef HAVE_STRNDUP
-#  undef  strndup
-#  define strndup(src,size) strdup(src)
-#endif
-
 /* Results strftime() are undefined if buffer too small
  * This variant returns a string of "####"... instead */
 #define slurm_strftime(s, max, format, tm)				\
