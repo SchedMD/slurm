@@ -49,14 +49,6 @@
 
 #include "src/common/log.h"	/* for error() */
 
-#ifndef FALSE
-#  define FALSE	false
-#endif
-
-#ifndef TRUE
-#  define TRUE	true
-#endif
-
 #ifndef MAX
 #  define MAX(a,b) ((a) > (b) ? (a) : (b))
 #endif

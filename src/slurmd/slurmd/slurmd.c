@@ -2071,7 +2071,7 @@ static int _resource_spec_init(void)
 	return SLURM_SUCCESS;
 }
 
-/* Return TRUE if CoreSpecPlugin=core_spec/cray */
+/* Return true if CoreSpecPlugin=core_spec/cray */
 static bool _is_core_spec_cray(void)
 {
 	bool use_core_spec_cray = false;

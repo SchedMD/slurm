@@ -212,7 +212,7 @@ _set_limit(char **env, slurm_rlimits_info_t *rli)
 	unsigned long env_value;
 	char max[24], cur[24], req[24];
 	struct rlimit r;
-	bool u_req_propagate;  /* e.g. TRUE if 'srun --propagate' */
+	bool u_req_propagate;  /* e.g. true if 'srun --propagate' */
 
 	char env_name[25] = "SLURM_RLIMIT_";
 	char *rlimit_name = &env_name[6];
@@ -304,12 +304,12 @@ static int _get_env_val(char **env, const char *name, unsigned long *valp,
 	 * user requested to have this rlimit propagated via 'srun --propagate'
 	 */
 	if (*val == 'U') {
-		*u_req_propagate = TRUE;
+		*u_req_propagate = true;
 		debug2( "_get_env_val: %s propagated by user option", &name[6]);
 		val++;
 	}
 	else
-		*u_req_propagate = FALSE;
+		*u_req_propagate = false;
 
 	*valp = strtoul(val, &p, 10);
 

@@ -94,119 +94,119 @@ static char *_initial_page_opts = "Name,RackMidplane,State,CPU_Count,"
 	"Real_Memory,Tmp_Disk";
 
 static display_data_t display_data_node[] = {
-	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_node,
+	{G_TYPE_INT, SORTID_POS, NULL, false, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_NAME, "Name", FALSE, EDIT_NONE, refresh_node,
+	{G_TYPE_STRING, SORTID_NAME, "Name", false, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_COLOR, NULL, TRUE, EDIT_COLOR, refresh_node,
+	{G_TYPE_STRING, SORTID_COLOR, NULL, true, EDIT_COLOR, refresh_node,
 	 create_model_node, admin_edit_node},
 #ifdef HAVE_BG
-	{G_TYPE_STRING, SORTID_RACK_MP, "RackMidplane", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_RACK_MP, "RackMidplane", false, EDIT_NONE,
 	 refresh_node, create_model_node, admin_edit_node},
 #else
-	{G_TYPE_STRING, SORTID_RACK_MP, NULL, TRUE, EDIT_NONE, refresh_node,
+	{G_TYPE_STRING, SORTID_RACK_MP, NULL, true, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
 #endif
-	{G_TYPE_STRING, SORTID_NODE_ADDR, "NodeAddr", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_NODE_ADDR, "NodeAddr", false, EDIT_NONE,
 	 refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_NODE_HOSTNAME, "NodeHostName", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_NODE_HOSTNAME, "NodeHostName", false, EDIT_NONE,
 	 refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_OWNER, "Owner", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_OWNER, "Owner", false, EDIT_NONE,
 	 refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_MCS_LABEL, "MCS_Label", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_MCS_LABEL, "MCS_Label", false, EDIT_NONE,
 	 refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_STATE, "State", FALSE, EDIT_MODEL, refresh_node,
+	{G_TYPE_STRING, SORTID_STATE, "State", false, EDIT_MODEL, refresh_node,
 	 create_model_node, admin_edit_node},
-	{G_TYPE_INT, SORTID_STATE_NUM, NULL, FALSE, EDIT_NONE, refresh_node,
+	{G_TYPE_INT, SORTID_STATE_NUM, NULL, false, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_CPUS, "CPU Count", FALSE,
+	{G_TYPE_STRING, SORTID_CPUS, "CPU Count", false,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_USED_CPUS, "Used CPU Count", FALSE,
+	{G_TYPE_STRING, SORTID_USED_CPUS, "Used CPU Count", false,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_ERR_CPUS, "Error CPU Count", FALSE,
+	{G_TYPE_STRING, SORTID_ERR_CPUS, "Error CPU Count", false,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_IDLE_CPUS, "Idle CPU Count", FALSE,
+	{G_TYPE_STRING, SORTID_IDLE_CPUS, "Idle CPU Count", false,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_INT, SORTID_BOARDS, "Boards", FALSE,
+	{G_TYPE_INT, SORTID_BOARDS, "Boards", false,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_INT, SORTID_SOCKETS, "Sockets", FALSE,
+	{G_TYPE_INT, SORTID_SOCKETS, "Sockets", false,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_INT, SORTID_CORES, "CoresPerSocket", FALSE,
+	{G_TYPE_INT, SORTID_CORES, "CoresPerSocket", false,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_INT, SORTID_THREADS, "ThreadsPerCore", FALSE,
+	{G_TYPE_INT, SORTID_THREADS, "ThreadsPerCore", false,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_REAL_MEMORY, "Real Memory", FALSE,
+	{G_TYPE_STRING, SORTID_REAL_MEMORY, "Real Memory", false,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_USED_MEMORY, "Used Memory", FALSE,
+	{G_TYPE_STRING, SORTID_USED_MEMORY, "Used Memory", false,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_FREE_MEM, "Free Memory", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_FREE_MEM, "Free Memory", false, EDIT_NONE,
 	 refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_TMP_DISK, "Tmp Disk", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_TMP_DISK, "Tmp Disk", false, EDIT_NONE,
 	 refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_ACTIVE_FEATURES, "Active Features", FALSE,
+	{G_TYPE_STRING, SORTID_ACTIVE_FEATURES, "Active Features", false,
 	 EDIT_TEXTBOX, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_ARCH, "Arch", FALSE,
+	{G_TYPE_STRING, SORTID_ARCH, "Arch", false,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_AVAIL_FEATURES, "Available Features", FALSE,
+	{G_TYPE_STRING, SORTID_AVAIL_FEATURES, "Available Features", false,
 	 EDIT_TEXTBOX, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_BOOT_TIME, "BootTime", FALSE,
+	{G_TYPE_STRING, SORTID_BOOT_TIME, "BootTime", false,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_CPU_LOAD, "CPU Load", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_CPU_LOAD, "CPU Load", false, EDIT_NONE,
 	 refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_GRES, "Gres", FALSE,
+	{G_TYPE_STRING, SORTID_GRES, "Gres", false,
 	 EDIT_TEXTBOX, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_REASON, "Reason", FALSE,
+	{G_TYPE_STRING, SORTID_REASON, "Reason", false,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_SLURMD_START_TIME, "SlurmdStartTime", FALSE,
+	{G_TYPE_STRING, SORTID_SLURMD_START_TIME, "SlurmdStartTime", false,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_LOWEST_JOULES, "Lowest Joules", FALSE,
+	{G_TYPE_STRING, SORTID_LOWEST_JOULES, "Lowest Joules", false,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_CONSUMED_ENERGY,"Consumed Joules", FALSE,
+	{G_TYPE_STRING, SORTID_CONSUMED_ENERGY,"Consumed Joules", false,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_CURRENT_WATTS, "Current Watts", FALSE,
+	{G_TYPE_STRING, SORTID_CURRENT_WATTS, "Current Watts", false,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_CAP_WATTS,"Cap Watts", FALSE,
+	{G_TYPE_STRING, SORTID_CAP_WATTS,"Cap Watts", false,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_VERSION, "Version", FALSE,
+	{G_TYPE_STRING, SORTID_VERSION, "Version", false,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_INT, SORTID_WEIGHT,"Weight", FALSE, EDIT_NONE, refresh_node,
+	{G_TYPE_INT, SORTID_WEIGHT,"Weight", false, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
-	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, EDIT_NONE, refresh_node,
+	{G_TYPE_INT, SORTID_UPDATED, NULL, false, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
-	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
+	{G_TYPE_NONE, -1, NULL, false, EDIT_NONE}
 };
 
 static display_data_t options_data_node[] = {
-	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE},
-	{G_TYPE_STRING, INFO_PAGE, "Full Info", TRUE, NODE_PAGE},
+	{G_TYPE_INT, SORTID_POS, NULL, false, EDIT_NONE},
+	{G_TYPE_STRING, INFO_PAGE, "Full Info", true, NODE_PAGE},
 #ifdef HAVE_BG
-	{G_TYPE_STRING, NODE_PAGE, "Drain Midplane", TRUE, ADMIN_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Undrain Midplane", TRUE, ADMIN_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Resume Midplane", TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Drain Midplane", true, ADMIN_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Undrain Midplane", true, ADMIN_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Resume Midplane", true, ADMIN_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Set Midplane Down",
-	 TRUE, ADMIN_PAGE},
+	 true, ADMIN_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Make Midplane Idle",
-	 TRUE, ADMIN_PAGE},
+	 true, ADMIN_PAGE},
 #else
-	{G_TYPE_STRING, NODE_PAGE, "Drain Node", TRUE, ADMIN_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Undrain Node", TRUE, ADMIN_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Resume Node", TRUE, ADMIN_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Set Node(s) Down", TRUE, ADMIN_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Make Node(s) Idle", TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Drain Node", true, ADMIN_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Undrain Node", true, ADMIN_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Resume Node", true, ADMIN_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Set Node(s) Down", true, ADMIN_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Make Node(s) Idle", true, ADMIN_PAGE},
 #endif
-	{G_TYPE_STRING, NODE_PAGE, "Update Active Features", TRUE, ADMIN_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Update Available Features", TRUE, ADMIN_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Update Gres", TRUE, ADMIN_PAGE},
-	{G_TYPE_STRING, JOB_PAGE,  "Jobs", TRUE, NODE_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Update Active Features", true, ADMIN_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Update Available Features", true, ADMIN_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Update Gres", true, ADMIN_PAGE},
+	{G_TYPE_STRING, JOB_PAGE,  "Jobs", true, NODE_PAGE},
 #ifdef HAVE_BG
-	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", TRUE, NODE_PAGE},
+	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", true, NODE_PAGE},
 #else
-	{G_TYPE_STRING, BLOCK_PAGE, NULL, TRUE, NODE_PAGE},
+	{G_TYPE_STRING, BLOCK_PAGE, NULL, true, NODE_PAGE},
 #endif
-	{G_TYPE_STRING, PART_PAGE, "Partitions", TRUE, NODE_PAGE},
-	{G_TYPE_STRING, RESV_PAGE, "Reservations", TRUE, NODE_PAGE},
-	//{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", FALSE, NODE_PAGE},
-	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
+	{G_TYPE_STRING, PART_PAGE, "Partitions", true, NODE_PAGE},
+	{G_TYPE_STRING, RESV_PAGE, "Reservations", true, NODE_PAGE},
+	//{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", false, NODE_PAGE},
+	{G_TYPE_NONE, -1, NULL, false, EDIT_NONE}
 };
 
 static display_data_t *local_display_data = NULL;
@@ -1171,7 +1171,7 @@ extern int update_active_features_node(GtkDialog *dialog, const char *nodelist,
 		 "Active Features for Node(s) %s?", nodelist);
 	label = gtk_label_new(tmp_char);
 	gtk_box_pack_start(GTK_BOX(dialog->vbox),
-			   label, FALSE, FALSE, 0);
+			   label, false, false, 0);
 
 	entry = create_entry();
 	if (!entry)
@@ -1180,7 +1180,7 @@ extern int update_active_features_node(GtkDialog *dialog, const char *nodelist,
 	if (old_features)
 		gtk_entry_set_text(GTK_ENTRY(entry), old_features);
 
-	gtk_box_pack_start(GTK_BOX(dialog->vbox), entry, TRUE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(dialog->vbox), entry, true, true, 0);
 	gtk_widget_show_all(GTK_WIDGET(dialog));
 
 	response = gtk_dialog_run(dialog);
@@ -1261,7 +1261,7 @@ extern int update_avail_features_node(GtkDialog *dialog, const char *nodelist,
 		 "Available Features for Node(s) %s?", nodelist);
 	label = gtk_label_new(tmp_char);
 	gtk_box_pack_start(GTK_BOX(dialog->vbox),
-			   label, FALSE, FALSE, 0);
+			   label, false, false, 0);
 
 	entry = create_entry();
 	if (!entry)
@@ -1270,7 +1270,7 @@ extern int update_avail_features_node(GtkDialog *dialog, const char *nodelist,
 	if (old_features)
 		gtk_entry_set_text(GTK_ENTRY(entry), old_features);
 
-	gtk_box_pack_start(GTK_BOX(dialog->vbox), entry, TRUE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(dialog->vbox), entry, true, true, 0);
 	gtk_widget_show_all(GTK_WIDGET(dialog));
 
 	response = gtk_dialog_run(dialog);
@@ -1347,7 +1347,7 @@ extern int update_gres_node(GtkDialog *dialog, const char *nodelist,
 	snprintf(tmp_char, sizeof(tmp_char), "Gres for Node(s) %s?", nodelist);
 
 	label = gtk_label_new(tmp_char);
-	gtk_box_pack_start(GTK_BOX(dialog->vbox), label, FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(dialog->vbox), label, false, false, 0);
 
 	entry = create_entry();
 	if (!entry)
@@ -1356,7 +1356,7 @@ extern int update_gres_node(GtkDialog *dialog, const char *nodelist,
 	if (old_gres)
 		gtk_entry_set_text(GTK_ENTRY(entry), old_gres);
 
-	gtk_box_pack_start(GTK_BOX(dialog->vbox), entry, TRUE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(dialog->vbox), entry, true, true, 0);
 	gtk_widget_show_all(GTK_WIDGET(dialog));
 
 	response = gtk_dialog_run(dialog);
@@ -1472,9 +1472,9 @@ extern int update_state_node(GtkDialog *dialog,
 	if (!label)
 		goto end_it;
 	node_msg->node_state = (uint16_t)state;
-	gtk_box_pack_start(GTK_BOX(dialog->vbox), label, FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(dialog->vbox), label, false, false, 0);
 	if (entry)
-		gtk_box_pack_start(GTK_BOX(dialog->vbox), entry, TRUE, TRUE, 0);
+		gtk_box_pack_start(GTK_BOX(dialog->vbox), entry, true, true, 0);
 	gtk_widget_show_all(GTK_WIDGET(dialog));
 	i = gtk_dialog_run(dialog);
 	if (i == GTK_RESPONSE_OK) {
@@ -1610,12 +1610,12 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 	sview_node_info_t *sview_node_info_ptr = NULL;
 	ListIterator itr = NULL;
 	GtkTreePath *path = NULL;
-	static bool set_opts = FALSE;
+	static bool set_opts = false;
 
 	if (!set_opts)
 		set_page_opts(NODE_PAGE, display_data_node,
 			      SORTID_CNT, _initial_page_opts);
-	set_opts = TRUE;
+	set_opts = true;
 
 	/* reset */
 	if (!table && !display_data) {
@@ -1660,7 +1660,7 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 	}
 
 display_it:
-	info_list = create_node_info_list(node_info_ptr, FALSE);
+	info_list = create_node_info_list(node_info_ptr, false);
 	if (!info_list)
 		goto reset_curs;
 	i = 0;
@@ -1732,7 +1732,7 @@ display_it:
 	/* gtk_widget_set_size_request(display_widget, -1, -1); */
 	_update_info_node(info_list, GTK_TREE_VIEW(display_widget));
 end_it:
-	toggled = FALSE;
+	toggled = false;
 	force_refresh = 1;
 reset_curs:
 	if (main_window && main_window->window)
@@ -1794,7 +1794,7 @@ extern void specific_info_node(popup_info_t *popup_win)
 	}
 display_it:
 
-	info_list = create_node_info_list(node_info_ptr, FALSE);
+	info_list = create_node_info_list(node_info_ptr, false);
 
 	if (!info_list)
 		return;
@@ -2046,7 +2046,7 @@ extern void popup_all_node_name(char *name, int id)
 			popup_win = create_popup_info(NODE_PAGE, id, title);
 		popup_win->spec_info->search_info->gchar_data = g_strdup(name);
 		if (!sview_thread_new((gpointer)popup_thr, popup_win,
-				      FALSE, &error)) {
+				      false, &error)) {
 			g_printerr ("Failed to create node popup thread: "
 				    "%s\n",
 				    error->message);

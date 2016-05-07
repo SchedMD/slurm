@@ -1552,7 +1552,7 @@ static int _job_test_hypercube(struct job_record *job_ptr, bitstr_t *bitmap,
 			cur_node_index++;
 			node_index = hypercube_switches[min_curve][switch_index]->
 				node_index[cur_node_index];
-		} while (FALSE == bit_test(avail_bitmap, node_index));
+		} while (false == bit_test(avail_bitmap, node_index));
 
 		/* Allocate the CPUs from the node */
 		bit_set(bitmap, node_index);

@@ -692,7 +692,7 @@ int list_compare_config (void *config_entry1, void *config_entry2)
 	return (weight1 - weight2);
 }
 
-/* Return TRUE if the node should be hidden by virtue of being powered down
+/* Return true if the node should be hidden by virtue of being powered down
  * and in the cloud. */
 static bool _is_cloud_hidden(struct node_record *node_ptr)
 {

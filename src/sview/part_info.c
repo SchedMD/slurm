@@ -134,197 +134,197 @@ static char *_initial_page_opts = "Partition,Default,Part_State,"
 	"Time_Limit,Node_Count,Node_State,NodeList";
 
 static display_data_t display_data_part[] = {
-	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_part},
-	{G_TYPE_STRING, SORTID_NAME, "Partition", FALSE,
+	{G_TYPE_INT, SORTID_POS, NULL, false, EDIT_NONE, refresh_part},
+	{G_TYPE_STRING, SORTID_NAME, "Partition", false,
 	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_COLOR, NULL, TRUE, EDIT_COLOR, refresh_part,
+	{G_TYPE_STRING, SORTID_COLOR, NULL, true, EDIT_COLOR, refresh_part,
 	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_ALTERNATE, "Alternate", FALSE,
+	{G_TYPE_STRING, SORTID_ALTERNATE, "Alternate", false,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_DEFAULT, "Default", FALSE,
+	{G_TYPE_STRING, SORTID_DEFAULT, "Default", false,
 	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_EXCLUSIVE_USER, "ExclusiveUser", FALSE,
+	{G_TYPE_STRING, SORTID_EXCLUSIVE_USER, "ExclusiveUser", false,
 	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_GRACE_TIME, "GraceTime", FALSE,
+	{G_TYPE_STRING, SORTID_GRACE_TIME, "GraceTime", false,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_HIDDEN, "Hidden", FALSE,
+	{G_TYPE_STRING, SORTID_HIDDEN, "Hidden", false,
 	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_PART_STATE, "Part State", FALSE,
+	{G_TYPE_STRING, SORTID_PART_STATE, "Part State", false,
 	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", FALSE,
+	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", false,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_NODES, "Node Count", FALSE,
+	{G_TYPE_STRING, SORTID_NODES, "Node Count", false,
 	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_CPUS, "CPU Count", FALSE,
+	{G_TYPE_STRING, SORTID_CPUS, "CPU Count", false,
 	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_NODE_STATE, "Node State", FALSE,
+	{G_TYPE_STRING, SORTID_NODE_STATE, "Node State", false,
 	 EDIT_MODEL, refresh_part,
 	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_JOB_SIZE, "Job Size", FALSE,
+	{G_TYPE_STRING, SORTID_JOB_SIZE, "Job Size", false,
 	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_PREEMPT_MODE, "PreemptMode", FALSE,
+	{G_TYPE_STRING, SORTID_PREEMPT_MODE, "PreemptMode", false,
 	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_PRIORITY_JOB_FACTOR, "PriorityJobFactor", FALSE,
+	{G_TYPE_STRING, SORTID_PRIORITY_JOB_FACTOR, "PriorityJobFactor", false,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_PRIORITY_TIER, "PriorityTier", FALSE,
+	{G_TYPE_STRING, SORTID_PRIORITY_TIER, "PriorityTier", false,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_NODES_MIN, "Nodes Min", FALSE,
+	{G_TYPE_STRING, SORTID_NODES_MIN, "Nodes Min", false,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_NODES_MAX, "Nodes Max", FALSE,
+	{G_TYPE_STRING, SORTID_NODES_MAX, "Nodes Max", false,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_MAX_CPUS_PER_NODE, "Max CPUs Per Node", FALSE,
+	{G_TYPE_STRING, SORTID_MAX_CPUS_PER_NODE, "Max CPUs Per Node", false,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_OVER_SUBSCRIBE, "OverSubscribe", FALSE,
+	{G_TYPE_STRING, SORTID_OVER_SUBSCRIBE, "OverSubscribe", false,
 	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_ROOT, "Root", FALSE, EDIT_MODEL, refresh_part,
+	{G_TYPE_STRING, SORTID_ROOT, "Root", false, EDIT_MODEL, refresh_part,
 	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_QOS_CHAR, "Qos", FALSE,
+	{G_TYPE_STRING, SORTID_QOS_CHAR, "Qos", false,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_ALLOW_ACCOUNTS, "Allowed Accounts", FALSE,
+	{G_TYPE_STRING, SORTID_ALLOW_ACCOUNTS, "Allowed Accounts", false,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_ALLOW_GROUPS, "Allowed Groups", FALSE,
+	{G_TYPE_STRING, SORTID_ALLOW_GROUPS, "Allowed Groups", false,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_ALLOW_QOS, "Allowed Qos", FALSE,
+	{G_TYPE_STRING, SORTID_ALLOW_QOS, "Allowed Qos", false,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_DENY_ACCOUNTS, "Denied Accounts", FALSE,
+	{G_TYPE_STRING, SORTID_DENY_ACCOUNTS, "Denied Accounts", false,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_DENY_QOS, "Denied Qos", FALSE,
+	{G_TYPE_STRING, SORTID_DENY_QOS, "Denied Qos", false,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_NODES_ALLOWED, "Nodes Allowed Allocating", FALSE,
+	{G_TYPE_STRING, SORTID_NODES_ALLOWED, "Nodes Allowed Allocating", false,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_TMP_DISK, "Temp Disk", FALSE,
+	{G_TYPE_STRING, SORTID_TMP_DISK, "Temp Disk", false,
 	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_MEM, "Memory", FALSE, EDIT_NONE, refresh_part,
+	{G_TYPE_STRING, SORTID_MEM, "Memory", false, EDIT_NONE, refresh_part,
 	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_FEATURES, "Available Features", FALSE,
+	{G_TYPE_STRING, SORTID_FEATURES, "Available Features", false,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_FEATURES_ACT, "Active Features", FALSE,
+	{G_TYPE_STRING, SORTID_FEATURES_ACT, "Active Features", false,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_REASON, "Reason", FALSE,
+	{G_TYPE_STRING, SORTID_REASON, "Reason", false,
 	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
 #ifdef HAVE_BG
-	{G_TYPE_STRING, SORTID_NODELIST, "MidplaneList", FALSE,
+	{G_TYPE_STRING, SORTID_NODELIST, "MidplaneList", false,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 #else
-	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", FALSE,
+	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", false,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 #endif
-	{G_TYPE_INT, SORTID_NODE_STATE_NUM, NULL, FALSE,
+	{G_TYPE_INT, SORTID_NODE_STATE_NUM, NULL, false,
 	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_INT, SORTID_ONLY_LINE, NULL, FALSE, EDIT_NONE, refresh_part,
+	{G_TYPE_INT, SORTID_ONLY_LINE, NULL, false, EDIT_NONE, refresh_part,
 	 create_model_part, admin_edit_part},
-	{G_TYPE_INT, SORTID_COLOR_INX, NULL, FALSE, EDIT_NONE, refresh_part,
+	{G_TYPE_INT, SORTID_COLOR_INX, NULL, false, EDIT_NONE, refresh_part,
 	 create_model_part, admin_edit_part},
-	{G_TYPE_POINTER, SORTID_NODE_INX, NULL, FALSE, EDIT_NONE,
+	{G_TYPE_POINTER, SORTID_NODE_INX, NULL, false, EDIT_NONE,
 	 refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, EDIT_NONE, refresh_part,
+	{G_TYPE_INT, SORTID_UPDATED, NULL, false, EDIT_NONE, refresh_part,
 	 create_model_part, admin_edit_part},
-	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
+	{G_TYPE_NONE, -1, NULL, false, EDIT_NONE}
 };
 
 static display_data_t create_data_part[] = {
-	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_part},
-	{G_TYPE_STRING, SORTID_NAME, "Name", FALSE,
+	{G_TYPE_INT, SORTID_POS, NULL, false, EDIT_NONE, refresh_part},
+	{G_TYPE_STRING, SORTID_NAME, "Name", false,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
-	{G_TYPE_STRING, SORTID_ALTERNATE, "Alternate", FALSE,
+	{G_TYPE_STRING, SORTID_ALTERNATE, "Alternate", false,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
-	{G_TYPE_STRING, SORTID_DEFAULT, "Default", FALSE,
+	{G_TYPE_STRING, SORTID_DEFAULT, "Default", false,
 	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
-	{G_TYPE_STRING, SORTID_EXCLUSIVE_USER, "ExclusiveUser", FALSE,
+	{G_TYPE_STRING, SORTID_EXCLUSIVE_USER, "ExclusiveUser", false,
 	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
-	{G_TYPE_STRING, SORTID_GRACE_TIME, "GraceTime", FALSE,
+	{G_TYPE_STRING, SORTID_GRACE_TIME, "GraceTime", false,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
-	{G_TYPE_STRING, SORTID_HIDDEN, "Hidden", FALSE,
+	{G_TYPE_STRING, SORTID_HIDDEN, "Hidden", false,
 	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
-	{G_TYPE_STRING, SORTID_PART_STATE, "State", FALSE,
+	{G_TYPE_STRING, SORTID_PART_STATE, "State", false,
 	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
-	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", FALSE,
+	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", false,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
-	{G_TYPE_STRING, SORTID_PREEMPT_MODE, "PreemptMode", FALSE,
+	{G_TYPE_STRING, SORTID_PREEMPT_MODE, "PreemptMode", false,
 	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
-	{G_TYPE_STRING, SORTID_PRIORITY_JOB_FACTOR, "PriorityJobFactor", FALSE,
+	{G_TYPE_STRING, SORTID_PRIORITY_JOB_FACTOR, "PriorityJobFactor", false,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
-	{G_TYPE_STRING, SORTID_PRIORITY_TIER, "PriorityTier", FALSE,
+	{G_TYPE_STRING, SORTID_PRIORITY_TIER, "PriorityTier", false,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
-	{G_TYPE_STRING, SORTID_NODES_MIN, "Nodes Min", FALSE,
+	{G_TYPE_STRING, SORTID_NODES_MIN, "Nodes Min", false,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
-	{G_TYPE_STRING, SORTID_NODES_MAX, "Nodes Max", FALSE,
+	{G_TYPE_STRING, SORTID_NODES_MAX, "Nodes Max", false,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
-	{G_TYPE_STRING, SORTID_MAX_CPUS_PER_NODE, "Max CPUs Per Node", FALSE,
+	{G_TYPE_STRING, SORTID_MAX_CPUS_PER_NODE, "Max CPUs Per Node", false,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
-	{G_TYPE_STRING, SORTID_ROOT, "Root", FALSE,
+	{G_TYPE_STRING, SORTID_ROOT, "Root", false,
 	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
-	{G_TYPE_STRING, SORTID_OVER_SUBSCRIBE, "OverSubscribe", FALSE,
+	{G_TYPE_STRING, SORTID_OVER_SUBSCRIBE, "OverSubscribe", false,
 	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
-	{G_TYPE_STRING, SORTID_ALLOW_ACCOUNTS, "Accounts Allowed", FALSE,
+	{G_TYPE_STRING, SORTID_ALLOW_ACCOUNTS, "Accounts Allowed", false,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
-	{G_TYPE_STRING, SORTID_ALLOW_GROUPS, "Groups Allowed", FALSE,
+	{G_TYPE_STRING, SORTID_ALLOW_GROUPS, "Groups Allowed", false,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
-	{G_TYPE_STRING, SORTID_ALLOW_QOS, "Qos Allowed", FALSE,
+	{G_TYPE_STRING, SORTID_ALLOW_QOS, "Qos Allowed", false,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
-	{G_TYPE_STRING, SORTID_DENY_ACCOUNTS, "Accounts Denied", FALSE,
+	{G_TYPE_STRING, SORTID_DENY_ACCOUNTS, "Accounts Denied", false,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
-	{G_TYPE_STRING, SORTID_DENY_QOS, "Qos Denied", FALSE,
+	{G_TYPE_STRING, SORTID_DENY_QOS, "Qos Denied", false,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
-	{G_TYPE_STRING, SORTID_NODES_ALLOWED, "Nodes Allowed Allocating", FALSE,
+	{G_TYPE_STRING, SORTID_NODES_ALLOWED, "Nodes Allowed Allocating", false,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
-	{G_TYPE_STRING, SORTID_FEATURES, "Available Features", FALSE,
+	{G_TYPE_STRING, SORTID_FEATURES, "Available Features", false,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
-	{G_TYPE_STRING, SORTID_FEATURES_ACT, "Active Features", FALSE,
+	{G_TYPE_STRING, SORTID_FEATURES_ACT, "Active Features", false,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
-	{G_TYPE_NONE, SORTID_REASON, "Reason", FALSE,
+	{G_TYPE_NONE, SORTID_REASON, "Reason", false,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 #ifdef HAVE_BG
-	{G_TYPE_STRING, SORTID_NODELIST, "MidplaneList", FALSE,
+	{G_TYPE_STRING, SORTID_NODELIST, "MidplaneList", false,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 #else
-	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", FALSE,
+	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", false,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 #endif
-	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
+	{G_TYPE_NONE, -1, NULL, false, EDIT_NONE}
 };
 
 static display_data_t options_data_part[] = {
-	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE},
-	{G_TYPE_STRING, INFO_PAGE, "Full Info", TRUE, PART_PAGE},
-	{G_TYPE_STRING, PART_PAGE, "Edit Partition", TRUE, ADMIN_PAGE},
-	{G_TYPE_STRING, PART_PAGE, "Remove Partition", TRUE, ADMIN_PAGE},
+	{G_TYPE_INT, SORTID_POS, NULL, false, EDIT_NONE},
+	{G_TYPE_STRING, INFO_PAGE, "Full Info", true, PART_PAGE},
+	{G_TYPE_STRING, PART_PAGE, "Edit Partition", true, ADMIN_PAGE},
+	{G_TYPE_STRING, PART_PAGE, "Remove Partition", true, ADMIN_PAGE},
 #ifdef HAVE_BG
 	{G_TYPE_STRING, PART_PAGE, "Drain Midplanes",
-	 TRUE, ADMIN_PAGE | EXTRA_NODES},
+	 true, ADMIN_PAGE | EXTRA_NODES},
 	{G_TYPE_STRING, PART_PAGE, "Resume Midplanes",
-	 TRUE, ADMIN_PAGE | EXTRA_NODES},
+	 true, ADMIN_PAGE | EXTRA_NODES},
 	{G_TYPE_STRING, PART_PAGE, "Put Midplanes Down",
-	 TRUE, ADMIN_PAGE | EXTRA_NODES},
+	 true, ADMIN_PAGE | EXTRA_NODES},
 	{G_TYPE_STRING, PART_PAGE, "Make Midplanes Idle",
-	 TRUE, ADMIN_PAGE | EXTRA_NODES},
+	 true, ADMIN_PAGE | EXTRA_NODES},
 	{G_TYPE_STRING, PART_PAGE, "Update Midplane Features",
-	 TRUE, ADMIN_PAGE | EXTRA_NODES},
+	 true, ADMIN_PAGE | EXTRA_NODES},
 #else
 	{G_TYPE_STRING, PART_PAGE, "Drain Nodes",
-	 TRUE, ADMIN_PAGE | EXTRA_NODES},
+	 true, ADMIN_PAGE | EXTRA_NODES},
 	{G_TYPE_STRING, PART_PAGE, "Resume Nodes",
-	 TRUE, ADMIN_PAGE | EXTRA_NODES},
+	 true, ADMIN_PAGE | EXTRA_NODES},
 	{G_TYPE_STRING, PART_PAGE, "Put Nodes Down",
-	 TRUE, ADMIN_PAGE | EXTRA_NODES},
+	 true, ADMIN_PAGE | EXTRA_NODES},
 	{G_TYPE_STRING, PART_PAGE, "Make Nodes Idle",
-	 TRUE, ADMIN_PAGE | EXTRA_NODES},
+	 true, ADMIN_PAGE | EXTRA_NODES},
 	{G_TYPE_STRING, PART_PAGE, "Update Node Features",
-	 TRUE, ADMIN_PAGE | EXTRA_NODES},
+	 true, ADMIN_PAGE | EXTRA_NODES},
 #endif
 	{G_TYPE_STRING, PART_PAGE, "Change Partition State",
-	 TRUE, ADMIN_PAGE},
-	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, PART_PAGE},
+	 true, ADMIN_PAGE},
+	{G_TYPE_STRING, JOB_PAGE, "Jobs", true, PART_PAGE},
 #ifdef HAVE_BG
-	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", TRUE, PART_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Midplanes", TRUE, PART_PAGE},
+	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", true, PART_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Midplanes", true, PART_PAGE},
 #else
-	{G_TYPE_STRING, BLOCK_PAGE, NULL, TRUE, PART_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, PART_PAGE},
+	{G_TYPE_STRING, BLOCK_PAGE, NULL, true, PART_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Nodes", true, PART_PAGE},
 #endif
-	//{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", FALSE, PART_PAGE},
-	{G_TYPE_STRING, RESV_PAGE, "Reservations", TRUE, PART_PAGE},
-	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
+	//{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", false, PART_PAGE},
+	{G_TYPE_STRING, RESV_PAGE, "Reservations", true, PART_PAGE},
+	{G_TYPE_NONE, -1, NULL, false, EDIT_NONE}
 };
 
 static display_data_t *local_display_data = NULL;
@@ -457,7 +457,7 @@ end_it:
 
 static uint16_t _set_part_over_subscribe_popup(void)
 {
-	GtkWidget *table = gtk_table_new(1, 2, FALSE);
+	GtkWidget *table = gtk_table_new(1, 2, false);
 	GtkWidget *label = NULL;
 	GtkObject *adjustment = gtk_adjustment_new(4,
 						   1, 1000,
@@ -482,7 +482,7 @@ static uint16_t _set_part_over_subscribe_popup(void)
 	gtk_container_set_border_width(GTK_CONTAINER(table), 10);
 
 	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
-			   table, FALSE, FALSE, 0);
+			   table, false, false, 0);
 
 	gtk_table_attach_defaults(GTK_TABLE(table), label, 0, 1, 0, 1);
 	gtk_table_attach_defaults(GTK_TABLE(table), spin_button, 1, 2, 0, 1);
@@ -794,7 +794,7 @@ static GtkWidget *_admin_full_edit_part(update_part_msg_t *part_msg,
 	table = GTK_TABLE(bin->child);
 	gtk_table_resize(table, SORTID_CNT, 2);
 
-	gtk_table_set_homogeneous(table, FALSE);
+	gtk_table_set_homogeneous(table, false);
 
 	for(i = 0; i < SORTID_CNT; i++) {
 		while (display_data++) {
@@ -2081,7 +2081,7 @@ extern GtkWidget *create_part_entry(update_part_msg_t *part_msg,
 	table = GTK_TABLE(bin->child);
 	gtk_table_resize(table, SORTID_CNT, 2);
 
-	gtk_table_set_homogeneous(table, FALSE);
+	gtk_table_set_homogeneous(table, false);
 
 	for(i = 0; i < SORTID_CNT; i++) {
 		while (display_data++) {
@@ -2109,19 +2109,19 @@ extern GtkWidget *create_part_entry(update_part_msg_t *part_msg,
 extern bool check_part_includes_node(int node_dx)
 {
 	partition_info_t *part_ptr = NULL;
-	bool rc = FALSE;
+	bool rc = false;
 	int i = 0;
 	static partition_info_msg_t *part_info_ptr = NULL;
 
 	if (working_sview_config.show_hidden)
-		return TRUE;
+		return true;
 
 	if (!g_part_info_ptr)
-		i = get_new_info_part(&part_info_ptr, TRUE);
+		i = get_new_info_part(&part_info_ptr, true);
 	if (i && (i != SLURM_NO_CHANGE_IN_DATA)) {
 		if (_DEBUG)
 			g_print("check_part_includes_node : error %d ", i);
-		return FALSE;
+		return false;
 	}
 
 	for (i=0; i<g_part_info_ptr->record_count; i++) {
@@ -2139,7 +2139,7 @@ extern bool check_part_includes_node(int node_dx)
 			}
 			if (node_dx >= part_ptr->node_inx[0] &&
 			    node_dx <= part_ptr->node_inx[1]) {
-				rc = TRUE;
+				rc = true;
 				if (_DEBUG)
 					g_print("hit!!\n");
 			}
@@ -2167,7 +2167,7 @@ extern bool visible_part(char* part_name)
 	static partition_info_msg_t *part_info_ptr = NULL;
 	partition_info_t *m_part_ptr = NULL;
 	int i;
-	int rc = FALSE;
+	int rc = false;
 
 	if (!g_part_info_ptr)
 		get_new_info_part(&part_info_ptr, force_refresh);
@@ -2175,9 +2175,9 @@ extern bool visible_part(char* part_name)
 		m_part_ptr = &(g_part_info_ptr->partition_array[i]);
 		if (!xstrcmp(m_part_ptr->name, part_name)) {
 			if (m_part_ptr->flags & PART_FLAG_HIDDEN)
-				rc =  FALSE;
+				rc =  false;
 			else
-				rc = TRUE;
+				rc = true;
 		}
 	}
 	return rc;
@@ -2532,12 +2532,12 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 	partition_info_t *part_ptr = NULL;
 	ListIterator itr = NULL;
 	GtkTreePath *path = NULL;
-	static bool set_opts = FALSE;
+	static bool set_opts = false;
 
 	if (!set_opts)
 		set_page_opts(PART_PAGE, display_data_part,
 			      SORTID_CNT, _initial_page_opts);
-	set_opts = TRUE;
+	set_opts = true;
 
 	/* reset */
 	if (!table && !display_data) {
@@ -2672,8 +2672,8 @@ display_it:
 	view = INFO_VIEW;
 	_update_info_part(info_list, GTK_TREE_VIEW(display_widget));
 end_it:
-	toggled = FALSE;
-	force_refresh = FALSE;
+	toggled = false;
+	force_refresh = false;
 reset_curs:
 	if (main_window && main_window->window)
 		gdk_window_set_cursor(main_window->window, NULL);
@@ -3042,7 +3042,7 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	default:
 		g_print("part got unknown type %d\n", id);
 	}
-	if (!sview_thread_new((gpointer)popup_thr, popup_win, FALSE, &error)) {
+	if (!sview_thread_new((gpointer)popup_thr, popup_win, false, &error)) {
 		g_printerr ("Failed to create part popup thread: %s\n",
 			    error->message);
 		return;
@@ -3060,7 +3060,7 @@ extern void select_admin_partitions(GtkTreeModel *model,
 					   SORTID_NODELIST, treeview);
 			return;
 		}
-		global_multi_error = FALSE;
+		global_multi_error = false;
 		gtk_tree_selection_selected_foreach(
 			gtk_tree_view_get_selection(treeview),
 			_process_each_partition, display_data->name);
@@ -3113,7 +3113,7 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 
 		renderer = gtk_cell_renderer_text_new();
 		gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(entry),
-					   renderer, TRUE);
+					   renderer, true);
 		gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(entry),
 					      renderer, "text", 0);
 
@@ -3176,10 +3176,10 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 	}
 
 	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
-			   label, FALSE, FALSE, 0);
+			   label, false, false, 0);
 	if (entry)
 		gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
-				   entry, TRUE, TRUE, 0);
+				   entry, true, true, 0);
 	gtk_widget_show_all(popup);
 	response = gtk_dialog_run (GTK_DIALOG(popup));
 
@@ -3199,7 +3199,7 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 				temp = g_strdup_printf(
 					"Problem removing partition %s: %s",
 					partid, slurm_strerror(rc));
-				global_multi_error = TRUE;
+				global_multi_error = true;
 			}
 		} else if (!global_send_update_msg) {
 			temp = g_strdup_printf("No change detected.");
@@ -3212,7 +3212,7 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 			temp = g_strdup_printf(
 				"Problem updating partition %s: %s",
 				partid, slurm_strerror(rc));
-			global_multi_error = TRUE;
+			global_multi_error = true;
 		}
 		display_edit_note(temp);
 		g_free(temp);

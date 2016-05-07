@@ -171,11 +171,11 @@ int main(int argc, char *argv[])
 		}
 
 		raw();
-		keypad(stdscr, TRUE);
+		keypad(stdscr, true);
 		noecho();
 		cbreak();
 		curs_set(0);
-		nodelay(stdscr, TRUE);
+		nodelay(stdscr, true);
 		start_color();
 		_set_pairs();
 
@@ -314,7 +314,7 @@ redraw:
 	}
 
 	if (!params.commandline) {
-		nodelay(stdscr, FALSE);
+		nodelay(stdscr, false);
 		getch();
 		endwin();
 	}

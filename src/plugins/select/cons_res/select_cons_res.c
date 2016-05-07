@@ -1716,7 +1716,7 @@ static time_t _guess_job_end(struct job_record * job_ptr, time_t now)
 	return end_time;
 }
 
-/* Return TRUE if job is in the processing of cleaning up.
+/* Return true if job is in the processing of cleaning up.
  * This is used for Cray systems to indicate the Node Health Check (NHC)
  * is still running. Until NHC completes, the job's resource use persists
  * the select/cons_res plugin data structures. */

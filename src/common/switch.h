@@ -178,11 +178,11 @@ extern int switch_g_job_step_part_comp(switch_jobinfo_t *jobinfo,
 	char *nodelist);
 
 /*
- * Return TRUE if the switch plugin processes partial job step
+ * Return true if the switch plugin processes partial job step
  * completion calls (i.e. switch_g_job_step_part_comp). Support
  * of partition completions is compute intensive, so it should
  * be avoided unless switch resources are in short supply (e.g.
- * switch/nrt). Otherwise return FALSE.
+ * switch/nrt). Otherwise return false.
  */
 extern bool switch_g_part_comp(void);
 

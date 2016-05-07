@@ -460,14 +460,14 @@ extern int attach_system_memory_pid(pid_t pid)
 extern bool check_cgroup_job_confinement(void)
 {
 	char *task_plugin_type = NULL;
-	bool status = FALSE;
+	bool status = false;
 
 	if (read_slurm_cgroup_conf(&slurm_cgroup_conf))
-		return FALSE;
+		return false;
 	task_plugin_type = slurm_get_task_plugin();
 	if (slurm_cgroup_conf.constrain_cores &&
 	    strstr(task_plugin_type, "cgroup"))
-		status = TRUE;
+		status = true;
 	xfree(task_plugin_type);
 	free_slurm_cgroup_conf(&slurm_cgroup_conf);
 	return status;

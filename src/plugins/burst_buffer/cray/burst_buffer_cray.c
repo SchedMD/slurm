@@ -3905,7 +3905,7 @@ static int _create_bufs(struct job_record *job_ptr, bb_job_t *bb_job,
 }
 
 /* Test for the existence of persistent burst buffers to be used (but not
- * created) by this job. Return TRUE of they are all ready */
+ * created) by this job. Return true of they are all ready */
 static bool _test_persistent_use_ready(bb_job_t *bb_job,
 				       struct job_record *job_ptr)
 {

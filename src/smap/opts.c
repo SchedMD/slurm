@@ -89,7 +89,7 @@ extern void parse_command_line(int argc, char *argv[])
 			exit(1);
 			break;
 		case 'c':
-			params.commandline = TRUE;
+			params.commandline = true;
 			break;
 		case 'C':
 			params.command = xstrdup(optarg);
@@ -159,7 +159,7 @@ extern void parse_command_line(int argc, char *argv[])
 			quiet_flag = 1;
 			break;
 		case 'R':
-			params.commandline = TRUE;
+			params.commandline = true;
 			params.resolve = xstrdup(optarg);
 			break;
 		case 'v':

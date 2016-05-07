@@ -149,7 +149,7 @@ extern int slurm_preempt_init(void)
 	char *type = NULL;
 
 	/* This function is called frequently, so it should be as fast as
-	 * possible. The test below will be TRUE almost all of the time and
+	 * possible. The test below will be true almost all of the time and
 	 * is as fast as possible. */
 	if (init_run && g_context)
 		return retval;

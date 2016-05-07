@@ -440,7 +440,7 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
 	return SLURM_SUCCESS;
 }
 
-/* Return TRUE if the specified pathname is recognized as that of a shared
+/* Return true if the specified pathname is recognized as that of a shared
  * object (i.e. containing ".so\0") */
 static bool
 _so_file ( char *file_name )
@@ -458,7 +458,7 @@ _so_file ( char *file_name )
 	return false;
 }
 
-/* Return TRUE of the specified major_type is a prefix of the shared object
+/* Return true of the specified major_type is a prefix of the shared object
  * pathname (i.e. either "<major_name>..." or "lib<major_name>...") */
 static bool
 _match_major ( const char *path_name, const char *major_type )
@@ -467,13 +467,13 @@ _match_major ( const char *path_name, const char *major_type )
 
 	/* Special case for BlueGene systems */
 	if (xstrncmp(head, "libsched_if", 11) == 0)
-		return FALSE;
+		return false;
 
 	if (xstrncmp(head, "lib", 3) == 0)
 		head += 3;
 	if (xstrncmp(head, major_type, strlen(major_type)))
-		return FALSE;
-	return TRUE;
+		return false;
+	return true;
 }
 
 int

@@ -494,7 +494,7 @@ void parse_command_line(int argc, char **argv)
 	struct stat stat_buf;
 	char *dot = NULL;
 	char *env_val = NULL;
-	bool brief_output = FALSE, long_output = FALSE;
+	bool brief_output = false, long_output = false;
 	bool all_users = 0;
 	bool all_clusters = 0;
 	slurmdb_job_cond_t *job_cond = params.job_cond;

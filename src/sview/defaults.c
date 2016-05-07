@@ -71,36 +71,36 @@ enum {
  */
 
 static display_data_t display_data_defaults[] = {
-	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, NULL},
+	{G_TYPE_INT, SORTID_POS, NULL, false, EDIT_NONE, NULL},
 	{G_TYPE_STRING, SORTID_ADMIN, "Start in Admin Mode",
-	 TRUE, EDIT_MODEL, NULL, create_model_defaults, NULL},
+	 true, EDIT_MODEL, NULL, create_model_defaults, NULL},
 	{G_TYPE_STRING, SORTID_BUTTON_SIZE, "Node Button Size in Pixels",
-	 TRUE, EDIT_TEXTBOX, NULL, create_model_defaults, NULL},
+	 true, EDIT_TEXTBOX, NULL, create_model_defaults, NULL},
 	{G_TYPE_STRING, SORTID_DEFAULT_PAGE, "Default Page",
-	 TRUE, EDIT_MODEL, NULL, create_model_defaults, NULL},
+	 true, EDIT_MODEL, NULL, create_model_defaults, NULL},
 	{G_TYPE_STRING, SORTID_GRID_HORI, "Grid: Nodes before Horizontal break",
-	 TRUE, EDIT_TEXTBOX, NULL, create_model_defaults, NULL},
+	 true, EDIT_TEXTBOX, NULL, create_model_defaults, NULL},
 	{G_TYPE_STRING, SORTID_GRID_VERT, "Grid: Nodes before Vertical break",
-	 TRUE, EDIT_TEXTBOX, NULL, create_model_defaults, NULL},
+	 true, EDIT_TEXTBOX, NULL, create_model_defaults, NULL},
 	{G_TYPE_STRING, SORTID_GRID_X_WIDTH, "Grid: Nodes in Row",
-	 TRUE, EDIT_TEXTBOX, NULL, create_model_defaults, NULL},
+	 true, EDIT_TEXTBOX, NULL, create_model_defaults, NULL},
 	{G_TYPE_STRING, SORTID_GRID_TOPO_ORDER, "Grid: Topology Order",
-	 TRUE, EDIT_MODEL, NULL, create_model_defaults, NULL},
+	 true, EDIT_MODEL, NULL, create_model_defaults, NULL},
 	{G_TYPE_STRING, SORTID_PAGE_VISIBLE, "Visible Pages",
-	 TRUE, EDIT_ARRAY, NULL, create_model_defaults, NULL},
+	 true, EDIT_ARRAY, NULL, create_model_defaults, NULL},
 	{G_TYPE_STRING, SORTID_REFRESH_DELAY, "Refresh Delay in Secs",
-	 TRUE, EDIT_TEXTBOX, NULL, create_model_defaults, NULL},
+	 true, EDIT_TEXTBOX, NULL, create_model_defaults, NULL},
 	{G_TYPE_STRING, SORTID_RULED_TV, "Ruled Tables",
-	 TRUE, EDIT_MODEL, NULL, create_model_defaults, NULL},
+	 true, EDIT_MODEL, NULL, create_model_defaults, NULL},
 	{G_TYPE_STRING, SORTID_SHOW_GRID, "Show Grid",
-	 TRUE, EDIT_MODEL, NULL, create_model_defaults, NULL},
+	 true, EDIT_MODEL, NULL, create_model_defaults, NULL},
 	{G_TYPE_STRING, SORTID_SHOW_HIDDEN, "Show Hidden",
-	 TRUE, EDIT_MODEL, NULL, create_model_defaults, NULL},
+	 true, EDIT_MODEL, NULL, create_model_defaults, NULL},
 	{G_TYPE_STRING, SORTID_SAVE_PAGE_OPTS, "Save Page Settings",
-	 TRUE, EDIT_MODEL, NULL, create_model_defaults, NULL},
+	 true, EDIT_MODEL, NULL, create_model_defaults, NULL},
 	{G_TYPE_STRING, SORTID_TAB_POS, "Tab Position",
-	 TRUE, EDIT_MODEL, NULL, create_model_defaults, NULL},
-	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
+	 true, EDIT_MODEL, NULL, create_model_defaults, NULL},
+	{G_TYPE_NONE, -1, NULL, false, EDIT_NONE}
 };
 
 
@@ -387,7 +387,7 @@ static void _local_display_admin_edit(GtkTable *table,
 
 		renderer = gtk_cell_renderer_text_new();
 		gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(entry),
-					   renderer, TRUE);
+					   renderer, true);
 		gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(entry),
 					      renderer, "text", 0);
 	} else if (display_data->extra == EDIT_TEXTBOX) {
@@ -526,10 +526,10 @@ static void _init_sview_conf(void)
 	default_sview_config.grid_hori = 10;
 	default_sview_config.grid_vert = 10;
 	default_sview_config.show_hidden = 0;
-	default_sview_config.admin_mode = FALSE;
-	default_sview_config.grid_topological = FALSE;
-	default_sview_config.ruled_treeview = FALSE;
-	default_sview_config.show_grid = TRUE;
+	default_sview_config.admin_mode = false;
+	default_sview_config.grid_topological = false;
+	default_sview_config.ruled_treeview = false;
+	default_sview_config.show_grid = true;
 	default_sview_config.default_page = JOB_PAGE;
 	default_sview_config.tab_pos = GTK_POS_TOP;
 	default_sview_config.convert_flags = CONVERT_NUM_UNIT_EXACT;
@@ -539,9 +539,9 @@ static void _init_sview_conf(void)
 		       0, sizeof(page_opts_t));
 
 		if (!main_display_data[i].show)
-			default_sview_config.page_visible[i] = FALSE;
+			default_sview_config.page_visible[i] = false;
 		else
-			default_sview_config.page_visible[i] = TRUE;
+			default_sview_config.page_visible[i] = true;
 	}
 }
 
@@ -636,7 +636,7 @@ extern int load_defaults(void)
 	s_p_get_boolean(&default_sview_config.grid_topological,
 			"GridTopo", hashtbl);
 	if (default_sview_config.grid_topological == 0)
-		default_sview_config.grid_topological = FALSE;
+		default_sview_config.grid_topological = false;
 	s_p_get_uint32(&default_sview_config.grid_vert,
 		       "GridVertical", hashtbl);
 	s_p_get_uint32(&default_sview_config.grid_x_width,
@@ -673,7 +673,7 @@ extern int load_defaults(void)
 	if (s_p_get_string(&tmp_str, "VisiblePages", hashtbl)) {
 		int i = 0;
 		for (i=0; i<PAGE_CNT; i++)
-			default_sview_config.page_visible[i] = FALSE;
+			default_sview_config.page_visible[i] = false;
 
 		if (slurm_strcasestr(tmp_str, "job"))
 			default_sview_config.page_visible[JOB_PAGE] = 1;
@@ -1052,7 +1052,7 @@ extern int configure_defaults(void)
 	uint32_t width = 150;
 	uint32_t height = 700;
 
-	apply_hidden_change = TRUE;
+	apply_hidden_change = true;
 
 	memcpy(&tmp_config, &default_sview_config, sizeof(sview_config_t));
 	gtk_window_set_default(GTK_WINDOW(popup), label);
@@ -1085,7 +1085,7 @@ extern int configure_defaults(void)
 	table = GTK_TABLE(bin->child);
 	gtk_table_resize(table, SORTID_CNT, 2);
 
-	gtk_table_set_homogeneous(table, FALSE);
+	gtk_table_set_homogeneous(table, false);
 
 	for (i = 0; i < SORTID_CNT; i++) {
 		while (display_data++) {
@@ -1106,10 +1106,10 @@ extern int configure_defaults(void)
 	gtk_table_resize(table, row, 2);
 
 	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
-			   label, FALSE, FALSE, 0);
+			   label, false, false, 0);
 	if (window)
 		gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
-				   GTK_WIDGET(window), TRUE, TRUE, 0);
+				   GTK_WIDGET(window), true, true, 0);
 	gtk_widget_show_all(popup);
 	response = gtk_dialog_run (GTK_DIALOG(popup));
 	if (response == GTK_RESPONSE_OK) {
@@ -1135,7 +1135,7 @@ extern int configure_defaults(void)
 				cluster_change_front_end();
 			} else if (tmp_config.grid_topological !=
 				   working_sview_config.grid_topological) {
-				apply_hidden_change = FALSE;
+				apply_hidden_change = false;
 				if (tmp_config.grid_topological) {
 					default_sview_config.grid_topological =
 						tmp_config.grid_topological;
@@ -1147,7 +1147,7 @@ extern int configure_defaults(void)
 							"Valid topology not "
 							"detected");
 						tmp_config.grid_topological =
-							FALSE;
+							false;
 						goto denied_change;
 					}
 				}
@@ -1180,7 +1180,7 @@ extern int configure_defaults(void)
 			gtk_toggle_action_set_active(
 				default_sview_config.action_hidden,
 				working_sview_config.show_hidden);
-			apply_hidden_change = TRUE;
+			apply_hidden_change = true;
 			gtk_toggle_action_set_active(
 				default_sview_config.action_page_opts,
 				working_sview_config.save_page_opts);

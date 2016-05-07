@@ -76,42 +76,42 @@ enum {
 static char *_initial_page_opts = "Name/JobID,Pool,Size,State,StateTime,UserID";
 
 static display_data_t display_data_bb[] = {
-	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE,
+	{G_TYPE_INT, SORTID_POS, NULL, false, EDIT_NONE,
 	 refresh_bb, create_model_bb, admin_edit_bb},
-	{G_TYPE_STRING, SORTID_PLUGIN, "Plugin", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_PLUGIN, "Plugin", false, EDIT_NONE,
 	 refresh_bb, create_model_bb, admin_edit_bb},
-	{G_TYPE_STRING, SORTID_NAME, "Name/JobID", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_NAME, "Name/JobID", false, EDIT_NONE,
 	 refresh_bb, create_model_bb, admin_edit_bb},
-	{G_TYPE_STRING, SORTID_COLOR, NULL, TRUE, EDIT_COLOR,
+	{G_TYPE_STRING, SORTID_COLOR, NULL, true, EDIT_COLOR,
 	 refresh_bb, create_model_bb, admin_edit_bb},
-	{G_TYPE_INT, SORTID_COLOR_INX, NULL, FALSE, EDIT_NONE,
+	{G_TYPE_INT, SORTID_COLOR_INX, NULL, false, EDIT_NONE,
 	 refresh_bb, create_model_bb, admin_edit_bb},
-	{G_TYPE_STRING, SORTID_ACCOUNT, "Account", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_ACCOUNT, "Account", false, EDIT_NONE,
 	 refresh_bb, create_model_bb, admin_edit_bb},
-	{G_TYPE_STRING, SORTID_CREATE_TIME, "CreateTime", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_CREATE_TIME, "CreateTime", false, EDIT_NONE,
 	 refresh_bb, create_model_bb, admin_edit_bb},
-	{G_TYPE_STRING, SORTID_PARTITION, "Partition", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_PARTITION, "Partition", false, EDIT_NONE,
 	 refresh_bb, create_model_bb, admin_edit_bb},
-	{G_TYPE_STRING, SORTID_POOL, "Pool", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_POOL, "Pool", false, EDIT_NONE,
 	 refresh_bb, create_model_bb, admin_edit_bb},
-	{G_TYPE_STRING, SORTID_QOS, "QOS", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_QOS, "QOS", false, EDIT_NONE,
 	 refresh_bb, create_model_bb, admin_edit_bb},
-	{G_TYPE_STRING, SORTID_SIZE, "Size", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_SIZE, "Size", false, EDIT_NONE,
 	 refresh_bb, create_model_bb, admin_edit_bb},
-	{G_TYPE_STRING, SORTID_STATE, "State", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_STATE, "State", false, EDIT_NONE,
 	 refresh_bb, create_model_bb, admin_edit_bb},
-	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, EDIT_NONE, refresh_bb,
+	{G_TYPE_INT, SORTID_UPDATED, NULL, false, EDIT_NONE, refresh_bb,
 	 create_model_bb, admin_edit_bb},
-	{G_TYPE_STRING, SORTID_USERID, "UserID", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_USERID, "UserID", false, EDIT_NONE,
 	 refresh_bb, create_model_bb, admin_edit_bb},
-	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
+	{G_TYPE_NONE, -1, NULL, false, EDIT_NONE}
 };
 
 /*Burst buffer options list*/
 static display_data_t options_data_bb[] = {
-	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE},
-	{G_TYPE_STRING, INFO_PAGE, "Full Info", TRUE, BB_PAGE},
-	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
+	{G_TYPE_INT, SORTID_POS, NULL, false, EDIT_NONE},
+	{G_TYPE_STRING, INFO_PAGE, "Full Info", true, BB_PAGE},
+	{G_TYPE_NONE, -1, NULL, false, EDIT_NONE}
 };
 
 static display_data_t *local_display_data = NULL;
@@ -664,13 +664,13 @@ extern void get_info_bb(GtkTable *table, display_data_t *display_data)
 	GtkTreeView *tree_view = NULL;
 	static GtkWidget *display_widget = NULL;
 	GtkTreePath *path = NULL;
-	static bool set_opts = FALSE;
+	static bool set_opts = false;
 
 	if (!set_opts) {
 		set_page_opts(BB_PAGE, display_data_bb,
 			      SORTID_CNT, _initial_page_opts);
 	}
-	set_opts = TRUE;
+	set_opts = true;
 
 	/* reset */
 	if (!table && !display_data) {
@@ -757,8 +757,8 @@ display_it:
 	view = INFO_VIEW;
 	_update_info_bb(info_list, GTK_TREE_VIEW(display_widget));
 end_it:
-	toggled = FALSE;
-	force_refresh = FALSE;
+	toggled = false;
+	force_refresh = false;
 reset_curs:
 	if (main_window && main_window->window)
 		gdk_window_set_cursor(main_window->window, NULL);
@@ -986,7 +986,7 @@ extern void popup_all_bb(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	default:
 		g_print("Burst Buffer got unknown type %d\n", id);
 	}
-	if (!sview_thread_new((gpointer)popup_thr, popup_win, FALSE, &error)) {
+	if (!sview_thread_new((gpointer)popup_thr, popup_win, false, &error)) {
 		g_printerr ("Failed to create burst buffer popup thread: %s\n",
 			    error->message);
 		return;

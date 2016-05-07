@@ -2903,7 +2903,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 	return rc;
 }
 
-/* Return TRUE if job_id is found in dependency_list.
+/* Return true if job_id is found in dependency_list.
  * Pass NULL dependency list to clear the counter.
  * Execute recursively for each dependent job */
 static bool _scan_depend(List dependency_list, uint32_t job_id)
@@ -2936,9 +2936,9 @@ static bool _scan_depend(List dependency_list, uint32_t job_id)
 
 	if (dependency_list == NULL) {
 		job_counter = 0;
-		return FALSE;
+		return false;
 	} else if (job_counter++ >= max_depend_depth) {
-		return FALSE;
+		return false;
 	}
 
 	xassert(job_id);
