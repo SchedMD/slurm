@@ -545,15 +545,15 @@ _sockname_regex(regex_t *re, const char *filename,
 		return -1;
 	}
 
-	match = strndup(filename + pmatch[1].rm_so,
+	match = xstrndup(filename + pmatch[1].rm_so,
 			(size_t)(pmatch[1].rm_eo - pmatch[1].rm_so));
 	*jobid = (uint32_t)atoll(match);
-	free(match);
+	xfree(match);
 
-	match = strndup(filename + pmatch[2].rm_so,
+	match = xstrndup(filename + pmatch[2].rm_so,
 			(size_t)(pmatch[2].rm_eo - pmatch[2].rm_so));
 	*stepid = (uint32_t)atoll(match);
-	free(match);
+	xfree(match);
 
 	return 0;
 }
