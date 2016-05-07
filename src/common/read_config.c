@@ -73,7 +73,6 @@
 #include "src/common/node_conf.h"
 #include "src/common/node_features.h"
 #include "src/common/parse_config.h"
-#include "src/common/parse_spec.h"
 #include "src/common/parse_time.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_accounting_storage.h"

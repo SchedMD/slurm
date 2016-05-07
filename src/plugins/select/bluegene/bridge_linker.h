@@ -50,7 +50,6 @@
 
 #include "src/common/node_select.h"
 #include "src/common/read_config.h"
-#include "src/common/parse_spec.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/common/list.h"
 #include "src/common/hostlist.h"

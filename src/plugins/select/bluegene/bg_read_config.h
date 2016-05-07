@@ -42,7 +42,6 @@
 #include "src/common/list.h"
 #include "src/common/xmalloc.h"
 #include "src/common/read_config.h"
-#include "src/common/parse_spec.h"
 
 /* structure filled in from reading bluegene.conf file for specifying
  * images */

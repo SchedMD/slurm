@@ -64,7 +64,6 @@
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/node_select.h"
-#include "src/common/parse_spec.h"
 #include "src/common/parse_time.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
