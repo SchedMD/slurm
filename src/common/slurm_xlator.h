@@ -70,11 +70,6 @@
 
 #if USE_ALIAS
 
-/* arg_desc.[ch] functions*/
-#define	arg_count		slurm_arg_count
-#define	arg_idx_by_name		slurm_arg_idx_by_name
-#define	arg_name_by_inx		slurm_arg_name_by_inx
-
 /* bitstring.[ch] functions*/
 #define	bit_alloc		slurm_bit_alloc
 #define	bit_test		slurm_bit_test
@@ -419,7 +414,6 @@
 #endif /* USE_ALIAS */
 
 /* Include the function definitions after redefining their names. */
-#include "src/common/arg_desc.h"
 #include "src/common/bitstring.h"
 #include "src/common/callerid.h"
 #include "src/common/eio.h"

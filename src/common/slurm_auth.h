@@ -44,7 +44,6 @@
 
 #include "src/common/plugrack.h"
 #include "src/common/pack.h"
-#include "src/common/arg_desc.h"
 
 /*
  * This API operates on a global authentication

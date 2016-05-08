@@ -191,8 +191,8 @@ am__libcommon_la_SOURCES_DIST = assoc_mgr.c assoc_mgr.h \
 	slurm_acct_gather_infiniband.h slurm_acct_gather_filesystem.c \
 	slurm_acct_gather_filesystem.h slurm_jobcomp.c slurm_jobcomp.h \
 	slurm_route.c slurm_route.h slurm_time.c slurm_time.h \
-	slurm_topology.c slurm_topology.h switch.c switch.h arg_desc.c \
-	arg_desc.h macros.h unsetenv.c unsetenv.h \
+	slurm_topology.c slurm_topology.h switch.c switch.h \
+	macros.h unsetenv.c unsetenv.h \
 	slurm_selecttype_info.c slurm_selecttype_info.h \
 	slurm_resource_info.c slurm_resource_info.h hostlist.c \
 	hostlist.h slurm_step_layout.c slurm_step_layout.h \
@@ -225,7 +225,7 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo cpu_frequency.lo \
 	slurm_acct_gather_infiniband.lo \
 	slurm_acct_gather_filesystem.lo slurm_jobcomp.lo \
 	slurm_route.lo slurm_time.lo slurm_topology.lo switch.lo \
-	arg_desc.lo $(am__objects_1) slurm_selecttype_info.lo \
+	$(am__objects_1) slurm_selecttype_info.lo \
 	slurm_resource_info.lo hostlist.lo slurm_step_layout.lo \
 	checkpoint.lo job_resources.lo parse_time.lo job_options.lo \
 	global_defaults.lo timers.lo stepd_api.lo \
@@ -674,7 +674,6 @@ libcommon_la_SOURCES = \
 	slurm_time.c slurm_time.h	\
 	slurm_topology.c slurm_topology.h \
 	switch.c switch.h		\
-	arg_desc.c arg_desc.h		\
 	macros.h			\
 	$(build_unsetenv_src)		\
 	slurm_selecttype_info.c 	\
@@ -810,7 +809,6 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/arg_desc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/assoc_mgr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bitstring.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/callerid.Plo@am__quote@

@@ -103,7 +103,6 @@ libcommon_la_SOURCES = 			\
 	slurm_time.c slurm_time.h	\
 	slurm_topology.c slurm_topology.h \
 	switch.c switch.h		\
-	arg_desc.c arg_desc.h		\
 	macros.h			\
 	$(build_unsetenv_src)		\
 	slurm_selecttype_info.c 	\

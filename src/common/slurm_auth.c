@@ -50,7 +50,6 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
-#include "src/common/arg_desc.h"
 
 static bool auth_dummy = false;	/* for security testing */
 static bool init_run = false;
