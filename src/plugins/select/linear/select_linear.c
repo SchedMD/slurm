@@ -64,6 +64,7 @@
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_strcasestr.h"
 #include "src/common/slurm_topology.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/xassert.h"
@@ -3464,9 +3465,9 @@ extern int init ( void )
 
 	topo_param = slurm_get_topology_param();
 	if (topo_param) {
-		if (strcasestr(topo_param, "dragonfly"))
+		if (slurm_strcasestr(topo_param, "dragonfly"))
 			have_dragonfly = true;
-		if (strcasestr(topo_param, "TopoOptional"))
+		if (slurm_strcasestr(topo_param, "TopoOptional"))
 			topo_optional = true;
 		xfree(topo_param);
 	}
