@@ -154,12 +154,15 @@ typedef struct bb_job {
 	char      *partition;	/* Associated partition (for limits) */
 	uint64_t   persist_add;	/* Persistent buffer space job adds, bytes */
 	char      *qos;	 	/* Associated QOS (for limits) */
+	uint64_t   req_size;	/* Bytes requested by job (excludes
+				 * persistent buffers) */
 	int        state;	/* job state with respect to burst buffers,
 				 * See BB_STATE_* in slurm.h.in */
 	uint32_t   swap_size;	/* swap space required per node in GB */
 	uint32_t   swap_nodes;	/* Number of nodes needed */
 	uint64_t   total_size;	/* Total bytes required for job (excludes
-				 * persistent buffers) */
+				 * persistent buffers, rounded up from
+				 * req_size) */
 	uint32_t   user_id;	/* user the job runs as */
 } bb_job_t;
 

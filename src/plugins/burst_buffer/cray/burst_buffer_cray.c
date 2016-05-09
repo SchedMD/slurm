@@ -190,6 +190,12 @@ typedef struct create_buf_data {
 	uint32_t user_id;
 } create_buf_data_t;
 
+#define BB_UNITS_BYTES 1
+struct bb_total_size {
+	int units;
+	uint64_t capacity;
+};
+
 static int	_alloc_job_bb(struct job_record *job_ptr, bb_job_t *bb_job,
 			      bool job_ready);
 static void	_apply_limits(void);
@@ -231,6 +237,7 @@ static void	_json_parse_instances_object(json_object *jobj,
 static void	_json_parse_pools_object(json_object *jobj, bb_pools_t *ent);
 static void	_json_parse_sessions_object(json_object *jobj,
 					    bb_sessions_t *ent);
+static struct bb_total_size *_json_parse_real_size(json_object *j);
 static void	_log_script_argv(char **script_argv, char *resp_msg);
 static void	_load_state(bool init_config);
 static int	_open_part_state_file(char **state_file);
@@ -603,6 +610,7 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 				}
 				tmp_cnt = _set_granularity(tmp_cnt,
 							   bb_job->job_pool);
+				bb_job->req_size += tmp_cnt;
 				bb_job->total_size += tmp_cnt;
 			} else if (!xstrncmp(tok, "persistentdw", 12)) {
 				/* Persistent buffer use */
@@ -657,6 +665,7 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 				}
 				tmp_cnt = _set_granularity(tmp_cnt,
 							   bb_job->job_pool);
+				bb_job->req_size += tmp_cnt;
 				bb_job->total_size += tmp_cnt;
 			} else {
 				/* Ignore stage-in, stage-out, etc. */
@@ -3034,6 +3043,54 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 	xfree(resp_msg);
 	_free_script_argv(script_argv);
 
+	/* Round up job buffer size based upon DW "equalize_fragments"
+	 * configuration parameter */
+		script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
+	script_argv[0] = xstrdup("dw_wlm_cli");
+	script_argv[1] = xstrdup("--function");
+	script_argv[2] = xstrdup("real_size");
+	script_argv[3] = xstrdup("--token");
+	xstrfmtcat(script_argv[4], "%u", job_ptr->job_id);
+	START_TIMER;
+	resp_msg = bb_run_script("real_size",
+				 bb_state.bb_config.get_sys_state,
+				 script_argv, timeout, &status);
+	END_TIMER;
+	if ((DELTA_TIMER > 200000) ||	/* 0.2 secs */
+	    bb_state.bb_config.debug_flag)
+		info("%s: real_size ran for %s", __func__, TIME_STR);
+	_log_script_argv(script_argv, resp_msg);
+	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		error("%s: real_size for job %u status:%u response:%s",
+		      __func__, job_ptr->job_id, status, resp_msg);
+		if (err_msg) {
+			xfree(*err_msg);
+			xstrfmtcat(*err_msg, "%s: %s", plugin_type, resp_msg);
+		}
+	} else {
+		json_object *j;
+		struct bb_total_size *ent;
+		j = json_tokener_parse(resp_msg);
+		if (j == NULL) {
+			error("%s: json parser failed on %s",
+			      __func__, resp_msg);
+		} else {
+			ent = _json_parse_real_size(j);
+			json_object_put(j);	/* Frees json memory */
+			if (ent &&
+			    (ent->units == BB_UNITS_BYTES) &&
+			    (ent->capacity > bb_job->total_size)) {
+				bb_job->total_size = ent->capacity;
+				info("%s: Job %u total_size increased from %"PRIu64" to %"PRIu64,
+				     __func__, job_ptr->job_id,
+				     bb_job->req_size, bb_job->total_size);
+			}
+			xfree(ent);
+		}
+	}
+	xfree(resp_msg);
+	_free_script_argv(script_argv);
+
 	/* Clean-up */
 	if (rc != SLURM_SUCCESS) {
 		slurm_mutex_lock(&bb_state.bb_mutex);
@@ -3047,6 +3104,38 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 	xfree(dw_cli_path);
 
 	return rc;
+}
+
+static struct bb_total_size *_json_parse_real_size(json_object *j)
+{
+	enum json_type type;
+	struct json_object_iter iter;
+	struct bb_total_size *bb_tot_sz;
+	const char *p;
+
+	bb_tot_sz = xmalloc(sizeof(struct bb_total_size));
+	json_object_object_foreachC(j, iter) {
+		type = json_object_get_type(iter.val);
+		switch (type) {
+			case json_type_string:
+				if (!xstrcmp(iter.key, "units")) {
+					p = json_object_get_string(iter.val);
+					if (!xstrcmp(p, "bytes"))
+					bb_tot_sz->units = BB_UNITS_BYTES;
+				}
+				break;
+			case json_type_int:
+				if (!xstrcmp(iter.key, "capacity")) {
+					bb_tot_sz->capacity =
+						json_object_get_int64(iter.val);
+				}
+				break;
+			default:
+				break;
+		}
+	}
+
+	return bb_tot_sz;
 }
 
 /*
