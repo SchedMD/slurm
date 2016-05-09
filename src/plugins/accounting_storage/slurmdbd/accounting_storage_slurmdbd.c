@@ -252,9 +252,8 @@ static void *_set_db_inx_thread(void *no_data)
 	/* DEF_TIMERS; */
 
 #if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "slurmctld_dbinx", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m",
-		      __func__, "slurmctld_dbinx");
+	if (prctl(PR_SET_NAME, "dbinx", NULL, NULL, NULL) < 0) {
+		error("%s: cannot set my name to %s %m", __func__, "dbinx");
 	}
 #endif
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);

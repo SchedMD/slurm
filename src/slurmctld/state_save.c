@@ -176,9 +176,8 @@ extern void *slurmctld_state_save(void *no_data)
 	int save_count;
 
 #if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "slurmctld_sstate", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m",
-		      __func__, "slurmctld_sstate");
+	if (prctl(PR_SET_NAME, "sstate", NULL, NULL, NULL) < 0) {
+		error("%s: cannot set my name to %s %m", __func__, "sstate");
 	}
 #endif
 

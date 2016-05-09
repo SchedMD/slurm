@@ -1202,9 +1202,8 @@ static void *_decay_thread(void *no_data)
 				   NO_LOCK, NO_LOCK, NO_LOCK };
 
 #if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "slurmctld_decay", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m",
-		      __func__, "slurmctld_decay");
+	if (prctl(PR_SET_NAME, "decay", NULL, NULL, NULL) < 0) {
+		error("%s: cannot set my name to %s %m", __func__, "decay");
 	}
 #endif
 	/*

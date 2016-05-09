@@ -729,9 +729,8 @@ extern void *backfill_agent(void *args)
 	bool short_sleep = false;
 
 #if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "slurmctld_bckfl", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m",
-		      __func__, "slurm_backfill");
+	if (prctl(PR_SET_NAME, "bckfl", NULL, NULL, NULL) < 0) {
+		error("%s: cannot set my name to %s %m", __func__, "backfill");
 	}
 #endif
 	_load_config();
