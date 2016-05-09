@@ -683,7 +683,7 @@ set_idbuf(char *idbuf)
 {
 	struct timeval now;
 	char thread_name[NAMELEN];
-	static int max_len = 12; /* handles current longest thread name */
+	int max_len = 12; /* handles current longest thread name */
 
 	gettimeofday(&now, NULL);
 	if (pthread_getname_np(pthread_self(), thread_name, NAMELEN)) {
