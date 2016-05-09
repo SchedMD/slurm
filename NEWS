@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix for possible slurmstepd segfault on invalid userr ID.
  -- MySQL - Fix for possible race condition when archiving multiple clusters
     at the same time.
+ -- Fix compile for when you don't have hwloc.
 
 * Changes in Slurm 15.08.11
 ===========================
