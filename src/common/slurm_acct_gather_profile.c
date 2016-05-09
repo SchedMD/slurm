@@ -37,9 +37,17 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
+
+#if HAVE_SYS_PRCTL_H
+#  include <sys/prctl.h>
+#endif
 
 #include "src/common/macros.h"
 #include "src/common/plugin.h"
@@ -121,6 +129,14 @@ static void _set_freq(int type, char *freq, char *freq_def)
 static void *_timer_thread(void *args)
 {
 	int i, now, diff;
+
+#if HAVE_SYS_PRCTL_H
+	if (prctl(PR_SET_NAME, "acctg_prof", NULL, NULL, NULL) < 0) {
+		error("%s: cannot set my name to %s %m",
+		      __func__, "acctg_prof");
+	}
+#endif
+
 	DEF_TIMERS;
 	while (acct_gather_profile_running) {
 		START_TIMER;
