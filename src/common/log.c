@@ -690,7 +690,6 @@ set_idbuf(char *idbuf)
 		error("failed to get thread name: %m");
 		return;
 	}
-	max_len = MAX(max_len, strlen(thread_name));
 
 	sprintf(idbuf, "%.15s.%-6d %5d %*s", slurm_ctime(&now.tv_sec) + 4,
 		(int)now.tv_usec, (int)getpid(), max_len, thread_name);
