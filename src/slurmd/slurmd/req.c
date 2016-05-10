@@ -204,6 +204,7 @@ static int  _run_epilog(job_env_t *job_env);
 static int  _run_prolog(job_env_t *job_env, slurm_cred_t *cred);
 static void _rpc_forward_data(slurm_msg_t *msg);
 static int  _rpc_network_callerid(slurm_msg_t *msg);
+static void _dealloc_gids(gids_t *p);
 
 
 static bool _pause_for_job_completion(uint32_t jobid, char *nodes,
@@ -698,7 +699,7 @@ _send_slurmstepd_init(int fd, int type, void *req,
 			tmp32 = (uint32_t)gids->gids[i];
 			safe_write(fd, &tmp32, sizeof(uint32_t));
 		}
-		xfree(gids);
+		_dealloc_gids(gids);
 	} else {
 		len = 0;
 		safe_write(fd, &len, sizeof(int));

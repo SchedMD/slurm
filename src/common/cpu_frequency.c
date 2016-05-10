@@ -40,7 +40,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <limits.h>
+#include <limits.h>     /* for PATH_MAX */
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -59,10 +59,8 @@
 
 #define PATH_TO_CPU	"/sys/devices/system/cpu/"
 #define LINE_LEN	100
-#define SYSFS_PATH_MAX	255
 #define FREQ_LIST_MAX	32
 #define GOV_NAME_LEN	24
-#define SPOOL_LEN       128
 
 #define GOV_CONSERVATIVE	0x01
 #define GOV_ONDEMAND		0x02
@@ -124,7 +122,7 @@ static int _fd_lock_retry(int fd)
  */
 static int _set_cpu_owner_lock(int cpu_id, uint32_t job_id)
 {
-	char tmp[SPOOL_LEN];
+	char tmp[PATH_MAX];
 	int fd, sz;
 
 	snprintf(tmp, sizeof(tmp), "%s/cpu", slurmd_spooldir);
@@ -149,7 +147,7 @@ static int _set_cpu_owner_lock(int cpu_id, uint32_t job_id)
 
 static int _test_cpu_owner_lock(int cpu_id, uint32_t job_id)
 {
-	char tmp[SPOOL_LEN];
+	char tmp[PATH_MAX];
 	uint32_t in_job_id;
 	int fd, sz;
 
@@ -199,7 +197,7 @@ static int
 _cpu_freq_cpu_avail(int cpuidx)
 {
 	FILE *fp = NULL;
-	char path[SYSFS_PATH_MAX];
+	char path[PATH_MAX];
 	int i, j, k;
 	uint32_t freq;
 	bool all_avail = false;
@@ -243,7 +241,7 @@ _cpu_freq_cpu_avail(int cpuidx)
 extern void
 cpu_freq_init(slurmd_conf_t *conf)
 {
-	char path[SYSFS_PATH_MAX];
+	char path[PATH_MAX];
 	struct stat statbuf;
 	FILE *fp;
 	char value[LINE_LEN];
@@ -626,7 +624,7 @@ static int
 _cpu_freq_get_cur_gov(int cpuidx)
 {
 	FILE *fp = NULL;
-	char path[SYSFS_PATH_MAX], gov_value[LINE_LEN];
+	char path[PATH_MAX], gov_value[LINE_LEN];
 	int j;
 
 	snprintf(path, sizeof(path),
@@ -659,7 +657,7 @@ _cpu_freq_get_cur_gov(int cpuidx)
 static int
 _cpu_freq_set_gov(stepd_step_rec_t *job, int cpuidx, char* gov )
 {
-	char path[SYSFS_PATH_MAX];
+	char path[PATH_MAX];
 	FILE *fp;
 	int fd, rc;
 
@@ -688,7 +686,7 @@ static uint32_t
 _cpu_freq_get_scaling_freq(int cpuidx, char* option)
 {
 	FILE *fp = NULL;
-	char path[SYSFS_PATH_MAX];
+	char path[PATH_MAX];
 	uint32_t freq;
 	/* get the value from 'option' */
 	snprintf(path, sizeof(path), PATH_TO_CPU
@@ -715,7 +713,7 @@ static int
 _cpu_freq_set_scaling_freq(stepd_step_rec_t *job, int cpx, uint32_t freq,
 		char* option)
 {
-	char path[SYSFS_PATH_MAX];
+	char path[PATH_MAX];
 	FILE *fp;
 	int fd, rc;
 	uint32_t newfreq;
