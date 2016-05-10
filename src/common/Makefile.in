@@ -166,12 +166,12 @@ am__libcommon_la_SOURCES_DIST = assoc_mgr.c assoc_mgr.h \
 	xhash.h net.c net.h log.c log.h cbuf.c cbuf.h safeopen.c \
 	safeopen.h bitstring.c bitstring.h mpi.c slurm_mpi.h pack.c \
 	pack.h parse_config.c parse_config.h parse_value.c \
-	parse_value.h plugin.c plugin.h \
-	plugrack.c plugrack.h power.c power.h print_fields.c \
-	print_fields.h read_config.c read_config.h node_select.c \
-	node_select.h env.c env.h fd.c fd.h slurm_cred.h slurm_cred.c \
-	slurm_errno.c slurm_ext_sensors.c slurm_ext_sensors.h \
-	slurm_mcs.c slurm_mcs.h slurm_priority.c slurm_priority.h \
+	parse_value.h plugin.c plugin.h plugrack.c plugrack.h power.c \
+	power.h print_fields.c print_fields.h read_config.c \
+	read_config.h node_select.c node_select.h env.c env.h fd.c \
+	fd.h slurm_cred.h slurm_cred.c slurm_errno.c \
+	slurm_ext_sensors.c slurm_ext_sensors.h slurm_mcs.c \
+	slurm_mcs.h slurm_priority.c slurm_priority.h \
 	slurm_protocol_api.c slurm_protocol_api.h \
 	slurm_protocol_pack.c slurm_protocol_pack.h \
 	slurm_protocol_util.c slurm_protocol_util.h \
@@ -191,31 +191,30 @@ am__libcommon_la_SOURCES_DIST = assoc_mgr.c assoc_mgr.h \
 	slurm_acct_gather_infiniband.h slurm_acct_gather_filesystem.c \
 	slurm_acct_gather_filesystem.h slurm_jobcomp.c slurm_jobcomp.h \
 	slurm_route.c slurm_route.h slurm_time.c slurm_time.h \
-	slurm_topology.c slurm_topology.h switch.c switch.h \
-	macros.h unsetenv.c unsetenv.h \
-	slurm_selecttype_info.c slurm_selecttype_info.h \
-	slurm_resource_info.c slurm_resource_info.h hostlist.c \
-	hostlist.h slurm_step_layout.c slurm_step_layout.h \
-	checkpoint.c checkpoint.h job_resources.c job_resources.h \
-	parse_time.c parse_time.h job_options.c job_options.h \
-	global_defaults.c timers.c timers.h slurm_xlator.h stepd_api.c \
-	stepd_api.h write_labelled_message.c write_labelled_message.h \
-	proc_args.c proc_args.h slurm_strcasestr.c slurm_strcasestr.h \
-	node_conf.h node_conf.c gres.h gres.c entity.h entity.c \
-	layout.h layout.c layouts_mgr.h layouts_mgr.c mapping.c \
-	mapping.h xcgroup_read_config.c xcgroup_read_config.h xlua.c \
-	xlua.h callerid.c callerid.h siphash24.c siphash_slurm.c \
-	siphash.h
+	slurm_topology.c slurm_topology.h switch.c switch.h macros.h \
+	unsetenv.c unsetenv.h slurm_selecttype_info.c \
+	slurm_selecttype_info.h slurm_resource_info.c \
+	slurm_resource_info.h hostlist.c hostlist.h \
+	slurm_step_layout.c slurm_step_layout.h checkpoint.c \
+	checkpoint.h job_resources.c job_resources.h parse_time.c \
+	parse_time.h job_options.c job_options.h global_defaults.c \
+	timers.c timers.h slurm_xlator.h stepd_api.c stepd_api.h \
+	write_labelled_message.c write_labelled_message.h proc_args.c \
+	proc_args.h slurm_strcasestr.c slurm_strcasestr.h node_conf.h \
+	node_conf.c gres.h gres.c entity.h entity.c layout.h layout.c \
+	layouts_mgr.h layouts_mgr.c mapping.c mapping.h \
+	xcgroup_read_config.c xcgroup_read_config.h xlua.c xlua.h \
+	callerid.c callerid.h siphash24.c siphash_slurm.c siphash.h
 @HAVE_UNSETENV_FALSE@am__objects_1 = unsetenv.lo
 am_libcommon_la_OBJECTS = assoc_mgr.lo cpu_frequency.lo \
 	node_features.lo xmalloc.lo xassert.lo xstring.lo xsignal.lo \
 	strnatcmp.lo forward.lo msg_aggr.lo strlcpy.lo list.lo \
 	xtree.lo xhash.lo net.lo log.lo cbuf.lo safeopen.lo \
 	bitstring.lo mpi.lo pack.lo parse_config.lo parse_value.lo \
-	plugin.lo plugrack.lo power.lo print_fields.lo \
-	read_config.lo node_select.lo env.lo fd.lo slurm_cred.lo \
-	slurm_errno.lo slurm_ext_sensors.lo slurm_mcs.lo \
-	slurm_priority.lo slurm_protocol_api.lo slurm_protocol_pack.lo \
+	plugin.lo plugrack.lo power.lo print_fields.lo read_config.lo \
+	node_select.lo env.lo fd.lo slurm_cred.lo slurm_errno.lo \
+	slurm_ext_sensors.lo slurm_mcs.lo slurm_priority.lo \
+	slurm_protocol_api.lo slurm_protocol_pack.lo \
 	slurm_protocol_util.lo slurm_protocol_socket_implementation.lo \
 	slurm_protocol_defs.lo slurm_rlimits_info.lo slurmdb_defs.lo \
 	slurmdb_pack.lo slurmdbd_defs.lo working_cluster.lo uid.lo \
