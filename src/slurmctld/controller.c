@@ -2691,6 +2691,18 @@ static void *_assoc_cache_mgr(void *no_data)
 		assoc_mgr_refresh_lists(acct_db_conn, 0);
 		if (running_cache)
 			unlock_slurmctld(job_write_lock);
+		else if (g_tres_count != slurmctld_tres_cnt) {
+			/* This has to be done outside of the job write lock.
+			 * This should only happen in very rare situations
+			 * where we have state, but the database some how has
+			 * changed out from under us. */
+			unlock_slurmctld(job_write_lock);
+			info("TRES in database does not match cache "
+			     "(%u != %u).  Updating...",
+			     g_tres_count, slurmctld_tres_cnt);
+			_init_tres();
+			lock_slurmctld(job_write_lock);
+		}
 		slurm_mutex_unlock(&assoc_cache_mutex);
 	}
 
