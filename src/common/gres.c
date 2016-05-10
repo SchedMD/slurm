@@ -512,9 +512,10 @@ extern void gres_plugin_add(char *gres_name)
 {
 	int i;
 
+	slurm_mutex_lock(&gres_context_lock);
 	for (i = 0; i < gres_context_cnt; i++) {
 		if (!xstrcmp(gres_context[i].gres_name, gres_name))
-			return;
+			goto fini;
 	}
 
 	xrealloc(gres_context,
@@ -524,6 +525,7 @@ extern void gres_plugin_add(char *gres_name)
 	gres_context[gres_context_cnt].gres_name = xstrdup(gres_name);
 	gres_context[gres_context_cnt].plugin_id =_build_id(gres_name);
 	gres_context_cnt++;
+fini:	slurm_mutex_unlock(&gres_context_lock);
 }
 
 /*
