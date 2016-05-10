@@ -310,8 +310,10 @@ static void _add_tres_2_list(List tres_list, char *tres_str, int seconds)
 /* This will destroy the *loc_tres given after it is transfered */
 static void _transfer_loc_tres(List *loc_tres, local_id_usage_t *usage)
 {
-	if (!usage)
+	if (!usage) {
+		FREE_NULL_LIST(*loc_tres);
 		return;
+	}
 
 	if (!usage->loc_tres) {
 		usage->loc_tres = *loc_tres;
