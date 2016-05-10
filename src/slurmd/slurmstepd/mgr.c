@@ -843,7 +843,7 @@ _one_step_complete_msg(stepd_step_rec_t *job, int first, int last)
 		/* this is the base of the tree, but we are doing
 		 * message aggr so send it to the slurmd to handle */
 		req.msg_type = REQUEST_STEP_COMPLETE_AGGR;
-		slurm_set_addr_char(&req.address, conf->port, "localhost");
+		slurm_set_addr_char(&req.address, conf->port, conf->hostname);
 		for (i = 0; i <= REVERSE_TREE_PARENT_RETRY; i++) {
 			if (i)
 				sleep(1);
@@ -2345,7 +2345,7 @@ _send_complete_batch_script_msg(stepd_step_rec_t *job, int err, int status)
 			 * may get a new job to launch */
 			if (i == 0) {
 				slurm_set_addr_char(&req_msg.address,
-						    conf->port, "localhost");
+						    conf->port, conf->hostname);
 			}
 			msg_rc = slurm_send_recv_rc_msg_only_one(&req_msg,
 								 &rc, 0);
