@@ -38,7 +38,6 @@ static uint32_t _threads_per_core(char *host)
 	if (!job_node_ptr || !host)
 		return threads;
 
-	slurm_mutex_lock(&job_node_info_lock);
 	for (i = 0; i < job_node_ptr->record_count; i++) {
 		if (job_node_ptr->node_array[i].name &&
 		    !strcmp(host, job_node_ptr->node_array[i].name)) {
@@ -46,7 +45,7 @@ static uint32_t _threads_per_core(char *host)
 			break;
 		}
 	}
-	slurm_mutex_unlock(&job_node_info_lock);
+
 	return threads;
 }
 
