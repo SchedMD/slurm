@@ -46,6 +46,9 @@
 /*
 ** MT safe
 */
+#ifndef   _GNU_SOURCE
+#  define _GNU_SOURCE
+#endif
 
 #if HAVE_CONFIG_H
 #  include "config.h"
@@ -90,6 +93,8 @@
 #ifndef LINEBUFSIZE
 #  define LINEBUFSIZE 256
 #endif
+
+#define NAMELEN 16
 
 /*
 ** Define slurm-specific aliases for use by plugins, see slurm_xlator.h
@@ -677,12 +682,17 @@ static void
 set_idbuf(char *idbuf)
 {
 	struct timeval now;
+	char thread_name[NAMELEN];
+	int max_len = 12; /* handles current longest thread name */
 
 	gettimeofday(&now, NULL);
+	if (pthread_getname_np(pthread_self(), thread_name, NAMELEN)) {
+		error("failed to get thread name: %m");
+		return;
+	}
 
-	sprintf(idbuf, "%.15s.%-6d %5d %p", slurm_ctime(&now.tv_sec) + 4,
-	        (int)now.tv_usec, (int)getpid(), (void *)pthread_self());
-
+	sprintf(idbuf, "%.15s.%-6d %5d %*s", slurm_ctime(&now.tv_sec) + 4,
+		(int)now.tv_usec, (int)getpid(), max_len, thread_name);
 }
 
 /* return a heap allocated string formed from fmt and ap arglist
@@ -1051,8 +1061,8 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 		if (log->fmt == LOG_FMT_THREAD_ID) {
 			char tmp[64];
 			set_idbuf(tmp);
-			_log_printf(log, log->buf, stderr, "%s %s: %s%s\n",
-			            tmp, log->argv0, pfx, buf);
+			_log_printf(log, log->buf, stderr, "%s: %s%s\n",
+			            tmp, pfx, buf);
 		} else {
 			_log_printf(log, log->buf, stderr, "%s: %s%s\n",
 			            log->argv0, pfx, buf);

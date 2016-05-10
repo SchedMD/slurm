@@ -662,6 +662,8 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 		lua_pushstring (L, job_desc->acctg_freq);
 	} else if (!xstrcmp(name, "alloc_node")) {
 		lua_pushstring (L, job_desc->alloc_node);
+	} else if (!xstrcmp(name, "array_inx")) {
+		lua_pushstring (L, job_desc->array_inx);
 	} else if (!xstrcmp(name, "begin_time")) {
 		lua_pushnumber (L, job_desc->begin_time);
 	} else if (!xstrcmp(name, "boards_per_node")) {
@@ -851,6 +853,11 @@ static int _set_job_req_field(lua_State *L)
 		xfree(job_desc->acctg_freq);
 		if (strlen(value_str))
 			job_desc->acctg_freq = xstrdup(value_str);
+	} else if (!xstrcmp(name, "array_inx")) {
+		value_str = luaL_checkstring(L, 3);
+		xfree(job_desc->array_inx);
+		if (strlen(value_str))
+			job_desc->array_inx = xstrdup(value_str);
 	} else if (!xstrcmp(name, "begin_time")) {
 		job_desc->begin_time = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "burst_buffer")) {

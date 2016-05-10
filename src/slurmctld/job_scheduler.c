@@ -1145,9 +1145,8 @@ static int _schedule(uint32_t job_limit)
 		error("%s: cannot get my name %m", __func__);
 		strlcpy(get_name, "slurmctld", sizeof(get_name));
 	}
-	if (prctl(PR_SET_NAME, "slurmctld_sched", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m",
-		      __func__, "slurmctld_sched");
+	if (prctl(PR_SET_NAME, "sched", NULL, NULL, NULL) < 0) {
+		error("%s: cannot set my name to %s %m", __func__, "sched");
 	}
 #endif
 

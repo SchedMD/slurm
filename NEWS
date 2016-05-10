@@ -16,6 +16,9 @@ documents those changes that are of interest to users and administrators.
     they are in a step.
  -- Correct partition's MaxCPUsPerNode enforcement when nodes are shared by
     multiple partitions.
+ -- node_feature/knl_cray - Prevent slurmctld GRES errors for "hbm" references.
+ -- Display thread name instead of thread id and remove process name in stderr
+    logging for "thread_id" LogTimeFormat.
 
 * Changes in Slurm 16.05.0rc1
 ==============================
@@ -226,6 +229,14 @@ documents those changes that are of interest to users and administrators.
  -- Do not attempt to power down a node which has never responded if the
     slurmctld daemon restarts without state.
  -- Fix for possible slurmstepd segfault on invalid userr ID.
+ -- MySQL - Fix for possible race condition when archiving multiple clusters
+    at the same time.
+ -- Fix compile for when you don't have hwloc.
+ -- Fix issue where daemons would only listen on specific address given in
+    slurm.conf instead of all.  If looking for specific addresses use
+    TopologyParam options No*InAddrAny.
+ -- Cray - Better robustness when dealing with the aeld interface.
+ -- job_submit.lua - add array_inx value for job arrays.
 
 * Changes in Slurm 15.08.11
 ===========================

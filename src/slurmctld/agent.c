@@ -234,9 +234,8 @@ void *agent(void *args)
 	int rpc_thread_cnt;
 
 #if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "slurmctld_agent", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m",
-		      __func__, "slurmctld_agent");
+	if (prctl(PR_SET_NAME, "agent", NULL, NULL, NULL) < 0) {
+		error("%s: cannot set my name to %s %m", __func__, "agent");
 	}
 #endif
 

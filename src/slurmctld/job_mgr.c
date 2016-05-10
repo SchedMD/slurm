@@ -10097,7 +10097,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			   job_specs->cpus_per_task) {
 			info("%s: setting cpus_per_task from %u to %u for "
 			     "job_id %u", __func__, detail_ptr->cpus_per_task,
-			     job_specs->pn_min_cpus,
+			     job_specs->cpus_per_task,
 			     job_ptr->job_id);
 			detail_ptr->cpus_per_task = job_specs->cpus_per_task;
 		}

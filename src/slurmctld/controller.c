@@ -851,9 +851,8 @@ static void *_slurmctld_signal_hand(void *no_data)
 	sigset_t set;
 
 #if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "slurmctld_sigmgr", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m",
-		      __func__, "slurmctld_sigmgr");
+	if (prctl(PR_SET_NAME, "sigmgr", NULL, NULL, NULL) < 0) {
+		error("%s: cannot set my name to %s %m", __func__, "sigmgr");
 	}
 #endif
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
@@ -932,9 +931,8 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	char* node_addr = NULL;
 
 #if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "slurmctld_rpcmgr", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m",
-		      __func__, "slurmctld_rpcmgr");
+	if (prctl(PR_SET_NAME, "rpcmgr", NULL, NULL, NULL) < 0) {
+		error("%s: cannot set my name to %s %m", __func__, "rpcmgr");
 	}
 #endif
 
@@ -1084,9 +1082,8 @@ static void *_service_connection(void *arg)
 	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
 
 #if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "slurmctld_srvcn", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m",
-		      __func__, "slurmctld_srvcn");
+	if (prctl(PR_SET_NAME, "srvcn", NULL, NULL, NULL) < 0) {
+		error("%s: cannot set my name to %s %m", __func__, "srvcn");
 	}
 #endif
 	slurm_msg_t_init(msg);

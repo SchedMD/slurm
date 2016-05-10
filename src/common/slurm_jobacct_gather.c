@@ -47,10 +47,18 @@
  *  	 Morris Jette, et al.
 \*****************************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
 #include <pthread.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
+
+#if HAVE_SYS_PRCTL_H
+#  include <sys/prctl.h>
+#endif
 
 #include "src/common/macros.h"
 #include "src/common/pack.h"
@@ -193,6 +201,13 @@ static void _task_sleep(int rem)
 static void *_watch_tasks(void *arg)
 {
 	int type = PROFILE_TASK;
+
+#if HAVE_SYS_PRCTL_H
+	if (prctl(PR_SET_NAME, "acctg", NULL, NULL, NULL) < 0) {
+		error("%s: cannot set my name to %s %m", __func__, "acctg");
+	}
+#endif
+
 	/* Give chance for processes to spawn before starting
 	 * the polling. This should largely eliminate the
 	 * the chance of having /proc open when the tasks are

@@ -66,6 +66,7 @@
 #define SYSFS_PATH_MAX	255
 #define FREQ_LIST_MAX	32
 #define GOV_NAME_LEN	24
+#define SPOOL_LEN       128
 
 #define GOV_CONSERVATIVE	0x01
 #define GOV_ONDEMAND		0x02
@@ -127,7 +128,7 @@ static int _fd_lock_retry(int fd)
  */
 static int _set_cpu_owner_lock(int cpu_id, uint32_t job_id)
 {
-	char tmp[64];
+	char tmp[SPOOL_LEN];
 	int fd, sz;
 
 	snprintf(tmp, sizeof(tmp), "%s/cpu", slurmd_spooldir);
@@ -152,7 +153,7 @@ static int _set_cpu_owner_lock(int cpu_id, uint32_t job_id)
 
 static int _test_cpu_owner_lock(int cpu_id, uint32_t job_id)
 {
-	char tmp[64];
+	char tmp[SPOOL_LEN];
 	uint32_t in_job_id;
 	int fd, sz;
 

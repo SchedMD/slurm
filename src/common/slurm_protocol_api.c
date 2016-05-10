@@ -2868,10 +2868,7 @@ slurm_fd_t slurm_init_msg_engine_addrname_port(char *addr_name, uint16_t port)
 {
 	slurm_addr_t addr;
 
-	if (addr_name)
-		slurm_set_addr(&addr, port, addr_name);
-	else
-		slurm_setup_sockaddr(&addr, port);
+	slurm_setup_sockaddr(&addr, port);
 
 	return slurm_init_msg_engine(&addr);
 }
