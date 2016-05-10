@@ -7,6 +7,7 @@
 #include <XSUB.h>
 
 #include <slurm/slurmdb.h>
+#undef VERSION /* prevent conflict with VERSION macro in config.h */
 #include "src/common/slurm_protocol_defs.h"
 #include "slurmdb-perl.h"
 

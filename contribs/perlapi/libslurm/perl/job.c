@@ -8,6 +8,7 @@
 #include <slurm/slurm.h>
 #include "ppport.h"
 
+#undef VERSION /* prevent conflict with VERSION macro in config.h */
 #include "src/common/job_resources.h"
 
 #include "bitstr.h"
