@@ -1868,12 +1868,13 @@ _send_pending_exit_msgs(stepd_step_rec_t *job)
 	int  nsent  = 0;
 	int  status = 0;
 	bool set    = false;
-	uint32_t  tid[job->node_tasks];
+	uint32_t *tid;
 
 	/*
 	 * Collect all exit codes with the same status into a
 	 * single message.
 	 */
+	tid = xmalloc(sizeof(uint32_t) * job->node_tasks);
 	for (i = 0; i < job->node_tasks; i++) {
 		stepd_step_task_info_t *t = job->task[i];
 
@@ -1894,6 +1895,7 @@ _send_pending_exit_msgs(stepd_step_rec_t *job)
 		debug2("Aggregated %d task exit messages", nsent);
 		_send_exit_msg(job, tid, nsent, status);
 	}
+	xfree(tid);
 
 	return nsent;
 }

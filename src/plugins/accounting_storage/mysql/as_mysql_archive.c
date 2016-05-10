@@ -2242,8 +2242,8 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 	uint32_t cnt = 0;
 	Buf buffer;
 	int error_code = 0;
-	static Buf (*pack_func)(MYSQL_RES *result, char *cluster_name,
-				uint32_t cnt, time_t *period_start);
+	Buf (*pack_func)(MYSQL_RES *result, char *cluster_name,
+			 uint32_t cnt, time_t *period_start);
 
 	cols = _get_archive_columns(type);
 

@@ -224,6 +224,13 @@ documents those changes that are of interest to users and administrators.
  -- Do not attempt to power down a node which has never responded if the
     slurmctld daemon restarts without state.
  -- Fix for possible slurmstepd segfault on invalid userr ID.
+ -- MySQL - Fix for possible race condition when archiving multiple clusters
+    at the same time.
+ -- Fix compile for when you don't have hwloc.
+ -- Fix issue where daemons would only listen on specific address given in
+    slurm.conf instead of all.  If looking for specific addresses use
+    TopologyParam options No*InAddrAny.
+ -- Cray - Better robustness when dealing with the aeld interface.
 
 * Changes in Slurm 15.08.11
 ===========================
