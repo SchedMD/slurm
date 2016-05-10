@@ -377,8 +377,6 @@ fini:
  */
 static void _aeld_cleanup(void)
 {
-	aeld_running = 0;
-
 	// Free any used memory
 	pthread_mutex_lock(&aeld_mutex);
 	_clear_event_list(app_list, &app_list_size);
@@ -388,6 +386,8 @@ static void _aeld_cleanup(void)
 	event_list_capacity = 0;
 	xfree(event_list);
 	pthread_mutex_unlock(&aeld_mutex);
+
+	aeld_running = 0;
 }
 
 /*
@@ -535,12 +535,20 @@ static void *_aeld_event_loop(void *args)
 			// Clear the event list
 			_clear_event_list(event_list, &event_list_size);
 			pthread_mutex_unlock(&aeld_mutex);
-			if (rv > 0) {
+			/*
+			 * For this application info call, some errors do
+			 * not require exiting the current session and
+			 * creating a new session.
+			 */
+			if (rv > 2) {
 				_handle_aeld_error(
 					"alpsc_ev_set_application_info",
 					errmsg, rv, &session);
 				_start_session(&session, &sessionfd);
 				fds[0].fd = sessionfd;
+			} else if ((rv == 1) || (rv == 2)) {
+				error("alpsc_ev_set_application_info rv %d, %s",
+				      rv, errmsg);
 			}
 		} else {
 			pthread_mutex_unlock(&aeld_mutex);
@@ -549,6 +557,7 @@ static void *_aeld_event_loop(void *args)
 
 	error("%s: poll failed: %m", __func__);
 	_aeld_cleanup();
+
 	return NULL;
 }
 
@@ -688,9 +697,10 @@ static void _update_app(struct job_record *job_ptr,
 	_initialize_event(&app, job_ptr, step_ptr, state);
 
 	// If there are no nodes, set_application_info will fail
-	if (app.nodes == NULL || app.num_nodes == 0) {
-		debug("Job %"PRIu32".%"PRIu32" has no nodes, skipping",
-		      job_ptr->job_id, step_ptr->step_id);
+	if ((app.nodes == NULL) || (app.num_nodes == 0) ||
+	    (app.app_name == NULL) || ((app.app_name)[0] == '\0')) {
+		debug("Job %"PRIu32".%"PRIu32" has no nodes or app name, "
+		      "skipping", job_ptr->job_id, step_ptr->step_id);
 		_free_event(&app);
 		return;
 	}
@@ -779,12 +789,16 @@ static void _start_aeld_thread()
 	debug("cray: %s", __func__);
 
 	// Spawn the aeld thread, only in slurmctld.
-	if (run_in_daemon("slurmctld")) {
+	if (!aeld_running && run_in_daemon("slurmctld")) {
 		pthread_attr_t attr;
-
+		aeld_running = 1;
 		slurm_attr_init(&attr);
-		if (pthread_create(&aeld_thread, &attr, _aeld_event_loop, NULL))
+		if (pthread_create(&aeld_thread, &attr, _aeld_event_loop,
+				   NULL)) {
 			error("pthread_create of message thread: %m");
+			aeld_running = 0;
+		}
+
 		slurm_attr_destroy(&attr);
 	}
 }
@@ -800,7 +814,6 @@ static void _stop_aeld_thread()
 
 	pthread_cancel(aeld_thread);
 	pthread_join(aeld_thread, NULL);
-	aeld_running = 0;
 }
 #endif
 
