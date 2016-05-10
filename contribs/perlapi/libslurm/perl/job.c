@@ -8,7 +8,11 @@
 #include <slurm/slurm.h>
 #include "ppport.h"
 
-#undef VERSION /* prevent conflict with VERSION macro in config.h */
+#undef VERSION /* MakeMaker defines VERSION to some version we don't care
+		* about. The true version will be defined in config.h which is
+		* included from src/common/job_resources.h below.
+		*/
+
 #include "src/common/job_resources.h"
 
 #include "bitstr.h"

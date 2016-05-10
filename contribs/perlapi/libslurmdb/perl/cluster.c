@@ -6,8 +6,12 @@
 #include <perl.h>
 #include <XSUB.h>
 
+#undef VERSION /* MakeMaker defines VERSION to some version we don't care
+		* about. The true version will be defined in config.h which is
+		* included indirectly below.
+		*/
+
 #include <slurm/slurmdb.h>
-#undef VERSION /* prevent conflict with VERSION macro in config.h */
 #include "src/common/slurm_protocol_defs.h"
 #include "slurmdb-perl.h"
 
