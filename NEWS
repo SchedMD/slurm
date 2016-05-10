@@ -13,6 +13,7 @@ documents those changes that are of interest to users and administrators.
     slurm.conf instead of all.  If looking for specific addresses use
     TopologyParam options No*InAddrAny.
  -- Cray - Better robustness when dealing with the aeld interface.
+ -- job_submit.lua - add array_inx value for job arrays.
 
 * Changes in Slurm 15.08.11
 ===========================
