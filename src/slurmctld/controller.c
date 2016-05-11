@@ -1092,7 +1092,10 @@ static void *_service_connection(void *arg)
 	 * possibility for slurmctld_req() to close accepted connection.
 	 */
 	if (slurm_receive_msg(conn->newsockfd, msg, 0) != 0) {
-		error("slurm_receive_msg: %m");
+		char addr_buf[32];
+		slurm_print_slurm_addr(&conn->cli_addr, addr_buf,
+				       sizeof(addr_buf));
+		error("slurm_receive_msg [%s]: %m", addr_buf);
 		/* close the new socket */
 		slurm_close(conn->newsockfd);
 		goto cleanup;

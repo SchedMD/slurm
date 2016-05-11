@@ -14,6 +14,7 @@ documents those changes that are of interest to users and administrators.
  -- node_feature/knl_cray - Prevent slurmctld GRES errors for "hbm" references.
  -- Display thread name instead of thread id and remove process name in stderr
     logging for "thread_id" LogTimeFormat.
+ -- Log IP address of bad incomming message to slurmctld.
 
 * Changes in Slurm 16.05.0rc1
 ==============================
