@@ -447,6 +447,7 @@ static void _calc_device_major(char *dev_path[PATH_MAX],
 		minor = (int)minor(fs.st_rdev);
 		debug3("device : %s major %d, minor %d\n",
 			dev_path[k], major, minor);
+		memset(str1, 0, sizeof(str1));
 		if (S_ISBLK(fs.st_mode)) {
 			sprintf(str1, "b %d:", major);
 			//info("device is block ");
