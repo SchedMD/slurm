@@ -39,16 +39,17 @@ source ./inc22.1.2
 source ./inc22.1.3
 source ./inc22.1.4
 
-set test_id     "test22.1"
+set test_id     "22.1"
+set test_name   "test22.1"
 set test_nu     "test22-1"
 set exit_code   0
 set matches     0
 set not_support 0
-set sql_in_clus1     "$test_id-clus1-in.sql"
-set sql_rem_clus1    "$test_id-clus1-rem.sql"
-set sql_in_clus2     "$test_id-clus2-in.sql"
-set sql_rem_clus2    "$test_id-clus2-rem.sql"
-set sql_out    "$test_id-out.sql"
+set sql_in_clus1     "$test_name-clus1-in.sql"
+set sql_rem_clus1    "$test_name-clus1-rem.sql"
+set sql_in_clus2     "$test_name-clus2-in.sql"
+set sql_rem_clus2    "$test_name-clus2-rem.sql"
+set sql_out    "$test_name-out.sql"
 set cluster1    [format "%s%s" $test_nu "clus1"]
 set cluster2    [format "%s%s" $test_nu "clus2"]
 set account1   [format "%s%s" $test_nu "acct1"]
@@ -64,9 +65,9 @@ set node1      [format "%s%d" $cluster1 1]
 set node_list  [format "%s%s" $cluster1 "\[0-1\]"]
 set node0_cpus 2
 set node1_cpus 2
-set test_job1  "$test_id\_job1"
-set test_job2  "$test_id\_job2"
-set test_job3  "$test_id\_job3"
+set test_job1  "$test_name\_job1"
+set test_job2  "$test_name\_job2"
+set test_job3  "$test_name\_job3"
 set cluster_cpus [expr $node0_cpus + $node1_cpus]
 set access_err  0
 set uid [get_my_uid]

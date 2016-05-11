@@ -31,11 +31,12 @@
 ############################################################################
 source ./globals
 
-set test_id          "test31.1"
+set test_id          "31.1"
+set test_name        "test31.1"
 set config_dir       ""
 set conf_path        "$config_dir/slurm.conf"
-set inc_slurm        "pro_epi_$test_id"
-set pro_epi_prog     "$test_id\_prog"
+set inc_slurm        "pro_epi_$test_name"
+set pro_epi_prog     "$test_name\_prog"
 set proc             ""
 set run_host         ""
 set make_file        0
@@ -58,7 +59,7 @@ if { [string compare [test_launch_type] "slurm"] } {
 
 proc change_pro_epi { arg program_name conf_change task_pro } {
 
-	global inc_slurm bin_chmod bin_rm config_dir pro_epi_prog bin_echo test_id bin_pwd alpha_numeric_under make_file bin_bash exit_code cwd file_dir bin_ln
+	global inc_slurm bin_chmod bin_rm config_dir pro_epi_prog bin_echo test_name bin_pwd alpha_numeric_under make_file bin_bash exit_code cwd file_dir bin_ln
 
 	if {$conf_change == 0} {
 		exec $bin_echo $arg=$config_dir/$pro_epi_prog > $config_dir/$inc_slurm
@@ -88,7 +89,7 @@ proc change_pro_epi { arg program_name conf_change task_pro } {
 
 	exec $bin_echo "#!/bin/bash\n" > $config_dir/$pro_epi_prog
 	if {$make_file == 1} {
-		exec $bin_echo "touch $file_dir/$arg.$test_id.txt" >> $config_dir/$pro_epi_prog
+		exec $bin_echo "touch $file_dir/$arg.$test_name.txt" >> $config_dir/$pro_epi_prog
 	}
 
 	# task prologs are ran with fork_wait so don't do the sleep
@@ -101,7 +102,7 @@ proc change_pro_epi { arg program_name conf_change task_pro } {
 }
 
 proc check_file { file_name } {
-	global test_id exit_code file_dir run_host pcmd_prog
+	global test_name exit_code file_dir run_host pcmd_prog
 
 	sleep 1
 
@@ -157,7 +158,7 @@ proc check_proc {program_name} {
 
 proc run_job { file_type program_name conf_change task_pro} {
 
-	global srun run_host make_file exit_code bin_rm bin_printenv bin_sleep cwd test_id
+	global srun run_host make_file exit_code bin_rm bin_printenv bin_sleep cwd test_name
 
 	# Change the included file to epilog in the slurm.conf
 	change_pro_epi $file_type $program_name $conf_change $task_pro
@@ -192,7 +193,7 @@ proc run_job { file_type program_name conf_change task_pro} {
 	# wait for file
 	if {$make_file == 1} {
 		# Check to see that the epilog or prolog file has been removed
-		check_file $file_type.$test_id.txt
+		check_file $file_type.$test_name.txt
 	}
 
 	if {$task_pro != 1} {
@@ -294,7 +295,7 @@ expect {
 #
 # Test srun --task-epilog
 #
-change_pro_epi srun-task-epilog srun--task-epilog_$test_id 1 0
+change_pro_epi srun-task-epilog srun--task-epilog_$test_name 1 0
 
 update_conf
 
@@ -320,15 +321,15 @@ if {$sub_job != 1} {
 }
 
 if {$make_file == 1} {
-	check_file srun-task-epilog.$test_id.txt
+	check_file srun-task-epilog.$test_name.txt
 }
 
 
 # Check to see if the child process still exist
-check_proc srun--task-epilog_$test_id
+check_proc srun--task-epilog_$test_name
 
 # Remove link
-exec $bin_rm -rf $cwd/srun--task-epilog_$test_id
+exec $bin_rm -rf $cwd/srun--task-epilog_$test_name
 
 #
 # Task Prolog Test
@@ -343,12 +344,12 @@ exec $bin_rm -rf $cwd/srun--task-epilog_$test_id
 if {$make_file == 1} {
 
 	# Test srun --task-prolog
-	change_pro_epi srun-task-prolog srun--task-prolog_$test_id 1 1
+	change_pro_epi srun-task-prolog srun--task-prolog_$test_name 1 1
 
 	update_conf
 
 	set sub_job 0
-	set sbcast_file      "$file_dir/${test_id}_sbcast"
+	set sbcast_file      "$file_dir/${test_name}_sbcast"
 
 	spawn $salloc -t1 -w$run_host $bin_bash
 	expect {
@@ -375,12 +376,12 @@ if {$make_file == 1} {
 		set exit_code 1
 	}
 
-	check_file ${test_id}_sbcast
+	check_file ${test_name}_sbcast
 
-	check_file srun-task-prolog.$test_id.txt
+	check_file srun-task-prolog.$test_name.txt
 
 	# Remove link
-	exec $bin_rm -rf $cwd/srun--task-prolog_$test_id
+	exec $bin_rm -rf $cwd/srun--task-prolog_$test_name
 
 	# Add a line in the slurm.conf file to include the epilogs and prologs
 	exec $bin_echo include $config_dir/$inc_slurm >> $config_dir/slurm.conf
@@ -388,7 +389,7 @@ if {$make_file == 1} {
 	#
 	# Test TaskProlog
 	#
-	run_job taskprolog taskprolog_$test_id 0 1
+	run_job taskprolog taskprolog_$test_name 0 1
 
 } else {
 	# Add a line in the slurm.conf file to include the epilogs and prologs
@@ -400,19 +401,19 @@ if {$make_file == 1} {
 #
 # Test Epilog param
 #
-run_job epilog epilog_$test_id 0 0
+run_job epilog epilog_$test_name 0 0
 
 #
 # Test TaskEpilog param
 #
-run_job taskepilog taskepilog_$test_id 0 0
+run_job taskepilog taskepilog_$test_name 0 0
 
 ###############Prolog Test###############
 
 #
 # Test Prolog param
 #
-run_job prolog prolog_$test_id 0 0
+run_job prolog prolog_$test_name 0 0
 
 # Clean up vestigial files and restore original slurm.conf file
 exec $bin_cp $cwd/slurm.conf.orig $config_dir/slurm.conf
