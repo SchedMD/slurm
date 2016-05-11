@@ -15,6 +15,8 @@ documents those changes that are of interest to users and administrators.
  -- Display thread name instead of thread id and remove process name in stderr
     logging for "thread_id" LogTimeFormat.
  -- Log IP address of bad incomming message to slurmctld.
+ -- If a user requests tasks, nodes and ntasks-per-node and
+    tasks-per-node/nodes != tasks print warning and ignore ntasks-per-node.
 
 * Changes in Slurm 16.05.0rc1
 ==============================
