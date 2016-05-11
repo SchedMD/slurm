@@ -119,10 +119,8 @@ static int _fd_lock_retry(int fd)
  * reset CPU frequency if it was the last job to set the CPU frequency.
  * with gang scheduling and cancellation of suspended or running jobs there
  * can be timing issues.
- * _set_cpu_owner_lock  - set specified job to own the CPU, this CPU file is
- *	locked on exit
- * _test_cpu_owner_lock - test if the specified job owns the CPU, this CPU is
- *	locked on return with true
+ * _set_cpu_owner_lock  - set specified job to own the CPU
+ * _test_cpu_owner_lock - test if the specified job owns the CPU
  */
 static int _set_cpu_owner_lock(int cpu_id, uint32_t job_id)
 {
@@ -145,10 +143,13 @@ static int _set_cpu_owner_lock(int cpu_id, uint32_t job_id)
 	sz = sizeof(uint32_t);
 	if (fd_write_n(fd, (void *) &job_id, sz) != sz)
 		error("%s: write: %m %s", __func__, tmp);
+	(void) fd_release_lock(fd);
 
 	return fd;
 }
 
+/* Test if specified job ID owns this CPU for frequency/governor control
+ * RET 0 if owner, -1 otherwise */
 static int _test_cpu_owner_lock(int cpu_id, uint32_t job_id)
 {
 	char tmp[PATH_MAX];
@@ -175,9 +176,11 @@ static int _test_cpu_owner_lock(int cpu_id, uint32_t job_id)
 	sz = sizeof(uint32_t);
 	if (fd_read_n(fd, (void *) &in_job_id, sz) != sz) {
 		error("%s: read: %m %s", __func__, tmp);
+		(void) fd_release_lock(fd);
 		close(fd);
 		return -1;
 	}
+	(void) fd_release_lock(fd);
 	if (job_id != in_job_id) {
 		/* Result of various race conditions */
 		debug("%s: CPU %d now owned by job %u rather than job %u",
@@ -185,10 +188,11 @@ static int _test_cpu_owner_lock(int cpu_id, uint32_t job_id)
 		close(fd);
 		return -1;
 	}
+	close(fd);
 	debug("%s: CPU %d owned by job %u as expected",
 	      __func__, cpu_id, job_id);
 
-	return fd;
+	return 0;
 }
 
 /*
