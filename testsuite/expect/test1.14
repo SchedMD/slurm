@@ -37,6 +37,7 @@ set exit_code        0
 set file_in         "test$test_id.input"
 set file_in2        "test$test_id.input2"
 set file_out        "test$test_id.output"
+set file_out2       "test$test_id.output2"
 set job_id           0
 set sleep_secs       10
 
@@ -60,7 +61,7 @@ if {[test_launch_poe]} {
 # Run one more step than allocated CPUs and make sure it waits
 # The "sleep 4" is meant to insure the earlier job steps start first
 #
-exec $bin_rm -f $file_in $file_in2 $file_out
+exec $bin_rm -f $file_in $file_in2 $file_out $file_out2
 make_bash_script $file_in "
   echo tasks_per_node=\$SLURM_TASKS_PER_NODE
   inx=0
@@ -166,7 +167,7 @@ make_bash_script $file_in "
 #
 # Spawn a job via sbatch
 #
-spawn $sbatch -N1 -t1 --gres=craynetwork:0 --output=$file_out $file_in
+spawn $sbatch -N1 -t1 --gres=craynetwork:0 --output=$file_out2 $file_in
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -198,12 +199,12 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 #
 # Check for desired output
 #
-if {[wait_for_file $file_out] != 0} {
-	send_user "\nFAILURE: Output file $file_out is missing\n"
+if {[wait_for_file $file_out2] != 0} {
+	send_user "\nFAILURE: Output file $file_out2 is missing\n"
 	exit 1
 }
 set matches 0
-spawn $bin_cat $file_out
+spawn $bin_cat $file_out2
 expect {
 	-re "StepId=$job_id" {
 		send_user "\nFAILURE: Problem --exclusive and --immediate option for step\n"
@@ -226,7 +227,7 @@ if { $matches != 1 } {
 }
 
 if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_in2 $file_out
+	exec $bin_rm -f $file_in $file_in2 $file_out $file_out2
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
