@@ -242,6 +242,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue when TopologyParam=NoInAddrAny is set the responses wouldn't
     make it to the slurmctld when using message aggregation.
  -- MySQL - Fix potential memory leak when rolling up data.
+ -- Fix issue with clustername file when running on NFS with root_squash.
 
 * Changes in Slurm 15.08.11
 ===========================

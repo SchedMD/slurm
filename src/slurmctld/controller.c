@@ -234,7 +234,8 @@ static void *       _slurmctld_rpc_mgr(void *no_data);
 static void *       _slurmctld_signal_hand(void *no_data);
 static void         _test_thread_limit(void);
 inline static void  _update_cred_key(void);
-static void	    _verify_clustername(void);
+static bool	    _verify_clustername(void);
+static void	    _create_clustername_file(void);
 static void         _update_nice(void);
 inline static void  _usage(char *prog_name);
 static bool         _valid_controller(void);
@@ -251,7 +252,7 @@ int main(int argc, char *argv[])
 		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
 	slurm_trigger_callbacks_t callbacks;
 	char *dir_name;
-
+	bool create_clustername_file;
 	/*
 	 * Make sure we have no extra open files which
 	 * would be propagated to spawned tasks.
@@ -274,9 +275,11 @@ int main(int argc, char *argv[])
 
 	update_logging();
 
-	/* verify clustername from conf matches value in spool dir
-	 * exit if inconsistent to protect state files from corruption */
-	_verify_clustername();
+	/* Verify clustername from conf matches value in spool dir
+	 * exit if inconsistent to protect state files from corruption.
+	 * This needs to be done before we kill the old one just incase we
+	 * fail. */
+	create_clustername_file = _verify_clustername();
 
 	_update_nice();
 	_kill_old_slurmctld();
@@ -308,6 +311,10 @@ int main(int argc, char *argv[])
 	 */
 	_init_pidfile();
 	_become_slurm_user();
+
+	if (create_clustername_file)
+		_create_clustername_file();
+
 	if (daemonize)
 		_set_work_dir();
 
@@ -2559,12 +2566,14 @@ static void _update_nice(void)
 
 /* Verify that ClusterName from slurm.conf matches the state directory.
  * If mismatched exit to protect state files from corruption.
- * If the clustername file does not exist, create it. */
-static void _verify_clustername(void)
+ * If the clustername file does not exist, return true so we can create it later
+ * after dropping privileges. */
+static bool _verify_clustername(void)
 {
 	FILE *fp;
 	char *filename = NULL;
 	char name[512];
+	bool create_file = false;
 
 	xstrfmtcat(filename, "%s/clustername",
 		   slurmctld_conf.state_save_location);
@@ -2575,32 +2584,47 @@ static void _verify_clustername(void)
 		fclose(fp);
 		if (xstrcmp(name, slurmctld_conf.cluster_name)) {
 			fatal("CLUSTER NAME MISMATCH.\n"
-				"slurmctld has been started with \""
-				"ClusterName=%s\", but read \"%s\" from "
-				"the state files in StateSaveLocation.\n"
-				"Running multiple clusters from a shared "
-				"StateSaveLocation WILL CAUSE CORRUPTION.\n"
-				"Remove %s to override this safety check if "
-				"this is intentional (e.g., the ClusterName "
-				"has changed).",
-				slurmctld_conf.cluster_name, name, filename);
+			      "slurmctld has been started with \""
+			      "ClusterName=%s\", but read \"%s\" from "
+			      "the state files in StateSaveLocation.\n"
+			      "Running multiple clusters from a shared "
+			      "StateSaveLocation WILL CAUSE CORRUPTION.\n"
+			      "Remove %s to override this safety check if "
+			      "this is intentional (e.g., the ClusterName "
+			      "has changed).", name,
+			      slurmctld_conf.cluster_name, filename);
 			exit(1);
 		}
-	} else if (slurmctld_conf.cluster_name) {
-		debug("creating clustername file: %s", filename);
-		if (!(fp = fopen(filename, "w"))) {
-			fatal("%s: failed to create file %s",
-				__func__, filename);
-			exit(1);
-		}
+	} else if (slurmctld_conf.cluster_name)
+		create_file = true;
 
-		if (fputs(slurmctld_conf.cluster_name, fp) < 0) {
-			fatal("%s: failed to write to file %s",
-				__func__, filename);
-			exit(1);
-		}
-		fclose(fp);
+	xfree(filename);
+
+	return create_file;
+}
+
+static void _create_clustername_file(void)
+{
+	FILE *fp;
+	char *filename = NULL;
+
+	if (!slurmctld_conf.cluster_name)
+		return;
+
+	filename = xstrdup_printf("%s/clustername",
+				  slurmctld_conf.state_save_location);
+
+	debug("creating clustername file: %s", filename);
+	if (!(fp = fopen(filename, "w"))) {
+		fatal("%s: failed to create file %s", __func__, filename);
+		exit(1);
 	}
+
+	if (fputs(slurmctld_conf.cluster_name, fp) < 0) {
+		fatal("%s: failed to write to file %s", __func__, filename);
+		exit(1);
+	}
+	fclose(fp);
 
 	xfree(filename);
 }
