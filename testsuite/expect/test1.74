@@ -207,7 +207,7 @@ if {[add_child $acct_c1 $acct_c2 [expr $node_cnt - 2] -1]} {
 	exit 1
 }
 
-############################# Test QoS Limits #################################
+send_user "############################# Test QoS Limits #################################\n"
 
 if {[mod_acct $acct [array get mod_acct_desc_vals] [array get mod_acct_vals] [array get mod_acct_assoc_vals]] != 0} {
 	send_user "\nFAILURE: account was not modified\n"
@@ -232,12 +232,19 @@ if {[mod_acct $acct [array get mod_acct_desc_vals] [array get mod_acct_vals] [ar
 	exit 1
 }
 srun_test [expr $node_cnt-1] $acct
+
+# Reset acct maxnodes
 set mod_acct_assoc_vals(maxnodes) -1
+if {[mod_acct $acct [array get mod_acct_desc_vals] [array get mod_acct_vals] [array get mod_acct_assoc_vals]] != 0} {
+	send_user "\nFAILURE: account was not modified\n"
+	cleanup
+	exit 1
+}
 
 # Now run test using GrpNode limits of qos
 set mod_qos_vals(GrpNodes) [expr $node_cnt - 1]
-
 mod_qos $qos [array get mod_qos_vals]
+sleep 1
 
 srun_test [expr $node_cnt-1] $acct
 
@@ -264,7 +271,7 @@ srun_test 1 $acct
 set mod_acct_assoc_vals(maxnodes) -1
 
 
-##################### Test limits based on associations #####################
+send_user "##################### Test limits based on associations #####################\n"
 
 #
 # MaxNodes Limit

@@ -86,7 +86,7 @@ make_bash_script $file_in "
 "
 
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -N$num_nodes -v -t1 ./$file_in]
+set salloc_pid [spawn $salloc -N$num_nodes -v -t2 ./$file_in]
 expect {
 	-re "salloc: Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -416,6 +416,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
+		cancel_job $job_id
 		kill_srun
 		exit 1
 	}

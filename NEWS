@@ -19,6 +19,13 @@ documents those changes that are of interest to users and administrators.
  -- node_feature/knl_cray - Prevent slurmctld GRES errors for "hbm" references.
  -- Display thread name instead of thread id and remove process name in stderr
     logging for "thread_id" LogTimeFormat.
+ -- Log IP address of bad incomming message to slurmctld.
+ -- If a user requests tasks, nodes and ntasks-per-node and
+    tasks-per-node/nodes != tasks print warning and ignore ntasks-per-node.
+ -- Release CPU "owner" file locks.
+ -- Fix for job step memory allocation: Reject invalid step at submit time
+    rather than leaving it queued.
+ -- Whenever possible, avoid allocating nodes that require a reboot.
 
 * Changes in Slurm 16.05.0rc1
 ==============================
@@ -240,6 +247,8 @@ documents those changes that are of interest to users and administrators.
  -- Perlapi - Remove unneeded/undefined mutex.
  -- Fix issue when TopologyParam=NoInAddrAny is set the responses wouldn't
     make it to the slurmctld when using message aggregation.
+ -- MySQL - Fix potential memory leak when rolling up data.
+ -- Fix issue with clustername file when running on NFS with root_squash.
 
 * Changes in Slurm 15.08.11
 ===========================

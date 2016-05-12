@@ -939,7 +939,8 @@ extern int gres_plugin_node_config_devices_path(char **dev_path,
 		{NULL}
 	};
 
-	int count = 0, count2 = 0, i, j;
+	int count = 0, i;
+	int ret_count = 0;
 	struct stat config_stat;
 	s_p_hashtbl_t *tbl;
 	gres_slurmd_conf_t **gres_array;
@@ -969,23 +970,25 @@ extern int gres_plugin_node_config_devices_path(char **dev_path,
 		}
 		for (i = 0; i < count; i++) {
 			if ((gres_array[i]) && (gres_array[i]->file)) {
-				dev_path[i]   = gres_array[i]->file;
-				gres_name[i]  = gres_array[i]->name;
+				dev_path[ret_count]  = gres_array[i]->file;
+				gres_name[ret_count] = gres_array[i]->name;
 				gres_array[i] = NULL;
+				ret_count++;
 			}
 		}
 	}
-	if (s_p_get_array((void ***) &gres_array, &count2, "NodeName", tbl)) {
-		if ((count + count2) > array_len) {
+	if (s_p_get_array((void ***) &gres_array, &count, "NodeName", tbl)) {
+		if ((ret_count + count) > array_len) {
 			error("GRES device count exceeds array size (%d > %d)",
-			      (count + count2), array_len);
-			count2 = array_len - count;
+			      (ret_count + count), array_len);
+			count = array_len - count;
 		}
-		for (i = 0, j = count; i < count2; i++, j++) {
+		for (i = 0; i < count; i++) {
 			if ((gres_array[i]) && (gres_array[i]->file)) {
-				dev_path[j]   = gres_array[i]->file;
-				gres_name[j]  = gres_array[i]->name;
+				dev_path[ret_count]  = gres_array[i]->file;
+				gres_name[ret_count] = gres_array[i]->name;
 				gres_array[i] = NULL;
+				ret_count++;
 			}
 		}
 	}
@@ -993,7 +996,7 @@ extern int gres_plugin_node_config_devices_path(char **dev_path,
 	slurm_mutex_unlock(&gres_context_lock);
 
 	xfree(gres_conf_file);
-	return (count + count2);
+	return ret_count;
 }
 
 /* No gres.conf file found.

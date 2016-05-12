@@ -892,8 +892,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 {
 	int node_inx, first_bit, last_bit;
 	struct node_record *node_ptr;
-	bitstr_t *nodes_avail = NULL, *nodes_idle = NULL,
-		*select_nodes_avail = NULL;
+	bitstr_t *nodes_avail = NULL, *nodes_idle = NULL;
+	bitstr_t *select_nodes_avail = NULL;
 	bitstr_t *nodes_picked = NULL, *node_tmp = NULL;
 	int error_code, nodes_picked_cnt = 0, cpus_picked_cnt = 0;
 	int cpu_cnt, i, task_cnt;
@@ -1180,6 +1180,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		if (tasks_picked_cnt >= step_spec->num_tasks)
 			return nodes_avail;
 		FREE_NULL_BITMAP(nodes_avail);
+		FREE_NULL_BITMAP(select_nodes_avail);
 
 		if (total_task_cnt >= step_spec->num_tasks)
 			*return_code = ESLURM_NODES_BUSY;
@@ -1193,6 +1194,18 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		int fail_mode = ESLURM_INVALID_TASK_MEMORY;
 		uint32_t tmp_mem, tmp_cpus, avail_cpus, total_cpus;
 		uint32_t avail_tasks, total_tasks;
+
+		if (_is_mem_resv() && step_spec->pn_min_memory &&
+		    ((step_spec->pn_min_memory & MEM_PER_CPU) == 0) &&
+		    job_ptr->details && job_ptr->details->pn_min_memory &&
+		    ((job_ptr->details->pn_min_memory & MEM_PER_CPU) == 0) &&
+		    (step_spec->pn_min_memory >
+		     job_ptr->details->pn_min_memory)) {
+			FREE_NULL_BITMAP(nodes_avail);
+			FREE_NULL_BITMAP(select_nodes_avail);
+			*return_code = ESLURM_INVALID_TASK_MEMORY;
+			return NULL;
+		}
 
 		usable_cpu_cnt = xmalloc(sizeof(uint32_t) * node_record_count);
 		first_bit = bit_ffs(job_resrcs_ptr->node_bitmap);
@@ -1269,7 +1282,9 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				total_tasks /= cpus_per_task;
 			}
 			if (avail_tasks == 0) {
-				if (step_spec->min_nodes == INFINITE) {
+				if ((step_spec->min_nodes == INFINITE) ||
+				    (step_spec->min_nodes ==
+				     job_ptr->node_cnt)) {
 					FREE_NULL_BITMAP(nodes_avail);
 					FREE_NULL_BITMAP(select_nodes_avail);
 					xfree(usable_cpu_cnt);

@@ -128,6 +128,31 @@ proc cr_core_cpu { node } {
 
 }
 
+# Get default_queue_depth to see how many jobs will start at one time
+proc default_queue_depth { } {
+	global scontrol exit_coode number
+
+	set depth 100
+	log_user 0
+	spawn $scontrol show config
+	expect {
+		-re "default_queue_depth=($number)" {
+			set depth $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	return $depth
+}
+
 proc create_part {part oversubscribe node} {
 
 	global scontrol exit_code
@@ -329,6 +354,11 @@ send_user "\n\nTest partition with overoubscribe=NO\n"
 
 # Determine the number of cores or CPUs
 set num_jobs [cr_core_cpu $node_name]
+set job_start [default_queue_depth]
+if { $num_jobs >= $job_start } {
+	send_user "\nWARNING: default_queue_depth less than core count ($num_jobs < $job_start), can not run this test\n"
+	exit $exit_code
+}
 
 # Create first test partition
 create_part $test_part_1 NO $node_name
@@ -351,15 +381,18 @@ delete_part $test_part_1
 # Test partition with oversubscribe=YES:2
 #
 ####################################
+set new_job_limit [expr $num_jobs * 2]
 if { [test_gang] == 1 } {
 	send_user "\n\nTest partition with oversubscribe=YES:2 incompatible with gang scheduling\n"
+} elseif { $new_job_limit >= $job_start } {
+        send_user "\nWARNING: default_queue_depth less than desired job count ($new_job_limit < $job_start), can not run oversubscribe=YES:2\n"
+
 } else {
 	send_user "\n\nTest partition with oversubscribe=YES:2\n"
 #	Make a new partition with oversubscribe=yes:2
 	create_part $test_part_2 "YES:$oversubscribe_j_cnt" $node_name
 
 #	Submit a job with oversubscribe (expect 2 jobs per core/CPU)
-	set new_job_limit [expr $num_jobs * 2]
 	sub_job "0-$new_job_limit" 1 $test_part_2
 	check_job $new_job_limit
 	cancel_job $job_id
