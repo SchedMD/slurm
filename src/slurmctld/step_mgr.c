@@ -1198,6 +1198,18 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		uint32_t tmp_mem, tmp_cpus, avail_cpus, total_cpus;
 		uint32_t avail_tasks, total_tasks;
 
+		if (_is_mem_resv() && step_spec->pn_min_memory &&
+		    ((step_spec->pn_min_memory & MEM_PER_CPU) == 0) &&
+		    job_ptr->details && job_ptr->details->pn_min_memory &&
+		    ((job_ptr->details->pn_min_memory & MEM_PER_CPU) == 0) &&
+		    (step_spec->pn_min_memory >
+		     job_ptr->details->pn_min_memory)) {
+			FREE_NULL_BITMAP(nodes_avail);
+			FREE_NULL_BITMAP(select_nodes_avail);
+			*return_code = ESLURM_INVALID_TASK_MEMORY;
+			return NULL;
+		}
+
 		usable_cpu_cnt = xmalloc(sizeof(uint32_t) * node_record_count);
 		first_bit = bit_ffs(job_resrcs_ptr->node_bitmap);
 		last_bit  = bit_fls(job_resrcs_ptr->node_bitmap);
@@ -1273,7 +1285,9 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				total_tasks /= cpus_per_task;
 			}
 			if (avail_tasks == 0) {
-				if (step_spec->min_nodes == INFINITE) {
+				if ((step_spec->min_nodes == INFINITE) ||
+				    (step_spec->min_nodes ==
+				     job_ptr->node_cnt)) {
 					FREE_NULL_BITMAP(nodes_avail);
 					FREE_NULL_BITMAP(select_nodes_avail);
 					xfree(usable_cpu_cnt);

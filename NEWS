@@ -18,6 +18,8 @@ documents those changes that are of interest to users and administrators.
  -- If a user requests tasks, nodes and ntasks-per-node and
     tasks-per-node/nodes != tasks print warning and ignore ntasks-per-node.
  -- Release CPU "owner" file locks.
+ -- Fix for job step memory allocation: Reject invalid step at submit time
+    rather than leaving it queued.
 
 * Changes in Slurm 16.05.0rc1
 ==============================
