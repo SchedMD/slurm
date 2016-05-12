@@ -2558,7 +2558,7 @@ static bool _verify_clustername(void)
 	char name[512];
 	bool create_file = false;
 	xstrfmtcat(filename, "%s/clustername",
-				slurmctld_conf.state_save_location);
+		   slurmctld_conf.state_save_location);
 
 	if ((fp = fopen(filename, "r"))) {
 		/* read value and compare */
@@ -2566,15 +2566,15 @@ static bool _verify_clustername(void)
 		fclose(fp);
 		if (xstrcmp(name, slurmctld_conf.cluster_name)) {
 			fatal("CLUSTER NAME MISMATCH.\n"
-				"slurmctld has been started with \""
-				"ClusterName=%s\", but read \"%s\" from "
-				"the state files in StateSaveLocation.\n"
-				"Running multiple clusters from a shared "
-				"StateSaveLocation WILL CAUSE CORRUPTION.\n"
-				"Remove %s to override this safety check if "
-				"this is intentional (e.g., the ClusterName "
-				"has changed).", name,
-				slurmctld_conf.cluster_name, filename);
+			      "slurmctld has been started with \""
+			      "ClusterName=%s\", but read \"%s\" from "
+			      "the state files in StateSaveLocation.\n"
+			      "Running multiple clusters from a shared "
+			      "StateSaveLocation WILL CAUSE CORRUPTION.\n"
+			      "Remove %s to override this safety check if "
+			      "this is intentional (e.g., the ClusterName "
+			      "has changed).", name,
+			      slurmctld_conf.cluster_name, filename);
 			exit(1);
 		}
 	} else if (slurmctld_conf.cluster_name)
