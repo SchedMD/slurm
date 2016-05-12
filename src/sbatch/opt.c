@@ -1600,7 +1600,10 @@ static void _set_options(int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_PRIORITY: {
-			long long priority = strtoll(optarg, NULL, 10);
+			long long priority;
+			if (!optarg) /* CLANG Fix */
+				break;
+			priority = strtoll(optarg, NULL, 10);
 			if (priority < 0) {
 				error("Priority must be >= 0");
 				exit(error_exit);
@@ -1722,6 +1725,8 @@ static void _set_options(int argc, char **argv)
 				opt.get_user_env_time = 0;
 			break;
 		case LONG_OPT_OPEN_MODE:
+			if (!optarg) /* CLANG Fix */
+				break;
 			if ((optarg[0] == 'a') || (optarg[0] == 'A'))
 				opt.open_mode = OPEN_MODE_APPEND;
 			else if ((optarg[0] == 't') || (optarg[0] == 'T'))
@@ -1796,6 +1801,8 @@ static void _set_options(int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_WAIT_ALL_NODES:
+			if (!optarg) /* CLANG Fix */
+				break;
 			opt.wait_all_nodes = strtol(optarg, NULL, 10);
 			break;
 		case LONG_OPT_EXPORT:
@@ -1817,6 +1824,8 @@ static void _set_options(int argc, char **argv)
 						"Ignored", optarg);
 			break;
 		case LONG_OPT_REQ_SWITCH:
+			if (!optarg) /* CLANG Fix */
+				break;
 			pos_delimit = strstr(optarg,"@");
 			if (pos_delimit != NULL) {
 				pos_delimit[0] = '\0';
@@ -2071,6 +2080,8 @@ static void _set_pbs_options(int argc, char **argv)
 			_parse_pbs_resource_list(optarg);
 			break;
 		case 'm':
+			if (!optarg) /* CLANG Fix */
+				break;
 			opt.mail_type |= _parse_pbs_mail_type(optarg);
 			if ((opt.mail_type == 0) && xstrcasecmp(optarg, "n")) {
 				error("-m=%s invalid", optarg);
@@ -2126,6 +2137,8 @@ static void _set_pbs_options(int argc, char **argv)
 		case 'V':
 			break;
 		case 'W':
+			if (!optarg) /* CLANG Fix */
+				break;
 			if (!strncasecmp(optarg, "umask=", 6)) {
 				opt.umask = strtol(optarg+6, NULL, 0);
 				if ((opt.umask < 0) || (opt.umask > 0777)) {

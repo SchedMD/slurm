@@ -1068,7 +1068,10 @@ void set_options(const int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_PRIORITY: {
-			long long priority = strtoll(optarg, NULL, 10);
+			long long priority;
+			if (!optarg) /* CLANG Fix */
+				break;
+			priority = strtoll(optarg, NULL, 10);
 			if (priority < 0) {
 				error("Priority must be >= 0");
 				exit(error_exit);
@@ -1240,6 +1243,8 @@ void set_options(const int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_WAIT_ALL_NODES:
+			if (!optarg) /* CLANG Fix */
+				break;
 			opt.wait_all_nodes = strtol(optarg, NULL, 10);
 			break;
 		case LONG_OPT_CPU_FREQ:
@@ -1249,6 +1254,8 @@ void set_options(const int argc, char **argv)
 						"Ignored", optarg);
 			break;
 		case LONG_OPT_REQ_SWITCH:
+			if (!optarg) /* CLANG Fix */
+				break;
 			pos_delimit = strstr(optarg,"@");
 			if (pos_delimit != NULL) {
 				pos_delimit[0] = '\0';

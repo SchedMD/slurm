@@ -186,12 +186,16 @@ extern void parse_command_line(int argc, char *argv[])
 			params.pri_db_res_op = true;
 			break;
 		case (int)'i':
+			if (!optarg) /* CLANG Fix */
+				break;
 			params.trigger_id = atoi(optarg);
 			break;
 		case (int)'I':
 			params.node_idle = true;
 			break;
 		case (int)'j':
+			if (!optarg) /* CLANG Fix */
+				break;
 			tmp_l = atol(optarg);
 			if (tmp_l <= 0) {
 				error("Invalid jobid %s", optarg);
@@ -219,6 +223,8 @@ extern void parse_command_line(int argc, char *argv[])
 			params.no_header = true;
 			break;
 		case (int)'o':
+			if (!optarg) /* CLANG Fix */
+				break;
 			params.offset = atoi(optarg);
 			break;
 		case (int)'p':
@@ -256,6 +262,8 @@ extern void parse_command_line(int argc, char *argv[])
 			params.mode_clear = true;
 			break;
 		case (int) OPT_LONG_FLAGS:
+			if (!optarg) /* CLANG Fix */
+				break;
 			if (!strncasecmp(optarg, "perm", 4))
 				params.flags = TRIGGER_FLAG_PERM;
 			else {
