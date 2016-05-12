@@ -119,7 +119,7 @@ static int _fd_lock_retry(int fd)
  * reset CPU frequency if it was the last job to set the CPU frequency.
  * with gang scheduling and cancellation of suspended or running jobs there
  * can be timing issues.
- * _set_cpu_owner_lock  - set specified job to own the CPU
+ * _set_cpu_owner_lock  - set specified job to own the CPU, file locked at exit
  * _test_cpu_owner_lock - test if the specified job owns the CPU
  */
 static int _set_cpu_owner_lock(int cpu_id, uint32_t job_id)
@@ -143,7 +143,6 @@ static int _set_cpu_owner_lock(int cpu_id, uint32_t job_id)
 	sz = sizeof(uint32_t);
 	if (fd_write_n(fd, (void *) &job_id, sz) != sz)
 		error("%s: write: %m %s", __func__, tmp);
-	(void) fd_release_lock(fd);
 
 	return fd;
 }
@@ -681,7 +680,10 @@ _cpu_freq_set_gov(stepd_step_rec_t *job, int cpuidx, char* gov )
 		error("%s: Can not set CPU governor: %m", __func__);
 		rc = SLURM_FAILURE;
 	}
-	(void) close(fd);
+	if (fd >= 0) {
+		(void) fd_release_lock(fd);
+		(void) close(fd);
+	}
 	return rc;
 }
 
@@ -737,7 +739,10 @@ _cpu_freq_set_scaling_freq(stepd_step_rec_t *job, int cpx, uint32_t freq,
 		error("%s: Can not set %s: %m", __func__, option);
 		rc = SLURM_FAILURE;
 	}
-	(void) close(fd);
+	if (fd >= 0) {
+		(void) fd_release_lock(fd);
+		(void) close(fd);
+	}
 	if (debug_flags & DEBUG_FLAG_CPU_FREQ) {
 		newfreq = _cpu_freq_get_scaling_freq(cpx, option);
 		if (newfreq != freq) {
