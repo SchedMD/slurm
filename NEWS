@@ -20,6 +20,7 @@ documents those changes that are of interest to users and administrators.
  -- Release CPU "owner" file locks.
  -- Fix for job step memory allocation: Reject invalid step at submit time
     rather than leaving it queued.
+ -- Whenever possible, avoid allocating nodes that require a reboot.
 
 * Changes in Slurm 16.05.0rc1
 ==============================

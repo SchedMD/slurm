@@ -130,6 +130,7 @@ static int  _match_feature3(struct job_record *job_ptr,
 static int _nodes_in_sets(bitstr_t *req_bitmap,
 			  struct node_set * node_set_ptr,
 			  int node_set_size);
+static int _sort_node_set(const void *x, const void *y);
 static int _pick_best_nodes(struct node_set *node_set_ptr,
 			    int node_set_size, bitstr_t ** select_bitmap,
 			    struct job_record *job_ptr,
@@ -2207,6 +2208,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 				      err_msg, test_only, can_reboot);
 	if (error_code)
 		return error_code;
+	qsort(node_set_ptr, node_set_size, sizeof(struct node_set),
+	      _sort_node_set);
 	_log_node_set(job_ptr->job_id, node_set_ptr, node_set_size);
 
 	/* insure that selected nodes are in these node sets */
@@ -3027,7 +3030,7 @@ static int _build_node_list(struct job_record *job_ptr,
 			    bool can_reboot)
 {
 	int adj_cpus, i, node_set_inx, node_set_len, power_cnt, rc;
-	struct node_set *node_set_ptr;
+	struct node_set *node_set_ptr, *prev_node_set_ptr;
 	struct config_record *config_ptr;
 	struct part_record *part_ptr = job_ptr->part_ptr;
 	ListIterator config_iterator;
@@ -3200,6 +3203,7 @@ static int _build_node_list(struct job_record *job_ptr,
 		node_set_ptr[node_set_inx].feature_bits = tmp_feature;
 		debug2("found %d usable nodes from config containing %s",
 		       node_set_ptr[node_set_inx].nodes, config_ptr->nodes);
+		prev_node_set_ptr = node_set_ptr + node_set_inx;
 		node_set_inx++;
 		if (node_set_inx >= node_set_len) {
 			error("%s: node_set buffer filled", __func__);
@@ -3207,9 +3211,17 @@ static int _build_node_list(struct job_record *job_ptr,
 		}
 		if (test_only || !can_reboot)
 			continue;
-		if (!_match_feature3(job_ptr, node_set_ptr + node_set_inx - 1,
+		if (!_match_feature3(job_ptr, prev_node_set_ptr,
 				     &inactive_bitmap))
 			continue;
+
+		if (bit_equal(prev_node_set_ptr->my_bitmap, inactive_bitmap)) {
+			/* All nodes require reboot, just change weight */
+			prev_node_set_ptr->weight = INFINITE;
+			continue;
+		}
+		/* Split the node set record in two:
+		 * one set to reboot, one set available now */
 		node_set_ptr[node_set_inx].cpus_per_node = config_ptr->cpus;
 		node_set_ptr[node_set_inx].features =
 			xstrdup(config_ptr->feature);
@@ -3312,6 +3324,18 @@ static int _build_node_list(struct job_record *job_ptr,
 	*node_set_size = node_set_inx;
 	*node_set_pptr = node_set_ptr;
 	return SLURM_SUCCESS;
+}
+
+static int _sort_node_set(const void *x, const void *y)
+{
+	struct node_set *node_set_ptr1 = (struct node_set *) x;
+	struct node_set *node_set_ptr2 = (struct node_set *) y;
+
+	if (node_set_ptr1->weight < node_set_ptr2->weight)
+		return -1;
+	if (node_set_ptr1->weight > node_set_ptr2->weight)
+		return 1;
+	return 0;
 }
 
 static void _log_node_set(uint32_t job_id, struct node_set *node_set_ptr,
