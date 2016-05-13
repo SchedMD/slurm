@@ -2221,9 +2221,11 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 				      err_msg, test_only, can_reboot);
 	if (error_code)
 		return error_code;
-	qsort(node_set_ptr, node_set_size, sizeof(struct node_set),
-	      _sort_node_set);
-	_log_node_set(job_ptr->job_id, node_set_ptr, node_set_size);
+	if (node_set_ptr) {
+		qsort(node_set_ptr, node_set_size, sizeof(struct node_set),
+		      _sort_node_set);
+		_log_node_set(job_ptr->job_id, node_set_ptr, node_set_size);
+	}
 
 	/* insure that selected nodes are in these node sets */
 	if (job_ptr->details->req_node_bitmap) {
