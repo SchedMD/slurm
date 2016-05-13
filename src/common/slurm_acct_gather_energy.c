@@ -94,7 +94,10 @@ static void *_watch_node(void *arg)
 
 	while (init_run && acct_gather_profile_running) {
 		/* Do this until shutdown is requested */
+		slurm_mutex_lock(&g_context_lock);
 		(*(ops.set_data))(ENERGY_DATA_PROFILE, &delta);
+		slurm_mutex_unlock(&g_context_lock);
+
 		slurm_mutex_lock(&acct_gather_profile_timer[type].notify_mutex);
 		pthread_cond_wait(
 			&acct_gather_profile_timer[type].notify,
@@ -152,8 +155,10 @@ extern int acct_gather_energy_fini(void)
 	if (g_context) {
 		init_run = false;
 
-		if (watch_node_thread_id)
+		if (watch_node_thread_id) {
+			pthread_cancel(watch_node_thread_id);
 			pthread_join(watch_node_thread_id, NULL);
+		}
 
 		rc = plugin_context_destroy(g_context);
 		g_context = NULL;
