@@ -2215,9 +2215,11 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 				      err_msg, test_only, can_reboot);
 	if (error_code)
 		return error_code;
-	qsort(node_set_ptr, node_set_size, sizeof(struct node_set),
-	      _sort_node_set);
-	_log_node_set(job_ptr->job_id, node_set_ptr, node_set_size);
+	if (node_set_ptr) {
+		qsort(node_set_ptr, node_set_size, sizeof(struct node_set),
+		      _sort_node_set);
+		_log_node_set(job_ptr->job_id, node_set_ptr, node_set_size);
+	}
 
 	/* insure that selected nodes are in these node sets */
 	if (job_ptr->details->req_node_bitmap) {
@@ -3225,6 +3227,7 @@ static int _build_node_list(struct job_record *job_ptr,
 		if (bit_equal(prev_node_set_ptr->my_bitmap, inactive_bitmap)) {
 			/* All nodes require reboot, just change weight */
 			prev_node_set_ptr->weight = INFINITE;
+			FREE_NULL_BITMAP(inactive_bitmap);
 			continue;
 		}
 		/* Split the node set record in two:
