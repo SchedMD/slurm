@@ -1,8 +1,11 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 16.05.0rc3
+=============================
+
 * Changes in Slurm 16.05.0rc2
-==============================
+=============================
  -- Cray node shutdown/reboot scripts, perform operations on all nodes in one
     capmc command. Only if that fails, issue the operations in parallel on
     individual nodes. Required for scalability.
