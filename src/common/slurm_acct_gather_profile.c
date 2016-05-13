@@ -142,6 +142,7 @@ static void *_timer_thread(void *args)
 
 	DEF_TIMERS;
 	while (init_run && acct_gather_profile_running) {
+		slurm_mutex_lock(&g_context_lock);
 		START_TIMER;
 		now = time(NULL);
 
@@ -180,6 +181,8 @@ static void *_timer_thread(void *args)
 			acct_gather_profile_timer[i].last_notify = now;
 		}
 		END_TIMER;
+		slurm_mutex_unlock(&g_context_lock);
+
 		usleep(USLEEP_TIME - DELTA_TIMER);
 	}
 
@@ -235,9 +238,6 @@ extern int acct_gather_profile_fini(void)
 
 	init_run = false;
 
-	if (timer_thread_id)
-		pthread_join(timer_thread_id, NULL);
-
 	for (i=0; i < PROFILE_CNT; i++) {
 		switch (i) {
 		case PROFILE_ENERGY:
@@ -257,6 +257,11 @@ extern int acct_gather_profile_fini(void)
 			      "slurm_acct_gather_profile.c "
 			      "(acct_gather_profile_fini)", i);
 		}
+	}
+
+	if (timer_thread_id) {
+		pthread_cancel(timer_thread_id);
+		pthread_join(timer_thread_id, NULL);
 	}
 
 	rc = plugin_context_destroy(g_context);

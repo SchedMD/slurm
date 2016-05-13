@@ -226,8 +226,11 @@ static void *_watch_tasks(void *arg)
 			&acct_gather_profile_timer[type].notify_mutex);
 		slurm_mutex_unlock(&acct_gather_profile_timer[type].
 				   notify_mutex);
+		slurm_mutex_lock(&g_context_lock);
 		/* The initial poll is done after the last task is added */
 		_poll_data(1);
+		slurm_mutex_unlock(&g_context_lock);
+
 	}
 	return NULL;
 }
@@ -302,8 +305,10 @@ extern int jobacct_gather_fini(void)
 	if (g_context) {
 		init_run = false;
 
-		if (watch_tasks_thread_id)
+		if (watch_tasks_thread_id) {
+			pthread_cancel(watch_tasks_thread_id);
 			pthread_join(watch_tasks_thread_id, NULL);
+		}
 
 		rc = plugin_context_destroy(g_context);
 		g_context = NULL;
