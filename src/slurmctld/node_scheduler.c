@@ -991,7 +991,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	uint32_t saved_min_cpus, saved_req_nodes;
 	int rc, tmp_node_set_size;
 	int mcs_select = 0;
-	struct node_set *tmp_node_set_ptr;
+	struct node_set *tmp_node_set_ptr, *prev_node_set_ptr;
 	int error_code = SLURM_SUCCESS, i;
 	bitstr_t *feature_bitmap, *accumulate_bitmap = NULL;
 	bitstr_t *save_avail_node_bitmap = NULL, *resv_bitmap = NULL;
@@ -1082,6 +1082,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		feat_iter = list_iterator_create(
 				job_ptr->details->feature_list);
 		while ((feat_ptr = (job_feature_t *) list_next(feat_iter))) {
+			bool sort_again = false;
 			if (feat_ptr->count == 0)
 				continue;
 			tmp_node_set_size = 0;
@@ -1110,15 +1111,23 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 					bit_copy(node_set_ptr[i].feature_bits);
 				tmp_node_set_ptr[tmp_node_set_size].my_bitmap =
 					bit_copy(node_set_ptr[i].my_bitmap);
+				prev_node_set_ptr = tmp_node_set_ptr +
+						    tmp_node_set_size;
 				tmp_node_set_size++;
 
-				if (test_only || !can_reboot)
+				if (test_only || !can_reboot ||
+				    (prev_node_set_ptr->weight == INFINITE))
 					continue;
-
 				if (!_match_feature2(feat_ptr->name,
 						     node_set_ptr+i,
 						     &inactive_bitmap))
 					continue;
+				sort_again = true;
+				if (bit_equal(prev_node_set_ptr->my_bitmap,
+					      inactive_bitmap)) {
+					prev_node_set_ptr->weight = INFINITE;
+					continue;
+				}
 				tmp_node_set_ptr[tmp_node_set_size].
 					cpus_per_node =
 					node_set_ptr[i].cpus_per_node;
@@ -1156,6 +1165,10 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 			job_ptr->details->min_cpus = feat_ptr->count;
 			FREE_NULL_LIST(*preemptee_job_list);
 			job_ptr->details->pn_min_memory = orig_req_mem;
+			if (sort_again) {
+				qsort(tmp_node_set_ptr, tmp_node_set_size,
+				      sizeof(struct node_set), _sort_node_set);
+			}
 			error_code = _pick_best_nodes(tmp_node_set_ptr,
 					tmp_node_set_size, &feature_bitmap,
 					job_ptr, part_ptr, min_nodes,

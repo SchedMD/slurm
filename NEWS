@@ -6,8 +6,11 @@ documents those changes that are of interest to users and administrators.
  -- burst_buffer/cray - Add support for rounding up the size of a buffer reqeust
     if the DataWarp configuration "equalize_fragments" is used.
  
+* Changes in Slurm 16.05.0rc3
+=============================
+
 * Changes in Slurm 16.05.0rc2
-==============================
+=============================
  -- Cray node shutdown/reboot scripts, perform operations on all nodes in one
     capmc command. Only if that fails, issue the operations in parallel on
     individual nodes. Required for scalability.
@@ -249,6 +252,8 @@ documents those changes that are of interest to users and administrators.
     make it to the slurmctld when using message aggregation.
  -- MySQL - Fix potential memory leak when rolling up data.
  -- Fix issue with clustername file when running on NFS with root_squash.
+ -- Fix race condition with respects to cleaning up the profiling threads
+    when in use.
 
 * Changes in Slurm 15.08.11
 ===========================
