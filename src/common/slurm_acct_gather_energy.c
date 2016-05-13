@@ -90,7 +90,7 @@ static pthread_mutex_t g_context_lock =	PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
 static bool acct_shutdown = true;
 static int freq = 0;
-
+static pthread_t watch_node_thread_id = 0;
 
 static void *_watch_node(void *arg)
 {
@@ -103,6 +103,8 @@ static void *_watch_node(void *arg)
 		      __func__, "acctg_energy");
 	}
 #endif
+	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 	while (init_run && acct_gather_profile_running) {
 		/* Do this until shutdown is requested */
@@ -158,14 +160,19 @@ done:
 
 extern int acct_gather_energy_fini(void)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 
-	if (!g_context)
-		return SLURM_SUCCESS;
+	slurm_mutex_lock(&g_context_lock);
+	if (g_context) {
+		init_run = false;
 
-	init_run = false;
-	rc = plugin_context_destroy(g_context);
-	g_context = NULL;
+		if (watch_node_thread_id)
+			pthread_join(watch_node_thread_id, NULL);
+
+		rc = plugin_context_destroy(g_context);
+		g_context = NULL;
+	}
+	slurm_mutex_unlock(&g_context_lock);
 
 	return rc;
 }
@@ -307,7 +314,6 @@ extern int acct_gather_energy_startpoll(uint32_t frequency)
 {
 	int retval = SLURM_SUCCESS;
 	pthread_attr_t attr;
-	pthread_t _watch_node_thread_id;
 
 	if (slurm_acct_gather_energy_init() < 0)
 		return SLURM_ERROR;
@@ -329,10 +335,8 @@ extern int acct_gather_energy_startpoll(uint32_t frequency)
 
 	/* create polling thread */
 	slurm_attr_init(&attr);
-	if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
-		error("pthread_attr_setdetachstate error %m");
 
-	if (pthread_create(&_watch_node_thread_id, &attr, &_watch_node, NULL)) {
+	if (pthread_create(&watch_node_thread_id, &attr, &_watch_node, NULL)) {
 		debug("acct_gather_energy failed to create _watch_node "
 		      "thread: %m");
 	} else

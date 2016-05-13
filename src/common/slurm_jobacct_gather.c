@@ -110,6 +110,7 @@ static slurm_jobacct_gather_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
+static pthread_t watch_tasks_thread_id = 0;
 
 static int freq = 0;
 static bool pgid_plugin = false;
@@ -208,13 +209,16 @@ static void *_watch_tasks(void *arg)
 	}
 #endif
 
+	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
 	/* Give chance for processes to spawn before starting
 	 * the polling. This should largely eliminate the
 	 * the chance of having /proc open when the tasks are
 	 * spawned, which would prevent a valid checkpoint/restart
 	 * with some systems */
 	_task_sleep(1);
-	while (!jobacct_shutdown && acct_gather_profile_running) {
+	while (init_run && !jobacct_shutdown && acct_gather_profile_running) {
 		/* Do this until shutdown is requested */
 		slurm_mutex_lock(&acct_gather_profile_timer[type].notify_mutex);
 		pthread_cond_wait(
@@ -297,10 +301,15 @@ extern int jobacct_gather_fini(void)
 	slurm_mutex_lock(&g_context_lock);
 	if (g_context) {
 		init_run = false;
+
+		if (watch_tasks_thread_id)
+			pthread_join(watch_tasks_thread_id, NULL);
+
 		rc = plugin_context_destroy(g_context);
 		g_context = NULL;
 	}
 	slurm_mutex_unlock(&g_context_lock);
+
 	return rc;
 }
 
@@ -308,7 +317,6 @@ extern int jobacct_gather_startpoll(uint16_t frequency)
 {
 	int retval = SLURM_SUCCESS;
 	pthread_attr_t attr;
-	pthread_t _watch_tasks_thread_id;
 
 	if (!plugin_polling)
 		return SLURM_SUCCESS;
@@ -333,10 +341,7 @@ extern int jobacct_gather_startpoll(uint16_t frequency)
 
 	/* create polling thread */
 	slurm_attr_init(&attr);
-	if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
-		error("pthread_attr_setdetachstate error %m");
-
-	if  (pthread_create(&_watch_tasks_thread_id, &attr,
+	if  (pthread_create(&watch_tasks_thread_id, &attr,
 			    &_watch_tasks, NULL)) {
 		debug("jobacct_gather failed to create _watch_tasks "
 		      "thread: %m");

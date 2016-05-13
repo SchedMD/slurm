@@ -244,6 +244,8 @@ documents those changes that are of interest to users and administrators.
     make it to the slurmctld when using message aggregation.
  -- MySQL - Fix potential memory leak when rolling up data.
  -- Fix issue with clustername file when running on NFS with root_squash.
+ -- Fix race condition with respects to cleaning up the profiling threads
+    when in use.
 
 * Changes in Slurm 15.08.11
 ===========================
