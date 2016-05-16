@@ -21,6 +21,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue with clustername file when running on NFS with root_squash.
  -- Fix race condition with respects to cleaning up the profiling threads
     when in use.
+ -- Fix issues when building on NetBSD.
 
 * Changes in Slurm 15.08.11
 ===========================

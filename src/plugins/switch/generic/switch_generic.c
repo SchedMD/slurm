@@ -40,9 +40,6 @@
 #  include "config.h"
 #endif
 
-#if !defined(__FreeBSD__)
-#include <net/if.h>
-#endif
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/types.h>
@@ -55,6 +52,11 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+
+/* net/if.h must come after sys/types.h on NetBSD */
+#if !defined(__FreeBSD__)
+#include <net/if.h>
+#endif
 
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
