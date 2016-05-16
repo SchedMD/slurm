@@ -100,7 +100,7 @@ uint64_t mask_to_int(cpu_set_t *mask)
 				rc = 999999999;
 				break;
 			}
-			rc += (1 << i);
+			rc += (((uint64_t) 1) << i);
 		}
 	}
 	return rc;
