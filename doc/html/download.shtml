@@ -339,6 +339,14 @@ times spent pending in them, which is often a good bellwether of scheduling
 problems.<br>
 <a href="https://github.com/fasrc/slurmmon">Slurmmon code</a></li><br>
 
+<li><b>Graphical Sdiag</b><br>
+The sdiag utility is a diagnostic tool that maintains statistics on Slurm's
+scheduling performance. You can run sdiag periodically or as you modify
+Slurm's configuration. However if you want a historical view of these
+statistics, you could save them in a time-series database and graph them over
+time as performed with this tool:<br>
+<a href="http://giovannitorres.me/graphing-sdiag-with-graphite.html">Graphing sdiag with Graphite </a></li><br>
+
 <li><b>MSlurm</b><br>
 Such a superstructure for the management of multiple Slurm environments is done
 with MSlurm. Thereby several Slurm clusters - even across multiple Slurm
@@ -398,6 +406,6 @@ Slurm-based HPC supercomputers. The website of Slurm-web, with screenshots:<br>
 
 </ul>
 
-<p style="text-align:center;">Last modified 16 February 2016</p>
+<p style="text-align:center;">Last modified 13 May 2016</p>
 
 <!--#include virtual="footer.txt"-->

@@ -48,7 +48,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined(__NetBSD__)
 #define POLLRDHUP POLLHUP
 #include <signal.h>
 #endif

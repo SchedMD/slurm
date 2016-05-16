@@ -36,10 +36,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if !defined(__FreeBSD__)
-#include <net/if.h>
-#endif
-
 #include <arpa/inet.h>
 #include <ifaddrs.h>
 #include <netdb.h>
@@ -50,6 +46,11 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+
+/* net/if.h must come after sys/types.h on NetBSD */
+#if !defined(__FreeBSD__)
+#include <net/if.h>
+#endif
 
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
