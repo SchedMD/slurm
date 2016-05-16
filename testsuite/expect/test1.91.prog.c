@@ -29,12 +29,12 @@
 #define _GNU_SOURCE
 #define __USE_GNU
 #include <errno.h>
+#include <inttypes.h>
 #include <sched.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
-#include <inttypes.h>
 
 #include "config.h"
 
@@ -89,7 +89,7 @@ char *cpuset_to_str(const cpu_set_t *mask, char *str)
 	return ret ? ret : ptr - 1;
 }
 
-uint64_t mask_to_int(cpu_set_t *mask)
+static uint64_t _mask_to_int(cpu_set_t *mask)
 {
 	uint64_t i, rc = 0;
 
@@ -123,6 +123,6 @@ int main (int argc, char **argv)
 	/* NOTE: The uint64_t number is subject to overflow if there are
 	 * >64 CPUs on a compute node, but the hex value will be valid */
 	printf("TASK_ID:%d,MASK:%"PRIu64":0x%s\n", task_id,
-	       mask_to_int(&mask), cpuset_to_str(&mask, mask_str));
+	       _mask_to_int(&mask), cpuset_to_str(&mask, mask_str));
 	exit(0);
 }

@@ -29,12 +29,12 @@
 #define _GNU_SOURCE
 #define __USE_GNU
 #include <errno.h>
+#include <inttypes.h>
 #include <sched.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
-#include <inttypes.h>
 
 #include "config.h"
 
@@ -58,9 +58,10 @@ static void _load_mask(cpu_set_t *mask)
 static uint64_t _mask_to_int(cpu_set_t *mask)
 {
 	uint64_t i, rc = 0;
-	for (i=0; i<CPU_SETSIZE; i++) {
+
+	for (i = 0; i < CPU_SETSIZE; i++) {
 		if (CPU_ISSET(i, mask))
-			rc += (1 << i);
+			rc += (((uint64_t) 1) << i);
 	}
 	return rc;
 }
