@@ -71,6 +71,12 @@
 
 #include <sys/resource.h>
 
+/* FIXME: Come up with a real solution for EUID instead of substituting RUID */
+#if defined(__NetBSD__)
+#define eaccess(p,m) (access((p),(m)))
+#define HAVE_EACCESS 1
+#endif
+
 #include "slurm/slurm_errno.h"
 
 #include "src/common/checkpoint.h"

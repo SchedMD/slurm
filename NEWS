@@ -233,7 +233,7 @@ documents those changes that are of interest to users and administrators.
 ===========================
  -- Do not attempt to power down a node which has never responded if the
     slurmctld daemon restarts without state.
- -- Fix for possible slurmstepd segfault on invalid userr ID.
+ -- Fix for possible slurmstepd segfault on invalid user ID.
  -- MySQL - Fix for possible race condition when archiving multiple clusters
     at the same time.
  -- Fix compile for when you don't have hwloc.
@@ -249,6 +249,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue with clustername file when running on NFS with root_squash.
  -- Fix race condition with respects to cleaning up the profiling threads
     when in use.
+ -- Fix issues when building on NetBSD.
 
 * Changes in Slurm 15.08.11
 ===========================
