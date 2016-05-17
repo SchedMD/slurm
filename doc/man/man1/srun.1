@@ -2566,7 +2566,11 @@ This is set only if the system has the topology/tree plugin configured.
 The value will be set component types listed in \fBSLURM_TOPOLOGY_ADDR\fR.
 Each component will be identified as either "switch" or "node".
 A period is used to separate each hardware component type.
-
+.TP
+\fBSLURMD_NODENAME\fR
+Name of the node running the task. In the case of a parallel job executing on
+multiple compute nodes, the various tasks will have this environment variable
+set to different values on each compute node.
 .TP
 \fBSRUN_DEBUG\fR
 Set to the logging level of the \fBsrun\fR command.
