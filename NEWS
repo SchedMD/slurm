@@ -22,6 +22,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix race condition with respects to cleaning up the profiling threads
     when in use.
  -- Fix issues when building on NetBSD.
+ -- Fix jobcomp/elasticsearch build when libcurl is installed in a
+    non-standard location.
 
 * Changes in Slurm 15.08.11
 ===========================
