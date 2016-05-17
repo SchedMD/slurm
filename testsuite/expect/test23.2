@@ -249,7 +249,7 @@ if {[wait_for_job $job_id3 "RUNNING"] != 0} {
 	send_user "\nFAILURE: waiting for job to start running\n"
 	exit 1
 }
-sleep 5
+sleep 15
 ################################################################
 #
 # Proc: sstat_job
@@ -534,7 +534,7 @@ proc sstat_vargs { soption vargs job_id} {
 ################################################################
 set matches [sstat_job a $job_id3]
 if {$matches != 3} {
-	send_user "\nFAILURE: sstat -a failed ($matches)\n"
+	send_user "\nFAILURE: sstat -a failed ($matches != 3)\n"
 	set exit_code 1
 }
 

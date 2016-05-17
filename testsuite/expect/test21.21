@@ -115,8 +115,7 @@ if {$got_node != 1} {
 	exit 0
 }
 
-# Get the number of cpus on a node
-
+# Get the number of CPUs on a node
 spawn $scontrol show node $test_node
 expect {
 	-re "CPUTot=($number)" {
@@ -147,8 +146,6 @@ if {$totcpus == 0} {
 	set acct_mod_assoc_vals(maxcpumins) "-n [expr $totcpus - $nthreads]"
 	set acct_mod_assoc_vals(grpcpurunmins) "-n [expr $totcpus - $nthreads]"
 }
-
-
 
 
 proc assoc_setup { limit_type limit_val } {
@@ -382,7 +379,6 @@ expect {
 		wait
 	}
 }
-
 if {$match != 1} {
 	send_user "\nFAILURE: $test_qos was not created\n"
 	exit 1

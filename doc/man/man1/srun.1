@@ -2635,7 +2635,11 @@ A period is used to separate each hardware component type.
 .TP
 \fBSLURM_UMASK\fR
 The \fIumask\fR in effect when the job was submitted.
-
+.TP
+\fBSLURMD_NODENAME\fR
+Name of the node running the task. In the case of a parallel job executing on
+multiple compute nodes, the various tasks will have this environment variable
+set to different values on each compute node.
 .TP
 \fBSRUN_DEBUG\fR
 Set to the logging level of the \fBsrun\fR command.

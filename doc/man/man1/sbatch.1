@@ -1887,9 +1887,6 @@ SLURM_NODE_ALIASES=ec0:1.2.3.4:foo,ec1:1.2.3.5:bar
 \fBSLURM_NODEID\fR
 ID of the nodes allocated.
 .TP
-\fBSLURMD_NODENAME\fR
-Names of all the allocated nodes.
-.TP
 \fBSLURM_NTASKS\fR (and \fBSLURM_NPROCS\fR for backwards compatibility)
 Same as \fB\-n, \-\-ntasks\fR
 .TP
@@ -1954,6 +1951,9 @@ hardware component type.
 .TP
 \fBSLURM_UMASK\fR
 The \fIumask\fR in effect when the job was submitted.
+.TP
+\fBSLURMD_NODENAME\fR
+Name of the node running the job script.
 
 .SH "EXAMPLES"
 .LP
