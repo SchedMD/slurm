@@ -34,6 +34,12 @@
 FAILURES=0
 COMPLETIONS=0
 
+# Clear any environment variables that could break the tests.
+# Cray sets some squeue format options that break tests
+unset SQUEUE_ALL
+unset SQUEUE_SORT
+unset SLURM_FORMAT
+
 # Make sure we are in the desired directory before possibly
 # removing files the user does not want to lose.
 if [ ! -x ./regression ]; then

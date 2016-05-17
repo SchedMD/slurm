@@ -96,11 +96,19 @@ expect {
 	}
 }
 
-if {$failed_cnt != 2 && $timeout_cnt != 1} {
+if {$failed_cnt != 2 || $timeout_cnt != 1} {
 	send_user "\nFAILURE: batch job $job_id did not FAIL and/or the step "
-	send_user "did not TIMEOUT.  Count for FAILED was $failed_cnt and "
-	send_user "TIMEOUT was $timeout_cnt\n"
+	send_user "did not TIMEOUT.  Count for FAILED was $failed_cnt (not 2) and "
+	send_user "TIMEOUT was $timeout_cnt (not 1)\n"
 	set exit_code 1
+
+	send_user "\nGathering more job information:\n"
+	spawn $sacct --jobs=$job_id
+	expect {
+		eof {
+			wait
+		}
+	}
 }
 
 if {$exit_code == 0} {
