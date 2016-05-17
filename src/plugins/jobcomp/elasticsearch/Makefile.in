@@ -177,7 +177,7 @@ am__DEPENDENCIES_1 =
 @WITH_CURL_TRUE@jobcomp_elasticsearch_la_DEPENDENCIES =  \
 @WITH_CURL_TRUE@	$(am__DEPENDENCIES_1)
 am__jobcomp_elasticsearch_la_SOURCES_DIST = jobcomp_elasticsearch.c
-am__objects_1 = jobcomp_elasticsearch_la-jobcomp_elasticsearch.lo
+am__objects_1 = jobcomp_elasticsearch.lo
 @WITH_CURL_TRUE@am_jobcomp_elasticsearch_la_OBJECTS =  \
 @WITH_CURL_TRUE@	$(am__objects_1)
 am__EXTRA_jobcomp_elasticsearch_la_SOURCES_DIST =  \
@@ -517,11 +517,10 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(LIBCURL_CPPFLAGS)
 AS_ELASTICSEARCH_SOURCES = jobcomp_elasticsearch.c
 @WITH_CURL_TRUE@pkglib_LTLIBRARIES = jobcomp_elasticsearch.la
 @WITH_CURL_TRUE@jobcomp_elasticsearch_la_SOURCES = $(AS_ELASTICSEARCH_SOURCES)
-@WITH_CURL_TRUE@jobcomp_elasticsearch_la_CPPFLAGS = $(LIBCURL_CPPFLAGS)
 @WITH_CURL_TRUE@jobcomp_elasticsearch_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 @WITH_CURL_TRUE@jobcomp_elasticsearch_la_LIBADD = $(LIBCURL)
 @WITH_CURL_FALSE@EXTRA_jobcomp_elasticsearch_la_SOURCES = $(AS_ELASTICSEARCH_SOURCES)
@@ -603,7 +602,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobcomp_elasticsearch_la-jobcomp_elasticsearch.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobcomp_elasticsearch.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -625,13 +624,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
-
-jobcomp_elasticsearch_la-jobcomp_elasticsearch.lo: jobcomp_elasticsearch.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(jobcomp_elasticsearch_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT jobcomp_elasticsearch_la-jobcomp_elasticsearch.lo -MD -MP -MF $(DEPDIR)/jobcomp_elasticsearch_la-jobcomp_elasticsearch.Tpo -c -o jobcomp_elasticsearch_la-jobcomp_elasticsearch.lo `test -f 'jobcomp_elasticsearch.c' || echo '$(srcdir)/'`jobcomp_elasticsearch.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/jobcomp_elasticsearch_la-jobcomp_elasticsearch.Tpo $(DEPDIR)/jobcomp_elasticsearch_la-jobcomp_elasticsearch.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='jobcomp_elasticsearch.c' object='jobcomp_elasticsearch_la-jobcomp_elasticsearch.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(jobcomp_elasticsearch_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o jobcomp_elasticsearch_la-jobcomp_elasticsearch.lo `test -f 'jobcomp_elasticsearch.c' || echo '$(srcdir)/'`jobcomp_elasticsearch.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
