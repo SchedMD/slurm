@@ -2221,11 +2221,12 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 				      err_msg, test_only, can_reboot);
 	if (error_code)
 		return error_code;
-	if (node_set_ptr) {
-		qsort(node_set_ptr, node_set_size, sizeof(struct node_set),
-		      _sort_node_set);
-		_log_node_set(job_ptr->job_id, node_set_ptr, node_set_size);
-	}
+	if (node_set_ptr == NULL)	/* Should never be true */
+		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
+
+	qsort(node_set_ptr, node_set_size, sizeof(struct node_set),
+	      _sort_node_set);
+	_log_node_set(job_ptr->job_id, node_set_ptr, node_set_size);
 
 	/* insure that selected nodes are in these node sets */
 	if (job_ptr->details->req_node_bitmap) {
@@ -3058,6 +3059,11 @@ static int _build_node_list(struct job_record *job_ptr,
 	bool has_xor = false;
 	bool resv_overlap = false;
 
+	if ((job_ptr->details->min_nodes == 0) &&
+	    (job_ptr->details->max_nodes == 0)) {
+		return ESLURM_INVALID_NODE_COUNT;
+	}
+
 	if (job_ptr->resv_name) {
 		/* Limit node selection to those in selected reservation */
 		time_t start_res = time(NULL);
@@ -3092,18 +3098,8 @@ static int _build_node_list(struct job_record *job_ptr,
 			return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 		}
 	}
-	if ((job_ptr->details->min_nodes == 0) &&
-	    (job_ptr->details->max_nodes == 0)) {
-		FREE_NULL_BITMAP(usable_node_mask);
-		*node_set_pptr = NULL;
-		*node_set_size = 0;
-		return SLURM_SUCCESS;
-	}
 
-	node_set_inx = 0;
-	node_set_len = list_count(config_list) * 4 + 1;
-	node_set_ptr = (struct node_set *)
-			xmalloc(sizeof(struct node_set) * node_set_len);
+
 	if (detail_ptr->exc_node_bitmap) {
 		if (usable_node_mask) {
 			bit_not(detail_ptr->exc_node_bitmap);
@@ -3131,6 +3127,10 @@ static int _build_node_list(struct job_record *job_ptr,
 		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 	}
 
+	node_set_inx = 0;
+	node_set_len = list_count(config_list) * 4 + 1;
+	node_set_ptr = (struct node_set *)
+			xmalloc(sizeof(struct node_set) * node_set_len);
 	config_iterator = list_iterator_create(config_list);
 	while ((config_ptr = (struct config_record *)
 			list_next(config_iterator))) {
