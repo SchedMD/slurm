@@ -209,10 +209,6 @@
 /* Define to 1 if using MySQL libaries */
 #undef HAVE_MYSQL
 
-/* Define to 1 if we can't use the alter ignore when messing with a database
- * table */
-#undef NO_ALTER_IGNORE_MYSQL
-
 /* Define to 1 for running on a Cray in native mode without ALPS */
 #undef HAVE_NATIVE_CRAY
 
@@ -487,8 +483,7 @@
 /* Define to 1 for --get-user-env to load user environment without .login */
 #undef LOAD_ENV_NO_LOGIN
 
-/* Define to the sub-directory in which libtool stores uninstalled libraries.
-   */
+/* Define to the sub-directory where libtool stores uninstalled libraries. */
 #undef LT_OBJDIR
 
 /* Define to 1 for memory leak debugging. */
@@ -502,6 +497,10 @@
 
 /* Define to 1 if you are building a production release. */
 #undef NDEBUG
+
+/* Define to 1 if we can't use the alter ignore when messing with a database
+   table */
+#undef NO_ALTER_IGNORE_MYSQL
 
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT
