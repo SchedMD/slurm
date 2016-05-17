@@ -66,13 +66,34 @@ my $user = $job->{'user'};
 my $group = getgrgid($job->{'gid'});
 my $state = $slurm->job_state_string($job->{'state'});
 $clustername = $job->{'cluster'};
-my $ncpus = $job->{'alloc_cpus'};
-# Check for missing number of cpus.
-if ($ncpus == 0) { $ncpus = 1; }
-my $reqmem = $job->{'req_mem'};
-my $nnodes = $job->{'alloc_nodes'};
+
+my $ncpus = 1;
+if (exists $job->{'alloc_cpus'}) {
+    $ncpus = $job->{'alloc_cpus'};
+} else {
+    if (exists $job->{'tres_alloc_str'}) {
+	$ncpus = Slurmdb::find_tres_count_in_string($job->{'tres_alloc_str'}, TRES_CPU);
+    }
+}
+# Check for missing number of cpus
+if (($ncpus == INFINITE64) || ($ncpus == 0)) {
+	$ncpus = 1;
+}
+
+my $nnodes = 1;
+if (exists $job->{'alloc_nodes'}) {
+    $nnodes = $job->{'alloc_nodes'};
+} else {
+    if (exists $job->{'tres_alloc_str'}) {
+        $nnodes = Slurmdb::find_tres_count_in_string($job->{'tres_alloc_str'}, TRES_NODE);
+    }
+}
 # Check for missing number of nodes.
-if ($nnodes == 0) { $nnodes = 1; }
+if (($nnodes == INFINITE64) || ($nnodes == 0)) {
+	$nnodes = 1;
+}
+
+my $reqmem = $job->{'req_mem'};
 my $pernode;
 if ($reqmem & MEM_PER_CPU) {
     $reqmem = ($reqmem & ~MEM_PER_CPU) * 1024 * $ncpus;

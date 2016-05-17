@@ -388,7 +388,7 @@ Includes the Slurm proctrack/lua and job_submit/lua plugin
 %package seff
 Summary: Mail tool that includes job statistics in user notification email
 Group: Development/System
-Requires: slurm
+Requires: slurm-perlapi
 %description seff
 Mail program used directly by the Slurm daemons. On completion of a job,
 wait for it's accounting information to be available and include that
