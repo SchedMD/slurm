@@ -66,6 +66,12 @@ def main(argv=None):
         print >>sys.stderr, 'ERROR: "globals" not here as needed'
         return -1
 
+	# Clear any environment variables that could break the tests.
+	# Cray sets some squeue format options that break tests
+	del os.environ['SQUEUE_ALL']
+	del os.environ['SQUEUE_SORT']
+	del os.environ['SLURM_FORMAT']
+
     # Read the current working directory and build a sorted list
     # of the available tests.
     test_re = re.compile('test(\d+)\.(\d+)$')
