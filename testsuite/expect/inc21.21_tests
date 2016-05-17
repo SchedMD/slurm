@@ -44,9 +44,15 @@ proc inc21_21_good { test_type limit } {
 	# Wait for old jobs to clean up
 	sleep 2
 
-	send_user "\n====== Test $test_type"
+	send_user "\n====== Test $test_type "
 	send_user "(Within: inc21.21_tests function: inc21_21_good) ======\n"
 
+	if { [string compare $test_type "maxcpus"] == 0 ||
+	     [string compare $test_type "maxcpumins"] == 0 &&
+             [default_part_exclusive] != 0} {
+		send_user "\nWARNING: Unable to perform test with exclusive node allocations\n"
+		return $exit_code
+	}	
 	if { [string compare $test_type "maxnode"] == 0 } {
 		set add "--exclusive"
 	} else {
@@ -54,7 +60,7 @@ proc inc21_21_good { test_type limit } {
 	}
 
 	set matches 0
-	spawn $srun -v $add -t1 [lindex $limit 0][lindex $limit 1] \
+	spawn $srun -v -t10 $add [lindex $limit 0][lindex $limit 1] \
 	    --account=$ta -I $bin_id
 	expect {
 		-re "launching ($number)" {
@@ -160,7 +166,12 @@ proc inc21_21_grp_test { test_type limit } {
 		return $exit_code
 	}
 
-	# Check and see if it is a cpu test
+	if { [default_part_exclusive] != 0} {
+		send_user "\nWARNING: This test can't be run Exclusive node allocations\n"
+		return $exit_code
+	}
+
+	# Check and see if it is a CPU test
 	if { [string compare $test_type "grpcpus"] == 0 ||
 	     [string compare $test_type "grpcpumins"] == 0 ||
 	     [string compare $test_type "grpcpurunmins"] == 0 } {
@@ -274,6 +285,12 @@ proc inc21_21_submit_test { limit } {
 	set limit_job ""
 	set limit_sub ""
 
+	if { [string compare $limit "grpjobsub"] == 0 &&
+	     [default_part_exclusive] != 0} {
+		send_user "\nWARNING: Unable to perform test with exclusive node allocations\n"
+		return $exit_code
+	}       
+
 	if { ![string compare $limit "maxjobsub"] } {
 		set limit_job "maxjob"
 		set limit_sub "maxsubmit"
@@ -363,7 +380,7 @@ proc inc21_21_submit_test { limit } {
 		       --error=/dev/null -t5 $file_in]
 	expect {
 		-re "Job violates accounting/QOS policy" {
-			send_user "\nThis error is expected, not a problem"
+			send_user "\nThis error is expected, not a problem "
 			print_err $limit "inc21_21_submit_test"
 			exp_continue
 		}
@@ -430,7 +447,11 @@ proc inc21_21_submit_test { limit } {
 		}
 	}
 
-	if { $matches != 4 } {
+	if { [string compare $limit "maxjobsub"] == 0 &&
+             $matches > 0 && $matches < 4 &&
+	     [default_part_exclusive] != 0} {
+		send_user "\nWARNING: Only started $matches of 4 possible jobs\n"
+	} elseif { $matches != 4 } {
 		send_user "\nFAILURE: jobs are not in the expected state "
 		send_user "expected ($matches != 4)"
 		print_err $limit "inc21_21_submit_test"
@@ -503,12 +524,12 @@ proc inc21_21_submit_test { limit } {
 		       --error=/dev/null -t5 $file_in]
 	expect {
 		-re "Job violates accounting/QOS policy" {
-			send_user "\n\[Job array test\] This error is expected, not a problem"
+			send_user "\n\[Job array test\] This error is expected, not a problem "
 			print_err $limit "inc21_21_submit_test"
 			exp_continue
 		}
 		-re "Submitted batch job ($number)" {
-			send_user "\nFAILURE:\[Job array test\] this job should not have ran."
+			send_user "\nFAILURE:\[Job array test\] this job should not have ran. "
 			print_err $limit "inc21_21_submit_test"
 			set exit_code 1
 			exp_continue
@@ -570,7 +591,11 @@ proc inc21_21_submit_test { limit } {
 		}
 	}
 
-	if { $matches != 4 } {
+	if { [string compare $limit "maxjobsub"] == 0 &&
+             $matches > 0 && $matches < 4 &&
+	     [default_part_exclusive] != 0} {
+		send_user "\nWARNING: Only started $matches of 4 possible jobs\n"
+	} elseif { $matches != 4 } {
 		send_user "\nFAILURE: jobs are not in the expected state "
 		send_user "expected ($matches != 4)"
 		print_err $limit "inc21_21_submit_test"
@@ -582,7 +607,6 @@ proc inc21_21_submit_test { limit } {
 	set acct_mod_assoc_test_vals($limit_sub) "-1"
 
 	return $exit_code
-
 }
 
 #
@@ -611,7 +635,7 @@ proc inc21_21_grpwall { test_type limit } {
 
 	set matches 0
 	send_user "Sleeping for a bit...hang tight\n"
-	spawn $srun -v [lindex $limit 0][lindex $limit 1] --account=$ta \
+	spawn $srun -v -t1 [lindex $limit 0][lindex $limit 1] --account=$ta \
 	    -I $file_in
 	expect {
 		-re "launching ($number)" {
@@ -648,7 +672,7 @@ proc inc21_21_grpwall { test_type limit } {
 	}
 
 	set matches 0
-	spawn $srun -v [lindex $limit 0][lindex $limit 1] --account=$ta \
+	spawn $srun -v -t1 [lindex $limit 0][lindex $limit 1] --account=$ta \
 	    -I $bin_id
 	expect {
 		-re "Job violates accounting/QOS policy" {
