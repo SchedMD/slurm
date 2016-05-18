@@ -182,7 +182,7 @@ expect {
 log_user 1
 if {$real_memory < 100} {
 	set job_mem_opt  "--comment=no_mem_limit"
-	set step_mem_opt ""
+	set step_mem_opt "-t1"
 } else {
 	set job_mem_opt  "--mem=100"
 	set step_mem_opt "--mem=20"
@@ -192,9 +192,9 @@ if {$real_memory < 100} {
 # Build input script file1
 #
 make_bash_script $file_in1 "
-  $srun $step_mem_opt sleep 60 &
-  $srun $step_mem_opt sleep 60 &
-  $srun $step_mem_opt sleep 60
+  $srun $step_mem_opt --gres=craynetwork:0 sleep 60 &
+  $srun $step_mem_opt --gres=craynetwork:0 sleep 60 &
+  $srun $step_mem_opt --gres=craynetwork:0 sleep 60
 "
 #
 # Spawn a job via srun using this account
@@ -202,7 +202,7 @@ make_bash_script $file_in1 "
 #       step per job if DefMemPerCPU or DefMemPerNode is configured.
 #
 set job_id3 0
-spawn $sbatch -N1 -t1 -v $job_mem_opt --account=$test_acct --output=/dev/null $file_in1
+spawn $sbatch -N1 -t1 -v $job_mem_opt --gres=craynetwork:0 --account=$test_acct --output=/dev/null $file_in1
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id3 $expect_out(1,string)
@@ -249,7 +249,7 @@ if {[wait_for_job $job_id3 "RUNNING"] != 0} {
 	send_user "\nFAILURE: waiting for job to start running\n"
 	exit 1
 }
-sleep 15
+sleep 5
 ################################################################
 #
 # Proc: sstat_job
