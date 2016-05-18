@@ -4533,7 +4533,8 @@ extern int post_job_step(struct step_record *step_ptr)
 				 step_ptr->step_id);
 
 	last_job_update = time(NULL);
-	step_ptr->state = JOB_COMPLETE;
+	/* Don't need to set state. Will be destroyed in next steps. */
+	/* step_ptr->state = JOB_COMPLETE; */
 
 	error_code = delete_step_record(job_ptr, step_ptr->step_id);
 	if (error_code == ENOENT) {
