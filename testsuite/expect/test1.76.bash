@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # It is assumed this script runs on cpu $1
 # 

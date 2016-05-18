@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 export MP_RMPOOL=slurm
 export MP_NODES=$SLURM_NNODES
 export MP_PROCS=$SLURM_NTASKS
