@@ -6,6 +6,7 @@ documents those changes that are of interest to users and administrators.
  -- Update seff to fix warnings with ncpus, and list slurm-perlapi dependency
     in spec file.
  -- Fix testsuite to consistent use /usr/bin/env {bash,expect} construct.
+ -- Cray - Ensure that step completion messages get to the database.
 
 * Changes in Slurm 16.05.0rc2
 =============================

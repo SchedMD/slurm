@@ -47,6 +47,7 @@
 
 #include "src/common/slurm_xlator.h"	/* Must be first */
 #include "src/common/pack.h"
+#include "src/common/slurm_accounting_storage.h"
 #include "src/slurmctld/burst_buffer.h"
 #include "src/slurmctld/locks.h"
 #include "other_select.h"
@@ -135,6 +136,7 @@ struct node_record *node_record_table_ptr __attribute__((weak_import));
 int node_record_count __attribute__((weak_import));
 time_t last_node_update __attribute__((weak_import));
 int slurmctld_primary __attribute__((weak_import));
+void *acct_db_conn  __attribute__((weak_import)) = NULL;
 #else
 slurmctld_config_t slurmctld_config;
 slurm_ctl_conf_t slurmctld_conf;
@@ -144,6 +146,7 @@ struct node_record *node_record_table_ptr;
 int node_record_count;
 time_t last_node_update;
 int slurmctld_primary;
+void *acct_db_conn = NULL;
 #endif
 
 static blade_info_t *blade_array = NULL;
@@ -2252,6 +2255,12 @@ extern int select_p_step_finish(struct step_record *step_ptr, bool killing_step)
 		_update_app(step_ptr->job_ptr, step_ptr, ALPSC_EV_END);
 	}
 #endif
+	/* Send step to db since the step could be deleted by post_job_step()
+	 * before the step is completed and sent to the db (handled in
+	 * _internal_step_complete() in step_mgr.c). post_job_step is called
+	 * after the NHC is run (or immediately with NHC_NO). */
+	jobacct_storage_g_step_complete(acct_db_conn, step_ptr);
+
 	if (slurmctld_conf.select_type_param & CR_NHC_STEP_NO) {
 		debug3("NHC_No_Steps set not running NHC on steps.");
 		other_step_finish(step_ptr, killing_step);
