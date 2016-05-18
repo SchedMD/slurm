@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
     in spec file.
  -- Fix testsuite to consistent use /usr/bin/env {bash,expect} construct.
  -- Cray - Ensure that step completion messages get to the database.
+ -- Fix step cpus_per_task calculation for heterogeneous job allocation.
 
 * Changes in Slurm 16.05.0rc2
 =============================
