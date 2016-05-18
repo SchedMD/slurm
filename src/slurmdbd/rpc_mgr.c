@@ -246,7 +246,16 @@ static void * _service_connection(void *arg)
 			fini = true;
 		}
 
-		(void) _send_resp(conn->newsockfd, buffer);
+		if (_send_resp(conn->newsockfd, buffer) != SLURM_SUCCESS) {
+			/* This is only an issue on persistent connections, and
+			 * really isn't that big of a deal as the slurmctld
+			 * will just send the message again. */
+			if (conn->ctld_port)
+				debug("Problem sending response to "
+				      "connection %d(%s) uid(%d)",
+				      conn->newsockfd, conn->ip, uid);
+			fini = true;
+		}
 		xfree(msg);
 	}
 

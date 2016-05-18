@@ -26,6 +26,10 @@ documents those changes that are of interest to users and administrators.
     non-standard location.
  -- Fix MemSpecLimit to explicitly require TaskPlugin=task/cgroup and
     ConstrainRAMSpace set in cgroup.conf.
+ -- MYSQL - Fix order of operations issue where if the database is locked up
+    and the slurmctld doesn't wait long enough for the response it would give
+    up leaving the connection open and create a situation where the next message
+    sent could receive the response of the first one.
 
 * Changes in Slurm 15.08.11
 ===========================

@@ -1856,16 +1856,16 @@ static Buf _recv_msg(int read_timeout)
 		return NULL;
 
 	if (!_fd_readable(slurmdbd_fd, read_timeout))
-		return NULL;
+		goto endit;
 	msg_read = read(slurmdbd_fd, &nw_size, sizeof(nw_size));
 	if (msg_read != sizeof(nw_size))
-		return NULL;
+		goto endit;
 	msg_size = ntohl(nw_size);
 	/* We don't error check for an upper limit here
   	 * since size could possibly be massive */
 	if (msg_size < 2) {
 		error("slurmdbd: Invalid msg_size (%u)", msg_size);
-		return NULL;
+		goto endit;
 	}
 
 	msg = xmalloc(msg_size);
@@ -1887,11 +1887,19 @@ static Buf _recv_msg(int read_timeout)
 			      offset, msg_size);
 		}	/* else in shutdown mode */
 		xfree(msg);
-		return NULL;
+		goto endit;
 	}
 
 	buffer = create_buf(msg, msg_size);
 	return buffer;
+
+endit:
+	/* Close it since we abondoned it.  If the connection does still exist
+	 * on the other end we can't rely on it after this point since we didn't
+	 * listen long enough for this response.
+	 */
+	_reopen_slurmdbd_fd();
+	return NULL;
 }
 
 /* Return time in msec since "start time" */
