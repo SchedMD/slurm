@@ -15,8 +15,8 @@
 
 AC_DEFUN([X_AC_JSON], [
 
-  x_ac_json_dirs="/usr /usr/local"
-  x_ac_json_libs="lib64 lib"
+  _x_ac_json_dirs="/usr /usr/local"
+  _x_ac_json_libs="lib64 lib"
 
   AC_ARG_WITH(
     [json],
@@ -30,11 +30,11 @@ AC_DEFUN([X_AC_JSON], [
       [for json installation],
       [x_ac_cv_json_dir],
       [
-        for d in $x_ac_json_dirs; do
+        for d in $_x_ac_json_dirs; do
           test -d "$d" || continue
           test -d "$d/include" || continue
           test -f "$d/include/json-c/json_object.h" || test -f "$d/include/json/json_object.h" || continue
-          for bit in $x_ac_json_libs; do
+          for bit in $_x_ac_json_libs; do
             test -d "$d/$bit" || continue
             _x_ac_json_libs_save="$LIBS"
             LIBS="-L$d/$bit -ljson-c $LIBS"
