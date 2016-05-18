@@ -3761,7 +3761,9 @@ Also see \fBFeature\fR.
 Limit on combined real memory allocation for compute node daemons
 (slurmd, slurmstepd), in megabytes. This memory is not available to job
 allocations. The daemons won't be killed when they exhaust the memory allocation
-(ie. the OOM Killer is disabled for the daemon's memory cgroup).
+(ie. the OOM Killer is disabled for the daemon's memory cgroup). This option has
+no effect unless cgroup job confinement is also configured
+(\fBTaskPlugin=task/cgroup\fR with \fBConstrainRAMSpace=yes\fR in cgroup.conf).
 
 .TP
 \fBPort\fR
