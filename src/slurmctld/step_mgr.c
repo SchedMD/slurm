@@ -225,9 +225,7 @@ static void _internal_step_complete(struct job_record *job_ptr,
 		job_ptr->derived_ec = MAX(job_ptr->derived_ec,
 					  step_ptr->exit_code);
 
-		/* This operations are needed for Cray systems and also provide
-		 * a cleaner state for requeued jobs. */
-		step_ptr->state = JOB_COMPLETING;
+		step_ptr->state |= JOB_COMPLETING;
 		select_g_step_finish(step_ptr, false);
 #if !defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
 		/* On native Cray, post_job_step is called after NHC completes.
@@ -2099,6 +2097,35 @@ static int _test_strlen(char *test_str, char *str_name, int max_str_len)
 	return SLURM_SUCCESS;
 }
 
+/* Calculate a step's cpus_per_task value. Set to zero if we can't distributed
+ * the tasks evenly over the nodes (heterogeneous job allocation). */
+static int _calc_cpus_per_task(job_step_create_request_msg_t *step_specs,
+			       struct job_record  *job_ptr)
+{
+	int cpus_per_task = 0, i;
+
+	if ((step_specs->cpu_count == 0) ||
+	    (step_specs->cpu_count % step_specs->num_tasks))
+		return cpus_per_task;
+
+	cpus_per_task = step_specs->cpu_count / step_specs->num_tasks;
+	if (cpus_per_task < 1)
+		cpus_per_task = 1;
+
+	if (!job_ptr->job_resrcs)
+		return cpus_per_task;
+
+	for (i = 0; i < job_ptr->job_resrcs->cpu_array_cnt; i++) {
+		if ((cpus_per_task > job_ptr->job_resrcs->cpu_array_value[i]) ||
+		    (job_ptr->job_resrcs->cpu_array_value[i] % cpus_per_task)) {
+			cpus_per_task = 0;
+			break;
+		}
+	}
+
+	return cpus_per_task;
+}
+
 /*
  * step_create - creates a step_record in step_specs->job_id, sets up the
  *	according to the step_specs.
@@ -2280,16 +2307,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	if (step_specs->num_tasks < 1)
 		return ESLURM_BAD_TASK_COUNT;
 
-	/* we set cpus_per_task to 0 if we can't spread them evenly
-	 * over the nodes (hetergeneous systems) */
-	if (!step_specs->cpu_count
-	    || (step_specs->cpu_count % step_specs->num_tasks))
-		cpus_per_task = 0;
-	else {
-		cpus_per_task = step_specs->cpu_count / step_specs->num_tasks;
-		if (cpus_per_task < 1)
-			cpus_per_task = 1;
-	}
+	cpus_per_task = _calc_cpus_per_task(step_specs, job_ptr);
 
 	if (step_specs->no_kill > 1)
 		step_specs->no_kill = 1;
@@ -4325,7 +4343,8 @@ extern int post_job_step(struct step_record *step_ptr)
 				 step_ptr->step_id);
 
 	last_job_update = time(NULL);
-	step_ptr->state = JOB_COMPLETE;
+	/* Don't need to set state. Will be destroyed in next steps. */
+	/* step_ptr->state = JOB_COMPLETE; */
 
 	error_code = delete_step_record(job_ptr, step_ptr->step_id);
 	if (error_code == ENOENT) {
