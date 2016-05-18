@@ -1166,7 +1166,7 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 	}
 
 	exit_code = step_ptr->exit_code;
-	comp_status = step_ptr->state;
+	comp_status = step_ptr->state & JOB_STATE_BASE;
 	if (comp_status < JOB_COMPLETE) {
 		if (WIFSIGNALED(exit_code)) {
 			comp_status = JOB_CANCELLED;
