@@ -286,6 +286,8 @@ if {[wait_for_job $job_id RUNNING] != 0} {
 	send_user "\nFAILURE: error waiting for job $job_id to start\n"
 	set exit_code 1
 }
+# Wait for steps to start too
+sleep 5
 
 # The number of allocated CPUs can vary depending upon the allocation unit
 set match 0

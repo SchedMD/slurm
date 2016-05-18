@@ -260,6 +260,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix issues when building on NetBSD.
  -- Fix jobcomp/elasticsearch build when libcurl is installed in a
     non-standard location.
+ -- Fix MemSpecLimit to explicitly require TaskPlugin=task/cgroup and
+    ConstrainRAMSpace set in cgroup.conf.
 
 * Changes in Slurm 15.08.11
 ===========================

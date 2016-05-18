@@ -330,7 +330,6 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 #
 # Report basic sacct info
 #
-
 spawn $sacct --noheader -P --job=$job_id.$step_id --format jobid,jobname,state,exitcode
 expect {
 	-re "$job_id\.$step_id" {
@@ -342,6 +341,11 @@ expect {
 		exp_continue
 	}
 	-re "FAILED" {
+		incr matches
+		exp_continue
+	}
+	-re "COMPLETING" {
+		send_user "\nWARNING: Step in completing state rather than FAILED\n"
 		incr matches
 		exp_continue
 	}

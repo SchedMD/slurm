@@ -38,7 +38,8 @@ COMPLETIONS=0
 # Cray sets some squeue format options that break tests
 unset SQUEUE_ALL
 unset SQUEUE_SORT
-unset SLURM_FORMAT
+unset SQUEUE_FORMAT
+unset SQUEUE_FORMAT2
 
 # Make sure we are in the desired directory before possibly
 # removing files the user does not want to lose.

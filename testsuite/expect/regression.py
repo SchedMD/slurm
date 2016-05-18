@@ -70,7 +70,8 @@ def main(argv=None):
 	# Cray sets some squeue format options that break tests
 	del os.environ['SQUEUE_ALL']
 	del os.environ['SQUEUE_SORT']
-	del os.environ['SLURM_FORMAT']
+	del os.environ['SQUEUE_FORMAT']
+	del os.environ['SQUEUE_FORMAT2']
 
     # Read the current working directory and build a sorted list
     # of the available tests.
