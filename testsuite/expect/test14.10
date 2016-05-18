@@ -1,4 +1,4 @@
-#!/usr/bin/expect
+#!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of SLURM functionality
 #          Validate sbcast for a job step allocation (subset of job allocation).

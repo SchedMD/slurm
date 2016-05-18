@@ -1,4 +1,4 @@
-#!/usr/bin/expect
+#!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of SLURM functionality
 #          Validate that scontrol show assoc_mgr shows the data cached in

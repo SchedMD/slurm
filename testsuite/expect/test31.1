@@ -87,7 +87,7 @@ proc change_pro_epi { arg program_name conf_change task_pro } {
 		set exit_code 1
 	}
 
-	exec $bin_echo "#!/bin/bash\n" > $config_dir/$pro_epi_prog
+	exec $bin_echo "#!$bin_bash\n" > $config_dir/$pro_epi_prog
 	if {$make_file == 1} {
 		exec $bin_echo "touch $file_dir/$arg.$test_name.txt" >> $config_dir/$pro_epi_prog
 	}
