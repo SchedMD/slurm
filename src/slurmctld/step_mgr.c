@@ -228,9 +228,7 @@ static void _internal_step_complete(struct job_record *job_ptr,
 		job_ptr->derived_ec = MAX(job_ptr->derived_ec,
 					  step_ptr->exit_code);
 
-		/* This operations are needed for Cray systems and also provide
-		 * a cleaner state for requeued jobs. */
-		step_ptr->state = JOB_COMPLETING;
+		step_ptr->state |= JOB_COMPLETING;
 		select_g_step_finish(step_ptr, false);
 #if !defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
 		/* On native Cray, post_job_step is called after NHC completes.
