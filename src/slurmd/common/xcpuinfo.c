@@ -174,6 +174,19 @@ static void hwloc_children(hwloc_topology_t topology, hwloc_obj_t obj,
 }
 #endif
 
+/* Return the number of cores which are decentdents of the given objecdt */
+static int _core_child_count(hwloc_topology_t topology, hwloc_obj_t obj)
+{
+	int count = 0, i;
+
+	if (obj->type == HWLOC_OBJ_CORE)
+		return 1;
+
+	for (i = 0; i < obj->arity; i++)
+		count += _core_child_count(topology, obj->children[i]);
+	return count;
+}
+
 extern int
 get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	    uint16_t *p_sockets, uint16_t *p_cores, uint16_t *p_threads,
@@ -247,7 +260,17 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 		actual_boards = MAX(hwloc_get_nbobjs_by_depth(topology, depth),
 				    1);
 	}
-	nobj[SOCKET] = hwloc_get_nbobjs_by_type(topology, objtype[SOCKET]);
+
+	/* Count sockets/NUMA containing any cores.
+	 * KNL NUMA with no cores are NOT counted. */
+	nobj[SOCKET] = 0;
+	depth = hwloc_get_type_depth(topology, objtype[SOCKET]);
+	for (i = 0; i < hwloc_get_nbobjs_by_depth(topology, depth); i++) {
+		obj = hwloc_get_obj_by_depth(topology, depth, i);
+		if ((obj->type == objtype[SOCKET]) &&
+		    (_core_child_count(topology, obj) > 0))
+			nobj[SOCKET]++;
+	}
 	nobj[CORE]   = hwloc_get_nbobjs_by_type(topology, objtype[CORE]);
 	/*
 	 * Workaround for hwloc
