@@ -13,6 +13,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix testsuite to consistent use /usr/bin/env {bash,expect} construct.
  -- Cray - Ensure that step completion messages get to the database.
  -- Fix step cpus_per_task calculation for heterogeneous job allocation.
+ -- Fix --with-json= configure option to use specified path.
+ -- Add back thread_id to "thread_id" LogTimeFormat to distinguish between
+    mutliple threads with the same name. Now displays thread name and id.
 
 * Changes in Slurm 16.05.0rc2
 =============================

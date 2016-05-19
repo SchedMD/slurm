@@ -160,7 +160,7 @@ OTHER CHANGES
  -- select/cray - Initiate step node health check at start of step termination
     rather than after application completely ends so that NHC can capture
     information about hung (non-killable) processes.
- -- Display thread name instead of thread id and remove process name in stderr
+ -- Display thread name along with thread id and remove process name in stderr
     logging for "thread_id" LogTimeFormat.
 
 API CHANGES

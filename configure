@@ -20047,8 +20047,8 @@ $as_echo "#define SLURM_BIGENDIAN 1" >>confdefs.h
 
 
 
-  x_ac_json_dirs="/usr /usr/local"
-  x_ac_json_libs="lib64 lib"
+  _x_ac_json_dirs="/usr /usr/local"
+  _x_ac_json_libs="lib64 lib"
 
 
 # Check whether --with-json was given.
@@ -20069,11 +20069,11 @@ if ${x_ac_cv_json_dir+:} false; then :
   $as_echo_n "(cached) " >&6
 else
 
-        for d in $x_ac_json_dirs; do
+        for d in $_x_ac_json_dirs; do
           test -d "$d" || continue
           test -d "$d/include" || continue
           test -f "$d/include/json-c/json_object.h" || test -f "$d/include/json/json_object.h" || continue
-          for bit in $x_ac_json_libs; do
+          for bit in $_x_ac_json_libs; do
             test -d "$d/$bit" || continue
             _x_ac_json_libs_save="$LIBS"
             LIBS="-L$d/$bit -ljson-c $LIBS"

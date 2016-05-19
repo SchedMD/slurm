@@ -669,8 +669,9 @@ set_idbuf(char *idbuf)
 		return;
 	}
 
-	sprintf(idbuf, "%.15s.%-6d %5d %*s", slurm_ctime(&now.tv_sec) + 4,
-		(int)now.tv_usec, (int)getpid(), max_len, thread_name);
+	sprintf(idbuf, "%.15s.%-6d %5d %-*s %p", slurm_ctime(&now.tv_sec) + 4,
+		(int)now.tv_usec, (int)getpid(), max_len, thread_name,
+		(void *)pthread_self());
 }
 
 /* return a heap allocated string formed from fmt and ap arglist
