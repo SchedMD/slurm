@@ -423,8 +423,8 @@ static char *_node_names_2_nid_list(char *node_names)
 		/* skip leading zeros */
 		while (node_names[i] == '0')
 			i++;
-		if ((node_names[i] < '0') || (node_names[i] > '9'))
-			i--;	/* value is all zero's, back up to the last 0 */
+		if (node_names[i] == '[')
+			i++;
 		while ((node_names[i] >= '0') && (node_names[i] <= '9')) {
 			nid_index *= 10;
 			nid_index += (node_names[i++] - '0');
