@@ -911,6 +911,8 @@ static int _signal_job_by_str(void)
 	if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
 		error("pthread_attr_setdetachstate error %m");
 	slurm_mutex_init(&num_active_threads_lock);
+	if (pthread_cond_init(&num_active_threads_cond, NULL))
+		error("pthread_cond_init error %m");
 
 	for (i = 0; opt.job_list[i]; i++) {
 		cancel_info = (job_cancel_info_t *)
