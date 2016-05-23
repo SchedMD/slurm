@@ -59,6 +59,7 @@
 
 #include "src/common/fd.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -409,7 +410,7 @@ cr_callback(void *unused)
 
 		debug2("step not launched.");
 
-		pthread_cond_broadcast(&step_launch_cond);
+		slurm_cond_broadcast(&step_launch_cond);
 	}
 
 	return 0;
@@ -466,8 +467,7 @@ main(int argc, char **argv)
 		slurm_mutex_lock(&step_launch_mutex);
 		while (step_launched) {
 			/* just avoid busy waiting */
-			pthread_cond_wait(&step_launch_cond,
-					  &step_launch_mutex);
+			slurm_cond_wait(&step_launch_cond, &step_launch_mutex);
 		}
 		slurm_mutex_unlock(&step_launch_mutex);
 

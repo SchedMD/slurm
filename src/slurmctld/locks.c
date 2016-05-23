@@ -208,7 +208,7 @@ static bool _wr_rdlock(lock_datatype_t datatype, bool wait_lock)
 			success = false;
 			break;
 		} else {	/* wait for state change and retry */
-			pthread_cond_wait(&locks_cond, &locks_mutex);
+			slurm_cond_wait(&locks_cond, &locks_mutex);
 			if (kill_thread)
 				pthread_exit(NULL);
 		}
@@ -222,7 +222,7 @@ static void _wr_rdunlock(lock_datatype_t datatype)
 {
 	slurm_mutex_lock(&locks_mutex);
 	slurmctld_locks.entity[read_lock(datatype)]--;
-	pthread_cond_broadcast(&locks_cond);
+	slurm_cond_broadcast(&locks_cond);
 	slurm_mutex_unlock(&locks_mutex);
 }
 
@@ -246,7 +246,7 @@ static bool _wr_wrlock(lock_datatype_t datatype, bool wait_lock)
 			success = false;
 			break;
 		} else {	/* wait for state change and retry */
-			pthread_cond_wait(&locks_cond, &locks_mutex);
+			slurm_cond_wait(&locks_cond, &locks_mutex);
 			if (kill_thread)
 				pthread_exit(NULL);
 		}
@@ -260,7 +260,7 @@ static void _wr_wrunlock(lock_datatype_t datatype)
 {
 	slurm_mutex_lock(&locks_mutex);
 	slurmctld_locks.entity[write_lock(datatype)]--;
-	pthread_cond_broadcast(&locks_cond);
+	slurm_cond_broadcast(&locks_cond);
 	slurm_mutex_unlock(&locks_mutex);
 }
 
@@ -277,7 +277,7 @@ void get_lock_values(slurmctld_lock_flags_t * lock_flags)
 extern void kill_locked_threads(void)
 {
 	kill_thread = 1;
-	pthread_cond_broadcast(&locks_cond);
+	slurm_cond_broadcast(&locks_cond);
 }
 
 /* un/lock semaphore used for saving state of slurmctld */

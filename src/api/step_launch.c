@@ -64,6 +64,7 @@
 #include "src/common/fd.h"
 #include "src/common/forward.h"
 #include "src/common/hostlist.h"
+#include "src/common/macros.h"
 #include "src/common/net.h"
 #include "src/common/plugstack.h"
 #include "src/common/slurm_auth.h"
@@ -564,7 +565,7 @@ int slurm_step_launch_wait_start(slurm_step_ctx_t *ctx)
 			      sls->tasks_requested);
 			sls->abort = true;
 			_step_abort(ctx);
-			pthread_cond_broadcast(&sls->cond);
+			slurm_cond_broadcast(&sls->cond);
 			slurm_mutex_unlock(&sls->lock);
 			return SLURM_ERROR;
 		}
@@ -582,7 +583,7 @@ int slurm_step_launch_wait_start(slurm_step_ctx_t *ctx)
 				error("timeout waiting for I/O connect");
 				sls->abort = true;
 				_step_abort(ctx);
-				pthread_cond_broadcast(&sls->cond);
+				slurm_cond_broadcast(&sls->cond);
 				slurm_mutex_unlock(&sls->lock);
 				return SLURM_ERROR;
 			}
@@ -614,7 +615,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 	slurm_mutex_lock(&sls->lock);
 	while (bit_set_count(sls->tasks_exited) < sls->tasks_requested) {
 		if (!sls->abort) {
-			pthread_cond_wait(&sls->cond, &sls->lock);
+			slurm_cond_wait(&sls->cond, &sls->lock);
 		} else {
 			if (!sls->abort_action_taken) {
 				slurm_kill_job_step(ctx->job_id,
@@ -705,7 +706,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 	/* Shutdown the io timeout thread, if one exists */
 	if (sls->io_timeout_thread_created) {
 		sls->halt_io_test = true;
-		pthread_cond_broadcast(&sls->cond);
+		slurm_cond_broadcast(&sls->cond);
 
 		slurm_mutex_unlock(&sls->lock);
 		pthread_join(sls->io_timeout_thread, NULL);
@@ -742,7 +743,7 @@ void slurm_step_launch_abort(slurm_step_ctx_t *ctx)
 
 	slurm_mutex_lock(&sls->lock);
 	sls->abort = true;
-	pthread_cond_broadcast(&sls->cond);
+	slurm_cond_broadcast(&sls->cond);
 	slurm_mutex_unlock(&sls->lock);
 }
 
@@ -891,7 +892,7 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 	sls->mpi_info->step_layout = layout;
 	sls->mpi_state = NULL;
 	slurm_mutex_init(&sls->lock);
-	pthread_cond_init(&sls->cond, NULL);
+	slurm_cond_init(&sls->cond, NULL);
 
 	for (ii = 0; ii < layout->node_cnt; ii++) {
 		sls->io_deadline[ii] = (time_t)NO_VAL;
@@ -937,8 +938,8 @@ void step_launch_state_alter(slurm_step_ctx_t *ctx)
 void step_launch_state_destroy(struct step_launch_state *sls)
 {
 	/* First undo anything created in step_launch_state_create() */
-	pthread_mutex_destroy(&sls->lock);
-	pthread_cond_destroy(&sls->cond);
+	slurm_mutex_destroy(&sls->lock);
+	slurm_cond_destroy(&sls->cond);
 	FREE_NULL_BITMAP(sls->tasks_started);
 	FREE_NULL_BITMAP(sls->tasks_exited);
 	FREE_NULL_BITMAP(sls->node_io_error);
@@ -1137,7 +1138,7 @@ _launch_handler(struct step_launch_state *sls, slurm_msg_t *resp)
 	if (sls->callback.task_start != NULL)
 		(sls->callback.task_start)(msg);
 
-	pthread_cond_broadcast(&sls->cond);
+	slurm_cond_broadcast(&sls->cond);
 	slurm_mutex_unlock(&sls->lock);
 
 }
@@ -1173,7 +1174,7 @@ _exit_handler(struct step_launch_state *sls, slurm_msg_t *exit_msg)
 	if (sls->callback.task_finish != NULL)
 		(sls->callback.task_finish)(msg);
 
-	pthread_cond_broadcast(&sls->cond);
+	slurm_cond_broadcast(&sls->cond);
 	slurm_mutex_unlock(&sls->lock);
 }
 
@@ -1197,7 +1198,7 @@ _job_complete_handler(struct step_launch_state *sls, slurm_msg_t *complete_msg)
 	force_terminated_job = true;
 	slurm_mutex_lock(&sls->lock);
 	sls->abort = true;
-	pthread_cond_broadcast(&sls->cond);
+	slurm_cond_broadcast(&sls->cond);
 	slurm_mutex_unlock(&sls->lock);
 }
 
@@ -1211,7 +1212,7 @@ _timeout_handler(struct step_launch_state *sls, slurm_msg_t *timeout_msg)
 		(sls->callback.step_timeout)(step_msg);
 
 	slurm_mutex_lock(&sls->lock);
-	pthread_cond_broadcast(&sls->cond);
+	slurm_cond_broadcast(&sls->cond);
 	slurm_mutex_unlock(&sls->lock);
 }
 
@@ -1276,7 +1277,7 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 		client_io_handler_downnodes(sls->io.normal, node_ids,
 					    num_node_ids);
 	}
-	pthread_cond_broadcast(&sls->cond);
+	slurm_cond_broadcast(&sls->cond);
 	slurm_mutex_unlock(&sls->lock);
 
 	xfree(node_ids);
@@ -1331,7 +1332,7 @@ _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 			      "connections.");
 
 			sls->abort = true;
-			pthread_cond_broadcast(&sls->cond);
+			slurm_cond_broadcast(&sls->cond);
 			slurm_mutex_unlock(&sls->lock);
 			return;
 		}
@@ -1378,7 +1379,7 @@ _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 			error("Aborting, step missing and io error on node %d",
 			      node_id);
 			sls->abort = true;
-			pthread_cond_broadcast(&sls->cond);
+			slurm_cond_broadcast(&sls->cond);
 			break;
 		}
 
@@ -1405,7 +1406,7 @@ _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 			error("Aborting, can not test connection to node %d.",
 			      node_id);
 			sls->abort = true;
-			pthread_cond_broadcast(&sls->cond);
+			slurm_cond_broadcast(&sls->cond);
 			break;
 		}
 
@@ -1416,7 +1417,7 @@ _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 		 * for receiving a response passes.
 		 */
 		if (test_message_sent) {
-			pthread_cond_broadcast(&sls->cond);
+			slurm_cond_broadcast(&sls->cond);
 		} else {
 			sls->io_deadline[node_id] = (time_t)NO_VAL;
 		}
@@ -1478,7 +1479,7 @@ _task_user_managed_io_handler(struct step_launch_state *sls,
 	/* prevent the caller from closing the user managed IO stream */
 	user_io_msg->conn_fd = -1;
 
-	pthread_cond_broadcast(&sls->cond);
+	slurm_cond_broadcast(&sls->cond);
 	slurm_mutex_unlock(&sls->lock);
 }
 
@@ -1587,7 +1588,7 @@ static int _fail_step_tasks(slurm_step_ctx_t *ctx, char *node, int ret_code)
 
 	slurm_mutex_lock(&sls->lock);
 	sls->abort = true;
-	pthread_cond_broadcast(&sls->cond);
+	slurm_cond_broadcast(&sls->cond);
 	slurm_mutex_unlock(&sls->lock);
 
 	memset(&msg, 0, sizeof(step_complete_msg_t));
@@ -1858,7 +1859,7 @@ step_launch_notify_io_failure(step_launch_state_t *sls, int node_id)
 		error("Aborting, io error and missing step on node %d",
 		      node_id);
 		sls->abort = true;
-		pthread_cond_broadcast(&sls->cond);
+		slurm_cond_broadcast(&sls->cond);
 	} else {
 
 		/* FIXME
@@ -1872,7 +1873,7 @@ step_launch_notify_io_failure(step_launch_state_t *sls, int node_id)
 			error("%s: aborting, io error with slurmstepd on node %d",
 			      __func__, node_id);
 			sls->abort = true;
-			pthread_cond_broadcast(&sls->cond);
+			slurm_cond_broadcast(&sls->cond);
 		}
 	}
 
@@ -1943,7 +1944,7 @@ _check_io_timeout(void *_sls)
 
 			if (sls->io_deadline[ii] <= now) {
 				sls->abort = true;
-				pthread_cond_broadcast(&sls->cond);
+				slurm_cond_broadcast(&sls->cond);
 				error(  "Cannot communicate with node %d.  "
 					"Aborting job.", ii);
 				break;
@@ -1958,12 +1959,12 @@ _check_io_timeout(void *_sls)
 		if (next_deadline == (time_t)NO_VAL) {
 			debug("io timeout thread: no pending deadlines, "
 			      "sleeping indefinitely");
-			pthread_cond_wait(&sls->cond, &sls->lock);
+			slurm_cond_wait(&sls->cond, &sls->lock);
 		} else {
 			debug("io timeout thread: sleeping %lds until deadline",
 			       (long)(next_deadline - time(NULL)));
 			ts.tv_sec = next_deadline;
-			pthread_cond_timedwait(&sls->cond, &sls->lock, &ts);
+			slurm_cond_timedwait(&sls->cond, &sls->lock, &ts);
 		}
 	}
 	slurm_mutex_unlock(&sls->lock);

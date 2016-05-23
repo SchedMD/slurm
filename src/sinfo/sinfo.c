@@ -477,7 +477,7 @@ void *_build_part_info(void *args)
 		error("sinfo_cnt underflow");
 		sinfo_cnt = 0;
 	}
-	pthread_cond_broadcast(&sinfo_cnt_cond);
+	slurm_cond_broadcast(&sinfo_cnt_cond);
 	slurm_mutex_unlock(&sinfo_cnt_mutex);
 	return NULL;
 }
@@ -599,7 +599,7 @@ static int _build_sinfo_data(List sinfo_list,
 
 	slurm_mutex_lock(&sinfo_cnt_mutex);
 	while (sinfo_cnt) {
-		pthread_cond_wait(&sinfo_cnt_cond, &sinfo_cnt_mutex);
+		slurm_cond_wait(&sinfo_cnt_cond, &sinfo_cnt_mutex);
 	}
 	slurm_mutex_unlock(&sinfo_cnt_mutex);
 

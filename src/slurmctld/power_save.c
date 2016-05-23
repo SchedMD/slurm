@@ -655,7 +655,7 @@ extern void config_power_mgr(void)
 			power_save_enabled = true;
 		power_save_config = true;
 	}
-	pthread_cond_signal(&power_cond);
+	slurm_cond_signal(&power_cond);
 	slurm_mutex_unlock(&power_mutex);
 }
 
@@ -691,7 +691,7 @@ extern bool power_save_test(void)
 
 	slurm_mutex_lock(&power_mutex);
 	while (!power_save_config) {
-		pthread_cond_wait(&power_cond, &power_mutex);
+		slurm_cond_wait(&power_cond, &power_mutex);
 	}
 	rc = power_save_enabled;
 	slurm_mutex_unlock(&power_mutex);
@@ -768,7 +768,7 @@ fini:	_clear_power_config();
 	_shutdown_power();
 	slurm_mutex_lock(&power_mutex);
 	power_save_enabled = false;
-	pthread_cond_signal(&power_cond);
+	slurm_cond_signal(&power_cond);
 	slurm_mutex_unlock(&power_mutex);
 	pthread_exit(NULL);
 	return NULL;

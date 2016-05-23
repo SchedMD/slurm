@@ -258,7 +258,7 @@ void *agent(void *args)
 			agent_thread_cnt += rpc_thread_cnt;
 			break;
 		} else {	/* wait for state change and retry */
-			pthread_cond_wait(&agent_cnt_cond, &agent_cnt_mutex);
+			slurm_cond_wait(&agent_cnt_cond, &agent_cnt_mutex);
 		}
 	}
 	slurm_mutex_unlock(&agent_cnt_mutex);
@@ -296,8 +296,8 @@ void *agent(void *args)
 		slurm_mutex_lock(&agent_info_ptr->thread_mutex);
 		while (agent_info_ptr->threads_active >=
 		       AGENT_THREAD_COUNT) {
-			pthread_cond_wait(&agent_info_ptr->thread_cond,
-					  &agent_info_ptr->thread_mutex);
+			slurm_cond_wait(&agent_info_ptr->thread_cond,
+					&agent_info_ptr->thread_mutex);
 		}
 
 		/* create thread specific data, NOTE: freed from
@@ -314,10 +314,8 @@ void *agent(void *args)
 					    (void *) task_specific_ptr))) {
 			error("pthread_create error %m");
 			if (agent_info_ptr->threads_active)
-				pthread_cond_wait(&agent_info_ptr->
-						  thread_cond,
-						  &agent_info_ptr->
-						  thread_mutex);
+				slurm_cond_wait(&agent_info_ptr->thread_cond,
+						&agent_info_ptr->thread_mutex);
 			else {
 				slurm_mutex_unlock(&agent_info_ptr->
 						     thread_mutex);
@@ -340,7 +338,7 @@ void *agent(void *args)
 	}
 	slurm_mutex_lock(&agent_info_ptr->thread_mutex);
 	while (agent_info_ptr->threads_active != 0) {
-		pthread_cond_wait(&agent_info_ptr->thread_cond,
+		slurm_cond_wait(&agent_info_ptr->thread_cond,
 				&agent_info_ptr->thread_mutex);
 	}
 	slurm_mutex_unlock(&agent_info_ptr->thread_mutex);
@@ -370,7 +368,7 @@ void *agent(void *args)
 	if ((agent_thread_cnt + AGENT_THREAD_COUNT + 2) < MAX_SERVER_THREADS)
 		spawn_retry_agent = true;
 
-	pthread_cond_broadcast(&agent_cnt_cond);
+	slurm_cond_broadcast(&agent_cnt_cond);
 	slurm_mutex_unlock(&agent_cnt_mutex);
 
 	if (spawn_retry_agent)
@@ -410,8 +408,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 
 	agent_info_ptr = xmalloc(sizeof(agent_info_t));
 	slurm_mutex_init(&agent_info_ptr->thread_mutex);
-	if (pthread_cond_init(&agent_info_ptr->thread_cond, NULL))
-		fatal("pthread_cond_init error %m");
+	slurm_cond_init(&agent_info_ptr->thread_cond, NULL);
 	agent_info_ptr->thread_count   = agent_arg_ptr->node_count;
 	agent_info_ptr->retry          = agent_arg_ptr->retry;
 	agent_info_ptr->threads_active = 0;
@@ -1075,7 +1072,7 @@ cleanup:
 						 thread_ptr->start_time);
 	/* Signal completion so another thread can replace us */
 	(*threads_active_ptr)--;
-	pthread_cond_signal(thread_cond_ptr);
+	slurm_cond_signal(thread_cond_ptr);
 	slurm_mutex_unlock(thread_mutex_ptr);
 	return (void *) NULL;
 }

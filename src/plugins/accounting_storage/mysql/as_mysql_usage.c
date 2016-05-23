@@ -40,6 +40,7 @@
 #include "as_mysql_cluster.h"
 #include "as_mysql_usage.h"
 #include "as_mysql_rollup.h"
+#include "src/common/macros.h"
 #include "src/common/slurm_time.h"
 
 time_t global_last_rollup = 0;
@@ -398,7 +399,7 @@ end_it:
 	(*local_rollup->rolledup)++;
 	if ((rc != SLURM_SUCCESS) && ((*local_rollup->rc) == SLURM_SUCCESS))
 		(*local_rollup->rc) = rc;
-	pthread_cond_signal(local_rollup->rolledup_cond);
+	slurm_cond_signal(local_rollup->rolledup_cond);
 	slurm_mutex_unlock(local_rollup->rolledup_lock);
 	xfree(local_rollup);
 
@@ -901,7 +902,7 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 	slurm_mutex_lock(&usage_rollup_lock);
 
 	slurm_mutex_init(&rolledup_lock);
-	pthread_cond_init(&rolledup_cond, NULL);
+	slurm_cond_init(&rolledup_cond, NULL);
 
 	//START_TIMER;
 	slurm_mutex_lock(&as_mysql_cluster_list_lock);
@@ -954,13 +955,13 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 	while (rolledup < roll_started) {
-		pthread_cond_wait(&rolledup_cond, &rolledup_lock);
+		slurm_cond_wait(&rolledup_cond, &rolledup_lock);
 		debug2("Got %d of %d rolled up", rolledup, roll_started);
 	}
 	slurm_mutex_unlock(&rolledup_lock);
 	debug2("Everything rolled up");
 	slurm_mutex_destroy(&rolledup_lock);
-	pthread_cond_destroy(&rolledup_cond);
+	slurm_cond_destroy(&rolledup_cond);
 	/* END_TIMER; */
 	/* info("total time was %s", TIME_STR); */
 

@@ -487,7 +487,7 @@ _decrement_thd_count(void)
 	slurm_mutex_lock(&active_mutex);
 	if (active_threads > 0)
 		active_threads--;
-	pthread_cond_signal(&active_cond);
+	slurm_cond_signal(&active_cond);
 	slurm_mutex_unlock(&active_mutex);
 }
 
@@ -503,7 +503,7 @@ _increment_thd_count(void)
 			     MAX_THREADS);
 			logged = true;
 		}
-		pthread_cond_wait(&active_cond, &active_mutex);
+		slurm_cond_wait(&active_cond, &active_mutex);
 	}
 	active_threads++;
 	slurm_mutex_unlock(&active_mutex);
@@ -527,12 +527,12 @@ _wait_for_all_threads(int secs)
 		if (rc == ETIMEDOUT) {
 			error("Timeout waiting for completion of %d threads",
 			      active_threads);
-			pthread_cond_signal(&active_cond);
+			slurm_cond_signal(&active_cond);
 			slurm_mutex_unlock(&active_mutex);
 			return;
 		}
 	}
-	pthread_cond_signal(&active_cond);
+	slurm_cond_signal(&active_cond);
 	slurm_mutex_unlock(&active_mutex);
 	verbose("all threads complete");
 }
@@ -1228,10 +1228,10 @@ _init_conf(void)
 
 	conf->starting_steps = list_create(destroy_starting_step);
 	slurm_mutex_init(&conf->starting_steps_lock);
-	pthread_cond_init(&conf->starting_steps_cond, NULL);
+	slurm_cond_init(&conf->starting_steps_cond, NULL);
 	conf->prolog_running_jobs = list_create(slurm_destroy_uint32_ptr);
 	slurm_mutex_init(&conf->prolog_running_lock);
-	pthread_cond_init(&conf->prolog_running_cond, NULL);
+	slurm_cond_init(&conf->prolog_running_cond, NULL);
 	return;
 }
 
@@ -1273,10 +1273,10 @@ _destroy_conf(void)
 		slurm_mutex_destroy(&conf->config_mutex);
 		FREE_NULL_LIST(conf->starting_steps);
 		slurm_mutex_destroy(&conf->starting_steps_lock);
-		pthread_cond_destroy(&conf->starting_steps_cond);
+		slurm_cond_destroy(&conf->starting_steps_cond);
 		FREE_NULL_LIST(conf->prolog_running_jobs);
 		slurm_mutex_destroy(&conf->prolog_running_lock);
-		pthread_cond_destroy(&conf->prolog_running_cond);
+		slurm_cond_destroy(&conf->prolog_running_cond);
 		slurm_cred_ctx_destroy(conf->vctx);
 		xfree(conf);
 	}

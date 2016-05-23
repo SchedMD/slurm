@@ -52,6 +52,7 @@
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -486,8 +487,8 @@ static void _cancel_jobid_by_state(uint32_t job_state, int filter_cnt, int *rc)
 			slurm_mutex_lock(&num_active_threads_lock);
 			num_active_threads++;
 			while (num_active_threads > MAX_THREADS) {
-				pthread_cond_wait(&num_active_threads_cond,
-						  &num_active_threads_lock);
+				slurm_cond_wait(&num_active_threads_cond,
+						&num_active_threads_lock);
 			}
 			slurm_mutex_unlock(&num_active_threads_lock);
 
@@ -524,8 +525,8 @@ static void _cancel_jobid_by_state(uint32_t job_state, int filter_cnt, int *rc)
 				 * starting confirmation of next job */
 				slurm_mutex_lock(&num_active_threads_lock);
 				while (num_active_threads > 0) {
-					pthread_cond_wait(&num_active_threads_cond,
-							  &num_active_threads_lock);
+					slurm_cond_wait(&num_active_threads_cond,
+							&num_active_threads_lock);
 				}
 				slurm_mutex_unlock(&num_active_threads_lock);
 			}
@@ -578,8 +579,8 @@ _cancel_jobs_by_state(uint32_t job_state, int filter_cnt, int *rc)
 		slurm_mutex_lock(&num_active_threads_lock);
 		num_active_threads++;
 		while (num_active_threads > MAX_THREADS) {
-			pthread_cond_wait(&num_active_threads_cond,
-					  &num_active_threads_lock);
+			slurm_cond_wait(&num_active_threads_cond,
+					&num_active_threads_lock);
 		}
 		slurm_mutex_unlock(&num_active_threads_lock);
 
@@ -593,8 +594,8 @@ _cancel_jobs_by_state(uint32_t job_state, int filter_cnt, int *rc)
 			 * starting confirmation of next job */
 			slurm_mutex_lock(&num_active_threads_lock);
 			while (num_active_threads > 0) {
-				pthread_cond_wait(&num_active_threads_cond,
-						  &num_active_threads_lock);
+				slurm_cond_wait(&num_active_threads_cond,
+						&num_active_threads_lock);
 			}
 			slurm_mutex_unlock(&num_active_threads_lock);
 		}
@@ -611,9 +612,7 @@ static int _cancel_jobs(int filter_cnt)
 		error("pthread_attr_setdetachstate error %m");
 
 	slurm_mutex_init(&num_active_threads_lock);
-
-	if (pthread_cond_init(&num_active_threads_cond, NULL))
-		error("pthread_cond_init error %m");
+	slurm_cond_init(&num_active_threads_cond, NULL);
 
 	_cancel_jobs_by_state(JOB_PENDING, filter_cnt, &rc);
 	/* Wait for any cancel of pending jobs to complete before starting
@@ -622,8 +621,8 @@ static int _cancel_jobs(int filter_cnt)
 	 * being cancelled. */
 	slurm_mutex_lock( &num_active_threads_lock );
 	while (num_active_threads > 0) {
-		pthread_cond_wait(&num_active_threads_cond,
-				  &num_active_threads_lock);
+		slurm_cond_wait(&num_active_threads_cond,
+				&num_active_threads_lock);
 	}
 	slurm_mutex_unlock(&num_active_threads_lock);
 
@@ -631,15 +630,14 @@ static int _cancel_jobs(int filter_cnt)
 	/* Wait for any spawned threads that have not finished */
 	slurm_mutex_lock( &num_active_threads_lock );
 	while (num_active_threads > 0) {
-		pthread_cond_wait(&num_active_threads_cond,
-				  &num_active_threads_lock);
+		slurm_cond_wait(&num_active_threads_cond,
+				&num_active_threads_lock);
 	}
 	slurm_mutex_unlock(&num_active_threads_lock);
 
 	slurm_attr_destroy(&attr);
 	slurm_mutex_destroy(&num_active_threads_lock);
-	if (pthread_cond_destroy(&num_active_threads_cond))
-		error("pthread_cond_destroy error %m");
+	slurm_cond_destroy(&num_active_threads_cond);
 
 	return rc;
 }
@@ -765,7 +763,7 @@ _cancel_job_id (void *ci)
 	slurm_mutex_lock(cancel_info->num_active_threads_lock);
 	*(cancel_info->rc) = MAX(*(cancel_info->rc), error_code);
 	(*(cancel_info->num_active_threads))--;
-	pthread_cond_signal(cancel_info->num_active_threads_cond);
+	slurm_cond_signal(cancel_info->num_active_threads_cond);
 	slurm_mutex_unlock(cancel_info->num_active_threads_lock);
 
 	xfree(cancel_info->job_id_str);
@@ -854,7 +852,7 @@ _cancel_step_id (void *ci)
 	slurm_mutex_lock(cancel_info->num_active_threads_lock);
 	*(cancel_info->rc) = MAX(*(cancel_info->rc), error_code);
 	(*(cancel_info->num_active_threads))--;
-	pthread_cond_signal(cancel_info->num_active_threads_cond);
+	slurm_cond_signal(cancel_info->num_active_threads_cond);
 	slurm_mutex_unlock(cancel_info->num_active_threads_lock);
 
 	xfree(cancel_info->job_id_str);
@@ -900,8 +898,7 @@ static int _signal_job_by_str(void)
 	if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
 		error("pthread_attr_setdetachstate error %m");
 	slurm_mutex_init(&num_active_threads_lock);
-	if (pthread_cond_init(&num_active_threads_cond, NULL))
-		error("pthread_cond_init error %m");
+	slurm_cond_init(&num_active_threads_cond, NULL);
 
 	for (i = 0; opt.job_list[i]; i++) {
 		cancel_info = (job_cancel_info_t *)
@@ -918,8 +915,8 @@ static int _signal_job_by_str(void)
 		slurm_mutex_lock(&num_active_threads_lock);
 		num_active_threads++;
 		while (num_active_threads > MAX_THREADS) {
-			pthread_cond_wait(&num_active_threads_cond,
-					  &num_active_threads_lock);
+			slurm_cond_wait(&num_active_threads_cond,
+					&num_active_threads_lock);
 		}
 		slurm_mutex_unlock(&num_active_threads_lock);
 
@@ -931,8 +928,8 @@ static int _signal_job_by_str(void)
 	/* Wait all spawned threads to finish */
 	slurm_mutex_lock( &num_active_threads_lock );
 	while (num_active_threads > 0) {
-		pthread_cond_wait(&num_active_threads_cond,
-				  &num_active_threads_lock);
+		slurm_cond_wait(&num_active_threads_cond,
+				&num_active_threads_lock);
 	}
 	slurm_mutex_unlock(&num_active_threads_lock);
 

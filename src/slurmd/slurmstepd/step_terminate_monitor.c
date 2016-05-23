@@ -104,7 +104,7 @@ void step_terminate_monitor_stop(void)
 
 	stop_flag = 1;
 	debug("step_terminate_monitor_stop signalling condition");
-	pthread_cond_signal(&cond);
+	slurm_cond_signal(&cond);
 	slurm_mutex_unlock(&lock);
 
 	if (pthread_join(tid, NULL) != 0) {

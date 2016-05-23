@@ -49,6 +49,7 @@
 #include "src/common/fd.h"
 #include "src/common/forward.h"
 #include "src/common/hostlist.h"
+#include "src/common/macros.h"
 #include "src/common/net.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
@@ -454,7 +455,7 @@ static message_thread_state_t *_msg_thr_create(int num_nodes, int num_tasks)
 	debug("Entering _msg_thr_create()");
 	mts = (message_thread_state_t *)xmalloc(sizeof(message_thread_state_t));
 	slurm_mutex_init(&mts->lock);
-	pthread_cond_init(&mts->cond, NULL);
+	slurm_cond_init(&mts->cond, NULL);
 	mts->tasks_started = bit_alloc(num_tasks);
 	mts->tasks_exited = bit_alloc(num_tasks);
 	mts->msg_handle = eio_handle_create(0);
@@ -494,7 +495,7 @@ static void _msg_thr_wait(message_thread_state_t *mts)
 	slurm_mutex_lock(&mts->lock);
 	while (bit_set_count(mts->tasks_exited)
 	       < bit_set_count(mts->tasks_started)) {
-		pthread_cond_wait(&mts->cond, &mts->lock);
+		slurm_cond_wait(&mts->cond, &mts->lock);
 	}
 	slurm_mutex_unlock(&mts->lock);
 }
@@ -504,8 +505,8 @@ static void _msg_thr_destroy(message_thread_state_t *mts)
 	eio_signal_shutdown(mts->msg_handle);
 	pthread_join(mts->msg_thread, NULL);
 	eio_handle_destroy(mts->msg_handle);
-	pthread_mutex_destroy(&mts->lock);
-	pthread_cond_destroy(&mts->cond);
+	slurm_mutex_destroy(&mts->lock);
+	slurm_cond_destroy(&mts->cond);
 	FREE_NULL_BITMAP(mts->tasks_started);
 	FREE_NULL_BITMAP(mts->tasks_exited);
 }
@@ -522,7 +523,7 @@ _launch_handler(message_thread_state_t *mts, slurm_msg_t *resp)
 		bit_set(mts->tasks_started, msg->task_ids[i]);
 	}
 
-	pthread_cond_signal(&mts->cond);
+	slurm_cond_signal(&mts->cond);
 	slurm_mutex_unlock(&mts->lock);
 
 }
@@ -566,7 +567,7 @@ _exit_handler(message_thread_state_t *mts, slurm_msg_t *exit_msg)
 		}
 	}
 
-	pthread_cond_signal(&mts->cond);
+	slurm_cond_signal(&mts->cond);
 	slurm_mutex_unlock(&mts->lock);
 }
 

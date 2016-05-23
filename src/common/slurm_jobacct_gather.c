@@ -221,7 +221,7 @@ static void *_watch_tasks(void *arg)
 	while (init_run && !jobacct_shutdown && acct_gather_profile_running) {
 		/* Do this until shutdown is requested */
 		slurm_mutex_lock(&acct_gather_profile_timer[type].notify_mutex);
-		pthread_cond_wait(
+		slurm_cond_wait(
 			&acct_gather_profile_timer[type].notify,
 			&acct_gather_profile_timer[type].notify_mutex);
 		slurm_mutex_unlock(&acct_gather_profile_timer[type].

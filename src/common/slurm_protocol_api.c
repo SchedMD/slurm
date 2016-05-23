@@ -57,9 +57,14 @@
 /* PROJECT INCLUDES */
 #include "src/common/assoc_mgr.h"
 #include "src/common/fd.h"
+#include "src/common/forward.h"
+#include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/msg_aggr.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_accounting_storage.h"
+#include "src/common/slurm_strcasestr.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/slurm_protocol_api.h"
@@ -68,12 +73,8 @@
 #include "src/common/slurm_route.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/log.h"
-#include "src/common/forward.h"
-#include "src/common/msg_aggr.h"
 #include "src/slurmdbd/read_config.h"
-#include "src/common/slurm_accounting_storage.h"
-#include "src/common/slurm_strcasestr.h"
+
 
 /* EXTERNAL VARIABLES */
 
@@ -3520,7 +3521,7 @@ int slurm_receive_msg_and_forward(slurm_fd_t fd, slurm_addr_t *orig_addr,
 		debug2("forwarding to %u", header.forward.cnt);
 		msg->forward_struct = xmalloc(sizeof(forward_struct_t));
 		slurm_mutex_init(&msg->forward_struct->forward_mutex);
-		pthread_cond_init(&msg->forward_struct->notify, NULL);
+		slurm_cond_init(&msg->forward_struct->notify, NULL);
 
 		msg->forward_struct->buf_len = remaining_buf(buffer);
 		msg->forward_struct->buf =

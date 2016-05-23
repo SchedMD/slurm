@@ -71,7 +71,6 @@
 #include "src/common/slurm_topology.h"
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
-#include "src/common/layouts_mgr.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/burst_buffer.h"
@@ -540,7 +539,7 @@ static void _throttle_start(int *active_rpc_cnt)
 			break;
 		}
 #if 1
-		pthread_cond_wait(&throttle_cond, &throttle_mutex);
+		slurm_cond_wait(&throttle_cond, &throttle_mutex);
 #else
 		/* While an RPC is being throttled due to a running RPC of the
 		 * same type, do not count that thread against the daemon's
@@ -548,7 +547,7 @@ static void _throttle_start(int *active_rpc_cnt)
 		 * in the slurmctld spawning so many pthreads that it exhausts
 		 * system resources and fails. */
 		server_thread_decr();
-		pthread_cond_wait(&throttle_cond, &throttle_mutex);
+		slurm_cond_wait(&throttle_cond, &throttle_mutex);
 		server_thread_incr();
 #endif
 	}
@@ -562,7 +561,7 @@ static void _throttle_fini(int *active_rpc_cnt)
 {
 	slurm_mutex_lock(&throttle_mutex);
 	(*active_rpc_cnt)--;
-	pthread_cond_broadcast(&throttle_cond);
+	slurm_cond_broadcast(&throttle_cond);
 	slurm_mutex_unlock(&throttle_mutex);
 }
 

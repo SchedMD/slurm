@@ -43,14 +43,14 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/macros.h"
 #include "src/common/msg_aggr.h"
-#include "src/common/xmalloc.h"
-#include "src/common/xstring.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_route.h"
-#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_interface.h"
-
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
 typedef struct {
@@ -85,7 +85,7 @@ static void _msg_aggr_free(void *x)
 {
 	msg_aggr_t *object = (msg_aggr_t *)x;
 	if (object) {
-		pthread_cond_destroy(&object->wait_cond);
+		slurm_cond_destroy(&object->wait_cond);
 		xfree(object);
 	}
 }
@@ -104,7 +104,7 @@ static msg_aggr_t *_handle_msg_aggr_ret(uint32_t msg_index, bool locked)
 		/* just remove them all */
 		if (!msg_index) {
 			/* make sure we don't wait any longer */
-			pthread_cond_signal(&msg_aggr->wait_cond);
+			slurm_cond_signal(&msg_aggr->wait_cond);
 			list_remove(itr);
 		} else if (msg_aggr->msg_index == msg_index) {
 			list_remove(itr);
@@ -204,7 +204,7 @@ static void * _msg_aggregation_sender(void *arg)
 
 	while (msg_collection.running) {
 		/* Wait for a new msg to be collected */
-		pthread_cond_wait(&msg_collection.cond, &msg_collection.mutex);
+		slurm_cond_wait(&msg_collection.cond, &msg_collection.mutex);
 
 
 		if (!msg_collection.running &&
@@ -219,8 +219,8 @@ static void * _msg_aggregation_sender(void *arg)
 		timeout.tv_sec += timeout.tv_nsec / 1000000000;
 		timeout.tv_nsec %= 1000000000;
 
-		pthread_cond_timedwait(&msg_collection.cond,
-				       &msg_collection.mutex, &timeout);
+		slurm_cond_timedwait(&msg_collection.cond,
+				     &msg_collection.mutex, &timeout);
 
 		if (!msg_collection.running &&
 		    !list_count(msg_collection.msg_list))
@@ -252,7 +252,7 @@ static void * _msg_aggregation_sender(void *arg)
 		FREE_NULL_LIST(cmp.msg_list);
 
 		/* Resume message collection */
-		pthread_cond_broadcast(&msg_collection.cond);
+		slurm_cond_broadcast(&msg_collection.cond);
 	}
 
 	slurm_mutex_unlock(&msg_collection.mutex);
@@ -275,7 +275,7 @@ extern void msg_aggr_sender_init(char *host, uint16_t port, uint64_t window,
 
 	slurm_mutex_lock(&msg_collection.mutex);
 	slurm_mutex_lock(&msg_collection.aggr_mutex);
-	pthread_cond_init(&msg_collection.cond, NULL);
+	slurm_cond_init(&msg_collection.cond, NULL);
 	slurm_set_addr(&msg_collection.node_addr, port, host);
 	msg_collection.window = window;
 	msg_collection.max_msg_cnt = max_msg_cnt;
@@ -320,13 +320,13 @@ extern void msg_aggr_sender_fini(void)
 	msg_collection.running = 0;
 	slurm_mutex_lock(&msg_collection.mutex);
 
-	pthread_cond_signal(&msg_collection.cond);
+	slurm_cond_signal(&msg_collection.cond);
 	slurm_mutex_unlock(&msg_collection.mutex);
 
 	pthread_join(msg_collection.thread_id, NULL);
 	msg_collection.thread_id = (pthread_t) 0;
 
-	pthread_cond_destroy(&msg_collection.cond);
+	slurm_cond_destroy(&msg_collection.cond);
 	/* signal and clear the waiting list */
 	slurm_mutex_lock(&msg_collection.aggr_mutex);
 	_handle_msg_aggr_ret(0, 1);
@@ -348,7 +348,7 @@ extern void msg_aggr_add_msg(slurm_msg_t *msg, bool wait,
 
 	slurm_mutex_lock(&msg_collection.mutex);
 	if (msg_collection.max_msgs == true) {
-		pthread_cond_wait(&msg_collection.cond, &msg_collection.mutex);
+		slurm_cond_wait(&msg_collection.cond, &msg_collection.mutex);
 	}
 
 	msg->msg_index = msg_index++;
@@ -361,12 +361,12 @@ extern void msg_aggr_add_msg(slurm_msg_t *msg, bool wait,
 
 	/* First msg in collection; initiate new window */
 	if (count == 1)
-		pthread_cond_signal(&msg_collection.cond);
+		slurm_cond_signal(&msg_collection.cond);
 
 	/* Max msgs reached; terminate window */
 	if (count >= msg_collection.max_msg_cnt) {
 		msg_collection.max_msgs = true;
-		pthread_cond_signal(&msg_collection.cond);
+		slurm_cond_signal(&msg_collection.cond);
 	}
 	slurm_mutex_unlock(&msg_collection.mutex);
 
@@ -378,7 +378,7 @@ extern void msg_aggr_add_msg(slurm_msg_t *msg, bool wait,
 
 		msg_aggr->msg_index = msg->msg_index;
 		msg_aggr->resp_callback = resp_callback;
-		pthread_cond_init(&msg_aggr->wait_cond, NULL);
+		slurm_cond_init(&msg_aggr->wait_cond, NULL);
 
 		slurm_mutex_lock(&msg_collection.aggr_mutex);
 		list_append(msg_collection.msg_aggr_list, msg_aggr);
@@ -454,7 +454,7 @@ extern void msg_aggr_resp(slurm_msg_t *msg)
 			if (msg_aggr->resp_callback &&
 			    (next_msg->msg_type != RESPONSE_SLURM_RC))
 				(*(msg_aggr->resp_callback))(next_msg);
-			pthread_cond_signal(&msg_aggr->wait_cond);
+			slurm_cond_signal(&msg_aggr->wait_cond);
 			slurm_mutex_unlock(&msg_collection.aggr_mutex);
 			break;
 		case RESPONSE_MESSAGE_COMPOSITE:

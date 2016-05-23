@@ -84,12 +84,13 @@
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
+#include "src/common/list.h"
+#include "src/common/macros.h"
+#include "src/common/node_select.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/node_select.h"
-#include "src/common/list.h"
 #include "src/slurmctld/slurmctld.h"
 
 /*
@@ -517,7 +518,7 @@ static void * _script_agent (void *args)
 		slurm_mutex_lock(&comp_list_mutex);
 
 		if (list_is_empty(comp_list) && !agent_exit)
-			pthread_cond_wait(&comp_list_cond, &comp_list_mutex);
+			slurm_cond_wait(&comp_list_cond, &comp_list_mutex);
 
 		/*
 		 * It is safe to unlock list mutex here. List has its
@@ -603,7 +604,7 @@ int slurm_jobcomp_log_record (struct job_record *record)
 
 	slurm_mutex_lock(&comp_list_mutex);
 	list_append(comp_list, job);
-	pthread_cond_broadcast(&comp_list_cond);
+	slurm_cond_broadcast(&comp_list_cond);
 	slurm_mutex_unlock(&comp_list_mutex);
 
 	return SLURM_SUCCESS;
@@ -626,7 +627,7 @@ static int _wait_for_thread (pthread_t thread_id)
 	int i;
 
 	for (i=0; i<20; i++) {
-		pthread_cond_broadcast(&comp_list_cond);
+		slurm_cond_broadcast(&comp_list_cond);
 		usleep(1000 * i);
 		if (pthread_kill(thread_id, 0))
 			return SLURM_SUCCESS;

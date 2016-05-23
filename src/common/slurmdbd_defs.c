@@ -327,7 +327,7 @@ extern int slurm_send_recv_slurmdbd_msg(uint16_t rpc_version,
 
 	free_buf(buffer);
 end_it:
-	pthread_cond_signal(&slurmdbd_cond);
+	slurm_cond_signal(&slurmdbd_cond);
 	slurm_mutex_unlock(&slurmdbd_lock);
 
 	return rc;
@@ -386,7 +386,7 @@ extern int slurm_send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 		rc = SLURM_ERROR;
 	}
 
-	pthread_cond_broadcast(&agent_cond);
+	slurm_cond_broadcast(&agent_cond);
 	slurm_mutex_unlock(&agent_lock);
 	return rc;
 }
@@ -2045,7 +2045,7 @@ static void _shutdown_agent(void)
 	if (agent_tid) {
 		agent_shutdown = time(NULL);
 		for (i=0; i<50; i++) {	/* up to 5 secs total */
-			pthread_cond_broadcast(&agent_cond);
+			slurm_cond_broadcast(&agent_cond);
 			usleep(100000);	/* 0.1 sec per try */
 			if (pthread_kill(agent_tid, SIGUSR1))
 				break;
@@ -2104,7 +2104,7 @@ static void *_agent(void *x)
 		/* START_TIMER; */
 		slurm_mutex_lock(&slurmdbd_lock);
 		if (halt_agent)
-			pthread_cond_wait(&slurmdbd_cond, &slurmdbd_lock);
+			slurm_cond_wait(&slurmdbd_cond, &slurmdbd_lock);
 
 		if ((slurmdbd_fd < 0) &&
 		    (difftime(time(NULL), fail_time) >= 10)) {
@@ -2124,8 +2124,8 @@ static void *_agent(void *x)
 			slurm_mutex_unlock(&slurmdbd_lock);
 			abs_time.tv_sec  = time(NULL) + 10;
 			abs_time.tv_nsec = 0;
-			(void) pthread_cond_timedwait(&agent_cond, &agent_lock,
-						      &abs_time);
+			slurm_cond_timedwait(&agent_cond, &agent_lock,
+					     &abs_time);
 			slurm_mutex_unlock(&agent_lock);
 			continue;
 		} else if ((cnt > 0) && ((cnt % 100) == 0))
@@ -2161,7 +2161,7 @@ static void *_agent(void *x)
 
 			slurm_mutex_lock(&assoc_cache_mutex);
 			if (slurmdbd_fd >= 0 && running_cache)
-				pthread_cond_signal(&assoc_cache_cond);
+				slurm_cond_signal(&assoc_cache_cond);
 			slurm_mutex_unlock(&assoc_cache_mutex);
 
 			continue;
@@ -2195,7 +2195,7 @@ static void *_agent(void *x)
 		slurm_mutex_unlock(&slurmdbd_lock);
 		slurm_mutex_lock(&assoc_cache_mutex);
 		if (slurmdbd_fd >= 0 && running_cache)
-			pthread_cond_signal(&assoc_cache_cond);
+			slurm_cond_signal(&assoc_cache_cond);
 		slurm_mutex_unlock(&assoc_cache_mutex);
 
 		slurm_mutex_lock(&agent_lock);

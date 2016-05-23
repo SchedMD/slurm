@@ -50,14 +50,15 @@
 #include "src/common/fd.h"
 #include "src/common/gres.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/uid.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/io.h"
@@ -271,8 +272,8 @@ stepd_step_rec_create(launch_tasks_request_msg_t *msg, uint16_t protocol_version
 	}
 
 	job->state = SLURMSTEPD_STEP_STARTING;
-	pthread_cond_init(&job->state_cond, NULL);
-	pthread_mutex_init(&job->state_mutex, NULL);
+	slurm_cond_init(&job->state_cond, NULL);
+	slurm_mutex_init(&job->state_mutex);
 	job->node_tasks	= msg->tasks_to_launch[nodeid];
 	i = sizeof(uint16_t) * msg->nnodes;
 	job->task_cnts  = xmalloc(i);
@@ -453,8 +454,8 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	job = xmalloc(sizeof(stepd_step_rec_t));
 
 	job->state = SLURMSTEPD_STEP_STARTING;
-	pthread_cond_init(&job->state_cond, NULL);
-	pthread_mutex_init(&job->state_mutex, NULL);
+	slurm_cond_init(&job->state_cond, NULL);
+	slurm_mutex_init(&job->state_mutex);
 	if (msg->cpus_per_node)
 		job->cpus    = msg->cpus_per_node[0];
 	job->node_tasks  = 1;

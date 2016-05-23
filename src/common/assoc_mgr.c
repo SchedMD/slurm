@@ -1858,7 +1858,7 @@ static void _wr_rdlock(assoc_mgr_lock_datatype_t datatype)
 			assoc_mgr_locks.entity[read_lock(datatype)]++;
 			break;
 		} else {	/* wait for state change and retry */
-			pthread_cond_wait(&locks_cond, &locks_mutex);
+			slurm_cond_wait(&locks_cond, &locks_mutex);
 		}
 	}
 	slurm_mutex_unlock(&locks_mutex);
@@ -1871,7 +1871,7 @@ static void _wr_rdunlock(assoc_mgr_lock_datatype_t datatype)
 	slurm_mutex_lock(&locks_mutex);
 	//info("read unlock on %d", datatype);
 	assoc_mgr_locks.entity[read_lock(datatype)]--;
-	pthread_cond_broadcast(&locks_cond);
+	slurm_cond_broadcast(&locks_cond);
 	slurm_mutex_unlock(&locks_mutex);
 }
 
@@ -1891,7 +1891,7 @@ static void _wr_wrlock(assoc_mgr_lock_datatype_t datatype)
 				entity[write_wait_lock(datatype)]--;
 			break;
 		} else {	/* wait for state change and retry */
-			pthread_cond_wait(&locks_cond, &locks_mutex);
+			slurm_cond_wait(&locks_cond, &locks_mutex);
 		}
 	}
 	slurm_mutex_unlock(&locks_mutex);
@@ -1904,7 +1904,7 @@ static void _wr_wrunlock(assoc_mgr_lock_datatype_t datatype)
 	slurm_mutex_lock(&locks_mutex);
 	//info("write unlock on %d", datatype);
 	assoc_mgr_locks.entity[write_lock(datatype)]--;
-	pthread_cond_broadcast(&locks_cond);
+	slurm_cond_broadcast(&locks_cond);
 	slurm_mutex_unlock(&locks_mutex);
 }
 

@@ -3500,7 +3500,7 @@ static void _fb_rdlock(void)
 			fb_read_lock++;
 			break;
 		} else {	/* wait for state change and retry */
-			pthread_cond_wait(&file_bcast_cond, &file_bcast_mutex);
+			slurm_cond_wait(&file_bcast_cond, &file_bcast_mutex);
 		}
 	}
 	slurm_mutex_unlock(&file_bcast_mutex);
@@ -3510,7 +3510,7 @@ static void _fb_rdunlock(void)
 {
 	slurm_mutex_lock(&file_bcast_mutex);
 	fb_read_lock--;
-	pthread_cond_broadcast(&file_bcast_cond);
+	slurm_cond_broadcast(&file_bcast_cond);
 	slurm_mutex_unlock(&file_bcast_mutex);
 }
 
@@ -3524,7 +3524,7 @@ static void _fb_wrlock(void)
 			fb_write_wait_lock--;
 			break;
 		} else {	/* wait for state change and retry */
-			pthread_cond_wait(&file_bcast_cond, &file_bcast_mutex);
+			slurm_cond_wait(&file_bcast_cond, &file_bcast_mutex);
 		}
 	}
 	slurm_mutex_unlock(&file_bcast_mutex);
@@ -3534,7 +3534,7 @@ static void _fb_wrunlock(void)
 {
 	slurm_mutex_lock(&file_bcast_mutex);
 	fb_write_lock--;
-	pthread_cond_broadcast(&file_bcast_cond);
+	slurm_cond_broadcast(&file_bcast_cond);
 	slurm_mutex_unlock(&file_bcast_mutex);
 }
 
@@ -5588,8 +5588,7 @@ static void *_prolog_timer(void *x)
 	slurm_mutex_lock(timer_struct->timer_mutex);
 	if (!timer_struct->prolog_fini) {
 		rc = pthread_cond_timedwait(timer_struct->timer_cond,
-					    timer_struct->timer_mutex,
-					    &ts);
+					    timer_struct->timer_mutex, &ts);
 	}
 	slurm_mutex_unlock(timer_struct->timer_mutex);
 
@@ -5666,7 +5665,7 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 	info("%s: run job script took %s", __func__, TIME_STR);
 	slurm_mutex_lock(&timer_mutex);
 	prolog_fini = true;
-	pthread_cond_broadcast(&timer_cond);
+	slurm_cond_broadcast(&timer_cond);
 	slurm_mutex_unlock(&timer_mutex);
 
 	diff_time = difftime(time(NULL), start_time);
@@ -5987,7 +5986,7 @@ _remove_starting_step(uint16_t type, void *req)
 			xfree(starting_step);
 
 			found = true;
-			pthread_cond_broadcast(&conf->starting_steps_cond);
+			slurm_cond_broadcast(&conf->starting_steps_cond);
 			break;
 		}
 	}
@@ -6041,8 +6040,8 @@ static int _wait_for_starting_step(uint32_t job_id, uint32_t step_id)
 		}
 		num_passes++;
 
-		pthread_cond_wait(&conf->starting_steps_cond,
-				  &conf->starting_steps_lock);
+		slurm_cond_wait(&conf->starting_steps_cond,
+				&conf->starting_steps_lock);
 	}
 	if (num_passes > 0) {
 		if (step_id != NO_VAL)
@@ -6119,7 +6118,7 @@ static void _remove_job_running_prolog(uint32_t job_id)
 			xfree(job_running_prolog);
 
 			found = true;
-			pthread_cond_broadcast(&conf->prolog_running_cond);
+			slurm_cond_broadcast(&conf->prolog_running_cond);
 			break;
 		}
 	}
@@ -6153,8 +6152,8 @@ static void _wait_for_job_running_prolog(uint32_t job_id)
 	slurm_mutex_lock(&conf->prolog_running_lock);
 
 	while (_prolog_is_running (job_id)) {
-		pthread_cond_wait(&conf->prolog_running_cond,
-				  &conf->prolog_running_lock);
+		slurm_cond_wait(&conf->prolog_running_cond,
+				&conf->prolog_running_lock);
 	}
 
 	slurm_mutex_unlock(&conf->prolog_running_lock);
@@ -6245,7 +6244,7 @@ static void _launch_complete_add(uint32_t job_id)
 			}
 		}
 	}
-	pthread_cond_signal(&job_state_cond);
+	slurm_cond_signal(&job_state_cond);
 	slurm_mutex_unlock(&job_state_mutex);
 	_launch_complete_log("job add", job_id);
 }
@@ -6327,8 +6326,8 @@ static void _launch_complete_wait(uint32_t job_id)
 			gettimeofday(&now, NULL);
 			timeout.tv_sec  = now.tv_sec + 1;
 			timeout.tv_nsec = now.tv_usec * 1000;
-			pthread_cond_timedwait(&job_state_cond,&job_state_mutex,
-					       &timeout);
+			slurm_cond_timedwait(&job_state_cond,&job_state_mutex,
+					     &timeout);
 			continue;
 		}
 		if (empty == -1)	/* Discard oldest job */

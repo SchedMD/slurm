@@ -46,22 +46,23 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "src/common/checkpoint.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/fd.h"
 #include "src/common/eio.h"
+#include "src/common/macros.h"
 #include "src/common/parse_time.h"
-#include "src/slurmd/common/proctrack.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_acct_gather.h"
 #include "src/common/stepd_api.h"
 #include "src/common/switch.h"
+#include "src/common/timers.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/checkpoint.h"
-#include "src/common/timers.h"
 
 #include "src/slurmd/common/core_spec_plugin.h"
+#include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/io.h"
 #include "src/slurmd/slurmstepd/mgr.h"
@@ -452,7 +453,7 @@ _handle_accept(void *arg)
 
 	slurm_mutex_lock(&message_lock);
 	message_connections--;
-	pthread_cond_signal(&message_cond);
+	slurm_cond_signal(&message_cond);
 	slurm_mutex_unlock(&message_lock);
 
 	debug3("Leaving  _handle_accept");
@@ -1377,7 +1378,7 @@ static void _wait_for_job_init(stepd_step_rec_t *job)
 			slurm_mutex_unlock(&job->state_mutex);
 			break;
 		}
-		pthread_cond_wait(&job->state_cond, &job->state_mutex);
+		slurm_cond_wait(&job->state_cond, &job->state_mutex);
 	}
 }
 
@@ -1643,14 +1644,14 @@ timeout:
 	 * perform this send. */
 	safe_write(fd, &rc, sizeof(int));
 	safe_write(fd, &errnum, sizeof(int));
-	pthread_cond_signal(&step_complete.cond);
+	slurm_cond_signal(&step_complete.cond);
 	slurm_mutex_unlock(&step_complete.lock);
 
 	return SLURM_SUCCESS;
 
 
 rwfail:	if (lock_set) {
-		pthread_cond_signal(&step_complete.cond);
+		slurm_cond_signal(&step_complete.cond);
 		slurm_mutex_unlock(&step_complete.lock);
 	}
 	return SLURM_FAILURE;

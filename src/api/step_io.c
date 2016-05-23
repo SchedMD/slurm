@@ -1252,7 +1252,7 @@ client_io_handler_destroy(client_io_t *cio)
 	/* FIXME - perhaps should make certain that IO engine is shutdown
 	   (by calling client_io_handler_finish()) before freeing anything */
 
-	pthread_mutex_destroy(&cio->ioservers_lock);
+	slurm_mutex_destroy(&cio->ioservers_lock);
 	FREE_NULL_BITMAP(cio->ioservers_ready_bits);
 	xfree(cio->ioserver); /* need to destroy the obj first? */
 	xfree(cio->listenport);

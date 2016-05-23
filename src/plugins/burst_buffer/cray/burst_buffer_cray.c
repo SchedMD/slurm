@@ -2581,7 +2581,7 @@ extern int init(void)
 {
 	pthread_attr_t attr;
 
-	pthread_mutex_init(&bb_state.bb_mutex, NULL);
+	slurm_mutex_init(&bb_state.bb_mutex);
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	bb_load_config(&bb_state, (char *)plugin_type); /* Removes "const" */
 	_test_config();
@@ -2628,7 +2628,7 @@ extern int fini(void)
 
 	slurm_mutex_lock(&bb_state.term_mutex);
 	bb_state.term_flag = true;
-	pthread_cond_signal(&bb_state.term_cond);
+	slurm_cond_signal(&bb_state.term_cond);
 	slurm_mutex_unlock(&bb_state.term_mutex);
 
 	if (bb_state.bb_thread) {

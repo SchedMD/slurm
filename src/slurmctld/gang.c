@@ -48,6 +48,7 @@
 #include "slurm/slurm.h"
 #include "src/common/bitstring.h"
 #include "src/common/list.h"
+#include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xstring.h"
@@ -1221,7 +1222,7 @@ extern int gs_fini(void)
 	if (thread_running) {
 		slurm_mutex_lock(&term_lock);
 		thread_shutdown = true;
-		pthread_cond_signal(&term_cond);
+		slurm_cond_signal(&term_cond);
 		slurm_mutex_unlock(&term_lock);
 		usleep(120000);
 		if (timeslicer_thread_id)
@@ -1614,7 +1615,7 @@ static void _slice_sleep(void)
 	ts.tv_nsec = now.tv_usec * 1000;
 	slurm_mutex_lock(&term_lock);
 	if (!thread_shutdown)
-		pthread_cond_timedwait(&term_cond, &term_lock, &ts);
+		slurm_cond_timedwait(&term_cond, &term_lock, &ts);
 	slurm_mutex_unlock(&term_lock);
 }
 

@@ -89,7 +89,7 @@ extern void stop_builtin_agent(void)
 {
 	slurm_mutex_lock(&term_lock);
 	stop_builtin = true;
-	pthread_cond_signal(&term_cond);
+	slurm_cond_signal(&term_cond);
 	slurm_mutex_unlock(&term_lock);
 }
 
@@ -103,7 +103,7 @@ static void _my_sleep(int secs)
 	ts.tv_nsec = now.tv_usec * 1000;
 	slurm_mutex_lock(&term_lock);
 	if (!stop_builtin)
-		pthread_cond_timedwait(&term_cond, &term_lock, &ts);
+		slurm_cond_timedwait(&term_cond, &term_lock, &ts);
 	slurm_mutex_unlock(&term_lock);
 }
 

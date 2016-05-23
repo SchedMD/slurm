@@ -921,8 +921,8 @@ extern void bb_sleep(bb_state_t *state_ptr, int add_secs)
 	ts.tv_nsec = tv.tv_usec * 1000;
 	slurm_mutex_lock(&state_ptr->term_mutex);
 	if (!state_ptr->term_flag) {
-		pthread_cond_timedwait(&state_ptr->term_cond,
-				       &state_ptr->term_mutex, &ts);
+		slurm_cond_timedwait(&state_ptr->term_cond,
+				     &state_ptr->term_mutex, &ts);
 	}
 	slurm_mutex_unlock(&state_ptr->term_mutex);
 }

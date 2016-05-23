@@ -46,6 +46,7 @@
 #include <fcntl.h>
 
 #include "src/common/slurm_xlator.h"	/* Must be first */
+#include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/slurmctld/burst_buffer.h"
@@ -990,7 +991,7 @@ static void _throttle_start(void)
 			active_post_nhc_cnt++;
 			break;
 		}
-		pthread_cond_wait(&throttle_cond, &throttle_mutex);
+		slurm_cond_wait(&throttle_cond, &throttle_mutex);
 	}
 	slurm_mutex_unlock(&throttle_mutex);
 	usleep(100);
@@ -999,7 +1000,7 @@ static void _throttle_fini(void)
 {
 	slurm_mutex_lock(&throttle_mutex);
 	active_post_nhc_cnt--;
-	pthread_cond_broadcast(&throttle_cond);
+	slurm_cond_broadcast(&throttle_cond);
 	slurm_mutex_unlock(&throttle_mutex);
 }
 

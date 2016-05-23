@@ -54,6 +54,7 @@
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/timers.h"
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
@@ -85,14 +86,14 @@ static void *_create_container_thread(void *args)
 
 	/* Signal the container_create we are done */
 	slurm_mutex_lock(&notify_mutex);
-	pthread_cond_signal(&notify);
+	slurm_cond_signal(&notify);
 	/* Don't unlock the notify_mutex here, wait, it is not needed
 	 * and can cause deadlock if done. */
 
 	/* Wait around for something else to be added and then exit
 	   when that takes place.
 	*/
-	pthread_cond_wait(&notify, &notify_mutex);
+	slurm_cond_wait(&notify, &notify_mutex);
 	slurm_mutex_unlock(&notify_mutex);
 
 	return NULL;
@@ -104,7 +105,7 @@ static void _end_container_thread(void)
 		/* This will end the thread and remove it from the container */
 		slurm_mutex_lock(&thread_mutex);
 		slurm_mutex_lock(&notify_mutex);
-		pthread_cond_signal(&notify);
+		slurm_cond_signal(&notify);
 		slurm_mutex_unlock(&notify_mutex);
 
 		pthread_join(threadid, NULL);
@@ -131,7 +132,7 @@ extern int fini(void)
 
 	/* free up some memory */
 	slurm_mutex_destroy(&notify_mutex);
-	pthread_cond_destroy(&notify);
+	slurm_cond_destroy(&notify);
 	slurm_mutex_destroy(&thread_mutex);
 
 	return SLURM_SUCCESS;
@@ -164,7 +165,7 @@ extern int proctrack_p_create(stepd_step_rec_t *job)
 		if (threadid) {
 			debug("Had a thread already 0x%08lx", threadid);
 			slurm_mutex_lock(&notify_mutex);
-			pthread_cond_wait(&notify, &notify_mutex);
+			slurm_cond_wait(&notify, &notify_mutex);
 			slurm_mutex_unlock(&notify_mutex);
 			debug("Last thread done 0x%08lx", threadid);
 		}
@@ -176,7 +177,7 @@ extern int proctrack_p_create(stepd_step_rec_t *job)
 		slurm_mutex_lock(&notify_mutex);
 		pthread_attr_init(&attr);
 		pthread_create(&threadid, &attr, _create_container_thread, job);
-		pthread_cond_wait(&notify, &notify_mutex);
+		slurm_cond_wait(&notify, &notify_mutex);
 		slurm_mutex_unlock(&notify_mutex);
 		slurm_mutex_unlock(&thread_mutex);
 

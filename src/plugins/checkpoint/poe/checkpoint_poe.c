@@ -57,6 +57,7 @@
 #include "src/common/slurm_xlator.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
@@ -164,7 +165,7 @@ extern int fini ( void )
 {
 	slurm_mutex_lock(&ckpt_agent_mutex);
 	ckpt_agent_stop = true;
-	pthread_cond_signal(&ckpt_agent_cond);
+	slurm_cond_signal(&ckpt_agent_cond);
 	slurm_mutex_unlock(&ckpt_agent_mutex);
 
 	if (ckpt_agent_tid && pthread_join(ckpt_agent_tid, NULL)) {
@@ -475,7 +476,7 @@ static void _my_sleep(int secs)
 	ts.tv_nsec = now.tv_usec * 1000;
 	slurm_mutex_lock(&ckpt_agent_mutex);
 	if (!ckpt_agent_stop)
-		pthread_cond_timedwait(&ckpt_agent_cond,&ckpt_agent_mutex,&ts);
+		slurm_cond_timedwait(&ckpt_agent_cond,&ckpt_agent_mutex,&ts);
 	slurm_mutex_unlock(&ckpt_agent_mutex);
 }
 

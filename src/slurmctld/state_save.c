@@ -99,7 +99,7 @@ extern void schedule_front_end_save(void)
 {
 	slurm_mutex_lock(&state_save_lock);
 	save_front_end++;
-	pthread_cond_broadcast(&state_save_cond);
+	slurm_cond_broadcast(&state_save_cond);
 	slurm_mutex_unlock(&state_save_lock);
 }
 
@@ -108,7 +108,7 @@ extern void schedule_job_save(void)
 {
 	slurm_mutex_lock(&state_save_lock);
 	save_jobs++;
-	pthread_cond_broadcast(&state_save_cond);
+	slurm_cond_broadcast(&state_save_cond);
 	slurm_mutex_unlock(&state_save_lock);
 }
 
@@ -117,7 +117,7 @@ extern void schedule_node_save(void)
 {
 	slurm_mutex_lock(&state_save_lock);
 	save_nodes++;
-	pthread_cond_broadcast(&state_save_cond);
+	slurm_cond_broadcast(&state_save_cond);
 	slurm_mutex_unlock(&state_save_lock);
 }
 
@@ -126,7 +126,7 @@ extern void schedule_part_save(void)
 {
 	slurm_mutex_lock(&state_save_lock);
 	save_parts++;
-	pthread_cond_broadcast(&state_save_cond);
+	slurm_cond_broadcast(&state_save_cond);
 	slurm_mutex_unlock(&state_save_lock);
 }
 
@@ -135,7 +135,7 @@ extern void schedule_resv_save(void)
 {
 	slurm_mutex_lock(&state_save_lock);
 	save_resv++;
-	pthread_cond_broadcast(&state_save_cond);
+	slurm_cond_broadcast(&state_save_cond);
 	slurm_mutex_unlock(&state_save_lock);
 }
 
@@ -144,7 +144,7 @@ extern void schedule_trigger_save(void)
 {
 	slurm_mutex_lock(&state_save_lock);
 	save_triggers++;
-	pthread_cond_broadcast(&state_save_cond);
+	slurm_cond_broadcast(&state_save_cond);
 	slurm_mutex_unlock(&state_save_lock);
 }
 
@@ -153,7 +153,7 @@ extern void shutdown_state_save(void)
 {
 	slurm_mutex_lock(&state_save_lock);
 	run_save_thread = false;
-	pthread_cond_broadcast(&state_save_cond);
+	slurm_cond_broadcast(&state_save_cond);
 	slurm_mutex_unlock(&state_save_lock);
 }
 
@@ -198,11 +198,11 @@ extern void *slurmctld_state_save(void *no_data)
 			} else if (save_count) { /* wait for a timeout */
 				struct timespec ts = {0, 0};
 				ts.tv_sec = now + 1;
-				pthread_cond_timedwait(&state_save_cond,
-				           	       &state_save_lock, &ts);
+				slurm_cond_timedwait(&state_save_cond,
+					  	     &state_save_lock, &ts);
 			} else {		/* wait for more work */
-				pthread_cond_wait(&state_save_cond,
-				           	  &state_save_lock);
+				slurm_cond_wait(&state_save_cond,
+					  	&state_save_lock);
 			}
 		}
 

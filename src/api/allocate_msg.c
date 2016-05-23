@@ -47,15 +47,16 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/eio.h"
+#include "src/common/fd.h"
+#include "src/common/forward.h"
+#include "src/common/net.h"
+#include "src/common/macros.h"
+#include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_common.h"
-#include "src/common/net.h"
-#include "src/common/fd.h"
-#include "src/common/forward.h"
 #include "src/common/xmalloc.h"
-#include "src/common/slurm_auth.h"
-#include "src/common/eio.h"
 #include "src/common/xsignal.h"
 
 struct allocation_msg_thread {
@@ -82,7 +83,7 @@ static void *_msg_thr_internal(void *arg)
 	debug("Entering _msg_thr_internal");
 	xsignal_block(signals);
 	slurm_mutex_lock(&msg_thr_start_lock);
-	pthread_cond_signal(&msg_thr_start_cond);
+	slurm_cond_signal(&msg_thr_start_cond);
 	slurm_mutex_unlock(&msg_thr_start_lock);
 	eio_handle_mainloop((eio_handle_t *)arg);
 	debug("Leaving _msg_thr_internal");
@@ -154,7 +155,7 @@ extern allocation_msg_thread_t *slurm_allocation_msg_thr_create(
 	slurm_attr_destroy(&attr);
 	/* Wait until the message thread has blocked signals
 	   before continuing. */
-	pthread_cond_wait(&msg_thr_start_cond, &msg_thr_start_lock);
+	slurm_cond_wait(&msg_thr_start_cond, &msg_thr_start_lock);
 	slurm_mutex_unlock(&msg_thr_start_lock);
 
 	return (allocation_msg_thread_t *)msg_thr;

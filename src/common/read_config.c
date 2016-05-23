@@ -2803,7 +2803,7 @@ slurm_conf_reinit(const char *file_name)
 extern void
 slurm_conf_mutex_init(void)
 {
-	pthread_mutex_init(&conf_lock, NULL);
+	slurm_mutex_init(&conf_lock);
 }
 
 extern void

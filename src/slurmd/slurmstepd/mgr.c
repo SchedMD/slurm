@@ -84,6 +84,7 @@
 #include "src/common/gres.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/plugstack.h"
 #include "src/common/safeopen.h"
@@ -970,7 +971,7 @@ static void _set_job_state(stepd_step_rec_t *job, slurmstepd_state_t new_state)
 {
 	slurm_mutex_lock(&job->state_mutex);
 	job->state = new_state;
-	pthread_cond_signal(&job->state_cond);
+	slurm_cond_signal(&job->state_cond);
 	slurm_mutex_unlock(&job->state_mutex);
 }
 

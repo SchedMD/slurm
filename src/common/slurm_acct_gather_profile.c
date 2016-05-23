@@ -53,15 +53,15 @@
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
 #include "src/common/read_config.h"
-#include "src/common/slurm_protocol_api.h"
-#include "src/common/xmalloc.h"
-#include "src/common/xstring.h"
+#include "src/common/slurm_acct_gather_infiniband.h"
 #include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/slurm_acct_gather_energy.h"
 #include "src/common/slurm_jobacct_gather.h"
-#include "src/common/slurm_acct_gather_infiniband.h"
 #include "src/common/slurm_strcasestr.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/timers.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 /* These 2 should remain the same. */
 #define SLEEP_TIME 1
@@ -174,7 +174,7 @@ static void *_timer_thread(void *args)
 			/* signal poller to start */
 			slurm_mutex_lock(&acct_gather_profile_timer[i].
 					 notify_mutex);
-			pthread_cond_signal(
+			slurm_cond_signal(
 				&acct_gather_profile_timer[i].notify);
 			slurm_mutex_unlock(&acct_gather_profile_timer[i].
 					   notify_mutex);
@@ -439,7 +439,7 @@ extern int acct_gather_profile_startpoll(char *freq, char *freq_def)
 	for (i=0; i < PROFILE_CNT; i++) {
 		memset(&acct_gather_profile_timer[i], 0,
 		       sizeof(acct_gather_profile_timer_t));
-		pthread_cond_init(&acct_gather_profile_timer[i].notify, NULL);
+		slurm_cond_init(&acct_gather_profile_timer[i].notify, NULL);
 		slurm_mutex_init(&acct_gather_profile_timer[i].notify_mutex);
 
 		switch (i) {
@@ -514,9 +514,9 @@ extern void acct_gather_profile_endpoll(void)
 	for (i=0; i < PROFILE_CNT; i++) {
 		/* end remote threads */
 		slurm_mutex_lock(&acct_gather_profile_timer[i].notify_mutex);
-		pthread_cond_signal(&acct_gather_profile_timer[i].notify);
+		slurm_cond_signal(&acct_gather_profile_timer[i].notify);
 		slurm_mutex_unlock(&acct_gather_profile_timer[i].notify_mutex);
-		pthread_cond_destroy(&acct_gather_profile_timer[i].notify);
+		slurm_cond_destroy(&acct_gather_profile_timer[i].notify);
 		acct_gather_profile_timer[i].freq = 0;
 		switch (i) {
 		case PROFILE_ENERGY:

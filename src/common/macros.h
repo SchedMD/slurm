@@ -46,7 +46,7 @@
 #include <stdbool.h>		/* for bool type */
 #include <stddef.h>		/* for NULL */
 #include <stdlib.h>		/* for abort() */
-
+#include <string.h>		/* for strerror() */
 #include "src/common/log.h"	/* for error() */
 
 #ifndef MAX
@@ -111,7 +111,64 @@
 #  define __NORETURN_ATTR			((void)0)
 #endif /* __GNUC__ */
 
-#define slurm_mutex_init(mutex)					\
+#define slurm_cond_init(cond, cont_attr)				\
+	do {								\
+		int err = pthread_cond_init(cond, cont_attr);		\
+		if (err) {						\
+			fatal("%s:%d %s: pthread_cond_init(): %m",	\
+				__FILE__, __LINE__, __func__);		\
+			abort();					\
+		}							\
+	} while (0)
+
+#define slurm_cond_signal(cond)					\
+	do {								\
+		int err = pthread_cond_signal(cond);			\
+		if (err) {						\
+			error("%s:%d %s: pthread_cond_signal(): %m",	\
+				__FILE__, __LINE__, __func__);		\
+		}							\
+	} while (0)
+
+#define slurm_cond_broadcast(cond)					\
+	do {								\
+		int err = pthread_cond_broadcast(cond);			\
+		if (err) {						\
+			error("%s:%d %s: pthread_cond_broadcast(): %m",	\
+				__FILE__, __LINE__, __func__);		\
+		}							\
+	} while (0)
+
+#define slurm_cond_wait(cond, mutex)					\
+	do {								\
+		int err = pthread_cond_wait(cond, mutex);		\
+		if (err) {						\
+			error("%s:%d %s: pthread_cond_wait(): %m",	\
+				__FILE__, __LINE__, __func__);		\
+		}							\
+	} while (0)
+
+#define slurm_cond_timedwait(cond, mutex, abstime)			\
+	do {								\
+		int err = pthread_cond_timedwait(cond, mutex, abstime);	\
+		if (err) {						\
+			debug("%s:%d %s: pthread_cond_timedwait(): %s",	\
+				__FILE__, __LINE__, __func__,		\
+				strerror(err));				\
+		}							\
+	} while (0)
+
+#define slurm_cond_destroy(cond)					\
+	do {								\
+		int err = pthread_cond_destroy(cond);			\
+		if (err) {						\
+			error("%s:%d %s: pthread_cond_destroy(): %m",	\
+				__FILE__, __LINE__, __func__);		\
+		}							\
+	} while (0)
+
+
+#define slurm_mutex_init(mutex)						\
 	do {								\
 		int err = pthread_mutex_init(mutex, NULL);		\
 		if (err) {						\

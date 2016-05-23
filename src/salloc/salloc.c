@@ -451,7 +451,7 @@ int main(int argc, char *argv[])
 	if (allocation_state == REVOKED) {
 		error("Allocation was revoked for job %u before command could "
 		      "be run", alloc->job_id);
-		pthread_cond_broadcast(&allocation_state_cond);
+		slurm_cond_broadcast(&allocation_state_cond);
 		slurm_mutex_unlock(&allocation_state_lock);
 		if (slurm_complete_job(alloc->job_id, status) != 0) {
 			error("Unable to clean up allocation for job %u: %m",
@@ -460,7 +460,7 @@ int main(int argc, char *argv[])
 		return 1;
  	}
 	allocation_state = GRANTED;
-	pthread_cond_broadcast(&allocation_state_cond);
+	slurm_cond_broadcast(&allocation_state_cond);
 	slurm_mutex_unlock(&allocation_state_lock);
 
 	/*  Ensure that salloc has initial terminal foreground control.  */
@@ -480,9 +480,9 @@ int main(int argc, char *argv[])
 	}
 	slurm_mutex_lock(&allocation_state_lock);
 	if (suspend_flag)
-		pthread_cond_wait(&allocation_state_cond, &allocation_state_lock);
+		slurm_cond_wait(&allocation_state_cond, &allocation_state_lock);
 	command_pid = _fork_command(command_argv);
-	pthread_cond_broadcast(&allocation_state_cond);
+	slurm_cond_broadcast(&allocation_state_cond);
 	slurm_mutex_unlock(&allocation_state_lock);
 
 	/*
@@ -524,7 +524,7 @@ relinquish:
 		slurm_mutex_lock(&allocation_state_lock);
 		allocation_state = REVOKED;
 	}
-	pthread_cond_broadcast(&allocation_state_cond);
+	slurm_cond_broadcast(&allocation_state_cond);
 	slurm_mutex_unlock(&allocation_state_lock);
 
 	slurm_free_resource_allocation_response_msg(alloc);
@@ -894,7 +894,7 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
 			}
 		}
 		allocation_state = REVOKED;
-		pthread_cond_broadcast(&allocation_state_cond);
+		slurm_cond_broadcast(&allocation_state_cond);
 		slurm_mutex_unlock(&allocation_state_lock);
 		/*
 		 * Clean up child process: only if the forked process has not

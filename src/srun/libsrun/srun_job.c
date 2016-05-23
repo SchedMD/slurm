@@ -54,20 +54,21 @@
 
 #include "src/common/bitstring.h"
 #include "src/common/cbuf.h"
+#include "src/common/fd.h"
+#include "src/common/forward.h"
 #include "src/common/hostlist.h"
+#include "src/common/io_hdr.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/plugstack.h"
+#include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_rlimits_info.h"
+#include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
-#include "src/common/io_hdr.h"
-#include "src/common/forward.h"
-#include "src/common/fd.h"
-#include "src/common/uid.h"
-#include "src/common/proc_args.h"
 
 #include "src/api/step_launch.h"
 
@@ -723,7 +724,7 @@ update_job_state(srun_job_t *job, srun_job_state_t state)
 	slurm_mutex_lock(&job->state_mutex);
 	if (job->state < state) {
 		job->state = state;
-		pthread_cond_signal(&job->state_cond);
+		slurm_cond_signal(&job->state_cond);
 
 	}
 	slurm_mutex_unlock(&job->state_mutex);
@@ -801,7 +802,7 @@ _job_create_structure(allocation_info_t *ainfo)
 	debug2("creating job with %d tasks", opt.ntasks);
 
 	slurm_mutex_init(&job->state_mutex);
-	pthread_cond_init(&job->state_cond, NULL);
+	slurm_cond_init(&job->state_cond, NULL);
 	job->state = SRUN_JOB_INIT;
 
  	job->alias_list = xstrdup(ainfo->alias_list);

@@ -51,10 +51,11 @@
 #include <syslog.h>
 
 #include "src/common/slurm_xlator.h"
+#include "src/common/fd.h"
+#include "src/common/macros.h"
+#include "src/common/net.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/net.h"
-#include "src/common/fd.h"
 
 /*
  *  2008-07-03:
@@ -2386,7 +2387,7 @@ mvapich_state_create(const mpi_plugin_client_info_t *job)
 	state->shutdown_complete = false;
 
 	slurm_mutex_init(&state->shutdown_lock);
-	pthread_cond_init(&state->shutdown_cond, NULL);
+	slurm_cond_init(&state->shutdown_cond, NULL);
 
 	*(state->job) = *job;
 
@@ -2401,7 +2402,7 @@ static void mvapich_state_destroy(mvapich_state_t *st)
 	close(st->shutdown_pipe[1]);
 
 	slurm_mutex_destroy(&st->shutdown_lock);
-	pthread_cond_destroy(&st->shutdown_cond);
+	slurm_cond_destroy(&st->shutdown_cond);
 
 	xfree(st);
 }
@@ -2535,7 +2536,7 @@ extern int mvapich_thr_destroy(mvapich_state_t *st)
 					if (time(NULL) >= ts.tv_sec) {
 						break;
 					}
-					pthread_cond_timedwait(
+					slurm_cond_timedwait(
 						&st->shutdown_cond,
 						&st->shutdown_lock, &ts);
 				}
@@ -2556,7 +2557,7 @@ void mvapich_thr_exit(mvapich_state_t *st)
 
 	st->shutdown_complete = true;
 
-	pthread_cond_signal(&st->shutdown_cond);
+	slurm_cond_signal(&st->shutdown_cond);
 	slurm_mutex_unlock(&st->shutdown_lock);
 
 	pthread_exit(NULL);

@@ -171,7 +171,7 @@ static void *_msg_thread(void *x)
 
 	slurm_mutex_lock(&agent_mutex);
 	agent_cnt--;
-	pthread_cond_signal(&agent_cond);
+	slurm_cond_signal(&agent_cond);
 	slurm_mutex_unlock(&agent_mutex);
 	xfree(x);
 	return NULL;
@@ -237,7 +237,7 @@ static void *_agent(void *x)
 
 		slurm_mutex_lock(&agent_mutex);
 		while (agent_cnt >= agent_max_cnt)
-			pthread_cond_wait(&agent_cond, &agent_mutex);
+			slurm_cond_wait(&agent_cond, &agent_mutex);
 		agent_cnt++;
 		slurm_mutex_unlock(&agent_mutex);
 
@@ -268,7 +268,7 @@ static void *_agent(void *x)
 	/* wait for completion of all outgoing message */
 	slurm_mutex_lock(&agent_mutex);
 	while (agent_cnt > 0)
-		pthread_cond_wait(&agent_cond, &agent_mutex);
+		slurm_cond_wait(&agent_cond, &agent_mutex);
 	slurm_mutex_unlock(&agent_mutex);
 	slurm_attr_destroy(&attr);
 

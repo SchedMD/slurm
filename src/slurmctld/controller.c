@@ -620,7 +620,7 @@ int main(int argc, char *argv[])
 			 * to wait for current info from the database */
 			slurm_mutex_lock(&assoc_cache_mutex);
 			running_cache = (uint16_t)NO_VAL;
-			pthread_cond_signal(&assoc_cache_cond);
+			slurm_cond_signal(&assoc_cache_cond);
 			slurm_mutex_unlock(&assoc_cache_mutex);
 			pthread_join(assoc_cache_thread, NULL);
 		}
@@ -1151,8 +1151,8 @@ static bool _wait_for_server_thread(void)
 				}
 				print_it = false;
 			}
-			pthread_cond_wait(&server_thread_cond,
-					  &slurmctld_config.thread_count_lock);
+			slurm_cond_wait(&server_thread_cond,
+					&slurmctld_config.thread_count_lock);
 		}
 	}
 	slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
@@ -1167,7 +1167,7 @@ extern void server_thread_decr(void)
 		slurmctld_config.server_thread_count--;
 	else
 		error("slurmctld_config.server_thread_count underflow");
-	pthread_cond_broadcast(&server_thread_cond);
+	slurm_cond_broadcast(&server_thread_cond);
 	slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 }
 
@@ -1717,7 +1717,7 @@ static void *_slurmctld_background(void *no_data)
 			ts.tv_nsec = now.tv_usec * 1000;
 			slurm_mutex_lock(&slurmctld_config.thread_count_lock);
 			while (slurmctld_config.server_thread_count > 0) {
-				pthread_cond_timedwait(&server_thread_cond,
+				slurm_cond_timedwait(&server_thread_cond,
 					&slurmctld_config.thread_count_lock,
 					&ts);
 			}
@@ -2694,7 +2694,7 @@ static void *_assoc_cache_mgr(void *no_data)
 
 	while (running_cache == 1) {
 		slurm_mutex_lock(&assoc_cache_mutex);
-		pthread_cond_wait(&assoc_cache_cond, &assoc_cache_mutex);
+		slurm_cond_wait(&assoc_cache_cond, &assoc_cache_mutex);
 		/* This is here to see if we are exiting.  If we get
 		   NO_VAL then just return since we are closing down.
 		*/

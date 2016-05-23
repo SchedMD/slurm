@@ -52,6 +52,7 @@
 
 #include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
@@ -648,7 +649,7 @@ static void *_ckpt_agent_thr(void *arg)
 	/* only perform ckpt operation of ONE JOB */
 	slurm_mutex_lock(&ckpt_agent_mutex);
 	while (ckpt_agent_jobid && ckpt_agent_jobid != req->job_id) {
-		pthread_cond_wait(&ckpt_agent_cond, &ckpt_agent_mutex);
+		slurm_cond_wait(&ckpt_agent_cond, &ckpt_agent_mutex);
 	}
 	ckpt_agent_jobid = req->job_id;
 	ckpt_agent_count ++;
@@ -703,7 +704,7 @@ static void *_ckpt_agent_thr(void *arg)
 	ckpt_agent_count --;
 	if (ckpt_agent_count == 0) {
 		ckpt_agent_jobid = 0;
-		pthread_cond_broadcast(&ckpt_agent_cond);
+		slurm_cond_broadcast(&ckpt_agent_cond);
 	}
 	slurm_mutex_unlock(&ckpt_agent_mutex);
 	_ckpt_req_free(req);

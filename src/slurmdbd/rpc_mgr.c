@@ -507,8 +507,7 @@ static int _wait_for_server_thread(void)
 				}
 				print_it = false;
 			}
-			pthread_cond_wait(&thread_count_cond,
-			                  &thread_count_lock);
+			slurm_cond_wait(&thread_count_cond, &thread_count_lock);
 		}
 	}
 	slurm_mutex_unlock(&thread_count_lock);
@@ -537,7 +536,7 @@ static void _free_server_thread(pthread_t my_tid)
 			error("Could not find slave_thread_id");
 	}
 
-	pthread_cond_broadcast(&thread_count_cond);
+	slurm_cond_broadcast(&thread_count_cond);
 	slurm_mutex_unlock(&thread_count_lock);
 }
 

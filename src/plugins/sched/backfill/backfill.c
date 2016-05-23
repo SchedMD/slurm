@@ -446,7 +446,7 @@ extern void stop_backfill_agent(void)
 {
 	slurm_mutex_lock(&term_lock);
 	stop_backfill = true;
-	pthread_cond_signal(&term_cond);
+	slurm_cond_signal(&term_cond);
 	slurm_mutex_unlock(&term_lock);
 }
 
@@ -483,7 +483,7 @@ static uint32_t _my_sleep(int usec)
 	ts.tv_nsec = nsec % 1000000000;
 	slurm_mutex_lock(&term_lock);
 	if (!stop_backfill)
-		pthread_cond_timedwait(&term_cond, &term_lock, &ts);
+		slurm_cond_timedwait(&term_cond, &term_lock, &ts);
 	slurm_mutex_unlock(&term_lock);
 	if (gettimeofday(&tv2, NULL))
 		return usec;

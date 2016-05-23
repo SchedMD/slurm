@@ -54,6 +54,7 @@
 
 #include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/timers.h"
 #include "src/common/xmalloc.h"
@@ -1251,7 +1252,7 @@ static void _my_sleep(int add_secs)
 	ts.tv_nsec = tv.tv_usec * 1000;
 	slurm_mutex_lock(&term_lock);
 	if (!stop_power)
-		pthread_cond_timedwait(&term_cond, &term_lock, &ts);
+		slurm_cond_timedwait(&term_cond, &term_lock, &ts);
 	slurm_mutex_unlock(&term_lock);
 }
 
@@ -1702,7 +1703,7 @@ static void _stop_power_agent(void)
 {
 	slurm_mutex_lock(&term_lock);
 	stop_power = true;
-	pthread_cond_signal(&term_cond);
+	slurm_cond_signal(&term_cond);
 	slurm_mutex_unlock(&term_lock);
 }
 
