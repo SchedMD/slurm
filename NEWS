@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
     mutliple threads with the same name. Now displays thread name and id.
  -- Change how Slurm determines the NUMA count of a node. Ignore KNL NUMA
     that only include memory.
+ -- Cray - Fix node list parsing in capmc_suspend/resume programs.
 
 * Changes in Slurm 16.05.0rc2
 =============================
