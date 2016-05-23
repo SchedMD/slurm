@@ -65,14 +65,16 @@ int val_to_char(int v)
 		return -1;
 }
 
-char *cpuset_to_str(const cpu_set_t *mask, char *str)
+static char *_cpuset_to_str(const cpu_set_t *mask, char *str, int size)
 {
-	int base;
+	int base, cnt;
 	char *ptr = str;
 	char *ret = NULL;
 
 	for (base = CPU_SETSIZE - 4; base >= 0; base -= 4) {
 		char val = 0;
+		if (++cnt >= size)
+			break;
 		if (CPU_ISSET(base, mask))
 			val |= 1;
 		if (CPU_ISSET(base + 1, mask))
@@ -108,7 +110,7 @@ static uint64_t _mask_to_int(cpu_set_t *mask)
 
 int main (int argc, char **argv)
 {
-	char mask_str[512], *task_str;
+	char mask_str[2048], *task_str;
 	cpu_set_t mask;
 	int task_id;
 
@@ -123,6 +125,7 @@ int main (int argc, char **argv)
 	/* NOTE: The uint64_t number is subject to overflow if there are
 	 * >64 CPUs on a compute node, but the hex value will be valid */
 	printf("TASK_ID:%d,MASK:%"PRIu64":0x%s\n", task_id,
-	       _mask_to_int(&mask), cpuset_to_str(&mask, mask_str));
+	       _mask_to_int(&mask),
+	       _cpuset_to_str(&mask, mask_str, sizeof(mask_str)));
 	exit(0);
 }
