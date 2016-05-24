@@ -202,6 +202,7 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 			assoc->max_submit_jobs = INFINITE;
 		if (assoc->max_wall_pj == NO_VAL)
 			assoc->max_wall_pj = INFINITE;
+		/* fall through */
 	case SLURMDB_MODIFY_ASSOC:
 	case SLURMDB_REMOVE_ASSOC:
 		xassert(((slurmdb_assoc_rec_t *)object)->cluster);
@@ -225,6 +226,7 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 			qos->max_submit_jobs_pu = INFINITE;
 		if (qos->max_wall_pj == NO_VAL)
 			qos->max_wall_pj = INFINITE;
+		/* fall through */
 	case SLURMDB_MODIFY_QOS:
 	case SLURMDB_REMOVE_QOS:
 		update_object->objects = list_create(
@@ -247,6 +249,7 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 	case SLURMDB_ADD_RES:
 		xassert(((slurmdb_res_rec_t *)object)->name);
 		xassert(((slurmdb_res_rec_t *)object)->server);
+		/* fall through */
 	case SLURMDB_MODIFY_RES:
 	case SLURMDB_REMOVE_RES:
 		xassert(((slurmdb_res_rec_t *)object)->id != NO_VAL);
