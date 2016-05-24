@@ -14,6 +14,7 @@ documents those changes that are of interest to users and administrators.
  -- Change how Slurm determines the NUMA count of a node. Ignore KNL NUMA
     that only include memory.
  -- Cray - Fix node list parsing in capmc_suspend/resume programs.
+ -- Fix sbatch #BSUB parsing for -W and -M options.
 
 * Changes in Slurm 16.05.0rc2
 =============================

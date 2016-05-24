@@ -1961,7 +1961,7 @@ static void _set_bsub_options(int argc, char **argv) {
 			break;
 		case 'M':
 			opt.mem_per_cpu = xstrntol(optarg,
-						   NULL, sizeof(optarg), 10);
+						   NULL, strlen(optarg), 10);
 			break;
 		case 'n':
 			opt.ntasks_set = true;
@@ -1994,7 +1994,7 @@ static void _set_bsub_options(int argc, char **argv) {
 			break;
 		case 'W':
 			opt.time_limit = xstrntol(optarg, NULL,
-						  sizeof(optarg), 10);
+						  strlen(optarg), 10);
 			break;
 		case 'x':
 			opt.shared = 0;
