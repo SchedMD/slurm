@@ -38,6 +38,7 @@
 
 #include <grp.h>
 #include <errno.h>
+#include <getopt.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,7 +51,6 @@
 
 #include "slurm/slurm_errno.h"
 
-#include "src/common/getopt.h"
 #include "src/common/hostlist.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_socket_common.h"
