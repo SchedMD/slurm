@@ -36,6 +36,7 @@ documents those changes that are of interest to users and administrators.
  -- Prevent wrong error message from spank plugin stack on GLOB_NOSPACE error.
  -- Fix proctrack/lua plugin to prevent possible deadlock.
  -- Prevent infinite loop in slurmstepd if execve fails.
+ -- Prevent multiple responses to REQUEST_UPDATE_JOB_STEP message.
 
 * Changes in Slurm 15.08.11
 ===========================
