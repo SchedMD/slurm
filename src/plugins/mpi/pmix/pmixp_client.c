@@ -74,7 +74,7 @@ static void op_callbk(pmix_status_t status, void *cbdata)
 static void errhandler_reg_callbk(pmix_status_t status, int errhandler_ref,
 		void *cbdata)
 {
-	PMIXP_ERROR("Error handler registration calback is called with status=%d, ref=%d",
+	PMIXP_DEBUG("Error handler registration callback is called with status=%d, ref=%d",
 		    status, errhandler_ref);
 }
 
