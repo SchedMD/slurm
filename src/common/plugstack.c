@@ -609,6 +609,7 @@ static int _spank_conf_include (struct spank_stack *stack,
 		break;
 	  case GLOB_NOSPACE:
 		errno = ENOMEM;
+		break;
 	  case GLOB_ABORTED:
 		verbose ("%s:%d: cannot read dir %s: %m",
 			file, lineno, pattern);

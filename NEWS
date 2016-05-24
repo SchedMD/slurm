@@ -33,6 +33,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix CFULL_BLOCK distribution type.
  -- Prevent sbatch from trying to enable debug messages when using job arrays.
  -- Prevent sbcast from enabling "--preserve" when specifying a jobid.
+ -- Prevent wrong error message from spank plugin stack on GLOB_NOSPACE error.
 
 * Changes in Slurm 15.08.11
 ===========================
