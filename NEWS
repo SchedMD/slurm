@@ -19,6 +19,7 @@ documents those changes that are of interest to users and administrators.
  -- Change how Slurm determines the NUMA count of a node. Ignore KNL NUMA
     that only include memory.
  -- Cray - Fix node list parsing in capmc_suspend/resume programs.
+ -- Fix sbatch #BSUB parsing for -W and -M options.
 
 * Changes in Slurm 16.05.0rc2
 =============================
@@ -278,6 +279,8 @@ documents those changes that are of interest to users and administrators.
  -- Prevent sbatch from trying to enable debug messages when using job arrays.
  -- Prevent sbcast from enabling "--preserve" when specifying a jobid.
  -- Prevent wrong error message from spank plugin stack on GLOB_NOSPACE error.
+ -- Fix proctrack/lua plugin to prevent possible deadlock.
+ -- Prevent infinite loop in slurmstepd if execve fails.
 
 * Changes in Slurm 15.08.11
 ===========================

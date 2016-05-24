@@ -2806,7 +2806,7 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *job,
 		while (1) {
 			execve(path, argv, env);
 			error("execve(%s): %m", path);
-			if ((errno == ENFILE) || (errno = ENOMEM)) {
+			if ((errno == ENFILE) || (errno == ENOMEM)) {
 				/* System limit on open files or memory reached,
 				 * retry after short delay */
 				sleep(1);
