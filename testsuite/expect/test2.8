@@ -43,13 +43,18 @@ set job_id2     0
 print_header $test_id
 
 set select_type [test_select_type]
+set def_part_name [default_partition]
+set nb_nodes [get_node_cnt_in_part $def_part_name]
 if {![string compare $select_type "bluegene"]} {
 	set is_bluegene 1
 } elseif {![string compare $select_type "linear"]} {
-	set def_part_name [default_partition]
-	set nb_nodes [get_node_cnt_in_part $def_part_name]
 	if {$nb_nodes < 2} {
 		send_user "\nWARNING: This test is incompatible with select/linear and only one node\n"
+		exit $exit_code
+	}
+} elseif {[default_part_exclusive]} {
+	if {$nb_nodes < 2} {
+		send_user "\nWARNING: This test is incompatible with exclusive node allocations and only one node\n"
 		exit $exit_code
 	}
 }
