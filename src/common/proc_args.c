@@ -163,6 +163,7 @@ void set_distribution(task_dist_states_t distribution,
 		case SLURM_DIST_CYCLIC_CFULL_BLOCK:
 			*dist      = "cyclic:fcyclic:block";
 			*lllp_dist = "fcyclic:block";
+			break;
 		case SLURM_DIST_CYCLIC_CFULL_CFULL:
 			*dist      = "cyclic:fcyclic:fcyclic";
 			*lllp_dist = "fcyclic:fcyclic";

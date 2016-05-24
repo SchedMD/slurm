@@ -547,6 +547,7 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_ARRAY_INX:
 		xfree(opt.array_inx);
 		opt.array_inx = xstrdup(val);
+		break;
 
 	case OPT_DEBUG:
 		if (val[0] != '\0') {
