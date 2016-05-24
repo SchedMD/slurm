@@ -310,6 +310,7 @@ static int _update_node_filesystem(void)
 		if (dataset_id == SLURM_ERROR) {
 			error("FileSystem: Failed to create the dataset "
 			      "for Lustre");
+			slurm_mutex_unlock(&lustre_lock);
 			return SLURM_ERROR;
 		}
 
