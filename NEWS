@@ -31,6 +31,7 @@ documents those changes that are of interest to users and administrators.
     up leaving the connection open and create a situation where the next message
     sent could receive the response of the first one.
  -- Fix CFULL_BLOCK distribution type.
+ -- Prevent sbatch from trying to enable debug messages when using job arrays.
 
 * Changes in Slurm 15.08.11
 ===========================
