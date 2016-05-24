@@ -1115,6 +1115,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_update_job_step_msg((step_update_request_msg_t *)
 					  msg->data, buffer,
 					  msg->protocol_version);
+		break;
 	case REQUEST_JOB_END_TIME:
 	case REQUEST_JOB_ALLOCATION_INFO:
 	case REQUEST_JOB_ALLOCATION_INFO_LITE:
