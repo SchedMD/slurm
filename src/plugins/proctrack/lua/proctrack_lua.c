@@ -464,7 +464,7 @@ uint64_t proctrack_p_find (pid_t pid)
 	lua_pop (L, -1);
 
 out:
-	slurm_mutex_lock (&lua_lock);
+	slurm_mutex_unlock (&lua_lock);
 	return (id);
 }
 

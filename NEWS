@@ -274,6 +274,8 @@ documents those changes that are of interest to users and administrators.
  -- Prevent sbatch from trying to enable debug messages when using job arrays.
  -- Prevent sbcast from enabling "--preserve" when specifying a jobid.
  -- Prevent wrong error message from spank plugin stack on GLOB_NOSPACE error.
+ -- Fix proctrack/lua plugin to prevent possible deadlock.
+ -- Prevent infinite loop in slurmstepd if execve fails.
 
 * Changes in Slurm 15.08.11
 ===========================
