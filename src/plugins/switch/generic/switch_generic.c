@@ -703,7 +703,7 @@ extern int switch_p_get_jobinfo(switch_jobinfo_t *switch_job,
 	sw_gen_ifa_t *ifa_ptr;
 	int i, s;
 	int bufsize = 1024;
-	char *buf = xmalloc(bufsize);
+	char *buf;
 
 #if defined(__FreeBSD__)
 #define IFNAMSIZ 16
@@ -725,6 +725,7 @@ extern int switch_p_get_jobinfo(switch_jobinfo_t *switch_job,
 		return SLURM_ERROR;
 	}
 
+	buf = xmalloc(bufsize);
 	s = snprintf(buf, bufsize, "(%s", node_ptr->node_name);
 	/* appends in buf triplets (ifname,ipversion,address) */
 	for (i = 0; i < node_ptr->ifa_cnt; i++) {
