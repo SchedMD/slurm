@@ -125,8 +125,6 @@ int main (int argc, char *argv[])
 		case 'h':
 			print_fields_have_header = 0;
 			break;
-			exit(exit_code);
-			break;
 		case 'l':
 			long_flag = 1;
 			break;
