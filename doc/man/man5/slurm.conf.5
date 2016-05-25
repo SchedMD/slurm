@@ -375,9 +375,6 @@ The slurmctld daemon must be restarted for a change in \fBCheckpointType\fR
 to take effect. Supported values presently include:
 .RS
 .TP 18
-\fBcheckpoint/aix\fR
-for IBM AIX systems only
-.TP
 \fBcheckpoint/blcr\fR
 Berkeley Lab Checkpoint Restart (BLCR).
 NOTE: If a file is found at sbin/scch (relative to the Slurm installation
@@ -983,9 +980,8 @@ The default value is unlimited (zero) and may not exceed 65533 seconds.
 .TP
 \fBJobAcctGatherType\fR
 The job accounting mechanism type.
-Acceptable values at present include "jobacct_gather/aix" (for AIX operating
-system), "jobacct_gather/linux" (for Linux operating system),
-"jobacct_gather/cgroup" and "jobacct_gather/none"
+Acceptable values at present include "jobacct_gather/linux" (for Linux
+systems), "jobacct_gather/cgroup" and "jobacct_gather/none"
 (no accounting data collected).
 The default value is "jobacct_gather/none".
 "jobacct_gather/cgroup" is a plugin for the Linux operating system
@@ -994,7 +990,7 @@ following statistics: From the cgroup memory subsystem: memory.usage_in_bytes
 (reported as 'pages') and rss from memory.stat (reported as 'rss'). From the
 cgroup cpuacct subsystem: user cpu time and system cpu time. No value
 is provided by cgroups for virtual memory size ('vsize').
-In order to use the \fBsstat\fR tool, "jobacct_gather/aix", "jobacct_gather/linux",
+In order to use the \fBsstat\fR tool "jobacct_gather/linux",
 or "jobacct_gather/cgroup" must be configured.
 .br
 \fBNOTE:\fR Changing this configuration parameter changes the contents of
@@ -1979,9 +1975,6 @@ NOTE: The \fBJobContainerType\fR applies to a job allocation, while
 Acceptable values at present include:
 .RS
 .TP 20
-\fBproctrack/aix\fR
-which uses an AIX kernel extension and is the default for AIX systems
-.TP
 \fBproctrack/cgroup\fR
 which uses linux cgroups to constrain and track processes.
 NOTE: see "man cgroup.conf" for configuration details

@@ -22,8 +22,6 @@ The major type must be &quot;jobacct_gather.&quot;
 The minor type can be any suitable name
 for the type of accounting package. We currently use
 <ul>
-<li><b>aix</b>&#151; Gathers information from AIX /proc table and adds this
-information to the standard rusage information also gathered for each job.
 <li><b>cgroup</b>&#151;Gathers information from Linux cgroup
 infrastructure and adds this information to the standard rusage
 information also gathered for each job. (Experimental, not to be used
