@@ -495,11 +495,6 @@ extern int new_ba_request(select_ba_request_t* ba_request)
 			      __LINE__, geo[X], geo[Y], geo[Z],
 			      ba_request->size);
 
-/* Having the functions pow and powf on an aix system doesn't seem to
- * link well, so since this is only for aix and this doesn't really
- * need to be there just don't allow this extra calculation.
- */
-#ifndef HAVE_AIX
 		/* see if We can find a cube or square root of the
 		   size to make an easy cube */
 		for(i=0; i<cluster_dims-1; i++) {
@@ -534,7 +529,6 @@ extern int new_ba_request(select_ba_request_t* ba_request)
 				      __LINE__, geo[X], geo[Y], geo[Z],
 				      ba_request->size);
 		}
-#endif //HAVE_AIX
 	}
 
 endit:

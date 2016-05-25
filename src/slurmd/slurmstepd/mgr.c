@@ -44,10 +44,6 @@
 #  include <sys/prctl.h>
 #endif
 
-#ifdef HAVE_AIX
-#  undef HAVE_UNSETENV
-#  include <sys/checkpnt.h>
-#endif
 #ifndef HAVE_UNSETENV
 #  include "src/common/unsetenv.h"
 #endif
@@ -1676,9 +1672,6 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 			 */
 			FREE_NULL_LIST (exec_wait_list);
 
-#ifdef HAVE_AIX
-			(void) mkcrid(0);
-#endif
 			/* jobacctinfo_endpoll();
 			 * closing jobacct files here causes deadlock */
 

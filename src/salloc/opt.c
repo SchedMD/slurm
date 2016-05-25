@@ -1656,11 +1656,6 @@ static bool _opt_verify(void)
 		exit(error_exit);
 	}
 
-#ifdef HAVE_AIX
-	if (opt.network == NULL)
-		opt.network = "us,sn_all,bulk_xfer";
-#endif
-
 #ifdef HAVE_NATIVE_CRAY
 	if (opt.network && opt.shared)
 		fatal("Requesting network performance counters requires "
@@ -2133,11 +2128,6 @@ static void _help(void)
 	spank_print_options(stdout, 6, 30);
 
 	printf("\n"
-#ifdef HAVE_AIX				/* AIX/Federation specific options */
-"AIX related options:\n"
-"      --network=type          communication protocol to be used\n"
-"\n"
-#endif
 #ifdef HAVE_NATIVE_CRAY			/* Native Cray specific options */
 "Cray related options:\n"
 "      --network=type          Use network performace counters\n"

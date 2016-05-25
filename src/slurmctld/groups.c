@@ -88,9 +88,7 @@ extern uid_t *get_group_members(char *group_name)
 	uid_t *group_uids = NULL, my_uid;
 	gid_t my_gid;
 	int buflen = PW_BUF_SIZE, i, j, res, uid_cnt;
-#ifdef HAVE_AIX
-	FILE *fp = NULL;
-#elif defined (__APPLE__) || defined (__CYGWIN__)
+#if defined (__APPLE__) || defined (__CYGWIN__)
 #else
 	char pw_buffer[PW_BUF_SIZE];
 	struct passwd pw;
@@ -158,21 +156,7 @@ extern uid_t *get_group_members(char *group_name)
 	 * databases), the rest of this function essentially does
 	 * nothing.  */
 
-#ifdef HAVE_AIX
-	setgrent_r(&fp);
-	while (1) {
-		slurm_seterrno(0);
-		res = getgrent_r(&grp, grp_buffer, buflen, &fp);
-		if (res != 0) {
-			if (errno == ERANGE) {
-				buflen *= 2;
-				xrealloc(grp_buffer, buflen);
-				continue;
-			}
-			break;
-		}
-		grp_result = &grp;
-#elif defined (__APPLE__) || defined (__CYGWIN__)
+#if defined (__APPLE__) || defined (__CYGWIN__)
 	setgrent();
 	while (1) {
 		if ((grp_result = getgrent()) == NULL)
@@ -221,12 +205,6 @@ extern uid_t *get_group_members(char *group_name)
 			}
 		}
 	}
-#ifdef HAVE_AIX
-	endgrent_r(&fp);
-	setpwent_r(&fp);
-	while (!getpwent_r(&pw, pw_buffer, PW_BUF_SIZE, &fp)) {
-		pwd_result = &pw;
-#else
 	endgrent();
 	setpwent();
 #if defined (__sun)
@@ -235,7 +213,6 @@ extern uid_t *get_group_members(char *group_name)
 	while ((pwd_result = getpwent()) != NULL) {
 #else
 	while (!getpwent_r(&pw, pw_buffer, PW_BUF_SIZE, &pwd_result)) {
-#endif
 #endif
 		/* At eof FreeBSD returns 0 unlike Linux
 		 * which returns ENOENT.
@@ -250,11 +227,7 @@ extern uid_t *get_group_members(char *group_name)
 		}
 		group_uids[j++] = pwd_result->pw_uid;
 	}
-#ifdef HAVE_AIX
-	endpwent_r(&fp);
-#else
 	endpwent();
-#endif
 	xfree(grp_buffer);
 	_put_group_cache(group_name, group_uids, j);
 	_log_group_members(group_name, group_uids);

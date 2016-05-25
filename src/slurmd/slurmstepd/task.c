@@ -55,10 +55,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#ifdef HAVE_AIX
-#  include <sys/checkpnt.h>
-#endif
-
 /* FIXME: Come up with a real solution for EUID instead of substituting RUID */
 #if defined(__NetBSD__)
 #define eaccess(p,m) (access((p),(m)))

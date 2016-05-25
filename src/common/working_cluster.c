@@ -119,9 +119,6 @@ extern uint32_t slurmdb_setup_cluster_flags(void)
 #ifdef HAVE_BGQ
 	cluster_flags |= CLUSTER_FLAG_BGQ;
 #endif
-#ifdef HAVE_AIX
-	cluster_flags |= CLUSTER_FLAG_AIX;
-#endif
 #ifdef MULTIPLE_SLURMD
 	cluster_flags |= CLUSTER_FLAG_MULTSD;
 #endif

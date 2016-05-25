@@ -2742,21 +2742,6 @@ _signal_jobstep(uint32_t jobid, uint32_t stepid, uid_t req_uid,
 		goto done2;
 	}
 
-#ifdef HAVE_AIX
-#  ifdef SIGMIGRATE
-#    ifdef SIGSOUND
-	/* SIGMIGRATE and SIGSOUND are used to initiate job checkpoint on AIX.
-	 * These signals are not sent to the entire process group, but just a
-	 * single process, namely the PMD. */
-	if (signal == SIGMIGRATE || signal == SIGSOUND) {
-		rc = stepd_signal_task_local(fd, protocol_version,
-					     signal, 0);
-		goto done2;
-	}
-#    endif
-#  endif
-#endif
-
 	rc = stepd_signal_container(fd, protocol_version, signal);
 	if (rc == -1)
 		rc = ESLURMD_JOB_NOTRUNNING;
@@ -4780,7 +4765,6 @@ _rpc_terminate_batch_job(uint32_t job_id, uint32_t user_id, char *node_name)
 		nsteps = _kill_all_active_steps(job_id, SIGTERM, true);
 	}
 
-#ifndef HAVE_AIX
 	if ((nsteps == 0) && !conf->epilog) {
 		slurm_cred_begin_expiration(conf->vctx, job_id);
 		save_cred_state(conf->vctx);
@@ -4790,7 +4774,6 @@ _rpc_terminate_batch_job(uint32_t job_id, uint32_t user_id, char *node_name)
 		_launch_complete_rm(job_id);
 		return;
 	}
-#endif
 
 	/*
 	 *  Check for corpses
@@ -4953,9 +4936,7 @@ _rpc_complete_batch(slurm_msg_t *msg)
 static void
 _rpc_terminate_job(slurm_msg_t *msg)
 {
-#ifndef HAVE_AIX
 	bool		have_spank = false;
-#endif
 	int             rc     = SLURM_SUCCESS;
 	kill_job_msg_t *req    = msg->data;
 	uid_t           uid    = g_slurm_auth_get_uid(msg->auth_cred,
@@ -5060,7 +5041,6 @@ _rpc_terminate_job(slurm_msg_t *msg)
 		nsteps = _kill_all_active_steps(req->job_id, SIGTERM, true);
 	}
 
-#ifndef HAVE_AIX
 	if ((nsteps == 0) && !conf->epilog) {
 		struct stat stat_buf;
 		if (conf->plugstack && (stat(conf->plugstack, &stat_buf) == 0))
@@ -5101,7 +5081,6 @@ _rpc_terminate_job(slurm_msg_t *msg)
 		_launch_complete_rm(req->job_id);
 		return;
 	}
-#endif
 
 	/*
 	 *  At this point, if connection still open, we send controller

@@ -28,14 +28,7 @@
 
 #include "config.h"
 
-#if defined(HAVE_AIX)
-/* AIX defines a func_data macro which conflicts with func_data
- * variable names in the gtk.h headers */
-#  undef func_data
-#  include <gtk/gtk.h>
-#else
-#  include <gtk/gtk.h>
-#endif
+#include <gtk/gtk.h>
 
 void sview_thread_init(gpointer vtable);
 GThread *sview_thread_new(GThreadFunc func, gpointer data,

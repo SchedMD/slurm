@@ -49,11 +49,7 @@
 #include "src/common/checkpoint.h"
 #include "src/common/slurm_protocol_api.h"
 
-#ifdef HAVE_AIX
-  char *__progname = "PROGRAM";
-#else
-  extern char * __progname;
-#endif
+extern char * __progname;
 
 static int _handle_rc_msg(slurm_msg_t *msg);
 static int _checkpoint_op (uint16_t op, uint16_t data,

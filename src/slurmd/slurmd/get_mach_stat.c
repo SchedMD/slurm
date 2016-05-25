@@ -63,7 +63,7 @@
 #include <string.h>
 #include <syslog.h>
 
-#if defined(HAVE_AIX) || defined(__sun) || defined(__APPLE__)
+#if defined(__sun) || defined(__APPLE__)
 #  include <sys/times.h>
 #  include <sys/types.h>
 #elif defined(__NetBSD__) || defined(__FreeBSD__)
@@ -232,7 +232,7 @@ get_tmp_disk(uint32_t *tmp_disk, char *tmp_fs)
 
 extern int get_up_time(uint32_t *up_time)
 {
-#if defined(HAVE_AIX) || defined(__sun) || defined(__APPLE__) || defined(__NetBSD__) || defined(__FreeBSD__)
+#if defined(__sun) || defined(__APPLE__) || defined(__NetBSD__) || defined(__FreeBSD__)
 	clock_t tm;
 	struct tms buf;
 
@@ -285,7 +285,7 @@ extern int get_up_time(uint32_t *up_time)
 
 extern int get_cpu_load(uint32_t *cpu_load)
 {
-#if defined(HAVE_AIX) || defined(__sun) || defined(__APPLE__) || defined(__NetBSD__) || defined(__FreeBSD__)
+#if defined(__sun) || defined(__APPLE__) || defined(__NetBSD__) || defined(__FreeBSD__)
 	/* Not sure how to get CPU load on above systems.
 	 * Perhaps some method below works. */
 	*cpu_load = 0;
@@ -323,7 +323,7 @@ extern int get_cpu_load(uint32_t *cpu_load)
 
 extern int get_free_mem(uint32_t *free_mem)
 {
-#if defined(HAVE_AIX) || defined(__sun) || defined(__APPLE__) || defined(__NetBSD__) || defined(__FreeBSD__) || defined(__CYGWIN__)
+#if defined(__sun) || defined(__APPLE__) || defined(__NetBSD__) || defined(__FreeBSD__) || defined(__CYGWIN__)
 	/* Not sure how to get CPU load on above systems.
 	 * Perhaps some method below works. */
 	*free_mem = 0;

@@ -1803,13 +1803,6 @@ static void _opt_args(int argc, char **argv)
 		xfree(launch_type);
 	}
 
-#ifdef HAVE_AIX
-	if (opt.network == NULL) {
-		opt.network = "us,sn_all,bulk_xfer";
-		setenv("SLURM_NETWORK", opt.network, 1);
-	}
-#endif
-
 #ifdef HAVE_NATIVE_CRAY
 	/* only fatal on the allocation */
 	if (opt.network && opt.shared && (opt.jobid == NO_VAL))
@@ -2877,7 +2870,7 @@ static void _help(void)
 	spank_print_options(stdout, 6, 30);
 
 	printf("\n"
-#if defined HAVE_AIX || defined HAVE_LIBNRT /* IBM PE specific options */
+#if defined HAVE_LIBNRT /* IBM PE specific options */
 "PE related options:\n"
 "      --network=type          communication protocol to be used\n"
 "\n"

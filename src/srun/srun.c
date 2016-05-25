@@ -40,10 +40,6 @@
 
 #include "config.h"
 
-#ifdef HAVE_AIX
-#  undef HAVE_UNSETENV
-#  include <sys/checkpnt.h>
-#endif
 #ifndef HAVE_UNSETENV
 #  include "src/common/unsetenv.h"
 #endif
