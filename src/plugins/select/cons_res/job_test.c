@@ -1068,6 +1068,8 @@ static uint32_t _gres_sock_job_test(List job_gres_list, List node_gres_list,
 	 * the overhead/time and complexity reasonable, we only consider
 	 * using consecutive sockets. */
 	avail_cores = xmalloc(sizeof(uint32_t) * sock_cnt);
+	if (s_p_n == 0)
+		s_p_n = 1;	/* job needs at least 1 socket */
 	for (i = 0; i <= (sock_cnt - s_p_n); i++) {
 		for (j = 1; j < s_p_n; j++)
 			bit_or(sock_core_bitmap[i], sock_core_bitmap[i+j]);
