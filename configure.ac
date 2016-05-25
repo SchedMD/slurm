@@ -208,9 +208,6 @@ AC_CHECK_FUNCS( \
 
 AC_CHECK_DECLS([hstrerror, strsignal, sys_siglist])
 
-AC_CHECK_FUNCS(unsetenv, [have_unsetenv=yes])
-AM_CONDITIONAL(HAVE_UNSETENV, test "x$have_unsetenv" = "xyes")
-
 ACX_PTHREAD([], AC_MSG_ERROR([Error: Cannot figure out how to use pthreads!]))
 
 LDFLAGS="$LDFLAGS "

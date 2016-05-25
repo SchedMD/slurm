@@ -44,10 +44,6 @@
 #  include <sys/prctl.h>
 #endif
 
-#ifndef HAVE_UNSETENV
-#  include "src/common/unsetenv.h"
-#endif
-
 #include <grp.h>
 #include <poll.h>
 #include <pthread.h>

@@ -10,14 +10,6 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-if HAVE_UNSETENV
-build_unsetenv_src =
-extra_unsetenv_src = unsetenv.c unsetenv.h
-else
-build_unsetenv_src = unsetenv.c unsetenv.h
-extra_unsetenv_src =
-endif
-
 AM_CPPFLAGS     = -I$(top_srcdir) $(BG_INCLUDES)
 
 noinst_PROGRAMS = libcommon.o libeio.o libspank.o
@@ -104,7 +96,6 @@ libcommon_la_SOURCES = 			\
 	slurm_topology.c slurm_topology.h \
 	switch.c switch.h		\
 	macros.h			\
-	$(build_unsetenv_src)		\
 	slurm_selecttype_info.c 	\
 	slurm_selecttype_info.h		\
 	slurm_resource_info.c 		\
@@ -135,7 +126,6 @@ libcommon_la_SOURCES = 			\
 	siphash24.c siphash_slurm.c siphash.h
 
 EXTRA_libcommon_la_SOURCES = 		\
-	$(extra_unsetenv_src)		\
 	uthash/LICENSE			\
 	uthash/README			\
 	uthash/uthash.h

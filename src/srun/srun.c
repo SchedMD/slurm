@@ -40,10 +40,6 @@
 
 #include "config.h"
 
-#ifndef HAVE_UNSETENV
-#  include "src/common/unsetenv.h"
-#endif
-
 #include <ctype.h>
 #include <fcntl.h>
 #include <grp.h>

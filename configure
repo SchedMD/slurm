@@ -781,8 +781,6 @@ PTHREAD_CFLAGS
 PTHREAD_LIBS
 PTHREAD_CC
 ax_pthread_config
-HAVE_UNSETENV_FALSE
-HAVE_UNSETENV_TRUE
 LIBOBJS
 WITH_JSON_PARSER_FALSE
 WITH_JSON_PARSER_TRUE
@@ -20102,26 +20100,6 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-for ac_func in unsetenv
-do :
-  ac_fn_c_check_func "$LINENO" "unsetenv" "ac_cv_func_unsetenv"
-if test "x$ac_cv_func_unsetenv" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_UNSETENV 1
-_ACEOF
- have_unsetenv=yes
-fi
-done
-
- if test "x$have_unsetenv" = "xyes"; then
-  HAVE_UNSETENV_TRUE=
-  HAVE_UNSETENV_FALSE='#'
-else
-  HAVE_UNSETENV_TRUE='#'
-  HAVE_UNSETENV_FALSE=
-fi
-
-
 
 
 ac_ext=c
@@ -25600,10 +25578,6 @@ fi
 
 if test -z "${WITH_JSON_PARSER_TRUE}" && test -z "${WITH_JSON_PARSER_FALSE}"; then
   as_fn_error $? "conditional \"WITH_JSON_PARSER\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${HAVE_UNSETENV_TRUE}" && test -z "${HAVE_UNSETENV_FALSE}"; then
-  as_fn_error $? "conditional \"HAVE_UNSETENV\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_OFED_TRUE}" && test -z "${BUILD_OFED_FALSE}"; then
