@@ -38,7 +38,6 @@ generated_html = \
 	gres_plugins.html \
 	hdf5_profile_user_guide.html \
 	high_throughput.html \
-	ibm.html \
 	ibm-pe.html \
 	intel_knl.html \
 	jobacct_gatherplugins.html \
