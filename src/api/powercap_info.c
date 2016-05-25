@@ -99,40 +99,27 @@ extern int slurm_load_powercap(powercap_info_msg_t **resp)
 extern void slurm_print_powercap_info_msg(FILE * out, powercap_info_msg_t *ptr,
 					  int one_liner)
 {
-	char tmp_line[512];
 	char *out_buf = NULL;
 
 	if (ptr->power_cap == 0) {
 		/****** Line 1 ******/
-		snprintf(tmp_line, sizeof(tmp_line),
-			 "Powercapping disabled by configuration."
-			 " See PowerParameters in `man slurm.conf'");
-		xstrcat(out_buf, tmp_line);
-		xstrcat(out_buf, "\n");
+		xstrcat(out_buf, "Powercapping disabled by configuration."
+			" See PowerParameters in `man slurm.conf'\n");
 		fprintf(out, "%s", out_buf);
 		xfree(out_buf);
 	} else {
 		/****** Line 1 ******/
-		snprintf(tmp_line, sizeof(tmp_line),
-			 "MinWatts=%u CurrentWatts=%u ",
-			 ptr->min_watts, ptr->cur_max_watts);
-		xstrcat(out_buf, tmp_line);
+		xstrfmtcat(out_buf, "MinWatts=%u CurrentWatts=%u ",
+			   ptr->min_watts, ptr->cur_max_watts);
 		if (ptr->power_cap == INFINITE) {
-			snprintf(tmp_line, sizeof(tmp_line),
-				 "PowerCap=INFINITE ");
+			xstrcat(out_buf, "PowerCap=INFINITE ");
 		} else {
-			snprintf(tmp_line, sizeof(tmp_line),
-				 "PowerCap=%u ", ptr->power_cap);
+			xstrfmtcat(out_buf, "PowerCap=%u ", ptr->power_cap);
 		}
-		xstrcat(out_buf, tmp_line);
-		snprintf(tmp_line, sizeof(tmp_line),
-			 "PowerFloor=%u PowerChangeRate=%u",
-			 ptr->power_floor, ptr->power_change);
-		xstrcat(out_buf, tmp_line);
-		snprintf(tmp_line, sizeof(tmp_line),
-			 "AdjustedMaxWatts=%u MaxWatts=%u",
-			 ptr->adj_max_watts, ptr->max_watts);
-		xstrcat(out_buf, tmp_line);
+		xstrfmtcat(out_buf, "PowerFloor=%u PowerChangeRate=%u",
+			   ptr->power_floor, ptr->power_change);
+		xstrfmtcat(out_buf, "AdjustedMaxWatts=%u MaxWatts=%u",
+			   ptr->adj_max_watts, ptr->max_watts);
 
 		xstrcat(out_buf, "\n");
 		fprintf(out, "%s", out_buf);
