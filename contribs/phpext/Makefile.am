@@ -2,11 +2,7 @@ AUTOMAKE_OPTIONS = foreign
 php_dir=slurm_php
 phpize=/usr/bin/phpize
 
-if HAVE_AIX
-config_line=CC="$(CC)" CCFLAGS="-g -static $(CFLAGS) $(CPPFLAGS)" ./configure
-else
 config_line=CC="$(CC)" LD="$(CC) $(CFLAGS) $(LDFLAGS)" CCFLAGS="-g -static $(CFLAGS)" CFLAGS="$(CFLAGS)" CPPFLAGS="$(CPPFLAGS)" ./configure
-endif
 
 all-local:
 	@cd $(php_dir) && \

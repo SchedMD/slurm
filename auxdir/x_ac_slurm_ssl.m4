@@ -28,13 +28,7 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
     [
   	tryssldir=$withval
 
-  	# Hack around a libtool bug on AIX.
-  	# libcrypto is in a non-standard library path on AIX (/opt/freeware
-  	# which is specified with --with-ssl), and libtool is not setting
-  	# the correct runtime library path in the binaries.
-  	if test "x$ac_have_aix" = "xyes"; then
-  		SSL_LIB_TEST="-lcrypto-static"
-	elif test "x$ac_have_nrt" = "xyes"; then
+	if test "x$ac_have_nrt" = "xyes"; then
 		# it appears on p7 machines the openssl doesn't
 		# link correctly so we need to add -ldl
 		SSL_LIB_TEST="$SSL_LIB_TEST -ldl"

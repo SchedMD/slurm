@@ -9,7 +9,6 @@
 # --enable-salloc-background %_with_salloc_background 1  on a cray system alloc salloc
 #                                               to execute as a background process.
 # --prefix           %_prefix             path  install path for commands, libraries, etc.
-# --with aix         %_with_aix           1     build aix RPM
 # --with auth_none   %_with_auth_none     1     build auth-none RPM
 # --with blcr        %_with_blcr          1     require blcr support
 # --with bluegene    %_with_bluegene      1     build bluegene RPM
@@ -70,11 +69,6 @@
 # Build with PAM by default on linux
 %ifos linux
 %slurm_with_opt pam
-%endif
-
-# Define with_aix on AIX systems (for proctrack)
-%ifos aix5.3
-%slurm_with_opt aix
 %endif
 
 %slurm_without_opt sgijob
@@ -173,12 +167,7 @@ BuildRequires: glib2-devel
 BuildRequires: pkgconfig
 %endif
 
-%ifnos aix5.3
-# FIXME: AIX can't seem to find this even though this is in existance there.
-# We should probably figure out a better way of doing this, but for now we
-# just won't look for it on AIX.
 BuildRequires: perl(ExtUtils::MakeMaker)
-%endif
 
 %description
 Slurm is an open source, fault-tolerant, and highly
@@ -227,12 +216,7 @@ scheduling and accounting modules
 # sure we get the correct installdir
 %define _perlarch %(perl -e 'use Config; $T=$Config{installsitearch}; $P=$Config{installprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;')
 
-# AIX doesn't always give the correct install prefix here for mans
-%ifos aix5.3
-%define _perlman3 %(perl -e 'use Config; $T=$Config{installsiteman3dir}; $P=$Config{siteprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; $P="/usr/share"; $T =~ s/$P//; print $T;')
-%else
 %define _perlman3 %(perl -e 'use Config; $T=$Config{installsiteman3dir}; $P=$Config{siteprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;')
-%endif
 
 %define _perlarchlib %(perl -e 'use Config; $T=$Config{installarchlib}; $P=$Config{installprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;')
 
@@ -340,17 +324,6 @@ Group: Development/System
 Requires: slurm-perlapi
 %description slurmdb-direct
 Wrappers to write directly to the slurmdb
-
-%if %{slurm_with aix}
-%package aix
-Summary: Slurm interfaces to IBM AIX
-Group: System Environment/Base
-Requires: slurm
-BuildRequires: proctrack >= 3
-Obsoletes: slurm-aix-federation
-%description aix
-Slurm interfaces for IBM AIX systems
-%endif
 
 %if %{slurm_with percs}
 %package percs
@@ -476,22 +449,18 @@ rm -rf "$RPM_BUILD_ROOT"
 DESTDIR="$RPM_BUILD_ROOT" %__make install
 DESTDIR="$RPM_BUILD_ROOT" %__make install-contrib
 
-%ifos aix5.3
-   mv ${RPM_BUILD_ROOT}%{_bindir}/srun ${RPM_BUILD_ROOT}%{_sbindir}
-%else
-   if [ -d /etc/init.d ]; then
-      install -D -m755 etc/init.d.slurm    $RPM_BUILD_ROOT/etc/init.d/slurm
-      install -D -m755 etc/init.d.slurmdbd $RPM_BUILD_ROOT/etc/init.d/slurmdbd
-      mkdir -p "$RPM_BUILD_ROOT/usr/sbin"
-      ln -s ../../etc/init.d/slurm    $RPM_BUILD_ROOT/usr/sbin/rcslurm
-      ln -s ../../etc/init.d/slurmdbd $RPM_BUILD_ROOT/usr/sbin/rcslurmdbd
-   fi
-   if [ -d /usr/lib/systemd/system ]; then
-      install -D -m644 etc/slurmctld.service $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmctld.service
-      install -D -m644 etc/slurmd.service    $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmd.service
-      install -D -m644 etc/slurmdbd.service  $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmdbd.service
-   fi
-%endif
+if [ -d /etc/init.d ]; then
+   install -D -m755 etc/init.d.slurm    $RPM_BUILD_ROOT/etc/init.d/slurm
+   install -D -m755 etc/init.d.slurmdbd $RPM_BUILD_ROOT/etc/init.d/slurmdbd
+   mkdir -p "$RPM_BUILD_ROOT/usr/sbin"
+   ln -s ../../etc/init.d/slurm    $RPM_BUILD_ROOT/usr/sbin/rcslurm
+   ln -s ../../etc/init.d/slurmdbd $RPM_BUILD_ROOT/usr/sbin/rcslurmdbd
+fi
+if [ -d /usr/lib/systemd/system ]; then
+   install -D -m644 etc/slurmctld.service $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmctld.service
+   install -D -m644 etc/slurmd.service    $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmd.service
+   install -D -m644 etc/slurmdbd.service  $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmdbd.service
+fi
 
 # Do not package Slurm's version of libpmi on Cray systems.
 # Cray's version of libpmi should be used.
@@ -669,11 +638,6 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/launch_runjob.so &&
 
 %endif
 
-LIST=./aix.files
-touch $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/proctrack_aix.so      &&
-  echo %{_libdir}/slurm/proctrack_aix.so               >> $LIST
-
 LIST=./percs.files
 touch $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/checkpoint_poe.so	&&
@@ -791,9 +755,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/slurmctld
 %{_sbindir}/slurmd
 %{_sbindir}/slurmstepd
-%ifos aix5.3
-%{_sbindir}/srun
-%endif
 %{_libdir}/*.so*
 %{_libdir}/slurm/src/*
 %{_mandir}/man1/*
@@ -933,7 +894,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/job_submit_cray.so
 %{_libdir}/slurm/job_submit_require_timelimit.so
 %{_libdir}/slurm/job_submit_throttle.so
-%{_libdir}/slurm/jobacct_gather_aix.so
 %{_libdir}/slurm/jobacct_gather_cgroup.so
 %{_libdir}/slurm/jobacct_gather_linux.so
 %{_libdir}/slurm/jobacct_gather_none.so
@@ -1026,13 +986,6 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 %config (noreplace) %{_perldir}/config.slurmdb.pl
 %{_sbindir}/moab_2_slurmdb
-#############################################################################
-
-%if %{slurm_with aix}
-%files -f aix.files aix
-%defattr(-,root,root)
-%{_libdir}/slurm/checkpoint_aix.so
-%endif
 #############################################################################
 
 %if %{slurm_with percs}

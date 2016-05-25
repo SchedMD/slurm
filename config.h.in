@@ -45,9 +45,6 @@
 /* Define to 1 if 4-dimensional architecture */
 #undef HAVE_4D
 
-/* Define to 1 for AIX operating system */
-#undef HAVE_AIX
-
 /* Define to 1 for Cray XT/XE systems using ALPS */
 #undef HAVE_ALPS_CRAY
 
@@ -265,9 +262,6 @@
 
 /* Define if you have Posix semaphores. */
 #undef HAVE_POSIX_SEMS
-
-/* Define to 1 if you have the <proctrack.h> header file. */
-#undef HAVE_PROCTRACK_H
 
 /* Define if libc sets program_invocation_name */
 #undef HAVE_PROGRAM_INVOCATION_NAME
@@ -649,17 +643,6 @@
 #  undef WORDS_BIGENDIAN
 # endif
 #endif
-
-/* Enable large inode numbers on Mac OS X 10.5.  */
-#ifndef _DARWIN_USE_64_BIT_INODE
-# define _DARWIN_USE_64_BIT_INODE 1
-#endif
-
-/* Number of bits in a file offset, on hosts where this is settable. */
-#undef _FILE_OFFSET_BITS
-
-/* Define for large files, on AIX-style hosts. */
-#undef _LARGE_FILES
 
 /* Define curl_free() as free() if our version of curl lacks curl_free. */
 #undef curl_free

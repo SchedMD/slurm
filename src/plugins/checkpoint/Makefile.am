@@ -1,3 +1,3 @@
 # Makefile for checkpoint plugins
 
-SUBDIRS = aix blcr none ompi poe
+SUBDIRS = blcr none ompi poe

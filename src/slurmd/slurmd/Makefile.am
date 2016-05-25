@@ -17,12 +17,6 @@ slurmd_LDADD = 					   \
 
 slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(HWLOC_LDFLAGS)
 
-if HAVE_AIX
-# We need to set maxdata back to 0 because this effects the "max memory size"
-# ulimit, and the ulimit is inherited by child processes.
-slurmd_LDFLAGS += -Wl,-bmaxdata:0x0
-endif
-
 SLURMD_SOURCES = \
 	slurmd.c slurmd.h \
 	req.c req.h \

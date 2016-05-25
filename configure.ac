@@ -66,15 +66,11 @@ AM_CONDITIONAL(BLUEGENE_LOADED, test "x$ac_bluegene_loaded" = "xyes")
 AC_SUBST(BLUEGENE_LOADED)
 
 
-X_AC_AIX
-
 dnl
 dnl Check to see if this architecture should use slurm_* prefix function
 dnl aliases for plugins.
 dnl
 case "$host" in
-	*-*-aix*) AC_DEFINE(USE_ALIAS, 0,
-			[Define slurm_ prefix function aliases for plugins]) ;;
 	*darwin*) AC_DEFINE(USE_ALIAS, 0,
 			[Define slurm_ prefix function aliases for plugins]) ;;
 	*)        AC_DEFINE(USE_ALIAS, 1,
@@ -527,7 +523,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/burst_buffer/cray/Makefile
 		 src/plugins/burst_buffer/generic/Makefile
 		 src/plugins/checkpoint/Makefile
-		 src/plugins/checkpoint/aix/Makefile
 		 src/plugins/checkpoint/blcr/Makefile
 		 src/plugins/checkpoint/blcr/cr_checkpoint.sh
 		 src/plugins/checkpoint/blcr/cr_restart.sh
@@ -550,7 +545,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/jobacct_gather/Makefile
 		 src/plugins/jobacct_gather/common/Makefile
 		 src/plugins/jobacct_gather/linux/Makefile
-		 src/plugins/jobacct_gather/aix/Makefile
 		 src/plugins/jobacct_gather/cgroup/Makefile
 		 src/plugins/jobacct_gather/none/Makefile
 		 src/plugins/jobcomp/Makefile
@@ -596,7 +590,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/priority/basic/Makefile
 		 src/plugins/priority/multifactor/Makefile
 		 src/plugins/proctrack/Makefile
-		 src/plugins/proctrack/aix/Makefile
 		 src/plugins/proctrack/cray/Makefile
 		 src/plugins/proctrack/cgroup/Makefile
 		 src/plugins/proctrack/pgid/Makefile

@@ -5,6 +5,7 @@ documents those changes that are of interest to users and administrators.
 ==============================
  -- burst_buffer/cray - Add support for rounding up the size of a buffer reqeust
     if the DataWarp configuration "equalize_fragments" is used.
+ -- Remove AIX support.
  
 * Changes in Slurm 16.05.0rc3
 =============================

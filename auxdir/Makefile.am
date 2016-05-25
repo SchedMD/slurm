@@ -11,7 +11,6 @@ EXTRA_DIST = \
     type_socklen_t.m4 \
     x_ac__system_configuration.m4 \
     x_ac_affinity.m4 \
-    x_ac_aix.m4 \
     x_ac_blcr.m4 \
     x_ac_bluegene.m4 \
     x_ac_cray.m4 \
