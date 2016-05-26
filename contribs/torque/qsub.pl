@@ -353,7 +353,14 @@ $command .= " -J $job_name" if $job_name;
 $command .= " --nice=$priority" if $priority;
 $command .= " -p $destination" if $destination;
 $command .= " --wckey=$wckey" if $wckey;
-$command .= " --requeue" if $requeue && $requeue =~ 'y';
+
+if ($requeue) {
+	if ($requeue =~ 'y') {
+		$command .= " --requeue";
+	} elsif ($requeue =~ 'n') {
+		$command .= " --no-requeue"
+	}
+}
 
 if ($script) {
 	if ($wrap && $wrap =~ 'y') {
