@@ -507,6 +507,14 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 	case REQUEST_ASSOC_MGR_INFO:
 		_slurm_rpc_assoc_mgr_info(msg);
 		break;
+	case REQUEST_PERSIST_INIT:
+		arg->persist = true;
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+		break;
+	case REQUEST_PERSIST_FINI:
+		arg->persist = false;
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+		break;
 	default:
 		error("invalid RPC msg_type=%u", msg->msg_type);
 		slurm_send_rc_msg(msg, EINVAL);

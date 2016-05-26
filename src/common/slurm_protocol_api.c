@@ -4003,19 +4003,81 @@ int slurm_send_rc_err_msg(slurm_msg_t *msg, int rc, char *err_msg)
 	return slurm_send_node_msg(msg->conn_fd, &resp_msg);
 }
 
+/* Open a persistent connection with controller at host and port
+ * IN host	- host name to connect to
+ * IN port	- port to connect to
+ * RET int	- returns open fd on success, -1 on failure
+ */
+extern int slurm_open_persist_controller_conn(char *host, uint32_t port)
+{
+	int fd = -1;
+	int rc;
+	slurm_msg_t resp_msg;
+	slurm_msg_t req_msg;
+	slurm_addr_t addr;
+
+	slurm_set_addr_char(&addr, port, host);
+	if ((fd = slurm_open_msg_conn(&addr)) < 0) {
+		error("failed to open connection to %s:%d", host, port);
+		return -1;
+	}
+
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
+
+	req_msg.msg_type = REQUEST_PERSIST_INIT;
+	if ((rc = slurm_send_recv_msg(fd, &req_msg, &resp_msg, 0)) ||
+	    (rc = slurm_get_return_code(resp_msg.msg_type, resp_msg.data))) {
+		error("failed to finish persistent connection %d", fd);
+		slurm_close_persist_controller_conn(fd);
+		fd = -1;
+	}
+
+	return fd;
+}
+
+/* Closes a persistent connection on the open fd.
+ * IN fd 	- open fd to close
+ * RET int	- returns SLURM_SUCCESS on SUCCESS, SLURM_FAILURE on error.
+ */
+extern int slurm_close_persist_controller_conn(int fd)
+{
+	int rc = SLURM_SUCCESS;
+	int retry = 0;
+	slurm_msg_t resp_msg;
+	slurm_msg_t req_msg;
+
+	xassert(fd >= 0);
+
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
+
+	req_msg.msg_type = REQUEST_PERSIST_FINI;
+	if ((rc = slurm_send_recv_msg(fd, &req_msg, &resp_msg, 0)) ||
+	    (rc = slurm_get_return_code(resp_msg.msg_type, resp_msg.data)))
+		error("failed to finish persistent connection %d", fd);
+
+	while ((slurm_shutdown_msg_conn(fd) < 0) && (errno == EINTR) ) {
+		if (retry++ > MAX_SHUTDOWN_RETRY) {
+			break;
+		}
+	}
+
+	return rc;
+}
+
 /*
  * Send and recv a slurm request and response on the open slurm descriptor
+ * Doesn't close the connection.
  * IN fd	- file descriptor to receive msg on
  * IN req	- a slurm_msg struct to be sent by the function
  * OUT resp	- a slurm_msg struct to be filled in by the function
  * IN timeout	- how long to wait in milliseconds
  * RET int	- returns 0 on success, -1 on failure and sets errno
  */
-static int
-_send_and_recv_msg(int fd, slurm_msg_t *req,
-		   slurm_msg_t *resp, int timeout)
+extern int slurm_send_recv_msg(int fd, slurm_msg_t *req,
+			       slurm_msg_t *resp, int timeout)
 {
-	int retry = 0;
 	int rc = -1;
 	slurm_msg_t_init(resp);
 
@@ -4027,6 +4089,24 @@ _send_and_recv_msg(int fd, slurm_msg_t *req,
 		rc = slurm_receive_msg(fd, resp, timeout);
 	}
 
+	return rc;
+}
+
+/*
+ * Send and recv a slurm request and response on the open slurm descriptor
+ * Closes the connection.
+ * IN fd	- file descriptor to receive msg on
+ * IN req	- a slurm_msg struct to be sent by the function
+ * OUT resp	- a slurm_msg struct to be filled in by the function
+ * IN timeout	- how long to wait in milliseconds
+ * RET int	- returns 0 on success, -1 on failure and sets errno
+ */
+static int
+_send_and_recv_msg(int fd, slurm_msg_t *req,
+		   slurm_msg_t *resp, int timeout)
+{
+	int retry = 0;
+	int rc = slurm_send_recv_msg(fd, req, resp, timeout);
 
 	/*
 	 *  Attempt to close an open connection

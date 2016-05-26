@@ -1084,35 +1084,45 @@ static void *_service_connection(void *arg)
 		error("%s: cannot set my name to %s %m", __func__, "srvcn");
 	}
 #endif
-	slurm_msg_t_init(msg);
-	/*
-	 * slurm_receive_msg sets msg connection fd to accepted fd. This allows
-	 * possibility for slurmctld_req() to close accepted connection.
-	 */
-	if (slurm_receive_msg(conn->newsockfd, msg, 0) != 0) {
-		char addr_buf[32];
-		slurm_print_peer_addr(conn->newsockfd,
-				      addr_buf, sizeof(addr_buf));
-		error("slurm_receive_msg(%s): %m", addr_buf);
-		/* close the new socket */
-		slurm_close(conn->newsockfd);
-		goto cleanup;
+	while (1) {
+		if (slurmctld_config.shutdown_time) {
+			break;
+		}
+		slurm_msg_t_init(msg);
+		/*
+		 * slurm_receive_msg sets msg connection fd to accepted fd. This allows
+		 * possibility for slurmctld_req() to close accepted connection.
+		 */
+		if (slurm_receive_msg(conn->newsockfd, msg, 0) != 0) {
+			char addr_buf[32];
+			slurm_print_slurm_addr(&conn->cli_addr, addr_buf,
+					       sizeof(addr_buf));
+			error("slurm_receive_msg [%s]: %m", addr_buf);
+			/* close the new socket */
+			slurm_close(conn->newsockfd);
+			goto cleanup;
+		}
+
+		if (errno != SLURM_SUCCESS) {
+			if (errno == SLURM_PROTOCOL_VERSION_ERROR) {
+				slurm_send_rc_msg(msg, SLURM_PROTOCOL_VERSION_ERROR);
+			} else
+				info("_service_connection/slurm_receive_msg %m");
+		} else {
+			/* process the request */
+			slurmctld_req(msg, conn);
+		}
+
+		if (!conn->persist)
+			break;
 	}
 
-	if (errno != SLURM_SUCCESS) {
-		if (errno == SLURM_PROTOCOL_VERSION_ERROR) {
-			slurm_send_rc_msg(msg, SLURM_PROTOCOL_VERSION_ERROR);
-		} else
-			info("_service_connection/slurm_receive_msg %m");
-	} else {
-		/* process the request */
-		slurmctld_req(msg, conn);
-	}
 	if ((conn->newsockfd >= 0)
 	    && slurm_close(conn->newsockfd) < 0)
 		error ("close(%d): %m",  conn->newsockfd);
 
 cleanup:
+	debug2("exiting service connection thread");
 	slurm_free_msg(msg);
 	xfree(arg);
 	server_thread_decr();
