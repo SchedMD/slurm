@@ -58,6 +58,7 @@ my ($start_time,
     $export_env,
     $interactive,
     $hold,
+    $join_output,
     $resource_list,
     $mail_options,
     $mail_user_list,
@@ -88,8 +89,7 @@ GetOptions('a=s'      => \$start_time,
 	   'e=s'      => \$err_path,
 	   'h'        => \$hold,
 	   'I'        => \$interactive,
-	   'j:s'      => sub { warn "option -j is the default, " .
-				    "stdout/stderr go into the same file\n" },
+	   'j:s'      => \$join_output,
 	   'J=s'      => \$array,
 	   'l=s'      => \$resource_list,
 	   'm=s'      => \$mail_options,
@@ -133,7 +133,10 @@ if ($man) {
 
 # Use sole remaining argument as jobIds
 my $script;
+my $use_job_name = "sbatch";
+
 if ($ARGV[0]) {
+	$use_job_name = $ARGV[0];
 	foreach (@ARGV) {
 	        $script .= "$_ ";
 	}
@@ -222,13 +225,13 @@ my $command;
 if($interactive) {
 	$command = "$salloc";
 
-#	Always want at least one node in the allocation
+	#	Always want at least one node in the allocation
 	if (!$node_opts{node_cnt}) {
 		$node_opts{node_cnt} = 1;
 	}
 
-#	Calculate the task count based of the node cnt and the amount
-#	of ppn's in the request
+	#	Calculate the task count based of the node cnt and the amount
+	#	of ppn's in the request
 	if ($node_opts{task_cnt}) {
 		$node_opts{task_cnt} *= $node_opts{node_cnt};
 	}
@@ -243,8 +246,23 @@ if($interactive) {
 
 	$command = "$sbatch";
 
-	$command .= " -e $err_path" if $err_path;
-	$command .= " -o $out_path" if $out_path;
+	if (!$join_output) {
+		if ($err_path) {
+			$command .= " -e $err_path";
+		} elsif ($job_name) {
+			$command .= " -e $job_name.e%j";
+		} else {
+			$command .= " -e $use_job_name.e%j";
+		}
+	}
+
+	if ($out_path) {
+		$command .= " -o $out_path";
+	} elsif ($job_name) {
+		$command .= " -o $job_name.o%j";
+	} else {
+		$command .= " -o $use_job_name.o%j";
+	}
 
 #	The job size specification may be within the batch script,
 #	Reset task count if node count also specified
