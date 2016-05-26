@@ -346,6 +346,7 @@ if($mail_options) {
 	$command .= " --mail-type=FAIL" if $mail_options =~ /a/;
 	$command .= " --mail-type=BEGIN" if $mail_options =~ /b/;
 	$command .= " --mail-type=END" if $mail_options =~ /e/;
+	$command .= " --mail-type=NONE" if $mail_options =~ /n/;
 }
 $command .= " --mail-user=$mail_user_list" if $mail_user_list;
 $command .= " -J $job_name" if $job_name;
