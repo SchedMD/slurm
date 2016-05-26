@@ -40,6 +40,7 @@
 #include "as_mysql_tres.h"
 #include "as_mysql_assoc.h"
 #include "as_mysql_cluster.h"
+#include "as_mysql_federation.h"
 #include "as_mysql_usage.h"
 #include "as_mysql_wckey.h"
 #include "src/common/node_select.h"
@@ -223,6 +224,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *user_name = NULL;
 	int affect_rows = 0;
 	int added = 0;
+	bool has_feds = false;
 	List assoc_list = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
 
@@ -277,6 +279,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 					   QOS_LEVEL_SET, 1);
 
 		if (object->federation) {
+			has_feds = 1;
 			rc = as_mysql_get_fed_cluster_index(mysql_conn,
 							    object->name,
 							    object->federation,
@@ -422,6 +425,8 @@ end_it:
 
 	if (!added)
 		reset_mysql_conn(mysql_conn);
+	else if (has_feds)
+		as_mysql_add_feds_to_update_list(mysql_conn);
 
 	return rc;
 }
@@ -602,7 +607,8 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(vals);
 		xfree(query);
 		return ret_list;
-	}
+	} else if (cluster->federation)
+		as_mysql_add_feds_to_update_list(mysql_conn);
 	xfree(query);
 
 end_it:
@@ -753,6 +759,7 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			errno = rc;
 			return NULL;
 		}
+		as_mysql_add_feds_to_update_list(mysql_conn);
 		errno = SLURM_SUCCESS;
 	} else
 		errno = ESLURM_JOBS_RUNNING_ON_ASSOC;

@@ -93,6 +93,7 @@
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/burst_buffer.h"
+#include "src/slurmctld/fed_mgr.h"
 #include "src/slurmctld/front_end.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/job_submit.h"
@@ -726,6 +727,11 @@ int main(int argc, char *argv[])
 			break;
 		usleep(100000);
 	}
+
+	/* do this outside of MEMORY_LEAD_DEBUG so that remote connections get
+	 * closed. */
+	fed_mgr_fini();
+
 #ifdef HAVE_BG
 	/* Always call slurm_select_fini() on some systems like
 	   BlueGene we need to make sure other processes are ended

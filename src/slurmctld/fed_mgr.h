@@ -1,7 +1,6 @@
 /*****************************************************************************\
- *  as_mysql_federation.h - functions dealing with federations.
+ *  fed_mgr.h - functions for federations
  *****************************************************************************
- *
  *  Copyright (C) 2016 SchedMD LLC.
  *  Written by Brian Christiansen <brian@schedmd.com>
  *
@@ -34,25 +33,15 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-#ifndef _HAVE_MYSQL_FEDERATION_H
-#define _HAVE_MYSQL_FEDERATION_H
 
-#include "accounting_storage_mysql.h"
+#ifndef _SLURM_FED_MGR_H
+#define _SLURM_FED_MGR_H
 
-extern int as_mysql_add_feds_to_update_list(mysql_conn_t *mysql_conn);
+#include "slurm/slurm.h"
+#include "slurm/slurmdb.h"
 
-extern int as_mysql_add_federations(mysql_conn_t *mysql_conn, uint32_t uid,
-				    List federation_list);
+extern int fed_mgr_init();
+extern int fed_mgr_fini();
+extern int fed_mgr_update_feds(slurmdb_update_object_t *update);
 
-extern List as_mysql_get_federations(
-				mysql_conn_t *mysql_conn, uid_t uid,
-				slurmdb_federation_cond_t *federation_cond);
-
-extern List as_mysql_modify_federations(
-				mysql_conn_t *mysql_conn, uint32_t uid,
-				slurmdb_federation_cond_t *fed_cond,
-				slurmdb_federation_rec_t *fed);
-
-extern List as_mysql_remove_federations(mysql_conn_t *mysql_conn, uint32_t uid,
-					slurmdb_federation_cond_t *fed_cond);
-#endif
+#endif /* _SLURM_FED_MGR_H */

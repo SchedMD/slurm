@@ -365,6 +365,8 @@ extern int as_mysql_add_federations(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if (!added)
 		reset_mysql_conn(mysql_conn);
+	else
+		as_mysql_add_feds_to_update_list(mysql_conn);
 
 	return rc;
 }
@@ -575,7 +577,8 @@ extern List as_mysql_modify_federations(
 		error("Couldn't modify federation");
 		FREE_NULL_LIST(ret_list);
 		ret_list = NULL;
-	}
+	} else
+		as_mysql_add_feds_to_update_list(mysql_conn);
 
 	return ret_list;
 }
@@ -659,7 +662,21 @@ extern List as_mysql_remove_federations(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (rc != SLURM_SUCCESS) {
 		FREE_NULL_LIST(ret_list);
 		return NULL;
-	}
+	} else
+		as_mysql_add_feds_to_update_list(mysql_conn);
 
 	return ret_list;
+}
+
+extern int as_mysql_add_feds_to_update_list(mysql_conn_t *mysql_conn)
+{
+	int rc = SLURM_SUCCESS;
+	List feds = as_mysql_get_federations(mysql_conn, 0, NULL);
+	if (feds && list_count(feds)) {
+		if ((rc = addto_update_list(mysql_conn->update_list,
+				       SLURMDB_UPDATE_FEDS, feds))
+		    != SLURM_SUCCESS)
+			FREE_NULL_LIST(feds);
+	}
+	return rc;
 }

@@ -3487,6 +3487,9 @@ extern int assoc_mgr_update(List update_list, bool locked)
 		case SLURMDB_ADD_TRES:
 			rc = assoc_mgr_update_tres(object, locked);
 			break;
+		case SLURMDB_UPDATE_FEDS:
+			/* Only handled in the slurmctld. */
+			break;
 		case SLURMDB_UPDATE_NOTSET:
 		default:
 			error("unknown type set in "

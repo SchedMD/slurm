@@ -136,7 +136,7 @@ static void _dump_slurmdb_res_records(List res_list)
  * RET: error code
  *
  * NOTE: This function will take the object given and free it later so it
- *       needed to be removed from a list if in one before.
+ *       needs to be removed from a existing lists prior.
  */
 extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 			     void *object)
@@ -161,7 +161,10 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 		/* here we prepend primarly for remove association
 		   since parents need to be removed last, and they are
 		   removed first in the calling code */
-		list_prepend(update_object->objects, object);
+		if (type == SLURMDB_UPDATE_FEDS)
+			update_object->objects = object;
+		else
+			list_prepend(update_object->objects, object);
 		return SLURM_SUCCESS;
 	}
 
@@ -256,6 +259,9 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 		update_object->objects = list_create(
 			slurmdb_destroy_res_rec);
 		break;
+	case SLURMDB_UPDATE_FEDS:
+		update_object->objects = object;
+		return SLURM_SUCCESS;
 	case SLURMDB_UPDATE_NOTSET:
 	default:
 		error("unknown type set in update_object: %d", type);

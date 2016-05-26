@@ -74,6 +74,7 @@
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/burst_buffer.h"
+#include "src/slurmctld/fed_mgr.h"
 #include "src/slurmctld/front_end.h"
 #include "src/slurmctld/gang.h"
 #include "src/slurmctld/job_scheduler.h"
@@ -5171,6 +5172,17 @@ inline static void  _slurm_rpc_set_schedlog_level(slurm_msg_t *msg)
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 }
 
+static int _find_update_object_in_list(void *x, void *key)
+{
+	slurmdb_update_object_t *object = (slurmdb_update_object_t *)x;
+	slurmdb_update_type_t type = *(slurmdb_update_type_t *)key;
+
+	if (object->type == type)
+		return 1;
+
+	return 0;
+}
+
 inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 {
 	int rc = SLURM_SUCCESS;
@@ -5200,8 +5212,15 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 	slurm_send_rc_msg(msg, rc);
 
 	if (update_ptr->update_list && list_count(update_ptr->update_list)) {
-		slurmdb_update_object_t *object =
-			list_peek(update_ptr->update_list);
+		slurmdb_update_object_t *object;
+
+		slurmdb_update_type_t fed_type = SLURMDB_UPDATE_FEDS;
+		if ((object = list_find_first(update_ptr->update_list,
+					      _find_update_object_in_list,
+					      &fed_type)))
+			fed_mgr_update_feds(object);
+
+		object = list_peek(update_ptr->update_list);
 		if (object->type != SLURMDB_ADD_TRES) {
 			/* If not specific message types, send message back
 			 * to the caller immediately letting him know we got it.

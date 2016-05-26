@@ -117,6 +117,7 @@ typedef enum {
 	SLURMDB_MODIFY_RES,
 	SLURMDB_REMOVE_QOS_USAGE,
 	SLURMDB_ADD_TRES,
+	SLURMDB_UPDATE_FEDS,
 } slurmdb_update_type_t;
 
 /* Define QOS flags */
@@ -596,7 +597,8 @@ typedef struct {
 	slurmdb_assoc_rec_t *root_assoc; /* root assoc for
 						* cluster */
 	uint16_t rpc_version; /* version of rpc this cluter is running */
-	char *tres_str;       /* comma separated list of TRES */
+	int 	 sockfd;      /* For convenience only. DOESN"T GET PACK */
+	char  	*tres_str;    /* comma separated list of TRES */
 } slurmdb_cluster_rec_t;
 
 typedef struct {

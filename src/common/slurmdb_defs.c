@@ -1463,6 +1463,7 @@ extern void slurmdb_init_cluster_rec(slurmdb_cluster_rec_t *cluster,
 	cluster->flags      = NO_VAL;
 	cluster->fed_state  = NO_VAL;
 	cluster->fed_weight = NO_VAL;
+	cluster->sockfd     = -1;
 }
 
 extern void slurmdb_init_federation_rec(slurmdb_federation_rec_t *federation,

@@ -148,16 +148,17 @@ am__installdirs = "$(DESTDIR)$(sbindir)"
 PROGRAMS = $(sbin_PROGRAMS)
 am_slurmctld_OBJECTS = acct_policy.$(OBJEXT) agent.$(OBJEXT) \
 	backup.$(OBJEXT) burst_buffer.$(OBJEXT) controller.$(OBJEXT) \
-	front_end.$(OBJEXT) gang.$(OBJEXT) groups.$(OBJEXT) \
-	job_mgr.$(OBJEXT) job_scheduler.$(OBJEXT) job_submit.$(OBJEXT) \
-	licenses.$(OBJEXT) locks.$(OBJEXT) node_mgr.$(OBJEXT) \
-	node_scheduler.$(OBJEXT) partition_mgr.$(OBJEXT) \
-	ping_nodes.$(OBJEXT) port_mgr.$(OBJEXT) power_save.$(OBJEXT) \
-	powercapping.$(OBJEXT) preempt.$(OBJEXT) proc_req.$(OBJEXT) \
-	read_config.$(OBJEXT) reservation.$(OBJEXT) \
-	sched_plugin.$(OBJEXT) slurmctld_plugstack.$(OBJEXT) \
-	srun_comm.$(OBJEXT) state_save.$(OBJEXT) statistics.$(OBJEXT) \
-	step_mgr.$(OBJEXT) trigger_mgr.$(OBJEXT)
+	fed_mgr.$(OBJEXT) front_end.$(OBJEXT) gang.$(OBJEXT) \
+	groups.$(OBJEXT) job_mgr.$(OBJEXT) job_scheduler.$(OBJEXT) \
+	job_submit.$(OBJEXT) licenses.$(OBJEXT) locks.$(OBJEXT) \
+	node_mgr.$(OBJEXT) node_scheduler.$(OBJEXT) \
+	partition_mgr.$(OBJEXT) ping_nodes.$(OBJEXT) \
+	port_mgr.$(OBJEXT) power_save.$(OBJEXT) powercapping.$(OBJEXT) \
+	preempt.$(OBJEXT) proc_req.$(OBJEXT) read_config.$(OBJEXT) \
+	reservation.$(OBJEXT) sched_plugin.$(OBJEXT) \
+	slurmctld_plugstack.$(OBJEXT) srun_comm.$(OBJEXT) \
+	state_save.$(OBJEXT) statistics.$(OBJEXT) step_mgr.$(OBJEXT) \
+	trigger_mgr.$(OBJEXT)
 slurmctld_OBJECTS = $(am_slurmctld_OBJECTS)
 am__DEPENDENCIES_1 =
 slurmctld_DEPENDENCIES = $(top_builddir)/src/common/libdaemonize.la \
@@ -500,6 +501,8 @@ slurmctld_SOURCES = \
 	burst_buffer.c	\
 	burst_buffer.h	\
 	controller.c 	\
+	fed_mgr.c 	\
+	fed_mgr.h 	\
 	front_end.c	\
 	front_end.h	\
 	gang.c		\
@@ -652,6 +655,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/backup.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/burst_buffer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/controller.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fed_mgr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/front_end.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gang.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/groups.Po@am__quote@
