@@ -2535,9 +2535,12 @@ extern int select_p_select_nodeinfo_set(struct job_record *job_ptr)
 
 	if (IS_JOB_RUNNING(job_ptr))
 		rc = _add_job_to_res(job_ptr, 0);
-	else if (IS_JOB_SUSPENDED(job_ptr))
-		rc = _add_job_to_res(job_ptr, 1);
-	else
+	else if (IS_JOB_SUSPENDED(job_ptr)) {
+		if (job_ptr->priority == 0)
+			rc = _add_job_to_res(job_ptr, 1);
+		else	/* Gang schedule suspend */
+			rc = _add_job_to_res(job_ptr, 0);
+	} else
 		return SLURM_SUCCESS;
 	gres_plugin_job_state_log(job_ptr->gres_list, job_ptr->job_id);
 
@@ -2743,7 +2746,10 @@ extern int select_p_reconfigure(void)
 			_add_job_to_res(job_ptr, 0);
 		} else if (IS_JOB_SUSPENDED(job_ptr)) {
 			/* add the job in a suspended state */
-			_add_job_to_res(job_ptr, 1);
+			if (job_ptr->priority == 0)
+				rc = _add_job_to_res(job_ptr, 1);
+			else	/* Gang schedule suspend */
+				rc = _add_job_to_res(job_ptr, 0);
 		} else if (_job_cleaning(job_ptr)) {
 			cleaning_job_cnt++;
 			run_time = (int) difftime(now, job_ptr->end_time);
