@@ -1204,8 +1204,11 @@ no_default:
 
 	if (user_str) {
 		printf(" Adding User(s)\n%s", user_str);
-		printf(" Settings =\n");
-		printf("  Default Account = %s\n", default_acct);
+		if (default_acct || default_wckey ||
+		    (admin_level != SLURMDB_ADMIN_NOTSET))
+			printf(" Settings =\n");
+		if (default_acct)
+			printf("  Default Account = %s\n", default_acct);
 		if (default_wckey)
 			printf("  Default WCKey   = %s\n", default_wckey);
 
