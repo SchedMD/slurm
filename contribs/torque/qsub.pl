@@ -135,7 +135,7 @@ if ($man) {
 my $script;
 if ($ARGV[0]) {
 	foreach (@ARGV) {
-	        $script .= "$_ ";
+	        $script .= "$_";
 	}
 }
 my $block="false";
