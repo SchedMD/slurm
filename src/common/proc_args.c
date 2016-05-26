@@ -981,7 +981,7 @@ bool verify_hint(const char *arg, int *min_sockets, int *min_cores,
 uint16_t parse_mail_type(const char *arg)
 {
 	char *buf, *tok, *save_ptr = NULL;
-	uint16_t rc = 0;
+	uint16_t rc = (uint16_t)INFINITE;
 
 	if (!arg)
 		return rc;
