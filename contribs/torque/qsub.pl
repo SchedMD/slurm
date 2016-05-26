@@ -85,7 +85,7 @@ my $srun = "${FindBin::Bin}/srun";
 GetOptions('a=s'      => \$start_time,
 	   'A=s'      => \$account,
 	   'b=s'      => \$wrap,
-	   'cwd'      => sub { warn "option -cwd is the default\n" },
+	   'cwd'      => sub { }, # this is the default
 	   'e=s'      => \$err_path,
 	   'h'        => \$hold,
 	   'I'        => \$interactive,
