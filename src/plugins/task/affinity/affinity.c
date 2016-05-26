@@ -329,8 +329,10 @@ void reset_cpuset(cpu_set_t *new_mask, cpu_set_t *cur_mask)
 	cpu_set_t full_mask, newer_mask;
 	int cur_offset, new_offset = 0, last_set = -1;
 
-	if (!_is_power_cpu())
+	if (!_is_power_cpu()) {
+		CPU_OR(new_mask, new_mask, cur_mask);
 		return;
+	}
 
 	if (slurm_getaffinity(1, sizeof(full_mask), &full_mask)) {
 		/* Try to get full CPU mask from process init */
