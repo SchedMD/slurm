@@ -436,23 +436,22 @@ sub parse_resource_list {
 
 #	Protect the colons used to separate elements in walltime=hh:mm:ss.
 #	Convert to NNhNNmNNs format.
-	$rl =~ s/walltime=(\d{1,2}):(\d{2}):(\d{2})/walltime=$1h$2m$3s/;
+	$rl =~ s/(walltime|h_rt)=(\d{1,2}):(\d{2}):(\d{2})/$1=$2h$3m$4s/;
 
 	$rl =~ s/:/,/g;
+
 	foreach my $key (@keys) {
 		#print "$rl\n";
 		($opt{$key}) = $rl =~ m/$key=([\w:\+=+]+)/;
-
 	}
+
+	$opt{walltime} = $opt{h_rt} if ($opt{h_rt} && !$opt{walltime});
 
 #	If needed, un-protect the walltime string.
 	if ($opt{walltime}) {
 		$opt{walltime} =~ s/(\d{1,2})h(\d{2})m(\d{2})s/$1:$2:$3/;
 #		Convert to minutes for SLURM.
 		$opt{walltime} = get_minutes($opt{walltime});
-	} elsif ($opt{h_rt}) {
-		# GridEngine is in seconds, so convert to minutes.
-		$opt{walltime} = $opt{h_rt} / 60;
 	}
 
 	if($opt{accelerator} && $opt{accelerator} =~ /^[Tt]/ && !$opt{naccelerators}) {
