@@ -38,6 +38,7 @@ documents those changes that are of interest to users and administrators.
  -- Prevent infinite loop in slurmstepd if execve fails.
  -- Prevent multiple responses to REQUEST_UPDATE_JOB_STEP message.
  -- Prevent possible deadlock in acct_gather_filesystem/lustre on error.
+ -- Make it so --mail-type=NONE didn't throw an invalid error.
 
 * Changes in Slurm 15.08.11
 ===========================

@@ -1502,7 +1502,7 @@ static void _set_options(int argc, char **argv)
 			break;
 		case LONG_OPT_MAIL_TYPE:
 			opt.mail_type |= parse_mail_type(optarg);
-			if (opt.mail_type == 0) {
+			if (opt.mail_type == (uint16_t)INFINITE) {
 				error("--mail-type=%s invalid", optarg);
 				exit(error_exit);
 			}
@@ -1889,7 +1889,7 @@ static void _set_pbs_options(int argc, char **argv)
 			break;
 		case 'm':
 			opt.mail_type |= _parse_pbs_mail_type(optarg);
-			if ((opt.mail_type == 0) && strcasecmp(optarg, "n")) {
+			if (opt.mail_type == (uint16_t)INFINITE) {
 				error("-m=%s invalid", optarg);
 				exit(error_exit);
 			}
@@ -2686,7 +2686,7 @@ static bool _opt_verify(void)
 
 static uint16_t _parse_pbs_mail_type(const char *arg)
 {
-	uint16_t rc =  0;
+	uint16_t rc = (uint16_t)INFINITE;
 
 	if (strchr(arg, 'b') || strchr(arg, 'B'))
 		rc |= MAIL_JOB_BEGIN;
@@ -2694,6 +2694,8 @@ static uint16_t _parse_pbs_mail_type(const char *arg)
 		rc |= MAIL_JOB_END;
 	if (strchr(arg, 'a') || strchr(arg, 'A'))
 		rc |= MAIL_JOB_FAIL;
+	if (strchr(arg, 'n') || strchr(arg, 'N'))
+		rc = 0;
 
 	return rc;
 }
