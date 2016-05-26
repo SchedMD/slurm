@@ -204,20 +204,20 @@ static int _set_rec(int *start, int argc, char *argv[],
 		} else if (!strncasecmp(argv[i], "Federation",
 					 MAX(command_len, 3))) {
 			if (cluster) {
-				cluster->federation = xstrdup(argv[i]+end);
+				cluster->fed.name = xstrdup(argv[i]+end);
 				rec_set = 1;
 			}
 		} else if (!strncasecmp(argv[i], "FedState",
 					 MAX(command_len, 2))) {
 			if (cluster) {
-				cluster->fed_state =
+				cluster->fed.state =
 					str_2_cluster_fed_states(argv[i]+end);
 				rec_set = 1;
 			}
 		} else if (!strncasecmp(argv[i], "Weight",
 					 MAX(command_len, 2))) {
 			if (cluster) {
-				cluster->fed_weight = slurm_atoul(argv[i]+end);
+				cluster->fed.weight = slurm_atoul(argv[i]+end);
 				rec_set = 1;
 			}
 		} else if (!strncasecmp(argv[i], "GrpCPURunMins",
@@ -344,10 +344,10 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 		}
 	}
 
-	if (start_cluster && start_cluster->federation) {
+	if (start_cluster && start_cluster->fed.name) {
 		int rc;
 		List fed_list = list_create(slurm_destroy_char);
-		list_append(fed_list, xstrdup(start_cluster->federation));
+		list_append(fed_list, xstrdup(start_cluster->fed.name));
 		rc = verify_federations_exist(fed_list);
 		FREE_NULL_LIST(fed_list);
 		if (rc) {
@@ -536,13 +536,13 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 						     (curr_inx == field_count));
 				break;
 			case PRINT_FEDERATION:
-				field->print_routine(field, cluster->federation,
+				field->print_routine(field, cluster->fed.name,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_FEDSTATE:
 			{
 				char *tmp_str = slurmdb_cluster_fed_states_str(
-							cluster->fed_state);
+							cluster->fed.state);
 				field->print_routine(field, tmp_str,
 						     (curr_inx == field_count));
 				xfree(tmp_str);
@@ -550,15 +550,15 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 				break;
 			}
 			case PRINT_FEDSTATERAW:
-				field->print_routine(field, cluster->fed_state,
+				field->print_routine(field, cluster->fed.state,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_INDEX:
-				field->print_routine(field, cluster->fed_inx,
+				field->print_routine(field, cluster->fed.index,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_WEIGHT:
-				field->print_routine(field, cluster->fed_weight,
+				field->print_routine(field, cluster->fed.weight,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_TRES:
@@ -694,10 +694,10 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 		goto end_it;
 	}
 
-	if (cluster->federation && cluster->federation[0]) {
+	if (cluster->fed.name && cluster->fed.name[0]) {
 		int rc;
 		List fed_list = list_create(slurm_destroy_char);
-		list_append(fed_list, xstrdup(cluster->federation));
+		list_append(fed_list, xstrdup(cluster->fed.name));
 		rc = verify_federations_exist(fed_list);
 		FREE_NULL_LIST(fed_list);
 		if (rc)

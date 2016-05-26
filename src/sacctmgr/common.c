@@ -1818,16 +1818,16 @@ extern void sacctmgr_print_cluster(slurmdb_cluster_rec_t *cluster)
 	if (cluster->classification)
 		printf("  Classification = %s\n",
 		       get_classification_str(cluster->classification));
-	if (cluster->federation)
-		printf("  Federation     = %s\n", cluster->federation);
-	if (cluster->fed_state != NO_VAL) {
+	if (cluster->fed.name)
+		printf("  Federation     = %s\n", cluster->fed.name);
+	if (cluster->fed.state != NO_VAL) {
 		char *tmp_str = slurmdb_cluster_fed_states_str(
-						cluster->fed_state);
+						cluster->fed.state);
 		printf("  FedState       = %s\n", tmp_str);
 		xfree(tmp_str);
 	}
-	if (cluster->fed_weight != NO_VAL)
-		printf("  Weight         = %u\n", cluster->fed_weight);
+	if (cluster->fed.weight != NO_VAL)
+		printf("  Weight         = %u\n", cluster->fed.weight);
 }
 
 extern void sacctmgr_print_federation(slurmdb_federation_rec_t *fed)

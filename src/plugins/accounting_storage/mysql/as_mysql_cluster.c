@@ -278,11 +278,11 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 					   &vals, &extra,
 					   QOS_LEVEL_SET, 1);
 
-		if (object->federation) {
+		if (object->fed.name) {
 			has_feds = 1;
 			rc = as_mysql_get_fed_cluster_index(mysql_conn,
 							    object->name,
-							    object->federation,
+							    object->fed.name,
 							    -1, &fed_inx);
 			if (rc) {
 				error("failed to get cluster index for "
@@ -305,9 +305,9 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			   "fed_inx=%d",
 			   cluster_table,
 			   now, now, object->name, object->classification,
-			   (object->federation) ? object->federation : "",
+			   (object->fed.name) ? object->fed.name : "",
 			   fed_inx, now, object->classification,
-			   (object->federation) ? object->federation : "",
+			   (object->fed.name) ? object->fed.name : "",
 			   fed_inx);
 		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
 			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
@@ -515,16 +515,16 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			   cluster->classification);
 	}
 
-	if (cluster->federation) {
-		xstrfmtcat(vals, ", federation='%s'", cluster->federation);
+	if (cluster->fed.name) {
+		xstrfmtcat(vals, ", federation='%s'", cluster->fed.name);
 	}
 
-	if (cluster->fed_state != NO_VAL) {
-		xstrfmtcat(vals, ", fed_state=%d", cluster->fed_state);
+	if (cluster->fed.state != NO_VAL) {
+		xstrfmtcat(vals, ", fed_state=%d", cluster->fed.state);
 	}
 
-	if (cluster->fed_weight != NO_VAL) {
-		xstrfmtcat(vals, ", fed_weight=%d", cluster->fed_weight);
+	if (cluster->fed.weight != NO_VAL) {
+		xstrfmtcat(vals, ", fed_weight=%d", cluster->fed.weight);
 	}
 
 	if (!vals) {
@@ -563,10 +563,10 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		object = xstrdup(row[0]);
 
-		if (cluster->federation) {
+		if (cluster->fed.name) {
 			int index;
 			rc = as_mysql_get_fed_cluster_index(mysql_conn, object,
-						    cluster->federation, -1,
+						    cluster->fed.name, -1,
 						    &index);
 			if (rc) {
 				error("failed to get cluster index for "
@@ -607,7 +607,7 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(vals);
 		xfree(query);
 		return ret_list;
-	} else if (cluster->federation)
+	} else if (cluster->fed.name)
 		as_mysql_add_feds_to_update_list(mysql_conn);
 	xfree(query);
 
@@ -876,10 +876,10 @@ empty:
 		cluster->classification = slurm_atoul(row[CLUSTER_REQ_CLASS]);
 		cluster->control_host = xstrdup(row[CLUSTER_REQ_CH]);
 		cluster->control_port = slurm_atoul(row[CLUSTER_REQ_CP]);
-		cluster->federation   = xstrdup(row[CLUSTER_REQ_FEDR]);
-		cluster->fed_inx      = slurm_atoul(row[CLUSTER_REQ_FEDINX]);
-		cluster->fed_state    = slurm_atoul(row[CLUSTER_REQ_FEDSTATE]);
-		cluster->fed_weight   = slurm_atoul(row[CLUSTER_REQ_FEDWEIGHT]);
+		cluster->fed.name     = xstrdup(row[CLUSTER_REQ_FEDR]);
+		cluster->fed.index    = slurm_atoul(row[CLUSTER_REQ_FEDINX]);
+		cluster->fed.state    = slurm_atoul(row[CLUSTER_REQ_FEDSTATE]);
+		cluster->fed.weight   = slurm_atoul(row[CLUSTER_REQ_FEDWEIGHT]);
 		cluster->rpc_version = slurm_atoul(row[CLUSTER_REQ_VERSION]);
 		cluster->dimensions = slurm_atoul(row[CLUSTER_REQ_DIMS]);
 		cluster->flags = slurm_atoul(row[CLUSTER_REQ_FLAGS]);

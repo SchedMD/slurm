@@ -575,6 +575,13 @@ typedef struct {
 } slurmdb_cluster_cond_t;
 
 typedef struct {
+	char    *name;   /* Federation name */
+	uint32_t index;  /* index of cluster in federation */
+	uint32_t state;  /* state of cluster in federation */
+	uint32_t weight; /* weight of cluster in federation */
+} fed_elem_t;
+
+typedef struct {
 	List accounting_list; /* list of slurmdb_cluster_accounting_rec_t *'s */
 	uint16_t classification; /* how this machine is classified */
 	slurm_addr_t control_addr; /* For convenience only.
@@ -586,10 +593,7 @@ typedef struct {
 			* Size of each dimension For now only on
 			* a bluegene cluster.  DOESN'T GET
 			* PACKED, is set up in slurmdb_get_info_cluster */
-	char    *federation; /* Federation name */
-	uint32_t fed_inx;    /* index of cluster in federation */
-	uint32_t fed_state;  /* state of cluster in federation */
-	uint32_t fed_weight; /* weight of cluster in federation */
+	fed_elem_t fed;      /* Federation information */
 	uint32_t flags;      /* set of CLUSTER_FLAG_* */
 	char *name;
 	char *nodes;

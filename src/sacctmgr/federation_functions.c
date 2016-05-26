@@ -323,12 +323,12 @@ static int _verify_clusters_exist(List cluster_list,
 		if (!tmp_rec) {
 			xstrfmtcat(missing_str, " The cluster %s doesn't exist."
 				   " Please add first.\n", cluster_rec->name);
-		} else if (tmp_rec->federation && tmp_rec->federation[0] &&
-			   (!fed_name || strcmp(fed_name, tmp_rec->federation)))
+		} else if (tmp_rec->fed.name && tmp_rec->fed.name[0] &&
+			   (!fed_name || strcmp(fed_name, tmp_rec->fed.name)))
 		{
 			xstrfmtcat(existing_str, " The cluster %s is already "
 				   "assigned to federation %s\n",
-				   tmp_rec->name, tmp_rec->federation);
+				   tmp_rec->name, tmp_rec->fed.name);
 		}
 	}
 
@@ -628,7 +628,7 @@ extern int sacctmgr_list_federation(int argc, char *argv[])
 					else {
 						tmp_str =
 						slurmdb_cluster_fed_states_str(
-							tmp_cluster->fed_state);
+							tmp_cluster->fed.state);
 					}
 					field->print_routine(
 						field, tmp_str,
@@ -642,7 +642,7 @@ extern int sacctmgr_list_federation(int argc, char *argv[])
 						tmp_uint32 = NO_VAL;
 					else
 						tmp_uint32 =
-							tmp_cluster->fed_state;
+							tmp_cluster->fed.state;
 					field->print_routine(
 						field, tmp_uint32,
 						(curr_inx == field_count));
@@ -652,7 +652,7 @@ extern int sacctmgr_list_federation(int argc, char *argv[])
 						tmp_uint32 = NO_VAL;
 					else
 						tmp_uint32 =
-							tmp_cluster->fed_inx;
+							tmp_cluster->fed.index;
 					field->print_routine(
 						field, tmp_uint32,
 						(curr_inx == field_count));
@@ -662,7 +662,7 @@ extern int sacctmgr_list_federation(int argc, char *argv[])
 						tmp_uint32 = NO_VAL;
 					else
 						tmp_uint32 =
-							tmp_cluster->fed_weight;
+							tmp_cluster->fed.weight;
 					field->print_routine(
 						field, tmp_uint32,
 						(curr_inx == field_count));

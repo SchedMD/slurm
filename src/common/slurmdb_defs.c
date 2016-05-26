@@ -75,7 +75,7 @@ static void _free_cluster_rec_members(slurmdb_cluster_rec_t *cluster)
 		FREE_NULL_LIST(cluster->accounting_list);
 		xfree(cluster->control_host);
 		xfree(cluster->dim_size);
-		xfree(cluster->federation);
+		xfree(cluster->fed.name);
 		xfree(cluster->name);
 		xfree(cluster->nodes);
 		slurmdb_destroy_assoc_rec(cluster->root_assoc);
@@ -1461,8 +1461,8 @@ extern void slurmdb_init_cluster_rec(slurmdb_cluster_rec_t *cluster,
 		_free_cluster_rec_members(cluster);
 	memset(cluster, 0, sizeof(slurmdb_cluster_rec_t));
 	cluster->flags      = NO_VAL;
-	cluster->fed_state  = NO_VAL;
-	cluster->fed_weight = NO_VAL;
+	cluster->fed.state  = NO_VAL;
+	cluster->fed.weight = NO_VAL;
 	cluster->sockfd     = -1;
 }
 
@@ -3109,11 +3109,11 @@ extern void slurmdb_copy_cluster_rec(slurmdb_cluster_rec_t *out,
 	out->control_host     = xstrdup(in->control_host);
 	out->control_port     = in->control_port;
 	out->dimensions       = in->dimensions;
-	xfree(out->federation);
-	out->federation       = xstrdup(in->federation);
-	out->fed_inx          = in->fed_inx;
-	out->fed_state        = in->fed_state;
-	out->fed_weight       = in->fed_weight;
+	xfree(out->fed.name);
+	out->fed.name         = xstrdup(in->fed.name);
+	out->fed.index        = in->fed.index;
+	out->fed.state        = in->fed.state;
+	out->fed.weight       = in->fed.weight;
 	out->flags            = in->flags;
 	xfree(out->name);
 	out->name             = xstrdup(in->name);
