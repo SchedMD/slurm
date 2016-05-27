@@ -235,7 +235,7 @@ proc submit_cpu {ntasks ncpus} {
 		-re "job ($number)" {
 			exp_continue
 		}
-		-re "($number) ($alpha_numeric_nodelist)" {
+		-re "  ($number) ($alpha_numeric_nodelist)" {
 			set tasks($x) $expect_out(1,string)
 			set nodes($x) $expect_out(2,string)
 			incr x 1
@@ -271,7 +271,7 @@ proc submit_tasks {ntasks ntaskpn} {
 		-re "job ($number)" {
 			exp_continue
 		}
-		-re "($number) ($alpha_numeric_nodelist)" {
+		-re "   ($number) ($alpha_numeric_nodelist)" {
 			set tasks($x) $expect_out(1,string)
 			set nodes($x) $expect_out(2,string)
 			incr x 1
