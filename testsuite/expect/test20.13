@@ -50,7 +50,7 @@ set qsub_default "--sbatchline $exe"
 set matches 0
 eval spawn $qsub -b y $qsub_default
 expect {
-	-re "--wrap=\"$exe \"" {
+	-re "--wrap=\"${exe}\"" {
 		incr matches
 		exp_continue
 	}
