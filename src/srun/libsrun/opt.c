@@ -1489,7 +1489,7 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_MAIL_TYPE:
 			opt.mail_type |= parse_mail_type(optarg);
-			if (opt.mail_type == 0) {
+			if (opt.mail_type == (uint16_t)INFINITE) {
 				error("--mail-type=%s invalid", optarg);
 				exit(error_exit);
 			}
