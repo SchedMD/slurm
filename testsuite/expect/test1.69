@@ -64,7 +64,6 @@ if {![string compare $select_type "bluegene"]} {
 	exit $exit_code
 }
 
-get_partition_nodes
 if {[test_select_type_params "Memory"]} {
 	set mem_opt "--mem=10"
 } else {

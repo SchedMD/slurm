@@ -50,7 +50,7 @@ set qsub_default "--sbatchline $exe"
 set matches 0
 eval spawn $qsub -b y $qsub_default
 expect {
-	-re "--wrap=\"$exe \"" {
+	-re "--wrap=\"${exe}\"" {
 		incr matches
 		exp_continue
 	}
@@ -175,6 +175,29 @@ if {$matches != 1} {
 }
 
 # test -l h_rt option (sbatch -t)
+set param "00:05:00"
+set matches 0
+eval spawn $qsub -l h_rt=$param $qsub_default
+expect {
+	-re "-t5" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: qsub not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 1} {
+	send_user "\nFAILURE: qsub -l h_rt option did not set up correctly\n"
+	set exit_code 1
+}
+
+# test -l h_vmem option (sbatch --mem)
 set param "3000"
 set matches 0
 eval spawn $qsub -l h_vmem=$param $qsub_default

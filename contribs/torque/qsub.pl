@@ -58,6 +58,7 @@ my ($start_time,
     $export_env,
     $interactive,
     $hold,
+    $join_output,
     $resource_list,
     $mail_options,
     $mail_user_list,
@@ -84,12 +85,11 @@ my $srun = "${FindBin::Bin}/srun";
 GetOptions('a=s'      => \$start_time,
 	   'A=s'      => \$account,
 	   'b=s'      => \$wrap,
-	   'cwd'      => sub { warn "option -cwd is the default\n" },
+	   'cwd'      => sub { }, # this is the default
 	   'e=s'      => \$err_path,
 	   'h'        => \$hold,
 	   'I'        => \$interactive,
-	   'j:s'      => sub { warn "option -j is the default, " .
-				    "stdout/stderr go into the same file\n" },
+	   'j:s'      => \$join_output,
 	   'J=s'      => \$array,
 	   'l=s'      => \$resource_list,
 	   'm=s'      => \$mail_options,
@@ -133,10 +133,14 @@ if ($man) {
 
 # Use sole remaining argument as jobIds
 my $script;
+my $use_job_name = "sbatch";
+
 if ($ARGV[0]) {
+	$use_job_name = $ARGV[0];
 	foreach (@ARGV) {
 	        $script .= "$_ ";
 	}
+	chop($script);
 }
 my $block="false";
 my $depend;
@@ -221,13 +225,13 @@ my $command;
 if($interactive) {
 	$command = "$salloc";
 
-#	Always want at least one node in the allocation
+	#	Always want at least one node in the allocation
 	if (!$node_opts{node_cnt}) {
 		$node_opts{node_cnt} = 1;
 	}
 
-#	Calculate the task count based of the node cnt and the amount
-#	of ppn's in the request
+	#	Calculate the task count based of the node cnt and the amount
+	#	of ppn's in the request
 	if ($node_opts{task_cnt}) {
 		$node_opts{task_cnt} *= $node_opts{node_cnt};
 	}
@@ -242,8 +246,23 @@ if($interactive) {
 
 	$command = "$sbatch";
 
-	$command .= " -e $err_path" if $err_path;
-	$command .= " -o $out_path" if $out_path;
+	if (!$join_output) {
+		if ($err_path) {
+			$command .= " -e $err_path";
+		} elsif ($job_name) {
+			$command .= " -e $job_name.e%j";
+		} else {
+			$command .= " -e $use_job_name.e%j";
+		}
+	}
+
+	if ($out_path) {
+		$command .= " -o $out_path";
+	} elsif ($job_name) {
+		$command .= " -o $job_name.o%j";
+	} else {
+		$command .= " -o $use_job_name.o%j";
+	}
 
 #	The job size specification may be within the batch script,
 #	Reset task count if node count also specified
@@ -327,13 +346,21 @@ if($mail_options) {
 	$command .= " --mail-type=FAIL" if $mail_options =~ /a/;
 	$command .= " --mail-type=BEGIN" if $mail_options =~ /b/;
 	$command .= " --mail-type=END" if $mail_options =~ /e/;
+	$command .= " --mail-type=NONE" if $mail_options =~ /n/;
 }
 $command .= " --mail-user=$mail_user_list" if $mail_user_list;
 $command .= " -J $job_name" if $job_name;
 $command .= " --nice=$priority" if $priority;
 $command .= " -p $destination" if $destination;
 $command .= " --wckey=$wckey" if $wckey;
-$command .= " --requeue" if $requeue && $requeue =~ 'y';
+
+if ($requeue) {
+	if ($requeue =~ 'y') {
+		$command .= " --requeue";
+	} elsif ($requeue =~ 'n') {
+		$command .= " --no-requeue"
+	}
+}
 
 if ($script) {
 	if ($wrap && $wrap =~ 'y') {
@@ -436,23 +463,22 @@ sub parse_resource_list {
 
 #	Protect the colons used to separate elements in walltime=hh:mm:ss.
 #	Convert to NNhNNmNNs format.
-	$rl =~ s/walltime=(\d{1,2}):(\d{2}):(\d{2})/walltime=$1h$2m$3s/;
+	$rl =~ s/(walltime|h_rt)=(\d{1,2}):(\d{2}):(\d{2})/$1=$2h$3m$4s/;
 
 	$rl =~ s/:/,/g;
+
 	foreach my $key (@keys) {
 		#print "$rl\n";
 		($opt{$key}) = $rl =~ m/$key=([\w:\+=+]+)/;
-
 	}
+
+	$opt{walltime} = $opt{h_rt} if ($opt{h_rt} && !$opt{walltime});
 
 #	If needed, un-protect the walltime string.
 	if ($opt{walltime}) {
 		$opt{walltime} =~ s/(\d{1,2})h(\d{2})m(\d{2})s/$1:$2:$3/;
 #		Convert to minutes for SLURM.
 		$opt{walltime} = get_minutes($opt{walltime});
-	} elsif ($opt{h_rt}) {
-		# GridEngine is in seconds, so convert to minutes.
-		$opt{walltime} = $opt{h_rt} / 60;
 	}
 
 	if($opt{accelerator} && $opt{accelerator} =~ /^[Tt]/ && !$opt{naccelerators}) {
