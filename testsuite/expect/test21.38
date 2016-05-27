@@ -49,7 +49,7 @@ set fed1 	"fed1_$test_id_2"
 set fed2 	"fed2_$test_id_2"
 set fed3 	"fed3_$test_id_2"
 
-set timeout	30
+set timeout	60
 print_header $test_id
 
 #
