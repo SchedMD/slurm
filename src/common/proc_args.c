@@ -981,16 +981,18 @@ bool verify_hint(const char *arg, int *min_sockets, int *min_cores,
 uint16_t parse_mail_type(const char *arg)
 {
 	char *buf, *tok, *save_ptr = NULL;
-	uint16_t rc = (uint16_t)INFINITE;
+	uint16_t rc = 0;
+	bool none_set = false;
 
 	if (!arg)
-		return rc;
+		return (uint16_t)INFINITE;
 
 	buf = xstrdup(arg);
 	tok = strtok_r(buf, ",", &save_ptr);
 	while (tok) {
 		if (strcasecmp(tok, "NONE") == 0) {
 			rc = 0;
+			none_set = true;
 			break;
 		} else if (strcasecmp(tok, "BEGIN") == 0)
 			rc |= MAIL_JOB_BEGIN;
@@ -1016,6 +1018,8 @@ uint16_t parse_mail_type(const char *arg)
 		tok = strtok_r(NULL, ",", &save_ptr);
 	}
 	xfree(buf);
+	if (!rc && !none_set)
+		rc = (uint16_t)INFINITE;
 
 	return rc;
 }
