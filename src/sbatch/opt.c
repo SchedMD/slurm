@@ -2883,7 +2883,7 @@ static bool _opt_verify(void)
 
 static uint16_t _parse_pbs_mail_type(const char *arg)
 {
-	uint16_t rc = (uint16_t)INFINITE;
+	uint16_t rc = 0;
 
 	if (strchr(arg, 'b') || strchr(arg, 'B'))
 		rc |= MAIL_JOB_BEGIN;
@@ -2891,8 +2891,11 @@ static uint16_t _parse_pbs_mail_type(const char *arg)
 		rc |= MAIL_JOB_END;
 	if (strchr(arg, 'a') || strchr(arg, 'A'))
 		rc |= MAIL_JOB_FAIL;
+
 	if (strchr(arg, 'n') || strchr(arg, 'N'))
 		rc = 0;
+	else if (!rc)
+		rc = (uint16_t)INFINITE;
 
 	return rc;
 }
