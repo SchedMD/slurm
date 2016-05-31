@@ -752,8 +752,24 @@ extern void slurmdb_pack_accounting_rec(void *in, uint16_t protocol_version,
 {
 	slurmdb_accounting_rec_t *object = (slurmdb_accounting_rec_t *)in;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		if (!object) {
+			pack64(0, buffer);
+			slurmdb_pack_tres_rec(NULL, rpc_version, buffer);
+			pack32(0, buffer);
+			pack_time(0, buffer);
+			return;
+		}
+
+		pack64(object->alloc_secs, buffer);
+		slurmdb_pack_tres_rec(&object->tres_rec, rpc_version, buffer);
+		pack32(object->id, buffer);
+		pack_time(object->period_start, buffer);
+	} else if (rpc_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		/* We only want to send the CPU tres to older
+		   versions of SLURM.
+		*/
+		if (!object || (object->tres_rec.id != TRES_CPU)) {
 			pack64(0, buffer);
 			slurmdb_pack_tres_rec(NULL, protocol_version, buffer);
 			pack32(0, buffer);

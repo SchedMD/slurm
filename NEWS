@@ -7,8 +7,11 @@ documents those changes that are of interest to users and administrators.
     if the DataWarp configuration "equalize_fragments" is used.
  -- Remove AIX support.
  
-* Changes in Slurm 16.05.0rc3
-=============================
+* Changes in Slurm 16.05.1
+==========================
+
+* Changes in Slurm 16.05.0
+==========================
  -- Update seff to fix warnings with ncpus, and list slurm-perlapi dependency
     in spec file.
  -- Fix testsuite to consistent use /usr/bin/env {bash,expect} construct.
@@ -22,6 +25,7 @@ documents those changes that are of interest to users and administrators.
  -- Cray - Fix node list parsing in capmc_suspend/resume programs.
  -- Fix sbatch #BSUB parsing for -W and -M options.
  -- Fix GRES task layout bug that could cause slurmctld to abort.
+ -- Fix to --gres-flags=enforce-binding logic when multiple sockets needed.
 
 * Changes in Slurm 16.05.0rc2
 =============================
@@ -248,6 +252,9 @@ documents those changes that are of interest to users and administrators.
  -- Add Max*PerAccount options for QOS.
  -- Protect slurm_mutex_* calls with abort() on failure.
 
+* Changes in Slurm 15.08.13
+===========================
+
 * Changes in Slurm 15.08.12
 ===========================
  -- Do not attempt to power down a node which has never responded if the
@@ -292,6 +299,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix Hidden error during _rpc_forward_data call.
  -- Fix bug resulting from wrong order-of-operations in _connect_srun_cr(),
     and two others that cause incorrect debug messages.
+ -- Fix backwards compatibility with sreport going to <= 14.11 coming from
+    >= 15.08 for some reports.
 
 * Changes in Slurm 15.08.11
 ===========================
