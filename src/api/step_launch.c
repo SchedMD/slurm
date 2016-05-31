@@ -977,7 +977,7 @@ static int _connect_srun_cr(char *addr)
 	strcpy(sa.sun_path, addr);
 	sa_len = strlen(sa.sun_path) + sizeof(sa.sun_family);
 
-	while ((rc = connect(fd, (struct sockaddr *)&sa, sa_len) < 0) &&
+	while (((rc = connect(fd, (struct sockaddr *)&sa, sa_len)) < 0) &&
 	       (errno == EINTR));
 
 	if (rc < 0) {

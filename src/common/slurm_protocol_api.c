@@ -4232,7 +4232,7 @@ int slurm_send_only_controller_msg(slurm_msg_t *req)
 		goto cleanup;
 	}
 
-	if ((rc = slurm_send_node_msg(fd, req) < 0)) {
+	if ((rc = slurm_send_node_msg(fd, req)) < 0) {
 		rc = SLURM_ERROR;
 	} else {
 		debug3("slurm_send_only_controller_msg: sent %d", rc);
@@ -4271,7 +4271,7 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 		return SLURM_SOCKET_ERROR;
 	}
 
-	if ((rc = slurm_send_node_msg(fd, req) < 0)) {
+	if ((rc = slurm_send_node_msg(fd, req)) < 0) {
 		rc = SLURM_ERROR;
 	} else {
 		debug3("slurm_send_only_node_msg: sent %d", rc);

@@ -6195,7 +6195,7 @@ _rpc_forward_data(slurm_msg_t *msg)
 	memset(&sa, 0, sizeof(sa));
 	sa.sun_family = AF_UNIX;
 	strcpy(sa.sun_path, req->address);
-	while ((rc = connect(fd, (struct sockaddr *)&sa, SUN_LEN(&sa)) < 0) &&
+	while (((rc = connect(fd, (struct sockaddr *)&sa, SUN_LEN(&sa))) < 0) &&
 	       (errno == EINTR));
 	if (rc < 0) {
 		rc = errno;
