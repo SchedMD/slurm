@@ -289,6 +289,9 @@ documents those changes that are of interest to users and administrators.
  -- If no default account is given for a user when creating (only a list of
     accounts) no default account is printed, previously NULL was printed.
  -- Fix for tracking a node's allocated CPUs with gang scheduling.
+ -- Fix Hidden error during _rpc_forward_data call.
+ -- Fix bug resulting from wrong order-of-operations in _connect_srun_cr(),
+    and two others that cause incorrect debug messages.
 
 * Changes in Slurm 15.08.11
 ===========================
