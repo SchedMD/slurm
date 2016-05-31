@@ -16,6 +16,7 @@ documents those changes that are of interest to users and administrators.
  -- Cray - Fix node list parsing in capmc_suspend/resume programs.
  -- Fix sbatch #BSUB parsing for -W and -M options.
  -- Fix GRES task layout bug that could cause slurmctld to abort.
+ -- Fix to --gres-flags=enforce-binding logic when multiple sockets needed.
 
 * Changes in Slurm 16.05.0rc2
 =============================

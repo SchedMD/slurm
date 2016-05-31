@@ -1118,7 +1118,8 @@ static uint32_t _socks_per_node(struct job_record *job_ptr)
 		return (uint32_t) 1;
 
 	mc_ptr = job_ptr->details->mc_ptr;
-	if (mc_ptr->ntasks_per_socket != (uint16_t) NO_VAL) {
+	if ((mc_ptr->ntasks_per_socket != (uint16_t) NO_VAL) &&
+	    (mc_ptr->ntasks_per_socket != (uint16_t) INFINITE)) {
 		tasks_per_node = job_ptr->details->num_tasks / min_nodes;
 		s_p_n = (tasks_per_node + mc_ptr->ntasks_per_socket - 1) /
 			mc_ptr->ntasks_per_socket;
