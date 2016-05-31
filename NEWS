@@ -287,6 +287,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix Hidden error during _rpc_forward_data call.
  -- Fix bug resulting from wrong order-of-operations in _connect_srun_cr(),
     and two others that cause incorrect debug messages.
+ -- Fix backwards compatibility with sreport going to <= 14.11 coming from
+    >= 15.08 for some reports.
 
 * Changes in Slurm 15.08.11
 ===========================
