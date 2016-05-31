@@ -88,7 +88,13 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
  */
 extern int init (void)
 {
-	debug("%s loaded", plugin_name);
+	cpu_set_t cur_mask;
+	char mstr[1 + CPU_SETSIZE / 4];
+
+	slurm_getaffinity(0, sizeof(cur_mask), &cur_mask);
+	cpuset_to_str(&cur_mask, mstr);
+	verbose("%s loaded with CPU mask %s", plugin_name, mstr);
+
 	return SLURM_SUCCESS;
 }
 
