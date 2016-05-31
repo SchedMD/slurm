@@ -42,6 +42,7 @@ documents those changes that are of interest to users and administrators.
  -- If no default account is given for a user when creating (only a list of
     accounts) no default account is printed, previously NULL was printed.
  -- Fix for tracking a node's allocated CPUs with gang scheduling.
+ -- Fix Hidden error during _rpc_forward_data call.
 
 * Changes in Slurm 15.08.11
 ===========================
