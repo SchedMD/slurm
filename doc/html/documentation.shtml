@@ -3,7 +3,9 @@
 <h1> Documentation</h1>
 
 <p><b>NOTE: This documentation is for Slurm version @SLURM_VERSION@.<br>
-Documentation for other versions of Slurm is distributed with the code</b></p>
+Documentation for older versions of Slurm are distributed with the source, or
+may be found in the <a href="http://slurm.schedmd.com/archive/">archive</a>.
+</b></p>
 
 <p>Also see <a href="tutorials.html">Tutorials</a> and
 <a href="publications.html">Publications and Presentations</a>.</p>
