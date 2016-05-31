@@ -841,7 +841,10 @@ extern void slurmdb_pack_accounting_rec(void *in, uint16_t rpc_version,
 		pack32(object->id, buffer);
 		pack_time(object->period_start, buffer);
 	} else if (rpc_version >= SLURM_14_03_PROTOCOL_VERSION) {
-		if (!object) {
+		/* We only want to send the CPU tres to older
+		   versions of SLURM.
+		*/
+		if (!object || (object->tres_rec.id != TRES_CPU)) {
 			pack64(0, buffer);
 			pack64(0, buffer);
 			pack32(0, buffer);
