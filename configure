@@ -22760,6 +22760,12 @@ rm -f core conftest.err conftest.$ac_objext \
   rm -f conf.glibtest
 
 
+if test ${glib_config_minor_version=0} -ge 12 ; then
+
+$as_echo "#define GLIB_PTHREAD_GETNAME 1" >>confdefs.h
+
+fi
+
 if test ${glib_config_minor_version=0} -ge 32 ; then
 
 $as_echo "#define GLIB_NEW_THREADS 1" >>confdefs.h
