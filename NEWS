@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 16.05.1
 ==========================
+ -- Fix compile issue with older glibc < 2.12
 
 * Changes in Slurm 16.05.0
 ==========================
