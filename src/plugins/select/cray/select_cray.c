@@ -809,7 +809,7 @@ static void _update_app(struct job_record *job_ptr,
 	return;
 }
 
-static void _start_aeld_thread()
+static void _start_aeld_thread(void)
 {
 	if (scheduling_disabled)
 		return;
@@ -831,7 +831,7 @@ static void _start_aeld_thread()
 	}
 }
 
-static void _stop_aeld_thread()
+static void _stop_aeld_thread(void)
 {
 	if (scheduling_disabled)
 		return;
@@ -1442,6 +1442,7 @@ extern int select_p_state_save(char *dir_name)
 
 extern int select_p_state_restore(char *dir_name)
 {
+	static time_t last_config_update = (time_t) 0;
 	int state_fd, i;
 	char *state_file = NULL;
 	Buf buffer = NULL;
@@ -1455,8 +1456,6 @@ extern int select_p_state_restore(char *dir_name)
 		return SLURM_SUCCESS;
 
 	debug("cray: select_p_state_restore");
-
-	static time_t last_config_update = (time_t) 0;
 
 	/* only run on startup */
 	if (last_config_update)
