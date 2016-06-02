@@ -89,6 +89,9 @@ int p_mpi_hook_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env)
 	pmixp_debug_hang(0);
 	PMIXP_DEBUG("start");
 
+	if (job->batch)
+		return SLURM_SUCCESS;
+
 	if (SLURM_SUCCESS != (ret = pmixp_stepd_init(job, env))) {
 		PMIXP_ERROR("pmixp_stepd_init() failed");
 		goto err_ext;
