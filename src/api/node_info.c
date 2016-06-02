@@ -527,7 +527,7 @@ extern int slurm_load_node_single (node_info_msg_t **resp,
  * configured sensors on the target machine
  * IN  host  - name of node to query, NULL if localhost
  * IN  delta - Use cache if data is newer than this in seconds
- * OUT nb_sensors - number of sensors
+ * OUT sensors_cnt - number of sensors
  * OUT energy - array of acct_gather_energy_t structures on success or
  *                NULL other wise
  * RET 0 on success or a slurm error code
@@ -543,6 +543,12 @@ extern int slurm_get_node_energy(char *host, uint16_t delta,
 	acct_gather_energy_req_msg_t req;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	char *this_addr;
+
+	xassert(sensor_cnt);
+	xassert(energy);
+
+	*sensor_cnt = 0;
+	*energy = NULL;
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);

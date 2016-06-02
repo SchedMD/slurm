@@ -12,8 +12,12 @@ documents those changes that are of interest to users and administrators.
  
 * Changes in Slurm 16.05.1
 ==========================
+ -- Fix __cplusplus macro in spank.h to allow compilation with C++.
  -- Fix compile issue with older glibc < 2.12
  -- Fix for starting batch step with mpi/pmix plugin.
+ -- Fix for "scontrol -dd show job" with respect to displaying the specific
+    CPUs allocated to a job on each node. Prior logic would only display
+    the CPU information for the first node in the job allocation.
 
 * Changes in Slurm 16.05.0
 ==========================
@@ -31,7 +35,6 @@ documents those changes that are of interest to users and administrators.
  -- Fix sbatch #BSUB parsing for -W and -M options.
  -- Fix GRES task layout bug that could cause slurmctld to abort.
  -- Fix to --gres-flags=enforce-binding logic when multiple sockets needed.
- -- Fix __cplusplus macro in spank.h to allow compilation with C++.
 
 * Changes in Slurm 16.05.0rc2
 =============================
@@ -260,6 +263,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 15.08.13
 ===========================
+ -- Fix issue where slurmd could core when running the ipmi energy plugin.
+ -- Print correct return code on failure to update node features through sview.
 
 * Changes in Slurm 15.08.12
 ===========================

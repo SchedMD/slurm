@@ -680,8 +680,8 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 			}
 			xstrcat(out, line_end);
 		}
-	} else if (job_resrcs && job_resrcs->core_bitmap
-			&& ((last = bit_fls(job_resrcs->core_bitmap) != -1))) {
+	} else if (job_resrcs && job_resrcs->core_bitmap &&
+		   ((last = bit_fls(job_resrcs->core_bitmap)) != -1)) {
 		hl = hostlist_create(job_resrcs->nodes);
 		if (!hl) {
 			error("slurm_sprint_job_info: hostlist_create: %s",
