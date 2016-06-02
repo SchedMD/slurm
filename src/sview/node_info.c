@@ -1193,7 +1193,7 @@ extern int update_active_features_node(GtkDialog *dialog, const char *nodelist,
 			g_free(edit);
 			goto end_it;
 		}
-		if ((rc = slurm_update_node(node_msg) == SLURM_SUCCESS)) {
+		if ((rc = slurm_update_node(node_msg)) == SLURM_SUCCESS) {
 			edit = g_strdup_printf(
 				"Node(s) %s updated successfully.",
 				nodelist);

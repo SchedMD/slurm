@@ -18,6 +18,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix for "scontrol -dd show job" with respect to displaying the specific
     CPUs allocated to a job on each node. Prior logic would only display
     the CPU information for the first node in the job allocation.
+ -- Print correct return code on failure to update active node features
+    through sview.
 
 * Changes in Slurm 16.05.0
 ==========================
