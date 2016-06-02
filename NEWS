@@ -6,6 +6,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix __cplusplus macro in spank.h to allow compilation with C++.
  -- Fix compile issue with older glibc < 2.12
  -- Fix for starting batch step with mpi/pmix plugin.
+ -- Fix for "scontrol -dd show job" with respect to displaying the specific
+    CPUs allocated to a job on each node. Prior logic would only display
+    the CPU information for the first node in the job allocation.
 
 * Changes in Slurm 16.05.0
 ==========================
