@@ -417,7 +417,7 @@ extern void slurm_debug2 (const char *format, ...)
 extern void slurm_debug3 (const char *format, ...)
   __attribute__ ((format (printf, 1, 2)));
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 }
 #endif
 

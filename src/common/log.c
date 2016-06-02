@@ -664,10 +664,17 @@ set_idbuf(char *idbuf)
 	int max_len = 12; /* handles current longest thread name */
 
 	gettimeofday(&now, NULL);
+#ifdef GLIB_PTHREAD_GETNAME
 	if (pthread_getname_np(pthread_self(), thread_name, NAMELEN)) {
 		error("failed to get thread name: %m");
 		return;
 	}
+#else
+	/* pthread_getname_np is a non-standard extension
+	 * skip printing thread name if not available */
+	max_len = 0;
+	thread_name[0] = '\0';
+#endif
 
 	sprintf(idbuf, "%.15s.%-6d %5d %-*s %p", slurm_ctime(&now.tv_sec) + 4,
 		(int)now.tv_usec, (int)getpid(), max_len, thread_name,
