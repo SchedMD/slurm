@@ -334,7 +334,7 @@ note the following environment variables:</p>
 <h3>Gang Scheduling</h3>
 
 <p>Slurm can be configured to gang schedule (time slice) parallel jobs by
-alternately suspending and resuming them. Depending upon the the number of
+alternately suspending and resuming them. Depending upon the number of
 jobs configured to time slice and the time slice interval (as specified in
 the <i>slurm.conf</i> file using the <b>OverSubscribe</b> and <b>SchedulerTimeSlice</b>
 options), the job may experience communication timeouts. Set the environment
@@ -453,7 +453,7 @@ Slurm (without jobs). The procedure is as follows:</p>
 <h3>Job Scheduling</h3>
 
 <p>Slurm can be configured to gang schedule (time slice) parallel jobs by
-alternately suspending and resuming them. Depending upon the the number of
+alternately suspending and resuming them. Depending upon the number of
 jobs configured to time slice and the time slice interval (as specified in
 the <i>slurm.conf</i> file using the <b>OverSubscribe</b> and <b>SchedulerTimeSlice</b>
 options), the job may experience communication timeouts. Set the environment

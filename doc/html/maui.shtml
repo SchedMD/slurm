@@ -136,7 +136,7 @@ This use of this key is essential to insure that a user
 not build his own program to cancel other user's jobs in
 Slurm.
 This should be no more than 32-bit unsigned integer and match
-the the encryption key in Maui (<i>--with-key</i> on the
+the encryption key in Maui (<i>--with-key</i> on the
 configure line) or Moab (<i>KEY</i> parameter in the
 <i>moab-private.cfg</i> file).
 Note tha. Slurm's wiki plugin does not include a mechanism

@@ -267,6 +267,7 @@ documents those changes that are of interest to users and administrators.
 ===========================
  -- Fix issue where slurmd could core when running the ipmi energy plugin.
  -- Print correct return code on failure to update node features through sview.
+ -- Documentation - cleanup typos.
 
 * Changes in Slurm 15.08.12
 ===========================
