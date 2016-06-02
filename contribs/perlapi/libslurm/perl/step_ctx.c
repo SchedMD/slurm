@@ -152,9 +152,9 @@ hv_to_slurm_step_launch_params(HV *hv, slurm_step_launch_params_t *params)
 			if ((svp = hv_fetch(local_fds_hv, "in", 2, FALSE))) {
 				if (SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVHV) {
 					fd_hv = (HV*)SvRV(*svp);
-					FETCH_FIELD(fd_hv, (&params->local_fds.in), fd, int, TRUE);
-					FETCH_FIELD(fd_hv, (&params->local_fds.in), taskid, uint32_t, TRUE);
-					FETCH_FIELD(fd_hv, (&params->local_fds.in), nodeid, uint32_t, TRUE);
+					FETCH_FIELD(fd_hv, (&params->local_fds.input), fd, int, TRUE);
+					FETCH_FIELD(fd_hv, (&params->local_fds.input), taskid, uint32_t, TRUE);
+					FETCH_FIELD(fd_hv, (&params->local_fds.input), nodeid, uint32_t, TRUE);
 				} else {
 					Perl_warn(aTHX_ "`in' of local_fds is not a hash reference, ignored");
 				}
