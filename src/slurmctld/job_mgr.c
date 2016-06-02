@@ -5225,7 +5225,8 @@ static int _part_access_check(struct part_record *part_ptr,
 
 	if ((part_ptr->state_up & PARTITION_SCHED) &&
 	    (job_desc->time_limit != NO_VAL) &&
-	    (job_desc->time_limit > part_ptr->max_time)) {
+	    (job_desc->time_limit > part_ptr->max_time) &&
+	    (!qos_ptr || !(qos_ptr->flags & QOS_FLAG_PART_TIME_LIMIT))) {
 		info("_part_access_check: Job time limit (%u) exceeds limit of "
 		     "partition %s(%u)",
 		     job_desc->time_limit, part_ptr->name, part_ptr->max_time);
