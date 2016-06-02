@@ -463,7 +463,7 @@ extern int launch_p_step_launch(
 	msg_thread = _spawn_msg_handler();
 
 	*global_rc = runjob_launch(opt.argc, opt.argv,
-				   cio_fds->in.fd,
+				   cio_fds->input.fd,
 				   cio_fds->out.fd,
 				   cio_fds->err.fd);
 	_send_step_complete_rpc(*global_rc);

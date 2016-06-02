@@ -6,6 +6,9 @@ documents those changes that are of interest to users and administrators.
  -- burst_buffer/cray - Add support for rounding up the size of a buffer reqeust
     if the DataWarp configuration "equalize_fragments" is used.
  -- Remove AIX support.
+ -- Rename "in" to "input" in slurm_step_io_fds data structure defined in
+    slurm.h. This is needed to avoid breaking Python with by using one of its
+    keywords in a Slurm data structure.
  
 * Changes in Slurm 16.05.1
 ==========================

@@ -160,8 +160,8 @@ int sattach(int argc, char *argv[])
 
 	_mpir_init(layout->task_cnt);
 	if (opt.input_filter_set) {
-		opt.fds.in.nodeid =
-			_nodeid_from_layout(layout, opt.fds.in.taskid);
+		opt.fds.input.nodeid =
+			_nodeid_from_layout(layout, opt.fds.input.taskid);
 	}
 
 	if (layout->front_end)

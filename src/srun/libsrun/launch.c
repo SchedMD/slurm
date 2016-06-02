@@ -419,17 +419,17 @@ extern void launch_common_set_stdio_fds(srun_job_t *job,
 	if (_is_local_file(job->ifname)) {
 		if ((job->ifname->name == NULL) ||
 		    (job->ifname->taskid != -1)) {
-			cio_fds->in.fd = STDIN_FILENO;
+			cio_fds->input.fd = STDIN_FILENO;
 		} else {
-			cio_fds->in.fd = open(job->ifname->name, O_RDONLY);
-			if (cio_fds->in.fd == -1) {
+			cio_fds->input.fd = open(job->ifname->name, O_RDONLY);
+			if (cio_fds->input.fd == -1) {
 				error("Could not open stdin file: %m");
 				exit(error_exit);
 			}
 		}
 		if (job->ifname->type == IO_ONE) {
-			cio_fds->in.taskid = job->ifname->taskid;
-			cio_fds->in.nodeid = slurm_step_layout_host_id(
+			cio_fds->input.taskid = job->ifname->taskid;
+			cio_fds->input.nodeid = slurm_step_layout_host_id(
 				launch_common_get_slurm_step_layout(job),
 				job->ifname->taskid);
 		}

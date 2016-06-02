@@ -1675,7 +1675,7 @@ typedef struct slurm_step_io_fds {
 		int fd;
 		uint32_t taskid;
 		uint32_t nodeid;
-	} in, out, err;
+	} input, out, err;
 } slurm_step_io_fds_t;
 
 #define SLURM_STEP_IO_FDS_INITIALIZER {{0, (uint32_t)-1, (uint32_t)-1},	\

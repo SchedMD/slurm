@@ -733,7 +733,7 @@ extern int launch_p_step_launch(
 		setpgrp();
 		_unblock_signals();
 		/* dup stdio onto our open fds */
-		if ((dup2(cio_fds->in.fd, 0) == -1) ||
+		if ((dup2(cio_fds->input.fd, 0) == -1) ||
 		    (dup2(cio_fds->out.fd, 1) == -1) ||
 		    (dup2(cio_fds->err.fd, 2) == -1)) {
 			error("dup2: %m");

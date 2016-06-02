@@ -444,7 +444,7 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 	if (opt.input_filter_set)
-		opt.fds.in.taskid = opt.input_filter;
+		opt.fds.input.taskid = opt.input_filter;
 	if (opt.output_filter_set)
 		opt.fds.out.taskid = opt.output_filter;
 	if (opt.error_filter_set) {

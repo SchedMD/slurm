@@ -994,10 +994,10 @@ _init_stdio_eio_objs(slurm_step_io_fds_t fds, client_io_t *cio)
 	/*
 	 * build stdin eio_obj_t
 	 */
-	if (fds.in.fd > -1) {
-		fd_set_close_on_exec(fds.in.fd);
+	if (fds.input.fd > -1) {
+		fd_set_close_on_exec(fds.input.fd);
 		cio->stdin_obj = create_file_read_eio_obj(
-			fds.in.fd, fds.in.taskid, fds.in.nodeid, cio);
+			fds.input.fd, fds.input.taskid, fds.input.nodeid, cio);
 		eio_new_initial_obj(cio->eio, cio->stdin_obj);
 	}
 
