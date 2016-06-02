@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 15.08.13
 ===========================
+ -- Fix issue where slurmd could core when running the ipmi energy plugin.
 
 * Changes in Slurm 15.08.12
 ===========================
