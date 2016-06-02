@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 16.05.1
 ==========================
+ -- Fix __cplusplus macro in spank.h to allow compilation with C++.
  -- Fix compile issue with older glibc < 2.12
  -- Fix for starting batch step with mpi/pmix plugin.
 
@@ -22,7 +23,6 @@ documents those changes that are of interest to users and administrators.
  -- Fix sbatch #BSUB parsing for -W and -M options.
  -- Fix GRES task layout bug that could cause slurmctld to abort.
  -- Fix to --gres-flags=enforce-binding logic when multiple sockets needed.
- -- Fix __cplusplus macro in spank.h to allow compilation with C++.
 
 * Changes in Slurm 16.05.0rc2
 =============================
