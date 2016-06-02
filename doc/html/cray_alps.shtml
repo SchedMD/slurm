@@ -27,7 +27,7 @@ Use Slurm's <i>sbatch</i> or <i>salloc</i> commands to create a resource
 allocation in ALPS.
 Then use ALPS' <i>aprun</i> command to launch parallel jobs within the resource
 allocation.
-The resource allocation is terminated once the the batch script or the
+The resource allocation is terminated once the batch script or the
 <i>salloc</i> command terminates.
 Slurm includes a <i>launch/aprun</i> plugin that allow users to use
 <i>srun</i> to wrap <i>aprun</i> and translate <i>srun</i> options
