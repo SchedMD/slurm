@@ -251,6 +251,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 15.08.13
 ===========================
+ -- Fix issue where slurmd could core when running the ipmi energy plugin.
 
 * Changes in Slurm 15.08.12
 ===========================
@@ -298,6 +299,7 @@ documents those changes that are of interest to users and administrators.
     and two others that cause incorrect debug messages.
  -- Fix backwards compatibility with sreport going to <= 14.11 coming from
     >= 15.08 for some reports.
+ -- Print correct return code on failure to update node features through sview.
 
 * Changes in Slurm 15.08.11
 ===========================
