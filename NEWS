@@ -20,6 +20,8 @@ documents those changes that are of interest to users and administrators.
     the CPU information for the first node in the job allocation.
  -- Print correct return code on failure to update active node features
     through sview.
+ -- Allow QOS timelimit to override partition timelimit when EnforcePartLimits
+    is set to all/any.
 
 * Changes in Slurm 16.05.0
 ==========================
