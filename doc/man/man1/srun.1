@@ -829,8 +829,7 @@ not include a space between them. For example "\-K1" and not "\-K 1".
 .TP
 \fB\-k\fR, \fB\-\-no\-kill\fR
 Do not automatically terminate a job if one of the nodes it has been
-allocated fails.  This option is only recognized on a job allocation,
-not for the submission of individual job steps.
+allocated fails. This option applies for both job and step allocation.
 The job will assume all responsibilities for fault\-tolerance.
 Tasks launch using this option will not be considered terminated
 (e.g. \fB\-K\fR, \fB\-\-kill\-on\-bad\-exit\fR and
