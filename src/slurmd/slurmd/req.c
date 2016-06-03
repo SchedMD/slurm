@@ -773,7 +773,7 @@ _forkexec_slurmstepd(uint16_t type, void *req,
 		return SLURM_FAILURE;
 	} else if (pid > 0) {
 		int rc = SLURM_SUCCESS;
-#ifndef SLURMSTEPD_MEMCHECK
+#if (SLURMSTEPD_MEMCHECK == 0)
 		int i;
 		time_t start_time = time(NULL);
 #endif
@@ -797,7 +797,7 @@ _forkexec_slurmstepd(uint16_t type, void *req,
 
 		/* If running under valgrind/memcheck, this pipe doesn't work
 		 * correctly so just skip it. */
-#ifndef SLURMSTEPD_MEMCHECK
+#if (SLURMSTEPD_MEMCHECK == 0)
 		i = read(to_slurmd[0], &rc, sizeof(int));
 		if (i < 0) {
 			error("%s: Can not read return code from slurmstepd "
@@ -831,11 +831,37 @@ _forkexec_slurmstepd(uint16_t type, void *req,
 			error("close read to_slurmd in parent: %m");
 		return rc;
 	} else {
-#ifndef SLURMSTEPD_MEMCHECK
-		char *const argv[2] = { (char *)conf->stepd_loc, NULL};
-#else
+#if (SLURMSTEPD_MEMCHECK == 1)
+		/* memcheck test of slurmstepd, option #1 */
 		char *const argv[3] = {"memcheck",
 				       (char *)conf->stepd_loc, NULL};
+#elif (SLURMSTEPD_MEMCHECK == 2)
+		/* valgrind test of slurmstepd, option #2 */
+		uint32_t job_id = 0, step_id = 0;
+		char log_file[256];
+		char *const argv[13] = {"valgrind", "--tool=memcheck",
+					"--error-limit=no",
+					"--leak-check=summary",
+					"--show-reachable=yes",
+					"--max-stackframe=16777216",
+					"--num-callers=20",
+					"--child-silent-after-fork=yes",
+					"--track-origins=yes",
+					log_file, (char *)conf->stepd_loc,
+					NULL};
+		if (type == LAUNCH_BATCH_JOB) {
+			job_id = ((batch_job_launch_msg_t *)req)->job_id;
+			step_id = ((batch_job_launch_msg_t *)req)->step_id;
+		} else if (type == LAUNCH_TASKS) {
+			job_id = ((launch_tasks_request_msg_t *)req)->job_id;
+			step_id = ((launch_tasks_request_msg_t *)req)->job_step_id;
+		}
+		snprintf(log_file, sizeof(log_file),
+			 "--log-file=/tmp/slurmstepd_valgrind_%u.%u",
+			 job_id, step_id);
+#else
+		/* no memory checking, default */
+		char *const argv[2] = { (char *)conf->stepd_loc, NULL};
 #endif
 		int i;
 		int failed = 0;

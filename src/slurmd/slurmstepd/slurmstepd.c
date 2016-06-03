@@ -344,7 +344,7 @@ _send_ok_to_slurmd(int sock)
 {
 	/* If running under valgrind/memcheck, this pipe doesn't work correctly
 	 * so just skip it. */
-#ifndef SLURMSTEPD_MEMCHECK
+#if (SLURMSTEPD_MEMCHECK == 0)
 	int ok = SLURM_SUCCESS;
 	safe_write(sock, &ok, sizeof(int));
 	return;
@@ -358,7 +358,7 @@ _send_fail_to_slurmd(int sock)
 {
 	/* If running under valgrind/memcheck, this pipe doesn't work correctly
 	 * so just skip it. */
-#ifndef SLURMSTEPD_MEMCHECK
+#if (SLURMSTEPD_MEMCHECK == 0)
 	int fail = SLURM_FAILURE;
 
 	if (errno)
