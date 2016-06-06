@@ -10,7 +10,7 @@ use POSIX qw/pow/;
 use Sys::Hostname;
 use Slurmdb ':all';
 use Slurm ':all';
-use Data::Dumper;
+#use Data::Dumper;
 
 my $VERSION = "2.1";
 
