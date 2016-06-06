@@ -15,6 +15,10 @@ documents those changes that are of interest to users and administrators.
     is set to all/any.
  -- Make it so qsub will do a "basename" on a wrapped command for the output
     and error files.
+ -- Fix issue where slurmd could core when running the ipmi energy plugin.
+ -- Documentation - cleanup typos.
+ -- Add logic so that slurmstepd can be launched under valgrind.
+ -- Increase buffer size to read /proc/*/stat files.
 
 * Changes in Slurm 16.05.0
 ==========================
