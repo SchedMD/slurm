@@ -55,7 +55,8 @@ static bool fed_shutdown = false;
 static int _close_controller_conn(slurmdb_cluster_rec_t *conn)
 {
 	int rc = SLURM_SUCCESS;
-	if (conn >= 0)
+	xassert(conn);
+	if (conn->sockfd >= 0)
 		rc = slurm_close_persist_controller_conn(conn->sockfd);
 	conn->sockfd = -1;
 	return rc;
@@ -63,7 +64,10 @@ static int _close_controller_conn(slurmdb_cluster_rec_t *conn)
 
 static int _open_controller_conn(slurmdb_cluster_rec_t *conn)
 {
-	conn->sockfd = slurm_open_persist_controller_conn(conn->control_host,
+	if (conn->control_host && conn->control_host[0] == '\0')
+		conn->sockfd = -1;
+	else
+		conn->sockfd = slurm_open_persist_controller_conn(conn->control_host,
 							  conn->control_port);
 	return conn->sockfd;
 }
