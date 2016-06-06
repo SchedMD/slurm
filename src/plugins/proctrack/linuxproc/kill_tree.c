@@ -149,7 +149,7 @@ static xppid_t **_build_hashtbl(void)
 {
 	DIR *dir;
 	struct dirent *de;
-	char path[PATH_MAX], *endptr, *num, rbuf[1024];
+	char path[PATH_MAX], *endptr, *num, *rbuf;
 	char myname[1024], cmd[1024];
 	char state;
 	int fd;
@@ -167,6 +167,7 @@ static xppid_t **_build_hashtbl(void)
 	hashtbl = (xppid_t **)xmalloc(HASH_LEN * sizeof(xppid_t *));
 
 	slurm_seterrno(0);
+	rbuf = xmalloc(4096);
 	while ((de = readdir(dir)) != NULL) {
 		num = de->d_name;
 		if ((num[0] < '0') || (num[0] > '9'))
@@ -183,7 +184,7 @@ static xppid_t **_build_hashtbl(void)
 		if ((fd = open(path, O_RDONLY)) < 0) {
 			continue;
 		}
-		if (read(fd, rbuf, 1024) <= 0) {
+		if (read(fd, rbuf, 4096) <= 0) {
 			close(fd);
 			continue;
 		}
@@ -202,6 +203,7 @@ static xppid_t **_build_hashtbl(void)
 		_push_to_hashtbl((pid_t)ppid, (pid_t)pid,
 				 strcmp(myname, cmd), cmd, hashtbl);
 	}
+	xfree(rbuf);
 	closedir(dir);
 	return hashtbl;
 }

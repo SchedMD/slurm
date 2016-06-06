@@ -196,7 +196,7 @@ proctrack_p_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 {
 	DIR *dir;
 	struct dirent *de;
-	char path[PATH_MAX], *endptr, *num, rbuf[1024];
+	char path[PATH_MAX], *endptr, *num, *rbuf;
 	char cmd[1024];
 	char state;
 	int fd, rc = SLURM_SUCCESS;
@@ -209,6 +209,7 @@ proctrack_p_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 		rc = SLURM_ERROR;
 		goto fini;
 	}
+	rbuf = xmalloc(4096);
 	while ((de = readdir(dir)) != NULL) {
 		num = de->d_name;
 		if ((num[0] < '0') || (num[0] > '9'))
@@ -223,7 +224,7 @@ proctrack_p_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 		if ((fd = open(path, O_RDONLY)) < 0) {
 			continue;
 		}
-		if (read(fd, rbuf, 1024) <= 0) {
+		if (read(fd, rbuf, 4096) <= 0) {
 			close(fd);
 			continue;
 		}
@@ -243,6 +244,7 @@ proctrack_p_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 		xrealloc(pid_array, sizeof(pid_t) * (pid_count + 1));
 		pid_array[pid_count++] = pid;
 	}
+	xfree(rbuf);
 	closedir(dir);
 
 fini:	*pids  = pid_array;
