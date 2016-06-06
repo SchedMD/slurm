@@ -271,6 +271,7 @@ documents those changes that are of interest to users and administrators.
  -- Print correct return code on failure to update node features through sview.
  -- Documentation - cleanup typos.
  -- Add logic so that slurmstepd can be launched under valgrind.
+ -- Increase buffer size to read /proc/*/stat files.
 
 * Changes in Slurm 15.08.12
 ===========================
