@@ -197,6 +197,7 @@ proctrack_p_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 	DIR *dir;
 	struct dirent *de;
 	char path[PATH_MAX], *endptr, *num, *rbuf;
+	ssize_t buf_used;
 	char cmd[1024];
 	char state;
 	int fd, rc = SLURM_SUCCESS;
@@ -224,7 +225,8 @@ proctrack_p_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 		if ((fd = open(path, O_RDONLY)) < 0) {
 			continue;
 		}
-		if (read(fd, rbuf, 4096) <= 0) {
+		buf_used = read(fd, rbuf, 4096);
+		if ((buf_used <= 0) || (buf_used >= 4096)) {
 			close(fd);
 			continue;
 		}

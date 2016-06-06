@@ -150,6 +150,7 @@ static xppid_t **_build_hashtbl(void)
 	DIR *dir;
 	struct dirent *de;
 	char path[PATH_MAX], *endptr, *num, *rbuf;
+	ssize_t buf_used;
 	char myname[1024], cmd[1024];
 	char state;
 	int fd;
@@ -184,7 +185,8 @@ static xppid_t **_build_hashtbl(void)
 		if ((fd = open(path, O_RDONLY)) < 0) {
 			continue;
 		}
-		if (read(fd, rbuf, 4096) <= 0) {
+		buf_used = read(fd, rbuf, 4096);
+		if ((buf_used <= 0) || (buf_used >= 4096)) {
 			close(fd);
 			continue;
 		}
