@@ -13,6 +13,8 @@ documents those changes that are of interest to users and administrators.
     through sview.
  -- Allow QOS timelimit to override partition timelimit when EnforcePartLimits
     is set to all/any.
+ -- Make it so qsub will do a "basename" on a wrapped command for the output
+    and error files.
 
 * Changes in Slurm 16.05.0
 ==========================

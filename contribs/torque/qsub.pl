@@ -50,6 +50,7 @@ use autouse 'Pod::Usage' => qw(pod2usage);
 use Slurm ':all';
 use Switch;
 use English;
+use File::Basename;
 
 my ($start_time,
     $account,
@@ -136,7 +137,7 @@ my $script;
 my $use_job_name = "sbatch";
 
 if ($ARGV[0]) {
-	$use_job_name = $ARGV[0];
+	$use_job_name = basename($ARGV[0]);
 	foreach (@ARGV) {
 	        $script .= "$_ ";
 	}
