@@ -2779,14 +2779,17 @@ extern int select_p_reconfigure(void)
 		} else if (_job_cleaning(job_ptr)) {
 			cleaning_job_cnt++;
 			run_time = (int) difftime(now, job_ptr->end_time);
-			info("Job %u is cleaning (Node Health Check running for %d secs)",
-			     job_ptr->job_id, run_time);
-			/* Ideally we want to avoid using this job's resources
-			 * until Node Health Check completes, but current logic
-			 * (line below commented out) will let release resources
-			 * from hung NHC for use by other jobs with
-			 * "scontrol reconfig" command. */
-			//_add_job_to_res(job_ptr, 0);
+			if (run_time >= 300) {
+				info("Job %u NHC hung for %d secs, releasing "
+				     "resources now, may underflow later)",
+				     job_ptr->job_id, run_time);
+				/* If/when NHC completes, it will release
+				 * resources that are not marked as allocated
+				 * to this job without line below. */
+				//_add_job_to_res(job_ptr, 0);
+			} else {
+				_add_job_to_res(job_ptr, 0);
+			}
 		}
 	}
 	list_iterator_destroy(job_iterator);

@@ -28,6 +28,10 @@ documents those changes that are of interest to users and administrators.
  -- Documentation - cleanup typos.
  -- Add logic so that slurmstepd can be launched under valgrind.
  -- Increase buffer size to read /proc/*/stat files.
+ -- Fix for tracking job resource allocation when slurmctld is reconfigured
+    while Cray Node Health Check (NHC) is running. Previous logic would fail to
+    record the job's allocation then perform release operation upon NHC
+    completeion, resulting in underflow error messages.
 
 * Changes in Slurm 16.05.0
 ==========================
