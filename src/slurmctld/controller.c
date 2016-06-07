@@ -534,6 +534,21 @@ int main(int argc, char *argv[])
 			trigger_primary_ctld_res_op();
 		}
 
+		/*
+		 * create attached thread to process RPCs
+		 * Create before registering so that the controller can listen
+		 * to any updates from the dbd at startup.
+		 */
+		server_thread_incr();
+		slurm_attr_init(&thread_attr);
+		while (pthread_create(&slurmctld_config.thread_id_rpc,
+				      &thread_attr, _slurmctld_rpc_mgr,
+				      NULL)) {
+			error("pthread_create error %m");
+			sleep(1);
+		}
+		slurm_attr_destroy(&thread_attr);
+
 		clusteracct_storage_g_register_ctld(
 			acct_db_conn,
 			slurmctld_conf.slurmctld_port);
@@ -552,19 +567,6 @@ int main(int argc, char *argv[])
 			fatal( "failed to initialize power management plugin");
 		if (slurm_mcs_init() != SLURM_SUCCESS)
 			fatal("failed to initialize mcs plugin");
-
-		/*
-		 * create attached thread to process RPCs
-		 */
-		server_thread_incr();
-		slurm_attr_init(&thread_attr);
-		while (pthread_create(&slurmctld_config.thread_id_rpc,
-				      &thread_attr, _slurmctld_rpc_mgr,
-				      NULL)) {
-			error("pthread_create error %m");
-			sleep(1);
-		}
-		slurm_attr_destroy(&thread_attr);
 
 		/*
 		 * create attached thread for signal handling
