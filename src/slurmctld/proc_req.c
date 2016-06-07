@@ -147,6 +147,7 @@ inline static void  _slurm_rpc_end_time(slurm_msg_t * msg);
 inline static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg,
 					       bool *run_scheduler,
 					       bool running_composite);
+inline static void  _slurm_rpc_get_fed(slurm_msg_t *msg);
 inline static void  _slurm_rpc_get_shares(slurm_msg_t *msg);
 inline static void  _slurm_rpc_get_topo(slurm_msg_t * msg);
 inline static void  _slurm_rpc_get_powercap(slurm_msg_t * msg);
@@ -295,6 +296,9 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		break;
 	case REQUEST_JOB_END_TIME:
 		_slurm_rpc_end_time(msg);
+		break;
+	case REQUEST_FED_INFO:
+		_slurm_rpc_get_fed(msg);
 		break;
 	case REQUEST_FRONT_END_INFO:
 		_slurm_rpc_dump_front_end(msg);
@@ -1440,6 +1444,33 @@ static void _slurm_rpc_end_time(slurm_msg_t * msg)
 	}
 	debug2("_slurm_rpc_end_time jobid=%u %s",
 	       time_req_msg->job_id, TIME_STR);
+}
+
+/* _slurm_rpc_get_fd - process RPC for federation state information */
+static void _slurm_rpc_get_fed(slurm_msg_t * msg)
+{
+	DEF_TIMERS;
+	slurm_msg_t response_msg;
+	slurmdb_federation_rec_t *fed = NULL;
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, slurm_get_auth_info());
+
+	START_TIMER;
+	debug2("Processing RPC: REQUEST_FED_INFO from uid=%d", uid);
+
+	fed_mgr_get_fed_info(&fed);
+
+	slurm_msg_t_init(&response_msg);
+	response_msg.flags = msg->flags;
+	response_msg.protocol_version = msg->protocol_version;
+	response_msg.address = msg->address;
+	response_msg.msg_type = RESPONSE_FED_INFO;
+	response_msg.data = fed;
+
+	/* send message */
+	slurm_send_node_msg(msg->conn_fd, &response_msg);
+
+	END_TIMER2("_slurm_rpc_get_fed");
+	debug2("%s %s", __func__, TIME_STR);
 }
 
 /* _slurm_rpc_dump_front_end - process RPC for front_end state information */

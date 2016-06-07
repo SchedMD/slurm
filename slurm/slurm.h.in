@@ -4842,6 +4842,23 @@ extern int slurm_network_callerid(network_callerid_msg_t req,
  * RET 0 or -1 on error */
 extern int slurm_top_job(char *job_id_str);
 
+/*****************************************************************************\
+ *      SLURM FEDERATION FUNCTIONS
+\*****************************************************************************/
+/*
+ * slurm_load_federation - issue RPC to get federation status from controller
+ * IN/OUT fed_pptr - place to store returned federation information.
+ * 		     slurmdb_federation_rec_t treated as a void pointer to since
+ * 		     slurm.h doesn't have ties to slurmdb.h.
+ * RET 0 or -1 on error
+ */
+extern int slurm_load_federation(void **fed_pptr);
+/*
+ * slurm_print_federation - prints slurmdb_federation_rec_t (passed as void*
+ * 			    since slurm.h doesn't know about slurmdb.h).
+ */
+extern void slurm_print_federation(void *fed);
+
 #ifdef __cplusplus
 }
 #endif

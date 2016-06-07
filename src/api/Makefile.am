@@ -88,6 +88,7 @@ slurmapi_src =           \
 	checkpoint.c     \
 	complete.c       \
 	config_info.c    \
+	federation_info.c \
 	front_end_info.c \
 	init_msg.c       \
 	job_info.c       \

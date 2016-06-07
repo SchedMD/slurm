@@ -1107,6 +1107,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case REQUEST_POWERCAP_INFO:
 	case REQUEST_PERSIST_INIT:
 	case REQUEST_PERSIST_FINI:
+	case REQUEST_FED_INFO:
 		/* Message contains no body/information */
 		break;
 	case REQUEST_ACCT_GATHER_ENERGY:
@@ -1564,6 +1565,11 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 			(front_end_info_request_msg_t *)msg->data, buffer,
 			msg->protocol_version);
 		break;
+	case RESPONSE_FED_INFO:
+		slurmdb_pack_federation_rec(
+			(slurmdb_federation_rec_t *)msg->data,
+			msg->protocol_version, buffer);
+		break;
 	case RESPONSE_FRONT_END_INFO:
 		_pack_front_end_info_msg((slurm_msg_t *) msg, buffer);
 		break;
@@ -1760,6 +1766,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case REQUEST_POWERCAP_INFO:
 	case REQUEST_PERSIST_INIT:
 	case REQUEST_PERSIST_FINI:
+	case REQUEST_FED_INFO:
 		/* Message contains no body/information */
 		break;
 	case REQUEST_ACCT_GATHER_ENERGY:
@@ -2254,6 +2261,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_job_sbcast_cred_msg(
 			(job_sbcast_cred_msg_t **)&msg->data, buffer,
 			msg->protocol_version);
+		break;
+	case RESPONSE_FED_INFO:
+		rc = slurmdb_unpack_federation_rec(&msg->data,
+						   msg->protocol_version,
+						   buffer);
 		break;
 	case REQUEST_FRONT_END_INFO:
 		rc = _unpack_front_end_info_request_msg(

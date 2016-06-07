@@ -358,7 +358,7 @@ contents of the slurm.conf configuration file.
 \fBshow\fP \fIENTITY\fP \fIID\fP
 Display the state of the specified entity with the specified identification.
 \fIENTITY\fP may be \fIaliases\fP, \fIassoc_mgr\fP, \fIburstbuffer\fP,
-\fIconfig\fP, \fIdaemons\fP, \fIfrontend\fP, \fIjob\fP, \fInode\fP,
+\fIconfig\fP, \fIdaemons\fP, \fIfederation\fP, \fIfrontend\fP, \fIjob\fP, \fInode\fP,
 \fIpartition\fP, \fIpowercap\fP, \fIreservation\fP, \fIslurmd\fP, \fIstep\fP,
 \fItopology\fP, \fIhostlist\fP, \fIhostlistsorted\fP or \fIhostnames\fP
 (also \fIblock\fP or \fIsubmp\fP on BlueGene systems).
@@ -404,7 +404,9 @@ list use \fIhostlistsorted\fP (e.g. tux2,tux1,tux2 = tux[1-2,2]).
 By default, all elements of the entity type specified are printed.
 For an \fIENTITY\fP of \fIjob\fP, if the job does not specify
 socket-per-node, cores-per-socket or threads-per-core then it
-will display '*' in ReqS:C:T=*:*:* field.
+will display '*' in ReqS:C:T=*:*:* field. For an \fIENTITY\fP of
+\fIfederation\fP, the federation name that the controller is part of and the
+sibling clusters part of the federation will be listed.
 
 .TP
 \fBshutdown\fP \fIOPTION\fP

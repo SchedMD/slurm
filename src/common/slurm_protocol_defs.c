@@ -3966,7 +3966,11 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case ACCOUNTING_REGISTER_CTLD:
 	case REQUEST_PERSIST_INIT:
 	case REQUEST_PERSIST_FINI:
+	case REQUEST_FED_INFO:
 		/* No body to free */
+		break;
+	case RESPONSE_FED_INFO:
+		slurmdb_destroy_federation_rec(data);
 		break;
 	case REQUEST_REBOOT_NODES:
 		slurm_free_reboot_msg(data);
@@ -4315,6 +4319,10 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_LAYOUT_INFO";
 	case RESPONSE_LAYOUT_INFO:
 		return "RESPONSE_LAYOUT_INFO";
+	case REQUEST_FED_INFO:
+		return "REQUEST_FED_INFO";
+	case RESPONSE_FED_INFO:
+		return "RESPONSE_FED_INFO";
 
 	case REQUEST_UPDATE_JOB:				/* 3001 */
 		return "REQUEST_UPDATE_JOB";

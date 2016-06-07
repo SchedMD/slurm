@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  fed_mgr.h - functions for federations
+ *  info_fed.c - functions dealing with Federations in the controller.
  *****************************************************************************
  *  Copyright (C) 2016 SchedMD LLC.
  *  Written by Brian Christiansen <brian@schedmd.com>
@@ -34,15 +34,13 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _SLURM_FED_MGR_H
-#define _SLURM_FED_MGR_H
+#include "scontrol.h"
 
-#include "slurm/slurm.h"
-#include "slurm/slurmdb.h"
+extern void scontrol_print_federation()
+{
+	void *fed = NULL;
 
-extern int fed_mgr_get_fed_info(slurmdb_federation_rec_t **ret_fed);
-extern int fed_mgr_init();
-extern int fed_mgr_fini();
-extern int fed_mgr_update_feds(slurmdb_update_object_t *update);
+	if (!slurm_load_federation(&fed))
+		slurm_print_federation(fed);
+}
 
-#endif /* _SLURM_FED_MGR_H */

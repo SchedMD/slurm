@@ -122,6 +122,7 @@ extern void	scontrol_print_burst_buffer(void);
 extern void	scontrol_print_completing (void);
 extern void	scontrol_print_completing_job(job_info_t *job_ptr,
 					      node_info_msg_t *node_info_msg);
+extern void	scontrol_print_federation();
 extern void	scontrol_print_front_end_list(char *node_list);
 extern void	scontrol_print_front_end(char *node_name,
 					 front_end_info_msg_t  *

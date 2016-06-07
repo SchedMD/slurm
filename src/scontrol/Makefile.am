@@ -11,6 +11,7 @@ scontrol_SOURCES =	\
 	info_block.c	\
 	info_burst_buffer.c \
 	info_assoc_mgr.c \
+	info_fed.c 	\
 	info_job.c	\
 	info_layout.c	\
 	info_lics.c	\

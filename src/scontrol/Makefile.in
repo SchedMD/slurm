@@ -147,9 +147,9 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_scontrol_OBJECTS = create_res.$(OBJEXT) info_block.$(OBJEXT) \
 	info_burst_buffer.$(OBJEXT) info_assoc_mgr.$(OBJEXT) \
-	info_job.$(OBJEXT) info_layout.$(OBJEXT) info_lics.$(OBJEXT) \
-	info_node.$(OBJEXT) info_part.$(OBJEXT) info_res.$(OBJEXT) \
-	scontrol.$(OBJEXT) update_job.$(OBJEXT) \
+	info_fed.$(OBJEXT) info_job.$(OBJEXT) info_layout.$(OBJEXT) \
+	info_lics.$(OBJEXT) info_node.$(OBJEXT) info_part.$(OBJEXT) \
+	info_res.$(OBJEXT) scontrol.$(OBJEXT) update_job.$(OBJEXT) \
 	update_layout.$(OBJEXT) update_node.$(OBJEXT) \
 	update_part.$(OBJEXT) update_step.$(OBJEXT) \
 	update_powercap.$(OBJEXT)
@@ -487,6 +487,7 @@ scontrol_SOURCES = \
 	info_block.c	\
 	info_burst_buffer.c \
 	info_assoc_mgr.c \
+	info_fed.c 	\
 	info_job.c	\
 	info_layout.c	\
 	info_lics.c	\
@@ -605,6 +606,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/info_assoc_mgr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/info_block.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/info_burst_buffer.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/info_fed.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/info_job.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/info_layout.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/info_lics.Po@am__quote@

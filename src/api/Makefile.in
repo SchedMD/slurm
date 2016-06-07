@@ -195,13 +195,13 @@ am__DEPENDENCIES_1 = $(common_dir)/libcommon.la \
 libslurmhelper_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__objects_1 = allocate.lo allocate_msg.lo block_info.lo \
 	burst_buffer_info.lo assoc_mgr_info.lo cancel.lo checkpoint.lo \
-	complete.lo config_info.lo front_end_info.lo init_msg.lo \
-	job_info.lo job_step_info.lo layout_info.lo license_info.lo \
-	node_info.lo partition_info.lo pmi_server.lo powercap_info.lo \
-	reservation_info.lo signal.lo slurm_get_statistics.lo \
-	slurm_hostlist.lo slurm_pmi.lo step_ctx.lo step_io.lo \
-	step_launch.lo submit.lo suspend.lo topo_info.lo triggers.lo \
-	reconfigure.lo update_config.lo
+	complete.lo config_info.lo federation_info.lo \
+	front_end_info.lo init_msg.lo job_info.lo job_step_info.lo \
+	layout_info.lo license_info.lo node_info.lo partition_info.lo \
+	pmi_server.lo powercap_info.lo reservation_info.lo signal.lo \
+	slurm_get_statistics.lo slurm_hostlist.lo slurm_pmi.lo \
+	step_ctx.lo step_io.lo step_launch.lo submit.lo suspend.lo \
+	topo_info.lo triggers.lo reconfigure.lo update_config.lo
 am_libslurmhelper_la_OBJECTS = $(am__objects_1)
 libslurmhelper_la_OBJECTS = $(am_libslurmhelper_la_OBJECTS)
 PROGRAMS = $(noinst_PROGRAMS)
@@ -610,6 +610,7 @@ slurmapi_src = \
 	checkpoint.c     \
 	complete.c       \
 	config_info.c    \
+	federation_info.c \
 	front_end_info.c \
 	init_msg.c       \
 	job_info.c       \
@@ -802,6 +803,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/checkpoint.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/complete.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/config_info.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/federation_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/front_end_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/init_msg.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_info.Plo@am__quote@

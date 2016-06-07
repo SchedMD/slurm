@@ -47,6 +47,7 @@
 
 static pthread_mutex_t fed_mutex = PTHREAD_MUTEX_INITIALIZER;
 char *fed_mgr_cluster_name = NULL;
+char *fed_mgr_fed_name = NULL;
 List fed_mgr_clusters = NULL;
 
 static pthread_t ping_thread = 0;
@@ -182,6 +183,10 @@ extern int fed_mgr_fini()
 	_close_fed_conns();
 	if (ping_thread)
 		pthread_cancel(ping_thread);
+
+	xfree(fed_mgr_cluster_name);
+	xfree(fed_mgr_fed_name);
+	FREE_NULL_LIST(fed_mgr_clusters);
 	return SLURM_SUCCESS;
 }
 
@@ -230,6 +235,7 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 				    DEBUG_FLAG_DB_FEDR)
 					info("I'm part of the '%s' federation!",
 					     fed->name);
+				fed_mgr_fed_name = xstrdup(fed->name);
 				break;
 			}
 		}
@@ -277,4 +283,29 @@ next_fed:
 	return SLURM_SUCCESS;
 }
 
+extern int fed_mgr_get_fed_info(slurmdb_federation_rec_t **ret_fed)
+{
+	slurmdb_federation_rec_t tmp_fed;
+	slurmdb_federation_rec_t *out_fed;
+
+	xassert(ret_fed);
+
+	out_fed = (slurmdb_federation_rec_t *)
+		xmalloc(sizeof(slurmdb_federation_rec_t));
+	slurmdb_init_federation_rec(&tmp_fed, false);
+	slurmdb_init_federation_rec(out_fed, false);
+
+	slurm_mutex_lock(&fed_mutex);
+	tmp_fed.name         = xstrdup(fed_mgr_fed_name);
+	tmp_fed.cluster_list = fed_mgr_clusters;
+
+	slurmdb_copy_federation_rec(out_fed, &tmp_fed);
+	slurm_mutex_unlock(&fed_mutex);
+
+	xfree(tmp_fed.name);
+
+	*ret_fed = out_fed;
+
+	return SLURM_SUCCESS;
+}
 
