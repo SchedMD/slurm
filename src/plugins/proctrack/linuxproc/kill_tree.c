@@ -124,7 +124,8 @@ static void _push_to_hashtbl(pid_t ppid, pid_t pid,
 
 static int _get_myname(char *s)
 {
-	char path[PATH_MAX], rbuf[1024];
+	char path[PATH_MAX], *rbuf;
+	ssize_t buf_used;
 	int fd;
 
 	sprintf(path, "/proc/%ld/stat", (long)getpid());
@@ -132,16 +133,21 @@ static int _get_myname(char *s)
 		error("Cannot open /proc/getpid()/stat");
 		return -1;
 	}
-	if (read(fd, rbuf, 1024) <= 0) {
+	rbuf = xmalloc(4096);
+	buf_used = read(fd, rbuf, 4096);
+	if ((buf_used <= 0) || (buf_used >= 4096)) {
 		error("Cannot read /proc/getpid()/stat");
+		xfree(rbuf);
 		close(fd);
 		return -1;
 	}
 	close(fd);
 	if (sscanf(rbuf, "%*d %s ", s) != 1) {
 		error("Cannot get the command name from /proc/getpid()/stat");
+		xfree(rbuf);
 		return -1;
 	}
+	xfree(rbuf);
 	return 0;
 }
 
