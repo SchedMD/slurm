@@ -547,16 +547,20 @@ static void
 _print_daemons (void)
 {
 	slurm_ctl_conf_info_msg_t *conf;
-	char me[MAX_SLURM_NAME], *b, *c, *n, *token, *save_ptr = NULL;
+	char node_name_short[MAX_SLURM_NAME];
+	char node_name_long[MAX_SLURM_NAME];
+	char *b, *c, *n, *token, *save_ptr = NULL;
 	int actld = 0, ctld = 0, d = 0;
 	char daemon_list[] = "slurmctld slurmd";
 
 	slurm_conf_init(NULL);
 	conf = slurm_conf_lock();
 
-	gethostname_short(me, MAX_SLURM_NAME);
+	gethostname_short(node_name_short, MAX_SLURM_NAME);
+	gethostname(node_name_long, MAX_SLURM_NAME);
 	if ((b = conf->backup_controller)) {
-		if ((xstrcmp(b, me) == 0) ||
+		if ((xstrcmp(b, node_name_short) == 0) ||
+		    (xstrcmp(b, node_name_long)  == 0) ||
 		    (xstrcasecmp(b, "localhost") == 0))
 			ctld = 1;
 	}
@@ -565,7 +569,8 @@ _print_daemons (void)
 		c = xstrdup(conf->control_machine);
 		token = strtok_r(c, ",", &save_ptr);
 		while (token) {
-			if ((xstrcmp(token, me) == 0) ||
+			if ((xstrcmp(token, node_name_short) == 0) ||
+			    (xstrcmp(token, node_name_long)  == 0) ||
 			    (xstrcasecmp(token, "localhost") == 0)) {
 				ctld = 1;
 				break;
@@ -576,7 +581,7 @@ _print_daemons (void)
 	}
 	slurm_conf_unlock();
 
-	if ((n = slurm_conf_get_nodename(me))) {
+	if ((n = slurm_conf_get_nodename(node_name_short))) {
 		d = 1;
 		xfree(n);
 	} else if ((n = slurm_conf_get_aliased_nodename())) {

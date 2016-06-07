@@ -23,6 +23,7 @@ documents those changes that are of interest to users and administrators.
     while Cray Node Health Check (NHC) is running. Previous logic would fail to
     record the job's allocation then perform release operation upon NHC
     completeion, resulting in underflow error messages.
+ -- Make "scontrol show daemons" work with long node names.
 
 * Changes in Slurm 16.05.0
 ==========================
