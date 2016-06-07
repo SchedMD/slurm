@@ -78,6 +78,7 @@
 #include "src/common/working_cluster.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
@@ -373,7 +374,7 @@ static char *        hostrange_pop(hostrange_t);
 static char *        hostrange_shift(hostrange_t, int);
 static int           hostrange_join(hostrange_t, hostrange_t);
 static hostrange_t   hostrange_intersect(hostrange_t, hostrange_t);
-static int           hostrange_hn_within(hostrange_t, hostname_t);
+static bool          _hostrange_hn_within(const hostrange_t, const hostname_t);
 static size_t        hostrange_to_string(hostrange_t hr, size_t, char *,
 					 char *, int);
 static size_t        hostrange_numstr(hostrange_t, size_t, char *, int);
@@ -1103,11 +1104,12 @@ static hostrange_t hostrange_intersect(hostrange_t h1, hostrange_t h2)
 	return new;
 }
 
-/* return 1 if hostname hn is within the hostrange hr
- *        0 if not.
- */
-static int hostrange_hn_within(hostrange_t hr, hostname_t hn)
+/* return true if hostname hn is within the hostrange hr */
+static bool _hostrange_hn_within(const hostrange_t hr, const hostname_t hn)
 {
+	hostname_t hn_tmp;
+	int retval = false;
+
 	if (hr->singlehost) {
 		/*
 		 *  If the current hostrange [hr] is a `singlehost' (no valid
@@ -1118,10 +1120,7 @@ static int hostrange_hn_within(hostrange_t hr, hostname_t hn)
 		 *   which case we return true. Otherwise, there is no
 		 *   possibility that [hn] matches [hr].
 		 */
-		if (strcmp (hn->hostname, hr->prefix) == 0)
-			return 1;
-		else
-			return 0;
+		return !xstrcmp(hn->hostname, hr->prefix);
 	}
 
 	/*
@@ -1129,19 +1128,20 @@ static int hostrange_hn_within(hostrange_t hr, hostname_t hn)
 	 *   better have a valid numeric suffix, or there is no
 	 *   way we can match
 	 */
-	if (!hostname_suffix_is_valid (hn))
-		return 0;
+	if (!hostname_suffix_is_valid(hn))
+		return false;
 
 	/*
 	 *  If hostrange and hostname prefixes don't match, then
 	 *   there is way the hostname falls within the range [hr].
 	 */
-	if (strcmp(hr->prefix, hn->prefix) != 0) {
+	hn_tmp = hostname_create(hn->hostname);
+	if (xstrcmp(hr->prefix, hn->prefix) != 0) {
 		int len1, len2, ldiff;
 		int dims = slurmdb_setup_cluster_name_dims();
 
 		if (dims != 1)
-			return 0;
+			goto done;
 
 		/* Below logic was added since primarily for a cray
 		 * where people typically drop
@@ -1162,14 +1162,14 @@ static int hostrange_hn_within(hostrange_t hr, hostname_t hn)
 		ldiff = len1 - len2;
 
 		if (ldiff > 0 && isdigit(hr->prefix[len1-1])
-		    && (strlen(hn->suffix) >= ldiff)) {
+		    && (strlen(hn_tmp->suffix) >= ldiff)) {
 			/* Tack on ldiff of the hostname's suffix to that of
 			 * it's prefix */
 			hn->prefix = realloc(hn->prefix, len2+ldiff+1);
-			strncat(hn->prefix, hn->suffix, ldiff);
+			strncat(hn_tmp->prefix, hn_tmp->suffix, ldiff);
 			/* Now adjust the suffix of the hostname object. */
-			hn->suffix += ldiff;
-			/* And the numeric representation just incase
+			hn_tmp->suffix += ldiff;
+			/* And the numeric representation just in case
 			 * whatever we just tacked on to the prefix
 			 * had something other than 0 in it.
 			 *
@@ -1177,26 +1177,29 @@ static int hostrange_hn_within(hostrange_t hr, hostname_t hn)
 			 * single dimension systems we will always use
 			 * the base 10.
 			 */
-			hn->num = strtoul(hn->suffix, NULL, 10);
+			hn_tmp->num = strtoul(hn_tmp->suffix, NULL, 10);
 
 			/* Now compare them and see if they match */
-			if (strcmp(hr->prefix, hn->prefix) != 0)
-				return 0;
-		} else
-			return 0;
+			if (xstrcmp(hr->prefix, hn_tmp->prefix) != 0)
+				goto done;
+		} else {
+			goto done;
+		}
 	}
 
 	/*
 	 *  Finally, check whether [hn], with a valid numeric suffix,
 	 *   falls within the range of [hr].
 	 */
-	if (hn->num <= hr->hi && hn->num >= hr->lo) {
-		int width = hostname_suffix_width(hn);
-		int num = hn->num;
-		return (_width_equiv(hr->lo, &hr->width, num, &width));
+	if (hn_tmp->num <= hr->hi && hn_tmp->num >= hr->lo) {
+		int width = hostname_suffix_width(hn_tmp);
+		int num = hn_tmp->num;
+		retval = _width_equiv(hr->lo, &hr->width, num, &width);
 	}
 
-	return 0;
+done:
+	hostname_destroy(hn_tmp);
+	return retval;
 }
 
 
@@ -2444,7 +2447,7 @@ int hostlist_find(hostlist_t hl, const char *hostname)
 	LOCK_HOSTLIST(hl);
 
 	for (i = 0, count = 0; i < hl->nranges; i++) {
-		if (hostrange_hn_within(hl->hr[i], hn)) {
+		if (_hostrange_hn_within(hl->hr[i], hn)) {
 			if (hostname_suffix_is_valid(hn))
 				ret = count + hn->num - hl->hr[i]->lo;
 			else
@@ -3666,7 +3669,7 @@ static int hostset_find_host(hostset_t set, const char *host)
 	LOCK_HOSTLIST(set->hl);
 	hn = hostname_create(host);
 	for (i = 0; i < set->hl->nranges; i++) {
-		if (hostrange_hn_within(set->hl->hr[i], hn)) {
+		if (_hostrange_hn_within(set->hl->hr[i], hn)) {
 			retval = 1;
 			goto done;
 		}
