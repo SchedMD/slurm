@@ -607,8 +607,10 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(vals);
 		xfree(query);
 		return ret_list;
-	} else if (cluster->fed.name)
-		as_mysql_add_feds_to_update_list(mysql_conn);
+	}
+
+	/* push out changes since the cluster could have just registered */
+	as_mysql_add_feds_to_update_list(mysql_conn);
 	xfree(query);
 
 end_it:
