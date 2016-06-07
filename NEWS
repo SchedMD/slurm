@@ -269,6 +269,8 @@ documents those changes that are of interest to users and administrators.
  -- Documentation - cleanup typos.
  -- Add logic so that slurmstepd can be launched under valgrind.
  -- Increase buffer size to read /proc/*/stat files.
+ -- Fix hostrange_hn_within to allow hostname lookup within a set of nodes
+    with different length prefixes.
 
 * Changes in Slurm 15.08.12
 ===========================
