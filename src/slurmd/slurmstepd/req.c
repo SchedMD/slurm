@@ -1085,8 +1085,10 @@ _handle_terminate(int fd, stepd_step_rec_t *job, uid_t uid)
 	}
 
 	if (proctrack_g_signal(job->cont_id, SIGKILL) < 0) {
-		rc = -1;
-		errnum = errno;
+		if (errno != ESRCH) {	/* No error if process already gone */
+			rc = -1;
+			errnum = errno;
+		}
 		verbose("Error sending SIGKILL signal to %u.%u: %m",
 			job->jobid, job->stepid);
 	} else {

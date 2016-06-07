@@ -860,8 +860,13 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 				break;
 		}
 		if (!p_ptr) {
+			char *part_name;
+			if (job_ptr->part_ptr)
+				part_name = job_ptr->part_ptr->name;
+			else
+				part_name = job_ptr->partition;
 			error("cons_res: could not find cr partition %s",
-			      job_ptr->part_ptr->name);
+			      part_name);
 			return SLURM_ERROR;
 		}
 		if (!p_ptr->row) {
