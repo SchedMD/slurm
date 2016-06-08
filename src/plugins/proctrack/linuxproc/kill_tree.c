@@ -327,39 +327,48 @@ extern int kill_proc_tree(pid_t top, int sig)
  */
 extern pid_t find_ancestor(pid_t process, char *process_name)
 {
-	char path[PATH_MAX], rbuf[1024];
+	char path[PATH_MAX], *rbuf;
+	ssize_t buf_used;
 	int fd;
 	long pid, ppid;
 
+	rbuf = xmalloc(4096);
 	pid = ppid = (long)process;
 	do {
 		if (ppid <= 1) {
-			return 0;
+			pid = 0;
+			break;
 		}
 
 		sprintf(path, "/proc/%ld/stat", ppid);
 		if ((fd = open(path, O_RDONLY)) < 0) {
-			return 0;
+			pid = 0;
+			break;
 		}
-		if (read(fd, rbuf, 1024) <= 0) {
+		buf_used = read(fd, rbuf, 4096);
+		if ((buf_used <= 0) || (buf_used >= 4096)) {
 			close(fd);
-			return 0;
+			pid = 0;
+			break;
 		}
 		close(fd);
 		if (sscanf(rbuf, "%ld %*s %*s %ld", &pid, &ppid) != 2) {
-			return 0;
+			pid = 0;
+			break;
 		}
 
 		sprintf(path, "/proc/%ld/cmdline", pid);
 		if ((fd = open(path, O_RDONLY)) < 0) {
 			continue;
 		}
-		if (read(fd, rbuf, 1024) <= 0) {
+		buf_used = read(fd, rbuf, 4096);
+		if ((buf_used <= 0) || (buf_used >= 4096)) {
 			close(fd);
 			continue;
 		}
 		close(fd);
 	} while (!strstr(rbuf, process_name));
+	xfree(rbuf);
 
 	return pid;
 }
