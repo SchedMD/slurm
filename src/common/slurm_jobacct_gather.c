@@ -218,7 +218,7 @@ static void *_watch_tasks(void *arg)
 	 * spawned, which would prevent a valid checkpoint/restart
 	 * with some systems */
 	_task_sleep(1);
-	while (init_run && !jobacct_shutdown && acct_gather_profile_running) {
+	while (init_run && !jobacct_shutdown && acct_gather_profile_test()) {
 		/* Do this until shutdown is requested */
 		slurm_mutex_lock(&acct_gather_profile_timer[type].notify_mutex);
 		pthread_cond_wait(

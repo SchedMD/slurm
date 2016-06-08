@@ -108,7 +108,9 @@ static const char *syms[] = {
 };
 
 acct_gather_profile_timer_t acct_gather_profile_timer[PROFILE_CNT];
-bool acct_gather_profile_running = false;
+
+static bool acct_gather_profile_running = false;
+static pthread_mutex_t profile_running_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static slurm_acct_gather_profile_ops_t ops;
 static plugin_context_t *g_context = NULL;
@@ -141,7 +143,7 @@ static void *_timer_thread(void *args)
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 	DEF_TIMERS;
-	while (init_run && acct_gather_profile_running) {
+	while (init_run && acct_gather_profile_test()) {
 		slurm_mutex_lock(&g_context_lock);
 		START_TIMER;
 		now = time(NULL);
@@ -427,11 +429,14 @@ extern int acct_gather_profile_startpoll(char *freq, char *freq_def)
 	if (acct_gather_profile_init() < 0)
 		return SLURM_ERROR;
 
+	slurm_mutex_lock(&profile_running_mutex);
 	if (acct_gather_profile_running) {
+		slurm_mutex_unlock(&profile_running_mutex);
 		error("acct_gather_profile_startpoll: poll already started!");
 		return retval;
 	}
 	acct_gather_profile_running = true;
+	slurm_mutex_unlock(&profile_running_mutex);
 
 	(*(ops.get))(ACCT_GATHER_PROFILE_RUNNING, &profile);
 	xassert(profile != ACCT_GATHER_PROFILE_NOT_SET);
@@ -504,12 +509,14 @@ extern void acct_gather_profile_endpoll(void)
 {
 	int i;
 
+	slurm_mutex_lock(&profile_running_mutex);
 	if (!acct_gather_profile_running) {
+		slurm_mutex_unlock(&profile_running_mutex);
 		debug2("acct_gather_profile_startpoll: poll already ended!");
 		return;
 	}
-
 	acct_gather_profile_running = false;
+	slurm_mutex_unlock(&profile_running_mutex);
 
 	for (i=0; i < PROFILE_CNT; i++) {
 		/* end remote threads */
@@ -672,3 +679,13 @@ extern bool acct_gather_profile_g_is_active(uint32_t type)
 
 	return (*(ops.is_active))(type);
 }
+
+extern bool acct_gather_profile_test(void)
+{
+	bool rc;
+	slurm_mutex_lock(&profile_running_mutex);
+	rc = acct_gather_profile_running;
+	slurm_mutex_unlock(&profile_running_mutex);
+	return rc;
+}
+
