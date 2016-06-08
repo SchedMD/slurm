@@ -630,12 +630,14 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 	int rc = SLURM_SUCCESS;
 	char *my_usage_table = NULL;
 	List usage_list = NULL;
-	char *id_str = NULL;
+	char *id_str = NULL, *name_char = NULL;
 	ListIterator itr = NULL, u_itr = NULL;
 	void *object = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
 	slurmdb_wckey_rec_t *wckey = NULL;
 	slurmdb_accounting_rec_t *accounting_rec = NULL;
+	hostlist_t hl = NULL;
+	char id[100];
 
 	if (!object_list) {
 		error("We need an object to set data for getting usage");
@@ -645,28 +647,36 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
+	/* Previously this would just tack id's onto a long list.  It turns out
+	 * that isn't very efficient.  This attempts to combine id's into a
+	 * hostlist and then query id sets instead of against each id
+	 * separately.  This has proven to be much more efficient.
+	 */
 	switch (type) {
 	case DBD_GET_ASSOC_USAGE:
+		name_char = "t3.id_assoc";
 		itr = list_iterator_create(object_list);
 		while ((assoc = list_next(itr))) {
-			if (id_str)
-				xstrfmtcat(id_str, " || t3.id_assoc=%d",
-					   assoc->id);
+			snprintf(id, sizeof(id), "%u", assoc->id);
+
+			if (hl)
+				hostlist_push_host_dims(hl, id, 1);
 			else
-				xstrfmtcat(id_str, "t3.id_assoc=%d", assoc->id);
+				hl = hostlist_create_dims(id, 1);
 		}
 		list_iterator_destroy(itr);
-
 		my_usage_table = assoc_day_table;
 		break;
 	case DBD_GET_WCKEY_USAGE:
+		name_char = "id";
 		itr = list_iterator_create(object_list);
 		while ((wckey = list_next(itr))) {
-			if (id_str)
-				xstrfmtcat(id_str, " || id=%d",
-					   wckey->id);
+			snprintf(id, sizeof(id), "%u", wckey->id);
+
+			if (hl)
+				hostlist_push_host_dims(hl, id, 1);
 			else
-				xstrfmtcat(id_str, "id=%d", wckey->id);
+				hl = hostlist_create_dims(id, 1);
 		}
 		list_iterator_destroy(itr);
 
@@ -676,6 +686,24 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 		error("Unknown usage type %d", type);
 		return SLURM_ERROR;
 		break;
+	}
+
+	if (hl) {
+		unsigned long lo, hi;
+
+		xfree(id_str);
+
+		hostlist_sort(hl);
+		while (hostlist_pop_range_values(hl, &lo, &hi)) {
+			if (id_str)
+				xstrcat(id_str, " || ");
+			if (lo >= hi)
+				xstrfmtcat(id_str, "%s=%lu", name_char, lo);
+			else
+				xstrfmtcat(id_str, "%s between %lu and %lu",
+					   name_char, lo, hi);
+		}
+		hostlist_destroy(hl);
 	}
 
 	if (set_usage_information(&my_usage_table, type, &start, &end)
