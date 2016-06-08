@@ -966,6 +966,12 @@ static int _connect_srun_cr(char *addr)
 	unsigned int sa_len;
 	int fd, rc;
 
+#ifdef UNIX_PATH_MAX
+	if (addr && (strlen(addr) > UNIX_PATH_MAX)) {
+		error("%s: socket path name too long (%s)", __func__, addr);
+		return -1;
+	}
+#endif
 	fd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (fd < 0) {
 		error("failed creating cr socket: %m");
