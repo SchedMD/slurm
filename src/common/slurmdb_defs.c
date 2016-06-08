@@ -39,6 +39,7 @@
 #include <stdlib.h>
 
 #include "src/common/assoc_mgr.h"
+#include "src/common/log.h"
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
 #include "src/common/slurm_auth.h"

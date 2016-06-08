@@ -41,6 +41,7 @@
 #include "config.h"
 
 #include "mysql_common.h"
+#include "src/common/log.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 #include "src/common/timers.h"

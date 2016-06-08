@@ -66,6 +66,7 @@
 
 #include "src/common/gres.h"
 #include "src/common/list.h"
+#include "src/common/log.h"
 #include "src/common/proc_args.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
