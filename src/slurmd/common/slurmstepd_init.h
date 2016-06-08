@@ -53,6 +53,7 @@
 //#define SLURMSTEPD_MEMCHECK 1	/* Run slurmstepd with memcheck */
 //#define SLURMSTEPD_MEMCHECK 2	/* Run slurmstepd with valgrind/memcheck */
 //#define SLURMSTEPD_MEMCHECK 3	/* Run slurmstepd with valgrind/drd */
+//#define SLURMSTEPD_MEMCHECK 4	/* Run slurmstepd with valgrind/helgrind */
 
 typedef enum slurmd_step_tupe {
 	LAUNCH_BATCH_JOB = 0,
