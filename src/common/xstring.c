@@ -420,9 +420,9 @@ long int xstrntol(const char *str, char **endptr, size_t n, int base)
 	memcpy(new_str, str, n);
 	new_str[n] = '\0';
 
-	number = strtol(new_str, new_endptr, base);
+	number = strtol(new_str, &new_endptr, base);
 	if (endptr)
-		*endptr = str + (new_endptr - new_str);
+		*endptr = ((char *)str) + (new_endptr - new_str);
 
 	return number;
 }
