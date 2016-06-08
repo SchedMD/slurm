@@ -258,7 +258,7 @@ _handle_pmi1_init(int fd, int lrank)
 	debug3("mpi/pmi2: in _handle_pmi1_init");
 
 	while ( (n = read(fd, buf, 64)) < 0 && errno == EINTR);
-	if (n < 0) {
+	if ((n < 0) || (n >= 64)) {
 		error("mpi/pmi2: failed to read PMI1 init command");
 		return SLURM_ERROR;
 	}
