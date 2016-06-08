@@ -81,7 +81,7 @@ struct part_record default_part;	/* default configuration values */
 List part_list = NULL;			/* partition list */
 char *default_part_name = NULL;		/* name of default partition */
 struct part_record *default_part_loc = NULL; /* default partition location */
-time_t last_part_update;	/* time of last update to partition records */
+time_t last_part_update = (time_t) 0;	/* time of last update to partition records */
 uint16_t part_max_priority = 0;         /* max priority_job_factor in all parts */
 
 static int    _delete_part_record(char *name);
