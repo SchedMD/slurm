@@ -550,7 +550,6 @@ extern int get_new_info_config(slurm_ctl_conf_info_msg_t **info_ptr);
 // common.c
 extern char * replspace (char *str);
 extern char * replus (char *str);
-extern char *delstr(char *str, char *orig);
 extern void set_page_opts(int tab, display_data_t *display_data,
 			  int count, char* initial_opts);
 extern void free_switch_nodes_maps(switch_record_bitmaps_t

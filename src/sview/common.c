@@ -686,25 +686,6 @@ extern char * replus (char *str)
 	return str;
 }
 
-extern char *delstr(char *str, char *orig)
-{
-	static char buffer[150];
-	char *p;
-
-	if (!(p = strstr(str, orig)))
-		return NULL;
-
-	strncpy(buffer, str, p-str);
-	strncpy(buffer+(p-str-1), p+strlen(orig), strlen(str)-(p-str));
-	buffer[strlen(str) - strlen(orig)] = '\0';
-
-	if (_DEBUG)
-		g_print("delstr: new string <%s>\n", buffer);
-
-	return buffer;
-}
-
-
 extern void free_switch_nodes_maps(
 	switch_record_bitmaps_t *sw_nodes_bitmaps_ptr)
 {
