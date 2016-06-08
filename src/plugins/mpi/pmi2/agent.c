@@ -56,6 +56,7 @@
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/eio.h"
+#include "src/common/macros.h"
 #include "src/common/slurm_mpi.h"
 #include "src/common/xstring.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
@@ -70,7 +71,8 @@ static int *initialized = NULL;
 static int *finalized = NULL;
 
 static eio_handle_t *pmi2_handle;
-static volatile int _agent_running;
+static volatile bool agent_running;
+static pthread_mutex_t agent_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static bool _tree_listen_readable(eio_obj_t *obj);
 static int  _tree_listen_read(eio_obj_t *obj, List objs);
@@ -304,7 +306,9 @@ _agent(void * unused)
 	eio_obj_t *tree_listen_obj, *task_obj;
 	int i;
 
-	_agent_running = 1;
+	slurm_mutex_lock(&agent_mutex);
+	agent_running = true;
+	slurm_mutex_unlock(&agent_mutex);
 
 	pmi2_handle = eio_handle_create(0);
 
@@ -330,8 +334,20 @@ _agent(void * unused)
 
 	eio_handle_destroy(pmi2_handle);
 
-	_agent_running = 0;
+	slurm_mutex_lock(&agent_mutex);
+	agent_running = false;
+	slurm_mutex_unlock(&agent_mutex);
+
 	return NULL;
+}
+
+static bool _agent_running_test(void)
+{
+	bool rc;
+	slurm_mutex_lock(&agent_mutex);
+	rc = agent_running;
+	slurm_mutex_unlock(&agent_mutex);
+	return rc;
 }
 
 /*
@@ -360,7 +376,7 @@ pmi2_start_agent(void)
 	      (unsigned long) pmi2_agent_tid);
 
 	/* wait for the agent to start */
-	while (!_agent_running) {
+	while (!_agent_running_test()) {
 		sched_yield();
 	}
 
@@ -377,7 +393,7 @@ pmi2_stop_agent(void)
 	if (pmi2_handle != NULL) {
 		eio_signal_shutdown(pmi2_handle);
 		/* wait for the agent to finish */
-		while (_agent_running ) {
+		while (_agent_running_test()) {
 			sched_yield();
 		}
 	}
