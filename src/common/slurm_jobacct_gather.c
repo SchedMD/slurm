@@ -110,6 +110,7 @@ static slurm_jobacct_gather_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
+static pthread_mutex_t init_run_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t watch_tasks_thread_id = 0;
 
 static int freq = 0;
@@ -193,6 +194,14 @@ static void _task_sleep(int rem)
 		rem = sleep(rem);	/* subject to interupt */
 }
 
+static bool _init_run_test(void)
+{
+	bool rc;
+	slurm_mutex_lock(&init_run_mutex);
+	rc = init_run;
+	slurm_mutex_unlock(&init_run_mutex);
+	return rc;
+}
 
 /* _watch_tasks() -- monitor slurm jobs and track their memory usage
  *
@@ -218,7 +227,8 @@ static void *_watch_tasks(void *arg)
 	 * spawned, which would prevent a valid checkpoint/restart
 	 * with some systems */
 	_task_sleep(1);
-	while (init_run && !jobacct_shutdown && acct_gather_profile_test()) {
+	while (_init_run_test() &&
+	       !jobacct_shutdown && acct_gather_profile_test()) {
 		/* Do this until shutdown is requested */
 		slurm_mutex_lock(&acct_gather_profile_timer[type].notify_mutex);
 		pthread_cond_wait(
@@ -241,7 +251,7 @@ extern int jobacct_gather_init(void)
 	char	*type = NULL;
 	int	retval=SLURM_SUCCESS;
 
-	if (slurmdbd_conf || (init_run && g_context))
+	if (slurmdbd_conf || (_init_run_test() && g_context))
 		return retval;
 
 	slurm_mutex_lock(&g_context_lock);
@@ -264,7 +274,9 @@ extern int jobacct_gather_init(void)
 		goto done;
 	}
 
+	slurm_mutex_lock(&init_run_mutex);
 	init_run = true;
+	slurm_mutex_unlock(&init_run_mutex);
 
 	/* only print the WARNING messages if in the slurmctld */
 	if (!run_in_daemon("slurmctld"))
@@ -303,7 +315,9 @@ extern int jobacct_gather_fini(void)
 
 	slurm_mutex_lock(&g_context_lock);
 	if (g_context) {
+		slurm_mutex_lock(&init_run_mutex);
 		init_run = false;
+		slurm_mutex_unlock(&init_run_mutex);
 
 		if (watch_tasks_thread_id) {
 			pthread_cancel(watch_tasks_thread_id);
