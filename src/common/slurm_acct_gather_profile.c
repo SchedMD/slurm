@@ -147,7 +147,7 @@ static void *_timer_thread(void *args)
 		now = time(NULL);
 
 		for (i=0; i<PROFILE_CNT; i++) {
-			if (acct_gather_suspended) {
+			if (acct_gather_suspend_test()) {
 				/* Handle suspended time as if it
 				 * didn't happen */
 				if (!acct_gather_profile_timer[i].freq)

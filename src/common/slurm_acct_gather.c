@@ -42,7 +42,8 @@
 #include "src/common/slurm_strcasestr.h"
 #include "src/common/xstring.h"
 
-bool acct_gather_suspended = false;
+static bool acct_gather_suspended = false;
+static pthread_mutex_t suspended_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static bool inited = 0;
 
@@ -244,10 +245,23 @@ extern int acct_gather_check_acct_freq_task(
 
 extern void acct_gather_suspend_poll(void)
 {
+	slurm_mutex_lock(&suspended_mutex);
 	acct_gather_suspended = true;
+	slurm_mutex_unlock(&suspended_mutex);
 }
 
 extern void acct_gather_resume_poll(void)
 {
+	slurm_mutex_lock(&suspended_mutex);
 	acct_gather_suspended = false;
+	slurm_mutex_unlock(&suspended_mutex);
+}
+
+extern bool acct_gather_suspend_test(void)
+{
+	bool rc;
+	slurm_mutex_lock(&suspended_mutex);
+	rc = acct_gather_suspended;
+	slurm_mutex_unlock(&suspended_mutex);
+	return rc;
 }
