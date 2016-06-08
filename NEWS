@@ -10,6 +10,9 @@ documents those changes that are of interest to users and administrators.
  -- Increase buffer size to read /proc/*/stat files.
  -- Fix hostrange_hn_within to allow hostname lookup within a set of nodes
     with different length prefixes.
+ -- MYSQL - Handle ER_HOST_IS_BLOCKED better by failing when it occurs instead
+    of continuously printing the message over and over as the problem will
+    most likely not resolve itself.
 
 * Changes in Slurm 15.08.12
 ===========================
