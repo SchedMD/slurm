@@ -120,6 +120,7 @@ static uint64_t cont_id = NO_VAL64;
 static pthread_mutex_t task_list_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static bool jobacct_shutdown = true;
+static pthread_mutex_t jobacct_shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool plugin_polling = true;
 
 static uint32_t jobacct_job_id     = 0;
@@ -179,6 +180,15 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static bool _jobacct_shutdown_test(void)
+{
+	bool rc;
+	slurm_mutex_lock(&jobacct_shutdown_mutex);
+	rc = jobacct_shutdown;
+	slurm_mutex_unlock(&jobacct_shutdown_mutex);
+	return rc;
+}
+
 static void _poll_data(bool profile)
 {
 	/* Update the data */
@@ -227,8 +237,8 @@ static void *_watch_tasks(void *arg)
 	 * spawned, which would prevent a valid checkpoint/restart
 	 * with some systems */
 	_task_sleep(1);
-	while (_init_run_test() &&
-	       !jobacct_shutdown && acct_gather_profile_test()) {
+	while (_init_run_test() && !_jobacct_shutdown_test() &&
+	       acct_gather_profile_test()) {
 		/* Do this until shutdown is requested */
 		slurm_mutex_lock(&acct_gather_profile_timer[type].notify_mutex);
 		pthread_cond_wait(
@@ -343,12 +353,13 @@ extern int jobacct_gather_startpoll(uint16_t frequency)
 	if (jobacct_gather_init() < 0)
 		return SLURM_ERROR;
 
-	if (!jobacct_shutdown) {
+	if (!_jobacct_shutdown_test()) {
 		error("jobacct_gather_startpoll: poll already started!");
 		return retval;
 	}
-
+	slurm_mutex_lock(&jobacct_shutdown_mutex);
 	jobacct_shutdown = false;
+	slurm_mutex_unlock(&jobacct_shutdown_mutex);
 
 	freq = frequency;
 
@@ -378,7 +389,9 @@ extern int jobacct_gather_endpoll(void)
 	if (jobacct_gather_init() < 0)
 		return SLURM_ERROR;
 
+	slurm_mutex_lock(&jobacct_shutdown_mutex);
 	jobacct_shutdown = true;
+	slurm_mutex_unlock(&jobacct_shutdown_mutex);
 	slurm_mutex_lock(&task_list_lock);
 	FREE_NULL_LIST(task_list);
 
@@ -400,7 +413,7 @@ extern int jobacct_gather_add_task(pid_t pid, jobacct_id_t *jobacct_id,
 	if (!plugin_polling)
 		return SLURM_SUCCESS;
 
-	if (jobacct_shutdown)
+	if (_jobacct_shutdown_test())
 		return SLURM_ERROR;
 
 	jobacct = jobacctinfo_create(jobacct_id);
@@ -436,7 +449,7 @@ error:
 
 extern jobacctinfo_t *jobacct_gather_stat_task(pid_t pid)
 {
-	if (!plugin_polling || jobacct_shutdown)
+	if (!plugin_polling || _jobacct_shutdown_test())
 		return NULL;
 	else if (pid) {
 		struct jobacctinfo *jobacct = NULL;
@@ -490,7 +503,7 @@ extern jobacctinfo_t *jobacct_gather_remove_task(pid_t pid)
 	 * mainly for updating energy consumption */
 	_poll_data(1);
 
-	if (jobacct_shutdown)
+	if (_jobacct_shutdown_test())
 		return NULL;
 
 	slurm_mutex_lock(&task_list_lock);
