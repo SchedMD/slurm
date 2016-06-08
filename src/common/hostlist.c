@@ -2178,6 +2178,39 @@ char *hostlist_pop_range(hostlist_t hl)
 	return buf;
 }
 
+int hostlist_pop_range_values(
+	hostlist_t hl, unsigned long *lo, unsigned long *hi)
+{
+	int i;
+	hostrange_t tail;
+
+	if (!hl || !lo || !hi)
+		return 0;
+
+	*lo = 0;
+	*hi = 0;
+	LOCK_HOSTLIST(hl);
+	if (hl->nranges < 1) {
+		UNLOCK_HOSTLIST(hl);
+		return 0;
+	}
+
+	i = hl->nranges - 1;
+	tail = hl->hr[i];
+
+	if (tail && i < hl->nranges) {
+		*lo = tail->lo;
+		*hi = tail->hi;
+		hl->nhosts -= hostrange_count(tail);
+		hl->nranges--;
+		hostrange_destroy(tail);
+		hl->hr[i] = NULL;
+	}
+
+	UNLOCK_HOSTLIST(hl);
+
+	return 1;
+}
 
 char *hostlist_shift_range(hostlist_t hl)
 {
