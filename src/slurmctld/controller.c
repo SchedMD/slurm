@@ -730,7 +730,7 @@ int main(int argc, char *argv[])
 		usleep(100000);
 	}
 
-	/* do this outside of MEMORY_LEAD_DEBUG so that remote connections get
+	/* do this outside of MEMORY_LEAK_DEBUG so that remote connections get
 	 * closed. */
 	fed_mgr_fini();
 
