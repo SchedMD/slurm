@@ -170,6 +170,8 @@ static void *_timer_thread(void *args)
 			if (!acct_gather_profile_timer[i].freq
 			    || (diff < acct_gather_profile_timer[i].freq))
 				continue;
+			if (!acct_gather_profile_test())
+				break;	/* Shutting down */
 			debug2("profile signalling type %s",
 			       acct_gather_profile_type_t_name(i));
 
@@ -186,6 +188,10 @@ static void *_timer_thread(void *args)
 		slurm_mutex_unlock(&g_context_lock);
 
 		usleep(USLEEP_TIME - DELTA_TIMER);
+	}
+
+	for (i=0; i < PROFILE_CNT; i++) {
+		pthread_cond_destroy(&acct_gather_profile_timer[i].notify);
 	}
 
 	return NULL;
@@ -523,8 +529,7 @@ extern void acct_gather_profile_endpoll(void)
 		slurm_mutex_lock(&acct_gather_profile_timer[i].notify_mutex);
 		pthread_cond_signal(&acct_gather_profile_timer[i].notify);
 		slurm_mutex_unlock(&acct_gather_profile_timer[i].notify_mutex);
-		pthread_cond_destroy(&acct_gather_profile_timer[i].notify);
-		acct_gather_profile_timer[i].freq = 0;
+
 		switch (i) {
 		case PROFILE_ENERGY:
 			break;
