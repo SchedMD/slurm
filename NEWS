@@ -25,6 +25,8 @@ documents those changes that are of interest to users and administrators.
     completeion, resulting in underflow error messages.
  -- Make "scontrol show daemons" work with long node names.
  -- CRAY - Collect energy using a uint64_t instead of uint32_t.
+ -- Fix incorrect if statements when determining if the user has a default
+    account or wckey.
 
 * Changes in Slurm 16.05.0
 ==========================

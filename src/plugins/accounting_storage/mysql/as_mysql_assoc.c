@@ -410,7 +410,7 @@ static int _make_sure_users_have_default(
 				break;
 			}
 		}
-		if (!rc != SLURM_SUCCESS)
+		if (rc != SLURM_SUCCESS)
 			break;
 		list_iterator_reset(clus_itr);
 	}
