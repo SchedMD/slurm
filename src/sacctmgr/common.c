@@ -760,7 +760,7 @@ extern int commit_check(char *warning)
 		if ((ans = select(fd+1, &rfds, NULL, NULL, &tv)) <= 0)
 			break;
 
-		c = getchar();
+		c = (char) getchar();
 		printf("\n");
 	}
 	_nonblock(0);
