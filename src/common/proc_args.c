@@ -843,16 +843,14 @@ bool verify_socket_core_thread_count(const char *arg, int *min_sockets,
 				     cpu_bind_type_t *cpu_bind_type)
 {
 	bool tmp_val,ret_val;
-	int i,j;
+	int i, j;
 	int max_sockets = 0, max_cores = 0, max_threads = 0;
 	const char *cur_ptr = arg;
 	char buf[3][48]; /* each can hold INT64_MAX - INT64_MAX */
-	buf[0][0] = '\0';
-	buf[1][0] = '\0';
-	buf[2][0] = '\0';
 
- 	for (j=0;j<3;j++) {
-		for (i=0;i<47;i++) {
+	memset(buf, 0, sizeof(buf));
+	for (j = 0; j < 3; j++) {
+		for (i = 0; i < 47; i++) {
 			if (*cur_ptr == '\0' || *cur_ptr ==':')
 				break;
 			buf[j][i] = *cur_ptr++;
@@ -860,7 +858,6 @@ bool verify_socket_core_thread_count(const char *arg, int *min_sockets,
 		if (*cur_ptr == '\0')
 			break;
 		xassert(*cur_ptr == ':');
-		buf[j][i] = '\0';
 		cur_ptr++;
 	}
 	/* if cpu_bind_type doesn't already have a auto preference, choose
@@ -878,7 +875,6 @@ bool verify_socket_core_thread_count(const char *arg, int *min_sockets,
 			*cpu_bind_type |= CPU_BIND_TO_THREADS;
 		}
 	}
-	buf[j][i] = '\0';
 
 	ret_val = true;
 	tmp_val = get_resource_arg_range(&buf[0][0], "first arg of -B",
