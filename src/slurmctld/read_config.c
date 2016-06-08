@@ -74,6 +74,7 @@
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/burst_buffer.h"
+#include "src/slurmctld/fed_mgr.h"
 #include "src/slurmctld/front_end.h"
 #include "src/slurmctld/gang.h"
 #include "src/slurmctld/job_scheduler.h"
@@ -1060,6 +1061,10 @@ int read_slurm_conf(int recover, bool reconfig)
 		fatal("failed to initialize node selection plugin state, "
 		      "Clean start required.");
 	}
+
+	if (!reconfig)
+		fed_mgr_state_load(state_save_dir);
+
 	xfree(state_save_dir);
 	_gres_reconfig(reconfig);
 	reset_job_bitmaps();		/* must follow select_g_job_init() */

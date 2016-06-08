@@ -39,11 +39,14 @@
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurmdbd_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/fed_mgr.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmdbd/read_config.h"
+
+#define FED_MGR_STATE_FILE "fed_mgr_state"
 
 static pthread_mutex_t fed_mutex = PTHREAD_MUTEX_INITIALIZER;
 char *fed_mgr_cluster_name = NULL;
@@ -173,6 +176,11 @@ extern int fed_mgr_init()
 	if (!inited) {
 		_create_ping_thread();
 		inited = true;
+
+		if ((!fed_mgr_cluster_name) && !slurmdbd_conf) {
+			xfree(fed_mgr_cluster_name);
+			fed_mgr_cluster_name = slurm_get_cluster_name();
+		}
 	}
 	return SLURM_SUCCESS;
 }
@@ -309,3 +317,168 @@ extern int fed_mgr_get_fed_info(slurmdb_federation_rec_t **ret_fed)
 	return SLURM_SUCCESS;
 }
 
+
+extern int fed_mgr_state_save(char *state_save_location)
+{
+	int error_code = 0, log_fd;
+	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
+	dbd_list_msg_t msg;
+	Buf buffer = init_buf(0);
+
+	DEF_TIMERS;
+
+	START_TIMER;
+
+	/* write header: version, time */
+	pack16(SLURM_PROTOCOL_VERSION, buffer);
+	pack_time(time(NULL), buffer);
+
+	packstr(fed_mgr_fed_name, buffer);
+
+	memset(&msg, 0, sizeof(dbd_list_msg_t));
+	msg.my_list = fed_mgr_clusters;
+	slurmdbd_pack_list_msg(&msg, SLURM_PROTOCOL_VERSION,
+			       DBD_ADD_CLUSTERS, buffer);
+
+	/* write the buffer to file */
+	reg_file = xstrdup_printf("%s/%s", state_save_location,
+				  FED_MGR_STATE_FILE);
+	old_file = xstrdup_printf("%s.old", reg_file);
+	new_file = xstrdup_printf("%s.new", reg_file);
+
+	log_fd = creat(new_file, 0600);
+	if (log_fd < 0) {
+		error("Can't save state, create file %s error %m", new_file);
+		error_code = errno;
+	} else {
+		int pos = 0, nwrite = get_buf_offset(buffer), amount;
+		char *data = (char *)get_buf_data(buffer);
+		while (nwrite > 0) {
+			amount = write(log_fd, &data[pos], nwrite);
+			if ((amount < 0) && (errno != EINTR)) {
+				error("Error writing file %s, %m", new_file);
+				error_code = errno;
+				break;
+			}
+			nwrite -= amount;
+			pos    += amount;
+		}
+		fsync(log_fd);
+		close(log_fd);
+	}
+	if (error_code)
+		(void) unlink(new_file);
+	else {			/* file shuffle */
+		(void) unlink(old_file);
+		if (link(reg_file, old_file))
+			debug4("unable to create link for %s -> %s: %m",
+			       reg_file, old_file);
+		(void) unlink(reg_file);
+		if (link(new_file, reg_file))
+			debug4("unable to create link for %s -> %s: %m",
+			       new_file, reg_file);
+		(void) unlink(new_file);
+	}
+	xfree(old_file);
+	xfree(reg_file);
+	xfree(new_file);
+
+	free_buf(buffer);
+
+	END_TIMER2("fed_mgr_state_save");
+
+	return error_code;
+}
+
+extern int fed_mgr_state_load(char *state_save_location)
+{
+	Buf buffer = NULL;
+	dbd_list_msg_t *msg = NULL;
+	char *data = NULL, *state_file;
+	time_t buf_time;
+	uint16_t ver = 0;
+	uint32_t data_size = 0;
+	uint32_t tmp32;
+	int state_fd;
+	int data_allocated, data_read = 0, error_code = SLURM_SUCCESS;
+
+	state_file = xstrdup_printf("%s/%s", state_save_location,
+				    FED_MGR_STATE_FILE);
+	state_fd = open(state_file, O_RDONLY);
+	if (state_fd < 0) {
+		error("No fed_mgr state file (%s) to recover", state_file);
+		xfree(state_file);
+		return SLURM_SUCCESS;
+	} else {
+		data_allocated = BUF_SIZE;
+		data = xmalloc(data_allocated);
+		while (1) {
+			data_read = read(state_fd, &data[data_size],
+					 BUF_SIZE);
+			if (data_read < 0) {
+				if (errno == EINTR)
+					continue;
+				else {
+					error("Read error on %s: %m",
+					      state_file);
+					break;
+				}
+			} else if (data_read == 0)	/* eof */
+				break;
+			data_size      += data_read;
+			data_allocated += data_read;
+			xrealloc(data, data_allocated);
+		}
+		close(state_fd);
+	}
+	xfree(state_file);
+
+	buffer = create_buf(data, data_size);
+
+	safe_unpack16(&ver, buffer);
+
+	debug3("Version in fed_mgr_state header is %u", ver);
+	if (ver > SLURM_PROTOCOL_VERSION || ver < SLURM_MIN_PROTOCOL_VERSION) {
+		error("***********************************************");
+		error("Can not recover fed_mgr state, incompatible version, "
+		      "got %u need > %u <= %u", ver,
+		      SLURM_MIN_PROTOCOL_VERSION, SLURM_PROTOCOL_VERSION);
+		error("***********************************************");
+		free_buf(buffer);
+		slurm_mutex_unlock(&fed_mutex);
+		return EFAULT;
+	}
+
+	slurm_mutex_lock(&fed_mutex);
+
+	safe_unpack_time(&buf_time, buffer);
+
+	xfree(fed_mgr_fed_name);
+	safe_unpackstr_xmalloc(&fed_mgr_fed_name, &tmp32, buffer);
+
+	error_code = slurmdbd_unpack_list_msg(&msg, ver, DBD_ADD_CLUSTERS,
+					      buffer);
+	if (error_code != SLURM_SUCCESS)
+		goto unpack_error;
+	else if (!msg->my_list) {
+		error("No tres retrieved");
+	}
+	FREE_NULL_LIST(fed_mgr_clusters);
+	fed_mgr_clusters = msg->my_list;
+	msg->my_list = NULL;
+	slurmdbd_free_list_msg(msg);
+
+	free_buf(buffer);
+	slurm_mutex_unlock(&fed_mutex);
+
+	fed_mgr_init();
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	if (buffer)
+		free_buf(buffer);
+
+	slurm_mutex_unlock(&fed_mutex);
+	return SLURM_ERROR;
+}

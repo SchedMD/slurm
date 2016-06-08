@@ -2004,6 +2004,7 @@ extern void save_all_state(void)
 	if ((save_loc = slurm_get_state_save_location())) {
 		select_g_state_save(save_loc);
 		dump_assoc_mgr_state(save_loc);
+		fed_mgr_state_save(save_loc);
 		xfree(save_loc);
 	}
 }
