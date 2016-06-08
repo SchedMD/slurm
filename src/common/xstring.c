@@ -402,12 +402,14 @@ char * xstrndup(const char *str, size_t n)
 long int xstrntol(const char *str, char **endptr, size_t n, int base)
 {
 	long int number = 0;
-	char new_str[n+1];
+	char new_str[n+1], *new_endptr = NULL;
 
 	memcpy(new_str, str, n);
 	new_str[n] = '\0';
 
-	number = strtol(new_str, endptr, base);
+	number = strtol(new_str, &new_endptr, base);
+	if (endptr)
+		*endptr = ((char *)str) + (new_endptr - new_str);
 
 	return number;
 }

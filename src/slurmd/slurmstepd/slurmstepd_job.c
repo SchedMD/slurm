@@ -349,6 +349,8 @@ stepd_step_rec_create(launch_tasks_request_msg_t *msg, uint16_t protocol_version
 		slurm_set_addr(&resp_addr,
 			       msg->resp_port[nodeid % msg->num_resp_port],
 			       NULL);
+	} else {
+		memset(&resp_addr, 0, sizeof(slurm_addr_t));
 	}
 	job->user_managed_io = msg->user_managed_io;
 	if (!msg->io_port)
@@ -358,6 +360,8 @@ stepd_step_rec_create(launch_tasks_request_msg_t *msg, uint16_t protocol_version
 		slurm_set_addr(&io_addr,
 			       msg->io_port[nodeid % msg->num_io_port],
 			       NULL);
+	} else {
+		memset(&io_addr, 0, sizeof(slurm_addr_t));
 	}
 
 	srun = srun_info_create(msg->cred, &resp_addr, &io_addr,

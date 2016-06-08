@@ -1426,7 +1426,7 @@ extern int filetxt_jobacct_process_archive(slurmdb_archive_cond_t *arch_cond)
 	}
 
 	/* reopen new logfile in append mode, since slurmctld may write it */
-	if (freopen(filein, "a", new_logfile) == NULL) {
+	if ((new_logfile = freopen(filein, "a", new_logfile)) == NULL) {
 		perror("reopening new logfile");
 		goto finished2;
 	}

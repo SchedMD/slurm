@@ -145,24 +145,32 @@ pdebug_stop_current(stepd_step_rec_t *job)
 static bool _pid_to_wake(pid_t pid)
 {
 #ifdef CLONE_PTRACE
-	char proc_stat[1024], proc_name[22], state[1], *str_ptr;
+	char *proc_stat, proc_name[22], state[1], *str_ptr;
 	int len, proc_fd, ppid, pgrp, session, tty, tpgid;
 	long unsigned flags;
 
 	sprintf (proc_name, "/proc/%d/stat", (int) pid);
 	if ((proc_fd = open(proc_name, O_RDONLY, 0)) == -1)
 		return false;  /* process is now gone */
-	len = read(proc_fd, proc_stat, sizeof(proc_stat));
+	proc_stat = xmalloc(4096);
+	len = read(proc_fd, proc_stat, 4096);
 	close(proc_fd);
-	if (len < 14)
+	if (len < 14) {
+		xfree(proc_stat);
 		return false;
+	}
 	/* skip over "PID (CMD) " */
-	if ((str_ptr = (char *)strrchr(proc_stat, ')')) == NULL)
+	if ((str_ptr = (char *)strrchr(proc_stat, ')')) == NULL) {
+		xfree(proc_stat);
 		return false;
+	}
 	if (sscanf(str_ptr + 2,
 		   "%c %d %d %d %d %d %lu ",
-		   state, &ppid, &pgrp, &session, &tty, &tpgid, &flags) != 7)
+		   state, &ppid, &pgrp, &session, &tty, &tpgid, &flags) != 7) {
+		xfree(proc_stat);
 		return false;
+	}
+	xfree(proc_stat);
 	if ((flags & CLONE_PTRACE) == 0)
 		return true;
 	return false;

@@ -248,7 +248,7 @@ static void _hardware(void)
 		if (!xstrncmp(buf, "physical id", sizeof("physical id") - 1)) {
 			sscanf(buf, "physical id\t: %d", &pkg);
 
-			if (pkg > MAX_PKGS)
+			if (pkg >= MAX_PKGS)
 				fatal("Slurm can only handle %d sockets for "
 				      "rapl, you seem to have more than that.  "
 				      "Update src/plugins/acct_gather_energy/"

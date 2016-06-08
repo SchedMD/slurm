@@ -230,6 +230,7 @@ int	slurm_set_cpuset(char *base, char *path, pid_t pid, size_t size,
 	 * "mems" must be set before any tasks can be added. */
 	snprintf(file_path, sizeof(file_path), "%s/%smems",
 		 base, cpuset_prefix);
+	memset(mstr, 0, sizeof(mstr));
 	fd = open(file_path, O_RDONLY);
 	if (fd < 0) {
 		error("open(%s): %m", file_path);

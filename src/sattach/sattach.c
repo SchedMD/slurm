@@ -281,6 +281,7 @@ static slurm_cred_t *_generate_fake_cred(uint32_t jobid, uint32_t stepid,
 	slurm_cred_arg_t arg;
 	slurm_cred_t *cred;
 
+	memset(&arg, 0, sizeof(slurm_cred_arg_t));
 	arg.jobid    = jobid;
 	arg.stepid   = stepid;
 	arg.uid      = uid;
