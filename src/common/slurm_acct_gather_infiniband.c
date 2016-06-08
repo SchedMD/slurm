@@ -96,7 +96,7 @@ static void *_watch_node(void *arg)
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
-	while (init_run && acct_gather_profile_running) {
+	while (init_run && acct_gather_profile_test()) {
 		/* Do this until shutdown is requested */
 		slurm_mutex_lock(&g_context_lock);
 		(*(ops.node_update))();

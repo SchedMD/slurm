@@ -83,7 +83,6 @@ typedef struct {
 } acct_gather_profile_timer_t;
 
 extern acct_gather_profile_timer_t acct_gather_profile_timer[PROFILE_CNT];
-extern bool acct_gather_profile_running;
 
 /*
  * Load the plugin
@@ -100,6 +99,9 @@ extern char *acct_gather_profile_to_string(uint32_t profile);
 
 /* translate string of words to uint32_t filled in with bits set to profile */
 extern uint32_t acct_gather_profile_from_string(char *profile_str);
+
+/* Return true if acct_gather_profile_running flag is set */
+extern bool acct_gather_profile_test(void);
 
 extern char *acct_gather_profile_type_to_string(uint32_t series);
 extern uint32_t acct_gather_profile_type_from_string(char *series_str);

@@ -81,6 +81,7 @@ struct eio_handle_components {
 	int  magic;
 #endif
 	int  fds[2];
+	pthread_mutex_t shutdown_mutex;
 	time_t shutdown_time;
 	uint16_t shutdown_wait;
 	List obj_list;
@@ -119,6 +120,7 @@ eio_handle_t *eio_handle_create(uint16_t shutdown_wait)
 	eio->obj_list = list_create(eio_obj_destroy);
 	eio->new_objs = list_create(eio_obj_destroy);
 
+	slurm_mutex_init(&eio->shutdown_mutex);
 	eio->shutdown_wait = DEFAULT_EIO_SHUTDOWN_WAIT;
 	if (shutdown_wait > 0)
 		eio->shutdown_wait = shutdown_wait;
@@ -134,6 +136,7 @@ void eio_handle_destroy(eio_handle_t *eio)
 	close(eio->fds[1]);
 	FREE_NULL_LIST(eio->obj_list);
 	FREE_NULL_LIST(eio->new_objs);
+	slurm_mutex_destroy(&eio->shutdown_mutex);
 
 	xassert(eio->magic = ~EIO_MAGIC);
 	xfree(eio);
@@ -228,7 +231,9 @@ int eio_signal_shutdown(eio_handle_t *eio)
 {
 	char c = 1;
 
+	slurm_mutex_lock(&eio->shutdown_mutex);
 	eio->shutdown_time = time(NULL);
+	slurm_mutex_unlock(&eio->shutdown_mutex);
 	if (eio && (write(eio->fds[1], &c, sizeof(char)) != 1))
 		return error("eio_handle_signal_shutdown: write; %m");
 	return 0;
@@ -280,6 +285,7 @@ int eio_handle_mainloop(eio_handle_t *eio)
 	eio_obj_t    **map     = NULL;
 	unsigned int   maxnfds = 0, nfds = 0;
 	unsigned int   n       = 0;
+	time_t shutdown_time;
 
 	xassert (eio != NULL);
 	xassert (eio->magic == EIO_MAGIC);
@@ -313,7 +319,10 @@ int eio_handle_mainloop(eio_handle_t *eio)
 
 		xassert(nfds <= maxnfds + 1);
 
-		if (_poll_internal(pollfds, nfds, eio->shutdown_time) < 0)
+		slurm_mutex_lock(&eio->shutdown_mutex);
+		shutdown_time = eio->shutdown_time;
+		slurm_mutex_unlock(&eio->shutdown_mutex);
+		if (_poll_internal(pollfds, nfds, shutdown_time) < 0)
 			goto error;
 
 		if (pollfds[nfds-1].revents & POLLIN)
@@ -321,9 +330,11 @@ int eio_handle_mainloop(eio_handle_t *eio)
 
 		_poll_dispatch(pollfds, nfds - 1, map, eio->obj_list);
 
-		if (eio->shutdown_time
-		    && difftime(time(NULL), eio->shutdown_time)
-		    >= eio->shutdown_wait) {
+		slurm_mutex_lock(&eio->shutdown_mutex);
+		shutdown_time = eio->shutdown_time;
+		slurm_mutex_unlock(&eio->shutdown_mutex);
+		if (shutdown_time &&
+		    (difftime(time(NULL), shutdown_time)>=eio->shutdown_wait)) {
 			error("%s: Abandoning IO %d secs after job shutdown "
 			      "initiated", __func__, eio->shutdown_wait);
 			break;

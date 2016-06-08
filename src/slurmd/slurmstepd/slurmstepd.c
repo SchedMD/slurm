@@ -377,7 +377,7 @@ _got_ack_from_slurmd(int sock)
 {
 	/* If running under valgrind/memcheck, this pipe doesn't work correctly
 	 * so just skip it. */
-#ifndef SLURMSTEPD_MEMCHECK
+#if (SLURMSTEPD_MEMCHECK == 0)
 	int ok;
 	safe_read(sock, &ok, sizeof(int));
 	return;

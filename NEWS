@@ -33,6 +33,7 @@ documents those changes that are of interest to users and administrators.
     record the job's allocation then perform release operation upon NHC
     completeion, resulting in underflow error messages.
  -- Make "scontrol show daemons" work with long node names.
+ -- CRAY - Collect energy using a uint64_t instead of uint32_t.
 
 * Changes in Slurm 16.05.0
 ==========================

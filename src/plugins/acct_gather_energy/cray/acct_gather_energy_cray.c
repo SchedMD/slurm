@@ -85,9 +85,9 @@ enum {
 
 extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl);
 
-static uint32_t _get_latest_stats(int type)
+static uint64_t _get_latest_stats(int type)
 {
-	uint32_t data = 0;
+	uint64_t data = 0;
 	int fd;
 	FILE *fp = NULL;
 	char *file_name;
@@ -117,7 +117,7 @@ static uint32_t _get_latest_stats(int type)
 	num_read = read(fd, sbuf, (sizeof(sbuf) - 1));
 	if (num_read > 0) {
 		sbuf[num_read] = '\0';
-		sscanf(sbuf, "%u", &data);
+		sscanf(sbuf, "%"PRIu64, &data);
 	}
 	fclose(fp);
 
@@ -147,8 +147,8 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 		return;
 
 	now = time(NULL);
-	curr_energy = (uint64_t) _get_latest_stats(GET_ENERGY);
-	curr_power = _get_latest_stats(GET_POWER);
+	curr_energy = _get_latest_stats(GET_ENERGY);
+	curr_power = (uint32_t) _get_latest_stats(GET_POWER);
 
 	if (energy->previous_consumed_energy) {
 		diff_energy = curr_energy - energy->previous_consumed_energy;

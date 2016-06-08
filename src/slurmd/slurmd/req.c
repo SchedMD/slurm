@@ -848,6 +848,48 @@ _forkexec_slurmstepd(uint16_t type, void *req,
 		snprintf(log_file, sizeof(log_file),
 			 "--log-file=/tmp/slurmstepd_valgrind_%u.%u",
 			 job_id, step_id);
+#elif (SLURMSTEPD_MEMCHECK == 3)
+		/* valgrind/drd test of slurmstepd, option #3 */
+		uint32_t job_id = 0, step_id = 0;
+		char log_file[256];
+		char *const argv[10] = {"valgrind", "--tool=drd",
+					"--error-limit=no",
+					"--max-stackframe=16777216",
+					"--num-callers=20",
+					"--child-silent-after-fork=yes",
+					log_file, (char *)conf->stepd_loc,
+					NULL};
+		if (type == LAUNCH_BATCH_JOB) {
+			job_id = ((batch_job_launch_msg_t *)req)->job_id;
+			step_id = ((batch_job_launch_msg_t *)req)->step_id;
+		} else if (type == LAUNCH_TASKS) {
+			job_id = ((launch_tasks_request_msg_t *)req)->job_id;
+			step_id = ((launch_tasks_request_msg_t *)req)->job_step_id;
+		}
+		snprintf(log_file, sizeof(log_file),
+			 "--log-file=/tmp/slurmstepd_valgrind_%u.%u",
+			 job_id, step_id);
+#elif (SLURMSTEPD_MEMCHECK == 4)
+		/* valgrind/helgrind test of slurmstepd, option #4 */
+		uint32_t job_id = 0, step_id = 0;
+		char log_file[256];
+		char *const argv[10] = {"valgrind", "--tool=helgrind",
+					"--error-limit=no",
+					"--max-stackframe=16777216",
+					"--num-callers=20",
+					"--child-silent-after-fork=yes",
+					log_file, (char *)conf->stepd_loc,
+					NULL};
+		if (type == LAUNCH_BATCH_JOB) {
+			job_id = ((batch_job_launch_msg_t *)req)->job_id;
+			step_id = ((batch_job_launch_msg_t *)req)->step_id;
+		} else if (type == LAUNCH_TASKS) {
+			job_id = ((launch_tasks_request_msg_t *)req)->job_id;
+			step_id = ((launch_tasks_request_msg_t *)req)->job_step_id;
+		}
+		snprintf(log_file, sizeof(log_file),
+			 "--log-file=/tmp/slurmstepd_valgrind_%u.%u",
+			 job_id, step_id);
 #else
 		/* no memory checking, default */
 		char *const argv[2] = { (char *)conf->stepd_loc, NULL};
