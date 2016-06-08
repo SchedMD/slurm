@@ -51,7 +51,7 @@
 static pthread_mutex_t fed_mutex = PTHREAD_MUTEX_INITIALIZER;
 char *fed_mgr_cluster_name = NULL;
 char *fed_mgr_fed_name = NULL;
-List fed_mgr_clusters = NULL;
+List fed_mgr_siblings = NULL;
 
 static pthread_t ping_thread = 0;
 static bool fed_shutdown = false;
@@ -104,10 +104,10 @@ static int _close_fed_conns()
 	ListIterator itr;
 	slurmdb_cluster_rec_t *conn;
 	slurm_mutex_lock(&fed_mutex);
-	if (!fed_mgr_clusters)
+	if (!fed_mgr_siblings)
 		goto fini;
 
-	itr = list_iterator_create(fed_mgr_clusters);
+	itr = list_iterator_create(fed_mgr_siblings);
 	while ((conn = list_next(itr))) {
 		_close_controller_conn(conn);
 	}
@@ -126,10 +126,10 @@ static void *_ping_thread(void *arg)
 		slurmdb_cluster_rec_t *conn;
 
 		slurm_mutex_lock(&fed_mutex);
-		if (!fed_mgr_clusters)
+		if (!fed_mgr_siblings)
 			goto next;
 
-		itr = list_iterator_create(fed_mgr_clusters);
+		itr = list_iterator_create(fed_mgr_siblings);
 
 		while ((conn = list_next(itr))) {
 			if (conn->sockfd == -1)
@@ -194,7 +194,7 @@ extern int fed_mgr_fini()
 
 	xfree(fed_mgr_cluster_name);
 	xfree(fed_mgr_fed_name);
-	FREE_NULL_LIST(fed_mgr_clusters);
+	FREE_NULL_LIST(fed_mgr_siblings);
 	return SLURM_SUCCESS;
 }
 
@@ -253,21 +253,21 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 
 		list_iterator_reset(c_itr);
 		/* add clusters from federation into local list */
-		if (fed_mgr_clusters) {
+		if (fed_mgr_siblings) {
 			/* close connections to all other clusters */
 			/* free cluster list as host and ports may have changed?
 			 * */
 			ListIterator fed_c_itr =
-				list_iterator_create(fed_mgr_clusters);
+				list_iterator_create(fed_mgr_siblings);
 			slurmdb_cluster_rec_t *conn ;
 			while((conn = list_next(fed_c_itr))) {
 				_close_controller_conn(conn);
 			}
 			list_iterator_destroy(fed_c_itr);
-			FREE_NULL_LIST(fed_mgr_clusters);
+			FREE_NULL_LIST(fed_mgr_siblings);
 		}
 
-		fed_mgr_clusters = list_create(slurmdb_destroy_cluster_rec);
+		fed_mgr_siblings = list_create(slurmdb_destroy_cluster_rec);
 		while ((cluster = list_next(c_itr))) {
 			slurmdb_cluster_rec_t *conn;
 			if (!xstrcasecmp(cluster->name, fed_mgr_cluster_name))
@@ -278,7 +278,7 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 			slurmdb_copy_cluster_rec(conn, cluster);
 
 			conn->sockfd = _open_controller_conn(conn);
-			list_append(fed_mgr_clusters, conn);
+			list_append(fed_mgr_siblings, conn);
 		}
 
 next_fed:
@@ -305,7 +305,7 @@ extern int fed_mgr_get_fed_info(slurmdb_federation_rec_t **ret_fed)
 
 	slurm_mutex_lock(&fed_mutex);
 	tmp_fed.name         = xstrdup(fed_mgr_fed_name);
-	tmp_fed.cluster_list = fed_mgr_clusters;
+	tmp_fed.cluster_list = fed_mgr_siblings;
 
 	slurmdb_copy_federation_rec(out_fed, &tmp_fed);
 	slurm_mutex_unlock(&fed_mutex);
@@ -336,7 +336,7 @@ extern int fed_mgr_state_save(char *state_save_location)
 	packstr(fed_mgr_fed_name, buffer);
 
 	memset(&msg, 0, sizeof(dbd_list_msg_t));
-	msg.my_list = fed_mgr_clusters;
+	msg.my_list = fed_mgr_siblings;
 	slurmdbd_pack_list_msg(&msg, SLURM_PROTOCOL_VERSION,
 			       DBD_ADD_CLUSTERS, buffer);
 
@@ -463,8 +463,8 @@ extern int fed_mgr_state_load(char *state_save_location)
 	else if (!msg->my_list) {
 		error("No tres retrieved");
 	}
-	FREE_NULL_LIST(fed_mgr_clusters);
-	fed_mgr_clusters = msg->my_list;
+	FREE_NULL_LIST(fed_mgr_siblings);
+	fed_mgr_siblings = msg->my_list;
 	msg->my_list = NULL;
 	slurmdbd_free_list_msg(msg);
 
