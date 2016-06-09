@@ -126,7 +126,7 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 				uint16_t flags);
 static void _stat_slurm_dirs(void);
 static int  _sync_nodes_to_comp_job(void);
-static int  _sync_nodes_to_jobs(void);
+static int  _sync_nodes_to_jobs(bool reconfig);
 static int  _sync_nodes_to_active_job(struct job_record *job_ptr);
 static void _sync_nodes_to_suspended_job(struct job_record *job_ptr);
 static void _sync_part_prio(void);
@@ -1062,7 +1062,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	_gres_reconfig(reconfig);
 	reset_job_bitmaps();		/* must follow select_g_job_init() */
 
-	(void) _sync_nodes_to_jobs();
+	(void) _sync_nodes_to_jobs(reconfig);
 	(void) sync_job_files();
 	_purge_old_node_state(old_node_table_ptr, old_node_record_count);
 	_purge_old_part_state(old_part_list, old_def_part_name);
@@ -2021,7 +2021,7 @@ static int  _preserve_plugins(slurm_ctl_conf_t * ctl_conf_ptr,
  * RET count of nodes having state changed
  * Note: Operates on common variables, no arguments
  */
-static int _sync_nodes_to_jobs(void)
+static int _sync_nodes_to_jobs(bool reconfig)
 {
 	struct job_record *job_ptr;
 	ListIterator job_iterator;
@@ -2029,9 +2029,14 @@ static int _sync_nodes_to_jobs(void)
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (job_ptr->details && job_ptr->details->prolog_running &&
-		    !IS_JOB_CONFIGURING(job_ptr))
+		if (!reconfig &&
+		    job_ptr->details && job_ptr->details->prolog_running) {
 			job_ptr->details->prolog_running = 0;
+			if (IS_JOB_CONFIGURING(job_ptr)) {
+				(void) prolog_slurmctld(job_ptr);
+				(void) bb_g_job_begin(job_ptr);
+			}
+		}
 
 		if (job_ptr->node_bitmap == NULL)
 			;

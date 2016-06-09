@@ -36,6 +36,9 @@ documents those changes that are of interest to users and administrators.
  -- CRAY - Collect energy using a uint64_t instead of uint32_t.
  -- Fix incorrect if statements when determining if the user has a default
     account or wckey.
+ -- Prevent job stuck in configuring state if slurmctld daemon restarted while
+    PrologSlurmctld is running. Also re-issue burst_buffer/pre-load operation
+    as needed.
 
 * Changes in Slurm 16.05.0
 ==========================
@@ -288,6 +291,13 @@ documents those changes that are of interest to users and administrators.
  -- Increase buffer size to read /proc/*/stat files.
  -- Fix hostrange_hn_within to allow hostname lookup within a set of nodes
     with different length prefixes.
+ -- MYSQL - Handle ER_HOST_IS_BLOCKED better by failing when it occurs instead
+    of continuously printing the message over and over as the problem will
+    most likely not resolve itself.
+ -- Add --disable-bluegene to configure.  This will make it so Slurm
+    can work on a BGAS node.
+ -- Prevent job stuck in configuring state if slurmctld daemon restarted while
+    PrologSlurmctld is running.
 
 * Changes in Slurm 15.08.12
 ===========================

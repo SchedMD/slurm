@@ -153,17 +153,21 @@ static int _mysql_query_internal(MYSQL *db_conn, char *query)
 		}
 		error("mysql_query failed: %d %s\n%s", errno, err_str, query);
 		if (errno == ER_LOCK_WAIT_TIMEOUT) {
+			/* FIXME: If we get ER_LOCK_WAIT_TIMEOUT here we need
+			 * to restart the connections, but it appears restarting
+			 * the calling program is the only way to handle this.
+			 * If anyone in the future figures out a way to handle
+			 * this, super.  Until then we will need to restart the
+			 * calling program if you ever get this error.
+			 */
 			fatal("mysql gave ER_LOCK_WAIT_TIMEOUT as an error. "
 			      "The only way to fix this is restart the "
 			      "calling program");
+		} else if (errno == ER_HOST_IS_BLOCKED) {
+			fatal("MySQL gave ER_HOST_IS_BLOCKED as an error. "
+			      "You will need to call 'mysqladmin flush-hosts' "
+			      "to regain connectivity.");
 		}
-		/* FIXME: If we get ER_LOCK_WAIT_TIMEOUT here we need
-		 * to restart the connections, but it appears restarting
-		 * the calling program is the only way to handle this.
-		 * If anyone in the future figures out a way to handle
-		 * this, super.  Until then we will need to restart the
-		 * calling program if you ever get this error.
-		 */
 		rc = SLURM_ERROR;
 	}
 end_it:

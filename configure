@@ -977,6 +977,7 @@ enable_option_checking
 enable_silent_rules
 enable_maintainer_mode
 with_rpath
+enable_bluegene
 with_db2_dir
 enable_bluegene_emulation
 enable_bgl_emulation
@@ -1695,6 +1696,9 @@ Optional Features:
   --enable-maintainer-mode
                           enable make rules and dependencies not useful (and
                           sometimes confusing) to the casual installer
+  --disable-bluegene      Disable Bluegene support for BGAS nodes (or wherever
+                          you run a Slurm on a bluegene system not wanting it
+                          to act like a Bluegene)
   --enable-bluegene-emulation
                           deprecated use --enable-bgl-emulation
   --enable-bgl-emulation  Run SLURM in BGL mode on a non-bluegene system
@@ -3683,6 +3687,30 @@ fi
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_with_rpath" >&5
 $as_echo "$ac_with_rpath" >&6; }
 
+
+
+	ac_real_bluegene_loaded=no
+	ac_bluegene_loaded=no
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether BG is explicitly disabled" >&5
+$as_echo_n "checking whether BG is explicitly disabled... " >&6; }
+	# Check whether --enable-bluegene was given.
+if test "${enable_bluegene+set}" = set; then :
+  enableval=$enable_bluegene;  case "$enableval" in
+			  yes) ac_bluegene_loaded=no ;;
+			  no) ac_bluegene_loaded=yes  ;;
+			  *) { $as_echo "$as_me:${as_lineno-$LINENO}: result: doh!" >&5
+$as_echo "doh!" >&6; }
+			     as_fn_error $? "bad value \"$enableval\" for --disable-bluegene" "$LINENO" 5  ;;
+		  esac
+
+fi
+
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${ac_bluegene_loaded=yes}" >&5
+$as_echo "${ac_bluegene_loaded=yes}" >&6; }
+
+
 DEPDIR="${am__leading_dot}deps"
 
 ac_config_commands="$ac_config_commands depfiles"
@@ -4724,9 +4752,6 @@ fi
 
 
 
-	ac_real_bluegene_loaded=no
-	ac_bluegene_loaded=no
-
 
 # Check whether --with-db2-dir was given.
 if test "${with_db2_dir+set}" = set; then :
@@ -4756,7 +4781,10 @@ if test "${enable_bgl_emulation+set}" = set; then :
 fi
 
 
-	if test "x$bluegene_emulation" = "xyes" -o "x$bgl_emulation" = "xyes"; then
+	# Skip if already set
+	if test "x$ac_bluegene_loaded" = "xyes" ; then
+		bg_default_dirs=""
+	elif test "x$bluegene_emulation" = "xyes" -o "x$bgl_emulation" = "xyes"; then
 
 $as_echo "#define HAVE_3D 1" >>confdefs.h
 
@@ -19907,9 +19935,10 @@ char *malloc ();
 int
 main ()
 {
-return ! malloc (0);
-  ;
-  return 0;
+char *a = malloc(0);
+int b = !a;
+free(a);
+return b;
 }
 _ACEOF
 if ac_fn_c_try_run "$LINENO"; then :
