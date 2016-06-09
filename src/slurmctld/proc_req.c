@@ -46,6 +46,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if HAVE_SYS_PRCTL_H
+#  include <sys/prctl.h>
+#endif
+
 #include "slurm/slurm_errno.h"
 
 #include "src/common/assoc_mgr.h"
@@ -206,6 +210,8 @@ static void  _slurm_rpc_comp_msg_list(composite_msg_t * comp_msg,
 				      struct timeval *start_tv,
 				      int timeout);
 static void  _slurm_rpc_assoc_mgr_info(slurm_msg_t * msg);
+
+static void  _set_persist_thread_name(connection_arg_t *arg);
 
 extern diag_stats_t slurmctld_diag_stats;
 
@@ -515,6 +521,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 	case REQUEST_PERSIST_INIT:
 		arg->persist = true;
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+		_set_persist_thread_name(arg);
 		break;
 	case REQUEST_PERSIST_FINI:
 		arg->persist = false;
@@ -537,6 +544,26 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		rpc_user_time[rpc_user_index] += DELTA_TIMER;
 	}
 	slurm_mutex_unlock(&rpc_mutex);
+}
+
+static void _set_persist_thread_name(connection_arg_t *arg)
+{
+#if HAVE_SYS_PRCTL_H
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_DB_FEDR) {
+		char *s_name = NULL;
+		char ip[16];
+		uint16_t port = 0;
+
+		slurm_get_ip_str(&arg->cli_addr, &port, ip, sizeof(ip));
+		if ((s_name = fed_mgr_find_sibling_name_by_ip(ip))) {
+			if (prctl(PR_SET_NAME, s_name, NULL, NULL, NULL) < 0)
+				error("%s: cannot set my name to %s %m",
+				      __func__, s_name);
+			xfree(s_name);
+		} else
+			error("Didn't find fed sibling by ip '%s'", ip);
+	}
+#endif
 }
 
 /* These functions prevent certain RPCs from keeping the slurmctld write locks

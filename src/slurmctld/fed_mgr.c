@@ -482,3 +482,28 @@ unpack_error:
 	slurm_mutex_unlock(&fed_mutex);
 	return SLURM_ERROR;
 }
+
+extern int _find_sibling_by_ip(void *x, void *key)
+{
+	slurmdb_cluster_rec_t *object = (slurmdb_cluster_rec_t *)x;
+	char *ip = (char *)key;
+
+	if (!xstrcmp(object->control_host, ip))
+		return 1;
+
+	return 0;
+}
+
+extern char *fed_mgr_find_sibling_name_by_ip(char *ip)
+{
+	char *name = NULL;
+	slurmdb_cluster_rec_t *sibling = NULL;
+
+	slurm_mutex_lock(&fed_mutex);
+	sibling = list_find_first(fed_mgr_siblings, _find_sibling_by_ip, ip);
+	if (sibling)
+		name = xstrdup(sibling->name);
+	slurm_mutex_unlock(&fed_mutex);
+
+	return name;
+}
