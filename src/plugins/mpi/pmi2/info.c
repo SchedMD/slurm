@@ -84,7 +84,7 @@ enqueue_nag_req(int fd, int rank, char *key)
 	req = xmalloc(sizeof(nag_req_t));
 	req->fd = fd;
 	req->rank = rank;
-	strncpy(req->key, key, PMI2_MAX_KEYLEN);
+	strncpy(req->key, key, (PMI2_MAX_KEYLEN - 1));	/* Insure NULL at end */
 
 	/* insert in the head */
 	req->next = nag_req_list;

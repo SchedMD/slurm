@@ -332,7 +332,7 @@ extern pid_t find_ancestor(pid_t process, char *process_name)
 	int fd;
 	long pid, ppid;
 
-	rbuf = xmalloc(4096);
+	rbuf = xmalloc_nz(4096);
 	pid = ppid = (long)process;
 	do {
 		if (ppid <= 1) {
@@ -345,6 +345,7 @@ extern pid_t find_ancestor(pid_t process, char *process_name)
 			pid = 0;
 			break;
 		}
+		memset(rbuf, 0, 4096);
 		buf_used = read(fd, rbuf, 4096);
 		if ((buf_used <= 0) || (buf_used >= 4096)) {
 			close(fd);
