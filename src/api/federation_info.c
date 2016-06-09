@@ -40,6 +40,7 @@
 
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xstring.h"
+#include "src/common/xmalloc.h"
 
 /*
  * slurm_load_federation - issue RPC to get federation status from controller
@@ -111,8 +112,13 @@ extern void slurm_print_federation(void *ptr)
 	list_sort(fed->cluster_list, (ListCmpF)_sort_clusters_by_name);
 	itr = list_iterator_create(fed->cluster_list);
 	while ((cluster = list_next(itr))) {
-		printf("%-*s %s:%s:%d\n", left_col_size, "Sibling:",
-		       cluster->name, cluster->control_host,
-		       cluster->control_port);
+		char *tmp_str = NULL;
+		tmp_str = slurmdb_cluster_fed_states_str(cluster->fed.state);
+		printf("%-*s %s:%s:%d Index:%d Weight:%d State:%s\n",
+		       left_col_size, "Sibling:", cluster->name,
+		       cluster->control_host, cluster->control_port,
+		       cluster->fed.index, cluster->fed.weight,
+		       (tmp_str ? tmp_str : ""));
+		xfree(tmp_str);
 	}
 }
