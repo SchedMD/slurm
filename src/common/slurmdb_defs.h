@@ -250,6 +250,7 @@ extern int slurmdb_find_update_object_in_list(void *x, void *key);
 extern int slurmdb_find_tres_in_list(void *x, void *key);
 extern int slurmdb_find_tres_in_list_by_count(void *x, void *key);
 extern int slurmdb_find_tres_in_list_by_type(void *x, void *key);
+extern int slurmdb_find_cluster_in_list(void *x, void *key);
 extern int slurmdb_find_cluster_accting_tres_in_list(void *x, void *key);
 extern int slurmdb_add_cluster_accounting_to_tres_list(
 	slurmdb_cluster_accounting_rec_t *accting,

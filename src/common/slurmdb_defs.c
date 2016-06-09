@@ -3815,6 +3815,17 @@ extern int slurmdb_find_tres_in_list_by_type(void *x, void *key)
 	return 0;
 }
 
+extern int slurmdb_find_cluster_in_list(void *x, void *key)
+{
+	slurmdb_cluster_rec_t *object = (slurmdb_cluster_rec_t *)x;
+	char *name = (char *)key;
+
+	if (!xstrcmp(object->name, name))
+		return 1;
+
+	return 0;
+}
+
 extern int slurmdb_find_cluster_accting_tres_in_list(void *x, void *key)
 {
 	slurmdb_cluster_accounting_rec_t *object =

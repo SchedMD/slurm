@@ -50,7 +50,7 @@
 
 static pthread_mutex_t fed_mutex = PTHREAD_MUTEX_INITIALIZER;
 char *fed_mgr_cluster_name = NULL;
-char *fed_mgr_fed_name = NULL;
+fed_elem_t fed_mgr_fed_info;
 List fed_mgr_siblings = NULL;
 
 static pthread_t ping_thread = 0;
@@ -109,6 +109,8 @@ static int _close_fed_conns()
 
 	itr = list_iterator_create(fed_mgr_siblings);
 	while ((conn = list_next(itr))) {
+		if (!xstrcasecmp(conn->name, fed_mgr_cluster_name))
+			continue;
 		_close_controller_conn(conn);
 	}
 	list_iterator_destroy(itr);
@@ -132,6 +134,8 @@ static void *_ping_thread(void *arg)
 		itr = list_iterator_create(fed_mgr_siblings);
 
 		while ((conn = list_next(itr))) {
+			if (!xstrcasecmp(conn->name, fed_mgr_cluster_name))
+				continue;
 			if (conn->sockfd == -1)
 				conn->sockfd = _open_controller_conn(conn);
 			if (conn->sockfd == -1)
@@ -190,7 +194,7 @@ extern int fed_mgr_fini()
 		pthread_cancel(ping_thread);
 
 	xfree(fed_mgr_cluster_name);
-	xfree(fed_mgr_fed_name);
+	xfree(fed_mgr_fed_info.name);
 	FREE_NULL_LIST(fed_mgr_siblings);
 	return SLURM_SUCCESS;
 }
@@ -238,7 +242,10 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 				    DEBUG_FLAG_DB_FEDR)
 					info("I'm part of the '%s' federation!",
 					     fed->name);
-				fed_mgr_fed_name = xstrdup(fed->name);
+				memcpy(&fed_mgr_fed_info, &cluster->fed,
+				       sizeof(fed_elem_t));
+				fed_mgr_fed_info.name =
+					xstrdup(cluster->fed.name);
 				break;
 			}
 		}
@@ -256,6 +263,9 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 				list_iterator_create(fed_mgr_siblings);
 			slurmdb_cluster_rec_t *conn ;
 			while((conn = list_next(fed_c_itr))) {
+				if (!xstrcasecmp(conn->name,
+						 fed_mgr_cluster_name))
+					continue;
 				_close_controller_conn(conn);
 			}
 			list_iterator_destroy(fed_c_itr);
@@ -265,8 +275,6 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 		fed_mgr_siblings = list_create(slurmdb_destroy_cluster_rec);
 		while ((cluster = list_next(c_itr))) {
 			slurmdb_cluster_rec_t *conn;
-			if (!xstrcasecmp(cluster->name, fed_mgr_cluster_name))
-				continue;
 
 			conn = xmalloc(sizeof(slurmdb_cluster_rec_t));
 			slurmdb_init_cluster_rec(conn, false);
@@ -299,13 +307,11 @@ extern int fed_mgr_get_fed_info(slurmdb_federation_rec_t **ret_fed)
 	slurmdb_init_federation_rec(out_fed, false);
 
 	slurm_mutex_lock(&fed_mutex);
-	tmp_fed.name         = xstrdup(fed_mgr_fed_name);
+	tmp_fed.name         = fed_mgr_fed_info.name;
 	tmp_fed.cluster_list = fed_mgr_siblings;
 
 	slurmdb_copy_federation_rec(out_fed, &tmp_fed);
 	slurm_mutex_unlock(&fed_mutex);
-
-	xfree(tmp_fed.name);
 
 	*ret_fed = out_fed;
 
@@ -327,8 +333,6 @@ extern int fed_mgr_state_save(char *state_save_location)
 	/* write header: version, time */
 	pack16(SLURM_PROTOCOL_VERSION, buffer);
 	pack_time(time(NULL), buffer);
-
-	packstr(fed_mgr_fed_name, buffer);
 
 	memset(&msg, 0, sizeof(dbd_list_msg_t));
 	msg.my_list = fed_mgr_siblings;
@@ -393,9 +397,9 @@ extern int fed_mgr_state_load(char *state_save_location)
 	time_t buf_time;
 	uint16_t ver = 0;
 	uint32_t data_size = 0;
-	uint32_t tmp32;
 	int state_fd;
 	int data_allocated, data_read = 0, error_code = SLURM_SUCCESS;
+	slurmdb_cluster_rec_t *cluster = NULL;
 
 	state_file = xstrdup_printf("%s/%s", state_save_location,
 				    FED_MGR_STATE_FILE);
@@ -448,9 +452,6 @@ extern int fed_mgr_state_load(char *state_save_location)
 
 	safe_unpack_time(&buf_time, buffer);
 
-	xfree(fed_mgr_fed_name);
-	safe_unpackstr_xmalloc(&fed_mgr_fed_name, &tmp32, buffer);
-
 	error_code = slurmdbd_unpack_list_msg(&msg, ver, DBD_ADD_CLUSTERS,
 					      buffer);
 	if (error_code != SLURM_SUCCESS)
@@ -462,6 +463,21 @@ extern int fed_mgr_state_load(char *state_save_location)
 	fed_mgr_siblings = msg->my_list;
 	msg->my_list = NULL;
 	slurmdbd_free_list_msg(msg);
+
+	/* Find current cluster and save off fed_elem for quick access. */
+	if (!fed_mgr_cluster_name)
+		fed_mgr_cluster_name = slurm_get_cluster_name();
+	if (list_count(fed_mgr_siblings) &&
+	    !(cluster = list_find_first(fed_mgr_siblings,
+					slurmdb_find_cluster_in_list,
+					fed_mgr_cluster_name))) {
+		error("This cluster doesn't exist in the fed siblings");
+		goto unpack_error;
+	} else if (cluster) {
+		xfree(fed_mgr_fed_info.name);
+		memcpy(&fed_mgr_fed_info, &cluster->fed, sizeof(fed_elem_t));
+		fed_mgr_fed_info.name = xstrdup(cluster->fed.name);
+	}
 
 	free_buf(buffer);
 	slurm_mutex_unlock(&fed_mutex);
