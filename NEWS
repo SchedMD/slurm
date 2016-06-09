@@ -284,6 +284,8 @@ documents those changes that are of interest to users and administrators.
     most likely not resolve itself.
  -- Add --disable-bluegene to configure.  This will make it so Slurm
     can work on a BGAS node.
+ -- Prevent job stuck in configuring state if slurmctld daemon restarted while
+    PrologSlurmctld is running.
 
 * Changes in Slurm 15.08.12
 ===========================
