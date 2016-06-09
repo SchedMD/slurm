@@ -27,6 +27,9 @@ documents those changes that are of interest to users and administrators.
  -- CRAY - Collect energy using a uint64_t instead of uint32_t.
  -- Fix incorrect if statements when determining if the user has a default
     account or wckey.
+ -- Prevent job stuck in configuring state if slurmctld daemon restarted while
+    PrologSlurmctld is running. Also re-issue burst_buffer/pre-load operation
+    as needed.
 
 * Changes in Slurm 16.05.0
 ==========================
