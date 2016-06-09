@@ -176,10 +176,8 @@ extern int fed_mgr_init()
 		_create_ping_thread();
 		inited = true;
 
-		if ((!fed_mgr_cluster_name) && !slurmdbd_conf) {
-			xfree(fed_mgr_cluster_name);
+		if (!fed_mgr_cluster_name)
 			fed_mgr_cluster_name = slurm_get_cluster_name();
-		}
 	}
 	return SLURM_SUCCESS;
 }
@@ -211,10 +209,8 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 	feds = update->objects;
 	f_itr = list_iterator_create(feds);
 
-	if ((!fed_mgr_cluster_name) && !slurmdbd_conf) {
-		xfree(fed_mgr_cluster_name);
+	if (!fed_mgr_cluster_name)
 		fed_mgr_cluster_name = slurm_get_cluster_name();
-	}
 
 	fed_mgr_init();
 
