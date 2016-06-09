@@ -121,7 +121,7 @@ fini:
 
 static void *_ping_thread(void *arg)
 {
-	while(!fed_shutdown) {
+	while (!slurmctld_config.shutdown_time) {
 		ListIterator itr;
 		slurmdb_cluster_rec_t *conn;
 
