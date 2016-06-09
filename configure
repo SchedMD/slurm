@@ -20214,9 +20214,10 @@ char *malloc ();
 int
 main ()
 {
-return ! malloc (0);
-  ;
-  return 0;
+char *a = malloc(0);
+int b = !a;
+free(a);
+return b;
 }
 _ACEOF
 if ac_fn_c_try_run "$LINENO"; then :

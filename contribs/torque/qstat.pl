@@ -227,8 +227,13 @@ if(defined($queueList)) {
 			print_job_brief($job, $line);
 			$line++;
 		}
+		$rc = 0;
 	}
-	$rc = 0;
+
+	# return 0 even if no records printed when using -u flag
+	if (@userIds) {
+		$rc = 0;
+	}
 }
 
 # Exit with status code
