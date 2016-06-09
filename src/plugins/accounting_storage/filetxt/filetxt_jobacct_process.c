@@ -1432,7 +1432,7 @@ extern int filetxt_jobacct_process_archive(slurmdb_archive_cond_t *arch_cond)
 	}
 
 	while (fgets(line, BUFFER_SIZE, fd)) {
-		if (fputs(line, new_logfile)<0) {
+		if (fputs(line, new_logfile) < 0) {
 			perror("writing final records");
 			goto finished2;
 		}
@@ -1441,7 +1441,8 @@ extern int filetxt_jobacct_process_archive(slurmdb_archive_cond_t *arch_cond)
 
 	printf("%d jobs expired.\n", list_count(exp_list));
 finished2:
-	fclose(new_logfile);
+	if (new_logfile)
+		fclose(new_logfile);
 	if (!file_err) {
 		if (unlink(old_logfile_name) == -1)
 			error("Unable to unlink old logfile %s: %m",
