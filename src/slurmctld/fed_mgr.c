@@ -152,7 +152,6 @@ next:
 static void _create_ping_thread()
 {
 	static bool first = true;
-	pthread_t thread_id;
 
 	if (!first)
 		return;
@@ -162,7 +161,7 @@ static void _create_ping_thread()
 	pthread_attr_t attr;
 
 	slurm_attr_init(&attr);
-	if (pthread_create(&thread_id, &attr, _ping_thread, NULL) != 0) {
+	if (pthread_create(&ping_thread, &attr, _ping_thread, NULL) != 0) {
 		error("pthread_create of message thread: %m");
 		slurm_attr_destroy(&attr);
 		return;
