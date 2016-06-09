@@ -12,12 +12,28 @@
 #    If found define HAVE_BG and HAVE_FRONT_END and others
 ##*****************************************************************************
 
-
-AC_DEFUN([X_AC_BGL],
+AC_DEFUN([X_AC_BG],
 [
 	ac_real_bluegene_loaded=no
 	ac_bluegene_loaded=no
 
+	AC_MSG_CHECKING([whether BG is explicitly disabled])
+	AC_ARG_ENABLE(
+		[bluegene],
+		AS_HELP_STRING(--disable-bluegene,Disable Bluegene support for BGAS nodes (or wherever you run a Slurm on a bluegene system not wanting it to act like a Bluegene)),
+		[ case "$enableval" in
+			  yes) ac_bluegene_loaded=no ;;
+			  no) ac_bluegene_loaded=yes  ;;
+			  *) AC_MSG_RESULT([doh!])
+			     AC_MSG_ERROR([bad value "$enableval" for --disable-bluegene])  ;;
+		  esac ]
+	)
+
+	AC_MSG_RESULT([${ac_bluegene_loaded=yes}])
+])
+
+AC_DEFUN([X_AC_BGL],
+[
    	AC_ARG_WITH(db2-dir, AS_HELP_STRING(--with-db2-dir=PATH,Specify path to parent directory of DB2 library), [ trydb2dir=$withval ])
 
 	# test for bluegene emulation mode
@@ -36,7 +52,10 @@ AC_DEFUN([X_AC_BGL],
 	  *)   AC_MSG_ERROR([bad value "$enableval" for --enable-bgl-emulation])  ;;
     	esac ])
 
-	if test "x$bluegene_emulation" = "xyes" -o "x$bgl_emulation" = "xyes"; then
+	# Skip if already set
+	if test "x$ac_bluegene_loaded" = "xyes" ; then
+		bg_default_dirs=""
+	elif test "x$bluegene_emulation" = "xyes" -o "x$bgl_emulation" = "xyes"; then
       		AC_DEFINE(HAVE_3D, 1, [Define to 1 if 3-dimensional architecture])
   		AC_DEFINE(SYSTEM_DIMENSIONS, 3, [3-dimensional architecture])
 		AC_DEFINE(HAVE_BG, 1, [Define to 1 if emulating or running on Blue Gene system])
