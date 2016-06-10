@@ -306,7 +306,7 @@ static bool _is_power_cpu(void)
 
 		char    buffer[BUFFLEN+1];
 		size_t  len = BUFFLEN;
-    
+
 		if ( sysctlbyname("hw.model", buffer, &len, NULL, 0) == 0 )
 		    is_power = ( strstr(buffer, "POWER7") != NULL );
 		else {
