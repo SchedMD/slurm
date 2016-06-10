@@ -397,7 +397,7 @@ int slurm_setaffinity(pid_t pid, size_t size, const cpu_set_t *mask)
 #ifdef __FreeBSD__
         rval = cpuset_setaffinity(CPU_LEVEL_WHICH, CPU_WHICH_PID,
 				pid, size, mask);
-#elif SCHED_GETAFFINITY_THREE_ARGS
+#elif defined(SCHED_GETAFFINITY_THREE_ARGS)
 	rval = sched_setaffinity(pid, size, mask);
 #else
 	rval = sched_setaffinity(pid, mask);
