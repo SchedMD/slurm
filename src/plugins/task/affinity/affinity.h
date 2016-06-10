@@ -35,8 +35,13 @@
 
 #include "config.h"
 
-#define _GNU_SOURCE
-#define  __USE_GNU
+#ifndef _GNU_SOURCE
+#  define _GNU_SOURCE
+#endif
+
+#ifndef __USE_GNU
+#  define  __USE_GNU
+#endif
 
 #ifdef HAVE_NUMA
 #  include <numa.h>
