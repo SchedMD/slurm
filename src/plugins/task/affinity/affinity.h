@@ -33,7 +33,9 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "config.h"
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#endif
 
 #ifndef _GNU_SOURCE
 #  define _GNU_SOURCE
@@ -45,6 +47,17 @@
 
 #ifdef HAVE_NUMA
 #  include <numa.h>
+#endif
+
+/*
+ * FreeBSD and Linux affinity functions have a slightly different interface
+ * and are defined in different headers.  See platform-dependencies in
+ * affinity.c.
+ */
+#ifdef __FreeBSD__
+#  include <sys/param.h>
+#  include <sys/cpuset.h>
+   typedef cpuset_t cpu_set_t;
 #endif
 
 #ifdef HAVE_SYS_PRCTL_H

@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "April 2016" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "June 2016" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -3355,6 +3355,8 @@ exclusive and since they decrease scheduling flexibility are not generally
 recommended (select no more than one of them).
 \fBCpusets\fR and \fBSched\fR
 are mutually exclusive (select only one of them).
+All TaskPluginParam options are supported on FreeBSD except \fBCpusets\fR.
+The \fBSched\fR option uses cpuset_setaffinity() on FreeBSD, not sched_setaffinity().
 
 .RS
 .TP 10

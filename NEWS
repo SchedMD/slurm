@@ -39,6 +39,7 @@ documents those changes that are of interest to users and administrators.
  -- Prevent job stuck in configuring state if slurmctld daemon restarted while
     PrologSlurmctld is running. Also re-issue burst_buffer/pre-load operation
     as needed.
+ -- Correct task affinity support for FreeBSD.
 
 * Changes in Slurm 16.05.0
 ==========================
