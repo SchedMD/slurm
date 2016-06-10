@@ -369,7 +369,7 @@ static int _bcast_file(struct bcast_parameters *params)
 	int rc = SLURM_SUCCESS;
 	file_bcast_msg_t bcast_msg;
 	char *buffer = NULL;
-	int32_t orig_len;
+	int32_t orig_len = 0;
 	uint32_t size_uncompressed = 0, size_compressed = 0;
 	uint32_t time_compression = 0;
 	bool more = true;
