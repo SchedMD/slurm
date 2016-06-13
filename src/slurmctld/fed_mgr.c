@@ -478,7 +478,7 @@ extern int fed_mgr_state_load(char *state_save_location)
 	/* Find current cluster and save off fed_elem for quick access. */
 	if (!fed_mgr_cluster_name)
 		fed_mgr_cluster_name = slurm_get_cluster_name();
-	if (list_count(fed_mgr_siblings) &&
+	if (fed_mgr_siblings &&
 	    !(cluster = list_find_first(fed_mgr_siblings,
 					slurmdb_find_cluster_in_list,
 					fed_mgr_cluster_name))) {
@@ -522,8 +522,9 @@ extern char *fed_mgr_find_sibling_name_by_ip(char *ip)
 	slurmdb_cluster_rec_t *sibling = NULL;
 
 	slurm_mutex_lock(&fed_mutex);
-	sibling = list_find_first(fed_mgr_siblings, _find_sibling_by_ip, ip);
-	if (sibling)
+	if (fed_mgr_siblings &&
+	    (sibling = list_find_first(fed_mgr_siblings, _find_sibling_by_ip,
+				       ip)))
 		name = xstrdup(sibling->name);
 	slurm_mutex_unlock(&fed_mutex);
 
