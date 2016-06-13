@@ -145,7 +145,7 @@ static size_t _write_bytes(int fd, char *buf, size_t size)
 	return size;
 }
 
-static char *_recv_msg(slurm_fd_t new_fd)
+static char *_recv_msg(int new_fd)
 {
 	char header[10];
 	unsigned long size;
@@ -175,7 +175,7 @@ static char *_recv_msg(slurm_fd_t new_fd)
 	return buf;
 }
 
-static void _send_reply(slurm_fd_t new_fd, char *msg)
+static void _send_reply(int new_fd, char *msg)
 {
 	uint32_t data_sent, msg_size = 0;
 	char header[10];
@@ -210,7 +210,7 @@ static char *_decrypt(char *msg, uid_t *uid)
 	return (char *) buf_out;
 }
 
-static void _proc_msg(slurm_fd_t new_fd, char *msg, slurm_addr_t cli_addr)
+static void _proc_msg(int new_fd, char *msg, slurm_addr_t cli_addr)
 {
 	/* Locks: Read job and node data */
 	slurmctld_lock_t job_read_lock = {
@@ -302,7 +302,7 @@ static void _proc_msg(slurm_fd_t new_fd, char *msg, slurm_addr_t cli_addr)
 
 static void *_msg_thread(void *no_data)
 {
-	slurm_fd_t sock_fd = -1, new_fd;
+	int sock_fd = -1, new_fd;
 	slurm_addr_t cli_addr;
 	char *msg;
 	int i;

@@ -592,18 +592,16 @@ existing_allocation(void)
 }
 
 /* Set up port to handle messages from slurmctld */
-slurm_fd_t
-slurmctld_msg_init(void)
+int slurmctld_msg_init(void)
 {
 	slurm_addr_t slurm_address;
 	uint16_t port;
-	static slurm_fd_t slurmctld_fd   = (slurm_fd_t) 0;
+	static int slurmctld_fd = -1;
 	uint16_t *ports;
 
-	if (slurmctld_fd)	/* May set early for queued job allocation */
+	if (slurmctld_fd >= 0)	/* May set early for queued job allocation */
 		return slurmctld_fd;
 
-	slurmctld_fd = -1;
 	slurmctld_comm_addr.port = 0;
 
 	if ((ports = slurm_get_srun_port_range()))

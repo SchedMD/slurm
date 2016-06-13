@@ -301,8 +301,8 @@ static void _sig_handler(int signal)
  *	controller (that's us) */
 static void *_background_rpc_mgr(void *no_data)
 {
-	slurm_fd_t newsockfd;
-	slurm_fd_t sockfd;
+	int newsockfd;
+	int sockfd;
 	slurm_addr_t cli_addr;
 	slurm_msg_t *msg = NULL;
 	int error_code;

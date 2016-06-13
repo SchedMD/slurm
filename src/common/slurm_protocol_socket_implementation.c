@@ -80,9 +80,9 @@
 
 
 /* Static functions */
-static int _slurm_connect (int __fd, struct sockaddr const * __addr,
-			   socklen_t __len);
-static slurm_fd_t _slurm_create_socket ( slurm_socket_type_t type );
+static int _slurm_connect(int __fd, struct sockaddr const * __addr,
+			  socklen_t __len);
+static int _slurm_create_socket ( slurm_socket_type_t type );
 static int _slurm_vfcntl(int fd, int cmd, va_list va );
 static int _slurm_fcntl(int fd, int cmd, ... );
 static int _slurm_socket (int __domain, int __type, int __protocol);
@@ -139,8 +139,8 @@ static void _sock_bind_wild(int sockfd)
 	return;
 }
 
-extern ssize_t slurm_msg_recvfrom_timeout(slurm_fd_t fd, char **pbuf,
-		size_t *lenp, uint32_t flags, int tmout)
+extern ssize_t slurm_msg_recvfrom_timeout(int fd, char **pbuf, size_t *lenp,
+					  uint32_t flags, int tmout)
 {
 	ssize_t  len;
 	uint32_t msglen;
@@ -172,14 +172,14 @@ extern ssize_t slurm_msg_recvfrom_timeout(slurm_fd_t fd, char **pbuf,
 	return (ssize_t) msglen;
 }
 
-extern ssize_t slurm_msg_sendto(slurm_fd_t fd, char *buffer, size_t size,
+extern ssize_t slurm_msg_sendto(int fd, char *buffer, size_t size,
 				uint32_t flags)
 {
 	return slurm_msg_sendto_timeout( fd, buffer, size, flags,
 				(slurm_get_msg_timeout() * 1000));
 }
 
-ssize_t slurm_msg_sendto_timeout(slurm_fd_t fd, char *buffer, size_t size,
+ssize_t slurm_msg_sendto_timeout(int fd, char *buffer, size_t size,
 				 uint32_t flags, int timeout)
 {
 	int   len;
@@ -210,7 +210,7 @@ ssize_t slurm_msg_sendto_timeout(slurm_fd_t fd, char *buffer, size_t size,
 
 /* Send slurm message with timeout
  * RET message size (as specified in argument) or SLURM_ERROR on error */
-extern int slurm_send_timeout(slurm_fd_t fd, char *buf, size_t size,
+extern int slurm_send_timeout(int fd, char *buf, size_t size,
 			      uint32_t flags, int timeout)
 {
 	int rc;
@@ -317,7 +317,7 @@ extern int slurm_send_timeout(slurm_fd_t fd, char *buf, size_t size,
 
 /* Get slurm message with timeout
  * RET message size (as specified in argument) or SLURM_ERROR on error */
-extern int slurm_recv_timeout(slurm_fd_t fd, char *buffer, size_t size,
+extern int slurm_recv_timeout(int fd, char *buffer, size_t size,
 			      uint32_t flags, int timeout )
 {
 	int rc;
@@ -415,10 +415,10 @@ extern int slurm_recv_timeout(slurm_fd_t fd, char *buffer, size_t size,
 	return recvlen;
 }
 
-extern slurm_fd_t slurm_init_msg_engine(slurm_addr_t *addr)
+extern int slurm_init_msg_engine(slurm_addr_t *addr)
 {
 	int rc;
-	slurm_fd_t fd;
+	int fd;
 	const int one = 1;
 	const size_t sz1 = sizeof(one);
 
@@ -459,16 +459,16 @@ extern slurm_fd_t slurm_init_msg_engine(slurm_addr_t *addr)
  * set *ADDR (which is *ADDR_LEN bytes long) to the address of the connecting
  * peer and *ADDR_LEN to the address's actual length, and return the
  * new socket's descriptor, or -1 for errors.  */
-extern slurm_fd_t slurm_accept_msg_conn(slurm_fd_t fd, slurm_addr_t *addr)
+extern int slurm_accept_msg_conn(int fd, slurm_addr_t *addr)
 {
 	socklen_t len = sizeof(slurm_addr_t);
 	return accept(fd, (struct sockaddr *)addr, &len);
 }
 
-extern slurm_fd_t slurm_open_stream(slurm_addr_t *addr, bool retry)
+extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 {
 	int retry_cnt;
-	slurm_fd_t fd;
+	int fd;
 	uint16_t port;
 	char ip[32];
 
@@ -520,7 +520,7 @@ extern slurm_fd_t slurm_open_stream(slurm_addr_t *addr, bool retry)
 }
 
 /* Put the local address of FD into *ADDR and its length in *LEN.  */
-extern int slurm_get_stream_addr(slurm_fd_t fd, slurm_addr_t *addr )
+extern int slurm_get_stream_addr(int fd, slurm_addr_t *addr )
 {
 	socklen_t size = sizeof(addr);
 	return getsockname(fd, (struct sockaddr *)addr, &size);
@@ -534,10 +534,9 @@ static int _slurm_socket (int __domain, int __type, int __protocol)
 /* Create a socket of the specified type
  * IN type - SLURM_STREAM or SLURM_MESSAGE
  */
-static slurm_fd_t _slurm_create_socket ( slurm_socket_type_t type )
+static int _slurm_create_socket ( slurm_socket_type_t type )
 {
-	switch ( type )
-	{
+	switch (type) {
 		case SLURM_STREAM :
 			return _slurm_socket ( AF_INET, SOCK_STREAM,
 					      IPPROTO_TCP) ;

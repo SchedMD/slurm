@@ -84,7 +84,7 @@ typedef enum slurm_socket_type {
  * timing out after `timeout' milliseconds.
  *
  */
-extern ssize_t slurm_msg_recvfrom_timeout(slurm_fd_t fd, char **buf,
+extern ssize_t slurm_msg_recvfrom_timeout(int fd, char **buf,
 		size_t *len, uint32_t flags, int timeout);
 
 /* slurm_msg_sendto
@@ -95,12 +95,17 @@ extern ssize_t slurm_msg_recvfrom_timeout(slurm_fd_t fd, char **buf,
  * IN flags - communication specific flags
  * RET number of bytes written
  */
-extern ssize_t slurm_msg_sendto ( slurm_fd_t open_fd, char *buffer ,
-			   size_t size , uint32_t flags ) ;
+extern ssize_t slurm_msg_sendto(int open_fd,
+				char *buffer,
+				size_t size,
+				uint32_t flags);
 /* slurm_msg_sendto_timeout is identical to _slurm_msg_sendto except
  * IN timeout - maximum time to wait for a message in milliseconds */
-extern ssize_t slurm_msg_sendto_timeout ( slurm_fd_t open_fd, char *buffer,
-				   size_t size, uint32_t flags, int timeout );
+extern ssize_t slurm_msg_sendto_timeout(int open_fd,
+					char *buffer,
+					size_t size,
+					uint32_t flags,
+					int timeout);
 
 /********************/
 /* stream functions */
@@ -109,41 +114,38 @@ extern ssize_t slurm_msg_sendto_timeout ( slurm_fd_t open_fd, char *buffer,
 /* slurm_init_msg_engine
  * opens a stream server and listens on it
  * IN slurm_address 	- slurm_addr_t to bind the server stream to
- * RET slurm_fd		- file descriptor of the stream created
+ * RET fd		- file descriptor of the stream created
  */
-extern slurm_fd_t slurm_init_msg_engine ( slurm_addr_t * slurm_address ) ;
+extern int slurm_init_msg_engine(slurm_addr_t *slurm_address);
 
 /* slurm_accept_msg_conn
  * accepts a incoming stream connection on a stream server slurm_fd
  * IN open_fd		- file descriptor to accept connection on
  * OUT slurm_address 	- slurm_addr_t of the accepted connection
- * RET slurm_fd		- file descriptor of the accepted connection
+ * RET int		- file descriptor of the accepted connection
  */
-extern slurm_fd_t slurm_accept_msg_conn ( slurm_fd_t open_fd ,
-				slurm_addr_t * slurm_address ) ;
+extern int slurm_accept_msg_conn(int open_fd, slurm_addr_t *slurm_address);
 
 /* slurm_open_stream
  * opens a client connection to stream server
  * IN slurm_address 	- slurm_addr_t of the connection destination
  * IN retry             - if true, retry as needed with various ports
  *                        to avoid socket address collision
- * RET slurm_fd_t         - file descriptor of the connection created
+ * RET int              - file descriptor of the connection created
  */
-extern slurm_fd_t slurm_open_stream ( slurm_addr_t * slurm_address,
-				      bool retry ) ;
+extern int slurm_open_stream(slurm_addr_t *slurm_address, bool retry);
 
 /* slurm_get_stream_addr
  * esentially a encapsilated get_sockname
  * IN open_fd 		- file descriptor to retreive slurm_addr_t for
  * OUT address		- address that open_fd to bound to
  */
-extern int slurm_get_stream_addr ( slurm_fd_t open_fd ,
-				   slurm_addr_t * address ) ;
+extern int slurm_get_stream_addr(int open_fd, slurm_addr_t *address);
 
-extern int slurm_send_timeout ( slurm_fd_t open_fd, char *buffer ,
-				size_t size , uint32_t flags, int timeout ) ;
-extern int slurm_recv_timeout ( slurm_fd_t open_fd, char *buffer ,
-				size_t size , uint32_t flags, int timeout ) ;
+extern int slurm_send_timeout(int open_fd, char *buffer, size_t size,
+			      uint32_t flags, int timeout);
+extern int slurm_recv_timeout(int open_fd, char *buffer, size_t size,
+			      uint32_t flags, int timeout);
 
 /***************************/
 /* slurm address functions */

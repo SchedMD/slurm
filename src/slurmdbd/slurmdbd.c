@@ -735,7 +735,7 @@ static void *_commit_handler(void *db_conn)
 static int _send_slurmctld_register_req(slurmdb_cluster_rec_t *cluster_rec)
 {
 	slurm_addr_t ctld_address;
-	slurm_fd_t fd;
+	int fd;
 	int rc = SLURM_SUCCESS;
 
 	slurm_set_addr_char(&ctld_address, cluster_rec->control_port,

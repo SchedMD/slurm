@@ -73,9 +73,9 @@ static int   err_code;
 static uint16_t sched_port;
 
 static void *	_msg_thread(void *no_data);
-static void		_proc_msg(slurm_fd_t new_fd, char *msg);
-static char *	_recv_msg(slurm_fd_t new_fd);
-static size_t	_send_msg(slurm_fd_t new_fd, char *buf, size_t size);
+static void	_proc_msg(int new_fd, char *msg);
+static char *	_recv_msg(int new_fd);
+static size_t	_send_msg(int new_fd, char *buf, size_t size);
 static size_t	_read_bytes(int fd, char *buf, size_t size);
 static size_t	_write_bytes(int fd, char *buf, size_t size);
 
@@ -161,7 +161,7 @@ extern void term_msg_thread(void)
 \*****************************************************************************/
 static void *_msg_thread(void *no_data)
 {
-	slurm_fd_t sock_fd = -1, new_fd;
+	int sock_fd = -1, new_fd;
 	slurm_addr_t cli_addr;
 	char *msg;
 	int i;
@@ -290,7 +290,7 @@ static size_t 	_write_bytes(int fd, char *buf, size_t size)
  * RET - The message which must be xfreed or
  *       NULL on error
 \*****************************************************************************/
-static char * 	_recv_msg(slurm_fd_t new_fd)
+static char * _recv_msg(int new_fd)
 {
 	char *buf;
 	buf = xmalloc(SIZE + 1);	/* need '\0' on end to print */
@@ -313,7 +313,7 @@ static char * 	_recv_msg(slurm_fd_t new_fd)
  *
  * RET - Number of data bytes written (excludes header)
 \*****************************************************************************/
-static size_t	_send_msg(slurm_fd_t new_fd, char *buf, size_t size)
+static size_t	_send_msg(int new_fd, char *buf, size_t size)
 {
 	size_t data_sent;
 
@@ -331,7 +331,7 @@ static size_t	_send_msg(slurm_fd_t new_fd, char *buf, size_t size)
 /*****************************************************************************\
  * process and respond to a request
 \*****************************************************************************/
-static void	_proc_msg(slurm_fd_t new_fd, char *msg)
+static void _proc_msg(int new_fd, char *msg)
 {
 	char send_buf[SIZE];
 	uint16_t nodes = 0, slots = 0;
@@ -369,7 +369,7 @@ static void	_proc_msg(slurm_fd_t new_fd, char *msg)
 	return;
 }
 
-extern void	send_reply(slurm_fd_t new_fd, char *response)
+extern void send_reply(int new_fd, char *response)
 {
 	_send_msg(new_fd, response, strlen(response)+1);
 }

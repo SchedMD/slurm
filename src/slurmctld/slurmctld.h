@@ -1238,7 +1238,7 @@ extern int job_hold_by_qos_id(uint32_t qos_id);
 
 /* Perform checkpoint operation on a job */
 extern int job_checkpoint(checkpoint_msg_t *ckpt_ptr, uid_t uid,
-			  slurm_fd_t conn_fd, uint16_t protocol_version);
+			  int conn_fd, uint16_t protocol_version);
 
 /* log the completion of the specified job */
 extern void job_completion_logger(struct job_record  *job_ptr, bool requeue);
@@ -1319,7 +1319,7 @@ extern void job_post_resize_acctg(struct job_record *job_ptr);
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_restart(checkpoint_msg_t *ckpt_ptr, uid_t uid,
-		       slurm_fd_t conn_fd, uint16_t protocol_version);
+		       int conn_fd, uint16_t protocol_version);
 
 /*
  * job_signal - signal the specified job
@@ -1342,7 +1342,9 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t flags,
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
-		uid_t uid, slurm_fd_t conn_fd, uint16_t protocol_version);
+			       uid_t uid,
+			       int conn_fd,
+			       uint16_t protocol_version);
 
 /*
  * job_step_checkpoint_comp - note job step checkpoint completion
@@ -1353,7 +1355,9 @@ extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_step_checkpoint_comp(checkpoint_comp_msg_t *ckpt_ptr,
-		uid_t uid, slurm_fd_t conn_fd, uint16_t protocol_version);
+				    uid_t uid,
+				    int conn_fd,
+				    uint16_t protocol_version);
 /*
  * job_step_checkpoint_task_comp - note task checkpoint completion
  * IN ckpt_ptr - checkpoint task complete status message
@@ -1363,7 +1367,9 @@ extern int job_step_checkpoint_comp(checkpoint_comp_msg_t *ckpt_ptr,
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_step_checkpoint_task_comp(checkpoint_task_comp_msg_t *ckpt_ptr,
-		uid_t uid, slurm_fd_t conn_fd, uint16_t protocol_version);
+					 uid_t uid,
+					 int conn_fd,
+					 uint16_t protocol_version);
 
 /*
  * job_str_signal - signal the specified job
@@ -1394,10 +1400,10 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
-		       slurm_fd_t conn_fd, bool indf_susp,
+		       int conn_fd, bool indf_susp,
 		       uint16_t protocol_version);
 extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
-			slurm_fd_t conn_fd, bool indf_susp,
+			int conn_fd, bool indf_susp,
 			uint16_t protocol_version);
 
 /*
@@ -1447,7 +1453,7 @@ extern int job_req_node_filter(struct job_record *job_ptr,
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_requeue(uid_t uid, uint32_t job_id,
-                       slurm_fd_t conn_fd, uint16_t protocol_version,
+                       int conn_fd, uint16_t protocol_version,
                        bool preempt, uint32_t state);
 
 /*
@@ -1460,8 +1466,8 @@ extern int job_requeue(uid_t uid, uint32_t job_id,
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr,
-                       slurm_fd_t conn_fd, uint16_t protocol_version,
-                       bool preempt);
+                        int conn_fd, uint16_t protocol_version,
+                        bool preempt);
 
 /*
  * job_set_top - Move the specified job to the top of the queue (at least
@@ -1474,7 +1480,7 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr,
  * IN protocol_version - slurm protocol version of client
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_set_top(top_job_msg_t *top_ptr, uid_t uid, slurm_fd_t conn_fd,
+extern int job_set_top(top_job_msg_t *top_ptr, uid_t uid, int conn_fd,
 		       uint16_t protocol_version);
 
 /*

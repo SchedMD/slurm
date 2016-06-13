@@ -96,7 +96,7 @@ extern FILE *pmd_lfp;
 
 typedef struct agent_data {
 	uint32_t   fe_auth_key;
-	slurm_fd_t fe_comm_socket;
+	int fe_comm_socket;
 } agent_data_t;
 
 static char *_name_from_addr(char *addr)
@@ -244,7 +244,7 @@ unpack_error:
 
 /* Validate a message connection
  * Return: true=valid/authenticated */
-static bool _validate_connect(slurm_fd_t socket_conn, uint32_t auth_key)
+static bool _validate_connect(int socket_conn, uint32_t auth_key)
 {
 	struct timeval tv;
 	fd_set read_fds;
@@ -282,9 +282,9 @@ static bool _validate_connect(slurm_fd_t socket_conn, uint32_t auth_key)
 }
 
 /* Process a message from PMD */
-static void _agent_proc_connect(slurm_fd_t fe_comm_socket,uint32_t fe_auth_key)
+static void _agent_proc_connect(int fe_comm_socket,uint32_t fe_auth_key)
 {
-	slurm_fd_t fe_comm_conn = -1;
+	int fe_comm_conn = -1;
 	slurm_addr_t be_addr;
 	bool be_connected = false;
 	Buf buffer = NULL;
@@ -346,7 +346,7 @@ static void *_agent_thread(void *arg)
 {
         agent_data_t *agent_data_ptr = (agent_data_t *) arg;
 	uint32_t   fe_auth_key    = agent_data_ptr->fe_auth_key;
-	slurm_fd_t fe_comm_socket = agent_data_ptr->fe_comm_socket;
+	int fe_comm_socket = agent_data_ptr->fe_comm_socket;
 	fd_set except_fds, read_fds;
 	struct timeval tv;
 	int i, n_fds;
@@ -396,7 +396,7 @@ static void _spawn_fe_agent(void)
 {
 	char hostname[256];
 	uint32_t   fe_auth_key = 0;
-	slurm_fd_t fe_comm_socket = -1;
+	int fe_comm_socket = -1;
 	slurm_addr_t comm_addr;
 	uint16_t comm_port;
 	pthread_attr_t agent_attr;
@@ -484,7 +484,7 @@ srun_job_t * _read_job_srun_agent(void)
 	char *key_str  = getenv("SLURM_FE_KEY");
 	char *sock_str = getenv("SLURM_FE_SOCKET");
 	char buf[32], *host, *sep;
-	slurm_fd_t resp_socket;
+	int resp_socket;
 	uint16_t resp_port;
 	uint32_t resp_auth_key, buf_size;
 	srun_job_t *srun_job = NULL;

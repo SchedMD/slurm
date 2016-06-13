@@ -340,7 +340,7 @@ extern void dump_update_list(List update_list)
 extern int cluster_first_reg(char *host, uint16_t port, uint16_t rpc_version)
 {
 	slurm_addr_t ctld_address;
-	slurm_fd_t fd;
+	int fd;
 	int rc = SLURM_SUCCESS;
 
 	info("First time to register cluster requesting "

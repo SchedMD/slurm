@@ -2794,11 +2794,11 @@ static void _remap_slurmctld_errno(void)
  *      even if asked for an ephemeral port.
  *
  * IN  port     - port to bind the msg server to
- * RET slurm_fd_t - file descriptor of the connection created
+ * RET int      - file descriptor of the connection created
  */
-slurm_fd_t slurm_init_msg_engine_port(uint16_t port)
+int slurm_init_msg_engine_port(uint16_t port)
 {
-	slurm_fd_t cc;
+	int cc;
 	slurm_addr_t addr;
 	int i;
 
@@ -2818,8 +2818,7 @@ slurm_fd_t slurm_init_msg_engine_port(uint16_t port)
 
 /* slurm_init_msg_engine_ports()
  */
-slurm_fd_t
-slurm_init_msg_engine_ports(uint16_t *ports)
+int slurm_init_msg_engine_ports(uint16_t *ports)
 {
 	int cc;
 	int val;
@@ -2857,9 +2856,9 @@ slurm_init_msg_engine_ports(uint16_t *ports)
  *
  * IN  addr_name - address to bind the msg server to (NULL means any)
  * IN  port      - port to bind the msg server to
- * RET slurm_fd_t  - file descriptor of the connection created
+ * RET int       - file descriptor of the connection created
  */
-slurm_fd_t slurm_init_msg_engine_addrname_port(char *addr_name, uint16_t port)
+int slurm_init_msg_engine_addrname_port(char *addr_name, uint16_t port)
 {
 	slurm_addr_t addr;
 
@@ -2875,7 +2874,7 @@ slurm_fd_t slurm_init_msg_engine_addrname_port(char *addr_name, uint16_t port)
  * IN  fd  - an open file descriptor to close
  * RET int - the return code
  */
-int slurm_shutdown_msg_engine(slurm_fd_t fd)
+int slurm_shutdown_msg_engine(int fd)
 {
 	int rc = slurm_close(fd);
 	if (rc)
@@ -2890,7 +2889,7 @@ int slurm_shutdown_msg_engine(slurm_fd_t fd)
  * IN  fd  - an open file descriptor to close
  * RET int - the return code
  */
-int slurm_shutdown_msg_conn(slurm_fd_t fd)
+int slurm_shutdown_msg_conn(int fd)
 {
 	return slurm_close(fd);
 }
@@ -2907,9 +2906,9 @@ int slurm_shutdown_msg_conn(slurm_fd_t fd)
  * IN slurm_address	- slurm_addr_t of the connection destination
  * RET slurm_fd		- file descriptor of the connection created
  */
-slurm_fd_t slurm_open_msg_conn(slurm_addr_t * slurm_address)
+int slurm_open_msg_conn(slurm_addr_t * slurm_address)
 {
-	slurm_fd_t fd = slurm_open_stream(slurm_address, false);
+	int fd = slurm_open_stream(slurm_address, false);
 	if (fd >= 0)
 		fd_set_close_on_exec(fd);
 	return fd;
@@ -2921,9 +2920,9 @@ slurm_fd_t slurm_open_msg_conn(slurm_addr_t * slurm_address)
  * IN/OUT addr     - address of controller contacted
  * RET slurm_fd	- file descriptor of the connection created
  */
-slurm_fd_t slurm_open_controller_conn(slurm_addr_t *addr, bool *use_backup)
+int slurm_open_controller_conn(slurm_addr_t *addr, bool *use_backup)
 {
-	slurm_fd_t fd = -1;
+	int fd = -1;
 	slurm_ctl_conf_t *conf;
 	slurm_protocol_config_t *myproto = NULL;
 	int retry, max_retry_period;
@@ -3008,13 +3007,13 @@ end_it:
 
 /* calls connect to make a connection-less datagram connection to the
  *	primary or secondary slurmctld message engine
- * RET slurm_fd_t - file descriptor of the connection created
  * IN dest      - controller to contact, primary or secondary
+ * RET int      - file descriptor of the connection created
  */
-slurm_fd_t slurm_open_controller_conn_spec(enum controller_id dest)
+int slurm_open_controller_conn_spec(enum controller_id dest)
 {
 	slurm_addr_t *addr;
-	slurm_fd_t rc;
+	int rc;
 
 	if (slurm_api_set_default_config() < 0) {
 		debug3("Error: Unable to set default config");
@@ -3047,12 +3046,12 @@ slurm_fd_t slurm_open_controller_conn_spec(enum controller_id dest)
 /*
  * NOTE: memory is allocated for the returned msg must be freed at
  *       some point using the slurm_free_functions.
- * IN open_fd	- file descriptor to receive msg on
+ * IN fd	- file descriptor to receive msg on
  * OUT msg	- a slurm_msg struct to be filled in by the function
  * IN timeout	- how long to wait in milliseconds
  * RET int	- returns 0 on success, -1 on failure and sets errno
  */
-int slurm_receive_msg(slurm_fd_t fd, slurm_msg_t *msg, int timeout)
+int slurm_receive_msg(int fd, slurm_msg_t *msg, int timeout)
 {
 	char *buf = NULL;
 	size_t buflen = 0;
@@ -3206,7 +3205,7 @@ total_return:
  *		  forwarded the message to. List containing type
  *		  (ret_data_info_t).
  */
-List slurm_receive_msgs(slurm_fd_t fd, int steps, int timeout)
+List slurm_receive_msgs(int fd, int steps, int timeout)
 {
 	char *buf = NULL;
 	size_t buflen = 0;
@@ -3412,7 +3411,7 @@ static int _unpack_msg_uid(Buf buffer)
  * IN timeout	- how long to wait in milliseconds
  * RET int	- returns 0 on success, -1 on failure and sets errno
  */
-int slurm_receive_msg_and_forward(slurm_fd_t fd, slurm_addr_t *orig_addr,
+int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 				  slurm_msg_t *msg, int timeout)
 {
 	char *buf = NULL;
@@ -3644,7 +3643,7 @@ _pack_msg(slurm_msg_t *msg, header_t *hdr, Buf buffer)
  *  Send a slurm message over an open file descriptor `fd'
  *    Returns the size of the message sent in bytes, or -1 on failure.
  */
-int slurm_send_node_msg(slurm_fd_t fd, slurm_msg_t * msg)
+int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 {
 	header_t header;
 	Buf      buffer;
@@ -3766,13 +3765,13 @@ int slurm_send_node_msg(slurm_fd_t fd, slurm_msg_t * msg)
  * IN timeout		- how long to wait in milliseconds
  * RET size_t		- bytes sent , or -1 on errror
  */
-size_t slurm_write_stream(slurm_fd_t open_fd, char *buffer, size_t size)
+size_t slurm_write_stream(int open_fd, char *buffer, size_t size)
 {
 	return slurm_send_timeout(open_fd, buffer, size,
 				  SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
 				  (slurm_get_msg_timeout() * 1000));
 }
-size_t slurm_write_stream_timeout(slurm_fd_t open_fd, char *buffer,
+size_t slurm_write_stream_timeout(int open_fd, char *buffer,
 				  size_t size, int timeout)
 {
 	return slurm_send_timeout(open_fd, buffer, size,
@@ -3788,13 +3787,13 @@ size_t slurm_write_stream_timeout(slurm_fd_t open_fd, char *buffer,
  * IN timeout	- how long to wait in milliseconds
  * RET size_t	- bytes read , or -1 on errror
  */
-size_t slurm_read_stream(slurm_fd_t open_fd, char *buffer, size_t size)
+size_t slurm_read_stream(int open_fd, char *buffer, size_t size)
 {
 	return slurm_recv_timeout(open_fd, buffer, size,
 				   SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
 				   (slurm_get_msg_timeout() * 1000));
 }
-size_t slurm_read_stream_timeout(slurm_fd_t open_fd, char *buffer,
+size_t slurm_read_stream_timeout(int open_fd, char *buffer,
 				 size_t size, int timeout)
 {
 	return slurm_recv_timeout(open_fd, buffer, size,
@@ -3837,7 +3836,7 @@ void slurm_get_ip_str(slurm_addr_t * slurm_address, uint16_t * port,
  * IN fd		- an open connection
  * OUT slurm_address	- place to park the peer's slurm_addr
  */
-int slurm_get_peer_addr(slurm_fd_t fd, slurm_addr_t * slurm_address)
+int slurm_get_peer_addr(int fd, slurm_addr_t * slurm_address)
 {
 	struct sockaddr name;
 	socklen_t namelen = (socklen_t) sizeof(struct sockaddr);
@@ -4011,7 +4010,7 @@ int slurm_send_rc_err_msg(slurm_msg_t *msg, int rc, char *err_msg)
  * RET int	- returns 0 on success, -1 on failure and sets errno
  */
 static int
-_send_and_recv_msg(slurm_fd_t fd, slurm_msg_t *req,
+_send_and_recv_msg(int fd, slurm_msg_t *req,
 		   slurm_msg_t *resp, int timeout)
 {
 	int retry = 0;
@@ -4051,7 +4050,7 @@ _send_and_recv_msg(slurm_fd_t fd, slurm_msg_t *req,
  *		  (ret_data_info_t).
  */
 static List
-_send_and_recv_msgs(slurm_fd_t fd, slurm_msg_t *req, int timeout)
+_send_and_recv_msgs(int fd, slurm_msg_t *req, int timeout)
 {
 	int retry = 0;
 	List ret_list = NULL;
@@ -4110,7 +4109,7 @@ _send_and_recv_msgs(slurm_fd_t fd, slurm_msg_t *req, int timeout)
  */
 int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 {
-	slurm_fd_t fd = -1;
+	int fd = -1;
 	int rc = 0;
 	time_t start_time = time(NULL);
 	int retry = 1;
@@ -4194,7 +4193,7 @@ cleanup:
  */
 int slurm_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp, int timeout)
 {
-	slurm_fd_t fd = -1;
+	int fd = -1;
 
 	resp->auth_cred = NULL;
 	if ((fd = slurm_open_msg_conn(&req->address)) < 0)
@@ -4215,7 +4214,7 @@ int slurm_send_only_controller_msg(slurm_msg_t *req)
 {
 	int      rc = SLURM_SUCCESS;
 	int      retry = 0;
-	slurm_fd_t fd = -1;
+	int fd = -1;
 	slurm_addr_t ctrl_addr;
 	bool     use_backup = false;
 
@@ -4258,9 +4257,9 @@ cleanup:
  */
 int slurm_send_only_node_msg(slurm_msg_t *req)
 {
-	int      rc = SLURM_SUCCESS;
-	int      retry = 0;
-	slurm_fd_t fd = -1;
+	int rc = SLURM_SUCCESS;
+	int retry = 0;
+	int fd = -1;
 
 	if ((fd = slurm_open_msg_conn(&req->address)) < 0) {
 		return SLURM_SOCKET_ERROR;
@@ -4331,7 +4330,7 @@ List slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 	static pthread_mutex_t conn_lock = PTHREAD_MUTEX_INITIALIZER;
 	static uint16_t conn_timeout = (uint16_t) NO_VAL;
 	List ret_list = NULL;
-	slurm_fd_t fd = -1;
+	int fd = -1;
 	ret_data_info_t *ret_data_info = NULL;
 	ListIterator itr;
 	int i;
@@ -4387,7 +4386,7 @@ List slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
  */
 int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout)
 {
-	slurm_fd_t fd = -1;
+	int fd = -1;
 	int ret_c = 0;
 	slurm_msg_t resp;
 

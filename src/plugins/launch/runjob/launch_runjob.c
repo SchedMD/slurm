@@ -179,7 +179,7 @@ _handle_msg(slurm_msg_t *msg)
 static void *_msg_thr_internal(void *arg)
 {
 	slurm_addr_t cli_addr;
-	slurm_fd_t newsockfd;
+	int newsockfd;
 	slurm_msg_t *msg;
 	int *slurmctld_fd_ptr = (int *)arg;
 
