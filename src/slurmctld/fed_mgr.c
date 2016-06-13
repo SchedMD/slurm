@@ -34,7 +34,13 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "config.h"
+
 #include <pthread.h>
+
+#if HAVE_SYS_PRCTL_H
+#  include <sys/prctl.h>
+#endif
 
 #include "src/common/list.h"
 #include "src/common/macros.h"
@@ -123,6 +129,11 @@ fini:
 
 static void *_ping_thread(void *arg)
 {
+#if HAVE_SYS_PRCTL_H
+	if (prctl(PR_SET_NAME, "fed_ping", NULL, NULL, NULL) < 0) {
+		error("%s: cannot set my name to %s %m", __func__, "fed_ping");
+	}
+#endif
 	while (!slurmctld_config.shutdown_time) {
 		ListIterator itr;
 		slurmdb_cluster_rec_t *conn;
