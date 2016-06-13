@@ -595,6 +595,7 @@ typedef struct {
 			* PACKED, is set up in slurmdb_get_info_cluster */
 	fed_elem_t fed;      /* Federation information */
 	uint32_t flags;      /* set of CLUSTER_FLAG_* */
+	pthread_mutex_t lock; /* For convenience only. DOESN"T GET PACK */
 	char *name;
 	char *nodes;
 	uint32_t plugin_id_select; /* id of the select plugin */

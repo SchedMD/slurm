@@ -748,6 +748,7 @@ extern void slurmdb_destroy_cluster_rec(void *object)
 
 	if (slurmdb_cluster) {
 		_free_cluster_rec_members(slurmdb_cluster);
+		slurm_mutex_destroy(&slurmdb_cluster->lock);
 		xfree(slurmdb_cluster);
 	}
 }
@@ -1464,6 +1465,7 @@ extern void slurmdb_init_cluster_rec(slurmdb_cluster_rec_t *cluster,
 	cluster->fed.state  = NO_VAL;
 	cluster->fed.weight = NO_VAL;
 	cluster->sockfd     = -1;
+	slurm_mutex_init(&cluster->lock);
 }
 
 extern void slurmdb_init_federation_rec(slurmdb_federation_rec_t *federation,

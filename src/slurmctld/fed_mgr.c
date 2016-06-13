@@ -66,20 +66,37 @@ static int _close_controller_conn(slurmdb_cluster_rec_t *conn)
 {
 	int rc = SLURM_SUCCESS;
 	xassert(conn);
+	slurm_mutex_lock(&conn->lock);
 	if (conn->sockfd >= 0)
 		rc = slurm_close_persist_controller_conn(conn->sockfd);
 	conn->sockfd = -1;
+	slurm_mutex_unlock(&conn->lock);
+
 	return rc;
 }
 
 static int _open_controller_conn(slurmdb_cluster_rec_t *conn)
 {
+	slurm_mutex_lock(&conn->lock);
 	if (conn->control_host && conn->control_host[0] == '\0')
 		conn->sockfd = -1;
 	else
 		conn->sockfd = slurm_open_persist_controller_conn(conn->control_host,
 							  conn->control_port);
+	slurm_mutex_unlock(&conn->lock);
+
 	return conn->sockfd;
+}
+
+static int _send_recv_msg(slurmdb_cluster_rec_t *conn, slurm_msg_t *req,
+			  slurm_msg_t *resp)
+{
+	int rc;
+	slurm_mutex_lock(&conn->lock);
+	rc = slurm_send_recv_msg(conn->sockfd, req, resp, 0);
+	slurm_mutex_unlock(&conn->lock);
+
+	return rc;
 }
 
 static int _ping_controller(slurmdb_cluster_rec_t *conn)
@@ -94,7 +111,7 @@ static int _ping_controller(slurmdb_cluster_rec_t *conn)
 
 	info("pinging %s(%s:%d)", conn->name, conn->control_host, conn->control_port);
 
-	if ((rc = slurm_send_recv_msg(conn->sockfd, &req_msg, &resp_msg, 0))) {
+	if ((rc = _send_recv_msg(conn, &req_msg, &resp_msg))) {
 		error("failed to ping %s(%s:%d)",
 		      conn->name, conn->control_host, conn->control_port);
 		conn->sockfd = -1;
