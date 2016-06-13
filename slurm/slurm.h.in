@@ -996,6 +996,8 @@ enum ctx_keys {
 #define BACKFILL_TEST      0x00000008	/* Backfill test in progress */
 #define GRES_ENFORCE_BIND  0x00000010	/* Enforce CPU/GRES binding */
 #define TEST_NOW_ONLY      0x00000020	/* Test for immediately start only */
+#define NODE_MEM_CALC      0x00000040	/* Per-node memory limit calculated */
+#define NODE_REBOOT        0x00000080	/* Waiting for node reboot */
 
 /*****************************************************************************\
  *      SLURM HOSTLIST FUNCTIONS

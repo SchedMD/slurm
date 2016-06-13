@@ -80,6 +80,7 @@ const char *node_select_syms[] = {
 	"select_p_job_expand",
 	"select_p_job_resized",
 	"select_p_job_signal",
+	"select_p_job_mem_confirm",
 	"select_p_job_fini",
 	"select_p_job_suspend",
 	"select_p_job_resume",
@@ -677,6 +678,21 @@ extern int select_g_job_signal(struct job_record *job_ptr, int signal)
 
 	return (*(ops[select_context_default].job_signal))
 		(job_ptr, signal);
+}
+
+/*
+ * Confirm that a job's memory allocation is still valid after a node is
+ * restarted. This is an issue if the job is allocated all of the memory on a
+ * node and that node is restarted with a different memory size than at the time
+ * it is allocated to the job. This would mostly be an issue on an Intel KNL
+ * node where the memory size would vary with the MCDRAM cache mode.
+ */
+extern int select_g_job_mem_confirm(struct job_record *job_ptr)
+{
+	if (slurm_select_init(0) < 0)
+		return SLURM_ERROR;
+
+	return (*(ops[select_context_default].job_mem_confirm)) (job_ptr);
 }
 
 /*

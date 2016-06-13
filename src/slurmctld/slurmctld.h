@@ -1556,6 +1556,12 @@ extern void job_set_alloc_tres(
 extern int job_update_tres_cnt(struct job_record *job_ptr, int node_inx);
 
 /*
+ * Modify a job's memory limit if allocated all memory on a node and that node
+ * reboots, possibly with a different memory size (e.g. KNL MCDRAM mode changed)
+ */
+extern void job_validate_mem(struct job_record *job_ptr);
+
+/*
  * check_job_step_time_limit - terminate jobsteps which have exceeded
  * their time limit
  * IN job_ptr - pointer to job containing steps to check

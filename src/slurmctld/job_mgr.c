@@ -7356,6 +7356,36 @@ static bool _test_nodes_ready(struct job_record *job_ptr)
 #endif
 
 /*
+ * Modify a job's memory limit if allocated all memory on a node and the node
+ * reboots, possibly with a different memory size (e.g. KNL MCDRAM mode changed)
+ */
+extern void job_validate_mem(struct job_record *job_ptr)
+{
+	uint64_t tres_count;
+
+	if ((job_ptr->bit_flags & NODE_MEM_CALC) &&
+	    (slurmctld_conf.fast_schedule == 0)) {
+		select_g_job_mem_confirm(job_ptr);
+		tres_count = (uint64_t)job_ptr->details->pn_min_memory;
+		if (tres_count & MEM_PER_CPU) {
+			tres_count &= (~MEM_PER_CPU);
+			tres_count *= job_ptr->tres_alloc_cnt[TRES_ARRAY_CPU];
+		} else {
+			tres_count *= job_ptr->tres_alloc_cnt[TRES_ARRAY_NODE];
+		}
+		job_ptr->tres_alloc_cnt[TRES_ARRAY_MEM] = tres_count;
+		job_ptr->tres_alloc_str =
+			assoc_mgr_make_tres_str_from_array(
+			job_ptr->tres_alloc_cnt, TRES_STR_FLAG_SIMPLE, true);
+
+		job_ptr->tres_fmt_alloc_str =
+			assoc_mgr_make_tres_str_from_array(
+			job_ptr->tres_alloc_cnt, TRES_STR_CONVERT_UNITS, true);
+		jobacct_storage_job_start_direct(acct_db_conn, job_ptr);
+	}
+}
+
+/*
  * job_time_limit - terminate jobs which have exceeded their time limit
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
@@ -7399,6 +7429,12 @@ void job_time_limit(void)
 			info("%s: Configuration for job %u is complete",
 			      __func__, job_ptr->job_id);
 			job_config_fini(job_ptr);
+			if (job_ptr->bit_flags & NODE_REBOOT) {
+				job_ptr->bit_flags &= (~NODE_REBOOT);
+				job_validate_mem(job_ptr);
+				if (job_ptr->batch_flag)
+					launch_job(job_ptr);
+			}
 		}
 #endif
 		/* This needs to be near the top of the loop, checks every

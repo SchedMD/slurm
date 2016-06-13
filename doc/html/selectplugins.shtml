@@ -564,6 +564,20 @@ be sent to the job.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On
 failure, the plugin should return a Slurm error code.</p>
 
+
+<p class="commandline">int select_p_job_mem_confirm (struct job_record *job_ptr);</p>
+<p style="margin-left:.2in"><b>Description</b>: Confirm that a job's memory
+allocation is still valid after a node is restarted. This is an issue if the
+job is allocated all of the memory on a node and that node is restarted with a
+different memory size than at the time it is allocated to the job. This would
+mostly be an issue on an Intel KNL node where the memory size would vary with
+the MCDRAM cache mode.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> job_ptr</span>&nbsp; &nbsp;&nbsp;(input) pointer
+to the job to be validated.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On
+failure, the plugin should return a Slurm error code.</p>
+
 <p class="commandline">int select_p_job_suspend (struct job_record *job_ptr,
 bool indf_susp);</p>
 <p style="margin-left:.2in"><b>Description</b>: Suspend the specified job.
@@ -779,6 +793,6 @@ cnodelist (e.g. on a BGQ it would look something like '[00000x11331]').</br>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 10 December 2015</p>
+<p style="text-align:center;">Last modified 11 June 2016</p>
 
 <!--#include virtual="footer.txt"-->

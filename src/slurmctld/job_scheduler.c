@@ -835,7 +835,8 @@ next_part:		part_ptr = (struct part_record *)
 			info("sched: Allocate JobId=%u Partition=%s NodeList=%s #CPUs=%u",
 			     job_ptr->job_id, job_ptr->part_ptr->name,
 			     job_ptr->nodes, job_ptr->total_cpus);
-			if (job_ptr->details->prolog_running == 0) {
+			if ((job_ptr->details->prolog_running == 0) &&
+			    ((job_ptr->bit_flags & NODE_REBOOT) == 0)) {
 				launch_msg = build_launch_job_msg(job_ptr,
 							msg->protocol_version);
 			}
@@ -1821,8 +1822,10 @@ next_task:
 #endif
 			if (job_ptr->batch_flag == 0)
 				srun_allocate(job_ptr->job_id);
-			else if (job_ptr->details->prolog_running == 0)
+			else if ((job_ptr->details->prolog_running == 0) &&
+			         ((job_ptr->bit_flags & NODE_REBOOT) == 0)) {
 				launch_job(job_ptr);
+			}
 			rebuild_job_part_list(job_ptr);
 			job_cnt++;
 			if (is_job_array_head &&
@@ -3618,6 +3621,7 @@ static void *_wait_boot(void *arg)
 
 	lock_slurmctld(job_write_lock);
 	prolog_running_decr(job_ptr);
+	job_validate_mem(job_ptr);
 	unlock_slurmctld(job_write_lock);
 
 	return NULL;
@@ -3800,6 +3804,7 @@ extern void prolog_running_decr(struct job_record *job_ptr)
 
 	job_ptr->job_state &= ~JOB_CONFIGURING;
 	if (job_ptr->batch_flag &&
+	    ((job_ptr->bit_flags & NODE_REBOOT) == 0) &&
 	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
 		launch_job(job_ptr);
 	}

@@ -437,6 +437,11 @@ extern int select_p_job_signal(struct job_record *job_ptr, int signal)
 	return other_job_signal(job_ptr, signal);
 }
 
+extern int select_p_job_mem_confirm(struct job_record *job_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
 extern int select_p_job_fini(struct job_record *job_ptr)
 {
 	if (job_ptr == NULL)
