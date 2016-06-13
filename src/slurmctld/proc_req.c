@@ -556,9 +556,11 @@ static void _set_persist_thread_name(connection_arg_t *arg)
 
 		slurm_get_ip_str(&arg->cli_addr, &port, ip, sizeof(ip));
 		if ((s_name = fed_mgr_find_sibling_name_by_ip(ip))) {
-			if (prctl(PR_SET_NAME, s_name, NULL, NULL, NULL) < 0)
+			char tmp_name[16];
+			snprintf(tmp_name, sizeof(tmp_name), "sib-%s", s_name);
+			if (prctl(PR_SET_NAME, tmp_name, NULL, NULL, NULL) < 0)
 				error("%s: cannot set my name to %s %m",
-				      __func__, s_name);
+				      __func__, tmp_name);
 			xfree(s_name);
 		} else
 			error("Didn't find fed sibling by ip '%s'", ip);
