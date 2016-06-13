@@ -199,10 +199,11 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	hwloc_obj_type_t objtype[LAST_OBJ];
 	unsigned idx[LAST_OBJ];
 	int nobj[LAST_OBJ];
+	bitstr_t *used_socket = NULL;
 	int actual_cpus;
 	int macid;
 	int absid;
-	int actual_boards = 1, depth;
+	int actual_boards = 1, depth, tot_socks = 0, used_sock_offset;
 	int i;
 
 	debug2("hwloc_topology_init");
@@ -265,11 +266,19 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	 * KNL NUMA with no cores are NOT counted. */
 	nobj[SOCKET] = 0;
 	depth = hwloc_get_type_depth(topology, objtype[SOCKET]);
+	used_socket = bit_alloc(1024);
 	for (i = 0; i < hwloc_get_nbobjs_by_depth(topology, depth); i++) {
 		obj = hwloc_get_obj_by_depth(topology, depth, i);
-		if ((obj->type == objtype[SOCKET]) &&
-		    (_core_child_count(topology, obj) > 0))
-			nobj[SOCKET]++;
+		if (obj->type == objtype[SOCKET]) {
+			if (_core_child_count(topology, obj) > 0) {
+				nobj[SOCKET]++;
+				bit_set(used_socket, tot_socks);
+			}
+			if (++tot_socks >= 1024) {	/* Bitmap size */
+				fatal("Socket count exceeds 1024, expand data structure size");
+				break;
+			}
+		}
 	}
 	nobj[CORE]   = hwloc_get_nbobjs_by_type(topology, objtype[CORE]);
 	/*
@@ -321,7 +330,10 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 			(*p_block_map_inv)[i] = i;
 		}
 		/* create map with hwloc */
+		used_sock_offset = 0;
 		for (idx[SOCKET]=0; idx[SOCKET]<nobj[SOCKET]; ++idx[SOCKET]) {
+			if (!bit_test(used_socket, i))
+				continue;
 			for (idx[CORE]=0; idx[CORE]<nobj[CORE]; ++idx[CORE]) {
 				for (idx[PU]=0; idx[PU]<nobj[PU]; ++idx[PU]) {
 					/* get hwloc_obj by indexes */
@@ -330,8 +342,9 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 					if (!obj)
 						continue;
 					macid = obj->os_index;
-					absid = idx[SOCKET]*nobj[CORE]*nobj[PU]
-					      + idx[CORE]*nobj[PU]
+					absid = used_sock_offset *
+						nobj[CORE] * nobj[PU]
+					      + idx[CORE] * nobj[PU]
 					      + idx[PU];
 
 					if ((macid >= actual_cpus) ||
@@ -345,9 +358,10 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 					(*p_block_map_inv)[macid] = absid;
 				}
 			 }
+			used_sock_offset++;
 		}
 	}
-
+	FREE_NULL_BITMAP(used_socket);
 	hwloc_topology_destroy(topology);
 
 	/* update output parameters */
