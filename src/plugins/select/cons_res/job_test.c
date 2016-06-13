@@ -3073,6 +3073,10 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		     job_ptr->job_id, bit_set_count(node_bitmap));
 	}
 
+	if ((details_ptr->pn_min_memory == 0) &&
+	    (select_fast_schedule == 0))
+		job_ptr->bit_flags |= NODE_MEM_CALC;	/* To be calculated */
+
 	orig_map = bit_copy(node_bitmap);
 	avail_cores = _make_core_bitmap(node_bitmap,
 					job_ptr->details->core_spec);

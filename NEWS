@@ -42,6 +42,9 @@ documents those changes that are of interest to users and administrators.
     as needed.
  -- Correct task affinity support for FreeBSD.
  -- Fix for task affinity on KNL in SNC2/Flat mode.
+ -- Recalculate a job's memory allocation after node reboot if job requests all
+    of a node's memory and FastSchedule=0 is configurated. Intel KNL memory size
+    can change on reboot with various MCDRAM modes.
 
 * Changes in Slurm 16.05.0
 ==========================

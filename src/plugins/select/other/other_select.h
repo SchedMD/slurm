@@ -213,6 +213,12 @@ extern int other_job_resized(struct job_record *job_ptr,
 extern int other_job_signal(struct job_record *job_ptr, int signal);
 
 /*
+ * Pass job memory allocation confirmation request to other plugin.
+ * IN job_ptr - job to be signalled
+ */
+extern int other_job_mem_confirm(struct job_record *job_ptr);
+
+/*
  * Note termination of job is starting. Executed from slurmctld.
  * IN job_ptr - pointer to job being terminated
  */
