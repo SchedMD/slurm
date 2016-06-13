@@ -2216,9 +2216,12 @@ char *hostlist_shift_range(hostlist_t hl)
 {
 	int i;
 	char *buf;
-	hostlist_t hltmp = hostlist_new();
-	if (!hltmp || !hl)
+	hostlist_t hltmp ;
+
+	if (!hl)
 		return NULL;
+
+	hltmp = hostlist_new();
 
 	LOCK_HOSTLIST(hl);
 
