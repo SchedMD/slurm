@@ -206,6 +206,7 @@ extern int slurm_addto_char_list(List char_list, char *names)
 	bool brack_not = false;
 	bool first_brack = false;
 	char *this_node_name;
+	char *tmp_this_node_name;
 	hostlist_t host_list;
 
 	if (!char_list) {
@@ -286,9 +287,15 @@ extern int slurm_addto_char_list(List char_list, char *names)
 				//info("got %s %d", name, i-start);
 
 				if ((host_list = hostlist_create(name))) {
+					/* FIXME: hostlist_shift returns
+					 * a malloc'd string, but we need
+					 * an xmalloc'd string to add to the
+					 * list. cleanup when hostlist uses
+					 * xmalloc */
 					while ((this_node_name =
-						xstrdup(hostlist_shift
-							(host_list)))) {
+						xstrdup((tmp_this_node_name =
+						hostlist_shift (host_list))))) {
+						free(tmp_this_node_name);
 						/* If we get a duplicate
 						 * remove the first one and tack
 						 * this on the end. This is
