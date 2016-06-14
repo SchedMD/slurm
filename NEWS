@@ -294,6 +294,9 @@ documents those changes that are of interest to users and administrators.
     can work on a BGAS node.
  -- Prevent job stuck in configuring state if slurmctld daemon restarted while
     PrologSlurmctld is running.
+ -- Handle association correctly if using FAIR_TREE as well as shares=Parent
+ -- Fix race condition when setting priority of a job and the association
+    doesn't have a parent.
 
 * Changes in Slurm 15.08.12
 ===========================

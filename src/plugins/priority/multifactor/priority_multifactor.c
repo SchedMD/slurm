@@ -445,8 +445,7 @@ static int _set_children_usage_efctv(List children_list)
  */
 static double _get_fairshare_priority(struct job_record *job_ptr)
 {
-	slurmdb_assoc_rec_t *job_assoc =
-		(slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
+	slurmdb_assoc_rec_t *job_assoc;
 	slurmdb_assoc_rec_t *fs_assoc = NULL;
 	double priority_fs = 0.0;
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
@@ -455,7 +454,12 @@ static double _get_fairshare_priority(struct job_record *job_ptr)
 	if (!calc_fairshare)
 		return 0;
 
+	assoc_mgr_lock(&locks);
+
+	job_assoc = (slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
+
 	if (!job_assoc) {
+		assoc_mgr_unlock(&locks);
 		error("Job %u has no association.  Unable to "
 		      "compute fairshare.", job_ptr->job_id);
 		return 0;
@@ -466,8 +470,6 @@ static double _get_fairshare_priority(struct job_record *job_ptr)
 		fs_assoc = job_assoc->usage->fs_assoc_ptr;
 	else
 		fs_assoc = job_assoc;
-
-	assoc_mgr_lock(&locks);
 
 	if (fuzzy_equal(fs_assoc->usage->usage_efctv, NO_VAL))
 		priority_p_set_assoc_usage(fs_assoc);
