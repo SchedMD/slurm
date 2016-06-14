@@ -315,8 +315,11 @@ static void _normalize_assoc_shares_fair_tree(
 {
 	slurmdb_assoc_rec_t *fs_assoc = assoc;
 	double shares_norm = 0.0;
-	if (assoc->shares_raw == SLURMDB_FS_USE_PARENT)
+
+	if ((assoc->shares_raw == SLURMDB_FS_USE_PARENT)
+	    && assoc->usage->fs_assoc_ptr)
 		fs_assoc = assoc->usage->fs_assoc_ptr;
+
 	if (fs_assoc->usage->level_shares)
 		shares_norm =
 			(double)fs_assoc->shares_raw /
