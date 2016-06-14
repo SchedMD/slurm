@@ -18,6 +18,8 @@ documents those changes that are of interest to users and administrators.
  -- Handle association correctly if using FAIR_TREE as well as shares=Parent
  -- Fix race condition when setting priority of a job and the association
     doesn't have a parent.
+ -- MYSQL - Fix issue with adding a reservation if the name has single quotes in
+    it.
 
 * Changes in Slurm 15.08.12
 ===========================
