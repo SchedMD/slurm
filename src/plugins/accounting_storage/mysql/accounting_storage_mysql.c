@@ -1926,8 +1926,9 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 		 * only looking for association type tables.
 		 */
 	} else if ((table == qos_table) || (table == wckey_table)) {
-		has_jobs = _check_jobs_before_remove_without_assoctable(
-			mysql_conn, cluster_name, assoc_char);
+		if (cluster_name)
+			has_jobs = _check_jobs_before_remove_without_assoctable(
+				mysql_conn, cluster_name, assoc_char);
 	} else if (table != assoc_table) {
 		/* first check to see if we are running jobs now */
 		if (_check_jobs_before_remove(

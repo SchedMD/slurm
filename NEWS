@@ -10,6 +10,8 @@ documents those changes that are of interest to users and administrators.
     slurm.h. This is needed to avoid breaking Python with by using one of its
     keywords in a Slurm data structure.
  -- Remove eligible_time from jobcomp/elasticsearch.
+ -- Fix issue where if no clusters were added but yet a QOS needed to be
+    deleted make it possible.
 
 * Changes in Slurm 16.05.1
 ==========================
