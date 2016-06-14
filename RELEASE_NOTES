@@ -68,3 +68,4 @@ Added the following API's
 
 Changed the following API's
 ============================
+ -- Removed (incorrectly calculated) eligible_time from jobcomp/elasticsearch.

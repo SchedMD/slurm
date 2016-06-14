@@ -9,7 +9,8 @@ documents those changes that are of interest to users and administrators.
  -- Rename "in" to "input" in slurm_step_io_fds data structure defined in
     slurm.h. This is needed to avoid breaking Python with by using one of its
     keywords in a Slurm data structure.
- 
+ -- Remove eligible_time from jobcomp/elasticsearch.
+
 * Changes in Slurm 16.05.1
 ==========================
  -- Fix __cplusplus macro in spank.h to allow compilation with C++.
