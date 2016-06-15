@@ -1683,6 +1683,17 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		goto unpack_error;
 	}
 
+	if (job_id > MAX_JOB_ID) {
+		error("JobID %u can not be recovered, JobID too high",
+		      job_id);
+		job_ptr->job_state = JOB_FAILED;
+		job_ptr->exit_code = 1;
+		job_ptr->state_reason = FAIL_SYSTEM;
+		xfree(job_ptr->state_desc);
+		job_ptr->end_time = now;
+		goto unpack_error;
+	}
+
 	if (((job_state & JOB_STATE_BASE) >= JOB_END) ||
 	    (batch_flag > MAX_BATCH_REQUEUE)) {
 		error("Invalid data for job %u: "

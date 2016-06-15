@@ -2,7 +2,7 @@ RELEASE NOTES FOR SLURM VERSION 17.02
 13 July 2016
 
 IMPORTANT NOTES:
-ANY JOBS WITH A JOB ID ABOVE 2,147,463,647 WILL BE PURGED WHEN SLURM IS
+ANY JOBS WITH A JOB ID ABOVE 67,108,863 WILL BE PURGED WHEN SLURM IS
 UPGRADED FROM AN OLDER VERSION! Reduce your configured MaxJobID value as needed
 prior to upgrading in order to eliminate these jobs.
 
@@ -32,6 +32,10 @@ upgrading Slurm to a new major release.
 
 HIGHLIGHTS
 ==========
+ -- In order to support federated jobs, the MaxJobID configuration parameter
+    default value has been reduced from 2,147,418,112 to 67,043,328 and it's
+    maximum value is now 67,108,863. ANY JOBS WITH A JOB ID ABOVE 67,108,863
+    WILL BE PURGED WHEN SLURM IS UPGRADED FROM AN OLDER VERSION!
 
 RPMBUILD CHANGES
 ================
@@ -44,6 +48,7 @@ COMMAND CHANGES (see man pages for details)
 
 OTHER CHANGES
 =============
+ -- Added new #define: #define MAX_JOB_ID (0x03FFFFFF)
 
 API CHANGES
 ===========
@@ -62,6 +67,8 @@ Removed members from the following struct definitions
 
 Changed the following enums and #defines
 ========================================
+ -- Changed DEFAULT_MAX_JOB_ID from 0x7fff0000 to 0x03ff0000.
+
 
 Added the following API's
 =========================

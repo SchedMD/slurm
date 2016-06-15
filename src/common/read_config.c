@@ -3341,9 +3341,9 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_uint32(&conf->max_job_id, "MaxJobId", hashtbl))
 		conf->max_job_id = DEFAULT_MAX_JOB_ID;
-	if (conf->max_job_id > 0x7fffffff) {
-		error("MaxJobId can not exceed 0x7fffffff, resetting value");
-		conf->max_job_id = 0x7fffffff;
+	if (conf->max_job_id > MAX_JOB_ID) {
+		error("MaxJobId can not exceed MAX_JOB_ID, resetting value");
+		conf->max_job_id = MAX_JOB_ID;
 	}
 
 	if (conf->first_job_id > conf->max_job_id) {

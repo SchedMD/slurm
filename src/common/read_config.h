@@ -120,7 +120,7 @@ extern char *default_plugstack;
 #define DEFAULT_MAIL_PROG           "/bin/mail"
 #define DEFAULT_MAX_ARRAY_SIZE      1001
 #define DEFAULT_MAX_JOB_COUNT       10000
-#define DEFAULT_MAX_JOB_ID          0x7fff0000
+#define DEFAULT_MAX_JOB_ID          0x03ff0000
 #define DEFAULT_MAX_STEP_COUNT      40000
 #define DEFAULT_MCS_PLUGIN          "mcs/none"
 #define DEFAULT_MEM_PER_CPU         0

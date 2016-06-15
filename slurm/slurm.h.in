@@ -164,6 +164,7 @@ typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
 #define NO_VAL	   (0xfffffffe)
 #define NO_VAL64   (0xfffffffffffffffe)
 #define MAX_TASKS_PER_NODE 512
+#define MAX_JOB_ID (0x03FFFFFF) /* bits 0-25 */
 
 /* Job step ID of external process container */
 #define SLURM_PENDING_STEP (0xfffffffd)

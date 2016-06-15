@@ -1335,12 +1335,15 @@ It only takes effect upon restart of the slurmctld daemon.
 
 .TP
 \fBMaxJobId\fR
-The maximum job id to be used for jobs submitted to Slurm without a
-specific requested value EXCEPT for jobs visible between clusters.
-Job id values generated will incremented by 1 for each subsequent job.
-Once \fBMaxJobId\fR is reached, the next job will be assigned \fBFirstJobId\fR.
-The default value is 2,147,418,112 (0x7fff0000).
-Jobs visible across clusters will always have a job ID of 2,147,483,648 or higher.
+The maximum job id to be used for jobs submitted to Slurm without a specific
+requested value. Job ids are unsigned 32bit integers with the first 26 bits
+reserved for local job ids and the remaining 6 bits reserved for a cluster id
+to identify a federated job's origin. The maximun allowed local job id is
+67,108,863 (0x3FFFFFF). The default value is 67,043,328 (0x03ff0000).
+\fBMaxJobId\fR only applies to the local job id and not the federated job id.
+Job id values generated will be incremented by 1 for each subsequent job. Once
+\fBMaxJobId\fR is reached, the next job will be assigned \fBFirstJobId\fR.
+Federated jobs will always have a job ID of 67,108,865 or higher.
 Also see \fBFirstJobId\fR.
 
 .TP

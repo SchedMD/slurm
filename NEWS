@@ -1,6 +1,14 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Federation Changes - Put below when merged in.
+==============================
+ -- In order to support federated jobs, the MaxJobID configuration parameter
+    default value has been reduced from 2,147,418,112 to 67,043,328 and it's
+    maximum value is now 67,108,863. ANY JOBS WITH A JOB ID ABOVE 67,108,863
+    WILL BE PURGED WHEN SLURM IS UPGRADED FROM AN OLDER VERSION!
+
+
 * Changes in Slurm 17.02.0pre1
 ==============================
  -- burst_buffer/cray - Add support for rounding up the size of a buffer reqeust
