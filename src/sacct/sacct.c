@@ -67,6 +67,7 @@ print_field_t fields[] = {
 	{10, "CPUTimeRAW", print_fields_uint64, PRINT_CPU_TIME_RAW},
 	{15, "DerivedExitCode", print_fields_str, PRINT_DERIVED_EC},
 	{10, "Elapsed", print_fields_time_from_secs, PRINT_ELAPSED},
+	{10, "ElapsedRaw", print_fields_uint32, PRINT_ELAPSED_RAW},
 	{19, "Eligible", print_fields_date, PRINT_ELIGIBLE},
 	{19, "End", print_fields_date, PRINT_END},
 	{8,  "ExitCode", print_fields_str, PRINT_EXITCODE},

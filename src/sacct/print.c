@@ -734,6 +734,25 @@ void print_fields(type_t type, void *object)
 					     (uint64_t)tmp_int,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_ELAPSED_RAW:
+			switch(type) {
+			case JOB:
+				tmp_int = job->elapsed;
+				break;
+			case JOBSTEP:
+				tmp_int = step->elapsed;
+				break;
+			case JOBCOMP:
+				tmp_int = job_comp->elapsed_time;
+				break;
+			default:
+				tmp_int = NO_VAL;
+				break;
+			}
+			field->print_routine(field,
+					     tmp_int,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_ELIGIBLE:
 			switch(type) {
 			case JOB:
