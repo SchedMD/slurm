@@ -217,7 +217,9 @@ int main(int argc, char *argv[])
 	if (opt.wait)
 		rc = _job_wait(resp->job_id);
 
+	xfree(desc.name);
 	xfree(desc.script);
+	env_array_free(desc.environment);
 	slurm_free_submit_response_response_msg(resp);
 	return rc;
 }
