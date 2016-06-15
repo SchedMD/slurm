@@ -148,11 +148,13 @@
 		}							\
 	} while (0)
 
+/* ignore timeouts, you must be able to handle them if
+ * calling cond_timedwait instead of cond_wait */
 #define slurm_cond_timedwait(cond, mutex, abstime)			\
 	do {								\
 		int err = pthread_cond_timedwait(cond, mutex, abstime);	\
-		if (err) {						\
-			debug("%s:%d %s: pthread_cond_timedwait(): %s",	\
+		if (err != ETIMEDOUT) {					\
+			error("%s:%d %s: pthread_cond_timedwait(): %s",	\
 				__FILE__, __LINE__, __func__,		\
 				strerror(err));				\
 		}							\
