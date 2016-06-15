@@ -5391,8 +5391,9 @@ _unpack_job_info_msg(job_info_msg_t ** msg, Buf buffer,
 		safe_unpack32(&((*msg)->record_count), buffer);
 		safe_unpack_time(&((*msg)->last_update), buffer);
 
-		job = (*msg)->job_array = xmalloc(sizeof(job_info_t) *
-						  (*msg)->record_count);
+		if ((*msg)->record_count)
+			job = (*msg)->job_array = xmalloc(sizeof(job_info_t) *
+							  (*msg)->record_count);
 		/* load individual job info */
 		for (i = 0; i < (*msg)->record_count; i++) {
 			if (_unpack_job_info_members(&job[i], buffer,
