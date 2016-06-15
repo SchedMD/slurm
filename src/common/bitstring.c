@@ -1095,43 +1095,65 @@ bit_unfmt(bitstr_t *b, char *str)
  * output: an array of integers
  * NOTE: the caller must xfree the returned memory
  */
-int32_t *
-bitfmt2int (char *bit_str_ptr)
+int32_t *bitfmt2int(char *bit_str_ptr)
 {
 	int32_t *bit_int_ptr, i, bit_inx, size, sum, start_val;
+	char *tmp = NULL;
+	int32_t start_task_id = -1;
+	int32_t end_task_id = -1;
+	int32_t step = -1;
 
 	if (bit_str_ptr == NULL)
 		return NULL;
-	size = strlen (bit_str_ptr) + 1;
-	bit_int_ptr = xmalloc ( sizeof (int32_t) *
-			(size * 2 + 1));	/* more than enough space */
+	if (!(xstrchr(bit_str_ptr, ':'))) {
+		size = strlen(bit_str_ptr) + 1;
+		/* more than enough space */
+		bit_int_ptr = xmalloc(sizeof(int32_t) * (size * 2 + 1));
 
-	bit_inx = sum = 0;
-	start_val = -1;
-	for (i = 0; i < size; i++) {
-		if (bit_str_ptr[i] >= '0' &&
-		    bit_str_ptr[i] <= '9'){
-			sum = (sum * 10) + (bit_str_ptr[i] - '0');
-		}
-
-		else if (bit_str_ptr[i] == '-') {
-			start_val = sum;
-			sum = 0;
-		}
-
-		else if (bit_str_ptr[i] == ',' ||
-		         bit_str_ptr[i] == '\0') {
-			if (i == 0)
-				break;
-			if (start_val == -1)
+		bit_inx = sum = 0;
+		start_val = -1;
+		for (i = 0; i < size; i++) {
+			if (bit_str_ptr[i] >= '0' &&
+			    bit_str_ptr[i] <= '9') {
+				sum = (sum * 10) + (bit_str_ptr[i] - '0');
+			} else if (bit_str_ptr[i] == '-') {
 				start_val = sum;
-			bit_int_ptr[bit_inx++] = start_val;
-			bit_int_ptr[bit_inx++] = sum;
-			start_val = -1;
-			sum = 0;
+				sum = 0;
+			} else if (bit_str_ptr[i] == ',' ||
+				   bit_str_ptr[i] == '\0') {
+				if (i == 0)
+					break;
+				if (start_val == -1)
+					start_val = sum;
+				bit_int_ptr[bit_inx++] = start_val;
+				bit_int_ptr[bit_inx++] = sum;
+				start_val = -1;
+				sum = 0;
+			}
+		}
+		assert(bit_inx < (size * 2 + 1));
+	} else {
+		start_task_id = strtol(bit_str_ptr, &tmp, 10);
+		if (*tmp != '-')
+			return NULL;
+		end_task_id = strtol(tmp + 1, &tmp, 10);
+		if (*tmp != ':')
+			return NULL;
+		step = strtol(tmp + 1, &tmp, 10);
+		if (*tmp != '\0')
+			return NULL;
+		if(end_task_id >= start_task_id && step > 0) {
+			size=((end_task_id - start_task_id) / step) + 1;
+			bit_int_ptr = xmalloc(sizeof(int32_t) * (size * 2 + 1));
+			bit_inx = 0;
+			for(i = 0; i < size; i++) {
+				bit_int_ptr[bit_inx++] = start_task_id + i * step;
+				bit_int_ptr[bit_inx++] = start_task_id + i * step;
+			}
+		} else {
+			return NULL;
 		}
 	}
-	assert(bit_inx < (size*2+1));
 	bit_int_ptr[bit_inx] = -1;
 	return bit_int_ptr;
 }
