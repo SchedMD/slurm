@@ -52,7 +52,8 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmdbd/read_config.h"
 
-#define FED_MGR_STATE_FILE "fed_mgr_state"
+#define FED_MGR_STATE_FILE       "fed_mgr_state"
+#define FED_MGR_CLUSTER_ID_BEGIN 26
 
 static pthread_mutex_t fed_mutex = PTHREAD_MUTEX_INITIALIZER;
 char *fed_mgr_cluster_name = NULL;
@@ -546,4 +547,41 @@ extern char *fed_mgr_find_sibling_name_by_ip(char *ip)
 	slurm_mutex_unlock(&fed_mutex);
 
 	return name;
+}
+
+/*
+ * Returns true if the cluster is part of a federation.
+ */
+extern bool fed_mgr_is_active()
+{
+	if (fed_mgr_fed_info.name)
+		return true;
+
+	return false;
+}
+
+/*
+ * Returns federated job id (<local id> + <cluster id>.
+ * Bits  0-25: Local job id
+ * Bits 26-31: Cluster id
+ */
+extern uint32_t fed_mgr_get_job_id(uint32_t orig)
+{
+	return orig + (fed_mgr_fed_info.index << FED_MGR_CLUSTER_ID_BEGIN);
+}
+
+/*
+ * Returns the local job id from a federated job id.
+ */
+extern uint32_t fed_mgr_get_local_id(uint32_t id)
+{
+	return id & MAX_JOB_ID;
+}
+
+/*
+ * Returns the cluster id from a federated job id.
+ */
+extern uint32_t fed_mgr_get_cluster_id(uint32_t id)
+{
+	return id >> FED_MGR_CLUSTER_ID_BEGIN;
 }

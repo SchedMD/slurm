@@ -83,6 +83,7 @@
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/burst_buffer.h"
+#include "src/slurmctld/fed_mgr.h"
 #include "src/slurmctld/front_end.h"
 #include "src/slurmctld/gang.h"
 #include "src/slurmctld/job_scheduler.h"
@@ -9193,7 +9194,10 @@ static int _set_job_id(struct job_record *job_ptr)
 		if (_dup_job_file_test(new_id))
 			continue;
 
-		job_ptr->job_id = new_id;
+		if (fed_mgr_is_active())
+			job_ptr->job_id = fed_mgr_get_job_id(new_id);
+		else
+			job_ptr->job_id = new_id;
 		/* When we get a new job id might as well make sure
 		 * the db_index is 0 since there is no way it will be
 		 * correct otherwise :). */
