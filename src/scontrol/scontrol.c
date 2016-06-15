@@ -49,14 +49,14 @@
 
 char *command_name;
 List clusters = NULL;
-int all_flag;		/* display even hidden partitions */
-int detail_flag;	/* display additional details */
-int exit_code;		/* scontrol's exit code, =1 on any error at any time */
-int exit_flag;		/* program to terminate if =1 */
-int input_words;	/* number of words of input permitted */
-int one_liner;		/* one record per line if =1 */
-int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
-int verbosity;		/* count of "-v" options */
+int all_flag = 0;	/* display even hidden partitions */
+int detail_flag = 0;	/* display additional details */
+int exit_code = 0;	/* scontrol's exit code, =1 on any error at any time */
+int exit_flag = 0;	/* program to terminate if =1 */
+int input_words = 128;	/* number of words of input permitted */
+int one_liner = 0;	/* one record per line if =1 */
+int quiet_flag = 0;	/* quiet=1, verbose=-1, normal=0 */
+int verbosity = 0;	/* count of "-v" options */
 uint32_t cluster_flags; /* what type of cluster are we talking to */
 
 block_info_msg_t *old_block_info_ptr = NULL;
@@ -90,7 +90,7 @@ static void	_write_config (void);
 int
 main (int argc, char *argv[])
 {
-	int error_code = SLURM_SUCCESS, i, opt_char, input_field_count;
+	int error_code = SLURM_SUCCESS, i, opt_char, input_field_count = 0;
 	char **input_fields, *env_val;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 
@@ -110,14 +110,7 @@ main (int argc, char *argv[])
 		{NULL,       0, 0, 0}
 	};
 
-	command_name      = argv[0];
-	all_flag          = 0;
-	detail_flag       = 0;
-	exit_code         = 0;
-	exit_flag         = 0;
-	input_field_count = 0;
-	quiet_flag        = 0;
-	verbosity         = 0;
+	command_name = argv[0];
 	slurm_conf_init(NULL);
 	log_init("scontrol", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
