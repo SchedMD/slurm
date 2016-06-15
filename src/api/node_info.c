@@ -392,6 +392,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 				slurm_make_time_str((time_t *)&node_ptr->reason_time,
 						    time_str, sizeof(time_str));
 				xstrfmtcat(out, " [%s@%s]", user_name, time_str);
+				xfree(user_name);
 			}
 			tok = strtok_r(NULL, "\n", &save_ptr);
 		}
