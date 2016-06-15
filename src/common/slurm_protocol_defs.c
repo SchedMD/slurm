@@ -1999,7 +1999,7 @@ extern char *health_check_node_state_str(uint32_t node_state)
 	if ((node_state & HEALTH_CHECK_NODE_ANY) == HEALTH_CHECK_NODE_ANY) {
 		if (state_str[0])
 			xstrcat(state_str, ",");
-		state_str = xstrdup("ANY");
+		xstrcat(state_str, "ANY");
 		return state_str;
 	}
 
