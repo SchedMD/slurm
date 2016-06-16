@@ -216,6 +216,10 @@ account and user associations inside their realm.
 Events like downed or draining nodes on clusters.
 
 .TP
+\fIfederation\fP
+A group of clusters that work together to schedule jobs.
+
+.TP
 \fIjob\fR
 Used to modify specific fields of a job: Derived Exit Code and
 the Comment String.
@@ -693,6 +697,28 @@ The name of a user in the association.
 Type of machine, current classifications are capability and capacity.
 
 .TP
+\fIFederation\fP=<federation>
+The federation that this cluster should be a member of. A cluster can only be a
+member of one federation at a time.
+
+.TP
+\fIFedState\fP=<state>
+The state of the cluster in the federation.
+.br
+Valid states are:
+.RS
+.TP
+\fIDRAIN\fP
+Cluster will accept no more jobs.
+
+.TP
+\fIDRAIN+REMOVE\fP
+Cluster will accept no more jobs and will remove itself from the
+federation. Once all of the federated jobs have completed the cluster will
+accept jobs as a non-federated cluster.
+.RE
+
+.TP
 \fIFlags\fP=<flag list>
 Comma separated list of Attributes for a particular cluster.  Current
 Flags include BGL, BGP, BGQ, Bluegene, CrayXT, FrontEnd, and MultipleSlurmd
@@ -706,6 +732,12 @@ configuration file for some Slurm\-managed cluster.
 .TP
 \fIRPC\fP=<rpc list>
 Comma separated list of numeric RPC values.
+
+.TP
+\fIWeight\fP=#
+Weight of the cluster in a federation. When submitting sibling jobs, clusters
+that can run a job immediately will be prioritized and chosen according to their
+weight. Weights can be used to favor jobs starting on specific clusters.
 
 .TP
 \fIWOLimits\fP
@@ -737,8 +769,25 @@ When a slurmctld registers with the database the port the controller
 is listening on is placed here.
 
 .TP
+\fIFederation\fP
+The name of the federation this cluster is a member of (if any).
+
+.TP
+\fIFedState\fP
+The state of the cluster in the federation (if a member of one).
+
+.TP
+\fIFedStateRaw\fP
+Numeric value of the name of the FedState.
+
+.TP
 \fIFlags\fP
 Attributes possessed by the cluster.
+
+.TP
+\fIIndex\fP
+The federation index assigned to the cluster when a member of a federation. This
+index uniquely identifies the cluster and its jobs in the federation.
 
 .TP
 \fINodeCount\fP
@@ -761,6 +810,10 @@ is running is placed here.
 \fITRES\fP
 Trackable RESources (BB (Burst buffer), CPU, Energy, GRES, License, Memory, and
 Node) this cluster is accounting for.
+
+.TP
+\fIWeight\fP
+The weight of the cluster when a member of a federation.
 
 .P
 NOTE: You can also view the information about the root association for
@@ -913,6 +966,67 @@ Number of TRES involved with the event.
 .TP
 \fIUser\fP
 On a node event this is the user who caused the event to happen.
+
+
+.SH "SPECIFICATIONS FOR FEDERATION"
+
+.TP
+\fIClusters\fP[+|-]=<comma separated list of cluster names>
+List of clusters to add/remove to a federation. A blank value (e.g. clusters=)
+will remove all federations for the federation. NOTE: a cluster can only be a
+member of one federation.
+
+.TP
+\fIName\fP=<name>
+The name of the federation.
+
+.TP
+\fIFlags\fP[+|-]=<flags>
+Used by the slurmctld to provide different scheduling behavior in the
+federation.
+.br
+Valid options are:
+.RS
+.TP
+\fILLC\fP
+At submission time, favor starting sibling jobs that can run immediately on
+clusters that are least loaded (ie. spread jobs across clusters). By default,
+Slurm will pack jobs onto clusters in the federation.
+.RE
+
+.SH "LIST/SHOW FEDERATION FORMAT OPTIONS"
+
+.TP
+\fIFederation\fP
+The name of the federation.
+
+.TP
+\fIFlags\fP
+Flags for the federation.
+
+.TP
+\fICluster\fP
+Name of the cluster that is a member of the federation.
+
+.TP
+\fIFedState\fP
+The state of the cluster in the federation.
+
+.TP
+\fIFedStateRaw\fP
+Numeric value of the name of the FedState.
+
+.TP
+\fIIndex\fP
+The index of the cluster in the federation.
+
+.TP
+\fIWeight\fP=#
+The weight of the cluster in the federation.
+
+.TP
+\fITree\fP
+Display federations in a hierarchical fashion.
 
 
 .SH "SPECIFICATIONS FOR JOB"
