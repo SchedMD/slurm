@@ -665,7 +665,7 @@ typedef struct {
 
 typedef struct {
 	char     *name;		/* Name of federation */
-	uint32_t  flags; 	/* used to add or remove feds in db */
+	uint32_t  flags; 	/* flags to control scheduling on controller */
 	List      cluster_list;	/* List of slurmdb_cluster_rec_t *'s */
 } slurmdb_federation_rec_t;
 
