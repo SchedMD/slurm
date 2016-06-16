@@ -775,6 +775,7 @@ properly displaying the contents of the slurm_jobacct.log file when the
 Initiate a job step under an already allocated job with job id \fIid\fR.
 Using this option will cause \fBsrun\fR to behave exactly as if the
 SLURM_JOB_ID environment variable was set.
+NOTE: For job allocations, this is only valid for users root and SlurmUser.
 
 .TP
 \fB\-K\fR, \fB\-\-kill\-on\-bad\-exit\fR[=0|1]
