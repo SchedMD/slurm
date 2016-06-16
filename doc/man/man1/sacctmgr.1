@@ -715,7 +715,7 @@ Cluster will accept no more jobs.
 \fIDRAIN+REMOVE\fP
 Cluster will accept no more jobs and will remove itself from the
 federation. Once all of the federated jobs have completed the cluster will
-accept jobs as a non-federated cluster.
+accept jobs as a non\-federated cluster.
 .RE
 
 .TP
@@ -971,7 +971,7 @@ On a node event this is the user who caused the event to happen.
 .SH "SPECIFICATIONS FOR FEDERATION"
 
 .TP
-\fIClusters\fP[+|-]=<comma separated list of cluster names>
+\fIClusters\fP[+|\-]=<comma separated list of cluster names>
 List of clusters to add/remove to a federation. A blank value (e.g. clusters=)
 will remove all federations for the federation. NOTE: a cluster can only be a
 member of one federation.
@@ -981,7 +981,7 @@ member of one federation.
 The name of the federation.
 
 .TP
-\fIFlags\fP[+|-]=<flags>
+\fIFlags\fP[+|\-]=<flags>
 Used by the slurmctld to provide different scheduling behavior in the
 federation.
 .br
