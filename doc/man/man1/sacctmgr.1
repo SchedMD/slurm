@@ -717,11 +717,6 @@ When a slurmctld registers with the database the port the controller
 is listening on is placed here.
 
 .TP
-\fITRES\fP
-Trackable RESources (BB (Burst buffer), CPU, Energy, GRES, License, Memory, and
-Node) this cluster is accounting for.
-
-.TP
 \fIFlags\fP
 Attributes possessed by the cluster.
 
@@ -741,6 +736,12 @@ The numeric value of the select plugin the cluster is using.
 \fIRPC\fP
 When a slurmctld registers with the database the rpc version the controller
 is running is placed here.
+
+.TP
+\fITRES\fP
+Trackable RESources (BB (Burst buffer), CPU, Energy, GRES, License, Memory, and
+Node) this cluster is accounting for.
+
 .P
 NOTE: You can also view the information about the root association for
 the cluster.  The Association format fields are described
@@ -849,10 +850,6 @@ The name of the cluster event happened on.
 The hostlist of nodes on a cluster in a cluster event.
 
 .TP
-\fITRES\fP
-Number of TRES involved with the event.
-
-.TP
 \fIDuration\fP
 Time period the event was around for.
 
@@ -888,6 +885,10 @@ On a node event this is the formatted state of the node during the event.
 \fIStateRaw\fP
 On a node event this is the numeric value of the state of the node
 during the event.
+
+.TP
+\fITRES\fP
+Number of TRES involved with the event.
 
 .TP
 \fIUser\fP
