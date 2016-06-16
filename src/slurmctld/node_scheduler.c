@@ -2570,7 +2570,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	    bit_overlap(job_ptr->node_bitmap, power_node_bitmap) ||
 	    !bit_super_set(job_ptr->node_bitmap, avail_node_bitmap)) {
 		job_ptr->job_state |= JOB_CONFIGURING;
-}
+	}
 
 	/* Request asynchronous launch of a prolog for a
 	 * non batch job. */
