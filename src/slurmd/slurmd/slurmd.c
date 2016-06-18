@@ -1250,6 +1250,7 @@ _destroy_conf(void)
 		xfree(conf->acct_gather_filesystem_type);
 		xfree(conf->acct_gather_infiniband_type);
 		xfree(conf->acct_gather_profile_type);
+		xfree(conf->auth_info);
 		xfree(conf->block_map);
 		xfree(conf->block_map_inv);
 		xfree(conf->chos_loc);
