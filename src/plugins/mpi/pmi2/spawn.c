@@ -153,8 +153,10 @@ spawn_req_pack(spawn_req_t *req, Buf buf)
 	int i, j;
 	spawn_subcmd_t *subcmd;
 	void *auth_cred;
+	char *auth_info = slurm_get_auth_info();
 
-	auth_cred = g_slurm_auth_create(NULL, 2, slurm_get_auth_info());
+	auth_cred = g_slurm_auth_create(NULL, 2, auth_info);
+	xfree(auth_info);
 	if (auth_cred == NULL) {
 		error("authentication: %s",
 		      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)) );
@@ -196,6 +198,7 @@ spawn_req_unpack(spawn_req_t **req_ptr, Buf buf)
 	uint32_t temp32;
 	int i, j;
 	void *auth_cred;
+	char *auth_info;
 	uid_t auth_uid, my_uid;
 
 	auth_cred = g_slurm_auth_unpack(buf);
@@ -204,7 +207,9 @@ spawn_req_unpack(spawn_req_t **req_ptr, Buf buf)
 		      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)) );
 		return SLURM_ERROR;
 	}
-	auth_uid = g_slurm_auth_get_uid(auth_cred, slurm_get_auth_info());
+	auth_info = slurm_get_auth_info();
+	auth_uid = g_slurm_auth_get_uid(auth_cred, auth_info);
+	xfree(auth_info);
 	(void) g_slurm_auth_destroy(auth_cred);
 	my_uid = getuid();
 	if ((auth_uid != 0) && (auth_uid != my_uid)) {

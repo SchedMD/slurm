@@ -891,6 +891,8 @@ int read_slurm_conf(int recover, bool reconfig)
 	/* initialization */
 	START_TIMER;
 
+	xfree(slurmctld_config.auth_info);
+	slurmctld_config.auth_info = slurm_get_auth_info();
 	if (reconfig) {
 		/* in order to re-use job state information,
 		 * update nodes_completing string (based on node bitmaps) */

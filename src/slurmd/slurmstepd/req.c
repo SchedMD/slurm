@@ -404,6 +404,7 @@ _handle_accept(void *arg)
 	int rc;
 	uid_t uid;
 	gid_t gid;
+	char *auth_info;
 
 	debug3("Entering _handle_accept (new thread)");
 	xfree(arg);
@@ -426,18 +427,21 @@ _handle_accept(void *arg)
 		free_buf(buffer);
 		goto fail;
 	}
-	rc = g_slurm_auth_verify(auth_cred, NULL, 2, slurm_get_auth_info());
+	auth_info = slurm_get_auth_info();
+	rc = g_slurm_auth_verify(auth_cred, NULL, 2, auth_info);
 	if (rc != SLURM_SUCCESS) {
 		error("Verifying authentication credential: %s",
 		      g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
+		xfree(auth_info);
 		(void) g_slurm_auth_destroy(auth_cred);
 		free_buf(buffer);
 		goto fail;
 	}
 
 	/* Get the uid & gid from the credential, then destroy it. */
-	uid = g_slurm_auth_get_uid(auth_cred, slurm_get_auth_info());
-	gid = g_slurm_auth_get_gid(auth_cred, slurm_get_auth_info());
+	uid = g_slurm_auth_get_uid(auth_cred, auth_info);
+	gid = g_slurm_auth_get_gid(auth_cred, auth_info);
+	xfree(auth_info);
 	debug3("  Identity: uid=%d, gid=%d", uid, gid);
 	g_slurm_auth_destroy(auth_cred);
 	free_buf(buffer);

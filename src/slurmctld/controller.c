@@ -465,6 +465,8 @@ int main(int argc, char *argv[])
 
 	while (1) {
 		/* initialization for each primary<->backup switch */
+		xfree(slurmctld_config.auth_info);
+		slurmctld_config.auth_info = slurm_get_auth_info();
 		slurmctld_config.shutdown_time = (time_t) 0;
 		slurmctld_config.resume_backup = false;
 
@@ -740,6 +742,7 @@ int main(int argc, char *argv[])
 
 #endif
 
+	xfree(slurmctld_config.auth_info);
 	xfree(slurmctld_cluster_name);
 	if (cnt) {
 		info("Slurmctld shutdown completing with %d active agent "

@@ -578,12 +578,15 @@ _exit_handler(message_thread_state_t *mts, slurm_msg_t *exit_msg)
 static void
 _handle_msg(void *arg, slurm_msg_t *msg)
 {
-	message_thread_state_t *mts = (message_thread_state_t *)arg;
-	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred,
-					     slurm_get_auth_info());
 	static uid_t slurm_uid;
 	static bool slurm_uid_set = false;
+	message_thread_state_t *mts = (message_thread_state_t *)arg;
+	char *auth_info = slurm_get_auth_info();
+	uid_t req_uid;
 	uid_t uid = getuid();
+
+	req_uid = g_slurm_auth_get_uid(msg->auth_cred, auth_info);
+	xfree(auth_info);
 
 	if (!slurm_uid_set) {
 		slurm_uid = slurm_get_slurm_user_id();

@@ -1750,7 +1750,7 @@ char *slurm_get_accounting_storage_pass(void)
  * returns the auth_info from slurmctld_conf object (AuthInfo parameter)
  * cache value in local buffer for best performance
  * WARNING: The return of this function can be used in many different
- * places and SHOULD NOT BE FREED!
+ * RET char * - AuthInfo value,  MUST be xfreed by caller
  */
 extern char *slurm_get_auth_info(void)
 {
@@ -3397,11 +3397,13 @@ total_return:
 static int _unpack_msg_uid(Buf buffer)
 {
 	int uid = -1;
-	void *auth_cred = NULL;
+	void *auth_cred = NULL, *auth_info;
 
 	if ((auth_cred = g_slurm_auth_unpack(buffer)) == NULL)
 		return uid;
-	uid = (int) g_slurm_auth_get_uid(auth_cred, slurm_get_auth_info());
+	auth_info = slurm_get_auth_info();
+	uid = (int) g_slurm_auth_get_uid(auth_cred, auth_info);
+	xfree(auth_info);
 	g_slurm_auth_destroy(auth_cred);
 
 	return uid;

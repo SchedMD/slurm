@@ -248,11 +248,14 @@ static void _handle_suspend(struct allocation_msg_thread *msg_thr,
 static void
 _handle_msg(void *arg, slurm_msg_t *msg)
 {
+	char *auth_info = slurm_get_auth_info();
 	struct allocation_msg_thread *msg_thr =
 		(struct allocation_msg_thread *)arg;
-	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred,
-					     slurm_get_auth_info());
+	uid_t req_uid;
 	uid_t uid = getuid();
+
+	req_uid = g_slurm_auth_get_uid(msg->auth_cred, auth_info);
+	xfree(auth_info);
 
 	if ((req_uid != slurm_uid) && (req_uid != 0) && (req_uid != uid)) {
 		error ("Security violation, slurm message from uid %u",

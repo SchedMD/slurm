@@ -817,6 +817,10 @@ _read_config(void)
 	slurm_mutex_lock(&conf->config_mutex);
 	cf = slurm_conf_lock();
 
+	xfree(conf->auth_info);
+	conf->auth_info = xstrdup(cf->authinfo);
+
+	xfree(conf->chos_loc);
 	conf->chos_loc = xstrdup(cf->chos_loc);
 
 	conf->last_update = time(NULL);

@@ -146,12 +146,13 @@
 \*****************************************************************************/
 
 typedef struct slurmctld_config {
+	char *	auth_info;
+	time_t	boot_time;
 	int	daemonize;
 	bool	resume_backup;
-	time_t	boot_time;
-	time_t	shutdown_time;
+	bool    scheduling_disabled;
 	int	server_thread_count;
-	bool scheduling_disabled;
+	time_t	shutdown_time;
 
 	slurm_cred_ctx_t cred_ctx;
 #ifdef WITH_PTHREADS
