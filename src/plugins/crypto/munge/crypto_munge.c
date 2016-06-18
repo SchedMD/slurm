@@ -103,17 +103,17 @@ static uid_t slurm_user = 0;
 static char *_auth_opts_to_socket(void)
 {
 	char *socket = NULL, *sep, *tmp;
-	char *opts = slurm_get_auth_info();
+	char *auth_info = slurm_get_auth_info();
 
-	if (opts) {
-		tmp = strstr(opts, "socket=");
+	if (auth_info) {
+		tmp = strstr(auth_info, "socket=");
 		if (tmp) {	/* New format */
 			socket = xstrdup(tmp + 7);
 			sep = strchr(socket, ',');
 			if (sep)
 				sep[0] = '\0';
 		}
-		xfree(opts);
+		xfree(auth_info);
 	}
 
 	return socket;

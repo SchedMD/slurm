@@ -312,11 +312,14 @@ static void _handle_timeout(srun_timeout_msg_t *timeout_msg)
 static void _handle_msg(slurm_msg_t *msg)
 {
 	static uint32_t slurm_uid = NO_VAL;
-	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred,
-					     slurm_get_auth_info());
+	char *auth_info = slurm_get_auth_info();
+	uid_t req_uid;
 	uid_t uid = getuid();
 	job_step_kill_msg_t *ss;
 	srun_user_msg_t *um;
+
+	req_uid = g_slurm_auth_get_uid(msg->auth_cred, auth_info);
+	xfree(auth_info);
 
 	if (slurm_uid == NO_VAL)
 		slurm_uid = slurm_get_slurm_user_id();

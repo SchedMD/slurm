@@ -48,6 +48,7 @@ documents those changes that are of interest to users and administrators.
     of a node's memory and FastSchedule=0 is configurated. Intel KNL memory size
     can change on reboot with various MCDRAM modes.
  -- Fix small memory leak when printing HealthCheckNodeState.
+ -- Eliminate memory leaks when AuthInfo is configured.
 
 * Changes in Slurm 16.05.0
 ==========================

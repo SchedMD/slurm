@@ -744,11 +744,14 @@ static void _destroy_allocation_response_socket(listen_t *listen)
 static int
 _handle_msg(slurm_msg_t *msg, resource_allocation_response_msg_t **resp)
 {
-	uid_t req_uid   = g_slurm_auth_get_uid(msg->auth_cred,
-					       slurm_get_auth_info());
+	char *auth_info = slurm_get_auth_info();
+	uid_t req_uid;
 	uid_t uid       = getuid();
 	uid_t slurm_uid = (uid_t) slurm_get_slurm_user_id();
 	int rc = 0;
+
+	req_uid = g_slurm_auth_get_uid(msg->auth_cred, auth_info);
+	xfree(auth_info);
 
 	if ((req_uid != slurm_uid) && (req_uid != 0) && (req_uid != uid)) {
 		error ("Security violation, slurm message from uid %u",
