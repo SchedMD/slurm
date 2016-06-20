@@ -28,13 +28,13 @@ documents those changes that are of interest to users and administrators.
  -- Make it so qsub will do a "basename" on a wrapped command for the output
     and error files.
  -- Fix issue where slurmd could core when running the ipmi energy plugin.
- -- Documentation - cleanup typos.
+ -- Documentation - clean up typos.
  -- Add logic so that slurmstepd can be launched under valgrind.
  -- Increase buffer size to read /proc/*/stat files.
  -- Fix for tracking job resource allocation when slurmctld is reconfigured
     while Cray Node Health Check (NHC) is running. Previous logic would fail to
     record the job's allocation then perform release operation upon NHC
-    completeion, resulting in underflow error messages.
+    completion, resulting in underflow error messages.
  -- Make "scontrol show daemons" work with long node names.
  -- CRAY - Collect energy using a uint64_t instead of uint32_t.
  -- Fix incorrect if statements when determining if the user has a default
@@ -45,10 +45,11 @@ documents those changes that are of interest to users and administrators.
  -- Correct task affinity support for FreeBSD.
  -- Fix for task affinity on KNL in SNC2/Flat mode.
  -- Recalculate a job's memory allocation after node reboot if job requests all
-    of a node's memory and FastSchedule=0 is configurated. Intel KNL memory size
+    of a node's memory and FastSchedule=0 is configured. Intel KNL memory size
     can change on reboot with various MCDRAM modes.
  -- Fix small memory leak when printing HealthCheckNodeState.
  -- Eliminate memory leaks when AuthInfo is configured.
+ -- Improve sdiag output description in man page.
 
 * Changes in Slurm 16.05.0
 ==========================
