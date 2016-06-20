@@ -277,9 +277,10 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 				buf = hostlist_ranged_string_xmalloc(inc_hl);
 				hostlist_delete(tmp_hl, buf);
 				xfree(buf);
-				while ((node_name = hostlist_shift(tmp_hl)) &&
-				       (i < diff)) {
+				while ((i < diff) &&
+				       (node_name = hostlist_shift(tmp_hl))) {
 					hostlist_push_host(inc_hl, node_name);
+					free(node_name);
 					i++;
 				}
 				hostlist_destroy(tmp_hl);
