@@ -37,6 +37,7 @@ documents those changes that are of interest to users and administrators.
     can change on reboot with various MCDRAM modes.
  -- Fix small memory leak when printing HealthCheckNodeState.
  -- Eliminate memory leaks when AuthInfo is configured.
+ -- Improve sdiag output description in man page.
 
 * Changes in Slurm 16.05.0
 ==========================
