@@ -60,7 +60,7 @@ proc inc21_21_good { test_type limit } {
 	}
 
 	set matches 0
-	spawn $srun -v -t10 $add [lindex $limit 0][lindex $limit 1] \
+	spawn $srun -v -t1 $add [lindex $limit 0][lindex $limit 1] \
 	    --account=$ta -I $bin_id
 	expect {
 		-re "launching ($number)" {
@@ -635,7 +635,7 @@ proc inc21_21_grpwall { test_type limit } {
 
 	set matches 0
 	send_user "Sleeping for a bit...hang tight\n"
-	spawn $srun -v -t1 [lindex $limit 0][lindex $limit 1] --account=$ta \
+	spawn $srun -v [lindex $limit 0][lindex $limit 1] --account=$ta \
 	    -I $file_in
 	expect {
 		-re "launching ($number)" {
@@ -672,7 +672,7 @@ proc inc21_21_grpwall { test_type limit } {
 	}
 
 	set matches 0
-	spawn $srun -v -t1 [lindex $limit 0][lindex $limit 1] --account=$ta \
+	spawn $srun -v [lindex $limit 0][lindex $limit 1] --account=$ta \
 	    -I $bin_id
 	expect {
 		-re "Job violates accounting/QOS policy" {
