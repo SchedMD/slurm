@@ -50,6 +50,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix small memory leak when printing HealthCheckNodeState.
  -- Eliminate memory leaks when AuthInfo is configured.
  -- Improve sdiag output description in man page.
+ -- Cray/capmc_resume script modify a node's features (as needed) when the
+    reinit (reboot) command is issued rather than wait for the nodes to change
+    to the "on" state.
 
 * Changes in Slurm 16.05.0
 ==========================
