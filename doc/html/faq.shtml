@@ -739,7 +739,7 @@ should either be removed or altered (e.g. SLURM_NNODES, SLURM_NODELIST and
 SLURM_NPROCS).
 The <i>scontrol</i> command will generate a script that can be executed to
 reset local environment variables.
-You must retain the SLURM_JOBID environment variable in order for the
+You must retain the SLURM_JOB_ID environment variable in order for the
 <i>srun</i> command to gather information about the job's current state and
 specify the desired node and/or task count in subsequent <i>srun</i> invocations.
 A new accounting record is generated when a job is resized showing the to have
@@ -748,10 +748,10 @@ An example is shown below.</p>
 <pre>
 #!/bin/bash
 srun my_big_job
-scontrol update JobId=$SLURM_JOBID NumNodes=2
-. slurm_job_${SLURM_JOBID}_resize.sh
+scontrol update JobId=$SLURM_JOB_ID NumNodes=2
+. slurm_job_${SLURM_JOB_ID}_resize.sh
 srun -N2 my_small_job
-rm slurm_job_${SLURM_JOBID}_resize.*
+rm slurm_job_${SLURM_JOB_ID}_resize.*
 </pre>
 
 <p><b>Increasing a job's size</b><br>
@@ -822,9 +822,9 @@ icrm2
 icrm3
 icrm4
 
-$ salloc -N4 --dependency=expand:$SLURM_JOBID bash
+$ salloc -N4 --dependency=expand:$SLURM_JOB_ID bash
 salloc: Granted job allocation 65543
-$ scontrol update jobid=$SLURM_JOBID NumNodes=0
+$ scontrol update jobid=$SLURM_JOB_ID NumNodes=0
 To rese. Slurm environment variables, execute
   For bash or sh shells:  . ./slurm_job_65543_resize.sh
   For csh shells:         source ./slurm_job_65543_resize.csh
@@ -832,11 +832,11 @@ $ exit
 exit
 salloc: Relinquishing job allocation 65543
 
-$ scontrol update jobid=$SLURM_JOBID NumNodes=ALL
+$ scontrol update jobid=$SLURM_JOB_ID NumNodes=ALL
 To rese. Slurm environment variables, execute
   For bash or sh shells:  . ./slurm_job_65542_resize.sh
   For csh shells:         source ./slurm_job_65542_resize.csh
-$ . ./slurm_job_$SLURM_JOBID_resize.sh
+$ . ./slurm_job_$SLURM_JOB_ID_resize.sh
 
 $ srun hostname
 icrm1
@@ -2013,14 +2013,14 @@ export PATH=/bin:/home/slurm/linux/bin
 LOG=/home/slurm/linux/log/logslurmepilog
 
 echo "Start `date`" >> $LOG 2>&1
-echo "Job $SLURM_JOBID exitcode $SLURM_JOB_EXIT_CODE2" >> $LOG 2>&1
+echo "Job $SLURM_JOB_ID exitcode $SLURM_JOB_EXIT_CODE2" >> $LOG 2>&1
 exitcode=`echo $SLURM_JOB_EXIT_CODE2|awk '{split($0, a, ":"); print a[1]}'` >> $LOG 2>&1
 if [ "$exitcode" == "8" ]; then
    echo "Found REQUEUE_EXIT_CODE: $REQUEUE_EXIT_CODE" >> $LOG 2>&1
-   scontrol requeuehold state=SpecialExit $SLURM_JOBID >> $LOG 2>&1
+   scontrol requeuehold state=SpecialExit $SLURM_JOB_ID >> $LOG 2>&1
    echo $? >> $LOG 2>&1
 else
-   echo "Job $SLURM_JOBID exit all right" >> $LOG 2>&1
+   echo "Job $SLURM_JOB_ID exit all right" >> $LOG 2>&1
 fi
 echo "Done `date`" >> $LOG 2>&1
 
@@ -2166,6 +2166,6 @@ followed by an optional comma separated list of cluster names to operate on.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 25 April 2016</p>
+<p style="text-align:center;">Last modified 22 June 2016</p>
 
 <!--#include virtual="footer.txt"-->

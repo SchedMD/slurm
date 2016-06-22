@@ -55,20 +55,20 @@ will generate a job array containing three jobs. If the sbatch command responds<
 then the environment variables will be set as
 follows:<br>
 <br>
-SLURM_JOBID=36<br>
+SLURM_JOB_ID=36<br>
 SLURM_ARRAY_JOB_ID=36<br>
 SLURM_ARRAY_TASK_ID=1<br>
 <br>
-SLURM_JOBID=37<br>
+SLURM_JOB_ID=37<br>
 SLURM_ARRAY_JOB_ID=36<br>
 SLURM_ARRAY_TASK_ID=2<br>
 <br>
-SLURM_JOBID=38<br>
+SLURM_JOB_ID=38<br>
 SLURM_ARRAY_JOB_ID=36<br>
 SLURM_ARRAY_TASK_ID=3<br>
 </p>
 
-<p>All Slurm commands and APIs recognize the SLURM_JOBID value.
+<p>All Slurm commands and APIs recognize the SLURM_JOB_ID value.
 Most commands also recognize the SLURM_ARRAY_JOB_ID plus SLURM_ARRAY_TASK_ID
 values separated by an underscore as identifying an element of a job array.
 Using the example above, "37" or "36_2" would be equivalent ways to identify
@@ -321,6 +321,6 @@ manage large job counts.
 Each task of the job array will have a unique Slurm "job_id", but
 all will have the same "array_job_id" value.</p>
 
-<p style="text-align:center;">Last modified 14 August 2014</p>
+<p style="text-align:center;">Last modified 22 June 2016</p>
 
 <!--#include virtual="footer.txt"-->

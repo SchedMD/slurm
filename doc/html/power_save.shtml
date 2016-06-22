@@ -196,7 +196,7 @@ available).</p>
 when node zero of the allocation is ready for use and pre-processing can
 be performed as needed before using <i>srun</i> to launch job steps.
 Waiting for all nodes to be booted can be accomplished by adding the 
-command "<i>scontrol wait_job $SLURM_JOBID</i>" within the script or by
+command "<i>scontrol wait_job $SLURM_JOB_ID</i>" within the script or by
 adding that command to the system <i>Prolog</i> or <i>PrologSlurmctld</i>
 as configured in <i>slurm.conf</i>, which would create the delay for all jobs
 on the system.
@@ -255,6 +255,6 @@ and perform the following actions:
 <li>Boot the appropriate image for each node</li>
 </ol>
 
-<p style="text-align:center;">Last modified 15 April 2015</p>
+<p style="text-align:center;">Last modified 22 June 2016</p>
 
 <!--#include virtual="footer.txt"-->
