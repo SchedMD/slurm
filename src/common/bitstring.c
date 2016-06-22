@@ -1091,6 +1091,7 @@ bit_unfmt(bitstr_t *b, char *str)
  * bitfmt2int - convert a string describing bitmap (output from bit_fmt,
  *	e.g. "0-30,45,50-60") into an array of integer (start/end) pairs
  *	terminated by -1 (e.g. "0, 30, 45, 45, 50, 60, -1")
+ *	Also supports the "1-17:4" step format ("1, 5, 9, 13, 17, -1").
  * input: bitmap string as produced by bitstring.c : bitfmt
  * output: an array of integers
  * NOTE: the caller must xfree the returned memory
@@ -1109,7 +1110,6 @@ int32_t *bitfmt2int(char *bit_str_ptr)
 		size = strlen(bit_str_ptr) + 1;
 		/* more than enough space */
 		bit_int_ptr = xmalloc(sizeof(int32_t) * (size * 2 + 1));
-
 		bit_inx = sum = 0;
 		start_val = -1;
 		for (i = 0; i < size; i++) {
@@ -1131,8 +1131,8 @@ int32_t *bitfmt2int(char *bit_str_ptr)
 				sum = 0;
 			}
 		}
-		assert(bit_inx < (size * 2 + 1));
-	} else {
+		xassert(bit_inx < (size * 2 + 1));
+	} else {	/* handle step format */
 		start_task_id = strtol(bit_str_ptr, &tmp, 10);
 		if (*tmp != '-')
 			return NULL;
@@ -1142,16 +1142,15 @@ int32_t *bitfmt2int(char *bit_str_ptr)
 		step = strtol(tmp + 1, &tmp, 10);
 		if (*tmp != '\0')
 			return NULL;
-		if(end_task_id >= start_task_id && step > 0) {
-			size=((end_task_id - start_task_id) / step) + 1;
-			bit_int_ptr = xmalloc(sizeof(int32_t) * (size * 2 + 1));
-			bit_inx = 0;
-			for(i = 0; i < size; i++) {
-				bit_int_ptr[bit_inx++] = start_task_id + i * step;
-				bit_int_ptr[bit_inx++] = start_task_id + i * step;
-			}
-		} else {
+		if (end_task_id < start_task_id || step <= 0)
 			return NULL;
+
+		size = ((end_task_id - start_task_id) / step) + 1;
+		bit_int_ptr = xmalloc(sizeof(int32_t) * (size * 2 + 1));
+		bit_inx = 0;
+		for(i = start_task_id; i < end_task_id; i += step) {
+			bit_int_ptr[bit_inx++] = i;     /* start of pair */
+			bit_int_ptr[bit_inx++] = i;     /* end of pair */
 		}
 	}
 	bit_int_ptr[bit_inx] = -1;
