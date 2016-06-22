@@ -1,0 +1,178 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test federation functionality
+#          Test scontrol show federations
+#
+# Reqs:    1. Using slurmdbd accounting storage type and is up
+#          2. fed_slurm_base is defined in globals.local - set to directory that
+#          has access to each federation configure (fedc1, fedc2, fedc3).
+#          Eg.
+#          slurm/slurm (src)
+#          slurm/fed1/bin
+#          slurm/fed1/sbin
+#          slurm/fed1/etc
+#          slurm/fed1/...
+#          slurm/fed2/...
+#          slurm/fed3/...
+#          3. controllers are up and running.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2016 SchedMD LLC.
+# Written by Brian Christiansen <brian@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+source ./globals
+source ./globals_accounting
+source ./globals_federation
+
+set test_id     "37.1"
+set exit_code   0
+set fed_name    "feda"
+
+set eol "\r\n"
+
+array set clusters {}
+
+set timeout	5
+print_header $test_id
+
+#
+# Check accounting config and bail if not found.
+#
+if { [test_account_storage] == 0 } {
+	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
+	exit 0
+}
+
+if { [string compare [check_accounting_admin_level] "Administrator"] } {
+	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\n"
+	send_user "Use: sacctmgr mod user \$USER set admin=admin.\n"
+	exit 0
+}
+
+proc cleanup { } {
+	global fed_name
+	return [delete_federations $fed_name];
+}
+
+proc end_it { exit_code } {
+	global test_id
+	cleanup
+	if {$exit_code == 0} {
+		print_success $test_id
+	}
+	exit $exit_code
+}
+
+if {[test_federation_setup]} {
+	send_user "\nWARNING: This test can't be run without fed_slurm_base,\
+		fedc1, fedc2, fedc3 setup in globals.local.\n"
+	exit 0
+}
+
+if {[test_cluster_up $fedc1] ||
+    [test_cluster_up $fedc2] ||
+    [test_cluster_up $fedc3]} {
+	end_it 1
+}
+
+# Remove existing setup
+if {[cleanup] != 0} {
+	send_user "\nFAILURE: failed to cleanup\n"
+	end_it 1
+}
+
+# add clusters to federation
+if {[setup_federation $fed_name]} {
+	send_user "\nFAILURE: failed to setup federation\n"
+	end_it 1
+}
+
+# Get cluster/fed info from db
+set matches 0
+set my_pid [spawn $sacctmgr show cluster $fedc1 $fedc2 $fedc3 \
+	    format="cluster%20,federation%20,index,controlhost,controlport,weight,fedstate"]
+expect {
+	-re "Cluster\\s+Federation\\s+Index\\s+ControlHost\\s+ControlPort\\s+Weight\\s+FedState $eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+(\\S+)\\s+$fed_name\\s+(\\d+)\\s+(\\S+)\\s+(\\d+)\\s+(\\d+)\\s+(\\S*) $eol" {
+		set clusters($expect_out(1,string)) [dict create index  $expect_out(2,string) \
+								 host   $expect_out(3,string) \
+								 port   $expect_out(4,string) \
+								 weight $expect_out(5,string) \
+								 state  $expect_out(6,string)]
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 4} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+# Match db info with what cluster has.
+set matches 0
+set my_pid [spawn $scontrol show federation]
+expect {
+	-re "Federation: $fed_name$eol" {
+		incr matches
+		send_user "FED!\n"
+		exp_continue
+	}
+	-re "Sibling:\\s+(\\S+):(\\S+):(\\d+) Index:(\\d+) Weight:(\\S+) State:(\\S*)$eol" {
+		set name $expect_out(1,string)
+		if {![string compare [dict get $clusters($name) host]  $expect_out(2,string)] &&
+		    ![string compare [dict get $clusters($name) state] $expect_out(6,string)] &&
+		    [dict get $clusters($name) port]   == $expect_out(3,string) &&
+		    [dict get $clusters($name) index]  == $expect_out(4,string) &&
+		    [dict get $clusters($name) weight] == $expect_out(5,string)} {
+			incr matches
+		}
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 4} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+end_it 0

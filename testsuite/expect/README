@@ -794,3 +794,7 @@ test36.1   lsid wrapper test
 test36.2   bjobs wrapper test
 test36.3   bkill wrapper test
 test36.4   bsub wrapper test
+
+test37.#   Testing of federations.
+==================================
+test37.1   scontrol show federations

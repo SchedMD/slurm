@@ -1,0 +1,184 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Establish global state information for SLURM federation tests
+#
+# To define site-specific state information, set the values in a file
+# named 'globals.local'. Those values will override any specified here.
+# for example:
+#
+# $ cat globals.local
+# set slurm_dir "/usr/local"
+# set mpicc     "/usr/local/bin/mpicc"
+#
+############################################################################
+# Copyright (C) 2016 SchedMD LLC.
+# Written by Brian Christiansen <brian@schedmd.com>
+
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the supplied file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+source ./globals
+
+# Set if testing federations
+cset fed_slurm_base 	""
+cset fedc1 		""
+cset fedc2 		""
+cset fedc3 		""
+
+set eol "\r\n"
+
+proc test_federation_setup { } {
+	global fed_slurm_base fedc1 fedc2 fedc3
+	set rc 0
+	if {![string compare $fed_slurm_base ""] ||
+	    ![string compare $fedc1 ""] ||
+	    ![string compare $fedc2 ""] ||
+	    ![string compare $fedc3 ""]} {
+		set rc 1;
+	}
+
+	return $rc
+}
+
+proc setup_federation { fed_name } {
+	global sacctmgr fedc1 fedc2 fedc3 eol
+	set rc 0
+	set my_pid [spawn $sacctmgr -i add federation $fed_name cluster=$fedc1,$fedc2,$fedc3]
+	set matches 0
+	expect {
+		-re "Adding Federation\\(s\\)$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "$fed_name$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "Settings$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "\\s+Cluster\\s+=\\s+$fedc1$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "\\s+Cluster\\s+=\\s+$fedc2$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "\\s+Cluster\\s+=\\s+$fedc3$eol" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr add not responding\n"
+			slow_kill $my_pid
+			set rc 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {!$rc && $matches != 6} {
+		send_user "$matches FAILURE: failed to create federation.\n"
+		set rc 1
+	}
+	return $rc
+}
+
+proc test_cluster_up { cname } {
+	set rc 0
+	set matches 0
+	global fed_slurm_base fedc1 fedc2 fedc3
+	set my_scontrol "${fed_slurm_base}/$cname/bin/scontrol"
+	log_user 0
+	set my_pid [spawn $my_scontrol show config]
+	expect {
+		"Configuration data as of" {
+			incr matches
+		}
+		timeout {
+			send_user "\nFAILURE: $cname not responding\n"
+			slow_kill $my_pid
+			set rc 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {!$rc && $matches != 1} {
+		send_user "\nFAILURE: $cname not responding\n"
+		set rc 1
+	}
+	log_user 1
+	return $rc
+}
+
+proc delete_federations { names } {
+	global sacctmgr
+	set matches 0
+	set rc 0
+	set object "federation"
+	set my_pid [spawn $sacctmgr -i delete $object $names]
+	expect {
+		-re "privilege to perform this action" {
+			send_user "FAILURE: don't have privileges."
+			incr rc
+		}
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			incr rc
+		}
+		-re "Problem getting" {
+			send_user "FAILURE: there was a problem getting information from the database\n"
+			incr rc
+		}
+		-re "Problem adding" {
+			send_user "FAILURE: there was an unknown problem\n"
+			incr rc
+		}
+		-re "No associations" {
+			send_user "FAILURE: your command didn't return anything\n"
+			incr rc
+		}
+		-re "Deleting $object" {
+			incr matches
+			exp_continue
+		}
+		-re " Nothing deleted" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr delete not responding\n"
+			slow_kill $my_pid
+			incr rc
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {!$rc && $matches != 1} {
+		send_user "\nFAILURE: sacctmgr had a problem deleting $object got $matches\n"
+		incr rc
+	}
+
+	return $rc
+}
