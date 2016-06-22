@@ -53,6 +53,7 @@ documents those changes that are of interest to users and administrators.
  -- Cray/capmc_resume script modify a node's features (as needed) when the
     reinit (reboot) command is issued rather than wait for the nodes to change
     to the "on" state.
+ -- Correctly print ranges when using step values in job arrays.
 
 * Changes in Slurm 16.05.0
 ==========================
@@ -315,6 +316,7 @@ documents those changes that are of interest to users and administrators.
     doesn't have a parent.
  -- MYSQL - Fix issue with adding a reservation if the name has single quotes in
     it.
+ -- Correctly print ranges when using step values in job arrays.
 
 * Changes in Slurm 15.08.12
 ===========================
