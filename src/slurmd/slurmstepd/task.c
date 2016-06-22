@@ -70,6 +70,7 @@
 #include "src/common/log.h"
 #include "src/common/plugstack.h"
 #include "src/common/slurm_mpi.h"
+#include "src/common/strlcpy.h"
 #include "src/common/switch.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
@@ -261,70 +262,56 @@ _run_script_and_set_env(const char *name, const char *path,
 }
 
 /* Given a program name, translate it to a fully qualified pathname as needed
- * based upon the PATH environment variable and current working directory */
-extern char *build_path(char* fname, char **prog_env, char *cwd)
+ * based upon the PATH environment variable and current working directory
+ * Returns xmalloc()'d string that must be xfree()'d */
+extern char *build_path(char *fname, char **prog_env, char *cwd)
 {
-	int i;
 	char *path_env = NULL, *dir;
-	char *file_name, *file_path;
+	char *file_name;
 	struct stat stat_buf;
-	int len = 256;
+	int len = PATH_MAX;
 
-	file_name = (char *)xmalloc(len);
-	/* make copy of file name (end at white space) */
-	snprintf(file_name, len, "%s", fname);
-	for (i = 0; i < len; i++) {
-		if (file_name[i] == '\0')
-			break;
-		if (!isspace(file_name[i]))
-			continue;
-		file_name[i] = '\0';
-		break;
-	}
+	if (!fname)
+		return NULL;
+
+	file_name = (char *) xmalloc(len);
 
 	/* check if already absolute path */
-	if (file_name[0] == '/')
+	if (fname[0] == '/') {
+		/* copy and ensure null termination */
+		strlcpy(file_name, fname, len);
 		return file_name;
-	if (file_name[0] == '.') {
-		file_path = (char *)xmalloc(len);
+	}
+
+	if (fname[0] == '.') {
 		if (cwd) {
-			snprintf(file_path, len, "%s/%s", cwd, file_name);
+			snprintf(file_name, len, "%s/%s", cwd, fname);
 		} else {
-			dir = (char *)xmalloc(len);
+			dir = (char *) xmalloc(len);
 			if (!getcwd(dir, len))
 				error("getcwd failed: %m");
-			snprintf(file_path, len, "%s/%s", dir, file_name);
+			snprintf(file_name, len, "%s/%s", dir, fname);
 			xfree(dir);
 		}
-		xfree(file_name);
-		return file_path;
+		return file_name;
 	}
 
 	/* search for the file using PATH environment variable */
-	for (i = 0; ; i++) {
-		if (prog_env[i] == NULL)
-			return file_name;
-		if (xstrncmp(prog_env[i], "PATH=", 5))
-			continue;
-		path_env = xstrdup(&prog_env[i][5]);
-		break;
-	}
+	path_env = xstrdup(getenvp(prog_env, "PATH"));
 
-	file_path = (char *)xmalloc(len);
 	dir = strtok(path_env, ":");
 	while (dir) {
-		snprintf(file_path, len, "%s/%s", dir, file_name);
-		if ((stat(file_path, &stat_buf) == 0)
+		snprintf(file_name, len, "%s/%s", dir, fname);
+		if ((stat(file_name, &stat_buf) == 0)
 		    && (! S_ISDIR(stat_buf.st_mode)))
 			break;
 		dir = strtok(NULL, ":");
 	}
 	if (dir == NULL)	/* not found */
-		snprintf(file_path, len, "%s", file_name);
+		strlcpy(file_name, fname, len);
 
-	xfree(file_name);
 	xfree(path_env);
-	return file_path;
+	return file_name;
 }
 
 static int
