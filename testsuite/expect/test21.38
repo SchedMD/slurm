@@ -139,7 +139,7 @@ proc cleanup { } {
 }
 
 proc end_it { exit_code } {
-cleanup
+	cleanup
 	exit $exit_code
 }
 
