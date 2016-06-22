@@ -692,26 +692,24 @@ int main(int argc, char *argv[])
 	xfree(mcdram_mode);
 	xfree(numa_mode);
 
-	/* Wait for all nodes to change state to "on" */
-	_wait_all_nodes_on();
-
 	if ((argc == 3) && !syscfg_path) {
 		slurm_init_update_node_msg(&node_msg);
 		node_msg.node_names = argv[1];
 		node_msg.features_act = argv[2];
 		rc = slurm_update_node(&node_msg);
+		if (rc != SLURM_SUCCESS) {
+			error("%s: slurm_update_node(\'%s\', \'%s\'): %s\n",
+			      prog_name, argv[1], argv[2],
+			      slurm_strerror(slurm_get_errno()));
+		}
 	}
 
-	if (rc == SLURM_SUCCESS) {
-		exit(0);
-	} else {
-		error("%s: slurm_update_node(\'%s\', \'%s\'): %s\n",
-		      prog_name, argv[1], argv[2],
-		      slurm_strerror(slurm_get_errno()));
-		exit(1);
-	}
+	/* Wait for all nodes to change state to "on" */
+	_wait_all_nodes_on();
 
 	bit_free(node_bitmap);
 	xfree(prog_name);
-	exit(0);
+	if (rc == SLURM_SUCCESS)
+		exit(0);
+	exit(1);
 }
