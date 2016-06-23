@@ -798,3 +798,4 @@ test36.4   bsub wrapper test
 test37.#   Testing of federations.
 ==================================
 test37.1   scontrol show federations
+test37.2   Validate federated clusters return federated job ids.
