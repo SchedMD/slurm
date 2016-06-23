@@ -717,8 +717,13 @@ This parameter would generally be used if whole nodes
 are allocated to jobs (\fBSelectType=select/linear\fR).
 Also see \fB\-\-mem\-per\-cpu\fR.
 \fB\-\-mem\fR and \fB\-\-mem\-per\-cpu\fR are mutually exclusive.
-NOTE: A memory size specification is treated as a special case and grants
-the job access to all of the memory on each node.
+
+NOTE: A memory size specification of zero is treated as a special case and
+grants the job access to all of the memory on each node.
+If the job is allocated multiple nodes in a heterogeneous cluster, the memory
+limit on each node will be that of the node in the allocation with the smallest
+memory size (same limit will apply to every node in the job's allocation).
+
 NOTE: Enforcement of memory limits currently relies upon the task/cgroup plugin
 or enabling of accounting, which samples memory use on a periodic basis (data
 need not be stored, just collected). In both cases memory use is based upon
