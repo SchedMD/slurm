@@ -57,6 +57,7 @@ documents those changes that are of interest to users and administrators.
  -- Allow from file names / paths over 256 characters when launching steps,
     as well as spaces in the executable name.
  -- job_submit.license.lua example modified to send message back to user.
+ -- Document job --mem=0 option means all memory on a node.
 
 * Changes in Slurm 16.05.0
 ==========================
