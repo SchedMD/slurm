@@ -56,6 +56,7 @@ documents those changes that are of interest to users and administrators.
  -- Correctly print ranges when using step values in job arrays.
  -- Allow from file names / paths over 256 characters when launching steps,
     as well as spaces in the executable name.
+ -- job_submit.license.lua example modified to send message back to user.
 
 * Changes in Slurm 16.05.0
 ==========================

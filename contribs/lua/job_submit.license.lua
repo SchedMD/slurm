@@ -42,6 +42,7 @@ function slurm_job_submit ( job_desc, part_list, submit_uid )
 	if bad_license_count > 0 then
 		slurm.log_info("slurm_job_submit: for user %u, invalid licenses value: %s",
 				job_desc.user_id, job_desc.licenses)
+		slurm.log_user("Invalid licenses value: %s", job_desc.licenses)
 		return slurm.ESLURM_INVALID_LICENSES
 	end
 
