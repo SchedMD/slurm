@@ -46,6 +46,7 @@ documents those changes that are of interest to users and administrators.
     as well as spaces in the executable name.
  -- job_submit.license.lua example modified to send message back to user.
  -- Document job --mem=0 option means all memory on a node.
+ -- Set SLURM_JOB_QOS environment variable to QOS name instead of description.
 
 * Changes in Slurm 16.05.0
 ==========================

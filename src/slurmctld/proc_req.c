@@ -1124,13 +1124,8 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 			alloc_msg.account = xstrdup(job_ptr->account);
 		if (job_ptr->qos_ptr) {
 			slurmdb_qos_rec_t *qos;
-
 			qos = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
-			if (xstrcmp(qos->description,
-				    "Normal QOS default") == 0)
-				alloc_msg.qos = xstrdup("normal");
-			else
-				alloc_msg.qos = xstrdup(qos->description);
+			alloc_msg.qos = xstrdup(qos->name);
 		}
 		if (job_ptr->resv_name)
 			alloc_msg.resv_name = xstrdup(job_ptr->resv_name);
@@ -2747,11 +2742,7 @@ static void _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg)
 		if (job_ptr->qos_ptr) {
 			slurmdb_qos_rec_t *qos;
 			qos = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
-			if (xstrcmp(qos->description,
-				    "Normal QOS default") == 0)
-				job_info_resp_msg.qos = xstrdup("normal");
-			else
-				job_info_resp_msg.qos=xstrdup(qos->description);
+			job_info_resp_msg.qos = xstrdup(qos->name);
 		}
 		job_info_resp_msg.resv_name      = xstrdup(job_ptr->resv_name);
 		job_info_resp_msg.select_jobinfo =
