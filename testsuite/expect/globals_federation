@@ -182,3 +182,41 @@ proc delete_federations { names } {
 
 	return $rc
 }
+
+proc get_clusterfed_info { fed_name } {
+	global sacctmgr fedc1 fedc2 fedc3 eol
+	set matches 0
+	array set clusters {}
+	set my_pid [spawn $sacctmgr show cluster $fedc1 $fedc2 $fedc3 \
+		    format="cluster%20,federation%20,index,controlhost,controlport,weight,fedstate"]
+	expect {
+		-re "Cluster\\s+Federation\\s+Index\\s+ControlHost\\s+ControlPort\\s+Weight\\s+FedState $eol" {
+			incr matches
+			exp_continue
+		}
+		-re "\\s+(\\S+)\\s+$fed_name\\s+(\\d+)\\s+(\\S+)\\s+(\\d+)\\s+(\\d+)\\s+(\\S*) $eol" {
+			set clusters($expect_out(1,string)) [dict create index  $expect_out(2,string) \
+									 host   $expect_out(3,string) \
+									 port   $expect_out(4,string) \
+									 weight $expect_out(5,string) \
+									 state  $expect_out(6,string)]
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr add not responding\n"
+			slow_kill $my_pid
+			exit 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 4} {
+		send_user "$matches FAILURE: didn't match enough clustesr for\
+			$fed_name.\n"
+		exit 1
+	}
+
+	return [array get clusters]
+}
