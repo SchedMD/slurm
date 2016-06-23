@@ -1,16 +1,16 @@
 <!--#include virtual="header.txt"-->
 
 <h1>CALL  FOR  ABSTRACTS</h1>
-<p>Slurm User Group Meeting 2015<br>
-15-16 September 2015<br>
-Washington DC, USA</p>
+<p>Slurm User Group Meeting 2016<br>
+26-27 September 2016<br>
+Athens, Greece</p>
 
 <p>You are invited to submit an abstract of a tutorial, technical presentation
-or site report to be given at the Slurm User Group Meeting 2015. This event is
+or site report to be given at the Slurm User Group Meeting 2016. This event is
 sponsored and organized by
-<a href="http://www.gwu.edu/">The George Washington University</a> and
+<a href="http://www.grnet.gr/">Greek Research and Technology Network (GRNET)</a> and
 <a href="http://www.schedmd.com/">SchedMD</a>.
-It will be held in Washington DC, USA on 15-16 September 2015.</p>
+It will be held in Athens, Greece on 26-27 September 2016.</p>
 
 <p>This international event is opened to everyone who wants to:
 <ul>
@@ -26,23 +26,21 @@ or tutorial about Slurm is invited to send an abstract to
 <a href="mailto:slugc@schedmd.com">slugc@schedmd.com</a>.</p>
 
 <p><b>Important Dates:</b><br>
-1 June 2015: Abstracts due<br>
-15 June 2015: Notification of acceptance<br>
-15-16 September 2015: Slurm User Group Meeting 2015<br>
+30 June 2016: Abstracts due<br>
+15 July 2016: Notification of acceptance<br>
+26-27 September 2016: Slurm User Group Meeting<br>
 </p>
 
 <p><b>Program Committee:</b><br>
 Yiannis Georgiou (Bull)<br>
 Brian Gilmer (Cray)<br>
 Matthieu Hautreux (CEA)<br>
-Morris Jette (SchedMD)<br>
-Bruce Pfaff (NASA Goddard Space Flight Center)<br>
-Tim Wickberg (The George Washington University)</p>
+Morris Jette (SchedMD)</p>
 
 <!--
 <p><a href="slurm_ug_registration.html">Registration information</a></p>
 -->
 
-<p style="text-align:center;">Last modified 20 March 2015</p>
+<p style="text-align:center;">Last modified 23 June 2016</p>
 
 <!--#include virtual="footer.txt"-->
