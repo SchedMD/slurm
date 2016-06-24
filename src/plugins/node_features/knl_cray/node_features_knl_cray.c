@@ -135,6 +135,7 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 static char *capmc_path = NULL;
 static uint32_t capmc_poll_freq = 45;	/* capmc state polling frequency */
 static uint32_t capmc_timeout = 0;	/* capmc command timeout in msec */
+static char *cnselect_path = NULL;
 static bool  debug_flag = false;
 static uint16_t allow_mcdram = KNL_MCDRAM_FLAG;
 static uint16_t allow_numa = KNL_NUMA_FLAG;
@@ -159,6 +160,7 @@ static s_p_options_t knl_conf_file_options[] = {
 	{"CapmcPath", S_P_STRING},
 	{"CapmcPollFreq", S_P_UINT32},
 	{"CapmcTimeout", S_P_UINT32},
+	{"CnselectPath", S_P_STRING},
 	{"DefaultMCDRAM", S_P_STRING},
 	{"DefaultNUMA", S_P_STRING},
 	{"LogFile", S_P_STRING},
@@ -1286,6 +1288,7 @@ extern int init(void)
 		(void) s_p_get_string(&capmc_path, "CapmcPath", tbl);
 		(void) s_p_get_uint32(&capmc_poll_freq, "CapmcPollFreq", tbl);
 		(void) s_p_get_uint32(&capmc_timeout, "CapmcTimeout", tbl);
+		(void) s_p_get_string(&cnselect_path, "CnselectPath", tbl);
 		if (s_p_get_string(&tmp_str, "DefaultMCDRAM", tbl)) {
 			default_mcdram = _knl_mcdram_parse(tmp_str, ",");
 			if (_knl_mcdram_bits_cnt(default_mcdram) != 1) {
@@ -1311,6 +1314,8 @@ extern int init(void)
 	if (!capmc_path)
 		capmc_path = xstrdup("/opt/cray/capmc/default/bin/capmc");
 	capmc_timeout = MAX(capmc_timeout, 500);
+	if (!cnselect_path)
+		cnselect_path = xstrdup("/opt/cray/sdb/default/bin/cnselect");
 	if (!syscfg_path)
 		verbose("SyscfgPath is not configured");
 
@@ -1329,6 +1334,7 @@ extern int init(void)
 		info("CapmcPath=%s", capmc_path);
 		info("CapmcPollFreq=%u sec", capmc_poll_freq);
 		info("CapmcTimeout=%u msec", capmc_timeout);
+		info("CnselectPath=%s", cnselect_path);
 		info("DefaultMCDRAM=%s DefaultNUMA=%s",
 		     default_mcdram_str, default_numa_str);
 		info("SyscfgPath=%s", syscfg_path);
@@ -1349,6 +1355,7 @@ extern int fini(void)
 	xfree(allowed_uid);
 	allowed_uid_cnt = 0;
 	xfree(capmc_path);
+	xfree(cnselect_path);
 	capmc_timeout = 0;
 	debug_flag = false;
 	xfree(mcdram_per_node);
@@ -1619,6 +1626,8 @@ fini:	_mcdram_cap_free(mcdram_cap, mcdram_cap_cnt);
  * avail_modes IN/OUT - append available modes, must be xfreed
  * current_mode IN/OUT - append current modes, must be xfreed
  *
+ * NOTE: Not applicable on Cray systems; can be used on other systems.
+ *
  * NOTES about syscfg (from Intel):
  * To display the BIOS Parameters:
  * >> syscfg /d biossettings <"BIOS variable Name">
@@ -1629,6 +1638,7 @@ fini:	_mcdram_cap_free(mcdram_cap, mcdram_cap_cnt);
  */
 extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 {
+#if 0
 	char *avail_states = NULL, *cur_state = NULL;
 	char *resp_msg, *argv[10], *avail_sep = "", *cur_sep = "", *tok;
 	int status = 0;
@@ -1752,6 +1762,7 @@ extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 	} else {
 		*current_mode = cur_state;
 	}
+#endif
 }
 
 /* Test if a job's feature specification is valid */
