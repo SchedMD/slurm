@@ -56,6 +56,7 @@
 #include "slurm/slurm.h"
 
 #include "src/common/assoc_mgr.h"
+#include "src/common/bitstring.h"
 #include "src/common/fd.h"
 #include "src/common/gres.h"
 #include "src/common/list.h"
@@ -187,7 +188,7 @@ typedef struct numa_cap {
 } numa_cap_t;
 
 typedef struct numa_cfg {
-	uint32_t nid;
+	char *nid_str;
 	char *numa_cfg;
 } numa_cfg_t;
 
@@ -201,10 +202,7 @@ static void _json_parse_mcdram_cap_object(json_object *jobj, mcdram_cap_t *ent);
 static void _json_parse_mcdram_cfg_object(json_object *jobj, mcdram_cfg_t *ent);
 static numa_cap_t *_json_parse_numa_cap_array(json_object *jobj, char *key,
 					      int *num);
-static numa_cfg_t *_json_parse_numa_cfg_array(json_object *jobj, char *key,
-					      int *num);
 static void _json_parse_numa_cap_object(json_object *jobj, numa_cap_t *ent);
-static void _json_parse_numa_cfg_object(json_object *jobj, numa_cfg_t *ent);
 static int  _knl_mcdram_bits_cnt(uint16_t mcdram_num);
 static uint16_t _knl_mcdram_parse(char *mcdram_str, char *sep);
 static char *_knl_mcdram_str(uint16_t mcdram_num);
@@ -213,6 +211,8 @@ static int _knl_numa_bits_cnt(uint16_t numa_num);
 static uint16_t _knl_numa_parse(char *numa_str, char *sep);
 static char *_knl_numa_str(uint16_t numa_num);
 static uint16_t _knl_numa_token(char *token);
+static numa_cfg_t *_load_current_numa(int *num);
+static char *_load_numa_type(char *type);
 static void _log_script_argv(char **script_argv, char *resp_msg);
 static void _mcdram_cap_free(mcdram_cap_t *mcdram_cap, int mcdram_cap_cnt);
 static void _mcdram_cap_log(mcdram_cap_t *mcdram_cap, int mcdram_cap_cnt);
@@ -642,34 +642,6 @@ static void _json_parse_numa_cap_object(json_object *jobj, numa_cap_t *ent)
 	}
 }
 
-static void _json_parse_numa_cfg_object(json_object *jobj, numa_cfg_t *ent)
-{
-	enum json_type type;
-	struct json_object_iter iter;
-	int64_t x;
-	const char *p;
-
-	json_object_object_foreachC(jobj, iter) {
-		type = json_object_get_type(iter.val);
-		switch (type) {
-		case json_type_int:
-			x = json_object_get_int64(iter.val);
-			if (xstrcmp(iter.key, "nid") == 0) {
-				ent->nid = x;
-			}
-			break;
-		case json_type_string:
-			p = json_object_get_string(iter.val);
-			if (xstrcmp(iter.key, "numa_cfg") == 0) {
-				ent->numa_cfg = xstrdup(p);
-			}
-			break;
-		default:
-			break;
-		}
-	}
-}
-
 static mcdram_cap_t *_json_parse_mcdram_cap_array(json_object *jobj, char *key,
 						  int *num)
 {
@@ -690,6 +662,63 @@ static mcdram_cap_t *_json_parse_mcdram_cap_array(json_object *jobj, char *key,
 	}
 
 	return ents;
+}
+
+/* Return NID string for all nodes with specified NUMA mode.
+ * xfree() the return value. */
+static char *_load_numa_type(char *type)
+{
+	char **script_argv, *resp_msg;
+	int i, status = 0;
+	DEF_TIMERS;
+
+	script_argv = xmalloc(sizeof(char *) * 4);	/* NULL terminated */
+	script_argv[0] = xstrdup("cnselect");
+	script_argv[1] = xstrdup("-e");
+	xstrfmtcat(script_argv[2], "numa_cfg.eq.%s", type);
+	START_TIMER;
+	resp_msg = _run_script(cnselect_path, script_argv, &status);
+	END_TIMER;
+	if (debug_flag) {
+		info("%s: %s %s %s ran for %s", __func__,
+		     script_argv[0], script_argv[1], script_argv[2], TIME_STR);
+	}
+	if (resp_msg == NULL) {
+		debug("%s: %s %s %s returned no information",
+		      __func__, script_argv[0], script_argv[1], script_argv[2]);
+	} else {
+		i = strlen(resp_msg);
+		if (resp_msg[i-1] == '\n')
+			resp_msg[i-1] = '\0';
+	}
+	_log_script_argv(script_argv, resp_msg);
+	_free_script_argv(script_argv);
+	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		error("%s: %s %s %s status:%u response:%s", __func__,
+		      script_argv[0], script_argv[1], script_argv[2],
+		      status, resp_msg);
+	}
+	return resp_msg;
+}
+
+/* Return table of NUMA modes and NID string identifying nodes with that mode.
+ * Use _numa_cfg_free() to release returned data structure */
+static numa_cfg_t *_load_current_numa(int *num)
+{
+	numa_cfg_t *numa_cfg;
+	int i;
+
+	numa_cfg = xmalloc(sizeof(numa_cfg_t) * 5);
+	numa_cfg[0].numa_cfg = xstrdup("a2a");
+	numa_cfg[1].numa_cfg = xstrdup("snc2");
+	numa_cfg[2].numa_cfg = xstrdup("snc4");
+	numa_cfg[3].numa_cfg = xstrdup("hemi");
+	numa_cfg[4].numa_cfg = xstrdup("quad");
+
+	for (i = 0; i < 5; i++)
+		numa_cfg[i].nid_str = _load_numa_type(numa_cfg[i].numa_cfg);
+	*num = 5;
+	return numa_cfg;
 }
 
 static mcdram_cfg_t *_json_parse_mcdram_cfg_array(json_object *jobj, char *key,
@@ -731,28 +760,6 @@ static numa_cap_t *_json_parse_numa_cap_array(json_object *jobj, char *key,
 	for (i = 0; i < *num; i++) {
 		jvalue = json_object_array_get_idx(jarray, i);
 		_json_parse_numa_cap_object(jvalue, &ents[i]);
-	}
-
-	return ents;
-}
-
-static numa_cfg_t *_json_parse_numa_cfg_array(json_object *jobj, char *key,
-					      int *num)
-{
-	json_object *jarray;
-	json_object *jvalue;
-	numa_cfg_t *ents;
-	int i;
-
-	jarray = jobj;
-	json_object_object_get_ex(jobj, key, &jarray);
-
-	*num = json_object_array_length(jarray);
-	ents = xmalloc(*num * sizeof(numa_cfg_t));
-
-	for (i = 0; i < *num; i++) {
-		jvalue = json_object_array_get_idx(jarray, i);
-		_json_parse_numa_cfg_object(jvalue, &ents[i]);
 	}
 
 	return ents;
@@ -859,6 +866,7 @@ static void _numa_cfg_free(numa_cfg_t *numa_cfg, int numa_cfg_cnt)
 	if (!numa_cfg)
 		return;
 	for (i = 0; i < numa_cfg_cnt; i++) {
+		xfree(numa_cfg[i].nid_str);
 		xfree(numa_cfg[i].numa_cfg);
 	}
 	xfree(numa_cfg);
@@ -871,8 +879,8 @@ static void _numa_cfg_log(numa_cfg_t *numa_cfg, int numa_cfg_cnt)
 	if (!numa_cfg)
 		return;
 	for (i = 0; i < numa_cfg_cnt; i++) {
-		info("NUMA_CFG[%d]: nid:%u numa_cfg:%s",
-		     i, numa_cfg[i].nid, numa_cfg[i].numa_cfg);
+		info("NUMA_CFG[%d]: nid_str:%s numa_cfg:%s",
+		     i, numa_cfg[i].nid_str, numa_cfg[i].numa_cfg);
 	}
 }
 
@@ -1101,14 +1109,30 @@ static void _update_all_node_features(
 	}
 	if (numa_cfg) {
 		for (i = 0; i < numa_cfg_cnt; i++) {
-			snprintf(node_name, sizeof(node_name),
-				 "%s%.*d", prefix, width, numa_cfg[i].nid);
-			node_ptr = find_node_record(node_name);
-			if (node_ptr) {
-				_merge_strings(&node_ptr->features_act,
-					       numa_cfg[i].numa_cfg,
-					       allow_numa);
+			bitstr_t *nid_bits;
+			int j, j_first, j_last;
+			if (!numa_cfg[i].nid_str)
+				continue;
+			nid_bits = bit_alloc(100000);
+			(void) bit_unfmt(nid_bits, numa_cfg[i].nid_str);
+			j_first = bit_ffs(nid_bits);
+			if (j_first >= 0)
+				j_last = bit_fls(nid_bits);
+			else
+				j_last = j_first - 1;
+			for (j = j_first; j <= j_last; j++) {
+				if (!bit_test(nid_bits, j))
+						continue;
+				snprintf(node_name, sizeof(node_name),
+					 "%s%.*d", prefix, width, j);
+				node_ptr = find_node_record(node_name);
+				if (node_ptr) {
+					_merge_strings(&node_ptr->features_act,
+						       numa_cfg[i].numa_cfg,
+						       allow_numa);
+				}
 			}
+			bit_free(nid_bits);
 		}
 	}
 	xfree(prefix);
@@ -1181,7 +1205,15 @@ static void _update_node_features(struct node_record *node_ptr,
 	}
 	if (numa_cfg) {
 		for (i = 0; i < numa_cfg_cnt; i++) {
-			if (nid == numa_cfg[i].nid) {
+			bitstr_t *nid_bits;
+			int match;
+			if (!numa_cfg[i].nid_str)
+				continue;
+			nid_bits = bit_alloc(100000);
+			(void) bit_unfmt(nid_bits, numa_cfg[i].nid_str);
+			match = bit_test(nid_bits, nid);
+			bit_free(nid_bits);
+			if (match) {
 				_merge_strings(&node_ptr->features_act,
 					       numa_cfg[i].numa_cfg,
 					       allow_numa);
@@ -1529,42 +1561,7 @@ extern int node_features_p_get_node(char *node_list)
 	/*
 	 * Load current NUMA configuration
 	 */
-	script_argv = xmalloc(sizeof(char *) * 4);	/* NULL terminated */
-	script_argv[0] = xstrdup("capmc");
-	script_argv[1] = xstrdup("get_numa_cfg");
-	START_TIMER;
-	resp_msg = _run_script(capmc_path, script_argv, &status);
-	END_TIMER;
-	if (debug_flag)
-		info("%s: get_numa_cfg ran for %s", __func__, TIME_STR);
-	_log_script_argv(script_argv, resp_msg);
-	_free_script_argv(script_argv);
-	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
-		error("%s: get_numa_cfg status:%u response:%s",
-		      __func__, status, resp_msg);
-	}
-	if (resp_msg == NULL) {
-		info("%s: get_numa_cfg returned no information", __func__);
-		rc = SLURM_ERROR;
-		goto fini;
-	}
-
-	j = json_tokener_parse(resp_msg);
-	if (j == NULL) {
-		error("%s: json parser failed on %s", __func__, resp_msg);
-		xfree(resp_msg);
-		rc = SLURM_ERROR;
-		goto fini;
-	}
-	xfree(resp_msg);
-	json_object_object_foreachC(j, iter) {
-		if (xstrcmp(iter.key, "nids"))
-			continue;
-		numa_cfg = _json_parse_numa_cfg_array(j, iter.key,
-						      &numa_cfg_cnt);
-		break;
-	}
-	json_object_put(j);	/* Frees json memory */
+	numa_cfg = _load_current_numa(&numa_cfg_cnt);
 
 	if (debug_flag) {
 		_mcdram_cap_log(mcdram_cap, mcdram_cap_cnt);
