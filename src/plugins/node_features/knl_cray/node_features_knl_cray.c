@@ -54,6 +54,7 @@
 #include "slurm/slurm.h"
 
 #include "src/common/assoc_mgr.h"
+#include "src/common/bitstring.h"
 #include "src/common/fd.h"
 #include "src/common/gres.h"
 #include "src/common/list.h"
@@ -87,8 +88,8 @@
 #define KNL_QUAD	0x0010
 #define KNL_MCDRAM_FLAG	0xff00
 #define KNL_CACHE	0x0100
-#define KNL_SPLIT	0x0200
-#define KNL_EQUAL	0x0400
+#define KNL_EQUAL	0x0200
+#define KNL_SPLIT	0x0400
 #define KNL_FLAT	0x0800
 
 /* These are defined here so when we link with something other than
@@ -134,6 +135,7 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 static char *capmc_path = NULL;
 static uint32_t capmc_poll_freq = 45;	/* capmc state polling frequency */
 static uint32_t capmc_timeout = 0;	/* capmc command timeout in msec */
+static char *cnselect_path = NULL;
 static bool  debug_flag = false;
 static uint16_t allow_mcdram = KNL_MCDRAM_FLAG;
 static uint16_t allow_numa = KNL_NUMA_FLAG;
@@ -158,6 +160,7 @@ static s_p_options_t knl_conf_file_options[] = {
 	{"CapmcPath", S_P_STRING},
 	{"CapmcPollFreq", S_P_UINT32},
 	{"CapmcTimeout", S_P_UINT32},
+	{"CnselectPath", S_P_STRING},
 	{"DefaultMCDRAM", S_P_STRING},
 	{"DefaultNUMA", S_P_STRING},
 	{"LogFile", S_P_STRING},
@@ -178,13 +181,20 @@ typedef struct mcdram_cfg {
 	uint16_t mcdram_pct;
 } mcdram_cfg_t;
 
+typedef struct mcdram_cfg2 {
+	int hbm_pct;
+	char *mcdram_cfg;
+	char *nid_str;
+	bitstr_t *node_bitmap;
+} mcdram_cfg2_t;
+
 typedef struct numa_cap {
 	uint32_t nid;
 	char *numa_cfg;
 } numa_cap_t;
 
 typedef struct numa_cfg {
-	uint32_t nid;
+	char *nid_str;
 	char *numa_cfg;
 } numa_cfg_t;
 
@@ -198,10 +208,7 @@ static void _json_parse_mcdram_cap_object(json_object *jobj, mcdram_cap_t *ent);
 static void _json_parse_mcdram_cfg_object(json_object *jobj, mcdram_cfg_t *ent);
 static numa_cap_t *_json_parse_numa_cap_array(json_object *jobj, char *key,
 					      int *num);
-static numa_cfg_t *_json_parse_numa_cfg_array(json_object *jobj, char *key,
-					      int *num);
 static void _json_parse_numa_cap_object(json_object *jobj, numa_cap_t *ent);
-static void _json_parse_numa_cfg_object(json_object *jobj, numa_cfg_t *ent);
 static int  _knl_mcdram_bits_cnt(uint16_t mcdram_num);
 static uint16_t _knl_mcdram_parse(char *mcdram_str, char *sep);
 static char *_knl_mcdram_str(uint16_t mcdram_num);
@@ -210,10 +217,15 @@ static int _knl_numa_bits_cnt(uint16_t numa_num);
 static uint16_t _knl_numa_parse(char *numa_str, char *sep);
 static char *_knl_numa_str(uint16_t numa_num);
 static uint16_t _knl_numa_token(char *token);
+static mcdram_cfg2_t *_load_current_mcdram(int *num);
+static numa_cfg_t *_load_current_numa(int *num);
+static char *_load_mcdram_type(int hbm_pct);
+static char *_load_numa_type(char *type);
 static void _log_script_argv(char **script_argv, char *resp_msg);
 static void _mcdram_cap_free(mcdram_cap_t *mcdram_cap, int mcdram_cap_cnt);
 static void _mcdram_cap_log(mcdram_cap_t *mcdram_cap, int mcdram_cap_cnt);
 static void _mcdram_cfg_free(mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt);
+static void _mcdram_cfg2_free(mcdram_cfg2_t *mcdram_cfg2, int mcdram_cfg2_cnt);
 static void _mcdram_cfg_log(mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt);
 static void _merge_strings(char **node_features, char *node_cfg,
 			   uint16_t allow_types);
@@ -639,34 +651,6 @@ static void _json_parse_numa_cap_object(json_object *jobj, numa_cap_t *ent)
 	}
 }
 
-static void _json_parse_numa_cfg_object(json_object *jobj, numa_cfg_t *ent)
-{
-	enum json_type type;
-	struct json_object_iter iter;
-	int64_t x;
-	const char *p;
-
-	json_object_object_foreachC(jobj, iter) {
-		type = json_object_get_type(iter.val);
-		switch (type) {
-		case json_type_int:
-			x = json_object_get_int64(iter.val);
-			if (xstrcmp(iter.key, "nid") == 0) {
-				ent->nid = x;
-			}
-			break;
-		case json_type_string:
-			p = json_object_get_string(iter.val);
-			if (xstrcmp(iter.key, "numa_cfg") == 0) {
-				ent->numa_cfg = xstrdup(p);
-			}
-			break;
-		default:
-			break;
-		}
-	}
-}
-
 static mcdram_cap_t *_json_parse_mcdram_cap_array(json_object *jobj, char *key,
 						  int *num)
 {
@@ -687,6 +671,125 @@ static mcdram_cap_t *_json_parse_mcdram_cap_array(json_object *jobj, char *key,
 	}
 
 	return ents;
+}
+
+/* Return NID string for all nodes with specified MCDRAM mode (HBM percentage).
+ * xfree() the return value. */
+static char *_load_mcdram_type(int hbm_pct)
+{
+	char **script_argv, *resp_msg;
+	int i, status = 0;
+	DEF_TIMERS;
+
+	if (hbm_pct < 0)	/* Unsupported configuration on this system */
+		return NULL;
+	script_argv = xmalloc(sizeof(char *) * 4);	/* NULL terminated */
+	script_argv[0] = xstrdup("cnselect");
+	script_argv[1] = xstrdup("-e");
+	xstrfmtcat(script_argv[2], "hbmcachepct.eq.%d", hbm_pct);
+	START_TIMER;
+	resp_msg = _run_script(cnselect_path, script_argv, &status);
+	END_TIMER;
+	if (debug_flag) {
+		info("%s: %s %s %s ran for %s", __func__,
+		     script_argv[0], script_argv[1], script_argv[2], TIME_STR);
+	}
+	if (resp_msg == NULL) {
+		debug("%s: %s %s %s returned no information",
+		      __func__, script_argv[0], script_argv[1], script_argv[2]);
+	} else {
+		i = strlen(resp_msg);
+		if (resp_msg[i-1] == '\n')
+			resp_msg[i-1] = '\0';
+	}
+	_log_script_argv(script_argv, resp_msg);
+	_free_script_argv(script_argv);
+	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		error("%s: %s %s %s status:%u response:%s", __func__,
+		      script_argv[0], script_argv[1], script_argv[2],
+		      status, resp_msg);
+	}
+	return resp_msg;
+}
+
+/* Return table of MCDRAM modes and NID string identifying nodes with that mode.
+ * Use _mcdram_cfg2_free() to release returned data structure */
+static mcdram_cfg2_t *_load_current_mcdram(int *num)
+{
+	mcdram_cfg2_t *mcdram_cfg;
+	int i;
+
+	mcdram_cfg = xmalloc(sizeof(mcdram_cfg2_t) * 4);
+
+	for (i = 0; i < 4; i++) {
+		mcdram_cfg[i].hbm_pct = mcdram_pct[i];
+		mcdram_cfg[i].mcdram_cfg = _knl_mcdram_str(KNL_CACHE << i);
+		mcdram_cfg[i].nid_str = _load_mcdram_type(mcdram_cfg[i].hbm_pct);
+		if (mcdram_cfg[i].nid_str) {
+			mcdram_cfg[i].node_bitmap = bit_alloc(10000);
+			(void) bit_unfmt(mcdram_cfg[i].node_bitmap,
+					 mcdram_cfg[i].nid_str);
+		}
+	}
+	*num = 4;
+	return mcdram_cfg;
+}
+
+/* Return NID string for all nodes with specified NUMA mode.
+ * xfree() the return value. */
+static char *_load_numa_type(char *type)
+{
+	char **script_argv, *resp_msg;
+	int i, status = 0;
+	DEF_TIMERS;
+
+	script_argv = xmalloc(sizeof(char *) * 4);	/* NULL terminated */
+	script_argv[0] = xstrdup("cnselect");
+	script_argv[1] = xstrdup("-e");
+	xstrfmtcat(script_argv[2], "numa_cfg.eq.%s", type);
+	START_TIMER;
+	resp_msg = _run_script(cnselect_path, script_argv, &status);
+	END_TIMER;
+	if (debug_flag) {
+		info("%s: %s %s %s ran for %s", __func__,
+		     script_argv[0], script_argv[1], script_argv[2], TIME_STR);
+	}
+	if (resp_msg == NULL) {
+		debug("%s: %s %s %s returned no information",
+		      __func__, script_argv[0], script_argv[1], script_argv[2]);
+	} else {
+		i = strlen(resp_msg);
+		if (resp_msg[i-1] == '\n')
+			resp_msg[i-1] = '\0';
+	}
+	_log_script_argv(script_argv, resp_msg);
+	_free_script_argv(script_argv);
+	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		error("%s: %s %s %s status:%u response:%s", __func__,
+		      script_argv[0], script_argv[1], script_argv[2],
+		      status, resp_msg);
+	}
+	return resp_msg;
+}
+
+/* Return table of NUMA modes and NID string identifying nodes with that mode.
+ * Use _numa_cfg_free() to release returned data structure */
+static numa_cfg_t *_load_current_numa(int *num)
+{
+	numa_cfg_t *numa_cfg;
+	int i;
+
+	numa_cfg = xmalloc(sizeof(numa_cfg_t) * 5);
+	numa_cfg[0].numa_cfg = xstrdup("a2a");
+	numa_cfg[1].numa_cfg = xstrdup("snc2");
+	numa_cfg[2].numa_cfg = xstrdup("snc4");
+	numa_cfg[3].numa_cfg = xstrdup("hemi");
+	numa_cfg[4].numa_cfg = xstrdup("quad");
+
+	for (i = 0; i < 5; i++)
+		numa_cfg[i].nid_str = _load_numa_type(numa_cfg[i].numa_cfg);
+	*num = 5;
+	return numa_cfg;
 }
 
 static mcdram_cfg_t *_json_parse_mcdram_cfg_array(json_object *jobj, char *key,
@@ -728,28 +831,6 @@ static numa_cap_t *_json_parse_numa_cap_array(json_object *jobj, char *key,
 	for (i = 0; i < *num; i++) {
 		jvalue = json_object_array_get_idx(jarray, i);
 		_json_parse_numa_cap_object(jvalue, &ents[i]);
-	}
-
-	return ents;
-}
-
-static numa_cfg_t *_json_parse_numa_cfg_array(json_object *jobj, char *key,
-					      int *num)
-{
-	json_object *jarray;
-	json_object *jvalue;
-	numa_cfg_t *ents;
-	int i;
-
-	jarray = jobj;
-	json_object_object_get_ex(jobj, key, &jarray);
-
-	*num = json_object_array_length(jarray);
-	ents = xmalloc(*num * sizeof(numa_cfg_t));
-
-	for (i = 0; i < *num; i++) {
-		jvalue = json_object_array_get_idx(jarray, i);
-		_json_parse_numa_cfg_object(jvalue, &ents[i]);
 	}
 
 	return ents;
@@ -811,6 +892,20 @@ static void _mcdram_cfg_free(mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt)
 	xfree(mcdram_cfg);
 }
 
+static void _mcdram_cfg2_free(mcdram_cfg2_t *mcdram_cfg2, int mcdram_cfg2_cnt)
+{
+	int i;
+
+	if (!mcdram_cfg2)
+		return;
+	for (i = 0; i < mcdram_cfg2_cnt; i++) {
+		xfree(mcdram_cfg2[i].mcdram_cfg);
+		FREE_NULL_BITMAP(mcdram_cfg2[i].node_bitmap);
+		xfree(mcdram_cfg2[i].nid_str);
+	}
+	xfree(mcdram_cfg2);
+}
+
 static void _mcdram_cfg_log(mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt)
 {
 	int i;
@@ -822,6 +917,19 @@ static void _mcdram_cfg_log(mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt)
 		     i, mcdram_cfg[i].nid, mcdram_cfg[i].dram_size,
 		     mcdram_cfg[i].mcdram_cfg, mcdram_cfg[i].mcdram_pct,
 		     mcdram_cfg[i].mcdram_size);
+	}
+}
+
+static void _mcdram_cfg2_log(mcdram_cfg2_t *mcdram_cfg2, int mcdram_cfg2_cnt)
+{
+	int i;
+
+	if (!mcdram_cfg2)
+		return;
+	for (i = 0; i < mcdram_cfg2_cnt; i++) {
+		info("MCDRAM_CFG[%d]: nid_str:%s mcdram_cfg:%s hbm_pct:%d",
+		     i, mcdram_cfg2[i].nid_str, mcdram_cfg2[i].mcdram_cfg,
+		     mcdram_cfg2[i].hbm_pct);
 	}
 }
 
@@ -856,6 +964,7 @@ static void _numa_cfg_free(numa_cfg_t *numa_cfg, int numa_cfg_cnt)
 	if (!numa_cfg)
 		return;
 	for (i = 0; i < numa_cfg_cnt; i++) {
+		xfree(numa_cfg[i].nid_str);
 		xfree(numa_cfg[i].numa_cfg);
 	}
 	xfree(numa_cfg);
@@ -868,8 +977,8 @@ static void _numa_cfg_log(numa_cfg_t *numa_cfg, int numa_cfg_cnt)
 	if (!numa_cfg)
 		return;
 	for (i = 0; i < numa_cfg_cnt; i++) {
-		info("NUMA_CFG[%d]: nid:%u numa_cfg:%s",
-		     i, numa_cfg[i].nid, numa_cfg[i].numa_cfg);
+		info("NUMA_CFG[%d]: nid_str:%s numa_cfg:%s",
+		     i, numa_cfg[i].nid_str, numa_cfg[i].numa_cfg);
 	}
 }
 
@@ -1094,14 +1203,30 @@ static void _update_all_node_features(
 	}
 	if (numa_cfg) {
 		for (i = 0; i < numa_cfg_cnt; i++) {
-			snprintf(node_name, sizeof(node_name),
-				 "%s%.*d", prefix, width, numa_cfg[i].nid);
-			node_ptr = find_node_record(node_name);
-			if (node_ptr) {
-				_merge_strings(&node_ptr->features_act,
-					       numa_cfg[i].numa_cfg,
-					       allow_numa);
+			bitstr_t *nid_bits;
+			int j, j_first, j_last;
+			if (!numa_cfg[i].nid_str)
+				continue;
+			nid_bits = bit_alloc(100000);
+			(void) bit_unfmt(nid_bits, numa_cfg[i].nid_str);
+			j_first = bit_ffs(nid_bits);
+			if (j_first >= 0)
+				j_last = bit_fls(nid_bits);
+			else
+				j_last = j_first - 1;
+			for (j = j_first; j <= j_last; j++) {
+				if (!bit_test(nid_bits, j))
+						continue;
+				snprintf(node_name, sizeof(node_name),
+					 "%s%.*d", prefix, width, j);
+				node_ptr = find_node_record(node_name);
+				if (node_ptr) {
+					_merge_strings(&node_ptr->features_act,
+						       numa_cfg[i].numa_cfg,
+						       allow_numa);
+				}
 			}
+			bit_free(nid_bits);
 		}
 	}
 	xfree(prefix);
@@ -1174,7 +1299,15 @@ static void _update_node_features(struct node_record *node_ptr,
 	}
 	if (numa_cfg) {
 		for (i = 0; i < numa_cfg_cnt; i++) {
-			if (nid == numa_cfg[i].nid) {
+			bitstr_t *nid_bits;
+			int match;
+			if (!numa_cfg[i].nid_str)
+				continue;
+			nid_bits = bit_alloc(100000);
+			(void) bit_unfmt(nid_bits, numa_cfg[i].nid_str);
+			match = bit_test(nid_bits, nid);
+			bit_free(nid_bits);
+			if (match) {
 				_merge_strings(&node_ptr->features_act,
 					       numa_cfg[i].numa_cfg,
 					       allow_numa);
@@ -1281,6 +1414,7 @@ extern int init(void)
 		(void) s_p_get_string(&capmc_path, "CapmcPath", tbl);
 		(void) s_p_get_uint32(&capmc_poll_freq, "CapmcPollFreq", tbl);
 		(void) s_p_get_uint32(&capmc_timeout, "CapmcTimeout", tbl);
+		(void) s_p_get_string(&cnselect_path, "CnselectPath", tbl);
 		if (s_p_get_string(&tmp_str, "DefaultMCDRAM", tbl)) {
 			default_mcdram = _knl_mcdram_parse(tmp_str, ",");
 			if (_knl_mcdram_bits_cnt(default_mcdram) != 1) {
@@ -1306,6 +1440,8 @@ extern int init(void)
 	if (!capmc_path)
 		capmc_path = xstrdup("/opt/cray/capmc/default/bin/capmc");
 	capmc_timeout = MAX(capmc_timeout, 500);
+	if (!cnselect_path)
+		cnselect_path = xstrdup("/opt/cray/sdb/default/bin/cnselect");
 	if (!syscfg_path)
 		verbose("SyscfgPath is not configured");
 
@@ -1324,6 +1460,7 @@ extern int init(void)
 		info("CapmcPath=%s", capmc_path);
 		info("CapmcPollFreq=%u sec", capmc_poll_freq);
 		info("CapmcTimeout=%u msec", capmc_timeout);
+		info("CnselectPath=%s", cnselect_path);
 		info("DefaultMCDRAM=%s DefaultNUMA=%s",
 		     default_mcdram_str, default_numa_str);
 		info("SyscfgPath=%s", syscfg_path);
@@ -1344,6 +1481,7 @@ extern int fini(void)
 	xfree(allowed_uid);
 	allowed_uid_cnt = 0;
 	xfree(capmc_path);
+	xfree(cnselect_path);
 	capmc_timeout = 0;
 	debug_flag = false;
 	xfree(mcdram_per_node);
@@ -1366,14 +1504,15 @@ extern int node_features_p_get_node(char *node_list)
 {
 	json_object *j;
 	json_object_iter iter;
-	int i, status = 0, rc = SLURM_SUCCESS;
+	int i, k, status = 0, rc = SLURM_SUCCESS;
 	DEF_TIMERS;
 	char *resp_msg, **script_argv;
 	mcdram_cap_t *mcdram_cap = NULL;
 	mcdram_cfg_t *mcdram_cfg = NULL;
+	mcdram_cfg2_t *mcdram_cfg2 = NULL;
 	numa_cap_t *numa_cap = NULL;
 	numa_cfg_t *numa_cfg = NULL;
-	int mcdram_cap_cnt = 0, mcdram_cfg_cnt = 0;
+	int mcdram_cap_cnt = 0, mcdram_cfg_cnt = 0, mcdram_cfg2_cnt = 0;
 	int numa_cap_cnt = 0, numa_cfg_cnt = 0;
 	struct node_record *node_ptr;
 	hostlist_t host_list;
@@ -1471,6 +1610,8 @@ extern int node_features_p_get_node(char *node_list)
 	}
 	json_object_put(j);	/* Frees json memory */
 
+	mcdram_cfg2 = _load_current_mcdram(&mcdram_cfg2_cnt);
+
 	/*
 	 * Load available NUMA capabilities
 	 */
@@ -1517,48 +1658,34 @@ extern int node_features_p_get_node(char *node_list)
 	/*
 	 * Load current NUMA configuration
 	 */
-	script_argv = xmalloc(sizeof(char *) * 4);	/* NULL terminated */
-	script_argv[0] = xstrdup("capmc");
-	script_argv[1] = xstrdup("get_numa_cfg");
-	START_TIMER;
-	resp_msg = _run_script(capmc_path, script_argv, &status);
-	END_TIMER;
-	if (debug_flag)
-		info("%s: get_numa_cfg ran for %s", __func__, TIME_STR);
-	_log_script_argv(script_argv, resp_msg);
-	_free_script_argv(script_argv);
-	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
-		error("%s: get_numa_cfg status:%u response:%s",
-		      __func__, status, resp_msg);
-	}
-	if (resp_msg == NULL) {
-		info("%s: get_numa_cfg returned no information", __func__);
-		rc = SLURM_ERROR;
-		goto fini;
-	}
-
-	j = json_tokener_parse(resp_msg);
-	if (j == NULL) {
-		error("%s: json parser failed on %s", __func__, resp_msg);
-		xfree(resp_msg);
-		rc = SLURM_ERROR;
-		goto fini;
-	}
-	xfree(resp_msg);
-	json_object_object_foreachC(j, iter) {
-		if (xstrcmp(iter.key, "nids"))
-			continue;
-		numa_cfg = _json_parse_numa_cfg_array(j, iter.key,
-						      &numa_cfg_cnt);
-		break;
-	}
-	json_object_put(j);	/* Frees json memory */
+	numa_cfg = _load_current_numa(&numa_cfg_cnt);
 
 	if (debug_flag) {
 		_mcdram_cap_log(mcdram_cap, mcdram_cap_cnt);
 		_mcdram_cfg_log(mcdram_cfg, mcdram_cfg_cnt);
+		_mcdram_cfg2_log(mcdram_cfg2, mcdram_cfg2_cnt);
 		_numa_cap_log(numa_cap, numa_cap_cnt);
 		_numa_cfg_log(numa_cfg, numa_cfg_cnt);
+	}
+	for (i = 0; i < mcdram_cfg_cnt; i++) {
+		for (k = 0; k < mcdram_cfg2_cnt; k++) {
+			if (!mcdram_cfg2[k].node_bitmap ||
+			    !bit_test(mcdram_cfg2[k].node_bitmap,
+				      mcdram_cfg[i].nid))
+				continue;
+			if (mcdram_cfg[i].mcdram_pct !=
+			    mcdram_cfg2[k].hbm_pct) {
+				debug("%s: HBM mismatch between capmc and cnselect for nid %u (%u != %d)",
+				      __func__, mcdram_cfg[i].nid,
+				      mcdram_cfg[i].mcdram_pct,
+				      mcdram_cfg2[k].hbm_pct);
+				mcdram_cfg[i].mcdram_pct=mcdram_cfg2[k].hbm_pct;
+				xfree(mcdram_cfg[i].mcdram_cfg);
+				mcdram_cfg[i].mcdram_cfg =
+					xstrdup(mcdram_cfg2[k].mcdram_cfg);
+			}
+			break;
+		}
 	}
 
 	START_TIMER;
@@ -1604,6 +1731,7 @@ extern int node_features_p_get_node(char *node_list)
 
 fini:	_mcdram_cap_free(mcdram_cap, mcdram_cap_cnt);
 	_mcdram_cfg_free(mcdram_cfg, mcdram_cfg_cnt);
+	_mcdram_cfg2_free(mcdram_cfg2, mcdram_cfg2_cnt);
 	_numa_cap_free(numa_cap, numa_cap_cnt);
 	_numa_cfg_free(numa_cfg, numa_cfg_cnt);
 
@@ -1613,6 +1741,8 @@ fini:	_mcdram_cap_free(mcdram_cap, mcdram_cap_cnt);
 /* Get this node's current and available MCDRAM and NUMA settings from BIOS.
  * avail_modes IN/OUT - append available modes, must be xfreed
  * current_mode IN/OUT - append current modes, must be xfreed
+ *
+ * NOTE: Not applicable on Cray systems; can be used on other systems.
  *
  * NOTES about syscfg (from Intel):
  * To display the BIOS Parameters:
@@ -1624,6 +1754,7 @@ fini:	_mcdram_cap_free(mcdram_cap, mcdram_cap_cnt);
  */
 extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 {
+#if 0
 	char *avail_states = NULL, *cur_state = NULL;
 	char *resp_msg, *argv[10], *avail_sep = "", *cur_sep = "", *tok;
 	int status = 0;
@@ -1747,6 +1878,7 @@ extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 	} else {
 		*current_mode = cur_state;
 	}
+#endif
 }
 
 /* Test if a job's feature specification is valid */

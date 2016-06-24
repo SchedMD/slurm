@@ -99,6 +99,7 @@ static s_p_options_t knl_conf_file_options[] = {
 	{"CapmcPath", S_P_STRING},
 	{"CapmcPollFreq", S_P_UINT32},
 	{"CapmcTimeout", S_P_UINT32},
+	{"CnselectPath", S_P_STRING},
 	{"DefaultMCDRAM", S_P_STRING},
 	{"DefaultNUMA", S_P_STRING},
 	{"LogFile", S_P_STRING},
