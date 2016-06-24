@@ -89,8 +89,8 @@
 #define KNL_QUAD	0x0010
 #define KNL_MCDRAM_FLAG	0xff00
 #define KNL_CACHE	0x0100
-#define KNL_SPLIT	0x0200
-#define KNL_EQUAL	0x0400
+#define KNL_EQUAL	0x0200
+#define KNL_SPLIT	0x0400
 #define KNL_FLAT	0x0800
 
 /* These are defined here so when we link with something other than
@@ -182,6 +182,13 @@ typedef struct mcdram_cfg {
 	uint16_t mcdram_pct;
 } mcdram_cfg_t;
 
+typedef struct mcdram_cfg2 {
+	int hbm_pct;
+	char *mcdram_cfg;
+	char *nid_str;
+	bitstr_t *node_bitmap;
+} mcdram_cfg2_t;
+
 typedef struct numa_cap {
 	uint32_t nid;
 	char *numa_cfg;
@@ -211,12 +218,15 @@ static int _knl_numa_bits_cnt(uint16_t numa_num);
 static uint16_t _knl_numa_parse(char *numa_str, char *sep);
 static char *_knl_numa_str(uint16_t numa_num);
 static uint16_t _knl_numa_token(char *token);
+static mcdram_cfg2_t *_load_current_mcdram(int *num);
 static numa_cfg_t *_load_current_numa(int *num);
+static char *_load_mcdram_type(int hbm_pct);
 static char *_load_numa_type(char *type);
 static void _log_script_argv(char **script_argv, char *resp_msg);
 static void _mcdram_cap_free(mcdram_cap_t *mcdram_cap, int mcdram_cap_cnt);
 static void _mcdram_cap_log(mcdram_cap_t *mcdram_cap, int mcdram_cap_cnt);
 static void _mcdram_cfg_free(mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt);
+static void _mcdram_cfg2_free(mcdram_cfg2_t *mcdram_cfg2, int mcdram_cfg2_cnt);
 static void _mcdram_cfg_log(mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt);
 static void _merge_strings(char **node_features, char *node_cfg,
 			   uint16_t allow_types);
@@ -664,6 +674,68 @@ static mcdram_cap_t *_json_parse_mcdram_cap_array(json_object *jobj, char *key,
 	return ents;
 }
 
+/* Return NID string for all nodes with specified MCDRAM mode (HBM percentage).
+ * xfree() the return value. */
+static char *_load_mcdram_type(int hbm_pct)
+{
+	char **script_argv, *resp_msg;
+	int i, status = 0;
+	DEF_TIMERS;
+
+	if (hbm_pct < 0)	/* Unsupported configuration on this system */
+		return NULL;
+	script_argv = xmalloc(sizeof(char *) * 4);	/* NULL terminated */
+	script_argv[0] = xstrdup("cnselect");
+	script_argv[1] = xstrdup("-e");
+	xstrfmtcat(script_argv[2], "hbmcachepct.eq.%d", hbm_pct);
+	START_TIMER;
+	resp_msg = _run_script(cnselect_path, script_argv, &status);
+	END_TIMER;
+	if (debug_flag) {
+		info("%s: %s %s %s ran for %s", __func__,
+		     script_argv[0], script_argv[1], script_argv[2], TIME_STR);
+	}
+	if (resp_msg == NULL) {
+		debug("%s: %s %s %s returned no information",
+		      __func__, script_argv[0], script_argv[1], script_argv[2]);
+	} else {
+		i = strlen(resp_msg);
+		if (resp_msg[i-1] == '\n')
+			resp_msg[i-1] = '\0';
+	}
+	_log_script_argv(script_argv, resp_msg);
+	_free_script_argv(script_argv);
+	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		error("%s: %s %s %s status:%u response:%s", __func__,
+		      script_argv[0], script_argv[1], script_argv[2],
+		      status, resp_msg);
+	}
+	return resp_msg;
+}
+
+/* Return table of MCDRAM modes and NID string identifying nodes with that mode.
+ * Use _mcdram_cfg2_free() to release returned data structure */
+static mcdram_cfg2_t *_load_current_mcdram(int *num)
+{
+	mcdram_cfg2_t *mcdram_cfg;
+	int i;
+
+	mcdram_cfg = xmalloc(sizeof(mcdram_cfg2_t) * 4);
+
+	for (i = 0; i < 4; i++) {
+		mcdram_cfg[i].hbm_pct = mcdram_pct[i];
+		mcdram_cfg[i].mcdram_cfg = _knl_mcdram_str(KNL_CACHE << i);
+		mcdram_cfg[i].nid_str = _load_mcdram_type(mcdram_cfg[i].hbm_pct);
+		if (mcdram_cfg[i].nid_str) {
+			mcdram_cfg[i].node_bitmap = bit_alloc(10000);
+			(void) bit_unfmt(mcdram_cfg[i].node_bitmap,
+					 mcdram_cfg[i].nid_str);
+		}
+	}
+	*num = 4;
+	return mcdram_cfg;
+}
+
 /* Return NID string for all nodes with specified NUMA mode.
  * xfree() the return value. */
 static char *_load_numa_type(char *type)
@@ -821,6 +893,20 @@ static void _mcdram_cfg_free(mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt)
 	xfree(mcdram_cfg);
 }
 
+static void _mcdram_cfg2_free(mcdram_cfg2_t *mcdram_cfg2, int mcdram_cfg2_cnt)
+{
+	int i;
+
+	if (!mcdram_cfg2)
+		return;
+	for (i = 0; i < mcdram_cfg2_cnt; i++) {
+		xfree(mcdram_cfg2[i].mcdram_cfg);
+		FREE_NULL_BITMAP(mcdram_cfg2[i].node_bitmap);
+		xfree(mcdram_cfg2[i].nid_str);
+	}
+	xfree(mcdram_cfg2);
+}
+
 static void _mcdram_cfg_log(mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt)
 {
 	int i;
@@ -832,6 +918,19 @@ static void _mcdram_cfg_log(mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt)
 		     i, mcdram_cfg[i].nid, mcdram_cfg[i].dram_size,
 		     mcdram_cfg[i].mcdram_cfg, mcdram_cfg[i].mcdram_pct,
 		     mcdram_cfg[i].mcdram_size);
+	}
+}
+
+static void _mcdram_cfg2_log(mcdram_cfg2_t *mcdram_cfg2, int mcdram_cfg2_cnt)
+{
+	int i;
+
+	if (!mcdram_cfg2)
+		return;
+	for (i = 0; i < mcdram_cfg2_cnt; i++) {
+		info("MCDRAM_CFG[%d]: nid_str:%s mcdram_cfg:%s hbm_pct:%d",
+		     i, mcdram_cfg2[i].nid_str, mcdram_cfg2[i].mcdram_cfg,
+		     mcdram_cfg2[i].hbm_pct);
 	}
 }
 
@@ -1410,14 +1509,15 @@ extern int node_features_p_get_node(char *node_list)
 {
 	json_object *j;
 	json_object_iter iter;
-	int i, status = 0, rc = SLURM_SUCCESS;
+	int i, k, status = 0, rc = SLURM_SUCCESS;
 	DEF_TIMERS;
 	char *resp_msg, **script_argv;
 	mcdram_cap_t *mcdram_cap = NULL;
 	mcdram_cfg_t *mcdram_cfg = NULL;
+	mcdram_cfg2_t *mcdram_cfg2 = NULL;
 	numa_cap_t *numa_cap = NULL;
 	numa_cfg_t *numa_cfg = NULL;
-	int mcdram_cap_cnt = 0, mcdram_cfg_cnt = 0;
+	int mcdram_cap_cnt = 0, mcdram_cfg_cnt = 0, mcdram_cfg2_cnt = 0;
 	int numa_cap_cnt = 0, numa_cfg_cnt = 0;
 	struct node_record *node_ptr;
 	hostlist_t host_list;
@@ -1515,6 +1615,8 @@ extern int node_features_p_get_node(char *node_list)
 	}
 	json_object_put(j);	/* Frees json memory */
 
+	mcdram_cfg2 = _load_current_mcdram(&mcdram_cfg2_cnt);
+
 	/*
 	 * Load available NUMA capabilities
 	 */
@@ -1566,8 +1668,29 @@ extern int node_features_p_get_node(char *node_list)
 	if (debug_flag) {
 		_mcdram_cap_log(mcdram_cap, mcdram_cap_cnt);
 		_mcdram_cfg_log(mcdram_cfg, mcdram_cfg_cnt);
+		_mcdram_cfg2_log(mcdram_cfg2, mcdram_cfg2_cnt);
 		_numa_cap_log(numa_cap, numa_cap_cnt);
 		_numa_cfg_log(numa_cfg, numa_cfg_cnt);
+	}
+	for (i = 0; i < mcdram_cfg_cnt; i++) {
+		for (k = 0; k < mcdram_cfg2_cnt; k++) {
+			if (!mcdram_cfg2[k].node_bitmap ||
+			    !bit_test(mcdram_cfg2[k].node_bitmap,
+				      mcdram_cfg[i].nid))
+				continue;
+			if (mcdram_cfg[i].mcdram_pct !=
+			    mcdram_cfg2[k].hbm_pct) {
+				debug("%s: HBM mismatch between capmc and cnselect for nid %u (%u != %d)",
+				      __func__, mcdram_cfg[i].nid,
+				      mcdram_cfg[i].mcdram_pct,
+				      mcdram_cfg2[k].hbm_pct);
+				mcdram_cfg[i].mcdram_pct=mcdram_cfg2[k].hbm_pct;
+				xfree(mcdram_cfg[i].mcdram_cfg);
+				mcdram_cfg[i].mcdram_cfg =
+					xstrdup(mcdram_cfg2[k].mcdram_cfg);
+			}
+			break;
+		}
 	}
 
 	START_TIMER;
@@ -1613,6 +1736,7 @@ extern int node_features_p_get_node(char *node_list)
 
 fini:	_mcdram_cap_free(mcdram_cap, mcdram_cap_cnt);
 	_mcdram_cfg_free(mcdram_cfg, mcdram_cfg_cnt);
+	_mcdram_cfg2_free(mcdram_cfg2, mcdram_cfg2_cnt);
 	_numa_cap_free(numa_cap, numa_cap_cnt);
 	_numa_cfg_free(numa_cfg, numa_cfg_cnt);
 

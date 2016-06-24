@@ -48,8 +48,8 @@ documents those changes that are of interest to users and administrators.
  -- Document job --mem=0 option means all memory on a node.
  -- Set SLURM_JOB_QOS environment variable to QOS name instead of description.
  -- knl_cray.conf file option of CnselectPath added.
- -- node_features/knl_cray plugin modified to get current node NUMA mode using
-    cnselect command rather than capmc command.
+ -- node_features/knl_cray plugin modified to get current node NUMA and MCDRAM
+    modes using cnselect command rather than capmc command.
 
 * Changes in Slurm 16.05.0
 ==========================
