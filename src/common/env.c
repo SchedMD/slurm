@@ -431,9 +431,8 @@ int setup_env(env_t *env, bool preserve_env)
 
 
 	if (env->cpu_bind_type) {
-		char *str_verbose, *str_bind_type, *str_bind_list;
-		char *str_bind;
-		int len;
+		char *str_verbose, *str_bind1 = NULL, *str_bind2 = NULL;
+		char *str_bind_list, *str_bind_type = NULL, *str_bind = NULL;
 
 		if (env->batch_flag) {
 			unsetenvp(env->env, "SBATCH_CPU_BIND_VERBOSE");
@@ -447,55 +446,59 @@ int setup_env(env_t *env, bool preserve_env)
 			unsetenvp(env->env, "SLURM_CPU_BIND");
 		}
 
-		str_verbose = xstrdup ("");
-		if (env->cpu_bind_type & CPU_BIND_VERBOSE) {
-			xstrcat(str_verbose, "verbose");
-		} else {
-			xstrcat(str_verbose, "quiet");
-		}
-		str_bind_type = xstrdup ("");
+		if (env->cpu_bind_type & CPU_BIND_VERBOSE)
+			str_verbose = "verbose";
+		else
+			str_verbose = "quiet";
+
 		if (env->cpu_bind_type & CPU_BIND_TO_THREADS) {
-			xstrcat(str_bind_type, "threads,");
+			str_bind1 = "threads";
 		} else if (env->cpu_bind_type & CPU_BIND_TO_CORES) {
-			xstrcat(str_bind_type, "cores,");
+			str_bind1 = "cores";
 		} else if (env->cpu_bind_type & CPU_BIND_TO_SOCKETS) {
-			xstrcat(str_bind_type, "sockets,");
+			str_bind1 = "sockets";
 		} else if (env->cpu_bind_type & CPU_BIND_TO_LDOMS) {
-			xstrcat(str_bind_type, "ldoms,");
+			str_bind1 = "ldoms";
 		} else if (env->cpu_bind_type & CPU_BIND_TO_BOARDS) {
-			xstrcat(str_bind_type, "boards,");
+			str_bind1 = "boards";
 		}
+
 		if (env->cpu_bind_type & CPU_BIND_NONE) {
-			xstrcat(str_bind_type, "none");
+			str_bind2 = "none";
 		} else if (env->cpu_bind_type & CPU_BIND_RANK) {
-			xstrcat(str_bind_type, "rank");
+			str_bind2 = "rank";
 		} else if (env->cpu_bind_type & CPU_BIND_MAP) {
-			xstrcat(str_bind_type, "map_cpu:");
+			str_bind2 = "map_cpu:";
 		} else if (env->cpu_bind_type & CPU_BIND_MASK) {
-			xstrcat(str_bind_type, "mask_cpu:");
+			str_bind2 = "mask_cpu:";
 		} else if (env->cpu_bind_type & CPU_BIND_LDRANK) {
-			xstrcat(str_bind_type, "rank_ldom");
+			str_bind2 = "rank_ldom";
 		} else if (env->cpu_bind_type & CPU_BIND_LDMAP) {
-			xstrcat(str_bind_type, "map_ldom:");
+			str_bind2 = "map_ldom:";
 		} else if (env->cpu_bind_type & CPU_BIND_LDMASK) {
-			xstrcat(str_bind_type, "mask_ldom:");
+			str_bind2 = "mask_ldom:";
 		}
-		len = strlen(str_bind_type);
-		if (len) {		/* remove a possible trailing ',' */
-		    	if (str_bind_type[len-1] == ',') {
-			    	str_bind_type[len-1] = '\0';
-			}
-		}
-		str_bind_list = xstrdup ("");
-		if (env->cpu_bind) {
-			xstrcat(str_bind_list, env->cpu_bind);
-		}
-		str_bind = xstrdup ("");
+
+		if (env->cpu_bind)
+			str_bind_list = env->cpu_bind;
+		else
+			str_bind_list = "";
+
+		/* combine first and second part with a comma if needed */
+		if (str_bind1)
+			xstrcat(str_bind_type, str_bind1);
+		if (str_bind1 && str_bind2)
+			xstrcatchar(str_bind_type, ',');
+		if (str_bind2)
+			xstrcat(str_bind_type, str_bind2);
+
 		xstrcat(str_bind, str_verbose);
-		if (str_bind[0] && str_bind_type && str_bind_type[0])
+		if (str_bind_type) {
 			xstrcatchar(str_bind, ',');
-		xstrcat(str_bind, str_bind_type);
-		xstrcat(str_bind, str_bind_list);
+			xstrcat(str_bind, str_bind_type);
+			xstrcat(str_bind, str_bind_list);
+		} else
+			str_bind_type = xstrdup("");
 
 		if (env->batch_flag) {
 			if (setenvf(&env->env, "SBATCH_CPU_BIND_VERBOSE",
@@ -538,11 +541,14 @@ int setup_env(env_t *env, bool preserve_env)
 				rc = SLURM_FAILURE;
 			}
 		}
+
+		xfree(str_bind);
+		xfree(str_bind_type);
 	}
 
 	if (env->mem_bind_type) {
-		char *str_verbose, *str_bind_type, *str_bind_list;
-		char *str_bind;
+		char *str_verbose, *str_bind_type = NULL, *str_bind_list;
+		char *str_bind = NULL;
 
 		if (env->batch_flag) {
 			unsetenvp(env->env, "SBATCH_MEM_BIND_VERBOSE");
@@ -556,35 +562,35 @@ int setup_env(env_t *env, bool preserve_env)
 			unsetenvp(env->env, "SLURM_MEM_BIND");
 		}
 
-		str_verbose = xstrdup ("");
-		if (env->mem_bind_type & MEM_BIND_VERBOSE) {
-			xstrcat(str_verbose, "verbose");
-		} else {
-			xstrcat(str_verbose, "quiet");
-		}
-		str_bind_type = xstrdup ("");
+		if (env->mem_bind_type & MEM_BIND_VERBOSE)
+			str_verbose = "verbose";
+		else
+			str_verbose = "quiet";
+
 		if (env->mem_bind_type & MEM_BIND_NONE) {
-			xstrcat(str_bind_type, "none");
+			str_bind_type = "none";
 		} else if (env->mem_bind_type & MEM_BIND_RANK) {
-			xstrcat(str_bind_type, "rank");
+			str_bind_type = "rank";
 		} else if (env->mem_bind_type & MEM_BIND_MAP) {
-			xstrcat(str_bind_type, "map_mem:");
+			str_bind_type = "map_mem:";
 		} else if (env->mem_bind_type & MEM_BIND_MASK) {
-			xstrcat(str_bind_type, "mask_mem:");
+			str_bind_type = "mask_mem:";
 		} else if (env->mem_bind_type & MEM_BIND_LOCAL) {
-			xstrcat(str_bind_type, "local");
+			str_bind_type = "local";
 		}
-		str_bind_list = xstrdup ("");
-		if (env->mem_bind) {
-			xstrcat(str_bind_list, env->mem_bind);
-		}
-		str_bind = xstrdup ("");
+
+		if (env->mem_bind)
+			str_bind_list = env->mem_bind;
+		else
+			str_bind_list = "";
+
 		xstrcat(str_bind, str_verbose);
-		if (str_bind[0]) {		/* add ',' if str_verbose */
+		if (str_bind_type) {
 			xstrcatchar(str_bind, ',');
-		}
-		xstrcat(str_bind, str_bind_type);
-		xstrcat(str_bind, str_bind_list);
+			xstrcat(str_bind, str_bind_type);
+			xstrcat(str_bind, str_bind_list);
+		} else
+			str_bind_type = "";
 
 		if (env->batch_flag) {
 			if (setenvf(&env->env, "SBATCH_MEM_BIND_VERBOSE",
@@ -627,6 +633,8 @@ int setup_env(env_t *env, bool preserve_env)
 				rc = SLURM_FAILURE;
 			}
 		}
+
+		xfree(str_bind);
 	}
 
 	if (cpu_freq_set_env("SLURM_CPU_FREQ_REQ", env->cpu_freq_min,
