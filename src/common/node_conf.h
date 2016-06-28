@@ -66,7 +66,7 @@ struct config_record {
 	uint16_t cores;		/* number of cores per CPU */
 	uint16_t core_spec_cnt;	/* number of specialized cores */
 	uint16_t threads;	/* number of threads per core */
-	uint32_t mem_spec_limit; /* MB real memory for memory specialization */
+	uint64_t mem_spec_limit; /* MB real memory for memory specialization */
 	uint64_t real_memory;	/* MB real memory on the node */
 	uint32_t tmp_disk;	/* MB total storage in TMP_FS file system */
 	double  *tres_weights;	/* array of TRES weights */
@@ -105,7 +105,7 @@ struct node_record {
 	uint16_t core_spec_cnt;		/* number of specialized cores on node*/
 	uint16_t threads;		/* number of threads per core */
 	uint64_t real_memory;		/* MB real memory on the node */
-	uint32_t mem_spec_limit;	/* MB memory limit for specialization */
+	uint64_t mem_spec_limit;	/* MB memory limit for specialization */
 	uint32_t tmp_disk;		/* MB total disk in TMP_FS */
 	uint32_t up_time;		/* seconds since node boot */
 	struct config_record *config_ptr;  /* configuration spec ptr */

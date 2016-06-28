@@ -275,7 +275,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 				   node_ptr->cpu_spec_list);
 		}
 		if (node_ptr->mem_spec_limit) {
-			xstrfmtcat(out, "MemSpecLimit=%u",
+			xstrfmtcat(out, "MemSpecLimit=%"PRIu64"",
 				   node_ptr->mem_spec_limit);
 		}
 		xstrcat(out, line_end);

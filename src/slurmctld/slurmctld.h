@@ -1973,7 +1973,7 @@ extern void reset_job_bitmaps (void);
 extern void reset_node_load(char *node_name, uint32_t cpu_load);
 
 /* Reset a node's free memory value */
-extern void reset_node_free_mem(char *node_name, uint32_t free_mem);
+extern void reset_node_free_mem(char *node_name, uint64_t free_mem);
 
 /* Reset all scheduling statistics
  * level IN - clear backfilled_jobs count if set */

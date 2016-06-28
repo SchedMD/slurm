@@ -126,7 +126,7 @@ typedef struct names_ll_s {
 	uint16_t threads;
 	char *cpu_spec_list;
 	uint16_t core_spec_cnt;
-	uint32_t mem_spec_limit;
+	uint64_t mem_spec_limit;
 	slurm_addr_t addr;
 	bool addr_initialized;
 	struct names_ll_s *next_alias;
@@ -586,7 +586,7 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		{"Feature", S_P_STRING},
 		{"Features", S_P_STRING},
 		{"Gres", S_P_STRING},
-		{"MemSpecLimit", S_P_UINT32},
+		{"MemSpecLimit", S_P_UINT64},
 		{"NodeAddr", S_P_STRING},
 		{"NodeHostname", S_P_STRING},
 		{"Port", S_P_STRING},
@@ -681,8 +681,8 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_string(&n->gres, "Gres", tbl))
 			s_p_get_string(&n->gres, "Gres", dflt);
 
-		if (!s_p_get_uint32(&n->mem_spec_limit, "MemSpecLimit", tbl)
-		    && !s_p_get_uint32(&n->mem_spec_limit,
+		if (!s_p_get_uint64(&n->mem_spec_limit, "MemSpecLimit", tbl)
+		    && !s_p_get_uint64(&n->mem_spec_limit,
 				       "MemSpecLimit", dflt))
 			n->mem_spec_limit = 0;
 
@@ -869,8 +869,9 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		}
 
 		if (n->mem_spec_limit >= n->real_memory) {
-			error("NodeNames=%s MemSpecLimit=%u is invalid, "
-			      "reset to 0", n->nodenames, n->mem_spec_limit);
+			error("NodeNames=%s MemSpecLimit=%"
+			      ""PRIu64" is invalid, reset to 0",
+			      n->nodenames, n->mem_spec_limit);
 			n->mem_spec_limit = 0;
 		}
 
@@ -1547,7 +1548,7 @@ static void _push_to_hashtbls(char *alias, char *hostname,
 			      uint16_t sockets, uint16_t cores,
 			      uint16_t threads, bool front_end,
 			      char *cpu_spec_list, uint16_t core_spec_cnt,
-			      uint32_t mem_spec_limit)
+			      uint64_t mem_spec_limit)
 {
 	int hostname_idx, alias_idx;
 	names_ll_t *p, *new;
@@ -2240,7 +2241,7 @@ extern int slurm_conf_get_cpus_bsct(const char *node_name,
 extern int slurm_conf_get_res_spec_info(const char *node_name,
 					char **cpu_spec_list,
 					uint16_t *core_spec_cnt,
-					uint32_t *mem_spec_limit)
+					uint64_t *mem_spec_limit)
 {
 	int idx;
 	names_ll_t *p;

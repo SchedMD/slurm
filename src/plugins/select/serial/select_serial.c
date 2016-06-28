@@ -171,7 +171,8 @@ static void _dump_nodes(void)
 
 	for (i=0; i<select_node_cnt; i++) {
 		node_ptr = select_node_record[i].node_ptr;
-		info("node:%s cpus:%u c:%u s:%u t:%u mem:%u a_mem:%u state:%d",
+		info("node:%s cpus:%u c:%u s:%u t:%u mem:%"PRIu64" "
+		     "a_mem:%"PRIu64" state:%d",
 		     node_ptr->name,
 		     select_node_record[i].cpus,
 		     select_node_record[i].cores,
@@ -786,7 +787,7 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 			if ((select_node_usage[i].alloc_memory >
 			     select_node_record[i].real_memory)) {
 				error("select/serial: node %s memory is "
-				      "overallocated (%u) for job %u",
+				      "overallocated (%"PRIu64") for job %u",
 				      node_ptr->name,
 				      select_node_usage[i].alloc_memory,
 				      job_ptr->job_id);
@@ -908,7 +909,8 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 			if (node_usage[i].alloc_memory <
 			    job->memory_allocated[n]) {
 				error("select/serial: node %s memory is "
-				      "under-allocated (%u<%u) for job %u",
+				      "under-allocated (%"PRIu64"<%"PRIu64") "
+				      "for job %u",
 				      node_ptr->name,
 				      node_usage[i].alloc_memory,
 				      job->memory_allocated[n],

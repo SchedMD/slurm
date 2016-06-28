@@ -224,7 +224,7 @@ typedef struct slurm_conf_node {
 	uint16_t core_spec_cnt;	/* number of specialized cores */
 	uint16_t threads;       /* number of threads per core */
 	uint64_t real_memory;	/* MB real memory on the node */
-	uint32_t mem_spec_limit; /* MB real memory for memory specialization */
+	uint64_t mem_spec_limit; /* MB real memory for memory specialization */
 	char *reason;
 	char *state;
 	uint32_t tmp_disk;	/* MB total storage in TMP_FS file system */
@@ -484,7 +484,7 @@ extern int slurm_conf_get_cpus_bsct(const char *node_name,
 extern int slurm_conf_get_res_spec_info(const char *node_name,
 					char **cpu_spec_list,
 					uint16_t *core_spec_cnt,
-					uint32_t *mem_spec_limit);
+					uint64_t *mem_spec_limit);
 
 /*
  * init_slurm_conf - initialize or re-initialize the slurm configuration

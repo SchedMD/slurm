@@ -4167,7 +4167,7 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 		safe_unpackstr_xmalloc(&node->mcs_label, &uint32_tmp, buffer);
 		safe_unpack32(&node->owner, buffer);
 		safe_unpack16(&node->core_spec_cnt, buffer);
-		safe_unpack32(&node->mem_spec_limit, buffer);
+		safe_unpack64(&node->mem_spec_limit, buffer);
 		safe_unpackstr_xmalloc(&node->cpu_spec_list, &uint32_tmp,
 				       buffer);
 
@@ -4229,7 +4229,8 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 		safe_unpackstr_xmalloc(&node->mcs_label, &uint32_tmp, buffer);
 		safe_unpack32(&node->owner, buffer);
 		safe_unpack16(&node->core_spec_cnt, buffer);
-		safe_unpack32(&node->mem_spec_limit, buffer);
+		safe_unpack32(&tmp_mem, buffer);
+		node->mem_spec_limit = tmp_mem;
 		safe_unpackstr_xmalloc(&node->cpu_spec_list, &uint32_tmp,
 				       buffer);
 
@@ -4291,7 +4292,8 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 
 		safe_unpack32(&node->owner, buffer);
 		safe_unpack16(&node->core_spec_cnt, buffer);
-		safe_unpack32(&node->mem_spec_limit, buffer);
+		safe_unpack32(&tmp_mem, buffer);
+		node->mem_spec_limit = tmp_mem;
 		safe_unpackstr_xmalloc(&node->cpu_spec_list, &uint32_tmp,
 				       buffer);
 

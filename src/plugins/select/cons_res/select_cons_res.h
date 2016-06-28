@@ -91,13 +91,13 @@ struct node_res_record {
 	uint16_t threads;		/* count of hyperthreads per core */
 	uint16_t vpus;			/* count of virtual cpus (hyperthreads)
 					 * configured per core */
-	uint32_t real_memory;		/* MB of real memory configured */
-	uint32_t mem_spec_limit;	/* MB of specialized/system memory */
+	uint64_t real_memory;		/* MB of real memory configured */
+	uint64_t mem_spec_limit;	/* MB of specialized/system memory */
 };
 
 /* per-node resource usage record */
 struct node_use_record {
-	uint32_t alloc_memory;		/* real memory reserved by already
+	uint64_t alloc_memory;		/* real memory reserved by already
 					 * scheduled jobs */
 	List gres_list;			/* list of gres state info managed by 
 					 * plugins */

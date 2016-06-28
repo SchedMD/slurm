@@ -53,7 +53,7 @@ extern void fini_system_cgroup(void);
 extern int set_system_cgroup_cpus(char *phys_core_str);
 
 /* Set memory limit in system memory cgroup */
-extern int set_system_cgroup_mem_limit(uint32_t mem_spec_limit);
+extern int set_system_cgroup_mem_limit(uint64_t mem_spec_limit);
 
 /* Disable OOM killer in system memory cgroup */
 extern int disable_system_cgroup_mem_oom();

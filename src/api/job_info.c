@@ -350,8 +350,8 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	int abs_node_inx, rel_node_inx;
 	int64_t nice;
 	int bit_inx, bit_reps;
-	uint32_t *last_mem_alloc_ptr = NULL;
-	uint32_t last_mem_alloc = NO_VAL;
+	uint64_t *last_mem_alloc_ptr = NULL;
+	uint64_t last_mem_alloc = NO_VAL64;
 	char *last_hosts;
 	hostlist_t hl, hl_last;
 	char select_buf[122];
@@ -741,7 +741,8 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 						hostlist_ranged_string_xmalloc(
 						hl_last);
 					xstrfmtcat(out,
-						   "  Nodes=%s CPU_IDs=%s Mem=%u",
+						   "  Nodes=%s CPU_IDs=%s "
+						   "Mem=%"PRIu64"",
 						   last_hosts, tmp2,
 						   last_mem_alloc_ptr ?
 						   last_mem_alloc : 0);
@@ -757,7 +758,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 					last_mem_alloc = job_resrcs->
 						memory_allocated[rel_node_inx];
 				else
-					last_mem_alloc = NO_VAL;
+					last_mem_alloc = NO_VAL64;
 			}
 			hostlist_push_host(hl_last, host);
 			free(host);
@@ -775,7 +776,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 		if (hostlist_count(hl_last)) {
 			last_hosts = hostlist_ranged_string_xmalloc(hl_last);
-			xstrfmtcat(out, "  Nodes=%s CPU_IDs=%s Mem=%u",
+			xstrfmtcat(out, "  Nodes=%s CPU_IDs=%s Mem=%"PRIu64"",
 				 last_hosts, tmp2,
 				 last_mem_alloc_ptr ? last_mem_alloc : 0);
 			xfree(last_hosts);

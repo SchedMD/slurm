@@ -93,7 +93,8 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 			      bool test_only)
 {
 	uint16_t cpus;
-	uint32_t avail_mem, req_mem, gres_cpus, gres_cores, cpus_per_core;
+	uint64_t avail_mem, req_mem;
+	uint32_t gres_cpus, gres_cores, cpus_per_core;
 	int core_start_bit, core_end_bit;
 	struct node_record *node_ptr = node_record_table_ptr + node_i;
 	List gres_list;
@@ -153,7 +154,7 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		info("select/serial: _can_job_run_on_node: %u cpus on %s(%d), "
-		     "mem %u/%u",
+		     "mem %"PRIu64"/%"PRIu64"",
 		     cpus, select_node_record[node_i].node_ptr->name,
 		     node_usage[node_i].node_state,
 		     node_usage[node_i].alloc_memory,
@@ -220,7 +221,8 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 			      enum node_cr_state job_node_req)
 {
 	struct node_record *node_ptr;
-	uint32_t i, free_mem, gres_cpus, gres_cores, min_mem;
+	uint32_t i, gres_cpus, gres_cores;
+	uint64_t free_mem, min_mem;
 	int i_first, i_last;
 	int core_start_bit, core_end_bit, cpus_per_core;
 	List gres_list;
@@ -248,7 +250,8 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 			free_mem  = select_node_record[i].real_memory;
 			free_mem -= node_usage[i].alloc_memory;
 			if (free_mem < min_mem) {
-				debug3("select/serial: node %s no mem %u < %u",
+				debug3("select/serial: node %s no mem "
+					"%"PRIu64" < %"PRIu64"",
 					select_node_record[i].node_ptr->name,
 					free_mem, min_mem);
 				goto clear_bit;
@@ -502,7 +505,8 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap, int mode,
 	bitstr_t *orig_map, *avail_cores, *free_cores;
 	bitstr_t *tmpcore = NULL;
 	bool test_only;
-	uint32_t c, i, j, k, csize, save_mem = 0;
+	uint32_t c, i, j, k, csize;
+	uint64_t save_mem = 0;
 	int n;
 	job_resources_t *job_res;
 	struct job_details *details_ptr;
@@ -903,9 +907,9 @@ alloc_job:
 	job_res->cpus_used        = xmalloc(job_res->nhosts *
 					    sizeof(uint16_t));
 	job_res->memory_allocated = xmalloc(job_res->nhosts *
-					    sizeof(uint32_t));
+					    sizeof(uint64_t));
 	job_res->memory_used      = xmalloc(job_res->nhosts *
-					    sizeof(uint32_t));
+					    sizeof(uint64_t));
 
 	/* store the hardware data for the selected nodes */
 	error_code = build_job_resources(job_res, node_record_table_ptr,

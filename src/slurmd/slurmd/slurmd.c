@@ -2212,7 +2212,7 @@ static int _memory_spec_init(void)
 		      "system memory cgroup");
 		return SLURM_ERROR;
 	}
-	info("Resource spec: system cgroup memory limit set to %u MB",
+	info("Resource spec: system cgroup memory limit set to %"PRIu64" MB",
 	     conf->mem_spec_limit);
 	return SLURM_SUCCESS;
 }

@@ -361,18 +361,18 @@ extern job_resources_t *copy_job_resources(job_resources_t *job_resrcs_ptr)
 	}
 
 	if (job_resrcs_ptr->memory_allocated) {
-		new_layout->memory_allocated = xmalloc(sizeof(uint32_t) *
+		new_layout->memory_allocated = xmalloc(sizeof(uint64_t) *
 						       new_layout->nhosts);
 		memcpy(new_layout->memory_allocated,
 		       job_resrcs_ptr->memory_allocated,
-		       (sizeof(uint32_t) * job_resrcs_ptr->nhosts));
+		       (sizeof(uint64_t) * job_resrcs_ptr->nhosts));
 	}
 	if (job_resrcs_ptr->memory_used) {
-		new_layout->memory_used = xmalloc(sizeof(uint32_t) *
+		new_layout->memory_used = xmalloc(sizeof(uint64_t) *
 						  new_layout->nhosts);
 		memcpy(new_layout->memory_used,
 		       job_resrcs_ptr->memory_used,
-		       (sizeof(uint32_t) * job_resrcs_ptr->nhosts));
+		       (sizeof(uint64_t) * job_resrcs_ptr->nhosts));
 	}
 
 	/* Copy sockets_per_node, cores_per_socket and core_sock_rep_count */
@@ -471,7 +471,8 @@ extern void log_job_resources(uint32_t job_id,
 
 	/* Can only log node_bitmap from slurmctld, so don't bother here */
 	for (node_inx=0; node_inx<job_resrcs_ptr->nhosts; node_inx++) {
-		uint32_t cpus_used = 0, memory_allocated = 0, memory_used = 0;
+		uint32_t cpus_used = 0;
+		uint64_t memory_allocated = 0, memory_used = 0;
 		info("Node[%d]:", node_inx);
 
 		if (sock_reps >=
@@ -489,7 +490,8 @@ extern void log_job_resources(uint32_t job_id,
 			memory_allocated = job_resrcs_ptr->
 				memory_allocated[node_inx];
 
-		info("  Mem(MB):%u:%u  Sockets:%u  Cores:%u  CPUs:%u:%u",
+		info("  Mem(MB):%"PRIu64":%"PRIu64"  Sockets:%u"
+		     "  Cores:%u  CPUs:%u:%u",
 		     memory_allocated, memory_used,
 		     job_resrcs_ptr->sockets_per_node[sock_inx],
 		     job_resrcs_ptr->cores_per_socket[sock_inx],
@@ -535,7 +537,7 @@ extern void pack_job_resources(job_resources_t *job_resrcs_ptr, Buf buffer,
 {
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		if (job_resrcs_ptr == NULL) {
 			uint32_t empty = NO_VAL;
 			pack32(empty, buffer);
@@ -574,17 +576,98 @@ extern void pack_job_resources(job_resources_t *job_resrcs_ptr, Buf buffer,
 			pack16_array(job_resrcs_ptr->cpus_used, 0, buffer);
 
 		if (job_resrcs_ptr->memory_allocated)
-			pack32_array(job_resrcs_ptr->memory_allocated,
+			pack64_array(job_resrcs_ptr->memory_allocated,
 				     job_resrcs_ptr->nhosts, buffer);
 		else
-			pack32_array(job_resrcs_ptr->memory_allocated,
+			pack64_array(job_resrcs_ptr->memory_allocated,
 				     0, buffer);
 
 		if (job_resrcs_ptr->memory_used)
-			pack32_array(job_resrcs_ptr->memory_used,
+			pack64_array(job_resrcs_ptr->memory_used,
 				     job_resrcs_ptr->nhosts, buffer);
 		else
-			pack32_array(job_resrcs_ptr->memory_used, 0, buffer);
+			pack64_array(job_resrcs_ptr->memory_used, 0, buffer);
+		if (!(cluster_flags & CLUSTER_FLAG_BG)) {
+			int i;
+			uint32_t core_cnt = 0, sock_recs = 0;
+			xassert(job_resrcs_ptr->cores_per_socket);
+			xassert(job_resrcs_ptr->sock_core_rep_count);
+			xassert(job_resrcs_ptr->sockets_per_node);
+
+			for (i=0; i<job_resrcs_ptr->nhosts; i++) {
+				core_cnt += job_resrcs_ptr->sockets_per_node[i]
+					* job_resrcs_ptr->cores_per_socket[i] *
+					job_resrcs_ptr->sock_core_rep_count[i];
+				sock_recs += job_resrcs_ptr->
+					     sock_core_rep_count[i];
+				if (sock_recs >= job_resrcs_ptr->nhosts)
+					break;
+			}
+			i++;
+			pack16_array(job_resrcs_ptr->sockets_per_node,
+				     (uint32_t) i, buffer);
+			pack16_array(job_resrcs_ptr->cores_per_socket,
+				     (uint32_t) i, buffer);
+			pack32_array(job_resrcs_ptr->sock_core_rep_count,
+				     (uint32_t) i, buffer);
+
+			xassert(job_resrcs_ptr->core_bitmap);
+			xassert(job_resrcs_ptr->core_bitmap_used);
+			pack_bit_str_hex(job_resrcs_ptr->core_bitmap, buffer);
+			pack_bit_str_hex(job_resrcs_ptr->core_bitmap_used,
+					 buffer);
+		}
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (job_resrcs_ptr == NULL) {
+			uint32_t empty = NO_VAL;
+			pack32(empty, buffer);
+			return;
+		}
+
+		pack32(job_resrcs_ptr->nhosts, buffer);
+		pack32(job_resrcs_ptr->ncpus, buffer);
+		pack32(job_resrcs_ptr->node_req, buffer);
+		packstr(job_resrcs_ptr->nodes, buffer);
+		pack8(job_resrcs_ptr->whole_node, buffer);
+
+		if (job_resrcs_ptr->cpu_array_reps)
+			pack32_array(job_resrcs_ptr->cpu_array_reps,
+				     job_resrcs_ptr->cpu_array_cnt, buffer);
+		else
+			pack32_array(job_resrcs_ptr->cpu_array_reps, 0, buffer);
+
+		if (job_resrcs_ptr->cpu_array_value)
+			pack16_array(job_resrcs_ptr->cpu_array_value,
+				     job_resrcs_ptr->cpu_array_cnt, buffer);
+		else
+			pack16_array(job_resrcs_ptr->cpu_array_value,
+				     0, buffer);
+
+		if (job_resrcs_ptr->cpus)
+			pack16_array(job_resrcs_ptr->cpus,
+				     job_resrcs_ptr->nhosts, buffer);
+		else
+			pack16_array(job_resrcs_ptr->cpus, 0, buffer);
+
+		if (job_resrcs_ptr->cpus_used)
+			pack16_array(job_resrcs_ptr->cpus_used,
+				     job_resrcs_ptr->nhosts, buffer);
+		else
+			pack16_array(job_resrcs_ptr->cpus_used, 0, buffer);
+
+		if (job_resrcs_ptr->memory_allocated)
+			pack64_array_as_32(job_resrcs_ptr->memory_allocated,
+					   job_resrcs_ptr->nhosts, buffer);
+		else
+			pack64_array_as_32(job_resrcs_ptr->memory_allocated,
+					   0, buffer);
+
+		if (job_resrcs_ptr->memory_used)
+			pack64_array_as_32(job_resrcs_ptr->memory_used,
+					   job_resrcs_ptr->nhosts, buffer);
+		else
+			pack64_array_as_32(job_resrcs_ptr->memory_used,
+					   0, buffer);
 		if (!(cluster_flags & CLUSTER_FLAG_BG)) {
 			int i;
 			uint32_t core_cnt = 0, sock_recs = 0;
@@ -630,7 +713,7 @@ extern int unpack_job_resources(job_resources_t **job_resrcs_pptr,
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
 	xassert(job_resrcs_pptr);
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		safe_unpack32(&empty, buffer);
 		if (empty == NO_VAL) {
 			*job_resrcs_pptr = NULL;
@@ -667,11 +750,75 @@ extern int unpack_job_resources(job_resources_t **job_resrcs_pptr,
 		if (tmp32 == 0)
 			xfree(job_resrcs->cpus_used);
 
-		safe_unpack32_array(&job_resrcs->memory_allocated,
+		safe_unpack64_array(&job_resrcs->memory_allocated,
 				    &tmp32, buffer);
 		if (tmp32 == 0)
 			xfree(job_resrcs->memory_allocated);
-		safe_unpack32_array(&job_resrcs->memory_used, &tmp32, buffer);
+		safe_unpack64_array(&job_resrcs->memory_used, &tmp32, buffer);
+		if (tmp32 == 0)
+			xfree(job_resrcs->memory_used);
+
+		if (!(cluster_flags & CLUSTER_FLAG_BG)) {
+			safe_unpack16_array(&job_resrcs->sockets_per_node,
+					    &tmp32, buffer);
+			if (tmp32 == 0)
+				xfree(job_resrcs->sockets_per_node);
+			safe_unpack16_array(&job_resrcs->cores_per_socket,
+					    &tmp32, buffer);
+			if (tmp32 == 0)
+				xfree(job_resrcs->cores_per_socket);
+			safe_unpack32_array(&job_resrcs->sock_core_rep_count,
+					    &tmp32, buffer);
+			if (tmp32 == 0)
+				xfree(job_resrcs->sock_core_rep_count);
+
+			unpack_bit_str_hex(&job_resrcs->core_bitmap, buffer);
+			unpack_bit_str_hex(&job_resrcs->core_bitmap_used,
+					   buffer);
+		}
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&empty, buffer);
+		if (empty == NO_VAL) {
+			*job_resrcs_pptr = NULL;
+			return SLURM_SUCCESS;
+		}
+
+		job_resrcs = xmalloc(sizeof(struct job_resources));
+		job_resrcs->nhosts = empty;
+		safe_unpack32(&job_resrcs->ncpus, buffer);
+		safe_unpack32(&job_resrcs->node_req, buffer);
+		safe_unpackstr_xmalloc(&job_resrcs->nodes, &tmp32, buffer);
+		safe_unpack8(&job_resrcs->whole_node, buffer);
+
+		safe_unpack32_array(&job_resrcs->cpu_array_reps,
+				    &tmp32, buffer);
+		if (tmp32 == 0)
+			xfree(job_resrcs->cpu_array_reps);
+		job_resrcs->cpu_array_cnt = tmp32;
+
+		safe_unpack16_array(&job_resrcs->cpu_array_value,
+				    &tmp32, buffer);
+		if (tmp32 == 0)
+			xfree(job_resrcs->cpu_array_value);
+
+		if (tmp32 != job_resrcs->cpu_array_cnt)
+			goto unpack_error;
+
+		safe_unpack16_array(&job_resrcs->cpus, &tmp32, buffer);
+		if (tmp32 == 0)
+			xfree(job_resrcs->cpus);
+		if (tmp32 != job_resrcs->nhosts)
+			goto unpack_error;
+		safe_unpack16_array(&job_resrcs->cpus_used, &tmp32, buffer);
+		if (tmp32 == 0)
+			xfree(job_resrcs->cpus_used);
+
+		safe_unpack64_array_from_32(&job_resrcs->memory_allocated,
+					    &tmp32, buffer);
+		if (tmp32 == 0)
+			xfree(job_resrcs->memory_allocated);
+		safe_unpack64_array_from_32(&job_resrcs->memory_used,
+					    &tmp32, buffer);
 		if (tmp32 == 0)
 			xfree(job_resrcs->memory_used);
 
