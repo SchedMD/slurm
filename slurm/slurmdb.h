@@ -602,7 +602,8 @@ typedef struct {
 	slurmdb_assoc_rec_t *root_assoc; /* root assoc for
 						* cluster */
 	uint16_t rpc_version; /* version of rpc this cluter is running */
-	int 	 sockfd;      /* For convenience only. DOESN"T GET PACK */
+	int 	 sockfd;      /* fd for connecting to sibling clusters.
+			       * Gets packed so client can display status. */
 	char  	*tres_str;    /* comma separated list of TRES */
 } slurmdb_cluster_rec_t;
 

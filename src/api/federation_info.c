@@ -99,6 +99,8 @@ extern void slurm_print_federation(void *ptr)
 	ListIterator itr;
 	slurmdb_cluster_rec_t *cluster;
 	int left_col_size;
+	char *conn_status[] = {"Disconnected", "Connected", "Self"};
+	char *cluster_name = slurm_get_cluster_name();
 
 	slurmdb_federation_rec_t *fed = (slurmdb_federation_rec_t *)ptr;
 
@@ -113,12 +115,20 @@ extern void slurm_print_federation(void *ptr)
 	itr = list_iterator_create(fed->cluster_list);
 	while ((cluster = list_next(itr))) {
 		char *tmp_str = NULL;
+		int conn_type = 0;
+		if (!xstrcmp(cluster->name, cluster_name))
+			conn_type = 2;
+		else if (cluster->sockfd != -1)
+			conn_type = 1;
+
 		tmp_str = slurmdb_cluster_fed_states_str(cluster->fed.state);
-		printf("%-*s %s:%s:%d Index:%d Weight:%d State:%s\n",
+		printf("%-*s %s:%s:%d Index:%d FedState:%s Weight:%d "
+		       "PersistConn:%s\n",
 		       left_col_size, "Sibling:", cluster->name,
 		       cluster->control_host, cluster->control_port,
-		       cluster->fed.index, cluster->fed.weight,
-		       (tmp_str ? tmp_str : ""));
+		       cluster->fed.index, (tmp_str ? tmp_str : ""),
+		       cluster->fed.weight, conn_status[conn_type]);
 		xfree(tmp_str);
 	}
+	xfree(cluster_name);
 }

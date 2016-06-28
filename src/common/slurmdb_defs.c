@@ -3124,6 +3124,7 @@ extern void slurmdb_copy_cluster_rec(slurmdb_cluster_rec_t *out,
 	out->plugin_id_select = in->plugin_id_select;
 	out->rpc_version      = in->rpc_version;
 	xfree(out->tres_str);
+	out->sockfd           = in->sockfd;
 	out->tres_str         = xstrdup(in->tres_str);
 
 	slurmdb_destroy_assoc_rec(out->root_assoc);

@@ -648,6 +648,7 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 			slurmdb_pack_assoc_rec(NULL, protocol_version, buffer);
 
 			pack16(0, buffer);
+			pack32((uint32_t)-1, buffer);
 			packnull(buffer);
 			return;
 		}
@@ -688,6 +689,7 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 				       protocol_version, buffer);
 
 		pack16(object->rpc_version, buffer);
+		pack32(object->sockfd, buffer);
 		packstr(object->tres_str, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
@@ -802,6 +804,8 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 			goto unpack_error;
 
 		safe_unpack16(&object_ptr->rpc_version, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		object_ptr->sockfd = (int)uint32_tmp;
 		safe_unpackstr_xmalloc(&object_ptr->tres_str,
 				       &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
