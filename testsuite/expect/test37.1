@@ -83,6 +83,48 @@ proc end_it { exit_code } {
 	exit $exit_code
 }
 
+proc test_fed_status {cname cluster_list} {
+	# Match db info with what cluster has.
+	global fed_slurm_base fed_name eol
+	array set clusters $cluster_list
+	parray clusters
+	set matches 0
+	set my_scontrol "${fed_slurm_base}/$cname/bin/scontrol"
+	set my_pid [spawn $my_scontrol show federation]
+	expect {
+		-re "Federation: $fed_name$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "Sibling:\\s+(\\S+):(\\S+):(\\d+) Index:(\\d+) FedState:(\\S*) Weight:(\\d+) PersistConn:(\\S+)$eol" {
+			set name $expect_out(1,string)
+			if {![string compare [dict get $clusters($name) host]  $expect_out(2,string)] &&
+			    ![string compare [dict get $clusters($name) state] $expect_out(5,string)] &&
+			    [dict get $clusters($name) port]   == $expect_out(3,string) &&
+			    [dict get $clusters($name) index]  == $expect_out(4,string) &&
+			    [dict get $clusters($name) weight] == $expect_out(6,string) &&
+			    ((![string compare $name $cname] &&
+			      ![string compare "Self" $expect_out(7,string)]) ||
+			     ![string compare "Connected" $expect_out(7,string)])} {
+				incr matches
+			}
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr add not responding\n"
+			slow_kill $my_pid
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 4} {
+		send_user "$matches FAILURE: unexpected error.\n"
+		end_it 1
+	}
+}
+
 if {[test_federation_setup]} {
 	send_user "\nWARNING: This test can't be run without fed_slurm_base,\
 		fedc1, fedc2, fedc3 setup in globals.local.\n"
@@ -110,38 +152,8 @@ if {[setup_federation $fed_name]} {
 # Get cluster/fed info from db
 array set clusters [get_clusterfed_info $fed_name]
 
-# Match db info with what cluster has.
-set matches 0
-set my_pid [spawn $scontrol show federation]
-expect {
-	-re "Federation: $fed_name$eol" {
-		incr matches
-		send_user "FED!\n"
-		exp_continue
-	}
-	-re "Sibling:\\s+(\\S+):(\\S+):(\\d+) Index:(\\d+) Weight:(\\S+) State:(\\S*)$eol" {
-		set name $expect_out(1,string)
-		if {![string compare [dict get $clusters($name) host]  $expect_out(2,string)] &&
-		    ![string compare [dict get $clusters($name) state] $expect_out(6,string)] &&
-		    [dict get $clusters($name) port]   == $expect_out(3,string) &&
-		    [dict get $clusters($name) index]  == $expect_out(4,string) &&
-		    [dict get $clusters($name) weight] == $expect_out(5,string)} {
-			incr matches
-		}
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr add not responding\n"
-		slow_kill $my_pid
-		end_it 1
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 4} {
-	send_user "$matches FAILURE: unexpected error.\n"
-	end_it 1
-}
+test_fed_status $fedc1 [array get clusters]
+test_fed_status $fedc2 [array get clusters]
+test_fed_status $fedc3 [array get clusters]
 
 end_it 0
