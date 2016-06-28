@@ -2342,11 +2342,13 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 
 	if (reg_msg->real_memory < config_ptr->real_memory) {
 		if (slurmctld_conf.fast_schedule == 0) {
-			debug("Node %s has low real_memory size (%u < %u)",
+			debug("Node %s has low real_memory size "
+			      "(%"PRIu64" < %"PRIu64")",
 			      reg_msg->node_name, reg_msg->real_memory,
 			      config_ptr->real_memory);
 		} else if (slurmctld_conf.fast_schedule == 1) {
-			error("Node %s has low real_memory size (%u < %u)",
+			error("Node %s has low real_memory size "
+			      "(%"PRIu64" < %"PRIu64")",
 			      reg_msg->node_name, reg_msg->real_memory,
 			      config_ptr->real_memory);
 			error_code  = EINVAL;

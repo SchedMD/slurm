@@ -223,7 +223,7 @@ typedef struct slurm_conf_node {
 	uint16_t cores;         /* number of cores per CPU */
 	uint16_t core_spec_cnt;	/* number of specialized cores */
 	uint16_t threads;       /* number of threads per core */
-	uint32_t real_memory;	/* MB real memory on the node */
+	uint64_t real_memory;	/* MB real memory on the node */
 	uint32_t mem_spec_limit; /* MB real memory for memory specialization */
 	char *reason;
 	char *state;
@@ -251,7 +251,7 @@ typedef struct slurm_conf_partition {
 	uint16_t cr_type;	/* Custom CR values for partition (supported
 				 * by select/cons_res plugin only) */
 	char *billing_weights_str;/* per TRES billing weights */
-	uint32_t def_mem_per_cpu; /* default MB memory per allocated CPU */
+	uint64_t def_mem_per_cpu; /* default MB memory per allocated CPU */
 	bool default_flag;	/* Set if default partition */
 	uint32_t default_time;	/* minutes or INFINITE */
 	uint16_t disable_root_jobs; /* if set then user root can't run
@@ -264,7 +264,7 @@ typedef struct slurm_conf_partition {
 	uint32_t max_cpus_per_node; /* maximum allocated CPUs per node */
 	uint16_t max_share;	/* number of jobs to gang schedule */
 	uint32_t max_time;	/* minutes or INFINITE */
-	uint32_t max_mem_per_cpu; /* maximum MB memory per allocated CPU */
+	uint64_t max_mem_per_cpu; /* maximum MB memory per allocated CPU */
 	uint32_t max_nodes;	/* per job or INFINITE */
 	uint32_t min_nodes;	/* per job */
 	char	*name;		/* name of the partition */

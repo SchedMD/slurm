@@ -161,6 +161,11 @@ extern uint16_t task_dist_new2old(uint32_t new_task_dist);
 /* Translate task_dist value from v14.11- format to v15.08+ format */
 extern uint32_t task_dist_old2new(uint16_t old_task_dist);
 
+/* Translate memory limits from old format to new */
+/* Remove when version 16.05 support is no longer required. */
+extern uint32_t xlate_mem_new2old(uint64_t new_mem);
+extern uint64_t xlate_mem_old2new(uint32_t old_mem);
+
 /* Translate 32-bit nice value to equivalent 16-bit value.
  * Remove when version 15.08 support is no longer required. */
 extern uint16_t xlate_nice_new2old(uint32_t new_nice);

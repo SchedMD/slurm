@@ -129,10 +129,10 @@ int set_user_limits(stepd_step_rec_t *job)
 		r.rlim_max =  r.rlim_cur = task_mem_bytes;
 		if (setrlimit(RLIMIT_RSS, &r)) {
 			/* Indicates that limit has already been exceeded */
-			fatal("setrlimit(RLIMIT_RSS, %u MB): %m",
+			fatal("setrlimit(RLIMIT_RSS, %"PRIu64" MB): %m",
 			      job->step_mem);
 		} else
-			debug2("Set task rss(%u MB)", job->step_mem);
+			debug2("Set task rss(%"PRIu64" MB)", job->step_mem);
 #if 0
 		getrlimit(RLIMIT_RSS, &r);
 		info("task RSS limits: %u %u", r.rlim_cur, r.rlim_max);
@@ -149,10 +149,10 @@ int set_user_limits(stepd_step_rec_t *job)
 		r.rlim_cur = r.rlim_max;
 		if (setrlimit(SLURM_RLIMIT_VSIZE, &r)) {
 			/* Indicates that limit has already been exceeded */
-			fatal("setrlimit(%s, %u MB): %m", 
+			fatal("setrlimit(%s, %"PRIu64" MB): %m",
 			      SLURM_RLIMIT_VNAME, job->step_mem);
 		} else
-			debug2("Set task vsize(%u MB)", job->step_mem);
+			debug2("Set task vsize(%"PRIu64" MB)", job->step_mem);
 #if 0
 		getrlimit(SLURM_RLIMIT_VSIZE, &r);
 		info("task VSIZE limits:   %u %u", r.rlim_cur, r.rlim_max);

@@ -617,8 +617,8 @@ _handle_info(int fd, stepd_step_rec_t *job)
 	 * we should be save in avoiding huge node IDs). */
 	safe_write(fd, &protocol_version, sizeof(uint16_t));
 	safe_write(fd, &job->nodeid, sizeof(uint32_t));
-	safe_write(fd, &job->job_mem, sizeof(uint32_t));
-	safe_write(fd, &job->step_mem, sizeof(uint32_t));
+	safe_write(fd, &job->job_mem, sizeof(uint64_t));
+	safe_write(fd, &job->step_mem, sizeof(uint64_t));
 
 	return SLURM_SUCCESS;
 rwfail:
@@ -628,8 +628,8 @@ rwfail:
 static int
 _handle_mem_limits(int fd, stepd_step_rec_t *job)
 {
-	safe_write(fd, &job->job_mem, sizeof(uint32_t));
-	safe_write(fd, &job->step_mem, sizeof(uint32_t));
+	safe_write(fd, &job->job_mem, sizeof(uint64_t));
+	safe_write(fd, &job->step_mem, sizeof(uint64_t));
 
 	return SLURM_SUCCESS;
 rwfail:

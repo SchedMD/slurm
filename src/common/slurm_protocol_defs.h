@@ -709,7 +709,7 @@ typedef struct job_step_specs {
 	uint16_t immediate;	/* 1 if allocate to run or fail immediately,
 				 * 0 if to be queued awaiting resources */
 	uint32_t job_id;	/* job ID */
-	uint32_t pn_min_memory; /* minimum real memory per node OR
+	uint64_t pn_min_memory; /* minimum real memory per node OR
 				 * real memory per CPU | MEM_PER_CPU,
 				 * default=0 (use job limit) */
 	char *name;		/* name of the job step, default "" */
@@ -760,10 +760,10 @@ typedef struct launch_tasks_request_msg {
 	uint32_t  uid;
 	char     *user_name;
 	uint32_t  gid;
-	uint32_t  job_mem_lim;	/* MB of memory reserved by job per node OR
+	uint64_t  job_mem_lim;	/* MB of memory reserved by job per node OR
 				 * real memory per CPU | MEM_PER_CPU,
 				 * default=0 (no limit) */
-	uint32_t  step_mem_lim;	/* MB of memory reserved by step */
+	uint64_t  step_mem_lim;	/* MB of memory reserved by step */
 	uint16_t  *tasks_to_launch;
 	uint32_t  envc;
 	uint32_t  argc;
@@ -926,7 +926,7 @@ typedef struct prolog_launch_msg {
 	slurm_cred_t *cred;
 	uint32_t gid;
 	uint32_t job_id;		/* slurm job_id */
-	uint32_t job_mem_limit;		/* job's memory limit, passed via cred */
+	uint64_t job_mem_limit;		/* job's memory limit, passed via cred */
 	uint32_t nnodes;			/* count of nodes, passed via cred */
 	char *nodes;			/* list of nodes allocated to job_step */
 	char *partition;		/* partition the job is running in */
@@ -986,14 +986,14 @@ typedef struct batch_job_launch_msg {
 	uint8_t open_mode;	/* stdout/err append or truncate */
 	uint8_t overcommit;	/* if resources being over subscribed */
 	char    *partition;	/* partition used to run job */
-	uint32_t pn_min_memory;  /* minimum real memory per node OR
+	uint64_t pn_min_memory;  /* minimum real memory per node OR
 				  * real memory per CPU | MEM_PER_CPU,
 				  * default=0 (no limit) */
 	char *acctg_freq;	/* accounting polling intervals	*/
 	uint32_t cpu_freq_min;  /* Minimum cpu frequency  */
 	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
 	uint32_t cpu_freq_gov;  /* cpu frequency governor */
-	uint32_t job_mem;	/* memory limit for job		*/
+	uint64_t job_mem;	/* memory limit for job		*/
 	uint16_t restart_cnt;	/* batch job restart count	*/
 	char **spank_job_env;	/* SPANK job environment variables */
 	uint32_t spank_job_env_size;	/* size of spank_job_env */
@@ -1116,7 +1116,7 @@ typedef struct suspend_int_msg {
 
 typedef struct ping_slurmd_resp_msg {
 	uint32_t cpu_load;	/* CPU load * 100 */
-	uint32_t free_mem;	/* Free memory in MiB */
+	uint64_t free_mem;	/* Free memory in MiB */
 } ping_slurmd_resp_msg_t;
 
 typedef struct license_info_request_msg {
@@ -1132,7 +1132,7 @@ typedef struct slurm_node_registration_status_msg {
 	uint16_t cores;
 	uint16_t cpus;
 	uint32_t cpu_load;	/* CPU load * 100 */
-	uint32_t free_mem;	/* Free memory in MiB */
+	uint64_t free_mem;	/* Free memory in MiB */
 	char *cpu_spec_list;	/* list of specialized CPUs */
 	acct_gather_energy_t *energy;
 	char *features_active;	/* Currently active node features */
@@ -1145,7 +1145,7 @@ typedef struct slurm_node_registration_status_msg {
 	char *node_name;
 	uint16_t boards;
 	char *os;
-	uint32_t real_memory;
+	uint64_t real_memory;
 	time_t slurmd_start_time;
 	uint32_t status;	/* node status code, same as return codes */
 	uint16_t startup;	/* slurmd just restarted */

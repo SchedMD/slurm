@@ -127,8 +127,7 @@ get_mach_name(char *node_name)
  * Output: real_memory - the Real Memory size in MB, "1" if error
  *         return code - 0 if no error, otherwise errno
  */
-extern int
-get_memory(uint32_t *real_memory)
+extern int get_memory(uint64_t *real_memory)
 {
 #ifdef HAVE__SYSTEM_CONFIGURATION
 	*real_memory = _system_configuration.physmem / (1024 * 1024);
@@ -142,7 +141,7 @@ get_memory(uint32_t *real_memory)
 		error ("get_memory: error running sysconf(_SC_PHYS_PAGES)");
 		return EINVAL;
 	}
-	*real_memory = (uint32_t)((float)pages * (sysconf(_SC_PAGE_SIZE) /
+	*real_memory = (uint64_t)((float)pages * (sysconf(_SC_PAGE_SIZE) /
 			1048576.0)); /* Megabytes of memory */
 #  else  /* !_SC_PHYS_PAGES */
 #    if HAVE_SYSCTLBYNAME
@@ -321,7 +320,7 @@ extern int get_cpu_load(uint32_t *cpu_load)
 	return 0;
 }
 
-extern int get_free_mem(uint32_t *free_mem)
+extern int get_free_mem(uint64_t *free_mem)
 {
 #if defined(__sun) || defined(__APPLE__) || defined(__NetBSD__) || defined(__FreeBSD__) || defined(__CYGWIN__)
 	/* Not sure how to get CPU load on above systems.

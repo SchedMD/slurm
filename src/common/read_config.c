@@ -591,7 +591,7 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		{"NodeHostname", S_P_STRING},
 		{"Port", S_P_STRING},
 		{"Procs", S_P_UINT16},
-		{"RealMemory", S_P_UINT32},
+		{"RealMemory", S_P_UINT64},
 		{"Reason", S_P_STRING},
 		{"Sockets", S_P_UINT16},
 		{"SocketsPerBoard", S_P_UINT16},
@@ -701,8 +701,8 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			no_cpus = true;
 		}
 
-		if (!s_p_get_uint32(&n->real_memory, "RealMemory", tbl)
-		    && !s_p_get_uint32(&n->real_memory, "RealMemory", dflt))
+		if (!s_p_get_uint64(&n->real_memory, "RealMemory", tbl)
+		    && !s_p_get_uint64(&n->real_memory, "RealMemory", dflt))
 			n->real_memory = 1;
 
 		if (!s_p_get_string(&n->reason, "Reason", tbl))
@@ -1058,8 +1058,8 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"AllowQos", S_P_STRING},
 		{"Alternate", S_P_STRING},
 		{"TRESBillingWeights", S_P_STRING},
-		{"DefMemPerCPU", S_P_UINT32},
-		{"DefMemPerNode", S_P_UINT32},
+		{"DefMemPerCPU", S_P_UINT64},
+		{"DefMemPerNode", S_P_UINT64},
 		{"Default", S_P_BOOLEAN}, /* YES or NO */
 		{"DefaultTime", S_P_STRING},
 		{"DenyAccounts", S_P_STRING},
@@ -1070,8 +1070,8 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"Hidden", S_P_BOOLEAN}, /* YES or NO */
 		{"LLN", S_P_BOOLEAN}, /* YES or NO */
 		{"MaxCPUsPerNode", S_P_UINT32},
-		{"MaxMemPerCPU", S_P_UINT32},
-		{"MaxMemPerNode", S_P_UINT32},
+		{"MaxMemPerCPU", S_P_UINT64},
+		{"MaxMemPerNode", S_P_UINT64},
 		{"MaxTime", S_P_STRING},
 		{"MaxNodes", S_P_UINT32}, /* INFINITE or a number */
 		{"MinNodes", S_P_UINT32},
@@ -1170,13 +1170,13 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 				    dflt))
 			p->max_cpus_per_node = INFINITE;
 
-		if (!s_p_get_uint32(&p->def_mem_per_cpu, "DefMemPerNode",
+		if (!s_p_get_uint64(&p->def_mem_per_cpu, "DefMemPerNode",
 				    tbl) &&
-		    !s_p_get_uint32(&p->def_mem_per_cpu, "DefMemPerNode",
+		    !s_p_get_uint64(&p->def_mem_per_cpu, "DefMemPerNode",
 				    dflt)) {
-			if (s_p_get_uint32(&p->def_mem_per_cpu,
+			if (s_p_get_uint64(&p->def_mem_per_cpu,
 					   "DefMemPerCPU", tbl) ||
-			    s_p_get_uint32(&p->def_mem_per_cpu,
+			    s_p_get_uint64(&p->def_mem_per_cpu,
 					   "DefMemPerCPU", dflt)) {
 				p->def_mem_per_cpu |= MEM_PER_CPU;
 			} else {
@@ -1184,13 +1184,13 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			}
 		}
 
-		if (!s_p_get_uint32(&p->max_mem_per_cpu, "MaxMemPerNode",
+		if (!s_p_get_uint64(&p->max_mem_per_cpu, "MaxMemPerNode",
 				    tbl) &&
-		    !s_p_get_uint32(&p->max_mem_per_cpu, "MaxMemPerNode",
+		    !s_p_get_uint64(&p->max_mem_per_cpu, "MaxMemPerNode",
 				    dflt)) {
-			if (s_p_get_uint32(&p->max_mem_per_cpu,
+			if (s_p_get_uint64(&p->max_mem_per_cpu,
 					   "MaxMemPerCPU", tbl) ||
-			    s_p_get_uint32(&p->max_mem_per_cpu,
+			    s_p_get_uint64(&p->max_mem_per_cpu,
 					   "MaxMemPerCPU", dflt)) {
 				p->max_mem_per_cpu |= MEM_PER_CPU;
 			} else {
@@ -3110,9 +3110,9 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		return SLURM_ERROR;
 	}
 
-	if (s_p_get_uint32(&conf->def_mem_per_cpu, "DefMemPerCPU", hashtbl))
+	if (s_p_get_uint64(&conf->def_mem_per_cpu, "DefMemPerCPU", hashtbl))
 		conf->def_mem_per_cpu |= MEM_PER_CPU;
-	else if (!s_p_get_uint32(&conf->def_mem_per_cpu, "DefMemPerNode",
+	else if (!s_p_get_uint64(&conf->def_mem_per_cpu, "DefMemPerNode",
 				 hashtbl))
 		conf->def_mem_per_cpu = DEFAULT_MEM_PER_CPU;
 
@@ -3366,10 +3366,10 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		}
 	}
 
-	if (s_p_get_uint32(&conf->max_mem_per_cpu,
+	if (s_p_get_uint64(&conf->max_mem_per_cpu,
 			   "MaxMemPerCPU", hashtbl)) {
 		conf->max_mem_per_cpu |= MEM_PER_CPU;
-	} else if (!s_p_get_uint32(&conf->max_mem_per_cpu,
+	} else if (!s_p_get_uint64(&conf->max_mem_per_cpu,
 				 "MaxMemPerNode", hashtbl)) {
 		conf->max_mem_per_cpu = DEFAULT_MAX_MEM_PER_CPU;
 	}

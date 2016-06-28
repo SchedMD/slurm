@@ -973,7 +973,7 @@ scontrol_update_job (int argc, char *argv[])
 		}
 		else if (strncasecmp(tag, "MinMemoryNode",
 				     MAX(taglen, 10)) == 0) {
-			if (parse_uint32(val, &job_msg.pn_min_memory)) {
+			if (parse_uint64(val, &job_msg.pn_min_memory)) {
 				error ("Invalid MinMemoryNode value: %s", val);
 				exit_code = 1;
 				return 0;
@@ -982,7 +982,7 @@ scontrol_update_job (int argc, char *argv[])
 		}
 		else if (strncasecmp(tag, "MinMemoryCPU",
 				     MAX(taglen, 10)) == 0) {
-			if (parse_uint32(val, &job_msg.pn_min_memory)) {
+			if (parse_uint64(val, &job_msg.pn_min_memory)) {
 				error ("Invalid MinMemoryCPU value: %s", val);
 				exit_code = 1;
 				return 0;

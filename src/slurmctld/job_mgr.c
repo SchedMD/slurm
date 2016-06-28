@@ -2278,7 +2278,7 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	pack8(detail_ptr->prolog_running, buffer);
 
 	pack32(detail_ptr->pn_min_cpus, buffer);
-	pack32(detail_ptr->pn_min_memory, buffer);
+	pack64(detail_ptr->pn_min_memory, buffer);
 	pack32(detail_ptr->pn_min_tmp_disk, buffer);
 	pack32(detail_ptr->cpu_freq_min, buffer);
 	pack32(detail_ptr->cpu_freq_max, buffer);
@@ -2317,7 +2317,8 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	char **argv = (char **) NULL, **env_sup = (char **) NULL;
 	uint32_t min_nodes, max_nodes;
 	uint32_t min_cpus = 1, max_cpus = NO_VAL;
-	uint32_t pn_min_cpus, pn_min_memory, pn_min_tmp_disk;
+	uint32_t pn_min_cpus, pn_min_tmp_disk;
+	uint64_t pn_min_memory;
 	uint32_t cpu_freq_min = NO_VAL;
 	uint32_t cpu_freq_max = NO_VAL;
 	uint32_t cpu_freq_gov = NO_VAL, nice = 0;
@@ -2332,7 +2333,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	multi_core_data_t *mc_ptr;
 
 	/* unpack the job's details from the buffer */
-	if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		safe_unpack32(&min_cpus, buffer);
 		safe_unpack32(&max_cpus, buffer);
 		safe_unpack32(&min_nodes, buffer);
@@ -2362,7 +2363,64 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 		safe_unpack8(&prolog_running, buffer);
 
 		safe_unpack32(&pn_min_cpus, buffer);
-		safe_unpack32(&pn_min_memory, buffer);
+		safe_unpack64(&pn_min_memory, buffer);
+		safe_unpack32(&pn_min_tmp_disk, buffer);
+		safe_unpack32(&cpu_freq_min, buffer);
+		safe_unpack32(&cpu_freq_max, buffer);
+		safe_unpack32(&cpu_freq_gov, buffer);
+		safe_unpack_time(&begin_time, buffer);
+		safe_unpack_time(&submit_time, buffer);
+
+		safe_unpackstr_xmalloc(&req_nodes,  &name_len, buffer);
+		safe_unpackstr_xmalloc(&exc_nodes,  &name_len, buffer);
+		safe_unpackstr_xmalloc(&features,   &name_len, buffer);
+		safe_unpackstr_xmalloc(&dependency, &name_len, buffer);
+		safe_unpackstr_xmalloc(&orig_dependency, &name_len, buffer);
+
+		safe_unpackstr_xmalloc(&err, &name_len, buffer);
+		safe_unpackstr_xmalloc(&in,  &name_len, buffer);
+		safe_unpackstr_xmalloc(&out, &name_len, buffer);
+		safe_unpackstr_xmalloc(&work_dir, &name_len, buffer);
+		safe_unpackstr_xmalloc(&ckpt_dir, &name_len, buffer);
+		safe_unpackstr_xmalloc(&restart_dir, &name_len, buffer);
+
+		if (unpack_multi_core_data(&mc_ptr, buffer, protocol_version))
+			goto unpack_error;
+		safe_unpackstr_array(&argv, &argc, buffer);
+		safe_unpackstr_array(&env_sup, &env_cnt, buffer);
+	} else if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
+		uint32_t tmp_mem;
+		safe_unpack32(&min_cpus, buffer);
+		safe_unpack32(&max_cpus, buffer);
+		safe_unpack32(&min_nodes, buffer);
+		safe_unpack32(&max_nodes, buffer);
+		safe_unpack32(&num_tasks, buffer);
+
+		safe_unpackstr_xmalloc(&acctg_freq, &name_len, buffer);
+		safe_unpack16(&contiguous, buffer);
+		safe_unpack16(&core_spec, buffer);
+		safe_unpack16(&cpus_per_task, buffer);
+		safe_unpack32(&nice, buffer);
+		safe_unpack16(&ntasks_per_node, buffer);
+		safe_unpack16(&requeue, buffer);
+		safe_unpack32(&task_dist, buffer);
+
+		safe_unpack8(&share_res, buffer);
+		safe_unpack8(&whole_node, buffer);
+
+		safe_unpackstr_xmalloc(&cpu_bind, &name_len, buffer);
+		safe_unpack16(&cpu_bind_type, buffer);
+		safe_unpackstr_xmalloc(&mem_bind, &name_len, buffer);
+		safe_unpack16(&mem_bind_type, buffer);
+		safe_unpack16(&plane_size, buffer);
+
+		safe_unpack8(&open_mode, buffer);
+		safe_unpack8(&overcommit, buffer);
+		safe_unpack8(&prolog_running, buffer);
+
+		safe_unpack32(&pn_min_cpus, buffer);
+		safe_unpack32(&tmp_mem, buffer);
+		pn_min_memory = xlate_mem_old2new(tmp_mem);
 		safe_unpack32(&pn_min_tmp_disk, buffer);
 		safe_unpack32(&cpu_freq_min, buffer);
 		safe_unpack32(&cpu_freq_max, buffer);
@@ -2388,6 +2446,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 		safe_unpackstr_array(&argv, &argc, buffer);
 		safe_unpackstr_array(&env_sup, &env_cnt, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint32_t tmp_mem;
 		uint16_t old_nice = 0;
 		safe_unpack32(&min_cpus, buffer);
 		safe_unpack32(&max_cpus, buffer);
@@ -2419,7 +2478,8 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 		safe_unpack8(&prolog_running, buffer);
 
 		safe_unpack32(&pn_min_cpus, buffer);
-		safe_unpack32(&pn_min_memory, buffer);
+		safe_unpack32(&tmp_mem, buffer);
+		pn_min_memory = xlate_mem_old2new(tmp_mem);
 		safe_unpack32(&pn_min_tmp_disk, buffer);
 		safe_unpack32(&cpu_freq_min, buffer);
 		safe_unpack32(&cpu_freq_max, buffer);
@@ -3446,7 +3506,8 @@ extern void excise_node_from_job(struct job_record *job_ptr,
  */
 void dump_job_desc(job_desc_msg_t * job_specs)
 {
-	long pn_min_cpus, pn_min_memory, pn_min_tmp_disk, min_cpus;
+	long pn_min_cpus, pn_min_tmp_disk, min_cpus;
+	uint64_t pn_min_memory;
 	long time_limit, priority, contiguous, nice, time_min;
 	long kill_on_node_fail, shared, immediate, wait_all_nodes;
 	long cpus_per_task, requeue, num_tasks, overcommit;
@@ -3496,16 +3557,15 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 		pn_min_memory = -1L;
 		mem_type = "job";
 	} else if (job_specs->pn_min_memory & MEM_PER_CPU) {
-		pn_min_memory = (long) (job_specs->pn_min_memory &
-					 (~MEM_PER_CPU));
+		pn_min_memory = job_specs->pn_min_memory & (~MEM_PER_CPU);
 		mem_type = "cpu";
 	} else {
-		pn_min_memory = (long) job_specs->pn_min_memory;
+		pn_min_memory = job_specs->pn_min_memory;
 		mem_type = "job";
 	}
 	pn_min_tmp_disk = (job_specs->pn_min_tmp_disk != NO_VAL) ?
 		(long) job_specs->pn_min_tmp_disk : -1L;
-	debug3("   pn_min_memory_%s=%ld pn_min_tmp_disk=%ld",
+	debug3("   pn_min_memory_%s=%"PRIu64" pn_min_tmp_disk=%ld",
 	       mem_type, pn_min_memory, pn_min_tmp_disk);
 	immediate = (job_specs->immediate == 0) ? 0L : 1L;
 	debug3("   immediate=%ld features=%s reservation=%s",
@@ -7316,8 +7376,8 @@ static char *_copy_nodelist_no_dup(char *node_list)
 static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg,
 			      struct part_record *part_ptr)
 {
-	uint32_t job_mem_limit = job_desc_msg->pn_min_memory;
-	uint32_t sys_mem_limit;
+	uint64_t job_mem_limit = job_desc_msg->pn_min_memory;
+	uint64_t sys_mem_limit;
 	uint16_t cpus_per_node;
 
 	if (part_ptr && part_ptr->max_mem_per_cpu)
@@ -7440,7 +7500,7 @@ extern void job_validate_mem(struct job_record *job_ptr)
 	if ((job_ptr->bit_flags & NODE_MEM_CALC) &&
 	    (slurmctld_conf.fast_schedule == 0)) {
 		select_g_job_mem_confirm(job_ptr);
-		tres_count = (uint64_t)job_ptr->details->pn_min_memory;
+		tres_count = job_ptr->details->pn_min_memory;
 		if (tres_count & MEM_PER_CPU) {
 			tres_count &= (~MEM_PER_CPU);
 			tres_count *= job_ptr->tres_alloc_cnt[TRES_ARRAY_CPU];
@@ -7754,7 +7814,7 @@ extern void job_set_alloc_tres(struct job_record *job_ptr,
 #endif
 	job_ptr->tres_alloc_cnt[TRES_ARRAY_NODE] = (uint64_t)alloc_nodes;
 
-	tres_count = (uint64_t)job_ptr->details->pn_min_memory;
+	tres_count = job_ptr->details->pn_min_memory;
 	if (tres_count & MEM_PER_CPU) {
 		tres_count &= (~MEM_PER_CPU);
 		tres_count *= job_ptr->tres_alloc_cnt[TRES_ARRAY_CPU];
@@ -8002,7 +8062,7 @@ _validate_min_mem_partition(job_desc_msg_t *job_desc_msg,
 			break;
 		else if (slurmctld_conf.enforce_part_limits ==
 			 PARTITION_ENFORCE_ANY) {
-			debug("%s: Job requested for (%u)MB is invalid"
+			debug("%s: Job requested for (%"PRIu64")MB is invalid"
 			      " for partition %s",
 			      __func__, job_desc_msg->pn_min_memory,
 			      part->name);
@@ -9317,14 +9377,56 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 static void _pack_pending_job_details(struct job_details *detail_ptr,
 				      Buf buffer, uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		if (detail_ptr) {
 			pack16(detail_ptr->contiguous, buffer);
 			pack16(detail_ptr->core_spec, buffer);
 			pack16(detail_ptr->cpus_per_task, buffer);
 			pack16(detail_ptr->pn_min_cpus, buffer);
 
-			pack32(detail_ptr->pn_min_memory, buffer);
+			pack64(detail_ptr->pn_min_memory, buffer);
+			pack32(detail_ptr->pn_min_tmp_disk, buffer);
+
+			packstr(detail_ptr->req_nodes, buffer);
+			pack_bit_fmt(detail_ptr->req_node_bitmap, buffer);
+			/* detail_ptr->req_node_layout is not packed */
+			packstr(detail_ptr->exc_nodes, buffer);
+			pack_bit_fmt(detail_ptr->exc_node_bitmap, buffer);
+
+			packstr(detail_ptr->std_err, buffer);
+			packstr(detail_ptr->std_in, buffer);
+			packstr(detail_ptr->std_out, buffer);
+
+			pack_multi_core_data(detail_ptr->mc_ptr, buffer,
+					     protocol_version);
+		} else {
+			pack16((uint16_t) 0, buffer);
+			pack16((uint16_t) 0, buffer);
+			pack16((uint16_t) 0, buffer);
+			pack16((uint16_t) 0, buffer);
+
+			pack64((uint64_t) 0, buffer);
+			pack32((uint32_t) 0, buffer);
+
+			packnull(buffer);
+			packnull(buffer);
+			packnull(buffer);
+			packnull(buffer);
+
+			packnull(buffer);
+			packnull(buffer);
+			packnull(buffer);
+
+			pack_multi_core_data(NULL, buffer, protocol_version);
+		}
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (detail_ptr) {
+			pack16(detail_ptr->contiguous, buffer);
+			pack16(detail_ptr->core_spec, buffer);
+			pack16(detail_ptr->cpus_per_task, buffer);
+			pack16(detail_ptr->pn_min_cpus, buffer);
+
+			pack32(xlate_mem_new2old(detail_ptr->pn_min_memory), buffer);
 			pack32(detail_ptr->pn_min_tmp_disk, buffer);
 
 			packstr(detail_ptr->req_nodes, buffer);
@@ -11096,8 +11198,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				entity = "job";
 
 			detail_ptr->pn_min_memory = job_specs->pn_min_memory;
-			info("sched: update_job: setting min_memory_%s to %u "
-			     "for job_id %u", entity,
+			info("sched: update_job: setting min_memory_%s to %"
+			     ""PRIu64" for job_id %u", entity,
 			     (job_specs->pn_min_memory & (~MEM_PER_CPU)),
 			     job_ptr->job_id);
 			/* Always use the acct_policy_limit_set.*
@@ -11105,7 +11207,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			job_ptr->limit_set.tres[TRES_ARRAY_MEM] =
 				acct_policy_limit_set.tres[TRES_ARRAY_MEM];
 			job_ptr->tres_req_cnt[TRES_ARRAY_MEM] =
-				(uint64_t)detail_ptr->pn_min_memory;
+				detail_ptr->pn_min_memory;
 			xfree(job_ptr->tres_req_str);
 			job_ptr->tres_req_str =
 				assoc_mgr_make_tres_str_from_array(
@@ -12875,7 +12977,7 @@ _xmit_new_end_time(struct job_record *job_ptr)
 	return;
 }
 
-extern uint64_t job_get_tres_mem(uint32_t pn_min_memory,
+extern uint64_t job_get_tres_mem(uint64_t pn_min_memory,
 				 uint32_t cpu_cnt, uint32_t node_cnt)
 {
 	uint64_t count = 0;
@@ -12885,11 +12987,11 @@ extern uint64_t job_get_tres_mem(uint32_t pn_min_memory,
 
 	if (pn_min_memory & MEM_PER_CPU) {
 		if (cpu_cnt != NO_VAL) {
-			count = (uint64_t)(pn_min_memory & (~MEM_PER_CPU));
+			count = pn_min_memory & (~MEM_PER_CPU);
 			count *= cpu_cnt;
 		}
 	} else if (node_cnt != NO_VAL)
-		count = (uint64_t)(pn_min_memory * node_cnt);
+		count = pn_min_memory * node_cnt;
 
 	return count;
 }

@@ -250,13 +250,13 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 				  SELECT_NODEDATA_MEM_ALLOC,
 				  NODE_STATE_ALLOCATED,
 				  &alloc_memory);
-	xstrfmtcat(out, "RealMemory=%u AllocMem=%u ",
+	xstrfmtcat(out, "RealMemory=%"PRIu64" AllocMem=%u ",
 		   node_ptr->real_memory, alloc_memory);
 
 	if (node_ptr->free_mem == NO_VAL)
 		xstrcat(out, "FreeMem=N/A ");
 	else
-		xstrfmtcat(out, "FreeMem=%u ", node_ptr->free_mem);
+		xstrfmtcat(out, "FreeMem=%"PRIu64" ", node_ptr->free_mem);
 
 	xstrfmtcat(out, "Sockets=%u Boards=%u",
 		   node_ptr->sockets, node_ptr->boards);

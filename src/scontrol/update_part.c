@@ -363,7 +363,7 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			(*update_cnt_ptr)++;
 		}
 		else if (!strncasecmp(tag, "DefMemPerCPU", MAX(taglen, 10))) {
-			if (parse_uint32(val, &part_msg_ptr->def_mem_per_cpu)) {
+			if (parse_uint64(val, &part_msg_ptr->def_mem_per_cpu)) {
 				error ("Invalid DefMemPerCPU value: %s", val);
 				return -1;
 			}
@@ -371,14 +371,14 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			(*update_cnt_ptr)++;
 		}
 		else if (!strncasecmp(tag, "DefMemPerNode", MAX(taglen, 10))) {
-			if (parse_uint32(val, &part_msg_ptr->def_mem_per_cpu)) {
+			if (parse_uint64(val, &part_msg_ptr->def_mem_per_cpu)) {
 				error ("Invalid DefMemPerNode value: %s", val);
 				return -1;
 			}
 			(*update_cnt_ptr)++;
 		}
 		else if (!strncasecmp(tag, "MaxMemPerCPU", MAX(taglen, 10))) {
-			if (parse_uint32(val, &part_msg_ptr->max_mem_per_cpu)) {
+			if (parse_uint64(val, &part_msg_ptr->max_mem_per_cpu)) {
 				error ("Invalid MaxMemPerCPU value: %s", val);
 				return -1;
 			}
@@ -386,7 +386,7 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			(*update_cnt_ptr)++;
 		}
 		else if (!strncasecmp(tag, "MaxMemPerNode", MAX(taglen, 10))) {
-			if (parse_uint32(val, &part_msg_ptr->max_mem_per_cpu)) {
+			if (parse_uint64(val, &part_msg_ptr->max_mem_per_cpu)) {
 				error ("Invalid MaxMemPerNode value: %s", val);
 				return -1;
 			}

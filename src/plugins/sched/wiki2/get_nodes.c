@@ -403,14 +403,14 @@ static char *	_dump_node(struct node_record *node_ptr, hostlist_t hl,
 	if (slurmctld_conf.fast_schedule && node_ptr->config_ptr) {
 		/* config from slurm.conf */
 		snprintf(tmp, sizeof(tmp),
-			"CMEMORY=%u;CDISK=%u;CPROC=%u;",
+			"CMEMORY=%"PRIu64";CDISK=%u;CPROC=%u;",
 			node_ptr->config_ptr->real_memory,
 			node_ptr->config_ptr->tmp_disk,
 			node_ptr->config_ptr->cpus);
 	} else {
 		/* config as reported by slurmd */
 		snprintf(tmp, sizeof(tmp),
-			"CMEMORY=%u;CDISK=%u;CPROC=%u;",
+			"CMEMORY=%"PRIu64";CDISK=%u;CPROC=%u;",
 			node_ptr->real_memory,
 			node_ptr->tmp_disk,
 			node_ptr->cpus);

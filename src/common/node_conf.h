@@ -67,7 +67,7 @@ struct config_record {
 	uint16_t core_spec_cnt;	/* number of specialized cores */
 	uint16_t threads;	/* number of threads per core */
 	uint32_t mem_spec_limit; /* MB real memory for memory specialization */
-	uint32_t real_memory;	/* MB real memory on the node */
+	uint64_t real_memory;	/* MB real memory on the node */
 	uint32_t tmp_disk;	/* MB total storage in TMP_FS file system */
 	double  *tres_weights;	/* array of TRES weights */
 	char    *tres_weights_str; /* per TRES billing weight string */
@@ -104,7 +104,7 @@ struct node_record {
 	char *cpu_spec_list;		/* node's specialized cpus */
 	uint16_t core_spec_cnt;		/* number of specialized cores on node*/
 	uint16_t threads;		/* number of threads per core */
-	uint32_t real_memory;		/* MB real memory on the node */
+	uint64_t real_memory;		/* MB real memory on the node */
 	uint32_t mem_spec_limit;	/* MB memory limit for specialization */
 	uint32_t tmp_disk;		/* MB total disk in TMP_FS */
 	uint32_t up_time;		/* seconds since node boot */
@@ -159,7 +159,7 @@ struct node_record {
 						 * to access contents */
 	uint32_t cpu_load;		/* CPU load * 100 */
 	time_t cpu_load_time;		/* Time when cpu_load last set */
-	uint32_t free_mem;		/* Free memory in MiB */
+	uint64_t free_mem;		/* Free memory in MiB */
 	time_t free_mem_time;		/* Time when free_mem last set */
 	uint16_t protocol_version;	/* Slurm version number */
 	char *version;			/* Slurm version */

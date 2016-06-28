@@ -1214,7 +1214,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "id_user", "int unsigned not null" },
 		{ "id_group", "int unsigned not null" },
 		{ "kill_requid", "int default -1 not null" },
-		{ "mem_req", "int unsigned default 0 not null" },
+		{ "mem_req", "bigint unsigned default 0 not null" },
 		{ "nodelist", "text" },
 		{ "nodes_alloc", "int unsigned not null" },
 		{ "node_inx", "text" },

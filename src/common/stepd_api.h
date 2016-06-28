@@ -86,14 +86,14 @@ typedef struct {
 	uint32_t stepid;
 	uint32_t nodeid;
 	uint16_t protocol_version;
-	uint32_t job_mem_limit;		/* job's memory limit, MB */
-	uint32_t step_mem_limit;	/* step's memory limit, MB */
+	uint64_t job_mem_limit;		/* job's memory limit, MB */
+	uint64_t step_mem_limit;	/* step's memory limit, MB */
 } slurmstepd_info_t;
 
 typedef struct {
-	uint32_t job_mem_limit;		/* job's memory limit, MB */
+	uint64_t job_mem_limit;		/* job's memory limit, MB */
 	uint32_t nodeid;
-	uint32_t step_mem_limit;	/* step's memory limit, MB */
+	uint64_t step_mem_limit;	/* step's memory limit, MB */
 } slurmstepd_mem_info_t;
 
 typedef struct {

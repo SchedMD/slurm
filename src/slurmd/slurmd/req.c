@@ -118,8 +118,8 @@ typedef struct {
 typedef struct {
 	uint32_t job_id;
 	uint32_t step_id;
-	uint32_t job_mem;
-	uint32_t step_mem;
+	uint64_t job_mem;
+	uint64_t step_mem;
 } job_mem_limits_t;
 
 typedef struct {
@@ -1079,8 +1079,8 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 
 		if (cpu_log) {
 			char *per_job = "", *per_step = "";
-			uint32_t job_mem  = arg.job_mem_limit;
-			uint32_t step_mem = arg.step_mem_limit;
+			uint64_t job_mem  = arg.job_mem_limit;
+			uint64_t step_mem = arg.step_mem_limit;
 			if (job_mem & MEM_PER_CPU) {
 				job_mem &= (~MEM_PER_CPU);
 				per_job = "_per_CPU";
@@ -1090,7 +1090,8 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 				per_step = "_per_CPU";
 			}
 			info("====================");
-			info("step_id:%u.%u job_mem:%uMB%s step_mem:%uMB%s",
+			info("step_id:%u.%u job_mem:%"PRIu64"MB%s "
+			     "step_mem:%"PRIu64"MB%s",
 			     arg.jobid, arg.stepid, job_mem, per_job,
 			     step_mem, per_step);
 		}
@@ -1189,7 +1190,7 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 	req->job_core_spec = arg.job_core_spec;
 	req->node_cpus = step_cpus;
 #if 0
-	info("%u.%u node_id:%d mem orig:%u cpus:%u limit:%u",
+	info("%u.%u node_id:%d mem orig:%"PRIu64" cpus:%u limit:%"PRIu64"",
 	     jobid, stepid, node_id, arg.job_mem_limit,
 	     step_cpus, req->job_mem_lim);
 #endif
@@ -1336,10 +1337,11 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 			job_limits_ptr->step_id  = req->job_step_id;
 			job_limits_ptr->step_mem = req->step_mem_lim;
 #if _LIMIT_INFO
-			info("AddLim step:%u.%u job_mem:%u step_mem:%u",
-			      job_limits_ptr->job_id, job_limits_ptr->step_id,
-			      job_limits_ptr->job_mem,
-			      job_limits_ptr->step_mem);
+			info("AddLim step:%u.%u job_mem:%"PRIu64" "
+			     "step_mem:%"PRIu64"",
+			     job_limits_ptr->job_id, job_limits_ptr->step_id,
+			     job_limits_ptr->job_mem,
+			     job_limits_ptr->step_mem);
 #endif
 			list_append(job_limits_list, job_limits_ptr);
 		}
@@ -1503,13 +1505,13 @@ _set_batch_job_limits(slurm_msg_t *msg)
 
 	if (cpu_log) {
 		char *per_job = "";
-		uint32_t job_mem  = arg.job_mem_limit;
+		uint64_t job_mem  = arg.job_mem_limit;
 		if (job_mem & MEM_PER_CPU) {
 			job_mem &= (~MEM_PER_CPU);
 			per_job = "_per_CPU";
 		}
 		info("====================");
-		info("batch_job:%u job_mem:%uMB%s", req->job_id,
+		info("batch_job:%u job_mem:%"PRIu64"MB%s", req->job_id,
 		     job_mem, per_job);
 	}
 	if (cpu_log || (arg.job_mem_limit & MEM_PER_CPU)) {
@@ -1702,7 +1704,7 @@ static void _make_prolog_mem_container(slurm_msg_t *msg)
 			job_limits_ptr->step_id  = SLURM_EXTERN_CONT;
 			job_limits_ptr->step_mem = req->job_mem_limit;
 #if _LIMIT_INFO
-			info("AddLim step:%u.%u job_mem:%u step_mem:%u",
+			info("AddLim step:%u.%u job_mem:%"PRIu64" step_mem:%u",
 			      job_limits_ptr->job_id, job_limits_ptr->step_id,
 			      job_limits_ptr->job_mem,
 			      job_limits_ptr->step_mem);
@@ -2378,7 +2380,8 @@ _load_job_limits(void)
 			job_limits_ptr->step_mem =
 				stepd_mem_info.step_mem_limit;
 #if _LIMIT_INFO
-			info("RecLim step:%u.%u job_mem:%u step_mem:%u",
+			info("RecLim step:%u.%u job_mem:%"PRIu64""
+			     " step_mem:%"PRIu64"",
 			     job_limits_ptr->job_id, job_limits_ptr->step_id,
 			     job_limits_ptr->job_mem,
 			     job_limits_ptr->step_mem);
@@ -2433,10 +2436,10 @@ _enforce_job_mem_limit(void)
 	job_step_stat_t *resp = NULL;
 	struct job_mem_info {
 		uint32_t job_id;
-		uint32_t mem_limit;	/* MB */
-		uint32_t mem_used;	/* MB */
-		uint32_t vsize_limit;	/* MB */
-		uint32_t vsize_used;	/* MB */
+		uint64_t mem_limit;	/* MB */
+		uint64_t mem_used;	/* MB */
+		uint64_t vsize_limit;	/* MB */
+		uint64_t vsize_used;	/* MB */
 	};
 	struct job_mem_info *job_mem_info_ptr = NULL;
 
@@ -2553,8 +2556,9 @@ _enforce_job_mem_limit(void)
 		if ((job_mem_info_ptr[i].mem_limit != 0) &&
 		    (job_mem_info_ptr[i].mem_used >
 		     job_mem_info_ptr[i].mem_limit)) {
-			info("Job %u exceeded memory limit (%u>%u), "
-			     "cancelling it", job_mem_info_ptr[i].job_id,
+			info("Job %u exceeded memory limit "
+			     "(%"PRIu64">%"PRIu64"), cancelling it",
+			     job_mem_info_ptr[i].job_id,
 			     job_mem_info_ptr[i].mem_used,
 			     job_mem_info_ptr[i].mem_limit);
 			_cancel_step_mem_limit(job_mem_info_ptr[i].job_id,
@@ -2562,8 +2566,9 @@ _enforce_job_mem_limit(void)
 		} else if ((job_mem_info_ptr[i].vsize_limit != 0) &&
 			   (job_mem_info_ptr[i].vsize_used >
 			    job_mem_info_ptr[i].vsize_limit)) {
-			info("Job %u exceeded virtual memory limit (%u>%u), "
-			     "cancelling it", job_mem_info_ptr[i].job_id,
+			info("Job %u exceeded virtual memory limit "
+			     "(%"PRIu64">%"PRIu64"), cancelling it",
+			     job_mem_info_ptr[i].job_id,
 			     job_mem_info_ptr[i].vsize_used,
 			     job_mem_info_ptr[i].vsize_limit);
 			_cancel_step_mem_limit(job_mem_info_ptr[i].job_id,

@@ -499,7 +499,7 @@ no_rollup_change:
 			   ") values (%u, UNIX_TIMESTAMP(), "
 			   "%u, %u, %u, %u, %u, %u, "
 			   "'%s', %u, %u, %ld, %ld, %ld, "
-			   "'%s', %u, %u, %u, %u, %u, %u",
+			   "'%s', %u, %u, %u, %u, %u, %"PRIu64"",
 			   job_ptr->job_id, job_ptr->array_job_id,
 			   array_task_id, job_ptr->assoc_id,
 			   job_ptr->qos_id,
@@ -550,7 +550,7 @@ no_rollup_change:
 			   "job_name='%s', track_steps=%u, id_qos=%u, "
 			   "state=greatest(state, %u), priority=%u, "
 			   "cpus_req=%u, nodes_alloc=%u, "
-			   "mem_req=%u, id_array_job=%u, id_array_task=%u",
+			   "mem_req=%"PRIu64", id_array_job=%u, id_array_task=%u",
 			   job_ptr->user_id, job_ptr->group_id, nodes,
 			   job_ptr->resv_id, job_ptr->time_limit,
 			   submit_time, begin_time, start_time,
@@ -651,7 +651,7 @@ no_rollup_change:
 		xstrfmtcat(query, "time_start=%ld, job_name='%s', state=%u, "
 			   "nodes_alloc=%u, id_qos=%u, "
 			   "id_assoc=%u, id_resv=%u, "
-			   "timelimit=%u, mem_req=%u, "
+			   "timelimit=%u, mem_req=%"PRIu64", "
 			   "id_array_job=%u, id_array_task=%u, "
 			   "time_eligible=%ld, mod_time=UNIX_TIMESTAMP() "
 			   "where job_db_inx=%"PRIu64,

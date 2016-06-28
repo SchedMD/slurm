@@ -151,7 +151,7 @@ typedef struct {
 	bitstr_t *job_core_bitmap;	/* cores allocated to JOB */
 	uint16_t  job_core_spec;	/* count of specialized cores */
 	char     *job_hostlist;		/* list of nodes allocated to JOB */
-	uint32_t  job_mem_limit;	/* MB of memory reserved per node OR
+	uint64_t  job_mem_limit;	/* MB of memory reserved per node OR
 					 * real memory per CPU | MEM_PER_CPU,
 					 * default=0 (no limit) */
 	uint32_t  job_nhosts;		/* count of nodes allocated to JOB */
@@ -160,7 +160,7 @@ typedef struct {
 	/* STEP specific info */
 	bitstr_t *step_core_bitmap;	/* cores allocated to STEP */
 	char     *step_hostlist;	/* list of nodes allocated to STEP */
-	uint32_t  step_mem_limit;	/* MB of memory reserved per node OR
+	uint64_t  step_mem_limit;	/* MB of memory reserved per node OR
 					 * real memory per CPU | MEM_PER_CPU,
 					 * default=0 (no limit) */
 	List step_gres_list;		/* Generic resources allocated to STEP */
@@ -313,7 +313,7 @@ int slurm_cred_get_signature(slurm_cred_t *cred, char **datap,
  */
 void format_core_allocs(slurm_cred_t *cred, char *node_name, uint16_t cpus,
 			 char **job_alloc_cores, char **step_alloc_cores,
-			 uint32_t *job_mem_limit, uint32_t *step_mem_limit);
+			 uint64_t *job_mem_limit, uint64_t *step_mem_limit);
 
 /*
  * Retrieve the job and step generic resources (gres) allocate to this job

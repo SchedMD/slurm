@@ -294,7 +294,7 @@ static void _layout_node_record(GtkTreeView *treeview,
 	if (node_ptr->free_mem == NO_VAL) {
 		snprintf(tmp_cnt, sizeof(tmp_cnt), "N/A");
 	} else {
-		snprintf(tmp_cnt, sizeof(tmp_cnt), "%uM",
+		snprintf(tmp_cnt, sizeof(tmp_cnt), "%"PRIu64"M",
 		         node_ptr->free_mem);
 	}
 	add_display_treestore_line(update, treestore, &iter,
@@ -542,7 +542,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 		strcpy(tmp_free_mem, "N/A");
 	} else {
 		snprintf(tmp_free_mem, sizeof(tmp_free_mem),
-		         "%uM", node_ptr->free_mem);
+		         "%"PRIu64"M", node_ptr->free_mem);
 	}
 
 	convert_num_unit((float)node_ptr->cpus, tmp_cpus,

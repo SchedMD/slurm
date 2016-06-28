@@ -500,7 +500,7 @@ struct job_details {
 					 * SLURM_DIST_PLANE */
 	/* job constraints: */
 	uint32_t pn_min_cpus;		/* minimum processors per node */
-	uint32_t pn_min_memory;		/* minimum memory per node (MB) OR
+	uint64_t pn_min_memory;		/* minimum memory per node (MB) OR
 					 * memory per allocated
 					 * CPU | MEM_PER_CPU */
 	uint32_t pn_min_tmp_disk;	/* minimum tempdisk per node, MB */
@@ -819,7 +819,7 @@ struct 	step_record {
 	struct job_record* job_ptr; 	/* ptr to the job that owns the step */
 	jobacctinfo_t *jobacct;         /* keep track of process info in the
 					 * step */
-	uint32_t pn_min_memory;		/* minimum real memory per node OR
+	uint64_t pn_min_memory;		/* minimum real memory per node OR
 					 * real memory per CPU | MEM_PER_CPU,
 					 * default=0 (use job limit) */
 	char *name;			/* name of job step */
@@ -1255,7 +1255,7 @@ extern void job_completion_logger(struct job_record  *job_ptr, bool requeue);
 
 /* Convert a pn_min_memory into total memory for the job either cpu or
  * node based. */
-extern uint64_t job_get_tres_mem(uint32_t pn_min_memory,
+extern uint64_t job_get_tres_mem(uint64_t pn_min_memory,
 				 uint32_t cpu_cnt, uint32_t node_cnt);
 
 /*

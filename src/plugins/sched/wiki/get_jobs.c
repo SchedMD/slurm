@@ -310,7 +310,7 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 	min_mem = _get_pn_min_mem(job_ptr);
 	if (min_mem & MEM_PER_CPU) {
 		snprintf(tmp, sizeof(tmp),
-			"DMEM=%u;", min_mem & (~MEM_PER_CPU));
+			"DMEM=%"PRIu64";", min_mem & (~MEM_PER_CPU));
 		xstrcat(buf, tmp);
 	}
 

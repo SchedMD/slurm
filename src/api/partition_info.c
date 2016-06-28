@@ -336,26 +336,26 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 		if (part_ptr->def_mem_per_cpu == MEM_PER_CPU) {
 			xstrcat(out, "DefMemPerCPU=UNLIMITED");
 		} else {
-			xstrfmtcat(out, "DefMemPerCPU=%u",
+			xstrfmtcat(out, "DefMemPerCPU=%"PRIu64"",
 				   part_ptr->def_mem_per_cpu & (~MEM_PER_CPU));
 		}
 	} else if (part_ptr->def_mem_per_cpu == 0) {
 		xstrcat(out, "DefMemPerNode=UNLIMITED");
 	} else {
-		xstrfmtcat(out, "DefMemPerNode=%u", part_ptr->def_mem_per_cpu);
+		xstrfmtcat(out, "DefMemPerNode=%"PRIu64"", part_ptr->def_mem_per_cpu);
 	}
 
 	if (part_ptr->max_mem_per_cpu & MEM_PER_CPU) {
 		if (part_ptr->max_mem_per_cpu == MEM_PER_CPU) {
 			xstrcat(out, " MaxMemPerCPU=UNLIMITED");
 		} else {
-			xstrfmtcat(out, " MaxMemPerCPU=%u",
+			xstrfmtcat(out, " MaxMemPerCPU=%"PRIu64"",
 				   part_ptr->max_mem_per_cpu & (~MEM_PER_CPU));
 		}
 	} else if (part_ptr->max_mem_per_cpu == 0) {
 		xstrcat(out, " MaxMemPerNode=UNLIMITED");
 	} else {
-		xstrfmtcat(out, " MaxMemPerNode=%u", part_ptr->max_mem_per_cpu);
+		xstrfmtcat(out, " MaxMemPerNode=%"PRIu64"", part_ptr->max_mem_per_cpu);
 	}
 
 	/****** Line 10 ******/

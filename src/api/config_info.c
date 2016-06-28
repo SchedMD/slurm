@@ -200,7 +200,7 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 				   node_info_ptr->node_array[i].gres);
 
 		if (node_info_ptr->node_array[i].real_memory > 1)
-		        xstrfmtcat(tmp_str, " RealMemory=%u",
+		        xstrfmtcat(tmp_str, " RealMemory=%"PRIu64"",
 				   node_info_ptr->node_array[i].real_memory);
 
 		if (node_info_ptr->node_array[i].tmp_disk)
@@ -285,10 +285,10 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 
 		if (p[i].def_mem_per_cpu & MEM_PER_CPU) {
 		        if (p[i].def_mem_per_cpu != MEM_PER_CPU)
-		                fprintf(fp, "DefMemPerCPU=%"PRIu32"",
+		                fprintf(fp, "DefMemPerCPU=%"PRIu64"",
 		                        p[i].def_mem_per_cpu & (~MEM_PER_CPU));
 		} else if (p[i].def_mem_per_cpu != 0)
-		        fprintf(fp, "DefMemPerNode=%"PRIu32"",
+		        fprintf(fp, "DefMemPerNode=%"PRIu64"",
 		                p[i].def_mem_per_cpu);
 
 		if (!p[i].allow_accounts && p[i].deny_accounts)
@@ -329,10 +329,10 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 
 		if (p[i].max_mem_per_cpu & MEM_PER_CPU) {
 		        if (p[i].max_mem_per_cpu != MEM_PER_CPU)
-		                fprintf(fp, " MaxMemPerCPU=%"PRIu32"",
+		                fprintf(fp, " MaxMemPerCPU=%"PRIu64"",
 		                        p[i].max_mem_per_cpu & (~MEM_PER_CPU));
 		} else if (p[i].max_mem_per_cpu != 0)
-		        fprintf(fp, " MaxMemPerNode=%"PRIu32"",
+		        fprintf(fp, " MaxMemPerNode=%"PRIu64"",
 				p[i].max_mem_per_cpu);
 
 		if (p[i].max_nodes != INFINITE) {
@@ -693,13 +693,13 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 		key_pair->value = xstrdup("UNLIMITED");
 	} else if (slurm_ctl_conf_ptr->def_mem_per_cpu & MEM_PER_CPU) {
 		key_pair->name = xstrdup("DefMemPerCPU");
-		snprintf(tmp_str, sizeof(tmp_str), "%u",
+		snprintf(tmp_str, sizeof(tmp_str), "%"PRIu64"",
 			 slurm_ctl_conf_ptr->def_mem_per_cpu &
 			 (~MEM_PER_CPU));
 		key_pair->value = xstrdup(tmp_str);
 	} else if (slurm_ctl_conf_ptr->def_mem_per_cpu) {
 		key_pair->name = xstrdup("DefMemPerNode");
-		snprintf(tmp_str, sizeof(tmp_str), "%u",
+		snprintf(tmp_str, sizeof(tmp_str), "%"PRIu64"",
 			 slurm_ctl_conf_ptr->def_mem_per_cpu);
 		key_pair->value = xstrdup(tmp_str);
 	} else {
@@ -1013,13 +1013,13 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 		key_pair->value = xstrdup("UNLIMITED");
 	} else if (slurm_ctl_conf_ptr->max_mem_per_cpu & MEM_PER_CPU) {
 		key_pair->name = xstrdup("MaxMemPerCPU");
-		snprintf(tmp_str, sizeof(tmp_str), "%u",
+		snprintf(tmp_str, sizeof(tmp_str), "%"PRIu64"",
 			 slurm_ctl_conf_ptr->max_mem_per_cpu & (~MEM_PER_CPU));
 		key_pair->value = xstrdup(tmp_str);
 
 	} else if (slurm_ctl_conf_ptr->max_mem_per_cpu) {
 		key_pair->name = xstrdup("MaxMemPerNode");
-		snprintf(tmp_str, sizeof(tmp_str), "%u",
+		snprintf(tmp_str, sizeof(tmp_str), "%"PRIu64"",
 			 slurm_ctl_conf_ptr->max_mem_per_cpu);
 		key_pair->value = xstrdup(tmp_str);
 	} else {
@@ -1854,7 +1854,7 @@ void slurm_print_slurmd_status (FILE* out,
 		slurmd_status_ptr->actual_cores);
 	fprintf(out, "Actual threads per core  = %u\n",
 		slurmd_status_ptr->actual_threads);
-	fprintf(out, "Actual real memory       = %u MB\n",
+	fprintf(out, "Actual real memory       = %"PRIu64" MB\n",
 		slurmd_status_ptr->actual_real_mem);
 	fprintf(out, "Actual temp disk space   = %u MB\n",
 		slurmd_status_ptr->actual_tmp_disk);

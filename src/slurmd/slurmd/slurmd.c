@@ -698,7 +698,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	if (first_msg) {
 		first_msg = false;
 		info("CPUs=%u Boards=%u Sockets=%u Cores=%u Threads=%u "
-		     "Memory=%u TmpDisk=%u Uptime=%u CPUSpecList=%s "
+		     "Memory=%"PRIu64" TmpDisk=%u Uptime=%u CPUSpecList=%s "
 		     "FeaturesAvail=%s FeaturesActive=%s",
 		     msg->cpus, msg->boards, msg->sockets, msg->cores,
 		     msg->threads, msg->real_memory, msg->tmp_disk,
@@ -706,7 +706,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 		     msg->features_active);
 	} else {
 		debug3("CPUs=%u Boards=%u Sockets=%u Cores=%u Threads=%u "
-		       "Memory=%u TmpDisk=%u Uptime=%u CPUSpecList=%s "
+		       "Memory=%"PRIu64" TmpDisk=%u Uptime=%u CPUSpecList=%s "
 		       "FeaturesAvail=%s FeaturesActive=%s",
 		       msg->cpus, msg->boards, msg->sockets, msg->cores,
 		       msg->threads, msg->real_memory, msg->tmp_disk,
@@ -1184,7 +1184,7 @@ _print_conf(void)
 	str[strlen(str)-1] = '\0';		/* trim trailing "," */
 	debug3("Inverse Map = %s", str);
 	xfree(str);
-	debug3("RealMemory  = %u",       conf->real_memory_size);
+	debug3("RealMemory  = %"PRIu64"",conf->real_memory_size);
 	debug3("TmpDisk     = %u",       conf->tmp_disk_space);
 	debug3("Epilog      = `%s'",     conf->epilog);
 	debug3("Logfile     = `%s'",     cf->slurmd_logfile);
@@ -1312,7 +1312,7 @@ _print_config(void)
 
 	get_memory(&conf->real_memory_size);
 	get_tmp_disk(&conf->tmp_disk_space, "/tmp");
-	printf("RealMemory=%u TmpDisk=%u\n",
+	printf("RealMemory=%"PRIu64" TmpDisk=%u\n",
 	       conf->real_memory_size, conf->tmp_disk_space);
 
 	get_up_time(&conf->up_time);
