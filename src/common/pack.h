@@ -109,6 +109,9 @@ int	unpack32_array(uint32_t **valp, uint32_t* size_val, Buf buffer);
 void	pack64_array(uint64_t *valp, uint32_t size_val, Buf buffer);
 int	unpack64_array(uint64_t **valp, uint32_t* size_val, Buf buffer);
 
+void	pack64_array_as_32(uint64_t * valp, uint32_t size_val, Buf buffer);
+int	unpack64_array_from_32(uint64_t ** valp, uint32_t * size_val, Buf buffer);
+
 void	packdouble_array(double *valp, uint32_t size_val, Buf buffer);
 int	unpackdouble_array(double **valp, uint32_t* size_val, Buf buffer);
 
@@ -246,17 +249,24 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 		goto unpack_error;			\
 } while (0)
 
+#define safe_unpack64_array_from_32(valp,size_valp,buf) do {	\
+	assert(sizeof(*size_valp) == sizeof(uint32_t)); \
+	assert(buf->magic == BUF_MAGIC);		\
+	if (unpack64_array_from_32(valp,size_valp,buf))	\
+		goto unpack_error;			\
+} while (0)
+
 #define safe_unpackdouble_array(valp,size_valp,buf) do {	\
 	assert(sizeof(*size_valp) == sizeof(uint32_t)); \
 	assert(buf->magic == BUF_MAGIC);		\
-	if (unpackdouble_array(valp,size_valp,buf))		\
+	if (unpackdouble_array(valp,size_valp,buf))	\
 		goto unpack_error;			\
 } while (0)
 
 #define safe_unpacklongdouble_array(valp,size_valp,buf) do {	\
 	assert(sizeof(*size_valp) == sizeof(uint32_t)); \
 	assert(buf->magic == BUF_MAGIC);		\
-	if (unpacklongdouble_array(valp,size_valp,buf))		\
+	if (unpacklongdouble_array(valp,size_valp,buf))	\
 		goto unpack_error;			\
 } while (0)
 

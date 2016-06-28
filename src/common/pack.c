@@ -441,6 +441,19 @@ void pack64_array(uint64_t * valp, uint32_t size_val, Buf buffer)
 	}
 }
 
+/* Pack an array of 64bit values as if they were 32bit
+ * Used for backwards compatibility */
+void pack64_array_as_32(uint64_t * valp, uint32_t size_val, Buf buffer)
+{
+	uint32_t i = 0;
+
+	pack32(size_val, buffer);
+
+	for (i = 0; i < size_val; i++) {
+		pack32((uint32_t) *(valp + i), buffer);
+	}
+}
+
 /* Given a int ptr, it will unpack an array of size_val
  */
 int unpack64_array(uint64_t ** valp, uint32_t * size_val, Buf buffer)
@@ -454,6 +467,24 @@ int unpack64_array(uint64_t ** valp, uint32_t * size_val, Buf buffer)
 	for (i = 0; i < *size_val; i++) {
 		if (unpack64((*valp) + i, buffer))
 			return SLURM_ERROR;
+	}
+	return SLURM_SUCCESS;
+}
+
+/* Unpack an array of 64bit values as if they were 32bit
+ * Used for backwards compatibility */
+int unpack64_array_from_32(uint64_t ** valp, uint32_t * size_val, Buf buffer)
+{
+	uint32_t i = 0, val32;
+
+	if (unpack32(size_val, buffer))
+		return SLURM_ERROR;
+
+	*valp = xmalloc_nz((*size_val) * sizeof(uint64_t));
+	for (i = 0; i < *size_val; i++) {
+		if (unpack32(&val32, buffer))
+			return SLURM_ERROR;
+		*(*valp + i) = val32;
 	}
 	return SLURM_SUCCESS;
 }
