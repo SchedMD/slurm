@@ -1293,41 +1293,8 @@ int sig_name2num(char *signal_name)
 	return sig;
 }
 
-
 /*
- * parse_uint32 - Convert anscii string to a 32 bit unsigned int.
- * IN      aval - ascii string.
- * IN/OUT  ival - 32 bit pointer.
- * RET     0 if no error, 1 otherwise.
- */
-extern int parse_uint32(char *aval, uint32_t *ival)
-{
-	/*
-	 * First,  convert the ascii value it to a
-	 * long long int. If the result is greater
-	 * than or equal to 0 and less than NO_VAL
-	 * set the value and return. Otherwise return
-	 * an error.
-	 */
-	uint32_t max32uint = (uint32_t) NO_VAL;
-	long long tval;
-	char *p;
-
-	/*
- 	 * Return error for invalid value.
-	 */
-	tval = strtoll(aval, &p, 10);
-	if (p[0] || (tval == LLONG_MIN) || (tval == LLONG_MAX) ||
-	    (tval < 0) || (tval >= max32uint))
-		return 1;
-
-	*ival = (uint32_t) tval;
-
-	return 0;
-}
-
-/*
- * parse_uint16 - Convert anscii string to a 16 bit unsigned int.
+ * parse_uint16 - Convert ascii string to a 16 bit unsigned int.
  * IN      aval - ascii string.
  * IN/OUT  ival - 16 bit pointer.
  * RET     0 if no error, 1 otherwise.
@@ -1346,7 +1313,7 @@ extern int parse_uint16(char *aval, uint16_t *ival)
 	char *p;
 
 	/*
- 	 * Return error for invalid value.
+	 * Return error for invalid value.
 	 */
 	tval = strtoll(aval, &p, 10);
 	if (p[0] || (tval == LLONG_MIN) || (tval == LLONG_MAX) ||
@@ -1354,6 +1321,70 @@ extern int parse_uint16(char *aval, uint16_t *ival)
 		return 1;
 
 	*ival = (uint16_t) tval;
+
+	return 0;
+}
+
+/*
+ * parse_uint32 - Convert ascii string to a 32 bit unsigned int.
+ * IN      aval - ascii string.
+ * IN/OUT  ival - 32 bit pointer.
+ * RET     0 if no error, 1 otherwise.
+ */
+extern int parse_uint32(char *aval, uint32_t *ival)
+{
+	/*
+	 * First,  convert the ascii value it to a
+	 * long long int. If the result is greater
+	 * than or equal to 0 and less than NO_VAL
+	 * set the value and return. Otherwise return
+	 * an error.
+	 */
+	uint32_t max32uint = (uint32_t) NO_VAL;
+	long long tval;
+	char *p;
+
+	/*
+	 * Return error for invalid value.
+	 */
+	tval = strtoll(aval, &p, 10);
+	if (p[0] || (tval == LLONG_MIN) || (tval == LLONG_MAX) ||
+	    (tval < 0) || (tval >= max32uint))
+		return 1;
+
+	*ival = (uint32_t) tval;
+
+	return 0;
+}
+
+/*
+ * parse_uint64 - Convert ascii string to a 64 bit unsigned int.
+ * IN      aval - ascii string.
+ * IN/OUT  ival - 64 bit pointer.
+ * RET     0 if no error, 1 otherwise.
+ */
+extern int parse_uint64(char *aval, uint64_t *ival)
+{
+	/*
+	 * First,  convert the ascii value it to an
+	 * unsigned long long. If the result is greater
+	 * than or equal to 0 and less than NO_VAL
+	 * set the value and return. Otherwise return
+	 * an error.
+	 */
+	uint64_t max64uint = NO_VAL64;
+	long long tval;
+	char *p;
+
+	/*
+ 	 * Return error for invalid value.
+	 */
+	tval = strtoll(aval, &p, 10);
+	if (p[0] || (tval == LLONG_MIN) || (tval == LLONG_MAX) ||
+	    (tval < 0) || (tval >= max64uint))
+		return 1;
+
+	*ival = (uint64_t) tval;
 
 	return 0;
 }

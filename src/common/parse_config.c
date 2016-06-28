@@ -74,6 +74,7 @@ strong_alias(s_p_get_string,		slurm_s_p_get_string);
 strong_alias(s_p_get_long,		slurm_s_p_get_long);
 strong_alias(s_p_get_uint16,		slurm_s_p_get_uint16);
 strong_alias(s_p_get_uint32,		slurm_s_p_get_uint32);
+strong_alias(s_p_get_uint64,		slurm_s_p_get_uint64);
 strong_alias(s_p_get_float,		slurm_s_p_get_float);
 strong_alias(s_p_get_double,		slurm_s_p_get_double);
 strong_alias(s_p_get_long_double,	slurm_s_p_get_long_double);
@@ -596,6 +597,14 @@ static void* _handle_uint32(const char* key, const char* value)
 	return data;
 }
 
+static void* _handle_uint64(const char* key, const char* value)
+{
+	uint64_t* data = (uint64_t*)xmalloc(sizeof(uint64_t));
+	if (s_p_handle_uint64(data, key, value) == SLURM_ERROR)
+		return NULL;
+	return data;
+}
+
 static void* _handle_boolean(const char* key, const char* value)
 {
 	bool* data = (bool*)xmalloc(sizeof(bool));
@@ -722,6 +731,10 @@ static int _handle_expline_cmp_uint32(const void* v1, const void* v2)
 {
 	return *((uint32_t*)v1) != *((uint32_t*)v2);
 }
+static int _handle_expline_cmp_uint64(const void* v1, const void* v2)
+{
+	return *((uint64_t*)v1) != *((uint64_t*)v2);
+}
 static int _handle_expline_cmp_float(const void* v1, const void* v2)
 {
 	return *((float*)v1) != *((float*)v2);
@@ -772,7 +785,7 @@ static void _handle_expline_ac(s_p_hashtbl_t* tbl,
 }
 
 /*
- * merge a feshly generated s_p_hashtbl_t from the line/expline processing
+ * merge a freshly generated s_p_hashtbl_t from the line/expline processing
  * with the already added s_p_hashtbl_t elements of the previously processed
  * siblings
  */
@@ -805,6 +818,11 @@ static void _handle_expline_merge(_expline_values_t* v_data,
 	case S_P_UINT32:
 		_handle_expline_ac(current_tbl, master_key, matchp->data,
 				   _handle_expline_cmp_uint32, &v_data->values,
+				   tables_count);
+		break;
+	case S_P_UINT64:
+		_handle_expline_ac(current_tbl, master_key, matchp->data,
+				   _handle_expline_cmp_uint64, &v_data->values,
 				   tables_count);
 		break;
 	case S_P_FLOAT:
@@ -895,6 +913,9 @@ static void _handle_keyvalue_match(s_p_values_t *v,
 		break;
 	case S_P_UINT32:
 		_handle_common(v, value, line, leftover, _handle_uint32);
+		break;
+	case S_P_UINT64:
+		_handle_common(v, value, line, leftover, _handle_uint64);
 		break;
 	case S_P_POINTER:
 		_handle_pointer(v, value, line, leftover);
@@ -1905,6 +1926,19 @@ int s_p_get_uint32(uint32_t *num, const char *key,
 	return 0;
 }
 
+int s_p_get_uint64(uint64_t *num, const char *key,
+		   const s_p_hashtbl_t *hashtbl)
+{
+	s_p_values_t *p = _get_check(S_P_UINT64, key, hashtbl);
+
+	if (p) {
+		*num = *(uint64_t *)p->data;
+		return 1;
+	}
+
+	return 0;
+}
+
 int s_p_get_operator(slurm_parser_operator_t *opt, const char *key,
 		     const s_p_hashtbl_t *hashtbl)
 {
@@ -2039,6 +2073,7 @@ void s_p_dump_values(const s_p_hashtbl_t *hashtbl,
 	long num;
 	uint16_t num16;
 	uint32_t num32;
+	uint64_t num64;
 	float numf;
 	double numd;
 	long double numld;
@@ -2074,6 +2109,12 @@ void s_p_dump_values(const s_p_hashtbl_t *hashtbl,
 		case S_P_UINT32:
 			if (s_p_get_uint32(&num32, op->key, hashtbl))
 				verbose("%s = %u", op->key, num32);
+			else
+				verbose("%s", op->key);
+			break;
+		case S_P_UINT64:
+			if (s_p_get_uint64(&num64, op->key, hashtbl))
+				verbose("%s = %"PRIu64"", op->key, num64);
 			else
 				verbose("%s", op->key);
 			break;

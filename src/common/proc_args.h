@@ -144,20 +144,14 @@ int get_signal_opts(char *optarg, uint16_t *warn_signal, uint16_t *warn_time,
 int sig_name2num(char *signal_name);
 
 /*
- * parse_uint16 - Convert anscii string to a 16 bit unsigned int.
+ * parse_uint16/32/64 - Convert ascii string to a 16/32/64 bit unsigned int.
  * IN      aval - ascii string.
- * IN/OUT  ival - 16 bit pointer.
+ * IN/OUT  ival - 16/32/64 bit pointer.
  * RET     0 if no error, 1 otherwise.
  */
-extern int	parse_uint16(char *aval, uint16_t *ival);
-
-/*
- * parse_uint32 - Convert anscii string to a 32 bit unsigned int.
- * IN      aval - ascii string.
- * IN/OUT  ival - 32 bit pointer.
- * RET     0 if no error, 1 otherwise.
- */
-extern int	parse_uint32(char *aval, uint32_t *ival);
+extern int parse_uint16(char *aval, uint16_t *ival);
+extern int parse_uint32(char *aval, uint32_t *ival);
+extern int parse_uint64(char *aval, uint64_t *ival);
 
 /* Get a decimal integer from arg
  * IN      name - command line name

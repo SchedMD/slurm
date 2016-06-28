@@ -109,8 +109,10 @@
  *	otherwise an error will be raised.
  * S_P_UINT16 - The value for a given key must be a valid
  *	string representation of an unsigned 16-bit integer.
- * S_P_LONG - The value for a given key must be be a valid
+ * S_P_UINT32 - The value for a given key must be be a valid
  *	string representation of an unsigned 32-bit integer.
+ * S_P_UINT64 - The value for a given key must be be a valid
+ *	string representation of an unsigned 64-bit integer.
  * S_P_POINTER - The parser makes no assumption about the type of the value.
  *    	The s_p_get_pointer() function will return a pointer to the
  *	s_p_hashtbl_t's internal copy of the value.  By default, the value
@@ -247,6 +249,7 @@ typedef enum slurm_parser_enum {
 	S_P_LONG,
 	S_P_UINT16,
 	S_P_UINT32,
+	S_P_UINT64,
 	S_P_POINTER,
 	S_P_ARRAY,
 	S_P_BOOLEAN,
@@ -460,6 +463,23 @@ int s_p_get_uint16(uint16_t *num, const char *key,
  *   was successfully set, otherwise returns 0;
  */
 int s_p_get_uint32(uint32_t *num, const char *key,
+		   const s_p_hashtbl_t *hashtbl);
+
+/*
+ * s_p_get_uint64
+ *
+ * Search for a key in a s_p_hashtbl_t with value of type
+ * uint64.  If the key is found and has a set value, the
+ * value is retuned in "num".
+ *
+ * OUT num - pointer to a uint64_t where the value is returned
+ * IN key - hash table key
+ * IN hashtbl - hash table created by s_p_hashtbl_create()
+ *
+ * Returns 1 when a value was set for "key" during parsing and "num"
+ *   was successfully set, otherwise returns 0;
+ */
+int s_p_get_uint64(uint64_t *num, const char *key,
 		   const s_p_hashtbl_t *hashtbl);
 
 /*
