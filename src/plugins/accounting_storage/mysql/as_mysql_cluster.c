@@ -869,6 +869,7 @@ empty:
 		MYSQL_RES *result2 = NULL;
 		MYSQL_ROW row2;
 		cluster = xmalloc(sizeof(slurmdb_cluster_rec_t));
+		slurmdb_init_cluster_rec(cluster, 0);
 		list_append(cluster_list, cluster);
 
 		cluster->name = xstrdup(row[CLUSTER_REQ_NAME]);
