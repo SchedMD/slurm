@@ -50,6 +50,7 @@ documents those changes that are of interest to users and administrators.
  -- knl_cray.conf file option of CnselectPath added.
  -- node_features/knl_cray plugin modified to get current node NUMA and MCDRAM
     modes using cnselect command rather than capmc command.
+ -- liblua - add SLES12 paths to runtime search list.
 
 * Changes in Slurm 16.05.0
 ==========================
