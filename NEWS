@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 16.05.2
 ==========================
+ -- CRAY - Fix issue where the proctrack plugin could hang if the container
+    id wasn't able to be made.
 
 * Changes in Slurm 16.05.1
 ==========================

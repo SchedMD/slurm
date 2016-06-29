@@ -85,22 +85,25 @@ static void *_create_container_thread(void *args)
 {
 	stepd_step_rec_t *job = (stepd_step_rec_t *)args;
 
-	if ((job->cont_id = (uint64_t)job_create(0, job->uid, 0))
-	    == (jid_t)-1) {
-		error ("Failed to create job container: %m");
-		return NULL;
-	}
+	job->cont_id = (uint64_t)job_create(0, job->uid, 0);
 
 	/* Signal the container_create we are done */
 	slurm_mutex_lock(&notify_mutex);
+
+	/* We need to signal failure or not */
 	pthread_cond_signal(&notify);
+
 	/* Don't unlock the notify_mutex here, wait, it is not needed
 	 * and can cause deadlock if done. */
 
-	/* Wait around for something else to be added and then exit
-	   when that takes place.
-	*/
-	pthread_cond_wait(&notify, &notify_mutex);
+	if (job->cont_id == (jid_t)-1)
+		error("Failed to create job container: %m");
+	else
+		/* Wait around for something else to be added and then exit
+		   when that takes place.
+		*/
+		pthread_cond_wait(&notify, &notify_mutex);
+
 	slurm_mutex_unlock(&notify_mutex);
 
 	return NULL;
@@ -187,10 +190,10 @@ extern int proctrack_p_create(stepd_step_rec_t *job)
 		pthread_cond_wait(&notify, &notify_mutex);
 		slurm_mutex_unlock(&notify_mutex);
 		slurm_mutex_unlock(&thread_mutex);
-
-		debug("proctrack_p_create: created jid "
-		      "0x%08lx thread 0x%08lx",
-		      job->cont_id, threadid);
+		if (job->cont_id != (jid_t)-1)
+			debug("proctrack_p_create: created jid "
+			      "0x%08lx thread 0x%08lx",
+			      job->cont_id, threadid);
 	} else
 		error("proctrack_p_create: already have a cont_id");
 
