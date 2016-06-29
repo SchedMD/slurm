@@ -51,6 +51,7 @@ documents those changes that are of interest to users and administrators.
  -- node_features/knl_cray plugin modified to get current node NUMA and MCDRAM
     modes using cnselect command rather than capmc command.
  -- liblua - add SLES12 paths to runtime search list.
+ -- Fix qsub default output and error files for task arrays.
 
 * Changes in Slurm 16.05.0
 ==========================
