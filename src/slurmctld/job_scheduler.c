@@ -1094,7 +1094,7 @@ static int _schedule(uint32_t job_limit)
 	ListIterator job_iterator = NULL, part_iterator = NULL;
 	List job_queue = NULL;
 	int failed_part_cnt = 0, failed_resv_cnt = 0, job_cnt = 0;
-	int error_code, bb, i, j, part_cnt, time_limit, pend_time;
+	int error_code, i, j, part_cnt, time_limit, pend_time;
 	uint32_t job_depth = 0, array_task_id;
 	job_queue_rec_t *job_queue_rec;
 	struct job_record *job_ptr = NULL;
@@ -1715,30 +1715,6 @@ next_task:
 
 		last_job_sched_start = MAX(last_job_sched_start,
 					   job_ptr->start_time);
-		bb = bb_g_job_test_stage_in(job_ptr, false);
-		if (bb != 1) {
-			if (bb == 0) {
-				job_ptr->state_reason =
-					WAIT_BURST_BUFFER_STAGING;
-			} else {
-				job_ptr->state_reason =
-					WAIT_BURST_BUFFER_RESOURCE;
-			}
-			if (job_ptr->start_time == 0) {
-				job_ptr->start_time = last_job_sched_start;
-				bb_wait_cnt++;
-			}
-			xfree(job_ptr->state_desc);
-			last_job_update = now;
-			debug3("sched: JobId=%u. State=%s. Reason=%s. "
-			       "Priority=%u.",
-			       job_ptr->job_id,
-			       job_state_string(job_ptr->job_state),
-			       job_reason_string(job_ptr->state_reason),
-			       job_ptr->priority);
-			continue;
-		}
-
 		if (deadline_time_limit) {
 			save_time_limit = job_ptr->time_limit;
 			job_ptr->time_limit = deadline_time_limit;
@@ -1758,6 +1734,18 @@ next_task:
 			       job_reason_string(job_ptr->state_reason),
 			       job_ptr->priority, job_ptr->partition);
 			fail_by_part = true;
+		} else if (error_code == ESLURM_BURST_BUFFER_WAIT) {
+			if (job_ptr->start_time == 0) {
+				job_ptr->start_time = last_job_sched_start;
+				bb_wait_cnt++;
+			}
+			debug3("sched: JobId=%u. State=%s. Reason=%s. "
+			       "Priority=%u.",
+			       job_ptr->job_id,
+			       job_state_string(job_ptr->job_state),
+			       job_reason_string(job_ptr->state_reason),
+			       job_ptr->priority);
+			continue;
 		} else if ((error_code == ESLURM_RESERVATION_BUSY) ||
 			   (error_code == ESLURM_RESERVATION_NOT_USABLE)) {
 			if (job_ptr->resv_ptr &&
