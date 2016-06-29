@@ -14,6 +14,9 @@ documents those changes that are of interest to users and administrators.
     deleted make it possible.
  -- SlurmDBD - change all timestamps to bigint from int to solve Y2038 problem.
 
+* Changes in Slurm 16.05.2
+==========================
+
 * Changes in Slurm 16.05.1
 ==========================
  -- Fix __cplusplus macro in spank.h to allow compilation with C++.
@@ -63,6 +66,10 @@ documents those changes that are of interest to users and administrators.
  -- knl_cray.conf file option of CnselectPath added.
  -- node_features/knl_cray plugin modified to get current node NUMA and MCDRAM
     modes using cnselect command rather than capmc command.
+ -- liblua - add SLES12 paths to runtime search list.
+ -- Fix qsub default output and error files for task arrays.
+ -- Fix qsub to set job_name correctly when wrapping a script (-b y)
+ -- Cray - set EnforcePartLimits=any in slurm.conf template.
 
 * Changes in Slurm 16.05.0
 ==========================

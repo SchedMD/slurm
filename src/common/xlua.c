@@ -51,9 +51,11 @@ int xlua_dlopen(void)
 	    !dlopen("liblua-5.2.so",   RTLD_NOW | RTLD_GLOBAL) &&
 	    !dlopen("liblua5.2.so",    RTLD_NOW | RTLD_GLOBAL) &&
 	    !dlopen("liblua5.2.so.0",  RTLD_NOW | RTLD_GLOBAL) &&
+	    !dlopen("liblua.so.5.2",   RTLD_NOW | RTLD_GLOBAL) &&
 	    !dlopen("liblua-5.1.so",   RTLD_NOW | RTLD_GLOBAL) &&
 	    !dlopen("liblua5.1.so",    RTLD_NOW | RTLD_GLOBAL) &&
-	    !dlopen("liblua5.1.so.0",  RTLD_NOW | RTLD_GLOBAL)) {
+	    !dlopen("liblua5.1.so.0",  RTLD_NOW | RTLD_GLOBAL) &&
+	    !dlopen("liblua.so.5.1",   RTLD_NOW | RTLD_GLOBAL) ) {
 		return error("Failed to open liblua.so: %s", dlerror());
 	}
 	return SLURM_SUCCESS;

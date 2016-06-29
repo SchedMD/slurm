@@ -250,19 +250,27 @@ if($interactive) {
 	if (!$join_output) {
 		if ($err_path) {
 			$command .= " -e $err_path";
-		} elsif ($job_name) {
-			$command .= " -e $job_name.e%j";
 		} else {
-			$command .= " -e $use_job_name.e%j";
+			if ($job_name) {
+				$command .= " -e $job_name.e%j";
+			} else {
+				$command .= " -e $use_job_name.e%j";
+			}
+
+			$command .= ".%a" if $array;
 		}
 	}
 
 	if ($out_path) {
 		$command .= " -o $out_path";
-	} elsif ($job_name) {
-		$command .= " -o $job_name.o%j";
 	} else {
-		$command .= " -o $use_job_name.o%j";
+		if ($job_name) {
+			$command .= " -o $job_name.o%j";
+		} else {
+			$command .= " -o $use_job_name.o%j";
+		}
+
+		$command .= ".%a" if $array;
 	}
 
 #	The job size specification may be within the batch script,
@@ -365,6 +373,7 @@ if ($requeue) {
 
 if ($script) {
 	if ($wrap && $wrap =~ 'y') {
+		$command .= " -J $use_job_name" if !$job_name;
 		$command .=" --wrap=\"$script\"";
 	} else {
 		$command .= " $script";
