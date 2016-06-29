@@ -52,6 +52,7 @@ documents those changes that are of interest to users and administrators.
     modes using cnselect command rather than capmc command.
  -- liblua - add SLES12 paths to runtime search list.
  -- Fix qsub default output and error files for task arrays.
+ -- Fix qsub to set job_name correctly when wrapping a script (-b y)
 
 * Changes in Slurm 16.05.0
 ==========================

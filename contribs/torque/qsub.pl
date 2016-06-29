@@ -373,6 +373,7 @@ if ($requeue) {
 
 if ($script) {
 	if ($wrap && $wrap =~ 'y') {
+		$command .= " -J $use_job_name" if !$job_name;
 		$command .=" --wrap=\"$script\"";
 	} else {
 		$command .= " $script";
