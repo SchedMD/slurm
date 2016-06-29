@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
  -- Remove eligible_time from jobcomp/elasticsearch.
  -- Fix issue where if no clusters were added but yet a QOS needed to be
     deleted make it possible.
+ -- SlurmDBD - change all timestamps to bigint from int to solve Y2038 problem.
 
 * Changes in Slurm 16.05.1
 ==========================

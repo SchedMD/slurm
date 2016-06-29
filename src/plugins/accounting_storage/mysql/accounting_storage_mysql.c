@@ -490,8 +490,8 @@ static bool _check_jobs_before_remove_without_assoctable(
 static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 {
 	storage_field_t acct_coord_table_fields[] = {
-		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default 0 not null" },
+		{ "creation_time", "bigint unsigned not null" },
+		{ "mod_time", "bigint unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
 		{ "acct", "tinytext not null" },
 		{ "user", "tinytext not null" },
@@ -499,8 +499,8 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	};
 
 	storage_field_t acct_table_fields[] = {
-		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default 0 not null" },
+		{ "creation_time", "bigint unsigned not null" },
+		{ "mod_time", "bigint unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
 		{ "name", "tinytext not null" },
 		{ "description", "text not null" },
@@ -509,7 +509,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	};
 
 	storage_field_t tres_table_fields[] = {
-		{ "creation_time", "int unsigned not null" },
+		{ "creation_time", "bigint unsigned not null" },
 		{ "deleted", "tinyint default 0 not null" },
 		{ "id", "int not null auto_increment" },
 		{ "type", "tinytext not null" },
@@ -518,8 +518,8 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	};
 
 	storage_field_t cluster_table_fields[] = {
-		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default 0 not null" },
+		{ "creation_time", "bigint unsigned not null" },
+		{ "mod_time", "bigint unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
 		{ "name", "tinytext not null" },
 		{ "control_host", "tinytext not null default ''" },
@@ -534,8 +534,8 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	};
 
 	storage_field_t clus_res_table_fields[] = {
-		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default 0 not null" },
+		{ "creation_time", "bigint unsigned not null" },
+		{ "mod_time", "bigint unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
 		{ "cluster", "tinytext not null" },
 		{ "res_id", "int not null" },
@@ -544,8 +544,8 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	};
 
 	storage_field_t qos_table_fields[] = {
-		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default 0 not null" },
+		{ "creation_time", "bigint unsigned not null" },
+		{ "mod_time", "bigint unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
 		{ "id", "int not null auto_increment" },
 		{ "name", "tinytext not null" },
@@ -580,8 +580,8 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	};
 
 	storage_field_t res_table_fields[] = {
-		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default 0 not null" },
+		{ "creation_time", "bigint unsigned not null" },
+		{ "mod_time", "bigint unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
 		{ "id", "int not null auto_increment" },
 		{ "name", "tinytext not null" },
@@ -596,7 +596,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 
 	storage_field_t txn_table_fields[] = {
 		{ "id", "int not null auto_increment" },
-		{ "timestamp", "int unsigned default 0 not null" },
+		{ "timestamp", "bigint unsigned default 0 not null" },
 		{ "action", "smallint not null" },
 		{ "name", "text not null" },
 		{ "actor", "tinytext not null" },
@@ -606,8 +606,8 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	};
 
 	storage_field_t user_table_fields[] = {
-		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default 0 not null" },
+		{ "creation_time", "bigint unsigned not null" },
+		{ "mod_time", "bigint unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
 		{ "name", "tinytext not null" },
 		{ "admin_level", "smallint default 1 not null" },
@@ -1081,8 +1081,8 @@ extern int create_cluster_assoc_table(
 	mysql_conn_t *mysql_conn, char *cluster_name)
 {
 	storage_field_t assoc_table_fields[] = {
-		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default 0 not null" },
+		{ "creation_time", "bigint unsigned not null" },
+		{ "mod_time", "bigint unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0 not null" },
 		{ "is_def", "tinyint default 0 not null" },
 		{ "id_assoc", "int unsigned not null auto_increment" },
@@ -1131,11 +1131,11 @@ extern int create_cluster_assoc_table(
 extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 {
 	storage_field_t cluster_usage_table_fields[] = {
-		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default 0 not null" },
+		{ "creation_time", "bigint unsigned not null" },
+		{ "mod_time", "bigint unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0 not null" },
 		{ "id_tres", "int not null" },
-		{ "time_start", "int unsigned not null" },
+		{ "time_start", "bigint unsigned not null" },
 		{ "count", "bigint unsigned default 0 not null" },
 		{ "alloc_secs", "bigint unsigned default 0 not null" },
 		{ "down_secs", "bigint unsigned default 0 not null" },
@@ -1147,8 +1147,8 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	};
 
 	storage_field_t event_table_fields[] = {
-		{ "time_start", "int unsigned not null" },
-		{ "time_end", "int unsigned default 0 not null" },
+		{ "time_start", "bigint unsigned not null" },
+		{ "time_end", "bigint unsigned default 0 not null" },
 		{ "node_name", "tinytext default '' not null" },
 		{ "cluster_nodes", "text not null default ''" },
 		{ "reason", "tinytext not null" },
@@ -1159,19 +1159,19 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	};
 
 	storage_field_t id_usage_table_fields[] = {
-		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default 0 not null" },
+		{ "creation_time", "bigint unsigned not null" },
+		{ "mod_time", "bigint unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0 not null" },
 		{ "id", "int unsigned not null" },
 		{ "id_tres", "int default 1 not null" },
-		{ "time_start", "int unsigned not null" },
+		{ "time_start", "bigint unsigned not null" },
 		{ "alloc_secs", "bigint unsigned default 0 not null" },
 		{ NULL, NULL}
 	};
 
 	storage_field_t job_table_fields[] = {
 		{ "job_db_inx", "int unsigned not null auto_increment" },
-		{ "mod_time", "int unsigned default 0 not null" },
+		{ "mod_time", "bigint unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0 not null" },
 		{ "account", "tinytext" },
 		{ "array_task_str", "text" },
@@ -1201,11 +1201,11 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "priority", "int unsigned not null" },
 		{ "state", "smallint unsigned not null" },
 		{ "timelimit", "int unsigned default 0 not null" },
-		{ "time_submit", "int unsigned default 0 not null" },
-		{ "time_eligible", "int unsigned default 0 not null" },
-		{ "time_start", "int unsigned default 0 not null" },
-		{ "time_end", "int unsigned default 0 not null" },
-		{ "time_suspended", "int unsigned default 0 not null" },
+		{ "time_submit", "bigint unsigned default 0 not null" },
+		{ "time_eligible", "bigint unsigned default 0 not null" },
+		{ "time_start", "bigint unsigned default 0 not null" },
+		{ "time_end", "bigint unsigned default 0 not null" },
+		{ "time_suspended", "bigint unsigned default 0 not null" },
 		{ "gres_req", "text not null default ''" },
 		{ "gres_alloc", "text not null default ''" },
 		{ "gres_used", "text not null default ''" },
@@ -1217,9 +1217,9 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	};
 
 	storage_field_t last_ran_table_fields[] = {
-		{ "hourly_rollup", "int unsigned default 0 not null" },
-		{ "daily_rollup", "int unsigned default 0 not null" },
-		{ "monthly_rollup", "int unsigned default 0 not null" },
+		{ "hourly_rollup", "bigint unsigned default 0 not null" },
+		{ "daily_rollup", "bigint unsigned default 0 not null" },
+		{ "monthly_rollup", "bigint unsigned default 0 not null" },
 		{ NULL, NULL}
 	};
 
@@ -1231,8 +1231,8 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "nodelist", "text not null default ''" },
 		{ "node_inx", "text not null default ''" },
 		{ "resv_name", "text not null" },
-		{ "time_start", "int unsigned default 0 not null"},
-		{ "time_end", "int unsigned default 0 not null" },
+		{ "time_start", "bigint unsigned default 0 not null"},
+		{ "time_end", "bigint unsigned default 0 not null" },
 		{ "tres", "text not null default ''" },
 		{ NULL, NULL}
 	};
@@ -1250,9 +1250,9 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "step_name", "text not null" },
 		{ "task_cnt", "int unsigned not null" },
 		{ "task_dist", "smallint default 0 not null" },
-		{ "time_start", "int unsigned default 0 not null" },
-		{ "time_end", "int unsigned default 0 not null" },
-		{ "time_suspended", "int unsigned default 0 not null" },
+		{ "time_start", "bigint unsigned default 0 not null" },
+		{ "time_end", "bigint unsigned default 0 not null" },
+		{ "time_suspended", "bigint unsigned default 0 not null" },
 		{ "user_sec", "int unsigned default 0 not null" },
 		{ "user_usec", "int unsigned default 0 not null" },
 		{ "sys_sec", "int unsigned default 0 not null" },
@@ -1293,14 +1293,14 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	storage_field_t suspend_table_fields[] = {
 		{ "job_db_inx", "int unsigned not null" },
 		{ "id_assoc", "int not null" },
-		{ "time_start", "int unsigned default 0 not null" },
-		{ "time_end", "int unsigned default 0 not null" },
+		{ "time_start", "bigint unsigned default 0 not null" },
+		{ "time_end", "bigint unsigned default 0 not null" },
 		{ NULL, NULL}
 	};
 
 	storage_field_t wckey_table_fields[] = {
-		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default 0 not null" },
+		{ "creation_time", "bigint unsigned not null" },
+		{ "mod_time", "bigint unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0 not null" },
 		{ "is_def", "tinyint default 0 not null" },
 		{ "id_wckey", "int unsigned not null auto_increment" },
