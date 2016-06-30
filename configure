@@ -1778,7 +1778,8 @@ Optional Packages:
   --with-freeipmi=PATH    Specify path to freeipmi installation
   --with-rrdtool=PATH     Specify path to rrdtool-devel installation
   --with-mysql_config=PATH
-                          Specify path to mysql_config binary
+                          Specify path of directory where mysql_config binary
+                          exists
   --with-alps-emulation   Run SLURM against an emulated ALPS system - requires
                           option cray.conf [default=no]
   --with-cray_dir=PATH    Specify path to Cray file installation - /opt/cray
@@ -19935,10 +19936,9 @@ char *malloc ();
 int
 main ()
 {
-char *a = malloc(0);
-int b = !a;
-free(a);
-return b;
+return ! malloc (0);
+  ;
+  return 0;
 }
 _ACEOF
 if ac_fn_c_try_run "$LINENO"; then :
@@ -22431,12 +22431,6 @@ rm -f core conftest.err conftest.$ac_objext \
 
   rm -f conf.glibtest
 
-
-if test ${glib_config_minor_version=0} -ge 12 ; then
-
-$as_echo "#define GLIB_PTHREAD_GETNAME 1" >>confdefs.h
-
-fi
 
 if test ${glib_config_minor_version=0} -ge 32 ; then
 

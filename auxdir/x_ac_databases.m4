@@ -18,7 +18,7 @@ AC_DEFUN([X_AC_DATABASES],
 	AC_ARG_WITH(
 		[mysql_config],
 		AS_HELP_STRING(--with-mysql_config=PATH,
-			Specify path to mysql_config binary),
+			Specify path of directory where mysql_config binary exists),
 		[_x_ac_mysql_bin="$withval"])
 
 	if test x$_x_ac_mysql_bin = xno; then

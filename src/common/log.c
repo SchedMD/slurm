@@ -52,6 +52,10 @@
 
 #include "config.h"
 
+#if HAVE_SYS_PRCTL_H
+#  include <sys/prctl.h>
+#endif
+
 #include <errno.h>
 #include <poll.h>
 #include <pthread.h>
@@ -664,14 +668,14 @@ set_idbuf(char *idbuf)
 	int max_len = 12; /* handles current longest thread name */
 
 	gettimeofday(&now, NULL);
-#ifdef GLIB_PTHREAD_GETNAME
-	if (pthread_getname_np(pthread_self(), thread_name, NAMELEN)) {
+#if HAVE_SYS_PRCTL_H
+	if (prctl(PR_GET_NAME, thread_name, NULL, NULL, NULL) < 0) {
 		error("failed to get thread name: %m");
-		return;
+		max_len = 0;
+		thread_name[0] = '\0';
 	}
 #else
-	/* pthread_getname_np is a non-standard extension
-	 * skip printing thread name if not available */
+	/* skip printing thread name if not available */
 	max_len = 0;
 	thread_name[0] = '\0';
 #endif

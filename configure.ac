@@ -263,10 +263,6 @@ fi
 
 AM_PATH_GLIB_2_0([2.7.1], [ac_glib_test="yes"], [ac_glib_test="no"], [gthread])
 
-if test ${glib_config_minor_version=0} -ge 12 ; then
-       AC_DEFINE([GLIB_PTHREAD_GETNAME], 1, [Define to 1 if using glib-2.12.0 or higher])
-fi
-
 if test ${glib_config_minor_version=0} -ge 32 ; then
        AC_DEFINE([GLIB_NEW_THREADS], 1, [Define to 1 if using glib-2.32.0 or higher])
 fi
