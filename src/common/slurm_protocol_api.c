@@ -307,9 +307,9 @@ uint32_t slurm_get_suspend_time(void)
 /* slurm_get_def_mem_per_cpu
  * RET DefMemPerCPU/Node value from slurm.conf
  */
-uint32_t slurm_get_def_mem_per_cpu(void)
+uint64_t slurm_get_def_mem_per_cpu(void)
 {
-	uint32_t mem_per_cpu = 0;
+	uint64_t mem_per_cpu = 0;
 	slurm_ctl_conf_t *conf;
 
 	if (slurmdbd_conf) {
@@ -390,9 +390,9 @@ void slurm_set_debug_flags(uint64_t debug_flags)
 /* slurm_get_max_mem_per_cpu
  * RET MaxMemPerCPU/Node value from slurm.conf
  */
-uint32_t slurm_get_max_mem_per_cpu(void)
+uint64_t slurm_get_max_mem_per_cpu(void)
 {
-	uint32_t mem_per_cpu = 0;
+	uint64_t mem_per_cpu = 0;
 	slurm_ctl_conf_t *conf;
 
 	if (slurmdbd_conf) {

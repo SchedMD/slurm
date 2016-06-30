@@ -194,6 +194,14 @@ static inline int _diff_uint32(uint32_t value_1, uint32_t value_2)
 		return -1;
 	return 0;
 }
+static inline int _diff_uint64(uint64_t value_1, uint64_t value_2)
+{
+	if (value_1 > value_2)
+		return 1;
+	if (value_1 < value_2)
+		return -1;
+	return 0;
+}
 static void
 _get_sinfo_from_void(sinfo_data_t **s1, sinfo_data_t **s2, void *v1, void *v2)
 {
@@ -244,7 +252,7 @@ static int _sort_by_free_mem(void *void1, void *void2)
 
 	_get_sinfo_from_void(&sinfo1, &sinfo2, void1, void2);
 
-	diff = _diff_uint32(sinfo1->min_free_mem, sinfo2->min_free_mem);
+	diff = _diff_uint64(sinfo1->min_free_mem, sinfo2->min_free_mem);
 
 	if (reverse_order)
 		diff = -diff;
@@ -579,7 +587,7 @@ static int _sort_by_memory(void *void1, void *void2)
 
 	_get_sinfo_from_void(&sinfo1, &sinfo2, void1, void2);
 
-	diff = _diff_uint32(sinfo1->min_mem, sinfo2->min_mem);
+	diff = _diff_uint64(sinfo1->min_mem, sinfo2->min_mem);
 
 	if (reverse_order)
 		diff = -diff;

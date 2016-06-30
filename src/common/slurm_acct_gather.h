@@ -52,8 +52,8 @@ extern int acct_gather_conf_destroy(void);
 /* don't forget to free this */
 extern List acct_gather_conf_values(void);
 extern int acct_gather_parse_freq(int type, char *freq);
-extern int acct_gather_check_acct_freq_task(
-	uint32_t job_mem_lim, char *acctg_freq);
+extern int acct_gather_check_acct_freq_task(uint64_t job_mem_lim,
+					    char *acctg_freq);
 extern void acct_gather_suspend_poll(void);
 extern void acct_gather_resume_poll(void);
 extern bool acct_gather_suspend_test(void);

@@ -46,7 +46,7 @@ typedef struct {
 	char *features;
 	char *features_act;
 	hostlist_t hl;
-	uint32_t mem_total;
+	uint64_t mem_total;
 	uint32_t node_cnt;
 	uint32_t node_alloc_cnt;
 	uint32_t node_error_cnt;

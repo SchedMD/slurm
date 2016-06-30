@@ -476,8 +476,8 @@ static void _opt_default(void)
 	opt.warn_time   = 0;
 
 	opt.pn_min_cpus    = NO_VAL;
-	opt.pn_min_memory  = NO_VAL;
-	opt.mem_per_cpu    = NO_VAL;
+	opt.pn_min_memory  = NO_VAL64;
+	opt.mem_per_cpu    = NO_VAL64;
 	opt.pn_min_tmp_disk= NO_VAL;
 
 	opt.hold	    = false;
@@ -1369,7 +1369,7 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_MEM:
 			opt.pn_min_memory = (int) str_to_mbytes(optarg);
-			opt.mem_per_cpu = NO_VAL;
+			opt.mem_per_cpu = NO_VAL64;
 			if (opt.pn_min_memory < 0) {
 				error("invalid memory constraint %s",
 				      optarg);
@@ -1378,7 +1378,7 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_MEM_PER_CPU:
 			opt.mem_per_cpu = (int) str_to_mbytes(optarg);
-			opt.pn_min_memory = NO_VAL;
+			opt.pn_min_memory = NO_VAL64;
 			if (opt.mem_per_cpu < 0) {
 				error("invalid memory constraint %s",
 				      optarg);
@@ -2470,10 +2470,10 @@ static char *print_constraints(void)
 		xstrfmtcat(buf, "mincpus-per-node=%d ", opt.pn_min_cpus);
 
 	if (opt.pn_min_memory != NO_VAL)
-		xstrfmtcat(buf, "mem-per-node=%dM ", opt.pn_min_memory);
+		xstrfmtcat(buf, "mem-per-node=%ldM ", opt.pn_min_memory);
 
 	if (opt.mem_per_cpu != NO_VAL)
-		xstrfmtcat(buf, "mem-per-cpu=%dM ", opt.mem_per_cpu);
+		xstrfmtcat(buf, "mem-per-cpu=%ldM ", opt.mem_per_cpu);
 
 	if (opt.pn_min_tmp_disk != NO_VAL)
 		xstrfmtcat(buf, "tmp-per-node=%ld ", opt.pn_min_tmp_disk);

@@ -386,7 +386,7 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 void
 dump_step_desc(job_step_create_request_msg_t *step_spec)
 {
-	uint32_t mem_value = step_spec->pn_min_memory;
+	uint64_t mem_value = step_spec->pn_min_memory;
 	char *mem_type = "node";
 
 	if (mem_value & MEM_PER_CPU) {
@@ -418,8 +418,8 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 	       step_spec->network, step_spec->exclusive);
 	debug3("   checkpoint-dir=%s checkpoint_int=%u",
 	       step_spec->ckpt_dir, step_spec->ckpt_interval);
-	debug3("   mem_per_%s=%u resv_port_cnt=%u immediate=%u no_kill=%u",
-	       mem_type, mem_value, step_spec->resv_port_cnt,
+	debug3("   mem_per_%s=%"PRIu64" resv_port_cnt=%u immediate=%u"
+	       " no_kill=%u", mem_type, mem_value, step_spec->resv_port_cnt,
 	       step_spec->immediate, step_spec->no_kill);
 	debug3("   overcommit=%d time_limit=%u gres=%s",
 	       step_spec->overcommit, step_spec->time_limit, step_spec->gres);
@@ -992,7 +992,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	if (step_spec->exclusive) {
 		int avail_cpus, avail_tasks, total_cpus, total_tasks, node_inx;
 		int i_first, i_last;
-		uint32_t avail_mem, total_mem;
+		uint64_t avail_mem, total_mem;
 		uint64_t gres_cnt;
 		uint32_t nodes_picked_cnt = 0;
 		uint32_t tasks_picked_cnt = 0, total_task_cnt = 0;
@@ -1051,7 +1051,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			}
 			if (_is_mem_resv() &&
 			    (step_spec->pn_min_memory & MEM_PER_CPU)) {
-				uint32_t mem_use = step_spec->pn_min_memory;
+				uint64_t mem_use = step_spec->pn_min_memory;
 				mem_use &= (~MEM_PER_CPU);
 
 				avail_mem = job_resrcs_ptr->
@@ -1069,7 +1069,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 					task_cnt /= cpus_per_task;
 				total_tasks = MIN(total_tasks, task_cnt);
 			} else if (_is_mem_resv() && step_spec->pn_min_memory) {
-				uint32_t mem_use = step_spec->pn_min_memory;
+				uint64_t mem_use = step_spec->pn_min_memory;
 
 				avail_mem = job_resrcs_ptr->
 					memory_allocated[node_inx] -
@@ -1220,7 +1220,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			usable_cpu_cnt[i] = avail_cpus = total_cpus;
 			if (_is_mem_resv() &&
 			    step_spec->pn_min_memory & MEM_PER_CPU) {
-				uint32_t mem_use = step_spec->pn_min_memory;
+				uint64_t mem_use = step_spec->pn_min_memory;
 				mem_use &= (~MEM_PER_CPU);
 				/* ignore current step allocations */
 				tmp_mem    = job_resrcs_ptr->
@@ -1237,7 +1237,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 					fail_mode = ESLURM_INVALID_TASK_MEMORY;
 				}
 			} else if (_is_mem_resv() && step_spec->pn_min_memory) {
-				uint32_t mem_use = step_spec->pn_min_memory;
+				uint64_t mem_use = step_spec->pn_min_memory;
 				/* ignore current step allocations */
 				tmp_mem    = job_resrcs_ptr->
 					     memory_allocated[node_inx];
@@ -1901,7 +1901,7 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 				       job_ptr->job_id, step_ptr->step_id);
 		if (step_ptr->pn_min_memory && _is_mem_resv()) {
 			if (step_ptr->pn_min_memory & MEM_PER_CPU) {
-				uint32_t mem_use = step_ptr->pn_min_memory;
+				uint64_t mem_use = step_ptr->pn_min_memory;
 				mem_use &= (~MEM_PER_CPU);
 				job_resrcs_ptr->memory_used[job_node_inx] +=
 					(mem_use * cpus_alloc);
@@ -2037,7 +2037,7 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 #endif
 		}
 		if (step_ptr->pn_min_memory && _is_mem_resv()) {
-			uint32_t mem_use = step_ptr->pn_min_memory;
+			uint64_t mem_use = step_ptr->pn_min_memory;
 			if (mem_use & MEM_PER_CPU) {
 				mem_use &= (~MEM_PER_CPU);
 				mem_use *= cpus_alloc;
@@ -2671,7 +2671,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 				usable_cpus = cpus;
 			if ((step_ptr->pn_min_memory & MEM_PER_CPU) &&
 			    _is_mem_resv()) {
-				uint32_t mem_use = step_ptr->pn_min_memory;
+				uint64_t mem_use = step_ptr->pn_min_memory;
 				mem_use &= (~MEM_PER_CPU);
 				usable_mem =
 					job_resrcs_ptr->memory_allocated[pos] -
@@ -3678,8 +3678,9 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	uint16_t cyclic_alloc, port, batch_step, bit_cnt;
 	uint16_t start_protocol_ver = SLURM_MIN_PROTOCOL_VERSION;
 	uint16_t ckpt_interval, cpus_per_task, resv_port_cnt, state;
-	uint32_t core_size, cpu_count, exit_code, pn_min_memory, name_len;
+	uint32_t core_size, cpu_count, exit_code, name_len;
 	uint32_t step_id, time_limit, cpu_freq_min, cpu_freq_max, cpu_freq_gov;
+	uint64_t pn_min_memory;
 	time_t start_time, pre_sus_time, tot_sus_time, ckpt_time;
 	char *host = NULL, *ckpt_dir = NULL, *core_job = NULL;
 	char *resv_ports = NULL, *name = NULL, *network = NULL;
@@ -3691,7 +3692,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	List gres_list = NULL;
 	dynamic_plugin_data_t *select_jobinfo = NULL;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		safe_unpack32(&step_id, buffer);
 		safe_unpack16(&cyclic_alloc, buffer);
 		safe_unpack16(&port, buffer);
@@ -3704,7 +3705,73 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 		safe_unpack8(&no_kill, buffer);
 
 		safe_unpack32(&cpu_count, buffer);
-		safe_unpack32(&pn_min_memory, buffer);
+		safe_unpack64(&pn_min_memory, buffer);
+		safe_unpack32(&exit_code, buffer);
+		if (exit_code != NO_VAL) {
+			safe_unpackstr_xmalloc(&bit_fmt, &name_len, buffer);
+			safe_unpack16(&bit_cnt, buffer);
+		}
+		safe_unpack32(&core_size, buffer);
+		if (core_size)
+			safe_unpackstr_xmalloc(&core_job, &name_len, buffer);
+		safe_unpack32(&time_limit, buffer);
+		safe_unpack32(&cpu_freq_min, buffer);
+		safe_unpack32(&cpu_freq_max, buffer);
+		safe_unpack32(&cpu_freq_gov, buffer);
+
+		safe_unpack_time(&start_time, buffer);
+		safe_unpack_time(&pre_sus_time, buffer);
+		safe_unpack_time(&tot_sus_time, buffer);
+		safe_unpack_time(&ckpt_time, buffer);
+
+		safe_unpackstr_xmalloc(&host, &name_len, buffer);
+		safe_unpackstr_xmalloc(&resv_ports, &name_len, buffer);
+		safe_unpackstr_xmalloc(&name, &name_len, buffer);
+		safe_unpackstr_xmalloc(&network, &name_len, buffer);
+		safe_unpackstr_xmalloc(&ckpt_dir, &name_len, buffer);
+
+		safe_unpackstr_xmalloc(&gres, &name_len, buffer);
+		if (gres_plugin_step_state_unpack(&gres_list, buffer,
+						  job_ptr->job_id, step_id,
+						  protocol_version)
+		    != SLURM_SUCCESS)
+			goto unpack_error;
+
+		safe_unpack16(&batch_step, buffer);
+		if (!batch_step) {
+			if (unpack_slurm_step_layout(&step_layout, buffer,
+						     protocol_version))
+				goto unpack_error;
+			if (switch_g_unpack_jobinfo(&switch_tmp, buffer,
+						    protocol_version))
+				goto unpack_error;
+		}
+		checkpoint_alloc_jobinfo(&check_tmp);
+		if (checkpoint_unpack_jobinfo(check_tmp, buffer,
+					      protocol_version))
+			goto unpack_error;
+
+		if (select_g_select_jobinfo_unpack(&select_jobinfo, buffer,
+						   protocol_version))
+			goto unpack_error;
+		safe_unpackstr_xmalloc(&tres_alloc_str, &name_len, buffer);
+		safe_unpackstr_xmalloc(&tres_fmt_alloc_str, &name_len, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint32_t tmp_mem;
+		safe_unpack32(&step_id, buffer);
+		safe_unpack16(&cyclic_alloc, buffer);
+		safe_unpack16(&port, buffer);
+		safe_unpack16(&ckpt_interval, buffer);
+		safe_unpack16(&cpus_per_task, buffer);
+		safe_unpack16(&resv_port_cnt, buffer);
+		safe_unpack16(&state, buffer);
+		safe_unpack16(&start_protocol_ver, buffer);
+
+		safe_unpack8(&no_kill, buffer);
+
+		safe_unpack32(&cpu_count, buffer);
+		safe_unpack32(&tmp_mem, buffer);
+		pn_min_memory = xlate_mem_old2new(tmp_mem);
 		safe_unpack32(&exit_code, buffer);
 		if (exit_code != NO_VAL) {
 			safe_unpackstr_xmalloc(&bit_fmt, &name_len, buffer);

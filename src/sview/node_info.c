@@ -225,7 +225,7 @@ static void _layout_node_record(GtkTreeView *treeview,
 	char *upper = NULL, *lower = NULL;
 	GtkTreeIter iter;
 	uint16_t err_cpus = 0, alloc_cpus = 0;
-	uint32_t alloc_memory = 0;
+	uint64_t alloc_memory = 0;
 	node_info_t *node_ptr = sview_node_info_ptr->node_ptr;
 	int idle_cpus = node_ptr->cpus;
 	GtkTreeStore *treestore =
@@ -291,7 +291,7 @@ static void _layout_node_record(GtkTreeView *treeview,
 						 SORTID_CPU_LOAD),
 				   tmp_cnt);
 
-	if (node_ptr->free_mem == NO_VAL) {
+	if (node_ptr->free_mem == NO_VAL64) {
 		snprintf(tmp_cnt, sizeof(tmp_cnt), "N/A");
 	} else {
 		snprintf(tmp_cnt, sizeof(tmp_cnt), "%"PRIu64"M",
@@ -394,7 +394,7 @@ static void _layout_node_record(GtkTreeView *treeview,
 				     SELECT_NODEDATA_MEM_ALLOC,
 				     NODE_STATE_ALLOCATED,
 				     &alloc_memory);
-	snprintf(tmp_cnt, sizeof(tmp_cnt), "%uM", alloc_memory);
+	snprintf(tmp_cnt, sizeof(tmp_cnt), "%"PRIu64"M", alloc_memory);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
 						 SORTID_USED_MEMORY),
@@ -498,7 +498,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 				GtkTreeStore *treestore)
 {
 	uint16_t alloc_cpus = 0, err_cpus = 0, idle_cpus;
-	uint32_t alloc_memory;
+	uint64_t alloc_memory;
 	node_info_t *node_ptr = sview_node_info_ptr->node_ptr;
 	char tmp_disk[20], tmp_cpus[20], tmp_err_cpus[20], tmp_idle_cpus[20];
 	char tmp_mem[20], tmp_used_memory[20];
@@ -538,7 +538,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			 "%.2f", (node_ptr->cpu_load / 100.0));
 	}
 
-	if (node_ptr->free_mem == NO_VAL) {
+	if (node_ptr->free_mem == NO_VAL64) {
 		strcpy(tmp_free_mem, "N/A");
 	} else {
 		snprintf(tmp_free_mem, sizeof(tmp_free_mem),
@@ -570,7 +570,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 				     SELECT_NODEDATA_MEM_ALLOC,
 				     NODE_STATE_ALLOCATED,
 				     &alloc_memory);
-	snprintf(tmp_used_memory, sizeof(tmp_used_memory), "%uM", alloc_memory);
+	snprintf(tmp_used_memory, sizeof(tmp_used_memory), "%"PRIu64"M", alloc_memory);
 
 	convert_num_unit((float)alloc_cpus, tmp_used_cpus,
 			 sizeof(tmp_used_cpus), UNIT_NONE, NO_VAL,

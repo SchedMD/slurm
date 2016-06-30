@@ -774,6 +774,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 {
 	char *type = "";
 	int temp_int = 0;
+	long long int temp_ll = 0;
 	char *p;
 	uint16_t rotate;
 	uint16_t conn_type[cluster_dims];
@@ -903,11 +904,11 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		job_msg->max_nodes = (uint32_t)temp_int;
 		break;
 	case SORTID_MEM_MIN:
-		temp_int = strtol(new_text, &p, 10);
+		temp_ll = strtoll(new_text, &p, 10);
 		if (*p == 'g' || *p == 'G')
-			temp_int *= 1024;
+			temp_ll *= 1024;
 		else if (*p == 't' || *p == 'T')
-			temp_int *= 1048576;
+			temp_ll *= 1048576;
 
 		p = slurm_strcasestr((char *)new_text, "cpu");
 		if (p)
@@ -917,7 +918,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 
 		if (temp_int <= 0)
 			goto return_error;
-		job_msg->pn_min_memory = (uint32_t)temp_int;
+		job_msg->pn_min_memory = (uint64_t) temp_ll;
 		if (p)
 			job_msg->pn_min_memory |= MEM_PER_CPU;
 		break;
@@ -1354,7 +1355,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 	job_info_t *job_ptr = sview_job_info_ptr->job_ptr;
 	struct group *group_info = NULL;
 	uint16_t term_sig = 0;
-	uint32_t min_mem = 0;
+	uint64_t min_mem = 0;
 
 	GtkTreeIter iter;
 	GtkTreeStore *treestore =
@@ -2037,7 +2038,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	job_info_t *job_ptr = sview_job_info_ptr->job_ptr;
 	struct group *group_info = NULL;
 	uint16_t term_sig = 0;
-	uint32_t min_mem = 0;
+	uint64_t min_mem = 0;
 
 	if (!iter)
 		iter = &sview_job_info_ptr->iter_ptr;

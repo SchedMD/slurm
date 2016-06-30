@@ -551,28 +551,29 @@ extern int jobacct_gather_set_proctrack_container_id(uint64_t id)
 	return SLURM_SUCCESS;
 }
 
-extern int jobacct_gather_set_mem_limit(uint32_t job_id, uint32_t step_id,
-					uint32_t mem_limit)
+extern int jobacct_gather_set_mem_limit(uint32_t job_id,
+					uint32_t step_id,
+					uint64_t mem_limit)
 {
 	if (!plugin_polling)
 		return SLURM_SUCCESS;
 
 	if ((job_id == 0) || (mem_limit == 0)) {
-		error("jobacct_gather_set_mem_limit: jobid:%u mem_limit:%u",
-		      job_id, mem_limit);
+		error("jobacct_gather_set_mem_limit: jobid:%u "
+		      "mem_limit:%"PRIu64"", job_id, mem_limit);
 		return SLURM_ERROR;
 	}
 
 	jobacct_job_id      = job_id;
 	jobacct_step_id     = step_id;
-	jobacct_mem_limit   = (uint64_t) mem_limit * 1024; /* MB to KB */
+	jobacct_mem_limit   = mem_limit * 1024; /* MB to KB */
 	jobacct_vmem_limit  = jobacct_mem_limit;
 	jobacct_vmem_limit *= (slurm_get_vsize_factor() / 100.0);
 	return SLURM_SUCCESS;
 }
 
-extern void jobacct_gather_handle_mem_limit(
-	uint64_t total_job_mem, uint64_t total_job_vsize)
+extern void jobacct_gather_handle_mem_limit(uint64_t total_job_mem,
+					    uint64_t total_job_vsize)
 {
 	if (!plugin_polling)
 		return;

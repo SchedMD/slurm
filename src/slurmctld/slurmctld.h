@@ -319,7 +319,7 @@ struct part_record {
 	char *alternate; 	/* name of alternate partition */
 	double *billing_weights;    /* array of TRES billing weights */
 	char   *billing_weights_str;/* per TRES billing weight string */
-	uint32_t def_mem_per_cpu; /* default MB memory per allocated CPU */
+	uint64_t def_mem_per_cpu; /* default MB memory per allocated CPU */
 	uint32_t default_time;	/* minutes, NO_VAL or INFINITE */
 	char *deny_accounts;	/* comma delimited list of denied accounts */
 	char **deny_account_array; /* NULL terminated list of denied accounts */
@@ -330,7 +330,7 @@ struct part_record {
 	uint32_t grace_time;	/* default preempt grace time in seconds */
 	uint32_t magic;		/* magic cookie to test data integrity */
 	uint32_t max_cpus_per_node; /* maximum allocated CPUs per node */
-	uint32_t max_mem_per_cpu; /* maximum MB memory per allocated CPU */
+	uint64_t max_mem_per_cpu; /* maximum MB memory per allocated CPU */
 	uint32_t max_nodes;	/* per job or INFINITE */
 	uint32_t max_nodes_orig;/* unscaled value (c-nodes on BlueGene) */
 	uint32_t max_offset;	/* select plugin max offset */

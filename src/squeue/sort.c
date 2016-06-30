@@ -257,6 +257,14 @@ static inline int _diff_uint32(uint32_t value_1, uint32_t value_2)
 		return -1;
 	return 0;
 }
+static inline int _diff_uint64(uint64_t value_1, uint64_t value_2)
+{
+	if (value_1 > value_2)
+		return 1;
+	if (value_1 < value_2)
+		return -1;
+	return 0;
+}
 static void _get_job_info_from_void(job_info_t **j1, job_info_t **j2,
 				    void *void1, void *void2)
 {
@@ -573,7 +581,7 @@ static int _sort_job_by_min_memory(void *void1, void *void2)
 
 	job1->pn_min_memory &= (~MEM_PER_CPU);
 	job2->pn_min_memory &= (~MEM_PER_CPU);
-	diff = _diff_uint32(job1->pn_min_memory, job2->pn_min_memory);
+	diff = _diff_uint64(job1->pn_min_memory, job2->pn_min_memory);
 
 	if (reverse_order)
 		diff = -diff;

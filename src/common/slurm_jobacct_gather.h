@@ -147,10 +147,11 @@ extern jobacctinfo_t *jobacct_gather_stat_task(pid_t pid);
 extern jobacctinfo_t *jobacct_gather_remove_task(pid_t pid);
 
 extern int jobacct_gather_set_proctrack_container_id(uint64_t id);
-extern int jobacct_gather_set_mem_limit(uint32_t job_id, uint32_t step_id,
-					uint32_t mem_limit);
-extern void jobacct_gather_handle_mem_limit(
-	uint64_t total_job_mem, uint64_t total_job_vsize);
+extern int jobacct_gather_set_mem_limit(uint32_t job_id,
+					uint32_t step_id,
+					uint64_t mem_limit);
+extern void jobacct_gather_handle_mem_limit(uint64_t total_job_mem,
+					    uint64_t total_job_vsize);
 
 extern jobacctinfo_t *jobacctinfo_create(jobacct_id_t *jobacct_id);
 extern void jobacctinfo_destroy(void *object);

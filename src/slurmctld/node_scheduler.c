@@ -94,7 +94,7 @@ struct node_set {		/* set of nodes with same configuration */
 				 * nodes within the same configuration
 				 * line (in slurm.conf) can actually
 				 * have different CPU counts */
-	uint32_t real_memory;
+	uint64_t real_memory;
 	uint32_t nodes;
 	uint32_t weight;
 	char     *features;
@@ -1106,8 +1106,8 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	    (job_ptr->details->req_node_layout == NULL)) {
 		ListIterator feat_iter;
 		job_feature_t *feat_ptr;
-		uint32_t smallest_min_mem = INFINITE;
-		uint32_t orig_req_mem = job_ptr->details->pn_min_memory;
+		uint64_t smallest_min_mem = INFINITE64;
+		uint64_t orig_req_mem = job_ptr->details->pn_min_memory;
 
 		feat_iter = list_iterator_create(
 				job_ptr->details->feature_list);
@@ -1577,8 +1577,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	 * will fail.  We have to keep track of the
 	 * memory for accounting, these next 2 variables do this for us.
 	 */
-	uint32_t smallest_min_mem = INFINITE;
-	uint32_t orig_req_mem = job_ptr->details->pn_min_memory;
+	uint64_t smallest_min_mem = INFINITE64;
+	uint64_t orig_req_mem = job_ptr->details->pn_min_memory;
 
 	if (test_only)
 		select_mode = SELECT_MODE_TEST_ONLY;

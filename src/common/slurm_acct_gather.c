@@ -198,8 +198,8 @@ extern int acct_gather_parse_freq(int type, char *freq)
 	return freq_int;
 }
 
-extern int acct_gather_check_acct_freq_task(
-	uint32_t job_mem_lim, char *acctg_freq)
+extern int acct_gather_check_acct_freq_task(uint64_t job_mem_lim,
+					    char *acctg_freq)
 {
 	int task_freq;
 	static uint32_t acct_freq_task = NO_VAL;

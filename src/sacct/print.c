@@ -1272,23 +1272,23 @@ void print_fields(type_t type, void *object)
 				switch(type) {
 				case JOB:
 					if (!job->track_steps)
-						tmp_uint32 = job->stats.
+						tmp_uint64 = job->stats.
 							rss_max_taskid;
 					break;
 				case JOBSTEP:
-					tmp_uint32 = step->stats.rss_max_taskid;
+					tmp_uint64 = step->stats.rss_max_taskid;
 					break;
 				case JOBCOMP:
 				default:
-					tmp_uint32 = NO_VAL;
+					tmp_uint64 = NO_VAL64;
 					break;
 				}
-				if (tmp_uint32 == (uint32_t)NO_VAL)
-					tmp_uint32 = NO_VAL;
+				if (tmp_uint64 == (uint64_t)NO_VAL)
+					tmp_uint64 = NO_VAL64;
 			}
 
 			field->print_routine(field,
-					     tmp_uint32,
+					     tmp_uint64,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_MAXVSIZE:

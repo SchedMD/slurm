@@ -176,8 +176,8 @@ typedef struct srun_options {
 
 	/* constraint options */
 	int32_t pn_min_cpus;	/* --mincpus=n			*/
-	int32_t pn_min_memory;	/* --mem=n			*/
-	int32_t mem_per_cpu;	/* --mem-per-cpu=n		*/
+	int64_t pn_min_memory;	/* --mem=n			*/
+	int64_t mem_per_cpu;	/* --mem-per-cpu=n		*/
 	long pn_min_tmp_disk;	/* --tmp=n			*/
 	char *constraints;	/* --constraints=, -C constraint*/
 	char *gres;		/* --gres=			*/
@@ -257,8 +257,8 @@ extern resource_allocation_response_msg_t *global_resp;
  *  macro or move this to a function if it gets a little complicated)
  */
 #define constraints_given() ((opt.pn_min_cpus     != NO_VAL) || \
-			     (opt.pn_min_memory   != NO_VAL) || \
-			     (opt.job_max_memory   != NO_VAL) || \
+			     (opt.pn_min_memory   != NO_VAL64) || \
+			     (opt.job_max_memory   != NO_VAL64) || \
 			     (opt.pn_min_tmp_disk != NO_VAL) || \
 			     (opt.pn_min_sockets  != NO_VAL) || \
 			     (opt.pn_min_cores    != NO_VAL) || \

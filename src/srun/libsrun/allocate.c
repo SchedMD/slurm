@@ -492,7 +492,8 @@ allocate_nodes(bool handle_signals)
 		 * allocated so we don't have issues when we use them
 		 * in the step creation.
 		 */
-		if (opt.pn_min_memory != NO_VAL)
+//XXXX pn_min_memory here is an int, not uint. these bit operations may have some bizarre side effects
+		if (opt.pn_min_memory != NO_VAL64)
 			opt.pn_min_memory = (resp->pn_min_memory &
 					     (~MEM_PER_CPU));
 		else if (opt.mem_per_cpu != NO_VAL)
@@ -806,9 +807,9 @@ job_desc_msg_create_from_opts (void)
 	}
 	if (opt.pn_min_cpus != NO_VAL)
 		j->pn_min_cpus    = opt.pn_min_cpus;
-	if (opt.pn_min_memory != NO_VAL)
+	if (opt.pn_min_memory != NO_VAL64)
 		j->pn_min_memory = opt.pn_min_memory;
-	else if (opt.mem_per_cpu != NO_VAL)
+	else if (opt.mem_per_cpu != NO_VAL64)
 		j->pn_min_memory = opt.mem_per_cpu | MEM_PER_CPU;
 	if (opt.pn_min_tmp_disk != NO_VAL)
 		j->pn_min_tmp_disk = opt.pn_min_tmp_disk;

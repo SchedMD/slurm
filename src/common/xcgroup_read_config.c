@@ -142,7 +142,7 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		{"ConstrainRAMSpace", S_P_BOOLEAN},
 		{"AllowedRAMSpace", S_P_STRING},
 		{"MaxRAMPercent", S_P_STRING},
-		{"MinRAMSpace", S_P_UINT32},
+		{"MinRAMSpace", S_P_UINT64},
 		{"ConstrainSwapSpace", S_P_BOOLEAN},
 		{"ConstrainKmemSpace", S_P_BOOLEAN},
 		{"AllowedSwapSpace", S_P_STRING},
@@ -239,7 +239,7 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 				"MaxSwapPercent",
 				&slurm_cgroup_conf->max_swap_percent);
 
-		s_p_get_uint32 (&slurm_cgroup_conf->min_ram_space,
+		s_p_get_uint64 (&slurm_cgroup_conf->min_ram_space,
 		                "MinRAMSpace", tbl);
 
 		/* Memory limits */

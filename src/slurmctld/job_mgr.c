@@ -7719,7 +7719,8 @@ void job_time_limit(void)
 extern void job_set_req_tres(
 	struct job_record *job_ptr, bool assoc_mgr_locked)
 {
-	uint32_t cpu_cnt = 0, mem_cnt = 0, node_cnt = 0;
+	uint32_t cpu_cnt = 0, node_cnt = 0;
+	uint64_t mem_cnt = 0;
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
 
@@ -7754,7 +7755,7 @@ extern void job_set_req_tres(
 
 	job_ptr->tres_req_cnt[TRES_ARRAY_NODE] = (uint64_t)node_cnt;
 	job_ptr->tres_req_cnt[TRES_ARRAY_CPU] = (uint64_t)cpu_cnt;
-	job_ptr->tres_req_cnt[TRES_ARRAY_MEM] = (uint64_t)mem_cnt;
+	job_ptr->tres_req_cnt[TRES_ARRAY_MEM] = mem_cnt;
 
 	license_set_job_tres_cnt(job_ptr->license_list,
 				 job_ptr->tres_req_cnt,

@@ -65,7 +65,7 @@ struct part_cr_record {
 struct node_cr_record {
 	struct part_cr_record *parts;	/* ptr to singly-linked part_cr_record
 					 * list that contains alloc_core info */
-	uint32_t alloc_memory;		/* real memory reserved by already
+	uint64_t alloc_memory;		/* real memory reserved by already
 					 * scheduled jobs */
 	uint16_t exclusive_cnt;		/* count of jobs exclusively allocated
 					 * this node (from different

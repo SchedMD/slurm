@@ -67,8 +67,8 @@ static int   _build_min_max_32_string(char *buffer, int buf_size,
 static int   _build_cpu_load_min_max_32(char *buffer, int buf_size,
 					uint32_t min, uint32_t max,
 					bool range);
-static int   _build_free_mem_min_max_32(char *buffer, int buf_size,
-					uint32_t min, uint32_t max,
+static int   _build_free_mem_min_max_64(char *buffer, int buf_size,
+					uint64_t min, uint64_t max,
 					bool range);
 static void  _print_reservation(reserve_info_t *resv_ptr, int width);
 static int   _print_secs(long time, int width, bool right, bool cut_output);
@@ -323,8 +323,8 @@ _build_cpu_load_min_max_32(char *buffer, int buf_size,
 }
 
 static int
-_build_free_mem_min_max_32(char *buffer, int buf_size,
-			    uint32_t min, uint32_t max,
+_build_free_mem_min_max_64(char *buffer, int buf_size,
+			    uint64_t min, uint64_t max,
 			    bool range)
 {
 
@@ -334,13 +334,13 @@ _build_free_mem_min_max_32(char *buffer, int buf_size,
 	if (min == NO_VAL) {
 		strcpy(tmp_min, "N/A");
 	} else {
-		snprintf(tmp_min, sizeof(tmp_min), "%u", min);
+		snprintf(tmp_min, sizeof(tmp_min), "%"PRIu64"", min);
 	}
 
 	if (max == NO_VAL) {
 		strcpy(tmp_max, "N/A");
 	} else {
-		snprintf(tmp_max, sizeof(tmp_max), "%u", max);
+		snprintf(tmp_max, sizeof(tmp_max), "%"PRIu64"", max);
 	}
 
 	if (max == min)
@@ -1268,10 +1268,10 @@ int _print_free_mem(sinfo_data_t * sinfo_data, int width,
 	char id[FORMAT_STRING_SIZE];
 
 	if (sinfo_data) {
-		_build_free_mem_min_max_32(id, FORMAT_STRING_SIZE,
-					 sinfo_data->min_free_mem,
-					 sinfo_data->max_free_mem,
-					 true);
+		_build_free_mem_min_max_64(id, FORMAT_STRING_SIZE,
+					   sinfo_data->min_free_mem,
+					   sinfo_data->max_free_mem,
+					   true);
 		_print_str(id, width, right_justify, true);
 	} else {
 		_print_str("FREE_MEM", width, right_justify, true);
@@ -1326,7 +1326,7 @@ int _print_alloc_mem(sinfo_data_t * sinfo_data, int width,
 {
 	char tmp_line[32];
 	if (sinfo_data) {
-		sprintf(tmp_line, "%u", sinfo_data->alloc_memory);
+		sprintf(tmp_line, "%"PRIu64"", sinfo_data->alloc_memory);
 		_print_str(tmp_line, width, right_justify, true);
 	} else {
 		_print_str("ALLOCMEM", width, right_justify, true);

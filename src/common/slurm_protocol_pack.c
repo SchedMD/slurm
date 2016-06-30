@@ -4349,8 +4349,15 @@ unpack_error:
  * Remove when version 16.05 support is no longer required. */
 extern uint32_t xlate_mem_new2old(uint64_t new_mem)
 {
+	uint32_t old_mem;
+
+	if (new_mem == NO_VAL64)
+		return NO_VAL;
+	if (new_mem == INFINITE64)
+		return INFINITE;
+
 	// clear all but lower 31 bits
-	uint32_t old_mem = (new_mem & 0x00000000efffffff);
+	old_mem = (new_mem & 0x00000000efffffff);
 
 	// reset MEM_PER_CPU flag to old location
 	if (new_mem & MEM_PER_CPU)
@@ -4361,8 +4368,15 @@ extern uint32_t xlate_mem_new2old(uint64_t new_mem)
 
 extern uint64_t xlate_mem_old2new(uint32_t old_mem)
 {
+	uint64_t new_mem;
+
+	if (old_mem == NO_VAL)
+		return NO_VAL64;
+	if (old_mem == INFINITE)
+		return INFINITE64;
+
 	// clear old flag at bit 32
-	uint64_t new_mem = (uint64_t) (old_mem & ~OLD_MEM_PER_CPU);
+	new_mem = (uint64_t) (old_mem & ~OLD_MEM_PER_CPU);
 
 	// reset flag at new bit 64 location
 	if (old_mem & OLD_MEM_PER_CPU)

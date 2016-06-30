@@ -83,17 +83,17 @@ typedef struct {
 	uint32_t max_threads;
 	uint32_t min_disk;
 	uint32_t max_disk;
-	uint32_t min_mem;
-	uint32_t max_mem;
+	uint64_t min_mem;
+	uint64_t max_mem;
 	uint32_t min_weight;
 	uint32_t max_weight;
 	uint32_t min_cpu_load;
 	uint32_t max_cpu_load;
-	uint32_t min_free_mem;
-	uint32_t max_free_mem;
+	uint64_t min_free_mem;
+	uint64_t max_free_mem;
 
 	uint32_t max_cpus_per_node;
-	uint32_t alloc_memory;
+	uint64_t alloc_memory;
 
 	char *version;
 	char *features;

@@ -1216,9 +1216,49 @@ void pack_part(struct part_record *part_ptr, Buf buffer,
 		select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, &altered);
 		pack32(altered,              buffer);
 		pack32(part_ptr->total_cpus, buffer);
-		pack32(part_ptr->def_mem_per_cpu, buffer);
+		pack64(part_ptr->def_mem_per_cpu, buffer);
 		pack32(part_ptr->max_cpus_per_node, buffer);
-		pack32(part_ptr->max_mem_per_cpu, buffer);
+		pack64(part_ptr->max_mem_per_cpu, buffer);
+
+		pack16(part_ptr->flags,      buffer);
+		pack16(part_ptr->max_share,  buffer);
+		pack16(part_ptr->preempt_mode, buffer);
+		pack16(part_ptr->priority_job_factor, buffer);
+		pack16(part_ptr->priority_tier, buffer);
+		pack16(part_ptr->state_up, buffer);
+		pack16(part_ptr->cr_type, buffer);
+
+		packstr(part_ptr->allow_accounts, buffer);
+		packstr(part_ptr->allow_groups, buffer);
+		packstr(part_ptr->allow_alloc_nodes, buffer);
+		packstr(part_ptr->allow_qos, buffer);
+		packstr(part_ptr->qos_char, buffer);
+		packstr(part_ptr->alternate, buffer);
+		packstr(part_ptr->deny_accounts, buffer);
+		packstr(part_ptr->deny_qos, buffer);
+		packstr(part_ptr->nodes, buffer);
+		pack_bit_fmt(part_ptr->node_bitmap, buffer);
+		packstr(part_ptr->billing_weights_str, buffer);
+		packstr(part_ptr->tres_fmt_str, buffer);
+	} else if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
+		if (default_part_loc == part_ptr)
+			part_ptr->flags |= PART_FLAG_DEFAULT;
+		else
+			part_ptr->flags &= (~PART_FLAG_DEFAULT);
+
+		packstr(part_ptr->name, buffer);
+		pack32(part_ptr->grace_time, buffer);
+		pack32(part_ptr->max_time, buffer);
+		pack32(part_ptr->default_time, buffer);
+		pack32(part_ptr->max_nodes_orig, buffer);
+		pack32(part_ptr->min_nodes_orig, buffer);
+		altered = part_ptr->total_nodes;
+		select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, &altered);
+		pack32(altered,              buffer);
+		pack32(part_ptr->total_cpus, buffer);
+		pack32(xlate_mem_new2old(part_ptr->def_mem_per_cpu), buffer);
+		pack32(part_ptr->max_cpus_per_node, buffer);
+		pack32(xlate_mem_new2old(part_ptr->max_mem_per_cpu), buffer);
 
 		pack16(part_ptr->flags,      buffer);
 		pack16(part_ptr->max_share,  buffer);
@@ -1256,9 +1296,9 @@ void pack_part(struct part_record *part_ptr, Buf buffer,
 		select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, &altered);
 		pack32(altered,              buffer);
 		pack32(part_ptr->total_cpus, buffer);
-		pack32(part_ptr->def_mem_per_cpu, buffer);
+		pack32(xlate_mem_new2old(part_ptr->def_mem_per_cpu), buffer);
 		pack32(part_ptr->max_cpus_per_node, buffer);
-		pack32(part_ptr->max_mem_per_cpu, buffer);
+		pack32(xlate_mem_new2old(part_ptr->max_mem_per_cpu), buffer);
 
 		pack16(part_ptr->flags,      buffer);
 		pack16(part_ptr->max_share,  buffer);
@@ -1642,7 +1682,7 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 		     part_ptr->alternate, part_desc->name);
 	}
 
-	if (part_desc->def_mem_per_cpu != NO_VAL) {
+	if (part_desc->def_mem_per_cpu != NO_VAL64) {
 		char *key;
 		uint32_t value;
 		if (part_desc->def_mem_per_cpu & MEM_PER_CPU) {
@@ -1689,7 +1729,7 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 		      "DenyQOS will be ignored");
 	}
 
-	if (part_desc->max_mem_per_cpu != NO_VAL) {
+	if (part_desc->max_mem_per_cpu != NO_VAL64) {
 		char *key;
 		uint32_t value;
 		if (part_desc->max_mem_per_cpu & MEM_PER_CPU) {
