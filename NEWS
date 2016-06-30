@@ -9,6 +9,7 @@ documents those changes that are of interest to users and administrators.
     BurstBufferStageIn later in the scheduling logic.
  -- Document which srun options apply to only job, only step, or job and step
     allocations.
+ -- Use more compatible function to get thread name (>= 2.6.11).
 
 * Changes in Slurm 16.05.1
 ==========================
