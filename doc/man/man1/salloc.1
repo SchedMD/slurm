@@ -1204,6 +1204,11 @@ sockets.  See additional information under \fB\-B\fR option above when
 task/affinity plugin is enabled.
 
 .TP
+\fB\-\-spread\-job\fR>
+Spread the job allocation over as many nodes as possible and attempt to
+evenly distribute tasks across the allocated nodes.
+
+.TP
 \fB\-\-switches\fR=<\fIcount\fR>[@<\fImax\-time\fR>]
 When a tree topology is used, this defines the maximum count of switches
 desired for the job allocation and optionally the maximum time to wait
@@ -1481,6 +1486,9 @@ Same as \fB\-\-reservation\fR
 .TP
 \fBSALLOC_SIGNAL\fR
 Same as \fB\-\-signal\fR
+.TP
+\fBSALLOC_SPREAD_JOB\fR
+Same as \fB\-\-spread\-job\fR
 .TP
 \fBSALLOC_THREAD_SPEC\fR
 Same as \fB\-\-thread\-spec\fR

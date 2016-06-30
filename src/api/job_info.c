@@ -955,6 +955,8 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 			xstrcat(out, "KillOInInvalidDependent=Yes");
 		if (job_ptr->bitflags & NO_KILL_INV_DEP)
 			xstrcat(out, "KillOInInvalidDependent=No");
+		if (job_ptr->bitflags & SPREAD_JOB)
+			xstrcat(out, "SpreadJob=Yes");
 	}
 
 	/****** END OF JOB RECORD ******/

@@ -6961,6 +6961,14 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	 */
 	detail_ptr->mc_ptr = _set_multi_core_data(job_desc);
 
+	if ((job_ptr->bit_flags & SPREAD_JOB) && (detail_ptr->max_nodes == 0) &&
+	    (detail_ptr->num_tasks != 0)) {
+		if (detail_ptr->min_nodes == 0)
+			detail_ptr->min_nodes = 1;
+		detail_ptr->max_nodes =
+			MIN(node_record_count, detail_ptr->num_tasks);
+	}
+
 	return SLURM_SUCCESS;
 }
 

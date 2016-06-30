@@ -105,6 +105,7 @@
 #define OPT_HINT	0x1a
 #define OPT_CPU_FREQ    0x1b
 #define OPT_THREAD_SPEC 0x1c
+#define OPT_SPREAD_JOB  0x1d
 
 /* generic getopt_long flags, integers and *not* valid characters */
 
@@ -159,6 +160,7 @@
 #define LONG_OPT_PROFILE         0x144
 #define LONG_OPT_CPU_FREQ        0x145
 #define LONG_OPT_GRES_FLAGS      0x146
+#define LONG_OPT_SPREAD_JOB      0x147
 #define LONG_OPT_PRIORITY        0x160
 #define LONG_OPT_POWER           0x162
 #define LONG_OPT_THREAD_SPEC     0x163
@@ -416,16 +418,17 @@ env_vars_t env_vars[] = {
   {"SALLOC_PARTITION",     OPT_STRING,     &opt.partition,     NULL          },
   {"SALLOC_POWER",         OPT_POWER,      NULL,               NULL          },
   {"SALLOC_PROFILE",       OPT_PROFILE,    NULL,               NULL          },
+  {"SALLOC_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL          },
   {"SALLOC_QOS",           OPT_STRING,     &opt.qos,           NULL          },
   {"SALLOC_RESERVATION",   OPT_STRING,     &opt.reservation,   NULL          },
   {"SALLOC_SIGNAL",        OPT_SIGNAL,     NULL,               NULL          },
+  {"SALLOC_SPREAD_JOB",    OPT_SPREAD_JOB, NULL,               NULL          },
   {"SALLOC_THREAD_SPEC",   OPT_THREAD_SPEC,NULL,               NULL          },
   {"SALLOC_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL          },
   {"SALLOC_WAIT",          OPT_IMMEDIATE,  NULL,               NULL          },
   {"SALLOC_WAIT_ALL_NODES",OPT_INT,        &opt.wait_all_nodes,NULL          },
-  {"SALLOC_WCKEY",         OPT_STRING,     &opt.wckey,         NULL          },
-  {"SALLOC_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL          },
   {"SALLOC_WAIT4SWITCH",   OPT_TIME_VAL,   NULL,               NULL          },
+  {"SALLOC_WCKEY",         OPT_STRING,     &opt.wckey,         NULL          },
   {NULL, 0, NULL, NULL}
 };
 
@@ -622,6 +625,9 @@ _process_env_var(env_vars_t *e, const char *val)
 		opt.core_spec = parse_int("thread_spec", val, true) |
 					 CORE_SPEC_THREAD;
 		break;
+	case OPT_SPREAD_JOB:
+		opt.job_flags |= SPREAD_JOB;
+		break;
 	default:
 		/* do nothing */
 		break;
@@ -715,6 +721,7 @@ void set_options(const int argc, char **argv)
 		{"reservation",   required_argument, 0, LONG_OPT_RESERVATION},
 		{"signal",        required_argument, 0, LONG_OPT_SIGNAL},
 		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
+		{"spread-job",    no_argument,       0, LONG_OPT_SPREAD_JOB},
 		{"switches",      required_argument, 0, LONG_OPT_REQ_SWITCH},
 		{"tasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"thread-spec",   required_argument, 0, LONG_OPT_THREAD_SPEC},
@@ -739,7 +746,7 @@ void set_options(const int argc, char **argv)
 
 	opt.progname = xbasename(argv[0]);
 	optind = 0;
-	while((opt_char = getopt_long(argc, argv, opt_string,
+	while ((opt_char = getopt_long(argc, argv, opt_string,
 				      optz, &option_index)) != -1) {
 		switch (opt_char) {
 
@@ -1275,6 +1282,9 @@ void set_options(const int argc, char **argv)
 		case LONG_OPT_THREAD_SPEC:
 			opt.core_spec = parse_int("thread_spec", optarg, true) |
 				CORE_SPEC_THREAD;
+			break;
+		case LONG_OPT_SPREAD_JOB:
+			opt.job_flags |= SPREAD_JOB;
 			break;
 		default:
 			if (spank_process_option(opt_char, optarg) < 0) {
@@ -2006,7 +2016,7 @@ static void _usage(void)
 #endif
 #endif
 "              [--mail-type=type] [--mail-user=user] [--nice[=value]]\n"
-"              [--bell] [--no-bell] [--kill-command[=signal]]\n"
+"              [--bell] [--no-bell] [--kill-command[=signal]] [--spread-job]\n"
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos]\n"
 "              [--mem_bind=...] [--reservation=name] [--mcs-label=mcs]\n"
@@ -2072,6 +2082,7 @@ static void _help(void)
 "      --reboot                reboot compute nodes before starting job\n"
 "  -s, --oversubscribe         oversubscribe resources with other jobs\n"
 "      --signal=[B:]num[@time] send signal when time limit within time seconds\n"
+"      --spread-job            spread job across as many nodes as possible\n"
 "      --switches=max-switches{@max-time-to-wait}\n"
 "                              Optimum switches and max time to wait for optimum\n"
 "  -S, --core-spec=cores       count of reserved cores\n"

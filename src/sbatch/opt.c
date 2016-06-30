@@ -111,6 +111,7 @@ enum wrappers {
 #define OPT_CORE_SPEC     0x1a
 #define OPT_CPU_FREQ      0x1b
 #define OPT_POWER         0x1d
+#define OPT_SPREAD_JOB    0x1e
 #define OPT_ARRAY_INX     0x20
 #define OPT_PROFILE       0x21
 #define OPT_HINT	  0x22
@@ -180,6 +181,7 @@ enum wrappers {
 #define LONG_OPT_GRES_FLAGS      0x15a
 #define LONG_OPT_PRIORITY        0x160
 #define LONG_OPT_KILL_INV_DEP    0x161
+#define LONG_OPT_SPREAD_JOB      0x162
 #define LONG_OPT_MCS_LABEL       0x165
 #define LONG_OPT_DEADLINE        0x166
 
@@ -473,6 +475,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_REQUEUE",       OPT_REQUEUE,    NULL,               NULL          },
   {"SBATCH_RESERVATION",   OPT_STRING,     &opt.reservation,   NULL          },
   {"SBATCH_SIGNAL",        OPT_SIGNAL,     NULL,               NULL          },
+  {"SBATCH_SPREAD_JOB",    OPT_SPREAD_JOB, NULL,               NULL          },
   {"SBATCH_THREAD_SPEC",   OPT_THREAD_SPEC,NULL,               NULL          },
   {"SBATCH_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL          },
   {"SBATCH_WAIT",          OPT_BOOL,       &opt.wait,          NULL          },
@@ -661,6 +664,9 @@ _process_env_var(env_vars_t *e, const char *val)
 			exit(error_exit);
 		}
 		break;
+	case OPT_SPREAD_JOB:
+		opt.job_flags |= SPREAD_JOB;
+		break;
 	case OPT_GET_USER_ENV:
 		if (val)
 			_proc_get_user_env((char *)val);
@@ -792,6 +798,7 @@ static struct option long_options[] = {
 	{"reservation",   required_argument, 0, LONG_OPT_RESERVATION},
 	{"signal",        required_argument, 0, LONG_OPT_SIGNAL},
 	{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
+	{"spread-job",    no_argument,       0, LONG_OPT_SPREAD_JOB},
 	{"switches",      required_argument, 0, LONG_OPT_REQ_SWITCH},
 	{"tasks-per-node",required_argument, 0, LONG_OPT_NTASKSPERNODE},
 	{"test-only",     no_argument,       0, LONG_OPT_TEST_ONLY},
@@ -1857,6 +1864,9 @@ static void _set_options(int argc, char **argv)
 				opt.job_flags |= KILL_INV_DEP;
 			if (xstrcasecmp(optarg, "no") == 0)
 				opt.job_flags |= NO_KILL_INV_DEP;
+			break;
+		case LONG_OPT_SPREAD_JOB:
+			opt.job_flags |= SPREAD_JOB;
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
@@ -3214,7 +3224,7 @@ static void _usage(void)
 "              [--cpu-freq=min[-max[:gov]] [--power=flags] [--gres-flags=opts]\n"
 "              [--switches=max-switches{@max-time-to-wait}] [--reboot]\n"
 "              [--core-spec=cores] [--thread-spec=threads] [--bb=burst_buffer_spec]\n"
-"              [--array=index_values] [--profile=...] [--ignore-pbs]\n"
+"              [--array=index_values] [--profile=...] [--ignore-pbs] [--spread-job]\n"
 "              [--export[=names]] [--export-file=file|fd] executable [args...]\n");
 }
 
@@ -3287,6 +3297,7 @@ static void _help(void)
 "  -s, --oversubscribe         over subscribe resources with other jobs\n"
 "  -S, --core-spec=cores       count of reserved cores\n"
 "      --signal=[B:]num[@time] send signal when time limit within time seconds\n"
+"      --spread-job            spread job across as many nodes as possible\n"
 "      --switches=max-switches{@max-time-to-wait}\n"
 "                              Optimum switches and max time to wait for optimum\n"
 "      --thread-spec=threads   count of reserved threads\n"

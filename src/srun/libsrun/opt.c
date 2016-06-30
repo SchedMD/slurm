@@ -116,6 +116,7 @@
 #define OPT_PROFILE     0x20
 #define OPT_EXPORT	0x21
 #define OPT_HINT	0x22
+#define OPT_SPREAD_JOB  0x23
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_HELP        0x100
@@ -192,6 +193,7 @@
 #define LONG_OPT_LAUNCH_CMD      0x156
 #define LONG_OPT_PROFILE         0x157
 #define LONG_OPT_EXPORT          0x158
+#define LONG_OPT_SPREAD_JOB      0x159
 #define LONG_OPT_PRIORITY        0x160
 #define LONG_OPT_ACCEL_BIND      0x161
 #define LONG_OPT_MCS_LABEL       0x165
@@ -621,6 +623,7 @@ env_vars_t env_vars[] = {
 {"SLURM_RESERVATION",   OPT_STRING,     &opt.reservation,   NULL             },
 {"SLURM_RESTART_DIR",   OPT_STRING,     &opt.restart_dir ,  NULL             },
 {"SLURM_RESV_PORTS",    OPT_RESV_PORTS, NULL,               NULL             },
+{"SLURM_SPREAD_JOB",    OPT_SPREAD_JOB, NULL,               NULL             },
 {"SLURM_SIGNAL",        OPT_SIGNAL,     NULL,               NULL             },
 {"SLURM_SRUN_MULTI",    OPT_MULTI,      NULL,               NULL             },
 {"SLURM_STDERRMODE",    OPT_STRING,     &opt.efname,        NULL             },
@@ -859,6 +862,9 @@ _process_env_var(env_vars_t *e, const char *val)
 		opt.core_spec = _get_int(val, "thread_spec", true) |
 					 CORE_SPEC_THREAD;
 		break;
+	case OPT_SPREAD_JOB:
+		opt.job_flags |= SPREAD_JOB;
+		break;
 	default:
 		/* do nothing */
 		break;
@@ -994,6 +1000,7 @@ static void _set_options(const int argc, char **argv)
 		{"signal",	     required_argument, 0, LONG_OPT_SIGNAL},
 		{"slurmd-debug",     required_argument, 0, LONG_OPT_DEBUG_SLURMD},
 		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
+		{"spread-job",       no_argument,       0, LONG_OPT_SPREAD_JOB},
 		{"switches",         required_argument, 0, LONG_OPT_REQ_SWITCH},
 		{"task-epilog",      required_argument, 0, LONG_OPT_TASK_EPILOG},
 		{"task-prolog",      required_argument, 0, LONG_OPT_TASK_PROLOG},
@@ -1751,6 +1758,9 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_COMPRESS:
 			opt.compress = parse_compress_type(optarg);
+			break;
+		case LONG_OPT_SPREAD_JOB:
+			opt.job_flags |= SPREAD_JOB;
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
@@ -2707,7 +2717,7 @@ static void _usage(void)
 "            [--prolog=fname] [--epilog=fname]\n"
 "            [--task-prolog=fname] [--task-epilog=fname]\n"
 "            [--ctrl-comm-ifhn=addr] [--multi-prog] [--mcs-label=mcs]\n"
-"            [--cpu-freq=min[-max[:gov]] [--power=flags]\n"
+"            [--cpu-freq=min[-max[:gov]] [--power=flags] [--spread-job]\n"
 "            [--switches=max-switches{@max-time-to-wait}] [--reboot]\n"
 "            [--core-spec=cores] [--thread-spec=threads]\n"
 "            [--bb=burst_buffer_spec] [--bbf=burst_buffer_file]\n"
@@ -2804,6 +2814,7 @@ static void _help(void)
 "  -S, --core-spec=cores       count of reserved cores\n"
 "      --signal=[B:]num[@time] send signal when time limit within time seconds\n"
 "      --slurmd-debug=level    slurmd debug level\n"
+"      --spread-job            spread job across as many nodes as possible\n"
 "      --switches=max-switches{@max-time-to-wait}\n"
 "                              Optimum switches and max time to wait for optimum\n"
 "      --task-epilog=program   run \"program\" after launching task\n"

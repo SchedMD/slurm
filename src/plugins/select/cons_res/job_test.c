@@ -202,7 +202,7 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 			      bool entire_sockets_only)
 {
 	uint16_t cpu_count = 0, cpu_cnt = 0;
-	uint16_t si, cps, avail_cpus = 0, num_tasks = 0;
+	uint16_t si, cps, avail_cpus = 0, max_cpus, num_tasks = 0;
 	uint32_t core_begin    = cr_get_coremap_offset(node_i);
 	uint32_t core_end      = cr_get_coremap_offset(node_i+1);
 	uint32_t c;
@@ -432,6 +432,16 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 		if (job_ptr->details->ntasks_per_node)
 			avail_cpus = num_tasks * cpus_per_task;
 	}
+
+	if ((job_ptr->bit_flags & SPREAD_JOB) &&
+	    (job_ptr->details->ntasks_per_node !=  0)) {
+		/* Treat ntasks_per_node as maximum */
+		max_cpus = job_ptr->details->ntasks_per_node;
+		if (cpus_per_task > 1)
+			max_cpus *= cpus_per_task;
+		avail_cpus = MIN(avail_cpus, max_cpus);
+	}
+
 	if ((job_ptr->details->ntasks_per_node &&
 	     (num_tasks < job_ptr->details->ntasks_per_node) &&
 	     (job_ptr->details->overcommit == 0)) ||

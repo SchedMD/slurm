@@ -13,6 +13,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue where if no clusters were added but yet a QOS needed to be
     deleted make it possible.
  -- SlurmDBD - change all timestamps to bigint from int to solve Y2038 problem.
+ -- Add salloc/sbatch/srun --spread-job to distribute tasks over as many nodes
+    as possible. This also treats the --ntasks-node-node option as a maximum
+    value.
 
 * Changes in Slurm 16.05.2
 ==========================

@@ -1812,6 +1812,11 @@ sockets.  See additional information under \fB\-B\fR option above when
 task/affinity plugin is enabled. This option applies to job allocations.
 
 .TP
+\fB\-\-spread\-job\fR
+Spread the job allocation over as many nodes as possible and attempt to
+evenly distribute tasks across the allocated nodes.
+
+.TP
 \fB\-\-switches\fR=<\fIcount\fR>[@<\fImax\-time\fR>]
 When a tree topology is used, this defines the maximum count of switches
 desired for the job allocation and optionally the maximum time to wait
@@ -2497,6 +2502,9 @@ Same as \fB\-e, \-\-error\fR
 .TP
 \fBSLURM_STDINMODE\fR
 Same as \fB\-i, \-\-input\fR
+.TP
+\fBSLURM_SPREAD_JOB\fR
+Same as \fB\-\-spread\-job\fR
 .TP
 \fBSLURM_SRUN_REDUCE_TASK_EXIT_MSG\fR
 if set and non-zero, successive task exit messages with the same exit code will
