@@ -188,6 +188,7 @@ enum {
 	ESLURM_POWER_RESERVED,
 	ESLURM_INVALID_POWERCAP,
 	ESLURM_INVALID_MCS_LABEL,
+	ESLURM_BURST_BUFFER_WAIT =			2100,
 
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,

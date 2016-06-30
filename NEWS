@@ -16,6 +16,12 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 16.05.2
 ==========================
+ -- CRAY - Fix issue where the proctrack plugin could hang if the container
+    id wasn't able to be made.
+ -- Move test for job wait reason value of BurstBufferResources and
+    BurstBufferStageIn later in the scheduling logic.
+ -- Document which srun options apply to only job, only step, or job and step
+    allocations.
 
 * Changes in Slurm 16.05.1
 ==========================

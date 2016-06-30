@@ -2142,7 +2142,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			bitstr_t **select_node_bitmap, char *unavail_node_str,
 			char **err_msg)
 {
-	int error_code = SLURM_SUCCESS, i, node_set_size = 0;
+	int bb, error_code = SLURM_SUCCESS, i, node_set_size = 0;
 	bitstr_t *select_bitmap = NULL;
 	struct node_set *node_set_ptr = NULL;
 	struct part_record *part_ptr = NULL;
@@ -2207,6 +2207,17 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			job_ptr->state_reason = WAIT_HELD;
 		}
 		return ESLURM_JOB_HELD;
+	}
+
+	bb = bb_g_job_test_stage_in(job_ptr, test_only);
+	if (bb != 1) {
+		xfree(job_ptr->state_desc);
+		last_job_update = now;
+		if (bb == 0)
+			job_ptr->state_reason = WAIT_BURST_BUFFER_STAGING;
+		else
+			job_ptr->state_reason = WAIT_BURST_BUFFER_RESOURCE;
+		return ESLURM_BURST_BUFFER_WAIT;
 	}
 
 	/* build sets of usable nodes based upon their configuration */

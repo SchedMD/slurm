@@ -35,6 +35,8 @@ Bind each task to NICs which are closest to the allocated CPUs.
 .TP
 \fBv\fR
 Verbose mode. Log how tasks are bound to GPU and NIC devices.
+.TP
+This option applies to job allocations.
 .RE
 
 .TP
@@ -42,7 +44,7 @@ Verbose mode. Log how tasks are bound to GPU and NIC devices.
 Charge resources used by this job to specified account.
 The \fIaccount\fR is an arbitrary string. The account name may
 be changed after job submission using the \fBscontrol\fR
-command.
+command. This option applies to job allocations.
 
 .TP
 \fB\-\-acctg\-freq\fR
@@ -96,7 +98,7 @@ interference with the job).
 .br
 Smaller (non\-zero) values have a greater impact upon job performance,
 but a value of 30 seconds is not likely to be noticeable for
-applications having less than 10,000 tasks.
+applications having less than 10,000 tasks. This option applies job allocations.
 .RE
 
 .TP
@@ -126,18 +128,19 @@ CR_Core, CR_Core_Memory, CR_Socket, or CR_Socket_Memory for this option
 to be honored.
 This option is not supported on BlueGene systems (select/bluegene plugin
 is configured).
-If not specified, the scontrol show job will display 'ReqS:C:T=*:*:*'.
+If not specified, the scontrol show job will display 'ReqS:C:T=*:*:*'. This
+option applies to job allocations.
 
 .TP
 \fB\-\-bb\fR=<\fIspec\fR>
 Burst buffer specification. The form of the specification is system dependent.
-Also see \fB\-\-bbf\fR.
+Also see \fB\-\-bbf\fR. This option applies to job allocations.
 
 .TP
 \fB\-\-bbf\fR=<\fIfile_name\fR>
 Path of file containing burst buffer specification.
 The form of the specification is system dependent.
-Also see \fB\-\-bb\fR.
+Also see \fB\-\-bb\fR. This option applies to job allocations.
 
 .TP
 \fB\-\-bcast\fR[=<\fIdest_path\fR>]
@@ -147,7 +150,8 @@ file path. If no path is specified, copy the file to a file named
 "slurm_bcast_<job_id>.<step_id>" in the current working.
 For example, "srun \-\-bcast=/tmp/mine \-N3 a.out" will copy the file "a.out"
 from your current directory to the file "/tmp/mine" on each of the three
-allocated compute nodes and execute that file.
+allocated compute nodes and execute that file. This option applies to step
+allocations.
 
 .TP
 \fB\-\-begin\fR=<\fItime\fR>
@@ -190,6 +194,8 @@ Slurm scheduler (e.g., 60 seconds with the default sched/builtin).
  \- If a date is specified without a year (e.g., MM/DD) then the current
 year is assumed, unless the combination of MM/DD and HH:MM:SS has
 already passed for that year, in which case the next year is used.
+.br
+This option applies to job allocations.
 .RE
 
 .TP
@@ -198,7 +204,7 @@ Specifies the interval between creating checkpoints of the job step.
 By default, the job step will have no checkpoints created.
 Acceptable time formats include "minutes", "minutes:seconds",
 "hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and
-"days\-hours:minutes:seconds".
+"days\-hours:minutes:seconds". This option applies to job and step allocations.
 
 .TP
 \fB\-\-checkpoint\-dir\fR=<\fIdirectory\fR>
@@ -206,11 +212,12 @@ Specifies the directory into which the job or job step's checkpoint should
 be written (used by the checkpoint/blcr and checkpoint/xlch plugins only).
 The default value is the current working directory.
 Checkpoint files will be of the form "<job_id>.ckpt" for jobs
-and "<job_id>.<step_id>.ckpt" for job steps.
+and "<job_id>.<step_id>.ckpt" for job steps. This option applies to job and
+step allocations.
 
 .TP
 \fB\-\-comment\fR=<\fIstring\fR>
-An arbitrary comment.
+An arbitrary comment. This option applies to job allocations.
 
 .TP
 \fB\-\-compress\fR[=\fItype\fR]
@@ -218,7 +225,8 @@ Compress file before sending it to compute hosts.
 The optional argument specifies the data compression library to be used.
 Supported values are "lz4" (default) and "zlib".
 Some compression libraries may be unavailable on some systems.
-For use with the \fB\-\-bcast\fR option.
+For use with the \fB\-\-bcast\fR option. This option applies to step
+allocations.
 
 .TP
 \fB\-C\fR, \fB\-\-constraint\fR=<\fIlist\fR>
@@ -274,19 +282,22 @@ of "rack1" and four nodes must be allocated from nodes with the feature
 \fBWARNING\fR: When srun is executed from within salloc or sbatch,
 the constraint value can only contain a single feature name. None of the
 other operators are currently supported for job steps.
+.br
+This option applies to job and step allocations.
 
 .TP
 \fB\-\-contiguous\fR
 If set, then the allocated nodes must form a contiguous set.
 Not honored with the \fBtopology/tree\fR or \fBtopology/3d_torus\fR
-plugins, both of which can modify the node ordering.
-Not honored for a job step's allocation.
+plugins, both of which can modify the node ordering. This option applies to job
+allocations.
 
 .TP
 \fB\-\-cores\-per\-socket\fR=<\fIcores\fR>
 Restrict node selection to nodes with at least the specified number of
 cores per socket.  See additional information under \fB\-B\fR option
-above when task/affinity plugin is enabled.
+above when task/affinity plugin is enabled. This option applies to job
+allocations.
 
 .TP
 \fB\-\-cpu_bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
@@ -431,6 +442,8 @@ task/cgroup plugin only.
 .B help
 Show help message for cpu_bind
 .RE
+.TP
+This option applies to job and step allocations.
 .RE
 
 .TP
@@ -532,6 +545,8 @@ with linuxproc as the ProctrackType can cause jobs to run too quickly before
 Accounting is able to poll for job information. As a result not all of
 accounting information will be present.
 
+This option applies to job and step allocations.
+
 .RE
 
 .TP
@@ -561,6 +576,8 @@ threads per CPU for a total of two tasks.
 there are configurations and options which can result in inconsistent
 allocations when \-c has a value greater than \-c on salloc or sbatch.
 
+This option applies to job allocations.
+
 .TP
 \fB\-\-deadline\fR=<\fIOPT\fR>
 remove the job if no ending is possible before
@@ -574,6 +591,8 @@ MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
 MM/DD[/YY]\-HH:MM[:SS]
 .br
 YYYY\-MM\-DD[THH:MM[:SS]]]
+
+This option applies to job allocations.
 
 .TP
 \fB\-d\fR, \fB\-\-dependency\fR=<\fIdependency_list\fR>
@@ -590,7 +609,8 @@ different  users. The  value may be changed after job submission using the
 scontrol command.
 Once a job dependency fails due to the termination state of a preceding job,
 the dependent job will never be run, even if the preceding job is requeued and
-has a different termination state in a subsequent execution.
+has a different termination state in a subsequent execution. This option applies
+to job allocations.
 .PD
 .RS
 .TP
@@ -629,7 +649,8 @@ sharing the same job name and user have terminated.
 Have the remote processes do a chdir to \fIpath\fR before beginning
 execution. The default is to chdir to the current working directory
 of the \fBsrun\fR process. The path can be specified as full path or
-relative path to the directory where the command is executed.
+relative path to the directory where the command is executed. This
+option applies to job allocations.
 
 .TP
 \fB\-e\fR, \fB\-\-error\fR=<\fImode\fR>
@@ -639,13 +660,14 @@ redirects stderr to the same file as stdout, if one is specified. The
 \fB\-\-error\fR option is provided to allow stdout and stderr to be
 redirected to different locations.
 See \fBIO Redirection\fR below for more options.
-If the specified file already exists, it will be overwritten.
+If the specified file already exists, it will be overwritten. This option
+applies to job and step allocations.
 
 .TP
 \fB\-E\fR, \fB\-\-preserve-env\fR
 Pass the current values of environment variables SLURM_NNODES and
 SLURM_NTASKS through to the \fIexecutable\fR, rather than computing them
-from commandline parameters.
+from commandline parameters. This option applies to job allocations.
 
 .TP
 \fB\-\-epilog\fR=<\fIexecutable\fR>
@@ -654,13 +676,13 @@ The command line arguments for \fIexecutable\fR will be the command
 and arguments of the job step.  If \fIexecutable\fR is "none", then
 no srun epilog will be run. This parameter overrides the SrunEpilog
 parameter in slurm.conf. This parameter is completely independent from
-the Epilog parameter in slurm.conf.
+the Epilog parameter in slurm.conf. This option applies to job allocations.
 
 
 .TP
 \fB\-\-exclusive[=user|mcs]\fR
-This option has two slightly different meanings for job and job step
-allocations.
+This option applies to job and job step allocations, and has two slightly
+different meanings for each one.
 When used to initiate a job, the job allocation cannot share nodes with
 other running jobs  (or just other users with the "=user" option or "=mcs" option).
 The default shared/exclusive behavior depends on system configuration and the
@@ -703,13 +725,14 @@ By default all environment variables are propagated. With "\-\-export=NONE"
 no environment variables will be propagated unless explicitly listed (e.g.,
 "\-\-export=NONE,PATH=/bin,SHELL=/bin/bash"). Regardless of this setting,
 the appropriate "SLURM_*" task environment variables are always exported to the
-environment.
+environment. This option applies to job allocations.
 
 .TP
 \fB\-\-gid\fR=<\fIgroup\fR>
 If \fBsrun\fR is run as root, and the \fB\-\-gid\fR option is used,
 submit the job with \fIgroup\fR's group access permissions.  \fIgroup\fR
-may be the group name or the numerical group ID.
+may be the group name or the numerical group ID. This option applies to
+job allocations.
 
 .TP
 \fB\-\-gres\fR=<\fIlist\fR>
@@ -724,11 +747,12 @@ A list of available generic consumable resources will be printed and the
 command will exit if the option argument is "help".
 Examples of use include "\-\-gres=gpu:2,mic=1", "\-\-gres=gpu:kepler:2", and
 "\-\-gres=help".
-NOTE: By default, a job step is allocated all of the generic resources that
-have allocated to the job. To change the behavior so that each job step is
-allocated no generic resources, explicitly set the value of \-\-gres to specify
-zero counts for each generic resource OR set "\-\-gres=none" OR set the
-SLURM_STEP_GRES environment variable to "none".
+NOTE: This option applies to job and step allocations. By default, a job step
+is allocated all of the generic resources that have allocated to the job.
+To change the behavior so that each job step is allocated no generic resources,
+explicitly set the value of \-\-gres to specify zero counts for each generic
+resource OR set "\-\-gres=none" OR set the SLURM_STEP_GRES environment variable
+to "none".
 
 .TP
 \fB\-\-gres\-flags\fR=enforce\-binding
@@ -741,13 +765,14 @@ sockets, however the application performance may be improved due to improved
 communication speed.
 Requires the node to be configured with more than one socket and resource
 filtering will be performed on a per\-socket basis.
-Applies to job allocation only.
+This option applies to job allocations.
 
 .TP
 \fB\-H, \-\-hold\fR
 Specify the job is to be submitted in a held state (priority of zero).
 A held job can now be released using scontrol to reset its priority
-(e.g. "\fIscontrol release <job_id>\fR").
+(e.g. "\fIscontrol release <job_id>\fR"). This option applies to job
+allocations.
 
 .TP
 \fB\-h\fR, \fB\-\-help\fR
@@ -773,6 +798,8 @@ Only supported with the task/affinity plugin.
 .TP
 .B help
 show this help message
+.TP
+This option applies to job allocations.
 .RE
 
 .TP
@@ -785,7 +812,8 @@ By default, \fB\-\-immediate\fR is off, and the command
 will block until resources become available. Since this option's
 argument is optional, for proper parsing the single letter option
 must be followed immediately with the value and not include a
-space between them. For example "\-I60" and not "\-I 60".
+space between them. For example "\-I60" and not "\-I 60". This option applies
+to job and step allocations.
 
 .TP
 \fB\-i\fR, \fB\-\-input\fR=<\fImode\fR>
@@ -794,7 +822,7 @@ Specify how stdin is to redirected. By default,
 redirects stdin from the terminal all tasks. See \fBIO Redirection\fR
 below for more options.
 For OS X, the poll() function does not support stdin, so input from
-a terminal is not possible.
+a terminal is not possible. This option applies to job and step allocations.
 
 .TP
 \fB\-J\fR, \fB\-\-job\-name\fR=<\fIjobname\fR>
@@ -804,13 +832,14 @@ is the supplied \fBexecutable\fR program's name. NOTE: This information
 may be written to the slurm_jobacct.log file. This file is space delimited
 so if a space is used in the \fIjobname\fR name it will cause problems in
 properly displaying the contents of the slurm_jobacct.log file when the
-\fBsacct\fR command is used.
+\fBsacct\fR command is used. This option applies to job and step allocations.
 
 .TP
 \fB\-\-jobid\fR=<\fIjobid\fR>
 Initiate a job step under an already allocated job with job id \fIid\fR.
 Using this option will cause \fBsrun\fR to behave exactly as if the
-SLURM_JOB_ID environment variable was set.
+SLURM_JOB_ID environment variable was set. This option applies to job and step
+allocations.
 NOTE: For job allocations, this is only valid for users root and SlurmUser.
 
 .TP
@@ -825,12 +854,13 @@ Note: This option takes precedence over the \fB\-W\fR, \fB\-\-wait\fR option
 to terminate the job immediately if a task exits with a non\-zero exit code.
 Since this option's argument is optional, for proper parsing the
 single letter option must be followed immediately with the value and
-not include a space between them. For example "\-K1" and not "\-K 1".
+not include a space between them. For example "\-K1" and not "\-K 1". This
+option applies to job allocations.
 
 .TP
 \fB\-k\fR, \fB\-\-no\-kill\fR
 Do not automatically terminate a job if one of the nodes it has been
-allocated fails. This option applies for both job and step allocation.
+allocated fails. This option applies to job and step allocations.
 The job will assume all responsibilities for fault\-tolerance.
 Tasks launch using this option will not be considered terminated
 (e.g. \fB\-K\fR, \fB\-\-kill\-on\-bad\-exit\fR and
@@ -843,18 +873,18 @@ The default action is to terminate the job upon node failure.
 \fB\-\-launch-cmd\fR
 Print external launch command instead of running job normally through
 Slurm. This option is only valid if using something other than the
-\fIlaunch/slurm\fR plugin.
+\fIlaunch/slurm\fR plugin. This option applies to step allocations.
 
 .TP
 \fB\-\-launcher\-opts\fR=<\fIoptions\fR>
 Options for the external launcher if using something other than the
-\fIlaunch/slurm\fR plugin.
+\fIlaunch/slurm\fR plugin. This option applies to step allocations.
 
 .TP
 \fB\-l\fR, \fB\-\-label\fR
 Prepend task number to lines of stdout/err.
 The \fB\-\-label\fR option will prepend lines of output with the remote
-task id.
+task id. This option applies to step allocations.
 
 .TP
 \fB\-L\fR, \fB\-\-licenses\fR=<\fBlicense\fR>
@@ -863,7 +893,7 @@ nodes of the cluster) which must be allocated to this job.
 License names can be followed by a colon and count
 (the default count is one).
 Multiple license names should be comma separated (e.g.
-"\-\-licenses=foo:4,bar").
+"\-\-licenses=foo:4,bar"). This option applies to job allocations.
 
 .TP
 .na
@@ -1012,6 +1042,8 @@ Rather than packing a job step's tasks as tightly as possible on the nodes,
 distribute them evenly.
 This user option will supersede the SelectTypeParameters CR_Pack_Nodes
 configuration parameter.
+.TP
+This option applies to job and step allocations.
 .RE
 
 .TP
@@ -1023,19 +1055,22 @@ and teardown completed), TIME_LIMIT, TIME_LIMIT_90 (reached 90 percent of time l
 TIME_LIMIT_80 (reached 80 percent of time limit), and TIME_LIMIT_50
 (reached 50 percent of time limit).
 Multiple \fItype\fR values may be specified in a comma separated list.
-The user to be notified is indicated with \fB\-\-mail\-user\fR.
+The user to be notified is indicated with \fB\-\-mail\-user\fR. This option
+applies to job allocations.
 
 .TP
 \fB\-\-mail\-user\fR=<\fIuser\fR>
 User to receive email notification of state changes as defined by
 \fB\-\-mail\-type\fR.
-The default value is the submitting user.
+The default value is the submitting user. This option applies to job
+allocations.
 
 .TP
 \fB\-\-mcs\-label\fR=<\fImcs\fR>
 Used only when the mcs/group plugin is enabled.
 This parameter is a group among the groups of the user.
-Default value is calculated by the Plugin mcs if it's enabled.
+Default value is calculated by the Plugin mcs if it's enabled. This option
+applies to job allocations.
 
 .TP
 \fB\-\-mem\fR=<\fIMB\fR>
@@ -1063,6 +1098,8 @@ need not be stored, just collected). In both cases memory use is based upon
 the job's Resident Set Size (RSS). A task may exceed the memory limit until
 the next periodic accounting sample.
 
+This option applies to job and step allocations.
+
 .TP
 \fB\-\-mem\-per\-cpu\fR=<\fIMB\fR>
 Minimum memory required per allocated CPU in MegaBytes.
@@ -1085,7 +1122,8 @@ Specifying a memory limit of zero for a job step will restrict the job step
 to the amount of memory allocated to the job, but not remove any of the job's
 memory allocation from being available to other job steps.
 Also see \fB\-\-mem\fR.
-\fB\-\-mem\fR and \fB\-\-mem\-per\-cpu\fR are mutually exclusive.
+\fB\-\-mem\fR and \fB\-\-mem\-per\-cpu\fR are mutually exclusive. This option
+applies to job and step allocations.
 
 .TP
 \fB\-\-mem_bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
@@ -1151,17 +1189,21 @@ with [0-9] so they are seen as numerical values by srun.
 .TP
 .B help
 show this help message
+.TP
+This option applies to job and step allocations.
 .RE
 
 .TP
 \fB\-\-mincpus\fR=<\fIn\fR>
-Specify a minimum number of logical cpus/processors per node.
+Specify a minimum number of logical cpus/processors per node. This option
+applies to job allocations.
 
 .TP
 \fB\-\-msg\-timeout\fR=<\fIseconds\fR>
 Modify the job launch message timeout.
 The default value is \fBMessageTimeout\fR in the Slurm configuration file slurm.conf.
 Changes to this are typically not recommended, but could be useful to diagnose problems.
+This option applies to job allocations.
 
 .TP
 \fB\-\-mpi\fR=<\fImpi_type\fR>
@@ -1216,6 +1258,8 @@ force "libpmix" usage.
 .B none
 No special MPI processing. This is the default and works with
 many other versions of MPI.
+.TP
+This option applies to step allocations.
 .RE
 
 .TP
@@ -1224,7 +1268,8 @@ Run a job with different programs and different arguments for
 each task. In this case, the executable program specified is
 actually a configuration file specifying the executable and
 arguments for each task. See \fBMULTIPLE PROGRAM CONFIGURATION\fR
-below for details on the configuration file contents.
+below for details on the configuration file contents. This option applies to
+step allocations.
 
 .TP
 \fB\-N\fR, \fB\-\-nodes\fR=<\fIminnodes\fR[\-\fImaxnodes\fR]>
@@ -1250,14 +1295,15 @@ The job will be allocated as many nodes as possible within the range specified
 and without delaying the initiation of the job.
 The node count specification may include a numeric value followed by a suffix
 of "k" (multiplies numeric value by 1,024) or "m" (multiplies numeric value by
-1,048,576).
+1,048,576). This option applies to job and step allocations.
 
 .TP
 \fB\-n\fR, \fB\-\-ntasks\fR=<\fInumber\fR>
 Specify the number of tasks to run. Request that \fBsrun\fR
 allocate resources for \fIntasks\fR tasks.
 The default is one task per node, but note
-that the \fB\-\-cpus\-per\-task\fR option will change this default.
+that the \fB\-\-cpus\-per\-task\fR option will change this default. This option
+applies to job and step allocations.
 
 .TP
 \fB\-\-network\fR=<\fItype\fR>
@@ -1403,6 +1449,8 @@ connections are established for each protocol (LAPI and MPI) and each task.
 If there are two networks and four tasks on the node then a total
 of 32 connections are established (2 instances x 2 protocols x 2 networks x
 4 tasks).
+.TP
+This option applies to job and step allocations.
 .RE
 
 .TP
@@ -1413,7 +1461,7 @@ by 100. The adjustment range is from \-10000 (highest priority)
 to 10000 (lowest priority). Only privileged users can specify
 a negative adjustment. NOTE: This option is presently
 ignored if \fISchedulerType=sched/wiki\fR or
-\fISchedulerType=sched/wiki2\fR.
+\fISchedulerType=sched/wiki2\fR. This option applies to job allocations.
 
 .TP
 \fB\-\-ntasks\-per\-core\fR=<\fIntasks\fR>
@@ -1426,7 +1474,8 @@ to bind the tasks to specific core unless \fB\-\-cpu_bind=none\fR
 is specified.
 NOTE: This option is not supported unless
 \fISelectTypeParameters=CR_Core\fR or
-\fISelectTypeParameters=CR_Core_Memory\fR is configured.
+\fISelectTypeParameters=CR_Core_Memory\fR is configured. This option applies to
+job allocations.
 
 .TP
 \fB\-\-ntasks\-per\-node\fR=<\fIntasks\fR>
@@ -1444,7 +1493,8 @@ a hybrid MPI/OpenMP app where only one MPI "task/rank" should be
 assigned to each node while allowing the OpenMP portion to utilize
 all of the parallelism present in the node, or submitting a single
 setup/cleanup/monitoring job to each node of a pre\-existing
-allocation as one step in a larger job script.
+allocation as one step in a larger job script. This option applies to job
+allocations.
 
 .TP
 \fB\-\-ntasks\-per\-socket\fR=<\fIntasks\fR>
@@ -1457,11 +1507,12 @@ to bind the tasks to specific sockets unless \fB\-\-cpu_bind=none\fR
 is specified.
 NOTE: This option is not supported unless
 \fISelectTypeParameters=CR_Socket\fR or
-\fISelectTypeParameters=CR_Socket_Memory\fR is configured.
+\fISelectTypeParameters=CR_Socket_Memory\fR is configured. This option applies
+to job allocations.
 
 .TP
 \fB\-O\fR, \fB\-\-overcommit\fR
-Overcommit resources.
+Overcommit resources. This option applies to job and step allocations.
 When applied to job allocation, only one CPU is allocated to the job per node
 and options used to specify the number of tasks per node, socket, core, etc.
 are ignored.
@@ -1487,13 +1538,14 @@ If the specified file already exists, it will be overwritten.
 .br
 
 If \fB\-\-error\fR is not also specified on the command line, both
-stdout and stderr will directed to the file specified by \fB\-\-output\fR.
+stdout and stderr will directed to the file specified by \fB\-\-output\fR. This
+option applies to job and step allocations.
 
 .TP
 \fB\-\-open\-mode\fR=<\fIappend|truncate\fR>
 Open the output and error files using append or truncate mode as specified.
 The default value is specified by the system configuration parameter
-\fIJobFileAppend\fR.
+\fIJobFileAppend\fR. This option applies to job allocations.
 
 .TP
 \fB\-p\fR, \fB\-\-partition\fR=<\fIpartition_names\fR>
@@ -1504,7 +1556,7 @@ than one partition, specify their names in a comma separate list and the one
 offering earliest initiation will be used with no regard given to the partition
 name ordering (although higher priority partitions will be considered first).
 When the job is initiated, the name of the partition used will be placed first
-in the job record partition string.
+in the job record partition string. This option applies to job allocations.
 
 .TP
 \fB\-\-power\fR=<\fIflags\fR>
@@ -1512,12 +1564,14 @@ Comma separated list of power management plugin options.
 Currently available flags include:
 level (all nodes allocated to the job should have identical power caps,
 may be disabled by the Slurm configuration option PowerParameters=job_no_level).
+This option applies to job allocations.
 
 .TP
 \fB\-\-priority\fR=<value>
 Request a specific job priority.
 May be subject to configuration specific constraints.
-Only Slurm operators and administrators can set the priority of a job.
+Only Slurm operators and administrators can set the priority of a job. This
+option applies to job allocations.
 
 .TP
 \fB\-\-profile\fR=<all|none|[energy[,|task[,|filesystem[,|network]]]]>
@@ -1550,6 +1604,9 @@ Filesystem data is collected.
 .TP
 \fBNetwork\fR
 Network (InfiniBand) data is collected.
+
+.TP
+This option applies to job and step allocations.
 .RE
 
 .TP
@@ -1559,7 +1616,7 @@ The command line arguments for \fIexecutable\fR will be the command
 and arguments of the job step.  If \fIexecutable\fR is "none", then
 no srun prolog will be run. This parameter overrides the SrunProlog
 parameter in slurm.conf. This parameter is completely independent from
-the Prolog parameter in slurm.conf.
+the Prolog parameter in slurm.conf. This option applies to job allocations.
 
 .TP
 \fB\-\-propagate\fR[=\fIrlimits\fR]
@@ -1605,6 +1662,8 @@ The maximum resident set size
 .TP
 \fBSTACK\fR
 The maximum stack size
+.TP
+This option applies to job allocations.
 .RE
 
 .TP
@@ -1615,17 +1674,19 @@ Implicitly sets \fB\-\-error\fR and \fB\-\-output\fR to /dev/null
 for all tasks except task zero, which may cause those tasks to
 exit immediately (e.g. shells will typically exit immediately
 in that situation).
+This option applies to step allocations.
 
 .TP
 \fB\-Q\fR, \fB\-\-quiet\fR
-Suppress informational messages from srun. Errors will still be displayed.
+Suppress informational messages from srun. Errors will still be displayed. This
+option applies to job and step allocations.
 
 .TP
 \fB\-q\fR, \fB\-\-quit\-on\-interrupt\fR
 Quit immediately on single SIGINT (Ctrl\-C). Use of this option
 disables the status feature normally available when \fBsrun\fR receives
 a single Ctrl\-C and causes \fBsrun\fR to instead immediately terminate the
-running job.
+running job. This option applies to step allocations.
 
 .TP
 \fB\-\-qos\fR=<\fIqos\fR>
@@ -1633,7 +1694,7 @@ Request a quality of service for the job.  QOS values can be defined
 for each user/cluster/account association in the Slurm database.
 Users will be limited to their association's defined set of qos's when
 the Slurm configuration parameter, AccountingStorageEnforce, includes
-"qos" in it's definition.
+"qos" in it's definition. This option applies to job allocations.
 
 .TP
 \fB\-r\fR, \fB\-\-relative\fR=<\fIn\fR>
@@ -1647,13 +1708,14 @@ fatal error when not running within a prior allocation (i.e. when
 SLURM_JOB_ID is not set). The default for \fIn\fR is 0. If the
 value of \fB\-\-nodes\fR exceeds the number of nodes identified
 with the \fB\-\-relative\fR option, a warning message will be
-printed and the \fB\-\-relative\fR option will take precedence.
+printed and the \fB\-\-relative\fR option will take precedence. This option
+applies to step allocations.
 
 .TP
 \fB\-\-reboot\fR
 Force the allocated nodes to reboot before starting the job.
 This is only supported with some system configurations and will otherwise be
-silently ignored.
+silently ignored. This option applies to job allocations.
 
 .TP
 \fB\-\-resv\-ports\fR
@@ -1662,16 +1724,18 @@ of port they want to reserve. The parameter MpiParams=ports=12000-12999
 must be specified in \fIslurm.conf\fR. If not specified the default reserve
 number of ports equal to the number of tasks. If the number of reserved ports
 is zero no ports is reserved.
-Used for OpenMPI.
+Used for OpenMPI. This option applies to job and step allocations.
 
 .TP
 \fB\-\-reservation\fR=<\fIname\fR>
-Allocate resources for the job from the named reservation.
+Allocate resources for the job from the named reservation. This option applies
+to job allocations.
 
 .TP
 \fB\-\-restart\-dir\fR=<\fIdirectory\fR>
 Specifies the directory from which the job or job step's checkpoint should
-be read (used by the checkpoint/blcrm and checkpoint/xlch plugins only).
+be read (used by the checkpoint/blcrm and checkpoint/xlch plugins only). This
+option applies to job allocations.
 
 \fB\-\-share\fR
 The \fB\-\-share\fR option has been replaced by the \fB\-\-oversubscribe\fR
@@ -1687,7 +1751,7 @@ partition's \fBOverSubscribe\fR option takes precedence over the job's option.
 This option may result in the allocation being granted sooner than if the
 \-\-oversubscribe option was not set and allow higher system utilization, but
 application performance will likely suffer due to competition for resources.
-Also see the \-\-exclusive option.
+Also see the \-\-exclusive option. This option applies to step allocations.
 
 .TP
 \fB\-S\fR, \fB\-\-core\-spec\fR=<\fInum\fR>
@@ -1698,7 +1762,8 @@ Default value is dependent upon the node's configured CoreSpecCount value.
 If a value of zero is designated and the Slurm configuration option
 AllowSpecResourcesUsage is enabled, the job will be allowed to override
 CoreSpecCount and use the specialized resources on nodes it is allocated.
-This option can not be used with the \fB\-\-thread\-spec\fR option.
+This option can not be used with the \fB\-\-thread\-spec\fR option. This option
+applies to job allocations.
 
 .TP
 \fB\-\-signal\fR=<\fIsig_num\fR>[@<\fIsig_time\fR>]
@@ -1710,7 +1775,7 @@ be sent up to 60 seconds earlier than specified.
 \fIsig_time\fR must have an integer value between 0 and 65535.
 By default, no signal is sent before the job's end time.
 If a \fIsig_num\fR is specified without any \fIsig_time\fR,
-the default time will be 60 seconds.
+the default time will be 60 seconds. This option applies to job allocations.
 
 .TP
 \fB\-\-slurmd\-debug\fR=<\fIlevel\fR>
@@ -1737,13 +1802,14 @@ Log errors and verbose informational messages
 .RE
 
 The slurmd debug information is copied onto the stderr of
-the job. By default only errors are displayed.
+the job. By default only errors are displayed. This option applies to job and
+step allocations.
 
 .TP
 \fB\-\-sockets\-per\-node\fR=<\fIsockets\fR>
 Restrict node selection to nodes with at least the specified number of
 sockets.  See additional information under \fB\-B\fR option above when
-task/affinity plugin is enabled.
+task/affinity plugin is enabled. This option applies to job allocations.
 
 .TP
 \fB\-\-switches\fR=<\fIcount\fR>[@<\fImax\-time\fR>]
@@ -1759,7 +1825,8 @@ Acceptable time formats include "minutes", "minutes:seconds",
 The job's maximum time delay may be limited by the system administrator using
 the \fBSchedulerParameters\fR configuration parameter with the
 \fBmax_switch_wait\fR parameter option.
-The default max\-time is the max_switch_wait SchedulerParameters.
+The default max\-time is the max_switch_wait SchedulerParameters. This option
+applies to job allocations.
 
 .TP
 \fB\-T\fR, \fB\-\-threads\fR=<\fInthreads\fR>
@@ -1770,7 +1837,7 @@ thread per allocated node up to a maximum of 60 concurrent
 threads. Specifying this option limits the number of
 concurrent threads to \fInthreads\fR (less than or equal to 60).
 This should only be used to set a low thread count for testing on
-very small memory computers.
+very small memory computers. This option applies to job allocations.
 
 .TP
 \fB\-t\fR, \fB\-\-time\fR=<\fItime\fR>
@@ -1786,7 +1853,8 @@ and second values are rounded up to the next minute.
 
 A time limit of zero requests that no time limit be imposed.  Acceptable time
 formats include "minutes", "minutes:seconds", "hours:minutes:seconds",
-"days\-hours", "days\-hours:minutes" and "days\-hours:minutes:seconds".
+"days\-hours", "days\-hours:minutes" and "days\-hours:minutes:seconds". This
+option applies to job and step allocations.
 
 .TP
 \fB\-\-task\-epilog\fR=<\fIexecutable\fR>
@@ -1794,7 +1862,8 @@ The \fBslurmstepd\fR daemon will run \fIexecutable\fR just after each task
 terminates. This will be executed before any TaskEpilog parameter in
 slurm.conf is executed. This is meant to be a very short\-lived
 program. If it fails to terminate within a few seconds, it will be
-killed along with any descendant processes.
+killed along with any descendant processes. This option applies to step
+allocations.
 
 .TP
 \fB\-\-task\-prolog\fR=<\fIexecutable\fR>
@@ -1805,7 +1874,7 @@ Besides the normal environment variables, this has SLURM_TASK_PID
 available to identify the process ID of the task being started.
 Standard output from this program of the form
 "export NAME=value" will be used to set environment variables
-for the task being spawned.
+for the task being spawned. This option applies to step allocations.
 
 .TP
 \fB\-\-test\-only\fR
@@ -1815,14 +1884,16 @@ the job.  This limits \fBsrun's\fR behavior to just return
 information; no job is actually submitted.
 EXCEPTION: On Bluegene/Q systems on when running within an existing job
 allocation, this disables the use of "runjob" to launch tasks. The program
-will be executed directly by the slurmd daemon.
+will be executed directly by the slurmd daemon. This option applies to job
+allocations.
 
 .TP
 \fB\-\-thread\-spec\fR=<\fInum\fR>
 Count of specialized threads per node reserved by the job for system operations
 and not used by the application. The application will not use these threads,
 but will be charged for their allocation.
-This option can not be used with the \fB\-\-core\-spec\fR option.
+This option can not be used with the \fB\-\-core\-spec\fR option. This option
+applies to job allocations.
 
 .TP
 \fB\-\-threads\-per\-core\fR=<\fIthreads\fR>
@@ -1830,7 +1901,7 @@ Restrict node selection to nodes with at least the specified number of
 threads per core.  NOTE: "Threads" refers to the number of processing units on
 each core rather than the number of application tasks to be launched per core.
 See additional information under \fB\-B\fR option above when task/affinity
-plugin is enabled.
+plugin is enabled. This option applies to job allocations.
 
 .TP
 \fB\-\-time\-min\fR=<\fItime\fR>
@@ -1843,11 +1914,12 @@ This is performed by a backfill scheduling algorithm to allocate resources
 otherwise reserved for higher priority jobs.
 Acceptable time formats include "minutes", "minutes:seconds",
 "hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and
-"days\-hours:minutes:seconds".
+"days\-hours:minutes:seconds". This option applies to job allocations.
 
 .TP
 \fB\-\-tmp\fR=<\fIMB\fR>
-Specify a minimum amount of temporary disk space.
+Specify a minimum amount of temporary disk space. This option applies to job
+allocations.
 
 .TP
 \fB\-u\fR, \fB\-\-unbuffered\fR
@@ -1855,7 +1927,8 @@ By default the connection between slurmstepd and the user launched application
 is over a pipe. The stdio output written by the application is buffered
 by the glibc until it is flushed or the output is set as unbuffered.
 See setbuf(3). If this option is specified the tasks are executed with
-a pseudo terminal so that the application output is unbuffered.
+a pseudo terminal so that the application output is unbuffered. This option
+applies to step allocations.
 .TP
 \fB\-\-usage\fR
 Display brief help message and exit.
@@ -1868,7 +1941,8 @@ to check access permissions for the target partition. User root
 may use this option to run jobs as a normal user in a RootOnly
 partition for example. If run as root, \fBsrun\fR will drop
 its permissions to the uid specified after node allocation is
-successful. \fIuser\fR may be the user name or numerical user ID.
+successful. \fIuser\fR may be the user name or numerical user ID. This option
+applies to job and step allocations.
 
 .TP
 \fB\-V\fR, \fB\-\-version\fR
@@ -1878,7 +1952,7 @@ Display version information and exit.
 \fB\-v\fR, \fB\-\-verbose\fR
 Increase the verbosity of srun's informational messages.  Multiple
 \fB\-v\fR's will further increase srun's verbosity.  By default only
-errors will be displayed.
+errors will be displayed. This option applies to job and step allocations.
 
 .TP
 \fB\-W\fR, \fB\-\-wait\fR=<\fIseconds\fR>
@@ -1890,7 +1964,7 @@ option can be useful to insure that a job is terminated in a timely fashion
 in the event that one or more tasks terminate prematurely.
 Note: The \fB\-K\fR, \fB\-\-kill\-on\-bad\-exit\fR option takes precedence
 over \fB\-W\fR, \fB\-\-wait\fR to terminate the job immediately if a task
-exits with a non\-zero exit code.
+exits with a non\-zero exit code. This option applies to job allocations.
 
 .TP
 \fB\-w\fR, \fB\-\-nodelist\fR=<\fIhost1,host2,...\fR or \fIfilename\fR>
@@ -1905,12 +1979,13 @@ by the supplied host list, additional resources will be allocated on other
 nodes as needed.
 Rather than repeating a host name multiple times, an asterisk and
 a repetition count may be appended to a host name. For example
-"host1,host1" and "host1*2" are equivalent.
+"host1,host1" and "host1*2" are equivalent. This option applies to job and step
+allocations.
 
 .TP
 \fB\-\-wckey\fR=<\fIwckey\fR>
 Specify wckey to be used with job.  If TrackWCKey=no (default) in the
-slurm.conf this value is ignored.
+slurm.conf this value is ignored. This option applies to job allocations.
 
 .TP
 \fB\-X\fR, \fB\-\-disable\-status\fR
@@ -1918,13 +1993,14 @@ Disable the display of task status when srun receives a single SIGINT
 (Ctrl\-C). Instead immediately forward the SIGINT to the running job.
 Without this option a second Ctrl\-C in one second is required to forcibly
 terminate the job and \fBsrun\fR will immediately exit. May also be
-set via the environment variable SLURM_DISABLE_STATUS.
+set via the environment variable SLURM_DISABLE_STATUS. This option applies to
+job allocations.
 
 .TP
 \fB\-x\fR, \fB\-\-exclude\fR=<\fIhost1,host2,...\fR or \fIfilename\fR>
 Request that a specific list of hosts not be included in the resources
 allocated to this job. The host list will be assumed to be a filename
-if it contains a "/"character.
+if it contains a "/"character. This option applies to job allocations.
 
 .TP
 \fB\-Z\fR, \fB\-\-no\-allocate\fR
@@ -1932,7 +2008,8 @@ Run the specified tasks on a set of nodes without creating a Slurm
 "job" in the Slurm queue structure, bypassing the normal resource
 allocation step.  The list of nodes must be specified with the
 \fB\-w\fR, \fB\-\-nodelist\fR option.  This is a privileged option
-only available for the users "SlurmUser" and "root".
+only available for the users "SlurmUser" and "root". This option applies to job
+allocations.
 
 .PP
 The following options support Blue Gene systems, but may be
@@ -1941,12 +2018,14 @@ applicable to other systems as well.
 .TP
 \fB\-\-blrts\-image\fR=<\fIpath\fR>
 Path to blrts image for bluegene block.  BGL only.
-Default from \fIblugene.conf\fR if not set.
+Default from \fIblugene.conf\fR if not set. This option applies to job
+allocations.
 
 .TP
 \fB\-\-cnload\-image\fR=<\fIpath\fR>
 Path to compute node image for bluegene block.  BGP only.
-Default from \fIblugene.conf\fR if not set.
+Default from \fIblugene.conf\fR if not set. This option applies to job
+allocations.
 
 .TP
 \fB\-\-conn\-type\fR=<\fItype\fR>
@@ -1962,7 +2041,7 @@ for virtual node mode, and HTC_L for Linux mode.
 For systems that allow a different connection type per dimension you
 can supply a comma separated list of connection types may be specified, one for
 each dimension (i.e. M,T,T,T will give you a torus connection is all
-dimensions expect the first).
+dimensions expect the first). This option applies to job allocations.
 
 .TP
 \fB\-g\fR, \fB\-\-geometry\fR=<\fIXxYxZ\fR> | <\fIAxXxYxZ\fR>
@@ -1971,33 +2050,39 @@ systems there are three numbers giving dimensions in the X, Y and Z directions,
 while on BlueGene/Q systems there are four numbers giving dimensions in the
 A, X, Y and Z directions and can not be used to allocate sub-blocks.
 For example "\-\-geometry=1x2x3x4", specifies a block of nodes having
-1 x 2 x 3 x 4 = 24 nodes (actually midplanes on BlueGene).
+1 x 2 x 3 x 4 = 24 nodes (actually midplanes on BlueGene). This option applies
+to job allocations.
 
 .TP
 \fB\-\-ioload\-image\fR=<\fIpath\fR>
 Path to io image for bluegene block.  BGP only.
-Default from \fIblugene.conf\fR if not set.
+Default from \fIblugene.conf\fR if not set. This option applies to job
+allocations.
 
 .TP
 \fB\-\-linux\-image\fR=<\fIpath\fR>
 Path to linux image for bluegene block.  BGL only.
-Default from \fIblugene.conf\fR if not set.
+Default from \fIblugene.conf\fR if not set. This option applies to job
+allocations.
 
 .TP
 \fB\-\-mloader\-image\fR=<\fIpath\fR>
 Path to mloader image for bluegene block.
-Default from \fIblugene.conf\fR if not set.
+Default from \fIblugene.conf\fR if not set. This option applies to job
+allocations.
 
 .TP
 \fB\-R\fR, \fB\-\-no\-rotate\fR
 Disables rotation of the job's requested geometry in order to fit an
 appropriate block.
 By default the specified geometry can rotate in three dimensions.
+This option applies to job allocations.
 
 .TP
 \fB\-\-ramdisk\-image\fR=<\fIpath\fR>
 Path to ramdisk image for bluegene block.  BGL only.
-Default from \fIblugene.conf\fR if not set.
+Default from \fIblugene.conf\fR if not set. This option applies to job
+allocations.
 
 .PP
 .B srun
