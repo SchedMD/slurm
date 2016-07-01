@@ -65,8 +65,8 @@ static int _job_resrcs_to_hv(job_info_t *job_info, HV *hv)
 	job_resources_t *job_resrcs = job_info->job_resrcs;
 	int bit_inx, bit_reps;
 	int abs_node_inx, rel_node_inx;
-	uint32_t *last_mem_alloc_ptr = NULL;
-	uint32_t last_mem_alloc = NO_VAL;
+	uint64_t *last_mem_alloc_ptr = NULL;
+	uint64_t last_mem_alloc = NO_VAL64;
 	char *last_hosts;
 	hostlist_t hl, hl_last;
 	uint32_t threads;
@@ -129,7 +129,7 @@ static int _job_resrcs_to_hv(job_info_t *job_info, HV *hv)
 				nr_hv = newHV();
 				hv_store_charp(nr_hv, "nodes", last_hosts);
 				hv_store_charp(nr_hv, "cpu_ids", tmp2);
-				hv_store_uint32_t(nr_hv, "mem",
+				hv_store_uint64_t(nr_hv, "mem",
 						  last_mem_alloc_ptr ?
 						  last_mem_alloc : 0);
 				av_store(av, cnt++, newRV_noinc((SV*)nr_hv));
@@ -143,7 +143,7 @@ static int _job_resrcs_to_hv(job_info_t *job_info, HV *hv)
 				last_mem_alloc = job_resrcs->
 					memory_allocated[rel_node_inx];
 			else
-				last_mem_alloc = NO_VAL;
+				last_mem_alloc = NO_VAL64;
 		}
 		slurm_hostlist_push_host(hl_last, host);
 		free(host);
@@ -164,7 +164,7 @@ static int _job_resrcs_to_hv(job_info_t *job_info, HV *hv)
 		nr_hv = newHV();
 		hv_store_charp(nr_hv, "nodes", last_hosts);
 		hv_store_charp(nr_hv, "cpu_ids", tmp2);
-		hv_store_uint32_t(nr_hv, "mem",
+		hv_store_uint64_t(nr_hv, "mem",
 				  last_mem_alloc_ptr ?
 				  last_mem_alloc : 0);
 		av_store(av, cnt++, newRV_noinc((SV*)nr_hv));
@@ -261,7 +261,7 @@ job_info_to_hv(job_info_t *job_info, HV *hv)
 #endif
 	STORE_FIELD(hv, job_info, num_nodes, uint32_t);
 	STORE_FIELD(hv, job_info, num_cpus, uint32_t);
-	STORE_FIELD(hv, job_info, pn_min_memory, uint32_t);
+	STORE_FIELD(hv, job_info, pn_min_memory, uint64_t);
 	STORE_FIELD(hv, job_info, pn_min_cpus, uint16_t);
 	STORE_FIELD(hv, job_info, pn_min_tmp_disk, uint32_t);
 
@@ -393,7 +393,7 @@ hv_to_job_info(HV *hv, job_info_t *job_info)
 	FETCH_FIELD(hv, job_info, ntasks_per_socket, uint16_t, TRUE);
 	FETCH_FIELD(hv, job_info, num_nodes, uint32_t, TRUE);
 	FETCH_FIELD(hv, job_info, num_cpus, uint32_t, TRUE);
-	FETCH_FIELD(hv, job_info, pn_min_memory, uint32_t, TRUE);
+	FETCH_FIELD(hv, job_info, pn_min_memory, uint64_t, TRUE);
 	FETCH_FIELD(hv, job_info, pn_min_cpus, uint16_t, TRUE);
 	FETCH_FIELD(hv, job_info, pn_min_tmp_disk, uint32_t, TRUE);
 	FETCH_FIELD(hv, job_info, partition, charp, FALSE);

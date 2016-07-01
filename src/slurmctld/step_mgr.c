@@ -1191,7 +1191,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	if ((step_spec->pn_min_memory && _is_mem_resv()) ||
 	    (step_spec->gres && (step_spec->gres[0]))) {
 		int fail_mode = ESLURM_INVALID_TASK_MEMORY;
-		uint32_t tmp_mem, tmp_cpus, avail_cpus, total_cpus;
+		uint64_t tmp_mem;
+		uint32_t tmp_cpus, avail_cpus, total_cpus;
 		uint32_t avail_tasks, total_tasks;
 
 		if (_is_mem_resv() && step_spec->pn_min_memory &&
@@ -3613,7 +3614,7 @@ extern void dump_job_step_state(struct job_record *job_ptr,
 	pack8(step_ptr->no_kill, buffer);
 
 	pack32(step_ptr->cpu_count, buffer);
-	pack32(step_ptr->pn_min_memory, buffer);
+	pack64(step_ptr->pn_min_memory, buffer);
 	pack32(step_ptr->exit_code, buffer);
 	if (step_ptr->exit_code != NO_VAL) {
 		uint16_t bit_cnt = 0;

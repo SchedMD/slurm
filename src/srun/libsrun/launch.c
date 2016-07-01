@@ -200,9 +200,9 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		job->ntasks = opt.ntasks = job->nhosts * opt.ntasks_per_node;
 	job->ctx_params.task_count = opt.ntasks;
 
-	if (opt.mem_per_cpu != NO_VAL)
+	if (opt.mem_per_cpu != NO_VAL64)
 		job->ctx_params.pn_min_memory = opt.mem_per_cpu | MEM_PER_CPU;
-	else if (opt.pn_min_memory != NO_VAL)
+	else if (opt.pn_min_memory != NO_VAL64)
 		job->ctx_params.pn_min_memory = opt.pn_min_memory;
 	if (opt.gres)
 		job->ctx_params.gres = opt.gres;

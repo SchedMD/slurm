@@ -688,7 +688,7 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	list_append(ret_list, key_pair);
-	if (slurm_ctl_conf_ptr->def_mem_per_cpu == INFINITE) {
+	if (slurm_ctl_conf_ptr->def_mem_per_cpu == INFINITE64) {
 		key_pair->name = xstrdup("DefMemPerNode");
 		key_pair->value = xstrdup("UNLIMITED");
 	} else if (slurm_ctl_conf_ptr->def_mem_per_cpu & MEM_PER_CPU) {
@@ -1008,7 +1008,7 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	list_append(ret_list, key_pair);
-	if (slurm_ctl_conf_ptr->max_mem_per_cpu == INFINITE) {
+	if (slurm_ctl_conf_ptr->max_mem_per_cpu == INFINITE64) {
 		key_pair->name = xstrdup("MaxMemPerNode");
 		key_pair->value = xstrdup("UNLIMITED");
 	} else if (slurm_ctl_conf_ptr->max_mem_per_cpu & MEM_PER_CPU) {

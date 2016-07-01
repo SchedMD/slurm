@@ -55,7 +55,7 @@ static uint16_t _get_job_tasks_per_node(struct job_record *job_ptr);
 static uint32_t	_get_job_end_time(struct job_record *job_ptr);
 static char *	_get_job_features(struct job_record *job_ptr);
 static uint32_t	_get_pn_min_disk(struct job_record *job_ptr);
-static uint32_t	_get_pn_min_mem(struct job_record *job_ptr);
+static uint64_t	_get_pn_min_mem(struct job_record *job_ptr);
 static uint32_t	_get_pn_min_nodes(struct job_record *job_ptr);
 static char *	_get_job_state(struct job_record *job_ptr);
 static uint32_t	_get_job_submit_time(struct job_record *job_ptr);
@@ -210,7 +210,8 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 {
 	char tmp[16384], *buf = NULL;
 	char *uname, *gname, *pname;
-	uint32_t end_time, suspend_time, min_mem;
+	uint32_t end_time, suspend_time;
+	uint64_t min_mem;
 
 	if (!job_ptr)
 		return NULL;
@@ -315,7 +316,7 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 	}
 
 	snprintf(tmp, sizeof(tmp),
-		"RMEM=%u;RDISK=%u;",
+		"RMEM=%"PRIu64";RDISK=%u;",
 		_get_pn_min_mem(job_ptr),
 		_get_pn_min_disk(job_ptr));
 	xstrcat(buf, tmp);
@@ -410,11 +411,11 @@ static uint16_t _get_job_tasks_per_node(struct job_record *job_ptr)
 	return tasks_per_node;
 }
 
-static uint32_t _get_pn_min_mem(struct job_record *job_ptr)
+static uint64_t _get_pn_min_mem(struct job_record *job_ptr)
 {
 	if (job_ptr->details)
 		return job_ptr->details->pn_min_memory;
-	return (uint32_t) 0;
+	return (uint64_t) 0;
 }
 
 static uint32_t _get_pn_min_disk(struct job_record *job_ptr)

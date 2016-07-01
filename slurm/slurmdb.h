@@ -721,7 +721,7 @@ typedef struct {
 	uint32_t qosid;
 	uint32_t req_cpus;
 	char	*req_gres;
-	uint32_t req_mem;
+	uint64_t req_mem;
 	uint32_t requid;
 	uint32_t resvid;
 	char *resv_name;

@@ -27,7 +27,7 @@ hv_to_slurm_step_ctx_params(HV *hv, slurm_step_ctx_params_t *params)
 	FETCH_FIELD(hv, params, features, charp, FALSE);
 	FETCH_FIELD(hv, params, immediate, uint16_t, FALSE);
 	FETCH_FIELD(hv, params, job_id, uint32_t, FALSE); /* for slurm_step_ctx_create_no_alloc */
-	FETCH_FIELD(hv, params, pn_min_memory, uint32_t, FALSE);
+	FETCH_FIELD(hv, params, pn_min_memory, uint64_t, FALSE);
 	FETCH_FIELD(hv, params, ckpt_dir, charp, FALSE);
 	FETCH_FIELD(hv, params, gres, charp, FALSE);
 	FETCH_FIELD(hv, params, name, charp, FALSE);

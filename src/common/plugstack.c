@@ -1866,6 +1866,7 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 {
 	int *p2int;
 	uint32_t *p2uint32;
+	uint64_t *p2uint64;
 	uint32_t  uint32;
 	uint16_t *p2uint16;
 	uid_t *p2uid;
@@ -2112,11 +2113,11 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 			*p2str = NULL;
 		break;
 	case S_JOB_ALLOC_MEM:
-		p2uint32 = va_arg(vargs, uint32_t *);
+		p2uint64 = va_arg(vargs, uint64_t *);
 		if (slurmd_job)
-			*p2uint32 = slurmd_job->job_mem;
+			*p2uint64 = slurmd_job->job_mem;
 		else
-			*p2uint32 = 0;
+			*p2uint64 = 0;
 		break;
 	case S_STEP_ALLOC_CORES:
 		p2str = va_arg(vargs, char **);
@@ -2126,11 +2127,11 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 			*p2str = NULL;
 		break;
 	case S_STEP_ALLOC_MEM:
-		p2uint32 = va_arg(vargs, uint32_t *);
+		p2uint64 = va_arg(vargs, uint64_t *);
 		if (slurmd_job)
-			*p2uint32 = slurmd_job->step_mem;
+			*p2uint64 = slurmd_job->step_mem;
 		else
-			*p2uint32 = 0;
+			*p2uint64 = 0;
 		break;
 	case S_SLURM_RESTART_COUNT:
 		p2uint32 = va_arg(vargs, uint32_t *);

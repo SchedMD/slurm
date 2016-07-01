@@ -1044,12 +1044,12 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 	xfree(tmp);
 
 	if (alloc->pn_min_memory & MEM_PER_CPU) {
-		uint32_t tmp_mem = alloc->pn_min_memory & (~MEM_PER_CPU);
-		env_array_overwrite_fmt(dest, "SLURM_MEM_PER_CPU", "%u",
+		uint64_t tmp_mem = alloc->pn_min_memory & (~MEM_PER_CPU);
+		env_array_overwrite_fmt(dest, "SLURM_MEM_PER_CPU", "%"PRIu64"",
 					tmp_mem);
 	} else if (alloc->pn_min_memory) {
-		uint32_t tmp_mem = alloc->pn_min_memory;
-		env_array_overwrite_fmt(dest, "SLURM_MEM_PER_NODE", "%u",
+		uint64_t tmp_mem = alloc->pn_min_memory;
+		env_array_overwrite_fmt(dest, "SLURM_MEM_PER_NODE", "%"PRIu64"",
 					tmp_mem);
 	}
 
@@ -1261,12 +1261,12 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	xfree(tmp);
 
 	if (batch->pn_min_memory & MEM_PER_CPU) {
-		uint32_t tmp_mem = batch->pn_min_memory & (~MEM_PER_CPU);
-		env_array_overwrite_fmt(dest, "SLURM_MEM_PER_CPU", "%u",
+		uint64_t tmp_mem = batch->pn_min_memory & (~MEM_PER_CPU);
+		env_array_overwrite_fmt(dest, "SLURM_MEM_PER_CPU", "%"PRIu64"",
 					tmp_mem);
 	} else if (batch->pn_min_memory) {
-		uint32_t tmp_mem = batch->pn_min_memory;
-		env_array_overwrite_fmt(dest, "SLURM_MEM_PER_NODE", "%u",
+		uint64_t tmp_mem = batch->pn_min_memory;
+		env_array_overwrite_fmt(dest, "SLURM_MEM_PER_NODE", "%"PRIu64"",
 					tmp_mem);
 	}
 

@@ -125,7 +125,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	int cpus_per_node = 1;
 	int idle_cpus;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
-	uint32_t alloc_memory;
+	uint64_t alloc_memory;
 	char *node_alloc_tres = NULL;
 	char *line_end = (one_liner) ? " " : "\n   ";
 
@@ -250,7 +250,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 				  SELECT_NODEDATA_MEM_ALLOC,
 				  NODE_STATE_ALLOCATED,
 				  &alloc_memory);
-	xstrfmtcat(out, "RealMemory=%"PRIu64" AllocMem=%u ",
+	xstrfmtcat(out, "RealMemory=%"PRIu64" AllocMem=%"PRIu64" ",
 		   node_ptr->real_memory, alloc_memory);
 
 	if (node_ptr->free_mem == NO_VAL)

@@ -1704,10 +1704,11 @@ static void _make_prolog_mem_container(slurm_msg_t *msg)
 			job_limits_ptr->step_id  = SLURM_EXTERN_CONT;
 			job_limits_ptr->step_mem = req->job_mem_limit;
 #if _LIMIT_INFO
-			info("AddLim step:%u.%u job_mem:%"PRIu64" step_mem:%u",
-			      job_limits_ptr->job_id, job_limits_ptr->step_id,
-			      job_limits_ptr->job_mem,
-			      job_limits_ptr->step_mem);
+			info("AddLim step:%u.%u job_mem:%"PRIu64""
+			     " step_mem:%"PRIu64"",
+			     job_limits_ptr->job_id, job_limits_ptr->step_id,
+			     job_limits_ptr->job_mem,
+			     job_limits_ptr->step_mem);
 #endif
 			list_append(job_limits_list, job_limits_ptr);
 		}

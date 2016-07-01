@@ -694,7 +694,7 @@ extern struct node_record *create_node_record (
 	/* these values will be overwritten when the node actually registers */
 	node_ptr->cpus = config_ptr->cpus;
 	node_ptr->cpu_load = NO_VAL;
-	node_ptr->free_mem = NO_VAL;
+	node_ptr->free_mem = NO_VAL64;
 	node_ptr->cpu_spec_list = xstrdup(config_ptr->cpu_spec_list);
 	node_ptr->boards = config_ptr->boards;
 	node_ptr->sockets = config_ptr->sockets;

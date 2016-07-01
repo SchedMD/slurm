@@ -3553,7 +3553,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	       job_specs->sockets_per_node, job_specs->cores_per_socket,
 	       job_specs->threads_per_core);
 
-	if (job_specs->pn_min_memory == NO_VAL) {
+	if (job_specs->pn_min_memory == NO_VAL64) {
 		pn_min_memory = -1L;
 		mem_type = "job";
 	} else if (job_specs->pn_min_memory & MEM_PER_CPU) {
@@ -7305,7 +7305,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->requeue = MIN(job_desc->requeue, 1);
 	else
 		detail_ptr->requeue = slurmctld_conf.job_requeue;
-	if (job_desc->pn_min_memory != NO_VAL)
+	if (job_desc->pn_min_memory != NO_VAL64)
 		detail_ptr->pn_min_memory = job_desc->pn_min_memory;
 	if (job_desc->pn_min_tmp_disk != NO_VAL)
 		detail_ptr->pn_min_tmp_disk = job_desc->pn_min_tmp_disk;
@@ -7389,7 +7389,8 @@ static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg,
 		return true;
 
 	if ((job_mem_limit & MEM_PER_CPU) && (sys_mem_limit & MEM_PER_CPU)) {
-		uint32_t cpu_ratio, mem_ratio;
+		uint32_t cpu_ratio;
+		uint64_t mem_ratio;
 		job_mem_limit &= (~MEM_PER_CPU);
 		sys_mem_limit &= (~MEM_PER_CPU);
 		if (job_mem_limit <= sys_mem_limit)
@@ -7397,7 +7398,8 @@ static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg,
 		mem_ratio = (job_mem_limit + sys_mem_limit - 1);
 		mem_ratio /= sys_mem_limit;
 		debug("increasing cpus_per_task and decreasing mem_per_cpu by "
-		      "factor of %u based upon mem_per_cpu limits", mem_ratio);
+		      "factor of %"PRIu64" based upon mem_per_cpu limits",
+		      mem_ratio);
 		if (job_desc_msg->cpus_per_task == (uint16_t) NO_VAL)
 			job_desc_msg->cpus_per_task = mem_ratio;
 		else
@@ -7993,7 +7995,7 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 	if (job_desc_msg->nice == NO_VAL)
 		job_desc_msg->nice = NICE_OFFSET;
 
-	if (job_desc_msg->pn_min_memory == NO_VAL) {
+	if (job_desc_msg->pn_min_memory == NO_VAL64) {
 		/* Default memory limit is DefMemPerCPU (if set) or no limit */
 		if (part_ptr && part_ptr->def_mem_per_cpu) {
 			job_desc_msg->pn_min_memory =
@@ -11180,7 +11182,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
-	if (job_specs->pn_min_memory != NO_VAL) {
+	if (job_specs->pn_min_memory != NO_VAL64) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL)) {
 			error_code = ESLURM_JOB_NOT_PENDING;
 		} else if (job_specs->pn_min_memory
@@ -12983,7 +12985,7 @@ extern uint64_t job_get_tres_mem(uint64_t pn_min_memory,
 {
 	uint64_t count = 0;
 
-	if (pn_min_memory == NO_VAL)
+	if (pn_min_memory == NO_VAL64)
 		return count;
 
 	if (pn_min_memory & MEM_PER_CPU) {

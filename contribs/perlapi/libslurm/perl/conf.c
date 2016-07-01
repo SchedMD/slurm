@@ -90,7 +90,7 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 
 	STORE_FIELD(hv, conf, debug_flags, uint64_t);
 
-	STORE_FIELD(hv, conf, def_mem_per_cpu, uint32_t);
+	STORE_FIELD(hv, conf, def_mem_per_cpu, uint64_t);
 
 	STORE_FIELD(hv, conf, disable_root_jobs, uint16_t);
 
@@ -197,7 +197,7 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 	STORE_FIELD(hv, conf, max_job_cnt, uint16_t);
 	STORE_FIELD(hv, conf, max_job_id, uint32_t);
 
-	STORE_FIELD(hv, conf, max_mem_per_cpu, uint32_t);
+	STORE_FIELD(hv, conf, max_mem_per_cpu, uint64_t);
 
 	if (conf->max_step_cnt)
 		STORE_FIELD(hv, conf, max_step_cnt, uint32_t);
@@ -446,7 +446,7 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	FETCH_FIELD(hv, conf, cpu_freq_def, uint32_t, FALSE);
 	FETCH_FIELD(hv, conf, crypto_type, charp, FALSE);
 	FETCH_FIELD(hv, conf, debug_flags, uint64_t, TRUE);
-	FETCH_FIELD(hv, conf, def_mem_per_cpu, uint32_t, TRUE);
+	FETCH_FIELD(hv, conf, def_mem_per_cpu, uint64_t, TRUE);
 	FETCH_FIELD(hv, conf, disable_root_jobs, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, eio_timeout, uint16_t, FALSE);
 	FETCH_FIELD(hv, conf, enforce_part_limits, uint16_t, TRUE);
@@ -498,7 +498,7 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	FETCH_FIELD(hv, conf, max_array_sz, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, max_job_cnt, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, max_job_id, uint32_t, FALSE);
-	FETCH_FIELD(hv, conf, max_mem_per_cpu, uint32_t, TRUE);
+	FETCH_FIELD(hv, conf, max_mem_per_cpu, uint64_t, TRUE);
 	FETCH_FIELD(hv, conf, max_step_cnt, uint32_t, FALSE);
 	FETCH_FIELD(hv, conf, max_tasks_per_node, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, mem_limit_enforce, uint16_t, FALSE);
@@ -630,7 +630,7 @@ slurmd_status_to_hv(slurmd_status_t *status, HV *hv)
 	STORE_FIELD(hv, status, actual_sockets, uint16_t);
 	STORE_FIELD(hv, status, actual_cores, uint16_t);
 	STORE_FIELD(hv, status, actual_threads, uint16_t);
-	STORE_FIELD(hv, status, actual_real_mem, uint32_t);
+	STORE_FIELD(hv, status, actual_real_mem, uint64_t);
 	STORE_FIELD(hv, status, actual_tmp_disk, uint32_t);
 	STORE_FIELD(hv, status, pid, uint32_t);
 	if (status->hostname)
@@ -660,7 +660,7 @@ hv_to_slurmd_status(HV *hv, slurmd_status_t *status)
 	FETCH_FIELD(hv, status, actual_sockets, uint16_t, TRUE);
 	FETCH_FIELD(hv, status, actual_cores, uint16_t, TRUE);
 	FETCH_FIELD(hv, status, actual_threads, uint16_t, TRUE);
-	FETCH_FIELD(hv, status, actual_real_mem, uint32_t, TRUE);
+	FETCH_FIELD(hv, status, actual_real_mem, uint64_t, TRUE);
 	FETCH_FIELD(hv, status, actual_tmp_disk, uint32_t, TRUE);
 	FETCH_FIELD(hv, status, pid, uint32_t, TRUE);
 	FETCH_FIELD(hv, status, hostname, charp, FALSE);

@@ -124,7 +124,7 @@ static void _rsvn_write_reserve_xml(FILE *fp, struct basil_reservation *r,
 			_write_xml(fp, "   <MemoryParamArray>\n");
 			for (mem = param->memory; mem; mem = mem->next) {
 				_write_xml(fp, "    <MemoryParam type=\"%s\""
-					   " size_mb=\"%u\"/>\n",
+					   " size_mb=\"%"PRIu64"\"/>\n",
 					   nam_memtype[mem->type],
 					   mem->size_mb ? : 1);
 			}
@@ -173,7 +173,7 @@ static void _rsvn_write_reserve_xml(FILE *fp, struct basil_reservation *r,
 					   nam_acceltype[accel->type]);
 
 				if (accel->memory_mb)
-					_write_xml(fp, " memory_mb=\"%u\"",
+					_write_xml(fp, " memory_mb=\"%"PRIu64"\"",
 						   accel->memory_mb);
 				_write_xml(fp, "/>\n");
 			}

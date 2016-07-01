@@ -1703,24 +1703,24 @@ void print_fields(type_t type, void *object)
 		case PRINT_REQ_MEM:
 			switch(type) {
 			case JOB:
-				tmp_uint32 = job->req_mem;
+				tmp_uint64 = job->req_mem;
 				break;
 			case JOBSTEP:
-				tmp_uint32 = step->job_ptr->req_mem;
+				tmp_uint64 = step->job_ptr->req_mem;
 				break;
 			case JOBCOMP:
 			default:
-				tmp_uint32 = NO_VAL;
+				tmp_uint64 = NO_VAL64;
 				break;
 			}
 
-			if (tmp_uint32 != (uint32_t)NO_VAL) {
+			if (tmp_uint64 != (uint64_t)NO_VAL64) {
 				bool per_cpu = false;
-				if (tmp_uint32 & MEM_PER_CPU) {
-					tmp_uint32 &= (~MEM_PER_CPU);
+				if (tmp_uint64 & MEM_PER_CPU) {
+					tmp_uint64 &= (~MEM_PER_CPU);
 					per_cpu = true;
 				}
-				convert_num_unit((double)tmp_uint32,
+				convert_num_unit((double)tmp_uint64,
 						 outbuf, sizeof(outbuf),
 						 UNIT_MEGA, params.units,
 						 params.convert_flags);

@@ -495,11 +495,11 @@ extern int launch_p_setup_srun_opt(char **rest)
 		}
 	}
 
-	if (opt.mem_per_cpu != NO_VAL) {
+	if (opt.mem_per_cpu != NO_VAL64) {
 		opt.argc += 2;
 		xrealloc(opt.argv, opt.argc * sizeof(char *));
 		opt.argv[command_pos++] = xstrdup("-m");
-		opt.argv[command_pos++] = xstrdup_printf("%u", opt.mem_per_cpu);
+		opt.argv[command_pos++] = xstrdup_printf("%"PRIu64"", opt.mem_per_cpu);
 	}
 
 	if (opt.ntasks_per_node != NO_VAL) {

@@ -1454,7 +1454,7 @@ extern int select_p_node_init(struct node_record *node_ptr_array, int node_cnt)
 {
 #ifdef HAVE_BG
 	int i = 0;
-	uint32_t real_memory, threads, cores;
+	uint64_t real_memory, threads, cores;
 
 	if (!node_ptr_array)
 		return SLURM_SUCCESS;

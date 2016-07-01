@@ -496,7 +496,7 @@ allocate_nodes(bool handle_signals)
 		if (opt.pn_min_memory != NO_VAL64)
 			opt.pn_min_memory = (resp->pn_min_memory &
 					     (~MEM_PER_CPU));
-		else if (opt.mem_per_cpu != NO_VAL)
+		else if (opt.mem_per_cpu != NO_VAL64)
 			opt.mem_per_cpu = (resp->pn_min_memory &
 					   (~MEM_PER_CPU));
 		/*

@@ -54,7 +54,7 @@ node_info_to_hv(node_info_t *node_info, uint16_t node_scaling, HV *hv)
 	STORE_FIELD(hv, node_info, node_state, uint32_t);
 	if(node_info->os)
 		STORE_FIELD(hv, node_info, os, charp);
-	STORE_FIELD(hv, node_info, real_memory, uint32_t);
+	STORE_FIELD(hv, node_info, real_memory, uint64_t);
 	if(node_info->reason)
 		STORE_FIELD(hv, node_info, reason, charp);
 	STORE_FIELD(hv, node_info, reason_time, time_t);
@@ -113,7 +113,7 @@ hv_to_node_info(HV *hv, node_info_t *node_info)
 	FETCH_FIELD(hv, node_info, name, charp, TRUE);
 	FETCH_FIELD(hv, node_info, node_state, uint32_t, TRUE);
 	FETCH_FIELD(hv, node_info, os, charp, FALSE);
-	FETCH_FIELD(hv, node_info, real_memory, uint32_t, TRUE);
+	FETCH_FIELD(hv, node_info, real_memory, uint64_t, TRUE);
 	FETCH_FIELD(hv, node_info, reason, charp, FALSE);
 	FETCH_FIELD(hv, node_info, reason_time, time_t, TRUE);
 	FETCH_FIELD(hv, node_info, reason_uid, uint32_t, TRUE);

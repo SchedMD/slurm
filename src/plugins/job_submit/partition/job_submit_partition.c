@@ -112,12 +112,12 @@ static bool _user_access(uid_t run_uid, uint32_t submit_uid,
 static bool _valid_memory(struct part_record *part_ptr,
 			  struct job_descriptor *job_desc)
 {
-	uint32_t job_limit, part_limit;
+	uint64_t job_limit, part_limit;
 
 	if (!part_ptr->max_mem_per_cpu)
 		return true;
 
-	if (job_desc->pn_min_memory == NO_VAL)
+	if (job_desc->pn_min_memory == NO_VAL64)
 		return true;
 
 	if ((job_desc->pn_min_memory   & MEM_PER_CPU) &&
@@ -141,7 +141,7 @@ static bool _valid_memory(struct part_record *part_ptr,
 
 	if (job_limit > part_limit) {
 		debug("job_submit/partition: skipping partition %s due to "
-		      "memory limit (%u > %u)",
+		      "memory limit (%"PRIu64" > %"PRIu64")",
 		      part_ptr->name, job_limit, part_limit);
 		return false;
 	}
