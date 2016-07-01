@@ -3406,7 +3406,7 @@ slurmdbd_pack_job_start_msg(void *in,
 		pack32(msg->priority, buffer);
 		pack32(msg->qos_id, buffer);
 		pack32(msg->req_cpus, buffer);
-		pack32(msg->req_mem, buffer);
+		pack64(msg->req_mem, buffer);
 		pack32(msg->resv_id, buffer);
 		pack_time(msg->start_time, buffer);
 		pack_time(msg->submit_time, buffer);
@@ -3440,7 +3440,7 @@ slurmdbd_pack_job_start_msg(void *in,
 		pack32(msg->priority, buffer);
 		pack32(msg->qos_id, buffer);
 		pack32(msg->req_cpus, buffer);
-		pack32(msg->req_mem, buffer);
+		pack32(xlate_mem_new2old(msg->req_mem), buffer);
 		pack32(msg->resv_id, buffer);
 		pack_time(msg->start_time, buffer);
 		pack_time(msg->submit_time, buffer);

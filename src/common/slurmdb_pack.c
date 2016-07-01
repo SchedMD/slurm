@@ -4506,7 +4506,7 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpack32(&job_ptr->req_cpus, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->req_gres, &uint32_tmp, buffer);
 		safe_unpack32(&tmp_mem, buffer);
-		job_ptr->req_mem = xlate_mem_old2new(tmp_mem);
+		job_ptr->req_mem = (uint64_t)tmp_mem;
 		safe_unpack32(&job_ptr->requid, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->resv_name, &uint32_tmp,
 				       buffer);
