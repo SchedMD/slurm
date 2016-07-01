@@ -124,6 +124,31 @@ static int _clear_federation_clusters(mysql_conn_t *mysql_conn, const char *fed)
 	return rc;
 }
 
+static int _remove_all_clusters_from_fed(mysql_conn_t *mysql_conn,
+					 const char *fed)
+{
+	int   rc    = SLURM_SUCCESS;
+	char *query = NULL;
+
+	xstrfmtcat(query, "UPDATE %s "
+		   	  "SET federation='', fed_inx=0 "
+			  "WHERE federation='%s' and deleted=0",
+		   cluster_table, fed);
+
+	if (debug_flags & DEBUG_FLAG_DB_FEDR)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+
+	rc = mysql_db_query(mysql_conn, query);
+	xfree(query);
+	if (rc)
+		error("Failed to remove all clusters from federation %s", fed);
+
+	/* TODO: Add to TXN table */
+	/* Have to add indexes */
+
+	return rc;
+}
+
 static int _remove_clusters_from_fed(mysql_conn_t *mysql_conn, List clusters)
 {
 	int   rc    = SLURM_SUCCESS;
@@ -149,7 +174,7 @@ static int _remove_clusters_from_fed(mysql_conn_t *mysql_conn, List clusters)
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
 	if (rc)
-		error("Failed to clusters %s from federation", names);
+		error("Failed to remove clusters %s from federation", names);
 	xfree(names);
 
 	/* TODO: Add to TXN table */
@@ -386,7 +411,6 @@ extern List as_mysql_get_federations(mysql_conn_t *mysql_conn, uid_t uid,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
-
 	if (!federation_cond) {
 		xstrcat(extra, " where deleted=0");
 		goto empty;
@@ -593,7 +617,6 @@ extern List as_mysql_remove_federations(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *user_name = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	bool jobs_running = 0;
 
 	if (!fed_cond) {
 		error("we need something to change");
@@ -642,17 +665,17 @@ extern List as_mysql_remove_federations(mysql_conn_t *mysql_conn, uint32_t uid,
 	user_name = uid_to_string((uid_t) uid);
 	while ((row = mysql_fetch_row(result))) {
 		char *object = xstrdup(row[0]);
-		if (!jobs_running)
-			list_append(ret_list, object);
+		list_append(ret_list, object);
+
+		if ((rc = _remove_all_clusters_from_fed(mysql_conn, object)))
+			break;
 
 		xfree(name_char);
 		xstrfmtcat(name_char, "name='%s'", object);
-		if (jobs_running)
-			xfree(object);
+
 		if ((rc = remove_common(mysql_conn, DBD_REMOVE_FEDERATIONS, now,
-					user_name, federation_table,
-					name_char, NULL, NULL, ret_list, NULL))
-		    != SLURM_SUCCESS)
+					user_name, federation_table, name_char,
+					NULL, NULL, ret_list, NULL)))
 			break;
 	}
 	mysql_free_result(result);
