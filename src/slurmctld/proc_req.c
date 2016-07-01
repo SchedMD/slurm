@@ -549,7 +549,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 static void _set_persist_thread_name(connection_arg_t *arg)
 {
 #if HAVE_SYS_PRCTL_H
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_DB_FEDR) {
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR) {
 		char *s_name = NULL;
 		char ip[16];
 		uint16_t port = 0;

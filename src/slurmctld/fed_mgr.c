@@ -250,7 +250,7 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 	if (!update->objects)
 		return SLURM_SUCCESS;
 
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_DB_FEDR)
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 		info("Got FEDS");
 
 	feds = update->objects;
@@ -271,15 +271,15 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 		ListIterator c_itr = list_iterator_create(fed->cluster_list);
 		slurmdb_cluster_rec_t *cluster = NULL;
 
-		if (slurmctld_conf.debug_flags & DEBUG_FLAG_DB_FEDR)
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 			info("Fed:%s Clusters:%d", fed->name,
 			     list_count(fed->cluster_list));
 		while ((cluster = list_next(c_itr))) {
-			if (slurmctld_conf.debug_flags & DEBUG_FLAG_DB_FEDR)
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 				info("\tCluster:%s", cluster->name);
 			if (!xstrcasecmp(cluster->name, fed_mgr_cluster_name)) {
 				if (slurmctld_conf.debug_flags &
-				    DEBUG_FLAG_DB_FEDR)
+				    DEBUG_FLAG_FEDR)
 					info("I'm part of the '%s' federation!",
 					     fed->name);
 				memcpy(&fed_mgr_fed_info, &cluster->fed,
@@ -333,10 +333,10 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 	list_iterator_destroy(f_itr);
 
 	if (!part_of_fed) {
-		if (slurmctld_conf.debug_flags & DEBUG_FLAG_DB_FEDR)
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 			info("Not part of any federation");
 		if (fed_mgr_fed_info.name) {
-			if (slurmctld_conf.debug_flags & DEBUG_FLAG_DB_FEDR)
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 				info("Leaving federation %s",
 				     fed_mgr_fed_info.name);
 			fed_mgr_fini(true);

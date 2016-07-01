@@ -72,7 +72,7 @@ extern int as_mysql_get_fed_cluster_index(mysql_conn_t *mysql_conn,
 			  "FROM %s "
 			  "WHERE deleted=0 AND name='%s' AND federation='%s';",
 		   cluster_table, cluster, federation);
-	if (debug_flags & DEBUG_FLAG_DB_FEDR)
+	if (debug_flags & DEBUG_FLAG_FEDR)
 		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
@@ -96,7 +96,7 @@ extern int as_mysql_get_fed_cluster_index(mysql_conn_t *mysql_conn,
 		   	  "WHERE name!='%s' AND federation='%s' "
 			  "AND fed_inx > %d ORDER BY fed_inx;",
 			  cluster_table, cluster, federation, last_index);
-	if (debug_flags & DEBUG_FLAG_DB_FEDR)
+	if (debug_flags & DEBUG_FLAG_FEDR)
 		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);

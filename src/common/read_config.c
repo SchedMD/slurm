@@ -4538,11 +4538,6 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "DB_Event");
 	}
-	if (debug_flags & DEBUG_FLAG_DB_FEDR) {
-		if (rc)
-			xstrcat(rc, ",");
-		xstrcat(rc, "DB_Federation");
-	}
 	if (debug_flags & DEBUG_FLAG_DB_JOB) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -4602,6 +4597,11 @@ extern char * debug_flags2str(uint64_t debug_flags)
 		if (rc)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Filesystem");
+	}
+	if (debug_flags & DEBUG_FLAG_FEDR) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "Federation");
 	}
 	if (debug_flags & DEBUG_FLAG_FRONT_END) {
 		if (rc)
@@ -4766,8 +4766,6 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_DB_TRES;
 		else if (xstrcasecmp(tok, "DB_Event") == 0)
 			(*flags_out) |= DEBUG_FLAG_DB_EVENT;
-		else if (xstrcasecmp(tok, "DB_Federation") == 0)
-			(*flags_out) |= DEBUG_FLAG_DB_FEDR;
 		else if (xstrcasecmp(tok, "DB_Job") == 0)
 			(*flags_out) |= DEBUG_FLAG_DB_JOB;
 		else if (xstrcasecmp(tok, "DB_QOS") == 0)
@@ -4790,6 +4788,8 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_ENERGY;
 		else if (xstrcasecmp(tok, "ExtSensors") == 0)
 			(*flags_out) |= DEBUG_FLAG_EXT_SENSORS;
+		else if (xstrcasecmp(tok, "Federation") == 0)
+			(*flags_out) |= DEBUG_FLAG_FEDR;
 		else if (xstrcasecmp(tok, "FrontEnd") == 0)
 			(*flags_out) |= DEBUG_FLAG_FRONT_END;
 		else if (xstrcasecmp(tok, "Gang") == 0)

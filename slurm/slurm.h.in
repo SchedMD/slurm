@@ -2488,7 +2488,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_DB_TRES      0x0000200000000000 /* Database TRES debug */
 #define DEBUG_FLAG_ESEARCH      0x0000400000000000 /* Elasticsearch debug */
 #define DEBUG_FLAG_NODE_FEATURES 0x0000800000000000 /* Node Features debug */
-#define DEBUG_FLAG_DB_FEDR      0x0001000000000000 /* Database Federation debug */
+#define DEBUG_FLAG_FEDR         0x0001000000000000 /* Federation debug */
 
 #define GROUP_FORCE		0x8000	/* if set, update group membership
 					 * info even if no updates to
