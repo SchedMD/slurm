@@ -14,6 +14,7 @@ documents those changes that are of interest to users and administrators.
  -- Make it so the extern step sends a message with accounting information
     back to the slurmctld.
  -- Make it so the extern step calls the select_g_step_start|finish functions.
+ -- Don't print error when extern step is canceled because job is ending.
 
 * Changes in Slurm 16.05.1
 ==========================

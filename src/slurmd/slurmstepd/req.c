@@ -795,7 +795,8 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 	ptr = getenvp(job->env, "SLURM_STEP_KILLED_MSG_NODE_ID");
 	if (ptr)
 		target_node_id = atoi(ptr);
-	if ((job->nodeid == target_node_id) && (msg_sent == 0) &&
+	if ((job->stepid != SLURM_EXTERN_CONT) &&
+	    (job->nodeid == target_node_id) && (msg_sent == 0) &&
 	    (job->state < SLURMSTEPD_STEP_ENDING)) {
 		time_t now = time(NULL);
 		char entity[24], time_str[24];
