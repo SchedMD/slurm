@@ -2197,7 +2197,7 @@ extern int select_p_step_start(struct step_record *step_ptr)
 #endif
 
 	jobinfo = step_ptr->job_ptr->select_jobinfo->data;
-	if (jobinfo->npc) {
+	if (jobinfo->npc && (step_ptr->step_id != SLURM_EXTERN_CONT)) {
 		int i;
 		select_jobinfo_t *step_jobinfo = step_ptr->select_jobinfo->data;
 		select_nodeinfo_t *nodeinfo;

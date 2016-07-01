@@ -11,6 +11,8 @@ documents those changes that are of interest to users and administrators.
     allocations.
  -- Use more compatible function to get thread name (>= 2.6.11).
  -- Fix order of job then step id when noting cleaning flag being set.
+ -- Make it so the extern step sends a message with accounting information
+    back to the slurmctld.
 
 * Changes in Slurm 16.05.1
 ==========================
