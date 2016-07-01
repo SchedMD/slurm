@@ -184,10 +184,10 @@ proc delete_federations { names } {
 }
 
 proc get_clusterfed_info { fed_name } {
-	global sacctmgr fedc1 fedc2 fedc3 eol
+	global sacctmgr eol
 	set matches 0
 	array set clusters {}
-	set my_pid [spawn $sacctmgr show cluster $fedc1 $fedc2 $fedc3 \
+	set my_pid [spawn $sacctmgr show cluster federation=$fed_name \
 		    format="cluster%20,federation%20,index,controlhost,controlport,weight,fedstate"]
 	expect {
 		-re "Cluster\\s+Federation\\s+Index\\s+ControlHost\\s+ControlPort\\s+Weight\\s+FedState $eol" {
@@ -212,11 +212,102 @@ proc get_clusterfed_info { fed_name } {
 			wait
 		}
 	}
-	if {$matches != 4} {
-		send_user "$matches FAILURE: didn't match enough clustesr for\
-			$fed_name.\n"
+	if {$matches < 2} {
+		send_user "$matches FAILURE: didn't match enough clustesr for $fed_name.\n"
 		exit 1
 	}
 
 	return [array get clusters]
+}
+
+#
+# Add a single cluster to the given federation.
+# IN:  cname    - name of cluster to add to federation.
+# IN:  fed_name - name of federation to add cluster to.
+# RET: returns 0 on sucess, 1 on failure.
+#
+proc add_cluster_to_fed {cname fed_name} {
+	global sacctmgr eol
+
+	set rc 0
+	set matches 0
+	set my_pid [spawn $sacctmgr -i modify federation $fed_name set clusters+=$cname]
+	expect {
+		-re "Setting$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "Cluster\\s+ \\+= $cname$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "^\\s+Modified federation...$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "\\s+$fed_name$eol" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr add not responding\n"
+			slow_kill $my_pid
+			set rc 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$rc || $matches != 4} {
+		send_user "$matches FAILURE: failed to add $cname to $fed_name.\n"
+		set $rc 1
+	}
+
+	return $rc
+}
+
+#
+# Remove a single cluster from the given federation.
+# IN:  cname    - name of cluster to remove from the federation.
+# IN:  fed_name - name of federation to remove cluster from.
+# RET: returns 0 on sucess, 1 on failure.
+#
+proc remove_cluster_from_fed {cname fed_name} {
+	global sacctmgr eol
+
+	set rc 0
+	set matches 0
+	set my_pid [spawn $sacctmgr -i modify federation $fed_name set clusters-=$cname]
+	expect {
+		-re "Setting$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "Cluster\\s+ -= $cname$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "^\\s+Modified federation...$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "\\s+$fed_name$eol" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr add not responding\n"
+			slow_kill $my_pid
+			set rc 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$rc || $matches != 4} {
+		send_user "$matches FAILURE: failed to remove $cname from $fed_name.\n"
+		set $rc 1
+	}
+
+	return $rc
 }
