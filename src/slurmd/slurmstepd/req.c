@@ -1328,9 +1328,20 @@ static int _handle_add_extern_pid_internal(stepd_step_rec_t *job, pid_t pid)
 	jobacct_id.nodeid = job->nodeid;
 	jobacct_id.job = job;
 
-	proctrack_g_add(job, pid);
-	task_g_add_pid(pid);
-	jobacct_gather_add_task(pid, &jobacct_id, 1);
+	if (proctrack_g_add(job, pid) != SLURM_SUCCESS) {
+		error("%s: Job %u can't add pid %d to proctrack plugin in the extern_step.", __func__, job->jobid, pid);
+		return SLURM_FAILURE;
+	}
+
+	if (task_g_add_pid(pid) != SLURM_SUCCESS) {
+		error("%s: Job %u can't add pid %d to task plugin in the extern_step.", __func__, job->jobid, pid);
+		return SLURM_FAILURE;
+	}
+
+	if (jobacct_gather_add_task(pid, &jobacct_id, 1) != SLURM_SUCCESS) {
+		error("%s: Job %u can't add pid %d to jobacct_gather plugin in the extern_step.", __func__, job->jobid, pid);
+		return SLURM_FAILURE;
+	}
 
 	/* spawn a thread that will wait on the pid given */
 	slurm_attr_init(&attr);

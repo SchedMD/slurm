@@ -179,8 +179,21 @@ extern int proctrack_g_create(stepd_step_rec_t * job)
  */
 extern int proctrack_g_add(stepd_step_rec_t * job, pid_t pid)
 {
+	int i = 0, max_retry = 3, rc;
+
 	if (slurm_proctrack_init() < 0)
 		return SLURM_ERROR;
+
+	/* Sometimes a plugin is transient in adding a pid, so lets
+	 * try a few times before we call it quits.
+	 */
+	while ((rc = (*(ops.add)) (job, pid)) != SLURM_SUCCESS) {
+		if (i++ > max_retry)
+			break;
+		debug("%s: %u.%u couldn't add pid %u, sleeping and trying again",
+		      __func__, job->jobid, job->stepid, pid);
+		sleep(1);
+	}
 
 	return (*(ops.add)) (job, pid);
 }

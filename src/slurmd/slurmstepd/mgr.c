@@ -1025,7 +1025,11 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	}
 
 	job->pgid = pid;
-	proctrack_g_add(job, pid);
+	if ((rc = proctrack_g_add(job, pid)) != SLURM_SUCCESS) {
+		error("%s: Step %u.%u unable to add pid %d to the proctrack plugin",
+		      __func__, job->jobid, job->stepid, pid);
+		goto fail1;
+	}
 
 	jobacct_id.nodeid = job->nodeid;
 	jobacct_id.taskid = job->nodeid;   /* Treat node ID as global task ID */
