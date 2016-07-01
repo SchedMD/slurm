@@ -732,7 +732,7 @@ int main(int argc, char *argv[])
 
 	/* do this outside of MEMORY_LEAK_DEBUG so that remote connections get
 	 * closed. */
-	fed_mgr_fini();
+	fed_mgr_fini(false);
 
 #ifdef HAVE_BG
 	/* Always call slurm_select_fini() on some systems like
