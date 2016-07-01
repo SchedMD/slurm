@@ -553,6 +553,12 @@ typedef struct {
 	uint16_t *tres;
 } acct_policy_limit_set_t;
 
+
+typedef struct {
+	bitstr_t *siblings;		/* bitmap of sibling cluster ids where
+					 * sibling jobs exist */
+} fed_job_details_t;
+
 /*
  * NOTE: When adding fields to the job_record, or any underlying structures,
  * be sure to sync with _rec_job_copy.
@@ -615,6 +621,7 @@ struct job_record {
 	bool epilog_running;		/* true of EpilogSlurmctld is running */
 	uint32_t exit_code;		/* exit code for job (status from
 					 * wait call) */
+	fed_job_details_t fed_details;	/* details for federated jobs. */
 	front_end_record_t *front_end_ptr; /* Pointer to front-end node running
 					 * this job */
 	char *gres;			/* generic resources requested by job */
