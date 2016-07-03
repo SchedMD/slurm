@@ -17,6 +17,8 @@ documents those changes that are of interest to users and administrators.
  -- Don't print error when extern step is canceled because job is ending.
  -- Handle a few error codes when dealing with the extern step to make sure
     we have the pids added to the system correctly.
+ -- Add support for job dependencies with job array expressions. Previous logic
+    required listing each task of job array individually.
 
 * Changes in Slurm 16.05.1
 ==========================
