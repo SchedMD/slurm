@@ -19,6 +19,7 @@ documents those changes that are of interest to users and administrators.
     we have the pids added to the system correctly.
  -- Add support for job dependencies with job array expressions. Previous logic
     required listing each task of job array individually.
+ -- Make sure tres_cnt is set before creating a slurmdb_assoc_usage_t.
 
 * Changes in Slurm 16.05.1
 ==========================
