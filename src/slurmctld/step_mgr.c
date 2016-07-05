@@ -739,7 +739,7 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 		return ESLURM_INVALID_JOB_ID;
 
 	if (step_ptr->step_id == SLURM_EXTERN_CONT)
-		return SLURM_SUCCESS;
+		return select_g_step_finish(step_ptr, true);
 
 	/* If the job is already cleaning we have already been here
 	 * before, so just return. */
@@ -749,7 +749,7 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 	if (cleaning) {	/* Step hasn't finished cleanup yet. */
 		debug("%s: Cleaning flag already set for "
 		      "job step %u.%u, no reason to cleanup again.",
-		      __func__, step_ptr->step_id, step_ptr->job_ptr->job_id);
+		      __func__, job_ptr->job_id, step_ptr->step_id);
 		return SLURM_SUCCESS;
 	}
 

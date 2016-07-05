@@ -2718,6 +2718,31 @@ static void _launch_prolog(struct job_record *job_ptr)
 	agent_arg_ptr->msg_type = REQUEST_LAUNCH_PROLOG;
 	agent_arg_ptr->msg_args = (void *) prolog_msg_ptr;
 
+	/* At least on a Cray we have to treat this as a real step, so
+	 * this is where to do it.
+	 */
+	if (slurmctld_conf.prolog_flags & PROLOG_FLAG_CONTAIN) {
+		struct step_record step_rec;
+		slurm_step_layout_t layout;
+
+		memset(&step_rec, 0, sizeof(step_rec));
+		memset(&layout, 0, sizeof(layout));
+
+#ifdef HAVE_FRONT_END
+		layout.node_list = job_ptr->front_end_ptr->name;
+#else
+		layout.node_list = job_ptr->nodes;
+#endif
+		layout.node_cnt = agent_arg_ptr->node_count;
+
+		step_rec.step_layout = &layout;
+		step_rec.step_id = SLURM_EXTERN_CONT;
+		step_rec.job_ptr = job_ptr;
+		step_rec.name = "external";
+
+		select_g_step_start(&step_rec);
+	}
+
 	/* Launch the RPC via agent */
 	agent_queue_request(agent_arg_ptr);
 }

@@ -974,6 +974,7 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	jobacct_id_t jobacct_id;
 	int status = 0;
 	pid_t pid;
+	int rc = SLURM_SUCCESS;
 
 	debug2("%s: Before call to spank_init()", __func__);
 	if (spank_init(job) < 0) {
@@ -1003,11 +1004,16 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	} else if (pid < 0) {
 		error("fork: %m");
 		_set_job_state(job, SLURMSTEPD_STEP_ENDING);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto fail1;
 	}
 
 	job->pgid = pid;
-	proctrack_g_add(job, pid);
+	if ((rc = proctrack_g_add(job, pid)) != SLURM_SUCCESS) {
+		error("%s: Step %u.%u unable to add pid %d to the proctrack plugin",
+		      __func__, job->jobid, job->stepid, pid);
+		goto fail1;
+	}
 
 	jobacct_id.nodeid = job->nodeid;
 	jobacct_id.taskid = job->nodeid;   /* Treat node ID as global task ID */
@@ -1056,12 +1062,16 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	 * condition starting another job on these CPUs. */
 	while (_send_pending_exit_msgs(job)) {;}
 
+fail1:
 	debug2("%s: Before call to spank_fini()", __func__);
 	if (spank_fini(job) < 0)
 		error("spank_fini failed");
 	debug2("%s: After call to spank_fini()", __func__);
 
-	return SLURM_SUCCESS;
+	_set_job_state(job, SLURMSTEPD_STEP_ENDING);
+	_send_step_complete_msgs(job);
+
+	return rc;
 }
 
 /*

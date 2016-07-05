@@ -71,7 +71,7 @@ It may be included directly in a future release of Slurm.</li><br>
 
 <li><b>Debuggers</b> and debugging tools</li>
 <ul>
-<li><a href="http://www.totalviewtech.com/"><b>TotalView</b></a>
+<li><a href="http://www.roguewave.com/products-services/totalview"><b>TotalView</b></a>
 is a GUI-based source code debugger well suited for parallel applications.</li>
 <li><a href="http://padb.pittman.org.uk/"><b>Padb</b></a>
 is a job inspection tool for examining and debugging parallel programs, primarily it simplifies the process of gathering stack traces but also supports a wide range of other functions.
