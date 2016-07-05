@@ -586,7 +586,8 @@ extern slurmdb_assoc_usage_t *slurmdb_create_assoc_usage(int tres_cnt)
 	int alloc_size;
 
 	if (!tres_cnt)
-		fatal("%s: You need to give a tres_cnt to call this function");
+		fatal("%s: You need to give a tres_cnt to call this function",
+		      __func__);
 
 	usage =	xmalloc(sizeof(slurmdb_assoc_usage_t));
 
