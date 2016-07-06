@@ -3983,6 +3983,7 @@ static void _check_job_compatibility(struct job_record *job_ptr,
 	_create_cluster_core_bitmap(core_bitmap);
 
 	i_node = 0;
+	res_inx = 0;
 	while (i_node < total_nodes) {
 		int cores_in_a_node = (job_res->sockets_per_node[res_inx] *
 				       job_res->cores_per_socket[res_inx]);
