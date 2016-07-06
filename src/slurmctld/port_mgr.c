@@ -87,9 +87,7 @@ static void _rebuild_port_array(struct step_record *step_ptr)
 	char *tmp_char;
 	hostlist_t hl;
 
-	i = strlen(step_ptr->resv_ports);
-	tmp_char = xmalloc(i+3);
-	sprintf(tmp_char, "[%s]", step_ptr->resv_ports);
+	tmp_char = xstrdup_printf("[%s]", step_ptr->resv_ports);
 	hl = hostlist_create(tmp_char);
 	if (!hl)
 		fatal("Invalid reserved ports: %s", step_ptr->resv_ports);
@@ -222,9 +220,13 @@ extern int resv_port_alloc(struct step_record *step_ptr)
 {
 	int i, port_inx;
 	int *port_array = NULL;
-	char port_str[16], *tmp_str;
+	char port_str[16];
 	hostlist_t hl;
 	static int last_port_alloc = 0;
+	static int dims = -1;
+
+	if (dims == -1)
+		dims = slurmdb_setup_cluster_name_dims();
 
 	if (step_ptr->resv_port_cnt > port_resv_cnt) {
 		info("step %u.%u needs %u reserved ports, but only %d exist",
@@ -264,17 +266,10 @@ extern int resv_port_alloc(struct step_record *step_ptr)
 		hostlist_push_host(hl, port_str);
 	}
 	hostlist_sort(hl);
-	step_ptr->resv_ports = hostlist_ranged_string_xmalloc(hl);
+	/* get the ranged string with no brackets on it */
+	step_ptr->resv_ports = hostlist_ranged_string_xmalloc_dims(hl, dims, 0);
 	hostlist_destroy(hl);
 	step_ptr->resv_port_array = port_array;
-
-	if (step_ptr->resv_ports[0] == '[') {
-		/* Remove brackets from hostlist */
-		step_ptr->resv_ports[i-1] = '\0';
-		tmp_str = xstrdup(step_ptr->resv_ports + 1);
-		xfree(step_ptr->resv_ports);
-		step_ptr->resv_ports = tmp_str;
-	}
 
 	debug("reserved ports %s for step %u.%u",
 	      step_ptr->resv_ports,

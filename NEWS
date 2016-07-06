@@ -26,6 +26,8 @@ documents those changes that are of interest to users and administrators.
     allocations span heterogeneous nodes (differing core or socket counts).
  -- Fix hostlist_ranged_string_xmalloc_dims to correctly not put brackets on
     hostlists when brackets == 0.
+ -- Make sure we don't get brackets when making a range of reserved ports
+    for a step.
 
 * Changes in Slurm 16.05.1
 ==========================
