@@ -339,6 +339,8 @@ documents those changes that are of interest to users and administrators.
  -- MYSQL - Fix issue with adding a reservation if the name has single quotes in
     it.
  -- Correctly print ranges when using step values in job arrays.
+ -- Fix for invalid array pointer when creating advanced reservation when job
+    allocations span heterogeneous nodes (differing core or socket counts).
 
 * Changes in Slurm 15.08.12
 ===========================
