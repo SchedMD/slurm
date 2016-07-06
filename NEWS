@@ -24,6 +24,8 @@ documents those changes that are of interest to users and administrators.
     one started during a backfill sleep.
  -- Fix for invalid array pointer when creating advanced reservation when job
     allocations span heterogeneous nodes (differing core or socket counts).
+ -- Fix hostlist_ranged_string_xmalloc_dims to correctly not put brackets on
+    hostlists when brackets == 0.
 
 * Changes in Slurm 16.05.1
 ==========================
