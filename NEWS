@@ -22,6 +22,8 @@ documents those changes that are of interest to users and administrators.
  -- Make sure tres_cnt is set before creating a slurmdb_assoc_usage_t.
  -- Prevent backfill scheduler from starting a second "singleton" job if another
     one started during a backfill sleep.
+ -- Fix for invalid array pointer when creating advanced reservation when job
+    allocations span heterogeneous nodes (differing core or socket counts).
 
 * Changes in Slurm 16.05.1
 ==========================
