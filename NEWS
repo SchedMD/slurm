@@ -28,6 +28,8 @@ documents those changes that are of interest to users and administrators.
     hostlists when brackets == 0.
  -- Make sure we don't get brackets when making a range of reserved ports
     for a step.
+ -- Change fatal to an error if port ranges aren't correct when reading state
+    for steps.
 
 * Changes in Slurm 16.05.1
 ==========================
