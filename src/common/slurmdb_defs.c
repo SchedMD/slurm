@@ -583,8 +583,14 @@ extern slurmdb_step_rec_t *slurmdb_create_step_rec()
 
 extern slurmdb_assoc_usage_t *slurmdb_create_assoc_usage(int tres_cnt)
 {
-	slurmdb_assoc_usage_t *usage =
-		xmalloc(sizeof(slurmdb_assoc_usage_t));
+	slurmdb_assoc_usage_t *usage;
+	int alloc_size;
+
+	if (!tres_cnt)
+		fatal("%s: You need to give a tres_cnt to call this function",
+		      __func__);
+
+	usage =	xmalloc(sizeof(slurmdb_assoc_usage_t));
 
 	usage->level_shares = NO_VAL;
 	usage->shares_norm = NO_VAL64;
@@ -594,13 +600,13 @@ extern slurmdb_assoc_usage_t *slurmdb_create_assoc_usage(int tres_cnt)
 	usage->level_fs = 0;
 	usage->fs_factor = 0;
 
-	if (tres_cnt) {
-		int alloc_size = sizeof(uint64_t) * tres_cnt;
-		usage->tres_cnt = tres_cnt;
-		usage->grp_used_tres = xmalloc(alloc_size);
-		usage->grp_used_tres_run_secs = xmalloc(alloc_size);
-		usage->usage_tres_raw = xmalloc(sizeof(long double) * tres_cnt);
-	}
+	usage->tres_cnt = tres_cnt;
+
+	alloc_size = sizeof(uint64_t) * tres_cnt;
+	usage->grp_used_tres = xmalloc(alloc_size);
+	usage->grp_used_tres_run_secs = xmalloc(alloc_size);
+
+	usage->usage_tres_raw = xmalloc(sizeof(long double) * tres_cnt);
 
 	return usage;
 }

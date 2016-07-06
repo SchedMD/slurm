@@ -1343,6 +1343,11 @@ next_task:
 				continue;
 			if (!avail_front_end(job_ptr))
 				continue;	/* No available frontend */
+			if (!job_independent(job_ptr, 0)) {
+				/* No longer independent
+				 * (e.g. another singleton started) */
+				continue;
+			}
 
 			job_ptr->time_limit = save_time_limit;
 			job_ptr->part_ptr = part_ptr;

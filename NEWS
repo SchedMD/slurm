@@ -35,6 +35,11 @@ documents those changes that are of interest to users and administrators.
     we have the pids added to the system correctly.
  -- Add support for job dependencies with job array expressions. Previous logic
     required listing each task of job array individually.
+ -- Make sure tres_cnt is set before creating a slurmdb_assoc_usage_t.
+ -- Prevent backfill scheduler from starting a second "singleton" job if another
+    one started during a backfill sleep.
+ -- Fix for invalid array pointer when creating advanced reservation when job
+    allocations span heterogeneous nodes (differing core or socket counts).
 
 * Changes in Slurm 16.05.1
 ==========================
@@ -352,6 +357,8 @@ documents those changes that are of interest to users and administrators.
  -- MYSQL - Fix issue with adding a reservation if the name has single quotes in
     it.
  -- Correctly print ranges when using step values in job arrays.
+ -- Fix for invalid array pointer when creating advanced reservation when job
+    allocations span heterogeneous nodes (differing core or socket counts).
 
 * Changes in Slurm 15.08.12
 ===========================

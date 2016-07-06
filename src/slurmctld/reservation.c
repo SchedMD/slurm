@@ -3958,7 +3958,7 @@ static void _check_job_compatibility(struct job_record *job_ptr,
 {
 	uint32_t total_nodes;
 	bitstr_t *full_node_bitmap;
-	int i_core, i_node;
+	int i_core, i_node, res_inx;
 	int start = 0;
 	int rep_count = 0;
 	job_resources_t *job_res = job_ptr->job_resrcs;
@@ -3984,9 +3984,8 @@ static void _check_job_compatibility(struct job_record *job_ptr,
 
 	i_node = 0;
 	while (i_node < total_nodes) {
-		int cores_in_a_node = (job_res->sockets_per_node[i_node] *
-				       job_res->cores_per_socket[i_node]);
-
+		int cores_in_a_node = (job_res->sockets_per_node[res_inx] *
+				       job_res->cores_per_socket[res_inx]);
 		int repeat_node_conf = job_res->sock_core_rep_count[rep_count++];
 		int node_bitmap_inx;
 
@@ -3997,6 +3996,7 @@ static void _check_job_compatibility(struct job_record *job_ptr,
 #endif
 
 		i_node += repeat_node_conf;
+		res_inx++;
 
 		while (repeat_node_conf--) {
 			int allocated;

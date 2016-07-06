@@ -726,7 +726,7 @@ static slurmdb_assoc_rec_t* _find_assoc_parent(
 }
 
 /* locks should be put in place before calling this function
- * ASSOC_WRITE, USER_WRITE */
+ * ASSOC_WRITE, USER_WRITE, TRES_READ */
 static int _set_assoc_parent_and_user(slurmdb_assoc_rec_t *assoc,
 				      int reset)
 {
@@ -906,7 +906,7 @@ static void _set_children_level_shares(slurmdb_assoc_rec_t *assoc,
 
 /* transfer slurmdb assoc list to be assoc_mgr assoc list */
 /* locks should be put in place before calling this function
- * ASSOC_WRITE, USER_WRITE */
+ * ASSOC_WRITE, USER_WRITE, TRES_READ */
 static int _post_assoc_list(void)
 {
 	slurmdb_assoc_rec_t *assoc = NULL;
