@@ -17,6 +17,10 @@ documents those changes that are of interest to users and administrators.
     as possible. This also treats the --ntasks-node-node option as a maximum
     value.
 
+* Changes in Slurm 16.05.3
+==========================
+
+
 * Changes in Slurm 16.05.2
 ==========================
  -- CRAY - Fix issue where the proctrack plugin could hang if the container
@@ -40,6 +44,12 @@ documents those changes that are of interest to users and administrators.
     one started during a backfill sleep.
  -- Fix for invalid array pointer when creating advanced reservation when job
     allocations span heterogeneous nodes (differing core or socket counts).
+ -- Fix hostlist_ranged_string_xmalloc_dims to correctly not put brackets on
+    hostlists when brackets == 0.
+ -- Make sure we don't get brackets when making a range of reserved ports
+    for a step.
+ -- Change fatal to an error if port ranges aren't correct when reading state
+    for steps.
 
 * Changes in Slurm 16.05.1
 ==========================

@@ -2669,12 +2669,13 @@ static int _is_bracket_needed(hostlist_t hl, int i)
  * Assumes hostlist is locked.
  */
 static int
-_get_bracketed_list(hostlist_t hl, int *start, const size_t n, char *buf)
+_get_bracketed_list(hostlist_t hl, int *start, const size_t n, char *buf,
+		    int brackets)
 {
 	hostrange_t *hr = hl->hr;
 	int i = *start;
 	int m, len = 0;
-	int bracket_needed = _is_bracket_needed(hl, i);
+	int bracket_needed = brackets ? _is_bracket_needed(hl, i) : 0;
 	int zeropad = 0;
 
 	if (is_cray_system()) {
@@ -3267,7 +3268,8 @@ notbox:
 		for (i = 0; i < hl->nranges && len < n;) {
 			if (i)
 				buf[len++] = ',';
-			len += _get_bracketed_list(hl, &i, n - len, buf + len);
+			len += _get_bracketed_list(hl, &i, n - len, buf + len,
+						   brackets);
 		}
 	}
 
@@ -3469,7 +3471,7 @@ char *hostlist_next_range(hostlist_iterator_t i)
 	buf_size = 8192;
 	buf = malloc(buf_size);
 	if (buf &&
-	    (_get_bracketed_list(i->hl, &j, buf_size, buf) == buf_size)) {
+	    (_get_bracketed_list(i->hl, &j, buf_size, buf, 1) == buf_size)) {
 		buf_size *= 2;
 		buf = realloc(buf, buf_size);
 	}
