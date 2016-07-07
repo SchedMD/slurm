@@ -115,7 +115,9 @@ static int _ping_controller(slurmdb_cluster_rec_t *conn)
 	if ((rc = _send_recv_msg(conn, &req_msg, &resp_msg))) {
 		error("failed to ping %s(%s:%d)",
 		      conn->name, conn->control_host, conn->control_port);
+		slurm_mutex_lock(&conn->lock);
 		conn->sockfd = -1;
+		slurm_mutex_unlock(&conn->lock);
 	} else if ((rc = slurm_get_return_code(resp_msg.msg_type, resp_msg.data)))
 		error("ping returned error from %s(%s:%d)",
 		      conn->name, conn->control_host, conn->control_port);
@@ -168,7 +170,7 @@ static void *_ping_thread(void *arg)
 			if (!xstrcasecmp(conn->name, fed_mgr_cluster_name))
 				continue;
 			if (conn->sockfd == -1)
-				conn->sockfd = _open_controller_conn(conn);
+				_open_controller_conn(conn);
 			if (conn->sockfd == -1)
 				continue;
 			_ping_controller(conn);
