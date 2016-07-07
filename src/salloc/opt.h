@@ -123,8 +123,8 @@ typedef struct salloc_options {
 
 	/* constraint options */
 	int mincpus;		/* --mincpus=n			*/
-	int mem_per_cpu;	/* --mem_per_cpu=n		*/
-	int realmem;		/* --mem=n			*/
+	int64_t mem_per_cpu;	/* --mem_per_cpu=n		*/
+	int64_t realmem;	/* --mem=n			*/
 	long tmpdisk;		/* --tmp=n			*/
 	char *constraints;	/* --constraints=, -C constraint*/
 	char *gres;		/* --gres			*/

@@ -253,7 +253,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	xstrfmtcat(out, "RealMemory=%"PRIu64" AllocMem=%"PRIu64" ",
 		   node_ptr->real_memory, alloc_memory);
 
-	if (node_ptr->free_mem == NO_VAL)
+	if (node_ptr->free_mem == NO_VAL64)
 		xstrcat(out, "FreeMem=N/A ");
 	else
 		xstrfmtcat(out, "FreeMem=%"PRIu64" ", node_ptr->free_mem);

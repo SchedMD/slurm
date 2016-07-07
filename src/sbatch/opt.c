@@ -116,6 +116,7 @@ enum wrappers {
 #define OPT_PROFILE       0x21
 #define OPT_HINT	  0x22
 #define OPT_DELAY_BOOT	  0x23
+#define OPT_INT64	  0x24
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_PROPAGATE   0x100
@@ -567,6 +568,16 @@ _process_env_var(env_vars_t *e, const char *val)
 			}
 		}
 		break;
+
+        case OPT_INT64:
+                if (val[0] != '\0') {
+                        *((int64_t *) e->arg) = (int64_t) strtoll(val, &end, 10);
+                        if (!(end && *end == '\0')) {
+                                error("%s=%s invalid. ignoring...",
+                                      e->var, val);
+                        }
+                }
+                break;
 
 	case OPT_BOOL:
 		/* A boolean env variable is true if:
@@ -1573,7 +1584,7 @@ static void _set_options(int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_MEM:
-			opt.realmem = (int) str_to_mbytes(optarg);
+			opt.realmem = (int64_t) str_to_mbytes(optarg);
 			if (opt.realmem < 0) {
 				error("invalid memory constraint %s",
 				      optarg);
@@ -1581,7 +1592,7 @@ static void _set_options(int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_MEM_PER_CPU:
-			opt.mem_per_cpu = (int) str_to_mbytes(optarg);
+			opt.mem_per_cpu = (int64_t) str_to_mbytes(optarg);
 			if (opt.mem_per_cpu < 0) {
 				error("invalid memory constraint %s",
 				      optarg);
@@ -3068,10 +3079,10 @@ static char *print_constraints()
 		xstrfmtcat(buf, "minthreads=%d ", opt.minthreads);
 
 	if (opt.realmem > 0)
-		xstrfmtcat(buf, "mem=%dM ", opt.realmem);
+		xstrfmtcat(buf, "mem=%ldM ", opt.realmem);
 
 	if (opt.mem_per_cpu > 0)
-		xstrfmtcat(buf, "mem-per-cpu=%dM ", opt.mem_per_cpu);
+		xstrfmtcat(buf, "mem-per-cpu=%ldM ", opt.mem_per_cpu);
 
 	if (opt.tmpdisk > 0)
 		xstrfmtcat(buf, "tmp=%ld ", opt.tmpdisk);

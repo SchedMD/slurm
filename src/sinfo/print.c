@@ -331,13 +331,13 @@ _build_free_mem_min_max_64(char *buffer, int buf_size,
 	char tmp_min[16];
 	char tmp_max[16];
 
-	if (min == NO_VAL) {
+	if (min == NO_VAL64) {
 		strcpy(tmp_min, "N/A");
 	} else {
 		snprintf(tmp_min, sizeof(tmp_min), "%"PRIu64"", min);
 	}
 
-	if (max == NO_VAL) {
+	if (max == NO_VAL64) {
 		strcpy(tmp_max, "N/A");
 	} else {
 		snprintf(tmp_max, sizeof(tmp_max), "%"PRIu64"", max);

@@ -118,6 +118,7 @@
 #define OPT_HINT	0x22
 #define OPT_SPREAD_JOB  0x23
 #define OPT_DELAY_BOOT  0x24
+#define OPT_INT64	0x25
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_HELP        0x100
@@ -600,8 +601,8 @@ env_vars_t env_vars[] = {
 {"SLURM_LABELIO",       OPT_INT,        &opt.labelio,       NULL             },
 {"SLURM_LINUX_IMAGE",   OPT_STRING,     &opt.linuximage,    NULL             },
 {"SLURM_MEM_BIND",      OPT_MEM_BIND,   NULL,               NULL             },
-{"SLURM_MEM_PER_CPU",	OPT_INT,	&opt.mem_per_cpu,   NULL             },
-{"SLURM_MEM_PER_NODE",	OPT_INT,	&opt.pn_min_memory, NULL             },
+{"SLURM_MEM_PER_CPU",	OPT_INT64,	&opt.mem_per_cpu,   NULL             },
+{"SLURM_MEM_PER_NODE",	OPT_INT64,	&opt.pn_min_memory, NULL             },
 {"SLURM_MLOADER_IMAGE", OPT_STRING,     &opt.mloaderimage,  NULL             },
 {"SLURM_MPI_TYPE",      OPT_MPI,        NULL,               NULL             },
 {"SLURM_NCORES_PER_SOCKET",OPT_NCORES,  NULL,               NULL             },
@@ -693,6 +694,16 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_INT:
 		if (val[0] != '\0') {
 			*((int *) e->arg) = (int) strtol(val, &end, 10);
+			if (!(end && *end == '\0')) {
+				error("%s=%s invalid. ignoring...",
+				      e->var, val);
+			}
+		}
+		break;
+
+	case OPT_INT64:
+		if (val[0] != '\0') {
+			*((int64_t *) e->arg) = (int64_t) strtoll(val, &end, 10);
 			if (!(end && *end == '\0')) {
 				error("%s=%s invalid. ignoring...",
 				      e->var, val);
@@ -1368,7 +1379,7 @@ static void _set_options(const int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_MEM:
-			opt.pn_min_memory = (int) str_to_mbytes(optarg);
+			opt.pn_min_memory = (int64_t) str_to_mbytes(optarg);
 			opt.mem_per_cpu = NO_VAL64;
 			if (opt.pn_min_memory < 0) {
 				error("invalid memory constraint %s",
@@ -1377,7 +1388,7 @@ static void _set_options(const int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_MEM_PER_CPU:
-			opt.mem_per_cpu = (int) str_to_mbytes(optarg);
+			opt.mem_per_cpu = (int64_t) str_to_mbytes(optarg);
 			opt.pn_min_memory = NO_VAL64;
 			if (opt.mem_per_cpu < 0) {
 				error("invalid memory constraint %s",

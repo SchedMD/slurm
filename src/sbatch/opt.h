@@ -135,8 +135,8 @@ typedef struct sbatch_options {
 	int minsockets;		/* --minsockets=n		*/
 	int mincores;		/* --mincores=n			*/
 	int minthreads;		/* --minthreads=n		*/
-	int mem_per_cpu;	/* --mem-per-cpu=n		*/
-	int realmem;		/* --mem=n			*/
+	int64_t mem_per_cpu;	/* --mem-per-cpu=n		*/
+	int64_t realmem;	/* --mem=n			*/
 	long tmpdisk;		/* --tmp=n			*/
 	char *constraints;	/* --constraints=, -C constraint*/
 	char *gres;		/* --gres			*/
