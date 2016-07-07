@@ -4285,6 +4285,22 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data,
 			}
 		}
 		type_array_updated = true;
+		if (job_gres_ptr->type_model && job_gres_ptr->type_model[0]) {
+			/* We may not know how many GRES of this type will be
+			 * available on this node, but need to track how many
+			 * are allocated to this job from here to avoid
+			 * underflows when this job is deallocated */
+			_add_gres_type(job_gres_ptr->type_model, node_gres_ptr,
+				       0);
+			for (j = 0; j < node_gres_ptr->type_cnt; j++) {
+				if (xstrcmp(job_gres_ptr->type_model,
+					    node_gres_ptr->type_model[j]))
+					continue;
+				node_gres_ptr->type_cnt_alloc[j] +=
+					job_gres_ptr->gres_cnt_alloc;
+				break;
+			}
+		}
 	}
 
 	if (!type_array_updated && job_gres_ptr->type_model) {

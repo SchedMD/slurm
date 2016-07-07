@@ -8,6 +8,9 @@ documents those changes that are of interest to users and administrators.
     sleep is killed.
  -- Fix areas the slurmctld can segfault if an extern step is in the system
     cleaning up on a restart.
+ -- Prevent possible incorrect counting of GRES of a given type if a node has
+    the multiple "types" of a given GRES "name", which could over-subscribe
+    GRES of a given type.
 
 * Changes in Slurm 16.05.2
 ==========================
