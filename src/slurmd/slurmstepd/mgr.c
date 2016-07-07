@@ -1045,7 +1045,7 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	if (!conf->job_acct_gather_freq)
 		jobacct_gather_stat_task(0);
 
-	if (spank_task_post_fork(job, 0) < 0)
+	if (spank_task_post_fork(job, -1) < 0)
 		error("spank extern task post-fork failed");
 
 	while ((wait4(pid, &status, 0, &rusage) < 0) && (errno == EINTR)) {

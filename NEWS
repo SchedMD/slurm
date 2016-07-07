@@ -15,6 +15,7 @@ documents those changes that are of interest to users and administrators.
  -- Add job_submit plugin for the "reboot" field.
  -- Make some more Slurm constants (INFINITE, NO_VAL64, etc.) available to
     job_submit/lua plugins.
+ -- Send in a -1 for a taskid into spank_task_post_fork for the extern_step.
 
 * Changes in Slurm 16.05.2
 ==========================
