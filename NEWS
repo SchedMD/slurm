@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
     the multiple "types" of a given GRES "name", which could over-subscribe
     GRES of a given type.
  -- Add web link to Harvard's Slurm Diamond Collectors.
+ -- Add job_submit plugin for the "reboot" field.
 
 * Changes in Slurm 16.05.2
 ==========================
