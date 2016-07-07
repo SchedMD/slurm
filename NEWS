@@ -13,6 +13,8 @@ documents those changes that are of interest to users and administrators.
     GRES of a given type.
  -- Add web link to Harvard's Slurm Diamond Collectors.
  -- Add job_submit plugin for the "reboot" field.
+ -- Make some more Slurm constants (INFINITE, NO_VAL64, etc.) available to
+    job_submit/lua plugins.
 
 * Changes in Slurm 16.05.2
 ==========================

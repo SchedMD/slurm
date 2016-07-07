@@ -1230,6 +1230,10 @@ static void _register_lua_slurm_output_functions (void)
 	lua_setfield (L, -2, "ALLOC_SID_ADMIN_HOLD");
 	lua_pushnumber (L, ALLOC_SID_USER_HOLD);
 	lua_setfield (L, -2, "ALLOC_SID_USER_HOLD");
+	lua_pushnumber (L, INFINITE);
+	lua_setfield (L, -2, "INFINITE");
+	lua_pushnumber (L, INFINITE64);
+	lua_setfield (L, -2, "INFINITE64");
 	lua_pushnumber (L, MAIL_JOB_BEGIN);
 	lua_setfield (L, -2, "MAIL_JOB_BEGIN");
 	lua_pushnumber (L, MAIL_JOB_END);
@@ -1238,14 +1242,28 @@ static void _register_lua_slurm_output_functions (void)
 	lua_setfield (L, -2, "MAIL_JOB_FAIL");
 	lua_pushnumber (L, MAIL_JOB_REQUEUE);
 	lua_setfield (L, -2, "MAIL_JOB_REQUEUE");
+	lua_pushnumber (L, MAIL_JOB_TIME100);
+	lua_setfield (L, -2, "MAIL_JOB_TIME100");
+	lua_pushnumber (L, MAIL_JOB_TIME90);
+	lua_setfield (L, -2, "MAIL_JOB_TIME890");
+	lua_pushnumber (L, MAIL_JOB_TIME80);
+	lua_setfield (L, -2, "MAIL_JOB_TIME80");
+	lua_pushnumber (L, MAIL_JOB_TIME50);
+	lua_setfield (L, -2, "MAIL_JOB_TIME50");
 	lua_pushnumber (L, MAIL_JOB_STAGE_OUT);
 	lua_setfield (L, -2, "MAIL_JOB_STAGE_OUT");
 	lua_pushnumber (L, MEM_PER_CPU);
 	lua_setfield (L, -2, "MEM_PER_CPU");
 	lua_pushnumber (L, NICE_OFFSET);
 	lua_setfield (L, -2, "NICE_OFFSET");
+	lua_pushnumber (L, NO_VAL64);
+	lua_setfield (L, -2, "NO_VAL64");
 	lua_pushnumber (L, NO_VAL);
 	lua_setfield (L, -2, "NO_VAL");
+	lua_pushnumber (L, (uint16_t) NO_VAL);
+	lua_setfield (L, -2, "NO_VAL16");
+	lua_pushnumber (L, (uint8_t) NO_VAL);
+	lua_setfield (L, -2, "NO_VAL8");
 
 	lua_setglobal (L, "slurm");
 
