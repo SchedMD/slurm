@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
  -- Prevent possible incorrect counting of GRES of a given type if a node has
     the multiple "types" of a given GRES "name", which could over-subscribe
     GRES of a given type.
+ -- Add web link to Harvard's Slurm Diamond Collectors.
 
 * Changes in Slurm 16.05.2
 ==========================
