@@ -6,6 +6,8 @@ documents those changes that are of interest to users and administrators.
  -- Make it so the extern step uses a reverse tree when cleaning up.
  -- If extern step doesn't get added into the proctrack plugin make sure the
     sleep is killed.
+ -- Fix areas the slurmctld can segfault if an extern step is in the system
+    cleaning up on a restart.
 
 * Changes in Slurm 16.05.2
 ==========================

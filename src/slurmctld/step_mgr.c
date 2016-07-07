@@ -4042,11 +4042,15 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	step_ptr->cpu_freq_max = cpu_freq_max;
 	step_ptr->cpu_freq_gov = cpu_freq_gov;
 	step_ptr->state        = state;
+
+	step_ptr->start_protocol_ver = start_protocol_ver;
+
 	/* Prior to 16.05, the step_layout->start_protocol_version isn't set on
 	 * creation of the layout. After 16.05 is EOL'ed then the step_layout's
 	 * start_protocol_version doesn't need to be set here anymore. */
-	step_ptr->step_layout->start_protocol_ver = step_ptr->start_protocol_ver
-		= start_protocol_ver;
+	/* NOTE: The extern step doesn't have a step_layout. */
+	if (step_ptr->step_layout)
+		step_ptr->step_layout->start_protocol_ver = start_protocol_ver;
 
 	if (!step_ptr->ext_sensors)
 		step_ptr->ext_sensors = ext_sensors_alloc();
@@ -4072,8 +4076,9 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 		xfree(core_job);
 	}
 
-	switch_g_job_step_allocated(switch_tmp,
-				    step_ptr->step_layout->node_list);
+	if (step_ptr->step_layout)
+		switch_g_job_step_allocated(switch_tmp,
+					    step_ptr->step_layout->node_list);
 
 	info("recovered job step %u.%u", job_ptr->job_id, step_id);
 	return SLURM_SUCCESS;

@@ -12516,7 +12516,8 @@ static void _notify_srun_missing_step(struct job_record *job_ptr, int node_inx,
 	xassert(job_ptr);
 	step_iterator = list_iterator_create (job_ptr->step_list);
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
-		if (step_ptr->state != JOB_RUNNING)
+		if ((step_ptr->step_id == SLURM_EXTERN_CONT) ||
+		    (step_ptr->state != JOB_RUNNING))
 			continue;
 		if (!bit_test(step_ptr->step_node_bitmap, node_inx))
 			continue;
