@@ -4498,7 +4498,7 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 					      "(%"PRIu64" %"PRIu64")",
 					      gres_name, job_id, node_name,
 					      node_gres_ptr->type_model[j],
-					      node_gres_ptr->type_cnt_alloc[i],
+					      node_gres_ptr->type_cnt_alloc[j],
 					      gres_cnt);
 					node_gres_ptr->type_cnt_alloc[j] = 0;
 				}
