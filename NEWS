@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 16.05.3
 ==========================
+ -- Make it so the extern step uses a reverse tree when cleaning up.
 
 * Changes in Slurm 16.05.2
 ==========================

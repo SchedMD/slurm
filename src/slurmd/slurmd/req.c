@@ -1763,11 +1763,15 @@ static void _spawn_prolog_stepd(slurm_msg_t *msg)
 		info("Job %u already killed, do not launch extern step",
 		     req->job_id);
 	} else {
+		hostset_t step_hset = hostset_create(req->nodes);
+
 		debug3("%s: call to _forkexec_slurmstepd", __func__);
 		(void) _forkexec_slurmstepd(
 			LAUNCH_TASKS, (void *)launch_req, cli,
-			&self, NULL, msg->protocol_version);
+			&self, step_hset, msg->protocol_version);
 		debug3("%s: return from _forkexec_slurmstepd", __func__);
+		if (step_hset)
+			hostset_destroy(step_hset);
 	}
 
 	for (i = 0; i < req->nnodes; i++)
