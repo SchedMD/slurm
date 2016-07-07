@@ -1025,9 +1025,12 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	}
 
 	job->pgid = pid;
+
 	if ((rc = proctrack_g_add(job, pid)) != SLURM_SUCCESS) {
 		error("%s: Step %u.%u unable to add pid %d to the proctrack plugin",
 		      __func__, job->jobid, job->stepid, pid);
+		killpg(pid, SIGKILL);
+		kill(pid, SIGKILL);
 		goto fail1;
 	}
 

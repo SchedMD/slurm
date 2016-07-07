@@ -4,6 +4,8 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 16.05.3
 ==========================
  -- Make it so the extern step uses a reverse tree when cleaning up.
+ -- If extern step doesn't get added into the proctrack plugin make sure the
+    sleep is killed.
 
 * Changes in Slurm 16.05.2
 ==========================
