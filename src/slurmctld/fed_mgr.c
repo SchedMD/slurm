@@ -186,15 +186,7 @@ next:
 
 static void _create_ping_thread()
 {
-	static bool first = true;
-
-	if (!first)
-		return;
-
-	first = false;
-
 	pthread_attr_t attr;
-
 	slurm_attr_init(&attr);
 	if (pthread_create(&ping_thread, &attr, _ping_thread, NULL) != 0) {
 		error("pthread_create of message thread: %m");
