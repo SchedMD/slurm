@@ -317,7 +317,8 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 			slurmdb_init_cluster_rec(conn, false);
 			slurmdb_copy_cluster_rec(conn, cluster);
 
-			conn->sockfd = _open_controller_conn(conn);
+			if (xstrcmp(cluster->name, fed_mgr_cluster_name))
+				_open_controller_conn(conn);
 			list_append(fed_mgr_siblings, conn);
 		}
 
