@@ -690,6 +690,7 @@ set_idbuf(char *idbuf)
  *
  * args are like printf, with the addition of the following format chars:
  * - %m expands to strerror(errno)
+ * - %M expand to time stamp, format is configuration dependent
  * - %t expands to strftime("%x %X") [ locally preferred short date/time ]
  * - %T expands to rfc2822 date time  [ "dd, Mon yyyy hh:mm:ss GMT offset" ]
  *
