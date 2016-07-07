@@ -72,7 +72,7 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 
 proc cleanup { } {
 	global fed_name
-	return [delete_federations $fed_name];
+	return [delete_federations $fed_name]
 }
 
 proc end_it { exit_code } {
@@ -101,21 +101,22 @@ proc test_fed_status {cname cluster_list} {
 		-re "$eol" {
 			incr lines
 			set line $expect_out(buffer)
-			#send_user "line: $line\n"
+			send_user "line: $line\n"
 
-			if {[regexp {Federation: feda} $line match]} {
-				#send_user "matched: $match\n"
+			if {[regexp "Federation: $fed_name" $line match]} {
+				send_user "matched: $match\n"
 				incr matches
 			} elseif {[regexp {Sibling:\s+(\S+):(\S+):(\d+) Index:(\d+) FedState:(\S*) Weight:(\d+) PersistConn:(\S+)} \
 					  $line match name host port index state weight conn]} {
-				#send_user "matched: $match\n"
-				if {![string compare [dict get $clusters($name) host]  $host]  &&
+				send_user "matched: $match\n"
+				if {$expected_matches &&
+				    ![string compare [dict get $clusters($name) host]  $host]  &&
 				    ![string compare [dict get $clusters($name) state] $state] &&
 				    ![string compare [dict get $clusters($name) conn]  $conn]  &&
 				    [dict get $clusters($name) port]   == $port &&
 				    [dict get $clusters($name) index]  == $index &&
 				    [dict get $clusters($name) weight] == $weight} {
-					#send_user "matched: $name\n"
+					send_user "matched: $name\n"
 					incr matches
 				}
 			}
@@ -130,13 +131,14 @@ proc test_fed_status {cname cluster_list} {
 			wait
 		}
 	}
-	if {$matches != $expected_matches} {
-		send_user "FAILURE: failed to match $matches != $expected_matches.\n"
+
+	if {$lines != $expected_matches} {
+		send_user "FAILURE: line count and expected matches don't match: $lines != $expected_matches.\n"
 		end_it 1
 	}
 
-	if {$lines != $matches} {
-		send_user "FAILURE: more or less lines found than matches: $ilines  != $matches.\n"
+	if {$matches != $expected_matches} {
+		send_user "FAILURE: failed to match $matches != $expected_matches.\n"
 		end_it 1
 	}
 }
@@ -240,5 +242,10 @@ dict set clusters($fedc1) conn Self
 dict set clusters($fedc2) conn Connected
 dict set clusters($fedc3) conn Connected
 test_fed_status $fedc1 [array get clusters]
+
+send_user "\n\ndelete federation and test from $fedc1\n"
+delete_federations $fed_name
+array unset clusters
+test_fed_status $fedc2 [array get clusters]
 
 end_it 0
