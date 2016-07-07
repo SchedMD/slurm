@@ -16,6 +16,8 @@ documents those changes that are of interest to users and administrators.
  -- Make some more Slurm constants (INFINITE, NO_VAL64, etc.) available to
     job_submit/lua plugins.
  -- Send in a -1 for a taskid into spank_task_post_fork for the extern_step.
+ -- MYSQL - Sightly better logic if a job completion comes in with an end time
+    of 0.
 
 * Changes in Slurm 16.05.2
 ==========================

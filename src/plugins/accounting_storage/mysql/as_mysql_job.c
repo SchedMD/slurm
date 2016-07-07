@@ -824,12 +824,20 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 		end_time = job_ptr->resize_time;
 		job_state = JOB_RESIZING;
 	} else {
-		/* If we get an error with this just fall through to avoid an
-		 * infinite loop */
 		if (job_ptr->end_time == 0) {
-			debug("as_mysql_jobacct: job %u never started",
-			      job_ptr->job_id);
-			return SLURM_SUCCESS;
+			if (job_ptr->start_time) {
+				error("%s: We are trying to end a job (%u) with no end time, setting it to the start time (%ld) of the job.",
+				      __func__,
+				      job_ptr->job_id, job_ptr->start_time);
+				job_ptr->end_time = job_ptr->start_time;
+			} else {
+				error("%s: job %u never started",
+				      __func__, job_ptr->job_id);
+
+				/* If we get an error with this just
+				 * fall through to avoid an infinite loop */
+				return SLURM_SUCCESS;
+			}
 		}
 		end_time = job_ptr->end_time;
 
