@@ -16,6 +16,8 @@ documents those changes that are of interest to users and administrators.
  -- Add salloc/sbatch/srun --spread-job to distribute tasks over as many nodes
     as possible. This also treats the --ntasks-node-node option as a maximum
     value.
+ -- Add ConstrainKmemSpace to cgroup.conf, defaulting to yes, to allow
+    cgroup Kmem enforcement to be disabled while still using ConstrainRAMSpace.
 
 * Changes in Slurm 16.05.3
 ==========================
