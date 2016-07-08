@@ -64,7 +64,9 @@ typedef struct slurm_cgroup_conf {
 
 	uint32_t  min_ram_space;         /* Lower bound on memory limit (MB) */
 
+	bool      constrain_kmem_space;
 	bool      constrain_swap_space;
+
 	float     allowed_swap_space;
 	float     max_swap_percent;      /* Upper bound on swap as % of RAM  */
 

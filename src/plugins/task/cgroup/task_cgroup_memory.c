@@ -63,6 +63,7 @@ static xcgroup_t job_memory_cg;
 static xcgroup_t step_memory_cg;
 
 static bool constrain_ram_space;
+static bool constrain_kmem_space;
 static bool constrain_swap_space;
 
 static float allowed_ram_space;   /* Allowed RAM in percent       */
@@ -104,6 +105,7 @@ extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	xcgroup_destroy(&memory_cg);
 
 	constrain_ram_space = slurm_cgroup_conf->constrain_ram_space;
+	constrain_kmem_space = slurm_cgroup_conf->constrain_kmem_space;
 	constrain_swap_space = slurm_cgroup_conf->constrain_swap_space;
 
 	/*
@@ -298,7 +300,8 @@ static int memcg_initialize (xcgroup_ns_t *ns, xcgroup_t *cg,
 	 * Also constrain kernel memory (if available).
 	 * See https://lwn.net/Articles/516529/
 	 */
-	xcgroup_set_uint64_param (cg, "memory.kmem.limit_in_bytes", mlb);
+	if (constrain_kmem_space)
+		xcgroup_set_uint64_param(cg, "memory.kmem.limit_in_bytes", mlb);
 
 	/* this limit has to be set only if ConstrainSwapSpace is set to yes */
 	if ( constrain_swap_space ) {
