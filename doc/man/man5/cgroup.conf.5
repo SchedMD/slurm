@@ -95,9 +95,11 @@ The default value is "no".
 
 .TP
 \fBConstrainRAMSpace\fR=<yes|no>
-If configured to "yes" then constrain the job's RAM usage.
-The default value is "no",
-in which case the job's RAM limit will be set to its swap space limit.
+If configured to "yes" then constrain the job's RAM usage by setting
+the memory soft limit to the allocated memory and the hard limit to
+the allocated memory * \fBAllowedRAMSpace\fR.  The default value is "no", in
+which case the job's RAM limit will be set to its swap space limit if
+\fBConstrainSwapSpace\fR is set to "yes".
 Also see \fBAllowedSwapSpace\fR, \fBAllowedRAMSpace\fR and
 \fBConstrainSwapSpace\fR.
 
@@ -105,7 +107,7 @@ Also see \fBAllowedSwapSpace\fR, \fBAllowedRAMSpace\fR and
 \fBConstrainSwapSpace\fR=<yes|no>
 If configured to "yes" then constrain the job's swap space usage.
 The default value is "no". Note that when set to "yes" and
-ConstrainRAMSpace is set to "no", AllowedRAMSpace is automatically set
+ConstrainRAMSpace is set to "no", \fBAllowedRAMSpace\fR is automatically set
 to 100% in order to limit the RAM+Swap amount to 100% of job's requirement
 plus the percent of allowed swap space. This amount is thus set to both
 RAM and RAM+Swap limits. This means that in that particular case,

@@ -27,13 +27,18 @@ documents those changes that are of interest to users and administrators.
  -- Prevent possible incorrect counting of GRES of a given type if a node has
     the multiple "types" of a given GRES "name", which could over-subscribe
     GRES of a given type.
- -- Add web link to Harvard's Slurm Diamond Collectors.
+ -- Add web links to Slurm Diamond Collectors (from Harvard University) and
+    collectd (from EDF).
  -- Add job_submit plugin for the "reboot" field.
  -- Make some more Slurm constants (INFINITE, NO_VAL64, etc.) available to
     job_submit/lua plugins.
  -- Send in a -1 for a taskid into spank_task_post_fork for the extern_step.
  -- MYSQL - Sightly better logic if a job completion comes in with an end time
     of 0.
+ -- task/cgroup plugin is configured with ConstrainRAMSpace=yes, then set soft
+    memory limit to allocated memory limit (previously no soft limit was set).
+ -- Document limitations in burst buffer use by the salloc command (possible
+    access problems from a login node).
 
 
 * Changes in Slurm 16.05.2
