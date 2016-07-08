@@ -87,7 +87,7 @@ proc end_it { exit_code } {
 # job id should be cluster_id + job_id
 # local_id:   bits 0-25
 # cluster_id: bits26-31
-proc test_job_id { cname cindex } {
+proc test_fed_job_id { cname cindex } {
 	global fed_slurm_base number
 	set job_id 0
 	set rc 0
@@ -116,7 +116,7 @@ proc test_job_id { cname cindex } {
 	}
 
 	if {$job_id <= $max_local_id} {
-		send_user "\nFAILURE: $cname didn't give back a federation job id\n"
+		send_user "\nFAILURE: $cname didn't give back a federation jobid ($job_id)\n"
 		incr rc
 	}
 
@@ -129,6 +129,45 @@ proc test_job_id { cname cindex } {
 			correct partition id ($part_id != $cindex)\n"
 		incr rc
 	}
+
+	return $rc
+}
+
+# submit jobs to non-federated cluster and make sure the jobid is not a
+# federated jobid.
+proc test_loc_job_id { cname } {
+	global fed_slurm_base number
+	set job_id 0
+	set rc 0
+
+	#bits 0-25
+	set max_local_id [expr 0x3FFFFFF]
+
+	set my_sbatch "${fed_slurm_base}/$cname/bin/sbatch"
+	set sbatch_pid [spawn $my_sbatch --wrap="hostname" -o/dev/null]
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		-re "error" {
+			send_user "\nFAILURE: Job was not submitted\n"
+			incr rc
+		}
+		timeout {
+			send_user "\nFAILURE: sbatch is not responding\n"
+			incr rc
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$job_id > $max_local_id} {
+		send_user "\nFAILURE: $cname didn't give back a non-federation job id\n"
+		incr rc
+	}
+	send_user "JobID:$job_id\n"
 
 	return $rc
 }
@@ -160,9 +199,27 @@ if {[setup_federation $fed_name]} {
 # Get cluster/fed info from db
 array set clusters [get_clusterfed_info $fed_name]
 
-if {[test_job_id $fedc1 [dict get $clusters($fedc1) index]] ||
-    [test_job_id $fedc2 [dict get $clusters($fedc2) index]] ||
-    [test_job_id $fedc3 [dict get $clusters($fedc3) index]]} {
+send_user "Verify federation ids are returned when cluster is part of federation\n"
+if {[test_fed_job_id $fedc1 [dict get $clusters($fedc1) index]] ||
+    [test_fed_job_id $fedc2 [dict get $clusters($fedc2) index]] ||
+    [test_fed_job_id $fedc3 [dict get $clusters($fedc3) index]]} {
+	end_it 1
+}
+
+
+# Verify that after clusters are removed from federation that they give normal
+# job ids again.
+if {[delete_federations $fed_name]} {
+	send_user "\nFAILURE: failed delete federation $fed_name\n"
+	end_it 1
+}
+
+sleep 2
+
+send_user "Verify local ids after being removed from federation\n"
+if {[test_loc_job_id $fedc1] ||
+    [test_loc_job_id $fedc2] ||
+    [test_loc_job_id $fedc3]} {
 	end_it 1
 }
 
