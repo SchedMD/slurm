@@ -224,7 +224,7 @@ extern int task_cgroup_memory_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)
 /*
  *  Return configured memory limit in bytes given a memory limit in MB.
  */
-static uint64_t mem_limit_in_bytes (uint64_t mem)
+static uint64_t mem_limit_in_bytes (uint64_t mem, bool with_allowed)
 {
 	/*
 	 *  If mem == 0 then assume there was no SLURM limit imposed
@@ -233,8 +233,12 @@ static uint64_t mem_limit_in_bytes (uint64_t mem)
 	 */
 	if (mem == 0)
 		mem = totalram * 1024 * 1024;
-	else
-		mem = percent_in_bytes (mem, allowed_ram_space);
+	else {
+		if (with_allowed)
+			mem = percent_in_bytes (mem, allowed_ram_space);
+		else
+			mem = percent_in_bytes(mem, 100.0);
+	}
 	if (mem < min_ram_space)
 		return (min_ram_space);
 	if (mem > max_ram)
@@ -256,7 +260,7 @@ static uint64_t swap_limit_in_bytes (uint64_t mem)
 	 *  If mem == 0 assume "unlimited" and use totalram.
 	 */
 	swap = percent_in_bytes (mem ? mem : totalram, allowed_swap_space);
-	mem = mem_limit_in_bytes (mem) + swap;
+	mem = mem_limit_in_bytes (mem, true) + swap;
 	if (mem < min_ram_space)
 		return (min_ram_space);
 	if (mem > max_swap)
@@ -268,7 +272,8 @@ static int memcg_initialize (xcgroup_ns_t *ns, xcgroup_t *cg,
 			     char *path, uint64_t mem_limit, uid_t uid,
 			     gid_t gid, uint32_t notify)
 {
-	uint64_t mlb = mem_limit_in_bytes (mem_limit);
+	uint64_t mlb = mem_limit_in_bytes (mem_limit, true);
+	uint64_t mlb_soft = mem_limit_in_bytes(mem_limit, false);
 	uint64_t mls = swap_limit_in_bytes  (mem_limit);
 
 	if (xcgroup_create (ns, cg, path, uid, gid) != XCGROUP_SUCCESS)
@@ -289,6 +294,9 @@ static int memcg_initialize (xcgroup_ns_t *ns, xcgroup_t *cg,
 	if ( ! constrain_ram_space )
 		mlb = mls;
 	xcgroup_set_uint64_param (cg, "memory.limit_in_bytes", mlb);
+
+	/* Set the soft limit to the allocated RAM.  */
+	xcgroup_set_uint64_param(cg, "memory.soft_limit_in_bytes", mlb_soft);
 
 	/*
 	 * Also constrain kernel memory (if available).

@@ -19,6 +19,8 @@ documents those changes that are of interest to users and administrators.
  -- Send in a -1 for a taskid into spank_task_post_fork for the extern_step.
  -- MYSQL - Sightly better logic if a job completion comes in with an end time
     of 0.
+ -- task/cgroup plugin is configured with ConstrainRAMSpace=yes, then set soft
+    memory limit to allocated memory limit (previously no soft limit was set).
 
 * Changes in Slurm 16.05.2
 ==========================
