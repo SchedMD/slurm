@@ -91,8 +91,9 @@ static int _open_controller_conn(slurmdb_cluster_rec_t *conn)
 	if (conn->control_host && conn->control_host[0] == '\0')
 		conn->sockfd = -1;
 	else
-		conn->sockfd = slurm_open_persist_controller_conn(conn->control_host,
-							  conn->control_port);
+		conn->sockfd =
+			slurm_open_persist_controller_conn(conn->control_host,
+							   conn->control_port);
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 		info("openend sibling conn to %s:%d", conn->name, conn->sockfd);
@@ -132,7 +133,8 @@ static int _ping_controller(slurmdb_cluster_rec_t *conn)
 		slurm_mutex_lock(&conn->lock);
 		conn->sockfd = -1;
 		slurm_mutex_unlock(&conn->lock);
-	} else if ((rc = slurm_get_return_code(resp_msg.msg_type, resp_msg.data)))
+	} else if ((rc = slurm_get_return_code(resp_msg.msg_type,
+					       resp_msg.data)))
 		error("ping returned error from %s(%s:%d)",
 		      conn->name, conn->control_host, conn->control_port);
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
