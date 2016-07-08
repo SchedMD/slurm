@@ -208,13 +208,16 @@ account and user associations inside their realm.
 Events like downed or draining nodes on clusters.
 
 .TP
-\fILostJobs\fR
-Jobs that have been orphanded on the local cluster.
+\fIRunawayJobs\fR
+Used only with the \fIlist\fR or \fIshow\fR command to report current
+jobs that have been orphanded on the local cluster and are now
+runaway.  If there are jobs in this state it will also give you an
+option to "fix" them.
 
 .TP
 \fIjob\fR
-Job - but only two specific fields of the job: Derived Exit Code and
-the Comment String
+Used to modify specific fields of a job: Derived Exit Code and
+the Comment String.
 
 .TP
 \fIqos\fR

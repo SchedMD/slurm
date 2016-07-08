@@ -339,7 +339,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[]);
 /* txn_functions.c */
 extern int sacctmgr_list_txn(int argc, char *argv[]);
 
-/* lost_jobs_functions.c */
-extern int sacctmgr_list_lost_jobs(int argc, char *argv[]);
+/* runaway_jobs_functions.c */
+extern int sacctmgr_list_runaway_jobs(int argc, char *argv[]);
 
 #endif

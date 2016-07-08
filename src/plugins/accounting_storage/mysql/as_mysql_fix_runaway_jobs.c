@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  as_mysql_fix_lost_jobs.c - functions dealing with lost jobs.
+ *  as_mysql_fix_runaway_jobs.c - functions dealing with runaway jobs.
  *****************************************************************************
  *  Copyright (C) 2016 SchedMD LLC.
  *  Written by Nathan Yee <nyee32@schedmd.com>
@@ -34,7 +34,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "as_mysql_fix_lost_jobs.h"
+#include "as_mysql_fix_runaway_jobs.h"
 #include "src/common/list.h"
 
 static int _job_sort_by_start_time(void *void1, void * void2)
@@ -87,8 +87,8 @@ static int _first_job_roll_up(mysql_conn_t *mysql_conn, time_t first_start)
 	return rc;
 }
 
-extern int as_mysql_fix_lost_jobs(mysql_conn_t *mysql_conn, uint32_t uid,
-				  List lost_jobs)
+extern int as_mysql_fix_runaway_jobs(mysql_conn_t *mysql_conn, uint32_t uid,
+				     List runaway_jobs)
 {
 	char *query = NULL, *job_ids = NULL;
 	slurmdb_job_rec_t *job = NULL;
@@ -96,8 +96,8 @@ extern int as_mysql_fix_lost_jobs(mysql_conn_t *mysql_conn, uint32_t uid,
 	int rc = SLURM_SUCCESS;
 	slurmdb_job_rec_t *first_job;
 
-	list_sort(lost_jobs, _job_sort_by_start_time);
-	first_job = list_peek(lost_jobs);
+	list_sort(runaway_jobs, _job_sort_by_start_time);
+	first_job = list_peek(runaway_jobs);
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
@@ -110,12 +110,12 @@ extern int as_mysql_fix_lost_jobs(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		if (!is_user_any_coord(mysql_conn, &user)) {
 			error("Only admins/operators/coordinators "
-			      "can fix lost jobs");
+			      "can fix runaway jobs");
 			return ESLURM_ACCESS_DENIED;
 		}
 	}
 
-	iter = list_iterator_create(lost_jobs);
+	iter = list_iterator_create(runaway_jobs);
 	while ((job = list_next(iter))) {
 		xstrfmtcat(job_ids, "%s%d", ((job_ids) ? "," : ""), job->jobid);
 	}
@@ -132,10 +132,10 @@ extern int as_mysql_fix_lost_jobs(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(job_ids);
 
 	/* Set rollup to the the last day of the previous month of the first
-	 * lost job */
+	 * runaway job */
 	rc = _first_job_roll_up(mysql_conn, first_job->start);
 	if (rc != SLURM_SUCCESS) {
-		error("Failed to fix lost jobs");
+		error("Failed to fix runaway jobs");
 		return SLURM_ERROR;
 	}
 

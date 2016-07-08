@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * lost_jobs_functions.c - functions dealing with lost jobs
+ * runaway_jobs_functions.c - functions dealing with runaway/orphan jobs
  *****************************************************************************
  *  Copyright (C) 2016 SchedMD LLC.
  *  Written by Nathan Yee <nyee32@schedmd.com>
@@ -49,7 +49,7 @@ static int _job_sort_by_start_time(void *void1, void * void2)
 		return 0;
 }
 
-static void _print_lost_jobs(List jobs)
+static void _print_runaway_jobs(List jobs)
 {
 	char outbuf[FORMAT_STRING_SIZE];
 	slurmdb_job_rec_t *job = NULL;
@@ -131,17 +131,17 @@ static void _print_lost_jobs(List jobs)
 	list_iterator_destroy(itr);
 }
 
-static List _get_lost_jobs(char *cluster)
+static List _get_runaway_jobs(char *cluster)
 {
 	int i = 0;
-	bool job_lost = true;
+	bool job_runaway = true;
 	List db_jobs_list = NULL;
 	ListIterator    db_jobs_itr  = NULL;
 	job_info_t     *clus_job     = NULL;
 	job_info_msg_t *clus_jobs    = NULL;
 	slurmdb_job_rec_t  *db_job   = NULL;
 	slurmdb_job_cond_t *job_cond = xmalloc(sizeof(slurmdb_job_cond_t));
-	List lost_jobs = NULL;
+	List runaway_jobs = NULL;
 
 	job_cond->without_steps = 1;
 	job_cond->without_usage_truncation = 1;
@@ -158,62 +158,63 @@ static List _get_lost_jobs(char *cluster)
 		return NULL;
 	}
 
-	lost_jobs = list_create(NULL);
+	runaway_jobs = list_create(NULL);
 	db_jobs_itr = list_iterator_create(db_jobs_list);
 	while ((db_job = list_next(db_jobs_itr))) {
-		job_lost = true;
+		job_runaway = true;
 		for (i = 0, clus_job = clus_jobs->job_array;
 		     i < clus_jobs->record_count; i++, clus_job++) {
 			if (db_job->jobid == clus_job->job_id) {
-				job_lost = false;
+				job_runaway = false;
 				break;
 			}
 		}
 
-		if (job_lost)
-			list_append(lost_jobs, db_job);
+		if (job_runaway)
+			list_append(runaway_jobs, db_job);
 	}
 	list_iterator_destroy(db_jobs_itr);
 
-	return lost_jobs;
+	return runaway_jobs;
 }
 
-static void _report_lost_jobs(List lost_jobs)
+static void _report_runaway_jobs(List runaway_jobs)
 {
-	if (list_count(lost_jobs)) {
-		printf("NOTE: Lost jobs are jobs that don't exist in the "
+	if (list_count(runaway_jobs)) {
+		printf("NOTE: Runaway jobs are jobs that don't exist in the "
 		       "controller but are still considered running in the "
 		       "datbase\n");
-		_print_lost_jobs(lost_jobs);
+		_print_runaway_jobs(runaway_jobs);
 	}
 }
 
 /*
- * List and ask user if they wish to fix the lost jobs
+ * List and ask user if they wish to fix the runaway jobs
  */
-extern int sacctmgr_list_lost_jobs(int argc, char *argv[])
+extern int sacctmgr_list_runaway_jobs(int argc, char *argv[])
 {
-	List lost_jobs = NULL;
+	List runaway_jobs = NULL;
 	int rc = SLURM_SUCCESS;
 	uint32_t my_uid = getuid();
 	char *cluster = NULL;
 
-	char *ask_msg = "\nWould you like to fix these lost jobs?\n"
+	char *ask_msg = "\nWould you like to fix these runaway jobs?\n"
 			"(This will set the end times to start times and "
 			"states to completed for these jobs and will trigger "
 			"the rollup to reroll usage from before the oldest "
-			"lost job.)\n\n";
+			"runaway job.)\n\n";
 
 	if (!(cluster = slurm_get_cluster_name()))
 		return SLURM_ERROR;
 
-	if (!(lost_jobs = _get_lost_jobs(cluster)))
+	if (!(runaway_jobs = _get_runaway_jobs(cluster)))
 		return SLURM_ERROR;
 	xfree(cluster);
-	_report_lost_jobs(lost_jobs);
+	_report_runaway_jobs(runaway_jobs);
 
-	if (list_count(lost_jobs)) {
-		rc = acct_storage_g_fix_lost_jobs(db_conn, my_uid, lost_jobs);
+	if (list_count(runaway_jobs)) {
+		rc = acct_storage_g_fix_runaway_jobs(
+			db_conn, my_uid, runaway_jobs);
 
 		if (rc == SLURM_SUCCESS) {
 			if (commit_check(ask_msg)) {
@@ -224,12 +225,12 @@ extern int sacctmgr_list_lost_jobs(int argc, char *argv[])
 			}
 		}
 		else {
-			error("Failed to fix lost job: %s\n",
+			error("Failed to fix runaway job: %s\n",
 			      slurm_strerror(rc));
 		}
 
 	} else {
-		printf("Lost Jobs: No lost jobs found\n");
+		printf("Runaway Jobs: No runaway jobs found\n");
 	}
 
 	return rc;

@@ -180,8 +180,8 @@ static int   _step_complete(slurmdbd_conn_t *slurmdbd_conn,
 			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _step_start(slurmdbd_conn_t *slurmdbd_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
-static int   _fix_lost_jobs(slurmdbd_conn_t *slurmdbd_conn, Buf in_buffer,
-			    Buf *out_buffer, uint32_t *uid);
+static int   _fix_runaway_jobs(slurmdbd_conn_t *slurmdbd_conn, Buf in_buffer,
+			       Buf *out_buffer, uint32_t *uid);
 
 /* Process an incoming RPC
  * slurmdbd_conn IN/OUT - in will that the newsockfd set before
@@ -466,9 +466,9 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 			rc = _step_start(slurmdbd_conn,
 					 in_buffer, out_buffer, uid);
 			break;
-		case DBD_FIX_LOST_JOB:
-			rc = _fix_lost_jobs(slurmdbd_conn,
-					    in_buffer, out_buffer, uid);
+		case DBD_FIX_RUNAWAY_JOB:
+			rc = _fix_runaway_jobs(slurmdbd_conn,
+					       in_buffer, out_buffer, uid);
 			break;
 		default:
 			comment = "Invalid RPC";
@@ -569,29 +569,29 @@ end_it:
 	return rc;
 }
 
-static int _fix_lost_jobs(slurmdbd_conn_t *slurmdbd_conn, Buf in_buffer,
-			  Buf *out_buffer, uint32_t *uid)
+static int _fix_runaway_jobs(slurmdbd_conn_t *slurmdbd_conn, Buf in_buffer,
+			     Buf *out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	dbd_list_msg_t *get_msg = NULL;
 	char *comment = NULL;
 
 	if (slurmdbd_unpack_list_msg(&get_msg, slurmdbd_conn->rpc_version,
-				     DBD_FIX_LOST_JOB, in_buffer) !=
+				     DBD_FIX_RUNAWAY_JOB, in_buffer) !=
 	    SLURM_SUCCESS) {
-		comment = "Failed to unpack DBD_LOST_JOBS message";
+		comment = "Failed to unpack DBD_RUNAWAY_JOBS message";
 		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
 
-	rc = acct_storage_g_fix_lost_jobs(slurmdbd_conn->db_conn, *uid,
-					  get_msg->my_list);
+	rc = acct_storage_g_fix_runaway_jobs(slurmdbd_conn->db_conn, *uid,
+					     get_msg->my_list);
 
 end_it:
 	slurmdbd_free_list_msg(get_msg);
 	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
-				      rc, comment, DBD_FIX_LOST_JOB);
+				      rc, comment, DBD_FIX_RUNAWAY_JOB);
 
 	return rc;
 }
