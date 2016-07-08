@@ -156,7 +156,7 @@ typedef enum {
 	DBD_ADD_TRES,         /* Add tres to the database           */
 	DBD_GET_TRES,         /* Get tres from the database         */
 	DBD_GOT_TRES,         /* Got tres from the database         */
-	DBD_FIX_LOST_JOB,      /* Fix the lost jobs */
+	DBD_FIX_RUNAWAY_JOB,    /* Fix any runaway jobs */
 } slurmdbd_msg_type_t;
 
 /*****************************************************************************\

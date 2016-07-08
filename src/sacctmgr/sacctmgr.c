@@ -651,8 +651,10 @@ static void _show_it (int argc, char *argv[])
 	} else if (strncasecmp(argv[0], "Problems",
 				MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_problem((argc - 1), &argv[1]);
-	} else if (strncasecmp(argv[0], "LostJobs", MAX(command_len, 1)) == 0) {
-		error_code = sacctmgr_list_lost_jobs((argc - 1), &argv[1]);
+	} else if (!strncasecmp(argv[0], "RunawayJobs", MAX(command_len, 2)) ||
+		   !strncasecmp(argv[0], "OrphanJobs", MAX(command_len, 1)) ||
+		   !strncasecmp(argv[0], "LostJobs", MAX(command_len, 1))) {
+		error_code = sacctmgr_list_runaway_jobs((argc - 1), &argv[1]);
 	} else if (strncasecmp(argv[0], "QOS", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_qos((argc - 1), &argv[1]);
 	} else if (!strncasecmp(argv[0], "Resource", MAX(command_len, 4))) {
@@ -677,7 +679,8 @@ static void _show_it (int argc, char *argv[])
 		fprintf(stderr, "\"Account\", \"Association\", "
 			"\"Cluster\", \"Configuration\",\n\"Event\", "
 			"\"Problem\", \"QOS\", \"Resource\", \"Reservation\", "
-			"\"Transaction\", \"TRES\", \"User\", or \"WCKey\"\n");
+			"\"RunAwayJobs\", \"Transaction\", \"TRES\", "
+			"\"User\", or \"WCKey\"\n");
 	}
 
 	if (error_code != SLURM_SUCCESS) {
@@ -855,8 +858,8 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
   <ENTITY> may be \"account\", \"association\", \"cluster\",               \n\
                   \"configuration\", \"coordinator\", \"event\", \"job\",  \n\
                   \"problem\", \"qos\", \"resource\", \"reservation\",     \n\
-                  \"transaction\", \"tres\",                               \n\
-                   \"user\" or \"wckey\"                                   \n\
+                  \"runawayjobs\", \"transaction\", \"tres\",              \n\
+                  \"user\" or \"wckey\"                                    \n\
                                                                            \n\
   <SPECS> are different for each command entity pair.                      \n\
        list account       - Clusters=, Descriptions=, Format=,             \n\
@@ -943,6 +946,8 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        delete resource    - Clusters=, Names=                              \n\
                                                                            \n\
        list reservation   - Clusters=, End=, ID=, Names=, Nodes=, Start=   \n\
+                                                                           \n\
+       list runawayjobs                                                    \n\
                                                                            \n\
        list transactions  - Accounts=, Action=, Actor=, Clusters=, End=,   \n\
                             Format=, ID=, Start=, User=, and WithAssoc     \n\

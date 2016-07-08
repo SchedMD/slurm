@@ -472,11 +472,12 @@ extern int acct_storage_g_roll_usage(void *db_conn,
 				     uint16_t archive_data);
 
 /*
- * Fix lost jobs
- * IN: jobs, a list of all the lost jobs
+ * Fix runaway jobs
+ * IN: jobs, a list of all the runaway jobs
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_fix_lost_jobs(void *db_conn, uint32_t uid, List jobs);
+extern int acct_storage_g_fix_runaway_jobs(void *db_conn,
+					   uint32_t uid, List jobs);
 
 /*
  * record shares used information for backup in case slurmctld restarts

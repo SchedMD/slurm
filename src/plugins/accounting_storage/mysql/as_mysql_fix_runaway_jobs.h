@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  as_mysql_fix_lost_jobs.h - functions dealing with lost jobs.
+ *  as_mysql_fix_runaway_jobs.h - functions dealing with runaway jobs.
  *****************************************************************************
  *  Copyright (C) 2016 SchedMD LLC.
  *  Written by Nathan Yee <nyee32@schedmd.com>
@@ -34,13 +34,13 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _HAVE_MYSQL_FIX_LOST_JOBS_H
-#define _HAVE_MYSQL_FIX_LOST_JOBS_H
+#ifndef _HAVE_MYSQL_FIX_RUNAWAY_JOBS_H
+#define _HAVE_MYSQL_FIX_RUNAWAY_JOBS_H
 
 #include "accounting_storage_mysql.h"
 #include "src/common/slurm_time.h"
 
-extern int as_mysql_fix_lost_jobs(mysql_conn_t *mysql_conn, uint32_t uid,
-				  List lost_jobs);
+extern int as_mysql_fix_runaway_jobs(mysql_conn_t *mysql_conn, uint32_t uid,
+				     List runaway_jobs);
 
 #endif

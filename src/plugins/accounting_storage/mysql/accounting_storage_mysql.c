@@ -51,7 +51,7 @@
 #include "as_mysql_assoc.h"
 #include "as_mysql_cluster.h"
 #include "as_mysql_convert.h"
-#include "as_mysql_fix_lost_jobs.h"
+#include "as_mysql_fix_runaway_jobs.h"
 #include "as_mysql_job.h"
 #include "as_mysql_jobacct_process.h"
 #include "as_mysql_problems.h"
@@ -2875,10 +2875,10 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 				   sent_end, archive_data);
 }
 
-extern int acct_storage_p_fix_lost_jobs(void *db_conn, uint32_t uid,
+extern int acct_storage_p_fix_runaway_jobs(void *db_conn, uint32_t uid,
 					List jobs)
 {
-	return as_mysql_fix_lost_jobs(db_conn, uid, jobs);
+	return as_mysql_fix_runaway_jobs(db_conn, uid, jobs);
 }
 
 extern int clusteracct_storage_p_node_down(mysql_conn_t *mysql_conn,
