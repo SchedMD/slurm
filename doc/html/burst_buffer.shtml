@@ -137,6 +137,14 @@ In a similar fashion, you can't stage files in/out at various points in the
 script execution. All file stage-in happens prior to the job's compute portion
 and all file stage-out happens after computation.</p>
 
+<p>The salloc and srun commands can also create and use burst buffers. For
+both commands. the "--bb" or "--bbf" option is used to specify the job's
+burst buffer requirements. 
+Note the burst buffer may not be accessible from a login node, but require
+that salloc spawn a shell on one of it's allocated compute nodes. See the
+description of SallocDefaultCommand in the slurm.conf man page for more
+information about how to spawn a remote shell.</p>
+
 <p>A basic validation is performed on the job's burst buffer options at job
 submit time.
 If the options are invalid, the job will be rejected and an error message will
@@ -289,6 +297,6 @@ $ scontrol create reservation StartTime=16:00 duration=60 \
   BurstBuffer=cray:pool_test:4G
 </pre>
 
-<p style="text-align:center;">Last modified 21 December 2015</p>
+<p style="text-align:center;">Last modified 8 July 2016</p>
 
 <!--#include virtual="footer.txt"-->

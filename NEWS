@@ -21,6 +21,8 @@ documents those changes that are of interest to users and administrators.
     of 0.
  -- task/cgroup plugin is configured with ConstrainRAMSpace=yes, then set soft
     memory limit to allocated memory limit (previously no soft limit was set).
+ -- Document limitations in burst buffer use by the salloc command (possible
+    access problems from a login node).
 
 * Changes in Slurm 16.05.2
 ==========================
