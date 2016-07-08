@@ -949,7 +949,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                                                                            \n\
        list reservation   - Clusters=, End=, ID=, Names=, Nodes=, Start=   \n\
                                                                            \n\
-       list runawayjobs                                                    \n\
+       list runawayjobs   - Cluster=, Format=                              \n\
                                                                            \n\
        list transactions  - Accounts=, Action=, Actor=, Clusters=, End=,   \n\
                             Format=, ID=, Start=, User=, and WithAssoc     \n\
@@ -1025,6 +1025,9 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                                                                            \n\
        Reservation        - Assoc, Cluster, End, Flags, ID, Name,          \n\
                             NodeNames, Start, TRES                         \n\
+                                                                           \n\
+       RunAwayJobs        - Cluster, ID, Name, Partition, State,           \n\
+                            TimeStart, TimeEnd                             \n\
                                                                            \n\
        Transactions       - Action, Actor, Info, TimeStamp, Where          \n\
                                                                            \n\
