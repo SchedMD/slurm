@@ -344,10 +344,14 @@ The sdiag utility is a diagnostic tool that maintains statistics on Slurm's
 scheduling performance. You can run sdiag periodically or as you modify
 Slurm's configuration. However if you want a historical view of these
 statistics, you could save them in a time-series database and graph them over
-time as performed with this tool:<br>
-<a href="http://giovannitorres.me/graphing-sdiag-with-graphite.html">Graphing sdiag with Graphite</a><br>
-<a href="https://github.com/fasrc/slurm-diamond-collector">
-  A collection of custom diamond collectors to gather various Slurm statistics</a></li><br>
+time as performed with this tool:
+<ul>
+<li><a href="http://giovannitorres.me/graphing-sdiag-with-graphite.html">Graphing sdiag with Graphite</a></li>
+<li><a href="https://github.com/fasrc/slurm-diamond-collector">
+  A collection of custom diamond collectors to gather various Slurm statistics</a></li>
+<li><a href="https://github.com/collectd/collectd/pull/1198">Collectd</a>
+  (for use with <a href="https://github.com/edf-hpc/jobmetrics">jobmetrics</a>)</li>
+</ul></li><br>
 
 <li><b>MSlurm</b><br>
 Such a superstructure for the management of multiple Slurm environments is done
@@ -408,6 +412,6 @@ Slurm-based HPC supercomputers. The website of Slurm-web, with screenshots:<br>
 
 </ul>
 
-<p style="text-align:center;">Last modified 7 July 2016</p>
+<p style="text-align:center;">Last modified 9 July 2016</p>
 
 <!--#include virtual="footer.txt"-->
