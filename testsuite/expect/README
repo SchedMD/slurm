@@ -674,7 +674,6 @@ test21.34  Validate that partition and job qos limits are enforced
 test21.35  Validate DenyOnLimit QoS flag is enforced on QoS and Associations.
 test21.36  Validate that sacctmgr lost jobs fixes lost jobs.
 test21.37  sacctmgr show stats
-test21.38  sacctmgr operations on clusters and federations.
 
 test22.#   Testing of sreport commands and options.
 	   These also test the sacctmgr archive dump/load functions.
@@ -797,5 +796,6 @@ test36.4   bsub wrapper test
 
 test37.#   Testing of federations.
 ==================================
+test37.1   sacctmgr operations on clusters and federations.
 test37.2   Validate federated clusters return federated job ids.
 test37.3   scontrol show federations
