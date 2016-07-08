@@ -520,8 +520,8 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		break;
 	case REQUEST_PERSIST_INIT:
 		arg->persist = true;
-		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		_set_persist_thread_name(arg);
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		break;
 	case REQUEST_PERSIST_FINI:
 		arg->persist = false;
