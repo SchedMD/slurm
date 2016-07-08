@@ -68,9 +68,15 @@ static int _close_controller_conn(slurmdb_cluster_rec_t *conn)
 	int rc = SLURM_SUCCESS;
 	xassert(conn);
 	slurm_mutex_lock(&conn->lock);
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+		info("closing sibling conn to %s", conn->name);
+
 	if (conn->sockfd >= 0)
 		rc = slurm_close_persist_controller_conn(conn->sockfd);
 	conn->sockfd = -1;
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+		info("closed sibling conn to %s", conn->name);
 	slurm_mutex_unlock(&conn->lock);
 
 	return rc;
@@ -79,11 +85,17 @@ static int _close_controller_conn(slurmdb_cluster_rec_t *conn)
 static int _open_controller_conn(slurmdb_cluster_rec_t *conn)
 {
 	slurm_mutex_lock(&conn->lock);
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+		info("opening sibling conn to %s", conn->name);
+
 	if (conn->control_host && conn->control_host[0] == '\0')
 		conn->sockfd = -1;
 	else
 		conn->sockfd = slurm_open_persist_controller_conn(conn->control_host,
 							  conn->control_port);
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+		info("openend sibling conn to %s:%d", conn->name, conn->sockfd);
 	slurm_mutex_unlock(&conn->lock);
 
 	return conn->sockfd;
@@ -110,7 +122,9 @@ static int _ping_controller(slurmdb_cluster_rec_t *conn)
 	slurm_msg_t_init(&resp_msg);
 	req_msg.msg_type = REQUEST_PING;
 
-	info("pinging %s(%s:%d)", conn->name, conn->control_host, conn->control_port);
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+		info("pinging %s(%s:%d)", conn->name, conn->control_host,
+		     conn->control_port);
 
 	if ((rc = _send_recv_msg(conn, &req_msg, &resp_msg))) {
 		error("failed to ping %s(%s:%d)",
@@ -121,6 +135,9 @@ static int _ping_controller(slurmdb_cluster_rec_t *conn)
 	} else if ((rc = slurm_get_return_code(resp_msg.msg_type, resp_msg.data)))
 		error("ping returned error from %s(%s:%d)",
 		      conn->name, conn->control_host, conn->control_port);
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+		info("finished pinging %s(%s:%d)", conn->name,
+		     conn->control_host, conn->control_port);
 
 	return rc;
 }

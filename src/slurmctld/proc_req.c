@@ -5277,8 +5277,15 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 		slurmdb_update_type_t fed_type = SLURMDB_UPDATE_FEDS;
 		if ((object = list_find_first(update_ptr->update_list,
 					      _find_update_object_in_list,
-					      &fed_type)))
+					      &fed_type))) {
+#if HAVE_SYS_PRCTL_H
+			if (prctl(PR_SET_NAME, "fedmgr", NULL, NULL, NULL) < 0){
+				error("%s: cannot set my name to %s %m",
+				      __func__, "fedmgr");
+			}
+#endif
 			fed_mgr_update_feds(object);
+		}
 
 		object = list_peek(update_ptr->update_list);
 		if (object->type != SLURMDB_ADD_TRES) {
