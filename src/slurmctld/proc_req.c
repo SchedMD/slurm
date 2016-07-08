@@ -550,11 +550,25 @@ static void _set_persist_thread_name(connection_arg_t *arg)
 {
 #if HAVE_SYS_PRCTL_H
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR) {
+#ifdef NYI
 		char *s_name = NULL;
+#endif
 		char ip[16];
 		uint16_t port = 0;
 
 		slurm_get_ip_str(&arg->cli_addr, &port, ip, sizeof(ip));
+#ifndef NYI
+		if (prctl(PR_SET_NAME, ip, NULL, NULL, NULL) < 0)
+			error("%s: cannot set my name to %s %m",
+			      __func__, ip);
+#else
+/* Trying to get the name of the sibling causes contention for the fed_mgr_lock
+ * when using the ping_thread. e.g. One cluster tries to establish a persistent
+ * connection with another cluster and at the same time the other cluster is in
+ * the middle of the pinging the other cluster -- which has the lock. The
+ * persistent connection request can't set the service connection's thread name
+ * until the ping thread release the lock. If/when the ping thread is removed
+ * this may be able to used again. */
 		if ((s_name = fed_mgr_find_sibling_name_by_ip(ip))) {
 			char tmp_name[16];
 			snprintf(tmp_name, sizeof(tmp_name), "sib-%s", s_name);
@@ -564,6 +578,7 @@ static void _set_persist_thread_name(connection_arg_t *arg)
 			xfree(s_name);
 		} else
 			error("Didn't find fed sibling by ip '%s'", ip);
+#endif
 	}
 #endif
 }
