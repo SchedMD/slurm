@@ -139,7 +139,11 @@ proc cleanup { } {
 }
 
 proc end_it { exit_code } {
+	global test_id
 	cleanup
+	if {$exit_code == 0} {
+		print_success $test_id
+	}
 	exit $exit_code
 }
 
@@ -177,7 +181,7 @@ expect {
 }
 if {$exit_code || $matches == 0} {
 	send_user "FAILURE: adding invalid federation failed unpexectedly.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 set matches 0
@@ -202,7 +206,7 @@ expect {
 }
 if {$exit_code || $matches != 2} {
 	send_user "FAILURE: adding invalid federation failed unpexectedly.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 #####################################
@@ -225,7 +229,7 @@ expect {
 }
 if {$exit_code || $matches != 1} {
 	send_user "FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 #####################################
@@ -253,7 +257,7 @@ expect {
 }
 if {$exit_code || $matches != 2} {
 	send_user "FAILURE: adding federation failed unpexectedly.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 set matches 0
@@ -278,7 +282,7 @@ expect {
 }
 if {$exit_code || $matches != 2} {
 	send_user "$matches FAILURE: adding federation failed unpexectedly.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 #####################################
@@ -302,7 +306,7 @@ expect {
 }
 if {$exit_code || $matches != 1} {
 	send_user "FAILURE: adding federation failed unpexectedly.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 #####################################
@@ -340,7 +344,7 @@ expect {
 }
 if {$exit_code || $matches != 4} {
 	send_user "$matches FAILURE: adding federation failed unpexectedly.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 set matches 0
@@ -365,7 +369,7 @@ expect {
 }
 if {$exit_code || $matches != 2} {
 	send_user "$matches FAILURE: adding federation failed unpexectedly.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 #####################################
@@ -393,7 +397,7 @@ expect {
 }
 if {$exit_code || $matches != 2} {
 	send_user "$matches FAILURE: adding federation failed unpexectedly.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 set matches 0
@@ -422,7 +426,7 @@ expect {
 }
 if {$exit_code || $matches != 3} {
 	send_user "$matches FAILURE: adding federation failed unpexectedly.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 set matches 0
@@ -451,7 +455,7 @@ expect {
 }
 if {$exit_code || $matches != 2} {
 	send_user "$matches FAILURE: adding federation failed unpexectedly.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 #####################################
@@ -496,7 +500,7 @@ expect {
 }
 if {$exit_code || $matches != 6} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 #####################################
@@ -536,7 +540,7 @@ expect {
 }
 if {$exit_code || $matches != 5} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 set matches 0
@@ -569,7 +573,7 @@ expect {
 }
 if {$exit_code || $matches != 4} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 set matches 0
@@ -602,7 +606,7 @@ expect {
 }
 if {$exit_code || $matches != 4} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 set matches 0
@@ -643,7 +647,7 @@ expect {
 }
 if {$exit_code || $matches != 6} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 #####################################
@@ -687,7 +691,7 @@ expect {
 }
 if {$exit_code || $matches != 6} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 set matches 0
@@ -724,7 +728,7 @@ expect {
 }
 if {$exit_code || $matches != 5} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 set matches 0
@@ -757,7 +761,7 @@ expect {
 }
 if {$exit_code || $matches != 4} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 set matches 0
@@ -790,7 +794,7 @@ expect {
 }
 if {$exit_code || $matches != 4} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 #####################################
@@ -830,7 +834,7 @@ expect {
 }
 if {$exit_code || $matches != 5} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 set matches 0
@@ -863,7 +867,7 @@ expect {
 }
 if {$exit_code || $matches != 4} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 send_user "tc1 = $tc1\n"
@@ -905,7 +909,7 @@ expect {
 }
 if {$exit_code || $matches != 6} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 #####################################
@@ -945,7 +949,7 @@ expect {
 }
 if {$exit_code || $matches != 5} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 # Verify that LLC is remove and that only the federations are listed since no
@@ -976,7 +980,7 @@ expect {
 }
 if {$exit_code || $matches != 3} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 #####################################
@@ -1013,7 +1017,7 @@ expect {
 }
 if {$exit_code || $matches != 4} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 set matches 0
@@ -1046,7 +1050,7 @@ expect {
 }
 if {$exit_code || $matches != 4} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 # move tc1 into whole.
@@ -1080,7 +1084,7 @@ expect {
 }
 if {$exit_code || $matches != 4} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 set matches 0
@@ -1113,7 +1117,7 @@ expect {
 }
 if {$exit_code || $matches != 4} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 # move tc2 back to fed2 and get new index -- 3.
@@ -1147,7 +1151,7 @@ expect {
 }
 if {$exit_code || $matches != 4} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 set matches 0
@@ -1180,7 +1184,7 @@ expect {
 }
 if {$exit_code || $matches != 4} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 
@@ -1220,7 +1224,7 @@ expect {
 }
 if {$exit_code || $matches != 4} {
 	send_user "$matches FAILURE: adding invalid federation failed unpexectedly.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 set matches 0
@@ -1269,7 +1273,7 @@ expect {
 }
 if {$exit_code || $matches != 7} {
 	send_user "$matches FAILURE: adding invalid federation failed unpexectedly.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 set matches 0
@@ -1306,7 +1310,7 @@ expect {
 }
 if {$exit_code || $matches != 5} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 #####################################
@@ -1342,7 +1346,7 @@ expect {
 }
 if {$exit_code || $matches != 4} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 set matches 0
@@ -1367,7 +1371,7 @@ expect {
 }
 if {$exit_code || $matches != 2} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 #####################################
@@ -1399,7 +1403,7 @@ expect {
 }
 if {$exit_code || $matches != 3} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 #####################################
@@ -1449,7 +1453,7 @@ expect {
 }
 if {$exit_code || $matches != 5} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 set matches 0
@@ -1478,7 +1482,7 @@ expect {
 }
 if {$exit_code || $matches != 3} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 set matches 0
@@ -1515,7 +1519,7 @@ expect {
 }
 if {$exit_code || $matches != 5} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 set matches 0
@@ -1544,7 +1548,7 @@ expect {
 }
 if {$exit_code || $matches != 3} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 set matches 0
@@ -1577,7 +1581,7 @@ expect {
 }
 if {$exit_code || $matches != 4} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 set matches 0
@@ -1607,7 +1611,7 @@ expect {
 }
 if {$exit_code || $matches != 4} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 set matches 0
@@ -1644,7 +1648,7 @@ expect {
 }
 if {$exit_code || $matches != 5} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 set matches 0
@@ -1672,7 +1676,7 @@ expect {
 }
 if {$exit_code || $matches != 2} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 #####################################
@@ -1708,7 +1712,7 @@ expect {
 }
 if {$exit_code || $matches != 4} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 set matches 0
@@ -1733,7 +1737,7 @@ expect {
 }
 if {$exit_code || $matches != 1} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 #####################################
@@ -1778,7 +1782,7 @@ for {set i 1} {$i <= $max_federations} {incr i} {
 		}
 		if {$exit_code || $matches != 4} {
 			send_user "$matches FAILURE: unexpected error.\n"
-			end_it $exit_code
+			end_it 1
 		}
 	} else {
 		expect {
@@ -1813,7 +1817,7 @@ for {set i 1} {$i <= $max_federations} {incr i} {
 		}
 		if {$exit_code || $matches != 5} {
 			send_user "$matches FAILURE: unexpected error.\n"
-			end_it $exit_code
+			end_it 1
 		}
 
 		set matches 0
@@ -1842,7 +1846,7 @@ for {set i 1} {$i <= $max_federations} {incr i} {
 		}
 		if {$exit_code || $matches != 2} {
 			send_user "$matches FAILURE: unexpected error.\n"
-			end_it $exit_code
+			end_it 1
 		}
 
 		set matches 0
@@ -1871,7 +1875,7 @@ for {set i 1} {$i <= $max_federations} {incr i} {
 		}
 		if {$exit_code || $matches != 3} {
 			send_user "$matches FAILURE: unexpected error.\n"
-			end_it $exit_code
+			end_it 1
 		}
 	}
 
@@ -1898,7 +1902,7 @@ expect {
 }
 if {$exit_code || $matches != 64} {
 	send_user "$matches FAILURE: unexpected error.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 #####################################
@@ -1924,7 +1928,7 @@ expect {
 }
 if {$exit_code || $matches } {
 	send_user "$matches FAILURE: found cluster still on federation when it should have been deleted.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 
@@ -1951,7 +1955,7 @@ expect {
 }
 if {$exit_code || $matches } {
 	send_user "$matches FAILURE: found federation when it should have been deleted.\n"
-	end_it $exit_code
+	end_it 1
 }
 
 set matches 0
@@ -1972,13 +1976,7 @@ expect {
 }
 if {$exit_code || $matches } {
 	send_user "$matches FAILURE: found federation on cluster when it was deleted.\n"
-	end_it $exit_code
+	end_it 1
 }
 
-cleanup
-if {$exit_code == 0} {
-	print_success $test_id
-}
-
-exit $exit_code
-
+end_it 0
