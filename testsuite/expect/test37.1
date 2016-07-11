@@ -1902,16 +1902,78 @@ if {$exit_code || $matches != 64} {
 }
 
 #####################################
-# TEST: add federation with existing clusters
-# verify asking if they want to still set clusters
+# TEST: delete cluster - should delete it from federation.
 #####################################
+delete_clusters "max1_$test_id_2"
+
+set matches 0
+set my_pid [spawn $sacctmgr show federation $fed1 format="federation%20,cluster%20"]
+expect {
+	-re "\\s+$fed1\\s+max1_$test_id_2 $eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches } {
+	send_user "$matches FAILURE: found cluster still on federation when it should have been deleted.\n"
+	end_it $exit_code
+}
+
+
 #####################################
 # TEST: delete federation - should clean clusters from federation.
 #####################################
-#####################################
-# TEST: delete cluster - should delete it from federation.
-#####################################
+delete_federations $fed1
 
+set matches 0
+set my_pid [spawn $sacctmgr show federation $fed1 format="federation%20,cluster%20"]
+expect {
+	-re "\\s+$fed1.*?$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches } {
+	send_user "$matches FAILURE: found federation when it should have been deleted.\n"
+	end_it $exit_code
+}
+
+set matches 0
+set my_pid [spawn $sacctmgr show cluster format="cluster%20,federation%20"]
+expect {
+	-re "$fed1" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches } {
+	send_user "$matches FAILURE: found federation on cluster when it was deleted.\n"
+	end_it $exit_code
+}
 
 cleanup
 if {$exit_code == 0} {
