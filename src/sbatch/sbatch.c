@@ -62,6 +62,7 @@
 
 #define MAX_RETRIES 15
 
+static void  _add_bb_to_script(char **script_body, char *burst_buffer_file);
 static void  _env_merge_filter(job_desc_msg_t *desc);
 static int   _fill_job_desc_from_opts(job_desc_msg_t *desc);
 static int   _check_cluster_specific_settings(job_desc_msg_t *desc);
@@ -81,7 +82,7 @@ int main(int argc, char *argv[])
 	job_desc_msg_t desc;
 	submit_response_msg_t *resp;
 	char *script_name;
-	void *script_body;
+	char *script_body;
 	int script_size = 0;
 	int rc = 0, retries = 0;
 
@@ -124,6 +125,10 @@ int main(int argc, char *argv[])
 		error("sbatch parameter parsing");
 		exit(error_exit);
 	}
+
+	if (opt.burst_buffer_file)
+		_add_bb_to_script(&script_body, opt.burst_buffer_file);
+		
 
 	if (spank_init_post_opt() < 0) {
 		error("Plugin stack post-option processing failed");
@@ -222,6 +227,52 @@ int main(int argc, char *argv[])
 	env_array_free(desc.environment);
 	slurm_free_submit_response_response_msg(resp);
 	return rc;
+}
+
+/* Insert the contents of "burst_buffer_file" into "script_body" */
+static void  _add_bb_to_script(char **script_body, char *burst_buffer_file)
+{
+	char *orig_script = *script_body;
+	char *new_script, *sep, save_char;
+	int i;
+
+	if (!burst_buffer_file || (burst_buffer_file[0] == '\0'))
+		return;	/* No burst buffer file or empty file */
+
+	if (!orig_script) {
+		*script_body = xstrdup(burst_buffer_file);
+		return;
+	}
+
+	i = strlen(burst_buffer_file) - 1;
+	if (burst_buffer_file[i] != '\n')	/* Append new line as needed */
+		xstrcat(burst_buffer_file, "\n");
+
+	if (orig_script[0] != '#') {
+		/* Prepend burst buffer file */
+		new_script = xstrdup(burst_buffer_file);
+		xstrcat(new_script, orig_script);
+		*script_body = new_script;
+		return;
+	}
+
+	sep = strchr(orig_script, '\n');
+	if (sep) {
+		save_char = sep[1];
+		sep[1] = '\0';
+		new_script = xstrdup(orig_script);
+		xstrcat(new_script, burst_buffer_file);
+		sep[1] = save_char;
+		xstrcat(new_script, sep + 1);
+		*script_body = new_script;
+		return;
+	} else {
+		new_script = xstrdup(orig_script);
+		xstrcat(new_script, "\n");
+		xstrcat(new_script, burst_buffer_file);
+		*script_body = new_script;
+		return;
+	}
 }
 
 /* Wait for specified job ID to terminate, return it's exit code */

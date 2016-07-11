@@ -143,7 +143,6 @@ enum wrappers {
 #define LONG_OPT_WRAP        0x118
 #define LONG_OPT_REQUEUE     0x119
 #define LONG_OPT_NETWORK     0x120
-#define LONG_OPT_BURST_BUFFER    0x126
 #define LONG_OPT_QOS             0x127
 #define LONG_OPT_SOCKETSPERNODE  0x130
 #define LONG_OPT_CORESPERSOCKET  0x131
@@ -184,6 +183,8 @@ enum wrappers {
 #define LONG_OPT_SPREAD_JOB      0x162
 #define LONG_OPT_MCS_LABEL       0x165
 #define LONG_OPT_DEADLINE        0x166
+#define LONG_OPT_BURST_BUFFER_SPEC 0x167
+#define LONG_OPT_BURST_BUFFER_FILE 0x168
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -226,6 +227,7 @@ static uint16_t _parse_pbs_mail_type(const char *arg);
 
 static void  _usage(void);
 static void _fullpath(char **filename, const char *cwd);
+static char *_read_file(char *fname);
 static void _set_options(int argc, char **argv);
 static void _parse_pbs_resource_list(char *rl);
 
@@ -282,7 +284,7 @@ static bool _valid_node_list(char **node_list_pptr)
 /*
  * _opt_default(): used by initialize_and_process_args to set defaults
  */
-static void _opt_default()
+static void _opt_default(void)
 {
 	char buf[MAXPATHLEN + 1];
 	int i;
@@ -410,6 +412,40 @@ static void _opt_default()
 	opt.job_flags = 0;
 
 	opt.mcs_label		= NULL;
+}
+
+/* Read specified file's contents into a buffer.
+ * Caller must xfree the buffer's contents */
+static char *_read_file(char *fname)
+{
+	int fd, i, offset = 0;
+	struct stat stat_buf;
+	char *file_buf;
+
+	fd = open(fname, O_RDONLY);
+	if (fd < 0) {
+		fatal("Could not open burst buffer specification file %s: %m",
+		      fname);
+	}
+	if (fstat(fd, &stat_buf) < 0) {
+		fatal("Could not stat burst buffer specification file %s: %m",
+		      fname);
+	}
+	file_buf = xmalloc(stat_buf.st_size);
+	while (stat_buf.st_size > offset) {
+		i = read(fd, file_buf + offset, stat_buf.st_size - offset);
+		if (i < 0) {
+			if (errno == EAGAIN)
+				continue;
+			fatal("Could not read burst buffer specification "
+			      "file %s: %m", fname);
+		}
+		if (i == 0)
+			break;	/* EOF */
+		offset += i;
+	}
+	close(fd);
+	return file_buf;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -744,7 +780,8 @@ static struct option long_options[] = {
 	{"nodelist",      required_argument, 0, 'w'},
 	{"exclude",       required_argument, 0, 'x'},
 	{"acctg-freq",    required_argument, 0, LONG_OPT_ACCTG_FREQ},
-	{"bb",            required_argument, 0, LONG_OPT_BURST_BUFFER},
+	{"bb",            required_argument, 0, LONG_OPT_BURST_BUFFER_SPEC},
+	{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
 	{"begin",         required_argument, 0, LONG_OPT_BEGIN},
 	{"blrts-image",   required_argument, 0, LONG_OPT_BLRTS_IMAGE},
 	{"checkpoint",    required_argument, 0, LONG_OPT_CHECKPOINT},
@@ -1588,9 +1625,13 @@ static void _set_options(int argc, char **argv)
 			opt.mcs_label = xstrdup(optarg);
 			break;
 		}
-		case LONG_OPT_BURST_BUFFER:
+		case LONG_OPT_BURST_BUFFER_SPEC:
 			xfree(opt.burst_buffer);
 			opt.burst_buffer = xstrdup(optarg);
+			break;
+		case LONG_OPT_BURST_BUFFER_FILE:
+			xfree(opt.burst_buffer_file);
+			opt.burst_buffer_file = _read_file(optarg);
 			break;
 		case LONG_OPT_NICE:
 			if (optarg)
@@ -3180,6 +3221,7 @@ static void _opt_list(void)
 	} else
 		info("core-spec         : %d", opt.core_spec);
 	info("burst_buffer      : `%s'", opt.burst_buffer);
+	info("burst_buffer_file : `%s'", opt.burst_buffer_file);
 	info("remote command    : `%s'", str);
 	info("power             : %s", power_flags_str(opt.power_flags));
 	info("wait              : %s", opt.wait ? "no" : "yes");
@@ -3223,7 +3265,8 @@ static void _usage(void)
 "              [--mem_bind=...] [--reservation=name] [--mcs-label=mcs]\n"
 "              [--cpu-freq=min[-max[:gov]] [--power=flags] [--gres-flags=opts]\n"
 "              [--switches=max-switches{@max-time-to-wait}] [--reboot]\n"
-"              [--core-spec=cores] [--thread-spec=threads] [--bb=burst_buffer_spec]\n"
+"              [--core-spec=cores] [--thread-spec=threads]\n"
+"              [--bb=burst_buffer_spec] [--bbf=burst_buffer_file]\n"
 "              [--array=index_values] [--profile=...] [--ignore-pbs] [--spread-job]\n"
 "              [--export[=names]] [--export-file=file|fd] executable [args...]\n");
 }
@@ -3239,6 +3282,7 @@ static void _help(void)
 "  -a, --array=indexes         job array index values\n"
 "  -A, --account=name          charge job to specified account\n"
 "      --bb=<spec>             burst buffer specifications\n"
+"      --bbf=<file_name>       burst buffer specification file\n"
 "      --begin=time            defer job until HH:MM MM/DD/YY\n"
 "  -M, --clusters=names        Comma separated list of clusters to issue\n"
 "                              commands to.  Default is current cluster.\n"

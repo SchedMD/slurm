@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
     value.
  -- Add ConstrainKmemSpace to cgroup.conf, defaulting to yes, to allow
     cgroup Kmem enforcement to be disabled while still using ConstrainRAMSpace.
+ -- Add support for sbatch --bbf option.
 
 * Changes in Slurm 16.05.3
 ==========================
