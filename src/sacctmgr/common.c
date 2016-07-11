@@ -379,11 +379,6 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("ID");
 		field->len = 6;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("Index", object, MAX(command_len, 3))) {
-		field->type = PRINT_INDEX;
-		field->name = xstrdup("Index");
-		field->len = 6;
-		field->print_routine = print_fields_uint32;
 	} else if (!strncasecmp("Info", object, MAX(command_len, 2))) {
 		field->type = PRINT_INFO;
 		field->name = xstrdup("Info");

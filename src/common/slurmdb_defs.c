@@ -3113,7 +3113,7 @@ extern void slurmdb_copy_cluster_rec(slurmdb_cluster_rec_t *out,
 	out->dimensions       = in->dimensions;
 	xfree(out->fed.name);
 	out->fed.name         = xstrdup(in->fed.name);
-	out->fed.index        = in->fed.index;
+	out->fed.id           = in->fed.id;
 	out->fed.state        = in->fed.state;
 	out->fed.weight       = in->fed.weight;
 	out->flags            = in->flags;

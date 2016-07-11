@@ -188,14 +188,14 @@ proc get_clusterfed_info { fed_name } {
 	set matches 0
 	array set clusters {}
 	set my_pid [spawn $sacctmgr show cluster federation=$fed_name \
-		    format="cluster%20,federation%20,index,controlhost,controlport,weight,fedstate"]
+		    format="cluster%20,federation%20,id,controlhost,controlport,weight,fedstate"]
 	expect {
-		-re "Cluster\\s+Federation\\s+Index\\s+ControlHost\\s+ControlPort\\s+Weight\\s+FedState $eol" {
+		-re "Cluster\\s+Federation\\s+ID\\s+ControlHost\\s+ControlPort\\s+Weight\\s+FedState $eol" {
 			incr matches
 			exp_continue
 		}
 		-re "\\s+(\\S+)\\s+$fed_name\\s+(\\d+)\\s+(\\S+)\\s+(\\d+)\\s+(\\d+)\\s+(\\S*) $eol" {
-			set clusters($expect_out(1,string)) [dict create index  $expect_out(2,string) \
+			set clusters($expect_out(1,string)) [dict create id     $expect_out(2,string) \
 									 host   $expect_out(3,string) \
 									 port   $expect_out(4,string) \
 									 weight $expect_out(5,string) \

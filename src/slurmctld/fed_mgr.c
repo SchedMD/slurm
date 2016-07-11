@@ -606,7 +606,7 @@ extern bool fed_mgr_is_active()
  */
 extern uint32_t fed_mgr_get_job_id(uint32_t orig)
 {
-	return orig + (fed_mgr_fed_info.index << FED_MGR_CLUSTER_ID_BEGIN);
+	return orig + (fed_mgr_fed_info.id << FED_MGR_CLUSTER_ID_BEGIN);
 }
 
 /*

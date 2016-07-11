@@ -76,7 +76,8 @@ extern int as_mysql_cluster_tres(mysql_conn_t *mysql_conn,
 				 char *cluster_nodes, char **tres_str_in,
 				 time_t event_time);
 
-extern int as_mysql_get_fed_cluster_index(mysql_conn_t *mysql_conn, const char
-					  *cluster, const char *federation,
-					  int last_index, int *ret_index);
+extern int as_mysql_get_fed_cluster_id(mysql_conn_t *mysql_conn,
+				       const char *cluster,
+				       const char *federation,
+				       int last_id, int *ret_id);
 #endif

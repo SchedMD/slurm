@@ -87,7 +87,7 @@ proc end_it { exit_code } {
 # job id should be cluster_id + job_id
 # local_id:   bits 0-25
 # cluster_id: bits26-31
-proc test_fed_job_id { cname cindex } {
+proc test_fed_job_id { cname cid} {
 	global fed_slurm_base number
 	set job_id 0
 	set rc 0
@@ -124,9 +124,9 @@ proc test_fed_job_id { cname cindex } {
 	set clust_id [expr $job_id >> 26]
 
 	send_user "Fed JobID:$job_id Local JobID:$local_id Cluster ID:$clust_id\n"
-	if {$clust_id != $cindex} {
+	if {$clust_id != $cid} {
 		send_user "\nFAILURE: jobid($job_id) from $cname didn't give\
-			correct partition id ($part_id != $cindex)\n"
+			correct partition id ($part_id != $cid)\n"
 		incr rc
 	}
 
@@ -200,9 +200,9 @@ if {[setup_federation $fed_name]} {
 array set clusters [get_clusterfed_info $fed_name]
 
 send_user "Verify federation ids are returned when cluster is part of federation\n"
-if {[test_fed_job_id $fedc1 [dict get $clusters($fedc1) index]] ||
-    [test_fed_job_id $fedc2 [dict get $clusters($fedc2) index]] ||
-    [test_fed_job_id $fedc3 [dict get $clusters($fedc3) index]]} {
+if {[test_fed_job_id $fedc1 [dict get $clusters($fedc1) id]] ||
+    [test_fed_job_id $fedc2 [dict get $clusters($fedc2) id]] ||
+    [test_fed_job_id $fedc3 [dict get $clusters($fedc3) id]]} {
 	end_it 1
 }
 

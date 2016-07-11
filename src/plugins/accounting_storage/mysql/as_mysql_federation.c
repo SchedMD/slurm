@@ -112,7 +112,7 @@ static int _clear_federation_clusters(mysql_conn_t *mysql_conn, const char *fed)
 {
 	int      rc = SLURM_SUCCESS;
 	char *query = NULL;
-	xstrfmtcat(query, "UPDATE %s SET federation='',fed_inx=0 "
+	xstrfmtcat(query, "UPDATE %s SET federation='',fed_id=0 "
 			  "WHERE deleted=0 AND federation='%s'",
 			  cluster_table, fed);
 	if (debug_flags & DEBUG_FLAG_FEDR)
@@ -131,7 +131,7 @@ static int _remove_all_clusters_from_fed(mysql_conn_t *mysql_conn,
 	char *query = NULL;
 
 	xstrfmtcat(query, "UPDATE %s "
-		   	  "SET federation='', fed_inx=0 "
+		   	  "SET federation='', fed_id=0 "
 			  "WHERE federation='%s' and deleted=0",
 		   cluster_table, fed);
 
@@ -164,7 +164,7 @@ static int _remove_clusters_from_fed(mysql_conn_t *mysql_conn, List clusters)
 	       xstrfmtcat(names, "%s'%s'", names ? "," : "", name );
 
 	xstrfmtcat(query, "UPDATE %s "
-		   	  "SET federation='', fed_inx=0 "
+		   	  "SET federation='', fed_id=0 "
 			  "WHERE name IN (%s) and deleted=0",
 		   cluster_table, names);
 
@@ -192,25 +192,24 @@ static int _add_clusters_to_fed(mysql_conn_t *mysql_conn, List clusters,
 	char *names   = NULL;
 	char *indexes = NULL;
 	ListIterator itr = NULL;
-	int   last_index = -1;
+	int   last_id = -1;
 
 	xassert(fed);
 	xassert(clusters);
 
 	itr = list_iterator_create(clusters);
 	while ((name = list_next(itr))) {
-		int index;
-		if ((rc = as_mysql_get_fed_cluster_index(mysql_conn, name, fed,
-							 last_index, &index)))
+		int id;
+		if ((rc = as_mysql_get_fed_cluster_id(mysql_conn, name, fed,
+						      last_id, &id)))
 			goto end_it;
-		last_index = index;
-		xstrfmtcat(indexes, "WHEN name='%s' THEN %d ",
-			   name, index);
+		last_id = id;
+		xstrfmtcat(indexes, "WHEN name='%s' THEN %d ", name, id);
 		xstrfmtcat(names, "%s'%s'", names ? "," : "", name);
 	}
 
 	xstrfmtcat(query, "UPDATE %s "
-		   	  "SET federation='%s', fed_inx = CASE %s END "
+		   	  "SET federation='%s', fed_id = CASE %s END "
 			  "WHERE name IN (%s) and deleted=0",
 		   cluster_table, fed, indexes, names);
 

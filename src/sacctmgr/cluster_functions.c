@@ -553,8 +553,8 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 				field->print_routine(field, cluster->fed.state,
 						     (curr_inx == field_count));
 				break;
-			case PRINT_INDEX:
-				field->print_routine(field, cluster->fed.index,
+			case PRINT_ID:
+				field->print_routine(field, cluster->fed.id,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_WEIGHT:

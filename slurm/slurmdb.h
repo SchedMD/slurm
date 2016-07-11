@@ -576,7 +576,7 @@ typedef struct {
 
 typedef struct {
 	char    *name;   /* Federation name */
-	uint32_t index;  /* index of cluster in federation */
+	uint32_t id;     /* id of cluster in federation */
 	uint32_t state;  /* state of cluster in federation */
 	uint32_t weight; /* weight of cluster in federation */
 } fed_elem_t;

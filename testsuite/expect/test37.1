@@ -544,9 +544,9 @@ if {$exit_code || $matches != 5} {
 }
 
 set matches 0
-set my_pid [spawn $sacctmgr show cluster $tc1 $tc2 $tc3 format="cluster%20,federation%20,index"]
+set my_pid [spawn $sacctmgr show cluster $tc1 $tc2 $tc3 format="cluster%20,federation%20,id"]
 expect {
-	-re "Cluster\\s+Federation\\s+Index $eol" {
+	-re "Cluster\\s+Federation\\s+ID $eol" {
 		incr matches
 		exp_continue
 	}
@@ -984,8 +984,8 @@ if {$exit_code || $matches != 3} {
 }
 
 #####################################
-# TEST: mod cluster to federation -- check indexes
-# create hole in fed2 indexes
+# TEST: mod cluster to federation -- check ids
+# create hole in fed2 ids
 #####################################
 set matches 0
 set my_pid [spawn $sacctmgr -i modify cluster $tc2 set federation=$fed1]
@@ -1021,9 +1021,9 @@ if {$exit_code || $matches != 4} {
 }
 
 set matches 0
-set my_pid [spawn $sacctmgr show cluster $tc1 $tc2 $tc3 format="cluster%20,federation%20,index"]
+set my_pid [spawn $sacctmgr show cluster $tc1 $tc2 $tc3 format="cluster%20,federation%20,id"]
 expect {
-	-re "Cluster\\s+Federation\\s+Index $eol" {
+	-re "Cluster\\s+Federation\\s+ID $eol" {
 		incr matches
 		exp_continue
 	}
@@ -1088,9 +1088,9 @@ if {$exit_code || $matches != 4} {
 }
 
 set matches 0
-set my_pid [spawn $sacctmgr show cluster $tc1 $tc2 $tc3 format="cluster%20,federation%20,index"]
+set my_pid [spawn $sacctmgr show cluster $tc1 $tc2 $tc3 format="cluster%20,federation%20,id"]
 expect {
-	-re "Cluster\\s+Federation\\s+Index $eol" {
+	-re "Cluster\\s+Federation\\s+ID $eol" {
 		incr matches
 		exp_continue
 	}
@@ -1120,7 +1120,7 @@ if {$exit_code || $matches != 4} {
 	end_it 1
 }
 
-# move tc2 back to fed2 and get new index -- 3.
+# move tc2 back to fed2 and get new id -- 3.
 set matches 0
 set my_pid [spawn $sacctmgr -i modify cluster $tc2 set federation=$fed2]
 expect {
@@ -1155,9 +1155,9 @@ if {$exit_code || $matches != 4} {
 }
 
 set matches 0
-set my_pid [spawn $sacctmgr show cluster $tc1 $tc2 $tc3 format="cluster%20,federation%20,index"]
+set my_pid [spawn $sacctmgr show cluster $tc1 $tc2 $tc3 format="cluster%20,federation%20,id"]
 expect {
-	-re "Cluster\\s+Federation\\s+Index $eol" {
+	-re "Cluster\\s+Federation\\s+ID $eol" {
 		incr matches
 		exp_continue
 	}
@@ -1277,9 +1277,9 @@ if {$exit_code || $matches != 7} {
 }
 
 set matches 0
-set my_pid [spawn $sacctmgr show federation $fed1 $fed2 $fed3 format="federation%20,flags,cluster%20,fedstate,weight,index"]
+set my_pid [spawn $sacctmgr show federation $fed1 $fed2 $fed3 format="federation%20,flags,cluster%20,fedstate,weight,id"]
 expect {
-	-re "Federation\\s+Flags\\s+Cluster\\s+FedState\\s+Weight\\s+Index $eol" {
+	-re "Federation\\s+Flags\\s+Cluster\\s+FedState\\s+Weight\\s+ID $eol" {
 		incr matches
 		exp_continue
 	}
@@ -1378,9 +1378,9 @@ if {$exit_code || $matches != 2} {
 # TEST: test selecting clusters by federations
 #####################################
 set matches 0
-set my_pid [spawn $sacctmgr show cluster where fed=$fed3 format="cluster%20,federation%20,index"]
+set my_pid [spawn $sacctmgr show cluster where fed=$fed3 format="cluster%20,federation%20,id"]
 expect {
-	-re "Cluster\\s+Federation\\s+Index $eol" {
+	-re "Cluster\\s+Federation\\s+ID $eol" {
 		incr matches
 		exp_continue
 	}

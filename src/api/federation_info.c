@@ -122,11 +122,11 @@ extern void slurm_print_federation(void *ptr)
 			conn_type = 1;
 
 		tmp_str = slurmdb_cluster_fed_states_str(cluster->fed.state);
-		printf("%-*s %s:%s:%d Index:%d FedState:%s Weight:%d "
+		printf("%-*s %s:%s:%d ID:%d FedState:%s Weight:%d "
 		       "PersistConn:%s\n",
 		       left_col_size, "Sibling:", cluster->name,
 		       cluster->control_host, cluster->control_port,
-		       cluster->fed.index, (tmp_str ? tmp_str : ""),
+		       cluster->fed.id, (tmp_str ? tmp_str : ""),
 		       cluster->fed.weight, conn_status[conn_type]);
 		xfree(tmp_str);
 	}

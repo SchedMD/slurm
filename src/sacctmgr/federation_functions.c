@@ -526,7 +526,7 @@ extern int sacctmgr_list_federation(int argc, char *argv[])
 
 	if (!list_count(format_list)) {
 		slurm_addto_char_list(format_list,
-				      "Federation,Flags%10,Cluster,Index,"
+				      "Federation,Flags%10,Cluster,ID%2,"
 				      "Weight,FedState,FedStateRaw");
 	}
 
@@ -562,7 +562,7 @@ extern int sacctmgr_list_federation(int argc, char *argv[])
 		case PRINT_CLUSTER:
 		case PRINT_FEDSTATE:
 		case PRINT_FEDSTATERAW:
-		case PRINT_INDEX:
+		case PRINT_ID:
 		case PRINT_WEIGHT:
 			print_clusters = true;
 			break;
@@ -647,12 +647,12 @@ extern int sacctmgr_list_federation(int argc, char *argv[])
 						field, tmp_uint32,
 						(curr_inx == field_count));
 					break;
-				case PRINT_INDEX:
+				case PRINT_ID:
 					if (!tmp_cluster)
 						tmp_uint32 = NO_VAL;
 					else
 						tmp_uint32 =
-							tmp_cluster->fed.index;
+							tmp_cluster->fed.id;
 					field->print_routine(
 						field, tmp_uint32,
 						(curr_inx == field_count));
