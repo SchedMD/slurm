@@ -23,6 +23,8 @@ documents those changes that are of interest to users and administrators.
     memory limit to allocated memory limit (previously no soft limit was set).
  -- Document limitations in burst buffer use by the salloc command (possible
     access problems from a login node).
+ -- Fix proctrack plugin to only add the pid of a process once
+    (regression in 16.05.2).
 
 * Changes in Slurm 16.05.2
 ==========================
