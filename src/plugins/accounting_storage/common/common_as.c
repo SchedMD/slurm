@@ -306,6 +306,9 @@ extern void dump_update_list(List update_list)
 			debug3("\tASSOC RECORDS");
 			_dump_slurmdb_assoc_records(object->objects);
 			break;
+		case SLURMDB_UPDATE_FEDS:
+			debug3("\tFEDERATION RECORDS");
+			break;
 		case SLURMDB_ADD_QOS:
 		case SLURMDB_MODIFY_QOS:
 		case SLURMDB_REMOVE_QOS:
