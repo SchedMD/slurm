@@ -194,7 +194,7 @@ extern int proctrack_g_add(stepd_step_rec_t * job, pid_t pid)
 		sleep(1);
 	}
 
-	return (*(ops.add)) (job, pid);
+	return rc;
 }
 
 /* Determine if core dump in progress
