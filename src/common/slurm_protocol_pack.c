@@ -14578,38 +14578,3 @@ unpack_error:
 	*msg = NULL;
 	return SLURM_ERROR;
 }
-
-/* template
-   void pack_ ( * msg , Buf buffer )
-   {
-   xassert ( msg != NULL );
-
-   pack16( msg -> , buffer ) ;
-   pack32( msg -> , buffer ) ;
-   pack_time( msg -> , buffer );
-   packstr ( msg -> , buffer ) ;
-   }
-
-   int unpack_ ( ** msg_ptr , Buf buffer )
-   {
-   uint32_t uint32_tmp;
-   * msg ;
-
-   xassert ( msg_ptr != NULL );
-
-   msg = xmalloc ( sizeof ( ) ) ;
-   *msg_ptr = msg;
-
-   safe_unpack16( & msg -> , buffer ) ;
-   safe_unpack32( & msg -> , buffer ) ;
-   safe_unpack_time ( & msg -> , buffer ) ;
-   safe_unpackstr_xmalloc ( & msg -> x, & uint32_tmp , buffer ) ;
-   return SLURM_SUCCESS;
-
-   unpack_error:
-   xfree(msg -> x);
-   xfree(msg);
-   *msg_ptr = NULL;
-   return SLURM_ERROR;
-   }
-*/
