@@ -91,9 +91,6 @@
 #include "src/slurmctld/powercapping.h"
 
 #define _DEBUG 0
-#ifndef BB_STAGE_ARRAY_TASK_CNT
-#  define BB_STAGE_ARRAY_TASK_CNT 4
-#endif
 #ifndef CORRESPOND_ARRAY_TASK_CNT
 #  define CORRESPOND_ARRAY_TASK_CNT 10
 #endif
@@ -142,6 +139,7 @@ static int sched_min_interval = 1000000;
 static int sched_min_interval = 0;
 #endif
 
+static int bb_array_stage_cnt = 10;
 extern diag_stats_t slurmctld_diag_stats;
 
 /*
@@ -343,7 +341,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 		if ((i = bit_ffs(job_ptr->array_recs->task_id_bitmap)) < 0)
 			continue;
 		pend_cnt = num_pending_job_array_tasks(job_ptr->array_job_id);
-		if (pend_cnt >= BB_STAGE_ARRAY_TASK_CNT)
+		if (pend_cnt >= bb_array_stage_cnt)
 			continue;
 		if (job_ptr->array_recs->task_cnt < 1)
 			continue;
@@ -1190,6 +1188,14 @@ static int _schedule(uint32_t job_limit)
 			}
 		} else {
 			batch_sched_delay = 3;
+		}
+
+		bb_array_stage_cnt = 10;
+		if (sched_params &&
+		    (tmp_ptr = strstr(sched_params, "bb_array_stage_cnt="))) {
+			int task_cnt = atoi(tmp_ptr + 19);
+			if (task_cnt > 0)
+				bb_array_stage_cnt = task_cnt;
 		}
 
 		bf_min_age_reserve = 0;

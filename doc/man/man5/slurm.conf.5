@@ -2411,6 +2411,13 @@ submitted at a very high rate (i.e. using the sbatch command) and one wishes
 to reduce the overhead of attempting to schedule each job at submit time.
 The default value is 3 seconds.
 .TP
+\fBbb_array_stage_cnt=#\fR
+Number of tasks from a job array that should be available for burst buffer
+resource allocation. Higher values will increase the system overhead as each
+task from the job array will be moved to it's own job record in memory, so
+relatively small values are generally recommended.
+The default value is 10.
+.TP
 \fBbf_busy_nodes\fR
 When selecting resources for pending jobs to reserve for future execution
 (i.e. the job can not be started immediately), then preferentially select
