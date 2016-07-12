@@ -185,7 +185,7 @@ Removes the task.
 <span class="commandline">SLURM_ERROR</span> on failure.
 
 <p class="commandline">int jobacct_gather_set_mem_limit(uint32_t job_id,
-  uint32_t step_id,uint32_t mem_limit)
+  uint32_t step_id, uint64_t mem_limit)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Sets the memory limit  of the job account.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
@@ -196,7 +196,7 @@ Sets the memory limit  of the job account.
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
 
-<p class="commandline">void jobacct_gather_handle_mem_limit(uint32_t total_job_mem, uint32_t total_job_vsize)
+<p class="commandline">void jobacct_gather_handle_mem_limit(uint64_t total_job_mem, uint64_t total_job_vsize)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Called to find out how much memory is used.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
