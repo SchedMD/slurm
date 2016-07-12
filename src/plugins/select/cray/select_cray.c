@@ -585,6 +585,8 @@ static void _initialize_event(alpsc_ev_app_t *event,
 	hostlist_iterator_t hlit;
 	char *node;
 	int rv;
+	uint32_t cnt = 0;
+
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -601,33 +603,37 @@ static void _initialize_event(alpsc_ev_app_t *event,
 	// Fill in nodes and num_nodes if available
 	if (step_ptr->step_layout) {
 		hl = hostlist_create(step_ptr->step_layout->node_list);
-		if (hl == NULL) {
-			return;
-		}
-		hlit = hostlist_iterator_create(hl);
-		if (hlit == NULL) {
-			hostlist_destroy(hl);
-			return;
-		}
-
-		event->nodes = xmalloc(step_ptr->step_layout->node_cnt
-				       * sizeof(int32_t));
-
-		while ((node = hostlist_next(hlit)) != NULL) {
-			rv = sscanf(node, "nid%"SCNd32,
-				    &event->nodes[event->num_nodes]);
-			if (rv) {
-				event->num_nodes++;
-			} else {
-				debug("%s: couldn't parse node %s, skipping",
-				      __func__, node);
-			}
-			free(node);
-		}
-
-		hostlist_iterator_destroy(hlit);
-		hostlist_destroy(hl);
+		cnt = step_ptr->step_layout->node_cnt;
+	} else if (step_ptr->step_id == SLURM_EXTERN_CONT) {
+		hl = hostlist_create(step_ptr->job_ptr->job_resrcs->nodes);
+		cnt = step_ptr->job_ptr->job_resrcs->nhosts;
 	}
+
+	if (!hl)
+		return;
+
+	hlit = hostlist_iterator_create(hl);
+	if (!hlit) {
+		hostlist_destroy(hl);
+		return;
+	}
+
+	event->nodes = xmalloc(cnt * sizeof(int32_t));
+
+	while ((node = hostlist_next(hlit))) {
+		rv = sscanf(node, "nid%"SCNd32,
+			    &event->nodes[event->num_nodes]);
+		if (rv) {
+			event->num_nodes++;
+		} else {
+			debug("%s: couldn't parse node %s, skipping",
+			      __func__, node);
+		}
+		free(node);
+	}
+
+	hostlist_iterator_destroy(hlit);
+	hostlist_destroy(hl);
 
 	END_TIMER;
 	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
