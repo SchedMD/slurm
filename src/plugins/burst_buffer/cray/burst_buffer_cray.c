@@ -2841,9 +2841,10 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 		}
 	}
 
-	if (bb_state.tres_pos > 0)
-		job_desc->tres_req_cnt[bb_state.tres_pos]
-			= bb_size / (1024 * 1024);
+	if (bb_state.tres_pos > 0) {
+		job_desc->tres_req_cnt[bb_state.tres_pos] =
+			bb_size / (1024 * 1024);
+	}
 
 fini:	slurm_mutex_unlock(&bb_state.bb_mutex);
 
@@ -3118,8 +3119,10 @@ static struct bb_total_size *_json_parse_real_size(json_object *j)
 			case json_type_string:
 				if (!xstrcmp(iter.key, "units")) {
 					p = json_object_get_string(iter.val);
-					if (!xstrcmp(p, "bytes"))
-					bb_tot_sz->units = BB_UNITS_BYTES;
+					if (!xstrcmp(p, "bytes")) {
+						bb_tot_sz->units =
+							BB_UNITS_BYTES;
+					}
 				}
 				break;
 			case json_type_int:

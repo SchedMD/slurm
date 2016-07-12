@@ -2203,7 +2203,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		    && (job_ptr->state_reason != FAIL_BURST_BUFFER_OP)
 		    && (job_ptr->state_reason != WAIT_HELD)
 		    && (job_ptr->state_reason != WAIT_HELD_USER)
-		    && job_ptr->state_reason != WAIT_MAX_REQUEUE) {
+		    && (job_ptr->state_reason != WAIT_MAX_REQUEUE)) {
 			job_ptr->state_reason = WAIT_HELD;
 		}
 		return ESLURM_JOB_HELD;
