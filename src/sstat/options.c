@@ -192,7 +192,7 @@ static int _addto_job_list(List job_list, char *names)
 						 * since that means all */
 						if (!strcasecmp(dot, "batch"))
 							selected_step->stepid =
-								SSTAT_EXTERN_STEP;
+								SSTAT_BATCH_STEP;
 						else if (!strcasecmp(dot,
 								     "extern"))
 							selected_step->stepid =

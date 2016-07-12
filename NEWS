@@ -23,6 +23,8 @@ documents those changes that are of interest to users and administrators.
  -- Correctly print ranges when using step values in job arrays.
  -- Fix for invalid array pointer when creating advanced reservation when job
     allocations span heterogeneous nodes (differing core or socket counts).
+ -- Fix for sstat to print correct info when requesting jobid.batch as part of
+    a comma-separated list.
 
 * Changes in Slurm 15.08.12
 ===========================
