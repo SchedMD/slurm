@@ -28,6 +28,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix for sstat to print correct info when requesting jobid.batch as part of
     a comma-separated list.
  -- CRAY - Fix issue if pid has already been added to another job container.
+ -- CRAY - Fix add of extern step to AELD.
 
 * Changes in Slurm 16.05.2
 ==========================
