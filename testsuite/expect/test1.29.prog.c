@@ -32,26 +32,34 @@
 #include <sys/resource.h>
 #include <unistd.h>
 
+static void print_limit(const char *str, const rlim_t lim)
+{
+	if (lim == RLIM_INFINITY)
+		printf("%s=-1\n", str);
+	else
+		printf("%s=%lu\n", str, (unsigned long) lim);
+}
+
 int main (int argc, char **argv)
 {
 	struct rlimit u_limit;
 	int exit_code = 0;
 
 	(void) getrlimit(RLIMIT_CORE, &u_limit);
-	printf("USER_CORE=%d\n", (int)u_limit.rlim_cur);
+	print_limit("USER_CORE", u_limit.rlim_cur);
 	(void) getrlimit(RLIMIT_FSIZE, &u_limit);
-	printf("USER_FSIZE=%d\n", (int)u_limit.rlim_cur);
+	print_limit("USER_FSIZE", u_limit.rlim_cur);
 	(void) getrlimit(RLIMIT_NOFILE, &u_limit);
-	printf("USER_NOFILE=%d\n", (int)u_limit.rlim_cur);
+	print_limit("USER_NOFILE", u_limit.rlim_cur);
 #ifdef RLIMIT_NPROC
 	(void) getrlimit(RLIMIT_NPROC, &u_limit);
-	printf("USER_NPROC=%d\n", (int)u_limit.rlim_cur);
+	print_limit("USER_NPROC", u_limit.rlim_cur);
 #else
 	printf("USER_NPROC unsupported\n");
 #endif
 #ifdef RLIMIT_STACK
         (void) getrlimit(RLIMIT_STACK, &u_limit);
-        printf("USER_STACK=%d\n", (int)u_limit.rlim_cur);
+        print_limit("USER_STACK", u_limit.rlim_cur);
 #else
         printf("USER_STACK unsupported\n");
 #endif

@@ -31,6 +31,7 @@ documents those changes that are of interest to users and administrators.
  -- CRAY - Fix add of extern step to AELD.
  -- burstbufer/cray: avoid batch submit error condition if waiting for stagein.
  -- CRAY - Fix for reporting steps lingering after they are already finished.
+ -- Testsuite - fix test1.29 / 17.15 for limits with values above 32-bits.
 
 * Changes in Slurm 16.05.2
 ==========================
