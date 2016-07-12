@@ -30,6 +30,7 @@ documents those changes that are of interest to users and administrators.
  -- CRAY - Fix issue if pid has already been added to another job container.
  -- CRAY - Fix add of extern step to AELD.
  -- burstbufer/cray: avoid batch submit error condition if waiting for stagein.
+ -- CRAY - Fix for reporting steps lingering after they are already finished.
 
 * Changes in Slurm 16.05.2
 ==========================
