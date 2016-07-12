@@ -27,6 +27,7 @@ documents those changes that are of interest to users and administrators.
     (regression in 16.05.2).
  -- Fix for sstat to print correct info when requesting jobid.batch as part of
     a comma-separated list.
+ -- CRAY - Fix issue if pid has already been added to another job container.
 
 * Changes in Slurm 16.05.2
 ==========================

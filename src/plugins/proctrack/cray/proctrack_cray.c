@@ -81,6 +81,8 @@ static pthread_mutex_t notify_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER;
 static uint64_t debug_flags = 0;
 
+extern bool proctrack_p_has_pid (uint64_t cont_id, pid_t pid);
+
 static void *_create_container_thread(void *args)
 {
 	stepd_step_rec_t *job = (stepd_step_rec_t *)args;
@@ -215,15 +217,38 @@ int proctrack_p_add(stepd_step_rec_t *job, pid_t pid)
 	char fname[64];
 	int fd;
 #endif
+	int count = 0;
+
 	DEF_TIMERS;
 	START_TIMER;
 
+try_again:
 	// Attach to the job container
 	if (job_attachpid(pid, job->cont_id) == (jid_t) -1) {
-		error("Failed to attach pid %d to job container: %m", pid);
-		return SLURM_ERROR;
-	}
+		if (errno == EINVAL && (count < 1)) {
+			jid_t jid;
+			if (proctrack_p_has_pid(job->cont_id, pid)) {
+				debug("%s: Trying to add pid (%d) again to the same container, ignoring.",
+				      __func__, pid);
+				return SLURM_SUCCESS;
+			}
 
+			if ((jid = job_detachpid(pid)) != (jid_t) -1) {
+				error("%s: Pid %d was attached to container %"PRIu64" incorrectly.  Moving to correct (%"PRIu64").",
+				      __func__, pid, jid, job->cont_id);
+				count++;
+				goto try_again;
+			} else {
+				error("%s: Couldn't detach pid %d from container: %m",
+				      __func__, pid);
+				return SLURM_ERROR;
+			}
+		} else {
+			error("Failed to attach pid %d to job container: %m",
+			      pid);
+			return SLURM_ERROR;
+		}
+	}
 	_end_container_thread();
 
 #ifdef HAVE_NATIVE_CRAY
