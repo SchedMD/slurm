@@ -4258,6 +4258,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 			job_completion_logger(job_ptr, false);
 		} else {	/* job remains queued */
 			if ((error_code == ESLURM_NODES_BUSY) ||
+			    (error_code == ESLURM_BURST_BUFFER_WAIT) ||
 			    (error_code == ESLURM_RESERVATION_BUSY) ||
 			    (error_code == ESLURM_ACCOUNTING_POLICY)) {
 				error_code = SLURM_SUCCESS;
