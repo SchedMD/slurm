@@ -345,9 +345,9 @@ stepd_get_info(int fd)
 		uint32_t tmp_mem;
 		safe_read(fd, &step_info->nodeid, sizeof(uint32_t));
 		safe_read(fd, &tmp_mem, sizeof(uint32_t));
-		step_info->job_mem_limit = (uint64_t) tmp_mem;
+		step_info->job_mem_limit = xlate_mem_old2new(tmp_mem);
 		safe_read(fd, &tmp_mem, sizeof(uint32_t));
-		step_info->step_mem_limit = (uint64_t) tmp_mem;
+		step_info->step_mem_limit = xlate_mem_old2new(tmp_mem);
 	} else {
 		error("stepd_get_info: protocol_version "
 		      "%hu not supported", step_info->protocol_version);

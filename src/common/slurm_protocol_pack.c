@@ -3392,12 +3392,12 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 		pack16(msg->sockets, buffer);
 		pack16(msg->cores, buffer);
 		pack16(msg->threads, buffer);
-		pack32((uint32_t) msg->real_memory, buffer);
+		pack32(xlate_mem_new2old(msg->real_memory), buffer);
 		pack32(msg->tmp_disk, buffer);
 		pack32(msg->up_time, buffer);
 		pack32(msg->hash_val, buffer);
 		pack32(msg->cpu_load, buffer);
-		pack32((uint32_t) msg->free_mem, buffer);
+		pack32(xlate_mem_new2old(msg->free_mem), buffer);
 
 		pack32(msg->job_count, buffer);
 		for (i = 0; i < msg->job_count; i++) {
@@ -3432,12 +3432,12 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 		pack16(msg->sockets, buffer);
 		pack16(msg->cores, buffer);
 		pack16(msg->threads, buffer);
-		pack32((uint32_t) msg->real_memory, buffer);
+		pack32(xlate_mem_new2old(msg->real_memory), buffer);
 		pack32(msg->tmp_disk, buffer);
 		pack32(msg->up_time, buffer);
 		pack32(msg->hash_val, buffer);
 		pack32(msg->cpu_load, buffer);
-		pack32((uint32_t) msg->free_mem, buffer);
+		pack32(xlate_mem_new2old(msg->free_mem), buffer);
 
 		pack32(msg->job_count, buffer);
 		for (i = 0; i < msg->job_count; i++) {
@@ -3566,13 +3566,13 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 		safe_unpack16(&node_reg_ptr->cores, buffer);
 		safe_unpack16(&node_reg_ptr->threads, buffer);
 		safe_unpack32(&tmp_mem, buffer);
-		node_reg_ptr->real_memory = (uint64_t) tmp_mem;
+		node_reg_ptr->real_memory = xlate_mem_old2new(tmp_mem);
 		safe_unpack32(&node_reg_ptr->tmp_disk, buffer);
 		safe_unpack32(&node_reg_ptr->up_time, buffer);
 		safe_unpack32(&node_reg_ptr->hash_val, buffer);
 		safe_unpack32(&node_reg_ptr->cpu_load, buffer);
 		safe_unpack32(&tmp_mem, buffer);
-		node_reg_ptr->free_mem = (uint64_t) tmp_mem;
+		node_reg_ptr->free_mem = xlate_mem_old2new(tmp_mem);
 
 		safe_unpack32(&node_reg_ptr->job_count, buffer);
 		node_reg_ptr->job_id =
@@ -3627,13 +3627,13 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 		safe_unpack16(&node_reg_ptr->cores, buffer);
 		safe_unpack16(&node_reg_ptr->threads, buffer);
 		safe_unpack32(&tmp_mem, buffer);
-		node_reg_ptr->real_memory = (uint64_t) tmp_mem;
+		node_reg_ptr->real_memory = xlate_mem_old2new(tmp_mem);
 		safe_unpack32(&node_reg_ptr->tmp_disk, buffer);
 		safe_unpack32(&node_reg_ptr->up_time, buffer);
 		safe_unpack32(&node_reg_ptr->hash_val, buffer);
 		safe_unpack32(&node_reg_ptr->cpu_load, buffer);
 		safe_unpack32(&tmp_mem, buffer);
-		node_reg_ptr->free_mem = (uint64_t) tmp_mem;
+		node_reg_ptr->free_mem = xlate_mem_old2new(tmp_mem);
 
 		safe_unpack32(&node_reg_ptr->job_count, buffer);
 		node_reg_ptr->job_id =
@@ -4223,20 +4223,20 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 		safe_unpack16(&node->threads, buffer);
 
 		safe_unpack32(&tmp_mem, buffer);
-		node->real_memory = (uint64_t) tmp_mem;
+		node->real_memory = xlate_mem_old2new(tmp_mem);
 		safe_unpack32(&node->tmp_disk, buffer);
 
 		safe_unpackstr_xmalloc(&node->mcs_label, &uint32_tmp, buffer);
 		safe_unpack32(&node->owner, buffer);
 		safe_unpack16(&node->core_spec_cnt, buffer);
 		safe_unpack32(&tmp_mem, buffer);
-		node->mem_spec_limit = tmp_mem;
+		node->mem_spec_limit = xlate_mem_old2new(tmp_mem);
 		safe_unpackstr_xmalloc(&node->cpu_spec_list, &uint32_tmp,
 				       buffer);
 
 		safe_unpack32(&node->cpu_load, buffer);
 		safe_unpack32(&tmp_mem, buffer);
-		node->free_mem = (uint64_t) tmp_mem;
+		node->free_mem = xlate_mem_old2new(tmp_mem);
 		safe_unpack32(&node->weight, buffer);
 		safe_unpack32(&node->reason_uid, buffer);
 
@@ -4287,19 +4287,19 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 		safe_unpack16(&node->threads, buffer);
 
 		safe_unpack32(&tmp_mem, buffer);
-		node->real_memory = (uint64_t) tmp_mem;
+		node->real_memory = xlate_mem_old2new(tmp_mem);
 		safe_unpack32(&node->tmp_disk, buffer);
 
 		safe_unpack32(&node->owner, buffer);
 		safe_unpack16(&node->core_spec_cnt, buffer);
 		safe_unpack32(&tmp_mem, buffer);
-		node->mem_spec_limit = tmp_mem;
+		node->mem_spec_limit = xlate_mem_old2new(tmp_mem);
 		safe_unpackstr_xmalloc(&node->cpu_spec_list, &uint32_tmp,
 				       buffer);
 
 		safe_unpack32(&node->cpu_load, buffer);
 		safe_unpack32(&tmp_mem, buffer);
-		node->free_mem = (uint64_t) tmp_mem;
+		node->free_mem = xlate_mem_old2new(tmp_mem);
 		safe_unpack32(&node->weight, buffer);
 		safe_unpack32(&node->reason_uid, buffer);
 
@@ -6283,7 +6283,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpack16(&job->pn_min_cpus, buffer);
 
 		safe_unpack32(&tmp_mem, buffer);
-		job->pn_min_memory = tmp_mem;
+		job->pn_min_memory = xlate_mem_old2new(tmp_mem);
 		safe_unpack32(&job->pn_min_tmp_disk, buffer);
 
 		safe_unpackstr_xmalloc(&job->req_nodes, &uint32_tmp, buffer);
@@ -6434,7 +6434,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpack16(&job->pn_min_cpus, buffer);
 
 		safe_unpack32(&tmp_mem, buffer);
-		job->pn_min_memory = tmp_mem;
+		job->pn_min_memory = xlate_mem_old2new(tmp_mem);
 		safe_unpack32(&job->pn_min_tmp_disk, buffer);
 
 		safe_unpackstr_xmalloc(&job->req_nodes, &uint32_tmp, buffer);
@@ -13093,7 +13093,7 @@ static void _pack_ping_slurmd_resp(ping_slurmd_resp_msg_t *msg,
 		pack64(msg->free_mem, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->cpu_load, buffer);
-		pack32((uint32_t) msg->free_mem, buffer);
+		pack32(xlate_mem_new2old(msg->free_mem), buffer);
 	}
 }
 
@@ -13113,7 +13113,7 @@ static int _unpack_ping_slurmd_resp(ping_slurmd_resp_msg_t **msg_ptr,
 		uint32_t tmp_mem;
 		safe_unpack32(&msg->cpu_load, buffer);
 		safe_unpack32(&tmp_mem, buffer);
-		msg->free_mem = (uint64_t) tmp_mem;
+		msg->free_mem = xlate_mem_old2new(tmp_mem);
 	}
 
 	return SLURM_SUCCESS;
@@ -13703,7 +13703,7 @@ static void _pack_slurmd_status(slurmd_status_t *msg, Buf buffer,
 		pack16(msg->actual_cores, buffer);
 		pack16(msg->actual_threads, buffer);
 
-		pack32((uint32_t) msg->actual_real_mem, buffer);
+		pack32(xlate_mem_new2old(msg->actual_real_mem), buffer);
 		pack32(msg->actual_tmp_disk, buffer);
 		pack32(msg->pid, buffer);
 
@@ -13763,7 +13763,7 @@ static int _unpack_slurmd_status(slurmd_status_t **msg_ptr, Buf buffer,
 		safe_unpack16(&msg->actual_threads, buffer);
 
 		safe_unpack32(&tmp_mem, buffer);
-		msg->actual_real_mem = (uint64_t) tmp_mem;
+		msg->actual_real_mem = xlate_mem_old2new(tmp_mem);
 		safe_unpack32(&msg->actual_tmp_disk, buffer);
 		safe_unpack32(&msg->pid, buffer);
 
