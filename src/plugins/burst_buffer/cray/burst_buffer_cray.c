@@ -2796,9 +2796,6 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 	    (job_desc->burst_buffer[0] == '\0'))
 		return rc;
 
-	if (job_desc->array_inx)	/* Job arrays not supported */
-		return ESLURM_INVALID_ARRAY;
-
 	if (bb_state.bb_config.debug_flag) {
 		info("%s: %s: job_user_id:%u, submit_uid:%d",
 		     plugin_type, __func__, job_desc->user_id, submit_uid);
@@ -2969,17 +2966,6 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 	if ((job_ptr->burst_buffer == NULL) ||
 	    (job_ptr->burst_buffer[0] == '\0'))
 		return rc;
-
-	if (job_ptr->array_recs) {
-		if (err_msg) {
-			xfree(*err_msg);
-			xstrfmtcat(*err_msg,
-				   "%s: Burst buffers not currently "
-				   "supported for job arrays",
-				   plugin_type);
-		}
-		return ESLURM_INVALID_BURST_BUFFER_REQUEST;
-	}
 
 	/* Initialization */
 	slurm_mutex_lock(&bb_state.bb_mutex);
@@ -3184,8 +3170,12 @@ extern time_t bb_p_job_get_est_start(struct job_record *job_ptr)
 	    (job_ptr->burst_buffer[0] == '\0'))
 		return est_start;
 
-	if (job_ptr->array_recs && (job_ptr->array_task_id == NO_VAL))
-		return est_start;
+	if (job_ptr->array_recs &&
+	    ((job_ptr->array_task_id == NO_VAL) ||
+	     (job_ptr->array_task_id == INFINITE))) {
+		est_start += 300;	/* 5 minutes, guess... */
+		return est_start;	/* Can't operate on job array struct */
+	}
 
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	if ((bb_job = _get_bb_job(job_ptr)) == NULL) {
@@ -3246,8 +3236,10 @@ extern int bb_p_job_try_stage_in(List job_queue)
 		    (job_ptr->burst_buffer == NULL) ||
 		    (job_ptr->burst_buffer[0] == '\0'))
 			continue;
-		if (job_ptr->array_recs && (job_ptr->array_task_id == NO_VAL))
-			continue;
+		if (job_ptr->array_recs &&
+		    ((job_ptr->array_task_id == NO_VAL) ||
+		     (job_ptr->array_task_id == INFINITE)))
+			continue;	/* Can't operate on job array struct */
 		bb_job = _get_bb_job(job_ptr);
 		if (bb_job == NULL)
 			continue;
@@ -3307,8 +3299,10 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
 	    (job_ptr->burst_buffer[0] == '\0'))
 		return 1;
 
-	if (job_ptr->array_recs && (job_ptr->array_task_id == NO_VAL))
-		return -1;
+	if (job_ptr->array_recs &&
+	    ((job_ptr->array_task_id == NO_VAL) ||
+	     (job_ptr->array_task_id == INFINITE)))
+		return -1;	/* Can't operate on job array structure */
 
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	if (bb_state.bb_config.debug_flag) {

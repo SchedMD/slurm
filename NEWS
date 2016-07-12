@@ -19,9 +19,9 @@ documents those changes that are of interest to users and administrators.
  -- Add ConstrainKmemSpace to cgroup.conf, defaulting to yes, to allow
     cgroup Kmem enforcement to be disabled while still using ConstrainRAMSpace.
  -- Add support for sbatch --bbf option.
- -- Add new SchedulerParameters option of bb_array_stage_cnt=# to indicate
-    how many pending tasks of a job array should be made available for burst
-    buffer resource allocation.
+ -- Add burst buffer support for job arrays. Add new SchedulerParameters option
+    of bb_array_stage_cnt=# to indicate how many pending tasks of a job array
+    should be made available for burst buffer resource allocation.
 
 * Changes in Slurm 16.05.3
 ==========================
