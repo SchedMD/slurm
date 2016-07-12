@@ -39,7 +39,6 @@
 #include <stdlib.h>
 
 #include "src/common/slurm_acct_gather.h"
-#include "src/common/slurm_strcasestr.h"
 #include "src/common/xstring.h"
 
 static bool acct_gather_suspended = false;
@@ -169,7 +168,7 @@ extern int acct_gather_parse_freq(int type, char *freq)
 
 	switch (type) {
 	case PROFILE_ENERGY:
-		if ((sub_str = slurm_strcasestr(freq, "energy=")))
+		if ((sub_str = xstrcasestr(freq, "energy=")))
 			freq_int = _get_int(sub_str + 7);
 		break;
 	case PROFILE_TASK:
@@ -178,15 +177,15 @@ extern int acct_gather_parse_freq(int type, char *freq)
 		*/
 		freq_int = _get_int(freq);
 		if ((freq_int == -1)
-		    && (sub_str = slurm_strcasestr(freq, "task=")))
+		    && (sub_str = xstrcasestr(freq, "task=")))
 			freq_int = _get_int(sub_str + 5);
 		break;
 	case PROFILE_FILESYSTEM:
-		if ((sub_str = slurm_strcasestr(freq, "filesystem=")))
+		if ((sub_str = xstrcasestr(freq, "filesystem=")))
 			freq_int = _get_int(sub_str + 11);
 		break;
 	case PROFILE_NETWORK:
-		if ((sub_str = slurm_strcasestr(freq, "network=")))
+		if ((sub_str = xstrcasestr(freq, "network=")))
 			freq_int = _get_int(sub_str + 8);
 		break;
 	default:

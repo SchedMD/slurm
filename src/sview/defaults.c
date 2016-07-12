@@ -43,7 +43,7 @@
 
 #include "sview.h"
 #include "src/common/parse_config.h"
-#include "src/common/slurm_strcasestr.h"
+#include "src/common/xstring.h"
 
 /* These need to be in alpha order (except POS and CNT) */
 enum {
@@ -614,19 +614,19 @@ extern int load_defaults(void)
 			MAX(default_sview_config.button_size/2, 2);
 	}
 	if (s_p_get_string(&tmp_str, "DefaultPage", hashtbl)) {
-		if (slurm_strcasestr(tmp_str, "job"))
+		if (xstrcasestr(tmp_str, "job"))
 			default_sview_config.default_page = JOB_PAGE;
-		else if (slurm_strcasestr(tmp_str, "part"))
+		else if (xstrcasestr(tmp_str, "part"))
 			default_sview_config.default_page = PART_PAGE;
-		else if (slurm_strcasestr(tmp_str, "res"))
+		else if (xstrcasestr(tmp_str, "res"))
 			default_sview_config.default_page = RESV_PAGE;
-		else if (slurm_strcasestr(tmp_str, "block"))
+		else if (xstrcasestr(tmp_str, "block"))
 			default_sview_config.default_page = BLOCK_PAGE;
-		else if (slurm_strcasestr(tmp_str, "node"))
+		else if (xstrcasestr(tmp_str, "node"))
 			default_sview_config.default_page = NODE_PAGE;
-		else if (slurm_strcasestr(tmp_str, "frontend"))
+		else if (xstrcasestr(tmp_str, "frontend"))
 			default_sview_config.default_page = FRONT_END_PAGE;
-		else if (slurm_strcasestr(tmp_str, "burstbuffer"))
+		else if (xstrcasestr(tmp_str, "burstbuffer"))
 			default_sview_config.default_page = BB_PAGE;
 
 		xfree(tmp_str);
@@ -660,13 +660,13 @@ extern int load_defaults(void)
 	s_p_get_uint32(&default_sview_config.fi_popup_height,
 		       "FullInfoPopupHeight", hashtbl);
 	if (s_p_get_string(&tmp_str, "TabPosition", hashtbl)) {
-		if (slurm_strcasestr(tmp_str, "top"))
+		if (xstrcasestr(tmp_str, "top"))
 			default_sview_config.tab_pos = GTK_POS_TOP;
-		else if (slurm_strcasestr(tmp_str, "bottom"))
+		else if (xstrcasestr(tmp_str, "bottom"))
 			default_sview_config.tab_pos = GTK_POS_BOTTOM;
-		else if (slurm_strcasestr(tmp_str, "left"))
+		else if (xstrcasestr(tmp_str, "left"))
 			default_sview_config.tab_pos = GTK_POS_LEFT;
-		else if (slurm_strcasestr(tmp_str, "right"))
+		else if (xstrcasestr(tmp_str, "right"))
 			default_sview_config.tab_pos = GTK_POS_RIGHT;
 		xfree(tmp_str);
 	}
@@ -675,19 +675,19 @@ extern int load_defaults(void)
 		for (i=0; i<PAGE_CNT; i++)
 			default_sview_config.page_visible[i] = false;
 
-		if (slurm_strcasestr(tmp_str, "job"))
+		if (xstrcasestr(tmp_str, "job"))
 			default_sview_config.page_visible[JOB_PAGE] = 1;
-		if (slurm_strcasestr(tmp_str, "part"))
+		if (xstrcasestr(tmp_str, "part"))
 			default_sview_config.page_visible[PART_PAGE] = 1;
-		if (slurm_strcasestr(tmp_str, "res"))
+		if (xstrcasestr(tmp_str, "res"))
 			default_sview_config.page_visible[RESV_PAGE] = 1;
-		if (slurm_strcasestr(tmp_str, "block"))
+		if (xstrcasestr(tmp_str, "block"))
 			default_sview_config.page_visible[BLOCK_PAGE] = 1;
-		if (slurm_strcasestr(tmp_str, "node"))
+		if (xstrcasestr(tmp_str, "node"))
 			default_sview_config.page_visible[NODE_PAGE] = 1;
-		if (slurm_strcasestr(tmp_str, "frontend"))
+		if (xstrcasestr(tmp_str, "frontend"))
 			default_sview_config.page_visible[FRONT_END_PAGE] = 1;
-		if (slurm_strcasestr(tmp_str, "burstbuffer"))
+		if (xstrcasestr(tmp_str, "burstbuffer"))
 			default_sview_config.page_visible[BB_PAGE] = 1;
 		xfree(tmp_str);
 	}

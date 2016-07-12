@@ -37,16 +37,16 @@
 \*****************************************************************************/
 
 #define _GNU_SOURCE		/* needed for getline() */
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <stdlib.h>
 #include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "src/common/pack.h"
-#include "src/common/slurm_strcasestr.h"
 #include "src/slurmctld/locks.h"
+
 #include "ccm.h"
 
 /* CCM use */
@@ -95,7 +95,7 @@ static char *_get_ccm_partition(ccm_config_t *ccm_config)
 			if (entry[num_read - 1] == '\n') {
 				entry[num_read - 1] = '\0';
 			}
-			if (slurm_strcasestr(entry, "CCM_QUEUES") == 0) {
+			if (xstrcasestr(entry, "CCM_QUEUES") == 0) {
 				continue;
 			}
 			/* Ignore a comment line */

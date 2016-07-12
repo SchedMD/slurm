@@ -101,7 +101,7 @@
 #include "src/common/slurm_xlator.h"
 #include "src/common/slurm_selecttype_info.h"
 #include "src/common/assoc_mgr.h"
-#include "src/common/slurm_strcasestr.h"
+#include "src/common/xstring.h"
 #include "select_cons_res.h"
 
 #include "dist_tasks.h"
@@ -1986,9 +1986,9 @@ extern int init(void)
 
 	topo_param = slurm_get_topology_param();
 	if (topo_param) {
-		if (slurm_strcasestr(topo_param, "dragonfly"))
+		if (xstrcasestr(topo_param, "dragonfly"))
 			have_dragonfly = true;
-		if (slurm_strcasestr(topo_param, "TopoOptional"))
+		if (xstrcasestr(topo_param, "TopoOptional"))
 			topo_optional = true;
 		xfree(topo_param);
 	}

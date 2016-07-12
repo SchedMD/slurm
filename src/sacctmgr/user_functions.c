@@ -40,7 +40,7 @@
 #include "src/sacctmgr/sacctmgr.h"
 #include "src/common/assoc_mgr.h"
 #include "src/common/uid.h"
-#include "src/common/slurm_strcasestr.h"
+#include "src/common/xstring.h"
 
 typedef struct {
 	char *cluster;
@@ -170,7 +170,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			if (format_list) {
 				/* We need this to get the defaults. (Usually
 				 * only for the calling cluster) */
-				if (slurm_strcasestr(argv[i]+end, "default"))
+				if (xstrcasestr(argv[i]+end, "default"))
 					assoc_cond->only_defs = 1;
 
 				slurm_addto_char_list(format_list, argv[i]+end);

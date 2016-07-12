@@ -66,7 +66,6 @@
 #include "src/common/pack.h"
 #include "src/common/parse_config.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/common/slurm_strcasestr.h"
 #include "src/common/timers.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
@@ -1928,23 +1927,23 @@ extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 				cur_sep = ",";
 			}
 		}
-		if (slurm_strcasestr(resp_msg, "All2All")) {
+		if (xstrcasestr(resp_msg, "All2All")) {
 			xstrfmtcat(avail_states, "%s%s", avail_sep, "a2a");
 			avail_sep = ",";
 		}
-		if (slurm_strcasestr(resp_msg, "Hemisphere")) {
+		if (xstrcasestr(resp_msg, "Hemisphere")) {
 			xstrfmtcat(avail_states, "%s%s", avail_sep, "hemi");
 			avail_sep = ",";
 		}
-		if (slurm_strcasestr(resp_msg, "Quadrant")) {
+		if (xstrcasestr(resp_msg, "Quadrant")) {
 			xstrfmtcat(avail_states, "%s%s", avail_sep, "quad");
 			avail_sep = ",";
 		}
-		if (slurm_strcasestr(resp_msg, "SNC-2")) {
+		if (xstrcasestr(resp_msg, "SNC-2")) {
 			xstrfmtcat(avail_states, "%s%s", avail_sep, "snc2");
 			avail_sep = ",";
 		}
-		if (slurm_strcasestr(resp_msg, "SNC-4")) {
+		if (xstrcasestr(resp_msg, "SNC-4")) {
 			xstrfmtcat(avail_states, "%s%s", avail_sep, "snc4");
 			avail_sep = ",";
 		}
@@ -1975,15 +1974,15 @@ extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 				xstrfmtcat(cur_state, "%s%s", cur_sep, "equal");
 			}
 		}
-		if (slurm_strcasestr(resp_msg, "Cache")) {
+		if (xstrcasestr(resp_msg, "Cache")) {
 			xstrfmtcat(avail_states, "%s%s", avail_sep, "cache");
 			avail_sep = ",";
 		}
-		if (slurm_strcasestr(resp_msg, "Flat")) {
+		if (xstrcasestr(resp_msg, "Flat")) {
 			xstrfmtcat(avail_states, "%s%s", avail_sep, "flat");
 			avail_sep = ",";
 		}
-		if (slurm_strcasestr(resp_msg, "Hybrid")) {
+		if (xstrcasestr(resp_msg, "Hybrid")) {
 			xstrfmtcat(avail_states, "%s%s", avail_sep, "equal");
 			/* avail_sep = ",";	CLANG error: Dead assignment */
 		}

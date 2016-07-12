@@ -48,7 +48,7 @@
 #include <unistd.h>
 
 #include "src/common/slurm_xlator.h"	/* Must be first */
-#include "src/common/slurm_strcasestr.h"
+#include "src/common/xstring.h"
 #include "other_select.h"
 #include "basil_interface.h"
 #include "cray_config.h"
@@ -168,7 +168,7 @@ static void _set_inv_interval(void)
 
 	if (sched_params) {
 		if (sched_params &&
-		    (tmp_ptr = slurm_strcasestr(sched_params,
+		    (tmp_ptr = xstrcasestr(sched_params,
 						"inventory_interval="))) {
 		/*                                   0123456789012345 */
 			i = atoi(tmp_ptr + 19);

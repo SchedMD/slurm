@@ -31,7 +31,7 @@
 #include "src/sview/sview.h"
 #include "src/common/parse_time.h"
 #include "src/common/proc_args.h"
-#include "src/common/slurm_strcasestr.h"
+#include "src/common/xstring.h"
 
 #define _DEBUG 0
 

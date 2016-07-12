@@ -57,7 +57,6 @@
 #include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/slurm_acct_gather_energy.h"
 #include "src/common/slurm_jobacct_gather.h"
-#include "src/common/slurm_strcasestr.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/timers.h"
 #include "src/common/xmalloc.h"
@@ -312,20 +311,20 @@ extern uint32_t acct_gather_profile_from_string(char *profile_str)
 	uint32_t profile = ACCT_GATHER_PROFILE_NOT_SET;
 
         if (!profile_str) {
-	} else if (slurm_strcasestr(profile_str, "none"))
+	} else if (xstrcasestr(profile_str, "none"))
 		profile = ACCT_GATHER_PROFILE_NONE;
-	else if (slurm_strcasestr(profile_str, "all"))
+	else if (xstrcasestr(profile_str, "all"))
 		profile = ACCT_GATHER_PROFILE_ALL;
 	else {
-		if (slurm_strcasestr(profile_str, "energy"))
+		if (xstrcasestr(profile_str, "energy"))
 			profile |= ACCT_GATHER_PROFILE_ENERGY;
-		if (slurm_strcasestr(profile_str, "task"))
+		if (xstrcasestr(profile_str, "task"))
 			profile |= ACCT_GATHER_PROFILE_TASK;
 
-		if (slurm_strcasestr(profile_str, "lustre"))
+		if (xstrcasestr(profile_str, "lustre"))
 			profile |= ACCT_GATHER_PROFILE_LUSTRE;
 
-		if (slurm_strcasestr(profile_str, "network"))
+		if (xstrcasestr(profile_str, "network"))
 			profile |= ACCT_GATHER_PROFILE_NETWORK;
 	}
 

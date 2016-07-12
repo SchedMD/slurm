@@ -74,19 +74,18 @@
 #include "src/common/node_features.h"
 #include "src/common/parse_config.h"
 #include "src/common/parse_time.h"
+#include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/slurm_selecttype_info.h"
-#include "src/common/slurm_strcasestr.h"
 #include "src/common/strlcpy.h"
 #include "src/common/uid.h"
 #include "src/common/util-net.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/proc_args.h"
 
 /*
 ** Define slurm-specific aliases for use by plugins, see slurm_xlator.h
@@ -3310,19 +3309,19 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	s_p_get_string(&conf->licenses, "Licenses", hashtbl);
 
 	if (s_p_get_string(&temp_str, "LogTimeFormat", hashtbl)) {
-		if (slurm_strcasestr(temp_str, "iso8601_ms"))
+		if (xstrcasestr(temp_str, "iso8601_ms"))
 			conf->log_fmt = LOG_FMT_ISO8601_MS;
-		else if (slurm_strcasestr(temp_str, "iso8601"))
+		else if (xstrcasestr(temp_str, "iso8601"))
 			conf->log_fmt = LOG_FMT_ISO8601;
-		else if (slurm_strcasestr(temp_str, "rfc5424_ms"))
+		else if (xstrcasestr(temp_str, "rfc5424_ms"))
 			conf->log_fmt = LOG_FMT_RFC5424_MS;
-		else if (slurm_strcasestr(temp_str, "rfc5424"))
+		else if (xstrcasestr(temp_str, "rfc5424"))
 			conf->log_fmt = LOG_FMT_RFC5424;
-		else if (slurm_strcasestr(temp_str, "clock"))
+		else if (xstrcasestr(temp_str, "clock"))
 			conf->log_fmt = LOG_FMT_CLOCK;
-		else if (slurm_strcasestr(temp_str, "short"))
+		else if (xstrcasestr(temp_str, "short"))
 			conf->log_fmt = LOG_FMT_SHORT;
-		else if (slurm_strcasestr(temp_str, "thread_id"))
+		else if (xstrcasestr(temp_str, "thread_id"))
 			conf->log_fmt = LOG_FMT_THREAD_ID;
 		xfree(temp_str);
 	} else
@@ -3475,20 +3474,20 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			   ",%s", DEFAULT_ACCOUNTING_TRES);
 
 	if (s_p_get_string(&temp_str, "AccountingStorageEnforce", hashtbl)) {
-		if (slurm_strcasestr(temp_str, "1")
-		    || slurm_strcasestr(temp_str, "associations"))
+		if (xstrcasestr(temp_str, "1")
+		    || xstrcasestr(temp_str, "associations"))
 			conf->accounting_storage_enforce
 				|= ACCOUNTING_ENFORCE_ASSOCS;
 
-		if (slurm_strcasestr(temp_str, "2")
-		    || slurm_strcasestr(temp_str, "limits")) {
+		if (xstrcasestr(temp_str, "2")
+		    || xstrcasestr(temp_str, "limits")) {
 			conf->accounting_storage_enforce
 				|= ACCOUNTING_ENFORCE_ASSOCS;
 			conf->accounting_storage_enforce
 				|= ACCOUNTING_ENFORCE_LIMITS;
 		}
 
-		if (slurm_strcasestr(temp_str, "safe")) {
+		if (xstrcasestr(temp_str, "safe")) {
 			conf->accounting_storage_enforce
 				|= ACCOUNTING_ENFORCE_ASSOCS;
 			conf->accounting_storage_enforce
@@ -3497,7 +3496,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 				|= ACCOUNTING_ENFORCE_SAFE;
 		}
 
-		if (slurm_strcasestr(temp_str, "wckeys")) {
+		if (xstrcasestr(temp_str, "wckeys")) {
 			conf->accounting_storage_enforce
 				|= ACCOUNTING_ENFORCE_ASSOCS;
 			conf->accounting_storage_enforce
@@ -3505,14 +3504,14 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->track_wckey = true;
 		}
 
-		if (slurm_strcasestr(temp_str, "qos")) {
+		if (xstrcasestr(temp_str, "qos")) {
 			conf->accounting_storage_enforce
 				|= ACCOUNTING_ENFORCE_ASSOCS;
 			conf->accounting_storage_enforce
 				|= ACCOUNTING_ENFORCE_QOS;
 		}
 
-		if (slurm_strcasestr(temp_str, "all")) {
+		if (xstrcasestr(temp_str, "all")) {
 			conf->accounting_storage_enforce = 0xffff;
 			conf->track_wckey = true;
 			/* If all is used, nojobs and nosteps aren't
@@ -3525,14 +3524,14 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		}
 
 		/* Everything that "all" doesn't mean should be put here */
-		if (slurm_strcasestr(temp_str, "nojobs")) {
+		if (xstrcasestr(temp_str, "nojobs")) {
 			conf->accounting_storage_enforce
 				|= ACCOUNTING_ENFORCE_NO_JOBS;
 			conf->accounting_storage_enforce
 				|= ACCOUNTING_ENFORCE_NO_STEPS;
 		}
 
-		if (slurm_strcasestr(temp_str, "nosteps")) {
+		if (xstrcasestr(temp_str, "nosteps")) {
 			conf->accounting_storage_enforce
 				|= ACCOUNTING_ENFORCE_NO_STEPS;
 		}
@@ -3705,19 +3704,19 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	conf->priority_flags = 0;
 	if (s_p_get_string(&temp_str, "PriorityFlags", hashtbl)) {
-		if (slurm_strcasestr(temp_str, "ACCRUE_ALWAYS"))
+		if (xstrcasestr(temp_str, "ACCRUE_ALWAYS"))
 			conf->priority_flags |= PRIORITY_FLAGS_ACCRUE_ALWAYS;
-		if (slurm_strcasestr(temp_str, "SMALL_RELATIVE_TO_TIME"))
+		if (xstrcasestr(temp_str, "SMALL_RELATIVE_TO_TIME"))
 			conf->priority_flags |= PRIORITY_FLAGS_SIZE_RELATIVE;
-		if (slurm_strcasestr(temp_str, "CALCULATE_RUNNING"))
+		if (xstrcasestr(temp_str, "CALCULATE_RUNNING"))
 			conf->priority_flags |= PRIORITY_FLAGS_CALCULATE_RUNNING;
 
-		if (slurm_strcasestr(temp_str, "DEPTH_OBLIVIOUS"))
+		if (xstrcasestr(temp_str, "DEPTH_OBLIVIOUS"))
 			conf->priority_flags |= PRIORITY_FLAGS_DEPTH_OBLIVIOUS;
-		else if (slurm_strcasestr(temp_str, "FAIR_TREE"))
+		else if (xstrcasestr(temp_str, "FAIR_TREE"))
 			conf->priority_flags |= PRIORITY_FLAGS_FAIR_TREE;
 
-		if (slurm_strcasestr(temp_str, "MAX_TRES"))
+		if (xstrcasestr(temp_str, "MAX_TRES"))
 			conf->priority_flags |= PRIORITY_FLAGS_MAX_TRES;
 
 		xfree(temp_str);
@@ -3830,23 +3829,23 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	conf->private_data = 0; /* Set to default before parsing PrivateData */
 	if (s_p_get_string(&temp_str, "PrivateData", hashtbl)) {
-		if (slurm_strcasestr(temp_str, "account"))
+		if (xstrcasestr(temp_str, "account"))
 			conf->private_data |= PRIVATE_DATA_ACCOUNTS;
-		if (slurm_strcasestr(temp_str, "cloud"))
+		if (xstrcasestr(temp_str, "cloud"))
 			conf->private_data |= PRIVATE_CLOUD_NODES;
-		if (slurm_strcasestr(temp_str, "job"))
+		if (xstrcasestr(temp_str, "job"))
 			conf->private_data |= PRIVATE_DATA_JOBS;
-		if (slurm_strcasestr(temp_str, "node"))
+		if (xstrcasestr(temp_str, "node"))
 			conf->private_data |= PRIVATE_DATA_NODES;
-		if (slurm_strcasestr(temp_str, "partition"))
+		if (xstrcasestr(temp_str, "partition"))
 			conf->private_data |= PRIVATE_DATA_PARTITIONS;
-		if (slurm_strcasestr(temp_str, "reservation"))
+		if (xstrcasestr(temp_str, "reservation"))
 			conf->private_data |= PRIVATE_DATA_RESERVATIONS;
-		if (slurm_strcasestr(temp_str, "usage"))
+		if (xstrcasestr(temp_str, "usage"))
 			conf->private_data |= PRIVATE_DATA_USAGE;
-		if (slurm_strcasestr(temp_str, "user"))
+		if (xstrcasestr(temp_str, "user"))
 			conf->private_data |= PRIVATE_DATA_USERS;
-		if (slurm_strcasestr(temp_str, "all"))
+		if (xstrcasestr(temp_str, "all"))
 			conf->private_data = 0xffff;
 		xfree(temp_str);
 	}

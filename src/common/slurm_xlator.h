@@ -325,6 +325,7 @@
 #define xstrchr			slurm_xstrchr
 #define xstrcmp			slurm_xstrcmp
 #define xstrcasecmp		slurm_xstrcasecmp
+#define xstrcasestr		slurm_xstrcasestr
 
 /* slurm_protocol_api.[ch] functions */
 #define convert_num_unit2       slurm_convert_num_unit2

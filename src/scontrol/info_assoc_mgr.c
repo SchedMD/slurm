@@ -37,7 +37,7 @@
 \*****************************************************************************/
 
 #include "scontrol.h"
-#include "src/common/slurm_strcasestr.h"
+#include "src/common/xstring.h"
 
 static uint32_t tres_cnt = 0;
 static char **tres_names = NULL;
@@ -518,11 +518,11 @@ extern void scontrol_print_assoc_mgr_info(int argc, char *argv[])
 				req.acct_list = list_create(slurm_destroy_char);
 			slurm_addto_char_list(req.acct_list, val);
 		} else if (!strncasecmp(tag, "flags", MAX(tag_len, 1))) {
-			if (slurm_strcasestr(val, "users"))
+			if (xstrcasestr(val, "users"))
 				req.flags |= ASSOC_MGR_INFO_FLAG_USERS;
-			if (slurm_strcasestr(val, "assoc"))
+			if (xstrcasestr(val, "assoc"))
 				req.flags |= ASSOC_MGR_INFO_FLAG_ASSOC;
-			if (slurm_strcasestr(val, "qos"))
+			if (xstrcasestr(val, "qos"))
 				req.flags |= ASSOC_MGR_INFO_FLAG_QOS;
 
 			if (!req.flags) {

@@ -42,7 +42,7 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_time.h"
 #include "src/common/uid.h"
-#include "src/common/slurm_strcasestr.h"
+#include "src/common/xstring.h"
 #include "sacct.h"
 #include <time.h>
 

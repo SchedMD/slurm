@@ -89,6 +89,7 @@ strong_alias(xstrtolower,       slurm_xstrtolower);
 strong_alias(xstrchr,           slurm_xstrchr);
 strong_alias(xstrcmp,           slurm_xstrcmp);
 strong_alias(xstrcasecmp,       slurm_xstrcasecmp);
+strong_alias(xstrcasestr,       slurm_xstrcasestr);
 
 /*
  * Ensure that a string has enough space to add 'needed' characters.
@@ -589,6 +590,33 @@ int xstrcasecmp(const char *s1, const char *s2)
 		return 1;
 	else
 		return strcasecmp(s1, s2);
+}
+
+char *xstrcasestr(char *haystack, char *needle)
+{
+	int hay_inx, hay_size, need_inx, need_size;
+	char *hay_ptr = haystack;
+
+	if (haystack == NULL || needle == NULL)
+		return NULL;
+
+	hay_size = strlen(haystack);
+	need_size = strlen(needle);
+
+	for (hay_inx=0; hay_inx<hay_size; hay_inx++) {
+		for (need_inx=0; need_inx<need_size; need_inx++) {
+			if (tolower((int) hay_ptr[need_inx]) !=
+			    tolower((int) needle [need_inx]))
+				break;		/* mis-match */
+		}
+
+		if (need_inx == need_size)	/* it matched */
+			return hay_ptr;
+		else				/* keep looking */
+			hay_ptr++;
+	}
+
+	return NULL;	/* no match anywhere in string */
 }
 
 /*

@@ -38,7 +38,7 @@
 #include "src/sview/sview.h"
 #include "src/common/parse_time.h"
 #include "src/common/proc_args.h"
-#include "src/common/slurm_strcasestr.h"
+#include "src/common/xstring.h"
 
 #define _DEBUG 0
 #define MAX_CANCEL_RETRY 10
@@ -910,7 +910,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		else if (*p == 't' || *p == 'T')
 			temp_ll *= 1048576;
 
-		p = slurm_strcasestr((char *)new_text, "cpu");
+		p = xstrcasestr((char *)new_text, "cpu");
 		if (p)
 			type = "min memory per cpu";
 		else

@@ -113,7 +113,6 @@ libcommon_la_SOURCES = 			\
 	write_labelled_message.c	\
 	write_labelled_message.h	\
 	proc_args.c proc_args.h		\
-	slurm_strcasestr.c slurm_strcasestr.h \
 	node_conf.h node_conf.c		\
 	gres.h gres.c			\
 	entity.h entity.c		\

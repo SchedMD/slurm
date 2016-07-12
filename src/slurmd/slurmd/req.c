@@ -80,7 +80,6 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
-#include "src/common/slurm_strcasestr.h"
 #include "src/common/stepd_api.h"
 #include "src/common/uid.h"
 #include "src/common/util-net.h"

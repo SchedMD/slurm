@@ -61,7 +61,6 @@
 #include "src/common/xstring.h"
 #include "src/common/slurmdb_defs.h"
 #include "src/slurmdbd/read_config.h"
-#include "src/common/slurm_strcasestr.h"
 
 /* Global variables */
 pthread_mutex_t conf_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -257,19 +256,19 @@ extern int read_slurmdbd_conf(void)
 		s_p_get_string(&slurmdbd_conf->log_file, "LogFile", tbl);
 
 		if (s_p_get_string(&temp_str, "LogTimeFormat", tbl)) {
-			if (slurm_strcasestr(temp_str, "iso8601_ms"))
+			if (xstrcasestr(temp_str, "iso8601_ms"))
 				slurmdbd_conf->log_fmt = LOG_FMT_ISO8601_MS;
-			else if (slurm_strcasestr(temp_str, "iso8601"))
+			else if (xstrcasestr(temp_str, "iso8601"))
 				slurmdbd_conf->log_fmt = LOG_FMT_ISO8601;
-			else if (slurm_strcasestr(temp_str, "rfc5424_ms"))
+			else if (xstrcasestr(temp_str, "rfc5424_ms"))
 				slurmdbd_conf->log_fmt = LOG_FMT_RFC5424_MS;
-			else if (slurm_strcasestr(temp_str, "rfc5424"))
+			else if (xstrcasestr(temp_str, "rfc5424"))
 				slurmdbd_conf->log_fmt = LOG_FMT_RFC5424;
-			else if (slurm_strcasestr(temp_str, "clock"))
+			else if (xstrcasestr(temp_str, "clock"))
 				slurmdbd_conf->log_fmt = LOG_FMT_CLOCK;
-			else if (slurm_strcasestr(temp_str, "short"))
+			else if (xstrcasestr(temp_str, "short"))
 				slurmdbd_conf->log_fmt = LOG_FMT_SHORT;
-			else if (slurm_strcasestr(temp_str, "thread_id"))
+			else if (xstrcasestr(temp_str, "thread_id"))
 				slurmdbd_conf->log_fmt = LOG_FMT_THREAD_ID;
 			xfree(temp_str);
 		} else
@@ -287,28 +286,28 @@ extern int read_slurmdbd_conf(void)
 
 		slurmdbd_conf->private_data = 0; /* default visible to all */
 		if (s_p_get_string(&temp_str, "PrivateData", tbl)) {
-			if (slurm_strcasestr(temp_str, "account"))
+			if (xstrcasestr(temp_str, "account"))
 				slurmdbd_conf->private_data
 					|= PRIVATE_DATA_ACCOUNTS;
-			if (slurm_strcasestr(temp_str, "job"))
+			if (xstrcasestr(temp_str, "job"))
 				slurmdbd_conf->private_data
 					|= PRIVATE_DATA_JOBS;
-			if (slurm_strcasestr(temp_str, "node"))
+			if (xstrcasestr(temp_str, "node"))
 				slurmdbd_conf->private_data
 					|= PRIVATE_DATA_NODES;
-			if (slurm_strcasestr(temp_str, "partition"))
+			if (xstrcasestr(temp_str, "partition"))
 				slurmdbd_conf->private_data
 					|= PRIVATE_DATA_PARTITIONS;
-			if (slurm_strcasestr(temp_str, "reservation"))
+			if (xstrcasestr(temp_str, "reservation"))
 				slurmdbd_conf->private_data
 					|= PRIVATE_DATA_RESERVATIONS;
-			if (slurm_strcasestr(temp_str, "usage"))
+			if (xstrcasestr(temp_str, "usage"))
 				slurmdbd_conf->private_data
 					|= PRIVATE_DATA_USAGE;
-			if (slurm_strcasestr(temp_str, "user"))
+			if (xstrcasestr(temp_str, "user"))
 				slurmdbd_conf->private_data
 					|= PRIVATE_DATA_USERS;
-			if (slurm_strcasestr(temp_str, "all"))
+			if (xstrcasestr(temp_str, "all"))
 				slurmdbd_conf->private_data = 0xffff;
 			xfree(temp_str);
 		}

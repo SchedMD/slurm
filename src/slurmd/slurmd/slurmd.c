@@ -88,7 +88,6 @@
 #include "src/common/slurm_mcs.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_route.h"
-#include "src/common/slurm_strcasestr.h"
 #include "src/common/slurm_topology.h"
 #include "src/common/stepd_api.h"
 #include "src/common/switch.h"
@@ -2035,11 +2034,11 @@ static uint64_t _parse_msg_aggr_params(int type, char *params)
 
 	switch (type) {
 	case WINDOW_TIME:
-		if ((sub_str = slurm_strcasestr(params, "WindowTime=")))
+		if ((sub_str = xstrcasestr(params, "WindowTime=")))
 			value = _get_int(sub_str + 11);
 		break;
 	case WINDOW_MSGS:
-		if ((sub_str = slurm_strcasestr(params, "WindowMsgs=")))
+		if ((sub_str = xstrcasestr(params, "WindowMsgs=")))
 			value = _get_int(sub_str + 11);
 		break;
 	default:

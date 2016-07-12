@@ -38,7 +38,6 @@
 
 #include <string.h>
 
-#include "src/common/slurm_strcasestr.h"
 #include "src/common/slurmdb_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -136,32 +135,32 @@ extern uint32_t slurmdb_setup_cluster_flags(void)
 
 static uint32_t _str_2_cluster_flags(char *flags_in)
 {
-	if (slurm_strcasestr(flags_in, "AIX"))
+	if (xstrcasestr(flags_in, "AIX"))
 		return CLUSTER_FLAG_AIX;
 
-	if (slurm_strcasestr(flags_in, "BGL"))
+	if (xstrcasestr(flags_in, "BGL"))
 		return CLUSTER_FLAG_BGL;
 
-	if (slurm_strcasestr(flags_in, "BGP"))
+	if (xstrcasestr(flags_in, "BGP"))
 		return CLUSTER_FLAG_BGP;
 
-	if (slurm_strcasestr(flags_in, "BGQ"))
+	if (xstrcasestr(flags_in, "BGQ"))
 		return CLUSTER_FLAG_BGQ;
 
-	if (slurm_strcasestr(flags_in, "Bluegene"))
+	if (xstrcasestr(flags_in, "Bluegene"))
 		return CLUSTER_FLAG_BG;
 
-	if (slurm_strcasestr(flags_in, "AlpsCray")
-	    || slurm_strcasestr(flags_in, "CrayXT"))
+	if (xstrcasestr(flags_in, "AlpsCray")
+	    || xstrcasestr(flags_in, "CrayXT"))
 		return CLUSTER_FLAG_CRAY_A;
 
-	if (slurm_strcasestr(flags_in, "FrontEnd"))
+	if (xstrcasestr(flags_in, "FrontEnd"))
 		return CLUSTER_FLAG_FE;
 
-	if (slurm_strcasestr(flags_in, "MultipleSlurmd"))
+	if (xstrcasestr(flags_in, "MultipleSlurmd"))
 		return CLUSTER_FLAG_MULTSD;
 
-	if (slurm_strcasestr(flags_in, "Cray"))
+	if (xstrcasestr(flags_in, "Cray"))
 		return CLUSTER_FLAG_CRAY_N;
 
 	return (uint32_t) 0;

@@ -178,7 +178,7 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo cpu_frequency.lo \
 	slurm_step_layout.lo checkpoint.lo job_resources.lo \
 	parse_time.lo job_options.lo global_defaults.lo timers.lo \
 	stepd_api.lo write_labelled_message.lo proc_args.lo \
-	slurm_strcasestr.lo node_conf.lo gres.lo entity.lo layout.lo \
+	node_conf.lo gres.lo entity.lo layout.lo \
 	layouts_mgr.lo mapping.lo xcgroup_read_config.lo xlua.lo \
 	callerid.lo siphash24.lo siphash_slurm.lo
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
@@ -631,7 +631,6 @@ libcommon_la_SOURCES = \
 	write_labelled_message.c	\
 	write_labelled_message.h	\
 	proc_args.c proc_args.h		\
-	slurm_strcasestr.c slurm_strcasestr.h \
 	node_conf.h node_conf.c		\
 	gres.h gres.c			\
 	entity.h entity.c		\
@@ -814,7 +813,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_route.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_selecttype_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_step_layout.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_strcasestr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_time.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_topology.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmdb_defs.Plo@am__quote@

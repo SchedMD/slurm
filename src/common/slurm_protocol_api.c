@@ -64,7 +64,6 @@
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_accounting_storage.h"
-#include "src/common/slurm_strcasestr.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/slurm_protocol_api.h"
@@ -4875,7 +4874,7 @@ extern void slurm_setup_sockaddr(struct sockaddr_in *sin, uint16_t port)
 			var = "NoInAddrAny";
 
 		if (topology_params &&
-		    slurm_strcasestr(topology_params, var)) {
+		    xstrcasestr(topology_params, var)) {
 			char host[MAXHOSTNAMELEN];
 
 			if (!gethostname(host, MAXHOSTNAMELEN)) {

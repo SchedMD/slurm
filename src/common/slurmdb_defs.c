@@ -43,7 +43,6 @@
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
 #include "src/common/slurm_auth.h"
-#include "src/common/slurm_strcasestr.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_time.h"
 #include "src/common/slurmdb_defs.h"
@@ -352,28 +351,28 @@ static int _setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec)
 
 static uint32_t _str_2_qos_flags(char *flags)
 {
-	if (slurm_strcasestr(flags, "DenyOnLimit"))
+	if (xstrcasestr(flags, "DenyOnLimit"))
 		return QOS_FLAG_DENY_LIMIT;
 
-	if (slurm_strcasestr(flags, "EnforceUsageThreshold"))
+	if (xstrcasestr(flags, "EnforceUsageThreshold"))
 		return QOS_FLAG_ENFORCE_USAGE_THRES;
 
-	if (slurm_strcasestr(flags, "PartitionMinNodes"))
+	if (xstrcasestr(flags, "PartitionMinNodes"))
 		return QOS_FLAG_PART_MIN_NODE;
 
-	if (slurm_strcasestr(flags, "PartitionMaxNodes"))
+	if (xstrcasestr(flags, "PartitionMaxNodes"))
 		return QOS_FLAG_PART_MAX_NODE;
 
-	if (slurm_strcasestr(flags, "PartitionTimeLimit"))
+	if (xstrcasestr(flags, "PartitionTimeLimit"))
 		return QOS_FLAG_PART_TIME_LIMIT;
 
-	if (slurm_strcasestr(flags, "RequiresReservation"))
+	if (xstrcasestr(flags, "RequiresReservation"))
 		return QOS_FLAG_REQ_RESV;
 
-	if (slurm_strcasestr(flags, "OverPartQOS"))
+	if (xstrcasestr(flags, "OverPartQOS"))
 		return QOS_FLAG_OVER_PART_QOS;
 
-	if (slurm_strcasestr(flags, "NoReserve"))
+	if (xstrcasestr(flags, "NoReserve"))
 		return QOS_FLAG_NO_RESERVE;
 
 	return 0;
@@ -1669,7 +1668,7 @@ extern char *slurmdb_federation_flags_str(uint32_t flags)
 
 static uint32_t _str_2_federation_flags(char *flags)
 {
-	if (slurm_strcasestr(flags, "LLC"))
+	if (xstrcasestr(flags, "LLC"))
 		return FEDERATION_FLAG_LLC;
 
 	return 0;
@@ -2343,16 +2342,16 @@ extern uint16_t str_2_classification(char *class)
 	if (!class)
 		return type;
 
-	if (slurm_strcasestr(class, "capac"))
+	if (xstrcasestr(class, "capac"))
 		type = SLURMDB_CLASS_CAPACITY;
-	else if (slurm_strcasestr(class, "capab"))
+	else if (xstrcasestr(class, "capab"))
 		type = SLURMDB_CLASS_CAPABILITY;
-	else if (slurm_strcasestr(class, "capap"))
+	else if (xstrcasestr(class, "capap"))
 		type = SLURMDB_CLASS_CAPAPACITY;
 
-	if (slurm_strcasestr(class, "*"))
+	if (xstrcasestr(class, "*"))
 		type |= SLURMDB_CLASSIFIED_FLAG;
-	else if (slurm_strcasestr(class, "class"))
+	else if (xstrcasestr(class, "class"))
 		type |= SLURMDB_CLASSIFIED_FLAG;
 
 	return type;
@@ -2391,13 +2390,13 @@ extern uint16_t str_2_slurmdb_problem(char *problem)
 	if (!problem)
 		return type;
 
-	if (slurm_strcasestr(problem, "account no assocs"))
+	if (xstrcasestr(problem, "account no assocs"))
 		type = SLURMDB_PROBLEM_USER_NO_ASSOC;
-	else if (slurm_strcasestr(problem, "account no users"))
+	else if (xstrcasestr(problem, "account no users"))
 		type = SLURMDB_PROBLEM_ACCT_NO_USERS;
-	else if (slurm_strcasestr(problem, "user no assocs"))
+	else if (xstrcasestr(problem, "user no assocs"))
 		type = SLURMDB_PROBLEM_USER_NO_ASSOC;
-	else if (slurm_strcasestr(problem, "user no uid"))
+	else if (xstrcasestr(problem, "user no uid"))
 		type = SLURMDB_PROBLEM_USER_NO_UID;
 
 	return type;
