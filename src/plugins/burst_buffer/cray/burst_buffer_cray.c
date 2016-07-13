@@ -137,6 +137,7 @@ typedef struct bb_instances {
 	uint32_t id;
 	uint64_t bytes;
 	char *label;
+	uint32_t session;
 } bb_instances_t;
 
 /* Description of each Cray DW pool entry
@@ -1094,6 +1095,7 @@ static void _load_state(bool init_config)
 	bb_pools_t *pools;
 	bb_sessions_t *sessions;
 	bb_alloc_t *bb_alloc;
+	struct job_record *job_ptr;
 	int num_configs = 0, num_instances = 0, num_pools = 0, num_sessions = 0;
 	int i, j;
 	char *end_ptr = NULL;
@@ -1220,9 +1222,16 @@ static void _load_state(bool init_config)
 		    (sessions[i].token[0] <='9')) {
 			bb_alloc->job_id =
 				strtol(sessions[i].token, &end_ptr, 10);
+			job_ptr = find_job_record(bb_alloc->job_id);
+			if (job_ptr) {
+				bb_alloc->array_job_id = job_ptr->array_job_id;
+				bb_alloc->array_task_id =job_ptr->array_task_id;
+			} else {
+				bb_alloc->array_task_id = NO_VAL;
+			}
 		}
 		for (j = 0; j < num_instances; j++) {
-			if (xstrcmp(sessions[i].token, instances[j].label))
+			if (sessions[i].id != instances[j].session)
 				continue;
 			bb_alloc->size += instances[j].bytes;
 		}
@@ -4741,6 +4750,29 @@ _parse_instance_capacity(json_object *instance, bb_instances_t *ent)
 	}
 }
 
+
+/* Parse "links" object in the "session" object */
+static void
+_parse_instance_links(json_object *instance, bb_instances_t *ent)
+{
+	enum json_type type;
+	struct json_object_iter iter;
+	int64_t x;
+
+	json_object_object_foreachC(instance, iter) {
+		type = json_object_get_type(iter.val);
+		switch (type) {
+		case json_type_int:
+			x = json_object_get_int64(iter.val);
+			if (!xstrcmp(iter.key, "session"))
+				ent->session = x;
+			break;
+		default:
+			break;
+		}
+	}
+}
+
 /* _json_parse_instances_object()
  */
 static void
@@ -4757,6 +4789,8 @@ _json_parse_instances_object(json_object *jobj, bb_instances_t *ent)
 		case json_type_object:
 			if (xstrcmp(iter.key, "capacity") == 0)
 				_parse_instance_capacity(iter.val, ent);
+			else if (xstrcmp(iter.key, "links") == 0)
+				_parse_instance_links(iter.val, ent);
 			break;
 		case json_type_int:
 			x = json_object_get_int64(iter.val);
