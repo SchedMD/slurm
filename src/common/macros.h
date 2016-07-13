@@ -153,7 +153,7 @@
 #define slurm_cond_timedwait(cond, mutex, abstime)			\
 	do {								\
 		int err = pthread_cond_timedwait(cond, mutex, abstime);	\
-		if (err != ETIMEDOUT) {					\
+		if (err && (err != ETIMEDOUT)) {			\
 			error("%s:%d %s: pthread_cond_timedwait(): %s",	\
 				__FILE__, __LINE__, __func__,		\
 				strerror(err));				\
