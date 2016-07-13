@@ -1678,7 +1678,13 @@ cbuf_shrink (cbuf_t cb)
 }
 
 
-#ifndef NDEBUG
+#ifdef NDEBUG
+static int
+cbuf_mutex_is_locked (cbuf_t cb)
+{
+    return 1;
+}
+#else
 static int
 cbuf_mutex_is_locked (cbuf_t cb)
 {
