@@ -1211,6 +1211,7 @@ static void *_step_kill(void *args)
 	lock_slurmctld(job_write_lock);
 	jobinfo = step_ptr->select_jobinfo->data;
 	jobinfo->cleaning |= CLEANING_COMPLETE;
+	post_job_step(step_ptr);
 	unlock_slurmctld(job_write_lock);
 	_throttle_fini();
 

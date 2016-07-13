@@ -253,20 +253,14 @@ extern void delete_step_records (struct job_record *job_ptr)
 	step_iterator = list_iterator_create(job_ptr->step_list);
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
 		/* Only check if not a pending step */
-		if (step_ptr->step_id != SLURM_EXTERN_CONT) {
-			uint16_t cleaning = 0;
-			select_g_select_jobinfo_get(step_ptr->select_jobinfo,
-						    SELECT_JOBDATA_CLEANING,
-						    &cleaning);
-			if (cleaning)	/* Step already in cleanup. */
-				continue;
-			/* _internal_step_complete() will purge step record */
-			_internal_step_complete(job_ptr, step_ptr);
-		} else {
-			_internal_step_complete(job_ptr, step_ptr);
-			list_remove (step_iterator);
-			_free_step_rec(step_ptr);
-		}
+		uint16_t cleaning = 0;
+		select_g_select_jobinfo_get(step_ptr->select_jobinfo,
+					    SELECT_JOBDATA_CLEANING,
+					    &cleaning);
+		if (cleaning)	/* Step already in cleanup. */
+			continue;
+		/* _internal_step_complete() will purge step record */
+		_internal_step_complete(job_ptr, step_ptr);
 	}
 	list_iterator_destroy(step_iterator);
 }
