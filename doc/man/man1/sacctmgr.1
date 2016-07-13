@@ -709,13 +709,14 @@ Valid states are:
 .RS
 .TP
 \fIDRAIN\fP
-Cluster will accept no more jobs.
+Cluster will not accept any new jobs and will let existing federated jobs
+complete.
 
 .TP
 \fIDRAIN+REMOVE\fP
-Cluster will accept no more jobs and will remove itself from the
-federation. Once all of the federated jobs have completed the cluster will
-accept jobs as a non\-federated cluster.
+Cluster will not accept any new jobs and will remove itself from the federation
+once all federated jobs have completed. When removed from the federation, the
+cluster will accept jobs as a non\-federated cluster.
 .RE
 
 .TP
