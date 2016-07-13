@@ -2957,7 +2957,7 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 	char *hash_dir = NULL, *job_dir = NULL, *script_file = NULL;
 	char *resp_msg = NULL, **script_argv;
 	char *dw_cli_path;
-	int hash_inx, rc = SLURM_SUCCESS, status = 0;
+	int fd = -1, hash_inx, rc = SLURM_SUCCESS, status = 0;
 	char jobid_buf[32];
 	bb_job_t *bb_job;
 	uint32_t timeout;
@@ -2991,14 +2991,33 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 	dw_cli_path = xstrdup(bb_state.bb_config.get_sys_state);
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 
-	hash_inx = job_ptr->job_id % 10;
-	xstrfmtcat(hash_dir, "%s/hash.%d", state_save_loc, hash_inx);
-	(void) mkdir(hash_dir, 0700);
-	xstrfmtcat(job_dir, "%s/job.%u", hash_dir, job_ptr->job_id);
-	(void) mkdir(job_dir, 0700);
-	xstrfmtcat(script_file, "%s/script", job_dir);
-	if (job_ptr->batch_flag == 0)
-		rc = _build_bb_script(job_ptr, script_file);
+	/* Standard file location for job arrays, version 16.05+ */
+	if (job_ptr->array_task_id != NO_VAL) {
+		hash_inx = job_ptr->array_job_id % 10;
+		xstrfmtcat(hash_dir, "%s/hash.%d", state_save_loc, hash_inx);
+		(void) mkdir(hash_dir, 0700);
+		xstrfmtcat(job_dir, "%s/job.%u", hash_dir,
+			   job_ptr->array_job_id);
+		(void) mkdir(job_dir, 0700);
+		xstrfmtcat(script_file, "%s/script", job_dir);
+		fd = open(script_file, 0);
+		if (fd >= 0)	/* found the script */
+			close(fd);
+		else
+			xfree(hash_dir);
+	}
+	/* Standard file location for all regular jobs and
+	 * job arrays in versions 14.11 & 15.08 */
+	if (fd < 0) {
+		hash_inx = job_ptr->job_id % 10;
+		xstrfmtcat(hash_dir, "%s/hash.%d", state_save_loc, hash_inx);
+		(void) mkdir(hash_dir, 0700);
+		xstrfmtcat(job_dir, "%s/job.%u", hash_dir, job_ptr->job_id);
+		(void) mkdir(job_dir, 0700);
+		xstrfmtcat(script_file, "%s/script", job_dir);
+		if (job_ptr->batch_flag == 0)
+			rc = _build_bb_script(job_ptr, script_file);
+	}
 
 	/* Run "job_process" function, validates user script */
 	script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
