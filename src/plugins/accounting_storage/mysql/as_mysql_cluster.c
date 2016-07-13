@@ -82,8 +82,10 @@ extern int as_mysql_get_fed_cluster_id(mysql_conn_t *mysql_conn,
 	xfree(query);
 	while ((row = mysql_fetch_row(result))) {
 		int tmp_id = slurm_atoul(row[1]);
-		debug2("cluster '%s' already part of federation '%s', using "
-		       "existing id %d", cluster, federation, tmp_id);
+		if (debug_flags & DEBUG_FLAG_FEDR)
+			info("cluster '%s' already part of federation '%s', "
+			     "using existing id %d", cluster, federation,
+			     tmp_id);
 		mysql_free_result(result);
 		*ret_id = tmp_id;
 		return SLURM_SUCCESS;
