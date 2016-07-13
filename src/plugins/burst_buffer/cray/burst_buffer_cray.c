@@ -1447,7 +1447,9 @@ static int _queue_stage_in(struct job_record *job_ptr, bb_job_t *bb_job)
 static void *_start_stage_in(void *x)
 {
 	stage_args_t *stage_args;
-	char **setup_argv, **data_in_argv, *resp_msg = NULL, *op = NULL;
+	char **setup_argv, **size_argv, **data_in_argv;
+	char *resp_msg = NULL, *op = NULL;
+	uint64_t real_size = 0;
 	int rc = SLURM_SUCCESS, status = 0, timeout;
 	slurmctld_lock_t job_read_lock =
 		{ NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
@@ -1527,6 +1529,48 @@ static void *_start_stage_in(void *x)
 		}
 	}
 
+	/* Round up job buffer size based upon DW "equalize_fragments"
+	 * configuration parameter */
+	size_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
+	size_argv[0] = xstrdup("dw_wlm_cli");
+	size_argv[1] = xstrdup("--function");
+	size_argv[2] = xstrdup("real_size");
+	size_argv[3] = xstrdup("--token");
+	xstrfmtcat(size_argv[4], "%u", stage_args->job_id);
+	START_TIMER;
+	resp_msg = bb_run_script("real_size",
+				 bb_state.bb_config.get_sys_state,
+				 size_argv, timeout, &status);
+	END_TIMER;
+	if ((DELTA_TIMER > 200000) ||	/* 0.2 secs */
+	    bb_state.bb_config.debug_flag)
+		info("%s: real_size ran for %s", __func__, TIME_STR);
+	_log_script_argv(size_argv, resp_msg);
+	if (WIFEXITED(status) && (WEXITSTATUS(status) != 0) &&
+	    resp_msg && (strncmp(resp_msg, "invalid function", 16) == 0)) {
+		debug("%s: Old dw_wlm_cli does not support real_size function",
+		      __func__);
+	} else if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		error("%s: real_size for job %u status:%u response:%s",
+		      __func__, stage_args->job_id, status, resp_msg);
+	} else {
+		json_object *j;
+		struct bb_total_size *ent;
+		j = json_tokener_parse(resp_msg);
+		if (j == NULL) {
+			error("%s: json parser failed on %s",
+			      __func__, resp_msg);
+		} else {
+			ent = _json_parse_real_size(j);
+			json_object_put(j);	/* Frees json memory */
+			if (ent && (ent->units == BB_UNITS_BYTES))
+				real_size = ent->capacity;
+			xfree(ent);
+		}
+	}
+	xfree(resp_msg);
+	_free_script_argv(size_argv);
+
 	lock_slurmctld(job_write_lock);
 	job_ptr = find_job_record(stage_args->job_id);
 	if (!job_ptr) {
@@ -1538,6 +1582,12 @@ static void *_start_stage_in(void *x)
 		if (bb_job)
 			bb_job->state = BB_STATE_STAGED_IN;
 		if (bb_job && bb_job->total_size) {
+			if (real_size > bb_job->req_size) {
+				info("%s: Job %u total_size increased from %"PRIu64" to %"PRIu64,
+				      __func__, stage_args->job_id,
+				      bb_job->req_size, real_size);
+				bb_job->total_size = real_size;
+			}
 			bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr);
 			if (bb_alloc) {
 				bb_alloc->state = BB_STATE_STAGED_IN;
@@ -3043,58 +3093,6 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 			xstrfmtcat(*err_msg, "%s: %s", plugin_type, resp_msg);
 		}
 		rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
-	}
-	xfree(resp_msg);
-	_free_script_argv(script_argv);
-
-	/* Round up job buffer size based upon DW "equalize_fragments"
-	 * configuration parameter */
-		script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
-	script_argv[0] = xstrdup("dw_wlm_cli");
-	script_argv[1] = xstrdup("--function");
-	script_argv[2] = xstrdup("real_size");
-	script_argv[3] = xstrdup("--token");
-	xstrfmtcat(script_argv[4], "%u", job_ptr->job_id);
-	START_TIMER;
-	resp_msg = bb_run_script("real_size",
-				 bb_state.bb_config.get_sys_state,
-				 script_argv, timeout, &status);
-	END_TIMER;
-	if ((DELTA_TIMER > 200000) ||	/* 0.2 secs */
-	    bb_state.bb_config.debug_flag)
-		info("%s: real_size ran for %s", __func__, TIME_STR);
-	_log_script_argv(script_argv, resp_msg);
-	if (WIFEXITED(status) && (WEXITSTATUS(status) != 0) &&
-	    resp_msg && (strncmp(resp_msg, "invalid function", 16) == 0)) {
-		debug("%s: Old dw_wlm_cli does not support real_size function",
-		      __func__);
-	} else if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
-		error("%s: real_size for job %u status:%u response:%s",
-		      __func__, job_ptr->job_id, status, resp_msg);
-		if (err_msg) {
-			xfree(*err_msg);
-			xstrfmtcat(*err_msg, "%s: %s", plugin_type, resp_msg);
-		}
-	} else {
-		json_object *j;
-		struct bb_total_size *ent;
-		j = json_tokener_parse(resp_msg);
-		if (j == NULL) {
-			error("%s: json parser failed on %s",
-			      __func__, resp_msg);
-		} else {
-			ent = _json_parse_real_size(j);
-			json_object_put(j);	/* Frees json memory */
-			if (ent &&
-			    (ent->units == BB_UNITS_BYTES) &&
-			    (ent->capacity > bb_job->total_size)) {
-				bb_job->total_size = ent->capacity;
-				info("%s: Job %u total_size increased from %"PRIu64" to %"PRIu64,
-				     __func__, job_ptr->job_id,
-				     bb_job->req_size, bb_job->total_size);
-			}
-			xfree(ent);
-		}
 	}
 	xfree(resp_msg);
 	_free_script_argv(script_argv);
