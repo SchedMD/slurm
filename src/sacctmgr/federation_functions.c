@@ -527,7 +527,7 @@ extern int sacctmgr_list_federation(int argc, char *argv[])
 	if (!list_count(format_list)) {
 		slurm_addto_char_list(format_list,
 				      "Federation,Flags%10,Cluster,ID%2,"
-				      "Weight,FedState,FedStateRaw");
+				      "Weight,FedState");
 	}
 
 	print_fields_list = sacctmgr_process_format_list(format_list);
