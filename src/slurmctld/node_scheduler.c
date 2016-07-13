@@ -3676,6 +3676,13 @@ static bitstr_t *_valid_features(struct job_record *job_ptr,
 	return result_bits;
 }
 
+static int _kill_step(struct step_record *step_ptr, void *arg)
+{
+	select_g_step_finish(step_ptr, true);
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * re_kill_job - for a given job, deallocate its nodes for a second time,
  *	basically a cleanup for failed deallocate() calls
@@ -3812,6 +3819,12 @@ extern void re_kill_job(struct job_record *job_ptr)
 		      job_ptr->job_id, host_str);
 	}
 #endif
+	/* On a Cray system this will start the NHC early so it is
+	 * able to gather any information it can from the apparent
+	 * unkillable processes.
+	 */
+	list_for_each(job_ptr->step_list, (ListForF)_kill_step, NULL);
+
 	xfree(host_str);
 	last_job_id = job_ptr->job_id;
 	hostlist_destroy(kill_hostlist);
