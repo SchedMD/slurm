@@ -677,7 +677,10 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 		}
 	}
 
-	if (!rec_set) {
+	if (exit_code) {
+		rc = SLURM_ERROR;
+		goto end_it;
+	} else if (!rec_set) {
 		exit_code=1;
 		fprintf(stderr, " You didn't give me anything to set\n");
 		rc = SLURM_ERROR;
@@ -689,9 +692,6 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 			rc = SLURM_SUCCESS;
 			goto end_it;
 		}
-	} else if (exit_code) {
-		rc = SLURM_ERROR;
-		goto end_it;
 	}
 
 	if (cluster->fed.name && cluster->fed.name[0]) {
