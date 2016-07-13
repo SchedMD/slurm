@@ -3045,7 +3045,11 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 	    bb_state.bb_config.debug_flag)
 		info("%s: real_size ran for %s", __func__, TIME_STR);
 	_log_script_argv(script_argv, resp_msg);
-	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+	if (WIFEXITED(status) && (WEXITSTATUS(status) != 0) &&
+	    resp_msg && (strncmp(resp_msg, "invalid function", 16) == 0)) {
+		debug("%s: Old dw_wlm_cli does not support real_size function",
+		      __func__);
+	} else if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 		error("%s: real_size for job %u status:%u response:%s",
 		      __func__, job_ptr->job_id, status, resp_msg);
 		if (err_msg) {
