@@ -98,9 +98,9 @@ if {[get_bb_emulate] != 0} {
 	set work_file_out /ss/$tmp_file
 }
 
-make_bash_script $script_use "#DW jobdw type=scratch capacity=1GiB access_mode=striped,private pfs=/scratch
-#DW stage_in type=file source=$cwd/$input_data destination=/ss/$tmp_file
-#DW stage_out type=file destination=$cwd/$output_data source=/ss/$tmp_file
+make_bash_script $script_use "#DW jobdw type=scratch capacity=1GiB access_mode=striped,private type=scratch
+#DW stage_in type=file source=$cwd/$input_data destination=\$DW_JOB_STRIPED/$tmp_file
+#DW stage_out type=file destination=$cwd/$output_data source=\$DW_JOB_STRIPED/$tmp_file
 $bin_cat  $work_file_in
 $bin_echo $data_out >$work_file_out
 $scontrol show burst
