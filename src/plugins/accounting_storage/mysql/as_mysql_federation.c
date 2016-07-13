@@ -148,9 +148,6 @@ static int _remove_all_clusters_from_fed(mysql_conn_t *mysql_conn,
 	if (rc)
 		error("Failed to remove all clusters from federation %s", fed);
 
-	/* TODO: Add to TXN table */
-	/* Have to add indexes */
-
 	return rc;
 }
 
@@ -181,9 +178,6 @@ static int _remove_clusters_from_fed(mysql_conn_t *mysql_conn, List clusters)
 	if (rc)
 		error("Failed to remove clusters %s from federation", names);
 	xfree(names);
-
-	/* TODO: Add to TXN table */
-	/* Have to add indexes */
 
 	return rc;
 }
@@ -241,9 +235,6 @@ end_it:
 	xfree(names);
 	xfree(indexes);
 	list_iterator_destroy(itr);
-
-	/* TODO: Add to TXN table */
-	/* Have to add indexes */
 
 	return rc;
 }
@@ -576,8 +567,6 @@ extern List as_mysql_modify_federations(
 		} else  {
 			xstrfmtcat(name_char, " || name='%s'", object);
 		}
-
-		/* TODO: build federation_rec and add to update list */
 	}
 	mysql_free_result(result);
 
