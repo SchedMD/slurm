@@ -108,32 +108,37 @@ static int _setup_federation_rec_limits(slurmdb_federation_rec_t *fed,
 	return SLURM_SUCCESS;
 }
 
-static int _clear_federation_clusters(mysql_conn_t *mysql_conn, const char *fed)
-{
-	int      rc = SLURM_SUCCESS;
-	char *query = NULL;
-	xstrfmtcat(query, "UPDATE %s SET federation='',fed_id=0 "
-			  "WHERE deleted=0 AND federation='%s'",
-			  cluster_table, fed);
-	if (debug_flags & DEBUG_FLAG_FEDR)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
-	rc = mysql_db_query(mysql_conn, query);
-	xfree(query);
-	if (rc)
-		error("Failed to clear federation %s's existing clusters", fed);
-	return rc;
-}
-
+/*
+ * Remove all clusters from federation.
+ * IN: mysql_conn - mysql connection
+ * IN: fed - fed to remove clusters from
+ * IN: exceptions - list of clusters to not remove.
+ */
 static int _remove_all_clusters_from_fed(mysql_conn_t *mysql_conn,
-					 const char *fed)
+					 const char *fed, List exceptions)
 {
 	int   rc    = SLURM_SUCCESS;
 	char *query = NULL;
+	char *exception_names = NULL;
+
+	if (exceptions && list_count(exceptions)) {
+		char *tmp_name;
+		ListIterator itr;
+
+		itr = list_iterator_create(exceptions);
+		while ((tmp_name = list_next(itr)))
+			xstrfmtcat(exception_names, "%s'%s'",
+				   (exception_names) ? "," : "",
+				   tmp_name);
+		list_iterator_destroy(itr);
+	}
 
 	xstrfmtcat(query, "UPDATE %s "
-		   	  "SET federation='', fed_id=0 "
+		   	  "SET federation='', fed_id=0, fed_state=%u "
 			  "WHERE federation='%s' and deleted=0",
-		   cluster_table, fed);
+		   cluster_table, CLUSTER_FED_STATE_NA, fed);
+	if (exception_names)
+		xstrfmtcat(query, " AND name NOT IN (%s)", exception_names);
 
 	if (debug_flags & DEBUG_FLAG_FEDR)
 		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
@@ -164,9 +169,9 @@ static int _remove_clusters_from_fed(mysql_conn_t *mysql_conn, List clusters)
 	       xstrfmtcat(names, "%s'%s'", names ? "," : "", name );
 
 	xstrfmtcat(query, "UPDATE %s "
-		   	  "SET federation='', fed_id=0 "
+		   	  "SET federation='', fed_id=0, fed_state=%u "
 			  "WHERE name IN (%s) and deleted=0",
-		   cluster_table, names);
+		   cluster_table, CLUSTER_FED_STATE_NA, names);
 
 	if (debug_flags & DEBUG_FLAG_FEDR)
 		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
@@ -208,10 +213,20 @@ static int _add_clusters_to_fed(mysql_conn_t *mysql_conn, List clusters,
 		xstrfmtcat(names, "%s'%s'", names ? "," : "", name);
 	}
 
+	/* Keep the same fed_state if the cluster isn't changing feds.
+	 * Also note that mysql evaluates from left to right and uses the
+	 * updated column values in case statements. So the check for federation
+	 * in the fed_state case statement must happen before fed_state is set
+	 * or the federation will always equal the federation in the case
+	 * statement.  */
 	xstrfmtcat(query, "UPDATE %s "
-		   	  "SET federation='%s', fed_id = CASE %s END "
+		   	  "SET "
+			  "fed_state = CASE WHEN federation='%s' THEN fed_state ELSE %u END, "
+			  "fed_id = CASE %s END, "
+		   	  "federation='%s' "
 			  "WHERE name IN (%s) and deleted=0",
-		   cluster_table, fed, indexes, names);
+		   cluster_table, fed, CLUSTER_FED_STATE_ACTIVE, indexes, fed,
+		   names);
 
 	if (debug_flags & DEBUG_FLAG_FEDR)
 		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
@@ -271,7 +286,8 @@ static int _assign_clusters_to_federation(mysql_conn_t *mysql_conn,
 	list_iterator_destroy(itr);
 
 	if (clear_clusters &&
-	    (rc = _clear_federation_clusters(mysql_conn, federation)))
+	    (rc = _remove_all_clusters_from_fed(mysql_conn, federation,
+						add_list)))
 		goto end_it;
 	if (list_count(rem_list) &&
 	    (rc = _remove_clusters_from_fed(mysql_conn, rem_list)))
@@ -666,7 +682,8 @@ extern List as_mysql_remove_federations(mysql_conn_t *mysql_conn, uint32_t uid,
 		char *object = xstrdup(row[0]);
 		list_append(ret_list, object);
 
-		if ((rc = _remove_all_clusters_from_fed(mysql_conn, object)))
+		if ((rc = _remove_all_clusters_from_fed(mysql_conn, object,
+							NULL)))
 			break;
 
 		xfree(name_char);

@@ -150,10 +150,19 @@ typedef enum {
 #define	FEDERATION_FLAG_LLC            0x00000001
 
 /* SLURM CLUSTER FEDERATION STATES */
-/* Action States */
-#define CLUSTER_FED_STATE_RESUME     0x0001
-#define CLUSTER_FED_STATE_DRAIN      0x0002
-#define CLUSTER_FED_STATE_REMOVE     0x0004
+enum cluster_fed_states {
+	CLUSTER_FED_STATE_NA,
+	CLUSTER_FED_STATE_ACTIVE,
+	CLUSTER_FED_STATE_INACTIVE
+};
+#define CLUSTER_FED_STATE_BASE       0x000f
+#define CLUSTER_FED_STATE_FLAGS      0xfff0
+#define CLUSTER_FED_STATE_DRAIN      0x0010 /* drain cluster by not accepting
+					       any new jobs and waiting for all
+					       federated jobs to complete.*/
+#define CLUSTER_FED_STATE_REMOVE     0x0020 /* remove cluster from federation
+					       once cluster is drained of
+					       federated jobs */
 
 /* flags and types of resources */
 /* when we come up with some */

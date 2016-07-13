@@ -1819,7 +1819,6 @@ extern void sacctmgr_print_cluster(slurmdb_cluster_rec_t *cluster)
 		char *tmp_str = slurmdb_cluster_fed_states_str(
 						cluster->fed.state);
 		printf("  FedState       = %s\n", tmp_str);
-		xfree(tmp_str);
 	}
 	if (cluster->fed.weight != NO_VAL)
 		printf("  Weight         = %u\n", cluster->fed.weight);

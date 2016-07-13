@@ -44,6 +44,7 @@ set eol "\r\n"
 set tc1		"tc1_$test_id_2"
 set tc2		"tc2_$test_id_2"
 set tc3		"tc3_$test_id_2"
+set tc4		"tc4_$test_id_2"
 
 set fed1 	"fed1_$test_id_2"
 set fed2 	"fed2_$test_id_2"
@@ -127,14 +128,14 @@ proc delete_federations { names } {
 }
 
 proc cleanup { } {
-	global tc1 tc2 tc3 fed1 fed2 fed3 exit_code test_id_2 max_federations
+	global tc1 tc2 tc3 tc4 fed1 fed2 fed3 exit_code test_id_2 max_federations
 
 	set tmp_clusters ""
 	for {set i 0} {$i <= $max_federations} {incr i} {
 		append  tmp_clusters "max${i}_$test_id_2,"
 	}
 
-	set exit_code [expr $exit_code + [delete_clusters "$tc1,$tc2,$tc3,${tmp_clusters}"]]
+	set exit_code [expr $exit_code + [delete_clusters "$tc1,$tc2,$tc3,$tc4,${tmp_clusters}"]]
 	set exit_code [expr $exit_code + [delete_federations "$fed1,$fed2,$fed3"]]
 }
 
@@ -373,7 +374,7 @@ if {$exit_code || $matches != 2} {
 }
 
 #####################################
-# TEST: add second federation and make sure that can select only one federation
+# TEST: add second federation and make sure that you can select only one federation
 #####################################
 set matches 0
 set my_pid [spawn $sacctmgr -i add federation $fed2]
@@ -463,7 +464,7 @@ if {$exit_code || $matches != 2} {
 # TEST: add new cluster with weight and state
 #####################################
 set matches 0
-set my_pid [spawn $sacctmgr -i add cluster $tc1 federation=$fed1 weight=9 fedstate=RESUME]
+set my_pid [spawn $sacctmgr -i add cluster $tc1 federation=$fed1 weight=9 fedstate=drain]
 expect {
 	-re "Adding Cluster\\(s\\)$eol" {
 		incr matches
@@ -481,7 +482,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+FedState\\s+=\\s+RESUME$eol" {
+	-re "\\s+FedState\\s+=\\s+DRAIN$eol" {
 		incr matches
 		exp_continue
 	}
@@ -544,21 +545,21 @@ if {$exit_code || $matches != 5} {
 }
 
 set matches 0
-set my_pid [spawn $sacctmgr show cluster $tc1 $tc2 $tc3 format="cluster%20,federation%20,id"]
+set my_pid [spawn $sacctmgr show cluster $tc1 $tc2 $tc3 format="cluster%20,federation%20,fedstate%20,id"]
 expect {
-	-re "Cluster\\s+Federation\\s+ID $eol" {
+	-re "Cluster\\s+Federation\\s+FedState\\s+ID $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$tc1\\s+$fed1\\s+1 $eol" {
+	-re "\\s+$tc1\\s+$fed1\\s+DRAIN\\s+1 $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$tc2\\s+$fed2\\s+1 $eol" {
+	-re "\\s+$tc2\\s+$fed2\\s+ACTIVE\\s+1 $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$tc3\\s+$fed2\\s+2 $eol" {
+	-re "\\s+$tc3\\s+$fed2\\s+ACTIVE\\s+2 $eol" {
 		incr matches
 		exp_continue
 	}
@@ -609,6 +610,7 @@ if {$exit_code || $matches != 4} {
 	end_it 1
 }
 
+# TEST tree option - shows one federation line per federation.
 set matches 0
 set my_pid [spawn $sacctmgr show federation $fed1 $fed2 format="federation%20,cluster%20" tree]
 expect {
@@ -732,13 +734,13 @@ if {$exit_code || $matches != 5} {
 }
 
 set matches 0
-set my_pid [spawn $sacctmgr -i modify cluster $tc1 set fedstate=RESUME]
+set my_pid [spawn $sacctmgr -i modify cluster $tc1 set fedstate=ACTIVE]
 expect {
 	-re "Setting$eol" {
 		incr matches
 		exp_continue
 	}
-	-re "^\\s+FedState\\s+=\\s+RESUME$eol" {
+	-re "^\\s+FedState\\s+=\\s+ACTIVE$eol" {
 		incr matches
 		exp_continue
 	}
@@ -765,13 +767,13 @@ if {$exit_code || $matches != 4} {
 }
 
 set matches 0
-set my_pid [spawn $sacctmgr show cluster $tc1 $tc2 $tc3 format="cluster%20,federation%20,fedstate,weight"]
+set my_pid [spawn $sacctmgr show cluster $tc1 $tc2 $tc3 format="cluster%20,federation%20,fedstate%20,weight"]
 expect {
 	-re "Cluster\\s+Federation\\s+FedState\\s+Weight $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$tc1\\s+$fed1\\s+RESUME\\s+5 $eol" {
+	-re "\\s+$tc1\\s+$fed1\\s+ACTIVE\\s+5 $eol" {
 		incr matches
 		exp_continue
 	}
@@ -838,13 +840,13 @@ if {$exit_code || $matches != 5} {
 }
 
 set matches 0
-set my_pid [spawn $sacctmgr show federation $fed1 $fed2 format="federation%20,flags,cluster%20,fedstate,weight"]
+set my_pid [spawn $sacctmgr show federation $fed1 $fed2 format="federation%20,flags,cluster%20,fedstate%20,weight"]
 expect {
 	-re "Federation\\s+Flags\\s+Cluster\\s+FedState\\s+Weight $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$fed1\\s+LLC\\s+$tc1\\s+RESUME\\s+5 $eol" {
+	-re "\\s+$fed1\\s+LLC\\s+$tc1\\s+ACTIVE\\s+5 $eol" {
 		incr matches
 		exp_continue
 	}
@@ -872,7 +874,7 @@ if {$exit_code || $matches != 4} {
 
 send_user "tc1 = $tc1\n"
 set matches 0
-set my_pid [spawn $sacctmgr show federation $fed1 $fed2 format="federation%20,flags,cluster%20,fedstate,weight" tree]
+set my_pid [spawn $sacctmgr show federation $fed1 $fed2 format="federation%20,flags,cluster%20,fedstate%20,weight" tree]
 expect {
 	-re "Federation\\s+Flags\\s+Cluster\\s+FedState\\s+Weight $eol" {
 		incr matches
@@ -882,7 +884,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$tc1\\s+RESUME\\s+5 $eol" {
+	-re "\\s+$tc1\\s+ACTIVE\\s+5 $eol" {
 		incr matches
 		exp_continue
 	}
@@ -952,7 +954,7 @@ if {$exit_code || $matches != 5} {
 	end_it 1
 }
 
-# Verify that LLC is remove and that only the federations are listed since no
+# Verify that LLC is removed and that only the federations are listed since no
 # cluster print fields are requested.
 set matches 0
 set my_pid [spawn $sacctmgr show federation $fed1 $fed2 format="federation%20,flags"]
@@ -1021,21 +1023,21 @@ if {$exit_code || $matches != 4} {
 }
 
 set matches 0
-set my_pid [spawn $sacctmgr show cluster $tc1 $tc2 $tc3 format="cluster%20,federation%20,id"]
+set my_pid [spawn $sacctmgr show cluster $tc1 $tc2 $tc3 format="cluster%20,federation%20,fedstate%20,id"]
 expect {
-	-re "Cluster\\s+Federation\\s+ID $eol" {
+	-re "Cluster\\s+Federation\\s+FedState\\s+ID $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$tc1\\s+$fed1\\s+1 $eol" {
+	-re "\\s+$tc1\\s+$fed1\\s+ACTIVE\\s+1 $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$tc2\\s+$fed1\\s+2 $eol" {
+	-re "\\s+$tc2\\s+$fed1\\s+ACTIVE\\s+2 $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$tc3\\s+$fed2\\s+2 $eol" {
+	-re "\\s+$tc3\\s+$fed2\\s+DRAIN\\s+2 $eol" {
 		incr matches
 		exp_continue
 	}
@@ -1088,21 +1090,21 @@ if {$exit_code || $matches != 4} {
 }
 
 set matches 0
-set my_pid [spawn $sacctmgr show cluster $tc1 $tc2 $tc3 format="cluster%20,federation%20,id"]
+set my_pid [spawn $sacctmgr show cluster $tc1 $tc2 $tc3 format="cluster%20,federation%20,fedstate%20,id"]
 expect {
-	-re "Cluster\\s+Federation\\s+ID $eol" {
+	-re "Cluster\\s+Federation\\s+FedState\\s+ID $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$tc1\\s+$fed2\\s+1 $eol" {
+	-re "\\s+$tc1\\s+$fed2\\s+ACTIVE\\s+1 $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$tc2\\s+$fed1\\s+2 $eol" {
+	-re "\\s+$tc2\\s+$fed1\\s+ACTIVE\\s+2 $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$tc3\\s+$fed2\\s+2 $eol" {
+	-re "\\s+$tc3\\s+$fed2\\s+DRAIN\\s+2 $eol" {
 		incr matches
 		exp_continue
 	}
@@ -1155,21 +1157,21 @@ if {$exit_code || $matches != 4} {
 }
 
 set matches 0
-set my_pid [spawn $sacctmgr show cluster $tc1 $tc2 $tc3 format="cluster%20,federation%20,id"]
+set my_pid [spawn $sacctmgr show cluster $tc1 $tc2 $tc3 format="cluster%20,federation%20,fedstate%20,id"]
 expect {
-	-re "Cluster\\s+Federation\\s+ID $eol" {
+	-re "Cluster\\s+Federation\\s+FedState\\s+ID $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$tc1\\s+$fed2\\s+1 $eol" {
+	-re "\\s+$tc1\\s+$fed2\\s+ACTIVE\\s+1 $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$tc2\\s+$fed2\\s+3 $eol" {
+	-re "\\s+$tc2\\s+$fed2\\s+ACTIVE\\s+3 $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$tc3\\s+$fed2\\s+2 $eol" {
+	-re "\\s+$tc3\\s+$fed2\\s+DRAIN\\s+2 $eol" {
 		incr matches
 		exp_continue
 	}
@@ -1277,7 +1279,7 @@ if {$exit_code || $matches != 7} {
 }
 
 set matches 0
-set my_pid [spawn $sacctmgr show federation $fed1 $fed2 $fed3 format="federation%20,flags,cluster%20,fedstate,weight,id"]
+set my_pid [spawn $sacctmgr show federation $fed1 $fed2 $fed3 format="federation%20,flags,cluster%20,fedstate%20,weight,id"]
 expect {
 	-re "Federation\\s+Flags\\s+Cluster\\s+FedState\\s+Weight\\s+ID $eol" {
 		incr matches
@@ -1291,11 +1293,11 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$fed3\\s+LLC\\s+$tc1\\s+RESUME\\s+5\\s+1 $eol" {
+	-re "\\s+$fed3\\s+LLC\\s+$tc1\\s+ACTIVE\\s+5\\s+1 $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$fed3\\s+LLC\\s+$tc2\\s+DRAIN\\+REMOVE\\s+9\\s+2 $eol" {
+	-re "\\s+$fed3\\s+LLC\\s+$tc2\\s+ACTIVE\\s+9\\s+2 $eol" {
 		incr matches
 		exp_continue
 	}
@@ -1350,13 +1352,13 @@ if {$exit_code || $matches != 4} {
 }
 
 set matches 0
-set my_pid [spawn $sacctmgr show cluster $tc3 format="cluster%20,federation%20"]
+set my_pid [spawn $sacctmgr show cluster $tc3 format="cluster%20,federation%20,fedstate%20,id"]
 expect {
-	-re "Cluster\\s+Federation $eol" {
+	-re "Cluster\\s+Federation\\s+FedState\\s+ID $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$tc3\\s+$eol" {
+	-re "\\s+$tc3\\s+NA\\s+0 $eol" {
 		incr matches
 		exp_continue
 	}
@@ -1405,6 +1407,451 @@ if {$exit_code || $matches != 3} {
 	send_user "$matches FAILURE: unexpected error.\n"
 	end_it 1
 }
+
+
+
+#####################################
+# TEST: test adding new cluster and verify state and change states
+#####################################
+set matches 0
+set my_pid [spawn $sacctmgr -i add cluster $tc4]
+expect {
+	-re "Adding Cluster\\(s\\)$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+$tc4$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 2} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+# New clustesr should have fed_id=0, federation="", fed_state=NA
+set matches 0
+set my_pid [spawn $sacctmgr show cluster $tc4 format="cluster%20,federation%20,fedstate%20,id"]
+expect {
+	-re "Cluster\\s+Federation\\s+FedState\\s+ID $eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+$tc4\\s+NA\\s+0 $eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 2} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+# Test adding cluster to federation sets state to ACTIVE
+set matches 0
+set my_pid [spawn $sacctmgr -i modify cluster $tc4 set federation=$fed3]
+expect {
+	-re "Setting" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Federation\\s+=\\s+$fed3$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$tc4$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 4} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+set matches 0
+set my_pid [spawn $sacctmgr show cluster $tc4 format="cluster%20,federation%20,fedstate%20,id"]
+expect {
+	-re "Cluster\\s+Federation\\s+FedState\\s+ID $eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+$tc4\\s+$fed3\\s+ACTIVE\\s+3 $eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 2} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+
+# Modifying cluster to same federation shouldln't change fed_id or fed_state
+set matches 0
+# set state to something other than ACTIVE, it should stay the same.
+set my_pid [spawn $sacctmgr -i modify cluster $tc4 set fedstate=DRAIN]
+expect {
+}
+expect -re $
+set my_pid [spawn $sacctmgr -i modify cluster $tc4 set federation=$fed3]
+expect {
+	-re "Setting" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Federation\\s+=\\s+$fed3$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$tc4$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 4} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+set matches 0
+set my_pid [spawn $sacctmgr show cluster $tc4 format="cluster%20,federation%20,fedstate%20,id"]
+expect {
+	-re "Cluster\\s+Federation\\s+FedState\\s+ID $eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+$tc4\\s+$fed3\\s+DRAIN\\s+3 $eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 2} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+#same thing for modifying the federaiton.
+set matches 0
+set my_pid [spawn $sacctmgr -i modify federation $fed3 set clusters+=$tc4]
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "Cluster\\s+ \\+= $tc4$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Modified federation...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+$fed3$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 4} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+set matches 0
+set my_pid [spawn $sacctmgr show cluster $tc4 format="cluster%20,federation%20,fedstate%20,id"]
+expect {
+	-re "Cluster\\s+Federation\\s+FedState\\s+ID $eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+$tc4\\s+$fed3\\s+DRAIN\\s+3 $eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 2} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+# changing from one federation to another should set the state to active
+set matches 0
+set my_pid [spawn $sacctmgr -i modify cluster $tc4 set federation=$fed2]
+expect {
+	-re "Setting" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Federation\\s+=\\s+$fed2$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$tc4$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 4} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+set matches 0
+set my_pid [spawn $sacctmgr show cluster $tc4 format="cluster%20,federation%20,fedstate%20,id"]
+expect {
+	-re "Cluster\\s+Federation\\s+FedState\\s+ID $eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+$tc4\\s+$fed2\\s+ACTIVE\\s+1 $eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 2} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+
+# same thing for modifying federation - state should go to active
+set my_pid [spawn $sacctmgr -i modify cluster $tc4 set fedstate=DRAIN]
+expect {
+}
+expect -re $
+set matches 0
+set my_pid [spawn $sacctmgr -i modify federation $fed3 set clusters+=$tc4]
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "Cluster\\s+ \\+= $tc4$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Modified federation...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+$fed3$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 4} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+set matches 0
+set my_pid [spawn $sacctmgr show cluster $tc4 format="cluster%20,federation%20,fedstate%20,id"]
+expect {
+	-re "Cluster\\s+Federation\\s+FedState\\s+ID $eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+$tc4\\s+$fed3\\s+ACTIVE\\s+3 $eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 2} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+# Test setting state to INACTIVE
+set matches 0
+set my_pid [spawn $sacctmgr -i modify cluster $tc4 set fedstate=INACTIVE]
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+FedState\\s+=\\s+INACTIVE$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$tc4$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 4} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+set matches 0
+set my_pid [spawn $sacctmgr show cluster $tc4 format="cluster%20,federation%20,fedstate%20,id"]
+expect {
+	-re "Cluster\\s+Federation\\s+FedState\\s+ID $eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+$tc4\\s+$fed3\\s+INACTIVE\\s+3 $eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 2} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+# Test invalid state
+set matches 0
+set my_pid [spawn $sacctmgr -i modify cluster $tc4 set fedstate=abcdefg]
+expect {
+	-re "Invalid FedState abcdefg" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 1} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+
 
 #####################################
 # TEST: modify federation change clusters - must remove others
@@ -1457,13 +1904,13 @@ if {$exit_code || $matches != 5} {
 }
 
 set matches 0
-set my_pid [spawn $sacctmgr show federation $fed1 format="federation%20,cluster%20"]
+set my_pid [spawn $sacctmgr show federation $fed1 format="federation%20,cluster%20,fedstate%20"]
 expect {
-	-re "Federation\\s+Cluster $eol" {
+	-re "Federation\\s+Cluster\\s+FedState $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$fed1\\s+(\\S+) $eol" {
+	-re "\\s+$fed1\\s+(\\S+)\\s+ACTIVE $eol" {
 		set match $expect_out(1,string)
 		if {[string equal $match $tc1] ||
 		    [string equal $match $tc2]} {
@@ -1523,13 +1970,13 @@ if {$exit_code || $matches != 5} {
 }
 
 set matches 0
-set my_pid [spawn $sacctmgr show federation $fed1 format="federation%20,cluster%20"]
+set my_pid [spawn $sacctmgr show federation $fed1 format="federation%20,cluster%20,fedstate%20"]
 expect {
-	-re "Federation\\s+Cluster $eol" {
+	-re "Federation\\s+Cluster\\s+FedState $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$fed1\\s+(\\S+) $eol" {
+	-re "\\s+$fed1\\s+(\\S+)\\s+ACTIVE $eol" {
 		set match $expect_out(1,string)
 		if {[string equal $match $tc1] ||
 		    [string equal $match $tc3]} {
@@ -1585,13 +2032,13 @@ if {$exit_code || $matches != 4} {
 }
 
 set matches 0
-set my_pid [spawn $sacctmgr show federation $fed1 format="federation%20,cluster%20"]
+set my_pid [spawn $sacctmgr show federation $fed1 format="federation%20,cluster%20,fedstate%20"]
 expect {
-	-re "Federation\\s+Cluster $eol" {
+	-re "Federation\\s+Cluster\\s+FedState $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$fed1\\s+(\\S+) $eol" {
+	-re "\\s+$fed1\\s+(\\S+)\\s+ACTIVE $eol" {
 		set match $expect_out(1,string)
 		if {[string equal $match $tc1] ||
 		    [string equal $match $tc2] ||
@@ -1652,13 +2099,13 @@ if {$exit_code || $matches != 5} {
 }
 
 set matches 0
-set my_pid [spawn $sacctmgr show federation $fed1 format="federation%20,cluster%20"]
+set my_pid [spawn $sacctmgr show federation $fed1 format="federation%20,cluster%20,fedstate%20"]
 expect {
-	-re "Federation\\s+Cluster $eol" {
+	-re "Federation\\s+Cluster\\s+FedState $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$fed1\\s+(\\S+) $eol" {
+	-re "\\s+$fed1\\s+(\\S+)\\s+ACTIVE $eol" {
 		set match $expect_out(1,string)
 		if {[string equal $match $tc3]} {
 			incr matches
@@ -1716,13 +2163,13 @@ if {$exit_code || $matches != 4} {
 }
 
 set matches 0
-set my_pid [spawn $sacctmgr show federation $fed1 format="federation%20,cluster%20"]
+set my_pid [spawn $sacctmgr show federation $fed1 format="federation%20,cluster%20,fedstate%20"]
 expect {
-	-re "Federation\\s+Cluster $eol" {
+	-re "Federation\\s+Cluster\\s+FedState $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$fed1\\s+(\\S+) $eol" {
+	-re "\\s+$fed1\\s+(\\S+)\\s+ACTIVE $eol" {
 		incr matches
 		exp_continue
 	}
@@ -1740,11 +2187,38 @@ if {$exit_code || $matches != 1} {
 	end_it 1
 }
 
+# Verify clusters fed_id=0, federation="", fed_state=NA after being removed from
+# federation
+set matches 0
+set my_pid [spawn $sacctmgr show cluster $tc1 $tc2 $tc3 format="cluster%20,federation%20,fedstate%20,id"]
+expect {
+	-re "Cluster\\s+Federation\\s+FedState\\s+ID $eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+($tc1|$tc2|$tc3)\\s+NA\\s+0 $eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 4} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
 #####################################
 # TEST: test adding more than 63 clusters to a federation
 #####################################
-# unset clusters
-set my_pid [spawn $sacctmgr -i modify cluster $tc1 $tc2 $tc3 set federation=]
+# unset federations
+set my_pid [spawn $sacctmgr -i modify federation $fed1 set clusters=]
 expect {
 }
 expect -re $
@@ -1900,7 +2374,7 @@ expect {
 		wait
 	}
 }
-if {$exit_code || $matches != 64} {
+if {$exit_code || $matches != $max_federations} {
 	send_user "$matches FAILURE: unexpected error.\n"
 	end_it 1
 }
@@ -1976,6 +2450,38 @@ expect {
 }
 if {$exit_code || $matches } {
 	send_user "$matches FAILURE: found federation on cluster when it was deleted.\n"
+	end_it 1
+}
+
+
+# Verify clusters fed_id=0, federation="", fed_state=NA after federation is deleted.
+
+set tmp_clusters ""
+for {set i 0} {$i <= $max_federations} {incr i} {
+	append  tmp_clusters "max${i}_$test_id_2,"
+}
+set matches 0
+set my_pid [spawn $sacctmgr show cluster $tmp_clusters format="cluster%20,federation%20,fedstate%20,id"]
+expect {
+	-re "Cluster\\s+Federation\\s+FedState\\s+ID $eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+max\[1-6\]{0,1}\\d{1}_$test_id_2\\s+NA\\s+0 $eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != $max_federations} {
+	send_user "$matches FAILURE: unexpected error.\n"
 	end_it 1
 }
 

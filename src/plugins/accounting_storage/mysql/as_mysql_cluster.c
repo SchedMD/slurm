@@ -272,6 +272,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	list_iterator_reset(itr);
 	while ((object = list_next(itr))) {
 		int fed_id = 0;
+		uint16_t fed_state = CLUSTER_FED_STATE_NA;
 		xstrcat(cols, "creation_time, mod_time, acct");
 		xstrfmtcat(vals, "%ld, %ld, 'root'", now, now);
 		xstrfmtcat(extra, ", mod_time=%ld", now);
@@ -295,22 +296,28 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 				added=0;
 				goto end_it;
 			}
+
+			if (object->fed.state != NO_VAL)
+				fed_state = object->fed.state;
+			else
+				fed_state = CLUSTER_FED_STATE_ACTIVE;
 		}
 
 		xstrfmtcat(query,
 			   "insert into %s (creation_time, mod_time, "
-			   "name, classification, federation, fed_id) "
-			   "values (%ld, %ld, '%s', %u, '%s', %d) "
+			   "name, classification, federation, fed_id, "
+			   "fed_state) "
+			   "values (%ld, %ld, '%s', %u, '%s', %d, %u) "
 			   "on duplicate key update deleted=0, mod_time=%ld, "
 			   "control_host='', control_port=0, "
 			   "classification=%u, flags=0, federation='%s', "
-			   "fed_id=%d",
+			   "fed_id=%d, fed_state=%u",
 			   cluster_table,
 			   now, now, object->name, object->classification,
 			   (object->fed.name) ? object->fed.name : "",
-			   fed_id, now, object->classification,
+			   fed_id, fed_state, now, object->classification,
 			   (object->fed.name) ? object->fed.name : "",
-			   fed_id);
+			   fed_id, fed_state);
 		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
 			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
@@ -522,7 +529,7 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	if (cluster->fed.state != NO_VAL) {
-		xstrfmtcat(vals, ", fed_state=%d", cluster->fed.state);
+		xstrfmtcat(vals, ", fed_state=%u", cluster->fed.state);
 	}
 
 	if (cluster->fed.weight != NO_VAL) {
@@ -543,7 +550,7 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
-	xstrfmtcat(query, "select name, control_port from %s%s;",
+	xstrfmtcat(query, "select name, control_port, federation from %s%s;",
 		   cluster_table, extra);
 
 	if (debug_flags & DEBUG_FLAG_DB_ASSOC)
@@ -566,20 +573,43 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		object = xstrdup(row[0]);
 
 		if (cluster->fed.name) {
-			int id;
-			rc = as_mysql_get_fed_cluster_id(mysql_conn, object,
-							 cluster->fed.name, -1,
-							 &id);
-			if (rc) {
-				error("failed to get cluster id for "
-				      "federation");
-				xfree(tmp_vals);
-				FREE_NULL_LIST(ret_list);
-				mysql_free_result(result);
-				goto end_it;
-			}
+			int id = 0;
+			char *curr_fed = NULL;
+			uint32_t set_state = NO_VAL;
 
+			if (cluster->fed.name[0] != '\0') {
+				rc = as_mysql_get_fed_cluster_id(
+							mysql_conn, object,
+							cluster->fed.name, -1,
+							&id);
+				if (rc) {
+					error("failed to get cluster id for "
+					      "federation");
+					xfree(tmp_vals);
+					FREE_NULL_LIST(ret_list);
+					mysql_free_result(result);
+					goto end_it;
+				}
+			}
+			/* will set fed_id=0 if being removed from fed. */
 			xstrfmtcat(tmp_vals, ", fed_id=%d", id);
+
+			curr_fed = xstrdup(row[2]);
+			if (cluster->fed.name[0] == '\0')
+				/* clear fed_state when leaving federation */
+				set_state = CLUSTER_FED_STATE_NA;
+			else if (cluster->fed.state != NO_VAL) {
+				/* NOOP: fed_state already set in vals */
+			} else if (xstrcmp(curr_fed, cluster->fed.name))
+				/* set state to active when joining fed * */
+				set_state = CLUSTER_FED_STATE_ACTIVE;
+			/* else use existing state */
+
+			if (set_state != NO_VAL)
+				xstrfmtcat(tmp_vals, ", fed_state=%u",
+					   set_state);
+
+			xfree(curr_fed);
 		}
 
 		list_append(ret_list, object);

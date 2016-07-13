@@ -212,6 +212,13 @@ static int _set_rec(int *start, int argc, char *argv[],
 			if (cluster) {
 				cluster->fed.state =
 					str_2_cluster_fed_states(argv[i]+end);
+				if (!cluster->fed.state) {
+					exit_code=1;
+					fprintf(stderr, "Invalid FedState "
+						"%s.\n", argv[i]+end);
+					break;
+				}
+
 				rec_set = 1;
 			}
 		} else if (!strncasecmp(argv[i], "Weight",
@@ -545,8 +552,6 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 							cluster->fed.state);
 				field->print_routine(field, tmp_str,
 						     (curr_inx == field_count));
-				xfree(tmp_str);
-
 				break;
 			}
 			case PRINT_FEDSTATERAW:

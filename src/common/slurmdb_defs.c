@@ -1707,52 +1707,55 @@ extern uint32_t str_2_federation_flags(char *flags, int option)
 	return federation_flags;
 }
 
-extern char *slurmdb_cluster_fed_states_str(uint32_t states)
+extern char *slurmdb_cluster_fed_states_str(uint32_t state)
 {
-	char *fed_states = NULL;
+	int  base        = (state & CLUSTER_FED_STATE_BASE);
+	bool drain_flag  = (state & CLUSTER_FED_STATE_DRAIN);
+	bool remove_flag = (state & CLUSTER_FED_STATE_REMOVE);
 
-	if (states & CLUSTER_FED_STATE_RESUME)
-		xstrcat(fed_states, "RESUME");
+	if (base == CLUSTER_FED_STATE_ACTIVE) {
+		if (remove_flag && drain_flag)
+			return "DRAIN+REMOVE";
+		else if (drain_flag)
+			return "DRAIN";
+		else
+			return "ACTIVE";
+	} else if (base == CLUSTER_FED_STATE_INACTIVE) {
+		if (remove_flag && drain_flag)
+			return "DRAINED+REMOVE";
+		else if (drain_flag)
+			return "DRAINED";
+		else
+			return "INACTIVE";
+	} else if (base == CLUSTER_FED_STATE_NA)
+		return "NA";
 
-	if (states & CLUSTER_FED_STATE_DRAIN) {
-		xstrcat(fed_states, "DRAIN");
-		if (states & CLUSTER_FED_STATE_REMOVE)
-			xstrcat(fed_states, "+REMOVE");
-	}
-
-	return fed_states;
+	return "?";
 }
 
-static uint32_t _str_2_cluster_fed_state(char *state)
+extern uint32_t str_2_cluster_fed_states(char *state)
 {
-	if (slurm_strcasestr(state, "RESUME"))
-		return CLUSTER_FED_STATE_RESUME;
-	else if (slurm_strcasestr(state, "DRAIN+REMOVE"))
-		return CLUSTER_FED_STATE_DRAIN | CLUSTER_FED_STATE_REMOVE;
-	else if (slurm_strcasestr(state, "DRAIN"))
-		return CLUSTER_FED_STATE_DRAIN;
-	return 0;
-}
+	uint32_t fed_state = 0;
 
-extern uint32_t str_2_cluster_fed_states(char *states)
-{
-	uint32_t fed_states = 0;
-	char *token, *my_states, *last = NULL;
-
-	if (!states) {
+	if (!state) {
 		error("We need a cluster federation state string to translate");
 		return SLURM_ERROR;
 	}
 
-	my_states = xstrdup(states);
-	token = strtok_r(my_states, ",", &last);
-	while (token) {
-		fed_states |= _str_2_cluster_fed_state(token);
-		token = strtok_r(NULL, ",", &last);
+	if (!strncasecmp(state, "Active", strlen(state)))
+		fed_state = CLUSTER_FED_STATE_ACTIVE;
+	else if (!strncasecmp(state, "Inactive", strlen(state)))
+		fed_state = CLUSTER_FED_STATE_INACTIVE;
+	else if (!strncasecmp(state, "DRAIN", strlen(state))) {
+		fed_state = CLUSTER_FED_STATE_ACTIVE;
+		fed_state |= CLUSTER_FED_STATE_DRAIN;
+	} else if (!strncasecmp(state, "DRAIN+REMOVE", strlen(state))) {
+		fed_state = CLUSTER_FED_STATE_ACTIVE;
+		fed_state |= (CLUSTER_FED_STATE_DRAIN |
+			      CLUSTER_FED_STATE_REMOVE);
 	}
-	xfree(my_states);
 
-	return fed_states;
+	return fed_state;
 }
 
 extern char *slurmdb_qos_flags_str(uint32_t flags)

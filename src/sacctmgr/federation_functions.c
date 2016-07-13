@@ -633,9 +633,6 @@ extern int sacctmgr_list_federation(int argc, char *argv[])
 					field->print_routine(
 						field, tmp_str,
 						(curr_inx == field_count));
-					if (tmp_str)
-						xfree(tmp_str);
-
 					break;
 				case PRINT_FEDSTATERAW:
 					if (!tmp_cluster)

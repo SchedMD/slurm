@@ -128,7 +128,6 @@ extern void slurm_print_federation(void *ptr)
 		       cluster->control_host, cluster->control_port,
 		       cluster->fed.id, (tmp_str ? tmp_str : ""),
 		       cluster->fed.weight, conn_status[conn_type]);
-		xfree(tmp_str);
 	}
 	xfree(cluster_name);
 }

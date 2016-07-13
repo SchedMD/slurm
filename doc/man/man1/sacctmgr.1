@@ -708,6 +708,14 @@ The state of the cluster in the federation.
 Valid states are:
 .RS
 .TP
+\fIACTIVE\fP
+Cluster will actively accept and schedule federated jobs.
+
+.TP
+\fIINACTIVE\fP
+Cluster will not schedule or accept any jobs.
+
+.TP
 \fIDRAIN\fP
 Cluster will not accept any new jobs and will let existing federated jobs
 complete.
