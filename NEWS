@@ -39,6 +39,7 @@ documents those changes that are of interest to users and administrators.
     unkillable processes.
  -- Fix gang scheduling and license release logic if single node job killed on
     bad node.
+ -- Make scontrol show steps show the extern step correctly.
 
 * Changes in Slurm 16.05.2
 ==========================
