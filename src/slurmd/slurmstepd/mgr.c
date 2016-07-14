@@ -1070,16 +1070,13 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	/* Call the other plugins to clean up
 	 * the cgroup hierarchy.
 	 */
+	_set_job_state(job, SLURMSTEPD_STEP_ENDING);
 	step_terminate_monitor_start(job->jobid, job->stepid);
 	proctrack_g_signal(job->cont_id, SIGKILL);
 	proctrack_g_wait(job->cont_id);
 	step_terminate_monitor_stop();
 
 	task_g_post_step(job);
-
-	/* Notify srun of completion AFTER frequency reset to avoid race
-	 * condition starting another job on these CPUs. */
-	while (_send_pending_exit_msgs(job)) {;}
 
 fail1:
 	debug2("%s: Before call to spank_fini()", __func__);
@@ -1088,6 +1085,9 @@ fail1:
 	debug2("%s: After call to spank_fini()", __func__);
 
 	_set_job_state(job, SLURMSTEPD_STEP_ENDING);
+
+	if (step_complete.rank > -1)
+		_wait_for_children_slurmstepd(job);
 	_send_step_complete_msgs(job);
 
 	return rc;
