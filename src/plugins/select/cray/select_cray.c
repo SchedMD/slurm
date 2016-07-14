@@ -586,7 +586,7 @@ static void _initialize_event(alpsc_ev_app_t *event,
 			      struct step_record *step_ptr,
 			      alpsc_ev_app_state_e state)
 {
-	hostlist_t hl;
+	hostlist_t hl = NULL;
 	hostlist_iterator_t hlit;
 	char *node;
 	int rv;
