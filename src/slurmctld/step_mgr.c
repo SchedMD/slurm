@@ -4531,6 +4531,10 @@ extern void rebuild_step_bitmaps(struct job_record *job_ptr,
 	list_iterator_destroy (step_iterator);
 }
 
+/* NOTE: this function will call delete_step_record which will lock
+ * the job_ptr->step_list so make sure you don't call this if you are
+ * already holding a lock on that list (list_for_each).
+ */
 extern int post_job_step(struct step_record *step_ptr)
 {
 	struct job_record *job_ptr = step_ptr->job_ptr;
