@@ -983,7 +983,7 @@ void list_install_fork_handlers (void)
 
 #ifdef NDEBUG
 static int
-list_mutex_is_locked (cbuf_t cb)
+list_mutex_is_locked (pthread_mutex_t *mutex)
 {
     return 1;
 }
