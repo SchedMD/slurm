@@ -606,13 +606,11 @@ static void _initialize_event(alpsc_ev_app_t *event,
 	event->num_nodes = 0;
 
 	// Fill in nodes and num_nodes if available
-	if (step_ptr->step_layout) {
+	if (step_ptr->step_layout)
 		hl = hostlist_create(step_ptr->step_layout->node_list);
-		cnt = step_ptr->step_layout->node_cnt;
-	} else if (step_ptr->step_id == SLURM_EXTERN_CONT) {
-		hl = hostlist_create(step_ptr->job_ptr->job_resrcs->nodes);
-		cnt = step_ptr->job_ptr->job_resrcs->nhosts;
-	}
+	else if ((step_ptr->step_id == SLURM_EXTERN_CONT) &&
+		 job_ptr->job_resrcs)
+		hl = hostlist_create(job_ptr->job_resrcs->nodes);
 
 	if (!hl)
 		return;
@@ -623,7 +621,7 @@ static void _initialize_event(alpsc_ev_app_t *event,
 		return;
 	}
 
-	event->nodes = xmalloc(cnt * sizeof(int32_t));
+	event->nodes = xmalloc(hostlist_count(hl) * sizeof(int32_t));
 
 	while ((node = hostlist_next(hlit))) {
 		rv = sscanf(node, "nid%"SCNd32,
