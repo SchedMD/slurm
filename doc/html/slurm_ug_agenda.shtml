@@ -84,8 +84,8 @@ are shown below.</p>
 <tr><td nowrap>13:50 - 14:20</td><td>Technical</td><td>Alexandre</td><td>Optimising HPC resource allocation through monitoring</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">14:20 - 14:40</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
 <tr><td nowrap>14:40 - 15:10</td><td>Technical</td><td>Glesser</td><td>Simunix, a large scale platform simulator</td></tr>
-<tr><td nowrap>15:10 - 15:40</td><td>Technical</td><td>Guldmyr</td><td>Configure a Slurm cluster with Ansible</td></tr>
-<tr><td nowrap>15:40 - 16:10</td><td>Technical</td><td>Kortas</td><td>Seamlessly handling 1001 jobs on Shaheen II</td></tr>
+<tr><td nowrap>15:10 - 15:40</td><td>Technical</td><td>Kortas</td><td>Seamlessly handling 1001 jobs on Shaheen II</td></tr>
+<tr><td nowrap>15:40 - 16:10</td><td>Technical</td><td>Guldmyr</td><td>Configure a Slurm cluster with Ansible</td></tr>
  
 <tr>
   <td bgcolor="#F0F1C9">19:00</td>

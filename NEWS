@@ -59,6 +59,8 @@ documents those changes that are of interest to users and administrators.
  -- CRAY - If trying to kill a step and you have NHC_NO_STEPS set run NHC
     anyway to attempt to log the backtraces of the potential
     unkillable processes.
+ -- Fix gang scheduling and license release logic if single node job killed on
+    bad node.
 
 
 * Changes in Slurm 16.05.2
