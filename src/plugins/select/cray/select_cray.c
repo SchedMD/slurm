@@ -2210,7 +2210,12 @@ extern int select_p_step_finish(struct step_record *step_ptr, bool killing_step)
 	 * before the step is completed and sent to the db (handled in
 	 * _internal_step_complete() in step_mgr.c). post_job_step is called
 	 * after the NHC is run (or immediately with NHC_NO). */
-	jobacct_storage_g_step_complete(acct_db_conn, step_ptr);
+	/* Note if select_g_step_finish is ever called outside of
+	 * _internal_step_complete you most likely will need to call
+	 * this.
+	 */
+	if (killing_step)
+		jobacct_storage_g_step_complete(acct_db_conn, step_ptr);
 
 	/* If we are killing the step we want to run the NHC all the
 	 * time because it will log backtraces of unkillable
