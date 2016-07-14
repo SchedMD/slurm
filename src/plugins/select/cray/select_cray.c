@@ -2217,7 +2217,12 @@ extern int select_p_step_finish(struct step_record *step_ptr, bool killing_step)
 	 * after the NHC is run (or immediately with NHC_NO). */
 	jobacct_storage_g_step_complete(acct_db_conn, step_ptr);
 
-	if (slurmctld_conf.select_type_param & CR_NHC_STEP_NO) {
+	/* If we are killing the step we want to run the NHC all the
+	 * time because it will log backtraces of unkillable
+	 * processes, so just do it.
+	 */
+	if (!killing_step &&
+	    (slurmctld_conf.select_type_param & CR_NHC_STEP_NO)) {
 		debug3("NHC_No_Steps set not running NHC on steps.");
 		other_step_finish(step_ptr, killing_step);
 		/* free resources on the job */

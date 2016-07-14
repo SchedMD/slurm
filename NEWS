@@ -34,6 +34,9 @@ documents those changes that are of interest to users and administrators.
  -- Testsuite - fix test1.29 / 17.15 for limits with values above 32-bits.
  -- CRAY - Simplify when a NHC is called on a step that has unkillable
     processes.
+ -- CRAY - If trying to kill a step and you have NHC_NO_STEPS set run NHC
+    anyway to attempt to log the backtraces of the potential
+    unkillable processes.
 
 * Changes in Slurm 16.05.2
 ==========================
