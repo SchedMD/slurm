@@ -3692,6 +3692,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 	char *host_str = NULL;
 	static uint32_t last_job_id = 0;
 	struct node_record *node_ptr;
+	struct step_record *step_ptr;
 	ListIterator step_iterator;
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr;
