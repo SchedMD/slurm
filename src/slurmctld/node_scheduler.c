@@ -79,6 +79,7 @@
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/burst_buffer.h"
 #include "src/slurmctld/front_end.h"
+#include "src/slurmctld/gang.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/node_scheduler.h"
@@ -609,8 +610,12 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 #endif
 
 	if ((agent_args->node_count - down_node_cnt) == 0) {
+		/* Can not wait for epilog completet to release licenses and
+		 * update gang scheduling table */
 		delete_step_records(job_ptr);
 		job_ptr->job_state &= (~JOB_COMPLETING);
+		(void) gs_job_fini(job_ptr);
+		license_job_return(job_ptr);
 		slurm_sched_g_schedule();
 	}
 
