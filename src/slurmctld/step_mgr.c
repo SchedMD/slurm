@@ -553,11 +553,6 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 	} else if ((signal == SIGKILL) || notify_slurmd)
 		signal_step_tasks(step_ptr, signal, REQUEST_SIGNAL_TASKS);
 
-	/* This has to be done last or we have a race condition with the
-	 * step_ptr not being around after this is called.  */
-	if (signal == SIGKILL)
-		select_g_step_finish(step_ptr, true);
-
 	return SLURM_SUCCESS;
 }
 
@@ -733,7 +728,7 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 		return ESLURM_INVALID_JOB_ID;
 
 	if (step_ptr->step_id == SLURM_EXTERN_CONT)
-		return select_g_step_finish(step_ptr, true);
+		return select_g_step_finish(step_ptr, false);
 
 	/* If the job is already cleaning we have already been here
 	 * before, so just return. */
@@ -4012,7 +4007,6 @@ static void _signal_step_timelimit(struct job_record *job_ptr,
 
 	if (notify_srun) {	/* Handle termination from srun, not slurmd */
 		srun_step_timeout(step_ptr, now);
-		(void) select_g_step_finish(step_ptr, true);
 		return;
 	}
 
@@ -4053,8 +4047,6 @@ static void _signal_step_timelimit(struct job_record *job_ptr,
 		agent_args->node_count++;
 	}
 #endif
-
-	(void) select_g_step_finish(step_ptr, true);
 
 	if (agent_args->node_count == 0) {
 		hostlist_destroy(agent_args->hostlist);
@@ -4331,6 +4323,10 @@ extern void rebuild_step_bitmaps(struct job_record *job_ptr,
 	list_iterator_destroy (step_iterator);
 }
 
+/* NOTE: this function will call delete_step_record which will lock
+ * the job_ptr->step_list so make sure you don't call this if you are
+ * already holding a lock on that list (list_for_each).
+ */
 extern int post_job_step(struct step_record *step_ptr)
 {
 	struct job_record *job_ptr = step_ptr->job_ptr;

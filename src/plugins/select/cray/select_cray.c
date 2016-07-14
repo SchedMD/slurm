@@ -73,6 +73,8 @@
  */
 struct select_jobinfo {
 	bitstr_t               *blade_map;
+	bool                    killing; /* (NO NEED TO PACK) used on
+					    a step to signify it being killed */
 	uint16_t                cleaning;
 	uint16_t		magic;
 	uint8_t                 npc;
@@ -581,7 +583,7 @@ static void _initialize_event(alpsc_ev_app_t *event,
 			      struct step_record *step_ptr,
 			      alpsc_ev_app_state_e state)
 {
-	hostlist_t hl;
+	hostlist_t hl = NULL;
 	hostlist_iterator_t hlit;
 	char *node;
 	int rv;
@@ -1112,7 +1114,18 @@ static void *_step_fini(void *args)
 		nhc_info.is_step = true;
 		nhc_info.apid = SLURM_ID_HASH(step_ptr->job_ptr->job_id,
 					      step_ptr->step_id);
-		nhc_info.exit_code = step_ptr->exit_code;
+
+		/* If we are killing the step it is usually because we
+		 * can't kill it normally.  So NHC will start before
+		 * the step ends.  Setting the exit_code to SIGKILL
+		 * will make NHC do extra tests hopefully helping the
+		 * unkillable process(es).
+		 */
+		if (jobinfo->killing)
+			nhc_info.exit_code = SIGKILL;
+		else
+			nhc_info.exit_code = step_ptr->exit_code;
+
 		nhc_info.user_id = step_ptr->job_ptr->user_id;
 
 		if (!step_ptr->step_layout ||
@@ -1162,56 +1175,6 @@ static void *_step_fini(void *args)
 		/* free resources on the job */
 		post_job_step(step_ptr);
 	}
-	unlock_slurmctld(job_write_lock);
-	_throttle_fini();
-
-	return NULL;
-}
-
-static void *_step_kill(void *args)
-{
-	struct step_record *step_ptr = (struct step_record *)args;
-	select_jobinfo_t *jobinfo = NULL;
-	nhc_info_t nhc_info;
-
-	/* Locks: Write job, write node */
-	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
-	slurmctld_lock_t job_read_lock = {
-		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
-
-	if (!step_ptr) {
-		error("%s: no step_ptr given, this should never happen",
-		      __func__);
-		return NULL;
-	}
-
-	memset(&nhc_info, 0, sizeof(nhc_info_t));
-	nhc_info.is_step = true;
-	lock_slurmctld(job_read_lock);
-	nhc_info.jobid = step_ptr->job_ptr->job_id;
-	nhc_info.apid = SLURM_ID_HASH(step_ptr->job_ptr->job_id,
-				      step_ptr->step_id);
-	nhc_info.exit_code = SIGKILL;
-	nhc_info.user_id = step_ptr->job_ptr->user_id;
-
-	if (!step_ptr->step_layout || !step_ptr->step_layout->node_list)
-		nhc_info.nodelist = xstrdup(step_ptr->job_ptr->nodes);
-	else
-		nhc_info.nodelist = xstrdup(step_ptr->step_layout->node_list);
-	unlock_slurmctld(job_read_lock);
-
-	/* run NHC */
-	_run_nhc(&nhc_info);
-	/***********/
-
-	xfree(nhc_info.nodelist);
-
-	_throttle_start();
-	lock_slurmctld(job_write_lock);
-	jobinfo = step_ptr->select_jobinfo->data;
-	jobinfo->cleaning |= CLEANING_COMPLETE;
-	post_job_step(step_ptr);
 	unlock_slurmctld(job_write_lock);
 	_throttle_fini();
 
@@ -2208,27 +2171,6 @@ extern int select_p_step_start(struct step_record *step_ptr)
 	return other_step_start(step_ptr);
 }
 
-static void _start_killing_step(struct step_record *step_ptr)
-{
-	select_jobinfo_t *jobinfo;
-
-	if (slurmctld_conf.select_type_param & CR_NHC_STEP_NO) {
-		debug3("NHC_No_Steps set not running NHC on steps.");
-		return;
-	}
-
-	if (!step_ptr->select_jobinfo) {
-		debug3("step never got an allocation.");
-		return;
-	}
-
-	jobinfo = step_ptr->select_jobinfo->data;
-	if (jobinfo && !IS_CLEANING_STARTED(jobinfo)) {
-		jobinfo->cleaning |= CLEANING_STARTED;
-		_spawn_cleanup_thread(step_ptr, _step_kill);
-	}
-}
-
 extern int select_p_step_finish(struct step_record *step_ptr, bool killing_step)
 {
 	select_jobinfo_t *jobinfo;
@@ -2246,19 +2188,16 @@ extern int select_p_step_finish(struct step_record *step_ptr, bool killing_step)
 	 * after the NHC is run (or immediately with NHC_NO). */
 	jobacct_storage_g_step_complete(acct_db_conn, step_ptr);
 
-	if (slurmctld_conf.select_type_param & CR_NHC_STEP_NO) {
+	/* If we are killing the step we want to run the NHC all the
+	 * time because it will log backtraces of unkillable
+	 * processes, so just do it.
+	 */
+	if (!killing_step &&
+	    (slurmctld_conf.select_type_param & CR_NHC_STEP_NO)) {
 		debug3("NHC_No_Steps set not running NHC on steps.");
 		other_step_finish(step_ptr, killing_step);
 		/* free resources on the job */
 		post_job_step(step_ptr);
-		if (debug_flags & DEBUG_FLAG_TIME_CRAY)
-			INFO_LINE("call took: %s", TIME_STR);
-		return SLURM_SUCCESS;
-	}
-
-	if (killing_step) {
-		_start_killing_step(step_ptr);
-		other_step_finish(step_ptr, killing_step);
 		if (debug_flags & DEBUG_FLAG_TIME_CRAY)
 			INFO_LINE("call took: %s", TIME_STR);
 		return SLURM_SUCCESS;
@@ -2291,6 +2230,7 @@ extern int select_p_step_finish(struct step_record *step_ptr, bool killing_step)
 		verbose("%s: Cleaned flag already set for step %u.%u",
 			__func__, step_ptr->job_ptr->job_id, step_ptr->step_id);
 	} else {
+		jobinfo->killing = killing_step;
 		jobinfo->cleaning |= CLEANING_STARTED;
 		_spawn_cleanup_thread(step_ptr, _step_fini);
 	}

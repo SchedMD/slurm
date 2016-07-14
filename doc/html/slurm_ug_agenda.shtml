@@ -3,6 +3,7 @@
 <h1>Slurm User Group Meeting 2016</h1>
 
 <a name="registration"><h1>Registration</h1></a>
+
 <p>The conference cost is</p>
 <ul>
 <li>$275 per person for early registration by 1 August 2016</li>
@@ -13,8 +14,39 @@
 plus dinner on Monday evening.<br>
 <a href="https://www.eventbrite.com/e/slurm-user-group-2016-tickets-26314495364?aff=eac2 ">Register here</a>.</p>
 
+<a name="hotels"><h1>Hotels</h1></a>
+
+<p>Many hotels are available in and around Athens.
+ A few options are listed below for your convenience.<br>
+<br>
+Adrian Hotel ***<br>
+Closest metro station: Monastiraki (blue line, green line)<br>
+Website: <a href="https://adrian.reserve-online.net">https://adrian.reserve-online.net</a><br>
+Address: 74, Adrianou st., Plaka, 105 56 Athens Greece<br>
+Tel.: (+30) 210 32 21 553 - 32 50 454<br>
+Fax: (+30) 210 32 50 461<br>
+<br>
+Plaka Hotel ***<br>
+Closest metro station: Monastiraki (blue line, green line)<br>
+Website: <a href="http://www.plakahotel.gr">http://www.plakahotel.gr</a><br>
+Address: 7, Kapnikareas & Mitropoleos Street. GR 10556 Athens Greece<br>
+Reservations.: Tel.+30 2103222706|Fax. +30 2103211800<br>
+Email: plaka@athenshotelsgroup.com<br>
+<br>
+Herodion Hotel ****<br>
+Closest metro station: Acropolis (red line)<br>
+Website: <a href="http://www.herodion.gr/main.php">http://www.herodion.gr/main.php</a><br>
+Address: 4,Rovertou Galli Str., Acropolis, Athens Greece<br>
+Tel: +30 210 9236832<br>
+E-mail: herodion@herodion.gr<br>
+<br>
+The Athenian Callirhoe Exclusive Hotel ****<br>
+Closest metro station: Syngrou/Fix (red line)<br>
+Website: <a href="http://www.atheniancallirhoe.athenshotels.it">http://www.atheniancallirhoe.athenshotels.it</a><br>
+Address: 32, Kallirrois Av. & Petmeza, 117 43 Athens</p>
 
 <a name="agenda"><h1>Agenda</h1></a>
+
 <p>Hosted by the 
 <a href="http://www.grnet.gr/">Greek Research and Technology Network (GRNET)</a> and
 <a href="http://www.schedmd.com/">SchedMD</a>.
@@ -24,9 +56,6 @@ The meeting will include an assortment of tutorials, technical presentations,
 and site reports.
 The <a href="#schedule">schedule</a> and <a href="#abstracts">abstracts</a>
 are shown below.</p>
-
-<a name="hotels"><h1>Hotel Information</h1></a>
-<p>TBD</p>
 
 <a name="schedule"><h1>Schedule</h1></a>
 
@@ -42,7 +71,7 @@ are shown below.</p>
  </tr>
 
 <tr><td bgcolor="#F0F1C9">08:00 - 08:30</td><td colspan="3" bgcolor="#F0F1C9">Registration </td></tr>
-<tr><td nowrap>08:30 - 08:45</td><td>Welcome</td><td>TBD</td><td>TBD</td></tr>
+<tr><td nowrap>08:30 - 08:45</td><td>Welcome</td><td>Floros</td><td>Welcome</td></tr>
 <tr><td nowrap>08:45 - 09:30</td><td>Keynote</td><td>Cournia</td><td>Computer-aided drug design for novel anti-cancer agents</td></tr>
 <tr><td nowrap>09:30 - 10:00</td><td>Technical</td><td>Auble, Georgiou</td><td>Overview of Slurm Version 16.05</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">10:00 - 10:20</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
@@ -85,12 +114,12 @@ are shown below.</p>
 <tr><td nowrap>10:50 - 11:20</td><td>Technical</td><td>Cadeau</td><td>High definition power and energy monitoring support</td></tr>
 <tr><td nowrap>11:20 - 11:50</td><td>Technical</td><td>Christiansen</td><td>Federated Cluster Scheduling</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">11:50 - 12:50</td><td colspan="3" bgcolor="#F0F1C9">Lunch</td></tr>
-<tr><td nowrap>12:50 - 13:20</td><td>Site Report</td><td>Yoshikawa</td><td>EDF</td></tr>
-<tr><td nowrap>13:20 - 13:50</td><td>Site Report</td><td>Pancorbo</td><td>LRZ</td></tr>
-<tr><td nowrap>13:50 - 14:20</td><td>Site Report</td><td>Jacobsen</td><td>NERSC</td></tr>
+<tr><td nowrap>12:50 - 13:20</td><td>Site Report</td><td>Yoshikawa</td><td>EDF Site Report</td></tr>
+<tr><td nowrap>13:20 - 13:50</td><td>Site Report</td><td>Pancorbo</td><td>LRZ Site Report</td></tr>
+<tr><td nowrap>13:50 - 14:20</td><td>Site Report</td><td>Jacobsen</td><td>NERSC Site Report</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">14:20 - 14:40</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
-<tr><td nowrap>14:40 - 15:10</td><td>Site Report</td><td>Nikoloutsakos</td><td>GRNET</td></tr>
-<tr><td nowrap>15:10 - 16:10</td><td>Closing</td><td>Auble</td><td>Closing discussions</td></tr>
+<tr><td nowrap>14:40 - 15:10</td><td>Site Report</td><td>Nikoloutsakos</td><td>GRNET Site Report</td></tr>
+<tr><td nowrap>15:10 - 16:10</td><td>Closing</td><td>Wickberg</td><td>Closing discussions</td></tr>
 
 </table>
 
@@ -104,7 +133,6 @@ are shown below.</p>
 
 <h3>Keynote: Computer-aided drug design for novel anti-cancer agents</h3>
 <p>Dr. Zoe Cournia (Biomedical Research Foundation, Academy of Athens)</p>
-<p>TBD</p>
 
 <!-- -------------------------------------------------------------------------- -->
 
@@ -599,6 +627,6 @@ deployment, issues, solutions and open questions that could possibly provide
 
 <!-- -------------------------------------------------------------------------- -->
 
-<p style="text-align:center;">Last modified 12 July 2016</p>
+<p style="text-align:center;">Last modified 14 July 2016</p>
 
 <!--#include virtual="footer.txt"-->
