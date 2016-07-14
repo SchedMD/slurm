@@ -1457,7 +1457,7 @@ static void *_start_stage_in(void *x)
 {
 	stage_args_t *stage_args;
 	char **setup_argv, **size_argv, **data_in_argv;
-	char *resp_msg = NULL, *op = NULL;
+	char *resp_msg = NULL, *resp_msg2 = NULL, *op = NULL;
 	uint64_t real_size = 0;
 	int rc = SLURM_SUCCESS, status = 0, timeout;
 	slurmctld_lock_t job_read_lock =
@@ -1547,28 +1547,29 @@ static void *_start_stage_in(void *x)
 	size_argv[3] = xstrdup("--token");
 	xstrfmtcat(size_argv[4], "%u", stage_args->job_id);
 	START_TIMER;
-	resp_msg = bb_run_script("real_size",
-				 bb_state.bb_config.get_sys_state,
-				 size_argv, timeout, &status);
+	resp_msg2 = bb_run_script("real_size",
+				  bb_state.bb_config.get_sys_state,
+				  size_argv, timeout, &status);
 	END_TIMER;
 	if ((DELTA_TIMER > 200000) ||	/* 0.2 secs */
 	    bb_state.bb_config.debug_flag)
 		info("%s: real_size ran for %s", __func__, TIME_STR);
-	_log_script_argv(size_argv, resp_msg);
+	/* Use resp_msg2 to preserve resp_msg for error message below */
+	_log_script_argv(size_argv, resp_msg2);
 	if (WIFEXITED(status) && (WEXITSTATUS(status) != 0) &&
-	    resp_msg && (strncmp(resp_msg, "invalid function", 16) == 0)) {
+	    resp_msg2 && (strncmp(resp_msg2, "invalid function", 16) == 0)) {
 		debug("%s: Old dw_wlm_cli does not support real_size function",
 		      __func__);
 	} else if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 		error("%s: real_size for job %u status:%u response:%s",
-		      __func__, stage_args->job_id, status, resp_msg);
+		      __func__, stage_args->job_id, status, resp_msg2);
 	} else {
 		json_object *j;
 		struct bb_total_size *ent;
-		j = json_tokener_parse(resp_msg);
+		j = json_tokener_parse(resp_msg2);
 		if (j == NULL) {
 			error("%s: json parser failed on %s",
-			      __func__, resp_msg);
+			      __func__, resp_msg2);
 		} else {
 			ent = _json_parse_real_size(j);
 			json_object_put(j);	/* Frees json memory */
@@ -1577,7 +1578,7 @@ static void *_start_stage_in(void *x)
 			xfree(ent);
 		}
 	}
-	xfree(resp_msg);
+	xfree(resp_msg2);
 	_free_script_argv(size_argv);
 
 	lock_slurmctld(job_write_lock);
