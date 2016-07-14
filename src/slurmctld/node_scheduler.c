@@ -3726,6 +3726,22 @@ extern void re_kill_job(struct job_record *job_ptr)
 					    job_ptr->spank_job_env);
 	kill_job->spank_job_env_size = job_ptr->spank_job_env_size;
 
+	/* On a Cray system this will start the NHC early so it is
+	 * able to gather any information it can from the apparent
+	 * unkillable processes.
+	 * NOTE: do not do a list_for_each here, that will hold on the list
+	 * lock while processing the entire list which could
+	 * potentially be needed to lock again in
+	 * select_g_step_finish which could potentially call
+	 * post_job_step which calls delete_step_record which locks
+	 * the list to create a list_iterator on the same list and
+	 * could cause deadlock :).
+	 */
+	step_iterator = list_iterator_create(job_ptr->step_list);
+	while ((step_ptr = list_next(step_iterator)))
+		select_g_step_finish(step_ptr, true);
+	list_iterator_destroy(step_iterator);
+
 #ifdef HAVE_FRONT_END
 	if (job_ptr->batch_host &&
 	    (front_end_ptr = find_front_end_record(job_ptr->batch_host))) {
@@ -3819,21 +3835,6 @@ extern void re_kill_job(struct job_record *job_ptr)
 		      job_ptr->job_id, host_str);
 	}
 #endif
-	/* On a Cray system this will start the NHC early so it is
-	 * able to gather any information it can from the apparent
-	 * unkillable processes.
-	 * NOTE: do not do a list_for_each here, that will hold on the list
-	 * lock while processing the entire list which could
-	 * potentially be needed to lock again in
-	 * select_g_step_finish which could potentially call
-	 * post_job_step which calls delete_step_record which locks
-	 * the list to create a list_iterator on the same list and
-	 * could cause deadlock :).
-	 */
-	step_iterator = list_iterator_create(job_ptr->step_list);
-	while ((step_ptr = list_next(step_iterator)))
-		select_g_step_finish(step_ptr, true);
-	list_iterator_destroy(step_iterator);
 
 	xfree(host_str);
 	last_job_id = job_ptr->job_id;
