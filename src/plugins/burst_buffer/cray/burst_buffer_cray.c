@@ -1467,6 +1467,7 @@ static void *_start_stage_in(void *x)
 	struct job_record *job_ptr;
 	bb_alloc_t *bb_alloc = NULL;
 	bb_job_t *bb_job;
+	bool get_real_size = false;
 	DEF_TIMERS;
 
 	stage_args = (stage_args_t *) x;
@@ -1538,48 +1539,57 @@ static void *_start_stage_in(void *x)
 		}
 	}
 
+	slurm_mutex_lock(&bb_state.bb_mutex);
+	bb_job = bb_job_find(&bb_state, stage_args->job_id);
+	if (bb_job && bb_job->req_size)
+		get_real_size = true;
+	slurm_mutex_unlock(&bb_state.bb_mutex);
+
 	/* Round up job buffer size based upon DW "equalize_fragments"
 	 * configuration parameter */
-	size_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
-	size_argv[0] = xstrdup("dw_wlm_cli");
-	size_argv[1] = xstrdup("--function");
-	size_argv[2] = xstrdup("real_size");
-	size_argv[3] = xstrdup("--token");
-	xstrfmtcat(size_argv[4], "%u", stage_args->job_id);
-	START_TIMER;
-	resp_msg2 = bb_run_script("real_size",
-				  bb_state.bb_config.get_sys_state,
-				  size_argv, timeout, &status);
-	END_TIMER;
-	if ((DELTA_TIMER > 200000) ||	/* 0.2 secs */
-	    bb_state.bb_config.debug_flag)
-		info("%s: real_size ran for %s", __func__, TIME_STR);
-	/* Use resp_msg2 to preserve resp_msg for error message below */
-	_log_script_argv(size_argv, resp_msg2);
-	if (WIFEXITED(status) && (WEXITSTATUS(status) != 0) &&
-	    resp_msg2 && (strncmp(resp_msg2, "invalid function", 16) == 0)) {
-		debug("%s: Old dw_wlm_cli does not support real_size function",
-		      __func__);
-	} else if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
-		error("%s: real_size for job %u status:%u response:%s",
-		      __func__, stage_args->job_id, status, resp_msg2);
-	} else {
-		json_object *j;
-		struct bb_total_size *ent;
-		j = json_tokener_parse(resp_msg2);
-		if (j == NULL) {
-			error("%s: json parser failed on %s",
-			      __func__, resp_msg2);
+	if (get_real_size) {
+		size_argv = xmalloc(sizeof(char *) * 10);/* NULL terminated */
+		size_argv[0] = xstrdup("dw_wlm_cli");
+		size_argv[1] = xstrdup("--function");
+		size_argv[2] = xstrdup("real_size");
+		size_argv[3] = xstrdup("--token");
+		xstrfmtcat(size_argv[4], "%u", stage_args->job_id);
+		START_TIMER;
+		resp_msg2 = bb_run_script("real_size",
+					  bb_state.bb_config.get_sys_state,
+					  size_argv, timeout, &status);
+		END_TIMER;
+		if ((DELTA_TIMER > 200000) ||	/* 0.2 secs */
+		    bb_state.bb_config.debug_flag)
+			info("%s: real_size ran for %s", __func__, TIME_STR);
+		/* Use resp_msg2 to preserve resp_msg for error message below */
+		_log_script_argv(size_argv, resp_msg2);
+		if (WIFEXITED(status) && (WEXITSTATUS(status) != 0) &&
+		    resp_msg2 &&
+		    (strncmp(resp_msg2, "invalid function", 16) == 0)) {
+			debug("%s: Old dw_wlm_cli does not support real_size function",
+			      __func__);
+		} else if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+			error("%s: real_size for job %u status:%u response:%s",
+			      __func__, stage_args->job_id, status, resp_msg2);
 		} else {
-			ent = _json_parse_real_size(j);
-			json_object_put(j);	/* Frees json memory */
-			if (ent && (ent->units == BB_UNITS_BYTES))
-				real_size = ent->capacity;
-			xfree(ent);
+			json_object *j;
+			struct bb_total_size *ent;
+			j = json_tokener_parse(resp_msg2);
+			if (j == NULL) {
+				error("%s: json parser failed on %s",
+				      __func__, resp_msg2);
+			} else {
+				ent = _json_parse_real_size(j);
+				json_object_put(j);	/* Frees json memory */
+				if (ent && (ent->units == BB_UNITS_BYTES))
+					real_size = ent->capacity;
+				xfree(ent);
+			}
 		}
+		xfree(resp_msg2);
+		_free_script_argv(size_argv);
 	}
-	xfree(resp_msg2);
-	_free_script_argv(size_argv);
 
 	lock_slurmctld(job_write_lock);
 	job_ptr = find_job_record(stage_args->job_id);
