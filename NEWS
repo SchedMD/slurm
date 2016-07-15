@@ -41,6 +41,9 @@ documents those changes that are of interest to users and administrators.
     bad node.
  -- Make scontrol show steps show the extern step correctly.
  -- Do not scheduled powered down nodes in FAILED state.
+ -- Do not start slurmctld power_save thread until partition information is read
+    in order to prevent race condition that can result invalid pointer when
+    trying to resolve configured SuspendExcParts.
 
 * Changes in Slurm 16.05.2
 ==========================
