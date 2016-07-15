@@ -40,6 +40,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix gang scheduling and license release logic if single node job killed on
     bad node.
  -- Make scontrol show steps show the extern step correctly.
+ -- Do not scheduled powered down nodes in FAILED state.
 
 * Changes in Slurm 16.05.2
 ==========================
