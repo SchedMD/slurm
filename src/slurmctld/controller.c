@@ -456,7 +456,6 @@ int main(int argc, char *argv[])
 		fatal( "failed to initialize node_features plugin");	
 	if (switch_g_slurmctld_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize switch plugin");
-//	config_power_mgr();
 	if (node_features_g_node_power() && !power_save_test()) {
 		fatal("PowerSave required with NodeFeatures plugin, "
 		      "but not fully configured (SuspendProgram, "
