@@ -1204,7 +1204,8 @@ static void _load_state(bool init_config)
 				bb_alloc->seen_time = bb_state.last_load_time;
 				continue;
 			}
-			if (difftime(now, sessions[i].created) < TIME_SLOP) {
+			if (difftime(now, sessions[i].created) <
+			    bb_state.bb_config.other_timeout) {
 				/* Newly created in other thread. Give that
 				 * thread a chance to add the entry */
 				continue;
