@@ -1489,6 +1489,9 @@ static void *_start_stage_in(void *x)
 	_log_script_argv(setup_argv, resp_msg);
 	lock_slurmctld(job_read_lock);
 	slurm_mutex_lock(&bb_state.bb_mutex);
+	/* The buffer's actual size may be larger than requested by the user.
+	 * Remove limit here and restore limit based upon actual size below
+	 * (assuming buffer allocation succeeded, or just leave it out). */
 	bb_limit_rem(stage_args->user_id, stage_args->bb_size, stage_args->pool,
 		     &bb_state);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
@@ -1508,6 +1511,8 @@ static void *_start_stage_in(void *x)
 		} else if (bb_job->total_size) {
 			bb_job->state = BB_STATE_STAGING_IN;
 			bb_alloc = bb_alloc_job(&bb_state, job_ptr, bb_job);
+			bb_limit_add(stage_args->user_id, bb_job->total_size,
+				     stage_args->pool, &bb_state);
 			bb_alloc->create_time = time(NULL);
 		} else {
 			bb_job->state = BB_STATE_STAGING_IN;

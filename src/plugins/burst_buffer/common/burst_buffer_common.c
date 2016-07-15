@@ -999,8 +999,6 @@ extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr,
 	bb_alloc_t *bb_alloc;
 
 	bb_alloc = bb_alloc_job_rec(state_ptr, job_ptr, bb_job);
-	bb_limit_add(bb_alloc->user_id, bb_alloc->size, bb_alloc->pool,
-		     state_ptr);
 
 	return bb_alloc;
 }
