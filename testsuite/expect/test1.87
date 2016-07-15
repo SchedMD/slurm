@@ -83,6 +83,7 @@ expect {
 	-re "configuration is not available" {
 		send_user "WARNING: partition too small for test\n"
 		slow_kill $srun_pid
+		exec $bin_rm -f $file_in
 		exit 0
 	}
 	-re "Required node not available" {

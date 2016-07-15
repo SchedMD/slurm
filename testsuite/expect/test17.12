@@ -289,6 +289,7 @@ if {$err_msg != 1} {
 # Must be root and no NodeFeaturesPlugin to proceed */
 if {[test_super_user] == 0 || [string compare [test_node_features_plugin] ""]} {
 	send_user "\nWARNING: Configuration not compatible with additional tests\n"
+	exec $bin_rm -f $file_in
 	exit $exit_code
 }
 
@@ -352,6 +353,7 @@ expect {
 log_user 1
 if {$i != 4} {
 	send_user "\nWARNING: There are not enough nodes to run the remaining tests ($i != 4)\n"
+	exec $bin_rm -f $file_in
 	exit $exit_code
 }
 
