@@ -109,7 +109,7 @@ expect {
 			sleep 1
 			exec $bin_kill -USR2 $srun_pid
 		}
-		send_user "\nSent signal USR1 $usr2target times\n"
+		send_user "\nSent signal USR2 $usr2target times\n"
 		exp_continue
 	}
 	-re "SIGUSR($number)" {
