@@ -575,9 +575,46 @@ changes made to Slurm in order to support it, including work still underway.</p>
 <h3>Leibniz Rechen Zentrum (LRZ) Site Report</h3>
 <p>Juan Pancorbo (LRZ)</p>
 
-<p>Leibniz Rechen Zentrum (LRZ) Site Report plus a description of our
- contribution to the Slurm code with the energy plugin for IBM Active Energy
- Manager.</p>
+<p>As a service provider for scientific high performance computing, Leibniz
+ Rechen Zentrum (LRZ) operates compute systems for use by educational
+ institutions in Munich, Bavaria, as well as on the national level.</p>
+
+<p>LRZ provides own computing resources as well as housing and managing
+ computing resources from other institutions such as Max Planck Institute,
+ Technical University Munich, or Ludwig Maximillian University.</p>
+
+<p>The tier 2 Linux cluster operated at LRZ is a heterogeneous system with different types of compute nodes, divided into 18 different clusters, each of which is managed by SLURM. The various clusters are configured for the different needs and services requested, ranging from single node thousand core NUMAlink shared memory clusters, to a 28-way infiniband- connected cluster for parallel job execution, or 28-way infiniband- connected cluster for serial job execution. Currently we have 9 clusters for general use (mostly European students), 8 housed cluster for the exclusive usage of different departments from Max Plank Institute and Munich Universities and 1 small test cluster.</p>
+
+<p>The management of all clusters is centralized on a single virtual machine.
+ The required SLURM control daemons run concurrently on this VM.</p>
+
+<p>With the use of a wrapper script called MSLURM, the SLURM administrator
+ can send SLURM commands to any cluster in an easy-to use and flexible manner,
+ including starting or stopping the complete SLURM subsystem.</p>
+
+<p>On June 2015 we decommissioned our old 4-ways serial processing nodes
+ (300 in total) and replaced them with the COOLMUC2 system (384 dual socket
+ 14 core Haswell EP nodes). 60 of these nodes replace the old hardware on
+ serial and a new cluster was created (mpp2) to handle the rest of the nodes.</p>
+
+<p>These nodes have the IBM Active Energy Manager which has among other tasks:
+<ul>
+<li> Monitoring power consumption data</li>
+<li>Collecting power consumption data</li>
+</ul></p>
+
+<p>Based on the slurm plugins acct_gather_energy_cray and acct_gather_energy_rapl
+ we have used the IBM AEM interface to read the energy counters on the node and
+ created the acct_gather_energy_ibmaem plugin. This plugin is currently included
+ with the source code. The plugin runs on each of the compute nodes to gather
+ the energy counter information during the job run and once that the job has
+ finished it adds the energies on reported by all the nodes and shows them per
+ step.</p>
+
+<p>We have checked the energy measurements of the plugin against the energy
+ reported by the nodes chassis in the rack and we got consistent data between
+ both systems with a maximum of 5% difference (which is also the maximum error
+ of the energy reported by the chassis according to the manufacturer)</p>
 
 <!-- -------------------------------------------------------------------------- -->
 
@@ -627,6 +664,6 @@ deployment, issues, solutions and open questions that could possibly provide
 
 <!-- -------------------------------------------------------------------------- -->
 
-<p style="text-align:center;">Last modified 14 July 2016</p>
+<p style="text-align:center;">Last modified 15 July 2016</p>
 
 <!--#include virtual="footer.txt"-->
