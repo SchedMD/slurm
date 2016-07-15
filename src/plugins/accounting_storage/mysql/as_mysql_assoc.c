@@ -723,7 +723,7 @@ static int _set_assoc_limits_for_add(
 		assoc->max_wall_pj = slurm_atoul(row[ASSOC2_REQ_MWPJ]);
 
 	/* For the tres limits we just concatted the limits going up
-	 * the heirarchy slurmdb_tres_list_from_string will just skip
+	 * the hierarchy slurmdb_tres_list_from_string will just skip
 	 * over any reoccuring limit to give us the first one per
 	 * TRES.
 	 */
@@ -2134,7 +2134,7 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 			assoc->max_tres_run_mins = xstrdup(row[ASSOC_REQ_MTRM]);
 
 		/* For the tres limits we just concatted the limits going up
-		 * the heirarchy slurmdb_tres_list_from_string will just skip
+		 * the hierarchy slurmdb_tres_list_from_string will just skip
 		 * over any reoccuring limit to give us the first one per
 		 * TRES.
 		 */
