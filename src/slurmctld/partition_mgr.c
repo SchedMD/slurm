@@ -869,6 +869,10 @@ int load_all_part_state(void)
  */
 struct part_record *find_part_record(char *name)
 {
+	if (!part_list) {
+		error("part_list is NULL");
+		return NULL;
+	}
 	return list_find_first(part_list, &list_find_part, name);
 }
 

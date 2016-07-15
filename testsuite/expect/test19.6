@@ -126,6 +126,7 @@ if {$disabled == 1} {
 	send_user "\nWARNING: Current configuration prevents setting triggers\n"
 	send_user "         Need to run as SlurmUser or make SlurmUser=root\n"
 	cancel_job $job_id
+	exec $bin_rm -f $file_in $file_in_fini $file_in_time $file_in_up $file_in_down $file_in_reconfig
 	exit $exit_code
 }
 if {$matches == 0} {

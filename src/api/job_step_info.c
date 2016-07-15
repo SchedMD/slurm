@@ -161,9 +161,11 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 	if (job_step_ptr->array_job_id) {
 		if (job_step_ptr->step_id == INFINITE) {	/* Pending */
 			snprintf(tmp_line, sizeof(tmp_line),
-				 "StepId=%u_%u.TBD ",
+				 "StepId=%u_%u.%s ",
 				 job_step_ptr->array_job_id,
-				 job_step_ptr->array_task_id);
+				 job_step_ptr->array_task_id,
+				 (job_step_ptr->state == JOB_PENDING) ?
+				 "TBD" : "Extern");
 		} else {
 			snprintf(tmp_line, sizeof(tmp_line), "StepId=%u_%u.%u ",
 				 job_step_ptr->array_job_id,
@@ -173,8 +175,10 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 		out = xstrdup(tmp_line);
 	} else {
 		if (job_step_ptr->step_id == INFINITE) {	/* Pending */
-			snprintf(tmp_line, sizeof(tmp_line), "StepId=%u.TBD ",
-				 job_step_ptr->job_id);
+			snprintf(tmp_line, sizeof(tmp_line), "StepId=%u.%s ",
+				 job_step_ptr->job_id,
+				 (job_step_ptr->state == JOB_PENDING) ?
+				 "TBD" : "Extern");
 		} else {
 			snprintf(tmp_line, sizeof(tmp_line), "StepId=%u.%u ",
 				 job_step_ptr->job_id, job_step_ptr->step_id);

@@ -221,18 +221,17 @@ static void _internal_step_complete(struct job_record *job_ptr,
 				    struct step_record *step_ptr)
 {
 	jobacct_storage_g_step_complete(acct_db_conn, step_ptr);
-	if (step_ptr->step_id != SLURM_EXTERN_CONT) {
+	if (step_ptr->step_id != SLURM_EXTERN_CONT)
 		job_ptr->derived_ec = MAX(job_ptr->derived_ec,
 					  step_ptr->exit_code);
 
-		step_ptr->state |= JOB_COMPLETING;
-		select_g_step_finish(step_ptr, false);
+	step_ptr->state |= JOB_COMPLETING;
+	select_g_step_finish(step_ptr, false);
 #if !defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
-		/* On native Cray, post_job_step is called after NHC completes.
-		 * IF SIMULATING A CRAY THIS NEEDS TO BE COMMENTED OUT!!!! */
-		post_job_step(step_ptr);
+	/* On native Cray, post_job_step is called after NHC completes.
+	 * IF SIMULATING A CRAY THIS NEEDS TO BE COMMENTED OUT!!!! */
+	post_job_step(step_ptr);
 #endif
-	}
 }
 
 /*
@@ -726,9 +725,6 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 	step_ptr = find_step_record(job_ptr, step_id);
 	if (step_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID;
-
-	if (step_ptr->step_id == SLURM_EXTERN_CONT)
-		return select_g_step_finish(step_ptr, false);
 
 	/* If the job is already cleaning we have already been here
 	 * before, so just return. */

@@ -896,7 +896,8 @@ stepd_completion(int fd, uint16_t protocol_version, step_complete_msg_t *sent)
 
 	buffer = init_buf(0);
 
-	debug("Entering stepd_completion, range_first = %d, range_last = %d",
+	debug("Entering stepd_completion for %u.%u, range_first = %d, range_last = %d",
+	      sent->job_id, sent->job_step_id,
 	      sent->range_first, sent->range_last);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {

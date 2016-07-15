@@ -93,6 +93,7 @@ expect {
 if {$disabled == 1} {
 	send_user "\nWARNING: Current configuration prevents setting triggers\n"
 	send_user "         Need to run as SlurmUser or make SlurmUser=root\n"
+	exec $bin_rm -f $file_in
 	exit $exit_code
 }
 if {$matches == 0} {

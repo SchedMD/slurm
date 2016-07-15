@@ -39,9 +39,6 @@ set exit_code         0
 
 print_header $test_id
 
-exec $bin_rm -f $trigger_file_out $trigger_file_in
-make_bash_script $trigger_file_in " $bin_echo Strigger has been triggered >$cwd/$trigger_file_out"
-
 #
 # get my uid and clear any vestigial triggers
 #
@@ -65,6 +62,12 @@ if {$uid == -1} {
 }
 exec $strigger --clear --quiet --user=$uid
 
+#
+# Build input files
+#
+exec $bin_rm -f $trigger_file_out $trigger_file_in
+make_bash_script $trigger_file_in " $bin_echo Strigger has been triggered >$cwd/$trigger_file_out"
+
 set match 0
 spawn $strigger --set -v --down --program=$cwd/$trigger_file_in
 expect {
@@ -87,6 +90,7 @@ expect {
 if {$permission == 1} {
 	send_user "\nWARNING: Current configuration prevents setting triggers\n"
 	send_user "         Need to run as SlurmUser or make SlurmUser=root\n"
+	exec $bin_rm -f $trigger_file_in
 	exit $exit_code
 }
 if {$match != 1} {
