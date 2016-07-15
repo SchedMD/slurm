@@ -1508,14 +1508,19 @@ static void *_start_stage_in(void *x)
 		} else if (!bb_job) {
 			error("%s: unable to find bb_job record for job %u",
 			      __func__, stage_args->job_id);
-		} else if (bb_job->total_size) {
-			bb_job->state = BB_STATE_STAGING_IN;
-			bb_alloc = bb_alloc_job(&bb_state, job_ptr, bb_job);
-			bb_limit_add(stage_args->user_id, bb_job->total_size,
-				     stage_args->pool, &bb_state);
-			bb_alloc->create_time = time(NULL);
 		} else {
 			bb_job->state = BB_STATE_STAGING_IN;
+			bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr);
+			if (!bb_alloc && bb_job->total_size) {
+				/* Not found (from restart race condtion) and
+				 * job buffer has non-zero size */
+				bb_alloc = bb_alloc_job(&bb_state, job_ptr,
+							bb_job);
+				bb_limit_add(stage_args->user_id,
+					     bb_job->total_size,
+					     stage_args->pool, &bb_state);
+				bb_alloc->create_time = time(NULL);
+			}
 		}
 	}
 	slurm_mutex_unlock(&bb_state.bb_mutex);
