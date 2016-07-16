@@ -169,8 +169,9 @@ static struct step_record * _create_step_record(struct job_record *job_ptr,
 	struct step_record *step_ptr;
 
 	xassert(job_ptr);
-	/* NOTE: Reserve highest step ID values for NO_VAL and
-	 * SLURM_BATCH_SCRIPT */
+	/* NOTE: Reserve highest step ID values for
+	 * SLURM_EXTERN_CONT and SLURM_BATCH_SCRIPT and any other
+	 * special step that may come our way. */
 	if (job_ptr->next_step_id >= 0xfffffff0) {
 		/* avoid step records in the accounting database */
 		info("job %u has reached step id limit", job_ptr->job_id);
@@ -213,7 +214,7 @@ static void _build_pending_step(struct job_record *job_ptr,
 	step_ptr->port		= step_specs->port;
 	step_ptr->host		= xstrdup(step_specs->host);
 	step_ptr->state		= JOB_PENDING;
-	step_ptr->step_id	= SLURM_EXTERN_CONT;
+	step_ptr->step_id	= SLURM_PENDING_STEP;
 	if (job_ptr->node_bitmap)
 		step_ptr->step_node_bitmap = bit_copy(job_ptr->node_bitmap);
 	step_ptr->time_last_active = time(NULL);
@@ -224,6 +225,10 @@ static void _internal_step_complete(struct job_record *job_ptr,
 				    struct step_record *step_ptr)
 {
 	jobacct_storage_g_step_complete(acct_db_conn, step_ptr);
+
+	if (step_ptr->step_id == SLURM_PENDING_STEP)
+		return;
+
 	if (step_ptr->step_id != SLURM_EXTERN_CONT)
 		job_ptr->derived_ec = MAX(job_ptr->derived_ec,
 					  step_ptr->exit_code);
@@ -255,14 +260,20 @@ extern void delete_step_records (struct job_record *job_ptr)
 	step_iterator = list_iterator_create(job_ptr->step_list);
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
 		/* Only check if not a pending step */
-		uint16_t cleaning = 0;
-		select_g_select_jobinfo_get(step_ptr->select_jobinfo,
-					    SELECT_JOBDATA_CLEANING,
-					    &cleaning);
-		if (cleaning)	/* Step already in cleanup. */
-			continue;
-		/* _internal_step_complete() will purge step record */
-		_internal_step_complete(job_ptr, step_ptr);
+		if (step_ptr->step_id != SLURM_PENDING_STEP) {
+			uint16_t cleaning = 0;
+			select_g_select_jobinfo_get(step_ptr->select_jobinfo,
+						    SELECT_JOBDATA_CLEANING,
+						    &cleaning);
+			if (cleaning)	/* Step already in cleanup. */
+				continue;
+			/* _internal_step_complete() will purge step record */
+			_internal_step_complete(job_ptr, step_ptr);
+		} else {
+			_internal_step_complete(job_ptr, step_ptr);
+			list_remove (step_iterator);
+			_free_step_rec(step_ptr);
+		}
 	}
 	list_iterator_destroy(step_iterator);
 }
@@ -728,6 +739,9 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 	step_ptr = find_step_record(job_ptr, step_id);
 	if (step_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID;
+
+	if (step_ptr->step_id == SLURM_PENDING_STEP)
+		return SLURM_SUCCESS;
 
 	/* If the job is already cleaning we have already been here
 	 * before, so just return. */
@@ -3447,7 +3461,7 @@ extern void step_set_alloc_tres(
 			mem_count = step_ptr->job_ptr->job_resrcs->
 				memory_allocated[0];
 	} else if ((step_ptr->step_id == SLURM_EXTERN_CONT) &&
-	    step_ptr->job_ptr->tres_alloc_str) {
+		   step_ptr->job_ptr->tres_alloc_str) {
 		/* get the tres from the whole job */
 		step_ptr->tres_alloc_str =
 			xstrdup(step_ptr->job_ptr->tres_alloc_str);
