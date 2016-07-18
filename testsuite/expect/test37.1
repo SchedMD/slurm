@@ -577,6 +577,41 @@ if {$exit_code || $matches != 4} {
 	end_it 1
 }
 
+
+#Test show cluster WithFed
+set matches 0
+set my_pid [spawn $sacctmgr show cluster $tc1 $tc2 $tc3 WithFed]
+expect {
+	-re "Cluster\\s+.*?Federation\\s+ID\\s+Weight\\s+FedState $eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+$tc1\\s+.*?$fed1\\s+1\\s+0\\s+DRAIN $eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+$tc2\\s+.*?$fed2\\s+\\s+1\\s+0\\s+ACTIVE $eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+$tc3\\s+.*?$fed2\\s+\\s+2\\s+0\\s+ACTIVE $eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 4} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
 set matches 0
 set my_pid [spawn $sacctmgr show federation $fed1 $fed2 format="federation%20,cluster%20"]
 expect {

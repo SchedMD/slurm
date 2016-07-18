@@ -42,6 +42,7 @@
 #include "src/common/uid.h"
 
 static bool with_deleted = 0;
+static bool with_fed = 0;
 static bool without_limits = 0;
 
 enum {
@@ -83,6 +84,10 @@ static int _set_cond(int *start, int argc, char *argv[],
 			   !strncasecmp(argv[i], "WithDeleted",
 					 MAX(command_len, 5))) {
 			with_deleted = 1;
+		} else if (!end &&
+			   !strncasecmp(argv[i], "WithFed",
+					 MAX(command_len, 5))) {
+			with_fed = 1;
 		} else if (!end && !strncasecmp(argv[i], "WOLimits",
 						 MAX(command_len, 3))) {
 			without_limits = 1;
@@ -484,6 +489,9 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 					      "Fa,GrpJ,GrpTRES,GrpS,MaxJ,"
 					      "MaxTRES,MaxS,MaxW,QOS,"
 					      "DefaultQOS");
+		if (with_fed)
+			slurm_addto_char_list(format_list,
+					      "Federation,ID,Weight,FedState");
 	}
 
 	cluster_cond->with_deleted = with_deleted;

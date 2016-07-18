@@ -957,7 +957,8 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             WOPInfo, and WOPLimits                         \n\
                                                                            \n\
        list cluster       - Classification=, DefaultQOS=, Federation=,     \n\
-                            Flags=, Format=, Names=, RPC= and WOLimits     \n\
+                            Flags=, Format=, Names=, RPC= WithFed and      \n\
+                            WOLimits                                       \n\
        add cluster        - DefaultQOS=, Fairshare=, Federation=, FedState=,\n\
                             GrpTRES=, GrpJobs=, GrpMemory=, GrpNodes=,     \n\
                             GrpSubmitJob=, MaxTRESMins=, MaxJobs=,         \n\
