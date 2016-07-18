@@ -922,10 +922,10 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
      !!                       Repeat the last command entered.             \n\
                                                                            \n\
   <ENTITY> may be \"account\", \"association\", \"cluster\",               \n\
-                  \"configuration\", \"coordinator\", \"event\", \"job\",  \n\
-                  \"problem\", \"qos\", \"resource\", \"reservation\",     \n\
-                  \"runawayjobs\", \"stats\", \"transaction\", \"tres\",   \n\
-                  \"user\" or \"wckey\"                                    \n\
+                  \"configuration\", \"coordinator\", \"event\",           \n\
+                  \"federation\", \"job\", \"problem\", \"qos\",           \n\
+                  \"resource\", \"reservation\", \"runawayjobs\", \"stats\"\n\
+                  \"transaction\", \"tres\", \"user\" or \"wckey\"         \n\
                                                                            \n\
   <SPECS> are different for each command entity pair.                      \n\
        list account       - Clusters=, Descriptions=, Format=,             \n\
@@ -956,18 +956,20 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             WithSubAccounts, WithDeleted, WOLimits,        \n\
                             WOPInfo, and WOPLimits                         \n\
                                                                            \n\
-       list cluster       - Classification=, DefaultQOS=, Flags=, Format=, \n\
-                            Names=, RPC=, and WOLimits                     \n\
-       add cluster        - DefaultQOS=, Fairshare=, GrpTRES=, GrpJobs=,   \n\
+       list cluster       - Classification=, DefaultQOS=, Federation=,     \n\
+                            Flags=, Format=, Names=, RPC= and WOLimits     \n\
+       add cluster        - DefaultQOS=, Fairshare=, Federation=, FedState=,\n\
+                            GrpTRES=, GrpJobs=, GrpMemory=, GrpNodes=,     \n\
+                            GrpSubmitJob=, MaxTRESMins=, MaxJobs=,         \n\
+                            MaxNodes=, MaxSubmitJobs=, MaxWall=, Name=,    \n\
+                            QosLevel= and Weight=                          \n\
+       modify cluster     - (set options) DefaultQOS=, Fairshare=,         \n\
+                            Federation=, FedState=, GrpTRES=, GrpJobs=,    \n\
                             GrpMemory=, GrpNodes=, GrpSubmitJob=,          \n\
                             MaxTRESMins=, MaxJobs=, MaxNodes=,             \n\
-                            MaxSubmitJobs=, MaxWall=, Name=, and QosLevel= \n\
-       modify cluster     - (set options) DefaultQOS=, Fairshare=, GrpTRES=,\n\
-                            GrpJobs=, GrpMemory=, GrpNodes=, GrpSubmitJob=,\n\
-                            MaxTRESMins=, MaxJobs=, MaxNodes=,             \n\
-                            MaxSubmitJobs=, MaxWall=, and QosLevel=        \n\
-                            (where options) Classification=, Flags=,       \n\
-                            and Names=                                     \n\
+                            MaxSubmitJobs=, MaxWall=, QosLevel= and Weight=\n\
+                            (where options) Classification=, Federation=,  \n\
+                            Flags=, and Names=                             \n\
        delete cluster     - Classification=, DefaultQOS=, Flags=, and Names=\n\
                                                                            \n\
        add coordinator    - Accounts=, and Names=                          \n\
@@ -976,6 +978,12 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        list events        - All_Clusters, All_Time, Clusters=, End=, Events=,\n\
                             Format=, MaxCPUs=, MinCPUs=, Nodes=, Reason=,  \n\
                             Start=, States=, and User=                     \n\
+                                                                           \n\
+       list federation    - Names=, Format= and Tree                       \n\
+       add federation     - Flags=, Clusters= and Name=                    \n\
+       modify federation  - (set options) Clusters= and Flags=             \n\
+                            (where options) Names=                         \n\
+       delete federation  - Names=                                         \n\
                                                                            \n\
        modify job         - (set options) DerivedExitCode=, Comment=       \n\
                             (where options) JobID=, Cluster=               \n\

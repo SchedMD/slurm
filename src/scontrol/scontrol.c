@@ -1993,7 +1993,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      !!                       Repeat the last command entered.             \n\
 									   \n\
   <ENTITY> may be \"aliases\", \"assoc_mgr\" \"burstBuffer\",              \n\
-       \"config\", \"daemons\", \"frontend\",                              \n\
+       \"config\", \"daemons\", \"federation\", \"frontend\",              \n\
        \"hostlist\", \"hostlistsorted\", \"hostnames\",                    \n\
        \"job\", \"layouts\", \"node\", \"partition\", \"reservation\",     \n\
        \"slurmd\", \"step\", or \"topology\"                               \n\
