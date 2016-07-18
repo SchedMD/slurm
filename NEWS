@@ -66,6 +66,7 @@ documents those changes that are of interest to users and administrators.
  -- Do not start slurmctld power_save thread until partition information is read
     in order to prevent race condition that can result invalid pointer when
     trying to resolve configured SuspendExcParts.
+ -- Add SLURM_PENDING_STEP id so it won't be confused with SLURM_EXTERN_CONT.
 
 
 * Changes in Slurm 16.05.2
