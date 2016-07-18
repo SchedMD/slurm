@@ -3198,6 +3198,7 @@ extern void slurmdb_pack_federation_cond(void *in, uint16_t protocol_version,
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			pack32(NO_VAL, buffer);
+			pack16(0, buffer);
 			return;
 		}
 
@@ -3213,6 +3214,8 @@ extern void slurmdb_pack_federation_cond(void *in, uint16_t protocol_version,
 			}
 			list_iterator_destroy(itr);
 		}
+
+		pack16(object->with_deleted, buffer);
 	}
 }
 
@@ -3242,6 +3245,8 @@ extern int slurmdb_unpack_federation_cond(void **object,
 					    tmp_info);
 			}
 		}
+
+		safe_unpack16(&object_ptr->with_deleted, buffer);
 	}
 
 	return SLURM_SUCCESS;
