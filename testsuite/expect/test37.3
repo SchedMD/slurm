@@ -106,6 +106,19 @@ proc test_fed_status {cname cluster_list} {
 			if {[regexp "Federation: $fed_name" $line match]} {
 				send_user "matched: $match\n"
 				incr matches
+			} elseif {[regexp {Self:\s+(\S+):(\S+):(\d+) ID:(\d+) FedState:(\S*) Weight:(\d+)} \
+					  $line match name host port id state weight]} {
+				send_user "matched: $match\n"
+				if {$expected_matches &&
+				    ![string compare [dict get $clusters($name) host]  $host]  &&
+				    ![string compare [dict get $clusters($name) state] $state] &&
+				    ![string compare [dict get $clusters($name) conn]  Self]  &&
+				    [dict get $clusters($name) port]   == $port &&
+				    [dict get $clusters($name) id]     == $id &&
+				    [dict get $clusters($name) weight] == $weight} {
+					send_user "matched self: $name\n"
+					incr matches
+				}
 			} elseif {[regexp {Sibling:\s+(\S+):(\S+):(\d+) ID:(\d+) FedState:(\S*) Weight:(\d+) PersistConn:(\S+)} \
 					  $line match name host port id state weight conn]} {
 				send_user "matched: $match\n"
@@ -116,7 +129,7 @@ proc test_fed_status {cname cluster_list} {
 				    [dict get $clusters($name) port]   == $port &&
 				    [dict get $clusters($name) id]     == $id &&
 				    [dict get $clusters($name) weight] == $weight} {
-					send_user "matched: $name\n"
+					send_user "matched sibling: $name\n"
 					incr matches
 				}
 			}
