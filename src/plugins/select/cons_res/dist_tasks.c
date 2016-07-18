@@ -355,6 +355,16 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 
 	if (!job_res)
 		return;
+	if (!job_res->core_bitmap) {
+		error("%s: core_bitmap for job %u is NULL",
+		      __func__, job_ptr->job_id);
+		return;
+	}
+	if (bit_ffs(job_res->core_bitmap) == -1) {
+		error("%s: core_bitmap for job %u has no bits set",
+		      __func__, job_ptr->job_id);
+		return;
+	}
 
 	if (cr_type & CR_SOCKET)
 		alloc_sockets = true;
