@@ -2214,6 +2214,196 @@ if {$exit_code || $matches != 4} {
 	end_it 1
 }
 
+
+#####################################
+# TEST: test deleting cluster with where federation= clause
+#####################################
+set my_pid [spawn $sacctmgr -i delete federation $fed2 $fed3]
+expect {
+}
+expect -re $
+
+set matches 0
+set my_pid [spawn $sacctmgr -i add federation $fed2 clusters=$tc1,$tc2]
+expect {
+	-re "Adding Federation\\(s\\)$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "$fed2$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "Settings$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+Cluster\\s+=\\s+$tc1$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+Cluster\\s+=\\s+$tc2$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 5} {
+	send_user "$matches FAILURE: adding federation with clusters failed.\n"
+	end_it 1
+}
+
+# add second cluster to make sure selectin only on federation
+set matches 0
+set my_pid [spawn $sacctmgr -i add federation $fed3 clusters=$tc3,$tc4]
+expect {
+	-re "Adding Federation\\(s\\)$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "$fed3$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "Settings$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+Cluster\\s+=\\s+$tc3$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+Cluster\\s+=\\s+$tc4$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 5} {
+	send_user "$matches FAILURE: adding federation with clusters failed.\n"
+	end_it 1
+}
+
+set matches 0
+set my_pid [spawn $sacctmgr -i delete cluster where federation=$fed2]
+expect {
+	-re "Deleting clusters...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "$tc1$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "$tc2$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 3} {
+	send_user "$matches FAILURE: deleting clusters with federation=.\n"
+	end_it 1
+}
+
+# add back clusters back to federation to verify both federation clusters are
+# selected.
+set matches 0
+set my_pid [spawn $sacctmgr -i add cluster $tc1,$tc2 federation=$fed2]
+expect {
+	-re "Adding Cluster\\(s\\)$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+$tc1$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+$tc2$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+Federation\\s+=\\s+$fed2$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 5} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+set matches 0
+set my_pid [spawn $sacctmgr -i delete cluster where federation=$fed2,$fed3]
+expect {
+	-re "Deleting clusters...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "$tc1$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "$tc2$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "$tc3$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "$tc4$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 5} {
+	send_user "$matches FAILURE: deleting clusters with federation=.\n"
+	end_it 1
+}
+
+
 #####################################
 # TEST: test adding more than 63 clusters to a federation
 #####################################

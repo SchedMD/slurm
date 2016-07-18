@@ -849,7 +849,9 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 	}
 
 	if (!list_count(cluster_cond->cluster_list)
-	   && !cluster_cond->classification) {
+	   && !cluster_cond->classification
+	   && (!cluster_cond->federation_list ||
+	       !list_count(cluster_cond->federation_list))) {
 		exit_code=1;
 		fprintf(stderr,
 			"problem with delete request.  "
