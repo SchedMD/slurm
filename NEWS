@@ -22,6 +22,7 @@ documents those changes that are of interest to users and administrators.
  -- Add burst buffer support for job arrays. Add new SchedulerParameters option
     of bb_array_stage_cnt=# to indicate how many pending tasks of a job array
     should be made available for burst buffer resource allocation.
+ -- Fix small memory leak when a job fails to load from state save.
 
 * Changes in Slurm 16.05.3
 ==========================

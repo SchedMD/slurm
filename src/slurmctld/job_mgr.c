@@ -1988,6 +1988,7 @@ unpack_error:
 	xfree(gres_alloc);
 	xfree(gres_req);
 	xfree(gres_used);
+	free_job_resources(&job_resources);
 	xfree(resp_host);
 	xfree(licenses);
 	xfree(limit_set.tres);
