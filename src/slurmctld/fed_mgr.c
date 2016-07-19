@@ -301,6 +301,7 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 				    DEBUG_FLAG_FEDR)
 					info("I'm part of the '%s' federation!",
 					     fed->name);
+				xfree(fed_mgr_fed_info.name);
 				memcpy(&fed_mgr_fed_info, &cluster->fed,
 				       sizeof(fed_elem_t));
 				fed_mgr_fed_info.name =

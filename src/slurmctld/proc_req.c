@@ -1513,6 +1513,8 @@ static void _slurm_rpc_get_fed(slurm_msg_t * msg)
 	/* send message */
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
 
+	slurmdb_destroy_federation_rec(fed);
+
 	END_TIMER2("_slurm_rpc_get_fed");
 	debug2("%s %s", __func__, TIME_STR);
 }

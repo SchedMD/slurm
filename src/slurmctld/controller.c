@@ -1085,7 +1085,6 @@ static void *_service_connection(void *arg)
 {
 	connection_arg_t *conn = (connection_arg_t *) arg;
 	void *return_code = NULL;
-	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
 
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_SET_NAME, "srvcn", NULL, NULL, NULL) < 0) {
@@ -1093,9 +1092,11 @@ static void *_service_connection(void *arg)
 	}
 #endif
 	while (1) {
+		slurm_msg_t *msg;
 		if (slurmctld_config.shutdown_time) {
 			break;
 		}
+		msg = xmalloc(sizeof(slurm_msg_t));
 		slurm_msg_t_init(msg);
 		/*
 		 * slurm_receive_msg sets msg connection fd to accepted fd. This allows
@@ -1108,6 +1109,7 @@ static void *_service_connection(void *arg)
 			error("slurm_receive_msg [%s]: %m", addr_buf);
 			/* close the new socket */
 			slurm_close(conn->newsockfd);
+			slurm_free_msg(msg);
 			goto cleanup;
 		}
 
@@ -1121,6 +1123,8 @@ static void *_service_connection(void *arg)
 			slurmctld_req(msg, conn);
 		}
 
+		slurm_free_msg(msg);
+
 		if (!conn->persist)
 			break;
 	}
@@ -1131,7 +1135,6 @@ static void *_service_connection(void *arg)
 
 cleanup:
 	debug2("exiting service connection thread");
-	slurm_free_msg(msg);
 	xfree(arg);
 	server_thread_decr();
 	return return_code;

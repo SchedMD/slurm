@@ -586,6 +586,7 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 					error("failed to get cluster id for "
 					      "federation");
 					xfree(tmp_vals);
+					xfree(object);
 					FREE_NULL_LIST(ret_list);
 					mysql_free_result(result);
 					goto end_it;
@@ -643,9 +644,9 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	/* push out changes since the cluster could have just registered */
 	as_mysql_add_feds_to_update_list(mysql_conn);
-	xfree(query);
 
 end_it:
+	xfree(query);
 	xfree(vals);
 	xfree(user_name);
 

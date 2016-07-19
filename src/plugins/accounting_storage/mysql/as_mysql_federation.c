@@ -148,6 +148,9 @@ static int _remove_all_clusters_from_fed(mysql_conn_t *mysql_conn,
 	if (rc)
 		error("Failed to remove all clusters from federation %s", fed);
 
+	if (exception_names)
+		xfree(exception_names);
+
 	return rc;
 }
 
