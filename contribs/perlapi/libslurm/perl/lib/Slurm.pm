@@ -371,7 +371,7 @@ Allocate resources for a job request. If the requested resources are not immedia
 
 =over 2
 
-=item * IN $job_desc: description of resource allocation request, with sturcture of C<job_desc_msg_t>.
+=item * IN $job_desc: description of resource allocation request, with structure of C<job_desc_msg_t>.
 
 =item * RET: response to request, with structure of C<resource_allocation_response_msg_t>.  This only represents a job allocation if resources are immediately available.  Otherwise it just contains the job id of the enqueued job request. On failure C<undef> is returned.
     
@@ -383,7 +383,7 @@ Allocate resources for a job request.  This call will block until the allocation
     
 =over 2
 
-=item * IN $job_desc: description of resource allocation request, with sturcture of C<job_desc_msg_t>.
+=item * IN $job_desc: description of resource allocation request, with structure of C<job_desc_msg_t>.
 
 =item * IN $timeout: amount of time, in seconds, to wait for a response before giving up. A timeout of zero will wait indefinitely.    
 
