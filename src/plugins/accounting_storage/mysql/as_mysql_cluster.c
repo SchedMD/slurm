@@ -579,6 +579,7 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if (rc != SLURM_SUCCESS) {
 		FREE_NULL_LIST(ret_list);
+		xfree(query);
 		return NULL;
 	}
 	if (!jobs_running) {
@@ -620,6 +621,8 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		errno = SLURM_SUCCESS;
 	} else
 		errno = ESLURM_JOBS_RUNNING_ON_ASSOC;
+
+	xfree(query);
 
 	return ret_list;
 }

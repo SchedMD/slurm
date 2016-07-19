@@ -25,6 +25,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix small memory leak when a job fails to load from state save.
  -- Fix invalid read when attempting to delete clusters from db with running
     jobs.
+ -- Fix small memory leak when deleting clusters from db.
 
 * Changes in Slurm 16.05.3
 ==========================
