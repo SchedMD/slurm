@@ -1839,7 +1839,7 @@ extern int validate_group(struct part_record *part_ptr, uid_t run_uid)
 #if defined(_SC_GETPW_R_SIZE_MAX)
 	long ii;
 #endif
-	int i = 0, res;
+	int i = 0, res, uid_array_len;
 	size_t buflen;
 	struct passwd pwd, *pwd_result;
 	char *buf;
@@ -1859,6 +1859,7 @@ extern int validate_group(struct part_record *part_ptr, uid_t run_uid)
 		if (part_ptr->allow_uids[i] == run_uid)
 			return 1;
 	}
+	uid_array_len = i;
 
 	/* The allow_uids list is built from the allow_groups list,
 	 * and if user/group enumeration has been disabled, it's
@@ -1948,6 +1949,16 @@ extern int validate_group(struct part_record *part_ptr, uid_t run_uid)
 	xfree(groups);
 	xfree(buf);
 	xfree(grp_buffer);
+
+	if (ret == 1) {
+		debug("UID %ld added to AllowGroup %s of partition %s",
+		      (long) run_uid, grp.gr_name, part_ptr->name);
+		part_ptr->allow_uids =
+			xrealloc(part_ptr->allow_uids,
+				 (sizeof(uid_t) * (uid_array_len + 1)));
+		part_ptr->allow_uids[uid_array_len] = run_uid;
+	}
+
 	return ret;
 }
 

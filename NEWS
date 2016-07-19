@@ -49,6 +49,10 @@ documents those changes that are of interest to users and administrators.
     Previous logic would in some cases allocate a job zero cores, resulting in
     slurmctld abort.
  -- Minimize preempted jobs for configurations with multiple jobs per node.
+ -- Improve partition AllowGroups caching. Update the table of UIDs permitted to
+    use a partition based upon it's AllowGroups configuration parameter as new
+    valid UIDs are found rather than looking up that user's group information
+    for every job they submit.
 
 * Changes in Slurm 16.05.2
 ==========================
