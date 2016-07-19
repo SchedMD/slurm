@@ -183,6 +183,7 @@ script for Slurm?</a></li>
 <li><a href="#cray_dvs">How can I update Slurm on a Cray DVS file system without
 rebooting the nodes?</a></li>
 <li><a href="#dbd_rebuild">How can I rebuild the database hierarchy?</a></li>
+<li><a href="#routing queue">How can a routing queue be configured?</a></li>
 </ol>
 
 <h2>For Management</h2>
@@ -2164,8 +2165,18 @@ administrator error in directly modifying the database. In order to rebuild
 the database information, start the slurmdbd daemon with the "-R" option
 followed by an optional comma separated list of cluster names to operate on.</p>
 
+<p><a name="routing queue"><b>66. How can a routing queue be configured?</b></a><br>
+A job submit plugin is designed to have access to a job request from a user,
+plus information about all of the available system partitions/queue.
+An administrator can write a C plugin or LUA script to set an incoming job's
+partition based upon its size, time limit, etc.
+See the <a href="http://slurm.schedmd.com/job_submit_plugins.html"> Job Submit Plugin API<a>
+guide for more information.
+Also see the available job submit plugins distributed with Slurm for examples
+(look in the "src/plugins/job_submit" directory).</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 22 June 2016</p>
+<p style="text-align:center;">Last modified 19 July 2016</p>
 
 <!--#include virtual="footer.txt"-->
