@@ -23,6 +23,8 @@ documents those changes that are of interest to users and administrators.
     of bb_array_stage_cnt=# to indicate how many pending tasks of a job array
     should be made available for burst buffer resource allocation.
  -- Fix small memory leak when a job fails to load from state save.
+ -- Fix invalid read when attempting to delete clusters from db with running
+    jobs.
 
 * Changes in Slurm 16.05.3
 ==========================

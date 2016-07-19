@@ -541,8 +541,14 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	user_name = uid_to_string((uid_t) uid);
 	while ((row = mysql_fetch_row(result))) {
 		char *object = xstrdup(row[0]);
-		if (!jobs_running)
-			list_append(ret_list, object);
+		if (!jobs_running) {
+			/* strdup the cluster name because ret_list will be
+			 * flushed if there are running jobs. This will cause an
+			 * invalid read because _check_jobs_before_remove() will
+			 * still try to access "cluster_name" which was
+			 * "object". */
+			list_append(ret_list, xstrdup(object));
+		}
 
 		xfree(name_char);
 		xstrfmtcat(name_char, "name='%s'", object);
@@ -559,11 +565,11 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			   object, cluster_day_table, now,
 			   object, cluster_hour_table, now,
 			   object, cluster_month_table, now);
-		if ((rc = remove_common(mysql_conn, DBD_REMOVE_CLUSTERS, now,
-					user_name, cluster_table,
-					name_char, assoc_char, object,
-					ret_list, &jobs_running))
-		    != SLURM_SUCCESS)
+		rc = remove_common(mysql_conn, DBD_REMOVE_CLUSTERS, now,
+				   user_name, cluster_table, name_char,
+				   assoc_char, object, ret_list, &jobs_running);
+		xfree(object);
+		if (rc != SLURM_SUCCESS)
 			break;
 	}
 	mysql_free_result(result);
