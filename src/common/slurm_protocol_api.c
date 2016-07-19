@@ -4012,8 +4012,8 @@ extern int slurm_open_persist_controller_conn(char *host, uint32_t port)
 {
 	int fd = -1;
 	int rc;
-	slurm_msg_t resp_msg;
-	slurm_msg_t req_msg;
+	slurm_msg_t *req_msg;
+	slurm_msg_t *resp_msg;
 	slurm_addr_t addr;
 
 	slurm_set_addr_char(&addr, port, host);
@@ -4022,16 +4022,22 @@ extern int slurm_open_persist_controller_conn(char *host, uint32_t port)
 		return -1;
 	}
 
-	slurm_msg_t_init(&req_msg);
-	slurm_msg_t_init(&resp_msg);
+	req_msg  = xmalloc(sizeof(slurm_msg_t));
+	resp_msg = xmalloc(sizeof(slurm_msg_t));
 
-	req_msg.msg_type = REQUEST_PERSIST_INIT;
-	if ((rc = slurm_send_recv_msg(fd, &req_msg, &resp_msg, 0)) ||
-	    (rc = slurm_get_return_code(resp_msg.msg_type, resp_msg.data))) {
+	slurm_msg_t_init(req_msg);
+	slurm_msg_t_init(resp_msg);
+
+	req_msg->msg_type = REQUEST_PERSIST_INIT;
+	if ((rc = slurm_send_recv_msg(fd, req_msg, resp_msg, 0)) ||
+	    (rc = slurm_get_return_code(resp_msg->msg_type, resp_msg->data))) {
 		error("failed to open persistent connection %d", fd);
 		slurm_close_persist_controller_conn(fd);
 		fd = -1;
 	}
+
+	slurm_free_msg(req_msg);
+	slurm_free_msg(resp_msg);
 
 	return fd;
 }
@@ -4044,17 +4050,19 @@ extern int slurm_close_persist_controller_conn(int fd)
 {
 	int rc = SLURM_SUCCESS;
 	int retry = 0;
-	slurm_msg_t resp_msg;
-	slurm_msg_t req_msg;
+	slurm_msg_t *req_msg;
+	slurm_msg_t *resp_msg;
+	req_msg  = xmalloc(sizeof(slurm_msg_t));
+	resp_msg = xmalloc(sizeof(slurm_msg_t));
 
 	xassert(fd >= 0);
 
-	slurm_msg_t_init(&req_msg);
-	slurm_msg_t_init(&resp_msg);
+	slurm_msg_t_init(req_msg);
+	slurm_msg_t_init(resp_msg);
 
-	req_msg.msg_type = REQUEST_PERSIST_FINI;
-	if ((rc = slurm_send_recv_msg(fd, &req_msg, &resp_msg, 0)) ||
-	    (rc = slurm_get_return_code(resp_msg.msg_type, resp_msg.data)))
+	req_msg->msg_type = REQUEST_PERSIST_FINI;
+	if ((rc = slurm_send_recv_msg(fd, req_msg, resp_msg, 0)) ||
+	    (rc = slurm_get_return_code(resp_msg->msg_type, resp_msg->data)))
 		error("failed to finish persistent connection %d", fd);
 
 	while ((slurm_shutdown_msg_conn(fd) < 0) && (errno == EINTR) ) {
@@ -4062,6 +4070,9 @@ extern int slurm_close_persist_controller_conn(int fd)
 			break;
 		}
 	}
+
+	slurm_free_msg(req_msg);
+	slurm_free_msg(resp_msg);
 
 	return rc;
 }
