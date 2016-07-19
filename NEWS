@@ -52,7 +52,8 @@ documents those changes that are of interest to users and administrators.
  -- Improve partition AllowGroups caching. Update the table of UIDs permitted to
     use a partition based upon it's AllowGroups configuration parameter as new
     valid UIDs are found rather than looking up that user's group information
-    for every job they submit.
+    for every job they submit. If the user is now allowed to use the partition,
+    then do not check that user's group access again for 5 seconds.
 
 * Changes in Slurm 16.05.2
 ==========================
