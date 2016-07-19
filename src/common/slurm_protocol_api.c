@@ -4028,7 +4028,7 @@ extern int slurm_open_persist_controller_conn(char *host, uint32_t port)
 	req_msg.msg_type = REQUEST_PERSIST_INIT;
 	if ((rc = slurm_send_recv_msg(fd, &req_msg, &resp_msg, 0)) ||
 	    (rc = slurm_get_return_code(resp_msg.msg_type, resp_msg.data))) {
-		error("failed to finish persistent connection %d", fd);
+		error("failed to open persistent connection %d", fd);
 		slurm_close_persist_controller_conn(fd);
 		fd = -1;
 	}
