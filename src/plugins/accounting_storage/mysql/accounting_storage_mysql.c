@@ -344,10 +344,10 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 			(*already_flushed) = 1;
 			reset_mysql_conn(mysql_conn);
 		}
+		if (ret_list)
+			_process_running_jobs_result(cluster_name, result,
+						     ret_list);
 	}
-
-	if (ret_list)
-		_process_running_jobs_result(cluster_name, result, ret_list);
 
 	mysql_free_result(result);
 	return rc;
