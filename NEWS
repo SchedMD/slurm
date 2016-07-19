@@ -48,6 +48,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix for core selection with job --gres-flags=enforce-binding option.
     Previous logic would in some cases allocate a job zero cores, resulting in
     slurmctld abort.
+ -- Minimize preempted jobs for configurations with multiple jobs per node.
 
 * Changes in Slurm 16.05.2
 ==========================
