@@ -552,8 +552,6 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		xfree(name_char);
 		xstrfmtcat(name_char, "name='%s'", object);
-		if (jobs_running)
-			xfree(object);
 		/* We should not need to delete any cluster usage just set it
 		 * to deleted */
 		xstrfmtcat(query,
