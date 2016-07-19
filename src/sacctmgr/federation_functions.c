@@ -388,7 +388,7 @@ extern int sacctmgr_add_federation(int argc, char *argv[])
 	    list_count(start_fed->cluster_list)) {
 		slurmdb_destroy_federation_rec(start_fed);
 		FREE_NULL_LIST(name_list);
-		fprintf(stderr, " Can't add assign clusters to multiple "
+		fprintf(stderr, " Can't assign clusters to multiple "
 				"federations.\n");
 		return SLURM_ERROR;
 	}
@@ -399,7 +399,7 @@ extern int sacctmgr_add_federation(int argc, char *argv[])
 		if (list_count(name_list) > 1){
 			slurmdb_destroy_federation_rec(start_fed);
 			FREE_NULL_LIST(name_list);
-			fprintf(stderr, " Can't add assign clusters to "
+			fprintf(stderr, " Can't assign clusters to "
 				"multiple federations.\n");
 			return SLURM_ERROR;
 		}
@@ -780,7 +780,7 @@ extern int sacctmgr_modify_federation(int argc, char *argv[])
 		char *mod_fed = NULL;
 		if (federation_cond->federation_list &&
 		    (list_count(federation_cond->federation_list) > 1)) {
-			fprintf(stderr, " Can't add assign clusters to "
+			fprintf(stderr, " Can't assign clusters to "
 					"multiple federations.\n");
 			rc = SLURM_ERROR;
 			goto end_it;
