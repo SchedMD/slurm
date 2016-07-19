@@ -33,9 +33,10 @@ upgrading Slurm to a new major release.
 HIGHLIGHTS
 ==========
  -- In order to support federated jobs, the MaxJobID configuration parameter
-    default value has been reduced from 2,147,418,112 to 67,043,328 and it's
-    maximum value is now 67,108,863. ANY JOBS WITH A JOB ID ABOVE 67,108,863
-    WILL BE PURGED WHEN SLURM IS UPGRADED FROM AN OLDER VERSION!
+    default value has been reduced from 2,147,418,112 to 67,043,328 and its
+    maximum value is now 67,108,863. Upon upgrading, any pre-existing jobs that
+    have a job ID above the new range will continue to run and new jobs will get
+    job IDs in the new range.
 
 RPMBUILD CHANGES
 ================

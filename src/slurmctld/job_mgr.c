@@ -1259,7 +1259,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	uint32_t resv_id, spank_job_env_size = 0, qos_id, derived_ec = 0;
 	uint32_t array_job_id = 0, req_switch = 0, wait4switch = 0;
 	uint32_t profile = ACCT_GATHER_PROFILE_NOT_SET;
-	uint32_t job_state;
+	uint32_t job_state, local_job_id = 0;
 	time_t start_time, end_time, suspend_time, pre_sus_time, tot_sus_time;
 	time_t preempt_time = 0, deadline = 0;
 	time_t resize_time = 0, now = time(NULL);
@@ -1684,17 +1684,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		goto unpack_error;
 	}
 
-	if (job_id > MAX_JOB_ID) {
-		error("JobID %u can not be recovered, JobID too high",
-		      job_id);
-		job_ptr->job_state = JOB_FAILED;
-		job_ptr->exit_code = 1;
-		job_ptr->state_reason = FAIL_SYSTEM;
-		xfree(job_ptr->state_desc);
-		job_ptr->end_time = now;
-		goto unpack_error;
-	}
-
 	if (((job_state & JOB_STATE_BASE) >= JOB_END) ||
 	    (batch_flag > MAX_BATCH_REQUEUE)) {
 		error("Invalid data for job %u: "
@@ -1712,8 +1701,11 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		highest_prio = MAX(highest_prio, priority);
 		lowest_prio  = MIN(lowest_prio,  priority);
 	}
-	if (job_id_sequence <= job_id)
-		job_id_sequence = job_id + 1;
+
+	/* base job_id_sequence on local job id */
+	local_job_id = fed_mgr_get_local_id(job_id);
+	if (job_id_sequence <= local_job_id)
+		job_id_sequence = local_job_id + 1;
 
 	xfree(job_ptr->tres_alloc_str);
 	job_ptr->tres_alloc_str = tres_alloc_str;
