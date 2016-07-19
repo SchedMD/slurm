@@ -1752,10 +1752,14 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
  */
 extern int validate_group(struct part_record *part_ptr, uid_t run_uid)
 {
+	static uid_t last_fail_uid = 0;
+	static struct part_record *last_fail_part_ptr = NULL;
+	static time_t last_fail_time = 0;
+	time_t now;
 #if defined(_SC_GETPW_R_SIZE_MAX)
 	long ii;
 #endif
-	int i = 0, res;
+	int i = 0, res, uid_array_len;
 	size_t buflen;
 	struct passwd pwd, *pwd_result;
 	char *buf;
@@ -1774,6 +1778,17 @@ extern int validate_group(struct part_record *part_ptr, uid_t run_uid)
 	for (i = 0; part_ptr->allow_uids[i]; i++) {
 		if (part_ptr->allow_uids[i] == run_uid)
 			return 1;
+	}
+	uid_array_len = i;
+
+	/* If this user has failed AllowGroups permission check on this
+	 * partition in past 5 seconds, then do not test again for performance
+	 * reasons. */
+	now = time(NULL);
+	if ((run_uid == last_fail_uid) &&
+	    (part_ptr == last_fail_part_ptr) &&
+	    (difftime(now, last_fail_time) < 5)) {
+		return 0;
 	}
 
 	/* The allow_uids list is built from the allow_groups list,
@@ -1814,7 +1829,7 @@ extern int validate_group(struct part_record *part_ptr, uid_t run_uid)
 			error("%s: Could not find passwd entry for uid %ld",
 			      __func__, (long) run_uid);
 			xfree(buf);
-			return 0;
+			goto fini;
 		}
 		break;
 	}
@@ -1845,7 +1860,7 @@ extern int validate_group(struct part_record *part_ptr, uid_t run_uid)
 			      __func__, (long) pwd.pw_gid);
 			xfree(buf);
 			xfree(grp_buffer);
-			return 0;
+			goto fini;
 		}
 		break;
 	}
@@ -1864,6 +1879,21 @@ extern int validate_group(struct part_record *part_ptr, uid_t run_uid)
 	xfree(groups);
 	xfree(buf);
 	xfree(grp_buffer);
+
+	if (ret == 1) {
+		debug("UID %ld added to AllowGroup %s of partition %s",
+		      (long) run_uid, grp.gr_name, part_ptr->name);
+		part_ptr->allow_uids =
+			xrealloc(part_ptr->allow_uids,
+				 (sizeof(uid_t) * (uid_array_len + 1)));
+		part_ptr->allow_uids[uid_array_len] = run_uid;
+	}
+
+fini:	if (ret == 0) {
+		last_fail_uid = run_uid;
+		last_fail_part_ptr = part_ptr;
+		last_fail_time = now;
+	}
 	return ret;
 }
 
