@@ -67,6 +67,10 @@ documents those changes that are of interest to users and administrators.
     in order to prevent race condition that can result invalid pointer when
     trying to resolve configured SuspendExcParts.
  -- Add SLURM_PENDING_STEP id so it won't be confused with SLURM_EXTERN_CONT.
+ -- Fix for core selection with job --gres-flags=enforce-binding option.
+    Previous logic would in some cases allocate a job zero cores, resulting in
+    slurmctld abort.
+ -- Minimize preempted jobs for configurations with multiple jobs per node.
 
 
 * Changes in Slurm 16.05.2

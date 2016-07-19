@@ -1617,8 +1617,14 @@ top:	orig_map = bit_copy(save_bitmap);
 				continue;
 
 			if ((pass_count++ > preempt_reorder_cnt) ||
-			    (preemptee_cand_cnt <= pass_count))
+			    (preemptee_cand_cnt <= pass_count)) {
+				/* Remove remaining jobs from preempt list */
+				while ((tmp_job_ptr = (struct job_record *)
+					list_next(job_iterator))) {
+					(void) list_remove(job_iterator);
+				}
 				break;
+			}
 
 			/* Reorder preemption candidates to minimize number
 			 * of preempted jobs and their priorities. */

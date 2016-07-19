@@ -610,6 +610,8 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 						 core_end_bit, job_ptr->job_id,
 						 node_ptr->name, node_i, s_p_n);
 	}
+	if (gres_cores == 0)
+		return (uint16_t) 0;
 
 	if (cr_type & CR_CORE) {
 		cpus = _allocate_cores(job_ptr, core_map, part_core_map,
@@ -1032,7 +1034,7 @@ static uint32_t _gres_sock_job_test(List job_gres_list, List node_gres_list,
 {
 	uint32_t core_cnt, sock_cnt, cores_per_sock;
 	uint32_t *avail_cores, result_cores;
-	bitstr_t **sock_core_bitmap;
+	bitstr_t **sock_core_bitmap, *other_node_cores;
 	int i, j;
 	int core_bit_cnt, core_inx, sock_inx, best_socket;
 
@@ -1054,14 +1056,17 @@ static uint32_t _gres_sock_job_test(List job_gres_list, List node_gres_list,
 	sock_core_bitmap = xmalloc(sizeof(bitstr_t *) * sock_cnt);
 	for (i = 0; i < sock_cnt; i++)
 		sock_core_bitmap[i] = bit_alloc(core_bit_cnt);
+	other_node_cores = bit_copy(core_bitmap);
 	for (i = core_start_bit, core_inx = 0, sock_inx = 0;
 	     i <= core_end_bit; i++) {
 		if (core_inx >= cores_per_sock) {
 			core_inx = 0;
 			sock_inx++;
 		}
-		if (bit_test(core_bitmap, i))
+		if (bit_test(core_bitmap, i)) {
 			bit_set(sock_core_bitmap[sock_inx], i);
+			bit_clear(other_node_cores, i);
+		}
 		core_inx++;
 	}
 
@@ -1090,8 +1095,10 @@ static uint32_t _gres_sock_job_test(List job_gres_list, List node_gres_list,
 	}
 	result_cores = avail_cores[best_socket];
 	bit_and(core_bitmap, sock_core_bitmap[best_socket]);
+	bit_or(core_bitmap, other_node_cores);
 
 	/* Free local data structures */
+	bit_free(other_node_cores);
 	for (i = 0; i < sock_cnt; i++)
 		bit_free(sock_core_bitmap[i]);
 	xfree(sock_core_bitmap);
