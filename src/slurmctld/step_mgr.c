@@ -310,8 +310,10 @@ static void _free_step_rec(struct step_record *step_ptr)
  * and not upon record purging. Presently both events occur
  * simultaneously. */
 	if (step_ptr->switch_job) {
-		switch_g_job_step_complete(step_ptr->switch_job,
-					   step_ptr->step_layout->node_list);
+		if (step_ptr->step_layout)
+			switch_g_job_step_complete(
+				step_ptr->switch_job,
+				step_ptr->step_layout->node_list);
 		switch_g_free_jobinfo (step_ptr->switch_job);
 	}
 	resv_port_free(step_ptr);
@@ -4026,7 +4028,10 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	slurm_step_layout_destroy(step_ptr->step_layout);
 	step_ptr->step_layout  = step_layout;
 
-	step_ptr->switch_job   = switch_tmp;
+	if ((step_ptr->step_id == SLURM_EXTERN_CONT) && switch_tmp)
+		switch_g_free_jobinfo(switch_tmp);
+	else
+		step_ptr->switch_job   = switch_tmp;
 
 	xfree(step_ptr->tres_alloc_str);
 	step_ptr->tres_alloc_str     = tres_alloc_str;
