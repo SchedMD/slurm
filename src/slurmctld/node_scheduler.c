@@ -3738,8 +3738,11 @@ extern void re_kill_job(struct job_record *job_ptr)
 	 * could cause deadlock :).
 	 */
 	step_iterator = list_iterator_create(job_ptr->step_list);
-	while ((step_ptr = list_next(step_iterator)))
+	while ((step_ptr = list_next(step_iterator))) {
+		if (step_ptr->step_id == SLURM_PENDING_STEP)
+			continue;
 		select_g_step_finish(step_ptr, true);
+	}
 	list_iterator_destroy(step_iterator);
 
 #ifdef HAVE_FRONT_END
