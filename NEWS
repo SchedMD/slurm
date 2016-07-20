@@ -81,6 +81,9 @@ documents those changes that are of interest to users and administrators.
     for every job they submit. If the user is now allowed to use the partition,
     then do not check that user's group access again for 5 seconds.
  -- Add routing queue information to Slurm FAQ web page.
+ -- Do not select_g_step_finish() a SLURM_PENDING_STEP step, as nothing has
+    been allocated for the step yet.
+ -- Fixed race condition in PMIx Fence logic.
 
 
 * Changes in Slurm 16.05.2

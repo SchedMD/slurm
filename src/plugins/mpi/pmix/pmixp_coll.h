@@ -53,6 +53,12 @@ typedef enum {
 	PMIXP_COLL_TYPE_DISCONNECT
 } pmixp_coll_type_t;
 
+typedef enum {
+	PMIXP_COLL_REQ_PROGRESS,
+	PMIXP_COLL_REQ_SKIP,
+	PMIXP_COLL_REQ_FAILURE
+} pmixp_coll_req_state_t;
+
 typedef struct {
 #ifndef NDEBUG
 #define PMIXP_COLL_STATE_MAGIC 0xCA11CAFE
@@ -165,25 +171,25 @@ static inline int pmixp_coll_check_seq(pmixp_coll_t *coll, uint32_t seq,
 {
 	if (coll->seq == seq) {
 		/* accept this message */
-		return SLURM_SUCCESS;
+		return PMIXP_COLL_REQ_PROGRESS;
 	} else if( (coll->seq+1) == seq ){
 		/* practice shows that because of SLURM communication
 		 * infrastructure our child can switch to the next Fence
 		 * and send us the message before the current fan-out message
 		 * arrived. This is accounted in current state machine, so we
 		 * allow if we receive message with seq number grater by one */
-		return SLURM_SUCCESS;
+		return PMIXP_COLL_REQ_PROGRESS;
 	} else if ((coll->seq - 1) == seq) {
 		/* his may be our child OR root of the tree that
 		 * had false negatives from SLURM protocol.
 		 * It's normal situation, return error because we
 		 * want to discard this message */
-		return SLURM_ERROR;
+		return PMIXP_COLL_REQ_SKIP;
 	}
 	/* maybe need more sophisticated handling in presence of
 	 * several steps. However maybe it's enough to just ignore */
 	/* slurm_kill_job_step(pmixp_info_jobid(), pmixp_info_stepid(), SIGKILL); */
-	return SLURM_ERROR;
+	return PMIXP_COLL_REQ_FAILURE;
 }
 
 int pmixp_coll_contrib_local(pmixp_coll_t *coll, char *data,

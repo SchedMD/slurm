@@ -414,7 +414,7 @@ static void _process_server_request(recv_header_t *_hdr, void *payload)
 			    nodename, (PMIXP_MSG_FAN_IN == hdr->type) ? "fan-in" : "fan-out",
 			    hdr->seq);
 		rc = pmixp_coll_check_seq(coll, hdr->seq, nodename);
-		if (SLURM_SUCCESS != rc) {
+		if (PMIXP_COLL_REQ_FAILURE == rc) {
 			/* this is unexepable event: either something went
 			 * really wrong or the state machine is incorrect.
 			 * This will 100% lead to application hang.
@@ -425,6 +425,11 @@ static void _process_server_request(recv_header_t *_hdr, void *payload)
 			slurm_kill_job_step(pmixp_info_jobid(), pmixp_info_stepid(),
 					    SIGKILL);
 
+			break;
+		} else if (PMIXP_COLL_REQ_SKIP == rc) {
+			PMIXP_DEBUG("Wrong collective seq. #%d from %s, current is %d, skip this message",
+				    hdr->seq, nodename, coll->seq);
+			free_buf(buf);
 			break;
 		}
 
