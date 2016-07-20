@@ -7,7 +7,7 @@ Subdirectories contain the source-code for the various contributations for
 Slurm as their documentation. A quick description of the subdirectories
 of the Slurm contribs distribution follows:
 
-  cray                [Tools for use on Cray systems]
+  cray/               [Tools for use on Cray systems]
      etc_sysconfig_slurm   - /etc/sysconfig/slurm for Cray XT/XE systems
      libalps_test_programs.tar.gz - set of tools to verify ALPS/BASIL support
 			     logic. Note that this currently requires:
@@ -38,7 +38,7 @@ of the Slurm contribs distribution follows:
      Build with "make -f /dev/null env_cache_builder" and execute as user root
      on the node where the moab daemon runs.
 
-  lua                [ LUA scripts ]
+  lua/               [ LUA scripts ]
      Example LUA scripts that can serve as Slurm plugins.
      job_submit.lua - job_submit plugin that can set a job's default partition
 		      using a very simple algorithm
@@ -65,11 +65,15 @@ of the Slurm contribs distribution follows:
      job launch using the existing "execer" mode of operation with slight
      modification.
 
-  pam                [ PAM (Pluggable Authentication Module) for Slurm ]
+  openlava/          [ Wrapper Scripts for OpenLava/LSF migration to Slurm ]
+     Helpful scripts to make transition to Slurm easier from OpenLava or LSF.
+     These scripts are easily updatable if there is functionality missing.
+
+  pam/               [ PAM (Pluggable Authentication Module) for Slurm ]
      This PAM module will restrict who can login to a node to users who have
      been allocated resources on the node and user root.
 
-  pam_slurm_adopt    [ Plugin for PAM to place incoming connections into
+  pam_slurm_adopt/   [ Plugin for PAM to place incoming connections into
                        existing Slurm job container ]
      This Slurm plugin provides a mechanism for new incomming connections to
      be placed into existing Slurm jobs containers so that then can be accounted
@@ -80,15 +84,20 @@ of the Slurm contribs distribution follows:
      API to Slurm using perl.  Making available all Slurm command that exist
      in the Slurm proper API.
 
-  phpext    	     [ PHP API to Slurm source ]
+  phpext/   	     [ PHP API to Slurm source ]
      API to Slurm using php.  Not a complete API, but offers quite a few
      interfaces to existing Slurm proper APIs.
 
-  pmi2               [ PMI2 client library ]
+  pmi2/              [ PMI2 client library ]
      User applications can link with this library to use Slurm's mpi/pmi2
      plugin.
 
-  sgather            [ shell script ]
+  seff/              [Tools to include job include job accounting in email]
+     Expand information in job state change notification (e.g. job start, job
+     ended, etc.) to include job accounting information in the email. Configure
+     Slurm's MailProg to "smail" from this package.
+
+  sgather/           [ shell script ]
      Gather remote files from a job into a central location. Reverse of of
      sbcast command.
 
@@ -115,10 +124,10 @@ of the Slurm contribs distribution follows:
      power of two size, then collapse the node list maintaining the numeric
      order based upon the Hilbert number.
 
-  slurm_completion_help	     [shell script, vim file]
+  slurm_completion_help/     [shell script, vim file]
      Scripts to help in option completion when using slurm commands.
 
-  slurmdb-direct     [ Perl program ]
+  slurmdb-direct/    [ Perl program ]
      Program that permits writing directly to SlurmDBD (Slurm DataBase Daemon).
 
   spank_core.c       [ SPANK plugin, C program ]
@@ -135,3 +144,5 @@ of the Slurm contribs distribution follows:
      Helpful scripts to make transition to Slurm easier from PBS or Torque.
      These scripts are easily updatable if there is functionality missing.
      NOTE: For the showq command, see https://github.com/pedmon/slurm_showq
+
+  web_apps/          [ Script to display job usage statistics and cluster utilization ]
