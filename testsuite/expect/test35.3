@@ -1,7 +1,7 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Cray job-specific burst buffer use
+#          Cray burst buffer use by job arrays
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "WARNING: ..." with an explanation of why the test can't be made, OR
@@ -32,13 +32,14 @@
 ############################################################################
 source ./globals
 
-set test_id     "35.2"
+set test_id     "35.3"
+set array_end   3
 set data_in     "DATA_IN_0123456789"
 set data_out    "DATA_OUT_9876543210"
 set exit_code   0
 set input_data  "test$test_id.data.in"
 set output_data "test$test_id.data.out"
-set output_use  "test$test_id.use.output"
+set output_use  "test$test_id-%A_%a.output"
 set script_use  "test$test_id.use.bash"
 set tmp_file    "test$test_id"
 
@@ -87,7 +88,7 @@ if {[string first "cray" $bb_types] == -1} {
 }
 
 set cwd [$bin_pwd]
-exec $bin_rm -f $input_data $output_data $output_use
+exec $bin_rm -f $input_data $output_data
 exec $bin_echo $data_in >$cwd/$input_data
 
 if {[get_bb_emulate] != 0} {
@@ -109,11 +110,11 @@ exit 0"
 }
 
 incr max_job_state_delay 300
-set job_id_use 0
-spawn $sbatch -N1 --output=$output_use $script_use
+set job_id 0
+spawn $sbatch -N1 --output=$output_use --array=1-${array_end} $script_use
 expect {
 	-re "Submitted batch job ($number)" {
-		set job_id_use $expect_out(1,string)
+		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
@@ -125,21 +126,33 @@ expect {
 	}
 }
 
-if {$job_id_use == 0} {
+if {$job_id == 0} {
 	send_user "\nFAILURE: job did not launch\n"
 	set exit_code 1
-} elseif {[wait_for_job $job_id_use "DONE"] != 0} {
+} elseif {[wait_for_job $job_id "DONE"] != 0} {
 	send_user "\nFAILURE: job did not complete\n"
 	set exit_code 1
-} elseif {[wait_for_file $output_use] != 0} {
-	set exit_code 1
-} elseif {[find_bb_jobid $output_use $job_id_use] == 0} {
-	send_user "\nFAILURE: job burst buffer not found\n"
-	set exit_code 1
-} elseif {[find_bb_data $output_use $data_in] == 0} {
-	send_user "\nFAILURE: job burst buffer input data not found\n"
-	set exit_code 1
-} elseif {[find_bb_data $output_data $data_out] == 0} {
+}
+
+for {set cnt 1} {$cnt<=$array_end} {incr cnt} {
+	set job_array_id "${job_id}_${cnt}"
+	set output_file "test${test_id}-${job_array_id}.output"
+	if {[wait_for_file $output_file] != 0} {
+		send_user "\nFAILURE: output file was not created or not the correct format. $output_file not found\n"
+		set exit_code 1
+	} elseif {[find_bb_jobid $output_file $job_array_id] == 0} {
+		send_user "\nFAILURE: job array $job_array_id burst buffer not found\n"
+		set exit_code 1
+	} elseif {[find_bb_data $output_file $data_in] == 0} {
+		send_user "\nFAILURE: job array $job_array_id burst buffer input data not found\n"
+		set exit_code 1
+	} else {
+		send_user "Job array task $cnt output file is good\n\n"
+		exec $bin_rm -f $output_file
+	}
+}
+
+if {[find_bb_data $output_data $data_out] == 0} {
 	send_user "\nFAILURE: job burst buffer output data not found\n"
 	set exit_code 1
 }
@@ -147,7 +160,7 @@ if {$job_id_use == 0} {
 set found 0
 spawn $scontrol show burst
 expect {
-	-re "JobID=$job_id_use" {
+	-re "JobID=$job_id" {
 		set found 1
 		exp_continue
 	}
@@ -164,14 +177,8 @@ if {$found != 0} {
 	set exit_code 1
 }
 
-if {[find_bb_data $output_data $data_out] == 0} {
-	send_user "\nFAILURE: job output burst buffer data not correct\n"
-	set exit_code 1
-}
-
 if {$exit_code == 0} {
-	exec $bin_rm -f $input_data $output_data
-	exec $bin_rm -f $output_use $script_use
+	exec $bin_rm -f $input_data $output_data $script_use
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
