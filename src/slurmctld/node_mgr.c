@@ -2594,8 +2594,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 				node_ptr->reason = xstrdup(
 					"Node unexpectedly rebooted");
 			}
-			info("%s: Node %s unexpectedly rebooted boot_time=%u "
-			     "last response=%u",
+			info("%s: Node %s unexpectedly rebooted boot_time=%u last response=%u",
 			     __func__, reg_msg->node_name,
 			     (uint32_t)node_ptr->boot_time,
 			     (uint32_t)node_ptr->last_response);

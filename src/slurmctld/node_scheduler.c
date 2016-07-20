@@ -2595,7 +2595,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	}
 
 	/* Request asynchronous launch of a prolog for a
-	 * non batch job. */
+	 * non-batch job. */
 	if ((slurmctld_conf.prolog_flags & PROLOG_FLAG_ALLOC) ||
 	    (slurmctld_conf.prolog_flags & PROLOG_FLAG_CONTAIN))
 		_launch_prolog(job_ptr);

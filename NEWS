@@ -58,6 +58,8 @@ documents those changes that are of interest to users and administrators.
  -- Do not select_g_step_finish() a SLURM_PENDING_STEP step, as nothing has
     been allocated for the step yet.
  -- Fixed race condition in PMIx Fence logic.
+ -- Prevent slurmctld abort if job is killed or requeued while waiting for
+    reboot of its allocated compute nodes.
 
 * Changes in Slurm 16.05.2
 ==========================
