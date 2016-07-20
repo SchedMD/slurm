@@ -48,6 +48,9 @@ running tasks from this job array to 4.</p>
 <p>Job arrays will have two additional environment variable set.
 <b>SLURM_ARRAY_JOB_ID</b> will be set to the first job ID of the array.
 <b>SLURM_ARRAY_TASK_ID</b> will be set to the job array index value.
+<b>SLURM_ARRAY_TASK_COUNT</b> will be set to the number of tasks in the job array.
+<b>SLURM_ARRAY_TASK_MAX</b> will be set to the highest job array index value.
+<b>SLURM_ARRAY_TASK_MIN</b> will be set to the lowest job array index value.
 For example a job submission of this sort<br>
 <i>sbatch --array=1-3 -N1 tmp</i><br>
 will generate a job array containing three jobs. If the sbatch command responds<br>
@@ -58,14 +61,23 @@ follows:<br>
 SLURM_JOB_ID=36<br>
 SLURM_ARRAY_JOB_ID=36<br>
 SLURM_ARRAY_TASK_ID=1<br>
+SLURM_ARRAY_TASK_COUNT=3<br>
+SLURM_ARRAY_TASK_MAX=3<br>
+SLURM_ARRAY_TASK_MIN=1<br>
 <br>
 SLURM_JOB_ID=37<br>
 SLURM_ARRAY_JOB_ID=36<br>
 SLURM_ARRAY_TASK_ID=2<br>
+SLURM_ARRAY_TASK_COUNT=3<br>
+SLURM_ARRAY_TASK_MAX=3<br>
+SLURM_ARRAY_TASK_MIN=1<br>
 <br>
 SLURM_JOB_ID=38<br>
 SLURM_ARRAY_JOB_ID=36<br>
 SLURM_ARRAY_TASK_ID=3<br>
+SLURM_ARRAY_TASK_COUNT=3<br>
+SLURM_ARRAY_TASK_MAX=3<br>
+SLURM_ARRAY_TASK_MIN=1<br>
 </p>
 
 <p>All Slurm commands and APIs recognize the SLURM_JOB_ID value.
@@ -321,6 +333,6 @@ manage large job counts.
 Each task of the job array will have a unique Slurm "job_id", but
 all will have the same "array_job_id" value.</p>
 
-<p style="text-align:center;">Last modified 22 June 2016</p>
+<p style="text-align:center;">Last modified 20 July 2016</p>
 
 <!--#include virtual="footer.txt"-->

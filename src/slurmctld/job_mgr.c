@@ -3703,7 +3703,7 @@ static void _create_job_array(struct job_record *job_ptr,
 {
 	struct job_details *details;
 	char *sep = NULL;
-	int max_run_tasks, min_task_id, max_task_id, step_task_id = 1;
+	int max_run_tasks, min_task_id, max_task_id, step_task_id = 1, task_cnt;
 	uint32_t i_cnt;
 
 	if (!job_specs->array_bitmap)
@@ -3720,6 +3720,7 @@ static void _create_job_array(struct job_record *job_ptr,
 	job_ptr->array_recs = xmalloc(sizeof(job_array_struct_t));
 	min_task_id = bit_ffs(job_specs->array_bitmap);
 	max_task_id = bit_fls(job_specs->array_bitmap);
+	task_cnt = bit_set_count(job_specs->array_bitmap);
 	i_cnt = max_task_id + 1;
 	job_specs->array_bitmap = bit_realloc(job_specs->array_bitmap, i_cnt);
 	job_ptr->array_recs->task_id_bitmap = job_specs->array_bitmap;
@@ -3746,7 +3747,9 @@ static void _create_job_array(struct job_record *job_ptr,
 		}
 		details->env_sup = xrealloc(details->env_sup,
 					    (sizeof(char *) *
-					    (details->env_cnt + 3)));
+					    (details->env_cnt + 4)));
+		xstrfmtcat(details->env_sup[details->env_cnt++],
+			   "SLURM_ARRAY_TASK_COUNT=%d", task_cnt);
 		xstrfmtcat(details->env_sup[details->env_cnt++],
 			   "SLURM_ARRAY_TASK_MIN=%d", min_task_id);
 		xstrfmtcat(details->env_sup[details->env_cnt++],
