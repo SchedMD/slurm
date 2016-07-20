@@ -3656,6 +3656,14 @@ static void *_wait_boot(void *arg)
 			unlock_slurmctld(job_write_lock);
 			return NULL;
 		}
+		if (IS_JOB_PENDING(job_ptr) ||	/* Job requeued or killed */
+		    IS_JOB_FINISHED(job_ptr) ||
+		    !job_ptr->node_bitmap) {
+			verbose("Job %u no longer waiting for node boot",
+				save_job_id);
+			unlock_slurmctld(job_write_lock);
+			return NULL;
+		}
 		for (i = 0, node_ptr = node_record_table_ptr;
 		     i < node_record_count; i++, node_ptr++) {
 			if (!bit_test(job_ptr->node_bitmap, i))
