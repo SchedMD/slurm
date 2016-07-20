@@ -1086,7 +1086,7 @@ static int _add_one_option(struct option **optz,
 
 	if (optz_add(optz, &opt) < 0) {
 		if (errno == EEXIST) {
-			error ("Ingoring conflicting option \"%s\" "
+			error ("Ignoring conflicting option \"%s\" "
 			       "in plugin \"%s\"",
 			       opt.name, spopt->plugin->name);
 		} else {

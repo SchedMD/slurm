@@ -718,7 +718,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 	}
 
 	if (!acct_cond->with_assocs && cond_set > 1) {
-		if (!commit_check("You requested options that are only vaild "
+		if (!commit_check("You requested options that are only valid "
 				 "when querying with the withassoc option.\n"
 				 "Are you sure you want to continue?")) {
 			printf("Aborted\n");
