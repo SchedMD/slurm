@@ -60,6 +60,8 @@ documents those changes that are of interest to users and administrators.
  -- Fixed race condition in PMIx Fence logic.
  -- Prevent slurmctld abort if job is killed or requeued while waiting for
     reboot of its allocated compute nodes.
+ -- Treat invalid user ID in AllowUserBoot option of knl.conf file as error
+    rather than fatal (log and do not exit).
 
 * Changes in Slurm 16.05.2
 ==========================
