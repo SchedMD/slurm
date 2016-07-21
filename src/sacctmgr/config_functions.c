@@ -164,26 +164,84 @@ extern int sacctmgr_list_config(bool have_db_conn)
 	return SLURM_SUCCESS;
 }
 
-extern int sacctmgr_list_stats(void)
+extern int sacctmgr_list_stats(int argc, char *argv[])
 {
 	uint32_t *rpc_type_ave_time = NULL, *rpc_user_ave_time = NULL;
 	slurmdb_stats_rec_t *buf = NULL;
 	int error_code, i, j;
 	uint16_t type_id;
-	uint32_t type_cnt, user_cnt, user_id;
+	uint32_t type_ave, type_cnt, user_ave, user_cnt, user_id;
 	uint64_t type_time, user_time;
+	bool sort_by_ave_time = false, sort_by_total_time = false;
 
 	error_code = slurmdb_get_stats(db_conn, &buf);
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
 
+	if (argc) {
+		if (!strncasecmp(argv[0], "ave_time", 2))
+			sort_by_ave_time = true;
+		else if (!strncasecmp(argv[0], "total_time", 2))
+			sort_by_total_time = true;
+	}
+
 	rpc_type_ave_time = xmalloc(sizeof(uint32_t) * buf->type_cnt);
 	rpc_user_ave_time = xmalloc(sizeof(uint32_t) * buf->user_cnt);
 
-	if (1) { /* sort by count, add other sort options later */
+	if (sort_by_ave_time) {
+		for (i = 0; i < buf->type_cnt; i++) {
+			if (buf->rpc_type_cnt[i]) {
+				rpc_type_ave_time[i] = buf->rpc_type_time[i] /
+						       buf->rpc_type_cnt[i];
+			}
+		}
 		for (i = 0; i < buf->type_cnt; i++) {
 			for (j = i+1; j < buf->type_cnt; j++) {
-				if (buf->rpc_type_cnt[i] >= buf->rpc_type_cnt[j])
+				if (rpc_type_ave_time[i] >= rpc_type_ave_time[j])
+					continue;
+				type_ave  = rpc_type_ave_time[i];
+				type_id   = buf->rpc_type_id[i];
+				type_cnt  = buf->rpc_type_cnt[i];
+				type_time = buf->rpc_type_time[i];
+				rpc_type_ave_time[i]  = rpc_type_ave_time[j];
+				buf->rpc_type_id[i]   = buf->rpc_type_id[j];
+				buf->rpc_type_cnt[i]  = buf->rpc_type_cnt[j];
+				buf->rpc_type_time[i] = buf->rpc_type_time[j];
+				rpc_type_ave_time[j]  = type_ave;
+				buf->rpc_type_id[j]   = type_id;
+				buf->rpc_type_cnt[j]  = type_cnt;
+				buf->rpc_type_time[j] = type_time;
+			}
+		}
+		for (i = 0; i < buf->user_cnt; i++) {
+			if (buf->rpc_user_cnt[i]) {
+				rpc_user_ave_time[i] = buf->rpc_user_time[i] /
+						       buf->rpc_user_cnt[i];
+			}
+		}
+		for (i = 0; i < buf->user_cnt; i++) {
+			for (j = i+1; j < buf->user_cnt; j++) {
+				if (rpc_user_ave_time[i] >= rpc_user_ave_time[j])
+					continue;
+				user_ave  = rpc_user_ave_time[i];
+				user_id   = buf->rpc_user_id[i];
+				user_cnt  = buf->rpc_user_cnt[i];
+				user_time = buf->rpc_user_time[i];
+				rpc_user_ave_time[i]  = rpc_user_ave_time[j];
+				buf->rpc_user_id[i]   = buf->rpc_user_id[j];
+				buf->rpc_user_cnt[i]  = buf->rpc_user_cnt[j];
+				buf->rpc_user_time[i] = buf->rpc_user_time[j];
+				rpc_user_ave_time[j]  = user_ave;
+				buf->rpc_user_id[j]   = user_id;
+				buf->rpc_user_cnt[j]  = user_cnt;
+				buf->rpc_user_time[j] = user_time;
+			}
+		}
+	} else if (sort_by_total_time) {
+		for (i = 0; i < buf->type_cnt; i++) {
+			for (j = i+1; j < buf->type_cnt; j++) {
+				if (buf->rpc_type_time[i] >=
+				    buf->rpc_type_time[j])
 					continue;
 				type_id   = buf->rpc_type_id[i];
 				type_cnt  = buf->rpc_type_cnt[i];
@@ -202,7 +260,49 @@ extern int sacctmgr_list_stats(void)
 		}
 		for (i = 0; i < buf->user_cnt; i++) {
 			for (j = i+1; j < buf->user_cnt; j++) {
-				if (buf->rpc_user_cnt[i] >= buf->rpc_user_cnt[j])
+				if (buf->rpc_user_time[i] >=
+				    buf->rpc_user_time[j])
+					continue;
+				user_id   = buf->rpc_user_id[i];
+				user_cnt  = buf->rpc_user_cnt[i];
+				user_time = buf->rpc_user_time[i];
+				buf->rpc_user_id[i]   = buf->rpc_user_id[j];
+				buf->rpc_user_cnt[i]  = buf->rpc_user_cnt[j];
+				buf->rpc_user_time[i] = buf->rpc_user_time[j];
+				buf->rpc_user_id[j]   = user_id;
+				buf->rpc_user_cnt[j]  = user_cnt;
+				buf->rpc_user_time[j] = user_time;
+			}
+			if (buf->rpc_user_cnt[i]) {
+				rpc_user_ave_time[i] = buf->rpc_user_time[i] /
+						       buf->rpc_user_cnt[i];
+			}
+		}
+	} else {	/* sort by RPC count */
+		for (i = 0; i < buf->type_cnt; i++) {
+			for (j = i+1; j < buf->type_cnt; j++) {
+				if (buf->rpc_type_cnt[i] >=
+				    buf->rpc_type_cnt[j])
+					continue;
+				type_id   = buf->rpc_type_id[i];
+				type_cnt  = buf->rpc_type_cnt[i];
+				type_time = buf->rpc_type_time[i];
+				buf->rpc_type_id[i]   = buf->rpc_type_id[j];
+				buf->rpc_type_cnt[i]  = buf->rpc_type_cnt[j];
+				buf->rpc_type_time[i] = buf->rpc_type_time[j];
+				buf->rpc_type_id[j]   = type_id;
+				buf->rpc_type_cnt[j]  = type_cnt;
+				buf->rpc_type_time[j] = type_time;
+			}
+			if (buf->rpc_type_cnt[i]) {
+				rpc_type_ave_time[i] = buf->rpc_type_time[i] /
+						       buf->rpc_type_cnt[i];
+			}
+		}
+		for (i = 0; i < buf->user_cnt; i++) {
+			for (j = i+1; j < buf->user_cnt; j++) {
+				if (buf->rpc_user_cnt[i] >=
+				    buf->rpc_user_cnt[j])
 					continue;
 				user_id   = buf->rpc_user_id[i];
 				user_cnt  = buf->rpc_user_cnt[i];
@@ -225,7 +325,7 @@ extern int sacctmgr_list_stats(void)
 	for (i = 0; i < buf->type_cnt; i++) {
 		if (buf->rpc_type_cnt[i] == 0)
 			continue;
-		printf("\t%-21s(%5u) count:%-6u "
+		printf("\t%-25s(%5u) count:%-6u "
 		       "ave_time:%-6u total_time:%"PRIu64"\n",
 		       slurmdbd_msg_type_2_str(buf->rpc_type_id[i], 1),
 		       buf->rpc_type_id[i], buf->rpc_type_cnt[i],
@@ -236,7 +336,7 @@ extern int sacctmgr_list_stats(void)
 	for (i = 0; i < buf->user_cnt; i++) {
 		if (buf->rpc_user_cnt[i] == 0)
 			continue;
-		printf("\t%-16s(%10u) count:%-6u "
+		printf("\t%-20s(%10u) count:%-6u "
 		       "ave_time:%-6u total_time:%"PRIu64"\n",
 		       uid_to_string_cached((uid_t)buf->rpc_user_id[i]),
 		       buf->rpc_user_id[i], buf->rpc_user_cnt[i],

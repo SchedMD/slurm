@@ -714,7 +714,7 @@ static void _show_it (int argc, char *argv[])
 		   !strncasecmp(argv[0], "Resv", MAX(command_len, 4))) {
 		error_code = sacctmgr_list_reservation((argc - 1), &argv[1]);
 	} else if (!strncasecmp(argv[0], "Stats", MAX(command_len, 1))) {
-		error_code = sacctmgr_list_stats();
+		error_code = sacctmgr_list_stats((argc - 1), &argv[1]);
 	} else if (!strncasecmp(argv[0], "Transactions", MAX(command_len, 1))
 		   || !strncasecmp(argv[0], "Txn", MAX(command_len, 1))) {
 		error_code = sacctmgr_list_txn((argc - 1), &argv[1]);
