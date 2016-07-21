@@ -5436,7 +5436,7 @@ static void _xlate_task_str(job_info_t *job_ptr)
 	/* Check first for a step function */
 	i_first = bit_ffs(task_bitmap);
 	i_last  = bit_fls(task_bitmap);
-	if (((i_last - i_first) > 10) &&
+	if (((i_last - i_first) > 10) && (bit_set_count(task_bitmap) > 5) &&
 	    !bit_test(task_bitmap, i_first + 1)) {
 		bool is_step = true;
 		i_prev = i_first;
