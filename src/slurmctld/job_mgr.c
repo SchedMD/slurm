@@ -12315,8 +12315,6 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 			     reg_msg->node_name);
 			continue;
 		}
-		if (reg_msg->step_id[i] == SLURM_EXTERN_CONT)
-			continue;
 
 		job_ptr = find_job_record(reg_msg->job_id[i]);
 		if (job_ptr == NULL) {

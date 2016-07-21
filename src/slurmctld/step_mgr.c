@@ -3314,24 +3314,16 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 	}
 
 	step_ptr = find_step_record(job_ptr, req->job_step_id);
-	if ((step_ptr == NULL) && (req->job_step_id == SLURM_EXTERN_CONT)) {
-		step_ptr = _create_step_record(job_ptr, 0);
-		checkpoint_alloc_jobinfo(&step_ptr->check_job);
-		step_ptr->ext_sensors = ext_sensors_alloc();
-		step_ptr->name = xstrdup("extern");
-		step_ptr->select_jobinfo = select_g_select_jobinfo_alloc();
-		step_ptr->state = JOB_RUNNING;
-		step_ptr->start_time = job_ptr->start_time;
-		step_ptr->step_id = SLURM_EXTERN_CONT;
-		if (job_ptr->node_bitmap) {
-			step_ptr->step_node_bitmap =
-				bit_copy(job_ptr->node_bitmap);
-		}
-		step_ptr->time_last_active = time(NULL);
-		step_set_alloc_tres(step_ptr, 1, false, false);
 
-		jobacct_storage_g_step_start(acct_db_conn, step_ptr);
-	}
+	/* FIXME: It was changed in 16.05.3 to make the extern step
+	 * at the beginning of the job, so this isn't really needed
+	 * anymore, but just incase there were steps out on the nodes
+	 * during an upgrade this was left in.  It can probably be
+	 * taken out in future releases though.
+	 */
+	if ((step_ptr == NULL) && (req->job_step_id == SLURM_EXTERN_CONT))
+		step_ptr = build_extern_step(job_ptr);
+
 	if (step_ptr == NULL) {
 		info("step_partial_comp: StepID=%u.%u invalid",
 		     req->job_id, req->job_step_id);
@@ -4028,9 +4020,10 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	slurm_step_layout_destroy(step_ptr->step_layout);
 	step_ptr->step_layout  = step_layout;
 
-	if ((step_ptr->step_id == SLURM_EXTERN_CONT) && switch_tmp)
+	if ((step_ptr->step_id == SLURM_EXTERN_CONT) && switch_tmp) {
 		switch_g_free_jobinfo(switch_tmp);
-	else
+		switch_tmp = NULL;
+	} else
 		step_ptr->switch_job   = switch_tmp;
 
 	xfree(step_ptr->tres_alloc_str);
@@ -4052,7 +4045,6 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	/* Prior to 16.05, the step_layout->start_protocol_version isn't set on
 	 * creation of the layout. After 16.05 is EOL'ed then the step_layout's
 	 * start_protocol_version doesn't need to be set here anymore. */
-	/* NOTE: The extern step doesn't have a step_layout. */
 	if (step_ptr->step_layout)
 		step_ptr->step_layout->start_protocol_ver = start_protocol_ver;
 
@@ -4080,7 +4072,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 		xfree(core_job);
 	}
 
-	if (step_ptr->step_layout)
+	if (step_ptr->step_layout && switch_tmp)
 		switch_g_job_step_allocated(switch_tmp,
 					    step_ptr->step_layout->node_list);
 
@@ -4573,4 +4565,39 @@ extern int post_job_step(struct step_record *step_ptr)
 	_wake_pending_steps(job_ptr);
 
 	return SLURM_SUCCESS;
+}
+
+extern struct step_record *build_extern_step(struct job_record *job_ptr)
+{
+	struct step_record *step_ptr = _create_step_record(job_ptr, 0);
+	char *node_list;
+	uint32_t node_cnt;
+
+#ifdef HAVE_FRONT_END
+	node_list = job_ptr->front_end_ptr->name;
+	node_cnt = 1;
+#else
+	node_list = job_ptr->nodes;
+	node_cnt = job_ptr->node_cnt;
+#endif
+
+	step_ptr->step_layout = fake_slurm_step_layout_create(
+		node_list, NULL, NULL, node_cnt, node_cnt);
+
+	checkpoint_alloc_jobinfo(&step_ptr->check_job);
+	step_ptr->ext_sensors = ext_sensors_alloc();
+	step_ptr->name = xstrdup("extern");
+	step_ptr->select_jobinfo = select_g_select_jobinfo_alloc();
+	step_ptr->state = JOB_RUNNING;
+	step_ptr->start_time = job_ptr->start_time;
+	step_ptr->step_id = SLURM_EXTERN_CONT;
+	if (job_ptr->node_bitmap)
+		step_ptr->step_node_bitmap =
+			bit_copy(job_ptr->node_bitmap);
+	step_ptr->time_last_active = time(NULL);
+	step_set_alloc_tres(step_ptr, 1, false, false);
+
+	jobacct_storage_g_step_start(acct_db_conn, step_ptr);
+
+	return step_ptr;
 }
