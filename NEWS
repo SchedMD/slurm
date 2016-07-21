@@ -62,6 +62,8 @@ documents those changes that are of interest to users and administrators.
     reboot of its allocated compute nodes.
  -- Treat invalid user ID in AllowUserBoot option of knl.conf file as error
     rather than fatal (log and do not exit).
+ -- qsub - When doing the default output files for an array in qsub style
+    make them using the master job ID instead of the normal job ID.
 
 * Changes in Slurm 16.05.2
 ==========================

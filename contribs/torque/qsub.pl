@@ -252,9 +252,9 @@ if($interactive) {
 			$command .= " -e $err_path";
 		} else {
 			if ($job_name) {
-				$command .= " -e $job_name.e%j";
+				$command .= " -e $job_name.e%A";
 			} else {
-				$command .= " -e $use_job_name.e%j";
+				$command .= " -e $use_job_name.e%A";
 			}
 
 			$command .= ".%a" if $array;
@@ -265,9 +265,9 @@ if($interactive) {
 		$command .= " -o $out_path";
 	} else {
 		if ($job_name) {
-			$command .= " -o $job_name.o%j";
+			$command .= " -o $job_name.o%A";
 		} else {
-			$command .= " -o $use_job_name.o%j";
+			$command .= " -o $use_job_name.o%A";
 		}
 
 		$command .= ".%a" if $array;
