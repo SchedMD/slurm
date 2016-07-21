@@ -2882,3 +2882,61 @@ extern int acct_storage_p_reset_lft_rgt(void *db_conn, uid_t uid,
 {
 	return SLURM_SUCCESS;
 }
+
+extern int acct_storage_p_get_stats(void *db_conn, slurmdb_stats_rec_t **stats)
+{
+	slurmdbd_msg_t req, resp;
+	int rc;
+
+	xassert(stats);
+	memset(&req, 0, sizeof(slurmdbd_msg_t));
+
+	req.msg_type = DBD_GET_STATS;
+	rc = slurm_send_recv_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &req, &resp);
+
+	if (rc != SLURM_SUCCESS)
+		error("slurmdbd: DBD_GET_STATS failure: %m");
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		if (msg->return_code == SLURM_SUCCESS) {
+			info("RC:%d %s", msg->return_code, msg->comment);
+		} else {
+			slurm_seterrno(msg->return_code);
+			info("RC:%d %s", msg->return_code, msg->comment);
+		}
+		slurmdbd_free_rc_msg(msg);
+	} else if (resp.msg_type != DBD_GOT_STATS) {
+		error("slurmdbd: response type not DBD_GOT_STATS: %u",
+		      resp.msg_type);
+	} else {
+		*stats = (slurmdb_stats_rec_t *) resp.data;
+	}
+
+	return rc;
+}
+
+extern int acct_storage_p_clear_stats(void *db_conn)
+{
+	slurmdbd_msg_t msg;
+	int rc = SLURM_SUCCESS;
+
+	memset(&msg, 0, sizeof(slurmdbd_msg_t));
+
+	msg.msg_type = DBD_CLEAR_STATS;
+	slurm_send_slurmdbd_recv_rc_msg(SLURM_PROTOCOL_VERSION, &msg, &rc);
+
+	return rc;
+}
+
+extern int acct_storage_p_shutdown(void *db_conn)
+{
+	slurmdbd_msg_t msg;
+	int rc = SLURM_SUCCESS;
+
+	memset(&msg, 0, sizeof(slurmdbd_msg_t));
+
+	msg.msg_type = DBD_SHUTDOWN;
+	slurm_send_slurmdbd_recv_rc_msg(SLURM_PROTOCOL_VERSION, &msg, &rc);
+
+	return rc;
+}

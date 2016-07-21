@@ -200,6 +200,9 @@ typedef struct slurm_acct_storage_ops {
 	int (*reconfig)            (void *db_conn, bool dbd);
 	int (*reset_lft_rgt)       (void *db_conn, uid_t uid,
 				    List cluster_list);
+	int (*get_stats)           (void *db_conn, slurmdb_stats_rec_t **stats);
+	int (*clear_stats)         (void *db_conn);
+	int (*shutdown)            (void *db_conn);
 } slurm_acct_storage_ops_t;
 /*
  * Must be synchronized with slurm_acct_storage_ops_t above.
@@ -270,6 +273,9 @@ static const char *syms[] = {
 	"acct_storage_p_flush_jobs_on_cluster",
 	"acct_storage_p_reconfig",
 	"acct_storage_p_reset_lft_rgt",
+	"acct_storage_p_get_stats",
+	"acct_storage_p_clear_stats",
+	"acct_storage_p_shutdown",
 };
 
 static slurm_acct_storage_ops_t ops;
@@ -1019,5 +1025,39 @@ extern int acct_storage_g_reset_lft_rgt(void *db_conn, uid_t uid,
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(ops.reset_lft_rgt))(db_conn, uid, cluster_list);
+
+}
+
+/*
+ * Get performance statistics.
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int acct_storage_g_get_stats(void *db_conn, slurmdb_stats_rec_t **stats)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return SLURM_ERROR;
+	return (*(ops.get_stats))(db_conn, stats);
+}
+
+/*
+ * Clear performance statistics.
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int acct_storage_g_clear_stats(void *db_conn)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return SLURM_ERROR;
+	return (*(ops.clear_stats))(db_conn);
+}
+
+/*
+ * Shutdown database server.
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int acct_storage_g_shutdown(void *db_conn)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return SLURM_ERROR;
+	return (*(ops.shutdown))(db_conn);
 
 }

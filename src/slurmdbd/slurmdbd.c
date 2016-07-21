@@ -75,6 +75,7 @@
 time_t shutdown_time = 0;		/* when shutdown request arrived */
 List registered_clusters = NULL;
 pthread_mutex_t registered_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_t signal_handler_thread;	/* thread ID for signal hander */
 
 /* Local variables */
 static int    dbd_sigarray[] = {	/* blocked signals for this process */
@@ -87,7 +88,6 @@ static log_options_t log_opts = 	/* Log to stderr & syslog */
 	LOG_OPTS_INITIALIZER;
 static int	 new_nice = 0;
 static pthread_t rpc_handler_thread;	/* thread ID for RPC hander */
-static pthread_t signal_handler_thread;	/* thread ID for signal hander */
 static pthread_t rollup_handler_thread;	/* thread ID for rollup hander */
 static pthread_t commit_handler_thread;	/* thread ID for commit hander */
 static pthread_mutex_t rollup_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -106,9 +106,9 @@ static void  _init_pidfile(void);
 static void  _kill_old_slurmdbd(void);
 static void  _parse_commandline(int argc, char *argv[]);
 static void  _request_registrations(void *db_conn);
-static void  _rollup_handler_cancel();
+static void  _rollup_handler_cancel(void);
 static void *_rollup_handler(void *no_data);
-static void  _commit_handler_cancel();
+static void  _commit_handler_cancel(void);
 static void *_commit_handler(void *no_data);
 static int   _send_slurmctld_register_req(slurmdb_cluster_rec_t *cluster_rec);
 static void  _set_work_dir(void);
@@ -324,7 +324,7 @@ end_it:
 	exit(0);
 }
 
-extern void reconfig()
+extern void reconfig(void)
 {
 	read_slurmdbd_conf();
 	assoc_mgr_set_missing_uids();
@@ -332,7 +332,7 @@ extern void reconfig()
 	_update_logging(false);
 }
 
-extern void shutdown_threads()
+extern void shutdown_threads(void)
 {
 	shutdown_time = time(NULL);
 	/* End commit before rpc_mgr_wake.  It will do the final

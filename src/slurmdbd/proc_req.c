@@ -44,6 +44,7 @@
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/timers.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
 #include "src/slurmdbd/read_config.h"
@@ -77,8 +78,12 @@ static int   _archive_dump(slurmdbd_conn_t *slurmdbd_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _archive_load(slurmdbd_conn_t *slurmdbd_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _clear_stats(slurmdbd_conn_t *slurmdbd_conn,
+			  Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _cluster_tres(slurmdbd_conn_t *slurmdbd_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _fix_runaway_jobs(slurmdbd_conn_t *slurmdbd_conn, Buf in_buffer,
+			       Buf *out_buffer, uint32_t *uid);
 static int   _get_accounts(slurmdbd_conn_t *slurmdbd_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_tres(slurmdbd_conn_t *slurmdbd_conn,
@@ -99,6 +104,8 @@ static int   _get_qos(slurmdbd_conn_t *slurmdbd_conn,
 		      Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_res(slurmdbd_conn_t *slurmdbd_conn,
 			  Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _get_stats(slurmdbd_conn_t *slurmdbd_conn,
+		        Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_txn(slurmdbd_conn_t *slurmdbd_conn,
 		      Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_usage(uint16_t type, slurmdbd_conn_t *slurmdbd_conn,
@@ -176,12 +183,15 @@ static int   _send_mult_job_start(slurmdbd_conn_t *slurmdbd_conn,
 static int   _send_mult_msg(slurmdbd_conn_t *slurmdbd_conn,
 			    Buf in_buffer, Buf *out_buffer,
 			    uint32_t *uid);
+static int   _shutdown(slurmdbd_conn_t *slurmdbd_conn,
+		       Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _step_complete(slurmdbd_conn_t *slurmdbd_conn,
 			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _step_start(slurmdbd_conn_t *slurmdbd_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
-static int   _fix_runaway_jobs(slurmdbd_conn_t *slurmdbd_conn, Buf in_buffer,
-			       Buf *out_buffer, uint32_t *uid);
+
+static pthread_mutex_t rpc_mutex = PTHREAD_MUTEX_INITIALIZER;
+static slurmdb_stats_rec_t rpc_stats;
 
 /* Process an incoming RPC
  * slurmdbd_conn IN/OUT - in will that the newsockfd set before
@@ -201,10 +211,50 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 	uint16_t msg_type;
 	Buf in_buffer;
 	char *comment = NULL;
+	int i, rpc_type_index = -1, rpc_user_index = -1;
+	DEF_TIMERS;
 
 	in_buffer = create_buf(msg, msg_size); /* puts msg into buffer struct */
 	safe_unpack16(&msg_type, in_buffer);
 
+	slurm_mutex_lock(&rpc_mutex);
+	if (rpc_stats.type_cnt == 0) {
+		rpc_stats.type_cnt = 200;  /* Capture info for first 200 RPC types */
+		rpc_stats.rpc_type_id   =
+			xmalloc(sizeof(uint16_t) * rpc_stats.type_cnt);
+		rpc_stats.rpc_type_cnt  =
+			xmalloc(sizeof(uint32_t) * rpc_stats.type_cnt);
+		rpc_stats.rpc_type_time =
+			xmalloc(sizeof(uint64_t) * rpc_stats.type_cnt);
+	}
+	for (i = 0; i < rpc_stats.type_cnt; i++) {
+		if (rpc_stats.rpc_type_id[i] == 0)
+			rpc_stats.rpc_type_id[i] = msg_type;
+		else if (rpc_stats.rpc_type_id[i] != msg_type)
+			continue;
+		rpc_type_index = i;
+		break;
+	}
+	if (rpc_stats.user_cnt == 0) {
+		rpc_stats.user_cnt = 200;  /* Capture info for first 200 RPC users */
+		rpc_stats.rpc_user_id   =
+			xmalloc(sizeof(uint32_t) * rpc_stats.user_cnt);
+		rpc_stats.rpc_user_cnt  =
+			xmalloc(sizeof(uint32_t) * rpc_stats.user_cnt);
+		rpc_stats.rpc_user_time =
+			xmalloc(sizeof(uint64_t) * rpc_stats.user_cnt);
+	}
+	for (i = 0; i < rpc_stats.user_cnt; i++) {
+		if ((rpc_stats.rpc_user_id[i] == 0) && (i != 0))
+			rpc_stats.rpc_user_id[i] = *uid;
+		else if (rpc_stats.rpc_user_id[i] != *uid)
+			continue;
+		rpc_user_index = i;
+		break;
+	}
+	slurm_mutex_unlock(&rpc_mutex);
+
+	START_TIMER;
 	errno = 0;		/* clear errno */
 	if (first && (msg_type != DBD_INIT)) {
 		comment = "Initial RPC not DBD_INIT";
@@ -470,6 +520,22 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 			rc = _fix_runaway_jobs(slurmdbd_conn,
 					       in_buffer, out_buffer, uid);
 			break;
+		case DBD_GET_STATS:
+			rc = _get_stats(slurmdbd_conn, in_buffer, out_buffer,
+					uid);
+			break;
+		case DBD_CLEAR_STATS:
+			rc = _clear_stats(slurmdbd_conn, in_buffer, out_buffer,
+					  uid);
+			*out_buffer = make_dbd_rc_msg(
+				slurmdbd_conn->rpc_version, rc, NULL, 0);
+			break;
+		case DBD_SHUTDOWN:
+			rc = _shutdown(slurmdbd_conn, in_buffer, out_buffer,
+				       uid);
+			*out_buffer = make_dbd_rc_msg(
+				slurmdbd_conn->rpc_version, rc, NULL, 0);
+			break;
 		default:
 			comment = "Invalid RPC";
 			error("CONN:%u %s msg_type=%d",
@@ -495,6 +561,18 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 		}
 
 	}
+
+	END_TIMER;
+	slurm_mutex_lock(&rpc_mutex);
+	if (rpc_type_index >= 0) {
+		rpc_stats.rpc_type_cnt[rpc_type_index]++;
+		rpc_stats.rpc_type_time[rpc_type_index] += DELTA_TIMER;
+	}
+	if (rpc_user_index >= 0) {
+		rpc_stats.rpc_user_cnt[rpc_user_index]++;
+		rpc_stats.rpc_user_time[rpc_user_index] += DELTA_TIMER;
+	}
+	slurm_mutex_unlock(&rpc_mutex);
 
 	xfer_buf_data(in_buffer);	/* delete in_buffer struct without
 					 * xfree of msg */
@@ -3777,3 +3855,92 @@ end_it:
 	return rc;
 }
 
+static int  _get_stats(slurmdbd_conn_t *slurmdbd_conn,
+		       Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_SUCCESS;
+	char *comment = NULL;
+
+	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
+	    && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
+	    < SLURMDB_ADMIN_SUPER_USER) {
+		comment = "Your user doesn't have privilege to perform this action";
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
+		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
+					      ESLURM_ACCESS_DENIED,
+					      comment, DBD_GET_STATS);
+
+		return ESLURM_ACCESS_DENIED;
+	}
+
+	info("Get stats request received from UID %u", *uid);
+	*out_buffer = init_buf(32 * 1024);
+	pack16((uint16_t) DBD_GOT_STATS, *out_buffer);
+	slurm_mutex_lock(&rpc_mutex);
+	slurmdb_pack_stats_msg(&rpc_stats, slurmdbd_conn->rpc_version,
+			       *out_buffer);
+	slurm_mutex_unlock(&rpc_mutex);
+
+	return rc;
+}
+
+static int  _clear_stats(slurmdbd_conn_t *slurmdbd_conn,
+			 Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int i, rc = SLURM_SUCCESS;
+	char *comment = NULL;
+
+	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
+	    && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
+	    < SLURMDB_ADMIN_SUPER_USER) {
+		comment = "Your user doesn't have privilege to perform this action";
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
+		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
+					      ESLURM_ACCESS_DENIED,
+					      comment, DBD_CLEAR_STATS);
+
+		return ESLURM_ACCESS_DENIED;
+	}
+
+	info("Clear stats request received from UID %u", *uid);
+	slurm_mutex_lock(&rpc_mutex);
+	for (i = 0; i < rpc_stats.type_cnt; i++) {
+		rpc_stats.rpc_type_cnt[i] = 0;
+		rpc_stats.rpc_type_time[i] = 0;
+	}
+	for (i = 0; i < rpc_stats.user_cnt; i++) {
+		rpc_stats.rpc_user_cnt[i] = 0;
+		rpc_stats.rpc_user_time[i] = 0;
+	}
+	slurm_mutex_unlock(&rpc_mutex);
+
+	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
+				      rc, comment, DBD_CLEAR_STATS);
+	return rc;
+}
+
+static int  _shutdown(slurmdbd_conn_t *slurmdbd_conn,
+		      Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_SUCCESS;
+	char *comment = NULL;
+
+	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
+	    && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
+	    < SLURMDB_ADMIN_SUPER_USER) {
+		comment = "Your user doesn't have privilege to perform this action";
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
+		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
+					      ESLURM_ACCESS_DENIED,
+					      comment, DBD_SHUTDOWN);
+
+		return ESLURM_ACCESS_DENIED;
+	}
+
+	info("Shutdown request received from UID %u", *uid);
+	pthread_kill(signal_handler_thread, SIGTERM);
+
+	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
+				      rc, comment, DBD_SHUTDOWN);
+	return rc;
+}

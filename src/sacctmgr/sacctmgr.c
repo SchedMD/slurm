@@ -66,6 +66,7 @@ bool tree_display = 0;
 
 static void	_add_it (int argc, char *argv[]);
 static void	_archive_it (int argc, char *argv[]);
+static void	_clear_it (int argc, char *argv[]);
 static void	_show_it (int argc, char *argv[]);
 static void	_modify_it (int argc, char *argv[]);
 static void	_delete_it (int argc, char *argv[]);
@@ -382,7 +383,8 @@ static void _print_version(void)
 static int
 _process_command (int argc, char *argv[])
 {
-	int command_len = 0;
+	int command_len = 0, rc;
+
 	if (argc < 1) {
 		exit_code = 1;
 		if (quiet_flag == -1)
@@ -440,6 +442,8 @@ _process_command (int argc, char *argv[])
 	} else if ((strncasecmp (argv[0], "archive",
 				 MAX(command_len, 3)) == 0)) {
 		_archive_it((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "clear", MAX(command_len, 3)) == 0) {
+		_clear_it((argc - 1), &argv[1]);
 	} else if ((strncasecmp (argv[0], "show", MAX(command_len, 3)) == 0) ||
 		   (strncasecmp (argv[0], "list", MAX(command_len, 3)) == 0)) {
 		_show_it((argc - 1), &argv[1]);
@@ -505,6 +509,20 @@ _process_command (int argc, char *argv[])
 				acct_storage_g_commit(db_conn, 0);
 			}
 		}
+	} else if (strncasecmp (argv[0], "shutdown",
+				MAX(command_len, 4)) == 0) {
+		if (argc > 1) {
+			exit_code = 1;
+			fprintf (stderr,
+				 "too many arguments for %s keyword\n",
+				 argv[0]);
+		}
+
+		rc = slurmdb_shutdown(db_conn);
+		if (rc != SLURM_SUCCESS)
+			fprintf(stderr, " Problem shutting down server: %s\n",
+				slurm_strerror(rc));
+			exit_code = 1;
 	} else if (strncasecmp (argv[0], "version", MAX(command_len, 4)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -615,6 +633,37 @@ static void _archive_it (int argc, char *argv[])
 }
 
 /*
+ * _clear_it - Clear the slurm configuration per the supplied arguments
+ * IN argc - count of arguments
+ * IN argv - list of arguments
+ */
+static void _clear_it (int argc, char *argv[])
+{
+	int error_code = SLURM_SUCCESS;
+	int command_len = 0;
+
+	if (!argv[0])
+		goto helpme;
+
+	command_len = strlen(argv[0]);
+
+	/* First identify the entity to list */
+	if (!strncasecmp(argv[0], "Stats", MAX(command_len, 1))) {
+		error_code = slurmdb_clear_stats(db_conn);
+	} else {
+	helpme:
+		exit_code = 1;
+		fprintf(stderr, "No valid entity in list command\n");
+		fprintf(stderr, "Input line must include ");
+		fprintf(stderr, "\"Stats\"\n");
+	}
+
+	if (error_code != SLURM_SUCCESS) {
+		exit_code = 1;
+	}
+}
+
+/*
  * _show_it - list the slurm configuration per the supplied arguments
  * IN argc - count of arguments
  * IN argv - list of arguments
@@ -664,6 +713,8 @@ static void _show_it (int argc, char *argv[])
 	} else if (!strncasecmp(argv[0], "Reservations", MAX(command_len, 4)) ||
 		   !strncasecmp(argv[0], "Resv", MAX(command_len, 4))) {
 		error_code = sacctmgr_list_reservation((argc - 1), &argv[1]);
+	} else if (!strncasecmp(argv[0], "Stats", MAX(command_len, 1))) {
+		error_code = sacctmgr_list_stats();
 	} else if (!strncasecmp(argv[0], "Transactions", MAX(command_len, 1))
 		   || !strncasecmp(argv[0], "Txn", MAX(command_len, 1))) {
 		error_code = sacctmgr_list_txn((argc - 1), &argv[1]);
@@ -681,8 +732,8 @@ static void _show_it (int argc, char *argv[])
 		fprintf(stderr, "\"Account\", \"Association\", "
 			"\"Cluster\", \"Configuration\",\n\"Event\", "
 			"\"Problem\", \"QOS\", \"Resource\", \"Reservation\", "
-			"\"RunAwayJobs\", \"Transaction\", \"TRES\", "
-			"\"User\", or \"WCKey\"\n");
+			"\"RunAwayJobs\", \"Stats\", \"Transaction\", "
+			"\"TRES\", \"User\", or \"WCKey\"\n");
 	}
 
 	if (error_code != SLURM_SUCCESS) {
@@ -825,6 +876,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                               back into the databse.                       \n\
      associations             when using show/list will list the           \n\
                               associations associated with the entity.     \n\
+     clear stats              clear server statistics                      \n\
      delete <ENTITY> <SPECS>  delete the specified entity(s)               \n\
      dump <CLUSTER> [File=<FILENAME>]                                      \n\
                               dump database information of the             \n\
@@ -852,6 +904,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
      quit                     terminate this command.                      \n\
      readonly                 makes it so no modification can happen.      \n\
      reconfigure              reread the slurmdbd.conf on the DBD.         \n\
+     shutdown                 shutdown the server.                         \n\
      show                     same as list                                 \n\
      verbose                  enable detailed logging.                     \n\
      version                  display tool version number.                 \n\
@@ -860,7 +913,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
   <ENTITY> may be \"account\", \"association\", \"cluster\",               \n\
                   \"configuration\", \"coordinator\", \"event\", \"job\",  \n\
                   \"problem\", \"qos\", \"resource\", \"reservation\",     \n\
-                  \"runawayjobs\", \"transaction\", \"tres\",              \n\
+                  \"runawayjobs\", \"stats\", \"transaction\", \"tres\",   \n\
                   \"user\" or \"wckey\"                                    \n\
                                                                            \n\
   <SPECS> are different for each command entity pair.                      \n\
@@ -950,6 +1003,9 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        list reservation   - Clusters=, End=, ID=, Names=, Nodes=, Start=   \n\
                                                                            \n\
        list runawayjobs   - Cluster=, Format=                              \n\
+                                                                           \n\
+       clear stats                                                         \n\
+       list stats                                                          \n\
                                                                            \n\
        list transactions  - Accounts=, Action=, Actor=, Clusters=, End=,   \n\
                             Format=, ID=, Start=, User=, and WithAssoc     \n\

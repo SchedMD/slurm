@@ -238,9 +238,10 @@ extern int sacctmgr_list_event(int argc, char *argv[]);
 extern int sacctmgr_list_problem(int argc, char *argv[]);
 extern int sacctmgr_list_qos(int argc, char *argv[]);
 extern int sacctmgr_list_res(int argc, char *argv[]);
-extern int sacctmgr_list_wckey(int argc, char *argv[]);
-extern int sacctmgr_list_tres(int, char **);
 extern int sacctmgr_list_reservation(int argc, char **argv);
+extern int sacctmgr_list_stats(void);
+extern int sacctmgr_list_tres(int, char **);
+extern int sacctmgr_list_wckey(int argc, char *argv[]);
 
 extern int sacctmgr_modify_assoc(int argc, char *argv[]);
 extern int sacctmgr_modify_user(int argc, char *argv[]);

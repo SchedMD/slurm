@@ -5050,6 +5050,86 @@ unpack_error:
 
 }
 
+extern void slurmdb_pack_stats_msg(void *object, uint16_t protocol_version,
+				   Buf buffer)
+{
+	slurmdb_stats_rec_t *stats_ptr = (slurmdb_stats_rec_t *) object;
+	uint32_t i;
+
+	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
+		for (i = 0; i < stats_ptr->type_cnt; i++) {
+			if (stats_ptr->rpc_type_id[i] == 0)
+				break;
+		}
+		pack32(i, buffer);
+		pack16_array(stats_ptr->rpc_type_id,   i, buffer);
+		pack32_array(stats_ptr->rpc_type_cnt,  i, buffer);
+		pack64_array(stats_ptr->rpc_type_time, i, buffer);
+
+		for (i = 1; i < stats_ptr->user_cnt; i++) {
+			if (stats_ptr->rpc_user_id[i] == 0)
+				break;
+		}
+		pack32(i, buffer);
+		pack32_array(stats_ptr->rpc_user_id,   i, buffer);
+		pack32_array(stats_ptr->rpc_user_cnt,  i, buffer);
+		pack64_array(stats_ptr->rpc_user_time, i, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+	}
+}
+
+extern int slurmdb_unpack_stats_msg(void **object, uint16_t protocol_version,
+				    Buf buffer)
+{
+	uint32_t uint32_tmp = 0;
+	slurmdb_stats_rec_t *stats_ptr =
+		xmalloc(sizeof(slurmdb_stats_rec_t));
+
+	*object = stats_ptr;
+	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
+		safe_unpack32(&stats_ptr->type_cnt, buffer);
+		safe_unpack16_array(&stats_ptr->rpc_type_id, &uint32_tmp,
+				    buffer);
+		if (uint32_tmp != stats_ptr->type_cnt)
+			goto unpack_error;
+		safe_unpack32_array(&stats_ptr->rpc_type_cnt, &uint32_tmp,
+				    buffer);
+		if (uint32_tmp != stats_ptr->type_cnt)
+			goto unpack_error;
+		safe_unpack64_array(&stats_ptr->rpc_type_time, &uint32_tmp,
+				    buffer);
+		if (uint32_tmp != stats_ptr->type_cnt)
+			goto unpack_error;
+
+		safe_unpack32(&stats_ptr->user_cnt, buffer);
+		safe_unpack32_array(&stats_ptr->rpc_user_id, &uint32_tmp,
+				    buffer);
+		if (uint32_tmp != stats_ptr->user_cnt)
+			goto unpack_error;
+		safe_unpack32_array(&stats_ptr->rpc_user_cnt, &uint32_tmp,
+				    buffer);
+		if (uint32_tmp != stats_ptr->user_cnt)
+			goto unpack_error;
+		safe_unpack64_array(&stats_ptr->rpc_user_time, &uint32_tmp,
+				    buffer);
+		if (uint32_tmp != stats_ptr->user_cnt)
+			goto unpack_error;
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurmdb_destroy_stats_rec(stats_ptr);
+	*object = NULL;
+	return SLURM_ERROR;
+}
+
 extern void slurmdb_pack_update_object(slurmdb_update_object_t *object,
 				       uint16_t protocol_version, Buf buffer)
 {
@@ -5095,6 +5175,9 @@ extern void slurmdb_pack_update_object(slurmdb_update_object_t *object,
 		break;
 	case SLURMDB_ADD_TRES:
 		my_function = slurmdb_pack_tres_rec;
+		break;
+	case DBD_GOT_STATS:
+		my_function = slurmdb_pack_stats_msg;
 		break;
 	case SLURMDB_UPDATE_NOTSET:
 	default:
@@ -5175,6 +5258,10 @@ extern int slurmdb_unpack_update_object(slurmdb_update_object_t **object,
 	case SLURMDB_ADD_TRES:
 		my_function = slurmdb_unpack_tres_rec;
 		my_destroy = slurmdb_destroy_tres_rec;
+		break;
+	case DBD_GOT_STATS:
+		my_function = slurmdb_unpack_stats_msg;
+		my_destroy = slurmdb_destroy_stats_rec;
 		break;
 	case SLURMDB_UPDATE_NOTSET:
 	default:

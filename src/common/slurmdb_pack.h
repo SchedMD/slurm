@@ -225,4 +225,9 @@ extern void pack_update_shares_used(void *in,
 extern int unpack_update_shares_used(void **object, uint16_t protocol_version,
 				     Buf buffer);
 
+extern void slurmdb_pack_stats_msg(void *object, uint16_t protocol_version,
+				   Buf buffer);
+extern int slurmdb_unpack_stats_msg(void **object, uint16_t protocol_version,
+				    Buf buffer);
+
 #endif

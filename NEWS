@@ -28,6 +28,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix small memory leak when deleting clusters from db.
  -- Add SLURM_ARRAY_TASK_COUNT environment variable. Total number of tasks in a
     job array (e.g. "--array=2,4,8" will set SLURM_ARRAY_TASK_COUNT=3).
+ -- Add new sacctmgr commands: "shutdown" (shutdown the server), "list stats"
+    (get server statistics) "clear stats" (clear server statistics).
 
 * Changes in Slurm 16.05.3
 ==========================

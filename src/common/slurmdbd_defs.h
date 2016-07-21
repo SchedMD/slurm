@@ -146,6 +146,10 @@ typedef enum {
 	DBD_GET_TRES,         /* Get tres from the database         */
 	DBD_GOT_TRES,         /* Got tres from the database         */
 	DBD_FIX_RUNAWAY_JOB,    /* Fix any runaway jobs */
+	DBD_GET_STATS,		/* Get daemon statistics */
+	DBD_GOT_STATS,		/* Got daemon statistics data */
+	DBD_CLEAR_STATS,	/* Clear daemon statistics */
+	DBD_SHUTDOWN,		/* Shutdown daemon */
 } slurmdbd_msg_type_t;
 
 /*****************************************************************************\

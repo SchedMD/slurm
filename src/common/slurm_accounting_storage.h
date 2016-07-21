@@ -508,6 +508,24 @@ extern int acct_storage_g_reconfig(void *db_conn, bool dbd);
 extern int acct_storage_g_reset_lft_rgt(void *db_conn, uid_t uid,
 					List cluster_list);
 
+/*
+ * Get performance statistics.
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int acct_storage_g_get_stats(void *db_conn, slurmdb_stats_rec_t **stats);
+
+/*
+ * Clear performance statistics.
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int acct_storage_g_clear_stats(void *db_conn);
+
+/*
+ * Shutdown database server.
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int acct_storage_g_shutdown(void *db_conn);
+
 /*********************** CLUSTER ACCOUNTING STORAGE **************************/
 
 extern int clusteracct_storage_g_node_down(void *db_conn,

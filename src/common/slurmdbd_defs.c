@@ -643,6 +643,9 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 		packstr((char *)req->data, buffer);
 		break;
 	case DBD_RECONFIG:
+	case DBD_GET_STATS:
+	case DBD_CLEAR_STATS:
+	case DBD_SHUTDOWN:
 		break;
 	default:
 		error("slurmdbd: Invalid message type pack %u(%s:%u)",
@@ -832,7 +835,14 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp,
 	case DBD_GET_CONFIG:
 		/* (handled in src/slurmdbd/proc_req.c) */
 	case DBD_RECONFIG:
+	case DBD_GET_STATS:
+	case DBD_CLEAR_STATS:
+	case DBD_SHUTDOWN:
 		/* No message to unpack */
+		break;
+	case DBD_GOT_STATS:
+		rc = slurmdb_unpack_stats_msg(
+			(void **)&resp->data, rpc_version, buffer);
 		break;
 	default:
 		error("slurmdbd: Invalid message type unpack %u(%s)",
@@ -1523,6 +1533,30 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 			return "DBD_GOT_MULT_MSG";
 		} else
 			return "Got Multiple Message Returns";
+		break;
+	case DBD_GET_STATS:
+		if (get_enum) {
+			return "DBD_GET_STATS";
+		} else
+			return "Get daemon statistics";
+		break;
+	case DBD_GOT_STATS:
+		if (get_enum) {
+			return "DBD_GOT_STATS";
+		} else
+			return "Got daemon statistics data";
+		break;
+	case DBD_CLEAR_STATS:
+		if (get_enum) {
+			return "DBD_CLEAR_STATS";
+		} else
+			return "Clear daemon statistics";
+		break;
+	case DBD_SHUTDOWN:
+		if (get_enum) {
+			return "DBD_SHUTDOWN";
+		} else
+			return "Shutdown daemon";
 		break;
 	default:
 		return "Unknown";
@@ -2939,7 +2973,7 @@ extern int slurmdbd_unpack_rec_msg(dbd_rec_msg_t **msg,
 		my_function = slurmdb_unpack_reservation_rec;
 		break;
 	default:
-		fatal("Unknown unpack type");
+		fatal("%s: Unknown unpack type", __func__);
 		return SLURM_ERROR;
 	}
 
@@ -3075,7 +3109,7 @@ extern int slurmdbd_unpack_cond_msg(dbd_cond_msg_t **msg,
 		my_function = slurmdb_unpack_event_cond;
 		break;
 	default:
-		fatal("Unknown unpack type");
+		fatal("%s: Unknown unpack type", __func__);
 		return SLURM_ERROR;
 	}
 
@@ -3608,7 +3642,7 @@ extern int slurmdbd_unpack_list_msg(dbd_list_msg_t **msg, uint16_t rpc_version,
 		my_destroy = slurmdbd_free_buffer;
 		break;
 	default:
-		fatal("Unknown unpack type");
+		fatal("%s: Unknown unpack type", __func__);
 		return SLURM_ERROR;
 	}
 
@@ -3728,7 +3762,7 @@ extern int slurmdbd_unpack_modify_msg(dbd_modify_msg_t **msg,
 		my_rec = slurmdb_unpack_user_rec;
 		break;
 	default:
-		fatal("Unknown unpack type");
+		fatal("%s: Unknown unpack type", __func__);
 		return SLURM_ERROR;
 	}
 

@@ -3795,3 +3795,17 @@ extern int slurmdb_get_tres_base_unit(char *tres_type)
 
 	return ret_unit;
 }
+
+extern void slurmdb_destroy_stats_rec(void *object)
+{
+	if (object) {
+		slurmdb_stats_rec_t *rpc_stats = (slurmdb_stats_rec_t *) object;
+		xfree(rpc_stats->rpc_type_id);
+		xfree(rpc_stats->rpc_type_cnt);
+		xfree(rpc_stats->rpc_type_time);
+		xfree(rpc_stats->rpc_user_id);
+		xfree(rpc_stats->rpc_user_cnt);
+		xfree(rpc_stats->rpc_user_time);
+		xfree(object);
+	}
+}

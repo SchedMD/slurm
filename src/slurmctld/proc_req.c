@@ -225,7 +225,6 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		      g_slurm_auth_errstr(g_slurm_auth_errno(msg->auth_cred)));
 		return;
 	}
-	START_TIMER;
 	slurm_mutex_lock(&rpc_mutex);
 	if (rpc_type_size == 0) {
 		rpc_type_size = 100;  /* Capture info for first 100 RPC types */
@@ -259,6 +258,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 
 	/* Debug the protocol layer.
 	 */
+	START_TIMER;
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
 		char *p;
 		char inetbuf[64];

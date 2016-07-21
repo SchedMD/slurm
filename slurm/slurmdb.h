@@ -1131,6 +1131,17 @@ typedef struct {
 	List tres_list; /* list of slurmdb_tres_rec_t *'s */
 } slurmdb_report_cluster_grouping_t;
 
+typedef struct {
+	uint32_t type_cnt;		/* Length of rpc_type arrays */
+	uint16_t *rpc_type_id;		/* RPC type */
+	uint32_t *rpc_type_cnt;		/* count of RPCs processed */
+	uint64_t *rpc_type_time;	/* total usecs this type RPC */
+	uint32_t user_cnt;		/* Length of rpc_user arrays */
+	uint32_t *rpc_user_id;		/* User ID issuing RPC */
+	uint32_t *rpc_user_cnt;		/* count of RPCs processed */
+	uint64_t *rpc_user_time;	/* total usecs this user's RPCs */
+} slurmdb_stats_rec_t;
+
 /* global variable for cross cluster communication */
 extern slurmdb_cluster_rec_t *working_cluster_rec;
 
@@ -1371,10 +1382,24 @@ extern List slurmdb_coord_remove(void *db_conn, List acct_list,
 
 /*
  * reconfigure the slurmdbd
- * RET: List of config_key_pairs_t *
- * note List needs to be freed when called
  */
 extern int slurmdb_reconfig(void *db_conn);
+
+/*
+ * shutdown the slurmdbd
+ */
+extern int slurmdb_shutdown(void *db_conn);
+
+/*
+ * clear the slurmdbd statistics
+ */
+extern int slurmdb_clear_stats(void *db_conn);
+
+/*
+ * get the slurmdbd statistics
+ * Call slurmdb_destroy_stats_rec() to free stats_pptr
+ */
+extern int slurmdb_get_stats(void *db_conn, slurmdb_stats_rec_t **stats_pptr);
 
 /*
  * get info from the storage
@@ -1506,6 +1531,7 @@ extern void slurmdb_destroy_selected_step(void *object);
 extern void slurmdb_destroy_report_job_grouping(void *object);
 extern void slurmdb_destroy_report_acct_grouping(void *object);
 extern void slurmdb_destroy_report_cluster_grouping(void *object);
+extern void slurmdb_destroy_stats_rec(void *object);
 
 extern void slurmdb_init_assoc_rec(slurmdb_assoc_rec_t *assoc,
 				   bool free_it);

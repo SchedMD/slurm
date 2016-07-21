@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "March 2016" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "July 2016" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -90,6 +90,10 @@ Identical to the \fBcreate\fR command.
 Use with show or list to display associations with the entity.
 
 .TP
+\fBclear\fR stats
+Clear the server statistics.
+
+.TP
 \fBcreate\fR <\fIENTITY\fR> <\fISPECS\fR>
 Add an entity.
 Identical to the \fBadd\fR command.
@@ -152,6 +156,10 @@ Display information about the specified entity.
 By default, all entries are displayed, you can narrow results by
 specifying SPECS in your query.
 Identical to the \fBlist\fR command.
+
+.TP
+\fBshutdown\fR
+Shutdown the server.
 
 .TP
 \fBverbose\fP
@@ -227,6 +235,10 @@ Used only with the \fIlist\fR or \fIshow\fR command to report current
 jobs that have been orphanded on the local cluster and are now
 runaway.  If there are jobs in this state it will also give you an
 option to "fix" them.
+
+.TP
+\fIstats\fR
+Used with \fBlist\fR or \fBshow\fR command to view server statistics.
 
 .TP
 \fItransaction\fR
@@ -2126,7 +2138,7 @@ An example of listing trackable resources
 Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
-Copyright (C) 2010\-2015 SchedMD LLC.
+Copyright (C) 2010\-2016 SchedMD LLC.
 .LP
 This file is part of Slurm, a resource management program.
 For details, see <http://slurm.schedmd.com/>.

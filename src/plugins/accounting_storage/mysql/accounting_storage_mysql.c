@@ -3111,3 +3111,18 @@ extern int acct_storage_p_reset_lft_rgt(mysql_conn_t *mysql_conn, uid_t uid,
 
 	return as_mysql_reset_lft_rgt(mysql_conn, uid, cluster_list);
 }
+
+extern int acct_storage_p_get_stats(void *db_conn, bool dbd)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int acct_storage_p_clear_stats(void *db_conn, bool dbd)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int acct_storage_p_shutdown(void *db_conn, bool dbd)
+{
+	return SLURM_SUCCESS;
+}
