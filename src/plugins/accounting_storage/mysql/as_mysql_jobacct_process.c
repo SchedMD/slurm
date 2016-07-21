@@ -1379,30 +1379,49 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 	}
 
 	if (job_cond->step_list && list_count(job_cond->step_list)) {
-		set = 0;
+		char *job_ids = NULL, *array_job_ids = NULL;
+		char *array_task_ids = NULL;
+
 		if (*extra)
 			xstrcat(*extra, " && (");
 		else
 			xstrcat(*extra, " where (");
+
 		itr = list_iterator_create(job_cond->step_list);
 		while ((selected_step = list_next(itr))) {
-			if (set)
-				xstrcat(*extra, " || ");
-			if (selected_step->array_task_id == NO_VAL)
-				xstrfmtcat(*extra, "(t1.id_job=%u || "
-					   "t1.id_array_job=%u)",
-					   selected_step->jobid,
+			if (selected_step->array_task_id == NO_VAL) {
+				if (job_ids)
+					xstrcat(job_ids, " ,");
+				if (array_job_ids)
+					xstrcat(array_job_ids, " ,");
+				xstrfmtcat(job_ids, "%u",
 					   selected_step->jobid);
-			else {
-				xstrfmtcat(*extra, "(t1.id_array_job=%u && "
-					   "t1.id_array_task=%u)",
-					   selected_step->jobid,
+				xstrfmtcat(array_job_ids, "%u",
+					   selected_step->jobid);
+			} else {
+				if (array_job_ids)
+					xstrcat(array_job_ids, " ,");
+				if (array_task_ids)
+					xstrcat(array_task_ids, " ,");
+				xstrfmtcat(array_job_ids, "%u",
+					   selected_step->jobid);
+				xstrfmtcat(array_task_ids, "%u",
 					   selected_step->array_task_id);
 			}
-			set = 1;
 		}
 		list_iterator_destroy(itr);
+
+		if (job_ids)
+			xstrfmtcat(*extra, "t1.id_job in (%s) || ", job_ids);
+		if (array_job_ids)
+			xstrfmtcat(*extra, "t1.id_array_job in (%s)", array_job_ids);
+		if (array_task_ids)
+			xstrfmtcat(*extra, " || t1.id_array_task in (%s)", array_task_ids);
+
 		xstrcat(*extra, ")");
+		xfree(job_ids);
+		xfree(array_job_ids);
+		xfree(array_task_ids);
 	}
 
 	if (job_cond->cpus_min) {

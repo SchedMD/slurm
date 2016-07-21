@@ -30,6 +30,8 @@ documents those changes that are of interest to users and administrators.
     job array (e.g. "--array=2,4,8" will set SLURM_ARRAY_TASK_COUNT=3).
  -- Add new sacctmgr commands: "shutdown" (shutdown the server), "list stats"
     (get server statistics) "clear stats" (clear server statistics).
+ -- Restructure job accounting query to use 'id_job in (1, 2, .. )' format
+    instead of logically equivalent 'id_job = 1 || id_job = 2 || ..' .
 
 * Changes in Slurm 16.05.3
 ==========================
