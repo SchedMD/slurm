@@ -298,9 +298,6 @@ if { ![check_acct_associations] } {
 }
 
 if {$exit_code == 0} {
-	print_success $test_id
-		} else {
-	send_user "\nFAILURE\n"
-		}
-
+	send_user "\nSUCCESS\n"
+}
 exit $exit_code
