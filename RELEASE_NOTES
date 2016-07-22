@@ -68,4 +68,5 @@ Added the following API's
 
 Changed the following API's
 ============================
+ -- Added start_delay field to jobcomp/elasticsearch.
  -- Removed (incorrectly calculated) eligible_time from jobcomp/elasticsearch.

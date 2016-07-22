@@ -32,6 +32,7 @@ documents those changes that are of interest to users and administrators.
     (get server statistics) "clear stats" (clear server statistics).
  -- Restructure job accounting query to use 'id_job in (1, 2, .. )' format
     instead of logically equivalent 'id_job = 1 || id_job = 2 || ..' .
+ -- Added start_delay field to jobcomp/elasticsearch.
 
 * Changes in Slurm 16.05.3
 ==========================
