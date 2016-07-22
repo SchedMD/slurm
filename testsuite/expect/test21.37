@@ -32,7 +32,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "21.11"
+set test_id     "21.37"
 set exit_code   0
 
 print_header $test_id
@@ -50,6 +50,14 @@ set matches 0
 set rpc_rec_cnt 0
 set as_pid [spawn $sacctmgr show stats]
 expect {
+	-re "Rollup statistics" {
+		incr matches
+		exp_continue
+	}
+	-re "Month *count:$number" {
+		incr matches
+		exp_continue
+	}
 	-re "Remote Procedure Call statistics by message type" {
 		incr matches
 		exp_continue
@@ -79,8 +87,8 @@ expect {
 if {$rpc_rec_cnt > 0} {
 	incr matches
 }
-if {$matches != 4} {
-	send_user "\nFAILURE: sacctmgr show stats response bad ($matches != 4).\n"
+if {$matches != 6} {
+	send_user "\nFAILURE: sacctmgr show stats response bad ($matches != 6).\n"
 	set exit_code 1
 }
 if {$exit_code == 0} {
