@@ -4128,10 +4128,9 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 		job_ptr->requid = uid;
 	if (IS_JOB_PENDING(job_ptr) && IS_JOB_COMPLETING(job_ptr) &&
 	    (signal == SIGKILL)) {
-		if ((job_ptr->job_state & JOB_STATE_BASE) == JOB_PENDING) {
-			/* Prevent job requeue, otherwise preserve state */
-			job_ptr->job_state = JOB_CANCELLED | JOB_COMPLETING;
-		}
+		/* Prevent job requeue, otherwise preserve state */
+		job_ptr->job_state = JOB_CANCELLED | JOB_COMPLETING;
+
 		/* build_cg_bitmap() not needed, job already completing */
 		verbose("%s: of requeuing %s successful",
 			__func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)));
