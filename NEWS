@@ -94,6 +94,13 @@ documents those changes that are of interest to users and administrators.
     reboot of its allocated compute nodes.
  -- Treat invalid user ID in AllowUserBoot option of knl.conf file as error
     rather than fatal (log and do not exit).
+ -- qsub - When doing the default output files for an array in qsub style
+    make them using the master job ID instead of the normal job ID.
+ -- Create the extern step while creating the job instead of waiting until the
+    end of the job to do it.
+ -- Always report a 0 exit code for the extern step instead of being canceled
+    or failed based on the signal that would always be killing it.
+ -- Fix to allow users to update QOS of pending jobs.
 
 
 * Changes in Slurm 16.05.2

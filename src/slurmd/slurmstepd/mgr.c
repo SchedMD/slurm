@@ -281,6 +281,12 @@ static uint32_t _get_exit_code(stepd_step_rec_t *job)
 	uint32_t i;
 	uint32_t step_rc = NO_VAL;
 
+	/* We are always killing/cancelling the extern_step so don't
+	 * report that.
+	 */
+	if (job->stepid == SLURM_EXTERN_CONT)
+		return 0;
+
 	for (i = 0; i < job->node_tasks; i++) {
 		/* if this task was killed by cmd, ignore its
 		 * return status as it only reflects the fact

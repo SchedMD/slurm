@@ -9751,7 +9751,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	/* NOTE: Update QOS before updating partition in order to enforce
 	 * AllowQOS and DenyQOS partition configuration options */
 	if (job_specs->qos) {
-		if (!authorized || !IS_JOB_PENDING(job_ptr))
+		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_JOB_NOT_PENDING;
 		else {
 			slurmdb_qos_rec_t qos_rec;
@@ -11751,8 +11751,6 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 			     reg_msg->node_name);
 			continue;
 		}
-		if (reg_msg->step_id[i] == SLURM_EXTERN_CONT)
-			continue;
 
 		job_ptr = find_job_record(reg_msg->job_id[i]);
 		if (job_ptr == NULL) {
