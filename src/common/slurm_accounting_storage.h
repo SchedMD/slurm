@@ -469,7 +469,8 @@ extern int acct_storage_g_get_usage(
  */
 extern int acct_storage_g_roll_usage(void *db_conn,
 				     time_t sent_start, time_t sent_end,
-				     uint16_t archive_data);
+				     uint16_t archive_data,
+				     rollup_stats_t *rollup_stats);
 
 /*
  * Fix runaway jobs

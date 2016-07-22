@@ -500,7 +500,7 @@ _process_command (int argc, char *argv[])
 		if (argc > 3)
 			archive_data = atoi(argv[3]);
 		if (acct_storage_g_roll_usage(db_conn, my_start,
-					     my_end, archive_data)
+					      my_end, archive_data, NULL)
 		   == SLURM_SUCCESS) {
 			if (commit_check("Would you like to commit rollup?")) {
 				acct_storage_g_commit(db_conn, 1);

@@ -171,12 +171,32 @@ extern int sacctmgr_list_stats(int argc, char *argv[])
 	int error_code, i, j;
 	uint16_t type_id;
 	uint32_t type_ave, type_cnt, user_ave, user_cnt, user_id;
-	uint64_t type_time, user_time;
+	uint64_t roll_ave, type_time, user_time;
 	bool sort_by_ave_time = false, sort_by_total_time = false;
+	char *rollup_type;
 
 	error_code = slurmdb_get_stats(db_conn, &buf);
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
+
+	printf("Rollup statistics\n");
+	for (i = 0; i < ROLLUP_COUNT; i++) {
+		if (i == ROLLUP_HOUR)
+			rollup_type = "Hour";
+		else if (i == ROLLUP_DAY)
+			rollup_type = "Day";
+		else if (i == ROLLUP_MONTH)
+			rollup_type = "Month";
+		else
+			rollup_type = "Unknown";
+		roll_ave = buf->rollup_time[i];
+		if (buf->rollup_count[i] > 1)
+			roll_ave /= buf->rollup_count[i];
+		printf("\t%-10s count:%-6u ave_time:%-6"PRIu64
+		       " total_time:%-12"PRIu64" max_time:%-12"PRIu64"\n",
+		       rollup_type, buf->rollup_count[i], roll_ave,
+		       buf->rollup_time[i], buf->rollup_max_time[i]);
+	}
 
 	if (argc) {
 		if (!strncasecmp(argv[0], "ave_time", 2))
@@ -321,7 +341,7 @@ extern int sacctmgr_list_stats(int argc, char *argv[])
 		}
 	}
 
-	printf("Remote Procedure Call statistics by message type\n");
+	printf("\nRemote Procedure Call statistics by message type\n");
 	for (i = 0; i < buf->type_cnt; i++) {
 		if (buf->rpc_type_cnt[i] == 0)
 			continue;

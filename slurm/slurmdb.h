@@ -1131,7 +1131,19 @@ typedef struct {
 	List tres_list; /* list of slurmdb_tres_rec_t *'s */
 } slurmdb_report_cluster_grouping_t;
 
+#define ROLLUP_HOUR	0
+#define ROLLUP_DAY	1
+#define ROLLUP_MONTH	2
+#define ROLLUP_COUNT	3
+typedef struct rollup_stats {
+	uint32_t rollup_time[ROLLUP_COUNT];
+} rollup_stats_t;
+
 typedef struct {
+	uint16_t *rollup_count;		/* Length should be ROLLUP_COUNT */
+	uint64_t *rollup_time;		/* Length should be ROLLUP_COUNT */
+	uint64_t *rollup_max_time;	/* Length should be ROLLUP_COUNT */
+
 	uint32_t type_cnt;		/* Length of rpc_type arrays */
 	uint16_t *rpc_type_id;		/* RPC type */
 	uint32_t *rpc_type_cnt;		/* count of RPCs processed */
@@ -1141,6 +1153,7 @@ typedef struct {
 	uint32_t *rpc_user_cnt;		/* count of RPCs processed */
 	uint64_t *rpc_user_time;	/* total usecs this user's RPCs */
 } slurmdb_stats_rec_t;
+
 
 /* global variable for cross cluster communication */
 extern slurmdb_cluster_rec_t *working_cluster_rec;
@@ -1678,12 +1691,14 @@ extern int slurmdb_usage_get(void *db_conn,
  * IN: sent_start (option time to do a re-roll or start from this point)
  * IN: sent_end (option time to do a re-roll or end at this point)
  * IN: archive_data (if 0 old data is not archived in a monthly rollup)
+ * IN/OUT: rollup_stats data structure in which to save rollup statistics
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int slurmdb_usage_roll(void *db_conn,
 			      time_t sent_start,
 			      time_t sent_end,
-			      uint16_t archive_data);
+			      uint16_t archive_data,
+			      rollup_stats_t *rollup_stats);
 
 /************** user functions **************/
 

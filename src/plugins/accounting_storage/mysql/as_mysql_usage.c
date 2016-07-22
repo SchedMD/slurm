@@ -55,6 +55,7 @@ typedef struct {
 	int *rolledup;
 	pthread_mutex_t *rolledup_lock;
 	pthread_cond_t *rolledup_cond;
+	rollup_stats_t *rollup_stats;
 	time_t sent_end;
 	time_t sent_start;
 } local_rollup_t;
@@ -62,7 +63,7 @@ typedef struct {
 static void *_cluster_rollup_usage(void *arg)
 {
 	local_rollup_t *local_rollup = (local_rollup_t *)arg;
-	int rc = SLURM_SUCCESS;
+	int i, rc = SLURM_SUCCESS;
 	char timer_str[128];
 	mysql_conn_t mysql_conn;
 	MYSQL_RES *result = NULL;
@@ -80,6 +81,7 @@ static void *_cluster_rollup_usage(void *arg)
 	time_t day_end;
 	time_t month_start;
 	time_t month_end;
+	long rollup_time[ROLLUP_COUNT];
 	DEF_TIMERS;
 
 	char *update_req_inx[] = {
@@ -88,15 +90,8 @@ static void *_cluster_rollup_usage(void *arg)
 		"monthly_rollup"
 	};
 
-	enum {
-		UPDATE_HOUR,
-		UPDATE_DAY,
-		UPDATE_MONTH,
-		UPDATE_COUNT
-	};
-
-
 	memset(&mysql_conn, 0, sizeof(mysql_conn_t));
+	memset(rollup_time, 0, sizeof(long) * ROLLUP_COUNT);
 	mysql_conn.rollback = 1;
 	mysql_conn.conn = local_rollup->mysql_conn->conn;
 	slurm_mutex_init(&mysql_conn.lock);
@@ -109,11 +104,10 @@ static void *_cluster_rollup_usage(void *arg)
 		goto end_it;
 
 	if (!local_rollup->sent_start) {
-		char *tmp = NULL;
-		int i=0;
-		xstrfmtcat(tmp, "%s", update_req_inx[i]);
-		for(i=1; i<UPDATE_COUNT; i++) {
-			xstrfmtcat(tmp, ", %s", update_req_inx[i]);
+		char *tmp = NULL, *sep = "";
+		for (i = 0; i < ROLLUP_COUNT; i++) {
+			xstrfmtcat(tmp, "%s%s", sep, update_req_inx[i]);
+			sep = ", ";
 		}
 		query = xstrdup_printf("select %s from \"%s_%s\"",
 				       tmp, local_rollup->cluster_name,
@@ -131,9 +125,9 @@ static void *_cluster_rollup_usage(void *arg)
 		xfree(query);
 		row = mysql_fetch_row(result);
 		if (row) {
-			last_hour = slurm_atoul(row[UPDATE_HOUR]);
-			last_day = slurm_atoul(row[UPDATE_DAY]);
-			last_month = slurm_atoul(row[UPDATE_MONTH]);
+			last_hour = slurm_atoul(row[ROLLUP_HOUR]);
+			last_day = slurm_atoul(row[ROLLUP_DAY]);
+			last_month = slurm_atoul(row[ROLLUP_MONTH]);
 			mysql_free_result(result);
 		} else {
 			time_t now = time(NULL);
@@ -306,6 +300,7 @@ static void *_cluster_rollup_usage(void *arg)
 		snprintf(timer_str, sizeof(timer_str),
 			 "hourly_rollup for %s", local_rollup->cluster_name);
 		END_TIMER3(timer_str, 5000000);
+		rollup_time[ROLLUP_HOUR] += DELTA_TIMER;
 		if (rc != SLURM_SUCCESS)
 			goto end_it;
 	}
@@ -320,6 +315,7 @@ static void *_cluster_rollup_usage(void *arg)
 		snprintf(timer_str, sizeof(timer_str),
 			 "daily_rollup for %s", local_rollup->cluster_name);
 		END_TIMER3(timer_str, 5000000);
+		rollup_time[ROLLUP_DAY] += DELTA_TIMER;
 		if (rc != SLURM_SUCCESS)
 			goto end_it;
 	}
@@ -334,6 +330,7 @@ static void *_cluster_rollup_usage(void *arg)
 		snprintf(timer_str, sizeof(timer_str),
 			 "monthly_rollup for %s", local_rollup->cluster_name);
 		END_TIMER3(timer_str, 5000000);
+		rollup_time[ROLLUP_MONTH] += DELTA_TIMER;
 		if (rc != SLURM_SUCCESS)
 			goto end_it;
 	}
@@ -397,6 +394,12 @@ end_it:
 
 	slurm_mutex_lock(local_rollup->rolledup_lock);
 	(*local_rollup->rolledup)++;
+	if (local_rollup->rollup_stats) {
+		for (i = 0; i < ROLLUP_COUNT; i++) {
+			local_rollup->rollup_stats->rollup_time[i] +=
+				rollup_time[i];
+		}
+	}
 	if ((rc != SLURM_SUCCESS) && ((*local_rollup->rc) == SLURM_SUCCESS))
 		(*local_rollup->rc) = rc;
 	slurm_cond_signal(local_rollup->rolledup_cond);
@@ -911,9 +914,9 @@ is_user:
 	return rc;
 }
 
-extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
-			       time_t sent_start, time_t sent_end,
-			       uint16_t archive_data)
+extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn, time_t sent_start,
+			       time_t sent_end, uint16_t archive_data,
+			       rollup_stats_t *rollup_stats)
 {
 	int rc = SLURM_SUCCESS;
 	int rolledup = 0;
@@ -951,6 +954,7 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 
 		local_rollup->sent_end = sent_end;
 		local_rollup->sent_start = sent_start;
+		local_rollup->rollup_stats = rollup_stats;
 
 		/* _cluster_rollup_usage is responsible for freeing
 		   this local_rollup */

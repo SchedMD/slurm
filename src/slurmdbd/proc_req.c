@@ -190,9 +190,6 @@ static int   _step_complete(slurmdbd_conn_t *slurmdbd_conn,
 static int   _step_start(slurmdbd_conn_t *slurmdbd_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 
-static pthread_mutex_t rpc_mutex = PTHREAD_MUTEX_INITIALIZER;
-static slurmdb_stats_rec_t rpc_stats;
-
 /* Process an incoming RPC
  * slurmdbd_conn IN/OUT - in will that the newsockfd set before
  *       calling and db_conn and rpc_version will be filled in with the init.
@@ -218,15 +215,6 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 	safe_unpack16(&msg_type, in_buffer);
 
 	slurm_mutex_lock(&rpc_mutex);
-	if (rpc_stats.type_cnt == 0) {
-		rpc_stats.type_cnt = 200;  /* Capture info for first 200 RPC types */
-		rpc_stats.rpc_type_id   =
-			xmalloc(sizeof(uint16_t) * rpc_stats.type_cnt);
-		rpc_stats.rpc_type_cnt  =
-			xmalloc(sizeof(uint32_t) * rpc_stats.type_cnt);
-		rpc_stats.rpc_type_time =
-			xmalloc(sizeof(uint64_t) * rpc_stats.type_cnt);
-	}
 	for (i = 0; i < rpc_stats.type_cnt; i++) {
 		if (rpc_stats.rpc_type_id[i] == 0)
 			rpc_stats.rpc_type_id[i] = msg_type;
@@ -234,15 +222,6 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 			continue;
 		rpc_type_index = i;
 		break;
-	}
-	if (rpc_stats.user_cnt == 0) {
-		rpc_stats.user_cnt = 200;  /* Capture info for first 200 RPC users */
-		rpc_stats.rpc_user_id   =
-			xmalloc(sizeof(uint32_t) * rpc_stats.user_cnt);
-		rpc_stats.rpc_user_cnt  =
-			xmalloc(sizeof(uint32_t) * rpc_stats.user_cnt);
-		rpc_stats.rpc_user_time =
-			xmalloc(sizeof(uint64_t) * rpc_stats.user_cnt);
 	}
 	for (i = 0; i < rpc_stats.user_cnt; i++) {
 		if ((rpc_stats.rpc_user_id[i] == 0) && (i != 0))
@@ -3548,8 +3527,9 @@ static int   _roll_usage(slurmdbd_conn_t *slurmdbd_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_roll_usage_msg_t *get_msg = NULL;
-	int rc = SLURM_SUCCESS;
+	int i, rc = SLURM_SUCCESS;
 	char *comment = NULL;
+	rollup_stats_t rollup_stats;
 
 	info("DBD_ROLL_USAGE: called");
 
@@ -3571,9 +3551,21 @@ static int   _roll_usage(slurmdbd_conn_t *slurmdbd_conn,
 		goto end_it;
 	}
 
+	memset(&rollup_stats, 0, sizeof(rollup_stats_t));
 	rc = acct_storage_g_roll_usage(slurmdbd_conn->db_conn,
 				       get_msg->start, get_msg->end,
-				       get_msg->archive_data);
+				       get_msg->archive_data, &rollup_stats);
+	slurm_mutex_lock(&rpc_mutex);
+	for (i = 0; i < ROLLUP_COUNT; i++) {
+		if (rollup_stats.rollup_time[i] == 0)
+			continue;
+		rpc_stats.rollup_count[i]++;
+		rpc_stats.rollup_time[i] += rollup_stats.rollup_time[i];
+		rpc_stats.rollup_max_time[i] =
+			MAX(rpc_stats.rollup_max_time[i],
+			    rollup_stats.rollup_time[i]);
+	}
+	slurm_mutex_unlock(&rpc_mutex);
 
 end_it:
 	slurmdbd_free_roll_usage_msg(get_msg);
