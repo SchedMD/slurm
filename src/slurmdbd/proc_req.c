@@ -3896,6 +3896,11 @@ static int  _clear_stats(slurmdbd_conn_t *slurmdbd_conn,
 
 	info("Clear stats request received from UID %u", *uid);
 	slurm_mutex_lock(&rpc_mutex);
+	for (i = 0; i < ROLLUP_COUNT; i++) {
+		rpc_stats.rollup_count[i] = 0;
+		rpc_stats.rollup_time[i] = 0;
+		rpc_stats.rollup_max_time[i] = 0;
+	}
 	for (i = 0; i < rpc_stats.type_cnt; i++) {
 		rpc_stats.rpc_type_cnt[i] = 0;
 		rpc_stats.rpc_type_time[i] = 0;
