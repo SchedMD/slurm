@@ -2017,8 +2017,11 @@ int _print_step_id(job_step_info_t * step, int width, bool right, char* suffix)
 	if (step == NULL) {	/* Print the Header instead */
 		_print_str("STEPID", width, right, true);
 	} else if (step->array_job_id) {
-		if (step->step_id == INFINITE) {	/* Pending */
+		if (step->step_id == SLURM_PENDING_STEP) {	/* Pending */
 			snprintf(id, FORMAT_STRING_SIZE, "%u_%u.TBD",
+				 step->array_job_id, step->array_task_id);
+		} else if (step->step_id == SLURM_EXTERN_CONT) {
+			snprintf(id, FORMAT_STRING_SIZE, "%u_%u.Extern",
 				 step->array_job_id, step->array_task_id);
 		} else {
 			snprintf(id, FORMAT_STRING_SIZE, "%u_%u.%u",
@@ -2027,8 +2030,12 @@ int _print_step_id(job_step_info_t * step, int width, bool right, char* suffix)
 		}
 		_print_str(id, width, right, true);
 	} else {
-		if (step->step_id == INFINITE) {	/* Pending */
-			snprintf(id, FORMAT_STRING_SIZE, "%u.TBD", step->job_id);
+		if (step->step_id == SLURM_PENDING_STEP) {	/* Pending */
+			snprintf(id, FORMAT_STRING_SIZE, "%u.TBD",
+				 step->job_id);
+		} else if (step->step_id == SLURM_EXTERN_CONT) {
+			snprintf(id, FORMAT_STRING_SIZE, "%u.Extern",
+				 step->job_id);
 		} else {
 			snprintf(id, FORMAT_STRING_SIZE, "%u.%u",
 				 step->job_id, step->step_id);
