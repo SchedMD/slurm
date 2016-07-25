@@ -185,10 +185,8 @@ extern int sacctmgr_list_stats(int argc, char *argv[])
 			rollup_type = "Hour";
 		else if (i == ROLLUP_DAY)
 			rollup_type = "Day";
-		else if (i == ROLLUP_MONTH)
+		else	/* (i == ROLLUP_MONTH) */
 			rollup_type = "Month";
-		else
-			rollup_type = "Unknown";
 		roll_ave = buf->rollup_time[i];
 		if (buf->rollup_count[i] > 1)
 			roll_ave /= buf->rollup_count[i];
