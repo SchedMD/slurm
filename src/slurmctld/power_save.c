@@ -126,6 +126,42 @@ static void _do_power_work(time_t now)
 	struct node_record *node_ptr;
 	bool run_suspend = false;
 
+	if (last_work_scan == 0) {
+		if (exc_nodes &&
+		    (node_name2bitmap(exc_nodes, false, &exc_node_bitmap))) {
+			error("Invalid SuspendExcNodes %s ignored", exc_nodes);
+		}
+
+		if (exc_parts) {
+			char *tmp = NULL, *one_part = NULL, *part_list = NULL;
+			struct part_record *part_ptr = NULL;
+
+			part_list = xstrdup(exc_parts);
+			one_part = strtok_r(part_list, ",", &tmp);
+			while (one_part != NULL) {
+				part_ptr = find_part_record(one_part);
+				if (!part_ptr) {
+					error("Invalid SuspendExcPart %s ignored",
+					      one_part);
+				} else if (exc_node_bitmap) {
+					bit_or(exc_node_bitmap,
+					       part_ptr->node_bitmap);
+				} else {
+					exc_node_bitmap =
+						bit_copy(part_ptr->node_bitmap);
+				}
+				one_part = strtok_r(NULL, ",", &tmp);
+			}
+			xfree(part_list);
+		}
+
+		if (exc_node_bitmap) {
+			char *tmp = bitmap2node_name(exc_node_bitmap);
+			info("power_save module, excluded nodes %s", tmp);
+			xfree(tmp);
+		}
+	}
+
 	/* Set limit on counts of nodes to have state changed */
 	delta_t = now - last_work_scan;
 	if (delta_t >= 60) {
@@ -587,47 +623,6 @@ static int _init_power_config(void)
 		error("power_save module disabled, invalid ResumeProgram %s",
 		      resume_prog);
 		return -1;
-	}
-
-	if (exc_nodes &&
-	    (node_name2bitmap(exc_nodes, false, &exc_node_bitmap))) {
-		error("power_save module disabled, "
-		      "invalid SuspendExcNodes %s", exc_nodes);
-		return -1;
-	}
-
-	if (exc_parts) {
-		char *tmp = NULL, *one_part = NULL, *part_list = NULL;
-		struct part_record *part_ptr = NULL;
-		int rc = 0;
-
-		part_list = xstrdup(exc_parts);
-		one_part = strtok_r(part_list, ",", &tmp);
-		while (one_part != NULL) {
-			part_ptr = find_part_record(one_part);
-			if (!part_ptr) {
-				error("power_save module disabled, "
-					"invalid SuspendExcPart %s",
-					one_part);
-				rc = -1;
-				break;
-			}
-			if (exc_node_bitmap)
-				bit_or(exc_node_bitmap, part_ptr->node_bitmap);
-			else
-				exc_node_bitmap = bit_copy(part_ptr->
-							   node_bitmap);
-			one_part = strtok_r(NULL, ",", &tmp);
-		}
-		xfree(part_list);
-		if (rc)
-			return rc;
-	}
-
-	if (exc_node_bitmap) {
-		char *tmp = bitmap2node_name(exc_node_bitmap);
-		debug("power_save module, excluded nodes %s", tmp);
-		xfree(tmp);
 	}
 
 	return 0;
