@@ -70,6 +70,7 @@ documents those changes that are of interest to users and administrators.
     or failed based on the signal that would always be killing it.
  -- Fix to allow users to update QOS of pending jobs.
  -- Print correct cluster name in "slurmd -C" output.
+ -- CRAY - Fix minor memory leak in switch plugin.
 
 * Changes in Slurm 16.05.2
 ==========================

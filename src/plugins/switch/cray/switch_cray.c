@@ -235,12 +235,15 @@ extern void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
 
 	START_TIMER;
 
-	if (!job || (job->magic == CRAY_NULL_JOBINFO_MAGIC)) {
+	if (!job) {
 		CRAY_DEBUG("switch_job was NULL");
 		return;
 	}
 
-	if (job->magic != CRAY_JOBINFO_MAGIC) {
+	if (job->magic == CRAY_NULL_JOBINFO_MAGIC) {
+		CRAY_DEBUG("switch_job was NULL MAGIC");
+		goto endit;
+	} else if (job->magic != CRAY_JOBINFO_MAGIC) {
 		CRAY_ERR("job is not a switch/cray slurm_cray_jobinfo_t");
 		return;
 	}
@@ -263,6 +266,7 @@ extern void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
 	}
 	if (job->num_ptags)
 		xfree(job->ptags);
+endit:
 	xfree(job);
 	END_TIMER;
 	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
