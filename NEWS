@@ -72,6 +72,8 @@ documents those changes that are of interest to users and administrators.
  -- Print correct cluster name in "slurmd -C" output.
  -- CRAY - Fix minor memory leak in switch plugin.
  -- CRAY - Change slurmconfgen_smw.py to skip over disabled nodes.
+ -- Fix eligible_time for elasticsearch as well as add queue_wait
+    (difference between start of job and when it was eligible).
 
 * Changes in Slurm 16.05.2
 ==========================

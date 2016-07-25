@@ -613,8 +613,8 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 {
 	int nwritten, B_SIZE = 1024;
 	char usr_str[32], grp_str[32], start_str[32], end_str[32];
-	char submit_str[32], *cluster = NULL, *qos, *state_string;
-	time_t elapsed_time, submit_time, eligible_time;
+	char time_str[32], *cluster = NULL, *qos, *state_string;
+	time_t elapsed_time;
 	enum job_states job_state;
 	uint32_t time_limit;
 	uint16_t ntasks_per_node;
@@ -719,16 +719,23 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 			   (unsigned long) job_ptr->array_task_id);
 	}
 
-	if (job_ptr->details && (job_ptr->details->submit_time != NO_VAL)) {
-		submit_time = job_ptr->details->submit_time;
-		_make_time_str(&submit_time, submit_str, sizeof(submit_str));
-		xstrfmtcat(buffer, ",\"@submit\":\"%s\"", submit_str);
+	if (job_ptr->details && job_ptr->details->submit_time) {
+		_make_time_str(&job_ptr->details->submit_time,
+			       time_str, sizeof(time_str));
+		xstrfmtcat(buffer, ",\"@submit\":\"%s\"", time_str);
 	}
 
-	if (job_ptr->details && (job_ptr->details->begin_time != NO_VAL)) {
-		eligible_time = job_ptr->start_time -
-				job_ptr->details->begin_time;
-		xstrfmtcat(buffer, ",\"eligible_time\":%lu", eligible_time);
+	if (job_ptr->details && job_ptr->details->begin_time) {
+		_make_time_str(&job_ptr->details->begin_time,
+			       time_str, sizeof(time_str));
+		xstrfmtcat(buffer, ",\"@eligible\":\"%s\"", time_str);
+		if (job_ptr->start_time) {
+			int64_t queue_wait = (int64_t)difftime(
+				job_ptr->start_time,
+				job_ptr->details->begin_time);
+			xstrfmtcat(buffer, ",\"queue_wait\":%"PRIi64,
+				   queue_wait);
+		}
 	}
 
 	if (job_ptr->details
