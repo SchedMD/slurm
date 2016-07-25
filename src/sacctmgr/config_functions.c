@@ -193,9 +193,9 @@ extern int sacctmgr_list_stats(int argc, char *argv[])
 		if (buf->rollup_count[i] > 1)
 			roll_ave /= buf->rollup_count[i];
 		printf("\t%-10s count:%-6u ave_time:%-6"PRIu64
-		       " total_time:%-12"PRIu64" max_time:%-12"PRIu64"\n",
+		       " max_time:%-12"PRIu64" total_time:%-12"PRIu64"\n",
 		       rollup_type, buf->rollup_count[i], roll_ave,
-		       buf->rollup_time[i], buf->rollup_max_time[i]);
+		       buf->rollup_max_time[i], buf->rollup_time[i]);
 	}
 
 	if (argc) {
