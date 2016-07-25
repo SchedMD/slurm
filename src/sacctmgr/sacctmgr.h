@@ -355,5 +355,7 @@ extern int sacctmgr_list_runaway_jobs(int argc, char *argv[]);
 
 /* federation_functions.c */
 extern int verify_federations_exist(List name_list);
+extern int verify_fed_clusters(List cluster_list, const char *fed_name,
+			       bool *existing_fed);
 
 #endif

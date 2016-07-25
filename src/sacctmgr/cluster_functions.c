@@ -648,6 +648,55 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 	return rc;
 }
 
+static int _find_cluster_rec_in_list(void *obj, void *key)
+{
+	slurmdb_cluster_rec_t *rec = (slurmdb_cluster_rec_t *)obj;
+	char *char_key = (char *)key;
+
+	if (!xstrcasecmp(rec->name, char_key))
+		return 1;
+
+	return 0;
+}
+
+/* Prepare cluster_list to be federation centric that will be passed to
+ * verify_clsuters_exists in federation_functions.c.
+ */
+static int _verify_fed_clusters(List cluster_list, const char *fed_name,
+				bool *existing_fed)
+{
+	int   rc         = SLURM_SUCCESS;
+	char *tmp_name   = NULL;
+	List  tmp_list   = list_create(slurmdb_destroy_cluster_rec);
+	ListIterator itr = list_iterator_create(cluster_list);
+
+	while ((tmp_name = list_next(itr))) {
+		slurmdb_cluster_rec_t *rec =
+			xmalloc(sizeof(slurmdb_cluster_rec_t));
+		slurmdb_init_cluster_rec(rec, 0);
+		rec->name = xstrdup(tmp_name);
+		list_append(tmp_list, rec);
+	}
+
+	if ((rc = verify_fed_clusters(tmp_list, fed_name, existing_fed)))
+		goto end_it;
+
+	/* have to reconcile lists now, clusters may have been removed from
+	 * tmp_list */
+	list_iterator_reset(itr);
+	while ((tmp_name = list_next(itr))) {
+		if (!list_find_first(tmp_list, _find_cluster_rec_in_list,
+				     tmp_name))
+			list_delete_item(itr);
+	}
+
+end_it:
+	FREE_NULL_LIST(tmp_list);
+	list_iterator_destroy(itr);
+
+	return rc;
+}
+
 extern int sacctmgr_modify_cluster(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
@@ -661,6 +710,7 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 	int cond_set = 0, prev_set = 0, rec_set = 0, set = 0;
 	List ret_list = NULL;
 	slurmdb_cluster_cond_t cluster_cond;
+	bool existing_fed = false;
 
 	slurmdb_init_assoc_rec(assoc, 0);
 
@@ -709,12 +759,35 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 
 	if (cluster->fed.name && cluster->fed.name[0]) {
 		int rc;
+		/* Make sure federation exists. */
 		List fed_list = list_create(slurm_destroy_char);
 		list_append(fed_list, xstrdup(cluster->fed.name));
 		rc = verify_federations_exist(fed_list);
 		FREE_NULL_LIST(fed_list);
 		if (rc)
 			goto end_it;
+
+		/* See if cluster is assigned to another federation already. */
+		if (list_count(cluster_cond.cluster_list)) {
+			if (_verify_fed_clusters(cluster_cond.cluster_list,
+						 cluster->fed.name,
+						 &existing_fed))
+					goto end_it;
+			else if (!list_count(cluster_cond.cluster_list)) {
+				/* irrelevant changes have been removed and
+				 * nothing to change now. */
+				printf("Nothing to change\n");
+				rc = SLURM_ERROR;
+				goto end_it;
+			} else if (existing_fed) {
+				char *warning =
+					"\nAre you sure you want to continue?";
+				if (!commit_check(warning)) {
+					rc = SLURM_ERROR;
+					goto end_it;
+				}
+			}
+		}
 	}
 
 	if (cond_set & 1) {

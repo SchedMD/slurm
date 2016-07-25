@@ -283,7 +283,8 @@ static int _assign_clusters_to_federation(mysql_conn_t *mysql_conn,
 	    (rc = _remove_all_clusters_from_fed(mysql_conn, federation,
 						add_list)))
 		goto end_it;
-	if (list_count(rem_list) &&
+	if (!clear_clusters &&
+	    list_count(rem_list) &&
 	    (rc = _remove_clusters_from_fed(mysql_conn, rem_list)))
 		goto end_it;
 	if (list_count(add_list) &&
