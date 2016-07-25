@@ -160,6 +160,10 @@ static void list_free_aux (void *x, void *pfreelist);
 static void *_list_pop_locked(List l);
 static void *_list_append_locked(List l, void *x);
 
+#ifndef NDEBUG
+static int _list_mutex_is_locked (pthread_mutex_t *mutex);
+#endif
+
 /***************
  *  Variables  *
  ***************/
@@ -169,14 +173,6 @@ static ListNode list_free_nodes = NULL;
 static ListIterator list_free_iterators = NULL;
 
 static pthread_mutex_t list_free_lock = PTHREAD_MUTEX_INITIALIZER;
-
-
-/************
- *  Macros  *
- ************/
-
-static int list_mutex_is_locked (pthread_mutex_t *mutex);
-
 
 /***************
  *  Functions  *
@@ -793,7 +789,7 @@ list_node_create (List l, ListNode *pp, void *x)
 
 	assert(l != NULL);
 	assert(l->magic == LIST_MAGIC);
-	assert(list_mutex_is_locked(&l->mutex));
+	assert(_list_mutex_is_locked(&l->mutex));
 	assert(pp != NULL);
 	assert(x != NULL);
 
@@ -835,7 +831,7 @@ list_node_destroy (List l, ListNode *pp)
 
 	assert(l != NULL);
 	assert(l->magic == LIST_MAGIC);
-	assert(list_mutex_is_locked(&l->mutex));
+	assert(_list_mutex_is_locked(&l->mutex));
 	assert(pp != NULL);
 
 	if (!(p = *pp))
@@ -981,15 +977,9 @@ void list_install_fork_handlers (void)
 		fatal("cannot install list atfork handler");
 }
 
-#ifdef NDEBUG
+#ifndef NDEBUG
 static int
-list_mutex_is_locked (pthread_mutex_t *mutex)
-{
-    return 1;
-}
-#else
-static int
-list_mutex_is_locked (pthread_mutex_t *mutex)
+_list_mutex_is_locked (pthread_mutex_t *mutex)
 {
 /*  Returns true if the mutex is locked; o/w, returns false.
  */
