@@ -582,9 +582,9 @@ static void _add_it (int argc, char *argv[])
 	helpme:
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in add command\n");
-		fprintf(stderr, "Input line must include, ");
-		fprintf(stderr, "\"Account\", \"Cluster\", ");
-		fprintf(stderr, "\"Coordinator\", \"QOS\", \"Resource\", ");
+		fprintf(stderr, "Input line must include ");
+		fprintf(stderr, "\"Account\", \"Cluster\", \"Coordinator\", ");
+		fprintf(stderr, "\"Federation\", \"QOS\", \"Resource\", ");
 		fprintf(stderr, "or \"User\"\n");
 	}
 
@@ -738,7 +738,9 @@ static void _show_it (int argc, char *argv[])
 			"\"Cluster\", \"Configuration\",\n\"Event\", "
 			"\"Problem\", \"QOS\", \"Resource\", \"Reservation\", "
 			"\"RunAwayJobs\", \"Stats\", \"Transaction\", "
-			"\"TRES\", \"User\", or \"WCKey\"\n");
+			"\"Federation\", \"Problem\", \"QOS\", \"Resource\", "
+			"\"Reservation\",\n\"RunAwayJobs\", \"Stats\", "
+			"\"Transaction\", \"TRES\", \"User\", or \"WCKey\"\n");
 	}
 
 	if (error_code != SLURM_SUCCESS) {
@@ -793,7 +795,7 @@ static void _modify_it (int argc, char *argv[])
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in modify command\n");
 		fprintf(stderr, "Input line must include ");
-		fprintf(stderr, "\"Account\", \"Cluster\", "
+		fprintf(stderr, "\"Account\", \"Cluster\", \"Federation\", "
 			"\"Job\", \"QOS\", \"Resource\" or \"User\"\n");
 	}
 
@@ -849,8 +851,8 @@ static void _delete_it (int argc, char *argv[])
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in delete command\n");
 		fprintf(stderr, "Input line must include ");
-		fprintf(stderr, "\"Account\", \"Cluster\", ");
-		fprintf(stderr, "\"Coordinator\",\"QOS\", \"Resource\", or ");
+		fprintf(stderr, "\"Account\", \"Cluster\", \"Coordinator\", ");
+		fprintf(stderr, "\"Federation\", \"QOS\", \"Resource\", or ");
 		fprintf(stderr, "\"User\"\n");
 	}
 
