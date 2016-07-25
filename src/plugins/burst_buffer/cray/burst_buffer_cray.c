@@ -3036,12 +3036,14 @@ static bool _have_dw_cmd_opts(bb_job_t *bb_job)
 extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 {
 	char *hash_dir = NULL, *job_dir = NULL, *script_file = NULL;
+	char *task_script_file = NULL;
 	char *resp_msg = NULL, **script_argv;
 	char *dw_cli_path;
 	int fd = -1, hash_inx, rc = SLURM_SUCCESS, status = 0;
 	char jobid_buf[32];
 	bb_job_t *bb_job;
 	uint32_t timeout;
+	bool using_master_script = false;
 	DEF_TIMERS;
 
 	if ((job_ptr->burst_buffer == NULL) ||
@@ -3073,7 +3075,8 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	/* Standard file location for job arrays, version 16.05+ */
-	if (job_ptr->array_task_id != NO_VAL) {
+	if ((job_ptr->array_task_id != NO_VAL) &&
+	    (job_ptr->array_job_id != job_ptr->job_id)) {
 		hash_inx = job_ptr->array_job_id % 10;
 		xstrfmtcat(hash_dir, "%s/hash.%d", state_save_loc, hash_inx);
 		(void) mkdir(hash_dir, 0700);
@@ -3082,10 +3085,12 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 		(void) mkdir(job_dir, 0700);
 		xstrfmtcat(script_file, "%s/script", job_dir);
 		fd = open(script_file, 0);
-		if (fd >= 0)	/* found the script */
+		if (fd >= 0) {	/* found the script */
 			close(fd);
-		else
+			using_master_script = true;
+		} else {
 			xfree(hash_dir);
+		}
 	}
 	/* Standard file location for all regular jobs and
 	 * job arrays in versions 14.11 & 15.08 */
@@ -3129,16 +3134,30 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 	_free_script_argv(script_argv);
 
 	/* Clean-up */
+	xfree(hash_dir);
+	xfree(job_dir);
+	xfree(dw_cli_path);
 	if (rc != SLURM_SUCCESS) {
 		slurm_mutex_lock(&bb_state.bb_mutex);
 		bb_job_del(&bb_state, job_ptr->job_id);
 		slurm_mutex_unlock(&bb_state.bb_mutex);
+	} else if (using_master_script) {
+		/* Job array's need to have script file in the "standard"
+		 * location for the remaining logic, make hard link */
+		hash_inx = job_ptr->job_id % 10;
+		xstrfmtcat(hash_dir, "%s/hash.%d", state_save_loc, hash_inx);
+		(void) mkdir(hash_dir, 0700);
+		xstrfmtcat(job_dir, "%s/job.%u", hash_dir, job_ptr->job_id);
+		(void) mkdir(job_dir, 0700);
+		xstrfmtcat(task_script_file, "%s/script", job_dir);
+		if ((link(script_file, task_script_file) != 0) &&
+		    (errno != EEXIST)) {
+			error("%s: link(%s,%s): %m", __func__, script_file,
+			      task_script_file);
+		}
 	}
-
-	xfree(hash_dir);
-	xfree(job_dir);
+	xfree(task_script_file);
 	xfree(script_file);
-	xfree(dw_cli_path);
 
 	return rc;
 }
