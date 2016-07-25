@@ -422,12 +422,16 @@ extern int switch_p_pack_node_info(switch_node_info_t *switch_node, Buf buffer,
 				 protocol_version);
 }
 
-extern int switch_p_unpack_node_info(switch_node_info_t *switch_node,
+extern int switch_p_unpack_node_info(switch_node_info_t **switch_node,
 				     Buf buffer, uint16_t protocol_version)
 {
 	if (debug_flags & DEBUG_FLAG_SWITCH)
 		info("switch_p_unpack_node_info()");
-	return nrt_unpack_nodeinfo((slurm_nrt_nodeinfo_t *)switch_node,
+
+	if (switch_p_alloc_node_info((slurm_nrt_nodeinfo_t **)switch_node))
+		return SLURM_ERROR;
+
+	return nrt_unpack_nodeinfo((slurm_nrt_nodeinfo_t *) *switch_node,
 				   buffer, protocol_version);
 }
 
@@ -679,13 +683,13 @@ extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 				protocol_version);
 }
 
-extern int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
+extern int switch_p_unpack_jobinfo(switch_jobinfo_t **switch_job, Buf buffer,
 				   uint16_t protocol_version)
 {
 	if (debug_flags & DEBUG_FLAG_SWITCH)
 		info("switch_p_unpack_jobinfo()");
 
-	return nrt_unpack_jobinfo((slurm_nrt_jobinfo_t *)switch_job, buffer,
+	return nrt_unpack_jobinfo((slurm_nrt_jobinfo_t **)switch_job, buffer,
 				  protocol_version);
 }
 

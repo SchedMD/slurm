@@ -136,7 +136,7 @@ int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 	return 0;
 }
 
-int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
+int switch_p_unpack_jobinfo(switch_jobinfo_t **switch_job, Buf buffer,
 			    uint16_t protocol_version)
 {
 	return SLURM_SUCCESS;
@@ -293,7 +293,7 @@ extern int switch_p_pack_node_info(switch_node_info_t *switch_node,
 	return 0;
 }
 
-extern int switch_p_unpack_node_info(switch_node_info_t *switch_node,
+extern int switch_p_unpack_node_info(switch_node_info_t **switch_node,
 				     Buf buffer, uint16_t protocol_version)
 {
 	return SLURM_SUCCESS;

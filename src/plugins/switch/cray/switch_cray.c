@@ -304,7 +304,7 @@ extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 	return 0;
 }
 
-extern int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
+extern int switch_p_unpack_jobinfo(switch_jobinfo_t **switch_job, Buf buffer,
 				   uint16_t protocol_version)
 {
 	uint32_t num_cookies;
@@ -317,7 +317,8 @@ extern int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 
 	xassert(buffer);
 
-	job = (slurm_cray_jobinfo_t *) switch_job;
+	job = xmalloc(sizeof(slurm_cray_jobinfo_t));
+	*switch_job = (switch_jobinfo_t *)job;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&job->magic, buffer);
@@ -363,21 +364,10 @@ extern int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	CRAY_ERR("Unpacking error");
-	if (job->num_cookies) {
-		xfree(job->cookie_ids);
 
-		if (job->cookies) {
-			int i;
-			// Free the individual cookie strings.
-			for (i = 0; i < job->num_cookies; i++) {
-				xfree(job->cookies[i]);
-			}
-			xfree(job->cookies);
-		}
-	}
-	if (job->num_ptags)
-		xfree(job->ptags);
+	CRAY_ERR("Unpacking error");
+	switch_p_free_jobinfo(*switch_job);
+	*switch_job = NULL;
 
 	return SLURM_ERROR;
 }
@@ -841,7 +831,7 @@ extern int switch_p_pack_node_info(switch_node_info_t *switch_node, Buf buffer,
 	return 0;
 }
 
-extern int switch_p_unpack_node_info(switch_node_info_t *switch_node,
+extern int switch_p_unpack_node_info(switch_node_info_t **switch_node,
 				     Buf buffer, uint16_t protocol_version)
 {
 	return SLURM_SUCCESS;

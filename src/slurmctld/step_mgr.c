@@ -3739,9 +3739,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 			if (unpack_slurm_step_layout(&step_layout, buffer,
 						     protocol_version))
 				goto unpack_error;
-			switch_g_alloc_jobinfo(&switch_tmp,
-					       job_ptr->job_id, step_id);
-			if (switch_g_unpack_jobinfo(switch_tmp, buffer,
+			if (switch_g_unpack_jobinfo(&switch_tmp, buffer,
 						    protocol_version))
 				goto unpack_error;
 		}

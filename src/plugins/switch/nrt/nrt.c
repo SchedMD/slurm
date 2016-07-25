@@ -3468,13 +3468,17 @@ unpack_error: /* safe_unpackXX are macros which jump to unpack_error */
 
 /* Used by: all */
 extern int
-nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf,
+nrt_unpack_jobinfo(slurm_nrt_jobinfo_t **j_pptr, Buf buf,
 		   uint16_t protocol_version)
 {
 	int i;
+	slurm_nrt_jobinfo_t *j;
 
-	xassert(j);
+	xassert(j_pptr);
 	xassert(buf);
+
+	nrt_alloc_jobinfo(j_pptr);
+	j = *j_pptr;
 
 	safe_unpack32(&j->magic, buf);
 
@@ -3513,11 +3517,10 @@ nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf,
 
 unpack_error:
 	error("nrt_unpack_jobinfo error");
-	if (j->tableinfo) {
-		for (i = 0; i < j->tables_per_task; i++)
-			xfree(j->tableinfo[i].table);
-		xfree(j->tableinfo);
-	}
+
+	nrt_free_jobinfo(*j_pptr);
+	*j_pptr = NULL;
+
 	slurm_seterrno_ret(EUNPACK);
 	return SLURM_ERROR;
 }

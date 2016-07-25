@@ -100,7 +100,7 @@ extern int nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 			     int instances, int cau, int immed);
 extern int nrt_pack_jobinfo(slurm_nrt_jobinfo_t *jp, Buf buf,
 			    uint16_t protocol_version);
-extern int nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *jp, Buf buf,
+extern int nrt_unpack_jobinfo(slurm_nrt_jobinfo_t **jp, Buf buf,
 			      uint16_t protocol_version);
 extern void nrt_free_jobinfo(slurm_nrt_jobinfo_t *jp);
 extern int nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid,

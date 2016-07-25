@@ -3451,10 +3451,8 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 
 		safe_unpack16(&node_reg_ptr->startup, buffer);
 		if (node_reg_ptr->startup
-		    &&  (switch_g_alloc_node_info(
-				 &node_reg_ptr->switch_nodeinfo)
-			 ||   switch_g_unpack_node_info(
-				 node_reg_ptr->switch_nodeinfo, buffer,
+		    &&  (switch_g_unpack_node_info(
+				 &node_reg_ptr->switch_nodeinfo, buffer,
 				 protocol_version)))
 			goto unpack_error;
 
@@ -3511,10 +3509,8 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 
 		safe_unpack16(&node_reg_ptr->startup, buffer);
 		if (node_reg_ptr->startup
-		    &&  (switch_g_alloc_node_info(
-				 &node_reg_ptr->switch_nodeinfo)
-			 ||   switch_g_unpack_node_info(
-				 node_reg_ptr->switch_nodeinfo, buffer,
+		    &&  (switch_g_unpack_node_info(
+				 &node_reg_ptr->switch_nodeinfo, buffer,
 				 protocol_version)))
 			goto unpack_error;
 
@@ -4915,9 +4911,7 @@ unpack_job_step_create_response_msg(job_step_create_response_msg_t ** msg,
 		if (select_g_select_jobinfo_unpack(
 			    &tmp_ptr->select_jobinfo, buffer, protocol_version))
 			goto unpack_error;
-		switch_g_alloc_jobinfo(&tmp_ptr->switch_job, NO_VAL,
-				       tmp_ptr->job_step_id);
-		if (switch_g_unpack_jobinfo(tmp_ptr->switch_job, buffer,
+		if (switch_g_unpack_jobinfo(&tmp_ptr->switch_job, buffer,
 					    protocol_version)) {
 			error("switch_g_unpack_jobinfo: %m");
 			switch_g_free_jobinfo(tmp_ptr->switch_job);
@@ -8511,9 +8505,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		safe_unpackstr_xmalloc(&msg->task_epilog, &uint32_tmp, buffer);
 		safe_unpack16(&msg->slurmd_debug, buffer);
 
-		switch_g_alloc_jobinfo(&msg->switch_job,
-				       msg->job_id, msg->job_step_id);
-		if (switch_g_unpack_jobinfo(msg->switch_job, buffer,
+		if (switch_g_unpack_jobinfo(&msg->switch_job, buffer,
 					    protocol_version) < 0) {
 			error("switch_g_unpack_jobinfo: %m");
 			switch_g_free_jobinfo(msg->switch_job);
@@ -8619,9 +8611,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		safe_unpackstr_xmalloc(&msg->task_epilog, &uint32_tmp, buffer);
 		safe_unpack16(&msg->slurmd_debug, buffer);
 
-		switch_g_alloc_jobinfo(&msg->switch_job,
-				       msg->job_id, msg->job_step_id);
-		if (switch_g_unpack_jobinfo(msg->switch_job, buffer,
+		if (switch_g_unpack_jobinfo(&msg->switch_job, buffer,
 					    protocol_version) < 0) {
 			error("switch_g_unpack_jobinfo: %m");
 			switch_g_free_jobinfo(msg->switch_job);

@@ -149,7 +149,7 @@ extern int  switch_g_pack_jobinfo  (switch_jobinfo_t *jobinfo, Buf buffer,
  * RET         - slurm error code
  * NOTE: returned value must be freed using g_switch_g_free_jobinfo
  */
-extern int  switch_g_unpack_jobinfo(switch_jobinfo_t *jobinfo, Buf buffer,
+extern int  switch_g_unpack_jobinfo(switch_jobinfo_t **jobinfo, Buf buffer,
 				    uint16_t protocol_version);
 
 /* get some field from a switch job credential
@@ -398,7 +398,7 @@ extern int switch_g_pack_node_info(switch_node_info_t *switch_node,
  * Unpack the data associated with a node's switch state record
  * from a buffer.
  */
-extern int switch_g_unpack_node_info(switch_node_info_t *switch_node,
+extern int switch_g_unpack_node_info(switch_node_info_t **switch_node,
 				     Buf buffer, uint16_t protocol_version);
 
 /*
