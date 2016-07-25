@@ -71,6 +71,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix to allow users to update QOS of pending jobs.
  -- Print correct cluster name in "slurmd -C" output.
  -- CRAY - Fix minor memory leak in switch plugin.
+ -- CRAY - Change slurmconfgen_smw.py to skip over disabled nodes.
 
 * Changes in Slurm 16.05.2
 ==========================

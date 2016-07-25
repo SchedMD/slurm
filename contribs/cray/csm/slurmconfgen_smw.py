@@ -86,12 +86,23 @@ def get_repurposed_computes(partition):
 
 
 def get_node(nodexml):
-    """ Convert node XML into a node dictionary """
+    """
+    Convert node XML into a node dictionary.
+    Returns None for disabled nodes.
+    """
+    cname = nodexml.find('cname').text
+    status = nodexml.find('status').text
+
+    # Skip disabled nodes
+    if status != 'enabled':
+        print 'Skipping {} node {}'.format(status, cname)
+        return None
+
     cores = int(nodexml.find('cores').text)
     sockets = int(nodexml.find('sockets').text)
     memory = int(nodexml.find('memory/sizeGB').text) * 1024
 
-    node = {'cname': nodexml.find('cname').text,
+    node = {'cname': cname,
             'nid': int(nodexml.find('nid').text),
             'CoresPerSocket': cores / sockets,
             'RealMemory': memory,
@@ -145,6 +156,8 @@ def get_inventory(partition, repurposed):
         # Loop through nodes in this module
         for nodexml in modulexml.findall('node_list/node'):
             node = get_node(nodexml)
+            if node is None:
+                continue
             if node['cname'] in repurposed:
                 print ('Skipping repurposed compute node {}'
                        .format(node['cname']))
