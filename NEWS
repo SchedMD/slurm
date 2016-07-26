@@ -41,6 +41,9 @@ documents those changes that are of interest to users and administrators.
  -- Added infrastructure for setting up federations in database and establishing
     connections between federation clusters.
 
+* Changes in Slurm 16.05.4
+==========================
+
 * Changes in Slurm 16.05.3
 ==========================
  -- Make it so the extern step uses a reverse tree when cleaning up.

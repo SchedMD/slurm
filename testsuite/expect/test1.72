@@ -34,6 +34,10 @@ set test_id   "1.72"
 set freq_val  0
 set exit_code 0
 
+if {[test_cray]} {
+        set timeout 60
+}
+
 if {[get_job_acct_freq] == 0} {
 	send_user "\nWARNING:this test requires JobAcctGatherFrequency to be set\n"
 	exit $exit_code
