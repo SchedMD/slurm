@@ -4,6 +4,8 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 16.05.4
 ==========================
  -- Fix potential deadlock if running with message aggregation.
+ -- Streamline when schedule() is called when running with message aggregation
+    on batch script completes.
 
 * Changes in Slurm 16.05.3
 ==========================
