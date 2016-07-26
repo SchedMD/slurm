@@ -921,6 +921,7 @@ static bool _all_partition_priorities_same(void)
  *	or removed from the queue, but have their priority or partition
  *	changed with the update_job RPC. In general nodes will be in priority
  *	order (by submit time), so the sorting should be pretty fast.
+ * Note: job_write_lock must be unlocked before calling this.
  */
 extern int schedule(uint32_t job_limit)
 {
