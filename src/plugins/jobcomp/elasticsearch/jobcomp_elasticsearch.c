@@ -608,7 +608,6 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	char usr_str[32], grp_str[32], start_str[32], end_str[32];
 	char time_str[32], *cluster = NULL, *qos, *state_string;
 	time_t elapsed_time;
-	double start_delay;
 	enum job_states job_state;
 	uint32_t time_limit;
 	uint16_t ntasks_per_node;
