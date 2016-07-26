@@ -1,7 +1,7 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Validates that sacctmgr lost jobs returns lost jobs
+#          Validates that sacctmgr runaway jobs returns runaway jobs
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -201,13 +201,13 @@ if {[archive_load $sql_query]} {
 	endit
 }
 
-# Test sacctmgr show lost jobs
+# Test sacctmgr show runaway jobs
 set list_job 0
 # Use temp conf file to use different cluster name.
 set env(SLURM_CONF) $test_conf_file
-spawn $sacctmgr show -i lost jobs
+spawn $sacctmgr show -i runaway jobs
 expect {
-	-re "NOTE: Lost jobs" {
+	-re "NOTE: Runaway jobs" {
 		set list_job 1
 		exp_continue
 	}
@@ -221,16 +221,16 @@ expect {
 }
 
 if {$list_job != 1} {
-	send_user "\nFAILURE: sacctmgr did not find any lost jobs when "
+	send_user "\nFAILURE: sacctmgr did not find any runaway jobs when "
 	send_user "it should have\n"
 	endit
 }
 
 # Check that jobs were fixed
 set list_job 0
-spawn $sacctmgr show -i lost jobs
+spawn $sacctmgr show -i runaway jobs
 expect {
-	-re "No lost jobs found" {
+	-re "No runaway jobs found" {
 		set list_job 1
 		exp_continue
 	}
@@ -244,7 +244,7 @@ expect {
 }
 
 if {$list_job != 1} {
-	send_user "\nFAILURE: sacctmgr found lost jobs when "
+	send_user "\nFAILURE: sacctmgr found runaway jobs when "
 	send_user "it should not have\n"
 	endit
 }

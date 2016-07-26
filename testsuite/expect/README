@@ -671,7 +671,7 @@ test21.32  Validate that mod qos =,+=,-= change the preempt value
 test21.33  Validate that a resource can be added to a cluster after creation
 test21.34  Validate that partition and job qos limits are enforced
 test21.35  Validate DenyOnLimit QoS flag is enforced on QoS and Associations.
-test21.36  Validate that sacctmgr lost jobs fixes lost jobs.
+test21.36  Validate that sacctmgr runaway jobs fixes runaway jobs.
 
 
 test22.#   Testing of sreport commands and options.
