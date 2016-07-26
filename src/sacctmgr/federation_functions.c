@@ -42,7 +42,6 @@ static int _set_cond(int *start, int argc, char *argv[],
 		     List format_list)
 {
 	int i;
-	int c_set = 0;
 	int a_set = 0;
 	int end = 0;
 	int command_len = 0;
@@ -96,13 +95,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 	}
 	(*start) = i;
 
-	if (c_set && a_set)
-		return 3;
-	else if (a_set) {
-		return 2;
-	} else if (c_set)
-		return 1;
-	return 0;
+	return a_set;
 }
 
 static int _set_rec(int *start, int argc, char *argv[],

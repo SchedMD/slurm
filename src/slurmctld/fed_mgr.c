@@ -410,9 +410,12 @@ extern int fed_mgr_state_save(char *state_save_location)
 	pack_time(time(NULL), buffer);
 
 	memset(&msg, 0, sizeof(dbd_list_msg_t));
+
+	slurm_mutex_lock(&fed_mutex);
 	msg.my_list = fed_mgr_siblings;
 	slurmdbd_pack_list_msg(&msg, SLURM_PROTOCOL_VERSION,
 			       DBD_ADD_CLUSTERS, buffer);
+	slurm_mutex_unlock(&fed_mutex);
 
 	/* write the buffer to file */
 	reg_file = xstrdup_printf("%s/%s", state_save_location,
@@ -562,8 +565,7 @@ extern int fed_mgr_state_load(char *state_save_location)
 	return SLURM_SUCCESS;
 
 unpack_error:
-	if (buffer)
-		free_buf(buffer);
+	free_buf(buffer);
 
 	slurm_mutex_unlock(&fed_mutex);
 	return SLURM_ERROR;

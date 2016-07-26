@@ -100,7 +100,7 @@ extern void slurm_print_federation(void *ptr)
 	slurmdb_cluster_rec_t *cluster;
 	int left_col_size;
 	char *conn_status[] = {"Disconnected", "Connected"};
-	char *cluster_name = slurm_get_cluster_name();
+	char *cluster_name = NULL;
 
 	slurmdb_federation_rec_t *fed = (slurmdb_federation_rec_t *)ptr;
 
@@ -108,6 +108,8 @@ extern void slurm_print_federation(void *ptr)
 
 	if (!fed->name)
 		return;
+
+	cluster_name = slurm_get_cluster_name();
 
 	left_col_size = strlen("federation:");
 	printf("%-*s %s\n", left_col_size, "Federation:", fed->name);

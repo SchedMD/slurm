@@ -367,6 +367,7 @@ extern int as_mysql_add_federations(mysql_conn_t *mysql_conn, uint32_t uid,
 			xfree(cols);
 			xfree(vals);
 			xfree(extra);
+			xfree(user_name);
 			return SLURM_ERROR;
 		}
 

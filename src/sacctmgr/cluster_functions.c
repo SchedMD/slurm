@@ -356,7 +356,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 		}
 	}
 
-	if (start_cluster && start_cluster->fed.name) {
+	if (start_cluster->fed.name) {
 		int rc;
 		List fed_list = list_create(slurm_destroy_char);
 		list_append(fed_list, xstrdup(start_cluster->fed.name));
