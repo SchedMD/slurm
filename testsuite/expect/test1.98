@@ -57,14 +57,14 @@ if {[test_launch_poe]} {
 #
 # Run two tasks per idle node in default partition, up to 64 tasks
 #
-send_user "TEST 1\n"
 set node_cnt 2
 set partition [default_partition]
-set task_cnt [available_nodes $partition idle]
+set task_cnt [available_nodes $partition "idle"]
 if {$task_cnt < $node_cnt} {
     send_user "\nWARNING: not enough nodes currently available ($task_cnt avail, $node_cnt needed)\n"
     exit 0
 }
+send_user "TEST 1\n"
 incr task_cnt $task_cnt
 if {$task_cnt > 64} {
 	set task_cnt 64
