@@ -100,12 +100,13 @@ const char plugin_type[] = "jobcomp/elasticsearch";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 #define INDEX_RETRY_INTERVAL 30
-#define JOBCOMP_DATA_FORMAT "{\"jobid\":%lu,\"username\":\"%s\","	\
-	"\"user_id\":%lu,\"groupname\":\"%s\",\"group_id\":%lu,"	\
+#define JOBCOMP_DATA_FORMAT "{\"jobid\":%u,\"username\":\"%s\","	\
+	"\"user_id\":%u,\"groupname\":\"%s\",\"group_id\":%u,"  	\
 	"\"@start\":\"%s\",\"@end\":\"%s\",\"elapsed\":%ld,"		\
 	"\"partition\":\"%s\",\"alloc_node\":\"%s\","			\
-	"\"nodes\":\"%s\",\"total_cpus\":%lu,\"total_nodes\":%lu,"	\
-	"\"derived_exitcode\":%lu,\"exitcode\":%lu,\"state\":\"%s\""
+	"\"nodes\":\"%s\",\"total_cpus\":%u,\"total_nodes\":%u,"	\
+	"\"derived_exitcode\":%u,\"exitcode\":%u,\"state\":\"%s\""      \
+	",\"cpu_hours\":%.6f"
 
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
@@ -604,7 +605,6 @@ static void _make_time_str(time_t * time, char *string, int size)
 
 extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 {
-	int nwritten, B_SIZE = 1024;
 	char usr_str[32], grp_str[32], start_str[32], end_str[32];
 	char time_str[32], *cluster = NULL, *qos, *state_string;
 	time_t elapsed_time;
@@ -612,7 +612,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	uint32_t time_limit;
 	uint16_t ntasks_per_node;
 	int i;
-	char *buffer, tmp_str[256], *script_str, *script;
+	char *buffer, *script_str, *script;
 	struct job_node *jnode;
 
 	if (list_count(jobslist) > MAX_JOBS) {
@@ -663,47 +663,19 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 
 	elapsed_time = job_ptr->end_time - job_ptr->start_time;
 
-	buffer = xmalloc(B_SIZE);
-
-	nwritten = snprintf(buffer, B_SIZE, JOBCOMP_DATA_FORMAT,
-			    (unsigned long) job_ptr->job_id, usr_str,
-			    (unsigned long) job_ptr->user_id, grp_str,
-			    (unsigned long) job_ptr->group_id, start_str,
-			    end_str, (long) elapsed_time,
-			    job_ptr->partition, job_ptr->alloc_node,
-			    job_ptr->nodes, (unsigned long) job_ptr->total_cpus,
-			    (unsigned long) job_ptr->total_nodes,
-			    (unsigned long) job_ptr->derived_ec,
-			    (unsigned long) job_ptr->exit_code, state_string);
-
-	if (nwritten >= B_SIZE) {
-		B_SIZE += nwritten + 1;
-		buffer = xrealloc(buffer, B_SIZE);
-
-		nwritten = snprintf(buffer, B_SIZE, JOBCOMP_DATA_FORMAT,
-				    (unsigned long) job_ptr->job_id, usr_str,
-				    (unsigned long) job_ptr->user_id, grp_str,
-				    (unsigned long) job_ptr->group_id,
-				    start_str, end_str, (long) elapsed_time,
-				    job_ptr->partition, job_ptr->alloc_node,
-				    job_ptr->nodes,
-				    (unsigned long) job_ptr->total_cpus,
-				    (unsigned long) job_ptr->total_nodes,
-				    (unsigned long) job_ptr->derived_ec,
-				    (unsigned long) job_ptr->exit_code,
-				    state_string);
-
-		if (nwritten >= B_SIZE) {
-			error("%s: Job completion data truncated and lost",
-			      plugin_type);
-			return SLURM_ERROR;
-		}
-	}
-
-	snprintf(tmp_str, sizeof(tmp_str), ",\"cpu_hours\":%.6f",
-		 ((float) elapsed_time * (float) job_ptr->total_cpus) /
-		  (float) 3600);
-	xstrcat(buffer, tmp_str);
+	buffer = xstrdup_printf(JOBCOMP_DATA_FORMAT,
+				job_ptr->job_id, usr_str,
+				job_ptr->user_id, grp_str,
+				job_ptr->group_id, start_str,
+				end_str, elapsed_time,
+				job_ptr->partition, job_ptr->alloc_node,
+				job_ptr->nodes, job_ptr->total_cpus,
+				job_ptr->total_nodes,
+				job_ptr->derived_ec,
+				job_ptr->exit_code, state_string,
+				((float) elapsed_time *
+				 (float) job_ptr->total_cpus) /
+				(float) 3600);
 
 	if (job_ptr->array_task_id != NO_VAL) {
 		xstrfmtcat(buffer, ",\"array_job_id\":%lu",
