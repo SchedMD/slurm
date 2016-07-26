@@ -183,7 +183,7 @@ static void _report_runaway_jobs(List runaway_jobs)
 	if (list_count(runaway_jobs)) {
 		printf("NOTE: Runaway jobs are jobs that don't exist in the "
 		       "controller but are still considered running in the "
-		       "datbase\n");
+		       "database\n");
 		_print_runaway_jobs(runaway_jobs);
 	}
 }
