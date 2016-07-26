@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 16.05.4
 ==========================
+ -- Fix potential deadlock if running with message aggregation.
 
 * Changes in Slurm 16.05.3
 ==========================

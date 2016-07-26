@@ -2191,7 +2191,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
 			run_sched = true;
 	}
 
-	if (run_sched)
+	if (!running_composite && run_sched)
 		(void) schedule(0);		/* Has own locking */
 	if (dump_job)
 		(void) schedule_job_save();	/* Has own locking */
