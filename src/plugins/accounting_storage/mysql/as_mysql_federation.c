@@ -323,6 +323,7 @@ extern int as_mysql_add_federations(mysql_conn_t *mysql_conn, uint32_t uid,
 	while ((object = list_next(itr))) {
 		if (object->cluster_list &&
 		    (list_count(federation_list) > 1)) {
+			xfree(user_name);
 			error("Clusters can only be assigned to one "
 			      "federation");
 			errno = ESLURM_FED_CLUSTER_MULTIPLE_ASSIGNMENT;
