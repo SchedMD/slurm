@@ -63,7 +63,7 @@ set partition [default_partition]
 set task_cnt [available_nodes $partition idle]
 if {$task_cnt < $node_cnt} {
     send_user "\nWARNING: not enough nodes currently available ($task_cnt avail, $node_cnt needed)\n"
-    exit $exit_code
+    exit 0
 }
 incr task_cnt $task_cnt
 if {$task_cnt > 64} {
