@@ -2,9 +2,9 @@ RELEASE NOTES FOR SLURM VERSION 17.02
 13 July 2016
 
 IMPORTANT NOTES:
-ANY JOBS WITH A JOB ID ABOVE 67,108,863 WILL BE PURGED WHEN SLURM IS
-UPGRADED FROM AN OLDER VERSION! Reduce your configured MaxJobID value as needed
-prior to upgrading in order to eliminate these jobs.
+THE MAXJOBID IS NOW 67,108,863. ANY PRE-EXISTING JOBS WILL CONTINUE TO RUN BUT
+NEW JOB IDS WILL BE WITHIN THE NEW MAXJOBID RANGE. Adjust your configured
+MaxJobID value as needed to eliminate any confusion.
 
 If using the slurmdbd (Slurm DataBase Daemon) you must update this first.
 The 17.02 slurmdbd will work with Slurm daemons of version 15.08 and above.
@@ -46,10 +46,10 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
+Add commands to sacctmgr for managing and displaying federations.
 
 OTHER CHANGES
 =============
- -- Added new #define: #define MAX_JOB_ID (0x03FFFFFF)
 
 API CHANGES
 ===========
@@ -59,20 +59,31 @@ Changed members of the following structs
 
 Added members to the following struct definitions
 =================================================
+In slurmdb_cluster_cond_t: Added List federation_list
+In slurmdb_cluster_rec_t: Added fed, lock, sockfd
+In struct job_record: Added fed_details
 
 Added the following struct definitions
 ======================================
+Added fed_elem_t to store federation information on slurmdb_cluster_rec_t.
+Added slurmdb_federation_cond_t for selecting federations from db.
+Added slurmdb_federation_rec_t to represent federation objects.
+Added job_fed_details_t for storing federated job information.
 
 Removed members from the following struct definitions
 =====================================================
 
 Changed the following enums and #defines
 ========================================
- -- Changed DEFAULT_MAX_JOB_ID from 0x7fff0000 to 0x03ff0000.
-
+Added MAX_JOB_ID (0x03FFFFFF)
+Added DEBUG_FLAG_FEDR flag for federation debugging.
+Added cluster_fed_states enum and defines for federation states.
+Changed DEFAULT_MAX_JOB_ID from 0x7fff0000 to 0x03ff0000.
 
 Added the following API's
 =========================
+Added slurm_load_federation() to retrieve federation info from cluster.
+Added slurm_print_federation() to print federation info retrieved from cluster.
 
 Changed the following API's
 ============================
