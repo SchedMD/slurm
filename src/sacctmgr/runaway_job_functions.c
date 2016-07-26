@@ -104,7 +104,7 @@ static void _print_runaway_jobs(List format_list, List jobs)
 
 	printf("NOTE: Runaway jobs are jobs that don't exist in the "
 	       "controller but are still considered running in the "
-	       "datbase\n");
+	       "database\n");
 
 	if (!format_list || !list_count(format_list)) {
 		if (!format_list)
