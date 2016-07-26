@@ -93,6 +93,11 @@ proc cleanup { } {
 
 }
 
+if { ![test_super_user] } {
+        send_user "\nWARNING: This test can't be run without being a super user of the cluster.\n"
+	exit 0
+}
+
 send_user "\n=== Testing Node Information ===\n"
 set first_option 1
 foreach option [array names node_info] {
