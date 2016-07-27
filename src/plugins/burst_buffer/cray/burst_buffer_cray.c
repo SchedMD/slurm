@@ -2558,6 +2558,13 @@ static int _xlate_interactive(struct job_descriptor *job_desc)
 	if (!job_desc->burst_buffer || (job_desc->burst_buffer[0] == '#'))
 		return rc;
 
+	if (strstr(job_desc->burst_buffer, "create_persistent") ||
+	    strstr(job_desc->burst_buffer, "destroy_persistent")) {
+		/* Create or destroy of persistent burst buffers NOT supported
+		 * via -bb option. Use -bbf or a batch script instead. */
+		return ESLURM_INVALID_BURST_BUFFER_REQUEST;
+	}
+
 	if ((tok = strstr(job_desc->burst_buffer, "access="))) {
 		access = xstrdup(tok + 7);
 		tok = strchr(access, ',');

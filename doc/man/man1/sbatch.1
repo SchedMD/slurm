@@ -138,17 +138,10 @@ is configured).
 If not specified, the scontrol show job will display 'ReqS:C:T=*:*:*'.
 
 .TP
-\fB\-\-bb\fR=<\fIspec\fR>
-Burst buffer specification.
-The form of the specification is system dependent.
-Also see \fB\-\-bbf\fR.
-
-.TP
 \fB\-\-bbf\fR=<\fIfile_name\fR>
 Path of file containing burst buffer specification.
 The form of the specification is system dependent.
 These burst buffer directives will be inserted into the submitted batch script.
-Also see \fB\-\-bb\fR.
 
 .TP
 \fB\-\-begin\fR=<\fItime\fR>
@@ -1637,9 +1630,6 @@ Same as \fB\-a, \-\-array\fR
 .TP
 \fBSBATCH_BLRTS_IMAGE\fR
 Same as \fB\-\-blrts\-image\fR
-.TP
-\fBSBATCH_BURST_BUFFER\fR
-Same as \fB\-\-bb\fR
 .TP
 \fBSBATCH_CHECKPOINT\fR
 Same as \fB\-\-checkpoint\fR

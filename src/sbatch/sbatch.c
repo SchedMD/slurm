@@ -501,8 +501,6 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->mail_type = opt.mail_type;
 	if (opt.mail_user)
 		desc->mail_user = xstrdup(opt.mail_user);
-	if (opt.burst_buffer)
-		desc->burst_buffer = opt.burst_buffer;
 	if (opt.begin)
 		desc->begin_time = opt.begin;
 	if (opt.deadline)

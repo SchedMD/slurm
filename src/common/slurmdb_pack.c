@@ -4305,8 +4305,7 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpack32(&job_ptr->associd, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->blockid, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->cluster, &uint32_tmp, buffer);
-		safe_unpack32(&uint32_tmp, buffer);
-		job_ptr->derived_ec = (int32_t)uint32_tmp;
+		safe_unpack32(&job_ptr->derived_ec, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->derived_es, &uint32_tmp,
 				       buffer);
 		safe_unpack32(&job_ptr->elapsed, buffer);

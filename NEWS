@@ -5,6 +5,7 @@ documents those changes that are of interest to users and administrators.
 ==============================
  -- Add new RPC (REQUEST_EVENT_LOG) so that slurmd and slurmstepd can log events
     through the slurmctld daemon.
+ -- Remove sbatch --bb option. That option was never supported.
 
 * Changes in Slurm 17.02.0pre1
 ==============================
@@ -51,6 +52,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix potential deadlock if running with message aggregation.
  -- Streamline when schedule() is called when running with message aggregation
     on batch script completes.
+ -- Fix incorrect casting when [un]packing derived_ec on slurmdb_job_rec_t.
+ -- Document that persistent burst buffers can not be created or destroyed using
+    the salloc or srun --bb options.
 
 * Changes in Slurm 16.05.3
 ==========================

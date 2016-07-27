@@ -183,8 +183,7 @@ enum wrappers {
 #define LONG_OPT_SPREAD_JOB      0x162
 #define LONG_OPT_MCS_LABEL       0x165
 #define LONG_OPT_DEADLINE        0x166
-#define LONG_OPT_BURST_BUFFER_SPEC 0x167
-#define LONG_OPT_BURST_BUFFER_FILE 0x168
+#define LONG_OPT_BURST_BUFFER_FILE 0x167
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -472,7 +471,6 @@ env_vars_t env_vars[] = {
   {"SBATCH_ARRAY_INX",     OPT_STRING,     &opt.array_inx,     NULL          },
   {"SBATCH_ACCTG_FREQ",    OPT_STRING,     &opt.acctg_freq,    NULL          },
   {"SBATCH_BLRTS_IMAGE",   OPT_STRING,     &opt.blrtsimage,    NULL          },
-  {"SBATCH_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL          },
   {"SBATCH_CHECKPOINT",    OPT_STRING,     &opt.ckpt_interval_str, NULL      },
   {"SBATCH_CHECKPOINT_DIR",OPT_STRING,     &opt.ckpt_dir,      NULL          },
   {"SBATCH_CLUSTERS",      OPT_STRING,     &opt.clusters,      NULL          },
@@ -780,7 +778,6 @@ static struct option long_options[] = {
 	{"nodelist",      required_argument, 0, 'w'},
 	{"exclude",       required_argument, 0, 'x'},
 	{"acctg-freq",    required_argument, 0, LONG_OPT_ACCTG_FREQ},
-	{"bb",            required_argument, 0, LONG_OPT_BURST_BUFFER_SPEC},
 	{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
 	{"begin",         required_argument, 0, LONG_OPT_BEGIN},
 	{"blrts-image",   required_argument, 0, LONG_OPT_BLRTS_IMAGE},
@@ -1625,10 +1622,6 @@ static void _set_options(int argc, char **argv)
 			opt.mcs_label = xstrdup(optarg);
 			break;
 		}
-		case LONG_OPT_BURST_BUFFER_SPEC:
-			xfree(opt.burst_buffer);
-			opt.burst_buffer = xstrdup(optarg);
-			break;
 		case LONG_OPT_BURST_BUFFER_FILE:
 			xfree(opt.burst_buffer_file);
 			opt.burst_buffer_file = _read_file(optarg);
@@ -3220,7 +3213,6 @@ static void _opt_list(void)
 		     opt.core_spec & (~CORE_SPEC_THREAD));
 	} else
 		info("core-spec         : %d", opt.core_spec);
-	info("burst_buffer      : `%s'", opt.burst_buffer);
 	info("burst_buffer_file : `%s'", opt.burst_buffer_file);
 	info("remote command    : `%s'", str);
 	info("power             : %s", power_flags_str(opt.power_flags));
@@ -3265,8 +3257,7 @@ static void _usage(void)
 "              [--mem_bind=...] [--reservation=name] [--mcs-label=mcs]\n"
 "              [--cpu-freq=min[-max[:gov]] [--power=flags] [--gres-flags=opts]\n"
 "              [--switches=max-switches{@max-time-to-wait}] [--reboot]\n"
-"              [--core-spec=cores] [--thread-spec=threads]\n"
-"              [--bb=burst_buffer_spec] [--bbf=burst_buffer_file]\n"
+"              [--core-spec=cores] [--thread-spec=threads] [--bbf=burst_buffer_file]\n"
 "              [--array=index_values] [--profile=...] [--ignore-pbs] [--spread-job]\n"
 "              [--export[=names]] [--export-file=file|fd] executable [args...]\n");
 }

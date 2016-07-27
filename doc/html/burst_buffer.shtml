@@ -137,8 +137,8 @@ In a similar fashion, you can't stage files in/out at various points in the
 script execution. All file stage-in happens prior to the job's compute portion
 and all file stage-out happens after computation.</p>
 
-<p>The salloc and srun commands can also create and use burst buffers. For
-both commands. the "--bb" or "--bbf" option is used to specify the job's
+<p>The salloc and srun commands can create and use job-specific burst buffers.
+For both commands, the "--bb" or "--bbf" option is used to specify the job's
 burst buffer requirements. 
 Note the burst buffer may not be accessible from a login node, but require
 that salloc spawn a shell on one of it's allocated compute nodes. See the
@@ -201,10 +201,12 @@ can create or destroy persistent burst buffers.</p>
 
 <h2><a name="interactive">Interactive Job Options</a></h2>
 
-<p>Interactive jobs may include directives for creating job specific burst
+<p>Interactive jobs may include directives for creating job-specific burst
 buffers as well as file staging.
 These options may be specified using either the "--bb" or "--bbf" option of
 the salloc or srun command.
+Note that support for creation and destruction of persistent burst buffers using
+the "--bb" option is <u>not</u> provided.
 The "--bbf" option take as an argument a filename and that file should contain
 a collection of burst buffer operations identical to that used for batch jobs.
 This file may contain file staging directives.
