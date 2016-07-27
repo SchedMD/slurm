@@ -6,6 +6,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix potential deadlock if running with message aggregation.
  -- Streamline when schedule() is called when running with message aggregation
     on batch script completes.
+ -- Fix incorrect casting when [un]packing derived_ec on slurmdb_job_rec_t.
 
 * Changes in Slurm 16.05.3
 ==========================
