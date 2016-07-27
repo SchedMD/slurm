@@ -3,6 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2010-2016 SchedMD LLC.
  *  Copyright (C) 2013      Intel, Inc.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
@@ -93,13 +94,14 @@
 
 #include "src/slurmd/common/core_spec_plugin.h"
 #include "src/slurmd/common/job_container_plugin.h"
-#include "src/slurmd/common/setproctitle.h"
+#include "src/slurmd/common/log_ctld.h"
 #include "src/slurmd/common/proctrack.h"
-#include "src/slurmd/common/slurmd_cgroup.h"
-#include "src/slurmd/common/task_plugin.h"
 #include "src/slurmd/common/run_script.h"
 #include "src/slurmd/common/reverse_tree.h"
+#include "src/slurmd/common/setproctitle.h"
 #include "src/slurmd/common/set_oomadj.h"
+#include "src/slurmd/common/slurmd_cgroup.h"
+#include "src/slurmd/common/task_plugin.h"
 #include "src/slurmd/common/xcpuinfo.h"
 
 #include "src/slurmd/slurmstepd/slurmstepd.h"
@@ -421,9 +423,16 @@ stepd_step_rec_t *
 mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr_t *cli)
 {
 	stepd_step_rec_t *job = NULL;
+	char *err_msg = NULL;
 
 	if (!(job = batch_stepd_step_rec_create(msg))) {
-		error("batch_stepd_step_rec_create() failed: %m");
+		xstrfmtcat(err_msg,
+			   "batch_stepd_step_rec_create() failed for job %u.%u on %s: %s",
+			   msg->job_id, msg->step_id, conf->hostname,
+			   slurm_strerror(errno));
+		(void) log_ctld(LOG_LEVEL_ERROR, err_msg);
+		error("%s", err_msg);
+		xfree(err_msg);
 		return NULL;
 	}
 
@@ -452,8 +461,13 @@ mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr_t *cli)
 	return job;
 
 cleanup:
-	error("batch script setup failed for job %u.%u",
-	      msg->job_id, msg->step_id);
+	xstrfmtcat(err_msg,
+		   "batch script setup failed for job %u.%u on %s: %s",
+		   msg->job_id, msg->step_id, conf->hostname,
+		   slurm_strerror(errno));
+	(void) log_ctld(LOG_LEVEL_ERROR, err_msg);
+	error("%s", err_msg);
+	xfree(err_msg);
 
 	if (job->aborted)
 		verbose("job %u abort complete", job->jobid);
@@ -1097,6 +1111,7 @@ job_manager(stepd_step_rec_t *job)
 	int  rc = SLURM_SUCCESS;
 	bool io_initialized = false;
 	char *ckpt_type = slurm_get_checkpoint_type();
+	char *err_msg = NULL;
 
 	debug3("Entered job_manager for %u.%u pid=%d",
 	       job->jobid, job->stepid, job->jmgr_pid);
@@ -1112,7 +1127,7 @@ job_manager(stepd_step_rec_t *job)
 	/*
 	 * Preload plugins.
 	 */
-	if ((core_spec_g_init()!= SLURM_SUCCESS)		||
+	if ((core_spec_g_init() != SLURM_SUCCESS)		||
 	    (switch_init() != SLURM_SUCCESS)			||
 	    (slurmd_task_init() != SLURM_SUCCESS)		||
 	    (slurm_proctrack_init() != SLURM_SUCCESS)		||
@@ -1199,6 +1214,11 @@ job_manager(stepd_step_rec_t *job)
 	if (checkpoint_stepd_prefork(job) != SLURM_SUCCESS) {
 		error("Failed checkpoint_stepd_prefork");
 		rc = SLURM_FAILURE;
+		xstrfmtcat(err_msg,
+			   "checkpoint_stepd_prefork failure for job %u.%u on %s",
+			   job->jobid, job->stepid, conf->hostname);
+		(void) log_ctld(LOG_LEVEL_ERROR, err_msg);
+		xfree(err_msg);
 		io_close_task_fds(job);
 		goto fail2;
 	}
@@ -1207,6 +1227,11 @@ job_manager(stepd_step_rec_t *job)
 	if (mpi_hook_slurmstepd_prefork(job, &job->env) != SLURM_SUCCESS) {
 		error("Failed mpi_hook_slurmstepd_prefork");
 		rc = SLURM_FAILURE;
+		xstrfmtcat(err_msg,
+			   "mpi_hook_slurmstepd_prefork failure for job %u.%u on %s",
+			   job->jobid, job->stepid, conf->hostname);
+		(void) log_ctld(LOG_LEVEL_ERROR, err_msg);
+		xfree(err_msg);
 		goto fail2;
 	}
 
