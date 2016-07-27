@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 17.02.0pre2
 ==============================
+ -- Add new RPC (REQUEST_EVENT_LOG) so that slurmd and slurmstepd can log events
+    through the slurmctld daemon.
 
 * Changes in Slurm 17.02.0pre1
 ==============================

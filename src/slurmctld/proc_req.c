@@ -149,6 +149,7 @@ inline static void  _slurm_rpc_dump_partitions(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_spank(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_stats(slurm_msg_t * msg);
 inline static void  _slurm_rpc_end_time(slurm_msg_t * msg);
+inline static void  _slurm_rpc_event_log(slurm_msg_t * msg);
 inline static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg,
 					       bool *run_scheduler,
 					       bool running_composite);
@@ -529,6 +530,9 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 	case REQUEST_PERSIST_FINI:
 		arg->persist = false;
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+		break;
+	case REQUEST_EVENT_LOG:
+		_slurm_rpc_event_log(msg);
 		break;
 	default:
 		error("invalid RPC msg_type=%u", msg->msg_type);
@@ -2578,6 +2582,41 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	}
 	xfree(err_msg);
+}
+
+static void _slurm_rpc_event_log(slurm_msg_t * msg)
+{
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
+					 slurmctld_config.auth_info);
+	slurm_event_log_msg_t *event_log_msg;
+	int error_code = SLURM_SUCCESS;
+
+	event_log_msg = (slurm_event_log_msg_t *) msg->data;
+	if (!validate_slurm_user(uid)) {
+		error_code = ESLURM_USER_ID_MISSING;
+		error("Security violation, NODE_REGISTER RPC from uid=%d", uid);
+	} else if (event_log_msg->level == LOG_LEVEL_ERROR) {
+		error("%s", event_log_msg->string);
+	} else if (event_log_msg->level == LOG_LEVEL_INFO) {
+		info("%s", event_log_msg->string);
+	} else if (event_log_msg->level == LOG_LEVEL_VERBOSE) {
+		verbose("%s", event_log_msg->string);
+	} else if (event_log_msg->level == LOG_LEVEL_DEBUG) {
+		debug("%s", event_log_msg->string);
+	} else if (event_log_msg->level == LOG_LEVEL_DEBUG2) {
+		debug2("%s", event_log_msg->string);
+	} else if (event_log_msg->level == LOG_LEVEL_DEBUG3) {
+		debug3("%s", event_log_msg->string);
+	} else if (event_log_msg->level == LOG_LEVEL_DEBUG4) {
+		debug4("%s", event_log_msg->string);
+	} else if (event_log_msg->level == LOG_LEVEL_DEBUG5) {
+		debug5("%s", event_log_msg->string);
+	} else {
+		error_code = EINVAL;
+		error("Invalid message level: %u", event_log_msg->level);
+		error("%s", event_log_msg->string);
+	}
+	slurm_send_rc_msg(msg, error_code);
 }
 
 /* _slurm_rpc_node_registration - process RPC to determine if a node's

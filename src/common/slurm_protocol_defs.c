@@ -784,6 +784,14 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 	}
 }
 
+extern void slurm_free_event_log_msg(slurm_event_log_msg_t * msg)
+{
+	if (msg) {
+		xfree(msg->string);
+		xfree(msg);
+	}
+}
+
 extern void slurm_free_prolog_launch_msg(prolog_launch_msg_t * msg)
 {
 	int i;
@@ -4068,6 +4076,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_ASSOC_MGR_INFO:
 		slurm_free_assoc_mgr_info_request_msg(data);
 		break;
+	case REQUEST_EVENT_LOG:
+		slurm_free_event_log_msg(data);
+		break;
 	default:
 		error("invalid type trying to be freed %u", type);
 		break;
@@ -4313,7 +4324,8 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_ASSOC_MGR_INFO";
 	case RESPONSE_ASSOC_MGR_INFO:
 		return "RESPONSE_ASSOC_MGR_INFO";
-	/* case REQUEST_SICP_INFO_DEFUNCT:			DEFUNCT */
+	case REQUEST_EVENT_LOG:
+		return "REQUEST_EVENT_LOG";
 	/* case RESPONSE_SICP_INFO_DEFUNCT:			DEFUNCT */
 	case REQUEST_LAYOUT_INFO:
 		return "REQUEST_LAYOUT_INFO";

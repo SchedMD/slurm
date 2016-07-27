@@ -749,6 +749,11 @@ _unpack_network_callerid_resp_msg(network_callerid_resp_t **msg_ptr,
 					    Buf buffer,
 					    uint16_t protocol_version);
 
+static void _pack_event_log_msg(slurm_event_log_msg_t *msg, Buf buffer,
+				uint16_t protocol_version);
+static int _unpack_event_log_msg(slurm_event_log_msg_t **msg, Buf buffer,
+				 uint16_t protocol_version);
+
 /* These functions should be removed when version 14.11 protocol is no longer
  * supported */
 #define OLD_DIST_CYCLIC		1
@@ -1638,6 +1643,10 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 						  msg->data, buffer,
 						  msg->protocol_version);
 		break;
+	case REQUEST_EVENT_LOG:
+		_pack_event_log_msg((slurm_event_log_msg_t *) msg->data, buffer,
+				    msg->protocol_version);
+		break;
 	default:
 		debug("No pack method for msg type %u", msg->msg_type);
 		return EINVAL;
@@ -2351,6 +2360,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_network_callerid_resp_msg((network_callerid_resp_t **)
 						  &(msg->data), buffer,
 						  msg->protocol_version);
+		break;
+	case REQUEST_EVENT_LOG:
+		rc = _unpack_event_log_msg((slurm_event_log_msg_t **)
+					   &(msg->data), buffer,
+					   msg->protocol_version);
 		break;
 	default:
 		debug("No unpack method for msg type %u", msg->msg_type);
@@ -12418,6 +12432,47 @@ _unpack_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t **msg,
 
 unpack_error:
 	slurm_free_assoc_mgr_info_request_msg(object_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+static void
+_pack_event_log_msg(slurm_event_log_msg_t *msg, Buf buffer,
+		   uint16_t protocol_version)
+{
+	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
+		pack16(msg->level, buffer);
+		packstr(msg->string, buffer);
+	} else {
+		error("_pack_job_desc_msg: protocol_version "
+		      "%hu not supported", protocol_version);
+	}
+}
+
+static int
+_unpack_event_log_msg(slurm_event_log_msg_t **msg, Buf buffer,
+		      uint16_t protocol_version)
+{
+	uint32_t uint32_tmp = 0;
+	slurm_event_log_msg_t *object_ptr = NULL;
+
+	xassert(msg != NULL);
+
+	object_ptr = xmalloc(sizeof(slurm_event_log_msg_t));
+	*msg = object_ptr;
+
+	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
+		safe_unpack16(&object_ptr->level, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->string, &uint32_tmp,buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_event_log_msg(object_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
