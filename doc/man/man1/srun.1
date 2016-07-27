@@ -2610,6 +2610,9 @@ with \-m, \-\-distribution.
 Global task IDs running on this node.
 Zero origin and comma separated.
 .TP
+\fBSLURM_JOB_ACCOUNT\fR
+Account name associated of the job allocation.
+.TP
 \fBSLURM_JOB_CPUS_PER_NODE\fR
 Number of CPUS per node.
 .TP
@@ -2628,6 +2631,13 @@ create a job step (i.e. within an existing job allocation).
 .TP
 \fBSLURM_JOB_PARTITION\fR
 Name of the partition in which the job is running.
+
+.TP
+\fBSLURM_JOB_QOS\fR
+Quality Of Service (QOS) of the job allocation.
+.TP
+\fBSLURM_JOB_RESERVATION\fR
+Advanced reservation containing the job allocation, if any.
 
 .TP
 \fBSLURM_LAUNCH_NODE_IPADDR\fR
