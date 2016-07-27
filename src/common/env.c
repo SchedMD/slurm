@@ -1094,6 +1094,19 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 	env_array_overwrite_fmt(dest, "SLURM_TASKS_PER_NODE", "%s", tmp);
 	xfree(tmp);
 
+	if (alloc->account) {
+		env_array_overwrite_fmt(dest, "SLURM_JOB_ACCOUNT",
+					"%s", alloc->account);
+	}
+	if (alloc->qos) {
+		env_array_overwrite_fmt(dest, "SLURM_JOB_QOS",
+					"%s", alloc->qos);
+	}
+	if (alloc->resv_name) {
+		env_array_overwrite_fmt(dest, "SLURM_JOB_RESERVATION",
+					"%s", alloc->resv_name);
+	}
+
 	if (alloc->env_size) {	/* Used to set Burst Buffer environment */
 		for (i = 0; i < alloc->env_size; i++) {
 			tmp = xstrdup(alloc->environment[i]);
