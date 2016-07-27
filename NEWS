@@ -55,6 +55,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix incorrect casting when [un]packing derived_ec on slurmdb_job_rec_t.
  -- Document that persistent burst buffers can not be created or destroyed using
     the salloc or srun --bb options.
+ -- Document that the SLURM_JOB_ACCOUNT and SLURM_JOB_QOS environment variables
+    are set for the salloc and sbatch commands in their man pages.
 
 * Changes in Slurm 16.05.3
 ==========================
