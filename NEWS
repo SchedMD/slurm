@@ -10,7 +10,7 @@ documents those changes that are of interest to users and administrators.
  -- Document that persistent burst buffers can not be created or destroyed using
     the salloc or srun --bb options.
  -- Document that the SLURM_JOB_ACCOUNT and SLURM_JOB_QOS environment variables
-    are set for the salloc and sbatch commands in their man pages.
+    are set for the srun and sbatch commands in their man pages.
 
 * Changes in Slurm 16.05.3
 ==========================
