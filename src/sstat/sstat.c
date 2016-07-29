@@ -242,7 +242,7 @@ int main(int argc, char **argv)
 
 			use_protocol_ver =
 				job_ptr->job_array[0].start_protocol_ver;
-			stepid = NO_VAL;
+			stepid = SLURM_BATCH_SCRIPT;
 			hl = hostlist_create(job_ptr->job_array[0].nodes);
 			nodelist = hostlist_pop(hl);
 			free_nodelist = true;
@@ -258,10 +258,9 @@ int main(int argc, char **argv)
 				      selected_step->jobid);
 				continue;
 			}
-
 			use_protocol_ver =
 				job_ptr->job_array[0].start_protocol_ver;
-			stepid = INFINITE;
+			stepid = SLURM_EXTERN_CONT;
 			nodelist = job_ptr->job_array[0].nodes;
 			slurm_free_job_info_msg(job_ptr);
 		} else if (selected_step->stepid != NO_VAL) {
