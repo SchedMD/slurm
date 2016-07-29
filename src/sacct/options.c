@@ -57,7 +57,6 @@ void _help_msg(void);
 void _usage(void);
 void _init_params();
 
-int selected_state[STATE_COUNT];
 List selected_parts = NULL;
 List selected_steps = NULL;
 void *acct_db_conn = NULL;

@@ -58,9 +58,13 @@ documents those changes that are of interest to users and administrators.
  -- Document that persistent burst buffers can not be created or destroyed using
     the salloc or srun --bb options.
  -- Add support for setting the SLURM_JOB_ACCOUNT, SLURM_JOB_QOS and
-    SLURM_JOB_RESERVAION environment variables are set for the srun command.
+    SLURM_JOB_RESERVAION environment variables are set for the salloc command.
     Document the same environment variables for the salloc, sbatch and srun
     commands in their man pages.
+ -- Fix issue where sacctmgr load cluster.cfg wouldn't load associations
+    that had a partition in them.
+ -- Don't return the extern step from sstat by default.
+ -- In sstat print 'extern' instead of 4294967295 for the extern step.
 
 * Changes in Slurm 16.05.3
 ==========================

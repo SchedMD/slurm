@@ -244,7 +244,7 @@ int main(int argc, char **argv)
 
 			use_protocol_ver =
 				job_ptr->job_array[0].start_protocol_ver;
-			stepid = NO_VAL;
+			stepid = SLURM_BATCH_SCRIPT;
 			hl = hostlist_create(job_ptr->job_array[0].nodes);
 			nodelist = hostlist_pop(hl);
 			free_nodelist = true;
@@ -260,10 +260,9 @@ int main(int argc, char **argv)
 				      selected_step->jobid);
 				continue;
 			}
-
 			use_protocol_ver =
 				job_ptr->job_array[0].start_protocol_ver;
-			stepid = INFINITE;
+			stepid = SLURM_EXTERN_CONT;
 			nodelist = job_ptr->job_array[0].nodes;
 			slurm_free_job_info_msg(job_ptr);
 		} else if (selected_step->stepid != NO_VAL) {
@@ -294,6 +293,8 @@ int main(int argc, char **argv)
 		} else {
 			/* get the first running step to query against. */
 			job_step_info_response_msg_t *step_ptr = NULL;
+			job_step_info_t *step_info;
+
 			if (slurm_get_job_steps(
 				    0, selected_step->jobid, NO_VAL,
 				    &step_ptr, SHOW_ALL)) {
@@ -306,13 +307,22 @@ int main(int argc, char **argv)
 				      selected_step->jobid);
 				continue;
 			}
-			stepid = step_ptr->job_steps[0].step_id;
-			nodelist = step_ptr->job_steps[0].nodes;
-			req_cpufreq_min = step_ptr->job_steps[0].cpu_freq_min;
-			req_cpufreq_max = step_ptr->job_steps[0].cpu_freq_max;
-			req_cpufreq_gov = step_ptr->job_steps[0].cpu_freq_gov;
-			use_protocol_ver =
-				step_ptr->job_steps[0].start_protocol_ver;
+
+			/* If the first step is the extern step lets
+			 * just skip it.  They should ask for it
+			 * directly.
+			 */
+			if ((step_ptr->job_steps[0].step_id ==
+			    SLURM_EXTERN_CONT) && step_ptr->job_step_count > 1)
+				step_info = ++step_ptr->job_steps;
+			else
+				step_info = step_ptr->job_steps;
+			stepid = step_info->step_id;
+			nodelist = step_info->nodes;
+			req_cpufreq_min = step_info->cpu_freq_min;
+			req_cpufreq_max = step_info->cpu_freq_max;
+			req_cpufreq_gov = step_info->cpu_freq_gov;
+			use_protocol_ver = step_info->start_protocol_ver;
 		}
 		_do_stat(selected_step->jobid, stepid, nodelist,
 			 req_cpufreq_min, req_cpufreq_max, req_cpufreq_gov,

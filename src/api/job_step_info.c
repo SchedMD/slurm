@@ -166,7 +166,7 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 				 job_step_ptr->array_task_id);
 		} else if (job_step_ptr->step_id == SLURM_EXTERN_CONT) {
 			snprintf(tmp_line, sizeof(tmp_line),
-				 "StepId=%u_%u.Extern ",
+				 "StepId=%u_%u.extern ",
 				 job_step_ptr->array_job_id,
 				 job_step_ptr->array_task_id);
 		} else {
@@ -183,7 +183,7 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 				 job_step_ptr->job_id);
 		} else if (job_step_ptr->step_id == SLURM_EXTERN_CONT) {
 			snprintf(tmp_line, sizeof(tmp_line),
-				 "StepId=%u.Extern ",
+				 "StepId=%u.extern ",
 				 job_step_ptr->job_id);
 		} else {
 			snprintf(tmp_line, sizeof(tmp_line), "StepId=%u.%u ",

@@ -42,6 +42,27 @@ if {[file executable $qrerun] == 0} {
 	exit 0
 }
 
+if {[file executable $bin_perldoc] == 0} {
+	send_user "\nWARNING: $bin_perldoc does not exist\n"
+	exit 0
+}
+
+# If perl-doc isn't installed there is sometimes a useless perldoc script
+# waiting for you telling you it isn't installed.  So we need to check for that.
+log_user 0
+spawn $bin_perldoc
+expect {
+	-re "You need to install the perl-doc" {
+		send_user "\nWARNING: $bin_perldoc not installed\n"
+		exit 0
+
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+
 exec $bin_rm -f $file_in $file_out
 make_bash_script $file_in "$qrerun --man >$file_out"
 exec ./$file_in
