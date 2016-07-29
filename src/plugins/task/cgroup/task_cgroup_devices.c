@@ -113,6 +113,34 @@ error:
 
 extern int task_cgroup_devices_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)
 {
+	xcgroup_t devices_cg;
+
+	/* Similarly to task_cgroup_{memory,cpuset}_fini(), we must lock the
+	 * root cgroup so we don't race with another job step that is
+	 * being started.  */
+        if (xcgroup_create(&devices_ns, &devices_cg,"",0,0)
+	    == XCGROUP_SUCCESS) {
+                if (xcgroup_lock(&devices_cg) == XCGROUP_SUCCESS) {
+			/* First move slurmstepd to the root devices cg
+			 * so we can remove the step/job/user devices
+			 * cg's.  */
+			xcgroup_move_process(&devices_cg, getpid());
+                        if (xcgroup_delete(&step_devices_cg) != SLURM_SUCCESS)
+                                debug2("task/cgroup: unable to remove step "
+                                       "devices : %m");
+                        if (xcgroup_delete(&job_devices_cg) != XCGROUP_SUCCESS)
+                                debug2("task/cgroup: not removing "
+                                       "job devices : %m");
+                        if (xcgroup_delete(&user_devices_cg)
+			    != XCGROUP_SUCCESS)
+                                debug2("task/cgroup: not removing "
+                                       "user devices : %m");
+                        xcgroup_unlock(&devices_cg);
+                } else
+                        error("task/cgroup: unable to lock root devices : %m");
+                xcgroup_destroy(&devices_cg);
+        } else
+                error("task/cgroup: unable to create root devices : %m");
 
 	if ( user_cgroup_path[0] != '\0' )
 		xcgroup_destroy(&user_devices_cg);

@@ -6,6 +6,8 @@ documents those changes that are of interest to users and administrators.
  -- Add new RPC (REQUEST_EVENT_LOG) so that slurmd and slurmstepd can log events
     through the slurmctld daemon.
  -- Remove sbatch --bb option. That option was never supported.
+ -- Automically cleanup task/cgroup cpuset and devices cgroups after steps are
+    done.
 
 * Changes in Slurm 17.02.0pre1
 ==============================
