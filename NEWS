@@ -13,6 +13,7 @@ documents those changes that are of interest to users and administrators.
     are set for the srun and sbatch commands in their man pages.
  -- Fix issue where sacctmgr load cluster.cfg wouldn't load associations
     that had a partition in them.
+ -- Don't return the extern step from sstat by default.
 
 * Changes in Slurm 16.05.3
 ==========================
