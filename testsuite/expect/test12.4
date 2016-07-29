@@ -208,11 +208,13 @@ proc sacct_job { soption job_id} {
 	set exit_code   0
 	set matches     0
 	set not_support 0
+	set total_opts "$sacct -$soption -X -p -j $job_id"
 
-	send_user "sacct -$soption -p -j $job_id\n"
+	send_user "\n"
+
+	eval spawn $total_opts
 
 	if { $soption == "-brief" || $soption == "b" } {
-		spawn $sacct -$soption -p -j $job_id
 		expect {
 			-re "SLURM accounting storage is disabled" {
 				set not_support 1
@@ -245,7 +247,6 @@ proc sacct_job { soption job_id} {
 	}
 
 	if { $soption == "-long" || $soption == "l" } {
-		spawn $sacct -$soption -p -j $job_id
 		expect {
 			-re "SLURM accounting storage is disabled" {
 				set not_support 1
@@ -302,7 +303,6 @@ proc sacct_job { soption job_id} {
 	}
 
 	if { $soption == "-noheader" || $soption == "n" } {
-		spawn $sacct -$soption -p -j $job_id
 		expect {
 			-re "SLURM accounting storage is disabled" {
 				set not_support 1
@@ -347,7 +347,6 @@ proc sacct_job { soption job_id} {
 	}
 
 	if { $soption == "-parsable" || $soption == "p" } {
-		spawn $sacct -$soption -p -j $job_id
 		expect {
 			-re "SLURM accounting storage is disabled" {
 				set not_support 1
@@ -380,8 +379,6 @@ proc sacct_job { soption job_id} {
 	}
 
 	if { $soption == "-parsable2" || $soption == "P" } {
-
-		spawn $sacct -$soption -p -j $job_id
 		expect {
 			-re "SLURM accounting storage is disabled" {
 				set not_support 1
@@ -414,7 +411,6 @@ proc sacct_job { soption job_id} {
 	}
 
 	if { $soption == "-verbose" || $soption == "v" } {
-		spawn $sacct -$soption -p -j $job_id
 		expect {
 			-re "SLURM accounting storage is disabled" {
 				set not_support 1
@@ -477,10 +473,13 @@ proc sacct_vargs { soption vargs job_id} {
 	set exit_code   0
 	set matches     0
 	set not_support 0
-	send_user "sacct -$soption $vargs -p -j $job_id\n"
+	set total_opts "$sacct -$soption $vargs -X -p -j $job_id"
+
+	send_user "\n"
+
+	eval spawn $total_opts
 
 	if { $soption == "g" || $soption == "-gid" || $soption == "-group" || $soption == "u" || $soption == "-uid" || $soption == "-user"} {
-		spawn $sacct -$soption $vargs -p -j $job_id
 		expect {
 			-re "SLURM accounting storage is disabled" {
 				set not_support 1
