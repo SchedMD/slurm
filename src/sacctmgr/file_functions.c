@@ -276,6 +276,9 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 		} else if (!strncasecmp (sub, "Organization",
 					 MAX(command_len, 1))) {
 			file_opts->org = xstrdup(option);
+		} else if (!strncasecmp (sub, "Partition",
+					 MAX(command_len, 1))) {
+			file_opts->assoc_rec.partition = xstrdup(option);
 		} else if (!strncasecmp (sub, "WCKeys",
 					 MAX(command_len, 2))) {
 			if (!file_opts->wckey_list)
