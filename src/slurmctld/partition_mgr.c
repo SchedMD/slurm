@@ -420,7 +420,7 @@ int dump_all_part_state(void)
 	char *old_file, *new_file, *reg_file;
 	/* Locks: Read partition */
 	slurmctld_lock_t part_read_lock =
-	    { READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
+	    { READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
 	Buf buffer = init_buf(high_buffer_size);
 	DEF_TIMERS;
 

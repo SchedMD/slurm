@@ -87,6 +87,11 @@ extern void lock_slurmctld(slurmctld_lock_t lock_levels)
 		(void) _wr_rdlock(PART_LOCK, true);
 	else if (lock_levels.partition == WRITE_LOCK)
 		(void) _wr_wrlock(PART_LOCK, true);
+
+	if (lock_levels.federation == READ_LOCK)
+		(void) _wr_rdlock(FED_LOCK, true);
+	else if (lock_levels.federation == WRITE_LOCK)
+		(void) _wr_wrlock(FED_LOCK, true);
 }
 
 /* try_lock_slurmctld - equivalent to lock_slurmctld() except
@@ -150,6 +155,30 @@ extern int try_lock_slurmctld (slurmctld_lock_t lock_levels)
 		return -1;
 	}
 
+	if (lock_levels.federation == READ_LOCK)
+		success = _wr_rdlock(FED_LOCK, false);
+	else if (lock_levels.federation == WRITE_LOCK)
+		success = _wr_wrlock(FED_LOCK, false);
+	if (!success) {
+		if (lock_levels.partition == READ_LOCK)
+			_wr_rdunlock(PART_LOCK);
+		else if (lock_levels.partition == WRITE_LOCK)
+			_wr_wrunlock(PART_LOCK);
+		if (lock_levels.node == READ_LOCK)
+			_wr_rdunlock(NODE_LOCK);
+		else if (lock_levels.node == WRITE_LOCK)
+			_wr_wrunlock(NODE_LOCK);
+		if (lock_levels.job == READ_LOCK)
+			_wr_rdunlock(JOB_LOCK);
+		else if (lock_levels.job == WRITE_LOCK)
+			_wr_wrunlock(JOB_LOCK);
+		if (lock_levels.config == READ_LOCK)
+			_wr_rdunlock(CONFIG_LOCK);
+		else if (lock_levels.config == WRITE_LOCK)
+			_wr_wrunlock(CONFIG_LOCK);
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -157,6 +186,11 @@ extern int try_lock_slurmctld (slurmctld_lock_t lock_levels)
  *	defined order */
 extern void unlock_slurmctld(slurmctld_lock_t lock_levels)
 {
+	if (lock_levels.federation == READ_LOCK)
+		_wr_rdunlock(FED_LOCK);
+	else if (lock_levels.federation == WRITE_LOCK)
+		_wr_wrunlock(FED_LOCK);
+
 	if (lock_levels.partition == READ_LOCK)
 		_wr_rdunlock(PART_LOCK);
 	else if (lock_levels.partition == WRITE_LOCK)

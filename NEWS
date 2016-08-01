@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
  -- Remove sbatch --bb option. That option was never supported.
  -- Automically cleanup task/cgroup cpuset and devices cgroups after steps are
     done.
+ -- Add federation read/write locks.
 
 * Changes in Slurm 17.02.0pre1
 ==============================

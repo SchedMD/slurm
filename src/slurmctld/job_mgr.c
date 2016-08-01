@@ -654,7 +654,7 @@ int dump_all_job_state(void)
 	struct stat stat_buf;
 	/* Locks: Read config and job */
 	slurmctld_lock_t job_read_lock =
-		{ READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+		{ READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
 	Buf buffer = init_buf(high_buffer_size);
@@ -2991,7 +2991,7 @@ extern bool allocated_session_in_use(job_desc_msg_t *new_alloc)
 	struct job_record *job_ptr;
 	/* Locks: Read job */
 	slurmctld_lock_t job_read_lock = {
-		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	if ((new_alloc->script != NULL) || (new_alloc->alloc_node == NULL))
 		return false;
@@ -14055,7 +14055,7 @@ extern int job_hold_by_assoc_id(uint32_t assoc_id)
 	struct job_record *job_ptr;
 	/* Write lock on jobs */
 	slurmctld_lock_t job_write_lock =
-		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	if (!job_list)
 		return cnt;
@@ -14114,7 +14114,7 @@ extern int job_hold_by_qos_id(uint32_t qos_id)
 	struct job_record *job_ptr;
 	/* Write lock on jobs */
 	slurmctld_lock_t job_write_lock =
-		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	if (!job_list)
 		return cnt;
@@ -14294,7 +14294,7 @@ extern int send_jobs_to_accounting(void)
 	ListIterator itr = NULL;
 	struct job_record *job_ptr;
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
+		NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
 
 	/* send jobs in pending or running state */
 	lock_slurmctld(job_write_lock);

@@ -129,7 +129,7 @@ extern int	get_jobs(char *cmd_ptr, int *err_code, char **err_msg)
 	time_t update_time;
 	/* Locks: read job, partition */
 	slurmctld_lock_t job_read_lock = {
-		NO_LOCK, READ_LOCK, NO_LOCK, READ_LOCK };
+		NO_LOCK, READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
 	int job_rec_cnt = 0, buf_size = 0;
 
 	if (cr_test == 0) {

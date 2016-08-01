@@ -214,16 +214,16 @@ static void _proc_msg(int new_fd, char *msg, slurm_addr_t cli_addr)
 {
 	/* Locks: Read job and node data */
 	slurmctld_lock_t job_read_lock = {
-		NO_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
+		NO_LOCK, READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 	/* Locks: Write job */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	/* Locks: Write job, write node, read partition */
 	slurmctld_lock_t job_write_lock2 = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
 	/* Locks: Write node data */
 	slurmctld_lock_t node_write_lock = {
-		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	char *cmd_ptr, *resp = NULL, *msg_decrypted = NULL;
 	uid_t cmd_uid;
 	uint32_t protocol_version = 0;

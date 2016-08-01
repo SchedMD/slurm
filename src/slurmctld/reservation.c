@@ -3032,7 +3032,7 @@ extern int dump_all_resv_state(void)
 	char *old_file, *new_file, *reg_file;
 	/* Locks: Read node */
 	slurmctld_lock_t resv_read_lock =
-	    { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
+	    { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 	Buf buffer = init_buf(BUF_SIZE);
 	DEF_TIMERS;
 
@@ -5339,7 +5339,7 @@ extern int send_resvs_to_accounting(void)
 	ListIterator itr = NULL;
 	slurmctld_resv_t *resv_ptr;
 	slurmctld_lock_t node_write_lock = {
-		NO_LOCK, NO_LOCK, WRITE_LOCK, READ_LOCK };
+		NO_LOCK, NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
 
 	if (!resv_list)
 		return SLURM_SUCCESS;
@@ -5455,7 +5455,7 @@ extern void update_assocs_in_resvs(void)
 	slurmctld_resv_t *resv_ptr = NULL;
 	ListIterator  iter = NULL;
 	slurmctld_lock_t node_write_lock = {
-		NO_LOCK, NO_LOCK, WRITE_LOCK, READ_LOCK };
+		NO_LOCK, NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
 
 	if (!resv_list) {
 		error("No reservation list given for updating associations");

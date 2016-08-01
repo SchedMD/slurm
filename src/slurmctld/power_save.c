@@ -705,10 +705,10 @@ static void *_init_power_save(void *arg)
 {
         /* Locks: Read nodes */
         slurmctld_lock_t node_read_lock = {
-                NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+                NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
         /* Locks: Write nodes */
         slurmctld_lock_t node_write_lock = {
-                NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+                NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	time_t now, boot_time = 0, last_power_scan = 0;
 
 	if (power_save_config && !power_save_enabled) {

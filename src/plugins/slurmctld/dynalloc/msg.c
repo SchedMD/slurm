@@ -89,7 +89,7 @@ extern int spawn_msg_thread(void)
 	slurm_ctl_conf_t *conf;
 	/* Locks: Read configurationn */
 	slurmctld_lock_t config_read_lock = {
-		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	lock_slurmctld(config_read_lock);
 	conf = slurm_conf_lock();

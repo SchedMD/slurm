@@ -556,7 +556,7 @@ no_reboot:
 	*/
 	if (block_inited && bg_action_ptr->job_ptr) {
 		slurmctld_lock_t job_write_lock = {
-			NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+			NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 		lock_slurmctld(job_write_lock);
 		bg_action_ptr->job_ptr->job_state &= (~JOB_CONFIGURING);
 		last_job_update = time(NULL);

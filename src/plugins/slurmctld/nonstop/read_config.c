@@ -151,7 +151,7 @@ static spare_node_resv_t *_xlate_hot_spares(char *spare_str, int *spare_cnt)
 	struct part_record *part_ptr = NULL;
 	/* Locks: Read partition */
 	slurmctld_lock_t part_read_lock =
-	    { NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
+	    { NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
 
 	*spare_cnt = 0;
 	if ((spare_str == NULL) || (spare_str[0] == '\0'))
@@ -338,7 +338,7 @@ extern void create_hot_spare_resv(void)
 	struct part_record *part_ptr;
 	/* Locks: Read partition */
 	slurmctld_lock_t part_read_lock =
-	    { NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
+	    { NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
 	reservation_name_msg_t delete_resv_msg;
 	resv_desc_msg_t resv_msg;
 	time_t now = time(NULL);

@@ -682,7 +682,7 @@ extern int dump_all_front_end_state(void)
 	front_end_record_t *front_end_ptr;
 	/* Locks: Read config and node */
 	slurmctld_lock_t node_read_lock = { READ_LOCK, NO_LOCK, READ_LOCK,
-					    NO_LOCK };
+					    NO_LOCK, NO_LOCK };
 	Buf buffer = init_buf(high_buffer_size);
 	DEF_TIMERS;
 

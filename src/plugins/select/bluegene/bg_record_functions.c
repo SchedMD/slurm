@@ -1076,7 +1076,7 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 	static select_ba_request_t blockreq;
 	int rc = SLURM_SUCCESS;
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 
 	xassert(mp_name);
 
@@ -1855,7 +1855,7 @@ extern void bg_record_post_hw_failure(
 	select_jobinfo_t *jobinfo;
 	ListIterator itr;
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 
 	if (!*kill_list)
 		return;

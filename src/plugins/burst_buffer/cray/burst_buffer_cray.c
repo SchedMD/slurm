@@ -413,7 +413,7 @@ static void *_bb_agent(void *args)
 {
 	/* Locks: write job */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	while (!bb_state.term_flag) {
 		bb_sleep(&bb_state, AGENT_INTERVAL);
@@ -1462,9 +1462,9 @@ static void *_start_stage_in(void *x)
 	uint64_t real_size = 0;
 	int rc = SLURM_SUCCESS, status = 0, timeout;
 	slurmctld_lock_t job_read_lock =
-		{ NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+		{ NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	slurmctld_lock_t job_write_lock =
-		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	struct job_record *job_ptr;
 	bb_alloc_t *bb_alloc = NULL;
 	bb_job_t *bb_job;
@@ -1731,7 +1731,7 @@ static void *_start_stage_out(void *x)
 	char **post_run_argv, **data_out_argv, *resp_msg = NULL, *op = NULL;
 	int rc = SLURM_SUCCESS, status = 0, timeout;
 	slurmctld_lock_t job_write_lock =
-		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	struct job_record *job_ptr;
 	bb_alloc_t *bb_alloc = NULL;
 	bb_job_t *bb_job = NULL;
@@ -1935,7 +1935,7 @@ static void *_start_teardown(void *x)
 	bb_job_t *bb_job = NULL;
 	/* Locks: write job */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	DEF_TIMERS;
 
 	teardown_args = (stage_args_t *) x;
@@ -3593,7 +3593,7 @@ static void *_start_pre_run(void *x)
 {
 	/* Locks: write job */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	pre_run_args_t *pre_run_args = (pre_run_args_t *) x;
 	char *resp_msg = NULL;
 	char jobid_buf[64];
@@ -4085,7 +4085,7 @@ static void _reset_buf_state(uint32_t user_id, uint32_t job_id, char *name,
 static void *_create_persistent(void *x)
 {
 	slurmctld_lock_t job_write_lock =
-		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	create_buf_data_t *create_args = (create_buf_data_t *) x;
 	struct job_record *job_ptr;
 	bb_alloc_t *bb_alloc;
@@ -4234,7 +4234,7 @@ static void *_create_persistent(void *x)
 static void *_destroy_persistent(void *x)
 {
 	slurmctld_lock_t job_write_lock =
-		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	create_buf_data_t *destroy_args = (create_buf_data_t *) x;
 	struct job_record *job_ptr;
 	bb_alloc_t *bb_alloc;

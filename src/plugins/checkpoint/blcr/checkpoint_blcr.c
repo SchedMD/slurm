@@ -611,7 +611,7 @@ static void _requeue_when_finished(uint32_t job_id)
 {
 	/* Locks: read job */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	struct job_record *job_ptr;
 
 	while (1) {
@@ -641,7 +641,7 @@ static void *_ckpt_agent_thr(void *arg)
 	int rc;
 	/* Locks: write job */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 	struct job_record *job_ptr;
 	struct step_record *step_ptr;
 	struct check_job_info *check_ptr;

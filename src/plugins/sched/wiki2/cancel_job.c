@@ -148,7 +148,7 @@ static int	_cancel_job(uint32_t jobid, char *comment_ptr,
 	int rc = 0, slurm_rc;
 	/* Write lock on job info */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	struct job_record *job_ptr = find_job_record(jobid);
 
 	lock_slurmctld(job_write_lock);
@@ -195,7 +195,7 @@ static int	_timeout_job(uint32_t jobid, char *comment_ptr,
 	struct job_record *job_ptr;
 	/* Write lock on job info */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	lock_slurmctld(job_write_lock);
 	job_ptr = find_job_record(jobid);

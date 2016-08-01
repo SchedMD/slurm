@@ -51,7 +51,7 @@ extern int	resume_job(char *cmd_ptr, int *err_code, char **err_msg)
 	static char reply_msg[128];
 	/* Locks: write job and node info */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 
 	arg_ptr = strstr(cmd_ptr, "ARG=");
 	if (arg_ptr == NULL) {

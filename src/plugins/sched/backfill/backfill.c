@@ -722,7 +722,7 @@ extern void *backfill_agent(void *args)
 	static time_t last_backfill_time = 0;
 	/* Read config and partitions; Write jobs and nodes */
 	slurmctld_lock_t all_locks = {
-		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
 	bool load_config;
 	bool short_sleep = false;
 
@@ -789,7 +789,7 @@ static void _clear_job_start_times(void)
 static int _yield_locks(int usec)
 {
 	slurmctld_lock_t all_locks = {
-		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
 	time_t job_update, node_update, part_update;
 	bool load_config = false;
 	int max_rpc_cnt;

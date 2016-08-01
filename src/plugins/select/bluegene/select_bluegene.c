@@ -129,11 +129,11 @@ int blocks_are_created = 0;
 int num_unused_cpus = 0;
 int num_possible_unused_cpus = 0;
 slurmctld_lock_t job_read_lock = {
-	NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+	NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 slurmctld_lock_t node_write_lock = {
-	NO_LOCK, READ_LOCK, WRITE_LOCK, NO_LOCK };
+	NO_LOCK, READ_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 slurmctld_lock_t part_write_lock = {
-	NO_LOCK, READ_LOCK, WRITE_LOCK, WRITE_LOCK };
+	NO_LOCK, READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 
 extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data);
 

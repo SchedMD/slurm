@@ -542,7 +542,7 @@ extern void set_job_elig_time(void)
 	struct part_record *part_ptr = NULL;
 	ListIterator job_iterator;
 	slurmctld_lock_t job_write_lock =
-		{ READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+		{ READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
 #ifdef HAVE_BG
 	static uint16_t cpus_per_node = 0;
 	if (!cpus_per_node)
@@ -630,7 +630,7 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job, bool locked)
 	static int select_serial = -1;
 	/* Locks: Read config, write job, write node, read partition */
 	slurmctld_lock_t job_write_lock =
-	    { READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+	    { READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
 	struct job_record *job_ptr = NULL;
 	struct job_record *fini_job_ptr = (struct job_record *) fini_job;
 	struct part_record *part_ptr;
@@ -1104,7 +1104,7 @@ static int _schedule(uint32_t job_limit)
 	int *sched_part_jobs = NULL, bb_wait_cnt = 0;
 	/* Locks: Read config, write job, write node, read partition */
 	slurmctld_lock_t job_write_lock =
-	    { READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+	    { READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
 	char jbuf[JBUFSIZ];
 	bool is_job_array_head;
 #ifdef HAVE_BG
@@ -3440,7 +3440,7 @@ static void *_run_epilog(void *arg)
 {
 	/* Locks: Write job */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	struct job_record *job_ptr;
 	epilog_arg_t *epilog_arg = (epilog_arg_t *) arg;
 	pid_t cpid;
@@ -3639,7 +3639,7 @@ static void *_wait_boot(void *arg)
 	struct job_record *job_ptr = (struct job_record *) arg;
 	/* Locks: Write jobs; read nodes */
 	slurmctld_lock_t job_write_lock = {
-		READ_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
+		READ_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 	uint16_t resume_timeout = slurm_get_resume_timeout();
 	struct node_record *node_ptr;
 	time_t start_time = time(NULL);
@@ -3753,7 +3753,7 @@ static void *_run_prolog(void *arg)
 	char *argv[2], **my_env;
 	/* Locks: Read config; Write jobs, nodes */
 	slurmctld_lock_t config_read_lock = {
-		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	bitstr_t *node_bitmap = NULL;
 	time_t now = time(NULL);
 	uint16_t resume_timeout = slurm_get_resume_timeout();
@@ -3804,7 +3804,7 @@ static void *_run_prolog(void *arg)
 	if (status != 0) {
 		bool kill_job = false;
 		slurmctld_lock_t job_write_lock = {
-			NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+			NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 		error("prolog_slurmctld job %u prolog exit status %u:%u",
 		      job_id, WEXITSTATUS(status), WTERMSIG(status));
 		lock_slurmctld(job_write_lock);

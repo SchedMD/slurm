@@ -457,7 +457,7 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 	static char reply_msg[128];
 	/* Locks: write job, read node and partition info */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
+		NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
 
 	arg_ptr = strstr(cmd_ptr, "ARG=");
 	if (arg_ptr == NULL) {

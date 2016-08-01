@@ -564,7 +564,7 @@ extern void *ccm_begin(void *args)
 	char err_str_buf[128], srun_msg_buf[256];
 	struct job_record *job_ptr = (struct job_record *)args;
 	slurmctld_lock_t job_read_lock =
-		{NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+		{NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	debug2("CCM job %u_ccm_begin partition %s", job_ptr->job_id,
 	       job_ptr->partition);
@@ -673,7 +673,7 @@ extern void *ccm_fini(void *args)
 	time_t delay;
 	struct job_record *job_ptr = (struct job_record *)args;
 	slurmctld_lock_t job_read_lock =
-		{NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+		{NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	memset(&ccm_info, 0, sizeof(ccm_info_t));
 	lock_slurmctld(job_read_lock);
