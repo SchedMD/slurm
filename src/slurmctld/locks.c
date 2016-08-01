@@ -89,7 +89,7 @@ extern void lock_slurmctld(slurmctld_lock_t lock_levels)
 		(void) _wr_wrlock(PART_LOCK, true);
 }
 
-/* try_lock_slurmctld - equivalent to lock_slurmctld() except 
+/* try_lock_slurmctld - equivalent to lock_slurmctld() except
  * RET 0 on success or -1 if the locks are currently not available */
 extern int try_lock_slurmctld (slurmctld_lock_t lock_levels)
 {
@@ -101,7 +101,7 @@ extern int try_lock_slurmctld (slurmctld_lock_t lock_levels)
 		success = _wr_wrlock(CONFIG_LOCK, false);
 	if (!success)
 		return -1;
-		
+
 	if (lock_levels.job == READ_LOCK)
 		success = _wr_rdlock(JOB_LOCK, false);
 	else if (lock_levels.job == WRITE_LOCK)
