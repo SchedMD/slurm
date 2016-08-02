@@ -155,6 +155,17 @@ main (int argc, char *argv[])
 	 * on STDERR_FILENO for us. */
 	dup2(STDERR_FILENO, STDOUT_FILENO);
 
+	/* slurmstepd is the only daemon that should survive upgrade. If it
+	 * had been swapped out before upgrade happened it could easily lead
+	 * to SIGBUS at any time after upgrade. Avoid that by locking it
+	 * in-memory. */
+#ifdef _POSIX_MEMLOCK
+	if (mlockall(MCL_FUTURE | MCL_CURRENT) < 0)
+		info("failed to mlock() slurmstepd pages: %m");
+#else
+	info("mlockall() system call does not appear to be available");
+#endif
+
 	/* This does most of the stdio setup, then launches all the tasks,
 	 * and blocks until the step is complete */
 	rc = job_manager(job);
