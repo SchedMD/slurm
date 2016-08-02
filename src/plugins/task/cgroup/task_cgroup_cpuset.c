@@ -1266,7 +1266,7 @@ again:
 		/* initialize the cpusets as it was non-existent */
 		if (_xcgroup_cpuset_init(&user_cpuset_cg) !=
 		    XCGROUP_SUCCESS) {
-			xcgroup_delete(&user_cpuset_cg);
+			(void)xcgroup_delete(&user_cpuset_cg);
 			xcgroup_destroy(&user_cpuset_cg);
 			goto error;
 		}
@@ -1324,7 +1324,7 @@ again:
 	if (_xcgroup_cpuset_init(&step_cpuset_cg) != XCGROUP_SUCCESS) {
 		xcgroup_destroy(&user_cpuset_cg);
 		xcgroup_destroy(&job_cpuset_cg);
-		xcgroup_delete(&step_cpuset_cg);
+		(void)xcgroup_delete(&step_cpuset_cg);
 		xcgroup_destroy(&step_cpuset_cg);
 		goto error;
 	}
