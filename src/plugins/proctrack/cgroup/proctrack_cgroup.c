@@ -300,12 +300,12 @@ int _slurm_cgroup_destroy(void)
 	}
 
 	if (job_cgroup_path[0] != '\0') {
-		xcgroup_delete(&job_freezer_cg);
+		(void)xcgroup_delete(&job_freezer_cg);
 		xcgroup_destroy(&job_freezer_cg);
 	}
 
 	if (user_cgroup_path[0] != '\0') {
-		xcgroup_delete(&user_freezer_cg);
+		(void)xcgroup_delete(&user_freezer_cg);
 		xcgroup_destroy(&user_freezer_cg);
 	}
 
