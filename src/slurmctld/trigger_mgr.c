@@ -405,7 +405,7 @@ extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg)
 	struct job_record *job_ptr;
 	/* Read config and job info */
 	slurmctld_lock_t job_read_lock =
-		{ READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+		{ READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	lock_slurmctld(job_read_lock);
 	slurm_mutex_lock(&trigger_mutex);
@@ -803,7 +803,7 @@ extern int trigger_state_save(void)
 	trig_mgr_info_t *trig_in;
 	/* Locks: Read config */
 	slurmctld_lock_t config_read_lock =
-		{ READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+		{ READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	/* write header: version, time */
 	packstr(TRIGGER_STATE_VERSION, buffer);

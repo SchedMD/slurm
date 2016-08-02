@@ -1624,7 +1624,7 @@ static void *_timeslicer_thread(void *arg)
 {
 	/* Write locks on job and read lock on nodes */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 	ListIterator part_iterator;
 	struct gs_part *p_ptr;
 

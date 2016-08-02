@@ -51,7 +51,7 @@ static void _apply_priority_fs(void);
 extern void fair_tree_decay(List jobs, time_t start)
 {
 	slurmctld_lock_t job_write_lock =
-		{ NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
+		{ NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
 	assoc_mgr_lock_t locks =
 		{ WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 		  NO_LOCK, NO_LOCK, NO_LOCK };

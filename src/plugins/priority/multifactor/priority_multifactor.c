@@ -926,7 +926,7 @@ static void _init_grp_used_cpu_run_secs(time_t last_ran)
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
 	slurmctld_lock_t job_read_lock =
-		{ NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+		{ NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	uint64_t tres_run_delta[slurmctld_tres_cnt];
 	int i;
 
@@ -1184,7 +1184,7 @@ static void *_decay_thread(void *no_data)
 
 	/* Write lock on jobs, read lock on nodes and partitions */
 	slurmctld_lock_t job_write_lock =
-		{ NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
+		{ NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
 
@@ -1794,7 +1794,7 @@ extern List priority_p_get_priority_factors_list(
 
 	/* Read lock on jobs, nodes, and partitions */
 	slurmctld_lock_t job_read_lock =
-		{ NO_LOCK, READ_LOCK, READ_LOCK, READ_LOCK };
+		{ NO_LOCK, READ_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
 
 	xassert(req_msg);
 	req_job_list = req_msg->job_id_list;
@@ -1862,7 +1862,7 @@ extern List priority_p_get_priority_factors_list(
 }
 
 /* at least slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK,
- * READ_LOCK, READ_LOCK }; should be locked before calling this */
+ * READ_LOCK, READ_LOCK, NO_LOCK }; should be locked before calling this */
 extern void priority_p_job_end(struct job_record *job_ptr)
 {
 	if (priority_debug)

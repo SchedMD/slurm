@@ -155,7 +155,7 @@ static void *_msg_thread(void *no_data)
 	int i;
 	/* Locks: Write configuration, job, node, and partition */
 	slurmctld_lock_t config_write_lock = {
-		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
+		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 
 	conf = slurm_conf_lock();
 	sched_port = conf->schedport;

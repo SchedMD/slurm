@@ -393,7 +393,7 @@ static void _get_capabilities(void)
 {
 	/* Write nodes */
 	slurmctld_lock_t write_node_lock = {
-		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	char *cmd_resp, *script_argv[3], node_names[128];
 	power_config_nodes_t *ents = NULL;
 	int i, j, num_ent = 0, status = 0;
@@ -664,7 +664,7 @@ static void _build_full_nid_string(void)
 {
 	/* Read nodes */
 	slurmctld_lock_t read_node_lock = {
-		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
+		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 	struct node_record *node_ptr;
 	hostset_t hs = NULL;
 	char *sep, *tmp_str;
@@ -703,7 +703,7 @@ static void _get_caps(void)
 {
 	/* Write nodes */
 	slurmctld_lock_t write_node_lock = {
-		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	char *cmd_resp, *script_argv[5];
 	power_config_nodes_t *ents = NULL;
 	int i, num_ent = 0, status = 0;
@@ -923,7 +923,7 @@ static void _get_nodes_ready(void)
 {
 	/* Write nodes */
 	slurmctld_lock_t write_node_lock = {
-		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	char *cmd_resp, *script_argv[5];
 	struct node_record *node_ptr;
 	power_config_nodes_t *ents = NULL;
@@ -1051,7 +1051,7 @@ static void _get_node_energy_counter(void)
 {
 	/* Write nodes */
 	slurmctld_lock_t write_node_lock = {
-		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	char *cmd_resp, *script_argv[5];
 	power_config_nodes_t *ents = NULL;
 	int i, j, num_ent = 0, status = 0;
@@ -1264,7 +1264,7 @@ extern void *_power_agent(void *args)
 	static time_t last_balance_time = 0;
 	/* Read jobs and nodes */
 	slurmctld_lock_t read_locks = {
-		NO_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
+		NO_LOCK, READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 
 	last_balance_time = time(NULL);
 	while (!stop_power) {

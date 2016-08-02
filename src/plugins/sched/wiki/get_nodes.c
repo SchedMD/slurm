@@ -71,13 +71,13 @@ extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 	time_t update_time;
 	/* Locks: read node, read partition */
 	slurmctld_lock_t node_read_lock = {
-		NO_LOCK, NO_LOCK, READ_LOCK, READ_LOCK };
+		NO_LOCK, NO_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
 	int node_rec_cnt = 0, buf_size = 0;
 
 #ifdef HAVE_ALPS_CRAY
 	/* Locks: write node */
 	slurmctld_lock_t node_write_lock = {
-		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 
 	/*
 	 * Run a Basil Inventory immediately before scheduling, to avoid

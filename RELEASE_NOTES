@@ -63,6 +63,7 @@ In slurmdb_cluster_cond_t: Added List federation_list
 In slurmdb_cluster_rec_t: Added fed, lock, sockfd
 In struct job_record: Added fed_details
 In connection_arg_t: Added bool persist
+In slurmctld_lock_t: Added federation
 
 Added the following struct definitions
 ======================================

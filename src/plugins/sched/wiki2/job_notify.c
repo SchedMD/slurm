@@ -70,7 +70,7 @@ extern int	job_notify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 	static char reply_msg[128];
 	/* Locks: read job */
 	slurmctld_lock_t job_read_lock = {
-		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	arg_ptr = strstr(cmd_ptr, "ARG=");
 	if (arg_ptr == NULL) {

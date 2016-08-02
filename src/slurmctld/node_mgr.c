@@ -131,7 +131,7 @@ int dump_all_node_state ( void )
 	struct node_record *node_ptr;
 	/* Locks: Read config and node */
 	slurmctld_lock_t node_read_lock = { READ_LOCK, NO_LOCK, READ_LOCK,
-					    NO_LOCK };
+					    NO_LOCK, NO_LOCK };
 	Buf buffer = init_buf(high_buffer_size);
 	DEF_TIMERS;
 
@@ -3644,7 +3644,7 @@ extern int send_nodes_to_accounting(time_t event_time)
 	uint32_t node_scaling = 0;
 	char *reason = NULL;
 	slurmctld_lock_t node_read_lock = {
-		READ_LOCK, NO_LOCK, READ_LOCK, WRITE_LOCK };
+		READ_LOCK, NO_LOCK, READ_LOCK, WRITE_LOCK, NO_LOCK };
 
 	select_g_alter_node_cnt(SELECT_GET_NODE_SCALING, &node_scaling);
 

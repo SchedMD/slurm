@@ -245,7 +245,7 @@ int main(int argc, char *argv[])
 	struct stat stat_buf;
 	/* Locks: Write configuration, job, node, and partition */
 	slurmctld_lock_t config_write_lock = {
-		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
+		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 	slurm_trigger_callbacks_t callbacks;
 	char *dir_name;
 	bool create_clustername_file;
@@ -810,7 +810,7 @@ static void _reconfigure_slurm(void)
 {
 	/* Locks: Write configuration, job, node, and partition */
 	slurmctld_lock_t config_write_lock = {
-		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
+		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 	int rc;
 
 	if (slurmctld_config.shutdown_time)
@@ -932,7 +932,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	connection_arg_t *conn_arg = NULL;
 	/* Locks: Read config */
 	slurmctld_lock_t config_read_lock = {
-		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	int sigarray[] = {SIGUSR1, 0};
 	char* node_addr = NULL;
 
@@ -1210,7 +1210,7 @@ static int _accounting_cluster_ready(void)
 	bitstr_t *total_node_bitmap = NULL;
 	char *cluster_nodes = NULL, *cluster_tres_str;
 	slurmctld_lock_t node_write_lock = {
-		NO_LOCK, NO_LOCK, WRITE_LOCK, WRITE_LOCK };
+		NO_LOCK, NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 				   WRITE_LOCK, NO_LOCK, NO_LOCK };
 
@@ -1309,7 +1309,7 @@ static void _remove_qos(slurmdb_qos_rec_t *rec)
 	ListIterator itr;
 	struct part_record *part_ptr;
 	slurmctld_lock_t part_write_lock =
-		{ NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
+		{ NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
 
 	lock_slurmctld(part_write_lock);
 	if (part_list) {
@@ -1340,7 +1340,7 @@ static void _update_assoc(slurmdb_assoc_rec_t *rec)
 	struct job_record *job_ptr;
 	/* Write lock on jobs */
 	slurmctld_lock_t job_write_lock =
-		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	if (!job_list || !accounting_enforce
 	    || !(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS))
@@ -1364,7 +1364,7 @@ static void _update_qos(slurmdb_qos_rec_t *rec)
 	struct job_record *job_ptr;
 	/* Write lock on jobs */
 	slurmctld_lock_t job_write_lock =
-		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	if (!job_list || !accounting_enforce
 	    || !(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS))
@@ -1518,7 +1518,7 @@ static void _update_cluster_tres(void)
 	struct job_record *job_ptr;
 	/* Write lock on jobs */
 	slurmctld_lock_t job_write_lock =
-		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
 
@@ -1658,29 +1658,29 @@ static void *_slurmctld_background(void *no_data)
 
 	/* Locks: Read config */
 	slurmctld_lock_t config_read_lock = {
-		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	/* Locks: Read config, read job */
 	slurmctld_lock_t job_read_lock = {
-		READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+		READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	/* Locks: Read config, write job, write node, read partition */
 	slurmctld_lock_t job_write_lock = {
-		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
 	/* Locks: Write job */
 	slurmctld_lock_t job_write_lock2 = {
-		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	/* Locks: Read config, write job, write node
 	 * (Might kill jobs on nodes set DOWN) */
 	slurmctld_lock_t node_write_lock = {
-		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	/* Locks: Write node */
 	slurmctld_lock_t node_write_lock2 = {
-		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	/* Locks: Write partition */
 	slurmctld_lock_t part_write_lock = {
-		NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
+		NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
 	/* Locks: Read job and node */
 	slurmctld_lock_t job_node_read_lock = {
-		NO_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
+		NO_LOCK, READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 
 	/* Let the dust settle before doing work */
 	now = time(NULL);
@@ -2018,7 +2018,7 @@ extern void ctld_assoc_mgr_init(slurm_trigger_callbacks_t *callbacks)
 	assoc_init_args_t assoc_init_arg;
 	int num_jobs = 0;
 	slurmctld_lock_t job_read_lock =
-		{ NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+		{ NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	memset(&assoc_init_arg, 0, sizeof(assoc_init_args_t));
 	assoc_init_arg.enforce = accounting_enforce;
@@ -2712,7 +2712,7 @@ static void *_assoc_cache_mgr(void *no_data)
 	slurmdb_assoc_rec_t assoc_rec;
 	/* Write lock on jobs, read lock on nodes and partitions */
 	slurmctld_lock_t job_write_lock =
-		{ NO_LOCK, WRITE_LOCK, READ_LOCK, WRITE_LOCK };
+		{ NO_LOCK, WRITE_LOCK, READ_LOCK, WRITE_LOCK, NO_LOCK };
 
 	if (!running_cache)
 		lock_slurmctld(job_write_lock);
@@ -2950,7 +2950,7 @@ static int _ping_backup_controller(void)
 	slurm_msg_t req;
 	/* Locks: Read configuration */
 	slurmctld_lock_t config_read_lock = {
-		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	lock_slurmctld(config_read_lock);
 	if (!slurmctld_conf.backup_addr) {

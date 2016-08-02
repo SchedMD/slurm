@@ -76,7 +76,7 @@ extern int	job_will_run(char *cmd_ptr, int *err_code, char **err_msg)
 	char *avail_nodes;
 	/* Locks: write job, read node and partition info */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
+		NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
 
 	arg_ptr = strstr(cmd_ptr, "ARG=");
 	if (arg_ptr == NULL) {
@@ -320,7 +320,7 @@ extern int	job_will_run2(char *cmd_ptr, int *err_code, char **err_msg)
 	char *avail_nodes = NULL;
 	/* Locks: write job, read node and partition info */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
+		NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
 
 	arg_ptr = strstr(cmd_ptr, "ARG=");
 	if (arg_ptr == NULL) {

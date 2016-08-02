@@ -180,7 +180,7 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 	struct job_record *job_ptr;
 	/* Write lock on job info, read lock on node info */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 	char *new_node_list = NULL;
 	static char tmp_msg[128];
 	bitstr_t *new_bitmap = (bitstr_t *) NULL;
