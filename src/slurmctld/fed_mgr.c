@@ -49,13 +49,13 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/fed_mgr.h"
+#include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmdbd/read_config.h"
 
 #define FED_MGR_STATE_FILE       "fed_mgr_state"
 #define FED_MGR_CLUSTER_ID_BEGIN 26
 
-static pthread_mutex_t fed_mutex = PTHREAD_MUTEX_INITIALIZER;
 char *fed_mgr_cluster_name = NULL;
 fed_elem_t fed_mgr_fed_info;
 List fed_mgr_siblings = NULL;
@@ -176,6 +176,9 @@ fini:
 
 static void *_ping_thread(void *arg)
 {
+	slurmctld_lock_t fed_read_lock = {
+		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
+
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_SET_NAME, "fed_ping", NULL, NULL, NULL) < 0) {
 		error("%s: cannot set my name to %s %m", __func__, "fed_ping");
@@ -185,7 +188,7 @@ static void *_ping_thread(void *arg)
 		ListIterator itr;
 		slurmdb_cluster_rec_t *conn;
 
-		slurm_mutex_lock(&fed_mutex);
+		lock_slurmctld(fed_read_lock);
 		if (!fed_mgr_siblings)
 			goto next;
 
@@ -203,7 +206,7 @@ static void *_ping_thread(void *arg)
 		list_iterator_destroy(itr);
 
 next:
-		slurm_mutex_unlock(&fed_mutex);
+		unlock_slurmctld(fed_read_lock);
 
 		sleep(5);
 	}
@@ -225,7 +228,10 @@ static void _create_ping_thread()
 
 extern int fed_mgr_init()
 {
-	slurm_mutex_lock(&fed_mutex);
+	slurmctld_lock_t fed_write_lock = {
+		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
+
+	lock_slurmctld(fed_write_lock);
 	if (!fed_mgr_inited) {
 		_create_ping_thread();
 		fed_mgr_inited = true;
@@ -233,14 +239,17 @@ extern int fed_mgr_init()
 		if (!fed_mgr_cluster_name)
 			fed_mgr_cluster_name = slurm_get_cluster_name();
 	}
-	slurm_mutex_unlock(&fed_mutex);
+	unlock_slurmctld(fed_write_lock);
 	return SLURM_SUCCESS;
 }
 
 extern int fed_mgr_fini(bool locked)
 {
+	slurmctld_lock_t fed_write_lock = {
+		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
+
 	if (!locked)
-		slurm_mutex_lock(&fed_mutex);
+		lock_slurmctld(fed_write_lock);
 
 	_close_sibling_conns();
 
@@ -254,7 +263,7 @@ extern int fed_mgr_fini(bool locked)
 	fed_mgr_inited = false;
 
 	if (!locked)
-		slurm_mutex_unlock(&fed_mutex);
+		unlock_slurmctld(fed_write_lock);
 
 	return SLURM_SUCCESS;
 }
@@ -265,6 +274,8 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 	ListIterator f_itr;
 	slurmdb_federation_rec_t *fed = NULL;
 	bool part_of_fed = false;
+	slurmctld_lock_t fed_write_lock = {
+		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
 
 	if (!update->objects)
 		return SLURM_SUCCESS;
@@ -277,7 +288,7 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 
 	fed_mgr_init();
 
-	slurm_mutex_lock(&fed_mutex);
+	lock_slurmctld(fed_write_lock);
 
 	/* find the federation that this cluster is in.
 	 * if it's changed from last time then do something.
@@ -364,7 +375,7 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 		}
 	}
 
-	slurm_mutex_unlock(&fed_mutex);
+	unlock_slurmctld(fed_write_lock);
 
 	return SLURM_SUCCESS;
 }
@@ -373,6 +384,8 @@ extern int fed_mgr_get_fed_info(slurmdb_federation_rec_t **ret_fed)
 {
 	slurmdb_federation_rec_t tmp_fed;
 	slurmdb_federation_rec_t *out_fed;
+	slurmctld_lock_t fed_read_lock = {
+		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 
 	xassert(ret_fed);
 
@@ -381,12 +394,12 @@ extern int fed_mgr_get_fed_info(slurmdb_federation_rec_t **ret_fed)
 	slurmdb_init_federation_rec(&tmp_fed, false);
 	slurmdb_init_federation_rec(out_fed, false);
 
-	slurm_mutex_lock(&fed_mutex);
+	lock_slurmctld(fed_read_lock);
 	tmp_fed.name         = fed_mgr_fed_info.name;
 	tmp_fed.cluster_list = fed_mgr_siblings;
 
 	slurmdb_copy_federation_rec(out_fed, &tmp_fed);
-	slurm_mutex_unlock(&fed_mutex);
+	unlock_slurmctld(fed_read_lock);
 
 	*ret_fed = out_fed;
 
@@ -400,6 +413,8 @@ extern int fed_mgr_state_save(char *state_save_location)
 	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
 	dbd_list_msg_t msg;
 	Buf buffer = init_buf(0);
+	slurmctld_lock_t fed_read_lock = {
+		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 
 	DEF_TIMERS;
 
@@ -411,11 +426,11 @@ extern int fed_mgr_state_save(char *state_save_location)
 
 	memset(&msg, 0, sizeof(dbd_list_msg_t));
 
-	slurm_mutex_lock(&fed_mutex);
+	lock_slurmctld(fed_read_lock);
 	msg.my_list = fed_mgr_siblings;
 	slurmdbd_pack_list_msg(&msg, SLURM_PROTOCOL_VERSION,
 			       DBD_ADD_CLUSTERS, buffer);
-	slurm_mutex_unlock(&fed_mutex);
+	unlock_slurmctld(fed_read_lock);
 
 	/* write the buffer to file */
 	reg_file = xstrdup_printf("%s/%s", state_save_location,
@@ -478,6 +493,8 @@ extern int fed_mgr_state_load(char *state_save_location)
 	int state_fd;
 	int data_allocated, data_read = 0, error_code = SLURM_SUCCESS;
 	slurmdb_cluster_rec_t *cluster = NULL;
+	slurmctld_lock_t fed_write_lock = {
+		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
 
 	state_file = xstrdup_printf("%s/%s", state_save_location,
 				    FED_MGR_STATE_FILE);
@@ -522,11 +539,8 @@ extern int fed_mgr_state_load(char *state_save_location)
 		      SLURM_MIN_PROTOCOL_VERSION, SLURM_PROTOCOL_VERSION);
 		error("***********************************************");
 		free_buf(buffer);
-		slurm_mutex_unlock(&fed_mutex);
 		return EFAULT;
 	}
-
-	slurm_mutex_lock(&fed_mutex);
 
 	safe_unpack_time(&buf_time, buffer);
 
@@ -537,6 +551,9 @@ extern int fed_mgr_state_load(char *state_save_location)
 	else if (!msg->my_list) {
 		error("No tres retrieved");
 	}
+
+	lock_slurmctld(fed_write_lock);
+
 	FREE_NULL_LIST(fed_mgr_siblings);
 	fed_mgr_siblings = msg->my_list;
 	msg->my_list = NULL;
@@ -550,6 +567,7 @@ extern int fed_mgr_state_load(char *state_save_location)
 					slurmdb_find_cluster_in_list,
 					fed_mgr_cluster_name))) {
 		error("This cluster doesn't exist in the fed siblings");
+		unlock_slurmctld(fed_write_lock);
 		goto unpack_error;
 	} else if (cluster) {
 		xfree(fed_mgr_fed_info.name);
@@ -558,7 +576,7 @@ extern int fed_mgr_state_load(char *state_save_location)
 	}
 
 	free_buf(buffer);
-	slurm_mutex_unlock(&fed_mutex);
+	unlock_slurmctld(fed_write_lock);
 
 	fed_mgr_init();
 
@@ -567,7 +585,6 @@ extern int fed_mgr_state_load(char *state_save_location)
 unpack_error:
 	free_buf(buffer);
 
-	slurm_mutex_unlock(&fed_mutex);
 	return SLURM_ERROR;
 }
 
@@ -586,13 +603,15 @@ extern char *fed_mgr_find_sibling_name_by_ip(char *ip)
 {
 	char *name = NULL;
 	slurmdb_cluster_rec_t *sibling = NULL;
+	slurmctld_lock_t fed_read_lock = {
+		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 
-	slurm_mutex_lock(&fed_mutex);
+	lock_slurmctld(fed_read_lock);
 	if (fed_mgr_siblings &&
 	    (sibling = list_find_first(fed_mgr_siblings, _find_sibling_by_ip,
 				       ip)))
 		name = xstrdup(sibling->name);
-	slurm_mutex_unlock(&fed_mutex);
+	unlock_slurmctld(fed_read_lock);
 
 	return name;
 }
