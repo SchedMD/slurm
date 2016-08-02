@@ -549,7 +549,7 @@ extern int fed_mgr_state_load(char *state_save_location)
 	if (error_code != SLURM_SUCCESS)
 		goto unpack_error;
 	else if (!msg->my_list) {
-		error("No tres retrieved");
+		error("No feds retrieved");
 	}
 
 	lock_slurmctld(fed_write_lock);
