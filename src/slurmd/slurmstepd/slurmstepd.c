@@ -42,6 +42,7 @@
 
 #include <signal.h>
 #include <stdlib.h>
+#include <sys/mman.h>
 #include <unistd.h>
 
 #include "src/common/cpu_frequency.h"
