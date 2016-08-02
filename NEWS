@@ -9,6 +9,7 @@ documents those changes that are of interest to users and administrators.
  -- Automically cleanup task/cgroup cpuset and devices cgroups after steps are
     done.
  -- Add federation read/write locks.
+ -- Limit job purge run time to 1 second at a time.
 
 * Changes in Slurm 17.02.0pre1
 ==============================

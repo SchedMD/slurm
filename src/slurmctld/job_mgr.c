@@ -141,6 +141,8 @@ static struct   job_record **job_array_hash_t = NULL;
 static bool     kill_invalid_dep;
 static time_t   last_file_write_time = (time_t) 0;
 static uint32_t max_array_size = NO_VAL;
+static bool	purge_quit = false;
+static struct timeval purge_start_time = {0, 0};
 static bitstr_t *requeue_exit = NULL;
 static bitstr_t *requeue_exit_hold = NULL;
 static int	select_serial = -1;
@@ -178,6 +180,7 @@ static void _job_array_comp(struct job_record *job_ptr, bool was_running);
 static int  _job_create(job_desc_msg_t * job_specs, int allocate, int will_run,
 			struct job_record **job_rec_ptr, uid_t submit_uid,
 			char **err_msg, uint16_t protocol_version);
+static void _job_purge_start(void);
 static void _job_timed_out(struct job_record *job_ptr);
 static void _kill_dependent(struct job_record *job_ptr);
 static void _list_delete_job(void *job_entry);
@@ -7830,6 +7833,11 @@ static int _list_find_job_id(void *job_entry, void *key)
 		return 0;
 }
 
+static void _job_purge_start(void)
+{
+	purge_quit = false;
+	gettimeofday(&purge_start_time, NULL);
+}
 
 /*
  * _list_find_job_old - find old entries in the job list,
@@ -7841,6 +7849,19 @@ static int _list_find_job_old(void *job_entry, void *key)
 	time_t kill_age, min_age, now = time(NULL);;
 	struct job_record *job_ptr = (struct job_record *)job_entry;
 	uint16_t cleaning = 0;
+	struct timeval tv_now = {0, 0};
+	long delta_t;
+
+	if (purge_quit)
+		return 0;
+	gettimeofday(&tv_now, NULL);
+	delta_t  = (tv_now.tv_sec - purge_start_time.tv_sec) * 1000000;
+	delta_t += tv_now.tv_usec;
+	delta_t -= purge_start_time.tv_usec;
+	if (delta_t > 1000000) {
+		purge_quit = true;
+		return 0;
+	}
 
 	if (IS_JOB_COMPLETING(job_ptr) && !LOTS_OF_AGENTS) {
 		kill_age = now - (slurmctld_conf.kill_wait +
@@ -8905,6 +8926,7 @@ void purge_old_job(void)
 	}
 	list_iterator_destroy(job_iterator);
 
+	_job_purge_start();
 	i = list_delete_all(job_list, &_list_find_job_old, "");
 	if (i) {
 		debug2("purge_old_job: purged %d old job records", i);
