@@ -3103,6 +3103,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 
 	orig_map = bit_copy(node_bitmap);
 	avail_cores = make_core_bitmap(node_bitmap,
+				       job_ptr->details->core_spec);
 
 	/* test to make sure that this job can succeed with all avail_cores
 	 * if 'no' then return FAIL
