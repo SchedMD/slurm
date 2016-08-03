@@ -913,9 +913,16 @@ clear_bit:	/* This node is not usable by this job */
 	return SLURM_SUCCESS;
 }
 
-
-/* given an "avail" node_bitmap, return a corresponding "avail" core_bitmap */
-bitstr_t *_make_core_bitmap(bitstr_t *node_map, uint16_t core_spec)
+/*
+ * Given an available node_bitmap, return a corresponding available core_bitmap,
+ *	excluding all specialized cores.
+ *
+ * node_map IN - Bitmap of available nodes
+ * core_spec IN - Count of specialized cores requested by the job or NO_VAL
+ * RET bitmap of cores available for use by this job or reservation
+ * NOTE: Call bit_free() on return value to avoid memory leak.
+ */
+extern bitstr_t *make_core_bitmap(bitstr_t *node_map, uint16_t core_spec)
 {
 	uint32_t n, c, nodes, size;
 	int spec_cores, res_core, res_sock, res_off;
@@ -3095,8 +3102,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		job_ptr->bit_flags |= NODE_MEM_CALC;	/* To be calculated */
 
 	orig_map = bit_copy(node_bitmap);
-	avail_cores = _make_core_bitmap(node_bitmap,
-					job_ptr->details->core_spec);
+	avail_cores = make_core_bitmap(node_bitmap,
 
 	/* test to make sure that this job can succeed with all avail_cores
 	 * if 'no' then return FAIL
