@@ -19,6 +19,7 @@ documents those changes that are of interest to users and administrators.
  -- In sstat print 'extern' instead of 4294967295 for the extern step.
  -- Lock slurmstepd in memory to avoid possible SIGBUS if the daemon is paged
     out at the time of a Slurm upgrade (changing plugins).
+ -- Make advanced reservations work properly with core specialization.
 
 * Changes in Slurm 16.05.3
 ==========================

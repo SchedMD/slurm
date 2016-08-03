@@ -222,7 +222,7 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 		    List preemptee_candidates, List *preemptee_job_list,
 		    bitstr_t *exc_core_bitmap);
 static int _sort_usable_nodes_dec(void *, void *);
-
+static void _spec_core_filter(bitstr_t *node_bitmap, bitstr_t **core_bitmap);
 static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
 		      uint32_t min_nodes, uint32_t max_nodes,
  		      uint32_t req_nodes, uint16_t job_node_req);
@@ -2944,12 +2944,7 @@ bitstr_t *_sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 
 		debug2("Reservation is using partial nodes");
 
-		/* if not NULL = Cores used by other core based reservations
-		 * overlapping in time with this one */
-		if (*core_bitmap == NULL) {
-			*core_bitmap = _make_core_bitmap_filtered(avail_bitmap,
-								  0);
-		}
+		_spec_core_filter(avail_bitmap, core_bitmap);
 		tmpcore = bit_copy(*core_bitmap);
 
 		bit_not(tmpcore); /* tmpcore contains now current free cores */
@@ -3082,10 +3077,7 @@ bitstr_t *_pick_first_cores(bitstr_t *avail_bitmap, uint32_t node_cnt,
 
 	sp_avail_bitmap = bit_alloc(bit_size(avail_bitmap));
 
-	/* if not NULL = Cores used by other core based reservations
-	 * overlapping in time with this one */
-	if (*core_bitmap == NULL)
-		*core_bitmap = _make_core_bitmap_filtered(avail_bitmap, 0);
+	_spec_core_filter(avail_bitmap, core_bitmap);
 	tmpcore = bit_copy(*core_bitmap);
 	bit_not(tmpcore); /* tmpcore contains now current free cores */
 	bit_and(*core_bitmap, tmpcore);	/* clear core_bitmap */
@@ -3164,6 +3156,25 @@ static int _get_avail_core_in_node(bitstr_t *core_bitmap, int node,
 	return 0;
 }
 
+/* Given available node and core bitmaps, remove all specialized cores
+ * node_bitmap IN - Nodes available for use
+ * core_bitmap IN/OUT - Cores currently NOT available for use */
+static void _spec_core_filter(bitstr_t *node_bitmap, bitstr_t **core_bitmap)
+{
+	bitstr_t *spec_core_map;
+
+	spec_core_map = make_core_bitmap(node_bitmap, (uint16_t) NO_VAL);
+	bit_not(spec_core_map);
+
+	xassert(core_bitmap);
+	if (*core_bitmap) {
+		bit_or(*core_bitmap, spec_core_map);
+		bit_free(spec_core_map);
+	} else {
+		*core_bitmap = spec_core_map;
+	}
+}
+
 extern bitstr_t * select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 				     uint32_t node_cnt,
 				     bitstr_t *avail_bitmap,
@@ -3208,8 +3219,8 @@ extern bitstr_t * select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 	if (bit_set_count(avail_bitmap) < node_cnt)
 		return avail_nodes_bitmap;
 
-	if (core_cnt && (*core_bitmap == NULL))
-		*core_bitmap = _make_core_bitmap_filtered(avail_bitmap, 0);
+	if (core_cnt)
+		_spec_core_filter(avail_bitmap, core_bitmap);
 
 	rem_nodes = node_cnt;
 	if (core_cnt && core_cnt[1]) {	/* Array of core counts */
