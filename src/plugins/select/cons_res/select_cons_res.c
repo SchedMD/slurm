@@ -3194,7 +3194,7 @@ extern bitstr_t * select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 	int best_fit_nodes;
 	int best_fit_location = 0, best_fit_sufficient;
 	bool sufficient;
-	int cores_per_node;	/* Minimum cores per node to consider */
+	int cores_per_node = 1;	/* Minimum cores per node to consider */
 	uint32_t *core_cnt, flags, rem_cores_save;
 	bool aggr_core_cnt = false, clear_core;
 
