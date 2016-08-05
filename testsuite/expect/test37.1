@@ -2283,9 +2283,45 @@ if {$exit_code || $matches != 1} {
 set matches 0
 set my_pid [spawn $sacctmgr -i modify cluster $tc1 $tc2 $tc3 set federation=$fed1]
 expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Federation\\s+=\\s+$fed1$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$tc1$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$tc2$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$tc3$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr mod not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
 }
-expect -re $
+if {$exit_code || $matches != 6} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
 
+set matches 0
 set my_pid [spawn $sacctmgr -i modify federation $fed1 set clusters=]
 expect {
 	-re "Setting$eol" {
