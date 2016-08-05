@@ -1484,7 +1484,7 @@ if {$exit_code || $matches != 2} {
 	end_it 1
 }
 
-# New clustesr should have fed_id=0, federation="", fed_state=NA
+# New clusters should have fed_id=0, federation="", fed_state=NA
 set matches 0
 set my_pid [spawn $sacctmgr show cluster $tc4 format="cluster%20,federation%20,fedstate%20,id"]
 expect {
