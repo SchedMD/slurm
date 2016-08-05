@@ -621,10 +621,16 @@ extern char *fed_mgr_find_sibling_name_by_ip(char *ip)
  */
 extern bool fed_mgr_is_active()
 {
-	if (fed_mgr_fed_info.name)
-		return true;
+	int rc = false;
+	slurmctld_lock_t fed_read_lock = {
+		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 
-	return false;
+	lock_slurmctld(fed_read_lock);
+	if (fed_mgr_fed_info.name)
+		rc = true;
+	unlock_slurmctld(fed_read_lock);
+
+	return rc;
 }
 
 /*
