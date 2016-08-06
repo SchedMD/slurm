@@ -70,6 +70,8 @@ documents those changes that are of interest to users and administrators.
  -- Lock slurmstepd in memory to avoid possible SIGBUS if the daemon is paged
     out at the time of a Slurm upgrade (changing plugins).
  -- Make advanced reservations work properly with core specialization.
+ -- Fix race condition in the account_gather plugin that could result in job
+    stuck in COMPLETING state.
 
 * Changes in Slurm 16.05.3
 ==========================
