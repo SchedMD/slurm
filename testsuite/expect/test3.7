@@ -147,11 +147,17 @@ make_bash_script $file_prog_sh2 "./$file_prog"
 exec $bin_cc -o $file_prog ${file_prog}.c
 exec $bin_chmod 700 $file_prog
 
+if {[test_select_type_params "MEMORY"]} {
+	set job_mem  10
+} else {
+	set job_mem  1
+}
+
 #
 # Submit two jobs to the same node,.
 # The first job includes srun, second only the application
 #
-set sbatch_pid [spawn $sbatch -N1 -t2 --output=$file_out1 --mem=10 $file_prog_sh1]
+set sbatch_pid [spawn $sbatch -N1 -t2 --output=$file_out1 --mem=${job_mem} $file_prog_sh1]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id1 $expect_out(1,string)
@@ -200,7 +206,7 @@ if {[string compare $host_name ""] == 0} {
 	exit 1
 }
 # Submit another job to that same node
-set sbatch_pid [spawn $sbatch -N1 -t2 --output=$file_out2 --mem=10 $file_prog_sh2]
+set sbatch_pid [spawn $sbatch -N1 -t2 --output=$file_out2 --mem=${job_mem} $file_prog_sh2]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id2 $expect_out(1,string)

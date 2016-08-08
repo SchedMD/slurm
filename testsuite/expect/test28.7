@@ -43,6 +43,12 @@ if {$array_size > [get_array_config]} {
 	exit 0
 }
 
+if {[test_select_type_params "MEMORY"]} {
+	set job_mem  10
+} else {
+	set job_mem  1
+}
+
 exec $bin_rm -f $script
 make_bash_script $script "sleep \$(( ( RANDOM % 10 ) + 1 ))"
 
@@ -50,7 +56,7 @@ make_bash_script $script "sleep \$(( ( RANDOM % 10 ) + 1 ))"
 # Submit a job array for first dependency test
 #
 set job_id 0
-spawn $sbatch -N1 -t1 -a 0-$top_array_task_id -o /dev/null -e /dev/null --mem=10 $script
+spawn $sbatch -N1 -t1 -a 0-$top_array_task_id -o /dev/null -e /dev/null --mem=${job_mem} $script
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -74,7 +80,7 @@ if { $job_id == 0 } {
 #
 set timeout $max_job_delay
 set match_job_state 0
-set srun_pid [spawn $srun -t1 --dependency=afterany:$job_id\_$top_array_task_id --mem=10 $scontrol show job $job_id\_$top_array_task_id]
+set srun_pid [spawn $srun -t1 --dependency=afterany:$job_id\_$top_array_task_id --mem=${job_mem} $scontrol show job $job_id\_$top_array_task_id]
 expect {
 	-re "JobState=COMPLETED|COMPLETING" {
 		set match_job_state 1
@@ -102,7 +108,7 @@ send_user "\nSo far, so good\n\n\n"
 # Submit a job array for second dependency test
 #
 set job_id 0
-spawn $sbatch -N1 -t1 -a 0-[expr $array_size - 1] -o /dev/null -e /dev/null --mem=10 $script
+spawn $sbatch -N1 -t1 -a 0-[expr $array_size - 1] -o /dev/null -e /dev/null --mem=${job_mem} $script
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -126,7 +132,7 @@ if { $job_id == 0 } {
 #
 set timeout $max_job_delay
 set match_job_state 0
-set srun_pid [spawn $srun -t1 --dependency=afterany:$job_id --mem=10 $scontrol show job $job_id]
+set srun_pid [spawn $srun -t1 --dependency=afterany:$job_id --mem=${job_mem} $scontrol show job $job_id]
 expect {
 	-re "JobState=COMPLETED|COMPLETING" {
 		incr match_job_state

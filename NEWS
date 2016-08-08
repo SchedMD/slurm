@@ -72,6 +72,8 @@ documents those changes that are of interest to users and administrators.
  -- Make advanced reservations work properly with core specialization.
  -- Fix race condition in the account_gather plugin that could result in job
     stuck in COMPLETING state.
+ -- Regression test fixes if SelectTypePlugin not managing memory and no node
+    memory size set (defaults to 1 MB per node).
 
 * Changes in Slurm 16.05.3
 ==========================

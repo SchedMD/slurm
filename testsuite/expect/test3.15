@@ -57,10 +57,10 @@ proc reconfigure { } {
 }
 
 proc submit_job { license_count } {
-	global script_name bin_sleep license_name sbatch number exit_code
+	global script_name bin_sleep license_name sbatch number exit_code job_mem
 	set job_id 0
 	make_bash_script $script_name "$bin_sleep 300"
-	spawn $sbatch -n1 -t1 -o /dev/null -L $license_name:$license_count --mem=10 $script_name
+	spawn $sbatch -n1 -t1 -o /dev/null -L $license_name:$license_count --mem=${job_mem} $script_name
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -187,6 +187,12 @@ if {![string compare $select_type "linear"]} {
 	exit $exit_code
 }
 
+if {[test_select_type_params "MEMORY"]} {
+	set job_mem  10
+} else {
+	set job_mem  1
+}
+
 spawn $bin_id -un
 expect {
 	-re "($alpha_numeric_under)" {
@@ -260,8 +266,23 @@ exec $bin_rm -f $cwd/slurm.conf.work
 reconfigure
 
 #
+# Delete any vesgitial advanced reservation, then
 # Create the advanced reservation with 6 of 8 licenses named "test3.15"
 #
+spawn $scontrol delete ReservationName=$resv_name
+expect {
+	-re "Error|error" {
+		send_user "\nError is expected, no worries\n"
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
 spawn $scontrol create reservation ReservationName=$resv_name starttime=now duration=2 nodecnt=2 flags=license_only users=$user_name licenses=${license_name}:6
 expect {
 	-re "Error|error" {
