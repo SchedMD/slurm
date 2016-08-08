@@ -1590,16 +1590,16 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
 
 	START_TIMER;
 	debug3("Processing RPC: REQUEST_NODE_INFO from uid=%d", uid);
-	lock_slurmctld(node_write_lock);
 
 	if ((slurmctld_conf.private_data & PRIVATE_DATA_NODES) &&
 	    (!validate_operator(uid))) {
-		unlock_slurmctld(node_write_lock);
 		error("Security violation, REQUEST_NODE_INFO RPC from uid=%d",
 		      uid);
 		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
 		return;
 	}
+
+	lock_slurmctld(node_write_lock);
 
 	select_g_select_nodeinfo_set_all();
 
@@ -1648,16 +1648,16 @@ static void _slurm_rpc_dump_node_single(slurm_msg_t * msg)
 
 	START_TIMER;
 	debug3("Processing RPC: REQUEST_NODE_INFO_SINGLE from uid=%d", uid);
-	lock_slurmctld(node_write_lock);
 
 	if ((slurmctld_conf.private_data & PRIVATE_DATA_NODES) &&
 	    (!validate_operator(uid))) {
-		unlock_slurmctld(node_write_lock);
 		error("Security violation, REQUEST_NODE_INFO_SINGLE RPC from "
 		      "uid=%d", uid);
 		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
 		return;
 	}
+
+	lock_slurmctld(node_write_lock);
 
 #if 0
 	/* This function updates each node's alloc_cpus count and too slow for
