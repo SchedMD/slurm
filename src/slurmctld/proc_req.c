@@ -1582,9 +1582,9 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
 	node_info_request_msg_t *node_req_msg =
 		(node_info_request_msg_t *) msg->data;
 	/* Locks: Read config, write node (reset allocated CPU count in some
-	 * select plugins) */
+	 * select plugins), write part (for part_filter_set) */
 	slurmctld_lock_t node_write_lock = {
-		READ_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		READ_LOCK, NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 
@@ -1640,19 +1640,19 @@ static void _slurm_rpc_dump_node_single(slurm_msg_t * msg)
 	slurm_msg_t response_msg;
 	node_info_single_msg_t *node_req_msg =
 		(node_info_single_msg_t *) msg->data;
-	/* Locks: Read config, read node */
-	slurmctld_lock_t node_read_lock = {
-		READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+	/* Locks: Read config, read node, write part (for part_filter_set) */
+	slurmctld_lock_t node_write_lock = {
+		READ_LOCK, NO_LOCK, READ_LOCK, WRITE_LOCK, NO_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 
 	START_TIMER;
 	debug3("Processing RPC: REQUEST_NODE_INFO_SINGLE from uid=%d", uid);
-	lock_slurmctld(node_read_lock);
+	lock_slurmctld(node_write_lock);
 
 	if ((slurmctld_conf.private_data & PRIVATE_DATA_NODES) &&
 	    (!validate_operator(uid))) {
-		unlock_slurmctld(node_read_lock);
+		unlock_slurmctld(node_write_lock);
 		error("Security violation, REQUEST_NODE_INFO_SINGLE RPC from "
 		      "uid=%d", uid);
 		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
@@ -1666,7 +1666,7 @@ static void _slurm_rpc_dump_node_single(slurm_msg_t * msg)
 #endif
 	pack_one_node(&dump, &dump_size, node_req_msg->show_flags,
 		      uid, node_req_msg->node_name, msg->protocol_version);
-	unlock_slurmctld(node_read_lock);
+	unlock_slurmctld(node_write_lock);
 	END_TIMER2("_slurm_rpc_dump_node_single");
 #if 0
 	info("_slurm_rpc_dump_node_single, name=%s size=%d %s",
