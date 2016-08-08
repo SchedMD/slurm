@@ -824,29 +824,40 @@ static int _build_all_partitionline_info(void)
 	return SLURM_SUCCESS;
 }
 
+static int _set_max_part_prio(void *x, void *arg)
+{
+	struct part_record *part_ptr = (struct part_record *) x;
+
+	if (part_ptr->priority_job_factor > part_max_priority)
+		part_max_priority = part_ptr->priority_job_factor;
+
+	return 0;
+}
+
+static int _reset_part_prio(void *x, void *arg)
+{
+	struct part_record *part_ptr = (struct part_record *) x;
+
+	/* protect against div0 if all partition priorities are zero */
+	if (part_max_priority == 0) {
+		part_ptr->norm_priority = 0;
+		return 0;
+	}
+
+	part_ptr->norm_priority = (double)part_ptr->priority_job_factor /
+				  (double)part_max_priority;
+
+	return 0;
+}
+
 /* _sync_part_prio - Set normalized partition priorities */
 static void _sync_part_prio(void)
 {
-	ListIterator itr = NULL;
-	struct part_record *part_ptr = NULL;
-
+	/* reset global value from part list */
 	part_max_priority = 0;
-	itr = list_iterator_create(part_list);
-	while ((part_ptr = list_next(itr))) {
-		if (part_ptr->priority_job_factor > part_max_priority)
-			part_max_priority = part_ptr->priority_job_factor;
-	}
-	list_iterator_destroy(itr);
-
-	if (part_max_priority) {
-		itr = list_iterator_create(part_list);
-		while ((part_ptr = list_next(itr))) {
-			part_ptr->norm_priority =
-				(double)part_ptr->priority_job_factor /
-				(double)part_max_priority;
-		}
-		list_iterator_destroy(itr);
-	}
+	list_for_each(part_list, _set_max_part_prio, NULL);
+	/* renormalize values after finding new max */
+	list_for_each(part_list, _reset_part_prio, NULL);
 }
 
 /*
