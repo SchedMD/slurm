@@ -97,11 +97,12 @@ static void   _unlink_free_nodes(bitstr_t *old_bitmap,
 static uid_t *_remove_duplicate_uids(uid_t *);
 static int _uid_cmp(const void *, const void *);
 
-static void _calc_part_tres(struct part_record *part_ptr)
+static int _calc_part_tres(void *x, void *arg)
 {
 	int i, j;
 	struct node_record *node_ptr;
 	uint64_t *tres_cnt;
+	struct part_record *part_ptr = (struct part_record *) x;
 
 	xfree(part_ptr->tres_cnt);
 	xfree(part_ptr->tres_fmt_str);
@@ -120,7 +121,7 @@ static void _calc_part_tres(struct part_record *part_ptr)
 	/* Just to be safe, lets do this after the node TRES ;) */
 	tres_cnt[TRES_ARRAY_NODE] = part_ptr->total_nodes;
 
-	/* grab the global tres and stick in partiton for easy reference. */
+	/* grab the global tres and stick in partition for easy reference. */
 	for(i = 0; i < slurmctld_tres_cnt; i++) {
 		slurmdb_tres_rec_t *tres_rec = assoc_mgr_tres_array[i];
 
@@ -133,6 +134,7 @@ static void _calc_part_tres(struct part_record *part_ptr)
 		assoc_mgr_make_tres_str_from_array(part_ptr->tres_cnt,
 						   TRES_STR_CONVERT_UNITS,
 						   true);
+	return 0;
 }
 
 /*
@@ -142,14 +144,7 @@ static void _calc_part_tres(struct part_record *part_ptr)
  */
 extern void set_partition_tres()
 {
-	struct part_record * part_ptr;
-	ListIterator itr = list_iterator_create(part_list);
-
-	while ((part_ptr = (struct part_record *)list_next(itr))) {
-		xfree(part_ptr->tres_cnt);
-		_calc_part_tres(part_ptr);
-	}
-	list_iterator_destroy(itr);
+	list_for_each(part_list, _calc_part_tres, NULL);
 }
 
 /*
