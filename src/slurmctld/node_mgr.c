@@ -768,6 +768,7 @@ static bool _node_is_hidden(struct node_record *node_ptr, uid_t uid)
  * NOTE: the caller must xfree the buffer at *buffer_ptr
  * NOTE: change slurm_load_node() in api/node_info.c when data format changes
  * NOTE: READ lock_slurmctld config before entry
+ * NOTE: WRITE lock_slurmctld part before entry for part_filter_set
  */
 extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 			   uint16_t show_flags, uid_t uid,
@@ -859,6 +860,7 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
  * NOTE: the caller must xfree the buffer at *buffer_ptr
  * NOTE: change slurm_load_node() in api/node_info.c when data format changes
  * NOTE: READ lock_slurmctld config before entry
+ * NOTE: WRITE lock_slurmctld part before entry for part_filter_set
  */
 extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 			   uint16_t show_flags, uid_t uid, char *node_name,

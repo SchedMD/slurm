@@ -24,6 +24,8 @@ documents those changes that are of interest to users and administrators.
     stuck in COMPLETING state.
  -- Regression test fixes if SelectTypePlugin not managing memory and no node
     memory size set (defaults to 1 MB per node).
+ -- Add missing partition write locks to _slurm_rpc_dump_nodes/node_single to
+    prevent a race condition leading to inconsistent sinfo results.
 
 * Changes in Slurm 16.05.3
 ==========================
