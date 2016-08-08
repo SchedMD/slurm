@@ -76,6 +76,8 @@ documents those changes that are of interest to users and administrators.
     memory size set (defaults to 1 MB per node).
  -- Add missing partition write locks to _slurm_rpc_dump_nodes/node_single to
     prevent a race condition leading to inconsistent sinfo results.
+ -- Fix task:CPU binding logic for some processors. This bug was introduced
+    in version 16.05.1 to address KNL bunding problem.
 
 * Changes in Slurm 16.05.3
 ==========================
