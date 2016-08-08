@@ -3158,8 +3158,10 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 
 	i = job_test_resv(job_ptr, &start_res, false, &resv_bitmap,
 			  &exc_core_bitmap, &resv_overlap);
-	if (i != SLURM_SUCCESS)
+	if (i != SLURM_SUCCESS) {
+		FREE_NULL_BITMAP(avail_bitmap);
 		return i;
+	}
 	bit_and(avail_bitmap, resv_bitmap);
 	FREE_NULL_BITMAP(resv_bitmap);
 
@@ -3272,6 +3274,7 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 	FREE_NULL_LIST(preemptee_candidates);
 	FREE_NULL_LIST(preemptee_job_list);
 	FREE_NULL_BITMAP(avail_bitmap);
+	FREE_NULL_BITMAP(exc_core_bitmap);
 	return rc;
 }
 

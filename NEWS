@@ -28,6 +28,7 @@ documents those changes that are of interest to users and administrators.
     prevent a race condition leading to inconsistent sinfo results.
  -- Fix task:CPU binding logic for some processors. This bug was introduced
     in version 16.05.1 to address KNL bunding problem.
+ -- Fix two minor memory leaks in slurmctld.
 
 * Changes in Slurm 16.05.3
 ==========================
