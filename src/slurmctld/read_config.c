@@ -274,6 +274,34 @@ static void _build_bitmaps_pre_select(void)
 	return;
 }
 
+static int _reset_node_bitmaps(void *x, void *arg)
+{
+	struct config_record *config_ptr = (struct config_record *) x;
+
+	FREE_NULL_BITMAP(config_ptr->node_bitmap);
+	config_ptr->node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
+
+	return 0;
+}
+
+static int _set_share_node_bitmap(void *x, void *arg)
+{
+	bitstr_t *tmp_bits;
+	struct job_record *job_ptr = (struct job_record *) x;
+
+	if (!IS_JOB_RUNNING(job_ptr) ||
+	    (job_ptr->node_bitmap == NULL)        ||
+	    (job_ptr->details     == NULL)        ||
+	    (job_ptr->details->share_res != 0))
+		return 0;
+
+	tmp_bits = bit_copy(job_ptr->node_bitmap);
+	bit_not(tmp_bits);
+	bit_and(share_node_bitmap, tmp_bits);
+	FREE_NULL_BITMAP(tmp_bits);
+
+	return 0;
+}
 /*
  * _build_bitmaps - build node bitmaps to define which nodes are in which
  *    1) partition  2) configuration record  3) up state  4) idle state
@@ -287,11 +315,7 @@ static void _build_bitmaps_pre_select(void)
 static int _build_bitmaps(void)
 {
 	int i, error_code = SLURM_SUCCESS;
-	ListIterator config_iterator;
-	struct config_record *config_ptr;
-	struct job_record    *job_ptr;
-	struct node_record   *node_ptr;
-	ListIterator job_iterator;
+	struct node_record *node_ptr;
 
 	last_node_update = time(NULL);
 	last_part_update = time(NULL);
@@ -311,33 +335,13 @@ static int _build_bitmaps(void)
 	up_node_bitmap    = (bitstr_t *) bit_alloc(node_record_count);
 
 	/* initialize the configuration bitmaps */
-	config_iterator = list_iterator_create(config_list);
-	while ((config_ptr = (struct config_record *)
-				      list_next(config_iterator))) {
-		FREE_NULL_BITMAP(config_ptr->node_bitmap);
-		config_ptr->node_bitmap =
-		    (bitstr_t *) bit_alloc(node_record_count);
-	}
-	list_iterator_destroy(config_iterator);
+	list_for_each(config_list, _reset_node_bitmaps, NULL);
 
 	/* Set all bits, all nodes initially available for sharing */
-	bit_nset(share_node_bitmap, 0, (node_record_count-1));
+	bit_set_all(share_node_bitmap);
 
 	/* identify all nodes non-sharable due to non-sharing jobs */
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		bitstr_t *tmp_bits;
-		if (!IS_JOB_RUNNING(job_ptr) ||
-		    (job_ptr->node_bitmap == NULL)        ||
-		    (job_ptr->details     == NULL)        ||
-		    (job_ptr->details->share_res != 0))
-			continue;
-		tmp_bits = bit_copy(job_ptr->node_bitmap);
-		bit_not(tmp_bits);
-		bit_and(share_node_bitmap, tmp_bits);
-		FREE_NULL_BITMAP(tmp_bits);
-	}
-	list_iterator_destroy(job_iterator);
+	list_for_each(job_list, _set_share_node_bitmap, NULL);
 
 	/* scan all nodes and identify which are up, idle and
 	 * their configuration, resync DRAINED vs. DRAINING state */
