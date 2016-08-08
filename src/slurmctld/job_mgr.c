@@ -4961,7 +4961,7 @@ static int _part_access_check(struct part_record *part_ptr,
 	}
 
 	if ((part_ptr->state_up & PARTITION_SCHED) &&
-	    (job_desc->min_nodes != NO_VAL) &&
+	    (job_desc->max_nodes != NO_VAL) &&
 	    (job_desc->max_nodes > max_nodes_tmp)) {
 		info("%s: Job requested for nodes (%u) greater than partition"
 		     " %s(%u) max nodes", __func__, job_desc->max_nodes,
@@ -5392,7 +5392,7 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 		    (!qos_ptr || (qos_ptr && !(qos_ptr->flags &
 					       QOS_FLAG_PART_MIN_NODE))))) {
 		debug2("Job %u requested too few nodes (%u) of "
-		       "partition %s(MinNodes %u)",
+		       "partition %s (MinNodes %u)",
 		       job_ptr->job_id, job_max_nodes,
 		       part_ptr->name, part_min_nodes);
 		fail_reason = WAIT_PART_NODE_LIMIT;
@@ -5408,8 +5408,9 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 		   (time_check > part_ptr->max_time) &&
 		   (!qos_ptr || (qos_ptr && !(qos_ptr->flags &
 					     QOS_FLAG_PART_TIME_LIMIT)))) {
-		info("Job %u exceeds partition time limit (%u > %u)",
-		       job_ptr->job_id, time_check, part_ptr->max_time);
+		info("Job %u exceeds partition %s time limit (%u > %u)",
+		       job_ptr->job_id, part_ptr->name, time_check,
+		       part_ptr->max_time);
 		fail_reason = WAIT_PART_TIME_LIMIT;
 	} else if (qos_ptr && assoc_ptr &&
 		   (qos_ptr->flags & QOS_FLAG_ENFORCE_USAGE_THRES) &&

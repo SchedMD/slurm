@@ -1627,8 +1627,14 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				}
 			}
 			if ((i >= 0) && (job_ptr->details->core_spec >= j)) {
-				info("_pick_best_nodes: job %u never runnable",
-				     job_ptr->job_id);
+				if (part_ptr && part_ptr->name) {
+					info("%s: job %u never runnable in partition %s",
+					     __func__, job_ptr->job_id,
+					     part_ptr->name);
+				} else {
+					info("%s: job %u never runnable",
+					     __func__, job_ptr->job_id);
+				}
 				return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 			}
 		}
@@ -1995,9 +2001,14 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		return error_code;
 	}
 	if (!runable_ever) {
+		if (part_ptr && part_ptr->name) {
+			info("%s: job %u never runnable in partition %s",
+			     __func__, job_ptr->job_id, part_ptr->name);
+		} else {
+			info("%s: job %u never runnable",
+			     __func__, job_ptr->job_id);
+		}
 		error_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
-		info("_pick_best_nodes: job %u never runnable",
-		     job_ptr->job_id);
 	} else if (!runable_avail && !nodes_busy) {
 		error_code = ESLURM_NODE_NOT_AVAIL;
 	}
