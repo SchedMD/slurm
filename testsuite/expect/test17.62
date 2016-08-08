@@ -35,13 +35,18 @@ set test_id       17.62
 set exit_code     0
 set file_in       "test$test_id\.sh"
 set job_name      "test$test_id\_job"
-set job_mem       100
 set partition     [default_partition]
 set job_time      1
 set stdout        "/dev/null"
 set stderr        "/tmp/err"
 set job_id        0
 set node_list     [get_idle_node_in_part [default_partition]]
+
+if {[test_select_type_params "MEMORY"]} {
+	set job_mem  100
+} else {
+	set job_mem  1
+}
 
 array set check_list { }
 set check_list(JobName)      $job_name

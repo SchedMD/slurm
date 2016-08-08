@@ -65,18 +65,26 @@ if {[test_launch_poe]} {
 	set step_id 0
 }
 
+if {[test_select_type_params "MEMORY"]} {
+	set job_mem  20
+	set step_mem 10
+} else {
+	set job_mem  1
+	set step_mem 1
+}
+
 #
 # Build input script file
 #
 make_bash_script $file_in "
-  $srun --mem=10 $bin_sleep 60 &
-  $srun --mem=10 $bin_sleep 60
+  $srun --mem=${step_mem} $bin_sleep 60 &
+  $srun --mem=${step_mem} $bin_sleep 60
 "
 
 #
 # Submit a couple jobs so we have something to work with
 #
-set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null -t5 --mem=20 $file_in]
+set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null -t5 --mem=${job_mem} $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id1 $expect_out(1,string)
@@ -96,7 +104,7 @@ if {$job_id1 == 0} {
 	exit 1
 }
 
-set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null -t5 --mem=20 $file_in]
+set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null -t5 --mem=${job_mem} $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id2 $expect_out(1,string)
