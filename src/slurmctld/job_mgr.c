@@ -5206,7 +5206,7 @@ static int _part_access_check(struct part_record *part_ptr,
 	}
 
 	if ((part_ptr->state_up & PARTITION_SCHED) &&
-	    (job_desc->min_nodes != NO_VAL) &&
+	    (job_desc->max_nodes != NO_VAL) &&
 	    (job_desc->max_nodes > max_nodes_tmp)) {
 		info("_part_access_check: Job requested for nodes (%u) "
 		     "greater than partition %s(%u) max nodes",
