@@ -85,8 +85,7 @@ time_t last_part_update = (time_t) 0;	/* time of last update to partition record
 uint16_t part_max_priority = 0;         /* max priority_job_factor in all parts */
 
 static int    _delete_part_record(char *name);
-static void   _dump_part_state(struct part_record *part_ptr,
-			       Buf buffer);
+static int    _dump_part_state(void *x, void *arg);
 static uid_t *_get_groups_members(char *group_names);
 static time_t _get_group_tlm(void);
 static void   _list_delete_part(void *part_entry);
@@ -414,8 +413,6 @@ int dump_all_part_state(void)
 {
 	/* Save high-water mark to avoid buffer growth with copies */
 	static int high_buffer_size = BUF_SIZE;
-	ListIterator part_iterator;
-	struct part_record *part_ptr;
 	int error_code = 0, log_fd;
 	char *old_file, *new_file, *reg_file;
 	/* Locks: Read partition */
@@ -432,12 +429,7 @@ int dump_all_part_state(void)
 
 	/* write partition records to buffer */
 	lock_slurmctld(part_read_lock);
-	part_iterator = list_iterator_create(part_list);
-	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
-		xassert (part_ptr->magic == PART_MAGIC);
-		_dump_part_state(part_ptr, buffer);
-	}
-	list_iterator_destroy(part_iterator);
+	list_for_each(part_list, _dump_part_state, buffer);
 
 	old_file = xstrdup(slurmctld_conf.state_save_location);
 	xstrcat(old_file, "/part_state.old");
@@ -504,9 +496,14 @@ int dump_all_part_state(void)
  *	is requested
  * IN/OUT buffer - location to store data, pointers automatically advanced
  */
-static void _dump_part_state(struct part_record *part_ptr, Buf buffer)
+static int _dump_part_state(void *x, void *arg)
 {
+	struct part_record *part_ptr = (struct part_record *) x;
+	Buf buffer = (Buf) arg;
+
 	xassert(part_ptr);
+	xassert(part_ptr->magic == PART_MAGIC);
+
 	if (default_part_loc == part_ptr)
 		part_ptr->flags |= PART_FLAG_DEFAULT;
 	else
@@ -538,6 +535,8 @@ static void _dump_part_state(struct part_record *part_ptr, Buf buffer)
 	packstr(part_ptr->deny_accounts, buffer);
 	packstr(part_ptr->deny_qos,      buffer);
 	packstr(part_ptr->nodes,         buffer);
+
+	return 0;
 }
 
 /* Open the partition state save file, or backup if necessary.
