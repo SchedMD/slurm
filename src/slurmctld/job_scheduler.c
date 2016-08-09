@@ -3077,7 +3077,7 @@ static void _delayed_job_start_time(struct job_record *job_ptr)
 		if (job_q_ptr->details->min_cpus == NO_VAL)
 			job_size_cpus = 1;
 		else
-			job_size_cpus = job_q_ptr->details->min_nodes;
+			job_size_cpus = job_q_ptr->details->min_cpus;
 		job_size_cpus = MAX(job_size_cpus,
 				    (job_size_nodes * part_cpus_per_node));
 		if (job_q_ptr->time_limit == NO_VAL)
