@@ -74,6 +74,7 @@
 #include "xcpuinfo.h"
 
 #define _DEBUG 0
+#define _MAX_SOCKET_INX 1024
 
 #if !defined(HAVE_HWLOC)
 static char* _cpuinfo_path = "/proc/cpuinfo";
@@ -207,7 +208,7 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	int actual_cpus;
 	int macid;
 	int absid;
-	int actual_boards = 1, depth, tot_socks = 0;
+	int actual_boards = 1, depth, sock_cnt, tot_socks = 0;
 	int i;
 
 	debug2("hwloc_topology_init");
@@ -272,29 +273,45 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	 * KNL NUMA with no cores are NOT counted. */
 	nobj[SOCKET] = 0;
 	depth = hwloc_get_type_depth(topology, objtype[SOCKET]);
-	used_socket = bit_alloc(1024);
-	for (i = 0; i < hwloc_get_nbobjs_by_depth(topology, depth); i++) {
+	used_socket = bit_alloc(_MAX_SOCKET_INX);
+	sock_cnt = hwloc_get_nbobjs_by_depth(topology, depth);
+	for (i = 0; i < sock_cnt; i++) {
 		obj = hwloc_get_obj_by_depth(topology, depth, i);
 		if (obj->type == objtype[SOCKET]) {
 			if (_core_child_count(topology, obj) > 0) {
 				nobj[SOCKET]++;
 				bit_set(used_socket, tot_socks);
 			}
-			if (++tot_socks >= 1024) {	/* Bitmap size */
-				fatal("Socket count exceeds 1024, expand data structure size");
+			if (++tot_socks >= _MAX_SOCKET_INX) {	/* Bitmap size */
+				fatal("Socket count exceeds %d, expand data structure size",
+				      _MAX_SOCKET_INX);
 				break;
 			}
 		}
 	}
-	nobj[CORE]   = hwloc_get_nbobjs_by_type(topology, objtype[CORE]);
+
+	nobj[CORE] = hwloc_get_nbobjs_by_type(topology, objtype[CORE]);
+
+	/* Workaround for hwloc bug, in some cases the topology "children" array
+	 * does not get populated, so _core_child_count() always returns 0 */
+	if (nobj[SOCKET] == 0) {
+		nobj[SOCKET] = hwloc_get_nbobjs_by_type(topology,
+							objtype[SOCKET]);
+		if (nobj[SOCKET] == 0) {
+			debug("get_cpuinfo() fudging nobj[SOCKET] from 0 to 1");
+			nobj[SOCKET] = 1;
+		}
+		if (nobj[SOCKET] >= _MAX_SOCKET_INX) {	/* Bitmap size */
+			fatal("Socket count exceeds %d, expand data structure size",
+			      _MAX_SOCKET_INX);
+		}
+		bit_nset(used_socket, 0, nobj[SOCKET] - 1);
+	}
+
 	/*
 	 * Workaround for hwloc
 	 * hwloc_get_nbobjs_by_type() returns 0 on some architectures.
 	 */
-	if ( nobj[SOCKET] == 0 ) {
-		debug("get_cpuinfo() fudging nobj[SOCKET] from 0 to 1");
-		nobj[SOCKET] = 1;
-	}
 	if ( nobj[CORE] == 0 ) {
 		debug("get_cpuinfo() fudging nobj[CORE] from 0 to 1");
 		nobj[CORE] = 1;
