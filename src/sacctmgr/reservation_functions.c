@@ -77,7 +77,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 				reservation_cond->cluster_list =
 					list_create(slurm_destroy_char);
 			}
-			if (slurm_addto_char_list(reservation_cond->name_list,
+			if (slurm_addto_char_list(reservation_cond->cluster_list,
 						  argv[i]+end))
 				set = 1;
 		} else if (!strncasecmp(argv[i], "Names",
