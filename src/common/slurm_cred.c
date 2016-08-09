@@ -1884,7 +1884,7 @@ _clear_expired_job_states(slurm_cred_ctx_t ctx)
 		}
 		if (j->expiration) {
 			strcpy(t3, " expires:");
-			timestr(&j->revoked, (t3+9), (64-9));
+			timestr(&j->expiration, (t3+9), (64-9));
 		} else {
 			t3[0] = '\0';
 		}
