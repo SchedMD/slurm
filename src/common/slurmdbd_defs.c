@@ -3516,7 +3516,6 @@ slurmdbd_unpack_job_start_msg(void **msg,
 		safe_unpack32(&msg_ptr->assoc_id, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->block_id, &uint32_tmp, buffer);
 		safe_unpack32(&uint32_tmp, buffer);
-		safe_unpack32(&uint32_tmp, buffer);
 		if (uint32_tmp == NO_VAL)
 			msg_ptr->db_index = NO_VAL64;
 		else
