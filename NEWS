@@ -33,6 +33,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix incorrect access check when using MaxNodes setting on the partition.
  -- Fix issue with sacctmgr when specifying a list of clusters to query.
  -- Fix issue when calculating future StartTime for a job.
+ -- Make EnforcePartLimit support logic work with any ordering of partitions
+    in job submit request.
 
 * Changes in Slurm 16.05.3
 ==========================

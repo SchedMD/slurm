@@ -4027,6 +4027,7 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 	struct part_record *part_ptr;
 	ListIterator iter;
 	int rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+	int best_rc = -1;
 
 	if (job_ptr->part_ptr_list) {
 		iter = list_iterator_create(job_ptr->part_ptr_list);
@@ -4034,25 +4035,73 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 			job_ptr->part_ptr = part_ptr;
 			debug2("Try job %u on next partition %s",
 			       job_ptr->job_id, part_ptr->name);
-			if (job_limits_check(&job_ptr, false) != WAIT_NO_REASON)
-				continue;
+
+			if (slurmctld_conf.enforce_part_limits !=
+			    PARTITION_ENFORCE_NONE) {
+				int part_limits_rc;
+				part_limits_rc = job_limits_check(&job_ptr,
+								  false);
+				if ((part_limits_rc != WAIT_NO_REASON) &&
+				    (slurmctld_conf.enforce_part_limits ==
+				     PARTITION_ENFORCE_ANY))
+					continue;
+				if ((part_limits_rc != WAIT_NO_REASON) &&
+				    (slurmctld_conf.enforce_part_limits ==
+				     PARTITION_ENFORCE_ALL)) {
+					best_rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+					break;
+				}
+			}
 			rc = select_nodes(job_ptr, test_only,
 					  select_node_bitmap, NULL, err_msg);
+			if ((rc == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
+			    (slurmctld_conf.enforce_part_limits ==
+			     PARTITION_ENFORCE_ALL)) {
+				best_rc = rc;	/* Job can not run */
+				break;
+			}
 			if ((rc != ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) &&
 			    (rc != ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
 			    (rc != ESLURM_RESERVATION_BUSY) &&
-			    (rc != ESLURM_NODES_BUSY))
-				break;
+			    (rc != ESLURM_NODES_BUSY)) {
+				best_rc = rc;	/* Job can run now */
+				if ((slurmctld_conf.enforce_part_limits ==
+				     PARTITION_ENFORCE_ANY) ||
+				    (slurmctld_conf.enforce_part_limits ==
+				     PARTITION_ENFORCE_NONE)) {
+					break;
+				}
+			}
+//			if ((best_rc == -1) &&
+//			    ((rc == ESLURM_NODES_BUSY) ||
+//			     (rc == ESLURM_RESERVATION_BUSY)))
+//				best_rc = rc;	/* Job can run later */
+			if (((rc == ESLURM_NODES_BUSY) ||
+			     (rc == ESLURM_RESERVATION_BUSY)) &&
+			    (best_rc == -1) &&
+			    (slurmctld_conf.enforce_part_limits ==
+			     PARTITION_ENFORCE_ANY)) {
+				if (test_only)
+					break;
+				best_rc = rc;	/* Keep looking for partition
+						 * where job can start now */
+			}
 			if ((job_ptr->preempt_in_progress) &&
-			    (rc != ESLURM_NODES_BUSY))
-				break;
+			    (rc != ESLURM_NODES_BUSY)) {
+				/* Already started preempting jobs, don't
+				 * consider starting this job in another
+				 * partition as we iterator over others. */
+				test_only = true;
+			}
 		}
 		list_iterator_destroy(iter);
+		if (best_rc != -1)
+			rc = best_rc;
 	} else {
-		if (job_limits_check(&job_ptr, false) != WAIT_NO_REASON)
-			test_only = true;
-		rc = select_nodes(job_ptr, test_only, select_node_bitmap,
-				  NULL, err_msg);
+		if (job_limits_check(&job_ptr, false) == WAIT_NO_REASON)
+			rc = select_nodes(job_ptr, test_only,
+					  select_node_bitmap,
+					  NULL, err_msg);
 	}
 
 	return rc;
@@ -4237,17 +4286,20 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 
 	acct_policy_add_job_submit(job_ptr);
 
-	if ((error_code == ESLURM_NODES_BUSY) ||
-	    (error_code == ESLURM_RESERVATION_BUSY) ||
-	    (error_code == ESLURM_JOB_HELD) ||
-	    (error_code == ESLURM_NODE_NOT_AVAIL) ||
-	    (error_code == ESLURM_QOS_THRES) ||
-	    (error_code == ESLURM_ACCOUNTING_POLICY) ||
-	    (error_code == ESLURM_RESERVATION_NOT_USABLE) ||
-	    (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) ||
-	    (error_code == ESLURM_POWER_NOT_AVAIL) ||
-	    (error_code == ESLURM_BURST_BUFFER_WAIT) ||
-	    (error_code == ESLURM_POWER_RESERVED)) {
+	if ((error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
+	    (slurmctld_conf.enforce_part_limits == PARTITION_ENFORCE_ALL))
+		;	/* Reject job submission */
+	else if ((error_code == ESLURM_NODES_BUSY) ||
+		 (error_code == ESLURM_RESERVATION_BUSY) ||
+		 (error_code == ESLURM_JOB_HELD) ||
+		 (error_code == ESLURM_NODE_NOT_AVAIL) ||
+		 (error_code == ESLURM_QOS_THRES) ||
+		 (error_code == ESLURM_ACCOUNTING_POLICY) ||
+		 (error_code == ESLURM_RESERVATION_NOT_USABLE) ||
+		 (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) ||
+		 (error_code == ESLURM_POWER_NOT_AVAIL) ||
+		 (error_code == ESLURM_BURST_BUFFER_WAIT) ||
+		 (error_code == ESLURM_POWER_RESERVED)) {
 		/* Not fatal error, but job can't be scheduled right now */
 		if (immediate) {
 			job_ptr->job_state  = JOB_FAILED;
