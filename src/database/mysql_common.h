@@ -102,7 +102,7 @@ extern MYSQL_RES *mysql_db_query_ret(mysql_conn_t *mysql_conn,
 				     char *query, bool last);
 extern int mysql_db_query_check_after(mysql_conn_t *mysql_conn, char *query);
 
-extern int mysql_db_insert_ret_id(mysql_conn_t *mysql_conn, char *query);
+extern uint64_t mysql_db_insert_ret_id(mysql_conn_t *mysql_conn, char *query);
 
 extern int mysql_db_create_table(mysql_conn_t *mysql_conn, char *table_name,
 				 storage_field_t *fields, char *ending);

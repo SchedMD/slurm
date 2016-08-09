@@ -447,7 +447,7 @@ static int _add_res(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *object,
 
 	if (debug_flags & DEBUG_FLAG_DB_RES)
 		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
-	object->id = mysql_db_insert_ret_id(mysql_conn, query);
+	object->id = (uint32_t)mysql_db_insert_ret_id(mysql_conn, query);
 	xfree(query);
 	if (!object->id) {
 		error("Couldn't add server resource %s", object->name);

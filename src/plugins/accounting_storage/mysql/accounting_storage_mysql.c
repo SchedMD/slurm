@@ -958,7 +958,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 					qos_table, now, now, qos);
 				if (debug_flags & DEBUG_FLAG_DB_QOS)
 					DB_DEBUG(mysql_conn->conn, "%s", query);
-				qos_id = mysql_db_insert_ret_id(
+				qos_id = (int)mysql_db_insert_ret_id(
 					mysql_conn, query);
 				if (!qos_id)
 					fatal("problem added qos '%s", qos);
@@ -978,7 +978,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 				qos_table, now, now);
 			if (debug_flags & DEBUG_FLAG_DB_QOS)
 				DB_DEBUG(mysql_conn->conn, "%s", query);
-			qos_id = mysql_db_insert_ret_id(mysql_conn, query);
+			qos_id = (int)mysql_db_insert_ret_id(mysql_conn, query);
 			if (!qos_id)
 				fatal("problem added qos 'normal");
 
