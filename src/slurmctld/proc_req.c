@@ -1109,6 +1109,9 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	    (error_code == ESLURM_NODE_NOT_AVAIL) ||
 	    (error_code == ESLURM_JOB_HELD))
 		job_waiting = true;
+	if ((error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
+	    (slurmctld_conf.enforce_part_limits != PARTITION_ENFORCE_NONE))
+		job_waiting = false;     /* Reject job submission */
 
 	if ((error_code == SLURM_SUCCESS) ||
 	    ((immediate == 0) && job_waiting)) {
@@ -3415,6 +3418,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 	char *err_msg = NULL;
+	bool reject_job = false;
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_SUBMIT_BATCH_JOB from uid=%d", uid);
@@ -3550,6 +3554,13 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 	    (error_code != ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
 	    (error_code != ESLURM_POWER_NOT_AVAIL) &&
 	    (error_code != ESLURM_POWER_RESERVED)) {
+		reject_job = true;
+	}
+	if ((error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
+	   (slurmctld_conf.enforce_part_limits != PARTITION_ENFORCE_NONE))
+		reject_job = true;
+
+	if (reject_job) {
 		info("_slurm_rpc_submit_batch_job: %s",
 		     slurm_strerror(error_code));
 		if (err_msg)
