@@ -285,7 +285,7 @@ static void *_set_db_inx_thread(void *no_data)
 				if (job_ptr->db_index || job_ptr->resize_time)
 					continue;
 
-				/* We set the db_index to NO_VAL here
+				/* We set the db_index to NO_VAL64 here
 				 * to avoid a potential race condition
 				 * where at this moment in time the
 				 * job is only eligible to run and
@@ -299,14 +299,14 @@ static void *_set_db_inx_thread(void *no_data)
 				 * this situation and it will handle
 				 * it accordingly.
 				 */
-				job_ptr->db_index = NO_VAL;
+				job_ptr->db_index = NO_VAL64;
 			}
 
 			req = xmalloc(sizeof(dbd_job_start_msg_t));
 			if (_setup_job_start_msg(req, job_ptr)
 			    != SLURM_SUCCESS) {
 				_partial_destroy_dbd_job_start(req);
-				if (job_ptr->db_index == NO_VAL)
+				if (job_ptr->db_index == NO_VAL64)
 					job_ptr->db_index = 0;
 				continue;
 			}
@@ -378,12 +378,13 @@ static void *_set_db_inx_thread(void *no_data)
 						     id_ptr->job_id)) &&
 					    job_ptr->db_index) {
 						/* Only set if db_index != 0.
-						 * Is set to NO_VAL previously
+						 * Is set to NO_VAL64 previously
 						 * but may have been set to 0
 						 * after the fact, which means
 						 * the start needs to be sent
 						 * again. */
-						job_ptr->db_index = id_ptr->id;
+						job_ptr->db_index =
+							id_ptr->db_index;
 						job_ptr->job_state &=
 							(~JOB_UPDATE_DB);
 					}
@@ -406,7 +407,7 @@ static void *_set_db_inx_thread(void *no_data)
 					goto end_it;
 				}
 				while ((job_ptr = list_next(itr))) {
-					if (job_ptr->db_index == NO_VAL)
+					if (job_ptr->db_index == NO_VAL64)
 						job_ptr->db_index = 0;
 				}
 				list_iterator_destroy(itr);
@@ -2559,7 +2560,7 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 		   deleted and hense the associations dealing with it.
 		*/
 		if (!req.db_index)
-			job_ptr->db_index = NO_VAL;
+			job_ptr->db_index = NO_VAL64;
 
 		if (slurm_send_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &msg) < 0) {
 			_partial_free_dbd_job_start(&req);
@@ -2582,7 +2583,7 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 		      msg_rc.msg_type);
 	} else {
 		resp = (dbd_id_rc_msg_t *) msg_rc.data;
-		job_ptr->db_index = resp->id;
+		job_ptr->db_index = resp->db_index;
 		rc = resp->return_code;
 		//info("here got %d for return code", resp->return_code);
 		slurmdbd_free_id_rc_msg(resp);

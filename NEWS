@@ -10,6 +10,10 @@ documents those changes that are of interest to users and administrators.
     done.
  -- Add federation read/write locks.
  -- Limit job purge run time to 1 second at a time.
+ -- The database index for jobs is now 64 bit.  If you happen to be close to
+    4 billion jobs in your database you will want to update your slurmctld at
+    the same time as your slurmdbd to prevent roll over of this variable as
+    it is 32 bit previous versions of Slurm.
 
 * Changes in Slurm 17.02.0pre1
 ==============================

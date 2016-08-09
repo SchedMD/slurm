@@ -2094,7 +2094,7 @@ static int  _job_complete(slurmdbd_conn_t *slurmdbd_conn,
 
 	job.assoc_id = job_comp_msg->assoc_id;
 	job.comment = job_comp_msg->comment;
-	if (job_comp_msg->db_index != NO_VAL)
+	if (job_comp_msg->db_index != NO_VAL64)
 		job.db_index = job_comp_msg->db_index;
 	job.derived_ec = job_comp_msg->derived_ec;
 	job.end_time = job_comp_msg->end_time;
@@ -2209,7 +2209,7 @@ static int  _job_suspend(slurmdbd_conn_t *slurmdbd_conn,
 	memset(&details, 0, sizeof(struct job_details));
 
 	job.assoc_id = job_suspend_msg->assoc_id;
-	if (job_suspend_msg->db_index != NO_VAL)
+	if (job_suspend_msg->db_index != NO_VAL64)
 		job.db_index = job_suspend_msg->db_index;
 	job.job_id = job_suspend_msg->job_id;
 	job.job_state = job_suspend_msg->job_state;
@@ -2971,7 +2971,7 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	array_recs.task_cnt = job_start_msg->array_task_pending;
 	job.assoc_id = job_start_msg->assoc_id;
 	job.comment = job_start_msg->block_id;
-	if (job_start_msg->db_index != NO_VAL)
+	if (job_start_msg->db_index != NO_VAL64)
 		job.db_index = job_start_msg->db_index;
 	details.begin_time = job_start_msg->eligible_time;
 	job.user_id = job_start_msg->uid;
@@ -3003,11 +3003,11 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 
 	if (job.job_state & JOB_RESIZING) {
 		job.resize_time = job_start_msg->eligible_time;
-		debug2("DBD_JOB_START: RESIZE CALL ID:%u NAME:%s INX:%u",
+		debug2("DBD_JOB_START: RESIZE CALL ID:%u NAME:%s INX:%"PRIu64,
 		       job_start_msg->job_id, job_start_msg->name,
 		       job.db_index);
 	} else if (job.start_time && !IS_JOB_PENDING(job_ptr)) {
-		debug2("DBD_JOB_START: START CALL ID:%u NAME:%s INX:%u",
+		debug2("DBD_JOB_START: START CALL ID:%u NAME:%s INX:%"PRIu64,
 		       job_start_msg->job_id, job_start_msg->name,
 		       job.db_index);
 	} else {
@@ -3017,7 +3017,7 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	id_rc_msg->return_code = jobacct_storage_g_job_start(
 		slurmdbd_conn->db_conn, &job);
 	id_rc_msg->job_id = job.job_id;
-	id_rc_msg->id = job.db_index;
+	id_rc_msg->db_index = job.db_index;
 
 	/* just incase job.wckey was set because we didn't send one */
 	if (!job_start_msg->wckey)
@@ -3946,7 +3946,7 @@ static int  _step_complete(slurmdbd_conn_t *slurmdbd_conn,
 	memset(&details, 0, sizeof(struct job_details));
 
 	job.assoc_id = step_comp_msg->assoc_id;
-	if (step_comp_msg->db_index != NO_VAL)
+	if (step_comp_msg->db_index != NO_VAL64)
 		job.db_index = step_comp_msg->db_index;
 	job.end_time = step_comp_msg->end_time;
 	step.exit_code = step_comp_msg->exit_code;
@@ -4022,7 +4022,7 @@ static int  _step_start(slurmdbd_conn_t *slurmdbd_conn,
 	memset(&layout, 0, sizeof(slurm_step_layout_t));
 
 	job.assoc_id = step_start_msg->assoc_id;
-	if (step_start_msg->db_index != NO_VAL)
+	if (step_start_msg->db_index != NO_VAL64)
 		job.db_index = step_start_msg->db_index;
 	job.job_id = step_start_msg->job_id;
 	step.name = step_start_msg->name;

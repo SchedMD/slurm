@@ -1191,7 +1191,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	};
 
 	storage_field_t job_table_fields[] = {
-		{ "job_db_inx", "int unsigned not null auto_increment" },
+		{ "job_db_inx", "bigint unsigned not null auto_increment" },
 		{ "mod_time", "bigint unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0 not null" },
 		{ "account", "tinytext" },
@@ -1259,7 +1259,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	};
 
 	storage_field_t step_table_fields[] = {
-		{ "job_db_inx", "int unsigned not null" },
+		{ "job_db_inx", "bigint unsigned not null" },
 		{ "deleted", "tinyint default 0 not null" },
 		{ "exit_code", "int default 0 not null" },
 		{ "id_step", "int not null" },
@@ -1312,7 +1312,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	};
 
 	storage_field_t suspend_table_fields[] = {
-		{ "job_db_inx", "int unsigned not null" },
+		{ "job_db_inx", "bigint unsigned not null" },
 		{ "id_assoc", "int not null" },
 		{ "time_start", "bigint unsigned default 0 not null" },
 		{ "time_end", "bigint unsigned default 0 not null" },

@@ -2322,7 +2322,7 @@ static void _acct_restore_active_jobs(void)
 		if (IS_JOB_SUSPENDED(job_ptr) || IS_JOB_RUNNING(job_ptr)) {
 			if (!with_slurmdbd)
 				jobacct_storage_g_job_start(acct_db_conn, job_ptr);
-			else if (job_ptr->db_index != NO_VAL)
+			else if (job_ptr->db_index != NO_VAL64)
 				job_ptr->db_index = 0;
 			step_iterator = list_iterator_create(
 				job_ptr->step_list);

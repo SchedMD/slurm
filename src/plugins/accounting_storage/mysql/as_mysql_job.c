@@ -52,12 +52,12 @@
 /* Used in job functions for getting the database index based off the
  * submit time, job and assoc id.  0 is returned if none is found
  */
-static int _get_db_index(mysql_conn_t *mysql_conn,
-			 time_t submit, uint32_t jobid, uint32_t associd)
+static uint64_t _get_db_index(mysql_conn_t *mysql_conn,
+			      time_t submit, uint32_t jobid, uint32_t associd)
 {
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	int db_index = 0;
+	uint64_t db_index = 0;
 	char *query = xstrdup_printf("select job_db_inx from \"%s_%s\" where "
 				     "time_submit=%d and id_job=%u "
 				     "and id_assoc=%u",
@@ -80,7 +80,7 @@ static int _get_db_index(mysql_conn_t *mysql_conn,
 		       (int)submit, jobid, associd);
 		return 0;
 	}
-	db_index = slurm_atoul(row[0]);
+	db_index = slurm_atoull(row[0]);
 	mysql_free_result(result);
 
 	return db_index;
@@ -253,7 +253,7 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 	int node_cnt = 0;
 	uint32_t array_task_id =
 		(job_ptr->array_job_id) ? job_ptr->array_task_id : NO_VAL;
-	uint32_t job_db_inx = job_ptr->db_index;
+	uint64_t job_db_inx = job_ptr->db_index;
 	job_array_struct_t *array_recs = job_ptr->array_recs;
 
 	if ((!job_ptr->details || !job_ptr->details->submit_time)
@@ -654,7 +654,7 @@ no_rollup_change:
 			   "timelimit=%u, mem_req=%u, "
 			   "id_array_job=%u, id_array_task=%u, "
 			   "time_eligible=%ld, mod_time=UNIX_TIMESTAMP() "
-			   "where job_db_inx=%d",
+			   "where job_db_inx=%"PRIu64,
 			   start_time, jname, job_state,
 			   node_cnt, job_ptr->qos_id,
 			   job_ptr->assoc_id,
@@ -919,7 +919,7 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 	}
 
 	xstrfmtcat(query,
-		   ", exit_code=%d, kill_requid=%d where job_db_inx=%d;",
+		   ", exit_code=%d, kill_requid=%d where job_db_inx=%"PRIu64";",
 		   exit_code, job_ptr->requid,
 		   job_ptr->db_index);
 
@@ -1080,7 +1080,7 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 		"step_name, state, tres_alloc, "
 		"nodes_alloc, task_cnt, nodelist, node_inx, "
 		"task_dist, req_cpufreq, req_cpufreq_min, req_cpufreq_gov) "
-		"values (%d, %d, %d, '%s', %d, '%s', %d, %d, "
+		"values (%"PRIu64", %d, %d, '%s', %d, '%s', %d, %d, "
 		"'%s', '%s', %d, %u, %u, %u) "
 		"on duplicate key update "
 		"nodes_alloc=%d, task_cnt=%d, time_end=0, state=%d, "
@@ -1297,7 +1297,7 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 	}
 
 	xstrfmtcat(query,
-		   " where job_db_inx=%d and id_step=%d",
+		   " where job_db_inx=%"PRIu64" and id_step=%u",
 		   step_ptr->job_ptr->db_index, step_ptr->step_id);
 	if (debug_flags & DEBUG_FLAG_DB_STEP)
 		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
@@ -1308,13 +1308,13 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 }
 
 extern int as_mysql_suspend(mysql_conn_t *mysql_conn,
-			    uint32_t old_db_inx,
+			    uint64_t old_db_inx,
 			    struct job_record *job_ptr)
 {
 	char *query = NULL;
 	int rc = SLURM_SUCCESS;
 	time_t submit_time;
-	uint32_t job_db_inx;
+	uint64_t job_db_inx;
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
@@ -1352,7 +1352,7 @@ extern int as_mysql_suspend(mysql_conn_t *mysql_conn,
 		job_db_inx = old_db_inx;
 		xstrfmtcat(query,
 			   "update \"%s_%s\" set time_end=%d where "
-			   "job_db_inx=%u && time_end=0;",
+			   "job_db_inx=%"PRIu64" && time_end=0;",
 			   mysql_conn->cluster_name, suspend_table,
 			   (int)job_ptr->suspend_time, job_db_inx);
 
@@ -1364,7 +1364,7 @@ extern int as_mysql_suspend(mysql_conn_t *mysql_conn,
 	*/
 	xstrfmtcat(query,
 		   "update \"%s_%s\" set time_suspended=%d-time_suspended, "
-		   "state=%d where job_db_inx=%d;",
+		   "state=%d where job_db_inx=%"PRIu64";",
 		   mysql_conn->cluster_name, job_table,
 		   (int)job_ptr->suspend_time,
 		   job_ptr->job_state & JOB_STATE_BASE,
@@ -1372,14 +1372,15 @@ extern int as_mysql_suspend(mysql_conn_t *mysql_conn,
 	if (IS_JOB_SUSPENDED(job_ptr))
 		xstrfmtcat(query,
 			   "insert into \"%s_%s\" (job_db_inx, id_assoc, "
-			   "time_start, time_end) values (%u, %u, %d, 0);",
+			   "time_start, time_end) "
+			   "values (%"PRIu64", %u, %d, 0);",
 			   mysql_conn->cluster_name, suspend_table,
 			   job_ptr->db_index, job_ptr->assoc_id,
 			   (int)job_ptr->suspend_time);
 	else
 		xstrfmtcat(query,
 			   "update \"%s_%s\" set time_end=%d where "
-			   "job_db_inx=%u && time_end=0;",
+			   "job_db_inx=%"PRIu64" && time_end=0;",
 			   mysql_conn->cluster_name, suspend_table,
 			   (int)job_ptr->suspend_time, job_ptr->db_index);
 	if (debug_flags & DEBUG_FLAG_DB_JOB)
@@ -1392,7 +1393,7 @@ extern int as_mysql_suspend(mysql_conn_t *mysql_conn,
 		xstrfmtcat(query,
 			   "update \"%s_%s\" set "
 			   "time_suspended=%u-time_suspended, "
-			   "state=%d where job_db_inx=%u and time_end=0",
+			   "state=%d where job_db_inx=%"PRIu64" and time_end=0",
 			   mysql_conn->cluster_name, step_table,
 			   (int)job_ptr->suspend_time,
 			   job_ptr->job_state, job_ptr->db_index);

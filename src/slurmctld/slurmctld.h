@@ -606,7 +606,7 @@ struct job_record {
 					 * 0 if cr is NOT enabled,
 					 * 1 if cr is enabled */
 	time_t deadline;		/* deadline */
-	uint32_t db_index;              /* used only for database
+	uint64_t db_index;              /* used only for database
 					 * plugins */
 	uint32_t derived_ec;		/* highest exit code of all job steps */
 	struct job_details *details;	/* job details */

@@ -230,7 +230,7 @@ typedef struct dbd_job_comp_msg {
 	uint32_t assoc_id;	/* accounting association id needed to
 				 * find job record in db */
 	char *	 comment;	/* job comment field */
-	uint32_t db_index;	/* index into the db for this job */
+	uint64_t db_index;	/* index into the db for this job */
 	uint32_t derived_ec;	/* derived job exit code or signal */
 	time_t   end_time;	/* job termintation time */
 	uint32_t exit_code;	/* job exit code or signal */
@@ -255,7 +255,7 @@ typedef struct dbd_job_start_msg {
 	uint32_t array_task_pending;/* number of tasks still pending */
 	uint32_t assoc_id;	/* accounting association id */
 	char *   block_id;      /* Bluegene block id */
-	uint32_t db_index;	/* index into the db for this job */
+	uint64_t db_index;	/* index into the db for this job */
 	time_t   eligible_time;	/* time job becomes eligible to run */
 	uint32_t gid;	        /* group ID */
 	uint32_t job_id;	/* job ID */
@@ -288,14 +288,14 @@ typedef struct dbd_job_start_msg {
 /* returns a uint32_t along with a return code */
 typedef struct dbd_id_rc_msg {
 	uint32_t job_id;
-	uint32_t id;
+	uint64_t db_index;
 	uint32_t return_code;
 } dbd_id_rc_msg_t;
 
 typedef struct dbd_job_suspend_msg {
 	uint32_t assoc_id;	/* accounting association id needed
 				 * to find job record in db */
-	uint32_t db_index;	/* index into the db for this job */
+	uint64_t db_index;	/* index into the db for this job */
 	uint32_t job_id;	/* job ID needed to find job record
 				 * in db */
 	uint32_t job_state;	/* job state */
@@ -346,7 +346,7 @@ typedef struct dbd_register_ctld_msg {
 
 typedef struct dbd_step_comp_msg {
 	uint32_t assoc_id;	/* accounting association id */
-	uint32_t db_index;	/* index into the db for this job */
+	uint64_t db_index;	/* index into the db for this job */
 	time_t   end_time;	/* job termintation time */
 	uint32_t exit_code;	/* job exit code or signal */
 	jobacctinfo_t *jobacct; /* status info */
@@ -363,7 +363,7 @@ typedef struct dbd_step_comp_msg {
 
 typedef struct dbd_step_start_msg {
 	uint32_t assoc_id;	/* accounting association id */
-	uint32_t db_index;	/* index into the db for this job */
+	uint64_t db_index;	/* index into the db for this job */
 	uint32_t job_id;	/* job ID */
 	char *   name;		/* step name */
 	char *   nodes;		/* hosts allocated to the step */

@@ -37,6 +37,10 @@ HIGHLIGHTS
     maximum value is now 67,108,863. Upon upgrading, any pre-existing jobs that
     have a job ID above the new range will continue to run and new jobs will get
     job IDs in the new range.
+ -- The database index for jobs is now 64 bit.  If you happen to be close to
+    4 billion jobs in your database you will want to update your slurmctld at
+    the same time as your slurmdbd to prevent roll over of this variable as
+    it is 32 bit previous versions of Slurm.
 
 RPMBUILD CHANGES
 ================
