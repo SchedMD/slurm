@@ -35,6 +35,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue when calculating future StartTime for a job.
  -- Make EnforcePartLimit support logic work with any ordering of partitions
     in job submit request.
+ -- Prevent restoration of wrong CPU governor and frequency when using
+    multiple task plugins.
 
 * Changes in Slurm 16.05.3
 ==========================

@@ -78,6 +78,7 @@ static uint64_t debug_flags = NO_VAL; /* init value for slurmd, slurmstepd */
 static struct cpu_freq_data {
 	uint8_t  avail_governors;
 	uint8_t  nfreq;
+	bool     org_set;
 	uint32_t avail_freq[FREQ_LIST_MAX];
 	char     org_governor[GOV_NAME_LEN];
 	char     new_governor[GOV_NAME_LEN];
@@ -486,7 +487,6 @@ cpu_freq_cpuset_validate(stepd_step_rec_t *job)
 	} while ( (cpu_str = strtok_r(NULL, ",", &savestr) ) != NULL);
 
 	for (cpuidx = 0; cpuidx < cpu_freq_count; cpuidx++) {
-		_cpu_freq_init_data(cpuidx);
 		if (bit_test(cpus_to_set, cpuidx)) {
 			_cpu_freq_setup_data(job, cpuidx);
 		}
@@ -764,6 +764,17 @@ static int
 _cpu_freq_current_state(int cpuidx)
 {
 	uint32_t freq;
+
+	if (cpufreq[cpuidx].org_set) {
+		/*
+		 * The current state was already loaded for this cpu.
+		 * Likely caused by stacked task plugins. Prevent
+		 * overwriting the original values so they can be
+		 * restored correctly after job completion.
+		 */
+		return SLURM_SUCCESS;
+	}
+
 	/*
 	 * Getting 'previous' values using the 'scaling' values rather
 	 * than the 'cpuinfo' values.
@@ -787,7 +798,12 @@ _cpu_freq_current_state(int cpuidx)
 		return SLURM_FAILURE;
 	cpufreq[cpuidx].org_max_freq = freq;
 
-	return _cpu_freq_get_cur_gov(cpuidx);
+	if (_cpu_freq_get_cur_gov(cpuidx) == SLURM_SUCCESS) {
+		cpufreq[cpuidx].org_set = true;
+		return SLURM_SUCCESS;
+	} else {
+		return SLURM_FAILURE;
+	}
 }
 
 
@@ -896,6 +912,7 @@ _cpu_freq_init_data(int cpx)
 	cpufreq[cpx].new_min_freq = NO_VAL;
 	cpufreq[cpx].org_max_freq = NO_VAL;
 	cpufreq[cpx].new_max_freq = NO_VAL;
+	cpufreq[cpx].org_set = false;
 }
 /*
  * Set either current frequency (speed)
