@@ -5678,7 +5678,7 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 	    (!qos_ptr || (qos_ptr && !(qos_ptr->flags
 				       & QOS_FLAG_PART_MAX_NODE)))) {
 		debug2("Job %u requested too many nodes (%u) of "
-		       "partition %s(MaxNodes %u)",
+		       "partition %s (MaxNodes %u)",
 		       job_ptr->job_id, job_min_nodes,
 		       part_ptr->name, part_max_nodes);
 		fail_reason = WAIT_PART_NODE_LIMIT;
