@@ -3828,15 +3828,13 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 					break;
 				}
 			}
-//			if ((best_rc == -1) &&
-//			    ((rc == ESLURM_NODES_BUSY) ||
-//			     (rc == ESLURM_RESERVATION_BUSY)))
-//				best_rc = rc;	/* Job can run later */
 			if (((rc == ESLURM_NODES_BUSY) ||
 			     (rc == ESLURM_RESERVATION_BUSY)) &&
 			    (best_rc == -1) &&
-			    (slurmctld_conf.enforce_part_limits ==
-			     PARTITION_ENFORCE_ANY)) {
+			    ((slurmctld_conf.enforce_part_limits ==
+			      PARTITION_ENFORCE_ANY) ||
+			     (slurmctld_conf.enforce_part_limits ==
+			      PARTITION_ENFORCE_NONE))) {
 				if (test_only)
 					break;
 				best_rc = rc;	/* Keep looking for partition
