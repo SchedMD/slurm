@@ -32,6 +32,7 @@ documents those changes that are of interest to users and administrators.
  -- Improve partition-specific limit logging from slurmctld daemon.
  -- Fix incorrect access check when using MaxNodes setting on the partition.
  -- Fix issue with sacctmgr when specifying a list of clusters to query.
+ -- Fix issue when calculating future StartTime for a job.
 
 * Changes in Slurm 16.05.3
 ==========================
