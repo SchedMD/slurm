@@ -73,6 +73,8 @@
 
 #include "xcpuinfo.h"
 
+#define _DEBUG 0
+
 #if !defined(HAVE_HWLOC)
 static char* _cpuinfo_path = "/proc/cpuinfo";
 
@@ -159,17 +161,19 @@ get_procs(uint16_t *procs)
  * NOTE: User must xfree block_map and block_map_inv
  */
 #ifdef HAVE_HWLOC
-#if DEBUG_DETAIL
-static void hwloc_children(hwloc_topology_t topology, hwloc_obj_t obj,
-                           int depth)
+#if _DEBUG
+static void _hwloc_children(hwloc_topology_t topology, hwloc_obj_t obj,
+			    int depth)
 {
 	char string[128];
 	unsigned i;
 
+	if (!obj)
+		return;
 	hwloc_obj_snprintf(string, sizeof(string), topology, obj, "#", 0);
-	debug3("%*s%s", 2*depth, "", string);
+	debug("%*s%s", 2 * depth, "", string);
 	for (i = 0; i < obj->arity; i++) {
-		hwloc_children(topology, obj->children[i], depth + 1);
+		_hwloc_children(topology, obj->children[i], depth + 1);
 	}
 }
 #endif
@@ -228,7 +232,9 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 		hwloc_topology_destroy(topology);
 		return 2;
 	}
-
+#if _DEBUG
+	_hwloc_children(topology, hwloc_get_root_obj(topology), 0);
+#endif
 	/* Some processors (e.g. AMD Opteron 6000 series) contain multiple
 	 * NUMA nodes per socket. This is a configuration which does not map
 	 * into the hardware entities that Slurm optimizes resource allocation
@@ -369,7 +375,7 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	*p_cores   = nobj[CORE];
 	*p_threads = nobj[PU];
 
-#if DEBUG_DETAIL
+#if _DEBUG
 	/*** Display raw data ***/
 	debug("CPUs:%u Boards:%u Sockets:%u CoresPerSocket:%u ThreadsPerCore:%u",
 	      *p_cpus, *p_boards, *p_sockets, *p_cores, *p_threads);
@@ -672,7 +678,7 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	*p_cores   = cores;
 	*p_threads = threads;
 
-#if DEBUG_DETAIL
+#if _DEBUG
 	/*** Display raw data ***/
 	debug3("numcpu:     %u", numcpu);
 	debug3("numphys:    %u", numphys);
@@ -853,7 +859,7 @@ static int _compute_block_map(uint16_t numproc,
 			(*block_map_inv)[idx] = i;
 		}
 	}
-#if DEBUG_DETAIL
+#if _DEBUG
 	/* Display the mapping tables */
 
 	debug3("\nMachine logical CPU ID assignment:");
