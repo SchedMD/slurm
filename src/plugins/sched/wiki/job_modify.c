@@ -262,7 +262,7 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 	if (host_ptr) {
 		host_ptr[8] = ':';
 		host_ptr += 9;
-		null_term(bank_ptr);
+		null_term(host_ptr);
 	}
 	if (nodes_ptr) {
 		nodes_ptr[5] = ':';
