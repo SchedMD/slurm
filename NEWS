@@ -40,6 +40,8 @@ documents those changes that are of interest to users and administrators.
  -- burst_buffer/cray: Add "--groupid" to DataWarp "setup" command.
  -- Fix lustre profiling putting it in the Filesystem dataset instead of the
     Network dataset.
+ -- Fix profiling documentation and code to match be consistent with
+    Filesystem instead of Lustre.
 
 * Changes in Slurm 16.05.3
 ==========================

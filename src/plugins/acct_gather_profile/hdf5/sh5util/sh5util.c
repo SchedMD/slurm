@@ -99,7 +99,7 @@
 // #define SUBDATA_SUMMARY "Summary"
 
 #define GRP_ENERGY "Energy"
-#define GRP_LUSTRE "Lustre"
+#define GRP_FILESYSTEM "Filesystem"
 // #define GRP_STEP "Step"
 #define GRP_STEPS "Steps"
 #define GRP_NODES "Nodes"
@@ -406,7 +406,7 @@ static int _set_options(const int argc, char **argv)
 			break;
 		case 's':
 			if (xstrcmp(optarg, GRP_ENERGY)
-			    && xstrcmp(optarg, GRP_LUSTRE)
+			    && xstrcmp(optarg, GRP_FILESYSTEM)
 			    && xstrcmp(optarg, GRP_NETWORK)
 			    && xstrncmp(optarg,GRP_TASK,
 					strlen(GRP_TASK))) {
