@@ -42,6 +42,8 @@ documents those changes that are of interest to users and administrators.
     Network dataset.
  -- Fix profiling documentation and code to match be consistent with
     Filesystem instead of Lustre.
+ -- Correct the way watts is calculated in the rapl plugin when using a poll
+    frequency other than AcctGatherNodeFreq.
 
 * Changes in Slurm 16.05.3
 ==========================
