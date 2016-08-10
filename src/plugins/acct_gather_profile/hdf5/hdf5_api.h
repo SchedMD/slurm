@@ -62,7 +62,7 @@
 #define ATTR_STARTTIME "Start Time"
 
 #define GRP_ENERGY "Energy"
-#define GRP_LUSTRE "Lustre"
+#define GRP_FILESYSTEM "Filesystem"
 #define GRP_STEPS "Steps"
 #define GRP_NODES "Nodes"
 #define GRP_NETWORK "Network"

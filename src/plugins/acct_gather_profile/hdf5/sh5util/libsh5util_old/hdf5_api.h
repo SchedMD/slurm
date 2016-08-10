@@ -74,7 +74,7 @@
 #define SUBDATA_SUMMARY "Summary"
 
 #define GRP_ENERGY "Energy"
-#define GRP_LUSTRE "Lustre"
+#define GRP_FILESYSTEM "Filesystem"
 #define GRP_STEP "Step"
 #define GRP_NODES "Nodes"
 #define GRP_NODE "Node"
