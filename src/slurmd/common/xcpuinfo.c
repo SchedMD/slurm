@@ -62,6 +62,9 @@
 
 #include "xcpuinfo.h"
 
+#define _DEBUG 0
+#define _MAX_SOCKET_INX 1024
+
 #if !defined(HAVE_HWLOC)
 static char* _cpuinfo_path = "/proc/cpuinfo";
 
@@ -148,17 +151,19 @@ get_procs(uint16_t *procs)
  * NOTE: User must xfree block_map and block_map_inv
  */
 #ifdef HAVE_HWLOC
-#if DEBUG_DETAIL
-static void hwloc_children(hwloc_topology_t topology, hwloc_obj_t obj,
-                           int depth)
+#if _DEBUG
+static void _hwloc_children(hwloc_topology_t topology, hwloc_obj_t obj,
+			    int depth)
 {
 	char string[128];
 	unsigned i;
 
+	if (!obj)
+		return;
 	hwloc_obj_snprintf(string, sizeof(string), topology, obj, "#", 0);
-	debug3("%*s%s", 2*depth, "", string);
+	debug("%*s%s", 2 * depth, "", string);
 	for (i = 0; i < obj->arity; i++) {
-		hwloc_children(topology, obj->children[i], depth + 1);
+		_hwloc_children(topology, obj->children[i], depth + 1);
 	}
 }
 #endif
@@ -192,7 +197,7 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	int actual_cpus;
 	int macid;
 	int absid;
-	int actual_boards = 1, depth, tot_socks = 0;
+	int actual_boards = 1, depth, sock_cnt, tot_socks = 0;
 	int i;
 
 	debug2("hwloc_topology_init");
@@ -217,7 +222,9 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 		hwloc_topology_destroy(topology);
 		return 2;
 	}
-
+#if _DEBUG
+	_hwloc_children(topology, hwloc_get_root_obj(topology), 0);
+#endif
 	/* Some processors (e.g. AMD Opteron 6000 series) contain multiple
 	 * NUMA nodes per socket. This is a configuration which does not map
 	 * into the hardware entities that Slurm optimizes resource allocation
@@ -255,29 +262,45 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	 * KNL NUMA with no cores are NOT counted. */
 	nobj[SOCKET] = 0;
 	depth = hwloc_get_type_depth(topology, objtype[SOCKET]);
-	used_socket = bit_alloc(1024);
-	for (i = 0; i < hwloc_get_nbobjs_by_depth(topology, depth); i++) {
+	used_socket = bit_alloc(_MAX_SOCKET_INX);
+	sock_cnt = hwloc_get_nbobjs_by_depth(topology, depth);
+	for (i = 0; i < sock_cnt; i++) {
 		obj = hwloc_get_obj_by_depth(topology, depth, i);
 		if (obj->type == objtype[SOCKET]) {
 			if (_core_child_count(topology, obj) > 0) {
 				nobj[SOCKET]++;
 				bit_set(used_socket, tot_socks);
 			}
-			if (++tot_socks >= 1024) {	/* Bitmap size */
-				fatal("Socket count exceeds 1024, expand data structure size");
+			if (++tot_socks >= _MAX_SOCKET_INX) {	/* Bitmap size */
+				fatal("Socket count exceeds %d, expand data structure size",
+				      _MAX_SOCKET_INX);
 				break;
 			}
 		}
 	}
-	nobj[CORE]   = hwloc_get_nbobjs_by_type(topology, objtype[CORE]);
+
+	nobj[CORE] = hwloc_get_nbobjs_by_type(topology, objtype[CORE]);
+
+	/* Workaround for hwloc bug, in some cases the topology "children" array
+	 * does not get populated, so _core_child_count() always returns 0 */
+	if (nobj[SOCKET] == 0) {
+		nobj[SOCKET] = hwloc_get_nbobjs_by_type(topology,
+							objtype[SOCKET]);
+		if (nobj[SOCKET] == 0) {
+			debug("get_cpuinfo() fudging nobj[SOCKET] from 0 to 1");
+			nobj[SOCKET] = 1;
+		}
+		if (nobj[SOCKET] >= _MAX_SOCKET_INX) {	/* Bitmap size */
+			fatal("Socket count exceeds %d, expand data structure size",
+			      _MAX_SOCKET_INX);
+		}
+		bit_nset(used_socket, 0, nobj[SOCKET] - 1);
+	}
+
 	/*
 	 * Workaround for hwloc
 	 * hwloc_get_nbobjs_by_type() returns 0 on some architectures.
 	 */
-	if ( nobj[SOCKET] == 0 ) {
-		debug("get_cpuinfo() fudging nobj[SOCKET] from 0 to 1");
-		nobj[SOCKET] = 1;
-	}
 	if ( nobj[CORE] == 0 ) {
 		debug("get_cpuinfo() fudging nobj[CORE] from 0 to 1");
 		nobj[CORE] = 1;
@@ -358,7 +381,7 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	*p_cores   = nobj[CORE];
 	*p_threads = nobj[PU];
 
-#if DEBUG_DETAIL
+#if _DEBUG
 	/*** Display raw data ***/
 	debug("CPUs:%u Boards:%u Sockets:%u CoresPerSocket:%u ThreadsPerCore:%u",
 	      *p_cpus, *p_boards, *p_sockets, *p_cores, *p_threads);
@@ -661,7 +684,7 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	*p_cores   = cores;
 	*p_threads = threads;
 
-#if DEBUG_DETAIL
+#if _DEBUG
 	/*** Display raw data ***/
 	debug3("numcpu:     %u", numcpu);
 	debug3("numphys:    %u", numphys);
@@ -842,7 +865,7 @@ static int _compute_block_map(uint16_t numproc,
 			(*block_map_inv)[idx] = i;
 		}
 	}
-#if DEBUG_DETAIL
+#if _DEBUG
 	/* Display the mapping tables */
 
 	debug3("\nMachine logical CPU ID assignment:");

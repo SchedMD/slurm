@@ -761,9 +761,9 @@ until the partition limits are altered(Time and Node Limits).
 If set to "ANY" or "YES" a job must satisfy any of the requested partitions
 to be submitted. The default value is "NO".
 NOTE: If set, then a job's QOS can not be used to exceed partition limits.
-NOTE: The partition limits being considered are it's configured MinNodes,
-MaxNodes, MaxTime, State (e.g. DOWN or INACTIVE), AllocNodes, AllowAccounts,
-AllowGroups, AllowQOS, and QOS usage threshold.
+NOTE: The partition limits being considered are it's configured MaxMemPerCPU,
+MaxMemPerNode, MinNodes, MaxNodes, MaxTime, State (e.g. DOWN or INACTIVE),
+AllocNodes, AllowAccounts, AllowGroups, AllowQOS, and QOS usage threshold.
 
 .TP
 \fBEpilog\fR
