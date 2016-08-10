@@ -305,8 +305,8 @@ static int _update_node_filesystem(void)
 	}
 
 	if (first) {
-		dataset_id = acct_gather_profile_g_create_dataset("Network",
-			NO_PARENT, dataset);
+		dataset_id = acct_gather_profile_g_create_dataset(
+			"Filesystem", NO_PARENT, dataset);
 		if (dataset_id == SLURM_ERROR) {
 			error("FileSystem: Failed to create the dataset "
 			      "for Lustre");
