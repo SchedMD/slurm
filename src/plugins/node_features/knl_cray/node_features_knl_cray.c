@@ -1789,10 +1789,10 @@ extern int node_features_p_get_node(char *node_list)
 				continue;
 			if (mcdram_cfg[i].mcdram_pct !=
 			    mcdram_cfg2[k].hbm_pct) {
-				debug("%s: HBM mismatch between capmc and cnselect for nid %u (%u != %d)",
-				      __func__, mcdram_cfg[i].nid,
-				      mcdram_cfg[i].mcdram_pct,
-				      mcdram_cfg2[k].hbm_pct);
+				info("%s: HBM mismatch between capmc and cnselect for nid %u (%u != %d)",
+				     __func__, mcdram_cfg[i].nid,
+				     mcdram_cfg[i].mcdram_pct,
+				     mcdram_cfg2[k].hbm_pct);
 				mcdram_cfg[i].mcdram_pct=mcdram_cfg2[k].hbm_pct;
 				xfree(mcdram_cfg[i].mcdram_cfg);
 				mcdram_cfg[i].mcdram_cfg =
@@ -1809,10 +1809,10 @@ extern int node_features_p_get_node(char *node_list)
 				continue;
 			if (xstrcmp(numa_cfg[i].numa_cfg,
 				    numa_cfg2[k].numa_cfg)) {
-				debug("%s: NUMA mismatch between capmc and cnselect for nid %u (%s != %s)",
-				      __func__, numa_cfg[i].nid,
-				      numa_cfg[i].numa_cfg,
-				      numa_cfg2[k].numa_cfg);
+				info("%s: NUMA mismatch between capmc and cnselect for nid %u (%s != %s)",
+				     __func__, numa_cfg[i].nid,
+				     numa_cfg[i].numa_cfg,
+				     numa_cfg2[k].numa_cfg);
 				xfree(numa_cfg[i].numa_cfg);
 				numa_cfg[i].numa_cfg =
 					xstrdup(numa_cfg2[k].numa_cfg);
