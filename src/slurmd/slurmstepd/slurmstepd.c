@@ -53,6 +53,7 @@
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/slurm_mpi.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/stepd_api.h"
 #include "src/common/switch.h"
@@ -103,6 +104,7 @@ main (int argc, char *argv[])
 	int ngids;
 	gid_t *gids;
 	int rc = 0;
+	char *launch_params;
 
 	if (_process_cmdline (argc, argv) < 0)
 		fatal ("Error in slurmstepd command line");
@@ -155,6 +157,26 @@ main (int argc, char *argv[])
 	 * allocated to any random file.  The slurmd already opened /dev/null
 	 * on STDERR_FILENO for us. */
 	dup2(STDERR_FILENO, STDOUT_FILENO);
+
+	/* slurmstepd is the only daemon that should survive upgrade. If it
+	 * had been swapped out before upgrade happened it could easily lead
+	 * to SIGBUS at any time after upgrade. Avoid that by locking it
+	 * in-memory. */
+	launch_params = slurm_get_launch_params();
+	if (launch_params && strstr(launch_params, "slurmstepd_memlock")) {
+#ifdef _POSIX_MEMLOCK
+		int flags = MCL_CURRENT;
+		if (strstr(launch_params, "slurmstepd_memlock_all"))
+			flags |= MCL_FUTURE;
+		if (mlockall(flags) < 0)
+			info("failed to mlock() slurmstepd pages: %m");
+		else
+			debug("slurmstepd locked in memory");
+#else
+		info("mlockall() system call does not appear to be available");
+#endif
+	}
+	xfree(launch_params);
 
 	/* This does most of the stdio setup, then launches all the tasks,
 	 * and blocks until the step is complete */

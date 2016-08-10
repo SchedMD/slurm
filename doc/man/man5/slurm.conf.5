@@ -1253,7 +1253,13 @@ used only for Intel Knights Landing processors (KNL) on Cray systems
 Identifies options to the job launch plugin.
 Acceptable values include:
 .RS
-.TP 12
+.TP 24
+\fBslurmstepd_memlock\fR
+Lock the slurmstepd process's current memory in RAM.
+.TP
+\fBslurmstepd_memlock_all\fR
+Lock the slurmstepd process's current and future memory in RAM.
+.TP
 \fBtest_exec\fR
 Validate the executable command's existence prior to attemping launch on
 the compute nodes

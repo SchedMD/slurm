@@ -14,6 +14,10 @@ documents those changes that are of interest to users and administrators.
     4 billion jobs in your database you will want to update your slurmctld at
     the same time as your slurmdbd to prevent roll over of this variable as
     it is 32 bit previous versions of Slurm.
+ -- Optionally lock slurmstepd in memory for performance reasons and to avoid
+    possible SIGBUS if the daemon is paged out at the time of a Slurm upgrade
+    (changing plugins). Controlled via new LaunchParameters options of
+    slurmstepd_memlock and slurmstepd_memlock_all.
 
 * Changes in Slurm 17.02.0pre1
 ==============================
