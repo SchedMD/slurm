@@ -2195,7 +2195,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	}
 
 	if (IS_JOB_FINISHED(job_ptr) ||
-	    (job_ptr->end_time <= time(NULL)))
+	    ((job_ptr->end_time <= time(NULL)) && !IS_JOB_CONFIGURING(job_ptr)))
 		return ESLURM_ALREADY_DONE;
 
 	task_dist = step_specs->task_dist & SLURM_DIST_STATE_BASE;

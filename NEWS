@@ -44,6 +44,9 @@ documents those changes that are of interest to users and administrators.
     Filesystem instead of Lustre.
  -- Correct the way watts is calculated in the rapl plugin when using a poll
     frequency other than AcctGatherNodeFreq.
+ -- Don't about step launch if job reaches expected end time while node is
+    configuring/booting (NOTE: The job end time will be adjusted after node
+    becomes ready for use).
 
 * Changes in Slurm 16.05.3
 ==========================
