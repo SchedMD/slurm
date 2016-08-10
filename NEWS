@@ -71,8 +71,6 @@ documents those changes that are of interest to users and administrators.
     that had a partition in them.
  -- Don't return the extern step from sstat by default.
  -- In sstat print 'extern' instead of 4294967295 for the extern step.
- -- Lock slurmstepd in memory to avoid possible SIGBUS if the daemon is paged
-    out at the time of a Slurm upgrade (changing plugins).
  -- Make advanced reservations work properly with core specialization.
  -- Fix race condition in the account_gather plugin that could result in job
     stuck in COMPLETING state.
