@@ -39,6 +39,7 @@ documents those changes that are of interest to users and administrators.
     multiple task plugins.
  -- Prevent slurmd abort if hwloc library fails to populate the "children"
     arrays (observed with hwloc version "dev-333-g85ea6e4").
+ -- burst_buffer/cray: Add "--groupid" to DataWarp "setup" command.
 
 * Changes in Slurm 16.05.3
 ==========================

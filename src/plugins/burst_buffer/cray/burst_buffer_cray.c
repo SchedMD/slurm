@@ -1379,23 +1379,25 @@ static int _queue_stage_in(struct job_record *job_ptr, bb_job_t *bb_job)
 	setup_argv[5] = xstrdup("--caller");
 	setup_argv[6] = xstrdup("SLURM");
 	setup_argv[7] = xstrdup("--user");
-	xstrfmtcat(setup_argv[8], "%d", job_ptr->user_id);
-	setup_argv[9] = xstrdup("--capacity");
+	xstrfmtcat(setup_argv[8], "%u", job_ptr->user_id);
+	setup_argv[9] = xstrdup("--groupid");
+	xstrfmtcat(setup_argv[10], "%u", job_ptr->group_id);
+	setup_argv[11] = xstrdup("--capacity");
 	if (bb_job->job_pool)
 		job_pool = bb_job->job_pool;
 	else
 		job_pool = bb_state.bb_config.default_pool;
-	xstrfmtcat(setup_argv[10], "%s:%s",
+	xstrfmtcat(setup_argv[12], "%s:%s",
 		   job_pool, bb_get_size_str(bb_job->total_size));
-	setup_argv[11] = xstrdup("--job");
-	xstrfmtcat(setup_argv[12], "%s/script", job_dir);
+	setup_argv[13] = xstrdup("--job");
+	xstrfmtcat(setup_argv[14], "%s/script", job_dir);
 	if (client_nodes_file_nid) {
 #if defined(HAVE_NATIVE_CRAY)
-		setup_argv[13] = xstrdup("--nidlistfile");
+		setup_argv[15] = xstrdup("--nidlistfile");
 #else
-		setup_argv[13] = xstrdup("--nodehostnamefile");
+		setup_argv[15] = xstrdup("--nodehostnamefile");
 #endif
-		setup_argv[14] = xstrdup(client_nodes_file_nid);
+		setup_argv[16] = xstrdup(client_nodes_file_nid);
 	}
 	bb_limit_add(job_ptr->user_id, bb_job->total_size, job_pool, &bb_state);
 
