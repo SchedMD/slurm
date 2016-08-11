@@ -294,8 +294,10 @@ extern void print_fields_hex064(print_field_t *field, uint64_t value, int last)
 		   == PRINT_FIELDS_PARSABLE_NO_ENDING
 		   && last)
 			;
-		else if (print_fields_parsable_print)
+		else if (print_fields_parsable_print && !fields_delimiter)
 			printf("|");
+		else if (print_fields_parsable_print && fields_delimiter)
+			printf("%s", fields_delimiter);
 		else
 			printf("%*s ", field->len, " ");
 	} else {
@@ -325,8 +327,10 @@ extern void print_fields_double(print_field_t *field, double value, int last)
 		   == PRINT_FIELDS_PARSABLE_NO_ENDING
 		   && last)
 			;
-		else if (print_fields_parsable_print)
+		else if (print_fields_parsable_print && !fields_delimiter)
 			printf("|");
+		else if (print_fields_parsable_print && fields_delimiter)
+			printf("%s", fields_delimiter);
 		else
 			printf("%*s ", field->len, " ");
 	} else {
@@ -356,8 +360,10 @@ extern void print_fields_long_double(
 		   == PRINT_FIELDS_PARSABLE_NO_ENDING
 		   && last)
 			;
-		else if (print_fields_parsable_print)
+		else if (print_fields_parsable_print && !fields_delimiter)
 			printf("|");
+		else if (print_fields_parsable_print && fields_delimiter)
+			printf("%s", fields_delimiter);
 		else
 			printf("%*s ", field->len, " ");
 	} else {
@@ -386,8 +392,10 @@ extern void print_fields_time(print_field_t *field, uint32_t value, int last)
 		   == PRINT_FIELDS_PARSABLE_NO_ENDING
 		   && last)
 			;
-		else if (print_fields_parsable_print)
+		else if (print_fields_parsable_print && !fields_delimiter)
 			printf("|");
+		else if (print_fields_parsable_print && fields_delimiter)
+			printf("%s", fields_delimiter);
 		else
 			printf("%*s ", field->len, " ");
 	} else {
@@ -418,8 +426,10 @@ extern void print_fields_time_from_secs(print_field_t *field,
 		   == PRINT_FIELDS_PARSABLE_NO_ENDING
 		   && last)
 			;
-		else if (print_fields_parsable_print)
+		else if (print_fields_parsable_print && !fields_delimiter)
 			printf("|");
+		else if (print_fields_parsable_print && fields_delimiter)
+			printf("%s", fields_delimiter);
 		else
 			printf("%*s ", field->len, " ");
 	} else {

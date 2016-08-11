@@ -105,6 +105,10 @@ documents those changes that are of interest to users and administrators.
  -- Don't about step launch if job reaches expected end time while node is
     configuring/booting (NOTE: The job end time will be adjusted after node
     becomes ready for use).
+ -- Fix several print routines to respect a custom output delimiter when
+    printing NO_VAL or INFINITE.
+ -- Correct documented configurations where --ntasks-per-core and
+    --ntasks-per-socket are supported.
 
 * Changes in Slurm 16.05.3
 ==========================

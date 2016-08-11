@@ -527,10 +527,6 @@ cpu_freq_cgroup_validate(stepd_step_rec_t *job, char *step_alloc_cores)
 	if (!cpu_freq_count)
 		return;
 
-	for (cpuidx = 0; cpuidx < cpu_freq_count; cpuidx++) {
-		_cpu_freq_init_data(cpuidx);
-	}
-
 	/* set entries in cpu frequency table for this step's cpus */
 	core_range = step_alloc_cores;
 	while ( (cpuidx = _cpu_freq_next_cpu(&core_range, &cpuidx,

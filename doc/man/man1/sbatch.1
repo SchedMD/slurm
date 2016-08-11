@@ -1135,19 +1135,9 @@ Request the maximum \fIntasks\fR be invoked on each core.
 Meant to be used with the \fB\-\-ntasks\fR option.
 Related to \fB\-\-ntasks\-per\-node\fR except at the core level
 instead of the node level.
-NOTE: This option is not supported unless
-\fISelectTypeParameters=CR_Core\fR or
-\fISelectTypeParameters=CR_Core_Memory\fR is configured.
-
-.TP
-\fB\-\-ntasks\-per\-socket\fR=<\fIntasks\fR>
-Request the maximum \fIntasks\fR be invoked on each socket.
-Meant to be used with the \fB\-\-ntasks\fR option.
-Related to \fB\-\-ntasks\-per\-node\fR except at the socket level
-instead of the node level.
-NOTE: This option is not supported unless
-\fISelectTypeParameters=CR_Socket\fR or
-\fISelectTypeParameters=CR_Socket_Memory\fR is configured.
+NOTE: This option is not supported unless \fISelectType=cons_res\fR is
+configured (either directly or indirectly on Cray systems)
+along with the node's core count.
 
 .TP
 \fB\-\-ntasks\-per\-node\fR=<\fIntasks\fR>
@@ -1166,6 +1156,16 @@ assigned to each node while allowing the OpenMP portion to utilize
 all of the parallelism present in the node, or submitting a single
 setup/cleanup/monitoring job to each node of a pre\-existing
 allocation as one step in a larger job script.
+
+.TP
+\fB\-\-ntasks\-per\-socket\fR=<\fIntasks\fR>
+Request the maximum \fIntasks\fR be invoked on each socket.
+Meant to be used with the \fB\-\-ntasks\fR option.
+Related to \fB\-\-ntasks\-per\-node\fR except at the socket level
+instead of the node level.
+NOTE: This option is not supported unless \fISelectType=cons_res\fR is
+configured (either directly or indirectly on Cray systems)
+along with the node's socket count.
 
 .TP
 \fB\-O\fR, \fB\-\-overcommit\fR

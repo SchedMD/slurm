@@ -1373,9 +1373,10 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			 */
 			node_cnt = bit_set_count(selected_nodes);
 			if (node_cnt > step_spec->max_nodes) {
-				info("_pick_step_nodes: requested nodes %s "
-				     "exceed max node count for job step %u",
-				     step_spec->node_list, job_ptr->job_id);
+				info("%s: requested nodes %s exceed max node count for job step %u (%d > %u)",
+				     __func__, step_spec->node_list,
+				     job_ptr->job_id, node_cnt,
+				     step_spec->max_nodes);
 				FREE_NULL_BITMAP(selected_nodes);
 				goto cleanup;
 			} else if (step_spec->min_nodes &&
@@ -1462,8 +1463,9 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		step_spec->min_nodes = (i > step_spec->min_nodes) ?
 					i : step_spec->min_nodes ;
 		if (step_spec->max_nodes < step_spec->min_nodes) {
-			info("Job step %u max node count incompatible with CPU "
-			     "count", job_ptr->job_id);
+			info("%s: Job step %u max node count incompatible with CPU count (%u < %u)",
+			     __func__, job_ptr->job_id, step_spec->max_nodes,
+			     step_spec->min_nodes);
 			*return_code = ESLURM_TOO_MANY_REQUESTED_CPUS;
 			goto cleanup;
 		}
