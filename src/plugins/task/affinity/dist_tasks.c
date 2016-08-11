@@ -1139,7 +1139,7 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 	masks = *masks_p;
 
 	pu_per_socket = hw_cores * hw_threads;
-	socket_tasks = xmalloc(hw_sockets);
+	socket_tasks = xmalloc(sizeof(int) * hw_sockets);
 
 	/* block distribution with oversubsciption */
 	c = 0;

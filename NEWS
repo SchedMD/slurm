@@ -51,6 +51,7 @@ documents those changes that are of interest to users and administrators.
     printing NO_VAL or INFINITE.
  -- Correct documented configurations where --ntasks-per-core and
     --ntasks-per-socket are supported.
+ -- task/affinity plugin buffer allocated too small, can corrupt memory.
 
 * Changes in Slurm 16.05.3
 ==========================
