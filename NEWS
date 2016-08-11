@@ -49,6 +49,8 @@ documents those changes that are of interest to users and administrators.
     becomes ready for use).
  -- Fix several print routines to respect a custom output delimiter when
     printing NO_VAL or INFINITE.
+ -- Correct documented configurations where --ntasks-per-core and
+    --ntasks-per-socket are supported.
 
 * Changes in Slurm 16.05.3
 ==========================
