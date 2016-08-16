@@ -14,6 +14,7 @@ documents those changes that are of interest to users and administrators.
  -- burst_buffer/cray: Requeue, but do not hold a job which fails the pre_run
     operation.
  -- Insure reported expected job start time is not in the past for pending jobs.
+ -- Add support for PMIx v2.
 
 * Changes in Slurm 16.05.4
 ==========================

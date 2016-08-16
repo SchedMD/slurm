@@ -13,6 +13,7 @@ AC_DEFUN([X_AC_PMIX],
 [
   _x_ac_pmix_dirs="/usr /usr/local"
   _x_ac_pmix_libs="lib64 lib"
+  _x_ac_pmix_version="1"
 
   AC_ARG_WITH(
     [pmix],
@@ -65,6 +66,15 @@ AC_DEFUN([X_AC_PMIX],
             AC_LINK_IFELSE(
               [AC_LANG_CALL([], PMIx_Get_version)],
               AS_VAR_SET(x_ac_cv_pmix_libdir, $d))
+
+            AC_PREPROC_IFELSE([AC_LANG_PROGRAM([
+              #include<pmix_server.h>
+              #if (PMIX_VERSION_MAJOR != 2L)
+                #error "not version 2"
+              #endif
+            ], [] )],
+            [ _x_ac_pmix_version="2" ], [] )
+
             CPPFLAGS="$_x_ac_pmix_cppflags_save"
             LIBS="$_x_ac_pmix_libs_save"
             test -n "$x_ac_cv_pmix_libdir" && break
@@ -86,4 +96,8 @@ AC_DEFUN([X_AC_PMIX],
   fi
 
   AM_CONDITIONAL(HAVE_PMIX, test -n "$x_ac_cv_pmix_dir")
+  AM_CONDITIONAL(HAVE_PMIX_V1,
+    [test $_x_ac_pmix_version = "1"] &&  [test -n "$x_ac_cv_pmix_dir"])
+  AM_CONDITIONAL(HAVE_PMIX_V2,
+    [test $_x_ac_pmix_version = "2"] &&  [test -n "$x_ac_cv_pmix_dir"])
 ])
