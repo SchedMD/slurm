@@ -9,6 +9,7 @@ documents those changes that are of interest to users and administrators.
     or data structures and a failure of slurmstepd.
  -- Export functions from parse_time.c in libslurm.so.
  -- Export unit convert functions from slurm_protocol_api.c in libslurm.so.
+ -- Fix scancel to allow multiple steps from a job to be cancelled at once.
 
 * Changes in Slurm 16.05.4
 ==========================
