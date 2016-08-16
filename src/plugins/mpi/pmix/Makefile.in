@@ -174,19 +174,43 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-mpi_pmix_la_DEPENDENCIES = $(top_builddir)/src/slurmd/common/libslurmd_reverse_tree_math.la \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_mpi_pmix_la_OBJECTS = mpi_pmix.lo pmixp_agent.lo pmixp_client.lo \
+@HAVE_PMIX_V1_TRUE@mpi_pmix_v1_la_DEPENDENCIES =  \
+@HAVE_PMIX_V1_TRUE@	$(pmix_internal_libs) $(am__DEPENDENCIES_1)
+am__mpi_pmix_v1_la_SOURCES_DIST = mpi_pmix.c pmixp_agent.c \
+	pmixp_client.c pmixp_coll.c pmixp_nspaces.c pmixp_info.c \
+	pmixp_server.c pmixp_state.c pmixp_io.c pmixp_utils.c \
+	pmixp_dmdx.c pmixp_agent.h pmixp_client.h pmixp_coll.h \
+	pmixp_nspaces.h pmixp_info.h pmixp_server.h pmixp_state.h \
+	pmixp_io.h pmixp_utils.h pmixp_common.h pmixp_dmdx.h
+am__objects_1 = mpi_pmix.lo pmixp_agent.lo pmixp_client.lo \
 	pmixp_coll.lo pmixp_nspaces.lo pmixp_info.lo pmixp_server.lo \
 	pmixp_state.lo pmixp_io.lo pmixp_utils.lo pmixp_dmdx.lo
-mpi_pmix_la_OBJECTS = $(am_mpi_pmix_la_OBJECTS)
+@HAVE_PMIX_V1_TRUE@am_mpi_pmix_v1_la_OBJECTS = $(am__objects_1)
+mpi_pmix_v1_la_OBJECTS = $(am_mpi_pmix_v1_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-mpi_pmix_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(mpi_pmix_la_LDFLAGS) $(LDFLAGS) -o $@
+mpi_pmix_v1_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(mpi_pmix_v1_la_LDFLAGS) $(LDFLAGS) -o \
+	$@
+@HAVE_PMIX_V1_TRUE@am_mpi_pmix_v1_la_rpath = -rpath $(pkglibdir)
+@HAVE_PMIX_V2_TRUE@mpi_pmix_v2_la_DEPENDENCIES =  \
+@HAVE_PMIX_V2_TRUE@	$(pmix_internal_libs) $(am__DEPENDENCIES_1)
+am__mpi_pmix_v2_la_SOURCES_DIST = mpi_pmix.c pmixp_agent.c \
+	pmixp_client.c pmixp_coll.c pmixp_nspaces.c pmixp_info.c \
+	pmixp_server.c pmixp_state.c pmixp_io.c pmixp_utils.c \
+	pmixp_dmdx.c pmixp_agent.h pmixp_client.h pmixp_coll.h \
+	pmixp_nspaces.h pmixp_info.h pmixp_server.h pmixp_state.h \
+	pmixp_io.h pmixp_utils.h pmixp_common.h pmixp_dmdx.h
+@HAVE_PMIX_V2_TRUE@am_mpi_pmix_v2_la_OBJECTS = $(am__objects_1)
+mpi_pmix_v2_la_OBJECTS = $(am_mpi_pmix_v2_la_OBJECTS)
+mpi_pmix_v2_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(mpi_pmix_v2_la_LDFLAGS) $(LDFLAGS) -o \
+	$@
+@HAVE_PMIX_V2_TRUE@am_mpi_pmix_v2_la_rpath = -rpath $(pkglibdir)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -221,8 +245,9 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(mpi_pmix_la_SOURCES)
-DIST_SOURCES = $(mpi_pmix_la_SOURCES)
+SOURCES = $(mpi_pmix_v1_la_SOURCES) $(mpi_pmix_v2_la_SOURCES)
+DIST_SOURCES = $(am__mpi_pmix_v1_la_SOURCES_DIST) \
+	$(am__mpi_pmix_v2_la_SOURCES_DIST)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -510,18 +535,21 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(PMIX_CPPFLAGS)
-pkglib_LTLIBRARIES = mpi_pmix.la 
-
-# OpenMPI MPI plugin.
-mpi_pmix_la_SOURCES = mpi_pmix.c pmixp_agent.c pmixp_client.c pmixp_coll.c pmixp_nspaces.c pmixp_info.c \
+pmix_src = mpi_pmix.c pmixp_agent.c pmixp_client.c pmixp_coll.c pmixp_nspaces.c pmixp_info.c \
 			pmixp_server.c pmixp_state.c pmixp_io.c pmixp_utils.c pmixp_dmdx.c \
 			pmixp_agent.h pmixp_client.h pmixp_coll.h pmixp_nspaces.h pmixp_info.h \
 			pmixp_server.h pmixp_state.h pmixp_io.h pmixp_utils.h pmixp_common.h pmixp_dmdx.h
 
-mpi_pmix_la_LIBADD = \
-	$(top_builddir)/src/slurmd/common/libslurmd_reverse_tree_math.la $(PMIX_LDFLAGS) $(PMIX_LIBS)
-
-mpi_pmix_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+pmix_internal_libs = $(top_builddir)/src/slurmd/common/libslurmd_reverse_tree_math.la
+pmix_ldflags = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(PMIX_LDFLAGS)
+@HAVE_PMIX_V1_TRUE@pkglib_LTLIBRARIES = mpi_pmix_v1.la
+@HAVE_PMIX_V2_TRUE@pkglib_LTLIBRARIES = mpi_pmix_v2.la
+@HAVE_PMIX_V1_TRUE@mpi_pmix_v1_la_SOURCES = $(pmix_src)
+@HAVE_PMIX_V1_TRUE@mpi_pmix_v1_la_LIBADD = $(pmix_internal_libs) $(PMIX_LIBS)
+@HAVE_PMIX_V1_TRUE@mpi_pmix_v1_la_LDFLAGS = $(pmix_ldflags)
+@HAVE_PMIX_V2_TRUE@mpi_pmix_v2_la_SOURCES = $(pmix_src)
+@HAVE_PMIX_V2_TRUE@mpi_pmix_v2_la_LIBADD = $(pmix_internal_libs) $(PMIX_LIBS)
+@HAVE_PMIX_V2_TRUE@mpi_pmix_v2_la_LDFLAGS = $(pmix_ldflags)
 all: all-am
 
 .SUFFIXES:
@@ -591,8 +619,11 @@ clean-pkglibLTLIBRARIES:
 	  rm -f $${locs}; \
 	}
 
-mpi_pmix.la: $(mpi_pmix_la_OBJECTS) $(mpi_pmix_la_DEPENDENCIES) $(EXTRA_mpi_pmix_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(mpi_pmix_la_LINK) -rpath $(pkglibdir) $(mpi_pmix_la_OBJECTS) $(mpi_pmix_la_LIBADD) $(LIBS)
+mpi_pmix_v1.la: $(mpi_pmix_v1_la_OBJECTS) $(mpi_pmix_v1_la_DEPENDENCIES) $(EXTRA_mpi_pmix_v1_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(mpi_pmix_v1_la_LINK) $(am_mpi_pmix_v1_la_rpath) $(mpi_pmix_v1_la_OBJECTS) $(mpi_pmix_v1_la_LIBADD) $(LIBS)
+
+mpi_pmix_v2.la: $(mpi_pmix_v2_la_OBJECTS) $(mpi_pmix_v2_la_DEPENDENCIES) $(EXTRA_mpi_pmix_v2_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(mpi_pmix_v2_la_LINK) $(am_mpi_pmix_v2_la_rpath) $(mpi_pmix_v2_la_OBJECTS) $(mpi_pmix_v2_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -848,6 +879,10 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 
 .PRECIOUS: Makefile
 
+
+force:
+$(pmix_internal_libs): force
+	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
