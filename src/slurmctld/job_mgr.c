@@ -13779,7 +13779,7 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
 			uint32_t state)
 {
-	bool is_running = false, is_suspended = false;
+	bool is_running = false, is_suspended = false, is_completed = false;
 	time_t now = time(NULL);
 
 	/* validate the request */
@@ -13845,6 +13845,8 @@ static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
 	 */
 	if (IS_JOB_SUSPENDED(job_ptr) || IS_JOB_RUNNING(job_ptr))
 		is_running = true;
+	else if (IS_JOB_COMPLETED(job_ptr))
+		is_completed = true;
 
 	/* We want this job to have the requeued state in the
 	 * accounting logs. Set a new submit time so the restarted
@@ -13876,6 +13878,14 @@ static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
 		job_ptr->time_limit = NO_VAL;
 		job_ptr->limit_set.time = 0;
 	}
+
+	/* When jobs are requeued while running/completing batch_requeue_fini is
+	 * called after the job is completely finished.  If the job is already
+	 * finished it needs to be called to clear out states (especially the
+	 * db_index or we will just write over the last job in the database).
+	 */
+	if (is_completed)
+		batch_requeue_fini(job_ptr);
 
 reply:
 	job_ptr->pre_sus_time = (time_t) 0;

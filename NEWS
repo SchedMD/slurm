@@ -59,6 +59,13 @@ documents those changes that are of interest to users and administrators.
  -- Added infrastructure for setting up federations in database and establishing
     connections between federation clusters.
 
+* Changes in Slurm 16.05.5
+==========================
+ -- Fix accounting for jobs requeued after the previous job was finished.
+ -- slurmstepd modified to pre-load all relevant plugins at startup to avoid
+    the possibility of modified plugins later resulting in inconsistent API
+    or data structures and a failure of slurmstepd.
+
 * Changes in Slurm 16.05.4
 ==========================
  -- Fix potential deadlock if running with message aggregation.
@@ -109,6 +116,7 @@ documents those changes that are of interest to users and administrators.
     printing NO_VAL or INFINITE.
  -- Correct documented configurations where --ntasks-per-core and
     --ntasks-per-socket are supported.
+ -- task/affinity plugin buffer allocated too small, can corrupt memory.
 
 * Changes in Slurm 16.05.3
 ==========================
