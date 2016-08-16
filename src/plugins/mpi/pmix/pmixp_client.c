@@ -60,13 +60,13 @@
 	xfree(kvp);						\
 }
 
-#if (PMIX_VERSION_MAJOR == 1)
+#if defined (HAVE_PMIX_V1)
 static int client_connected(const pmix_proc_t *proc, void *server_object)
 {
 	/* we don't do anything by now */
 	return PMIX_SUCCESS;
 }
-#else
+#elif defined(HAVE_PMIX_V2)
 static int client_connected(const pmix_proc_t *proc, void *server_object,
 		pmix_op_cbfunc_t cbfunc, void *cbdata)
 {
@@ -80,7 +80,7 @@ static void op_callbk(pmix_status_t status, void *cbdata)
 	PMIXP_DEBUG("op callback is called with status=%d", status);
 }
 
-#if (PMIX_VERSION_MAJOR == 1)
+#if defined (HAVE_PMIX_V1)
 static void errhandler_reg_callbk(pmix_status_t status,
 		int errhandler_ref, void *cbdata)
 {
@@ -88,7 +88,7 @@ static void errhandler_reg_callbk(pmix_status_t status,
 		"status=%d, ref=%d",
 		status, errhandler_ref);
 }
-#else
+#elif defined(HAVE_PMIX_V2)
 static void errhandler_reg_callbk(pmix_status_t status, size_t errhandler_ref,
 		void *cbdata)
 {
@@ -171,10 +171,10 @@ pmix_server_module_t _slurm_pmix_cb = {
 	NULL
 };
 
-#if (PMIX_VERSION_MAJOR == 1)
+#if defined (HAVE_PMIX_V1)
 static void errhandler(pmix_status_t status, pmix_proc_t proc[],
 		size_t nproc, pmix_info_t info[], size_t ninfo);
-#else
+#elif defined(HAVE_PMIX_V2)
 static void errhandler(size_t evhdlr_registration_id,
 		pmix_status_t status,
 		const pmix_proc_t *source,
@@ -236,10 +236,10 @@ int pmixp_libpmix_init(void)
 	*/
 
 	/* register the errhandler */
-#if (PMIX_VERSION_MAJOR == 1)
+#if defined (HAVE_PMIX_V1)
 	PMIx_Register_errhandler(NULL, 0, errhandler,
 			errhandler_reg_callbk, NULL);
-#else
+#elif defined(HAVE_PMIX_V2)
 	PMIx_Register_event_handler(NULL, 0, NULL, 0, errhandler,
 			errhandler_reg_callbk, NULL);
 #endif
@@ -252,9 +252,9 @@ int pmixp_libpmix_finalize(void)
 	int rc = SLURM_SUCCESS, rc1;
 
 	/* deregister the errhandler */
-#if (PMIX_VERSION_MAJOR == 1)
+#if defined (HAVE_PMIX_V1)
 	PMIx_Deregister_errhandler(0, op_callbk, NULL);
-#else
+#elif defined(HAVE_PMIX_V2)
 	PMIx_Deregister_event_handler(0, op_callbk, NULL);
 #endif
 
@@ -270,7 +270,7 @@ int pmixp_libpmix_finalize(void)
 	return rc;
 }
 
-#if (PMIX_VERSION_MAJOR == 1)
+#if defined (HAVE_PMIX_V1)
 static void errhandler(pmix_status_t status,
 		       pmix_proc_t proc[], size_t nproc,
 		       pmix_info_t info[], size_t ninfo)
@@ -281,7 +281,7 @@ static void errhandler(pmix_status_t status,
 			status, (int) nproc);
 	slurm_kill_job_step(pmixp_info_jobid(), pmixp_info_stepid(), SIGKILL);
 }
-#else
+#elif defined(HAVE_PMIX_V2)
 static void errhandler(size_t evhdlr_registration_id,
 		pmix_status_t status,
 		const pmix_proc_t *source,
