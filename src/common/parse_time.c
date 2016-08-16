@@ -68,6 +68,7 @@ strong_alias(parse_time, slurm_parse_time);
 strong_alias(time_str2mins, slurm_time_str2mins);
 strong_alias(time_str2secs, slurm_time_str2secs);
 strong_alias(secs2time_str, slurm_secs2time_str);
+strong_alias(mins2time_str, slurm_mins2time_str);
 strong_alias(mon_abbr, slurm_mon_abbr);
 
 #define _RUN_STAND_ALONE 0
