@@ -745,6 +745,10 @@ BUILD_IPMI_TRUE
 FREEIPMI_LDFLAGS
 FREEIPMI_CPPFLAGS
 FREEIPMI_LIBS
+HAVE_PMIX_V2_FALSE
+HAVE_PMIX_V2_TRUE
+HAVE_PMIX_V1_FALSE
+HAVE_PMIX_V1_TRUE
 HAVE_PMIX_FALSE
 HAVE_PMIX_TRUE
 PMIX_LDFLAGS
@@ -21784,6 +21788,7 @@ $as_echo "#define HAVE_HWLOC_PCI 1" >>confdefs.h
 
   _x_ac_pmix_dirs="/usr /usr/local"
   _x_ac_pmix_libs="lib64 lib"
+  _x_ac_pmix_version="1"
 
 
 # Check whether --with-pmix was given.
@@ -21889,6 +21894,28 @@ if ac_fn_c_try_link "$LINENO"; then :
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
+
+            cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+              #include<pmix_server.h>
+              #if (PMIX_VERSION_MAJOR != 2L)
+                #error "not version 2"
+              #endif
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_cpp "$LINENO"; then :
+   _x_ac_pmix_version="2"
+fi
+rm -f conftest.err conftest.i conftest.$ac_ext
+
             CPPFLAGS="$_x_ac_pmix_cppflags_save"
             LIBS="$_x_ac_pmix_libs_save"
             test -n "$x_ac_cv_pmix_libdir" && break
@@ -21920,6 +21947,22 @@ $as_echo "#define HAVE_PMIX 1" >>confdefs.h
 else
   HAVE_PMIX_TRUE='#'
   HAVE_PMIX_FALSE=
+fi
+
+   if test $_x_ac_pmix_version = "1" &&  test -n "$x_ac_cv_pmix_dir"; then
+  HAVE_PMIX_V1_TRUE=
+  HAVE_PMIX_V1_FALSE='#'
+else
+  HAVE_PMIX_V1_TRUE='#'
+  HAVE_PMIX_V1_FALSE=
+fi
+
+   if test $_x_ac_pmix_version = "2" &&  test -n "$x_ac_cv_pmix_dir"; then
+  HAVE_PMIX_V2_TRUE=
+  HAVE_PMIX_V2_FALSE='#'
+else
+  HAVE_PMIX_V2_TRUE='#'
+  HAVE_PMIX_V2_FALSE=
 fi
 
 
@@ -26004,6 +26047,14 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_PMIX_TRUE}" && test -z "${HAVE_PMIX_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_PMIX\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${HAVE_PMIX_V1_TRUE}" && test -z "${HAVE_PMIX_V1_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_PMIX_V1\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${HAVE_PMIX_V2_TRUE}" && test -z "${HAVE_PMIX_V2_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_PMIX_V2\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_IPMI_TRUE}" && test -z "${BUILD_IPMI_FALSE}"; then

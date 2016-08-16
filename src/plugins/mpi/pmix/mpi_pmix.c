@@ -80,7 +80,13 @@
  * minimum version for their plugins as this API matures.
  */
 const char plugin_name[] = "PMIx plugin";
-const char plugin_type[] = "mpi/pmix";
+
+#if (PMIX_VERSION_MAJOR == 1)
+const char plugin_type[] = "mpi/pmix_v1";
+#else
+const char plugin_type[] = "mpi/pmix_v2";
+#endif
+
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 int p_mpi_hook_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env)
