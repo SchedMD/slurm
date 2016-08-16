@@ -333,6 +333,12 @@
 #define xstrcmp			slurm_xstrcmp
 #define xstrcasecmp		slurm_xstrcasecmp
 
+/* slurm_protocol_api.[ch] functions */
+#define convert_num_unit2       slurm_convert_num_unit2
+#define convert_num_unit        slurm_convert_num_unit
+#define revert_num_unit         slurm_revert_num_unit
+#define get_convert_unit_val    slurm_get_convert_unit_val
+#define get_unit_type           slurm_get_unit_type
 
 /* slurm_protocol_defs.[ch] functions */
 #define preempt_mode_string	slurm_preempt_mode_string

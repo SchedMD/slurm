@@ -81,6 +81,12 @@
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_strcasestr.h"
 
+strong_alias(convert_num_unit2, slurm_convert_num_unit2);
+strong_alias(convert_num_unit, slurm_convert_num_unit);
+strong_alias(revert_num_unit, slurm_revert_num_unit);
+strong_alias(get_convert_unit_val, slurm_get_convert_unit_val);
+strong_alias(get_unit_type, slurm_get_unit_type);
+
 /* EXTERNAL VARIABLES */
 
 /* #DEFINES */

@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
     the possibility of modified plugins later resulting in inconsistent API
     or data structures and a failure of slurmstepd.
  -- Export functions from parse_time.c in libslurm.so.
+ -- Export unit convert functions from slurm_protocol_api.c in libslurm.so.
 
 * Changes in Slurm 16.05.4
 ==========================
