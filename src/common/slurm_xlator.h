@@ -262,6 +262,13 @@
 #define	packmem_array		slurm_packmem_array
 #define	unpackmem_array		slurm_unpackmem_array
 
+/* parse_time.[ch] functions */
+#define parse_time              slurm_parse_time
+#define time_str2mins           slurm_time_str2mins
+#define time_str2secs           slurm_time_str2secs
+#define secs2time_str           slurm_secs2time_str
+#define mon_abbr                slurm_mon_abbr
+
 /* env.[ch] functions */
 #define	setenvf 		slurm_setenvpf
 #define	unsetenvp		slurm_unsetenvp
