@@ -4,6 +4,9 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 16.05.5
 ==========================
  -- Fix accounting for jobs requeued after the previous job was finished.
+ -- slurmstepd modified to pre-load all relevant plugins at startup to avoid
+    the possibility of modified plugins later resulting in inconsistent API
+    or data structures and a failure of slurmstepd.
 
 * Changes in Slurm 16.05.4
 ==========================

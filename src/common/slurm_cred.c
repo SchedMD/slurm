@@ -345,6 +345,15 @@ done:
 	return(retval);
 }
 
+/* Initialize the plugin. */
+int slurm_crypto_init(void)
+{
+	if (_slurm_crypto_init() < 0)
+		return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
+}
+
 static int _slurm_crypto_fini(void)
 {
 	int rc;

@@ -97,6 +97,7 @@
 #include "src/common/plugstack.h"
 #include "src/common/safeopen.h"
 #include "src/common/slurm_acct_gather_profile.h"
+#include "src/common/slurm_cred.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_mpi.h"
 #include "src/common/switch.h"
@@ -1126,14 +1127,19 @@ job_manager(stepd_step_rec_t *job)
 	acct_gather_conf_init();
 
 	/*
-	 * Preload plugins.
+	 * Preload all plugins at start time to avoid plugin changes
+	 * (i.e. due to a Slurm upgrade) after the process starts.
 	 */
-	if ((core_spec_g_init()!= SLURM_SUCCESS)		||
+	if ((core_spec_g_init() != SLURM_SUCCESS)		||
 	    (switch_init() != SLURM_SUCCESS)			||
 	    (slurmd_task_init() != SLURM_SUCCESS)		||
 	    (slurm_proctrack_init() != SLURM_SUCCESS)		||
 	    (checkpoint_init(ckpt_type) != SLURM_SUCCESS)	||
-	    (jobacct_gather_init() != SLURM_SUCCESS)) {
+	    (jobacct_gather_init() != SLURM_SUCCESS)		||
+	    (acct_gather_profile_init() != SLURM_SUCCESS)	||
+	    (slurm_crypto_init() != SLURM_SUCCESS)		||
+	    (job_container_init() != SLURM_SUCCESS)		||
+	    (gres_plugin_init() != SLURM_SUCCESS)) {
 		rc = SLURM_PLUGIN_NAME_INVALID;
 		goto fail1;
 	}

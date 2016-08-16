@@ -175,6 +175,9 @@ typedef struct {
 	List step_gres_list;		/* Generic resources allocated to STEP */
 } slurm_cred_arg_t;
 
+/* Initialize the plugin. */
+int slurm_crypto_init(void);
+
 /* Terminate the plugin and release all memory. */
 int slurm_crypto_fini(void);
 
