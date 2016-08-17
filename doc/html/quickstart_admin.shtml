@@ -8,6 +8,9 @@ general overview.</p>
 <p>Also see <a href="platforms.html">Platforms</a> for a list of supported
 computer platforms.</p>
 
+<p>This document also includes a section specifically describing how to
+perform <a href="#upgrade">upgrades</a>.</p>
+
 <h2>Super Quick Start</h2>
 <ol>
 <li>Make sure the clocks, users and groups (UIDs and GIDs) are synchronized
@@ -725,21 +728,19 @@ See <i>testsuite/expect/README</i> for more information.</p>
 <a name="upgrade"><h2>Upgrades</h2></a>
 
 <p>Background: The Slurm version numbers contain three digits, which represent
-the major, minor and micro release numbers in that order (e.g. 14.11.3 is
-major=14, minor=11, micro=3).
+the major, minor and micro release numbers in that order (e.g. 16.05.3 is
+major=16, minor=05, micro=3).
 The major release number indicates the last two digits in the year of release
 and the minor release number indicates the month of release.
-Thus version 14.11.x was initially released in November 2014.
+Thus version 16.05.x was initially released in May 2016.
 Changes in the RPCs (remote procedure calls) and state files will only be made
 if the major and/or minor release number changes, which typically happens
 about once every nine months or so.
 A list of recent major/minor Slurm releases is shown below.</p>
 <ul>
-<li>2.5.x    (Released November 2012)</li>
-<li>2.6.x    (Released June 2013)</li>
-<li>14.03.x  (Released March 2014)</li>
 <li>14.11.x  (Released November 2014)</li>
 <li>15.08.x  (Released August 2015)</li>
+<li>16.05.x  (Released May 2016)</li>
 </ul>
 
 <p>Slurm's MPI libraries may also change if the major and/or minor release number
@@ -747,8 +748,8 @@ change, requiring applications be re-linked (behavior may vary depending upon
 the MPI implementation used and the specific Slurm changes between releases).
 Locally developed Slurm plugins may also require modification.
 Slurm daemons will support RPCs and state files from the two previous minor
-releases (e.g. a version 15.08.x SlurmDBD will support slurmctld daemons and
-commands with a version of 14.03.x or 14.11.x).
+releases (e.g. a version 16.05.x SlurmDBD will support slurmctld daemons and
+commands with a version of 16.05.x, 15.08.x or 14.11.x).
 This means that upgrading at least once each year is recommended.
 Otherwise, intermediate upgrades will be required to preserve state information.
 Changes in the micro release number generally represent only bug fixes,
@@ -757,7 +758,7 @@ but may also include very minor enhancements.</p>
 <p>If the SlurmDBD daemon is used, it must be at the same or higher minor
 release number as the Slurmctld daemons.
 In other words, when changing the version to a higher release number (e.g
-from 14.11.x to 15.08.x) <b>always upgrade the SlurmDBD daemon first</b>.
+from 15.08.x to 16.05.x) <b>always upgrade the SlurmDBD daemon first</b>.
 Database table changes may be required for the upgrade, for example
 adding new fields to existing tables.
 If the database contains a large number of entries, <b>the SlurmDBD daemon
@@ -771,14 +772,16 @@ although rolling upgrades are also possible (i.e. upgrading the head node(s)
 first then upgrading the compute and login nodes later at various times).
 Also see the note above about reverse compatibility.</p>
 
-<p>Pretty much each new major and/or minor release of Slurm (e.g. 14.11.x to 15.08.x)
+<p>Almost every new major and/or minor release of Slurm (e.g. 15.08.x to 16.05.x)
 involves changes to the state files with new data structures, new options, etc.
-Slurm permits upgrades of up to two major or minor updates (e.g. 14.03.x or 14.11.x
-to 15.08.x) without loss of jobs or other state information, but the state
+Slurm permits upgrades of up to two major or minor updates (e.g. 14.11.x or 15.08.x
+to 16.05.x) without loss of jobs or other state information, but the state
 information from older state files versions will not be recognized and will be
 discarded, resulting in loss of all running and pending jobs.
-State files are not recognized when downgrading (e.g. from 15.08.x to 14.11.x)
+State files are <b>not</b> recognized when downgrading (e.g. from 16.05.x to 15.08.x)
 and will be discarded, resulting in loss of all running and pending jobs.
+For this reason, creating backup copies of state files (as described below)
+can be of value.
 Therefore when upgrading Slurm (more precisely, the slurmctld daemon),
 saving the <i>StateSaveLocation</i> (as defined in <i>slurm.conf</i>)
 directory contents with all state information is recommended.
@@ -787,8 +790,8 @@ recover the jobs.
 Jobs submitted under the new version will not be in those state files,
 but it can let you recover most jobs.
 An exception to this is that jobs may be lost when installing new pre-release
-versions (e.g. 15.08.0-pre1 to 15.08.0-pre2).
-We'll try to note these cases in the NEWS file.
+versions (e.g. 16.05.0-pre1 to 16.05.0-pre2).
+Developers will try to note these cases in the NEWS file.
 Contents of major releases are also described in the RELEASE_NOTES file.</p>
 
 <p>The libslurm.so version is increased every major release.
@@ -804,20 +807,27 @@ slurmd daemons on compute nodes are not down for longer than SlurmdTimeout.
 The recommended upgrade order is as follows:</p>
 <ol>
 <li>Shutdown the slurmdbd daemon</li>
+<li>Dump the Slurm database using mysqldump (in case of any possible failure)
+    and increase innodb_buffer_size in my.cnf to 128M</li>
 <li>Upgrade the slurmdbd daemon</li>
 <li>Restart the slurmdbd daemon</li>
+<li>Increase configured SlurmdTimeout and SlurmctldTimeout values and
+    execute "scontrol reconfig" for them to take effect</li>
 <li>Shutdown the slurmctld daemon(s)</li>
 <li>Shutdown the slurmd daemons on the compute nodes</li>
+<li>Copy the contents of the configured SlurmStateDir directory (in case
+    of any possible failure)</li>
 <li>Upgrade the slurmctld and slurmd daemons</li>
 <li>Restart the slurmd daemons on the compute nodes</li>
 <li>Restart the slurmctld daemon(s)</li>
+<li>Validate proper operation</li>
+<li>Restore configured SlurmdTimeout and SlurmctldTimeout values and
+    execute "scontrol reconfig" for them to take effect</li>
+<li>Destroy backup copies of database and/or state files</li>
 </ol>
-<p><b>Note</b>: The slurmd daemons must be restarted before the slurmctld
-daemons or within the SlurmdTimeout value.
-It is also possible to update the slurmd daemons on a node-by-node basis
-after the slurmctld daemon(s) are upgraded, but do make sure their down
-time is below the SlurmdTimeout value.
-</p>
+<p><b>Note</b>: It is possible to update the slurmd daemons on a node-by-node
+basis after the slurmctld daemon(s) are upgraded, but do make sure their down
+time is below the SlurmdTimeout value.</p>
 
 <p>If you have built your own version of Slurm plugins, they will likely
 need modification to support a new version of Slurm. It is common for plugins
@@ -843,6 +853,6 @@ options such as mysql and gui tools via a configuration menu.</p>
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 31 March 2016</p>
+<p style="text-align:center;">Last modified 17 August 2016</p>
 
 <!--#include virtual="footer.txt"-->

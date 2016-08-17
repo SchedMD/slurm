@@ -255,6 +255,14 @@
 #define	packmem_array		slurm_packmem_array
 #define	unpackmem_array		slurm_unpackmem_array
 
+/* parse_time.[ch] functions */
+#define parse_time              slurm_parse_time
+#define time_str2mins           slurm_time_str2mins
+#define time_str2secs           slurm_time_str2secs
+#define secs2time_str           slurm_secs2time_str
+#define mins2time_str           slurm_mins2time_str
+#define mon_abbr                slurm_mon_abbr
+
 /* env.[ch] functions */
 #define	setenvf 		slurm_setenvpf
 #define	unsetenvp		slurm_unsetenvp
@@ -318,6 +326,12 @@
 #define xstrcmp			slurm_xstrcmp
 #define xstrcasecmp		slurm_xstrcasecmp
 
+/* slurm_protocol_api.[ch] functions */
+#define convert_num_unit2       slurm_convert_num_unit2
+#define convert_num_unit        slurm_convert_num_unit
+#define revert_num_unit         slurm_revert_num_unit
+#define get_convert_unit_val    slurm_get_convert_unit_val
+#define get_unit_type           slurm_get_unit_type
 
 /* slurm_protocol_defs.[ch] functions */
 #define preempt_mode_string	slurm_preempt_mode_string

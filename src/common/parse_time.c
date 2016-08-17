@@ -54,6 +54,19 @@
 #include "src/common/slurm_time.h"
 #include "src/common/strlcpy.h"
 #include "src/common/xstring.h"
+#include "src/common/parse_time.h"
+
+/*
+** Define slurm-specific aliases for use by plugins, see slurm_xlator.h
+** for details.
+*/
+strong_alias(parse_time, slurm_parse_time);
+//slurm_make_time_str is already exported
+strong_alias(time_str2mins, slurm_time_str2mins);
+strong_alias(time_str2secs, slurm_time_str2secs);
+strong_alias(secs2time_str, slurm_secs2time_str);
+strong_alias(mins2time_str, slurm_mins2time_str);
+strong_alias(mon_abbr, slurm_mon_abbr);
 
 #define _RUN_STAND_ALONE 0
 

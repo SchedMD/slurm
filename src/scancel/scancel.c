@@ -509,6 +509,7 @@ static void _cancel_jobid_by_state(uint32_t job_state, int filter_cnt, int *rc)
 						     cancel_info);
 				if (err)  /* Run in-line as needed */
 					_cancel_job_id(cancel_info);
+				job_ptr->job_id = 0;
 			} else {
 				cancel_info->job_id = job_ptr->job_id;
 				cancel_info->step_id = opt.step_id[j];
@@ -518,7 +519,6 @@ static void _cancel_jobid_by_state(uint32_t job_state, int filter_cnt, int *rc)
 				if (err)  /* Run in-line as needed */
 					_cancel_step_id(cancel_info);
 			}
-			job_ptr->job_id = 0;
 
 			if (opt.interactive) {
 				/* Print any error message for first job before
