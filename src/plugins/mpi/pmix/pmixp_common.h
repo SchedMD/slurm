@@ -69,6 +69,24 @@
 #define PMIX_VERSION_MAJOR 1L
 #endif
 
+/* Check PMIx version */
+#if defined (HAVE_PMIX_V1) && (PMIX_VERSION_MAJOR != 1)
+#if (PMIX_VERSION_MAJOR == 2)
+#error "PMIx version mismatch: the version seen during configuration was v1.x, at compile - v2.x"
+#else
+#error "PMIx version mismatch: the version seen during configuration was v1.x, at compile - unknown"
+#endif
+#endif
+
+#if defined (HAVE_PMIX_V2) && (PMIX_VERSION_MAJOR != 2)
+#if (PMIX_VERSION_MAJOR == 1)
+#error "PMIx version mismatch: the version seen during configuration was v2.x, at compile - v1.x"
+#else
+#error "PMIx version mismatch: the version seen during configuration was v2.x, at compile - unknown"
+#endif
+#endif
+
+
 /* TODO: use /tmp directory instead */
 #define MAX_USOCK_PATH							\
 	((size_t) &(((struct sockaddr_un *)0 + 1)->sun_family) -	\
