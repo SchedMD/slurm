@@ -333,6 +333,7 @@ test6.13   Test routing all signals through slurmctld rather than slurmd
 	   (undocumented --ctld option).
 test6.14   Test scancel nodelist option (--nodelist or -w).
 test6.15   Test scancel signal of full job including batch script (--full option).
+test6.16   Validate scancel of multiple job steps (job.step specification).
 
 test7.#    Testing of other functionality.
 ==========================================

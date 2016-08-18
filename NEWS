@@ -69,6 +69,8 @@ documents those changes that are of interest to users and administrators.
  -- Export unit convert functions from slurm_protocol_api.c in libslurm.so.
  -- Fix scancel to allow multiple steps from a job to be cancelled at once.
  -- Update and expand upgrade guide (in Quick Start Administrator web page).
+ -- burst_buffer/cray: Requeue, but do not hold a job which fails the pre_run
+    operation.
 
 * Changes in Slurm 16.05.4
 ==========================
