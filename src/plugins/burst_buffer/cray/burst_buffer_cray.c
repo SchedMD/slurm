@@ -3426,7 +3426,6 @@ static void _kill_job(struct job_record *job_ptr)
 	last_job_update = time(NULL);
 	job_ptr->end_time = last_job_update;
 	job_ptr->job_state = JOB_PENDING | JOB_COMPLETING;
-	job_ptr->priority = 0;	/* Hold job */
 	build_cg_bitmap(job_ptr);
 	job_ptr->exit_code = 1;
 	job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
