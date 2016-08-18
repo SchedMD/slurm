@@ -16,8 +16,8 @@ pmix_internal_libs = $(top_builddir)/src/slurmd/common/libslurmd_reverse_tree_ma
 
 if HAVE_PMIX_V1
 pkglib_v1dir=$(pkglibdir)
-pkglib_v1_LTLIBRARIES = mpi_pmix_v1.la
 pmix_v1_ldflags = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(PMIX_V1_LDFLAGS)
+pkglib_v1_LTLIBRARIES = mpi_pmix_v1.la
 mpi_pmix_v1_la_SOURCES = $(pmix_src)
 mpi_pmix_v1_la_LIBADD = $(pmix_internal_libs) $(PMIX_LIBS)
 mpi_pmix_v1_la_LDFLAGS = $(pmix_v1_ldflags)
@@ -34,6 +34,24 @@ mpi_pmix_v2_la_LDFLAGS = $(pmix_v2_ldflags)
 mpi_pmix_v2_la_CPPFLAGS = $(AM_CPPFLAGS) $(PMIX_V2_CPPFLAGS) -DHAVE_PMIX_V2
 endif
 
+if HAVE_PMIX_V2
+mpi_pmix_so := mpi_pmix_v2.so
+else
+
+if HAVE_PMIX_V1
+mpi_pmix_so := mpi_pmix_v1.so
+endif
+
+endif 
+
+
 force:
 $(pmix_internal_libs): force
 	@cd `dirname $@` && $(MAKE) `basename $@`
+
+install-exec-hook:
+	rm -rf $(pkglibdir)/mpi_pmix.so
+	$(LN_S) ./$(mpi_pmix_so)  $(pkglibdir)/mpi_pmix.so
+
+uninstall-hook:
+	rm -rf $(pkglibdir)/mpi_pmix.so
