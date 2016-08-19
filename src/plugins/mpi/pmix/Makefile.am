@@ -6,7 +6,6 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
-
 pmix_src = mpi_pmix.c pmixp_agent.c pmixp_client.c pmixp_coll.c pmixp_nspaces.c pmixp_info.c \
 			pmixp_server.c pmixp_state.c pmixp_io.c pmixp_utils.c pmixp_dmdx.c \
 			pmixp_agent.h pmixp_client.h pmixp_coll.h pmixp_nspaces.h pmixp_info.h \
@@ -14,14 +13,19 @@ pmix_src = mpi_pmix.c pmixp_agent.c pmixp_client.c pmixp_coll.c pmixp_nspaces.c 
 
 pmix_internal_libs = $(top_builddir)/src/slurmd/common/libslurmd_reverse_tree_math.la
 
+pmix_ldflags = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+
+# pkglib_v#dir is needed in each one of the below because of the way we
+# use pkglib_v#_LTLIBRARIES even though it is the same for each one it still
+# needs to be defined.
+
 if HAVE_PMIX_V1
 
 pkglib_v1dir=$(pkglibdir)
 pkglib_v1_LTLIBRARIES = mpi_pmix_v1.la
-pmix_v1_ldflags = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(PMIX_V1_LDFLAGS)
 mpi_pmix_v1_la_SOURCES = $(pmix_src)
 mpi_pmix_v1_la_LIBADD = $(pmix_internal_libs) $(PMIX_LIBS)
-mpi_pmix_v1_la_LDFLAGS = $(pmix_v1_ldflags)
+mpi_pmix_v1_la_LDFLAGS = $(pmix_ldflags) $(PMIX_V1_LDFLAGS)
 mpi_pmix_v1_la_CPPFLAGS = $(AM_CPPFLAGS) $(PMIX_V1_CPPFLAGS) -DHAVE_PMIX_VER=1
 
 endif
@@ -29,11 +33,10 @@ endif
 if HAVE_PMIX_V2
 
 pkglib_v2dir=$(pkglibdir)
-pmix_v2_ldflags = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(PMIX_V2_LDFLAGS)
 pkglib_v2_LTLIBRARIES = mpi_pmix_v2.la
 mpi_pmix_v2_la_SOURCES = $(pmix_src)
 mpi_pmix_v2_la_LIBADD = $(pmix_internal_libs) $(PMIX_LIBS)
-mpi_pmix_v2_la_LDFLAGS = $(pmix_v2_ldflags)
+mpi_pmix_v2_la_LDFLAGS = $(pmix_ldflags) $(PMIX_V2_LDFLAGS)
 mpi_pmix_v2_la_CPPFLAGS = $(AM_CPPFLAGS) $(PMIX_V2_CPPFLAGS) -DHAVE_PMIX_VER=2
 
 endif
