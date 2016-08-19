@@ -13,12 +13,15 @@ AC_DEFUN([X_AC_PMIX],
 [
   _x_ac_pmix_dirs="/usr /usr/local"
   _x_ac_pmix_libs="lib64 lib"
-  _x_ac_pmix_version="1"
+
+  _x_ac_pmix_v1_found="0"
+  _x_ac_pmix_v2_found="0"
 
   AC_ARG_WITH(
     [pmix],
     AS_HELP_STRING(--with-pmix=PATH,Specify path to pmix installation),
-    [AS_IF([test "x$with_pmix" != xno],[_x_ac_pmix_dirs="$with_pmix $_x_ac_pmix_dirs"])])
+    [AS_IF([test "x$with_pmix" != xno],[with_pmix=`echo $with_pmix | sed "s/:/ /"`
+      _x_ac_pmix_dirs="$with_pmix $_x_ac_pmix_dirs"])])
 
   if [test "x$with_pmix" = xno]; then
     AC_MSG_WARN([support for pmix disabled])
@@ -40,64 +43,73 @@ AC_DEFUN([X_AC_PMIX],
             LIBS="-L$d/$d1 -lpmix $LIBS"
             AC_LINK_IFELSE(
               [AC_LANG_CALL([], PMIx_Get_version)],
-              AS_VAR_SET(x_ac_cv_pmix_dir, $d))
-            CPPFLAGS="$_x_ac_pmix_cppflags_save"
-            LIBS="$_x_ac_pmix_libs_save"
-            test -n "$x_ac_cv_pmix_dir" && break
-          done
-          test -n "$x_ac_cv_pmix_dir" && break
-        done
-      ])
+              AS_VAR_SET(x_ac_cv_pmix_dir, $d)
+              AS_VAR_SET(x_ac_cv_pmix_libdir, $d/$d1))
 
-    if test -z "$x_ac_cv_pmix_dir"; then
-      AC_MSG_WARN([unable to locate pmix installation])
-    else
-      AC_CACHE_CHECK(
-        [for pmix library directory],
-        [x_ac_cv_pmix_libdir],
-        [
-          for d1 in $_x_ac_pmix_libs; do
-            d="$x_ac_cv_pmix_dir/$d1"
-            test -d "$d" || continue
-            _x_ac_pmix_cppflags_save="$CPPFLAGS"
-            CPPFLAGS="-I$x_ac_cv_pmix_dir/include $CPPFLAGS"
-            _x_ac_pmix_libs_save="$LIBS"
-            LIBS="-L$d -lpmix $LIBS"
-            AC_LINK_IFELSE(
-              [AC_LANG_CALL([], PMIx_Get_version)],
-              AS_VAR_SET(x_ac_cv_pmix_libdir, $d))
+            if [test -z "$x_ac_cv_pmix_dir"] ||
+               [test -z "$x_ac_cv_pmix_libdir"]; then
+              AC_MSG_WARN([unable to locate pmix installation])
+              continue
+            fi
 
+            _x_ac_pmix_version="0"
             AC_PREPROC_IFELSE([AC_LANG_PROGRAM([
               #include<pmix_server.h>
               #if (PMIX_VERSION_MAJOR != 2L)
                 #error "not version 2"
               #endif
-            ], [] )],
-            [ _x_ac_pmix_version="2" ], [] )
+            ], [ ] )],
+            [ _x_ac_pmix_version="2" ], [ _x_ac_pmix_version="1" ] )
 
             CPPFLAGS="$_x_ac_pmix_cppflags_save"
             LIBS="$_x_ac_pmix_libs_save"
-            test -n "$x_ac_cv_pmix_libdir" && break
+
+            m4_define([err_pmix],[was already found if one of the previous paths])
+
+            if [test "$_x_ac_pmix_version" = "1"]; then
+              if [test "$_x_ac_pmix_v1_found" = "1" ]; then
+                m4_define([err_pmix_v1],[error processing $x_ac_cv_pmix_libdir: PMIx v1.x])
+                AC_MSG_ERROR(err_pmix_v1 err_pmix)
+              fi
+
+              _x_ac_pmix_v1_found="1"
+              PMIX_V1_CPPFLAGS="-I$x_ac_cv_pmix_dir/include"
+              if test "$ac_with_rpath" = "yes"; then
+                PMIX_V1_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_pmix_libdir -L$x_ac_cv_pmix_libdir"
+              else
+                PMIX_V1_LDFLAGS="-L$x_ac_cv_pmix_libdir"
+              fi
+            fi
+
+            if [test "$_x_ac_pmix_version" = "2"]; then
+              if [test "$_x_ac_pmix_v2_found" = "1" ]; then
+                m4_define([err_pmix_v2],[error processing $x_ac_cv_pmix_libdir: PMIx v2.x])
+                AC_MSG_ERROR(err_pmix_v2 err_pmix)
+              fi
+              _x_ac_pmix_v2_found="1"
+              PMIX_V2_CPPFLAGS="-I$x_ac_cv_pmix_dir/include"
+              if test "$ac_with_rpath" = "yes"; then
+                PMIX_V2_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_pmix_libdir -L$x_ac_cv_pmix_libdir"
+              else
+                PMIX_V2_LDFLAGS="-L$x_ac_cv_pmix_libdir"
+              fi
+            fi
           done
-        ])
-      PMIX_CPPFLAGS="-I$x_ac_cv_pmix_dir/include"
-      if test "$ac_with_rpath" = "yes"; then
-        PMIX_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_pmix_libdir -L$x_ac_cv_pmix_libdir"
-      else
-        PMIX_LDFLAGS="-L$x_ac_cv_pmix_libdir"
-      fi
-      PMIX_LIBS="-lpmix"
-      AC_DEFINE(HAVE_PMIX, 1, [Define to 1 if pmix library found])
-    fi
+        done
+      ])
+
+    PMIX_LIBS="-lpmix"
+    AC_DEFINE(HAVE_PMIX, 1, [Define to 1 if pmix library found])
 
     AC_SUBST(PMIX_LIBS)
-    AC_SUBST(PMIX_CPPFLAGS)
-    AC_SUBST(PMIX_LDFLAGS)
+    AC_SUBST(PMIX_V1_CPPFLAGS)
+    AC_SUBST(PMIX_V1_LDFLAGS)
+    AC_SUBST(PMIX_V2_CPPFLAGS)
+    AC_SUBST(PMIX_V2_LDFLAGS)
   fi
 
-  AM_CONDITIONAL(HAVE_PMIX, test -n "$x_ac_cv_pmix_dir")
-  AM_CONDITIONAL(HAVE_PMIX_V1,
-    [test $_x_ac_pmix_version = "1"] &&  [test -n "$x_ac_cv_pmix_dir"])
-  AM_CONDITIONAL(HAVE_PMIX_V2,
-    [test $_x_ac_pmix_version = "2"] &&  [test -n "$x_ac_cv_pmix_dir"])
+  AM_CONDITIONAL(HAVE_PMIX, [test $_x_ac_pmix_v1_found = "1"] &&
+                [test $_x_ac_pmix_v2_found = "1"])
+  AM_CONDITIONAL(HAVE_PMIX_V1, [test $_x_ac_pmix_v1_found = "1"])
+  AM_CONDITIONAL(HAVE_PMIX_V2, [test $_x_ac_pmix_v2_found = "1"])
 ])

@@ -4,7 +4,7 @@ AUTOMAKE_OPTIONS = foreign
 
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(PMIX_CPPFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
 
 pmix_src = mpi_pmix.c pmixp_agent.c pmixp_client.c pmixp_coll.c pmixp_nspaces.c pmixp_info.c \
@@ -14,25 +14,27 @@ pmix_src = mpi_pmix.c pmixp_agent.c pmixp_client.c pmixp_coll.c pmixp_nspaces.c 
 
 pmix_internal_libs = $(top_builddir)/src/slurmd/common/libslurmd_reverse_tree_math.la
 
-pmix_ldflags = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(PMIX_LDFLAGS)
-
 if HAVE_PMIX_V1
 
-pkglib_LTLIBRARIES = mpi_pmix_v1.la
+pkglib_v1dir=$(pkglibdir)
+pkglib_v1_LTLIBRARIES = mpi_pmix_v1.la
+pmix_v1_ldflags = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(PMIX_V1_LDFLAGS)
 mpi_pmix_v1_la_SOURCES = $(pmix_src)
 mpi_pmix_v1_la_LIBADD = $(pmix_internal_libs) $(PMIX_LIBS)
-mpi_pmix_v1_la_LDFLAGS = $(pmix_ldflags)
-mpi_pmix_v1_la_CPPFLAGS = $(AM_CPPFLAGS) -DHAVE_PMIX_VER=1
+mpi_pmix_v1_la_LDFLAGS = $(pmix_v1_ldflags)
+mpi_pmix_v1_la_CPPFLAGS = $(AM_CPPFLAGS) $(PMIX_V1_CPPFLAGS) -DHAVE_PMIX_VER=1
 
 endif
 
 if HAVE_PMIX_V2
 
-pkglib_LTLIBRARIES = mpi_pmix_v2.la
+pkglib_v2dir=$(pkglibdir)
+pmix_v2_ldflags = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(PMIX_V2_LDFLAGS)
+pkglib_v2_LTLIBRARIES = mpi_pmix_v2.la
 mpi_pmix_v2_la_SOURCES = $(pmix_src)
 mpi_pmix_v2_la_LIBADD = $(pmix_internal_libs) $(PMIX_LIBS)
-mpi_pmix_v2_la_LDFLAGS = $(pmix_ldflags)
-mpi_pmix_v2_la_CPPFLAGS = $(AM_CPPFLAGS) -DHAVE_PMIX_VER=2
+mpi_pmix_v2_la_LDFLAGS = $(pmix_v2_ldflags)
+mpi_pmix_v2_la_CPPFLAGS = $(AM_CPPFLAGS) $(PMIX_V2_CPPFLAGS) -DHAVE_PMIX_VER=2
 
 endif
 
