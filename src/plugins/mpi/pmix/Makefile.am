@@ -22,7 +22,7 @@ pkglib_LTLIBRARIES = mpi_pmix_v1.la
 mpi_pmix_v1_la_SOURCES = $(pmix_src)
 mpi_pmix_v1_la_LIBADD = $(pmix_internal_libs) $(PMIX_LIBS)
 mpi_pmix_v1_la_LDFLAGS = $(pmix_ldflags)
-mpi_pmix_v1_la_CPPFLAGS = $(AM_CPPFLAGS) -DHAVE_PMIX_V1
+mpi_pmix_v1_la_CPPFLAGS = $(AM_CPPFLAGS) -DHAVE_PMIX_VER=1
 
 endif
 
@@ -32,7 +32,7 @@ pkglib_LTLIBRARIES = mpi_pmix_v2.la
 mpi_pmix_v2_la_SOURCES = $(pmix_src)
 mpi_pmix_v2_la_LIBADD = $(pmix_internal_libs) $(PMIX_LIBS)
 mpi_pmix_v2_la_LDFLAGS = $(pmix_ldflags)
-mpi_pmix_v2_la_CPPFLAGS = $(AM_CPPFLAGS) -DHAVE_PMIX_V2
+mpi_pmix_v2_la_CPPFLAGS = $(AM_CPPFLAGS) -DHAVE_PMIX_VER=2
 
 endif
 

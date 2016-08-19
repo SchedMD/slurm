@@ -556,11 +556,11 @@ pmix_ldflags = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(PMIX_LDFLAGS)
 @HAVE_PMIX_V1_TRUE@mpi_pmix_v1_la_SOURCES = $(pmix_src)
 @HAVE_PMIX_V1_TRUE@mpi_pmix_v1_la_LIBADD = $(pmix_internal_libs) $(PMIX_LIBS)
 @HAVE_PMIX_V1_TRUE@mpi_pmix_v1_la_LDFLAGS = $(pmix_ldflags)
-@HAVE_PMIX_V1_TRUE@mpi_pmix_v1_la_CPPFLAGS = $(AM_CPPFLAGS) -DHAVE_PMIX_V1
+@HAVE_PMIX_V1_TRUE@mpi_pmix_v1_la_CPPFLAGS = $(AM_CPPFLAGS) -DHAVE_PMIX_VER=1
 @HAVE_PMIX_V2_TRUE@mpi_pmix_v2_la_SOURCES = $(pmix_src)
 @HAVE_PMIX_V2_TRUE@mpi_pmix_v2_la_LIBADD = $(pmix_internal_libs) $(PMIX_LIBS)
 @HAVE_PMIX_V2_TRUE@mpi_pmix_v2_la_LDFLAGS = $(pmix_ldflags)
-@HAVE_PMIX_V2_TRUE@mpi_pmix_v2_la_CPPFLAGS = $(AM_CPPFLAGS) -DHAVE_PMIX_V2
+@HAVE_PMIX_V2_TRUE@mpi_pmix_v2_la_CPPFLAGS = $(AM_CPPFLAGS) -DHAVE_PMIX_VER=2
 all: all-am
 
 .SUFFIXES:

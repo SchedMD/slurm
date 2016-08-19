@@ -81,9 +81,9 @@
  */
 const char plugin_name[] = "PMIx plugin";
 
-#if defined (HAVE_PMIX_V1)
+#if (HAVE_PMIX_VER == 1)
 const char plugin_type[] = "mpi/pmix_v1";
-#elif defined(HAVE_PMIX_V2)
+#elif (HAVE_PMIX_VER == 2)
 const char plugin_type[] = "mpi/pmix_v2";
 #endif
 
