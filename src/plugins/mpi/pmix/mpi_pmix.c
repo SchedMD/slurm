@@ -89,6 +89,23 @@ const char plugin_type[] = "mpi/pmix_v2";
 
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
+/*
+ * init() is called when the plugin is loaded, before any other functions
+ * are called.  Put global initialization here.
+ */
+extern int init(void)
+{
+	/* HAVE_PMIX_VER is what we were compiled against PMIX_VERSION_MAJOR is
+	 * found in the pmix source we are dynamically linking against.
+	 */
+	if (HAVE_PMIX_VER != PMIX_VERSION_MAJOR)
+		fatal("pmix_init: Slurm was compiled against PMIx v%d but we are now linking against v%ld. Please check your install.",
+		      HAVE_PMIX_VER, PMIX_VERSION_MAJOR);
+
+	return SLURM_SUCCESS;
+}
+
+
 int p_mpi_hook_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env)
 {
 	int ret;
