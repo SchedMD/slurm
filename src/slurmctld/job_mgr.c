@@ -8393,7 +8393,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 	      uint16_t protocol_version, uid_t uid)
 {
 	struct job_details *detail_ptr;
-	time_t begin_time = 0;
+	time_t begin_time = 0, start_time;
 	uint8_t uint8_tmp = 0;
 	char *nodelist = NULL;
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
@@ -8451,11 +8451,17 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		}
 
 		pack_time(begin_time, buffer);
-		/* Actual or expected start time */
-		if ((dump_job_ptr->start_time) || (begin_time <= time(NULL)))
-			pack_time(dump_job_ptr->start_time, buffer);
-		else	/* earliest start time in the future */
-			pack_time(begin_time, buffer);
+
+		if (IS_JOB_STARTED(dump_job_ptr)) {
+			/* Report actual start time, in past */
+			start_time = dump_job_ptr->start_time;
+		} else if (dump_job_ptr->start_time != 0) {
+			/* Report expected start time,
+			 * making sure that time is not in the past */
+			start_time = MAX(dump_job_ptr->start_time, time(NULL));
+		} else	/* earliest start time in the future */
+			start_time = begin_time;
+		pack_time(start_time, buffer);
 
 		pack_time(dump_job_ptr->end_time, buffer);
 		pack_time(dump_job_ptr->suspend_time, buffer);

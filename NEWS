@@ -13,6 +13,7 @@ documents those changes that are of interest to users and administrators.
  -- Update and expand upgrade guide (in Quick Start Administrator web page).
  -- burst_buffer/cray: Requeue, but do not hold a job which fails the pre_run
     operation.
+ -- Insure reported expected job start time is not in the past for pending jobs.
 
 * Changes in Slurm 16.05.4
 ==========================
