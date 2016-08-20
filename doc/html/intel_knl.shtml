@@ -222,6 +222,7 @@ CapmcTimeout=2000	# msec
 DefaultNUMA=a2a         # NUMA=all2all
 AllowNUMA=a2a,snc2,hemi
 DefaultMCDRAM=cache     # MCDRAM=cache
+</pre>
 
 <h3>Sample slurm.conf File</h3>
 
