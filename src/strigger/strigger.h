@@ -3,6 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2010-2016 SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -47,6 +48,7 @@
 
 struct strigger_parameters {
 	bool     block_err;
+	bool     burst_buffer;
 	List     clusters;
 	uint16_t flags;
 	bool     front_end;

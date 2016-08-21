@@ -5,7 +5,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010-2015 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2016 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -2131,6 +2131,8 @@ extern char *trigger_res_type(uint16_t res_type)
 		return "database";
 	else if (res_type == TRIGGER_RES_TYPE_FRONT_END)
 		return "front_end";
+	else if (res_type == TRIGGER_RES_TYPE_OTHER)
+		return "other";
 	else
 		return "unknown";
 }
@@ -2213,6 +2215,8 @@ extern char *trigger_type(uint32_t trig_type)
 		return "primary_database_resumed_operation";
 	else if (trig_type == TRIGGER_TYPE_BLOCK_ERR)
 		return "block_err";
+	else if (trig_type == TRIGGER_TYPE_BURST_BUFFER)
+		return "burst_buffer";
 	else
 		return "unknown";
 }

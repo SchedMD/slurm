@@ -18,6 +18,8 @@ documents those changes that are of interest to users and administrators.
     possible SIGBUS if the daemon is paged out at the time of a Slurm upgrade
     (changing plugins). Controlled via new LaunchParameters options of
     slurmstepd_memlock and slurmstepd_memlock_all.
+ -- Add event trigger on burst buffer errors (see strigger man page,
+    --burst_buffer option).
 
 * Changes in Slurm 17.02.0pre1
 ==============================

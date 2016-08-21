@@ -2896,6 +2896,7 @@ typedef struct stats_info_response_msg {
 #define TRIGGER_RES_TYPE_SLURMDBD       0x0004
 #define TRIGGER_RES_TYPE_DATABASE       0x0005
 #define TRIGGER_RES_TYPE_FRONT_END      0x0006
+#define TRIGGER_RES_TYPE_OTHER          0x0007
 
 #define TRIGGER_TYPE_UP                 0x00000001
 #define TRIGGER_TYPE_DOWN               0x00000002
@@ -2917,6 +2918,7 @@ typedef struct stats_info_response_msg {
 #define TRIGGER_TYPE_PRI_DBD_RES_OP     0x00020000
 #define TRIGGER_TYPE_PRI_DB_FAIL        0x00040000
 #define TRIGGER_TYPE_PRI_DB_RES_OP      0x00080000
+#define TRIGGER_TYPE_BURST_BUFFER       0x00100000
 
 
 typedef struct trigger_info {

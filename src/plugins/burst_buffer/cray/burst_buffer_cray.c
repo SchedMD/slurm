@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  burst_buffer_cray.c - Plugin for managing a Cray burst_buffer
  *****************************************************************************
- *  Copyright (C) 2014-2015 SchedMD LLC.
+ *  Copyright (C) 2014-2016 SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
@@ -71,6 +71,7 @@
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
+#include "src/slurmctld/trigger_mgr.h"
 #include "src/plugins/burst_buffer/common/burst_buffer_common.h"
 
 #define _DEBUG 0	/* Detailed debugging information */
@@ -1498,6 +1499,7 @@ static void *_start_stage_in(void *x)
 	bb_limit_rem(stage_args->user_id, stage_args->bb_size, stage_args->pool,
 		     &bb_state);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		trigger_burst_buffer();
 		error("%s: setup for job %u status:%u response:%s",
 		      __func__, stage_args->job_id, status, resp_msg);
 		rc = SLURM_ERROR;
@@ -1545,6 +1547,7 @@ static void *_start_stage_in(void *x)
 		     __func__, stage_args->job_id, TIME_STR);
 		_log_script_argv(data_in_argv, resp_msg);
 		if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+			trigger_burst_buffer();
 			error("%s: dws_data_in for job %u status:%u "
 			      "response:%s",
 			      __func__, stage_args->job_id, status, resp_msg);
@@ -1760,6 +1763,7 @@ static void *_start_stage_out(void *x)
 	}
 	_log_script_argv(post_run_argv, resp_msg);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		trigger_burst_buffer();
 		error("%s: dws_post_run for job %u status:%u response:%s",
 		      __func__, stage_args->job_id, status, resp_msg);
 		rc = SLURM_ERROR;
@@ -1797,6 +1801,7 @@ static void *_start_stage_out(void *x)
 		}
 		_log_script_argv(data_out_argv, resp_msg);
 		if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+			trigger_burst_buffer();
 			error("%s: dws_data_out for job %u "
 			      "status:%u response:%s",
 			      __func__, stage_args->job_id, status, resp_msg);
@@ -1965,6 +1970,7 @@ static void *_start_teardown(void *x)
 	if ((!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) &&
 	    (!resp_msg || !strstr(resp_msg, "token not found"))) {
 		bool hurry = false;
+		trigger_burst_buffer();
 		error("%s: %s: teardown for job %u status:%u response:%s",
 		      plugin_name, __func__, teardown_args->job_id, status,
 		      resp_msg);
@@ -3634,6 +3640,7 @@ static void *_start_pre_run(void *x)
 	}
 	_log_script_argv(pre_run_args->args, resp_msg);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		trigger_burst_buffer();
 		error("%s: dws_pre_run for %s status:%u response:%s", __func__,
 		      jobid_buf, status, resp_msg);
 		if (job_ptr) {
@@ -4136,6 +4143,7 @@ static void *_create_persistent(void *x)
 	info("create_persistent of %s ran for %s",
 	     create_args->name, TIME_STR);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		trigger_burst_buffer();
 		error("%s: For JobID=%u Name=%s status:%u response:%s",
 		      __func__, create_args->job_id, create_args->name,
 		      status, resp_msg);
@@ -4279,6 +4287,7 @@ static void *_destroy_persistent(void *x)
 	info("destroy_persistent of %s ran for %s",
 	     destroy_args->name, TIME_STR);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		trigger_burst_buffer();
 		error("%s: destroy_persistent for JobID=%u Name=%s "
 		      "status:%u response:%s",
 		      __func__, destroy_args->job_id, destroy_args->name,
@@ -4368,6 +4377,7 @@ _bb_get_configs(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	if ((!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) &&
 	    (!resp_msg || (resp_msg[0] != '{'))) {
 #endif
+		trigger_burst_buffer();
 		error("%s: show_configurations status:%u response:%s",
 		      __func__, status, resp_msg);
 	}
@@ -4431,6 +4441,7 @@ _bb_get_instances(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	if ((!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) &&
 	    (!resp_msg || (resp_msg[0] != '{'))) {
 #endif
+		trigger_burst_buffer();
 		error("%s: show_instances status:%u response:%s",
 		      __func__, status, resp_msg);
 	}
@@ -4495,6 +4506,7 @@ _bb_get_pools(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	}
 	_free_script_argv(script_argv);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		trigger_burst_buffer();
 		error("%s: pools status:%u response:%s",
 		      __func__, status, resp_msg);
 	}
@@ -4553,6 +4565,7 @@ _bb_get_sessions(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	if ((!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) &&
 	    (!resp_msg || (resp_msg[0] != '{'))) {
 #endif
+		trigger_burst_buffer();
 		error("%s: show_sessions status:%u response:%s",
 		      __func__, status, resp_msg);
 	}

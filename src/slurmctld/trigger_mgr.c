@@ -3,6 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2010-2016 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -76,6 +77,7 @@ bitstr_t *trigger_down_nodes_bitmap = NULL;
 bitstr_t *trigger_drained_nodes_bitmap = NULL;
 bitstr_t *trigger_fail_nodes_bitmap = NULL;
 bitstr_t *trigger_up_nodes_bitmap   = NULL;
+static bool trigger_bb_error = false;
 static bool trigger_block_err = false;
 static bool trigger_node_reconfig = false;
 static bool trigger_pri_ctld_fail = false;
@@ -693,6 +695,13 @@ extern void trigger_block_error(void)
 	slurm_mutex_unlock(&trigger_mutex);
 }
 
+extern void trigger_burst_buffer(void)
+{
+	slurm_mutex_lock(&trigger_mutex);
+	trigger_bb_error = true;
+	slurm_mutex_unlock(&trigger_mutex);
+}
+
 static void _dump_trigger_state(trig_mgr_info_t *trig_ptr, Buf buffer)
 {
 	/* write trigger pull state flags */
@@ -750,7 +759,7 @@ static int _load_trigger_state(Buf buffer, uint16_t protocol_version)
 	}
 
 	if ((trig_ptr->res_type < TRIGGER_RES_TYPE_JOB)  ||
-	    (trig_ptr->res_type > TRIGGER_RES_TYPE_DATABASE) ||
+	    (trig_ptr->res_type > TRIGGER_RES_TYPE_OTHER) ||
 	    (trig_ptr->state > 2))
 		goto unpack_error;
 	if (trig_ptr->res_type == TRIGGER_RES_TYPE_JOB) {
@@ -1145,6 +1154,18 @@ static void _trigger_front_end_event(trig_mgr_info_t *trig_in, time_t now)
 			info("trigger[%u] for node %s up",
 			     trig_in->trig_id, trig_in->res_id);
 		}
+		return;
+	}
+}
+
+static void _trigger_other_event(trig_mgr_info_t *trig_in, time_t now)
+{
+	if ((trig_in->trig_type & TRIGGER_TYPE_BURST_BUFFER) &&
+	    trigger_bb_error) {
+		trig_in->state = 1;
+		trig_in->trig_time = now;
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_TRIGGERS)
+			info("trigger[%u] for burst buffer", trig_in->trig_id);
 		return;
 	}
 }
@@ -1569,6 +1590,7 @@ static void _clear_event_triggers(void)
 			   0, (bit_size(trigger_up_nodes_bitmap) - 1));
 	}
 	trigger_node_reconfig = false;
+	trigger_bb_error = false;
 	trigger_block_err = false;
 	trigger_pri_ctld_fail = false;
 	trigger_pri_ctld_res_op = false;
@@ -1627,7 +1649,9 @@ extern void trigger_process(void)
 	trig_iter = list_iterator_create(trigger_list);
 	while ((trig_in = list_next(trig_iter))) {
 		if (trig_in->state == 0) {
-			if (trig_in->res_type == TRIGGER_RES_TYPE_JOB)
+			if (trig_in->res_type == TRIGGER_RES_TYPE_OTHER)
+				_trigger_other_event(trig_in, now);
+			else if (trig_in->res_type == TRIGGER_RES_TYPE_JOB)
 				_trigger_job_event(trig_in, now);
 			else if (trig_in->res_type == TRIGGER_RES_TYPE_NODE)
 				_trigger_node_event(trig_in, now);

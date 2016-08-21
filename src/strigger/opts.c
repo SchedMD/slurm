@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2006-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Copyright (C) 2010-2016 SchedMD LLC.
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
@@ -55,15 +55,16 @@
 
 #include "src/strigger/strigger.h"
 
-#define OPT_LONG_HELP      0x100
-#define OPT_LONG_USAGE     0x101
-#define OPT_LONG_SET       0x102
-#define OPT_LONG_GET       0x103
-#define OPT_LONG_CLEAR     0x104
-#define OPT_LONG_USER      0x105
-#define OPT_LONG_BLOCK_ERR 0x106
-#define OPT_LONG_FRONT_END 0x107
-#define OPT_LONG_FLAGS     0x108
+#define OPT_LONG_HELP		0x100
+#define OPT_LONG_USAGE		0x101
+#define OPT_LONG_SET		0x102
+#define OPT_LONG_GET		0x103
+#define OPT_LONG_CLEAR		0x104
+#define OPT_LONG_USER		0x105
+#define OPT_LONG_BLOCK_ERR	0x106
+#define OPT_LONG_FRONT_END	0x107
+#define OPT_LONG_FLAGS		0x108
+#define OPT_LONG_BURST_BUFFER	0x109
 
 /* getopt_long options, integers but not characters */
 
@@ -117,6 +118,7 @@ extern void parse_command_line(int argc, char *argv[])
 		{"verbose",                             no_argument, 0, 'v'},
 		{"version",                             no_argument, 0, 'V'},
 		{"block_err", no_argument,       0, OPT_LONG_BLOCK_ERR},
+		{"burst_buffer", no_argument,    0, OPT_LONG_BURST_BUFFER},
 		{"clear",     no_argument,       0, OPT_LONG_CLEAR},
 		{"flags",     required_argument, 0, OPT_LONG_FLAGS},
 		{"front_end", no_argument,       0, OPT_LONG_FRONT_END},
@@ -252,6 +254,9 @@ extern void parse_command_line(int argc, char *argv[])
 		case (int) OPT_LONG_BLOCK_ERR:
 			params.block_err = true;
 			break;
+		case (int) OPT_LONG_BURST_BUFFER:
+			params.burst_buffer = true;
+			break;
 		case (int) OPT_LONG_HELP:
 			_help();
 			exit(0);
@@ -303,6 +308,7 @@ static void _init_options( void )
 	params.mode_clear   = false;
 
 	params.block_err    = false;
+	params.burst_buffer = false;
 	params.pri_ctld_fail = false;
 	params.pri_ctld_res_op = false;
 	params.pri_ctld_res_ctrl = false;
@@ -343,6 +349,7 @@ static void _print_options( void )
 	verbose("get          = %s", params.mode_get ? "true" : "false");
 	verbose("clear        = %s", params.mode_clear ? "true" : "false");
 	verbose("block_err    = %s", params.block_err ? "true" : "false");
+	verbose("burst_buffer = %s", params.burst_buffer ? "true" : "false");
 	verbose("flags        = %u", params.flags);
 	verbose("front_end    = %s", params.front_end ? "true" : "false");
 	verbose("job_id       = %u", params.job_id);
@@ -408,6 +415,7 @@ static void _validate_options( void )
 	    ((params.node_down + params.node_drained + params.node_fail +
 	      params.node_idle + params.node_up + params.reconfig +
 	      params.job_fini  + params.time_limit + params.block_err +
+	      params.burst_buffer +
      	      params.pri_ctld_fail  + params.pri_ctld_res_op  +
 	      params.pri_ctld_res_ctrl  + params.pri_ctld_acct_buffer_full  +
  	      params.bu_ctld_fail + params.bu_ctld_res_op  +
@@ -415,7 +423,7 @@ static void _validate_options( void )
 	      params.pri_dbd_res_op  + params.pri_db_fail  +
 	      params.pri_db_res_op) == 0)) {
 		error("You must specify a trigger (--block_err, --down, --up, "
-			"--reconfig, --time, --fini,)\n"
+			"--reconfig, --time, --fini, --burst_buffer,\n"
 			"--primary_slurmctld_failure,\n"
 			"--primary_slurmctld_resumed_operation,\n"
 			"--primary_slurmctld_resumed_control,\n"
@@ -489,6 +497,7 @@ Usage: strigger [--set | --get | --clear] [OPTIONS]\n\
       --get           get trigger information\n\
       --clear         delete a trigger\n\n\
       --block_err     trigger event on BlueGene block error\n\
+      --burst_buffer  trigger event on burst buffer error\n\
       --front_end     trigger event on FrontEnd node state changes\n\
   -a, --primary_slurmctld_failure\n\
                       trigger event when primary slurmctld fails\n\

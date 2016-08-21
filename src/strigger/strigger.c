@@ -3,6 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2010-2016 SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -136,6 +137,8 @@ static int _set_trigger(void)
 			ti.trig_type |= TRIGGER_TYPE_TIME;
 	} else if (params.front_end) {
 		ti.res_type = TRIGGER_RES_TYPE_FRONT_END;
+	} else if (params.burst_buffer) {
+		ti.res_type = TRIGGER_RES_TYPE_OTHER;
 	} else {
 		ti.res_type = TRIGGER_RES_TYPE_NODE;
 		if (params.node_id)
@@ -145,6 +148,8 @@ static int _set_trigger(void)
 	}
 	if (params.block_err)
 		ti.trig_type |= TRIGGER_TYPE_BLOCK_ERR;
+	if (params.burst_buffer)
+		ti.trig_type |= TRIGGER_TYPE_BURST_BUFFER;
 	if (params.node_down)
 		ti.trig_type |= TRIGGER_TYPE_DOWN;
 	if (params.node_drained)
@@ -234,6 +239,11 @@ static int _get_trigger(void)
 		if (params.block_err) {
 			if (trig_msg->trigger_array[i].trig_type
 					!= TRIGGER_TYPE_BLOCK_ERR)
+				continue;
+		}
+		if (params.burst_buffer) {
+			if (trig_msg->trigger_array[i].trig_type
+					!= TRIGGER_TYPE_BURST_BUFFER)
 				continue;
 		}
 		if (params.job_fini) {
