@@ -783,6 +783,16 @@ scontrol_update_job (int argc, char *argv[])
 			job_msg.comment = val;
 			update_cnt++;
 		}
+		else if (strncasecmp(tag, "DelayBoot", MAX(taglen, 5)) == 0) {
+			int time_sec = time_str2secs(val);
+			if (time_sec == NO_VAL) {
+				error("Invalid DelayBoot value");
+				exit_code = 1;
+				return 0;
+			}
+			job_msg.delay_boot = time_sec;
+			update_cnt++;
+		}
 		else if (strncasecmp(tag, "TimeLimit", MAX(taglen, 5)) == 0) {
 			bool incr, decr;
 			uint32_t job_current_time, time_limit;

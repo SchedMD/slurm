@@ -1127,6 +1127,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	}
 
 	pack32(dump_job_ptr->assoc_id, buffer);
+	pack32(dump_job_ptr->delay_boot, buffer);
 	pack32(dump_job_ptr->job_id, buffer);
 	pack32(dump_job_ptr->user_id, buffer);
 	pack32(dump_job_ptr->group_id, buffer);
@@ -1210,6 +1211,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->resv_name, buffer);
 	packstr(dump_job_ptr->batch_host, buffer);
 	packstr(dump_job_ptr->burst_buffer, buffer);
+	packstr(dump_job_ptr->burst_buffer_state, buffer);
 
 	select_g_select_jobinfo_pack(dump_job_ptr->select_jobinfo,
 				     buffer, SLURM_PROTOCOL_VERSION);
@@ -1264,7 +1266,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	uint32_t resv_id, spank_job_env_size = 0, qos_id, derived_ec = 0;
 	uint32_t array_job_id = 0, req_switch = 0, wait4switch = 0;
 	uint32_t profile = ACCT_GATHER_PROFILE_NOT_SET;
-	uint32_t job_state, local_job_id = 0;
+	uint32_t job_state, local_job_id = 0, delay_boot = 0;
 	time_t start_time, end_time, suspend_time, pre_sus_time, tot_sus_time;
 	time_t preempt_time = 0, deadline = 0;
 	time_t resize_time = 0, now = time(NULL);
@@ -1286,8 +1288,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	char *licenses = NULL, *state_desc = NULL, *wckey = NULL;
 	char *resv_name = NULL, *gres = NULL, *batch_host = NULL;
 	char *gres_alloc = NULL, *gres_req = NULL, *gres_used = NULL;
-	char *burst_buffer = NULL, *task_id_str = NULL, *mcs_label = NULL;
-	char *admin_comment = NULL;
+	char *burst_buffer = NULL, *burst_buffer_state = NULL;
+	char *admin_comment = NULL, *task_id_str = NULL, *mcs_label = NULL;
 	uint32_t task_id_size = NO_VAL;
 	char **spank_job_env = (char **) NULL;
 	List gres_list = NULL, part_ptr_list = NULL;
@@ -1328,6 +1330,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		}
 
 		safe_unpack32(&assoc_id, buffer);
+		safe_unpack32(&delay_boot, buffer);
 		safe_unpack32(&job_id, buffer);
 
 		/* validity test as possible */
@@ -1445,6 +1448,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&resv_name, &name_len, buffer);
 		safe_unpackstr_xmalloc(&batch_host, &name_len, buffer);
 		safe_unpackstr_xmalloc(&burst_buffer, &name_len, buffer);
+		safe_unpackstr_xmalloc(&burst_buffer_state, &name_len, buffer);
 
 		if (select_g_select_jobinfo_unpack(&select_jobinfo, buffer,
 						   protocol_version))
@@ -1937,6 +1941,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->alloc_resp_port = alloc_resp_port;
 	job_ptr->alloc_sid    = alloc_sid;
 	job_ptr->assoc_id     = assoc_id;
+	job_ptr->delay_boot   = delay_boot;
 	xfree(job_ptr->admin_comment);
 	job_ptr->admin_comment = admin_comment;
 	admin_comment          = NULL;  /* reused, nothing left to free */
@@ -1947,6 +1952,9 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	xfree(job_ptr->burst_buffer);
 	job_ptr->burst_buffer = burst_buffer;
 	burst_buffer          = NULL;  /* reused, nothing left to free */
+	xfree(job_ptr->burst_buffer_state);
+	job_ptr->burst_buffer_state = burst_buffer_state;
+	burst_buffer_state    = NULL;  /* reused, nothing left to free */
 	xfree(job_ptr->comment);
 	job_ptr->comment      = comment;
 	comment               = NULL;  /* reused, nothing left to free */
@@ -7043,6 +7051,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->job_state  = JOB_PENDING;
 	job_ptr->time_limit = job_desc->time_limit;
 	job_ptr->deadline   = job_desc->deadline;
+	if (job_desc->delay_boot != NO_VAL)
+		job_ptr->delay_boot   = job_desc->delay_boot;
 	if (job_desc->time_min != NO_VAL)
 		job_ptr->time_min = job_desc->time_min;
 	job_ptr->alloc_sid  = job_desc->alloc_sid;
@@ -8402,6 +8412,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		}
 
 		pack32(dump_job_ptr->assoc_id, buffer);
+		pack32(dump_job_ptr->delay_boot, buffer);
 		pack32(dump_job_ptr->job_id,   buffer);
 		pack32(dump_job_ptr->user_id,  buffer);
 		pack32(dump_job_ptr->group_id, buffer);
@@ -8494,6 +8505,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 			packnull(buffer);
 		}
 		packstr(dump_job_ptr->burst_buffer, buffer);
+		packstr(dump_job_ptr->burst_buffer_state, buffer);
 
 		assoc_mgr_lock(&locks);
 		if (assoc_mgr_qos_list) {
@@ -10822,7 +10834,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 	if ((job_specs->deadline) && (!IS_JOB_RUNNING(job_ptr))) {
 		char time_str[32];
-		slurm_make_time_str(&job_ptr->deadline,time_str,
+		slurm_make_time_str(&job_ptr->deadline, time_str,
 				    sizeof(time_str));
 		if (job_specs->deadline < now) {
 			error_code = ESLURM_INVALID_TIME_VALUE;
@@ -10844,6 +10856,12 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	}
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
+
+	if (job_specs->delay_boot != NO_VAL) {
+		job_ptr->delay_boot = job_specs->delay_boot;
+		info("sched: update_job: setting delay_boot to %u for job_id %u",
+		     job_specs->delay_boot, job_ptr->job_id);
+	}
 
 	/* this needs to be after partition and QOS checks */
 	if (job_specs->reservation

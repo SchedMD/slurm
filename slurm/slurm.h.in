@@ -1528,6 +1528,7 @@ typedef struct job_info {
 	uint32_t bitflags;      /* Various job flags */
 	uint16_t boards_per_node;  /* boards per node required by job   */
 	char *burst_buffer;	/* burst buffer specifications */
+	char *burst_buffer_state; /* burst buffer state info */
 	char *command;		/* command to be executed, built from submitted
 				 * job's argv and NULL for salloc command */
 	char *comment;		/* arbitrary comment (used by Moab scheduler) */

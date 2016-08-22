@@ -553,6 +553,21 @@ int _print_job_burst_buffer(job_info_t * job, int width, bool right, char* suffi
 	return SLURM_SUCCESS;
 }
 
+int _print_job_burst_buffer_state(job_info_t * job, int width, bool right,
+				  char* suffix)
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("BURST_BUFFER_STATE", width, right, true);
+	else {
+		char id[FORMAT_STRING_SIZE];
+		snprintf(id, FORMAT_STRING_SIZE, "%s", job->burst_buffer_state);
+		_print_str(id, width, right, true);
+	}
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_job_core_spec(job_info_t * job, int width, bool right, char* suffix)
 {
 	char spec[FORMAT_STRING_SIZE];
@@ -568,6 +583,17 @@ int _print_job_core_spec(job_info_t * job, int width, bool right, char* suffix)
 	} else {
 		_print_int(job->core_spec, width, right, true);
 	}
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_delay_boot(job_info_t * job, int width, bool right, char* suffix)
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("DELAY_BOOT", width, right, true);
+	else
+		_print_secs((long)job->delay_boot, width, right, true);
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;

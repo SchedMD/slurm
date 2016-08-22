@@ -584,6 +584,7 @@ struct job_record {
 	char *batch_host;		/* host executing batch script */
 	uint32_t bit_flags;             /* various flags */
 	char *burst_buffer;		/* burst buffer specification */
+	char *burst_buffer_state;	/* burst buffer state */
 	check_jobinfo_t check_job;      /* checkpoint context, opaque */
 	uint16_t ckpt_interval;		/* checkpoint interval in minutes */
 	time_t ckpt_time;		/* last time job was periodically
@@ -606,9 +607,9 @@ struct job_record {
 					 * bluegene and the linear plugins
 					 * 0 if cr is NOT enabled,
 					 * 1 if cr is enabled */
+	uint64_t db_index;              /* used only for database plugins */
 	time_t deadline;		/* deadline */
-	uint64_t db_index;              /* used only for database
-					 * plugins */
+	uint32_t delay_boot;		/* Delay boot for desired node mode */
 	uint32_t derived_ec;		/* highest exit code of all job steps */
 	struct job_details *details;	/* job details */
 	uint16_t direct_set_prio;	/* Priority set directly if

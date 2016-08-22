@@ -501,6 +501,10 @@ Prints the number of boards per node allocated to the job.
 Burst Buffer specification
 (Valid for jobs only)
 .TP
+\fBburstbufferstate\fR
+Burst Buffer state
+(Valid for jobs only)
+.TP
 \fBchptdir\fR
 Prints the directory where the job checkpoint will be written to.
 (Valid for job steps only)
@@ -549,6 +553,10 @@ dependent jobs complete. In the case of a job that can not run due to job
 dependencies never being satisfied, the full original job dependency
 specification will be reported. A value of NULL implies this job has no
 dependencies.
+(Valid for jobs only)
+.TP
+\fBdelayboot\fR
+Delay boot time.
 (Valid for jobs only)
 .TP
 \fBderivedec\fR

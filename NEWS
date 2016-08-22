@@ -25,6 +25,8 @@ documents those changes that are of interest to users and administrators.
     temporarily delay booting nodes into the desired state for a job in the
     hope of using nodes already in the proper state which will be available at
     a later time.
+ -- Add job burst_buffer_state and delay_boot fields to scontrol and squeue
+    output. Also add ability to modify delay_boot from scontrol.
 
 * Changes in Slurm 17.02.0pre1
 ==============================

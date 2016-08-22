@@ -1057,11 +1057,22 @@ extern int parse_long_format( char* format_long )
 							  field_size,
 							  right_justify,
 							  suffix );
-			else if (!xstrcasecmp(token,"burstbuffer"))
+			else if (!xstrcasecmp(token, "burstbuffer"))
 				job_format_add_burst_buffer(params.format_list,
 							    field_size,
 							    right_justify,
-							    suffix );
+							    suffix);
+			else if (!xstrcasecmp(token, "burstbufferstate"))
+				job_format_add_burst_buffer_state(
+							params.format_list,
+							field_size,
+							right_justify,
+							suffix);
+			else if (!xstrcasecmp(token, "delayboot"))
+				job_format_add_delay_boot(params.format_list,
+							  field_size,
+							  right_justify,
+							  suffix);
 			else if (!xstrcasecmp(token,"mincpus"))
 				job_format_add_min_cpus( params.format_list,
 							 field_size,

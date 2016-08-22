@@ -807,9 +807,14 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	xstrfmtcat(out, "MinMemory%s=%s MinTmpDiskNode=%s", tmp6_ptr, tmp1, tmp2);
 	xstrcat(out, line_end);
 
-	/****** Line 19 ******/
-	xstrfmtcat(out, "Features=%s Gres=%s Reservation=%s",
-		   job_ptr->features, job_ptr->gres, job_ptr->resv_name);
+	/****** Line ******/
+	secs2time_str((time_t)job_ptr->delay_boot, tmp1, sizeof(tmp1));
+	xstrfmtcat(out, "Features=%s DelayBoot=%s", job_ptr->features, tmp1);
+	xstrcat(out, line_end);
+
+	/****** Line ******/
+	xstrfmtcat(out, "Gres=%s Reservation=%s",
+		   job_ptr->gres, job_ptr->resv_name);
 	xstrcat(out, line_end);
 
 	/****** Line 20 ******/
@@ -940,6 +945,13 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	if (job_ptr->burst_buffer) {
 		xstrcat(out, line_end);
 		xstrfmtcat(out, "BurstBuffer=%s", job_ptr->burst_buffer);
+	}
+
+	/****** Line (optional) ******/
+	if (job_ptr->burst_buffer_state) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "BurstBufferState=%s",
+			   job_ptr->burst_buffer_state);
 	}
 
 	/****** Line 36 (optional) ******/

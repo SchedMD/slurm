@@ -5552,6 +5552,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		_xlate_task_str(job);
 
 		safe_unpack32(&job->assoc_id, buffer);
+		safe_unpack32(&job->delay_boot, buffer);
 		safe_unpack32(&job->job_id,   buffer);
 		safe_unpack32(&job->user_id,  buffer);
 		safe_unpack32(&job->group_id, buffer);
@@ -5564,7 +5565,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpack8 (&job->reboot,       buffer);
 		safe_unpack16(&job->restart_cnt,  buffer);
 		safe_unpack16(&job->show_flags,   buffer);
-		safe_unpack_time(&job->deadline, buffer);
+		safe_unpack_time(&job->deadline,  buffer);
 
 		safe_unpack32(&job->alloc_sid,    buffer);
 		safe_unpack32(&job->time_limit,   buffer);
@@ -5593,6 +5594,8 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpackstr_xmalloc(&job->batch_host, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->batch_script, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->burst_buffer, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->burst_buffer_state, &uint32_tmp,
+				       buffer);
 		safe_unpackstr_xmalloc(&job->qos, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->licenses, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->state_desc, &uint32_tmp, buffer);
