@@ -19,7 +19,7 @@ AC_DEFUN([X_AC_PMIX],
 
   AC_ARG_WITH(
     [pmix],
-    AS_HELP_STRING(--with-pmix=PATH,Specify path to pmix installation),
+    AS_HELP_STRING(--with-pmix=PATH,Specify path to pmix installation(s).  Multiple version directories can be ':' delimited.),
     [AS_IF([test "x$with_pmix" != xno],[with_pmix=`echo $with_pmix | sed "s/:/ /"`
       _x_ac_pmix_dirs="$with_pmix $_x_ac_pmix_dirs"])])
 

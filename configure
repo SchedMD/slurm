@@ -1794,7 +1794,8 @@ Optional Packages:
                       /usr/local or /usr if not found in /usr/local]
    --without-lz4      to disable lz4 usage completely
   --with-hwloc=PATH       Specify path to hwloc installation
-  --with-pmix=PATH        Specify path to pmix installation
+  --with-pmix=PATH        Specify path to pmix installation(s). Multiple
+                          version directories can be ':' delimited.
   --with-freeipmi=PATH    Specify path to freeipmi installation
   --with-rrdtool=PATH     Specify path to rrdtool-devel installation
   --with-mysql_config=PATH
