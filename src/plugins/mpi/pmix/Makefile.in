@@ -570,6 +570,8 @@ pmix_ldflags = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 @HAVE_PMIX_V2_TRUE@mpi_pmix_v2_la_LIBADD = $(pmix_internal_libs) $(PMIX_LIBS)
 @HAVE_PMIX_V2_TRUE@mpi_pmix_v2_la_LDFLAGS = $(pmix_ldflags) $(PMIX_V2_LDFLAGS)
 @HAVE_PMIX_V2_TRUE@mpi_pmix_v2_la_CPPFLAGS = $(AM_CPPFLAGS) $(PMIX_V2_CPPFLAGS) -DHAVE_PMIX_VER=2
+@HAVE_PMIX_V1_TRUE@@HAVE_PMIX_V2_FALSE@mpi_pmix_so := mpi_pmix_v1.so
+@HAVE_PMIX_V2_TRUE@mpi_pmix_so := mpi_pmix_v2.so
 all: all-am
 
 .SUFFIXES:
@@ -1040,7 +1042,8 @@ install-dvi: install-dvi-am
 install-dvi-am:
 
 install-exec-am:
-
+	@$(NORMAL_INSTALL)
+	$(MAKE) $(AM_MAKEFLAGS) install-exec-hook
 install-html: install-html-am
 
 install-html-am:
@@ -1081,8 +1084,9 @@ ps-am:
 
 uninstall-am: uninstall-pkglib_v1LTLIBRARIES \
 	uninstall-pkglib_v2LTLIBRARIES
-
-.MAKE: install-am install-strip
+	@$(NORMAL_INSTALL)
+	$(MAKE) $(AM_MAKEFLAGS) uninstall-hook
+.MAKE: install-am install-exec-am install-strip uninstall-am
 
 .PHONY: CTAGS GTAGS TAGS all all-am check check-am clean clean-generic \
 	clean-libtool clean-pkglib_v1LTLIBRARIES \
@@ -1091,15 +1095,16 @@ uninstall-am: uninstall-pkglib_v1LTLIBRARIES \
 	distclean-libtool distclean-tags distdir dvi dvi-am html \
 	html-am info info-am install install-am install-data \
 	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-man install-pdf install-pdf-am \
-	install-pkglib_v1LTLIBRARIES install-pkglib_v2LTLIBRARIES \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags tags-am uninstall uninstall-am \
-	uninstall-pkglib_v1LTLIBRARIES uninstall-pkglib_v2LTLIBRARIES
+	install-exec-am install-exec-hook install-html install-html-am \
+	install-info install-info-am install-man install-pdf \
+	install-pdf-am install-pkglib_v1LTLIBRARIES \
+	install-pkglib_v2LTLIBRARIES install-ps install-ps-am \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
+	pdf pdf-am ps ps-am tags tags-am uninstall uninstall-am \
+	uninstall-hook uninstall-pkglib_v1LTLIBRARIES \
+	uninstall-pkglib_v2LTLIBRARIES
 
 .PRECIOUS: Makefile
 
@@ -1107,6 +1112,13 @@ uninstall-am: uninstall-pkglib_v1LTLIBRARIES \
 force:
 $(pmix_internal_libs): force
 	@cd `dirname $@` && $(MAKE) `basename $@`
+
+install-exec-hook:
+	rm -rf $(pkglibdir)/mpi_pmix.so
+	$(LN_S) ./$(mpi_pmix_so)  $(pkglibdir)/mpi_pmix.so
+
+uninstall-hook:
+	rm -rf $(pkglibdir)/mpi_pmix.so
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

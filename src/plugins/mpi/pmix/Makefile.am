@@ -41,6 +41,23 @@ mpi_pmix_v2_la_CPPFLAGS = $(AM_CPPFLAGS) $(PMIX_V2_CPPFLAGS) -DHAVE_PMIX_VER=2
 
 endif
 
+if HAVE_PMIX_V2
+mpi_pmix_so := mpi_pmix_v2.so
+else
+
+if HAVE_PMIX_V1
+mpi_pmix_so := mpi_pmix_v1.so
+endif
+
+endif
+
 force:
 $(pmix_internal_libs): force
 	@cd `dirname $@` && $(MAKE) `basename $@`
+
+install-exec-hook:
+	rm -rf $(pkglibdir)/mpi_pmix.so
+	$(LN_S) ./$(mpi_pmix_so)  $(pkglibdir)/mpi_pmix.so
+
+uninstall-hook:
+	rm -rf $(pkglibdir)/mpi_pmix.so
