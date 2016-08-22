@@ -289,6 +289,8 @@ static int _job_rec_field(const struct job_record *job_ptr,
 		lua_pushstring (L, job_ptr->burst_buffer);
 	} else if (!xstrcmp(name, "comment")) {
 		lua_pushstring (L, job_ptr->comment);
+	} else if (!xstrcmp(name, "delay_boot")) {
+		lua_pushnumber (L, job_ptr->delay_boot);
 	} else if (!xstrcmp(name, "direct_set_prio")) {
 		lua_pushnumber (L, job_ptr->direct_set_prio);
 	} else if (!xstrcmp(name, "gres")) {
@@ -682,6 +684,8 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 		lua_pushstring (L, _get_default_qos(job_desc->user_id,
 						    job_desc->account,
 						    job_desc->partition));
+	} else if (!xstrcmp(name, "delay_boot")) {
+		lua_pushnumber (L, job_desc->delay_boot);
 	} else if (!xstrcmp(name, "dependency")) {
 		lua_pushstring (L, job_desc->dependency);
 	} else if (!xstrcmp(name, "end_time")) {
@@ -884,6 +888,8 @@ static int _set_job_req_field(lua_State *L)
 		xfree(job_desc->dependency);
 		if (strlen(value_str))
 			job_desc->dependency = xstrdup(value_str);
+	} else if (!xstrcmp(name, "delay_boot")) {
+		job_desc->delay_boot = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "end_time")) {
 		job_desc->end_time = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "exc_nodes")) {

@@ -5552,6 +5552,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		_xlate_task_str(job);
 
 		safe_unpack32(&job->assoc_id, buffer);
+		safe_unpack32(&job->delay_boot, buffer);
 		safe_unpack32(&job->job_id,   buffer);
 		safe_unpack32(&job->user_id,  buffer);
 		safe_unpack32(&job->group_id, buffer);
@@ -5564,7 +5565,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpack8 (&job->reboot,       buffer);
 		safe_unpack16(&job->restart_cnt,  buffer);
 		safe_unpack16(&job->show_flags,   buffer);
-		safe_unpack_time(&job->deadline, buffer);
+		safe_unpack_time(&job->deadline,  buffer);
 
 		safe_unpack32(&job->alloc_sid,    buffer);
 		safe_unpack32(&job->time_limit,   buffer);
@@ -5593,6 +5594,8 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpackstr_xmalloc(&job->batch_host, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->batch_script, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->burst_buffer, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->burst_buffer_state, &uint32_tmp,
+				       buffer);
 		safe_unpackstr_xmalloc(&job->qos, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->licenses, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->state_desc, &uint32_tmp, buffer);
@@ -7557,6 +7560,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		}
 		pack16(job_desc_ptr->wait_all_nodes, buffer);
 		pack32(job_desc_ptr->bitflags, buffer);
+		pack32(job_desc_ptr->delay_boot, buffer);
 	} else if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
 		packstr(job_desc_ptr->clusters, buffer);
 		pack16(job_desc_ptr->contiguous, buffer);
@@ -8060,6 +8064,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		job_desc_ptr->ramdiskimage = NULL;
 		safe_unpack16(&job_desc_ptr->wait_all_nodes, buffer);
 		safe_unpack32(&job_desc_ptr->bitflags, buffer);
+		safe_unpack32(&job_desc_ptr->delay_boot, buffer);
 	} else if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
 		job_desc_ptr = xmalloc(sizeof(job_desc_msg_t));
 		*job_desc_buffer_ptr = job_desc_ptr;

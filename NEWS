@@ -21,6 +21,12 @@ documents those changes that are of interest to users and administrators.
  -- Add event trigger on burst buffer errors (see strigger man page,
     --burst_buffer option).
  -- Add job AdminComment field which can only be set by a Slurm administrator.
+ -- Add salloc, sbatch and srun option of --delay-boot=<time>, which will
+    temporarily delay booting nodes into the desired state for a job in the
+    hope of using nodes already in the proper state which will be available at
+    a later time.
+ -- Add job burst_buffer_state and delay_boot fields to scontrol and squeue
+    output. Also add ability to modify delay_boot from scontrol.
 
 * Changes in Slurm 17.02.0pre1
 ==============================

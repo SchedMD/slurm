@@ -187,6 +187,7 @@ typedef struct sbatch_options {
 	uint8_t power_flags;	/* Power management options	*/
 	char *mcs_label;	/* mcs label if mcs plugin in use */
 	time_t deadline;	/* ---deadline                  */
+	uint32_t delay_boot;	/* --delay-boot			*/
 } opt_t;
 
 extern opt_t opt;

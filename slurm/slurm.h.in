@@ -1375,6 +1375,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
 	uint32_t cpu_freq_gov;  /* cpu frequency governor */
 	time_t deadline;	/* deadline */
+	uint32_t delay_boot;	/* delay boot for desired node state */
 	char *dependency;	/* synchronize job execution with other jobs */
 	time_t end_time;	/* time by which job must complete, used for
 				 * job update only now, possible deadline
@@ -1527,6 +1528,7 @@ typedef struct job_info {
 	uint32_t bitflags;      /* Various job flags */
 	uint16_t boards_per_node;  /* boards per node required by job   */
 	char *burst_buffer;	/* burst buffer specifications */
+	char *burst_buffer_state; /* burst buffer state info */
 	char *command;		/* command to be executed, built from submitted
 				 * job's argv and NULL for salloc command */
 	char *comment;		/* arbitrary comment (used by Moab scheduler) */
@@ -1540,6 +1542,7 @@ typedef struct job_info {
 	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
 	uint32_t cpu_freq_gov;  /* cpu frequency governor */
 	time_t deadline;	/* deadline */
+	uint32_t delay_boot;	/* delay boot for desired node state */
 	char *dependency;	/* synchronize job execution with other jobs */
 	uint32_t derived_ec;	/* highest exit code of all job steps */
 	time_t eligible_time;	/* time job is eligible for running */

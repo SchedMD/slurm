@@ -64,6 +64,7 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->cpu_freq_max	= NO_VAL;
 	job_desc_msg->cpu_freq_gov	= NO_VAL;
 	job_desc_msg->cpus_per_task	= (uint16_t) NO_VAL;
+	job_desc_msg->delay_boot	= NO_VAL;
 	job_desc_msg->geometry[0]       = (uint16_t) NO_VAL;
 	job_desc_msg->group_id		= NO_VAL;
 	job_desc_msg->job_id		= NO_VAL;

@@ -795,6 +795,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->power_flags = opt.power_flags;
 	if (opt.mcs_label)
 		desc->mcs_label = xstrdup(opt.mcs_label);
+	if (opt.delay_boot != NO_VAL)
+		desc->delay_boot = opt.delay_boot;
 
 	return 0;
 }
