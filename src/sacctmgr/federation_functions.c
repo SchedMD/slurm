@@ -609,7 +609,6 @@ extern int sacctmgr_list_federation(int argc, char *argv[])
 						(curr_inx == field_count));
 					break;
 				case PRINT_FLAGS:
-				{
 					if (tree_display && tmp_cluster)
 						tmp_str = NULL;
 					else {
@@ -624,7 +623,6 @@ extern int sacctmgr_list_federation(int argc, char *argv[])
 					if (tmp_str)
 						xfree(tmp_str);
 					break;
-				}
 
 				/* Cluster Specific Fields */
 				case PRINT_CLUSTER:
