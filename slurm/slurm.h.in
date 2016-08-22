@@ -1338,6 +1338,7 @@ typedef struct power_mgmt_data {
 typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *account;		/* charge to specified account */
 	char *acctg_freq;	/* accounting polling intervals (seconds) */
+	char *admin_comment;	/* administrator's arbitrary comment (update only) */
 	char *alloc_node;	/* node making resource allocation request
 				 * NOTE: Normally set by slurm_submit* or
 				 * slurm_allocate* function */
@@ -1511,6 +1512,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 
 typedef struct job_info {
 	char *account;		/* charge to specified account */
+	char *admin_comment;	/* administrator's arbitrary comment */
 	char    *alloc_node;	/* local node making resource alloc */
 	uint32_t alloc_sid;	/* local sid making resource alloc */
 	void *array_bitmap;	/* NOTE: set on unpack */

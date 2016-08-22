@@ -1385,6 +1385,18 @@ int _print_job_account(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
+int _print_job_admin_comment(job_info_t * job, int width, bool right_justify,
+			     char* suffix)
+{
+	if (job == NULL)	 /* Print the Header instead */
+		_print_str("ADMIN_COMMENT", width, right_justify, true);
+	else
+		_print_str(job->admin_comment, width, right_justify, true);
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_job_comment(job_info_t * job, int width, bool right_justify,
 			char* suffix)
 {

@@ -20,6 +20,7 @@ documents those changes that are of interest to users and administrators.
     slurmstepd_memlock and slurmstepd_memlock_all.
  -- Add event trigger on burst buffer errors (see strigger man page,
     --burst_buffer option).
+ -- Add job AdminComment field which can only be set by a Slurm administrator.
 
 * Changes in Slurm 17.02.0pre1
 ==============================

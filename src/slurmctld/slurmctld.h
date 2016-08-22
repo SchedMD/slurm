@@ -565,6 +565,7 @@ typedef struct {
  */
 struct job_record {
 	char    *account;		/* account number to charge */
+	char    *admin_comment;		/* administrator's arbitrary comment */
 	char	*alias_list;		/* node name to address aliases */
 	char    *alloc_node;		/* local node making resource alloc */
 	uint16_t alloc_resp_port;	/* RESPONSE_RESOURCE_ALLOCATION port */

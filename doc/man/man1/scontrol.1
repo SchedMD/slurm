@@ -506,6 +506,10 @@ Repeat the last command executed.
 Account name to be changed for this job's resource use.
 Value may be cleared with blank data value, "Account=".
 .TP
+\fIAdminComment\fP=<spec> OR +=<spec>
+Arbitrary descriptive string. Can only be set by a Slurm administrator.
+Use "+=" syntax to append information.
+.TP
 \fIArrayTaskThrottle\fP=<count>
 Speciify the maximum number of tasks in a job array that can execute at
 the same time.
@@ -519,6 +523,9 @@ is limited to 2.
 Burst buffer specification to be changed for this job's resource use.
 Value may be cleared with blank data value, "BurstBuffer=".
 Format is burst buffer plugin specific.
+.TP
+\fIComment\fP=<spec>
+Arbitrary descriptive string.
 .TP
 \fIConn\-Type\fP=<type>
 Reset the node connection type. Supported only on IBM BlueGene systems.

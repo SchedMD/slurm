@@ -728,10 +728,15 @@ scontrol_update_job (int argc, char *argv[])
 
 	slurm_init_job_desc_msg (&job_msg);
 	for (i = 0; i < argc; i++) {
+		char *add_info = NULL;
 		tag = argv[i];
 		val = strchr(argv[i], '=');
 		if (val) {
 			taglen = val - argv[i];
+			if ((taglen > 0) && (val[-1] == '+')) {
+				add_info = val - 1;
+				taglen--;
+			}
 			val++;
 			vallen = strlen(val);
 		} else if (strncasecmp(tag, "Nice", MAX(strlen(tag), 2)) == 0){
@@ -754,6 +759,13 @@ scontrol_update_job (int argc, char *argv[])
 
 		if (strncasecmp(tag, "JobId", MAX(taglen, 3)) == 0) {
 			job_msg.job_id_str = val;
+		}
+		else if (strncasecmp(tag, "AdminComment", MAX(taglen, 3)) == 0){
+			if (add_info)
+				job_msg.admin_comment = add_info;
+			else
+				job_msg.admin_comment = val;
+			update_cnt++;
 		}
 		else if (strncasecmp(tag, "ArrayTaskThrottle",
 				     MAX(taglen, 10)) == 0) {
