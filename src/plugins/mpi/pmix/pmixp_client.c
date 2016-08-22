@@ -62,6 +62,22 @@
 	(void)strncpy(kvp->key, key, PMIX_MAX_KEYLEN);		\
 }
 
+#define PMIXP_INFO_ADD(kvp, key_str, field, val) \
+({ \
+	int key_num = 0; \
+	char *key = key_str; \
+	if (kvp == NULL) \
+		kvp = (pmix_info_t *)xmalloc(sizeof(pmix_info_t)); \
+	else { \
+		key_num = xsize(kvp) / sizeof(pmix_info_t); \
+		kvp = (pmix_info_t *)xrealloc(kvp, (key_num + 1) * sizeof(pmix_info_t)); \
+	} \
+	(void)strncpy(kvp[key_num].key, key, PMIX_MAX_KEYLEN); \
+	PMIX_VAL_SET(&kvp[key_num].value, field, val); \
+})
+
+#define PMIXP_INFO_SIZE(kvp) (xsize(kvp) / sizeof(pmix_info_t))
+
 #define PMIXP_FREE_KEY(kvp)				\
 {								\
 	xfree(kvp);						\
@@ -195,7 +211,7 @@ int pmixp_libpmix_init(void)
 {
 	int rc;
 	mode_t rights = (S_IRUSR | S_IWUSR | S_IXUSR) | (S_IRGRP | S_IWGRP | S_IXGRP);
-	pmix_info_t *kvp;
+	pmix_info_t *kvp = NULL;
 
 	/* NOTE: we need user who owns the job to access PMIx usock
 	 * file. According to 'man 7 unix':
@@ -222,20 +238,26 @@ int pmixp_libpmix_init(void)
 		error("chown(%s): %m", pmixp_info_tmpdir_lib());
 		return errno;
 	}
-	
+
+	/* TODO: must be deleted in future once info-key approach will harden */
 	setenv(PMIXP_PMIXLIB_TMPDIR, pmixp_info_tmpdir_lib(), 1);
 
-	PMIXP_ALLOC_KEY(kvp, PMIX_USERID);
-	PMIX_VAL_SET(&kvp->value, uint32_t, pmixp_info_jobuid());
+	PMIXP_INFO_ADD(kvp, PMIX_USERID, uint32_t, pmixp_info_jobuid());
+
+#ifdef PMIX_SERVER_TMPDIR
+	PMIXP_INFO_ADD(kvp, PMIX_SERVER_TMPDIR, string,
+		       pmixp_info_tmpdir_lib());
+#endif
 
 	/* setup the server library */
-	if (PMIX_SUCCESS != (rc = PMIx_server_init(&_slurm_pmix_cb, kvp, 1))) {
+	if (PMIX_SUCCESS != (rc = PMIx_server_init(&_slurm_pmix_cb, kvp,
+						   PMIXP_INFO_SIZE(kvp)))) {
 		PMIXP_ERROR_STD("PMIx_server_init failed with error %d\n", rc);
 		return SLURM_ERROR;
 	}
 
 	PMIXP_FREE_KEY(kvp);
-	
+
 	/*
 	if( pmixp_fixrights(pmixp_info_tmpdir_lib(),
 		(uid_t) pmixp_info_jobuid(), rights) ){
