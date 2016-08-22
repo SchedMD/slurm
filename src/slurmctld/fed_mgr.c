@@ -58,6 +58,7 @@
 
 static char                  *fed_mgr_cluster_name = NULL;
 static fed_elem_t             fed_mgr_fed_info;
+static uint32_t               fed_mgr_fed_flags    = 0;
 static List                   fed_mgr_siblings     = NULL;
 static slurmdb_cluster_rec_t *fed_mgr_loc_cluster  = NULL;
 
@@ -245,7 +246,8 @@ static void _destroy_ping_thread()
 /*
  * Must have FED write lock prior to entering
  */
-static void _join_federation(slurmdb_cluster_rec_t *db_cluster, List siblings)
+static void _join_federation(slurmdb_cluster_rec_t *db_cluster, List siblings,
+			     uint32_t fed_flags)
 {
 	slurmdb_cluster_rec_t *tmp_cluster;
 	ListIterator c_itr;
@@ -256,6 +258,8 @@ static void _join_federation(slurmdb_cluster_rec_t *db_cluster, List siblings)
 	xfree(fed_mgr_fed_info.name);
 	memcpy(&fed_mgr_fed_info, &db_cluster->fed, sizeof(fed_elem_t));
 	fed_mgr_fed_info.name = xstrdup(db_cluster->fed.name);
+
+	fed_mgr_fed_flags = fed_flags;
 
 	/* Store the cluster_rec from the db for passing this information back
 	 * in scontrol show fed. This is so that it doesn't need to be stored in
@@ -312,6 +316,7 @@ static void _leave_federation()
 	FREE_NULL_LIST(fed_mgr_siblings);
 	slurmdb_destroy_cluster_rec(fed_mgr_loc_cluster);
 	fed_mgr_loc_cluster = NULL;
+	fed_mgr_fed_flags = 0;
 }
 
 extern int fed_mgr_init()
@@ -383,7 +388,8 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 		while ((cluster = list_next(c_itr))) {
 			if (!xstrcasecmp(cluster->name, fed_mgr_cluster_name)) {
 				part_of_fed = true;
-				_join_federation(cluster, fed->cluster_list);
+				_join_federation(cluster, fed->cluster_list,
+						 fed->flags);
 				break;
 			}
 		}
@@ -425,6 +431,7 @@ extern int fed_mgr_get_fed_info(slurmdb_federation_rec_t **ret_fed)
 
 		tmp_fed.name         = fed_mgr_fed_info.name;
 		tmp_fed.cluster_list = fed_mgr_siblings;
+		tmp_fed.flags        = fed_mgr_fed_flags;
 
 		slurmdb_copy_federation_rec(out_fed, &tmp_fed);
 
@@ -454,10 +461,6 @@ static List _make_state_save_siblings()
 	ListIterator itr;
 	slurmdb_cluster_rec_t *tmp_rec;
 	slurmdb_cluster_rec_t *tmp_fed_mgr_loc_cluster;
-	slurmctld_lock_t fed_read_lock = {
-		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
-
-	lock_slurmctld(fed_read_lock);
 
 	if (!fed_mgr_fed_info.name)
 		goto end_it;
@@ -482,7 +485,6 @@ static List _make_state_save_siblings()
 	list_iterator_destroy(itr);
 
 end_it:
-	unlock_slurmctld(fed_read_lock);
 	return ret_list;
 }
 
@@ -491,6 +493,9 @@ extern int fed_mgr_state_save(char *state_save_location)
 	int error_code = 0, log_fd;
 	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
 	dbd_list_msg_t msg;
+	slurmctld_lock_t fed_read_lock = {
+		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
+
 	Buf buffer = init_buf(0);
 
 	DEF_TIMERS;
@@ -501,12 +506,16 @@ extern int fed_mgr_state_save(char *state_save_location)
 	pack16(SLURM_PROTOCOL_VERSION, buffer);
 	pack_time(time(NULL), buffer);
 
+	lock_slurmctld(fed_read_lock);
+	pack32(fed_mgr_fed_flags, buffer);
+
 	memset(&msg, 0, sizeof(dbd_list_msg_t));
 
 	msg.my_list = _make_state_save_siblings();
 	slurmdbd_pack_list_msg(&msg, SLURM_PROTOCOL_VERSION,
 			       DBD_ADD_CLUSTERS, buffer);
 	FREE_NULL_LIST(msg.my_list);
+	unlock_slurmctld(fed_read_lock);
 
 	/* write the buffer to file */
 	reg_file = xstrdup_printf("%s/%s", state_save_location,
@@ -565,7 +574,7 @@ extern int fed_mgr_state_load(char *state_save_location)
 	char *data = NULL, *state_file;
 	time_t buf_time;
 	uint16_t ver = 0;
-	uint32_t data_size = 0;
+	uint32_t data_size = 0, tmp_fed_flags = 0;
 	int state_fd;
 	int data_allocated, data_read = 0, error_code = SLURM_SUCCESS;
 	slurmdb_cluster_rec_t *cluster = NULL;
@@ -619,6 +628,7 @@ extern int fed_mgr_state_load(char *state_save_location)
 	}
 
 	safe_unpack_time(&buf_time, buffer);
+	safe_unpack32(&tmp_fed_flags, buffer);
 
 	error_code = slurmdbd_unpack_list_msg(&msg, ver, DBD_ADD_CLUSTERS,
 					      buffer);
@@ -641,7 +651,7 @@ extern int fed_mgr_state_load(char *state_save_location)
 		slurmdbd_free_list_msg(msg);
 		goto unpack_error;
 	} else if (cluster) {
-		_join_federation(cluster, msg->my_list);
+		_join_federation(cluster, msg->my_list, tmp_fed_flags);
 	}
 	unlock_slurmctld(fed_write_lock);
 
