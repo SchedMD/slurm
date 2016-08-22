@@ -721,11 +721,12 @@ job_desc_msg_create_from_opts (void)
 		j->nice   = NICE_OFFSET + opt.nice;
 	if (opt.priority)
 		j->priority = opt.priority;
-
 	if (opt.cpu_bind)
 		j->cpu_bind       = opt.cpu_bind;
 	if (opt.cpu_bind_type)
 		j->cpu_bind_type  = opt.cpu_bind_type;
+	if (opt.delay_boot != NO_VAL)
+		j->delay_boot = opt.delay_boot;
 	if (opt.mem_bind)
 		j->mem_bind       = opt.mem_bind;
 	if (opt.mem_bind_type)

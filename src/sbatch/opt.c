@@ -115,6 +115,7 @@ enum wrappers {
 #define OPT_ARRAY_INX     0x20
 #define OPT_PROFILE       0x21
 #define OPT_HINT	  0x22
+#define OPT_DELAY_BOOT	  0x23
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_PROPAGATE   0x100
@@ -184,6 +185,7 @@ enum wrappers {
 #define LONG_OPT_MCS_LABEL       0x165
 #define LONG_OPT_DEADLINE        0x166
 #define LONG_OPT_BURST_BUFFER_FILE 0x167
+#define LONG_OPT_DELAY_BOOT      0x168
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -411,6 +413,7 @@ static void _opt_default(void)
 	opt.job_flags = 0;
 
 	opt.mcs_label		= NULL;
+	opt.delay_boot      = NO_VAL;
 }
 
 /* Read specified file's contents into a buffer.
@@ -480,6 +483,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL          },
   {"SBATCH_CPU_FREQ_REQ",  OPT_CPU_FREQ,   NULL,               NULL          },
   {"SBATCH_DEBUG",         OPT_DEBUG,      NULL,               NULL          },
+  {"SBATCH_DELAY_BOOT",    OPT_DELAY_BOOT, NULL,               NULL          },
   {"SBATCH_DISTRIBUTION",  OPT_DISTRIB ,   NULL,               NULL          },
   {"SBATCH_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL          },
   {"SBATCH_EXPORT",        OPT_STRING,     &opt.export_env,    NULL          },
@@ -542,6 +546,7 @@ static void
 _process_env_var(env_vars_t *e, const char *val)
 {
 	char *end = NULL;
+	int i;
 
 	debug2("now processing env var %s=%s", e->var, val);
 
@@ -725,6 +730,14 @@ _process_env_var(env_vars_t *e, const char *val)
 		opt.core_spec = parse_int("thread_spec", val, false) |
 					 CORE_SPEC_THREAD;
 		break;
+	case OPT_DELAY_BOOT:
+		i = time_str2secs(val);
+		if (i == NO_VAL)
+			error("Invalid SBATCH_DELAY_BOOT argument: %s. Ignored",
+			      val);
+		else
+			opt.delay_boot = (uint32_t) i;
+		break;
 	default:
 		/* do nothing */
 		break;
@@ -790,6 +803,7 @@ static struct option long_options[] = {
 	{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 	{"cpu-freq",         required_argument, 0, LONG_OPT_CPU_FREQ},
 	{"deadline",      required_argument, 0, LONG_OPT_DEADLINE},
+	{"delay-boot",    required_argument, 0, LONG_OPT_DELAY_BOOT},
 	{"exclusive",     optional_argument, 0, LONG_OPT_EXCLUSIVE},
 	{"export",        required_argument, 0, LONG_OPT_EXPORT},
 	{"export-file",   required_argument, 0, LONG_OPT_EXPORT_FILE},
@@ -1288,7 +1302,7 @@ static bool _opt_wrpr_batch_script(const char *file, const void *body,
 
 static void _set_options(int argc, char **argv)
 {
-	int opt_char, option_index = 0, max_val = 0;
+	int opt_char, option_index = 0, max_val = 0, i;
 	char *tmp;
 
 	struct option *optz = spank_option_table_create(long_options);
@@ -1488,9 +1502,18 @@ static void _set_options(int argc, char **argv)
 			opt.deadline = parse_time(optarg, 0);
 			if (errno == ESLURM_INVALID_TIME_VALUE) {
 				error("Invalid deadline specification %s",
-				       optarg);
+				      optarg);
 				exit(error_exit);
 			}
+			break;
+		case LONG_OPT_DELAY_BOOT:
+			i = time_str2secs(optarg);
+			if (i == NO_VAL) {
+				error("Invalid delay-boot specification %s",
+				      optarg);
+				exit(error_exit);
+			}
+			opt.delay_boot = (uint32_t) i;
 			break;
 		case LONG_OPT_EXCLUSIVE:
 			if (optarg == NULL) {
@@ -3190,6 +3213,8 @@ static void _opt_list(void)
 	info("cpu_freq_min      : %u", opt.cpu_freq_min);
 	info("cpu_freq_max      : %u", opt.cpu_freq_max);
 	info("cpu_freq_gov      : %u", opt.cpu_freq_gov);
+	if (opt.delay_boot != NO_VAL)
+		info("delay_boot        : %u", opt.delay_boot);
 	info("mail_type         : %s", print_mail_type(opt.mail_type));
 	info("mail_user         : %s", opt.mail_user);
 	info("sockets-per-node  : %d", opt.sockets_per_node);
@@ -3259,7 +3284,8 @@ static void _usage(void)
 "              [--switches=max-switches{@max-time-to-wait}] [--reboot]\n"
 "              [--core-spec=cores] [--thread-spec=threads] [--bbf=burst_buffer_file]\n"
 "              [--array=index_values] [--profile=...] [--ignore-pbs] [--spread-job]\n"
-"              [--export[=names]] [--export-file=file|fd] executable [args...]\n");
+"              [--export[=names]] [--export-file=file|fd] [--delay-boot=mins]\n"
+"              executable [args...]\n");
 }
 
 static void _help(void)
@@ -3285,6 +3311,7 @@ static void _help(void)
 "  -d, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
 "      --deadline=time         remove the job if no ending possible before\n"
 "                              this deadline (start > (deadline - time[-min]))\n"
+"      --delay-boot=mins       delay boot for desired node features\n"
 "  -D, --workdir=directory     set working directory for batch script\n"
 "  -e, --error=err             file for batch script's standard error\n"
 "      --export[=names]        specify environment variables to export\n"

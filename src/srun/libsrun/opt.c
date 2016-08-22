@@ -117,6 +117,7 @@
 #define OPT_EXPORT	0x21
 #define OPT_HINT	0x22
 #define OPT_SPREAD_JOB  0x23
+#define OPT_DELAY_BOOT  0x24
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_HELP        0x100
@@ -198,6 +199,7 @@
 #define LONG_OPT_ACCEL_BIND      0x161
 #define LONG_OPT_MCS_LABEL       0x165
 #define LONG_OPT_DEADLINE        0x166
+#define LONG_OPT_DELAY_BOOT      0x167
 
 extern char **environ;
 
@@ -540,6 +542,7 @@ static void _opt_default(void)
 	opt.priority = 0;
 	opt.power_flags = 0;
 	opt.mcs_label = NULL;
+	opt.delay_boot = NO_VAL;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -576,6 +579,7 @@ env_vars_t env_vars[] = {
 {"SLURM_CPUS_PER_TASK", OPT_INT,        &opt.cpus_per_task, &opt.cpus_set    },
 {"SLURM_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL             },
 {"SLURM_CPU_FREQ_REQ",  OPT_CPU_FREQ,   NULL,               NULL             },
+{"SLURM_DELAY_BOOT",    OPT_DELAY_BOOT, NULL,               NULL             },
 {"SLURM_DEPENDENCY",    OPT_STRING,     &opt.dependency,    NULL             },
 {"SLURM_DISABLE_STATUS",OPT_INT,        &opt.disable_status,NULL             },
 {"SLURM_DISTRIBUTION",  OPT_DISTRIB,    NULL,               NULL             },
@@ -674,6 +678,7 @@ _process_env_var(env_vars_t *e, const char *val)
 {
 	char *end = NULL;
 	task_dist_states_t dt;
+	int i;
 
 	debug2("now processing env var %s=%s", e->var, val);
 
@@ -865,6 +870,14 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_SPREAD_JOB:
 		opt.job_flags |= SPREAD_JOB;
 		break;
+	case OPT_DELAY_BOOT:
+		i = time_str2secs(val);
+		if (i == NO_VAL)
+			error("Invalid SLURM_DELAY_BOOT argument: %s. Ignored",
+			      val);
+		else
+			opt.delay_boot = (uint32_t) i;
+		break;
 	default:
 		/* do nothing */
 		break;
@@ -949,6 +962,7 @@ static void _set_options(const int argc, char **argv)
 		{"cpu-freq",         required_argument, 0, LONG_OPT_CPU_FREQ},
 		{"deadline",         required_argument, 0, LONG_OPT_DEADLINE},
 		{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
+		{"delay-boot",       required_argument, 0, LONG_OPT_DELAY_BOOT},
 		{"epilog",           required_argument, 0, LONG_OPT_EPILOG},
 		{"exclusive",        optional_argument, 0, LONG_OPT_EXCLUSIVE},
 		{"export",           required_argument, 0, LONG_OPT_EXPORT},
@@ -1762,6 +1776,15 @@ static void _set_options(const int argc, char **argv)
 		case LONG_OPT_SPREAD_JOB:
 			opt.job_flags |= SPREAD_JOB;
 			break;
+		case LONG_OPT_DELAY_BOOT:
+			tmp_int = time_str2secs(optarg);
+			if (tmp_int == NO_VAL) {
+				error("Invalid delay-boot specification %s",
+				      optarg);
+				exit(error_exit);
+			}
+			opt.delay_boot = (uint32_t) tmp_int;
+			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
 				exit(error_exit);
@@ -2506,6 +2529,8 @@ static void _opt_list(void)
 	info("cpu_freq_min   : %u", opt.cpu_freq_min);
 	info("cpu_freq_max   : %u", opt.cpu_freq_max);
 	info("cpu_freq_gov   : %u", opt.cpu_freq_gov);
+	if (opt.delay_boot != NO_VAL)
+		info("delay_boot        : %u", opt.delay_boot);
 	info("switches       : %d", opt.req_switch);
 	info("wait-for-switches : %d", opt.wait4switch);
 	info("distribution   : %s", format_task_dist_states(opt.distribution));
@@ -2722,7 +2747,7 @@ static void _usage(void)
 "            [--core-spec=cores] [--thread-spec=threads]\n"
 "            [--bb=burst_buffer_spec] [--bbf=burst_buffer_file]\n"
 "            [--bcast=<dest_path>] [--compress[=library]]\n"
-"            [--acctg-freq=<datatype>=<interval>]\n"
+"            [--acctg-freq=<datatype>=<interval>] [--delay-boot=mins]\n"
 "            [-w hosts...] [-x hosts...] executable [args...]\n");
 
 }
@@ -2754,6 +2779,7 @@ static void _help(void)
 "  -d, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
 "      --deadline=time         remove the job if no ending possible before\n"
 "                              this deadline (start > (deadline - time[-min]))\n"
+"      --delay-boot=mins       delay boot for desired node features\n"
 "  -D, --chdir=path            change remote current working directory\n"
 "      --export=env_vars|NONE  environment variables passed to launcher with\n"
 "                              optional values or NONE (pass no variables)\n"

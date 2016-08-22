@@ -505,6 +505,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->begin_time = opt.begin;
 	if (opt.deadline)
 		desc->deadline = opt.deadline;
+	if (opt.delay_boot != NO_VAL)
+		desc->delay_boot = opt.delay_boot;
 	if (opt.account)
 		desc->account = xstrdup(opt.account);
 	if (opt.comment)

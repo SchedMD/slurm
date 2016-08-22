@@ -386,6 +386,15 @@ MM/DD[/YY]\-HH:MM[:SS]
 YYYY\-MM\-DD[THH:MM[:SS]]]
 
 .TP
+\fB\-\-delay\-boot\fR=<\fIminutes\fR>
+If nodes with the features requested by the job are expected to be available
+within this time period, then wait for those nodes rather than booting currently
+available nodes into the desired state.
+The argument is in units of minutes.
+A default value may be specified using the \fBDelayBoot\fR configuration
+parameter in the knl.conf file, otherwise the default value is zero (no delay).
+
+.TP
 \fB\-d\fR, \fB\-\-dependency\fR=<\fIdependency_list\fR>
 Defer the start of this job until the specified dependencies have been
 satisfied completed.
@@ -1441,6 +1450,9 @@ Same as \fB\-\-core\-spec\fR
 .TP
 \fBSALLOC_DEBUG\fR
 Same as \fB\-v, \-\-verbose\fR
+.TP
+\fBSALLOC_DELAY_BOOT\fR
+Same as \fB\-\-delay\-boot\fR
 .TP
 \fBSALLOC_EXCLUSIVE\fR
 Same as \fB\-\-exclusive\fR

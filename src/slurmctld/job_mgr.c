@@ -3638,7 +3638,8 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	debug3("   mcs_label=%s", job_specs->mcs_label);
 	slurm_make_time_str(&job_specs->deadline, buf, sizeof(buf));
 	debug3("   deadline=%s", buf);
-	debug3("   bitflags=%u", job_specs->bitflags);
+	debug3("   bitflags=%u delay_boot=%u", job_specs->bitflags,
+	       job_specs->delay_boot);
 
 	select_g_select_jobinfo_sprint(job_specs->select_jobinfo,
 				       buf, sizeof(buf), SELECT_PRINT_MIXED);

@@ -106,6 +106,7 @@
 #define OPT_CPU_FREQ    0x1b
 #define OPT_THREAD_SPEC 0x1c
 #define OPT_SPREAD_JOB  0x1d
+#define OPT_DELAY_BOOT	0x1e
 
 /* generic getopt_long flags, integers and *not* valid characters */
 
@@ -166,7 +167,7 @@
 #define LONG_OPT_THREAD_SPEC     0x163
 #define LONG_OPT_MCS_LABEL       0x165
 #define LONG_OPT_DEADLINE        0x166
-
+#define LONG_OPT_DELAY_BOOT      0x167
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -361,6 +362,7 @@ static void _opt_default()
 	opt.cpu_freq_min    = NO_VAL;
 	opt.cpu_freq_max    = NO_VAL;
 	opt.cpu_freq_gov    = NO_VAL;
+	opt.delay_boot      = NO_VAL;
 	opt.no_shell	    = false;
 	opt.get_user_env_time = -1;
 	opt.get_user_env_mode = -1;
@@ -402,6 +404,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL          },
   {"SALLOC_CPU_FREQ_REQ",  OPT_CPU_FREQ,   NULL,               NULL          },
   {"SALLOC_DEBUG",         OPT_DEBUG,      NULL,               NULL          },
+  {"SALLOC_DELAY_BOOT",    OPT_DELAY_BOOT, NULL,               NULL          },
   {"SALLOC_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL          },
   {"SALLOC_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL          },
   {"SALLOC_GRES_FLAGS",    OPT_GRES_FLAGS, NULL,               NULL          },
@@ -455,6 +458,7 @@ static void
 _process_env_var(env_vars_t *e, const char *val)
 {
 	char *end = NULL;
+	int i;
 
 	debug2("now processing env var %s=%s", e->var, val);
 
@@ -628,6 +632,14 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_SPREAD_JOB:
 		opt.job_flags |= SPREAD_JOB;
 		break;
+	case OPT_DELAY_BOOT:
+		i = time_str2secs(val);
+		if (i == NO_VAL)
+			error("Invalid SALLOC_DELAY_BOOT argument: %s. Ignored",
+			      val);
+		else
+			opt.delay_boot = (uint32_t) i;
+		break;
 	default:
 		/* do nothing */
 		break;
@@ -636,7 +648,7 @@ _process_env_var(env_vars_t *e, const char *val)
 
 void set_options(const int argc, char **argv)
 {
-	int opt_char, option_index = 0, max_val = 0;
+	int opt_char, option_index = 0, max_val = 0, i;
 	char *tmp;
 	static struct option long_options[] = {
 		{"account",       required_argument, 0, 'A'},
@@ -685,6 +697,7 @@ void set_options(const int argc, char **argv)
 		{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 		{"cpu-freq",         required_argument, 0, LONG_OPT_CPU_FREQ},
 		{"deadline",      required_argument, 0, LONG_OPT_DEADLINE},
+		{"delay-boot",    required_argument, 0, LONG_OPT_DELAY_BOOT},
 		{"exclusive",     optional_argument, 0, LONG_OPT_EXCLUSIVE},
 		{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 		{"gid",           required_argument, 0, LONG_OPT_GID},
@@ -935,9 +948,18 @@ void set_options(const int argc, char **argv)
 			opt.deadline = parse_time(optarg, 0);
 			if (errno == ESLURM_INVALID_TIME_VALUE) {
 				error("Invalid deadline specification %s",
-				       optarg);
+				      optarg);
 				exit(error_exit);
 			}
+			break;
+		case LONG_OPT_DELAY_BOOT:
+			i = time_str2secs(optarg);
+			if (i == NO_VAL) {
+				error("Invalid delay-boot specification %s",
+				      optarg);
+				exit(error_exit);
+			}
+			opt.delay_boot = (uint32_t) i;
 			break;
                 case LONG_OPT_EXCLUSIVE:
 			if (optarg == NULL) {
@@ -1889,6 +1911,8 @@ static void _opt_list(void)
 	info("wckey          : `%s'", opt.wckey);
 	if (opt.jobid != NO_VAL)
 		info("jobid          : %u", opt.jobid);
+	if (opt.delay_boot != NO_VAL)
+		info("delay_boot     : %u", opt.delay_boot);
 	info("distribution   : %s", format_task_dist_states(opt.distribution));
 	if (opt.distribution == SLURM_DIST_PLANE)
 		info("plane size   : %u", opt.plane_size);
@@ -2025,7 +2049,7 @@ static void _usage(void)
 "              [--switches=max-switches[@max-time-to-wait]]\n"
 "              [--core-spec=cores] [--thread-spec=threads] [--reboot]\n"
 "              [--bb=burst_buffer_spec] [--bbf=burst_buffer_file]\n"
-"              [executable [args...]]\n");
+"              [--delay-boot=mins] [executable [args...]]\n");
 }
 
 static void _help(void)
@@ -2044,6 +2068,7 @@ static void _help(void)
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
 "      --comment=name          arbitrary comment\n"
 "      --cpu-freq=min[-max[:gov]] requested cpu frequency (and governor)\n"
+"      --delay-boot=mins       delay boot for desired node features\n"
 "  -d, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
 "      --deadline=time         remove the job if no ending possible before\n"
 "                              this deadline (start > (deadline - time[-min]))\n"
