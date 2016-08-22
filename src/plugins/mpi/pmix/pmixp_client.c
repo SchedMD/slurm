@@ -48,6 +48,13 @@
 #include <sys/types.h>
 #include <pmix_server.h>
 
+/* Check PMIx version */
+#if (HAVE_PMIX_VER != PMIX_VERSION_MAJOR)
+#define VALUE_TO_STRING(x) #x
+#define VALUE(x) VALUE_TO_STRING(x)
+#pragma message "PMIx version mismatch: the major version seen during configuration was " VALUE(HAVE_PMIX_VER) "L but found " VALUE(PMIX_VERSION_MAJOR) " compilation will most likely fail.  Please reconfigure against the new version."
+#endif
+
 #define PMIXP_ALLOC_KEY(kvp, key_str)				\
 {								\
 	char *key = key_str;					\
