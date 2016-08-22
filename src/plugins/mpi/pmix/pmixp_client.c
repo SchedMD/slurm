@@ -48,6 +48,13 @@
 #include <sys/types.h>
 #include <pmix_server.h>
 
+/* Check PMIx version */
+#if (HAVE_PMIX_VER != PMIX_VERSION_MAJOR)
+#define VALUE_TO_STRING(x) #x
+#define VALUE(x) VALUE_TO_STRING(x)
+#pragma message "PMIx version mismatch: the major version seen during configuration was " VALUE(HAVE_PMIX_VER) "L but found " VALUE(PMIX_VERSION_MAJOR) " compilation will most likely fail.  Please reconfigure against the new version."
+#endif
+
 #define PMIXP_ALLOC_KEY(kvp, key_str)				\
 {								\
 	char *key = key_str;					\
@@ -60,23 +67,43 @@
 	xfree(kvp);						\
 }
 
+#if (HAVE_PMIX_VER == 1)
 static int client_connected(const pmix_proc_t *proc, void *server_object)
 {
 	/* we don't do anything by now */
 	return PMIX_SUCCESS;
 }
+#elif (HAVE_PMIX_VER >= 2)
+static int client_connected(const pmix_proc_t *proc, void *server_object,
+		pmix_op_cbfunc_t cbfunc, void *cbdata)
+{
+	/* we don't do anything by now */
+	return PMIX_SUCCESS;
+}
+#endif
 
 static void op_callbk(pmix_status_t status, void *cbdata)
 {
 	PMIXP_DEBUG("op callback is called with status=%d", status);
 }
 
-static void errhandler_reg_callbk(pmix_status_t status, int errhandler_ref,
+#if (HAVE_PMIX_VER == 1)
+static void errhandler_reg_callbk(pmix_status_t status,
+		int errhandler_ref, void *cbdata)
+{
+	PMIXP_DEBUG("Error handler registration callback is called with "
+		"status=%d, ref=%d",
+		status, errhandler_ref);
+}
+#elif (HAVE_PMIX_VER >= 2)
+static void errhandler_reg_callbk(pmix_status_t status, size_t errhandler_ref,
 		void *cbdata)
 {
-	PMIXP_DEBUG("Error handler registration callback is called with status=%d, ref=%d",
-		    status, errhandler_ref);
+	PMIXP_DEBUG("Error handler registration callback is called with "
+		"status=%d, ref=%d",
+		status, (int)errhandler_ref);
 }
+#endif
 
 static pmix_status_t client_finalized(const pmix_proc_t *proc,
 		void *server_object, pmix_op_cbfunc_t cbfunc, void *cbdata)
@@ -151,8 +178,18 @@ pmix_server_module_t _slurm_pmix_cb = {
 	NULL
 };
 
-static void errhandler(pmix_status_t status, pmix_proc_t proc[], size_t nproc,
-		pmix_info_t info[], size_t ninfo);
+#if (HAVE_PMIX_VER == 1)
+static void errhandler(pmix_status_t status, pmix_proc_t proc[],
+		size_t nproc, pmix_info_t info[], size_t ninfo);
+#elif (HAVE_PMIX_VER >= 2)
+static void errhandler(size_t evhdlr_registration_id,
+		pmix_status_t status,
+		const pmix_proc_t *source,
+		pmix_info_t info[], size_t ninfo,
+		pmix_info_t *results, size_t nresults,
+		pmix_event_notification_cbfunc_fn_t cbfunc,
+		void *cbdata);
+#endif
 
 int pmixp_libpmix_init(void)
 {
@@ -206,8 +243,13 @@ int pmixp_libpmix_init(void)
 	*/
 
 	/* register the errhandler */
-	PMIx_Register_errhandler(NULL, 0, errhandler, errhandler_reg_callbk,
-			NULL);
+#if (HAVE_PMIX_VER == 1)
+	PMIx_Register_errhandler(NULL, 0, errhandler,
+			errhandler_reg_callbk, NULL);
+#elif (HAVE_PMIX_VER >= 2)
+	PMIx_Register_event_handler(NULL, 0, NULL, 0, errhandler,
+			errhandler_reg_callbk, NULL);
+#endif
 
 	return 0;
 }
@@ -217,7 +259,11 @@ int pmixp_libpmix_finalize(void)
 	int rc = SLURM_SUCCESS, rc1;
 
 	/* deregister the errhandler */
+#if (HAVE_PMIX_VER == 1)
 	PMIx_Deregister_errhandler(0, op_callbk, NULL);
+#elif (HAVE_PMIX_VER >= 2)
+	PMIx_Deregister_event_handler(0, op_callbk, NULL);
+#endif
 
 	if (PMIX_SUCCESS != PMIx_server_finalize()) {
 		rc = SLURM_ERROR;
@@ -231,6 +277,7 @@ int pmixp_libpmix_finalize(void)
 	return rc;
 }
 
+#if (HAVE_PMIX_VER == 1)
 static void errhandler(pmix_status_t status,
 		       pmix_proc_t proc[], size_t nproc,
 		       pmix_info_t info[], size_t ninfo)
@@ -241,6 +288,22 @@ static void errhandler(pmix_status_t status,
 			status, (int) nproc);
 	slurm_kill_job_step(pmixp_info_jobid(), pmixp_info_stepid(), SIGKILL);
 }
+#elif (HAVE_PMIX_VER >= 2)
+static void errhandler(size_t evhdlr_registration_id,
+		pmix_status_t status,
+		const pmix_proc_t *source,
+		pmix_info_t info[], size_t ninfo,
+		pmix_info_t *results, size_t nresults,
+		pmix_event_notification_cbfunc_fn_t cbfunc,
+		void *cbdata)
+{
+	/* TODO: do something more sophisticated here */
+	/* FIXME: use proper specificator for nranges */
+	PMIXP_ERROR_STD("Error handler invoked: status = %d",
+			status);
+	slurm_kill_job_step(pmixp_info_jobid(), pmixp_info_stepid(), SIGKILL);
+}
+#endif
 
 /*
  * general proc-level attributes
@@ -671,7 +734,7 @@ static pmix_status_t publish_fn(const pmix_proc_t *proc,
 		void *cbdata)
 {
 	PMIXP_DEBUG("called");
-	return PMIX_ERR_NOT_IMPLEMENTED;
+	return PMIX_ERR_NOT_SUPPORTED;
 }
 
 static pmix_status_t lookup_fn(const pmix_proc_t *proc, char **keys,
@@ -679,7 +742,7 @@ static pmix_status_t lookup_fn(const pmix_proc_t *proc, char **keys,
 		pmix_lookup_cbfunc_t cbfunc, void *cbdata)
 {
 	PMIXP_DEBUG("called");
-	return PMIX_ERR_NOT_IMPLEMENTED;
+	return PMIX_ERR_NOT_SUPPORTED;
 }
 
 static pmix_status_t unpublish_fn(const pmix_proc_t *proc, char **keys,
@@ -687,7 +750,7 @@ static pmix_status_t unpublish_fn(const pmix_proc_t *proc, char **keys,
 		void *cbdata)
 {
 	PMIXP_DEBUG("called");
-	return PMIX_ERR_NOT_IMPLEMENTED;
+	return PMIX_ERR_NOT_SUPPORTED;
 }
 
 static pmix_status_t spawn_fn(const pmix_proc_t *proc,
@@ -696,7 +759,7 @@ static pmix_status_t spawn_fn(const pmix_proc_t *proc,
 		pmix_spawn_cbfunc_t cbfunc, void *cbdata)
 {
 	PMIXP_DEBUG("called");
-	return PMIX_ERR_NOT_IMPLEMENTED;
+	return PMIX_ERR_NOT_SUPPORTED;
 }
 
 static pmix_status_t connect_fn(const pmix_proc_t procs[], size_t nprocs,
@@ -704,7 +767,7 @@ static pmix_status_t connect_fn(const pmix_proc_t procs[], size_t nprocs,
 		void *cbdata)
 {
 	PMIXP_DEBUG("called");
-	return PMIX_ERR_NOT_IMPLEMENTED;
+	return PMIX_ERR_NOT_SUPPORTED;
 }
 
 static pmix_status_t disconnect_fn(const pmix_proc_t procs[], size_t nprocs,
@@ -712,5 +775,5 @@ static pmix_status_t disconnect_fn(const pmix_proc_t procs[], size_t nprocs,
 		void *cbdata)
 {
 	PMIXP_DEBUG("called");
-	return PMIX_ERR_NOT_IMPLEMENTED;
+	return PMIX_ERR_NOT_SUPPORTED;
 }

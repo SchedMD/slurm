@@ -282,7 +282,7 @@ int pmixp_dmdx_get(const char *nspace, int rank,
 	/* check the return status */
 	if (SLURM_SUCCESS != rc) {
 		PMIXP_ERROR("Cannot send direct modex request to %s", host);
-		cbfunc(PMIX_ERR_COMM_FAILURE, NULL, 0, cbdata, NULL, NULL);
+		cbfunc(PMIX_ERROR, NULL, 0, cbdata, NULL, NULL);
 		return SLURM_ERROR;
 	}
 
@@ -391,14 +391,14 @@ static void _dmdx_resp(Buf buf, char *sender_host, uint32_t seq_num)
 	rc = _read_info(buf, &ns, &rank, &sender_ns, &status);
 	if (SLURM_SUCCESS != rc) {
 		/* notify libpmix about an error */
-		req->cbfunc(PMIX_ERR_UNPACK_FAILURE, NULL, 0, req->cbdata, NULL, NULL);
+		req->cbfunc(PMIX_ERROR, NULL, 0, req->cbdata, NULL, NULL);
 		goto exit;
 	}
 
 	/* get the modex blob */
 	if (SLURM_SUCCESS != (rc = unpackmem_ptr(&data, &size, buf))) {
 		/* notify libpmix about an error */
-		req->cbfunc(PMIX_ERR_UNPACK_FAILURE, NULL, 0, req->cbdata, NULL,
+		req->cbfunc(PMIX_ERROR, NULL, 0, req->cbdata, NULL,
 				NULL);
 		goto exit;
 	}
