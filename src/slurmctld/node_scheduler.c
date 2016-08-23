@@ -975,6 +975,29 @@ extern void filter_by_node_mcs(struct job_record *job_ptr, int mcs_select,
 	}
 }
 
+/* Remove nodes from the "avail_node_bitmap" which need to be rebooted in order
+ * to be used if the job's "delay_boot" time has not yet been reached. */
+static void _filter_by_node_feature(struct job_record *job_ptr,
+				    struct node_set *node_set_ptr,
+				    int node_set_size)
+{
+	int i;
+
+	if ((job_ptr->details == NULL) ||
+	    ((job_ptr->details->begin_time != 0) &&
+ 	     ((job_ptr->details->begin_time + job_ptr->delay_boot) <=
+	      time(NULL))))
+		return;
+
+	for (i = 0; i < node_set_size; i++) {
+		if (node_set_ptr[i].weight != INFINITE)
+			continue;
+		bit_not(node_set_ptr[i].my_bitmap);
+		bit_and(avail_node_bitmap, node_set_ptr[i].my_bitmap);
+		bit_not(node_set_ptr[i].my_bitmap);
+	}
+}
+
 /*
  * If the job has required feature counts, then accumulate those
  * required resources using multiple calls to _pick_best_nodes()
@@ -1053,6 +1076,8 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	if (!save_avail_node_bitmap)
 		save_avail_node_bitmap = bit_copy(avail_node_bitmap);
 	filter_by_node_owner(job_ptr, avail_node_bitmap);
+	if (can_reboot && !test_only)
+		_filter_by_node_feature(job_ptr, node_set_ptr, node_set_size);
 
 	/* get mcs_select */
 	mcs_select = slurm_mcs_get_select(job_ptr);
