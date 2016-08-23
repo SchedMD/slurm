@@ -2132,23 +2132,6 @@ static bool _first_array_task(struct job_record *job_ptr)
 	return false;
 }
 
-/* Return TRUE if the job can be rebooted now to change the node's features */
-static bool _job_reboot_test(struct job_record *job_ptr, bool test_only)
-{
-	if (!node_features_g_user_update(job_ptr->user_id))
-		return false;
-
-	if (test_only)
-		return true;
-
-	if (job_ptr->details && 
-	    ((job_ptr->details->begin_time == 0) ||
-	     ((job_ptr->details->begin_time+job_ptr->delay_boot) > time(NULL))))
-		return false;
-
-	return true;
-}
-
 /*
  * select_nodes - select and allocate nodes to a specific job
  * IN job_ptr - pointer to the job record
@@ -2254,7 +2237,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	}
 
 	/* build sets of usable nodes based upon their configuration */
-	can_reboot = _job_reboot_test(job_ptr, test_only);
+	can_reboot = node_features_g_user_update(job_ptr->user_id);
 	error_code = _build_node_list(job_ptr, &node_set_ptr, &node_set_size,
 				      err_msg, test_only, can_reboot);
 	if (error_code)
