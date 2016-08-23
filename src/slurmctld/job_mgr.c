@@ -4115,7 +4115,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 {
 	static time_t sched_update = 0;
 	static int defer_sched = 0;
-	char *key, *sched_params, *tmp_ptr;
+	char *sched_params, *tmp_ptr;
 	int error_code, i;
 	bool no_alloc, top_prio, test_only, too_fragmented, independent;
 	struct job_record *job_ptr;
@@ -4128,9 +4128,9 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 			defer_sched = 1;
 		else
 			defer_sched = 0;
-		key = strstr(sched_params, "delay_boot=");
-		if (key) {
-			i = time_str2secs(key + 11);
+		if (sched_params &&
+		    (tmp_ptr = strstr(sched_params, "delay_boot="))) {
+			i = time_str2secs(tmp_ptr + 11);
 			if (i != NO_VAL)
 				delay_boot = i;
 		}
