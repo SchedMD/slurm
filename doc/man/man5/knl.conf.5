@@ -123,14 +123,6 @@ The value can include one of the possible values identified with the
 The default value is "a2a".
 
 .TP
-\fBDelayBoot\fR
-If nodes with the MCDRAM and NUMA state requested by the job are expected to
-be available within this time period, then wait for those nodes rather than
-booting currently available nodes into the desired state.
-May be overridden by a job's --delay-boot option.
-The argument value is in minutes with a default value of zero (no delay).
-
-.TP
 \fBLogFile\fR
 Fully qualified path to a log file.
 The default value is SlurmctldLogFile from the slurm.conf configuration file.

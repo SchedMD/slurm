@@ -2595,6 +2595,15 @@ This option may improve system responsiveness when large numbers of jobs
 (many hundreds) are submitted at the same time, but it will delay the
 initiation time of individual jobs. Also see \fBdefault_queue_depth\fR above.
 .TP
+\fBdelay_boot=#\fR
+Do not reboot nodes in order to satified this job's feature specification if
+the job has been eligible to run for less than this time period.
+If the job has waited for less than the specified period, it will use only
+nodes which already have the specified features.
+The argument is in units of minutes.
+Individual jobs may override this default value with the \fB\-\-delay\-boot\fR
+option.
+.TP
 \fBdisable_user_top\fB
 Disable use of the "scontrol top" command by non-privileged users.
 .TP

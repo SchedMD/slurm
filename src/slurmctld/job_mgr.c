@@ -130,6 +130,7 @@ time_t last_job_update;		/* time of last update to job records */
 
 /* Local variables */
 static int      bf_min_age_reserve = 0;
+static uint32_t delay_boot = 0;
 static uint32_t highest_prio = 0;
 static uint32_t lowest_prio  = TOP_PRIORITY;
 static int      hash_table_size = 0;
@@ -4114,11 +4115,34 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 {
 	static time_t sched_update = 0;
 	static int defer_sched = 0;
-	char *sched_params, *tmp_ptr;
+	char *key, *sched_params, *tmp_ptr;
 	int error_code, i;
 	bool no_alloc, top_prio, test_only, too_fragmented, independent;
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
+
+	if (sched_update != slurmctld_conf.last_update) {
+		sched_update = slurmctld_conf.last_update;
+		sched_params = slurm_get_sched_params();
+		if (sched_params && strstr(sched_params, "defer"))
+			defer_sched = 1;
+		else
+			defer_sched = 0;
+		key = strstr(sched_params, "delay_boot=");
+		if (key) {
+			i = time_str2secs(key + 11);
+			if (i != NO_VAL)
+				delay_boot = i;
+		}
+		bf_min_age_reserve = 0;
+		if (sched_params &&
+		    (tmp_ptr = strstr(sched_params, "bf_min_age_reserve="))) {
+			int min_age = atoi(tmp_ptr + 19);
+			if (min_age > 0)
+				bf_min_age_reserve = min_age;
+		}
+		xfree(sched_params);
+	}
 
 	if (job_specs->array_bitmap)
 		i = bit_set_count(job_specs->array_bitmap);
@@ -4177,22 +4201,6 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	else
 		too_fragmented = false;
 
-	if (sched_update != slurmctld_conf.last_update) {
-		sched_update = slurmctld_conf.last_update;
-		sched_params = slurm_get_sched_params();
-		if (sched_params && strstr(sched_params, "defer"))
-			defer_sched = 1;
-		else
-			defer_sched = 0;
-		bf_min_age_reserve = 0;
-		if (sched_params &&
-		    (tmp_ptr = strstr(sched_params, "bf_min_age_reserve="))) {
-			int min_age = atoi(tmp_ptr + 19);
-			if (min_age > 0)
-				bf_min_age_reserve = min_age;
-		}
-		xfree(sched_params);
-	}
 	if (defer_sched == 1)
 		too_fragmented = true;
 
@@ -7051,7 +7059,9 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->job_state  = JOB_PENDING;
 	job_ptr->time_limit = job_desc->time_limit;
 	job_ptr->deadline   = job_desc->deadline;
-	if (job_desc->delay_boot != NO_VAL)
+	if (job_desc->delay_boot == NO_VAL)
+		job_ptr->delay_boot   = delay_boot;
+	else
 		job_ptr->delay_boot   = job_desc->delay_boot;
 	if (job_desc->time_min != NO_VAL)
 		job_ptr->time_min = job_desc->time_min;

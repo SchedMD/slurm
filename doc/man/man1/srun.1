@@ -596,12 +596,14 @@ This option applies only to job allocations.
 
 .TP
 \fB\-\-delay\-boot\fR=<\fIminutes\fR>
-If nodes with the features requested by the job are expected to be available
-within this time period, then wait for those nodes rather than booting currently
-available nodes into the desired state.
+Do not reboot nodes in order to satified this job's feature specification if
+the job has been eligible to run for less than this time period.
+If the job has waited for less than the specified period, it will use only
+nodes which already have the specified features.
 The argument is in units of minutes.
-A default value may be specified using the \fBDelayBoot\fR configuration
-parameter in the knl.conf file, otherwise the default value is zero (no delay).
+A default value may be set by a system administrator using the \fBdelay_boot\fR
+option of the \fBSchedulerParameters\fR configuration parameter in the
+slurm.conf file, otherwise the default value is zero (no delay).
 
 This option applies only to job allocations.
 

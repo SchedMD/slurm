@@ -582,6 +582,11 @@ struct job_record {
 	uint16_t batch_flag;		/* 1 or 2 if batch job (with script),
 					 * 2 indicates retry mode (one retry) */
 	char *batch_host;		/* host executing batch script */
+	double billable_tres;		/* calculated billable tres for the
+					 * job, as defined by the partition's
+					 * billing weight. Recalculated upon job
+					 * resize.  Cannot be calculated until
+					 * the job is alloocated resources. */
 	uint32_t bit_flags;             /* various flags */
 	char *burst_buffer;		/* burst buffer specification */
 	char *burst_buffer_state;	/* burst buffer state */
@@ -594,11 +599,6 @@ struct job_record {
 					 * by the job, decremented while job is
 					 * completing (N/A for bluegene
 					 * systems) */
-	double billable_tres;		/* calculated billable tres for the
-					 * job, as defined by the partition's
-					 * billing weight. Recalculated upon job
-					 * resize.  Cannot be calculated until
-					 * the job is alloocated resources. */
 	uint16_t cr_enabled;            /* specify if Consumable Resources
 					 * is enabled. Needed since CR deals
 					 * with a finer granularity in its
