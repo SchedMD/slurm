@@ -36,6 +36,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <signal.h>
+
 #include "src/common/gres.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
