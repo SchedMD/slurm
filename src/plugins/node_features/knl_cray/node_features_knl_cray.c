@@ -2035,18 +2035,6 @@ extern int node_features_p_job_valid(char *job_features)
 	if (numa_cnt > 1)			/* Multiple NUMA options */
 		return ESLURM_INVALID_KNL;
 
-	/* snc4 only allowed with cache today due to invalid config information
-	 * reported by kernel to hwloc, then to Slurm */
-	if (!job_numa) {
-	    job_numa = default_numa;
-	}
-	if (!job_mcdram) {
-	    job_mcdram = default_mcdram;
-	}
-	if (job_numa == KNL_SNC4 && job_mcdram != KNL_CACHE) {
-		return ESLURM_INVALID_KNL;
-	}
-
 	return SLURM_SUCCESS;
 }
 
