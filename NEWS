@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
  -- mpi/pmix: support for passing TMPDIR path through info key
  -- Cray: update slurmconfgen_smw.py script to correctly identify service nodes
     versus compute nodes.
+ -- FreeBSD - fix build issue in knl_cray plugin.
 
 * Changes in Slurm 16.05.4
 ==========================
