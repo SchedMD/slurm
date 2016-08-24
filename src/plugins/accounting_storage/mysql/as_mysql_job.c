@@ -1296,8 +1296,11 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 			   jobacct->energy.consumed_energy);
 	}
 
+	/* id_step has to be %d here to handle the -2 -1 for the batch and
+	   extern steps.  Don't change it to a %u.
+	*/
 	xstrfmtcat(query,
-		   " where job_db_inx=%"PRIu64" and id_step=%u",
+		   " where job_db_inx=%"PRIu64" and id_step=%d",
 		   step_ptr->job_ptr->db_index, step_ptr->step_id);
 	if (debug_flags & DEBUG_FLAG_DB_STEP)
 		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
