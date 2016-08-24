@@ -586,15 +586,15 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$tc1\\s+.*?$fed1\\s+1\\s+0\\s+DRAIN $eol" {
+	-re "\\s+$tc1\\s+.*?$fed1\\s+1\\s+9\\s+DRAIN $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$tc2\\s+.*?$fed2\\s+\\s+1\\s+0\\s+ACTIVE $eol" {
+	-re "\\s+$tc2\\s+.*?$fed2\\s+\\s+1\\s+1\\s+ACTIVE $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$tc3\\s+.*?$fed2\\s+\\s+2\\s+0\\s+ACTIVE $eol" {
+	-re "\\s+$tc3\\s+.*?$fed2\\s+\\s+2\\s+1\\s+ACTIVE $eol" {
 		incr matches
 		exp_continue
 	}

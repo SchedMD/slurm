@@ -273,6 +273,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	while ((object = list_next(itr))) {
 		int fed_id = 0;
 		uint16_t fed_state = CLUSTER_FED_STATE_NA;
+		uint32_t fed_weight = 1; /* default */
 		xstrcat(cols, "creation_time, mod_time, acct");
 		xstrfmtcat(vals, "%ld, %ld, 'root'", now, now);
 		xstrfmtcat(extra, ", mod_time=%ld", now);
@@ -303,21 +304,25 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 				fed_state = CLUSTER_FED_STATE_ACTIVE;
 		}
 
+		if (object->fed.weight != NO_VAL)
+			fed_weight = object->fed.weight;
+
 		xstrfmtcat(query,
 			   "insert into %s (creation_time, mod_time, "
 			   "name, classification, federation, fed_id, "
-			   "fed_state) "
-			   "values (%ld, %ld, '%s', %u, '%s', %d, %u) "
+			   "fed_state, fed_weight) "
+			   "values (%ld, %ld, '%s', %u, '%s', %d, %u, %u) "
 			   "on duplicate key update deleted=0, mod_time=%ld, "
 			   "control_host='', control_port=0, "
 			   "classification=%u, flags=0, federation='%s', "
-			   "fed_id=%d, fed_state=%u",
+			   "fed_id=%d, fed_state=%u, fed_weight=%u",
 			   cluster_table,
 			   now, now, object->name, object->classification,
 			   (object->fed.name) ? object->fed.name : "",
-			   fed_id, fed_state, now, object->classification,
+			   fed_id, fed_state, fed_weight,
+			   now, object->classification,
 			   (object->fed.name) ? object->fed.name : "",
-			   fed_id, fed_state);
+			   fed_id, fed_state, fed_weight);
 		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
 			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
