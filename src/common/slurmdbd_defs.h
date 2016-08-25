@@ -155,6 +155,10 @@ typedef enum {
 	DBD_GOT_FEDERATIONS,	/* Response to DBD_GET_FEDERATIONS 	*/
 	DBD_MODIFY_FEDERATIONS, /* Modify existing federation 		*/
 	DBD_REMOVE_FEDERATIONS, /* Removing existing federation 	*/
+
+	SLURM_PERSIST_INIT = 6500, /* So we don't use the
+				    * REQUEST_PERSIST_INIT also used here.
+				    */
 } slurmdbd_msg_type_t;
 
 /*****************************************************************************\

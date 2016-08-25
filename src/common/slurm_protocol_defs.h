@@ -52,6 +52,7 @@
 #include "src/common/macros.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_common.h"
+#include "src/common/slurm_persist_conn.h"
 #include "src/common/slurm_step_layout.h"
 #include "src/common/slurmdb_defs.h"
 #include "src/common/working_cluster.h"
@@ -194,7 +195,9 @@ typedef enum {
 	RESPONSE_ACCT_GATHER_ENERGY,	/* 1020 */
 	REQUEST_LICENSE_INFO,
 	RESPONSE_LICENSE_INFO,
-
+	DBD_MESSAGES_START = 1400,
+	/* Don't make any messages in this range as this is what the DBD uses */
+	DBD_MESSAGES_END   = 2000,
 	REQUEST_BUILD_INFO	= 2001,
 	RESPONSE_BUILD_INFO,
 	REQUEST_JOB_INFO,
@@ -346,7 +349,8 @@ typedef enum {
 	REQUEST_COMPLETE_PROLOG,
 	RESPONSE_PROLOG_EXECUTING,	/* 6019 */
 
-	REQUEST_PERSIST_INIT,
+	REQUEST_PERSIST_INIT = 6500,
+	RESPONSE_PERSIST_INIT,
 	REQUEST_PERSIST_FINI,
 
 	SRUN_PING = 7001,
