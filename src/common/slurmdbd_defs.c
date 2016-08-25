@@ -92,7 +92,8 @@ static time_t    agent_shutdown = 0;
 
 static pthread_mutex_t slurmdbd_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  slurmdbd_cond = PTHREAD_COND_INITIALIZER;
-static int       slurmdbd_fd         = -1;
+static slurm_persist_conn_t *slurmdbd_conn = NULL;
+static bool      slurmdbd_defs_inited = false;
 static char *    slurmdbd_auth_info  = NULL;
 static char *    slurmdbd_cluster    = NULL;
 static bool      halt_agent          = 0;
@@ -102,20 +103,18 @@ static bool      from_ctld           = 0;
 static bool      need_to_register    = 0;
 
 static void * _agent(void *x);
-static void   _close_slurmdbd_fd(void);
 static void   _create_agent(void);
 static bool   _fd_readable(int fd, int read_timeout);
 static int    _fd_writeable(int fd);
 static int    _get_return_code(uint16_t rpc_version, int read_timeout);
 static Buf    _load_dbd_rec(int fd);
 static void   _load_dbd_state(void);
-static void   _open_slurmdbd_fd(bool db_needed);
+static void   _open_slurmdbd_conn(bool db_needed);
 static int    _purge_job_start_req(void);
 static Buf    _recv_msg(int read_timeout);
-static void   _reopen_slurmdbd_fd(void);
+static void   _reopen_slurmdbd_conn(void);
 static int    _save_dbd_rec(int fd, Buf buffer);
 static void   _save_dbd_state(void);
-static int    _send_init_msg(void);
 static int    _send_fini_msg(void);
 static int    _send_msg(Buf buffer);
 static void   _sig_handler(int signal);
@@ -129,29 +128,21 @@ static int    _tot_wait (struct timeval *start_time);
  ****************************************************************************/
 
 /* Open a socket connection to SlurmDbd
- * auth_info IN - alternate authentication key
  * callbacks IN - make agent to process RPCs and contains callback pointers
- * rollback IN - keep journal and permit rollback if set
  * Returns SLURM_SUCCESS or an error code */
-extern int slurm_open_slurmdbd_conn(char *auth_info,
-				    const slurm_trigger_callbacks_t *callbacks,
-				    bool rollback)
+extern int slurm_open_slurmdbd_conn(const slurm_trigger_callbacks_t *callbacks)
 {
 	int tmp_errno = SLURM_SUCCESS;
 	/* we need to set this up before we make the agent or we will
 	 * get a threading issue. */
-	slurm_mutex_lock(&slurmdbd_lock);
-	xfree(slurmdbd_auth_info);
-	if (auth_info)
-		slurmdbd_auth_info = xstrdup(auth_info);
 
-	xfree(slurmdbd_cluster);
-	slurmdbd_cluster = slurm_get_cluster_name();
+	slurm_mutex_lock(&slurmdbd_lock);
+	xassert(slurmdbd_defs_inited);
 
 	agent_shutdown = 0;
 
-	if (slurmdbd_fd < 0) {
-		_open_slurmdbd_fd(1);
+	if (!slurmdbd_conn) {
+		_open_slurmdbd_conn(1);
 		tmp_errno = errno;
 	}
 	slurm_mutex_unlock(&slurmdbd_lock);
@@ -176,7 +167,7 @@ extern int slurm_open_slurmdbd_conn(char *auth_info,
 	if (tmp_errno) {
 		errno = tmp_errno;
 		return tmp_errno;
-	} else if (slurmdbd_fd < 0)
+	} else if (slurmdbd_conn->fd < 0)
 		return SLURM_ERROR;
 	else
 		return SLURM_SUCCESS;
@@ -194,10 +185,11 @@ extern int slurm_close_slurmdbd_conn(void)
 		debug("slurmdbd: Sent fini msg");
 
 	slurm_mutex_lock(&slurmdbd_lock);
-	_close_slurmdbd_fd();
-	xfree(slurmdbd_auth_info);
-	xfree(slurmdbd_cluster);
+	slurm_persist_conn_close(slurmdbd_conn);
+	slurmdbd_conn = NULL;
 	slurm_mutex_unlock(&slurmdbd_lock);
+
+	slurmdbd_defs_fini();
 
 	return SLURM_SUCCESS;
 }
@@ -271,6 +263,7 @@ extern int slurm_send_recv_slurmdbd_msg(uint16_t rpc_version,
 	int rc = SLURM_SUCCESS, read_timeout;
 	Buf buffer;
 
+	xassert(slurmdbd_conn);
 	xassert(req);
 	xassert(resp);
 
@@ -282,14 +275,14 @@ extern int slurm_send_recv_slurmdbd_msg(uint16_t rpc_version,
 	read_timeout = SLURMDBD_TIMEOUT * 1000;
 	slurm_mutex_lock(&slurmdbd_lock);
 	halt_agent = 0;
-	if (slurmdbd_fd < 0) {
+	if (slurmdbd_conn->fd < 0) {
 		/* Either slurm_open_slurmdbd_conn() was not executed or
 		 * the connection to Slurm DBD has been closed */
 		if (req->msg_type == DBD_GET_CONFIG)
-			_open_slurmdbd_fd(0);
+			_open_slurmdbd_conn(0);
 		else
-			_open_slurmdbd_fd(1);
-		if (slurmdbd_fd < 0) {
+			_open_slurmdbd_conn(1);
+		if (slurmdbd_conn->fd < 0) {
 			rc = SLURM_ERROR;
 			goto end_it;
 		}
@@ -387,83 +380,110 @@ extern int slurm_send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 	return rc;
 }
 
-/* Open a connection to the Slurm DBD and set slurmdbd_fd */
-static void _open_slurmdbd_fd(bool need_db)
+extern void slurmdbd_defs_init(char *auth_info)
 {
-	slurm_addr_t dbd_addr;
-	uint16_t slurmdbd_port;
-	char *   slurmdbd_host;
-	bool try_backup = true;
+	slurm_mutex_lock(&slurmdbd_lock);
 
-	if (slurmdbd_fd >= 0) {
+	if (slurmdbd_defs_inited) {
+		slurm_mutex_unlock(&slurmdbd_lock);
+		return;
+	}
+
+	slurmdbd_defs_inited = true;
+
+	xfree(slurmdbd_auth_info);
+	slurmdbd_auth_info = xstrdup(auth_info);
+
+	xfree(slurmdbd_cluster);
+	slurmdbd_cluster = slurm_get_cluster_name();
+
+	slurm_mutex_unlock(&slurmdbd_lock);
+}
+
+extern void slurmdbd_defs_fini(void)
+{
+	slurm_mutex_lock(&slurmdbd_lock);
+	if (!slurmdbd_defs_inited) {
+		slurm_mutex_unlock(&slurmdbd_lock);
+		return;
+	}
+
+	slurmdbd_defs_inited = false;
+	xfree(slurmdbd_auth_info);
+	xfree(slurmdbd_cluster);
+	slurm_mutex_unlock(&slurmdbd_lock);
+}
+
+/* Open a connection to the Slurm DBD and set slurmdbd_conn */
+static void _open_slurmdbd_conn(bool need_db)
+{
+	bool try_backup = true;
+	int rc;
+
+	if (slurmdbd_conn && slurmdbd_conn->fd >= 0) {
 		debug("Attempt to re-open slurmdbd socket");
 		/* clear errno (checked after this for errors) */
 		errno = 0;
 		return;
 	}
 
-	slurmdbd_host = slurm_get_accounting_storage_host();
-	slurmdbd_port = slurm_get_accounting_storage_port();
-	if (slurmdbd_host == NULL) {
-		slurmdbd_host = xstrdup(DEFAULT_STORAGE_HOST);
-		slurm_set_accounting_storage_host(slurmdbd_host);
+	slurm_persist_conn_close(slurmdbd_conn);
+	slurmdbd_conn = xmalloc(sizeof(slurm_persist_conn_t));
+	slurmdbd_conn->dbd_conn = true;
+	slurmdbd_conn->reconnect = true;
+	slurmdbd_conn->cluster_name = xstrdup(slurmdbd_cluster);
+
+	slurmdbd_conn->read_timeout = (slurm_get_msg_timeout() + 35) * 1000;
+
+	slurmdbd_conn->host = slurm_get_accounting_storage_host();
+	slurmdbd_conn->port = slurm_get_accounting_storage_port();
+	if (slurmdbd_conn->host == NULL) {
+		slurmdbd_conn->host = xstrdup(DEFAULT_STORAGE_HOST);
+		slurm_set_accounting_storage_host(slurmdbd_conn->host);
 	}
 
-	if (slurmdbd_port == 0) {
-		slurmdbd_port = SLURMDBD_PORT;
-		slurm_set_accounting_storage_port(slurmdbd_port);
+	if (slurmdbd_conn->port == 0) {
+		slurmdbd_conn->port = SLURMDBD_PORT;
+		slurm_set_accounting_storage_port(slurmdbd_conn->port);
 	}
 again:
-	slurm_set_addr(&dbd_addr, slurmdbd_port, slurmdbd_host);
-	if (dbd_addr.sin_port == 0)
-		error("Unable to locate SlurmDBD host %s:%u",
-		      slurmdbd_host, slurmdbd_port);
-	else {
-		slurmdbd_fd = slurm_open_msg_conn(&dbd_addr);
 
-		if (slurmdbd_fd < 0) {
-			debug("slurmdbd: slurm_open_msg_conn to %s:%u: %m",
-			      slurmdbd_host, slurmdbd_port);
-			if (try_backup) {
-				try_backup = false;
-				xfree(slurmdbd_host);
-				if ((slurmdbd_host =
-				    slurm_get_accounting_storage_backup_host()))
-					goto again;
-			}
-		} else {
-			int rc;
-			fd_set_nonblocking(slurmdbd_fd);
-			fd_set_close_on_exec(slurmdbd_fd);
-			rc = _send_init_msg();
-			if (rc == SLURM_SUCCESS) {
-				if (from_ctld)
-					need_to_register = 1;
-				if (callbacks_requested) {
-					(callback.dbd_resumed)();
-					(callback.db_resumed)();
-				}
-			}
+	if (((rc = slurm_persist_conn_open(slurmdbd_conn)) != SLURM_SUCCESS) &&
+	    try_backup) {
+		xfree(slurmdbd_conn->host);
+		try_backup = false;
+		if ((slurmdbd_conn->host =
+		     slurm_get_accounting_storage_backup_host()))
+			goto again;
+	}
 
-			if ((!need_db && (rc == ESLURM_DB_CONNECTION)) ||
-			    (rc == SLURM_SUCCESS)) {
-				debug("slurmdbd: Sent DbdInit msg");
-				/* clear errno (checked after this for
-				   errors)
-				*/
-				errno = 0;
-			} else {
-				if ((rc == ESLURM_DB_CONNECTION) &&
-				    callbacks_requested) {
-					(callback.db_fail)();
-				}
-
-				error("slurmdbd: Sending DbdInit msg: %m");
-				_close_slurmdbd_fd();
-			}
+	if (rc == SLURM_SUCCESS) {
+		/* set the timeout to the timeout to be used for all other
+		 * messages */
+		slurmdbd_conn->read_timeout = SLURMDBD_TIMEOUT * 1000;
+		if (from_ctld)
+			need_to_register = 1;
+		if (callbacks_requested) {
+			(callback.dbd_resumed)();
+			(callback.db_resumed)();
 		}
 	}
-	xfree(slurmdbd_host);
+
+	if ((!need_db && (rc == ESLURM_DB_CONNECTION)) ||
+	    (rc == SLURM_SUCCESS)) {
+		debug("slurmdbd: Sent DbdInit msg");
+		/* clear errno (checked after this for
+		   errors)
+		*/
+		errno = 0;
+	} else {
+		if ((rc == ESLURM_DB_CONNECTION) && callbacks_requested)
+			(callback.db_fail)();
+
+		error("slurmdbd: Sending DbdInit msg: %m");
+		slurm_persist_conn_close(slurmdbd_conn);
+		slurmdbd_conn = NULL;
+	}
 }
 
 extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
@@ -568,7 +588,7 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 		break;
 	case DBD_INIT:
 		slurmdbd_pack_init_msg((dbd_init_msg_t *)req->data, rpc_version,
-				       buffer, slurmdbd_auth_info);
+				       buffer);
 		break;
 	case DBD_FINI:
 		slurmdbd_pack_fini_msg((dbd_fini_msg_t *)req->data,
@@ -761,8 +781,7 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp,
 		break;
 	case DBD_INIT:
 		rc = slurmdbd_unpack_init_msg((dbd_init_msg_t **)&resp->data,
-					      buffer,
-					      slurmdbd_auth_info);
+					      rpc_version, buffer);
 		break;
 	case DBD_FINI:
 		rc = slurmdbd_unpack_fini_msg((dbd_fini_msg_t **)&resp->data,
@@ -1619,53 +1638,6 @@ extern void slurmdbd_free_buffer(void *x)
 		free_buf(buffer);
 }
 
-static int _send_init_msg()
-{
-	int rc, read_timeout;
-	Buf buffer;
-	dbd_init_msg_t req;
-	int tmp_errno = SLURM_SUCCESS;
-
-	errno = tmp_errno;
-
-	buffer = init_buf(1024);
-	pack16((uint16_t) DBD_INIT, buffer);
-	if (!slurmdbd_cluster) {
-		debug("No ClusterName set.");
-		slurmdbd_cluster = slurm_get_cluster_name();
-	}
-	req.cluster_name = slurmdbd_cluster;
-	req.rollback = rollback_started;
-	req.version  = SLURM_PROTOCOL_VERSION;
-	slurmdbd_pack_init_msg(&req, SLURM_PROTOCOL_VERSION, buffer,
-			       slurmdbd_auth_info);
-	/* if we have an issue with the pack we want to log the errno,
-	   but send anyway so we get it logged on the slurmdbd also */
-	tmp_errno = errno;
-
-	rc = _send_msg(buffer);
-	free_buf(buffer);
-	if (rc != SLURM_SUCCESS) {
-		error("slurmdbd: Sending DBD_INIT message: %d: %m", rc);
-		return rc;
-	}
-
-	/* Add 35 seconds here to make sure the DBD has enough time to
-	   process the request.  30 seconds is defined in
-	   src/database/mysql_common.c in mysql_db_get_db_connection
-	   as the time to wait for a mysql connection and 5 seconds to
-	   avoid a race condition since it could time out at the
-	   same rate and not leave any time to send the response back.
-	*/
-	read_timeout = (slurm_get_msg_timeout() + 35) * 1000;
-	rc = _get_return_code(SLURM_PROTOCOL_VERSION, read_timeout);
-	if (tmp_errno)
-		errno = tmp_errno;
-	else if (rc != SLURM_SUCCESS)
-		errno = rc;
-	return rc;
-}
-
 static int _send_fini_msg(void)
 {
 	Buf buffer;
@@ -1673,7 +1645,7 @@ static int _send_fini_msg(void)
 
 	/* If the connection is already gone, we don't need to send a
 	   fini. */
-	if (_fd_writeable(slurmdbd_fd) == -1)
+	if (_fd_writeable(slurmdbd_conn->fd) == -1)
 		return SLURM_SUCCESS;
 
 	buffer = init_buf(1024);
@@ -1688,21 +1660,13 @@ static int _send_fini_msg(void)
 	return SLURM_SUCCESS;
 }
 
-/* Close the SlurmDbd connection */
-static void _close_slurmdbd_fd(void)
-{
-	if (slurmdbd_fd >= 0) {
-		close(slurmdbd_fd);
-		slurmdbd_fd = -1;
-	}
-}
-
 /* Reopen the Slurm DBD connection due to some error */
-static void _reopen_slurmdbd_fd(void)
+static void _reopen_slurmdbd_conn(void)
 {
 	info("slurmdbd: reopening connection");
-	_close_slurmdbd_fd();
-	_open_slurmdbd_fd(1);
+	slurm_persist_conn_close(slurmdbd_conn);
+	slurmdbd_conn = NULL;
+	_open_slurmdbd_conn(1);
 }
 
 static int _send_msg(Buf buffer)
@@ -1712,10 +1676,10 @@ static int _send_msg(Buf buffer)
 	ssize_t msg_wrote;
 	int rc, retry_cnt = 0;
 
-	if (slurmdbd_fd < 0)
+	if (slurmdbd_conn->fd < 0)
 		return EAGAIN;
 
-	rc =_fd_writeable(slurmdbd_fd);
+	rc =_fd_writeable(slurmdbd_conn->fd);
 	if (rc == -1) {
 	re_open:	/* SlurmDBD shutdown, try to reopen a connection now */
 		if (retry_cnt++ > 3)
@@ -1724,26 +1688,26 @@ static int _send_msg(Buf buffer)
 		   connection just return that */
 		if (errno == ESLURM_ACCESS_DENIED)
 			return ESLURM_ACCESS_DENIED;
-		_reopen_slurmdbd_fd();
-		rc = _fd_writeable(slurmdbd_fd);
+		_reopen_slurmdbd_conn();
+		rc = _fd_writeable(slurmdbd_conn->fd);
 	}
 	if (rc < 1)
 		return EAGAIN;
 
 	msg_size = get_buf_offset(buffer);
 	nw_size = htonl(msg_size);
-	msg_wrote = write(slurmdbd_fd, &nw_size, sizeof(nw_size));
+	msg_wrote = write(slurmdbd_conn->fd, &nw_size, sizeof(nw_size));
 	if (msg_wrote != sizeof(nw_size))
 		return EAGAIN;
 
 	msg = get_buf_data(buffer);
 	while (msg_size > 0) {
-		rc = _fd_writeable(slurmdbd_fd);
+		rc = _fd_writeable(slurmdbd_conn->fd);
 		if (rc == -1)
 			goto re_open;
 		if (rc < 1)
 			return EAGAIN;
-		msg_wrote = write(slurmdbd_fd, msg, msg_size);
+		msg_wrote = write(slurmdbd_conn->fd, msg, msg_size);
 		if (msg_wrote <= 0)
 			return EAGAIN;
 		msg += msg_wrote;
@@ -1923,12 +1887,12 @@ static Buf _recv_msg(int read_timeout)
 	ssize_t msg_read, offset;
 	Buf buffer;
 
-	if (slurmdbd_fd < 0)
+	if (slurmdbd_conn->fd < 0)
 		return NULL;
 
-	if (!_fd_readable(slurmdbd_fd, read_timeout))
+	if (!_fd_readable(slurmdbd_conn->fd, read_timeout))
 		goto endit;
-	msg_read = read(slurmdbd_fd, &nw_size, sizeof(nw_size));
+	msg_read = read(slurmdbd_conn->fd, &nw_size, sizeof(nw_size));
 	if (msg_read != sizeof(nw_size))
 		goto endit;
 	msg_size = ntohl(nw_size);
@@ -1942,9 +1906,9 @@ static Buf _recv_msg(int read_timeout)
 	msg = xmalloc(msg_size);
 	offset = 0;
 	while (msg_size > offset) {
-		if (!_fd_readable(slurmdbd_fd, read_timeout))
+		if (!_fd_readable(slurmdbd_conn->fd, read_timeout))
 			break;		/* problem with this socket */
-		msg_read = read(slurmdbd_fd, (msg + offset),
+		msg_read = read(slurmdbd_conn->fd, (msg + offset),
 				(msg_size - offset));
 		if (msg_read <= 0) {
 			error("slurmdbd: read: %m");
@@ -1969,7 +1933,7 @@ endit:
 	 * on the other end we can't rely on it after this point since we didn't
 	 * listen long enough for this response.
 	 */
-	_reopen_slurmdbd_fd();
+	_reopen_slurmdbd_conn();
 	return NULL;
 }
 
@@ -2186,20 +2150,20 @@ static void *_agent(void *x)
 		if (halt_agent)
 			slurm_cond_wait(&slurmdbd_cond, &slurmdbd_lock);
 
-		if ((slurmdbd_fd < 0) &&
+		if ((slurmdbd_conn->fd < 0) &&
 		    (difftime(time(NULL), fail_time) >= 10)) {
 			/* The connection to Slurm DBD is not open */
-			_open_slurmdbd_fd(1);
-			if (slurmdbd_fd < 0)
+			_open_slurmdbd_conn(1);
+			if (slurmdbd_conn->fd < 0)
 				fail_time = time(NULL);
 		}
 
 		slurm_mutex_lock(&agent_lock);
-		if (agent_list && slurmdbd_fd)
+		if (agent_list && slurmdbd_conn->fd)
 			cnt = list_count(agent_list);
 		else
 			cnt = 0;
-		if ((cnt == 0) || (slurmdbd_fd < 0) ||
+		if ((cnt == 0) || (slurmdbd_conn->fd < 0) ||
 		    (fail_time && (difftime(time(NULL), fail_time) < 10))) {
 			slurm_mutex_unlock(&slurmdbd_lock);
 			abs_time.tv_sec  = time(NULL) + 10;
@@ -2240,7 +2204,7 @@ static void *_agent(void *x)
 			slurm_mutex_unlock(&slurmdbd_lock);
 
 			slurm_mutex_lock(&assoc_cache_mutex);
-			if (slurmdbd_fd >= 0 && running_cache)
+			if (slurmdbd_conn->fd >= 0 && running_cache)
 				slurm_cond_signal(&assoc_cache_cond);
 			slurm_mutex_unlock(&assoc_cache_mutex);
 
@@ -2274,7 +2238,7 @@ static void *_agent(void *x)
 		}
 		slurm_mutex_unlock(&slurmdbd_lock);
 		slurm_mutex_lock(&assoc_cache_mutex);
-		if (slurmdbd_fd >= 0 && running_cache)
+		if (slurmdbd_conn->fd >= 0 && running_cache)
 			slurm_cond_signal(&assoc_cache_cond);
 		slurm_mutex_unlock(&assoc_cache_mutex);
 
@@ -3190,41 +3154,19 @@ unpack_error:
 }
 
 extern void
-slurmdbd_pack_init_msg(dbd_init_msg_t *msg, uint16_t rpc_version,
-		       Buf buffer, char *auth_info)
+slurmdbd_pack_init_msg(dbd_init_msg_t *msg, uint16_t rpc_version, Buf buffer)
 {
-	int rc;
-	void *auth_cred;
-
 	pack16(msg->version, buffer);
 
 	/* Adding anything to this needs to happen after the version
 	   since this is where the reciever gets the version from. */
 	packstr(msg->cluster_name, buffer);
-
-	auth_cred = g_slurm_auth_create(NULL, 2, auth_info);
-	if (auth_cred == NULL) {
-		error("Creating authentication credential: %s",
-		      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
-		errno = ESLURM_ACCESS_DENIED;
-	} else {
-		rc = g_slurm_auth_pack(auth_cred, buffer);
-		if (rc) {
-			error("Packing authentication credential: %s",
-			      g_slurm_auth_errstr(
-				      g_slurm_auth_errno(auth_cred)));
-			errno = g_slurm_auth_errno(auth_cred);
-		}
-		(void) g_slurm_auth_destroy(auth_cred);
-	}
 }
 
 extern int
-slurmdbd_unpack_init_msg(dbd_init_msg_t **msg,
-			 Buf buffer, char *auth_info)
+slurmdbd_unpack_init_msg(dbd_init_msg_t **msg, uint16_t rpc_version, Buf buffer)
 {
 	int rc = SLURM_SUCCESS;
-	void *auth_cred;
 	uint32_t tmp32;
 
 	dbd_init_msg_t *msg_ptr = xmalloc(sizeof(dbd_init_msg_t));
@@ -3236,28 +3178,33 @@ slurmdbd_unpack_init_msg(dbd_init_msg_t **msg,
 	if (rpc_version < SLURM_17_02_PROTOCOL_VERSION)
 		safe_unpack16((uint16_t *)&tmp32, buffer);
 	safe_unpack16(&msg_ptr->version, buffer);
+	safe_unpackstr_xmalloc(&msg_ptr->cluster_name, &tmp32, buffer);
 
 	/* We find out the version of the caller right here so use
 	   that as the rpc_version. */
-	if (msg_ptr->version >= 7) {
-		safe_unpackstr_xmalloc(&msg_ptr->cluster_name, &tmp32, buffer);
+	if (msg_ptr->version < SLURM_17_02_PROTOCOL_VERSION) {
+		void *auth_cred = g_slurm_auth_unpack(buffer);
+
+		xassert(slurmdbd_defs_inited);
+
+		if (auth_cred == NULL) {
+			error("Unpacking authentication credential: %s",
+			      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
+			rc = ESLURM_ACCESS_DENIED;
+			goto unpack_error;
+		}
+		msg_ptr->uid = g_slurm_auth_get_uid(
+			auth_cred, slurmdbd_auth_info);
+		if (g_slurm_auth_errno(auth_cred) != SLURM_SUCCESS) {
+			error("Bad authentication: %s",
+			      g_slurm_auth_errstr(
+				      g_slurm_auth_errno(auth_cred)));
+			rc = ESLURM_ACCESS_DENIED;
+			goto unpack_error;
+		}
+		g_slurm_auth_destroy(auth_cred);
 	}
 
-	auth_cred = g_slurm_auth_unpack(buffer);
-	if (auth_cred == NULL) {
-		error("Unpacking authentication credential: %s",
-		      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
-		rc = ESLURM_ACCESS_DENIED;
-		goto unpack_error;
-	}
-	msg_ptr->uid = g_slurm_auth_get_uid(auth_cred, auth_info);
-	if (g_slurm_auth_errno(auth_cred) != SLURM_SUCCESS) {
-		error("Bad authentication: %s",
-		      g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
-		rc = ESLURM_ACCESS_DENIED;
-		goto unpack_error;
-	}
-	g_slurm_auth_destroy(auth_cred);
 	return rc;
 
 unpack_error:

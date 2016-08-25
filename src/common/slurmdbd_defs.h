@@ -397,14 +397,15 @@ extern pthread_cond_t assoc_cache_cond; /* assoc cache condition */
  * Slurm DBD message processing functions
 \*****************************************************************************/
 
+extern void slurmdbd_defs_init(char *auth_info);
+extern void slurmdbd_defs_fini(void);
+
 /* Open a socket connection to SlurmDbd
  * auth_info IN - alternate authentication key
  * make_agent IN - make agent to process RPCs if set
  * rollback IN - keep journal and permit rollback if set
  * Returns SLURM_SUCCESS or an error code */
-extern int slurm_open_slurmdbd_conn(char *auth_info,
-                                    const slurm_trigger_callbacks_t *callbacks,
-                                    bool rollback);
+extern int slurm_open_slurmdbd_conn(const slurm_trigger_callbacks_t *callbacks);
 
 /* Close the SlurmDBD socket connection */
 extern int slurm_close_slurmdbd_conn(void);
@@ -484,7 +485,7 @@ extern void slurmdbd_pack_cond_msg(dbd_cond_msg_t *msg,
 				   uint16_t rpc_version,
 				   slurmdbd_msg_type_t type, Buf buffer);
 extern void slurmdbd_pack_init_msg(dbd_init_msg_t *msg, uint16_t rpc_version,
-				   Buf buffer, char *auth_info);
+				   Buf buffer);
 extern void slurmdbd_pack_fini_msg(dbd_fini_msg_t *msg,
 				   uint16_t rpc_version, Buf buffer);
 extern void slurmdbd_pack_job_complete_msg(dbd_job_comp_msg_t *msg,
@@ -547,8 +548,8 @@ extern int slurmdbd_unpack_rec_msg(dbd_rec_msg_t **msg,
 extern int slurmdbd_unpack_cond_msg(dbd_cond_msg_t **msg,
 				    uint16_t rpc_version,
 				    slurmdbd_msg_type_t type, Buf buffer);
-extern int slurmdbd_unpack_init_msg(dbd_init_msg_t **msg, Buf buffer,
-				    char *auth_info);
+extern int slurmdbd_unpack_init_msg(dbd_init_msg_t **msg,
+				    uint16_t rpc_version, Buf buffer);
 extern int slurmdbd_unpack_fini_msg(dbd_fini_msg_t **msg,
 				    uint16_t rpc_version, Buf buffer);
 extern int slurmdbd_unpack_job_complete_msg(dbd_job_comp_msg_t **msg,

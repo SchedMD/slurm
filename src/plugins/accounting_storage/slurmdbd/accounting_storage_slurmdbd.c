@@ -101,8 +101,6 @@ const char plugin_name[] = "Accounting storage SLURMDBD plugin";
 const char plugin_type[] = "accounting_storage/slurmdbd";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-static char *slurmdbd_auth_info = NULL;
-
 static pthread_t db_inx_handler_thread;
 static pthread_t cleanup_handler_thread;
 static pthread_mutex_t db_inx_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -443,19 +441,21 @@ static void *_cleanup_thread(void *no_data)
  */
 extern int init ( void )
 {
-	char *cluster_name = NULL;
-
 	if (first) {
+		char *cluster_name = NULL, *auth_info;
 		/* since this can be loaded from many different places
 		   only tell us once. */
 		if (!(cluster_name = slurm_get_cluster_name()))
 			fatal("%s requires ClusterName in slurm.conf",
 			      plugin_name);
 		xfree(cluster_name);
-		slurmdbd_auth_info = slurm_get_accounting_storage_pass();
-		verbose("%s loaded with AuthInfo=%s",
-			plugin_name, slurmdbd_auth_info);
 
+		auth_info = slurm_get_accounting_storage_pass();
+		verbose("%s loaded with AuthInfo=%s",
+			plugin_name, auth_info);
+
+		slurmdbd_defs_init(auth_info);
+		xfree(auth_info);
 		if (job_list && !(slurm_get_accounting_storage_enforce() &
 				  ACCOUNTING_ENFORCE_NO_JOBS)) {
 			/* only do this when job_list is defined
@@ -501,7 +501,7 @@ extern int fini ( void )
 	slurm_mutex_unlock(&db_inx_lock);
 
 	first = 1;
-	xfree(slurmdbd_auth_info);
+	slurmdbd_defs_fini();
 
 	return SLURM_SUCCESS;
 }
@@ -510,16 +510,10 @@ extern void *acct_storage_p_get_connection(
 	const slurm_trigger_callbacks_t *callbacks,
 	int conn_num, bool rollback, char *cluster_name)
 {
-	if (!slurmdbd_auth_info)
+	if (first)
 		init();
 
-	/* When dealing with rollbacks it turns out it is much faster
-	   to do the commit once or once in a while instead of
-	   autocommit.  The SlurmDBD will periodically do a commit to
-	   avoid such a slow down.
-	*/
-	if (slurm_open_slurmdbd_conn(slurmdbd_auth_info,
-				     callbacks, true) == SLURM_SUCCESS)
+	if (slurm_open_slurmdbd_conn(callbacks) == SLURM_SUCCESS)
 		errno = SLURM_SUCCESS;
 	/* send something back to make sure we don't run this again */
 	return (void *)1;
