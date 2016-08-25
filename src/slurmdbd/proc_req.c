@@ -38,6 +38,7 @@
 
 #include <signal.h>
 
+#include "src/common/slurm_auth.h"
 #include "src/common/gres.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
@@ -56,6 +57,9 @@
 #include "src/slurmctld/slurmctld.h"
 
 /* Local functions */
+static int   _unpack_persist_init(slurmdbd_conn_t *slurmdbd_conn,
+				  Buf in_buffer, Buf *out_buffer,
+				  uint32_t *uid);
 static int   _add_accounts(slurmdbd_conn_t *slurmdbd_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _add_account_coords(slurmdbd_conn_t *slurmdbd_conn,
@@ -251,7 +255,8 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 
 	START_TIMER;
 	errno = 0;		/* clear errno */
-	if (first && (msg_type != DBD_INIT)) {
+	if (first && ((msg_type != DBD_INIT) &&
+		      (msg_type != REQUEST_PERSIST_INIT))) {
 		comment = "Initial RPC not DBD_INIT";
 		error("CONN:%u %s type (%d)",
 		      slurmdbd_conn->newsockfd, comment, msg_type);
@@ -260,6 +265,10 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 					      rc, comment, DBD_INIT);
 	} else {
 		switch (msg_type) {
+		case REQUEST_PERSIST_INIT:
+			rc = _unpack_persist_init(slurmdbd_conn,
+						  in_buffer, out_buffer, uid);
+			break;
 		case DBD_ADD_ACCOUNTS:
 			rc = _add_accounts(slurmdbd_conn,
 					   in_buffer, out_buffer, uid);
@@ -628,6 +637,91 @@ static char * _replace_double_quotes(char *option)
 	return option;
 }
 
+static int _handle_init_msg(slurmdbd_conn_t *slurmdbd_conn,
+			    persist_init_req_msg_t *init_msg,  Buf *out_buffer,
+			    uint32_t *uid)
+{
+	int rc = SLURM_SUCCESS;
+
+	*uid = init_msg->uid;
+
+	debug("REQUEST_PERSIST_INIT: CLUSTER:%s VERSION:%u UID:%u IP:%s CONN:%u",
+	      init_msg->cluster_name, init_msg->version, init_msg->uid,
+	      slurmdbd_conn->ip, slurmdbd_conn->newsockfd);
+
+	slurmdbd_conn->cluster_name = xstrdup(init_msg->cluster_name);
+
+	/* When dealing with rollbacks it turns out it is much faster
+	   to do the commit once or once in a while instead of
+	   autocommit.  The SlurmDBD will periodically do a commit to
+	   avoid such a slow down.
+	*/
+	slurmdbd_conn->db_conn = acct_storage_g_get_connection(
+		false, slurmdbd_conn->newsockfd, true,
+		slurmdbd_conn->cluster_name);
+	slurmdbd_conn->rpc_version = init_msg->version;
+	if (errno)
+		rc = errno;
+
+	return rc;
+}
+
+static int _unpack_persist_init(slurmdbd_conn_t *slurmdbd_conn,
+				Buf in_buffer, Buf *out_buffer,
+				uint32_t *uid)
+{
+	int rc;
+	slurm_msg_t msg;
+	persist_init_req_msg_t *req_msg;
+	persist_init_resp_msg_t resp_msg;
+	char *comment = NULL;
+
+	slurm_msg_t_init(&msg);
+
+	if ((rc = slurm_unpack_received_msg(
+		     &msg, slurmdbd_conn->newsockfd, in_buffer)) < 0) {
+		comment = "Failed to unpack PERSIST_INIT message";
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
+		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
+					      rc, comment,
+					      REQUEST_PERSIST_INIT);
+		goto end_it;
+	}
+
+	req_msg = (persist_init_req_msg_t *)msg.data;
+	req_msg->uid = g_slurm_auth_get_uid(
+		msg.auth_cred, slurmdbd_conf->auth_info);
+
+	/* If the client happens to be a newer version than we are make it so
+	 * they talk language I understand.
+	 */
+	if (req_msg->version > SLURM_PROTOCOL_VERSION)
+		req_msg->version = SLURM_PROTOCOL_VERSION;
+
+	rc = _handle_init_msg(slurmdbd_conn, req_msg, out_buffer, uid);
+
+	if (rc != SLURM_SUCCESS)
+		comment = slurm_strerror(rc);
+
+end_it:
+
+	memset(&resp_msg, 0, sizeof(persist_init_resp_msg_t));
+	resp_msg.comment = comment;
+	resp_msg.rc = rc;
+	resp_msg.version = req_msg->version;
+
+	*out_buffer = init_buf(1024);
+	pack16((uint16_t) RESPONSE_PERSIST_INIT, *out_buffer);
+	slurm_persist_pack_init_resp_msg(
+		&resp_msg, *out_buffer, req_msg->version);
+
+	if (msg.auth_cred)
+		g_slurm_auth_destroy(msg.auth_cred);
+
+	slurm_free_msg_data(msg.msg_type, msg.data);
+
+	return rc;
+}
 
 static int _add_accounts(slurmdbd_conn_t *slurmdbd_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid)
@@ -2001,13 +2095,17 @@ static int _init_conn(slurmdbd_conn_t *slurmdbd_conn,
 	char *comment = NULL;
 	int rc = SLURM_SUCCESS;
 
-	if ((rc = slurmdbd_unpack_init_msg(&init_msg, in_buffer,
-					   slurmdbd_conf->auth_info))
+	/* 2 versions After 17.02 this can go away since dbd_init_msg_t is going
+	 * away with it.
+	 */
+	if ((rc = slurmdbd_unpack_init_msg(
+		     &init_msg, SLURM_MIN_PROTOCOL_VERSION, in_buffer))
 	    != SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_INIT message";
 		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
 		goto end_it;
 	}
+
 	if ((init_msg->version < SLURM_MIN_PROTOCOL_VERSION) ||
 	    (init_msg->version > SLURM_PROTOCOL_VERSION)) {
 		comment = "Incompatible RPC version";
@@ -2018,25 +2116,18 @@ static int _init_conn(slurmdbd_conn_t *slurmdbd_conn,
 		rc = SLURM_PROTOCOL_VERSION_ERROR;
 		goto end_it;
 	}
-	*uid = init_msg->uid;
 
-	debug("DBD_INIT: CLUSTER:%s VERSION:%u UID:%u IP:%s CONN:%u",
-	      init_msg->cluster_name, init_msg->version, init_msg->uid,
-	      slurmdbd_conn->ip, slurmdbd_conn->newsockfd);
+	rc = _handle_init_msg(slurmdbd_conn, (persist_init_req_msg_t *)init_msg,
+			      out_buffer, uid);
 
-	slurmdbd_conn->cluster_name = xstrdup(init_msg->cluster_name);
-	slurmdbd_conn->db_conn = acct_storage_g_get_connection(
-		false, slurmdbd_conn->newsockfd, init_msg->rollback,
-		slurmdbd_conn->cluster_name);
-	slurmdbd_conn->rpc_version = init_msg->version;
-	if (errno) {
-		rc = errno;
+	if (rc != SLURM_SUCCESS)
 		comment = slurm_strerror(rc);
-	}
 end_it:
-	slurmdbd_free_init_msg(init_msg);
+
 	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 				      rc, comment, DBD_INIT);
+
+	slurmdbd_free_init_msg(init_msg);
 
 	return rc;
 }

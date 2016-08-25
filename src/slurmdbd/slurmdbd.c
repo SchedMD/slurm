@@ -147,6 +147,9 @@ int main(int argc, char *argv[])
 		fatal("Unable to initialize %s accounting storage plugin",
 		      slurmdbd_conf->storage_type);
 	}
+
+	slurmdbd_defs_init(slurmdbd_conf->auth_info);
+
 	_kill_old_slurmdbd();
 	if (foreground == 0)
 		_daemonize();
@@ -327,6 +330,7 @@ end_it:
 	log_fini();
 	free_slurmdbd_conf();
 	_free_dbd_stats();
+	slurmdbd_defs_fini();
 	exit(0);
 }
 
