@@ -233,6 +233,12 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 		rpc_type_index = i;
 		break;
 	}
+
+	/* FIXME: the uid isn't figured out until after the init message.
+	 * Perhaps this doesn't matter though.  Seems like we could move this
+	 * whole chunk until after the processing.  It isn't clear why it is up
+	 * here just looking at this code.
+	 */
 	for (i = 0; i < rpc_stats.user_cnt; i++) {
 		if ((rpc_stats.rpc_user_id[i] == 0) && (i != 0))
 			rpc_stats.rpc_user_id[i] = *uid;
