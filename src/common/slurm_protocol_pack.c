@@ -885,6 +885,12 @@ extern uint32_t task_dist_old2new(uint16_t old_task_dist)
 void
 pack_header(header_t * header, Buf buffer)
 {
+	/* The DBD always unpacks the message type first.  DO NOT UNPACK THIS ON
+	 * THE UNPACK SIDE.
+	 */
+	if (header->flags & SLURMDBD_CONNECTION)
+		pack16(header->msg_type, buffer);
+
 	pack16((uint16_t)header->version, buffer);
 
 	if (header->version >= SLURM_16_05_PROTOCOL_VERSION) {
