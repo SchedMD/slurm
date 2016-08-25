@@ -963,6 +963,15 @@ extern int slurm_shutdown_msg_engine(int open_fd);
  * receive message functions
 \**********************************************************************/
 
+/* unpack a complete recieved message
+ * OUT msg - a slurm_msg struct to be filled in by the function
+ * IN  fd - file descriptor the message came from
+ * IN  buffer - Buf we will fill in the message with
+ * RET int	- returns 0 on success, -1 on failure and sets errno
+ */
+
+extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, Buf buffer);
+
 /*
  *  Receive a slurm message on the open slurm descriptor "fd" waiting
  *    at most "timeout" seconds for the message data. If timeout is

@@ -3063,58 +3063,11 @@ int slurm_open_controller_conn_spec(enum controller_id dest)
 	return rc;
 }
 
-/**********************************************************************\
- * receive message functions
-\**********************************************************************/
-
-/*
- * NOTE: memory is allocated for the returned msg must be freed at
- *       some point using the slurm_free_functions.
- * IN fd	- file descriptor to receive msg on
- * OUT msg	- a slurm_msg struct to be filled in by the function
- * IN timeout	- how long to wait in milliseconds
- * RET int	- returns 0 on success, -1 on failure and sets errno
- */
-int slurm_receive_msg(int fd, slurm_msg_t *msg, int timeout)
+extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, Buf buffer)
 {
-	char *buf = NULL;
-	size_t buflen = 0;
 	header_t header;
 	int rc;
 	void *auth_cred = NULL;
-	Buf buffer;
-
-	xassert(fd >= 0);
-	slurm_msg_t_init(msg);
-	msg->conn_fd = fd;
-
-	if (timeout <= 0)
-		/* convert secs to msec */
-		timeout  = slurm_get_msg_timeout() * 1000;
-
-	else if (timeout > (slurm_get_msg_timeout() * 10000)) {
-		debug("%s: You are receiving a message with very long "
-		      "timeout of %d seconds", __func__, (timeout/1000));
-	} else if (timeout < 1000) {
-		error("%s: You are receiving a message with a very short "
-		      "timeout of %d msecs", __func__, timeout);
-	}
-
-	/*
-	 * Receive a msg. slurm_msg_recvfrom() will read the message
-	 *  length and allocate space on the heap for a buffer containing
-	 *  the message.
-	 */
-	if (slurm_msg_recvfrom_timeout(fd, &buf, &buflen, 0, timeout) < 0) {
-		forward_init(&header.forward, NULL);
-		rc = errno;
-		goto total_return;
-	}
-
-#if	_DEBUG
-	_print_data (buf, buflen);
-#endif
-	buffer = create_buf(buf, buflen);
 
 	if (unpack_header(&header, buffer) == SLURM_ERROR) {
 		free_buf(buffer);
@@ -3200,7 +3153,6 @@ int slurm_receive_msg(int fd, slurm_msg_t *msg, int timeout)
 
 	msg->auth_cred = (void *)auth_cred;
 
-	free_buf(buffer);
 	rc = SLURM_SUCCESS;
 
 total_return:
@@ -3216,7 +3168,66 @@ total_return:
 		rc = 0;
 	}
 	return rc;
+}
 
+/**********************************************************************\
+ * receive message functions
+\**********************************************************************/
+
+/*
+ * NOTE: memory is allocated for the returned msg must be freed at
+ *       some point using the slurm_free_functions.
+ * IN fd	- file descriptor to receive msg on
+ * OUT msg	- a slurm_msg struct to be filled in by the function
+ * IN timeout	- how long to wait in milliseconds
+ * RET int	- returns 0 on success, -1 on failure and sets errno
+ */
+int slurm_receive_msg(int fd, slurm_msg_t *msg, int timeout)
+{
+	char *buf = NULL;
+	size_t buflen = 0;
+	int rc;
+	Buf buffer;
+
+	xassert(fd >= 0);
+	slurm_msg_t_init(msg);
+	msg->conn_fd = fd;
+
+	if (timeout <= 0)
+		/* convert secs to msec */
+		timeout  = slurm_get_msg_timeout() * 1000;
+
+	else if (timeout > (slurm_get_msg_timeout() * 10000)) {
+		debug("%s: You are receiving a message with very long "
+		      "timeout of %d seconds", __func__, (timeout/1000));
+	} else if (timeout < 1000) {
+		error("%s: You are receiving a message with a very short "
+		      "timeout of %d msecs", __func__, timeout);
+	}
+
+	/*
+	 * Receive a msg. slurm_msg_recvfrom() will read the message
+	 *  length and allocate space on the heap for a buffer containing
+	 *  the message.
+	 */
+	if (slurm_msg_recvfrom_timeout(fd, &buf, &buflen, 0, timeout) < 0) {
+		rc = errno;
+		goto endit;
+	}
+
+#if	_DEBUG
+	_print_data (buf, buflen);
+#endif
+	buffer = create_buf(buf, buflen);
+
+	rc = slurm_unpack_received_msg(msg, fd, buffer);
+
+	free_buf(buffer);
+
+endit:
+	slurm_seterrno(rc);
+
+	return rc;
 }
 
 /*
