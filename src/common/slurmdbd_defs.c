@@ -95,7 +95,6 @@ static pthread_cond_t  slurmdbd_cond = PTHREAD_COND_INITIALIZER;
 static int       slurmdbd_fd         = -1;
 static char *    slurmdbd_auth_info  = NULL;
 static char *    slurmdbd_cluster    = NULL;
-static bool      rollback_started    = 0;
 static bool      halt_agent          = 0;
 static slurm_trigger_callbacks_t callback;
 static bool      callbacks_requested = 0;
@@ -150,7 +149,6 @@ extern int slurm_open_slurmdbd_conn(char *auth_info,
 	slurmdbd_cluster = slurm_get_cluster_name();
 
 	agent_shutdown = 0;
-	rollback_started = rollback;
 
 	if (slurmdbd_fd < 0) {
 		_open_slurmdbd_fd(1);
@@ -190,12 +188,10 @@ extern int slurm_close_slurmdbd_conn(void)
 	/* NOTE: agent_lock not needed for _shutdown_agent() */
 	_shutdown_agent();
 
-	if (rollback_started) {
-		if (_send_fini_msg() != SLURM_SUCCESS)
-			error("slurmdbd: Sending fini msg: %m");
-		else
-			debug("slurmdbd: Sent fini msg");
-	}
+	if (_send_fini_msg() != SLURM_SUCCESS)
+		error("slurmdbd: Sending fini msg: %m");
+	else
+		debug("slurmdbd: Sent fini msg");
 
 	slurm_mutex_lock(&slurmdbd_lock);
 	_close_slurmdbd_fd();
@@ -3200,7 +3196,6 @@ slurmdbd_pack_init_msg(dbd_init_msg_t *msg, uint16_t rpc_version,
 	int rc;
 	void *auth_cred;
 
-	pack16(msg->rollback, buffer);
 	pack16(msg->version, buffer);
 
 	/* Adding anything to this needs to happen after the version
@@ -3236,7 +3231,10 @@ slurmdbd_unpack_init_msg(dbd_init_msg_t **msg,
 
 	*msg = msg_ptr;
 
-	safe_unpack16(&msg_ptr->rollback, buffer);
+	/* We don't use rollback going forward and version was packed after it
+	 * unfortunately */
+	if (rpc_version < SLURM_17_02_PROTOCOL_VERSION)
+		safe_unpack16((uint16_t *)&tmp32, buffer);
 	safe_unpack16(&msg_ptr->version, buffer);
 
 	/* We find out the version of the caller right here so use

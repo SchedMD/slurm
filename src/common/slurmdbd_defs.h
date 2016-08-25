@@ -218,7 +218,6 @@ typedef struct dbd_get_jobs_msg {
 
 typedef struct dbd_init_msg {
 	char *cluster_name;     /* cluster this message is coming from */
-	uint16_t rollback;      /* to allow rollbacks or not */
 	uint16_t version;	/* protocol version */
 	uint32_t uid;		/* UID originating connection,
 				 * filled by authtentication plugin*/
