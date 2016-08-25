@@ -21934,7 +21934,7 @@ $as_echo "#define HAVE_PMIX 1" >>confdefs.h
 
   fi
 
-   if test $_x_ac_pmix_v1_found = "1" &&
+   if test $_x_ac_pmix_v1_found = "1" ||
                 test $_x_ac_pmix_v2_found = "1"; then
   HAVE_PMIX_TRUE=
   HAVE_PMIX_FALSE='#'
