@@ -108,7 +108,7 @@ AC_DEFUN([X_AC_PMIX],
     AC_SUBST(PMIX_V2_LDFLAGS)
   fi
 
-  AM_CONDITIONAL(HAVE_PMIX, [test $_x_ac_pmix_v1_found = "1"] &&
+  AM_CONDITIONAL(HAVE_PMIX, [test $_x_ac_pmix_v1_found = "1"] ||
                 [test $_x_ac_pmix_v2_found = "1"])
   AM_CONDITIONAL(HAVE_PMIX_V1, [test $_x_ac_pmix_v1_found = "1"])
   AM_CONDITIONAL(HAVE_PMIX_V2, [test $_x_ac_pmix_v2_found = "1"])
