@@ -4357,7 +4357,7 @@ extern uint32_t xlate_mem_new2old(uint64_t new_mem)
 		return INFINITE;
 
 	// clear all but lower 31 bits
-	old_mem = (new_mem & 0x00000000efffffff);
+	old_mem = (new_mem & 0x000000007fffffff);
 
 	// reset MEM_PER_CPU flag to old location
 	if (new_mem & MEM_PER_CPU)
