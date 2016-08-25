@@ -957,9 +957,8 @@ static void _validate_config(slurm_gres_context_t *context_ptr)
 	list_iterator_destroy(iter);
 }
 
-extern int gres_plugin_node_config_devices_path(char **dev_path,
-						char **gres_name,
-						int array_len,
+extern int gres_plugin_node_config_devices_path(char ***dev_path,
+						char ***gres_name,
 						char *node_name)
 {
 	static s_p_options_t _gres_options[] = {
@@ -973,7 +972,10 @@ extern int gres_plugin_node_config_devices_path(char **dev_path,
 	struct stat config_stat;
 	s_p_hashtbl_t *tbl;
 	gres_slurmd_conf_t **gres_array;
-	char *gres_conf_file;
+	char *gres_conf_file, *slash, *root_path, *one_name;
+	char **local_gres = NULL, **local_dev = NULL;
+	int array_len = 0;
+	hostlist_t hl;
 
 	gres_plugin_init();
 	gres_conf_file = get_extra_conf_path("gres.conf");
@@ -992,39 +994,93 @@ extern int gres_plugin_node_config_devices_path(char **dev_path,
 	FREE_NULL_LIST(gres_conf_list);
 	gres_conf_list = list_create(_destroy_gres_slurmd_conf);
 	if (s_p_get_array((void ***) &gres_array, &count, "Name", tbl)) {
-		if (count > array_len) {
-			error("GRES device count exceeds array size (%d > %d)",
-			      count, array_len);
-			count = array_len;
-		}
 		for (i = 0; i < count; i++) {
-			if ((gres_array[i]) && (gres_array[i]->file)) {
-				dev_path[ret_count]  = gres_array[i]->file;
-				gres_name[ret_count] = gres_array[i]->name;
-				gres_array[i] = NULL;
-				ret_count++;
+			if (!gres_array[i] || !gres_array[i]->file)
+				continue;
+			root_path = xstrdup(gres_array[i]->file);
+			slash = strrchr(root_path, '/');
+			if (slash) {
+				hl = hostlist_create(slash + 1);
+				slash[1] = '\0';
+			} else {
+				hl = hostlist_create(root_path);
+				root_path[0] = '\0';
 			}
+			if (hl == NULL) {
+				error("can't parse gres.conf file record (%s)",
+				      gres_array[i]->file);
+			} else {
+				while ((one_name = hostlist_shift(hl))) {
+					if ((ret_count + 1) > array_len) {
+						array_len += 128;
+						local_dev = xrealloc(local_dev,
+								(sizeof(char *)
+								* array_len));
+						local_gres = xrealloc(
+								local_gres,
+								(sizeof(char *)
+								* array_len));
+					}
+					xstrfmtcat(local_dev[ret_count], "%s%s",
+						   root_path, one_name);
+					local_gres[ret_count] =
+						gres_array[i]->name;
+					ret_count++;
+					free(one_name);
+				}
+				hostlist_destroy(hl);
+			}
+			xfree(root_path);
+			gres_array[i] = NULL;
 		}
 	}
 	if (s_p_get_array((void ***) &gres_array, &count, "NodeName", tbl)) {
-		if ((ret_count + count) > array_len) {
-			error("GRES device count exceeds array size (%d > %d)",
-			      (ret_count + count), array_len);
-			count = array_len - count;
-		}
 		for (i = 0; i < count; i++) {
-			if ((gres_array[i]) && (gres_array[i]->file)) {
-				dev_path[ret_count]  = gres_array[i]->file;
-				gres_name[ret_count] = gres_array[i]->name;
-				gres_array[i] = NULL;
-				ret_count++;
+			if (!gres_array[i] || !gres_array[i]->file)
+				continue;
+			root_path = xstrdup(gres_array[i]->file);
+			slash = strrchr(root_path, '/');
+			if (slash) {
+				hl = hostlist_create(slash + 1);
+				slash[1] = '\0';
+			} else {
+				hl = hostlist_create(root_path);
+				root_path[0] = '\0';
 			}
+			if (hl == NULL) {
+				error("can't parse gres.conf file record (%s)",
+				      gres_array[i]->file);
+			} else {
+				while ((one_name = hostlist_shift(hl))) {
+					if ((ret_count + 1) > array_len) {
+						array_len += 128;
+						local_dev = xrealloc(local_dev,
+								(sizeof(char *)
+								* array_len));
+						local_gres = xrealloc(
+								local_gres,
+								(sizeof(char *)
+								* array_len));
+					}
+					xstrfmtcat(local_dev[ret_count], "%s%s",
+						   root_path, one_name);
+					local_gres[ret_count] =
+						gres_array[i]->name;
+					ret_count++;
+					free(one_name);
+				}
+				hostlist_destroy(hl);
+			}
+			xfree(root_path);
+			gres_array[i] = NULL;
 		}
 	}
 	s_p_hashtbl_destroy(tbl);
 	slurm_mutex_unlock(&gres_context_lock);
-
 	xfree(gres_conf_file);
+	*dev_path = local_dev;
+	*gres_name = local_gres;
+
 	return ret_count;
 }
 
@@ -4964,7 +5020,7 @@ extern void gres_plugin_job_state_log(List gres_list, uint32_t job_id)
 extern void gres_plugin_job_state_file(List gres_list, int *gres_bit_alloc,
 				       int *gres_count)
 {
-	int i, j, gres_cnt=0, len, p, found=0;
+	int i, j, gres_cnt = 0, len, p, found = 0;
 	ListIterator gres_iter;
 	gres_state_t *gres_ptr;
 	gres_job_state_t *gres_job_ptr;
@@ -4975,15 +5031,12 @@ extern void gres_plugin_job_state_file(List gres_list, int *gres_bit_alloc,
 
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
-
-	for (j=0; j<gres_context_cnt; j++) {
+	for (j = 0; j < gres_context_cnt; j++) {
 		found = 0;
 		list_iterator_reset(gres_iter);
-		while ((gres_ptr = (gres_state_t *) list_next(gres_iter))){
-			if (gres_ptr->plugin_id !=
-			    gres_context[j].plugin_id ) {
+		while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
+			if (gres_ptr->plugin_id != gres_context[j].plugin_id)
 				continue;
-			}
 			found = 1;
 			gres_job_ptr = (gres_job_state_t *) gres_ptr->gres_data;
 			if ((gres_job_ptr != NULL) &&
@@ -4991,7 +5044,7 @@ extern void gres_plugin_job_state_file(List gres_list, int *gres_bit_alloc,
 			    (gres_job_ptr->gres_bit_alloc != NULL) &&
 			    (gres_job_ptr->gres_bit_alloc[0] != NULL)) {
 			     	len = bit_size(gres_job_ptr->gres_bit_alloc[0]);
-				for (i=0; i<len; i++) {
+				for (i = 0; i < len; i++) {
 					if (!bit_test(gres_job_ptr->
 						      gres_bit_alloc[0], i))
 						gres_bit_alloc[gres_cnt] = 0;
@@ -5003,7 +5056,7 @@ extern void gres_plugin_job_state_file(List gres_list, int *gres_bit_alloc,
 			break;
 		}
 		if (found == 0) {
-			for (p=0; p<gres_count[j]; p++){
+			for (p = 0; p < gres_count[j]; p++) {
 				gres_bit_alloc[gres_cnt] = 0;
 				gres_cnt++;
 			}
