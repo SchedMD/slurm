@@ -4,19 +4,60 @@ AUTOMAKE_OPTIONS = foreign
 
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(PMIX_CPPFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
-pkglib_LTLIBRARIES = mpi_pmix.la 
-
-# OpenMPI MPI plugin.
-mpi_pmix_la_SOURCES = mpi_pmix.c pmixp_agent.c pmixp_client.c pmixp_coll.c pmixp_nspaces.c pmixp_info.c \
+pmix_src = mpi_pmix.c pmixp_agent.c pmixp_client.c pmixp_coll.c pmixp_nspaces.c pmixp_info.c \
 			pmixp_server.c pmixp_state.c pmixp_io.c pmixp_utils.c pmixp_dmdx.c \
 			pmixp_agent.h pmixp_client.h pmixp_coll.h pmixp_nspaces.h pmixp_info.h \
 			pmixp_server.h pmixp_state.h pmixp_io.h pmixp_utils.h pmixp_common.h pmixp_dmdx.h
 
-mpi_pmix_la_LIBADD = \
-	$(top_builddir)/src/slurmd/common/libslurmd_reverse_tree_math.la $(PMIX_LDFLAGS) $(PMIX_LIBS)
+pmix_internal_libs = $(top_builddir)/src/slurmd/common/libslurmd_reverse_tree_math.la
 
-mpi_pmix_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+pmix_ldflags = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
+# pkglib_v#dir is needed in each one of the below because of the way we
+# use pkglib_v#_LTLIBRARIES even though it is the same for each one it still
+# needs to be defined.
 
+if HAVE_PMIX_V1
+
+pkglib_v1dir=$(pkglibdir)
+pkglib_v1_LTLIBRARIES = mpi_pmix_v1.la
+mpi_pmix_v1_la_SOURCES = $(pmix_src)
+mpi_pmix_v1_la_LIBADD = $(pmix_internal_libs) $(PMIX_LIBS)
+mpi_pmix_v1_la_LDFLAGS = $(pmix_ldflags) $(PMIX_V1_LDFLAGS)
+mpi_pmix_v1_la_CPPFLAGS = $(AM_CPPFLAGS) $(PMIX_V1_CPPFLAGS) -DHAVE_PMIX_VER=1
+
+endif
+
+if HAVE_PMIX_V2
+
+pkglib_v2dir=$(pkglibdir)
+pkglib_v2_LTLIBRARIES = mpi_pmix_v2.la
+mpi_pmix_v2_la_SOURCES = $(pmix_src)
+mpi_pmix_v2_la_LIBADD = $(pmix_internal_libs) $(PMIX_LIBS)
+mpi_pmix_v2_la_LDFLAGS = $(pmix_ldflags) $(PMIX_V2_LDFLAGS)
+mpi_pmix_v2_la_CPPFLAGS = $(AM_CPPFLAGS) $(PMIX_V2_CPPFLAGS) -DHAVE_PMIX_VER=2
+
+endif
+
+if HAVE_PMIX_V2
+mpi_pmix_so := mpi_pmix_v2.so
+else
+
+if HAVE_PMIX_V1
+mpi_pmix_so := mpi_pmix_v1.so
+endif
+
+endif
+
+force:
+$(pmix_internal_libs): force
+	@cd `dirname $@` && $(MAKE) `basename $@`
+
+install-exec-hook:
+	rm -rf $(pkglibdir)/mpi_pmix.so
+	$(LN_S) ./$(mpi_pmix_so)  $(pkglibdir)/mpi_pmix.so
+
+uninstall-hook:
+	rm -rf $(pkglibdir)/mpi_pmix.so

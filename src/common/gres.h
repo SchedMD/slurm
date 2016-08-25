@@ -211,13 +211,11 @@ extern int gres_plugin_node_config_pack(Buf buffer);
  * Return information about the configured gres devices on the node
  * OUT dev_path - the devices paths as written on gres.conf file
  * OUT gres_name - the names of the devices (ex. gpu, nic,..)
- * IN array_len - count of elements in dev_path and gres_name
  * IN node_name - Name of this compute node
- * OUT int - number of lines of gres.conf file
+ * OUT int - number of records in dev_path and gres_name
  */
-extern int gres_plugin_node_config_devices_path(char **dev_path,
-						char **gres_name,
-						int array_len,
+extern int gres_plugin_node_config_devices_path(char ***dev_path,
+						char ***gres_name,
 						char *node_name);
 
 /*

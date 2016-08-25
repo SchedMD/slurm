@@ -51,6 +51,10 @@
 #  include <json/json.h>
 #endif
 
+#if defined(__FreeBSD__) || defined(__NetBSD__)
+#define POLLRDHUP POLLHUP
+#endif
+
 #include "slurm/slurm.h"
 
 #include "src/common/assoc_mgr.h"

@@ -165,10 +165,10 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 {
 	int f, k, rc, gres_conf_lines, allow_lines;
 	int fstatus = SLURM_ERROR;
-	char *gres_name[PATH_MAX];
-	char *gres_cgroup[PATH_MAX], *dev_path[PATH_MAX];
+	char **gres_name = NULL;
+	char **gres_cgroup = NULL, **dev_path = NULL;
 	char *allowed_devices[PATH_MAX], *allowed_dev_major[PATH_MAX];
-	int *gres_bit_alloc = NULL;
+	int *gres_job_bit_alloc = NULL;
 	int *gres_step_bit_alloc = NULL;
 	int *gres_count = NULL;
 	xcgroup_t devices_cg;
@@ -182,18 +182,17 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 
 	char* slurm_cgpath ;
 
-	/* create slurm root cg in this cg namespace */
+	/* create slurm root cgroup in this cgroup namespace */
 	slurm_cgpath = task_cgroup_create_slurm_cg(&devices_ns);
-	if ( slurm_cgpath == NULL ) {
+	if (slurm_cgpath == NULL)
 		return SLURM_ERROR;
-	}
 
 	/* build user cgroup relative path if not set (should not be) */
 	if (*user_cgroup_path == '\0') {
-		if (snprintf(user_cgroup_path, PATH_MAX,
-			     "%s/uid_%u", slurm_cgpath, uid) >= PATH_MAX) {
-			error("unable to build uid %u cgroup relative "
-			      "path : %m", uid);
+		if (snprintf(user_cgroup_path, PATH_MAX, "%s/uid_%u",
+			     slurm_cgpath, uid) >= PATH_MAX) {
+			error("unable to build uid %u cgroup relative path : %m",
+			      uid);
 			xfree(slurm_cgpath);
 			return SLURM_ERROR;
 		}
@@ -201,17 +200,17 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 	xfree(slurm_cgpath);
 
 	/* build job cgroup relative path if no set (should not be) */
-	if ( *job_cgroup_path == '\0' ) {
-		if ( snprintf(job_cgroup_path,PATH_MAX, "%s/job_%u",
-			      user_cgroup_path, jobid) >= PATH_MAX ) {
+	if (*job_cgroup_path == '\0') {
+		if (snprintf(job_cgroup_path, PATH_MAX, "%s/job_%u",
+			     user_cgroup_path, jobid) >= PATH_MAX) {
 			error("task/cgroup: unable to build job %u devices "
-			      "cg relative path : %m", jobid);
+			      "cgroup relative path : %m", jobid);
 			return SLURM_ERROR;
 		}
 	}
 
 	/* build job step cgroup relative path (should not be) */
-	if ( *jobstep_cgroup_path == '\0' ) {
+	if (*jobstep_cgroup_path == '\0') {
 		int cc;
 		if (stepid == SLURM_BATCH_SCRIPT) {
 			cc = snprintf(jobstep_cgroup_path, PATH_MAX,
@@ -224,74 +223,72 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 				     "%s/step_%u",
 				     job_cgroup_path, stepid);
 		}
-		if (cc >= PATH_MAX ) {
+		if (cc >= PATH_MAX) {
 			error("task/cgroup: unable to build job step %u.%u "
-			      "devices cg relative path : %m", jobid, stepid);
+			      "devices cgroup relative path : %m",
+			      jobid, stepid);
 			return SLURM_ERROR;
 		}
 	}
 
 	/*
-	 * create devices root cg and lock it
+	 * create devices root cgroup and lock it
 	 *
 	 * we will keep the lock until the end to avoid the effect of a release
 	 * agent that would remove an existing cgroup hierarchy while we are
 	 * setting it up. As soon as the step cgroup is created, we can release
 	 * the lock.
-	 * Indeed, consecutive slurm steps could result in cg being removed
+	 * Indeed, consecutive slurm steps could result in cgroup being removed
 	 * between the next EEXIST instanciation and the first addition of
 	 * a task. The release_agent will have to lock the root devices cgroup
 	 * to avoid this scenario.
 	 */
-	if ( xcgroup_create(&devices_ns, &devices_cg, "", 0, 0) !=
-	     XCGROUP_SUCCESS ) {
-		error("task/cgroup: unable to create root devices xcgroup");
+	if (xcgroup_create(&devices_ns, &devices_cg, "", 0, 0) !=
+	    XCGROUP_SUCCESS ) {
+		error("task/cgroup: unable to create root devices cgroup");
 		return SLURM_ERROR;
 	}
-	if ( xcgroup_lock(&devices_cg) != XCGROUP_SUCCESS ) {
+	if (xcgroup_lock(&devices_cg) != XCGROUP_SUCCESS) {
 		xcgroup_destroy(&devices_cg);
-		error("task/cgroup: unable to lock root devices cg");
+		error("task/cgroup: unable to lock root devices cgroup");
 		return SLURM_ERROR;
 	}
 
-	info("task/cgroup: manage devices jor job '%u'",jobid);
+	info("task/cgroup: manage devices jor job '%u'", jobid);
 
 	 /*
 	  * collect info concerning the gres.conf file
-	  * the gres devices paths and the gres names
+	  * the GRES devices paths and the GRES names
 	  */
-	gres_conf_lines = gres_plugin_node_config_devices_path(dev_path,
-							       gres_name,
-							       PATH_MAX,
+	gres_conf_lines = gres_plugin_node_config_devices_path(&dev_path,
+							       &gres_name,
 							       job->node_name);
 
 	/*
 	 * create the entry for cgroup devices subsystem with major minor
 	 */
-	_calc_device_major(dev_path,gres_cgroup,gres_conf_lines);
-
-	allow_lines = read_allowed_devices_file(allowed_devices);
+	gres_cgroup = xmalloc(sizeof(char *) * gres_conf_lines);
+	_calc_device_major(dev_path, gres_cgroup, gres_conf_lines);
 
 	/*
          * create the entry with major minor for the default allowed devices
          * read from the file
          */
-	_calc_device_major(allowed_devices,allowed_dev_major,allow_lines);
-
-	gres_count = xmalloc ( sizeof (int) * (gres_conf_lines) );
+	allow_lines = read_allowed_devices_file(allowed_devices);
+	_calc_device_major(allowed_devices, allowed_dev_major, allow_lines);
 
 	/*
 	 * calculate the number of gres.conf records for each gres name
-	 *
 	 */
+	gres_count = xmalloc(sizeof(int) * gres_conf_lines);
 	f = 0;
 	gres_count[f] = 1;
 	for (k = 0; k < gres_conf_lines; k++) {
 		if ((k+1 < gres_conf_lines) &&
-		    (xstrcmp(gres_name[k],gres_name[k+1]) == 0))
+		    (xstrcmp(gres_name[k], gres_name[k+1]) == 0))
 			gres_count[f]++;
 		if ((k+1 < gres_conf_lines) &&
-		    (xstrcmp(gres_name[k],gres_name[k+1]) != 0)) {
+		    (xstrcmp(gres_name[k], gres_name[k+1]) != 0)) {
 			f++;
 			gres_count[f] = 1;
 		}
@@ -300,16 +297,14 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 	/*
 	 * create user cgroup in the devices ns (it could already exist)
 	 */
-	if ( xcgroup_create(&devices_ns,&user_devices_cg,
-			    user_cgroup_path,
-			    getuid(),getgid()) != XCGROUP_SUCCESS ) {
+	if (xcgroup_create(&devices_ns, &user_devices_cg, user_cgroup_path,
+			   getuid(), getgid()) != XCGROUP_SUCCESS) {
 		goto error;
 	}
-	if ( xcgroup_instantiate(&user_devices_cg) != XCGROUP_SUCCESS ) {
+	if (xcgroup_instantiate(&user_devices_cg) != XCGROUP_SUCCESS) {
 		xcgroup_destroy(&user_devices_cg);
 		goto error;
 	}
-
 
 	/* TODO
 	 * check that user's devices cgroup is consistant and allow the
@@ -320,39 +315,39 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 	/*
 	 * create job cgroup in the devices ns (it could already exist)
 	 */
-	if ( xcgroup_create(&devices_ns,&job_devices_cg,
-			    job_cgroup_path,
-			    getuid(), getgid()) != XCGROUP_SUCCESS ) {
+	if (xcgroup_create(&devices_ns, &job_devices_cg, job_cgroup_path,
+			    getuid(), getgid()) != XCGROUP_SUCCESS) {
 		xcgroup_destroy(&user_devices_cg);
 		goto error;
 	}
-	if ( xcgroup_instantiate(&job_devices_cg) != XCGROUP_SUCCESS ) {
+	if (xcgroup_instantiate(&job_devices_cg) != XCGROUP_SUCCESS) {
 		xcgroup_destroy(&user_devices_cg);
 		xcgroup_destroy(&job_devices_cg);
 		goto error;
 	}
 
-	gres_bit_alloc = xmalloc ( sizeof (int) * (gres_conf_lines + 1));
-
 	/* fetch information concerning the gres devices allocation for the job */
-	gres_plugin_job_state_file(job_gres_list, gres_bit_alloc, gres_count);
+	gres_job_bit_alloc = xmalloc(sizeof (int) * (gres_conf_lines + 10));
+	gres_plugin_job_state_file(job_gres_list, gres_job_bit_alloc,
+				   gres_count);
 
 	/*
-	 * with the current cgroup devices subsystem design (whitelist only supported)
-	 * we need to allow all different devices that are supposed to be allowed by
-	 * default.
+	 * with the current cgroup devices subsystem design (whitelist only
+	 * supported) we need to allow all different devices that are supposed
+	 * to be allowed by* default.
 	 */
 	for (k = 0; k < allow_lines; k++) {
-		info("Default access allowed to device %s", allowed_dev_major[k]);
-		xcgroup_set_param(&job_devices_cg,"devices.allow",
-			allowed_dev_major[k]);
+		info("Default access allowed to device %s",
+		     allowed_dev_major[k]);
+		xcgroup_set_param(&job_devices_cg, "devices.allow",
+				  allowed_dev_major[k]);
 	}
 
 	/*
-         * allow or deny access to devices according to gres permissions for the job
+         * allow or deny access to devices according to job GRES permissions
          */
 	for (k = 0; k < gres_conf_lines; k++) {
-		if (gres_bit_alloc[k] == 1) {
+		if (gres_job_bit_alloc[k] == 1) {
 			info("Allowing access to device %s", gres_cgroup[k]);
 			xcgroup_set_param(&job_devices_cg, "devices.allow",
                                           gres_cgroup[k]);
@@ -368,9 +363,8 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 	 * use job's user uid/gid to enable tasks cgroups creation by
 	 * the user inside the step cgroup owned by root
 	 */
-	if ( xcgroup_create(&devices_ns,&step_devices_cg,
-			    jobstep_cgroup_path,
-			    uid,gid) != XCGROUP_SUCCESS ) {
+	if (xcgroup_create(&devices_ns, &step_devices_cg, jobstep_cgroup_path,
+			   uid, gid) != XCGROUP_SUCCESS ) {
 		/* do not delete user/job cgroup as */
 		/* they can exist for other steps */
 		xcgroup_destroy(&user_devices_cg);
@@ -385,48 +379,50 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 	}
 
 
-	if (job->stepid != SLURM_BATCH_SCRIPT &&
-	    job->stepid != SLURM_EXTERN_CONT) {
+	if ((job->stepid != SLURM_BATCH_SCRIPT) &&
+	    (job->stepid != SLURM_EXTERN_CONT)) {
 
-		gres_step_bit_alloc = xmalloc ( sizeof (int) * (gres_conf_lines + 1));
-
-		/* fetch information concerning the gres devices allocation for the step */
+		/* fetch information about step GRES devices allocation */
+		gres_step_bit_alloc = xmalloc(sizeof (int) * (gres_conf_lines + 10));
 		gres_plugin_step_state_file(step_gres_list, gres_step_bit_alloc,
-				    gres_count);
-
+					    gres_count);
 
 		/*
-		 * with the current cgroup devices subsystem design (whitelist only supported)
-		 * we need to allow all different devices that are supposed to be allowed by
-		 * default.
+		 * with the current cgroup devices subsystem design (whitelist
+		 * only supported) we need to allow all different devices that
+		 * are supposed to be allowed by default.
 		 */
 		for (k = 0; k < allow_lines; k++) {
-			info("Default access allowed to device %s", allowed_dev_major[k]);
-			xcgroup_set_param(&step_devices_cg,"devices.allow",
+			info("Default access allowed to device %s",
+			     allowed_dev_major[k]);
+			xcgroup_set_param(&step_devices_cg, "devices.allow",
 					  allowed_dev_major[k]);
 		}
 
 		/*
-		 * allow or deny access to devices according to gres permissions for the step
+		 * allow or deny access to devices according to GRES permissions
+		 * for the step
 		 */
 		for (k = 0; k < gres_conf_lines; k++) {
-			if (gres_step_bit_alloc[k] == 1){
+			if (gres_step_bit_alloc[k] == 1) {
 				info("Allowing access to device %s for step",
 				     gres_cgroup[k]);
-				xcgroup_set_param(&step_devices_cg, "devices.allow",
+				xcgroup_set_param(&step_devices_cg,
+						 "devices.allow",
 						  gres_cgroup[k]);
 			} else {
 				info("Not allowing access to device %s for step",
 				     gres_cgroup[k]);
-			xcgroup_set_param(&step_devices_cg, "devices.deny",
-					  gres_cgroup[k]);
+				xcgroup_set_param(&step_devices_cg,
+						 "devices.deny",
+						  gres_cgroup[k]);
 			}
 		}
 	}
 	/* attach the slurmstepd to the step devices cgroup */
 	pid_t pid = getpid();
-	rc = xcgroup_add_pids(&step_devices_cg,&pid,1);
-	if ( rc != XCGROUP_SUCCESS ) {
+	rc = xcgroup_add_pids(&step_devices_cg, &pid, 1);
+	if (rc != XCGROUP_SUCCESS) {
 		error("task/cgroup: unable to add slurmstepd to devices cg '%s'",
 		      step_devices_cg.path);
 		fstatus = SLURM_ERROR;
@@ -437,9 +433,12 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 error:
 	xcgroup_unlock(&devices_cg);
 	xcgroup_destroy(&devices_cg);
-
 	xfree(gres_step_bit_alloc);
-	xfree(gres_bit_alloc);
+	xfree(gres_job_bit_alloc);
+	xfree(gres_name);
+	xfree(dev_path);
+	xfree(gres_cgroup);
+
 	return fstatus;
 }
 

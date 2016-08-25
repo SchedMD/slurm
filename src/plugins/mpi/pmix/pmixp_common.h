@@ -65,6 +65,10 @@
 /* PMIx library header */
 #include <pmix_server.h>
 
+#ifndef PMIX_VERSION_MAJOR
+#define PMIX_VERSION_MAJOR 1L
+#endif
+
 /* TODO: use /tmp directory instead */
 #define MAX_USOCK_PATH							\
 	((size_t) &(((struct sockaddr_un *)0 + 1)->sun_family) -	\

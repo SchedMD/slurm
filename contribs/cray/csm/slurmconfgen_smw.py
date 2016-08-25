@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 #
-# Copyright 2015 Cray Inc. All Rights Reserved
+# Copyright 2015-2016 Cray Inc. All Rights Reserved.
 """ A script to generate slurm.conf and gres.conf for a
     Cray system on the smw """
+
+from __future__ import print_function
 
 import argparse
 import os
@@ -65,22 +67,23 @@ def parse_args():
     return parser.parse_args()
 
 
-def get_repurposed_computes(partition):
-    """ Gets a list of repurposed compute nodes for the given partition. """
-    print 'Getting list of repurposed compute nodes...'
+def get_service_nodes(partition):
+    """ Gets a list of service nodes for the given partition. """
+    print('Getting list of service nodes...')
     try:
         xtcliout = subprocess.check_output(['/opt/cray/hss/default/bin/xtcli',
-                                            'status', '-m', partition],
+                                            'status', partition],
                                            stderr=subprocess.STDOUT)
-        repurposed = []
+        service = []
         for line in xtcliout.splitlines():
             cname = re.match(
                 r'\s*(c\d+-\d+c[0-2]s(?:\d|1[0-5])n[0-3]):\s+service',
                 line)
             if cname:
-                repurposed.append(cname.group(1))
+                service.append(cname.group(1))
 
-        return repurposed
+        print('Found {} service nodes.'.format(len(service)))
+        return service
     except subprocess.CalledProcessError:
         return []
 
@@ -95,7 +98,7 @@ def get_node(nodexml):
 
     # Skip disabled nodes
     if status != 'enabled':
-        print 'Skipping {} node {}'.format(status, cname)
+        print('Skipping {} node {}'.format(status, cname))
         return None
 
     cores = int(nodexml.find('cores').text)
@@ -121,8 +124,8 @@ def get_node(nodexml):
             mic += 1
             craynetwork = 2
         else:
-            print ('WARNING: accelerator type {0} unknown'
-                   .format(accelxml.text))
+            print('WARNING: accelerator type {0} unknown'
+                  .format(accelxml.text))
 
     node['Gres'] = [Gres('craynetwork', craynetwork)]
     if gpu > 0:
@@ -132,10 +135,10 @@ def get_node(nodexml):
     return node
 
 
-def get_inventory(partition, repurposed):
+def get_inventory(partition, service):
     """ Gets a hardware inventory for the given partition.
         Returns the node dictionary """
-    print 'Gathering hardware inventory...'
+    print('Gathering hardware inventory...')
     nodes = {}
 
     # Get an inventory and parse the XML
@@ -146,26 +149,16 @@ def get_inventory(partition, repurposed):
 
     # Loop through all modules
     for modulexml in inventoryxml.findall('module_list/module'):
-        # Skip service nodes
-        board_type = modulexml.find('board_type').text
-        if board_type == '10':
-            continue
-        elif board_type != '13':
-            print 'WARNING: board type {} unknown'.format(board_type)
-
         # Loop through nodes in this module
         for nodexml in modulexml.findall('node_list/node'):
             node = get_node(nodexml)
-            if node is None:
-                continue
-            if node['cname'] in repurposed:
-                print ('Skipping repurposed compute node {}'
-                       .format(node['cname']))
+            if node is None or node['cname'] in service:
                 continue
 
             # Add to output data structures
             nodes[node['nid']] = node
 
+    print('Found {} compute nodes.'.format(len(nodes)))
     return nodes
 
 
@@ -174,7 +167,7 @@ def compact_nodes(nodes):
     basenode = None
     toremove = []
 
-    print 'Compacting node configuration...'
+    print('Compacting node configuration...')
     for curnid in sorted(nodes):
         if basenode is None:
             basenode = nodes[curnid]
@@ -201,6 +194,8 @@ def compact_nodes(nodes):
     # Remove nodes we've consolidated
     for nid in toremove:
         del nodes[nid]
+
+    print('Compacted into {} group(s).'.format(len(nodes)))
 
 
 def scale_mem(mem):
@@ -281,8 +276,8 @@ def main():
     args = parse_args()
 
     # Get info from cnode and xthwinv
-    repurposed = get_repurposed_computes(args.partition)
-    nodes = get_inventory(args.partition, repurposed)
+    service = get_service_nodes(args.partition)
+    nodes = get_inventory(args.partition, service)
     nodelist = rli_compress([int(nid) for nid in nodes])
     compact_nodes(nodes)
     defmem, maxmem = get_mem_per_cpu(nodes)
@@ -290,7 +285,7 @@ def main():
     # Write files from templates
     jinjaenv = Environment(loader=FileSystemLoader(args.templatedir))
     conffile = os.path.join(args.output, 'slurm.conf')
-    print 'Writing Slurm configuration to {0}...'.format(conffile)
+    print('Writing Slurm configuration to {0}...'.format(conffile))
     with open(conffile, 'w') as outfile:
         outfile.write(jinjaenv.get_template('slurm.conf.j2').render(
             script=sys.argv[0],
@@ -303,14 +298,14 @@ def main():
             nodelist=nodelist))
 
     gresfilename = os.path.join(args.output, 'gres.conf')
-    print 'Writing gres configuration to {0}...'.format(gresfilename)
+    print('Writing gres configuration to {0}...'.format(gresfilename))
     with open(gresfilename, 'w') as gresfile:
         gresfile.write(jinjaenv.get_template('gres.conf.j2').render(
             script=sys.argv[0],
             date=time.asctime(),
             nodes=nodes))
 
-    print 'Done.'
+    print('Done.')
 
 
 if __name__ == "__main__":

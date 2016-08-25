@@ -745,10 +745,16 @@ BUILD_IPMI_TRUE
 FREEIPMI_LDFLAGS
 FREEIPMI_CPPFLAGS
 FREEIPMI_LIBS
+HAVE_PMIX_V2_FALSE
+HAVE_PMIX_V2_TRUE
+HAVE_PMIX_V1_FALSE
+HAVE_PMIX_V1_TRUE
 HAVE_PMIX_FALSE
 HAVE_PMIX_TRUE
-PMIX_LDFLAGS
-PMIX_CPPFLAGS
+PMIX_V2_LDFLAGS
+PMIX_V2_CPPFLAGS
+PMIX_V1_LDFLAGS
+PMIX_V1_CPPFLAGS
 PMIX_LIBS
 HWLOC_LDFLAGS
 HWLOC_CPPFLAGS
@@ -1774,7 +1780,8 @@ Optional Packages:
                       /usr/local or /usr if not found in /usr/local]
    --without-lz4      to disable lz4 usage completely
   --with-hwloc=PATH       Specify path to hwloc installation
-  --with-pmix=PATH        Specify path to pmix installation
+  --with-pmix=PATH        Specify path to pmix installation(s). Multiple
+                          version directories can be ':' delimited.
   --with-freeipmi=PATH    Specify path to freeipmi installation
   --with-rrdtool=PATH     Specify path to rrdtool-devel installation
   --with-mysql_config=PATH
@@ -21428,11 +21435,15 @@ $as_echo "#define HAVE_HWLOC_PCI 1" >>confdefs.h
   _x_ac_pmix_dirs="/usr /usr/local"
   _x_ac_pmix_libs="lib64 lib"
 
+  _x_ac_pmix_v1_found="0"
+  _x_ac_pmix_v2_found="0"
+
 
 # Check whether --with-pmix was given.
 if test "${with_pmix+set}" = set; then :
   withval=$with_pmix; if test "x$with_pmix" != xno; then :
-  _x_ac_pmix_dirs="$with_pmix $_x_ac_pmix_dirs"
+  with_pmix=`echo $with_pmix | sed "s/:/ /"`
+      _x_ac_pmix_dirs="$with_pmix $_x_ac_pmix_dirs"
 fi
 fi
 
@@ -21478,91 +21489,117 @@ return PMIx_Get_version ();
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
   x_ac_cv_pmix_dir=$d
+              x_ac_cv_pmix_libdir=$d/$d1
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
+
+            if test -z "$x_ac_cv_pmix_dir" ||
+               test -z "$x_ac_cv_pmix_libdir"; then
+              { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate pmix installation" >&5
+$as_echo "$as_me: WARNING: unable to locate pmix installation" >&2;}
+              continue
+            fi
+
+            _x_ac_pmix_version="0"
+            cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+              #include<pmix_server.h>
+              #if (PMIX_VERSION_MAJOR != 2L)
+                #error "not version 2"
+              #endif
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_cpp "$LINENO"; then :
+   _x_ac_pmix_version="2"
+else
+   _x_ac_pmix_version="1"
+fi
+rm -f conftest.err conftest.i conftest.$ac_ext
+
             CPPFLAGS="$_x_ac_pmix_cppflags_save"
             LIBS="$_x_ac_pmix_libs_save"
-            test -n "$x_ac_cv_pmix_dir" && break
+
+
+
+            if test "$_x_ac_pmix_version" = "1"; then
+              if test "$_x_ac_pmix_v1_found" = "1" ; then
+
+                as_fn_error $? "error processing $x_ac_cv_pmix_libdir: PMIx v1.x was already found if one of the previous paths" "$LINENO" 5
+              fi
+
+              _x_ac_pmix_v1_found="1"
+              PMIX_V1_CPPFLAGS="-I$x_ac_cv_pmix_dir/include"
+              if test "$ac_with_rpath" = "yes"; then
+                PMIX_V1_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_pmix_libdir -L$x_ac_cv_pmix_libdir"
+              else
+                PMIX_V1_LDFLAGS="-L$x_ac_cv_pmix_libdir"
+              fi
+            fi
+
+            if test "$_x_ac_pmix_version" = "2"; then
+              if test "$_x_ac_pmix_v2_found" = "1" ; then
+
+                as_fn_error $? "error processing $x_ac_cv_pmix_libdir: PMIx v2.x was already found if one of the previous paths" "$LINENO" 5
+              fi
+              _x_ac_pmix_v2_found="1"
+              PMIX_V2_CPPFLAGS="-I$x_ac_cv_pmix_dir/include"
+              if test "$ac_with_rpath" = "yes"; then
+                PMIX_V2_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_pmix_libdir -L$x_ac_cv_pmix_libdir"
+              else
+                PMIX_V2_LDFLAGS="-L$x_ac_cv_pmix_libdir"
+              fi
+            fi
           done
-          test -n "$x_ac_cv_pmix_dir" && break
         done
 
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_pmix_dir" >&5
 $as_echo "$x_ac_cv_pmix_dir" >&6; }
 
-    if test -z "$x_ac_cv_pmix_dir"; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate pmix installation" >&5
-$as_echo "$as_me: WARNING: unable to locate pmix installation" >&2;}
-    else
-      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pmix library directory" >&5
-$as_echo_n "checking for pmix library directory... " >&6; }
-if ${x_ac_cv_pmix_libdir+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-          for d1 in $_x_ac_pmix_libs; do
-            d="$x_ac_cv_pmix_dir/$d1"
-            test -d "$d" || continue
-            _x_ac_pmix_cppflags_save="$CPPFLAGS"
-            CPPFLAGS="-I$x_ac_cv_pmix_dir/include $CPPFLAGS"
-            _x_ac_pmix_libs_save="$LIBS"
-            LIBS="-L$d -lpmix $LIBS"
-            cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char PMIx_Get_version ();
-int
-main ()
-{
-return PMIx_Get_version ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  x_ac_cv_pmix_libdir=$d
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-            CPPFLAGS="$_x_ac_pmix_cppflags_save"
-            LIBS="$_x_ac_pmix_libs_save"
-            test -n "$x_ac_cv_pmix_libdir" && break
-          done
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_pmix_libdir" >&5
-$as_echo "$x_ac_cv_pmix_libdir" >&6; }
-      PMIX_CPPFLAGS="-I$x_ac_cv_pmix_dir/include"
-      if test "$ac_with_rpath" = "yes"; then
-        PMIX_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_pmix_libdir -L$x_ac_cv_pmix_libdir"
-      else
-        PMIX_LDFLAGS="-L$x_ac_cv_pmix_libdir"
-      fi
-      PMIX_LIBS="-lpmix"
+    PMIX_LIBS="-lpmix"
 
 $as_echo "#define HAVE_PMIX 1" >>confdefs.h
 
-    fi
+
+
 
 
 
 
   fi
 
-   if test -n "$x_ac_cv_pmix_dir"; then
+   if test $_x_ac_pmix_v1_found = "1" &&
+                test $_x_ac_pmix_v2_found = "1"; then
   HAVE_PMIX_TRUE=
   HAVE_PMIX_FALSE='#'
 else
   HAVE_PMIX_TRUE='#'
   HAVE_PMIX_FALSE=
+fi
+
+   if test $_x_ac_pmix_v1_found = "1"; then
+  HAVE_PMIX_V1_TRUE=
+  HAVE_PMIX_V1_FALSE='#'
+else
+  HAVE_PMIX_V1_TRUE='#'
+  HAVE_PMIX_V1_FALSE=
+fi
+
+   if test $_x_ac_pmix_v2_found = "1"; then
+  HAVE_PMIX_V2_TRUE=
+  HAVE_PMIX_V2_FALSE='#'
+else
+  HAVE_PMIX_V2_TRUE='#'
+  HAVE_PMIX_V2_FALSE=
 fi
 
 
@@ -25619,6 +25656,14 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_PMIX_TRUE}" && test -z "${HAVE_PMIX_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_PMIX\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${HAVE_PMIX_V1_TRUE}" && test -z "${HAVE_PMIX_V1_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_PMIX_V1\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${HAVE_PMIX_V2_TRUE}" && test -z "${HAVE_PMIX_V2_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_PMIX_V2\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_IPMI_TRUE}" && test -z "${BUILD_IPMI_FALSE}"; then
