@@ -1116,7 +1116,6 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case REQUEST_TOPO_INFO:
 	case REQUEST_BURST_BUFFER_INFO:
 	case REQUEST_POWERCAP_INFO:
-	case REQUEST_PERSIST_INIT:
 	case REQUEST_PERSIST_FINI:
 	case REQUEST_FED_INFO:
 		/* Message contains no body/information */
@@ -1124,6 +1123,16 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case REQUEST_ACCT_GATHER_ENERGY:
 		_pack_acct_gather_energy_req(
 			(acct_gather_energy_req_msg_t *)msg->data,
+			buffer, msg->protocol_version);
+		break;
+	case REQUEST_PERSIST_INIT:
+		slurm_persist_pack_init_req_msg(
+			(persist_init_req_msg_t *)msg->data,
+			buffer);
+		break;
+	case RESPONSE_PERSIST_INIT:
+		slurm_persist_pack_init_resp_msg(
+			(persist_init_resp_msg_t *)msg->data,
 			buffer, msg->protocol_version);
 		break;
 	case REQUEST_REBOOT_NODES:
@@ -1779,7 +1788,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case REQUEST_TOPO_INFO:
 	case REQUEST_BURST_BUFFER_INFO:
 	case REQUEST_POWERCAP_INFO:
-	case REQUEST_PERSIST_INIT:
 	case REQUEST_PERSIST_FINI:
 	case REQUEST_FED_INFO:
 		/* Message contains no body/information */
@@ -1787,6 +1795,17 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case REQUEST_ACCT_GATHER_ENERGY:
 		rc = _unpack_acct_gather_energy_req(
 			(acct_gather_energy_req_msg_t **) & (msg->data),
+			buffer, msg->protocol_version);
+		break;
+	case REQUEST_PERSIST_INIT:
+		/* the version is contained in the data so use that instead of
+		   what is in the message */
+		slurm_persist_unpack_init_req_msg(
+			(persist_init_req_msg_t **)&msg->data, buffer);
+		break;
+	case RESPONSE_PERSIST_INIT:
+		slurm_persist_unpack_init_resp_msg(
+			(persist_init_resp_msg_t **)&msg->data,
 			buffer, msg->protocol_version);
 		break;
 	case REQUEST_REBOOT_NODES:

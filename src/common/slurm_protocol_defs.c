@@ -3982,13 +3982,18 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_BURST_BUFFER_INFO:
 	case REQUEST_POWERCAP_INFO:
 	case ACCOUNTING_REGISTER_CTLD:
-	case REQUEST_PERSIST_INIT:
 	case REQUEST_PERSIST_FINI:
 	case REQUEST_FED_INFO:
 		/* No body to free */
 		break;
 	case RESPONSE_FED_INFO:
 		slurmdb_destroy_federation_rec(data);
+		break;
+	case REQUEST_PERSIST_INIT:
+		slurm_persist_free_init_req_msg(data);
+		break;
+	case RESPONSE_PERSIST_INIT:
+		slurm_persist_free_init_resp_msg(data);
 		break;
 	case REQUEST_REBOOT_NODES:
 		slurm_free_reboot_msg(data);
