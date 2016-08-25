@@ -98,9 +98,12 @@
 #define SLURM_1_3_PROTOCOL_VERSION ((13 << 8) | 0)
 #endif
 
-/* used to set flags to empty */
+/* Below are flags for the header of a message. */
+
+/* Used to set flags to empty */
 #define SLURM_PROTOCOL_NO_FLAGS 0
 #define SLURM_GLOBAL_AUTH_KEY   0x0001
+#define SLURMDBD_CONNECTION     0x0002
 
 #include "src/common/slurm_protocol_socket_common.h"
 
