@@ -1052,7 +1052,8 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	    (error_code == ESLURM_RESERVATION_NOT_USABLE) ||
 	    (error_code == ESLURM_QOS_THRES) ||
 	    (error_code == ESLURM_NODE_NOT_AVAIL) ||
-	    (error_code == ESLURM_JOB_HELD))
+	    (error_code == ESLURM_JOB_HELD) ||
+	    (error_code == ESLURM_PARTITION_DOWN))
 		job_waiting = true;
 	if ((error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
 	    (slurmctld_conf.enforce_part_limits != PARTITION_ENFORCE_NONE))

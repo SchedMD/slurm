@@ -20,6 +20,7 @@ documents those changes that are of interest to users and administrators.
     versus compute nodes.
  -- FreeBSD - fix build issue in knl_cray plugin.
  -- Corrections to gres.conf parsing logic.
+ -- Make partition State independent of EnforcePartLimits value.
 
 * Changes in Slurm 16.05.4
 ==========================
