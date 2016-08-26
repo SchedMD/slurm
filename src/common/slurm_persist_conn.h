@@ -80,6 +80,10 @@ typedef struct {
  * Returns SLURM_SUCCESS on success or SLURM_ERROR on failure */
 extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn);
 
+/* Close the persistant connection members, but don't free structure */
+extern void slurm_persist_conn_members_close(
+	slurm_persist_conn_t *persist_conn);
+
 /* Close the persistant connection and free structure */
 extern void slurm_persist_conn_close(slurm_persist_conn_t *persist_conn);
 

@@ -401,15 +401,24 @@ end_it:
 }
 
 /* Close the persistant connection */
+extern void slurm_persist_conn_members_close(slurm_persist_conn_t *persist_conn)
+{
+	if (!persist_conn)
+		return;
+
+	persist_conn->inited = false;
+	_close_fd(&persist_conn->fd);
+	xfree(persist_conn->cluster_name);
+	xfree(persist_conn->rem_host);
+}
+
+/* Close the persistant connection */
 extern void slurm_persist_conn_close(slurm_persist_conn_t *persist_conn)
 {
-	if (persist_conn) {
-		persist_conn->inited = false;
-		_close_fd(&persist_conn->fd);
-		xfree(persist_conn->cluster_name);
-		xfree(persist_conn->rem_host);
-		xfree(persist_conn);
-	}
+	if (!persist_conn)
+		return;
+	slurm_persist_conn_members_close(persist_conn);
+	xfree(persist_conn);
 }
 
 extern Buf slurm_persist_msg_pack(slurm_persist_conn_t *persist_conn,
