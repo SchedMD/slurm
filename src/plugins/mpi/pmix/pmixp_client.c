@@ -48,6 +48,10 @@
 #include <sys/types.h>
 #include <pmix_server.h>
 
+#ifdef HAVE_HWLOC
+#include <hwloc.h>
+#endif
+
 /* Check PMIx version */
 #if (HAVE_PMIX_VER != PMIX_VERSION_MAJOR)
 #define VALUE_TO_STRING(x) #x
@@ -595,6 +599,51 @@ static void _set_localinfo(List lresp)
 	list_append(lresp, kvp);
 }
 
+/*
+ * provide topology information if hwloc is available
+ */
+static void _set_topology(List lresp)
+{
+#ifdef HAVE_HWLOC
+	hwloc_topology_t topology;
+	unsigned long flags;
+	pmix_info_t *kvp;
+	char *p = NULL;
+	int len;
+
+	if( 0 != hwloc_topology_init(&topology) ) {
+		/* error in initialize hwloc library */
+		error("%s: hwloc_topology_init() failed", __func__);
+		goto err_exit;
+	}
+
+	flags = (HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM |
+		 HWLOC_TOPOLOGY_FLAG_IO_DEVICES);
+	hwloc_topology_set_flags(topology, flags);
+
+	if (hwloc_topology_load(topology)) {
+		error("%s: hwloc_topology_load() failed", __func__);
+		goto err_release_topo;
+	}
+
+	if (0 != hwloc_topology_export_xmlbuffer(topology, &p, &len)) {
+		error("%s: hwloc_topology_load() failed", __func__);
+		goto err_release_topo;
+	}
+
+	PMIXP_ALLOC_KEY(kvp, PMIX_LOCAL_TOPO);
+	PMIX_VAL_SET(&kvp->value, string, p);
+	list_append(lresp, kvp);
+
+	/* successful exit - fallthru */
+err_release_topo:
+	hwloc_topology_destroy(topology);
+err_exit:
+#endif
+	return;
+}
+
+
 typedef struct {
 	volatile int active;
 } _register_caddy_t;
@@ -632,6 +681,8 @@ int pmixp_libpmix_job_set(void)
 	_set_procdatas(lresp);
 
 	_set_sizeinfo(lresp);
+
+	_set_topology(lresp);
 
 	if (SLURM_SUCCESS != _set_mapsinfo(lresp)) {
 		list_destroy(lresp);

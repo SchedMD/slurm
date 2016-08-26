@@ -493,6 +493,8 @@ enum job_state_reason {
 	/********************/
 	WAIT_QOS_MAX_JOB_PER_ACCT,    /* QOS MaxJobPerAccount exceeded */
 	WAIT_QOS_MAX_SUB_JOB_PER_ACCT,/* QOS MaxJobSubmitSPerAccount exceeded */
+	WAIT_PART_CONFIG,	      /* Generic partition configuration reason */
+	WAIT_ACCOUNT_POLICY,          /* Generic accounting policy reason */
 };
 
 enum job_acct_types {

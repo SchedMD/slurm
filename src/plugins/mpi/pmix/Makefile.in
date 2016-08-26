@@ -173,8 +173,10 @@ am__installdirs = "$(DESTDIR)$(pkglib_v1dir)" \
 	"$(DESTDIR)$(pkglib_v2dir)"
 LTLIBRARIES = $(pkglib_v1_LTLIBRARIES) $(pkglib_v2_LTLIBRARIES)
 am__DEPENDENCIES_1 =
+am__DEPENDENCIES_2 = $(pmix_internal_libs) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 @HAVE_PMIX_V1_TRUE@mpi_pmix_v1_la_DEPENDENCIES =  \
-@HAVE_PMIX_V1_TRUE@	$(pmix_internal_libs) $(am__DEPENDENCIES_1)
+@HAVE_PMIX_V1_TRUE@	$(am__DEPENDENCIES_2)
 am__mpi_pmix_v1_la_SOURCES_DIST = mpi_pmix.c pmixp_agent.c \
 	pmixp_client.c pmixp_coll.c pmixp_nspaces.c pmixp_info.c \
 	pmixp_server.c pmixp_state.c pmixp_io.c pmixp_utils.c \
@@ -199,7 +201,7 @@ mpi_pmix_v1_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$@
 @HAVE_PMIX_V1_TRUE@am_mpi_pmix_v1_la_rpath = -rpath $(pkglib_v1dir)
 @HAVE_PMIX_V2_TRUE@mpi_pmix_v2_la_DEPENDENCIES =  \
-@HAVE_PMIX_V2_TRUE@	$(pmix_internal_libs) $(am__DEPENDENCIES_1)
+@HAVE_PMIX_V2_TRUE@	$(am__DEPENDENCIES_2)
 am__mpi_pmix_v2_la_SOURCES_DIST = mpi_pmix.c pmixp_agent.c \
 	pmixp_client.c pmixp_coll.c pmixp_nspaces.c pmixp_info.c \
 	pmixp_server.c pmixp_state.c pmixp_io.c pmixp_utils.c \
@@ -540,14 +542,15 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(HWLOC_CPPFLAGS)
 pmix_src = mpi_pmix.c pmixp_agent.c pmixp_client.c pmixp_coll.c pmixp_nspaces.c pmixp_info.c \
 			pmixp_server.c pmixp_state.c pmixp_io.c pmixp_utils.c pmixp_dmdx.c \
 			pmixp_agent.h pmixp_client.h pmixp_coll.h pmixp_nspaces.h pmixp_info.h \
 			pmixp_server.h pmixp_state.h pmixp_io.h pmixp_utils.h pmixp_common.h pmixp_dmdx.h
 
 pmix_internal_libs = $(top_builddir)/src/slurmd/common/libslurmd_reverse_tree_math.la
-pmix_ldflags = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+pmix_ldflags = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(HWLOC_LDFLAGS)
+pmix_libadd = $(pmix_internal_libs) $(PMIX_LIBS) $(HWLOC_LIBS)
 
 # pkglib_v#dir is needed in each one of the below because of the way we
 # use pkglib_v#_LTLIBRARIES even though it is the same for each one it still
@@ -555,13 +558,13 @@ pmix_ldflags = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 @HAVE_PMIX_V1_TRUE@pkglib_v1dir = $(pkglibdir)
 @HAVE_PMIX_V1_TRUE@pkglib_v1_LTLIBRARIES = mpi_pmix_v1.la
 @HAVE_PMIX_V1_TRUE@mpi_pmix_v1_la_SOURCES = $(pmix_src)
-@HAVE_PMIX_V1_TRUE@mpi_pmix_v1_la_LIBADD = $(pmix_internal_libs) $(PMIX_LIBS)
+@HAVE_PMIX_V1_TRUE@mpi_pmix_v1_la_LIBADD = $(pmix_libadd)
 @HAVE_PMIX_V1_TRUE@mpi_pmix_v1_la_LDFLAGS = $(pmix_ldflags) $(PMIX_V1_LDFLAGS)
 @HAVE_PMIX_V1_TRUE@mpi_pmix_v1_la_CPPFLAGS = $(AM_CPPFLAGS) $(PMIX_V1_CPPFLAGS) -DHAVE_PMIX_VER=1
 @HAVE_PMIX_V2_TRUE@pkglib_v2dir = $(pkglibdir)
 @HAVE_PMIX_V2_TRUE@pkglib_v2_LTLIBRARIES = mpi_pmix_v2.la
 @HAVE_PMIX_V2_TRUE@mpi_pmix_v2_la_SOURCES = $(pmix_src)
-@HAVE_PMIX_V2_TRUE@mpi_pmix_v2_la_LIBADD = $(pmix_internal_libs) $(PMIX_LIBS)
+@HAVE_PMIX_V2_TRUE@mpi_pmix_v2_la_LIBADD = $(pmix_libadd)
 @HAVE_PMIX_V2_TRUE@mpi_pmix_v2_la_LDFLAGS = $(pmix_ldflags) $(PMIX_V2_LDFLAGS)
 @HAVE_PMIX_V2_TRUE@mpi_pmix_v2_la_CPPFLAGS = $(AM_CPPFLAGS) $(PMIX_V2_CPPFLAGS) -DHAVE_PMIX_VER=2
 @HAVE_PMIX_V1_TRUE@@HAVE_PMIX_V2_FALSE@mpi_pmix_so := mpi_pmix_v1.so

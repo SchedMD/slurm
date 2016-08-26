@@ -325,6 +325,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 	int tested_jobs = 0;
 	char jobid_buf[32];
 	int job_part_pairs = 0;
+	time_t now = time(NULL);
 
 	(void) _delta_tv(&start_tv);
 	job_queue = list_create(_job_queue_rec_del);
@@ -423,7 +424,6 @@ extern List build_job_queue(bool clear_start, bool backfill)
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (((tested_jobs % 100) == 0) &&
 		    (_delta_tv(&start_tv) >= build_queue_timeout)) {
-			time_t now = time(NULL);
 			if (difftime(now, last_log_time) > 600) {
 				/* Log at most once every 10 minutes */
 				info("%s has run for %d usec, exiting with %d "
@@ -451,10 +451,10 @@ extern List build_job_queue(bool clear_start, bool backfill)
 				job_ptr->part_ptr = part_ptr;
 				reason = job_limits_check(&job_ptr, backfill);
 				if ((reason != WAIT_NO_REASON) &&
-				    (reason != job_ptr->state_reason) &&
-				    (!part_policy_job_runnable_state(job_ptr))){
+				    (reason != job_ptr->state_reason)) {
 					job_ptr->state_reason = reason;
 					xfree(job_ptr->state_desc);
+					last_job_update = now;
 				}
 				/* priority_array index matches part_ptr_list
 				 * position: increment inx */

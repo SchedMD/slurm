@@ -4009,6 +4009,7 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 			       job_ptr->job_id, part_ptr->name);
 
 			part_limits_rc = job_limits_check(&job_ptr, false);
+
 			if ((part_limits_rc != WAIT_NO_REASON) &&
 			    (slurmctld_conf.enforce_part_limits ==
 			     PARTITION_ENFORCE_ANY))
@@ -4024,7 +4025,7 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 				}
 			}
 
-			if (part_limits_rc != WAIT_PART_DOWN) {
+			if (part_limits_rc == WAIT_NO_REASON) {
 				rc = select_nodes(job_ptr, test_only,
 						  select_node_bitmap,
 						  NULL, err_msg);
@@ -4032,6 +4033,9 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 				rc = select_nodes(job_ptr, true,
 						  select_node_bitmap,
 						  NULL, err_msg);
+				if ((rc == SLURM_SUCCESS) &&
+				    (part_limits_rc == WAIT_PART_DOWN))
+					rc = ESLURM_PARTITION_DOWN;
 			}
 			if ((rc == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
 			    (slurmctld_conf.enforce_part_limits ==
@@ -4089,6 +4093,29 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 		}
 	}
 
+	if (rc == ESLURM_NODES_BUSY)
+		job_ptr->state_reason = WAIT_RESOURCES;
+	else if ((rc == ESLURM_RESERVATION_BUSY) ||
+		 (rc == ESLURM_RESERVATION_NOT_USABLE))
+		job_ptr->state_reason = WAIT_RESERVATION;
+	else if (rc == ESLURM_JOB_HELD)
+		job_ptr->state_reason = WAIT_HELD;
+	else if (rc == ESLURM_NODE_NOT_AVAIL)
+		job_ptr->state_reason = WAIT_NODE_NOT_AVAIL;
+	else if (rc == ESLURM_QOS_THRES)
+		job_ptr->state_reason = WAIT_QOS_THRES;
+	else if (rc == ESLURM_ACCOUNTING_POLICY)
+		job_ptr->state_reason = WAIT_ACCOUNT_POLICY;
+	else if (rc == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE)
+		job_ptr->state_reason = WAIT_PART_CONFIG;
+	else if (rc == ESLURM_POWER_NOT_AVAIL)
+		job_ptr->state_reason = WAIT_POWER_NOT_AVAIL;
+	else if (rc == ESLURM_BURST_BUFFER_WAIT)
+		job_ptr->state_reason = WAIT_BURST_BUFFER_RESOURCE;
+	else if (rc == ESLURM_POWER_RESERVED)
+		job_ptr->state_reason = WAIT_POWER_RESERVED;
+	else if (rc == ESLURM_PARTITION_DOWN)
+		job_ptr->state_reason = WAIT_PART_DOWN;
 	return rc;
 }
 
@@ -5427,12 +5454,12 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 				     "partitions with partition based "
 				     "associations", __func__);
 				rc = SLURM_ERROR;
-			} else
+			} else {
 				rc = _part_access_check(part_ptr_tmp, job_desc,
 							req_bitmap, submit_uid,
 							qos_ptr, assoc_ptr ?
 							assoc_ptr->acct : NULL);
-
+			}
 			if ((rc != SLURM_SUCCESS) &&
 			    ((rc == ESLURM_ACCESS_DENIED) ||
 			     (rc == ESLURM_USER_ID_MISSING) ||
@@ -5897,7 +5924,6 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	error_code = _valid_job_part(job_desc, submit_uid, req_bitmap,
 				     &part_ptr, part_ptr_list,
 				     assoc_ptr, qos_ptr);
-
 	if (error_code != SLURM_SUCCESS)
 		goto cleanup_fail;
 
@@ -10379,7 +10405,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				job_ptr->details->req_node_bitmap,
 				&tmp_part_ptr, part_ptr_list,
 				job_ptr->assoc_ptr, job_ptr->qos_ptr);
-
 			if (!error_code) {
 				xfree(job_ptr->partition);
 				job_ptr->partition =
