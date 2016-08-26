@@ -122,6 +122,7 @@ extern void *rpc_mgr(void *no_data)
 	 * Process incoming RPCs until told to shutdown
 	 */
 	while ((i = _wait_for_server_thread()) >= 0) {
+		uint16_t orig_port;
 		/*
 		 * accept needed for stream implementation is a no-op in
 		 * message implementation that just passes sockfd to newsockfd
@@ -138,7 +139,7 @@ extern void *rpc_mgr(void *no_data)
 
 		conn_arg = xmalloc(sizeof(slurmdbd_conn_t));
 		conn_arg->newsockfd = newsockfd;
-		slurm_get_ip_str(&cli_addr, &conn_arg->orig_port,
+		slurm_get_ip_str(&cli_addr, &orig_port,
 				 conn_arg->ip, sizeof(conn_arg->ip));
 		retry_cnt = 0;
 		while (pthread_create(&slave_thread_id[i],

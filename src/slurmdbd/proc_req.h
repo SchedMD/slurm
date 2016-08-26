@@ -49,7 +49,6 @@ typedef struct {
 	void *db_conn; /* database connection */
 	char ip[32];
 	int newsockfd; /* socket connection descriptor */
-	uint16_t orig_port;
 	uint16_t rpc_version; /* version of rpc */
 	char *tres_str;
 } slurmdbd_conn_t;
