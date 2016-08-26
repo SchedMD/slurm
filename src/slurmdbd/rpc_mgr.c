@@ -138,9 +138,10 @@ extern void *rpc_mgr(void *no_data)
 		fd_set_nonblocking(newsockfd);
 
 		conn_arg = xmalloc(sizeof(slurmdbd_conn_t));
-		conn_arg->newsockfd = newsockfd;
+		conn_arg->conn.fd = newsockfd;
+		conn_arg->conn.rem_host = xmalloc_nz(sizeof(char) * 32);
 		slurm_get_ip_str(&cli_addr, &orig_port,
-				 conn_arg->ip, sizeof(conn_arg->ip));
+				 conn_arg->conn.rem_host, sizeof(char) * 32);
 		retry_cnt = 0;
 		while (pthread_create(&slave_thread_id[i],
 				      &thread_attr_rpc_req,
@@ -190,38 +191,41 @@ static void * _service_connection(void *arg)
 	bool fini = false, first = true;
 	Buf buffer = NULL;
 	int rc = SLURM_SUCCESS;
+	int fd = conn->conn.fd;
 
-	debug2("Opened connection %d from %s", conn->newsockfd, conn->ip);
+	debug2("Opened connection %d from %s", conn->conn.fd,
+	       conn->conn.rem_host);
 
 	while (!fini) {
-		if (!_fd_readable(conn->newsockfd))
+		if (!_fd_readable(conn->conn.fd))
 			break;		/* problem with this socket */
-		msg_read = read(conn->newsockfd, &nw_size, sizeof(nw_size));
+		msg_read = read(conn->conn.fd, &nw_size, sizeof(nw_size));
 		if (msg_read == 0)	/* EOF */
 			break;
 		if (msg_read != sizeof(nw_size)) {
 			error("Could not read msg_size from "
 			      "connection %d(%s) uid(%d)",
-			      conn->newsockfd, conn->ip, uid);
+			      conn->conn.fd, conn->conn.rem_host, uid);
 			break;
 		}
 		msg_size = ntohl(nw_size);
 		if ((msg_size < 2) || (msg_size > MAX_MSG_SIZE)) {
 			error("Invalid msg_size (%u) from "
 			      "connection %d(%s) uid(%d)",
-			      msg_size, conn->newsockfd, conn->ip, uid);
+			      msg_size, conn->conn.fd,
+			      conn->conn.rem_host, uid);
 			break;
 		}
 
 		msg = xmalloc(msg_size);
 		offset = 0;
 		while (msg_size > offset) {
-			if (!_fd_readable(conn->newsockfd))
+			if (!_fd_readable(conn->conn.fd))
 				break;		/* problem with this socket */
-			msg_read = read(conn->newsockfd, (msg + offset),
+			msg_read = read(conn->conn.fd, (msg + offset),
 					(msg_size - offset));
 			if (msg_read <= 0) {
-				error("read(%d): %m", conn->newsockfd);
+				error("read(%d): %m", conn->conn.fd);
 				break;
 			}
 			offset += msg_read;
@@ -233,42 +237,42 @@ static void * _service_connection(void *arg)
 			if (rc != SLURM_SUCCESS && rc != ACCOUNTING_FIRST_REG) {
 				error("Processing last message from "
 				      "connection %d(%s) uid(%d)",
-				      conn->newsockfd, conn->ip, uid);
+				      conn->conn.fd, conn->conn.rem_host, uid);
 				if (rc == ESLURM_ACCESS_DENIED
 				    || rc == SLURM_PROTOCOL_VERSION_ERROR)
 					fini = true;
 			}
 		} else {
-			buffer = make_dbd_rc_msg(conn->rpc_version,
+			buffer = make_dbd_rc_msg(conn->conn.version,
 						 SLURM_ERROR, "Bad offset", 0);
 			fini = true;
 		}
 
-		if (_send_resp(conn->newsockfd, buffer) != SLURM_SUCCESS) {
+		if (_send_resp(conn->conn.fd, buffer) != SLURM_SUCCESS) {
 			/* This is only an issue on persistent connections, and
 			 * really isn't that big of a deal as the slurmctld
 			 * will just send the message again. */
-			if (conn->ctld_port)
+			if (conn->conn.rem_port)
 				debug("Problem sending response to "
 				      "connection %d(%s) uid(%d)",
-				      conn->newsockfd, conn->ip, uid);
+				      conn->conn.fd, conn->conn.rem_host, uid);
 			fini = true;
 		}
 		xfree(msg);
 	}
 
-	if (conn->ctld_port) {
+	if (conn->conn.rem_port) {
 		if (!shutdown_time) {
 			slurmdb_cluster_rec_t cluster_rec;
 			ListIterator itr;
 			slurmdbd_conn_t *slurmdbd_conn;
 			memset(&cluster_rec, 0, sizeof(slurmdb_cluster_rec_t));
-			cluster_rec.name = conn->cluster_name;
-			cluster_rec.control_host = conn->ip;
-			cluster_rec.control_port = conn->ctld_port;
+			cluster_rec.name = conn->conn.cluster_name;
+			cluster_rec.control_host = conn->conn.rem_host;
+			cluster_rec.control_port = conn->conn.rem_port;
 			cluster_rec.tres_str = conn->tres_str;
 			debug("cluster %s has disconnected",
-			      conn->cluster_name);
+			      conn->conn.cluster_name);
 
 			clusteracct_storage_g_fini_ctld(
 				conn->db_conn, &cluster_rec);
@@ -289,13 +293,11 @@ static void * _service_connection(void *arg)
 	}
 
 	acct_storage_g_close_connection(&conn->db_conn);
-	if (slurm_close(conn->newsockfd) < 0)
-		error("close(%d): %m(%s)",  conn->newsockfd, conn->ip);
-	else
-		debug2("Closed connection %d uid(%d)", conn->newsockfd, uid);
+	slurm_persist_conn_members_close(&conn->conn);
+
+	debug2("Closed connection %d uid(%d)", fd, uid);
 
 	xfree(conn->tres_str);
-	xfree(conn->cluster_name);
 	xfree(conn);
 	_free_server_thread(pthread_self());
 	return NULL;

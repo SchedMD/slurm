@@ -44,12 +44,8 @@
 #include "src/common/slurm_protocol_defs.h"
 
 typedef struct {
-	char *cluster_name;
-	uint16_t ctld_port; /* slurmctld_port */
+	slurm_persist_conn_t conn;
 	void *db_conn; /* database connection */
-	char ip[32];
-	int newsockfd; /* socket connection descriptor */
-	uint16_t rpc_version; /* version of rpc */
 	char *tres_str;
 } slurmdbd_conn_t;
 
