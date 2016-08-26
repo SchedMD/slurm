@@ -88,7 +88,7 @@ static bool _conn_readable(slurm_persist_conn_t *persist_conn)
 	ufds.events = POLLIN;
 	gettimeofday(&tstart, NULL);
 	while (persist_conn->inited) {
-		time_left = persist_conn->read_timeout - _tot_wait(&tstart);
+		time_left = persist_conn->timeout - _tot_wait(&tstart);
 		rc = poll(&ufds, 1, time_left);
 		if (rc == -1) {
 			if ((errno == EINTR) || (errno == EAGAIN))
@@ -152,7 +152,7 @@ static bool _conn_readable(slurm_persist_conn_t *persist_conn)
 /* 			return 0; */
 /* 		/\* */
 /* 		 * Check here to make sure the socket really is there. */
-/* 		 * If not then exit out and notify the sender.  This */
+/* 		 * If not then exit out and notify the conn.  This */
 /*  		 * is here since a write doesn't always tell you the */
 /* 		 * socket is gone, but getting 0 back from a */
 /* 		 * nonblocking read means just that. */
@@ -297,8 +297,8 @@ endit:
 }
 
 /* Open a persistant socket connection
- * IN/OUT - persistant connection needing host and port filled in.  Returned
- * completely filled in.
+ * IN/OUT - persistant connection needing rem_host and rem_port filled in.
+ * Returned completely filled in.
  * Returns SLURM_SUCCESS on success or SLURM_ERROR on failure */
 extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
 {
@@ -309,8 +309,8 @@ extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
 	persist_init_resp_msg_t *resp = NULL;
 
 	xassert(persist_conn);
-	xassert(persist_conn->host);
-	xassert(persist_conn->port);
+	xassert(persist_conn->rem_host);
+	xassert(persist_conn->rem_port);
 	xassert(persist_conn->cluster_name);
 
 	if (persist_conn->fd > 0)
@@ -318,21 +318,19 @@ extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
 	else
 		persist_conn->fd = -1;
 
-	if (!persist_conn->inited) {
-		slurm_mutex_init(&persist_conn->lock);
-		slurm_cond_init(&persist_conn->cond, NULL);
+	if (!persist_conn->inited)
 		persist_conn->inited = true;
-	}
 
 	if (!persist_conn->version)
 		persist_conn->version = SLURM_MIN_PROTOCOL_VERSION;
-	if (persist_conn->read_timeout < 0)
-		persist_conn->read_timeout = slurm_get_msg_timeout() * 1000;
+	if (persist_conn->timeout < 0)
+		persist_conn->timeout = slurm_get_msg_timeout() * 1000;
 
-	slurm_set_addr_char(&addr, persist_conn->port, persist_conn->host);
+	slurm_set_addr_char(&addr, persist_conn->rem_port,
+			    persist_conn->rem_host);
 	if ((persist_conn->fd = slurm_open_msg_conn(&addr)) < 0) {
 		error("%s: failed to open persistant connection to %s:%d",
-		      __func__, persist_conn->host, persist_conn->port);
+		      __func__, persist_conn->rem_host, persist_conn->rem_port);
 		return rc;
 	}
 	fd_set_nonblocking(persist_conn->fd);
@@ -345,7 +343,7 @@ extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
 	 */
 	req_msg.protocol_version = persist_conn->version;
 	req_msg.msg_type = REQUEST_PERSIST_INIT;
-	if (persist_conn->dbd_conn)
+	if (persist_conn->flags & PERSIST_FLAG_DBD)
 		req_msg.flags |= SLURMDBD_CONNECTION;
 
 	memset(&req, 0, sizeof(persist_init_req_msg_t));
@@ -356,12 +354,12 @@ extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
 
 	if (slurm_send_node_msg(persist_conn->fd, &req_msg) < 0) {
 		error("%s: failed to send persistent connection init message to %s:%d",
-		      __func__, persist_conn->host, persist_conn->port);
+		      __func__, persist_conn->rem_host, persist_conn->rem_port);
 		_close_fd(&persist_conn->fd);
 	} else {
 		Buf buffer = _recv_msg(persist_conn);
 		persist_msg_t msg;
-		bool dbd_conn = persist_conn->dbd_conn;
+		uint16_t flags = persist_conn->flags;
 
 		if (!buffer) {
 			error("%s: No response to persist_init", __func__);
@@ -371,9 +369,9 @@ extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
 		memset(&msg, 0, sizeof(persist_msg_t));
 		/* The first unpack is done the same way for dbd or normal
 		 * communication . */
-		persist_conn->dbd_conn = false;
+		persist_conn->flags &= (~PERSIST_FLAG_DBD);
 		rc = slurm_persist_msg_unpack(persist_conn, &msg, buffer);
-		persist_conn->dbd_conn = dbd_conn;
+		persist_conn->flags = flags;
 		free_buf(buffer);
 
 		resp = (persist_init_resp_msg_t *)msg.data;
@@ -383,11 +381,13 @@ extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
 		if (rc != SLURM_SUCCESS) {
 			if (resp)
 				error("%s: Something happened with the receiving/processing of the persistent connection init message to %s:%d: %s",
-				      __func__, persist_conn->host,
-				      persist_conn->port, resp->comment);
+				      __func__, persist_conn->rem_host,
+				      persist_conn->rem_port, resp->comment);
 			else
 				error("%s: Failed to unpack persistent connection init resp message from %s:%d",
-			      __func__, persist_conn->host, persist_conn->port);
+				      __func__,
+				      persist_conn->rem_host,
+				      persist_conn->rem_port);
 			_close_fd(&persist_conn->fd);
 		} else
 			persist_conn->version = resp->version;
@@ -405,13 +405,9 @@ extern void slurm_persist_conn_close(slurm_persist_conn_t *persist_conn)
 {
 	if (persist_conn) {
 		persist_conn->inited = false;
-		slurm_mutex_lock(&persist_conn->lock);
 		_close_fd(&persist_conn->fd);
 		xfree(persist_conn->cluster_name);
-		xfree(persist_conn->host);
-		slurm_mutex_unlock(&persist_conn->lock);
-		slurm_mutex_destroy(&persist_conn->lock);
-		slurm_cond_destroy(&persist_conn->cond);
+		xfree(persist_conn->rem_host);
 		xfree(persist_conn);
 	}
 }
@@ -423,7 +419,7 @@ extern Buf slurm_persist_msg_pack(slurm_persist_conn_t *persist_conn,
 
 	xassert(persist_conn);
 
-	if (persist_conn->dbd_conn)
+	if (persist_conn->flags & PERSIST_FLAG_DBD)
 		buffer = pack_slurmdbd_msg((slurmdbd_msg_t *)req_msg,
 					   persist_conn->version);
 	else {
@@ -452,7 +448,7 @@ extern int slurm_persist_msg_unpack(slurm_persist_conn_t *persist_conn,
 	xassert(persist_conn);
 	xassert(resp_msg);
 
-	if (persist_conn->dbd_conn)
+	if (persist_conn->flags & PERSIST_FLAG_DBD)
 		rc = unpack_slurmdbd_msg((slurmdbd_msg_t *)resp_msg,
 					 persist_conn->version,
 					 buffer);
@@ -568,7 +564,6 @@ extern void slurm_persist_free_init_resp_msg(persist_init_resp_msg_t *msg)
 /* 	   then after we get into the mutex we unset. */
 /* 	*\/ */
 /* 	halt_agent = 1; */
-/* 	slurm_mutex_lock(&persist_conn->lock); */
 /* 	halt_agent = 0; */
 /* 	if (persist_conn->fd < 0) { */
 /* 		if (!persist_conn->reconnect) { */
@@ -615,8 +610,6 @@ extern void slurm_persist_free_init_resp_msg(persist_init_resp_msg_t *msg)
 
 /* 	free_buf(buffer); */
 /* end_it: */
-/* 	slurm_cond_signal(&persist_conn->cond); */
-/* 	slurm_mutex_unlock(&persist_conn->lock); */
 
 /* 	return rc; */
 /* } */

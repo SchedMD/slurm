@@ -39,17 +39,18 @@
 
 #include "slurm/slurm.h"
 
+#define PERSIST_FLAG_NONE      0x0000
+#define PERSIST_FLAG_DBD       0x0001
+#define PERSIST_FLAG_RECONNECT 0x0002
+
 typedef struct {
 	char *cluster_name;
-	pthread_cond_t cond;
-	bool dbd_conn;
 	int fd;
-	char *host;
+	uint16_t flags;
 	bool inited;
-	pthread_mutex_t lock;
-	int port;
-	int read_timeout;
-	bool reconnect;
+	char *rem_host;
+	int rem_port;
+	int timeout;
 	uint16_t version;
 } slurm_persist_conn_t;
 

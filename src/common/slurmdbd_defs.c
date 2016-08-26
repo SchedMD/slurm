@@ -342,7 +342,8 @@ extern int slurm_send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 			    ((slurmctld_conf.max_job_cnt * 2) +
 			     (node_record_count * 4)));
 
-	buffer = pack_slurmdbd_msg(req, rpc_version);
+	buffer = slurm_persist_msg_pack(
+		slurmdbd_conn, (persist_msg_t *)req);
 
 	slurm_mutex_lock(&agent_lock);
 	if ((agent_tid == 0) || (agent_list == NULL)) {
@@ -429,30 +430,29 @@ static void _open_slurmdbd_conn(bool need_db)
 
 	slurm_persist_conn_close(slurmdbd_conn);
 	slurmdbd_conn = xmalloc(sizeof(slurm_persist_conn_t));
-	slurmdbd_conn->dbd_conn = true;
-	slurmdbd_conn->reconnect = true;
+	slurmdbd_conn->flags = PERSIST_FLAG_DBD | PERSIST_FLAG_RECONNECT;
 	slurmdbd_conn->cluster_name = xstrdup(slurmdbd_cluster);
 
-	slurmdbd_conn->read_timeout = (slurm_get_msg_timeout() + 35) * 1000;
+	slurmdbd_conn->timeout = (slurm_get_msg_timeout() + 35) * 1000;
 
-	slurmdbd_conn->host = slurm_get_accounting_storage_host();
-	slurmdbd_conn->port = slurm_get_accounting_storage_port();
-	if (slurmdbd_conn->host == NULL) {
-		slurmdbd_conn->host = xstrdup(DEFAULT_STORAGE_HOST);
-		slurm_set_accounting_storage_host(slurmdbd_conn->host);
+	slurmdbd_conn->rem_host = slurm_get_accounting_storage_host();
+	slurmdbd_conn->rem_port = slurm_get_accounting_storage_port();
+	if (slurmdbd_conn->rem_host == NULL) {
+		slurmdbd_conn->rem_host = xstrdup(DEFAULT_STORAGE_HOST);
+		slurm_set_accounting_storage_host(slurmdbd_conn->rem_host);
 	}
 
-	if (slurmdbd_conn->port == 0) {
-		slurmdbd_conn->port = SLURMDBD_PORT;
-		slurm_set_accounting_storage_port(slurmdbd_conn->port);
+	if (slurmdbd_conn->rem_port == 0) {
+		slurmdbd_conn->rem_port = SLURMDBD_PORT;
+		slurm_set_accounting_storage_port(slurmdbd_conn->rem_port);
 	}
 again:
 
 	if (((rc = slurm_persist_conn_open(slurmdbd_conn)) != SLURM_SUCCESS) &&
 	    try_backup) {
-		xfree(slurmdbd_conn->host);
+		xfree(slurmdbd_conn->rem_host);
 		try_backup = false;
-		if ((slurmdbd_conn->host =
+		if ((slurmdbd_conn->rem_host =
 		     slurm_get_accounting_storage_backup_host()))
 			goto again;
 	}
@@ -460,7 +460,7 @@ again:
 	if (rc == SLURM_SUCCESS) {
 		/* set the timeout to the timeout to be used for all other
 		 * messages */
-		slurmdbd_conn->read_timeout = SLURMDBD_TIMEOUT * 1000;
+		slurmdbd_conn->timeout = SLURMDBD_TIMEOUT * 1000;
 		if (from_ctld)
 			need_to_register = 1;
 		if (callbacks_requested) {
@@ -2025,7 +2025,7 @@ static int _fd_writeable(int fd)
 			return 0;
 		/*
 		 * Check here to make sure the socket really is there.
-		 * If not then exit out and notify the sender.  This
+		 * If not then exit out and notify the conn.  This
  		 * is here since a write doesn't always tell you the
 		 * socket is gone, but getting 0 back from a
 		 * nonblocking read means just that.
