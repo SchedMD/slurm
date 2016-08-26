@@ -21,6 +21,8 @@ documents those changes that are of interest to users and administrators.
  -- FreeBSD - fix build issue in knl_cray plugin.
  -- Corrections to gres.conf parsing logic.
  -- Make partition State independent of EnforcePartLimits value.
+ -- Fix multipart srun submission with EnforcePartLimits=NO and job violating
+    the partition limits.
 
 * Changes in Slurm 16.05.4
 ==========================

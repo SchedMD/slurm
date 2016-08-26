@@ -4037,6 +4037,7 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 			       job_ptr->job_id, part_ptr->name);
 
 			part_limits_rc = job_limits_check(&job_ptr, false);
+
 			if ((part_limits_rc != WAIT_NO_REASON) &&
 			    (slurmctld_conf.enforce_part_limits ==
 			     PARTITION_ENFORCE_ANY))
@@ -4052,7 +4053,7 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 				}
 			}
 
-			if (part_limits_rc != WAIT_PART_DOWN) {
+			if (part_limits_rc == WAIT_NO_REASON) {
 				rc = select_nodes(job_ptr, test_only,
 						  select_node_bitmap,
 						  NULL, err_msg);
@@ -4060,6 +4061,9 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 				rc = select_nodes(job_ptr, true,
 						  select_node_bitmap,
 						  NULL, err_msg);
+				if ((rc == SLURM_SUCCESS) &&
+				    (part_limits_rc == WAIT_PART_DOWN))
+					rc = ESLURM_PARTITION_DOWN;
 			}
 			if ((rc == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
 			    (slurmctld_conf.enforce_part_limits ==
