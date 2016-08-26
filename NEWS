@@ -23,6 +23,7 @@ documents those changes that are of interest to users and administrators.
  -- Make partition State independent of EnforcePartLimits value.
  -- Fix multipart srun submission with EnforcePartLimits=NO and job violating
     the partition limits.
+ -- Fix problem updating job state_reason.
 
 * Changes in Slurm 16.05.4
 ==========================

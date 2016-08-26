@@ -1627,6 +1627,10 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "MaxJobsPerAccount";
 	case WAIT_QOS_MAX_SUB_JOB_PER_ACCT:
 		return "MaxSubmitJobsPerAccount";
+	case WAIT_PART_CONFIG:
+		return "PartitionConfig";
+	case WAIT_ACCOUNT_POLICY:
+		return "AccountingPolicy";
 	default:
 		snprintf(val, sizeof(val), "%d", inx);
 		return val;
