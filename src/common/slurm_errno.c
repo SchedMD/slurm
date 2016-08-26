@@ -325,6 +325,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Invalid mcs_label specified"				},
 	{ ESLURM_BURST_BUFFER_WAIT,
 	  "Waiting for burst buffer"				},
+	{ ESLURM_PARTITION_DOWN,
+	  "Partition in DOWN state"				},
 
 	/* slurmd error codes */
 	{ ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN,
