@@ -602,9 +602,9 @@ static void _set_localinfo(List lresp)
 /*
  * provide topology information if hwloc is available
  */
-#ifdef HAVE_HWLOC
 static void _set_topology(List lresp)
 {
+#ifdef HAVE_HWLOC
 	hwloc_topology_t topology;
 	unsigned long flags;
 	pmix_info_t *kvp;
@@ -639,13 +639,9 @@ static void _set_topology(List lresp)
 err_release_topo:
 	hwloc_topology_destroy(topology);
 err_exit:
+#endif
 	return;
 }
-#else
-static void _set_topology(List lresp)
-{
-}
-#endif
 
 
 typedef struct {
