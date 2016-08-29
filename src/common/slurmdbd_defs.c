@@ -88,7 +88,6 @@ static pthread_mutex_t agent_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  agent_cond = PTHREAD_COND_INITIALIZER;
 static List      agent_list     = (List) NULL;
 static pthread_t agent_tid      = 0;
-static time_t    agent_shutdown = 0;
 
 static pthread_mutex_t slurmdbd_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  slurmdbd_cond = PTHREAD_COND_INITIALIZER;
@@ -97,8 +96,6 @@ static bool      slurmdbd_defs_inited = false;
 static char *    slurmdbd_auth_info  = NULL;
 static char *    slurmdbd_cluster    = NULL;
 static bool      halt_agent          = 0;
-static slurm_trigger_callbacks_t callback;
-static bool      callbacks_requested = 0;
 static bool      from_ctld           = 0;
 static bool      need_to_register    = 0;
 
@@ -116,7 +113,6 @@ static void   _reopen_slurmdbd_conn(void);
 static int    _save_dbd_rec(int fd, Buf buffer);
 static void   _save_dbd_state(void);
 static int    _send_fini_msg(void);
-static int    _send_msg(Buf buffer);
 static void   _sig_handler(int signal);
 static void   _shutdown_agent(void);
 static void   _slurmdbd_packstr(void *str, uint16_t rpc_version, Buf buffer);
@@ -139,8 +135,6 @@ extern int slurm_open_slurmdbd_conn(const slurm_trigger_callbacks_t *callbacks)
 	slurm_mutex_lock(&slurmdbd_lock);
 	xassert(slurmdbd_defs_inited);
 
-	agent_shutdown = 0;
-
 	if (!slurmdbd_conn) {
 		_open_slurmdbd_conn(1);
 		tmp_errno = errno;
@@ -151,11 +145,11 @@ extern int slurm_open_slurmdbd_conn(const slurm_trigger_callbacks_t *callbacks)
 	/* Initialize the callback pointers */
 	if (callbacks != NULL) {
 		/* copy the user specified callback pointers */
-		memcpy(&(callback), callbacks,
+		memcpy(&(slurmdbd_conn->trigger_callbacks), callbacks,
 		       sizeof(slurm_trigger_callbacks_t));
-		callbacks_requested = true;
 	} else {
-		callbacks_requested = false;
+		memset(&slurmdbd_conn->trigger_callbacks, 0,
+		       sizeof(slurm_trigger_callbacks_t));
 	}
 
 	if ((callbacks != NULL) && ((agent_tid == 0) || (agent_list == NULL)))
@@ -185,7 +179,7 @@ extern int slurm_close_slurmdbd_conn(void)
 		debug("slurmdbd: Sent fini msg");
 
 	slurm_mutex_lock(&slurmdbd_lock);
-	slurm_persist_conn_close(slurmdbd_conn);
+	slurm_persist_conn_destroy(slurmdbd_conn);
 	slurmdbd_conn = NULL;
 	slurm_mutex_unlock(&slurmdbd_lock);
 
@@ -293,7 +287,7 @@ extern int slurm_send_recv_slurmdbd_msg(uint16_t rpc_version,
 		goto end_it;
 	}
 
-	rc = _send_msg(buffer);
+	rc = slurm_persist_send_msg(slurmdbd_conn, buffer);
 	free_buf(buffer);
 	if (rc != SLURM_SUCCESS) {
 		error("slurmdbd: Sending message type %s: %d: %m",
@@ -361,8 +355,8 @@ extern int slurm_send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 		syslog_time = time(NULL);
 		error("slurmdbd: agent queue filling, RESTART SLURMDBD NOW");
 		syslog(LOG_CRIT, "*** RESTART SLURMDBD NOW ***");
-		if (callbacks_requested)
-			(callback.dbd_fail)();
+		if (slurmdbd_conn->trigger_callbacks.dbd_fail)
+			(slurmdbd_conn->trigger_callbacks.dbd_fail)();
 	}
 	if (cnt == (max_agent_queue - 1))
 		cnt -= _purge_job_start_req();
@@ -371,8 +365,8 @@ extern int slurm_send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 			fatal("list_enqueue: memory allocation failure");
 	} else {
 		error("slurmdbd: agent queue is full, discarding request");
-		if (callbacks_requested)
-			(callback.acct_full)();
+		if (slurmdbd_conn->trigger_callbacks.acct_full)
+			(slurmdbd_conn->trigger_callbacks.acct_full)();
 		rc = SLURM_ERROR;
 	}
 
@@ -429,23 +423,32 @@ static void _open_slurmdbd_conn(bool need_db)
 	}
 
 	slurm_persist_conn_close(slurmdbd_conn);
-	slurmdbd_conn = xmalloc(sizeof(slurm_persist_conn_t));
-	slurmdbd_conn->flags = PERSIST_FLAG_DBD | PERSIST_FLAG_RECONNECT;
-	slurmdbd_conn->cluster_name = xstrdup(slurmdbd_cluster);
+	if (!slurmdbd_conn) {
+		slurmdbd_conn = xmalloc(sizeof(slurm_persist_conn_t));
+		slurmdbd_conn->flags =
+			PERSIST_FLAG_DBD | PERSIST_FLAG_RECONNECT;
+		slurmdbd_conn->cluster_name = xstrdup(slurmdbd_cluster);
 
-	slurmdbd_conn->timeout = (slurm_get_msg_timeout() + 35) * 1000;
+		slurmdbd_conn->timeout = (slurm_get_msg_timeout() + 35) * 1000;
 
+		slurmdbd_conn->rem_port = slurm_get_accounting_storage_port();
+
+		if (!slurmdbd_conn->rem_port) {
+			slurmdbd_conn->rem_port = SLURMDBD_PORT;
+			slurm_set_accounting_storage_port(
+				slurmdbd_conn->rem_port);
+		}
+	}
+	slurmdbd_conn->shutdown = 0;
+
+	xfree(slurmdbd_conn->rem_host);
 	slurmdbd_conn->rem_host = slurm_get_accounting_storage_host();
-	slurmdbd_conn->rem_port = slurm_get_accounting_storage_port();
-	if (slurmdbd_conn->rem_host == NULL) {
+	if (!slurmdbd_conn->rem_host) {
 		slurmdbd_conn->rem_host = xstrdup(DEFAULT_STORAGE_HOST);
-		slurm_set_accounting_storage_host(slurmdbd_conn->rem_host);
+		slurm_set_accounting_storage_host(
+			slurmdbd_conn->rem_host);
 	}
 
-	if (slurmdbd_conn->rem_port == 0) {
-		slurmdbd_conn->rem_port = SLURMDBD_PORT;
-		slurm_set_accounting_storage_port(slurmdbd_conn->rem_port);
-	}
 again:
 
 	if (((rc = slurm_persist_conn_open(slurmdbd_conn)) != SLURM_SUCCESS) &&
@@ -463,10 +466,10 @@ again:
 		slurmdbd_conn->timeout = SLURMDBD_TIMEOUT * 1000;
 		if (from_ctld)
 			need_to_register = 1;
-		if (callbacks_requested) {
-			(callback.dbd_resumed)();
-			(callback.db_resumed)();
-		}
+		if (slurmdbd_conn->trigger_callbacks.dbd_resumed)
+			(slurmdbd_conn->trigger_callbacks.dbd_resumed)();
+		if (slurmdbd_conn->trigger_callbacks.db_resumed)
+			(slurmdbd_conn->trigger_callbacks.db_resumed)();
 	}
 
 	if ((!need_db && (rc == ESLURM_DB_CONNECTION)) ||
@@ -477,8 +480,9 @@ again:
 		*/
 		errno = 0;
 	} else {
-		if ((rc == ESLURM_DB_CONNECTION) && callbacks_requested)
-			(callback.db_fail)();
+		if ((rc == ESLURM_DB_CONNECTION) &&
+		    slurmdbd_conn->trigger_callbacks.db_fail)
+			(slurmdbd_conn->trigger_callbacks.db_fail)();
 
 		error("slurmdbd: Sending DbdInit msg: %m");
 		slurm_persist_conn_close(slurmdbd_conn);
@@ -1654,7 +1658,7 @@ static int _send_fini_msg(void)
 	req.close_conn   = 1;
 	slurmdbd_pack_fini_msg(&req, SLURM_PROTOCOL_VERSION, buffer);
 
-	_send_msg(buffer);
+	slurm_persist_send_msg(slurmdbd_conn, buffer);
 	free_buf(buffer);
 
 	return SLURM_SUCCESS;
@@ -1665,56 +1669,7 @@ static void _reopen_slurmdbd_conn(void)
 {
 	info("slurmdbd: reopening connection");
 	slurm_persist_conn_close(slurmdbd_conn);
-	slurmdbd_conn = NULL;
 	_open_slurmdbd_conn(1);
-}
-
-static int _send_msg(Buf buffer)
-{
-	uint32_t msg_size, nw_size;
-	char *msg;
-	ssize_t msg_wrote;
-	int rc, retry_cnt = 0;
-
-	if (slurmdbd_conn->fd < 0)
-		return EAGAIN;
-
-	rc =_fd_writeable(slurmdbd_conn->fd);
-	if (rc == -1) {
-	re_open:	/* SlurmDBD shutdown, try to reopen a connection now */
-		if (retry_cnt++ > 3)
-			return EAGAIN;
-		/* if errno is ACCESS_DENIED do not try to reopen to
-		   connection just return that */
-		if (errno == ESLURM_ACCESS_DENIED)
-			return ESLURM_ACCESS_DENIED;
-		_reopen_slurmdbd_conn();
-		rc = _fd_writeable(slurmdbd_conn->fd);
-	}
-	if (rc < 1)
-		return EAGAIN;
-
-	msg_size = get_buf_offset(buffer);
-	nw_size = htonl(msg_size);
-	msg_wrote = write(slurmdbd_conn->fd, &nw_size, sizeof(nw_size));
-	if (msg_wrote != sizeof(nw_size))
-		return EAGAIN;
-
-	msg = get_buf_data(buffer);
-	while (msg_size > 0) {
-		rc = _fd_writeable(slurmdbd_conn->fd);
-		if (rc == -1)
-			goto re_open;
-		if (rc < 1)
-			return EAGAIN;
-		msg_wrote = write(slurmdbd_conn->fd, msg, msg_size);
-		if (msg_wrote <= 0)
-			return EAGAIN;
-		msg += msg_wrote;
-		msg_size -= msg_wrote;
-	}
-
-	return SLURM_SUCCESS;
 }
 
 static int _unpack_return_code(uint16_t rpc_version, Buf buffer)
@@ -1917,7 +1872,7 @@ static Buf _recv_msg(int read_timeout)
 		offset += msg_read;
 	}
 	if (msg_size != offset) {
-		if (agent_shutdown == 0) {
+		if (slurmdbd_conn->shutdown == 0) {
 			error("slurmdbd: only read %zd of %d bytes",
 			      offset, msg_size);
 		}	/* else in shutdown mode */
@@ -1960,7 +1915,7 @@ static bool _fd_readable(int fd, int read_timeout)
 	ufds.fd     = fd;
 	ufds.events = POLLIN;
 	gettimeofday(&tstart, NULL);
-	while (agent_shutdown == 0) {
+	while (slurmdbd_conn->shutdown == 0) {
 		time_left = read_timeout - _tot_wait(&tstart);
 		rc = poll(&ufds, 1, time_left);
 		if (rc == -1) {
@@ -2012,7 +1967,7 @@ static int _fd_writeable(int fd)
 	ufds.fd     = fd;
 	ufds.events = POLLOUT;
 	gettimeofday(&tstart, NULL);
-	while (agent_shutdown == 0) {
+	while (slurmdbd_conn->shutdown == 0) {
 		time_left = write_timeout - _tot_wait(&tstart);
 		rc = poll(&ufds, 1, time_left);
 		if (rc == -1) {
@@ -2032,8 +1987,8 @@ static int _fd_writeable(int fd)
 		 */
 		if (ufds.revents & POLLHUP || (recv(fd, &temp, 1, 0) == 0)) {
 			debug2("SlurmDBD connection is closed");
-			if (callbacks_requested)
-				(callback.dbd_fail)();
+			if (slurmdbd_conn->trigger_callbacks.dbd_fail)
+				(slurmdbd_conn->trigger_callbacks.dbd_fail)();
 			return -1;
 		}
 		if (ufds.revents & POLLNVAL) {
@@ -2042,8 +1997,8 @@ static int _fd_writeable(int fd)
 		}
 		if (ufds.revents & POLLERR) {
 			error("SlurmDBD connection experienced an error: %m");
-			if (callbacks_requested)
-				(callback.dbd_fail)();
+			if (slurmdbd_conn->trigger_callbacks.dbd_fail)
+				(slurmdbd_conn->trigger_callbacks.dbd_fail)();
 			return 0;
 		}
 		if ((ufds.revents & POLLOUT) == 0) {
@@ -2065,7 +2020,7 @@ static void _create_agent(void)
 {
 	/* this needs to be set because the agent thread will do
 	   nothing if the connection was closed and then opened again */
-	agent_shutdown = 0;
+	slurmdbd_conn->shutdown = 0;
 
 	if (agent_list == NULL) {
 		agent_list = list_create(slurmdbd_free_buffer);
@@ -2087,7 +2042,7 @@ static void _shutdown_agent(void)
 	int i;
 
 	if (agent_tid) {
-		agent_shutdown = time(NULL);
+		slurmdbd_conn->shutdown = time(NULL);
 		for (i=0; i<50; i++) {	/* up to 5 secs total */
 			slurm_cond_broadcast(&agent_cond);
 			usleep(100000);	/* 0.1 sec per try */
@@ -2144,7 +2099,7 @@ static void *_agent(void *x)
 	xsignal(SIGUSR1, _sig_handler);
 	xsignal_unblock(sigarray);
 
-	while (agent_shutdown == 0) {
+	while (slurmdbd_conn->shutdown == 0) {
 		/* START_TIMER; */
 		slurm_mutex_lock(&slurmdbd_lock);
 		if (halt_agent)
@@ -2214,9 +2169,9 @@ static void *_agent(void *x)
 		/* NOTE: agent_lock is clear here, so we can add more
 		 * requests to the queue while waiting for this RPC to
 		 * complete. */
-		rc = _send_msg(buffer);
+		rc = slurm_persist_send_msg(slurmdbd_conn, buffer);
 		if (rc != SLURM_SUCCESS) {
-			if (agent_shutdown) {
+			if (slurmdbd_conn->shutdown) {
 				slurm_mutex_unlock(&slurmdbd_lock);
 				break;
 			}
@@ -2228,7 +2183,7 @@ static void *_agent(void *x)
 			rc = _get_return_code(SLURM_PROTOCOL_VERSION,
 					      read_timeout);
 			if (rc == EAGAIN) {
-				if (agent_shutdown) {
+				if (slurmdbd_conn->shutdown) {
 					slurm_mutex_unlock(&slurmdbd_lock);
 					break;
 				}

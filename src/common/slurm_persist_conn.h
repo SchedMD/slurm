@@ -50,7 +50,9 @@ typedef struct {
 	bool inited;
 	char *rem_host;
 	int rem_port;
+	time_t shutdown;
 	int timeout;
+	slurm_trigger_callbacks_t trigger_callbacks;
 	uint16_t version;
 } slurm_persist_conn_t;
 
@@ -80,12 +82,20 @@ typedef struct {
  * Returns SLURM_SUCCESS on success or SLURM_ERROR on failure */
 extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn);
 
+/* Close the persistant connection don't free structure or members */
+extern void slurm_persist_conn_close(slurm_persist_conn_t *persist_conn);
+
 /* Close the persistant connection members, but don't free structure */
-extern void slurm_persist_conn_members_close(
+extern void slurm_persist_conn_members_destroy(
 	slurm_persist_conn_t *persist_conn);
 
 /* Close the persistant connection and free structure */
-extern void slurm_persist_conn_close(slurm_persist_conn_t *persist_conn);
+extern void slurm_persist_conn_destroy(slurm_persist_conn_t *persist_conn);
+
+extern int slurm_persist_send_msg(
+	slurm_persist_conn_t *persist_conn, Buf buffer);
+extern Buf slurm_persist_recv_msg(slurm_persist_conn_t *persist_conn);
+
 
 extern Buf slurm_persist_msg_pack(slurm_persist_conn_t *persist_conn,
 				  persist_msg_t *req_msg);

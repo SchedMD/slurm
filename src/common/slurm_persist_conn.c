@@ -71,9 +71,9 @@ static void _close_fd(int *fd)
 
 /* static void _reopen_persist_conn(slurm_persist_conn_t *persist_conn) */
 /* { */
-/* 	xassert(persist_conn); */
-/* 	_close_fd(&persist_conn->fd); */
-/* 	slurm_persist_conn_open(persist_conn); */
+/*	xassert(persist_conn); */
+/*	_close_fd(&persist_conn->fd); */
+/*	slurm_persist_conn_open(persist_conn); */
 /* } */
 
 /* Wait until a file is readable,
@@ -128,121 +128,128 @@ static bool _conn_readable(slurm_persist_conn_t *persist_conn)
  *     0 if can not be written to within 5 seconds
  *     -1 if file has been closed POLLHUP
  */
-/* static int _conn_writeable(slurm_persist_conn_t *persist_conn) */
-/* { */
-/* 	struct pollfd ufds; */
-/* 	int write_timeout = 5000; */
-/* 	int rc, time_left; */
-/* 	struct timeval tstart; */
-/* 	char temp[2]; */
+static int _conn_writeable(slurm_persist_conn_t *persist_conn)
+{
+	struct pollfd ufds;
+	int write_timeout = 5000;
+	int rc, time_left;
+	struct timeval tstart;
+	char temp[2];
 
-/* 	ufds.fd     = persist_conn->fd; */
-/* 	ufds.events = POLLOUT; */
-/* 	gettimeofday(&tstart, NULL); */
-/* 	while (agent_shutdown == 0) { */
-/* 		time_left = write_timeout - _tot_wait(&tstart); */
-/* 		rc = poll(&ufds, 1, time_left); */
-/* 		if (rc == -1) { */
-/* 			if ((errno == EINTR) || (errno == EAGAIN)) */
-/* 				continue; */
-/* 			error("poll: %m"); */
-/* 			return -1; */
-/* 		} */
-/* 		if (rc == 0) */
-/* 			return 0; */
-/* 		/\* */
-/* 		 * Check here to make sure the socket really is there. */
-/* 		 * If not then exit out and notify the conn.  This */
-/*  		 * is here since a write doesn't always tell you the */
-/* 		 * socket is gone, but getting 0 back from a */
-/* 		 * nonblocking read means just that. */
-/* 		 *\/ */
-/* 		if (ufds.revents & POLLHUP || */
-/* 		    (recv(persist_conn->fd, &temp, 1, 0) == 0)) { */
-/* 			debug2("persistant connection is closed"); */
-/* 			if (callbacks_requested) */
-/* 				(callback.dbd_fail)(); */
-/* 			return -1; */
-/* 		} */
-/* 		if (ufds.revents & POLLNVAL) { */
-/* 			error("persistant connection is invalid"); */
-/* 			return 0; */
-/* 		} */
-/* 		if (ufds.revents & POLLERR) { */
-/* 			error("persistant connection experienced an error: %m"); */
-/* 			if (callbacks_requested) */
-/* 				(callback.dbd_fail)(); */
-/* 			return 0; */
-/* 		} */
-/* 		if ((ufds.revents & POLLOUT) == 0) { */
-/* 			error("persistant connection %d events %d", */
-/* 			      persist_conn->fd, ufds.revents); */
-/* 			return 0; */
-/* 		} */
-/* 		/\* revents == POLLOUT *\/ */
-/* 		errno = 0; */
-/* 		return 1; */
-/* 	} */
-/* 	return 0; */
-/* } */
+	ufds.fd     = persist_conn->fd;
+	ufds.events = POLLOUT;
+	gettimeofday(&tstart, NULL);
+	while (persist_conn->shutdown == 0) {
+		time_left = write_timeout - _tot_wait(&tstart);
+		rc = poll(&ufds, 1, time_left);
+		if (rc == -1) {
+			if ((errno == EINTR) || (errno == EAGAIN))
+				continue;
+			error("poll: %m");
+			return -1;
+		}
+		if (rc == 0)
+			return 0;
+		/*
+		 * Check here to make sure the socket really is there.
+		 * If not then exit out and notify the conn.  This
+		 * is here since a write doesn't always tell you the
+		 * socket is gone, but getting 0 back from a
+		 * nonblocking read means just that.
+		 */
+		if (ufds.revents & POLLHUP ||
+		    (recv(persist_conn->fd, &temp, 1, 0) == 0)) {
+			debug2("persistant connection is closed");
+			if (persist_conn->trigger_callbacks.dbd_fail)
+				(persist_conn->trigger_callbacks.dbd_fail)();
+			return -1;
+		}
+		if (ufds.revents & POLLNVAL) {
+			error("persistant connection is invalid");
+			return 0;
+		}
+		if (ufds.revents & POLLERR) {
+			error("persistant connection experienced an error: %m");
+			if (persist_conn->trigger_callbacks.dbd_fail)
+				(persist_conn->trigger_callbacks.dbd_fail)();
+			return 0;
+		}
+		if ((ufds.revents & POLLOUT) == 0) {
+			error("persistant connection %d events %d",
+			      persist_conn->fd, ufds.revents);
+			return 0;
+		}
+		/* revents == POLLOUT */
+		errno = 0;
+		return 1;
+	}
+	return 0;
+}
 
-/* static int _send_msg(slurm_persist_conn_t *persist_conn, Buf buffer) */
-/* { */
-/* 	uint32_t msg_size, nw_size; */
-/* 	char *msg; */
-/* 	ssize_t msg_wrote; */
-/* 	int rc, retry_cnt = 0; */
+extern int slurm_persist_send_msg(
+	slurm_persist_conn_t *persist_conn, Buf buffer)
+{
+	uint32_t msg_size, nw_size;
+	char *msg;
+	ssize_t msg_wrote;
+	int rc, retry_cnt = 0;
 
-/* 	if (persist_conn->fd < 0) */
-/* 		return EAGAIN; */
+	xassert(persist_conn);
 
-/* 	rc = _conn_writeable(persist_conn); */
-/* 	if (rc == -1) { */
-/* 	re_open: */
-/* 		if (retry_cnt++ > 3) */
-/* 			return EAGAIN; */
-/* 		/\* if errno is ACCESS_DENIED do not try to reopen to */
-/* 		   connection just return that *\/ */
-/* 		if (errno == ESLURM_ACCESS_DENIED) */
-/* 			return ESLURM_ACCESS_DENIED; */
+	if (persist_conn->fd < 0)
+		return EAGAIN;
 
-/* 		if (persist_conn->reconnect) { */
-/* 			_reopen_fd(persist_conn); */
-/* 			rc = _conn_writeable(persist_conn); */
-/* 		} */
-/* 	} */
-/* 	if (rc < 1) */
-/* 		return EAGAIN; */
+	rc = _conn_writeable(persist_conn);
+	if (rc == -1) {
+	re_open:
+		if (retry_cnt++ > 3)
+			return EAGAIN;
+		/* if errno is ACCESS_DENIED do not try to reopen to
+		   connection just return that */
+		if (errno == ESLURM_ACCESS_DENIED)
+			return ESLURM_ACCESS_DENIED;
 
-/* 	msg_size = get_buf_offset(buffer); */
-/* 	nw_size = htonl(msg_size); */
-/* 	msg_wrote = write(persist_conn->fd, &nw_size, sizeof(nw_size)); */
-/* 	if (msg_wrote != sizeof(nw_size)) */
-/* 		return EAGAIN; */
+		if (persist_conn->flags & PERSIST_FLAG_RECONNECT) {
+			slurm_persist_conn_close(persist_conn);
+			slurm_persist_conn_open(persist_conn);
+			rc = _conn_writeable(persist_conn);
+		} else
+			return SLURM_ERROR;
+	}
+	if (rc < 1)
+		return EAGAIN;
 
-/* 	msg = get_buf_data(buffer); */
-/* 	while (msg_size > 0) { */
-/* 		rc = _conn_writeable(persist_conn); */
-/* 		if (rc == -1) */
-/* 			goto re_open; */
-/* 		if (rc < 1) */
-/* 			return EAGAIN; */
-/* 		msg_wrote = write(persist_conn->fd, msg, msg_size); */
-/* 		if (msg_wrote <= 0) */
-/* 			return EAGAIN; */
-/* 		msg += msg_wrote; */
-/* 		msg_size -= msg_wrote; */
-/* 	} */
+	msg_size = get_buf_offset(buffer);
+	nw_size = htonl(msg_size);
+	msg_wrote = write(persist_conn->fd, &nw_size, sizeof(nw_size));
+	if (msg_wrote != sizeof(nw_size))
+		return EAGAIN;
 
-/* 	return SLURM_SUCCESS; */
-/* } */
+	msg = get_buf_data(buffer);
+	while (msg_size > 0) {
+		rc = _conn_writeable(persist_conn);
+		if (rc == -1)
+			goto re_open;
+		if (rc < 1)
+			return EAGAIN;
+		msg_wrote = write(persist_conn->fd, msg, msg_size);
+		if (msg_wrote <= 0)
+			return EAGAIN;
+		msg += msg_wrote;
+		msg_size -= msg_wrote;
+	}
 
-static Buf _recv_msg(slurm_persist_conn_t *persist_conn)
+	return SLURM_SUCCESS;
+}
+
+extern Buf slurm_persist_recv_msg(slurm_persist_conn_t *persist_conn)
 {
 	uint32_t msg_size, nw_size;
 	char *msg;
 	ssize_t msg_read, offset;
 	Buf buffer;
+
+	xassert(persist_conn);
 
 	if (persist_conn->fd < 0)
 		return NULL;
@@ -255,7 +262,7 @@ static Buf _recv_msg(slurm_persist_conn_t *persist_conn)
 		goto endit;
 	msg_size = ntohl(nw_size);
 	/* We don't error check for an upper limit here
-  	 * since size could possibly be massive */
+	 * since size could possibly be massive */
 	if (msg_size < 2) {
 		error("Persistant Conn: Invalid msg_size (%u)", msg_size);
 		goto endit;
@@ -357,7 +364,7 @@ extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
 		      __func__, persist_conn->rem_host, persist_conn->rem_port);
 		_close_fd(&persist_conn->fd);
 	} else {
-		Buf buffer = _recv_msg(persist_conn);
+		Buf buffer = slurm_persist_recv_msg(persist_conn);
 		persist_msg_t msg;
 		uint16_t flags = persist_conn->flags;
 
@@ -400,8 +407,17 @@ end_it:
 	return rc;
 }
 
+extern void slurm_persist_conn_close(slurm_persist_conn_t *persist_conn)
+{
+	if (!persist_conn)
+		return;
+
+	_close_fd(&persist_conn->fd);
+}
+
 /* Close the persistant connection */
-extern void slurm_persist_conn_members_close(slurm_persist_conn_t *persist_conn)
+extern void slurm_persist_conn_members_destroy(
+	slurm_persist_conn_t *persist_conn)
 {
 	if (!persist_conn)
 		return;
@@ -413,11 +429,11 @@ extern void slurm_persist_conn_members_close(slurm_persist_conn_t *persist_conn)
 }
 
 /* Close the persistant connection */
-extern void slurm_persist_conn_close(slurm_persist_conn_t *persist_conn)
+extern void slurm_persist_conn_destroy(slurm_persist_conn_t *persist_conn)
 {
 	if (!persist_conn)
 		return;
-	slurm_persist_conn_members_close(persist_conn);
+	slurm_persist_conn_members_destroy(persist_conn);
 	xfree(persist_conn);
 }
 
@@ -559,67 +575,66 @@ extern void slurm_persist_free_init_resp_msg(persist_init_resp_msg_t *msg)
 }
 
 /* extern int slurm_persist_send_recv_msg(slurm_persist_conn_t *persist_conn, */
-/* 				       persist_msg_t *req, persist_msg_t *resp) */
+/*				       persist_msg_t *req, persist_msg_t *resp) */
 /* { */
-/* 	int rc = SLURM_SUCCESS, read_timeout; */
-/* 	Buf buffer; */
+/*	int rc = SLURM_SUCCESS, read_timeout; */
+/*	Buf buffer; */
 
-/* 	xassert(persist_conn); */
-/* 	xassert(req); */
-/* 	xassert(resp); */
+/*	xassert(persist_conn); */
+/*	xassert(req); */
+/*	xassert(resp); */
 
-/* 	/\* To make sure we can get this to send instead of the agent */
-/* 	   sending stuff that can happen anytime we set halt_agent and */
-/* 	   then after we get into the mutex we unset. */
-/* 	*\/ */
-/* 	halt_agent = 1; */
-/* 	halt_agent = 0; */
-/* 	if (persist_conn->fd < 0) { */
-/* 		if (!persist_conn->reconnect) { */
-/* 			rc = SLURM_ERROR; */
-/* 			goto end_it; */
-/* 		} */
-/* 		/\* Either slurm_open_slurmdbd_conn() was not executed or */
-/* 		 * the connection to Slurm DBD has been closed *\/ */
-/* 		if (req->msg_type == DBD_GET_CONFIG) */
-/* 			_open_slurmdbd_fd(0); */
-/* 		else */
-/* 			_open_slurmdbd_fd(1); */
-/* 		if (slurmdbd_fd < 0) { */
-/* 			rc = SLURM_ERROR; */
-/* 			goto end_it; */
-/* 		} */
-/* 	} */
+/*	/\* To make sure we can get this to send instead of the agent */
+/*	   sending stuff that can happen anytime we set halt_agent and */
+/*	   then after we get into the mutex we unset. */
+/*	*\/ */
+/*	halt_agent = 1; */
+/*	halt_agent = 0; */
+/*	if (persist_conn->fd < 0) { */
+/*		if (!persist_conn->reconnect) { */
+/*			rc = SLURM_ERROR; */
+/*			goto end_it; */
+/*		} */
+/*		/\* Either slurm_open_slurmdbd_conn() was not executed or */
+/*		 * the connection to Slurm DBD has been closed *\/ */
+/*		if (req->msg_type == DBD_GET_CONFIG) */
+/*			_open_slurmdbd_fd(0); */
+/*		else */
+/*			_open_slurmdbd_fd(1); */
+/*		if (slurmdbd_fd < 0) { */
+/*			rc = SLURM_ERROR; */
+/*			goto end_it; */
+/*		} */
+/*	} */
 
-/* 	if (!(buffer = pack_slurmdbd_msg(req, rpc_version))) { */
-/* 		rc = SLURM_ERROR; */
-/* 		goto end_it; */
-/* 	} */
+/*	if (!(buffer = pack_slurmdbd_msg(req, rpc_version))) { */
+/*		rc = SLURM_ERROR; */
+/*		goto end_it; */
+/*	} */
 
-/* 	rc = _send_msg(buffer); */
-/* 	free_buf(buffer); */
-/* 	if (rc != SLURM_SUCCESS) { */
-/* 		error("slurmdbd: Sending message type %s: %d: %m", */
-/* 		      rpc_num2string(req->msg_type), rc); */
-/* 		goto end_it; */
-/* 	} */
+/*	rc = _send_msg(buffer); */
+/*	free_buf(buffer); */
+/*	if (rc != SLURM_SUCCESS) { */
+/*		error("slurmdbd: Sending message type %s: %d: %m", */
+/*		      rpc_num2string(req->msg_type), rc); */
+/*		goto end_it; */
+/*	} */
 
-/* 	buffer = _recv_msg(persist_conn); */
-/* 	if (buffer == NULL) { */
-/* 		error("slurmdbd: Getting response to message type %u", */
-/* 		      req->msg_type); */
-/* 		rc = SLURM_ERROR; */
-/* 		goto end_it; */
-/* 	} */
+/*	buffer = _recv_msg(persist_conn); */
+/*	if (buffer == NULL) { */
+/*		error("slurmdbd: Getting response to message type %u", */
+/*		      req->msg_type); */
+/*		rc = SLURM_ERROR; */
+/*		goto end_it; */
+/*	} */
 
-/* 	rc = unpack_slurmdbd_msg(resp, rpc_version, buffer); */
-/* 	/\* check for the rc of the start job message *\/ */
-/* 	if (rc == SLURM_SUCCESS && resp->msg_type == DBD_ID_RC) */
-/* 		rc = ((dbd_id_rc_msg_t *)resp->data)->return_code; */
+/*	rc = unpack_slurmdbd_msg(resp, rpc_version, buffer); */
+/*	/\* check for the rc of the start job message *\/ */
+/*	if (rc == SLURM_SUCCESS && resp->msg_type == DBD_ID_RC) */
+/*		rc = ((dbd_id_rc_msg_t *)resp->data)->return_code; */
 
-/* 	free_buf(buffer); */
+/*	free_buf(buffer); */
 /* end_it: */
 
-/* 	return rc; */
+/*	return rc; */
 /* } */
-

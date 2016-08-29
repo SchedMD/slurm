@@ -69,7 +69,6 @@
 /* Local functions */
 static bool   _fd_readable(int fd);
 static void   _free_server_thread(pthread_t my_tid);
-static int    _send_resp(int fd, Buf buffer);
 static void * _service_connection(void *arg);
 static void   _sig_handler(int signal);
 static int    _tot_wait (struct timeval *start_time);
@@ -248,7 +247,8 @@ static void * _service_connection(void *arg)
 			fini = true;
 		}
 
-		if (_send_resp(conn->conn.fd, buffer) != SLURM_SUCCESS) {
+		if (slurm_persist_send_msg(&conn->conn, buffer)
+		    != SLURM_SUCCESS) {
 			/* This is only an issue on persistent connections, and
 			 * really isn't that big of a deal as the slurmctld
 			 * will just send the message again. */
@@ -258,6 +258,7 @@ static void * _service_connection(void *arg)
 				      conn->conn.fd, conn->conn.rem_host, uid);
 			fini = true;
 		}
+		free_buf(buffer);
 		xfree(msg);
 	}
 
@@ -293,7 +294,7 @@ static void * _service_connection(void *arg)
 	}
 
 	acct_storage_g_close_connection(&conn->db_conn);
-	slurm_persist_conn_members_close(&conn->conn);
+	slurm_persist_conn_members_destroy(&conn->conn);
 
 	debug2("Closed connection %d uid(%d)", fd, uid);
 
@@ -318,41 +319,6 @@ extern Buf make_dbd_rc_msg(uint16_t rpc_version,
 	msg.sent_type  = sent_type;
 	slurmdbd_pack_rc_msg(&msg, rpc_version, buffer);
 	return buffer;
-}
-
-static int _send_resp(int fd, Buf buffer)
-{
-	uint32_t msg_size, nw_size;
-	ssize_t msg_wrote;
-	char *out_buf;
-
-	if ((fd < 0) || (!fd_writeable(fd)))
-		goto io_err;
-
-	msg_size = get_buf_offset(buffer);
-	nw_size = htonl(msg_size);
-	if (!fd_writeable(fd))
-		goto io_err;
-	msg_wrote = write(fd, &nw_size, sizeof(nw_size));
-	if (msg_wrote != sizeof(nw_size))
-		goto io_err;
-
-	out_buf = get_buf_data(buffer);
-	while (msg_size > 0) {
-		if (!fd_writeable(fd))
-			goto io_err;
-		msg_wrote = write(fd, out_buf, msg_size);
-		if (msg_wrote <= 0)
-			goto io_err;
-		out_buf  += msg_wrote;
-		msg_size -= msg_wrote;
-	}
-	free_buf(buffer);
-	return SLURM_SUCCESS;
-
-io_err:
-	free_buf(buffer);
-	return SLURM_ERROR;
 }
 
 /* Return time in msec since "start time" */
