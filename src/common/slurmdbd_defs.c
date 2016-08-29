@@ -103,14 +103,11 @@ static time_t    slurmdbd_shutdown   = 0;
 
 static void * _agent(void *x);
 static void   _create_agent(void);
-static bool   _fd_readable(int fd, int read_timeout);
-static int    _get_return_code(uint16_t rpc_version, int read_timeout);
+static int    _get_return_code(void);
 static Buf    _load_dbd_rec(int fd);
 static void   _load_dbd_state(void);
 static void   _open_slurmdbd_conn(bool db_needed);
 static int    _purge_job_start_req(void);
-static Buf    _recv_msg(int read_timeout);
-static void   _reopen_slurmdbd_conn(void);
 static int    _save_dbd_rec(int fd, Buf buffer);
 static void   _save_dbd_state(void);
 static int    _send_fini_msg(void);
@@ -118,7 +115,6 @@ static void   _sig_handler(int signal);
 static void   _shutdown_agent(void);
 static void   _slurmdbd_packstr(void *str, uint16_t rpc_version, Buf buffer);
 static int    _slurmdbd_unpackstr(void **str, uint16_t rpc_version, Buf buffer);
-static int    _tot_wait (struct timeval *start_time);
 
 /****************************************************************************
  * Socket open/close/read/write functions
@@ -255,7 +251,7 @@ extern int slurm_send_recv_slurmdbd_msg(uint16_t rpc_version,
 					slurmdbd_msg_t *req,
 					slurmdbd_msg_t *resp)
 {
-	int rc = SLURM_SUCCESS, read_timeout;
+	int rc = SLURM_SUCCESS;
 	Buf buffer;
 
 	xassert(slurmdbd_conn);
@@ -267,7 +263,6 @@ extern int slurm_send_recv_slurmdbd_msg(uint16_t rpc_version,
 	   then after we get into the mutex we unset.
 	*/
 	halt_agent = 1;
-	read_timeout = SLURMDBD_TIMEOUT * 1000;
 	slurm_mutex_lock(&slurmdbd_lock);
 	halt_agent = 0;
 	if (slurmdbd_conn->fd < 0) {
@@ -296,7 +291,7 @@ extern int slurm_send_recv_slurmdbd_msg(uint16_t rpc_version,
 		goto end_it;
 	}
 
-	buffer = _recv_msg(read_timeout);
+	buffer = slurm_persist_recv_msg(slurmdbd_conn);
 	if (buffer == NULL) {
 		error("slurmdbd: Getting response to message type %u",
 		      req->msg_type);
@@ -488,7 +483,6 @@ again:
 
 		error("slurmdbd: Sending DbdInit msg: %m");
 		slurm_persist_conn_close(slurmdbd_conn);
-		slurmdbd_conn = NULL;
 	}
 }
 
@@ -1666,14 +1660,6 @@ static int _send_fini_msg(void)
 	return SLURM_SUCCESS;
 }
 
-/* Reopen the Slurm DBD connection due to some error */
-static void _reopen_slurmdbd_conn(void)
-{
-	info("slurmdbd: reopening connection");
-	slurm_persist_conn_close(slurmdbd_conn);
-	_open_slurmdbd_conn(1);
-}
-
 static int _unpack_return_code(uint16_t rpc_version, Buf buffer)
 {
 	uint16_t msg_type = -1;
@@ -1736,20 +1722,20 @@ unpack_error:
 	return rc;
 }
 
-static int _get_return_code(uint16_t rpc_version, int read_timeout)
+static int _get_return_code(void)
 {
 	int rc = SLURM_ERROR;
-	Buf buffer = _recv_msg(read_timeout);
+	Buf buffer = slurm_persist_recv_msg(slurmdbd_conn);
 	if (buffer == NULL)
 		return rc;
 
-	rc = _unpack_return_code(rpc_version, buffer);
+	rc = _unpack_return_code(slurmdbd_conn->version, buffer);
 
 	free_buf(buffer);
 	return rc;
 }
 
-static int _handle_mult_rc_ret(uint16_t rpc_version, int read_timeout)
+static int _handle_mult_rc_ret(void)
 {
 	Buf buffer;
 	uint16_t msg_type;
@@ -1758,7 +1744,7 @@ static int _handle_mult_rc_ret(uint16_t rpc_version, int read_timeout)
 	int rc = SLURM_ERROR;
 	Buf out_buf = NULL;
 
-	buffer = _recv_msg(read_timeout);
+	buffer = slurm_persist_recv_msg(slurmdbd_conn);
 	if (buffer == NULL)
 		return rc;
 
@@ -1766,7 +1752,8 @@ static int _handle_mult_rc_ret(uint16_t rpc_version, int read_timeout)
 	switch(msg_type) {
 	case DBD_GOT_MULT_MSG:
 		if (slurmdbd_unpack_list_msg(
-			    &list_msg, rpc_version, DBD_GOT_MULT_MSG, buffer)
+			    &list_msg, slurmdbd_conn->version,
+			    DBD_GOT_MULT_MSG, buffer)
 		    != SLURM_SUCCESS) {
 			error("slurmdbd: unpack message error");
 			break;
@@ -1779,7 +1766,7 @@ static int _handle_mult_rc_ret(uint16_t rpc_version, int read_timeout)
 			while ((out_buf = list_next(itr))) {
 				Buf b;
 				if ((rc = _unpack_return_code(
-					    rpc_version, out_buf))
+					    slurmdbd_conn->version, out_buf))
 				    != SLURM_SUCCESS)
 					break;
 
@@ -1796,7 +1783,7 @@ static int _handle_mult_rc_ret(uint16_t rpc_version, int read_timeout)
 		slurmdbd_free_list_msg(list_msg);
 		break;
 	case DBD_RC:
-		if (slurmdbd_unpack_rc_msg(&msg, rpc_version, buffer)
+		if (slurmdbd_unpack_rc_msg(&msg, slurmdbd_conn->version, buffer)
 		    == SLURM_SUCCESS) {
 			rc = msg->return_code;
 			if (rc != SLURM_SUCCESS) {
@@ -1835,122 +1822,6 @@ static int _handle_mult_rc_ret(uint16_t rpc_version, int read_timeout)
 unpack_error:
 	free_buf(buffer);
 	return rc;
-}
-
-static Buf _recv_msg(int read_timeout)
-{
-	uint32_t msg_size, nw_size;
-	char *msg;
-	ssize_t msg_read, offset;
-	Buf buffer;
-
-	if (slurmdbd_conn->fd < 0)
-		return NULL;
-
-	if (!_fd_readable(slurmdbd_conn->fd, read_timeout))
-		goto endit;
-	msg_read = read(slurmdbd_conn->fd, &nw_size, sizeof(nw_size));
-	if (msg_read != sizeof(nw_size))
-		goto endit;
-	msg_size = ntohl(nw_size);
-	/* We don't error check for an upper limit here
-  	 * since size could possibly be massive */
-	if (msg_size < 2) {
-		error("slurmdbd: Invalid msg_size (%u)", msg_size);
-		goto endit;
-	}
-
-	msg = xmalloc(msg_size);
-	offset = 0;
-	while (msg_size > offset) {
-		if (!_fd_readable(slurmdbd_conn->fd, read_timeout))
-			break;		/* problem with this socket */
-		msg_read = read(slurmdbd_conn->fd, (msg + offset),
-				(msg_size - offset));
-		if (msg_read <= 0) {
-			error("slurmdbd: read: %m");
-			break;
-		}
-		offset += msg_read;
-	}
-	if (msg_size != offset) {
-		if (*slurmdbd_conn->shutdown == 0) {
-			error("slurmdbd: only read %zd of %d bytes",
-			      offset, msg_size);
-		}	/* else in shutdown mode */
-		xfree(msg);
-		goto endit;
-	}
-
-	buffer = create_buf(msg, msg_size);
-	return buffer;
-
-endit:
-	/* Close it since we abondoned it.  If the connection does still exist
-	 * on the other end we can't rely on it after this point since we didn't
-	 * listen long enough for this response.
-	 */
-	_reopen_slurmdbd_conn();
-	return NULL;
-}
-
-/* Return time in msec since "start time" */
-static int _tot_wait (struct timeval *start_time)
-{
-	struct timeval end_time;
-	int msec_delay;
-
-	gettimeofday(&end_time, NULL);
-	msec_delay =   (end_time.tv_sec  - start_time->tv_sec ) * 1000;
-	msec_delay += ((end_time.tv_usec - start_time->tv_usec + 500) / 1000);
-	return msec_delay;
-}
-
-/* Wait until a file is readable,
- * RET false if can not be read */
-static bool _fd_readable(int fd, int read_timeout)
-{
-	struct pollfd ufds;
-	int rc, time_left;
-	struct timeval tstart;
-
-	ufds.fd     = fd;
-	ufds.events = POLLIN;
-	gettimeofday(&tstart, NULL);
-	while (*slurmdbd_conn->shutdown == 0) {
-		time_left = read_timeout - _tot_wait(&tstart);
-		rc = poll(&ufds, 1, time_left);
-		if (rc == -1) {
-			if ((errno == EINTR) || (errno == EAGAIN))
-				continue;
-			error("poll: %m");
-			return false;
-		}
-		if (rc == 0)
-			return false;
-		if ((ufds.revents & POLLHUP) &&
-		    ((ufds.revents & POLLIN) == 0)) {
-			debug2("SlurmDBD connection closed");
-			return false;
-		}
-		if (ufds.revents & POLLNVAL) {
-			error("SlurmDBD connection is invalid");
-			return false;
-		}
-		if (ufds.revents & POLLERR) {
-			error("SlurmDBD connection experienced an error");
-			return false;
-		}
-		if ((ufds.revents & POLLIN) == 0) {
-			error("SlurmDBD connection %d events %d",
-			      fd, ufds.revents);
-			return false;
-		}
-		/* revents == POLLIN */
-		errno = 0;
-		return true;
-	}
-	return false;
 }
 
 /****************************************************************************
@@ -2025,7 +1896,6 @@ static void *_agent(void *x)
 	struct timespec abs_time;
 	static time_t fail_time = 0;
 	int sigarray[] = {SIGUSR1, 0};
-	int read_timeout = SLURMDBD_TIMEOUT * 1000;
 	slurmdbd_msg_t list_req;
 	dbd_list_msg_t list_msg;
 
@@ -2117,11 +1987,9 @@ static void *_agent(void *x)
 			}
 			error("slurmdbd: Failure sending message: %d: %m", rc);
 		} else if (list_msg.my_list) {
-			rc = _handle_mult_rc_ret(SLURM_PROTOCOL_VERSION,
-						 read_timeout);
+			rc = _handle_mult_rc_ret();
 		} else {
-			rc = _get_return_code(SLURM_PROTOCOL_VERSION,
-					      read_timeout);
+			rc = _get_return_code();
 			if (rc == EAGAIN) {
 				if (*slurmdbd_conn->shutdown) {
 					slurm_mutex_unlock(&slurmdbd_lock);

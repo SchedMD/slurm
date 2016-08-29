@@ -87,7 +87,7 @@ static bool _conn_readable(slurm_persist_conn_t *persist_conn)
 	ufds.fd     = persist_conn->fd;
 	ufds.events = POLLIN;
 	gettimeofday(&tstart, NULL);
-	while (persist_conn->inited) {
+	while (*persist_conn->shutdown == 0) {
 		time_left = persist_conn->timeout - _tot_wait(&tstart);
 		rc = poll(&ufds, 1, time_left);
 		if (rc == -1) {
@@ -437,7 +437,7 @@ extern Buf slurm_persist_recv_msg(slurm_persist_conn_t *persist_conn)
 		offset += msg_read;
 	}
 	if (msg_size != offset) {
-		if (!persist_conn->inited) {
+		if (*persist_conn->shutdown == 0) {
 			error("Persistant Conn: only read %zd of %d bytes",
 			      offset, msg_size);
 		}	/* else in shutdown mode */
@@ -453,7 +453,8 @@ endit:
 	 * on the other end we can't rely on it after this point since we didn't
 	 * listen long enough for this response.
 	 */
-	_close_fd(&persist_conn->fd);
+	if (persist_conn->flags & PERSIST_FLAG_RECONNECT)
+		slurm_persist_conn_reopen(persist_conn, true);
 
 	return NULL;
 }
