@@ -104,7 +104,6 @@ static time_t    slurmdbd_shutdown   = 0;
 static void * _agent(void *x);
 static void   _create_agent(void);
 static bool   _fd_readable(int fd, int read_timeout);
-static int    _fd_writeable(int fd);
 static int    _get_return_code(uint16_t rpc_version, int read_timeout);
 static Buf    _load_dbd_rec(int fd);
 static void   _load_dbd_state(void);
@@ -1652,7 +1651,7 @@ static int _send_fini_msg(void)
 
 	/* If the connection is already gone, we don't need to send a
 	   fini. */
-	if (_fd_writeable(slurmdbd_conn->fd) == -1)
+	if (slurm_persist_conn_writeable(slurmdbd_conn) == -1)
 		return SLURM_SUCCESS;
 
 	buffer = init_buf(1024);
@@ -1952,68 +1951,6 @@ static bool _fd_readable(int fd, int read_timeout)
 		return true;
 	}
 	return false;
-}
-
-/* Wait until a file is writeable,
- * RET 1 if file can be written now,
- *     0 if can not be written to within 5 seconds
- *     -1 if file has been closed POLLHUP
- */
-static int _fd_writeable(int fd)
-{
-	struct pollfd ufds;
-	int write_timeout = 5000;
-	int rc, time_left;
-	struct timeval tstart;
-	char temp[2];
-
-	ufds.fd     = fd;
-	ufds.events = POLLOUT;
-	gettimeofday(&tstart, NULL);
-	while (*slurmdbd_conn->shutdown == 0) {
-		time_left = write_timeout - _tot_wait(&tstart);
-		rc = poll(&ufds, 1, time_left);
-		if (rc == -1) {
-			if ((errno == EINTR) || (errno == EAGAIN))
-				continue;
-			error("poll: %m");
-			return -1;
-		}
-		if (rc == 0)
-			return 0;
-		/*
-		 * Check here to make sure the socket really is there.
-		 * If not then exit out and notify the conn.  This
- 		 * is here since a write doesn't always tell you the
-		 * socket is gone, but getting 0 back from a
-		 * nonblocking read means just that.
-		 */
-		if (ufds.revents & POLLHUP || (recv(fd, &temp, 1, 0) == 0)) {
-			debug2("SlurmDBD connection is closed");
-			if (slurmdbd_conn->trigger_callbacks.dbd_fail)
-				(slurmdbd_conn->trigger_callbacks.dbd_fail)();
-			return -1;
-		}
-		if (ufds.revents & POLLNVAL) {
-			error("SlurmDBD connection is invalid");
-			return 0;
-		}
-		if (ufds.revents & POLLERR) {
-			error("SlurmDBD connection experienced an error: %m");
-			if (slurmdbd_conn->trigger_callbacks.dbd_fail)
-				(slurmdbd_conn->trigger_callbacks.dbd_fail)();
-			return 0;
-		}
-		if ((ufds.revents & POLLOUT) == 0) {
-			error("SlurmDBD connection %d events %d",
-			      fd, ufds.revents);
-			return 0;
-		}
-		/* revents == POLLOUT */
-		errno = 0;
-		return 1;
-	}
-	return 0;
 }
 
 /****************************************************************************
