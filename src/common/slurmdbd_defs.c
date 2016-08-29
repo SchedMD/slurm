@@ -98,6 +98,8 @@ static char *    slurmdbd_cluster    = NULL;
 static bool      halt_agent          = 0;
 static bool      from_ctld           = 0;
 static bool      need_to_register    = 0;
+static time_t    slurmdbd_shutdown   = 0;
+
 
 static void * _agent(void *x);
 static void   _create_agent(void);
@@ -439,7 +441,8 @@ static void _open_slurmdbd_conn(bool need_db)
 				slurmdbd_conn->rem_port);
 		}
 	}
-	slurmdbd_conn->shutdown = 0;
+	slurmdbd_shutdown = 0;
+	slurmdbd_conn->shutdown = &slurmdbd_shutdown;
 
 	xfree(slurmdbd_conn->rem_host);
 	slurmdbd_conn->rem_host = slurm_get_accounting_storage_host();
@@ -1872,7 +1875,7 @@ static Buf _recv_msg(int read_timeout)
 		offset += msg_read;
 	}
 	if (msg_size != offset) {
-		if (slurmdbd_conn->shutdown == 0) {
+		if (*slurmdbd_conn->shutdown == 0) {
 			error("slurmdbd: only read %zd of %d bytes",
 			      offset, msg_size);
 		}	/* else in shutdown mode */
@@ -1915,7 +1918,7 @@ static bool _fd_readable(int fd, int read_timeout)
 	ufds.fd     = fd;
 	ufds.events = POLLIN;
 	gettimeofday(&tstart, NULL);
-	while (slurmdbd_conn->shutdown == 0) {
+	while (*slurmdbd_conn->shutdown == 0) {
 		time_left = read_timeout - _tot_wait(&tstart);
 		rc = poll(&ufds, 1, time_left);
 		if (rc == -1) {
@@ -1967,7 +1970,7 @@ static int _fd_writeable(int fd)
 	ufds.fd     = fd;
 	ufds.events = POLLOUT;
 	gettimeofday(&tstart, NULL);
-	while (slurmdbd_conn->shutdown == 0) {
+	while (*slurmdbd_conn->shutdown == 0) {
 		time_left = write_timeout - _tot_wait(&tstart);
 		rc = poll(&ufds, 1, time_left);
 		if (rc == -1) {
@@ -2020,7 +2023,7 @@ static void _create_agent(void)
 {
 	/* this needs to be set because the agent thread will do
 	   nothing if the connection was closed and then opened again */
-	slurmdbd_conn->shutdown = 0;
+	slurmdbd_shutdown = 0;
 
 	if (agent_list == NULL) {
 		agent_list = list_create(slurmdbd_free_buffer);
@@ -2042,7 +2045,7 @@ static void _shutdown_agent(void)
 	int i;
 
 	if (agent_tid) {
-		slurmdbd_conn->shutdown = time(NULL);
+		slurmdbd_shutdown = time(NULL);
 		for (i=0; i<50; i++) {	/* up to 5 secs total */
 			slurm_cond_broadcast(&agent_cond);
 			usleep(100000);	/* 0.1 sec per try */
@@ -2099,7 +2102,7 @@ static void *_agent(void *x)
 	xsignal(SIGUSR1, _sig_handler);
 	xsignal_unblock(sigarray);
 
-	while (slurmdbd_conn->shutdown == 0) {
+	while (*slurmdbd_conn->shutdown == 0) {
 		/* START_TIMER; */
 		slurm_mutex_lock(&slurmdbd_lock);
 		if (halt_agent)
@@ -2171,7 +2174,7 @@ static void *_agent(void *x)
 		 * complete. */
 		rc = slurm_persist_send_msg(slurmdbd_conn, buffer);
 		if (rc != SLURM_SUCCESS) {
-			if (slurmdbd_conn->shutdown) {
+			if (*slurmdbd_conn->shutdown) {
 				slurm_mutex_unlock(&slurmdbd_lock);
 				break;
 			}
@@ -2183,7 +2186,7 @@ static void *_agent(void *x)
 			rc = _get_return_code(SLURM_PROTOCOL_VERSION,
 					      read_timeout);
 			if (rc == EAGAIN) {
-				if (slurmdbd_conn->shutdown) {
+				if (*slurmdbd_conn->shutdown) {
 					slurm_mutex_unlock(&slurmdbd_lock);
 					break;
 				}

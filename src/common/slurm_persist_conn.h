@@ -50,7 +50,7 @@ typedef struct {
 	bool inited;
 	char *rem_host;
 	int rem_port;
-	time_t shutdown;
+	time_t *shutdown;
 	int timeout;
 	slurm_trigger_callbacks_t trigger_callbacks;
 	uint16_t version;
@@ -78,6 +78,14 @@ typedef struct {
 
 /* Open a persistant socket connection
  * IN/OUT - persistant connection needing host and port filled in.  Returned
+ * mostly filled in without the version to use to communicate.
+ * Returns SLURM_SUCCESS on success or SLURM_ERROR on failure */
+extern int slurm_persist_conn_open_without_init(
+	slurm_persist_conn_t *persist_conn);
+
+/* Open a persistant socket connection and sends an init message to establish
+ * the connection.
+ * IN/OUT - persistant connection needing host and port filled in.  Returned
  * completely filled in.
  * Returns SLURM_SUCCESS on success or SLURM_ERROR on failure */
 extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn);
@@ -85,12 +93,17 @@ extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn);
 /* Close the persistant connection don't free structure or members */
 extern void slurm_persist_conn_close(slurm_persist_conn_t *persist_conn);
 
+extern int slurm_persist_conn_reopen(slurm_persist_conn_t *persist_conn,
+				     bool with_init);
+
 /* Close the persistant connection members, but don't free structure */
 extern void slurm_persist_conn_members_destroy(
 	slurm_persist_conn_t *persist_conn);
 
 /* Close the persistant connection and free structure */
 extern void slurm_persist_conn_destroy(slurm_persist_conn_t *persist_conn);
+
+extern int slurm_persist_conn_writeable(slurm_persist_conn_t *persist_conn);
 
 extern int slurm_persist_send_msg(
 	slurm_persist_conn_t *persist_conn, Buf buffer);

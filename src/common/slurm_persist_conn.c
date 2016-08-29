@@ -123,197 +123,10 @@ static bool _conn_readable(slurm_persist_conn_t *persist_conn)
 	return false;
 }
 
-/* Wait until a file is writeable,
- * RET 1 if file can be written now,
- *     0 if can not be written to within 5 seconds
- *     -1 if file has been closed POLLHUP
- */
-static int _conn_writeable(slurm_persist_conn_t *persist_conn)
+extern int slurm_persist_conn_open_without_init(
+	slurm_persist_conn_t *persist_conn)
 {
-	struct pollfd ufds;
-	int write_timeout = 5000;
-	int rc, time_left;
-	struct timeval tstart;
-	char temp[2];
-
-	ufds.fd     = persist_conn->fd;
-	ufds.events = POLLOUT;
-	gettimeofday(&tstart, NULL);
-	while (persist_conn->shutdown == 0) {
-		time_left = write_timeout - _tot_wait(&tstart);
-		rc = poll(&ufds, 1, time_left);
-		if (rc == -1) {
-			if ((errno == EINTR) || (errno == EAGAIN))
-				continue;
-			error("poll: %m");
-			return -1;
-		}
-		if (rc == 0)
-			return 0;
-		/*
-		 * Check here to make sure the socket really is there.
-		 * If not then exit out and notify the conn.  This
-		 * is here since a write doesn't always tell you the
-		 * socket is gone, but getting 0 back from a
-		 * nonblocking read means just that.
-		 */
-		if (ufds.revents & POLLHUP ||
-		    (recv(persist_conn->fd, &temp, 1, 0) == 0)) {
-			debug2("persistant connection is closed");
-			if (persist_conn->trigger_callbacks.dbd_fail)
-				(persist_conn->trigger_callbacks.dbd_fail)();
-			return -1;
-		}
-		if (ufds.revents & POLLNVAL) {
-			error("persistant connection is invalid");
-			return 0;
-		}
-		if (ufds.revents & POLLERR) {
-			error("persistant connection experienced an error: %m");
-			if (persist_conn->trigger_callbacks.dbd_fail)
-				(persist_conn->trigger_callbacks.dbd_fail)();
-			return 0;
-		}
-		if ((ufds.revents & POLLOUT) == 0) {
-			error("persistant connection %d events %d",
-			      persist_conn->fd, ufds.revents);
-			return 0;
-		}
-		/* revents == POLLOUT */
-		errno = 0;
-		return 1;
-	}
-	return 0;
-}
-
-extern int slurm_persist_send_msg(
-	slurm_persist_conn_t *persist_conn, Buf buffer)
-{
-	uint32_t msg_size, nw_size;
-	char *msg;
-	ssize_t msg_wrote;
-	int rc, retry_cnt = 0;
-
-	xassert(persist_conn);
-
-	if (persist_conn->fd < 0)
-		return EAGAIN;
-
-	rc = _conn_writeable(persist_conn);
-	if (rc == -1) {
-	re_open:
-		if (retry_cnt++ > 3)
-			return EAGAIN;
-		/* if errno is ACCESS_DENIED do not try to reopen to
-		   connection just return that */
-		if (errno == ESLURM_ACCESS_DENIED)
-			return ESLURM_ACCESS_DENIED;
-
-		if (persist_conn->flags & PERSIST_FLAG_RECONNECT) {
-			slurm_persist_conn_close(persist_conn);
-			slurm_persist_conn_open(persist_conn);
-			rc = _conn_writeable(persist_conn);
-		} else
-			return SLURM_ERROR;
-	}
-	if (rc < 1)
-		return EAGAIN;
-
-	msg_size = get_buf_offset(buffer);
-	nw_size = htonl(msg_size);
-	msg_wrote = write(persist_conn->fd, &nw_size, sizeof(nw_size));
-	if (msg_wrote != sizeof(nw_size))
-		return EAGAIN;
-
-	msg = get_buf_data(buffer);
-	while (msg_size > 0) {
-		rc = _conn_writeable(persist_conn);
-		if (rc == -1)
-			goto re_open;
-		if (rc < 1)
-			return EAGAIN;
-		msg_wrote = write(persist_conn->fd, msg, msg_size);
-		if (msg_wrote <= 0)
-			return EAGAIN;
-		msg += msg_wrote;
-		msg_size -= msg_wrote;
-	}
-
-	return SLURM_SUCCESS;
-}
-
-extern Buf slurm_persist_recv_msg(slurm_persist_conn_t *persist_conn)
-{
-	uint32_t msg_size, nw_size;
-	char *msg;
-	ssize_t msg_read, offset;
-	Buf buffer;
-
-	xassert(persist_conn);
-
-	if (persist_conn->fd < 0)
-		return NULL;
-
-	if (!_conn_readable(persist_conn))
-		goto endit;
-
-	msg_read = read(persist_conn->fd, &nw_size, sizeof(nw_size));
-	if (msg_read != sizeof(nw_size))
-		goto endit;
-	msg_size = ntohl(nw_size);
-	/* We don't error check for an upper limit here
-	 * since size could possibly be massive */
-	if (msg_size < 2) {
-		error("Persistant Conn: Invalid msg_size (%u)", msg_size);
-		goto endit;
-	}
-
-	msg = xmalloc(msg_size);
-	offset = 0;
-	while (msg_size > offset) {
-		if (!_conn_readable(persist_conn))
-			break;		/* problem with this socket */
-		msg_read = read(persist_conn->fd, (msg + offset),
-				(msg_size - offset));
-		if (msg_read <= 0) {
-			error("Persistant Conn: read: %m");
-			break;
-		}
-		offset += msg_read;
-	}
-	if (msg_size != offset) {
-		if (!persist_conn->inited) {
-			error("Persistant Conn: only read %zd of %d bytes",
-			      offset, msg_size);
-		}	/* else in shutdown mode */
-		xfree(msg);
-		goto endit;
-	}
-
-	buffer = create_buf(msg, msg_size);
-	return buffer;
-
-endit:
-	/* Close it since we abondoned it.  If the connection does still exist
-	 * on the other end we can't rely on it after this point since we didn't
-	 * listen long enough for this response.
-	 */
-	_close_fd(&persist_conn->fd);
-
-	return NULL;
-}
-
-/* Open a persistant socket connection
- * IN/OUT - persistant connection needing rem_host and rem_port filled in.
- * Returned completely filled in.
- * Returns SLURM_SUCCESS on success or SLURM_ERROR on failure */
-extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
-{
-	int rc = SLURM_ERROR;
-	slurm_msg_t req_msg;
 	slurm_addr_t addr;
-	persist_init_req_msg_t req;
-	persist_init_resp_msg_t *resp = NULL;
 
 	xassert(persist_conn);
 	xassert(persist_conn->rem_host);
@@ -338,10 +151,28 @@ extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
 	if ((persist_conn->fd = slurm_open_msg_conn(&addr)) < 0) {
 		error("%s: failed to open persistant connection to %s:%d",
 		      __func__, persist_conn->rem_host, persist_conn->rem_port);
-		return rc;
+		return SLURM_ERROR;
 	}
 	fd_set_nonblocking(persist_conn->fd);
 	fd_set_close_on_exec(persist_conn->fd);
+
+	return SLURM_SUCCESS;
+}
+
+
+/* Open a persistant socket connection
+ * IN/OUT - persistant connection needing rem_host and rem_port filled in.
+ * Returned completely filled in.
+ * Returns SLURM_SUCCESS on success or SLURM_ERROR on failure */
+extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
+{
+	int rc = SLURM_ERROR;
+	slurm_msg_t req_msg;
+	persist_init_req_msg_t req;
+	persist_init_resp_msg_t *resp = NULL;
+
+	if (slurm_persist_conn_open_without_init(persist_conn) != SLURM_SUCCESS)
+		return rc;
 
 	slurm_msg_t_init(&req_msg);
 
@@ -415,6 +246,17 @@ extern void slurm_persist_conn_close(slurm_persist_conn_t *persist_conn)
 	_close_fd(&persist_conn->fd);
 }
 
+extern int slurm_persist_conn_reopen(slurm_persist_conn_t *persist_conn,
+				     bool with_init)
+{
+	slurm_persist_conn_close(persist_conn);
+
+	if (with_init)
+		return slurm_persist_conn_open(persist_conn);
+	else
+		return slurm_persist_conn_open_without_init(persist_conn);
+}
+
 /* Close the persistant connection */
 extern void slurm_persist_conn_members_destroy(
 	slurm_persist_conn_t *persist_conn)
@@ -435,6 +277,185 @@ extern void slurm_persist_conn_destroy(slurm_persist_conn_t *persist_conn)
 		return;
 	slurm_persist_conn_members_destroy(persist_conn);
 	xfree(persist_conn);
+}
+
+/* Wait until a file is writeable,
+ * RET 1 if file can be written now,
+ *     0 if can not be written to within 5 seconds
+ *     -1 if file has been closed POLLHUP
+ */
+extern int slurm_persist_conn_writeable(slurm_persist_conn_t *persist_conn)
+{
+	struct pollfd ufds;
+	int write_timeout = 5000;
+	int rc, time_left;
+	struct timeval tstart;
+	char temp[2];
+
+	ufds.fd     = persist_conn->fd;
+	ufds.events = POLLOUT;
+	gettimeofday(&tstart, NULL);
+	while ((*persist_conn->shutdown) == 0) {
+		time_left = write_timeout - _tot_wait(&tstart);
+		rc = poll(&ufds, 1, time_left);
+		if (rc == -1) {
+			if ((errno == EINTR) || (errno == EAGAIN))
+				continue;
+			error("poll: %m");
+			return -1;
+		}
+		if (rc == 0)
+			return 0;
+		/*
+		 * Check here to make sure the socket really is there.
+		 * If not then exit out and notify the conn.  This
+		 * is here since a write doesn't always tell you the
+		 * socket is gone, but getting 0 back from a
+		 * nonblocking read means just that.
+		 */
+		if (ufds.revents & POLLHUP ||
+		    (recv(persist_conn->fd, &temp, 1, 0) == 0)) {
+			debug2("persistant connection is closed");
+			if (persist_conn->trigger_callbacks.dbd_fail)
+				(persist_conn->trigger_callbacks.dbd_fail)();
+			return -1;
+		}
+		if (ufds.revents & POLLNVAL) {
+			error("persistant connection is invalid");
+			return 0;
+		}
+		if (ufds.revents & POLLERR) {
+			error("persistant connection experienced an error: %m");
+			if (persist_conn->trigger_callbacks.dbd_fail)
+				(persist_conn->trigger_callbacks.dbd_fail)();
+			return 0;
+		}
+		if ((ufds.revents & POLLOUT) == 0) {
+			error("persistant connection %d events %d",
+			      persist_conn->fd, ufds.revents);
+			return 0;
+		}
+		/* revents == POLLOUT */
+		errno = 0;
+		return 1;
+	}
+	return 0;
+}
+
+extern int slurm_persist_send_msg(
+	slurm_persist_conn_t *persist_conn, Buf buffer)
+{
+	uint32_t msg_size, nw_size;
+	char *msg;
+	ssize_t msg_wrote;
+	int rc, retry_cnt = 0;
+
+	xassert(persist_conn);
+
+	if (persist_conn->fd < 0)
+		return EAGAIN;
+
+	rc = slurm_persist_conn_writeable(persist_conn);
+	if (rc == -1) {
+	re_open:
+		if (retry_cnt++ > 3)
+			return EAGAIN;
+		/* if errno is ACCESS_DENIED do not try to reopen to
+		   connection just return that */
+		if (errno == ESLURM_ACCESS_DENIED)
+			return ESLURM_ACCESS_DENIED;
+
+		if (persist_conn->flags & PERSIST_FLAG_RECONNECT) {
+			slurm_persist_conn_reopen(persist_conn, true);
+			rc = slurm_persist_conn_writeable(persist_conn);
+		} else
+			return SLURM_ERROR;
+	}
+	if (rc < 1)
+		return EAGAIN;
+
+	msg_size = get_buf_offset(buffer);
+	nw_size = htonl(msg_size);
+	msg_wrote = write(persist_conn->fd, &nw_size, sizeof(nw_size));
+	if (msg_wrote != sizeof(nw_size))
+		return EAGAIN;
+
+	msg = get_buf_data(buffer);
+	while (msg_size > 0) {
+		rc = slurm_persist_conn_writeable(persist_conn);
+		if (rc == -1)
+			goto re_open;
+		if (rc < 1)
+			return EAGAIN;
+		msg_wrote = write(persist_conn->fd, msg, msg_size);
+		if (msg_wrote <= 0)
+			return EAGAIN;
+		msg += msg_wrote;
+		msg_size -= msg_wrote;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+extern Buf slurm_persist_recv_msg(slurm_persist_conn_t *persist_conn)
+{
+	uint32_t msg_size, nw_size;
+	char *msg;
+	ssize_t msg_read, offset;
+	Buf buffer;
+
+	xassert(persist_conn);
+
+	if (persist_conn->fd < 0)
+		return NULL;
+
+	if (!_conn_readable(persist_conn))
+		goto endit;
+
+	msg_read = read(persist_conn->fd, &nw_size, sizeof(nw_size));
+	if (msg_read != sizeof(nw_size))
+		goto endit;
+	msg_size = ntohl(nw_size);
+	/* We don't error check for an upper limit here
+	 * since size could possibly be massive */
+	if (msg_size < 2) {
+		error("Persistant Conn: Invalid msg_size (%u)", msg_size);
+		goto endit;
+	}
+
+	msg = xmalloc(msg_size);
+	offset = 0;
+	while (msg_size > offset) {
+		if (!_conn_readable(persist_conn))
+			break;		/* problem with this socket */
+		msg_read = read(persist_conn->fd, (msg + offset),
+				(msg_size - offset));
+		if (msg_read <= 0) {
+			error("Persistant Conn: read: %m");
+			break;
+		}
+		offset += msg_read;
+	}
+	if (msg_size != offset) {
+		if (!persist_conn->inited) {
+			error("Persistant Conn: only read %zd of %d bytes",
+			      offset, msg_size);
+		}	/* else in shutdown mode */
+		xfree(msg);
+		goto endit;
+	}
+
+	buffer = create_buf(msg, msg_size);
+	return buffer;
+
+endit:
+	/* Close it since we abondoned it.  If the connection does still exist
+	 * on the other end we can't rely on it after this point since we didn't
+	 * listen long enough for this response.
+	 */
+	_close_fd(&persist_conn->fd);
+
+	return NULL;
 }
 
 extern Buf slurm_persist_msg_pack(slurm_persist_conn_t *persist_conn,
