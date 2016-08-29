@@ -193,22 +193,22 @@ extern int slurm_send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
 					   int *resp_code)
 {
 	int rc;
-	slurmdbd_msg_t *resp;
+	slurmdbd_msg_t resp;
 
 	xassert(req);
 	xassert(resp_code);
 
-	resp = xmalloc(sizeof(slurmdbd_msg_t));
-	rc = slurm_send_recv_slurmdbd_msg(rpc_version, req, resp);
+	memset(&resp, 0, sizeof(slurmdbd_msg_t));
+	rc = slurm_send_recv_slurmdbd_msg(rpc_version, req, &resp);
 	if (rc != SLURM_SUCCESS) {
 		;	/* error message already sent */
-	} else if (resp->msg_type != DBD_RC) {
+	} else if (resp.msg_type != DBD_RC) {
 		error("slurmdbd: response is not type DBD_RC: %s(%u)",
-		      slurmdbd_msg_type_2_str(resp->msg_type, 1),
-		      resp->msg_type);
+		      slurmdbd_msg_type_2_str(resp.msg_type, 1),
+		      resp.msg_type);
 		rc = SLURM_ERROR;
-	} else {	/* resp->msg_type == DBD_RC */
-		dbd_rc_msg_t *msg = resp->data;
+	} else {	/* resp.msg_type == DBD_RC */
+		dbd_rc_msg_t *msg = resp.data;
 		*resp_code = msg->return_code;
 		if (msg->return_code != SLURM_SUCCESS
 		    && msg->return_code != ACCOUNTING_FIRST_REG) {
@@ -238,7 +238,6 @@ extern int slurm_send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
 			need_to_register = 0;
 		slurmdbd_free_rc_msg(msg);
 	}
-	xfree(resp);
 
 	return rc;
 }
