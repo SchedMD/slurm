@@ -1552,8 +1552,6 @@ extern int select_p_job_init(List job_list)
 		while ((job_ptr = list_next(itr))) {
 
 			jobinfo = job_ptr->select_jobinfo->data;
-			if (IS_CLEANING(jobinfo) || IS_JOB_RUNNING(job_ptr))
-				_set_job_running_restore(jobinfo);
 
 			/* We need to resize bitmaps if the
 			 * blades change in count.  We must increase
@@ -1568,6 +1566,9 @@ extern int select_p_job_init(List job_list)
 			    && (bit_size(jobinfo->used_blades) < blade_cnt))
 				jobinfo->used_blades = bit_realloc(
 					jobinfo->used_blades, blade_cnt);
+
+			if (IS_CLEANING(jobinfo) || IS_JOB_RUNNING(job_ptr))
+				_set_job_running_restore(jobinfo);
 
 			if (!(slurmctld_conf.select_type_param & CR_NHC_STEP_NO)
 			    && job_ptr->step_list
