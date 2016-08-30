@@ -274,8 +274,18 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 	} else {
 		switch (msg.msg_type) {
 		case REQUEST_PERSIST_INIT:
-			rc = _unpack_persist_init(slurmdbd_conn,
-						  &msg, out_buffer, uid);
+			if (first)
+				rc = _unpack_persist_init(
+					slurmdbd_conn, &msg, out_buffer, uid);
+			else {
+				comment = "REQUEST_PERSIST_INIT sent after connection established";
+				error("CONN:%u %s",
+				      slurmdbd_conn->conn.fd, comment);
+				rc = EINVAL;
+				*out_buffer = make_dbd_rc_msg(
+					slurmdbd_conn->conn.version,
+					rc, comment, REQUEST_PERSIST_INIT);
+			}
 			break;
 		case DBD_ADD_ACCOUNTS:
 			rc = _add_accounts(slurmdbd_conn,
@@ -1075,7 +1085,7 @@ static int _archive_load(slurmdbd_conn_t *slurmdbd_conn,
 			 slurmdbd_msg_t *msg, Buf *out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
-	slurmdb_archive_rec_t *arch_rec = NULL;
+	slurmdb_archive_rec_t *arch_rec = msg->data;
 	char *comment = "SUCCESS";
 
 	debug2("DBD_ARCHIVE_LOAD: called");
@@ -1096,7 +1106,6 @@ static int _archive_load(slurmdbd_conn_t *slurmdbd_conn,
 		comment = "Error with request.";
 
 end_it:
-	slurmdb_destroy_archive_rec(arch_rec);
 	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->conn.version,
 				      rc, comment, DBD_ARCHIVE_LOAD);
 	return rc;
