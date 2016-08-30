@@ -161,9 +161,10 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 		/* here we prepend primarly for remove association
 		   since parents need to be removed last, and they are
 		   removed first in the calling code */
-		if (type == SLURMDB_UPDATE_FEDS)
+		if (type == SLURMDB_UPDATE_FEDS) {
+			FREE_NULL_LIST(update_object->objects);
 			update_object->objects = object;
-		else
+		} else
 			list_prepend(update_object->objects, object);
 		return SLURM_SUCCESS;
 	}
