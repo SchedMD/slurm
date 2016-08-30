@@ -26,6 +26,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix problem updating job state_reason.
  -- pmix - Provide HWLOC topology in the job-data if Slurm was configured
     with hwloc.
+ -- Cray - Fix issue restoring jobs when blade count increases due to hardware
+    reconfiguration.
 
 * Changes in Slurm 16.05.4
 ==========================
