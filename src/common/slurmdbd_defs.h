@@ -448,6 +448,7 @@ extern void slurmdbd_free_buffer(void *x);
 \*****************************************************************************/
 extern void slurmdbd_free_acct_coord_msg(dbd_acct_coord_msg_t *msg);
 extern void slurmdbd_free_cluster_tres_msg(dbd_cluster_tres_msg_t *msg);
+extern void slurmdbd_free_msg(slurmdbd_msg_t *msg);
 extern void slurmdbd_free_rec_msg(dbd_rec_msg_t *msg, slurmdbd_msg_type_t type);
 extern void slurmdbd_free_cond_msg(dbd_cond_msg_t *msg,
 				   slurmdbd_msg_type_t type);

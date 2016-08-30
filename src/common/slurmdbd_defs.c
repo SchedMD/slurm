@@ -103,6 +103,7 @@ static time_t    slurmdbd_shutdown   = 0;
 
 static void * _agent(void *x);
 static void   _create_agent(void);
+static int _unpack_config_name(char **object, uint16_t rpc_version, Buf buffer);
 static int    _get_return_code(void);
 static Buf    _load_dbd_rec(int fd);
 static void   _load_dbd_state(void);
@@ -692,6 +693,12 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp,
 	}
 
 	switch (resp->msg_type) {
+	case REQUEST_PERSIST_INIT:
+		resp->data = xmalloc(sizeof(slurm_msg_t));
+		slurm_msg_t_init(resp->data);
+		rc = slurm_unpack_received_msg(
+			(slurm_msg_t *)resp->data, 0, buffer);
+		break;
 	case DBD_ADD_ACCOUNTS:
 	case DBD_ADD_TRES:
 	case DBD_ADD_ASSOCS:
@@ -857,7 +864,9 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp,
 			resp->msg_type, buffer);
 		break;
 	case DBD_GET_CONFIG:
-		/* (handled in src/slurmdbd/proc_req.c) */
+		rc = _unpack_config_name(
+			(char **)&resp->data, rpc_version, buffer);
+		break;
 	case DBD_RECONFIG:
 	case DBD_GET_STATS:
 	case DBD_CLEAR_STATS:
@@ -1721,6 +1730,21 @@ unpack_error:
 	return rc;
 }
 
+static int _unpack_config_name(char **object, uint16_t rpc_version, Buf buffer)
+{
+	char *config_name;
+	uint32_t uint32_tmp;
+
+	safe_unpackstr_xmalloc(&config_name, &uint32_tmp, buffer);
+	*object = config_name;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	*object = NULL;
+	return SLURM_ERROR;
+}
+
+
 static int _get_return_code(void)
 {
 	int rc = SLURM_ERROR;
@@ -2341,6 +2365,150 @@ extern void slurmdbd_free_cluster_tres_msg(dbd_cluster_tres_msg_t *msg)
 		xfree(msg->cluster_nodes);
 		xfree(msg->tres_str);
 		xfree(msg);
+	}
+}
+
+extern void slurmdbd_free_msg(slurmdbd_msg_t *msg)
+{
+	switch(msg->msg_type) {
+	case DBD_ADD_ACCOUNTS:
+	case DBD_ADD_TRES:
+	case DBD_ADD_ASSOCS:
+	case DBD_ADD_CLUSTERS:
+	case DBD_ADD_FEDERATIONS:
+	case DBD_ADD_RES:
+	case DBD_ADD_USERS:
+	case DBD_GOT_ACCOUNTS:
+	case DBD_GOT_TRES:
+	case DBD_GOT_ASSOCS:
+	case DBD_GOT_CLUSTERS:
+	case DBD_GOT_EVENTS:
+	case DBD_GOT_FEDERATIONS:
+	case DBD_GOT_JOBS:
+	case DBD_GOT_LIST:
+	case DBD_GOT_PROBS:
+	case DBD_GOT_RES:
+	case DBD_ADD_QOS:
+	case DBD_GOT_QOS:
+	case DBD_GOT_RESVS:
+	case DBD_ADD_WCKEYS:
+	case DBD_GOT_WCKEYS:
+	case DBD_GOT_TXN:
+	case DBD_GOT_USERS:
+	case DBD_GOT_CONFIG:
+	case DBD_SEND_MULT_JOB_START:
+	case DBD_GOT_MULT_JOB_START:
+	case DBD_SEND_MULT_MSG:
+	case DBD_GOT_MULT_MSG:
+	case DBD_FIX_RUNAWAY_JOB:
+		slurmdbd_free_list_msg(msg->data);
+		break;
+	case DBD_ADD_ACCOUNT_COORDS:
+	case DBD_REMOVE_ACCOUNT_COORDS:
+		slurmdbd_free_acct_coord_msg(msg->data);
+		break;
+	case DBD_ARCHIVE_LOAD:
+		slurmdb_destroy_archive_rec(msg->data);
+		break;
+	case DBD_CLUSTER_TRES:
+	case DBD_FLUSH_JOBS:
+		slurmdbd_free_cluster_tres_msg(msg->data);
+		break;
+	case DBD_GET_ACCOUNTS:
+	case DBD_GET_TRES:
+	case DBD_GET_ASSOCS:
+	case DBD_GET_CLUSTERS:
+	case DBD_GET_EVENTS:
+	case DBD_GET_FEDERATIONS:
+	case DBD_GET_JOBS_COND:
+	case DBD_GET_PROBS:
+	case DBD_GET_QOS:
+	case DBD_GET_RESVS:
+	case DBD_GET_RES:
+	case DBD_GET_TXN:
+	case DBD_GET_USERS:
+	case DBD_GET_WCKEYS:
+	case DBD_REMOVE_ACCOUNTS:
+	case DBD_REMOVE_ASSOCS:
+	case DBD_REMOVE_CLUSTERS:
+	case DBD_REMOVE_FEDERATIONS:
+	case DBD_REMOVE_QOS:
+	case DBD_REMOVE_RES:
+	case DBD_REMOVE_WCKEYS:
+	case DBD_REMOVE_USERS:
+	case DBD_ARCHIVE_DUMP:
+		slurmdbd_free_cond_msg(msg->data, msg->msg_type);
+		break;
+	case DBD_GET_ASSOC_USAGE:
+	case DBD_GOT_ASSOC_USAGE:
+	case DBD_GET_CLUSTER_USAGE:
+	case DBD_GOT_CLUSTER_USAGE:
+	case DBD_GET_WCKEY_USAGE:
+	case DBD_GOT_WCKEY_USAGE:
+		slurmdbd_free_usage_msg(msg->data, msg->msg_type);
+		break;
+	case DBD_INIT:
+		slurmdbd_free_init_msg(msg->data);
+		break;
+	case DBD_FINI:
+		slurmdbd_free_fini_msg(msg->data);
+		break;
+	case DBD_JOB_COMPLETE:
+		slurmdbd_free_job_complete_msg(msg->data);
+		break;
+	case DBD_JOB_START:
+		slurmdbd_free_job_start_msg(msg->data);
+		break;
+	case DBD_JOB_SUSPEND:
+		slurmdbd_free_job_suspend_msg(msg->data);
+		break;
+	case DBD_MODIFY_ACCOUNTS:
+	case DBD_MODIFY_ASSOCS:
+	case DBD_MODIFY_CLUSTERS:
+	case DBD_MODIFY_FEDERATIONS:
+	case DBD_MODIFY_JOB:
+	case DBD_MODIFY_QOS:
+	case DBD_MODIFY_RES:
+	case DBD_MODIFY_USERS:
+		slurmdbd_free_modify_msg(msg->data, msg->msg_type);
+		break;
+	case DBD_NODE_STATE:
+		slurmdbd_free_node_state_msg(msg->data);
+		break;
+	case DBD_RC:
+		slurmdbd_free_rc_msg(msg->data);
+		break;
+	case DBD_STEP_COMPLETE:
+		slurmdbd_free_step_complete_msg(msg->data);
+		break;
+	case DBD_STEP_START:
+		slurmdbd_free_step_start_msg(msg->data);
+		break;
+	case DBD_REGISTER_CTLD:
+		slurmdbd_free_register_ctld_msg(msg->data);
+		break;
+	case DBD_ROLL_USAGE:
+		slurmdbd_free_roll_usage_msg(msg->data);
+		break;
+	case DBD_ADD_RESV:
+	case DBD_REMOVE_RESV:
+	case DBD_MODIFY_RESV:
+		slurmdbd_free_rec_msg(msg->data, msg->msg_type);
+		break;
+	case DBD_GET_CONFIG:
+	case DBD_RECONFIG:
+	case DBD_GET_STATS:
+	case DBD_CLEAR_STATS:
+	case DBD_SHUTDOWN:
+		break;
+	case SLURM_PERSIST_INIT:
+		slurm_free_msg(msg->data);
+		break;
+	default:
+		error("%s: Unknown rec type %d(%s)",
+		      __func__, msg->msg_type,
+		      slurmdbd_msg_type_2_str(msg->msg_type, true));
+		return;
 	}
 }
 

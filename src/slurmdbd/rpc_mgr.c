@@ -139,6 +139,7 @@ extern void *rpc_mgr(void *no_data)
 		conn_arg = xmalloc(sizeof(slurmdbd_conn_t));
 		conn_arg->conn.fd = newsockfd;
 		conn_arg->conn.shutdown = &shutdown_time;
+		conn_arg->conn.version = SLURM_MIN_PROTOCOL_VERSION;
 		conn_arg->conn.rem_host = xmalloc_nz(sizeof(char) * 32);
 		slurm_get_ip_str(&cli_addr, &orig_port,
 				 conn_arg->conn.rem_host, sizeof(char) * 32);
