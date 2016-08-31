@@ -672,7 +672,7 @@ static char * _replace_double_quotes(char *option)
 }
 
 static int _handle_init_msg(slurmdbd_conn_t *slurmdbd_conn,
-			    persist_init_req_msg_t *init_msg, Buf *out_buffer,
+			    persist_init_req_msg_t *init_msg,
 			    uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
@@ -719,7 +719,7 @@ static int _unpack_persist_init(slurmdbd_conn_t *slurmdbd_conn,
 	if (req_msg->version > SLURM_PROTOCOL_VERSION)
 		req_msg->version = SLURM_PROTOCOL_VERSION;
 
-	rc = _handle_init_msg(slurmdbd_conn, req_msg, out_buffer, uid);
+	rc = _handle_init_msg(slurmdbd_conn, req_msg, uid);
 
 	if (rc != SLURM_SUCCESS)
 		comment = slurm_strerror(rc);
@@ -1765,7 +1765,7 @@ static int _init_conn(slurmdbd_conn_t *slurmdbd_conn,
 	}
 
 	rc = _handle_init_msg(slurmdbd_conn, (persist_init_req_msg_t *)init_msg,
-			      out_buffer, uid);
+			      uid);
 
 	if (rc != SLURM_SUCCESS)
 		comment = slurm_strerror(rc);
