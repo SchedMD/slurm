@@ -154,6 +154,7 @@ typedef struct bb_job {
 	char      *partition;	/* Associated partition (for limits) */
 	uint64_t   persist_add;	/* Persistent buffer space job adds, bytes */
 	char      *qos;	 	/* Associated QOS (for limits) */
+	int        retry_cnt;	/* Count of attempted retries */
 	int        state;	/* job state with respect to burst buffers,
 				 * See BB_STATE_* in slurm.h.in */
 	uint32_t   swap_size;	/* swap space required per node in GB */
