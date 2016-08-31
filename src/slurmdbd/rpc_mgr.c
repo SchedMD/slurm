@@ -71,7 +71,6 @@ static bool   _fd_readable(int fd);
 static void   _free_server_thread(pthread_t my_tid);
 static void * _service_connection(void *arg);
 static void   _sig_handler(int signal);
-static int    _tot_wait (struct timeval *start_time);
 static int    _wait_for_server_thread(void);
 static void   _wait_for_thread_fini(void);
 
@@ -323,18 +322,6 @@ extern Buf make_dbd_rc_msg(uint16_t rpc_version,
 	return buffer;
 }
 
-/* Return time in msec since "start time" */
-static int _tot_wait (struct timeval *start_time)
-{
-	struct timeval end_time;
-	int msec_delay;
-
-	gettimeofday(&end_time, NULL);
-	msec_delay =   (end_time.tv_sec  - start_time->tv_sec ) * 1000;
-	msec_delay += ((end_time.tv_usec - start_time->tv_usec + 500) / 1000);
-	return msec_delay;
-}
-
 /* Wait until a file is readable, return false if can not be read */
 static bool _fd_readable(int fd)
 {
@@ -367,64 +354,6 @@ static bool _fd_readable(int fd)
 			return false;
 		}
 		if ((ufds.revents & POLLIN) == 0) {
-			error("Connection %d events %d", fd, ufds.revents);
-			return false;
-		}
-		break;
-	}
-	errno = 0;
-	return true;
-}
-
-/* Wait until a file is writeable,
- * RET false if can not be written to within 5 seconds */
-extern bool fd_writeable(int fd)
-{
-	struct pollfd ufds;
-	int msg_timeout = 5000;
-	int rc, time_left;
-	struct timeval tstart;
-	char temp[2];
-
-	ufds.fd     = fd;
-	ufds.events = POLLOUT;
-	gettimeofday(&tstart, NULL);
-	while (shutdown_time == 0) {
-		time_left = msg_timeout - _tot_wait(&tstart);
-		rc = poll(&ufds, 1, time_left);
-		if (shutdown_time)
-			return false;
-		if (rc == -1) {
-			if ((errno == EINTR) || (errno == EAGAIN))
-				continue;
-			error("poll: %m");
-			return false;
-		}
-		if (rc == 0) {
-			debug2("write timeout");
-			return false;
-		}
-
-		/*
-		 * Check here to make sure the socket really is there.
-		 * If not then exit out and notify the sender.  This
- 		 * is here since a write doesn't always tell you the
-		 * socket is gone, but getting 0 back from a
-		 * nonblocking read means just that.
-		 */
-		if (ufds.revents & POLLHUP || (recv(fd, &temp, 1, 0) == 0)) {
-			debug3("Write connection %d closed", fd);
-			return false;
-		}
-		if (ufds.revents & POLLNVAL) {
-			error("Connection %d is invalid", fd);
-			return false;
-		}
-		if (ufds.revents & POLLERR) {
-			error("Connection %d experienced an error", fd);
-			return false;
-		}
-		if ((ufds.revents & POLLOUT) == 0) {
 			error("Connection %d events %d", fd, ufds.revents);
 			return false;
 		}

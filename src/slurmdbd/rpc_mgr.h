@@ -42,8 +42,6 @@
 #include "src/common/pack.h"
 #include "src/common/assoc_mgr.h"
 
-extern bool fd_writeable(int fd);
-
 /* Return a buffer containing a DBD_RC (return code) message
  * caller must free returned buffer */
 extern Buf make_dbd_rc_msg(uint16_t rpc_version,
