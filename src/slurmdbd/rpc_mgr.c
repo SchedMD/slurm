@@ -243,8 +243,8 @@ static void * _service_connection(void *arg)
 					fini = true;
 			}
 		} else {
-			buffer = make_dbd_rc_msg(conn->conn.version,
-						 SLURM_ERROR, "Bad offset", 0);
+			buffer = slurm_persist_make_rc_msg(
+				&conn->conn, SLURM_ERROR, "Bad offset", 0);
 			fini = true;
 		}
 
@@ -303,23 +303,6 @@ static void * _service_connection(void *arg)
 	xfree(conn);
 	_free_server_thread(pthread_self());
 	return NULL;
-}
-
-/* Return a buffer containing a DBD_RC (return code) message
- * caller must free returned buffer */
-extern Buf make_dbd_rc_msg(uint16_t rpc_version,
-			   int rc, char *comment, uint16_t sent_type)
-{
-	Buf buffer;
-
-	dbd_rc_msg_t msg;
-	buffer = init_buf(1024);
-	pack16((uint16_t) DBD_RC, buffer);
-	msg.return_code  = rc;
-	msg.comment  = comment;
-	msg.sent_type  = sent_type;
-	slurmdbd_pack_rc_msg(&msg, rpc_version, buffer);
-	return buffer;
 }
 
 /* Wait until a file is readable, return false if can not be read */

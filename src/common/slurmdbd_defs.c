@@ -203,12 +203,12 @@ extern int slurm_send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
 	rc = slurm_send_recv_slurmdbd_msg(rpc_version, req, &resp);
 	if (rc != SLURM_SUCCESS) {
 		;	/* error message already sent */
-	} else if (resp.msg_type != DBD_RC) {
-		error("slurmdbd: response is not type DBD_RC: %s(%u)",
+	} else if (resp.msg_type != PERSIST_RC) {
+		error("slurmdbd: response is not type PERSIST_RC: %s(%u)",
 		      slurmdbd_msg_type_2_str(resp.msg_type, 1),
 		      resp.msg_type);
 		rc = SLURM_ERROR;
-	} else {	/* resp.msg_type == DBD_RC */
+	} else {	/* resp.msg_type == PERSIST_RC */
 		dbd_rc_msg_t *msg = resp.data;
 		*resp_code = msg->return_code;
 		if (msg->return_code != SLURM_SUCCESS
@@ -500,6 +500,10 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 	pack16(req->msg_type, buffer);
 
 	switch (req->msg_type) {
+	case REQUEST_PERSIST_INIT:
+	case PERSIST_RC:
+		pack_msg((slurm_msg_t *)req->data, buffer);
+		break;
 	case DBD_ADD_ACCOUNTS:
 	case DBD_ADD_TRES:
 	case DBD_ADD_ASSOCS:
@@ -683,6 +687,7 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp,
 			       uint16_t rpc_version, Buf buffer)
 {
 	int rc = SLURM_SUCCESS;
+	slurm_msg_t msg;
 
 	safe_unpack16(&resp->msg_type, buffer);
 
@@ -693,6 +698,16 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp,
 	}
 
 	switch (resp->msg_type) {
+	case PERSIST_RC:
+		slurm_msg_t_init(&msg);
+
+		msg.protocol_version = slurmdbd_conn->version;
+		msg.msg_type = resp->msg_type;
+
+		rc = unpack_msg(&msg, buffer);
+
+		resp->data = msg.data;
+		break;
 	case REQUEST_PERSIST_INIT:
 		resp->data = xmalloc(sizeof(slurm_msg_t));
 		slurm_msg_t_init(resp->data);
@@ -832,6 +847,7 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp,
 			buffer);
 		break;
 	case DBD_RC:
+		resp->msg_type = PERSIST_RC;
 		rc = slurmdbd_unpack_rc_msg((dbd_rc_msg_t **)&resp->data,
 					    rpc_version,
 					    buffer);
@@ -1671,61 +1687,58 @@ static int _send_fini_msg(void)
 static int _unpack_return_code(uint16_t rpc_version, Buf buffer)
 {
 	uint16_t msg_type = -1;
-	dbd_rc_msg_t *msg;
+	persist_rc_msg_t *msg;
 	dbd_id_rc_msg_t *id_msg;
+	slurmdbd_msg_t resp;
 	int rc = SLURM_ERROR;
 
-	safe_unpack16(&msg_type, buffer);
-	switch(msg_type) {
-	case DBD_ID_RC:
-		if (slurmdbd_unpack_id_rc_msg(
-			    (void **)&id_msg, rpc_version, buffer)
-		    == SLURM_SUCCESS) {
-			rc = id_msg->return_code;
-			slurmdbd_free_id_rc_msg(id_msg);
-			if (rc != SLURM_SUCCESS)
-				error("slurmdbd: DBD_ID_RC is %d", rc);
-		} else
-			error("slurmdbd: unpack message error");
-		break;
-	case DBD_RC:
-		if (slurmdbd_unpack_rc_msg(&msg, rpc_version, buffer)
-		    == SLURM_SUCCESS) {
-			rc = msg->return_code;
-			if (rc != SLURM_SUCCESS) {
-				if (msg->sent_type == DBD_REGISTER_CTLD &&
-				    slurm_get_accounting_storage_enforce()) {
-					error("slurmdbd: DBD_RC is %d from "
-					      "%s(%u): %s",
-					      rc,
-					      slurmdbd_msg_type_2_str(
-						      msg->sent_type, 1),
-					      msg->sent_type,
-					      msg->comment);
-					fatal("You need to add this cluster "
-					      "to accounting if you want to "
-					      "enforce associations, or no "
-					      "jobs will ever run.");
-				} else
-					debug("slurmdbd: DBD_RC is %d from "
-					      "%s(%u): %s",
-					      rc,
-					      slurmdbd_msg_type_2_str(
-						      msg->sent_type, 1),
-					      msg->sent_type,
-					      msg->comment);
+	memset(&resp, 0, sizeof(slurmdbd_msg_t));
+	if ((rc = unpack_slurmdbd_msg(&resp, slurmdbd_conn->version, buffer))
+	    != SLURM_SUCCESS) {
+		error("%s: unpack message error", __func__);
+		return rc;
+	}
 
-			} else if (msg->sent_type == DBD_REGISTER_CTLD)
-				need_to_register = 0;
-			slurmdbd_free_rc_msg(msg);
-		} else
-			error("slurmdbd: unpack message error");
+	switch(resp.msg_type) {
+	case DBD_ID_RC:
+		id_msg = resp.data;
+		rc = id_msg->return_code;
+		slurmdbd_free_id_rc_msg(id_msg);
+		if (rc != SLURM_SUCCESS)
+			error("slurmdbd: DBD_ID_RC is %d", rc);
+		break;
+	case PERSIST_RC:
+		msg = resp.data;
+		rc = msg->rc;
+		if (rc != SLURM_SUCCESS) {
+			if (msg->ret_info == DBD_REGISTER_CTLD &&
+			    slurm_get_accounting_storage_enforce()) {
+				error("slurmdbd: DBD_RC is %d from "
+				      "%s(%u): %s",
+				      rc,
+				      slurmdbd_msg_type_2_str(
+					      msg->ret_info, 1),
+				      msg->ret_info,
+				      msg->comment);
+				fatal("You need to add this cluster "
+				      "to accounting if you want to "
+				      "enforce associations, or no "
+				      "jobs will ever run.");
+			} else
+				debug("slurmdbd: DBD_RC is %d from "
+				      "%s(%u): %s",
+				      rc,
+				      slurmdbd_msg_type_2_str(
+					      msg->ret_info, 1),
+				      msg->ret_info,
+				      msg->comment);
+		} else if (msg->ret_info == DBD_REGISTER_CTLD)
+			need_to_register = 0;
+		slurm_persist_free_rc_msg(msg);
 		break;
 	default:
 		error("slurmdbd: bad message type %d != DBD_RC", msg_type);
 	}
-
-unpack_error:
 
 	return rc;
 }
@@ -1762,8 +1775,8 @@ static int _handle_mult_rc_ret(void)
 {
 	Buf buffer;
 	uint16_t msg_type;
-	dbd_rc_msg_t *msg;
-	dbd_list_msg_t *list_msg;
+	persist_rc_msg_t *msg = NULL;
+	dbd_list_msg_t *list_msg = NULL;
 	int rc = SLURM_ERROR;
 	Buf out_buf = NULL;
 
@@ -1806,40 +1819,43 @@ static int _handle_mult_rc_ret(void)
 		slurmdbd_free_list_msg(list_msg);
 		break;
 	case DBD_RC:
-		if (slurmdbd_unpack_rc_msg(&msg, slurmdbd_conn->version, buffer)
+		msg_type = PERSIST_RC;
+	case PERSIST_RC:
+		if (slurm_persist_unpack_rc_msg(
+			    &msg, buffer, slurmdbd_conn->version)
 		    == SLURM_SUCCESS) {
-			rc = msg->return_code;
+			rc = msg->rc;
 			if (rc != SLURM_SUCCESS) {
-				if (msg->sent_type == DBD_REGISTER_CTLD &&
+				if (msg->ret_info == DBD_REGISTER_CTLD &&
 				    slurm_get_accounting_storage_enforce()) {
-					error("slurmdbd: DBD_RC is %d from "
+					error("slurmdbd: PERSIST_RC is %d from "
 					      "%s(%u): %s",
 					      rc,
 					      slurmdbd_msg_type_2_str(
-						      msg->sent_type, 1),
-					      msg->sent_type,
+						      msg->ret_info, 1),
+					      msg->ret_info,
 					      msg->comment);
 					fatal("You need to add this cluster "
 					      "to accounting if you want to "
 					      "enforce associations, or no "
 					      "jobs will ever run.");
 				} else
-					debug("slurmdbd: DBD_RC is %d from "
+					debug("slurmdbd: PERSIST_RC is %d from "
 					      "%s(%u): %s",
 					      rc,
 					      slurmdbd_msg_type_2_str(
-						      msg->sent_type, 1),
-					      msg->sent_type,
+						      msg->ret_info, 1),
+					      msg->ret_info,
 					      msg->comment);
-			} else if (msg->sent_type == DBD_REGISTER_CTLD)
+			} else if (msg->ret_info == DBD_REGISTER_CTLD)
 				need_to_register = 0;
 
-			slurmdbd_free_rc_msg(msg);
+			slurm_persist_free_rc_msg(msg);
 		} else
 			error("slurmdbd: unpack message error");
 		break;
 	default:
-		error("slurmdbd: bad message type %d != DBD_RC", msg_type);
+		error("slurmdbd: bad message type %d != PERSIST_RC", msg_type);
 	}
 
 unpack_error:
