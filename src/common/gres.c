@@ -2722,6 +2722,7 @@ extern uint64_t gres_plugin_node_config_cnt(List gres_list, char *name)
 	int i;
 	ListIterator gres_iter;
 	gres_state_t *gres_ptr;
+	gres_node_state_t *data_ptr;
 	uint64_t count = 0;
 
 	if (!gres_list || !name || !list_count(gres_list))
@@ -2731,19 +2732,53 @@ extern uint64_t gres_plugin_node_config_cnt(List gres_list, char *name)
 
 	slurm_mutex_lock(&gres_context_lock);
 	for (i=0; i < gres_context_cnt; i++) {
-		if (xstrcmp(gres_context[i].gres_name, name))
-			continue;
-		/* Find or create gres_state entry on the list */
-		gres_iter = list_iterator_create(gres_list);
-		while ((gres_ptr = list_next(gres_iter))) {
-			if (gres_ptr->plugin_id == gres_context[i].plugin_id)
+		if (!xstrcmp(gres_context[i].gres_name, name)) {
+			/* Find or create gres_state entry on the list */
+			gres_iter = list_iterator_create(gres_list);
+			while ((gres_ptr = list_next(gres_iter))) {
+				if (gres_ptr->plugin_id ==
+				    gres_context[i].plugin_id)
+					break;
+			}
+			list_iterator_destroy(gres_iter);
+
+			if (!gres_ptr || !gres_ptr->gres_data)
 				break;
+			data_ptr = (gres_node_state_t *)gres_ptr->gres_data;
+			count = data_ptr->gres_cnt_config;
+			break;
+		} else if (!xstrncmp(name, gres_context[i].gres_name_colon,
+				     gres_context[i].gres_name_colon_len)) {
+			int type;
+			char *type_str = NULL;
+
+			if (!(type_str = strchr(name, ':'))) {
+				error("Invalid gres name '%s'", name);
+				break;
+			}
+			type_str++;
+
+			gres_iter = list_iterator_create(gres_list);
+			while ((gres_ptr = list_next(gres_iter))) {
+				if (gres_ptr->plugin_id ==
+				    gres_context[i].plugin_id)
+					break;
+			}
+			list_iterator_destroy(gres_iter);
+
+			if (!gres_ptr || !gres_ptr->gres_data)
+				break;
+			data_ptr = (gres_node_state_t *)gres_ptr->gres_data;
+
+			for (type = 0; type < data_ptr->type_cnt; type++) {
+				if (!xstrcmp(data_ptr->type_model[type],
+					     type_str)) {
+					count = data_ptr->type_cnt_avail[type];
+					break;
+				}
+			}
+			break;
 		}
-		list_iterator_destroy(gres_iter);
-		if (gres_ptr && gres_ptr->gres_data)
-			count = ((gres_node_state_t *)(gres_ptr->gres_data))->
-				gres_cnt_config;
-		break;
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 

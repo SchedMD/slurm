@@ -27,6 +27,8 @@ documents those changes that are of interest to users and administrators.
     a later time.
  -- Add job burst_buffer_state and delay_boot fields to scontrol and squeue
     output. Also add ability to modify delay_boot from scontrol.
+ -- Fix for node's available tres array getting filled in with configured gres
+    model types.
 
 * Changes in Slurm 17.02.0pre1
 ==============================
