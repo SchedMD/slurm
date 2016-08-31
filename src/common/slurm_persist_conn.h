@@ -72,9 +72,10 @@ typedef struct {
 typedef struct {
 	char *comment;
 	uint32_t rc;
-	uint16_t version; /* protocol version we are connecting to since we
-			   * sent the lowest one to begin with */
-} persist_init_resp_msg_t;
+	uint16_t ret_info; /* protocol version we are connecting to since we
+			    * sent the lowest one to begin with, or the return
+			    * of a message type sent. */
+} persist_rc_msg_t;
 
 /* Open a persistant socket connection
  * IN/OUT - persistant connection needing host and port filled in.  Returned
@@ -121,11 +122,11 @@ extern int slurm_persist_unpack_init_req_msg(
 	persist_init_req_msg_t **msg, Buf buffer);
 extern void slurm_persist_free_init_req_msg(persist_init_req_msg_t *msg);
 
-extern void slurm_persist_pack_init_resp_msg(
-	persist_init_resp_msg_t *msg, Buf buffer, uint16_t protocol_version);
-extern int slurm_persist_unpack_init_resp_msg(
-	persist_init_resp_msg_t **msg, Buf buffer, uint16_t protocol_version);
-extern void slurm_persist_free_init_resp_msg(persist_init_resp_msg_t *msg);
+extern void slurm_persist_pack_rc_msg(
+	persist_rc_msg_t *msg, Buf buffer, uint16_t protocol_version);
+extern int slurm_persist_unpack_rc_msg(
+	persist_rc_msg_t **msg, Buf buffer, uint16_t protocol_version);
+extern void slurm_persist_free_rc_msg(persist_rc_msg_t *msg);
 
 extern int slurm_persist_send_recv_msg(slurm_persist_conn_t *persist_conn,
 				       persist_msg_t *req, persist_msg_t *resp);

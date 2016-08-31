@@ -3992,8 +3992,8 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_PERSIST_INIT:
 		slurm_persist_free_init_req_msg(data);
 		break;
-	case RESPONSE_PERSIST_INIT:
-		slurm_persist_free_init_resp_msg(data);
+	case PERSIST_RC:
+		slurm_persist_free_rc_msg(data);
 		break;
 	case REQUEST_REBOOT_NODES:
 		slurm_free_reboot_msg(data);
@@ -4592,6 +4592,8 @@ rpc_num2string(uint16_t opcode)
 
 	case REQUEST_PERSIST_INIT:
 		return "REQUEST_PERSIST_INIT";
+	case PERSIST_RC:
+		return "PERSIST_RC";
 	case REQUEST_PERSIST_FINI:
 		return "REQUEST_PERSIST_FINI";
 

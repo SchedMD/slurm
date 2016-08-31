@@ -1130,9 +1130,9 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 			(persist_init_req_msg_t *)msg->data,
 			buffer);
 		break;
-	case RESPONSE_PERSIST_INIT:
-		slurm_persist_pack_init_resp_msg(
-			(persist_init_resp_msg_t *)msg->data,
+	case PERSIST_RC:
+		slurm_persist_pack_rc_msg(
+			(persist_rc_msg_t *)msg->data,
 			buffer, msg->protocol_version);
 		break;
 	case REQUEST_REBOOT_NODES:
@@ -1803,9 +1803,9 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		slurm_persist_unpack_init_req_msg(
 			(persist_init_req_msg_t **)&msg->data, buffer);
 		break;
-	case RESPONSE_PERSIST_INIT:
-		slurm_persist_unpack_init_resp_msg(
-			(persist_init_resp_msg_t **)&msg->data,
+	case PERSIST_RC:
+		slurm_persist_unpack_rc_msg(
+			(persist_rc_msg_t **)&msg->data,
 			buffer, msg->protocol_version);
 		break;
 	case REQUEST_REBOOT_NODES:

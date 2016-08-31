@@ -169,7 +169,7 @@ extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
 	int rc = SLURM_ERROR;
 	slurm_msg_t req_msg;
 	persist_init_req_msg_t req;
-	persist_init_resp_msg_t *resp = NULL;
+	persist_rc_msg_t *resp = NULL;
 
 	if (slurm_persist_conn_open_without_init(persist_conn) != SLURM_SUCCESS)
 		return rc;
@@ -212,7 +212,7 @@ extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
 		persist_conn->flags = flags;
 		free_buf(buffer);
 
-		resp = (persist_init_resp_msg_t *)msg.data;
+		resp = (persist_rc_msg_t *)msg.data;
 		if (resp && rc == SLURM_SUCCESS)
 			rc = resp->rc;
 
@@ -228,12 +228,12 @@ extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
 				      persist_conn->rem_port);
 			_close_fd(&persist_conn->fd);
 		} else
-			persist_conn->version = resp->version;
+			persist_conn->version = resp->ret_info;
 	}
 
 end_it:
 
-	slurm_persist_free_init_resp_msg(resp);
+	slurm_persist_free_rc_msg(resp);
 
 	return rc;
 }
@@ -475,6 +475,7 @@ extern Buf slurm_persist_msg_pack(slurm_persist_conn_t *persist_conn,
 		slurm_msg_t_init(&msg);
 
 		msg.data = req_msg->data;
+		msg.msg_type = req_msg->msg_type;
 		msg.protocol_version = persist_conn->version;
 
 		buffer = init_buf(BUF_SIZE);
@@ -558,37 +559,36 @@ extern void slurm_persist_free_init_req_msg(persist_init_req_msg_t *msg)
 	}
 }
 
-extern void slurm_persist_pack_init_resp_msg(
-	persist_init_resp_msg_t *msg, Buf buffer, uint16_t protocol_version)
+extern void slurm_persist_pack_rc_msg(
+	persist_rc_msg_t *msg, Buf buffer, uint16_t protocol_version)
 {
 	packstr(msg->comment, buffer);
 	pack32(msg->rc, buffer);
-	pack16(msg->version, buffer);
+	pack16(msg->ret_info, buffer);
 }
 
-extern int slurm_persist_unpack_init_resp_msg(
-	persist_init_resp_msg_t **msg, Buf buffer, uint16_t protocol_version)
+extern int slurm_persist_unpack_rc_msg(
+	persist_rc_msg_t **msg, Buf buffer, uint16_t protocol_version)
 {
 	uint32_t uint32_tmp;
 
-	persist_init_resp_msg_t *msg_ptr =
-		xmalloc(sizeof(persist_init_resp_msg_t));
+	persist_rc_msg_t *msg_ptr = xmalloc(sizeof(persist_rc_msg_t));
 
 	*msg = msg_ptr;
 
 	safe_unpackstr_xmalloc(&msg_ptr->comment, &uint32_tmp, buffer);
 	safe_unpack32(&msg_ptr->rc, buffer);
-	safe_unpack16(&msg_ptr->version, buffer);
+	safe_unpack16(&msg_ptr->ret_info, buffer);
 
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_persist_free_init_resp_msg(msg_ptr);
+	slurm_persist_free_rc_msg(msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
 
-extern void slurm_persist_free_init_resp_msg(persist_init_resp_msg_t *msg)
+extern void slurm_persist_free_rc_msg(persist_rc_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->comment);

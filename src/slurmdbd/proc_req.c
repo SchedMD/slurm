@@ -707,7 +707,7 @@ static int _unpack_persist_init(slurmdbd_conn_t *slurmdbd_conn,
 	int rc;
 	slurm_msg_t *smsg = msg->data;
 	persist_init_req_msg_t *req_msg = smsg->data;
-	persist_init_resp_msg_t resp_msg;
+	persist_rc_msg_t resp_msg;
 	char *comment = NULL;
 
 	req_msg->uid = g_slurm_auth_get_uid(
@@ -724,14 +724,14 @@ static int _unpack_persist_init(slurmdbd_conn_t *slurmdbd_conn,
 	if (rc != SLURM_SUCCESS)
 		comment = slurm_strerror(rc);
 
-	memset(&resp_msg, 0, sizeof(persist_init_resp_msg_t));
+	memset(&resp_msg, 0, sizeof(persist_rc_msg_t));
 	resp_msg.comment = comment;
 	resp_msg.rc = rc;
-	resp_msg.version = req_msg->version;
+	resp_msg.ret_info = req_msg->version;
 
 	*out_buffer = init_buf(1024);
-	pack16((uint16_t) RESPONSE_PERSIST_INIT, *out_buffer);
-	slurm_persist_pack_init_resp_msg(
+	pack16((uint16_t) PERSIST_RC, *out_buffer);
+	slurm_persist_pack_rc_msg(
 		&resp_msg, *out_buffer, req_msg->version);
 
 	return rc;
