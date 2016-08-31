@@ -131,4 +131,8 @@ extern void slurm_persist_free_rc_msg(persist_rc_msg_t *msg);
 extern int slurm_persist_send_recv_msg(slurm_persist_conn_t *persist_conn,
 				       persist_msg_t *req, persist_msg_t *resp);
 
+extern Buf slurm_persist_make_rc_msg(slurm_persist_conn_t *persist_conn,
+				     uint32_t rc, char *comment,
+				     uint16_t ret_info);
+
 #endif

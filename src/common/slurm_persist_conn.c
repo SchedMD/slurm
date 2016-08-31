@@ -660,3 +660,23 @@ extern void slurm_persist_free_rc_msg(persist_rc_msg_t *msg)
 
 /*	return rc; */
 /* } */
+
+extern Buf slurm_persist_make_rc_msg(slurm_persist_conn_t *persist_conn,
+				     uint32_t rc, char *comment,
+				     uint16_t ret_info)
+{
+	persist_rc_msg_t msg;
+	persist_msg_t resp;
+
+	memset(&msg, 0, sizeof(persist_msg_t));
+	memset(&resp, 0, sizeof(persist_rc_msg_t));
+
+	msg.rc = rc;
+	msg.comment = comment;
+	msg.ret_info = ret_info;
+
+	resp.msg_type = PERSIST_RC;
+	resp.data = &msg;
+
+	return slurm_persist_msg_pack(persist_conn, &resp);
+}
