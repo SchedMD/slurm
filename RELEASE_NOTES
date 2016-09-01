@@ -87,6 +87,8 @@ Added MAX_JOB_ID (0x03FFFFFF)
 Added DEBUG_FLAG_FEDR flag for federation debugging.
 Added cluster_fed_states enum and defines for federation states.
 Changed DEFAULT_MAX_JOB_ID from 0x7fff0000 to 0x03ff0000.
+Added SELECT_NODEDATA_TRES_ALLOC_FMT_STR to select_nodedata_type.
+Added SELECT_NODEDATA_TRES_ALLOC_WEIGHTED to select_nodedata_type.
 
 Added the following API's
 =========================

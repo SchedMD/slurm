@@ -100,6 +100,7 @@
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/slurm_selecttype_info.h"
+#include "src/common/assoc_mgr.h"
 #include "src/common/slurm_strcasestr.h"
 #include "select_cons_res.h"
 
@@ -125,6 +126,7 @@ bitstr_t *avail_node_bitmap __attribute__((weak_import));
 bitstr_t *idle_node_bitmap __attribute__((weak_import));
 uint16_t *cr_node_num_cores __attribute__((weak_import));
 uint32_t *cr_node_cores_offset __attribute__((weak_import));
+int slurmctld_tres_cnt __attribute__((weak_import)) = 0;
 #else
 slurm_ctl_conf_t slurmctld_conf;
 struct node_record *node_record_table_ptr;
@@ -138,6 +140,7 @@ bitstr_t *avail_node_bitmap;
 bitstr_t *idle_node_bitmap;
 uint16_t *cr_node_num_cores;
 uint32_t *cr_node_cores_offset;
+int slurmctld_tres_cnt = 0;
 #endif
 
 /*
@@ -178,6 +181,7 @@ bool     have_dragonfly       = false;
 bool     pack_serial_at_end   = false;
 bool     preempt_by_part      = false;
 bool     preempt_by_qos       = false;
+uint16_t priority_flags       = 0;
 uint64_t select_debug_flags   = 0;
 uint16_t select_fast_schedule = 0;
 bool     topo_optional        = false;
@@ -194,6 +198,10 @@ struct select_nodeinfo {
 	uint16_t magic;		/* magic number */
 	uint16_t alloc_cpus;
 	uint32_t alloc_memory;
+	uint64_t *tres_alloc_cnt;	/* array of tres counts allocated.
+					   NOT PACKED */
+	char     *tres_alloc_fmt_str;	/* formatted str of allocated tres */
+	double    tres_alloc_weighted;	/* weighted number of tres allocated. */
 };
 
 extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void);
@@ -1983,6 +1991,8 @@ extern int init(void)
 		xfree(topo_param);
 	}
 
+	priority_flags = slurm_get_priority_flags();
+
 	return SLURM_SUCCESS;
 }
 
@@ -2434,7 +2444,12 @@ extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
 					 Buf buffer,
 					 uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
+		pack16(nodeinfo->alloc_cpus, buffer);
+		pack32(nodeinfo->alloc_memory, buffer);
+		packstr(nodeinfo->tres_alloc_fmt_str, buffer);
+		packdouble(nodeinfo->tres_alloc_weighted, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack16(nodeinfo->alloc_cpus, buffer);
 		pack32(nodeinfo->alloc_memory, buffer);
 	}
@@ -2446,12 +2461,19 @@ extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
 					   Buf buffer,
 					   uint16_t protocol_version)
 {
+	uint32_t uint32_tmp;
 	select_nodeinfo_t *nodeinfo_ptr = NULL;
 
 	nodeinfo_ptr = select_p_select_nodeinfo_alloc();
 	*nodeinfo = nodeinfo_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
+		safe_unpack16(&nodeinfo_ptr->alloc_cpus, buffer);
+		safe_unpack32(&nodeinfo_ptr->alloc_memory, buffer);
+		safe_unpackstr_xmalloc(&nodeinfo_ptr->tres_alloc_fmt_str,
+				       &uint32_tmp, buffer);
+		safe_unpackdouble(&nodeinfo_ptr->tres_alloc_weighted, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack16(&nodeinfo_ptr->alloc_cpus, buffer);
 		safe_unpack32(&nodeinfo_ptr->alloc_memory, buffer);
 	}
@@ -2484,6 +2506,8 @@ extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 			return EINVAL;
 		}
 		nodeinfo->magic = 0;
+		xfree(nodeinfo->tres_alloc_cnt);
+		xfree(nodeinfo->tres_alloc_fmt_str);
 		xfree(nodeinfo);
 	}
 	return SLURM_SUCCESS;
@@ -2497,6 +2521,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 	static time_t last_set_all = 0;
 	uint32_t alloc_cpus, node_cores, node_cpus, node_threads;
 	bitstr_t *alloc_core_bitmap = NULL;
+	List gres_list;
 
 	/* only set this once when the last_node_update is newer than
 	 * the last time we set things up. */
@@ -2576,6 +2601,30 @@ extern int select_p_select_nodeinfo_set_all(void)
 		} else {
 			nodeinfo->alloc_memory = 0;
 		}
+
+		/* Build allocated tres */
+		if (!nodeinfo->tres_alloc_cnt)
+			nodeinfo->tres_alloc_cnt = xmalloc(sizeof(uint64_t) *
+							   slurmctld_tres_cnt);
+		nodeinfo->tres_alloc_cnt[TRES_ARRAY_CPU] = alloc_cpus;
+		nodeinfo->tres_alloc_cnt[TRES_ARRAY_MEM] =
+			nodeinfo->alloc_memory;
+		if (select_node_usage[n].gres_list)
+			gres_list = select_node_usage[n].gres_list;
+		else
+			gres_list = node_ptr->gres_list;
+		gres_set_node_tres_cnt(gres_list, nodeinfo->tres_alloc_cnt,
+				       false);
+
+		xfree(nodeinfo->tres_alloc_fmt_str);
+		nodeinfo->tres_alloc_fmt_str =
+			assoc_mgr_make_tres_str_from_array(
+						nodeinfo->tres_alloc_cnt,
+						TRES_STR_CONVERT_UNITS, false);
+		nodeinfo->tres_alloc_weighted =
+			assoc_mgr_tres_weighted(nodeinfo->tres_alloc_cnt,
+					node_ptr->config_ptr->tres_weights,
+					priority_flags, false);
 	}
 	FREE_NULL_BITMAP(alloc_core_bitmap);
 
@@ -2611,6 +2660,7 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 	uint16_t *uint16 = (uint16_t *) data;
 	uint32_t *uint32 = (uint32_t *) data;
 	char **tmp_char = (char **) data;
+	double *tmp_double = (double *) data;
 	select_nodeinfo_t **select_nodeinfo = (select_nodeinfo_t **) data;
 
 	if (nodeinfo == NULL) {
@@ -2642,6 +2692,12 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 		break;
 	case SELECT_NODEDATA_MEM_ALLOC:
 		*uint32 = nodeinfo->alloc_memory;
+		break;
+	case SELECT_NODEDATA_TRES_ALLOC_FMT_STR:
+		*tmp_char = xstrdup(nodeinfo->tres_alloc_fmt_str);
+		break;
+	case SELECT_NODEDATA_TRES_ALLOC_WEIGHTED:
+		*tmp_double = nodeinfo->tres_alloc_weighted;
 		break;
 	default:
 		error("Unsupported option %d for get_nodeinfo.", dinfo);
