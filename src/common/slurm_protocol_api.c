@@ -626,6 +626,25 @@ bool slurm_get_priority_favor_small(void)
 	return factor;
 }
 
+/* slurm_get_priority_flags
+ * returns the priority flags bitmap from slurmctld_conf object
+ * RET uint16_t - priority flags
+ */
+uint16_t slurm_get_priority_flags(void)
+{
+	uint16_t flags = 0;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		flags = conf->priority_flags;
+		slurm_conf_unlock();
+	}
+
+	return flags;
+}
+
 /* slurm_get_priority_max_age
  * returns the priority age max in seconds from slurmctld_conf object
  * RET uint32_t - age_max in secs.

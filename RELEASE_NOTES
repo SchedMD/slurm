@@ -90,6 +90,7 @@ Added the following API's
 =========================
 Added slurm_load_federation() to retrieve federation info from cluster.
 Added slurm_print_federation() to print federation info retrieved from cluster.
+Added slurm_get_priority_flags() to retrieve priority flags from slurmctld_conf.
 
 Changed the following API's
 ============================
