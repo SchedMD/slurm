@@ -29,6 +29,8 @@ documents those changes that are of interest to users and administrators.
  -- Cray - Fix issue restoring jobs when blade count increases due to hardware
     reconfiguration.
  -- burst_buffer/cray - Hold job after 3 failed pre-run operations.
+ -- sched/backfill - Check that a user's QOS is allowed to use a partition
+    before trying to schedule resources on that partition for the job.
 
 * Changes in Slurm 16.05.4
 ==========================
