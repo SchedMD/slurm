@@ -154,6 +154,7 @@ typedef struct bb_job {
 	char      *partition;	/* Associated partition (for limits) */
 	uint64_t   persist_add;	/* Persistent buffer space job adds, bytes */
 	char      *qos;	 	/* Associated QOS (for limits) */
+	int        retry_cnt;	/* Count of attempted retries */
 	uint64_t   req_size;	/* Bytes requested by job (excludes
 				 * persistent buffers) */
 	int        state;	/* job state with respect to burst buffers,

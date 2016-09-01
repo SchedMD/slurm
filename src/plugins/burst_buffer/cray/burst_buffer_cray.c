@@ -77,6 +77,8 @@
 #define _DEBUG 0	/* Detailed debugging information */
 #define TIME_SLOP 5	/* time allowed to synchronize operations between
 			 * threads */
+#define MAX_RETRY_CNT 2	/* Hold job if "pre_run" operation fails more than
+			 * 2 times */
 /*
  * These variables are required by the burst buffer plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -3582,11 +3584,13 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 }
 
 /* Kill job from CONFIGURING state */
-static void _kill_job(struct job_record *job_ptr)
+static void _kill_job(struct job_record *job_ptr, bool hold_job)
 {
 	last_job_update = time(NULL);
 	job_ptr->end_time = last_job_update;
 	job_ptr->job_state = JOB_PENDING | JOB_COMPLETING;
+	if (hold_job)
+		job_ptr->priority = 0;
 	build_cg_bitmap(job_ptr);
 	job_ptr->exit_code = 1;
 	job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
@@ -3609,6 +3613,7 @@ static void *_start_pre_run(void *x)
 	struct job_record *job_ptr;
 	bool run_kill_job = false;
 	uint32_t timeout;
+	bool hold_job = false;
 	DEF_TIMERS;
 
 	if (pre_run_args->timeout)
@@ -3647,8 +3652,11 @@ static void *_start_pre_run(void *x)
 			if (IS_JOB_RUNNING(job_ptr))
 				run_kill_job = true;
 			bb_job = _get_bb_job(job_ptr);
-			if (bb_job)
+			if (bb_job) {
 				bb_job->state = BB_STATE_TEARDOWN;
+				if (bb_job->retry_cnt++ > MAX_RETRY_CNT)
+					hold_job = true;
+			}
 		}
 		_queue_teardown(pre_run_args->job_id, pre_run_args->user_id,
 				true);
@@ -3657,7 +3665,7 @@ static void *_start_pre_run(void *x)
 		prolog_running_decr(job_ptr);
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 	if (run_kill_job)
-		_kill_job(job_ptr);
+		_kill_job(job_ptr, hold_job);
 	unlock_slurmctld(job_write_lock);
 
 	xfree(resp_msg);
