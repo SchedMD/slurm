@@ -1793,6 +1793,11 @@ If set, priority will be calculated based similar to the normal multifactor
 calculation, but depth of the associations in the tree do not adversely effect
 their priority.
 .TP
+\fMAX_TRES\fR
+If set, the weighted TRES value (e.g. TRESBillingWeights) is calculated as the
+MAX of individual TRES' on a node (e.g. cpus, mem, gres) plus the sum of all
+global TRES' (e.g. licenses).
+.TP
 \fBSMALL_RELATIVE_TO_TIME\fR
 If set, the job's size component will be based upon not the job size alone, but
 the job's size divided by it's time limit.
@@ -4590,10 +4595,10 @@ See also the "Alternate" partition specification.
 TRESBillingWeights is used to define the billing weights of each TRES type that
 will be used in calcuating the usage of a job.
 
-Billing weights are specified as a comma-separated list of
+Billing weights are specified as a comma\-separated list of
 \fI<TRES Type>\fR=\fI<TRES Billing Weight>\fR pairs.
 
-Any TRES Type is available for billing. Note that base the unit for memory and
+Any TRES Type is available for billing. Note that the base unit for memory and
 burst buffers is megabytes.
 
 By default the billing of TRES is calculated as the sum of all TRES types
