@@ -149,6 +149,10 @@ information about how to spawn a remote shell.</p>
 submit time.
 If the options are invalid, the job will be rejected and an error message will
 be returned directly to the user.
+Note that unrecognized options may be ignored in order to support backward
+compatibility (i.e. a job submission would not fail in the case of an option
+being specified that is recognized by some versions of Slurm, but not recognized
+by other versions).
 If the job is accepted, but later fails (e.g. some problem staging files), the
 job will be held and its "Reason" field will be set to error message provided
 by the underlying infrastructure.</p>
