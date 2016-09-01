@@ -598,6 +598,7 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		{"State", S_P_STRING},
 		{"ThreadsPerCore", S_P_UINT16},
 		{"TmpDisk", S_P_UINT32},
+		{"TRESWeights", S_P_STRING},
 		{"Weight", S_P_UINT32},
 		{NULL}
 	};
@@ -733,6 +734,10 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_uint32(&n->tmp_disk, "TmpDisk", tbl)
 		    && !s_p_get_uint32(&n->tmp_disk, "TmpDisk", dflt))
 			n->tmp_disk = 0;
+
+		if (!s_p_get_string(&n->tres_weights_str, "TRESWeights", tbl) &&
+		    !s_p_get_string(&n->tres_weights_str, "TRESWeights", dflt))
+			xfree(n->tres_weights_str);
 
 		if (!s_p_get_uint32(&n->weight, "Weight", tbl)
 		    && !s_p_get_uint32(&n->weight, "Weight", dflt))
@@ -923,6 +928,7 @@ static void _destroy_nodename(void *ptr)
 	xfree(n->port_str);
 	xfree(n->reason);
 	xfree(n->state);
+	xfree(n->tres_weights_str);
 	xfree(ptr);
 }
 

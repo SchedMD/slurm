@@ -483,7 +483,7 @@ static int _build_all_nodeline_info(void)
 	int rc;
 
 	/* Load the node table here */
-	rc = build_all_nodeline_info(false);
+	rc = build_all_nodeline_info(false, slurmctld_tres_cnt);
 	rc = MAX(build_all_frontend_info(false), rc);
 
 	/* Now perform operations on the node table as needed by slurmctld */

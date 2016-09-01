@@ -47,6 +47,8 @@ RPMBUILD CHANGES
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
+-- Add new TRESWeights option to NodeName line for caclulating how busy a node
+   is. Currently only used for federation configurations.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

@@ -228,6 +228,7 @@ typedef struct slurm_conf_node {
 	char *reason;
 	char *state;
 	uint32_t tmp_disk;	/* MB total storage in TMP_FS file system */
+	char *tres_weights_str;	/* per TRES billing weight string */
 	uint32_t weight;	/* arbitrary priority of node for
 				 * scheduling work on */
 } slurm_conf_node_t;
