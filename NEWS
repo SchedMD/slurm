@@ -29,6 +29,7 @@ documents those changes that are of interest to users and administrators.
     output. Also add ability to modify delay_boot from scontrol.
  -- Fix for node's available tres array getting filled in with configured gres
     model types.
+ -- Log if job --bb option contains any unrecognized content.
 
 * Changes in Slurm 17.02.0pre1
 ==============================

@@ -2560,10 +2560,11 @@ static int _xlate_batch(struct job_descriptor *job_desc)
  * burst_buffer options in a batch script file */
 static int _xlate_interactive(struct job_descriptor *job_desc)
 {
-	char *access = NULL, *pool = NULL, *type = NULL;
-	char *end_ptr = NULL, *tok;
+	char *access = NULL, *bb_copy = NULL, *capacity = NULL, *pool = NULL;
+	char *swap = NULL, *type = NULL;
+	char *end_ptr = NULL, *sep, *tok;
 	uint64_t buf_size = 0, swap_cnt = 0;
-	int rc = SLURM_SUCCESS;
+	int i, rc = SLURM_SUCCESS, tok_len;
 
 	if (!job_desc->burst_buffer || (job_desc->burst_buffer[0] == '#'))
 		return rc;
@@ -2575,46 +2576,89 @@ static int _xlate_interactive(struct job_descriptor *job_desc)
 		return ESLURM_INVALID_BURST_BUFFER_REQUEST;
 	}
 
-	if ((tok = strstr(job_desc->burst_buffer, "access="))) {
+	bb_copy = xstrdup(job_desc->burst_buffer);
+	if ((tok = strstr(bb_copy, "access="))) {
 		access = xstrdup(tok + 7);
-		tok = strchr(access, ',');
-		if (tok)
-			tok[0] = '\0';
-		tok = strchr(access, ' ');
-		if (tok)
-			tok[0] = '\0';
+		sep = strchr(access, ',');
+		if (sep)
+			sep[0] = '\0';
+		sep = strchr(access, ' ');
+		if (sep)
+			sep[0] = '\0';
+		tok_len = strlen(access) + 7;
+		memset(tok, ' ', tok_len);
 	}
 
-	if ((tok = strstr(job_desc->burst_buffer, "capacity="))) {
+	if ((tok = strstr(bb_copy, "capacity="))) {
 		buf_size = bb_get_size_num(tok + 9, 1);
 		if (buf_size == 0) {
-			rc = ESLURM_INVALID_BURST_BUFFER_CHANGE;
+			rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
 			goto fini;
 		}
+		capacity = xstrdup(tok + 9);
+		sep = strchr(capacity, ',');
+		if (sep)
+			sep[0] = '\0';
+		sep = strchr(capacity, ' ');
+		if (sep)
+			sep[0] = '\0';
+		tok_len = strlen(capacity) + 9;
+		memset(tok, ' ', tok_len);
 	}
 
 
-	if ((tok = strstr(job_desc->burst_buffer, "pool="))) {
+	if ((tok = strstr(bb_copy, "pool="))) {
 		pool = xstrdup(tok + 5);
-		tok = strchr(pool, ',');
-		if (tok)
-			tok[0] = '\0';
-		tok = strchr(pool, ' ');
-		if (tok)
-			tok[0] = '\0';
+		sep = strchr(pool, ',');
+		if (sep)
+			sep[0] = '\0';
+		sep = strchr(pool, ' ');
+		if (sep)
+			sep[0] = '\0';
+		tok_len = strlen(pool) + 5;
+		memset(tok, ' ', tok_len);
 	}
 
-	if ((tok = strstr(job_desc->burst_buffer, "swap=")))
+	if ((tok = strstr(bb_copy, "swap="))) {
 		swap_cnt = strtol(tok + 5, &end_ptr, 10);
+		if (swap_cnt == 0) {
+			rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
+			goto fini;
+		}
+		swap = xstrdup(tok + 5);
+		sep = strchr(swap, ',');
+		if (sep)
+			sep[0] = '\0';
+		sep = strchr(swap, ' ');
+		if (sep)
+			sep[0] = '\0';
+		tok_len = strlen(swap) + 5;
+		memset(tok, ' ', tok_len);
+	}
 
-	if ((tok = strstr(job_desc->burst_buffer, "type="))) {
+	if ((tok = strstr(bb_copy, "type="))) {
 		type = xstrdup(tok + 5);
-		tok = strchr(type, ',');
-		if (tok)
-			tok[0] = '\0';
-		tok = strchr(type, ' ');
-		if (tok)
-			tok[0] = '\0';
+		sep = strchr(type, ',');
+		if (sep)
+			sep[0] = '\0';
+		sep = strchr(type, ' ');
+		if (sep)
+			sep[0] = '\0';
+		tok_len = strlen(type) + 5;
+		memset(tok, ' ', tok_len);
+	}
+
+	if (rc == SLURM_SUCCESS) {
+		/* Look for vestigial content. Treating this as an error would
+		 * prevent backward compatibility. Just log it for now. */
+		for (i = 0; bb_copy[i]; i++) {
+			if (isspace(bb_copy[i]))
+				continue;
+			verbose("%s: Unrecognized --bb content: %s",
+				__func__, bb_copy + i);
+//			rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
+//			goto fini;
+		}
 	}
 
 	if (rc == SLURM_SUCCESS)
@@ -2650,7 +2694,10 @@ static int _xlate_interactive(struct job_descriptor *job_desc)
 	}
 
 fini:	xfree(access);
+	xfree(bb_copy);
+	xfree(capacity);
 	xfree(pool);
+	xfree(swap);
 	xfree(type);
 	return rc;
 }
