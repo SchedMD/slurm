@@ -70,6 +70,8 @@ In slurmdb_cluster_rec_t: Added fed, lock, sockfd
 In struct job_record: Added fed_details
 In connection_arg_t: Added bool persist
 In slurmctld_lock_t: Added federation
+In will_run_response_msg_t: Added double sys_usage_per to report back how busy a
+	cluster is.
 
 Added the following struct definitions
 ======================================
