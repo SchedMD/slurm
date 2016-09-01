@@ -1410,7 +1410,7 @@ static void _internal_setup(void)
 							  slurmctld_tres_cnt);
 	}
 	xfree(tres_weights_str);
-	flags = slurmctld_conf.priority_flags;
+	flags = slurm_get_priority_flags();
 
 	if (priority_debug) {
 		info("priority: Damp Factor is %u", damp_factor);
