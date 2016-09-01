@@ -479,4 +479,13 @@ extern char *assoc_mgr_make_tres_str_from_array(
 extern void assoc_mgr_get_default_qos_info(
 	slurmdb_assoc_rec_t *assoc_ptr, slurmdb_qos_rec_t *qos_rec);
 
+/* Calcuate a weighted tres value.
+ * IN: tres_cnt - array of tres values of size g_tres_count.
+ * IN: weights - weights to apply to tres values of size g_tres_count.
+ * IN: flags - priority flags (toogle between MAX or SUM of tres).
+ * IN: locked - whether the tres read assoc mgr lock is locked or not.
+ * RET: returns the calcuated tres weight.
+ */
+extern double assoc_mgr_tres_weighted(uint64_t *tres_cnt, double *weights,
+				      uint16_t flags, bool locked);
 #endif /* _SLURM_ASSOC_MGR_H */

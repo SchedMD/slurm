@@ -740,10 +740,8 @@ static time_t _next_reset(uint16_t reset_period, time_t last_reset)
  */
 static double _calc_billable_tres(struct job_record *job_ptr, time_t start_time)
 {
-	int    i;
-	double to_bill_node   = 0.0;
-	double to_bill_global = 0.0;
-	double *billing_weights = NULL;
+	xassert(job_ptr);
+
 	struct part_record *part_ptr = job_ptr->part_ptr;
 
 	/* We don't have any resources allocated, just return 0. */
@@ -770,30 +768,10 @@ static double _calc_billable_tres(struct job_record *job_ptr, time_t start_time)
 		     job_ptr->job_id, part_ptr->billing_weights_str,
 		     job_ptr->part_ptr->name);
 
-	billing_weights = part_ptr->billing_weights;
-	for (i = 0; i < slurmctld_tres_cnt; i++) {
-		double tres_weight = billing_weights[i];
-		char  *tres_type   = assoc_mgr_tres_array[i]->type;
-		double tres_value  = job_ptr->tres_alloc_cnt[i];
-
-		if (priority_debug)
-			info("BillingWeight: %s = %f * %f = %f",
-			     assoc_mgr_tres_name_array[i],
-			     tres_value, tres_weight, tres_value * tres_weight);
-
-		tres_value *= tres_weight;
-
-		if ((flags & PRIORITY_FLAGS_MAX_TRES) &&
-		    ((i == TRES_ARRAY_CPU) ||
-		     (i == TRES_ARRAY_MEM) ||
-		     (i == TRES_ARRAY_NODE) ||
-		     (!xstrcasecmp(tres_type, "gres"))))
-			to_bill_node = MAX(to_bill_node, tres_value);
-		else
-			to_bill_global += tres_value;
-	}
-
-	job_ptr->billable_tres = to_bill_node + to_bill_global;
+	job_ptr->billable_tres =
+		assoc_mgr_tres_weighted(job_ptr->tres_alloc_cnt,
+					part_ptr->billing_weights, flags,
+					false);
 
 	if (priority_debug)
 		info("BillingWeight: Job %d %s = %f", job_ptr->job_id,
