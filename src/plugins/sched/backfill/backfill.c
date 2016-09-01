@@ -64,6 +64,7 @@
 #include <unistd.h>
 
 #include "slurm/slurm.h"
+#include "slurm/slurmdb.h"
 #include "slurm/slurm_errno.h"
 
 #include "src/common/assoc_mgr.h"
@@ -1092,6 +1093,15 @@ static int _attempt_backfill(void)
 				job_ptr->state_reason = WAIT_NO_REASON;
 				last_job_update = now;
 			}
+		}
+
+		qos_ptr = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
+		if (part_policy_valid_qos(job_ptr->part_ptr, qos_ptr) !=
+		    SLURM_SUCCESS) {
+			xfree(job_ptr->state_desc);
+			job_ptr->state_reason = WAIT_QOS;
+			last_job_update = now;
+			continue;
 		}
 
 		if (!acct_policy_job_runnable_state(job_ptr) &&
