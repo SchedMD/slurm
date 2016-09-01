@@ -6548,10 +6548,12 @@ extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked)
 	return tres_str;
 }
 
-extern void gres_set_job_tres_cnt(List gres_list,
-				  uint32_t node_cnt,
-				  uint64_t *tres_cnt,
-				  bool locked)
+/* Fill in job/node tres arrays with allocated gres. */
+static void _set_type_tres_cnt(gres_state_type_enum_t state_type,
+			       List gres_list,
+			       uint32_t node_cnt,
+			       uint64_t *tres_cnt,
+			       bool locked)
 {
 	ListIterator itr;
 	gres_state_t *gres_state_ptr;
@@ -6570,7 +6572,9 @@ extern void gres_set_job_tres_cnt(List gres_list,
 		tres_rec.type = "gres";
 	}
 
-	if (!gres_list || !tres_cnt || !node_cnt || (node_cnt == NO_VAL))
+	if (!gres_list || !tres_cnt ||
+	    ((state_type == GRES_STATE_TYPE_JOB) &&
+	     (!node_cnt || (node_cnt == NO_VAL))))
 		return;
 
 	/* must be locked first before gres_contrex_lock!!! */
@@ -6580,11 +6584,6 @@ extern void gres_set_job_tres_cnt(List gres_list,
 	slurm_mutex_lock(&gres_context_lock);
 	itr = list_iterator_create(gres_list);
 	while ((gres_state_ptr = list_next(itr))) {
-		gres_job_state_t *gres_data_ptr = (gres_job_state_t *)
-			gres_state_ptr->gres_data;
-		col_name = gres_data_ptr->type_model;
-		count = gres_data_ptr->gres_cnt_alloc * (uint64_t)node_cnt;
-
 		for (i=0; i < gres_context_cnt; i++) {
 			if (gres_context[i].plugin_id ==
 			    gres_state_ptr->plugin_id) {
@@ -6598,25 +6597,84 @@ extern void gres_set_job_tres_cnt(List gres_list,
 			continue;
 		}
 
-		if ((tres_pos = assoc_mgr_find_tres_pos(
-			     &tres_rec, true)) != -1)
+		/* Get alloc count for main gres. */
+		switch (state_type) {
+		case GRES_STATE_TYPE_JOB:
+		{
+			gres_job_state_t *gres_data_ptr = (gres_job_state_t *)
+				gres_state_ptr->gres_data;
+			count = gres_data_ptr->gres_cnt_alloc *
+				(uint64_t)node_cnt;
+			break;
+		}
+		case GRES_STATE_TYPE_NODE:
+		{
+			gres_node_state_t *gres_data_ptr = (gres_node_state_t *)
+				gres_state_ptr->gres_data;
+			count = gres_data_ptr->gres_cnt_alloc;
+			break;
+		}
+		default:
+			error("unsupported state type %d in %s",
+			      state_type, __func__);
+			continue;
+		}
+		/* Set main tres's count. */
+		if ((tres_pos = assoc_mgr_find_tres_pos(&tres_rec, true)) != -1)
 			tres_cnt[tres_pos] = count;
 
-		/* Now lets put of the : name tres if we are tracking
-		 * it as well.  This would be handy for gres like
-		 * gpu:tesla, where you might want to track both as
-		 * TRES.
-		 */
-		if (col_name && (i < gres_context_cnt)) {
-			tres_rec.name = xstrdup_printf(
-				"%s%s",
-				gres_context[i].gres_name_colon,
-				col_name);
+		/* Set tres count for gres model types. This would be handy for
+		 * gres like gpu:tesla, where you might want to track both as
+		 * TRES. */
+		switch (state_type) {
+		case GRES_STATE_TYPE_JOB:
+		{
+			gres_job_state_t *gres_data_ptr = (gres_job_state_t *)
+				gres_state_ptr->gres_data;
 
-			if ((tres_pos = assoc_mgr_find_tres_pos(
-				     &tres_rec, true)) != -1)
-				tres_cnt[tres_pos] = count;
-			xfree(tres_rec.name);
+			col_name = gres_data_ptr->type_model;
+			if (col_name) {
+				tres_rec.name = xstrdup_printf(
+					"%s%s",
+					gres_context[i].gres_name_colon,
+					col_name);
+
+				if ((tres_pos = assoc_mgr_find_tres_pos(
+					     &tres_rec, true)) != -1)
+					tres_cnt[tres_pos] = count;
+				xfree(tres_rec.name);
+			}
+			break;
+		}
+		case GRES_STATE_TYPE_NODE:
+		{
+			int type;
+			gres_node_state_t *gres_data_ptr = (gres_node_state_t *)
+				gres_state_ptr->gres_data;
+
+			for (type = 0; type < gres_data_ptr->type_cnt; type++) {
+				col_name = gres_data_ptr->type_model[type];
+				if (!col_name)
+					continue;
+
+				tres_rec.name = xstrdup_printf(
+						"%s%s",
+						gres_context[i].gres_name_colon,
+						col_name);
+
+				count = gres_data_ptr->type_cnt_alloc[type];
+
+				if ((tres_pos = assoc_mgr_find_tres_pos(
+							&tres_rec, true)) != -1)
+					tres_cnt[tres_pos] = count;
+				xfree(tres_rec.name);
+			}
+			break;
+		}
+		default:
+			error("unsupported state type %d in %s",
+			      state_type, __func__);
+			continue;
 		}
 	}
 	list_iterator_destroy(itr);
@@ -6626,4 +6684,21 @@ extern void gres_set_job_tres_cnt(List gres_list,
 		assoc_mgr_unlock(&locks);
 
 	return;
+}
+
+extern void gres_set_job_tres_cnt(List gres_list,
+				  uint32_t node_cnt,
+				  uint64_t *tres_cnt,
+				  bool locked)
+{
+	_set_type_tres_cnt(GRES_STATE_TYPE_JOB,
+			   gres_list, node_cnt, tres_cnt, locked);
+}
+
+extern void gres_set_node_tres_cnt(List gres_list,
+				   uint64_t *tres_cnt,
+				   bool locked)
+{
+	_set_type_tres_cnt(GRES_STATE_TYPE_NODE,
+			   gres_list, 0, tres_cnt, locked);
 }

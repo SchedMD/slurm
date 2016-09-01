@@ -154,6 +154,12 @@ typedef struct gres_step_state {
 	bitstr_t **gres_bit_alloc;
 } gres_step_state_t;
 
+typedef enum {
+	GRES_STATE_TYPE_NODE = 0,
+	GRES_STATE_TYPE_JOB,
+	GRES_STATE_TYPE_STEP
+} gres_state_type_enum_t;
+
 /*
  * Initialize the gres plugin.
  *
@@ -768,7 +774,7 @@ extern gres_step_state_t *gres_get_step_state(List gres_list, char *name);
  */
 extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked);
 
-/* Fill in the tres_cnt based off the gres_list and node_cnt
+/* Fill in the job allocated tres_cnt based off the gres_list and node_cnt
  * IN gres_list - filled in with gres_job_state_t's
  * IN node_cnt - number of nodes in the job
  * OUT tres_cnt - gres spots filled in with total number of TRES
@@ -779,5 +785,14 @@ extern void gres_set_job_tres_cnt(List gres_list,
 				  uint32_t node_cnt,
 				  uint64_t *tres_cnt,
 				  bool locked);
+
+/* Fill in the node allocated tres_cnt based off the gres_list
+ * IN gres_list - filled in with gres_node_state_t's gres_alloc_cnt
+ * OUT tres_cnt - gres spots filled in with total number of TRES
+ *                allocated on node
+ * IN locked - if the assoc_mgr tres read locked is locked or not
+ */
+extern void gres_set_node_tres_cnt(List gres_list, uint64_t *tres_cnt,
+				   bool locked);
 
 #endif /* !_GRES_H */
