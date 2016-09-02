@@ -104,6 +104,11 @@ extern void slurm_persist_conn_members_destroy(
 /* Close the persistant connection and free structure */
 extern void slurm_persist_conn_destroy(slurm_persist_conn_t *persist_conn);
 
+extern int slurm_persist_conn_process_msg(slurm_persist_conn_t *persist_conn,
+					  persist_msg_t *persist_msg,
+					  char *msg_char, uint32_t msg_size,
+					  Buf *out_buffer, bool first);
+
 extern int slurm_persist_conn_writeable(slurm_persist_conn_t *persist_conn);
 
 extern int slurm_persist_send_msg(

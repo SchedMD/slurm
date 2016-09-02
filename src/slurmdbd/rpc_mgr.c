@@ -186,7 +186,7 @@ static void * _service_connection(void *arg)
 {
 	slurmdbd_conn_t *conn = (slurmdbd_conn_t *) arg;
 	uint32_t nw_size = 0, msg_size = 0, uid = NO_VAL;
-	char *msg = NULL;
+	char *msg_char = NULL;
 	ssize_t msg_read = 0, offset = 0;
 	bool fini = false, first = true;
 	Buf buffer = NULL;
@@ -217,12 +217,12 @@ static void * _service_connection(void *arg)
 			break;
 		}
 
-		msg = xmalloc(msg_size);
+		msg_char = xmalloc(msg_size);
 		offset = 0;
 		while (msg_size > offset) {
 			if (!_fd_readable(conn->conn.fd))
 				break;		/* problem with this socket */
-			msg_read = read(conn->conn.fd, (msg + offset),
+			msg_read = read(conn->conn.fd, (msg_char + offset),
 					(msg_size - offset));
 			if (msg_read <= 0) {
 				error("read(%d): %m", conn->conn.fd);
@@ -231,36 +231,53 @@ static void * _service_connection(void *arg)
 			offset += msg_read;
 		}
 		if (msg_size == offset) {
-			rc = proc_req(
-				conn, msg, msg_size, first, &buffer, &uid);
-			first = false;
-			if (rc != SLURM_SUCCESS && rc != ACCOUNTING_FIRST_REG) {
-				error("Processing last message from "
-				      "connection %d(%s) uid(%d)",
-				      conn->conn.fd, conn->conn.rem_host, uid);
-				if (rc == ESLURM_ACCESS_DENIED
-				    || rc == SLURM_PROTOCOL_VERSION_ERROR)
+			persist_msg_t msg;
+			rc = slurm_persist_conn_process_msg(
+				&conn->conn, &msg,
+				msg_char, msg_size,
+				&buffer, first);
+			if (rc == SLURM_SUCCESS) {
+				rc = proc_req(conn, &msg, &uid);
+				slurmdbd_free_msg((slurmdbd_msg_t *)&msg);
+
+				if (rc == SLURM_COMMUNICATIONS_SEND_ERROR) {
 					fini = true;
+				} else if (rc != SLURM_SUCCESS &&
+				    rc != ACCOUNTING_FIRST_REG) {
+					error("Processing last message from "
+					      "connection %d(%s) uid(%d)",
+					      conn->conn.fd,
+					      conn->conn.rem_host, uid);
+					if (rc == ESLURM_ACCESS_DENIED ||
+					    rc == SLURM_PROTOCOL_VERSION_ERROR)
+						fini = true;
+				}
+				buffer = NULL;
 			}
+			first = false;
 		} else {
 			buffer = slurm_persist_make_rc_msg(
 				&conn->conn, SLURM_ERROR, "Bad offset", 0);
 			fini = true;
 		}
 
-		if (slurm_persist_send_msg(&conn->conn, buffer)
-		    != SLURM_SUCCESS) {
-			/* This is only an issue on persistent connections, and
-			 * really isn't that big of a deal as the slurmctld
-			 * will just send the message again. */
-			if (conn->conn.rem_port)
-				debug("Problem sending response to "
-				      "connection %d(%s) uid(%d)",
-				      conn->conn.fd, conn->conn.rem_host, uid);
-			fini = true;
+		if (buffer) {
+			if (slurm_persist_send_msg(&conn->conn, buffer)
+			    != SLURM_SUCCESS) {
+				/* This is only an issue on persistent
+				 * connections, and really isn't that big of a
+				 * deal as the slurmctld will just send the
+				 * message again. */
+				if (conn->conn.rem_port)
+					debug("Problem sending response to "
+					      "connection %d(%s) uid(%d)",
+					      conn->conn.fd,
+					      conn->conn.rem_host, uid);
+				fini = true;
+			}
+			free_buf(buffer);
 		}
-		free_buf(buffer);
-		xfree(msg);
+		xfree(msg_char);
 	}
 
 	if (conn->conn.rem_port) {

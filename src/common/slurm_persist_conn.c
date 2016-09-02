@@ -279,6 +279,54 @@ extern void slurm_persist_conn_destroy(slurm_persist_conn_t *persist_conn)
 	xfree(persist_conn);
 }
 
+extern int slurm_persist_conn_process_msg(slurm_persist_conn_t *persist_conn,
+					  persist_msg_t *persist_msg,
+					  char *msg_char, uint32_t msg_size,
+					  Buf *out_buffer, bool first)
+{
+	int rc;
+	Buf recv_buffer = NULL;
+	char *comment = NULL;
+
+	/* puts msg_char into buffer struct */
+	recv_buffer = create_buf(msg_char, msg_size);
+
+	memset(persist_msg, 0, sizeof(persist_msg_t));
+	/* FIXME: We really need to combine these into the normal messages so we
+	 * can handle it that way.
+	 */
+	rc = unpack_slurmdbd_msg(
+		(slurmdbd_msg_t *)persist_msg, persist_conn->version, recv_buffer);
+	xfer_buf_data(recv_buffer); /* delete in_buffer struct
+				     * without xfree of msg_char
+				     * (done later in this
+				     * function). */
+	if (rc != SLURM_SUCCESS) {
+		comment = xstrdup_printf("Failed to unpack %s message",
+					 slurmdbd_msg_type_2_str(
+						 persist_msg->msg_type, true));
+		error("CONN:%u %s", persist_conn->fd, comment);
+		*out_buffer = slurm_persist_make_rc_msg(
+			persist_conn, rc, comment, persist_msg->msg_type);
+		xfree(comment);
+	} else if (first && (persist_msg->msg_type != REQUEST_PERSIST_INIT)) {
+		comment = "Initial RPC not REQUEST_PERSIST_INIT";
+		error("CONN:%u %s type (%d)",
+		      persist_conn->fd, comment, persist_msg->msg_type);
+		rc = EINVAL;
+		*out_buffer = slurm_persist_make_rc_msg(
+			persist_conn, rc, comment, REQUEST_PERSIST_INIT);
+	} else if (!first && (persist_msg->msg_type == REQUEST_PERSIST_INIT)) {
+		comment = "REQUEST_PERSIST_INIT sent after connection established";
+		error("CONN:%u %s", persist_conn->fd, comment);
+		rc = EINVAL;
+		*out_buffer = slurm_persist_make_rc_msg(
+			persist_conn, rc, comment, REQUEST_PERSIST_INIT);
+	}
+
+	return rc;
+}
+
 /* Wait until a file is writeable,
  * RET 1 if file can be written now,
  *     0 if can not be written to within 5 seconds
