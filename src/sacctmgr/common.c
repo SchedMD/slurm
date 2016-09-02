@@ -210,8 +210,7 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("Class");
 		field->len = 9;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("ClusterNodes", object, MAX(command_len, 8))
-		   || !strncasecmp("NodeNames", object, MAX(command_len, 8))) {
+	} else if (!strncasecmp("ClusterNodes", object, MAX(command_len, 8))) {
 		field->type = PRINT_CLUSTER_NODES;
 		field->name = xstrdup("Cluster Nodes");
 		field->len = 20;
@@ -544,7 +543,7 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("NodeCount");
 		field->len = 9;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("NodeName", object, MAX(command_len, 5))) {
+	} else if (!strncasecmp("NodeNames", object, MAX(command_len, 5))) {
 		field->type = PRINT_NODENAME;
 		field->name = xstrdup("NodeName");
 		field->len = 20;
