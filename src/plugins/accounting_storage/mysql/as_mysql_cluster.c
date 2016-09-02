@@ -96,7 +96,7 @@ extern int as_mysql_get_fed_cluster_id(mysql_conn_t *mysql_conn,
 	xstrfmtcat(query, "SELECT name, federation, fed_id "
 		   	  "FROM %s "
 		   	  "WHERE name!='%s' AND federation='%s' "
-			  "AND fed_id > %d ORDER BY fed_id;",
+			  "AND fed_id > %d AND deleted=0 ORDER BY fed_id;",
 			  cluster_table, cluster, federation, last_id);
 	if (debug_flags & DEBUG_FLAG_FEDR)
 		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
