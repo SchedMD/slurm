@@ -52,7 +52,7 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
-Add commands to sacctmgr for managing and displaying federations.
+-- Add commands to sacctmgr for managing and displaying federations.
 
 OTHER CHANGES
 =============
