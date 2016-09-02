@@ -3238,8 +3238,10 @@ static int   _send_mult_msg(slurmdbd_conn_t *slurmdbd_conn,
 			get_buf_data(req_buf),
 			size_buf(req_buf), &ret_buf, 0);
 
-		if (rc == SLURM_SUCCESS)
+		if (rc == SLURM_SUCCESS) {
 			rc = proc_req(slurmdbd_conn, &sub_msg, &ret_buf, uid);
+			slurmdbd_free_msg((slurmdbd_msg_t *)&sub_msg);
+		}
 
 		if (ret_buf)
 			list_append(list_msg.my_list, ret_buf);
