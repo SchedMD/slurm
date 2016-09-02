@@ -546,7 +546,7 @@ static print_field_t *_get_print_field(char *object)
 	} else if (!strncasecmp("NodeNames", object, MAX(command_len, 5))) {
 		field->type = PRINT_NODENAME;
 		field->name = xstrdup("NodeName");
-		field->len = 20;
+		field->len = -15;
 		field->print_routine = print_fields_str;
 	} else if (!strncasecmp("Organization", object, MAX(command_len, 1))) {
 		field->type = PRINT_ORG;
