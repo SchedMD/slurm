@@ -1830,7 +1830,7 @@ extern void sacctmgr_print_federation(slurmdb_federation_rec_t *fed)
 
 	if (fed->name)
 		printf("  Name          = %s\n", fed->name);
-	if (fed->flags) {
+	if (fed->flags && (fed->flags != FEDERATION_FLAG_NOTSET)) {
 		char *mode = NULL;
 		char *tmp_flags =
 			slurmdb_federation_flags_str(fed->flags);

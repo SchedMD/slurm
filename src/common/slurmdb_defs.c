@@ -1477,6 +1477,7 @@ extern void slurmdb_init_federation_rec(slurmdb_federation_rec_t *federation,
 	if (free_it)
 		_free_federation_rec_members(federation);
 	memset(federation, 0, sizeof(slurmdb_federation_rec_t));
+	federation->flags = FEDERATION_FLAG_NOTSET;
 }
 
 extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos, bool free_it,
