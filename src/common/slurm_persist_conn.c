@@ -266,6 +266,8 @@ extern void slurm_persist_conn_members_destroy(
 
 	persist_conn->inited = false;
 	_close_fd(&persist_conn->fd);
+	if (persist_conn->auth_cred)
+		g_slurm_auth_destroy(persist_conn->auth_cred);
 	xfree(persist_conn->cluster_name);
 	xfree(persist_conn->rem_host);
 }
@@ -292,11 +294,7 @@ extern int slurm_persist_conn_process_msg(slurm_persist_conn_t *persist_conn,
 	recv_buffer = create_buf(msg_char, msg_size);
 
 	memset(persist_msg, 0, sizeof(persist_msg_t));
-	/* FIXME: We really need to combine these into the normal messages so we
-	 * can handle it that way.
-	 */
-	rc = unpack_slurmdbd_msg(
-		(slurmdbd_msg_t *)persist_msg, persist_conn->version, recv_buffer);
+	rc = slurm_persist_msg_unpack(persist_conn, persist_msg, recv_buffer);
 	xfer_buf_data(recv_buffer); /* delete in_buffer struct
 				     * without xfree of msg_char
 				     * (done later in this
@@ -561,6 +559,19 @@ extern int slurm_persist_msg_unpack(slurm_persist_conn_t *persist_conn,
 
 		resp_msg->msg_type = msg.msg_type;
 		resp_msg->data = msg.data;
+	}
+
+	/* Here we transfer the auth_cred to the persist_conn just incase in the
+	 * future we need to use it in some way to verify things for messages
+	 * that don't have on that will follow on the connection.
+	 */
+	if (resp_msg->msg_type == REQUEST_PERSIST_INIT) {
+		slurm_msg_t *msg = resp_msg->data;
+		if (persist_conn->auth_cred)
+			g_slurm_auth_destroy(persist_conn->auth_cred);
+
+		persist_conn->auth_cred = msg->auth_cred;
+		msg->auth_cred = NULL;
 	}
 
 	return rc;

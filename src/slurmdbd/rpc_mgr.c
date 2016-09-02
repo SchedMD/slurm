@@ -137,6 +137,7 @@ extern void *rpc_mgr(void *no_data)
 
 		conn_arg = xmalloc(sizeof(slurmdbd_conn_t));
 		conn_arg->conn.fd = newsockfd;
+		conn_arg->conn.flags = PERSIST_FLAG_DBD;
 		conn_arg->conn.shutdown = &shutdown_time;
 		conn_arg->conn.version = SLURM_MIN_PROTOCOL_VERSION;
 		conn_arg->conn.rem_host = xmalloc_nz(sizeof(char) * 32);

@@ -44,6 +44,7 @@
 #define PERSIST_FLAG_RECONNECT 0x0002
 
 typedef struct {
+	void *auth_cred;
 	char *cluster_name;
 	int fd;
 	uint16_t flags;
