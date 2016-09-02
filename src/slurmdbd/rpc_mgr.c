@@ -232,17 +232,16 @@ static void * _service_connection(void *arg)
 		}
 		if (msg_size == offset) {
 			persist_msg_t msg;
+
 			rc = slurm_persist_conn_process_msg(
 				&conn->conn, &msg,
 				msg_char, msg_size,
 				&buffer, first);
-			if (rc == SLURM_SUCCESS) {
-				rc = proc_req(conn, &msg, &uid);
-				slurmdbd_free_msg((slurmdbd_msg_t *)&msg);
 
-				if (rc == SLURM_COMMUNICATIONS_SEND_ERROR) {
-					fini = true;
-				} else if (rc != SLURM_SUCCESS &&
+			if (rc == SLURM_SUCCESS) {
+				rc = proc_req(conn, &msg, &buffer, &uid);
+				slurmdbd_free_msg((slurmdbd_msg_t *)&msg);
+				if (rc != SLURM_SUCCESS &&
 				    rc != ACCOUNTING_FIRST_REG) {
 					error("Processing last message from "
 					      "connection %d(%s) uid(%d)",
@@ -252,7 +251,6 @@ static void * _service_connection(void *arg)
 					    rc == SLURM_PROTOCOL_VERSION_ERROR)
 						fini = true;
 				}
-				buffer = NULL;
 			}
 			first = false;
 		} else {
