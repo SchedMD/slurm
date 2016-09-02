@@ -235,9 +235,10 @@ static int   _step_start(slurmdbd_conn_t *slurmdbd_conn,
  * uid IN/OUT - user ID who initiated the RPC
  * RET SLURM_SUCCESS or error code */
 extern int
-proc_req(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+proc_req(void *conn, persist_msg_t *msg,
 	 Buf *out_buffer, uint32_t *uid)
 {
+	slurmdbd_conn_t *slurmdbd_conn = conn;
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 	int i, rpc_type_index = -1, rpc_user_index = -1;

@@ -58,7 +58,7 @@ typedef struct {
  * buffer OUT - outgoing response, must be freed by caller
  * uid IN/OUT - user ID who initiated the RPC
  * RET SLURM_SUCCESS or error code */
-extern int proc_req(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+extern int proc_req(void *conn, persist_msg_t *msg,
 		    Buf *out_buffer, uint32_t *uid);
 
 #endif /* !_PROC_REQ */

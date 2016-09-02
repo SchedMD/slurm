@@ -46,7 +46,12 @@
 #include "src/common/slurmdbd_defs.h"
 #include "slurm_persist_conn.h"
 
-char *cluster_name = NULL;
+/*
+ *  Maximum message size. Messages larger than this value (in bytes)
+ *  will not be received.
+ */
+#define MAX_MSG_SIZE     (16*1024*1024)
+
 
 /* Return time in msec since "start time" */
 static int _tot_wait (struct timeval *start_time)
@@ -82,14 +87,19 @@ static bool _conn_readable(slurm_persist_conn_t *persist_conn)
 {
 	struct pollfd ufds;
 	int rc, time_left;
-	struct timeval tstart;
 
 	ufds.fd     = persist_conn->fd;
 	ufds.events = POLLIN;
-	gettimeofday(&tstart, NULL);
-	while (*persist_conn->shutdown == 0) {
-		time_left = persist_conn->timeout - _tot_wait(&tstart);
+	while (!(*persist_conn->shutdown)) {
+		if (persist_conn->timeout) {
+			struct timeval tstart;
+			gettimeofday(&tstart, NULL);
+			time_left = persist_conn->timeout - _tot_wait(&tstart);
+		} else
+			time_left = -1;
 		rc = poll(&ufds, 1, time_left);
+		if (*persist_conn->shutdown)
+			return false;
 		if (rc == -1) {
 			if ((errno == EINTR) || (errno == EAGAIN))
 				continue;
@@ -279,6 +289,109 @@ extern void slurm_persist_conn_destroy(slurm_persist_conn_t *persist_conn)
 		return;
 	slurm_persist_conn_members_destroy(persist_conn);
 	xfree(persist_conn);
+}
+
+extern int slurm_persist_service_connection(
+	slurm_persist_conn_t *persist_conn, void *arg)
+{
+	uint32_t nw_size = 0, msg_size = 0, uid = NO_VAL;
+	char *msg_char = NULL;
+	ssize_t msg_read = 0, offset = 0;
+	bool first = true;
+	Buf buffer = NULL;
+	int rc = SLURM_SUCCESS;
+
+	xassert(persist_conn->proc_callback);
+
+	debug2("Opened connection %d from %s", persist_conn->fd,
+	       persist_conn->rem_host);
+
+	while (!(*persist_conn->shutdown)) {
+		if (!_conn_readable(persist_conn))
+			break;		/* problem with this socket */
+		msg_read = read(persist_conn->fd, &nw_size, sizeof(nw_size));
+		if (msg_read == 0)	/* EOF */
+			break;
+		if (msg_read != sizeof(nw_size)) {
+			error("Could not read msg_size from "
+			      "connection %d(%s) uid(%d)",
+			      persist_conn->fd, persist_conn->rem_host, uid);
+			break;
+		}
+		msg_size = ntohl(nw_size);
+		if ((msg_size < 2) || (msg_size > MAX_MSG_SIZE)) {
+			error("Invalid msg_size (%u) from "
+			      "connection %d(%s) uid(%d)",
+			      msg_size, persist_conn->fd,
+			      persist_conn->rem_host, uid);
+			break;
+		}
+
+		msg_char = xmalloc(msg_size);
+		offset = 0;
+		while (msg_size > offset) {
+			if (!_conn_readable(persist_conn))
+				break;		/* problem with this socket */
+			msg_read = read(persist_conn->fd, (msg_char + offset),
+					(msg_size - offset));
+			if (msg_read <= 0) {
+				error("read(%d): %m", persist_conn->fd);
+				break;
+			}
+			offset += msg_read;
+		}
+		if (msg_size == offset) {
+			persist_msg_t msg;
+
+			rc = slurm_persist_conn_process_msg(
+				persist_conn, &msg,
+				msg_char, msg_size,
+				&buffer, first);
+
+			if (rc == SLURM_SUCCESS) {
+				rc = (persist_conn->proc_callback)(
+					arg, &msg, &buffer, &uid);
+				slurmdbd_free_msg((slurmdbd_msg_t *)&msg);
+				if (rc != SLURM_SUCCESS &&
+				    rc != ACCOUNTING_FIRST_REG) {
+					error("Processing last message from "
+					      "connection %d(%s) uid(%d)",
+					      persist_conn->fd,
+					      persist_conn->rem_host, uid);
+					if (rc == ESLURM_ACCESS_DENIED ||
+					    rc == SLURM_PROTOCOL_VERSION_ERROR)
+						break;
+				}
+			}
+			first = false;
+		} else {
+			buffer = slurm_persist_make_rc_msg(
+				persist_conn, SLURM_ERROR, "Bad offset", 0);
+			break;
+		}
+
+		if (buffer) {
+			if (slurm_persist_send_msg(persist_conn, buffer)
+			    != SLURM_SUCCESS) {
+				/* This is only an issue on persistent
+				 * connections, and really isn't that big of a
+				 * deal as the slurmctld will just send the
+				 * message again. */
+				if (persist_conn->rem_port)
+					debug("Problem sending response to "
+					      "connection %d(%s) uid(%d)",
+					      persist_conn->fd,
+					      persist_conn->rem_host, uid);
+				break;
+			}
+			free_buf(buffer);
+		}
+		xfree(msg_char);
+	}
+
+	debug2("Closed connection %d uid(%d)", persist_conn->fd, uid);
+
+	return rc;
 }
 
 extern int slurm_persist_conn_process_msg(slurm_persist_conn_t *persist_conn,

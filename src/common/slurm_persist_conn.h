@@ -44,11 +44,20 @@
 #define PERSIST_FLAG_RECONNECT 0x0002
 
 typedef struct {
+	uint16_t msg_type;	/* see slurmdbd_msg_type_t or
+				 * slurm_msg_type_t */
+	void * data;		/* pointer to a message type below */
+} persist_msg_t;
+
+typedef struct {
 	void *auth_cred;
 	char *cluster_name;
 	int fd;
 	uint16_t flags;
 	bool inited;
+	int (*proc_callback)(void *persist_conn, /* really this struct */
+			     persist_msg_t *msg,
+			     Buf *out_buffer, uint32_t *uid);
 	char *rem_host;
 	int rem_port;
 	time_t *shutdown;
@@ -56,12 +65,6 @@ typedef struct {
 	slurm_trigger_callbacks_t trigger_callbacks;
 	uint16_t version;
 } slurm_persist_conn_t;
-
-typedef struct {
-	uint16_t msg_type;	/* see slurmdbd_msg_type_t or
-				 * slurm_msg_type_t */
-	void * data;		/* pointer to a message type below */
-} persist_msg_t;
 
 typedef struct {
 	char *cluster_name;     /* cluster this message is coming from */
@@ -104,6 +107,9 @@ extern void slurm_persist_conn_members_destroy(
 
 /* Close the persistant connection and free structure */
 extern void slurm_persist_conn_destroy(slurm_persist_conn_t *persist_conn);
+
+extern int slurm_persist_service_connection(
+	slurm_persist_conn_t *persist_conn, void *arg);
 
 extern int slurm_persist_conn_process_msg(slurm_persist_conn_t *persist_conn,
 					  persist_msg_t *persist_msg,

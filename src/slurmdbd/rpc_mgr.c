@@ -67,7 +67,6 @@
 #define MAX_MSG_SIZE     (16*1024*1024)
 
 /* Local functions */
-static bool   _fd_readable(int fd);
 static void   _free_server_thread(pthread_t my_tid);
 static void * _service_connection(void *arg);
 static void   _sig_handler(int signal);
@@ -138,6 +137,7 @@ extern void *rpc_mgr(void *no_data)
 		conn_arg = xmalloc(sizeof(slurmdbd_conn_t));
 		conn_arg->conn.fd = newsockfd;
 		conn_arg->conn.flags = PERSIST_FLAG_DBD;
+		conn_arg->conn.proc_callback = proc_req;
 		conn_arg->conn.shutdown = &shutdown_time;
 		conn_arg->conn.version = SLURM_MIN_PROTOCOL_VERSION;
 		conn_arg->conn.rem_host = xmalloc_nz(sizeof(char) * 32);
@@ -186,98 +186,8 @@ extern void rpc_mgr_wake(void)
 static void * _service_connection(void *arg)
 {
 	slurmdbd_conn_t *conn = (slurmdbd_conn_t *) arg;
-	uint32_t nw_size = 0, msg_size = 0, uid = NO_VAL;
-	char *msg_char = NULL;
-	ssize_t msg_read = 0, offset = 0;
-	bool fini = false, first = true;
-	Buf buffer = NULL;
-	int rc = SLURM_SUCCESS;
-	int fd = conn->conn.fd;
 
-	debug2("Opened connection %d from %s", conn->conn.fd,
-	       conn->conn.rem_host);
-
-	while (!fini) {
-		if (!_fd_readable(conn->conn.fd))
-			break;		/* problem with this socket */
-		msg_read = read(conn->conn.fd, &nw_size, sizeof(nw_size));
-		if (msg_read == 0)	/* EOF */
-			break;
-		if (msg_read != sizeof(nw_size)) {
-			error("Could not read msg_size from "
-			      "connection %d(%s) uid(%d)",
-			      conn->conn.fd, conn->conn.rem_host, uid);
-			break;
-		}
-		msg_size = ntohl(nw_size);
-		if ((msg_size < 2) || (msg_size > MAX_MSG_SIZE)) {
-			error("Invalid msg_size (%u) from "
-			      "connection %d(%s) uid(%d)",
-			      msg_size, conn->conn.fd,
-			      conn->conn.rem_host, uid);
-			break;
-		}
-
-		msg_char = xmalloc(msg_size);
-		offset = 0;
-		while (msg_size > offset) {
-			if (!_fd_readable(conn->conn.fd))
-				break;		/* problem with this socket */
-			msg_read = read(conn->conn.fd, (msg_char + offset),
-					(msg_size - offset));
-			if (msg_read <= 0) {
-				error("read(%d): %m", conn->conn.fd);
-				break;
-			}
-			offset += msg_read;
-		}
-		if (msg_size == offset) {
-			persist_msg_t msg;
-
-			rc = slurm_persist_conn_process_msg(
-				&conn->conn, &msg,
-				msg_char, msg_size,
-				&buffer, first);
-
-			if (rc == SLURM_SUCCESS) {
-				rc = proc_req(conn, &msg, &buffer, &uid);
-				slurmdbd_free_msg((slurmdbd_msg_t *)&msg);
-				if (rc != SLURM_SUCCESS &&
-				    rc != ACCOUNTING_FIRST_REG) {
-					error("Processing last message from "
-					      "connection %d(%s) uid(%d)",
-					      conn->conn.fd,
-					      conn->conn.rem_host, uid);
-					if (rc == ESLURM_ACCESS_DENIED ||
-					    rc == SLURM_PROTOCOL_VERSION_ERROR)
-						fini = true;
-				}
-			}
-			first = false;
-		} else {
-			buffer = slurm_persist_make_rc_msg(
-				&conn->conn, SLURM_ERROR, "Bad offset", 0);
-			fini = true;
-		}
-
-		if (buffer) {
-			if (slurm_persist_send_msg(&conn->conn, buffer)
-			    != SLURM_SUCCESS) {
-				/* This is only an issue on persistent
-				 * connections, and really isn't that big of a
-				 * deal as the slurmctld will just send the
-				 * message again. */
-				if (conn->conn.rem_port)
-					debug("Problem sending response to "
-					      "connection %d(%s) uid(%d)",
-					      conn->conn.fd,
-					      conn->conn.rem_host, uid);
-				fini = true;
-			}
-			free_buf(buffer);
-		}
-		xfree(msg_char);
-	}
+	slurm_persist_service_connection(&conn->conn, conn);
 
 	if (conn->conn.rem_port) {
 		if (!shutdown_time) {
@@ -313,54 +223,12 @@ static void * _service_connection(void *arg)
 	acct_storage_g_close_connection(&conn->db_conn);
 	slurm_persist_conn_members_destroy(&conn->conn);
 
-	debug2("Closed connection %d uid(%d)", fd, uid);
-
 	xfree(conn->tres_str);
 	xfree(conn);
 	_free_server_thread(pthread_self());
 	return NULL;
 }
 
-/* Wait until a file is readable, return false if can not be read */
-static bool _fd_readable(int fd)
-{
-	struct pollfd ufds;
-	int rc;
-
-	ufds.fd     = fd;
-	ufds.events = POLLIN;
-	while (1) {
-		rc = poll(&ufds, 1, -1);
-		if (shutdown_time)
-			return false;
-		if (rc == -1) {
-			if ((errno == EINTR) || (errno == EAGAIN))
-				continue;
-			error("poll: %m");
-			return false;
-		}
-		if ((ufds.revents & POLLHUP) &&
-		    ((ufds.revents & POLLIN) == 0)) {
-			debug3("Read connection %d closed", fd);
-			return false;
-		}
-		if (ufds.revents & POLLNVAL) {
-			error("Connection %d is invalid", fd);
-			return false;
-		}
-		if (ufds.revents & POLLERR) {
-			error("Connection %d experienced an error", fd);
-			return false;
-		}
-		if ((ufds.revents & POLLIN) == 0) {
-			error("Connection %d events %d", fd, ufds.revents);
-			return false;
-		}
-		break;
-	}
-	errno = 0;
-	return true;
-}
 
 /* Increment thread_count and don't return until its value is no larger
  *	than MAX_THREAD_COUNT,
