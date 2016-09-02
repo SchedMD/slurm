@@ -495,7 +495,6 @@ extern List as_mysql_modify_federations(
 	     *name_char = NULL, *fed_items = NULL;
 	char *tmp_char1 = NULL, *tmp_char2 = NULL;
 	time_t now = time(NULL);
-	char *user_name = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 
@@ -520,7 +519,8 @@ extern List as_mysql_modify_federations(
 	xfree(tmp_char1);
 	xfree(tmp_char2);
 
-	if (!extra || !vals) {
+	if (!extra ||
+	    (!vals && (!fed->cluster_list || !list_count(fed->cluster_list)))) {
 		xfree(extra);
 		xfree(vals);
 		errno = SLURM_NO_CHANGE_IN_DATA;
@@ -561,15 +561,13 @@ extern List as_mysql_modify_federations(
 	}
 	xfree(extra);
 
-	rc = 0;
 	ret_list = list_create(slurm_destroy_char);
 	while ((row = mysql_fetch_row(result))) {
 		object = xstrdup(row[0]);
 
 		list_append(ret_list, object);
-		if (!rc) {
+		if (!name_char) {
 			xstrfmtcat(name_char, "(name='%s'", object);
-			rc = 1;
 		} else  {
 			xstrfmtcat(name_char, " || name='%s'", object);
 		}
@@ -598,12 +596,13 @@ extern List as_mysql_modify_federations(
 	xfree(query);
 	xstrcat(name_char, ")");
 
-	user_name = uid_to_string((uid_t) uid);
-	rc = modify_common(mysql_conn, DBD_MODIFY_FEDERATIONS, now,
-			   user_name, federation_table,
-			   name_char, vals, NULL);
-
-	xfree(user_name);
+	if (vals) {
+		char *user_name = uid_to_string((uid_t) uid);
+		rc = modify_common(mysql_conn, DBD_MODIFY_FEDERATIONS, now,
+				   user_name, federation_table,
+				   name_char, vals, NULL);
+		xfree(user_name);
+	}
 	xfree(name_char);
 	xfree(vals);
 
