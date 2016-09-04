@@ -55,5 +55,6 @@ int pmixp_stepd_send(char *nodelist, const char *address, char *data,
 		     int silent);
 int pmixp_rmdir_recursively(char *path);
 int pmixp_fixrights(char *path, uid_t uid, mode_t mode);
+int pmixp_mkdir(char *path, mode_t rights);
 
 #endif /* PMIXP_UTILS_H*/
