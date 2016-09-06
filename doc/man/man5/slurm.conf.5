@@ -2698,6 +2698,11 @@ By default if a job environment setup fails the job keeps running with
 a limited environment. By specifying this parameter the job will be
 requeued in held state and the execution node drained.
 .TP
+\fBsalloc_wait_nodes\fR
+If defined, the salloc command will wait until all allocated nodes are ready for
+use (i.e. booted) before the command returns. By default, salloc will return as
+soon as the resource allocation has been made.
+.TP
 \fBsched_interval=#\fR
 How frequently, in seconds, the main scheduling loop will execute and test all
 pending jobs.

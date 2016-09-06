@@ -34,7 +34,10 @@ documents those changes that are of interest to users and administrators.
  -- sacctmgr - Fix displaying nodenames when printing out events or
     reservations.
  -- Fix mpiexec wrapper to accept task count with more than one digit.
- -- Add mpiexec man page to the script. 
+ -- Add mpiexec man page to the script.
+ -- Add salloc_wait_nodes option to the SchedulerParameters parameter in the
+    slurm.conf file controlling when the salloc command returns in relation to
+    when nodes are ready for use (i.e. booted).
 
 * Changes in Slurm 16.05.4
 ==========================

@@ -1513,7 +1513,7 @@ static bool _opt_verify(void)
 	}
 	if (!opt.wait_all_nodes)
 		info("Cray needs --wait-all-nodes to wait on ALPS reservation");
-	opt.wait_all_nodes = true;
+	opt.wait_all_nodes = 1;
 	if (opt.kill_command_signal_set) {
 		/*
 		 * Disabled to avoid that the user supplies a weaker signal that
@@ -1701,6 +1701,14 @@ static bool _opt_verify(void)
 
 	cpu_freq_set_env("SLURM_CPU_FREQ_REQ",
 			opt.cpu_freq_min, opt.cpu_freq_max, opt.cpu_freq_gov);
+
+	if (opt.wait_all_nodes == (uint16_t) NO_VAL) {
+		char *sched_params;
+		sched_params = slurm_get_sched_params();
+		if (sched_params && strstr(sched_params, "salloc_wait_nodes"))
+			opt.wait_all_nodes = 1;
+		xfree(sched_params);
+	}
 
 	return verified;
 }

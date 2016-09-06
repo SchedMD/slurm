@@ -1323,8 +1323,11 @@ will be sorted by Slurm.
 
 .TP
 \fB\-\-wait\-all\-nodes\fR=<\fIvalue\fR>
-Controls when the execution of the command begins.
-By default the job will begin execution as soon as the allocation is made.
+Controls when the execution of the command begins with respect to when nodes
+are ready for use (i.e. booted).
+By default, the salloc command will return as soon as the allocation is made.
+This default can be altered using the \fBsalloc_wait_nodes\fR option to the
+\fBSchedulerParameters\fR parameter in the slurm.conf file.
 .RS
 .TP 5
 0
