@@ -3107,11 +3107,16 @@ static void _node_did_resp(struct node_record *node_ptr)
 	time_t boot_req_time, now = time(NULL);
 
 	node_inx = node_ptr - node_record_table_ptr;
-	/* Do not change last_response value (in the future) for nodes being
-	 *  booted so unexpected reboots are recognized */
-	if (IS_NODE_POWER_UP(node_ptr) ||
-	    (IS_NODE_DOWN(node_ptr) &&
-	     !xstrcmp(node_ptr->reason, "Scheduled reboot"))) {
+	if (IS_NODE_POWER_UP(node_ptr) && (node_ptr->last_response == 0)) {
+		/* slurmctld restart while reboot in progress, assume compute
+		 * node actually rebooted, add boot time to node state in
+		 * slurm version 17.02 to be more robust */
+		node_ptr->last_response = now + slurm_get_resume_timeout();
+	} else if (IS_NODE_POWER_UP(node_ptr) ||
+		   (IS_NODE_DOWN(node_ptr) &&
+		    !xstrcmp(node_ptr->reason, "Scheduled reboot"))) {
+		/* Do not change last_response value (in the future) for nodes
+		 * being booted so unexpected reboots are recognized */
 		boot_req_time = node_ptr->last_response -
 				slurm_get_resume_timeout();
 		if (node_ptr->boot_time < boot_req_time) {

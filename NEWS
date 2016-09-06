@@ -38,6 +38,8 @@ documents those changes that are of interest to users and administrators.
  -- Add salloc_wait_nodes option to the SchedulerParameters parameter in the
     slurm.conf file controlling when the salloc command returns in relation to
     when nodes are ready for use (i.e. booted).
+ -- Handle case when slurmctld daemon restart while compute node reboot in
+    progress. Return node to service rather than setting DOWN.
 
 * Changes in Slurm 16.05.4
 ==========================
