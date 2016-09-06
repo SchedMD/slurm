@@ -73,7 +73,7 @@ sub get_new_config() {
 		   || ($parts[1] eq "")
 		   || ($parts[0] =~ '#')) {
 			next;
-		} elsif ($parts[0] =~ '\-n *(\d)') {
+		} elsif ($parts[0] =~ '\-n *(\d+)') {
 			$end_cnt = $task_cnt+$1-1;
 			print FILE "$task_cnt-$end_cnt\t$parts[1]";
 			$task_cnt = $end_cnt+1;
@@ -166,5 +166,112 @@ system($command);
 
 system("rm -f $new_config") if($new_config);
 
+__END__
 
+=head1 NAME
 
+B<mpiexec.slurm> - Run an MPI program under Slurm
+
+=head1 SYNOPSIS
+
+mpiexec.slurm args executable pgmargs
+
+where args are comannd line arguments for mpiexec (see below), executable is
+the name of the eecutable and pgmargs are command line arguments for the
+executable. For example the following command will run the MPI progam a.out on
+4 processes:
+
+	mpiexec.slurm -n 4 a.out
+
+mpiexec.slurm supports the following options:
+
+         [-n nprocs]
+         [-host hostname]
+         [-verbose]
+         [-nostdin]
+         [-allstdin]
+         [-nostdout]
+         [-pernode]
+         [-config config_file]
+         [-help|-?]
+         [-man]
+
+=head1 DESCRIPTION
+
+The B<mpiexec.slurm> 
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-n <np>>
+
+Specify the number of processes to use
+
+=item B<-host hostname>
+
+Name of host on which to run processes
+
+=item B<-verbose>
+
+Increase the verbosity of mpiexec.slurm informational messages. Multiple
+-verbose's  will further increase mpiexec.slurm's verbosity. By default only
+errors will be displayed.
+
+=item B<-nostdin>
+
+Do not connect the standard input stream of process 0 to the mpiexec process.
+If the process attempts to read from stdin, it will see an end-of-file.
+
+=item B<-allstdin>
+
+Send the standard input stream of mpiexec.slurm to all processes. Each
+character typed to mpiexec (or read from a file) is duplicated numproc times,
+and sent to each process. This permits every process to read, for example,
+configuration information from the input stream. 
+
+=item B<-nostdout>
+
+Do not connect the standard output and error streams of each process back to
+the mpiexec.slurm process. Standard output and error will be respectively
+writte in files of the form job.ojobid and job.ejobid for batch jobs, and
+directly to the controlling terminal for interactive jobs.
+
+=item B<-pernode>
+
+Allocate only one process per compute node. For SMP nodes, only one processor
+will be allocated a job. This flag is used to implement multiple level
+parallelism with MPI between nodes, and threads within a node, assmuming the
+code is set up to do that.
+
+=item B<-config <config_file>>
+
+Process executable and arguments are specified in the given configuration file.
+This flag permits the use of heterogeneous jobs using multiple executables. No
+executable is given on the command line when using the -config flag. If
+config_file is "-", then the configuration is read from standard input. In this
+case the flag -nostdin is mandatory, as it is not possible to separate the
+contents of the configuration file from process input. The config_file can
+contain lines beginning with "#", that are considered comments and ignored and
+and one or more lines with the following format:
+
+	-n XX : executable [args]
+
+where XX is the number of processes to be used, executable is the name of the
+program to run and args are its arguments. For example:
+
+	# Sample mpiexec config file
+	# Launch two instance of foo
+	-n 2 : foo
+	# and three instances of bar
+	-n 3 bar
+
+There is no support for hostname task layout in a config file at the moment.
+
+=item B<-help|-?>
+
+Display a brief help page
+
+=back
+
+=cut
