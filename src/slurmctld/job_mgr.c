@@ -7152,9 +7152,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_desc->spank_job_env_size = 0;         /* nothing left to free */
 	job_ptr->mcs_label = xstrdup(job_desc->mcs_label);
 
-	if (job_desc->wait_all_nodes == (uint16_t) NO_VAL)
-		job_ptr->wait_all_nodes = DEFAULT_WAIT_ALL_NODES;
-	else
+	if (job_desc->wait_all_nodes != (uint16_t) NO_VAL)
 		job_ptr->wait_all_nodes = job_desc->wait_all_nodes;
 	job_ptr->warn_flags  = job_desc->warn_flags;
 	job_ptr->warn_signal = job_desc->warn_signal;
