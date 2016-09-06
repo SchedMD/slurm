@@ -73,7 +73,7 @@ sub get_new_config() {
 		   || ($parts[1] eq "")
 		   || ($parts[0] =~ '#')) {
 			next;
-		} elsif ($parts[0] =~ '\-n *(\d)') {
+		} elsif ($parts[0] =~ '\-n *(\d+)') {
 			$end_cnt = $task_cnt+$1-1;
 			print FILE "$task_cnt-$end_cnt\t$parts[1]";
 			$task_cnt = $end_cnt+1;

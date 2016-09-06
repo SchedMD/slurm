@@ -33,6 +33,7 @@ documents those changes that are of interest to users and administrators.
     before trying to schedule resources on that partition for the job.
  -- sacctmgr - Fix displaying nodenames when printing out events or
     reservations.
+ -- Fix mpiexec wrapper to accept task count with more than one digit.
 
 * Changes in Slurm 16.05.4
 ==========================
