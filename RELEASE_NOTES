@@ -75,7 +75,8 @@ In will_run_response_msg_t: Added double sys_usage_per to report back how busy a
 
 Added the following struct definitions
 ======================================
-Added fed_elem_t to store federation information on slurmdb_cluster_rec_t.
+Added slurmdb_cluster_fed_t to store federation information on
+	slurmdb_cluster_rec_t.
 Added slurmdb_federation_cond_t for selecting federations from db.
 Added slurmdb_federation_rec_t to represent federation objects.
 Added job_fed_details_t for storing federated job information.

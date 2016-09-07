@@ -57,7 +57,7 @@
 #define FED_MGR_CLUSTER_ID_BEGIN 26
 
 static char                  *fed_mgr_cluster_name = NULL;
-static fed_elem_t             fed_mgr_fed_info;
+static slurmdb_cluster_fed_t  fed_mgr_fed_info     = {0};
 static uint32_t               fed_mgr_fed_flags    = 0;
 static List                   fed_mgr_siblings     = NULL;
 static slurmdb_cluster_rec_t *fed_mgr_loc_cluster  = NULL;
@@ -256,7 +256,8 @@ static void _join_federation(slurmdb_cluster_rec_t *db_cluster, List siblings,
 		info("Joining federation %s", db_cluster->fed.name);
 
 	xfree(fed_mgr_fed_info.name);
-	memcpy(&fed_mgr_fed_info, &db_cluster->fed, sizeof(fed_elem_t));
+	memcpy(&fed_mgr_fed_info, &db_cluster->fed,
+	       sizeof(slurmdb_cluster_fed_t));
 	fed_mgr_fed_info.name = xstrdup(db_cluster->fed.name);
 
 	fed_mgr_fed_flags = fed_flags;
