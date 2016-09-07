@@ -452,36 +452,31 @@ extern int fed_mgr_get_fed_info(slurmdb_federation_rec_t **ret_fed)
 }
 
 
-/* Make copy of fed_mgr_siblings and add the fed_mgr_loc_cluster to the list to
- * save. fed_mgr_state_load will separate out the local cluster from the
- * siblings.
+/* Return a list with the siblings and the loc_cluster in it.
+ *
+ * fed_mgr_state_load() will separate out the local cluster from the siblings.
+ *
+ * NOTE: Must have fed read lock around this call and around the returned list.
+ * NOTE: Must free returned list.
  */
-static List _make_state_save_siblings()
+static List _make_local_siblings()
 {
 	List ret_list = NULL;
 	ListIterator itr;
 	slurmdb_cluster_rec_t *tmp_rec;
-	slurmdb_cluster_rec_t *tmp_fed_mgr_loc_cluster;
 
 	if (!fed_mgr_fed_info.name)
 		goto end_it;
 
-	ret_list = list_create(slurmdb_destroy_cluster_rec);
+	ret_list = list_create(NULL);
 
 	/* local cluster */
-	tmp_fed_mgr_loc_cluster = xmalloc(sizeof(slurmdb_cluster_rec_t));
-	slurmdb_init_cluster_rec(tmp_fed_mgr_loc_cluster, false);
-	slurmdb_copy_cluster_rec(tmp_fed_mgr_loc_cluster, fed_mgr_loc_cluster);
-	list_append(ret_list, tmp_fed_mgr_loc_cluster);
+	list_append(ret_list, fed_mgr_loc_cluster);
 
 	/* siblings */
 	itr = list_iterator_create(fed_mgr_siblings);
 	while ((tmp_rec = list_next(itr))) {
-		slurmdb_cluster_rec_t *new_rec;
-		new_rec = xmalloc(sizeof(slurmdb_cluster_rec_t));
-		slurmdb_init_cluster_rec(new_rec, false);
-		slurmdb_copy_cluster_rec(new_rec, tmp_rec);
-		list_append(ret_list, new_rec);
+		list_append(ret_list, tmp_rec);
 	}
 	list_iterator_destroy(itr);
 
@@ -511,8 +506,7 @@ extern int fed_mgr_state_save(char *state_save_location)
 	pack32(fed_mgr_fed_flags, buffer);
 
 	memset(&msg, 0, sizeof(dbd_list_msg_t));
-
-	msg.my_list = _make_state_save_siblings();
+	msg.my_list = _make_local_siblings();
 	slurmdbd_pack_list_msg(&msg, SLURM_PROTOCOL_VERSION,
 			       DBD_ADD_CLUSTERS, buffer);
 	FREE_NULL_LIST(msg.my_list);
