@@ -205,6 +205,7 @@ static void _do_power_work(time_t now)
 			node_ptr->node_state |=   NODE_STATE_NO_RESPOND;
 			bit_clear(power_node_bitmap, i);
 			bit_clear(avail_node_bitmap, i);
+			node_ptr->boot_req_time = now;
 			node_ptr->last_response = now + resume_timeout;
 			bit_set(wake_node_bitmap,    i);
 			bit_set(resume_node_bitmap,  i);
@@ -304,6 +305,7 @@ extern int power_job_reboot(struct job_record *job_ptr)
 		node_ptr->node_state |=   NODE_STATE_NO_RESPOND;
 		bit_clear(power_node_bitmap, i);
 		bit_clear(avail_node_bitmap, i);
+		node_ptr->boot_req_time = now;
 		node_ptr->last_response = now + resume_timeout;
 		bit_set(resume_node_bitmap,  i);
 	}

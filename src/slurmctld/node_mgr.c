@@ -234,6 +234,7 @@ _dump_node_state (struct node_record *dump_node_ptr, Buf buffer)
 	pack32  (dump_node_ptr->tmp_disk, buffer);
 	pack32  (dump_node_ptr->reason_uid, buffer);
 	pack_time(dump_node_ptr->reason_time, buffer);
+	pack_time(dump_node_ptr->boot_req_time, buffer);
 	pack16  (dump_node_ptr->protocol_version, buffer);
 	packstr (dump_node_ptr->mcs_label, buffer);
 	(void) gres_plugin_node_state_pack(dump_node_ptr->gres_list, buffer,
@@ -292,7 +293,7 @@ extern int load_all_node_state ( bool state_only )
 	uint16_t cpus = 1, boards = 1, sockets = 1, cores = 1, threads = 1;
 	uint32_t real_memory, tmp_disk, data_size = 0, name_len;
 	uint32_t reason_uid = NO_VAL, mem_spec_limit = 0;
-	time_t reason_time = 0;
+	time_t boot_req_time = 0, reason_time = 0;
 	List gres_list = NULL;
 	struct node_record *node_ptr;
 	int state_fd;
@@ -359,7 +360,38 @@ extern int load_all_node_state ( bool state_only )
 	while (remaining_buf (buffer) > 0) {
 		uint32_t base_state;
 		uint16_t obj_protocol_version = (uint16_t)NO_VAL;
-		if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
+			safe_unpackstr_xmalloc (&comm_name, &name_len, buffer);
+			safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
+			safe_unpackstr_xmalloc (&node_hostname,
+							    &name_len, buffer);
+			safe_unpackstr_xmalloc (&reason,    &name_len, buffer);
+			safe_unpackstr_xmalloc (&features,  &name_len, buffer);
+			safe_unpackstr_xmalloc (&features_act,&name_len,buffer);
+			safe_unpackstr_xmalloc (&gres,      &name_len, buffer);
+			safe_unpackstr_xmalloc (&cpu_spec_list,
+							    &name_len, buffer);
+			safe_unpack32 (&node_state,  buffer);
+			safe_unpack16 (&cpus,        buffer);
+			safe_unpack16 (&boards,     buffer);
+			safe_unpack16 (&sockets,     buffer);
+			safe_unpack16 (&cores,       buffer);
+			safe_unpack16 (&core_spec_cnt, buffer);
+			safe_unpack16 (&threads,     buffer);
+			safe_unpack32 (&real_memory, buffer);
+			safe_unpack32 (&mem_spec_limit, buffer);
+			safe_unpack32 (&tmp_disk,    buffer);
+			safe_unpack32 (&reason_uid,  buffer);
+			safe_unpack_time (&reason_time, buffer);
+			safe_unpack_time (&boot_req_time, buffer);
+			safe_unpack16 (&obj_protocol_version, buffer);
+			safe_unpackstr_xmalloc (&mcs_label, &name_len, buffer);
+			if (gres_plugin_node_state_unpack(
+				    &gres_list, buffer, node_name,
+				    protocol_version) != SLURM_SUCCESS)
+				goto unpack_error;
+			base_state = node_state & NODE_STATE_BASE;
+		} else if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
 			safe_unpackstr_xmalloc (&comm_name, &name_len, buffer);
 			safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
 			safe_unpackstr_xmalloc (&node_hostname,
@@ -538,6 +570,9 @@ extern int load_all_node_state ( bool state_only )
 				node_ptr->reason_time = reason_time;
 				node_ptr->reason_uid = reason_uid;
 			}
+
+			if (node_ptr->node_state & NODE_STATE_POWER_UP)
+				node_ptr->boot_req_time = boot_req_time;
 
 			if (!slurmctld_conf.fast_schedule) {
 				/* Accounting will need to know the
@@ -2154,7 +2189,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	struct node_record *node_ptr;
 	char *reason_down = NULL, *tmp_str;
 	uint32_t node_flags;
-	time_t boot_req_time, now = time(NULL);
+	time_t now = time(NULL);
 	bool gang_flag = false;
 	bool orig_node_avail;
 	static uint32_t cr_flag = NO_VAL;
@@ -2174,14 +2209,10 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	node_ptr->version = reg_msg->version;
 	reg_msg->version = NULL;
 
-	if (IS_NODE_POWER_UP(node_ptr)) {
-		boot_req_time = node_ptr->last_response -
-				slurm_get_resume_timeout();
-		if (node_ptr->boot_time < boot_req_time) {
-			debug("Still waiting for boot of node %s",
-			      node_ptr->name);
-			return SLURM_SUCCESS;
-		}
+	if (IS_NODE_POWER_UP(node_ptr) &&
+	    (node_ptr->boot_time < node_ptr->boot_req_time)) {
+		debug("Still waiting for boot of node %s", node_ptr->name);
+		return SLURM_SUCCESS;
 	}
 
 	if (cr_flag == NO_VAL) {
@@ -3002,28 +3033,19 @@ static void _node_did_resp(struct node_record *node_ptr)
 {
 	int node_inx;
 	uint32_t node_flags;
-	time_t boot_req_time, now = time(NULL);
+	time_t now = time(NULL);
 
 	node_inx = node_ptr - node_record_table_ptr;
-	if (IS_NODE_POWER_UP(node_ptr) && (node_ptr->last_response == 0)) {
-		/* slurmctld restart while reboot in progress, assume compute
-		 * node actually rebooted, add boot time to node state in
-		 * slurm version 17.02 to be more robust */
-		node_ptr->last_response = now + slurm_get_resume_timeout();
-	} else if (IS_NODE_POWER_UP(node_ptr) ||
-		   (IS_NODE_DOWN(node_ptr) &&
-		    !xstrcmp(node_ptr->reason, "Scheduled reboot"))) {
-		/* Do not change last_response value (in the future) for nodes
-		 * being booted so unexpected reboots are recognized */
-		boot_req_time = node_ptr->last_response -
-				slurm_get_resume_timeout();
-		if (node_ptr->boot_time < boot_req_time) {
+	if (IS_NODE_POWER_UP(node_ptr) ||
+	    (IS_NODE_DOWN(node_ptr) &&
+	     !xstrcmp(node_ptr->reason, "Scheduled reboot"))) {
+		if (node_ptr->boot_time < node_ptr->boot_req_time) {
 			debug("Still waiting for boot of node %s",
 			      node_ptr->name);
 			return;
 		}
 	}
-	node_ptr->last_response = MAX(now, node_ptr->last_response);
+	node_ptr->last_response = now;
 	if (IS_NODE_NO_RESPOND(node_ptr) || IS_NODE_POWER_UP(node_ptr)) {
 		info("Node %s now responding", node_ptr->name);
 		node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);

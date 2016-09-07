@@ -1609,6 +1609,7 @@ static void _queue_reboot_msg(void)
 		node_ptr->reason = xstrdup("Scheduled reboot");
 		bit_clear(avail_node_bitmap, i);
 		bit_clear(idle_node_bitmap, i);
+		node_ptr->boot_req_time = now;
 		node_ptr->last_response = now + slurm_get_resume_timeout();
 	}
 	if (reboot_agent_args != NULL) {

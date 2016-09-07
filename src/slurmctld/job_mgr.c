@@ -12253,7 +12253,7 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 	struct job_record *job_ptr;
 	struct step_record *step_ptr;
 	char step_str[64];
-	time_t boot_req_time, now = time(NULL);
+	time_t now = time(NULL);
 
 	node_ptr = find_node_record(reg_msg->node_name);
 	if (node_ptr == NULL) {
@@ -12279,14 +12279,10 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 		error("Node up_time is invalid: %u>%u", reg_msg->up_time,
 		      (uint32_t) now);
 	}
-	if (IS_NODE_POWER_UP(node_ptr)) {
-		boot_req_time = node_ptr->last_response -
-				slurm_get_resume_timeout();
-		if (node_ptr->boot_time < boot_req_time) {
-			debug("Still waiting for boot of node %s",
-			      node_ptr->name);
-			return;
-		}
+	if (IS_NODE_POWER_UP(node_ptr) &&
+	    (node_ptr->boot_time < node_ptr->boot_req_time)) {
+		debug("Still waiting for boot of node %s", node_ptr->name);
+		return;
 	}
 
 	node_inx = node_ptr - node_record_table_ptr;

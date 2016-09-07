@@ -89,6 +89,7 @@ struct node_record {
 					 * responding */
 	bool not_responding;		/* set if fails to respond,
 					 * clear after logging this */
+	time_t boot_req_time;		/* Time of node boot request */
 	time_t boot_time;		/* Time of node boot,
 					 * computed from up_time */
 	time_t slurmd_start_time;	/* Time of slurmd startup */

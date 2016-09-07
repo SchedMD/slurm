@@ -3609,6 +3609,7 @@ extern int reboot_job_nodes(struct job_record *job_ptr)
 		node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 		node_ptr->node_state |= NODE_STATE_POWER_UP;
 		bit_clear(avail_node_bitmap, i);
+		node_ptr->boot_req_time = now;
 		node_ptr->last_response = now + slurmctld_conf.resume_timeout -
 					  slurmctld_conf.slurmd_timeout;
 	}
