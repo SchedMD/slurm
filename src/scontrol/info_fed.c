@@ -40,7 +40,9 @@ extern void scontrol_print_federation()
 {
 	void *fed = NULL;
 
-	if (!slurm_load_federation(&fed))
+	if (!slurm_load_federation(&fed)) {
 		slurm_print_federation(fed);
+		slurmdb_destroy_federation_rec(fed);
+	}
 }
 

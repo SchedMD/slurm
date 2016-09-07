@@ -156,4 +156,5 @@ extern void slurm_print_federation(void *ptr)
 
 	list_iterator_destroy(itr);
 	xfree(cluster_name);
+	xfree(fed_flag_str);
 }
