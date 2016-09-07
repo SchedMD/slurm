@@ -84,7 +84,7 @@ proc end_it { exit_code } {
 	exit $exit_code
 }
 
-proc test_fed_status {cname cluster_list} {
+proc test_fed_status {cname fed_flags cluster_list} {
 	# Match db info with what cluster has.
 	global fed_slurm_base fed_name eol
 	array set clusters $cluster_list
@@ -103,7 +103,7 @@ proc test_fed_status {cname cluster_list} {
 			set line $expect_out(buffer)
 			send_user "line: $line\n"
 
-			if {[regexp "Federation: $fed_name" $line match]} {
+			if {[regexp "Federation: $fed_name Flags:$fed_flags" $line match]} {
 				send_user "matched: $match\n"
 				incr matches
 			} elseif {[regexp {Self:\s+(\S+):(\S+):(\d+) ID:(\d+) FedState:(\S*) Weight:(\d+)} \
@@ -183,23 +183,25 @@ if {[setup_federation $fed_name]} {
 # Get cluster/fed info from db
 array set clusters [get_clusterfed_info $fed_name]
 
+set fed_flags "None"
+
 send_user "\n\ntest from $fedc1\n"
 dict set clusters($fedc1) conn Self
 dict set clusters($fedc2) conn Connected
 dict set clusters($fedc3) conn Connected
-test_fed_status $fedc1 [array get clusters]
+test_fed_status $fedc1 $fed_flags [array get clusters]
 
 send_user "\n\ntest from $fedc2\n"
 dict set clusters($fedc1) conn Connected
 dict set clusters($fedc2) conn Self
 dict set clusters($fedc3) conn Connected
-test_fed_status $fedc2 [array get clusters]
+test_fed_status $fedc2 $fed_flags [array get clusters]
 
 send_user "\n\ntest from $fedc3\n"
 dict set clusters($fedc1) conn Connected
 dict set clusters($fedc2) conn Connected
 dict set clusters($fedc3) conn Self
-test_fed_status $fedc3 [array get clusters]
+test_fed_status $fedc3 $fed_flags [array get clusters]
 
 send_user "\n\nremove $fedc3 and test from $fedc1 and $fedc2\n"
 if {[remove_cluster_from_fed $fedc3 $fed_name]} {
@@ -208,11 +210,11 @@ if {[remove_cluster_from_fed $fedc3 $fed_name]} {
 array unset clusters $fedc3
 dict set clusters($fedc1) conn Self
 dict set clusters($fedc2) conn Connected
-test_fed_status $fedc1 [array get clusters]
+test_fed_status $fedc1 $fed_flags [array get clusters]
 
 dict set clusters($fedc1) conn Connected
 dict set clusters($fedc2) conn Self
-test_fed_status $fedc2 [array get clusters]
+test_fed_status $fedc2 $fed_flags [array get clusters]
 
 send_user "\n\nremove $fedc1 and test from $fedc2\n"
 if {[remove_cluster_from_fed $fedc1 $fed_name]} {
@@ -220,14 +222,14 @@ if {[remove_cluster_from_fed $fedc1 $fed_name]} {
 }
 array unset clusters $fedc1
 dict set clusters($fedc2) conn Self
-test_fed_status $fedc2 [array get clusters]
+test_fed_status $fedc2 $fed_flags [array get clusters]
 
 send_user "\n\nremove $fedc2 and test from $fedc2\n"
 array unset clusters
 if {[remove_cluster_from_fed $fedc2 $fed_name]} {
 	end_it 1
 }
-test_fed_status $fedc2 [array get clusters]
+test_fed_status $fedc2 $fed_flags [array get clusters]
 
 send_user "\n\nadd $fedc1 and test from $fedc1\n"
 if {[add_cluster_to_fed $fedc1 $fed_name]} {
@@ -235,7 +237,7 @@ if {[add_cluster_to_fed $fedc1 $fed_name]} {
 }
 array set clusters [get_clusterfed_info $fed_name]
 dict set clusters($fedc1) conn Self
-test_fed_status $fedc1 [array get clusters]
+test_fed_status $fedc1 $fed_flags [array get clusters]
 
 send_user "\n\nadd $fedc2 and test from $fedc1\n"
 if {[add_cluster_to_fed $fedc2 $fed_name]} {
@@ -244,7 +246,7 @@ if {[add_cluster_to_fed $fedc2 $fed_name]} {
 array set clusters [get_clusterfed_info $fed_name]
 dict set clusters($fedc1) conn Self
 dict set clusters($fedc2) conn Connected
-test_fed_status $fedc1 [array get clusters]
+test_fed_status $fedc1 $fed_flags [array get clusters]
 
 send_user "\n\nadd $fedc3 and test from $fedc1\n"
 if {[add_cluster_to_fed $fedc3 $fed_name]} {
@@ -254,11 +256,96 @@ array set clusters [get_clusterfed_info $fed_name]
 dict set clusters($fedc1) conn Self
 dict set clusters($fedc2) conn Connected
 dict set clusters($fedc3) conn Connected
-test_fed_status $fedc1 [array get clusters]
+test_fed_status $fedc1 $fed_flags [array get clusters]
+
+
+send_user "\n\nTest federation flags (LLC)\n"
+set matches 0
+set my_pid [spawn $sacctmgr -i modify federation $fed_name set flags+=LLC]
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Flags\\s+\\+=\\s+LLC$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Modified federation...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$fed_name$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 4} {
+	send_user "$matches FAILURE: setting LLC flag.\n"
+	end_it 1
+}
+
+set fed_flags "LLC"
+array set clusters [get_clusterfed_info $fed_name]
+dict set clusters($fedc1) conn Self
+dict set clusters($fedc2) conn Connected
+dict set clusters($fedc3) conn Connected
+test_fed_status $fedc1 $fed_flags [array get clusters]
+
+
+send_user "\n\nTest removal of federation flags (LLC)\n"
+set matches 0
+set my_pid [spawn $sacctmgr -i modify federation $fed_name set flags-=LLC]
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Flags\\s+\\-=\\s+LLC$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Modified federation...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$fed_name$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 4} {
+	send_user "$matches FAILURE: removing federation flags.\n"
+	end_it 1
+}
+
+set fed_flags "None"
+array set clusters [get_clusterfed_info $fed_name]
+dict set clusters($fedc1) conn Self
+dict set clusters($fedc2) conn Connected
+dict set clusters($fedc3) conn Connected
+test_fed_status $fedc1 $fed_flags [array get clusters]
+
 
 send_user "\n\ndelete federation and test from $fedc1\n"
 delete_federations $fed_name
 array unset clusters
-test_fed_status $fedc2 [array get clusters]
+test_fed_status $fedc2 $fed_flags [array get clusters]
 
 end_it 0

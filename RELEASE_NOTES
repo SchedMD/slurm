@@ -47,10 +47,12 @@ RPMBUILD CHANGES
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
+-- Add new TRESWeights option to NodeName line for caclulating how busy a node
+   is. Currently only used for federation configurations.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
-Add commands to sacctmgr for managing and displaying federations.
+-- Add commands to sacctmgr for managing and displaying federations.
 
 OTHER CHANGES
 =============
@@ -68,10 +70,13 @@ In slurmdb_cluster_rec_t: Added fed, lock, sockfd
 In struct job_record: Added fed_details
 In connection_arg_t: Added bool persist
 In slurmctld_lock_t: Added federation
+In will_run_response_msg_t: Added double sys_usage_per to report back how busy a
+	cluster is.
 
 Added the following struct definitions
 ======================================
-Added fed_elem_t to store federation information on slurmdb_cluster_rec_t.
+Added slurmdb_cluster_fed_t to store federation information on
+	slurmdb_cluster_rec_t.
 Added slurmdb_federation_cond_t for selecting federations from db.
 Added slurmdb_federation_rec_t to represent federation objects.
 Added job_fed_details_t for storing federated job information.
@@ -85,11 +90,14 @@ Added MAX_JOB_ID (0x03FFFFFF)
 Added DEBUG_FLAG_FEDR flag for federation debugging.
 Added cluster_fed_states enum and defines for federation states.
 Changed DEFAULT_MAX_JOB_ID from 0x7fff0000 to 0x03ff0000.
+Added SELECT_NODEDATA_TRES_ALLOC_FMT_STR to select_nodedata_type.
+Added SELECT_NODEDATA_TRES_ALLOC_WEIGHTED to select_nodedata_type.
 
 Added the following API's
 =========================
 Added slurm_load_federation() to retrieve federation info from cluster.
 Added slurm_print_federation() to print federation info retrieved from cluster.
+Added slurm_get_priority_flags() to retrieve priority flags from slurmctld_conf.
 
 Changed the following API's
 ============================

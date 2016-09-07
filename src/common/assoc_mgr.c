@@ -6134,3 +6134,65 @@ extern void assoc_mgr_get_default_qos_info(
 
 	return;
 }
+
+/* Calcuate a weighted tres value.
+ * IN: tres_cnt - array of tres values of size g_tres_count.
+ * IN: weights - weights to apply to tres values of size g_tres_count.
+ * IN: flags - priority flags (toogle between MAX or SUM of tres).
+ * IN: locked - whether the tres read assoc mgr lock is locked or not.
+ * RET: returns the calcuated tres weight.
+ */
+extern double assoc_mgr_tres_weighted(uint64_t *tres_cnt, double *weights,
+				      uint16_t flags, bool locked)
+{
+	int    i;
+	double to_bill_node   = 0.0;
+	double to_bill_global = 0.0;
+	double billable_tres  = 0.0;
+	assoc_mgr_lock_t tres_read_lock = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+		READ_LOCK, NO_LOCK, NO_LOCK };
+
+	/* We don't have any resources allocated, just return 0. */
+	if (!tres_cnt)
+		return 0.0;
+
+	/* Default to cpus if no weights given */
+	if (!weights)
+		return (double)tres_cnt[TRES_ARRAY_CPU];
+
+	if (!locked)
+		assoc_mgr_lock(&tres_read_lock);
+
+	for (i = 0; i < g_tres_count; i++) {
+		double tres_weight = weights[i];
+		char  *tres_type   = assoc_mgr_tres_array[i]->type;
+		double tres_value  = tres_cnt[i];
+
+		debug("TRES Weight: %s = %f * %f = %f",
+		      assoc_mgr_tres_name_array[i], tres_value, tres_weight,
+		      tres_value * tres_weight);
+
+		tres_value *= tres_weight;
+
+		if ((flags & PRIORITY_FLAGS_MAX_TRES) &&
+		    ((i == TRES_ARRAY_CPU) ||
+		     (i == TRES_ARRAY_MEM) ||
+		     (i == TRES_ARRAY_NODE) ||
+		     (!xstrcasecmp(tres_type, "gres"))))
+			to_bill_node = MAX(to_bill_node, tres_value);
+		else
+			to_bill_global += tres_value;
+	}
+
+	billable_tres = to_bill_node + to_bill_global;
+
+	debug("TRES Weighted: %s = %f",
+	      (flags & PRIORITY_FLAGS_MAX_TRES) ?
+	      "MAX(node TRES) + SUM(Global TRES)" : "SUM(TRES)",
+	      billable_tres);
+
+	if (!locked)
+		assoc_mgr_unlock(&tres_read_lock);
+
+	return billable_tres;
+}

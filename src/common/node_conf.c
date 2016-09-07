@@ -56,6 +56,7 @@
 #include <sys/stat.h>
 #include <time.h>
 
+#include "src/common/assoc_mgr.h"
 #include "src/common/hostlist.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
@@ -381,6 +382,8 @@ static void _list_delete_config (void *config_entry)
 	xfree(config_ptr->gres);
 	xfree (config_ptr->nodes);
 	FREE_NULL_BITMAP (config_ptr->node_bitmap);
+	xfree(config_ptr->tres_weights);
+	xfree(config_ptr->tres_weights_str);
 	xfree (config_ptr);
 }
 
@@ -564,9 +567,10 @@ extern int build_all_frontend_info (bool is_slurmd_context)
  * build_all_nodeline_info - get a array of slurm_conf_node_t structures
  *	from the slurm.conf reader, build table, and set values
  * IN set_bitmap - if true, set node_bitmap in config record (used by slurmd)
+ * IN tres_cnt - number of TRES configured on system (used on controller side)
  * RET 0 if no error, error code otherwise
  */
-extern int build_all_nodeline_info (bool set_bitmap)
+extern int build_all_nodeline_info (bool set_bitmap, int tres_cnt)
 {
 	slurm_conf_node_t *node, **ptr_array;
 	struct config_record *config_ptr = NULL;
@@ -592,6 +596,16 @@ extern int build_all_nodeline_info (bool set_bitmap)
 		config_ptr->real_memory = node->real_memory;
 		config_ptr->mem_spec_limit = node->mem_spec_limit;
 		config_ptr->tmp_disk = node->tmp_disk;
+
+		if (tres_cnt) {
+			config_ptr->tres_weights_str =
+				xstrdup(node->tres_weights_str);
+			config_ptr->tres_weights =
+				slurm_get_tres_weight_array(
+						node->tres_weights_str,
+						tres_cnt);
+		}
+
 		config_ptr->weight = node->weight;
 		if (node->feature && node->feature[0])
 			config_ptr->feature = xstrdup(node->feature);

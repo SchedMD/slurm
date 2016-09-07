@@ -143,6 +143,57 @@ static int bb_array_stage_cnt = 10;
 extern diag_stats_t slurmctld_diag_stats;
 
 /*
+ * Calculate how busy the system is by figuring out how busy each node is.
+ */
+static double _get_system_usage()
+{
+	static double sys_usage_per = 0.0;
+	static time_t last_idle_update = 0;
+	static uint16_t priority_flags = 0;
+	static bool statics_inited = false;
+
+	if (!statics_inited) {
+		priority_flags = slurm_get_priority_flags();
+		statics_inited = true;
+	}
+
+	if (last_idle_update < last_node_update) {
+		int    i;
+		double alloc_tres = 0;
+		double tot_tres   = 0;
+
+		select_g_select_nodeinfo_set_all();
+
+		for (i = 0; i < node_record_count; i++) {
+			struct node_record *node_ptr =
+				&node_record_table_ptr[i];
+			double node_alloc_tres = 0.0;
+			double node_tot_tres   = 0.0;
+
+			select_g_select_nodeinfo_get(
+				node_ptr->select_nodeinfo,
+				SELECT_NODEDATA_TRES_ALLOC_WEIGHTED,
+				NODE_STATE_ALLOCATED, &node_alloc_tres);
+
+			node_tot_tres =
+				assoc_mgr_tres_weighted(
+				node_ptr->tres_cnt,
+				node_ptr->config_ptr->tres_weights,
+				priority_flags, false);
+
+			alloc_tres += node_alloc_tres;
+			tot_tres   += node_tot_tres;
+		}
+		last_idle_update = last_node_update;
+
+		if (tot_tres)
+			sys_usage_per = (alloc_tres / tot_tres) * 100;
+	}
+
+	return sys_usage_per;
+}
+
+/*
  * _build_user_job_list - build list of jobs for a given user
  *			  and an optional job name
  * IN  user_id - user id
@@ -3270,6 +3321,9 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 			}
 			list_iterator_destroy(preemptee_iterator);
 		}
+
+		resp_data->sys_usage_per = _get_system_usage();
+
 		*resp = resp_data;
 	} else {
 		rc = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;

@@ -3997,6 +3997,25 @@ might be used to insure the file system is kept clean.
 The default value is 0.
 
 .TP
+\fBTRESWeights\fR TRESWeights are used to calculate a value that represents how
+busy a node is. Currently only used in federation configurations. TRESWeights
+are different from TRESBillingWeights \-\- which is used for fairshare
+calcuations.
+
+TRES weights are specified as a comma\-separated list of
+\fI<TRES Type>\fR=\fI<TRES Weight>\fR pairs.
+.nf
+e.g.
+NodeName=node1 ... TRESWeights="CPU=1.0,Mem=0.25G,GRES/gpu=2.0"
+.fi
+
+By default the weighted TRES value is calculated as the sum of all node TRES
+types multiplied by their corresponding TRES weight.
+
+If PriorityFlags=MAX_TRES is configured, the weighted TRES value is calculated
+as the MAX of individual node TRES' (e.g. cpus, mem, gres).
+
+.TP
 \fBWeight\fR
 The priority of the node for scheduling purposes.
 All things being equal, jobs will be allocated the nodes with

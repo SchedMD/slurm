@@ -12310,19 +12310,43 @@ _pack_will_run_response_msg(will_run_response_msg_t *msg, Buf buffer,
 {
 	uint32_t count = NO_VAL, *job_id_ptr;
 
-	pack32(msg->job_id, buffer);
-	pack32(msg->proc_cnt, buffer);
-	pack_time(msg->start_time, buffer);
-	packstr(msg->node_list, buffer);
+	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
+		pack32(msg->job_id, buffer);
+		packstr(msg->node_list, buffer);
 
-	if (msg->preemptee_job_id)
-		count = list_count(msg->preemptee_job_id);
-	pack32(count, buffer);
-	if (count && (count != NO_VAL)) {
-		ListIterator itr = list_iterator_create(msg->preemptee_job_id);
-		while ((job_id_ptr = list_next(itr)))
-			pack32(job_id_ptr[0], buffer);
-		list_iterator_destroy(itr);
+		if (msg->preemptee_job_id)
+			count = list_count(msg->preemptee_job_id);
+		pack32(count, buffer);
+		if (count && (count != NO_VAL)) {
+			ListIterator itr =
+				list_iterator_create(msg->preemptee_job_id);
+			while ((job_id_ptr = list_next(itr)))
+				pack32(job_id_ptr[0], buffer);
+			list_iterator_destroy(itr);
+		}
+
+		pack32(msg->proc_cnt, buffer);
+		pack_time(msg->start_time, buffer);
+		packdouble(msg->sys_usage_per, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack32(msg->job_id, buffer);
+		pack32(msg->proc_cnt, buffer);
+		pack_time(msg->start_time, buffer);
+		packstr(msg->node_list, buffer);
+
+		if (msg->preemptee_job_id)
+			count = list_count(msg->preemptee_job_id);
+		pack32(count, buffer);
+		if (count && (count != NO_VAL)) {
+			ListIterator itr =
+				list_iterator_create(msg->preemptee_job_id);
+			while ((job_id_ptr = list_next(itr)))
+				pack32(job_id_ptr[0], buffer);
+			list_iterator_destroy(itr);
+		}
+	} else {
+		error("_pack_job_desc_msg: protocol_version "
+		      "%hu not supported", protocol_version);
 	}
 }
 
@@ -12339,20 +12363,45 @@ _unpack_will_run_response_msg(will_run_response_msg_t ** msg_ptr, Buf buffer,
 	uint32_t count, i, uint32_tmp, *job_id_ptr;
 
 	msg = xmalloc(sizeof(will_run_response_msg_t));
-	safe_unpack32(&msg->job_id, buffer);
-	safe_unpack32(&msg->proc_cnt, buffer);
-	safe_unpack_time(&msg->start_time, buffer);
-	safe_unpackstr_xmalloc(&msg->node_list, &uint32_tmp, buffer);
 
-	safe_unpack32(&count, buffer);
-	if (count && (count != NO_VAL)) {
-		msg->preemptee_job_id = list_create(_pre_list_del);
-		for (i=0; i<count; i++) {
-			safe_unpack32(&uint32_tmp, buffer);
-			job_id_ptr = xmalloc(sizeof(uint32_t));
-			job_id_ptr[0] = uint32_tmp;
-			list_append(msg->preemptee_job_id, job_id_ptr);
+	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpackstr_xmalloc(&msg->node_list, &uint32_tmp, buffer);
+
+		safe_unpack32(&count, buffer);
+		if (count && (count != NO_VAL)) {
+			msg->preemptee_job_id = list_create(_pre_list_del);
+			for (i=0; i<count; i++) {
+				safe_unpack32(&uint32_tmp, buffer);
+				job_id_ptr = xmalloc(sizeof(uint32_t));
+				job_id_ptr[0] = uint32_tmp;
+				list_append(msg->preemptee_job_id, job_id_ptr);
+			}
 		}
+
+		safe_unpack32(&msg->proc_cnt, buffer);
+		safe_unpack_time(&msg->start_time, buffer);
+		safe_unpackdouble(&msg->sys_usage_per, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->proc_cnt, buffer);
+		safe_unpack_time(&msg->start_time, buffer);
+		safe_unpackstr_xmalloc(&msg->node_list, &uint32_tmp, buffer);
+
+		safe_unpack32(&count, buffer);
+		if (count && (count != NO_VAL)) {
+			msg->preemptee_job_id = list_create(_pre_list_del);
+			for (i=0; i<count; i++) {
+				safe_unpack32(&uint32_tmp, buffer);
+				job_id_ptr = xmalloc(sizeof(uint32_t));
+				job_id_ptr[0] = uint32_tmp;
+				list_append(msg->preemptee_job_id, job_id_ptr);
+			}
+		}
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
 	}
 
 	*msg_ptr = msg;

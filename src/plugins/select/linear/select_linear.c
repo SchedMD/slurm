@@ -57,6 +57,7 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/slurm_xlator.h"	/* Must be first */
+#include "src/common/assoc_mgr.h"
 #include "src/common/gres.h"
 #include "src/common/job_resources.h"
 #include "src/common/list.h"
@@ -119,7 +120,11 @@ struct select_nodeinfo {
 	uint16_t magic;		/* magic number */
 	uint16_t alloc_cpus;
 	uint32_t alloc_memory;
+	char    *tres_alloc_fmt_str;	/* formatted str of allocated tres */
+	double   tres_alloc_weighted;	/* weighted number of tres allocated. */
 };
+
+static uint16_t priority_flags = 0;
 
 static int  _add_job_to_nodes(struct cr_record *cr_ptr,
 			      struct job_record *job_ptr, char *pre_err,
@@ -3472,6 +3477,8 @@ extern int init ( void )
 		xfree(topo_param);
 	}
 
+	priority_flags = slurm_get_priority_flags();
+
 	return rc;
 }
 
@@ -3832,7 +3839,12 @@ extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
 					 Buf buffer,
 					 uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
+		pack16(nodeinfo->alloc_cpus, buffer);
+		pack32(nodeinfo->alloc_memory, buffer);
+		packstr(nodeinfo->tres_alloc_fmt_str, buffer);
+		packdouble(nodeinfo->tres_alloc_weighted, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack16(nodeinfo->alloc_cpus, buffer);
 		pack32(nodeinfo->alloc_memory, buffer);
 	}
@@ -3844,12 +3856,19 @@ extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
 					   Buf buffer,
 					   uint16_t protocol_version)
 {
+	uint32_t uint32_tmp;
 	select_nodeinfo_t *nodeinfo_ptr = NULL;
 
 	nodeinfo_ptr = select_p_select_nodeinfo_alloc();
 	*nodeinfo = nodeinfo_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
+		safe_unpack16(&nodeinfo_ptr->alloc_cpus, buffer);
+		safe_unpack32(&nodeinfo_ptr->alloc_memory, buffer);
+		safe_unpackstr_xmalloc(&nodeinfo_ptr->tres_alloc_fmt_str,
+				       &uint32_tmp, buffer);
+		safe_unpackdouble(&nodeinfo_ptr->tres_alloc_weighted, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack16(&nodeinfo_ptr->alloc_cpus, buffer);
 		safe_unpack32(&nodeinfo_ptr->alloc_memory, buffer);
 	}
@@ -3882,6 +3901,7 @@ extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 			return EINVAL;
 		}
 		nodeinfo->magic = 0;
+		xfree(nodeinfo->tres_alloc_fmt_str);
 		xfree(nodeinfo);
 	}
 	return SLURM_SUCCESS;
@@ -3917,14 +3937,27 @@ extern int select_p_select_nodeinfo_set_all(void)
 			continue;
 		}
 
+		xfree(nodeinfo->tres_alloc_fmt_str);
 		if (IS_NODE_COMPLETING(node_ptr) || IS_NODE_ALLOCATED(node_ptr)) {
 			if (slurmctld_conf.fast_schedule)
 				nodeinfo->alloc_cpus =
 					node_ptr->config_ptr->cpus;
 			else
 				nodeinfo->alloc_cpus = node_ptr->cpus;
-		} else
+
+			nodeinfo->tres_alloc_fmt_str =
+				assoc_mgr_make_tres_str_from_array(
+						node_ptr->tres_cnt,
+						TRES_STR_CONVERT_UNITS, false);
+			nodeinfo->tres_alloc_weighted =
+				assoc_mgr_tres_weighted(
+					node_ptr->tres_cnt,
+					node_ptr->config_ptr->tres_weights,
+					priority_flags, false);
+		} else {
 			nodeinfo->alloc_cpus = 0;
+			nodeinfo->tres_alloc_weighted = 0.0;
+		}
 		if (cr_ptr && cr_ptr->nodes) {
 			nodeinfo->alloc_memory = cr_ptr->nodes[n].alloc_memory;
 		} else {
@@ -3956,6 +3989,7 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 	uint16_t *uint16 = (uint16_t *) data;
 	uint32_t *uint32 = (uint32_t *) data;
 	char **tmp_char = (char **) data;
+	double *tmp_double = (double *) data;
 	select_nodeinfo_t **select_nodeinfo = (select_nodeinfo_t **) data;
 
 	if (nodeinfo == NULL) {
@@ -3987,6 +4021,12 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 		break;
 	case SELECT_NODEDATA_MEM_ALLOC:
 		*uint32 = nodeinfo->alloc_memory;
+		break;
+	case SELECT_NODEDATA_TRES_ALLOC_FMT_STR:
+		*tmp_char = xstrdup(nodeinfo->tres_alloc_fmt_str);
+		break;
+	case SELECT_NODEDATA_TRES_ALLOC_WEIGHTED:
+		*tmp_double = nodeinfo->tres_alloc_weighted;
 		break;
 	default:
 		error("Unsupported option %d for get_nodeinfo.", dinfo);

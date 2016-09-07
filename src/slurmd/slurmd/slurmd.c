@@ -1493,7 +1493,7 @@ _slurmd_init(void)
 	 * build_all_nodeline_info() to be called with proper argument. */
 	if (slurm_select_init(1) != SLURM_SUCCESS )
 		return SLURM_FAILURE;
-	build_all_nodeline_info(true);
+	build_all_nodeline_info(true, 0);
 	build_all_frontend_info(true);
 
 	/*

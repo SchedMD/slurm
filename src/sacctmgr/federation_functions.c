@@ -474,27 +474,23 @@ extern int sacctmgr_add_federation(int argc, char *argv[])
 		goto end_it;
 	}
 
-	/* Since we are creating tables with add federation that can't be
-	   rolled back.  So we ask before hand if they are serious
-	   about it so we can rollback if needed.
-	*/
-	if (commit_check("Would you like to commit changes?")) {
-		notice_thread_init();
-		rc = acct_storage_g_add_federations(db_conn, my_uid,
-						    federation_list);
-		notice_thread_fini();
-		if (rc == SLURM_SUCCESS) {
+	notice_thread_init();
+	rc = acct_storage_g_add_federations(db_conn, my_uid,
+					    federation_list);
+	notice_thread_fini();
+
+	if (rc == SLURM_SUCCESS) {
+		if (commit_check("Would you like to commit changes?")) {
 			acct_storage_g_commit(db_conn, 1);
 		} else {
-			fprintf(stderr, " Problem adding federation(s): %s\n",
-				slurm_strerror(rc));
-			/* this isn't really needed, but just to be safe */
+			printf(" Changes Discarded\n");
 			acct_storage_g_commit(db_conn, 0);
 		}
 	} else {
-		printf(" Changes Discarded\n");
-		/* this isn't really needed, but just to be safe */
-		acct_storage_g_commit(db_conn, 0);
+		exit_code = 1;
+		fprintf(stderr, " Problem adding federation(s): %s\n",
+			slurm_strerror(rc));
+		rc = SLURM_ERROR;
 	}
 
 end_it:
@@ -609,7 +605,6 @@ extern int sacctmgr_list_federation(int argc, char *argv[])
 						(curr_inx == field_count));
 					break;
 				case PRINT_FLAGS:
-				{
 					if (tree_display && tmp_cluster)
 						tmp_str = NULL;
 					else {
@@ -624,7 +619,6 @@ extern int sacctmgr_list_federation(int argc, char *argv[])
 					if (tmp_str)
 						xfree(tmp_str);
 					break;
-				}
 
 				/* Cluster Specific Fields */
 				case PRINT_CLUSTER:

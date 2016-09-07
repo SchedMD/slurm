@@ -588,7 +588,7 @@ typedef struct {
 	uint32_t id;     /* id of cluster in federation */
 	uint32_t state;  /* state of cluster in federation */
 	uint32_t weight; /* weight of cluster in federation */
-} fed_elem_t;
+} slurmdb_cluster_fed_t;
 
 typedef struct {
 	List accounting_list; /* list of slurmdb_cluster_accounting_rec_t *'s */
@@ -602,7 +602,7 @@ typedef struct {
 			* Size of each dimension For now only on
 			* a bluegene cluster.  DOESN'T GET
 			* PACKED, is set up in slurmdb_get_info_cluster */
-	fed_elem_t fed;      /* Federation information */
+	slurmdb_cluster_fed_t fed; /* Federation information */
 	uint32_t flags;      /* set of CLUSTER_FLAG_* */
 	pthread_mutex_t lock; /* For convenience only. DOESN"T GET PACK */
 	char *name;

@@ -652,6 +652,7 @@ int main(int argc, char *argv[])
 
 	layouts_fini();
 	g_slurm_jobcomp_fini();
+	fed_mgr_fini();
 
 	/* Since pidfile is created as user root (its owner is
 	 *   changed to SlurmUser) SlurmUser may not be able to
@@ -732,7 +733,6 @@ int main(int argc, char *argv[])
 
 	/* do this outside of MEMORY_LEAK_DEBUG so that remote connections get
 	 * closed. */
-	fed_mgr_fini(false);
 
 #ifdef HAVE_BG
 	/* Always call slurm_select_fini() on some systems like

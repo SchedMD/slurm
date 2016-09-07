@@ -69,6 +69,8 @@ struct config_record {
 	uint32_t mem_spec_limit; /* MB real memory for memory specialization */
 	uint32_t real_memory;	/* MB real memory on the node */
 	uint32_t tmp_disk;	/* MB total storage in TMP_FS file system */
+	double  *tres_weights;	/* array of TRES weights */
+	char    *tres_weights_str; /* per TRES billing weight string */
 	uint32_t weight;	/* arbitrary priority of node for
 				 * scheduling work on */
 	char *feature;		/* arbitrary list of node's features */
@@ -212,9 +214,10 @@ hostlist_t bitmap2hostlist (bitstr_t *bitmap);
  * build_all_nodeline_info - get a array of slurm_conf_node_t structures
  *	from the slurm.conf reader, build table, and set values
  * IN set_bitmap - if true, set node_bitmap in config record (used by slurmd)
+ * IN tres_cnt - number of TRES configured on system (used on controller side)
  * RET 0 if no error, error code otherwise
  */
-extern int build_all_nodeline_info (bool set_bitmap);
+extern int build_all_nodeline_info (bool set_bitmap, int tres_cnt);
 
 /*
  * build_all_frontend_info - get a array of slurm_conf_frontend_t structures

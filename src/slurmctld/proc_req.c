@@ -2501,9 +2501,9 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 	/* Locks: Read config, read job, read node, read partition */
 	slurmctld_lock_t job_read_lock = {
 		READ_LOCK, READ_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
-	/* Locks: Write job, read node, read partition */
+	/* Locks: Write job, Write node, read partition */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 	uint16_t port;	/* dummy value */

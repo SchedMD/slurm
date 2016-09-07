@@ -436,6 +436,7 @@ extern int select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 	uint32_t *uint32 = (uint32_t *) data;
 	bitstr_t **bitmap = (bitstr_t **) data;
 	char **tmp_char = (char **) data;
+	double *tmp_double = (double *) data;
 	ListIterator itr = NULL;
 	node_subgrp_t *subgrp = NULL;
 
@@ -513,6 +514,12 @@ extern int select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 		break;
 	case SELECT_NODEDATA_MEM_ALLOC:
 		*uint32 = 0;
+		break;
+	case SELECT_NODEDATA_TRES_ALLOC_FMT_STR:
+		*tmp_char = NULL;
+		break;
+	case SELECT_NODEDATA_TRES_ALLOC_WEIGHTED:
+		*tmp_double = 0;
 		break;
 	default:
 		error("Unsupported option %d for get_nodeinfo.", dinfo);

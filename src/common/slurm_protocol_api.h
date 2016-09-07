@@ -302,6 +302,12 @@ uint32_t slurm_get_priority_calc_period(void);
  */
 bool slurm_get_priority_favor_small(void);
 
+/* slurm_get_priority_flags
+ * returns the priority flags bitmap from slurmctld_conf object
+ * RET uint16_t - priority flags
+ */
+uint16_t slurm_get_priority_flags(void);
+
 /* slurm_get_priority_max_age
  * returns the priority age max in seconds from slurmctld_conf object
  * RET uint32_t - max_age in secs.

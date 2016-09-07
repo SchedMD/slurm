@@ -213,7 +213,7 @@ proc get_clusterfed_info { fed_name } {
 		}
 	}
 	if {$matches < 2} {
-		send_user "$matches FAILURE: didn't match enough clustesr for $fed_name.\n"
+		send_user "$matches FAILURE: didn't match enough clusters for $fed_name.\n"
 		exit 1
 	}
 

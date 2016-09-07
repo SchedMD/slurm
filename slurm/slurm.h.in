@@ -587,7 +587,10 @@ enum select_nodedata_type {
 				      * freed with xfree */
 	SELECT_NODEDATA_RACK_MP,     /* data-> char * needs to be
 				      * freed with xfree */
-	SELECT_NODEDATA_MEM_ALLOC    /* data-> uint32_t */
+	SELECT_NODEDATA_MEM_ALLOC,   /* data-> uint32_t */
+	SELECT_NODEDATA_TRES_ALLOC_FMT_STR, /* data-> char * needs to be freed
+					       with xfree */
+	SELECT_NODEDATA_TRES_ALLOC_WEIGHTED /* data-> double */
 };
 
 enum select_print_mode {
@@ -2217,6 +2220,7 @@ typedef struct will_run_response_msg {
 	List preemptee_job_id;	/* jobs preempted to start this job */
 	uint32_t proc_cnt;	/* CPUs allocated to job at start */
 	time_t start_time;	/* time when job will start */
+	double sys_usage_per;	/* System usage percentage */
 } will_run_response_msg_t;
 
 
