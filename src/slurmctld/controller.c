@@ -1762,7 +1762,7 @@ static void *_slurmctld_background(void *no_data)
 			break;
 		}
 
-		if (difftime(now, last_resv_time) >= 2) {
+		if (difftime(now, last_resv_time) >= 5) {
 			now = time(NULL);
 			last_resv_time = now;
 			lock_slurmctld(node_write_lock);
