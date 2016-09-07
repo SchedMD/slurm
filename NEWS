@@ -40,6 +40,8 @@ documents those changes that are of interest to users and administrators.
     when nodes are ready for use (i.e. booted).
  -- Handle case when slurmctld daemon restart while compute node reboot in
     progress. Return node to service rather than setting DOWN.
+ -- Preserve node "RESERVATION" state when one of multiple overlapping
+    reservations ends.
 
 * Changes in Slurm 16.05.4
 ==========================

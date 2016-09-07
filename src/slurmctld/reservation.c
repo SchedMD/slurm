@@ -5400,7 +5400,7 @@ extern void fini_job_resv_check(void)
 		}
 		_advance_resv_time(resv_ptr);
 		if ((resv_ptr->job_run_cnt    == 0) &&
-		    (resv_ptr->flags_set_node == 0) &&
+		    (resv_ptr->flags_set_node == false) &&
 		    ((resv_ptr->flags & RESERVE_FLAG_DAILY ) == 0) &&
 		    ((resv_ptr->flags & RESERVE_FLAG_WEEKLY) == 0)) {
 			if (resv_ptr->job_pend_cnt) {
@@ -5453,7 +5453,9 @@ extern int send_resvs_to_accounting(void)
  */
 extern int set_node_maint_mode(bool reset_all)
 {
-	int res_start_cnt = 0;
+	int i, res_start_cnt = 0;
+	struct node_record *node_ptr;
+	uint32_t flags;
 	ListIterator iter;
 	slurmctld_resv_t *resv_ptr;
 	time_t now = time(NULL);
@@ -5461,36 +5463,25 @@ extern int set_node_maint_mode(bool reset_all)
 	if (!resv_list)
 		return res_start_cnt;
 
-	if (reset_all) {
-		int i;
-		struct node_record *node_ptr;
-		uint32_t flags = (NODE_STATE_RES | NODE_STATE_MAINT);
-
-		for (i = 0, node_ptr = node_record_table_ptr;
-		     i <= node_record_count;
-		     i++, node_ptr++) {
-			node_ptr->node_state &= (~flags);
-		}
+	flags = (NODE_STATE_RES | NODE_STATE_MAINT);
+	for (i = 0, node_ptr = node_record_table_ptr;
+	     i <= node_record_count; i++, node_ptr++) {
+		node_ptr->node_state &= (~flags);
 	}
+
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
-		uint32_t flags = NODE_STATE_RES;
-		if (reset_all)
-			resv_ptr->flags_set_node = false;
+		flags = NODE_STATE_RES;
 		if (resv_ptr->flags & RESERVE_FLAG_MAINT)
 			flags |= NODE_STATE_MAINT;
 
 		if ((now >= resv_ptr->start_time) &&
 		    (now <  resv_ptr->end_time  )) {
-			if (!resv_ptr->flags_set_node) {
-				resv_ptr->flags_set_node = true;
-				_set_nodes_flags(resv_ptr, now, flags);
-				last_node_update = now;
-			}
-		} else if (resv_ptr->flags_set_node) {
-			resv_ptr->flags_set_node = false;
+			resv_ptr->flags_set_node = true;
 			_set_nodes_flags(resv_ptr, now, flags);
 			last_node_update = now;
+		} else {
+			resv_ptr->flags_set_node = false;
 		}
 
 		if (reset_all)	/* Defer reservation prolog/epilog */
