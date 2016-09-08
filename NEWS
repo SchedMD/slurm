@@ -42,6 +42,8 @@ documents those changes that are of interest to users and administrators.
     progress. Return node to service rather than setting DOWN.
  -- Preserve node "RESERVATION" state when one of multiple overlapping
     reservations ends.
+ -- Restructure srun command locking for task_exit processing logic for improved
+    parallelism.
 
 * Changes in Slurm 16.05.4
 ==========================

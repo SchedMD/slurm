@@ -92,6 +92,7 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 static srun_job_t *local_srun_job = NULL;
 static uint32_t *local_global_rc = NULL;
+static pthread_mutex_t launch_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static task_state_t task_state;
 static time_t launch_start_time;
@@ -302,9 +303,11 @@ static void _task_finish(task_exit_msg_t *msg)
 	verbose("Received task exit notification for %d %s (status=0x%04x).",
 		msg->num_tasks, task_str, msg->return_code);
 
+	/* NOTE: These functions can take multiple milliseconds */
 	tasks = _task_array_to_string(msg->num_tasks, msg->task_id_list);
 	hosts = _task_ids_to_host_list(msg->num_tasks, msg->task_id_list);
 
+	slurm_mutex_lock(&launch_lock);
 	if (WIFEXITED(msg->return_code)) {
 		if ((rc = WEXITSTATUS(msg->return_code)) == 0) {
 			verbose("%s: %s %s: Completed", hosts, task_str, tasks);
@@ -364,6 +367,7 @@ static void _task_finish(task_exit_msg_t *msg)
 		_setup_max_wait_timer();
 
 	last_task_exit_rc = msg->return_code;
+	slurm_mutex_unlock(&launch_lock);
 }
 
 /* Load the multi_prog config file into argv, pass the  entire file contents

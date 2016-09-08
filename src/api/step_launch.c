@@ -1157,6 +1157,7 @@ static void
 _exit_handler(struct step_launch_state *sls, slurm_msg_t *exit_msg)
 {
 	task_exit_msg_t *msg = (task_exit_msg_t *) exit_msg->data;
+	void (*task_finish)(task_exit_msg_t *);
 	int i;
 
 	if ((msg->job_id != sls->mpi_info->jobid) ||
@@ -1175,14 +1176,16 @@ _exit_handler(struct step_launch_state *sls, slurm_msg_t *exit_msg)
 	}
 
 	slurm_mutex_lock(&sls->lock);
+	task_finish = sls->callback.task_finish;
+	slurm_mutex_unlock(&sls->lock);
+	if (task_finish != NULL)
+		(task_finish)(msg);	/* Outside of lock for performance */
 
+	slurm_mutex_lock(&sls->lock);
 	for (i = 0; i < msg->num_tasks; i++) {
 		debug("task %u done", msg->task_id_list[i]);
 		bit_set(sls->tasks_exited, msg->task_id_list[i]);
 	}
-
-	if (sls->callback.task_finish != NULL)
-		(sls->callback.task_finish)(msg);
 
 	pthread_cond_broadcast(&sls->cond);
 	slurm_mutex_unlock(&sls->lock);
