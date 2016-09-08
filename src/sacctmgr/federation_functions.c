@@ -81,6 +81,15 @@ static int _set_cond(int *start, int argc, char *argv[],
 					federation_cond->federation_list,
 					argv[i]+end))
 				a_set = 1;
+		} else if (!end || !strncasecmp(argv[i], "Clusters",
+						MAX(command_len, 3))) {
+			if (!federation_cond->cluster_list)
+				federation_cond->cluster_list =
+					list_create(slurm_destroy_char);
+			if (slurm_addto_char_list(
+						  federation_cond->cluster_list,
+						  argv[i]+end))
+				a_set = 1;
 		} else if (!strncasecmp(argv[i], "Format",
 					 MAX(command_len, 2))) {
 			if (format_list)
