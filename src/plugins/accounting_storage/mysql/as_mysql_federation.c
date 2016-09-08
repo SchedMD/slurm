@@ -39,8 +39,8 @@
 #include "as_mysql_cluster.h"
 
 char *fed_req_inx[] = {
-	"name",
-	"flags",
+	"t1.name",
+	"t1.flags",
 };
 enum {
 	FED_REQ_NAME,
@@ -59,9 +59,24 @@ static int _setup_federation_cond_limits(slurmdb_federation_cond_t *fed_cond,
 		return 0;
 
 	if (fed_cond->with_deleted)
-		xstrcat(*extra, " where (deleted=0 || deleted=1)");
+		xstrcat(*extra, " where (t1.deleted=0 || t1.deleted=1)");
 	else
-		xstrcat(*extra, " where deleted=0");
+		xstrcat(*extra, " where t1.deleted=0");
+
+	if (fed_cond->cluster_list
+	    && list_count(fed_cond->cluster_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(fed_cond->cluster_list);
+		while ((object = list_next(itr))) {
+			if (set)
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "t2.name='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
 
 	if (fed_cond->federation_list
 	    && list_count(fed_cond->federation_list)) {
@@ -71,7 +86,7 @@ static int _setup_federation_cond_limits(slurmdb_federation_cond_t *fed_cond,
 		while ((object = list_next(itr))) {
 			if (set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "name='%s'", object);
+			xstrfmtcat(*extra, "t1.name='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -424,7 +439,7 @@ extern List as_mysql_get_federations(mysql_conn_t *mysql_conn, uid_t uid,
 		return NULL;
 
 	if (!federation_cond) {
-		xstrcat(extra, " where deleted=0");
+		xstrcat(extra, " where t1.deleted=0");
 		goto empty;
 	}
 
@@ -439,8 +454,11 @@ empty:
 		xstrfmtcat(tmp, ", %s", fed_req_inx[i]);
 	}
 
-	query = xstrdup_printf("select %s from %s%s",
-			       tmp, federation_table, extra);
+	query = xstrdup_printf(
+		"select distinct %s from %s as t1 "
+		"left join %s as t2 on t1.name=t2.federation "
+		"%s order by t1.name",
+		tmp, federation_table, cluster_table, extra);
 	xfree(tmp);
 	xfree(extra);
 
@@ -546,7 +564,7 @@ extern List as_mysql_modify_federations(
 		xstrfmtcat(fed_items, ", %s", fed_req_inx[req_inx]);
 	}
 
-	xstrfmtcat(query, "select %s from %s%s;",
+	xstrfmtcat(query, "select %s from %s as t1 %s;",
 		   fed_items, federation_table, extra);
 	xfree(fed_items);
 
@@ -650,8 +668,8 @@ extern List as_mysql_remove_federations(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
-	query = xstrdup_printf("select name from %s%s;", federation_table,
-			       extra);
+	query = xstrdup_printf("select name from %s as t1 %s;",
+			       federation_table, extra);
 	xfree(extra);
 	if (!(result = mysql_db_query_ret( mysql_conn, query, 0))) {
 		xfree(query);

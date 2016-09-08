@@ -670,6 +670,7 @@ typedef struct {
 
 typedef struct {
 	List federation_list; 	/* list of char * */
+	List cluster_list; 	/* list of char * */
 	uint16_t with_deleted;
 } slurmdb_federation_cond_t;
 

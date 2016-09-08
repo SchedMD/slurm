@@ -56,11 +56,8 @@
 #define FED_MGR_STATE_FILE       "fed_mgr_state"
 #define FED_MGR_CLUSTER_ID_BEGIN 26
 
-static char                  *fed_mgr_cluster_name = NULL;
-static slurmdb_cluster_fed_t  fed_mgr_fed_info     = {0};
-static uint32_t               fed_mgr_fed_flags    = 0;
-static List                   fed_mgr_siblings     = NULL;
-static slurmdb_cluster_rec_t *fed_mgr_loc_cluster  = NULL;
+slurmdb_federation_rec_t     *fed_mgr_fed_rec      = NULL;
+static slurmdb_cluster_rec_t *fed_mgr_cluster_rec  = NULL;
 
 static pthread_t ping_thread  = 0;
 static bool      stop_pinging = false;
@@ -161,11 +158,13 @@ static int _close_sibling_conns()
 	ListIterator itr;
 	slurmdb_cluster_rec_t *conn;
 
-	if (!fed_mgr_siblings)
+	if (!fed_mgr_fed_rec || !fed_mgr_fed_rec->cluster_list)
 		goto fini;
 
-	itr = list_iterator_create(fed_mgr_siblings);
+	itr = list_iterator_create(fed_mgr_fed_rec->cluster_list);
 	while ((conn = list_next(itr))) {
+		if (conn == fed_mgr_cluster_rec)
+			continue;
 		_close_controller_conn(conn);
 	}
 	list_iterator_destroy(itr);
@@ -190,12 +189,14 @@ static void *_ping_thread(void *arg)
 		slurmdb_cluster_rec_t *conn;
 
 		lock_slurmctld(fed_read_lock);
-		if (!fed_mgr_siblings)
+		if (!fed_mgr_fed_rec || !fed_mgr_fed_rec->cluster_list)
 			goto next;
 
-		itr = list_iterator_create(fed_mgr_siblings);
+		itr = list_iterator_create(fed_mgr_fed_rec->cluster_list);
 
 		while ((conn = list_next(itr))) {
+			if (conn == fed_mgr_cluster_rec)
+				continue;
 			if (conn->sockfd == -1)
 				_open_controller_conn(conn);
 			if (conn->sockfd == -1)
@@ -246,53 +247,43 @@ static void _destroy_ping_thread()
 /*
  * Must have FED write lock prior to entering
  */
-static void _join_federation(slurmdb_cluster_rec_t *db_cluster, List siblings,
-			     uint32_t fed_flags)
+static void _join_federation(slurmdb_federation_rec_t *db_fed)
 {
-	slurmdb_cluster_rec_t *tmp_cluster;
 	ListIterator c_itr;
+	slurmdb_cluster_rec_t *tmp_cluster, *db_cluster;
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-		info("Joining federation %s", db_cluster->fed.name);
+		info("Joining federation %s", db_fed->name);
 
-	xfree(fed_mgr_fed_info.name);
-	memcpy(&fed_mgr_fed_info, &db_cluster->fed,
-	       sizeof(slurmdb_cluster_fed_t));
-	fed_mgr_fed_info.name = xstrdup(db_cluster->fed.name);
+	c_itr = list_iterator_create(db_fed->cluster_list);
+	if (fed_mgr_fed_rec) {
+		/* we are already part of a federation, preserve existing
+		 * conenctions */
+		while ((db_cluster = list_next(c_itr))) {
+			if (db_cluster == fed_mgr_cluster_rec)
+				continue;
+			if (!(tmp_cluster =
+			      list_find_first(fed_mgr_fed_rec->cluster_list,
+					      slurmdb_find_cluster_in_list,
+					      db_cluster->name))) {
+				continue;
+			}
 
-	fed_mgr_fed_flags = fed_flags;
+			/* FIXME: Danny mod send and recv clusters */
+		}
 
-	/* Store the cluster_rec from the db for passing this information back
-	 * in scontrol show fed. This is so that it doesn't need to be stored in
-	 * the siblings list. */
-	slurmdb_destroy_cluster_rec(fed_mgr_loc_cluster);
-	fed_mgr_loc_cluster = xmalloc(sizeof(slurmdb_cluster_rec_t));
-	slurmdb_init_cluster_rec(fed_mgr_loc_cluster, false);
-	slurmdb_copy_cluster_rec(fed_mgr_loc_cluster, db_cluster);
-
-	/* add clusters from federation into local list */
-	if (fed_mgr_siblings) {
-		/* close connections to all other siblings */
-		/* free sib list as host and ports may have changed */
-		_close_sibling_conns();
-		FREE_NULL_LIST(fed_mgr_siblings);
+		slurmdb_destroy_federation_rec(fed_mgr_fed_rec);
 	}
 
-	fed_mgr_siblings = list_create(slurmdb_destroy_cluster_rec);
-	c_itr = list_iterator_create(siblings);
-	while ((tmp_cluster = list_next(c_itr))) {
-		slurmdb_cluster_rec_t *sibling;
+	fed_mgr_fed_rec = db_fed;
 
-		if (!xstrcmp(tmp_cluster->name, fed_mgr_cluster_name))
+	list_iterator_reset(c_itr);
+	while ((tmp_cluster = list_next(c_itr))) {
+		if (tmp_cluster == fed_mgr_cluster_rec)
 			continue;
 
-		sibling = xmalloc(sizeof(slurmdb_cluster_rec_t));
-		slurmdb_init_cluster_rec(sibling, false);
-		slurmdb_copy_cluster_rec(sibling, tmp_cluster);
-
-		_open_controller_conn(sibling);
-
-		list_append(fed_mgr_siblings, sibling);
+		/* FIXME: Danny open connection */
+		_open_controller_conn(tmp_cluster);
 	}
 	list_iterator_destroy(c_itr);
 
@@ -304,35 +295,70 @@ static void _join_federation(slurmdb_cluster_rec_t *db_cluster, List siblings,
  */
 static void _leave_federation()
 {
-	if (!fed_mgr_fed_info.name)
+	if (!fed_mgr_fed_rec)
 		return;
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-		info("Leaving federation %s", fed_mgr_fed_info.name);
+		info("Leaving federation %s", fed_mgr_fed_rec->name);
 
 	_close_sibling_conns();
 	_destroy_ping_thread();
-	xfree(fed_mgr_fed_info.name);
-	memset(&fed_mgr_fed_info, 0, sizeof(fed_mgr_fed_info));
-	FREE_NULL_LIST(fed_mgr_siblings);
-	slurmdb_destroy_cluster_rec(fed_mgr_loc_cluster);
-	fed_mgr_loc_cluster = NULL;
-	fed_mgr_fed_flags = 0;
+	slurmdb_destroy_federation_rec(fed_mgr_fed_rec);
+	fed_mgr_fed_rec = NULL;
+	fed_mgr_cluster_rec = NULL;
 }
 
-extern int fed_mgr_init()
+extern int fed_mgr_init(void *db_conn)
 {
+	int rc = SLURM_SUCCESS;
+	slurmdb_federation_cond_t fed_cond;
+	List fed_list;
 	slurmctld_lock_t fed_write_lock = {
 		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
 
-	lock_slurmctld(fed_write_lock);
+	if (running_cache) {
+		debug("Database appears down, reading federations from state file.");
+		fed_mgr_state_load(slurmctld_conf.state_save_location);
+		return SLURM_SUCCESS;
+	}
 
-	if (!fed_mgr_cluster_name)
-		fed_mgr_cluster_name = slurm_get_cluster_name();
+	slurmdb_init_federation_cond(&fed_cond, 0);
+	fed_cond.cluster_list = list_create(NULL);
+	list_append(fed_cond.cluster_list, slurmctld_cluster_name);
 
-	unlock_slurmctld(fed_write_lock);
+	fed_list = acct_storage_g_get_federations(db_conn, getuid(),
+						  &fed_cond);
+	FREE_NULL_LIST(fed_cond.cluster_list);
+	if (!fed_list) {
+		error("failed to get a federation list");
+		return SLURM_ERROR;
+	}
 
-	return SLURM_SUCCESS;
+	if (list_count(fed_list) == 1) {
+		slurmdb_cluster_rec_t *cluster = NULL;
+		slurmdb_federation_rec_t *fed = list_pop(fed_list);
+
+		if ((cluster = list_find_first(fed->cluster_list,
+					       slurmdb_find_cluster_in_list,
+					       slurmctld_cluster_name))) {
+			lock_slurmctld(fed_write_lock);
+
+			fed_mgr_cluster_rec = cluster;
+			_join_federation(fed);
+
+			unlock_slurmctld(fed_write_lock);
+		} else {
+			error("failed to get cluster from federation that we request");
+			rc = SLURM_ERROR;
+		}
+	} else if (list_count(fed_list) > 1) {
+		error("got more federations than expected");
+		rc = SLURM_ERROR;
+	}
+
+	FREE_NULL_LIST(fed_list);
+
+	return rc;
 }
 
 extern int fed_mgr_fini()
@@ -342,7 +368,6 @@ extern int fed_mgr_fini()
 
 	lock_slurmctld(fed_write_lock);
 
-	xfree(fed_mgr_cluster_name);
 	_leave_federation();
 
 	unlock_slurmctld(fed_write_lock);
@@ -355,7 +380,7 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 	List feds;
 	ListIterator f_itr;
 	slurmdb_federation_rec_t *fed = NULL;
-	bool part_of_fed = false;
+	slurmdb_cluster_rec_t *cluster = NULL;
 	slurmctld_lock_t fed_write_lock = {
 		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
 
@@ -368,8 +393,6 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 	feds = update->objects;
 	f_itr = list_iterator_create(feds);
 
-	fed_mgr_init();
-
 	lock_slurmctld(fed_write_lock);
 
 	/* find the federation that this cluster is in.
@@ -379,29 +402,24 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 
 	/* what if a remote cluster is removed from federation.
 	 * have to detect that and close the connection to the remote */
-	while ((fed = list_next(f_itr))) {
-		ListIterator c_itr = list_iterator_create(fed->cluster_list);
-		slurmdb_cluster_rec_t *cluster = NULL;
+	while ((fed = list_pop(feds))) {
+		if (!fed->cluster_list)
+			goto next;
 
-		if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-			info("Fed:%s Clusters:%d", fed->name,
-			     list_count(fed->cluster_list));
-		while ((cluster = list_next(c_itr))) {
-			if (!xstrcasecmp(cluster->name, fed_mgr_cluster_name)) {
-				part_of_fed = true;
-				_join_federation(cluster, fed->cluster_list,
-						 fed->flags);
-				break;
-			}
-		}
-		list_iterator_destroy(c_itr);
-
-		if (part_of_fed)
+		if ((cluster = list_find_first(fed->cluster_list,
+					       slurmdb_find_cluster_in_list,
+					       slurmctld_cluster_name))) {
+			fed_mgr_cluster_rec = cluster;
+			_join_federation(fed);
 			break;
+		}
+
+next:
+		slurmdb_destroy_federation_rec(fed);
 	}
 	list_iterator_destroy(f_itr);
 
-	if (!part_of_fed) {
+	if (!fed) {
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 			info("Not part of any federation");
 		_leave_federation();
@@ -412,83 +430,10 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 	return SLURM_SUCCESS;
 }
 
-extern int fed_mgr_get_fed_info(slurmdb_federation_rec_t **ret_fed)
-{
-	slurmdb_federation_rec_t *out_fed;
-	slurmctld_lock_t fed_read_lock = {
-		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
-
-	xassert(ret_fed);
-
-	out_fed = (slurmdb_federation_rec_t *)
-		xmalloc(sizeof(slurmdb_federation_rec_t));
-	slurmdb_init_federation_rec(out_fed, false);
-
-	lock_slurmctld(fed_read_lock);
-
-	if (fed_mgr_fed_info.name) {
-		slurmdb_federation_rec_t tmp_fed;
-		slurmdb_init_federation_rec(&tmp_fed, false);
-
-		tmp_fed.name         = fed_mgr_fed_info.name;
-		tmp_fed.cluster_list = fed_mgr_siblings;
-		tmp_fed.flags        = fed_mgr_fed_flags;
-
-		slurmdb_copy_federation_rec(out_fed, &tmp_fed);
-
-		/* add local cluster info */
-		slurmdb_cluster_rec_t *tmp_cluster;
-		tmp_cluster = xmalloc(sizeof(slurmdb_cluster_rec_t));
-		slurmdb_init_cluster_rec(tmp_cluster, false);
-		slurmdb_copy_cluster_rec(tmp_cluster, fed_mgr_loc_cluster);
-		list_append(out_fed->cluster_list, tmp_cluster);
-	}
-
-	unlock_slurmctld(fed_read_lock);
-
-	*ret_fed = out_fed;
-
-	return SLURM_SUCCESS;
-}
-
-
-/* Return a list with the siblings and the loc_cluster in it.
- *
- * fed_mgr_state_load() will separate out the local cluster from the siblings.
- *
- * NOTE: Must have fed read lock around this call and around the returned list.
- * NOTE: Must free returned list.
- */
-static List _make_local_siblings()
-{
-	List ret_list = NULL;
-	ListIterator itr;
-	slurmdb_cluster_rec_t *tmp_rec;
-
-	if (!fed_mgr_fed_info.name)
-		goto end_it;
-
-	ret_list = list_create(NULL);
-
-	/* local cluster */
-	list_append(ret_list, fed_mgr_loc_cluster);
-
-	/* siblings */
-	itr = list_iterator_create(fed_mgr_siblings);
-	while ((tmp_rec = list_next(itr))) {
-		list_append(ret_list, tmp_rec);
-	}
-	list_iterator_destroy(itr);
-
-end_it:
-	return ret_list;
-}
-
 extern int fed_mgr_state_save(char *state_save_location)
 {
 	int error_code = 0, log_fd;
 	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
-	dbd_list_msg_t msg;
 	slurmctld_lock_t fed_read_lock = {
 		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 
@@ -503,13 +448,8 @@ extern int fed_mgr_state_save(char *state_save_location)
 	pack_time(time(NULL), buffer);
 
 	lock_slurmctld(fed_read_lock);
-	pack32(fed_mgr_fed_flags, buffer);
-
-	memset(&msg, 0, sizeof(dbd_list_msg_t));
-	msg.my_list = _make_local_siblings();
-	slurmdbd_pack_list_msg(&msg, SLURM_PROTOCOL_VERSION,
-			       DBD_ADD_CLUSTERS, buffer);
-	FREE_NULL_LIST(msg.my_list);
+	slurmdb_pack_federation_rec(fed_mgr_fed_rec, SLURM_PROTOCOL_VERSION,
+				    buffer);
 	unlock_slurmctld(fed_read_lock);
 
 	/* write the buffer to file */
@@ -565,14 +505,14 @@ extern int fed_mgr_state_save(char *state_save_location)
 extern int fed_mgr_state_load(char *state_save_location)
 {
 	Buf buffer = NULL;
-	dbd_list_msg_t *msg = NULL;
 	char *data = NULL, *state_file;
 	time_t buf_time;
 	uint16_t ver = 0;
-	uint32_t data_size = 0, tmp_fed_flags = 0;
+	uint32_t data_size = 0;
 	int state_fd;
 	int data_allocated, data_read = 0, error_code = SLURM_SUCCESS;
 	slurmdb_cluster_rec_t *cluster = NULL;
+	slurmdb_federation_rec_t *tmp_fed = NULL;
 	slurmctld_lock_t fed_write_lock = {
 		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
 
@@ -623,35 +563,35 @@ extern int fed_mgr_state_load(char *state_save_location)
 	}
 
 	safe_unpack_time(&buf_time, buffer);
-	safe_unpack32(&tmp_fed_flags, buffer);
 
-	error_code = slurmdbd_unpack_list_msg(&msg, ver, DBD_ADD_CLUSTERS,
-					      buffer);
+	error_code = slurmdb_unpack_federation_rec((void **)&tmp_fed, ver,
+						   buffer);
 	if (error_code != SLURM_SUCCESS)
 		goto unpack_error;
-	else if (!msg->my_list) {
+	else if (!tmp_fed) {
 		error("No feds retrieved");
 	}
 
-	fed_mgr_init(); /* set fed_mgr_cluster_name */
-
-	lock_slurmctld(fed_write_lock);
-
-	if (msg->my_list &&
-	    !(cluster = list_find_first(msg->my_list,
+	if (tmp_fed && tmp_fed->cluster_list &&
+	    !(cluster = list_find_first(tmp_fed->cluster_list,
 					slurmdb_find_cluster_in_list,
-					fed_mgr_cluster_name))) {
+					slurmctld_cluster_name))) {
 		error("This cluster doesn't exist in the fed siblings");
-		unlock_slurmctld(fed_write_lock);
-		slurmdbd_free_list_msg(msg);
+		slurmdb_destroy_federation_rec(tmp_fed);
 		goto unpack_error;
 	} else if (cluster) {
-		_join_federation(cluster, msg->my_list, tmp_fed_flags);
-	}
-	unlock_slurmctld(fed_write_lock);
+		lock_slurmctld(fed_write_lock);
 
-	slurmdbd_free_list_msg(msg);
+		fed_mgr_cluster_rec = cluster;
+		_join_federation(tmp_fed);
+		tmp_fed = NULL;
+
+		unlock_slurmctld(fed_write_lock);
+	}
+
 	free_buf(buffer);
+	if (tmp_fed)
+		slurmdb_destroy_federation_rec(tmp_fed);
 
 	return SLURM_SUCCESS;
 
@@ -680,9 +620,9 @@ extern char *fed_mgr_find_sibling_name_by_ip(char *ip)
 		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 
 	lock_slurmctld(fed_read_lock);
-	if (fed_mgr_siblings &&
-	    (sibling = list_find_first(fed_mgr_siblings, _find_sibling_by_ip,
-				       ip)))
+	if (fed_mgr_fed_rec && fed_mgr_fed_rec->cluster_list &&
+	    (sibling = list_find_first(fed_mgr_fed_rec->cluster_list,
+				       _find_sibling_by_ip, ip)))
 		name = xstrdup(sibling->name);
 	unlock_slurmctld(fed_read_lock);
 
@@ -699,7 +639,7 @@ extern bool fed_mgr_is_active()
 		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 
 	lock_slurmctld(fed_read_lock);
-	if (fed_mgr_fed_info.name)
+	if (fed_mgr_fed_rec)
 		rc = true;
 	unlock_slurmctld(fed_read_lock);
 
@@ -713,7 +653,9 @@ extern bool fed_mgr_is_active()
  */
 extern uint32_t fed_mgr_get_job_id(uint32_t orig)
 {
-	return orig + (fed_mgr_fed_info.id << FED_MGR_CLUSTER_ID_BEGIN);
+	if (!fed_mgr_cluster_rec)
+		return orig;
+	return orig + (fed_mgr_cluster_rec->fed.id << FED_MGR_CLUSTER_ID_BEGIN);
 }
 
 /*
