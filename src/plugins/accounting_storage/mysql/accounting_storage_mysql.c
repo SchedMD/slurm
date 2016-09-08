@@ -1998,16 +1998,26 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	}
 
 	if (table != assoc_table) {
-		if (cluster_centric)
+		if (cluster_centric) {
 			xstrfmtcat(query,
 				   "update \"%s_%s\" set mod_time=%ld, "
 				   "deleted=1 where deleted=0 && (%s);",
 				   cluster_name, table, now, name_char);
-		else
+		} else if (table == federation_table) {
+			xstrfmtcat(query,
+				   "update %s set "
+				   "mod_time=%ld, deleted=1, "
+				   "flags=DEFAULT, "
+				   "priority=DEFAULT "
+				   "where deleted=0 && (%s);",
+				   federation_table, now,
+				   name_char);
+		} else {
 			xstrfmtcat(query,
 				   "update %s set mod_time=%ld, deleted=1 "
 				   "where deleted=0 && (%s);",
 				   table, now, name_char);
+		}
 	}
 
 	/* If we are removing assocs use the assoc_char since the
