@@ -701,7 +701,7 @@ _send_exit_msg(stepd_step_rec_t *job, uint32_t *tid, int n, int status)
 
 	/*
 	 *  Hack for TCP timeouts on exit of large, synchronized job
-	 *  termination. Delay a random amount if job->nnodes > 100
+	 *  termination. Delay a random amount if job->nnodes > 500
 	 */
 	if (job->nnodes > 500)
 		_random_sleep(job);
