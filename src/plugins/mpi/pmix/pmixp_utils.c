@@ -201,9 +201,8 @@ bool pmixp_fd_read_ready(int fd, int *shutdown)
 	*shutdown = 0;
 
 	rc = poll(pfd, 1, 0);
-	
 	if( rc < 0 ){
-		if( errno != EINTR ){
+		if( !(errno == EINTR) ){
 			*shutdown = -errno;
 			return false;
 		}

@@ -318,6 +318,8 @@ int pmixp_stepd_init(const stepd_step_rec_t *job, char ***env)
 		goto err_job;
 	}
 
+    pmixp_server_init_pp(env);
+
 	xfree(path);
 	_was_initialized = 1;
 	return SLURM_SUCCESS;
@@ -400,7 +402,6 @@ static struct io_operations direct_peer_ops = {
 	.writable	= _serv_writable,
 	.handle_write	= _serv_write
 };
-
 
 static bool _serv_readable(eio_obj_t *obj)
 {
@@ -574,6 +575,18 @@ static void _process_server_request(pmixp_base_hdr_t *hdr, void *payload)
 		buf = create_buf(NULL, 0);
 		break;
 	}
+#ifndef NDEBUG
+	case PMIXP_MSG_PINGPONG: {
+		/* if the pingpong mode was activated - node 0 sends ping requests
+		 * and receiver assumed to respond back to node 0
+		 */
+		if( pmixp_info_nodeid() ){
+			pmixp_server_pp_send(pmixp_info_job_host(0), hdr->msgsize);
+		}
+		pmixp_server_pp_inc();
+		break;
+	}
+#endif
 	default:
 		PMIXP_ERROR("Unknown message type %d", hdr->type);
 		break;
@@ -850,6 +863,8 @@ _direct_send(pmixp_dconn_t *dconn, pmixp_ep_t *ep,
 	msg->hdr = bhdr;
 	msg->payload = _buf_finalize(buf, NULL, 0, &dsize);
 	msg->buf_ptr = buf;
+	
+	
 	rc = pmixp_dconn_send(dconn, msg);
 	if (SLURM_SUCCESS != rc) {
 		msg->sent_cb(rc, PMIXP_SRV_CB_INLINE, msg->cbdata);
@@ -1034,3 +1049,184 @@ static int _slurm_send(pmixp_ep_t *ep, pmixp_base_hdr_t bhdr, Buf buf)
 	return rc;
 }
 
+/*
+ * ------------------- communication DEBUG tool -----------------------
+ */
+
+#ifndef NDEBUG
+
+/*
+ * This is solely a debug code that helps to estimate
+ * the performance of the communication subsystem
+ * of the plugin
+ */
+
+static bool _pmixp_pp_on = false;
+static int _pmixp_pp_low = 0;
+static int _pmixp_pp_up = 24;
+static int _pmixp_pp_bound = 10;
+static int _pmixp_pp_siter = 1000;
+static int _pmixp_pp_liter = 100;
+
+static volatile int _pmixp_pp_count = 0;
+
+int pmixp_server_pp_count()
+{
+	return _pmixp_pp_count;
+}
+
+void pmixp_server_pp_inc()
+{
+	_pmixp_pp_count++;
+}
+
+static bool _consists_from_digits(char *s)
+{
+	if (strspn(s, "0123456789") == strlen(s)){
+		return true;
+	}
+	return false;
+}
+
+void pmixp_server_init_pp(char ***env)
+{
+	char *env_ptr = NULL;
+
+	/* check if we want to run ping-pong */
+	if (!(env_ptr = getenvp(*env, PMIXP_PP_ON))) {
+		return;
+	}
+	if (!strcmp("1", env_ptr) || !strcmp("true", env_ptr)) {
+		_pmixp_pp_on = true;
+	}
+
+	if ((env_ptr = getenvp(*env, PMIXP_PP_LOW))) {
+		if (_consists_from_digits(env_ptr)) {
+			_pmixp_pp_low = atoi(env_ptr);
+		}
+	}
+
+	if ((env_ptr = getenvp(*env, PMIXP_PP_UP))) {
+		if (_consists_from_digits(env_ptr)) {
+			_pmixp_pp_up = atoi(env_ptr);
+		}
+	}
+
+	if ((env_ptr = getenvp(*env, PMIXP_PP_SITER))) {
+		if (_consists_from_digits(env_ptr)) {
+			_pmixp_pp_siter = atoi(env_ptr);
+		}
+	}
+
+	if ((env_ptr = getenvp(*env, PMIXP_PP_LITER))) {
+		if (_consists_from_digits(env_ptr)) {
+			_pmixp_pp_liter = atoi(env_ptr);
+		}
+	}
+
+	if ((env_ptr = getenvp(*env, PMIXP_PP_BOUND))) {
+		if (_consists_from_digits(env_ptr)) {
+			_pmixp_pp_bound = atoi(env_ptr);
+		}
+	}
+}
+
+bool pmixp_server_want_pp()
+{
+    return _pmixp_pp_on;
+}
+
+/*
+ * For this to work the following conditions supposed to be
+ * satisfied:
+ * - SLURM has to be configured with `--enable-debug` option
+ * - jobstep needs to have at least two nodes
+ * In this case communication exchange will be done between
+ * the first two nodes.
+ */
+void pmixp_server_run_pp()
+{
+	int i;
+	size_t start, end, bound;
+	/* ping is initiated by the nodeid == 0
+	 * all the rest - just exit
+	 */
+	if( pmixp_info_nodeid() ){
+		return;
+	}
+
+	start = 1 << _pmixp_pp_low;
+	end = 1 << _pmixp_pp_up;
+	bound = 1 << _pmixp_pp_bound;
+
+	for( i = start; i <= end; i *= 2) {
+		int count, iters = _pmixp_pp_siter;
+		struct timeval tv1, tv2;
+		double time;
+		if( i >= bound ) {
+			iters = _pmixp_pp_liter;
+		}
+
+		/* warmup - 10% of iters # */
+		count = pmixp_server_pp_count() + iters/10;
+		while( pmixp_server_pp_count() < count ){
+			int cur_count = pmixp_server_pp_count();
+			pmixp_server_pp_send(pmixp_info_job_host(1), i);
+			while( cur_count == pmixp_server_pp_count() ){
+				usleep(1);
+			}
+		}
+
+		count = pmixp_server_pp_count() + iters;
+		gettimeofday(&tv1, NULL);
+		while( pmixp_server_pp_count() < count ){
+			int cur_count = pmixp_server_pp_count();
+			/* Send the message to the (nodeid == 1) */
+			pmixp_server_pp_send(pmixp_info_job_host(1), i);
+			/* wait for the response */
+			while (cur_count == pmixp_server_pp_count());
+		}
+		gettimeofday(&tv2, NULL);
+		time = tv2.tv_sec + 1E-6 * tv2.tv_usec -
+				(tv1.tv_sec + 1E-6 * tv1.tv_usec);
+		/* Output measurements to the slurmd.log */
+		PMIXP_ERROR("latency: %d - %lf", i, time / iters );
+	}
+}
+
+
+struct pp_cbdata
+{
+	Buf buf;
+	double start;
+	int size;
+} cbdata;
+
+void pingpong_complete(int rc, pmixp_srv_cb_context_t ctx, void *data)
+{
+	struct pp_cbdata *d = (struct pp_cbdata*)data;
+	free_buf(d->buf);
+	//    PMIXP_ERROR("Send complete: %d %lf", d->size, GET_TS - d->start);
+}
+
+int pmixp_server_pp_send(const char *host, int size)
+{
+	Buf buf = pmixp_server_buf_new();
+	int rc;
+	pmixp_ep_t ep;
+
+	grow_buf(buf, size);
+	ep.type = PMIXP_EP_HNAME;
+	ep.ep.hostname = (char*)host;
+	cbdata.buf = buf;
+	cbdata.size = size;
+	set_buf_offset(buf,get_buf_offset(buf) + size);
+	rc = pmixp_server_send_nb(&ep, PMIXP_MSG_PINGPONG,
+				  _pmixp_pp_count, buf, pingpong_complete, (void*)&cbdata);
+	if (SLURM_SUCCESS != rc) {
+		PMIXP_ERROR("Was unable to wait for the parent %s to become alive", host);
+	}
+	return rc;
+}
+
+#endif

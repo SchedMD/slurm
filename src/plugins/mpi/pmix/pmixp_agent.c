@@ -341,6 +341,14 @@ int pmixp_agent_start(void)
 		sched_yield();
 	}
 
+	/* Check if a ping-pong run was requested by user
+	 * NOTE: enabled only if `--enable-debug` configuration
+	 * option was passed
+	 */
+	if( pmixp_server_want_pp() ){
+		pmixp_server_run_pp();
+	}
+	
 	PMIXP_DEBUG("agent thread started: tid = %lu",
 			(unsigned long) _agent_tid);
 

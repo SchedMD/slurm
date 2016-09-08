@@ -44,7 +44,10 @@ typedef enum {
 	PMIXP_MSG_FAN_IN,
 	PMIXP_MSG_FAN_OUT,
 	PMIXP_MSG_DMDX,
-	PMIXP_MSG_INIT_DIRECT
+	PMIXP_MSG_INIT_DIRECT,
+#ifndef NDEBUG
+	PMIXP_MSG_PINGPONG
+#endif
 } pmixp_srv_cmd_t;
 
 typedef enum {
@@ -92,5 +95,21 @@ pmixp_server_buf_reserve(Buf buf, uint32_t size)
 		grow_buf(buf, to_reserve);
 	}
 }
+
+
+#ifndef NDEBUG
+/* Debug tools used only if debug was enabled */
+void pmixp_server_init_pp(char ***env);
+bool pmixp_server_want_pp();
+void pmixp_server_run_pp();
+int pmixp_server_pp_send(const char *hostlist, int size);
+int pmixp_server_pp_count();
+void pmixp_server_pp_inc();
+#else
+/* Stubs for the initialization code */
+#define pmixp_server_want_pp() (0)
+#define pmixp_server_run_pp()
+#define pmixp_server_init_pp(env)
+#endif
 
 #endif /* PMIXP_SERVER_H */

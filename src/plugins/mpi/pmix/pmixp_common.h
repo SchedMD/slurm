@@ -113,4 +113,24 @@
 #define PMIXP_PMIXLIB_DEBUG "PMIX_DEBUG"
 #define PMIXP_PMIXLIB_DEBUG_REDIR "PMIX_OUTPUT_REDIRECT"
 
+/* ----------------------------------------------------------
+ * This variables can be used to setup a ping-pong test to test
+ * the communication latency (for debug purpose only)
+ * ---------------------------------------------------------- */
+
+/* Request a point-to-point test to be executed
+ * before running a job
+ */
+#define PMIXP_PP_ON "SLURM_PMIX_WANT_PP"
+/* Smallest message size (power of 2) */
+#define PMIXP_PP_LOW "SLURM_PMIX_PP_LOW_PWR2"
+/* Largest message size (power of 2) */
+#define PMIXP_PP_UP "SLURM_PMIX_PP_UP_PWR2"
+/* Number of repetitions for the small messages */
+#define PMIXP_PP_SITER "SLURM_PMIX_PP_ITER_SMALL"
+/* Number of repetitions for the large messages */
+#define PMIXP_PP_LITER "SLURM_PMIX_PP_ITER_LARGE"
+/* The bound after which message is considered large */
+#define PMIXP_PP_BOUND "SLURM_PMIX_PP_LARGE_PWR2"
+
 #endif /* PMIXP_COMMON_H */
