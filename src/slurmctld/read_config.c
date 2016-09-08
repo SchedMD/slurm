@@ -1077,9 +1077,6 @@ int read_slurm_conf(int recover, bool reconfig)
 		      "Clean start required.");
 	}
 
-	if (!reconfig)
-		fed_mgr_state_load(state_save_dir);
-
 	xfree(state_save_dir);
 	_gres_reconfig(reconfig);
 	reset_job_bitmaps();		/* must follow select_g_job_init() */

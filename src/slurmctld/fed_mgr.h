@@ -41,7 +41,8 @@
 #include "slurm/slurmdb.h"
 
 extern slurmdb_federation_rec_t *fed_mgr_fed_rec;
-extern int fed_mgr_init();
+
+extern int fed_mgr_init(void *db_conn);
 extern int fed_mgr_fini();
 extern int fed_mgr_update_feds(slurmdb_update_object_t *update);
 extern int fed_mgr_state_save(char *state_save_location);

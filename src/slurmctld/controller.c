@@ -2068,6 +2068,9 @@ extern void ctld_assoc_mgr_init(slurm_trigger_callbacks_t *callbacks)
 		}
 	}
 
+	if (fed_mgr_init(acct_db_conn))
+		fatal("Failed to initialize fed_mgr");
+
 	/* Now load the usage from a flat file since it isn't kept in
 	   the database No need to check for an error since if this
 	   fails we will get an error message and we will go on our

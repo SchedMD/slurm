@@ -308,15 +308,57 @@ static void _leave_federation()
 	fed_mgr_cluster_rec = NULL;
 }
 
-extern int fed_mgr_init()
+extern int fed_mgr_init(void *db_conn)
 {
+	int rc = SLURM_SUCCESS;
+	slurmdb_federation_cond_t fed_cond;
+	List fed_list;
 	slurmctld_lock_t fed_write_lock = {
 		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
 
+	if (running_cache) {
+		debug("Database appears down, reading federations from state file.");
+		fed_mgr_state_load(slurmctld_conf.state_save_location);
+		return SLURM_SUCCESS;
+	}
 
+	slurmdb_init_federation_cond(&fed_cond, 0);
+	fed_cond.cluster_list = list_create(NULL);
+	list_append(fed_cond.cluster_list, slurmctld_cluster_name);
 
+	fed_list = acct_storage_g_get_federations(db_conn, getuid(),
+						  &fed_cond);
+	FREE_NULL_LIST(fed_cond.cluster_list);
+	if (!fed_list) {
+		error("failed to get a federation list");
+		return SLURM_ERROR;
+	}
 
-	return SLURM_SUCCESS;
+	if (list_count(fed_list) == 1) {
+		slurmdb_cluster_rec_t *cluster = NULL;
+		slurmdb_federation_rec_t *fed = list_pop(fed_list);
+
+		if ((cluster = list_find_first(fed->cluster_list,
+					       slurmdb_find_cluster_in_list,
+					       slurmctld_cluster_name))) {
+			lock_slurmctld(fed_write_lock);
+
+			fed_mgr_cluster_rec = cluster;
+			_join_federation(fed);
+
+			unlock_slurmctld(fed_write_lock);
+		} else {
+			error("failed to get cluster from federation that we request");
+			rc = SLURM_ERROR;
+		}
+	} else if (list_count(fed_list) > 1) {
+		error("got more federations than expected");
+		rc = SLURM_ERROR;
+	}
+
+	FREE_NULL_LIST(fed_list);
+
+	return rc;
 }
 
 extern int fed_mgr_fini()
