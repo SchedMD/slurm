@@ -112,6 +112,7 @@ static void _free_cluster_cond_members(slurmdb_cluster_cond_t *cluster_cond)
 static void _free_federation_cond_members(slurmdb_federation_cond_t *fed_cond)
 {
 	if (fed_cond) {
+		FREE_NULL_LIST(fed_cond->cluster_list);
 		FREE_NULL_LIST(fed_cond->federation_list);
 	}
 }
