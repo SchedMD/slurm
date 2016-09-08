@@ -2012,6 +2012,35 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 				   "where deleted=0 && (%s);",
 				   federation_table, now,
 				   name_char);
+		} else if (table == qos_table) {
+			xstrfmtcat(query,
+				   "update %s set "
+				   "mod_time=%ld, deleted=1, "
+				   "grace_time=DEFAULT, "
+				   "max_jobs_pa=DEFAULT, "
+				   "max_jobs_per_user=DEFAULT, "
+				   "max_submit_jobs_pa=DEFAULT, "
+				   "max_submit_jobs_per_user=DEFAULT, "
+				   "max_tres_pa=DEFAULT, "
+				   "max_tres_pj=DEFAULT, "
+				   "max_tres_pn=DEFAULT, "
+				   "max_tres_pu=DEFAULT, "
+				   "max_tres_mins_pj=DEFAULT, "
+				   "max_tres_run_mins_pa=DEFAULT, "
+				   "max_tres_run_mins_pu=DEFAULT, "
+				   "min_tres_pj=DEFAULT, "
+				   "max_wall_duration_per_job=DEFAULT, "
+				   "grp_jobs=DEFAULT, grp_submit_jobs=DEFAULT, "
+				   "grp_tres=DEFAULT, "
+				   "grp_tres_mins=DEFAULT, "
+				   "grp_tres_run_mins=DEFAULT, "
+				   "grp_wall=DEFAULT, "
+				   "preempt=DEFAULT, "
+				   "priority=DEFAULT, "
+				   "usage_factor=DEFAULT, "
+				   "usage_thres=DEFAULT "
+				   "where deleted=0 && (%s);",
+				   qos_table, now, name_char);
 		} else {
 			xstrfmtcat(query,
 				   "update %s set mod_time=%ld, deleted=1 "
@@ -2053,46 +2082,12 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	if (rc != SLURM_SUCCESS) {
 		reset_mysql_conn(mysql_conn);
 		return SLURM_ERROR;
-	} else if (table == qos_table) {
-		query = xstrdup_printf(
-			"update %s set "
-			"mod_time=%ld, deleted=1, "
-			"grace_time=DEFAULT, "
-			"max_jobs_pa=DEFAULT, "
-			"max_jobs_per_user=DEFAULT, "
-			"max_submit_jobs_pa=DEFAULT, "
-			"max_submit_jobs_per_user=DEFAULT, "
-			"max_tres_pa=DEFAULT, "
-			"max_tres_pj=DEFAULT, "
-			"max_tres_pn=DEFAULT, "
-			"max_tres_pu=DEFAULT, "
-			"max_tres_mins_pj=DEFAULT, "
-			"max_tres_run_mins_pa=DEFAULT, "
-			"max_tres_run_mins_pu=DEFAULT, "
-			"min_tres_pj=DEFAULT, "
-			"max_wall_duration_per_job=DEFAULT, "
-			"grp_jobs=DEFAULT, grp_submit_jobs=DEFAULT, "
-			"grp_tres=DEFAULT, "
-			"grp_tres_mins=DEFAULT, "
-			"grp_tres_run_mins=DEFAULT, "
-			"grp_wall=DEFAULT, "
-			"preempt=DEFAULT, "
-			"priority=DEFAULT, "
-			"usage_factor=DEFAULT, "
-			"usage_thres=DEFAULT "
-			"where (%s);",
-			qos_table, now,
-			name_char);
-		if (debug_flags & DEBUG_FLAG_DB_QOS)
-			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
-		rc = mysql_db_query(mysql_conn, query);
-		xfree(query);
-		return rc;
 	} else if ((table == acct_coord_table)
 		   || (table == wckey_table)
 		   || (table == clus_res_table)
 		   || (table == res_table)
-		   || (table == federation_table))
+		   || (table == federation_table)
+		   || (table == qos_table))
 		return SLURM_SUCCESS;
 
 	/* mark deleted=1 or remove completely the accounting tables
