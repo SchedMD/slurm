@@ -30,6 +30,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix for node's available tres array getting filled in with configured gres
     model types.
  -- Log if job --bb option contains any unrecognized content.
+ -- Display configured and allocated tres for nodes in scontrol show nodes.
 
 * Changes in Slurm 17.02.0pre1
 ==============================

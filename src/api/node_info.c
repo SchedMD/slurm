@@ -126,6 +126,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	int idle_cpus;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	uint32_t alloc_memory;
+	char *node_alloc_tres = NULL;
 	char *line_end = (one_liner) ? " " : "\n   ";
 
 	if (node_scaling)
@@ -315,7 +316,17 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	} else {
 		xstrcat(out, "SlurmdStartTime=None");
 	}
+	xstrcat(out, line_end);
 
+	/****** TRES Line ******/
+	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
+				     SELECT_NODEDATA_TRES_ALLOC_FMT_STR,
+				     NODE_STATE_ALLOCATED, &node_alloc_tres);
+	xstrfmtcat(out, "CfgTRES=%s", node_ptr->tres_fmt_str);
+	xstrcat(out, line_end);
+	xstrfmtcat(out, "AllocTRES=%s",
+		   (node_alloc_tres) ?  node_alloc_tres : "");
+	xfree(node_alloc_tres);
 	xstrcat(out, line_end);
 
 	/****** Power Management Line ******/
