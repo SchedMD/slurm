@@ -668,6 +668,7 @@ _random_sleep(stepd_step_rec_t *job)
 	long int delay = 0;
 	long int max   = (slurm_get_tcp_timeout() * job->nnodes);
 
+	max = MIN(max, 5000);
 	srand48((long int) (job->jobid + job->nodeid));
 
 	delay = lrand48() % ( max + 1 );
