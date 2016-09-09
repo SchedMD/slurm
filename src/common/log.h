@@ -232,6 +232,11 @@ void log_flush(void);
  */
 extern void log_set_debug_flags(void);
 
+/* Return the highest LOG_LEVEL_* used for any logging mechanism.
+ * For example, if LOG_LEVEL_INFO is returned, we know that all verbose and
+ * debug type messages will be ignored. */
+extern int get_log_level(void);
+
 /*
  * the following log a message to the log facility at the appropriate level:
  *

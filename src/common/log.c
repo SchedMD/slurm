@@ -1382,3 +1382,15 @@ dump_cleanup_list(void)
 	}
 	slurm_mutex_unlock(&fatal_lock);
 }
+
+/* Return the highest LOG_LEVEL_* used for any logging mechanism.
+ * For example, if LOG_LEVEL_INFO is returned, we know that all verbose and
+ * debug type messages will be ignored. */
+extern int get_log_level(void)
+{
+	int level;
+
+	level = MAX(log->opt.syslog_level, log->opt.logfile_level);
+	level = MAX(level, log->opt.stderr_level);
+	return level;
+}
