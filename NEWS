@@ -44,6 +44,8 @@ documents those changes that are of interest to users and administrators.
     reservations ends.
  -- Restructure srun command locking for task_exit processing logic for improved
     parallelism.
+ -- Modify srun task completion handling to only build the task/node string for
+    logging purposes if it is needed. Modified for performance purposes.
 
 * Changes in Slurm 16.05.4
 ==========================

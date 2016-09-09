@@ -283,8 +283,8 @@ static void _task_start(launch_tasks_response_msg_t *msg)
 
 static void _task_finish(task_exit_msg_t *msg)
 {
-	char *tasks;
-	char *hosts;
+	char *tasks = NULL, *hosts = NULL;
+	bool build_task_string = false;
 	uint32_t rc = 0;
 	int normal_exit = 0;
 	static int reduce_task_exit_msg = -1;
@@ -303,33 +303,48 @@ static void _task_finish(task_exit_msg_t *msg)
 	verbose("Received task exit notification for %d %s (status=0x%04x).",
 		msg->num_tasks, task_str, msg->return_code);
 
-	/* NOTE: These functions can take multiple milliseconds */
-	tasks = _task_array_to_string(msg->num_tasks, msg->task_id_list);
-	hosts = _task_ids_to_host_list(msg->num_tasks, msg->task_id_list);
+	/* Only build the "tasks" and "hosts" strings as needed. Buidling them
+	 * can take multiple milliseconds */
+	if (WIFEXITED(msg->return_code)) {
+		if ((rc = WEXITSTATUS(msg->return_code)) == 0) {
+			if (get_log_level() >= LOG_LEVEL_VERBOSE)
+				build_task_string = true;
+		} else {
+			build_task_string = true;
+		}
+
+	} else if (WIFSIGNALED(msg->return_code)) {
+		if (local_srun_job->state >= SRUN_JOB_CANCELLED) {
+			if (get_log_level() >= LOG_LEVEL_VERBOSE)
+				build_task_string = true;
+		} else {
+			build_task_string = true;
+		}
+	}
+	if (build_task_string) {
+		tasks = _task_array_to_string(msg->num_tasks, msg->task_id_list);
+		hosts = _task_ids_to_host_list(msg->num_tasks, msg->task_id_list);
+	}
 
 	slurm_mutex_lock(&launch_lock);
 	if (WIFEXITED(msg->return_code)) {
 		if ((rc = WEXITSTATUS(msg->return_code)) == 0) {
 			verbose("%s: %s %s: Completed", hosts, task_str, tasks);
 			normal_exit = 1;
-		}
-		else if (_is_openmpi_port_error(rc)) {
+		} else if (_is_openmpi_port_error(rc)) {
 			_handle_openmpi_port_error(tasks, hosts,
 						   local_srun_job->step_ctx);
-		} else {
-			if (reduce_task_exit_msg == 0 ||
-			    msg_printed == 0 ||
-			    msg->return_code != last_task_exit_rc) {
-				error("%s: %s %s: Exited with exit code %d",
-				      hosts, task_str, tasks, rc);
-				msg_printed = 1;
-			}
+		} else if ((reduce_task_exit_msg == 0) ||
+			   (msg_printed == 0) ||
+			   (msg->return_code != last_task_exit_rc)) {
+			error("%s: %s %s: Exited with exit code %d",
+			      hosts, task_str, tasks, rc);
+			msg_printed = 1;
 		}
 		if (!WIFEXITED(*local_global_rc)
 		    || (rc > WEXITSTATUS(*local_global_rc)))
 			*local_global_rc = msg->return_code;
-	}
-	else if (WIFSIGNALED(msg->return_code)) {
+	} else if (WIFSIGNALED(msg->return_code)) {
 		const char *signal_str = strsignal(WTERMSIG(msg->return_code));
 		char * core_str = "";
 #ifdef WCOREDUMP
@@ -339,20 +354,16 @@ static void _task_finish(task_exit_msg_t *msg)
 		if (local_srun_job->state >= SRUN_JOB_CANCELLED) {
 			verbose("%s: %s %s: %s%s",
 				hosts, task_str, tasks, signal_str, core_str);
-		} else {
-			if (reduce_task_exit_msg == 0 ||
-			    msg_printed == 0 ||
-			    msg->return_code != last_task_exit_rc) {
-				error("%s: %s %s: %s%s",
-				      hosts, task_str, tasks, signal_str,
-				      core_str);
-				msg_printed = 1;
-			}
+		} else if ((reduce_task_exit_msg == 0) ||
+			   (msg_printed == 0) ||
+			   (msg->return_code != last_task_exit_rc)) {
+			error("%s: %s %s: %s%s",
+			      hosts, task_str, tasks, signal_str, core_str);
+			msg_printed = 1;
 		}
 		if (*local_global_rc == NO_VAL)
 			*local_global_rc = msg->return_code;
 	}
-
 	xfree(tasks);
 	xfree(hosts);
 
