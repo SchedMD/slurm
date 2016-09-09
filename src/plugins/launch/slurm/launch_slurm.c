@@ -123,14 +123,25 @@ static char *_hostset_to_string(hostset_t hs)
 
 /* Convert an array of task IDs into a list of host names
  * RET: the string, caller must xfree() this value */
-static char *_task_ids_to_host_list(int ntasks, uint32_t taskids[])
+static char *_task_ids_to_host_list(int ntasks, uint32_t *taskids)
 {
-	int i;
+	int i, task_cnt = 0;
 	hostset_t hs;
 	char *hosts;
 	slurm_step_layout_t *sl;
 
 	if ((sl = launch_common_get_slurm_step_layout(local_srun_job)) == NULL)
+		return (xstrdup("Unknown"));
+
+	/* If overhead of determining the hostlist is too high then srun
+	 * communications will timeout and fail, so return "Unknown" instead.
+	 *
+	 * See slurm_step_layout_host_id() in src/common/slurm_step_layout.c
+	 * for details. */
+	for (i = 0; i < sl->node_cnt; i++) {
+		task_cnt += sl->tasks[i];
+	}
+	if (task_cnt > 100000)
 		return (xstrdup("Unknown"));
 
 	hs = hostset_create(NULL);
@@ -166,7 +177,7 @@ static char *_task_array_to_string(int ntasks, uint32_t taskids[])
 		error("bit_alloc: memory allocation failure");
 		exit(error_exit);
 	}
-	for (i=0; i<ntasks; i++)
+	for (i = 0; i < ntasks; i++)
 		bit_set(tasks_bitmap, taskids[i]);
 	str = xmalloc(2048);
 	bit_fmt(str, 2048, tasks_bitmap);
@@ -322,8 +333,10 @@ static void _task_finish(task_exit_msg_t *msg)
 		}
 	}
 	if (build_task_string) {
-		tasks = _task_array_to_string(msg->num_tasks, msg->task_id_list);
-		hosts = _task_ids_to_host_list(msg->num_tasks, msg->task_id_list);
+		tasks = _task_array_to_string(msg->num_tasks,
+					      msg->task_id_list);
+		hosts = _task_ids_to_host_list(msg->num_tasks,
+					       msg->task_id_list);
 	}
 
 	slurm_mutex_lock(&launch_lock);
