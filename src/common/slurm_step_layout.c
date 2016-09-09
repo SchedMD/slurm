@@ -455,8 +455,8 @@ int slurm_step_layout_host_id (slurm_step_layout_t *s, int taskid)
 	int i, j;
 	if (!s->tasks || !s->tids || (taskid > s->task_cnt - 1))
 		return SLURM_ERROR;
-	for (i=0; i < s->node_cnt; i++)
-		for (j=0; j<s->tasks[i]; j++)
+	for (i = 0; i < s->node_cnt; i++)
+		for (j = 0; j < s->tasks[i]; j++)
 			if (s->tids[i][j] == taskid)
 				return i;
 
