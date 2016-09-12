@@ -1177,18 +1177,23 @@ bind by task rank (not recommended)
 Use memory local to the processor in use
 .TP
 .B map_mem:<list>
-bind by mapping a node's memory to tasks as specified
-where <list> is <cpuid1>,<cpuid2>,...<cpuidN>.
-CPU IDs are interpreted as decimal values unless they are preceded
-with '0x' in which case they interpreted as hexadecimal values
-(not recommended)
+bind by setting memory masks on tasks (or ranks) as specified where <list> is
+<numa_id_for_task_0>,<numa_id_for_task_1>,...
+NUMA IDs are interpreted as decimal values unless they are preceded
+with '0x' in which case they interpreted as hexadecimal values.
+If the number of tasks (or ranks) exceeds the number of elements in this list,
+elements in the list will be reused as needed starting from the beginning of
+the list.
 .TP
 .B mask_mem:<list>
-bind by setting memory masks on tasks as specified
-where <list> is <mask1>,<mask2>,...<maskN>.
-memory masks are \fBalways\fR interpreted as hexadecimal values.
+bind by setting memory masks on tasks (or ranks) as specified where <list> is
+<numa_mask_for_task_0>,<numa_mask_for_task_1>,...
+NUMA masks are \fBalways\fR interpreted as hexadecimal values.
 Note that masks must be preceded with a '0x' if they don't begin
-with [0-9] so they are seen as numerical values by srun.
+with [0-9] so they are seen as numerical values.
+If the number of tasks (or ranks) exceeds the number of elements in this list,
+elements in the list will be reused as needed starting from the beginning of
+the list.
 .TP
 .B help
 show this help message
