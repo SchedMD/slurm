@@ -41,6 +41,8 @@ HIGHLIGHTS
     4 billion jobs in your database you will want to update your slurmctld at
     the same time as your slurmdbd to prevent roll over of this variable as
     it is 32 bit previous versions of Slurm.
+ -- All memory values (in MB) are now 64 bit. Previously, nodes with > 2TB of
+    memory would not schedule or enforce memory limits correctly.
 
 RPMBUILD CHANGES
 ================
@@ -62,6 +64,12 @@ API CHANGES
 
 Changed members of the following structs
 ========================================
+Memory conversion to uint64_t in: job_descriptor, job_info, node_info,
+	partition_info, resource_allocation_response_msg, slurm_ctl_conf,
+	slurmd_status_msg, slurm_step_ctx_params_t
+Variables converted are: actual_real_mem, def_mem_per_cpu, free_mem,
+	max_mem_per_cpu, mem_spec_limit, pn_min_memory, real_memory, req_mem.
+
 
 Added members to the following struct definitions
 =================================================
@@ -92,6 +100,7 @@ Added cluster_fed_states enum and defines for federation states.
 Changed DEFAULT_MAX_JOB_ID from 0x7fff0000 to 0x03ff0000.
 Added SELECT_NODEDATA_TRES_ALLOC_FMT_STR to select_nodedata_type.
 Added SELECT_NODEDATA_TRES_ALLOC_WEIGHTED to select_nodedata_type.
+Changed MEM_PER_CPU flag to 0x8000000000000000 from 0x80000000.
 
 Added the following API's
 =========================
