@@ -111,8 +111,10 @@ extern void slurm_print_federation(void *ptr)
 		return;
 
 	fed_flag_str = slurmdb_federation_flags_str(fed->flags);
-
-	cluster_name = slurm_get_cluster_name();
+	if (working_cluster_rec)
+		cluster_name = xstrdup(working_cluster_rec->name);
+	else
+		cluster_name = slurm_get_cluster_name();
 
 	left_col_size = strlen("federation:");
 	printf("%-*s %s Flags:%s\n", left_col_size, "Federation:",
