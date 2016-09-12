@@ -52,6 +52,7 @@ typedef struct {
 typedef struct {
 	void *auth_cred;
 	char *cluster_name;
+	uint16_t my_port;
 	int fd;
 	uint16_t flags;
 	bool inited;
@@ -68,6 +69,8 @@ typedef struct {
 
 typedef struct {
 	char *cluster_name;     /* cluster this message is coming from */
+	uint16_t port;          /* If you want to open a new connection, this is
+				 *  the port to talk to. */
 	uint16_t version;	/* protocol version */
 	uint32_t uid;		/* UID originating connection,
 				 * filled by authtentication plugin*/

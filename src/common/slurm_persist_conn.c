@@ -196,7 +196,8 @@ extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
 
 	memset(&req, 0, sizeof(persist_init_req_msg_t));
 	req.cluster_name = persist_conn->cluster_name;
-	req.version  = SLURM_PROTOCOL_VERSION;
+	req.port = persist_conn->my_port;
+	req.version = SLURM_PROTOCOL_VERSION;
 
 	req_msg.data = &req;
 
@@ -700,6 +701,7 @@ extern void slurm_persist_pack_init_req_msg(
 	/* Adding anything to this needs to happen after the version
 	   since this is where the receiver gets the version from. */
 	packstr(msg->cluster_name, buffer);
+	pack16(msg->port, buffer);
 }
 
 extern int slurm_persist_unpack_init_req_msg(
@@ -714,6 +716,7 @@ extern int slurm_persist_unpack_init_req_msg(
 
 	safe_unpack16(&msg_ptr->version, buffer);
 	safe_unpackstr_xmalloc(&msg_ptr->cluster_name, &tmp32, buffer);
+	safe_unpack16(&msg_ptr->port, buffer);
 
 	return SLURM_SUCCESS;
 
