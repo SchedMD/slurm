@@ -544,7 +544,7 @@ extern int fed_mgr_init(void *db_conn)
 					       slurmctld_cluster_name))) {
 			_join_federation(fed, cluster, false);
 		} else {
-			error("failed to get cluster from federation that we request");
+			error("failed to get cluster from federation that we requested");
 			rc = SLURM_ERROR;
 		}
 	}
