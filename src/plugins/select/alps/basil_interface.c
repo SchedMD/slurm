@@ -160,8 +160,8 @@ extern int basil_node_ranking(struct node_record *node_array, int node_cnt)
 		} else if ((slurmctld_conf.fast_schedule != 2)
 			   && (node->mem_size
 			       != node_ptr->config_ptr->real_memory)) {
-			fatal("slurm.conf: node %s has RealMemory=%u "
-			      "but configured as RealMemory=%u in your "
+			fatal("slurm.conf: node %s has RealMemory=%"PRIu64" "
+			      "but configured as RealMemory=%"PRIu64" in your "
 			      "slurm.conf",
 			      node_ptr->name, node->mem_size,
 			      node_ptr->config_ptr->real_memory);
@@ -973,8 +973,9 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 	if (mppmem)
 		job_ptr->details->pn_min_memory = mppmem | MEM_PER_CPU;
 
-	info("ALPS RESERVATION #%u, JobId %u: BASIL -n %d -N %d -d %d -m %d",
-	     resv_id, job_ptr->job_id, mppwidth, mppnppn, mppdepth, mppmem);
+	info("ALPS RESERVATION #%u, JobId %u: BASIL -n %d -N %d -d %d "
+	     "-m %"PRIu64"", resv_id, job_ptr->job_id, mppwidth, mppnppn,
+	     mppdepth, mppmem);
 
 	return SLURM_SUCCESS;
 }
