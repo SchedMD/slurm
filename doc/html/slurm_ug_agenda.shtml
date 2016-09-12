@@ -150,7 +150,7 @@ talk. These enhancements include:</p>
 <li>Ability to establish per-task dependencies in a job array</li>
 <li>Added support for PMIx</li>
 <li>Added command wrappers for the LSF/OpenLava resource managers</li>
-<li>Added syooirt for GridEngine options to the qsub command wrapper</li>
+<li>Added support for GridEngine options to the qsub command wrapper</li>
 </ul>
 
 <!-- -------------------------------------------------------------------------- -->
@@ -175,26 +175,6 @@ talk. These enhancements include:</p>
 
 <p>This talk will present the MCS logic, the Slurm options to use, as well as
 future improvements.</p>
-
-<!-- -------------------------------------------------------------------------- -->
-
-<h3>Support for Intel Knights Landing (KNL)</h3>
-<p>Morris Jette and Tim Wickberg (SchedMD)</p>
-
-<p>The Intel Knights Landing (KNL) chip has a number of unusual capabilities
- affecting resource management. The most significant feature for Slurm to manage
- is the chip's ability to modify its cache and NUMA configuration at boot time.
- This means that Slurm just not only track the node's current configuration, but
- the configurations which can be made available when the node is rebooted.
- Various quantities of cache resources can be made available user addressable
- high bandwidth memory (HBM), which Slurm treats as a generic resource (GRES)
- on the node. The various NUMA configurations necessitate support for dynamically
- changing the groupings of the cores and memory. Slurm has addressed these, and
- other challenges, through the addition of a new "node_features" plugin
- infrastructure.</p>
-
-<p>This presentation will cover an overview of the KNL architecture and the
-changes made to Slurm in order to support it, including work still underway.</p>
 
 <!-- -------------------------------------------------------------------------- -->
 
@@ -421,20 +401,23 @@ changes made to Slurm in order to support it, including work still underway.</p>
 
 <!-- -------------------------------------------------------------------------- -->
 
-<h3>Slurm Roadmap</h3>
-<p>Danny Auble (SchedMD)<br>Yiannis Georgiou (BULL)</p>
+<h3>Support for Intel Knights Landing (KNL)</h3>
+<p>Morris Jette and Tim Wickberg (SchedMD)</p>
 
-<p>This presentation will describe new capabilities planned in future releases of Slurm</p>
-<ul>
-<li>Advanced Xeon Phi Knights Landing support</li>
-<li>Generic burst buffer support</li>
-<li>Greater control over a computer&rsquo;s power consumption</li>
-<li>Control over a job&rsquo;s frequency limits based upon its QOS</li>
-<li>Inter-cluster job management</li>
-<li>Dynamic runtime settings environment</li>
-<li>Support of VM and containers management within Slurm (HPC, Cloud/Big Data)</li>
-<li>Deploy Big Data workflow upon HPC infrastructure</li>
-</ul>
+<p>The Intel Knights Landing (KNL) chip has a number of unusual capabilities
+ affecting resource management. The most significant feature for Slurm to manage
+ is the chip's ability to modify its cache and NUMA configuration at boot time.
+ This means that Slurm just not only track the node's current configuration, but
+ the configurations which can be made available when the node is rebooted.
+ Various quantities of cache resources can be made available user addressable
+ high bandwidth memory (HBM), which Slurm treats as a generic resource (GRES)
+ on the node. The various NUMA configurations necessitate support for dynamically
+ changing the groupings of the cores and memory. Slurm has addressed these, and
+ other challenges, through the addition of a new "node_features" plugin
+ infrastructure.</p>
+
+<p>This presentation will cover an overview of the KNL architecture and the
+changes made to Slurm in order to support it, including work still underway.</p>
 
 <!-- -------------------------------------------------------------------------- -->
 
@@ -525,7 +508,7 @@ changes made to Slurm in order to support it, including work still underway.</p>
 <!-- -------------------------------------------------------------------------- -->
 
 <h3>Federated Cluster Scheduling</h3>
-<p>Brian Christiansen (SchedMD)</p>
+<p>Brian Christiansen, Dominik Bartkiewicz (SchedMD)</p>
 
 <p>Slurm has provided limited support for resource management across multiple
  clusters, but with notable limitations. We have designed Slurm enhancements to
@@ -544,6 +527,24 @@ changes made to Slurm in order to support it, including work still underway.</p>
  be sufficiently low for Slurm to retain the ability to executing hundreds of
  jobs per second per cluster. An overview of the design will be presented
  along with an analysis of its capabilities.</p>
+
+<!-- -------------------------------------------------------------------------- -->
+
+<h3>Slurm Roadmap</h3>
+<p>Danny Auble (SchedMD)<br>Yiannis Georgiou (BULL)</p>
+
+<p>This presentation will describe new capabilities planned in future releases of Slurm</p>
+<ul>
+<li>Advanced Xeon Phi Knights Landing support</li>
+<li>Generic burst buffer support</li>
+<li>Greater control over a computer&rsquo;s power consumption</li>
+<li>Control over a job&rsquo;s frequency limits based upon its QOS</li>
+<li>Inter-cluster job management</li>
+<li>Dynamic runtime settings environment</li>
+<li>Support of VM and containers management within Slurm (HPC, Cloud/Big Data)</li>
+<li>Deploy Big Data workflow upon HPC infrastructure</li>
+</ul>
+
 
 <!-- -------------------------------------------------------------------------- -->
 
