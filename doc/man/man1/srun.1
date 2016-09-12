@@ -375,24 +375,25 @@ The lowest numbered task on each node is bound to socket (or core or thread) zer
 Not supported unless the entire node is allocated to the job.
 .TP
 .B map_cpu:<list>
-Bind by mapping CPU IDs to tasks as specified
-where <list> is <cpuid1>,<cpuid2>,...<cpuidN>.
-The mapping is specified for a node and identical mapping is applied to the
-tasks on every node (i.e. the lowest task ID on each node is mapped to the
-first CPU ID specified in the list, etc.).
+Bind by setting CPU masks on tasks (or ranks) as specified where <list> is
+<cpu_id_for_task_0>,<cpu_id_for_task_1>,...
 CPU IDs are interpreted as decimal values unless they are preceded
-with '0x' in which case they are interpreted as hexadecimal values.
+with '0x' in which case they interpreted as hexadecimal values.
+If the number of tasks (or ranks) exceeds the number of elements in this list,
+elements in the list will be reused as needed starting from the beginning of
+the list.
 Not supported unless the entire node is allocated to the job.
 .TP
 .B mask_cpu:<list>
-Bind by setting CPU masks on tasks as specified
-where <list> is <mask1>,<mask2>,...<maskN>.
+Bind by setting CPU masks on tasks (or ranks) as specified where <list> is
+<cpu_mask_for_task_0>,<cpu_mask_for_task_1>,...
 The mapping is specified for a node and identical mapping is applied to the
 tasks on every node (i.e. the lowest task ID on each node is mapped to the
 first mask specified in the list, etc.).
 CPU masks are \fBalways\fR interpreted as hexadecimal values but can be
 preceded with an optional '0x'. Not supported unless the entire node is
 allocated to the job.
+Not supported unless the entire node is allocated to the job.
 .TP
 .B rank_ldom
 Bind to a NUMA locality domain by rank. Not supported unless the entire
@@ -1177,23 +1178,31 @@ bind by task rank (not recommended)
 Use memory local to the processor in use
 .TP
 .B map_mem:<list>
-bind by setting memory masks on tasks (or ranks) as specified where <list> is
+Bind by setting memory masks on tasks (or ranks) as specified where <list> is
 <numa_id_for_task_0>,<numa_id_for_task_1>,...
+The mapping is specified for a node and identical mapping is applied to the
+tasks on every node (i.e. the lowest task ID on each node is mapped to the
+first ID specified in the list, etc.).
 NUMA IDs are interpreted as decimal values unless they are preceded
 with '0x' in which case they interpreted as hexadecimal values.
 If the number of tasks (or ranks) exceeds the number of elements in this list,
 elements in the list will be reused as needed starting from the beginning of
 the list.
+Not supported unless the entire node is allocated to the job.
 .TP
 .B mask_mem:<list>
-bind by setting memory masks on tasks (or ranks) as specified where <list> is
+Bind by setting memory masks on tasks (or ranks) as specified where <list> is
 <numa_mask_for_task_0>,<numa_mask_for_task_1>,...
+The mapping is specified for a node and identical mapping is applied to the
+tasks on every node (i.e. the lowest task ID on each node is mapped to the
+first mask specified in the list, etc.).
 NUMA masks are \fBalways\fR interpreted as hexadecimal values.
 Note that masks must be preceded with a '0x' if they don't begin
 with [0-9] so they are seen as numerical values.
 If the number of tasks (or ranks) exceeds the number of elements in this list,
 elements in the list will be reused as needed starting from the beginning of
 the list.
+Not supported unless the entire node is allocated to the job.
 .TP
 .B help
 show this help message
