@@ -73,10 +73,10 @@ are shown below.</p>
 <tr><td bgcolor="#F0F1C9">08:00 - 08:30</td><td colspan="3" bgcolor="#F0F1C9">Registration </td></tr>
 <tr><td nowrap>08:30 - 08:45</td><td>Welcome</td><td>Floros</td><td>Welcome</td></tr>
 <tr><td nowrap>08:45 - 09:30</td><td>Keynote</td><td>Cournia</td><td>Computer-aided drug design for novel anti-cancer agents</td></tr>
-<tr><td nowrap>09:30 - 10:00</td><td>Technical</td><td>Auble, Georgiou</td><td>Overview of Slurm Version 16.05</td></tr>
+<tr><td nowrap>09:30 - 10:00</td><td>Tutorial </td><td>Sanchez</td><td>Slurm Overview</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">10:00 - 10:20</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
-<tr><td nowrap>10:20 - 10:50</td><td>Technical</td><td>Roy</td><td>MCS (Multi-Category Security) Plugin</td></tr>
-<tr><td nowrap>10:50 - 11:20</td><td>Technical</td><td>Wickberg</td><td>Support for Intel Knights Landing (KNL)</td></tr>
+<tr><td nowrap>10:20 - 10:50</td><td>Technical</td><td>Auble, Georgiou</td><td>Overview of Slurm Version 16.05</td></tr>
+<tr><td nowrap>10:50 - 11:20</td><td>Technical</td><td>Roy</td><td>MCS (Multi-Category Security) Plugin</td></tr>
 <tr><td nowrap>11:20 - 11:50</td><td>Technical</td><td>Paul</td><td>Burst Buffer Integration and Usage with Slurm</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">11:50 - 12:50</td><td colspan="3" bgcolor="#F0F1C9">Lunch</td></tr>
 <tr><td nowrap>12:50 - 13:20</td><td>Technical</td><td>Mor&iacute;&ntilde;igo</td><td>Slurm Configuration Impact on Benchmarking</td></tr>
@@ -107,19 +107,20 @@ are shown below.</p>
   </tr>
 
 <tr><td nowrap>08:30 - 09:00</td><td>Technical</td><td>Rodr&iacute;guez-Pascual</td><td>Checkpoint/restart in Slurm: current status and new developments</td></tr>
-<tr><td nowrap>09:00 - 09:30</td><td>Technical</td><td>Auble, Georgiou</td><td>Slurm Roadmap</td></tr>
+<tr><td nowrap>09:00 - 09:30</td><td>Technical</td><td>Wickberg</td><td>Support for Intel Knights Landing (KNL)</td></tr>
 <tr><td nowrap>09:30 - 10:00</td><td>Technical</td><td>Perry</td><td>Support of heterogeneous resources and MPMD-MPI</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">10:00 - 10:20</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
 <tr><td nowrap>10:20 - 10:50</td><td>Technical</td><td>Rajagopal</td><td>Improving system utilization under strict power budget using the layouts</td></tr>
 <tr><td nowrap>10:50 - 11:20</td><td>Technical</td><td>Cadeau</td><td>High definition power and energy monitoring support</td></tr>
-<tr><td nowrap>11:20 - 11:50</td><td>Technical</td><td>Christiansen</td><td>Federated Cluster Scheduling</td></tr>
+<tr><td nowrap>11:20 - 11:50</td><td>Technical</td><td>Christiansen, Bartkiewicz</td><td>Federated Cluster Scheduling</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">11:50 - 12:50</td><td colspan="3" bgcolor="#F0F1C9">Lunch</td></tr>
-<tr><td nowrap>12:50 - 13:20</td><td>Site Report</td><td>Yoshikawa</td><td>EDF Site Report</td></tr>
-<tr><td nowrap>13:20 - 13:50</td><td>Site Report</td><td>Pancorbo</td><td>LRZ Site Report</td></tr>
-<tr><td nowrap>13:50 - 14:20</td><td>Site Report</td><td>Jacobsen</td><td>NERSC Site Report</td></tr>
+<tr><td nowrap>12:50 - 13:20</td><td>Technical</td><td>Auble, Georgiou</td><td>Slurm Roadmap</td></tr>
+<tr><td nowrap>13:20 - 13:50</td><td>Site Report</td><td>Yoshikawa</td><td>EDF Site Report</td></tr>
+<tr><td nowrap>13:50 - 14:20</td><td>Site Report</td><td>Pancorbo</td><td>LRZ Site Report</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">14:20 - 14:40</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
-<tr><td nowrap>14:40 - 15:10</td><td>Site Report</td><td>Nikoloutsakos</td><td>GRNET Site Report</td></tr>
-<tr><td nowrap>15:10 - 16:10</td><td>Closing</td><td>Wickberg</td><td>Closing discussions</td></tr>
+<tr><td nowrap>14:40 - 15:10</td><td>Site Report</td><td>Jacobsen</td><td>NERSC Site Report</td></tr>
+<tr><td nowrap>15:10 - 15:40</td><td>Site Report</td><td>Nikoloutsakos</td><td>GRNET Site Report</td></tr>
+<tr><td nowrap>15:40 - 16:10</td><td>Closing</td><td>Wickberg</td><td>Closing discussions</td></tr>
 
 </table>
 
@@ -149,7 +150,7 @@ talk. These enhancements include:</p>
 <li>Ability to establish per-task dependencies in a job array</li>
 <li>Added support for PMIx</li>
 <li>Added command wrappers for the LSF/OpenLava resource managers</li>
-<li>Added syooirt for GridEngine options to the qsub command wrapper</li>
+<li>Added support for GridEngine options to the qsub command wrapper</li>
 </ul>
 
 <!-- -------------------------------------------------------------------------- -->
@@ -174,26 +175,6 @@ talk. These enhancements include:</p>
 
 <p>This talk will present the MCS logic, the Slurm options to use, as well as
 future improvements.</p>
-
-<!-- -------------------------------------------------------------------------- -->
-
-<h3>Support for Intel Knights Landing (KNL)</h3>
-<p>Morris Jette and Tim Wickberg (SchedMD)</p>
-
-<p>The Intel Knights Landing (KNL) chip has a number of unusual capabilities
- affecting resource management. The most significant feature for Slurm to manage
- is the chip's ability to modify its cache and NUMA configuration at boot time.
- This means that Slurm just not only track the node's current configuration, but
- the configurations which can be made available when the node is rebooted.
- Various quantities of cache resources can be made available user addressable
- high bandwidth memory (HBM), which Slurm treats as a generic resource (GRES)
- on the node. The various NUMA configurations necessitate support for dynamically
- changing the groupings of the cores and memory. Slurm has addressed these, and
- other challenges, through the addition of a new "node_features" plugin
- infrastructure.</p>
-
-<p>This presentation will cover an overview of the KNL architecture and the
-changes made to Slurm in order to support it, including work still underway.</p>
 
 <!-- -------------------------------------------------------------------------- -->
 
@@ -420,20 +401,23 @@ changes made to Slurm in order to support it, including work still underway.</p>
 
 <!-- -------------------------------------------------------------------------- -->
 
-<h3>Slurm Roadmap</h3>
-<p>Danny Auble (SchedMD)<br>Yiannis Georgiou (BULL)</p>
+<h3>Support for Intel Knights Landing (KNL)</h3>
+<p>Morris Jette and Tim Wickberg (SchedMD)</p>
 
-<p>This presentation will describe new capabilities planned in future releases of Slurm</p>
-<ul>
-<li>Advanced Xeon Phi Knights Landing support</li>
-<li>Generic burst buffer support</li>
-<li>Greater control over a computer&rsquo;s power consumption</li>
-<li>Control over a job&rsquo;s frequency limits based upon its QOS</li>
-<li>Inter-cluster job management</li>
-<li>Dynamic runtime settings environment</li>
-<li>Support of VM and containers management within Slurm (HPC, Cloud/Big Data)</li>
-<li>Deploy Big Data workflow upon HPC infrastructure</li>
-</ul>
+<p>The Intel Knights Landing (KNL) chip has a number of unusual capabilities
+ affecting resource management. The most significant feature for Slurm to manage
+ is the chip's ability to modify its cache and NUMA configuration at boot time.
+ This means that Slurm just not only track the node's current configuration, but
+ the configurations which can be made available when the node is rebooted.
+ Various quantities of cache resources can be made available user addressable
+ high bandwidth memory (HBM), which Slurm treats as a generic resource (GRES)
+ on the node. The various NUMA configurations necessitate support for dynamically
+ changing the groupings of the cores and memory. Slurm has addressed these, and
+ other challenges, through the addition of a new "node_features" plugin
+ infrastructure.</p>
+
+<p>This presentation will cover an overview of the KNL architecture and the
+changes made to Slurm in order to support it, including work still underway.</p>
 
 <!-- -------------------------------------------------------------------------- -->
 
@@ -524,7 +508,7 @@ changes made to Slurm in order to support it, including work still underway.</p>
 <!-- -------------------------------------------------------------------------- -->
 
 <h3>Federated Cluster Scheduling</h3>
-<p>Brian Christiansen (SchedMD)</p>
+<p>Brian Christiansen, Dominik Bartkiewicz (SchedMD)</p>
 
 <p>Slurm has provided limited support for resource management across multiple
  clusters, but with notable limitations. We have designed Slurm enhancements to
@@ -543,6 +527,24 @@ changes made to Slurm in order to support it, including work still underway.</p>
  be sufficiently low for Slurm to retain the ability to executing hundreds of
  jobs per second per cluster. An overview of the design will be presented
  along with an analysis of its capabilities.</p>
+
+<!-- -------------------------------------------------------------------------- -->
+
+<h3>Slurm Roadmap</h3>
+<p>Danny Auble (SchedMD)<br>Yiannis Georgiou (BULL)</p>
+
+<p>This presentation will describe new capabilities planned in future releases of Slurm</p>
+<ul>
+<li>Advanced Xeon Phi Knights Landing support</li>
+<li>Generic burst buffer support</li>
+<li>Greater control over a computer&rsquo;s power consumption</li>
+<li>Control over a job&rsquo;s frequency limits based upon its QOS</li>
+<li>Inter-cluster job management</li>
+<li>Dynamic runtime settings environment</li>
+<li>Support of VM and containers management within Slurm (HPC, Cloud/Big Data)</li>
+<li>Deploy Big Data workflow upon HPC infrastructure</li>
+</ul>
+
 
 <!-- -------------------------------------------------------------------------- -->
 
