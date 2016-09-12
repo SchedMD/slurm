@@ -126,7 +126,8 @@ slurm_shutdown (uint16_t options)
 	 * Explicity send the message to both primary
 	 *   and backup controllers
 	 */
-	(void) _send_message_controller(SECONDARY_CONTROLLER, &req_msg);
+	if (!working_cluster_rec)
+		(void) _send_message_controller(SECONDARY_CONTROLLER, &req_msg);
 	return _send_message_controller(PRIMARY_CONTROLLER,   &req_msg);
 }
 

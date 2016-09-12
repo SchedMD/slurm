@@ -3044,7 +3044,15 @@ int slurm_open_controller_conn_spec(enum controller_id dest)
 		return SLURM_ERROR;
 	}
 
-	if (dest == PRIMARY_CONTROLLER)
+	if (working_cluster_rec) {
+		if (working_cluster_rec->control_addr.sin_port == 0) {
+			slurm_set_addr(
+				&working_cluster_rec->control_addr,
+				working_cluster_rec->control_port,
+				working_cluster_rec->control_host);
+		}
+		addr = &working_cluster_rec->control_addr;
+	} else if (dest == PRIMARY_CONTROLLER)
 		addr = &proto_conf->primary_controller;
 	else {	/* (dest == SECONDARY_CONTROLLER) */
 		slurm_ctl_conf_t *conf;
