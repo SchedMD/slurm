@@ -75,8 +75,8 @@ are shown below.</p>
 <tr><td nowrap>08:45 - 09:30</td><td>Keynote</td><td>Cournia</td><td>Computer-aided drug design for novel anti-cancer agents</td></tr>
 <tr><td nowrap>09:30 - 10:00</td><td>Technical</td><td>Auble, Georgiou</td><td>Overview of Slurm Version 16.05</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">10:00 - 10:20</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
-<tr><td nowrap>10:20 - 10:50</td><td>Technical</td><td>Roy</td><td>MCS (Multi-Category Security) Plugin</td></tr>
-<tr><td nowrap>10:50 - 11:20</td><td>Technical</td><td>Wickberg</td><td>Support for Intel Knights Landing (KNL)</td></tr>
+<tr><td nowrap>10:20 - 10:50</td><td>Tutorial </td><td>Sanchez</td><td>Slurm Overview</td></tr>
+<tr><td nowrap>10:50 - 11:20</td><td>Technical</td><td>Roy</td><td>MCS (Multi-Category Security) Plugin</td></tr>
 <tr><td nowrap>11:20 - 11:50</td><td>Technical</td><td>Paul</td><td>Burst Buffer Integration and Usage with Slurm</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">11:50 - 12:50</td><td colspan="3" bgcolor="#F0F1C9">Lunch</td></tr>
 <tr><td nowrap>12:50 - 13:20</td><td>Technical</td><td>Mor&iacute;&ntilde;igo</td><td>Slurm Configuration Impact on Benchmarking</td></tr>
@@ -107,19 +107,20 @@ are shown below.</p>
   </tr>
 
 <tr><td nowrap>08:30 - 09:00</td><td>Technical</td><td>Rodr&iacute;guez-Pascual</td><td>Checkpoint/restart in Slurm: current status and new developments</td></tr>
-<tr><td nowrap>09:00 - 09:30</td><td>Technical</td><td>Auble, Georgiou</td><td>Slurm Roadmap</td></tr>
+<tr><td nowrap>09:00 - 09:30</td><td>Technical</td><td>Wickberg</td><td>Support for Intel Knights Landing (KNL)</td></tr>
 <tr><td nowrap>09:30 - 10:00</td><td>Technical</td><td>Perry</td><td>Support of heterogeneous resources and MPMD-MPI</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">10:00 - 10:20</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
 <tr><td nowrap>10:20 - 10:50</td><td>Technical</td><td>Rajagopal</td><td>Improving system utilization under strict power budget using the layouts</td></tr>
 <tr><td nowrap>10:50 - 11:20</td><td>Technical</td><td>Cadeau</td><td>High definition power and energy monitoring support</td></tr>
-<tr><td nowrap>11:20 - 11:50</td><td>Technical</td><td>Christiansen</td><td>Federated Cluster Scheduling</td></tr>
+<tr><td nowrap>11:20 - 11:50</td><td>Technical</td><td>Christiansen, Bartkiewicz</td><td>Federated Cluster Scheduling</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">11:50 - 12:50</td><td colspan="3" bgcolor="#F0F1C9">Lunch</td></tr>
-<tr><td nowrap>12:50 - 13:20</td><td>Site Report</td><td>Yoshikawa</td><td>EDF Site Report</td></tr>
-<tr><td nowrap>13:20 - 13:50</td><td>Site Report</td><td>Pancorbo</td><td>LRZ Site Report</td></tr>
-<tr><td nowrap>13:50 - 14:20</td><td>Site Report</td><td>Jacobsen</td><td>NERSC Site Report</td></tr>
+<tr><td nowrap>12:50 - 13:20</td><td>Technical</td><td>Auble, Georgiou</td><td>Slurm Roadmap</td></tr>
+<tr><td nowrap>13:20 - 13:50</td><td>Site Report</td><td>Yoshikawa</td><td>EDF Site Report</td></tr>
+<tr><td nowrap>13:50 - 14:20</td><td>Site Report</td><td>Pancorbo</td><td>LRZ Site Report</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">14:20 - 14:40</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
-<tr><td nowrap>14:40 - 15:10</td><td>Site Report</td><td>Nikoloutsakos</td><td>GRNET Site Report</td></tr>
-<tr><td nowrap>15:10 - 16:10</td><td>Closing</td><td>Wickberg</td><td>Closing discussions</td></tr>
+<tr><td nowrap>14:40 - 15:10</td><td>Site Report</td><td>Jacobsen</td><td>NERSC Site Report</td></tr>
+<tr><td nowrap>15:10 - 15:40</td><td>Site Report</td><td>Nikoloutsakos</td><td>GRNET Site Report</td></tr>
+<tr><td nowrap>15:40 - 16:10</td><td>Closing</td><td>Wickberg</td><td>Closing discussions</td></tr>
 
 </table>
 
