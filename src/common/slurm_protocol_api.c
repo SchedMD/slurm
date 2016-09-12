@@ -4612,15 +4612,25 @@ extern int *set_span(int total,  uint16_t tree_width)
 }
 
 /*
- * Free a slurm message
+ * Free a slurm message's memebers but not the message itself
  */
-extern void slurm_free_msg(slurm_msg_t *msg)
+extern void slurm_free_msg_members(slurm_msg_t *msg)
 {
 	if (msg) {
 		if (msg->auth_cred)
 			(void) g_slurm_auth_destroy(msg->auth_cred);
 		slurm_free_msg_data(msg->msg_type, msg->data);
 		FREE_NULL_LIST(msg->ret_list);
+	}
+}
+
+/*
+ * Free a slurm message
+ */
+extern void slurm_free_msg(slurm_msg_t *msg)
+{
+	if (msg) {
+		slurm_free_msg_members(msg);
 		xfree(msg);
 	}
 }

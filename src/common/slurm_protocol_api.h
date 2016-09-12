@@ -1284,6 +1284,7 @@ extern int slurm_close_persist_controller_conn(int fd);
  * NOTE: Returned array MUST be release by caller using xfree */
 extern int *set_span(int total, uint16_t tree_width);
 
+extern void slurm_free_msg_members(slurm_msg_t *msg);
 extern void slurm_free_msg(slurm_msg_t * msg);
 
 /* must free this memory with free not xfree */
