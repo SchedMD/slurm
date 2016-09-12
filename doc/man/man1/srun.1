@@ -1133,7 +1133,10 @@ and the NUMA memory functions are available.
 may differ on some architectures.\fR For example, CPU binding may be performed
 at the level of the cores within a processor while memory binding will
 be performed at the level of nodes, where the definition of "nodes"
-may differ from system to system. \fBThe use of any type other than
+may differ from system to system.
+By default no memory binding is performed; any task using any CPU can use
+any memory. This option is typically used to insure that each task is bound to
+the memory closest to it's assigned CPU. \fBThe use of any type other than
 "none" or "local" is not recommended.\fR
 If you want greater control, try running a simple test code with the
 options "\-\-cpu_bind=verbose,none \-\-mem_bind=verbose,none" to determine
