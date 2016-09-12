@@ -73,9 +73,9 @@ are shown below.</p>
 <tr><td bgcolor="#F0F1C9">08:00 - 08:30</td><td colspan="3" bgcolor="#F0F1C9">Registration </td></tr>
 <tr><td nowrap>08:30 - 08:45</td><td>Welcome</td><td>Floros</td><td>Welcome</td></tr>
 <tr><td nowrap>08:45 - 09:30</td><td>Keynote</td><td>Cournia</td><td>Computer-aided drug design for novel anti-cancer agents</td></tr>
-<tr><td nowrap>09:30 - 10:00</td><td>Technical</td><td>Auble, Georgiou</td><td>Overview of Slurm Version 16.05</td></tr>
+<tr><td nowrap>09:30 - 10:00</td><td>Tutorial </td><td>Sanchez</td><td>Slurm Overview</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">10:00 - 10:20</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
-<tr><td nowrap>10:20 - 10:50</td><td>Tutorial </td><td>Sanchez</td><td>Slurm Overview</td></tr>
+<tr><td nowrap>10:20 - 10:50</td><td>Technical</td><td>Auble, Georgiou</td><td>Overview of Slurm Version 16.05</td></tr>
 <tr><td nowrap>10:50 - 11:20</td><td>Technical</td><td>Roy</td><td>MCS (Multi-Category Security) Plugin</td></tr>
 <tr><td nowrap>11:20 - 11:50</td><td>Technical</td><td>Paul</td><td>Burst Buffer Integration and Usage with Slurm</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">11:50 - 12:50</td><td colspan="3" bgcolor="#F0F1C9">Lunch</td></tr>
