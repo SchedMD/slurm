@@ -1878,10 +1878,10 @@ static char *print_constraints()
 		xstrfmtcat(buf, "mincpus=%d ", opt.mincpus);
 
 	if (opt.realmem > 0)
-		xstrfmtcat(buf, "mem=%ldM ", opt.realmem);
+		xstrfmtcat(buf, "mem=%"PRIi64"M ", opt.realmem);
 
 	if (opt.mem_per_cpu > 0)
-		xstrfmtcat(buf, "mem-per-cpu=%ldM ", opt.mem_per_cpu);
+		xstrfmtcat(buf, "mem-per-cpu=%"PRIi64"M ", opt.mem_per_cpu);
 
 	if (opt.tmpdisk > 0)
 		xstrfmtcat(buf, "tmp=%ld ", opt.tmpdisk);

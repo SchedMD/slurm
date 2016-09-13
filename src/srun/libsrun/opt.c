@@ -2481,10 +2481,10 @@ static char *print_constraints(void)
 		xstrfmtcat(buf, "mincpus-per-node=%d ", opt.pn_min_cpus);
 
 	if (opt.pn_min_memory != NO_VAL64)
-		xstrfmtcat(buf, "mem-per-node=%ldM ", opt.pn_min_memory);
+		xstrfmtcat(buf, "mem-per-node=%"PRIi64"M ", opt.pn_min_memory);
 
 	if (opt.mem_per_cpu != NO_VAL64)
-		xstrfmtcat(buf, "mem-per-cpu=%ldM ", opt.mem_per_cpu);
+		xstrfmtcat(buf, "mem-per-cpu=%"PRIi64"M ", opt.mem_per_cpu);
 
 	if (opt.pn_min_tmp_disk != NO_VAL)
 		xstrfmtcat(buf, "tmp-per-node=%ld ", opt.pn_min_tmp_disk);
