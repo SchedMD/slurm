@@ -436,7 +436,14 @@ typedef struct slurm_protocol_config {
 typedef struct slurm_msg {
 	slurm_addr_t address;
 	void *auth_cred;
-	int conn_fd;
+	slurm_persist_conn_t *conn; /* DON'T PACK OR FREE! this is here to
+				     * distinquish a persistant connection from
+				     * a normal connection it should be filled
+				     * in with the connection before sending the
+				     * message so that it is handled correctly.
+				     */
+	int conn_fd; /* Only used when the message isn't on a persistant
+		      * connection. */
 	void *data;
 	uint32_t data_size;
 	uint16_t flags;
