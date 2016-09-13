@@ -549,10 +549,11 @@ int main(int argc, char *argv[])
 		}
 		slurm_attr_destroy(&thread_attr);
 
+		if (fed_mgr_init(acct_db_conn))
+			fatal("Failed to initialize fed_mgr");
 		clusteracct_storage_g_register_ctld(
 			acct_db_conn,
 			slurmctld_conf.slurmctld_port);
-
 		_accounting_cluster_ready();
 
 		if (slurm_priority_init() != SLURM_SUCCESS)
@@ -652,7 +653,6 @@ int main(int argc, char *argv[])
 
 	layouts_fini();
 	g_slurm_jobcomp_fini();
-	fed_mgr_fini();
 
 	/* Since pidfile is created as user root (its owner is
 	 *   changed to SlurmUser) SlurmUser may not be able to
@@ -2058,9 +2058,6 @@ extern void ctld_assoc_mgr_init(slurm_trigger_callbacks_t *callbacks)
 		}
 	}
 
-	if (fed_mgr_init(acct_db_conn))
-		fatal("Failed to initialize fed_mgr");
-
 	/* Now load the usage from a flat file since it isn't kept in
 	   the database No need to check for an error since if this
 	   fails we will get an error message and we will go on our
@@ -2297,6 +2294,7 @@ static int _report_locks_set(void)
 int slurmctld_shutdown(void)
 {
 	debug("sched: slurmctld terminating");
+	fed_mgr_fini();
 	if (slurmctld_config.thread_id_rpc) {
 		pthread_kill(slurmctld_config.thread_id_rpc, SIGUSR1);
 		return SLURM_SUCCESS;
