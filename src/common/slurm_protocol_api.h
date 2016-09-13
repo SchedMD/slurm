@@ -1262,19 +1262,6 @@ int slurm_send_only_node_msg(slurm_msg_t * request_msg);
 extern int slurm_send_recv_msg(int fd, slurm_msg_t *req,
 			       slurm_msg_t *resp, int timeout);
 
-/* Open a persistent connection with controller at host and port
- * IN host	- host name to connect to
- * IN port	- port to connect to
- * RET int	- returns open fd on success, -1 on failure
- */
-extern int slurm_open_persist_controller_conn(char *host, uint32_t port);
-
-/* Closes a persistent connection on the open fd.
- * IN fd 	- open fd to close
- * RET int	- returns SLURM_SUCCESS on SUCCESS, SLURM_FAILURE on error.
- */
-extern int slurm_close_persist_controller_conn(int fd);
-
 /* Slurm message functions */
 
 /* set_span
