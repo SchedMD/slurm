@@ -3786,7 +3786,7 @@ _unpack_resource_allocation_response_msg(
 	tmp_ptr = xmalloc(sizeof(resource_allocation_response_msg_t));
 	*msg = tmp_ptr;
 
-	if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&tmp_ptr->account, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->alias_list, &uint32_tmp,

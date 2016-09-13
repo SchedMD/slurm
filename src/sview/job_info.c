@@ -916,7 +916,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		else
 			type = "min memory per node";
 
-		if (temp_int <= 0)
+		if (temp_ll <= 0)
 			goto return_error;
 		job_msg->pn_min_memory = (uint64_t) temp_ll;
 		if (p)
