@@ -1085,58 +1085,48 @@ static void *_service_connection(void *arg)
 {
 	connection_arg_t *conn = (connection_arg_t *) arg;
 	void *return_code = NULL;
+	slurm_msg_t msg;
 
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_SET_NAME, "srvcn", NULL, NULL, NULL) < 0) {
 		error("%s: cannot set my name to %s %m", __func__, "srvcn");
 	}
 #endif
-	while (1) {
-		slurm_msg_t *msg;
-		if (slurmctld_config.shutdown_time) {
-			break;
-		}
-		msg = xmalloc(sizeof(slurm_msg_t));
-		slurm_msg_t_init(msg);
-		/*
-		 * slurm_receive_msg sets msg connection fd to accepted fd. This allows
-		 * possibility for slurmctld_req() to close accepted connection.
-		 */
-		if (slurm_receive_msg(conn->newsockfd, msg, 0) != 0) {
-			char addr_buf[32];
-			slurm_print_slurm_addr(&conn->cli_addr, addr_buf,
-					       sizeof(addr_buf));
-			error("slurm_receive_msg [%s]: %m", addr_buf);
-			/* close the new socket */
-			slurm_close(conn->newsockfd);
-			slurm_free_msg(msg);
-			goto cleanup;
-		}
-
-		if (errno != SLURM_SUCCESS) {
-			if (errno == SLURM_PROTOCOL_VERSION_ERROR) {
-				slurm_send_rc_msg(msg, SLURM_PROTOCOL_VERSION_ERROR);
-			} else
-				info("_service_connection/slurm_receive_msg %m");
-		} else {
-			/* process the request */
-			slurmctld_req(msg, conn);
-		}
-
-		slurm_free_msg(msg);
-
-		if (!conn->persist)
-			break;
+	slurm_msg_t_init(&msg);
+	/*
+	 * slurm_receive_msg sets msg connection fd to accepted fd. This allows
+	 * possibility for slurmctld_req() to close accepted connection.
+	 */
+	if (slurm_receive_msg(conn->newsockfd, &msg, 0) != 0) {
+		char addr_buf[32];
+		slurm_print_slurm_addr(&conn->cli_addr, addr_buf,
+				       sizeof(addr_buf));
+		error("slurm_receive_msg [%s]: %m", addr_buf);
+		/* close the new socket */
+		slurm_close(conn->newsockfd);
+		slurm_free_msg_members(&msg);
+		goto cleanup;
 	}
 
-	if ((conn->newsockfd >= 0)
-	    && slurm_close(conn->newsockfd) < 0)
+	if (errno != SLURM_SUCCESS) {
+		if (errno == SLURM_PROTOCOL_VERSION_ERROR) {
+			slurm_send_rc_msg(&msg, SLURM_PROTOCOL_VERSION_ERROR);
+		} else
+			info("_service_connection/slurm_receive_msg %m");
+	} else {
+		/* process the request */
+		slurmctld_req(&msg, conn);
+	}
+
+	if ((conn->newsockfd >= 0) &&
+	    (slurm_close(conn->newsockfd) < 0))
 		error ("close(%d): %m",  conn->newsockfd);
 
 cleanup:
-	debug2("exiting service connection thread");
+	slurm_free_msg_members(&msg);
 	xfree(arg);
 	server_thread_decr();
+
 	return return_code;
 }
 
