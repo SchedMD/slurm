@@ -3192,8 +3192,27 @@ int slurm_receive_msg(int fd, slurm_msg_t *msg, int timeout)
 	int rc;
 	Buf buffer;
 
+	if (msg->conn) {
+		persist_msg_t persist_msg;
+
+		buffer = slurm_persist_recv_msg(msg->conn);
+		if (!buffer) {
+			error("%s: No response to persist_init", __func__);
+			slurm_persist_conn_close(msg->conn);
+			return SLURM_ERROR;
+		}
+		memset(&persist_msg, 0, sizeof(persist_msg_t));
+		rc = slurm_persist_msg_unpack(msg->conn, &persist_msg, buffer);
+		free_buf(buffer);
+
+		msg->msg_type = persist_msg.msg_type;
+		msg->data = persist_msg.data;
+
+		return SLURM_SUCCESS;
+	}
+
 	xassert(fd >= 0);
-	slurm_msg_t_init(msg);
+
 	msg->conn_fd = fd;
 
 	if (timeout <= 0)
@@ -3691,6 +3710,36 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 	void *   auth_cred;
 	time_t   start_time = time(NULL);
 
+	if (msg->conn) {
+		persist_msg_t persist_msg;
+
+		memset(&persist_msg, 0, sizeof(persist_msg_t));
+		persist_msg.msg_type = msg->msg_type;
+		persist_msg.data = msg->data;
+
+		buffer = slurm_persist_msg_pack(msg->conn, &persist_msg);
+		rc = slurm_persist_send_msg(msg->conn, buffer);
+		free_buf(buffer);
+
+		if ((rc < 0) && (errno == ENOTCONN)) {
+			debug3("slurm_persist_send_msg: pesistant connection has disappeared for msg_type=%u",
+			       msg->msg_type);
+		} else if (rc < 0) {
+			slurm_addr_t peer_addr;
+			char addr_str[32];
+			if (!slurm_get_peer_addr(msg->conn->fd, &peer_addr)) {
+				slurm_print_slurm_addr(
+					&peer_addr, addr_str, sizeof(addr_str));
+				error("slurm_persist_send_msg: address:port=%s msg_type=%u: %m",
+				      addr_str, msg->msg_type);
+			} else
+				error("slurm_persist_send_msg: msg_type=%u: %m",
+				      msg->msg_type);
+		}
+
+		return rc;
+	}
+
 	/*
 	 * Initialize header with Auth credential and message type.
 	 * We get the credential now rather than later so the work can
@@ -3955,6 +4004,7 @@ static void _rc_msg_setup(slurm_msg_t *msg, slurm_msg_t *resp_msg,
 	resp_msg->address  = msg->address;
 	resp_msg->msg_type = RESPONSE_SLURM_RC;
 	resp_msg->data     = rc_msg;
+	resp_msg->conn = msg->conn;
 	resp_msg->flags = msg->flags;
 	resp_msg->forward = msg->forward;
 	resp_msg->forward_struct = msg->forward_struct;
@@ -4031,6 +4081,7 @@ int slurm_send_rc_err_msg(slurm_msg_t *msg, int rc, char *err_msg)
 	resp_msg.address  = msg->address;
 	resp_msg.msg_type = RESPONSE_SLURM_RC_MSG;
 	resp_msg.data     = &rc_msg;
+	resp_msg.conn = msg->conn;
 	resp_msg.flags = msg->flags;
 	resp_msg.forward = msg->forward;
 	resp_msg.forward_struct = msg->forward_struct;
