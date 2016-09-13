@@ -39,9 +39,10 @@
 
 #include "slurm/slurm.h"
 
-#define PERSIST_FLAG_NONE      0x0000
-#define PERSIST_FLAG_DBD       0x0001
-#define PERSIST_FLAG_RECONNECT 0x0002
+#define PERSIST_FLAG_NONE           0x0000
+#define PERSIST_FLAG_DBD            0x0001
+#define PERSIST_FLAG_RECONNECT      0x0002
+#define PERSIST_FLAG_ALREADY_INITED 0x0004
 
 typedef struct {
 	uint16_t msg_type;	/* see slurmdbd_msg_type_t or
@@ -51,16 +52,17 @@ typedef struct {
 
 typedef struct {
 	void *auth_cred;
+	int (*callback_proc)(void *arg,
+			     persist_msg_t *msg,
+			     Buf *out_buffer, uint32_t *uid);
+	void (*callback_fini)(void *arg);
 	char *cluster_name;
 	uint16_t my_port;
 	int fd;
 	uint16_t flags;
 	bool inited;
-	int (*proc_callback)(void *persist_conn, /* really this struct */
-			     persist_msg_t *msg,
-			     Buf *out_buffer, uint32_t *uid);
 	char *rem_host;
-	int rem_port;
+	uint16_t rem_port;
 	time_t *shutdown;
 	int timeout;
 	slurm_trigger_callbacks_t trigger_callbacks;
@@ -83,6 +85,35 @@ typedef struct {
 			    * sent the lowest one to begin with, or the return
 			    * of a message type sent. */
 } persist_rc_msg_t;
+
+/* setup a daemon to receive incoming persistant connections. */
+extern void slurm_persist_conn_recv_server_init(void);
+
+/* finish up any persistant connections we are listening to */
+extern void slurm_persist_conn_recv_server_fini(void);
+
+/* Create a thread that will wait listening on the fd in the
+ * slurm_persist_conn_t.
+ * IN - persist_conn - persistant connection to listen to.
+ * IN - thread_loc - location in the persist_conn thread pool.  This number can
+ *                   be got from slurm_persist_conn_wait_for_thread_loc or given
+ *                   -1 to get one inside the function.
+ * IN - arg - arbitrary argument that will be sent to the callback as well as
+ *            the callback in the persist_conn.
+ * RET - SLURM_SUCCESS on success SLURM_ERROR else.
+ */
+extern int slurm_persist_conn_recv_thread_init(
+	slurm_persist_conn_t *persist_conn, int thread_loc, void *arg);
+
+/* Increment thread_count and don't return until its value is no larger
+ *	than MAX_THREAD_COUNT,
+ * RET index of free index in persist_pthread_id or -1 to exit */
+extern int slurm_persist_conn_wait_for_thread_loc(void);
+
+/* Free the index given from slurm_persist_conn_wait_for_thread_loc */
+extern void slurm_persist_conn_free_thread_loc(
+	int thread_loc, pthread_t my_tid);
+
 
 /* Open a persistant socket connection
  * IN/OUT - persistant connection needing host and port filled in.  Returned
@@ -110,9 +141,6 @@ extern void slurm_persist_conn_members_destroy(
 
 /* Close the persistant connection and free structure */
 extern void slurm_persist_conn_destroy(slurm_persist_conn_t *persist_conn);
-
-extern int slurm_persist_service_connection(
-	slurm_persist_conn_t *persist_conn, void *arg);
 
 extern int slurm_persist_conn_process_msg(slurm_persist_conn_t *persist_conn,
 					  persist_msg_t *persist_msg,
@@ -142,9 +170,6 @@ extern void slurm_persist_pack_rc_msg(
 extern int slurm_persist_unpack_rc_msg(
 	persist_rc_msg_t **msg, Buf buffer, uint16_t protocol_version);
 extern void slurm_persist_free_rc_msg(persist_rc_msg_t *msg);
-
-extern int slurm_persist_send_recv_msg(slurm_persist_conn_t *persist_conn,
-				       persist_msg_t *req, persist_msg_t *resp);
 
 extern Buf slurm_persist_make_rc_msg(slurm_persist_conn_t *persist_conn,
 				     uint32_t rc, char *comment,
