@@ -52,5 +52,7 @@ extern bool fed_mgr_is_active();
 extern uint32_t fed_mgr_get_job_id(uint32_t orig);
 extern uint32_t fed_mgr_get_local_id(uint32_t id);
 extern uint32_t fed_mgr_get_cluster_id(uint32_t id);
+extern int fed_mgr_add_sibling_conn(slurm_persist_conn_t *persist_conn,
+				    char **out_buffer);
 
 #endif /* _SLURM_FED_MGR_H */
