@@ -624,6 +624,7 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 	ListIterator itr = NULL;
 	uint32_t count = NO_VAL;
 	slurmdb_cluster_rec_t *object = (slurmdb_cluster_rec_t *)in;
+	slurm_persist_conn_t *persist_conn;
 
 	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		if (!object) {
@@ -648,7 +649,8 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 			slurmdb_pack_assoc_rec(NULL, protocol_version, buffer);
 
 			pack16(0, buffer);
-			pack32((uint32_t)-1, buffer);
+			pack8(0, buffer);
+			pack8(0, buffer);
 			packnull(buffer);
 			return;
 		}
@@ -689,7 +691,10 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 				       protocol_version, buffer);
 
 		pack16(object->rpc_version, buffer);
-		pack32(object->sockfd, buffer);
+		persist_conn = object->fed.recv;
+		pack8((persist_conn && persist_conn->fd != -1) ? 1 : 0, buffer);
+		persist_conn = object->fed.send;
+		pack8((persist_conn && persist_conn->fd != -1) ? 1 : 0, buffer);
 		packstr(object->tres_str, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
@@ -753,6 +758,7 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 				      Buf buffer)
 {
 	uint32_t uint32_tmp;
+	uint8_t uint8_tmp;
 	int i;
 	uint32_t count;
 	slurmdb_cluster_rec_t *object_ptr =
@@ -804,8 +810,14 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 			goto unpack_error;
 
 		safe_unpack16(&object_ptr->rpc_version, buffer);
-		safe_unpack32(&uint32_tmp, buffer);
-		object_ptr->sockfd = (int)uint32_tmp;
+		safe_unpack8(&uint8_tmp, buffer);
+		if (uint8_tmp)
+			object_ptr->fed.recv =
+				xmalloc(sizeof(slurm_persist_conn_t));
+		safe_unpack8(&uint8_tmp, buffer);
+		if (uint8_tmp)
+			object_ptr->fed.send =
+				xmalloc(sizeof(slurm_persist_conn_t));
 		safe_unpackstr_xmalloc(&object_ptr->tres_str,
 				       &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
