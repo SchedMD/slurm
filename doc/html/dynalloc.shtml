@@ -77,23 +77,23 @@ slurm_jobid=682 allocated_node_list=vm4,vm5 tasks_per_node=4(x2).
 wait for the allocation response.
 </p>
 
-<p>In the app part of the above message, <b>app</b> is the application/task 
-id which will be sent back to client for identifying the allocation result; 
-<b>np</b> is the number of process will run, namely the number of slots 
-should be allocated for this app; <b>N</b> is the number of nodes should 
+<p>In the app part of the above message, <b>app</b> is the application/task
+id which will be sent back to client for identifying the allocation result;
+<b>np</b> is the number of process will run, namely the number of slots
+should be allocated for this app; <b>N</b> is the number of nodes should
 be allocated; <b>node_list</b> is the node pool from which to select nodes;
-<b>flag</b> is the allocation requirement which can be "mandatory" or 
-"optional", if "flag=mandatory", all requested nodes must be allocated 
-from <b>node_list</b>; else if "flag=optional", try best to allocate node 
-from <b>node_list</b>, and the allocation should include all nodes in the 
-given list that are currently available, if that is not enough to meet the 
+<b>flag</b> is the allocation requirement which can be "mandatory" or
+"optional", if "flag=mandatory", all requested nodes must be allocated
+from <b>node_list</b>; else if "flag=optional", try best to allocate node
+from <b>node_list</b>, and the allocation should include all nodes in the
+given list that are currently available, if that is not enough to meet the
 requested node number <b>N</b>, then take any other nodes that are available
-to fill out the requested number. <b>cpu_bind</b> is to bind tasks to CPUs, 
-which is used only when the task/affinity or task/cgroup plugin is enabled 
+to fill out the requested number. <b>cpu_bind</b> is to bind tasks to CPUs,
+which is used only when the task/affinity or task/cgroup plugin is enabled
 (please refer to 'man salloc'). <b>mem_per_cpu</b> is mimimum memory required
-per allocated CPU in MegaBytes, which is used when the task/cgroup plugin is 
-enabled. <b>resv_port_cnt</b> is the port count required to be allocated, if 
-not specified, resv_port_cnt=1 by default.   
+per allocated CPU in megabytes, which is used when the task/cgroup plugin is
+enabled. <b>resv_port_cnt</b> is the port count required to be allocated, if
+not specified, resv_port_cnt=1 by default.
 </p>
 
 <p>A response message might be like "jobid=100:app=0 slurm_jobid=679 
