@@ -724,6 +724,7 @@ Default value is calculated by the Plugin mcs if it's enabled.
 .TP
 \fB\-\-mem\fR=<\fIMB\fR>
 Specify the real memory required per node in MegaBytes.
+Different units can be specified using the suffix [K|M|G|T].
 Default value is \fBDefMemPerNode\fR and the maximum value is
 \fBMaxMemPerNode\fR. If configured, both of parameters can be
 seen using the \fBscontrol show config\fR command.
@@ -747,6 +748,7 @@ the next periodic accounting sample.
 .TP
 \fB\-\-mem\-per\-cpu\fR=<\fIMB\fR>
 Mimimum memory required per allocated CPU in MegaBytes.
+Different units can be specified using the suffix [K|M|G|T].
 Default value is \fBDefMemPerCPU\fR and the maximum value is \fBMaxMemPerCPU\fR
 (see exception below). If configured, both of parameters can be
 seen using the \fBscontrol show config\fR command.
@@ -1605,6 +1607,12 @@ Advanced reservation containing the job allocation, if any.
 .TP
 \fBSLURM_MEM_BIND\fR
 Set to value of the \-\-mem_bind\fR option.
+.TP
+\fBSLURM_MEM_PER_CPU\fR
+Same as \fB\-\-mem\-per\-cpu\fR
+.TP
+\fBSLURM_MEM_PER_NODE\fR
+Same as \fB\-\-mem\fR
 .TP
 \fBSLURM_SUBMIT_DIR\fR
 The directory from which \fBsalloc\fR was invoked.
