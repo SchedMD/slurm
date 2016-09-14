@@ -78,6 +78,7 @@ extern void *rpc_mgr(void *no_data)
 	pthread_attr_t thread_attr_rpc_req;
 	int sockfd, newsockfd;
 	int i;
+	uint16_t port;
 	slurm_addr_t cli_addr;
 	slurmdbd_conn_t *conn_arg = NULL;
 
@@ -122,7 +123,9 @@ extern void *rpc_mgr(void *no_data)
 		conn_arg->conn.shutdown = &shutdown_time;
 		conn_arg->conn.version = SLURM_MIN_PROTOCOL_VERSION;
 		conn_arg->conn.rem_host = xmalloc_nz(sizeof(char) * 16);
-		slurm_get_ip_str(&cli_addr, &conn_arg->conn.rem_port,
+		/* Don't fill in the rem_port here.  It will be filled in
+		 * later if it is a slurmctld connection. */
+		slurm_get_ip_str(&cli_addr, &port,
 				 conn_arg->conn.rem_host, sizeof(char) * 16);
 
 		slurm_persist_conn_recv_thread_init(
