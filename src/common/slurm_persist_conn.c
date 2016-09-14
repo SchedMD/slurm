@@ -267,7 +267,7 @@ static int _process_service_connection(
 	}
 
 	debug("Closed connection %d uid(%d)", persist_conn->fd, uid);
-	persist_conn->fd = -1;
+
 	return rc;
 }
 
