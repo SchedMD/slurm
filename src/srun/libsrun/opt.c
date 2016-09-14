@@ -2249,11 +2249,13 @@ static bool _opt_verify(void)
 
 		if ((opt.ntasks_per_node != NO_VAL) &&
 		    (opt.ntasks_per_node != (opt.ntasks / opt.min_nodes))) {
-			info("Warning: can't honor --ntasks-per-node set to %u "
-			     "which doesn't match the requested tasks %u with "
-			     "the number of requested nodes %u.  "
-			     "Ignoring --ntasks-per-node.",
-			      opt.ntasks_per_node, opt.ntasks, opt.min_nodes);
+			if (opt.ntasks > opt.ntasks_per_node)
+				info("Warning: can't honor --ntasks-per-node "
+				     "set to %u which doesn't match the "
+				     "requested tasks %u with the number of "
+				     "requested nodes %u. Ignoring "
+				     "--ntasks-per-node.", opt.ntasks_per_node,
+				     opt.ntasks, opt.min_nodes);
 			opt.ntasks_per_node = NO_VAL;
 		}
 
