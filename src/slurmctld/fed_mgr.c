@@ -73,10 +73,11 @@ static int _close_controller_conn(slurmdb_cluster_rec_t *cluster)
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 		info("closing sibling conn to %s", cluster->name);
 
-	slurm_persist_conn_destroy(cluster->fed.send);
-	cluster->fed.send = NULL;
+	/* destroy the recv one first as it will control the end of the send. */
 	slurm_persist_conn_destroy(cluster->fed.recv);
 	cluster->fed.recv = NULL;
+	slurm_persist_conn_destroy(cluster->fed.send);
+	cluster->fed.send = NULL;
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 		info("closed sibling conn to %s", cluster->name);
@@ -404,33 +405,47 @@ static int _find_cluster_recv_in_list(void *x, void *key)
 static void _persist_callback_fini(void *arg)
 {
 	slurm_persist_conn_t *persist_conn = arg;
-	slurmdb_cluster_rec_t *cluster = NULL;
+	slurmdb_cluster_rec_t *cluster;
 	slurmctld_lock_t fed_write_lock = {
 		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
 
+	/* If we are shutting down just return or you will get deadlock since
+	 * all these locks are already locked.
+	 */
+	if (!persist_conn || *persist_conn->shutdown)
+		return;
 	lock_slurmctld(fed_write_lock);
 
 	/* shuting down */
-	if (!fed_mgr_fed_rec || !persist_conn) {
+	if (!fed_mgr_fed_rec) {
 		unlock_slurmctld(fed_write_lock);
 		return;
 	}
 
-	if ((cluster = list_find_first(fed_mgr_fed_rec->cluster_list,
+	if (!(cluster = list_find_first(fed_mgr_fed_rec->cluster_list,
 				       _find_cluster_recv_in_list,
 				       persist_conn))) {
-		persist_conn = cluster->fed.send;
-		if (persist_conn) {
-			if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-				info("Closing send to sibling cluster %s",
-				     cluster->name);
-			slurm_persist_conn_close(persist_conn);
-		}
-	} else {
 		info("Couldn't find cluster %s?",
 		     persist_conn->cluster_name);
+		unlock_slurmctld(fed_write_lock);
+		return;
 	}
 
+	slurm_mutex_lock(&cluster->lock);
+
+	persist_conn = cluster->fed.recv;
+	/* should already be closed, but just incase */
+	slurm_persist_conn_close(persist_conn);
+
+	persist_conn = cluster->fed.send;
+	if (persist_conn) {
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+			info("Closing send to sibling cluster %s",
+			     cluster->name);
+		slurm_persist_conn_close(persist_conn);
+	}
+
+	slurm_mutex_unlock(&cluster->lock);
 	unlock_slurmctld(fed_write_lock);
 }
 
@@ -849,7 +864,8 @@ extern int fed_mgr_add_sibling_conn(slurm_persist_conn_t *persist_conn,
 	}
 
 	persist_conn->callback_fini = _persist_callback_fini;
-	persist_conn->flags |= PERSIST_FLAG_ALREADY_INITED;
+	persist_conn->flags |=
+		(PERSIST_FLAG_ALREADY_INITED | PERSIST_FLAG_JOINABLE);
 
 	cluster->control_port = persist_conn->rem_port;
 	xfree(cluster->control_host);

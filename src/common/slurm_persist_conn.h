@@ -43,6 +43,7 @@
 #define PERSIST_FLAG_DBD            0x0001
 #define PERSIST_FLAG_RECONNECT      0x0002
 #define PERSIST_FLAG_ALREADY_INITED 0x0004
+#define PERSIST_FLAG_JOINABLE       0x0008
 
 typedef struct {
 	uint16_t msg_type;	/* see slurmdbd_msg_type_t or
@@ -64,6 +65,7 @@ typedef struct {
 	char *rem_host;
 	uint16_t rem_port;
 	time_t *shutdown;
+	pthread_t thread_id;
 	int timeout;
 	slurm_trigger_callbacks_t trigger_callbacks;
 	uint16_t version;

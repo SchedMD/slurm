@@ -273,7 +273,7 @@ static int _process_service_connection(
 static void *_service_connection(void *arg)
 {
 	persist_service_conn_t *service_conn = arg;
-	void (*callback_fini)(void *arg);
+
 	xassert(service_conn);
 	xassert(service_conn->conn);
 
@@ -285,14 +285,14 @@ static void *_service_connection(void *arg)
 	}
 	xfree(name);
 #endif
-	/* The conn might not be around after this function is finished, so grab
-	 * the callback now just to make sure we have it.
-	 */
-	callback_fini = service_conn->conn->callback_fini;
+
+	if (service_conn->conn->flags & PERSIST_FLAG_JOINABLE)
+		service_conn->conn->thread_id = pthread_self();
+
 	_process_service_connection(service_conn->conn, service_conn->arg);
 
-	if (callback_fini)
-		(callback_fini)(service_conn->arg);
+	if (service_conn->conn->callback_fini)
+		(service_conn->conn->callback_fini)(service_conn->arg);
 	else
 		debug("Persist connection from cluster %s has disconnected",
 		      service_conn->conn->cluster_name);
@@ -356,8 +356,11 @@ extern int slurm_persist_conn_recv_thread_init(
 	retry_cnt = 0;
 
 	slurm_attr_init(&attr);
-	if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
-		fatal("pthread_attr_setdetachstate %m");
+	if (!(persist_conn->flags & PERSIST_FLAG_JOINABLE)) {
+		if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
+			fatal("pthread_attr_setdetachstate %m");
+	}
+
 	//_service_connection(service_conn);
 	while (pthread_create(&persist_thread_id[thread_loc],
 			      &attr,
@@ -604,6 +607,15 @@ extern void slurm_persist_conn_members_destroy(
 
 	persist_conn->inited = false;
 	_close_fd(&persist_conn->fd);
+
+	if (persist_conn->flags & PERSIST_FLAG_JOINABLE) {
+		if (persist_conn->thread_id) {
+			pthread_kill(persist_conn->thread_id, SIGUSR1);
+			pthread_join(persist_conn->thread_id, NULL);
+		}
+		persist_conn->thread_id = 0;
+	}
+
 	if (persist_conn->auth_cred) {
 		g_slurm_auth_destroy(persist_conn->auth_cred);
 		persist_conn->auth_cred = NULL;
