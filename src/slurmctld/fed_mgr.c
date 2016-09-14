@@ -870,6 +870,7 @@ extern int fed_mgr_add_sibling_conn(slurm_persist_conn_t *persist_conn,
 	cluster->control_port = persist_conn->rem_port;
 	xfree(cluster->control_host);
 	cluster->control_host = xstrdup(persist_conn->rem_host);
+	slurm_persist_conn_destroy(cluster->fed.recv);
 	cluster->fed.recv = persist_conn;
 	send = cluster->fed.send;
 
