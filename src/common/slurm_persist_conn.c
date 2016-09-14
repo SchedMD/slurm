@@ -258,6 +258,7 @@ static int _process_service_connection(
 					      "connection %d(%s) uid(%d)",
 					      persist_conn->fd,
 					      persist_conn->rem_host, uid);
+				free_buf(buffer);
 				break;
 			}
 			free_buf(buffer);
