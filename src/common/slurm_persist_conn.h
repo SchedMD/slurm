@@ -43,7 +43,6 @@
 #define PERSIST_FLAG_DBD            0x0001
 #define PERSIST_FLAG_RECONNECT      0x0002
 #define PERSIST_FLAG_ALREADY_INITED 0x0004
-#define PERSIST_FLAG_JOINABLE       0x0008
 
 typedef struct {
 	uint16_t msg_type;	/* see slurmdbd_msg_type_t or
@@ -96,7 +95,8 @@ extern void slurm_persist_conn_recv_server_fini(void);
 
 /* Create a thread that will wait listening on the fd in the
  * slurm_persist_conn_t.
- * IN - persist_conn - persistant connection to listen to.
+ * IN - persist_conn - persistant connection to listen to.  This will be freed
+ *                     internally, so forget about once it enters here.
  * IN - thread_loc - location in the persist_conn thread pool.  This number can
  *                   be got from slurm_persist_conn_wait_for_thread_loc or given
  *                   -1 to get one inside the function.
@@ -113,8 +113,7 @@ extern int slurm_persist_conn_recv_thread_init(
 extern int slurm_persist_conn_wait_for_thread_loc(void);
 
 /* Free the index given from slurm_persist_conn_wait_for_thread_loc */
-extern void slurm_persist_conn_free_thread_loc(
-	int thread_loc, pthread_t my_tid);
+extern void slurm_persist_conn_free_thread_loc(int thread_loc);
 
 
 /* Open a persistant socket connection

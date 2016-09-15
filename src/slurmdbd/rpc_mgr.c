@@ -75,7 +75,6 @@ static pthread_t       master_thread_id = 0;
 /* Process incoming RPCs. Meant to execute as a pthread */
 extern void *rpc_mgr(void *no_data)
 {
-	pthread_attr_t thread_attr_rpc_req;
 	int sockfd, newsockfd;
 	int i;
 	uint16_t port;
@@ -83,12 +82,6 @@ extern void *rpc_mgr(void *no_data)
 	slurmdbd_conn_t *conn_arg = NULL;
 
 	master_thread_id = pthread_self();
-
-	/* threads to process individual RPC's are detached */
-	slurm_attr_init(&thread_attr_rpc_req);
-	if (pthread_attr_setdetachstate
-	    (&thread_attr_rpc_req, PTHREAD_CREATE_DETACHED))
-		fatal("pthread_attr_setdetachstate %m");
 
 	/* initialize port for RPCs */
 	if ((sockfd = slurm_init_msg_engine_port(get_dbd_port()))
@@ -100,7 +93,8 @@ extern void *rpc_mgr(void *no_data)
 	/*
 	 * Process incoming RPCs until told to shutdown
 	 */
-	while ((i = slurm_persist_conn_wait_for_thread_loc()) >= 0) {
+	while (!shutdown_time &&
+	       (i = slurm_persist_conn_wait_for_thread_loc()) >= 0) {
 		/*
 		 * accept needed for stream implementation is a no-op in
 		 * message implementation that just passes sockfd to newsockfd
@@ -108,7 +102,7 @@ extern void *rpc_mgr(void *no_data)
 		if ((newsockfd = slurm_accept_msg_conn(sockfd,
 						       &cli_addr)) ==
 		    SLURM_SOCKET_ERROR) {
-			slurm_persist_conn_free_thread_loc(i, (pthread_t) 0);
+			slurm_persist_conn_free_thread_loc(i);
 			if (errno != EINTR)
 				error("slurm_accept_msg_conn: %m");
 			continue;
@@ -116,24 +110,24 @@ extern void *rpc_mgr(void *no_data)
 		fd_set_nonblocking(newsockfd);
 
 		conn_arg = xmalloc(sizeof(slurmdbd_conn_t));
-		conn_arg->conn.fd = newsockfd;
-		conn_arg->conn.flags = PERSIST_FLAG_DBD;
-		conn_arg->conn.callback_proc = proc_req;
-		conn_arg->conn.callback_fini = _connection_fini_callback;
-		conn_arg->conn.shutdown = &shutdown_time;
-		conn_arg->conn.version = SLURM_MIN_PROTOCOL_VERSION;
-		conn_arg->conn.rem_host = xmalloc_nz(sizeof(char) * 16);
+		conn_arg->conn = xmalloc(sizeof(slurm_persist_conn_t));
+		conn_arg->conn->fd = newsockfd;
+		conn_arg->conn->flags = PERSIST_FLAG_DBD;
+		conn_arg->conn->callback_proc = proc_req;
+		conn_arg->conn->callback_fini = _connection_fini_callback;
+		conn_arg->conn->shutdown = &shutdown_time;
+		conn_arg->conn->version = SLURM_MIN_PROTOCOL_VERSION;
+		conn_arg->conn->rem_host = xmalloc_nz(sizeof(char) * 16);
 		/* Don't fill in the rem_port here.  It will be filled in
 		 * later if it is a slurmctld connection. */
 		slurm_get_ip_str(&cli_addr, &port,
-				 conn_arg->conn.rem_host, sizeof(char) * 16);
+				 conn_arg->conn->rem_host, sizeof(char) * 16);
 
 		slurm_persist_conn_recv_thread_init(
-			&conn_arg->conn, i, conn_arg);
+			conn_arg->conn, i, conn_arg);
 	}
 
-	debug3("rpc_mgr shutting down");
-	slurm_attr_destroy(&thread_attr_rpc_req);
+	debug("rpc_mgr shutting down");
 	(void) slurm_shutdown_msg_engine(sockfd);
 	pthread_exit((void *) 0);
 	return NULL;
@@ -144,7 +138,6 @@ extern void rpc_mgr_wake(void)
 {
 	if (master_thread_id)
 		pthread_kill(master_thread_id, SIGUSR1);
-
 	slurm_persist_conn_recv_server_fini();
 }
 
@@ -152,18 +145,18 @@ static void _connection_fini_callback(void *arg)
 {
 	slurmdbd_conn_t *conn = (slurmdbd_conn_t *) arg;
 
-	if (conn->conn.rem_port) {
+	if (conn->conn->rem_port) {
 		if (!shutdown_time) {
 			slurmdb_cluster_rec_t cluster_rec;
 			ListIterator itr;
 			slurmdbd_conn_t *slurmdbd_conn;
 			memset(&cluster_rec, 0, sizeof(slurmdb_cluster_rec_t));
-			cluster_rec.name = conn->conn.cluster_name;
-			cluster_rec.control_host = conn->conn.rem_host;
-			cluster_rec.control_port = conn->conn.rem_port;
+			cluster_rec.name = conn->conn->cluster_name;
+			cluster_rec.control_host = conn->conn->rem_host;
+			cluster_rec.control_port = conn->conn->rem_port;
 			cluster_rec.tres_str = conn->tres_str;
 			debug("cluster %s has disconnected",
-			      conn->conn.cluster_name);
+			      conn->conn->cluster_name);
 
 			clusteracct_storage_g_fini_ctld(
 				conn->db_conn, &cluster_rec);
@@ -184,8 +177,8 @@ static void _connection_fini_callback(void *arg)
 	}
 
 	acct_storage_g_close_connection(&conn->db_conn);
-	slurm_persist_conn_members_destroy(&conn->conn);
-
+	/* handled directly in the internal persist_conn code */
+	//slurm_persist_conn_members_destroy(&conn->conn);
 	xfree(conn->tres_str);
 	xfree(conn);
 }

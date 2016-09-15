@@ -782,7 +782,7 @@ static void *_commit_handler(void *db_conn)
 			itr = list_iterator_create(registered_clusters);
 			while ((slurmdbd_conn = list_next(itr))) {
 				debug4("running commit for %s",
-				       slurmdbd_conn->conn.cluster_name);
+				       slurmdbd_conn->conn->cluster_name);
 				acct_storage_g_commit(
 					slurmdbd_conn->db_conn, 1);
 			}

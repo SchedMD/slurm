@@ -56,17 +56,18 @@
  */
 #define MAX_MSG_SIZE     (16*1024*1024)
 
-static pthread_t       persist_thread_id[MAX_THREAD_COUNT];
-static int             thread_count = 0;
-static pthread_mutex_t thread_count_lock = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t  thread_count_cond = PTHREAD_COND_INITIALIZER;
-static int             shutdown_time = 0;
-
 typedef struct {
 	void *arg;
 	slurm_persist_conn_t *conn;
 	int thread_loc;
+	pthread_t thread_id;
 } persist_service_conn_t;
+
+static persist_service_conn_t *persist_service_conn[MAX_THREAD_COUNT];
+static int             thread_count = 0;
+static pthread_mutex_t thread_count_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t  thread_count_cond = PTHREAD_COND_INITIALIZER;
+static int             shutdown_time = 0;
 
 /* Return time in msec since "start time" */
 static int _tot_wait (struct timeval *start_time)
@@ -150,6 +151,14 @@ static bool _conn_readable(slurm_persist_conn_t *persist_conn)
 	return false;
 }
 
+static void _destroy_persist_service(persist_service_conn_t *persist_service)
+{
+	if (persist_service) {
+		slurm_persist_conn_destroy(persist_service->conn);
+		xfree(persist_service);
+	}
+}
+
 static void _sig_handler(int signal)
 {
 }
@@ -169,7 +178,7 @@ static int _process_service_connection(
 	uint32_t nw_size = 0, msg_size = 0, uid = NO_VAL;
 	char *msg_char = NULL;
 	ssize_t msg_read = 0, offset = 0;
-	bool first = true;
+	bool first = true, fini = false;
 	Buf buffer = NULL;
 	int rc = SLURM_SUCCESS;
 
@@ -182,7 +191,7 @@ static int _process_service_connection(
 	if (persist_conn->flags & PERSIST_FLAG_ALREADY_INITED)
 		first = false;
 
-	while (!(*persist_conn->shutdown)) {
+	while (!(*persist_conn->shutdown) && !fini) {
 		if (!_conn_readable(persist_conn))
 			break;		/* problem with this socket */
 		msg_read = read(persist_conn->fd, &nw_size, sizeof(nw_size));
@@ -236,16 +245,17 @@ static int _process_service_connection(
 					      persist_conn->rem_host, uid);
 					if (rc == ESLURM_ACCESS_DENIED ||
 					    rc == SLURM_PROTOCOL_VERSION_ERROR)
-						break;
+						fini = true;
 				}
 			}
 			first = false;
 		} else {
 			buffer = slurm_persist_make_rc_msg(
 				persist_conn, SLURM_ERROR, "Bad offset", 0);
-			break;
+			fini = true;
 		}
 
+		xfree(msg_char);
 		if (buffer) {
 			if (slurm_persist_send_msg(persist_conn, buffer)
 			    != SLURM_SUCCESS) {
@@ -258,12 +268,10 @@ static int _process_service_connection(
 					      "connection %d(%s) uid(%d)",
 					      persist_conn->fd,
 					      persist_conn->rem_host, uid);
-				free_buf(buffer);
-				break;
+				fini = true;
 			}
 			free_buf(buffer);
 		}
-		xfree(msg_char);
 	}
 
 	debug("Closed connection %d uid(%d)", persist_conn->fd, uid);
@@ -287,8 +295,7 @@ static void *_service_connection(void *arg)
 	xfree(name);
 #endif
 
-	if (service_conn->conn->flags & PERSIST_FLAG_JOINABLE)
-		service_conn->conn->thread_id = pthread_self();
+	service_conn->thread_id = pthread_self();
 
 	_process_service_connection(service_conn->conn, service_conn->arg);
 
@@ -298,9 +305,9 @@ static void *_service_connection(void *arg)
 		debug("Persist connection from cluster %s has disconnected",
 		      service_conn->conn->cluster_name);
 
-	slurm_persist_conn_free_thread_loc(
-		service_conn->thread_loc, pthread_self());
-	xfree(service_conn);
+	/* service_conn is freed inside here */
+	slurm_persist_conn_free_thread_loc(service_conn->thread_loc);
+//	xfree(service_conn);
 
 	return NULL;
 }
@@ -328,8 +335,22 @@ extern void slurm_persist_conn_recv_server_fini(void)
 	shutdown_time = time(NULL);
 	slurm_mutex_lock(&thread_count_lock);
 	for (i=0; i<MAX_THREAD_COUNT; i++) {
-		if (persist_thread_id[i])
-			pthread_kill(persist_thread_id[i], SIGUSR1);
+		if (!persist_service_conn[i])
+			continue;
+		if (persist_service_conn[i]->thread_id)
+			pthread_kill(persist_service_conn[i]->thread_id,
+				     SIGUSR1);
+	}
+	/* It is faster to signal then wait since the threads would end serially
+	 * instead of parallel if you did it all in one loop.
+	 */
+	for (i=0; i<MAX_THREAD_COUNT; i++) {
+		if (!persist_service_conn[i])
+			continue;
+		if (persist_service_conn[i]->thread_id)
+			pthread_join(persist_service_conn[i]->thread_id, NULL);
+		_destroy_persist_service(persist_service_conn[i]);
+		persist_service_conn[i] = NULL;
 	}
 	slurm_mutex_unlock(&thread_count_lock);
 }
@@ -347,6 +368,11 @@ extern int slurm_persist_conn_recv_thread_init(
 		return rc;
 
 	service_conn = xmalloc(sizeof(persist_service_conn_t));
+
+	slurm_mutex_lock(&thread_count_lock);
+	persist_service_conn[thread_loc] = service_conn;
+	slurm_mutex_unlock(&thread_count_lock);
+
 	service_conn->arg = arg;
 	service_conn->conn = persist_conn;
 	service_conn->thread_loc = thread_loc;
@@ -357,13 +383,9 @@ extern int slurm_persist_conn_recv_thread_init(
 	retry_cnt = 0;
 
 	slurm_attr_init(&attr);
-	if (!(persist_conn->flags & PERSIST_FLAG_JOINABLE)) {
-		if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
-			fatal("pthread_attr_setdetachstate %m");
-	}
 
 	//_service_connection(service_conn);
-	while (pthread_create(&persist_thread_id[thread_loc],
+	while (pthread_create(&persist_service_conn[thread_loc]->thread_id,
 			      &attr,
 			      _service_connection,
 			      (void *)service_conn)) {
@@ -383,7 +405,7 @@ extern int slurm_persist_conn_recv_thread_init(
 
 /* Increment thread_count and don't return until its value is no larger
  *	than MAX_THREAD_COUNT,
- * RET index of free index in persist_pthread_id or -1 to exit */
+ * RET index of free index in persist_service_conn or -1 to exit */
 extern int slurm_persist_conn_wait_for_thread_loc(void)
 {
 	bool print_it = true;
@@ -397,7 +419,7 @@ extern int slurm_persist_conn_wait_for_thread_loc(void)
 		if (thread_count < MAX_THREAD_COUNT) {
 			thread_count++;
 			for (i=0; i<MAX_THREAD_COUNT; i++) {
-				if (persist_thread_id[i])
+				if (persist_service_conn[i])
 					continue;
 				rc = i;
 				break;
@@ -433,9 +455,11 @@ extern int slurm_persist_conn_wait_for_thread_loc(void)
 }
 
 /* my_tid IN - Thread ID of spawned thread, 0 if no thread spawned */
-extern void slurm_persist_conn_free_thread_loc(int thread_loc, pthread_t my_tid)
+extern void slurm_persist_conn_free_thread_loc(int thread_loc)
 {
-	int i;
+	/* we will handle this in the fini */
+	if (shutdown_time)
+		return;
 
 	slurm_mutex_lock(&thread_count_lock);
 	if (thread_count > 0)
@@ -443,22 +467,8 @@ extern void slurm_persist_conn_free_thread_loc(int thread_loc, pthread_t my_tid)
 	else
 		error("thread_count underflow");
 
-	if (my_tid) {
-		if (persist_thread_id[thread_loc] == my_tid)
-			persist_thread_id[thread_loc] = (pthread_t) 0;
-		else {
-			debug("For some reason the thread id 0x%08lx wasn't in the correct place %d.  Looking for it in the array.",
-			      my_tid, thread_loc);
-			for (i=0; i<MAX_THREAD_COUNT; i++) {
-				if (persist_thread_id[i] != my_tid)
-					continue;
-				persist_thread_id[i] = (pthread_t) 0;
-				break;
-			}
-			if (i >= MAX_THREAD_COUNT)
-				error("Could not find persist_thread_id");
-		}
-	}
+	_destroy_persist_service(persist_service_conn[thread_loc]);
+	persist_service_conn[thread_loc] = NULL;
 
 	slurm_cond_broadcast(&thread_count_cond);
 	slurm_mutex_unlock(&thread_count_lock);
@@ -608,14 +618,6 @@ extern void slurm_persist_conn_members_destroy(
 
 	persist_conn->inited = false;
 	_close_fd(&persist_conn->fd);
-
-	if (persist_conn->flags & PERSIST_FLAG_JOINABLE) {
-		if (persist_conn->thread_id) {
-			pthread_kill(persist_conn->thread_id, SIGUSR1);
-			pthread_join(persist_conn->thread_id, NULL);
-		}
-		persist_conn->thread_id = 0;
-	}
 
 	if (persist_conn->auth_cred) {
 		g_slurm_auth_destroy(persist_conn->auth_cred);

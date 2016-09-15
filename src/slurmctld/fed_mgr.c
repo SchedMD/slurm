@@ -73,8 +73,9 @@ static int _close_controller_conn(slurmdb_cluster_rec_t *cluster)
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 		info("closing sibling conn to %s", cluster->name);
 
-	/* destroy the recv one first as it will control the end of the send. */
-	slurm_persist_conn_destroy(cluster->fed.recv);
+	/* The recv free of this is handled directly in the persist_conn code,
+	 * don't free it here */
+//	slurm_persist_conn_destroy(cluster->fed.recv);
 	cluster->fed.recv = NULL;
 	slurm_persist_conn_destroy(cluster->fed.send);
 	cluster->fed.send = NULL;
@@ -433,9 +434,10 @@ static void _persist_callback_fini(void *arg)
 
 	slurm_mutex_lock(&cluster->lock);
 
-	persist_conn = cluster->fed.recv;
-	/* should already be closed, but just incase */
-	slurm_persist_conn_close(persist_conn);
+	/* This will get handled at the end of the thread, don't free it here */
+	cluster->fed.recv = NULL;
+//	persist_conn = cluster->fed.recv;
+//	slurm_persist_conn_close(persist_conn);
 
 	persist_conn = cluster->fed.send;
 	if (persist_conn) {
@@ -864,8 +866,7 @@ extern int fed_mgr_add_sibling_conn(slurm_persist_conn_t *persist_conn,
 	}
 
 	persist_conn->callback_fini = _persist_callback_fini;
-	persist_conn->flags |=
-		(PERSIST_FLAG_ALREADY_INITED | PERSIST_FLAG_JOINABLE);
+	persist_conn->flags |= PERSIST_FLAG_ALREADY_INITED;
 
 	cluster->control_port = persist_conn->rem_port;
 	xfree(cluster->control_host);
