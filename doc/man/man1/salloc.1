@@ -500,7 +500,7 @@ Examples of use include "\-\-gres=gpu:2,mic=1", "\-\-gres=gpu:kepler:2", and
 .TP
 \fB\-\-gres\-flags\fR=enforce\-binding
 If set, the only CPUs available to the job will be those bound to the selected
-GRES (i.e. the CPUs identifed in the gres.conf file will be strictly enforced
+GRES (i.e. the CPUs identified in the gres.conf file will be strictly enforced
 rather than advisory). This option may result in delayed initiation of a job.
 For example a job requiring two GPUs and one CPU will be delayed until both
 GPUs on a single socket are available rather than using GPUs bound to separate
@@ -747,7 +747,7 @@ the next periodic accounting sample.
 
 .TP
 \fB\-\-mem\-per\-cpu\fR=<\fIMB\fR>
-Mimimum memory required per allocated CPU in megabytes.
+Minimum memory required per allocated CPU in megabytes.
 Different units can be specified using the suffix [K|M|G|T].
 Default value is \fBDefMemPerCPU\fR and the maximum value is \fBMaxMemPerCPU\fR
 (see exception below). If configured, both of parameters can be
@@ -892,7 +892,7 @@ that the \fB\-\-cpus\-per\-task\fR option will change this default.
 Specify information pertaining to the switch or network.
 The interpretation of \fItype\fR is system dependent.
 This option is supported when running Slurm on a Cray natively.  It is
-used to request using Network Performace Counters.
+used to request using Network Performance Counters.
 Only one value per request is valid.
 All options are case in\-sensitive.
 In this configuration supported values include:

@@ -50,6 +50,7 @@ documents those changes that are of interest to users and administrators.
     environment variables for --mem/--mem-per-cpu and allowed suffixes.
  -- Silence srun warning when overriding the job ntasks-per-node count
     with a lower task count for the step.
+ -- Docs - assorted spelling fixes.
 
 * Changes in Slurm 16.05.4
 ==========================
