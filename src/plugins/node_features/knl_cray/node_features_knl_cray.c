@@ -154,6 +154,7 @@ static bool reconfig = false;
 
 /* Percentage of MCDRAM used for cache by type, updated from capmc */
 static int mcdram_pct[KNL_MCDRAM_CNT];
+static int mcdram_set = 0;
 static uint64_t *mcdram_per_node = NULL;
 
 /* NOTE: New knl_cray.conf parameters added below must also be added to the
@@ -525,7 +526,6 @@ static void _free_script_argv(char **script_argv)
  */
 static void _update_mcdram_pct(char *tok, int mcdram_num)
 {
-	static int mcdram_set = 0;
 	int inx;
 
 	if (mcdram_set == KNL_MCDRAM_CNT)
@@ -1466,6 +1466,7 @@ extern int init(void)
 	default_numa = KNL_ALL2ALL;
 	for (i = 0; i < KNL_MCDRAM_CNT; i++)
 		mcdram_pct[i] = -1;
+	mcdram_set = 0;
 
 	knl_conf_file = get_extra_conf_path("knl_cray.conf");
 	if ((stat(knl_conf_file, &stat_buf) == 0) &&
@@ -1840,7 +1841,7 @@ extern int node_features_p_get_node(char *node_list)
 						      numa_cap, numa_cap_cnt,
 						      numa_cfg, numa_cfg_cnt);
 			}
-			xfree(node_name);
+			free(node_name);
 		}
 		hostlist_destroy (host_list);
 	} else {

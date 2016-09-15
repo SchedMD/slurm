@@ -51,6 +51,8 @@ documents those changes that are of interest to users and administrators.
  -- Silence srun warning when overriding the job ntasks-per-node count
     with a lower task count for the step.
  -- Docs - assorted spelling fixes.
+ -- node_features/knl_cray: Fix bug where MCDRAM state could be taken from
+    capmc rather than cnselect.
 
 * Changes in Slurm 16.05.4
 ==========================
