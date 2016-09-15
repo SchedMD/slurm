@@ -75,6 +75,7 @@
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
+#include "src/slurmctld/read_config.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
@@ -135,6 +136,16 @@ slurmctld_config_t slurmctld_config;
 const char plugin_name[]        = "node_features knl_cray plugin";
 const char plugin_type[]        = "node_features/knl_cray";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
+
+/* These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld.
+ */
+#if defined (__APPLE__)
+List active_feature_list __attribute__((weak_import));
+#else
+List active_feature_list;
+#endif
 
 /* Configuration Paramters */
 static char *capmc_path = NULL;
@@ -265,6 +276,10 @@ static void _update_node_features(struct node_record *node_ptr,
 				  mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt,
 				  numa_cap_t *numa_cap, int numa_cap_cnt,
 				  numa_cfg_t *numa_cfg, int numa_cfg_cnt);
+
+/* Function used both internally and externally */
+extern int node_features_p_node_update(char *active_features,
+				       bitstr_t *node_bitmap);
 
 static s_p_hashtbl_t *_config_make_tbl(char *filename)
 {
@@ -1330,6 +1345,7 @@ static void _update_node_features(struct node_record *node_ptr,
 	int i, nid;
 	char *end_ptr = "";
 	uint64_t mcdram_size;
+	bitstr_t *node_bitmap = NULL;
 
 	xassert(node_ptr);
 	nid = strtol(node_ptr->name + 3, &end_ptr, 10);
@@ -1394,6 +1410,15 @@ static void _update_node_features(struct node_record *node_ptr,
 			}
 		}
 	}
+
+	/* Update bitmaps and lists used by slurmctld for scheduling */
+	node_bitmap = bit_alloc(node_record_count);
+	bit_set(node_bitmap, (node_ptr - node_record_table_ptr));
+	update_feature_list(active_feature_list, node_ptr->features_act,
+			    node_bitmap);
+	(void) node_features_p_node_update(node_ptr->features_act, node_bitmap);
+	FREE_NULL_BITMAP(node_bitmap);
+
 }
 
 static void _make_uid_array(char *uid_str)
