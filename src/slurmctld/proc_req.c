@@ -750,6 +750,7 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->licenses_used       = licenses_used;
 	conf_ptr->log_fmt             = conf->log_fmt;
 
+	conf_ptr->mail_domain         = xstrdup(conf->mail_domain);
 	conf_ptr->mail_prog           = xstrdup(conf->mail_prog);
 	conf_ptr->max_array_sz        = conf->max_array_sz;
 	conf_ptr->max_job_cnt         = conf->max_job_cnt;

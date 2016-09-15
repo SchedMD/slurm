@@ -6624,6 +6624,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->licenses_used, buffer);
 
 		pack32(build_ptr->max_array_sz, buffer);
+		packstr(build_ptr->mail_domain, buffer);
 		packstr(build_ptr->mail_prog, buffer);
 		pack32(build_ptr->max_job_cnt, buffer);
 		pack32(build_ptr->max_job_id, buffer);
@@ -7532,6 +7533,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 
 		safe_unpack32(&build_ptr->max_array_sz, buffer);
+		safe_unpackstr_xmalloc(&build_ptr->mail_domain,
+				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->mail_prog,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&build_ptr->max_job_cnt, buffer);
@@ -7929,6 +7932,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 
 		safe_unpack32(&build_ptr->max_array_sz, buffer);
+		build_ptr->mail_domain = NULL;
 		safe_unpackstr_xmalloc(&build_ptr->mail_prog,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&build_ptr->max_job_cnt, buffer);
@@ -8327,6 +8331,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 
 		safe_unpack32(&build_ptr->max_array_sz, buffer);
+		build_ptr->mail_domain = NULL;
 		safe_unpackstr_xmalloc(&build_ptr->mail_prog,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&build_ptr->max_job_cnt, buffer);

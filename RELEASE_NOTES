@@ -80,6 +80,7 @@ In connection_arg_t: Added bool persist
 In slurmctld_lock_t: Added federation
 In will_run_response_msg_t: Added double sys_usage_per to report back how busy a
 	cluster is.
+In slurm_ctl_conf: Added mail_domain.
 
 Added the following struct definitions
 ======================================

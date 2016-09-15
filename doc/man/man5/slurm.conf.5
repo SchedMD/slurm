@@ -1314,6 +1314,12 @@ including the microseconds, the daemon's process ID and the current thread name
 and ID.
 
 .TP
+\fBMailDomain\fR
+Domain name to qualify usernames if email address is not explicitly given
+with the "--mail-user" option. If unset, the local MTA will need to qualify
+local address itself.
+
+.TP
 \fBMailProg\fR
 Fully qualified pathname to the program used to send email per user request.
 The default value is "/bin/mail".

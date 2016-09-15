@@ -32,6 +32,7 @@ documents those changes that are of interest to users and administrators.
  -- Log if job --bb option contains any unrecognized content.
  -- Display configured and allocated tres for nodes in scontrol show nodes.
  -- Change all memory values (in MB) to uint64_t to accommodate > 2TB per node.
+ -- Add MailDomain option to qualify email addresses.
 
 * Changes in Slurm 17.02.0pre1
 ==============================

@@ -245,6 +245,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"Layouts", S_P_STRING},
 	{"Licenses", S_P_STRING},
 	{"LogTimeFormat", S_P_STRING},
+	{"MailDomain", S_P_STRING},
 	{"MailProg", S_P_STRING},
 	{"MaxArraySize", S_P_UINT32},
 	{"MaxJobCount", S_P_UINT32},
@@ -3327,9 +3328,10 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	} else
 		conf->log_fmt = LOG_FMT_ISO8601_MS;
 
+	s_p_get_string(&conf->mail_domain, "MailDomain", hashtbl);
+
 	if (!s_p_get_string(&conf->mail_prog, "MailProg", hashtbl))
 		conf->mail_prog = xstrdup(DEFAULT_MAIL_PROG);
-
 
 	if (!s_p_get_uint32(&conf->max_array_sz, "MaxArraySize", hashtbl))
 		conf->max_array_sz = DEFAULT_MAX_ARRAY_SIZE;
