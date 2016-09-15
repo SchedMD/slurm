@@ -185,7 +185,7 @@ static int _process_service_connection(
 	xassert(persist_conn->callback_proc);
 	xassert(persist_conn->shutdown);
 
-	debug("Opened connection %d from %s", persist_conn->fd,
+	debug2("Opened connection %d from %s", persist_conn->fd,
 	       persist_conn->rem_host);
 
 	if (persist_conn->flags & PERSIST_FLAG_ALREADY_INITED)
@@ -274,7 +274,7 @@ static int _process_service_connection(
 		}
 	}
 
-	debug("Closed connection %d uid(%d)", persist_conn->fd, uid);
+	debug2("Closed connection %d uid(%d)", persist_conn->fd, uid);
 
 	return rc;
 }
