@@ -553,9 +553,6 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		/* we have already calculated the rpc info above, just return */
 		return;
 		break;
-	case REQUEST_PERSIST_FINI:
-		/* FIXME: I don't think this will be used */
-		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		break;
 	case REQUEST_EVENT_LOG:
 		_slurm_rpc_event_log(msg);

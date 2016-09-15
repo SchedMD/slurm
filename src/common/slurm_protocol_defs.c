@@ -3982,7 +3982,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_BURST_BUFFER_INFO:
 	case REQUEST_POWERCAP_INFO:
 	case ACCOUNTING_REGISTER_CTLD:
-	case REQUEST_PERSIST_FINI:
 	case REQUEST_FED_INFO:
 		/* No body to free */
 		break;
@@ -4594,8 +4593,6 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_PERSIST_INIT";
 	case PERSIST_RC:
 		return "PERSIST_RC";
-	case REQUEST_PERSIST_FINI:
-		return "REQUEST_PERSIST_FINI";
 
 	default:
 		(void) snprintf(buf, sizeof(buf), "%u", opcode);

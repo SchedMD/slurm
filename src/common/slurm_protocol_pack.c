@@ -1116,7 +1116,6 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case REQUEST_TOPO_INFO:
 	case REQUEST_BURST_BUFFER_INFO:
 	case REQUEST_POWERCAP_INFO:
-	case REQUEST_PERSIST_FINI:
 	case REQUEST_FED_INFO:
 		/* Message contains no body/information */
 		break;
@@ -1788,7 +1787,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case REQUEST_TOPO_INFO:
 	case REQUEST_BURST_BUFFER_INFO:
 	case REQUEST_POWERCAP_INFO:
-	case REQUEST_PERSIST_FINI:
 	case REQUEST_FED_INFO:
 		/* Message contains no body/information */
 		break;
