@@ -532,27 +532,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 	case REQUEST_PERSIST_INIT:
 		if (msg->conn)
 			error("We already have a persistant connect, this should never happen");
-		/* Say we finished this right away since we will be most likely
-		 * hanging out in _slurm_rpc_persist_init until that connection
-		 * is severed.
-		 */
-		END_TIMER;
-		slurm_mutex_lock(&rpc_mutex);
-		if (rpc_type_index >= 0) {
-			rpc_type_cnt[rpc_type_index]++;
-			rpc_type_time[rpc_type_index] += DELTA_TIMER;
-		}
-		if (rpc_user_index >= 0) {
-			rpc_user_cnt[rpc_user_index]++;
-			rpc_user_time[rpc_user_index] += DELTA_TIMER;
-		}
-		slurm_mutex_unlock(&rpc_mutex);
-
 		_slurm_rpc_persist_init(msg, arg);
-
-		/* we have already calculated the rpc info above, just return */
-		return;
-		break;
 		break;
 	case REQUEST_EVENT_LOG:
 		_slurm_rpc_event_log(msg);
