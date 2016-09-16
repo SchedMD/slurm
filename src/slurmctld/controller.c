@@ -692,6 +692,7 @@ int main(int argc, char *argv[])
 	resv_fini();
 	trigger_fini();
 	dir_name = slurm_get_state_save_location();
+	fed_mgr_fini();
 	assoc_mgr_fini(dir_name);
 	xfree(dir_name);
 	reserve_port_config(NULL);
@@ -2294,7 +2295,6 @@ static int _report_locks_set(void)
 int slurmctld_shutdown(void)
 {
 	debug("sched: slurmctld terminating");
-	fed_mgr_fini();
 	if (slurmctld_config.thread_id_rpc) {
 		pthread_kill(slurmctld_config.thread_id_rpc, SIGUSR1);
 		return SLURM_SUCCESS;
