@@ -70,7 +70,6 @@
 ** for details.
  */
 strong_alias(slurmdbd_free_list_msg,	slurmdb_slurmdbd_free_list_msg);
-strong_alias(slurmdbd_free_rc_msg,	slurmdb_slurmdbd_free_rc_msg);
 strong_alias(slurmdbd_free_usage_msg,	slurmdb_slurmdbd_free_usage_msg);
 strong_alias(slurmdbd_free_id_rc_msg,	slurmdb_slurmdbd_free_id_rc_msg);
 
@@ -209,20 +208,20 @@ extern int slurm_send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
 		      resp.msg_type);
 		rc = SLURM_ERROR;
 	} else {	/* resp.msg_type == PERSIST_RC */
-		dbd_rc_msg_t *msg = resp.data;
-		*resp_code = msg->return_code;
-		if (msg->return_code != SLURM_SUCCESS
-		    && msg->return_code != ACCOUNTING_FIRST_REG) {
+		persist_rc_msg_t *msg = resp.data;
+		*resp_code = msg->rc;
+		if (msg->rc != SLURM_SUCCESS
+		    && msg->rc != ACCOUNTING_FIRST_REG) {
 			char *comment = msg->comment;
 			if (!comment)
-				comment = slurm_strerror(msg->return_code);
-			if (msg->sent_type == DBD_REGISTER_CTLD &&
+				comment = slurm_strerror(msg->rc);
+			if (msg->ret_info == DBD_REGISTER_CTLD &&
 			    slurm_get_accounting_storage_enforce()) {
 				error("slurmdbd: Issue with call "
 				      "%s(%u): %u(%s)",
 				      slurmdbd_msg_type_2_str(
-					      msg->sent_type, 1),
-				      msg->sent_type, msg->return_code,
+					      msg->ret_info, 1),
+				      msg->ret_info, msg->rc,
 				      comment);
 				fatal("You need to add this cluster "
 				      "to accounting if you want to "
@@ -232,12 +231,12 @@ extern int slurm_send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
 				debug("slurmdbd: Issue with call "
 				      "%s(%u): %u(%s)",
 				      slurmdbd_msg_type_2_str(
-					      msg->sent_type, 1),
-				      msg->sent_type, msg->return_code,
+					      msg->ret_info, 1),
+				      msg->ret_info, msg->rc,
 				      comment);
-		} else if (msg->sent_type == DBD_REGISTER_CTLD)
+		} else if (msg->ret_info == DBD_REGISTER_CTLD)
 			need_to_register = 0;
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	}
 
 	return rc;
@@ -633,10 +632,6 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 			(dbd_node_state_msg_t *)req->data, rpc_version,
 			buffer);
 		break;
-	case DBD_RC:
-		slurmdbd_pack_rc_msg((dbd_rc_msg_t *)req->data,
-				     rpc_version, buffer);
-		break;
 	case DBD_STEP_COMPLETE:
 		slurmdbd_pack_step_complete_msg(
 			(dbd_step_comp_msg_t *)req->data, rpc_version,
@@ -848,12 +843,6 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp,
 			(dbd_node_state_msg_t **)&resp->data, rpc_version,
 			buffer);
 		break;
-	case DBD_RC:
-		resp->msg_type = PERSIST_RC;
-		rc = slurmdbd_unpack_rc_msg((dbd_rc_msg_t **)&resp->data,
-					    rpc_version,
-					    buffer);
-		break;
 	case DBD_STEP_COMPLETE:
 		rc = slurmdbd_unpack_step_complete_msg(
 			(dbd_step_comp_msg_t **)&resp->data,
@@ -1011,8 +1000,6 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_MODIFY_USERS;
 	} else if (!xstrcasecmp(msg_type, "Node State")) {
 		return DBD_NODE_STATE;
-	} else if (!xstrcasecmp(msg_type, "RC")) {
-		return DBD_RC;
 	} else if (!xstrcasecmp(msg_type, "Register Cluster")) {
 		return DBD_REGISTER_CTLD;
 	} else if (!xstrcasecmp(msg_type, "Remove Accounts")) {
@@ -1397,12 +1384,6 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 		} else
 			return "Node State";
 		break;
-	case DBD_RC:
-		if (get_enum) {
-			return "DBD_RC";
-		} else
-			return "Return Code";
-		break;
 	case DBD_REGISTER_CTLD:
 		if (get_enum) {
 			return "DBD_REGISTER_CTLD";
@@ -1715,7 +1696,7 @@ static int _unpack_return_code(uint16_t rpc_version, Buf buffer)
 		if (rc != SLURM_SUCCESS) {
 			if (msg->ret_info == DBD_REGISTER_CTLD &&
 			    slurm_get_accounting_storage_enforce()) {
-				error("slurmdbd: DBD_RC is %d from "
+				error("slurmdbd: PERSIST_RC is %d from "
 				      "%s(%u): %s",
 				      rc,
 				      slurmdbd_msg_type_2_str(
@@ -1727,7 +1708,7 @@ static int _unpack_return_code(uint16_t rpc_version, Buf buffer)
 				      "enforce associations, or no "
 				      "jobs will ever run.");
 			} else
-				debug("slurmdbd: DBD_RC is %d from "
+				debug("slurmdbd: PERSIST_RC is %d from "
 				      "%s(%u): %s",
 				      rc,
 				      slurmdbd_msg_type_2_str(
@@ -1739,7 +1720,7 @@ static int _unpack_return_code(uint16_t rpc_version, Buf buffer)
 		slurm_persist_free_rc_msg(msg);
 		break;
 	default:
-		error("slurmdbd: bad message type %d != DBD_RC", msg_type);
+		error("slurmdbd: bad message type %d != PERSIST_RC", msg_type);
 	}
 
 	return rc;
@@ -1820,8 +1801,6 @@ static int _handle_mult_rc_ret(void)
 		slurm_mutex_unlock(&agent_lock);
 		slurmdbd_free_list_msg(list_msg);
 		break;
-	case DBD_RC:
-		msg_type = PERSIST_RC;
 	case PERSIST_RC:
 		if (slurm_persist_unpack_rc_msg(
 			    &msg, buffer, slurmdbd_conn->version)
@@ -2493,9 +2472,6 @@ extern void slurmdbd_free_msg(slurmdbd_msg_t *msg)
 	case DBD_NODE_STATE:
 		slurmdbd_free_node_state_msg(msg->data);
 		break;
-	case DBD_RC:
-		slurmdbd_free_rc_msg(msg->data);
-		break;
 	case DBD_STEP_COMPLETE:
 		slurmdbd_free_step_complete_msg(msg->data);
 		break;
@@ -2741,14 +2717,6 @@ extern void slurmdbd_free_node_state_msg(dbd_node_state_msg_t *msg)
 		xfree(msg->hostlist);
 		xfree(msg->reason);
 		xfree(msg->tres_str);
-		xfree(msg);
-	}
-}
-
-extern void slurmdbd_free_rc_msg(dbd_rc_msg_t *msg)
-{
-	if (msg) {
-		xfree(msg->comment);
 		xfree(msg);
 	}
 }
@@ -3943,33 +3911,6 @@ slurmdbd_unpack_node_state_msg(dbd_node_state_msg_t **msg,
 
 unpack_error:
 	slurmdbd_free_node_state_msg(msg_ptr);
-	*msg = NULL;
-	return SLURM_ERROR;
-}
-
-extern void
-slurmdbd_pack_rc_msg(dbd_rc_msg_t *msg,
-		     uint16_t rpc_version, Buf buffer)
-{
-	packstr(msg->comment, buffer);
-	pack32(msg->return_code, buffer);
-	pack16(msg->sent_type, buffer);
-}
-
-extern int
-slurmdbd_unpack_rc_msg(dbd_rc_msg_t **msg,
-		       uint16_t rpc_version, Buf buffer)
-{
-	uint32_t uint32_tmp;
-	dbd_rc_msg_t *msg_ptr = xmalloc(sizeof(dbd_rc_msg_t));
-	*msg = msg_ptr;
-	safe_unpackstr_xmalloc(&msg_ptr->comment, &uint32_tmp, buffer);
-	safe_unpack32(&msg_ptr->return_code, buffer);
-	safe_unpack16(&msg_ptr->sent_type, buffer);
-	return SLURM_SUCCESS;
-
-unpack_error:
-	slurmdbd_free_rc_msg(msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }

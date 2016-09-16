@@ -86,7 +86,7 @@ typedef enum {
 	DBD_MODIFY_CLUSTERS,    /* Modify existing cluster              */
 	DBD_MODIFY_USERS,       /* Modify existing user                 */
 	DBD_NODE_STATE,		/* Record node state transition		*/
-	DBD_RC,			/* Return code from operation		*/
+	DBD_RC, 		/* DEFUNCT, use PERSIST_RC instead.	*/
 	DBD_REGISTER_CTLD,	/* Register a slurmctld's comm port	*/
 	DBD_REMOVE_ACCOUNTS,    /* Remove existing account              */
 	DBD_REMOVE_ACCOUNT_COORDS,/* Remove existing coordinator from
@@ -334,12 +334,6 @@ typedef struct dbd_node_state_msg {
 	char *tres_str;	        /* Simple comma separated list of TRES */
 } dbd_node_state_msg_t;
 
-typedef struct dbd_rc_msg {
-	char *   comment;	/* reason for failure */
-	uint32_t return_code;
-	uint16_t sent_type;	/* type of message this is in response to */
-} dbd_rc_msg_t;
-
 typedef struct dbd_register_ctld_msg {
 	uint16_t dimensions;    /* dimensions of system */
 	uint32_t flags;         /* flags for cluster */
@@ -462,7 +456,6 @@ extern void slurmdbd_free_list_msg(dbd_list_msg_t *msg);
 extern void slurmdbd_free_modify_msg(dbd_modify_msg_t *msg,
 				     slurmdbd_msg_type_t type);
 extern void slurmdbd_free_node_state_msg(dbd_node_state_msg_t *msg);
-extern void slurmdbd_free_rc_msg(dbd_rc_msg_t *msg);
 extern void slurmdbd_free_register_ctld_msg(dbd_register_ctld_msg_t *msg);
 extern void slurmdbd_free_roll_usage_msg(dbd_roll_usage_msg_t *msg);
 extern void slurmdbd_free_step_complete_msg(dbd_step_comp_msg_t *msg);
@@ -512,8 +505,6 @@ extern void slurmdbd_pack_modify_msg(dbd_modify_msg_t *msg,
 extern void slurmdbd_pack_node_state_msg(dbd_node_state_msg_t *msg,
 					 uint16_t rpc_version,
 					 Buf buffer);
-extern void slurmdbd_pack_rc_msg(dbd_rc_msg_t *msg,
-				 uint16_t rpc_version, Buf buffer);
 extern void slurmdbd_pack_register_ctld_msg(dbd_register_ctld_msg_t *msg,
 					    uint16_t rpc_version,
 					    Buf buffer);
@@ -576,8 +567,6 @@ extern int slurmdbd_unpack_modify_msg(dbd_modify_msg_t **msg,
 extern int slurmdbd_unpack_node_state_msg(dbd_node_state_msg_t **msg,
 					  uint16_t rpc_version,
 					  Buf buffer);
-extern int slurmdbd_unpack_rc_msg(dbd_rc_msg_t **msg,
-				  uint16_t rpc_version, Buf buffer);
 extern int slurmdbd_unpack_register_ctld_msg(dbd_register_ctld_msg_t **msg,
 					     uint16_t rpc_version,
 					     Buf buffer);
