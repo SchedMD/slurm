@@ -195,8 +195,16 @@ typedef enum {
 	RESPONSE_ACCT_GATHER_ENERGY,	/* 1020 */
 	REQUEST_LICENSE_INFO,
 	RESPONSE_LICENSE_INFO,
-	DBD_MESSAGES_START = 1400,
-	/* Don't make any messages in this range as this is what the DBD uses */
+	DBD_MESSAGES_START = 1400, /* We can't repalce this with
+				    * REQUEST_PERSIST_INIT since DBD_INIT is
+				    * packed in a way we can't tell the
+				    * protocol_version without unpacking
+				    * multiple variables. 2 versions after
+				    * 17.02 we can probably replace if someone
+				    * remembers */
+	PERSIST_RC = 1433, /* To mirror the DBD_RC this is replacing */
+	/* Don't make any messages in this range as this is what the DBD uses
+	 * unless mirroring */
 	DBD_MESSAGES_END   = 2000,
 	REQUEST_BUILD_INFO	= 2001,
 	RESPONSE_BUILD_INFO,
@@ -350,7 +358,6 @@ typedef enum {
 	RESPONSE_PROLOG_EXECUTING,	/* 6019 */
 
 	REQUEST_PERSIST_INIT = 6500,
-	PERSIST_RC,
 
 	SRUN_PING = 7001,
 	SRUN_TIMEOUT,
