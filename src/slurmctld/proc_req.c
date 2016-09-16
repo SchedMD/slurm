@@ -5312,7 +5312,6 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 					 slurmctld_config.auth_info);
 	accounting_update_msg_t *update_ptr =
 		(accounting_update_msg_t *) msg->data;
-	bool sent_rc = false;
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -5349,32 +5348,14 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 			fed_mgr_update_feds(object);
 		}
 
-		object = list_peek(update_ptr->update_list);
-		if (object->type != SLURMDB_ADD_TRES) {
-			/* If not specific message types, send message back
-			 * to the caller immediately letting him know we got it.
-			 * In most cases there is no need to wait since the end
-			 * result would be the same if we wait or not
-			 * since the update has already happened in
-			 * the database.
-			 */
-			slurm_send_rc_msg(msg, rc);
-			sent_rc = true;
-		}
 		rc = assoc_mgr_update(update_ptr->update_list, 0);
 	}
 
 	END_TIMER2("_slurm_rpc_accounting_update_msg");
 
-	if (sent_rc) {
-		if (rc != SLURM_SUCCESS)
-			error("assoc_mgr_update gave error: %s",
-			      slurm_strerror(rc));
-	} else {
-		info("sending after");
-		slurm_send_rc_msg(msg, rc);
-	}
-
+	if (rc != SLURM_SUCCESS)
+		error("assoc_mgr_update gave error: %s",
+		      slurm_strerror(rc));
 }
 
 /* _slurm_rpc_reboot_nodes - process RPC to schedule nodes reboot */
