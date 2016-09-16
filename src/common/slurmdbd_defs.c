@@ -470,7 +470,7 @@ again:
 
 	if ((!need_db && (rc == ESLURM_DB_CONNECTION)) ||
 	    (rc == SLURM_SUCCESS)) {
-		debug("slurmdbd: Sent DbdInit msg");
+		debug("slurmdbd: Sent PersistInit msg");
 		/* clear errno (checked after this for
 		   errors)
 		*/
@@ -480,7 +480,7 @@ again:
 		    slurmdbd_conn->trigger_callbacks.db_fail)
 			(slurmdbd_conn->trigger_callbacks.db_fail)();
 
-		error("slurmdbd: Sending DbdInit msg: %m");
+		error("slurmdbd: Sending PersistInit msg: %m");
 		slurm_persist_conn_close(slurmdbd_conn);
 	}
 }
