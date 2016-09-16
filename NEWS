@@ -119,6 +119,15 @@ documents those changes that are of interest to users and administrators.
     parallelism.
  -- Modify srun task completion handling to only build the task/node string for
     logging purposes if it is needed. Modified for performance purposes.
+ -- Docs - update salloc/sbatch/srun man pages to mention corresponding
+    environment variables for --mem/--mem-per-cpu and allowed suffixes.
+ -- Silence srun warning when overriding the job ntasks-per-node count
+    with a lower task count for the step.
+ -- Docs - assorted spelling fixes.
+ -- node_features/knl_cray: Fix bug where MCDRAM state could be taken from
+    capmc rather than cnselect.
+ -- node_features/knl_cray: If a node is rebooted outside of Slurm's direction,
+    update it's active features with current MCDRAM and NUMA mode information.
 
 * Changes in Slurm 16.05.4
 ==========================

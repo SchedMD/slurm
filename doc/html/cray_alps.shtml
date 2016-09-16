@@ -102,7 +102,7 @@ line as well with the <i>--launch-cmd</i> option.</p>
 
 <p>To <i>increase</i> the per-PE memory settable via the <i>--mem</i> option requires making
    more per-task resources available using the <i>--ntasks-per-node</i> option to sbatch/salloc.
-   This allows <i>--mem</i> to request up to node_memory / ntasks_per_node MegaBytes.</p>
+   This allows <i>--mem</i> to request up to node_memory / ntasks_per_node megabytes.</p>
 
 <p>When <i>--ntasks-per-node</i> is 1, the entire node memory may be requested by the application.
    Setting <i>--ntasks-per-node</i> to the number of cores per node yields the default per-CPU share

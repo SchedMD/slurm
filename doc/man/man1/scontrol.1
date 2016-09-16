@@ -511,7 +511,7 @@ Arbitrary descriptive string. Can only be set by a Slurm administrator.
 Use "+=" syntax to append information.
 .TP
 \fIArrayTaskThrottle\fP=<count>
-Speciify the maximum number of tasks in a job array that can execute at
+Specify the maximum number of tasks in a job array that can execute at
 the same time.
 Set the count to zero in order to eliminate any limit.
 The task throttle count for a job array is reported as part of its ArrayTaskId
@@ -1353,7 +1353,7 @@ buffer plugins.
 "type" specifies a Cray generic burst buffer resource, for example "nodes".
 if "type" is not specified, the number is a measure of storage space.
 The "units" may be "N" (nodes), "GB" (gigabytes), "TB" (terabytes),
-"PB" (petabytes), etc. with the default units being gigabyes for reservations
+"PB" (petabytes), etc. with the default units being gigabytes for reservations
 of storage space.
 For example "BurstBuffer=cray:2TB" (reserve 2TB of storage plus
 3 nodes from the Cray plugin) or
@@ -1496,7 +1496,7 @@ Once the reservation has been created, it must be populated within 5 minutes
 of its start time or it will be purged before any jobs have been run.
 .TP
 \fRREPLACE\fR
-Resources allocated to jobs as automaticallly replenished using idle resources.
+Resources allocated to jobs as automatically replenished using idle resources.
 This option can be used to maintain a constant number of idle resources
 available for pending jobs (subject to availability of idle resources).
 This should be used with the \fINodeCnt\fP reservation option; do not identify

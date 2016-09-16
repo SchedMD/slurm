@@ -178,9 +178,9 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo cpu_frequency.lo \
 	slurm_step_layout.lo checkpoint.lo job_resources.lo \
 	parse_time.lo job_options.lo global_defaults.lo timers.lo \
 	stepd_api.lo write_labelled_message.lo proc_args.lo \
-	node_conf.lo gres.lo entity.lo layout.lo \
-	layouts_mgr.lo mapping.lo xcgroup_read_config.lo xlua.lo \
-	callerid.lo siphash24.lo siphash_slurm.lo
+	node_conf.lo gres.lo entity.lo layout.lo layouts_mgr.lo \
+	mapping.lo xcgroup_read_config.lo xlua.lo callerid.lo \
+	siphash24.lo siphash_slurm.lo
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -356,6 +356,7 @@ HDF5_FFLAGS = @HDF5_FFLAGS@
 HDF5_FLIBS = @HDF5_FLIBS@
 HDF5_LDFLAGS = @HDF5_LDFLAGS@
 HDF5_LIBS = @HDF5_LIBS@
+HDF5_TYPE = @HDF5_TYPE@
 HDF5_VERSION = @HDF5_VERSION@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@

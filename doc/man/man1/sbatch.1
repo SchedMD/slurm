@@ -560,7 +560,7 @@ Examples of use include "\-\-gres=gpu:2,mic=1", "\-\-gres=gpu:kepler:2", and
 .TP
 \fB\-\-gres\-flags\fR=enforce\-binding
 If set, the only CPUs available to the job will be those bound to the selected
-GRES (i.e. the CPUs identifed in the gres.conf file will be strictly enforced
+GRES (i.e. the CPUs identified in the gres.conf file will be strictly enforced
 rather than advisory). This option may result in delayed initiation of a job.
 For example a job requiring two GPUs and one CPU will be delayed until both
 GPUs on a single socket are available rather than using GPUs bound to separate
@@ -831,7 +831,8 @@ Default value is calculated by the Plugin mcs if it's enabled.
 
 .TP
 \fB\-\-mem\fR=<\fIMB\fR>
-Specify the real memory required per node in MegaBytes.
+Specify the real memory required per node in megabytes.
+Different units can be specified using the suffix [K|M|G|T].
 Default value is \fBDefMemPerNode\fR and the maximum value is
 \fBMaxMemPerNode\fR. If configured, both parameters can be
 seen using the \fBscontrol show config\fR command.
@@ -854,7 +855,8 @@ the next periodic accounting sample.
 
 .TP
 \fB\-\-mem\-per\-cpu\fR=<\fIMB\fR>
-Mimimum memory required per allocated CPU in MegaBytes.
+Minimum memory required per allocated CPU in megabytes.
+Different units can be specified using the suffix [K|M|G|T].
 Default value is \fBDefMemPerCPU\fR and the maximum value is \fBMaxMemPerCPU\fR
 (see exception below). If configured, both parameters can be
 seen using the \fBscontrol show config\fR command.
@@ -998,7 +1000,7 @@ that the \fB\-\-cpus\-per\-task\fR option will change this default.
 Specify information pertaining to the switch or network.
 The interpretation of \fItype\fR is system dependent.
 This option is supported when running Slurm on a Cray natively.  It is
-used to request using Network Performace Counters.
+used to request using Network Performance Counters.
 Only one value per request is valid.
 All options are case in\-sensitive.
 In this configuration supported values include:
@@ -1930,6 +1932,13 @@ Advanced reservation containing the job allocation, if any.
 .TP
 \fBSLURM_LOCALID\fR
 Node local task ID for the process within a job.
+.TP
+.TP
+\fBSLURM_MEM_PER_CPU\fR
+Same as \fB\-\-mem\-per\-cpu\fR
+.TP
+\fBSLURM_MEM_PER_NODE\fR
+Same as \fB\-\-mem\fR
 .TP
 \fBSLURM_NODE_ALIASES\fR
 Sets of node name, communication address and hostname for nodes allocated to

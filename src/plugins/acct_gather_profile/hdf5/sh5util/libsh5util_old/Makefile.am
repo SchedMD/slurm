@@ -4,7 +4,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common -I.
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common -I. $(HDF5_CPPFLAGS)
 
 noinst_LTLIBRARIES = libsh5util_old.la
 
