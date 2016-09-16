@@ -465,6 +465,7 @@ static void _join_federation(slurmdb_federation_rec_t *fed,
 	lock_slurmctld(fed_read_lock);
 	_open_persist_sends();
 	unlock_slurmctld(fed_read_lock);
+	_create_ping_thread();
 }
 
 extern int fed_mgr_init(void *db_conn)
@@ -472,29 +473,42 @@ extern int fed_mgr_init(void *db_conn)
 	int rc = SLURM_SUCCESS;
 	slurmdb_federation_cond_t fed_cond;
 	List fed_list;
+	slurmdb_federation_rec_t *fed = NULL;
+
+	slurm_persist_conn_recv_server_init();
 
 	if (running_cache) {
 		debug("Database appears down, reading federations from state file.");
-		fed_mgr_state_load(slurmctld_conf.state_save_location);
-		return SLURM_SUCCESS;
+		fed = fed_mgr_state_load(
+			slurmctld_conf.state_save_location);
+		if (!fed) {
+			debug2("No federation state");
+			return SLURM_SUCCESS;
+		}
+	} else {
+		slurmdb_init_federation_cond(&fed_cond, 0);
+		fed_cond.cluster_list = list_create(NULL);
+		list_append(fed_cond.cluster_list, slurmctld_cluster_name);
+
+		fed_list = acct_storage_g_get_federations(db_conn, getuid(),
+							  &fed_cond);
+		FREE_NULL_LIST(fed_cond.cluster_list);
+		if (!fed_list) {
+			error("failed to get a federation list");
+			return SLURM_ERROR;
+		}
+
+		if (list_count(fed_list) == 1)
+			fed = list_pop(fed_list);
+		else if (list_count(fed_list) > 1) {
+			error("got more federations than expected");
+			rc = SLURM_ERROR;
+		}
+		FREE_NULL_LIST(fed_list);
 	}
-	slurm_persist_conn_recv_server_init();
 
-	slurmdb_init_federation_cond(&fed_cond, 0);
-	fed_cond.cluster_list = list_create(NULL);
-	list_append(fed_cond.cluster_list, slurmctld_cluster_name);
-
-	fed_list = acct_storage_g_get_federations(db_conn, getuid(),
-						  &fed_cond);
-	FREE_NULL_LIST(fed_cond.cluster_list);
-	if (!fed_list) {
-		error("failed to get a federation list");
-		return SLURM_ERROR;
-	}
-
-	if (list_count(fed_list) == 1) {
+	if (fed) {
 		slurmdb_cluster_rec_t *cluster = NULL;
-		slurmdb_federation_rec_t *fed = list_pop(fed_list);
 
 		if ((cluster = list_find_first(fed->cluster_list,
 					       slurmdb_find_cluster_in_list,
@@ -504,14 +518,8 @@ extern int fed_mgr_init(void *db_conn)
 			error("failed to get cluster from federation that we request");
 			rc = SLURM_ERROR;
 		}
-	} else if (list_count(fed_list) > 1) {
-		error("got more federations than expected");
-		rc = SLURM_ERROR;
 	}
 
-	FREE_NULL_LIST(fed_list);
-
-	_create_ping_thread();
 	return rc;
 }
 
@@ -657,7 +665,7 @@ extern int fed_mgr_state_save(char *state_save_location)
 	return error_code;
 }
 
-extern int fed_mgr_state_load(char *state_save_location)
+extern slurmdb_federation_rec_t *fed_mgr_state_load(char *state_save_location)
 {
 	Buf buffer = NULL;
 	char *data = NULL, *state_file;
@@ -666,8 +674,7 @@ extern int fed_mgr_state_load(char *state_save_location)
 	uint32_t data_size = 0;
 	int state_fd;
 	int data_allocated, data_read = 0, error_code = SLURM_SUCCESS;
-	slurmdb_cluster_rec_t *cluster = NULL;
-	slurmdb_federation_rec_t *tmp_fed = NULL;
+	slurmdb_federation_rec_t *ret_fed = NULL;
 
 	state_file = xstrdup_printf("%s/%s", state_save_location,
 				    FED_MGR_STATE_FILE);
@@ -675,7 +682,7 @@ extern int fed_mgr_state_load(char *state_save_location)
 	if (state_fd < 0) {
 		error("No fed_mgr state file (%s) to recover", state_file);
 		xfree(state_file);
-		return SLURM_SUCCESS;
+		return NULL;
 	} else {
 		data_allocated = BUF_SIZE;
 		data = xmalloc(data_allocated);
@@ -712,41 +719,40 @@ extern int fed_mgr_state_load(char *state_save_location)
 		      SLURM_MIN_PROTOCOL_VERSION, SLURM_PROTOCOL_VERSION);
 		error("***********************************************");
 		free_buf(buffer);
-		return EFAULT;
+		return NULL;
 	}
 
 	safe_unpack_time(&buf_time, buffer);
 
-	error_code = slurmdb_unpack_federation_rec((void **)&tmp_fed, ver,
+	error_code = slurmdb_unpack_federation_rec((void **)&ret_fed, ver,
 						   buffer);
 	if (error_code != SLURM_SUCCESS)
 		goto unpack_error;
-	else if (!tmp_fed) {
+	else if (!ret_fed) {
 		error("No feds retrieved");
-	}
-
-	if (tmp_fed && tmp_fed->cluster_list &&
-	    !(cluster = list_find_first(tmp_fed->cluster_list,
-					slurmdb_find_cluster_in_list,
-					slurmctld_cluster_name))) {
-		error("This cluster doesn't exist in the fed siblings");
-		slurmdb_destroy_federation_rec(tmp_fed);
-		goto unpack_error;
-	} else if (cluster) {
-		_join_federation(tmp_fed, cluster);
-		tmp_fed = NULL;
+	} else {
+		/* We want to free the connections here since they don't exist
+		 * anymore, but they were packed when state was saved. */
+		slurmdb_cluster_rec_t *cluster;
+		ListIterator itr = list_iterator_create(
+			ret_fed->cluster_list);
+		while ((cluster = list_next(itr))) {
+			slurm_persist_conn_destroy(cluster->fed.recv);
+			cluster->fed.recv = NULL;
+			slurm_persist_conn_destroy(cluster->fed.send);
+			cluster->fed.send = NULL;
+		}
+		list_iterator_destroy(itr);
 	}
 
 	free_buf(buffer);
-	if (tmp_fed)
-		slurmdb_destroy_federation_rec(tmp_fed);
 
-	return SLURM_SUCCESS;
+	return ret_fed;
 
 unpack_error:
 	free_buf(buffer);
 
-	return SLURM_ERROR;
+	return NULL;
 }
 
 extern int _find_sibling_by_ip(void *x, void *key)
