@@ -33,6 +33,7 @@
 #     AC_SUBST(HDF5_FC)
 #     AC_SUBST(HDF5_FFLAGS)
 #     AC_SUBST(HDF5_FLIBS)
+#     AC_SUBST(HDF5_TYPE)
 #     AC_DEFINE(HAVE_HDF5)
 #
 #   and sets with_hdf5="yes".  Additionally, the macro sets
@@ -74,6 +75,9 @@
 #             AC_MSG_ERROR([Unable to find HDF5, we need parallel HDF5.])
 #     fi
 #
+#   The HDF5_TYPE environment variable returns "parallel" or "serial",
+#   depending on which type of library is found.
+#
 # LICENSE
 #
 #   Copyright (c) 2009 Timothy Brown <tbrown@freeshell.org>
@@ -84,7 +88,7 @@
 #   and this notice are preserved. This file is offered as-is, without any
 #   warranty.
 
-#serial 8
+#serial 15
 
 AC_DEFUN([AX_LIB_HDF5], [
 
@@ -137,6 +141,7 @@ HDF5_LIBS=""
 HDF5_FC=""
 HDF5_FFLAGS=""
 HDF5_FLIBS=""
+HDF5_TYPE=""
 
 dnl Try and find hdf5 compiler tools and options.
 if test "$with_hdf5" = "yes"; then
@@ -153,6 +158,12 @@ if test "$with_hdf5" = "yes"; then
         AC_MSG_CHECKING([Using provided HDF5 C wrapper])
         AC_MSG_RESULT([$H5CC])
     fi
+    AC_MSG_CHECKING([for HDF5 type])
+    AS_CASE([$H5CC],
+        [*h5pcc], [HDF5_TYPE=parallel],
+        [*h5cc], [HDF5_TYPE=serial],
+        [HDF5_TYPE=neither])
+    AC_MSG_RESULT([$HDF5_TYPE])
     AC_MSG_CHECKING([for HDF5 libraries])
     if test ! -f "$H5CC" || test ! -x "$H5CC"; then
         AC_MSG_RESULT([no])
@@ -178,6 +189,9 @@ HDF5 support is being disabled (equivalent to --with-hdf5=no).
 
         dnl Get the actual compiler used
         HDF5_CC=$(eval $H5CC -show | $AWK '{print $[]1}')
+        if test "$HDF5_CC" = "ccache"; then
+            HDF5_CC=$(eval $H5CC -show | $AWK '{print $[]2}')
+        fi
 
         dnl h5cc provides both AM_ and non-AM_ options
         dnl depending on how it was compiled either one of
@@ -203,7 +217,7 @@ HDF5 support is being disabled (equivalent to --with-hdf5=no).
         dnl Find the installation directory and append include/
         HDF5_tmp_inst=$(eval $H5CC -showconfig \
             | $GREP 'Installation point:' \
-            | $AWK -F: '{print $[]2}' )
+            | $AWK '{print $[]NF}' )
 
         dnl Add this to the CPPFLAGS
         HDF5_CPPFLAGS="-I${HDF5_tmp_inst}/include"
@@ -227,6 +241,7 @@ HDF5 support is being disabled (equivalent to --with-hdf5=no).
         AC_MSG_RESULT([yes (version $[HDF5_VERSION])])
 
         dnl See if we can compile
+        AC_LANG_PUSH([C])
         ax_lib_hdf5_save_CC=$CC
         ax_lib_hdf5_save_CPPFLAGS=$CPPFLAGS
         ax_lib_hdf5_save_LIBS=$LIBS
@@ -245,8 +260,10 @@ HDF5 support is being disabled (equivalent to --with-hdf5=no).
         AC_HAVE_LIBRARY([hdf5_hl], [HDF5_LIBS="$HDF5_LIBS -lhdf5_hl"], [], [])
 
         CC=$ax_lib_hdf5_save_CC
+        CPPFLAGS=$ax_lib_hdf5_save_CPPFLAGS
         LIBS=$ax_lib_hdf5_save_LIBS
         LDFLAGS=$ax_lib_hdf5_save_LDFLAGS
+        AC_LANG_POP([C])
 
         AC_MSG_CHECKING([for matching HDF5 Fortran wrapper])
         dnl Presume HDF5 Fortran wrapper is just a name variant from H5CC
@@ -299,6 +316,7 @@ HDF5 support is being disabled (equivalent to --with-hdf5=no).
 	AC_SUBST([HDF5_FC])
 	AC_SUBST([HDF5_FFLAGS])
 	AC_SUBST([HDF5_FLIBS])
+	AC_SUBST([HDF5_TYPE])
 	AC_DEFINE([HAVE_HDF5], [1], [Defined if you have HDF5 support])
     fi
 fi
