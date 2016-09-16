@@ -3409,6 +3409,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 	slurm_msg_t_init(&response_msg);
 	response_msg.flags = msg->flags;
 	response_msg.protocol_version = msg->protocol_version;
+	response_msg.conn = msg->conn;
 
 	/* do RPC call */
 	if ( (uid != job_desc_msg->user_id) && (!validate_super_user(uid)) ) {
