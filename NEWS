@@ -128,6 +128,7 @@ documents those changes that are of interest to users and administrators.
     capmc rather than cnselect.
  -- node_features/knl_cray: If a node is rebooted outside of Slurm's direction,
     update it's active features with current MCDRAM and NUMA mode information.
+ -- Restore ability to manually power down nodes, broken in 15.08.12.
 
 * Changes in Slurm 16.05.4
 ==========================
