@@ -662,14 +662,23 @@ extern int slurm_persist_conn_process_msg(slurm_persist_conn_t *persist_conn,
 		*out_buffer = slurm_persist_make_rc_msg(
 			persist_conn, rc, comment, persist_msg->msg_type);
 		xfree(comment);
-	} else if (first && (persist_msg->msg_type != REQUEST_PERSIST_INIT)) {
+	}
+	/* 2 versions after 17.02 code refering to DBD_INIT can be removed as it
+	   will no longer be suppported.
+	*/
+	else if (first &&
+		 (persist_msg->msg_type != REQUEST_PERSIST_INIT) &&
+		 (persist_msg->msg_type != DBD_INIT)) {
 		comment = "Initial RPC not REQUEST_PERSIST_INIT";
 		error("CONN:%u %s type (%d)",
 		      persist_conn->fd, comment, persist_msg->msg_type);
 		rc = EINVAL;
 		*out_buffer = slurm_persist_make_rc_msg(
-			persist_conn, rc, comment, REQUEST_PERSIST_INIT);
-	} else if (!first && (persist_msg->msg_type == REQUEST_PERSIST_INIT)) {
+			persist_conn, rc, comment,
+			REQUEST_PERSIST_INIT);
+	} else if (!first &&
+		   ((persist_msg->msg_type == REQUEST_PERSIST_INIT) ||
+		    (persist_msg->msg_type == DBD_INIT))) {
 		comment = "REQUEST_PERSIST_INIT sent after connection established";
 		error("CONN:%u %s", persist_conn->fd, comment);
 		rc = EINVAL;

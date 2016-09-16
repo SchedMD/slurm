@@ -1702,6 +1702,7 @@ static int _init_conn(slurmdbd_conn_t *slurmdbd_conn,
 		      persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_init_msg_t *init_msg = msg->data;
+	persist_init_req_msg_t persist_init;
 	char *comment = NULL;
 	int rc = SLURM_SUCCESS;
 
@@ -1720,8 +1721,12 @@ static int _init_conn(slurmdbd_conn_t *slurmdbd_conn,
 		goto end_it;
 	}
 
-	rc = _handle_init_msg(slurmdbd_conn, (persist_init_req_msg_t *)init_msg,
-			      uid);
+	memset(&persist_init, 0, sizeof(persist_init_req_msg_t));
+	persist_init.cluster_name = init_msg->cluster_name;
+	persist_init.version = init_msg->version;
+	persist_init.uid = init_msg->uid;
+
+	rc = _handle_init_msg(slurmdbd_conn, &persist_init, uid);
 
 	if (rc != SLURM_SUCCESS)
 		comment = slurm_strerror(rc);
