@@ -740,6 +740,7 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp,
 	case DBD_GOT_MULT_JOB_START:
 	case DBD_SEND_MULT_MSG:
 	case DBD_GOT_MULT_MSG:
+	case DBD_FIX_RUNAWAY_JOB:
 		rc = slurmdbd_unpack_list_msg(
 			(dbd_list_msg_t **)&resp->data, rpc_version,
 			resp->msg_type, buffer);
