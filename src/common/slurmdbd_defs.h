@@ -83,7 +83,7 @@ typedef enum {
 	DBD_JOB_SUSPEND,	/* Record job suspension		*/
 	DBD_MODIFY_ACCOUNTS,    /* Modify existing account              */
 	DBD_MODIFY_ASSOCS,      /* Modify existing association          */
-	DBD_MODIFY_CLUSTERS,    /* Modify existing cluster              */
+	DBD_MODIFY_CLUSTERS,    /* 1430 Modify existing cluster         */
 	DBD_MODIFY_USERS,       /* Modify existing user                 */
 	DBD_NODE_STATE,		/* Record node state transition		*/
 	DBD_RC, 		/* DEFUNCT, use PERSIST_RC instead.	*/
@@ -117,7 +117,7 @@ typedef enum {
 	DBD_GOT_WCKEY_USAGE,  	/* Get wckey usage information  	*/
 	DBD_ARCHIVE_DUMP,    	/* issue a request to dump jobs to
 				 * archive */
-	DBD_ARCHIVE_LOAD,    	/* load an archive file    	        */
+	DBD_ARCHIVE_LOAD,    	/* 1460 load an archive file   	        */
 	DBD_ADD_RESV,    	/* add a reservation                    */
 	DBD_REMOVE_RESV,    	/* remove a reservation                 */
 	DBD_MODIFY_RESV,    	/* modify a reservation                 */
@@ -147,7 +147,7 @@ typedef enum {
 	DBD_GOT_TRES,         /* Got tres from the database         */
 	DBD_FIX_RUNAWAY_JOB,    /* Fix any runaway jobs */
 	DBD_GET_STATS,		/* Get daemon statistics */
-	DBD_GOT_STATS,		/* Got daemon statistics data */
+	DBD_GOT_STATS,		/* 1490 Got daemon statistics data */
 	DBD_CLEAR_STATS,	/* Clear daemon statistics */
 	DBD_SHUTDOWN,		/* Shutdown daemon */
 	DBD_ADD_FEDERATIONS,    /* Add new federation to the mix        */
