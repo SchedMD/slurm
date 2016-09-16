@@ -764,6 +764,7 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 	slurmdb_cluster_rec_t *object_ptr =
 		xmalloc(sizeof(slurmdb_cluster_rec_t));
 	slurmdb_cluster_accounting_rec_t *slurmdb_info = NULL;
+	slurm_persist_conn_t *conn;
 
 	*object = object_ptr;
 
@@ -811,13 +812,17 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 
 		safe_unpack16(&object_ptr->rpc_version, buffer);
 		safe_unpack8(&uint8_tmp, buffer);
-		if (uint8_tmp)
-			object_ptr->fed.recv =
-				xmalloc(sizeof(slurm_persist_conn_t));
+		if (uint8_tmp) {
+			conn = xmalloc(sizeof(slurm_persist_conn_t));
+			conn->fd = -1;
+			object_ptr->fed.recv = conn;
+		}
 		safe_unpack8(&uint8_tmp, buffer);
-		if (uint8_tmp)
-			object_ptr->fed.send =
-				xmalloc(sizeof(slurm_persist_conn_t));
+		if (uint8_tmp) {
+			conn = xmalloc(sizeof(slurm_persist_conn_t));
+			conn->fd = -1;
+			object_ptr->fed.send = conn;
+		}
 		safe_unpackstr_xmalloc(&object_ptr->tres_str,
 				       &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
