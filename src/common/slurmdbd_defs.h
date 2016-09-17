@@ -83,10 +83,10 @@ typedef enum {
 	DBD_JOB_SUSPEND,	/* Record job suspension		*/
 	DBD_MODIFY_ACCOUNTS,    /* Modify existing account              */
 	DBD_MODIFY_ASSOCS,      /* Modify existing association          */
-	DBD_MODIFY_CLUSTERS,    /* Modify existing cluster              */
+	DBD_MODIFY_CLUSTERS,    /* 1430 Modify existing cluster         */
 	DBD_MODIFY_USERS,       /* Modify existing user                 */
 	DBD_NODE_STATE,		/* Record node state transition		*/
-	DBD_RC,			/* Return code from operation		*/
+	DBD_RC, 		/* DEFUNCT, use PERSIST_RC instead.	*/
 	DBD_REGISTER_CTLD,	/* Register a slurmctld's comm port	*/
 	DBD_REMOVE_ACCOUNTS,    /* Remove existing account              */
 	DBD_REMOVE_ACCOUNT_COORDS,/* Remove existing coordinator from
@@ -117,7 +117,7 @@ typedef enum {
 	DBD_GOT_WCKEY_USAGE,  	/* Get wckey usage information  	*/
 	DBD_ARCHIVE_DUMP,    	/* issue a request to dump jobs to
 				 * archive */
-	DBD_ARCHIVE_LOAD,    	/* load an archive file    	        */
+	DBD_ARCHIVE_LOAD,    	/* 1460 load an archive file   	        */
 	DBD_ADD_RESV,    	/* add a reservation                    */
 	DBD_REMOVE_RESV,    	/* remove a reservation                 */
 	DBD_MODIFY_RESV,    	/* modify a reservation                 */
@@ -147,7 +147,7 @@ typedef enum {
 	DBD_GOT_TRES,         /* Got tres from the database         */
 	DBD_FIX_RUNAWAY_JOB,    /* Fix any runaway jobs */
 	DBD_GET_STATS,		/* Get daemon statistics */
-	DBD_GOT_STATS,		/* Got daemon statistics data */
+	DBD_GOT_STATS,		/* 1490 Got daemon statistics data */
 	DBD_CLEAR_STATS,	/* Clear daemon statistics */
 	DBD_SHUTDOWN,		/* Shutdown daemon */
 	DBD_ADD_FEDERATIONS,    /* Add new federation to the mix        */
@@ -155,6 +155,10 @@ typedef enum {
 	DBD_GOT_FEDERATIONS,	/* Response to DBD_GET_FEDERATIONS 	*/
 	DBD_MODIFY_FEDERATIONS, /* Modify existing federation 		*/
 	DBD_REMOVE_FEDERATIONS, /* Removing existing federation 	*/
+
+	SLURM_PERSIST_INIT = 6500, /* So we don't use the
+				    * REQUEST_PERSIST_INIT also used here.
+				    */
 } slurmdbd_msg_type_t;
 
 /*****************************************************************************\
@@ -214,7 +218,6 @@ typedef struct dbd_get_jobs_msg {
 
 typedef struct dbd_init_msg {
 	char *cluster_name;     /* cluster this message is coming from */
-	uint16_t rollback;      /* to allow rollbacks or not */
 	uint16_t version;	/* protocol version */
 	uint32_t uid;		/* UID originating connection,
 				 * filled by authtentication plugin*/
@@ -331,12 +334,6 @@ typedef struct dbd_node_state_msg {
 	char *tres_str;	        /* Simple comma separated list of TRES */
 } dbd_node_state_msg_t;
 
-typedef struct dbd_rc_msg {
-	char *   comment;	/* reason for failure */
-	uint32_t return_code;
-	uint16_t sent_type;	/* type of message this is in response to */
-} dbd_rc_msg_t;
-
 typedef struct dbd_register_ctld_msg {
 	uint16_t dimensions;    /* dimensions of system */
 	uint32_t flags;         /* flags for cluster */
@@ -394,14 +391,15 @@ extern pthread_cond_t assoc_cache_cond; /* assoc cache condition */
  * Slurm DBD message processing functions
 \*****************************************************************************/
 
+extern void slurmdbd_defs_init(char *auth_info);
+extern void slurmdbd_defs_fini(void);
+
 /* Open a socket connection to SlurmDbd
  * auth_info IN - alternate authentication key
  * make_agent IN - make agent to process RPCs if set
  * rollback IN - keep journal and permit rollback if set
  * Returns SLURM_SUCCESS or an error code */
-extern int slurm_open_slurmdbd_conn(char *auth_info,
-                                    const slurm_trigger_callbacks_t *callbacks,
-                                    bool rollback);
+extern int slurm_open_slurmdbd_conn(const slurm_trigger_callbacks_t *callbacks);
 
 /* Close the SlurmDBD socket connection */
 extern int slurm_close_slurmdbd_conn(void);
@@ -444,6 +442,7 @@ extern void slurmdbd_free_buffer(void *x);
 \*****************************************************************************/
 extern void slurmdbd_free_acct_coord_msg(dbd_acct_coord_msg_t *msg);
 extern void slurmdbd_free_cluster_tres_msg(dbd_cluster_tres_msg_t *msg);
+extern void slurmdbd_free_msg(slurmdbd_msg_t *msg);
 extern void slurmdbd_free_rec_msg(dbd_rec_msg_t *msg, slurmdbd_msg_type_t type);
 extern void slurmdbd_free_cond_msg(dbd_cond_msg_t *msg,
 				   slurmdbd_msg_type_t type);
@@ -457,7 +456,6 @@ extern void slurmdbd_free_list_msg(dbd_list_msg_t *msg);
 extern void slurmdbd_free_modify_msg(dbd_modify_msg_t *msg,
 				     slurmdbd_msg_type_t type);
 extern void slurmdbd_free_node_state_msg(dbd_node_state_msg_t *msg);
-extern void slurmdbd_free_rc_msg(dbd_rc_msg_t *msg);
 extern void slurmdbd_free_register_ctld_msg(dbd_register_ctld_msg_t *msg);
 extern void slurmdbd_free_roll_usage_msg(dbd_roll_usage_msg_t *msg);
 extern void slurmdbd_free_step_complete_msg(dbd_step_comp_msg_t *msg);
@@ -481,7 +479,7 @@ extern void slurmdbd_pack_cond_msg(dbd_cond_msg_t *msg,
 				   uint16_t rpc_version,
 				   slurmdbd_msg_type_t type, Buf buffer);
 extern void slurmdbd_pack_init_msg(dbd_init_msg_t *msg, uint16_t rpc_version,
-				   Buf buffer, char *auth_info);
+				   Buf buffer);
 extern void slurmdbd_pack_fini_msg(dbd_fini_msg_t *msg,
 				   uint16_t rpc_version, Buf buffer);
 extern void slurmdbd_pack_job_complete_msg(dbd_job_comp_msg_t *msg,
@@ -507,8 +505,6 @@ extern void slurmdbd_pack_modify_msg(dbd_modify_msg_t *msg,
 extern void slurmdbd_pack_node_state_msg(dbd_node_state_msg_t *msg,
 					 uint16_t rpc_version,
 					 Buf buffer);
-extern void slurmdbd_pack_rc_msg(dbd_rc_msg_t *msg,
-				 uint16_t rpc_version, Buf buffer);
 extern void slurmdbd_pack_register_ctld_msg(dbd_register_ctld_msg_t *msg,
 					    uint16_t rpc_version,
 					    Buf buffer);
@@ -544,8 +540,8 @@ extern int slurmdbd_unpack_rec_msg(dbd_rec_msg_t **msg,
 extern int slurmdbd_unpack_cond_msg(dbd_cond_msg_t **msg,
 				    uint16_t rpc_version,
 				    slurmdbd_msg_type_t type, Buf buffer);
-extern int slurmdbd_unpack_init_msg(dbd_init_msg_t **msg, Buf buffer,
-				    char *auth_info);
+extern int slurmdbd_unpack_init_msg(dbd_init_msg_t **msg,
+				    uint16_t rpc_version, Buf buffer);
 extern int slurmdbd_unpack_fini_msg(dbd_fini_msg_t **msg,
 				    uint16_t rpc_version, Buf buffer);
 extern int slurmdbd_unpack_job_complete_msg(dbd_job_comp_msg_t **msg,
@@ -571,8 +567,6 @@ extern int slurmdbd_unpack_modify_msg(dbd_modify_msg_t **msg,
 extern int slurmdbd_unpack_node_state_msg(dbd_node_state_msg_t **msg,
 					  uint16_t rpc_version,
 					  Buf buffer);
-extern int slurmdbd_unpack_rc_msg(dbd_rc_msg_t **msg,
-				  uint16_t rpc_version, Buf buffer);
 extern int slurmdbd_unpack_register_ctld_msg(dbd_register_ctld_msg_t **msg,
 					     uint16_t rpc_version,
 					     Buf buffer);

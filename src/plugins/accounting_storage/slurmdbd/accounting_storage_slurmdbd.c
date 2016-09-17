@@ -101,8 +101,6 @@ const char plugin_name[] = "Accounting storage SLURMDBD plugin";
 const char plugin_type[] = "accounting_storage/slurmdbd";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-static char *slurmdbd_auth_info = NULL;
-
 static pthread_t db_inx_handler_thread;
 static pthread_t cleanup_handler_thread;
 static pthread_mutex_t db_inx_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -348,13 +346,13 @@ static void *_set_db_inx_thread(void *no_data)
 				error("slurmdbd: DBD_SEND_MULT_JOB_START "
 				      "failure: %m");
 				reset = 1;
-			} else if (resp.msg_type == DBD_RC) {
-				dbd_rc_msg_t *msg = resp.data;
-				if (msg->return_code == SLURM_SUCCESS) {
+			} else if (resp.msg_type == PERSIST_RC) {
+				persist_rc_msg_t *msg = resp.data;
+				if (msg->rc == SLURM_SUCCESS) {
 					info("%s", msg->comment);
 				} else
 					error("%s", msg->comment);
-				slurmdbd_free_rc_msg(msg);
+				slurm_persist_free_rc_msg(msg);
 				reset = 1;
 			} else if (resp.msg_type != DBD_GOT_MULT_JOB_START) {
 				error("slurmdbd: response type not "
@@ -443,19 +441,21 @@ static void *_cleanup_thread(void *no_data)
  */
 extern int init ( void )
 {
-	char *cluster_name = NULL;
-
 	if (first) {
+		char *cluster_name = NULL, *auth_info;
 		/* since this can be loaded from many different places
 		   only tell us once. */
 		if (!(cluster_name = slurm_get_cluster_name()))
 			fatal("%s requires ClusterName in slurm.conf",
 			      plugin_name);
 		xfree(cluster_name);
-		slurmdbd_auth_info = slurm_get_accounting_storage_pass();
-		verbose("%s loaded with AuthInfo=%s",
-			plugin_name, slurmdbd_auth_info);
 
+		auth_info = slurm_get_accounting_storage_pass();
+		verbose("%s loaded with AuthInfo=%s",
+			plugin_name, auth_info);
+
+		slurmdbd_defs_init(auth_info);
+		xfree(auth_info);
 		if (job_list && !(slurm_get_accounting_storage_enforce() &
 				  ACCOUNTING_ENFORCE_NO_JOBS)) {
 			/* only do this when job_list is defined
@@ -501,7 +501,7 @@ extern int fini ( void )
 	slurm_mutex_unlock(&db_inx_lock);
 
 	first = 1;
-	xfree(slurmdbd_auth_info);
+	slurmdbd_defs_fini();
 
 	return SLURM_SUCCESS;
 }
@@ -510,16 +510,10 @@ extern void *acct_storage_p_get_connection(
 	const slurm_trigger_callbacks_t *callbacks,
 	int conn_num, bool rollback, char *cluster_name)
 {
-	if (!slurmdbd_auth_info)
+	if (first)
 		init();
 
-	/* When dealing with rollbacks it turns out it is much faster
-	   to do the commit once or once in a while instead of
-	   autocommit.  The SlurmDBD will periodically do a commit to
-	   avoid such a slow down.
-	*/
-	if (slurm_open_slurmdbd_conn(slurmdbd_auth_info,
-				     callbacks, true) == SLURM_SUCCESS)
+	if (slurm_open_slurmdbd_conn(callbacks) == SLURM_SUCCESS)
 		errno = SLURM_SUCCESS;
 	/* send something back to make sure we don't run this again */
 	return (void *)1;
@@ -828,16 +822,16 @@ extern List acct_storage_p_modify_users(void *db_conn, uint32_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_MODIFY_USERS failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("slurmdbd: response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -871,16 +865,16 @@ extern List acct_storage_p_modify_accts(void *db_conn, uint32_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_MODIFY_ACCOUNTS failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("slurmdbd: response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -916,16 +910,16 @@ extern List acct_storage_p_modify_clusters(void *db_conn, uint32_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_MODIFY_CLUSTERS failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("slurmdbd: response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -962,16 +956,16 @@ extern List acct_storage_p_modify_assocs(
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_MODIFY_ASSOCS failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("slurmdbd: response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -1008,16 +1002,16 @@ extern List acct_storage_p_modify_federations(
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_MODIFY_FEDERATIONS failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("slurmdbd: response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -1051,16 +1045,16 @@ extern List acct_storage_p_modify_job(void *db_conn, uint32_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_MODIFY_JOB failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("slurmdbd: response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -1094,16 +1088,16 @@ extern List acct_storage_p_modify_qos(void *db_conn, uint32_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_MODIFY_QOS failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("slurmdbd: response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -1137,16 +1131,16 @@ extern List acct_storage_p_modify_res(void *db_conn, uint32_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_MODIFY_RES failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("slurmdbd: response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -1180,16 +1174,16 @@ extern List acct_storage_p_modify_wckeys(void *db_conn, uint32_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_MODIFY_WCKEYS failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("slurmdbd: response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -1263,16 +1257,16 @@ extern List acct_storage_p_remove_users(void *db_conn, uint32_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_REMOVE_USERS failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("slurmdbd: response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -1309,16 +1303,16 @@ extern List acct_storage_p_remove_coord(void *db_conn, uint32_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_REMOVE_ACCOUNT_COORDS failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("slurmdbd: response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -1351,16 +1345,16 @@ extern List acct_storage_p_remove_accts(void *db_conn, uint32_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_REMOVE_ACCTS failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("slurmdbd: response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -1395,16 +1389,16 @@ extern List acct_storage_p_remove_clusters(void *db_conn, uint32_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_REMOVE_CLUSTERS failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("slurmdbd: response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -1441,16 +1435,16 @@ extern List acct_storage_p_remove_assocs(
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_REMOVE_ASSOCS failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("slurmdbd: response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -1486,16 +1480,16 @@ extern List acct_storage_p_remove_federations(
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_REMOVE_FEDERATIONS failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("slurmdbd: response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -1532,16 +1526,16 @@ extern List acct_storage_p_remove_qos(
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_REMOVE_QOS failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("slurmdbd: response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -1574,16 +1568,16 @@ extern List acct_storage_p_remove_res(
 	rc = slurm_send_recv_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &req, &resp);
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_REMOVE_RES failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("slurmdbd: response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -1617,16 +1611,16 @@ extern List acct_storage_p_remove_wckeys(
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_REMOVE_WCKEYS failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("slurmdbd: response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -1696,16 +1690,16 @@ extern List acct_storage_p_get_users(void *db_conn, uid_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_GET_USERS failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_USERS) {
 		error("slurmdbd: response type not DBD_GOT_USERS: %u",
 		      resp.msg_type);
@@ -1737,16 +1731,16 @@ extern List acct_storage_p_get_accts(void *db_conn, uid_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_GET_ACCOUNTS failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_ACCOUNTS) {
 		error("slurmdbd: response type not DBD_GOT_ACCOUNTS: %u",
 		      resp.msg_type);
@@ -1779,16 +1773,16 @@ extern List acct_storage_p_get_clusters(void *db_conn, uid_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_GET_CLUSTERS failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_CLUSTERS) {
 		error("slurmdbd: response type not DBD_GOT_CLUSTERS: %u",
 		      resp.msg_type);
@@ -1821,16 +1815,16 @@ extern List acct_storage_p_get_federations(void *db_conn, uid_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_GET_FEDERATIONS failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_FEDERATIONS) {
 		error("slurmdbd: response type not DBD_GOT_FEDERATIONS: %u",
 		      resp.msg_type);
@@ -1858,16 +1852,16 @@ extern List acct_storage_p_get_config(void *db_conn, char *config_name)
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_GET_CONFIG failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_CONFIG) {
 		error("slurmdbd: response type not DBD_GOT_CONFIG: %u",
 		      resp.msg_type);
@@ -1899,16 +1893,16 @@ extern List acct_storage_p_get_tres(void *db_conn, uid_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_GET_TRES failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_TRES) {
 		error("slurmdbd: response type not DBD_GOT_TRES: %u",
 		      resp.msg_type);
@@ -1940,16 +1934,16 @@ extern List acct_storage_p_get_assocs(
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_GET_ASSOCS failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_ASSOCS) {
 		error("slurmdbd: response type not DBD_GOT_ASSOCS: %u",
 		      resp.msg_type);
@@ -1981,16 +1975,16 @@ extern List acct_storage_p_get_events(void *db_conn, uint32_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_GET_EVENTS failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_EVENTS) {
 		error("slurmdbd: response type not DBD_GOT_EVENTS: %u",
 		      resp.msg_type);
@@ -2022,16 +2016,16 @@ extern List acct_storage_p_get_problems(void *db_conn, uid_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_GET_PROBS failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_PROBS) {
 		error("slurmdbd: response type not DBD_GOT_PROBS: %u",
 		      resp.msg_type);
@@ -2063,16 +2057,16 @@ extern List acct_storage_p_get_qos(void *db_conn, uid_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_GET_QOS failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_QOS) {
 		error("slurmdbd: response type not DBD_GOT_QOS: %u",
 		      resp.msg_type);
@@ -2111,16 +2105,16 @@ extern List acct_storage_p_get_res(void *db_conn, uid_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_GET_RES failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_RES) {
 		error("slurmdbd: response type not DBD_GOT_RES: %u",
 		      resp.msg_type);
@@ -2159,16 +2153,16 @@ extern List acct_storage_p_get_wckeys(void *db_conn, uid_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_GET_WCKEYS failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_WCKEYS) {
 		error("slurmdbd: response type not DBD_GOT_WCKEYS: %u",
 		      resp.msg_type);
@@ -2208,16 +2202,16 @@ extern List acct_storage_p_get_reservations(
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_GET_RESVS failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_RESVS) {
 		error("slurmdbd: response type not DBD_GOT_RESVS: %u",
 		      resp.msg_type);
@@ -2256,16 +2250,16 @@ extern List acct_storage_p_get_txn(void *db_conn, uid_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_GET_TXN failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_TXN) {
 		error("slurmdbd: response type not DBD_GOT_TXN: %u",
 		      resp.msg_type);
@@ -2320,16 +2314,16 @@ extern int acct_storage_p_get_usage(void *db_conn, uid_t uid,
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: %s failure: %m",
 		      slurmdbd_msg_type_2_str(type, 1));
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			(*my_list) = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_ASSOC_USAGE
 		   && resp.msg_type != DBD_GOT_WCKEY_USAGE
 		   && resp.msg_type != DBD_GOT_CLUSTER_USAGE) {
@@ -2585,7 +2579,7 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 		resp = (dbd_id_rc_msg_t *) msg_rc.data;
 		job_ptr->db_index = resp->db_index;
 		rc = resp->return_code;
-		//info("here got %d for return code", resp->return_code);
+		//info("here got %d for return code", resp->rc);
 		slurmdbd_free_id_rc_msg(resp);
 	}
 	_partial_free_dbd_job_start(&req);
@@ -2890,16 +2884,16 @@ extern List jobacct_storage_p_get_jobs_cond(void *db_conn, uid_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_GET_JOBS_COND failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
 			info("%s", msg->comment);
 			my_job_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_JOBS) {
 		error("slurmdbd: response type not DBD_GOT_JOBS: %u",
 		      resp.msg_type);
@@ -2935,17 +2929,17 @@ extern int jobacct_storage_p_archive(void *db_conn,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_ARCHIVE_DUMP failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		rc = msg->return_code;
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		rc = msg->rc;
 
-		if (msg->return_code == SLURM_SUCCESS)
+		if (msg->rc == SLURM_SUCCESS)
 			info("%s", msg->comment);
 		else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else {
 		error("unknown return for archive_dump");
 		rc = SLURM_ERROR;
@@ -2970,17 +2964,17 @@ extern int jobacct_storage_p_archive_load(void *db_conn,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_ARCHIVE_LOAD failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		rc = msg->return_code;
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		rc = msg->rc;
 
-		if (msg->return_code == SLURM_SUCCESS)
+		if (msg->rc == SLURM_SUCCESS)
 			info("%s", msg->comment);
 		else {
-			slurm_seterrno(msg->return_code);
+			slurm_seterrno(msg->rc);
 			error("%s", msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else {
 		error("unknown return for archive_load");
 		rc = SLURM_ERROR;
@@ -3053,15 +3047,15 @@ extern int acct_storage_p_get_stats(void *db_conn, slurmdb_stats_rec_t **stats)
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_GET_STATS failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if (msg->return_code == SLURM_SUCCESS) {
-			info("RC:%d %s", msg->return_code, msg->comment);
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
+			info("RC:%d %s", msg->rc, msg->comment);
 		} else {
-			slurm_seterrno(msg->return_code);
-			info("RC:%d %s", msg->return_code, msg->comment);
+			slurm_seterrno(msg->rc);
+			info("RC:%d %s", msg->rc, msg->comment);
 		}
-		slurmdbd_free_rc_msg(msg);
+		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_STATS) {
 		error("slurmdbd: response type not DBD_GOT_STATS: %u",
 		      resp.msg_type);

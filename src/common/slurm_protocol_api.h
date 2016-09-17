@@ -963,6 +963,15 @@ extern int slurm_shutdown_msg_engine(int open_fd);
  * receive message functions
 \**********************************************************************/
 
+/* unpack a complete recieved message
+ * OUT msg - a slurm_msg struct to be filled in by the function
+ * IN  fd - file descriptor the message came from
+ * IN  buffer - Buf we will fill in the message with
+ * RET int	- returns 0 on success, -1 on failure and sets errno
+ */
+
+extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, Buf buffer);
+
 /*
  *  Receive a slurm message on the open slurm descriptor "fd" waiting
  *    at most "timeout" seconds for the message data. If timeout is
@@ -1253,19 +1262,6 @@ int slurm_send_only_node_msg(slurm_msg_t * request_msg);
 extern int slurm_send_recv_msg(int fd, slurm_msg_t *req,
 			       slurm_msg_t *resp, int timeout);
 
-/* Open a persistent connection with controller at host and port
- * IN host	- host name to connect to
- * IN port	- port to connect to
- * RET int	- returns open fd on success, -1 on failure
- */
-extern int slurm_open_persist_controller_conn(char *host, uint32_t port);
-
-/* Closes a persistent connection on the open fd.
- * IN fd 	- open fd to close
- * RET int	- returns SLURM_SUCCESS on SUCCESS, SLURM_FAILURE on error.
- */
-extern int slurm_close_persist_controller_conn(int fd);
-
 /* Slurm message functions */
 
 /* set_span
@@ -1275,6 +1271,7 @@ extern int slurm_close_persist_controller_conn(int fd);
  * NOTE: Returned array MUST be release by caller using xfree */
 extern int *set_span(int total, uint16_t tree_width);
 
+extern void slurm_free_msg_members(slurm_msg_t *msg);
 extern void slurm_free_msg(slurm_msg_t * msg);
 
 /* must free this memory with free not xfree */

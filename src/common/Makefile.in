@@ -180,7 +180,7 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo cpu_frequency.lo \
 	stepd_api.lo write_labelled_message.lo proc_args.lo \
 	node_conf.lo gres.lo entity.lo layout.lo layouts_mgr.lo \
 	mapping.lo xcgroup_read_config.lo xlua.lo callerid.lo \
-	siphash24.lo siphash_slurm.lo
+	siphash24.lo siphash_slurm.lo slurm_persist_conn.lo
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -641,7 +641,8 @@ libcommon_la_SOURCES = \
 	xcgroup_read_config.c xcgroup_read_config.h \
 	xlua.c xlua.h			\
 	callerid.c callerid.h		\
-	siphash24.c siphash_slurm.c siphash.h
+	siphash24.c siphash_slurm.c siphash.h \
+	slurm_persist_conn.c slurm_persist_conn.h
 
 EXTRA_libcommon_la_SOURCES = \
 	uthash/LICENSE			\
@@ -803,6 +804,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_jobacct_gather.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_jobcomp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_mcs.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_persist_conn.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_priority.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_protocol_api.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_protocol_defs.Plo@am__quote@

@@ -352,7 +352,6 @@
 
 /* slurmdbd_defs.[ch] functions */
 #define slurmdbd_free_list_msg	slurmdb_slurmdbd_free_list_msg
-#define slurmdbd_free_rc_msg    slurmdb_slurmdbd_free_rc_msg
 #define slurmdbd_free_usage_msg slurmdb_slurmdbd_free_usage_msg
 #define slurmdbd_free_id_rc_msg slurmdb_slurmdbd_free_id_rc_msg
 

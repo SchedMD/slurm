@@ -99,7 +99,6 @@ extern void slurm_print_federation(void *ptr)
 	ListIterator itr;
 	slurmdb_cluster_rec_t *cluster;
 	int left_col_size;
-	char *conn_status[] = {"Disconnected", "Connected"};
 	char *cluster_name = NULL;
 	char *fed_flag_str = NULL;
 
@@ -111,8 +110,10 @@ extern void slurm_print_federation(void *ptr)
 		return;
 
 	fed_flag_str = slurmdb_federation_flags_str(fed->flags);
-
-	cluster_name = slurm_get_cluster_name();
+	if (working_cluster_rec)
+		cluster_name = xstrdup(working_cluster_rec->name);
+	else
+		cluster_name = slurm_get_cluster_name();
 
 	left_col_size = strlen("federation:");
 	printf("%-*s %s Flags:%s\n", left_col_size, "Federation:",
@@ -138,20 +139,19 @@ extern void slurm_print_federation(void *ptr)
 	list_iterator_reset(itr);
 	while ((cluster = list_next(itr))) {
 		char *tmp_str = NULL;
-		int conn_type = 0;
+
 		if (!xstrcmp(cluster->name, cluster_name))
 			continue;
 
-		if (cluster->sockfd != -1)
-			conn_type = 1;
-
 		tmp_str = slurmdb_cluster_fed_states_str(cluster->fed.state);
 		printf("%-*s %s:%s:%d ID:%d FedState:%s Weight:%d "
-		       "PersistConn:%s\n",
+		       "PersistConnSend/Recv:%s/%s\n",
 		       left_col_size, "Sibling:", cluster->name,
 		       cluster->control_host, cluster->control_port,
 		       cluster->fed.id, (tmp_str ? tmp_str : ""),
-		       cluster->fed.weight, conn_status[conn_type]);
+		       cluster->fed.weight,
+		       cluster->fed.send ? "Yes" : "No",
+		       cluster->fed.recv ? "Yes" : "No");
 	}
 
 	list_iterator_destroy(itr);

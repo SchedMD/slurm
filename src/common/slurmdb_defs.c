@@ -1464,7 +1464,6 @@ extern void slurmdb_init_cluster_rec(slurmdb_cluster_rec_t *cluster,
 	cluster->flags      = NO_VAL;
 	cluster->fed.state  = NO_VAL;
 	cluster->fed.weight = NO_VAL;
-	cluster->sockfd     = -1;
 	slurm_mutex_init(&cluster->lock);
 }
 
@@ -3128,7 +3127,6 @@ extern void slurmdb_copy_cluster_rec(slurmdb_cluster_rec_t *out,
 	out->plugin_id_select = in->plugin_id_select;
 	out->rpc_version      = in->rpc_version;
 	xfree(out->tres_str);
-	out->sockfd           = in->sockfd;
 	out->tres_str         = xstrdup(in->tres_str);
 
 	slurmdb_destroy_assoc_rec(out->root_assoc);
@@ -3141,7 +3139,10 @@ extern void slurmdb_copy_cluster_rec(slurmdb_cluster_rec_t *out,
 	/* Not copied currently:
 	 * accounting_list
 	 * control_addr
-	 * dim_size */
+	 * dim_size
+	 * fed.recv
+	 * fed.send
+	 */
 }
 
 extern void slurmdb_copy_federation_rec(slurmdb_federation_rec_t *out,

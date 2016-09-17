@@ -304,7 +304,7 @@ static void *_background_rpc_mgr(void *no_data)
 	int newsockfd;
 	int sockfd;
 	slurm_addr_t cli_addr;
-	slurm_msg_t *msg = NULL;
+	slurm_msg_t msg;
 	int error_code;
 	char* node_addr = NULL;
 
@@ -356,18 +356,17 @@ static void *_background_rpc_mgr(void *no_data)
 			continue;
 		}
 
-		msg = xmalloc(sizeof(slurm_msg_t));
-		slurm_msg_t_init(msg);
-		if (slurm_receive_msg(newsockfd, msg, 0) != 0)
+		slurm_msg_t_init(&msg);
+		if (slurm_receive_msg(newsockfd, &msg, 0) != 0)
 			error("slurm_receive_msg: %m");
 
-		error_code = _background_process_msg(msg);
+		error_code = _background_process_msg(&msg);
 		if ((error_code == SLURM_SUCCESS)			&&
-		    (msg->msg_type == REQUEST_SHUTDOWN_IMMEDIATE)	&&
+		    (msg.msg_type == REQUEST_SHUTDOWN_IMMEDIATE)	&&
 		    (slurmctld_config.shutdown_time == 0))
 			slurmctld_config.shutdown_time = time(NULL);
 
-		slurm_free_msg(msg);
+		slurm_free_msg_members(&msg);
 
 		slurm_close(newsockfd);	/* close new socket */
 	}

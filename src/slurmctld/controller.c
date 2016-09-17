@@ -549,10 +549,11 @@ int main(int argc, char *argv[])
 		}
 		slurm_attr_destroy(&thread_attr);
 
+		if (fed_mgr_init(acct_db_conn))
+			fatal("Failed to initialize fed_mgr");
 		clusteracct_storage_g_register_ctld(
 			acct_db_conn,
 			slurmctld_conf.slurmctld_port);
-
 		_accounting_cluster_ready();
 
 		if (slurm_priority_init() != SLURM_SUCCESS)
@@ -652,7 +653,6 @@ int main(int argc, char *argv[])
 
 	layouts_fini();
 	g_slurm_jobcomp_fini();
-	fed_mgr_fini();
 
 	/* Since pidfile is created as user root (its owner is
 	 *   changed to SlurmUser) SlurmUser may not be able to
@@ -692,6 +692,7 @@ int main(int argc, char *argv[])
 	resv_fini();
 	trigger_fini();
 	dir_name = slurm_get_state_save_location();
+	fed_mgr_fini();
 	assoc_mgr_fini(dir_name);
 	xfree(dir_name);
 	reserve_port_config(NULL);
@@ -1085,58 +1086,48 @@ static void *_service_connection(void *arg)
 {
 	connection_arg_t *conn = (connection_arg_t *) arg;
 	void *return_code = NULL;
+	slurm_msg_t msg;
 
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_SET_NAME, "srvcn", NULL, NULL, NULL) < 0) {
 		error("%s: cannot set my name to %s %m", __func__, "srvcn");
 	}
 #endif
-	while (1) {
-		slurm_msg_t *msg;
-		if (slurmctld_config.shutdown_time) {
-			break;
-		}
-		msg = xmalloc(sizeof(slurm_msg_t));
-		slurm_msg_t_init(msg);
-		/*
-		 * slurm_receive_msg sets msg connection fd to accepted fd. This allows
-		 * possibility for slurmctld_req() to close accepted connection.
-		 */
-		if (slurm_receive_msg(conn->newsockfd, msg, 0) != 0) {
-			char addr_buf[32];
-			slurm_print_slurm_addr(&conn->cli_addr, addr_buf,
-					       sizeof(addr_buf));
-			error("slurm_receive_msg [%s]: %m", addr_buf);
-			/* close the new socket */
-			slurm_close(conn->newsockfd);
-			slurm_free_msg(msg);
-			goto cleanup;
-		}
-
-		if (errno != SLURM_SUCCESS) {
-			if (errno == SLURM_PROTOCOL_VERSION_ERROR) {
-				slurm_send_rc_msg(msg, SLURM_PROTOCOL_VERSION_ERROR);
-			} else
-				info("_service_connection/slurm_receive_msg %m");
-		} else {
-			/* process the request */
-			slurmctld_req(msg, conn);
-		}
-
-		slurm_free_msg(msg);
-
-		if (!conn->persist)
-			break;
+	slurm_msg_t_init(&msg);
+	/*
+	 * slurm_receive_msg sets msg connection fd to accepted fd. This allows
+	 * possibility for slurmctld_req() to close accepted connection.
+	 */
+	if (slurm_receive_msg(conn->newsockfd, &msg, 0) != 0) {
+		char addr_buf[32];
+		slurm_print_slurm_addr(&conn->cli_addr, addr_buf,
+				       sizeof(addr_buf));
+		error("slurm_receive_msg [%s]: %m", addr_buf);
+		/* close the new socket */
+		slurm_close(conn->newsockfd);
+		slurm_free_msg_members(&msg);
+		goto cleanup;
 	}
 
-	if ((conn->newsockfd >= 0)
-	    && slurm_close(conn->newsockfd) < 0)
+	if (errno != SLURM_SUCCESS) {
+		if (errno == SLURM_PROTOCOL_VERSION_ERROR) {
+			slurm_send_rc_msg(&msg, SLURM_PROTOCOL_VERSION_ERROR);
+		} else
+			info("_service_connection/slurm_receive_msg %m");
+	} else {
+		/* process the request */
+		slurmctld_req(&msg, conn);
+	}
+
+	if ((conn->newsockfd >= 0) &&
+	    (slurm_close(conn->newsockfd) < 0))
 		error ("close(%d): %m",  conn->newsockfd);
 
 cleanup:
-	debug2("exiting service connection thread");
+	slurm_free_msg_members(&msg);
 	xfree(arg);
 	server_thread_decr();
+
 	return return_code;
 }
 
@@ -2067,9 +2058,6 @@ extern void ctld_assoc_mgr_init(slurm_trigger_callbacks_t *callbacks)
 			      "slurmctld start time");
 		}
 	}
-
-	if (fed_mgr_init(acct_db_conn))
-		fatal("Failed to initialize fed_mgr");
 
 	/* Now load the usage from a flat file since it isn't kept in
 	   the database No need to check for an error since if this

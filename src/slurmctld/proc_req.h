@@ -49,7 +49,6 @@
 typedef struct connection_arg {
 	int newsockfd;
 	slurm_addr_t cli_addr;
-	bool persist;
 } connection_arg_t;
 
 /* Free memory used to track RPC usage by type and user */

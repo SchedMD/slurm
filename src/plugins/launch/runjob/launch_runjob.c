@@ -183,7 +183,7 @@ static void *_msg_thr_internal(void *arg)
 {
 	slurm_addr_t cli_addr;
 	int newsockfd;
-	slurm_msg_t *msg;
+	slurm_msg_t msg;
 	int *slurmctld_fd_ptr = (int *)arg;
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
@@ -196,15 +196,15 @@ static void *_msg_thr_internal(void *arg)
 				error("slurm_accept_msg_conn: %m");
 			continue;
 		}
-		msg = xmalloc(sizeof(slurm_msg_t));
-		if (slurm_receive_msg(newsockfd, msg, 0) != 0) {
+		slurm_msg_t_init(&msg);
+		if (slurm_receive_msg(newsockfd, &msg, 0) != 0) {
 			error("slurm_receive_msg: %m");
 			/* close the new socket */
 			slurm_close(newsockfd);
 			continue;
 		}
-		_handle_msg(msg);
-		slurm_free_msg(msg);
+		_handle_msg(&msg);
+		slurm_free_msg_members(&msg);
 		slurm_close(newsockfd);
 	}
 	return NULL;

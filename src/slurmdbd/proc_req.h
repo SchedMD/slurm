@@ -44,13 +44,8 @@
 #include "src/common/slurm_protocol_defs.h"
 
 typedef struct {
-	char *cluster_name;
-	uint16_t ctld_port; /* slurmctld_port */
+	slurm_persist_conn_t *conn;
 	void *db_conn; /* database connection */
-	char ip[32];
-	int newsockfd; /* socket connection descriptor */
-	uint16_t orig_port;
-	uint16_t rpc_version; /* version of rpc */
 	char *tres_str;
 } slurmdbd_conn_t;
 
@@ -63,8 +58,7 @@ typedef struct {
  * buffer OUT - outgoing response, must be freed by caller
  * uid IN/OUT - user ID who initiated the RPC
  * RET SLURM_SUCCESS or error code */
-extern int proc_req(slurmdbd_conn_t *slurmdbd_conn, char *msg,
-		    uint32_t msg_size, bool first, Buf *out_buffer,
-		    uint32_t *uid);
+extern int proc_req(void *conn, persist_msg_t *msg,
+		    Buf *out_buffer, uint32_t *uid);
 
 #endif /* !_PROC_REQ */

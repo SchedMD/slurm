@@ -61,58 +61,137 @@ static slurmdb_cluster_rec_t *fed_mgr_cluster_rec  = NULL;
 
 static pthread_t ping_thread  = 0;
 static bool      stop_pinging = false;
+static pthread_mutex_t open_send_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static int _close_controller_conn(slurmdb_cluster_rec_t *conn)
+static int _close_controller_conn(slurmdb_cluster_rec_t *cluster)
 {
 	int rc = SLURM_SUCCESS;
-	xassert(conn);
-	slurm_mutex_lock(&conn->lock);
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-		info("closing sibling conn to %s", conn->name);
+//	slurm_persist_conn_t *persist_conn = NULL;
 
-	if (conn->sockfd >= 0)
-		rc = slurm_close_persist_controller_conn(conn->sockfd);
-	conn->sockfd = -1;
+	xassert(cluster);
+	slurm_mutex_lock(&cluster->lock);
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+		info("closing sibling conn to %s", cluster->name);
+
+	/* The recv free of this is handled directly in the persist_conn code,
+	 * don't free it here */
+//	slurm_persist_conn_destroy(cluster->fed.recv);
+	cluster->fed.recv = NULL;
+	slurm_persist_conn_destroy(cluster->fed.send);
+	cluster->fed.send = NULL;
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-		info("closed sibling conn to %s", conn->name);
-	slurm_mutex_unlock(&conn->lock);
+		info("closed sibling conn to %s", cluster->name);
+	slurm_mutex_unlock(&cluster->lock);
 
 	return rc;
 }
 
-static int _open_controller_conn(slurmdb_cluster_rec_t *conn)
+static int _open_controller_conn(slurmdb_cluster_rec_t *cluster)
 {
-	slurm_mutex_lock(&conn->lock);
+	int rc;
+	slurm_persist_conn_t *persist_conn = NULL;
+
+	if (cluster == fed_mgr_cluster_rec) {
+		info("%s: hey! how did we get here with ourselves?", __func__);
+		return SLURM_ERROR;
+	}
+
+	slurm_mutex_lock(&cluster->lock);
+
+	if (!cluster->control_host || !cluster->control_host[0] ||
+	    !cluster->control_port) {
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+			info("%s: Sibling cluster %s doesn't appear up yet, skipping",
+			     __func__, cluster->name);
+		slurm_mutex_unlock(&cluster->lock);
+		return SLURM_SUCCESS;
+	}
+
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-		info("opening sibling conn to %s", conn->name);
+		info("opening sibling conn to %s", cluster->name);
 
-	if (conn->control_host && conn->control_host[0] == '\0')
-		conn->sockfd = -1;
-	else
-		conn->sockfd =
-			slurm_open_persist_controller_conn(conn->control_host,
-							   conn->control_port);
+	if (!cluster->fed.send) {
+		persist_conn = xmalloc(sizeof(slurm_persist_conn_t));
 
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-		info("openend sibling conn to %s:%d", conn->name, conn->sockfd);
-	slurm_mutex_unlock(&conn->lock);
+		cluster->fed.send = persist_conn;
 
-	return conn->sockfd;
+		/* Since this connection is coming from us, make it so ;) */
+		persist_conn->cluster_name = xstrdup(slurmctld_cluster_name);
+		persist_conn->my_port = slurmctld_conf.slurmctld_port;
+		persist_conn->rem_host = xstrdup(cluster->control_host);
+		persist_conn->rem_port = cluster->control_port;
+		persist_conn->shutdown = &slurmctld_config.shutdown_time;
+		//persist_conn->timeout = 0; /* we want this to be 0 */
+	} else {
+		persist_conn = cluster->fed.send;
+
+		/* Perhaps a backup came up, so don't assume it was the same
+		 * host or port we had before.
+		 */
+		xfree(persist_conn->rem_host);
+		persist_conn->rem_host = xstrdup(cluster->control_host);
+		persist_conn->rem_port = cluster->control_port;
+	}
+
+	rc = slurm_persist_conn_open(persist_conn);
+	if (rc != SLURM_SUCCESS) {
+		error("fed_mgr: Unable to open connection to cluster %s using host %s(%u)",
+		      cluster->name,
+		      persist_conn->rem_host, persist_conn->rem_port);
+	} else if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+		info("opened sibling conn to %s:%d",
+		     cluster->name, persist_conn->fd);
+	slurm_mutex_unlock(&cluster->lock);
+
+	return rc;
 }
 
-static int _send_recv_msg(slurmdb_cluster_rec_t *conn, slurm_msg_t *req,
+/* fed_mgr read lock needs to be set before coming in here,
+ * not the write lock */
+static void _open_persist_sends()
+{
+	ListIterator itr;
+	slurmdb_cluster_rec_t *cluster = NULL;
+	slurm_persist_conn_t *send = NULL;
+
+	if (!fed_mgr_fed_rec || ! fed_mgr_fed_rec->cluster_list)
+		return;
+
+	/* This open_send_mutex will make this like a write lock since at the
+	 * same time we are sending out these open requests the other slurmctlds
+	 * will be replying and needing to get to the structures.  If we just
+	 * used the fed_mgr write lock it would cause deadlock.
+	 */
+	slurm_mutex_lock(&open_send_mutex);
+	itr = list_iterator_create(fed_mgr_fed_rec->cluster_list);
+	while ((cluster = list_next(itr))) {
+		if (cluster == fed_mgr_cluster_rec)
+			continue;
+
+		send = cluster->fed.send;
+		if (!send || send->fd == -1)
+			_open_controller_conn(cluster);
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&open_send_mutex);
+}
+
+static int _send_recv_msg(slurmdb_cluster_rec_t *cluster, slurm_msg_t *req,
 			  slurm_msg_t *resp)
 {
 	int rc;
-	slurm_mutex_lock(&conn->lock);
-	rc = slurm_send_recv_msg(conn->sockfd, req, resp, 0);
-	slurm_mutex_unlock(&conn->lock);
+	slurm_mutex_lock(&cluster->lock);
+
+	resp->conn = req->conn = cluster->fed.send;
+
+	rc = slurm_send_recv_msg(req->conn->fd, req, resp, 0);
+	slurm_mutex_unlock(&cluster->lock);
 
 	return rc;
 }
 
-static int _ping_controller(slurmdb_cluster_rec_t *conn)
+static int _ping_controller(slurmdb_cluster_rec_t *cluster)
 {
 	int rc = SLURM_SUCCESS;
 	slurm_msg_t *req_msg;
@@ -126,22 +205,21 @@ static int _ping_controller(slurmdb_cluster_rec_t *conn)
 	req_msg->msg_type = REQUEST_PING;
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-		info("pinging %s(%s:%d)", conn->name, conn->control_host,
-		     conn->control_port);
+		info("pinging %s(%s:%d)", cluster->name, cluster->control_host,
+		     cluster->control_port);
 
-	if ((rc = _send_recv_msg(conn, req_msg, resp_msg))) {
+	if ((rc = _send_recv_msg(cluster, req_msg, resp_msg))) {
 		error("failed to ping %s(%s:%d)",
-		      conn->name, conn->control_host, conn->control_port);
-		slurm_mutex_lock(&conn->lock);
-		conn->sockfd = -1;
-		slurm_mutex_unlock(&conn->lock);
+		      cluster->name, cluster->control_host,
+		      cluster->control_port);
 	} else if ((rc = slurm_get_return_code(resp_msg->msg_type,
 					       resp_msg->data)))
 		error("ping returned error from %s(%s:%d)",
-		      conn->name, conn->control_host, conn->control_port);
+		      cluster->name, cluster->control_host,
+		      cluster->control_port);
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-		info("finished pinging %s(%s:%d)", conn->name,
-		     conn->control_host, conn->control_port);
+		info("finished pinging %s(%s:%d)", cluster->name,
+		     cluster->control_host, cluster->control_port);
 
 	slurm_free_msg(req_msg);
 	slurm_free_msg(resp_msg);
@@ -156,16 +234,16 @@ static int _ping_controller(slurmdb_cluster_rec_t *conn)
 static int _close_sibling_conns()
 {
 	ListIterator itr;
-	slurmdb_cluster_rec_t *conn;
+	slurmdb_cluster_rec_t *cluster;
 
 	if (!fed_mgr_fed_rec || !fed_mgr_fed_rec->cluster_list)
 		goto fini;
 
 	itr = list_iterator_create(fed_mgr_fed_rec->cluster_list);
-	while ((conn = list_next(itr))) {
-		if (conn == fed_mgr_cluster_rec)
+	while ((cluster = list_next(itr))) {
+		if (cluster == fed_mgr_cluster_rec)
 			continue;
-		_close_controller_conn(conn);
+		_close_controller_conn(cluster);
 	}
 	list_iterator_destroy(itr);
 
@@ -186,7 +264,7 @@ static void *_ping_thread(void *arg)
 	while (!stop_pinging &&
 	       !slurmctld_config.shutdown_time) {
 		ListIterator itr;
-		slurmdb_cluster_rec_t *conn;
+		slurmdb_cluster_rec_t *cluster;
 
 		lock_slurmctld(fed_read_lock);
 		if (!fed_mgr_fed_rec || !fed_mgr_fed_rec->cluster_list)
@@ -194,17 +272,16 @@ static void *_ping_thread(void *arg)
 
 		itr = list_iterator_create(fed_mgr_fed_rec->cluster_list);
 
-		while ((conn = list_next(itr))) {
-			if (conn == fed_mgr_cluster_rec)
+		while ((cluster = list_next(itr))) {
+			slurm_persist_conn_t *send;
+			if (cluster == fed_mgr_cluster_rec)
 				continue;
-			if (conn->sockfd == -1)
-				_open_controller_conn(conn);
-			if (conn->sockfd == -1)
+			send = cluster->fed.send;
+			if (!send || send->fd == -1)
 				continue;
-			_ping_controller(conn);
+			_ping_controller(cluster);
 		}
 		list_iterator_destroy(itr);
-
 next:
 		unlock_slurmctld(fed_read_lock);
 
@@ -221,6 +298,7 @@ static void _create_ping_thread()
 {
 	pthread_attr_t attr;
 	slurm_attr_init(&attr);
+
 	stop_pinging = false;
 	if (!ping_thread &&
 	    (pthread_create(&ping_thread, &attr, _ping_thread, NULL) != 0)) {
@@ -245,49 +323,56 @@ static void _destroy_ping_thread()
 }
 
 /*
- * Must have FED write lock prior to entering
+ * Must have FED unlocked prior to entering
  */
-static void _join_federation(slurmdb_federation_rec_t *db_fed)
+static void _fed_mgr_ptr_init(slurmdb_federation_rec_t *db_fed,
+			      slurmdb_cluster_rec_t *cluster)
 {
 	ListIterator c_itr;
 	slurmdb_cluster_rec_t *tmp_cluster, *db_cluster;
+	slurmctld_lock_t fed_write_lock = {
+		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
+
+	xassert(cluster);
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 		info("Joining federation %s", db_fed->name);
 
-	c_itr = list_iterator_create(db_fed->cluster_list);
+	lock_slurmctld(fed_write_lock);
 	if (fed_mgr_fed_rec) {
 		/* we are already part of a federation, preserve existing
 		 * conenctions */
+		c_itr = list_iterator_create(db_fed->cluster_list);
 		while ((db_cluster = list_next(c_itr))) {
-			if (db_cluster == fed_mgr_cluster_rec)
+			if (!xstrcmp(db_cluster->name,
+				     slurmctld_cluster_name)) {
+				fed_mgr_cluster_rec = db_cluster;
 				continue;
+			}
 			if (!(tmp_cluster =
 			      list_find_first(fed_mgr_fed_rec->cluster_list,
 					      slurmdb_find_cluster_in_list,
 					      db_cluster->name))) {
+				/* don't worry about destroying the connection
+				 * here.  It will happen below when we free
+				 * fed_mgr_fed_rec (automagically).
+				 */
 				continue;
 			}
 
-			/* FIXME: Danny mod send and recv clusters */
+			/* transfer over the connections we already have */
+			db_cluster->fed.send = tmp_cluster->fed.send;
+			tmp_cluster->fed.send = NULL;
+			db_cluster->fed.recv = tmp_cluster->fed.recv;
+			tmp_cluster->fed.recv = NULL;
 		}
-
+		list_iterator_destroy(c_itr);
 		slurmdb_destroy_federation_rec(fed_mgr_fed_rec);
-	}
+	} else
+		fed_mgr_cluster_rec = cluster;
 
 	fed_mgr_fed_rec = db_fed;
-
-	list_iterator_reset(c_itr);
-	while ((tmp_cluster = list_next(c_itr))) {
-		if (tmp_cluster == fed_mgr_cluster_rec)
-			continue;
-
-		/* FIXME: Danny open connection */
-		_open_controller_conn(tmp_cluster);
-	}
-	list_iterator_destroy(c_itr);
-
-	_create_ping_thread();
+	unlock_slurmctld(fed_write_lock);
 }
 
 /*
@@ -308,55 +393,132 @@ static void _leave_federation()
 	fed_mgr_cluster_rec = NULL;
 }
 
+static int _find_cluster_recv_in_list(void *x, void *key)
+{
+	slurmdb_cluster_rec_t *object = (slurmdb_cluster_rec_t *)x;
+
+	if (object->fed.recv == key)
+		return 1;
+
+	return 0;
+}
+
+static void _persist_callback_fini(void *arg)
+{
+	slurm_persist_conn_t *persist_conn = arg;
+	slurmdb_cluster_rec_t *cluster;
+	slurmctld_lock_t fed_write_lock = {
+		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
+
+	/* If we are shutting down just return or you will get deadlock since
+	 * all these locks are already locked.
+	 */
+	if (!persist_conn || *persist_conn->shutdown)
+		return;
+	lock_slurmctld(fed_write_lock);
+
+	/* shuting down */
+	if (!fed_mgr_fed_rec) {
+		unlock_slurmctld(fed_write_lock);
+		return;
+	}
+
+	if (!(cluster = list_find_first(fed_mgr_fed_rec->cluster_list,
+				       _find_cluster_recv_in_list,
+				       persist_conn))) {
+		info("Couldn't find cluster %s?",
+		     persist_conn->cluster_name);
+		unlock_slurmctld(fed_write_lock);
+		return;
+	}
+
+	slurm_mutex_lock(&cluster->lock);
+
+	/* This will get handled at the end of the thread, don't free it here */
+	cluster->fed.recv = NULL;
+//	persist_conn = cluster->fed.recv;
+//	slurm_persist_conn_close(persist_conn);
+
+	persist_conn = cluster->fed.send;
+	if (persist_conn) {
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+			info("Closing send to sibling cluster %s",
+			     cluster->name);
+		slurm_persist_conn_close(persist_conn);
+	}
+
+	slurm_mutex_unlock(&cluster->lock);
+	unlock_slurmctld(fed_write_lock);
+}
+
+static void _join_federation(slurmdb_federation_rec_t *fed,
+			     slurmdb_cluster_rec_t *cluster)
+{
+	slurmctld_lock_t fed_read_lock = {
+		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
+
+	_fed_mgr_ptr_init(fed, cluster);
+
+	/* We must open the connections after we get out of the
+	 * write_lock or we will end up in deadlock.
+	 */
+	lock_slurmctld(fed_read_lock);
+	_open_persist_sends();
+	unlock_slurmctld(fed_read_lock);
+	_create_ping_thread();
+}
+
 extern int fed_mgr_init(void *db_conn)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_federation_cond_t fed_cond;
 	List fed_list;
-	slurmctld_lock_t fed_write_lock = {
-		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
+	slurmdb_federation_rec_t *fed = NULL;
+
+	slurm_persist_conn_recv_server_init();
 
 	if (running_cache) {
 		debug("Database appears down, reading federations from state file.");
-		fed_mgr_state_load(slurmctld_conf.state_save_location);
-		return SLURM_SUCCESS;
+		fed = fed_mgr_state_load(
+			slurmctld_conf.state_save_location);
+		if (!fed) {
+			debug2("No federation state");
+			return SLURM_SUCCESS;
+		}
+	} else {
+		slurmdb_init_federation_cond(&fed_cond, 0);
+		fed_cond.cluster_list = list_create(NULL);
+		list_append(fed_cond.cluster_list, slurmctld_cluster_name);
+
+		fed_list = acct_storage_g_get_federations(db_conn, getuid(),
+							  &fed_cond);
+		FREE_NULL_LIST(fed_cond.cluster_list);
+		if (!fed_list) {
+			error("failed to get a federation list");
+			return SLURM_ERROR;
+		}
+
+		if (list_count(fed_list) == 1)
+			fed = list_pop(fed_list);
+		else if (list_count(fed_list) > 1) {
+			error("got more federations than expected");
+			rc = SLURM_ERROR;
+		}
+		FREE_NULL_LIST(fed_list);
 	}
 
-	slurmdb_init_federation_cond(&fed_cond, 0);
-	fed_cond.cluster_list = list_create(NULL);
-	list_append(fed_cond.cluster_list, slurmctld_cluster_name);
-
-	fed_list = acct_storage_g_get_federations(db_conn, getuid(),
-						  &fed_cond);
-	FREE_NULL_LIST(fed_cond.cluster_list);
-	if (!fed_list) {
-		error("failed to get a federation list");
-		return SLURM_ERROR;
-	}
-
-	if (list_count(fed_list) == 1) {
+	if (fed) {
 		slurmdb_cluster_rec_t *cluster = NULL;
-		slurmdb_federation_rec_t *fed = list_pop(fed_list);
 
 		if ((cluster = list_find_first(fed->cluster_list,
 					       slurmdb_find_cluster_in_list,
 					       slurmctld_cluster_name))) {
-			lock_slurmctld(fed_write_lock);
-
-			fed_mgr_cluster_rec = cluster;
-			_join_federation(fed);
-
-			unlock_slurmctld(fed_write_lock);
+			_join_federation(fed, cluster);
 		} else {
 			error("failed to get cluster from federation that we request");
 			rc = SLURM_ERROR;
 		}
-	} else if (list_count(fed_list) > 1) {
-		error("got more federations than expected");
-		rc = SLURM_ERROR;
 	}
-
-	FREE_NULL_LIST(fed_list);
 
 	return rc;
 }
@@ -368,6 +530,8 @@ extern int fed_mgr_fini()
 
 	lock_slurmctld(fed_write_lock);
 
+	slurm_persist_conn_recv_server_fini();
+
 	_leave_federation();
 
 	unlock_slurmctld(fed_write_lock);
@@ -378,7 +542,6 @@ extern int fed_mgr_fini()
 extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 {
 	List feds;
-	ListIterator f_itr;
 	slurmdb_federation_rec_t *fed = NULL;
 	slurmdb_cluster_rec_t *cluster = NULL;
 	slurmctld_lock_t fed_write_lock = {
@@ -387,13 +550,18 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 	if (!update->objects)
 		return SLURM_SUCCESS;
 
+	lock_slurmctld(fed_write_lock);
+	if (!fed_mgr_fed_rec) {
+		unlock_slurmctld(fed_write_lock);
+		return SLURM_SUCCESS; /* we haven't started the fed mgr yet. */
+	}
+	unlock_slurmctld(fed_write_lock);
+
+
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-		info("Got FEDS");
+		info("Got a federation update");
 
 	feds = update->objects;
-	f_itr = list_iterator_create(feds);
-
-	lock_slurmctld(fed_write_lock);
 
 	/* find the federation that this cluster is in.
 	 * if it's changed from last time then update stored information.
@@ -403,29 +571,24 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 	/* what if a remote cluster is removed from federation.
 	 * have to detect that and close the connection to the remote */
 	while ((fed = list_pop(feds))) {
-		if (!fed->cluster_list)
-			goto next;
-
-		if ((cluster = list_find_first(fed->cluster_list,
+		if (fed->cluster_list &&
+		    (cluster = list_find_first(fed->cluster_list,
 					       slurmdb_find_cluster_in_list,
 					       slurmctld_cluster_name))) {
-			fed_mgr_cluster_rec = cluster;
-			_join_federation(fed);
+			_join_federation(fed, cluster);
 			break;
 		}
 
-next:
 		slurmdb_destroy_federation_rec(fed);
 	}
-	list_iterator_destroy(f_itr);
 
 	if (!fed) {
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 			info("Not part of any federation");
+		lock_slurmctld(fed_write_lock);
 		_leave_federation();
+		unlock_slurmctld(fed_write_lock);
 	}
-
-	unlock_slurmctld(fed_write_lock);
 
 	return SLURM_SUCCESS;
 }
@@ -502,7 +665,7 @@ extern int fed_mgr_state_save(char *state_save_location)
 	return error_code;
 }
 
-extern int fed_mgr_state_load(char *state_save_location)
+extern slurmdb_federation_rec_t *fed_mgr_state_load(char *state_save_location)
 {
 	Buf buffer = NULL;
 	char *data = NULL, *state_file;
@@ -511,10 +674,7 @@ extern int fed_mgr_state_load(char *state_save_location)
 	uint32_t data_size = 0;
 	int state_fd;
 	int data_allocated, data_read = 0, error_code = SLURM_SUCCESS;
-	slurmdb_cluster_rec_t *cluster = NULL;
-	slurmdb_federation_rec_t *tmp_fed = NULL;
-	slurmctld_lock_t fed_write_lock = {
-		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
+	slurmdb_federation_rec_t *ret_fed = NULL;
 
 	state_file = xstrdup_printf("%s/%s", state_save_location,
 				    FED_MGR_STATE_FILE);
@@ -522,7 +682,7 @@ extern int fed_mgr_state_load(char *state_save_location)
 	if (state_fd < 0) {
 		error("No fed_mgr state file (%s) to recover", state_file);
 		xfree(state_file);
-		return SLURM_SUCCESS;
+		return NULL;
 	} else {
 		data_allocated = BUF_SIZE;
 		data = xmalloc(data_allocated);
@@ -559,46 +719,40 @@ extern int fed_mgr_state_load(char *state_save_location)
 		      SLURM_MIN_PROTOCOL_VERSION, SLURM_PROTOCOL_VERSION);
 		error("***********************************************");
 		free_buf(buffer);
-		return EFAULT;
+		return NULL;
 	}
 
 	safe_unpack_time(&buf_time, buffer);
 
-	error_code = slurmdb_unpack_federation_rec((void **)&tmp_fed, ver,
+	error_code = slurmdb_unpack_federation_rec((void **)&ret_fed, ver,
 						   buffer);
 	if (error_code != SLURM_SUCCESS)
 		goto unpack_error;
-	else if (!tmp_fed) {
+	else if (!ret_fed) {
 		error("No feds retrieved");
-	}
-
-	if (tmp_fed && tmp_fed->cluster_list &&
-	    !(cluster = list_find_first(tmp_fed->cluster_list,
-					slurmdb_find_cluster_in_list,
-					slurmctld_cluster_name))) {
-		error("This cluster doesn't exist in the fed siblings");
-		slurmdb_destroy_federation_rec(tmp_fed);
-		goto unpack_error;
-	} else if (cluster) {
-		lock_slurmctld(fed_write_lock);
-
-		fed_mgr_cluster_rec = cluster;
-		_join_federation(tmp_fed);
-		tmp_fed = NULL;
-
-		unlock_slurmctld(fed_write_lock);
+	} else {
+		/* We want to free the connections here since they don't exist
+		 * anymore, but they were packed when state was saved. */
+		slurmdb_cluster_rec_t *cluster;
+		ListIterator itr = list_iterator_create(
+			ret_fed->cluster_list);
+		while ((cluster = list_next(itr))) {
+			slurm_persist_conn_destroy(cluster->fed.recv);
+			cluster->fed.recv = NULL;
+			slurm_persist_conn_destroy(cluster->fed.send);
+			cluster->fed.send = NULL;
+		}
+		list_iterator_destroy(itr);
 	}
 
 	free_buf(buffer);
-	if (tmp_fed)
-		slurmdb_destroy_federation_rec(tmp_fed);
 
-	return SLURM_SUCCESS;
+	return ret_fed;
 
 unpack_error:
 	free_buf(buffer);
 
-	return SLURM_ERROR;
+	return NULL;
 }
 
 extern int _find_sibling_by_ip(void *x, void *key)
@@ -672,4 +826,78 @@ extern uint32_t fed_mgr_get_local_id(uint32_t id)
 extern uint32_t fed_mgr_get_cluster_id(uint32_t id)
 {
 	return id >> FED_MGR_CLUSTER_ID_BEGIN;
+}
+
+extern int fed_mgr_add_sibling_conn(slurm_persist_conn_t *persist_conn,
+				    char **out_buffer)
+{
+	slurmdb_cluster_rec_t *cluster = NULL;
+	slurm_persist_conn_t *send = NULL;
+	slurmctld_lock_t fed_read_lock = {
+		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
+	int rc = SLURM_SUCCESS;
+
+	lock_slurmctld(fed_read_lock);
+
+	if (!fed_mgr_fed_rec) {
+		unlock_slurmctld(fed_read_lock);
+		*out_buffer = xstrdup_printf(
+			"no fed_mgr_fed_rec on cluster %s?  "
+			"This should never happen",
+			slurmctld_cluster_name);
+		error("%s: %s", __func__, *out_buffer);
+		return SLURM_ERROR;
+	}
+
+	if (!fed_mgr_cluster_rec) {
+		unlock_slurmctld(fed_read_lock);
+		*out_buffer = xstrdup_printf(
+			"no fed_mgr_cluster_rec on cluster %s?  "
+			"This should never happen",
+			slurmctld_cluster_name);
+		error("%s: %s", __func__, *out_buffer);
+		return SLURM_ERROR;
+	}
+
+	if (!(cluster = list_find_first(fed_mgr_fed_rec->cluster_list,
+					slurmdb_find_cluster_in_list,
+					persist_conn->cluster_name))) {
+		unlock_slurmctld(fed_read_lock);
+		*out_buffer = xstrdup_printf(
+			"%s isn't a known sibling of ours, but tried to connect to cluster %s federation %s",
+			persist_conn->cluster_name, slurmctld_cluster_name,
+			fed_mgr_fed_rec->name);
+		error("%s: %s", __func__, *out_buffer);
+		return SLURM_ERROR;
+	}
+
+	persist_conn->callback_fini = _persist_callback_fini;
+	persist_conn->flags |= PERSIST_FLAG_ALREADY_INITED;
+
+	cluster->control_port = persist_conn->rem_port;
+	xfree(cluster->control_host);
+	cluster->control_host = xstrdup(persist_conn->rem_host);
+	slurm_persist_conn_destroy(cluster->fed.recv);
+	cluster->fed.recv = persist_conn;
+	send = cluster->fed.send;
+
+	if (!send || send->fd == -1) {
+		slurm_mutex_lock(&open_send_mutex);
+		rc = _open_controller_conn(cluster);
+		slurm_mutex_unlock(&open_send_mutex);
+	}
+
+	unlock_slurmctld(fed_read_lock);
+
+	if (rc == SLURM_SUCCESS &&
+	    (rc = slurm_persist_conn_recv_thread_init(
+		    persist_conn, -1, persist_conn)
+	     != SLURM_SUCCESS)) {
+		*out_buffer = xstrdup_printf(
+			"Couldn't connect back to %s for some reason",
+			persist_conn->cluster_name);
+		error("%s: %s", __func__, *out_buffer);
+	}
+
+	return rc;
 }

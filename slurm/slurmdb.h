@@ -584,9 +584,13 @@ typedef struct {
 } slurmdb_cluster_cond_t;
 
 typedef struct {
-	char    *name;   /* Federation name */
-	uint32_t id;     /* id of cluster in federation */
-	uint32_t state;  /* state of cluster in federation */
+	uint32_t id; /* id of cluster in federation */
+	char *name; /* Federation name */
+	void *recv;  /* slurm_persist_conn_t we recv information about this
+		      * sibling on. (We get this information) */
+	void *send; /* slurm_persist_conn_t we send information to this
+		     * cluster on. (We set this information) */
+	uint32_t state; /* state of cluster in federation */
 	uint32_t weight; /* weight of cluster in federation */
 } slurmdb_cluster_fed_t;
 
@@ -611,8 +615,6 @@ typedef struct {
 	slurmdb_assoc_rec_t *root_assoc; /* root assoc for
 						* cluster */
 	uint16_t rpc_version; /* version of rpc this cluter is running */
-	int 	 sockfd;      /* fd for connecting to sibling clusters.
-			       * Gets packed so client can display status. */
 	char  	*tres_str;    /* comma separated list of TRES */
 } slurmdb_cluster_rec_t;
 

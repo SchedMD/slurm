@@ -246,6 +246,13 @@ static List _get_runaway_jobs(slurmdb_job_cond_t *job_cond)
 	}
 
 	working_cluster_rec = list_peek(cluster_list);
+	if (!working_cluster_rec->control_host ||
+	    working_cluster_rec->control_host[0] == '\0' ||
+	    !working_cluster_rec->control_port) {
+		error("Slurmctld running on cluster %s is not up, can't check running jobs",
+		      working_cluster_rec->name);
+		return NULL;
+	}
 	if (slurm_load_jobs((time_t)NULL, &clus_jobs, 0)) {
 		error("Failed to get jobs from requested clusters: %m");
 		return NULL;
