@@ -33,6 +33,9 @@ documents those changes that are of interest to users and administrators.
  -- Display configured and allocated tres for nodes in scontrol show nodes.
  -- Change all memory values (in MB) to uint64_t to accommodate > 2TB per node.
  -- Add MailDomain option to qualify email addresses.
+ -- Refactor the persistent connections within the federation code to use
+    the same logic that was found in the slurmdbd.  Now both functionalities
+    share the same code.
 
 * Changes in Slurm 17.02.0pre1
 ==============================
