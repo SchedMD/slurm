@@ -137,6 +137,7 @@ html_DATA = \
 	Slurm_Entity.pdf \
 	Slurm_Individual.pdf \
 	sponsors.gif \
+	squeue_color.png \
 	topo_ex1.gif \
 	topo_ex2.gif \
 	tutorial_intro_files.tar \

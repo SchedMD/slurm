@@ -61,6 +61,7 @@
   What exactly is considered a CPU?</a></li>
 <li><a href="#sbatch_srun">What is the difference between the sbatch
   and srun commands?</a></li>
+<li><a href="#squeue_color">Can squeue output be color coded?</a></li>
 </ol>
 
 <h2>For Administrators</h2>
@@ -1038,6 +1039,27 @@ Failures involving sbatch jobs typically result in the job being requeued
 and executed again, while failures involving srun typically result in an
 error message being generated with the expectation that the user will respond
 in an appropriate fashion.</p> 
+
+<p><a name="squeue_color"><b>32. Can squeue output be color coded?</b></a><br>
+The squeue command output is not color coded, but other tools can be used to
+add color. One such tool is ColorWrapper
+(<a href="https://github.com/rrthomas/cw">https://github.com/rrthomas/cw</a>).
+A sample ColorWrapper configuration file and output are shown below.</p>
+<pre>
+path /bin:/usr/bin:/sbin:/usr/sbin:<env>
+usepty
+base green+
+match red:default (Resources)
+match black:default (null)
+match black:cyan N/A
+regex cyan:default  PD .*$
+regex red:default ^\d*\s*C .*$
+regex red:default ^\d*\s*CG .*$
+regex red:default ^\d*\s*NF .*$
+regex white:default ^JOBID.*
+</pre>
+<img src="squeue_color.png" width=600>
+
 
 <p class="footer"><a href="#top">top</a></p>
 
