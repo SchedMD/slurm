@@ -113,7 +113,7 @@ static int _open_controller_conn(slurmdb_cluster_rec_t *cluster, bool locked)
 			     __func__, cluster->name);
 		if (!locked)
 			slurm_mutex_unlock(&cluster->lock);
-		return SLURM_SUCCESS;
+		return SLURM_ERROR;
 	}
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
@@ -206,9 +206,8 @@ static int _send_recv_msg(slurmdb_cluster_rec_t *cluster, slurm_msg_t *req,
 	slurm_mutex_lock(&cluster->lock);
 
 	rc = _check_send(cluster);
-	if (rc == SLURM_SUCCESS) {
+	if ((rc == SLURM_SUCCESS) && cluster->fed.send) {
 		resp->conn = req->conn = cluster->fed.send;
-
 		rc = slurm_send_recv_msg(req->conn->fd, req, resp, 0);
 	}
 	slurm_mutex_unlock(&cluster->lock);
