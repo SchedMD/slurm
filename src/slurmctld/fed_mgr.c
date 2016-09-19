@@ -861,10 +861,17 @@ extern int fed_mgr_add_sibling_conn(slurm_persist_conn_t *persist_conn,
 	if (!fed_mgr_fed_rec) {
 		unlock_slurmctld(fed_read_lock);
 		*out_buffer = xstrdup_printf(
-			"no fed_mgr_fed_rec on cluster %s?  "
-			"This should never happen",
+			"no fed_mgr_fed_rec on cluster %s yet.",
 			slurmctld_cluster_name);
-		error("%s: %s", __func__, *out_buffer);
+		/* This really isn't an error.  If the cluster doesn't know it
+		 * is in a federation this could happen on the initial
+		 * connection from a sibling that found out about the addition
+		 * before I did.
+		 */
+		debug("%s: %s", __func__, *out_buffer);
+		/* The other side needs to see this as an error though or the
+		 * connection won't be completely established.
+		 */
 		return SLURM_ERROR;
 	}
 
