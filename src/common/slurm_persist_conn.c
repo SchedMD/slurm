@@ -37,7 +37,10 @@
 
 #include <poll.h>
 #include <pthread.h>
+
+#if HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
+#endif
 
 #include "slurm/slurm_errno.h"
 #include "src/common/fd.h"
