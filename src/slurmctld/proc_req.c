@@ -228,6 +228,9 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 	int i, rpc_type_index = -1, rpc_user_index = -1;
 	uint32_t rpc_uid;
 
+	if (arg && (arg->newsockfd >= 0))
+		fd_set_nonblocking(arg->newsockfd);
+
 	/* Just to validate the cred */
 	rpc_uid = (uint32_t) g_slurm_auth_get_uid(msg->auth_cred,
 						  slurmctld_config.auth_info);
@@ -6075,8 +6078,6 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg, connection_arg_t *arg)
 
 	persist_conn->fd = arg->newsockfd;
 	arg->newsockfd = -1;
-
-	fd_set_nonblocking(persist_conn->fd);
 
 	persist_conn->callback_proc = _process_persist_conn;
 
