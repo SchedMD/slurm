@@ -1146,7 +1146,7 @@ void fatal(const char *fmt, ...)
 	log_flush();
 	fatal_cleanup();
 
-	exit(1);
+	abort();
 }
 
 int error(const char *fmt, ...)
