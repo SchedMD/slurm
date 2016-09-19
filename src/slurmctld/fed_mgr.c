@@ -374,12 +374,13 @@ static void _fed_mgr_ptr_init(slurmdb_federation_rec_t *db_fed,
 				 */
 				continue;
 			}
-
+			slurm_mutex_lock(&tmp_cluster->lock);
 			/* transfer over the connections we already have */
 			db_cluster->fed.send = tmp_cluster->fed.send;
 			tmp_cluster->fed.send = NULL;
 			db_cluster->fed.recv = tmp_cluster->fed.recv;
 			tmp_cluster->fed.recv = NULL;
+			slurm_mutex_unlock(&tmp_cluster->lock);
 		}
 		list_iterator_destroy(c_itr);
 		slurmdb_destroy_federation_rec(fed_mgr_fed_rec);
