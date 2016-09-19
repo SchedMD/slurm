@@ -6102,12 +6102,12 @@ end_it:
 
 	ret_buf = slurm_persist_make_rc_msg(persist_conn,
 					    rc, comment, persist_conn->version);
-	xfree(comment);
 	if (slurm_persist_send_msg(persist_conn, ret_buf) != SLURM_SUCCESS) {
 		debug("Problem sending response to connection %d(%s) uid(%d)",
 		      persist_conn->fd, persist_conn->rem_host, uid);
 		rc = SLURM_ERROR;
 	}
+	xfree(comment);
 	free_buf(ret_buf);
 	END_TIMER;
 
