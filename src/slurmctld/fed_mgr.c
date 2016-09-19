@@ -767,7 +767,10 @@ extern slurmdb_federation_rec_t *fed_mgr_state_load(char *state_save_location)
 						   buffer);
 	if (error_code != SLURM_SUCCESS)
 		goto unpack_error;
-	else if (!ret_fed) {
+	else if (!ret_fed || !ret_fed->name ||
+		 !list_count(ret_fed->cluster_list)) {
+		slurmdb_destroy_federation_rec(ret_fed);
+		ret_fed = NULL;
 		error("No feds retrieved");
 	} else {
 		/* We want to free the connections here since they don't exist
