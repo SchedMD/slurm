@@ -93,6 +93,10 @@ static int _open_controller_conn(slurmdb_cluster_rec_t *cluster)
 {
 	int rc;
 	slurm_persist_conn_t *persist_conn = NULL;
+	static int timeout = -1;
+
+	if (timeout < 0)
+		timeout = slurm_get_msg_timeout() * 1000;
 
 	if (cluster == fed_mgr_cluster_rec) {
 		info("%s: hey! how did we get here with ourselves?", __func__);
@@ -124,7 +128,8 @@ static int _open_controller_conn(slurmdb_cluster_rec_t *cluster)
 		persist_conn->rem_host = xstrdup(cluster->control_host);
 		persist_conn->rem_port = cluster->control_port;
 		persist_conn->shutdown = &slurmctld_config.shutdown_time;
-		//persist_conn->timeout = 0; /* we want this to be 0 */
+		persist_conn->timeout = timeout; /* don't put this as 0 it
+						  * could cause deadlock */
 	} else {
 		persist_conn = cluster->fed.send;
 
