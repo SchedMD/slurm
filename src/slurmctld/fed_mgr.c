@@ -196,36 +196,31 @@ static int _send_recv_msg(slurmdb_cluster_rec_t *cluster, slurm_msg_t *req,
 static int _ping_controller(slurmdb_cluster_rec_t *cluster)
 {
 	int rc = SLURM_SUCCESS;
-	slurm_msg_t *req_msg;
-	slurm_msg_t *resp_msg;
+	slurm_msg_t req_msg;
+	slurm_msg_t resp_msg;
 
-	req_msg  = xmalloc(sizeof(slurm_msg_t));
-	resp_msg = xmalloc(sizeof(slurm_msg_t));
-
-	slurm_msg_t_init(req_msg);
-	slurm_msg_t_init(resp_msg);
-	req_msg->msg_type = REQUEST_PING;
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
+	req_msg.msg_type = REQUEST_PING;
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 		info("pinging %s(%s:%d)", cluster->name, cluster->control_host,
 		     cluster->control_port);
 
-	if ((rc = _send_recv_msg(cluster, req_msg, resp_msg))) {
+	if ((rc = _send_recv_msg(cluster, &req_msg, &resp_msg))) {
 		error("failed to ping %s(%s:%d)",
 		      cluster->name, cluster->control_host,
 		      cluster->control_port);
-	} else if ((rc = slurm_get_return_code(resp_msg->msg_type,
-					       resp_msg->data)))
+	} else if ((rc = slurm_get_return_code(resp_msg.msg_type,
+					       resp_msg.data)))
 		error("ping returned error from %s(%s:%d)",
 		      cluster->name, cluster->control_host,
 		      cluster->control_port);
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 		info("finished pinging %s(%s:%d)", cluster->name,
 		     cluster->control_host, cluster->control_port);
-
-	slurm_free_msg(req_msg);
-	slurm_free_msg(resp_msg);
-
+	slurm_free_msg_members(&req_msg);
+	slurm_free_msg_members(&resp_msg);
 	return rc;
 }
 
