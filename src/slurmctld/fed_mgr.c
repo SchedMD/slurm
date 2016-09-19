@@ -63,6 +63,7 @@ static pthread_t ping_thread  = 0;
 static bool      stop_pinging = false, inited = false;
 static pthread_mutex_t open_send_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t update_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static int _close_controller_conn(slurmdb_cluster_rec_t *cluster)
 {
@@ -576,7 +577,8 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 				       * all will get set up later. */
 	}
 	slurm_mutex_unlock(&init_mutex);
-
+	/* we only want one update happening at a time. */
+	slurm_mutex_lock(&update_mutex);
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 		info("Got a federation update");
 
@@ -608,7 +610,7 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 		_leave_federation();
 		unlock_slurmctld(fed_write_lock);
 	}
-
+	slurm_mutex_unlock(&update_mutex);
 	return SLURM_SUCCESS;
 }
 
