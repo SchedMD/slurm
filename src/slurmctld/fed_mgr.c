@@ -60,8 +60,9 @@ slurmdb_federation_rec_t     *fed_mgr_fed_rec      = NULL;
 static slurmdb_cluster_rec_t *fed_mgr_cluster_rec  = NULL;
 
 static pthread_t ping_thread  = 0;
-static bool      stop_pinging = false;
+static bool      stop_pinging = false, inited = false;
 static pthread_mutex_t open_send_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static int _close_controller_conn(slurmdb_cluster_rec_t *cluster)
 {
@@ -475,6 +476,13 @@ extern int fed_mgr_init(void *db_conn)
 	List fed_list;
 	slurmdb_federation_rec_t *fed = NULL;
 
+	slurm_mutex_lock(&init_mutex);
+
+	if (inited) {
+		slurm_mutex_unlock(&init_mutex);
+		return SLURM_SUCCESS;
+	}
+
 	slurm_persist_conn_recv_server_init();
 
 	if (running_cache) {
@@ -483,7 +491,8 @@ extern int fed_mgr_init(void *db_conn)
 			slurmctld_conf.state_save_location);
 		if (!fed) {
 			debug2("No federation state");
-			return SLURM_SUCCESS;
+			rc = SLURM_SUCCESS;
+			goto end_it;
 		}
 	} else {
 		slurmdb_init_federation_cond(&fed_cond, 0);
@@ -495,7 +504,8 @@ extern int fed_mgr_init(void *db_conn)
 		FREE_NULL_LIST(fed_cond.cluster_list);
 		if (!fed_list) {
 			error("failed to get a federation list");
-			return SLURM_ERROR;
+			rc = SLURM_ERROR;
+			goto end_it;
 		}
 
 		if (list_count(fed_list) == 1)
@@ -520,6 +530,10 @@ extern int fed_mgr_init(void *db_conn)
 		}
 	}
 
+end_it:
+	inited = true;
+	slurm_mutex_unlock(&init_mutex);
+
 	return rc;
 }
 
@@ -527,6 +541,10 @@ extern int fed_mgr_fini()
 {
 	slurmctld_lock_t fed_write_lock = {
 		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
+
+	slurm_mutex_lock(&init_mutex);
+	inited = false;
+	slurm_mutex_unlock(&init_mutex);
 
 	lock_slurmctld(fed_write_lock);
 
@@ -550,13 +568,14 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 	if (!update->objects)
 		return SLURM_SUCCESS;
 
-	lock_slurmctld(fed_write_lock);
-	if (!fed_mgr_fed_rec) {
-		unlock_slurmctld(fed_write_lock);
-		return SLURM_SUCCESS; /* we haven't started the fed mgr yet. */
+	slurm_mutex_lock(&init_mutex);
+	if (!inited) {
+		slurm_mutex_unlock(&init_mutex);
+		return SLURM_SUCCESS; /* we haven't started the fed mgr and we
+				       * can't start it from here, don't worry
+				       * all will get set up later. */
 	}
-	unlock_slurmctld(fed_write_lock);
-
+	slurm_mutex_unlock(&init_mutex);
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 		info("Got a federation update");
