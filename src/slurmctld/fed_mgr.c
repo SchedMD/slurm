@@ -89,7 +89,7 @@ static int _close_controller_conn(slurmdb_cluster_rec_t *cluster)
 	return rc;
 }
 
-static int _open_controller_conn(slurmdb_cluster_rec_t *cluster)
+static int _open_controller_conn(slurmdb_cluster_rec_t *cluster, bool locked)
 {
 	int rc;
 	slurm_persist_conn_t *persist_conn = NULL;
@@ -103,14 +103,16 @@ static int _open_controller_conn(slurmdb_cluster_rec_t *cluster)
 		return SLURM_ERROR;
 	}
 
-	slurm_mutex_lock(&cluster->lock);
+	if (!locked)
+		slurm_mutex_lock(&cluster->lock);
 
 	if (!cluster->control_host || !cluster->control_host[0] ||
 	    !cluster->control_port) {
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 			info("%s: Sibling cluster %s doesn't appear up yet, skipping",
 			     __func__, cluster->name);
-		slurm_mutex_unlock(&cluster->lock);
+		if (!locked)
+			slurm_mutex_unlock(&cluster->lock);
 		return SLURM_SUCCESS;
 	}
 
@@ -149,9 +151,22 @@ static int _open_controller_conn(slurmdb_cluster_rec_t *cluster)
 	} else if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 		info("opened sibling conn to %s:%d",
 		     cluster->name, persist_conn->fd);
-	slurm_mutex_unlock(&cluster->lock);
+	if (!locked)
+		slurm_mutex_unlock(&cluster->lock);
 
 	return rc;
+}
+
+/* The cluster->lock should be locked before this is called */
+static int _check_send(slurmdb_cluster_rec_t *cluster)
+{
+	slurm_persist_conn_t *send = cluster->fed.send;
+
+	if (!send || send->fd == -1) {
+		return _open_controller_conn(cluster, true);
+	}
+
+	return SLURM_SUCCESS;
 }
 
 /* fed_mgr read lock needs to be set before coming in here,
@@ -178,7 +193,7 @@ static void _open_persist_sends()
 
 		send = cluster->fed.send;
 		if (!send || send->fd == -1)
-			_open_controller_conn(cluster);
+			_open_controller_conn(cluster, false);
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&open_send_mutex);
@@ -190,9 +205,12 @@ static int _send_recv_msg(slurmdb_cluster_rec_t *cluster, slurm_msg_t *req,
 	int rc;
 	slurm_mutex_lock(&cluster->lock);
 
-	resp->conn = req->conn = cluster->fed.send;
+	rc = _check_send(cluster);
+	if (rc == SLURM_SUCCESS) {
+		resp->conn = req->conn = cluster->fed.send;
 
-	rc = slurm_send_recv_msg(req->conn->fd, req, resp, 0);
+		rc = slurm_send_recv_msg(req->conn->fd, req, resp, 0);
+	}
 	slurm_mutex_unlock(&cluster->lock);
 
 	return rc;
@@ -275,11 +293,7 @@ static void *_ping_thread(void *arg)
 		itr = list_iterator_create(fed_mgr_fed_rec->cluster_list);
 
 		while ((cluster = list_next(itr))) {
-			slurm_persist_conn_t *send;
 			if (cluster == fed_mgr_cluster_rec)
-				continue;
-			send = cluster->fed.send;
-			if (!send || send->fd == -1)
 				continue;
 			_ping_controller(cluster);
 		}
@@ -853,7 +867,6 @@ extern int fed_mgr_add_sibling_conn(slurm_persist_conn_t *persist_conn,
 				    char **out_buffer)
 {
 	slurmdb_cluster_rec_t *cluster = NULL;
-	slurm_persist_conn_t *send = NULL;
 	slurmctld_lock_t fed_read_lock = {
 		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 	int rc = SLURM_SUCCESS;
@@ -902,18 +915,13 @@ extern int fed_mgr_add_sibling_conn(slurm_persist_conn_t *persist_conn,
 	persist_conn->callback_fini = _persist_callback_fini;
 	persist_conn->flags |= PERSIST_FLAG_ALREADY_INITED;
 
+	slurm_mutex_lock(&cluster->lock);
 	cluster->control_port = persist_conn->rem_port;
 	xfree(cluster->control_host);
 	cluster->control_host = xstrdup(persist_conn->rem_host);
 	slurm_persist_conn_destroy(cluster->fed.recv);
 	cluster->fed.recv = persist_conn;
-	send = cluster->fed.send;
-
-	if (!send || send->fd == -1) {
-		slurm_mutex_lock(&open_send_mutex);
-		rc = _open_controller_conn(cluster);
-		slurm_mutex_unlock(&open_send_mutex);
-	}
+	slurm_mutex_unlock(&cluster->lock);
 
 	unlock_slurmctld(fed_read_lock);
 
