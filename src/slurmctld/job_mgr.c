@@ -4366,7 +4366,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	acct_policy_add_job_submit(job_ptr);
 
 	if ((error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
-	    (slurmctld_conf.enforce_part_limits == PARTITION_ENFORCE_ALL))
+	    (slurmctld_conf.enforce_part_limits != PARTITION_ENFORCE_NONE))
 		;	/* Reject job submission */
 	else if ((error_code == ESLURM_NODES_BUSY) ||
 		 (error_code == ESLURM_RESERVATION_BUSY) ||
