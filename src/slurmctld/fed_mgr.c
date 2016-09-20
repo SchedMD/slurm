@@ -466,7 +466,8 @@ static void _persist_callback_fini(void *arg)
 }
 
 static void _join_federation(slurmdb_federation_rec_t *fed,
-			     slurmdb_cluster_rec_t *cluster)
+			     slurmdb_cluster_rec_t *cluster,
+			     bool update)
 {
 	slurmctld_lock_t fed_read_lock = {
 		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
@@ -476,9 +477,11 @@ static void _join_federation(slurmdb_federation_rec_t *fed,
 	/* We must open the connections after we get out of the
 	 * write_lock or we will end up in deadlock.
 	 */
-	lock_slurmctld(fed_read_lock);
-	_open_persist_sends();
-	unlock_slurmctld(fed_read_lock);
+	if (!update) {
+		lock_slurmctld(fed_read_lock);
+		_open_persist_sends();
+		unlock_slurmctld(fed_read_lock);
+	}
 	_create_ping_thread();
 }
 
@@ -536,7 +539,7 @@ extern int fed_mgr_init(void *db_conn)
 		if ((cluster = list_find_first(fed->cluster_list,
 					       slurmdb_find_cluster_in_list,
 					       slurmctld_cluster_name))) {
-			_join_federation(fed, cluster);
+			_join_federation(fed, cluster, false);
 		} else {
 			error("failed to get cluster from federation that we request");
 			rc = SLURM_ERROR;
@@ -608,7 +611,7 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 		    (cluster = list_find_first(fed->cluster_list,
 					       slurmdb_find_cluster_in_list,
 					       slurmctld_cluster_name))) {
-			_join_federation(fed, cluster);
+			_join_federation(fed, cluster, true);
 			break;
 		}
 
