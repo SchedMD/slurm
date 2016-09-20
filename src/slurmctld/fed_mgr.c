@@ -926,8 +926,14 @@ extern int fed_mgr_add_sibling_conn(slurm_persist_conn_t *persist_conn,
 	cluster->control_port = persist_conn->rem_port;
 	xfree(cluster->control_host);
 	cluster->control_host = xstrdup(persist_conn->rem_host);
-	slurm_persist_conn_destroy(cluster->fed.recv);
+
+	/* If this pointer exists it will be handled by the persist_conn code,
+	 * don't free
+	 */
+	//slurm_persist_conn_destroy(cluster->fed.recv);
+
 	cluster->fed.recv = persist_conn;
+
 	slurm_mutex_unlock(&cluster->lock);
 
 	unlock_slurmctld(fed_read_lock);
