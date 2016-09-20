@@ -1824,7 +1824,10 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		    !_job_cleaning(tmp_job_ptr))
 			continue;
 		if (tmp_job_ptr->end_time == 0) {
-			error("Job %u has zero end_time", tmp_job_ptr->job_id);
+			if (!_job_cleaning(tmp_job_ptr)) {
+				error("Job %u has zero end_time",
+				      tmp_job_ptr->job_id);
+			}
 			continue;
 		}
 		if (_is_preemptable(tmp_job_ptr, preemptee_candidates)) {
