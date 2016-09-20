@@ -62,6 +62,9 @@ documents those changes that are of interest to users and administrators.
     then pass to the ResumeProgram the job ID assigned to the nodes in the
     SLURM_JOB_ID environment variable.
  -- Allow a node's PowerUp state flag to be cleared using update_node RPC.
+ -- capmc_suspend/resume - If a request modify NUMA or MCDRAM state on a set of
+    nodes or reboot a set of nodes fails then just requeue the job and abort the
+    entire operation rather than trying to operate on individual nodes.
 
 * Changes in Slurm 16.05.4
 ==========================
