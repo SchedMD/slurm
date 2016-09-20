@@ -3749,7 +3749,7 @@ extern void slurm_free_composite_msg(composite_msg_t *msg)
 extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 {
 	/* this message was never loaded */
-	if (type == (uint16_t)NO_VAL)
+	if ((uint16_t)type == (uint16_t)NO_VAL)
 		return SLURM_SUCCESS;
 
 	switch (type) {
