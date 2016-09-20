@@ -1616,13 +1616,20 @@ int update_node ( update_node_msg_t * update_node_msg )
 				}
 				free(this_node_name);
 				continue;
+			} else if ((state_val & NODE_STATE_POWER_SAVE) &&
+				   (state_val & NODE_STATE_POWER_UP) &&
+				   (IS_NODE_POWER_UP(node_ptr))) {
+				/* Clear any reboot operation in progress */
+				node_ptr->node_state &= (~NODE_STATE_POWER_UP);
+				node_ptr->last_response = now;
+				state_val = base_state;
 			} else if (state_val == NODE_STATE_NO_RESPOND) {
 				node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 				state_val = base_state;
 				bit_clear(avail_node_bitmap, node_inx);
 			} else {
-				info ("Invalid node state specified %u",
-					state_val);
+				info("Invalid node state specified %u",
+				     state_val);
 				err_code = 1;
 				error_code = ESLURM_INVALID_NODE_STATE;
 			}
@@ -2120,6 +2127,7 @@ static bool _valid_node_state_change(uint32_t old, uint32_t new)
 		case NODE_STATE_NO_RESPOND:
 		case NODE_STATE_POWER_SAVE:
 		case NODE_STATE_POWER_UP:
+		case (NODE_STATE_POWER_SAVE | NODE_STATE_POWER_UP):
 		case NODE_STATE_UNDRAIN:
 			return true;
 

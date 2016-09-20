@@ -61,6 +61,7 @@ documents those changes that are of interest to users and administrators.
  -- When powering up a node to change it's state (e.g. KNL NUMA or MCDRAM mode)
     then pass to the ResumeProgram the job ID assigned to the nodes in the
     SLURM_JOB_ID environment variable.
+ -- Allow a node's PowerUp state flag to be cleared using update_node RPC.
 
 * Changes in Slurm 16.05.4
 ==========================
