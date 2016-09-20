@@ -1000,7 +1000,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 					 slurmctld_config.auth_info);
 	int immediate = job_desc_msg->immediate;
 	bool do_unlock = false;
-	bool job_waiting = false;
+	bool reject_job = false;
 	struct job_record *job_ptr = NULL;
 	uint16_t port;	/* dummy value */
 	slurm_addr_t resp_addr;
@@ -1071,21 +1071,10 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		error_code = SLURM_ERROR;
 
 	/* return result */
-	if ((error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) ||
-	    (error_code == ESLURM_POWER_NOT_AVAIL) ||
-	    (error_code == ESLURM_POWER_RESERVED) ||
-	    (error_code == ESLURM_RESERVATION_NOT_USABLE) ||
-	    (error_code == ESLURM_QOS_THRES) ||
-	    (error_code == ESLURM_NODE_NOT_AVAIL) ||
-	    (error_code == ESLURM_JOB_HELD) ||
-	    (error_code == ESLURM_PARTITION_DOWN))
-		job_waiting = true;
-	if ((error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
-	    (slurmctld_conf.enforce_part_limits != PARTITION_ENFORCE_NONE))
-		job_waiting = false;     /* Reject job submission */
+	if (!job_ptr || (error_code && job_ptr->job_state == JOB_FAILED))
+		reject_job = true;
 
-	if ((error_code == SLURM_SUCCESS) ||
-	    ((immediate == 0) && job_waiting)) {
+	if (!reject_job) {
 		xassert(job_ptr);
 		info("sched: _slurm_rpc_allocate_resources JobId=%u "
 		     "NodeList=%s %s",job_ptr->job_id,
@@ -3533,18 +3522,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 	}
 
 	/* return result */
-	if ((error_code != SLURM_SUCCESS) &&
-	    (error_code != ESLURM_JOB_HELD) &&
-	    (error_code != ESLURM_NODE_NOT_AVAIL) &&
-	    (error_code != ESLURM_QOS_THRES) &&
-	    (error_code != ESLURM_RESERVATION_NOT_USABLE) &&
-	    (error_code != ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
-	    (error_code != ESLURM_POWER_NOT_AVAIL) &&
-	    (error_code != ESLURM_POWER_RESERVED)) {
-		reject_job = true;
-	}
-	if ((error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
-	   (slurmctld_conf.enforce_part_limits != PARTITION_ENFORCE_NONE))
+	if (!job_ptr || (error_code && job_ptr->job_state == JOB_FAILED))
 		reject_job = true;
 
 	if (reject_job) {
@@ -3554,8 +3532,6 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 			slurm_send_rc_err_msg(msg, error_code, err_msg);
 		else
 			slurm_send_rc_msg(msg, error_code);
-	} else if (!job_ptr) {	/* Mostly to avoid CLANG error */
-		fatal("job_allocate failed to allocate job, rc=%d",error_code);
 	} else {
 		info("_slurm_rpc_submit_batch_job JobId=%u %s",
 		     job_ptr->job_id, TIME_STR);
