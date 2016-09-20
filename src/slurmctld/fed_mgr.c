@@ -333,6 +333,7 @@ static void _destroy_ping_thread()
 		 * holding the read lock and we are already in the write lock.
 		 * pthread_join(ping_thread, NULL);
 		 */
+		pthread_kill(ping_thread, SIGUSR1);
 		ping_thread = 0;
 	}
 }
