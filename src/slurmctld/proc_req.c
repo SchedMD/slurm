@@ -6105,8 +6105,9 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg, connection_arg_t *arg)
 	persist_conn->version = persist_init->version;
 	memcpy(&p_tmp, persist_conn, sizeof(slurm_persist_conn_t));
 
-	rc = fed_mgr_add_sibling_conn(persist_conn, &comment);
-
+	if ((rc = fed_mgr_add_sibling_conn(persist_conn, &comment))
+	    != SLURM_SUCCESS)
+		slurm_persist_conn_destroy(persist_conn);
 end_it:
 
 	/* If people are really hammering the fed_mgr we could get into trouble
