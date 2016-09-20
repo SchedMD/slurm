@@ -56,7 +56,6 @@
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
-#include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/parse_config.h"
@@ -90,10 +89,6 @@ static char *prog_name = NULL;
 static char *mcdram_mode = NULL, *numa_mode = NULL;
 static char *syscfg_path = NULL;
 
-static pthread_mutex_t thread_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t  thread_cnt_cond  = PTHREAD_COND_INITIALIZER;
-static int thread_cnt = 0;
-
 /* NOTE: Keep this table synchronized with the table in
  * src/plugins/node_features/knl_cray/node_features_knl_cray.c */
 static s_p_options_t knl_conf_file_options[] = {
@@ -114,7 +109,6 @@ static s_p_options_t knl_conf_file_options[] = {
 /* Static functions */
 static s_p_hashtbl_t *_config_make_tbl(char *filename);
 static uint32_t *_json_parse_nids(json_object *jobj, char *key, int *num);
-static void *_node_update(void *args);
 static void _read_config(void);
 static char *_run_script(char **script_argv, int *status);
 static int _tot_wait(struct timeval *start_time);
@@ -400,125 +394,6 @@ static int _update_all_nodes(char *host_list)
 	return rc;
 }
 
-static void *_node_update(void *args)
-{
-	char *node_name = (char *) args;
-	char *argv[10], nid_str[32], *resp_msg;
-	int i, nid = -1, status = 0;
-	bool node_reinit_sent = false, node_state_sent;
-
-	for (i = 0; node_name[i]; i++) {
-		if ((node_name[i] >= '0') && (node_name[i] <= '9')) {
-			nid = strtol(node_name + i, NULL, 10);
-			break;
-		}
-	}
-	if (nid < 0) {
-		error("%s: No valid NID: %s", prog_name, node_name);
-		goto fini;
-	}
-	bit_set(node_bitmap, nid);
-	snprintf(nid_str, sizeof(nid_str), "%d", nid);
-
-	if (mcdram_mode) {
-		/* Update MCDRAM mode.
-		* Example: "capmc set_mcdram_cfg –n 43 –m cache" */
-		argv[0] = "capmc";
-		argv[1] = "set_mcdram_cfg";
-		argv[2] = "-m";
-		argv[3] = mcdram_mode;
-		argv[4] = "-n";
-		argv[5] = nid_str;
-		argv[6] = NULL;
-		node_state_sent = false;
-		for (i = 0; ((i < NODE_STATE_RETRIES) && !node_state_sent);
-		     i++) {
-			resp_msg = _run_script(argv, &status);
-			if ((status == 0) ||
-			    (resp_msg &&
-			     strcasestr(resp_msg, "Success"))) {
-				debug("%s: set_mcdram_cfg sent to %s",
-				      prog_name, nid_str);
-				node_state_sent = true;
-			} else {
-				error("%s: capmc(%s,%s,%s,%s,%s): %d %s",
-				      prog_name, argv[1], argv[2], argv[3],
-				      argv[4], argv[5], status, resp_msg);
-				sleep(1);
-			}
-			xfree(resp_msg);
-		}
-	}
-
-	if (numa_mode) {
-		/* Update NUMA mode.
-		 * Example: "capmc set_numa_cfg –m a2a –n 43" */
-		argv[0] = "capmc";
-		argv[1] = "set_numa_cfg";
-		argv[2] = "-m";
-		argv[3] = numa_mode;
-		argv[4] = "-n";
-		argv[5] = nid_str;
-		argv[6] = NULL;
-		node_state_sent = false;
-		for (i = 0; ((i < NODE_STATE_RETRIES) && !node_state_sent);
-		     i++) {
-			resp_msg = _run_script(argv, &status);
-			if ((status == 0) ||
-			    (resp_msg &&
-			     strcasestr(resp_msg, "Success"))) {
-				debug("%s: set_numa_cfg sent to %s",
-				      prog_name, nid_str);
-				node_state_sent = true;
-			} else {
-				error("%s: capmc(%s,%s,%s,%s,%s): %d %s",
-				      prog_name, argv[1], argv[2], argv[3],
-				      argv[4], argv[5], status, resp_msg);
-				sleep(1);
-			}
-			xfree(resp_msg);
-		}
-	}
-
-	/* Request node restart.
-	 * Example: "capmc node_reinit –n 43" */
-	argv[0] = "capmc";
-	argv[1] = "node_reinit";
-	argv[2] = "-n";
-	argv[3] = nid_str;
-	argv[4] = NULL;
-//	argv[4] = "-r";	/* Future option: Reason */
-//	argv[5] = "Change KNL mode";
-	for (i = 0; ((i < NODE_REINIT_RETRIES) && !node_reinit_sent); i++) {
-		resp_msg = _run_script(argv, &status);
-		if ((status == 0) ||
-		    (resp_msg && strcasestr(resp_msg, "Success"))) {
-			debug("%s: node_reinit sent to %s", prog_name, nid_str);
-			node_reinit_sent = true;
-		} else {
-			error("%s: capmc(%s,%s,%s): %d %s", prog_name,
-			      argv[1], argv[2], argv[3], status, resp_msg);
-			sleep(1);
-		}
-		xfree(resp_msg);
-	}
-
-	if (!node_reinit_sent) {
-		char *scontrol_input = NULL;
-		xstrfmtcat(scontrol_input,
-			   "%s/bin/scontrol update nodename=%s state=DOWN Reason=reboot_failure",
-			   SLURM_PREFIX, node_name);
-		(void) system(scontrol_input);
-		xfree(scontrol_input);
-	}
-
-fini:	slurm_mutex_lock(&thread_cnt_mutex);
-	thread_cnt--;
-	pthread_cond_signal(&thread_cnt_cond);
-	slurm_mutex_unlock(&thread_cnt_mutex);
-	return NULL;
-}
-
 static uint32_t *_json_parse_nids(json_object *jobj, char *key, int *num)
 {
 	json_object *j_array = NULL;
@@ -597,10 +472,6 @@ int main(int argc, char *argv[])
 	char *features, *save_ptr = NULL, *tok;
 	update_node_msg_t node_msg;
 	int rc =  SLURM_SUCCESS;
-	hostlist_t hl = NULL;
-	char *node_name;
-	pthread_attr_t attr_work;
-	pthread_t thread_work = 0;
 
 	xstrfmtcat(prog_name, "%s[%u]", argv[0], (uint32_t) getpid());
 	_read_config();
@@ -629,7 +500,7 @@ int main(int argc, char *argv[])
 			    !strcasecmp(tok, "snc4")) {
 				xfree(numa_mode);
 				numa_mode = xstrdup(tok);
-			} else if (!strcasecmp(tok, "cache")  ||
+			} else if (!strcasecmp(tok, "cache") ||
 				   !strcasecmp(tok, "split") ||
 				   !strcasecmp(tok, "equal") ||
 				   !strcasecmp(tok, "flat")) {
@@ -641,50 +512,31 @@ int main(int argc, char *argv[])
 		xfree(features);
 	}
 
-	/* Attempt to update and restart all nodes in a single capmc call,
-	 * attempt to update and restart individual nodes only if that fails. */
+	/* Attempt to update and restart all nodes in a single capmc call */
 	node_bitmap = bit_alloc(100000);
 	if (_update_all_nodes(argv[1]) != 0) {
-		/* Spawn threads to change MCDRAM and NUMA states and start node
-		 * reboot process */
-		if ((hl = hostlist_create(argv[1])) == NULL) {
-			error("%s: Invalid hostlist (%s)", prog_name, argv[1]);
-			exit(2);
-		}
-		while ((node_name = hostlist_pop(hl))) {
-			slurm_mutex_lock(&thread_cnt_mutex);
-			while (1) {
-				if (thread_cnt <= MAX_THREADS) {
-					thread_cnt++;
-					break;
-				} else {   /* wait for state change and retry */
-					pthread_cond_wait(&thread_cnt_cond,
-							  &thread_cnt_mutex);
-				}
-			}
-			slurm_mutex_unlock(&thread_cnt_mutex);
+		/* Could not reboot nodes.
+		 * Requeue/hold the job we were trying to start */
+		uint32_t job_id = 0;
+		char *job_id_str = getenv("SLURM_JOB_ID");
+		if (job_id_str)
+			job_id = strtol(job_id_str, NULL, 10);
+		if (job_id)
+			(void) slurm_requeue(job_id, JOB_REQUEUE_HOLD);
 
-			slurm_attr_init(&attr_work);
-			(void) pthread_attr_setdetachstate
-				(&attr_work, PTHREAD_CREATE_DETACHED);
-			if (pthread_create(&thread_work, &attr_work,
-					   _node_update, (void *) node_name)) {
-				_node_update((void *) node_name);
-			}
-			slurm_attr_destroy(&attr_work);
+		/* Return the nodes to service */
+		slurm_init_update_node_msg(&node_msg);
+		node_msg.node_names = argv[1];
+		node_msg.node_state = NODE_STATE_POWER_SAVE |
+				      NODE_STATE_POWER_UP;
+		rc = slurm_update_node(&node_msg);
+		if (rc != SLURM_SUCCESS) {
+			error("%s: slurm_update_node(\'%s\', \'IDLE\'): %s\n",
+			      prog_name, argv[1],
+			      slurm_strerror(slurm_get_errno()));
 		}
-		hostlist_destroy(hl);
 
-		/* Wait for work threads to complete */
-		slurm_mutex_lock(&thread_cnt_mutex);
-		while (1) {
-			if (thread_cnt == 0)
-				break;
-			else	/* wait for state change and retry */
-				pthread_cond_wait(&thread_cnt_cond,
-						  &thread_cnt_mutex);
-		}
-		slurm_mutex_unlock(&thread_cnt_mutex);
+		exit(1);
 	}
 	xfree(mcdram_mode);
 	xfree(numa_mode);
