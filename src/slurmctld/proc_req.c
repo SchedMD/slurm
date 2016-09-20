@@ -6055,19 +6055,29 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg, connection_arg_t *arg)
 	char *comment = NULL;
 	uint16_t port;
 	Buf ret_buf;
-	slurm_persist_conn_t *persist_conn;
+	slurm_persist_conn_t *persist_conn, p_tmp;
 	persist_init_req_msg_t *persist_init = msg->data;
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 
+	START_TIMER;
+
+	if (persist_init->version > SLURM_PROTOCOL_VERSION)
+		persist_init->version = SLURM_PROTOCOL_VERSION;
+
 	if (!validate_slurm_user(uid)) {
+		memset(&p_tmp, 0, sizeof(slurm_persist_conn_t));
+		p_tmp.fd = arg->newsockfd;
+		p_tmp.cluster_name = persist_init->cluster_name;
+		p_tmp.version = persist_init->version;
+		p_tmp.shutdown = &slurmctld_config.shutdown_time;
+
 		rc = ESLURM_USER_ID_MISSING;
 		error("Security violation, REQUEST_PERSIST_INIT RPC "
 		      "from uid=%d", uid);
 		goto end_it;
 	}
 
-	START_TIMER;
 	persist_conn = xmalloc(sizeof(slurm_persist_conn_t));
 
 	persist_conn->auth_cred = msg->auth_cred;
@@ -6092,19 +6102,20 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg, connection_arg_t *arg)
 	persist_conn->shutdown = &slurmctld_config.shutdown_time;
 	//persist_conn->timeout = 0; /* we want this to be 0 */
 
-	if (persist_init->version > SLURM_PROTOCOL_VERSION)
-		persist_init->version = SLURM_PROTOCOL_VERSION;
 	persist_conn->version = persist_init->version;
+	memcpy(&p_tmp, persist_conn, sizeof(slurm_persist_conn_t));
 
 	rc = fed_mgr_add_sibling_conn(persist_conn, &comment);
 
 end_it:
 
-	ret_buf = slurm_persist_make_rc_msg(persist_conn,
-					    rc, comment, persist_conn->version);
-	if (slurm_persist_send_msg(persist_conn, ret_buf) != SLURM_SUCCESS) {
-		debug("Problem sending response to connection %d(%s) uid(%d)",
-		      persist_conn->fd, persist_conn->rem_host, uid);
+	/* If people are really hammering the fed_mgr we could get into trouble
+	 * with the persist_conn we sent in, so use the copy instead
+	 */
+	ret_buf = slurm_persist_make_rc_msg(&p_tmp, rc, comment, p_tmp.version);
+	if (slurm_persist_send_msg(&p_tmp, ret_buf) != SLURM_SUCCESS) {
+		debug("Problem sending response to connection %d uid(%d)",
+		      p_tmp.fd, uid);
 		rc = SLURM_ERROR;
 	}
 	xfree(comment);
