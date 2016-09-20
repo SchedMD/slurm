@@ -134,6 +134,9 @@ documents those changes that are of interest to users and administrators.
  -- Restore ability to manually power down nodes, broken in 15.08.12.
  -- Don't log error for job end_time being zero if node health check is still
     running.
+ -- When powering up a node to change it's state (e.g. KNL NUMA or MCDRAM mode)
+    then pass to the ResumeProgram the job ID assigned to the nodes in the
+    SLURM_JOB_ID environment variable.
 
 * Changes in Slurm 16.05.4
 ==========================

@@ -101,7 +101,7 @@ static void *_init_power_save(void *arg);
 static int   _kill_procs(void);
 static int   _reap_procs(void);
 static void  _re_wake(void);
-static pid_t _run_prog(char *prog, char *arg1, char *arg2);
+static pid_t _run_prog(char *prog, char *arg1, char *arg2, uint32_t job_id);
 static void  _shutdown_power(void);
 static bool  _valid_prog(char *file_name);
 
@@ -320,7 +320,7 @@ extern int power_job_reboot(struct job_record *job_ptr)
 			features = node_features_g_job_xlate(
 					job_ptr->details->features);
 		}
-		pid = _run_prog(resume_prog, nodes, features);
+		pid = _run_prog(resume_prog, nodes, features, job_ptr->job_id);
 #if _DEBUG
 		info("power_save: pid %d reboot nodes %s features %s",
 		     (int) pid, nodes, features);
@@ -369,7 +369,7 @@ static void _re_wake(void)
 		char *nodes;
 		nodes = bitmap2node_name(wake_node_bitmap);
 		if (nodes) {
-			pid_t pid = _run_prog(resume_prog, nodes, NULL);
+			pid_t pid = _run_prog(resume_prog, nodes, NULL, 0);
 			info("power_save: pid %d rewaking nodes %s",
 			     (int) pid, nodes);
 		} else
@@ -381,7 +381,7 @@ static void _re_wake(void)
 
 static void _do_resume(char *host)
 {
-	pid_t pid = _run_prog(resume_prog, host, NULL);
+	pid_t pid = _run_prog(resume_prog, host, NULL, 0);
 #if _DEBUG
 	info("power_save: pid %d waking nodes %s", (int) pid, host);
 #else
@@ -391,7 +391,7 @@ static void _do_resume(char *host)
 
 static void _do_suspend(char *host)
 {
-	pid_t pid = _run_prog(suspend_prog, host, NULL);
+	pid_t pid = _run_prog(suspend_prog, host, NULL, 0);
 #if _DEBUG
 	info("power_save: pid %d suspending nodes %s", (int) pid, host);
 #else
@@ -403,17 +403,20 @@ static void _do_suspend(char *host)
  * prog IN	- program to run
  * arg1 IN	- first program argument, the hostlist expression
  * arg2 IN	- second program argumentor NULL
+ * job_id IN	- Passed as SLURM_JOB_ID environment variable
  */
-static pid_t _run_prog(char *prog, char *arg1, char *arg2)
+static pid_t _run_prog(char *prog, char *arg1, char *arg2, uint32_t job_id)
 {
 	int i;
-	char *argv[4], *pname;
+	char *argv[4], job_id_str[32], *pname;
 	pid_t child;
 	slurm_ctl_conf_t *ctlconf;
 
 	if (prog == NULL)	/* disabled, useful for testing */
 		return -1;
 
+	if (job_id)
+		snprintf(job_id_str, sizeof(job_id_str), "%u", job_id);
 	pname = strrchr(prog, '/');
 	if (pname == NULL)
 		argv[0] = prog;
@@ -431,6 +434,8 @@ static pid_t _run_prog(char *prog, char *arg1, char *arg2)
 		ctlconf = slurm_conf_lock();
 		setenv("SLURM_CONF", ctlconf->slurm_conf, 1);
 		slurm_conf_unlock();
+		if (job_id)
+			setenv("SLURM_JOB_ID", job_id_str, 1);
 		execv(prog, argv);
 		exit(1);
 	} else if (child < 0) {
