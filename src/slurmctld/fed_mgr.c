@@ -200,17 +200,20 @@ static void _open_persist_sends()
 }
 
 static int _send_recv_msg(slurmdb_cluster_rec_t *cluster, slurm_msg_t *req,
-			  slurm_msg_t *resp)
+			  slurm_msg_t *resp, bool locked)
 {
 	int rc;
-	slurm_mutex_lock(&cluster->lock);
+
+	if (!locked)
+		slurm_mutex_lock(&cluster->lock);
 
 	rc = _check_send(cluster);
 	if ((rc == SLURM_SUCCESS) && cluster->fed.send) {
 		resp->conn = req->conn = cluster->fed.send;
 		rc = slurm_send_recv_msg(req->conn->fd, req, resp, 0);
 	}
-	slurm_mutex_unlock(&cluster->lock);
+	if (!locked)
+		slurm_mutex_unlock(&cluster->lock);
 
 	return rc;
 }
@@ -225,11 +228,13 @@ static int _ping_controller(slurmdb_cluster_rec_t *cluster)
 	slurm_msg_t_init(&resp_msg);
 	req_msg.msg_type = REQUEST_PING;
 
+	slurm_mutex_lock(&cluster->lock);
+
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 		info("pinging %s(%s:%d)", cluster->name, cluster->control_host,
 		     cluster->control_port);
 
-	if ((rc = _send_recv_msg(cluster, &req_msg, &resp_msg))) {
+	if ((rc = _send_recv_msg(cluster, &req_msg, &resp_msg, true))) {
 		error("failed to ping %s(%s:%d)",
 		      cluster->name, cluster->control_host,
 		      cluster->control_port);
@@ -241,6 +246,7 @@ static int _ping_controller(slurmdb_cluster_rec_t *cluster)
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 		info("finished pinging %s(%s:%d)", cluster->name,
 		     cluster->control_host, cluster->control_port);
+	slurm_mutex_unlock(&cluster->lock);
 	slurm_free_msg_members(&req_msg);
 	slurm_free_msg_members(&resp_msg);
 	return rc;
