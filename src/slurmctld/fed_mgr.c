@@ -416,16 +416,6 @@ static void _leave_federation()
 	fed_mgr_cluster_rec = NULL;
 }
 
-static int _find_cluster_recv_in_list(void *x, void *key)
-{
-	slurmdb_cluster_rec_t *object = (slurmdb_cluster_rec_t *)x;
-
-	if (object->fed.recv == key)
-		return 1;
-
-	return 0;
-}
-
 static void _persist_callback_fini(void *arg)
 {
 	slurm_persist_conn_t *persist_conn = arg;
@@ -447,8 +437,8 @@ static void _persist_callback_fini(void *arg)
 	}
 
 	if (!(cluster = list_find_first(fed_mgr_fed_rec->cluster_list,
-				       _find_cluster_recv_in_list,
-				       persist_conn))) {
+				       slurmdb_find_cluster_in_list,
+				       persist_conn->cluster_name))) {
 		info("Couldn't find cluster %s?",
 		     persist_conn->cluster_name);
 		unlock_slurmctld(fed_write_lock);
