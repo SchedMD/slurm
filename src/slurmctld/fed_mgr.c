@@ -37,6 +37,7 @@
 #include "config.h"
 
 #include <pthread.h>
+#include <signal.h>
 
 #if HAVE_SYS_PRCTL_H
 #  include <sys/prctl.h>
