@@ -499,6 +499,9 @@ extern int fed_mgr_init(void *db_conn)
 		return SLURM_SUCCESS;
 	}
 
+	if (!association_based_accounting)
+		goto end_it;
+
 	slurm_persist_conn_recv_server_init();
 
 	if (running_cache) {

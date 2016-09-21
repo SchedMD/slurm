@@ -549,8 +549,8 @@ int main(int argc, char *argv[])
 		}
 		slurm_attr_destroy(&thread_attr);
 
-		if (fed_mgr_init(acct_db_conn))
-			fatal("Failed to initialize fed_mgr");
+		fed_mgr_init(acct_db_conn);
+
 		clusteracct_storage_g_register_ctld(
 			acct_db_conn,
 			slurmctld_conf.slurmctld_port);
