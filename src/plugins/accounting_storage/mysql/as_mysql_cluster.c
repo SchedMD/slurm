@@ -458,7 +458,7 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	int set = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	bool clust_reg = false;
+	bool clust_reg = false, fed_update = false;
 
 	/* If you need to alter the default values of the cluster use
 	 * modify_assocs since this is used only for registering
@@ -531,14 +531,17 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if (cluster->fed.name) {
 		xstrfmtcat(vals, ", federation='%s'", cluster->fed.name);
+		fed_update = true;
 	}
 
 	if (cluster->fed.state != NO_VAL) {
 		xstrfmtcat(vals, ", fed_state=%u", cluster->fed.state);
+		fed_update = true;
 	}
 
 	if (cluster->fed.weight != NO_VAL) {
 		xstrfmtcat(vals, ", fed_weight=%d", cluster->fed.weight);
+		fed_update = true;
 	}
 
 	if (!vals) {
@@ -647,8 +650,8 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		return ret_list;
 	}
 
-	/* push out changes since the cluster could have just registered */
-	as_mysql_add_feds_to_update_list(mysql_conn);
+	if (fed_update)
+		as_mysql_add_feds_to_update_list(mysql_conn);
 
 end_it:
 	xfree(query);
@@ -673,7 +676,7 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	slurmdb_wckey_cond_t wckey_cond;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	bool jobs_running = 0;
+	bool jobs_running = 0, fed_update = false;
 
 	if (!cluster_cond) {
 		error("we need something to change");
@@ -698,7 +701,8 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
-	query = xstrdup_printf("select name from %s%s;", cluster_table, extra);
+	query = xstrdup_printf("select name,federation from %s%s;",
+			       cluster_table, extra);
 	xfree(extra);
 	if (!(result = mysql_db_query_ret(
 		      mysql_conn, query, 0))) {
@@ -732,6 +736,9 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			 * "object". */
 			list_append(ret_list, xstrdup(object));
 		}
+
+		if (row[1] && (*row[1] != '\0'))
+			fed_update = true;
 
 		xfree(name_char);
 		xstrfmtcat(name_char, "name='%s'", object);
@@ -799,7 +806,10 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			errno = rc;
 			return NULL;
 		}
-		as_mysql_add_feds_to_update_list(mysql_conn);
+
+		if (fed_update)
+			as_mysql_add_feds_to_update_list(mysql_conn);
+
 		errno = SLURM_SUCCESS;
 	} else
 		errno = ESLURM_JOBS_RUNNING_ON_ASSOC;
