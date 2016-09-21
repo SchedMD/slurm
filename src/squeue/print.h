@@ -465,8 +465,6 @@ int _print_job_restart_cnt(job_info_t * job, int width,
 			   bool right_justify, char* suffix);
 int _print_job_sockets_per_board(job_info_t * job, int width,
 				 bool right_justify, char* suffix);
-int _print_job_sockets_per_board(job_info_t * job, int width,
-				 bool right_justify, char* suffix);
 int _print_job_std_err(job_info_t * job, int width,
 		       bool right_justify, char* suffix);
 int _print_job_std_in(job_info_t * job, int width,
