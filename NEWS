@@ -67,6 +67,8 @@ documents those changes that are of interest to users and administrators.
     entire operation rather than trying to operate on individual nodes.
  -- node_features/knl_cray plugin: Increase default CapmcTimeout parameter from
     10 to 60 seconds.
+ -- Fix squeue filter by job license when a job has requested more than 1
+    license of a certain type.
 
 * Changes in Slurm 16.05.4
 ==========================

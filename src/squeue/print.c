@@ -2404,6 +2404,7 @@ static int _filter_job(job_info_t * job)
 
 	if (params.licenses_list) {
 		char *token = NULL, *last = NULL, *tmp_name = NULL;
+		char *tmp_token;
 
 		filter = 1;
 		if (job->licenses) {
@@ -2411,9 +2412,18 @@ static int _filter_job(job_info_t * job)
 			token = strtok_r(tmp_name, ",", &last);
 		}
 		while (token && filter) {
+			/* Consider license name only, ignore ":" lic count */
+			tmp_token = token;
+			while (*tmp_token) {
+				if (*tmp_token == ':') {
+					*tmp_token = '\0';
+					break;
+				}
+				tmp_token++;
+			}
 			iterator = list_iterator_create(params.licenses_list);
 			while ((license = list_next(iterator))) {
-				if (strstr(token, license)) {
+				if (xstrcmp(token, license) == 0) {
 					filter = 0;
 					break;
 				}
