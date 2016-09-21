@@ -63,6 +63,7 @@ extern char *default_plugstack;
 #define ACCOUNTING_ENFORCE_NO_JOBS 0x0020
 #define ACCOUNTING_ENFORCE_NO_STEPS 0x0040
 #define ACCOUNTING_ENFORCE_TRES   0x0080
+#define ACCOUNTING_ENFORCE_FED    0x0100
 
 #define DEFAULT_ACCOUNTING_TRES  "cpu,mem,energy,node"
 #define DEFAULT_ACCOUNTING_DB      "slurm_acct_db"

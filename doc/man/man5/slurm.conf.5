@@ -55,7 +55,7 @@ Only used for database type storage plugins, ignored otherwise.
 \fBAccountingStorageEnforce\fR
 This controls what level of association\-based enforcement to impose
 on job submissions.  Valid options are any combination of
-\fIassociations\fR, \fIlimits\fR, \fInojobs\fR, \fInosteps\fR, \fIqos\fR, \fIsafe\fR, and \fIwckeys\fR, or
+\fIassociations\fR, \ffederation\fR, \fIlimits\fR, \fInojobs\fR, \fInosteps\fR, \fIqos\fR, \fIsafe\fR, and \fIwckeys\fR, or
 \fIall\fR for all things (expect nojobs and nosteps, they must be requested as well).
 
 If limits, qos, or wckeys are set, associations will automatically be set.
@@ -82,6 +82,8 @@ launched but then killed when the limit is reached.
 
 With qos and/or wckeys enforced jobs will not be scheduled unless a valid qos
 and/or workload characterization key is specified.
+
+If wanting to run in a federation you must have the federation option set.
 
 When \fBAccountingStorageEnforce\fR is changed, a restart of the slurmctld
 daemon is required (not just a "scontrol reconfig").

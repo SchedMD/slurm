@@ -2778,13 +2778,18 @@ extern void accounting_enforce_string(uint16_t enforce, char *str, int str_len)
 {
 	if (str_len > 0)
 		str[0] = '\0';
-	if (str_len < 30) {
+	if (str_len < 60) {
 		error("enforce: output buffer too small");
 		return;
 	}
 
 	if (enforce & ACCOUNTING_ENFORCE_ASSOCS)
 		strcat(str, "associations"); //12 len
+	if (enforce & ACCOUNTING_ENFORCE_FED) {
+		if (str[0])
+			strcat(str, ",");
+		strcat(str, "federation"); //10 len
+	}
 	if (enforce & ACCOUNTING_ENFORCE_LIMITS) {
 		if (str[0])
 			strcat(str, ",");
@@ -2815,7 +2820,7 @@ extern void accounting_enforce_string(uint16_t enforce, char *str, int str_len)
 			strcat(str, ",");
 		strcat(str, "wckeys"); //7 len
 	}
-	// total len 50
+	// total len 60
 
 	if (str[0] == '\0')
 		strcat(str, "none");

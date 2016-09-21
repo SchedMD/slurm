@@ -3513,6 +3513,11 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 				|= ACCOUNTING_ENFORCE_QOS;
 		}
 
+		if (xstrcasestr(temp_str, "fed")) {
+			conf->accounting_storage_enforce
+				|= ACCOUNTING_ENFORCE_FED;
+		}
+
 		if (xstrcasestr(temp_str, "all")) {
 			conf->accounting_storage_enforce = 0xffff;
 			conf->track_wckey = true;

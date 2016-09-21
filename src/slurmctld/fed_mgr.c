@@ -499,6 +499,12 @@ extern int fed_mgr_init(void *db_conn)
 		return SLURM_SUCCESS;
 	}
 
+	inited = true;
+
+	if (!(accounting_enforce & ACCOUNTING_ENFORCE_FED)) {
+		slurm_mutex_unlock(&init_mutex);
+		return SLURM_SUCCESS;
+	}
 	slurm_persist_conn_recv_server_init();
 
 	if (running_cache) {
@@ -547,7 +553,6 @@ extern int fed_mgr_init(void *db_conn)
 	}
 
 end_it:
-	inited = true;
 	slurm_mutex_unlock(&init_mutex);
 
 	return rc;
