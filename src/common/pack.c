@@ -115,6 +115,8 @@ Buf create_buf(char *data, int size)
 /* free_buf - release memory associated with a given buffer */
 void free_buf(Buf my_buf)
 {
+	if (!my_buf)
+		return;
 	assert(my_buf->magic == BUF_MAGIC);
 	xfree(my_buf->head);
 	xfree(my_buf);
