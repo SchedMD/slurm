@@ -91,7 +91,7 @@ the boot time.</p>
 <h3>Sample Use Cases</h3>
 
 <pre>
-$ sbatch -C flat,a2a -N2 -gres=hbm:8g --exclusive my.script
+$ sbatch -C flat,a2a -N2 --gres=hbm:8g --exclusive my.script
 $ srun --constraint=hemi,cache -n36 a.out
 $ srun --constraint=flat --gres=hbm:2g -n36 a.out
 
