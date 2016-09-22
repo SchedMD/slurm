@@ -656,6 +656,15 @@ int PMIX_Ring(const char value[], int *rank, int *ranks, char left[], char right
 
     PMI2U_printf("[BEGIN PMI2_Ring]");
 
+    /* for singleton mode, set rank and ranks, copy input to output buffers */
+    if (PMI2_initialized == SINGLETON_INIT_BUT_NO_PM) {
+        *rank  = 0;
+        *ranks = 1;
+        MPIU_Strncpy(left,  value, maxvalue);
+        MPIU_Strncpy(right, value, maxvalue);
+        goto fn_exit_singleton;
+    }
+
     /* send message: cmd=ring_in, count=1, left=value, right=value */
     pmi2_errno = PMIi_WriteSimpleCommandStr(PMI2_fd, &cmd, RING_CMD,
 	RING_COUNT_KEY,   "1",
@@ -689,6 +698,7 @@ int PMIX_Ring(const char value[], int *rank, int *ranks, char left[], char right
 fn_exit:
     free(cmd.command);
     freepairs(cmd.pairs, cmd.nPairs);
+fn_exit_singleton:
     PMI2U_printf("[END PMI2_Ring]");
     return pmi2_errno;
 fn_fail:
