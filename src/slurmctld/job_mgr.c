@@ -5195,8 +5195,16 @@ static int _part_access_check(struct part_record *part_ptr,
 			      char *acct)
 {
 	uint32_t total_nodes, min_nodes_tmp, max_nodes_tmp;
+	uint32_t job_min_nodes, job_max_nodes;
 	size_t resv_name_leng = 0;
 	int rc = SLURM_SUCCESS;
+
+#ifdef HAVE_BG
+	static uint16_t cpus_per_node = 0;
+	if (!cpus_per_node)
+		select_g_alter_node_cnt(SELECT_GET_NODE_CPU_CNT,
+					&cpus_per_node);
+#endif
 
 	if (job_desc->reservation != NULL) {
 		resv_name_leng = strlen(job_desc->reservation);
@@ -5288,24 +5296,37 @@ static int _part_access_check(struct part_record *part_ptr,
 		return ESLURM_REQUESTED_NODES_NOT_IN_PARTITION;
 	}
 
-	/* Check against min/max node limits in the partition */
+#ifdef HAVE_BG
+	job_min_nodes = (job_desc->min_cpus == NO_VAL ?
+			 NO_VAL : job_desc->min_cpus / cpus_per_node);
+	job_max_nodes = (job_desc->max_cpus == NO_VAL ?
+			 NO_VAL : job_desc->max_cpus / cpus_per_node);
+	min_nodes_tmp = part_ptr->min_nodes_orig;
+	max_nodes_tmp = part_ptr->max_nodes_orig;
+#else
+	job_min_nodes = job_desc->min_nodes;
+	job_max_nodes = job_desc->max_nodes;
 	min_nodes_tmp = part_ptr->min_nodes;
 	max_nodes_tmp = part_ptr->max_nodes;
+#endif
+
+	/* Check against min/max node limits in the partition */
+
 	if ((part_ptr->state_up & PARTITION_SCHED) &&
-	    (job_desc->min_nodes != NO_VAL) &&
-	    (job_desc->min_nodes < min_nodes_tmp)) {
+	    (job_min_nodes != NO_VAL) &&
+	    (job_min_nodes < min_nodes_tmp)) {
 		info("_part_access_check: Job requested for nodes (%u) "
 		     "smaller than partition %s(%u) min nodes",
-		     job_desc->min_nodes, part_ptr->name, min_nodes_tmp);
+		     job_min_nodes, part_ptr->name, min_nodes_tmp);
 		return  ESLURM_INVALID_NODE_COUNT;
 	}
 
 	if ((part_ptr->state_up & PARTITION_SCHED) &&
-	    (job_desc->max_nodes != NO_VAL) &&
-	    (job_desc->max_nodes > max_nodes_tmp)) {
+	    (job_max_nodes != NO_VAL) &&
+	    (job_max_nodes > max_nodes_tmp)) {
 		info("_part_access_check: Job requested for nodes (%u) "
 		     "greater than partition %s(%u) max nodes",
-		     job_desc->max_nodes, part_ptr->name, max_nodes_tmp);
+		     job_max_nodes, part_ptr->name, max_nodes_tmp);
 		return ESLURM_INVALID_NODE_COUNT;
 	}
 

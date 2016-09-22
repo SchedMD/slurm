@@ -75,6 +75,7 @@ documents those changes that are of interest to users and administrators.
  -- Automically cleanup task/cgroup cpuset and devices cgroups after steps are
     done.
  -- Testsuite - Fix test1.83 to handle gaps in node names properly.
+ -- BlueGene - correctly scale node counts when enforcing MaxNodes limit.
 
 * Changes in Slurm 16.05.4
 ==========================
