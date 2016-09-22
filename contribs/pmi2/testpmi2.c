@@ -72,7 +72,7 @@ main(int argc, char **argv)
 
 	PMI2_Init(&spawned, &size, &rank, &appnum);
 
-	PMI2_Job_GetId(jobid, sizeof(buf));
+	PMI2_Job_GetId(jobid, sizeof(jobid));
 
 	memset(val, 0, sizeof(val));
 	PMI2_Info_GetJobAttr("mpi_reserved_ports",
