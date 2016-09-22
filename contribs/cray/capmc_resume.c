@@ -70,7 +70,8 @@
 /* Maximum poll wait time for child processes, in milliseconds */
 #define MAX_POLL_WAIT 500
 
-#define DEFAULT_CAPMC_TIMEOUT 10000	/* 10 seconds */
+/* Default and minimum timeout parameters for the capmc command */
+#define DEFAULT_CAPMC_TIMEOUT 60000	/* 60 seconds */
 #define MIN_CAPMC_TIMEOUT 1000		/* 1 second */
 
 /* Number of times to try performing "node_reinit" operation */

@@ -81,6 +81,10 @@
 /* Maximum poll wait time for child processes, in milliseconds */
 #define MAX_POLL_WAIT 500
 
+/* Default and minimum timeout parameters for the capmc command */
+#define DEFAULT_CAPMC_TIMEOUT 60000	/* 60 seconds */
+#define MIN_CAPMC_TIMEOUT 1000		/* 1 second */
+
 /* Intel Knights Landing Configuration Modes */
 #define KNL_NUMA_CNT	5
 #define KNL_MCDRAM_CNT	4
@@ -1479,7 +1483,7 @@ extern int init(void)
 	allowed_uid_cnt = 0;
 	xfree(capmc_path);
 	capmc_poll_freq = 45;
-	capmc_timeout = 1000;
+	capmc_timeout = DEFAULT_CAPMC_TIMEOUT;
 	debug_flag = false;
 	default_mcdram = KNL_CACHE;
 	default_numa = KNL_ALL2ALL;
@@ -1538,7 +1542,7 @@ extern int init(void)
 	xfree(knl_conf_file);
 	if (!capmc_path)
 		capmc_path = xstrdup("/opt/cray/capmc/default/bin/capmc");
-	capmc_timeout = MAX(capmc_timeout, 500);
+	capmc_timeout = MAX(capmc_timeout, MIN_CAPMC_TIMEOUT);
 	if (!cnselect_path)
 		cnselect_path = xstrdup("/opt/cray/sdb/default/bin/cnselect");
 	if (!syscfg_path)

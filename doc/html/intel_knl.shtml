@@ -91,7 +91,7 @@ the boot time.</p>
 <h3>Sample Use Cases</h3>
 
 <pre>
-$ sbatch -C flat,a2a -N2 -gres=hbm:8g --exclusive my.script
+$ sbatch -C flat,a2a -N2 --gres=hbm:8g --exclusive my.script
 $ srun --constraint=hemi,cache -n36 a.out
 $ srun --constraint=flat --gres=hbm:2g -n36 a.out
 
@@ -196,12 +196,12 @@ on the order of 20 minutes.</li>
 
 <h3>Cray Configuration</h3>
 
-<p>On Cray systems NodeFeaturesPlugins should be set to "knl_cray".</p>
+<p>On Cray systems, NodeFeaturesPlugins should be configured as "knl_cray".</p>
 
 <p>The configuration file will be named "knl_cray.conf".
-The file will include the path to the capmc program (CapmcPath), which is used
-to get a node's available MCDRAM and NUMA modes, change the modes, power the
-node down, reboot it, etc.
+The file will include the path to the <i>capmc</i> program (CapmcPath),
+which is used to get a node's available MCDRAM and NUMA modes, change the modes,
+power the node down, reboot it, etc.
 Note the "CapmcTimeout" parameter is the time required for the capmc program
 to respond to a request and NOT the time for a boot operation to complete.</p>
 
@@ -213,6 +213,10 @@ If powering down of idle nodes is not desired, then configure "ResumeProgram"
 in "slurm.conf" to the path of the "capmc_resume" file and configure
 "SuspendTime" to a huge value (e.g. "SuspendTime=30000000" will only power
 down a node which has been idle for about one year).</p>
+
+<p>Note that getting a compute node's current MCDRAM and NUMA mode,
+modifying its MCDRAM and NUMA mode, and rebooting it are operations performed
+by the slurmctld daemon on the head node.
 
 <p>The GresTypes configuration parameter should include "hbm" to identify
 High Bandwidth Memory (HBM) as being a consumable resources on compute nodes.
@@ -241,6 +245,7 @@ DebugFlags=NodeFeatures
 GresTypes=hbm
 #
 ResumeProgram=/opt/slurm/default/sbin/capmc_resume
+SuspendProgram=/opt/slurm/default/sbin/capmc_suspend
 SuspendTime=30000000
 ResumeTimeout=1800
 ...
@@ -248,8 +253,45 @@ Nodename=default Sockets=1 CoresPerSocket=68 ThreadsPerCore=4 RealMemory=128000 
 NodeName=nid[00000-00127] State=UNKNOWN
 </pre>
 
+
+<h3>Generic Cluster Configuration</h3>
+
+<p>All other clusters should have NodeFeaturesPlugins configured to "knl_generic".
+This plugin performs all operations directly on the compute nodes using Intel's
+<i>syscfg</i> program to get and modify the node's MCDRAM and NUMA mode and
+uses the Linux <i>reboot</i> program to reboot the compute node in order for
+modifications in MCDRAM and/or NUMA mode to take effect.
+This plugin does <u>not</u> require the specification of ResumeProgram,
+SuspendProgram, SuspendTimem etc. in slurm.conf.</p>
+
+<p><b>NOTE:</b>Support for generic KNL clusters is planned for release in Slurm
+version 16.05.6 in October 2016. Slurm support for KNL is only available on Cray
+systems in earlier versions of Slurm.</p>
+
+<h3>Sample knl_generic.conf File</h3>
+
+<pre>
+# Sample knl_generic.conf
+SyscfgPath=/usr/sbin/syscfg
+DefaultNUMA=a2a         # NUMA=all2all
+AllowNUMA=a2a,snc2,hemi
+DefaultMCDRAM=cache     # MCDRAM=cache
+</pre>
+
+<h3>Sample slurm.conf File</h3>
+
+<pre>
+# Sample slurm.conf
+NodeFeaturesPlugins=knl_generic
+DebugFlags=NodeFeatures
+GresTypes=hbm
+...
+Nodename=default Sockets=1 CoresPerSocket=68 ThreadsPerCore=4 RealMemory=128000 Feature=knl
+NodeName=nid[00000-00127] State=UNKNOWN
+</pre>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 12 September 2016</p>
+<p style="text-align:center;">Last modified 21 September 2016</p>
 
 <!--#include virtual="footer.txt"-->
