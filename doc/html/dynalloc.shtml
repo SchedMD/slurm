@@ -90,7 +90,7 @@ given list that are currently available, if that is not enough to meet the
 requested node number <b>N</b>, then take any other nodes that are available
 to fill out the requested number. <b>cpu_bind</b> is to bind tasks to CPUs,
 which is used only when the task/affinity or task/cgroup plugin is enabled
-(please refer to 'man salloc'). <b>mem_per_cpu</b> is mimimum memory required
+(please refer to 'man salloc'). <b>mem_per_cpu</b> is minimum memory required
 per allocated CPU in megabytes, which is used when the task/cgroup plugin is
 enabled. <b>resv_port_cnt</b> is the port count required to be allocated, if
 not specified, resv_port_cnt=1 by default.

@@ -296,8 +296,8 @@ sacct [<OPTION>]                                                            \n \
                  delimiter is a '|'. This options is ignored if\n\
                  -p or -P options are not specified.\n\
      -D, --duplicates:                                                      \n\
-	           If SLURM job ids are reset, some job numbers will        \n\
-	           probably appear more than once refering to different jobs.\n\
+	           If SLURM job ids are reset, some job numbers may         \n\
+	           appear more than once referring to different jobs.       \n\
 	           Without this option only the most recent jobs will be    \n\
                    displayed.                                               \n\
      -e, --helpformat:                                                      \n\
