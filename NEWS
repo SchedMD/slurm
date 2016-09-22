@@ -148,6 +148,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix bug in PMIX_Ring in the pmi2 plugin so that it supports singleton mode.
     It also updates the testpmixring.c test program so it can be used to check
     singleton runs.
+ -- Automically cleanup task/cgroup cpuset and devices cgroups after steps are
+    done.
 
 * Changes in Slurm 16.05.4
 ==========================
