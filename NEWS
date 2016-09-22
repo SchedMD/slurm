@@ -50,7 +50,7 @@ documents those changes that are of interest to users and administrators.
     deleted make it possible.
  -- SlurmDBD - change all timestamps to bigint from int to solve Y2038 problem.
  -- Add salloc/sbatch/srun --spread-job to distribute tasks over as many nodes
-    as possible. This also treats the --ntasks-node-node option as a maximum
+    as possible. This also treats the --ntasks-per-node option as a maximum
     value.
  -- Add ConstrainKmemSpace to cgroup.conf, defaulting to yes, to allow
     cgroup Kmem enforcement to be disabled while still using ConstrainRAMSpace.
