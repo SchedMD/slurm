@@ -24,14 +24,13 @@ main(int argc, char **argv)
     int spawned, size, rank, appnum;
     struct timeval tv, tv2;
     int ring_rank, ring_size;
-    char jobid[128];
     char val[128];
     char buf[128];
     char left[128];
     char right[128];
 
     {
-        int x = 1;
+        int x = 0;
 
         while (x) {
             fprintf(stderr, "attachme %d\n", getpid());
@@ -42,8 +41,6 @@ main(int argc, char **argv)
     gettimeofday(&tv, NULL);
 
     PMI2_Init(&spawned, &size, &rank, &appnum);
-
-    PMI2_Job_GetId(jobid, sizeof(buf));
 
     /* test PMIX_Ring */
     snprintf(val, sizeof(val), "pmi_rank=%d", rank);

@@ -426,8 +426,8 @@ int PMI2_Job_Disconnect(const char jobid[]);
  
   Output Parameters:
   + rank  - returns caller's rank within ring
-  - ranks - returns number of procs within ring
-  - left  - buffer to receive value provided by (rank - 1) % ranks
+  . ranks - returns number of procs within ring
+  . left  - buffer to receive value provided by (rank - 1) % ranks
   - right - buffer to receive value provided by (rank + 1) % ranks
  
   Return values:
@@ -439,6 +439,14 @@ int PMI2_Job_Disconnect(const char jobid[]);
   process belongs.  All processes in the group must call this
   function, but a process may return before all processes have called
   the function.
+
+  The rank of a process within the ring may not be the same as its
+  rank returned by PMI2_Init.
+
+  For a process group consisting of a single process, this function
+  returns rank=0, ranks=1, and the input string in the value buffer
+  shall be copied to the left and right output buffers.  This same
+  behavior holds when the function is called in singleton mode.
 
 @*/
 #define HAVE_PMIX_RING 1 /* so one can conditionally compile with this funciton */
