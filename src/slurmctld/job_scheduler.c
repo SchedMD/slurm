@@ -242,6 +242,31 @@ static void _job_queue_rec_del(void *x)
 	xfree(x);
 }
 
+/* Return true if the job has some step still in a cleaning state, which
+ * can happen on a Cray if a job is requeued and the step NHC is still running
+ * after the requeued job is eligible to run again */
+static uint16_t _is_step_cleaning(struct job_record *job_ptr)
+{
+	ListIterator step_iterator;
+	struct step_record *step_ptr;
+	uint16_t cleaning = 0;
+
+	step_iterator = list_iterator_create(job_ptr->step_list);
+	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+		/* Only check if not a pending step */
+		if (step_ptr->step_id != SLURM_PENDING_STEP) {
+			select_g_select_jobinfo_get(step_ptr->select_jobinfo,
+						    SELECT_JOBDATA_CLEANING,
+						    &cleaning);
+			if (cleaning)
+				break;
+		}
+	}
+	list_iterator_destroy(step_iterator);
+
+	return cleaning;
+}
+
 /* Job test for ability to run now, excludes partition specific tests */
 static bool _job_runnable_test1(struct job_record *job_ptr, bool sched_plugin)
 {
@@ -256,6 +281,8 @@ static bool _job_runnable_test1(struct job_record *job_ptr, bool sched_plugin)
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_CLEANING,
 				    &cleaning);
+	if (!cleaning)
+		cleaning = _is_step_cleaning(job_ptr);
 	if (cleaning ||
 	    (job_ptr->details && job_ptr->details->prolog_running) ||
 	    (job_ptr->step_list && list_count(job_ptr->step_list))) {

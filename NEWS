@@ -152,6 +152,8 @@ documents those changes that are of interest to users and administrators.
     done.
  -- Testsuite - Fix test1.83 to handle gaps in node names properly.
  -- BlueGene - correctly scale node counts when enforcing MaxNodes limit.
+ -- Make sure no attempt is made to schedule a requeued job until all steps are
+    cleaned (Node Health Check completes for all steps on a Cray).
 
 * Changes in Slurm 16.05.4
 ==========================
