@@ -1992,6 +1992,8 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 	if (step_ptr->step_layout == NULL)	/* batch step */
 		return;
 
+	if (job_resrcs_ptr == NULL)
+		return;
 	i_first = bit_ffs(job_resrcs_ptr->node_bitmap);
 	i_last  = bit_fls(job_resrcs_ptr->node_bitmap);
 	if (i_first == -1)	/* empty bitmap */
