@@ -72,6 +72,10 @@ if {$available < 3} {
 	exit 0
 }
 
+if {[string length $partition] == 0} {
+	set partition [default_partition]
+}
+
 #
 # Submit a 3 contiguous node job
 #
@@ -82,7 +86,7 @@ set host_0_num       0
 set host_1_num       0
 set host_2_num       0
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N3-3 --contiguous -l -t1 $bin_printenv $node_name_env]
+set srun_pid [spawn $srun -N3-3 -p $partition --contiguous -l -t1 $bin_printenv $node_name_env]
 expect {
 	-re "Required node not available|Node count specification invalid|configuration not available" {
 		send_user "\nWARNING: can't test srun task distribution\n"
@@ -137,24 +141,56 @@ if {[string compare $host_2_name ""] == 0} {
 }
 
 #
-# Verify node sequence number
+# Verify allocated nodes are contiguous within the partition
 #
-set host_0_num [get_suffix $host_0_name]
-set host_1_num [get_suffix $host_1_name]
-set host_2_num [get_suffix $host_2_name]
+set part_hosts_list {}
+log_user 0
+spawn $sinfo --noheader -p $partition -N -o %N
+expect {
+	-re "($alpha_numeric_under)" {
+		lappend part_hosts_list $expect_out(1,string)
+		exp_continue
+	}
+	-re "Unable to contact" {
+		log_user 1
+		send_user "\nFAILURE: slurm appears to be down\n"
+		exit 1
+	}
+	timeout {
+		log_user 1
+		send_user "\nFAILURE: sinfo not responding\n"
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
 
-if {$host_0_num == -1 || $host_1_num == -1 || $host_2_num == -1} {
-	send_user "\nWARNING: node names lack numeric suffix\n"
-	exit $exit_code
+set index_host_0 [lsearch $part_hosts_list $host_0_name]
+if {$index_host_0 == -1} {
+	send_user "\nFAILURE: $host_0_name not found in list of hosts from partition $partition\n"
+	exit 1
+}
+set index_host_1 [lsearch $part_hosts_list $host_1_name]
+if {$index_host_1 == -1} {
+	send_user "\nFAILURE: $host_1_name not found in list of hosts from partition $partition\n"
+	exit 1
+}
+set index_host_2 [lsearch $part_hosts_list $host_2_name]
+if {$index_host_2 == -1} {
+	send_user "\nFAILURE: $host_2_name not found in list of hosts from partition $partition\n"
+	exit 1
 }
 
-if {$host_1_num != [expr $host_0_num + 1]} {
+if {$index_host_1 != [expr $index_host_0 + 1]} {
 	send_user "\nFAILURE: node sequence number not contiguous\n"
-	set exit_code   1
+	set exit_code 1
 }
-if {$host_2_num != [expr $host_1_num + 1]} {
+
+if {$index_host_2 != [expr $index_host_1 + 1]} {
 	send_user "\nFAILURE: node sequence number not contiguous\n"
-	set exit_code   1
+	set exit_code 1
 }
 
 if {$exit_code == 0} {
