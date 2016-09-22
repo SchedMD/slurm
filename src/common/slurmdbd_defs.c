@@ -1029,9 +1029,9 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_STEP_START;
 	} else if (!xstrcasecmp(msg_type, "Get Jobs Conditional")) {
 		return DBD_GET_JOBS_COND;
-	} else if (!xstrcasecmp(msg_type, "Get Transations")) {
+	} else if (!xstrcasecmp(msg_type, "Get Transactions")) {
 		return DBD_GET_TXN;
-	} else if (!xstrcasecmp(msg_type, "Got Transations")) {
+	} else if (!xstrcasecmp(msg_type, "Got Transactions")) {
 		return DBD_GOT_TXN;
 	} else if (!xstrcasecmp(msg_type, "Add QOS")) {
 		return DBD_ADD_QOS;
@@ -1473,13 +1473,13 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 		if (get_enum) {
 			return "DBD_GET_TXN";
 		} else
-			return "Get Transations";
+			return "Get Transactions";
 		break;
 	case DBD_GOT_TXN:
 		if (get_enum) {
 			return "DBD_GOT_TXN";
 		} else
-			return "Got Transations";
+			return "Got Transactions";
 		break;
 	case DBD_ADD_QOS:
 		if (get_enum) {
