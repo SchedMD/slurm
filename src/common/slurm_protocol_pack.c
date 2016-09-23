@@ -14025,7 +14025,7 @@ static void _pack_accounting_update_msg(accounting_update_msg_t *msg,
 	ListIterator itr = NULL;
 	slurmdb_update_object_t *rec = NULL;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		if (msg->update_list)
 			count = list_count(msg->update_list);
 
@@ -14038,6 +14038,30 @@ static void _pack_accounting_update_msg(accounting_update_msg_t *msg,
 					rec, protocol_version, buffer);
 			}
 			list_iterator_destroy(itr);
+		}
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (msg->update_list) {
+			count = list_count(msg->update_list);
+			itr = list_iterator_create(msg->update_list);
+			while ((rec = list_next(itr))) {
+				if (rec->type == SLURMDB_UPDATE_FEDS)
+					count--;
+			}
+			pack32(count, buffer);
+
+			if (count) {
+				list_iterator_reset(itr);
+				while ((rec = list_next(itr))) {
+					if (rec->type == SLURMDB_UPDATE_FEDS)
+						continue;
+					slurmdb_pack_update_object(
+							rec, protocol_version,
+							buffer);
+				}
+			}
+			list_iterator_destroy(itr);
+		} else {
+			pack32(0, buffer);
 		}
 	}
 }

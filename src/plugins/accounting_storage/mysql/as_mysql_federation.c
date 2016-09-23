@@ -456,7 +456,7 @@ empty:
 
 	query = xstrdup_printf(
 		"select distinct %s from %s as t1 "
-		"left join %s as t2 on t1.name=t2.federation "
+		"left join %s as t2 on t1.name=t2.federation and t2.deleted=0"
 		"%s order by t1.name",
 		tmp, federation_table, cluster_table, extra);
 	xfree(tmp);
