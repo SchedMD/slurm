@@ -209,7 +209,7 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	int macid;
 	int absid;
 	int actual_boards = 1, depth, sock_cnt, tot_socks = 0;
-	int i;
+	int i, used_sock_idx;
 
 	debug2("hwloc_topology_init");
 	if (hwloc_topology_init(&topology)) {
@@ -353,9 +353,12 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 			(*p_block_map_inv)[i] = i;
 		}
 		/* create map with hwloc */
-		for (idx[SOCKET] = 0, i = 0; idx[SOCKET] < nobj[SOCKET]; i++) {
-			if (!bit_test(used_socket, i))
+		used_sock_idx = -1;
+		for (idx[SOCKET] = 0; idx[SOCKET] < nobj[SOCKET];
+		     idx[SOCKET]++) {
+			if (!bit_test(used_socket, idx[SOCKET]))
 				continue;
+			used_sock_idx++;
 			for (idx[CORE]=0; idx[CORE]<nobj[CORE]; ++idx[CORE]) {
 				for (idx[PU]=0; idx[PU]<nobj[PU]; ++idx[PU]) {
 					/* get hwloc_obj by indexes */
@@ -364,7 +367,7 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 					if (!obj)
 						continue;
 					macid = obj->os_index;
-					absid = idx[SOCKET] * nobj[CORE] * nobj[PU]
+					absid = used_sock_idx * nobj[CORE] * nobj[PU]
 					      + idx[CORE] * nobj[PU]
 					      + idx[PU];
 
@@ -379,7 +382,6 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 					(*p_block_map_inv)[macid] = absid;
 				}
 			}
-			idx[SOCKET]++;
 		}
 	}
 	FREE_NULL_BITMAP(used_socket);
