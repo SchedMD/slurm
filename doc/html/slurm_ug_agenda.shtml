@@ -84,7 +84,7 @@ are shown below.</p>
 <tr><td nowrap>13:50 - 14:20</td><td>Technical</td><td>Alexandre</td><td>Optimising HPC resource allocation through monitoring</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">14:20 - 14:40</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
 <tr><td nowrap>14:40 - 15:10</td><td>Technical</td><td>Glesser</td><td>Simunix, a large scale platform simulator</td></tr>
-<tr><td nowrap>15:10 - 15:40</td><td>Technical</td><td>Kortas</td><td>Seamlessly handling 1001 jobs on Shaheen II</td></tr>
+<tr><td nowrap>15:10 - 15:40</td><td>Site Report</td><td>Cardo</td><td>Swiss National Supercomputer Centre (CSCS) Site Report</td></tr>
 <tr><td nowrap>15:40 - 16:10</td><td>Technical</td><td>Guldmyr</td><td>Configure a Slurm cluster with Ansible</td></tr>
  
 <tr>
@@ -309,63 +309,8 @@ future improvements.</p>
 
 <!-- -------------------------------------------------------------------------- -->
 
-<h3>Seamlessly handling 1001 jobs on Shaheen II</h3>
-<p>Samuel Kortas (KAUST)</p>
-
-<p>Installed at KAUST since June 2015, the 6174 pure CPU nodes or 197,568 cores
- of the XC-40 Shaheen II has been an ideal resource to satisfy both our
- scalability and capacity users.</p>
-
-<p>Still, simultaneously accommodating their needs might be challenging when facing
- a so wide variety of jobs and workflows. As an example, the efficient
- cohabitation of large scale jobs favored by CFD users along with jobs launched
- per thousands privileged by our biology scientists is not an easy task from a
- scheduling perspective[2]. As in most HPC centers, to lower waiting time in
- queue and optimize restitution duration, we had to put in place a scheduling
- policy limiting the number of jobs per user in the queue.</p>
-
-<p>As a consequence, when submitting studies composed of hundreds or thousands of
- jobs, our scientists have to split their workflow into chunks of acceptable
- size. Then they keep monitoring the queue in order to submit the following
- chunks or relaunch steps that have eventually failed.</p>
-
-<p>On Shaheen II, these workflows may consist in
-<ul>
-<li>Elementary single-node or single-core jobs belonging to one single
- parametric study at the occasion of a metagenome profiling or of an inversion
- of land seismic reflection data,</li>
-<li>More complex succession of dependent MPI jobs of different size that can
- cover several time or iteration steps. Example are the optimization a crystal
- structure incomputational chemistry [5] or running an MITgcm/DART ocean
- assimilation system on a long duration period.</li>
-</ul></p>
-
-<p>In order to automate these tasks, the KAUST Supercomputing Laboratory has
- designed and developed breakit and decimate, two tools easing the submission,
- monitoring, cancellation and self-healing of these workflows. Written in
- python 2.7, they transparently add prologue and epilogue to the user job
- script and submit the right job dependency that automatically add new chunks
- of work or relaunch a job in case of a hardware, software or numerical
- convergence failure.</p>
-
-<p>These tools also complete the scheduling and executing environment
- allowing the user to
-<ul>
-<li>Manage workflows as a whole regarding their submission, monitoring, deletion
- or reconfiguration.</li>
-<li>Benefit from a centralized log file.</li>
-<li>Send fully-configurable mails detailing the completion of the workflow at
- any time of the execution.</li>
-<li>Cancel, resubmit or complete part of the workflow even if it is not yet
- completed.</li>
-<li>Set criteria to check for correctness of the results obtained at a given
- step and decide on the decision to be made: either stopping the whole workflow,
- partially resubmitting it in similar condition, or modifying it dynamically.</li>
-</ul></p>
-
-<p>To appreciate the flexibility and ease of use of breakit and decimate,
- several examples of workflows currently implemented on Shaheen II will be
- detailed.</p>
+<h3>Swiss National Supercomputer Centre (CSCS) Site Report</h3>
+<p>Nicholas Cardo</p>
 
 <!-- -------------------------------------------------------------------------- -->
 
@@ -666,6 +611,6 @@ deployment, issues, solutions and open questions that could possibly provide
 
 <!-- -------------------------------------------------------------------------- -->
 
-<p style="text-align:center;">Last modified 18 July 2016</p>
+<p style="text-align:center;">Last modified 23 September 2016</p>
 
 <!--#include virtual="footer.txt"-->

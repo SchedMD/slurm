@@ -154,6 +154,7 @@ documents those changes that are of interest to users and administrators.
  -- BlueGene - correctly scale node counts when enforcing MaxNodes limit.
  -- Make sure no attempt is made to schedule a requeued job until all steps are
     cleaned (Node Health Check completes for all steps on a Cray).
+ -- KNL: Correct task affinity logic for some NUMA modes.
 
 * Changes in Slurm 16.05.4
 ==========================
