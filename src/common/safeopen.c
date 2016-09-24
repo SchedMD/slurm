@@ -72,8 +72,9 @@ FILE * safeopen(const char *path, const char *mode, int flags)
 		fstat(fd,   &fb2);
 
 		if (fb2.st_ino != fb1.st_ino) {
-			fprintf(stderr, "safeopen(): refusing to open `%s', "
-					"which is a soft link\n", path);
+			fprintf(stderr,
+				"%s refusing to open file %s: soft link\n",
+				__func__, path);
 			close(fd);
 			return NULL;
 		}
