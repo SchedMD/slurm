@@ -354,7 +354,7 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 		}
 		/* create map with hwloc */
 		used_sock_idx = -1;
-		for (idx[SOCKET] = 0; (used_sock_id + 1) < nobj[SOCKET];
+		for (idx[SOCKET] = 0; (used_sock_idx + 1) < nobj[SOCKET];
 		     idx[SOCKET]++) {
 			if (!bit_test(used_socket, idx[SOCKET]))
 				continue;
