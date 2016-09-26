@@ -6279,6 +6279,12 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpackstr_xmalloc(&job->tres_req_str,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&job->start_protocol_ver, buffer);
+
+		safe_unpackstr_xmalloc(&job->fed_origin_str, &uint32_tmp,
+				       buffer);
+		safe_unpack64(&job->fed_siblings, buffer);
+		safe_unpackstr_xmalloc(&job->fed_siblings_str, &uint32_tmp,
+				       buffer);
 	} else if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
 		uint32_t tmp_mem;
 		safe_unpack32(&job->array_job_id, buffer);

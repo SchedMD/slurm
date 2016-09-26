@@ -236,6 +236,16 @@ int job_format_add_function(List list, int width, bool right_justify,
 				_print_job_eligible_time)
 #define job_format_add_exit_code(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_exit_code)
+#define job_format_add_fed_origin(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix, _print_job_fed_origin)
+#define job_format_add_fed_origin_raw(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix, \
+				_print_job_fed_origin_raw)
+#define job_format_add_fed_siblings(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix, _print_job_fed_siblings)
+#define job_format_add_fed_siblings_raw(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix, \
+				_print_job_fed_siblings_raw)
 #define job_format_add_max_cpus(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_max_cpus)
 #define job_format_add_max_nodes(list,wid,right,suffix) \
@@ -433,6 +443,14 @@ int _print_job_eligible_time(job_info_t * job, int width, bool right_justify,
 			     char* suffix);
 int _print_job_exit_code(job_info_t * job, int width, bool right_justify,
 			 char* suffix);
+int _print_job_fed_origin(job_info_t * job, int width, bool right_justify,
+			  char* suffix);
+int _print_job_fed_origin_raw(job_info_t * job, int width, bool right_justify,
+			      char* suffix);
+int _print_job_fed_siblings(job_info_t * job, int width, bool right_justify,
+			    char* suffix);
+int _print_job_fed_siblings_raw(job_info_t * job, int width, bool right_justify,
+				char* suffix);
 int _print_job_max_cpus(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_max_nodes(job_info_t * job, int width, bool right_justify,

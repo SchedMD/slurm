@@ -1371,6 +1371,28 @@ extern int parse_long_format( char* format_long )
 							 field_size,
 							 right_justify,
 							 suffix );
+			else if (!xstrcasecmp(token, "fedorigin"))
+				job_format_add_fed_origin(params.format_list,
+							  field_size,
+							  right_justify,
+							  suffix );
+			else if (!xstrcasecmp(token, "fedoriginraw"))
+				job_format_add_fed_origin_raw(
+							params.format_list,
+							field_size,
+							right_justify,
+							suffix );
+			else if (!xstrcasecmp(token, "fedsiblings"))
+				job_format_add_fed_siblings(params.format_list,
+							    field_size,
+							    right_justify,
+							    suffix );
+			else if (!xstrcasecmp(token, "fedsiblingsraw"))
+				job_format_add_fed_siblings_raw(
+							params.format_list,
+							field_size,
+							right_justify,
+							suffix );
 			else if (!xstrcasecmp(token, "maxcpus"))
 				job_format_add_max_cpus(params.format_list,
 							 field_size,
