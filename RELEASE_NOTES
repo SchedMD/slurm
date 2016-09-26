@@ -87,6 +87,7 @@ In will_run_response_msg_t: Added double sys_usage_per to report back how busy a
 In slurm_ctl_conf: Added mail_domain.
 In slurm_msg_t: Added buffer to keep received message buffer to use for later
 		      purposes.
+In job_desc_msg_t: Added fed_siblings to track which clusters have sibling jobs.
 
 Added the following struct definitions
 ======================================

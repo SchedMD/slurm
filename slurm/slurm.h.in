@@ -1386,6 +1386,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * from job's allocation, default NONE */
 	char *features;		/* required feature specification,
 				 * default NONE */
+	uint64_t fed_siblings;	/* Bitmap of federation siblings */
 	char *gres;		/* comma separated list of required generic
 				 * resources, default NONE */
 	uint32_t group_id;	/* group to assume, if run as root. */
