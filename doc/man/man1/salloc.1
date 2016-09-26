@@ -1120,9 +1120,10 @@ level (all nodes allocated to the job should have identical power caps,
 may be disabled by the Slurm configuration option PowerParameters=job_no_level).
 
 .TP
-\fB\-\-priority\fR=<value>
+\fB\-\-priority\fR=<\fIvalue\fR>
 Request a specific job priority.
 May be subject to configuration specific constraints.
+\fIvalue\fR should either be a numeric value or "TOP" (for highest possible value).
 Only Slurm operators and administrators can set the priority of a job.
 
 .TP

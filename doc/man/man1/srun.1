@@ -1584,11 +1584,12 @@ may be disabled by the Slurm configuration option PowerParameters=job_no_level).
 This option applies to job allocations.
 
 .TP
-\fB\-\-priority\fR=<value>
+\fB\-\-priority\fR=<\fIvalue\fR>
 Request a specific job priority.
 May be subject to configuration specific constraints.
-Only Slurm operators and administrators can set the priority of a job. This
-option applies to job allocations.
+\fIvalue\fR should either be a numeric value or "TOP" (for highest possible value).
+Only Slurm operators and administrators can set the priority of a job.
+This option applies to job allocations only.
 
 .TP
 \fB\-\-profile\fR=<all|none|[energy[,|task[,|filesystem[,|network]]]]>

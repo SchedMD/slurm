@@ -1620,16 +1620,21 @@ static void _set_options(int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_PRIORITY: {
-			long long priority = strtoll(optarg, NULL, 10);
-			if (priority < 0) {
-				error("Priority must be >= 0");
-				exit(error_exit);
+			long long priority;
+			if (strcasecmp(optarg, "TOP") == 0) {
+				opt.priority = NO_VAL - 1;
+			} else {
+				priority = strtoll(optarg, NULL, 10);
+				if (priority < 0) {
+					error("Priority must be >= 0");
+					exit(error_exit);
+				}
+				if (priority >= NO_VAL) {
+					error("Priority must be < %i", NO_VAL);
+					exit(error_exit);
+				}
+				opt.priority = priority;
 			}
-			if (priority >= NO_VAL) {
-				error("Priority must be < %i", NO_VAL);
-				exit(error_exit);
-			}
-			opt.priority = priority;
 			break;
 		}
 		case LONG_OPT_NO_REQUEUE:
