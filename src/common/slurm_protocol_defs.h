@@ -286,6 +286,8 @@ typedef enum {
 	REQUEST_JOB_NOTIFY,
 	REQUEST_JOB_SBCAST_CRED,
 	RESPONSE_JOB_SBCAST_CRED,
+	REQUEST_SIB_JOB_WILL_RUN,
+	REQUEST_SIB_SUBMIT_BATCH_JOB,
 
 	REQUEST_JOB_STEP_CREATE = 5001,
 	RESPONSE_JOB_STEP_CREATE,
@@ -1201,6 +1203,18 @@ typedef struct slurm_event_log_msg {
 	char *   string;	/* String for slurmctld to log */
 } slurm_event_log_msg_t;
 
+typedef struct {
+	void    *data;		/* Unpacked buffer
+				 * Only populated on the receiving side. */
+	Buf      data_buffer;	/* Buffer that holds an unpacked data type.
+				 * Only populated on the sending side. */
+	uint16_t data_type;	/* date type to unpack */
+	uint16_t data_version;	/* Version that data is packed with */
+	uint64_t fed_siblings;	/* sibling bitmap of job */
+	uint32_t job_id;	/* job_id of job - set in job_desc on receiving
+				 * side */
+} sib_msg_t;
+
 /*****************************************************************************\
  *      ACCOUNTING PUSHS
 \*****************************************************************************/
@@ -1264,6 +1278,7 @@ extern void slurm_free_front_end_info_request_msg(
 extern void slurm_free_node_info_request_msg(node_info_request_msg_t *msg);
 extern void slurm_free_node_info_single_msg(node_info_single_msg_t *msg);
 extern void slurm_free_part_info_request_msg(part_info_request_msg_t *msg);
+extern void slurm_free_sib_msg(sib_msg_t *msg);
 extern void slurm_free_stats_info_request_msg(stats_info_request_msg_t *msg);
 extern void slurm_free_stats_response_msg(stats_info_response_msg_t *msg);
 extern void slurm_free_step_alloc_info_msg(step_alloc_info_msg_t * msg);

@@ -788,6 +788,15 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 	}
 }
 
+extern void slurm_free_sib_msg(sib_msg_t *msg)
+{
+	if (msg) {
+		free_buf(msg->data_buffer);
+		slurm_free_msg_data(msg->data_type, msg->data);
+		xfree(msg);
+	}
+}
+
 extern void slurm_free_event_log_msg(slurm_event_log_msg_t * msg)
 {
 	if (msg) {
@@ -3830,6 +3839,16 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_UPDATE_JOB:
 		slurm_free_job_desc_msg(data);
 		break;
+	case REQUEST_SIB_JOB_WILL_RUN:
+	case REQUEST_SIB_SUBMIT_BATCH_JOB:
+		slurm_free_sib_msg(data);
+		break;
+	case RESPONSE_JOB_WILL_RUN:
+		slurm_free_will_run_response_msg(data);
+		break;
+	case RESPONSE_SUBMIT_BATCH_JOB:
+		slurm_free_submit_response_response_msg(data);
+		break;
 	case RESPONSE_ACCT_GATHER_UPDATE:
 		slurm_free_acct_gather_node_resp_msg(data);
 		break;
@@ -4425,6 +4444,10 @@ rpc_num2string(uint16_t opcode)
 		return "RESPONSE_JOB_ATTACH";
 	case REQUEST_JOB_WILL_RUN:
 		return "REQUEST_JOB_WILL_RUN";
+	case REQUEST_SIB_JOB_WILL_RUN:
+		return "REQUEST_SIB_JOB_WILL_RUN";
+	case REQUEST_SIB_SUBMIT_BATCH_JOB:
+		return "REQUEST_SIB_SUBMIT_BATCH_JOB";
 	case RESPONSE_JOB_WILL_RUN:
 		return "RESPONSE_JOB_WILL_RUN";
 	case REQUEST_JOB_ALLOCATION_INFO:

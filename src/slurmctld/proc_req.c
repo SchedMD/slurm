@@ -358,6 +358,30 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 	case REQUEST_JOB_WILL_RUN:
 		_slurm_rpc_job_will_run(msg);
 		break;
+	case REQUEST_SIB_JOB_WILL_RUN:
+	{
+		sib_msg_t *sib_msg       = msg->data;
+		job_desc_msg_t *job_desc = sib_msg->data;
+
+		msg->data = job_desc;
+		_slurm_rpc_job_will_run(msg);
+		msg->data = sib_msg;
+
+		break;
+	}
+	case REQUEST_SIB_SUBMIT_BATCH_JOB:
+	{
+		sib_msg_t *sib_msg       = msg->data;
+		job_desc_msg_t *job_desc = sib_msg->data;
+		job_desc->job_id         = sib_msg->job_id;
+		job_desc->fed_siblings   = sib_msg->fed_siblings;
+
+		msg->data = job_desc;
+		_slurm_rpc_submit_batch_job(msg);
+		msg->data = sib_msg;
+
+		break;
+	}
 	case MESSAGE_NODE_REGISTRATION_STATUS:
 		_slurm_rpc_node_registration(msg, 0);
 		break;

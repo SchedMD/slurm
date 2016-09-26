@@ -98,6 +98,7 @@ Added slurmdb_cluster_fed_t to store federation information on
 Added slurmdb_federation_cond_t for selecting federations from db.
 Added slurmdb_federation_rec_t to represent federation objects.
 Added job_fed_details_t for storing federated job information.
+Added sib_msg_t for sending messages to siblings.
 
 Removed members from the following struct definitions
 =====================================================
