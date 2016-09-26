@@ -8423,8 +8423,13 @@ static bool _all_parts_hidden(struct job_record *job_ptr)
 }
 
 /* Determine if a given job should be seen by a specific user */
-static bool _hide_job(struct job_record *job_ptr, uid_t uid)
+static bool _hide_job(struct job_record *job_ptr, uid_t uid,
+		      uint16_t show_flags)
 {
+	if (!(show_flags & SHOW_FED_TRACK) &&
+	    job_ptr->fed_details && fed_mgr_is_tracker_only_job(job_ptr))
+		return true;
+
 	if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
 	    (job_ptr->user_id != uid) && !validate_operator(uid) &&
 	    (((slurm_mcs_get_privatedata() == 0) &&
@@ -8478,7 +8483,7 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 		    _all_parts_hidden(job_ptr))
 			continue;
 
-		if (_hide_job(job_ptr, uid))
+		if (_hide_job(job_ptr, uid, show_flags))
 			continue;
 
 		if ((filter_uid != NO_VAL) && (filter_uid != job_ptr->user_id))
@@ -8533,7 +8538,7 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 	job_ptr = find_job_record(job_id);
 	if (job_ptr && (job_ptr->array_task_id == NO_VAL) &&
 	    !job_ptr->array_recs) {
-		if (!_hide_job(job_ptr, uid)) {
+		if (!_hide_job(job_ptr, uid, show_flags)) {
 			pack_job(job_ptr, show_flags, buffer, protocol_version,
 				 uid);
 			jobs_packed++;
@@ -8544,7 +8549,7 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 		/* Either the job is not found or it is a job array */
 		if (job_ptr) {
 			packed_head = true;
-			if (!_hide_job(job_ptr, uid)) {
+			if (!_hide_job(job_ptr, uid, show_flags)) {
 				pack_job(job_ptr, show_flags, buffer,
 					 protocol_version, uid);
 				jobs_packed++;
@@ -8556,7 +8561,7 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 			if ((job_ptr->job_id == job_id) && packed_head) {
 				;	/* Already packed */
 			} else if (job_ptr->array_job_id == job_id) {
-				if (_hide_job(job_ptr, uid))
+				if (_hide_job(job_ptr, uid, show_flags))
 					break;
 				pack_job(job_ptr, show_flags, buffer,
 					 protocol_version, uid);

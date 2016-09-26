@@ -60,6 +60,7 @@
 #define OPT_LONG_HIDE      0x102
 #define OPT_LONG_START     0x103
 #define OPT_LONG_NOCONVERT 0x104
+#define OPT_LONG_FEDTRACK  0x105
 
 /* FUNCTIONS */
 static List  _build_job_list( char* str );
@@ -94,6 +95,7 @@ parse_command_line( int argc, char* argv[] )
 		{"accounts",   required_argument, 0, 'A'},
 		{"all",        no_argument,       0, 'a'},
 		{"array",      no_argument,       0, 'r'},
+		{"fedtrack",   no_argument,       0, OPT_LONG_FEDTRACK},
 		{"Format",     required_argument, 0, 'O'},
 		{"format",     required_argument, 0, 'o'},
 		{"help",       no_argument,       0, OPT_LONG_HELP},
@@ -291,6 +293,9 @@ parse_command_line( int argc, char* argv[] )
 				      optarg);
 				exit(1);
 			}
+			break;
+		case OPT_LONG_FEDTRACK:
+			params.show_fedtrack = true;
 			break;
 		case OPT_LONG_HELP:
 			_help();

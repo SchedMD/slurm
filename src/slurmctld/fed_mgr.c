@@ -57,6 +57,8 @@
 #define FED_MGR_STATE_FILE       "fed_mgr_state"
 #define FED_MGR_CLUSTER_ID_BEGIN 26
 
+#define FED_SIBLING_BIT(x) ((uint64_t)1 << (x - 1))
+
 slurmdb_federation_rec_t     *fed_mgr_fed_rec      = NULL;
 static slurmdb_cluster_rec_t *fed_mgr_cluster_rec  = NULL;
 
@@ -958,6 +960,35 @@ extern int fed_mgr_add_sibling_conn(slurm_persist_conn_t *persist_conn,
 			persist_conn->cluster_name);
 		error("%s: %s", __func__, *out_buffer);
 	}
+
+	return rc;
+}
+
+
+/* Tests if the job is a tracker only federated job.
+ * Tracker only job: a job that shouldn't run on the local cluster but should be
+ * kept around to facilitate communications for it's sibling jobs on other
+ * clusters.
+ */
+extern bool fed_mgr_is_tracker_only_job(struct job_record *job_ptr)
+{
+	bool rc = false;
+	slurmctld_lock_t fed_read_lock = {
+		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
+
+	xassert(job_ptr);
+
+	lock_slurmctld(fed_read_lock);
+
+	if (job_ptr->fed_details &&
+	    fed_mgr_cluster_rec &&
+	    (fed_mgr_get_cluster_id(job_ptr->job_id) ==
+	     fed_mgr_cluster_rec->fed.id) &&
+	    (!(job_ptr->fed_details->siblings &
+	      FED_SIBLING_BIT(fed_mgr_cluster_rec->fed.id))))
+		rc = true;
+
+	unlock_slurmctld(fed_read_lock);
 
 	return rc;
 }

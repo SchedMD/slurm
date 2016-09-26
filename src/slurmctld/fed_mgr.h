@@ -56,5 +56,5 @@ extern char *fed_mgr_get_cluster_name(uint32_t id);
 extern char *fed_mgr_cluster_ids_to_names(uint64_t cluster_ids);
 extern int fed_mgr_add_sibling_conn(slurm_persist_conn_t *persist_conn,
 				    char **out_buffer);
-
+extern bool fed_mgr_is_tracker_only_job(struct job_record *job_ptr);
 #endif /* _SLURM_FED_MGR_H */
