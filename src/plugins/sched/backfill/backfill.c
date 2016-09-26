@@ -603,9 +603,9 @@ static void _load_config(void)
 		max_backfill_job_per_user = 0;
 	}
 	if ((max_backfill_job_per_user != 0) &&
-	    (max_backfill_job_per_user >= max_backfill_job_cnt)) {
-		error("bf_max_job_user >= bf_max_job_test (%u >= %u)",
-		      max_backfill_job_per_user, max_backfill_job_cnt);
+	    (max_backfill_job_per_user > max_backfill_job_cnt)) {
+		info("warning: bf_max_job_user > bf_max_job_test (%u > %u)",
+		     max_backfill_job_per_user, max_backfill_job_cnt);
 	}
 
 	bf_min_age_reserve = 0;
@@ -1692,11 +1692,11 @@ next_task:
 				      max_backfill_job_per_part,
 				      max_backfill_job_cnt);
 			} else if ((max_backfill_job_per_user != 0) &&
-				   (max_backfill_job_per_user >=
+				   (max_backfill_job_per_user >
 				    max_backfill_job_cnt)) {
-				error("bf_max_job_user >= bf_max_job_test (%u >= %u)",
-				      max_backfill_job_per_user,
-				      max_backfill_job_cnt);
+				info("warning: bf_max_job_user > bf_max_job_test (%u > %u)",
+				     max_backfill_job_per_user,
+				     max_backfill_job_cnt);
 			}
 			break;
 		}
