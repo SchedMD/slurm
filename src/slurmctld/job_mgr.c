@@ -176,6 +176,7 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	bool admin, slurmdb_qos_rec_t *qos_rec,	int *error_code, bool locked);
 static void _dump_job_details(struct job_details *detail_ptr, Buf buffer);
 static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer);
+static void _free_job_fed_details(job_fed_details_t **fed_details_pptr);
 static void _get_batch_job_dir_ids(List batch_dirs);
 static time_t _get_last_state_write_time(void);
 static void _job_array_comp(struct job_record *job_ptr, bool was_running);
@@ -7338,6 +7339,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	}
 	if (job_desc->features)
 		detail_ptr->features = xstrdup(job_desc->features);
+	if (job_desc->fed_siblings)
+		set_job_fed_details(job_ptr, job_desc->fed_siblings);
 	if ((job_desc->shared == JOB_SHARED_NONE) && (select_serial == 0)) {
 		detail_ptr->share_res  = 0;
 		detail_ptr->whole_node = 1;
@@ -8240,6 +8243,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->burst_buffer);
 	checkpoint_free_jobinfo(job_ptr->check_job);
 	xfree(job_ptr->comment);
+	_free_job_fed_details(&job_ptr->fed_details);
 	free_job_resources(&job_ptr->job_resrcs);
 	xfree(job_ptr->gres);
 	xfree(job_ptr->gres_alloc);
@@ -12036,6 +12040,23 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				SELECT_JOBDATA_NETWORK,
 				job_ptr->network);
 		}
+	}
+
+	if (job_specs->fed_siblings) {
+		slurmctld_lock_t fed_read_lock = {
+			NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
+		if (job_ptr->fed_details)
+			info("update_job: setting fed_siblings from %"PRIu64" to %"PRIu64" for job_id %u",
+			     job_ptr->fed_details->siblings,
+			     job_specs->fed_siblings,
+			     job_ptr->job_id);
+		else
+			info("update_job: setting fed_siblings to %"PRIu64" for job_id %u",
+			     job_specs->fed_siblings,
+			     job_ptr->job_id);
+		lock_slurmctld(fed_read_lock);
+		set_job_fed_details(job_ptr, job_specs->fed_siblings);
+		unlock_slurmctld(fed_read_lock);
 	}
 
 fini:
@@ -16071,4 +16092,38 @@ _kill_dependent(struct job_record *job_ptr)
 	job_completion_logger(job_ptr, false);
 	last_job_update = now;
 	srun_allocate_abort(job_ptr);
+}
+
+static void _free_job_fed_details(job_fed_details_t **fed_details_pptr)
+{
+	job_fed_details_t *fed_details_ptr = *fed_details_pptr;
+
+	if (fed_details_ptr) {
+		xfree(fed_details_ptr->origin_str);
+		xfree(fed_details_ptr->siblings_str);
+		xfree(fed_details_ptr);
+		*fed_details_pptr = NULL;
+	}
+}
+
+
+extern void set_job_fed_details(struct job_record *job_ptr,
+				uint64_t fed_siblings)
+{
+	xassert(job_ptr);
+
+	if (!job_ptr->fed_details) {
+		job_ptr->fed_details =
+			xmalloc(sizeof(job_fed_details_t));
+	} else {
+		xfree(job_ptr->fed_details->siblings_str);
+		xfree(job_ptr->fed_details->origin_str);
+	}
+
+	job_ptr->fed_details->siblings = fed_siblings;
+	job_ptr->fed_details->siblings_str =
+		fed_mgr_cluster_ids_to_names(fed_siblings);
+	job_ptr->fed_details->origin_str =
+		fed_mgr_get_cluster_name(
+				fed_mgr_get_cluster_id(job_ptr->job_id));
 }

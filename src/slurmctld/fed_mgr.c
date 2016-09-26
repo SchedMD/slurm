@@ -808,6 +808,17 @@ extern int _find_sibling_by_ip(void *x, void *key)
 	return 0;
 }
 
+extern int _find_sibling_by_id(void *x, void *key)
+{
+	slurmdb_cluster_rec_t *object = (slurmdb_cluster_rec_t *)x;
+	int id = (intptr_t)key;
+
+	if (object->fed.id == id)
+		return 1;
+
+	return 0;
+}
+
 extern char *fed_mgr_find_sibling_name_by_ip(char *ip)
 {
 	char *name = NULL;
@@ -949,4 +960,58 @@ extern int fed_mgr_add_sibling_conn(slurm_persist_conn_t *persist_conn,
 	}
 
 	return rc;
+}
+
+/* Return the cluster name for the given cluster id.
+ * Must xfree returned string
+ */
+extern char *fed_mgr_get_cluster_name(uint32_t id)
+{
+	slurmdb_cluster_rec_t *sibling;
+	char *name = NULL;
+
+	if ((sibling =
+	     list_find_first(fed_mgr_fed_rec->cluster_list,
+			     _find_sibling_by_id,
+			     (void *)(intptr_t)id))) {
+		name = xstrdup(sibling->name);
+	}
+
+	return name;
+}
+
+
+/* Convert cluster ids to cluster names.
+ *
+ * RET: return string of comma-separated clsuter names.
+ *      Must free returned string.
+ */
+extern char *fed_mgr_cluster_ids_to_names(uint64_t cluster_ids)
+{
+	int bit = 1;
+	char *names = NULL;
+
+	if (!fed_mgr_fed_rec || !fed_mgr_fed_rec->cluster_list)
+		return names;
+
+	while (cluster_ids) {
+		if (cluster_ids & 1) {
+			slurmdb_cluster_rec_t *sibling;
+			if ((sibling =
+			     list_find_first(fed_mgr_fed_rec->cluster_list,
+					     _find_sibling_by_id,
+					     (void *)(intptr_t)bit))){
+				xstrfmtcat(names, "%s%s",
+					   (names) ? "," : "", sibling->name);
+			} else {
+				error("Couldn't find a sibling cluster with id %d",
+				      bit);
+			}
+		}
+
+		cluster_ids >>= 1;
+		bit++;
+	}
+
+	return names;
 }

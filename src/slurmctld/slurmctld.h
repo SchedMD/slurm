@@ -553,10 +553,10 @@ typedef struct {
 	uint16_t *tres;
 } acct_policy_limit_set_t;
 
-
 typedef struct {
-	bitstr_t *siblings;		/* bitmap of sibling cluster ids where
-					 * sibling jobs exist */
+	char    *origin_str;	/* origin cluster name */
+	uint64_t siblings;	/* bitmap of sibling cluster ids */
+	char    *siblings_str;	/* comma separated list of sibling names */
 } job_fed_details_t;
 
 /*
@@ -2411,4 +2411,9 @@ waitpid_timeout(const char *, pid_t, int *, int);
  */
 extern void set_partition_tres();
 
+/*
+ * Set job's siblings and make sibling strings
+ */
+extern void set_job_fed_details(struct job_record *job_ptr,
+				uint64_t fed_siblings);
 #endif /* !_HAVE_SLURMCTLD_H */
