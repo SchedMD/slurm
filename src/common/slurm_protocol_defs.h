@@ -433,6 +433,7 @@ typedef struct slurm_protocol_config {
 typedef struct slurm_msg {
 	slurm_addr_t address;
 	void *auth_cred;
+	Buf buffer; /* DON't PACK! ptr to buffer that msg was unpacked from. */
 	slurm_persist_conn_t *conn; /* DON'T PACK OR FREE! this is here to
 				     * distinquish a persistant connection from
 				     * a normal connection it should be filled

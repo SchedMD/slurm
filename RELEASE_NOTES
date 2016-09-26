@@ -85,6 +85,8 @@ In slurmctld_lock_t: Added federation
 In will_run_response_msg_t: Added double sys_usage_per to report back how busy a
 	cluster is.
 In slurm_ctl_conf: Added mail_domain.
+In slurm_msg_t: Added buffer to keep received message buffer to use for later
+		      purposes.
 
 Added the following struct definitions
 ======================================
@@ -106,6 +108,8 @@ Changed DEFAULT_MAX_JOB_ID from 0x7fff0000 to 0x03ff0000.
 Added SELECT_NODEDATA_TRES_ALLOC_FMT_STR to select_nodedata_type.
 Added SELECT_NODEDATA_TRES_ALLOC_WEIGHTED to select_nodedata_type.
 Changed MEM_PER_CPU flag to 0x8000000000000000 from 0x80000000.
+Added SLURM_MSG_KEEP_BUFFER msg flag to instruct slurm_receive_msg() to save the
+	buffer ptr.
 
 Added the following API's
 =========================
