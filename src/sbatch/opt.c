@@ -1314,6 +1314,7 @@ static bool _opt_wrpr_batch_script(const char *file, const void *body,
 static void _set_options(int argc, char **argv)
 {
 	int opt_char, option_index = 0, max_val = 0, i;
+	long long priority;
 	char *tmp;
 
 	struct option *optz = spank_option_table_create(long_options);
@@ -1675,22 +1676,25 @@ static void _set_options(int argc, char **argv)
 				}
 			}
 			break;
-		case LONG_OPT_PRIORITY: {
-			long long priority;
-			if (!optarg) /* CLANG Fix */
-				break;
-			priority = strtoll(optarg, NULL, 10);
-			if (priority < 0) {
-				error("Priority must be >= 0");
-				exit(error_exit);
+		case LONG_OPT_PRIORITY:
+			if (!optarg) { /* CLANG Fix */
+				;
+			} else if (strcasecmp(optarg, "TOP") == 0) {
+				opt.priority = NO_VAL - 1;
+			} else {
+				priority = strtoll(optarg, NULL, 10);
+				if (priority < 0) {
+					error("Priority must be >= 0");
+					exit(error_exit);
+				}
+				if (priority >= NO_VAL) {
+					error("Priority must be < %i", NO_VAL);
+					exit(error_exit);
+				}
+				opt.priority = priority;
+
 			}
-			if (priority >= NO_VAL) {
-				error("Priority must be < %i", NO_VAL);
-				exit(error_exit);
-			}
-			opt.priority = priority;
 			break;
-		}
 		case LONG_OPT_NO_REQUEUE:
 			opt.requeue = 0;
 			break;

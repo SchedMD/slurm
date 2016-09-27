@@ -2027,7 +2027,7 @@ static int  _preserve_plugins(slurm_ctl_conf_t * ctl_conf_ptr,
 	}
 
 	if (ctl_conf_ptr->backup_controller == NULL)
-		info("read_slurm_conf: backup_controller not specified.");
+		info("%s: backup_controller not specified", __func__);
 
 	return rc;
 }

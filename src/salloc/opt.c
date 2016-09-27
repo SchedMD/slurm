@@ -661,6 +661,7 @@ void set_options(const int argc, char **argv)
 {
 	int opt_char, option_index = 0, max_val = 0, i;
 	char *tmp;
+	long long priority;
 	static struct option long_options[] = {
 		{"account",       required_argument, 0, 'A'},
 		{"extra-node-info", required_argument, 0, 'B'},
@@ -1107,22 +1108,24 @@ void set_options(const int argc, char **argv)
 				}
 			}
 			break;
-		case LONG_OPT_PRIORITY: {
-			long long priority;
-			if (!optarg) /* CLANG Fix */
-				break;
-			priority = strtoll(optarg, NULL, 10);
-			if (priority < 0) {
-				error("Priority must be >= 0");
-				exit(error_exit);
+		case LONG_OPT_PRIORITY:
+			if (!optarg) { /* CLANG Fix */
+				;
+			} else if (strcasecmp(optarg, "TOP") == 0) {
+				opt.priority = NO_VAL - 1;
+			} else {
+				priority = strtoll(optarg, NULL, 10);
+				if (priority < 0) {
+					error("Priority must be >= 0");
+					exit(error_exit);
+				}
+				if (priority >= NO_VAL) {
+					error("Priority must be < %i", NO_VAL);
+					exit(error_exit);
+				}
+				opt.priority = priority;
 			}
-			if (priority >= NO_VAL) {
-				error("Priority must be < %i", NO_VAL);
-				exit(error_exit);
-			}
-			opt.priority = priority;
 			break;
-		}
 		case LONG_OPT_BELL:
 			opt.bell = BELL_ALWAYS;
 			break;

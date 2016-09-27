@@ -1124,6 +1124,17 @@ defined in the file \fIslurm.h\fR and is not a variable, it is set at
 Slurm build time.
 
 .TP
+\fB\-p\fR, \fB\-\-partition\fR=<\fIpartition_names\fR>
+Request a specific partition for the resource allocation.  If not specified,
+the default behavior is to allow the slurm controller to select the default
+partition as designated by the system administrator. If the job can use more
+than one partition, specify their names in a comma separate list and the one
+offering earliest initiation will be used with no regard given to the partition
+name ordering (although higher priority partitions will be considered first).
+When the job is initiated, the name of the partition used will be placed first
+in the job record partition string.
+
+.TP
 \fB\-\-power\fR=<\fIflags\fR>
 Comma separated list of power management plugin options.
 Currently available flags include:
@@ -1131,9 +1142,10 @@ level (all nodes allocated to the job should have identical power caps,
 may be disabled by the Slurm configuration option PowerParameters=job_no_level).
 
 .TP
-\fB\-\-priority\fR=<value>
+\fB\-\-priority\fR=<\fIvalue\fR>
 Request a specific job priority.
 May be subject to configuration specific constraints.
+\fIvalue\fR should either be a numeric value or "TOP" (for highest possible value).
 Only Slurm operators and administrators can set the priority of a job.
 
 .TP
@@ -1168,16 +1180,6 @@ Lustre data is collected.
 \fBNetwork\fR
 Network (InfiniBand) data is collected.
 .RE
-.TP
-\fB\-p\fR, \fB\-\-partition\fR=<\fIpartition_names\fR>
-Request a specific partition for the resource allocation.  If not specified,
-the default behavior is to allow the slurm controller to select the default
-partition as designated by the system administrator. If the job can use more
-than one partition, specify their names in a comma separate list and the one
-offering earliest initiation will be used with no regard given to the partition
-name ordering (although higher priority partitions will be considered first).
-When the job is initiated, the name of the partition used will be placed first
-in the job record partition string.
 
 .TP
 \fB\-Q\fR, \fB\-\-quiet\fR
