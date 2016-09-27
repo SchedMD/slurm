@@ -371,14 +371,22 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 	}
 	case REQUEST_SIB_SUBMIT_BATCH_JOB:
 	{
+		uint16_t tmp_version     = msg->protocol_version;
 		sib_msg_t *sib_msg       = msg->data;
 		job_desc_msg_t *job_desc = sib_msg->data;
 		job_desc->job_id         = sib_msg->job_id;
 		job_desc->fed_siblings   = sib_msg->fed_siblings;
 
+		/* set protocol version to that of the client's version so that
+		 * the job's start_protocol_version is that of the client's and
+		 * not the calling controllers. */
+		msg->protocol_version = sib_msg->data_version;
 		msg->data = job_desc;
+
 		_slurm_rpc_submit_batch_job(msg);
+
 		msg->data = sib_msg;
+		msg->protocol_version = tmp_version;
 
 		break;
 	}
@@ -3460,7 +3468,16 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 	}
 
 	dump_job_desc(job_desc_msg);
-	if (error_code == SLURM_SUCCESS) {
+	if (error_code == SLURM_SUCCESS &&
+	    job_desc_msg->job_id == SLURM_BATCH_SCRIPT && /* make sure it's not
+							     a submitted sib
+							     job. */
+	    fed_mgr_is_active()) {
+		error_code = fed_mgr_job_allocate(msg, job_desc_msg, uid,
+						  msg->protocol_version,
+						  &job_ptr, &err_msg);
+
+	} else if (error_code == SLURM_SUCCESS) {
 		_throttle_start(&active_rpc_cnt);
 		lock_slurmctld(job_write_lock);
 		START_TIMER;	/* Restart after we have locks */
