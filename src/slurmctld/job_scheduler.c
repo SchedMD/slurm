@@ -279,6 +279,9 @@ static bool _job_runnable_test1(struct job_record *job_ptr, bool sched_plugin)
 	if (!IS_JOB_PENDING(job_ptr) || IS_JOB_COMPLETING(job_ptr))
 		return false;
 
+	if (job_ptr->fed_details && fed_mgr_is_tracker_only_job(job_ptr))
+		return false;
+
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_CLEANING,
 				    &cleaning);
