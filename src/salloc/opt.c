@@ -1271,6 +1271,11 @@ void set_options(const int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_WAIT_ALL_NODES:
+			if ((optarg[0] < '0') || (optarg[0] > '9')) {
+				error("Invalid --wait-all-nodes argument: %s",
+				      optarg);
+				exit(1);
+			}
 			opt.wait_all_nodes = strtol(optarg, NULL, 10);
 			break;
 		case LONG_OPT_CPU_FREQ:
