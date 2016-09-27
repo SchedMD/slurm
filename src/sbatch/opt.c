@@ -75,6 +75,7 @@
 #include <sys/types.h>
 #include <sys/utsname.h>
 
+#include "slurm/slurm.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
@@ -133,6 +134,7 @@ enum wrappers {
 #define OPT_ARRAY_INX     0x20
 #define OPT_PROFILE       0x21
 #define OPT_HINT	  0x22
+#define OPT_USE_MIN_NODES 0x23
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_PROPAGATE   0x100
@@ -199,6 +201,7 @@ enum wrappers {
 #define LONG_OPT_GRES_FLAGS      0x15a
 #define LONG_OPT_PRIORITY        0x160
 #define LONG_OPT_KILL_INV_DEP    0x161
+#define LONG_OPT_USE_MIN_NODES   0x162
 #define LONG_OPT_MCS_LABEL       0x165
 #define LONG_OPT_DEADLINE        0x166
 
@@ -494,6 +497,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_SIGNAL",        OPT_SIGNAL,     NULL,               NULL          },
   {"SBATCH_THREAD_SPEC",   OPT_THREAD_SPEC,NULL,               NULL          },
   {"SBATCH_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL          },
+  {"SBATCH_USE_MIN_NODES", OPT_USE_MIN_NODES ,NULL,            NULL          },
   {"SBATCH_WAIT",          OPT_BOOL,       &opt.wait,          NULL          },
   {"SBATCH_WAIT_ALL_NODES",OPT_INT,        &opt.wait_all_nodes,NULL          },
   {"SBATCH_WAIT4SWITCH",   OPT_TIME_VAL,   NULL,               NULL          },
@@ -704,6 +708,9 @@ _process_env_var(env_vars_t *e, const char *val)
 		opt.core_spec = parse_int("thread_spec", val, false) |
 					 CORE_SPEC_THREAD;
 		break;
+	case OPT_USE_MIN_NODES:
+		opt.job_flags |= USE_MIN_NODES;
+		break;
 	default:
 		/* do nothing */
 		break;
@@ -819,6 +826,7 @@ static struct option long_options[] = {
 	{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
 	{"tmp",           required_argument, 0, LONG_OPT_TMP},
 	{"uid",           required_argument, 0, LONG_OPT_UID},
+	{"use-min-nodes", no_argument,       0, LONG_OPT_USE_MIN_NODES},
 	{"wait",          no_argument,       0, LONG_OPT_WAIT},
 	{"wait-all-nodes",required_argument, 0, LONG_OPT_WAIT_ALL_NODES},
 	{"wckey",         required_argument, 0, LONG_OPT_WCKEY},
@@ -1872,6 +1880,9 @@ static void _set_options(int argc, char **argv)
 				opt.job_flags |= KILL_INV_DEP;
 			if (xstrcasecmp(optarg, "no") == 0)
 				opt.job_flags |= NO_KILL_INV_DEP;
+			break;
+		case LONG_OPT_USE_MIN_NODES:
+			opt.job_flags |= USE_MIN_NODES;
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
@@ -3232,7 +3243,8 @@ static void _usage(void)
 "              [--switches=max-switches{@max-time-to-wait}] [--reboot]\n"
 "              [--core-spec=cores] [--thread-spec=threads] [--bb=burst_buffer_spec]\n"
 "              [--array=index_values] [--profile=...] [--ignore-pbs]\n"
-"              [--export[=names]] [--export-file=file|fd] executable [args...]\n");
+"              [--export[=names]] [--export-file=file|fd] [--use-min-nodes]\n"
+"              executable [args...]\n");
 }
 
 static void _help(void)
@@ -3310,6 +3322,8 @@ static void _help(void)
 "  -t, --time=minutes          time limit\n"
 "      --time-min=minutes      minimum time limit (if distinct)\n"
 "      --uid=user_id           user ID to run job as (user root only)\n"
+"      --use-min-nodes         if a range of node counts is given, prefer the\n"
+"                              smaller count\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
 "  -W, --wait                  wait for completion of submitted job\n"
 "      --wckey=wckey           wckey to run job under\n"

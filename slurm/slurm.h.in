@@ -988,7 +988,7 @@ enum ctx_keys {
 #define PRIORITY_FLAGS_FAIR_TREE	0x0020	/* Prioritize by level in
 						 * account hierarchy. */
 
-/* These bits are set in the flags field of job_desc_msg_t */
+/* These bits are set in the bitflags field of job_desc_msg_t */
 #define KILL_INV_DEP       0x00000001	/* Kill job on invalid dependency */
 #define NO_KILL_INV_DEP    0x00000002	/* Don't kill job on invalid dependency */
 #define HAS_STATE_DIR      0x00000004	/* Used by slurmctld to track state dir */
@@ -997,6 +997,7 @@ enum ctx_keys {
 #define TEST_NOW_ONLY      0x00000020	/* Test for immediately start only */
 #define NODE_MEM_CALC      0x00000040	/* Per-node memory limit calculated */
 #define NODE_REBOOT        0x00000080	/* Waiting for node reboot */
+#define USE_MIN_NODES      0x00000200	/* Prefer minimum node count */
 
 /*****************************************************************************\
  *      SLURM HOSTLIST FUNCTIONS

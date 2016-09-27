@@ -82,6 +82,8 @@ documents those changes that are of interest to users and administrators.
  -- Add salloc/sbatch/srun --priority option of "TOP" to set job priority to
     the highest possible value. This option is only available to Slurm operators
     and administrators.
+ -- Add salloc/sbatch/srun option --use-min-nodes to prefer smaller node counts
+    when a range of node counts is specified (e.g. "-N 2-4").
 
 * Changes in Slurm 16.05.4
 ==========================

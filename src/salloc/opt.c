@@ -75,6 +75,7 @@
 #include <sys/types.h>
 #include <sys/utsname.h>
 
+#include "slurm/slurm.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
@@ -123,6 +124,7 @@
 #define OPT_HINT	0x1a
 #define OPT_CPU_FREQ    0x1b
 #define OPT_THREAD_SPEC 0x1c
+#define OPT_USE_MIN_NODES 0x23
 
 /* generic getopt_long flags, integers and *not* valid characters */
 
@@ -180,6 +182,7 @@
 #define LONG_OPT_PRIORITY        0x160
 #define LONG_OPT_POWER           0x162
 #define LONG_OPT_THREAD_SPEC     0x163
+#define LONG_OPT_USE_MIN_NODES   0x164
 #define LONG_OPT_MCS_LABEL       0x165
 #define LONG_OPT_DEADLINE        0x166
 
@@ -435,14 +438,15 @@ env_vars_t env_vars[] = {
   {"SALLOC_POWER",         OPT_POWER,      NULL,               NULL          },
   {"SALLOC_PROFILE",       OPT_PROFILE,    NULL,               NULL          },
   {"SALLOC_QOS",           OPT_STRING,     &opt.qos,           NULL          },
+  {"SALLOC_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL          },
   {"SALLOC_RESERVATION",   OPT_STRING,     &opt.reservation,   NULL          },
   {"SALLOC_SIGNAL",        OPT_SIGNAL,     NULL,               NULL          },
   {"SALLOC_THREAD_SPEC",   OPT_THREAD_SPEC,NULL,               NULL          },
   {"SALLOC_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL          },
+  {"SALLOC_USE_MIN_NODES", OPT_USE_MIN_NODES ,NULL,            NULL          },
   {"SALLOC_WAIT",          OPT_IMMEDIATE,  NULL,               NULL          },
   {"SALLOC_WAIT_ALL_NODES",OPT_INT,        &opt.wait_all_nodes,NULL          },
   {"SALLOC_WCKEY",         OPT_STRING,     &opt.wckey,         NULL          },
-  {"SALLOC_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL          },
   {"SALLOC_WAIT4SWITCH",   OPT_TIME_VAL,   NULL,               NULL          },
   {NULL, 0, NULL, NULL}
 };
@@ -640,6 +644,9 @@ _process_env_var(env_vars_t *e, const char *val)
 		opt.core_spec = parse_int("thread_spec", val, true) |
 					 CORE_SPEC_THREAD;
 		break;
+	case OPT_USE_MIN_NODES:
+		opt.job_flags |= USE_MIN_NODES;
+		break;
 	default:
 		/* do nothing */
 		break;
@@ -740,6 +747,7 @@ void set_options(const int argc, char **argv)
 		{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
 		{"tmp",           required_argument, 0, LONG_OPT_TMP},
 		{"uid",           required_argument, 0, LONG_OPT_UID},
+		{"use-min-nodes", no_argument,       0, LONG_OPT_USE_MIN_NODES},
 		{"wait-all-nodes",required_argument, 0, LONG_OPT_WAIT_ALL_NODES},
 		{"wckey",         required_argument, 0, LONG_OPT_WCKEY},
 		{NULL,            0,                 0, 0}
@@ -1291,6 +1299,9 @@ void set_options(const int argc, char **argv)
 		case LONG_OPT_THREAD_SPEC:
 			opt.core_spec = parse_int("thread_spec", optarg, true) |
 				CORE_SPEC_THREAD;
+			break;
+		case LONG_OPT_USE_MIN_NODES:
+			opt.job_flags |= USE_MIN_NODES;
 			break;
 		default:
 			if (spank_process_option(opt_char, optarg) < 0) {
@@ -2044,7 +2055,7 @@ static void _usage(void)
 "              [--switches=max-switches[@max-time-to-wait]]\n"
 "              [--core-spec=cores] [--thread-spec=threads] [--reboot]\n"
 "              [--bb=burst_buffer_spec] [--bbf=burst_buffer_file]\n"
-"              [executable [args...]]\n");
+"              [--use-min-nodes] [executable [args...]]\n");
 }
 
 static void _help(void)
@@ -2108,6 +2119,8 @@ static void _help(void)
 "  -t, --time=minutes          time limit\n"
 "      --time-min=minutes      minimum time limit (if distinct)\n"
 "      --uid=user_id           user ID to run job as (user root only)\n"
+"      --use-min-nodes         if a range of node counts is given, prefer the\n"
+"                              smaller count\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
 "      --wckey=wckey           wckey to run job under\n"
 "\n"
