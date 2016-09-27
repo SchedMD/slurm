@@ -2703,6 +2703,13 @@ If defined, the salloc command will wait until all allocated nodes are ready for
 use (i.e. booted) before the command returns. By default, salloc will return as
 soon as the resource allocation has been made.
 .TP
+\fBsbatch_wait_nodes\fR
+If defined, the sbatch script will wait until all allocated nodes are ready for
+use (i.e. booted) before the initiation. By default, the sbatch script will be
+initiated as soon as the first node in the job allocation is ready. The sbatch
+command can use the \-\-wait\-all\-nodes option to override this configuration
+parameter.
+.TP
 \fBsched_interval=#\fR
 How frequently, in seconds, the main scheduling loop will execute and test all
 pending jobs.
