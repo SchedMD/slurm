@@ -6,10 +6,11 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
 <meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management,
-Linux clusters, high-performance computing">
-<meta name="description" content="Simple Linux Utility for Resource Management">
-<title>Simple Linux Utility for Resource Management</title>
+<meta http-equiv="keywords" content="Slurm, Slurm Workload Manager,
+Simple Linux Utility for Resource Management, workload manager,
+resource management, Linux clusters, high-performance computing">
+<meta name="description" content="Slurm Workload Manager">
+<title>Slurm Workload Manager</title>
 <link href="linuxstyles.css" rel="stylesheet" type="text/css">
 <link href="slurmstyles.css" rel="stylesheet" type="text/css">
 <script src="http://www.google.com/jsapi" type="text/javascript"></script>

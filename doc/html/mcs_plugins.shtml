@@ -9,7 +9,7 @@ defines them. It is intended as a resource to programmers wishing to write
 their own Slurm MCS plugins.
 
 <p>Slurm MCS plugins must conform to the
-SLURM Plugin API with the following specifications:
+Slurm Plugin API with the following specifications:
 
 <p><span class="commandline">const char
 plugin_name[]="<i>full&nbsp;text&nbsp;name</i>"</span>

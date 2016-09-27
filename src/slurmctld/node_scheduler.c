@@ -2324,7 +2324,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 
 	max_nodes = MIN(max_nodes, 500000);	/* prevent overflows */
 	if (!job_ptr->limit_set.tres[TRES_ARRAY_NODE] &&
-	    job_ptr->details->max_nodes)
+	    (job_ptr->details->max_nodes != 0) &&
+	    ((job_ptr->bit_flags & USE_MIN_NODES) == 0))
 		req_nodes = max_nodes;
 	else
 		req_nodes = min_nodes;

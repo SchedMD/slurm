@@ -1982,6 +1982,10 @@ successful. \fIuser\fR may be the user name or numerical user ID. This option
 applies to job and step allocations.
 
 .TP
+\fB\-\-use-min-nodes\fR
+If a range of node counts is given, prefer the smaller count.
+
+.TP
 \fB\-V\fR, \fB\-\-version\fR
 Display version information and exit.
 
@@ -2577,6 +2581,9 @@ Same as \fB\-t, \-\-time\fR
 .TP
 \fBSLURM_UNBUFFEREDIO\fR
 Same as \fB\-u, \-\-unbuffered\fR
+.TP
+\fBSLURM_USE_MIN_NODES\fR
+Same as \fB\-\-use\-min\-nodes\fR
 .TP
 \fBSLURM_WAIT\fR
 Same as \fB\-W, \-\-wait\fR

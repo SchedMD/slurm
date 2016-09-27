@@ -990,6 +990,7 @@ enum ctx_keys {
 #define NODE_MEM_CALC      0x00000040	/* Per-node memory limit calculated */
 #define NODE_REBOOT        0x00000080	/* Waiting for node reboot */
 #define SPREAD_JOB         0x00000100	/* Spread job across max node count */
+#define USE_MIN_NODES      0x00000200	/* Prefer minimum node count */
 
 /*****************************************************************************\
  *      SLURM HOSTLIST FUNCTIONS

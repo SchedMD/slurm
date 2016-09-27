@@ -56,6 +56,7 @@
 #include <sys/utsname.h>
 #include <unistd.h>
 
+#include "slurm/slurm.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
@@ -119,6 +120,7 @@
 #define OPT_SPREAD_JOB  0x23
 #define OPT_DELAY_BOOT  0x24
 #define OPT_INT64	0x25
+#define OPT_USE_MIN_NODES 0x26
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_HELP        0x100
@@ -198,6 +200,7 @@
 #define LONG_OPT_SPREAD_JOB      0x159
 #define LONG_OPT_PRIORITY        0x160
 #define LONG_OPT_ACCEL_BIND      0x161
+#define LONG_OPT_USE_MIN_NODES   0x162
 #define LONG_OPT_MCS_LABEL       0x165
 #define LONG_OPT_DEADLINE        0x166
 #define LONG_OPT_DELAY_BOOT      0x167
@@ -640,6 +643,7 @@ env_vars_t env_vars[] = {
 {"SLURM_THREADS",       OPT_INT,        &opt.max_threads,   NULL             },
 {"SLURM_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL             },
 {"SLURM_UNBUFFEREDIO",  OPT_INT,        &opt.unbuffered,    NULL             },
+{"SLURM_USE_MIN_NODES", OPT_USE_MIN_NODES, NULL,            NULL             },
 {"SLURM_WAIT",          OPT_INT,        &opt.max_wait,      NULL             },
 {"SLURM_WAIT4SWITCH",   OPT_TIME_VAL,   NULL,               NULL             },
 {"SLURM_WCKEY",         OPT_STRING,     &opt.wckey,         NULL             },
@@ -889,6 +893,9 @@ _process_env_var(env_vars_t *e, const char *val)
 		else
 			opt.delay_boot = (uint32_t) i;
 		break;
+	case OPT_USE_MIN_NODES:
+		opt.job_flags |= USE_MIN_NODES;
+		break;
 	default:
 		/* do nothing */
 		break;
@@ -1036,6 +1043,7 @@ static void _set_options(const int argc, char **argv)
 		{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
 		{"tmp",              required_argument, 0, LONG_OPT_TMP},
 		{"uid",              required_argument, 0, LONG_OPT_UID},
+		{"use-min-nodes",    no_argument,       0, LONG_OPT_USE_MIN_NODES},
 		{"usage",            no_argument,       0, LONG_OPT_USAGE},
 		{"wckey",            required_argument, 0, LONG_OPT_WCKEY},
 		{NULL,               0,                 0, 0}
@@ -1800,6 +1808,9 @@ static void _set_options(const int argc, char **argv)
 				exit(error_exit);
 			}
 			opt.delay_boot = (uint32_t) tmp_int;
+			break;
+		case LONG_OPT_USE_MIN_NODES:
+			opt.job_flags |= USE_MIN_NODES;
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
@@ -2766,7 +2777,8 @@ static void _usage(void)
 "            [--bb=burst_buffer_spec] [--bbf=burst_buffer_file]\n"
 "            [--bcast=<dest_path>] [--compress[=library]]\n"
 "            [--acctg-freq=<datatype>=<interval>] [--delay-boot=mins]\n"
-"            [-w hosts...] [-x hosts...] executable [args...]\n");
+"            [-w hosts...] [-x hosts...] [--use-min-nodes]\n"
+"            executable [args...]\n");
 
 }
 
@@ -2868,6 +2880,8 @@ static void _help(void)
 "  -t, --time=minutes          time limit\n"
 "      --time-min=minutes      minimum time limit (if distinct)\n"
 "  -u, --unbuffered            do not line-buffer stdout/err\n"
+"      --use-min-nodes         if a range of node counts is given, prefer the\n"
+"                              smaller count\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
 "  -W, --wait=sec              seconds to wait after first task exits\n"
 "                              before killing job\n"

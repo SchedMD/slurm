@@ -2155,7 +2155,7 @@ The problem with DVS caching is related to the fact that the dereferenced value
 of /opt/slurm/default symlink is cached in the DVS attribute cache, and that
 cache is not dropped when the rest of the VM caches are.</p>
 
-<p>The Cray Native SLURM installation manual indicates that slurm should
+<p>The Cray Native Slurm installation manual indicates that slurm should
 have a "default" symlink run through /etc/alternatives.
 As an alternative to that:
 <ol>
