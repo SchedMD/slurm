@@ -629,8 +629,20 @@ static void _throttle_fini(int *active_rpc_cnt)
  */
 static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 {
-	char *licenses_used = get_licenses_used();  /* Do before config lock */
-	slurm_ctl_conf_t *conf = slurm_conf_lock();
+	slurm_ctl_conf_t *conf;
+	char *licenses_used;
+	uint32_t next_job_id;
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+
+	/* Do before config lock */
+	licenses_used = get_licenses_used();
+
+	lock_slurmctld(job_write_lock);
+	next_job_id   = get_next_job_id(true);
+	unlock_slurmctld(job_write_lock);
+
+	conf = slurm_conf_lock();
 
 	memset(conf_ptr, 0, sizeof(slurm_ctl_conf_t));
 
@@ -760,7 +772,7 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->msg_aggr_params     = xstrdup(conf->msg_aggr_params);
 	conf_ptr->msg_timeout         = conf->msg_timeout;
 
-	conf_ptr->next_job_id         = get_next_job_id();
+	conf_ptr->next_job_id         = next_job_id;
 	conf_ptr->node_features_plugins = xstrdup(conf->node_features_plugins);
 	conf_ptr->node_prefix         = xstrdup(conf->node_prefix);
 

@@ -9891,18 +9891,39 @@ void reset_first_job_id(void)
 }
 
 /*
- * get_next_job_id - return the job_id to be used by default for
- *	the next job
+ * Return the next available job_id to be used.
+ * IN test_only - if true, doesn't advance the job_id sequence, just returns
+ * 	what the next job id will be.
+ * RET a valid job_id or SLURM_ERROR if all job_ids are exhausted.
  */
-extern uint32_t get_next_job_id(void)
+extern uint32_t get_next_job_id(bool test_only)
 {
-	uint32_t next_id;
+	int i;
+	uint32_t new_id, max_jobs, tmp_id_sequence;
 
-	job_id_sequence = MAX(job_id_sequence, slurmctld_conf.first_job_id);
-	next_id = job_id_sequence + 1;
-	if (next_id >= slurmctld_conf.max_job_id)
-		next_id = slurmctld_conf.first_job_id;
-	return next_id;
+	max_jobs = slurmctld_conf.max_job_id - slurmctld_conf.first_job_id;
+	tmp_id_sequence = MAX(job_id_sequence, slurmctld_conf.first_job_id);
+
+	/* Insure no conflict in job id if we roll over 32 bits */
+	for (i = 0; i < max_jobs; i++) {
+		if (++tmp_id_sequence >= slurmctld_conf.max_job_id)
+			tmp_id_sequence = slurmctld_conf.first_job_id;
+		if (find_job_record(tmp_id_sequence))
+			continue;
+		if (_dup_job_file_test(tmp_id_sequence))
+			continue;
+
+		new_id = tmp_id_sequence;
+		if (!test_only)
+			job_id_sequence = new_id;
+
+		return new_id;
+	}
+
+	error("We have exhausted our supply of valid job id values. "
+	      "FirstJobId=%u MaxJobId=%u", slurmctld_conf.first_job_id,
+	      slurmctld_conf.max_job_id);
+	return SLURM_ERROR;
 }
 
 /*
@@ -9911,38 +9932,20 @@ extern uint32_t get_next_job_id(void)
  */
 static int _set_job_id(struct job_record *job_ptr)
 {
-	int i;
-	uint32_t new_id, max_jobs;
+	uint32_t new_id;
 
 	xassert(job_ptr);
 	xassert (job_ptr->magic == JOB_MAGIC);
 
-	max_jobs = slurmctld_conf.max_job_id - slurmctld_conf.first_job_id;
-	job_id_sequence = MAX(job_id_sequence, slurmctld_conf.first_job_id);
-
-	/* Insure no conflict in job id if we roll over 32 bits */
-	for (i = 0; i < max_jobs; i++) {
-		if (++job_id_sequence >= slurmctld_conf.max_job_id)
-			job_id_sequence = slurmctld_conf.first_job_id;
-		new_id = job_id_sequence;
-		if (find_job_record(new_id))
-			continue;
-		if (_dup_job_file_test(new_id))
-			continue;
-
-		if (fed_mgr_is_active())
-			job_ptr->job_id = fed_mgr_get_job_id(new_id);
-		else
-			job_ptr->job_id = new_id;
+	if ((new_id = get_next_job_id(false)) != SLURM_ERROR) {
+		job_ptr->job_id = new_id;
 		/* When we get a new job id might as well make sure
 		 * the db_index is 0 since there is no way it will be
 		 * correct otherwise :). */
 		job_ptr->db_index = 0;
 		return SLURM_SUCCESS;
 	}
-	error("We have exhausted our supply of valid job id values. "
-	      "FirstJobId=%u MaxJobId=%u", slurmctld_conf.first_job_id,
-	      slurmctld_conf.max_job_id);
+
 	job_ptr->job_id = NO_VAL;
 	return EAGAIN;
 }

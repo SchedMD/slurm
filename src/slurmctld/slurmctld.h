@@ -1108,10 +1108,12 @@ extern char **get_job_env (struct job_record *job_ptr, uint32_t *env_size);
 extern char *get_job_script (struct job_record *job_ptr);
 
 /*
- * get_next_job_id - return the job_id to be used by default for
- *	the next job
+ * Return the next available job_id to be used.
+ * IN test_only - if true, doesn't advance the job_id sequence, just returns
+ * 	what the next job id will be.
+ * RET a valid job_id or SLURM_ERROR if all job_ids are exhausted.
  */
-extern uint32_t get_next_job_id(void);
+extern uint32_t get_next_job_id(bool test_only);
 
 /*
  * get_part_list - find record for named partition(s)
