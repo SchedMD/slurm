@@ -124,7 +124,7 @@ proc test_fed_job_id { cname cid} {
 	set clust_id [expr $job_id >> 26]
 
 	send_user "Fed JobID:$job_id Local JobID:$local_id Cluster ID:$clust_id\n"
-	if {$clust_id != $cid} {
+	if {!$rc && ($clust_id != $cid)} {
 		send_user "\nFAILURE: jobid($job_id) from $cname didn't give\
 			correct partition id ($part_id != $cid)\n"
 		incr rc
