@@ -1116,10 +1116,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 					    (void *) new_text);
 		break;
 	case SORTID_IMAGE_LINUX:
-		if (cluster_flags & CLUSTER_FLAG_BGL)
-			type = "LinuxImage";
-		else
-			type = "CnloadImage";
+		type = "CnloadImage";
 
 		if (!job_msg->select_jobinfo)
 			job_msg->select_jobinfo
@@ -1138,10 +1135,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 					    (void *) new_text);
 		break;
 	case SORTID_IMAGE_RAMDISK:
-		if (cluster_flags & CLUSTER_FLAG_BGL)
-			type = "RamdiskImage";
-		else
-			type = "IoloadImage";
+		type = "IoloadImage";
 
 		if (!job_msg->select_jobinfo)
 			job_msg->select_jobinfo
@@ -1611,17 +1605,6 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_GROUP_ID),
 				   tmp_char);
 	if (cluster_flags & CLUSTER_FLAG_BG) {
-		if (cluster_flags & CLUSTER_FLAG_BGL)
-			add_display_treestore_line(
-				update, treestore, &iter,
-				find_col_name(display_data_job,
-					      SORTID_IMAGE_BLRTS),
-				select_g_select_jobinfo_sprint(
-					job_ptr->select_jobinfo,
-					tmp_char,
-					sizeof(tmp_char),
-					SELECT_PRINT_BLRTS_IMAGE));
-
 		add_display_treestore_line(update, treestore, &iter,
 					   find_col_name(display_data_job,
 							 SORTID_IMAGE_LINUX),
@@ -2470,18 +2453,6 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SORTID_ROTATE,        tmp_rotate,
 				   SORTID_SMALL_BLOCK,
 					sview_job_info_ptr->small_block,
-				   -1);
-	}
-
-	if (cluster_flags & CLUSTER_FLAG_BGL) {
-		char tmp_blrts[40];
-
-		select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
-					       tmp_blrts, sizeof(tmp_blrts),
-					       SELECT_PRINT_BLRTS_IMAGE);
-
-		gtk_tree_store_set(treestore, iter,
-				   SORTID_IMAGE_BLRTS,   tmp_blrts,
 				   -1);
 	}
 
@@ -3736,28 +3707,26 @@ extern GtkListStore *create_model_job(int type)
 				   0, "NAV",
 				   1, SORTID_CONNECTION,
 				   -1);
-		if (!(cluster_flags & CLUSTER_FLAG_BGL)) {
-			gtk_list_store_append(model, &iter);
-			gtk_list_store_set(model, &iter,
-					   0, "HTC SMP",
-					   1, SORTID_CONNECTION,
-					   -1);
-			gtk_list_store_append(model, &iter);
-			gtk_list_store_set(model, &iter,
-					   0, "HTC Dual",
-					   1, SORTID_CONNECTION,
-					   -1);
-			gtk_list_store_append(model, &iter);
-			gtk_list_store_set(model, &iter,
-					   0, "HTC Virtual",
-					   1, SORTID_CONNECTION,
-					   -1);
-			gtk_list_store_append(model, &iter);
-			gtk_list_store_set(model, &iter,
-					   0, "HTC Linux",
-					   1, SORTID_CONNECTION,
-					   -1);
-		}
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "HTC SMP",
+				   1, SORTID_CONNECTION,
+				   -1);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "HTC Dual",
+				   1, SORTID_CONNECTION,
+				   -1);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "HTC Virtual",
+				   1, SORTID_CONNECTION,
+				   -1);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "HTC Linux",
+				   1, SORTID_CONNECTION,
+				   -1);
 		break;
 	default:
 		break;
@@ -4999,30 +4968,16 @@ extern void cluster_change_job(void)
 			default:
 				break;
 			}
-			if (cluster_flags & CLUSTER_FLAG_BGL) {
-				switch(display_data->id) {
-				case SORTID_IMAGE_BLRTS:
-					display_data->name = "Image Blrts";
-					break;
-				case SORTID_IMAGE_LINUX:
-					display_data->name = "Image Linux";
-					break;
-				case SORTID_IMAGE_RAMDISK:
-					display_data->name = "Image Ramdisk";
-					break;
-				}
-			} else {
-				switch(display_data->id) {
-				case SORTID_IMAGE_BLRTS:
-					display_data->name = NULL;
-					break;
-				case SORTID_IMAGE_LINUX:
-					display_data->name = "Image Cnload";
-					break;
-				case SORTID_IMAGE_RAMDISK:
-					display_data->name = "Image Ioload";
-					break;
-				}
+			switch(display_data->id) {
+			case SORTID_IMAGE_BLRTS:
+				display_data->name = NULL;
+				break;
+			case SORTID_IMAGE_LINUX:
+				display_data->name = "Image Cnload";
+				break;
+			case SORTID_IMAGE_RAMDISK:
+				display_data->name = "Image Ioload";
+				break;
 			}
 		} else {
 			switch(display_data->id) {

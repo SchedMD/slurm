@@ -273,36 +273,6 @@ static void _layout_block_record(GtkTreeView *treeview,
 					   find_col_name(display_data_block,
 							 SORTID_IMAGEMLOADER),
 					   block_ptr->imagemloader);
-	} else if (cluster_flags & CLUSTER_FLAG_BGP) {
-		add_display_treestore_line(update, treestore, &iter,
-					   find_col_name(display_data_block,
-							 SORTID_IMAGELINUX),
-					   block_ptr->imagelinux);
-		add_display_treestore_line(update, treestore, &iter,
-					   find_col_name(display_data_block,
-							 SORTID_IMAGERAMDISK),
-					   block_ptr->imageramdisk);
-		add_display_treestore_line(update, treestore, &iter,
-					   find_col_name(display_data_block,
-							 SORTID_IMAGEMLOADER),
-					   block_ptr->imagemloader);
-	} else if (cluster_flags & CLUSTER_FLAG_BGL) {
-		add_display_treestore_line(update, treestore, &iter,
-					   find_col_name(display_data_block,
-							 SORTID_IMAGEBLRTS),
-					   block_ptr->imageblrts);
-		add_display_treestore_line(update, treestore, &iter,
-					   find_col_name(display_data_block,
-							 SORTID_IMAGELINUX),
-					   block_ptr->imagelinux);
-		add_display_treestore_line(update, treestore, &iter,
-					   find_col_name(display_data_block,
-							 SORTID_IMAGEMLOADER),
-					   block_ptr->imagemloader);
-		add_display_treestore_line(update, treestore, &iter,
-					   find_col_name(display_data_block,
-							 SORTID_IMAGERAMDISK),
-					   block_ptr->imageramdisk);
 	}
 
 	tmp_char = _set_running_job_str(block_ptr->job_list, 0);
@@ -312,13 +282,7 @@ static void _layout_block_record(GtkTreeView *treeview,
 						 SORTID_JOB),
 				   tmp_char);
 	xfree(tmp_char);
-	if (cluster_flags & CLUSTER_FLAG_BGL) {
-		add_display_treestore_line(update, treestore, &iter,
-					   find_col_name(display_data_block,
-							 SORTID_USE),
-					   node_use_string(
-						   block_ptr->bg_node_use));
-	} convert_num_unit((float)block_ptr->cnode_cnt, tmp_cnt,
+	convert_num_unit((float)block_ptr->cnode_cnt, tmp_cnt,
 			   sizeof(tmp_cnt), UNIT_NONE, NO_VAL,
 			   working_sview_config.convert_flags);
 	if (cluster_flags & CLUSTER_FLAG_BGQ) {
@@ -390,21 +354,6 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 	xfree(tmp_char2);
 	if (cluster_flags & CLUSTER_FLAG_BGQ)
 		xfree(tmp_char3);
-
-	if (cluster_flags & CLUSTER_FLAG_BGP) {
-		gtk_tree_store_set(treestore, &block_ptr->iter_ptr,
-				   SORTID_IMAGERAMDISK, block_ptr->imageramdisk,
-				   SORTID_IMAGELINUX,   block_ptr->imagelinux,
-				   -1);
-	} else if (cluster_flags & CLUSTER_FLAG_BGL) {
-		gtk_tree_store_set(treestore, &block_ptr->iter_ptr,
-				   SORTID_IMAGERAMDISK, block_ptr->imageramdisk,
-				   SORTID_IMAGELINUX,   block_ptr->imagelinux,
-				   SORTID_IMAGEBLRTS,   block_ptr->imageblrts,
-				   SORTID_USE,
-					node_use_string(block_ptr->bg_node_use),
-				   -1);
-	}
 
 	return;
 }
@@ -623,20 +572,6 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 		block_ptr->reason
 			= xstrdup(block_info_ptr->block_array[i].reason);
 
-		if (cluster_flags & CLUSTER_FLAG_BGP) {
-			block_ptr->imagelinux = xstrdup(
-				block_info_ptr->block_array[i].linuximage);
-			block_ptr->imageramdisk = xstrdup(
-				block_info_ptr->block_array[i].ramdiskimage);
-		} else if (cluster_flags & CLUSTER_FLAG_BGL) {
-			block_ptr->imageblrts = xstrdup(
-				block_info_ptr->block_array[i].blrtsimage);
-			block_ptr->imagelinux = xstrdup(
-				block_info_ptr->block_array[i].linuximage);
-			block_ptr->imageramdisk = xstrdup(
-				block_info_ptr->block_array[i].ramdiskimage);
-		}
-
 		block_ptr->imagemloader = xstrdup(
 			block_info_ptr->block_array[i].mloaderimage);
 
@@ -645,10 +580,6 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 		memcpy(block_ptr->bg_conn_type,
 		       block_info_ptr->block_array[i].conn_type,
 		       sizeof(block_ptr->bg_conn_type));
-
-		if (cluster_flags & CLUSTER_FLAG_BGL)
-			block_ptr->bg_node_use
-				= block_info_ptr->block_array[i].node_use;
 
 		block_ptr->cnode_cnt
 			= block_info_ptr->block_array[i].cnode_cnt;
@@ -1585,44 +1516,6 @@ extern void cluster_change_block(void)
 			case SORTID_IMAGELINUX:
 			case SORTID_IMAGERAMDISK:
 				display_data->name = NULL;
-				break;
-			default:
-				break;
-			}
-		} else if (cluster_flags & CLUSTER_FLAG_BGP) {
-			switch(display_data->id) {
-			case SORTID_USE:
-			case SORTID_IMAGEBLRTS:
-				display_data->name = NULL;
-				break;
-			case SORTID_IMAGELINUX:
-				display_data->name = "Image Cnload";
-				break;
-			case SORTID_IMAGERAMDISK:
-				display_data->name = "Image Ioload";
-				break;
-			case SORTID_USER:
-				display_data->name = "User";
-				break;
-			default:
-				break;
-			}
-		} else if (cluster_flags & CLUSTER_FLAG_BGL) {
-			switch(display_data->id) {
-			case SORTID_USE:
-				display_data->name = "Node Use";
-				break;
-			case SORTID_IMAGEBLRTS:
-				display_data->name = "Image Blrt";
-				break;
-			case SORTID_IMAGELINUX:
-				display_data->name = "Image Linux";
-				break;
-			case SORTID_IMAGERAMDISK:
-				display_data->name = "Image Ramdisk";
-				break;
-			case SORTID_USER:
-				display_data->name = "User";
 				break;
 			default:
 				break;

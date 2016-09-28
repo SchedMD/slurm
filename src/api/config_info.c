@@ -445,17 +445,13 @@ void slurm_print_ctl_conf ( FILE* out,
 	char *select_title = "Select Plugin Configuration";
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
-	if (cluster_flags & CLUSTER_FLAG_BGL)
-		select_title = "\nBluegene/L configuration\n";
-	else if (cluster_flags & CLUSTER_FLAG_BGP)
-		select_title = "\nBluegene/P configuration\n";
-	else if (cluster_flags & CLUSTER_FLAG_BGQ)
+	if (cluster_flags & CLUSTER_FLAG_BGQ)
 		select_title = "\nBluegene/Q configuration\n";
 	else if (cluster_flags & CLUSTER_FLAG_CRAY)
 		select_title = "\nCray configuration\n";
 
-	if ( slurm_ctl_conf_ptr == NULL )
-		return ;
+	if (slurm_ctl_conf_ptr == NULL)
+		return;
 
 	slurm_make_time_str((time_t *)&slurm_ctl_conf_ptr->last_update,
 			     time_str, sizeof(time_str));

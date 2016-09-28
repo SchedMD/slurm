@@ -498,9 +498,7 @@ extern void verify_conn_type(const char *arg, uint16_t *conn_type)
 	char *arg_tmp = xstrdup(arg), *tok, *save_ptr = NULL;
 
 	if (working_cluster_rec) {
-		if (working_cluster_rec->flags & CLUSTER_FLAG_BGP)
-			got_bgp = 1;
-		else if (working_cluster_rec->flags & CLUSTER_FLAG_BGQ)
+		if (working_cluster_rec->flags & CLUSTER_FLAG_BGQ)
 			highest_dims = 4;
 	} else {
 #if defined HAVE_BGQ

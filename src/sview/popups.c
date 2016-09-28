@@ -246,11 +246,7 @@ static void _layout_conf_ctl(GtkTreeStore *treestore,
 	List ret_list = NULL;
 	char *select_title = "Select Plugin Configuration";
 
-	if (cluster_flags & CLUSTER_FLAG_BGL)
-		select_title = "Bluegene/L configuration";
-	else if (cluster_flags & CLUSTER_FLAG_BGP)
-		select_title = "Bluegene/P configuration";
-	else if (cluster_flags & CLUSTER_FLAG_BGQ)
+	if (cluster_flags & CLUSTER_FLAG_BGQ)
 		select_title = "Bluegene/Q configuration";
 	else if (cluster_flags & CLUSTER_FLAG_CRAY)
 		select_title = "\nCray configuration\n";
@@ -788,24 +784,10 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 		while (display_data++) {
 			if (display_data->id == -1)
 				break;
-			if (cluster_flags & CLUSTER_FLAG_BGL) {
-				switch(display_data->id) {
-				case BG_BLOCK_BUSY:
-					display_data->name = "Busy";
-					break;
-				}
-			} else if (cluster_flags & CLUSTER_FLAG_BGP){
-				switch(display_data->id) {
-				case BG_BLOCK_REBOOTING:
-					display_data->name = "Rebooting";
-					break;
-				}
-			} else {
-				switch(display_data->id) {
-				case BG_BLOCK_ALLOCATED:
-					display_data->name = "Allocated";
-					break;
-				}
+			switch(display_data->id) {
+			case BG_BLOCK_ALLOCATED:
+				display_data->name = "Allocated";
+				break;
 			}
 		}
 		sview_search_info.search_type = SEARCH_BLOCK_STATE;

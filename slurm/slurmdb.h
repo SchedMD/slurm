@@ -186,7 +186,9 @@ enum cluster_fed_states {
 /* Cluster flags */
 #define CLUSTER_FLAG_BG     0x00000001 /* This is a bluegene cluster */
 #define CLUSTER_FLAG_BGL    0x00000002 /* This is a bluegene/l cluster */
+				       /* Removed v17.02 */
 #define CLUSTER_FLAG_BGP    0x00000004 /* This is a bluegene/p cluster */
+				       /* Removed v17.02 */
 #define CLUSTER_FLAG_BGQ    0x00000008 /* This is a bluegene/q cluster */
 #define CLUSTER_FLAG_SC     0x00000010 /* This is a sun constellation cluster */
 				       /* Removed v16.05 */

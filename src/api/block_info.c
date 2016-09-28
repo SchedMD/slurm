@@ -146,9 +146,6 @@ char *slurm_sprint_block_info(
 	tmp_char = conn_type_string_full(block_ptr->conn_type);
 	xstrfmtcat(out, "ConnType=%s", tmp_char);
 	xfree(tmp_char);
-	if (cluster_flags & CLUSTER_FLAG_BGL)
-		xstrfmtcat(out, " NodeUse=%s",
-			   node_use_string(block_ptr->node_use));
 
 	xstrcat(out, line_end);
 
@@ -172,23 +169,6 @@ char *slurm_sprint_block_info(
 	/****** Line 4 ******/
 	xstrfmtcat(out, "MloaderImage=%s%s",
 		   block_ptr->mloaderimage, line_end);
-
-	if (cluster_flags & CLUSTER_FLAG_BGL) {
-		/****** Line 5 ******/
-		xstrfmtcat(out, "BlrtsImage=%s%s", block_ptr->blrtsimage,
-			   line_end);
-		/****** Line 6 ******/
-		xstrfmtcat(out, "LinuxImage=%s%s", block_ptr->linuximage,
-			   line_end);
-		/****** Line 7 ******/
-		xstrfmtcat(out, "RamdiskImage=%s", block_ptr->ramdiskimage);
-	} else if (cluster_flags & CLUSTER_FLAG_BGP) {
-		/****** Line 5 ******/
-		xstrfmtcat(out, "CnloadImage=%s%s", block_ptr->linuximage,
-			   line_end);
-		/****** Line 6 ******/
-		xstrfmtcat(out, "IoloadImage=%s", block_ptr->ramdiskimage);
-	}
 
 	if (block_ptr->reason)
 		xstrfmtcat(out, "Reason=%s%s",

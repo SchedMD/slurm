@@ -850,27 +850,13 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 			xstrcat(out, select_buf);
 		}
 
-		if (cluster_flags & CLUSTER_FLAG_BGL) {
-			/****** Line 25 (optional) ******/
-			select_g_select_jobinfo_sprint(
-				job_ptr->select_jobinfo,
-				select_buf, sizeof(select_buf),
-				SELECT_PRINT_BLRTS_IMAGE);
-			if (select_buf[0] != '\0') {
-				xstrcat(out, line_end);
-				xstrfmtcat(out, "BlrtsImage=%s", select_buf);
-			}
-		}
 		/****** Line 26 (optional) ******/
 		select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 					       select_buf, sizeof(select_buf),
 					       SELECT_PRINT_LINUX_IMAGE);
 		if (select_buf[0] != '\0') {
 			xstrcat(out, line_end);
-			if (cluster_flags & CLUSTER_FLAG_BGL)
-				xstrfmtcat(out, "LinuxImage=%s", select_buf);
-			else
-				xstrfmtcat(out, "CnloadImage=%s", select_buf);
+			xstrfmtcat(out, "CnloadImage=%s", select_buf);
 		}
 		/****** Line 27 (optional) ******/
 		select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
@@ -886,10 +872,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 					       SELECT_PRINT_RAMDISK_IMAGE);
 		if (select_buf[0] != '\0') {
 			xstrcat(out, line_end);
-			if (cluster_flags & CLUSTER_FLAG_BGL)
-				xstrfmtcat(out, "RamDiskImage=%s", select_buf);
-			else
-				xstrfmtcat(out, "IoloadImage=%s", select_buf);
+			xstrfmtcat(out, "IoloadImage=%s", select_buf);
 		}
 	}
 

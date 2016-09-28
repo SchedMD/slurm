@@ -132,12 +132,6 @@ static uint32_t _str_2_cluster_flags(char *flags_in)
 	if (xstrcasestr(flags_in, "AIX"))
 		return CLUSTER_FLAG_AIX;
 
-	if (xstrcasestr(flags_in, "BGL"))
-		return CLUSTER_FLAG_BGL;
-
-	if (xstrcasestr(flags_in, "BGP"))
-		return CLUSTER_FLAG_BGP;
-
 	if (xstrcasestr(flags_in, "BGQ"))
 		return CLUSTER_FLAG_BGQ;
 
@@ -177,7 +171,7 @@ extern uint32_t slurmdb_str_2_cluster_flags(char *flags_in)
 	return cluster_flags;
 }
 
-/*needs to be xfreed */
+/* must xfree() returned string */
 extern char *slurmdb_cluster_flags_2_str(uint32_t flags_in)
 {
 	char *cluster_flags = NULL;
@@ -192,18 +186,6 @@ extern char *slurmdb_cluster_flags_2_str(uint32_t flags_in)
 		if (cluster_flags)
 			xstrcat(cluster_flags, ",");
 		xstrcat(cluster_flags, "Bluegene");
-	}
-
-	if (flags_in & CLUSTER_FLAG_BGL) {
-		if (cluster_flags)
-			xstrcat(cluster_flags, ",");
-		xstrcat(cluster_flags, "BGL");
-	}
-
-	if (flags_in & CLUSTER_FLAG_BGP) {
-		if (cluster_flags)
-			xstrcat(cluster_flags, ",");
-		xstrcat(cluster_flags, "BGP");
 	}
 
 	if (flags_in & CLUSTER_FLAG_BGQ) {
