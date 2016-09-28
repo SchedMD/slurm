@@ -918,7 +918,7 @@ extern slurmdb_federation_rec_t *fed_mgr_state_load(char *state_save_location)
 		 !list_count(ret_fed->cluster_list)) {
 		slurmdb_destroy_federation_rec(ret_fed);
 		ret_fed = NULL;
-		error("No feds retrieved");
+		debug("No feds to retrieve from state");
 	} else {
 		/* We want to free the connections here since they don't exist
 		 * anymore, but they were packed when state was saved. */
