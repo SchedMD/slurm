@@ -2617,137 +2617,143 @@ expect {
 }
 expect -re $
 
-for {set i 1} {$i <= $max_federations} {incr i} {
-	set matches 0
-	set tmpc "max${i}_$test_id_2"
-	set my_pid [spawn $sacctmgr -i add cluster $tmpc federation=$fed1]
-	if {$i < $max_federations} {
-		expect {
-			-re "Adding Cluster\\(s\\)$eol" {
-				incr matches
-				exp_continue
-			}
-			-re "\\s+$tmpc$eol" {
-				incr matches
-				exp_continue
-			}
-			-re "\\s+Setting$eol" {
-				incr matches
-				exp_continue
-			}
-			-re "\\s+Federation\\s+=\\s+$fed1$eol" {
-				incr matches
-				exp_continue
-			}
-			timeout {
-				send_user "\nFAILURE: sacctmgr add not responding\n"
-				slow_kill $my_pid
-				set exit_code 1
-			}
-			eof {
-				wait
-			}
-		}
-		if {$exit_code || $matches != 4} {
-			send_user "$matches FAILURE: unexpected error.\n"
-			end_it 1
-		}
-	} else {
-		expect {
-			-re "Adding Cluster\\(s\\)$eol" {
-				incr matches
-				exp_continue
-			}
-			-re "\\s+$tmpc$eol" {
-				incr matches
-				exp_continue
-			}
-			-re "\\s+Setting$eol" {
-				incr matches
-				exp_continue
-			}
-			-re "\\s+Federation\\s+=\\s+$fed1$eol" {
-				incr matches
-				exp_continue
-			}
-			-re "\\s+Problem adding clusters: Too many clusters in federation?" {
-				incr matches
-				exp_continue
-			}
-			timeout {
-				send_user "\nFAILURE: sacctmgr add not responding\n"
-				slow_kill $my_pid
-				set exit_code 1
-			}
-			eof {
-				wait
-			}
-		}
-		if {$exit_code || $matches != 5} {
-			send_user "$matches FAILURE: unexpected error.\n"
-			end_it 1
-		}
-
-		set matches 0
-		#####################################
-		# TEST: modify cluster to exceed max clusters in federation
-		#####################################
-		#add last cluster without federation
-		set my_pid [spawn $sacctmgr -i add cluster $tmpc]
-		expect {
-			-re "Adding Cluster\\(s\\)$eol" {
-				incr matches
-				exp_continue
-			}
-			-re "\\s+$tmpc$eol" {
-				incr matches
-				exp_continue
-			}
-			timeout {
-				send_user "\nFAILURE: sacctmgr add not responding\n"
-				slow_kill $my_pid
-				set exit_code 1
-			}
-			eof {
-				wait
-			}
-		}
-		if {$exit_code || $matches != 2} {
-			send_user "$matches FAILURE: unexpected error.\n"
-			end_it 1
-		}
-
-		set matches 0
-		set my_pid [spawn $sacctmgr -i modify cluster $tmpc set federation=$fed1]
-		expect {
-			-re "Setting$eol" {
-				incr matches
-				exp_continue
-			}
-			-re "^\\s+Federation\\s+=\\s+$fed1$eol" {
-				incr matches
-				exp_continue
-			}
-			-re "sacctmgr: error: Too many clusters in federation$eol" {
-				incr matches
-				exp_continue
-			}
-			timeout {
-				send_user "\nFAILURE: sacctmgr add not responding\n"
-				slow_kill $my_pid
-				set exit_code 1
-			}
-			eof {
-				wait
-			}
-		}
-		if {$exit_code || $matches != 3} {
-			send_user "$matches FAILURE: unexpected error.\n"
-			end_it 1
-		}
+set matches 0
+set tmp_clusters ""
+for {set i 1} {$i < $max_federations} {incr i} {
+	if {$i > 1} {
+		append tmp_clusters ","
 	}
-
+	append tmp_clusters "max${i}_$test_id_2"
 }
+set timeout 300
+set my_pid [spawn $sacctmgr -i add cluster $tmp_clusters federation=$fed1]
+expect {
+	-re "Adding Cluster\\(s\\)$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+max\[1-6\]{0,1}\\d{1}_$test_id_2$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+Federation\\s+=\\s+$fed1$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 66} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+set matches 0
+set tmpc "max${i}_$test_id_2"
+set my_pid [spawn $sacctmgr -i add cluster $tmpc federation=$fed1]
+expect {
+	-re "Adding Cluster\\(s\\)$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+$tmpc$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+Federation\\s+=\\s+$fed1$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+Problem adding clusters: Too many clusters in federation?" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 5} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+set matches 0
+#####################################
+# TEST: modify cluster to exceed max clusters in federation
+#####################################
+#add last cluster without federation
+set my_pid [spawn $sacctmgr -i add cluster $tmpc]
+expect {
+	-re "Adding Cluster\\(s\\)$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+$tmpc$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 2} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+set matches 0
+set my_pid [spawn $sacctmgr -i modify cluster $tmpc set federation=$fed1]
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Federation\\s+=\\s+$fed1$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "sacctmgr: error: Too many clusters in federation$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 3} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
 set matches 0
 set my_pid [spawn $sacctmgr show federation $fed1 format="federation%20,cluster%20"]
 expect {
