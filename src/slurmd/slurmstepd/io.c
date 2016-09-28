@@ -933,7 +933,7 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 	 *  Initialize stdin
 	 */
 #ifdef HAVE_PTY_H
-	if (job->pty) {
+	if (job->flags & LAUNCH_PTY) {
 		/* All of the stdin fails unless EVERY
 		 * task gets an eio object for stdin.
 		 * Its not clear why that is. */
@@ -1019,7 +1019,7 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 	 *  Initialize stdout
 	 */
 #ifdef HAVE_PTY_H
-	if (job->pty) {
+	if (job->flags & LAUNCH_PTY) {
 		if (task->gtid == 0) {
 			task->stdout_fd = dup(task->stdin_fd);
 			fd_set_close_on_exec(task->stdout_fd);
@@ -1037,8 +1037,9 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 			fd_set_close_on_exec(task->stdout_fd);
 			task->from_stdout = -1;  /* not used */
 		}
-	} else if (task->ofname != NULL &&
-		   (!job->labelio || xstrcmp(task->ofname, "/dev/null")==0)) {
+	} else if ((task->ofname != NULL) &&
+		   (((job->flags & LAUNCH_LABEL_IO) == 0) ||
+		    (xstrcmp(task->ofname, "/dev/null") == 0))) {
 #else
 	if (task->ofname != NULL &&
 	    (!job->labelio || xstrcmp(task->ofname, "/dev/null")==0) ) {
@@ -1061,7 +1062,7 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 		/* create pipe and eio object */
 		int pout[2];
 #if HAVE_PTY_H
-		if (job->buffered_stdio) {
+		if (job->flags & LAUNCH_BUFFERED_IO) {
 #if HAVE_SETRESUID
 			if (setresuid(geteuid(), geteuid(), 0) < 0)
 				error("%s: %d setresuid() %m",
@@ -1104,7 +1105,7 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 	 *  Initialize stderr
 	 */
 #ifdef HAVE_PTY_H
-	if (job->pty) {
+	if (job->flags & LAUNCH_PTY) {
 		if (task->gtid == 0) {
 			/* Make a file descriptor for the task to write to, but
 			   don't make a separate one read from, because in pty
@@ -1123,11 +1124,14 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 			fd_set_close_on_exec(task->stderr_fd);
 			task->from_stderr = -1;  /* not used */
 		}
-	} else if (task->efname != NULL &&
-		   (!job->labelio || xstrcmp(task->efname, "/dev/null")==0)) {
+
+	} else if ((task->efname != NULL) &&
+		   (((job->flags & LAUNCH_LABEL_IO) == 0) ||
+		    (xstrcmp(task->efname, "/dev/null") == 0))) {
 #else
-	if (task->efname != NULL &&
-	    (!job->labelio || xstrcmp(task->efname, "/dev/null")==0) ) {
+	if ((task->efname != NULL) &&
+	    (((job->flags & LAUNCH_LABEL_IO) == 0) ||
+	     (xstrcmp(task->efname, "/dev/null") == 0))) {
 #endif
 		int count = 0;
 		/* open file on task's stdout */

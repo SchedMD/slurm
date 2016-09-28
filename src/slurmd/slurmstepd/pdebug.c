@@ -62,7 +62,7 @@ pdebug_trace_process(stepd_step_rec_t *job, pid_t pid)
 	 *  ptrace(PTRACE_DETACH).
 	 */
 
-	if (job->task_flags & TASK_PARALLEL_DEBUG) {
+	if (job->flags & LAUNCH_PARALLEL_DEBUG) {
 		int status;
 		waitpid(pid, &status, WUNTRACED);
 		if (!WIFSTOPPED(status)) {
@@ -126,7 +126,7 @@ pdebug_stop_current(stepd_step_rec_t *job)
 	/*
 	 * Stop the task on exec for TotalView to connect
 	 */
-	if ( (job->task_flags & TASK_PARALLEL_DEBUG)
+	if ( (job->flags & LAUNCH_PARALLEL_DEBUG)
 #ifdef BSD
 	     && (_PTRACE(PT_TRACE_ME, 0, (caddr_t)0, 0) < 0) )
 #elif defined(PT_TRACE_ME)
@@ -189,7 +189,7 @@ static bool _pid_to_wake(pid_t pid)
  */
 void pdebug_wake_process(stepd_step_rec_t *job, pid_t pid)
 {
-	if ((job->task_flags & TASK_PARALLEL_DEBUG) && (pid > (pid_t) 0)) {
+	if ((job->flags & LAUNCH_PARALLEL_DEBUG) && (pid > (pid_t) 0)) {
 		if (_pid_to_wake(pid)) {
 			if (kill(pid, SIGCONT) < 0)
 				error("kill(%lu): %m", (unsigned long) pid);

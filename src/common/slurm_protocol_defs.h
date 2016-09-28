@@ -156,15 +156,6 @@
    typedef struct switch_node_info switch_node_info_t;
 #endif
 
-/* used to define flags of the launch_tasks_request_msg_t and
- * spawn task_request_msg_t task_flags
- */
-enum task_flag_vals {
-	TASK_PARALLEL_DEBUG = 0x1,
-	TASK_UNUSED1 = 0x2,
-	TASK_UNUSED2 = 0x4
-};
-
 /*
  * SLURM Message types
  *
@@ -765,6 +756,13 @@ typedef struct job_step_create_response_msg {
 				      */
 } job_step_create_response_msg_t;
 
+#define LAUNCH_PARALLEL_DEBUG	0x00000001
+#define LAUNCH_MULTI_PROG	0x00000002
+#define LAUNCH_PTY		0x00000004
+#define LAUNCH_BUFFERED_IO	0x00000008
+#define LAUNCH_LABEL_IO		0x00000010
+#define LAUNCH_USER_MANAGED_IO	0x00000020
+
 typedef struct launch_tasks_request_msg {
 	uint32_t  job_id;
 	uint32_t  job_step_id;
@@ -784,7 +782,6 @@ typedef struct launch_tasks_request_msg {
 	uint16_t  *tasks_to_launch;
 	uint32_t  envc;
 	uint32_t  argc;
-	uint16_t  multi_prog;
 	uint16_t  node_cpus;
 	uint16_t  cpus_per_task;
 	char    **env;
@@ -800,14 +797,10 @@ typedef struct launch_tasks_request_msg {
 
         /* Distribution at the lowest level of logical processor (lllp) */
 	uint32_t task_dist;  /* --distribution=, -m dist	*/
-	uint16_t  task_flags;
+	uint32_t flags;		/* See LAUNCH_* flags defined above */
 	uint32_t **global_task_ids;
 	slurm_addr_t orig_addr;	  /* where message really came from for io */
-
-	uint16_t user_managed_io; /* 0 for "normal" IO,
-				     1 for "user manged" IO */
 	uint8_t open_mode;	/* stdout/err append or truncate */
-	uint8_t pty;		/* use pseudo tty */
 	char *acctg_freq;	/* accounting polling intervals */
 	uint32_t cpu_freq_min;  /* Minimum cpu frequency  */
 	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
@@ -819,8 +812,6 @@ typedef struct launch_tasks_request_msg {
 	char     *ofname; /* stdout filename pattern */
 	char     *efname; /* stderr filename pattern */
 	char     *ifname; /* stdin filename pattern */
-	uint8_t   buffered_stdio; /* 1 for line-buffered, 0 for unbuffered */
-	uint8_t   labelio;  /* prefix output lines with the task number */
 	uint16_t  num_io_port;
 	uint16_t  *io_port;  /* array of available client IO listen ports */
 	/**********  END  "normal" IO only options **********/

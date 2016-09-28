@@ -164,7 +164,6 @@ typedef struct {
 	bool           aborted;    /* true if already aborted               */
 	bool           batch;      /* true if this is a batch job           */
 	bool           run_prolog; /* true if need to run prolog            */
-	bool           user_managed_io;
 	time_t         timelimit;  /* time at which job must stop           */
 	uint32_t       profile;	   /* Level of acct_gather_profile          */
 	char          *task_prolog; /* per-task prolog                      */
@@ -196,20 +195,13 @@ typedef struct {
 			       * used when a new client attaches
 			       */
 
-	uint8_t	buffered_stdio; /* stdio buffering flag, 1 for line-buffering,
-				 * 0 for no buffering
-				 */
-	uint8_t labelio;	/* 1 for labelling output with the task id */
-
 	pthread_t      ioid;  /* pthread id of IO thread                    */
 	pthread_t      msgid; /* pthread id of message thread               */
 	eio_handle_t  *msg_handle; /* eio handle for the message thread     */
 
 	pid_t          jmgr_pid;     /* job manager pid                     */
 	pid_t          pgid;         /* process group id for tasks          */
-
-	uint16_t       task_flags;
-	uint16_t       multi_prog;
+	uint32_t       flags;        /* See LAUNCH_* flags defined in slurm_protocol_defs.h */
 	uint16_t       overcommit;
 	env_t          *envtp;
 	uint64_t       cont_id;
@@ -217,7 +209,6 @@ typedef struct {
 	char          *batchdir;
 	jobacctinfo_t *jobacct;
 	uint8_t        open_mode;	/* stdout/err append or truncate */
-	uint8_t        pty;		/* set if creating pseudo tty	*/
 	job_options_t  options;
 	char          *ckpt_dir;
 	time_t         ckpt_timestamp;

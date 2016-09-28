@@ -37,6 +37,9 @@ documents those changes that are of interest to users and administrators.
     the same logic that was found in the slurmdbd.  Now both functionalities
     share the same code.
  -- Remove BlueGene/L and BlueGene/P support.
+ -- Add "flag" field to launch_tasks_request_msg. Remove the following fields
+    (moved into flags): multi_prog, task_flags, user_managed_io, pty,
+    buffered_stdio, and labelio.
 
 * Changes in Slurm 17.02.0pre1
 ==============================

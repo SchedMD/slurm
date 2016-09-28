@@ -542,8 +542,7 @@ _setup_normal_io(stepd_step_rec_t *job)
 		   the stepd rather than sent back to srun or written directly
 		   from the node.  When a task has ofname or efname == NULL, it
 		   means data gets sent back to the client. */
-
-		if (job->labelio) {
+		if (job->flags & LAUNCH_LABEL_IO) {
 			slurmd_filename_pattern_t outpattern, errpattern;
 			bool same = false;
 			int file_flags;
@@ -558,7 +557,7 @@ _setup_normal_io(stepd_step_rec_t *job)
 				for (ii = 0; ii < job->node_tasks; ii++) {
 					rc = io_create_local_client(
 						job->task[ii]->ofname,
-						file_flags, job, job->labelio,
+						file_flags, job, 1,
 						job->task[ii]->id,
 						same ? job->task[ii]->id : -2);
 					if (rc != SLURM_SUCCESS) {
@@ -574,9 +573,8 @@ _setup_normal_io(stepd_step_rec_t *job)
 			} else if (outpattern == SLURMD_ALL_SAME) {
 				/* Open a file for all tasks */
 				rc = io_create_local_client(
-					job->task[0]->ofname,
-					file_flags, job, job->labelio,
-					-1, same ? -1 : -2);
+					job->task[0]->ofname, file_flags,
+					job, 1, -1, same ? -1 : -2);
 				if (rc != SLURM_SUCCESS) {
 					error("Could not open output file %s: %m",
 					      job->task[0]->ofname);
@@ -595,8 +593,7 @@ _setup_normal_io(stepd_step_rec_t *job)
 					     ii < job->node_tasks; ii++) {
 						rc = io_create_local_client(
 							job->task[ii]->efname,
-							file_flags, job,
-							job->labelio,
+							file_flags, job, 1,
 							-2, job->task[ii]->id);
 						if (rc != SLURM_SUCCESS) {
 							error("Could not open error file %s: %m",
@@ -611,8 +608,7 @@ _setup_normal_io(stepd_step_rec_t *job)
 					/* Open a file for all tasks */
 					rc = io_create_local_client(
 						job->task[0]->efname,
-						file_flags, job, job->labelio,
-						-2, -1);
+						file_flags, job, 1, -2, -1);
 					if (rc != SLURM_SUCCESS) {
 						error("Could not open error file %s: %m",
 						      job->task[0]->efname);
@@ -1341,7 +1337,8 @@ fail2:
 	/*
 	 * Wait for io thread to complete (if there is one)
 	 */
-	if (!job->batch && !job->user_managed_io && io_initialized)
+	if (!job->batch && io_initialized &&
+	    ((job->flags & LAUNCH_USER_MANAGED_IO) == 0))
 		_wait_for_io(job);
 
 	/*
@@ -1566,7 +1563,7 @@ static int exec_wait_kill_children (List exec_wait_list)
 static void prepare_stdio (stepd_step_rec_t *job, stepd_step_task_info_t *task)
 {
 #ifdef HAVE_PTY_H
-	if (job->pty && (task->gtid == 0)) {
+	if ((job->flags & LAUNCH_PTY) && (task->gtid == 0)) {
 		if (login_tty(task->stdin_fd))
 			error("login_tty: %m");
 		else
@@ -1633,7 +1630,7 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 		goto fail1; /* pam_setup error */
 
 	set_umask(job);		/* set umask for stdout/err files */
-	if (job->user_managed_io)
+	if (job->flags & LAUNCH_USER_MANAGED_IO)
 		rc = _setup_user_managed_io(job);
 	else
 		rc = _setup_normal_io(job);
@@ -1813,13 +1810,10 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 		 * session, causing setpgid() to fail, setsid()
 		 * has already set its process group as desired
 		 */
-		if ((job->pty == 0)
-		    &&  (setpgid (job->task[i]->pid, job->pgid) < 0)) {
-			error("Unable to put task %d (pid %d) into "
-			      "pgrp %d: %m",
-			      i,
-			      job->task[i]->pid,
-			      job->pgid);
+		if (((job->flags & LAUNCH_PTY) == 0) &&
+		    (setpgid (job->task[i]->pid, job->pgid) < 0)) {
+			error("Unable to put task %d (pid %d) into pgrp %d: %m",
+			      i, job->task[i]->pid, job->pgid);
 		}
 
 		if (proctrack_g_add(job, job->task[i]->pid)
@@ -2554,7 +2548,9 @@ _slurmd_job_log_init(stepd_step_rec_t *job)
 	 *   STDERR_FILENO to the task's pts on stderr to avoid hangs in
 	 *   the slurmstepd.
 	 */
-	if (!job->user_managed_io && !job->pty && job->task != NULL) {
+	if (((job->flags & LAUNCH_USER_MANAGED_IO) == 0) &&
+	    ((job->flags & LAUNCH_PTY) == 0) &&
+	    (job->task != NULL)) {
 		if (dup2(job->task[0]->stderr_fd, STDERR_FILENO) < 0) {
 			error("job_log_init: dup2(stderr): %m");
 			return ESLURMD_IO_ERROR;

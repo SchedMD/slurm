@@ -9993,15 +9993,11 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 		pack16(msg->mem_bind_type, buffer);
 		packstr(msg->mem_bind, buffer);
 		packstr_array(msg->argv, msg->argc, buffer);
-		pack16(msg->task_flags, buffer);
-		pack16(msg->multi_prog, buffer);
-		pack16(msg->user_managed_io, buffer);
-		if (msg->user_managed_io == 0) {
+		pack32(msg->flags, buffer);
+		if ((msg->flags & LAUNCH_USER_MANAGED_IO) == 0) {
 			packstr(msg->ofname, buffer);
 			packstr(msg->efname, buffer);
 			packstr(msg->ifname, buffer);
-			pack8(msg->buffered_stdio, buffer);
-			pack8(msg->labelio, buffer);
 			pack16(msg->num_io_port, buffer);
 			for (i = 0; i < msg->num_io_port; i++)
 				pack16(msg->io_port[i], buffer);
@@ -10017,7 +10013,6 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 		packstr(msg->complete_nodelist, buffer);
 
 		pack8(msg->open_mode, buffer);
-		pack8(msg->pty, buffer);
 		packstr(msg->acctg_freq, buffer);
 		pack32(msg->cpu_freq_min, buffer);
 		pack32(msg->cpu_freq_max, buffer);
@@ -10036,6 +10031,20 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 						     protocol_version);
 		}
 	} else if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
+		uint16_t task_flags = 0, multi_prog = 0, user_managed_io = 0;
+		uint8_t pty = 0, buffered_stdio = 0, labelio = 0;
+		if (msg->flags & LAUNCH_PARALLEL_DEBUG)
+			task_flags = 1;
+		if (msg->flags & LAUNCH_MULTI_PROG)
+			multi_prog = 1;
+		if (msg->flags & LAUNCH_USER_MANAGED_IO)
+			user_managed_io = 1;
+		if (msg->flags & LAUNCH_PTY)
+			pty = 1;
+		if (msg->flags & LAUNCH_BUFFERED_IO)
+			buffered_stdio = 1;
+		if (msg->flags & LAUNCH_LABEL_IO)
+			labelio = 1;
 		pack32(msg->job_id, buffer);
 		pack32(msg->job_step_id, buffer);
 		pack32(msg->ntasks, buffer);
@@ -10076,15 +10085,15 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 		pack16(msg->mem_bind_type, buffer);
 		packstr(msg->mem_bind, buffer);
 		packstr_array(msg->argv, msg->argc, buffer);
-		pack16(msg->task_flags, buffer);
-		pack16(msg->multi_prog, buffer);
-		pack16(msg->user_managed_io, buffer);
-		if (msg->user_managed_io == 0) {
+		pack16(task_flags, buffer);
+		pack16(multi_prog, buffer);
+		pack16(user_managed_io, buffer);
+		if (user_managed_io == 0) {
 			packstr(msg->ofname, buffer);
 			packstr(msg->efname, buffer);
 			packstr(msg->ifname, buffer);
-			pack8(msg->buffered_stdio, buffer);
-			pack8(msg->labelio, buffer);
+			pack8(buffered_stdio, buffer);
+			pack8(labelio, buffer);
 			pack16(msg->num_io_port, buffer);
 			for (i = 0; i < msg->num_io_port; i++)
 				pack16(msg->io_port[i], buffer);
@@ -10100,7 +10109,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 		packstr(msg->complete_nodelist, buffer);
 
 		pack8(msg->open_mode, buffer);
-		pack8(msg->pty, buffer);
+		pack8(pty, buffer);
 		packstr(msg->acctg_freq, buffer);
 		pack32(msg->cpu_freq_min, buffer);
 		pack32(msg->cpu_freq_max, buffer);
@@ -10119,6 +10128,20 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 						     protocol_version);
 		}
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint16_t task_flags = 0, multi_prog = 0, user_managed_io = 0;
+		uint8_t pty = 0, buffered_stdio = 0, labelio = 0;
+		if (msg->flags & LAUNCH_PARALLEL_DEBUG)
+			task_flags = 1;
+		if (msg->flags & LAUNCH_MULTI_PROG)
+			multi_prog = 1;
+		if (msg->flags & LAUNCH_USER_MANAGED_IO)
+			user_managed_io = 1;
+		if (msg->flags & LAUNCH_PTY)
+			pty = 1;
+		if (msg->flags & LAUNCH_BUFFERED_IO)
+			buffered_stdio = 1;
+		if (msg->flags & LAUNCH_LABEL_IO)
+			labelio = 1;
 		pack32(msg->job_id, buffer);
 		pack32(msg->job_step_id, buffer);
 		pack32(msg->ntasks, buffer);
@@ -10156,15 +10179,15 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 		pack16(msg->mem_bind_type, buffer);
 		packstr(msg->mem_bind, buffer);
 		packstr_array(msg->argv, msg->argc, buffer);
-		pack16(msg->task_flags, buffer);
-		pack16(msg->multi_prog, buffer);
-		pack16(msg->user_managed_io, buffer);
-		if (msg->user_managed_io == 0) {
+		pack16(task_flags, buffer);
+		pack16(multi_prog, buffer);
+		pack16(user_managed_io, buffer);
+		if (user_managed_io == 0) {
 			packstr(msg->ofname, buffer);
 			packstr(msg->efname, buffer);
 			packstr(msg->ifname, buffer);
-			pack8(msg->buffered_stdio, buffer);
-			pack8(msg->labelio, buffer);
+			pack8(buffered_stdio, buffer);
+			pack8(labelio, buffer);
 			pack16(msg->num_io_port, buffer);
 			for (i = 0; i < msg->num_io_port; i++)
 				pack16(msg->io_port[i], buffer);
@@ -10180,7 +10203,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 		packstr(msg->complete_nodelist, buffer);
 
 		pack8(msg->open_mode, buffer);
-		pack8(msg->pty, buffer);
+		pack8(pty, buffer);
 		packstr(msg->acctg_freq, buffer);
 		pack32(msg->cpu_freq_min, buffer);
 		pack32(msg->cpu_freq_max, buffer);
@@ -10269,18 +10292,14 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		safe_unpack16(&msg->mem_bind_type, buffer);
 		safe_unpackstr_xmalloc(&msg->mem_bind, &uint32_tmp, buffer);
 		safe_unpackstr_array(&msg->argv, &msg->argc, buffer);
-		safe_unpack16(&msg->task_flags, buffer);
-		safe_unpack16(&msg->multi_prog, buffer);
-		safe_unpack16(&msg->user_managed_io, buffer);
-		if (msg->user_managed_io == 0) {
+		safe_unpack32(&msg->flags, buffer);
+		if ((msg->flags & LAUNCH_USER_MANAGED_IO) == 0) {
 			safe_unpackstr_xmalloc(&msg->ofname, &uint32_tmp,
 					       buffer);
 			safe_unpackstr_xmalloc(&msg->efname, &uint32_tmp,
 					       buffer);
 			safe_unpackstr_xmalloc(&msg->ifname, &uint32_tmp,
 					       buffer);
-			safe_unpack8(&msg->buffered_stdio, buffer);
-			safe_unpack8(&msg->labelio, buffer);
 			safe_unpack16(&msg->num_io_port, buffer);
 			if (msg->num_io_port > 0) {
 				msg->io_port = xmalloc(sizeof(uint16_t) *
@@ -10311,7 +10330,6 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 				       buffer);
 
 		safe_unpack8(&msg->open_mode, buffer);
-		safe_unpack8(&msg->pty, buffer);
 		safe_unpackstr_xmalloc(&msg->acctg_freq, &uint32_tmp, buffer);
 		safe_unpack32(&msg->cpu_freq_min, buffer);
 		safe_unpack32(&msg->cpu_freq_max, buffer);
@@ -10324,7 +10342,9 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 						       protocol_version);
 		}
 	} else if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
-		uint32_t tmp_mem;
+		uint32_t tmp_mem = 0;
+		uint16_t task_flags = 0, multi_prog = 0, user_managed_io = 0;
+		uint8_t pty = 0, buffered_stdio = 0, labelio = 0;
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpack32(&msg->job_step_id, buffer);
 		safe_unpack32(&msg->ntasks, buffer);
@@ -10377,18 +10397,18 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		safe_unpack16(&msg->mem_bind_type, buffer);
 		safe_unpackstr_xmalloc(&msg->mem_bind, &uint32_tmp, buffer);
 		safe_unpackstr_array(&msg->argv, &msg->argc, buffer);
-		safe_unpack16(&msg->task_flags, buffer);
-		safe_unpack16(&msg->multi_prog, buffer);
-		safe_unpack16(&msg->user_managed_io, buffer);
-		if (msg->user_managed_io == 0) {
+		safe_unpack16(&task_flags, buffer);
+		safe_unpack16(&multi_prog, buffer);
+		safe_unpack16(&user_managed_io, buffer);
+		if (user_managed_io == 0) {
 			safe_unpackstr_xmalloc(&msg->ofname, &uint32_tmp,
 					       buffer);
 			safe_unpackstr_xmalloc(&msg->efname, &uint32_tmp,
 					       buffer);
 			safe_unpackstr_xmalloc(&msg->ifname, &uint32_tmp,
 					       buffer);
-			safe_unpack8(&msg->buffered_stdio, buffer);
-			safe_unpack8(&msg->labelio, buffer);
+			safe_unpack8(&buffered_stdio, buffer);
+			safe_unpack8(&labelio, buffer);
 			safe_unpack16(&msg->num_io_port, buffer);
 			if (msg->num_io_port > 0) {
 				msg->io_port = xmalloc(sizeof(uint16_t) *
@@ -10419,7 +10439,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 				       buffer);
 
 		safe_unpack8(&msg->open_mode, buffer);
-		safe_unpack8(&msg->pty, buffer);
+		safe_unpack8(&pty, buffer);
 		safe_unpackstr_xmalloc(&msg->acctg_freq, &uint32_tmp, buffer);
 		safe_unpack32(&msg->cpu_freq_min, buffer);
 		safe_unpack32(&msg->cpu_freq_max, buffer);
@@ -10431,8 +10451,22 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 						       buffer,
 						       protocol_version);
 		}
+		if (task_flags)
+			msg->flags |= LAUNCH_PARALLEL_DEBUG;
+		if (multi_prog)
+			msg->flags |= LAUNCH_MULTI_PROG;
+		if (user_managed_io)
+			msg->flags |= LAUNCH_USER_MANAGED_IO;
+		if (pty)
+			msg->flags |= LAUNCH_PTY;
+		if (buffered_stdio)
+			msg->flags |= LAUNCH_BUFFERED_IO;
+		if (labelio)
+			msg->flags |= LAUNCH_LABEL_IO;
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		uint32_t tmp_mem;
+		uint32_t tmp_mem = 0;
+		uint16_t task_flags = 0, multi_prog = 0, user_managed_io = 0;
+		uint8_t pty = 0, buffered_stdio = 0, labelio = 0;
 		msg->ntasks_per_board = (uint16_t)NO_VAL;
 		msg->ntasks_per_core = (uint16_t)NO_VAL;
 		msg->ntasks_per_socket = (uint16_t)NO_VAL;
@@ -10486,18 +10520,18 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		safe_unpack16(&msg->mem_bind_type, buffer);
 		safe_unpackstr_xmalloc(&msg->mem_bind, &uint32_tmp, buffer);
 		safe_unpackstr_array(&msg->argv, &msg->argc, buffer);
-		safe_unpack16(&msg->task_flags, buffer);
-		safe_unpack16(&msg->multi_prog, buffer);
-		safe_unpack16(&msg->user_managed_io, buffer);
-		if (msg->user_managed_io == 0) {
+		safe_unpack16(&task_flags, buffer);
+		safe_unpack16(&multi_prog, buffer);
+		safe_unpack16(&user_managed_io, buffer);
+		if (user_managed_io == 0) {
 			safe_unpackstr_xmalloc(&msg->ofname, &uint32_tmp,
 					       buffer);
 			safe_unpackstr_xmalloc(&msg->efname, &uint32_tmp,
 					       buffer);
 			safe_unpackstr_xmalloc(&msg->ifname, &uint32_tmp,
 					       buffer);
-			safe_unpack8(&msg->buffered_stdio, buffer);
-			safe_unpack8(&msg->labelio, buffer);
+			safe_unpack8(&buffered_stdio, buffer);
+			safe_unpack8(&labelio, buffer);
 			safe_unpack16(&msg->num_io_port, buffer);
 			if (msg->num_io_port > 0) {
 				msg->io_port = xmalloc(sizeof(uint16_t) *
@@ -10528,7 +10562,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 				       buffer);
 
 		safe_unpack8(&msg->open_mode, buffer);
-		safe_unpack8(&msg->pty, buffer);
+		safe_unpack8(&pty, buffer);
 		safe_unpackstr_xmalloc(&msg->acctg_freq, &uint32_tmp, buffer);
 		safe_unpack32(&msg->cpu_freq_min, buffer);
 		safe_unpack32(&msg->cpu_freq_max, buffer);
@@ -10540,6 +10574,18 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 						       buffer,
 						       protocol_version);
 		}
+		if (task_flags)
+			msg->flags |= LAUNCH_PARALLEL_DEBUG;
+		if (multi_prog)
+			msg->flags |= LAUNCH_MULTI_PROG;
+		if (user_managed_io)
+			msg->flags |= LAUNCH_USER_MANAGED_IO;
+		if (pty)
+			msg->flags |= LAUNCH_PTY;
+		if (buffered_stdio)
+			msg->flags |= LAUNCH_BUFFERED_IO;
+		if (labelio)
+			msg->flags |= LAUNCH_LABEL_IO;
 	} else {
 		error("_unpack_launch_tasks_request_msg: protocol_version "
 		      "%hu not supported", protocol_version);

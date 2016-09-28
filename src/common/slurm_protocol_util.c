@@ -181,7 +181,7 @@ void slurm_print_launch_task_msg(launch_tasks_request_msg_t *msg, char *name)
 	}
 	debug3("msg -> resp_port  = %u", *(msg->resp_port));
 	debug3("msg -> io_port    = %u", *(msg->io_port));
-	debug3("msg -> task_flags = %x", msg->task_flags);
+	debug3("msg -> flags      = %x", msg->flags);
 
 	for (i = 0; i < msg->tasks_to_launch[node_id]; i++) {
 		debug3("global_task_id[%d]: %u ", i,

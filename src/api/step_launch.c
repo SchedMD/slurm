@@ -280,7 +280,9 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 	launch.mem_bind_type	= params->mem_bind_type;
 	launch.mem_bind		= params->mem_bind;
 	launch.accel_bind_type	= params->accel_bind_type;
-	launch.multi_prog	= params->multi_prog ? 1 : 0;
+	launch.flags		= 0;
+	if (params->multi_prog)
+		launch.flags	|= LAUNCH_MULTI_PROG;
 	launch.cpus_per_task	= params->cpus_per_task;
 	launch.ntasks_per_board = params->ntasks_per_board;
 	launch.ntasks_per_core  = params->ntasks_per_core;
@@ -288,7 +290,8 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 
 	launch.task_dist	= params->task_dist;
 	launch.partition	= params->partition;
-	launch.pty              = params->pty;
+	if (params->pty)
+		launch.flags |= LAUNCH_PTY;
 	launch.ckpt_dir         = params->ckpt_dir;
 	launch.restart_dir      = params->restart_dir;
 	launch.acctg_freq	= params->acctg_freq;
@@ -297,24 +300,26 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 	launch.complete_nodelist =
 		xstrdup(ctx->step_resp->step_layout->node_list);
 	spank_set_remote_options (launch.options);
-	launch.task_flags = 0;
 	if (params->parallel_debug)
-		launch.task_flags |= TASK_PARALLEL_DEBUG;
+		launch.flags |= LAUNCH_PARALLEL_DEBUG;
 
 	launch.tasks_to_launch = ctx->step_resp->step_layout->tasks;
 	launch.global_task_ids = ctx->step_resp->step_layout->tids;
 
 	launch.select_jobinfo  = ctx->step_resp->select_jobinfo;
 
-	launch.user_managed_io = params->user_managed_io ? 1 : 0;
+	if (params->user_managed_io)
+		launch.flags	|= LAUNCH_USER_MANAGED_IO;
 	ctx->launch_state->user_managed_io = params->user_managed_io;
 
 	if (!ctx->launch_state->user_managed_io) {
 		launch.ofname = params->remote_output_filename;
 		launch.efname = params->remote_error_filename;
 		launch.ifname = params->remote_input_filename;
-		launch.buffered_stdio = params->buffered_stdio ? 1 : 0;
-		launch.labelio = params->labelio ? 1 : 0;
+		if (params->buffered_stdio)
+			launch.flags	|= LAUNCH_BUFFERED_IO;
+		if (params->labelio)
+			launch.flags	|= LAUNCH_LABEL_IO;
 		ctx->launch_state->io.normal =
 			client_io_handler_create(params->local_fds,
 						 ctx->step_req->num_tasks,
@@ -466,11 +471,14 @@ int slurm_step_launch_add (slurm_step_ctx_t *ctx,
 	launch.mem_bind_type	= params->mem_bind_type;
 	launch.mem_bind		= params->mem_bind;
 	launch.accel_bind_type	= params->accel_bind_type;
-	launch.multi_prog	= params->multi_prog ? 1 : 0;
+	launch.flags = 0;
+	if (params->multi_prog)
+		launch.flags |= LAUNCH_MULTI_PROG;
 	launch.cpus_per_task	= params->cpus_per_task;
 	launch.task_dist	= params->task_dist;
 	launch.partition	= params->partition;
-	launch.pty              = params->pty;
+	if (params->pty)
+		launch.flags |= LAUNCH_PTY;
 	launch.ckpt_dir         = params->ckpt_dir;
 	launch.restart_dir      = params->restart_dir;
 	launch.acctg_freq	= params->acctg_freq;
@@ -480,16 +488,16 @@ int slurm_step_launch_add (slurm_step_ctx_t *ctx,
 		xstrdup(ctx->step_resp->step_layout->node_list);
 
 	spank_set_remote_options (launch.options);
-	launch.task_flags = 0;
 	if (params->parallel_debug)
-		launch.task_flags |= TASK_PARALLEL_DEBUG;
+		launch.flags |= LAUNCH_PARALLEL_DEBUG;
 
 	launch.tasks_to_launch = ctx->step_resp->step_layout->tasks;
 	launch.global_task_ids = ctx->step_resp->step_layout->tids;
 
 	launch.select_jobinfo  = ctx->step_resp->select_jobinfo;
 
-	launch.user_managed_io = params->user_managed_io ? 1 : 0;
+	if (params->user_managed_io)
+		launch.flags |= LAUNCH_USER_MANAGED_IO;
 
 	/* user_managed_io is true */
 	if (!ctx->launch_state->io.user) {
