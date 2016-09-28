@@ -1317,6 +1317,9 @@ extern void *_submit_sibling_job(void *arg)
 
 	if ((rc = _persist_submit_batch_job(sibling, sib_msg, &resp))) {
 		error("Failed to submit job to sibling %s: %m", sibling->name);
+	} else if (!resp) {
+		error("Got a success back without a resp. This shouldn't happen");
+		rc = SLURM_ERROR;
         } else if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR) {
 		info("Submitted federated job %u to %s",
 		     resp->job_id, sibling->name);
