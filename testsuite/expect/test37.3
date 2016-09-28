@@ -243,6 +243,7 @@ send_user "\n\nadd $fedc2 and test from $fedc1\n"
 if {[add_cluster_to_fed $fedc2 $fed_name]} {
 	end_it 1
 }
+sleep 5
 array set clusters [get_clusterfed_info $fed_name]
 dict set clusters($fedc1) conn Self
 dict set clusters($fedc2) conn "Yes/Yes"
@@ -252,6 +253,7 @@ send_user "\n\nadd $fedc3 and test from $fedc1\n"
 if {[add_cluster_to_fed $fedc3 $fed_name]} {
 	end_it 1
 }
+sleep 5
 array set clusters [get_clusterfed_info $fed_name]
 dict set clusters($fedc1) conn Self
 dict set clusters($fedc2) conn "Yes/Yes"
