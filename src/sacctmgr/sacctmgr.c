@@ -519,10 +519,11 @@ _process_command (int argc, char *argv[])
 		}
 
 		rc = slurmdb_shutdown(db_conn);
-		if (rc != SLURM_SUCCESS)
+		if (rc != SLURM_SUCCESS) {
 			fprintf(stderr, " Problem shutting down server: %s\n",
 				slurm_strerror(rc));
 			exit_code = 1;
+		}
 	} else if (strncasecmp (argv[0], "version", MAX(command_len, 4)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
