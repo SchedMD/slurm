@@ -4785,7 +4785,7 @@ _json_parse_sessions_array(json_object *jobj, char *key, int *num)
 	json_object_object_get_ex(jobj, key, &jarray);
 
 	*num = json_object_array_length(jarray);
-	ents = xmalloc(*num * sizeof(bb_pools_t));
+	ents = xmalloc(*num * sizeof(bb_sessions_t));
 
 	for (i = 0; i < *num; i++) {
 		jvalue = json_object_array_get_idx(jarray, i);
