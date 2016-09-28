@@ -9,7 +9,7 @@
 
 #include "config.h"
 
-#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES
 /* Use symbols from the runjob.so library provided by IBM.
  * Do NOT use debugger symbols local to the srun command */
 

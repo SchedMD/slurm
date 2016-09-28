@@ -68,15 +68,9 @@ enum {
 	SORTID_CONN,
 	SORTID_JOB,
 	SORTID_IMAGEBLRTS,
-#ifdef HAVE_BGL
-	SORTID_IMAGELINUX,
-	SORTID_IMAGEMLOADER,
-	SORTID_IMAGERAMDISK,
-#else
 	SORTID_IMAGELINUX,
 	SORTID_IMAGERAMDISK,
 	SORTID_IMAGEMLOADER,
-#endif
 	SORTID_NODELIST,
 	SORTID_NODE_CNT,
 	SORTID_PARTITION,
@@ -107,13 +101,8 @@ static display_data_t display_data_block[] = {
 	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_JOB, "JobID", false, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
-#ifdef HAVE_BG_L_P
-	{G_TYPE_STRING, SORTID_USER, "User", false, EDIT_NONE, refresh_block,
-	 create_model_block, admin_edit_block},
-#else
 	{G_TYPE_STRING, SORTID_USER, NULL, false, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
-#endif
 	{G_TYPE_STRING, SORTID_NODE_CNT, "Node Count",
 	 false, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_CONN, "Connection Type",
@@ -124,25 +113,6 @@ static display_data_t display_data_block[] = {
 	{G_TYPE_STRING, SORTID_PARTITION, "Partition",
 	 false, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
-#ifdef HAVE_BGL
-	{G_TYPE_STRING, SORTID_USE, "Node Use", false, EDIT_NONE, refresh_block,
-	 create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_IMAGEBLRTS, "Image Blrts",
-	 false, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_IMAGELINUX, "Image Linux",
-	 false, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_IMAGERAMDISK, "Image Ramdisk",
-	 false, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
-#elif defined HAVE_BGP
-	{G_TYPE_STRING, SORTID_USE, NULL, false, EDIT_NONE, refresh_block,
-	 create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_IMAGEBLRTS, NULL,
-	 false, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_IMAGELINUX, "Image Cnload",
-	 false, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_IMAGERAMDISK, "Image Ioload",
-	 false, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
-#else
 	{G_TYPE_STRING, SORTID_USE, NULL, false, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_IMAGEBLRTS, NULL,
@@ -151,7 +121,6 @@ static display_data_t display_data_block[] = {
 	 false, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_IMAGERAMDISK, NULL,
 	 false, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
-#endif
 	{G_TYPE_STRING, SORTID_IMAGEMLOADER, "Image Mloader",
 	 false, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_REASON, "Reason",

@@ -577,7 +577,7 @@ extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
 			exit(error_exit);
 	} else {
 		/* Combined job allocation and job step launch */
-#if defined HAVE_FRONT_END && (!defined HAVE_BG || defined HAVE_BG_L_P || !defined HAVE_BG_FILES) && (!defined HAVE_REAL_CRAY)
+#if defined HAVE_FRONT_END && (!defined HAVE_BG || !defined HAVE_BG_FILES) && (!defined HAVE_REAL_CRAY)
 		uid_t my_uid = getuid();
 		if ((my_uid != 0) &&
 		    (my_uid != slurm_get_slurm_user_id())) {
@@ -811,7 +811,7 @@ _job_create_structure(allocation_info_t *ainfo)
  	job->partition = xstrdup(ainfo->partition);
 	job->stepid  = ainfo->stepid;
 
-#if defined HAVE_BG && !defined HAVE_BG_L_P
+#if defined HAVE_BG
 //#if defined HAVE_BGQ && defined HAVE_BG_FILES
 	/* Since the allocation will have the correct cnode count get
 	   it if it is available.  Else grab it from opt.min_nodes

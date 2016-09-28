@@ -997,17 +997,7 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 			node_inx = bit_fmt(temp_bit, sizeof(temp_bit),
 					   step_ptr->step_node_bitmap);
 		}
-#ifdef HAVE_BG_L_P
-		/* Only L and P use this code */
-		if (step_ptr->job_ptr->details)
-			tasks = step_ptr->job_ptr->details->min_cpus;
-		else
-			tasks = step_ptr->job_ptr->cpu_cnt;
-		select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo,
-					    SELECT_JOBDATA_NODE_CNT,
-					    &nodes);
-		temp_nodes = step_ptr->job_ptr->nodes;
-#else
+
 		if (!step_ptr->step_layout
 		    || !step_ptr->step_layout->task_cnt) {
 			if (step_ptr->cpu_count)
@@ -1040,7 +1030,7 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 			task_dist = step_ptr->step_layout->task_dist;
 			temp_nodes = step_ptr->step_layout->node_list;
 		}
-#endif
+
 		select_g_select_jobinfo_get(step_ptr->select_jobinfo,
 					    SELECT_JOBDATA_IONODES,
 					    &ionodes);
@@ -1147,10 +1137,6 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		tasks = 1;
 	} else {
 		now = time(NULL);
-#ifdef HAVE_BG_L_P
-		/* Only L and P use this code */
-		tasks = step_ptr->job_ptr->details->min_cpus;
-#else
 		if (!step_ptr->step_layout
 		    || !step_ptr->step_layout->task_cnt) {
 			if (step_ptr->cpu_count)
@@ -1170,7 +1156,6 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 			}
 		} else
 			tasks = step_ptr->step_layout->task_cnt;
-#endif
 	}
 
 	exit_code = step_ptr->exit_code;

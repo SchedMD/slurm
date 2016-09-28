@@ -5485,10 +5485,6 @@ _build_env(job_env_t *job_env)
 	if (job_env->resv_id) {
 #if defined(HAVE_BG)
 		setenvf(&env, "MPIRUN_PARTITION", "%s", job_env->resv_id);
-# ifdef HAVE_BGP
-		/* Needed for HTC jobs */
-		setenvf(&env, "SUBMIT_POOL", "%s", job_env->resv_id);
-# endif
 #elif defined(HAVE_ALPS_CRAY)
 		setenvf(&env, "BASIL_RESERVATION_ID", "%s", job_env->resv_id);
 #endif

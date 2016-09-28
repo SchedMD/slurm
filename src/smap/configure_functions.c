@@ -324,12 +324,7 @@ static int _create_allocation(char *com, List allocated_blocks)
 	select_ba_request_t *request;
 	char fini_char;
 	int diff=0;
-#ifndef HAVE_BGL
-#ifdef HAVE_BGP
-	int small16=-1;
-#endif
 	int small64=-1, small256=-1;
-#endif
 	request = (select_ba_request_t*) xmalloc(sizeof(select_ba_request_t));
 	request->rotate = false;
 	request->elongate = false;
@@ -405,18 +400,7 @@ static int _create_allocation(char *com, List allocated_blocks)
 		} else if (small128 == 0 && (com[i] >= '0' && com[i] <= '9')) {
 			small128 = i;
 			i++;
-		}
-#ifdef HAVE_BGP
-		else if (!strncasecmp(com+i, "16CN", 4)) {
-			small16 = 0;
-			i += 4;
-		} else if (small16 == 0 && (com[i] >= '0' && com[i] <= '9')) {
-			small16 = i;
-			i++;
-		}
-#endif
-#ifndef HAVE_BGL
-		else if (!strncasecmp(com+i, "64CN", 4)) {
+		} else if (!strncasecmp(com+i, "64CN", 4)) {
 			small64 = 0;
 			i += 4;
 		} else if (!strncasecmp(com+i, "256CN", 5)) {
@@ -428,9 +412,7 @@ static int _create_allocation(char *com, List allocated_blocks)
 		} else if (small256 == 0 && (com[i] >= '0' && com[i] <= '9')) {
 			small256 = i;
 			i++;
-		}
-#endif
-		else if ((geoi < 0) &&
+		} else if ((geoi < 0) &&
 			 (((com[i] >= '0') && (com[i] <= '9')) ||
 			  ((com[i] >= 'A') && (com[i] <= 'Z')))) {
 			geoi = i;
@@ -443,13 +425,6 @@ static int _create_allocation(char *com, List allocated_blocks)
 
 	if (request->conn_type[0] >= SELECT_SMALL) {
 		int total = 512;
-#ifdef HAVE_BGP
-		if (small16 > 0) {
-			request->small16 = atoi(&com[small16]);
-			total -= request->small16 * 16;
-		}
-#endif
-#ifndef HAVE_BGL
 		if (small64 > 0) {
 			request->small64 = atoi(&com[small64]);
 			total -= request->small64 * 64;
@@ -459,7 +434,6 @@ static int _create_allocation(char *com, List allocated_blocks)
 			request->small256 = atoi(&com[small256]);
 			total -= request->small256 * 256;
 		}
-#endif
 
 		if (small32 > 0) {
 			request->small32 = atoi(&com[small32]);
@@ -478,7 +452,6 @@ static int _create_allocation(char *com, List allocated_blocks)
 
 		}
 
-#ifndef HAVE_BGL
 		while (total > 0) {
 			if (total >= 256) {
 				request->small256++;
@@ -492,28 +465,10 @@ static int _create_allocation(char *com, List allocated_blocks)
 			} else if (total >= 32) {
 				request->small32++;
 				total -= 32;
-			}
-#ifdef HAVE_BGP
-			else if (total >= 16) {
-				request->small16++;
-				total -= 16;
-			}
-#endif
-			else
-				break;
-		}
-#else
-		while (total > 0) {
-			if (total >= 128) {
-				request->small128++;
-				total -= 128;
-			} else if (total >= 32) {
-				request->small32++;
-				total -= 32;
 			} else
 				break;
 		}
-#endif
+
 		request->size = 1;
 /* 		sprintf(error_string, */
 /* 			"got %d %d %d %d %d %d", */
@@ -821,13 +776,11 @@ static int _copy_allocation(char *com, List allocated_blocks)
 		request->rotate =allocated_block->request->rotate;
 		request->elongate = allocated_block->request->elongate;
 		request->deny_pass = allocated_block->request->deny_pass;
-#ifndef HAVE_BGL
 		request->small16 = allocated_block->request->small16;
-		request->small64 = allocated_block->request->small64;
-		request->small256 = allocated_block->request->small256;
-#endif
 		request->small32 = allocated_block->request->small32;
+		request->small64 = allocated_block->request->small64;
 		request->small128 = allocated_block->request->small128;
+		request->small256 = allocated_block->request->small256;
 
 		request->rotate_count= 0;
 		request->elongate_count = 0;
@@ -899,39 +852,11 @@ static int _save_allocation(char *com, List allocated_blocks)
 			"# See the bluegene.conf man page for "
 			"more information\n");
 		xstrcat(save_string, "#\n");
-#ifdef HAVE_BGL
-		image_dir = "/bgl/BlueLight/ppcfloor/bglsys/bin";
-		xstrfmtcat(save_string, "BlrtsImage=%s/rts_hw.rts\n",
-			   image_dir);
-		xstrfmtcat(save_string, "LinuxImage=%s/zImage.elf\n",
-			   image_dir);
-		xstrfmtcat(save_string,
-			   "MloaderImage=%s/mmcs-mloader.rts\n",
-			   image_dir);
-		xstrfmtcat(save_string,
-			   "RamDiskImage=%s/ramdisk.elf\n",
-			   image_dir);
-
-		xstrcat(save_string, "IONodesPerMP=8 # io poor\n");
-		xstrcat(save_string, "# IONodesPerMP=64 # io rich\n");
-#elif defined HAVE_BGP
-		image_dir = "/bgsys/drivers/ppcfloor/boot";
-		xstrfmtcat(save_string, "CnloadImage=%s/cns,%s/cnk\n",
-			   image_dir, image_dir);
-		xstrfmtcat(save_string, "MloaderImage=%s/uloader\n",
-			   image_dir);
-		xstrfmtcat(save_string,
-			   "IoloadImage=%s/cns,%s/linux,%s/ramdisk\n",
-			   image_dir, image_dir, image_dir);
-		xstrcat(save_string, "IONodesPerMP=4 # io poor\n");
-		xstrcat(save_string, "# IONodesPerMP=32 # io rich\n");
-#else
 		image_dir = "/bgsys/drivers/ppcfloor/boot";
 		xstrfmtcat(save_string, "MloaderImage=%s/firmware\n",
 			   image_dir);
 		xstrcat(save_string, "IONodesPerMP=4 # io semi-poor\n");
 		xstrcat(save_string, "# IONodesPerMP=16 # io rich\n");
-#endif
 
 		xstrcat(save_string, "BridgeAPILogFile="
 		       "/var/log/slurm/bridgeapi.log\n");
@@ -955,25 +880,6 @@ static int _save_allocation(char *com, List allocated_blocks)
 			if (request->small16 || request->small32
 			    || request->small64 || request->small128
 			    || request->small256) {
-#ifdef HAVE_BGL
-				xstrfmtcat(extra,
-					   " 32CNBlocks=%d "
-					   "128CNBlocks=%d",
-					   request->small32,
-					   request->small128);
-#elif defined HAVE_BGP
-				xstrfmtcat(extra,
-					   " 16CNBlocks=%d "
-					   "32CNBlocks=%d "
-					   "64CNBlocks=%d "
-					   "128CNBlocks=%d "
-					   "256CNBlocks=%d",
-					   request->small16,
-					   request->small32,
-					   request->small64,
-					   request->small128,
-					   request->small256);
-#else
 				xstrfmtcat(extra,
 					   " 32CNBlocks=%d "
 					   "64CNBlocks=%d "
@@ -983,7 +889,6 @@ static int _save_allocation(char *com, List allocated_blocks)
 					   request->small64,
 					   request->small128,
 					   request->small256);
-#endif
 			}
 
 			xstrfmtcat(save_string, "MPs=%s", request->save_name);
@@ -997,9 +902,6 @@ static int _save_allocation(char *com, List allocated_blocks)
 					xstrcat(save_string, " Type=");
 				xstrfmtcat(save_string, "%s", conn_type_string(
 						   request->conn_type[i]));
-#ifdef HAVE_BG_L_P
-				break;
-#endif
 			}
 
 			if (extra) {
@@ -1251,27 +1153,18 @@ static void _print_header_command(void)
 #endif
 	main_xcord += 10;
 
-#ifdef HAVE_BGP
-	mvwprintw(text_win, main_ycord,
-		  main_xcord, "16CN");
-	main_xcord += 5;
-#endif
 	mvwprintw(text_win, main_ycord,
 		  main_xcord, "32CN");
 	main_xcord += 5;
-#ifndef HAVE_BGL
 	mvwprintw(text_win, main_ycord,
 		  main_xcord, "64CN");
 	main_xcord += 5;
-#endif
 	mvwprintw(text_win, main_ycord,
 		  main_xcord, "128CN");
 	main_xcord += 6;
-#ifndef HAVE_BGL
 	mvwprintw(text_win, main_ycord,
 		  main_xcord, "256CN");
 	main_xcord += 6;
-#endif
 #ifdef HAVE_BG
 	mvwprintw(text_win, main_ycord,
 		  main_xcord, "MIDPLANELIST");
@@ -1320,44 +1213,27 @@ static void _print_text_command(allocated_block_t *allocated_block)
 	main_xcord += 10;
 
 	if (allocated_block->request->conn_type[0] >= SELECT_SMALL) {
-#ifdef HAVE_BGP
-		mvwprintw(text_win, main_ycord,
-			  main_xcord, "%d",
-			  allocated_block->request->small16);
-		main_xcord += 5;
-#endif
-
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%d",
 			  allocated_block->request->small32);
 		main_xcord += 5;
 
-#ifndef HAVE_BGL
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%d",
 			  allocated_block->request->small64);
 		main_xcord += 5;
-#endif
 
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%d",
 			  allocated_block->request->small128);
 		main_xcord += 6;
 
-#ifndef HAVE_BGL
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%d",
 			  allocated_block->request->small256);
 		main_xcord += 6;
-#endif
 	} else {
-#ifdef HAVE_BGL
-		main_xcord += 11;
-#elif defined HAVE_BGP
-		main_xcord += 27;
-#else
 		main_xcord += 22;
-#endif
 	}
 	mvwprintw(text_win, main_ycord,
 		  main_xcord, "%s",

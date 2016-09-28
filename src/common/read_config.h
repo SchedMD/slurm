@@ -107,7 +107,7 @@ extern char *default_plugstack;
 #define DEFAULT_KILL_TREE           0
 #define DEFAULT_KILL_WAIT           30
 
-#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES
 #  define DEFAULT_LAUNCH_TYPE         "launch/runjob"
 #elif defined HAVE_LIBNRT
 #  define DEFAULT_LAUNCH_TYPE         "launch/poe"

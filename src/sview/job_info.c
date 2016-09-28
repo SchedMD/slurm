@@ -136,15 +136,9 @@ enum {
 	SORTID_GRES,
 	SORTID_GROUP_ID,
 	SORTID_IMAGE_BLRTS,
-#ifdef HAVE_BGL
-	SORTID_IMAGE_LINUX,
-	SORTID_IMAGE_MLOADER,
-	SORTID_IMAGE_RAMDISK,
-#else
 	SORTID_IMAGE_LINUX,
 	SORTID_IMAGE_RAMDISK,
 	SORTID_IMAGE_MLOADER,
-#endif
 	SORTID_JOBID,
 	SORTID_JOBID_FORMATTED,
 	SORTID_LICENSES,
@@ -250,21 +244,12 @@ static display_data_t display_data_job[] = {
 	 false, EDIT_MODEL, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_CONNECTION, "Connection",
 	 false, EDIT_MODEL, refresh_job, create_model_job, admin_edit_job},
-#ifdef HAVE_BGL
-	{G_TYPE_STRING, SORTID_IMAGE_BLRTS, "Image Blrts",
-	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_IMAGE_LINUX, "Image Linux",
-	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_IMAGE_RAMDISK, "Image Ramdisk",
-	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-#else
 	{G_TYPE_STRING, SORTID_IMAGE_BLRTS, NULL,
 	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_IMAGE_LINUX, "Image Cnload",
 	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_IMAGE_RAMDISK, "Image Ioload",
 	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-#endif
 	{G_TYPE_STRING, SORTID_IMAGE_MLOADER, "Image Mloader",
 	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 #else

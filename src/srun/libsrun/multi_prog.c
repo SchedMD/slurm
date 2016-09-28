@@ -113,7 +113,7 @@ _build_path(char* fname)
 static void
 _set_range(int low_num, int high_num, char *exec_name, bool ignore_duplicates)
 {
-#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES
 	/* Use symbols from the runjob.so library provided by IBM.
 	 * Do NOT use debugger symbols local to the srun command */
 #else
@@ -185,7 +185,7 @@ mpir_set_multi_name(int ntasks, const char *config_fname)
 	char *ranks, *exec_name, *p, *ptrptr;
 	int line_num = 0;
 
-#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES
 	/* Use symbols from the runjob.so library provided by IBM.
 	 * Do NOT use debugger symbols local to the srun command */
 #else
@@ -237,7 +237,7 @@ mpir_set_multi_name(int ntasks, const char *config_fname)
 extern void
 mpir_init(int num_tasks)
 {
-#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES
 	/* Use symbols from the runjob.so library provided by IBM.
 	 * Do NOT use debugger symbols local to the srun command */
 #else
@@ -253,7 +253,7 @@ mpir_init(int num_tasks)
 extern void
 mpir_cleanup(void)
 {
-#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES
 	/* Use symbols from the runjob.so library provided by IBM.
 	 * Do NOT use debugger symbols local to the srun command */
 #else
@@ -270,7 +270,7 @@ mpir_cleanup(void)
 extern void
 mpir_set_executable_names(const char *executable_name)
 {
-#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES
 	/* Use symbols from the runjob.so library provided by IBM.
 	 * Do NOT use debugger symbols local to the srun command */
 #else
@@ -290,7 +290,7 @@ mpir_set_executable_names(const char *executable_name)
 extern void
 mpir_dump_proctable(void)
 {
-#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES
 	/* Use symbols from the runjob.so library provided by IBM.
 	 * Do NOT use debugger symbols local to the srun command */
 #else

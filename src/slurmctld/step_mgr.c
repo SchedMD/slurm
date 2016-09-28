@@ -3390,19 +3390,10 @@ extern void step_set_alloc_tres(
 				xstrdup(step_ptr->job_ptr->tres_fmt_alloc_str);
 		return;
 	} else {
-#ifdef HAVE_BG_L_P
-		/* Only L and P use this code */
-		if (step_ptr->job_ptr->details)
-			cpu_count =
-				(uint64_t)step_ptr->job_ptr->details->min_cpus;
-		else
-			cpu_count = (uint64_t)step_ptr->job_ptr->cpu_cnt;
-#else
 		if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
 			cpu_count = (uint64_t)step_ptr->job_ptr->total_cpus;
 		else
 			cpu_count = (uint64_t)step_ptr->cpu_count;
-#endif
 		mem_count = (uint64_t)step_ptr->pn_min_memory;
 		if (mem_count & MEM_PER_CPU) {
 			mem_count &= (~MEM_PER_CPU);
@@ -4067,7 +4058,7 @@ static void _signal_step_timelimit(struct job_record *job_ptr,
 	static int notify_srun = -1;
 
 	if (notify_srun == -1) {
-#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES
 		notify_srun = 1;
 #else
 		char *launch_type = slurm_get_launch_type();

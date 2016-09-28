@@ -503,9 +503,7 @@ extern void verify_conn_type(const char *arg, uint16_t *conn_type)
 		else if (working_cluster_rec->flags & CLUSTER_FLAG_BGQ)
 			highest_dims = 4;
 	} else {
-#ifdef HAVE_BGP
-		got_bgp = 1;
-# elif defined HAVE_BGQ
+#if defined HAVE_BGQ
 		highest_dims = 4;
 #endif
 	}
@@ -1131,7 +1129,7 @@ char *search_path(char *cwd, char *cmd, bool check_current_dir, int access_mode,
 	ListIterator i        = NULL;
 	char *path, *fullpath = NULL;
 
-#if defined HAVE_BG && !defined HAVE_BG_L_P
+#if defined HAVE_BG
 	/* BGQ's runjob command required a fully qualified path */
 	if (((cmd[0] == '.') || (cmd[0] == '/')) &&
 	    (access(cmd, access_mode) == 0)) {

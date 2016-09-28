@@ -46,15 +46,6 @@
 /* Define to 1 if you have Blue Gene system support. */
 #undef HAVE_BG
 
-/* Define to 1 if emulating or running on Blue Gene/L system */
-#undef HAVE_BGL
-
-/* Define to 1 if emulating or running on Blue Gene/P system */
-#undef HAVE_BGP
-
-/* Define to 1 if emulating or running on Blue Gene/L-P system */
-#undef HAVE_BG_L_P
-
 /* Define to 1 if emulating or running on Blue Gene/Q system */
 #undef HAVE_BGQ
 

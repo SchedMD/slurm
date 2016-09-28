@@ -2659,17 +2659,6 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 	char *temp_nodes = NULL;
 	char *ionodes = NULL;
 
-#ifdef HAVE_BG_L_P
-
-	if (step_ptr->job_ptr->details)
-		tasks = step_ptr->job_ptr->details->min_cpus;
-	else
-		tasks = step_ptr->job_ptr->cpu_cnt;
-	select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_NODE_CNT,
-				    &nodes);
-	temp_nodes = step_ptr->job_ptr->nodes;
-#else
 	if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
 		tasks = step_ptr->job_ptr->total_cpus;
 		nodes = step_ptr->job_ptr->total_nodes;
@@ -2686,7 +2675,7 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 		task_dist = step_ptr->step_layout->task_dist;
 		temp_nodes = step_ptr->step_layout->node_list;
 	}
-#endif
+
 	select_g_select_jobinfo_get(step_ptr->select_jobinfo,
 				    SELECT_JOBDATA_IONODES,
 				    &ionodes);
@@ -2766,17 +2755,10 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 	if (step_ptr->step_id == SLURM_BATCH_SCRIPT)
 		tasks = 1;
 	else {
-#ifdef HAVE_BG_L_P
-		if (step_ptr->job_ptr->details)
-			tasks = step_ptr->job_ptr->details->min_cpus;
-		else
-			tasks = step_ptr->job_ptr->cpu_cnt;
-#else
 		if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
 			tasks = step_ptr->job_ptr->total_cpus;
 		else
 			tasks = step_ptr->step_layout->task_cnt;
-#endif
 	}
 
 	if (!step_ptr->job_ptr->db_index

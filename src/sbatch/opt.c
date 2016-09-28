@@ -1794,7 +1794,7 @@ static void _set_options(int argc, char **argv)
 			opt.ramdiskimage = xstrdup(optarg);
 			break;
 		case LONG_OPT_REBOOT:
-#if defined HAVE_BG && !defined HAVE_BG_L_P
+#if defined HAVE_BG
 			info("WARNING: If your job is smaller than the block "
 			     "it is going to run on and other jobs are "
 			     "running on it the --reboot option will not be "
@@ -2717,19 +2717,8 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-#ifdef HAVE_BGL
-	if (opt.blrtsimage && strchr(opt.blrtsimage, ' ')) {
-		error("invalid BlrtsImage given '%s'", opt.blrtsimage);
-		verified = false;
-	}
-#endif
-
 	if (opt.linuximage && strchr(opt.linuximage, ' ')) {
-#ifdef HAVE_BGL
-		error("invalid LinuxImage given '%s'", opt.linuximage);
-#else
 		error("invalid CnloadImage given '%s'", opt.linuximage);
-#endif
 		verified = false;
 	}
 
@@ -2739,11 +2728,7 @@ static bool _opt_verify(void)
 	}
 
 	if (opt.ramdiskimage && strchr(opt.ramdiskimage, ' ')) {
-#ifdef HAVE_BGL
-		error("invalid RamDiskImage given '%s'", opt.ramdiskimage);
-#else
 		error("invalid IoloadImage given '%s'", opt.ramdiskimage);
-#endif
 		verified = false;
 	}
 
@@ -3206,24 +3191,12 @@ static void _opt_list(void)
 	info("rotate            : %s", opt.no_rotate ? "yes" : "no");
 	info("network           : %s", opt.network);
 
-#ifdef HAVE_BGL
-	if (opt.blrtsimage)
-		info("BlrtsImage        : %s", opt.blrtsimage);
-#endif
 	if (opt.linuximage)
-#ifdef HAVE_BGL
-		info("LinuxImage        : %s", opt.linuximage);
-#else
 		info("CnloadImage       : %s", opt.linuximage);
-#endif
 	if (opt.mloaderimage)
 		info("MloaderImage      : %s", opt.mloaderimage);
 	if (opt.ramdiskimage)
-#ifdef HAVE_BGL
-		info("RamDiskImage      : %s", opt.ramdiskimage);
-#else
 		info("IoloadImage       : %s", opt.ramdiskimage);
-#endif
 	if (opt.begin) {
 		char time_str[32];
 		slurm_make_time_str(&opt.begin, time_str, sizeof(time_str));
@@ -3287,19 +3260,9 @@ static void _usage(void)
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "              [--account=name] [--dependency=type:jobid] [--comment=name]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
-#ifdef HAVE_BG_L_P
-"              [--geometry=XxYxZ] "
-#else
-"              [--geometry=AxXxYxZ] "
-#endif
-"[--conn-type=type] [--no-rotate]\n"
-#ifdef HAVE_BGL
-"              [--blrts-image=path] [--linux-image=path]\n"
-"              [--mloader-image=path] [--ramdisk-image=path]\n"
-#else
+"              [--geometry=AxXxYxZ] [--conn-type=type] [--no-rotate]\n"
 "              [--cnload-image=path]\n"
 "              [--mloader-image=path] [--ioload-image=path]\n"
-#endif
 #endif
 "              [--mail-type=type] [--mail-user=user][--nice[=value]] [--wait]\n"
 "              [--requeue] [--no-requeue] [--ntasks-per-node=n] [--propagate]\n"
@@ -3454,17 +3417,12 @@ static void _help(void)
 #endif
 #ifdef HAVE_BG				/* Blue gene specific options */
 "Blue Gene related options:\n"
-#ifdef HAVE_BG_L_P
-"  -g, --geometry=XxYxZ        geometry constraints of the job\n"
-#else
 "  -g, --geometry=AxXxYxZ      Midplane geometry constraints of the job,\n"
 "                              sub-block allocations can not be allocated\n"
 "                              with the geometry option\n"
-#endif
 "  -R, --no-rotate             disable geometry rotation\n"
 "      --conn-type=type        constraint on type of connection, MESH or TORUS\n"
 "                              if not set, then tries to fit TORUS else MESH\n"
-#ifndef HAVE_BGL
 "                              If wanting to run in HTC mode (only for 1\n"
 "                              midplane and below).  You can use HTC_S for\n"
 "                              SMP, HTC_D for Dual, HTC_V for\n"
@@ -3472,16 +3430,6 @@ static void _help(void)
 "      --cnload-image=path     path to compute node image for bluegene block.  Default if not set\n"
 "      --mloader-image=path    path to mloader image for bluegene block.  Default if not set\n"
 "      --ioload-image=path     path to ioload image for bluegene block.  Default if not set\n"
-#else
-"      --blrts-image=path      path to blrts image for bluegene block.  Default\n"
-"                              if not set\n"
-"      --linux-image=path      path to linux image for bluegene block.  Default\n"
-"                              if not set\n"
-"      --mloader-image=path    path to mloader image for bluegene block.\n"
-"                              Default if not set\n"
-"      --ramdisk-image=path    path to ramdisk image for bluegene block.\n"
-"                              Default if not set\n"
-#endif
 #endif
 "\n"
 "Help options:\n"
