@@ -7088,6 +7088,31 @@ _set_multi_core_data(job_desc_msg_t * job_desc)
 	return mc_ptr;
 }
 
+/* Return default "wait_all_nodes" option for a new job */
+static uint16_t _default_wait_all_nodes(job_desc_msg_t *job_desc)
+{
+	static uint16_t default_batch_wait = (uint16_t) NO_VAL;
+	static time_t sched_update = 0;
+	char *sched_params;
+
+	if (!job_desc->script)
+		return 0;
+
+	if ((default_batch_wait != (uint16_t) NO_VAL) &&
+	    (sched_update == slurmctld_conf.last_update))
+		return default_batch_wait;
+
+	sched_params = slurm_get_sched_params();
+	if (sched_params && strstr(sched_params, "sbatch_wait_nodes"))
+		default_batch_wait = 1;
+	else
+		default_batch_wait = 0;
+	xfree(sched_params);
+	sched_update = slurmctld_conf.last_update;
+
+	return default_batch_wait;
+}
+
 /* _copy_job_desc_to_job_record - copy the job descriptor from the RPC
  *	structure into the actual slurmctld job record */
 static int
@@ -7233,7 +7258,9 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_desc->spank_job_env_size = 0;         /* nothing left to free */
 	job_ptr->mcs_label = xstrdup(job_desc->mcs_label);
 
-	if (job_desc->wait_all_nodes != (uint16_t) NO_VAL)
+	if (job_desc->wait_all_nodes == (uint16_t) NO_VAL)
+		job_ptr->wait_all_nodes = _default_wait_all_nodes(job_desc);
+	else
 		job_ptr->wait_all_nodes = job_desc->wait_all_nodes;
 	job_ptr->warn_flags  = job_desc->warn_flags;
 	job_ptr->warn_signal = job_desc->warn_signal;
