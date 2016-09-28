@@ -36,6 +36,7 @@ documents those changes that are of interest to users and administrators.
  -- Refactor the persistent connections within the federation code to use
     the same logic that was found in the slurmdbd.  Now both functionalities
     share the same code.
+ -- Remove BlueGene/L and BlueGene/P support.
 
 * Changes in Slurm 17.02.0pre1
 ==============================

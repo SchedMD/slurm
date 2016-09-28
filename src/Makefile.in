@@ -88,7 +88,6 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@REAL_BG_L_P_LOADED_FALSE@am__append_1 = srun
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_zlib.m4 \
@@ -194,10 +193,7 @@ am__define_uniq_tagged_files = \
   done | $(am__uniquify_input)`
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = api bcast common database db_api layouts plugins sacct \
-	sacctmgr salloc sattach sbatch sbcast scancel scontrol sdiag \
-	sinfo slurmctld slurmd slurmdbd smap smd sprio squeue sreport \
-	srun_cr sshare sstat strigger sview srun
+DIST_SUBDIRS = $(SUBDIRS)
 am__DIST_COMMON = $(srcdir)/Makefile.in
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 am__relativize = \
@@ -233,11 +229,9 @@ AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
-BGL_LOADED = @BGL_LOADED@
 BGQ_LOADED = @BGQ_LOADED@
 BG_INCLUDES = @BG_INCLUDES@
 BG_LDFLAGS = @BG_LDFLAGS@
-BG_L_P_LOADED = @BG_L_P_LOADED@
 BLCR_CPPFLAGS = @BLCR_CPPFLAGS@
 BLCR_HOME = @BLCR_HOME@
 BLCR_LDFLAGS = @BLCR_LDFLAGS@
@@ -380,7 +374,6 @@ PTHREAD_LIBS = @PTHREAD_LIBS@
 RANLIB = @RANLIB@
 READLINE_LIBS = @READLINE_LIBS@
 REAL_BGQ_LOADED = @REAL_BGQ_LOADED@
-REAL_BG_L_P_LOADED = @REAL_BG_L_P_LOADED@
 RELEASE = @RELEASE@
 RRDTOOL_CPPFLAGS = @RRDTOOL_CPPFLAGS@
 RRDTOOL_LDFLAGS = @RRDTOOL_LDFLAGS@
@@ -481,10 +474,39 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = api bcast common database db_api layouts plugins sacct \
-	sacctmgr salloc sattach sbatch sbcast scancel scontrol sdiag \
-	sinfo slurmctld slurmd slurmdbd smap smd sprio squeue sreport \
-	srun_cr sshare sstat strigger sview $(am__append_1)
+SUBDIRS = \
+	api		\
+	bcast		\
+	common		\
+	database	\
+	db_api		\
+	layouts		\
+	plugins		\
+	sacct		\
+	sacctmgr	\
+	salloc		\
+	sattach		\
+	sbatch		\
+	sbcast		\
+	scancel		\
+	scontrol	\
+	sdiag		\
+	sinfo		\
+	slurmctld	\
+	slurmd		\
+	slurmdbd	\
+	smap		\
+	smd		\
+	sprio		\
+	squeue		\
+	sreport		\
+	srun		\
+	srun_cr		\
+	sshare		\
+	sstat		\
+	strigger	\
+	sview
+
 all: all-recursive
 
 .SUFFIXES:

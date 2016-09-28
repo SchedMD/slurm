@@ -33,25 +33,6 @@ X_AC_RPATH
 
 X_AC_BG
 
-X_AC_BGL
-
-dnl we need to know if this is a bgl in the Makefile.am to do
-dnl some things differently
-AM_CONDITIONAL(BGL_LOADED, test "x$ac_bluegene_loaded" = "xyes")
-AC_SUBST(BGL_LOADED)
-
-X_AC_BGP
-
-dnl ok now check if We have an L or P system, Q is handled differently
-dnl so handle it later.
-AM_CONDITIONAL(BG_L_P_LOADED, test "x$ac_bluegene_loaded" = "xyes")
-AC_SUBST(BG_L_P_LOADED)
-
-dnl ok now check if We are on a real L or P system, (test if to build srun
-dnl or not.  If we are emulating things we should build it.
-AM_CONDITIONAL(REAL_BG_L_P_LOADED, test "x$ac_real_bluegene_loaded" = "xyes")
-AC_SUBST(REAL_BG_L_P_LOADED)
-
 X_AC_BGQ
 
 dnl We need to know if this is a Q system
@@ -610,10 +591,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/select/alps/libalps/Makefile
 		 src/plugins/select/alps/libemulate/Makefile
 		 src/plugins/select/bluegene/Makefile
-		 src/plugins/select/bluegene/ba/Makefile
 		 src/plugins/select/bluegene/ba_bgq/Makefile
-		 src/plugins/select/bluegene/bl/Makefile
-		 src/plugins/select/bluegene/bl_bgq/Makefile
 		 src/plugins/select/bluegene/sfree/Makefile
 		 src/plugins/select/cons_res/Makefile
 		 src/plugins/select/cray/Makefile

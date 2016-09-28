@@ -3,15 +3,6 @@
 /* Define if building universal (internal helper macro) */
 #undef AC_APPLE_UNIVERSAL_BUILD
 
-/* Define the BG_BRIDGE_SO value */
-#undef BG_BRIDGE_SO
-
-/* Define the BG_DB2_SO value */
-#undef BG_DB2_SO
-
-/* Define the BG_SERIAL value */
-#undef BG_SERIAL
-
 /* Define BLCR installation home */
 #undef BLCR_HOME
 
@@ -57,12 +48,6 @@
 /* Define to 1 if emulating or running on Blue Gene system */
 #undef HAVE_BG
 
-/* Define to 1 if emulating or running on Blue Gene/L system */
-#undef HAVE_BGL
-
-/* Define to 1 if emulating or running on Blue Gene/P system */
-#undef HAVE_BGP
-
 /* Define to 1 if emulating or running on Blue Gene/Q system */
 #undef HAVE_BGQ
 
@@ -71,9 +56,6 @@
 
 /* Define to 1 if using code where blocks have actions */
 #undef HAVE_BG_GET_ACTION
-
-/* Define to 1 if emulating or running on Blue Gene/L or P system */
-#undef HAVE_BG_L_P
 
 /* Define to 1 if using code with new iocheck */
 #undef HAVE_BG_NEW_IO_CHECK

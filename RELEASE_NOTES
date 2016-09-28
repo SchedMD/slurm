@@ -43,6 +43,7 @@ HIGHLIGHTS
     it is 32 bit previous versions of Slurm.
  -- All memory values (in MB) are now 64 bit. Previously, nodes with > 2TB of
     memory would not schedule or enforce memory limits correctly.
+ -- Removed AIX, BlueGene/L and BlueGene/P support.
 
 RPMBUILD CHANGES
 ================
