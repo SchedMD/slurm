@@ -570,8 +570,10 @@ extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
 		free_buf(buffer);
 
 		resp = (persist_rc_msg_t *)msg.data;
-		if (resp && rc == SLURM_SUCCESS)
+		if (resp && rc == SLURM_SUCCESS) {
 			rc = resp->rc;
+			persist_conn->version = resp->ret_info;
+		}
 
 		if (rc != SLURM_SUCCESS) {
 			if (resp)
@@ -584,8 +586,7 @@ extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
 				      persist_conn->rem_host,
 				      persist_conn->rem_port);
 			_close_fd(&persist_conn->fd);
-		} else
-			persist_conn->version = resp->ret_info;
+		}
 	}
 
 end_it:
@@ -708,6 +709,9 @@ extern int slurm_persist_conn_writeable(slurm_persist_conn_t *persist_conn)
 	char temp[2];
 
 	xassert(persist_conn->shutdown);
+
+	if (persist_conn->fd < 0)
+		return -1;
 
 	ufds.fd     = persist_conn->fd;
 	ufds.events = POLLOUT;

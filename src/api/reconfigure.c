@@ -153,7 +153,7 @@ _send_message_controller (enum controller_id dest, slurm_msg_t *req)
 {
 	int rc = SLURM_PROTOCOL_SUCCESS;
 	int fd = -1;
-	slurm_msg_t *resp_msg = NULL;
+	slurm_msg_t resp_msg;
 
 	/* always going to one node (primary or backup per value of "dest") */
 	if ((fd = slurm_open_controller_conn_spec(dest)) < 0)
@@ -163,22 +163,23 @@ _send_message_controller (enum controller_id dest, slurm_msg_t *req)
 		slurm_shutdown_msg_conn(fd);
 		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_SEND_ERROR);
 	}
-	resp_msg = xmalloc(sizeof(slurm_msg_t));
-	slurm_msg_t_init(resp_msg);
+	slurm_msg_t_init(&resp_msg);
 
-	if ((rc = slurm_receive_msg(fd, resp_msg, 0)) != 0) {
+	if ((rc = slurm_receive_msg(fd, &resp_msg, 0)) != 0) {
+		slurm_free_msg_members(&resp_msg);
 		slurm_shutdown_msg_conn(fd);
 		return SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR;
 	}
 
 	if (slurm_shutdown_msg_conn(fd) != SLURM_SUCCESS)
 		rc = SLURMCTLD_COMMUNICATIONS_SHUTDOWN_ERROR;
-	else if (resp_msg->msg_type != RESPONSE_SLURM_RC)
+	else if (resp_msg.msg_type != RESPONSE_SLURM_RC)
 		rc = SLURM_UNEXPECTED_MSG_ERROR;
 	else
-		rc = slurm_get_return_code(resp_msg->msg_type,
-					   resp_msg->data);
-	slurm_free_msg(resp_msg);
+		rc = slurm_get_return_code(resp_msg.msg_type,
+					   resp_msg.data);
+
+	slurm_free_msg_members(&resp_msg);
 
 	if (rc)
 		slurm_seterrno_ret(rc);

@@ -1648,6 +1648,7 @@ extern void slurmdbd_free_buffer(void *x)
 
 static int _send_fini_msg(void)
 {
+	int rc;
 	Buf buffer;
 	dbd_fini_msg_t req;
 
@@ -1662,10 +1663,10 @@ static int _send_fini_msg(void)
 	req.close_conn   = 1;
 	slurmdbd_pack_fini_msg(&req, SLURM_PROTOCOL_VERSION, buffer);
 
-	slurm_persist_send_msg(slurmdbd_conn, buffer);
+	rc = slurm_persist_send_msg(slurmdbd_conn, buffer);
 	free_buf(buffer);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 static int _unpack_return_code(uint16_t rpc_version, Buf buffer)
@@ -3084,6 +3085,7 @@ extern int
 slurmdbd_unpack_init_msg(dbd_init_msg_t **msg, uint16_t rpc_version, Buf buffer)
 {
 	int rc = SLURM_SUCCESS;
+	uint16_t tmp16;
 	uint32_t tmp32;
 
 	dbd_init_msg_t *msg_ptr = xmalloc(sizeof(dbd_init_msg_t));
@@ -3093,7 +3095,7 @@ slurmdbd_unpack_init_msg(dbd_init_msg_t **msg, uint16_t rpc_version, Buf buffer)
 	/* We don't use rollback going forward and version was packed after it
 	 * unfortunately */
 	if (rpc_version < SLURM_17_02_PROTOCOL_VERSION)
-		safe_unpack16((uint16_t *)&tmp32, buffer);
+		safe_unpack16(&tmp16, buffer);
 	safe_unpack16(&msg_ptr->version, buffer);
 	safe_unpackstr_xmalloc(&msg_ptr->cluster_name, &tmp32, buffer);
 
