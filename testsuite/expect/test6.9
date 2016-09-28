@@ -47,15 +47,15 @@ print_header $test_id
 # The "sleep 1" insures the background tasks is step 0 and foreground tasks is step 1
 #
 make_bash_script $file_in "
-  $srun $bin_sleep $max_job_delay &
+  $srun --mem=10 $bin_sleep $max_job_delay &
   $bin_sleep 1
-  $srun $bin_sleep $max_job_delay
+  $srun --mem=10 $bin_sleep $max_job_delay
 "
 
 #
 # Spawn sbatch job
 #
-set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null --job-name=job.$test_id -t5 $file_in]
+set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null --mem=20 --job-name=job.$test_id -t5 $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
