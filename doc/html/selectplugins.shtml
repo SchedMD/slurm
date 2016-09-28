@@ -16,10 +16,10 @@ specifications:</p>
 The major type must be &quot;select.&quot; The minor type can be any recognizable
 abbreviation for the type of node selection algorithm. We recommend, for example:</p>
 <ul>
-<li><b>bluegene</b>&#151;<a href="http://www.research.ibm.com/bluegene/">IBM Blue Gene</a>
+<li><b>bluegene</b>&#151;<a href="http://www.research.ibm.com/bluegene/">IBM BlueGene/Q</a>
 node selector. Note that this plugin not only selects the nodes for a job, but performs
 some initialization and termination functions for the job. Use this plugin for
-BlueGene/L, BlueGene/P and BlueGene/Q systems.</li>
+BlueGene/Q systems.</li>
 <li><b>cons_res</b>&#151;A plugin that can allocate individual processors,
 memory, etc. within nodes. This plugin is recommended for systems with
 many non-parallel programs sharing nodes. For more information see

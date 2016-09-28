@@ -10,7 +10,7 @@ The select plugin is aware of the systems topology, based upon data structures
 established by the topology plugn. It can also over-subscribe resources to
 support gang scheduling (time slicing of parallel jobs), if so configured.
 The select plugin is also capable of communicating with an external entity
-to perform these actions (the select/bluegene plugin used on an IBM BlueGene
+to perform these actions (the select/bluegene plugin used on an IBM BlueGene/Q
 and the select/cray plugin used with Cray ALPS/BASIL software are two 
 examples). Other architectures would rely upon either the select/linear or
 select/cons_res plugin. The select/linear plugin allocates whole nodes to jobs
@@ -66,7 +66,7 @@ jobs, expanding/shrinking job allocations, un/packing job state information,
 un/packing node state information, etc. The operation of those functions is
 relatively straightforward and not detailed here.</p>
 
-<h2>Operation on IBM BlueGene Systems</h2>
+<h2>Operation on IBM BlueGene/Q Systems</h2>
 
 <p>On IBM BlueGene systems, Slurm's <i>slurmd</i> daemon executes on the
 front-end nodes rather than the compute nodes and IBM provides a Bridge API 
@@ -74,9 +74,8 @@ to manage compute nodes and jobs. The IBM BlueGene systems also have very
 specific topology rules for what resources can be allocated to a job. Slurm's
 interface to IBM's Bridge API and the topology rules are found within the
 select/bluegene plugin and very little BlueGene-specific logic in Slurm is
-found outside of that plugin. Note that the select/bluegene plugin is used for
-BlueGene/L, BlueGene/P and BlueGene/Q systems with select portions of the
-code conditionally compiled depending upon the system type.</p>
+found outside of that plugin. Note that the select/bluegene plugin is required
+for BlueGene/Q systems.</p>
 
 <h2>Operation on Cray Systems</h2>
 
