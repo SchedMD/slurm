@@ -3205,6 +3205,12 @@ int slurm_receive_msg(int fd, slurm_msg_t *msg, int timeout)
 		rc = slurm_persist_msg_unpack(msg->conn, &persist_msg, buffer);
 		free_buf(buffer);
 
+		if (rc) {
+			error("%s: Failed to unpack persist msg", __func__);
+			slurm_persist_conn_close(msg->conn);
+			return SLURM_ERROR;
+		}
+
 		msg->msg_type = persist_msg.msg_type;
 		msg->data = persist_msg.data;
 

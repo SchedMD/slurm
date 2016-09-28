@@ -778,12 +778,14 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 				 * nothing to change now. */
 				printf("Nothing to change\n");
 				rc = SLURM_ERROR;
+				(void)rc; /* CLANG false positive */
 				goto end_it;
 			} else if (existing_fed) {
 				char *warning =
 					"\nAre you sure you want to continue?";
 				if (!commit_check(warning)) {
 					rc = SLURM_ERROR;
+					(void)rc; /* CLANG false positive */
 					goto end_it;
 				}
 			}

@@ -455,10 +455,7 @@ extern int sacctmgr_add_federation(int argc, char *argv[])
 	while((name = list_next(itr))) {
 		slurmdb_federation_rec_t *fed = NULL;
 		if (!name[0]) {
-			exit_code=1;
-			fprintf(stderr, " No blank names are "
-				"allowed when adding.\n");
-			rc = SLURM_ERROR;
+			fprintf(stderr, " Skipping blank fed name.\n");
 			continue;
 		}
 		fed = xmalloc(sizeof(slurmdb_federation_rec_t));

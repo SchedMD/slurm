@@ -6036,6 +6036,8 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg, connection_arg_t *arg)
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 
+	xassert(arg);
+
 	START_TIMER;
 
 	if (persist_init->version > SLURM_PROTOCOL_VERSION)
@@ -6093,7 +6095,6 @@ end_it:
 	if (slurm_persist_send_msg(&p_tmp, ret_buf) != SLURM_SUCCESS) {
 		debug("Problem sending response to connection %d uid(%d)",
 		      p_tmp.fd, uid);
-		rc = SLURM_ERROR;
 	}
 	xfree(comment);
 	free_buf(ret_buf);
