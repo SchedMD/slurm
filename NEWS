@@ -40,6 +40,8 @@ documents those changes that are of interest to users and administrators.
  -- Add "flag" field to launch_tasks_request_msg. Remove the following fields
     (moved into flags): multi_prog, task_flags, user_managed_io, pty,
     buffered_stdio, and labelio.
+ -- Add protocol version to slurmd startup communications for slurmstepd to
+    permit changes in the protocol.
 
 * Changes in Slurm 17.02.0pre1
 ==============================
