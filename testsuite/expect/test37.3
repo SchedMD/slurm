@@ -136,7 +136,7 @@ proc test_fed_status {cname fed_flags cluster_list} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sacctmgr add not responding\n"
+			send_user "\nFAILURE: scontrol not responding\n"
 			slow_kill $my_pid
 			end_it 1
 		}
