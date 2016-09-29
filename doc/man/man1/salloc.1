@@ -1031,12 +1031,11 @@ of 32 connections are established (2 instances x 2 protocols x 2 networks x
 
 .TP
 \fB\-\-nice\fR[=\fIadjustment\fR]
-Run the job with an adjusted scheduling priority within Slurm.
-With no adjustment value the scheduling priority is decreased
-by 100. The adjustment range is from \-10000 (highest priority)
-to 10000 (lowest priority). Only privileged users can specify
-a negative adjustment. NOTE: This option is presently
-ignored if \fISchedulerType=sched/wiki\fR or
+Run the job with an adjusted scheduling priority within Slurm. With no
+adjustment value the scheduling priority is decreased by 100. A negative nice
+value increases the priority, otherwise decreases it. The adjustment range is
++/\- 2147483645. Only privileged users can specify a negative adjustment.
+NOTE: This option is presently ignored if \fISchedulerType=sched/wiki\fR or
 \fISchedulerType=sched/wiki2\fR.
 
 .TP

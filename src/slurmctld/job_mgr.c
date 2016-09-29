@@ -3631,7 +3631,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	overcommit = (job_specs->overcommit != (uint8_t) NO_VAL) ?
 		(long) job_specs->overcommit : -1L;
 	nice = (job_specs->nice != NO_VAL) ?
-		(job_specs->nice - NICE_OFFSET) : 0;
+		((int64_t)job_specs->nice - NICE_OFFSET) : 0;
 	debug3("   mail_type=%u mail_user=%s nice=%ld num_tasks=%ld "
 	       "open_mode=%u overcommit=%ld acctg_freq=%s",
 	       job_specs->mail_type, job_specs->mail_user, nice, num_tasks,

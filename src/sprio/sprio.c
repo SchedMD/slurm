@@ -174,7 +174,7 @@ int main (int argc, char *argv[])
 		} else {
 			if (params.long_list)
 				params.format = "%.15i %.8u %.10Y %.10A %.10F "
-					"%.10J %.10P %.10Q %.6N %.20T";
+					"%.10J %.10P %.10Q %.11N %.20T";
 			else{
 				params.format = xstrdup("%.15i");
 				if (params.users)

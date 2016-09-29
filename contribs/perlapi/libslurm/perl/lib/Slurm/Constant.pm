@@ -144,7 +144,7 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =over 2
 
-=item * NICE_OFFSET             10000
+=item * NICE_OFFSET             0x80000000
 
 =back
 

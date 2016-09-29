@@ -96,6 +96,7 @@ documents those changes that are of interest to users and administrators.
     that it would otherwise be run on with NHC_NO.
  -- Ignore GRES/QOS updates that maintain the same value as before.
  -- mpi/pmix - prepare temp directory for application.
+ -- Fix display for the nice and priority values in sprio/scontrol/squeue.
 
 * Changes in Slurm 16.05.4
 ==========================

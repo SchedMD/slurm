@@ -571,7 +571,8 @@ static uint32_t _get_priority_internal(time_t start_time,
 		+ job_ptr->prio_factors->priority_part
 		+ job_ptr->prio_factors->priority_qos
 		+ tmp_tres
-		- (double)(job_ptr->prio_factors->nice - NICE_OFFSET);
+		- (double)(((int64_t)job_ptr->prio_factors->nice)
+			   - NICE_OFFSET);
 
 	/* Priority 0 is reserved for held jobs */
 	if (priority < 1)
@@ -608,8 +609,9 @@ static uint32_t _get_priority_internal(time_t start_time,
 				 + job_ptr->prio_factors->priority_js
 				 + job_ptr->prio_factors->priority_qos
 				 + tmp_tres
-				 - (double)(job_ptr->prio_factors->nice
-					    - NICE_OFFSET));
+				 - (double)
+				   (((uint64_t)job_ptr->prio_factors->nice)
+				    - NICE_OFFSET));
 
 			/* Priority 0 is reserved for held jobs */
 			if (priority_part < 1)
@@ -670,14 +672,14 @@ static uint32_t _get_priority_internal(time_t start_time,
 		}
 
 		info("Job %u priority: %.2f + %.2f + %.2f + %.2f + %.2f + %2.f "
-		     "- %d = %.2f",
+		     "- %ld = %.2f",
 		     job_ptr->job_id, job_ptr->prio_factors->priority_age,
 		     job_ptr->prio_factors->priority_fs,
 		     job_ptr->prio_factors->priority_js,
 		     job_ptr->prio_factors->priority_part,
 		     job_ptr->prio_factors->priority_qos,
 		     tmp_tres,
-		     (job_ptr->prio_factors->nice - NICE_OFFSET),
+		     (((int64_t)job_ptr->prio_factors->nice) - NICE_OFFSET),
 		     priority);
 
 		xfree(pre_factors.priority_tres);
