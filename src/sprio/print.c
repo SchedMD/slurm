@@ -82,13 +82,17 @@ static double _get_priority(priority_factors_object_t *prio_factors)
 		+ prio_factors->priority_js
 		+ prio_factors->priority_part
 		+ prio_factors->priority_qos
-		- (double)(prio_factors->nice - NICE_OFFSET);
+		- (double)((int64_t)prio_factors->nice - NICE_OFFSET);
 
 	for (i = 0; i < prio_factors->tres_cnt; i++) {
 		if (!prio_factors->priority_tres[i])
 			continue;
 		priority += prio_factors->priority_tres[i];
 	}
+
+	/* Priority 0 is reserved for held jobs */
+        if (priority < 1)
+                priority = 1;
 
 	return priority;
 }
@@ -423,7 +427,7 @@ int _print_job_nice(priority_factors_object_t * job, int width,
 	else if (job == (priority_factors_object_t *) -1)
 		_print_str("", width, right, true);
 	else
-		_print_int(job->nice - NICE_OFFSET, width, right, true);
+		_print_int((int64_t)job->nice - NICE_OFFSET, width, right, true);
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;

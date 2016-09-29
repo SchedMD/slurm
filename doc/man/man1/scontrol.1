@@ -668,13 +668,13 @@ When used to identify jobs to be modified, all jobs belonging to all users
 are modified unless the \fIUserID\fP option is used to identify a specific user.
 Either \fIJobId\fP or \fIJobName\fP is required.
 .TP
-\fINice\fP[=delta]
-Adjust job's priority by the specified value. Default value is 100.
-The adjustment range is from \-10000 (highest priority)
-to 10000 (lowest priority).
-Nice value changes are not additive, but overwrite any prior nice
-value and are applied to the job's base priority.
-Only privileged users, Slurm administrator or root, can specify a negative adjustment.
+\fB\-\-nice\fR[=\fIadjustment\fR]
+Update the job with an adjusted scheduling priority within Slurm. With no
+adjustment value the scheduling priority is decreased by 100. A negative nice
+value increases the priority, otherwise decreases it. The adjustment range is
++/\- 2147483645. Only privileged users can specify a negative adjustment.
+NOTE: This option is presently ignored if \fISchedulerType=sched/wiki\fR or
+\fISchedulerType=sched/wiki2\fR.
 .TP
 \fINodeList\fP=<nodes>
 Change the nodes allocated to a running job to shrink it's size.
