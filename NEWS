@@ -94,6 +94,7 @@ documents those changes that are of interest to users and administrators.
     mid-cycle unnecessarily.
  -- Cray - add NHC_ABSOLUTELY_NO to never run NHC, even on certain edge cases
     that it would otherwise be run on with NHC_NO.
+ -- Ignore GRES/QOS updates that maintain the same value as before.
 
 * Changes in Slurm 16.05.4
 ==========================

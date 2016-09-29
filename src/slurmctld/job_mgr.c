@@ -10228,8 +10228,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		detail_ptr ? detail_ptr->min_nodes : 1);
 
 	if (job_specs->gres) {
-		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL) ||
-		    (detail_ptr->expanding_jobid != 0)) {
+		if (!xstrcmp(job_specs->gres, job_ptr->gres)) {
+			debug("sched: update_job: new gres identical to "
+			      "old gres \"%s\"", job_ptr->gres);
+		} else if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL)
+			   || (detail_ptr->expanding_jobid != 0)) {
 			error_code = ESLURM_JOB_NOT_PENDING;
 		} else if (gres_plugin_job_state_validate(job_specs->gres,
 							  &gres_list)) {
@@ -10462,45 +10465,42 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	/* NOTE: Update QOS before updating partition in order to enforce
 	 * AllowQOS and DenyQOS partition configuration options */
 	if (job_specs->qos) {
-		if (!IS_JOB_PENDING(job_ptr))
-			error_code = ESLURM_JOB_NOT_PENDING;
-		else {
-			slurmdb_qos_rec_t qos_rec;
-			slurmdb_qos_rec_t *new_qos_ptr;
-			char *resv_name;
+		slurmdb_qos_rec_t qos_rec;
+		slurmdb_qos_rec_t *new_qos_ptr;
+		char *resv_name;
 
-			if (job_specs->reservation
-			    && job_specs->reservation[0] != '\0')
-				resv_name = job_specs->reservation;
-			else
-				resv_name = job_ptr->resv_name;
+		if (job_specs->reservation
+		    && job_specs->reservation[0] != '\0')
+			resv_name = job_specs->reservation;
+		else
+			resv_name = job_ptr->resv_name;
 
-			memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
+		memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
 
-			/* If the qos is blank that means we want the default */
-			if (job_specs->qos[0])
-				qos_rec.name = job_specs->qos;
+		/* If the qos is blank that means we want the default */
+		if (job_specs->qos[0])
+			qos_rec.name = job_specs->qos;
 
-			new_qos_ptr = _determine_and_validate_qos(
-				resv_name, job_ptr->assoc_ptr,
-				authorized, &qos_rec, &error_code, false);
-			if ((error_code == SLURM_SUCCESS) && new_qos_ptr) {
+		new_qos_ptr = _determine_and_validate_qos(
+			resv_name, job_ptr->assoc_ptr,
+			authorized, &qos_rec, &error_code, false);
+		if ((error_code == SLURM_SUCCESS) && new_qos_ptr) {
+			if (job_ptr->qos_id != qos_rec.id && IS_JOB_PENDING(job_ptr)) {
 				info("%s: setting QOS to %s for job_id %u",
 				     __func__, new_qos_ptr->name,
 				     job_ptr->job_id);
-				if (job_ptr->qos_id != qos_rec.id) {
-					acct_policy_remove_job_submit(job_ptr);
-					job_ptr->qos_id = qos_rec.id;
-					job_ptr->qos_ptr = new_qos_ptr;
-					job_ptr->limit_set.qos =
-						acct_policy_limit_set.qos;
-					update_accounting = true;
-					acct_policy_add_job_submit(job_ptr);
-				} else {
-					debug("sched: %s: new QOS identical "
-					      "to old QOS %u",
-					      __func__, job_ptr->job_id);
-				}
+				acct_policy_remove_job_submit(job_ptr);
+				job_ptr->qos_id = qos_rec.id;
+				job_ptr->qos_ptr = new_qos_ptr;
+				job_ptr->limit_set.qos =
+					acct_policy_limit_set.qos;
+				update_accounting = true;
+				acct_policy_add_job_submit(job_ptr);
+			} else if (job_ptr->qos_id == qos_rec.id) {
+				debug("sched: update_job: new QOS identical "
+				      "to old QOS %u", job_ptr->job_id);
+			} else {
+				error_code = ESLURM_JOB_NOT_PENDING;
 			}
 		}
 	}
