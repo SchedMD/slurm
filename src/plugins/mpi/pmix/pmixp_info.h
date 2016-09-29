@@ -67,7 +67,7 @@ typedef struct {
 	uint32_t *gtids; /* global ids of tasks located on *this* node */
 	char *task_map_packed; /* string represents packed task mapping information */
 	int timeout;
-	char *cli_tmpdir;
+	char *cli_tmpdir, *cli_tmpdir_base;
 	char *lib_tmpdir;
 	uid_t uid;
 	gid_t gid;
@@ -96,6 +96,11 @@ static inline char *pmixp_info_hostname(void)
 static inline char *pmixp_info_tmpdir_cli(void)
 {
 	return _pmixp_job_info.cli_tmpdir;
+}
+
+static inline char *pmixp_info_tmpdir_cli_base(void)
+{
+	return _pmixp_job_info.cli_tmpdir_base;
 }
 
 /* Cli tempdir */

@@ -59,6 +59,11 @@
 #pragma message "PMIx version mismatch: the major version seen during configuration was " VALUE(HAVE_PMIX_VER) "L but found " VALUE(PMIX_VERSION_MAJOR) " compilation will most likely fail.  Please reconfigure against the new version."
 #endif
 
+// define some additional keys
+#ifndef PMIX_TDIR_RMCLEAN
+#define PMIX_TDIR_RMCLEAN "pmix.tdir.rmclean"
+#endif
+
 #define PMIXP_ALLOC_KEY(kvp, key_str)				\
 {								\
 	char *key = key_str;					\
@@ -217,31 +222,18 @@ int pmixp_libpmix_init(void)
 	mode_t rights = (S_IRUSR | S_IWUSR | S_IXUSR) | (S_IRGRP | S_IWGRP | S_IXGRP);
 	pmix_info_t *kvp = NULL;
 
-	/* NOTE: we need user who owns the job to access PMIx usock
-	 * file. According to 'man 7 unix':
-	 * "... In the Linux implementation, sockets which are visible in the file system
-	 * honor the permissions of the directory  they are  in... "
-	 * Our case is the following: slurmstepd is usually running as root, user application will
-	 * be "sudo'ed". To provide both of them with acces to the unix socket we do the following:
-	 * 1. Owner ID is set to the job owner.
-	 * 2. Group ID corresponds to slurmstepd.
-	 * 3. Set 0770 access mode */
-	if (0 != mkdir(pmixp_info_tmpdir_lib(), rights) ) {
-		PMIXP_ERROR_STD("Cannot create directory \"%s\"", pmixp_info_tmpdir_lib());
+	if (0 != (rc = pmixp_mkdir(pmixp_info_tmpdir_lib(), rights))) {
+		PMIXP_ERROR_STD("Cannot create server tmpdir: \"%s\"",
+				pmixp_info_tmpdir_lib());
 		return errno;
 	}
 
-	/* There might be umask that will drop essential rights. Fix it explicitly.
-	 * TODO: is there more elegant solution? */
-	if (chmod(pmixp_info_tmpdir_lib(), rights) < 0) {
-		error("chown(%s): %m", pmixp_info_tmpdir_lib());
+	if (0 != (rc = pmixp_mkdir(pmixp_info_tmpdir_cli(), rights))) {
+		PMIXP_ERROR_STD("Cannot create client tmpdir: \"%s\"",
+				pmixp_info_tmpdir_cli());
 		return errno;
 	}
 
-	if (chown(pmixp_info_tmpdir_lib(), (uid_t) pmixp_info_jobuid(), (gid_t) -1) < 0) {
-		error("chown(%s): %m", pmixp_info_tmpdir_lib());
-		return errno;
-	}
 
 	/* TODO: must be deleted in future once info-key approach will harden */
 	setenv(PMIXP_PMIXLIB_TMPDIR, pmixp_info_tmpdir_lib(), 1);
@@ -296,10 +288,17 @@ int pmixp_libpmix_finalize(void)
 	}
 
 	rc1 = pmixp_rmdir_recursively(pmixp_info_tmpdir_lib());
-	if (0 == rc) {
-		/* return only one error :) */
-		rc = rc1;
+	if (0 != rc1) {
+		PMIXP_ERROR_STD("Failed to remove %s\n", pmixp_info_tmpdir_lib());
+		/* Not considering this as fatal error */
 	}
+
+	rc1 = pmixp_rmdir_recursively(pmixp_info_tmpdir_cli());
+	if (0 != rc1) {
+		PMIXP_ERROR_STD("Failed to remove %s\n", pmixp_info_tmpdir_cli());
+		/* Not considering this as fatal error */
+	}
+
 	return rc;
 }
 
@@ -362,26 +361,28 @@ static void _set_tmpdirs(List lresp)
 {
 	pmix_info_t *kvp;
 	char *p = NULL;
+	bool rmclean = true;
 
 	/* We consider two sources of the tempdir:
 	 * - SLURM's slurm.conf TmpFS option;
 	 * - env var SLURM_PMIX_TMPDIR;
 	 * do we need to do anything else?
 	 */
-	p = pmixp_info_tmpdir_cli();
-	if (NULL == p) {
-		p = PMIXP_TMPDIR_DEFAULT;
-	}
+	p = pmixp_info_tmpdir_cli_base();
 	PMIXP_ALLOC_KEY(kvp, PMIX_TMPDIR);
 	PMIX_VAL_SET(&kvp->value, string, p);
 	list_append(lresp, kvp);
+
+	p = pmixp_info_tmpdir_cli();
 	PMIXP_ALLOC_KEY(kvp, PMIX_NSDIR);
 	PMIX_VAL_SET(&kvp->value, string, p);
 	list_append(lresp, kvp);
-	PMIXP_ALLOC_KEY(kvp, PMIX_PROCDIR);
-	PMIX_VAL_SET(&kvp->value, string, p);
+
+	PMIXP_ALLOC_KEY(kvp, PMIX_TDIR_RMCLEAN);
+	PMIX_VAL_SET(&kvp->value, flag, rmclean);
 	list_append(lresp, kvp);
 }
+
 
 /*
  * information about relative ranks as assigned by the RM
