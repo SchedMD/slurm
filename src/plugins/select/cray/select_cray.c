@@ -247,6 +247,12 @@ static int _run_nhc(nhc_info_t *nhc_info)
 	if (scheduling_disabled)
 		return 0;
 
+	if (slurmctld_conf.select_type_param & CR_NHC_ABSOLUTELY_NO) {
+		error("%s: disabled by NHC_Absolutely_No setting, skipping.",
+		      __func__);
+		return 0;
+	}
+
 #ifdef HAVE_NATIVE_CRAY
 	int argc = 13, status = 1, wait_rc, i = 0;
 	char *argv[argc];
