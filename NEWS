@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 16.05.6
+==========================
+
 * Changes in Slurm 16.05.5
 ==========================
  -- Fix accounting for jobs requeued after the previous job was finished.
