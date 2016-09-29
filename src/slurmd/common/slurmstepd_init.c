@@ -86,11 +86,12 @@ extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer)
 {
 	uint32_t uint32_tmp;
 	uint16_t protocol_version;
-	char *ver_str;
+	char *ver_str = NULL;
 
 	safe_unpackstr_xmalloc(&ver_str, &uint32_tmp, buffer);
 	if (ver_str && !xstrcmp(ver_str, PROTOCOL_VERSION)) {
 		safe_unpack16(&protocol_version, buffer);
+		xfree(ver_str);
 	} else {
 		/* Kludge to add protocol version in existing data structure:
 		 * use "hostname" as a version marker. Eliminate this in
