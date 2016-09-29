@@ -923,6 +923,8 @@ enum ctx_keys {
  * across available nodes */
 #define CR_PACK_NODES  0x0200
 
+#define CR_NHC_ABSOLUTELY_NO 0x0400 /* Completely disable NHC on Native Cray */
+
 /* By default, distribute cores using a block approach inside the nodes */
 #define CR_CORE_DEFAULT_DIST_BLOCK 0x1000
 

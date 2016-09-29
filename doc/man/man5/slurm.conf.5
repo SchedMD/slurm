@@ -2886,13 +2886,17 @@ Layer the select/cons_res plugin under the select/cray plugin, the default is
 to layer on select/linear.  This also allows all the options for
 \fBSelectType=select/cons_res\fR.
 .TP
+\fBNHC_ABSOLUTELY_NO\fR
+Never run the node health check. Implies NHC_NO and NHC_NO_STEPS as well.
+.TP
 \fBNHC_NO_STEPS\fR
 Do not run the node health check after each step.  Default is to run
 after each step.
 .TP
 \fBNHC_NO\fR
 Do not run the node health check after each allocation.  Default is to run
-after each allocation.  This also sets NHC_NO_STEPS, so the NHC will never run.
+after each allocation.  This also sets NHC_NO_STEPS, so the NHC will never run
+except when nodes have been left with unkillable steps.
 .RE
 .TP
 The following options are supported for \fBSelectType=select/cons_res\fR:
