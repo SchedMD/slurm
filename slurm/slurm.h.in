@@ -1906,6 +1906,8 @@ typedef struct {
 						* process using
 						* slurm_get_select_jobinfo()
 						*/
+	char *srun_host;	/* host of srun command */
+	uint32_t srun_pid;	/* PID of srun command */
 	time_t start_time;	/* step start time */
 	uint16_t start_protocol_ver; /* Slurm version step was started with
 				      *	either srun or the lowest slurmd version

@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Copyright (C) 2012-2013 SchedMD LLC.
+ *  Copyright (C) 2012-2016 SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -209,6 +209,7 @@ static void _build_pending_step(struct job_record *job_ptr,
 
 	step_ptr->cpu_count	= step_specs->num_tasks;
 	step_ptr->port		= step_specs->port;
+	step_ptr->srun_pid	= step_specs->srun_pid;
 	step_ptr->host		= xstrdup(step_specs->host);
 	step_ptr->state		= JOB_PENDING;
 	step_ptr->step_id	= SLURM_PENDING_STEP;
@@ -413,9 +414,9 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 	       step_spec->task_dist, step_spec->plane_size);
 	debug3("   node_list=%s  constraints=%s",
 	       step_spec->node_list, step_spec->features);
-	debug3("   host=%s port=%u name=%s network=%s exclusive=%u",
-	       step_spec->host, step_spec->port, step_spec->name,
-	       step_spec->network, step_spec->exclusive);
+	debug3("   host=%s port=%u srun_pid=%u name=%s network=%s exclusive=%u",
+	       step_spec->host, step_spec->port, step_spec->srun_pid,
+	       step_spec->name, step_spec->network, step_spec->exclusive);
 	debug3("   checkpoint-dir=%s checkpoint_int=%u",
 	       step_spec->ckpt_dir, step_spec->ckpt_interval);
 	debug3("   mem_per_%s=%"PRIu64" resv_port_cnt=%u immediate=%u"
@@ -2427,6 +2428,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 				   step_ptr->step_id);
 
 	step_ptr->port = step_specs->port;
+	step_ptr->srun_pid = step_specs->srun_pid;
 	step_ptr->host = xstrdup(step_specs->host);
 	step_ptr->batch_step = batch_step;
 	if ((step_specs->cpu_freq_min == NO_VAL) &&
@@ -2788,7 +2790,54 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
 	cpu_cnt = step_ptr->cpu_count;
 #endif
 
-	if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
+		pack32(step_ptr->job_ptr->array_job_id, buffer);
+		pack32(step_ptr->job_ptr->array_task_id, buffer);
+		pack32(step_ptr->job_ptr->job_id, buffer);
+		pack32(step_ptr->step_id, buffer);
+		pack16(step_ptr->ckpt_interval, buffer);
+		pack32(step_ptr->job_ptr->user_id, buffer);
+		pack32(cpu_cnt, buffer);
+		pack32(step_ptr->cpu_freq_min, buffer);
+		pack32(step_ptr->cpu_freq_max, buffer);
+		pack32(step_ptr->cpu_freq_gov, buffer);
+		pack32(task_cnt, buffer);
+		if (step_ptr->step_layout)
+			pack32(step_ptr->step_layout->task_dist, buffer);
+		else
+			pack32((uint32_t) SLURM_DIST_UNKNOWN, buffer);
+		pack32(step_ptr->time_limit, buffer);
+		pack32(step_ptr->state, buffer);
+		pack32(step_ptr->srun_pid, buffer);
+
+		pack_time(step_ptr->start_time, buffer);
+		if (IS_JOB_SUSPENDED(step_ptr->job_ptr)) {
+			run_time = step_ptr->pre_sus_time;
+		} else {
+			begin_time = MAX(step_ptr->start_time,
+					 step_ptr->job_ptr->suspend_time);
+			run_time = step_ptr->pre_sus_time +
+				difftime(time(NULL), begin_time);
+		}
+		pack_time(run_time, buffer);
+
+		if (step_ptr->job_ptr->part_ptr)
+			packstr(step_ptr->job_ptr->part_ptr->name, buffer);
+		else
+			packstr(step_ptr->job_ptr->partition, buffer);
+		packstr(step_ptr->host, buffer);
+		packstr(step_ptr->resv_ports, buffer);
+		packstr(node_list, buffer);
+		packstr(step_ptr->name, buffer);
+		packstr(step_ptr->network, buffer);
+		pack_bit_fmt(pack_bitstr, buffer);
+		packstr(step_ptr->ckpt_dir, buffer);
+		packstr(step_ptr->gres, buffer);
+		select_g_select_jobinfo_pack(step_ptr->select_jobinfo, buffer,
+					     protocol_version);
+		packstr(step_ptr->tres_fmt_alloc_str, buffer);
+		pack16(step_ptr->start_protocol_ver, buffer);
+	} else if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
 		pack32(step_ptr->job_ptr->array_job_id, buffer);
 		pack32(step_ptr->job_ptr->array_task_id, buffer);
 		pack32(step_ptr->job_ptr->job_id, buffer);
@@ -3595,6 +3644,7 @@ extern void dump_job_step_state(struct job_record *job_ptr,
 {
 	pack32(step_ptr->step_id, buffer);
 	pack16(step_ptr->cyclic_alloc, buffer);
+	pack32(step_ptr->srun_pid, buffer);
 	pack16(step_ptr->port, buffer);
 	pack16(step_ptr->ckpt_interval, buffer);
 	pack16(step_ptr->cpus_per_task, buffer);
@@ -3670,7 +3720,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	uint16_t cyclic_alloc, port, batch_step, bit_cnt;
 	uint16_t start_protocol_ver = SLURM_MIN_PROTOCOL_VERSION;
 	uint16_t ckpt_interval, cpus_per_task, resv_port_cnt, state;
-	uint32_t core_size, cpu_count, exit_code, name_len;
+	uint32_t core_size, cpu_count, exit_code, name_len, srun_pid = 0;
 	uint32_t step_id, time_limit, cpu_freq_min, cpu_freq_max, cpu_freq_gov;
 	uint64_t pn_min_memory;
 	time_t start_time, pre_sus_time, tot_sus_time, ckpt_time;
@@ -3687,6 +3737,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		safe_unpack32(&step_id, buffer);
 		safe_unpack16(&cyclic_alloc, buffer);
+		safe_unpack32(&srun_pid, buffer);
 		safe_unpack16(&port, buffer);
 		safe_unpack16(&ckpt_interval, buffer);
 		safe_unpack16(&cpus_per_task, buffer);
@@ -3851,6 +3902,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	step_ptr->ckpt_dir     = ckpt_dir;
 	step_ptr->gres         = gres;
 	step_ptr->gres_list    = gres_list;
+	step_ptr->srun_pid     = srun_pid;
 	step_ptr->port         = port;
 	step_ptr->ckpt_interval= ckpt_interval;
 	step_ptr->pn_min_memory= pn_min_memory;

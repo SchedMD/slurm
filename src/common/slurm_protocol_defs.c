@@ -1069,13 +1069,13 @@ extern void slurm_free_job_step_create_request_msg(
 		job_step_create_request_msg_t *msg)
 {
 	if (msg) {
+		xfree(msg->ckpt_dir);
 		xfree(msg->features);
 		xfree(msg->gres);
 		xfree(msg->host);
 		xfree(msg->name);
 		xfree(msg->network);
 		xfree(msg->node_list);
-		xfree(msg->ckpt_dir);
 		xfree(msg);
 	}
 }
@@ -3203,6 +3203,7 @@ extern void slurm_free_job_step_info_members (job_step_info_t * msg)
 		xfree(msg->resv_ports);
 		select_g_select_jobinfo_free(msg->select_jobinfo);
 		msg->select_jobinfo = NULL;
+		xfree(msg->srun_host);
 		xfree(msg->tres_alloc_str);
 	}
 }

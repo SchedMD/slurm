@@ -4877,6 +4877,7 @@ pack_job_step_create_request_msg(job_step_create_request_msg_t * msg,
 		pack16(msg->exclusive, buffer);
 		pack16(msg->immediate, buffer);
 		pack16(msg->resv_port_cnt, buffer);
+		pack32(msg->srun_pid, buffer);
 
 		packstr(msg->host, buffer);
 		packstr(msg->name, buffer);
@@ -4960,6 +4961,7 @@ unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 		safe_unpack16(&tmp_ptr->exclusive, buffer);
 		safe_unpack16(&tmp_ptr->immediate, buffer);
 		safe_unpack16(&tmp_ptr->resv_port_cnt, buffer);
+		safe_unpack32(&tmp_ptr->srun_pid, buffer);
 
 		safe_unpackstr_xmalloc(&tmp_ptr->host, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->name, &uint32_tmp, buffer);
@@ -5765,7 +5767,50 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer,
 	uint32_t uint32_tmp = 0;
 	char *node_inx_str;
 
-	if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
+		safe_unpack32(&step->array_job_id, buffer);
+		safe_unpack32(&step->array_task_id, buffer);
+		safe_unpack32(&step->job_id, buffer);
+		safe_unpack32(&step->step_id, buffer);
+		safe_unpack16(&step->ckpt_interval, buffer);
+		safe_unpack32(&step->user_id, buffer);
+		safe_unpack32(&step->num_cpus, buffer);
+		safe_unpack32(&step->cpu_freq_min, buffer);
+		safe_unpack32(&step->cpu_freq_max, buffer);
+		safe_unpack32(&step->cpu_freq_gov, buffer);
+		safe_unpack32(&step->num_tasks, buffer);
+		safe_unpack32(&step->task_dist, buffer);
+		safe_unpack32(&step->time_limit, buffer);
+		safe_unpack32(&step->state, buffer);
+		safe_unpack32(&step->srun_pid, buffer);
+
+		safe_unpack_time(&step->start_time, buffer);
+		safe_unpack_time(&step->run_time, buffer);
+
+		safe_unpackstr_xmalloc(&step->partition, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->srun_host, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->resv_ports, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->nodes, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->name, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->network, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node_inx_str, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->ckpt_dir, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->gres, &uint32_tmp, buffer);
+		if (node_inx_str == NULL)
+			step->node_inx = bitfmt2int("");
+		else {
+			step->node_inx = bitfmt2int(node_inx_str);
+			xfree(node_inx_str);
+		}
+
+		if (select_g_select_jobinfo_unpack(&step->select_jobinfo,
+						   buffer, protocol_version))
+			goto unpack_error;
+
+		safe_unpackstr_xmalloc(&step->tres_alloc_str,
+				       &uint32_tmp, buffer);
+		safe_unpack16(&step->start_protocol_ver, buffer);
+	} else if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
 		safe_unpack32(&step->array_job_id, buffer);
 		safe_unpack32(&step->array_task_id, buffer);
 		safe_unpack32(&step->job_id, buffer);

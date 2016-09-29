@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 17.02.0pre3
 ==============================
+ -- Add srun host & PID to job step data structures.
 
 * Changes in Slurm 17.02.0pre2
 ==============================

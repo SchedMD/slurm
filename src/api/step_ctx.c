@@ -144,6 +144,7 @@ static job_step_create_request_msg_t *_create_step_request(
 	step_req->no_kill = step_params->no_kill;
 	step_req->overcommit = step_params->overcommit ? 1 : 0;
 	step_req->pn_min_memory = step_params->pn_min_memory;
+	step_req->srun_pid = (uint32_t) getpid();
 	step_req->time_limit = step_params->time_limit;
 
 	return step_req;

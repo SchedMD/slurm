@@ -291,6 +291,14 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 	}
 	xstrfmtcat(out, " Dist=%s",
 		   slurm_step_layout_type_name(job_step_ptr->task_dist));
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+
+	/****** Line 7 ******/
+	xstrfmtcat(out, "SrunHost:Pid=%s:%u",
+		   job_step_ptr->srun_host, job_step_ptr->srun_pid);
 	xstrcat(out, "\n\n");
 
 	return out;
