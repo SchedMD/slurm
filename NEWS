@@ -89,6 +89,9 @@ documents those changes that are of interest to users and administrators.
     behaviour with respect to waiting for all allocated nodes to be ready for
     use. Job can override the configuration option using the --wait-all-nodes=#
     option.
+ -- Prevent partition group access updates from resetting last_part_update when
+    no changes have been made. Prevents backfill scheduler from restarting
+    mid-cycle unnecessarily.
 
 * Changes in Slurm 16.05.4
 ==========================
