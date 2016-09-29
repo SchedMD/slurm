@@ -307,16 +307,17 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 			job->step_ctx = slurm_step_ctx_create_no_alloc(
 				&job->ctx_params, job->stepid);
 		} else {
-			if (opt.immediate)
+			if (opt.immediate) {
 				step_wait = MAX(1, opt.immediate -
 						   difftime(time(NULL),
 							    srun_begin_time)) *
 					    1000;
-			else
+			} else {
 				/* Wait 60 to 70 seconds for response */
 				step_wait = (getpid() % 10) * 1000 + 60000;
-			job->step_ctx = slurm_step_ctx_create_timeout(
+				job->step_ctx = slurm_step_ctx_create_timeout(
 						&job->ctx_params, step_wait);
+			}
 		}
 		if (job->step_ctx != NULL) {
 			if (i > 0)
