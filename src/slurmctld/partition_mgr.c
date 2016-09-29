@@ -1966,6 +1966,36 @@ extern int validate_alloc_node(struct part_record *part_ptr, char* alloc_node)
  	return status;
 }
 
+static int _update_part_uid_access_list(void *x, void *arg)
+{
+	struct part_record *part_ptr = (struct part_record *)x;
+	int *updated = (int *)arg;
+	int i = 0;
+	uid_t *tmp_uids;
+
+	tmp_uids = part_ptr->allow_uids;
+	part_ptr->allow_uids = _get_groups_members(part_ptr->allow_groups);
+
+	if ((!part_ptr->allow_uids) && (!tmp_uids)) {
+		/* no changes, and no arrays to compare */
+	} else if ((!part_ptr->allow_uids) || (!tmp_uids)) {
+		/* one is set when it wasn't before */
+		*updated = 1;
+	} else {
+		/* step through arrays and compare item by item */
+		/* uid_t arrays are terminated with a zero */
+		for (i = 0; part_ptr->allow_uids[i]; i++) {
+			if (tmp_uids[i] != part_ptr->allow_uids[i]) {
+				*updated = 1;
+				break;
+			}
+		}
+	}
+
+	xfree(tmp_uids);
+	return 0;
+}
+
 /*
  * load_part_uid_allow_list - reload the allow_uid list of partitions
  *	if required (updated group file or force set)
@@ -1974,9 +2004,8 @@ extern int validate_alloc_node(struct part_record *part_ptr, char* alloc_node)
 void load_part_uid_allow_list(int force)
 {
 	static time_t last_update_time;
+	int updated = 0;
 	time_t temp_time;
-	ListIterator part_iterator;
-	struct part_record *part_ptr;
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -1985,16 +2014,18 @@ void load_part_uid_allow_list(int force)
 		return;
 	debug("Updating partition uid access list");
 	last_update_time = temp_time;
-	last_part_update = time(NULL);
 
-	part_iterator = list_iterator_create(part_list);
-	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
-		xfree(part_ptr->allow_uids);
-		part_ptr->allow_uids =
-			_get_groups_members(part_ptr->allow_groups);
+	list_for_each(part_list, _update_part_uid_access_list, &updated);
+
+	/* only update last_part_update when changes made to avoid restarting
+	 * backfill scheduler unnecessarily */
+	if (updated) {
+		debug2("%s: list updated, resetting last_part_update time",
+		       __func__);
+		last_part_update = time(NULL);
 	}
+
 	clear_group_cache();
-	list_iterator_destroy(part_iterator);
 	END_TIMER2("load_part_uid_allow_list");
 }
 
