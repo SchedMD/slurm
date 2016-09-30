@@ -315,9 +315,9 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 			} else {
 				/* Wait 60 to 70 seconds for response */
 				step_wait = (getpid() % 10) * 1000 + 60000;
-				job->step_ctx = slurm_step_ctx_create_timeout(
-						&job->ctx_params, step_wait);
 			}
+			job->step_ctx = slurm_step_ctx_create_timeout(
+						&job->ctx_params, step_wait);
 		}
 		if (job->step_ctx != NULL) {
 			if (i > 0)
