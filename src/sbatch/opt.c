@@ -1612,21 +1612,29 @@ static void _set_options(int argc, char **argv)
 			xfree(opt.burst_buffer);
 			opt.burst_buffer = xstrdup(optarg);
 			break;
-		case LONG_OPT_NICE:
+		case LONG_OPT_NICE: {
+			long long tmp_nice;
 			if (optarg)
-				opt.nice = strtol(optarg, NULL, 10);
+				tmp_nice = strtoll(optarg, NULL, 10);
 			else
-				opt.nice = 100;
-			if (opt.nice < 0) {
+				tmp_nice = 100;
+			if (abs(tmp_nice) > (NICE_OFFSET - 3)) {
+				error("Nice value out of range (+/- %u). Value "
+				      "ignored", NICE_OFFSET - 3);
+				tmp_nice = 0;
+			}
+			if (tmp_nice < 0) {
 				uid_t my_uid = getuid();
 				if ((my_uid != 0) &&
 				    (my_uid != slurm_get_slurm_user_id())) {
 					error("Nice value must be "
 					      "non-negative, value ignored");
-					opt.nice = 0;
+					tmp_nice = 0;
 				}
 			}
+			opt.nice = (int) tmp_nice;
 			break;
+		}
 		case LONG_OPT_PRIORITY: {
 			long long priority;
 			if (strcasecmp(optarg, "TOP") == 0) {
@@ -2133,21 +2141,29 @@ static void _set_pbs_options(int argc, char **argv)
 			else
 				opt.ofname = xstrdup(optarg);
 			break;
-		case 'p':
+		case 'p': {
+			long long tmp_nice;
 			if (optarg)
-				opt.nice = strtol(optarg, NULL, 10);
+				tmp_nice = strtoll(optarg, NULL, 10);
 			else
-				opt.nice = 100;
-			if (opt.nice < 0) {
+				tmp_nice = 100;
+			if (abs(tmp_nice) > (NICE_OFFSET - 3)) {
+				error("Nice value out of range (+/- %u). Value "
+				      "ignored", NICE_OFFSET - 3);
+				tmp_nice = 0;
+			}
+			if (tmp_nice < 0) {
 				uid_t my_uid = getuid();
 				if ((my_uid != 0) &&
 				    (my_uid != slurm_get_slurm_user_id())) {
 					error("Nice value must be "
 					      "non-negative, value ignored");
-					opt.nice = 0;
+					tmp_nice = 0;
 				}
 			}
+			opt.nice = (int) tmp_nice;
 			break;
+		}
 		case 'q':
 			xfree(opt.partition);
 			opt.partition = xstrdup(optarg);
@@ -2444,21 +2460,28 @@ static void _parse_pbs_resource_list(char *rl)
 				xfree(temp);
 			}
 		} else if (!xstrncmp(rl+i, "nice=", 5)) {
+			long long tmp_nice;
 			i += 5;
 			temp = _get_pbs_option_value(rl, &i, ',');
 			if (temp)
-				opt.nice = strtol(temp, NULL, 10);
+				tmp_nice = strtoll(temp, NULL, 10);
 			else
-				opt.nice = 100;
-			if (opt.nice < 0) {
+				tmp_nice = 100;
+			if (abs(tmp_nice) > (NICE_OFFSET - 3)) {
+				error("Nice value out of range (+/- %u). Value "
+				      "ignored", NICE_OFFSET - 3);
+				tmp_nice = 0;
+			}
+			if (tmp_nice < 0) {
 				uid_t my_uid = getuid();
 				if ((my_uid != 0) &&
 				    (my_uid != slurm_get_slurm_user_id())) {
 					error("Nice value must be "
 					      "non-negative, value ignored");
-					opt.nice = 0;
+					tmp_nice = 0;
 				}
 			}
+			opt.nice = (int) tmp_nice;
 			xfree(temp);
 		} else if (!xstrncmp(rl+i, "nodes=", 6)) {
 			i+=6;

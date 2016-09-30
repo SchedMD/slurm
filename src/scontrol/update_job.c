@@ -834,16 +834,15 @@ scontrol_update_job (int argc, char *argv[])
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "Nice", MAX(taglen, 2)) == 0) {
-			int nice;
-			nice = strtoll(val, (char **) NULL, 10);
-			if (abs(nice) > NICE_OFFSET) {
-				error("Invalid nice value, must be between "
-					"-%d and %d", NICE_OFFSET,
-					NICE_OFFSET);
+			long long tmp_nice;
+			tmp_nice = strtoll(val, (char **)NULL, 10);
+			if (abs(tmp_nice) > (NICE_OFFSET - 3)) {
+				error("Nice value out of range (+/- %u). Value "
+				      "ignored", NICE_OFFSET - 3);
 				exit_code = 1;
 				return 0;
 			}
-			job_msg.nice = NICE_OFFSET + nice;
+			job_msg.nice = NICE_OFFSET + tmp_nice;
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "CPUsPerTask", MAX(taglen, 6)) == 0) {
