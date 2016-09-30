@@ -3388,7 +3388,7 @@ static void _help(void)
 #endif
 #ifdef HAVE_NATIVE_CRAY			/* Native Cray specific options */
 "Cray related options:\n"
-"      --network=type          Use network performace counters\n"
+"      --network=type          Use network performance counters\n"
 "                              (system, network, or processor)\n"
 "\n"
 #endif
