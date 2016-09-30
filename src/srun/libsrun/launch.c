@@ -161,7 +161,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 					 void (*signal_function)(int),
 					 sig_atomic_t *destroy_job)
 {
-	int i, rc;
+	int i, j, rc;
 	unsigned long step_wait = 0, my_sleep = 0;
 	uint16_t base_dist;
 
@@ -352,8 +352,8 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 				     "retrying");
 			}
 			xsignal_unblock(sig_array);
-			for (i = 0; sig_array[i]; i++)
-				xsignal(sig_array[i], signal_function);
+			for (j = 0; sig_array[j]; j++)
+				xsignal(sig_array[j], signal_function);
 			my_sleep = (getpid() % 1000) * 100 + 100000;
 		} else {
 			verbose("Job step creation still disabled, retrying");
