@@ -2221,9 +2221,6 @@ extern int gres_plugin_node_state_pack(List gres_list, Buf buffer,
 	top_offset = get_buf_offset(buffer);
 	pack16(rec_cnt, buffer);	/* placeholder if data */
 
-	if (gres_list == NULL)
-		return rc;
-
 	(void) gres_plugin_init();
 
 	slurm_mutex_lock(&gres_context_lock);
