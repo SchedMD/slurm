@@ -2,7 +2,7 @@
  **  pmix_server.c - PMIx server side functionality
  *****************************************************************************
  *  Copyright (C) 2014-2015 Artem Polyakov. All rights reserved.
- *  Copyright (C) 2015      Mellanox Technologies. All rights reserved.
+ *  Copyright (C) 2015-2016 Mellanox Technologies. All rights reserved.
  *  Written by Artem Polyakov <artpol84@gmail.com, artemp@mellanox.com>.
  *
  *  This file is part of SLURM, a resource management program.
@@ -322,7 +322,7 @@ static int _recv_unpack_hdr(void *net, void *host)
 }
 
 int pmixp_server_send(char *hostlist, pmixp_srv_cmd_t type, uint32_t seq,
-		const char *addr, void *data, size_t size)
+		const char *addr, void *data, size_t size, int p2p)
 {
 	send_header_t hdr;
 	char nhdr[sizeof(send_header_t)];
@@ -339,7 +339,11 @@ int pmixp_server_send(char *hostlist, pmixp_srv_cmd_t type, uint32_t seq,
 	hsize = _send_pack_hdr(&hdr, nhdr);
 	memcpy(data, nhdr, hsize);
 
-	rc = pmixp_stepd_send(hostlist, addr, data, size, 500, 7, 0);
+	if( !p2p ){
+		rc = pmixp_stepd_send(hostlist, addr, data, size, 500, 7, 0);
+	} else {
+		rc = pmixp_p2p_send(hostlist, addr, data, size, 500, 7, 0);
+	}
 	if (SLURM_SUCCESS != rc) {
 		PMIXP_ERROR("Cannot send message to %s, size = %u, hostlist:\n%s",
 			    addr, (uint32_t) size, hostlist);

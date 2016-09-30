@@ -2,7 +2,7 @@
  **	pmix_utils.c - Various PMIx utility functions
  *****************************************************************************
  *  Copyright (C) 2014-2015 Artem Polyakov. All rights reserved.
- *  Copyright (C) 2015      Mellanox Technologies. All rights reserved.
+ *  Copyright (C) 2015-2016 Mellanox Technologies. All rights reserved.
  *  Written by Artem Polyakov <artpol84@gmail.com, artemp@mellanox.com>.
  *
  *  This file is part of SLURM, a resource management program.
@@ -53,6 +53,9 @@ int pmixp_srun_send(slurm_addr_t *addr, uint32_t len, char *data);
 int pmixp_stepd_send(char *nodelist, const char *address, char *data,
 		     uint32_t len, unsigned int start_delay, unsigned int retry_cnt,
 		     int silent);
+int pmixp_p2p_send(char *nodename, const char *address, char *data,
+		     uint32_t len, unsigned int start_delay,
+		     unsigned int retry_cnt, int silent);
 int pmixp_rmdir_recursively(char *path);
 int pmixp_fixrights(char *path, uid_t uid, mode_t mode);
 int pmixp_mkdir(char *path, mode_t rights);

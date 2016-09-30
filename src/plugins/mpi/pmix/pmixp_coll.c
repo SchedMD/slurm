@@ -2,7 +2,7 @@
  **  pmix_coll.c - PMIx collective primitives
  *****************************************************************************
  *  Copyright (C) 2014-2015 Artem Polyakov. All rights reserved.
- *  Copyright (C) 2015      Mellanox Technologies. All rights reserved.
+ *  Copyright (C) 2015-2016 Mellanox Technologies. All rights reserved.
  *  Written by Artem Polyakov <artpol84@gmail.com, artemp@mellanox.com>.
  *
  *  This file is part of SLURM, a resource management program.
@@ -518,7 +518,7 @@ static void _progress_fan_in(pmixp_coll_t *coll)
 	pmixp_srv_cmd_t type;
 	const char *addr = pmixp_info_srv_addr();
 	char *hostlist = NULL;
-	int rc;
+	int rc, is_p2p = 0;
 	Buf root_buf;
 
 	PMIXP_DEBUG("%s:%d: start, local=%d, child_cntr=%d",
@@ -548,6 +548,7 @@ static void _progress_fan_in(pmixp_coll_t *coll)
 		type = PMIXP_MSG_FAN_IN;
 		PMIXP_DEBUG("%s:%d: switch to PMIXP_COLL_FAN_OUT state",
 			    pmixp_info_namespace(), pmixp_info_nodeid());
+		is_p2p = 1;
 	} else {
 		if (0 < hostlist_count(coll->all_children)) {
 			hostlist = hostlist_ranged_string_xmalloc(
@@ -577,7 +578,7 @@ static void _progress_fan_in(pmixp_coll_t *coll)
 		}
 		rc = pmixp_server_send(hostlist, type, coll->seq, addr,
 				get_buf_data(coll->buf),
-				get_buf_offset(coll->buf));
+				get_buf_offset(coll->buf), is_p2p);
 
 		if (SLURM_SUCCESS != rc) {
 			PMIXP_ERROR(

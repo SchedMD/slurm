@@ -2,7 +2,7 @@
  **	pmix_utils.c - Various PMIx utility functions
  *****************************************************************************
  *  Copyright (C) 2014-2015 Artem Polyakov. All rights reserved.
- *  Copyright (C) 2015      Mellanox Technologies. All rights reserved.
+ *  Copyright (C) 2015-2016 Mellanox Technologies. All rights reserved.
  *  Written by Artem Polyakov <artpol84@gmail.com, artemp@mellanox.com>.
  *
  *  This file is part of SLURM, a resource management program.
@@ -300,6 +300,104 @@ int pmixp_stepd_send(char *nodelist, const char *address, char *data,
 		delay *= 2;
 	}
 	xfree(copy_of_nodelist);
+
+	return rc;
+}
+
+static int _pmix_p2p_send_core(char *nodename, const char *address, char *data,
+				uint32_t len)
+{
+	int rc, timeout;
+	slurm_msg_t msg;
+	forward_data_msg_t req;
+	List ret_list;
+	ret_data_info_t *ret_data_info = NULL;
+
+	slurm_msg_t_init(&msg);
+
+	PMIXP_DEBUG("nodelist=%s, address=%s, len=%u",
+			nodename, address, len);
+	req.address = address;
+	req.len = len;
+	req.data = (char *)data;
+
+	msg.msg_type = REQUEST_FORWARD_DATA;
+	msg.data = &req;
+
+	rc = slurm_conf_get_addr(nodename, &msg.address);
+	if (SLURM_ERROR == rc) {
+		PMIXP_ERROR("Can't find address for host "
+			    "%s, check slurm.conf", nodename);
+	}
+
+	timeout = slurm_get_msg_timeout() * 1000;
+	msg.forward.timeout = timeout;
+	msg.forward.cnt = 0;
+	msg.forward.nodelist = NULL;
+	ret_list = slurm_send_addr_recv_msgs(&msg, nodename,
+						timeout);
+	if (ret_list) {
+		int ret_cnt = list_count(ret_list);
+		if (0 == ret_cnt &&
+		    (errno != SLURM_COMMUNICATIONS_CONNECTION_ERROR)) {
+			PMIXP_ERROR("failed to send to %s, errno=%d",
+				    nodename, errno);
+			return SLURM_ERROR;
+		}
+	} else {
+		/* This should never happen (when this was
+		 * written slurm_send_addr_recv_msgs always
+		 * returned a list */
+		PMIXP_ERROR("No return list given from "
+			    "slurm_send_addr_recv_msgs spawned for %s",
+			    nodename);
+		return SLURM_ERROR;
+	}
+
+	rc = SLURM_SUCCESS;
+	while ((ret_data_info = list_pop(ret_list))) {
+		int temp_rc =0;
+		temp_rc = slurm_get_return_code(ret_data_info->type,
+					ret_data_info->data);
+		if (temp_rc != SLURM_SUCCESS) {
+			rc = temp_rc;
+		}
+		destroy_data_info(ret_data_info);
+	}
+
+	FREE_NULL_LIST(ret_list);
+
+	return rc;
+}
+
+int pmixp_p2p_send(char *nodename, const char *address, char *data,
+		     uint32_t len, unsigned int start_delay,
+		     unsigned int retry_cnt, int silent)
+{
+
+	int retry = 0, rc;
+	unsigned int delay = start_delay; /* in milliseconds */
+
+	while (1) {
+		if (!silent && retry >= 1) {
+			PMIXP_ERROR("send failed, rc=%d, try #%d", rc, retry);
+		}
+
+		rc = _pmix_p2p_send_core(nodename, address, data, len);
+
+		if (rc == SLURM_SUCCESS)
+			break;
+
+		retry++;
+		if (retry >= retry_cnt)
+			break;
+
+		/* wait with constantly increasing delay */
+		struct timespec ts =
+			{(delay / 1000), ((delay % 1000) * 1000000)};
+		nanosleep(&ts, NULL);
+		delay *= 2;
+	}
 
 	return rc;
 }
