@@ -701,10 +701,11 @@ void signal_step_tasks_on_node(char* node_name, struct step_record *step_ptr,
 /* A step just completed, signal srun processes with pending steps to retry */
 static void _wake_pending_steps(struct job_record *job_ptr)
 {
+	static int config_start_count = -1, config_max_age = -1;
 	ListIterator step_iterator;
 	struct step_record *step_ptr;
 	int start_count = 0;
-	time_t max_age = time(NULL) - 60;   /* Wake step after 60 seconds */
+	time_t max_age;
 
 	if (!IS_JOB_RUNNING(job_ptr))
 		return;
@@ -712,13 +713,39 @@ static void _wake_pending_steps(struct job_record *job_ptr)
 	if (!job_ptr->step_list)
 		return;
 
+	if (config_start_count == -1) {
+		char *sched_params, *tmp_ptr;
+		long int param;
+		sched_params = slurm_get_sched_params();
+		config_start_count = 8;	
+		config_max_age = 60;
+		if (sched_params) {
+			tmp_ptr = strstr(sched_params, "step_retry_count=");
+			if (tmp_ptr) {
+				param = strtol(tmp_ptr + 17, NULL, 10);
+				if ((param >= 1) &&
+				    (param != LONG_MIN) && (param != LONG_MAX))
+					config_start_count = param;
+			}
+			tmp_ptr = strstr(sched_params, "step_retry_time=");
+			if (tmp_ptr) {
+				param = strtol(tmp_ptr + 16, NULL, 10);
+				if ((param >= 1) &&
+				    (param != LONG_MIN) && (param != LONG_MAX))
+					config_max_age = param;
+			}
+			xfree(sched_params);
+		}
+	}
+	max_age = time(NULL) - config_max_age;
+
 	/* We do not know which steps can use currently available resources.
 	 * Try to start a bit more based upon step sizes. Effectiveness
 	 * varies with step sizes, constraints and order. */
 	step_iterator = list_iterator_create(job_ptr->step_list);
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
 		if ((step_ptr->state == JOB_PENDING) &&
-		    ((start_count < 8) ||
+		    ((start_count < config_start_count) ||
 		     (step_ptr->time_last_active <= max_age))) {
 			srun_step_signal(step_ptr, 0);
 			list_remove(step_iterator);

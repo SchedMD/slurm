@@ -6,6 +6,8 @@ documents those changes that are of interest to users and administrators.
  -- Add srun host & PID to job step data structures.
  -- Avoid creating duplicate pending step records for the same srun command.
  -- Rewrite srun's logic for pending steps for better efficiency (fewer RPCs).
+ -- Added new SchedulerParameters options step_retry_count and step_retry_time
+    to control scheduling behaviour of job steps waiting for resources.
 
 * Changes in Slurm 17.02.0pre2
 ==============================

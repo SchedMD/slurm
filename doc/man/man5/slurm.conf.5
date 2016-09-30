@@ -2759,6 +2759,19 @@ cycle and the beginning of the next scheduling cycle.
 A value of zero will disable throttling of the scheduling logic interval.
 The default value is 1,000,000 microseconds on Cray/ALPS systems and
 zero microseconds (throttling is disabled) on other systems.
+.TP
+\fBstep_retry_count=#\fR
+When a step completes and there are steps ending resource allocation, then
+retry step allocations for at least this number of pending steps.
+Also see \fBstep_retry_time\fR.
+The default value is 8 steps.
+.TP
+\fBstep_retry_time=#\fR
+When a step completes and there are steps ending resource allocation, then
+retry step allocations for all steps which have been pending for at least this
+number of seconds.
+Also see \fBstep_retry_count\fR.
+The default value is 60 seconds.
 .RE
 
 .TP
