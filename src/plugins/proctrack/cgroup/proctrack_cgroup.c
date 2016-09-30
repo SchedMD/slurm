@@ -554,12 +554,8 @@ extern int proctrack_p_destroy (uint64_t id)
 
 extern uint64_t proctrack_p_find(pid_t pid)
 {
-	uint64_t cont_id = -1;
-
-	if (cont_id == (uint64_t) -1)
-		return 0;
 	/* not provided for now */
-	return cont_id;
+	return 0;
 }
 
 extern bool proctrack_p_has_pid(uint64_t cont_id, pid_t pid)
