@@ -4,6 +4,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 16.05.6
 ==========================
  -- Docs - the correct default value for GroupUpdateForce is 0.
+ -- mpi/pmix - improve point to point communication performance.
 
 * Changes in Slurm 16.05.5
 ==========================
