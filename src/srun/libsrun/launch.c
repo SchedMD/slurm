@@ -163,7 +163,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 {
 	int i, j, rc;
 	unsigned long step_wait = 0;
-	uint16_t base_dist;
+	uint16_t base_dist, slurmctld_timeout;
 
 	if (!job) {
 		error("launch_common_create_job_step: no job given");
@@ -315,8 +315,10 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 							    srun_begin_time)) *
 					    1000;
 			} else {
-				/* Wait 60 to 70 seconds for response */
-				step_wait = (getpid() % 10) * 1000 + 60000;
+				slurmctld_timeout = MIN(300, MAX(60,
+					slurm_get_slurmctld_timeout()));
+				step_wait = ((getpid() % 10) +
+					     slurmctld_timeout) * 1000;
 			}
 			job->step_ctx = slurm_step_ctx_create_timeout(
 						&job->ctx_params, step_wait);

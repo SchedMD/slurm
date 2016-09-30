@@ -278,6 +278,13 @@ char *slurm_get_slurmctld_plugstack(void);
  */
 char *slurm_get_slurmd_plugstack(void);
 
+/* slurm_get_slurmctld_timeout
+ * get slurmctld_timeout from slurmctld_conf object from
+ * slurmctld_conf object
+ * RET uint16_t - slurmctld timeout in seconds
+ */
+uint16_t slurm_get_slurmctld_timeout(void);
+
 /* slurm_get_plugin_dir
  * get plugin directory from slurmctld_conf object from slurmctld_conf object
  * RET char *   - plugin directory, MUST be xfreed by caller

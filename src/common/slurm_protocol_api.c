@@ -1510,6 +1510,25 @@ char *slurm_get_slurmd_plugstack(void)
 	return slurmd_plugstack;
 }
 
+/* slurm_get_slurmctld_timeout
+ * get slurmctld_timeout from slurmctld_conf object from
+ * slurmctld_conf object
+ * RET uint16_t - slurmctld timeout in seconds
+ */
+uint16_t slurm_get_slurmctld_timeout(void)
+{
+	uint16_t slurmctld_timeout = 0;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		slurmctld_timeout = conf->slurmctld_timeout;
+		slurm_conf_unlock();
+	}
+	return slurmctld_timeout;
+}
+
 /* slurm_get_accounting_storage_type
  * returns the accounting storage type from slurmctld_conf object
  * RET char *    - accounting storage type,  MUST be xfreed by caller
