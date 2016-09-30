@@ -4,6 +4,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 17.02.0pre3
 ==============================
  -- Add srun host & PID to job step data structures.
+ -- Avoid creating duplicate pending step records for the same srun command.
 
 * Changes in Slurm 17.02.0pre2
 ==============================

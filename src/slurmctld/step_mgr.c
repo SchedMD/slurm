@@ -100,6 +100,8 @@ static bitstr_t * _pick_step_nodes(struct job_record *job_ptr,
 static bitstr_t *_pick_step_nodes_cpus(struct job_record *job_ptr,
 				       bitstr_t *nodes_bitmap, int node_cnt,
 				       int cpu_cnt, uint32_t *usable_cpu_cnt);
+static void _purge_duplicate_steps(struct job_record *job_ptr,
+				   job_step_create_request_msg_t *step_specs);
 static hostlist_t _step_range_to_hostlist(struct step_record *step_ptr,
 				uint32_t range_first, uint32_t range_last);
 static int _step_hostname_to_inx(struct step_record *step_ptr,
@@ -191,6 +193,29 @@ static struct step_record * _create_step_record(struct job_record *job_ptr,
 	(void) list_append (job_ptr->step_list, step_ptr);
 
 	return step_ptr;
+}
+
+/* Purge any duplicate job steps for this PID */
+static void _purge_duplicate_steps(struct job_record *job_ptr,
+				   job_step_create_request_msg_t *step_specs)
+{
+	ListIterator step_iterator;
+	struct step_record *step_ptr;
+
+	xassert(job_ptr);
+
+	step_iterator = list_iterator_create(job_ptr->step_list);
+	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+		if ((step_ptr->step_id  == SLURM_PENDING_STEP)   &&
+		    (step_ptr->state    == JOB_PENDING)          &&
+		    (step_ptr->srun_pid	== step_specs->srun_pid) &&
+		    (xstrcmp(step_ptr->host, step_specs->host) == 0)) {
+			list_remove (step_iterator);
+			_free_step_rec(step_ptr);
+			break;
+		}
+	}
+	list_iterator_destroy(step_iterator);
 }
 
 /* The step with a state of PENDING is used as a placeholder for a host and
@@ -696,7 +721,7 @@ static void _wake_pending_steps(struct job_record *job_ptr)
 		    ((start_count < 8) ||
 		     (step_ptr->time_last_active <= max_age))) {
 			srun_step_signal(step_ptr, 0);
-			list_remove (step_iterator);
+			list_remove(step_iterator);
 			/* Step never started, no need to check
 			 * SELECT_JOBDATA_CLEANING. */
 			_free_step_rec(step_ptr);
@@ -2171,6 +2196,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	if (job_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID ;
 
+	_purge_duplicate_steps(job_ptr, step_specs);
 	if ((job_ptr->details == NULL) || IS_JOB_SUSPENDED(job_ptr))
 		return ESLURM_DISABLED;
 
