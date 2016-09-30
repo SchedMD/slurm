@@ -59,10 +59,11 @@
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/timers.h"
+#include "src/common/switch.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
-#include "src/common/switch.h"
 #include "src/api/step_ctx.h"
 
 int step_signals[] = {
@@ -220,15 +221,15 @@ slurm_step_ctx_create_timeout (const slurm_step_ctx_params_t *step_params,
 	struct slurm_step_ctx_struct *ctx = NULL;
 	job_step_create_request_msg_t *step_req = NULL;
 	job_step_create_response_msg_t *step_resp = NULL;
-	int i, rc, time_left = timeout;
+	int i, rc, time_left;
 	int sock = -1;
 	uint16_t port = 0;
 	int errnum = 0;
 	int cc;
 	uint16_t *ports;
-
-	/* First copy the user's step_params into a step request struct */
-	step_req = _create_step_request(step_params);
+	struct pollfd fds;
+	long elapsed_time;
+	DEF_TIMERS;
 
 	/* We will handle the messages in the step_launch.c mesage handler,
 	 * but we need to open the socket right now so we can tell the
@@ -239,11 +240,11 @@ slurm_step_ctx_create_timeout (const slurm_step_ctx_params_t *step_params,
 	else
 		cc = net_stream_listen(&sock, &port);
 	if (cc < 0) {
-		errnum = errno;
 		error("unable to initialize step context socket: %m");
-		slurm_free_job_step_create_request_msg(step_req);
-		goto fail;
+		return (slurm_step_ctx_t *) NULL;
 	}
+
+	step_req = _create_step_request(step_params);
 	step_req->port = port;
 	step_req->host = xshort_hostname();
 
@@ -254,14 +255,21 @@ slurm_step_ctx_create_timeout (const slurm_step_ctx_params_t *step_params,
 	     (errno == ESLURM_POWER_RESERVED) ||
 	     (errno == ESLURM_PORTS_BUSY) ||
 	     (errno == ESLURM_INTERCONNECT_BUSY))) {
-		struct pollfd fds;
+		START_TIMER;
+		errnum = errno;
 		fds.fd = sock;
 		fds.events = POLLIN;
 		xsignal_unblock(step_signals);
 		for (i = 0; step_signals[i]; i++)
 			xsignal(step_signals[i], _signal_while_allocating);
-		while ((rc = poll(&fds, 1, time_left)) <= 0) {
-			if (destroy_step)
+		while (1) {
+			END_TIMER;
+			elapsed_time = DELTA_TIMER / 1000;
+			if (elapsed_time >= timeout)
+				break;
+			time_left = timeout - elapsed_time;
+			i = poll(&fds, 1, time_left);
+			if ((i >= 0) || destroy_step)
 				break;
 			if ((errno == EINTR) || (errno == EAGAIN))
 				continue;
@@ -271,32 +279,28 @@ slurm_step_ctx_create_timeout (const slurm_step_ctx_params_t *step_params,
 		if (destroy_step) {
 			info("Cancelled pending job step with signal %d",
 			     destroy_step);
-			errno = ESLURM_ALREADY_DONE;
-		} else
-			rc = slurm_job_step_create(step_req, &step_resp);
-	}
-
-	if ((rc < 0) || (step_resp == NULL)) {
-		errnum = errno;
+			errnum = ESLURM_ALREADY_DONE;
+		}
 		slurm_free_job_step_create_request_msg(step_req);
 		close(sock);
-		goto fail;
+		errno = errnum;
+	} else if ((rc < 0) || (step_resp == NULL)) {
+		slurm_free_job_step_create_request_msg(step_req);
+		close(sock);
+	} else {
+		ctx = xmalloc(sizeof(struct slurm_step_ctx_struct));
+		ctx->launch_state = NULL;
+		ctx->magic	= STEP_CTX_MAGIC;
+		ctx->job_id	= step_req->job_id;
+		ctx->user_id	= step_req->user_id;
+		ctx->step_req   = step_req;
+		ctx->step_resp	= step_resp;
+		ctx->verbose_level = step_params->verbose_level;
+		ctx->launch_state = step_launch_state_create(ctx);
+		ctx->launch_state->slurmctld_socket_fd = sock;
 	}
 
-	ctx = xmalloc(sizeof(struct slurm_step_ctx_struct));
-	ctx->launch_state = NULL;
-	ctx->magic	= STEP_CTX_MAGIC;
-	ctx->job_id	= step_req->job_id;
-	ctx->user_id	= step_req->user_id;
-	ctx->step_req   = step_req;
-	ctx->step_resp	= step_resp;
-	ctx->verbose_level = step_params->verbose_level;
-
-	ctx->launch_state = step_launch_state_create(ctx);
-	ctx->launch_state->slurmctld_socket_fd = sock;
-fail:
-	errno = errnum;
-	return (slurm_step_ctx_t *)ctx;
+	return (slurm_step_ctx_t *) ctx;
 }
 
 /*

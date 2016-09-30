@@ -162,7 +162,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 					 sig_atomic_t *destroy_job)
 {
 	int i, j, rc;
-	unsigned long step_wait = 0, my_sleep = 0;
+	unsigned long step_wait = 0;
 	uint16_t base_dist;
 
 	if (!job) {
@@ -304,7 +304,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	      job->ctx_params.cpu_count, job->ctx_params.task_count,
 	      job->ctx_params.name, job->ctx_params.relative);
 
-	for (i=0; (!(*destroy_job)); i++) {
+	for (i = 0; (!(*destroy_job)); i++) {
 		if (opt.no_alloc) {
 			job->step_ctx = slurm_step_ctx_create_no_alloc(
 				&job->ctx_params, job->stepid);
@@ -354,15 +354,9 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 			xsignal_unblock(sig_array);
 			for (j = 0; sig_array[j]; j++)
 				xsignal(sig_array[j], signal_function);
-			my_sleep = (getpid() % 1000) * 100 + 100000;
 		} else {
 			verbose("Job step creation still disabled, retrying");
-			my_sleep *= 2;
 		}
-
-		/* sleep 0.1 to 5 secs with exponential back-off */
-		my_sleep = MIN(my_sleep, 5000000);
-		usleep(my_sleep);
 
 		if (*destroy_job) {
 			/* cancelled by signal */
