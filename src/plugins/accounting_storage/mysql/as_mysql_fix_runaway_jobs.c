@@ -120,7 +120,8 @@ extern int as_mysql_fix_runaway_jobs(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrfmtcat(job_ids, "%s%d", ((job_ids) ? "," : ""), job->jobid);
 	}
 
-	query = xstrdup_printf("UPDATE \"%s_%s\" SET time_end=time_start, "
+	query = xstrdup_printf("UPDATE \"%s_%s\" SET time_end="
+			       "GREATEST(time_start, time_eligible, time_submit), "
 			       "state=%d WHERE id_job IN (%s);",
 			       mysql_conn->cluster_name, job_table,
 			       JOB_COMPLETE, job_ids);

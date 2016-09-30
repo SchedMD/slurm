@@ -5,6 +5,7 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Docs - the correct default value for GroupUpdateForce is 0.
  -- mpi/pmix - improve point to point communication performance.
+ -- SlurmDB - include pending jobs in search during 'sacctmgr show runawayjobs'.
 
 * Changes in Slurm 16.05.5
 ==========================

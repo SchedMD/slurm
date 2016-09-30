@@ -146,6 +146,7 @@ static List _get_runaway_jobs(char *cluster)
 	job_cond->without_steps = 1;
 	job_cond->without_usage_truncation = 1;
 	job_cond->state_list = list_create(slurm_destroy_char);
+	slurm_addto_char_list(job_cond->state_list, "0");
 	slurm_addto_char_list(job_cond->state_list, "1");
 	job_cond->cluster_list = list_create(slurm_destroy_char);
 	slurm_addto_char_list(job_cond->cluster_list, cluster);
@@ -182,8 +183,8 @@ static void _report_runaway_jobs(List runaway_jobs)
 {
 	if (list_count(runaway_jobs)) {
 		printf("NOTE: Runaway jobs are jobs that don't exist in the "
-		       "controller but are still considered running in the "
-		       "database\n");
+		       "controller but are still considered running or pending "
+		       "in the database\n");
 		_print_runaway_jobs(runaway_jobs);
 	}
 }
@@ -199,9 +200,11 @@ extern int sacctmgr_list_runaway_jobs(int argc, char *argv[])
 	char *cluster = NULL;
 
 	char *ask_msg = "\nWould you like to fix these runaway jobs?\n"
-			"(This will set the end times to start times and "
-			"states to completed for these jobs and will trigger "
-			"the rollup to reroll usage from before the oldest "
+			"(This will set the end time for each job to the "
+			"latest out of the start, eligible, or submit times, "
+			"and set the state to completed.\n"
+			"Once corrected, this will trigger the rollup to "
+			"reroll usage from before the oldest "
 			"runaway job.)\n\n";
 
 	if (!(cluster = slurm_get_cluster_name()))
