@@ -140,7 +140,6 @@ enum wrappers {
 #define LONG_OPT_PROPAGATE   0x100
 #define LONG_OPT_MEM_BIND    0x102
 #define LONG_OPT_POWER       0x103
-#define LONG_OPT_WAIT        0x104
 #define LONG_OPT_JOBID       0x105
 #define LONG_OPT_TMP         0x106
 #define LONG_OPT_MEM         0x107
@@ -762,6 +761,7 @@ static struct option long_options[] = {
 	{"verbose",       no_argument,       0, 'v'},
 	{"version",       no_argument,       0, 'V'},
 	{"nodelist",      required_argument, 0, 'w'},
+	{"wait",          no_argument,       0, 'W'},
 	{"exclude",       required_argument, 0, 'x'},
 	{"acctg-freq",    required_argument, 0, LONG_OPT_ACCTG_FREQ},
 	{"bb",            required_argument, 0, LONG_OPT_BURST_BUFFER},
@@ -827,7 +827,6 @@ static struct option long_options[] = {
 	{"tmp",           required_argument, 0, LONG_OPT_TMP},
 	{"uid",           required_argument, 0, LONG_OPT_UID},
 	{"use-min-nodes", no_argument,       0, LONG_OPT_USE_MIN_NODES},
-	{"wait",          no_argument,       0, LONG_OPT_WAIT},
 	{"wait-all-nodes",required_argument, 0, LONG_OPT_WAIT_ALL_NODES},
 	{"wckey",         required_argument, 0, LONG_OPT_WCKEY},
 	{"wrap",          required_argument, 0, LONG_OPT_WRAP},
@@ -1461,6 +1460,9 @@ static void _set_options(int argc, char **argv)
 			xfree(opt.nodelist);
 			opt.nodelist = xstrdup(optarg);
 			break;
+		case 'W':
+			opt.wait = true;
+			break;
 		case 'x':
 			xfree(opt.exc_nodes);
 			opt.exc_nodes = xstrdup(optarg);
@@ -1786,9 +1788,6 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_NETWORK:
 			xfree(opt.network);
 			opt.network = xstrdup(optarg);
-			break;
-		case LONG_OPT_WAIT:
-			opt.wait = true;
 			break;
 		case LONG_OPT_WCKEY:
 			xfree(opt.wckey);

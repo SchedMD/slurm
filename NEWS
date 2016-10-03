@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
  -- mpi/pmix - improve point to point communication performance.
  -- SlurmDB - include pending jobs in search during 'sacctmgr show runawayjobs'.
  -- Add client side out-of-range checks to --nice flag.
+ -- Fix support for sbatch "-W" option, previously eeded to use "--wait".
 
 * Changes in Slurm 16.05.5
 ==========================
