@@ -8709,7 +8709,7 @@ _pack_sib_msg(sib_msg_t *sib_msg_ptr, Buf buffer, uint16_t protocol_version)
 				       get_buf_offset(buffer) + grow_size);
 		}
 	} else {
-		error("_pack_job_desc_msg: protocol_version "
+		error("_pack_sib_msg: protocol_version "
 		      "%hu not supported", protocol_version);
 	}
 }
