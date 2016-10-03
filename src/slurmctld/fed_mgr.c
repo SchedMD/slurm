@@ -1188,12 +1188,17 @@ static int _sort_sib_will_runs(void *x, void *y)
  * Find a sibling that can start the job now.
  * IN msg - contains the original job_desc buffer to send to the siblings and to
  * 	be able to create a job_desc copy to willrun itself.
+ * IN job_desc - original job_desc. It contains the federated job_id to put on
+ * 	the unpacked job_desc. This is not used for the actual will_run because
+ * 	job_allocate will modify the job_desc.
  * IN uid - uid of user submitting the job
  * OUT avail_sibs - bitmap of cluster ids that returned a will_run_response.
  * RET returns a ptr to a cluster_rec that can or start the job now or NULL if
  * 	no cluster can start the job now.
  */
-static slurmdb_cluster_rec_t *_find_start_now_sib(slurm_msg_t *msg, uid_t uid,
+static slurmdb_cluster_rec_t *_find_start_now_sib(slurm_msg_t *msg,
+						  job_desc_msg_t *job_desc,
+						  uid_t uid,
 						  uint64_t *avail_sibs)
 {
 	sib_willrun_t *sib_willrun     = NULL;
@@ -1225,6 +1230,7 @@ static slurmdb_cluster_rec_t *_find_start_now_sib(slurm_msg_t *msg, uid_t uid,
 	unpack_msg(&tmp_msg, msg->buffer);
 	set_buf_offset(msg->buffer, buf_offset);
 
+	((job_desc_msg_t *)tmp_msg.data)->job_id = job_desc->job_id;
 	sib_msg.data         = tmp_msg.data;
 	sib_msg.data_buffer  = msg->buffer;
 	sib_msg.data_version = msg->protocol_version;
@@ -1493,16 +1499,15 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 
 	lock_slurmctld(fed_read_lock);
 
-	/* Don't job/node write lock on _find_start_now_sib. It locks inside
-	 * _sib_will_run */
-	start_now_sib = _find_start_now_sib(msg, uid, &avail_sibs);
-
 	lock_slurmctld(job_write_lock);
 	/* get job_id now. Can't submit job to get job_id as job_allocate will
 	 * change the job_desc. */
 	job_desc->job_id = fed_mgr_get_job_id(get_next_job_id(false));
-
 	unlock_slurmctld(job_write_lock);
+
+	/* Don't job/node write lock on _find_start_now_sib. It locks inside
+	 * _sib_will_run */
+	start_now_sib = _find_start_now_sib(msg, job_desc, uid, &avail_sibs);
 
 	if (start_now_sib == NULL) {
 		job_desc->fed_siblings = avail_sibs;
