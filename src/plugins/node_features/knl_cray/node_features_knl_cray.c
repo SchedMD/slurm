@@ -109,8 +109,10 @@
  */
 #if defined (__APPLE__)
 slurmctld_config_t slurmctld_config __attribute__((weak_import));
+bitstr_t *avail_node_bitmap __attribute__((weak_import));
 #else
 slurmctld_config_t slurmctld_config;
+bitstr_t *avail_node_bitmap;
 #endif
 
 /*
@@ -157,6 +159,7 @@ static char *capmc_path = NULL;
 static uint32_t capmc_poll_freq = 45;	/* capmc state polling frequency */
 static uint32_t capmc_retries = DEFAULT_CAPMC_RETRIES;
 static uint32_t capmc_timeout = 0;	/* capmc command timeout in msec */
+static bitstr_t *capmc_node_bitmap = NULL;	/* Nodes found by capmc */
 static char *cnselect_path = NULL;
 static bool  debug_flag = false;
 static uint16_t allow_mcdram = KNL_MCDRAM_FLAG;
@@ -1665,6 +1668,7 @@ extern int fini(void)
 	debug_flag = false;
 	xfree(mcdram_per_node);
 	xfree(syscfg_path);
+	FREE_NULL_BITMAP(capmc_node_bitmap);
 	return SLURM_SUCCESS;
 }
 
@@ -1675,6 +1679,116 @@ extern int node_features_p_reconfig(void)
 	reconfig = true;
 	slurm_mutex_unlock(&config_mutex);
 	return SLURM_SUCCESS;
+}
+
+/* Put any node NOT found by "capmc node_status" into DRAIN state */
+static void _check_node_status(void)
+{
+	json_object *j_obj;
+	json_object_iter iter;
+	json_object *j_array = NULL;
+	json_object *j_value;
+	char *resp_msg, **script_argv;
+	int i, nid, num_ent, retry, status = 0;
+	struct node_record *node_ptr;
+	DEF_TIMERS;
+
+	if (!capmc_node_bitmap) {
+		script_argv = xmalloc(sizeof(char *) * 4); /* NULL terminated */
+		script_argv[0] = xstrdup("capmc");
+		script_argv[1] = xstrdup("node_status");
+		for (retry = 0; ; retry++) {
+			START_TIMER;
+			resp_msg = _run_script(capmc_path, script_argv, &status);
+			END_TIMER;
+			if (debug_flag) {
+				info("%s: node_status ran for %s",
+				     __func__, TIME_STR);
+			}
+			_log_script_argv(script_argv, resp_msg);
+			if (WIFEXITED(status) && (WEXITSTATUS(status) == 0))
+				break;	/* Success */
+			error("%s: node_status status:%u response:%s",
+			      __func__, status, resp_msg);
+			if (resp_msg == NULL) {
+				info("%s: node_status returned no information",
+				     __func__);
+				_free_script_argv(script_argv);
+				return;
+			}
+			if (strstr(resp_msg, "Could not lookup") &&
+			    (retry <= capmc_retries)) {
+				/* State Manager is down. Sleep and retry */
+				sleep(1);
+				xfree(resp_msg);
+			} else {
+				xfree(resp_msg);
+				_free_script_argv(script_argv);
+				return;
+			}
+		}
+		_free_script_argv(script_argv);
+
+		j_obj = json_tokener_parse(resp_msg);
+		if (j_obj == NULL) {
+			error("%s: json parser failed on %s", __func__,
+			      resp_msg);
+			xfree(resp_msg);
+			return;
+		}
+
+		capmc_node_bitmap = bit_alloc(100000);
+		json_object_object_foreachC(j_obj, iter) {
+			/* NOTE: The error number "e" and message "err_msg"
+			 * fields are currently ignored. */
+			if (!xstrcmp(iter.key, "e") ||
+			    !xstrcmp(iter.key, "err_msg"))
+				continue;
+			if (json_object_get_type(iter.val) != json_type_array)
+				continue;
+			json_object_object_get_ex(j_obj, iter.key, &j_array);
+			if (!j_array) {
+				error("%s: Unable to parse nid specification",
+				      __func__);
+				FREE_NULL_BITMAP(capmc_node_bitmap);
+				return;
+			}
+			num_ent = json_object_array_length(j_array);
+			for (i = 0; i < num_ent; i++) {
+				j_value = json_object_array_get_idx(j_array, i);
+				if (json_object_get_type(j_value) !=
+				    json_type_int) {
+					error("%s: Unable to parse nid specification",
+					      __func__);
+				} else {
+					nid = json_object_get_int64(j_value);
+					if ((nid >= 0) && (nid < 100000))
+						bit_set(capmc_node_bitmap, nid);
+				}
+
+			}
+		}
+		json_object_put(j_obj);	/* Frees json memory */
+	}
+
+	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
+	     i++, node_ptr++) {
+		nid = atoi(node_ptr->name + 3);	/* Skip "nid" */
+		if ((nid < 0) || (nid >= 100000) ||
+		    bit_test(capmc_node_bitmap, nid))
+			continue;
+		info("Node %s not found by \'capmc node_status\', draining it",
+		     node_ptr->name);
+		if (IS_NODE_DOWN(node_ptr) || IS_NODE_DRAIN(node_ptr))
+			continue;
+		node_ptr->node_state |= NODE_STATE_DRAIN;
+		xfree(node_ptr->reason);
+		node_ptr->reason = xstrdup("Node not found by capmc");
+		node_ptr->reason_time = time(NULL);
+		node_ptr->reason_uid = slurm_get_slurm_user_id();
+		if (avail_node_bitmap)
+			bit_clear(avail_node_bitmap, i);
+	}
 }
 
 /* Update active and available features on specified nodes,
@@ -1704,6 +1818,9 @@ extern int node_features_p_get_node(char *node_list)
 		reconfig = true;
 	}
 	slurm_mutex_unlock(&config_mutex);
+
+	_check_node_status();	/* Flag nodes not found by capmc */
+
 	if (!mcdram_per_node)
 		mcdram_per_node = xmalloc(sizeof(uint64_t) * node_record_count);
 
@@ -2004,8 +2121,8 @@ extern int node_features_p_get_node(char *node_list)
 		}
 		hostlist_destroy (host_list);
 	} else {
-		for (i=0, node_ptr=node_record_table_ptr; i<node_record_count;
-		     i++, node_ptr++) {
+		for (i = 0, node_ptr = node_record_table_ptr;
+		     i < node_record_count; i++, node_ptr++) {
 			xfree(node_ptr->features_act);
 			_strip_knl_opts(&node_ptr->features);
 			if (node_ptr->features && !node_ptr->features_act) {
