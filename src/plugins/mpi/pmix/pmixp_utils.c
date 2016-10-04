@@ -318,8 +318,7 @@ static int _pmix_p2p_send_core(char *nodename, const char *address, char *data,
 
 	slurm_msg_t_init(&msg);
 
-	PMIXP_DEBUG("nodelist=%s, address=%s, len=%u",
-			nodename, address, len);
+	PMIXP_DEBUG("nodelist=%s, address=%s, len=%u", nodename, address, len);
 	req.address = (char *)address;
 	req.len = len;
 	req.data = data;
@@ -327,8 +326,7 @@ static int _pmix_p2p_send_core(char *nodename, const char *address, char *data,
 	msg.msg_type = REQUEST_FORWARD_DATA;
 	msg.data = &req;
 
-	rc = slurm_conf_get_addr(nodename, &msg.address);
-	if (SLURM_ERROR == rc) {
+	if (slurm_conf_get_addr(nodename, &msg.address) == SLURM_ERROR) {
 		PMIXP_ERROR("Can't find address for host "
 			    "%s, check slurm.conf", nodename);
 	}
@@ -354,12 +352,10 @@ static int _pmix_p2p_send_core(char *nodename, const char *address, char *data,
 
 	rc = SLURM_SUCCESS;
 	while ((ret_data_info = list_pop(ret_list))) {
-		int temp_rc =0;
-		temp_rc = slurm_get_return_code(ret_data_info->type,
-					ret_data_info->data);
-		if (temp_rc != SLURM_SUCCESS) {
+		int temp_rc = slurm_get_return_code(ret_data_info->type,
+						    ret_data_info->data);
+		if (temp_rc != SLURM_SUCCESS)
 			rc = temp_rc;
-		}
 		destroy_data_info(ret_data_info);
 	}
 
