@@ -4027,7 +4027,7 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 	struct part_record *part_ptr;
 	ListIterator iter;
 	int rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
-	int best_rc = -1, part_limits_rc;
+	int best_rc = -1, part_limits_rc = WAIT_NO_REASON;
 
 	if (job_ptr->part_ptr_list) {
 		iter = list_iterator_create(job_ptr->part_ptr_list);
