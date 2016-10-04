@@ -14220,6 +14220,9 @@ static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
 		return ESLURM_ACCESS_DENIED;
 	}
 
+	if (state & JOB_RECONFIG_FAIL)
+		node_features_g_get_node(job_ptr->nodes);
+
 	/* If the partition was removed don't allow the job to be
 	 * requeued.  If it doesn't have details then something is very
 	 * wrong and if the job doesn't want to be requeued don't.

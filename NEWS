@@ -11,6 +11,8 @@ documents those changes that are of interest to users and administrators.
  -- node_features/knl_cray plugin and capmc_suspend/resume programs modified to
     sleep and retry capmc operations if the Cray State Manager is down. Added
     CapmcRetries configuration parameter to knl_cray.conf.
+ -- node_features/knl_cray plugin: Remove any KNL MCDRAM or NUMA features from
+    node's configuration if capmc does NOT report the node as being KNL.
 
 * Changes in Slurm 16.05.5
 ==========================

@@ -1252,6 +1252,35 @@ next_tok:	tok1 = strtok_r(NULL, ",", &save_ptr1);
 	xfree(tmp_str1);
 }
 
+/* Remove all KNL MCDRAM and NUMA type GRES from this node (it isn't KNL),
+ * returns count of KNL features found. */
+static int _strip_knl_features(char **node_feature)
+{
+	char *tmp_str1, *tok1, *save_ptr1 = NULL;
+	char *tmp_str2 = NULL, *sep = "";
+	int cnt = 0;
+
+	tmp_str1 = xstrdup(*node_feature);
+	tok1 = strtok_r(tmp_str1, ",", &save_ptr1);
+	while (tok1) {
+		if (_knl_mcdram_token(tok1) || _knl_numa_token(tok1)) {
+			cnt++;
+		} else {
+			xstrfmtcat(tmp_str2, "%s%s", sep, tok1);
+			sep = ",";
+		}
+		tok1 = strtok_r(NULL, ",", &save_ptr1);
+	}
+	if (cnt) {	/* Update the nodes features */
+		xfree(*node_feature);
+		*node_feature = tmp_str2;
+	} else {	/* Discard new feature list */
+		xfree(tmp_str2);
+	}
+	xfree(tmp_str1);
+	return cnt;
+}
+
 /* Update features and features_act fields for ALL nodes based upon
  * its current configuration provided by capmc */
 static void _update_all_node_features(
@@ -1262,9 +1291,11 @@ static void _update_all_node_features(
 {
 	struct node_record *node_ptr;
 	char node_name[32], *prefix;
-	int i, width = 5;
+	int i, node_inx, width = 5;
 	uint64_t mcdram_size;
+	bitstr_t *knl_node_bitmap;
 
+	knl_node_bitmap = bit_alloc(node_record_count);
 	if ((node_record_table_ptr == NULL) ||
 	    (node_record_table_ptr->name == NULL)) {
 		prefix = xstrdup("nid");
@@ -1286,6 +1317,8 @@ static void _update_all_node_features(
 				 "%s%.*d", prefix, width, mcdram_cap[i].nid);
 			node_ptr = find_node_record(node_name);
 			if (node_ptr) {
+				node_inx = node_ptr - node_record_table_ptr;
+				bit_set(knl_node_bitmap, node_inx);
 				_merge_strings(&node_ptr->features,
 					       mcdram_cap[i].mcdram_cfg,
 					       allow_mcdram);
@@ -1338,7 +1371,25 @@ static void _update_all_node_features(
 			}
 		}
 	}
+
+	/* Make sure that only nodes reported by "capmc get_mcdram_capabilities"
+	 * contain KNL features */
+	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
+	     i++, node_ptr++) {
+		if (bit_test(knl_node_bitmap, i))
+			continue;
+		node_inx = _strip_knl_features(&node_ptr->features) +
+			   _strip_knl_features(&node_ptr->features_act);
+		if (node_inx) {
+			error("Removed KNL features from non-KNL node %s",
+			      node_ptr->name);
+		}
+		gres_plugin_node_feature(node_ptr->name, "hbm", 0,
+					 &node_ptr->gres, &node_ptr->gres_list);
+	}
+
 	xfree(prefix);
+	FREE_NULL_BITMAP(knl_node_bitmap);
 }
 
 /* Update a specific node's features and features_act fields based upon
@@ -1349,11 +1400,11 @@ static void _update_node_features(struct node_record *node_ptr,
 				  numa_cap_t *numa_cap, int numa_cap_cnt,
 				  numa_cfg_t *numa_cfg, int numa_cfg_cnt)
 {
-	int i, nid;
+	int i, nid, node_inx;
 	char *end_ptr = "";
 	uint64_t mcdram_size;
 	bitstr_t *node_bitmap = NULL;
-
+	bool is_knl = false;
 	xassert(node_ptr);
 	nid = strtol(node_ptr->name + 3, &end_ptr, 10);
 	if (end_ptr[0] != '\0') {
@@ -1372,10 +1423,12 @@ static void _update_node_features(struct node_record *node_ptr,
 				_merge_strings(&node_ptr->features,
 					       mcdram_cap[i].mcdram_cfg,
 					       allow_mcdram);
+				is_knl = true;
 				break;
 			}
 		}
 	}
+
 	if (mcdram_cfg) {
 		for (i = 0; i < mcdram_cfg_cnt; i++) {
 			if (nid != mcdram_cfg[i].nid)
@@ -1418,6 +1471,19 @@ static void _update_node_features(struct node_record *node_ptr,
 		}
 	}
 
+	/* Make sure that only nodes reported by "capmc get_mcdram_capabilities"
+	 * contain KNL features */
+	if (!is_knl) {
+		node_inx = _strip_knl_features(&node_ptr->features) +
+			   _strip_knl_features(&node_ptr->features_act);
+		if (node_inx) {
+			error("Removed KNL features from non-KNL node %s",
+			      node_ptr->name);
+		}
+		gres_plugin_node_feature(node_ptr->name, "hbm", 0,
+					 &node_ptr->gres, &node_ptr->gres_list);
+	}
+
 	/* Update bitmaps and lists used by slurmctld for scheduling */
 	node_bitmap = bit_alloc(node_record_count);
 	bit_set(node_bitmap, (node_ptr - node_record_table_ptr));
@@ -1425,7 +1491,6 @@ static void _update_node_features(struct node_record *node_ptr,
 			    node_bitmap);
 	(void) node_features_p_node_update(node_ptr->features_act, node_bitmap);
 	FREE_NULL_BITMAP(node_bitmap);
-
 }
 
 static void _make_uid_array(char *uid_str)
