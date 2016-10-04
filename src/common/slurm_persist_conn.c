@@ -314,6 +314,22 @@ static void *_service_connection(void *arg)
 	slurm_persist_conn_free_thread_loc(service_conn->thread_loc);
 //	xfree(service_conn);
 
+	/* In order to avoid zombie threads, detach the thread now before
+	 * exiting.  slurm_persist_conn_recv_server_fini() will not try to join
+	 * the thread because slurm_persist_conn_free_thread_loc() will have
+	 * free'd the connection. If their are threads at shutdown, the join
+	 * will happen before the detach so recv_fini() will wait until the
+	 * thread is done.
+	 *
+	 * pthread_join man page:
+	 * Failure to join with a thread that is joinable (i.e., one that is not
+	 * detached), produces a "zombie thread". Avoid doing this, since each
+	 * zombie thread consumes some system resources, and when enough zombie
+	 * threads have accumulated, it will no longer be possible to create new
+	 * threads (or processes).
+	 */
+	pthread_detach(pthread_self());
+
 	return NULL;
 }
 
