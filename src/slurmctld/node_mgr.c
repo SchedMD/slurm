@@ -2533,7 +2533,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 
 	if (node_ptr->last_response &&
 	    (node_ptr->boot_time > node_ptr->last_response) &&
-	    !IS_NODE_UNKNOWN(node_ptr)) {
+	    !IS_NODE_UNKNOWN(node_ptr)) {	/* Node just rebooted */
 		(void) node_features_g_get_node(node_ptr->name);
 	}
 
