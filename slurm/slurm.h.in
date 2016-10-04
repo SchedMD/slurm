@@ -240,6 +240,9 @@ enum job_states {
 #define	JOB_COMPLETING	  0x00008000 /* Waiting for epilog completion */
 #define JOB_STOPPED       0x00010000 /* Job is stopped state (holding resources,
 					but sent SIGSTOP */
+#define JOB_RECONFIG_FAIL 0x00020000 /* Node configuration for job failed,
+					not job state, just job requeue flag */
+
 
 #define READY_JOB_FATAL	   -2	/* fatal error */
 #define READY_JOB_ERROR    -1	/* ordinary error */
@@ -4461,9 +4464,10 @@ extern void slurm_free_job_array_resp(job_array_resp_msg_t *resp);
  *            valid values are:
  *            0 - if the job has to be requeued in JOB_PENDING state
  *            JOB_SPECIAL_EXIT - if the job has to be requeued in
- *            the special exit state and be held.
+ *                the special exit state and be held.
  *            JOB_REQUEUE_HOLD - if the job has to be requeued in
- *            JOB_PENDING and held state.
+ *                JOB_PENDING and held state.
+ *            JOB_RECONFIG_FAIL - Node configuration for job failed
  * RET 0 or a slurm error code
  */
 extern int slurm_requeue(uint32_t job_id, uint32_t state);
@@ -4477,9 +4481,10 @@ extern int slurm_requeue(uint32_t job_id, uint32_t state);
  *            valid values are:
  *            0 - if the job has to be requeued in JOB_PENDING state
  *            JOB_SPECIAL_EXIT - if the job has to be requeued in
- *            the special exit state and be held.
+ *                the special exit state and be held.
  *            JOB_REQUEUE_HOLD - if the job has to be requeued in
- *            JOB_PENDING and held state.
+ *                JOB_PENDING and held state.
+ *            JOB_RECONFIG_FAIL - Node configuration for job failed
  * OUT resp - per task response to the request,
  *	      free using slurm_free_job_array_resp()
  * RET 0 or a slurm error code

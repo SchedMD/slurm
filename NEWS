@@ -8,6 +8,9 @@ documents those changes that are of interest to users and administrators.
  -- SlurmDB - include pending jobs in search during 'sacctmgr show runawayjobs'.
  -- Add client side out-of-range checks to --nice flag.
  -- Fix support for sbatch "-W" option, previously eeded to use "--wait".
+ -- node_features/knl_cray plugin and capmc_suspend/resume programs modified to
+    sleep and retry capmc operations if the Cray State Manager is down. Added
+    CapmcRetries configuration parameter to knl_cray.conf.
 
 * Changes in Slurm 16.05.5
 ==========================
