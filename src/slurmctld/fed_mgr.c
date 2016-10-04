@@ -1549,6 +1549,11 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	 * _sib_will_run */
 	start_now_sib = _find_start_now_sib(msg, job_desc, uid, &avail_sibs);
 
+	if (!avail_sibs) {
+		debug("No cluster responded to sibling will_runs, submitting to self");
+		avail_sibs = FED_SIBLING_BIT(fed_mgr_cluster_rec->fed.id);
+	}
+
 	if (start_now_sib == NULL) {
 		job_desc->fed_siblings = avail_sibs;
 	} else if (start_now_sib == fed_mgr_cluster_rec) {
