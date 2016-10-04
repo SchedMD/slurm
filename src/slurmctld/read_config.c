@@ -1086,8 +1086,6 @@ int read_slurm_conf(int recover, bool reconfig)
 	_purge_old_node_state(old_node_table_ptr, old_node_record_count);
 	_purge_old_part_state(old_part_list, old_def_part_name);
 
-	if ((rc = _build_bitmaps()))
-		fatal("_build_bitmaps failure");
 	mpi_params = slurm_get_mpi_params();
 	reserve_port_config(mpi_params);
 	xfree(mpi_params);
@@ -1113,6 +1111,8 @@ int read_slurm_conf(int recover, bool reconfig)
 		}
 		build_feature_list_eq();
 	}
+	if ((rc = _build_bitmaps())) /* must follow node_features_g_get_node() */
+		fatal("_build_bitmaps failure");
 
 	(void) _sync_nodes_to_comp_job();/* must follow select_g_node_init() */
 	load_part_uid_allow_list(1);
