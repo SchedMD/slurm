@@ -337,23 +337,18 @@ static int _pmix_p2p_send_core(char *nodename, const char *address, char *data,
 	msg.forward.timeout = timeout;
 	msg.forward.cnt = 0;
 	msg.forward.nodelist = NULL;
-	ret_list = slurm_send_addr_recv_msgs(&msg, nodename,
-						timeout);
-	if (ret_list) {
-		int ret_cnt = list_count(ret_list);
-		if (0 == ret_cnt &&
-		    (errno != SLURM_COMMUNICATIONS_CONNECTION_ERROR)) {
-			PMIXP_ERROR("failed to send to %s, errno=%d",
-				    nodename, errno);
-			return SLURM_ERROR;
-		}
-	} else {
+	ret_list = slurm_send_addr_recv_msgs(&msg, nodename, timeout);
+	if (!ret_list) {
 		/* This should never happen (when this was
 		 * written slurm_send_addr_recv_msgs always
 		 * returned a list */
 		PMIXP_ERROR("No return list given from "
 			    "slurm_send_addr_recv_msgs spawned for %s",
 			    nodename);
+		return SLURM_ERROR;
+	} else if ((errno != SLURM_COMMUNICATIONS_CONNECTION_ERROR) &&
+		   !list_count(ret_list)) {
+		PMIXP_ERROR("failed to send to %s, errno=%d", nodename, errno);
 		return SLURM_ERROR;
 	}
 
