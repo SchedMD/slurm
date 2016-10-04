@@ -51,6 +51,9 @@
 #include "pmixp_utils.h"
 #include "pmixp_debug.h"
 
+/* must come after the above pmixp includes */
+#include "src/common/forward.h"
+
 void pmixp_xfree_xmalloced(void *x)
 {
 	xfree(x);
@@ -317,9 +320,9 @@ static int _pmix_p2p_send_core(char *nodename, const char *address, char *data,
 
 	PMIXP_DEBUG("nodelist=%s, address=%s, len=%u",
 			nodename, address, len);
-	req.address = address;
+	req.address = (char *)address;
 	req.len = len;
-	req.data = (char *)data;
+	req.data = data;
 
 	msg.msg_type = REQUEST_FORWARD_DATA;
 	msg.data = &req;
