@@ -70,7 +70,7 @@ int build_alpsc_pe_info(stepd_step_rec_t *job,
 	} else if (cmd_index == NULL) {
 		CRAY_ERR("NULL cmd_index");
 		return SLURM_ERROR;
-	} else if (job->multi_prog) {
+	} else if (job->flags & LAUNCH_MULTI_PROG) {
 		if (job->mpmd_set == NULL) {
 			CRAY_ERR("MPMD launch but no mpmd_set");
 			return SLURM_ERROR;
