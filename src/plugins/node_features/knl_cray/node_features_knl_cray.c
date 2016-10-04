@@ -82,6 +82,7 @@
 #define MAX_POLL_WAIT 500
 
 /* Default and minimum timeout parameters for the capmc command */
+#define DEFAULT_CAPMC_RETRIES 4
 #define DEFAULT_CAPMC_TIMEOUT 60000	/* 60 seconds */
 #define MIN_CAPMC_TIMEOUT 1000		/* 1 second */
 
@@ -152,6 +153,7 @@ List active_feature_list;
 /* Configuration Paramters */
 static char *capmc_path = NULL;
 static uint32_t capmc_poll_freq = 45;	/* capmc state polling frequency */
+static uint32_t capmc_retries = DEFAULT_CAPMC_RETRIES;
 static uint32_t capmc_timeout = 0;	/* capmc command timeout in msec */
 static char *cnselect_path = NULL;
 static bool  debug_flag = false;
@@ -178,6 +180,7 @@ static s_p_options_t knl_conf_file_options[] = {
 	{"AllowUserBoot", S_P_STRING},
 	{"CapmcPath", S_P_STRING},
 	{"CapmcPollFreq", S_P_UINT32},
+	{"CapmcRetries", S_P_UINT32},
 	{"CapmcTimeout", S_P_UINT32},
 	{"CnselectPath", S_P_STRING},
 	{"DefaultMCDRAM", S_P_STRING},
@@ -1516,6 +1519,7 @@ extern int init(void)
 		}
 		(void) s_p_get_string(&capmc_path, "CapmcPath", tbl);
 		(void) s_p_get_uint32(&capmc_poll_freq, "CapmcPollFreq", tbl);
+		(void) s_p_get_uint32(&capmc_retries, "CapmcRetries", tbl);
 		(void) s_p_get_uint32(&capmc_timeout, "CapmcTimeout", tbl);
 		(void) s_p_get_string(&cnselect_path, "CnselectPath", tbl);
 		if (s_p_get_string(&tmp_str, "DefaultMCDRAM", tbl)) {
@@ -1562,6 +1566,7 @@ extern int init(void)
 		info("AllowUserBoot=%s", allow_user_str);
 		info("CapmcPath=%s", capmc_path);
 		info("CapmcPollFreq=%u sec", capmc_poll_freq);
+		info("CapmcRetries=%u", capmc_retries);
 		info("CapmcTimeout=%u msec", capmc_timeout);
 		info("CnselectPath=%s", cnselect_path);
 		info("DefaultMCDRAM=%s DefaultNUMA=%s",
@@ -1607,7 +1612,7 @@ extern int node_features_p_get_node(char *node_list)
 {
 	json_object *j;
 	json_object_iter iter;
-	int i, k, status = 0, rc = SLURM_SUCCESS;
+	int i, k, rc = SLURM_SUCCESS, retry, status = 0;
 	DEF_TIMERS;
 	char *resp_msg, **script_argv;
 	mcdram_cap_t *mcdram_cap = NULL;
@@ -1637,25 +1642,39 @@ extern int node_features_p_get_node(char *node_list)
 	script_argv = xmalloc(sizeof(char *) * 4);	/* NULL terminated */
 	script_argv[0] = xstrdup("capmc");
 	script_argv[1] = xstrdup("get_mcdram_capabilities");
-	START_TIMER;
-	resp_msg = _run_script(capmc_path, script_argv, &status);
-	END_TIMER;
-	if (debug_flag) {
-		info("%s: get_mcdram_capabilities ran for %s",
-		     __func__, TIME_STR);
-	}
-	_log_script_argv(script_argv, resp_msg);
-	_free_script_argv(script_argv);
-	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+	for (retry = 0; ; retry++) {
+		START_TIMER;
+		resp_msg = _run_script(capmc_path, script_argv, &status);
+		END_TIMER;
+		if (debug_flag) {
+			info("%s: get_mcdram_capabilities ran for %s",
+			     __func__, TIME_STR);
+		}
+		_log_script_argv(script_argv, resp_msg);
+		if (WIFEXITED(status) && (WEXITSTATUS(status) == 0))
+			break;	/* Success */
 		error("%s: get_mcdram_capabilities status:%u response:%s",
 		      __func__, status, resp_msg);
+		if (resp_msg == NULL) {
+			info("%s: get_mcdram_capabilities returned no information",
+			     __func__);
+			_free_script_argv(script_argv);
+			rc = SLURM_ERROR;
+			goto fini;
+		}
+		if (strstr(resp_msg, "Could not lookup") &&
+		    (retry <= capmc_retries)) {
+			/* State Manager is down. Sleep and retry */
+			sleep(1);
+			xfree(resp_msg);
+		} else {
+			xfree(resp_msg);
+			_free_script_argv(script_argv);
+			rc = SLURM_ERROR;
+			goto fini;
+		}
 	}
-	if (resp_msg == NULL) {
-		info("%s: get_mcdram_capabilities returned no information",
-		     __func__);
-		rc = SLURM_ERROR;
-		goto fini;
-	}
+	_free_script_argv(script_argv);
 
 	j = json_tokener_parse(resp_msg);
 	if (j == NULL) {
@@ -1680,22 +1699,39 @@ extern int node_features_p_get_node(char *node_list)
 	script_argv = xmalloc(sizeof(char *) * 4);	/* NULL terminated */
 	script_argv[0] = xstrdup("capmc");
 	script_argv[1] = xstrdup("get_mcdram_cfg");
-	START_TIMER;
-	resp_msg = _run_script(capmc_path, script_argv, &status);
-	END_TIMER;
-	if (debug_flag)
-		info("%s: get_mcdram_cfg ran for %s", __func__, TIME_STR);
-	_log_script_argv(script_argv, resp_msg);
-	_free_script_argv(script_argv);
-	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+	for (retry = 0; ; retry++) {
+		START_TIMER;
+		resp_msg = _run_script(capmc_path, script_argv, &status);
+		END_TIMER;
+		if (debug_flag) {
+			info("%s: get_mcdram_cfg ran for %s",
+			     __func__, TIME_STR);
+		}
+		_log_script_argv(script_argv, resp_msg);
+		if (WIFEXITED(status) && (WEXITSTATUS(status) == 0))
+			break;	/* Success */
 		error("%s: get_mcdram_cfg status:%u response:%s",
 		      __func__, status, resp_msg);
+		if (resp_msg == NULL) {
+			info("%s: get_mcdram_cfg returned no information",
+			     __func__);
+			_free_script_argv(script_argv);
+			rc = SLURM_ERROR;
+			goto fini;
+		}
+		if (strstr(resp_msg, "Could not lookup") &&
+		    (retry <= capmc_retries)) {
+			/* State Manager is down. Sleep and retry */
+			sleep(1);
+			xfree(resp_msg);
+		} else {
+			xfree(resp_msg);
+			_free_script_argv(script_argv);
+			rc = SLURM_ERROR;
+			goto fini;
+		}
 	}
-	if (resp_msg == NULL) {
-		info("%s: get_mcdram_cfg returned no information", __func__);
-		rc = SLURM_ERROR;
-		goto fini;
-	}
+	_free_script_argv(script_argv);
 
 	j = json_tokener_parse(resp_msg);
 	if (j == NULL) {
@@ -1722,25 +1758,39 @@ extern int node_features_p_get_node(char *node_list)
 	script_argv = xmalloc(sizeof(char *) * 4);	/* NULL terminated */
 	script_argv[0] = xstrdup("capmc");
 	script_argv[1] = xstrdup("get_numa_capabilities");
-	START_TIMER;
-	resp_msg = _run_script(capmc_path, script_argv, &status);
-	END_TIMER;
-	if (debug_flag) {
-		info("%s: get_numa_capabilities ran for %s",
-		     __func__, TIME_STR);
-	}
-	_log_script_argv(script_argv, resp_msg);
-	_free_script_argv(script_argv);
-	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+	for (retry = 0; ; retry++) {
+		START_TIMER;
+		resp_msg = _run_script(capmc_path, script_argv, &status);
+		END_TIMER;
+		if (debug_flag) {
+			info("%s: get_numa_capabilities ran for %s",
+			     __func__, TIME_STR);
+		}
+		_log_script_argv(script_argv, resp_msg);
+		if (WIFEXITED(status) && (WEXITSTATUS(status) == 0))
+			break;	/* Success */
 		error("%s: get_numa_capabilities status:%u response:%s",
 		      __func__, status, resp_msg);
+		if (resp_msg == NULL) {
+			info("%s: get_numa_capabilities returned no information",
+			     __func__);
+			_free_script_argv(script_argv);
+			rc = SLURM_ERROR;
+			goto fini;
+		}
+		if (strstr(resp_msg, "Could not lookup") &&
+		    (retry <= capmc_retries)) {
+			/* State Manager is down. Sleep and retry */
+			sleep(1);
+			xfree(resp_msg);
+		} else {
+			xfree(resp_msg);
+			_free_script_argv(script_argv);
+			rc = SLURM_ERROR;
+			goto fini;
+		}
 	}
-	if (resp_msg == NULL) {
-		info("%s: get_numa_capabilities returned no information",
-		     __func__);
-		rc = SLURM_ERROR;
-		goto fini;
-	}
+	_free_script_argv(script_argv);
 
 	j = json_tokener_parse(resp_msg);
 	if (j == NULL) {
@@ -1765,22 +1815,37 @@ extern int node_features_p_get_node(char *node_list)
 	script_argv = xmalloc(sizeof(char *) * 4);	/* NULL terminated */
 	script_argv[0] = xstrdup("capmc");
 	script_argv[1] = xstrdup("get_numa_cfg");
-	START_TIMER;
-	resp_msg = _run_script(capmc_path, script_argv, &status);
-	END_TIMER;
-	if (debug_flag)
-		info("%s: get_numa_cfg ran for %s", __func__, TIME_STR);
-	_log_script_argv(script_argv, resp_msg);
-	_free_script_argv(script_argv);
-	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+	for (retry = 0; ; retry++) {
+		START_TIMER;
+		resp_msg = _run_script(capmc_path, script_argv, &status);
+		END_TIMER;
+		if (debug_flag)
+			info("%s: get_numa_cfg ran for %s", __func__, TIME_STR);
+		_log_script_argv(script_argv, resp_msg);
+		if (WIFEXITED(status) && (WEXITSTATUS(status) == 0))
+			break;	/* Success */
 		error("%s: get_numa_cfg status:%u response:%s",
 		      __func__, status, resp_msg);
+		if (resp_msg == NULL) {
+			info("%s: get_numa_cfg returned no information",
+			     __func__);
+			_free_script_argv(script_argv);
+			rc = SLURM_ERROR;
+			goto fini;
+		}
+		if (strstr(resp_msg, "Could not lookup") &&
+		    (retry <= capmc_retries)) {
+			/* State Manager is down. Sleep and retry */
+			sleep(1);
+			xfree(resp_msg);
+		} else {
+			xfree(resp_msg);
+			_free_script_argv(script_argv);
+			rc = SLURM_ERROR;
+			goto fini;
+		}
 	}
-	if (resp_msg == NULL) {
-		info("%s: get_numa_cfg returned no information", __func__);
-		rc = SLURM_ERROR;
-		goto fini;
-	}
+	_free_script_argv(script_argv);
 
 	j = json_tokener_parse(resp_msg);
 	if (j == NULL) {

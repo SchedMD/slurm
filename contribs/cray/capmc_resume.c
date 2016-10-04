@@ -71,6 +71,7 @@
 #define MAX_POLL_WAIT 500
 
 /* Default and minimum timeout parameters for the capmc command */
+#define DEFAULT_CAPMC_RETRIES 4
 #define DEFAULT_CAPMC_TIMEOUT 60000	/* 60 seconds */
 #define MIN_CAPMC_TIMEOUT 1000		/* 1 second */
 
@@ -83,6 +84,7 @@
 /* Static variables */
 static char *capmc_path = NULL;
 static uint32_t capmc_poll_freq = 45;
+static uint32_t capmc_retries = DEFAULT_CAPMC_RETRIES;
 static uint32_t capmc_timeout = DEFAULT_CAPMC_TIMEOUT;
 static char *log_file = NULL;
 static bitstr_t *node_bitmap = NULL;
@@ -98,6 +100,7 @@ static s_p_options_t knl_conf_file_options[] = {
 	{"AllowUserBoot", S_P_STRING},
 	{"CapmcPath", S_P_STRING},
 	{"CapmcPollFreq", S_P_UINT32},
+	{"CapmcRetries", S_P_UINT32},
 	{"CapmcTimeout", S_P_UINT32},
 	{"CnselectPath", S_P_STRING},
 	{"DefaultMCDRAM", S_P_STRING},
@@ -146,6 +149,7 @@ static void _read_config(void)
 	if ((tbl = _config_make_tbl(knl_conf_file))) {
 		(void) s_p_get_string(&capmc_path, "CapmcPath", tbl);
 		(void) s_p_get_uint32(&capmc_poll_freq, "CapmcPollFreq", tbl);
+		(void) s_p_get_uint32(&capmc_retries, "CapmcRetries", tbl);
 		(void) s_p_get_uint32(&capmc_timeout, "CapmcTimeout", tbl);
 		(void) s_p_get_string(&log_file, "LogFile", tbl);
 		(void) s_p_get_string(&syscfg_path, "SyscfgPath", tbl);
@@ -315,7 +319,7 @@ static char *_node_names_2_nid_list(char *node_names)
 static int _update_all_nodes(char *host_list)
 {
 	char *argv[10], *nid_list, *resp_msg;
-	int rc = 0, status = 0;
+	int rc = 0, retry, status = 0;
 
 	nid_list = _node_names_2_nid_list(host_list);
 
@@ -329,18 +333,30 @@ static int _update_all_nodes(char *host_list)
 		argv[4] = "-n";
 		argv[5] = nid_list;
 		argv[6] = NULL;
-		resp_msg = _run_script(argv, &status);
-		if ((status == 0) ||
-		    (resp_msg && strcasestr(resp_msg, "Success"))) {
-			debug("%s: set_mcdram_cfg sent to %s",
-			      prog_name, argv[5]);
-		} else {
+		for (retry = 0; ; retry++) {
+			resp_msg = _run_script(argv, &status);
+			if ((status == 0) ||
+			    (resp_msg && strcasestr(resp_msg, "Success"))) {
+				debug("%s: set_mcdram_cfg sent to %s",
+				      prog_name, argv[5]);
+				xfree(resp_msg);
+				break;
+			}
 			error("%s: capmc(%s,%s,%s,%s,%s): %d %s",
 			      prog_name, argv[1], argv[2], argv[3],
 			      argv[4], argv[5], status, resp_msg);
-			rc = -1;
+			if (resp_msg && strstr(resp_msg, "Could not lookup") &&
+			    (retry <= capmc_retries)) {
+				/* State Manager is down. Sleep and retry */
+				sleep(1);
+				xfree(resp_msg);
+			} else {
+				/* Non-recoverable error */
+				rc = -1;
+				xfree(resp_msg);
+				break;
+			}
 		}
-		xfree(resp_msg);
 	}
 
 	if (numa_mode && (rc == 0)) {
@@ -353,18 +369,30 @@ static int _update_all_nodes(char *host_list)
 		argv[4] = "-n";
 		argv[5] = nid_list;
 		argv[6] = NULL;
-		resp_msg = _run_script(argv, &status);
-		if ((status == 0) ||
-		    (resp_msg && strcasestr(resp_msg, "Success"))) {
-			debug("%s: set_numa_cfg sent to %s",
-			      prog_name, argv[5]);
-		} else {
+		for (retry = 0; ; retry++) {
+			resp_msg = _run_script(argv, &status);
+			if ((status == 0) ||
+			    (resp_msg && strcasestr(resp_msg, "Success"))) {
+				debug("%s: set_numa_cfg sent to %s",
+				      prog_name, argv[5]);
+				xfree(resp_msg);
+				break;
+			}
 			error("%s: capmc(%s,%s,%s,%s,%s): %d %s",
 			      prog_name, argv[1], argv[2], argv[3],
 			      argv[4], argv[5], status, resp_msg);
-			rc = -1;
+			if (resp_msg && strstr(resp_msg, "Could not lookup") &&
+			    (retry <= capmc_retries)) {
+				/* State Manager is down. Sleep and retry */
+				sleep(1);
+				xfree(resp_msg);
+			} else {
+				/* Non-recoverable error */
+				rc = -1;
+				xfree(resp_msg);
+				break;
+			}
 		}
-		xfree(resp_msg);
 	}
 
 	/* Request node restart.
@@ -377,17 +405,29 @@ static int _update_all_nodes(char *host_list)
 		argv[4] = NULL;
 //		argv[4] = "-r";	/* Future option: Reason */
 //		argv[5] = "Change KNL mode";
-		resp_msg = _run_script(argv, &status);
-		if ((status == 0) ||
-		    (resp_msg && strcasestr(resp_msg, "Success"))) {
-			debug("%s: node_reinit sent to %s",
-			      prog_name, argv[3]);
-		} else {
+		for (retry = 0; ; retry++) {
+			resp_msg = _run_script(argv, &status);
+			if ((status == 0) ||
+			    (resp_msg && strcasestr(resp_msg, "Success"))) {
+				debug("%s: node_reinit sent to %s",
+				      prog_name, argv[3]);
+				xfree(resp_msg);
+				break;
+			}
 			error("%s: capmc(%s,%s,%s): %d %s", prog_name,
 			      argv[1], argv[2], argv[3], status, resp_msg);
-			rc = -1;
+			if (resp_msg && strstr(resp_msg, "Could not lookup") &&
+			    (retry <= capmc_retries)) {
+				/* State Manager is down. Sleep and retry */
+				sleep(1);
+				xfree(resp_msg);
+			} else {
+				/* Non-recoverable error */
+				rc = -1;
+				xfree(resp_msg);
+				break;
+			}
 		}
-		xfree(resp_msg);
 	}
 
 	xfree(nid_list);
@@ -479,7 +519,9 @@ int main(int argc, char *argv[])
 	log_opts.stderr_level = LOG_LEVEL_QUIET;
 	log_opts.syslog_level = LOG_LEVEL_QUIET;
 	if (slurm_get_debug_flags() && DEBUG_FLAG_NODE_FEATURES)
-		log_opts.logfile_level += 3;
+		log_opts.logfile_level = LOG_LEVEL_DEBUG;
+	else
+		log_opts.logfile_level = LOG_LEVEL_ERROR;
 	(void) log_init(argv[0], log_opts, LOG_DAEMON, log_file);
 
 	if ((argc < 2) || (argc > 3)) {
@@ -517,13 +559,13 @@ int main(int argc, char *argv[])
 	node_bitmap = bit_alloc(100000);
 	if (_update_all_nodes(argv[1]) != 0) {
 		/* Could not reboot nodes.
-		 * Requeue/hold the job we were trying to start */
+		 * Requeue the job we were trying to start */
 		uint32_t job_id = 0;
 		char *job_id_str = getenv("SLURM_JOB_ID");
 		if (job_id_str)
 			job_id = strtol(job_id_str, NULL, 10);
 		if (job_id)
-			(void) slurm_requeue(job_id, JOB_REQUEUE_HOLD);
+			(void) slurm_requeue(job_id, JOB_RECONFIG_FAIL);
 
 		/* Return the nodes to service */
 		slurm_init_update_node_msg(&node_msg);

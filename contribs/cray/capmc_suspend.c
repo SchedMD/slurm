@@ -71,6 +71,7 @@
 #define MAX_POLL_WAIT 500
 
 /* Default and minimum timeout parameters for the capmc command */
+#define DEFAULT_CAPMC_RETRIES 4
 #define DEFAULT_CAPMC_TIMEOUT 60000	/* 60 seconds */
 #define MIN_CAPMC_TIMEOUT 1000		/* 1 second */
 
@@ -83,13 +84,10 @@
 /* Static variables */
 static char *capmc_path = NULL;
 static uint32_t capmc_poll_freq = 45;   /* capmc state polling frequency */
+static uint32_t capmc_retries = DEFAULT_CAPMC_RETRIES;
 static uint32_t capmc_timeout = DEFAULT_CAPMC_TIMEOUT;
 static char *log_file = NULL;
 static char *prog_name = NULL;
-
-static pthread_mutex_t thread_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t  thread_cnt_cond  = PTHREAD_COND_INITIALIZER;
-static int thread_cnt = 0;
 
 /* NOTE: Keep this table synchronized with the table in
  * src/plugins/node_features/knl_cray/node_features_knl_cray.c */
@@ -99,6 +97,7 @@ static s_p_options_t knl_conf_file_options[] = {
 	{"AllowUserBoot", S_P_STRING},
 	{"CapmcPath", S_P_STRING},
 	{"CapmcPollFreq", S_P_UINT32},
+	{"CapmcRetries", S_P_UINT32},
 	{"CapmcTimeout", S_P_UINT32},
 	{"CnselectPath", S_P_STRING},
 	{"DefaultMCDRAM", S_P_STRING},
@@ -146,6 +145,7 @@ static void _read_config(void)
 	if ((tbl = _config_make_tbl(knl_conf_file))) {
 		(void) s_p_get_string(&capmc_path, "CapmcPath", tbl);
 		(void) s_p_get_uint32(&capmc_poll_freq, "CapmcPollFreq", tbl);
+		(void) s_p_get_uint32(&capmc_retries, "CapmcRetries", tbl);
 		(void) s_p_get_uint32(&capmc_timeout, "CapmcTimeout", tbl);
 		(void) s_p_get_string(&log_file, "LogFile", tbl);
 	}
@@ -317,7 +317,7 @@ static char *_node_names_2_nid_list(char *node_names)
 static int _update_all_nodes(char *node_names)
 {
 	char *argv[10], *nid_list, *resp_msg;
-	int rc = -1, status = 0;
+	int rc = 0, retry, status = 0;
 
 	nid_list = _node_names_2_nid_list(node_names);
 	if (nid_list == NULL)
@@ -330,15 +330,31 @@ static int _update_all_nodes(char *node_names)
 	argv[2] = "-n";
 	argv[3] = nid_list;
 	argv[4] = NULL;
-	resp_msg = _run_script(argv, &status);
-	if ((status == 0) ||
-	    (resp_msg && strcasestr(resp_msg, "Success"))) {
-		debug("%s: node_off sent to %s", prog_name, argv[3]);
-		rc = 0;
-	} else {
+	for (retry = 0; ; retry++) {
+		resp_msg = _run_script(argv, &status);
+		if ((status == 0) ||
+		    (resp_msg && strcasestr(resp_msg, "Success"))) {
+			debug("%s: node_off sent to %s", prog_name, argv[3]);
+			xfree(resp_msg);
+			break;
+		}
 		error("%s: capmc(%s,%s,%s): %d %s", prog_name,
 		      argv[1], argv[2], argv[3], status, resp_msg);
+		if (resp_msg && strstr(resp_msg, "Could not lookup") &&
+		    (retry <= capmc_retries)) {
+			/* State Manager is down. Sleep and retry */
+			error("Cray State Manager is down, retrying request");
+			sleep(1);
+			xfree(resp_msg);
+		} else {
+			/* Non-recoverable error */
+			error("Aborting capmc_suspend for %s", nid_list);
+			rc = -1;
+			xfree(resp_msg);
+			break;
+		}
 	}
+
 	xfree(resp_msg);
 	xfree(nid_list);
 	return rc;
@@ -353,22 +369,14 @@ int main(int argc, char *argv[])
 	log_opts.stderr_level = LOG_LEVEL_QUIET;
 	log_opts.syslog_level = LOG_LEVEL_QUIET;
 	if (slurm_get_debug_flags() && DEBUG_FLAG_NODE_FEATURES)
-		log_opts.logfile_level += 3;
+		log_opts.logfile_level = LOG_LEVEL_DEBUG;
+	else
+		log_opts.logfile_level = LOG_LEVEL_ERROR;
 	(void) log_init(argv[0], log_opts, LOG_DAEMON, log_file);
 
 	/* Attempt to shutdown all nodes in a single capmc call. */
 	if (_update_all_nodes(argv[1]) != 0)
 		exit(1);
-
-	/* Wait for work threads to complete */
-	slurm_mutex_lock(&thread_cnt_mutex);
-	while (1) {
-		if (thread_cnt == 0)
-			break;
-		else	/* wait for state change and retry */
-			pthread_cond_wait(&thread_cnt_cond, &thread_cnt_mutex);
-	}
-	slurm_mutex_unlock(&thread_cnt_mutex);
 
 	xfree(prog_name);
 	exit(0);
