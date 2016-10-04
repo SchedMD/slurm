@@ -1185,6 +1185,34 @@ static int _sort_sib_will_runs(void *x, void *y)
 }
 
 /*
+ * Convert comma separated list of cluster names to bitmap of cluster ids.
+ */
+static uint64_t _cluster_names_to_ids(char *clusters)
+{
+	uint64_t cluster_ids = 0;
+	List cluster_names = list_create(slurm_destroy_char);
+
+	if (slurm_addto_char_list(cluster_names, clusters)) {
+		ListIterator itr = list_iterator_create(cluster_names);
+		char *cluster_name;
+		slurmdb_cluster_rec_t *sibling;
+
+		while ((cluster_name = list_next(itr))) {
+			if ((sibling =
+			     list_find_first(fed_mgr_fed_rec->cluster_list,
+					     slurmdb_find_cluster_in_list,
+					     cluster_name))) {
+				cluster_ids |= FED_SIBLING_BIT(sibling->fed.id);
+			}
+		}
+		list_iterator_destroy(itr);
+	}
+	FREE_NULL_LIST(cluster_names);
+
+	return cluster_ids;
+}
+
+/*
  * Find a sibling that can start the job now.
  * IN msg - contains the original job_desc buffer to send to the siblings and to
  * 	be able to create a job_desc copy to willrun itself.
@@ -1211,6 +1239,7 @@ static slurmdb_cluster_rec_t *_find_start_now_sib(slurm_msg_t *msg,
 	sib_msg_t sib_msg;
 	time_t now = 0;
 	uint32_t buf_offset;
+	uint64_t cluster_list = 0xffffffff; /* all clusters available */
 	slurm_msg_t tmp_msg;
 
 	xassert(msg);
@@ -1236,9 +1265,20 @@ static slurmdb_cluster_rec_t *_find_start_now_sib(slurm_msg_t *msg,
 	sib_msg.data_version = msg->protocol_version;
 	sib_msg.data_type    = msg->msg_type;
 
+	if (job_desc->clusters)
+		cluster_list = _cluster_names_to_ids(job_desc->clusters);
+
 	/* willrun the sibling clusters */
 	sib_itr = list_iterator_create(fed_mgr_fed_rec->cluster_list);
 	while ((sibling = list_next(sib_itr))) {
+		if (!(cluster_list & FED_SIBLING_BIT(sibling->fed.id))) {
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+				info("skipping cluster %s -- not in cluster list to submit job to",
+				     sibling->name);
+
+			continue;
+		}
+
 		sib_willrun = xmalloc(sizeof(sib_willrun_t));
 		sib_willrun->sibling = sibling;
 		sib_willrun->uid     = uid;
