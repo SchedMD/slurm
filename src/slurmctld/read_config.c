@@ -1091,6 +1091,12 @@ int read_slurm_conf(int recover, bool reconfig)
 	if (node_features_g_count() > 0) {
 		if (node_features_g_get_node(NULL) != SLURM_SUCCESS)
 			error("failed to initialize node features");
+	}
+	if ((rc = _build_bitmaps())) /* must follow node_features_g_get_node()
+				      * and preceed build_features_list_*() */
+		fatal("_build_bitmaps failure");
+
+	if (node_features_g_count() > 0) {
 		build_feature_list_ne();
 	} else {
 		/* Copy node's available_features to active_features */
@@ -1101,8 +1107,6 @@ int read_slurm_conf(int recover, bool reconfig)
 		}
 		build_feature_list_eq();
 	}
-	if ((rc = _build_bitmaps())) /* must follow node_features_g_get_node() */
-		fatal("_build_bitmaps failure");
 
 	(void) _sync_nodes_to_comp_job();/* must follow select_g_node_init() */
 	load_part_uid_allow_list(1);
