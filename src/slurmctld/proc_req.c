@@ -165,7 +165,7 @@ inline static void  _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_step_kill(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_step_create(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_step_get_info(slurm_msg_t * msg);
-inline static void  _slurm_rpc_job_will_run(slurm_msg_t * msg);
+inline static void  _slurm_rpc_job_will_run(slurm_msg_t * msg, bool allow_sibs);
 inline static void  _slurm_rpc_job_alloc_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg);
 inline static void  _slurm_rpc_kill_job2(slurm_msg_t *msg);
@@ -356,7 +356,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		_slurm_rpc_job_step_get_info(msg);
 		break;
 	case REQUEST_JOB_WILL_RUN:
-		_slurm_rpc_job_will_run(msg);
+		_slurm_rpc_job_will_run(msg, true);
 		break;
 	case REQUEST_SIB_JOB_WILL_RUN:
 	{
@@ -364,7 +364,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		job_desc_msg_t *job_desc = sib_msg->data;
 
 		msg->data = job_desc;
-		_slurm_rpc_job_will_run(msg);
+		_slurm_rpc_job_will_run(msg, false);
 		msg->data = sib_msg;
 
 		break;
@@ -2509,7 +2509,7 @@ static bool _is_valid_will_run_user(job_desc_msg_t *job_desc_msg, uid_t uid)
 
 /* _slurm_rpc_job_will_run - process RPC to determine if job with given
  *	configuration can be initiated */
-static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
+static void _slurm_rpc_job_will_run(slurm_msg_t * msg, bool allow_sibs)
 {
 	/* init */
 	DEF_TIMERS;
@@ -2556,18 +2556,30 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 				 job_desc_msg->resp_host, 16);
 		dump_job_desc(job_desc_msg);
 		if (error_code == SLURM_SUCCESS) {
-			lock_slurmctld(job_write_lock);
 			if (job_desc_msg->job_id == NO_VAL) {
-				error_code = job_allocate(job_desc_msg, false,
-							  true, &resp,
-							  true, uid, &job_ptr,
-							  &err_msg,
-							  msg->protocol_version);
+				if (allow_sibs && fed_mgr_is_active()) {
+					/* don't job_write lock here. fed_mgr
+					 * locks around the job_allocate when
+					 * doing a will_run to itself. */
+					error_code =
+						fed_mgr_sib_will_run(
+							msg, job_desc_msg, uid,
+							&resp);
+				} else {
+					lock_slurmctld(job_write_lock);
+					error_code = job_allocate(
+							job_desc_msg, false,
+							true, &resp, true, uid,
+							&job_ptr, &err_msg,
+							msg->protocol_version);
+					unlock_slurmctld(job_write_lock);
+				}
 			} else {	/* existing job test */
+				lock_slurmctld(job_write_lock);
 				error_code = job_start_data(job_desc_msg,
 							    &resp);
+				unlock_slurmctld(job_write_lock);
 			}
-			unlock_slurmctld(job_write_lock);
 			END_TIMER2("_slurm_rpc_job_will_run");
 		}
 	} else if (errno)

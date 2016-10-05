@@ -60,4 +60,6 @@ extern bool fed_mgr_is_tracker_only_job(struct job_record *job_ptr);
 extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 				uid_t uid, uint16_t protocol_version,
 				struct job_record **job_pptr, char **err_msg);
+extern int fed_mgr_sib_will_run(slurm_msg_t *msg, job_desc_msg_t *job_desc,
+				uid_t uid, will_run_response_msg_t **resp);
 #endif /* _SLURM_FED_MGR_H */
