@@ -466,8 +466,8 @@ static void _persist_callback_fini(void *arg)
 	}
 
 	if (!(cluster = list_find_first(fed_mgr_fed_rec->cluster_list,
-				       slurmdb_find_cluster_in_list,
-				       persist_conn->cluster_name))) {
+					slurmdb_find_cluster_in_list,
+					persist_conn->cluster_name))) {
 		info("Couldn't find cluster %s?",
 		     persist_conn->cluster_name);
 		unlock_slurmctld(fed_write_lock);
