@@ -1156,8 +1156,10 @@ int read_slurm_conf(int recover, bool reconfig)
 	error_code = MAX(error_code, rc);	/* not fatal */
 	rc = switch_g_reconfig();
 	error_code = MAX(error_code, rc);	/* not fatal */
-	rc = node_features_g_reconfig();
-	error_code = MAX(error_code, rc);	/* not fatal */
+	if (reconfig) {
+		rc = node_features_g_reconfig();
+		error_code = MAX(error_code, rc); /* not fatal */
+	}
 	rc = _preserve_select_type_param(&slurmctld_conf, old_select_type_p);
 	error_code = MAX(error_code, rc);	/* not fatal */
 	if (reconfig)
