@@ -160,6 +160,7 @@ static uint32_t capmc_poll_freq = 45;	/* capmc state polling frequency */
 static uint32_t capmc_retries = DEFAULT_CAPMC_RETRIES;
 static uint32_t capmc_timeout = 0;	/* capmc command timeout in msec */
 static bitstr_t *capmc_node_bitmap = NULL;	/* Nodes found by capmc */
+static bitstr_t *knl_node_bitmap = NULL;	/* KNL nodes found by capmc */
 static char *cnselect_path = NULL;
 static bool  debug_flag = false;
 static uint16_t allow_mcdram = KNL_MCDRAM_FLAG;
@@ -1296,9 +1297,7 @@ static void _update_all_node_features(
 	char node_name[32], *prefix;
 	int i, node_inx, width = 5;
 	uint64_t mcdram_size;
-	bitstr_t *knl_node_bitmap;
 
-	knl_node_bitmap = bit_alloc(node_record_count);
 	if ((node_record_table_ptr == NULL) ||
 	    (node_record_table_ptr->name == NULL)) {
 		prefix = xstrdup("nid");
@@ -1315,6 +1314,8 @@ static void _update_all_node_features(
 		}
 	}
 	if (mcdram_cap) {
+		if (!knl_node_bitmap)
+			knl_node_bitmap = bit_alloc(node_record_count);
 		for (i = 0; i < mcdram_cap_cnt; i++) {
 			snprintf(node_name, sizeof(node_name),
 				 "%s%.*d", prefix, width, mcdram_cap[i].nid);
@@ -1392,7 +1393,6 @@ static void _update_all_node_features(
 	}
 
 	xfree(prefix);
-	FREE_NULL_BITMAP(knl_node_bitmap);
 }
 
 /* Update a specific node's features and features_act fields based upon
@@ -1510,13 +1510,16 @@ static void _update_node_features2(struct node_record *node_ptr,
 	uint64_t mcdram_size;
 
 	xassert(node_ptr);
+	node_idx = node_ptr - node_record_table_ptr;
+	if (!knl_node_bitmap || !bit_test(knl_node_bitmap, node_idx))
+		return;		/* Not KNL node */
+
 	nid = strtol(node_ptr->name + 3, &end_ptr, 10);
 	if ((end_ptr[0] != '\0') || (nid < 0) || (nid >= 100000)) {
 		error("%s: Invalid node name (%s)", __func__, node_ptr->name);
 		return;
 	}
 
-	node_idx = node_ptr - node_record_table_ptr;
 	_strip_knl_opts(&node_ptr->features_act);
 
 	if (mcdram_cfg2) {
@@ -1735,6 +1738,7 @@ extern int fini(void)
 	xfree(mcdram_per_node);
 	xfree(syscfg_path);
 	FREE_NULL_BITMAP(capmc_node_bitmap);
+	FREE_NULL_BITMAP(knl_node_bitmap);
 	return SLURM_SUCCESS;
 }
 
@@ -2433,11 +2437,16 @@ extern int node_features_p_node_update(char *active_features,
 /* Translate a node's feature specification by replacing any features associated
  * with this plugin in the original value with the new values, preserving any
  * features that are not associated with this plugin
+ * IN new_features - newly specific features (active or available)
+ * IN orig_features - original features (active or available)
+ * IN mode - 1=registration, 2=update
  * RET node's new merged features, must be xfreed */
-extern char *node_features_p_node_xlate(char *new_features, char *orig_features)
+extern char *node_features_p_node_xlate(char *new_features, char *orig_features,
+					int mode)
 {
 	char *node_features = NULL;
 	char *tmp, *save_ptr = NULL, *sep = "", *tok;
+	bool non_knl_features = false;
 
 	if (new_features) {
 		tmp = xstrdup(new_features);
@@ -2447,10 +2456,20 @@ extern char *node_features_p_node_xlate(char *new_features, char *orig_features)
 			    (_knl_numa_token(tok)   != 0)) {
 				xstrfmtcat(node_features, "%s%s", sep, tok);
 				sep = ",";
-			}
+			} else
+				non_knl_features = true;
 			tok = strtok_r(NULL, ",", &save_ptr);
 		}
 		xfree(tmp);
+	}
+
+	if ((mode == 2) &&
+	    (non_knl_features || (new_features && (new_features[0] == '\0')))) {
+		/* Complete replacement of active features if node update RPC
+		 * and specified features empty or contain non-KNL values */
+		xfree(node_features);
+		node_features = xstrdup(new_features);
+		return node_features;
 	}
 
 	if (!node_features) {	/* No new info from compute node */
