@@ -15,6 +15,8 @@ documents those changes that are of interest to users and administrators.
     node's configuration if capmc does NOT report the node as being KNL.
  -- node_features/knl_cray plugin: drain any node not reported by
     "capmc node_status" on startup or reconfig.
+ -- node_features/knl_cray plugin: Substantially streamline and speed up logic
+    to load current node state on reconfigure failure or unexpected node boot.
 
 * Changes in Slurm 16.05.5
 ==========================

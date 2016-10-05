@@ -209,7 +209,7 @@ typedef struct mcdram_cfg {
 } mcdram_cfg_t;
 
 typedef struct mcdram_cfg2 {
-	int hbm_pct;
+	int cache_pct;
 	char *mcdram_cfg;
 	char *nid_str;
 	bitstr_t *node_bitmap;
@@ -255,7 +255,7 @@ static char *_knl_numa_str(uint16_t numa_num);
 static uint16_t _knl_numa_token(char *token);
 static mcdram_cfg2_t *_load_current_mcdram(int *num);
 static numa_cfg2_t *_load_current_numa(int *num);
-static char *_load_mcdram_type(int hbm_pct);
+static char *_load_mcdram_type(int cache_pct);
 static char *_load_numa_type(char *type);
 static void _log_script_argv(char **script_argv, char *resp_msg);
 static void _mcdram_cap_free(mcdram_cap_t *mcdram_cap, int mcdram_cap_cnt);
@@ -280,12 +280,16 @@ static void _update_all_node_features(
 				mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt,
 				numa_cap_t *numa_cap, int numa_cap_cnt,
 				numa_cfg_t *numa_cfg, int numa_cfg_cnt);
+static int  _update_current_mode(char *node_list);
 static void _update_mcdram_pct(char *tok, int mcdram_num);
 static void _update_node_features(struct node_record *node_ptr,
 				  mcdram_cap_t *mcdram_cap, int mcdram_cap_cnt,
 				  mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt,
 				  numa_cap_t *numa_cap, int numa_cap_cnt,
 				  numa_cfg_t *numa_cfg, int numa_cfg_cnt);
+static void _update_node_features2(struct node_record *node_ptr,
+				   mcdram_cfg2_t *mcdram_cfg, int mcdram_cfg_cnt,
+				   numa_cfg2_t *numa_cfg, int numa_cfg_cnt);
 
 /* Function used both internally and externally */
 extern int node_features_p_node_update(char *active_features,
@@ -745,18 +749,18 @@ static mcdram_cap_t *_json_parse_mcdram_cap_array(json_object *jobj, char *key,
 /* Return NID string for all nodes with specified MCDRAM mode (HBM percentage).
  * NOTE: Information not returned for nodes which are not up
  * NOTE: xfree() the return value. */
-static char *_load_mcdram_type(int hbm_pct)
+static char *_load_mcdram_type(int cache_pct)
 {
 	char **script_argv, *resp_msg;
 	int i, status = 0;
 	DEF_TIMERS;
 
-	if (hbm_pct < 0)	/* Unsupported configuration on this system */
+	if (cache_pct < 0)	/* Unsupported configuration on this system */
 		return NULL;
 	script_argv = xmalloc(sizeof(char *) * 4);	/* NULL terminated */
 	script_argv[0] = xstrdup("cnselect");
 	script_argv[1] = xstrdup("-e");
-	xstrfmtcat(script_argv[2], "hbmcachepct.eq.%d", hbm_pct);
+	xstrfmtcat(script_argv[2], "hbmcachepct.eq.%d", cache_pct);
 	START_TIMER;
 	resp_msg = _run_script(cnselect_path, script_argv, &status);
 	END_TIMER;
@@ -792,9 +796,9 @@ static mcdram_cfg2_t *_load_current_mcdram(int *num)
 	mcdram_cfg = xmalloc(sizeof(mcdram_cfg2_t) * 4);
 
 	for (i = 0; i < 4; i++) {
-		mcdram_cfg[i].hbm_pct = mcdram_pct[i];
+		mcdram_cfg[i].cache_pct = mcdram_pct[i];
 		mcdram_cfg[i].mcdram_cfg = _knl_mcdram_str(KNL_CACHE << i);
-		mcdram_cfg[i].nid_str = _load_mcdram_type(mcdram_cfg[i].hbm_pct);
+		mcdram_cfg[i].nid_str = _load_mcdram_type(mcdram_cfg[i].cache_pct);
 		if (mcdram_cfg[i].nid_str && mcdram_cfg[i].nid_str[0]) {
 			mcdram_cfg[i].node_bitmap = bit_alloc(100000);
 			(void) bit_unfmt(mcdram_cfg[i].node_bitmap,
@@ -1026,9 +1030,9 @@ static void _mcdram_cfg2_log(mcdram_cfg2_t *mcdram_cfg2, int mcdram_cfg2_cnt)
 	if (!mcdram_cfg2)
 		return;
 	for (i = 0; i < mcdram_cfg2_cnt; i++) {
-		info("MCDRAM_CFG[%d]: nid_str:%s mcdram_cfg:%s hbm_pct:%d",
+		info("MCDRAM_CFG[%d]: nid_str:%s mcdram_cfg:%s cache_pct:%d",
 		     i, mcdram_cfg2[i].nid_str, mcdram_cfg2[i].mcdram_cfg,
-		     mcdram_cfg2[i].hbm_pct);
+		     mcdram_cfg2[i].cache_pct);
 	}
 }
 
@@ -1408,6 +1412,7 @@ static void _update_node_features(struct node_record *node_ptr,
 	uint64_t mcdram_size;
 	bitstr_t *node_bitmap = NULL;
 	bool is_knl = false;
+
 	xassert(node_ptr);
 	nid = strtol(node_ptr->name + 3, &end_ptr, 10);
 	if (end_ptr[0] != '\0') {
@@ -1490,6 +1495,71 @@ static void _update_node_features(struct node_record *node_ptr,
 	/* Update bitmaps and lists used by slurmctld for scheduling */
 	node_bitmap = bit_alloc(node_record_count);
 	bit_set(node_bitmap, (node_ptr - node_record_table_ptr));
+	update_feature_list(active_feature_list, node_ptr->features_act,
+			    node_bitmap);
+	(void) node_features_p_node_update(node_ptr->features_act, node_bitmap);
+	FREE_NULL_BITMAP(node_bitmap);
+}
+
+/* Update a specific node's features_act field based upon
+ * its current configuration provided by capmc */
+static void _update_node_features2(struct node_record *node_ptr,
+				   mcdram_cfg2_t *mcdram_cfg2,
+				   int mcdram_cfg_cnt,
+				   numa_cfg2_t *numa_cfg2, int numa_cfg_cnt)
+{
+	int i, nid, node_idx;
+	char *end_ptr = "";
+	bitstr_t *node_bitmap = NULL;
+	uint64_t mcdram_size;
+
+	xassert(node_ptr);
+	nid = strtol(node_ptr->name + 3, &end_ptr, 10);
+	if ((end_ptr[0] != '\0') || (nid < 0) || (nid >= 100000)) {
+		error("%s: Invalid node name (%s)", __func__, node_ptr->name);
+		return;
+	}
+
+	node_idx = node_ptr - node_record_table_ptr;
+	_strip_knl_opts(&node_ptr->features_act);
+
+	if (mcdram_cfg2) {
+		for (i = 0; i < mcdram_cfg_cnt; i++) {
+			if (!mcdram_cfg2[i].node_bitmap ||
+			    !bit_test(mcdram_cfg2[i].node_bitmap, nid))
+				continue;
+			_merge_strings(&node_ptr->features_act,
+				       mcdram_cfg2[i].mcdram_cfg,
+				       allow_mcdram);
+			if (!mcdram_per_node)
+				break;
+			mcdram_size = mcdram_per_node[node_idx] *
+				      (100 - mcdram_cfg2[i].cache_pct) / 100;
+			if (!node_ptr->gres) {
+				node_ptr->gres =
+					xstrdup(node_ptr->config_ptr->gres);
+			}
+			gres_plugin_node_feature(node_ptr->name, "hbm",
+						 mcdram_size, &node_ptr->gres,
+						 &node_ptr->gres_list);
+			break;
+		}
+	}
+
+	if (numa_cfg2) {
+		for (i = 0; i < numa_cfg_cnt; i++) {
+			if (!numa_cfg2[i].node_bitmap ||
+			    !bit_test(numa_cfg2[i].node_bitmap, nid))
+				continue;
+			_merge_strings(&node_ptr->features_act,
+				       numa_cfg2[i].numa_cfg, allow_numa);
+			break;
+		}
+	}
+
+	/* Update bitmaps and lists used by slurmctld for scheduling */
+	node_bitmap = bit_alloc(node_record_count);
+	bit_set(node_bitmap, node_idx);
 	update_feature_list(active_feature_list, node_ptr->features_act,
 			    node_bitmap);
 	(void) node_features_p_node_update(node_ptr->features_act, node_bitmap);
@@ -1791,6 +1861,47 @@ static void _check_node_status(void)
 	}
 }
 
+/* Update only the current MCDRAM and NUMA mode for identified nodes */
+static int _update_current_mode(char *node_list)
+{
+	mcdram_cfg2_t *mcdram_cfg2 = NULL;
+	numa_cfg2_t *numa_cfg2 = NULL;
+	int mcdram_cfg2_cnt = 0, numa_cfg2_cnt = 0, rc = 0;
+	struct node_record *node_ptr;
+	hostlist_t host_list;
+	char *node_name;
+
+	mcdram_cfg2 = _load_current_mcdram(&mcdram_cfg2_cnt);
+	numa_cfg2   = _load_current_numa(&numa_cfg2_cnt);
+
+	if (debug_flag) {
+		_mcdram_cfg2_log(mcdram_cfg2, mcdram_cfg2_cnt);
+		_numa_cfg2_log(numa_cfg2, numa_cfg2_cnt);
+	}
+
+	if ((host_list = hostlist_create(node_list)) == NULL) {
+		error ("hostlist_create error on %s: %m", node_list);
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+	while ((node_name = hostlist_shift(host_list))) {
+		node_ptr = find_node_record(node_name);
+		if (node_ptr) {
+			_update_node_features2(node_ptr,
+					       mcdram_cfg2, mcdram_cfg2_cnt,
+					       numa_cfg2, numa_cfg2_cnt);
+		}
+		free(node_name);
+	}
+	hostlist_destroy (host_list);
+	last_node_update = time(NULL);
+
+fini:	_mcdram_cfg2_free(mcdram_cfg2, mcdram_cfg2_cnt);
+	_numa_cfg2_free(numa_cfg2, numa_cfg2_cnt);
+
+	return rc;
+}
+
 /* Update active and available features on specified nodes,
  * sets features on all nodes if node_list is NULL */
 extern int node_features_p_get_node(char *node_list)
@@ -1815,11 +1926,15 @@ extern int node_features_p_get_node(char *node_list)
 	slurm_mutex_lock(&config_mutex);
 	if (reconfig) {
 		(void) init();
-		reconfig = true;
+		reconfig = false;
 	}
 	slurm_mutex_unlock(&config_mutex);
 
 	_check_node_status();	/* Flag nodes not found by capmc */
+
+	if (mcdram_per_node && node_list &&	/* Selected node updated and */
+	    (mcdram_pct[0] != -1))		/* have needd global info */
+		return _update_current_mode(node_list);
 
 	if (!mcdram_per_node)
 		mcdram_per_node = xmalloc(sizeof(uint64_t) * node_record_count);
@@ -2069,12 +2184,13 @@ extern int node_features_p_get_node(char *node_list)
 				      mcdram_cfg[i].nid))
 				continue;
 			if (mcdram_cfg[i].mcdram_pct !=
-			    mcdram_cfg2[k].hbm_pct) {
+			    mcdram_cfg2[k].cache_pct) {
 				info("%s: HBM mismatch between capmc and cnselect for nid %u (%u != %d)",
 				     __func__, mcdram_cfg[i].nid,
 				     mcdram_cfg[i].mcdram_pct,
-				     mcdram_cfg2[k].hbm_pct);
-				mcdram_cfg[i].mcdram_pct=mcdram_cfg2[k].hbm_pct;
+				     mcdram_cfg2[k].cache_pct);
+				mcdram_cfg[i].mcdram_pct =
+					mcdram_cfg2[k].cache_pct;
 				xfree(mcdram_cfg[i].mcdram_cfg);
 				mcdram_cfg[i].mcdram_cfg =
 					xstrdup(mcdram_cfg2[k].mcdram_cfg);
