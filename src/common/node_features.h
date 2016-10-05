@@ -86,8 +86,12 @@ extern int node_features_g_node_update(char *active_features,
 /* Translate a node's feature specification by replacing any features associated
  * with this plugin in the original value with the new values, preserving any
  * features that are not associated with this plugin
+ * IN new_features - newly specific features (active or available)
+ * IN orig_features - original features (active or available)
+ * IN mode - 1=registration, 2=update
  * RET node's new merged features, must be xfreed */
-extern char *node_features_g_node_xlate(char *new_features,char *orig_features);
+extern char *node_features_g_node_xlate(char *new_features,char *orig_features,
+					int mode);
 
 /* Determine if the specified user can modify the currently available node
  * features */

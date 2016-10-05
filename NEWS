@@ -17,6 +17,9 @@ documents those changes that are of interest to users and administrators.
     "capmc node_status" on startup or reconfig.
  -- node_features/knl_cray plugin: Substantially streamline and speed up logic
     to load current node state on reconfigure failure or unexpected node boot.
+ -- node_features plugin - Add "mode" argument to node_features_p_node_xlate()
+    function to fix some bugs updating a node's features using the node update
+    RPC.
 
 * Changes in Slurm 16.05.5
 ==========================

@@ -2565,11 +2565,16 @@ extern int node_features_p_node_update(char *active_features,
 /* Translate a node's feature specification by replacing any features associated
  * with this plugin in the original value with the new values, preserving any
  * features that are not associated with this plugin
+ * IN new_features - newly specific features (active or available)
+ * IN orig_features - original features (active or available)
+ * IN mode - 1=registration, 2=update
  * RET node's new merged features, must be xfreed */
-extern char *node_features_p_node_xlate(char *new_features, char *orig_features)
+extern char *node_features_p_node_xlate(char *new_features, char *orig_features,
+					int mode)
 {
 	char *node_features = NULL;
 	char *tmp, *save_ptr = NULL, *sep = "", *tok;
+	bool non_knl_features = false;
 
 	if (new_features) {
 		tmp = xstrdup(new_features);
@@ -2579,10 +2584,20 @@ extern char *node_features_p_node_xlate(char *new_features, char *orig_features)
 			    (_knl_numa_token(tok)   != 0)) {
 				xstrfmtcat(node_features, "%s%s", sep, tok);
 				sep = ",";
-			}
+			} else
+				non_knl_features = true;
 			tok = strtok_r(NULL, ",", &save_ptr);
 		}
 		xfree(tmp);
+	}
+
+	if ((mode == 2) &&
+	    (non_knl_features || (new_features && (new_features[0] == '\0')))) {
+		/* Complete replacement of active features if node update RPC
+		 * and specified features empty or contain non-KNL values */
+		xfree(node_features);
+		node_features = xstrdup(new_features);
+		return node_features;
 	}
 
 	if (!node_features) {	/* No new info from compute node */
