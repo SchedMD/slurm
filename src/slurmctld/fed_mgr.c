@@ -1131,11 +1131,21 @@ static void *_sib_will_run(void *arg)
 	if (sib_willrun->sibling == fed_mgr_cluster_rec) {
 		char *err_msg = NULL;
 		struct job_record *job_ptr = NULL;
+		job_desc_msg_t *job_desc;
 		sib_msg_t *sib_msg = sib_willrun->sib_msg;
 		slurmctld_lock_t job_write_lock = {
 			NO_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
 
 		lock_slurmctld(job_write_lock);
+		job_desc = sib_msg->data;
+
+		if (job_desc->job_id == NO_VAL) {
+			/* Get a job_id now without incrementing the job_id
+			 * count. This prevents burning job_ids on will_runs */
+			job_desc->job_id =
+				fed_mgr_get_job_id(get_next_job_id(true));
+		}
+
 		rc = job_allocate(sib_msg->data, false, true,
 				  &sib_willrun->resp, true, sib_willrun->uid,
 				  &job_ptr, &err_msg, sib_msg->data_version);

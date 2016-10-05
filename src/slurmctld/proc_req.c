@@ -2567,6 +2567,13 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg, bool allow_sibs)
 							&resp);
 				} else {
 					lock_slurmctld(job_write_lock);
+
+					/* Get a job_id now without incrementing
+					 * the job_id count. This prevents
+					 * burning job_ids on will_runs */
+					job_desc_msg->job_id =
+						get_next_job_id(true);
+
 					error_code = job_allocate(
 							job_desc_msg, false,
 							true, &resp, true, uid,
