@@ -8880,56 +8880,53 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 				job_desc_ptr->select_jobinfo,
 				buffer, protocol_version);
 		} else {
-			job_desc_ptr->select_jobinfo =
-				select_g_select_jobinfo_alloc();
+			dynamic_plugin_data_t *select_jobinfo;
+			select_jobinfo = select_g_select_jobinfo_alloc();
 			if (job_desc_ptr->geometry[0] != (uint16_t) NO_VAL)
 				select_g_select_jobinfo_set(
-					job_desc_ptr->select_jobinfo,
+					select_jobinfo,
 					SELECT_JOBDATA_GEOMETRY,
 					job_desc_ptr->geometry);
 
 			if (job_desc_ptr->conn_type[0] != (uint16_t) NO_VAL)
 				select_g_select_jobinfo_set(
-					job_desc_ptr->select_jobinfo,
+					select_jobinfo,
 					SELECT_JOBDATA_CONN_TYPE,
 					&(job_desc_ptr->conn_type));
 			if (job_desc_ptr->reboot != (uint16_t) NO_VAL)
 				select_g_select_jobinfo_set(
-					job_desc_ptr->select_jobinfo,
+					select_jobinfo,
 					SELECT_JOBDATA_REBOOT,
 					&(job_desc_ptr->reboot));
 			if (job_desc_ptr->rotate != (uint16_t) NO_VAL)
 				select_g_select_jobinfo_set(
-					job_desc_ptr->select_jobinfo,
+					select_jobinfo,
 					SELECT_JOBDATA_ROTATE,
 					&(job_desc_ptr->rotate));
 			if (job_desc_ptr->blrtsimage) {
 				select_g_select_jobinfo_set(
-					job_desc_ptr->select_jobinfo,
+					select_jobinfo,
 					SELECT_JOBDATA_BLRTS_IMAGE,
 					job_desc_ptr->blrtsimage);
 			}
 			if (job_desc_ptr->linuximage)
 				select_g_select_jobinfo_set(
-					job_desc_ptr->select_jobinfo,
+					select_jobinfo,
 					SELECT_JOBDATA_LINUX_IMAGE,
 					job_desc_ptr->linuximage);
 			if (job_desc_ptr->mloaderimage)
 				select_g_select_jobinfo_set(
-					job_desc_ptr->select_jobinfo,
+					select_jobinfo,
 					SELECT_JOBDATA_MLOADER_IMAGE,
 					job_desc_ptr->mloaderimage);
 			if (job_desc_ptr->ramdiskimage)
 				select_g_select_jobinfo_set(
-					job_desc_ptr->select_jobinfo,
+					select_jobinfo,
 					SELECT_JOBDATA_RAMDISK_IMAGE,
 					job_desc_ptr->ramdiskimage);
-			select_g_select_jobinfo_pack(
-				job_desc_ptr->select_jobinfo,
-				buffer, protocol_version);
-			select_g_select_jobinfo_free(
-				job_desc_ptr->select_jobinfo);
-			job_desc_ptr->select_jobinfo = NULL;
+			select_g_select_jobinfo_pack(select_jobinfo, buffer,
+						     protocol_version);
+			select_g_select_jobinfo_free(select_jobinfo);
 		}
 		pack16(job_desc_ptr->wait_all_nodes, buffer);
 		pack32(job_desc_ptr->bitflags, buffer);
@@ -9049,56 +9046,53 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 				job_desc_ptr->select_jobinfo,
 				buffer, protocol_version);
 		} else {
-			job_desc_ptr->select_jobinfo =
-				select_g_select_jobinfo_alloc();
+			dynamic_plugin_data_t *select_jobinfo;
+			select_jobinfo = select_g_select_jobinfo_alloc();
 			if (job_desc_ptr->geometry[0] != (uint16_t) NO_VAL)
 				select_g_select_jobinfo_set(
-					job_desc_ptr->select_jobinfo,
+					select_jobinfo,
 					SELECT_JOBDATA_GEOMETRY,
 					job_desc_ptr->geometry);
 
 			if (job_desc_ptr->conn_type[0] != (uint16_t) NO_VAL)
 				select_g_select_jobinfo_set(
-					job_desc_ptr->select_jobinfo,
+					select_jobinfo,
 					SELECT_JOBDATA_CONN_TYPE,
 					&(job_desc_ptr->conn_type));
 			if (job_desc_ptr->reboot != (uint16_t) NO_VAL)
 				select_g_select_jobinfo_set(
-					job_desc_ptr->select_jobinfo,
+					select_jobinfo,
 					SELECT_JOBDATA_REBOOT,
 					&(job_desc_ptr->reboot));
 			if (job_desc_ptr->rotate != (uint16_t) NO_VAL)
 				select_g_select_jobinfo_set(
-					job_desc_ptr->select_jobinfo,
+					select_jobinfo,
 					SELECT_JOBDATA_ROTATE,
 					&(job_desc_ptr->rotate));
 			if (job_desc_ptr->blrtsimage) {
 				select_g_select_jobinfo_set(
-					job_desc_ptr->select_jobinfo,
+					select_jobinfo,
 					SELECT_JOBDATA_BLRTS_IMAGE,
 					job_desc_ptr->blrtsimage);
 			}
 			if (job_desc_ptr->linuximage)
 				select_g_select_jobinfo_set(
-					job_desc_ptr->select_jobinfo,
+					select_jobinfo,
 					SELECT_JOBDATA_LINUX_IMAGE,
 					job_desc_ptr->linuximage);
 			if (job_desc_ptr->mloaderimage)
 				select_g_select_jobinfo_set(
-					job_desc_ptr->select_jobinfo,
+					select_jobinfo,
 					SELECT_JOBDATA_MLOADER_IMAGE,
 					job_desc_ptr->mloaderimage);
 			if (job_desc_ptr->ramdiskimage)
 				select_g_select_jobinfo_set(
-					job_desc_ptr->select_jobinfo,
+					select_jobinfo,
 					SELECT_JOBDATA_RAMDISK_IMAGE,
 					job_desc_ptr->ramdiskimage);
-			select_g_select_jobinfo_pack(
-				job_desc_ptr->select_jobinfo,
-				buffer, protocol_version);
-			select_g_select_jobinfo_free(
-				job_desc_ptr->select_jobinfo);
-			job_desc_ptr->select_jobinfo = NULL;
+			select_g_select_jobinfo_pack(select_jobinfo, buffer,
+						     protocol_version);
+			select_g_select_jobinfo_free( select_jobinfo);
 		}
 		pack16(job_desc_ptr->wait_all_nodes, buffer);
 		pack32(job_desc_ptr->bitflags, buffer);
@@ -9210,56 +9204,53 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 				job_desc_ptr->select_jobinfo,
 				buffer, protocol_version);
 		} else {
-			job_desc_ptr->select_jobinfo =
-				select_g_select_jobinfo_alloc();
+			dynamic_plugin_data_t *select_jobinfo;
+			select_jobinfo = select_g_select_jobinfo_alloc();
 			if (job_desc_ptr->geometry[0] != (uint16_t) NO_VAL)
 				select_g_select_jobinfo_set(
-					job_desc_ptr->select_jobinfo,
+					select_jobinfo,
 					SELECT_JOBDATA_GEOMETRY,
 					job_desc_ptr->geometry);
 
 			if (job_desc_ptr->conn_type[0] != (uint16_t) NO_VAL)
 				select_g_select_jobinfo_set(
-					job_desc_ptr->select_jobinfo,
+					select_jobinfo,
 					SELECT_JOBDATA_CONN_TYPE,
 					&(job_desc_ptr->conn_type));
 			if (job_desc_ptr->reboot != (uint16_t) NO_VAL)
 				select_g_select_jobinfo_set(
-					job_desc_ptr->select_jobinfo,
+					select_jobinfo,
 					SELECT_JOBDATA_REBOOT,
 					&(job_desc_ptr->reboot));
 			if (job_desc_ptr->rotate != (uint16_t) NO_VAL)
 				select_g_select_jobinfo_set(
-					job_desc_ptr->select_jobinfo,
+					select_jobinfo,
 					SELECT_JOBDATA_ROTATE,
 					&(job_desc_ptr->rotate));
 			if (job_desc_ptr->blrtsimage) {
 				select_g_select_jobinfo_set(
-					job_desc_ptr->select_jobinfo,
+					select_jobinfo,
 					SELECT_JOBDATA_BLRTS_IMAGE,
 					job_desc_ptr->blrtsimage);
 			}
 			if (job_desc_ptr->linuximage)
 				select_g_select_jobinfo_set(
-					job_desc_ptr->select_jobinfo,
+					select_jobinfo,
 					SELECT_JOBDATA_LINUX_IMAGE,
 					job_desc_ptr->linuximage);
 			if (job_desc_ptr->mloaderimage)
 				select_g_select_jobinfo_set(
-					job_desc_ptr->select_jobinfo,
+					select_jobinfo,
 					SELECT_JOBDATA_MLOADER_IMAGE,
 					job_desc_ptr->mloaderimage);
 			if (job_desc_ptr->ramdiskimage)
 				select_g_select_jobinfo_set(
-					job_desc_ptr->select_jobinfo,
+					select_jobinfo,
 					SELECT_JOBDATA_RAMDISK_IMAGE,
 					job_desc_ptr->ramdiskimage);
-			select_g_select_jobinfo_pack(
-				job_desc_ptr->select_jobinfo,
-				buffer, protocol_version);
-			select_g_select_jobinfo_free(
-				job_desc_ptr->select_jobinfo);
-			job_desc_ptr->select_jobinfo = NULL;
+			select_g_select_jobinfo_pack(select_jobinfo, buffer,
+						     protocol_version);
+			select_g_select_jobinfo_free( select_jobinfo);
 		}
 		pack16(job_desc_ptr->wait_all_nodes, buffer);
 		pack32(job_desc_ptr->bitflags, buffer);

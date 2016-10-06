@@ -96,8 +96,11 @@ typedef enum {
 
 typedef struct {
 	slurmdb_cluster_rec_t *cluster_rec;
-	int preempt_cnt;
-	time_t start_time;
+	job_desc_msg_t        *job_desc;
+	int                    preempt_cnt;
+	time_t                 start_time;
+	pthread_t              thread_id;
+	int                    thread_rc;
 } local_cluster_rec_t;
 
 extern slurmdb_job_rec_t *slurmdb_create_job_rec();

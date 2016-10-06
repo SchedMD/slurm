@@ -411,29 +411,28 @@ static int _sort_local_cluster(void *v1, void *v2)
 	return 0;
 }
 
-static local_cluster_rec_t * _job_will_run (job_desc_msg_t *req)
+static void * _job_will_run (void *arg)
 {
-	local_cluster_rec_t *local_cluster = NULL;
+	local_cluster_rec_t *local_cluster = (local_cluster_rec_t *)arg;
+	slurmdb_cluster_rec_t *cluster_rec = local_cluster->cluster_rec;
 	will_run_response_msg_t *will_run_resp;
 	char buf[64];
 	int rc;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	char *type = "processors";
 
-	rc = slurm_job_will_run2(req, &will_run_resp);
-
-	if (rc >= 0) {
+	if (!(rc = slurm_job_will_run2_addr(&cluster_rec->control_addr,
+					    local_cluster->job_desc,
+					    &will_run_resp))) {
 		if (cluster_flags & CLUSTER_FLAG_BG)
 			type = "cnodes";
 		slurm_make_time_str(&will_run_resp->start_time,
 				    buf, sizeof(buf));
 		debug("Job %u to start at %s on cluster %s using %u %s on %s",
-		      will_run_resp->job_id, buf, working_cluster_rec->name,
+		      will_run_resp->job_id, buf, cluster_rec->name,
 		      will_run_resp->proc_cnt, type,
 		      will_run_resp->node_list);
 
-		local_cluster = xmalloc(sizeof(local_cluster_rec_t));
-		local_cluster->cluster_rec = working_cluster_rec;
 		local_cluster->start_time = will_run_resp->start_time;
 
 		if (will_run_resp->preemptee_job_id) {
@@ -458,7 +457,9 @@ static local_cluster_rec_t * _job_will_run (job_desc_msg_t *req)
 		slurm_free_will_run_response_msg(will_run_resp);
 	}
 
-	return local_cluster;
+	local_cluster->thread_rc = rc;
+
+	return NULL;
 }
 
 static int _set_qos_bit_from_string(bitstr_t *valid_qos, char *name)
@@ -3012,13 +3013,15 @@ extern int slurmdb_get_first_avail_cluster(job_desc_msg_t *req,
 	char *cluster_names, slurmdb_cluster_rec_t **cluster_rec)
 {
 	local_cluster_rec_t *local_cluster = NULL;
+	slurmdb_cluster_rec_t *tmp_cluster;
 	int rc = SLURM_SUCCESS;
 	char buf[64];
 	bool host_set = false;
-	ListIterator itr;
+	ListIterator itr, resp_itr;
 	List cluster_list = NULL;
 	List ret_list = NULL;
 	List tried_feds = list_create(NULL);
+	pthread_attr_t attr;
 
 	*cluster_rec = NULL;
 	cluster_list = slurmdb_get_info_cluster(cluster_names);
@@ -3038,37 +3041,48 @@ extern int slurmdb_get_first_avail_cluster(job_desc_msg_t *req,
 		host_set = true;
 	}
 
-	if (working_cluster_rec)
-		*cluster_rec = working_cluster_rec;
-
+	slurm_attr_init(&attr);
 	ret_list = list_create(_destroy_local_cluster_rec);
 	itr = list_iterator_create(cluster_list);
-	while ((working_cluster_rec = list_next(itr))) {
+	while ((tmp_cluster = list_next(itr))) {
 
 		/* only try one cluster from each federation */
-		if (working_cluster_rec->fed.name &&
+		if (tmp_cluster->fed.id &&
 		    list_find_first(tried_feds, _find_char_in_list,
-				    working_cluster_rec->fed.name))
+				    tmp_cluster->fed.name))
 			continue;
 
-		if ((local_cluster = _job_will_run(req))) {
-			list_append(ret_list, local_cluster);
-			if (working_cluster_rec->fed.name)
-				list_append(tried_feds,
-					    working_cluster_rec->fed.name);
-		} else {
-			error("Problem with submit to cluster %s: %m",
-			      working_cluster_rec->name);
+		local_cluster_rec_t *local_cluster =
+			xmalloc(sizeof(local_cluster_rec_t));
+		local_cluster->cluster_rec = tmp_cluster;
+		local_cluster->job_desc    = req;
+
+		if (pthread_create(&local_cluster->thread_id, &attr,
+				   _job_will_run, local_cluster) != 0) {
+			error("failed to create _job_will_run thread");
+			xfree(local_cluster);
+			continue;
 		}
+
+		list_append(ret_list, local_cluster);
+		if (tmp_cluster->fed.id)
+			list_append(tried_feds, tmp_cluster->fed.name);
 	}
 	list_iterator_destroy(itr);
 	FREE_NULL_LIST(tried_feds);
+	slurm_attr_destroy(&attr);
 
-	/* restore working_cluster_rec in case it was already set */
-	if (*cluster_rec) {
-		working_cluster_rec = *cluster_rec;
-		*cluster_rec = NULL;
+	resp_itr = list_iterator_create(ret_list);
+	while ((local_cluster = list_next(resp_itr))) {
+		pthread_join(local_cluster->thread_id, NULL);
+
+		if (local_cluster->thread_rc) {
+			error("Problem with submit to cluster %s: %m",
+			      local_cluster->cluster_rec->name);
+			list_delete_item(resp_itr);
+		}
 	}
+	list_iterator_destroy(resp_itr);
 
 	if (host_set)
 		req->alloc_node = NULL;

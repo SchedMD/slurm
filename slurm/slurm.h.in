@@ -3174,6 +3174,18 @@ extern int slurm_job_will_run2(job_desc_msg_t *req,
 			       will_run_response_msg_t **will_run_resp);
 
 /*
+ * slurm_job_will_run2_addr - determine if a job would execute immediately if
+ * 	submitted now
+ * INT addr - prebuilt slurm_addr_t
+ * IN job_desc_msg - description of resource allocation request
+ * OUT will_run_resp - job run time data
+ * 	free using slurm_free_will_run_response_msg()
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+int slurm_job_will_run2_addr(slurm_addr_t *addr, job_desc_msg_t *req,
+			     will_run_response_msg_t **will_run_resp);
+
+/*
  * slurm_sbcast_lookup - retrieve info for an existing resource allocation
  *	including a credential needed for sbcast
  * IN job_id - job allocation identifier
