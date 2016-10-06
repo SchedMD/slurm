@@ -944,7 +944,7 @@ unpack_error:
 	return NULL;
 }
 
-extern int _find_sibling_by_id(void *x, void *key)
+static int _find_sibling_by_id(void *x, void *key)
 {
 	slurmdb_cluster_rec_t *object = (slurmdb_cluster_rec_t *)x;
 	int id = (intptr_t)key;
@@ -1371,7 +1371,7 @@ static slurmdb_cluster_rec_t *_find_start_now_sib(slurm_msg_t *msg,
 	return ret_sib;
 }
 
-extern void *_submit_sibling_job(void *arg)
+static void *_submit_sibling_job(void *arg)
 {
 	int rc = SLURM_SUCCESS;
 	submit_response_msg_t *resp = NULL;
@@ -1395,7 +1395,7 @@ extern void *_submit_sibling_job(void *arg)
 	return NULL;
 }
 
-extern void *_update_sibling_job(void *arg)
+static void *_update_sibling_job(void *arg)
 {
 	sib_update_t *sub = (sib_update_t *)arg;
 	sub->thread_rc = _persist_update_job(sub->sibling, sub->job_desc);
@@ -1415,7 +1415,7 @@ extern void *_update_sibling_job(void *arg)
  * 	fails, then the sucessful siblings will be updated with the correct
  * 	sibling bitmap.
  */
-extern int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg)
+static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg)
 {
 	int rc = SLURM_SUCCESS;
 	ListIterator sib_itr, thread_itr;
