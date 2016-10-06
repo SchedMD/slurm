@@ -24,6 +24,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix typo when an error occurs when discovering pmix version on
     configure.
  -- Fix configuring pmix support when you have your lib dir symlinked to lib64.
+ -- Fix waiting reason if a job is waiting for a specific limit instead of
+    always just AccountingPolicy.
 
 * Changes in Slurm 16.05.5
 ==========================

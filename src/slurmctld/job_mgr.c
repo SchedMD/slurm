@@ -4132,8 +4132,6 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 		job_ptr->state_reason = WAIT_NODE_NOT_AVAIL;
 	else if (rc == ESLURM_QOS_THRES)
 		job_ptr->state_reason = WAIT_QOS_THRES;
-	else if (rc == ESLURM_ACCOUNTING_POLICY)
-		job_ptr->state_reason = WAIT_ACCOUNT_POLICY;
 	else if (rc == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE)
 		job_ptr->state_reason = WAIT_PART_CONFIG;
 	else if (rc == ESLURM_POWER_NOT_AVAIL)
