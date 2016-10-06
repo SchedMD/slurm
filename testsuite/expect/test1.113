@@ -73,7 +73,7 @@ if {$matches < $needed_nodes} {
 
 set nodes 0
 set timeout $max_job_delay
-set srun_pid [spawn $srun -p $partition -N1-2 --use-min-nodes -n$ncpus --ntasks-per-thread=1--cpu-bind=thread $bin_printenv SLURM_NNODES]
+set srun_pid [spawn $srun -p $partition -N1-2 --use-min-nodes -n$ncpus $bin_printenv SLURM_NNODES]
 expect {
 	-re "($number)" {
 		set nodes $expect_out(1,string)

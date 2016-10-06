@@ -73,7 +73,7 @@ if {$matches < $needed_nodes} {
 
 set job_id 0
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -p $partition -N1-2 --use-min-nodes -n$ncpus --hint=nomultithread $bin_printenv SLURM_NNODES]
+set salloc_pid [spawn $salloc -p $partition -N1-2 --use-min-nodes -n$ncpus $bin_printenv SLURM_NNODES]
 #set salloc_pid [spawn $salloc -p $partition -N1-2 -n$ncpus $bin_printenv SLURM_NNODES]
 expect {
 	-re "Granted job allocation ($number)" {
