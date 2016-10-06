@@ -6,6 +6,81 @@
 
 <h2>Presentations</h2>
 
+<!--Slurm User Group Meeting 2016-->
+<li><b>Presentations from Slurm User Group Meeting, September 2016</b></li>
+<ul>
+
+<!--- <li>Welcome: <a href="SLUG16/welcome.pdf">SLUG 2016 Welcome</a>,
+Nikos Nikoloutsakos, GRNET</li> --->
+
+<li>Keynote: <a href="SLUG16/Cournia-SLURM2016.pdf">Computer-aided drug design for novel anti-cancer agents</a>,
+Dr. Zoe Cournia (Biomedical Research Foundation, Academy of Athens)</li>
+
+<li>Technical: <a href="SLUG16/V16.05.pdf">Overview of Slurm Version 16.05</a>,
+Danny Auble (SchedMD), Yiannis Georgiou (Bull)</li>
+
+<li>Technical: <a href="SLUG16/MCS.pdf">MCS (Multi-Category Security) Plugin</a>,
+Aline Roy, CEA</li>
+
+<li>Technical: <a href="SLUG16/NERSC_BB.pdf">Slurm Burst Buffer Integration</a>,
+David Paul, NERSC</li>
+
+<li>Technical: <a href="SLUG16/ciemat-benchmarking.pdf">Slurm Configuration Impact on Benchmarking</a>,
+Jos&eacute; Mor&iacute;&ntilde;igo, Manuel Rodr&iacute;guez-Pascual, and Rafael Mayo-Garc&iacute;a, CIEMAT</li>
+
+<li>Technical: <a href="SLUG16/monitoring_influxdb_slug.pdf">Real-time monitoring Slurm jobs with InfluxDB</a>,
+Carlos Fenoy Garc&iacute;a</li>
+
+<li>Technical: <a href="SLUG16/hpc_job_monitoring.pdf">Optimising HPC resource allocation through monitoring</a>,
+Alexandre Beche, EPFL</li>
+
+<li>Technical: <a href="SLUG16/slug16_simunix.pdf">Simunix, a large scale platform simulator</a>,
+David Glesser and Adrien Faure, Bull AtoS</li>
+
+<li>Site Report: <a href="SLUG16/CSCS-SLUG2016.pdf">Swiss National Supercomputer Centre (CSCS)</a>,
+Nicholas Cardo</li>
+
+<li>Technical: <a href="SLUG16/slug2016_johan_guldmyr.pdf">Configure a Slurm cluster with Ansible</a>,
+Johan Guldmyr, CSC</li>
+
+<li>Technical: <a href="SLUG16/ciemat-cr.pdf">Checkpoint/restart in Slurm: current status and new developments</a>,
+Manuel Rodr&iacute;guez-Pascual, J.A. Mor&iacute;&ntilde;igo, and Rafael Mayo-Garc&iacute;a, CIEMAT</li>
+
+<li>Technical: <a href="SLUG16/KNL.pdf">Intel Knights Landing (KNL)</a>,
+Morris Jette and Tim Wickberg, SchedMD</li>
+
+<li>Technical: <a href="SLUG16/Job_Packs_SUG_2016.pdf">Job Packs - A New Slurm Feature For Enhanced Support of Heterogeneuous Resources</a>,
+Andry Razafinjatovo, Martin Perry, and Yiannis Georgiou (Bull AtoS), Matthieu Hautreux (CEA)</li>
+
+<li>Technical: <a href="SLUG16/slug16_powercap.pdf">Improving system utilization under strict power budget using the layouts</a>,
+Dineshkumar Rajagopal, Yiannis Georgiou, and David Glesser, Bull AtoS</li>
+
+<li>Technical: <a href="SLUG16/slug_power_hdeem.pdf">High definition power and energy monitoring support</a>,
+Thomas Cadeau and Yiannis Georgiou, Bull AtoS</li>
+
+<li>Technical: <a href="SLUG16/FederatedScheduling.pdf">Federated Cluster Scheduling</a>,
+Dominik Bartkiewicz and Brian Christiansen, SchedMD</li>
+
+<li>Technical: <a href="SLUG16/Roadmap.pdf">Slurm Roadmap - SchedMD</a>,
+Danny Auble, SchedMD</li>
+
+<li>Technical: <a href="SLUG16/BullRoadmap.pdf">Slurm Roadmap - Bull</a>,
+Yiannis Georgiou and Andry Razafinjatovo, Bull AtoS</li>
+
+<li>Site Report: <a href="SLUG16/EDF.pdf">Electricit&eacute; de France(EDF)</a>,
+C&eacute;cile Yoshikawa</li>
+
+<li>Site Report: <a href="SLUG16/LRZ.pdf">Leibniz-Rechenzentrum (LRZ)</a>,
+Juan Pancorbo Armada</li>
+
+<li>Site Report: <a href="SLUG16/NERSC.pdf">NERSC Site Report - One Year Of Slurm</a>,
+Douglas Jacobsen</li>
+
+<li>Site Report: <a href="SLUG16/GRNET.pdf">Experience using Slurm on ARIS HPC System</a>,
+Nikos Nikoloutsakos, GRNET</li>
+
+</li>
+
 <!--SC15 Slurm Booth + BOF-->
 <li><b>Presentations from Slurm Booth and Birds of a Feather, SC15, November 2015</b></li>
 <ul>
@@ -699,6 +774,6 @@ Danny Auble of LLNL about Slurm.</p>
 Learning Chef: Compute Cluter with Slurm</a>
 A Slurm Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 9 December 2015</p>
+<p style="text-align:center;">Last modified 6 October 2016</p>
 
 <!--#include virtual="footer.txt"-->
