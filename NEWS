@@ -21,6 +21,8 @@ documents those changes that are of interest to users and administrators.
     function to fix some bugs updating a node's features using the node update
     RPC.
  -- Testsuite - Added srun/salloc/sbatch tests with --use-min-nodes option.
+ -- Fix typo when an error occurs when discovering pmix version on
+    configure.
 
 * Changes in Slurm 16.05.5
 ==========================

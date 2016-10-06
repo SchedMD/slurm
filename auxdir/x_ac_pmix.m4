@@ -64,7 +64,7 @@ AC_DEFUN([X_AC_PMIX],
             CPPFLAGS="$_x_ac_pmix_cppflags_save"
             LIBS="$_x_ac_pmix_libs_save"
 
-            m4_define([err_pmix],[was already found if one of the previous paths])
+            m4_define([err_pmix],[was already found in one of the previous paths])
 
             if [test "$_x_ac_pmix_version" = "1"]; then
               if [test "$_x_ac_pmix_v1_found" = "1" ]; then
