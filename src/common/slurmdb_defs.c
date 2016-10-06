@@ -3052,14 +3052,14 @@ extern int slurmdb_get_first_avail_cluster(job_desc_msg_t *req,
 	while ((working_cluster_rec = list_next(itr))) {
 
 		/* only try one cluster from each federation */
-		if (working_cluster_rec->fed.name &&
+		if (working_cluster_rec->fed.id &&
 		    list_find_first(tried_feds, _find_char_in_list,
 				    working_cluster_rec->fed.name))
 			continue;
 
 		if ((local_cluster = _job_will_run(req))) {
 			list_append(ret_list, local_cluster);
-			if (working_cluster_rec->fed.name)
+			if (working_cluster_rec->fed.id)
 				list_append(tried_feds,
 					    working_cluster_rec->fed.name);
 		} else {
