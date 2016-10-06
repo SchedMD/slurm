@@ -79,6 +79,10 @@ AC_DEFUN([X_AC_PMIX],
               else
                 PMIX_V1_LDFLAGS="-L$x_ac_cv_pmix_libdir"
               fi
+	      # We don't want to search the other lib after we found it in
+	      # one place or we might report a false duplicate if lib64 is a
+	      # symlink of lib.
+	      break
             fi
 
             if [test "$_x_ac_pmix_version" = "2"]; then
@@ -93,6 +97,10 @@ AC_DEFUN([X_AC_PMIX],
               else
                 PMIX_V2_LDFLAGS="-L$x_ac_cv_pmix_libdir"
               fi
+	      # We don't want to search the other lib after we found it in
+	      # one place or we might report a false duplicate if lib64 is a
+	      # symlink of lib.
+	      break
             fi
           done
         done
