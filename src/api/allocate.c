@@ -379,51 +379,6 @@ int slurm_job_will_run2 (job_desc_msg_t *req,
 }
 
 /*
- * slurm_job_will_run2_addr - determine if a job would execute immediately if
- * 	submitted now
- * INT addr - prebuilt slurm_addr_t
- * IN job_desc_msg - description of resource allocation request
- * OUT will_run_resp - job run time data
- * 	free using slurm_free_will_run_response_msg()
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
- */
-int slurm_job_will_run2_addr(slurm_addr_t *addr, job_desc_msg_t *req,
-			     will_run_response_msg_t **will_run_resp)
-{
-	slurm_msg_t req_msg, resp_msg;
-	int rc;
-	/* req.immediate = true;    implicit */
-
-	slurm_msg_t_init(&req_msg);
-	req_msg.msg_type = REQUEST_JOB_WILL_RUN;
-	req_msg.data     = req;
-	int fd = -1;
-
-	if ((fd = slurm_open_msg_conn(addr)) < 0)
-		return SLURM_SOCKET_ERROR;
-
-	rc = slurm_send_recv_msg(fd, &req_msg, &resp_msg, 0);
-	slurm_close(fd);
-	if (rc < 0)
-		return SLURM_SOCKET_ERROR;
-
-	switch (resp_msg.msg_type) {
-	case RESPONSE_SLURM_RC:
-		if (_handle_rc_msg(&resp_msg) < 0)
-			return SLURM_PROTOCOL_ERROR;
-		break;
-	case RESPONSE_JOB_WILL_RUN:
-		*will_run_resp = (will_run_response_msg_t *) resp_msg.data;
-		break;
-	default:
-		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
-		break;
-	}
-
-	return SLURM_PROTOCOL_SUCCESS;
-}
-
-/*
  * slurm_job_step_create - create a job step for a given job id
  * IN slurm_step_alloc_req_msg - description of job step request
  * OUT slurm_step_alloc_resp_msg - response to request
