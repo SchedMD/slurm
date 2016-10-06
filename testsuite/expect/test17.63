@@ -87,7 +87,7 @@ make_bash_script $file_in "
 
 set cwd "[$bin_pwd]"
 make_bash_script $file_script "
-  $sbatch -p $partition -N1-2 --use-min-nodes -n$ncpus --hint=nomultithread --output=$file_out --error=$file_err $cwd/$file_in
+  $sbatch -p $partition -N1-2 --use-min-nodes -n$ncpus --output=$file_out --error=$file_err $cwd/$file_in
   exit 0
 "
 

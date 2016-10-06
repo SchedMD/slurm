@@ -232,6 +232,8 @@ typedef struct numa_cfg2 {
 	char *numa_cfg;
 } numa_cfg2_t;
 
+static void _check_node_disabled(void);
+static void _check_node_status(void);
 static s_p_hashtbl_t *_config_make_tbl(char *filename);
 static void _free_script_argv(char **script_argv);
 static mcdram_cap_t *_json_parse_mcdram_cap_array(json_object *jobj, char *key,
@@ -1751,7 +1753,7 @@ extern int node_features_p_reconfig(void)
 	return SLURM_SUCCESS;
 }
 
-/* Put any node NOT found by "capmc node_status" into DRAIN state */
+/* Put any nodes NOT found by "capmc node_status" into DRAIN state */
 static void _check_node_status(void)
 {
 	json_object *j_obj;
@@ -1861,6 +1863,33 @@ static void _check_node_status(void)
 	}
 }
 
+/* Put any disabled nodes into DRAIN state */
+static void _check_node_disabled(void)
+{
+/* FIXME: To be added
+ *
+ * STEP 0 (for testing), disable/enable nodes:
+ * > xtcli disable ${TARGET_NODE}
+ * > xtcli enable ${TARGET_NODE}
+ *
+ * STEP 1: Identify disabled compute nodes
+ * > xtshow --compute --disabled
+ * L1s ...
+ * L0s ...
+ * Nodes ...
+ * c0-0c0s7n0:    -|  disabled  [noflags|]
+ * SeaStars ...
+ * Links ...
+ * c1-0c2s1s1l1:    -|  disabled  [noflags|]
+ *
+ * STEP 2: Map cname to nid name
+ * > rtr -Im ${TARGET_BLADE}
+ *
+ * STEP 3: Drain the disabled compute nodes
+ * See logic in _check_node_status() above.
+ */
+}
+
 /* Update only the current MCDRAM and NUMA mode for identified nodes */
 static int _update_current_mode(char *node_list)
 {
@@ -1930,7 +1959,8 @@ extern int node_features_p_get_node(char *node_list)
 	}
 	slurm_mutex_unlock(&config_mutex);
 
-	_check_node_status();	/* Flag nodes not found by capmc */
+	_check_node_status();	/* Drain nodes not found by capmc */
+	_check_node_disabled();	/* Drain disabled nodes */
 
 	if (mcdram_per_node && node_list &&	/* Selected node updated and */
 	    (mcdram_pct[0] != -1))		/* have needd global info */

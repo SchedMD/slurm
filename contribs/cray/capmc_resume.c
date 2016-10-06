@@ -416,7 +416,9 @@ static int _update_all_nodes(char *host_list)
 			}
 			error("%s: capmc(%s,%s,%s): %d %s", prog_name,
 			      argv[1], argv[2], argv[3], status, resp_msg);
-			if (resp_msg && strstr(resp_msg, "Could not lookup") &&
+			if (resp_msg &&
+			    (strstr(resp_msg, "Could not lookup") ||
+			     strstr(resp_msg, "Internal server error")) &&
 			    (retry <= capmc_retries)) {
 				/* State Manager is down. Sleep and retry */
 				sleep(1);
