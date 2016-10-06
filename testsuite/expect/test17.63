@@ -43,6 +43,7 @@ set ncpus ""
 
 print_header $test_id
 
+log_user 0
 spawn $sinfo -N -h -p $partition -t idle -o "%c"
 expect {
 	-re "($number)" {
@@ -62,6 +63,7 @@ expect {
 		wait
 	}
 }
+log_user 1
 
 if {$matches < $needed_nodes} {
 	send_user "\nWARNING: $needed_nodes idle nodes required in partition $partition, only $matches found.\n"
@@ -107,7 +109,7 @@ expect {
 
 if { $job_id == 0 } {
 	send_user "\nFAILURE: failed to submit job\n"
-	set exit_code 1
+	exit 1
 }
 
 #
@@ -115,11 +117,6 @@ if { $job_id == 0 } {
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
 	send_user "\nFAILURE: waiting for job to complete\n"
-	set exit_code 1
-}
-
-if {$job_id == 0} {
-	send_user "\nFAILURE: job submit failure\n"
 	set exit_code 1
 }
 
@@ -147,9 +144,8 @@ if {[file exist $file_out]} {
 	set exit_code 1
 }
 
-exec $bin_rm -f $file_in $file_script $file_out $file_err
-
 if {$exit_code == 0} {
+	exec $bin_rm -f $file_in $file_script $file_out $file_err
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
