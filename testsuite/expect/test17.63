@@ -1,0 +1,155 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test of --use-min-nodes option.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2016 SchedMD LLC.
+# Written by Alejandro Sanchez <alex@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "17.63"
+set file_in     "test$test_id.input"
+set file_script "test$test_id.bash"
+set file_out    "test$test_id.output"
+set file_err    "test$test_id.error"
+set exit_code   0
+set needed_nodes 2
+set partition [default_partition]
+set matches 0
+set ncpus ""
+
+print_header $test_id
+
+spawn $sinfo -N -h -p $partition -t idle -o "%c"
+expect {
+	-re "($number)" {
+		incr matches
+		if {$ncpus eq ""} {
+			set ncpus $expect_out(1,string)
+		} elseif {$expect_out(1,string) < $ncpus} {
+			set ncpus $expect_out(1,string)
+		}
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sinfo not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches < $needed_nodes} {
+	send_user "\nWARNING: $needed_nodes idle nodes required in partition $partition, only $matches found.\n"
+	exit 0
+}
+
+#
+# Delete left-over stdin/out/err files
+# Build stdin file
+#
+exec $bin_rm -f $file_in $file_script $file_out $file_err
+make_bash_script $file_in "
+  $bin_printenv SLURM_NNODES
+  exit 0
+"
+
+set cwd "[$bin_pwd]"
+make_bash_script $file_script "
+  $sbatch -p $partition -N1-2 --use-min-nodes -n$ncpus --output=$file_out --error=$file_err $cwd/$file_in
+  exit 0
+"
+
+#
+# Spawn a sbatch command to verify that the default output file is
+# created and contain the correct contents
+#
+set job_id 0
+spawn ./$file_script
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+
+if { $job_id == 0 } {
+	send_user "\nFAILURE: failed to submit job\n"
+	set exit_code 1
+}
+
+#
+# Wait for job to complete
+#
+if {[wait_for_job $job_id "DONE"] != 0} {
+	send_user "\nFAILURE: waiting for job to complete\n"
+	set exit_code 1
+}
+
+if {$job_id == 0} {
+	send_user "\nFAILURE: job submit failure\n"
+	set exit_code 1
+}
+
+#
+# Check for desired output
+#
+set nodes 0
+if {[file exist $file_out]} {
+	spawn $bin_cat $file_out
+	expect {
+		-re "($number)" {
+			set nodes $expect_out(1,string)
+			if {$nodes != 1} {
+				send_user "\nFAILURE: expected 1 allocated node\n"
+				set exit_code 1
+			}
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+} else {
+	send_user "\nFAILURE: job didn't produce the expected $file_out output file\n"
+	set exit_code 1
+}
+
+exec $bin_rm -f $file_in $file_script $file_out $file_err
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
