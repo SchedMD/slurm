@@ -47,7 +47,6 @@ extern int fed_mgr_fini();
 extern int fed_mgr_update_feds(slurmdb_update_object_t *update);
 extern int fed_mgr_state_save(char *state_save_location);
 extern slurmdb_federation_rec_t *fed_mgr_state_load(char *state_save_location);
-extern char *fed_mgr_find_sibling_name_by_ip(char *ip);
 extern bool fed_mgr_is_active();
 extern uint32_t fed_mgr_get_job_id(uint32_t orig);
 extern uint32_t fed_mgr_get_local_id(uint32_t id);

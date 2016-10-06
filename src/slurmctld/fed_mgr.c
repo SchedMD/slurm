@@ -944,17 +944,6 @@ unpack_error:
 	return NULL;
 }
 
-extern int _find_sibling_by_ip(void *x, void *key)
-{
-	slurmdb_cluster_rec_t *object = (slurmdb_cluster_rec_t *)x;
-	char *ip = (char *)key;
-
-	if (!xstrcmp(object->control_host, ip))
-		return 1;
-
-	return 0;
-}
-
 extern int _find_sibling_by_id(void *x, void *key)
 {
 	slurmdb_cluster_rec_t *object = (slurmdb_cluster_rec_t *)x;
@@ -964,23 +953,6 @@ extern int _find_sibling_by_id(void *x, void *key)
 		return 1;
 
 	return 0;
-}
-
-extern char *fed_mgr_find_sibling_name_by_ip(char *ip)
-{
-	char *name = NULL;
-	slurmdb_cluster_rec_t *sibling = NULL;
-	slurmctld_lock_t fed_read_lock = {
-		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
-
-	lock_slurmctld(fed_read_lock);
-	if (fed_mgr_fed_rec && fed_mgr_fed_rec->cluster_list &&
-	    (sibling = list_find_first(fed_mgr_fed_rec->cluster_list,
-				       _find_sibling_by_ip, ip)))
-		name = xstrdup(sibling->name);
-	unlock_slurmctld(fed_read_lock);
-
-	return name;
 }
 
 /*
