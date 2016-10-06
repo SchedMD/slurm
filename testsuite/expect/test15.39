@@ -39,6 +39,11 @@ set ncpus ""
 
 print_header $test_id
 
+if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
+	send_user "\nWARNING: This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE\n"
+	exit 0
+}
+
 log_user 0
 spawn $sinfo -N -h -p $partition -t idle -o "%c"
 expect {
@@ -68,7 +73,7 @@ if {$matches < $needed_nodes} {
 
 set job_id 0
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -p $partition -N1-2 --use-min-nodes -n$ncpus $bin_printenv SLURM_NNODES]
+set salloc_pid [spawn $salloc -p $partition -N1-2 --use-min-nodes -n$ncpus --hint=nomultithread $bin_printenv SLURM_NNODES]
 #set salloc_pid [spawn $salloc -p $partition -N1-2 -n$ncpus $bin_printenv SLURM_NNODES]
 expect {
 	-re "Granted job allocation ($number)" {

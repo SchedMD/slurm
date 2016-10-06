@@ -43,6 +43,11 @@ set ncpus ""
 
 print_header $test_id
 
+if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
+	send_user "\nWARNING: This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE\n"
+	exit 0
+}
+
 log_user 0
 spawn $sinfo -N -h -p $partition -t idle -o "%c"
 expect {
@@ -82,7 +87,7 @@ make_bash_script $file_in "
 
 set cwd "[$bin_pwd]"
 make_bash_script $file_script "
-  $sbatch -p $partition -N1-2 --use-min-nodes -n$ncpus --output=$file_out --error=$file_err $cwd/$file_in
+  $sbatch -p $partition -N1-2 --use-min-nodes -n$ncpus --hint=nomultithread --output=$file_out --error=$file_err $cwd/$file_in
   exit 0
 "
 
