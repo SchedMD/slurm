@@ -701,6 +701,8 @@ static void _help(void)
 /*	printf("      --ctld                      send request directly to slurmctld\n"); */
 	printf("  -f, --full                      signal batch shell and all steps for specified job\n");
 	printf("  -i, --interactive               require response from user for each job\n");
+	printf("  -M, --clusters                  clusters to issue commands to.\n");
+	printf("                                  NOTE: SlurmDBD must be up.\n");
 	printf("  -n, --name=job_name             act only on jobs with this name\n");
 	printf("  -p, --partition=partition       act only on jobs in this partition\n");
 	printf("  -Q, --quiet                     disable warnings\n");

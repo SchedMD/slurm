@@ -489,6 +489,7 @@ Usage: sprio [OPTIONS]\n\
   -M, --cluster=cluster_name      cluster to issue commands to.  Default is\n\
                                   current cluster.  cluster with no name will\n\
                                   reset to default.\n\
+                                  NOTE: SlurmDBD must be up.\n\
   -n, --norm                      display normalized values\n\
   -o, --format=format             format specification\n\
   -u, --user=user_name            comma separated list of users to view\n\

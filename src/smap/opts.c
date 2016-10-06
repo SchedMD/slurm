@@ -335,6 +335,7 @@ Usage: smap [OPTIONS]\n\
   -M, --cluster=cluster_name cluster to issue commands to.  Default is\n\
                              current cluster.  cluster with no name will\n\
                              reset to default.\n\
+                             NOTE: SlurmDBD must be up.\n\
   -n, --nodes=[nodes]        only show objects with these nodes.\n\
                              If querying to the ionode level use the -I\n\
                              option in conjunction with this option.\n\

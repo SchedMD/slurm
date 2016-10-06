@@ -1917,6 +1917,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      -h or --help: equivalent to \"help\" command                          \n\
      --hide: equivalent to \"hide\" command                                \n\
      -M or --cluster: equivalent to \"cluster\" command                    \n\
+             NOTE: SlurmDBD must be up.                                    \n\
      -o or --oneliner: equivalent to \"oneliner\" command                  \n\
      -Q or --quiet: equivalent to \"quiet\" command                        \n\
      -v or --verbose: equivalent to \"verbose\" command                    \n\
@@ -1934,6 +1935,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      cluster                  cluster to issue commands to.  Default is    \n\
 			      current cluster.  cluster with no name will  \n\
 			      reset to default.                            \n\
+                              NOTE: SlurmDBD must be up.                   \n\
      checkpoint <CH_OP><ID>   perform a checkpoint operation on identified \n\
 			      job or job step \n\
      completing               display jobs in completing state along with  \n\
