@@ -3008,6 +3008,12 @@ static int _find_char_in_list(void *name, void *key)
 	return 0;
 }
 
+/* Return the cluster with the fastest start_time.
+ *
+ * Note: The will_runs are not threaded. Currently it relies on the
+ * working_cluster_rec to pack the job_desc's jobinfo. See previous commit for
+ * an example of how to thread this.
+ */
 extern int slurmdb_get_first_avail_cluster(job_desc_msg_t *req,
 	char *cluster_names, slurmdb_cluster_rec_t **cluster_rec)
 {
