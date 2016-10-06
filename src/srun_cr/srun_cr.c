@@ -299,7 +299,7 @@ fork_exec_srun(void)
 		 * remove srun from the foreground process group,
 		 * or Ctrl-C will cause SIGINT duplicated
 		 */
-		setpgrp();
+		setpgid(0, 0);
 
 		update_env("SLURM_SRUN_CR_SOCKET", cr_sock_addr);
 

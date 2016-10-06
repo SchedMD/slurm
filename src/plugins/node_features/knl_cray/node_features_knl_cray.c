@@ -1140,7 +1140,7 @@ static char *_run_script(char *cmd_path, char **script_argv, int *status)
 			if ((i != STDERR_FILENO) && (i != STDOUT_FILENO))
 				close(i);
 		}
-		setpgrp(0, 0);
+		setpgid(0, 0);
 		execv(cmd_path, script_argv);
 		error("%s: execv(%s): %m", __func__, cmd_path);
 		exit(127);

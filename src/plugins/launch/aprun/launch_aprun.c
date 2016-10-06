@@ -733,7 +733,7 @@ extern int launch_p_step_launch(
 		*/
 		rc = 0;
 	} else {
-		setpgrp();
+		setpgid(0, 0);
 		_unblock_signals();
 		/* dup stdio onto our open fds */
 		if ((dup2(cio_fds->input.fd, 0) == -1) ||
