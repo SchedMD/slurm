@@ -110,6 +110,7 @@ documents those changes that are of interest to users and administrators.
  -- node_features plugin - Add "mode" argument to node_features_p_node_xlate()
     function to fix some bugs updating a node's features using the node update
     RPC.
+ -- Testsuite - Added srun/salloc/sbatch tests with --use-min-nodes option.
 
 * Changes in Slurm 16.05.5
 ==========================

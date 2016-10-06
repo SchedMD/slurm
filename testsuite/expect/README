@@ -220,6 +220,7 @@ test1.109  Test of --deadline and --begin option and --time_min too long
 test1.110  Test of --deadline and --begin option and --time_min OK
 test1.111  Test of --deadline and --begin option and time to be changed
 test1.112  Test of --deadline and --begin option and time not changed
+test1.113  Test of --use-min-nodes option.
 
 test2.#    Testing of scontrol options (to be run as unprivileged user).
 ========================================================================
@@ -522,6 +523,7 @@ test15.35  Test of --deadline option and time_min and time too long
 test15.36  Test of --deadline option and --begin option too late
 test15.37  Test of --deadline and --begin option and --time_min too long
 test15.38  Test of --deadline and --begin option and --time_min OK
+test15.39  Test of --use-min-nodes option.
 
 test16.#   Testing of sattach options.
 ======================================
@@ -605,6 +607,7 @@ test17.59  Test of --deadline option and --begin option too late
 test17.60  Test of --deadline and --begin option and --time_min too long
 test17.61  Test of --deadline and --begin option and --time_min OK
 test17.62  Test for #BSUB batch script entry
+test17.63  Test of --use-min-nodes option.
 
 
 test19.#   Testing of strigger options.
