@@ -124,7 +124,6 @@ EXTRA_DIST = \
 	test1.96			\
 	test1.96.prog.c			\
 	test1.97			\
-	test1.98			\
 	test1.99			\
 	test1.100			\
 	test1.101			\
