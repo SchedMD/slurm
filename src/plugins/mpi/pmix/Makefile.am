@@ -57,8 +57,8 @@ $(pmix_internal_libs): force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
 install-exec-hook:
-	rm -rf $(pkglibdir)/mpi_pmix.so
-	$(LN_S) ./$(mpi_pmix_so)  $(pkglibdir)/mpi_pmix.so
+	rm -rf $(DESTDIR)$(pkglibdir)/mpi_pmix.so
+	$(LN_S) ./$(mpi_pmix_so)  $(DESTDIR)$(pkglibdir)/mpi_pmix.so
 
 uninstall-hook:
-	rm -rf $(pkglibdir)/mpi_pmix.so
+	rm -rf $(DESTDIR)$(pkglibdir)/mpi_pmix.so

@@ -20466,7 +20466,7 @@ rm -f conftest.err conftest.i conftest.$ac_ext
             if test "$_x_ac_pmix_version" = "1"; then
               if test "$_x_ac_pmix_v1_found" = "1" ; then
 
-                as_fn_error $? "error processing $x_ac_cv_pmix_libdir: PMIx v1.x was already found if one of the previous paths" "$LINENO" 5
+                as_fn_error $? "error processing $x_ac_cv_pmix_libdir: PMIx v1.x was already found in one of the previous paths" "$LINENO" 5
               fi
 
               _x_ac_pmix_v1_found="1"
@@ -20476,12 +20476,16 @@ rm -f conftest.err conftest.i conftest.$ac_ext
               else
                 PMIX_V1_LDFLAGS="-L$x_ac_cv_pmix_libdir"
               fi
+	      # We don't want to search the other lib after we found it in
+	      # one place or we might report a false duplicate if lib64 is a
+	      # symlink of lib.
+	      break
             fi
 
             if test "$_x_ac_pmix_version" = "2"; then
               if test "$_x_ac_pmix_v2_found" = "1" ; then
 
-                as_fn_error $? "error processing $x_ac_cv_pmix_libdir: PMIx v2.x was already found if one of the previous paths" "$LINENO" 5
+                as_fn_error $? "error processing $x_ac_cv_pmix_libdir: PMIx v2.x was already found in one of the previous paths" "$LINENO" 5
               fi
               _x_ac_pmix_v2_found="1"
               PMIX_V2_CPPFLAGS="-I$x_ac_cv_pmix_dir/include"
@@ -20490,6 +20494,10 @@ rm -f conftest.err conftest.i conftest.$ac_ext
               else
                 PMIX_V2_LDFLAGS="-L$x_ac_cv_pmix_libdir"
               fi
+	      # We don't want to search the other lib after we found it in
+	      # one place or we might report a false duplicate if lib64 is a
+	      # symlink of lib.
+	      break
             fi
           done
         done

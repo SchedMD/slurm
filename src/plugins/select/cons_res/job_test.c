@@ -1696,6 +1696,7 @@ static int _eval_nodes_busy(struct job_record *job_ptr, bitstr_t *node_map,
 			total_cpus += avail_cpus;
 			rem_cpus   -= avail_cpus;
 			rem_nodes--;
+			min_rem_nodes--;
 			max_nodes--;
 			if ((max_nodes <= 0) ||
 			    ((rem_cpus <= 0) && (rem_nodes <= 0)))
@@ -1714,6 +1715,7 @@ static int _eval_nodes_busy(struct job_record *job_ptr, bitstr_t *node_map,
 			total_cpus += avail_cpus;
 			rem_cpus   -= avail_cpus;
 			rem_nodes--;
+			min_rem_nodes--;
 			max_nodes--;
 			if ((max_nodes <= 0) ||
 			    ((rem_cpus <= 0) && (rem_nodes <= 0)))
