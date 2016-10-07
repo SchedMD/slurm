@@ -101,7 +101,7 @@ typedef struct allocation_info {
 	uint32_t                stepid;
 } allocation_info_t;
 
-static int shepard_fd = -1;
+static int shepherd_fd = -1;
 static pthread_t signal_thread = (pthread_t) 0;
 static int pty_sigarray[] = { SIGWINCH, 0 };
 
@@ -127,8 +127,8 @@ static void  _set_prio_process_env(void);
 static int _set_rlimit_env(void);
 static void _set_submit_dir_env(void);
 static int _set_umask_env(void);
-static void _shepard_notify(int shepard_fd);
-static int _shepard_spawn(srun_job_t *job, bool got_alloc);
+static void _shepherd_notify(int shepherd_fd);
+static int _shepherd_spawn(srun_job_t *job, bool got_alloc);
 static void *_srun_signal_mgr(void *no_data);
 static void _step_opt_exclusive(void);
 static int _validate_relative(resource_allocation_response_msg_t *resp);
@@ -648,7 +648,7 @@ extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
 		 * Spawn process to insure clean-up of job and/or step
 		 * on abnormal termination
 		 */
-		shepard_fd = _shepard_spawn(job, *got_alloc);
+		shepherd_fd = _shepherd_spawn(job, *got_alloc);
 	}
 
 	*p_job = job;
@@ -696,7 +696,7 @@ extern void fini_srun(srun_job_t *job, bool got_alloc, uint32_t *global_rc,
 		else
 			slurm_complete_job(job->jobid, *global_rc);
 	}
-	_shepard_notify(shepard_fd);
+	_shepherd_notify(shepherd_fd);
 
 cleanup:
 	if (signal_thread) {
@@ -1339,47 +1339,47 @@ static int _set_umask_env(void)
 	return SLURM_SUCCESS;
 }
 
-static void _shepard_notify(int shepard_fd)
+static void _shepherd_notify(int shepherd_fd)
 {
 	int rc;
 
 	while (1) {
-		rc = write(shepard_fd, "", 1);
+		rc = write(shepherd_fd, "", 1);
 		if (rc == -1) {
 			if ((errno == EAGAIN) || (errno == EINTR))
 				continue;
-			error("write(shepard): %m");
+			error("write(shepherd): %m");
 		}
 		break;
 	}
-	close(shepard_fd);
+	close(shepherd_fd);
 }
 
-static int _shepard_spawn(srun_job_t *job, bool got_alloc)
+static int _shepherd_spawn(srun_job_t *job, bool got_alloc)
 {
-	int shepard_pipe[2], rc;
-	pid_t shepard_pid;
+	int shepherd_pipe[2], rc;
+	pid_t shepherd_pid;
 	char buf[1];
 
-	if (pipe(shepard_pipe)) {
+	if (pipe(shepherd_pipe)) {
 		error("pipe: %m");
 		return -1;
 	}
 
-	shepard_pid = fork();
-	if (shepard_pid == -1) {
+	shepherd_pid = fork();
+	if (shepherd_pid == -1) {
 		error("fork: %m");
 		return -1;
 	}
-	if (shepard_pid != 0) {
-		close(shepard_pipe[0]);
-		return shepard_pipe[1];
+	if (shepherd_pid != 0) {
+		close(shepherd_pipe[0]);
+		return shepherd_pipe[1];
 	}
 
 	/* Wait for parent to notify of completion or I/O error on abort */
-	close(shepard_pipe[1]);
+	close(shepherd_pipe[1]);
 	while (1) {
-		rc = read(shepard_pipe[0], buf, 1);
+		rc = read(shepherd_pipe[0], buf, 1);
 		if (rc == 1) {
 			exit(0);
 		} else if (rc == 0) {
@@ -1490,6 +1490,6 @@ static int _validate_relative(resource_allocation_response_msg_t *resp)
 
 static void _call_spank_fini(void)
 {
-	if (-1 != shepard_fd)
+	if (-1 != shepherd_fd)
 		spank_fini(NULL);
 }
