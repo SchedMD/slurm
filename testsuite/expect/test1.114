@@ -31,10 +31,56 @@
 source ./globals
 
 set test_id     "1.114"
-set cpu_cnt     0
 set node_cnt    0
 set exit_code   0
 set partition [default_partition]
+
+proc run_spread_job { task_cnt } {
+	global max_job_delay srun scontrol bin_printenv number exit_code
+
+	set timeout $max_job_delay
+	set job_id 0
+	set srun_pid [spawn $srun -n $task_cnt --spread-job $bin_printenv SLURM_JOB_ID]
+	expect {
+		-re "($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: srun not responding\n"
+			slow_kill $sun_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$job_id == 0} {
+		send_user "\nFAILURE: srun job ID not found\n"
+		exit 1
+	}
+
+	set timeout 10
+	set num_nodes 0
+	spawn $scontrol show job $job_id
+	expect {
+		-re "NumNodes=($number)" {
+			set num_nodes $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$num_nodes != $task_cnt} {
+		send_user "\nFAILURE: Invalid node count for job $job_id ($num_nodes != $task_cnt)\n"
+		set exit_code 1
+	}
+}
 
 print_header $test_id
 
@@ -48,10 +94,6 @@ spawn $sinfo -h -p $partition -t idle -o "NODES=%D CPUS=%c"
 expect {
 	-re "NODES=($number)" {
 		set node_cnt $expect_out(1,string)
-		exp_continue
-	}
-	-re "CPUS=($number)" {
-		set cpu_cnt $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
@@ -69,52 +111,18 @@ if {$node_cnt < 2} {
 	exit 0
 }
 
-if {$cpu_cnt < 2} {
-	send_user "\nWARNING: Insufficient CPUs for test in partition $partition ($cpu_cnt < 2)\n"
-	exit 0
+if {$node_cnt > 8} {
+	set max_task_cnt 8
+} else {
+	set max_task_cnt $node_cnt
 }
 
-set timeout $max_job_delay
-set job_id 0
-set srun_pid [spawn $srun -p $partition -n2 --spread-job $bin_printenv SLURM_JOB_ID]
-expect {
-	-re "($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
+for {set inx 2} {$inx < $max_task_cnt} {incr inx 2} {
+	run_spread_job $inx
+	if {$exit_code != 0} {
+		break
 	}
-	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $sun_pid
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id == 0} {
-	send_user "\nFAILURE: srun job ID not found\n"
-	exit 1
-}
-
-set timeout 10
-set num_nodes 0
-spawn $scontrol show job $job_id
-expect {
-	-re "NumNodes=($number)" {
-		set num_nodes $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if {$num_nodes != 2} {
-	send_user "\nFAILURE: Invalid node count for job $job_id ($num_nodes != 2)\n"
-	set exit_code 1
+	sleep 1
 }
 
 if {$exit_code == 0} {
