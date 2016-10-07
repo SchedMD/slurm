@@ -116,6 +116,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix configuring pmix support when you have your lib dir symlinked to lib64.
  -- Fix waiting reason if a job is waiting for a specific limit instead of
     always just AccountingPolicy.
+ -  Correct SchedulerParameters=bf_busy_nodes logic with respect to the job's
+    minimum node count. Previous logic would not decremement counter in some
+    locations and reject valid job request for not reaching minimum node count.
 
 * Changes in Slurm 16.05.5
 ==========================
