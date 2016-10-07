@@ -221,6 +221,7 @@ test1.110  Test of --deadline and --begin option and --time_min OK
 test1.111  Test of --deadline and --begin option and time to be changed
 test1.112  Test of --deadline and --begin option and time not changed
 test1.113  Test of --use-min-nodes option.
+test1.114  Test of srun --spread-job option.
 
 test2.#    Testing of scontrol options (to be run as unprivileged user).
 ========================================================================
