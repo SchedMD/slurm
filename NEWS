@@ -29,6 +29,7 @@ documents those changes that are of interest to users and administrators.
  -- Correct SchedulerParameters=bf_busy_nodes logic with respect to the job's
     minimum node count. Previous logic would not decremement counter in some
     locations and reject valid job request for not reaching minimum node count.
+ -- Fix FreeBSD-11 build by using llabs() function in place of abs().
 
 * Changes in Slurm 16.05.5
 ==========================

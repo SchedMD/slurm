@@ -836,7 +836,7 @@ scontrol_update_job (int argc, char *argv[])
 		else if (strncasecmp(tag, "Nice", MAX(taglen, 2)) == 0) {
 			long long tmp_nice;
 			tmp_nice = strtoll(val, (char **)NULL, 10);
-			if (abs(tmp_nice) > (NICE_OFFSET - 3)) {
+			if (llabs(tmp_nice) > (NICE_OFFSET - 3)) {
 				error("Nice value out of range (+/- %u). Value "
 				      "ignored", NICE_OFFSET - 3);
 				exit_code = 1;

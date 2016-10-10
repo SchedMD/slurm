@@ -1620,7 +1620,7 @@ static void _set_options(int argc, char **argv)
 				tmp_nice = strtoll(optarg, NULL, 10);
 			else
 				tmp_nice = 100;
-			if (abs(tmp_nice) > (NICE_OFFSET - 3)) {
+			if (llabs(tmp_nice) > (NICE_OFFSET - 3)) {
 				error("Nice value out of range (+/- %u). Value "
 				      "ignored", NICE_OFFSET - 3);
 				tmp_nice = 0;
@@ -2146,7 +2146,7 @@ static void _set_pbs_options(int argc, char **argv)
 				tmp_nice = strtoll(optarg, NULL, 10);
 			else
 				tmp_nice = 100;
-			if (abs(tmp_nice) > (NICE_OFFSET - 3)) {
+			if (llabs(tmp_nice) > (NICE_OFFSET - 3)) {
 				error("Nice value out of range (+/- %u). Value "
 				      "ignored", NICE_OFFSET - 3);
 				tmp_nice = 0;
@@ -2466,7 +2466,7 @@ static void _parse_pbs_resource_list(char *rl)
 				tmp_nice = strtoll(temp, NULL, 10);
 			else
 				tmp_nice = 100;
-			if (abs(tmp_nice) > (NICE_OFFSET - 3)) {
+			if (llabs(tmp_nice) > (NICE_OFFSET - 3)) {
 				error("Nice value out of range (+/- %u). Value "
 				      "ignored", NICE_OFFSET - 3);
 				tmp_nice = 0;
