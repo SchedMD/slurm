@@ -292,6 +292,11 @@ proc allocate_and_quit { node proc_cnt total_procs } {
 
 print_header $test_id
 
+if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
+	send_user "\nWARNING: This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE\n"
+	exit 0
+}
+
 # find the default partition
 set def_part [default_partition]
 
