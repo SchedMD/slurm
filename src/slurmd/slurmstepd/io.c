@@ -1042,7 +1042,8 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 		    (xstrcmp(task->ofname, "/dev/null") == 0))) {
 #else
 	if (task->ofname != NULL &&
-	    (!job->labelio || xstrcmp(task->ofname, "/dev/null")==0) ) {
+	    (((job->flags & LAUNCH_LABEL_IO) == 0) ||
+	     xstrcmp(task->ofname, "/dev/null") == 0)) {
 #endif
 		int count = 0;
 		/* open file on task's stdout */
