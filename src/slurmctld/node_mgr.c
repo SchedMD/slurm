@@ -2406,8 +2406,8 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 			_split_node_config(node_ptr, reg_msg);
 		}
 	}
-	if (reg_msg->boards < reg_msg->sockets) {
-		error("Node %s has fewer boards than sockets (%u < %u), setting board count to 1",
+	if (reg_msg->boards > reg_msg->sockets) {
+		error("Node %s has more boards than sockets (%u > %u), setting board count to 1",
 		      reg_msg->node_name, reg_msg->boards, reg_msg->sockets);
 		reg_msg->boards = 1;
 	}
