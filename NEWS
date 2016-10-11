@@ -35,6 +35,8 @@ documents those changes that are of interest to users and administrators.
     SelectTypeParameters=other_cons_res as equivalent to select/cons_res.
  -- If a node's socket or core count are changed at registration time (e.g. a
     KNL node's NUMA mode is changed), change it's board count to match.
+ -- Prevent possible divide by zero in select/cons_res if a node's board count
+    is higher than it's socket count.
 
 * Changes in Slurm 16.05.5
 ==========================

@@ -445,7 +445,15 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 		}
 
 		/* Count available cores on each socket and board */
-		sock_per_brd = nsockets_nb / nboards_nb;
+		if (nsockets_nb >= nboards_nb) {
+			sock_per_brd = nsockets_nb / nboards_nb;
+		} else {
+			error("Node socket count lower than board count "
+			      "(%u < %u), job %u node %s",
+			      nsockets_nb, nboards_nb, job_ptr->job_id,
+			      node_record_table_ptr[n].name);
+			sock_per_brd = 1;
+		}
 		for (b = 0; b < nboards_nb; b++) {
 			boards_core_cnt[b] = 0;
 			sort_brds_core_cnt[b] = 0;
