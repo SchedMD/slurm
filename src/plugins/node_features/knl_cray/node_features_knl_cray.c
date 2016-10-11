@@ -173,6 +173,12 @@ static char *syscfg_path = NULL;
 static pthread_mutex_t config_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool reconfig = false;
 
+static pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
+static char *node_list_queue = NULL;
+static time_t node_time_queue = (time_t) 0;
+static time_t shutdown_time = (time_t) 0;
+static pthread_t queue_thread = 0;
+
 /* Percentage of MCDRAM used for cache by type, updated from capmc */
 static int mcdram_pct[KNL_MCDRAM_CNT];
 static int mcdram_set = 0;
@@ -275,6 +281,8 @@ static void _numa_cfg2_free(numa_cfg2_t *numa_cfg, int numa_cfg2_cnt);
 static void _numa_cfg_log(numa_cfg_t *numa_cfg, int numa_cfg_cnt);
 static void _numa_cfg2_log(numa_cfg2_t *numa_cfg, int numa_cfg2_cnt);
 static uint64_t _parse_size(char *size_str);
+extern void *_queue_agent(void *args);
+static int  _queue_node_update(char *node_list);
 static char *_run_script(char *cmd_path, char **script_argv, int *status);
 static void _strip_knl_opts(char **features);
 static int  _tot_wait (struct timeval *start_time);
@@ -283,16 +291,13 @@ static void _update_all_node_features(
 				mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt,
 				numa_cap_t *numa_cap, int numa_cap_cnt,
 				numa_cfg_t *numa_cfg, int numa_cfg_cnt);
-static int  _update_current_mode(char *node_list);
 static void _update_mcdram_pct(char *tok, int mcdram_num);
 static void _update_node_features(struct node_record *node_ptr,
 				  mcdram_cap_t *mcdram_cap, int mcdram_cap_cnt,
 				  mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt,
 				  numa_cap_t *numa_cap, int numa_cap_cnt,
 				  numa_cfg_t *numa_cfg, int numa_cfg_cnt);
-static void _update_node_features2(struct node_record *node_ptr,
-				   mcdram_cfg2_t *mcdram_cfg, int mcdram_cfg_cnt,
-				   numa_cfg2_t *numa_cfg, int numa_cfg_cnt);
+static int _update_node_state(char *node_list, bool set_locks);
 
 /* Function used both internally and externally */
 extern int node_features_p_node_update(char *active_features,
@@ -1503,74 +1508,6 @@ static void _update_node_features(struct node_record *node_ptr,
 	FREE_NULL_BITMAP(node_bitmap);
 }
 
-/* Update a specific node's features_act field based upon
- * its current configuration provided by capmc */
-static void _update_node_features2(struct node_record *node_ptr,
-				   mcdram_cfg2_t *mcdram_cfg2,
-				   int mcdram_cfg_cnt,
-				   numa_cfg2_t *numa_cfg2, int numa_cfg_cnt)
-{
-	int i, nid, node_idx;
-	char *end_ptr = "";
-	bitstr_t *node_bitmap = NULL;
-	uint64_t mcdram_size;
-
-	xassert(node_ptr);
-	node_idx = node_ptr - node_record_table_ptr;
-	if (!knl_node_bitmap || !bit_test(knl_node_bitmap, node_idx))
-		return;		/* Not KNL node */
-
-	nid = strtol(node_ptr->name + 3, &end_ptr, 10);
-	if ((end_ptr[0] != '\0') || (nid < 0) || (nid >= 100000)) {
-		error("%s: Invalid node name (%s)", __func__, node_ptr->name);
-		return;
-	}
-
-	_strip_knl_opts(&node_ptr->features_act);
-
-	if (mcdram_cfg2) {
-		for (i = 0; i < mcdram_cfg_cnt; i++) {
-			if (!mcdram_cfg2[i].node_bitmap ||
-			    !bit_test(mcdram_cfg2[i].node_bitmap, nid))
-				continue;
-			_merge_strings(&node_ptr->features_act,
-				       mcdram_cfg2[i].mcdram_cfg,
-				       allow_mcdram);
-			if (!mcdram_per_node)
-				break;
-			mcdram_size = mcdram_per_node[node_idx] *
-				      (100 - mcdram_cfg2[i].cache_pct) / 100;
-			if (!node_ptr->gres) {
-				node_ptr->gres =
-					xstrdup(node_ptr->config_ptr->gres);
-			}
-			gres_plugin_node_feature(node_ptr->name, "hbm",
-						 mcdram_size, &node_ptr->gres,
-						 &node_ptr->gres_list);
-			break;
-		}
-	}
-
-	if (numa_cfg2) {
-		for (i = 0; i < numa_cfg_cnt; i++) {
-			if (!numa_cfg2[i].node_bitmap ||
-			    !bit_test(numa_cfg2[i].node_bitmap, nid))
-				continue;
-			_merge_strings(&node_ptr->features_act,
-				       numa_cfg2[i].numa_cfg, allow_numa);
-			break;
-		}
-	}
-
-	/* Update bitmaps and lists used by slurmctld for scheduling */
-	node_bitmap = bit_alloc(node_record_count);
-	bit_set(node_bitmap, node_idx);
-	update_feature_list(active_feature_list, node_ptr->features_act,
-			    node_bitmap);
-	(void) node_features_p_node_update(node_ptr->features_act, node_bitmap);
-	FREE_NULL_BITMAP(node_bitmap);
-}
-
 static void _make_uid_array(char *uid_str)
 {
 	char *save_ptr = NULL, *tmp_str, *tok;
@@ -1729,6 +1666,16 @@ extern int init(void)
 	}
 	gres_plugin_add("hbm");
 
+	slurm_mutex_lock(&queue_mutex);
+	if (queue_thread == 0) {
+		pthread_attr_t attr;
+		slurm_attr_init(&attr);
+		/* since we do a join on this later we don't make it detached */
+		if (pthread_create(&queue_thread, &attr, _queue_agent, NULL))
+			fatal("Unable to start %s thread: %m", plugin_type);
+	}
+	slurm_mutex_unlock(&queue_mutex);
+
 	return SLURM_SUCCESS;
 }
 
@@ -1745,6 +1692,15 @@ extern int fini(void)
 	xfree(syscfg_path);
 	FREE_NULL_BITMAP(capmc_node_bitmap);
 	FREE_NULL_BITMAP(knl_node_bitmap);
+
+	shutdown_time = time(NULL);
+	pthread_join(queue_thread, NULL);
+	slurm_mutex_lock(&queue_mutex);
+	xfree(node_list_queue);	/* just drop requessts */
+	shutdown_time = (time_t) 0;
+	queue_thread = 0;
+	slurm_mutex_unlock(&queue_mutex);
+
 	return SLURM_SUCCESS;
 }
 
@@ -1894,50 +1850,60 @@ static void _check_node_disabled(void)
  */
 }
 
-/* Update only the current MCDRAM and NUMA mode for identified nodes */
-static int _update_current_mode(char *node_list)
+/* Periodically update node information for specified nodes. We can't do this
+ * work in real-time since capmc takes multiple seconds to execute. */
+extern void *_queue_agent(void *args)
 {
-	mcdram_cfg2_t *mcdram_cfg2 = NULL;
-	numa_cfg2_t *numa_cfg2 = NULL;
-	int mcdram_cfg2_cnt = 0, numa_cfg2_cnt = 0, rc = 0;
-	struct node_record *node_ptr;
-	hostlist_t host_list;
-	char *node_name;
+	char *node_list;
 
-	mcdram_cfg2 = _load_current_mcdram(&mcdram_cfg2_cnt);
-	numa_cfg2   = _load_current_numa(&numa_cfg2_cnt);
+	while (shutdown_time == 0) {
+		sleep(1);
+		if (shutdown_time)
+			break;
 
-	if (debug_flag) {
-		_mcdram_cfg2_log(mcdram_cfg2, mcdram_cfg2_cnt);
-		_numa_cfg2_log(numa_cfg2, numa_cfg2_cnt);
-	}
-
-	if ((host_list = hostlist_create(node_list)) == NULL) {
-		error ("hostlist_create error on %s: %m", node_list);
-		rc = SLURM_ERROR;
-		goto fini;
-	}
-	while ((node_name = hostlist_shift(host_list))) {
-		node_ptr = find_node_record(node_name);
-		if (node_ptr) {
-			_update_node_features2(node_ptr,
-					       mcdram_cfg2, mcdram_cfg2_cnt,
-					       numa_cfg2, numa_cfg2_cnt);
+		if (node_list_queue &&
+		    (difftime(time(NULL), node_time_queue) >= 30)) {
+			slurm_mutex_lock(&queue_mutex);
+			node_list = node_list_queue;
+			node_list_queue = NULL;
+			node_time_queue = (time_t) 0;
+			slurm_mutex_unlock(&queue_mutex);
+			(void) _update_node_state(node_list, true);
 		}
-		free(node_name);
 	}
-	hostlist_destroy (host_list);
-	last_node_update = time(NULL);
 
-fini:	_mcdram_cfg2_free(mcdram_cfg2, mcdram_cfg2_cnt);
-	_numa_cfg2_free(numa_cfg2, numa_cfg2_cnt);
-
-	return rc;
+	return NULL;
 }
 
-/* Update active and available features on specified nodes,
- * sets features on all nodes if node_list is NULL */
+/* Queue request to update node information */
+static int _queue_node_update(char *node_list)
+{
+	slurm_mutex_lock(&queue_mutex);
+	if (node_time_queue == 0)
+		node_time_queue = time(NULL);
+	if (node_list_queue)
+		xstrcat(node_list_queue, ",");
+	xstrcat(node_list_queue, node_list);
+	slurm_mutex_unlock(&queue_mutex);
+
+	return SLURM_SUCCESS;
+}
+
+/* Update active and available features on specified nodes.
+ * If node_list is NULL then update ALL nodes now.
+ * If node_list is not NULL, then queue a request to update select nodes later.
+ */
 extern int node_features_p_get_node(char *node_list)
+{
+	if (node_list &&		/* Selected node to be update */
+	    mcdram_per_node &&		/* and needed global info is */
+	    (mcdram_pct[0] != -1))	/* already available */
+		return _queue_node_update(node_list);
+
+	return _update_node_state(node_list, false);
+}
+
+static int _update_node_state(char *node_list, bool set_locks)
 {
 	json_object *j;
 	json_object_iter iter;
@@ -1965,10 +1931,6 @@ extern int node_features_p_get_node(char *node_list)
 
 	_check_node_status();	/* Drain nodes not found by capmc */
 	_check_node_disabled();	/* Drain disabled nodes */
-
-	if (mcdram_per_node && node_list &&	/* Selected node updated and */
-	    (mcdram_pct[0] != -1))		/* have needd global info */
-		return _update_current_mode(node_list);
 
 	if (!mcdram_per_node)
 		mcdram_per_node = xmalloc(sizeof(uint64_t) * node_record_count);
@@ -2254,10 +2216,18 @@ extern int node_features_p_get_node(char *node_list)
 
 	START_TIMER;
 	if (node_list) {
+		/* Write nodes */
+		slurmctld_lock_t write_nodes_lock = {
+			NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK};
+
 		if ((host_list = hostlist_create(node_list)) == NULL) {
 			error ("hostlist_create error on %s: %m", node_list);
 			goto fini;
 		}
+		hostlist_uniq(host_list);
+
+		if (set_locks)
+			lock_slurmctld(write_nodes_lock);
 		while ((node_name = hostlist_shift(host_list))) {
 			node_ptr = find_node_record(node_name);
 			if (node_ptr) {
@@ -2269,7 +2239,9 @@ extern int node_features_p_get_node(char *node_list)
 			}
 			free(node_name);
 		}
-		hostlist_destroy (host_list);
+		if (set_locks)
+			unlock_slurmctld(write_nodes_lock);
+		hostlist_destroy(host_list);
 	} else {
 		for (i = 0, node_ptr = node_record_table_ptr;
 		     i < node_record_count; i++, node_ptr++) {
