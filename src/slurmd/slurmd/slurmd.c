@@ -805,10 +805,10 @@ _read_config(void)
 	char *path_pubkey = NULL;
 	slurm_ctl_conf_t *cf = NULL;
 	int cc;
-
 #ifndef HAVE_FRONT_END
 	bool cr_flag = false, gang_flag = false;
 #endif
+
 	slurm_mutex_lock(&conf->config_mutex);
 	cf = slurm_conf_lock();
 
@@ -835,6 +835,10 @@ _read_config(void)
 #ifndef HAVE_FRONT_END
 	if (!xstrcmp(cf->select_type, "select/cons_res"))
 		cr_flag = true;
+	if (!xstrcmp(cf->select_type, "select/cray") &&
+	    (cf->select_type_param & CR_OTHER_CONS_RES))
+		cr_flag = true;
+
 	if (cf->preempt_mode & PREEMPT_MODE_GANG)
 		gang_flag = true;
 #endif

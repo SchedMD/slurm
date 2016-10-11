@@ -2398,6 +2398,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 			      reg_msg->node_name, sockets1, cores1, threads1,
 			      sockets2, cores2, threads2);
 			/* Preserve configured values */
+			reg_msg->boards  = config_ptr->boards;
 			reg_msg->sockets = config_ptr->sockets;
 			reg_msg->cores   = config_ptr->cores;
 			reg_msg->threads = config_ptr->threads;
@@ -2427,6 +2428,11 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 		     (config_ptr->sockets * config_ptr->cores))) {
 			_split_node_config(node_ptr, reg_msg);
 		}
+	}
+	if (reg_msg->boards > reg_msg->sockets) {
+		error("Node %s has more boards than sockets (%u > %u), setting board count to 1",
+		      reg_msg->node_name, reg_msg->boards, reg_msg->sockets);
+		reg_msg->boards = 1;
 	}
 
 	/* reset partition and node config (in that order) */
