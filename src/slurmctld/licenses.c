@@ -150,7 +150,7 @@ static List _build_license_list(char *licenses, bool *valid)
 				num = (uint32_t)strtol(&token[i], &end_num,10);
 			}
 		}
-		if (num <= 0) {
+		if (num < 0) {
 			*valid = false;
 			break;
 		}

@@ -37,6 +37,7 @@ documents those changes that are of interest to users and administrators.
     KNL node's NUMA mode is changed), change it's board count to match.
  -- Prevent possible divide by zero in select/cons_res if a node's board count
     is higher than it's socket count.
+ -- Allow an advanced reservation to contain a license count of zero.
 
 * Changes in Slurm 16.05.5
 ==========================
