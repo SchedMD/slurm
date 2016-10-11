@@ -33,6 +33,8 @@ documents those changes that are of interest to users and administrators.
  -- Cray: The slurmd can manipulate the socket/core/thread values reported based
     upon the configuration. The logic failed to consider select/cray with
     SelectTypeParameters=other_cons_res as equivalent to select/cons_res.
+ -- If a node's socket or core count are changed at registration time (e.g. a
+    KNL node's NUMA mode is changed), change it's board count to match.
 
 * Changes in Slurm 16.05.5
 ==========================
