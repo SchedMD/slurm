@@ -810,7 +810,6 @@ _read_config(void)
 	char *path_pubkey = NULL;
 	slurm_ctl_conf_t *cf = NULL;
 	int cc;
-
 #ifndef HAVE_FRONT_END
 	bool cr_flag = false, gang_flag = false;
 #endif
@@ -842,7 +841,6 @@ _read_config(void)
 	if (!xstrcmp(cf->select_type, "select/cons_res"))
 		cr_flag = true;
 	if (!xstrcmp(cf->select_type, "select/cray") &&
-            cf->select_type_param &&
 	    (cf->select_type_param & CR_OTHER_CONS_RES))
 		cr_flag = true;
 
