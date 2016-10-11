@@ -30,6 +30,9 @@ documents those changes that are of interest to users and administrators.
     minimum node count. Previous logic would not decremement counter in some
     locations and reject valid job request for not reaching minimum node count.
  -- Fix FreeBSD-11 build by using llabs() function in place of abs().
+ -- Cray: The slurmd can manipulate the socket/core/thread values reported based
+    upon the configuration. The logic failed to consider select/cray with
+    SelectTypeParameters=other_cons_res as equivalent to select/cons_res.
 
 * Changes in Slurm 16.05.5
 ==========================

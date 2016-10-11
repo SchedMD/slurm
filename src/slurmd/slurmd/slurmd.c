@@ -840,6 +840,11 @@ _read_config(void)
 #ifndef HAVE_FRONT_END
 	if (!xstrcmp(cf->select_type, "select/cons_res"))
 		cr_flag = true;
+	if (!xstrcmp(cf->select_type, "select/cray") &&
+            cf->select_type_param &&
+	    strstr(cf->select_type_param, "other_cons_res"))
+		cr_flag = true;
+
 	if (cf->preempt_mode & PREEMPT_MODE_GANG)
 		gang_flag = true;
 #endif
