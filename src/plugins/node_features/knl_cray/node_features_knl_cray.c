@@ -1725,83 +1725,78 @@ static void _check_node_status(void)
 	struct node_record *node_ptr;
 	DEF_TIMERS;
 
-	if (!capmc_node_bitmap) {
-		script_argv = xmalloc(sizeof(char *) * 4); /* NULL terminated */
-		script_argv[0] = xstrdup("capmc");
-		script_argv[1] = xstrdup("node_status");
-		for (retry = 0; ; retry++) {
-			START_TIMER;
-			resp_msg = _run_script(capmc_path, script_argv, &status);
-			END_TIMER;
-			if (debug_flag) {
-				info("%s: node_status ran for %s",
-				     __func__, TIME_STR);
-			}
-			_log_script_argv(script_argv, resp_msg);
-			if (WIFEXITED(status) && (WEXITSTATUS(status) == 0))
-				break;	/* Success */
-			error("%s: node_status status:%u response:%s",
-			      __func__, status, resp_msg);
-			if (resp_msg == NULL) {
-				info("%s: node_status returned no information",
-				     __func__);
-				_free_script_argv(script_argv);
-				return;
-			}
-			if (strstr(resp_msg, "Could not lookup") &&
-			    (retry <= capmc_retries)) {
-				/* State Manager is down. Sleep and retry */
-				sleep(1);
-				xfree(resp_msg);
-			} else {
-				xfree(resp_msg);
-				_free_script_argv(script_argv);
-				return;
-			}
-		}
-		_free_script_argv(script_argv);
-
-		j_obj = json_tokener_parse(resp_msg);
-		if (j_obj == NULL) {
-			error("%s: json parser failed on %s", __func__,
-			      resp_msg);
-			xfree(resp_msg);
+	script_argv = xmalloc(sizeof(char *) * 4); /* NULL terminated */
+	script_argv[0] = xstrdup("capmc");
+	script_argv[1] = xstrdup("node_status");
+	for (retry = 0; ; retry++) {
+		START_TIMER;
+		resp_msg = _run_script(capmc_path, script_argv, &status);
+		END_TIMER;
+		if (debug_flag)
+			info("%s: node_status ran for %s", __func__, TIME_STR);
+		_log_script_argv(script_argv, resp_msg);
+		if (WIFEXITED(status) && (WEXITSTATUS(status) == 0))
+			break;	/* Success */
+		error("%s: node_status status:%u response:%s",
+		      __func__, status, resp_msg);
+		if (resp_msg == NULL) {
+			info("%s: node_status returned no information",
+			     __func__);
+			_free_script_argv(script_argv);
 			return;
 		}
+		if (strstr(resp_msg, "Could not lookup") &&
+		    (retry <= capmc_retries)) {
+			/* State Manager is down. Sleep and retry */
+			sleep(1);
+			xfree(resp_msg);
+		} else {
+			xfree(resp_msg);
+			_free_script_argv(script_argv);
+			return;
+		}
+	}
+	_free_script_argv(script_argv);
 
-		capmc_node_bitmap = bit_alloc(100000);
-		json_object_object_foreachC(j_obj, iter) {
-			/* NOTE: The error number "e" and message "err_msg"
-			 * fields are currently ignored. */
-			if (!xstrcmp(iter.key, "e") ||
-			    !xstrcmp(iter.key, "err_msg"))
-				continue;
-			if (json_object_get_type(iter.val) != json_type_array)
-				continue;
-			json_object_object_get_ex(j_obj, iter.key, &j_array);
-			if (!j_array) {
+	j_obj = json_tokener_parse(resp_msg);
+	if (j_obj == NULL) {
+		error("%s: json parser failed on %s", __func__, resp_msg);
+		xfree(resp_msg);
+		return;
+	}
+
+	FREE_NULL_BITMAP(capmc_node_bitmap);
+	capmc_node_bitmap = bit_alloc(100000);
+	json_object_object_foreachC(j_obj, iter) {
+		/* NOTE: The error number "e" and message "err_msg"
+		 * fields are currently ignored. */
+		if (!xstrcmp(iter.key, "e") ||
+		    !xstrcmp(iter.key, "err_msg"))
+			continue;
+		if (json_object_get_type(iter.val) != json_type_array)
+			continue;
+		json_object_object_get_ex(j_obj, iter.key, &j_array);
+		if (!j_array) {
+			error("%s: Unable to parse nid specification",
+			      __func__);
+			FREE_NULL_BITMAP(capmc_node_bitmap);
+			return;
+		}
+		num_ent = json_object_array_length(j_array);
+		for (i = 0; i < num_ent; i++) {
+			j_value = json_object_array_get_idx(j_array, i);
+			if (json_object_get_type(j_value) !=
+			    json_type_int) {
 				error("%s: Unable to parse nid specification",
 				      __func__);
-				FREE_NULL_BITMAP(capmc_node_bitmap);
-				return;
-			}
-			num_ent = json_object_array_length(j_array);
-			for (i = 0; i < num_ent; i++) {
-				j_value = json_object_array_get_idx(j_array, i);
-				if (json_object_get_type(j_value) !=
-				    json_type_int) {
-					error("%s: Unable to parse nid specification",
-					      __func__);
-				} else {
-					nid = json_object_get_int64(j_value);
-					if ((nid >= 0) && (nid < 100000))
-						bit_set(capmc_node_bitmap, nid);
-				}
-
+			} else {
+				nid = json_object_get_int64(j_value);
+				if ((nid >= 0) && (nid < 100000))
+					bit_set(capmc_node_bitmap, nid);
 			}
 		}
-		json_object_put(j_obj);	/* Frees json memory */
 	}
+	json_object_put(j_obj);	/* Frees json memory */
 
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
