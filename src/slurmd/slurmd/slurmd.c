@@ -814,6 +814,7 @@ _read_config(void)
 #ifndef HAVE_FRONT_END
 	bool cr_flag = false, gang_flag = false;
 #endif
+
 	slurm_mutex_lock(&conf->config_mutex);
 	cf = slurm_conf_lock();
 
@@ -842,7 +843,7 @@ _read_config(void)
 		cr_flag = true;
 	if (!xstrcmp(cf->select_type, "select/cray") &&
             cf->select_type_param &&
-	    strstr(cf->select_type_param, "other_cons_res"))
+	    (cf->select_type_param & CR_OTHER_CONS_RES))
 		cr_flag = true;
 
 	if (cf->preempt_mode & PREEMPT_MODE_GANG)
