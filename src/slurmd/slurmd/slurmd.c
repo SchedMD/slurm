@@ -1296,8 +1296,9 @@ _print_config(void)
 	int days, hours, mins, secs;
 	char name[128];
 
-	_read_config();
-	printf("ClusterName=%s ", conf->cluster_name);
+	if (conf->cluster_name)
+		printf("ClusterName=%s ", conf->cluster_name);
+
 	gethostname_short(name, sizeof(name));
 	printf("NodeName=%s ", name);
 
