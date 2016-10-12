@@ -3493,9 +3493,11 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 							     a submitted sib
 							     job. */
 	    fed_mgr_is_active()) {
+		_throttle_start(&active_rpc_cnt);
 		error_code = fed_mgr_job_allocate(msg, job_desc_msg, uid,
 						  msg->protocol_version,
 						  &job_ptr, &err_msg);
+		_throttle_fini(&active_rpc_cnt);
 
 	} else if (error_code == SLURM_SUCCESS) {
 		_throttle_start(&active_rpc_cnt);
