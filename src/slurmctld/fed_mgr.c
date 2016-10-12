@@ -1611,8 +1611,8 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 
 		lock_slurmctld(job_write_lock);
 		if (!job_desc->fed_siblings) {
-			/* we know that we are already have a job_ptr so just
-			 * make it a scheduleable job. */
+			/* we know that we already have a job_ptr so just make
+			 * it a scheduleable job. */
 			error("Failed to submit fed job to siblings, submitting to local cluster");
 			job_desc->fed_siblings |=
 				FED_SIBLING_BIT(fed_mgr_cluster_rec->fed.id);
