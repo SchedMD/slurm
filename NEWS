@@ -46,6 +46,7 @@ documents those changes that are of interest to users and administrators.
     multi-node job in which the non-KNL node features vary by node.
  -- task/affinity plugin: Honor a job's --ntasks-per-socket and
     --ntasks-per-core options in task binding.
+ -- slurmd - do not print ClusterName when using 'slurmd -C'.
 
 * Changes in Slurm 16.05.5
 ==========================
