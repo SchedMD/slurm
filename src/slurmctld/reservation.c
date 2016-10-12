@@ -4982,6 +4982,14 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			    (start_relative >= job_end_time) ||
 			    (end_relative   <= job_start_time))
 				continue;
+
+			if (resv_ptr->flags & RESERVE_FLAG_ALL_NODES) {
+				rc = ESLURM_NODES_BUSY;
+				if (move_time)
+					*when = resv_ptr->end_time;
+				break;
+			}
+
 			if (job_ptr->details->req_node_bitmap &&
 			    bit_overlap(job_ptr->details->req_node_bitmap,
 					resv_ptr->node_bitmap) &&
