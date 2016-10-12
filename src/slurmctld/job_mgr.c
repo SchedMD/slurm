@@ -9892,6 +9892,9 @@ void reset_first_job_id(void)
 
 /*
  * Return the next available job_id to be used.
+ *
+ * Must have job_write lock when grabbing a job_id
+ *
  * IN test_only - if true, doesn't advance the job_id sequence, just returns
  * 	what the next job id will be.
  * RET a valid job_id or SLURM_ERROR if all job_ids are exhausted.
