@@ -80,9 +80,11 @@
 #ifdef USE_64BIT_BITSTR
 typedef int64_t bitstr_t;
 #define BITSTR_SHIFT 		BITSTR_SHIFT_WORD64
+#define BITSTR_MAXVAL           0xffffffffffffffff
 #else
 typedef int32_t bitstr_t;
 #define BITSTR_SHIFT 		BITSTR_SHIFT_WORD32
+#define BITSTR_MAXVAL           0xffffffff
 #endif
 
 typedef bitstr_t bitoff_t;

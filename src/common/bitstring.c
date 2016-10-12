@@ -347,7 +347,7 @@ bit_ffc(bitstr_t *b)
 	while (bit < _bitstr_bits(b) && value == -1) {
 		int32_t word = _bit_word(bit);
 
-		if (b[word] == BITSTR_MAXPOS) {
+		if (b[word] == BITSTR_MAXVAL) {
 			bit += sizeof(bitstr_t)*8;
 			continue;
 		}

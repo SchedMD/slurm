@@ -47,6 +47,7 @@ documents those changes that are of interest to users and administrators.
  -- task/affinity plugin: Honor a job's --ntasks-per-socket and
     --ntasks-per-core options in task binding.
  -- slurmd - do not print ClusterName when using 'slurmd -C'.
+ -- Correct a bitmap test function (used only by the select/bluegene plugin).
 
 * Changes in Slurm 16.05.5
 ==========================
