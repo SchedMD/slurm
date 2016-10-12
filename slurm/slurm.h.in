@@ -1335,6 +1335,12 @@ typedef struct power_mgmt_data {
 } power_mgmt_data_t;
 
 #define CORE_SPEC_THREAD 0x8000	/* If set, this is a thread count not core count */
+
+/*
+ * Update:
+ * _copy_job_desc_to_job_record()
+ * slurm_free_job_desc_msg()
+ */
 typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *account;		/* charge to specified account */
 	char *acctg_freq;	/* accounting polling intervals (seconds) */
