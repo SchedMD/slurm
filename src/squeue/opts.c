@@ -1979,6 +1979,7 @@ Usage: squeue [OPTIONS]\n\
   --noconvert                     don't convert units from their original type\n\
 				  (e.g. 2048M won't be converted to 2G).\n\
   -o, --format=format             format specification\n\
+  -O, --Format=format             format specification\n\
   -p, --partition=partition(s)    comma separated list of partitions\n\
 				  to view, default is all partitions\n\
   -q, --qos=qos(s)                comma separated list of qos's\n\
