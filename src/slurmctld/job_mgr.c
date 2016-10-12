@@ -14217,17 +14217,22 @@ static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
 	 */
 	if (!job_ptr->part_ptr || !job_ptr->details
 	    || !job_ptr->details->requeue) {
+		if (state & JOB_RECONFIG_FAIL)
+			(void) job_fail(job_ptr->job_id, JOB_BOOT_FAIL);
 		return ESLURM_DISABLED;
 	}
+
+	if (job_ptr->batch_flag == 0) {
+		debug("Job-requeue can only be done for batch jobs");
+		if (state & JOB_RECONFIG_FAIL)
+			(void) job_fail(job_ptr->job_id, JOB_BOOT_FAIL);
+		return ESLURM_BATCH_ONLY;
+	}
+
 
 	/* If the job is already pending, just return an error. */
 	if (IS_JOB_PENDING(job_ptr))
 		return ESLURM_JOB_PENDING;
-
-	if (job_ptr->batch_flag == 0) {
-		debug("Job-requeue can only be done for batch jobs");
-		return ESLURM_BATCH_ONLY;
-	}
 
 	slurm_sched_g_requeue(job_ptr, "Job requeued by user/admin");
 	last_job_update = now;
