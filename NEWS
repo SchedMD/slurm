@@ -264,7 +264,6 @@ documents those changes that are of interest to users and administrators.
  -- Always report a 0 exit code for the extern step instead of being canceled
     or failed based on the signal that would always be killing it.
  -- Fix to allow users to update QOS of pending jobs.
- -- Print correct cluster name in "slurmd -C" output.
  -- CRAY - Fix minor memory leak in switch plugin.
  -- CRAY - Change slurmconfgen_smw.py to skip over disabled nodes.
  -- Fix eligible_time for elasticsearch as well as add queue_wait
