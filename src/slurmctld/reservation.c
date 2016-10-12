@@ -5043,6 +5043,9 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			break;
 		/* rc == ESLURM_NODES_BUSY here from above break */
 		if (move_time && (i<10)) {  /* Retry for later start time */
+			job_start_time = *when;
+			job_end_time   = *when + _get_job_duration(job_ptr);
+
 			bit_nset(*node_bitmap, 0, (node_record_count - 1));
 			rc = SLURM_SUCCESS;
 			continue;
