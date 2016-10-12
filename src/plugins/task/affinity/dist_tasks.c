@@ -933,6 +933,7 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 	bitstr_t *avail_map;
 	bitstr_t **masks = NULL;
 	int *socket_last_pu = NULL;
+	int core_inx, pu_per_core, *core_tasks = NULL;
 
 	info ("_task_layout_lllp_cyclic ");
 
@@ -955,6 +956,8 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 		req->cpus_per_task = i;
 	}
 
+	pu_per_core = hw_threads;
+	core_tasks = xmalloc(sizeof(int) * hw_sockets * hw_cores);
 	socket_last_pu = xmalloc(hw_sockets * sizeof(int));
 
 	*masks_p = xmalloc(max_tasks * sizeof(bitstr_t*));
@@ -989,6 +992,9 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 					 */
 					debug("allocation is full, "
 					      "oversubscribing");
+					memset(core_tasks, 0,
+					       (sizeof(int) *
+					        hw_sockets * hw_cores));
 					memset(socket_last_pu, 0,
 					       sizeof(hw_sockets
 						      * sizeof(int)));
@@ -1004,10 +1010,16 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 			socket_last_pu[s]++;
 			/* skip unrequested threads */
 			if (req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)
-				socket_last_pu[s] += hw_threads-1;
+				socket_last_pu[s] += hw_threads - 1;
 
 			if (!bit_test(avail_map, bit))
 				continue;
+
+			core_inx = bit / pu_per_core;
+			if ((req->ntasks_per_core != 0) &&
+			    (core_tasks[core_inx] >= req->ntasks_per_core))
+				continue;
+			core_tasks[core_inx]++;
 
 			if (!masks[taskcount])
 				masks[taskcount] =
@@ -1030,13 +1042,7 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 			if (++p < req->cpus_per_task)
 				continue;
 
-			/* Means we are binding to cores so skip the
-			   rest of the threads in this one.  If a user
-			   requests ntasks-per-core=1 and the
-			   cpu_bind=threads this will not be able to
-			   work since we don't know how many tasks per
-			   core have been allocated.
-			*/
+			/* Binding to cores, skip remaining of the threads */
 			if (!(req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)
 			    && ((req->cpu_bind_type & CPU_BIND_TO_CORES)
 				|| (req->ntasks_per_core == 1))) {
@@ -1067,6 +1073,7 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 	_expand_masks(req->cpu_bind_type, max_tasks, masks,
 		      hw_sockets, hw_cores, hw_threads, avail_map);
 	FREE_NULL_BITMAP(avail_map);
+	xfree(core_tasks);
 	xfree(socket_last_pu);
 
 	return SLURM_SUCCESS;
@@ -1103,6 +1110,7 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 	int max_cpus = max_tasks * req->cpus_per_task;
 	bitstr_t *avail_map;
 	bitstr_t **masks = NULL;
+	int core_inx, pu_per_core, *core_tasks = NULL;
 	int sock_inx, pu_per_socket, *socket_tasks = NULL;
 
 	info("_task_layout_lllp_block ");
@@ -1138,14 +1146,22 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 	*masks_p = xmalloc(max_tasks * sizeof(bitstr_t*));
 	masks = *masks_p;
 
+	pu_per_core = hw_threads;
+	core_tasks = xmalloc(sizeof(int) * hw_sockets * hw_cores);
 	pu_per_socket = hw_cores * hw_threads;
 	socket_tasks = xmalloc(sizeof(int) * hw_sockets);
 
 	/* block distribution with oversubsciption */
 	c = 0;
 	while (taskcount < max_tasks) {
-		if (taskcount == last_taskcount) {
+		if (taskcount == last_taskcount)
 			fatal("_task_layout_lllp_block infinite loop");
+		if (taskcount > 0) {
+			/* Clear counters to over-subscribe, if necessary */
+			memset(core_tasks, 0,
+			       (sizeof(int) * hw_sockets * hw_cores));
+			memset(socket_tasks, 0,
+			       (sizeof(int) * hw_sockets));
 		}
 		last_taskcount = taskcount;
 		/* the abstract map is already laid out in block order,
@@ -1156,10 +1172,15 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 			if (bit_test(avail_map, i) == 0)
 				continue;
 
+			core_inx = i / pu_per_core;
+			if ((req->ntasks_per_core != 0) &&
+			    (core_tasks[core_inx] >= req->ntasks_per_core))
+				continue;
 			sock_inx = i / pu_per_socket;
 			if ((req->ntasks_per_socket != 0) &&
 			    (socket_tasks[sock_inx] >= req->ntasks_per_socket))
 				continue;
+			core_tasks[core_inx]++;
 			socket_tasks[sock_inx]++;
 
 			if (!masks[taskcount])
@@ -1174,13 +1195,7 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 
 			if (++c < req->cpus_per_task)
 				continue;
-			/* Means we are binding to cores so skip the
-			   rest of the threads in this one.  If a user
-			   requests ntasks-per-core=1 and the
-			   cpu_bind=threads this will not be able to
-			   work since we don't know how many tasks per
-			   core have been allocated.
-			*/
+			/* Binding to cores, skip remaining of the threads */
 			if (!(req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)
 			    && ((req->cpu_bind_type & CPU_BIND_TO_CORES)
 				|| (req->ntasks_per_core == 1))) {
@@ -1197,9 +1212,8 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 			if (++taskcount >= max_tasks)
 				break;
 		}
-		for (i = 0; i < hw_sockets; i++)
-			socket_tasks[i] = 0;
 	}
+	xfree(core_tasks);
 	xfree(socket_tasks);
 
 	/* last step: expand the masks to bind each task
