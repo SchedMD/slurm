@@ -402,7 +402,7 @@ proc sprio_args { soption sargs jobid} {
 				set not_support 1
 				exp_continue
 			}
-			-re "JOBID     USER   PRIORITY        AGE  FAIRSHARE    JOBSIZE  PARTITION        QOS   NICE" {
+			-re "JOBID     USER   PRIORITY        AGE  FAIRSHARE    JOBSIZE  PARTITION        QOS        NICE" {
 				if {$debug} {send_user "\nmatch12\n"}
 				incr matches
 				exp_continue
