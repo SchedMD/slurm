@@ -42,6 +42,8 @@ documents those changes that are of interest to users and administrators.
  -- Prevent possible divide by zero in select/cons_res if a node's board count
     is higher than it's socket count.
  -- Allow an advanced reservation to contain a license count of zero.
+ -- Preserve non-KNL node features when updating the KNL node features for a
+    multi-node job in which the non-KNL node features vary by node.
 
 * Changes in Slurm 16.05.5
 ==========================

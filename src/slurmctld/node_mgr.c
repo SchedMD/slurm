@@ -1397,11 +1397,9 @@ int update_node ( update_node_msg_t * update_node_msg )
 				node_features_g_node_xlate(
 					update_node_msg->features_act,
 					node_ptr->features, 2);
-			xfree(update_node_msg->features_act);
-			update_node_msg->features_act =
-				xstrdup(node_ptr->features_act);
-			/* _update_node_active_features() logs and updates
-			 * active_feature_list */
+			error_code = _update_node_active_features(
+						node_ptr->name,
+						node_ptr->features_act);
 		}
 
 		if (update_node_msg->gres) {
@@ -1662,11 +1660,6 @@ int update_node ( update_node_msg_t * update_node_msg )
 	FREE_NULL_HOSTLIST(hostname_list);
 	last_node_update = now;
 
-	if ((error_code == 0) && (update_node_msg->features_act)) {
-		error_code = _update_node_active_features(
-					update_node_msg->node_names,
-					update_node_msg->features_act);
-	}
 	if ((error_code == 0) && (update_node_msg->features)) {
 		error_code = _update_node_avail_features(
 					update_node_msg->node_names,
