@@ -1205,6 +1205,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		}
 
 		slurm_msg_t_init(&response_msg);
+		response_msg.conn = msg->conn;
 		response_msg.flags = msg->flags;
 		response_msg.protocol_version = msg->protocol_version;
 		response_msg.msg_type = RESPONSE_RESOURCE_ALLOCATION;
