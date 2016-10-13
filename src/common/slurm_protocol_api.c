@@ -948,6 +948,24 @@ uint16_t slurm_get_private_data(void)
 	return private_data;
 }
 
+/* slurm_get_resume_program
+ * returns the ResumeProgram from slurmctld_conf object
+ * RET char *    - ResumeProgram, MUST be xfreed by caller
+ */
+char *slurm_get_resume_program(void)
+{
+	char *resume_program = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		resume_program = xstrdup(conf->resume_program);
+		slurm_conf_unlock();
+	}
+	return resume_program;
+}
+
 /* slurm_get_state_save_location
  * get state_save_location from slurmctld_conf object from slurmctld_conf object
  * RET char *   - state_save_location directory, MUST be xfreed by caller
