@@ -620,8 +620,8 @@ extern int init(void)
 		}
 		(void) s_p_get_string(&syscfg_path, "SyscfgPath", tbl);
 		s_p_hashtbl_destroy(tbl);
-	} else {
-		error("something wrong with opening/reading knl_generic.conf");
+	} else if (errno != ENOENT) {
+		error("Error opening/reading knl_generic.conf: %m");
 		rc = SLURM_ERROR;
 	}
 	xfree(knl_conf_file);
