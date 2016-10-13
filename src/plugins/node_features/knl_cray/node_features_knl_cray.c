@@ -2503,7 +2503,7 @@ extern bool node_features_p_node_power(void)
  * NOTE: Not applicable for knl_cray plugin, reconfiguration done by slurmctld
  * IN active_features - New active features
  * RET error code */
-extern int node_features_g_node_set(char *active_features)
+extern int node_features_p_node_set(char *active_features)
 {
 	return SLURM_SUCCESS;
 }
