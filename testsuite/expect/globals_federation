@@ -89,24 +89,28 @@ proc setup_federation { fed_name } {
 	set count 0
 	foreach cluster [list $fedc1 $fedc2 $fedc3] {
 		incr count
-		set my_pid [spawn $sacctmgr -i mod federation $fed_name set cluster+=$cluster]
+		set my_pid [spawn $sacctmgr -i mod cluster $cluster set federation=$fed_name weight=1]
 		set matches 0
 		expect {
 			-re "Setting$eol" {
 				incr matches
 					exp_continue
 			}
-			-re "\\s+Cluster\\s+\\+=\\s+$cluster$eol" {
+			-re "^\\s+Federation\\s+=\\s+$fed_name$eol" {
 				incr matches
-					exp_continue
+				exp_continue
 			}
-			-re "^\\s+Modified federation...$eol" {
+			-re "^\\s+Weight\\s+=\\s+1$eol" {
 				incr matches
-					exp_continue
+				exp_continue
 			}
-			-re "\\s+$fed_name$eol" {
+			-re "Modified cluster...$eol" {
 				incr matches
-					exp_continue
+				exp_continue
+			}
+			-re "^\\s+$cluster$eol" {
+				incr matches
+				exp_continue
 			}
 			timeout {
 				send_user "\nFAILURE: sacctmgr add not responding\n"
@@ -117,8 +121,8 @@ proc setup_federation { fed_name } {
 				wait
 			}
 		}
-		if {!$rc && $matches != 4} {
-			send_user "$matches FAILURE: failed to create federation.\n"
+		if {!$rc && $matches != 5} {
+			send_user "$matches FAILURE: failed to add $cluster to federation.\n"
 			set rc 1
 			break;
 		}
@@ -339,3 +343,90 @@ proc remove_cluster_from_fed {cname fed_name} {
 
 	return $rc
 }
+
+
+proc modify_federation_flags {fed_name mode flags} {
+	global sacctmgr eol
+	set matches 0
+	set my_pid [spawn $sacctmgr -i modify federation $fed_name set flags$mode$flags]
+	expect {
+		-re "Setting$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "^\\s+Flags\\s+\\$mode\\s+$flags$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "^\\s+Modified federation...$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "^\\s+$fed_name$eol" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr add not responding\n"
+			slow_kill $my_pid
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 4} {
+		send_user "$matches FAILURE: unexpected error.\n"
+		end_it 1
+	}
+}
+
+proc modify_cluster_weight {cname weight} {
+	global sacctmgr eol
+	set matches 0
+	set my_pid [spawn $sacctmgr -i mod cluster $cname set weight=$weight]
+	expect {
+		-re "Setting$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "^\\s+Weight\\s+=\\s+$weight$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "Modified cluster...$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "^\\s+$cname$eol" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr add not responding\n"
+			slow_kill $my_pid
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 4} {
+		send_user "$matches FAILURE: failed to set weight for $cname\n"
+		end_it 1
+	}
+}
+
+
+proc log_error {msg} {
+	send_user "\nFAILURE: $msg\n"
+}
+
+proc log_warn {msg} {
+	send_user "\nWARNING:    $msg\n"
+}
+
+proc log_info {msg} {
+	send_user "INFO:    $msg\n"
+}
+
