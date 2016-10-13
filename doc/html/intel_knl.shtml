@@ -148,6 +148,7 @@ man page for more information.</li>
 <li>A mechanism is required to boot nodes in the desired configuration. This
 mechanism must be integrated with existing Slurm infrastructure for
 <a href="sbatch.html">rebooting nodes on user request (--reboot)</a> plus
+<u>(for Cray systems only)</u>
 <a href="power_save.html">power saving</a> (powering down idle nodes and
 restarting them on demand).</li>
 </ol>
@@ -155,9 +156,14 @@ restarting them on demand).</li>
 <p>In addition, there is a DebugFlags option of "NodeFeatures" which will
 generate detailed information about KNL operations.</p>
 
-<p>Note that a node's KNL-specific available and active features are not
-included in the "slurm.conf" configuration file, but are set and the managed
-by the NodeFeatures plugin.
+<p>The KNL-specific available and active features are configured differently
+based upon the plugin configured.<br>
+<u>For the knl_cray plugin</u>, KNL-specific available and active features are
+not included in the "slurm.conf" configuration file, but are set and the managed
+by the NodeFeatures plugin when the slurmctld daemon starts.<br>
+<u>For the knl_generic plugin</u>, KNL-specific features should be defined
+in the "slurm.conf" configuration file. When the slurmd daemon starts on each
+compute node, it will update the available and active features as needed.<br>
 Features which are not KNL-specific (e.g. rack number, "knl", etc.) will be
 copied from the node's "Features" configuration in "slurm.conf" to both the
 available and active feature fields and not modified by the NodeFeatures
@@ -225,7 +231,23 @@ The amount of HBM on each node should not be configured in a Slurm configuration
 file, but that information will be loaded by the knl_cray plugin using
 information provided by the capmc program.</p>
 
-<h3>Sample knl_cray.conf File</h3>
+<h3>Sample slurm.conf file for knl_cray plugin</h3>
+
+<pre>
+# Sample slurm.conf
+NodeFeaturesPlugins=knl_cray
+DebugFlags=NodeFeatures
+GresTypes=hbm
+#
+ResumeProgram=/opt/slurm/default/sbin/capmc_resume
+SuspendTime=30000000
+ResumeTimeout=1800
+...
+Nodename=default Sockets=1 CoresPerSocket=68 ThreadsPerCore=4 RealMemory=128000 Feature=knl
+NodeName=nid[00000-00127] State=UNKNOWN
+</pre>
+
+<h3>Sample knl_cray.conf file</h3>
 
 <pre>
 # Sample knl_cray.conf

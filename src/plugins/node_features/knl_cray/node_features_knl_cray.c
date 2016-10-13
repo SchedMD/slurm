@@ -2498,10 +2498,14 @@ extern bool node_features_p_node_power(void)
 	return true;
 }
 
-/* Return true if the plugin requires RebootProgram for booting nodes */
-extern bool node_features_p_node_reboot(void)
+/* Set's the node's active features based upon job constraints.
+ * NOTE: Executed by the slurmd daemon.
+ * NOTE: Not applicable for knl_cray plugin, reconfiguration done by slurmctld
+ * IN active_features - New active features
+ * RET error code */
+extern int node_features_g_node_set(char *active_features)
 {
-	return false;
+	return SLURM_SUCCESS;
 }
 
 /* Note the active features associated with a set of nodes have been updated.

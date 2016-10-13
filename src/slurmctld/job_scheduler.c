@@ -3636,8 +3636,7 @@ extern int reboot_job_nodes(struct job_record *job_ptr)
 		node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 		node_ptr->node_state |= NODE_STATE_POWER_UP;
 		bit_clear(avail_node_bitmap, i);
-		node_ptr->last_response = now + slurmctld_conf.resume_timeout -
-					  slurmctld_conf.slurmd_timeout;
+		node_ptr->last_response = now + slurmctld_conf.resume_timeout;
 	}
 	FREE_NULL_BITMAP(boot_node_bitmap);
 	agent_queue_request(reboot_agent_args);
