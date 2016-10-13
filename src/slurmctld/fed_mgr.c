@@ -1346,11 +1346,12 @@ static slurmdb_cluster_rec_t *_find_start_now_sib(slurm_msg_t *msg,
 			continue;
 
 		*avail_sibs |= FED_SIBLING_BIT(sib_willrun->sibling->fed.id);
-		if (sib_willrun->resp->start_time <= now &&
-		    (start_now_sib == NULL ||
-		     (sib_willrun->resp->start_time <
-		      start_now_sib->resp->start_time))) {
+
+		/* Pick first sibling that can start the job now. siblings are
+		 * sorted by weight and resources. */
+		if (sib_willrun->resp->start_time <= now) {
 			start_now_sib = sib_willrun;
+			break;
 		}
 	}
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR) {
