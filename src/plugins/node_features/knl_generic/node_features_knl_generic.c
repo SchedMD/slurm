@@ -563,10 +563,10 @@ extern int init(void)
 {
 	char *allow_mcdram_str, *allow_numa_str, *allow_user_str;
 	char *default_mcdram_str, *default_numa_str;
-	char *knl_conf_file, *tmp_str = NULL;
+	char *knl_conf_file, *tmp_str = NULL, *resume_program;
 	s_p_hashtbl_t *tbl;
 	struct stat stat_buf;
-	int i;
+	int i, rc = SLURM_SUCCESS;
 
 	/* Set default values */
 	allow_mcdram = KNL_MCDRAM_FLAG;
@@ -622,10 +622,18 @@ extern int init(void)
 		s_p_hashtbl_destroy(tbl);
 	} else {
 		error("something wrong with opening/reading knl_generic.conf");
+		rc = SLURM_ERROR;
 	}
 	xfree(knl_conf_file);
 	if (!syscfg_path)
-		syscfg_path = xstrdup("/usr/sbin/syscfg");
+		syscfg_path = xstrdup("/usr/bin/syscfg");
+
+	if ((resume_program = slurm_get_resume_program())) {
+		error("Use of ResumeProgram with %s not currently supported",
+		      plugin_name);
+		xfree(resume_program);
+		rc = SLURM_ERROR;
+	}
 
 	if (slurm_get_debug_flags() & DEBUG_FLAG_NODE_FEATURES)
 		debug_flag = true;
@@ -650,7 +658,7 @@ extern int init(void)
 	}
 	gres_plugin_add("hbm");
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /* Release allocated memory */
@@ -1076,7 +1084,7 @@ extern int node_features_p_node_set(char *active_features)
 	}
 
 	/* Clear features, do not pass as argument to reboot program
-	 * (assuming we are calling /usr/sbin/reboot). */
+	 * (assuming we are calling /sbin/reboot). */
 	active_features[0] = '\0';
 
 	return error_code;
