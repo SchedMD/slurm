@@ -183,7 +183,8 @@ _load_job_records (void)
 	/* We need the fill job array string representation for identifying
 	 * and killing job arrays */
 	setenv("SLURM_BITSTR_LEN", "0", 1);
-	error_code = slurm_load_jobs ((time_t) NULL, &job_buffer_ptr, 1);
+	error_code = slurm_load_jobs ((time_t) NULL, &job_buffer_ptr,
+				      (SHOW_ALL | SHOW_FED_TRACK));
 
 	if (error_code) {
 		slurm_perror ("slurm_load_jobs error");
