@@ -48,6 +48,7 @@ documents those changes that are of interest to users and administrators.
     --ntasks-per-core options in task binding.
  -- slurmd - do not print ClusterName when using 'slurmd -C'.
  -- Correct a bitmap test function (used only by the select/bluegene plugin).
+ -- Do not propagate SLURM_UMASK environment variable to batch script.
 
 * Changes in Slurm 16.05.5
 ==========================

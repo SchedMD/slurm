@@ -191,6 +191,9 @@ set_umask(stepd_step_rec_t *job)
 	}
 
 	mask = strtol(val, (char **)NULL, 8);
+	if ((job->stepid == SLURM_EXTERN_CONT) ||
+	    (job->stepid == SLURM_BATCH_SCRIPT))
+		unsetenvp(job->env, "SLURM_UMASK");
 	umask(mask);
 	return SLURM_SUCCESS;
 }
