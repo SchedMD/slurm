@@ -1360,7 +1360,7 @@ static slurmdb_cluster_rec_t *_find_start_now_sib(slurm_msg_t *msg,
 			     start_now_sib->sibling->name,
 			     start_now_sib->resp->start_time, now);
 		else
-			info("No siblings can start the job now");
+			info("No siblings can start the job now (%ld))", now);
 	}
 	list_iterator_destroy(itr);
 
