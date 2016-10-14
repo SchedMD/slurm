@@ -1028,6 +1028,7 @@ extern int node_features_p_node_set(char *active_features)
 		}  else {
 			_log_script_argv(argv, resp_msg);
 		}
+		xfree(resp_msg);
 		xfree(numa_mode);
 	}
 
@@ -1080,6 +1081,7 @@ extern int node_features_p_node_set(char *active_features)
 		} else {
 			_log_script_argv(argv, resp_msg);
 		}
+		xfree(resp_msg);
 		xfree(mcdram_mode);
 	}
 
