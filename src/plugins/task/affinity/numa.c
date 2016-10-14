@@ -101,7 +101,7 @@ static int _str_to_memset(nodemask_t *mask, const char* str)
 
 void slurm_chk_memset(nodemask_t *mask, stepd_step_rec_t *job)
 {
-	char bind_type[42];
+	char bind_type[42], *mode;
 	char action[42];
 	char status[42];
 	char mstr[1 + NUMA_NUM_NODES / 4];
@@ -120,25 +120,29 @@ void slurm_chk_memset(nodemask_t *mask, stepd_step_rec_t *job)
 		strcpy(bind_type, "=NONE");
 	} else {
 		strcpy(action, " set");
+		if (job->mem_bind_type & MEM_BIND_PREFER)
+			mode = " PREFER ";
+		else
+			mode = "=";
 		if (job->mem_bind_type & MEM_BIND_RANK) {
-			strcpy(bind_type, "=RANK");
+			strcpy(bind_type, "RANK");
 		} else if (job->mem_bind_type & MEM_BIND_LOCAL) {
-			strcpy(bind_type, "=LOC ");
+			strcpy(bind_type, "LOC ");
 		} else if (job->mem_bind_type & MEM_BIND_MAP) {
-			strcpy(bind_type, "=MAP ");
+			strcpy(bind_type, "MAP ");
 		} else if (job->mem_bind_type & MEM_BIND_MASK) {
-			strcpy(bind_type, "=MASK");
+			strcpy(bind_type, "MASK");
 		} else if (job->mem_bind_type & (~MEM_BIND_VERBOSE)) {
-			strcpy(bind_type, "=UNK ");
+			strcpy(bind_type, "UNK ");
 		} else {
 			strcpy(action, "");
-			strcpy(bind_type, "=NULL");
+			strcpy(bind_type, "NULL");
 		}
 	}
 
-	fprintf(stderr, "mem_bind%s - "
+	fprintf(stderr, "mem_bind%s%s - "
 			"%s, task %2u %2u [%u]: mask 0x%s%s%s\n",
-			bind_type,
+			mode, bind_type,
 			conf->hostname,
 			task_gid,
 			task_lid,

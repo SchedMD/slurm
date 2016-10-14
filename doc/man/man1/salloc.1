@@ -803,9 +803,10 @@ The following informational environment variables are set when
 \fB\-\-mem_bind\fR is in use:
 
 .nf
-	SLURM_MEM_BIND_VERBOSE
-	SLURM_MEM_BIND_TYPE
-	SLURM_MEM_BIND_LIST
+        SLURM_MEM_BIND_LIST
+        SLURM_MEM_BIND_PREFER
+        SLURM_MEM_BIND_TYPE
+        SLURM_MEM_BIND_VERBOSE
 .fi
 
 See the \fBENVIRONMENT VARIABLES\fR section for a more detailed description
@@ -828,6 +829,9 @@ bind by task rank (not recommended)
 .TP
 .B local
 Use memory local to the processor in use
+.TP
+.B p[refer]
+Prefer use of first specified NUMA node, but permit use of other available NUMA nodes.
 .TP
 .B map_mem:<list>
 Bind by setting memory masks on tasks (or ranks) as specified where <list> is

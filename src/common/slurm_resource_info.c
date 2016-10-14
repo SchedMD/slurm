@@ -216,7 +216,8 @@ void slurm_sprint_mem_bind_type(char *str, mem_bind_type_t mem_bind_type)
 
 	if (mem_bind_type & MEM_BIND_VERBOSE)
 		strcat(str, "verbose,");
-
+	if (mem_bind_type & MEM_BIND_PREFER)
+		strcat(str, "prefer,");
 	if (mem_bind_type & MEM_BIND_NONE)
 		strcat(str, "none,");
 	if (mem_bind_type & MEM_BIND_RANK)
@@ -566,7 +567,9 @@ int slurm_verify_mem_bind(const char *arg, char **mem_bind,
 		if (xstrcasecmp(tok, "help") == 0) {
 			slurm_print_mem_bind_help();
 			return 1;
-
+		} else if ((xstrcasecmp(tok, "p") == 0) ||
+			   (xstrcasecmp(tok, "prefer") == 0)) {
+		        *flags |= MEM_BIND_PREFER;
 		} else if ((xstrcasecmp(tok, "q") == 0) ||
 			   (xstrcasecmp(tok, "quiet") == 0)) {
 		        *flags &= ~MEM_BIND_VERBOSE;

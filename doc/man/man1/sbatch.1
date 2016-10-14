@@ -900,9 +900,10 @@ The following informational environment variables are set when
 \fB\-\-mem_bind\fR is in use:
 
 .nf
-        SLURM_MEM_BIND_VERBOSE
-        SLURM_MEM_BIND_TYPE
         SLURM_MEM_BIND_LIST
+        SLURM_MEM_BIND_PREFER
+        SLURM_MEM_BIND_TYPE
+        SLURM_MEM_BIND_VERBOSE
 .fi
 
 See the \fBENVIRONMENT VARIABLES\fR section for a more detailed description
@@ -925,6 +926,9 @@ bind by task rank (not recommended)
 .TP
 .B local
 Use memory local to the processor in use
+.TP
+.B p[refer]
+Prefer use of first specified NUMA node, but permit use of other available NUMA nodes.
 .TP
 .B map_mem:<list>
 Bind by setting memory masks on tasks (or ranks) as specified where <list> is
@@ -1859,16 +1863,19 @@ Set to bit mask used for CPU binding.
 \fBSBATCH_MEM_BIND\fR
 Set to value of the \-\-mem_bind\fR option.
 .TP
-\fBSBATCH_MEM_BIND_VERBOSE\fR
-Set to "verbose" if the \-\-mem_bind\fR option includes the verbose option.
-Set to "quiet" otherwise.
+\fBSBATCH_MEM_BIND_LIST\fR
+Set to bit mask used for memory binding.
+.TP
+\fBSBATCH_MEM_BIND_PREFER\fR
+Set to "prefer" if the \-\-mem_bind\fR option includes the prefer option.
 .TP
 \fBSBATCH_MEM_BIND_TYPE\fR
 Set to the memory binding type specified with the \-\-mem_bind\fR option.
 Possible values are "none", "rank", "map_map", "mask_mem" and "local".
 .TP
-\fBSBATCH_MEM_BIND_LIST\fR
-Set to bit mask used for memory binding.
+\fBSBATCH_MEM_BIND_VERBOSE\fR
+Set to "verbose" if the \-\-mem_bind\fR option includes the verbose option.
+Set to "quiet" otherwise.
 .TP
 \fBSLURM_ARRAY_TASK_COUNT\fR
 Total number of tasks in a job array.

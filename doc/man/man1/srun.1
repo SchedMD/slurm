@@ -1172,9 +1172,10 @@ The following informational environment variables are set when
 \fB\-\-mem_bind\fR is in use:
 
 .nf
-	SLURM_MEM_BIND_VERBOSE
-	SLURM_MEM_BIND_TYPE
 	SLURM_MEM_BIND_LIST
+	SLURM_MEM_BIND_PREFER
+	SLURM_MEM_BIND_TYPE
+	SLURM_MEM_BIND_VERBOSE
 .fi
 
 See the \fBENVIRONMENT VARIABLES\fR section for a more detailed description
@@ -1197,6 +1198,9 @@ bind by task rank (not recommended)
 .TP
 .B local
 Use memory local to the processor in use
+.TP
+.B p[refer]
+Prefer use of first specified NUMA node, but permit use of other available NUMA nodes.
 .TP
 .B map_mem:<list>
 Bind by setting memory masks on tasks (or ranks) as specified where <list> is
@@ -2700,14 +2704,17 @@ initiated (where the srun command ran from).
 Node local task ID for the process within a job.
 
 .TP
-\fBSLURM_MEM_BIND_VERBOSE\fR
-\-\-mem_bind verbosity (quiet,verbose).
+\fBSLURM_MEM_BIND_LIST\fR
+\-\-mem_bind map or mask list (<list of IDs or masks for this node>).
+.TP
+\fBSLURM_MEM_BIND_PREFER\fR
+\-\-mem_bind prefer (prefer).
 .TP
 \fBSLURM_MEM_BIND_TYPE\fR
 \-\-mem_bind type (none,rank,map_mem:,mask_mem:).
 .TP
-\fBSLURM_MEM_BIND_LIST\fR
-\-\-mem_bind map or mask list (<list of IDs or masks for this node>).
+\fBSLURM_MEM_BIND_VERBOSE\fR
+\-\-mem_bind verbosity (quiet,verbose).
 
 .TP
 \fBSLURM_NNODES\fR

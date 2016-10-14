@@ -363,6 +363,20 @@ extern int task_p_pre_setuid (stepd_step_rec_t *job)
 	return rc;
 }
 
+#ifdef HAVE_NUMA
+static void _numa_set_preferred(nodemask_t *new_mask)
+{
+	int i;
+
+	for (i = 0; i < NUMA_NUM_NODES; i++) {
+		if (nodemask_isset(new_mask, i)) {
+			numa_set_preferred(i);
+			break;
+		}
+	}
+}
+#endif
+
 /*
  * task_p_pre_launch() is called prior to exec of application task.
  *	It is followed by TaskProlog program (from slurm.conf) and
@@ -451,8 +465,12 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 		if (get_memset(&new_mask, job) &&
 		    (!(job->mem_bind_type & MEM_BIND_NONE))) {
 			slurm_set_memset(path, &new_mask);
-			if (numa_available() >= 0)
-				numa_set_membind(&new_mask);
+			if (numa_available() >= 0) {
+				if (job->mem_bind_type & MEM_BIND_PREFER)
+					_numa_set_preferred(&new_mask);
+				else
+					numa_set_membind(&new_mask);
+			}
 			cur_mask = new_mask;
 		}
 		slurm_chk_memset(&cur_mask, job);
@@ -462,7 +480,10 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 		cur_mask = numa_get_membind();
 		if (get_memset(&new_mask, job)
 		    &&  (!(job->mem_bind_type & MEM_BIND_NONE))) {
-			numa_set_membind(&new_mask);
+			if (job->mem_bind_type & MEM_BIND_PREFER)
+				_numa_set_preferred(&new_mask);
+			else
+				numa_set_membind(&new_mask);
 			cur_mask = new_mask;
 		}
 		slurm_chk_memset(&cur_mask, job);

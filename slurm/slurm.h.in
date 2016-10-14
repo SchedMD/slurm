@@ -814,7 +814,8 @@ typedef enum mem_bind_type {    /* memory binding type from --mem_bind=... */
 	MEM_BIND_RANK   = 0x04,	/* =rank */
 	MEM_BIND_MAP    = 0x08,	/* =map_mem:<list of CPU IDs> */
 	MEM_BIND_MASK   = 0x10,	/* =mask_mem:<list of CPU masks> */
-	MEM_BIND_LOCAL  = 0x20	/* =local */
+	MEM_BIND_LOCAL  = 0x20,	/* =local */
+	MEM_BIND_PREFER = 0x40	/* =prefer */
 } mem_bind_type_t;
 
 typedef enum accel_bind_type {    /* accelerator binding from --accel_bind= */
