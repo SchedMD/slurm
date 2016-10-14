@@ -9,6 +9,9 @@ documents those changes that are of interest to users and administrators.
  -- Added new SchedulerParameters options step_retry_count and step_retry_time
     to control scheduling behaviour of job steps waiting for resources.
  -- Optimize resource allocation logic for --spread-job job option.
+ -- Modify cpu_bind and mem_bind map and mask options to accept a repetition
+    count to better support large task count. For example:
+    "mask_mem:0x0f*2,0xf0*2" is equivalent to "mask_mem:0x0f,0x0f,0xf0,0xf0"
 
 * Changes in Slurm 17.02.0pre2
 ==============================
