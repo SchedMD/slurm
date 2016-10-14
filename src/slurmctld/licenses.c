@@ -136,7 +136,7 @@ static List _build_license_list(char *licenses, bool *valid)
 	tmp_str = xstrdup(licenses);
 	token = strtok_r(tmp_str, ",;", &last);
 	while (token && *valid) {
-		uint32_t num = 1;
+		int32_t num = 1;
 		for (i = 0; token[i]; i++) {
 			if (isspace(token[i])) {
 				*valid = false;
@@ -147,7 +147,7 @@ static List _build_license_list(char *licenses, bool *valid)
 			 */
 			if ((token[i] == ':') || (token[i] == '*')) {
 				token[i++] = '\0';
-				num = (uint32_t)strtol(&token[i], &end_num,10);
+				num = (int32_t)strtol(&token[i], &end_num, 10);
 			}
 		}
 		if (num < 0) {
