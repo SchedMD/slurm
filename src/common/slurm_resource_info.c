@@ -93,7 +93,7 @@ static char *_expand_mult(char *list, char *type, int *error_code)
 
 	*error_code = SLURM_SUCCESS;
 
-	if (!tmp)		/* Nothing to convert */	
+	if (!list)		/* Nothing to convert */	
 		return NULL;
 
 	tmp = xstrdup(list);
