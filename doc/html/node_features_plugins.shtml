@@ -119,13 +119,6 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 <p style="margin-left:.2in"><b>Returns</b>: <br>
   True if the plugin requires PowerSave mode for booting nodes.
 
-<p class="commandline"> bool node_features_p_node_reboot(void)
-<p style="margin-left:.2in"><b>Description</b>:<br>
-  Report if the RebootProgram is required to boot nodes.
-  Executed from the slurmctld daemon only.
-<p style="margin-left:.2in"><b>Returns</b>: <br>
-  True if the plugin requires RebootProgram mode for booting nodes.
-
 <p class="commandline"> void node_features_p_node_state(char **avail_modes, char **current_mode)
 <p style="margin-left:.2in"><b>Description</b>:<br>
   Get this node's available and current features (e.g. MCDRAM and NUMA
@@ -169,6 +162,6 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 1 March 2016</p>
+<p style="text-align:center;">Last modified 29 August 2016</p>
 
 <!--#include virtual="footer.txt"-->

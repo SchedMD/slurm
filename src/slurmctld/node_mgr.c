@@ -2285,7 +2285,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	int error_code, i, node_inx;
 	struct config_record *config_ptr;
 	struct node_record *node_ptr;
-	char *reason_down = NULL, *tmp_str;
+	char *reason_down = NULL, *tmp_str, *orig_act;
 	uint32_t node_flags;
 	time_t now = time(NULL);
 	bool gang_flag = false;
@@ -2323,14 +2323,6 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	if (slurm_get_preempt_mode() != PREEMPT_MODE_OFF)
 		gang_flag = true;
 
-	if (reg_msg->features_active) {
-		tmp_str = node_features_g_node_xlate(reg_msg->features_active,
-						     node_ptr->features_act, 1);
-		xfree(node_ptr->features_act);
-		node_ptr->features_act = tmp_str;
-		(void) _update_node_active_features(node_ptr->name,
-						    node_ptr->features_act);
-	}
 	if (reg_msg->features_avail) {
 		tmp_str = node_features_g_node_xlate(reg_msg->features_avail,
 						     node_ptr->features, 1);
@@ -2338,6 +2330,18 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 		node_ptr->features = tmp_str;
 		(void) _update_node_avail_features(node_ptr->name,
 						   node_ptr->features);
+	}
+	if (reg_msg->features_active) {
+		if (node_ptr->features_act)
+			orig_act = node_ptr->features_act;
+		else
+			orig_act = node_ptr->features;
+		tmp_str = node_features_g_node_xlate(reg_msg->features_active,
+						     orig_act, 1);
+		xfree(node_ptr->features_act);
+		node_ptr->features_act = tmp_str;
+		(void) _update_node_active_features(node_ptr->name,
+						    node_ptr->features_act);
 	}
 
 	if (gres_plugin_node_config_unpack(reg_msg->gres_info,

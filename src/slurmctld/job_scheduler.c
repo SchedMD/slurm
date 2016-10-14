@@ -3242,6 +3242,7 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 			  &exc_core_bitmap, &resv_overlap);
 	if (i != SLURM_SUCCESS) {
 		FREE_NULL_BITMAP(avail_bitmap);
+		FREE_NULL_BITMAP(exc_core_bitmap);
 		return i;
 	}
 	bit_and(avail_bitmap, resv_bitmap);
@@ -3678,8 +3679,7 @@ extern int reboot_job_nodes(struct job_record *job_ptr)
 		node_ptr->node_state |= NODE_STATE_POWER_UP;
 		bit_clear(avail_node_bitmap, i);
 		node_ptr->boot_req_time = now;
-		node_ptr->last_response = now + slurmctld_conf.resume_timeout -
-					  slurmctld_conf.slurmd_timeout;
+		node_ptr->last_response = now + slurmctld_conf.resume_timeout;
 	}
 	FREE_NULL_BITMAP(boot_node_bitmap);
 	agent_queue_request(reboot_agent_args);

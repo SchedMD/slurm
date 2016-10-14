@@ -148,6 +148,7 @@ man page for more information.</li>
 <li>A mechanism is required to boot nodes in the desired configuration. This
 mechanism must be integrated with existing Slurm infrastructure for
 <a href="sbatch.html">rebooting nodes on user request (--reboot)</a> plus
+<u>(for Cray systems only)</u>
 <a href="power_save.html">power saving</a> (powering down idle nodes and
 restarting them on demand).</li>
 </ol>
@@ -155,9 +156,14 @@ restarting them on demand).</li>
 <p>In addition, there is a DebugFlags option of "NodeFeatures" which will
 generate detailed information about KNL operations.</p>
 
-<p>Note that a node's KNL-specific available and active features are not
-included in the "slurm.conf" configuration file, but are set and the managed
-by the NodeFeatures plugin.
+<p>The KNL-specific available and active features are configured differently
+based upon the plugin configured.<br>
+<u>For the knl_cray plugin</u>, KNL-specific available and active features are
+not included in the "slurm.conf" configuration file, but are set and the managed
+by the NodeFeatures plugin when the slurmctld daemon starts.<br>
+<u>For the knl_generic plugin</u>, KNL-specific features should be defined
+in the "slurm.conf" configuration file. When the slurmd daemon starts on each
+compute node, it will update the available and active features as needed.<br>
 Features which are not KNL-specific (e.g. rack number, "knl", etc.) will be
 copied from the node's "Features" configuration in "slurm.conf" to both the
 available and active feature fields and not modified by the NodeFeatures
@@ -225,7 +231,23 @@ The amount of HBM on each node should not be configured in a Slurm configuration
 file, but that information will be loaded by the knl_cray plugin using
 information provided by the capmc program.</p>
 
-<h3>Sample knl_cray.conf File</h3>
+<h3>Sample slurm.conf file for knl_cray plugin</h3>
+
+<pre>
+# Sample slurm.conf
+NodeFeaturesPlugins=knl_cray
+DebugFlags=NodeFeatures
+GresTypes=hbm
+#
+ResumeProgram=/opt/slurm/default/sbin/capmc_resume
+SuspendTime=30000000
+ResumeTimeout=1800
+...
+Nodename=default Sockets=1 CoresPerSocket=68 ThreadsPerCore=4 RealMemory=128000 Feature=knl
+NodeName=nid[00000-00127] State=UNKNOWN
+</pre>
+
+<h3>Sample knl_cray.conf file</h3>
 
 <pre>
 # Sample knl_cray.conf
@@ -261,18 +283,30 @@ This plugin performs all operations directly on the compute nodes using Intel's
 <i>syscfg</i> program to get and modify the node's MCDRAM and NUMA mode and
 uses the Linux <i>reboot</i> program to reboot the compute node in order for
 modifications in MCDRAM and/or NUMA mode to take effect.
-This plugin does <u>not</u> require the specification of ResumeProgram,
-SuspendProgram, SuspendTimem etc. in slurm.conf.</p>
+Make sure that RebootProgram is defined in the slurm.conf file.
+This plugin currently does <u>not</u> permit the specification of ResumeProgram,
+SuspendProgram, SuspendTimem etc. in slurm.conf, however that limitation may
+be removed in the future (the ResumeProgram currently has no means of changing
+the node's MCDRAM and/or NUMA mode prior to reboot).</p>
 
-<p><b>NOTE:</b>Support for generic KNL clusters is planned for release in Slurm
-version 16.05.6 in October 2016. Slurm support for KNL is only available on Cray
-systems in earlier versions of Slurm.</p>
+<p><b>NOTE:</b>The syscfg program reports the MCDRAM and NUMA mode to be used
+when the node is next booted. If the syscfg program is used to modify the MCDRAM
+or NUMA mode of a node, but it is not rebooted, then Slurm will be making
+scheduling decisions based upon incorrect state information. If you want to
+change node state information outside of Slurm then use the following proceedure:
+<ol>
+<li>Drain the nodes of interest</li>
+<li>Change their MCDRAM and/or NUMA mode</li>
+<li>Reboot the nodes, then</li>
+<li>Restore them to service in Slurm</li>
+</ol>
+</p>
 
 <h3>Sample knl_generic.conf File</h3>
 
 <pre>
 # Sample knl_generic.conf
-SyscfgPath=/usr/sbin/syscfg
+SyscfgPath=/usr/bin/syscfg
 DefaultNUMA=a2a         # NUMA=all2all
 AllowNUMA=a2a,snc2,hemi
 DefaultMCDRAM=cache     # MCDRAM=cache
@@ -285,6 +319,7 @@ DefaultMCDRAM=cache     # MCDRAM=cache
 NodeFeaturesPlugins=knl_generic
 DebugFlags=NodeFeatures
 GresTypes=hbm
+RebootProgram=/sbin/reboot
 ...
 Nodename=default Sockets=1 CoresPerSocket=68 ThreadsPerCore=4 RealMemory=128000 Feature=knl
 NodeName=nid[00000-00127] State=UNKNOWN
@@ -292,6 +327,6 @@ NodeName=nid[00000-00127] State=UNKNOWN
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 25 September 2016</p>
+<p style="text-align:center;">Last modified 13 October 2016</p>
 
 <!--#include virtual="footer.txt"-->

@@ -1,0 +1,41 @@
+#!/bin/bash
+# Emulate syscfg (Intel's MOBO interface) for testing purposes
+# Use cases:
+# syscfg /d BIOSSETTINGS "Cluster Mode"
+# syscfg /d BIOSSETTINGS "Memory Mode"
+# syscfg /bcs "" biossettings "Cluster Mode" "01"
+# syscfg /bcs "" biossettings "Memory Mode" "02"
+#
+if [ "${1}" == "/d" -a "${3}" == "Cluster Mode" ]; then
+   echo 'Cluster Mode'
+   echo '============'
+   echo 'Current Value : All2All'
+   echo '-----------------------'
+   echo 'Possible Values'
+   echo 'All2All : 00'
+   echo 'Hemisphere : 01'
+   echo 'Quadrant : 02'
+   echo 'SNC-2 : 03'
+   echo 'SNC-4 : 04'
+   exit 0
+fi
+
+if [ "${1}" == "/d" -a "${3}" == "Memory Mode" ]; then
+   echo 'Memory Mode'
+   echo '==========='
+   echo 'Current Value : Cache'
+   echo '---------------------'
+   echo 'Possible Values'
+   echo 'Cache : 00'
+   echo 'Flat : 01'
+   echo 'Hybrid : 02'
+   echo 'Auto : 03'
+   exit 0
+fi
+
+if [ "${1}" == "/bcs" ]; then
+   exit 0
+fi
+
+echo 'Invalid argument'
+exit 1

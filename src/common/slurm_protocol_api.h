@@ -393,6 +393,12 @@ double *slurm_get_tres_weight_array(char *weights_str, int tres_cnt);
  */
 uint16_t slurm_get_private_data(void);
 
+/* slurm_get_resume_program
+ * returns the ResumeProgram from slurmctld_conf object
+ * RET char *    - ResumeProgram, MUST be xfreed by caller
+ */
+char *slurm_get_resume_program(void);
+
 /* slurm_get_state_save_location
  * get state_save_location from slurmctld_conf object from slurmctld_conf object
  * RET char *   - state_save_location directory, MUST be xfreed by caller
