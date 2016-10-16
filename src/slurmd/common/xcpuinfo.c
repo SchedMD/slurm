@@ -212,7 +212,7 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	hwloc_topology_set_flags(topology, HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM);
 
 	/* ignores cache, misc */
-#if HWLOC_API_VERSION <= 0x00010a00
+#if HWLOC_API_VERSION < 0x00020000
 	hwloc_topology_ignore_type (topology, HWLOC_OBJ_CACHE);
 	hwloc_topology_ignore_type (topology, HWLOC_OBJ_MISC);
 #else
