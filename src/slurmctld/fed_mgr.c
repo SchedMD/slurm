@@ -714,9 +714,13 @@ extern int fed_mgr_fini()
 
 	lock_slurmctld(fed_write_lock);
 
-	slurm_persist_conn_recv_server_fini();
-
+	/* Call _leave_federation() before slurm_persist_conn_recv_server_fini()
+	 * as this will NULL out the cluster's recv persistent connection before
+	 * _server_fini() actually destroy's it. That way the cluster's recv
+	 * connection won't be pointing to bad memory. */
 	_leave_federation();
+
+	slurm_persist_conn_recv_server_fini();
 
 	unlock_slurmctld(fed_write_lock);
 
