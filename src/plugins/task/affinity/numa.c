@@ -101,9 +101,7 @@ static int _str_to_memset(nodemask_t *mask, const char* str)
 
 void slurm_chk_memset(nodemask_t *mask, stepd_step_rec_t *job)
 {
-	char bind_type[42], *mode;
-	char action[42];
-	char status[42];
+	char *action, *bind_type, *mode;
 	char mstr[1 + NUMA_NUM_NODES / 4];
 	int task_gid = job->envtp->procid;
 	int task_lid = job->envtp->localid;
@@ -112,44 +110,41 @@ void slurm_chk_memset(nodemask_t *mask, stepd_step_rec_t *job)
 	if (!(job->mem_bind_type & MEM_BIND_VERBOSE))
 		return;
 
-	action[0] = '\0';
-	status[0] = '\0';
-
 	if (job->mem_bind_type & MEM_BIND_NONE) {
-		strcpy(action, "");
-		strcpy(bind_type, "=NONE");
+		mode = "=";
+		action = "";
+		bind_type = "NONE";
 	} else {
-		strcpy(action, " set");
+		action = " set";
 		if (job->mem_bind_type & MEM_BIND_PREFER)
 			mode = " PREFER ";
 		else
 			mode = "=";
 		if (job->mem_bind_type & MEM_BIND_RANK) {
-			strcpy(bind_type, "RANK");
+			bind_type = "RANK";
 		} else if (job->mem_bind_type & MEM_BIND_LOCAL) {
-			strcpy(bind_type, "LOC ");
+			bind_type = "LOC";
 		} else if (job->mem_bind_type & MEM_BIND_MAP) {
-			strcpy(bind_type, "MAP ");
+			bind_type = "MAP";
 		} else if (job->mem_bind_type & MEM_BIND_MASK) {
-			strcpy(bind_type, "MASK");
+			bind_type = "MASK";
 		} else if (job->mem_bind_type & (~MEM_BIND_VERBOSE)) {
-			strcpy(bind_type, "UNK ");
+			bind_type = "UNK";
 		} else {
-			strcpy(action, "");
-			strcpy(bind_type, "NULL");
+			action = "";
+			bind_type = "NULL";
 		}
 	}
 
 	fprintf(stderr, "mem_bind%s%s - "
-			"%s, task %2u %2u [%u]: mask 0x%s%s%s\n",
+			"%s, task %2u %2u [%u]: mask 0x%s%s\n",
 			mode, bind_type,
 			conf->hostname,
 			task_gid,
 			task_lid,
 			mypid,
 			_memset_to_str(mask, mstr),
-			action,
-			status);
+			action);
 }
 
 int get_memset(nodemask_t *mask, stepd_step_rec_t *job)
