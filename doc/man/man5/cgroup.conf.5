@@ -123,6 +123,12 @@ used to constrain swap space.
 Also see \fBAllowedSwapSpace\fR.
 
 .TP
+\fBConstrainKmemSpace\fR=<yes|no>
+If configured to "yes" then constrain the job's kernel memory usage.
+The default value is "yes". It is automatically disabled if \fBConstrainRAMSpace\fR=no.
+Also see \fBAllowedKmemSpace\fR.
+
+.TP
 \fBMaxRAMPercent\fR=\fIPERCENT\fR
 Set an upper bound in percent of total RAM on the RAM constraint for a job.
 This will be the memory constraint applied to jobs that are not explicitly
@@ -137,6 +143,16 @@ that may be used for a job. This will be the swap limit applied to jobs
 on systems where memory is not being explicitly allocated to job. The
 \fIPERCENT\fR may be an arbitrary floating point number between 0 and 100.
 The default value is 100.
+
+.TP
+\fBMaxKmemPercent\fR=\fIPERCENT\fR
+Set an upper bound in percent of total Kmem for a job. The \fIPERCENT\fR may be an
+arbitrary floating point number. The default value is 100.
+
+.TP
+\fBMinKmemSpace\fR=<number>
+Set a lower bound (in MB) on the memory limits defined by
+\fBAllowedKmemSpace\fR. The default limit is 30M.
 
 .TP
 \fBMinRAMSpace\fR=<number>

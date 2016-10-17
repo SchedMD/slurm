@@ -14,6 +14,9 @@ documents those changes that are of interest to users and administrators.
     "mask_mem:0x0f*2,0xf0*2" is equivalent to "mask_mem:0x0f,0x0f,0xf0,0xf0".
  -- Add suppoprt for --mem_bind=prefer option to prefer, but not restrict memory
     use to the identified NUMA node.
+ -- Add mechanism to constrain kernel memory allocation using cgroups. New
+    cgroup.conf parameters added: ConstrainKmemSpace, MaxKmemPercent, and
+    MinKmemSpace.
 
 * Changes in Slurm 17.02.0pre2
 ==============================

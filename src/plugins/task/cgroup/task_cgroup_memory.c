@@ -68,11 +68,15 @@ static bool constrain_swap_space;
 
 static float allowed_ram_space;   /* Allowed RAM in percent       */
 static float allowed_swap_space;  /* Allowed Swap percent         */
+static float allowed_kmem_space;  /* Allowed Kmem number          */
+static float max_kmem_percent;	   /* Allowed Kernel memory percent*/
 
+static uint64_t max_kmem;       /* Upper bound for kmem.limit_in_bytes  */
 static uint64_t max_ram;        /* Upper bound for memory.limit_in_bytes  */
 static uint64_t max_swap;       /* Upper bound for swap                   */
 static uint64_t totalram;       /* Total real memory available on node    */
-static uint64_t min_ram_space;  /* Don't constrain RAM below this value       */
+static uint64_t min_ram_space;  /* Don't constrain RAM below this value   */
+static uint64_t min_kmem_space; /* Don't constrain Kernel mem below       */
 
 static uint64_t percent_in_bytes (uint64_t mb, float percent)
 {
@@ -104,8 +108,8 @@ extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	xcgroup_set_param(&memory_cg, "memory.use_hierarchy","1");
 	xcgroup_destroy(&memory_cg);
 
-	constrain_ram_space = slurm_cgroup_conf->constrain_ram_space;
 	constrain_kmem_space = slurm_cgroup_conf->constrain_kmem_space;
+	constrain_ram_space = slurm_cgroup_conf->constrain_ram_space;
 	constrain_swap_space = slurm_cgroup_conf->constrain_swap_space;
 
 	/*
@@ -120,18 +124,24 @@ extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	else
 		allowed_ram_space = 100.0;
 
+	allowed_kmem_space = slurm_cgroup_conf->allowed_kmem_space;
 	allowed_swap_space = slurm_cgroup_conf->allowed_swap_space;
 
 	if ((totalram = (uint64_t) conf->real_memory_size) == 0)
 		error ("task/cgroup: Unable to get RealMemory size");
 
+	max_kmem = percent_in_bytes(totalram, slurm_cgroup_conf->max_kmem_percent);
 	max_ram = percent_in_bytes(totalram, slurm_cgroup_conf->max_ram_percent);
 	max_swap = percent_in_bytes(totalram, slurm_cgroup_conf->max_swap_percent);
 	max_swap += max_ram;
 	min_ram_space = slurm_cgroup_conf->min_ram_space * 1024 * 1024;
+	max_kmem_percent = slurm_cgroup_conf->max_kmem_percent;
+	min_kmem_space = slurm_cgroup_conf->min_kmem_space * 1024 * 1024;
 
 	debug ("task/cgroup/memory: total:%luM allowed:%.4g%%(%s), "
-	       "swap:%.4g%%(%s), max:%.4g%%(%luM) max+swap:%.4g%%(%luM) min:%uM",
+	       "swap:%.4g%%(%s), max:%.4g%%(%luM) "
+	       "max+swap:%.4g%%(%luM) min:%uM "
+	       "kmem:%.4g%%(%luM %s) min:%uM",
 	       (unsigned long) totalram,
 	       allowed_ram_space,
 	       constrain_ram_space?"enforced":"permissive",
@@ -141,7 +151,11 @@ extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	       (unsigned long) (max_ram/(1024*1024)),
 	       slurm_cgroup_conf->max_swap_percent,
 	       (unsigned long) (max_swap/(1024*1024)),
-	       (unsigned) slurm_cgroup_conf->min_ram_space);
+	       (unsigned) slurm_cgroup_conf->min_ram_space,
+	       slurm_cgroup_conf->max_kmem_percent,
+	       (unsigned long)(max_kmem/(1024*1024)),
+	       constrain_kmem_space?"enforced":"permissive",
+	       slurm_cgroup_conf->min_kmem_space);
 
         /*
          *  Warning: OOM Killer must be disabled for slurmstepd
@@ -266,6 +280,28 @@ static uint64_t swap_limit_in_bytes (uint64_t mem)
 	return (mem);
 }
 
+/*
+ * If Kmem space is disabled, it set to max percent of its RAM usage.
+ */
+static uint64_t kmem_limit_in_bytes (uint64_t mlb)
+{
+	uint64_t totalKmem = percent_in_bytes(mlb, max_kmem_percent);
+	if ( ! constrain_kmem_space )
+		return totalKmem;
+	if ( allowed_kmem_space < 0 ) {	/* Initial value */
+		if ( mlb > totalKmem )
+			return totalKmem;
+		if ( mlb < min_kmem_space )
+			return min_kmem_space;
+		return mlb;
+	}
+	if ( allowed_kmem_space > totalKmem )
+		return totalKmem;
+	if ( allowed_kmem_space < min_kmem_space )
+		return min_kmem_space;
+	return allowed_kmem_space;
+}
+
 static int memcg_initialize (xcgroup_ns_t *ns, xcgroup_t *cg,
 			     char *path, uint64_t mem_limit, uid_t uid,
 			     gid_t gid, uint32_t notify)
@@ -300,8 +336,9 @@ static int memcg_initialize (xcgroup_ns_t *ns, xcgroup_t *cg,
 	 * Also constrain kernel memory (if available).
 	 * See https://lwn.net/Articles/516529/
 	 */
-	if (constrain_kmem_space)
-		xcgroup_set_uint64_param(cg, "memory.kmem.limit_in_bytes", mlb);
+
+	xcgroup_set_uint64_param (cg, "memory.kmem.limit_in_bytes",
+				  kmem_limit_in_bytes(mlb));
 
 	/* this limit has to be set only if ConstrainSwapSpace is set to yes */
 	if ( constrain_swap_space ) {

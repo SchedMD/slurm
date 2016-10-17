@@ -87,6 +87,9 @@ static void _clear_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		slurm_cgroup_conf->min_ram_space = XCGROUP_DEFAULT_MIN_RAM;
 		slurm_cgroup_conf->constrain_swap_space = false ;
 		slurm_cgroup_conf->constrain_kmem_space = false ;
+		slurm_cgroup_conf->allowed_kmem_space = -1;
+		slurm_cgroup_conf->max_kmem_percent = 100;
+		slurm_cgroup_conf->min_kmem_space = XCGROUP_DEFAULT_MIN_RAM;
 		slurm_cgroup_conf->allowed_swap_space = 0 ;
 		slurm_cgroup_conf->max_swap_percent = 100 ;
 		slurm_cgroup_conf->memlimit_enforcement = 0 ;
@@ -145,6 +148,9 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		{"MinRAMSpace", S_P_UINT64},
 		{"ConstrainSwapSpace", S_P_BOOLEAN},
 		{"ConstrainKmemSpace", S_P_BOOLEAN},
+		{"AllowedKmemSpace", S_P_STRING},
+		{"MaxKmemPercent", S_P_STRING},
+		{"MinKmemSpace", S_P_UINT32},
 		{"AllowedSwapSpace", S_P_STRING},
 		{"MaxSwapPercent", S_P_STRING},
 		{"ConstrainCores", S_P_BOOLEAN},
@@ -230,6 +236,17 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		if (!s_p_get_boolean(&slurm_cgroup_conf->constrain_kmem_space,
 				     "ConstrainKmemSpace", tbl))
 			slurm_cgroup_conf->constrain_kmem_space = true;
+
+		conf_get_float (tbl,
+				"AllowedKmemSpace",
+				&slurm_cgroup_conf->allowed_kmem_space);
+
+		conf_get_float (tbl,
+				"MaxKmemPercent",
+				&slurm_cgroup_conf->max_kmem_percent);
+
+		s_p_get_uint32 (&slurm_cgroup_conf->min_kmem_space,
+				"MinKmemSpace", tbl);
 
 		conf_get_float (tbl,
 				"AllowedSwapSpace",
