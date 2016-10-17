@@ -207,18 +207,16 @@ static int _find_match_in_tcp_file(
  *
  * All errors in this function should be silently ignored. Processes appear and
  * disappear all the time. It is natural for processes to disappear in between
- * operations such as readdir_r, stat, and others. We should detect errors but
+ * operations such as readdir, stat, and others. We should detect errors but
  * not log them.
  */
 static int _find_inode_in_fddir(pid_t pid, ino_t inode)
 {
 	DIR *dirp;
 	struct dirent *entryp;
-	struct dirent *result;
-	int name_max;
 	char dirpath[1024];
 	char fdpath[1024];
-	int len, rc = SLURM_FAILURE;
+	int rc = SLURM_FAILURE;
 	struct stat statbuf;
 
 	snprintf(dirpath, 1024, "/proc/%d/fd", (pid_t)pid);
@@ -226,19 +224,11 @@ static int _find_inode_in_fddir(pid_t pid, ino_t inode)
 		return SLURM_FAILURE;
 	}
 
-	/* Thus saith the man page readdir_r(3) */
-	name_max = pathconf(dirpath, _PC_NAME_MAX);
-	if (name_max == -1)	/* Limit not defined, or error */
-		name_max = 255;	/* Take a guess */
-	len = offsetof(struct dirent, d_name) + name_max + 1;
-	entryp = xmalloc(len);
-
 	while (1) {
-		readdir_r(dirp, entryp, &result);
-		if (!result)
+		if (!(entryp = readdir(dirp)))
 			break;
 		/* Ignore . and .. */
-		if (xstrncmp(entryp->d_name, ".", 1)==0)
+		else if (!xstrncmp(entryp->d_name, ".", 1))
 			continue;
 
 		/* This is a symlink. Follow it to get destination's inode. */
@@ -254,7 +244,6 @@ static int _find_inode_in_fddir(pid_t pid, ino_t inode)
 	}
 
 	closedir(dirp);
-	xfree(entryp);
 	return rc;
 }
 
@@ -303,16 +292,15 @@ extern int callerid_find_conn_by_inode(callerid_conn_t *conn, ino_t inode)
  *
  * Most errors in this function should be silently ignored. Processes appear and
  * disappear all the time. It is natural for processes to disappear in between
- * operations such as readdir_r, stat, and others. We should detect errors but
+ * operations such as readdir, stat, and others. We should detect errors but
  * not log them.
  */
 extern int find_pid_by_inode (pid_t *pid_result, ino_t inode)
 {
 	DIR *dirp;
 	struct dirent *entryp;
-	struct dirent *result;
 	char *dirpath = "/proc";
-	int name_max, len, rc = SLURM_FAILURE;
+	int rc = SLURM_FAILURE;
 	pid_t pid;
 
 	if ((dirp = opendir(dirpath)) == NULL) {
@@ -322,16 +310,8 @@ extern int find_pid_by_inode (pid_t *pid_result, ino_t inode)
 		return SLURM_FAILURE;
 	}
 
-	/* Thus saith the man page readdir_r(3) */
-	name_max = pathconf(dirpath, _PC_NAME_MAX);
-	if (name_max == -1)	/* Limit not defined, or error */
-		name_max = 255;	/* Take a guess */
-	len = offsetof(struct dirent, d_name) + name_max + 1;
-	entryp = xmalloc(len);
-
 	while (1) {
-		readdir_r(dirp, entryp, &result);
-		if (!result)
+		if (!(entryp = readdir(dirp)))
 			break;
 		/* We're only looking for /proc/[0-9]*  */
 		else if (!isdigit(entryp->d_name[0]))
@@ -352,7 +332,6 @@ extern int find_pid_by_inode (pid_t *pid_result, ino_t inode)
 	}
 
 	closedir(dirp);
-	xfree(entryp);
 	return rc;
 }
 
@@ -361,10 +340,9 @@ extern int callerid_get_own_netinfo (callerid_conn_t *conn)
 {
 	DIR *dirp;
 	struct dirent *entryp;
-	struct dirent *result;
 	char *dirpath = "/proc/self/fd";
 	char fdpath[1024];
-	int name_max, len, rc = SLURM_FAILURE;
+	int rc = SLURM_FAILURE;
 	struct stat statbuf;
 
 	if ((dirp = opendir(dirpath)) == NULL) {
@@ -373,20 +351,11 @@ extern int callerid_get_own_netinfo (callerid_conn_t *conn)
 		return rc;
 	}
 
-	/* thus saith the man page readdir_r(3) */
-	name_max = pathconf(dirpath, _PC_NAME_MAX);
-	if (name_max == -1)	/* Limit not defined, or error */
-		name_max = 255;	/* Take a guess */
-	len = offsetof(struct dirent, d_name) + name_max + 1;
-	entryp = xmalloc(len);
-
 	while (1) {
-		readdir_r(dirp, entryp, &result);
-		if (!result)
+		if (!(entryp = readdir(dirp)))
 			break;
-
 		/* Ignore . and .. */
-		if (xstrncmp(entryp->d_name, ".", 1)==0)
+		else if (!xstrncmp(entryp->d_name, ".", 1))
 			continue;
 
 		snprintf(fdpath, 1024, "%s/%s", dirpath, entryp->d_name);
@@ -409,6 +378,5 @@ extern int callerid_get_own_netinfo (callerid_conn_t *conn)
 	}
 
 	closedir(dirp);
-	xfree(entryp);
 	return rc;
 }

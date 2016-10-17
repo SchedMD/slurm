@@ -242,9 +242,7 @@ extern int task_p_slurmd_resume_job (uint32_t job_id)
 extern int task_p_slurmd_release_resources (uint32_t job_id)
 {
 	DIR *dirp;
-	struct dirent entry;
-	struct dirent *result;
-	int rc;
+	struct dirent *entryp;
 	char base[PATH_MAX];
 	char path[PATH_MAX];
 
@@ -293,15 +291,12 @@ extern int task_p_slurmd_release_resources (uint32_t job_id)
 	}
 
 	while (1) {
-		rc = readdir_r(dirp, &entry, &result);
-		if (rc && (errno == EAGAIN))
-			continue;
-		if (rc || (result == NULL))
+		if (!(entryp = readdir(dirp)))
 			break;
-		if (xstrncmp(entry.d_name, "slurm", 5))
+		if (xstrncmp(entryp->d_name, "slurm", 5))
 			continue;
 		if (snprintf(path, PATH_MAX, "%s/%s",
-					 base, entry.d_name) >= PATH_MAX) {
+			     base, entryp->d_name) >= PATH_MAX) {
 			error("%s: cpuset path too long", __func__);
 			break;
 		}
