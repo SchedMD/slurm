@@ -625,6 +625,8 @@ documents those changes that are of interest to users and administrators.
     a comma-separated list.
  -- Cray - Fix issue restoring jobs when blade count increases due to hardware
     reconfiguration.
+ -- Ignore warnings about depricated functions. This is primarily there for
+    new glibc 2.24+ that depricates readdir_r.
 
 * Changes in Slurm 15.08.12
 ===========================
