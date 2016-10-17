@@ -34,8 +34,8 @@ AC_DEFUN([X_AC_DEBUG], [
     ]
   )
   if test "$x_ac_developer" = yes; then
-    test "$GCC" = yes && CFLAGS="$CFLAGS -Werror"
-    test "$GXX" = yes && CXXFLAGS="$CXXFLAGS -Werror"
+    test "$GCC" = yes && CFLAGS="$CFLAGS -Wno-deprecated-declarations -Werror"
+    test "$GXX" = yes && CXXFLAGS="$CXXFLAGS -Wno-deprecated-declarations -Werror"
     # automatically turn on --enable-debug if being a developer
     x_ac_debug=yes
   else
@@ -61,8 +61,8 @@ AC_DEFUN([X_AC_DEBUG], [
   if test "$x_ac_debug" = yes; then
     # you will most likely get a -O2 in you compile line, but the last option
     # is the only one that is looked at.
-    test "$GCC" = yes && CFLAGS="$CFLAGS -Wall -g -O0 -fno-strict-aliasing"
-    test "$GXX" = yes && CXXFLAGS="$CXXFLAGS -Wall -g -O0 -fno-strict-aliasing"
+    test "$GCC" = yes && CFLAGS="$CFLAGS -Wno-deprecated-declarations -Wall -g -O0 -fno-strict-aliasing"
+    test "$GXX" = yes && CXXFLAGS="$CXXFLAGS -Wno-deprecated-declarations -Wall -g -O0 -fno-strict-aliasing"
   fi
   AC_MSG_RESULT([${x_ac_debug=no}])
 
