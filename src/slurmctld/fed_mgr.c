@@ -1546,10 +1546,24 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg)
  * start the job now, then a sibling job is submitted to that cluster. If no
  * cluster can start the job now, then siblings jobs are submitted to each
  * sibling.
+ *
+ * Does its own locking (job and fed). Doesn't have a job write lock when
+ * communicating with siblings to prevent blocking on sibling communications.
+ *
+ * IN msg - msg that contains packed job_desc msg to send to siblings.
+ * IN job_desc - original job_desc msg.
+ * IN uid - uid of user requesting allocation.
+ * IN protocol_version - version of the code the caller is using
+ * OUT job_id_ptr - job_id of allocated job
+ * OUT alloc_code - error_code returned from job_allocate
+ * OUT err_msg - error message returned if any
+ * RET returns SLURM_SUCCESS if the allocation was successful, SLURM_ERROR
+ * 	otherwise.
  */
 extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 				uid_t uid, uint16_t protocol_version,
-				struct job_record **job_pptr, char **err_msg)
+				uint32_t *job_id_ptr, int *alloc_code,
+				char **err_msg)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_cluster_rec_t *start_now_sib;
@@ -1559,6 +1573,12 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
+
+	xassert(msg);
+	xassert(job_desc);
+	xassert(job_id_ptr);
+	xassert(alloc_code);
+	xassert(err_msg);
 
 	lock_slurmctld(fed_read_lock);
 
@@ -1590,17 +1610,19 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	/* Submit local job first. Then submit to all siblings. If the local job
 	 * fails, then don't worry about sending to the siblings. */
 	lock_slurmctld(job_write_lock);
-	rc = job_allocate(job_desc, job_desc->immediate, false, NULL, 0, uid,
-			  job_pptr, err_msg, protocol_version);
-	job_ptr = *job_pptr;
+	*alloc_code = job_allocate(job_desc, job_desc->immediate, false, NULL,
+				   uid, &job_ptr, err_msg, protocol_version);
 
-	if (!job_ptr || (rc && job_ptr->job_state == JOB_FAILED)) {
+	if (!job_ptr || (*alloc_code && job_ptr->job_state == JOB_FAILED)) {
 		unlock_slurmctld(job_write_lock);
+		rc = SLURM_ERROR;
 		/* There may be an rc but the job won't be failed. Will sit in
 		 * qeueue */
 		info("failed to submit federated job to local cluster");
 		goto end_it;
 	}
+
+	*job_id_ptr = job_ptr->job_id;
 
 	info("Submitted %sfederated job %u to %s(self)",
 	     (!(job_ptr->fed_details->siblings &
@@ -1615,14 +1637,23 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		 * the local job's sibling bitmap */
 
 		lock_slurmctld(job_write_lock);
-		if (!job_desc->fed_siblings) {
-			/* we know that we already have a job_ptr so just make
-			 * it a scheduleable job. */
-			error("Failed to submit fed job to siblings, submitting to local cluster");
-			job_desc->fed_siblings |=
-				FED_SIBLING_BIT(fed_mgr_cluster_rec->fed.id);
+		if ((job_ptr->magic  == JOB_MAGIC) &&
+		    (job_ptr->job_id == *job_id_ptr)) {
+
+			if (!job_desc->fed_siblings) {
+				/* we know that we already have a job_ptr so
+				 * just make it a scheduleable job. */
+				error("Failed to submit fed job to siblings, submitting to local cluster");
+				job_desc->fed_siblings |=
+					FED_SIBLING_BIT(
+						fed_mgr_cluster_rec->fed.id);
+			}
+			set_job_fed_details(job_ptr, job_desc->fed_siblings);
+		} else {
+			error("%s: job got messed up. this should never happen",
+			      __func__);
 		}
-		set_job_fed_details(job_ptr, job_desc->fed_siblings);
+
 		unlock_slurmctld(job_write_lock);
 	}
 
