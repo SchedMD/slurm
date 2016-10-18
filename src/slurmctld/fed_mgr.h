@@ -54,8 +54,8 @@ extern int       fed_mgr_init(void *db_conn);
 extern bool      fed_mgr_is_active();
 extern bool      fed_mgr_is_tracker_only_job(struct job_record *job_ptr);
 extern int       fed_mgr_job_allocate(slurm_msg_t *msg,
-				      job_desc_msg_t *job_desc, uid_t uid,
-				      uint16_t protocol_version,
+				      job_desc_msg_t *job_desc, bool alloc_only,
+				      uid_t uid, uint16_t protocol_version,
 				      uint32_t *job_id_ptr, int *alloc_code,
 				      char **err_msg);
 extern int       fed_mgr_sib_will_run(slurm_msg_t *msg,

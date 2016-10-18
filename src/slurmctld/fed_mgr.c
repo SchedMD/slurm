@@ -600,6 +600,49 @@ end_it:
 	return rc;
 }
 
+static int _persist_allocte_resources(slurmdb_cluster_rec_t *conn,
+				      sib_msg_t *sib_msg,
+				      resource_allocation_response_msg_t **resp)
+{
+        int rc = SLURM_PROTOCOL_SUCCESS;
+        slurm_msg_t req_msg, resp_msg;
+
+	*resp = NULL;
+
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
+
+	req_msg.msg_type = REQUEST_SIB_RESOURCE_ALLOCATION;
+	req_msg.data     = sib_msg;
+
+	rc = _send_recv_msg(conn, &req_msg, &resp_msg, false);
+	if (rc) {
+		rc = SLURM_PROTOCOL_ERROR;
+		goto end_it;
+	}
+
+	switch (resp_msg.msg_type) {
+	case RESPONSE_SLURM_RC:
+		if ((rc = ((return_code_msg_t *) resp_msg.data)->return_code)) {
+			slurm_seterrno(rc);
+			rc = SLURM_PROTOCOL_ERROR;
+		}
+		break;
+	case RESPONSE_RESOURCE_ALLOCATION:
+		*resp = (resource_allocation_response_msg_t *) resp_msg.data;
+		resp_msg.data = NULL;
+		break;
+	default:
+		slurm_seterrno(SLURM_UNEXPECTED_MSG_ERROR);
+		rc = SLURM_PROTOCOL_ERROR;
+	}
+
+end_it:
+	slurm_free_msg_members(&resp_msg);
+
+	return rc;
+}
+
 static int _persist_update_job(slurmdb_cluster_rec_t *conn,
 			       job_desc_msg_t *data)
 {
@@ -1376,7 +1419,31 @@ static slurmdb_cluster_rec_t *_find_start_now_sib(slurm_msg_t *msg,
 	return ret_sib;
 }
 
-static void *_submit_sibling_job(void *arg)
+static void *_submit_sibling_allocation(void *arg)
+{
+	int rc = SLURM_SUCCESS;
+	resource_allocation_response_msg_t *alloc_resp = NULL;
+	sib_submit_t *sub = (sib_submit_t *)arg;
+	slurmdb_cluster_rec_t *sibling = sub->sibling;
+	sib_msg_t *sib_msg             = sub->sib_msg;
+
+	if ((rc = _persist_allocte_resources(sibling, sib_msg, &alloc_resp))) {
+		error("Failed to submit job to sibling %s: %m", sibling->name);
+	} else if (!alloc_resp) {
+		error("Got a success back without a resp. This shouldn't happen");
+		rc = SLURM_ERROR;
+	} else if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR) {
+		info("Submitted federated allocation %u to %s",
+		     alloc_resp->job_id, sibling->name);
+	}
+	sub->thread_rc = rc;
+
+	slurm_free_resource_allocation_response_msg(alloc_resp);
+
+	return NULL;
+}
+
+static void *_submit_sibling_batch_job(void *arg)
 {
 	int rc = SLURM_SUCCESS;
 	submit_response_msg_t *resp = NULL;
@@ -1415,12 +1482,14 @@ static void *_update_sibling_job(void *arg)
  *
  * IN job_desc - job_desc containing job_id and fed_siblings of job to be.
  * IN msg - contains the original job_desc buffer to send to the siblings.
+ * IN alloc_only - true if just an allocation. false if a batch job.
  * RET returns SLURM_SUCCESS if all siblings recieved the job sucessfully or
  * 	SLURM_ERROR if any siblings failed to receive the job. If a sibling
  * 	fails, then the sucessful siblings will be updated with the correct
  * 	sibling bitmap.
  */
-static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg)
+static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
+				bool alloc_only)
 {
 	int rc = SLURM_SUCCESS;
 	ListIterator sib_itr, thread_itr;
@@ -1459,7 +1528,9 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg)
 		sub->sibling = sibling;
 		sub->sib_msg = &sib_msg;
 		if (pthread_create(&thread_id, &attr,
-				   _submit_sibling_job, sub) != 0) {
+				   ((alloc_only) ?
+				    _submit_sibling_allocation :
+				    _submit_sibling_batch_job), sub) != 0) {
 			error("failed to create submit_sibling_job_thread");
 			xfree(sub);
 			continue;
@@ -1552,6 +1623,7 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg)
  *
  * IN msg - msg that contains packed job_desc msg to send to siblings.
  * IN job_desc - original job_desc msg.
+ * IN alloc_only - true if requesting just an allocation (srun/salloc).
  * IN uid - uid of user requesting allocation.
  * IN protocol_version - version of the code the caller is using
  * OUT job_id_ptr - job_id of allocated job
@@ -1561,7 +1633,8 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg)
  * 	otherwise.
  */
 extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
-				uid_t uid, uint16_t protocol_version,
+				bool alloc_only, uid_t uid,
+				uint16_t protocol_version,
 				uint32_t *job_id_ptr, int *alloc_code,
 				char **err_msg)
 {
@@ -1611,7 +1684,8 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	 * fails, then don't worry about sending to the siblings. */
 	lock_slurmctld(job_write_lock);
 	*alloc_code = job_allocate(job_desc, job_desc->immediate, false, NULL,
-				   uid, &job_ptr, err_msg, protocol_version);
+				   alloc_only, uid, &job_ptr, err_msg,
+				   protocol_version);
 
 	if (!job_ptr || (*alloc_code && job_ptr->job_state == JOB_FAILED)) {
 		unlock_slurmctld(job_write_lock);
@@ -1632,7 +1706,7 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 
 	unlock_slurmctld(job_write_lock);
 
-	if (_submit_sibling_jobs(job_desc, msg)) {
+	if (_submit_sibling_jobs(job_desc, msg, alloc_only)) {
 		/* failed to submit a sibling job to a sibling. Need to update
 		 * the local job's sibling bitmap */
 

@@ -390,6 +390,27 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 
 		break;
 	}
+	case REQUEST_SIB_RESOURCE_ALLOCATION:
+	{
+		uint16_t tmp_version     = msg->protocol_version;
+		sib_msg_t *sib_msg       = msg->data;
+		job_desc_msg_t *job_desc = sib_msg->data;
+		job_desc->job_id         = sib_msg->job_id;
+		job_desc->fed_siblings   = sib_msg->fed_siblings;
+
+		/* set protocol version to that of the client's version so that
+		 * the job's start_protocol_version is that of the client's and
+		 * not the calling controllers. */
+		msg->protocol_version = sib_msg->data_version;
+		msg->data = job_desc;
+
+		_slurm_rpc_allocate_resources(msg);
+
+		msg->data = sib_msg;
+		msg->protocol_version = tmp_version;
+
+		break;
+	}
 	case MESSAGE_NODE_REGISTRATION_STATUS:
 		_slurm_rpc_node_registration(msg, 0);
 		break;
@@ -1100,24 +1121,60 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		if (error_code == SLURM_SUCCESS) {
 			do_unlock = true;
 			_throttle_start(&active_rpc_cnt);
-			lock_slurmctld(job_write_lock);
 
-			error_code = job_allocate(job_desc_msg, immediate,
-						  false, NULL,
-						  true, uid, &job_ptr,
-						  &err_msg,
-						  msg->protocol_version);
-			/* unlock after finished using the job structure data */
+			if (job_desc_msg->job_id == SLURM_BATCH_SCRIPT &&
+			    fed_mgr_is_active()) {
+				uint32_t job_id;
+				if (fed_mgr_job_allocate(
+							msg, job_desc_msg, true,
+							uid,
+							msg->protocol_version,
+							&job_id, &error_code,
+							&err_msg)) {
+					do_unlock = false;
+					_throttle_fini(&active_rpc_cnt);
+					reject_job = true;
+				} else {
+					/* fed_mgr_job_allocate grabs and
+					 * releases job_write_lock on its own to
+					 * prevent waiting/locking on siblings
+					 * to reply. Now grab the lock and grab
+					 * the jobid. */
+					lock_slurmctld(job_write_lock);
+					if (!(job_ptr =
+					      find_job_record(job_id))) {
+						error("%s: can't find fed job that was just created. this should never happen",
+						      __func__);
+						reject_job = true;
+						error_code = SLURM_ERROR;
+					}
+				}
+			} else {
+				lock_slurmctld(job_write_lock);
+
+				error_code = job_allocate(
+						job_desc_msg, immediate, false,
+						NULL, true, uid, &job_ptr,
+						&err_msg,
+						msg->protocol_version);
+				/* unlock after finished using the job structure
+				 * data */
+
+				/* return result */
+				if (!job_ptr ||
+				    (error_code &&
+				     job_ptr->job_state == JOB_FAILED))
+					reject_job = true;
+			}
 			END_TIMER2("_slurm_rpc_allocate_resources");
 		}
-	} else if (errno)
-		error_code = errno;
-	else
-		error_code = SLURM_ERROR;
-
-	/* return result */
-	if (!job_ptr || (error_code && job_ptr->job_state == JOB_FAILED))
+	} else {
 		reject_job = true;
+		if (errno)
+			error_code = errno;
+		else
+			error_code = SLURM_ERROR;
+	}
 
 	if (!reject_job) {
 		xassert(job_ptr);
@@ -3498,7 +3555,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 	if (job_desc_msg->job_id == SLURM_BATCH_SCRIPT &&
 	    fed_mgr_is_active()) { /* make sure it's not a submitted sib job. */
 
-		if (fed_mgr_job_allocate(msg, job_desc_msg, uid,
+		if (fed_mgr_job_allocate(msg, job_desc_msg, false, uid,
 					 msg->protocol_version, &job_id,
 					 &error_code, &err_msg))
 			reject_job = true;
