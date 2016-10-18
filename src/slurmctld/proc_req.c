@@ -3444,7 +3444,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 	static int active_rpc_cnt = 0;
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
-	uint32_t step_id = 0;
+	uint32_t step_id = SLURM_BATCH_SCRIPT, job_id = 0;
 	struct job_record *job_ptr = NULL;
 	slurm_msg_t response_msg;
 	submit_response_msg_t submit_msg;
@@ -3480,6 +3480,8 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		error("REQUEST_SUBMIT_BATCH_JOB lacks alloc_node from uid=%d", uid);
 	}
 
+	dump_job_desc(job_desc_msg);
+
 	if (error_code == SLURM_SUCCESS) {
 		/* Locks are for job_submit plugin use */
 		lock_slurmctld(job_read_lock);
@@ -3487,34 +3489,32 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		unlock_slurmctld(job_read_lock);
 	}
 
-	dump_job_desc(job_desc_msg);
-	if (error_code == SLURM_SUCCESS &&
-	    job_desc_msg->job_id == SLURM_BATCH_SCRIPT && /* make sure it's not
-							     a submitted sib
-							     job. */
-	    fed_mgr_is_active()) {
-		_throttle_start(&active_rpc_cnt);
-		error_code = fed_mgr_job_allocate(msg, job_desc_msg, uid,
-						  msg->protocol_version,
-						  &job_ptr, &err_msg);
-		_throttle_fini(&active_rpc_cnt);
+	if (error_code) {
+		reject_job = true;
+		goto send_msg;
+	}
 
-	} else if (error_code == SLURM_SUCCESS) {
-		_throttle_start(&active_rpc_cnt);
+	_throttle_start(&active_rpc_cnt);
+	if (job_desc_msg->job_id == SLURM_BATCH_SCRIPT &&
+	    fed_mgr_is_active()) { /* make sure it's not a submitted sib job. */
+
+		if (fed_mgr_job_allocate(msg, job_desc_msg, uid,
+					 msg->protocol_version, &job_id,
+					 &error_code, &err_msg))
+			reject_job = true;
+	} else {
 		lock_slurmctld(job_write_lock);
 		START_TIMER;	/* Restart after we have locks */
+
 		if (job_desc_msg->job_id != SLURM_BATCH_SCRIPT) {
 			job_ptr = find_job_record(job_desc_msg->job_id);
 			if (job_ptr && IS_JOB_FINISHED(job_ptr)) {
 				if (IS_JOB_COMPLETING(job_ptr)) {
 					info("Attempt to re-use active "
 					     "job id %u", job_ptr->job_id);
-					slurm_send_rc_msg(
-						msg,
-						ESLURM_DUPLICATE_JOB_ID);
-					unlock_slurmctld(job_write_lock);
-					_throttle_fini(&active_rpc_cnt);
-					goto fini;
+					reject_job = true;
+					error_code = ESLURM_DUPLICATE_JOB_ID;
+					goto unlock;
 				}
 				job_ptr = NULL;	/* OK to re-use job id */
 			}
@@ -3530,10 +3530,9 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 			if (!validate_slurm_user(uid)) {
 				info("Attempt to execute batch job step by "
 				     "uid=%d", uid);
-				slurm_send_rc_msg(msg, ESLURM_NO_STEPS);
-				unlock_slurmctld(job_write_lock);
-				_throttle_fini(&active_rpc_cnt);
-				goto fini;
+				error_code = ESLURM_NO_STEPS;
+				reject_job = true;
+				goto unlock;
 			}
 #endif
 
@@ -3543,63 +3542,56 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 				      "by user %u",
 				      uid, job_ptr->job_id,
 				      job_ptr->user_id);
-				slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
-				unlock_slurmctld(job_write_lock);
-				_throttle_fini(&active_rpc_cnt);
-				goto fini;
+				error_code = ESLURM_USER_ID_MISSING;
+				reject_job = true;
+				goto unlock;
 			}
 			if (job_ptr->details &&
 			    job_ptr->details->prolog_running) {
-				slurm_send_rc_msg(msg, EAGAIN);
-				unlock_slurmctld(job_write_lock);
-				_throttle_fini(&active_rpc_cnt);
-				goto fini;
+				error_code = EAGAIN;
+				reject_job = true;
+				goto unlock;
 			}
 
 			error_code = _launch_batch_step(job_desc_msg, uid,
 							&step_id,
 							msg->protocol_version);
-			unlock_slurmctld(job_write_lock);
-			_throttle_fini(&active_rpc_cnt);
-			END_TIMER2("_slurm_rpc_submit_batch_job");
-
 			if (error_code != SLURM_SUCCESS) {
 				info("_launch_batch_step: %s",
 				     slurm_strerror(error_code));
-				slurm_send_rc_msg(msg, error_code);
-			} else {
-				info("_launch_batch_step StepId=%u.%u %s",
-				     job_desc_msg->job_id, step_id,
-				     TIME_STR);
-				submit_msg.job_id     = job_desc_msg->job_id;
-				submit_msg.step_id    = step_id;
-				submit_msg.error_code = error_code;
-				response_msg.msg_type =
-					RESPONSE_SUBMIT_BATCH_JOB;
-
-				response_msg.data = &submit_msg;
-				slurm_send_node_msg(msg->conn_fd,
-						    &response_msg);
-				schedule_job_save();
+				reject_job = true;
+				goto unlock;
 			}
-			goto fini;
-		}
 
-		/* Create new job allocation */
-		error_code = job_allocate(job_desc_msg,
-					  job_desc_msg->immediate, false,
-					  NULL, 0, uid, &job_ptr, &err_msg,
-					  msg->protocol_version);
+			job_id = job_desc_msg->job_id;
+
+			info("_launch_batch_step StepId=%u.%u %s",
+			     job_id, step_id, TIME_STR);
+		} else {
+			/* Create new job allocation */
+			error_code = job_allocate(job_desc_msg,
+						  job_desc_msg->immediate,
+						  false, NULL, 0, uid, &job_ptr,
+						  &err_msg,
+						  msg->protocol_version);
+			if (!job_ptr ||
+			    (error_code && job_ptr->job_state == JOB_FAILED))
+				reject_job = true;
+			else
+				job_id = job_ptr->job_id;
+
+			if (job_desc_msg->immediate &&
+			    (error_code != SLURM_SUCCESS))
+				error_code = ESLURM_CAN_NOT_START_IMMEDIATELY;
+		}
+unlock:
 		unlock_slurmctld(job_write_lock);
-		_throttle_fini(&active_rpc_cnt);
-		END_TIMER2("_slurm_rpc_submit_batch_job");
-		if (job_desc_msg->immediate && (error_code != SLURM_SUCCESS))
-			error_code = ESLURM_CAN_NOT_START_IMMEDIATELY;
 	}
 
-	/* return result */
-	if (!job_ptr || (error_code && job_ptr->job_state == JOB_FAILED))
-		reject_job = true;
+	_throttle_fini(&active_rpc_cnt);
+
+send_msg:
+	END_TIMER2("_slurm_rpc_submit_batch_job");
 
 	if (reject_job) {
 		info("_slurm_rpc_submit_batch_job: %s",
@@ -3610,21 +3602,23 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 			slurm_send_rc_msg(msg, error_code);
 	} else {
 		info("_slurm_rpc_submit_batch_job JobId=%u %s",
-		     job_ptr->job_id, TIME_STR);
+		     job_id, TIME_STR);
 		/* send job_ID */
-		submit_msg.job_id     = job_ptr->job_id;
-		submit_msg.step_id    = SLURM_BATCH_SCRIPT;
+		submit_msg.job_id     = job_id;
+		submit_msg.step_id    = step_id;
 		submit_msg.error_code = error_code;
 		response_msg.msg_type = RESPONSE_SUBMIT_BATCH_JOB;
 		response_msg.data = &submit_msg;
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 
 		schedule_job_save();	/* Has own locks */
-		schedule_node_save();	/* Has own locks */
-		queue_job_scheduler();
+		if (step_id == SLURM_BATCH_SCRIPT) {
+			schedule_node_save();	/* Has own locks */
+			queue_job_scheduler();
+		}
 	}
 
-fini:	xfree(err_msg);
+	xfree(err_msg);
 }
 
 /* _slurm_rpc_update_job - process RPC to update the configuration of a
