@@ -953,6 +953,8 @@ typedef struct {
 	uint32_t nnodes;
 	char *nodes;
 	uint32_t ntasks;
+	uint32_t packjobid;	/* jobid of srun first step of the jobpack */
+	uint32_t packstepid;	/* stepid of jobpack member */
 	char *pid_str;
 	uint32_t req_cpufreq_min;
 	uint32_t req_cpufreq_max;

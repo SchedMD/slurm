@@ -160,6 +160,8 @@ typedef struct {
 	char *nodelist;
 	char *nodes;
 	char *node_inx;
+	char *packjobid;
+	char *packstepid;
 	char *period_end;
 	char *period_start;
 	char *period_suspended;
@@ -367,6 +369,8 @@ static char *step_req_inx[] = {
 	"max_disk_write_node",
 	"ave_disk_write",
 	"tres_alloc",
+	"packjobid",
+	"packstepid",
 };
 
 
@@ -419,6 +423,8 @@ enum {
 	STEP_REQ_MAX_DISK_WRITE_NODE,
 	STEP_REQ_AVE_DISK_WRITE,
 	STEP_REQ_TRES,
+	STEP_REQ_PACKJOBID,
+	STEP_REQ_PACKSTEPID,
 	STEP_REQ_COUNT,
 };
 
@@ -808,6 +814,8 @@ static void _pack_local_step(local_step_t *object,
 	packstr(object->nodelist, buffer);
 	packstr(object->nodes, buffer);
 	packstr(object->node_inx, buffer);
+	packstr(object->packjobid, buffer);
+	packstr(object->packstepid, buffer);
 	packstr(object->period_end, buffer);
 	packstr(object->period_start, buffer);
 	packstr(object->period_suspended, buffer);
@@ -833,7 +841,58 @@ static int _unpack_local_step(local_step_t *object,
 	uint32_t tmp32;
 	char *tmp_char;
 
-	if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_17_02_PROTOCOL_VERSION) {
+		unpackstr_ptr(&object->act_cpufreq, &tmp32, buffer);
+		unpackstr_ptr(&object->ave_cpu, &tmp32, buffer);
+		unpackstr_ptr(&object->ave_disk_read, &tmp32, buffer);
+		unpackstr_ptr(&object->ave_disk_write, &tmp32, buffer);
+		unpackstr_ptr(&object->ave_pages, &tmp32, buffer);
+		unpackstr_ptr(&object->ave_rss, &tmp32, buffer);
+		unpackstr_ptr(&object->ave_vsize, &tmp32, buffer);
+		unpackstr_ptr(&object->exit_code, &tmp32, buffer);
+		unpackstr_ptr(&object->consumed_energy, &tmp32, buffer);
+		unpackstr_ptr(&object->job_db_inx, &tmp32, buffer);
+		unpackstr_ptr(&object->kill_requid, &tmp32, buffer);
+		unpackstr_ptr(&object->max_disk_read, &tmp32, buffer);
+		unpackstr_ptr(&object->max_disk_read_node, &tmp32, buffer);
+		unpackstr_ptr(&object->max_disk_read_task, &tmp32, buffer);
+		unpackstr_ptr(&object->max_disk_write, &tmp32, buffer);
+		unpackstr_ptr(&object->max_disk_write_node, &tmp32, buffer);
+		unpackstr_ptr(&object->max_disk_write_task, &tmp32, buffer);
+		unpackstr_ptr(&object->max_pages, &tmp32, buffer);
+		unpackstr_ptr(&object->max_pages_node, &tmp32, buffer);
+		unpackstr_ptr(&object->max_pages_task, &tmp32, buffer);
+		unpackstr_ptr(&object->max_rss, &tmp32, buffer);
+		unpackstr_ptr(&object->max_rss_node, &tmp32, buffer);
+		unpackstr_ptr(&object->max_rss_task, &tmp32, buffer);
+		unpackstr_ptr(&object->max_vsize, &tmp32, buffer);
+		unpackstr_ptr(&object->max_vsize_node, &tmp32, buffer);
+		unpackstr_ptr(&object->max_vsize_task, &tmp32, buffer);
+		unpackstr_ptr(&object->min_cpu, &tmp32, buffer);
+		unpackstr_ptr(&object->min_cpu_node, &tmp32, buffer);
+		unpackstr_ptr(&object->min_cpu_task, &tmp32, buffer);
+		unpackstr_ptr(&object->name, &tmp32, buffer);
+		unpackstr_ptr(&object->nodelist, &tmp32, buffer);
+		unpackstr_ptr(&object->nodes, &tmp32, buffer);
+		unpackstr_ptr(&object->node_inx, &tmp32, buffer);
+		unpackstr_ptr(&object->packjobid, &tmp32, buffer);
+		unpackstr_ptr(&object->packstepid, &tmp32, buffer);
+		unpackstr_ptr(&object->period_end, &tmp32, buffer);
+		unpackstr_ptr(&object->period_start, &tmp32, buffer);
+		unpackstr_ptr(&object->period_suspended, &tmp32, buffer);
+		unpackstr_ptr(&object->req_cpufreq_min, &tmp32, buffer);
+		unpackstr_ptr(&object->req_cpufreq_max, &tmp32, buffer);
+		unpackstr_ptr(&object->req_cpufreq_gov, &tmp32, buffer);
+		unpackstr_ptr(&object->state, &tmp32, buffer);
+		unpackstr_ptr(&object->stepid, &tmp32, buffer);
+		unpackstr_ptr(&object->sys_sec, &tmp32, buffer);
+		unpackstr_ptr(&object->sys_usec, &tmp32, buffer);
+		unpackstr_ptr(&object->tasks, &tmp32, buffer);
+		unpackstr_ptr(&object->task_dist, &tmp32, buffer);
+		unpackstr_ptr(&object->tres_alloc_str, &tmp32, buffer);
+		unpackstr_ptr(&object->user_sec, &tmp32, buffer);
+		unpackstr_ptr(&object->user_usec, &tmp32, buffer);
+	} else if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		unpackstr_ptr(&object->act_cpufreq, &tmp32, buffer);
 		unpackstr_ptr(&object->ave_cpu, &tmp32, buffer);
 		unpackstr_ptr(&object->ave_disk_read, &tmp32, buffer);
