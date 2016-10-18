@@ -50,6 +50,8 @@ documents those changes that are of interest to users and administrators.
  -- Correct a bitmap test function (used only by the select/bluegene plugin).
  -- Do not propagate SLURM_UMASK environment variable to batch script.
  -- Added node_features/knl_generic plugin for KNL support on non-Cray systems.
+ -- Cray: Prevent abort in backfill scheduling logic for requeued job that has
+    been cancelled while NHC is running.
 
 * Changes in Slurm 16.05.5
 ==========================
