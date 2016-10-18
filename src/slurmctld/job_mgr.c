@@ -3532,6 +3532,9 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	int spec_count;
 	char *mem_type, buf[100], *signal_flags, *spec_type, *job_id;
 
+	if (get_log_level() < LOG_LEVEL_DEBUG3)
+		return;
+
 	if (job_specs == NULL)
 		return;
 
