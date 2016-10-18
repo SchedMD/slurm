@@ -17,6 +17,8 @@ documents those changes that are of interest to users and administrators.
  -- Add mechanism to constrain kernel memory allocation using cgroups. New
     cgroup.conf parameters added: ConstrainKmemSpace, MaxKmemPercent, and
     MinKmemSpace.
+ -- Correct invokation of man2html, which previously could cause FreeBSD builds
+    to hang.
 
 * Changes in Slurm 17.02.0pre2
 ==============================
