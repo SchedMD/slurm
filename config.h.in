@@ -477,10 +477,6 @@
 /* Define to 1 if you are building a production release. */
 #undef NDEBUG
 
-/* Define to 1 if we can't use the alter ignore when messing with a database
-   table */
-#undef NO_ALTER_IGNORE_MYSQL
-
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT
 
