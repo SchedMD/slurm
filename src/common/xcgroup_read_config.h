@@ -67,7 +67,7 @@ typedef struct slurm_cgroup_conf {
 	bool      constrain_kmem_space;
 	float     allowed_kmem_space;
 	float     max_kmem_percent;
-	uint32_t  min_kmem_space;
+	uint64_t  min_kmem_space;
 
 	bool      constrain_swap_space;
 	float     allowed_swap_space;
