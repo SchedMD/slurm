@@ -5197,13 +5197,6 @@ static int _part_access_check(struct part_record *part_ptr,
 	size_t resv_name_leng = 0;
 	int rc = SLURM_SUCCESS;
 
-#ifdef HAVE_BG
-	static uint16_t cpus_per_node = 0;
-	if (!cpus_per_node)
-		select_g_alter_node_cnt(SELECT_GET_NODE_CPU_CNT,
-					&cpus_per_node);
-#endif
-
 	if (job_desc->reservation != NULL) {
 		resv_name_leng = strlen(job_desc->reservation);
 	}
@@ -5294,16 +5287,16 @@ static int _part_access_check(struct part_record *part_ptr,
 		return ESLURM_REQUESTED_NODES_NOT_IN_PARTITION;
 	}
 
+	/* The node counts have not been altered yet, so do not figure them out
+	 * by using the cpu counts.  The partitions have already been altered
+	 * so we have to use the original values.
+	 */
+	job_min_nodes = job_desc->min_nodes;
+	job_max_nodes = job_desc->max_nodes;
 #ifdef HAVE_BG
-	job_min_nodes = (job_desc->min_cpus == NO_VAL ?
-			 NO_VAL : job_desc->min_cpus / cpus_per_node);
-	job_max_nodes = (job_desc->max_cpus == NO_VAL ?
-			 NO_VAL : job_desc->max_cpus / cpus_per_node);
 	min_nodes_tmp = part_ptr->min_nodes_orig;
 	max_nodes_tmp = part_ptr->max_nodes_orig;
 #else
-	job_min_nodes = job_desc->min_nodes;
-	job_max_nodes = job_desc->max_nodes;
 	min_nodes_tmp = part_ptr->min_nodes;
 	max_nodes_tmp = part_ptr->max_nodes;
 #endif
@@ -5721,6 +5714,11 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 	}
 
 #ifdef HAVE_BG
+	/* The node counts not been altered to reflect slurm nodes instead of
+	 * cnodes, so we need to figure out the cnode count
+	 * by using the cpu counts.  The partitions have been altered as well
+	 * so we have to use the original values.
+	 */
 	job_min_nodes = detail_ptr->min_cpus / cpus_per_node;
 	job_max_nodes = detail_ptr->max_cpus / cpus_per_node;
 	part_min_nodes = part_ptr->min_nodes_orig;

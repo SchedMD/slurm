@@ -54,6 +54,7 @@ documents those changes that are of interest to users and administrators.
     been cancelled while NHC is running.
  -- Improve reported estimates of start and end times for pending jobs.
  -- pbsnodes: Show OS value as "unknown" for down nodes.
+ -- BlueGene - correctly scale node counts when enforcing MaxNodes limit take 2.
 
 * Changes in Slurm 16.05.5
 ==========================
