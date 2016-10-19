@@ -5714,7 +5714,7 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 	}
 
 #ifdef HAVE_BG
-	/* The node counts not been altered to reflect slurm nodes instead of
+	/* The node counts have been altered to reflect slurm nodes instead of
 	 * cnodes, so we need to figure out the cnode count
 	 * by using the cpu counts.  The partitions have been altered as well
 	 * so we have to use the original values.
