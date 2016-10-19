@@ -53,6 +53,7 @@ documents those changes that are of interest to users and administrators.
  -- Cray: Prevent abort in backfill scheduling logic for requeued job that has
     been cancelled while NHC is running.
  -- Improve reported estimates of start and end times for pending jobs.
+ -- pbsnodes: Show OS value as "unknown" for down nodes.
 
 * Changes in Slurm 16.05.5
 ==========================

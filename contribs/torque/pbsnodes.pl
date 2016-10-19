@@ -136,6 +136,9 @@ Main:
 	    my $state     = lc(Slurm->node_state_string($node->{'node_state'}));
             my $reason    = $node->{'reason'};
 	    my $gres      = $node->{'gres'};
+	    if ( !defined $node->{'os'} ) {
+		$node->{'os'} = "unknown";
+	    }
 	    my $os        = lc($node->{'os'});
 	    my $arch      = $node->{'arch'};
 	    my $disksize  = $node->{'tmp_disk'};
