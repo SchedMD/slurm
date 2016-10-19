@@ -8553,7 +8553,8 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 	      uint16_t protocol_version, uid_t uid)
 {
 	struct job_details *detail_ptr;
-	time_t begin_time = 0, start_time;
+	time_t begin_time = 0, start_time = 0, end_time = 0;
+	uint32_t time_limit;
 	uint8_t uint8_tmp = 0;
 	char *nodelist = NULL;
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
@@ -8596,9 +8597,11 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		pack32(dump_job_ptr->alloc_sid, buffer);
 		if ((dump_job_ptr->time_limit == NO_VAL)
 		    && dump_job_ptr->part_ptr)
-			pack32(dump_job_ptr->part_ptr->max_time, buffer);
+			time_limit = dump_job_ptr->part_ptr->max_time;
 		else
-			pack32(dump_job_ptr->time_limit, buffer);
+			time_limit = dump_job_ptr->time_limit;
+
+		pack32(time_limit, buffer);
 		pack32(dump_job_ptr->time_min, buffer);
 
 		if (dump_job_ptr->details) {
@@ -8616,15 +8619,26 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		if (IS_JOB_STARTED(dump_job_ptr)) {
 			/* Report actual start time, in past */
 			start_time = dump_job_ptr->start_time;
+			end_time = dump_job_ptr->end_time;
 		} else if (dump_job_ptr->start_time != 0) {
 			/* Report expected start time,
 			 * making sure that time is not in the past */
 			start_time = MAX(dump_job_ptr->start_time, time(NULL));
-		} else	/* earliest start time in the future */
+			if (time_limit != NO_VAL) {
+				end_time = MAX(dump_job_ptr->end_time,
+					       (start_time + time_limit * 60));
+			}
+		} else	if (begin_time > time(NULL)) {
+			/* earliest start time in the future */
 			start_time = begin_time;
+			if (time_limit != NO_VAL) {
+				end_time = MAX(dump_job_ptr->end_time,
+					       (start_time + time_limit * 60));
+			}
+		}
 		pack_time(start_time, buffer);
+		pack_time(end_time, buffer);
 
-		pack_time(dump_job_ptr->end_time, buffer);
 		pack_time(dump_job_ptr->suspend_time, buffer);
 		pack_time(dump_job_ptr->pre_sus_time, buffer);
 		pack_time(dump_job_ptr->resize_time, buffer);
