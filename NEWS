@@ -22,6 +22,9 @@ documents those changes that are of interest to users and administrators.
  -- MYSQL - Unconditionally remove 'ignore' clause from 'alter ignore'.
  -- Modify service files to not start Slurm daemons until after Munge has been
     started.
+    NOTE: If you are not using Munge, but are using the "service" scripts to
+    start Slurm daemons, then you will need to remove this check from the
+    etc/slurm*service scripts.
 
 * Changes in Slurm 17.02.0pre2
 ==============================
