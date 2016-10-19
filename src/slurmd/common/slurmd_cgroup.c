@@ -232,8 +232,8 @@ extern int init_system_memory_cgroup(void)
 
 	debug ("system cgroup: memory: total:%luM allowed:%.4g%%(%s), "
 	       "swap:%.4g%%(%s), max:%.4g%%(%luM) "
-	       "max+swap:%.4g%%(%luM) min:%uM "
-	       "kmem:%.4g%%(%luM %s) min:%uM",
+	       "max+swap:%.4g%%(%luM) min:%luM "
+	       "kmem:%.4g%%(%luM %s) min:%luM",
 	       (unsigned long) totalram,
 	       allowed_ram_space,
 	       constrain_ram_space?"enforced":"permissive",
@@ -245,12 +245,12 @@ extern int init_system_memory_cgroup(void)
 
 	       slurm_cgroup_conf.max_swap_percent,
 	       (unsigned long) (max_swap/(1024*1024)),
-	       (unsigned) slurm_cgroup_conf.min_ram_space,
+	       (unsigned long) slurm_cgroup_conf.min_ram_space,
 
 	       slurm_cgroup_conf.max_kmem_percent,
 	       (unsigned long)(max_kmem/(1024*1024)),
 	       constrain_kmem_space?"enforced":"permissive",
-	       slurm_cgroup_conf.min_kmem_space);
+	       (unsigned long) slurm_cgroup_conf.min_kmem_space);
 
         /*
          *  Warning: OOM Killer must be disabled for slurmstepd

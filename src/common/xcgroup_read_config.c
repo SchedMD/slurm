@@ -245,7 +245,7 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 				"MaxKmemPercent",
 				&slurm_cgroup_conf->max_kmem_percent);
 
-		s_p_get_uint32 (&slurm_cgroup_conf->min_kmem_space,
+		s_p_get_uint64 (&slurm_cgroup_conf->min_kmem_space,
 				"MinKmemSpace", tbl);
 
 		conf_get_float (tbl,
