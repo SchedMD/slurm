@@ -150,7 +150,7 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		{"ConstrainKmemSpace", S_P_BOOLEAN},
 		{"AllowedKmemSpace", S_P_STRING},
 		{"MaxKmemPercent", S_P_STRING},
-		{"MinKmemSpace", S_P_UINT32},
+		{"MinKmemSpace", S_P_UINT64},
 		{"AllowedSwapSpace", S_P_STRING},
 		{"MaxSwapPercent", S_P_STRING},
 		{"ConstrainCores", S_P_BOOLEAN},
