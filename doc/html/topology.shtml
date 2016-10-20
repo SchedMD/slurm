@@ -131,6 +131,9 @@ SwitchName=s1 Nodes=tux[4-7]
 SwitchName=s2 Nodes=tux[8-11]
 SwitchName=s3 Nodes=tux[12-15]
 SwitchName=s4 Switches=s[0-3]
+SwitchName=s5 Switches=s[0-3]
+SwitchName=s6 Switches=s[0-3]
+SwitchName=s7 Switches=s[0-3]
 </pre>
 
 <p>Note that compute nodes on switches that lack a common parent switch can
