@@ -55,6 +55,7 @@ documents those changes that are of interest to users and administrators.
  -- Improve reported estimates of start and end times for pending jobs.
  -- pbsnodes: Show OS value as "unknown" for down nodes.
  -- BlueGene - correctly scale node counts when enforcing MaxNodes limit take 2.
+ -- Fix "sbatch --hold" to set JobHeldUser correctly instead of JobHeldAdmin.
 
 * Changes in Slurm 16.05.5
 ==========================
