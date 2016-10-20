@@ -3034,23 +3034,29 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	else
 		conf->use_spec_resources = DEFAULT_ALLOW_SPEC_RESOURCE_USAGE;
 
-	s_p_get_string(&default_storage_type, "DefaultStorageType", hashtbl);
-	s_p_get_string(&default_storage_host, "DefaultStorageHost", hashtbl);
-	s_p_get_string(&default_storage_user, "DefaultStorageUser", hashtbl);
-	s_p_get_string(&default_storage_pass, "DefaultStoragePass", hashtbl);
-	s_p_get_string(&default_storage_loc,  "DefaultStorageLoc",  hashtbl);
-	s_p_get_uint32(&default_storage_port, "DefaultStoragePort", hashtbl);
-	s_p_get_string(&conf->job_credential_private_key,
-		       "JobCredentialPrivateKey", hashtbl);
-	s_p_get_string(&conf->job_credential_public_certificate,
-		      "JobCredentialPublicCertificate", hashtbl);
+	(void) s_p_get_string(&default_storage_type, "DefaultStorageType",
+			      hashtbl);
+	(void) s_p_get_string(&default_storage_host, "DefaultStorageHost",
+			      hashtbl);
+	(void) s_p_get_string(&default_storage_user, "DefaultStorageUser",
+			      hashtbl);
+	(void) s_p_get_string(&default_storage_pass, "DefaultStoragePass",
+			      hashtbl);
+	(void) s_p_get_string(&default_storage_loc,  "DefaultStorageLoc",
+			      hashtbl);
+	(void) s_p_get_uint32(&default_storage_port, "DefaultStoragePort",
+			      hashtbl);
+	(void) s_p_get_string(&conf->job_credential_private_key,
+			     "JobCredentialPrivateKey", hashtbl);
+	(void) s_p_get_string(&conf->job_credential_public_certificate,
+			      "JobCredentialPublicCertificate", hashtbl);
 
-	s_p_get_string(&conf->authinfo, "AuthInfo", hashtbl);
+	(void) s_p_get_string(&conf->authinfo, "AuthInfo", hashtbl);
 
 	if (!s_p_get_string(&conf->authtype, "AuthType", hashtbl))
 		conf->authtype = xstrdup(DEFAULT_AUTH_TYPE);
 
-	s_p_get_string(&conf->bb_type, "BurstBufferType", hashtbl);
+	(void) s_p_get_string(&conf->bb_type, "BurstBufferType", hashtbl);
 
 	if (s_p_get_uint16(&uint16_tmp, "GroupUpdateTime", hashtbl)) {
 		if (uint16_tmp > GROUP_TIME_MASK) {
@@ -3076,7 +3082,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->checkpoint_type, "CheckpointType", hashtbl))
 		conf->checkpoint_type = xstrdup(DEFAULT_CHECKPOINT_TYPE);
 
-	s_p_get_string(&conf->chos_loc, "ChosLoc", hashtbl);
+	(void) s_p_get_string(&conf->chos_loc, "ChosLoc", hashtbl);
 
 	if (s_p_get_string(&temp_str, "CpuFreqDef", hashtbl)) {
 		if (cpu_freq_verify_def(temp_str, &conf->cpu_freq_def)) {
@@ -3145,12 +3151,13 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->enforce_part_limits = DEFAULT_ENFORCE_PART_LIMITS;
 	}
 
-	s_p_get_string(&conf->epilog, "Epilog", hashtbl);
+	(void) s_p_get_string(&conf->epilog, "Epilog", hashtbl);
 
 	if (!s_p_get_uint32(&conf->epilog_msg_time, "EpilogMsgTime", hashtbl))
 		conf->epilog_msg_time = DEFAULT_EPILOG_MSG_TIME;
 
-	s_p_get_string(&conf->epilog_slurmctld, "EpilogSlurmctld", hashtbl);
+	(void) s_p_get_string(&conf->epilog_slurmctld, "EpilogSlurmctld",
+			      hashtbl);
 
 	if (!s_p_get_string(&conf->ext_sensors_type,
 			    "ExtSensorsType", hashtbl))
@@ -3171,7 +3178,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint32(&conf->first_job_id, "FirstJobId", hashtbl))
 		conf->first_job_id = DEFAULT_FIRST_JOB_ID;
 
-	s_p_get_string(&conf->gres_plugins, "GresTypes", hashtbl);
+	(void) s_p_get_string(&conf->gres_plugins, "GresTypes", hashtbl);
 
 	if (!s_p_get_uint16(&conf->inactive_limit, "InactiveLimit", hashtbl))
 		conf->inactive_limit = DEFAULT_INACTIVE_LIMIT;
@@ -3186,8 +3193,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->job_acct_gather_type =
 			xstrdup(DEFAULT_JOB_ACCT_GATHER_TYPE);
 
-	s_p_get_string(&conf->job_acct_gather_params, "JobAcctGatherParams",
-		       hashtbl);
+	(void) s_p_get_string(&conf->job_acct_gather_params,
+			     "JobAcctGatherParams", hashtbl);
 
 	if (!s_p_get_string(&conf->job_ckpt_dir, "JobCheckpointDir", hashtbl))
 		conf->job_ckpt_dir = xstrdup(DEFAULT_JOB_CKPT_DIR);
@@ -3263,22 +3270,22 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	else if (conf->job_requeue > 1)
 		conf->job_requeue = 1;
 
-	s_p_get_string(&conf->job_submit_plugins, "JobSubmitPlugins",
-		       hashtbl);
+	(void) s_p_get_string(&conf->job_submit_plugins, "JobSubmitPlugins",
+			      hashtbl);
 
 	if (!s_p_get_uint16(&conf->get_env_timeout, "GetEnvTimeout", hashtbl))
 		conf->get_env_timeout = DEFAULT_GET_ENV_TIMEOUT;
 
-	s_p_get_uint16(&conf->health_check_interval, "HealthCheckInterval",
-		       hashtbl);
+	(void) s_p_get_uint16(&conf->health_check_interval,
+			      "HealthCheckInterval", hashtbl);
 	if (s_p_get_string(&temp_str, "HealthCheckNodeState", hashtbl)) {
 		conf->health_check_node_state = _health_node_state(temp_str);
 		xfree(temp_str);
 	} else
 		conf->health_check_node_state = HEALTH_CHECK_NODE_ANY;
 
-	s_p_get_string(&conf->health_check_program, "HealthCheckProgram",
-		       hashtbl);
+	(void) s_p_get_string(&conf->health_check_program, "HealthCheckProgram",
+			      hashtbl);
 
 	if (!s_p_get_uint16(&conf->keep_alive_time, "KeepAliveTime", hashtbl))
 		conf->keep_alive_time = DEFAULT_KEEP_ALIVE_TIME;
@@ -3289,12 +3296,13 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint16(&conf->kill_wait, "KillWait", hashtbl))
 		conf->kill_wait = DEFAULT_KILL_WAIT;
 
-	s_p_get_string(&conf->launch_params, "LaunchParameters", hashtbl);
+	(void) s_p_get_string(&conf->launch_params, "LaunchParameters",
+			      hashtbl);
 
 	if (!s_p_get_string(&conf->launch_type, "LaunchType", hashtbl))
 		conf->launch_type = xstrdup(DEFAULT_LAUNCH_TYPE);
 
-	s_p_get_string(&conf->licenses, "Licenses", hashtbl);
+	(void) s_p_get_string(&conf->licenses, "Licenses", hashtbl);
 
 	if (s_p_get_string(&temp_str, "LogTimeFormat", hashtbl)) {
 		if (xstrcasestr(temp_str, "iso8601_ms"))
@@ -3315,7 +3323,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	} else
 		conf->log_fmt = LOG_FMT_ISO8601_MS;
 
-	s_p_get_string(&conf->mail_domain, "MailDomain", hashtbl);
+	(void) s_p_get_string(&conf->mail_domain, "MailDomain", hashtbl);
 
 	if (!s_p_get_string(&conf->mail_prog, "MailProg", hashtbl))
 		conf->mail_prog = xstrdup(DEFAULT_MAIL_PROG);
@@ -3376,7 +3384,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->max_tasks_per_node = DEFAULT_MAX_TASKS_PER_NODE;
 	}
 
-	s_p_get_string(&conf->mcs_plugin_params, "MCSParameters", hashtbl);
+	(void) s_p_get_string(&conf->mcs_plugin_params, "MCSParameters",
+			      hashtbl);
 	if (!s_p_get_string(&conf->mcs_plugin, "MCSPlugin", hashtbl)) {
 		conf->mcs_plugin = xstrdup(DEFAULT_MCS_PLUGIN);
 		if (conf->mcs_plugin_params) {
@@ -3425,7 +3434,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->mpi_default, "MpiDefault", hashtbl))
 		conf->mpi_default = xstrdup(DEFAULT_MPI_DEFAULT);
 
-	s_p_get_string(&conf->mpi_params, "MpiParams", hashtbl);
+	(void) s_p_get_string(&conf->mpi_params, "MpiParams", hashtbl);
 #if defined(HAVE_NATIVE_CRAY)
 	if (conf->mpi_params == NULL ||
 	    strstr(conf->mpi_params, "ports=") == NULL) {
@@ -3434,7 +3443,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	}
 #endif
 
-	s_p_get_string(&conf->msg_aggr_params, "MsgAggregationParams", hashtbl);
+	(void) s_p_get_string(&conf->msg_aggr_params, "MsgAggregationParams",
+			      hashtbl);
 
 	if (!s_p_get_boolean((bool *)&conf->track_wckey,
 			    "TrackWCKey", hashtbl))
@@ -3451,8 +3461,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 				xstrdup(DEFAULT_ACCOUNTING_STORAGE_TYPE);
 	}
 
-	s_p_get_string(&conf->node_features_plugins, "NodeFeaturesPlugins",
-		       hashtbl);
+	(void) s_p_get_string(&conf->node_features_plugins,
+			     "NodeFeaturesPlugins", hashtbl);
 
 	if (!s_p_get_string(&conf->accounting_storage_tres,
 			    "AccountingStorageTRES", hashtbl))
@@ -3530,8 +3540,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->accounting_storage_enforce = 0;
 
 	/* if no backup we don't care */
-	s_p_get_string(&conf->accounting_storage_backup_host,
-		       "AccountingStorageBackupHost", hashtbl);
+	(void) s_p_get_string(&conf->accounting_storage_backup_host,
+			      "AccountingStorageBackupHost", hashtbl);
 
 	if (!s_p_get_string(&conf->accounting_storage_host,
 			    "AccountingStorageHost", hashtbl)) {
@@ -3600,7 +3610,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->accounting_storage_user = xstrdup("N/A");
 	}
 
-	s_p_get_uint16(&conf->over_time_limit, "OverTimeLimit", hashtbl);
+	(void) s_p_get_uint16(&conf->over_time_limit, "OverTimeLimit", hashtbl);
 
 	if (!s_p_get_string(&conf->plugindir, "PluginDir", hashtbl))
 		conf->plugindir = xstrdup(default_plugin_path);
@@ -3612,7 +3622,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->plugstack, "PlugStackConfig", hashtbl))
 		conf->plugstack = xstrdup(default_plugstack);
 
-	s_p_get_string(&conf->power_parameters, "PowerParameters", hashtbl);
+	(void) s_p_get_string(&conf->power_parameters, "PowerParameters",
+			      hashtbl);
 	if (!s_p_get_string(&conf->power_plugin, "PowerPlugin", hashtbl))
 		conf->power_plugin = xstrdup(DEFAULT_POWER_PLUGIN);
 
@@ -3723,7 +3734,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	} else
 		conf->priority_max_age = DEFAULT_PRIORITY_DECAY;
 
-	s_p_get_string(&conf->priority_params, "PriorityParameters", hashtbl);
+	(void) s_p_get_string(&conf->priority_params, "PriorityParameters",
+			      hashtbl);
 
 
 	if (s_p_get_string(&temp_str, "PriorityUsageResetPeriod", hashtbl)) {
@@ -3839,8 +3851,9 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		xfree(temp_str);
 	}
 
-	s_p_get_string(&conf->prolog, "Prolog", hashtbl);
-	s_p_get_string(&conf->prolog_slurmctld, "PrologSlurmctld", hashtbl);
+	(void) s_p_get_string(&conf->prolog, "Prolog", hashtbl);
+	(void) s_p_get_string(&conf->prolog_slurmctld, "PrologSlurmctld",
+			      hashtbl);
 
 	if (s_p_get_string(&temp_str, "PrologFlags", hashtbl)) {
 		conf->prolog_flags = prolog_str2flags(temp_str);
@@ -3909,25 +3922,26 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	}
 #endif
 
-	s_p_get_string(&conf->resv_epilog, "ResvEpilog", hashtbl);
-	s_p_get_uint16(&conf->resv_over_run, "ResvOverRun", hashtbl);
-	s_p_get_string(&conf->resv_prolog, "ResvProlog", hashtbl);
+	(void) s_p_get_string(&conf->resv_epilog, "ResvEpilog", hashtbl);
+	(void) s_p_get_uint16(&conf->resv_over_run, "ResvOverRun", hashtbl);
+	(void)s_p_get_string(&conf->resv_prolog, "ResvProlog", hashtbl);
 
-	s_p_get_string(&conf->resume_program, "ResumeProgram", hashtbl);
+	(void)s_p_get_string(&conf->resume_program, "ResumeProgram", hashtbl);
 	if (!s_p_get_uint16(&conf->resume_rate, "ResumeRate", hashtbl))
 		conf->resume_rate = DEFAULT_RESUME_RATE;
 	if (!s_p_get_uint16(&conf->resume_timeout, "ResumeTimeout", hashtbl))
 		conf->resume_timeout = DEFAULT_RESUME_TIMEOUT;
 
-	s_p_get_string(&conf->reboot_program, "RebootProgram", hashtbl);
+	(void) s_p_get_string(&conf->reboot_program, "RebootProgram", hashtbl);
 
 	if (!s_p_get_string(&conf->route_plugin, "RoutePlugin", hashtbl))
 		conf->route_plugin = xstrdup(DEFAULT_ROUTE_PLUGIN);
 
-	s_p_get_string(&conf->salloc_default_command, "SallocDefaultCommand",
-			hashtbl);
+	(void) s_p_get_string(&conf->salloc_default_command,
+			      "SallocDefaultCommand", hashtbl);
 
-	s_p_get_string(&conf->sched_params, "SchedulerParameters", hashtbl);
+	(void) s_p_get_string(&conf->sched_params, "SchedulerParameters",
+			      hashtbl);
 
 	if (s_p_get_uint16(&conf->schedport, "SchedulerPort", hashtbl)) {
 		if (conf->schedport == 0) {
@@ -4050,10 +4064,11 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			    "SlurmctldPidFile", hashtbl))
 		conf->slurmctld_pidfile = xstrdup(DEFAULT_SLURMCTLD_PIDFILE);
 
-	s_p_get_string(&conf->slurmctld_plugstack, "SlurmctldPlugstack",
-		       hashtbl);
+	(void) s_p_get_string(&conf->slurmctld_plugstack, "SlurmctldPlugstack",
+			      hashtbl);
 
-	s_p_get_string(&conf->slurmctld_logfile, "SlurmctldLogFile", hashtbl);
+	(void )s_p_get_string(&conf->slurmctld_logfile, "SlurmctldLogFile",
+			      hashtbl);
 
 	if (s_p_get_string(&temp_str, "SlurmctldPort", hashtbl)) {
 		char *end_ptr = NULL;
@@ -4103,7 +4118,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	} else
 		conf->slurmd_debug = LOG_LEVEL_INFO;
 
-	s_p_get_string(&conf->slurmd_logfile, "SlurmdLogFile", hashtbl);
+	(void) s_p_get_string(&conf->slurmd_logfile, "SlurmdLogFile", hashtbl);
 
 	if (!s_p_get_string(&conf->slurmd_pidfile, "SlurmdPidFile", hashtbl))
 		conf->slurmd_pidfile = xstrdup(DEFAULT_SLURMD_PIDFILE);
@@ -4111,10 +4126,11 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint32(&conf->slurmd_port, "SlurmdPort", hashtbl))
 		conf->slurmd_port = SLURMD_PORT;
 
-	s_p_get_string(&conf->slurmd_plugstack, "SlurmdPlugstack",
-		       hashtbl);
+	(void) s_p_get_string(&conf->slurmd_plugstack, "SlurmdPlugstack",
+			      hashtbl);
 
-	s_p_get_string(&conf->sched_logfile, "SlurmSchedLogFile", hashtbl);
+	(void) s_p_get_string(&conf->sched_logfile, "SlurmSchedLogFile",
+			      hashtbl);
 
 	if (!s_p_get_uint16(&conf->sched_log_level,
 			   "SlurmSchedLogLevel", hashtbl))
@@ -4130,20 +4146,23 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint16(&conf->slurmd_timeout, "SlurmdTimeout", hashtbl))
 		conf->slurmd_timeout = DEFAULT_SLURMD_TIMEOUT;
 
-	s_p_get_string(&conf->srun_prolog, "SrunProlog", hashtbl);
+	(void) s_p_get_string(&conf->srun_prolog, "SrunProlog", hashtbl);
 	if (s_p_get_string(&temp_str, "SrunPortRange", hashtbl)) {
 		conf->srun_port_range = _parse_srun_ports(temp_str);
 		xfree(temp_str);
 	}
-	s_p_get_string(&conf->srun_epilog, "SrunEpilog", hashtbl);
+	(void) s_p_get_string(&conf->srun_epilog, "SrunEpilog", hashtbl);
 
 	if (!s_p_get_string(&conf->state_save_location,
 			    "StateSaveLocation", hashtbl))
 		conf->state_save_location = xstrdup(DEFAULT_SAVE_STATE_LOC);
 
-	s_p_get_string(&conf->suspend_exc_nodes, "SuspendExcNodes", hashtbl);
-	s_p_get_string(&conf->suspend_exc_parts, "SuspendExcParts", hashtbl);
-	s_p_get_string(&conf->suspend_program, "SuspendProgram", hashtbl);
+	(void) s_p_get_string(&conf->suspend_exc_nodes, "SuspendExcNodes",
+			      hashtbl);
+	(void) s_p_get_string(&conf->suspend_exc_parts, "SuspendExcParts",
+			      hashtbl);
+	(void) s_p_get_string(&conf->suspend_program, "SuspendProgram",
+			      hashtbl);
 	if (!s_p_get_uint16(&conf->suspend_rate, "SuspendRate", hashtbl))
 		conf->suspend_rate = DEFAULT_SUSPEND_RATE;
 	if (s_p_get_string(&temp_str, "SuspendTime", hashtbl)) {
@@ -4277,8 +4296,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		xfree(temp_str);
 	}
 
-	s_p_get_string(&conf->task_epilog, "TaskEpilog", hashtbl);
-	s_p_get_string(&conf->task_prolog, "TaskProlog", hashtbl);
+	(void) s_p_get_string(&conf->task_epilog, "TaskEpilog", hashtbl);
+	(void) s_p_get_string(&conf->task_prolog, "TaskProlog", hashtbl);
 
 	if (!s_p_get_uint16(&conf->tcp_timeout, "TCPTimeout", hashtbl))
 		conf->tcp_timeout = DEFAULT_TCP_TIMEOUT;
@@ -4289,7 +4308,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint16(&conf->wait_time, "WaitTime", hashtbl))
 		conf->wait_time = DEFAULT_WAIT_TIME;
 
-	s_p_get_string(&conf->topology_param, "TopologyParam", hashtbl);
+	(void) s_p_get_string(&conf->topology_param, "TopologyParam", hashtbl);
 
 	if (!s_p_get_string(&conf->topology_plugin, "TopologyPlugin", hashtbl))
 		conf->topology_plugin = xstrdup(DEFAULT_TOPOLOGY_PLUGIN);
@@ -4322,7 +4341,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			    "UnkillableStepTimeout", hashtbl))
 		conf->unkillable_timeout = DEFAULT_UNKILLABLE_TIMEOUT;
 
-	s_p_get_uint16(&conf->vsize_factor, "VSizeFactor", hashtbl);
+	(void) s_p_get_uint16(&conf->vsize_factor, "VSizeFactor", hashtbl);
 
 #ifdef HAVE_BG
 	if (conf->node_prefix == NULL) {
@@ -4342,8 +4361,9 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	/* The default values for both of these variables are NULL.
 	 */
-	s_p_get_string(&conf->requeue_exit, "RequeueExit", hashtbl);
-	s_p_get_string(&conf->requeue_exit_hold, "RequeueExitHold", hashtbl);
+	(void) s_p_get_string(&conf->requeue_exit, "RequeueExit", hashtbl);
+	(void) s_p_get_string(&conf->requeue_exit_hold, "RequeueExitHold",
+			      hashtbl);
 
 	if (!s_p_get_string(&conf->layouts, "Layouts", hashtbl))
 		conf->layouts = xstrdup("");
