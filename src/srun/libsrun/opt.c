@@ -400,18 +400,23 @@ static void _opt_default(void)
 	opt.ntasks_set = false;
 	opt.cpus_per_task = 0;
 	opt.cpus_set = false;
+	opt.hint_env = NULL;
+	opt.hint_set = false;
 	opt.min_nodes = 1;
 	opt.max_nodes = 0;
 	opt.sockets_per_node = NO_VAL; /* requested sockets */
 	opt.cores_per_socket = NO_VAL; /* requested cores */
 	opt.threads_per_core = NO_VAL; /* requested threads */
+	opt.threads_per_core_set = false;
 	opt.ntasks_per_node      = NO_VAL; /* ntask max limits */
 	opt.ntasks_per_socket    = NO_VAL;
 	opt.ntasks_per_core      = NO_VAL;
+	opt.ntasks_per_core_set  = false;
 	opt.nodes_set = false;
 	opt.nodes_set_env = false;
 	opt.nodes_set_opt = false;
 	opt.cpu_bind_type = 0;
+	opt.cpu_bind_type_set = false;
 	opt.cpu_bind = NULL;
 	opt.mem_bind_type = 0;
 	opt.mem_bind = NULL;
@@ -742,15 +747,7 @@ _process_env_var(env_vars_t *e, const char *val)
 			error("Invalid --cpu-freq argument: %s. Ignored", val);
 		break;
 	case OPT_HINT:
-		/* Keep after other options filled in */
-		if (verify_hint(val,
-				&opt.sockets_per_node,
-				&opt.cores_per_socket,
-				&opt.threads_per_core,
-				&opt.ntasks_per_core,
-				&opt.cpu_bind_type)) {
-			exit(error_exit);
-		}
+		opt.hint_env = xstrdup(val);
 		break;
 	case OPT_MEM_BIND:
 		if (slurm_verify_mem_bind(val, &opt.mem_bind,
@@ -1090,12 +1087,13 @@ static void _set_options(const int argc, char **argv)
 						&opt.cores_per_socket,
 						&opt.threads_per_core,
 						&opt.cpu_bind_type);
-
 			if (opt.extra_set == false) {
 				error("invalid resource allocation -B `%s'",
 					optarg);
 				exit(error_exit);
 			}
+			opt.cpu_bind_type_set = true;
+			opt.threads_per_core_set = true;
 			break;
 		case (int)'c':
 			tmp_int = _get_int(optarg, "cpus-per-task", false);
@@ -1341,6 +1339,7 @@ static void _set_options(const int argc, char **argv)
 			if (slurm_verify_cpu_bind(optarg, &opt.cpu_bind,
 						  &opt.cpu_bind_type))
 				exit(error_exit);
+			opt.cpu_bind_type_set = true;
 			break;
 		case LONG_OPT_LAUNCH_CMD:
 			opt.launch_cmd = true;
@@ -1385,6 +1384,7 @@ static void _set_options(const int argc, char **argv)
 				      optarg);
 				exit(error_exit);
 			}
+			opt.threads_per_core_set = true;
 			break;
 		case LONG_OPT_MEM:
 			opt.pn_min_memory = (int64_t) str_to_mbytes(optarg);
@@ -1629,6 +1629,7 @@ static void _set_options(const int argc, char **argv)
 			if ((opt.threads_per_core == 1) &&
 			    (max_val == INT_MAX))
 				opt.threads_per_core = NO_VAL;
+			opt.threads_per_core_set = true;
 			break;
 		case LONG_OPT_NTASKSPERNODE:
 			opt.ntasks_per_node = _get_int(optarg,
@@ -1642,6 +1643,7 @@ static void _set_options(const int argc, char **argv)
 		case LONG_OPT_NTASKSPERCORE:
 			opt.ntasks_per_core = _get_int(optarg,
 						       "ntasks-per-core", true);
+			opt.ntasks_per_core_set  = true;
 			break;
 		case LONG_OPT_HINT:
 			/* Keep after other options filled in */
@@ -1653,6 +1655,9 @@ static void _set_options(const int argc, char **argv)
 					&opt.cpu_bind_type)) {
 				exit(error_exit);
 			}
+			opt.hint_set = true;
+			opt.ntasks_per_core_set  = true;
+			opt.threads_per_core  = true;
 			break;
 		case LONG_OPT_BLRTS_IMAGE:
 			xfree(opt.blrtsimage);
@@ -2029,6 +2034,19 @@ static bool _opt_verify(void)
 		error("-r,--relative not allowed with "
 		      "-w,--nodelist or -x,--exclude.");
 		verified = false;
+	}
+
+	if (opt.hint_env &&
+	    (!opt.hint_set && !opt.cpu_bind_type_set &&
+	     !opt.ntasks_per_core_set && !opt.threads_per_core_set)) {
+		if (verify_hint(opt.hint_env,
+				&opt.sockets_per_node,
+				&opt.cores_per_socket,
+				&opt.threads_per_core,
+				&opt.ntasks_per_core,
+				&opt.cpu_bind_type)) {
+			exit(error_exit);
+		}
 	}
 
 	if (opt.cpus_set && (opt.pn_min_cpus < opt.cpus_per_task))

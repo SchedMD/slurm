@@ -320,15 +320,19 @@ static void _opt_default(void)
 	opt.cpu_freq_gov = NO_VAL;
 	opt.cpus_per_task = 0;
 	opt.cpus_set = false;
+	opt.hint_env = NULL;
+	opt.hint_set = false;
 	opt.min_nodes = 1;
 	opt.max_nodes = 0;
 	opt.nodes_set = false;
 	opt.sockets_per_node = NO_VAL; /* requested sockets */
 	opt.cores_per_socket = NO_VAL; /* requested cores */
 	opt.threads_per_core = NO_VAL; /* requested threads */
+	opt.threads_per_core_set = false;
 	opt.ntasks_per_node      = 0;  /* ntask max limits */
 	opt.ntasks_per_socket    = NO_VAL;
 	opt.ntasks_per_core      = NO_VAL;
+	opt.ntasks_per_core_set  = false;
 	opt.mem_bind_type = 0;
 	opt.mem_bind = NULL;
 	opt.core_spec = (uint16_t) NO_VAL;
@@ -614,15 +618,7 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 
 	case OPT_HINT:
-		/* Keep after other options filled in */
-		if (verify_hint(val,
-				&opt.sockets_per_node,
-				&opt.cores_per_socket,
-				&opt.threads_per_core,
-				&opt.ntasks_per_core,
-				NULL)) {
-			exit(error_exit);
-		}
+		opt.hint_env = xstrdup(val);
 		break;
 
 	case OPT_MEM_BIND:
@@ -1364,6 +1360,7 @@ static void _set_options(int argc, char **argv)
 					optarg);
 				exit(error_exit);
 			}
+			opt.threads_per_core_set = true;
 			break;
 		case 'c':
 			opt.cpus_set = true;
@@ -1593,6 +1590,7 @@ static void _set_options(int argc, char **argv)
 				      optarg);
 				exit(error_exit);
 			}
+			opt.threads_per_core_set = true;
 			break;
 		case LONG_OPT_MEM:
 			opt.realmem = (int64_t) str_to_mbytes(optarg);
@@ -1756,6 +1754,7 @@ static void _set_options(int argc, char **argv)
 			if ((opt.threads_per_core == 1) &&
 			    (max_val == INT_MAX))
 				opt.threads_per_core = NO_VAL;
+			opt.threads_per_core_set = true;
 			break;
 		case LONG_OPT_NTASKSPERNODE:
 			opt.ntasks_per_node = parse_int("ntasks-per-node",
@@ -1775,6 +1774,7 @@ static void _set_options(int argc, char **argv)
 							optarg, true);
 			setenvf(NULL, "SLURM_NTASKS_PER_CORE", "%d",
 				opt.ntasks_per_core);
+			opt.ntasks_per_core = true;
 			break;
 		case LONG_OPT_HINT:
 			/* Keep after other options filled in */
@@ -1786,6 +1786,9 @@ static void _set_options(int argc, char **argv)
 					NULL)) {
 				exit(error_exit);
 			}
+			opt.hint_set = true;
+			opt.ntasks_per_core = true;
+			opt.threads_per_core_set = true;
 			break;
 		case LONG_OPT_BLRTS_IMAGE:
 			xfree(opt.blrtsimage);
@@ -2651,6 +2654,19 @@ static bool _opt_verify(void)
 	if (opt.quiet && opt.verbose) {
 		error ("don't specify both --verbose (-v) and --quiet (-Q)");
 		verified = false;
+	}
+
+	if (opt.hint_env &&
+	    (!opt.hint_set && !opt.ntasks_per_core_set &&
+	     !opt.threads_per_core_set)) {
+		if (verify_hint(opt.hint_env,
+				&opt.sockets_per_node,
+				&opt.cores_per_socket,
+				&opt.threads_per_core,
+				&opt.ntasks_per_core,
+				NULL)) {
+			exit(error_exit);
+		}
 	}
 
 	if (opt.ntasks_set && (opt.ntasks > 0)) {

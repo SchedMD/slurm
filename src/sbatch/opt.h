@@ -81,9 +81,13 @@ typedef struct sbatch_options {
 	int cores_per_socket;	/* --cores-per-socket=n		*/
 	uint32_t job_flags;	/* --kill_invalid_dep, --gres-flags */
 	int threads_per_core;	/* --threads-per-core=n		*/
+	bool threads_per_core_set;/* --threads-per-core set explicitly set */
 	int ntasks_per_node;	/* --ntasks-per-node=n		*/
 	int ntasks_per_socket;	/* --ntasks-per-socket=n	*/
 	int ntasks_per_core;	/* --ntasks-per-core=n		*/
+	int ntasks_per_core_set; /* true if ntasks-per-core explicitly set */
+	char *hint_env;		/* SLURM_HINT env var setting	*/
+	bool hint_set;		/* --hint set explicitly set	*/
 	mem_bind_type_t mem_bind_type; /* --mem_bind=		*/
 	char *mem_bind;		/* binding map for map/mask_mem	*/
 	bool extra_set;		/* true if extra node info explicitly set */

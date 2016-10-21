@@ -89,10 +89,15 @@ typedef struct srun_options {
 	int32_t sockets_per_node; /* --sockets-per-node=n      */
 	int32_t cores_per_socket; /* --cores-per-socket=n      */
 	int32_t threads_per_core; /* --threads-per-core=n      */
+	bool threads_per_core_set;/* --threads-per-core set explicitly set */
 	int32_t ntasks_per_node;   /* --ntasks-per-node=n	*/
 	int32_t ntasks_per_socket; /* --ntasks-per-socket=n	*/
 	int ntasks_per_core;	/* --ntasks-per-core=n		*/
+	bool ntasks_per_core_set; /* --ntasks-per-core set explicitly set */
+	char *hint_env;		/* SLURM_HINT env var setting	*/
+	bool hint_set;		/* --hint set explicitly set	*/
 	cpu_bind_type_t cpu_bind_type; /* --cpu_bind=           */
+	bool cpu_bind_type_set;	/* --cpu_bind set explicitly set */
 	char *cpu_bind;		/* binding map for map/mask_cpu */
 	mem_bind_type_t mem_bind_type; /* --mem_bind=		*/
 	char *mem_bind;		/* binding map for map/mask_mem	*/
