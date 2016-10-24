@@ -492,7 +492,12 @@ static char *_lookup_slurm_api_errtab(int errnum)
 char *slurm_strerror(int errnum)
 {
 	char *res = _lookup_slurm_api_errtab(errnum);
-	return (res ? res : strerror(errnum));
+	if (res)
+		return res;
+	else if (errnum > 0)
+		return strerror(errnum);
+	else
+		return "Unknown negative error number";
 }
 
 /*

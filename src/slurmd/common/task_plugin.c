@@ -176,7 +176,7 @@ extern int slurmd_task_fini(void)
 			if (rc2 != SLURM_SUCCESS) {
 				debug("%s: %s: %s", __func__,
 				      g_task_context[i]->type,
-				      slurm_strerror(rc));
+				      slurm_strerror(rc2));
 				rc = SLURM_ERROR;
 			}
 		}
