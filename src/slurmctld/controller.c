@@ -1105,7 +1105,6 @@ static void *_service_connection(void *arg)
 		error("slurm_receive_msg [%s]: %m", addr_buf);
 		/* close the new socket */
 		slurm_close(conn->newsockfd);
-		slurm_free_msg_members(&msg);
 		goto cleanup;
 	}
 
