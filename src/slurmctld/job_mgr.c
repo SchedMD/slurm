@@ -4159,7 +4159,10 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 		 (rc == ESLURM_RESERVATION_NOT_USABLE))
 		job_ptr->state_reason = WAIT_RESERVATION;
 	else if (rc == ESLURM_JOB_HELD)
-		job_ptr->state_reason = WAIT_HELD;
+		/* Do not reset the state_reason field here. select_nodes()
+		 * already set the state_reason field, and this error code
+		 * does not distinguish between user and admin holds. */
+		;
 	else if (rc == ESLURM_NODE_NOT_AVAIL)
 		job_ptr->state_reason = WAIT_NODE_NOT_AVAIL;
 	else if (rc == ESLURM_QOS_THRES)

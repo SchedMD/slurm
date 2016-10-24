@@ -765,7 +765,7 @@ static struct option long_options[] = {
 	{"array",         required_argument, 0, 'a'},
 	{"batch",         no_argument,       0, 'b'}, /* batch option
 							 is only here for
-							 moab tansition
+							 moab translation
 							 doesn't do anything */
 	{"extra-node-info", required_argument, 0, 'B'},
 	{"cpus-per-task", required_argument, 0, 'c'},
@@ -776,7 +776,7 @@ static struct option long_options[] = {
 	{"nodefile",      required_argument, 0, 'F'},
 	{"geometry",      required_argument, 0, 'g'},
 	{"help",          no_argument,       0, 'h'},
-	{"hold",          no_argument,       0, 'H'}, /* undocumented */
+	{"hold",          no_argument,       0, 'H'},
 	{"input",         required_argument, 0, 'i'},
 	{"immediate",     no_argument,       0, 'I'},
 	{"job-name",      required_argument, 0, 'J'},
