@@ -900,18 +900,18 @@ typedef struct composite_msg {
 #define SIG_FAILURE	999	/* Dummy signal value to signify sys failure */
 typedef struct kill_job_msg {
 	uint32_t job_id;
-	uint32_t step_id;
 	uint32_t job_state;
 	uint32_t job_uid;
-	time_t   time;		/* slurmctld's time of request */
-	time_t   start_time;	/* time of job start, track job requeue */
 	char *nodes;
-	dynamic_plugin_data_t *select_jobinfo;	/* opaque data type */
-	char **spank_job_env;
-	uint32_t spank_job_env_size;
 	char **pelog_env;	/* jobpack environment variables for job
 				   prolog/epilog */
 	uint32_t pelog_env_size;/* element count in pelog_env */
+	dynamic_plugin_data_t *select_jobinfo;	/* opaque data type */
+	char **spank_job_env;
+	uint32_t spank_job_env_size;
+	time_t   start_time;	/* time of job start, track job requeue */
+	uint32_t step_id;
+	time_t   time;		/* slurmctld's time of request */
 } kill_job_msg_t;
 
 typedef struct signal_job_msg {
