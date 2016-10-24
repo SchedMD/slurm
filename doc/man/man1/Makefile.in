@@ -89,7 +89,13 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@HAVE_MAN2HTML_TRUE@am__append_1 = $(html_DATA)
+@BUILD_HDF5_TRUE@am__append_1 = sh5util.1
+@WITH_BLCR_TRUE@am__append_2 = srun_cr.1
+@BUILD_SVIEW_TRUE@am__append_3 = sview.1
+@BUILD_HDF5_TRUE@@HAVE_MAN2HTML_TRUE@am__append_4 = sh5util.html
+@HAVE_MAN2HTML_TRUE@@WITH_BLCR_TRUE@am__append_5 = srun_cr.html
+@BUILD_SVIEW_TRUE@@HAVE_MAN2HTML_TRUE@am__append_6 = sview.html
+@HAVE_MAN2HTML_TRUE@am__append_7 = $(html_DATA)
 subdir = doc/man/man1
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_zlib.m4 \
@@ -448,54 +454,19 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-man1_MANS = \
-	sacct.1 \
-	sacctmgr.1 \
-	salloc.1 \
-	sattach.1 \
-	sbatch.1 \
-	sbcast.1 \
-	scancel.1 \
-	scontrol.1 \
-	sdiag.1	\
-	sinfo.1   \
-	slurm.1 \
-	smap.1 \
-	sprio.1 \
-	sh5util.1 \
-	squeue.1 \
-	sreport.1 \
-	srun.1 \
-	srun_cr.1 \
-	sshare.1 \
-	sstat.1 \
-	strigger.1 \
-	sview.1
-
-EXTRA_DIST = $(man1_MANS) $(am__append_1)
-@HAVE_MAN2HTML_TRUE@html_DATA = \
-@HAVE_MAN2HTML_TRUE@	sacct.html \
-@HAVE_MAN2HTML_TRUE@	sacctmgr.html \
-@HAVE_MAN2HTML_TRUE@	salloc.html \
-@HAVE_MAN2HTML_TRUE@	sattach.html \
-@HAVE_MAN2HTML_TRUE@	sbatch.html \
-@HAVE_MAN2HTML_TRUE@	sbcast.html \
-@HAVE_MAN2HTML_TRUE@	scancel.html \
-@HAVE_MAN2HTML_TRUE@	scontrol.html \
-@HAVE_MAN2HTML_TRUE@	sdiag.html \
-@HAVE_MAN2HTML_TRUE@	sinfo.html \
-@HAVE_MAN2HTML_TRUE@	smap.html \
-@HAVE_MAN2HTML_TRUE@	sprio.html \
-@HAVE_MAN2HTML_TRUE@	sh5util.html \
-@HAVE_MAN2HTML_TRUE@	squeue.html \
-@HAVE_MAN2HTML_TRUE@	sreport.html \
-@HAVE_MAN2HTML_TRUE@	srun.html \
-@HAVE_MAN2HTML_TRUE@	srun_cr.html \
-@HAVE_MAN2HTML_TRUE@	sshare.html \
-@HAVE_MAN2HTML_TRUE@	sstat.html \
-@HAVE_MAN2HTML_TRUE@	strigger.html \
-@HAVE_MAN2HTML_TRUE@	sview.html
-
+man1_MANS = sacct.1 sacctmgr.1 salloc.1 sattach.1 sbatch.1 sbcast.1 \
+	scancel.1 scontrol.1 sdiag.1 sinfo.1 slurm.1 smap.1 sprio.1 \
+	squeue.1 sreport.1 srun.1 sshare.1 sstat.1 strigger.1 \
+	$(am__append_1) $(am__append_2) $(am__append_3)
+EXTRA_DIST = $(man1_MANS) $(am__append_7)
+@HAVE_MAN2HTML_TRUE@html_DATA = sacct.html sacctmgr.html salloc.html \
+@HAVE_MAN2HTML_TRUE@	sattach.html sbatch.html sbcast.html \
+@HAVE_MAN2HTML_TRUE@	scancel.html scontrol.html sdiag.html \
+@HAVE_MAN2HTML_TRUE@	sinfo.html smap.html sprio.html \
+@HAVE_MAN2HTML_TRUE@	squeue.html sreport.html srun.html \
+@HAVE_MAN2HTML_TRUE@	sshare.html sstat.html strigger.html \
+@HAVE_MAN2HTML_TRUE@	$(am__append_4) $(am__append_5) \
+@HAVE_MAN2HTML_TRUE@	$(am__append_6)
 @HAVE_MAN2HTML_TRUE@MOSTLYCLEANFILES = ${html_DATA}
 @HAVE_MAN2HTML_TRUE@SUFFIXES = .html
 all: all-am
