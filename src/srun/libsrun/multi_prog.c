@@ -311,7 +311,7 @@ mpir_dump_proctable(void)
 
 static int
 _update_task_mask(int low_num, int high_num, int *ntasks, bool *ntasks_set,
-		  bitstr_t *task_mask, bool ignore_duplicates)
+		  bitstr_t **task_mask, bool ignore_duplicates)
 {
 	int i;
 
@@ -332,24 +332,24 @@ _update_task_mask(int low_num, int high_num, int *ntasks, bool *ntasks_set,
 			*ntasks = high_num + 1;
 			*ntasks_set = true;
 			i_set_ntasks = true;
-			task_mask = bit_realloc(task_mask, *ntasks);
+			(*task_mask) = bit_realloc((*task_mask), *ntasks);
 		}
 	}
 	for (i=low_num; i<=high_num; i++) {
-		if (bit_test(task_mask, i)) {
+		if (bit_test((*task_mask), i)) {
 			if (ignore_duplicates)
 				continue;
 			error("Duplicate record for task %d", i);
 			return -1;
 		}
-		bit_set(task_mask, i);
+		bit_set((*task_mask), i);
 	}
 	return 0;
 }
 
 static int
 _validate_ranks(char *ranks, int *ntasks, bool *ntasks_set, int32_t *ncmds,
-		bitstr_t *task_mask)
+		bitstr_t **task_mask)
 {
 	static bool has_asterisk = false;
 	char *range = NULL, *p = NULL;
@@ -467,7 +467,7 @@ verify_multi_name(char *config_fname, int *ntasks, bool *ntasks_set,
 			goto fini;
 		}
 		if (_validate_ranks(ranks, ntasks, ntasks_set, ncmds,
-				    task_mask)) {
+				    &task_mask)) {
 			error("Line %d of configuration file %s invalid",
 				line_num, config_fname);
 			rc = -1;
