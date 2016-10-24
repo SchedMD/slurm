@@ -204,6 +204,10 @@ am__objects_1 = allocate.lo allocate_msg.lo block_info.lo \
 	topo_info.lo triggers.lo reconfigure.lo update_config.lo
 am_libslurmhelper_la_OBJECTS = $(am__objects_1)
 libslurmhelper_la_OBJECTS = $(am_libslurmhelper_la_OBJECTS)
+libslurmhelper_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(libslurmhelper_la_LDFLAGS) $(LDFLAGS) \
+	-o $@
 PROGRAMS = $(noinst_PROGRAMS)
 am_libslurm_o_OBJECTS =
 libslurm_o_OBJECTS = $(am_libslurm_o_OBJECTS)
@@ -650,7 +654,7 @@ slurmapi_add = \
 
 libslurmhelper_la_SOURCES = $(slurmapi_src)
 libslurmhelper_la_LIBADD = $(slurmapi_add)
-libslurmhelper_la_LDFLAGs = \
+libslurmhelper_la_LDFLAGS = \
 	$(LIB_LDFLAGS) \
 	-version-info $(current):$(rev):$(age)
 
@@ -777,7 +781,7 @@ libslurm.la: $(libslurm_la_OBJECTS) $(libslurm_la_DEPENDENCIES) $(EXTRA_libslurm
 	$(AM_V_CCLD)$(libslurm_la_LINK) -rpath $(libdir) $(libslurm_la_OBJECTS) $(libslurm_la_LIBADD) $(LIBS)
 
 libslurmhelper.la: $(libslurmhelper_la_OBJECTS) $(libslurmhelper_la_DEPENDENCIES) $(EXTRA_libslurmhelper_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(LINK)  $(libslurmhelper_la_OBJECTS) $(libslurmhelper_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(libslurmhelper_la_LINK)  $(libslurmhelper_la_OBJECTS) $(libslurmhelper_la_LIBADD) $(LIBS)
 
 clean-noinstPROGRAMS:
 	@list='$(noinst_PROGRAMS)'; test -n "$$list" || exit 0; \
