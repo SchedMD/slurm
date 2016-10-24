@@ -104,7 +104,7 @@ typedef struct epilog_arg {
 	char **my_env;
 } epilog_arg_t;
 
-static char **	_build_env(struct job_record *job_ptr);
+static char **	_build_env(struct job_record *job_ptr, bool is_epilog);
 static void	_depend_list_del(void *dep_ptr);
 static void	_feature_list_delete(void *x);
 static void	_job_queue_append(List job_queue, struct job_record *job_ptr,
@@ -3389,7 +3389,7 @@ extern int epilog_slurmctld(struct job_record *job_ptr)
 	epilog_arg = xmalloc(sizeof(epilog_arg_t));
 	epilog_arg->job_id = job_ptr->job_id;
 	epilog_arg->epilog_slurmctld = xstrdup(slurmctld_conf.epilog_slurmctld);
-	epilog_arg->my_env = _build_env(job_ptr);
+	epilog_arg->my_env = _build_env(job_ptr, true);
 
 	slurm_attr_init(&thread_attr_epilog);
 	pthread_attr_setdetachstate(&thread_attr_epilog,
@@ -3412,7 +3412,7 @@ extern int epilog_slurmctld(struct job_record *job_ptr)
 	}
 }
 
-static char **_build_env(struct job_record *job_ptr)
+static char **_build_env(struct job_record *job_ptr, bool is_epilog)
 {
 	char **my_env, *name, *eq, buf[32];
 	int exit_code, i, signal;
@@ -3443,18 +3443,21 @@ static char **_build_env(struct job_record *job_ptr)
 		setenvf(&my_env, "SLURM_JOB_CONSTRAINTS",
 			"%s", job_ptr->details->features);
 	}
-	setenvf(&my_env, "SLURM_JOB_DERIVED_EC", "%u",
-		job_ptr->derived_ec);
 
-	exit_code = signal = 0;
-	if (WIFEXITED(job_ptr->exit_code)) {
-		exit_code = WEXITSTATUS(job_ptr->exit_code);
+	if (is_epilog) {
+		exit_code = signal = 0;
+		if (WIFEXITED(job_ptr->exit_code)) {
+			exit_code = WEXITSTATUS(job_ptr->exit_code);
+		}
+		if (WIFSIGNALED(job_ptr->exit_code)) {
+			signal = WTERMSIG(job_ptr->exit_code);
+		}
+		snprintf(buf, sizeof(buf), "%d:%d", exit_code, signal);
+		setenvf(&my_env, "SLURM_JOB_DERIVED_EC", "%u",
+			job_ptr->derived_ec);
+		setenvf(&my_env, "SLURM_JOB_EXIT_CODE2", "%s", buf);
+		setenvf(&my_env, "SLURM_JOB_EXIT_CODE", "%u", job_ptr->exit_code);
 	}
-	if (WIFSIGNALED(job_ptr->exit_code)) {
-		signal = WTERMSIG(job_ptr->exit_code);
-	}
-	sprintf(buf, "%d:%d", exit_code, signal);
-	setenvf(&my_env, "SLURM_JOB_EXIT_CODE2", "%s", buf);
 
 	if (job_ptr->array_task_id != NO_VAL) {
 		setenvf(&my_env, "SLURM_ARRAY_JOB_ID", "%u",
@@ -3484,7 +3487,6 @@ static char **_build_env(struct job_record *job_ptr)
 			slurmctld_cluster_name);
 	}
 
-	setenvf(&my_env, "SLURM_JOB_EXIT_CODE", "%u", job_ptr->exit_code);
 	setenvf(&my_env, "SLURM_JOB_GID", "%u", job_ptr->group_id);
 	name = gid_to_string((uid_t) job_ptr->group_id);
 	setenvf(&my_env, "SLURM_JOB_GROUP", "%s", name);
@@ -3834,7 +3836,7 @@ static void *_run_prolog(void *arg)
 	lock_slurmctld(config_read_lock);
 	argv[0] = xstrdup(slurmctld_conf.prolog_slurmctld);
 	argv[1] = NULL;
-	my_env = _build_env(job_ptr);
+	my_env = _build_env(job_ptr, false);
 	job_id = job_ptr->job_id;
 	if (job_ptr->node_bitmap) {
 		node_bitmap = bit_copy(job_ptr->node_bitmap);

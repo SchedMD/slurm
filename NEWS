@@ -30,6 +30,8 @@ documents those changes that are of interest to users and administrators.
     specified: -B, --cpu_bind, --hint, --ntasks-per-core, or --threads-per-core.
  -- burst_buffer/cray: Accept new jobs on backup slurmctld daemon without access
     to dw_wlm_cli command. No burst buffer actions will take place.
+ -- Do not include SLURM_JOB_DERIVED_EC, SLURM_JOB_EXIT_CODE, or
+    SLURM_JOB_EXIT_CODE in PrologSlurmctld environment (not available yet).
 
 * Changes in Slurm 17.02.0pre2
 ==============================
