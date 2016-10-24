@@ -909,6 +909,9 @@ typedef struct kill_job_msg {
 	dynamic_plugin_data_t *select_jobinfo;	/* opaque data type */
 	char **spank_job_env;
 	uint32_t spank_job_env_size;
+	char **pelog_env;	/* jobpack environment variables for job
+				   prolog/epilog */
+	uint32_t pelog_env_size;/* element count in pelog_env */
 } kill_job_msg_t;
 
 typedef struct signal_job_msg {
