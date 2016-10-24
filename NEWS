@@ -28,6 +28,8 @@ documents those changes that are of interest to users and administrators.
  -- Do not process SALLOC_HINT, SBATCH_HINT or SLURM_HINT environment variables
     if any of the following salloc, sbatch or srun command line options are
     specified: -B, --cpu_bind, --hint, --ntasks-per-core, or --threads-per-core.
+ -- burst_buffer/cray: Accept new jobs on backup slurmctld daemon without access
+    to dw_wlm_cli command. No burst buffer actions will take place.
 
 * Changes in Slurm 17.02.0pre2
 ==============================

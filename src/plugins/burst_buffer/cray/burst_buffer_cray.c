@@ -3116,6 +3116,13 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 
 	/* Initialization */
 	slurm_mutex_lock(&bb_state.bb_mutex);
+	if (bb_state.last_load_time == 0) {
+		/* Assume request is valid for now, can't test it anyway */
+		info("%s: %s: Burst buffer down, skip tests for job %u",
+		      plugin_type, __func__, job_ptr->job_id);
+		slurm_mutex_unlock(&bb_state.bb_mutex);
+		return rc;
+	}
 	bb_job = _get_bb_job(job_ptr);
 	if (bb_job == NULL) {
 		slurm_mutex_unlock(&bb_state.bb_mutex);
@@ -3313,6 +3320,12 @@ extern time_t bb_p_job_get_est_start(struct job_record *job_ptr)
 	}
 
 	slurm_mutex_lock(&bb_state.bb_mutex);
+	if (bb_state.last_load_time == 0) {
+		est_start += 3600;	/* 1 hour, guess... */
+		slurm_mutex_unlock(&bb_state.bb_mutex);
+		return est_start;	/* Can't operate on job array struct */
+	}
+
 	if ((bb_job = _get_bb_job(job_ptr)) == NULL) {
 		slurm_mutex_unlock(&bb_state.bb_mutex);
 		return est_start;
@@ -3361,6 +3374,11 @@ extern int bb_p_job_try_stage_in(List job_queue)
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	if (bb_state.bb_config.debug_flag)
 		info("%s: %s", plugin_type,  __func__);
+
+	if (bb_state.last_load_time == 0) {
+		slurm_mutex_unlock(&bb_state.bb_mutex);
+		return SLURM_SUCCESS;
+	}
 
 	/* Identify candidates to be allocated burst buffers */
 	job_candidates = list_create(_job_queue_del);
@@ -3426,7 +3444,7 @@ extern int bb_p_job_try_stage_in(List job_queue)
  */
 extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
 {
-	bb_job_t *bb_job;
+	bb_job_t *bb_job = NULL;
 	int rc = 1;
 	char jobid_buf[32];
 
@@ -3446,7 +3464,8 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
 		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)),
 		     (int) test_only);
 	}
-	bb_job = _get_bb_job(job_ptr);
+	if (bb_state.last_load_time != 0)
+		bb_job = _get_bb_job(job_ptr);
 	if (bb_job && (bb_job->state == BB_STATE_COMPLETE))
 		bb_job->state = BB_STATE_PENDING;	/* job requeued */
 	if (bb_job == NULL) {
@@ -3507,6 +3526,12 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 		info("%s: %s: %s",
 		     plugin_type, __func__,
 		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
+	}
+	if (bb_state.last_load_time == 0) {
+		info("%s: %s: Burst buffer down, can not start job %u",
+		      plugin_type, __func__, job_ptr->job_id);
+		slurm_mutex_unlock(&bb_state.bb_mutex);
+		return SLURM_ERROR;
 	}
 	bb_job = _get_bb_job(job_ptr);
 	if (!bb_job) {
@@ -3740,6 +3765,12 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 		info("%s: %s: %s", plugin_type, __func__,
 		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 	}
+	if (bb_state.last_load_time == 0) {
+		info("%s: %s: Burst buffer down, can not stage out job %u",
+		      plugin_type, __func__, job_ptr->job_id);
+		slurm_mutex_unlock(&bb_state.bb_mutex);
+		return SLURM_ERROR;
+	}
 	bb_job = _get_bb_job(job_ptr);
 	if (!bb_job) {
 		/* No job buffers. Assuming use of persistent buffers only */
@@ -3775,6 +3806,12 @@ extern int bb_p_job_test_post_run(struct job_record *job_ptr)
 	if (bb_state.bb_config.debug_flag) {
 		info("%s: %s: %s", plugin_type, __func__,
 		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
+	}
+	if (bb_state.last_load_time == 0) {
+		info("%s: %s: Burst buffer down, can not post_run job %u",
+		      plugin_type, __func__, job_ptr->job_id);
+		slurm_mutex_unlock(&bb_state.bb_mutex);
+		return -1;
 	}
 	bb_job = bb_job_find(&bb_state, job_ptr->job_id);
 	if (!bb_job) {
@@ -3818,6 +3855,12 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 		info("%s: %s: %s", plugin_type, __func__,
 		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 	}
+	if (bb_state.last_load_time == 0) {
+		info("%s: %s: Burst buffer down, can not stage-out job %u",
+		      plugin_type, __func__, job_ptr->job_id);
+		slurm_mutex_unlock(&bb_state.bb_mutex);
+		return -1;
+	}
 	bb_job = bb_job_find(&bb_state, job_ptr->job_id);
 	if (!bb_job) {
 		/* No job buffers. Assuming use of persistent buffers only */
@@ -3853,6 +3896,12 @@ extern int bb_p_job_cancel(struct job_record *job_ptr)
 	if (bb_state.bb_config.debug_flag) {
 		info("%s: %s: %s", plugin_type, __func__,
 		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
+	}
+	if (bb_state.last_load_time == 0) {
+		info("%s: %s: Burst buffer down, can not cancel job %u",
+		      plugin_type, __func__, job_ptr->job_id);
+		slurm_mutex_unlock(&bb_state.bb_mutex);
+		return SLURM_ERROR;
 	}
 
 	bb_job = _get_bb_job(job_ptr);
