@@ -244,7 +244,7 @@ int main(int argc, char **argv)
 				job_ptr->job_array[0].start_protocol_ver;
 			stepid = SLURM_BATCH_SCRIPT;
 			hl = hostlist_create(job_ptr->job_array[0].nodes);
-			nodelist = hostlist_pop(hl);
+			nodelist = hostlist_shift(hl);
 			free_nodelist = true;
 			hostlist_destroy(hl);
 			slurm_free_job_info_msg(job_ptr);
