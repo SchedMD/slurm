@@ -169,7 +169,6 @@ int main(int argc, char *argv[])
 		exit(error_exit);
 	}
 
-
 	if (_check_cluster_specific_settings(&desc) != SLURM_SUCCESS)
 		exit(error_exit);
 
