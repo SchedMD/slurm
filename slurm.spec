@@ -318,13 +318,6 @@ Requires: slurm-perlapi
 Slurm job exit code management tools. Enables users to alter job exit code
 information for completed jobs
 
-%package slurmdb-direct
-Summary: Wrappers to write directly to the slurmdb
-Group: Development/System
-Requires: slurm-perlapi
-%description slurmdb-direct
-Wrappers to write directly to the slurmdb
-
 %if %{slurm_with percs}
 %package percs
 Summary: Slurm plugins to run on an IBM PERCS system
@@ -975,12 +968,6 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 %{_bindir}/sjobexitmod
 %{_mandir}/man1/sjobexit*
-#############################################################################
-
-%files slurmdb-direct
-%defattr(-,root,root)
-%config (noreplace) %{_perldir}/config.slurmdb.pl
-%{_sbindir}/moab_2_slurmdb
 #############################################################################
 
 %if %{slurm_with percs}
