@@ -32,6 +32,8 @@ documents those changes that are of interest to users and administrators.
     to dw_wlm_cli command. No burst buffer actions will take place.
  -- Do not include SLURM_JOB_DERIVED_EC, SLURM_JOB_EXIT_CODE, or
     SLURM_JOB_EXIT_CODE in PrologSlurmctld environment (not available yet).
+ -- Cray - set task plugin to fatal() if task/cgroup is not loaded after
+    task/cray in the TaskPlugin settings.
 
 * Changes in Slurm 17.02.0pre2
 ==============================

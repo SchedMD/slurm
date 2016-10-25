@@ -165,7 +165,7 @@ extern int init (void)
 	char *task_cray = strstr(task_plugin, "cray");
 
 	if (!task_cgroup || !task_cray || task_cgroup < task_cray)
-		error("task/cgroup must be used with, and listed after, "
+		fatal("task/cgroup must be used with, and listed after, "
 		      "task/cray in TaskPlugin");
 
 	xfree(task_plugin);
