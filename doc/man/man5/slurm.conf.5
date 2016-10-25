@@ -2932,6 +2932,8 @@ Schedule resources to jobs on the least loaded nodes (based upon the number
 of idle CPUs). This is generally only recommended for an environment with
 serial jobs as idle resources will tend to be highly fragmented, resulting
 in parallel jobs being distributed across many nodes.
+Note that node \fBWeight\fR takes precedence over how many idle resources are
+on each node.
 Also see the partition configuration parameter \fBLLN\fR
 use the least loaded nodes in selected partitions.
 .TP
@@ -4349,6 +4351,8 @@ Schedule resources to jobs on the least loaded nodes (based upon the number
 of idle CPUs). This is generally only recommended for an environment with
 serial jobs as idle resources will tend to be highly fragmented, resulting
 in parallel jobs being distributed across many nodes.
+Note that node \fBWeight\fR takes precedence over how many idle resources are
+on each node.
 Also see the \fBSelectParameters\fR configuration parameter \fBCR_LLN\fR to
 use the least loaded nodes in every partition.
 
