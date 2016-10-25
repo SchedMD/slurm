@@ -310,14 +310,6 @@ Requires: slurm-perlapi
 %description openlava
 OpenLava wrapper scripts used for helping migrate from OpenLava/LSF to Slurm
 
-%package sjobexit
-Summary: Slurm job exit code management tools
-Group: Development/System
-Requires: slurm-perlapi
-%description sjobexit
-Slurm job exit code management tools. Enables users to alter job exit code
-information for completed jobs
-
 %if %{slurm_with percs}
 %package percs
 Summary: Slurm plugins to run on an IBM PERCS system
@@ -327,7 +319,6 @@ BuildRequires: nrt
 %description percs
 Slurm plugins to run on an IBM PERCS system, POE interface and NRT switch plugin
 %endif
-
 
 %if %{slurm_with sgijob}
 %package proctrack-sgi-job
@@ -351,25 +342,21 @@ Slurm lua bindings
 Includes the Slurm proctrack/lua and job_submit/lua plugin
 %endif
 
-%package seff
-Summary: Mail tool that includes job statistics in user notification email
-Group: Development/System
-Requires: slurm-perlapi
-%description seff
-Mail program used directly by the Slurm daemons. On completion of a job,
-wait for it's accounting information to be available and include that
-information in the email body.
-
-%package sjstat
+%package contribs
 Summary: Perl tool to print Slurm job state information
 Group: Development/System
 Requires: slurm
-%description sjstat
-Perl tool to print Slurm job state information. The output is designed to give
-information on the resource usage and availablilty, as well as information
+%description contribs
+seff is a mail program used directly by the Slurm daemons. On completion of a
+job, wait for it's accounting information to be available and include that
+information in the email body.
+sjobexit is a slurm job exit code management tool. It enables users to alter
+job exit code information for completed jobs
+sjstat is a Perl tool to print Slurm job state information. The output is designed
+to give information on the resource usage and availablilty, as well as information
 about jobs that are currently active on the machine. This output is built
 using the Slurm utilities, sinfo, squeue and scontrol, the man pages for these
-utilities will provide more information and greater depth of understanding
+utilities will provide more information and greater depth of understanding.
 
 %if %{slurm_with pam}
 %package pam_slurm
@@ -964,12 +951,6 @@ rm -rf $RPM_BUILD_ROOT
 
 #############################################################################
 
-%files sjobexit
-%defattr(-,root,root)
-%{_bindir}/sjobexitmod
-%{_mandir}/man1/sjobexit*
-#############################################################################
-
 %if %{slurm_with percs}
 %files -f percs.files percs
 %defattr(-,root,root)
@@ -992,15 +973,13 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 #############################################################################
 
-%files seff
+%files contribs
 %defattr(-,root,root)
 %{_bindir}/seff
-%{_bindir}/smail
-#############################################################################
-
-%files sjstat
-%defattr(-,root,root)
+%{_bindir}/sjobexitmod
 %{_bindir}/sjstat
+%{_bindir}/smail
+%{_bindir}/sjobexitmod
 %{_mandir}/man1/sjstat*
 #############################################################################
 

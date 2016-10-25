@@ -36,6 +36,8 @@ documents those changes that are of interest to users and administrators.
     task/cray in the TaskPlugin settings.
  -- Remove separate slurm_blcr package. If Slurm is built with BLCR support,
     the files will now be part of the main Slurm packages.
+ -- Replace sjstat, seff and sjobexit RPM packages with a single "contribs"
+    package.
  -- Remove long since defunct slurmdb-direct scripts.
 
 * Changes in Slurm 17.02.0pre2
