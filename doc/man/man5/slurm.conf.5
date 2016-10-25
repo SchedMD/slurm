@@ -2659,6 +2659,13 @@ If a job has an invalid dependency and it can never run terminate it
 and set its state to be JOB_CANCELLED. By default the job stays pending
 with reason DependencyNeverSatisfied.
 .TP
+\fBmax_array_tasks\fR
+Specify the maximum number of tasks that be included in a job array.
+The default limit is MaxArraySize, but this option can be used to set a lower
+limit. For example, max_array_tasks=1000 and MaxArraySize=100001 would permit
+a maximum task ID of 100000, but limit the number of tasks in any single job
+array to 1000.
+.TP
 \fBmax_depend_depth=#\fR
 Maximum number of jobs to test for a circular job dependency. Stop testing
 after this number of job dependencies have been tested. The default value is

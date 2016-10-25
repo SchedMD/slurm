@@ -41,6 +41,7 @@
 \*****************************************************************************/
 
 #include "config.h"
+#define _GNU_SOURCE
 
 #include <ctype.h>
 #include <dirent.h>
@@ -6375,6 +6376,10 @@ static bool _parse_array_tok(char *tok, bitstr_t *array_bitmap, uint32_t max)
 /* Translate a job array expression into the equivalent bitmap */
 static bool _valid_array_inx(job_desc_msg_t *job_desc)
 {
+	static time_t sched_update = 0;
+	static uint32_t max_task_cnt = NO_VAL;
+	char *sched_params, *key;
+	uint32_t task_cnt;
 	slurm_ctl_conf_t *conf;
 	bool valid = true;
 	char *tmp, *tok, *last = NULL;
@@ -6395,6 +6400,17 @@ static bool _valid_array_inx(job_desc_msg_t *job_desc)
 		return false;
 	}
 
+	if (sched_update != slurmctld_conf.last_update) {
+		max_task_cnt = max_array_size;
+		sched_update = slurmctld_conf.last_update;
+		if ((sched_params = slurm_get_sched_params()) &&
+		    (key = strcasestr(sched_params, "max_array_tasks="))) {
+			key += 16;
+			max_task_cnt = atoi(key);
+		}
+		xfree(sched_params);
+	}
+
 	/* We have a job array request */
 	job_desc->immediate = 0;	/* Disable immediate option */
 	job_desc->array_bitmap = bit_alloc(max_array_size);
@@ -6407,6 +6423,15 @@ static bool _valid_array_inx(job_desc_msg_t *job_desc)
 		tok = strtok_r(NULL, ",", &last);
 	}
 	xfree(tmp);
+
+	if (valid && (max_task_cnt < max_array_size)) {
+		task_cnt = bit_set_count(job_desc->array_bitmap);
+		if (task_cnt > max_task_cnt) {
+			debug("max_array_tasks exceeded (%u > %u)",
+			      task_cnt, max_task_cnt);
+			valid = false;
+		}
+	}
 
 	return valid;
 }

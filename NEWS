@@ -41,6 +41,8 @@ documents those changes that are of interest to users and administrators.
  -- Remove long since defunct slurmdb-direct scripts.
  -- Add SbcastParameters configuration option to control default file
     destination directory and compression algorithm.
+ -- Add new SchedulerParameter (max_array_tasks) to limit the maximum number of
+    tasks in a job array independently from the maximum task ID (MaxArraySize).
 
 * Changes in Slurm 17.02.0pre2
 ==============================
