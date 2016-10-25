@@ -59,6 +59,7 @@ documents those changes that are of interest to users and administrators.
  -- Cray - print warning that task/cgroup is required, and must be after
     task/cray in the TaskPlugin settings.
  -- Document that node Weight takes precedence over load with LLN scheduling.
+ -- Fix issue where gang scheduling could happen even with OverSubscribe=NO.
 
 * Changes in Slurm 16.05.5
 ==========================
