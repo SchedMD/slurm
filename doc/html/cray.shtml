@@ -151,15 +151,14 @@
 
 <li>Task</li>
 <p>
-  Set <b><i>TaskPlugin=cray</i></b> to use.
-  It is advised to use this in conjunction with other task plugins
-  such as the <i>task/cgroup</i> plugin.  This can be done in this
-  manner, <b><i>TaskPlugin=cgroup,cray</i></b>, you can also
-  use the <i>task/affinity</i> plugin if wanted with <i>task/cray</i>
-  or the combination of all three depending on how you want your
-  system configured (i.e <b><i>TaskPlugin=cgroup,affinity,cray</i></b>).  The
-  plugins are used in the order they are defined in the comma
-  separated list.
+  Set <b><i>TaskPlugin=cray,cgroup</i></b> to use. Use of the
+  <b><i>task/cgroup</i></b> plugin is required alongside <i>task/cray</i>.
+  You may also use the <i>task/affinity</i> plugin along with
+  <i>task/cray,task/cgroup</i> if desired (i.e.
+  <b><i>TaskPlugin=cray,affinity,cgroup</i></b>). Note that plugins
+  are used in the order they are defined in the comma separated list,
+  and that <i>task/cray</i> must be listed before <i>task/cgroup</i>
+  due to internal dependencies between the two plugins.
 </p>
 </ul>
 

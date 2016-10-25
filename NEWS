@@ -56,6 +56,8 @@ documents those changes that are of interest to users and administrators.
  -- pbsnodes: Show OS value as "unknown" for down nodes.
  -- BlueGene - correctly scale node counts when enforcing MaxNodes limit take 2.
  -- Fix "sbatch --hold" to set JobHeldUser correctly instead of JobHeldAdmin.
+ -- Cray - print warning that task/cgroup is required, and must be after
+    task/cray in the TaskPlugin settings.
 
 * Changes in Slurm 16.05.5
 ==========================

@@ -164,6 +164,16 @@ extern int init (void)
 {
 	debug("%s loaded.", plugin_name);
 
+	char *task_plugin = slurm_get_task_plugin();
+	char *task_cgroup = strstr(task_plugin, "cgroup");
+	char *task_cray = strstr(task_plugin, "cray");
+
+	if (!task_cgroup || !task_cray || task_cgroup < task_cray)
+		error("task/cgroup must be used with, and listed after, "
+		      "task/cray in TaskPlugin");
+
+	xfree(task_plugin);
+
 #ifdef HAVE_NATIVE_CRAY
 	int rc;
 	struct stat st;
@@ -1053,6 +1063,7 @@ static int _step_epilogue(void)
 	}
 	return SLURM_SUCCESS;
 }
+#endif
 
 /*
  * Keep track a of a pid.
@@ -1061,5 +1072,3 @@ extern int task_p_add_pid (pid_t pid)
 {
 	return SLURM_SUCCESS;
 }
-
-#endif
