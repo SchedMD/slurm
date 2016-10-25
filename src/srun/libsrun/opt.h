@@ -66,7 +66,7 @@ extern int _verbose;
 extern enum modes mode;
 
 typedef struct srun_options {
-
+	char *clusters;		/* cluster to run this on. */
 	char *progname;		/* argv[0] of this program or
 				 * configuration file if multi_prog */
 	bool multi_prog;	/* multiple programs to execute */
