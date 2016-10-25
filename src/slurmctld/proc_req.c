@@ -789,8 +789,9 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->ret2service         = conf->ret2service;
 	conf_ptr->route_plugin        = xstrdup(conf->route_plugin);
 
-	conf_ptr->salloc_default_command = xstrdup(conf->
-						   salloc_default_command);
+	conf_ptr->salloc_default_command =xstrdup(conf->salloc_default_command);
+	conf_ptr->sbcast_parameters   = xstrdup(conf->sbcast_parameters);
+
 	if (conf->sched_params)
 		conf_ptr->sched_params = xstrdup(conf->sched_params);
 	else

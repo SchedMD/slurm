@@ -1762,6 +1762,8 @@ uint16_t parse_compress_type(const char *arg)
 		return COMPRESS_ZLIB;
 	else if (!strcasecmp(arg, "lz4"))
 		return COMPRESS_LZ4;
+	else if (!strcasecmp(arg, "none"))
+		return COMPRESS_OFF;
 
 	error("Compression type '%s' unknown, disabling compression support.",
 	      arg);

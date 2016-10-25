@@ -2718,6 +2718,7 @@ typedef struct slurm_ctl_conf {
 				 * registration */
 	char *route_plugin;     /* route plugin */
 	char *salloc_default_command; /* default salloc command */
+	char *sbcast_parameters; /* sbcast command options */
 	char *sched_logfile;    /* where slurm Scheduler log gets written */
 	uint16_t sched_log_level;  /* configured level of slurm Scheduler log */
 	char *sched_params;	/* SchedulerParameters OR

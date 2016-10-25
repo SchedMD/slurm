@@ -39,6 +39,8 @@ documents those changes that are of interest to users and administrators.
  -- Replace sjstat, seff and sjobexit RPM packages with a single "contribs"
     package.
  -- Remove long since defunct slurmdb-direct scripts.
+ -- Add SbcastParameters configuration option to control default file
+    destination directory and compression algorithm.
 
 * Changes in Slurm 17.02.0pre2
 ==============================

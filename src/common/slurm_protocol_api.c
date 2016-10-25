@@ -1804,8 +1804,6 @@ char *slurm_get_accounting_storage_pass(void)
 
 /* slurm_get_auth_info
  * returns the auth_info from slurmctld_conf object (AuthInfo parameter)
- * cache value in local buffer for best performance
- * WARNING: The return of this function can be used in many different
  * RET char * - AuthInfo value,  MUST be xfreed by caller
  */
 extern char *slurm_get_auth_info(void)
@@ -1822,6 +1820,23 @@ extern char *slurm_get_auth_info(void)
 	}
 
 	return auth_info;
+}
+
+/* slurm_get_sbcast_parameters
+ * RET char * - SbcastParameters from slurm.conf,  MUST be xfreed by caller
+ */
+char *slurm_get_sbcast_parameters(void)
+{
+	char *sbcast_parameters = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if (!slurmdbd_conf) {
+		conf = slurm_conf_lock();
+		sbcast_parameters = xstrdup(conf->sbcast_parameters);
+		slurm_conf_unlock();
+	}
+
+	return sbcast_parameters;
 }
 
 /* slurm_get_auth_ttl

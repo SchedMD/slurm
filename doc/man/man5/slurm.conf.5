@@ -2419,6 +2419,23 @@ allocated to the job on that node, otherwise the shell may be limited to a
 single cpu or core.
 
 .TP
+\fBSbcastParameters\fR
+Controls sbcast command behavior.
+Supported values include
+.RS
+.TP 15
+\fBDestDir=\fR
+Destination directory for file being broadcast to allocated compute nodes.
+Default value is current working directory.
+.TP
+\fBCompression=\fR
+Specify default file compression library to be used.
+Supported values are "lz4", "none" and "zlib".
+The default value with the sbcast \-\-compress option is "lz4" and "none" otherwise.
+Some compression libraries may be unavailable on some systems.
+.RE
+
+.TP
 \fBSchedulerParameters\fR
 The interpretation of this parameter varies by \fBSchedulerType\fR.
 Multiple options may be comma separated.
