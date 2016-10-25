@@ -52,38 +52,7 @@ set acct_req(cluster) $cluster
 set user_req(account) $account
 set user_req(cluster) $cluster
 
-# Remove pre-existing items
-proc cleanup { } {
-	global cluster account user bin_rm sql_query sql_query_rem
-	remove_cluster "$cluster"
-	remove_acct "" $account
-	remove_user "" "" $user
-	exec $bin_rm -f $sql_query $sql_query_rem
-}
-
-proc endit { } {
-	global exit_code
-	cleanup
-
-	if {$exit_code == 0} {
-		send_user "\nSUCCESS\n"
-	} else {
-		send_user "\nFAILURE\n"
-	}
-
-	exit $exit_code
-}
-
-
-print_header $test_id
-
-if {[test_using_slurmdbd] == 0} {
-	send_user "\nThis test can't be run without AccountStorageType=slurmdbd\n"
-	exit 0
-}
-
-# Remove pre-existing items
-cleanup
+exec $bin_rm -f $sql_query $sql_query_rem
 
 # DON'T MESS WITH THIS UNLESS YOU REALLY UNDERSTAND WHAT YOU ARE DOING!!!!!
 # THIS COULD SERIOUSLY MESS UP YOUR DATABASE IF YOU ALTER THIS INCORRECTLY
@@ -100,6 +69,41 @@ close $file
 set file [open $sql_query_rem "w"]
 puts $file [format "%s%s%s" "truncate table \"" $cluster "_job_table\";"]
 close $file
+
+# Remove pre-existing items
+proc cleanup { } {
+	global cluster account user sql_query_rem
+	archive_load $sql_query_rem
+	remove_user "" "" $user
+	remove_acct "" $account
+	remove_cluster "$cluster"
+}
+
+proc endit { } {
+	global exit_code bin_rm sql_query sql_query_rem
+	cleanup
+
+	if {$exit_code == 0} {
+		send_user "\nSUCCESS\n"
+	} else {
+		send_user "\nFAILURE\n"
+	}
+
+	exec $bin_rm -f $sql_query $sql_query_rem
+
+	exit $exit_code
+}
+
+
+print_header $test_id
+
+if {[test_using_slurmdbd] == 0} {
+	send_user "\nThis test can't be run without AccountStorageType=slurmdbd\n"
+	exit 0
+}
+
+# Remove pre-existing items
+cleanup
 
 # Add Test Cluster
 if {[add_cluster $cluster [array get clus_req]]} {
