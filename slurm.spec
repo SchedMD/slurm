@@ -392,15 +392,6 @@ running on the node, or any user who has allocated resources on the node
 according to the Slurm
 %endif
 
-%if %{slurm_with blcr}
-%package blcr
-Summary: Allows Slurm to use Berkeley Lab Checkpoint/Restart
-Group: System Environment/Base
-Requires: slurm
-%description blcr
-Gives the ability for Slurm to use Berkeley Lab Checkpoint/Restart
-%endif
-
 #############################################################################
 
 %prep
@@ -585,6 +576,10 @@ LIST=./slurm.files
 touch $LIST
 test -f $RPM_BUILD_ROOT/etc/init.d/slurm			&&
   echo /etc/init.d/slurm				>> $LIST
+test -f $RPM_BUILD_ROOT/%{_libexecdir}/slurm/cr_checkpoint.sh   &&
+  echo %{_libexecdir}/slurm/cr_checkpoint.sh	        >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libexecdir}/slurm/cr_restart.sh      &&
+  echo %{_libexecdir}/slurm/cr_restart.sh	        >> $LIST
 test -f $RPM_BUILD_ROOT/%{_sbindir}/capmc_suspend		&&
   echo %{_sbindir}/capmc_suspend			>> $LIST
 test -f $RPM_BUILD_ROOT/%{_sbindir}/capmc_resume		&&
@@ -682,6 +677,8 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_profile_hdf5.so &&
    echo %{_libdir}/slurm/acct_gather_profile_hdf5.so >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/burst_buffer_cray.so        &&
    echo %{_libdir}/slurm/burst_buffer_cray.so        >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/checkpoint_blcr.so          &&
+   echo %{_libdir}/slurm/checkpoint_blcr.so          >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/crypto_openssl.so           &&
    echo %{_libdir}/slurm/crypto_openssl.so           >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/ext_sensors_rrd.so          &&
@@ -800,10 +797,6 @@ rm -rf $RPM_BUILD_ROOT
 %config %{_sysconfdir}/slurm.epilog.clean
 %exclude %{_mandir}/man1/sjobexit*
 %exclude %{_mandir}/man1/sjstat*
-%if %{slurm_with blcr}
-%exclude %{_mandir}/man1/srun_cr*
-%exclude %{_bindir}/srun_cr
-%endif
 #############################################################################
 
 %files devel
@@ -1027,16 +1020,6 @@ rm -rf $RPM_BUILD_ROOT
 %if %{slurm_with pam}
 %files -f pam.files pam_slurm
 %defattr(-,root,root)
-%endif
-#############################################################################
-
-%if %{slurm_with blcr}
-%files blcr
-%defattr(-,root,root)
-%{_bindir}/srun_cr
-%{_libexecdir}/slurm/cr_*
-%{_libdir}/slurm/checkpoint_blcr.so
-%{_mandir}/man1/srun_cr*
 %endif
 #############################################################################
 

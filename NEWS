@@ -34,6 +34,8 @@ documents those changes that are of interest to users and administrators.
     SLURM_JOB_EXIT_CODE in PrologSlurmctld environment (not available yet).
  -- Cray - set task plugin to fatal() if task/cgroup is not loaded after
     task/cray in the TaskPlugin settings.
+ -- Remove separate slurm_blcr package. If Slurm is built with BLCR support,
+    the files will now be part of the main Slurm packages.
 
 * Changes in Slurm 17.02.0pre2
 ==============================
