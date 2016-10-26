@@ -1255,6 +1255,9 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->tres_fmt_alloc_str, buffer);
 	packstr(dump_job_ptr->tres_req_str, buffer);
 	packstr(dump_job_ptr->tres_fmt_req_str, buffer);
+	packstr_array(dump_job_ptr->pelog_env,
+		      dump_job_ptr->pelog_env_size, buffer);
+	pack32(dump_job_ptr->pack_leader, buffer);
 }
 
 /* Unpack a job's state information from a buffer */
@@ -1308,6 +1311,9 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	double billable_tres = (double)NO_VAL;
 	char *tres_alloc_str = NULL, *tres_fmt_alloc_str = NULL,
 		*tres_req_str = NULL, *tres_fmt_req_str = NULL;
+	uint32_t pelog_env_size = 0;
+	char **pelog_env = (char **) NULL;
+	uint32_t pack_leader;
 
 	memset(&limit_set, 0, sizeof(acct_policy_limit_set_t));
 	limit_set.tres = xmalloc(sizeof(uint16_t) * slurmctld_tres_cnt);
@@ -1504,6 +1510,9 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 				       &name_len, buffer);
 		safe_unpackstr_xmalloc(&tres_req_str, &name_len, buffer);
 		safe_unpackstr_xmalloc(&tres_fmt_req_str, &name_len, buffer);
+		safe_unpackstr_array(&pelog_env, &pelog_env_size,
+				     buffer);
+		safe_unpack32(&pack_leader, buffer);
 	} else if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
 		safe_unpack32(&array_job_id, buffer);
 		safe_unpack32(&array_task_id, buffer);
@@ -2196,6 +2205,9 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		job_set_req_tres(job_ptr, true);
 
 	build_node_details(job_ptr, false);	/* set node_addr */
+	job_ptr->pelog_env    = pelog_env;
+	job_ptr->pelog_env_size = pelog_env_size;
+	job_ptr->pack_leader  = pack_leader;
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -2239,6 +2251,9 @@ unpack_error:
 			job_ptr->job_id = NO_VAL;
 		_purge_job_record(job_ptr->job_id);
 	}
+	for (i=0; i<pelog_env_size; i++)
+		xfree(pelog_env[i]);
+	xfree(pelog_env);
 	return SLURM_FAILURE;
 }
 
