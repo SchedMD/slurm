@@ -209,7 +209,7 @@ static void _opt_batch_script(const char *file, const void *body, int size);
 
 /* set options from pbs batch script */
 static bool _opt_wrpr_batch_script(const char *file, const void *body, int size,
-				  int argc, char **argv, int magic);
+				   int argc, char **argv, int magic);
 
 /* Wrapper functions */
 static void _set_pbs_options(int argc, char **argv);
@@ -243,7 +243,7 @@ static void _parse_pbs_resource_list(char *rl);
 #undef USE_ARGERROR
 #if USE_ARGERROR
 static void argerror(const char *msg, ...)
-  __attribute__ ((format (printf, 1, 2)));
+	__attribute__ ((format (printf, 1, 2)));
 static void argerror(const char *msg, ...)
 {
 	va_list ap;
@@ -730,7 +730,7 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 	case OPT_CPU_FREQ:
 		if (cpu_freq_verify_cmdline(val, &opt.cpu_freq_min,
-				&opt.cpu_freq_max, &opt.cpu_freq_gov))
+					    &opt.cpu_freq_max, &opt.cpu_freq_gov))
 			error("Invalid --cpu-freq argument: %s. Ignored", val);
 		break;
 	case OPT_POWER:
@@ -738,7 +738,7 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 	case OPT_THREAD_SPEC:
 		opt.core_spec = parse_int("thread_spec", val, false) |
-					 CORE_SPEC_THREAD;
+			CORE_SPEC_THREAD;
 		break;
 	case OPT_DELAY_BOOT:
 		i = time_str2secs(val);
@@ -1217,8 +1217,8 @@ static void _opt_batch_script(const char * file, const void *body, int size)
  * then pass the array to _set_options for() further parsing.
  */
 static bool _opt_wrpr_batch_script(const char *file, const void *body,
-				     int size, int cmd_argc, char **cmd_argv,
-				     int magic)
+				   int size, int cmd_argc, char **cmd_argv,
+				   int magic)
 {
 	char *magic_word;
 	void (*wrp_func) (int,char**) = NULL;
@@ -1349,15 +1349,15 @@ static void _set_options(int argc, char **argv)
 			break;
 		case 'B':
 			opt.extra_set = verify_socket_core_thread_count(
-						optarg,
-						&opt.sockets_per_node,
-						&opt.cores_per_socket,
-						&opt.threads_per_core,
-						NULL);
+				optarg,
+				&opt.sockets_per_node,
+				&opt.cores_per_socket,
+				&opt.threads_per_core,
+				NULL);
 
 			if (opt.extra_set == false) {
 				error("invalid resource allocation -B `%s'",
-					optarg);
+				      optarg);
 				exit(error_exit);
 			}
 			opt.threads_per_core_set = true;
@@ -1922,9 +1922,9 @@ static void _set_options(int argc, char **argv)
 			break;
 		case LONG_OPT_CPU_FREQ:
 			if (cpu_freq_verify_cmdline(optarg, &opt.cpu_freq_min,
-					&opt.cpu_freq_max, &opt.cpu_freq_gov))
+						    &opt.cpu_freq_max, &opt.cpu_freq_gov))
 				error("Invalid --cpu-freq argument: %s. "
-						"Ignored", optarg);
+				      "Ignored", optarg);
 			break;
 		case LONG_OPT_REQ_SWITCH:
 			if (!optarg) /* CLANG Fix */
@@ -1952,7 +1952,7 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_THREAD_SPEC:
 			opt.core_spec = parse_int("thread_spec",
 						  optarg, false) |
-					CORE_SPEC_THREAD;
+				CORE_SPEC_THREAD;
 			break;
 		case LONG_OPT_KILL_INV_DEP:
 			if (xstrcasecmp(optarg, "yes") == 0)
@@ -2150,7 +2150,7 @@ static void _set_pbs_options(int argc, char **argv)
 	optind = 0;
 	while ((opt_char = getopt_long(argc, argv, pbs_opt_string,
 				       pbs_long_options, &option_index))
-	      != -1) {
+	       != -1) {
 		switch (opt_char) {
 		case 'a':
 			opt.begin = parse_time(optarg, 0);
@@ -2475,10 +2475,10 @@ static void _parse_pbs_resource_list(char *rl)
 				xfree(temp);
 			}
 #if defined(HAVE_ALPS_CRAY) || defined(HAVE_NATIVE_CRAY)
-		/*
-		 * NB: no "mppmem" here since it specifies per-PE memory units,
-		 *     whereas SLURM uses per-node and per-CPU memory units.
-		 */
+			/*
+			 * NB: no "mppmem" here since it specifies per-PE memory units,
+			 *     whereas SLURM uses per-node and per-CPU memory units.
+			 */
 		} else if (!xstrncmp(rl + i, "mppdepth=", 9)) {
 			/* Cray: number of CPUs (threads) per processing element */
 			i += 9;
@@ -2887,7 +2887,7 @@ static bool _opt_verify(void)
 	/* set up the proc and node counts based on the arbitrary list
 	   of nodes */
 	if (((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_ARBITRARY)
-	   && (!opt.nodes_set || !opt.ntasks_set)) {
+	    && (!opt.nodes_set || !opt.ntasks_set)) {
 		if (!hl)
 			hl = hostlist_create(opt.nodelist);
 		if (!opt.ntasks_set) {
@@ -2946,7 +2946,7 @@ static bool _opt_verify(void)
 		char *sched_name = slurm_get_sched_type();
 		if (xstrcmp(sched_name, "sched/wiki") == 0) {
 			info("WARNING: Ignoring the -I/--immediate option "
-				"(not supported by Maui)");
+			     "(not supported by Maui)");
 			opt.immediate = false;
 		}
 		xfree(sched_name);
@@ -3002,7 +3002,7 @@ static bool _opt_verify(void)
 	}
 
 	cpu_freq_set_env("SLURM_CPU_FREQ_REQ",
-			opt.cpu_freq_min, opt.cpu_freq_max, opt.cpu_freq_gov);
+			 opt.cpu_freq_min, opt.cpu_freq_max, opt.cpu_freq_gov);
 
 	return verified;
 }
@@ -3194,7 +3194,7 @@ static void _opt_list(void)
 	info("gid               : %ld", (long) opt.gid);
 	info("cwd               : %s", opt.cwd);
 	info("ntasks            : %d %s", opt.ntasks,
-		opt.ntasks_set ? "(set)" : "(default)");
+	     opt.ntasks_set ? "(set)" : "(default)");
 	if (opt.cpus_set)
 		info("cpus_per_task     : %d", opt.cpus_per_task);
 	if (opt.max_nodes) {
@@ -3202,12 +3202,12 @@ static void _opt_list(void)
 		     opt.min_nodes, opt.max_nodes);
 	} else {
 		info("nodes             : %d %s", opt.min_nodes,
-			opt.nodes_set ? "(set)" : "(default)");
+		     opt.nodes_set ? "(set)" : "(default)");
 	}
 	info("jobid             : %u %s", opt.jobid,
-		opt.jobid_set ? "(set)" : "(default)");
+	     opt.jobid_set ? "(set)" : "(default)");
 	info("partition         : %s",
-		opt.partition == NULL ? "default" : opt.partition);
+	     opt.partition == NULL ? "default" : opt.partition);
 	info("profile           : `%s'",
 	     acct_gather_profile_to_string(opt.profile));
 	info("job name          : `%s'", opt.job_name);
