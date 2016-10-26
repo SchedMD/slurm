@@ -1456,6 +1456,8 @@ static bool _opt_verify(void)
 {
 	bool verified = true;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
+	hostlist_t hl = NULL;
+	int hl_cnt = 0;
 
 	if (opt.quiet && opt.verbose) {
 		error ("don't specify both --verbose (-v) and --quiet (-Q)");
@@ -1503,8 +1505,7 @@ static bool _opt_verify(void)
 	}
 
 	if (opt.nodelist) {
-		int hl_cnt;
-		hostlist_t hl = hostlist_create(opt.nodelist);
+		hl = hostlist_create(opt.nodelist);
 		if (!hl) {
 			error("memory allocation failure");
 			exit(error_exit);
@@ -1515,6 +1516,7 @@ static bool _opt_verify(void)
 			opt.min_nodes = MAX(hl_cnt, opt.min_nodes);
 		else
 			opt.min_nodes = hl_cnt;
+		opt.nodes_set = true;
 	}
 
 
@@ -1681,19 +1683,34 @@ static bool _opt_verify(void)
 			      "nodes, setting nnodes to %d",
 			      opt.ntasks, opt.min_nodes, opt.ntasks);
 
-			opt.min_nodes = opt.ntasks;
-			if (   opt.max_nodes
-			       && (opt.min_nodes > opt.max_nodes) )
-				opt.max_nodes = opt.min_nodes;
-		}
+			opt.min_nodes = opt.max_nodes = opt.ntasks;
+
+			if (hl_cnt > opt.min_nodes) {
+				int del_cnt, i;
+				char *host;
+				del_cnt = hl_cnt - opt.min_nodes;
+				for (i=0; i<del_cnt; i++) {
+					host = hostlist_pop(hl);
+					free(host);
+				}
+				xfree(opt.nodelist);
+				opt.nodelist =
+					hostlist_ranged_string_xmalloc(hl);
+			}
+
+		} else if (opt.max_nodes == 0)
+			opt.max_nodes = opt.ntasks;
 
 	} /* else if (opt.ntasks_set && !opt.nodes_set) */
+
+	if (hl)
+		hostlist_destroy(hl);
 
 	/* set up the proc and node counts based on the arbitrary list
 	   of nodes */
 	if (((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_ARBITRARY)
 	    && (!opt.nodes_set || !opt.ntasks_set)) {
-		hostlist_t hl = hostlist_create(opt.nodelist);
+		hl = hostlist_create(opt.nodelist);
 		if (!opt.ntasks_set) {
 			opt.ntasks_set = 1;
 			opt.ntasks = hostlist_count(hl);

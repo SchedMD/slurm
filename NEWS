@@ -43,6 +43,8 @@ documents those changes that are of interest to users and administrators.
     destination directory and compression algorithm.
  -- Add new SchedulerParameter (max_array_tasks) to limit the maximum number of
     tasks in a job array independently from the maximum task ID (MaxArraySize).
+ -- Fix issue where number of nodes is not properly allocated when sbatch and
+    salloc are requested with -n tasks < hosts from -w hostlist or from -N.
 
 * Changes in Slurm 17.02.0pre2
 ==============================
