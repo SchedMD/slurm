@@ -1313,7 +1313,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		*tres_req_str = NULL, *tres_fmt_req_str = NULL;
 	uint32_t pelog_env_size = 0;
 	char **pelog_env = (char **) NULL;
-	uint32_t pack_leader;
+	uint32_t pack_leader = 0;
 
 	memset(&limit_set, 0, sizeof(acct_policy_limit_set_t));
 	limit_set.tres = xmalloc(sizeof(uint16_t) * slurmctld_tres_cnt);
