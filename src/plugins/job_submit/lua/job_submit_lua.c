@@ -1250,6 +1250,14 @@ static void _register_lua_slurm_output_functions (void)
 	lua_setfield (L, -2, "MEM_PER_CPU");
 	lua_pushnumber (L, NICE_OFFSET);
 	lua_setfield (L, -2, "NICE_OFFSET");
+	lua_pushnumber (L, JOB_SHARED_NONE);
+	lua_setfield (L, -2, "JOB_SHARED_NONE");
+	lua_pushnumber (L, JOB_SHARED_OK);
+	lua_setfield (L, -2, "JOB_SHARED_OK");
+	lua_pushnumber (L, JOB_SHARED_USER);
+	lua_setfield (L, -2, "JOB_SHARED_USER");
+	lua_pushnumber (L, JOB_SHARED_MCS);
+	lua_setfield (L, -2, "JOB_SHARED_MCS");
 	lua_pushnumber (L, NO_VAL64);
 	lua_setfield (L, -2, "NO_VAL64");
 	lua_pushnumber (L, NO_VAL);
