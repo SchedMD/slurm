@@ -60,6 +60,7 @@ documents those changes that are of interest to users and administrators.
     task/cray in the TaskPlugin settings.
  -- Document that node Weight takes precedence over load with LLN scheduling.
  -- Fix issue where gang scheduling could happen even with OverSubscribe=NO.
+ -- Expose JOB_SHARED_* values to job_submit/lua plugin.
 
 * Changes in Slurm 16.05.5
 ==========================
