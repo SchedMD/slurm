@@ -182,9 +182,11 @@ script for Slurm?</a></li>
 <li><a href="#cluster_acct">When adding a new cluster, how can the Slurm cluster
     configuration be copied from an existing cluster to the new cluster?</a></li>
 <li><a href="#cray_dvs">How can I update Slurm on a Cray DVS file system without
-rebooting the nodes?</a></li>
+    rebooting the nodes?</a></li>
 <li><a href="#dbd_rebuild">How can I rebuild the database hierarchy?</a></li>
 <li><a href="#routing queue">How can a routing queue be configured?</a></li>
+<li><a href="#squeue_script">How can I suspend, resume, hold or release all
+    of the jobs belonging to a speciic user, partition, etc?</a></li>
 </ol>
 
 <h2>For Management</h2>
@@ -2197,8 +2199,18 @@ guide for more information.
 Also see the available job submit plugins distributed with Slurm for examples
 (look in the "src/plugins/job_submit" directory).</p>
 
+<p><a name="squeue_script"><b>67. How can I suspend, resume, hold or release all
+    of the jobs belonging to a speciic user, partition, etc?</b></a><br>
+There isn't any filtering by user, partition, etc. available in the scontrol
+command; however the squeue command can be used to perform the filtering and
+build a script which you can then execute. For example:
+<pre>
+> squeue -u adam -h -o "scontrol hold %i" &gt;hold_script
+</pre>
+</li>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 19 July 2016</p>
+<p style="text-align:center;">Last modified 26 October 2016</p>
 
 <!--#include virtual="footer.txt"-->
