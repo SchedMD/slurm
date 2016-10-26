@@ -5385,25 +5385,44 @@ extern int set_node_maint_mode(bool reset_all)
 	if (!resv_list)
 		return res_start_cnt;
 
-	flags = (NODE_STATE_RES | NODE_STATE_MAINT);
+	flags = NODE_STATE_RES;
+	if (reset_all)
+		flags |= NODE_STATE_MAINT;
 	for (i = 0, node_ptr = node_record_table_ptr;
 	     i <= node_record_count; i++, node_ptr++) {
 		node_ptr->node_state &= (~flags);
 	}
 
+	if (!reset_all) {
+		/* NODE_STATE_RES already cleared above, 
+		 * clear RESERVE_FLAG_MAINT for expired reservations */
+		iter = list_iterator_create(resv_list);
+		while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+			if ((resv_ptr->flags_set_node) &&
+			    (resv_ptr->flags & RESERVE_FLAG_MAINT) &&
+			    ((now <  resv_ptr->start_time) ||
+			     (now >= resv_ptr->end_time  ))) {
+				flags = NODE_STATE_MAINT;
+				resv_ptr->flags_set_node = false;
+				_set_nodes_flags(resv_ptr, now, flags);
+				last_node_update = now;
+			}
+		}
+		list_iterator_destroy(iter);
+	}
+
+	/* Set NODE_STATE_RES and possibly NODE_STATE_MAINT for nodes in all
+	 * currently active reservations */
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
-		flags = NODE_STATE_RES;
-		if (resv_ptr->flags & RESERVE_FLAG_MAINT)
-			flags |= NODE_STATE_MAINT;
-
 		if ((now >= resv_ptr->start_time) &&
 		    (now <  resv_ptr->end_time  )) {
+			flags = NODE_STATE_RES;
+			if (resv_ptr->flags & RESERVE_FLAG_MAINT)
+				flags |= NODE_STATE_MAINT;
 			resv_ptr->flags_set_node = true;
 			_set_nodes_flags(resv_ptr, now, flags);
 			last_node_update = now;
-		} else {
-			resv_ptr->flags_set_node = false;
 		}
 
 		if (reset_all)	/* Defer reservation prolog/epilog */

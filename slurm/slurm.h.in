@@ -864,7 +864,8 @@ enum node_states {
 					 * new work */
 #define NODE_STATE_POWER_UP   0x4000	/* restore power or otherwise
 					 * configure a node */
-#define NODE_STATE_MAINT      0x8000	/* node in maintenance reservation */
+#define NODE_STATE_MAINT      0x8000	/* node in maintenance reservation OR
+					 * node reboot requested */
 
 /* used to define the size of the credential.signature size
  * used to define the key size of the io_stream_header_t

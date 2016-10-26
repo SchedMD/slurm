@@ -191,6 +191,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue where number of nodes is not properly allocated when srun is
     requested with -n tasks < hosts from -w hostlist.
  -- Update srun documentation for -N, -w and -m arbitrary.
+ -- Fix bug that was clearing MAINT mode on nodes scheduled for reboot (bug
+    introduced in version 16.05.5 to address bug in overlapping reservations).
 
 * Changes in Slurm 16.05.5
 ==========================
