@@ -2217,6 +2217,7 @@ static bool _opt_verify(void)
 			opt.min_nodes = MAX(hl_cnt, opt.min_nodes);
 		else
 			opt.min_nodes = hl_cnt;
+		opt.nodes_set = true;
 	}
 
 	if ((opt.nodes_set || opt.extra_set)				&&
