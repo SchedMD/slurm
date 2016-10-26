@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "March 2016" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "October 2016" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -981,6 +981,11 @@ will be laid out on the nodes in the order of the file.
 controls the nodes to be allocated to the job and not the allocation of
 CPUs on those nodes. This option is meant primarily to control a job step's
 task layout in an existing job allocation for the srun command.
+.br
+\fBNOTE:\fR If number of tasks is given and a list of requested nodes is also
+given the number of nodes used from that list will be reduced to match that of
+the number of tasks if the number of nodes in the list is greater than the
+number of tasks.
 
 .TP
 Second distribution method (distribution of CPUs across sockets for binding):
@@ -1312,6 +1317,10 @@ behavior is to allocate enough nodes to satisfy the requirements of
 the \fB\-n\fR and \fB\-c\fR options.
 The job will be allocated as many nodes as possible within the range specified
 and without delaying the initiation of the job.
+If number of tasks is given and a number of requested nodes is also given the
+number of nodes used from that request will be reduced to match that of the
+number of tasks if the number of nodes in the request is greater than the number
+of tasks.
 The node count specification may include a numeric value followed by a suffix
 of "k" (multiplies numeric value by 1,024) or "m" (multiplies numeric value by
 1,048,576). This option applies to job and step allocations.
@@ -2001,8 +2010,11 @@ by the supplied host list, additional resources will be allocated on other
 nodes as needed.
 Rather than repeating a host name multiple times, an asterisk and
 a repetition count may be appended to a host name. For example
-"host1,host1" and "host1*2" are equivalent. This option applies to job and step
-allocations.
+"host1,host1" and "host1*2" are equivalent. If number of tasks is given and a
+list of requested nodes is also given the number of nodes used from that list
+will be reduced to match that of the number of tasks if the number of nodes in
+the list is greater than the number of tasks. This option applies to job and
+step allocations.
 
 .TP
 \fB\-\-wckey\fR=<\fIwckey\fR>
