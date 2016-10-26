@@ -9899,7 +9899,7 @@ void reset_first_job_id(void)
 /*
  * Return the next available job_id to be used.
  *
- * Must have job_write lock when grabbing a job_id
+ * Must have job_write and fed_read locks when grabbing a job_id
  *
  * IN test_only - if true, doesn't advance the job_id sequence, just returns
  * 	what the next job id will be.
@@ -9917,14 +9917,16 @@ extern uint32_t get_next_job_id(bool test_only)
 	for (i = 0; i < max_jobs; i++) {
 		if (++tmp_id_sequence >= slurmctld_conf.max_job_id)
 			tmp_id_sequence = slurmctld_conf.first_job_id;
-		if (find_job_record(tmp_id_sequence))
+
+		new_id = fed_mgr_get_job_id(tmp_id_sequence);
+
+		if (find_job_record(new_id))
 			continue;
-		if (_dup_job_file_test(tmp_id_sequence))
+		if (_dup_job_file_test(new_id))
 			continue;
 
-		new_id = tmp_id_sequence;
 		if (!test_only)
-			job_id_sequence = new_id;
+			job_id_sequence = tmp_id_sequence;
 
 		return new_id;
 	}

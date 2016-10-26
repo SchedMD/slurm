@@ -1161,8 +1161,7 @@ static void *_sib_will_run(void *arg)
 		if (job_desc->job_id == NO_VAL) {
 			/* Get a job_id now without incrementing the job_id
 			 * count. This prevents burning job_ids on will_runs */
-			job_desc->job_id =
-				fed_mgr_get_job_id(get_next_job_id(true));
+			job_desc->job_id = get_next_job_id(true);
 		}
 
 		rc = job_allocate(sib_msg->data, false, true,
@@ -1658,7 +1657,7 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	lock_slurmctld(job_write_lock);
 	/* get job_id now. Can't submit job to get job_id as job_allocate will
 	 * change the job_desc. */
-	job_desc->job_id = fed_mgr_get_job_id(get_next_job_id(false));
+	job_desc->job_id = get_next_job_id(false);
 	unlock_slurmctld(job_write_lock);
 
 	/* Don't job/node write lock on _find_start_now_sib. It locks inside
