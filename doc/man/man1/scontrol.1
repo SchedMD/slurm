@@ -1229,6 +1229,22 @@ Changing the \fINodes\fP in a partition has no effect upon jobs that
 have already begun execution.
 
 .TP
+\fIOverTimeLimit\fP=<count>
+Number of minutes by which a job can exceed its time limit before
+being canceled.
+The configured job time limit is treated as a \fIsoft\fR limit.
+Adding \fBOverTimeLimit\fR to the \fIsoft\fR limit provides a \fIhard\fR
+limit, at which point the job is canceled.
+This is particularly useful for backfill scheduling, which bases upon
+each job's soft time limit.
+A partition\-specific \fIOverTimeLimit\fP will override any global
+\fIOverTimeLimit\fP value.
+If not specified, the global \fIOverTimeLimit\fP value will take precedence.
+May not exceed exceed 65533 minutes.
+An input value of "UNLIMITED" will clear any previously configured
+partition\-specific \fIOverTimeLimit\fP value.
+
+.TP
 \fIOverSubscribe\fP=<yes|no|exclusive|force>[:<job_count>]
 Specify if compute resources (i.e. individual CPUs) in this partition can be
 shared by multiple jobs.

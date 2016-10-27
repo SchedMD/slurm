@@ -227,7 +227,7 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (!strncasecmp(tag, "OverSubscribe", MAX(taglen, 2)) ||
+		else if (!strncasecmp(tag, "OverSubscribe", MAX(taglen, 5)) ||
 			 !strncasecmp(tag, "Shared", MAX(taglen, 2))) {
 			char *colon_pos = strchr(val, ':');
 			if (colon_pos) {
@@ -266,6 +266,19 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 				error("Invalid input: %s", argv[i]);
 				error("Acceptable OverSubscribe values are "
 					"NO, EXCLUSIVE, YES:#, and FORCE:#");
+				return -1;
+			}
+			(*update_cnt_ptr)++;
+		}
+		else if (strncasecmp(tag, "OverTimeLimit", MAX(taglen, 5))
+			  == 0) {
+			if ((xstrcasecmp(val,"UNLIMITED") == 0) ||
+			    (xstrcasecmp(val,"INFINITE") == 0)) {
+				part_msg_ptr->over_time_limit =
+					(uint16_t) INFINITE;
+			} else if (parse_uint16(val, &part_msg_ptr->
+						      over_time_limit)) {
+				error("Invalid OverTimeLimit value: %s", val);
 				return -1;
 			}
 			(*update_cnt_ptr)++;

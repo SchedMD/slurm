@@ -115,6 +115,7 @@ enum {
 	SORTID_NODES_MIN,
 	SORTID_ONLY_LINE,
 	SORTID_OVER_SUBSCRIBE,
+	SORTID_OVER_TIME_LIMIT,
 	SORTID_PART_STATE,
 	SORTID_PREEMPT_MODE,
 	SORTID_PRIORITY_JOB_FACTOR,
@@ -176,6 +177,8 @@ static display_data_t display_data_part[] = {
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_OVER_SUBSCRIBE, "OverSubscribe", false,
 	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_OVER_TIME_LIMIT, "OverTimeLimit", false,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_ROOT, "Root", false, EDIT_MODEL, refresh_part,
 	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_QOS_CHAR, "Qos", false,
@@ -256,6 +259,8 @@ static display_data_t create_data_part[] = {
 	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_OVER_SUBSCRIBE, "OverSubscribe", false,
 	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
+	{G_TYPE_STRING, SORTID_OVER_TIME_LIMIT, "OverTimeLimit", false,
+	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_ALLOW_ACCOUNTS, "Accounts Allowed", false,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_ALLOW_GROUPS, "Groups Allowed", false,
@@ -650,6 +655,16 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		else
 			goto return_error;
 		type = "oversubscribe";
+		break;
+	case SORTID_OVER_TIME_LIMIT:
+		if (!xstrcasecmp(new_text, "INFINITE") ||
+		    !xstrcasecmp(new_text, "UNLIMITED")) {
+			part_msg->over_time_limit = (uint16_t) INFINITE;
+		} else if (new_text[0] >= '0' && new_text[0] <= '9')
+			part_msg->over_time_limit = atoi(new_text);
+		else
+			goto return_error;
+		type = "overtimelimit";
 		break;
 	case SORTID_ALLOW_ACCOUNTS:
 		type = "accounts";
@@ -1140,6 +1155,17 @@ static void _layout_part_record(GtkTreeView *treeview,
 			} else
 				temp_char = "no";
 			break;
+		case SORTID_OVER_TIME_LIMIT:
+			if (part_ptr->over_time_limit == (uint16_t) INFINITE) {
+				temp_char = "UNLIMITED";
+			} else if (part_ptr->over_time_limit == NO_VAL16) {
+				temp_char = "N/A";
+			} else {
+				snprintf(tmp_buf, sizeof(tmp_buf), "%u",
+					 part_ptr->over_time_limit);
+				temp_char = tmp_buf;
+			}
+			break;
 		case SORTID_TMP_DISK:
 			convert_num_unit(
 				(float)sview_part_info->sub_part_total.
@@ -1209,11 +1235,12 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	char tmp_prio_job_factor[40], tmp_prio_tier[40];
 	char tmp_size[40], tmp_over_subscribe_buf[40], tmp_time[40];
 	char tmp_max_nodes[40], tmp_min_nodes[40], tmp_grace[40];
+	char tmp_over_time_limit_buf[40];
 	char tmp_cpu_cnt[40], tmp_node_cnt[40], tmp_max_cpus_per_node[40];
 	char *tmp_alt, *tmp_default, *tmp_accounts, *tmp_groups, *tmp_hidden;
 	char *tmp_deny_accounts, *tmp_qos_char, *tmp_exc_user;
 	char *tmp_qos, *tmp_deny_qos;
-	char *tmp_root, *tmp_over_subscribe, *tmp_state;
+	char *tmp_root, *tmp_over_subscribe, *tmp_over_time_limit, *tmp_state;
 	uint16_t tmp_preempt;
 	partition_info_t *part_ptr = sview_part_info->part_ptr;
 	GtkTreeIter sub_iter;
@@ -1353,6 +1380,17 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	} else
 		tmp_over_subscribe = "no";
 
+	if (part_ptr->over_time_limit == (uint16_t) INFINITE) {
+		tmp_over_time_limit = "UNLIMITED";
+	} else if (part_ptr->over_time_limit == NO_VAL16) {
+		tmp_over_time_limit = "N/A";
+	} else {
+		snprintf(tmp_over_time_limit_buf,
+			 sizeof(tmp_over_time_limit_buf), "%u",
+			 part_ptr->over_time_limit);
+		tmp_over_time_limit = tmp_over_time_limit_buf;
+	}
+
 	if (part_ptr->max_time == INFINITE)
 		snprintf(tmp_time, sizeof(tmp_time), "infinite");
 	else {
@@ -1399,6 +1437,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 			   SORTID_NODELIST,   part_ptr->nodes,
 			   SORTID_ONLY_LINE,  0,
 			   SORTID_OVER_SUBSCRIBE, tmp_over_subscribe,
+			   SORTID_OVER_TIME_LIMIT, tmp_over_time_limit,
 			   SORTID_PART_STATE, tmp_state,
 			   SORTID_PREEMPT_MODE,
 				preempt_mode_string(tmp_preempt),
@@ -2370,6 +2409,7 @@ extern GtkListStore *create_model_part(int type)
 	case SORTID_NODES_MIN:
 	case SORTID_NODES_MAX:
 	case SORTID_MAX_CPUS_PER_NODE:
+	case SORTID_OVER_TIME_LIMIT:
 		break;
 	case SORTID_OVER_SUBSCRIBE:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);

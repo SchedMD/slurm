@@ -108,6 +108,7 @@
 #define SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0 0
 #define STEP_FLAG 0xbbbb
 #define TOP_PRIORITY 0xffff0000	/* large, but leave headroom for higher */
+#define ONE_YEAR	(365 * 24 * 60 * 60)
 
 #define JOB_HASH_INX(_job_id)	(_job_id % hash_table_size)
 #define JOB_ARRAY_HASH_INX(_job_id, _task_id) \
@@ -5036,6 +5037,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	char jbuf[JBUFSIZ];
 	int i;
 	int use_cloud = false;
+	uint16_t over_time_limit;
 
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
@@ -5155,6 +5157,13 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		 * from slow responding slurmds */
 		return SLURM_SUCCESS;
 	} else {
+		if (job_ptr->part_ptr &&
+		    (job_ptr->part_ptr->over_time_limit != NO_VAL16)) {
+			over_time_limit = job_ptr->part_ptr->over_time_limit;
+		} else {
+			over_time_limit = slurmctld_conf.over_time_limit;
+		}
+
 		if (node_fail) {
 			job_ptr->job_state = JOB_NODE_FAIL | job_comp_flag;
 			job_ptr->requid = uid;
@@ -5169,7 +5178,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 			xfree(job_ptr->state_desc);
 		} else if (job_comp_flag
 			   && ((job_ptr->end_time
-				+ slurmctld_conf.over_time_limit * 60) < now)) {
+				+ over_time_limit * 60) < now)) {
 			/* Test if the job has finished before its allowed
 			 * over time has expired.
 			 */
@@ -7628,13 +7637,10 @@ void job_time_limit(void)
 			    slurmctld_conf.msg_timeout + 1);
 	time_t over_run;
 	int resv_status = 0;
+	uint16_t over_time_limit;
 #ifndef HAVE_BG
 	uint8_t prolog;
 #endif
-	if (slurmctld_conf.over_time_limit == (uint16_t) INFINITE)
-		over_run = now - (365 * 24 * 60 * 60);	/* one year */
-	else
-		over_run = now - (slurmctld_conf.over_time_limit  * 60);
 
 	begin_job_resv_check();
 	job_iterator = list_iterator_create(job_list);
@@ -7765,6 +7771,19 @@ void job_time_limit(void)
 				job_ptr->mail_type &= (~MAIL_JOB_TIME50);
 				mail_job_info(job_ptr, MAIL_JOB_TIME50);
 			}
+
+			if (job_ptr->part_ptr &&
+			    (job_ptr->part_ptr->over_time_limit != NO_VAL16)) {
+				over_time_limit =
+					job_ptr->part_ptr->over_time_limit;
+			} else {
+				over_time_limit =
+					slurmctld_conf.over_time_limit;
+			}
+			if (over_time_limit == (uint16_t) INFINITE)
+				over_run = now - ONE_YEAR;
+			else
+				over_run = now - (over_time_limit  * 60);
 			if (job_ptr->end_time <= over_run) {
 				last_job_update = now;
 				info("Time limit exhausted for JobId=%u",

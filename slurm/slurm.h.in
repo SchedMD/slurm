@@ -147,7 +147,8 @@ typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
 /* eg. the maximum count of nodes any job may use in some partition */
 #define	INFINITE   (0xffffffff)
 #define	INFINITE64 (0xffffffffffffffff)
-#define NO_VAL	   (0xfffffffe)
+#define NO_VAL16   (0xfffe)
+#define NO_VAL     (0xfffffffe)
 #define NO_VAL64   (0xfffffffffffffffe)
 #define MAX_TASKS_PER_NODE 512
 #define MAX_JOB_ID (0x03FFFFFF) /* bits 0-25 */
@@ -2168,6 +2169,8 @@ typedef struct partition_info {
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
 	char *nodes;		/* list names of nodes in partition */
+	uint16_t over_time_limit; /* job's time limit can be exceeded by this
+				   * number of minutes before cancellation */
 	uint16_t preempt_mode;	/* See PREEMPT_MODE_* in slurm/slurm.h */
 	uint16_t priority_job_factor;	/* job priority weight factor */
 	uint16_t priority_tier;	/* tier for scheduling and preemption */

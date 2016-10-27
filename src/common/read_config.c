@@ -1079,6 +1079,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"MinNodes", S_P_UINT32},
 		{"Nodes", S_P_STRING},
 		{"OverSubscribe", S_P_STRING}, /* YES, NO, or FORCE */
+		{"OverTimeLimit", S_P_STRING},
 		{"PreemptMode", S_P_STRING},
 		{"Priority", S_P_UINT16},
 		{"PriorityJobFactor", S_P_UINT16},
@@ -1283,6 +1284,24 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_boolean(&p->lln_flag, "LLN", tbl) &&
 		    !s_p_get_boolean(&p->lln_flag, "LLN", dflt))
 			p->lln_flag = false;
+
+		if (s_p_get_string(&tmp, "OverTimeLimit", tbl) ||
+		    s_p_get_string(&tmp, "OverTimeLimit", dflt)) {
+			if (!strcasecmp(tmp, "INFINITE") ||
+			    !strcasecmp(tmp, "UNLIMITED")) {
+				p->over_time_limit = (uint16_t) INFINITE;
+			} else {
+				int i = strtol(tmp, (char **) NULL, 10);
+				if (i < 0)
+					error("Ignoring bad OverTimeLimit value: %s",
+					      tmp);
+				else if (i > 0xfffe)
+					p->over_time_limit = (uint16_t)INFINITE;
+				else
+					p->over_time_limit = i;
+			}
+		} else
+			p->over_time_limit = NO_VAL16;
 
 		if (s_p_get_string(&tmp, "PreemptMode", tbl) ||
 		    s_p_get_string(&tmp, "PreemptMode", dflt)) {

@@ -344,6 +344,8 @@ struct part_record {
 	char *nodes;		/* comma delimited list names of nodes */
 	double   norm_priority;	/* normalized scheduling priority for
 				 * jobs (DON'T PACK) */
+	uint16_t over_time_limit; /* job's time limit can be exceeded by this
+				   * number of minutes before cancellation */
 	uint16_t preempt_mode;	/* See PREEMPT_MODE_* in slurm/slurm.h */
 	uint16_t priority_job_factor;	/* job priority weight factor */
 	uint16_t priority_tier;	/* tier for scheduling and preemption */

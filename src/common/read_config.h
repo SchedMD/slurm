@@ -269,6 +269,8 @@ typedef struct slurm_conf_partition {
 	uint32_t min_nodes;	/* per job */
 	char	*name;		/* name of the partition */
 	char 	*nodes;		/* comma delimited list names of nodes */
+	uint16_t over_time_limit; /* job's time limit can be exceeded by this
+				   * number of minutes before cancellation */
 	uint16_t preempt_mode;	/* See PREEMPT_MODE_* in slurm/slurm.h */
 	uint16_t priority_job_factor;	/* job priority weight factor */
 	uint16_t priority_tier;	/* tier for scheduling and preemption */

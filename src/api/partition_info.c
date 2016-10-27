@@ -291,15 +291,24 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	else
 		xstrfmtcat(out, " OverSubscribe=YES:%u", val);
 
+	xstrcat(out, line_end);
+
+	/****** Line ******/
+	if (part_ptr->over_time_limit == NO_VAL16)
+		xstrfmtcat(out, "OverTimeLimit=NONE");
+	else if (part_ptr->over_time_limit == (uint16_t) INFINITE)
+		xstrfmtcat(out, "OverTimeLimit=UNLIMITED");
+	else
+		xstrfmtcat(out, "OverTimeLimit=%u", part_ptr->over_time_limit);
+
 	preempt_mode = part_ptr->preempt_mode;
-	if (preempt_mode == (uint16_t) NO_VAL)
+	if (preempt_mode == NO_VAL16)
 		preempt_mode = slurm_get_preempt_mode(); /* use cluster param */
 	xstrfmtcat(out, " PreemptMode=%s", preempt_mode_string(preempt_mode));
 
 	xstrcat(out, line_end);
 
-	/****** Line 8 ******/
-
+	/****** Line ******/
 	if (part_ptr->state_up == PARTITION_UP)
 		xstrcat(out, "State=UP");
 	else if (part_ptr->state_up == PARTITION_DOWN)

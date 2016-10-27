@@ -292,6 +292,8 @@ struct part_record *create_part_record(void)
 	part_ptr->alternate         = xstrdup(default_part.alternate);
 	part_ptr->cr_type	    = default_part.cr_type;
 	part_ptr->flags             = default_part.flags;
+	part_ptr->grace_time 	    = default_part.grace_time;
+	part_ptr->max_share         = default_part.max_share;
 	part_ptr->max_time          = default_part.max_time;
 	part_ptr->default_time      = default_part.default_time;
 	part_ptr->max_cpus_per_node = default_part.max_cpus_per_node;
@@ -299,12 +301,12 @@ struct part_record *create_part_record(void)
 	part_ptr->max_nodes_orig    = default_part.max_nodes;
 	part_ptr->min_nodes         = default_part.min_nodes;
 	part_ptr->min_nodes_orig    = default_part.min_nodes;
-	part_ptr->state_up          = default_part.state_up;
-	part_ptr->max_share         = default_part.max_share;
+	part_ptr->over_time_limit   = default_part.over_time_limit;
 	part_ptr->preempt_mode      = default_part.preempt_mode;
 	part_ptr->priority_job_factor = default_part.priority_job_factor;
 	part_ptr->priority_tier     = default_part.priority_tier;
-	part_ptr->grace_time 	    = default_part.grace_time;
+	part_ptr->state_up          = default_part.state_up;
+
 	if (part_max_priority) {
 		part_ptr->norm_priority =
 			(double)default_part.priority_job_factor /
@@ -514,6 +516,7 @@ static int _dump_part_state(void *x, void *arg)
 
 	pack16(part_ptr->flags,          buffer);
 	pack16(part_ptr->max_share,      buffer);
+	pack16(part_ptr->over_time_limit,buffer);
 	pack16(part_ptr->preempt_mode,   buffer);
 	pack16(part_ptr->priority_job_factor, buffer);
 	pack16(part_ptr->priority_tier,  buffer);
@@ -581,7 +584,8 @@ int load_all_part_state(void)
 	uint32_t max_cpus_per_node = INFINITE, grace_time = 0;
 	time_t time;
 	uint16_t flags, priority_job_factor, priority_tier;
-	uint16_t max_share, preempt_mode, state_up, cr_type;
+	uint16_t max_share, over_time_limit = NO_VAL16, preempt_mode;
+	uint16_t state_up, cr_type;
 	struct part_record *part_ptr;
 	uint32_t data_size = 0, name_len;
 	int data_allocated, data_read = 0, error_code = 0, part_cnt = 0;
@@ -643,7 +647,56 @@ int load_all_part_state(void)
 	safe_unpack_time(&time, buffer);
 
 	while (remaining_buf(buffer) > 0) {
-		if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
+			safe_unpackstr_xmalloc(&part_name, &name_len, buffer);
+			safe_unpack32(&grace_time, buffer);
+			safe_unpack32(&max_time, buffer);
+			safe_unpack32(&default_time, buffer);
+			safe_unpack32(&max_cpus_per_node, buffer);
+			safe_unpack32(&max_nodes, buffer);
+			safe_unpack32(&min_nodes, buffer);
+
+			safe_unpack16(&flags,        buffer);
+			safe_unpack16(&max_share,    buffer);
+			safe_unpack16(&over_time_limit, buffer);
+			safe_unpack16(&preempt_mode, buffer);
+
+			safe_unpack16(&priority_job_factor, buffer);
+			safe_unpack16(&priority_tier, buffer);
+			if (priority_job_factor > part_max_priority)
+				part_max_priority = priority_job_factor;
+
+			safe_unpack16(&state_up, buffer);
+			safe_unpack16(&cr_type, buffer);
+
+			safe_unpackstr_xmalloc(&allow_accounts,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&allow_groups,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&allow_qos,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&qos_char,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&deny_accounts,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&deny_qos,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&allow_alloc_nodes,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&alternate, &name_len, buffer);
+			safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
+			if ((flags & PART_FLAG_DEFAULT_CLR)   ||
+			    (flags & PART_FLAG_EXC_USER_CLR)  ||
+			    (flags & PART_FLAG_HIDDEN_CLR)    ||
+			    (flags & PART_FLAG_NO_ROOT_CLR)   ||
+			    (flags & PART_FLAG_ROOT_ONLY_CLR) ||
+			    (flags & PART_FLAG_REQ_RESV_CLR)  ||
+			    (flags & PART_FLAG_LLN_CLR)) {
+				error("Invalid data for partition %s: flags=%u",
+				      part_name, flags);
+				error_code = EINVAL;
+			}
+		} else if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
 			safe_unpackstr_xmalloc(&part_name, &name_len, buffer);
 			safe_unpack32(&grace_time, buffer);
 			safe_unpack32(&max_time, buffer);
@@ -794,7 +847,8 @@ int load_all_part_state(void)
 		part_ptr->min_nodes_orig = min_nodes;
 		part_ptr->max_share      = max_share;
 		part_ptr->grace_time     = grace_time;
-		if (preempt_mode != (uint16_t) NO_VAL)
+		part_ptr->over_time_limit = over_time_limit;
+		if (preempt_mode != NO_VAL16)
 			part_ptr->preempt_mode   = preempt_mode;
 		part_ptr->priority_job_factor = priority_job_factor;
 		part_ptr->priority_tier  = priority_tier;
@@ -963,7 +1017,8 @@ int init_part_conf(void)
 	default_part.min_nodes_orig = 1;
 	default_part.state_up       = PARTITION_UP;
 	default_part.max_share      = 1;
-	default_part.preempt_mode   = (uint16_t) NO_VAL;
+	default_part.over_time_limit = NO_VAL16;
+	default_part.preempt_mode   = NO_VAL16;
 	default_part.priority_tier  = 1;
 	default_part.priority_job_factor = 1;
 	default_part.norm_priority  = 0;
@@ -1222,6 +1277,7 @@ void pack_part(struct part_record *part_ptr, Buf buffer,
 
 		pack16(part_ptr->flags,      buffer);
 		pack16(part_ptr->max_share,  buffer);
+		pack16(part_ptr->over_time_limit, buffer);
 		pack16(part_ptr->preempt_mode, buffer);
 		pack16(part_ptr->priority_job_factor, buffer);
 		pack16(part_ptr->priority_tier, buffer);
@@ -1521,7 +1577,13 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 		part_ptr->max_share = part_desc->max_share;
 	}
 
-	if (part_desc->preempt_mode != (uint16_t) NO_VAL) {
+	if (part_desc->over_time_limit != NO_VAL16) {
+		info("update_part: setting OverTimeLimit to %u for partition %s",
+		     part_desc->over_time_limit, part_desc->name);
+		part_ptr->over_time_limit = part_desc->over_time_limit;
+	}
+
+	if (part_desc->preempt_mode != NO_VAL16) {
 		uint16_t new_mode;
 		new_mode = part_desc->preempt_mode & (~PREEMPT_MODE_GANG);
 		if (new_mode <= PREEMPT_MODE_CANCEL) {
