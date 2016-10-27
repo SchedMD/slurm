@@ -556,6 +556,13 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, line_end);
 	}
 
+	/****** Line 14a (optional) ******/
+	if (job_ptr->fed_siblings) {
+		xstrfmtcat(out, "FedOrigin=%s FedSiblings=%s",
+			   job_ptr->fed_origin_str, job_ptr->fed_siblings_str);
+		xstrcat(out, line_end);
+	}
+
 	/****** Line 15 ******/
 	if (cluster_flags & CLUSTER_FLAG_BG) {
 		select_g_select_jobinfo_get(job_ptr->select_jobinfo,

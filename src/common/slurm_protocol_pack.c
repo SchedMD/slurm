@@ -628,6 +628,11 @@ static int  _unpack_will_run_response_msg(will_run_response_msg_t ** msg_ptr,
 					  Buf buffer,
 					  uint16_t protocol_version);
 
+static void _pack_sib_msg(sib_msg_t *sib_msg_ptr, Buf buffer,
+			  uint16_t protocol_version);
+static int _unpack_sib_msg(sib_msg_t **sib_msg_buffer_ptr, Buf buffer,
+			   uint16_t protocol_version);
+
 static void _pack_accounting_update_msg(accounting_update_msg_t *msg,
 					Buf buffer,
 					uint16_t protocol_version);
@@ -1084,6 +1089,12 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_job_desc_msg((job_desc_msg_t *)
 				   msg->data, buffer,
 				   msg->protocol_version);
+		break;
+	case REQUEST_SIB_JOB_WILL_RUN:
+	case REQUEST_SIB_SUBMIT_BATCH_JOB:
+	case REQUEST_SIB_RESOURCE_ALLOCATION:
+		_pack_sib_msg((sib_msg_t *)msg->data, buffer,
+			      msg->protocol_version);
 		break;
 	case REQUEST_UPDATE_JOB_STEP:
 		_pack_update_job_step_msg((step_update_request_msg_t *)
@@ -1755,6 +1766,12 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_job_desc_msg((job_desc_msg_t **) & (msg->data),
 					  buffer,
 					  msg->protocol_version);
+		break;
+	case REQUEST_SIB_JOB_WILL_RUN:
+	case REQUEST_SIB_SUBMIT_BATCH_JOB:
+	case REQUEST_SIB_RESOURCE_ALLOCATION:
+		rc = _unpack_sib_msg((sib_msg_t **)&(msg->data), buffer,
+				     msg->protocol_version);
 		break;
 	case REQUEST_UPDATE_JOB_STEP:
 		rc = _unpack_update_job_step_msg(
@@ -6279,6 +6296,12 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpackstr_xmalloc(&job->tres_req_str,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&job->start_protocol_ver, buffer);
+
+		safe_unpackstr_xmalloc(&job->fed_origin_str, &uint32_tmp,
+				       buffer);
+		safe_unpack64(&job->fed_siblings, buffer);
+		safe_unpackstr_xmalloc(&job->fed_siblings_str, &uint32_tmp,
+				       buffer);
 	} else if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
 		uint32_t tmp_mem;
 		safe_unpack32(&job->array_job_id, buffer);
@@ -8664,6 +8687,77 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void
+_pack_sib_msg(sib_msg_t *sib_msg_ptr, Buf buffer, uint16_t protocol_version)
+{
+	xassert(sib_msg_ptr);
+
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack16(sib_msg_ptr->data_type, buffer);
+		pack16(sib_msg_ptr->data_version, buffer);
+		pack64(sib_msg_ptr->fed_siblings, buffer);
+		pack32(sib_msg_ptr->job_id, buffer);
+
+		/* add already packed data_buffer to buffer */
+		if (size_buf(sib_msg_ptr->data_buffer)) {
+			Buf dbuf = sib_msg_ptr->data_buffer;
+			uint32_t grow_size =
+				size_buf(dbuf) - get_buf_offset(dbuf);
+
+			grow_buf(buffer, grow_size);
+			memcpy(&buffer->head[get_buf_offset(buffer)],
+			       &dbuf->head[get_buf_offset(dbuf)], grow_size);
+			set_buf_offset(buffer,
+				       get_buf_offset(buffer) + grow_size);
+		}
+	} else {
+		error("_pack_sib_msg: protocol_version "
+		      "%hu not supported", protocol_version);
+	}
+}
+
+static int
+_unpack_sib_msg(sib_msg_t **sib_msg_buffer_ptr, Buf buffer,
+		uint16_t protocol_version)
+{
+	sib_msg_t *sib_msg_ptr = NULL;
+	slurm_msg_t tmp_msg;
+
+	xassert(sib_msg_buffer_ptr);
+
+	/* alloc memory for structure */
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		sib_msg_ptr = xmalloc(sizeof(sib_msg_t));
+		*sib_msg_buffer_ptr = sib_msg_ptr;
+
+		/* load the data values */
+		safe_unpack16(&sib_msg_ptr->data_type, buffer);
+		safe_unpack16(&sib_msg_ptr->data_version, buffer);
+		safe_unpack64(&sib_msg_ptr->fed_siblings, buffer);
+		safe_unpack32(&sib_msg_ptr->job_id, buffer);
+
+		if (remaining_buf(buffer)) {
+			slurm_msg_t_init(&tmp_msg);
+			tmp_msg.msg_type         = sib_msg_ptr->data_type;
+			tmp_msg.protocol_version = sib_msg_ptr->data_version;
+
+			if (unpack_msg(&tmp_msg, buffer))
+				goto unpack_error;
+
+			sib_msg_ptr->data = tmp_msg.data;
+			tmp_msg.data = NULL;
+			slurm_free_msg_members(&tmp_msg);
+		}
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_sib_msg(sib_msg_ptr);
+	*sib_msg_buffer_ptr = NULL;
+	return SLURM_ERROR;
+}
+
 /* _pack_job_desc_msg
  * packs a job_desc struct
  * IN job_desc_ptr - pointer to the job descriptor to pack
@@ -8684,6 +8778,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		pack32(job_desc_ptr->task_dist, buffer);
 		pack16(job_desc_ptr->kill_on_node_fail, buffer);
 		packstr(job_desc_ptr->features, buffer);
+		pack64(job_desc_ptr->fed_siblings, buffer);
 		packstr(job_desc_ptr->gres, buffer);
 		pack32(job_desc_ptr->job_id, buffer);
 		packstr(job_desc_ptr->job_id_str, buffer);
@@ -9204,6 +9299,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		safe_unpack16(&job_desc_ptr->kill_on_node_fail, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->features,
 				       &uint32_tmp, buffer);
+		safe_unpack64(&job_desc_ptr->fed_siblings, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->gres, &uint32_tmp,buffer);
 		safe_unpack32(&job_desc_ptr->job_id, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->job_id_str,

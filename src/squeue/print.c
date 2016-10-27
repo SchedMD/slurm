@@ -1652,6 +1652,87 @@ int _print_job_exit_code(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
+int _print_job_fed_origin(job_info_t * job, int width, bool right_justify,
+			    char* suffix)
+{
+	if (job == NULL)
+		_print_str("FED_ORIGIN", width, right_justify, true);
+	else {
+		if (job->fed_origin_str)
+			_print_str(job->fed_origin_str, width, right_justify,
+				   true);
+		else
+			_print_str("NA", width, right_justify, true);
+	}
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_fed_origin_raw(job_info_t * job, int width, bool right_justify,
+			      char* suffix)
+{
+	if (job == NULL)
+		_print_str("FED_ORIGIN_RAW", width, right_justify, true);
+	else {
+		int id = job->job_id >> 26;
+		if (id)
+			_print_int(id, width, right_justify, true);
+		else
+			_print_str("NA", width, right_justify, true);
+	}
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_fed_siblings(job_info_t * job, int width, bool right_justify,
+			    char* suffix)
+{
+	if (job == NULL)
+		_print_str("FED_SIBLINGS", width, right_justify, true);
+	else {
+		if (job->fed_siblings_str)
+			_print_str(job->fed_siblings_str, width, right_justify,
+				   true);
+		else
+			_print_str("NA", width, right_justify, true);
+	}
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_fed_siblings_raw(job_info_t * job, int width, bool right_justify,
+				char* suffix)
+{
+	if (job == NULL)
+		_print_str("FED_SIBLINGS_RAW", width, right_justify, true);
+	else {
+		int bit = 1;
+		char *ids = NULL;
+		uint64_t tmp_sibs = job->fed_siblings;
+		while (tmp_sibs) {
+			if (tmp_sibs & 1)
+				xstrfmtcat(ids, "%s%d", (ids) ? "," : "", bit);
+
+			tmp_sibs >>= 1;
+			bit++;
+		}
+		if (ids)
+			_print_str(ids, width, right_justify, true);
+		else
+			_print_str("NA", width, right_justify, true);
+	}
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_job_max_cpus(job_info_t * job, int width, bool right_justify,
 		    char* suffix)
 {

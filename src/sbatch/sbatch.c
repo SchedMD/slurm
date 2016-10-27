@@ -161,13 +161,13 @@ int main(int argc, char *argv[])
 
 	/* If can run on multiple clusters find the earliest run time
 	 * and run it there */
+	desc.clusters = xstrdup(opt.clusters);
 	if (opt.clusters &&
 	    slurmdb_get_first_avail_cluster(&desc, opt.clusters,
 			&working_cluster_rec) != SLURM_SUCCESS) {
 		print_db_notok(opt.clusters, 0);
 		exit(error_exit);
 	}
-
 
 	if (_check_cluster_specific_settings(&desc) != SLURM_SUCCESS)
 		exit(error_exit);
@@ -221,6 +221,7 @@ int main(int argc, char *argv[])
 	if (opt.wait)
 		rc = _job_wait(resp->job_id);
 
+	xfree(desc.clusters);
 	xfree(desc.name);
 	xfree(desc.script);
 	env_array_free(desc.environment);

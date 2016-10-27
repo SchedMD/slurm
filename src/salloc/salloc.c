@@ -59,6 +59,7 @@
 #include "src/common/cpu_frequency.h"
 #include "src/common/env.h"
 #include "src/common/plugstack.h"
+#include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/slurm_time.h"
@@ -303,6 +304,16 @@ int main(int argc, char *argv[])
 			error("setgid: %m");
 			exit(error_exit);
 		}
+	}
+
+	/* If can run on multiple clusters find the earliest run time
+	 * and run it there */
+	desc.clusters = xstrdup(opt.clusters);
+	if (opt.clusters &&
+	    slurmdb_get_first_avail_cluster(&desc, opt.clusters,
+			&working_cluster_rec) != SLURM_SUCCESS) {
+		print_db_notok(opt.clusters, 0);
+		exit(error_exit);
 	}
 
 	callbacks.ping = _ping_handler;
@@ -560,6 +571,8 @@ relinquish:
 			}
 		}
 	}
+
+	xfree(desc.clusters);
 	return rc;
 }
 

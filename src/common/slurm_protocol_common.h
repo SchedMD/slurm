@@ -104,6 +104,7 @@
 #define SLURM_PROTOCOL_NO_FLAGS 0
 #define SLURM_GLOBAL_AUTH_KEY   0x0001
 #define SLURMDBD_CONNECTION     0x0002
+#define SLURM_MSG_KEEP_BUFFER   0x0004
 
 #include "src/common/slurm_protocol_socket_common.h"
 

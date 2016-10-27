@@ -1094,6 +1094,7 @@ static void *_service_connection(void *arg)
 	}
 #endif
 	slurm_msg_t_init(&msg);
+	msg.flags |= SLURM_MSG_KEEP_BUFFER;
 	/*
 	 * slurm_receive_msg sets msg connection fd to accepted fd. This allows
 	 * possibility for slurmctld_req() to close accepted connection.

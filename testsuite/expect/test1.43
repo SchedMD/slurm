@@ -58,7 +58,7 @@ for {set node_cnt 1} {$node_cnt > 0} {set node_cnt [expr $node_cnt * 2]} {
 			incr jobs_run
 			exp_continue
 		}
-		-re "allocation failure" {
+		-re "allocation failure:.*?\r\n" {
 			set alloc_fail 1
 			set node_cnt 0
 			exp_continue

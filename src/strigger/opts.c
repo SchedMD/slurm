@@ -536,6 +536,7 @@ Usage: strigger [--set | --get | --clear] [OPTIONS]\n\
   -M, --cluster=name  cluster to issue commands to.  Default is\n\
                       current cluster.  cluster with no name will\n\
                       reset to default.\n\
+                      NOTE: SlurmDBD must up.\n\
   -n, --node[=host]   trigger related to specific node, all nodes by default\n\
   -N, --noheader      Do not print the message header\n\
   -o, --offset=#      trigger's offset time from event, negative to precede\n\

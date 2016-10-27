@@ -60,6 +60,7 @@
 #define OPT_LONG_HIDE      0x102
 #define OPT_LONG_START     0x103
 #define OPT_LONG_NOCONVERT 0x104
+#define OPT_LONG_FEDTRACK  0x105
 
 /* FUNCTIONS */
 static List  _build_job_list( char* str );
@@ -94,6 +95,7 @@ parse_command_line( int argc, char* argv[] )
 		{"accounts",   required_argument, 0, 'A'},
 		{"all",        no_argument,       0, 'a'},
 		{"array",      no_argument,       0, 'r'},
+		{"fedtrack",   no_argument,       0, OPT_LONG_FEDTRACK},
 		{"Format",     required_argument, 0, 'O'},
 		{"format",     required_argument, 0, 'o'},
 		{"help",       no_argument,       0, OPT_LONG_HELP},
@@ -291,6 +293,9 @@ parse_command_line( int argc, char* argv[] )
 				      optarg);
 				exit(1);
 			}
+			break;
+		case OPT_LONG_FEDTRACK:
+			params.show_fedtrack = true;
 			break;
 		case OPT_LONG_HELP:
 			_help();
@@ -1371,6 +1376,28 @@ extern int parse_long_format( char* format_long )
 							 field_size,
 							 right_justify,
 							 suffix );
+			else if (!xstrcasecmp(token, "fedorigin"))
+				job_format_add_fed_origin(params.format_list,
+							  field_size,
+							  right_justify,
+							  suffix );
+			else if (!xstrcasecmp(token, "fedoriginraw"))
+				job_format_add_fed_origin_raw(
+							params.format_list,
+							field_size,
+							right_justify,
+							suffix );
+			else if (!xstrcasecmp(token, "fedsiblings"))
+				job_format_add_fed_siblings(params.format_list,
+							    field_size,
+							    right_justify,
+							    suffix );
+			else if (!xstrcasecmp(token, "fedsiblingsraw"))
+				job_format_add_fed_siblings_raw(
+							params.format_list,
+							field_size,
+							right_justify,
+							suffix );
 			else if (!xstrcasecmp(token, "maxcpus"))
 				job_format_add_max_cpus(params.format_list,
 							 field_size,
@@ -1952,6 +1979,7 @@ Usage: squeue [OPTIONS]\n\
   --noconvert                     don't convert units from their original type\n\
 				  (e.g. 2048M won't be converted to 2G).\n\
   -o, --format=format             format specification\n\
+  -O, --Format=format             format specification\n\
   -p, --partition=partition(s)    comma separated list of partitions\n\
 				  to view, default is all partitions\n\
   -q, --qos=qos(s)                comma separated list of qos's\n\

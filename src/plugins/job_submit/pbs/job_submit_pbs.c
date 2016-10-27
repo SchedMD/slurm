@@ -302,7 +302,7 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 	char *std_out, *tok;
 	uint32_t my_job_id;
 
-	my_job_id = get_next_job_id();
+	my_job_id = get_next_job_id(true);
 	_xlate_dependency(job_desc, submit_uid, my_job_id);
 
 	if (job_desc->account)

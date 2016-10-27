@@ -553,10 +553,10 @@ typedef struct {
 	uint16_t *tres;
 } acct_policy_limit_set_t;
 
-
 typedef struct {
-	bitstr_t *siblings;		/* bitmap of sibling cluster ids where
-					 * sibling jobs exist */
+	char    *origin_str;	/* origin cluster name */
+	uint64_t siblings;	/* bitmap of sibling cluster ids */
+	char    *siblings_str;	/* comma separated list of sibling names */
 } job_fed_details_t;
 
 /*
@@ -1108,10 +1108,12 @@ extern char **get_job_env (struct job_record *job_ptr, uint32_t *env_size);
 extern char *get_job_script (struct job_record *job_ptr);
 
 /*
- * get_next_job_id - return the job_id to be used by default for
- *	the next job
+ * Return the next available job_id to be used.
+ * IN test_only - if true, doesn't advance the job_id sequence, just returns
+ * 	what the next job id will be.
+ * RET a valid job_id or SLURM_ERROR if all job_ids are exhausted.
  */
-extern uint32_t get_next_job_id(void);
+extern uint32_t get_next_job_id(bool test_only);
 
 /*
  * get_part_list - find record for named partition(s)
@@ -2411,4 +2413,9 @@ waitpid_timeout(const char *, pid_t, int *, int);
  */
 extern void set_partition_tres();
 
+/*
+ * Set job's siblings and make sibling strings
+ */
+extern void set_job_fed_details(struct job_record *job_ptr,
+				uint64_t fed_siblings);
 #endif /* !_HAVE_SLURMCTLD_H */

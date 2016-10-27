@@ -878,6 +878,7 @@ enum node_states {
 #define SHOW_DETAIL	0x0002	/* Show detailed resource information */
 #define SHOW_DETAIL2	0x0004	/* Show batch script listing */
 #define SHOW_MIXED	0x0008	/* Automatically set node MIXED state */
+#define SHOW_FED_TRACK	0x0010	/* Show tracking only federated jobs */
 
 /* Define keys for ctx_key argument of slurm_step_ctx_get() */
 enum ctx_keys {
@@ -1334,6 +1335,12 @@ typedef struct power_mgmt_data {
 } power_mgmt_data_t;
 
 #define CORE_SPEC_THREAD 0x8000	/* If set, this is a thread count not core count */
+
+/*
+ * Update:
+ * _copy_job_desc_to_job_record()
+ * slurm_free_job_desc_msg()
+ */
 typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *account;		/* charge to specified account */
 	char *acctg_freq;	/* accounting polling intervals (seconds) */
@@ -1386,6 +1393,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * from job's allocation, default NONE */
 	char *features;		/* required feature specification,
 				 * default NONE */
+	uint64_t fed_siblings;	/* Bitmap of federation siblings */
 	char *gres;		/* comma separated list of required generic
 				 * resources, default NONE */
 	uint32_t group_id;	/* group to assume, if run as root. */
@@ -1559,6 +1567,9 @@ typedef struct job_info {
 				 * start_range_2, .., -1  */
 	uint32_t exit_code;	/* exit code for job (status from wait call) */
 	char *features;		/* comma separated list of required features */
+	char *fed_origin_str;	/* Origin cluster's name */
+	uint64_t fed_siblings;	/* bitmap of sibling cluster ids */
+	char *fed_siblings_str;	/* string of sibling cluster names */
 	char *gres;		/* comma separated list of generic resources */
 	uint32_t group_id;	/* group job submitted as */
 	uint32_t job_id;	/* job ID */

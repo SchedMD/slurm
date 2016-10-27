@@ -1,0 +1,442 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test federated submissions
+#
+# Reqs:    1. Using slurmdbd accounting storage type and is up
+#          2. fed_slurm_base is defined in globals.local - set to directory that
+#          has access to each federation configure (fedc1, fedc2, fedc3).
+#          Eg.
+#          fedr/slurm/ (src)
+#          fedr/fed1/bin
+#          fedr/fed1/sbin
+#          fedr/fed1/etc
+#          fedr/fed1/...
+#          fedr/fed2/...
+#          fedr/fed3/...
+#          3. controllers are up and running.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2016 SchedMD LLC.
+# Written by Brian Christiansen <brian@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+source ./globals
+source ./globals_accounting
+source ./globals_federation
+
+set test_id     "37.4"
+set exit_code   0
+set fed_name    "feda"
+set file_in     "test$test_id.in"
+set user_name   ""
+
+set eol "\r\n"
+
+set timeout	5
+print_header $test_id
+
+#
+# Check accounting config and bail if not found.
+#
+if { [test_account_storage] == 0 } {
+	log_warn "This test can't be run without a usable AccountStorageType"
+	exit 0
+}
+
+if { [string compare [check_accounting_admin_level] "Administrator"] } {
+	log_warn "This test can't be run without being an Accounting administrator.\n \
+	 	  Use: sacctmgr mod user \$USER set admin=admin."
+	exit 0
+}
+
+proc cancel_all_jobs { } {
+	global scancel user_name fedc1 fedc2 fedc3
+
+	spawn $scancel -M$fedc1,$fedc2,$fedc3 --user $user_name
+	expect {
+		eof {
+			wait
+		}
+	}
+	sleep 5
+}
+
+proc cleanup { } {
+	global scancel fed_name user_name bin_rm file_in fedc1 fedc2 fedc3
+
+	cancel_all_jobs
+	exec $bin_rm -f $file_in
+
+	return [delete_federations $fed_name];
+}
+
+proc end_it { exit_code } {
+	global test_id
+	cleanup
+	if {$exit_code == 0} {
+		print_success $test_id
+	}
+	exit $exit_code
+}
+
+proc submit_fed_job { cname expected_origin expected_sib spec_clusters } {
+	global fed_slurm_base file_in node_count number squeue
+
+	set submit_cluster ""
+	set origin  ""
+	set sibling ""
+	set job_id 0
+	set my_sbatch "${fed_slurm_base}/$cname/bin/sbatch"
+	set command "$my_sbatch -N$node_count --exclusive --output=/dev/null --error=/dev/null -t3"
+	if {$spec_clusters ne ""} {
+		append command " -M$spec_clusters"
+	}
+	append command " $file_in"
+	set sbatch_pid [spawn {*}$command]
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		-re "on cluster (\\S+)" {
+			set submit_cluster $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			log_error "sbatch not responding"
+			slow_kill $sbatch_pid
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$job_id == 0} {
+		log_error "batch submit failure"
+		end_it 1
+	}
+
+	sleep 3
+
+	set my_squeue "${fed_slurm_base}/$cname/bin/squeue"
+	if {$submit_cluster ne ""} {
+		set my_squeue "${fed_slurm_base}/$submit_cluster/bin/squeue"
+	}
+	spawn $my_squeue --jobs=$job_id --noheader -Ofedorigin,fedsiblings --fedtrack
+	expect {
+		-re "(\\S+)\\s+(\\S+)" {
+			set origin  $expect_out(1,string)
+			set sibling $expect_out(2,string)
+		}
+	}
+
+	log_info "origin:$origin sibling:$sibling"
+
+	if {($expected_origin ne "") && ($origin ne $expected_origin)} {
+		log_error "origin:$origin != expected_origin:$expected_origin"
+		end_it 1
+	}
+
+	if {($expected_sib ne "") && ($sibling ne $expected_sib)} {
+		log_error "sibling:$sibling != expected_sib:$expected_sib"
+		end_it 1
+	}
+
+
+	# Verify that siblings have the job as well.
+	foreach tmp_sib [split $sibling ","] {
+		if {$tmp_sib eq  $origin} {
+			continue
+		}
+		set my_squeue "${fed_slurm_base}/$tmp_sib/bin/squeue"
+		spawn $my_squeue --jobs=$job_id --noheader -Ofedorigin,fedsiblings
+		set match 0
+		expect {
+			-re "(\\S+)\\s+(\\S+)" {
+				set match 1
+				if {$origin ne $expect_out(1,string)} {
+					log_error "origin not the same on $sibling"
+				}
+				if {$sibling ne $expect_out(2,string)} {
+					log_error "sibling not the same on $sibling"
+				}
+			}
+			timeout {
+				log_error "$my_squeue not responding"
+					end_it 1
+			}
+			eof {
+				wait
+			}
+		}
+
+		if {!$match} {
+			log_error "didn't find origin or sibling from job"
+			end_it 1
+		}
+	}
+
+	return $sibling
+}
+
+if {[test_federation_setup]} {
+	log_warn "WARNING: This test can't be run without fed_slurm_base,\
+		fedc1, fedc2, fedc3 setup in globals.local."
+	exit 0
+}
+
+if {[test_cluster_up $fedc1] ||
+    [test_cluster_up $fedc2] ||
+    [test_cluster_up $fedc3]} {
+	end_it 1
+}
+
+spawn $bin_id -un
+expect {
+	-re "($alpha_numeric_under)" {
+		set user_name $expect_out(1,string)
+	}
+	eof {
+		wait
+	}
+}
+
+# Remove existing setup
+if {[cleanup] != 0} {
+	log_error "failed to cleanup"
+	end_it 1
+}
+
+# add clusters to federation
+if {[setup_federation $fed_name]} {
+	log_error "failed to setup federation"
+	end_it 1
+}
+
+# get number of nodes per cluster
+# devide by 2 to get 2 jobs per clusters
+set node_count [expr [available_nodes "" ""] / 2]
+
+make_bash_script $file_in "$bin_sleep 300"
+
+
+###############################################################################
+send_user "\n\n"
+send_user "Test packing across clusters\n"
+###############################################################################
+
+# Submit first job and get a sibling
+set first_sib [submit_fed_job $fedc1 $fedc1 "" ""]
+# Second job should have same sibling as first
+submit_fed_job $fedc1  $fedc1 $first_sib ""
+
+
+# Third job should get a different a sib
+set second_sib [submit_fed_job $fedc1 $fedc1 "" ""]
+if {$second_sib eq $first_sib} {
+	log_error "$second_sib == $first_sib"
+	end_it 1
+}
+submit_fed_job $fedc1  $fedc1 $second_sib ""
+
+
+# Fifth job should be on a different sib that the first two
+set third_sib [submit_fed_job $fedc1 $fedc1 "" ""]
+if {($third_sib eq $first_sib) || ($third_sib eq $second_sib)} {
+	log_error "$third_sib == ($first_sib || $second_sib)"
+	end_it 1
+}
+submit_fed_job $fedc1  $fedc1 $third_sib ""
+
+
+# last job should be submitted to all siblings
+submit_fed_job $fedc1  $fedc1 "$fedc1,$fedc2,$fedc3" ""
+
+
+
+###############################################################################
+send_user "\n\n"
+send_user "Test packing across clusters with weights\n\n"
+# Set fed1's weight to 2. Should pack on fed2 and fed 3 before getting to fed1
+###############################################################################
+cancel_all_jobs
+modify_cluster_weight $fedc1 2
+
+# Submit first job and get a sibling -- not fed1
+set first_sib [submit_fed_job $fedc1 $fedc1 "" ""]
+if {$first_sib eq $fedc1} {
+	log_error "$first_sib == $fedc1"
+	end_it 1
+}
+# Second job should have same sibling as first
+submit_fed_job $fedc1  $fedc1 $first_sib ""
+
+
+# Third job should get a different a sib
+set second_sib [submit_fed_job $fedc1 $fedc1 "" ""]
+if {$second_sib eq $fedc1 || $second_sib eq $first_sib} {
+	log_error "$second_sib == $first_sib"
+	end_it 1
+}
+submit_fed_job $fedc1  $fedc1 $second_sib ""
+
+
+# Fifth job should be on fed1
+set third_sib [submit_fed_job $fedc1 $fedc1 $fedc1 ""]
+submit_fed_job $fedc1  $fedc1 $third_sib ""
+
+
+# last job should be submitted to all siblings
+submit_fed_job $fedc1  $fedc1 "$fedc1,$fedc2,$fedc3" ""
+
+
+# reset fed1's weight
+modify_cluster_weight $fedc1 1
+
+
+###############################################################################
+send_user "\n\n"
+send_user "Test -M<clusters> with federated jobs\n"
+###############################################################################
+cancel_all_jobs
+
+# Submit job to only fed1
+submit_fed_job $fedc1 $fedc1 $fedc1 $fedc1
+submit_fed_job $fedc1 $fedc1 $fedc1 $fedc1
+submit_fed_job $fedc1 $fedc1 $fedc1 $fedc1
+
+# Submit job to only fed1,fed2
+# Will go to fed2 since fed1 is full and third job should go to both
+submit_fed_job $fedc1 $fedc1 $fedc2 "$fedc1,$fedc2"
+submit_fed_job $fedc1 $fedc1 $fedc2 "$fedc1,$fedc2"
+submit_fed_job $fedc1 $fedc1 "$fedc1,$fedc2" "$fedc1,$fedc2"
+
+# Submit job to fed2,fed3.
+# Should choose fed2 to be origin and submit
+submit_fed_job $fedc1 $fedc2 $fedc3 "$fedc2,$fedc3"
+submit_fed_job $fedc1 $fedc2 $fedc3 "$fedc2,$fedc3"
+submit_fed_job $fedc1 $fedc2 "$fedc2,$fedc3" "$fedc2,$fedc3"
+
+
+###############################################################################
+send_user "\n\n"
+send_user "Test spreading across clusters with LLC flag\n"
+###############################################################################
+cancel_all_jobs
+# Now make set the Federation to LLC and make sure that it spreads across the
+# cluster.
+modify_federation_flags $fed_name "=" "LLC"
+
+
+# Submit first job and get a sibling
+set sib1 [submit_fed_job $fedc1 $fedc1 "" ""]
+
+# Second job shouldln't have same sibling as first
+set sib2 [submit_fed_job $fedc1 $fedc1 "" ""]
+if {$sib2 eq $sib1} {
+	log_error "$sib1 == $sib2"
+	end_it 1
+}
+
+# Third job shouldln't have same sibling as first or second
+set sib3 [submit_fed_job $fedc1 $fedc1 "" ""]
+if {$sib3 eq $sib1 || $sib3 eq $sib2} {
+	log_error "$sib1 == ($sib2 || $sib3)"
+	end_it 1
+}
+
+# Repeat
+# Fourth job could get any sib but I would expect it to get sib1
+set sib1 [submit_fed_job $fedc1 $fedc1 $sib1 ""]
+
+# Second job shouldln't have same sibling as first
+set sib2 [submit_fed_job $fedc1 $fedc1 "" ""]
+if {$sib2 eq $sib1} {
+	log_error "$sib1 == $sib2"
+	end_it 1
+}
+
+# Third job shouldln't have same sibling as first or second
+set sib3 [submit_fed_job $fedc1 $fedc1 "" ""]
+if {$sib3 eq $sib1 || $sib3 eq $sib2} {
+	log_error "$sib1 == ($sib2 || $sib3)"
+	end_it 1
+}
+
+# last job should be submitted to all siblings
+submit_fed_job $fedc1  $fedc1 "$fedc1,$fedc2,$fedc3" ""
+
+
+###############################################################################
+send_user "\n\n"
+send_user "Test spreading across clusters with LLC flag with weights\n"
+# Set fed1's weight to 2. Should spread spread between fed2 and fed3 before
+# going to fed1
+###############################################################################
+cancel_all_jobs
+modify_cluster_weight $fedc1 2
+
+# Submit first job and get a sibling
+set sib1 [submit_fed_job $fedc1 $fedc1 "" ""]
+if {$sib1 eq $fedc1} {
+	log_error "$sib1 == $fedc1"
+	end_it 1
+}
+
+# Second job shouldln't have same sibling as first
+set sib2 [submit_fed_job $fedc1 $fedc1 "" ""]
+if {$sib2 eq $fedc1 || $sib2 eq $sib1} {
+	log_error "$sib1 == $sib2"
+	end_it 1
+}
+
+# Repeat
+# job could get any sib but I would expect it to get sib1
+set sib1 [submit_fed_job $fedc1 $fedc1 $sib1 ""]
+if {$sib1 eq $fedc1} {
+	log_error "$sib1 == $fedc1"
+	end_it 1
+}
+
+# Second job shouldln't have same sibling as first
+set sib2 [submit_fed_job $fedc1 $fedc1 "" ""]
+if {$sib2 eq $fedc1 || $sib2 eq $sib1} {
+	log_error "$sib1 == $sib2"
+	end_it 1
+}
+
+# Third job shouldln't have same sibling as first or second
+set sib3 [submit_fed_job $fedc1 $fedc1 $fedc1 ""]
+submit_fed_job $fedc1  $fedc1 $sib3 ""
+
+# last job should be submitted to all siblings
+submit_fed_job $fedc1  $fedc1 "$fedc1,$fedc2,$fedc3" ""
+
+# reset fed1's weight
+modify_cluster_weight $fedc1 1
+
+
+
+# All Done
+end_it 0

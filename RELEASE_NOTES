@@ -85,6 +85,11 @@ In slurmctld_lock_t: Added federation
 In will_run_response_msg_t: Added double sys_usage_per to report back how busy a
 	cluster is.
 In slurm_ctl_conf: Added mail_domain.
+In slurm_msg_t: Added buffer to keep received message buffer to use for later
+		      purposes.
+In job_desc_msg_t: Added fed_siblings to track which clusters have sibling jobs.
+In slurm_job_info_t: Added fed_origin_str, fed_siblings, fed_siblings_str to
+		      display job federation information.
 
 Added the following struct definitions
 ======================================
@@ -93,6 +98,7 @@ Added slurmdb_cluster_fed_t to store federation information on
 Added slurmdb_federation_cond_t for selecting federations from db.
 Added slurmdb_federation_rec_t to represent federation objects.
 Added job_fed_details_t for storing federated job information.
+Added sib_msg_t for sending messages to siblings.
 
 Removed members from the following struct definitions
 =====================================================
@@ -106,6 +112,8 @@ Changed DEFAULT_MAX_JOB_ID from 0x7fff0000 to 0x03ff0000.
 Added SELECT_NODEDATA_TRES_ALLOC_FMT_STR to select_nodedata_type.
 Added SELECT_NODEDATA_TRES_ALLOC_WEIGHTED to select_nodedata_type.
 Changed MEM_PER_CPU flag to 0x8000000000000000 from 0x80000000.
+Added SLURM_MSG_KEEP_BUFFER msg flag to instruct slurm_receive_msg() to save the
+	buffer ptr.
 
 Added the following API's
 =========================

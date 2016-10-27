@@ -176,6 +176,7 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	bool admin, slurmdb_qos_rec_t *qos_rec,	int *error_code, bool locked);
 static void _dump_job_details(struct job_details *detail_ptr, Buf buffer);
 static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer);
+static void _free_job_fed_details(job_fed_details_t **fed_details_pptr);
 static void _get_batch_job_dir_ids(List batch_dirs);
 static time_t _get_last_state_write_time(void);
 static void _job_array_comp(struct job_record *job_ptr, bool was_running);
@@ -3531,6 +3532,9 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	int spec_count;
 	char *mem_type, buf[100], *signal_flags, *spec_type, *job_id;
 
+	if (get_log_level() < LOG_LEVEL_DEBUG3)
+		return;
+
 	if (job_specs == NULL)
 		return;
 
@@ -6535,6 +6539,9 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 	if (rc != SLURM_SUCCESS)
 		return rc;
 
+	if (job_desc->array_inx && fed_mgr_is_active())
+		return ESLURM_NOT_SUPPORTED;
+
 	if (!_valid_array_inx(job_desc))
 		return ESLURM_INVALID_ARRAY;
 
@@ -7338,6 +7345,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	}
 	if (job_desc->features)
 		detail_ptr->features = xstrdup(job_desc->features);
+	if (job_desc->fed_siblings)
+		set_job_fed_details(job_ptr, job_desc->fed_siblings);
 	if ((job_desc->shared == JOB_SHARED_NONE) && (select_serial == 0)) {
 		detail_ptr->share_res  = 0;
 		detail_ptr->whole_node = 1;
@@ -8240,6 +8249,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->burst_buffer);
 	checkpoint_free_jobinfo(job_ptr->check_job);
 	xfree(job_ptr->comment);
+	_free_job_fed_details(&job_ptr->fed_details);
 	free_job_resources(&job_ptr->job_resrcs);
 	xfree(job_ptr->gres);
 	xfree(job_ptr->gres_alloc);
@@ -8419,8 +8429,13 @@ static bool _all_parts_hidden(struct job_record *job_ptr)
 }
 
 /* Determine if a given job should be seen by a specific user */
-static bool _hide_job(struct job_record *job_ptr, uid_t uid)
+static bool _hide_job(struct job_record *job_ptr, uid_t uid,
+		      uint16_t show_flags)
 {
+	if (!(show_flags & SHOW_FED_TRACK) &&
+	    job_ptr->fed_details && fed_mgr_is_tracker_only_job(job_ptr))
+		return true;
+
 	if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
 	    (job_ptr->user_id != uid) && !validate_operator(uid) &&
 	    (((slurm_mcs_get_privatedata() == 0) &&
@@ -8474,7 +8489,7 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 		    _all_parts_hidden(job_ptr))
 			continue;
 
-		if (_hide_job(job_ptr, uid))
+		if (_hide_job(job_ptr, uid, show_flags))
 			continue;
 
 		if ((filter_uid != NO_VAL) && (filter_uid != job_ptr->user_id))
@@ -8529,7 +8544,7 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 	job_ptr = find_job_record(job_id);
 	if (job_ptr && (job_ptr->array_task_id == NO_VAL) &&
 	    !job_ptr->array_recs) {
-		if (!_hide_job(job_ptr, uid)) {
+		if (!_hide_job(job_ptr, uid, show_flags)) {
 			pack_job(job_ptr, show_flags, buffer, protocol_version,
 				 uid);
 			jobs_packed++;
@@ -8540,7 +8555,7 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 		/* Either the job is not found or it is a job array */
 		if (job_ptr) {
 			packed_head = true;
-			if (!_hide_job(job_ptr, uid)) {
+			if (!_hide_job(job_ptr, uid, show_flags)) {
 				pack_job(job_ptr, show_flags, buffer,
 					 protocol_version, uid);
 				jobs_packed++;
@@ -8552,7 +8567,7 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 			if ((job_ptr->job_id == job_id) && packed_head) {
 				;	/* Already packed */
 			} else if (job_ptr->array_job_id == job_id) {
-				if (_hide_job(job_ptr, uid))
+				if (_hide_job(job_ptr, uid, show_flags))
 					break;
 				pack_job(job_ptr, show_flags, buffer,
 					 protocol_version, uid);
@@ -8777,6 +8792,17 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		packstr(dump_job_ptr->tres_fmt_alloc_str, buffer);
 		packstr(dump_job_ptr->tres_fmt_req_str, buffer);
 		pack16(dump_job_ptr->start_protocol_ver, buffer);
+
+		if (dump_job_ptr->fed_details) {
+			packstr(dump_job_ptr->fed_details->origin_str, buffer);
+			pack64(dump_job_ptr->fed_details->siblings, buffer);
+			packstr(dump_job_ptr->fed_details->siblings_str,
+				buffer);
+		} else {
+			packnull(buffer);
+			pack64((uint64_t)0, buffer);
+			packnull(buffer);
+		}
 	} else if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
 		detail_ptr = dump_job_ptr->details;
 		pack32(dump_job_ptr->array_job_id, buffer);
@@ -9871,18 +9897,44 @@ void reset_first_job_id(void)
 }
 
 /*
- * get_next_job_id - return the job_id to be used by default for
- *	the next job
+ * Return the next available job_id to be used.
+ *
+ * Must have job_write and fed_read locks when grabbing a job_id
+ *
+ * IN test_only - if true, doesn't advance the job_id sequence, just returns
+ * 	what the next job id will be.
+ * RET a valid job_id or SLURM_ERROR if all job_ids are exhausted.
  */
-extern uint32_t get_next_job_id(void)
+extern uint32_t get_next_job_id(bool test_only)
 {
-	uint32_t next_id;
+	int i;
+	uint32_t new_id, max_jobs, tmp_id_sequence;
 
-	job_id_sequence = MAX(job_id_sequence, slurmctld_conf.first_job_id);
-	next_id = job_id_sequence + 1;
-	if (next_id >= slurmctld_conf.max_job_id)
-		next_id = slurmctld_conf.first_job_id;
-	return next_id;
+	max_jobs = slurmctld_conf.max_job_id - slurmctld_conf.first_job_id;
+	tmp_id_sequence = MAX(job_id_sequence, slurmctld_conf.first_job_id);
+
+	/* Insure no conflict in job id if we roll over 32 bits */
+	for (i = 0; i < max_jobs; i++) {
+		if (++tmp_id_sequence >= slurmctld_conf.max_job_id)
+			tmp_id_sequence = slurmctld_conf.first_job_id;
+
+		new_id = fed_mgr_get_job_id(tmp_id_sequence);
+
+		if (find_job_record(new_id))
+			continue;
+		if (_dup_job_file_test(new_id))
+			continue;
+
+		if (!test_only)
+			job_id_sequence = tmp_id_sequence;
+
+		return new_id;
+	}
+
+	error("We have exhausted our supply of valid job id values. "
+	      "FirstJobId=%u MaxJobId=%u", slurmctld_conf.first_job_id,
+	      slurmctld_conf.max_job_id);
+	return SLURM_ERROR;
 }
 
 /*
@@ -9891,38 +9943,20 @@ extern uint32_t get_next_job_id(void)
  */
 static int _set_job_id(struct job_record *job_ptr)
 {
-	int i;
-	uint32_t new_id, max_jobs;
+	uint32_t new_id;
 
 	xassert(job_ptr);
 	xassert (job_ptr->magic == JOB_MAGIC);
 
-	max_jobs = slurmctld_conf.max_job_id - slurmctld_conf.first_job_id;
-	job_id_sequence = MAX(job_id_sequence, slurmctld_conf.first_job_id);
-
-	/* Insure no conflict in job id if we roll over 32 bits */
-	for (i = 0; i < max_jobs; i++) {
-		if (++job_id_sequence >= slurmctld_conf.max_job_id)
-			job_id_sequence = slurmctld_conf.first_job_id;
-		new_id = job_id_sequence;
-		if (find_job_record(new_id))
-			continue;
-		if (_dup_job_file_test(new_id))
-			continue;
-
-		if (fed_mgr_is_active())
-			job_ptr->job_id = fed_mgr_get_job_id(new_id);
-		else
-			job_ptr->job_id = new_id;
+	if ((new_id = get_next_job_id(false)) != SLURM_ERROR) {
+		job_ptr->job_id = new_id;
 		/* When we get a new job id might as well make sure
 		 * the db_index is 0 since there is no way it will be
 		 * correct otherwise :). */
 		job_ptr->db_index = 0;
 		return SLURM_SUCCESS;
 	}
-	error("We have exhausted our supply of valid job id values. "
-	      "FirstJobId=%u MaxJobId=%u", slurmctld_conf.first_job_id,
-	      slurmctld_conf.max_job_id);
+
 	job_ptr->job_id = NO_VAL;
 	return EAGAIN;
 }
@@ -12036,6 +12070,23 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				SELECT_JOBDATA_NETWORK,
 				job_ptr->network);
 		}
+	}
+
+	if (job_specs->fed_siblings) {
+		slurmctld_lock_t fed_read_lock = {
+			NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
+		if (job_ptr->fed_details)
+			info("update_job: setting fed_siblings from %"PRIu64" to %"PRIu64" for job_id %u",
+			     job_ptr->fed_details->siblings,
+			     job_specs->fed_siblings,
+			     job_ptr->job_id);
+		else
+			info("update_job: setting fed_siblings to %"PRIu64" for job_id %u",
+			     job_specs->fed_siblings,
+			     job_ptr->job_id);
+		lock_slurmctld(fed_read_lock);
+		set_job_fed_details(job_ptr, job_specs->fed_siblings);
+		unlock_slurmctld(fed_read_lock);
 	}
 
 fini:
@@ -16071,4 +16122,38 @@ _kill_dependent(struct job_record *job_ptr)
 	job_completion_logger(job_ptr, false);
 	last_job_update = now;
 	srun_allocate_abort(job_ptr);
+}
+
+static void _free_job_fed_details(job_fed_details_t **fed_details_pptr)
+{
+	job_fed_details_t *fed_details_ptr = *fed_details_pptr;
+
+	if (fed_details_ptr) {
+		xfree(fed_details_ptr->origin_str);
+		xfree(fed_details_ptr->siblings_str);
+		xfree(fed_details_ptr);
+		*fed_details_pptr = NULL;
+	}
+}
+
+
+extern void set_job_fed_details(struct job_record *job_ptr,
+				uint64_t fed_siblings)
+{
+	xassert(job_ptr);
+
+	if (!job_ptr->fed_details) {
+		job_ptr->fed_details =
+			xmalloc(sizeof(job_fed_details_t));
+	} else {
+		xfree(job_ptr->fed_details->siblings_str);
+		xfree(job_ptr->fed_details->origin_str);
+	}
+
+	job_ptr->fed_details->siblings = fed_siblings;
+	job_ptr->fed_details->siblings_str =
+		fed_mgr_cluster_ids_to_names(fed_siblings);
+	job_ptr->fed_details->origin_str =
+		fed_mgr_get_cluster_name(
+				fed_mgr_get_cluster_id(job_ptr->job_id));
 }

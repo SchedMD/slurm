@@ -456,9 +456,8 @@ Usage:  sshare [OPTION]                                                    \n\
                            with the '--format' option                      \n\
     -l or --long           include normalized usage in output              \n\
     -m or --partition      print the partition part of the association     \n\
-    -M or --cluster=name   cluster to issue commands to.  Default is       \n\
-                           current cluster.  cluster with no name will     \n\
-                           reset to default.                               \n\
+    -M or --cluster=names  clusters to issue commands to.                  \n\
+                           NOTE: SlurmDBD must be up.                      \n\
     -n or --noheader       omit header from output                         \n\
     -o or --format=        Comma separated list of fields. (use            \n\
                            (\"--helpformat\" for a list of available fields).\n\
