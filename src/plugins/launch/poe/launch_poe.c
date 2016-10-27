@@ -208,11 +208,11 @@ static void _propagate_srun_opts(uint32_t nnodes, uint32_t ntasks)
 	if (opt.job_name)
 		setenv("SLURM_JOB_NAME", opt.job_name, 1);
 	if (opt.mem_per_cpu > 0) {
-		snprintf(value, sizeof(value), "%d", opt.mem_per_cpu);
+		snprintf(value, sizeof(value), "%"PRIu64, opt.mem_per_cpu);
 		setenv("SLURM_MEM_PER_CPU", value, 1);
 	}
 	if (opt.pn_min_memory > 0) {
-		snprintf(value, sizeof(value), "%d", opt.pn_min_memory);
+		snprintf(value, sizeof(value), "%"PRIu64, opt.pn_min_memory);
 		setenv("SLURM_MEM_PER_NODE", value, 1);
 	}
 	if (opt.network)
