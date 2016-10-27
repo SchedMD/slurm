@@ -612,11 +612,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 	if ((agent_args->node_count - down_node_cnt) == 0) {
 		/* Can not wait for epilog completet to release licenses and
 		 * update gang scheduling table */
-		delete_step_records(job_ptr);
-		job_ptr->job_state &= (~JOB_COMPLETING);
-		(void) gs_job_fini(job_ptr);
-		license_job_return(job_ptr);
-		slurm_sched_g_schedule();
+		cleanup_completing(job_ptr);
 	}
 
 	if (agent_args->node_count == 0) {
@@ -3755,9 +3751,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 				if ((job_ptr->node_cnt > 0) &&
 				    ((--job_ptr->node_cnt) == 0)) {
 					last_node_update = time(NULL);
-					delete_step_records(job_ptr);
-					job_ptr->job_state &= (~JOB_COMPLETING);
-					slurm_sched_g_schedule();
+					cleanup_completing(job_ptr);
 					batch_requeue_fini(job_ptr);
 					last_node_update = time(NULL);
 				}
@@ -3784,9 +3778,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 				(node_ptr->comp_job_cnt)--;
 			if ((job_ptr->node_cnt > 0) &&
 			    ((--job_ptr->node_cnt) == 0)) {
-				delete_step_records(job_ptr);
-				job_ptr->job_state &= (~JOB_COMPLETING);
-				slurm_sched_g_schedule();
+				cleanup_completing(job_ptr);
 				batch_requeue_fini(job_ptr);
 				last_node_update = time(NULL);
 			}

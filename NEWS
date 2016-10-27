@@ -68,6 +68,8 @@ documents those changes that are of interest to users and administrators.
     introduced in version 16.05.5 to address bug in overlapping reservations).
  -- Add logging of node reboot requests.
  -- Docs - remove recommendation for ReleaseAgent setting in cgroup.conf.
+ -- Make sure a job cleans up completely if it has a node fail.  Mostly an
+    issue with gang scheduling.
 
 * Changes in Slurm 16.05.5
 ==========================
