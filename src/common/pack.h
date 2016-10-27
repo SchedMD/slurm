@@ -73,10 +73,10 @@ typedef struct slurm_buf * Buf;
 #define remaining_buf(__buf)		(__buf->size - __buf->processed)
 #define size_buf(__buf)			(__buf->size)
 
-Buf	create_buf (char *data, int size);
+Buf	create_buf (char *data, uint32_t size);
 void	free_buf(Buf my_buf);
-Buf	init_buf(int size);
-void    grow_buf (Buf my_buf, int size);
+Buf	init_buf(uint32_t size);
+void    grow_buf (Buf my_buf, uint32_t size);
 void	*xfer_buf_data(Buf my_buf);
 
 void	pack_time(time_t val, Buf buffer);

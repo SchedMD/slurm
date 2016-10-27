@@ -93,7 +93,7 @@ strong_alias(unpackmem_array,	slurm_unpackmem_array);
 /* Basic buffer management routines */
 /* create_buf - create a buffer with the supplied contents, contents must
  * be xalloc'ed */
-Buf create_buf(char *data, int size)
+Buf create_buf(char *data, uint32_t size)
 {
 	Buf my_buf;
 
@@ -123,7 +123,7 @@ void free_buf(Buf my_buf)
 }
 
 /* Grow a buffer by the specified amount */
-void grow_buf (Buf buffer, int size)
+void grow_buf (Buf buffer, uint32_t size)
 {
 	if ((buffer->size + size) > MAX_BUF_SIZE) {
 		error("%s: Buffer size limit exceeded (%u > %u)",
@@ -136,7 +136,7 @@ void grow_buf (Buf buffer, int size)
 }
 
 /* init_buf - create an empty buffer of the given size */
-Buf init_buf(int size)
+Buf init_buf(uint32_t size)
 {
 	Buf my_buf;
 
