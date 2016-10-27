@@ -428,7 +428,7 @@ extern int switch_p_unpack_node_info(switch_node_info_t **switch_node,
 	if (debug_flags & DEBUG_FLAG_SWITCH)
 		info("switch_p_unpack_node_info()");
 
-	if (switch_p_alloc_node_info((slurm_nrt_nodeinfo_t **)switch_node))
+	if (switch_p_alloc_node_info(switch_node))
 		return SLURM_ERROR;
 
 	return nrt_unpack_nodeinfo((slurm_nrt_nodeinfo_t *) *switch_node,
