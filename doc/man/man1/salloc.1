@@ -98,17 +98,13 @@ applications having less than 10,000 tasks.
 
 .TP
 \fB\-B\fR \fB\-\-extra\-node\-info\fR=<\fIsockets\fR[:\fIcores\fR[:\fIthreads\fR]]>
-Request a specific allocation of resources with details as to the
-number and type of computational resources within a cluster:
-number of sockets (or physical processors) per node,
-cores per socket, and threads per core.
-The total amount of resources being requested is the product of all of
-the terms.
+Restrict node selection to nodes with at least the specified number of
+sockets, cores per socket and/or threads per core.
+NOTE: These options do not specify the resource allocation size.
 Each value specified is considered a minimum.
 An asterisk (*) can be used as a placeholder indicating that all available
 resources of that type are to be utilized.
-As with nodes, the individual levels can also be specified in separate
-options if desired:
+The individual levels can also be specified in separate options if desired:
 .nf
     \fB\-\-sockets\-per\-node\fR=<\fIsockets\fR>
     \fB\-\-cores\-per\-socket\fR=<\fIcores\fR>
