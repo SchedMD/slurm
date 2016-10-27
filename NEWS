@@ -66,6 +66,7 @@ documents those changes that are of interest to users and administrators.
  -- Update srun documentation for -N, -w and -m arbitrary.
  -- Fix bug that was clearing MAINT mode on nodes scheduled for reboot (bug
     introduced in version 16.05.5 to address bug in overlapping reservations).
+ -- Add logging of node reboot requests.
 
 * Changes in Slurm 16.05.5
 ==========================
