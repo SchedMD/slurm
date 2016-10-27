@@ -1556,12 +1556,11 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 		/* failed to submit a job to sibling. Need to update all of the
 		 * job's fed_siblings bitmaps */
 		List update_threads = list_create(_xfree_f);
-		job_desc_msg_t *job_update_msg =
-			xmalloc(sizeof(job_desc_msg_t));
+		job_desc_msg_t job_update_msg;
 
-		slurm_init_job_desc_msg(job_update_msg);
-		job_update_msg->job_id       = job_desc->job_id;
-		job_update_msg->fed_siblings = job_desc->fed_siblings;
+		slurm_init_job_desc_msg(&job_update_msg);
+		job_update_msg.job_id       = job_desc->job_id;
+		job_update_msg.fed_siblings = job_desc->fed_siblings;
 
 		list_iterator_reset(sib_itr);
 		while ((sibling = list_next(sib_itr))) {
@@ -1577,7 +1576,7 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 				continue;
 
 			sub = xmalloc(sizeof(sib_submit_t));
-			sub->job_desc = job_update_msg;
+			sub->job_desc = &job_update_msg;
 			sub->sibling  = sibling;
 			if (pthread_create(&thread_id, &attr,
 					   _update_sibling_job, sub) != 0) {
@@ -1601,6 +1600,7 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 			}
 		}
 		list_iterator_destroy(thread_itr);
+		FREE_NULL_LIST(update_threads);
 	}
 
 	slurm_attr_destroy(&attr);
