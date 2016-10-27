@@ -21,10 +21,6 @@ or more associated subsystems.</li>
 apply controls to a cgroup:
 <ul>
 <li><i>tasks</i> - identifies the processes (PIDs) in the cgroup.
-<li><i>release_agent</i> - specifies the location of the script or program to
-be called when the cgroup becomes empty.</li>
-<li><i>notify_on_release</i> - controls whether the release_agent is called for
-the cgroup.</li>
 <li>additional state objects specific to each subsystem.</li>
 </ul>
 </ul>
@@ -158,54 +154,10 @@ hierarchies:</p>
 use more than one node will have a cgroup structure on each node.</p>
 
 <a name="cleanup"><h2>Cleanup of Slurm Cgroups</h2></a>
-<p>Linux provides a mechanism for the automatic removal of a cgroup when its
-state changes from non-empty to empty.  A cgroup is empty when no processes are
-attached to it and it has no child cgroups.  The Slurm cgroups implementation
-allows this mechanism to be used to automatically remove the relevant Slurm
-cgroups when tasks, steps and jobs terminate. To enable this automatic removal
-feature, follow these steps:</p>
-<ul>
-<li>If desired, configure the location of the Slurm Cgroup release agent
-directory. This is done using the <i>CgroupReleaseAgentDir</i> option in
-<a href="cgroup.conf.html">cgroup.conf</a>.
-The default location is /etc/slurm/cgroup.</li>
-<br>
-<pre>
-       [sulu] (slurm) etc> cat cgroup.conf | grep CgroupReleaseAgentDir
-       CgroupReleaseAgentDir="/etc/slurm/cgroup"
-</pre>
-<li>Create the common release agent file.  This file should be named
-<i>release_common</i>.  An example script for this file is provided in the
-Slurm delivery at etc/cgroup.release_common.example. The example script will
-automatically remove user, job, step and task cgroups as they become empty. The
-file must have execute permission for root.</li><br>
-<li>Create release agent files for each cgroup subsystem to be used by Slurm.
-This depends on which cgroup plugins are enabled.  For example, the
-proctrack/cgroup plugin uses the <i>freezer</i> subsystem.  See
-<a href="#available">Currently Available Cgroup Plugins</a> above to find out
-which subsystems are used by each plugin. The name of each release agent file
-must be of the form <i>release_&lt;subsystem name&gt;</i>. These files should
-be created as symbolic links to the common release agent file,
-<i>release_common</i>.  The files must have execute permission for root. See
-the following example.</li>
-<br>
-<pre>
-       [sulu] (slurm) cgroup> ls -al /etc/slurm/cgroup
-       total 12
-       drwxr-xr-x 2 root root 4096 Oct  7 13:50 .
-       drwxr-xr-x 6 root root 4096 Sep 27 09:34 ..
-       lrwxrwxrwx 1 root root   14 Oct  7 13:50 release_blkio -> release_common
-       -rwxr-xr-x 1 root root 3263 Oct  7 13:47 release_common
-       lrwxrwxrwx 1 root root   14 Oct  7 13:50 release_cpuacct -> release_common
-       lrwxrwxrwx 1 root root   14 Oct  7 13:49 release_cpuset -> release_common
-       lrwxrwxrwx 1 root root   14 Oct  7 13:50 release_freezer -> release_common
-       lrwxrwxrwx 1 root root   14 Oct  7 13:50 release_memory -> release_common
-       lrwxrwxrwx 1 root root   14 Oct  7 13:50 release_devices -> release_common
-
-</pre>
-</ul>
+<p>As of the 16.05.5 release, slurmd will automatically cleanup the cgroups
+under its control, and the ReleaseAgent setting is no longer recommended.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 8 March 2016</p>
+<p style="text-align:center;">Last modified 27 October 2016</p>
 
 <!--#include virtual="footer.txt"-->

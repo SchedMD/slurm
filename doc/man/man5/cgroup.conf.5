@@ -1,4 +1,4 @@
-.TH "cgroup.conf" "5" "Slurm Configuration File" "November 2015" "Slurm Configuration File"
+.TH "cgroup.conf" "5" "Slurm Configuration File" "October 2016" "Slurm Configuration File"
 
 .SH "NAME"
 cgroup.conf \- Slurm configuration file for the cgroup support
@@ -44,7 +44,9 @@ one per subsystem. The default \fIPATH\fR is /sys/fs/cgroup.
 .TP
 \fBCgroupReleaseAgentDir\fR=<path_to_release_agent_directory>
 Used to tune the cgroup system behavior. This parameter identifies the location
-of the directory containing Slurm cgroup release_agent files.
+of the directory containing Slurm cgroup release_agent files. As of 16.05.5
+the release_agents are no longer required for proper cleanup of the cgroup
+hierarchy.
 
 .SH "TASK/CGROUP PLUGIN"
 
@@ -190,8 +192,6 @@ after updating the file.
 ###
 .br
 CgroupAutomount=yes
-.br
-CgroupReleaseAgentDir="/etc/slurm/cgroup"
 .br
 ConstrainCores=yes
 .br

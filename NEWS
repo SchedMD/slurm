@@ -195,6 +195,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix bug that was clearing MAINT mode on nodes scheduled for reboot (bug
     introduced in version 16.05.5 to address bug in overlapping reservations).
  -- Add logging of node reboot requests.
+ -- Docs - remove recommendation for ReleaseAgent setting in cgroup.conf.
 
 * Changes in Slurm 16.05.5
 ==========================
