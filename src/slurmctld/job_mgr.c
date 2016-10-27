@@ -3125,9 +3125,7 @@ extern int kill_job_by_front_end_name(char *node_name)
 				}
 				job_update_tres_cnt(job_ptr, i);
 				if (job_ptr->node_cnt == 0) {
-					delete_step_records(job_ptr);
-					job_ptr->job_state &= (~JOB_COMPLETING);
-					slurm_sched_g_schedule();
+					cleanup_completing(job_ptr);
 				}
 				node_ptr = &node_record_table_ptr[i];
 				if (node_ptr->comp_job_cnt)
@@ -3358,11 +3356,9 @@ extern int kill_running_job_by_node_name(char *node_name)
 				error("node_cnt underflow on JobId=%u",
 				      job_ptr->job_id);
 			}
-			if (job_ptr->node_cnt == 0) {
-				delete_step_records(job_ptr);
-				job_ptr->job_state &= (~JOB_COMPLETING);
-				slurm_sched_g_schedule();
-			}
+			if (job_ptr->node_cnt == 0)
+				cleanup_completing(job_ptr);
+
 			if (node_ptr->comp_job_cnt)
 				(node_ptr->comp_job_cnt)--;
 			else {
