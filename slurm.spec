@@ -454,10 +454,6 @@ fi
 
 install -D -m644 etc/cgroup.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup.conf.example
 install -D -m644 etc/cgroup_allowed_devices_file.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup_allowed_devices_file.conf.example
-install -D -m755 etc/cgroup.release_common.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup.release_common.example
-install -D -m755 etc/cgroup.release_common.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup/release_freezer
-install -D -m755 etc/cgroup.release_common.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup/release_cpuset
-install -D -m755 etc/cgroup.release_common.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup/release_memory
 install -D -m644 etc/layouts.d.power.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/layouts.d/power.conf.example
 install -D -m644 etc/layouts.d.power_cpufreq.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/layouts.d/power_cpufreq.conf.example
 install -D -m644 etc/layouts.d.unit.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/layouts.d/unit.conf.example
@@ -766,10 +762,6 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %config %{_sysconfdir}/cgroup.conf.example
 %config %{_sysconfdir}/cgroup_allowed_devices_file.conf.example
-%config %{_sysconfdir}/cgroup.release_common.example
-%config %{_sysconfdir}/cgroup/release_freezer
-%config %{_sysconfdir}/cgroup/release_cpuset
-%config %{_sysconfdir}/cgroup/release_memory
 %config %{_sysconfdir}/layouts.d/power.conf.example
 %config %{_sysconfdir}/layouts.d/power_cpufreq.conf.example
 %config %{_sysconfdir}/layouts.d/unit.conf.example

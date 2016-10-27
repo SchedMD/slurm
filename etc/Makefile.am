@@ -1,4 +1,4 @@
-ETC_FILES = cgroup.release_common.example init.d.slurmdbd init.d.slurm \
+ETC_FILES = init.d.slurmdbd init.d.slurm \
 	    slurmctld.service slurmdbd.service slurmd.service
 
 CLEANFILES = $(ETC_FILES)
@@ -11,9 +11,6 @@ edit = sed \
 	-e 's|@BLUEGENE_LOADED_FALSE[@]|$(BLUEGENE_LOADED_FALSE)|g'
 
 noinst_DATA = $(ETC_FILES)
-
-cgroup.release_common.example: Makefile $(srcdir)/cgroup.release_common.example.in
-	$(edit) $(srcdir)/cgroup.release_common.example.in > cgroup.release_common.example
 
 init.d.slurmdbd: Makefile $(srcdir)/init.d.slurmdbd.in
 	$(edit) $(srcdir)/init.d.slurmdbd.in > init.d.slurmdbd
