@@ -41,13 +41,6 @@ Specify the \fIPATH\fR under which cgroups should be mounted. This
 should be a writable directory which will contain cgroups mounted
 one per subsystem. The default \fIPATH\fR is /sys/fs/cgroup.
 
-.TP
-\fBCgroupReleaseAgentDir\fR=<path_to_release_agent_directory>
-Used to tune the cgroup system behavior. This parameter identifies the location
-of the directory containing Slurm cgroup release_agent files. As of 16.05.5
-the release_agents are no longer required for proper cleanup of the cgroup
-hierarchy.
-
 .SH "TASK/CGROUP PLUGIN"
 
 .LP

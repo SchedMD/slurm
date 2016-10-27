@@ -153,9 +153,6 @@ hierarchies:</p>
 <p>Note that all these structures apply to a specific compute node. Jobs that 
 use more than one node will have a cgroup structure on each node.</p>
 
-<a name="cleanup"><h2>Cleanup of Slurm Cgroups</h2></a>
-<p>As of the 16.05.5 release, slurmd will automatically cleanup the cgroups
-under its control, and the ReleaseAgent setting is no longer recommended.</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 27 October 2016</p>
