@@ -118,15 +118,6 @@ expect {
 	}
 }
 
-#
-# Verify node count
-#
-if {[test_front_end] != 0} {
-	send_user "\nWARNING: Additional testing is incompatible "
-	send_user "with front-end systems\n"
-	exit $exit_code
-}
-
 if {[string compare $host_0_name ""] == 0} {
 	send_user "\nFAILURE: Did not get hostname of task 0\n"
 	exit 1
@@ -140,58 +131,9 @@ if {[string compare $host_2_name ""] == 0} {
 	exit 1
 }
 
-#
-# Verify allocated nodes are contiguous within the partition
-#
-set part_hosts_list {}
-log_user 0
-spawn $sinfo --noheader -p $partition -N -o %N
-expect {
-	-re "($alpha_numeric_under)" {
-		lappend part_hosts_list $expect_out(1,string)
-		exp_continue
-	}
-	-re "Unable to contact" {
-		log_user 1
-		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1
-	}
-	timeout {
-		log_user 1
-		send_user "\nFAILURE: sinfo not responding\n"
-		exit 1
-	}
-	eof {
-		wait
-	}
-}
-log_user 1
+lappend check_hosts_list $host_0_name $host_1_name $host_2_name
 
-set index_host_0 [lsearch $part_hosts_list $host_0_name]
-if {$index_host_0 == -1} {
-	send_user "\nFAILURE: $host_0_name not found in list of hosts from partition $partition\n"
-	exit 1
-}
-set index_host_1 [lsearch $part_hosts_list $host_1_name]
-if {$index_host_1 == -1} {
-	send_user "\nFAILURE: $host_1_name not found in list of hosts from partition $partition\n"
-	exit 1
-}
-set index_host_2 [lsearch $part_hosts_list $host_2_name]
-if {$index_host_2 == -1} {
-	send_user "\nFAILURE: $host_2_name not found in list of hosts from partition $partition\n"
-	exit 1
-}
-
-if {$index_host_1 != [expr $index_host_0 + 1]} {
-	send_user "\nFAILURE: node sequence number not contiguous\n"
-	set exit_code 1
-}
-
-if {$index_host_2 != [expr $index_host_1 + 1]} {
-	send_user "\nFAILURE: node sequence number not contiguous\n"
-	set exit_code 1
-}
+set exit_code [check_hosts_contiguous $partition $check_hosts_list]
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"

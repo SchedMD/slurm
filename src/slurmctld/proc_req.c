@@ -5382,22 +5382,26 @@ inline static void _slurm_rpc_reboot_nodes(slurm_msg_t * msg)
 	lock_slurmctld(node_write_lock);
 	for (i = 0, node_ptr = node_record_table_ptr;
 	     i < node_record_count; i++, node_ptr++) {
-		if (bit_test(bitmap, i) == 0)
+		if (!bit_test(bitmap, i))
 			continue;
-		if (IS_NODE_MAINT(node_ptr)) /* already on maintenance */
+		if (IS_NODE_MAINT(node_ptr) || /* already on maintenance */
+		    IS_NODE_FUTURE(node_ptr) || IS_NODE_DOWN(node_ptr) ||
+		    (IS_NODE_CLOUD(node_ptr) && IS_NODE_POWER_SAVE(node_ptr))) {
+			bit_clear(bitmap, i);
 			continue;
-		if (IS_NODE_FUTURE(node_ptr) || IS_NODE_DOWN(node_ptr))
-			continue;
-		if (IS_NODE_CLOUD(node_ptr) && IS_NODE_POWER_SAVE(node_ptr))
-			continue;
+		}
 		node_ptr->node_state |= NODE_STATE_MAINT;
 		want_nodes_reboot = true;
 	}
 
 	if (want_nodes_reboot == true)
 		schedule_node_save();
-
 	unlock_slurmctld(node_write_lock);
+	if (want_nodes_reboot == true) {
+		nodelist = bitmap2node_name(bitmap);
+		info("reboot request queued for nodes %s", nodelist);
+		xfree(nodelist);
+	}
 	FREE_NULL_BITMAP(bitmap);
 	rc = SLURM_SUCCESS;
 #endif

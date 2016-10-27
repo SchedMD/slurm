@@ -3943,3 +3943,64 @@ proc get_part_total_cores {part states} {
 	return $cores
 }
 
+#####################################################################
+#
+# Proc: check_hosts_contiguous
+#
+# Purpose:	Given a partition and a list of hosts, verify if all
+#		hosts belong to the partition and are contiguous.
+#
+# Input part			- partition
+#	check_hosts_list	- hosts to check contiguous
+#
+# Returns: 0 on SUCCESS, 1 otherwise
+#
+#####################################################################
+
+proc check_hosts_contiguous {part check_hosts_list} {
+
+	global sinfo alpha_numeric_under
+
+	set part_hosts_list {}
+
+	log_user 0
+	set sinfo_pid [spawn $sinfo --noheader -p $part -N -o %N]
+	expect {
+		-re "($alpha_numeric_under)" {
+			lappend part_hosts_list $expect_out(1,string)
+			exp_continue
+		}
+		-re "Unable to contact" {
+			log_user 1
+			send_user "\nFAILURE: slurm appears to be down\n"
+			return 1
+		}
+		timeout {
+			log_user 1
+			send_user "\nFAILURE: sinfo not responding\n"
+			slow_kill $sinfo_pid
+			return 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	foreach host $check_hosts_list {
+		set idx_cur [lsearch $part_hosts_list $host]
+		if {$idx_cur == -1} {
+			send_user "\nFAILURE: $host not found in list of hosts from partition $part\n"
+			return 1
+		}
+		if {[info exists idx_old]} {
+			if {$idx_cur != [expr $idx_old + 1]} {
+				send_user "\nFAILURE: node sequence number not contiguous\n"
+				return 1
+			}
+		}
+		set idx_old $idx_cur
+	}
+
+	return 0
+}
