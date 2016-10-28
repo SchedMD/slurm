@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 16.05.7
 ==========================
+ -- Fix issue in the priority/multifactor plugin where on a slurmctld restart
+    more time than should be allowed would be accounted for.
 
 * Changes in Slurm 16.05.6
 ==========================
