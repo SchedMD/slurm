@@ -1169,6 +1169,8 @@ static void *_sib_will_run(void *arg)
 				  &job_ptr, &err_msg, sib_msg->data_version);
 		unlock_slurmctld(job_write_lock);
 
+		xfree(err_msg);
+
 		if (rc)
 			debug2("%s: %s", __func__, slurm_strerror(rc));
 	} else if ((rc = _persist_job_will_run(sib_willrun->sibling,
