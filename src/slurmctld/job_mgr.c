@@ -1158,6 +1158,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack_time(dump_job_ptr->preempt_time, buffer);
 	pack_time(dump_job_ptr->start_time, buffer);
 	pack_time(dump_job_ptr->end_time, buffer);
+	pack_time(dump_job_ptr->end_time_exp, buffer);
 	pack_time(dump_job_ptr->suspend_time, buffer);
 	pack_time(dump_job_ptr->pre_sus_time, buffer);
 	pack_time(dump_job_ptr->resize_time, buffer);
@@ -1274,7 +1275,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	uint32_t array_job_id = 0, req_switch = 0, wait4switch = 0;
 	uint32_t profile = ACCT_GATHER_PROFILE_NOT_SET;
 	uint32_t job_state, local_job_id = 0, delay_boot = 0;
-	time_t start_time, end_time, suspend_time, pre_sus_time, tot_sus_time;
+	time_t start_time, end_time, end_time_exp, suspend_time,
+		pre_sus_time, tot_sus_time;
 	time_t preempt_time = 0, deadline = 0;
 	time_t resize_time = 0, now = time(NULL);
 	uint8_t reboot = 0, power_flags = 0;
@@ -1384,6 +1386,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack_time(&preempt_time, buffer);
 		safe_unpack_time(&start_time, buffer);
 		safe_unpack_time(&end_time, buffer);
+		safe_unpack_time(&end_time_exp, buffer);
 		safe_unpack_time(&suspend_time, buffer);
 		safe_unpack_time(&pre_sus_time, buffer);
 		safe_unpack_time(&resize_time, buffer);
@@ -1582,6 +1585,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack_time(&preempt_time, buffer);
 		safe_unpack_time(&start_time, buffer);
 		safe_unpack_time(&end_time, buffer);
+		end_time_exp = end_time;
 		safe_unpack_time(&suspend_time, buffer);
 		safe_unpack_time(&pre_sus_time, buffer);
 		safe_unpack_time(&resize_time, buffer);
@@ -1775,6 +1779,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack_time(&preempt_time, buffer);
 		safe_unpack_time(&start_time, buffer);
 		safe_unpack_time(&end_time, buffer);
+		end_time_exp = end_time;
 		safe_unpack_time(&suspend_time, buffer);
 		safe_unpack_time(&pre_sus_time, buffer);
 		safe_unpack_time(&resize_time, buffer);
@@ -1988,7 +1993,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->direct_set_prio = direct_set_prio;
 	job_ptr->db_index     = db_index;
 	job_ptr->derived_ec   = derived_ec;
-	job_ptr->end_time_exp = job_ptr->end_time = end_time;
+	job_ptr->end_time_exp = end_time_exp;
+	job_ptr->end_time     = end_time;
 	job_ptr->exit_code    = exit_code;
 	job_ptr->group_id     = group_id;
 	job_ptr->job_state    = job_state;

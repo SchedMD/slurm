@@ -928,6 +928,12 @@ static void _init_grp_used_cpu_run_secs(time_t last_ran)
 		if (priority_debug)
 			debug2("job: %u", job_ptr->job_id);
 
+		/* If end_time_exp is NO_VAL we have already ran the end for
+		 * this job.  We don't want to do it again, so just exit.
+		 */
+		if (job_ptr->end_time_exp == (time_t)NO_VAL)
+			continue;
+
 		if (!IS_JOB_RUNNING(job_ptr))
 			continue;
 
