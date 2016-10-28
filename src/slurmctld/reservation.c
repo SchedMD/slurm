@@ -1616,7 +1616,6 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 		safe_unpack8((uint8_t *)&resv_ptr->account_not,	buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->assoc_list,
 				       &uint32_tmp,	buffer);
-		resv_ptr->core_resrcs = create_job_resources();
 		if (unpack_job_resources(&resv_ptr->core_resrcs, buffer,
 					 protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
