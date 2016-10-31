@@ -75,6 +75,7 @@ static void _free_cluster_rec_members(slurmdb_cluster_rec_t *cluster)
 		xfree(cluster->control_host);
 		xfree(cluster->dim_size);
 		xfree(cluster->fed.name);
+		slurm_persist_conn_destroy(cluster->fed.send);
 		xfree(cluster->name);
 		xfree(cluster->nodes);
 		slurmdb_destroy_assoc_rec(cluster->root_assoc);
