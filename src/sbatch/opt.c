@@ -2854,6 +2854,12 @@ static bool _opt_verify(void)
 		}
 
 	} else if (opt.nodes_set && opt.ntasks_set) {
+		/*
+		 * Make sure that the number of
+		 * max_nodes is <= number of tasks
+		 */
+		if (opt.ntasks < opt.max_nodes)
+			opt.max_nodes = opt.ntasks;
 
 		/*
 		 *  make sure # of procs >= min_nodes
@@ -2879,8 +2885,7 @@ static bool _opt_verify(void)
 					hostlist_ranged_string_xmalloc(hl);
 			}
 
-		} else if (opt.max_nodes == 0)
-			opt.max_nodes = opt.ntasks;
+		}
 
 	} /* else if (opt.ntasks_set && !opt.nodes_set) */
 
