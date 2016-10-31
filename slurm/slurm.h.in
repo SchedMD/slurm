@@ -809,14 +809,16 @@ typedef enum cpu_bind_type {	/* cpu binding type from --cpu_bind=... */
 typedef enum mem_bind_type {    /* memory binding type from --mem_bind=... */
 	/* verbose can be set with any other flag */
 	MEM_BIND_VERBOSE= 0x01,	/* =v, */
-	/* the following manual binding flags are mutually exclusive */
+	/* the following five manual binding flags are mutually exclusive */
 	/* MEM_BIND_NONE needs to be the first in this sub-list */
 	MEM_BIND_NONE   = 0x02,	/* =no */
 	MEM_BIND_RANK   = 0x04,	/* =rank */
-	MEM_BIND_MAP    = 0x08,	/* =map_mem:<list of CPU IDs> */
-	MEM_BIND_MASK   = 0x10,	/* =mask_mem:<list of CPU masks> */
+	MEM_BIND_MAP    = 0x08,	/* =map_mem:<list of NUMA IDs> */
+	MEM_BIND_MASK   = 0x10,	/* =mask_mem:<list of NUMA masks> */
 	MEM_BIND_LOCAL  = 0x20,	/* =local */
-	MEM_BIND_PREFER = 0x40	/* =prefer */
+	/* sort and prefer can be set with any other flags */
+	MEM_BIND_SORT	= 0x40,	/* =sort */
+	MEM_BIND_PREFER = 0x80	/* =prefer */
 } mem_bind_type_t;
 
 typedef enum accel_bind_type {    /* accelerator binding from --accel_bind= */

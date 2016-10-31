@@ -489,7 +489,7 @@ slurmd_LDADD = \
 	$(top_builddir)/src/api/libslurm.o $(DL_LIBS)  \
 	../common/libslurmd_reverse_tree_math.la
 
-slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(HWLOC_LDFLAGS)
+slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(HWLOC_LDFLAGS) $(NUMA_LIBS)
 SLURMD_SOURCES = \
 	slurmd.c slurmd.h \
 	req.c req.h \

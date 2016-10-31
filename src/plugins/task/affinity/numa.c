@@ -86,11 +86,11 @@ static int _str_to_memset(nodemask_t *mask, const char* str)
 		if (val & 1)
 			nodemask_set(mask, base);
 		if (val & 2)
-			 nodemask_set(mask, base+1);
+			nodemask_set(mask, base+1);
 		if (val & 4)
-			 nodemask_set(mask, base+2);
+			nodemask_set(mask, base+2);
 		if (val & 8)
-			 nodemask_set(mask, base+3);
+			nodemask_set(mask, base+3);
 		len--;
 		ptr--;
 		base += 4;

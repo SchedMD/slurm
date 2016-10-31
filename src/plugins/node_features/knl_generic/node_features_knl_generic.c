@@ -39,6 +39,11 @@
 
 #define _GNU_SOURCE	/* For POLLRDHUP */
 #include <ctype.h>
+#include <fcntl.h>
+#ifdef HAVE_NUMA
+#undef NUMA_VERSION1_COMPATIBILITY
+#include <numa.h>
+#endif
 #include <poll.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -87,6 +92,12 @@
 #define KNL_HYBRID	0x0400
 #define KNL_FLAT	0x0800
 #define KNL_AUTO	0x1000
+
+#ifndef MODPROBE_PATH
+#define MODPROBE_PATH	"/sbin/modprobe"
+#endif
+#define ZONE_SORT_PATH	"/sys/kernel/zone_sort_free_pages/nodeid"
+//#define ZONE_SORT_PATH	"/tmp/nodeid"	/* For testing */
 
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
@@ -1194,6 +1205,40 @@ extern char *node_features_p_node_xlate(char *new_features, char *orig_features)
 	xfree(tmp);
 
 	return node_features;
+}
+
+/* Perform set up for step launch
+ * mem_sort IN - Trigger sort of memory pages (KNL zonesort)
+ * numa_bitmap IN - NUMA nodes allocated to this job */
+extern void node_features_p_step_config(bool mem_sort, bitstr_t *numa_bitmap)
+{
+#ifdef HAVE_NUMA
+	if (mem_sort && (numa_available() != -1)) {
+//FIXME: after reboot of SchedMD KNL nodes, run:
+// insmod /home/tim/kmod/xppsl-addons/zonesort_module.ko
+		int buf_len, fd, i, len;
+		char buf[8];
+		(void) system(MODPROBE_PATH " zonesort_module");
+		if ((fd = open(ZONE_SORT_PATH, O_WRONLY | O_SYNC)) == -1) {
+			error("%s: Could not open file %s: %m",
+			      __func__, ZONE_SORT_PATH);
+		} else {
+			len = numa_max_node() + 1;
+			for (i = 0; i < len; i++) {
+				if (numa_bitmap && !bit_test(numa_bitmap, i))
+					continue;
+				snprintf(buf, sizeof(buf), "%d", i);
+				buf_len = strlen(buf) + 1;
+				// info("SORT NUMA %s", buf);
+				if (write(fd, buf, buf_len) != buf_len) {
+					error("%s: Could not write file %s: %m",
+					      __func__, ZONE_SORT_PATH);
+				}
+			}
+			(void) close(fd);
+		}
+	}
+#endif
 }
 
 /* Determine if the specified user can modify the currently available node

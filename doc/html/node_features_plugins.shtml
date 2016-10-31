@@ -20,6 +20,7 @@ plugin_type[]="<i>node_features/[knl_cray]</i>"</span><br>
 
 <ul>
 <li><b>knl_cray</b>&#151;Use Cray's capmc command to manage an Intel KNL processor.</li>
+<li><b>knl_generic</b>&#151;Use Intel commands to manage KNL processor.</li>
 </ul>
 
 <p><span class="commandline">const uint32_t plugin_version=SLURM_VERSION_NUMBER</span><br>
@@ -151,6 +152,14 @@ The system <span class="commandline">_init()</span> is called before the Slurm
   A string with it's memory allocated by xmalloc (i.e. the return value
   must be released using Slurm's xfree function).</p>
 
+<p class="commandline"> void node_features_p_step_config(bool mem_sort, bitstr_t *numa_bitmap)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+  Perform any desired initialization operations prior to launching a job step.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+  <span class="commandline"> mem_sort:</span> If true, run zonesort before launching a job step.<br>
+  <span class="commandline"> numa_bitmap:</span> Identify NUMA nodes on which to execute zonesort.
+  If NULL, then execute zonesort on all NUMA nodes</p>
+
 <p class="commandline"> char *node_features_p_user_update(uid_t uid)
 <p style="margin-left:.2in"><b>Description</b>:<br>
   Determine if the specified user can modify the currently available node
@@ -162,6 +171,6 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 29 August 2016</p>
+<p style="text-align:center;">Last modified 31 October 2016</p>
 
 <!--#include virtual="footer.txt"-->

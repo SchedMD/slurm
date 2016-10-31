@@ -4,6 +4,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 17.02.0pre4
 ==============================
  -- Add support for per-partitiion OverTimeLimit configuration.
+ -- Add --mem_bind option of "sort" to run zonesort on KNL nodes at step start.
 
 * Changes in Slurm 17.02.0pre3
 ==============================

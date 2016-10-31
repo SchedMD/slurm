@@ -65,6 +65,7 @@ typedef struct node_features_ops {
 	int	(*node_update)	(char *active_features, bitstr_t *node_bitmap);
 	char *	(*node_xlate)	(char *new_features, char *orig_features,
 				 int mode);
+	void	(*step_config)	(bool mem_sort, bitstr_t *numa_bitmap);
 	int	(*reconfig)	(void);
 	bool	(*user_update)	(uid_t uid);
 } node_features_ops_t;
@@ -82,6 +83,7 @@ static const char *syms[] = {
 	"node_features_p_node_state",
 	"node_features_p_node_update",
 	"node_features_p_node_xlate",
+	"node_features_p_step_config",
 	"node_features_p_reconfig",
 	"node_features_p_user_update"
 };
@@ -186,6 +188,24 @@ extern int node_features_g_count(void)
 	slurm_mutex_unlock(&g_context_lock);
 
 	return rc;
+}
+
+/* Perform set up for step launch
+ * mem_sort IN - Trigger sort of memory pages (KNL zonesort)
+ * numa_bitmap IN - NUMA nodes allocated to this job */
+extern void node_features_g_step_config(bool mem_sort, bitstr_t *numa_bitmap)
+{
+	DEF_TIMERS;
+	int i;
+
+	START_TIMER;
+	if (node_features_g_init() != SLURM_SUCCESS)
+		return;
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; i < g_context_cnt; i++)
+		(*(ops[i].step_config))(mem_sort, numa_bitmap);
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2("node_features_g_step_config");
 }
 
 /* Reset plugin configuration information */
