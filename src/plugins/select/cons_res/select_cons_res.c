@@ -3621,3 +3621,27 @@ extern bitstr_t *select_p_ba_cnodelist2bitmap(char *cnodelist)
 {
 	return NULL;
 }
+
+extern int cr_cpus_per_core(struct job_details *details, int node_inx)
+{
+	uint16_t ncpus_per_core = 0xffff;	/* Usable CPUs per core */
+	uint16_t threads_per_core = select_node_record[node_inx].vpus;
+	uint16_t cpus_per_task = details->cpus_per_task;
+
+	if (details && details->mc_ptr) {
+		multi_core_data_t *mc_ptr = details->mc_ptr;
+		if ((mc_ptr->ntasks_per_core != (uint16_t) INFINITE) &&
+		    (mc_ptr->ntasks_per_core)) {
+			ncpus_per_core = MIN(threads_per_core,
+					     (mc_ptr->ntasks_per_core *
+					      cpus_per_task));
+		}
+		if ((mc_ptr->threads_per_core != (uint16_t) NO_VAL) &&
+		    (mc_ptr->threads_per_core <  ncpus_per_core)) {
+			ncpus_per_core = mc_ptr->threads_per_core;
+		}
+	}
+
+	threads_per_core = MIN(threads_per_core, ncpus_per_core);
+	return threads_per_core;
+}
