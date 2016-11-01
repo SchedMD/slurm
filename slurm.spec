@@ -971,7 +971,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/sjobexitmod
 %{_bindir}/sjstat
 %{_bindir}/smail
-%{_bindir}/sjobexitmod
 %{_mandir}/man1/sjstat*
 #############################################################################
 
