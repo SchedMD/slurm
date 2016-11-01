@@ -1344,15 +1344,23 @@ extern void bb_job_log(bb_state_t *state_ptr, bb_job_t *bb_job)
 	}
 }
 
-/* Make claim against resource limit for a user */
+/* Make claim against resource limit for a user
+ * user_id IN - Owner of burst buffer
+ * bb_size IN - Size of burst buffer
+ * pool IN - Pool containing the burst buffer
+ * state_ptr IN - Global state to update
+ * update_pool_used IN - If true, update the pool's used space */
 extern void bb_limit_add(uint32_t user_id, uint64_t bb_size, char *pool,
-			 bb_state_t *state_ptr)
+			 bb_state_t *state_ptr, bool update_pool_used)
 {
 	burst_buffer_pool_t *pool_ptr;
 	bb_user_t *bb_user;
 	int i;
 
-	if (!pool || !xstrcmp(pool, state_ptr->bb_config.default_pool)) {
+	/* Update the pool's used_space as necessary */
+	if (!update_pool_used) {
+		/* Buffer's space is already accounted for in pool used_space */
+	} else if (!pool || !xstrcmp(pool, state_ptr->bb_config.default_pool)) {
 		state_ptr->used_space += bb_size;
 	} else {
 		pool_ptr = state_ptr->bb_config.pool_ptr;
@@ -1366,6 +1374,7 @@ extern void bb_limit_add(uint32_t user_id, uint64_t bb_size, char *pool,
 			error("%s: Unable to located pool %s", __func__, pool);
 	}
 
+	/* Update user space used */
 	bb_user = bb_find_user_rec(user_id, state_ptr);
 	xassert(bb_user);
 	bb_user->size += bb_size;
