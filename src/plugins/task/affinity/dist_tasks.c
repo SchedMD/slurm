@@ -1019,7 +1019,6 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 			if ((req->ntasks_per_core != 0) &&
 			    (core_tasks[core_inx] >= req->ntasks_per_core))
 				continue;
-			core_tasks[core_inx]++;
 
 			if (!masks[taskcount])
 				masks[taskcount] =
@@ -1041,6 +1040,8 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 
 			if (++p < req->cpus_per_task)
 				continue;
+
+			core_tasks[core_inx]++;
 
 			/* Binding to cores, skip remaining of the threads */
 			if (!(req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)
@@ -1180,7 +1181,6 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 			if ((req->ntasks_per_socket != 0) &&
 			    (socket_tasks[sock_inx] >= req->ntasks_per_socket))
 				continue;
-			core_tasks[core_inx]++;
 			socket_tasks[sock_inx]++;
 
 			if (!masks[taskcount])
@@ -1195,6 +1195,7 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 
 			if (++c < req->cpus_per_task)
 				continue;
+			core_tasks[core_inx]++;
 			/* Binding to cores, skip remaining of the threads */
 			if (!(req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)
 			    && ((req->cpu_bind_type & CPU_BIND_TO_CORES)

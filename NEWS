@@ -9,6 +9,9 @@ documents those changes that are of interest to users and administrators.
     rather than trying to account for buffer allocations in progress.
  -- cray/busrt_buffer - Fix for double counting of used_space at slurmctld
     startup.
+ -- Fix regression in 16.05.6 where if you request multiple cpus per task (-c2)
+    and request --ntasks-per-core=1 and only 1 task on the node
+    the slurmd would abort on an infinite loop fatal.
 
 * Changes in Slurm 16.05.6
 ==========================
