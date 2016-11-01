@@ -333,9 +333,14 @@ extern void bb_sleep(bb_state_t *state_ptr, int add_secs);
 extern char *bb_run_script(char *script_type, char *script_path,
 			   char **script_argv, int max_wait, int *status);
 
-/* Make claim against resource limit for a user */
+/* Make claim against resource limit for a user
+ * user_id IN - Owner of burst buffer
+ * bb_size IN - Size of burst buffer
+ * pool IN - Pool containing the burst buffer
+ * state_ptr IN - Global state to update
+ * update_pool_used IN - If true, update the pool's used space */
 extern void bb_limit_add(uint32_t user_id, uint64_t bb_size, char *pool,
-			 bb_state_t *state_ptr);
+			 bb_state_t *state_ptr, bool update_pool_used);
 
 /* Release claim against resource limit for a user */
 extern void bb_limit_rem(uint32_t user_id, uint64_t bb_size, char *pool,

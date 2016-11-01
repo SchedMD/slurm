@@ -7,6 +7,8 @@ documents those changes that are of interest to users and administrators.
     more time than should be allowed would be accounted for.
  -- cray/busrt_buffer - If total_space in a pool decreases, reset used_space
     rather than trying to account for buffer allocations in progress.
+ -- cray/busrt_buffer - Fix for double counting of used_space at slurmctld
+    startup.
 
 * Changes in Slurm 16.05.6
 ==========================

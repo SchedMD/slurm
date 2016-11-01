@@ -699,7 +699,7 @@ static void _apply_limits(void)
 		while (bb_alloc) {
 			_set_assoc_mgr_ptrs(bb_alloc);
 			bb_limit_add(bb_alloc->user_id, bb_alloc->size,
-				     bb_alloc->pool, &bb_state);
+				     bb_alloc->pool, &bb_state, false);
 			bb_alloc = bb_alloc->next;
 		}
 	}
@@ -1234,9 +1234,9 @@ static void _load_state(bool init_config)
 					     sessions[i].user_id);
 		bb_alloc->create_time = sessions[i].created;
 		bb_alloc->id = sessions[i].id;
-		if ((sessions[i].token != NULL)  &&
-		    (sessions[i].token[0] >='0') &&
-		    (sessions[i].token[0] <='9')) {
+		if ((sessions[i].token != NULL)   &&
+		    (sessions[i].token[0] >= '0') &&
+		    (sessions[i].token[0] <= '9')) {
 			bb_alloc->job_id =
 				strtol(sessions[i].token, &end_ptr, 10);
 		}
@@ -1250,7 +1250,7 @@ static void _load_state(bool init_config)
 		if (!init_config) {	/* Newly found buffer */
 			_pick_alloc_account(bb_alloc);
 			bb_limit_add(bb_alloc->user_id, bb_alloc->size,
-				     bb_alloc->pool, &bb_state);
+				     bb_alloc->pool, &bb_state, false);
 		}
 		if (bb_alloc->job_id == 0)
 			bb_post_persist_create(NULL, bb_alloc, &bb_state);
@@ -1425,7 +1425,8 @@ static int _queue_stage_in(struct job_record *job_ptr, bb_job_t *bb_job)
 #endif
 		setup_argv[16] = xstrdup(client_nodes_file_nid);
 	}
-	bb_limit_add(job_ptr->user_id, bb_job->total_size, job_pool, &bb_state);
+	bb_limit_add(job_ptr->user_id, bb_job->total_size, job_pool, &bb_state,
+		     true);
 
 	data_in_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
 	data_in_argv[0] = xstrdup("dw_wlm_cli");
@@ -3754,7 +3755,7 @@ static int _create_bufs(struct job_record *job_ptr, bb_job_t *bb_job,
 					xstrdup(bb_state.bb_config.default_pool);
 			}
 			bb_limit_add(job_ptr->user_id, buf_ptr->size,
-				     buf_ptr->pool, &bb_state);
+				     buf_ptr->pool, &bb_state, true);
 			bb_job->state = BB_STATE_ALLOCATING;
 			buf_ptr->state = BB_STATE_ALLOCATING;
 			create_args = xmalloc(sizeof(create_buf_data_t));
