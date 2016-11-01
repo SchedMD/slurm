@@ -46,6 +46,10 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#if defined(__FreeBSD__) || defined(__NetBSD__)
+#define POLLRDHUP POLLHUP
+#endif
+
 #include "slurm/slurm.h"
 
 #include "src/common/assoc_mgr.h"
