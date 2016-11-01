@@ -40,25 +40,12 @@
  * slurm_step_layout_create - determine how many tasks of a job will be
  *                    run on each node. Distribution is influenced
  *                    by number of cpus on each host.
- * IN tlist - hostlist corresponding to task layout
- * IN cpus_per_node - cpus per node
- * IN cpu_count_reps - how many nodes have same cpu count
- * IN node_cnt - number of nodes we have
- * IN task_cnt - number of tasks to distribute across these cpus
- * IN cpus_per_task - number of cpus per task
- * IN task_dist - type of distribution we are using
- * IN plane_size - plane size (only needed for the plane distribution)
+ * IN step_layout_req - information needed for task distibutionhostlist corresponding to task layout
  * RET a pointer to an slurm_step_layout_t structure
  * NOTE: allocates memory that should be xfreed by caller
  */
-extern slurm_step_layout_t *slurm_step_layout_create(const char *tlist,
-						     uint16_t *cpus_per_node,
-						     uint32_t *cpu_count_reps,
-						     uint32_t node_cnt,
-						     uint32_t task_cnt,
-						     uint16_t cpus_per_task,
-						     uint32_t task_dist,
-						     uint16_t plane_size);
+extern slurm_step_layout_t *slurm_step_layout_create(
+	slurm_step_layout_req_t *step_layout_req);
 
 /*
  * fake_slurm_step_layout_create - used when you don't allocate a job from the

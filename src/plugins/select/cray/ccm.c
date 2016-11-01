@@ -279,7 +279,7 @@ static char *_ccm_create_nidlist_file(ccm_info_t *ccm_info)
 	char *unique_filenm = NULL;
 	FILE *tmp_fp = NULL;
 	slurm_step_layout_t *step_layout = NULL;
-
+	slurm_step_layout_req_t step_layout_req;
 	/*
 	 * Create a unique temp file; name of the file will be passed
 	 * in an env variable to the CCM prolog/epilog.
@@ -309,15 +309,19 @@ static char *_ccm_create_nidlist_file(ccm_info_t *ccm_info)
 		debug3("CCM job %u nodes[%d] is %d",
 		       ccm_info->job_id, i, nodes[i]);
 	}
+
+	memset(&step_layout_req, 0, sizeof(slurm_step_layout_req_t));
+
+	step_layout_req.node_list = ccm_info->nodelist;
+	step_layout_req.cpus_per_node = ccm_info->cpus_per_node;
+	step_layout_req.cpu_count_reps = ccm_info->cpu_count_reps;
+	step_layout_req.num_hosts = ccm_info->node_cnt;
+	step_layout_req.num_tasks = ccm_info->num_tasks;
+	step_layout_req.cpus_per_task = ccm_info->cpus_per_task;
+	step_layout_req.task_dist = ccm_info->task_dist;
+	step_layout_req.plane_size = ccm_info->plane_size;
 	/* Determine how many PEs(tasks) will be run on each node */
-	step_layout = slurm_step_layout_create(ccm_info->nodelist,
-					       ccm_info->cpus_per_node,
-					       ccm_info->cpu_count_reps,
-					       ccm_info->node_cnt,
-					       ccm_info->num_tasks,
-					       ccm_info->cpus_per_task,
-					       ccm_info->task_dist,
-					       ccm_info->plane_size);
+	step_layout = slurm_step_layout_create(&step_layout_req);
 	if (!step_layout) {
 		CRAY_ERR("CCM job %u slurm_step_layout_create failure",
 			 ccm_info->job_id);

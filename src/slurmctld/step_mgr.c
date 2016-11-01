@@ -2626,6 +2626,8 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	uint16_t cpus_per_node[node_count];
 	struct job_record *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
+	slurm_step_layout_req_t step_layout_req;
+
 #ifndef HAVE_BGQ
 	uint32_t gres_cpus;
 	int cpu_inx = -1;
@@ -2792,11 +2794,17 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	/* } */
 
 	/* layout the tasks on the nodes */
-	if ((step_layout = slurm_step_layout_create(step_node_list,
-						    cpus_per_node,
-						    cpu_count_reps, node_count,
-						    num_tasks, cpus_per_task,
-						    task_dist, plane_size))) {
+	memset(&step_layout_req, 0, sizeof(slurm_step_layout_req_t));
+	step_layout_req.node_list = step_node_list;
+	step_layout_req.cpus_per_node = cpus_per_node;
+	step_layout_req.cpu_count_reps = cpu_count_reps;
+	step_layout_req.num_hosts = node_count;
+	step_layout_req.num_tasks = num_tasks;
+	step_layout_req.cpus_per_task = cpus_per_task;
+	step_layout_req.task_dist = task_dist;
+	step_layout_req.plane_size = plane_size;
+
+	if ((step_layout = slurm_step_layout_create(&step_layout_req))) {
 		step_layout->start_protocol_ver = step_ptr->start_protocol_ver;
 	}
 
