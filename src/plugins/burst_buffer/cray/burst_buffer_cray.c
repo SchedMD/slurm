@@ -1094,7 +1094,7 @@ static void _load_state(bool init_config)
 	char *end_ptr = NULL;
 	time_t now = time(NULL);
 	uint32_t timeout;
-	uint64_t used_space;
+	uint64_t total_space_new, total_space_lost, used_space;
 	assoc_mgr_lock_t assoc_locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
 					 NO_LOCK, NO_LOCK, NO_LOCK };
 	bool found_pool;
@@ -1127,16 +1127,28 @@ static void _load_state(bool init_config)
 		if (xstrcmp(pools[i].id,
 			    bb_state.bb_config.default_pool) == 0) {
 			bb_state.bb_config.granularity = pools[i].granularity;
-			bb_state.total_space = pools[i].quantity *
-					       pools[i].granularity;
+			total_space_new = pools[i].quantity *
+					  pools[i].granularity;
+			if (bb_state.total_space > total_space_new) {
+				total_space_lost = bb_state.total_space -
+						   total_space_new;
+			} else
+				total_space_lost = 0;
+			bb_state.total_space = total_space_new;
 			if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
 				continue;
-			/* Don't decrease used_space in case buffer allocation
-			 * in progress */
 			used_space = pools[i].quantity - pools[i].free;
 			used_space *= pools[i].granularity;
-			bb_state.used_space = MAX(bb_state.used_space,
-						  used_space);
+			if (total_space_lost) {
+				/* Reset used_space,
+				 * ignore in allocations in progress */
+				bb_state.used_space = used_space;
+			} else {
+				/* Don't decrease used_space in case buffer
+				 * allocation in progress */
+				bb_state.used_space = MAX(bb_state.used_space,
+							  used_space);
+			}
 
 			/* Everything else is an alternate pool */
 			bb_state.bb_config.pool_cnt = 0;
@@ -1162,16 +1174,28 @@ static void _load_state(bool init_config)
 			bb_state.bb_config.pool_cnt++;
 		}
 
-		pool_ptr->total_space = pools[i].quantity *
-				        pools[i].granularity;
+		total_space_new = pools[i].quantity * pools[i].granularity;
+		if (pool_ptr->total_space > total_space_new) {
+			total_space_lost = pool_ptr->total_space -
+					   total_space_new;
+		} else
+			total_space_lost = 0;
+		pool_ptr->total_space = total_space_new;
 		pool_ptr->granularity = pools[i].granularity;
 		if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
 			continue;
-		/* Don't decrease used_space in case buffer allocation
-		 * in progress */
 		used_space = pools[i].quantity - pools[i].free;
 		used_space *= pools[i].granularity;
-		pool_ptr->used_space = MAX(pool_ptr->used_space, used_space);
+		if (total_space_lost) {
+			/* Reset used_space,
+			 * ignore in allocations in progress */
+			pool_ptr->used_space = used_space;
+		} else {
+			/* Don't decrease used_space in case buffer allocation
+			 * in progress */
+			pool_ptr->used_space = MAX(pool_ptr->used_space,
+						   used_space);
+		}
 	}
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 	_bb_free_pools(pools, num_pools);
