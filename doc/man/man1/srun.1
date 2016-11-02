@@ -1239,6 +1239,10 @@ Not supported unless the entire node is allocated to the job.
 .B no[ne]
 don't bind tasks to memory (default)
 .TP
+.B nosort
+avoid sorting free cache pages (default, LaunchParameters configuration
+parameter can override this default)
+.TP
 .B p[refer]
 Prefer use of first specified NUMA node, but permit
  use of other available NUMA nodes.

@@ -376,6 +376,7 @@ static void argerror(const char *msg, ...)
  */
 static void _opt_default(void)
 {
+	char *launch_params;
 	char buf[MAXPATHLEN + 1];
 	int i;
 	uid_t uid = getuid();
@@ -419,8 +420,14 @@ static void _opt_default(void)
 	opt.cpu_bind_type = 0;
 	opt.cpu_bind_type_set = false;
 	opt.cpu_bind = NULL;
-	opt.mem_bind_type = 0;
+
 	opt.mem_bind = NULL;
+	opt.mem_bind_type = 0;
+	launch_params = slurm_get_launch_params();
+	if (launch_params && strstr(launch_params, "mem_sort"))
+		opt.mem_bind_type |= MEM_BIND_SORT;
+	xfree(launch_params);
+
 	opt.accel_bind_type = 0;
 	opt.core_spec = (uint16_t) NO_VAL;
 	opt.core_spec_set = false;
@@ -2585,10 +2592,10 @@ static void _opt_list(void)
 	info("distribution   : %s", format_task_dist_states(opt.distribution));
 	if ((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE)
 		info("plane size   : %u", opt.plane_size);
-	info("cpu_bind       : %s",
-	     opt.cpu_bind == NULL ? "default" : opt.cpu_bind);
-	info("mem_bind       : %s",
-	     opt.mem_bind == NULL ? "default" : opt.mem_bind);
+	info("cpu_bind       : %s (%u)",
+	     opt.cpu_bind == NULL ? "default" : opt.cpu_bind, opt.cpu_bind_type);
+	info("mem_bind       : %s (%u)",
+	     opt.mem_bind == NULL ? "default" : opt.mem_bind, opt.mem_bind_type);
 	info("verbose        : %d", _verbose);
 	info("slurmd_debug   : %d", opt.slurmd_debug);
 	if (opt.immediate <= 1)

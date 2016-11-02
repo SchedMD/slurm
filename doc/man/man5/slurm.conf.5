@@ -1258,6 +1258,10 @@ Identifies options to the job launch plugin.
 Acceptable values include:
 .RS
 .TP 24
+\fBmem_sort\fR
+Sort NUMA memory at step start. User can override this default with
+SLURM_MEM_BIND environment variable or \-\-mem_bind=nosort command line option.
+.TP 24
 \fBslurmstepd_memlock\fR
 Lock the slurmstepd process's current memory in RAM.
 .TP
