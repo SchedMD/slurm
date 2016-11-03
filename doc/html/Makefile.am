@@ -52,12 +52,10 @@ generated_html = \
 	fair_tree.html \
 	mail.html \
 	man_index.html \
-	maui.html \
 	mc_support.html \
 	mcs.html \
 	mcs_plugins.html \
 	meetings.html \
-	moab.html \
 	mpi_guide.html \
 	mpiplugins.html \
 	multi_cluster.html \
