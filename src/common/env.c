@@ -974,10 +974,14 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 	int i, rc = SLURM_SUCCESS;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	slurm_step_layout_req_t step_layout_req;
+	uint16_t cpus_per_task_array[1];
+	uint32_t cpus_task_reps[1];
 
 	memset(&step_layout_req, 0, sizeof(slurm_step_layout_req_t));
 	step_layout_req.num_tasks = desc->num_tasks;
 	step_layout_req.num_hosts = alloc->node_cnt;
+	cpus_per_task_array[0] = desc->cpus_per_task;
+	cpus_task_reps[0] = alloc->node_cnt;
 
 	_setup_particulars(cluster_flags, dest, alloc->select_jobinfo);
 
@@ -1066,7 +1070,8 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 
 	step_layout_req.cpus_per_node = alloc->cpus_per_node;
 	step_layout_req.cpu_count_reps = alloc->cpu_count_reps;
-	step_layout_req.cpus_per_task = desc->cpus_per_task;
+	step_layout_req.cpus_per_task = cpus_per_task_array;
+	step_layout_req.cpus_task_reps = cpus_task_reps;
 	step_layout_req.task_dist = desc->task_dist;
 	step_layout_req.plane_size = desc->plane_size;
 
@@ -1145,6 +1150,8 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	uint32_t task_dist;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	slurm_step_layout_req_t step_layout_req;
+	uint16_t cpus_per_task_array[1];
+	uint32_t cpus_task_reps[1];
 
 	memset(&step_layout_req, 0, sizeof(slurm_step_layout_req_t));
 	step_layout_req.num_tasks = batch->ntasks;
@@ -1205,6 +1212,8 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 		cpus_per_task = batch->cpus_per_task;
 	else
 		cpus_per_task = 1;	/* default value */
+	cpus_per_task_array[0] = cpus_per_task;
+	cpus_task_reps[0] = step_layout_req.num_hosts;
 
 	/* Only overwrite this if it is set.  They are set in
 	 * sbatch directly and could have changed. */
@@ -1232,7 +1241,8 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 
 	step_layout_req.cpus_per_node = batch->cpus_per_node;
 	step_layout_req.cpu_count_reps = batch->cpu_count_reps;
-	step_layout_req.cpus_per_task = cpus_per_task;
+	step_layout_req.cpus_per_task = cpus_per_task_array;
+	step_layout_req.cpus_task_reps = cpus_task_reps;
 	step_layout_req.task_dist = task_dist;
 	step_layout_req.plane_size = (uint16_t)NO_VAL;
 

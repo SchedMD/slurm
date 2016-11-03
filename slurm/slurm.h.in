@@ -1685,7 +1685,8 @@ typedef struct {
 	uint32_t *cpu_count_reps; /* how many nodes have same cpu count */
 	uint32_t num_hosts; /* number of hosts we have */
 	uint32_t num_tasks; /* number of tasks to distribute across these cpus*/
-	uint16_t cpus_per_task; /* number of cpus per task */
+	uint16_t *cpus_per_task; /* number of cpus per task */
+	uint32_t *cpus_task_reps; /* how many nodes have same per task count */
 	uint32_t task_dist; /* type of distribution we are using */
 	uint16_t plane_size; /* plane size (only needed for plane distribution*/
 } slurm_step_layout_req_t;

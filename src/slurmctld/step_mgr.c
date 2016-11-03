@@ -2624,20 +2624,26 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 {
 	slurm_step_layout_t *step_layout = NULL;
 	uint16_t cpus_per_node[node_count];
+	uint16_t cpus_per_task_array[node_count];
 	struct job_record *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	slurm_step_layout_req_t step_layout_req;
+	uint16_t ntasks_per_core = 0;
+	uint16_t ntasks_per_socket = 0;
+	uint32_t cpus_task = 0;
 
 #ifndef HAVE_BGQ
 	uint32_t gres_cpus;
-	int cpu_inx = -1;
+	int cpu_inx = -1, cpus_task_inx = -1;
 	int i, usable_cpus, usable_mem;
 	int set_nodes = 0/* , set_tasks = 0 */;
 	int pos = -1, job_node_offset = -1;
 	int first_bit, last_bit;
 	uint32_t cpu_count_reps[node_count];
+	uint32_t cpus_task_reps[node_count];
 #else
 	uint32_t cpu_count_reps[1];
+	uint32_t cpus_task_reps[1];
 #endif
 
 	xassert(job_resrcs_ptr);
@@ -2668,13 +2674,24 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	   numbers.
 	*/
 	memcpy(cpus_per_node, job_resrcs_ptr->cpus, sizeof(cpus_per_node));
+	cpus_per_task_array[0] = cpus_per_task;
 	cpu_count_reps[0] = job_resrcs_ptr->ncpus;
+	cpus_task_reps[0] = job_resrcs_ptr->ncpus;
 
 #else
 	/* build the cpus-per-node arrays for the subset of nodes
 	 * used by this job step */
 	first_bit = bit_ffs(job_ptr->node_bitmap);
 	last_bit  = bit_fls(job_ptr->node_bitmap);
+
+	if (job_ptr->details && job_ptr->details->mc_ptr) {
+		multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
+		if (mc_ptr->ntasks_per_core &&
+		    (mc_ptr->ntasks_per_core != (uint16_t) INFINITE)) {
+			ntasks_per_core = mc_ptr->ntasks_per_core;
+		}
+
+	}
 
 	for (i = first_bit; i <= last_bit; i++) {
 		uint16_t cpus, cpus_used;
@@ -2721,6 +2738,52 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 
 				cpus /= threads;
 				cpus_used /= threads;
+				cpus_per_task_array[0] = cpus_per_task;
+				cpu_count_reps[0] = node_count;
+			} else {
+				/* Here we are trying to figure out how many
+				 * cpus each task really needs.  This really
+				 * only becomes an issue if the job requested
+				 * ntasks_per_core|socket=1.  We just increase
+				 * the number of cpus_per_task to the thread
+				 * count.  Since the system could be
+				 * heterogeneous we needed to make this an
+				 * array.
+				 */
+				uint16_t threads_per_core;
+				if (slurmctld_conf.fast_schedule)
+					threads_per_core =
+						node_ptr->config_ptr->threads;
+				else
+					threads_per_core = node_ptr->threads;
+				if (ntasks_per_socket == 1) {
+					uint16_t threads_per_socket;
+					if (slurmctld_conf.fast_schedule)
+						threads_per_socket =
+							node_ptr->config_ptr->
+							cores;
+					else
+						threads_per_socket =
+							node_ptr->cores;
+					threads_per_socket *= threads_per_core;
+
+					if (cpus_per_task < threads_per_socket)
+						cpus_task = threads_per_socket;
+				} else if ((ntasks_per_core == 1) &&
+					   (cpus_per_task < threads_per_core))
+					cpus_task = threads_per_core;
+				else
+					cpus_task = cpus_per_task;
+
+				if ((cpus_task_inx == -1) ||
+				    (cpus_task_reps[cpus_task_inx] !=
+				     cpus_task)) {
+					cpus_task_inx++;
+					cpus_per_task_array[cpus_task_inx] =
+						cpus_task;
+					cpus_task_reps[cpus_task_inx] = 1;
+				} else
+					cpus_task_reps[cpus_task_inx]++;
 			}
 
 			if (step_ptr->exclusive) {
@@ -2798,9 +2861,11 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	step_layout_req.node_list = step_node_list;
 	step_layout_req.cpus_per_node = cpus_per_node;
 	step_layout_req.cpu_count_reps = cpu_count_reps;
+	step_layout_req.cpus_per_task = cpus_per_task_array;
+	step_layout_req.cpus_task_reps = cpus_task_reps;
 	step_layout_req.num_hosts = node_count;
 	step_layout_req.num_tasks = num_tasks;
-	step_layout_req.cpus_per_task = cpus_per_task;
+	step_layout_req.cpus_per_task = cpus_per_task_array;
 	step_layout_req.task_dist = task_dist;
 	step_layout_req.plane_size = plane_size;
 

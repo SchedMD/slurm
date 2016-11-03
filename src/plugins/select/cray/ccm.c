@@ -280,6 +280,9 @@ static char *_ccm_create_nidlist_file(ccm_info_t *ccm_info)
 	FILE *tmp_fp = NULL;
 	slurm_step_layout_t *step_layout = NULL;
 	slurm_step_layout_req_t step_layout_req;
+	uint16_t cpus_per_task_array[1];
+	uint32_t cpus_task_reps[1];
+
 	/*
 	 * Create a unique temp file; name of the file will be passed
 	 * in an env variable to the CCM prolog/epilog.
@@ -317,7 +320,12 @@ static char *_ccm_create_nidlist_file(ccm_info_t *ccm_info)
 	step_layout_req.cpu_count_reps = ccm_info->cpu_count_reps;
 	step_layout_req.num_hosts = ccm_info->node_cnt;
 	step_layout_req.num_tasks = ccm_info->num_tasks;
-	step_layout_req.cpus_per_task = ccm_info->cpus_per_task;
+
+	cpus_per_task_array[0] = ccm_info->cpus_per_task;
+	cpus_task_reps[0] = step_layout_req.num_hosts;
+
+	step_layout_req.cpus_per_task = cpus_per_task_array;
+	step_layout_req.cpus_task_reps = cpus_task_reps;
 	step_layout_req.task_dist = ccm_info->task_dist;
 	step_layout_req.plane_size = ccm_info->plane_size;
 	/* Determine how many PEs(tasks) will be run on each node */

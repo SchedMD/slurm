@@ -55,8 +55,7 @@ static int _init_task_layout(slurm_step_layout_req_t *step_layout_req,
 			     slurm_step_layout_t *step_layout,
 			     const char *arbitrary_nodes);
 
-static int _task_layout_block(slurm_step_layout_req_t *step_layout_req,
-			      slurm_step_layout_t *step_layout,
+static int _task_layout_block(slurm_step_layout_t *step_layout,
 			      uint16_t *cpus);
 static int _task_layout_cyclic(slurm_step_layout_t *step_layout,
 			       uint16_t *cpus);
@@ -405,20 +404,30 @@ static int _init_task_layout(slurm_step_layout_req_t *step_layout_req,
 			     slurm_step_layout_t *step_layout,
 			     const char *arbitrary_nodes)
 {
-	int cpu_cnt = 0, cpu_inx = 0, i;
+	int cpu_cnt = 0, cpu_inx = 0, cpu_task_cnt = 0, cpu_task_inx = 0, i;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
-/*	char *name = NULL; */
 	uint16_t cpus[step_layout->node_cnt];
+	uint16_t cpus_per_task[1];
+	uint32_t cpus_task_reps[1];
 
 	if (step_layout->node_cnt == 0)
 		return SLURM_ERROR;
 	if (step_layout->tasks)	/* layout already completed */
 		return SLURM_SUCCESS;
 
-	if (((int)step_layout_req->cpus_per_task < 1) ||
-	    (step_layout_req->cpus_per_task == (uint16_t)NO_VAL))
-		step_layout_req->cpus_per_task = 1;
+	if (!step_layout_req->cpus_per_task) {
+		cpus_per_task[0] = 1;
+		cpus_task_reps[0] = step_layout_req->num_hosts;
+		step_layout_req->cpus_per_task = cpus_per_task;
+		step_layout_req->cpus_task_reps = cpus_task_reps;
+	}
+
+	if (((int)step_layout_req->cpus_per_task[0] < 1) ||
+	    (step_layout_req->cpus_per_task[0] == (uint16_t)NO_VAL)) {
+		step_layout_req->cpus_per_task[0] = 1;
+		step_layout_req->cpus_task_reps[0] = step_layout_req->num_hosts;
+	}
 
 	step_layout->plane_size = step_layout_req->plane_size;
 
@@ -454,7 +463,7 @@ static int _init_task_layout(slurm_step_layout_req_t *step_layout_req,
 /*		free(name); */
 		cpus[i] = (cpus_per_node[cpu_inx] / cpus_per_task);
 		cpus[i] = (step_layout_req->cpus_per_node[cpu_inx] /
-			   step_layout_req->cpus_per_task);
+			   step_layout_req->cpus_per_task[cpu_task_inx]);
 		if (cpus[i] == 0) {
 			/* this can be a result of a heterogeneous allocation
 			 * (e.g. 4 cpus on one node and 2 on the second with
@@ -472,7 +481,7 @@ static int _init_task_layout(slurm_step_layout_req_t *step_layout_req,
 			*/
 			uint16_t cpus_per_node =
 				step_layout->plane_size *
-				step_layout_req->cpus_per_task;
+				step_layout_req->cpus_per_task[cpu_task_inx];
 			if (cpus[i] > cpus_per_node)
 				cpus[i] = cpus_per_node;
 		}
@@ -483,6 +492,13 @@ static int _init_task_layout(slurm_step_layout_req_t *step_layout_req,
 			/* move to next record */
 			cpu_inx++;
 			cpu_cnt = 0;
+		}
+
+		if ((++cpu_task_cnt) >=
+		    step_layout_req->cpus_task_reps[cpu_task_inx]) {
+			/* move to next record */
+			cpu_task_inx++;
+			cpu_task_cnt = 0;
 		}
 	}
 
@@ -497,8 +513,7 @@ static int _init_task_layout(slurm_step_layout_req_t *step_layout_req,
 		 == SLURM_DIST_PLANE)
 		return _task_layout_plane(step_layout, cpus);
 	else
-		return _task_layout_block(
-			step_layout_req, step_layout, cpus);
+		return _task_layout_block(step_layout, cpus);
 }
 
 /* use specific set run tasks on each host listed in hostfile
@@ -582,8 +597,7 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 	return SLURM_SUCCESS;
 }
 
-static int _task_layout_block(slurm_step_layout_req_t *step_layout_req,
-			      slurm_step_layout_t *step_layout, uint16_t *cpus)
+static int _task_layout_block(slurm_step_layout_t *step_layout, uint16_t *cpus)
 {
 	static uint16_t select_params = (uint16_t) NO_VAL;
 	int i, j, task_id = 0;
@@ -604,8 +618,8 @@ static int _task_layout_block(slurm_step_layout_req_t *step_layout_req,
 		/* Pass 1: Put one task on each node */
 		for (i = 0; ((i < step_layout->node_cnt) &&
 			     (task_id < step_layout->task_cnt)); i++) {
-			if ((step_layout->tasks[i] *
-			     step_layout_req->cpus_per_task) < cpus[i]) {
+			/* cpus has already been altered for cpus_per_task */
+			if (step_layout->tasks[i] < cpus[i]) {
 				step_layout->tasks[i]++;
 				task_id++;
 			}
@@ -614,9 +628,8 @@ static int _task_layout_block(slurm_step_layout_req_t *step_layout_req,
 		/* Pass 2: Fill remaining CPUs on a node-by-node basis */
 		for (i = 0; ((i < step_layout->node_cnt) &&
 			     (task_id < step_layout->task_cnt)); i++) {
-			while (((step_layout->tasks[i] *
-				 step_layout_req->cpus_per_task) <
-				cpus[i]) &&
+			/* cpus has already been altered for cpus_per_task */
+			while ((step_layout->tasks[i] < cpus[i]) &&
 			       (task_id < step_layout->task_cnt)) {
 				step_layout->tasks[i]++;
 				task_id++;
