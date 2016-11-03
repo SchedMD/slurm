@@ -1110,7 +1110,6 @@ extern bool node_features_p_node_power(void)
 extern int node_features_p_node_update(char *active_features,
 				       bitstr_t *node_bitmap)
 {
-//FIXME: Need to get HBM details for implementation.
 	int i, i_first, i_last;
 	int rc = SLURM_SUCCESS;
 	uint16_t mcdram_inx;
@@ -1118,7 +1117,9 @@ extern int node_features_p_node_update(char *active_features,
 	struct node_record *node_ptr;
 
 	if (mcdram_per_node == NULL) {
-		error("%s: mcdram_per_node == NULL", __func__);
+//FIXME: Additional logic is needed to determine the available MCDRAM space
+//FIXME: Additional logic will also be required to handle heterogeneous sizes
+		verbose("%s: mcdram_per_node is NULL", __func__);
 		return SLURM_ERROR;
 	}
 	mcdram_inx = _knl_mcdram_parse(active_features, ",");
