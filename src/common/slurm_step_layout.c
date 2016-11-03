@@ -452,16 +452,16 @@ static int _init_task_layout(slurm_step_layout_req_t *step_layout_req,
 		return SLURM_ERROR;
 	}
 
+	/* hostlist_t hl = hostlist_create(step_layout->node_list); */
 	for (i=0; i<step_layout->node_cnt; i++) {
-/*		name = hostlist_shift(hl); */
-/*		if (!name) { */
-/*			error("hostlist incomplete for this job request"); */
-/*			hostlist_destroy(hl); */
-/*			return SLURM_ERROR; */
-/*		} */
-/*		debug2("host %d = %s", i, name); */
-/*		free(name); */
-		cpus[i] = (cpus_per_node[cpu_inx] / cpus_per_task);
+		/* char *name = hostlist_shift(hl); */
+		/* if (!name) { */
+		/* 	error("hostlist incomplete for this job request"); */
+		/* 	hostlist_destroy(hl); */
+		/* 	return SLURM_ERROR; */
+		/* } */
+		/* debug2("host %d = %s", i, name); */
+		/* free(name); */
 		cpus[i] = (step_layout_req->cpus_per_node[cpu_inx] /
 			   step_layout_req->cpus_per_task[cpu_task_inx]);
 		if (cpus[i] == 0) {
@@ -486,7 +486,7 @@ static int _init_task_layout(slurm_step_layout_req_t *step_layout_req,
 				cpus[i] = cpus_per_node;
 		}
 
-		//info("got %d cpus", cpus[i]);
+		/* info("got %d cpus", cpus[i]); */
 		if ((++cpu_cnt) >=
 		    step_layout_req->cpu_count_reps[cpu_inx]) {
 			/* move to next record */
@@ -634,6 +634,7 @@ static int _task_layout_block(slurm_step_layout_t *step_layout, uint16_t *cpus)
 				step_layout->tasks[i]++;
 				task_id++;
 			}
+			info("%d cpus %d %d", i, cpus[i], step_layout->tasks[i]);
 		}
 
 		/* Pass 3: Spread remaining tasks across all nodes */
