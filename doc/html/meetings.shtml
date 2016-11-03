@@ -1,18 +1,23 @@
 <!--#include virtual="header.txt"-->
 
 <h1>Meetings</h1>
+<!--
+<p><b>Slurm User Group Meeting 2016</b><br>
+26-27 September 2016<br>
+Athens, Greece<br>
+Host: <a href="http://www.grnet.gr/">Greek Research and Technology Network (GRNET)</a></p> -->
+<!-- <p>More information coming soon.</p> -->
+<!-- <p><a href="slurm_ug_cfp.html">Call for Abstracts: Due 30 June 2016</a></p> -->
+<!-- <p><a href="slurm_ug_agenda.html">Meeting agenda, registration information, etc.</a></p> -->
+<!-- <p><a href="slurm_ug_agenda.html#hotels">Meeting hotels</a></p> -->
+
+<br>
+<h2>Previous Meetings</h2>
 
 <p><b>Slurm User Group Meeting 2016</b><br>
 26-27 September 2016<br>
 Athens, Greece<br>
-Host: <a href="http://www.grnet.gr/">Greek Research and Technology Network (GRNET)</a></p>
-<!-- <p>More information coming soon.</p> -->
-<!-- <p><a href="slurm_ug_cfp.html">Call for Abstracts: Due 30 June 2016</a></p> -->
-<p><a href="slurm_ug_agenda.html">Meeting agenda, registration information, etc.</a></p>
-<p><a href="slurm_ug_agenda.html#hotels">Meeting hotels</a></p>
-
-<br>
-<h2>Previous Meetings</h2>
+Host: Greek Research and Technology Network</p>
 
 <p><b>Slurm User Group Meeting 2015</b><br>
 15-16 September 2015<br>
@@ -44,6 +49,6 @@ Host: Bull</p>
 Paris, France<br>
 Host: CEA</p>
 
-<p style="text-align:center;">Last modified 14 July 2016</p>
+<p style="text-align:center;">Last modified 2 November 2016</p>
 
 <!--#include virtual="footer.txt"-->
