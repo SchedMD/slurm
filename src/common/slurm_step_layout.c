@@ -634,7 +634,6 @@ static int _task_layout_block(slurm_step_layout_t *step_layout, uint16_t *cpus)
 				step_layout->tasks[i]++;
 				task_id++;
 			}
-			info("%d cpus %d %d", i, cpus[i], step_layout->tasks[i]);
 		}
 
 		/* Pass 3: Spread remaining tasks across all nodes */
