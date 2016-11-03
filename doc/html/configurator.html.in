@@ -683,7 +683,7 @@ log goes to syslog, string "%h" in name gets replaced with hostname)
 
 <H2>Job Completion Logging</H2>
 Define the job completion logging mechanism to be used. SlurmDBD and None are
-recommended. The PGSQL plugin is not fully supported. <BR>
+recommended.<BR>
 Select one value for <B>JobCompType</B>:<BR>
 <input type="radio" name="job_comp_type" value="none" checked> <B>None</B>:
 No job completion logging<BR>
