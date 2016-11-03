@@ -27,8 +27,8 @@ The minor type can be any recognizable abbreviation for the type of
 cryptographic mechanism.
 We recommend, for example:</p>
 <ul>
-<li><b>munge</b>&#151;LLNL's Munge system.</li>
-<li><b>openssl</b>&#151;Open SSL.</li>
+<li><b>munge</b> &mdash; LLNL's Munge system.</li>
+<li><b>openssl</b> &mdash; Open SSL.</li>
 </ul></p>
 
 <p><span class="commandline">const char plugin_name[]</span><br>

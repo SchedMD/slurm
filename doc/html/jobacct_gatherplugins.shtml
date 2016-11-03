@@ -22,13 +22,13 @@ The major type must be &quot;jobacct_gather.&quot;
 The minor type can be any suitable name
 for the type of accounting package. We currently use
 <ul>
-<li><b>cgroup</b>&#151;Gathers information from Linux cgroup
+<li><b>cgroup</b> &mdash; Gathers information from Linux cgroup
 infrastructure and adds this information to the standard rusage
 information also gathered for each job. (Experimental, not to be used
   in production.)
-<li><b>linux</b>&#151;Gathers information from Linux /proc table and adds this
+<li><b>linux</b> &mdash; Gathers information from Linux /proc table and adds this
 information to the standard rusage information also gathered for each job.
-<li><b>none</b>&#151;No information gathered.
+<li><b>none</b> &mdash; No information gathered.
 </ul>
 
 <p><span class="commandline">const uint32_t plugin_version</span><br>

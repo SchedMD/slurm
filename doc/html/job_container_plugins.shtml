@@ -22,9 +22,9 @@ The major type must be &quot;job_container.&quot;
 The minor type can be any recognizable abbreviation for the type
 of proctrack. We recommend, for example:</p>
 <ul>
-<li><b>cncu</b>&#151;Designed for use on Cray systems only and interface with
+<li><b>cncu</b> &mdash; Designed for use on Cray systems only and interface with
 Compute Node Clean Up (CNCU) the Cray infrastructure.</li>
-<li><b>none</b>&#151;Designed for all other systems.</li>
+<li><b>none</b> &mdash; Designed for all other systems.</li>
 </ul>
 
 <p><span class="commandline">const char plugin_name[]</span><br>

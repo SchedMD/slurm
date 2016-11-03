@@ -19,8 +19,8 @@ plugin_type[]="<i>node_features/[knl_cray]</i>"</span><br>
 <p style="margin-left:.2in">
 
 <ul>
-<li><b>knl_cray</b>&#151;Use Cray's capmc command to manage an Intel KNL processor.</li>
-<li><b>knl_generic</b>&#151;Use Intel commands to manage KNL processor.</li>
+<li><b>knl_cray</b> &mdash; Use Cray's capmc command to manage an Intel KNL processor.</li>
+<li><b>knl_generic</b> &mdash; Use Intel commands to manage KNL processor.</li>
 </ul>
 
 <p><span class="commandline">const uint32_t plugin_version=SLURM_VERSION_NUMBER</span><br>

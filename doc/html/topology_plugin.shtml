@@ -19,9 +19,9 @@ The major type must be &quot;topology.&quot;
 The minor type specifies the type of topology mechanism.
 We recommend, for example:</p>
 <ul>
-<li><b>3d_torus</b>&#151;Optimize placement for a three dimensional torus.</li>
-<li><b>none</b>&#151;No topology information.</li>
-<li><b>tree</b>&#151;Optimize placement based upon a hierarchy of network
+<li><b>3d_torus</b> &mdash; Optimize placement for a three dimensional torus.</li>
+<li><b>none</b> &mdash; No topology information.</li>
+<li><b>tree</b> &mdash; Optimize placement based upon a hierarchy of network
 switches.</li>
 </ul></p>
 

@@ -18,10 +18,10 @@ recognizable abbreviation for the type of preemption.
 We recommend, for example:</p>
 
 <ul>
-<li><b>none</b>&#151;This plugin prevents any job preemption.</li>
-<li><b>partition_prio</b>&#151;This plugin permit pending jobs from one
+<li><b>none</b> &mdash; This plugin prevents any job preemption.</li>
+<li><b>partition_prio</b> &mdash; This plugin permit pending jobs from one
 partition to preempt jobs from a lower priority partition.</li>
-<li><b>qos</b>&#151;This plugin permits jobs to preempt others based
+<li><b>qos</b> &mdash; This plugin permits jobs to preempt others based
 upon their Quality Of Service values as defined in the Slurm database.</li>
 </ul>
 

@@ -20,9 +20,9 @@ specifications:</p>
 The major type must be &quot;switch.&quot; The minor type can be any recognizable
 abbreviation for the type of switch. We recommend, for example:</p>
 <ul>
-<li><b>none</b>&#151;A plugin that implements the API without providing any actual
+<li><b>none</b> &mdash; A plugin that implements the API without providing any actual
 switch service. This is the case for Ethernet and Myrinet interconnects.</li>
-<li><b>nrt</b>&#151;IBM Network Resource Table API.</li>
+<li><b>nrt</b> &mdash; IBM Network Resource Table API.</li>
 </ul>
 
 <p><span class="commandline">const char plugin_name[]</span><br>

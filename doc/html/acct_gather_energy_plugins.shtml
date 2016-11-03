@@ -23,11 +23,11 @@ The major type must be &quot;acct_gather_energy.&quot;
 The minor type can be any suitable name
 for the type of energy accounting. We currently use
 <ul>
-<li><b>none</b>&#151; No energy consumption data is provided.
-<li><b>ipmi</b>&#151;Gets energy consumption data from the
+<li><b>none</b> &mdash; No energy consumption data is provided.
+<li><b>ipmi</b> &mdash; Gets energy consumption data from the
 BMC (Baseboard Management Controller) using the
 IPMI (Intelligent Platform Management Interface) tool.
-<li><b>rapl</b>&#151;Gets energy consumption data from hardware sensors on each 
+<li><b>rapl</b> &mdash; Gets energy consumption data from hardware sensors on each
 core/socket, using RAPL (Running Average Power Limit) sensors. Note that
 enabling RAPL may require the execution of the command "sudo modprobe msr".
 </ul>

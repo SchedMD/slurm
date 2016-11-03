@@ -3,16 +3,16 @@
 <h1>Platforms</h1>
 <h2>Operating Systems</h2>
 <ul>
-<li><b>FreeBSD</b>&#151;Fully supported.</li>
-<li><b>Linux</b>&#151;Slurm has been thoroughly tested on most popular Linux
+<li><b>FreeBSD</b> &mdash; Fully supported.</li>
+<li><b>Linux</b> &mdash; Slurm has been thoroughly tested on most popular Linux
 distributions using i386, ia64, and x86_64 architectures.</li>
-<li><b>NetBSD</b>&#151;Fully supported.</li>
-<li><b>OS X</b>&#151;Slurm has run OS X in the past, but the current OS X linker
+<li><b>NetBSD</b> &mdash; Fully supported.</li>
+<li><b>OS X</b> &mdash; Slurm has run OS X in the past, but the current OS X linker
 does not support Slurm plugins. (OS X dynamically linked objects can be called by
 the main program. They may not call functions in the main program or other
 dynamically linked objects, which are features required by Slurm.)</li>
-<li><b>Solaris</b>&#151;OpenSolaris is fully supported.</li>
-<li><b>Other</b>&#151;Slurm ports to other systems will be gratefully accepted.</li>
+<li><b>Solaris</b> &mdash; OpenSolaris is fully supported.</li>
+<li><b>Other</b> &mdash; Slurm ports to other systems will be gratefully accepted.</li>
 </ul>
 
 <p style="text-align:center;">Last modified 15 April 2015</p>

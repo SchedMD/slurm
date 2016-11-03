@@ -17,13 +17,13 @@ plugin_type[]="<i>launch/[aprun|poe|runjob|slurm</i>"</span><br>
 <p style="margin-left:.2in">
 
 <ul>
-<li><b>aprun</b>&#151;Use Cray's aprun command to launch tasks - used on Cray
+<li><b>aprun</b> &mdash; Use Cray's aprun command to launch tasks - used on Cray
 systems with ALPS installed.</li>
-<li><b>poe</b>&#151;Use IBM's poe command to launch tasks - used on systems
+<li><b>poe</b> &mdash; Use IBM's poe command to launch tasks - used on systems
   IBM's parallel environment (PE) installed.</li>
-<li><b>runjob</b>&#151;Use IBM's runjob command to launch tasks - used on
+<li><b>runjob</b> &mdash; Use IBM's runjob command to launch tasks - used on
   BlueGene/Q systems.</li>
-<li><b>slurm</b>&#151;Use Slurm's default launching infrastructure</li>
+<li><b>slurm</b> &mdash; Use Slurm's default launching infrastructure</li>
 </ul>
 
 <p><span class="commandline">const uint32_t plugin_version</span><br>

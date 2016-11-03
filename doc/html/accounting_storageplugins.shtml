@@ -22,12 +22,12 @@ The major type must be &quot;accounting_storage.&quot;
 The minor type can be any suitable name
 for the type of accounting package. We currently use
 <ul>
-<li><b>filetxt</b>&#151;Information written to a text file.
-<li><b>mysql</b>&#151; Store information in a mysql database (using
+<li><b>filetxt</b> &mdash; Information written to a text file.
+<li><b>mysql</b> &mdash; Store information in a mysql database (using
   the InnoDB storage engine).
-<li><b>slurmdbd</b>&#151; Send information to the Slurm Database
+<li><b>slurmdbd</b> &mdash; Send information to the Slurm Database
   Daemon (SlurmDBD).  Extra configuration is needed and described <a href="accounting.html">here</a>.
-<li><b>none</b>&#151; Information is not stored anywhere.
+<li><b>none</b> &mdash; Information is not stored anywhere.
 </ul>
 
 <p><span class="commandline">const uint32_t plugin_version</span><br>

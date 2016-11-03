@@ -24,15 +24,15 @@ specifications:</p>
 The major type must be &quot;sched.&quot; The minor type can be any recognizable
 abbreviation for the type of scheduler. We recommend, for example:</p>
 <ul>
-<li><b>builtin</b>&#151;A plugin that implements the API without providing any actual
+<li><b>builtin</b> &mdash; A plugin that implements the API without providing any actual
 scheduling services. This is the default behavior and implements first-in-first-out scheduling.</li>
-<li><b>backfill</b>&#151;Raise the priority of jobs if doing so results in their starting earlier
+<li><b>backfill</b> &mdash; Raise the priority of jobs if doing so results in their starting earlier
 without any delay in the expected initiation time of any higher priority job.</li>
-<li><b>wiki</b>&#151;Uses
+<li><b>wiki</b> &mdash; Uses
 <a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
 The Maui Scheduler</a> (Wiki version)
 as an external entity to control Slurm job scheduling.</li>
-<li><b>wiki2</b>&#151;Uses
+<li><b>wiki2</b> &mdash; Uses
 <a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
 Moab Cluster Suite</a> as an external entity to control Slurm job scheduling.
 Note that wiki2 is an expanded version of the wiki plugin with additional
