@@ -14,10 +14,10 @@ specifications:</p>
 The major type must be &quot;jobcomp.&quot; The minor type can be any recognizable
 abbreviation for the type of scheduler. We recommend, for example:</p>
 <ul>
-<li><b>none</b>&#151;No job logging.</li>
-<li><b>filetxt</b>&#151;Log job information to a text file.</li>
-<li><b>mysql</b>&#151;Job completion is written to a mysql database.</li>
-<li><b>script</b>&#151;Execute a script passing in job information in environment variables.</li>
+<li><b>none</b> &mdash; No job logging.</li>
+<li><b>filetxt</b> &mdash; Log job information to a text file.</li>
+<li><b>mysql</b> &mdash; Job completion is written to a mysql database.</li>
+<li><b>script</b> &mdash; Execute a script passing in job information in environment variables.</li>
 </ul>
 
 <p><span class="commandline">const char plugin_name[]</span><br>

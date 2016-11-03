@@ -22,18 +22,18 @@ The major type must be &quot;job_submit.&quot;
 The minor type can be any suitable name for the type of job submission package.
 We include samples in the Slurm distribution for
 <ul>
-<li><b>all_partitions</b>&#151;Set default partition to all partitions on
+<li><b>all_partitions</b> &mdash; Set default partition to all partitions on
 the cluster.</li>
-<li><b>defaults</b>&#151;Set default values for job submission or modify
+<li><b>defaults</b> &mdash; Set default values for job submission or modify
 requests.</li>
-<li><b>logging</b>&#151;Log select job submission and modification
+<li><b>logging</b> &mdash; Log select job submission and modification
 parameters.</li>
-<li><b>lua</b>&#151;Interface to <a href="http://www.lua.org">Lua</a> scripts
+<li><b>lua</b> &mdash; Interface to <a href="http://www.lua.org">Lua</a> scripts
 implementing these functions (actually a slight variation of them). Sample Lua
 scripts can be found with the Slurm distribution in the directory
 <i>contribs/lua</i>. The default installation location of the Lua scripts is
 the same location as the Slurm configuration file, <i>slurm.conf</i>.</li>
-<li><b>partition</b>&#151;Sets a job's default partition based upon job
+<li><b>partition</b> &mdash; Sets a job's default partition based upon job
 submission parameters and available partitions.</li>
 </ul>
 

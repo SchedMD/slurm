@@ -23,8 +23,8 @@ The major type must be &quot;rout&quot;
 The minor type specifies the type of route mechanism.
 </p>
 <ul>
-<li><b>default</b>&#151;No routing information.</li>
-<li><b>topology</b>&#151;Route messages using topology.conf information.</li>
+<li><b>default</b> &mdash; No routing information.</li>
+<li><b>topology</b> &mdash; Route messages using topology.conf information.</li>
 </ul></p>
 
 <p><span class="commandline">const char plugin_name[]</span><br>

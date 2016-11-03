@@ -23,8 +23,8 @@ The minor type can be any suitable name for the type of core specialization
 package.
 The following core specialization plugins are included in the Slurm distribution
 <ul>
-<li><b>cray</b>&#151;Use Cray APIs to enforce core specialization.</li>
-<li><b>none</b>&#151;Can be configured to log calls to its functions, but
+<li><b>cray</b> &mdash; Use Cray APIs to enforce core specialization.</li>
+<li><b>none</b> &mdash; Can be configured to log calls to its functions, but
 otherwise does nothing.</li>
 </ul>
 <p>Slurm can be configured to use multiple core specialization plugins if desired.</p>

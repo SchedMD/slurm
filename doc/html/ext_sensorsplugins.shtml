@@ -23,8 +23,8 @@ The major type must be &quot;ext_sensors.&quot;
 The minor type can be any suitable name
 for the type of external sensors. We currently use
 <ul>
-<li><b>none</b>&#151; No external sensors data is collected.
-<li><b>rrd</b>&#151;Gets external sensors data from the
+<li><b>none</b> &mdash; No external sensors data is collected.
+<li><b>rrd</b> &mdash; Gets external sensors data from the
 RRD database.
 </ul>
 

@@ -18,9 +18,9 @@ recognizable abbreviation for the type of priority.
 We recommend, for example:</p>
 
 <ul>
-<li><b>basic</b>&#151;A plugin that implements the API and provides basic FIFO
+<li><b>basic</b> &mdash; A plugin that implements the API and provides basic FIFO
 job priority.</li>
-<li><b>multifactor</b>&#151;The multi-factor job priority plugin.</li>
+<li><b>multifactor</b> &mdash; The multi-factor job priority plugin.</li>
 </ul>
 
 <p><span class="commandline">const char plugin_name[]</span><br>

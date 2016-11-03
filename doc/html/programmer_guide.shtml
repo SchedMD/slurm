@@ -60,15 +60,15 @@ The build process is described in the README file.
 <p>Copyright and disclaimer information are in the files COPYING and DISCLAIMER.
 All of the top-level subdirectories are described below.</p>
 
-<p style="margin-left:.2in"><b>auxdir</b>&#151;Used for building Slurm.<br>
-<b>contribs</b>&#151;Various contributed tools.<br>
-<b>doc</b>&#151;Documentation including man pages. <br>
-<b>etc</b>&#151;Sample configuration files.<br>
-<b>slurm</b>&#151;Header files for API use. These files must be installed. Placing
+<p style="margin-left:.2in"><b>auxdir</b> &mdash; Used for building Slurm.<br>
+<b>contribs</b> &mdash; Various contributed tools.<br>
+<b>doc</b> &mdash; Documentation including man pages. <br>
+<b>etc</b> &mdash; Sample configuration files.<br>
+<b>slurm</b> &mdash; Header files for API use. These files must be installed. Placing
 these header files in this location makes for better code portability.<br>
-<b>src</b>&#151;Contains all source code and header files not in the "slurm" subdirectory
+<b>src</b> &mdash; Contains all source code and header files not in the "slurm" subdirectory
 described above.<br>
-<b>testsuite</b>&#151;DejaGnu and Expect are used for testing all of its files
+<b>testsuite</b> &mdash; DejaGnu and Expect are used for testing all of its files
 are here.</p>
 
 <p class="footer"><a href="#top">top</a></p>
@@ -78,9 +78,9 @@ are here.</p>
 Two directories are of particular interest:</p>
 
 <p style="margin-left:.2in">
-<b>doc/man</b>&#151; contains the man pages for the APIs,
+<b>doc/man</b> &mdash; contains the man pages for the APIs,
 configuration file, commands, and daemons.<br>
-<b>doc/html</b>&#151; contains the web pages.</p>
+<b>doc/html</b> &mdash; contains the web pages.</p>
 
 <h2>Source Code</h2>
 
@@ -89,14 +89,14 @@ The details of each directory's contents are proved below. The directories are
 as follows: </p>
 
 <p style="margin-left:.2in">
-<b>api</b>&#151;Application Program Interfaces into
+<b>api</b> &mdash; Application Program Interfaces into
 the Slurm code. Used to send and get Slurm information from the central manager.
 These are the functions user applications might utilize.<br>
-<b>common</b>&#151;General purpose functions for widespread use throughout
+<b>common</b> &mdash; General purpose functions for widespread use throughout
 Slurm.<br>
-<b>database</b>&#151;Various database files that support the accounting
+<b>database</b> &mdash; Various database files that support the accounting
  storage plugin.<br>
-<b>plugins</b>&#151;Plugin functions for various infrastructures or optional
+<b>plugins</b> &mdash; Plugin functions for various infrastructures or optional
 behavior. A separate subdirectory is used for each plugin class:<br>
 <ul>
 <li><b>accounting_storage</b> for specifying the type of storage for accounting,<br>
@@ -117,39 +117,39 @@ including fair-share,<br>
 topology.<br>
 </ul>
 <p style="margin-left:.2in">
-<b>sacct</b>&#151;User command to view accounting information about jobs.<br>
-<b>sacctmgr</b>&#151;User and administrator tool to manage accounting.<br>
-<b>salloc</b>&#151;User command to allocate resources for a job.<br>
-<b>sattach</b>&#151;User command to attach standard input, output and error
+<b>sacct</b> &mdash; User command to view accounting information about jobs.<br>
+<b>sacctmgr</b> &mdash; User and administrator tool to manage accounting.<br>
+<b>salloc</b> &mdash; User command to allocate resources for a job.<br>
+<b>sattach</b> &mdash; User command to attach standard input, output and error
 files to a running job or job step.<br>
-<b>sbatch</b>&#151;User command to submit a batch job (script for later execution).<br>
-<b>sbcast</b>&#151;User command to broadcast a file to all nodes associated
+<b>sbatch</b> &mdash; User command to submit a batch job (script for later execution).<br>
+<b>sbcast</b> &mdash; User command to broadcast a file to all nodes associated
 with an existing Slurm job.<br>
-<b>scancel</b>&#151;User command to cancel (or signal) a job or job step.<br>
-<b>scontrol</b>&#151;Administrator tool to manage Slurm.<br>
-<b>sinfo</b>&#151;User command to get information on Slurm nodes and partitions.<br>
-<b>slurmctld</b>&#151;Slurm central manager daemon code.<br>
-<b>slurmd</b>&#151;Slurm daemon code to manage the compute server nodes including
+<b>scancel</b> &mdash; User command to cancel (or signal) a job or job step.<br>
+<b>scontrol</b> &mdash; Administrator tool to manage Slurm.<br>
+<b>sinfo</b> &mdash; User command to get information on Slurm nodes and partitions.<br>
+<b>slurmctld</b> &mdash; Slurm central manager daemon code.<br>
+<b>slurmd</b> &mdash; Slurm daemon code to manage the compute server nodes including
 the execution of user applications.<br>
-<b>slurmdbd</b>&#151;Slurm database daemon managing access to the accounting
+<b>slurmdbd</b> &mdash; Slurm database daemon managing access to the accounting
 storage database.<br>
-<b>smap</b>&#151;User command to view layout of nodes, partitions, and jobs.
+<b>smap</b> &mdash; User command to view layout of nodes, partitions, and jobs.
 This is particularly valuable on systems like Bluegene, which has a three
 dimension torus topography.<br>
-<b>sprio</b>&#151;User command to see the breakdown of a job's priority
+<b>sprio</b> &mdash; User command to see the breakdown of a job's priority
 calculation when the Multifactor Job Priority plugin is installed.<br>
-<b>squeue</b>&#151;User command to get information on Slurm jobs and job steps.<br>
-<b>sreport</b>&#151;User command to view various reports about past
+<b>squeue</b> &mdash; User command to get information on Slurm jobs and job steps.<br>
+<b>sreport</b> &mdash; User command to view various reports about past
 usage across the enterprise.<br>
-<b>srun</b>&#151;User command to submit a job, get an allocation, and/or
+<b>srun</b> &mdash; User command to submit a job, get an allocation, and/or
 initiation a parallel job step.<br>
-<b>srun_cr</b>&#151;Checkpoint/Restart wrapper for srun.<br>
-<b>sshare</b>&#151;User command to view shares and usage when the Multifactor
+<b>srun_cr</b> &mdash; Checkpoint/Restart wrapper for srun.<br>
+<b>sshare</b> &mdash; User command to view shares and usage when the Multifactor
 Job Priority plugin is installed.<br>
-<b>sstat</b>&#151;User command to view detailed statistics about running
+<b>sstat</b> &mdash; User command to view detailed statistics about running
 jobs when a Job Accounting Gather plugin is installed.<br>
-<b>strigger</b>&#151;User and administrator tool to manage event triggers.<br>
-<b>sview</b>&#151;User command to view and update node, partition, and
+<b>strigger</b> &mdash; User and administrator tool to manage event triggers.<br>
+<b>sview</b> &mdash; User command to view and update node, partition, and
 job state information.<br>
 
 <p class="footer"><a href="#top">top</a></p>

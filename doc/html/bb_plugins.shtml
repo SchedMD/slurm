@@ -24,8 +24,8 @@ The minor type can be any suitable name for the type of burst buffer
 package.
 The following burst buffer plugins are included in the Slurm distribution
 <ul>
-<li><b>cray</b>&#151;Use Cray APIs to provide burst buffer.</li>
-<li><b>generic</b>&#151;Use generic burst buffer plugin.</li>
+<li><b>cray</b> &mdash; Use Cray APIs to provide burst buffer.</li>
+<li><b>generic</b> &mdash; Use generic burst buffer plugin.</li>
 </ul>
 
 <p><span class="commandline">const uint32_t plugin_version</span><br>

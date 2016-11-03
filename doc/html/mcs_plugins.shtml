@@ -23,9 +23,9 @@ The major type must be &quot;mcs.&quot;
 The minor type can be any suitable name
 for the MCS. We recommend, for example :
 <ul>
-<li><b>none</b>&#151; Default. No category associated to jobs.
-<li><b>user</b>&#151; Use user name as the category to associate jobs to.
-<li><b>group</b>&#151; Use a user group as the category to associate jobs to.
+<li><b>none</b> &mdash; Default. No category associated to jobs.
+<li><b>user</b> &mdash; Use user name as the category to associate jobs to.
+<li><b>group</b> &mdash; Use a user group as the category to associate jobs to.
 </ul>
 
 <p><span class="commandline">const uint32_t plugin_version</span><br>

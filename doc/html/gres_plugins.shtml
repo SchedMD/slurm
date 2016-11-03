@@ -36,8 +36,8 @@ in other Slurm functions used by the plugin.</p>
 
 <p>We include samples in the Slurm distribution for
 <ul>
-<li><b>gpu</b>&#151;Manage GPUs (Graphics Processing Units).
-<li><b>nic</b>&#151;Manage NICs (Network Interface Cards, this plugin does
+<li><b>gpu</b> &mdash; Manage GPUs (Graphics Processing Units).
+<li><b>nic</b> &mdash; Manage NICs (Network Interface Cards, this plugin does
 nothing today).
 </ul>
 

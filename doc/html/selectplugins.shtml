@@ -16,20 +16,20 @@ specifications:</p>
 The major type must be &quot;select.&quot; The minor type can be any recognizable
 abbreviation for the type of node selection algorithm. We recommend, for example:</p>
 <ul>
-<li><b>bluegene</b>&#151;<a href="http://www.research.ibm.com/bluegene/">IBM Blue Gene</a>
+<li><b>bluegene</b> &mdash;<a href="http://www.research.ibm.com/bluegene/">IBM Blue Gene</a>
 node selector. Note that this plugin not only selects the nodes for a job, but performs
 some initialization and termination functions for the job. Use this plugin for
 BlueGene/L, BlueGene/P and BlueGene/Q systems.</li>
-<li><b>cons_res</b>&#151;A plugin that can allocate individual processors,
+<li><b>cons_res</b> &mdash; A plugin that can allocate individual processors,
 memory, etc. within nodes. This plugin is recommended for systems with
 many non-parallel programs sharing nodes. For more information see
 <a href=cons_res.html>Consumable Resources in Slurm</a>.</li>
-<li><b>cray</b>&#151;Cray XE and XT system node selector. Note that this
+<li><b>cray</b> &mdash; Cray XE and XT system node selector. Note that this
 plugin not only selects the nodes for a job, but performs some initialization
 and termination functions for the job. This plugin also serves as a wrapper
 for the <i>select/linear</i> plugin which enforces various limits and
 provides support for resource selection optimized for the system topology.</li>
-<li><b>linear</b>&#151;A plugin that selects nodes assuming a one-dimensional
+<li><b>linear</b> &mdash; A plugin that selects nodes assuming a one-dimensional
 array of nodes. The nodes are selected so as to minimize the number of consecutive
 sets of nodes utilizing a best-fit algorithm. While supporting shared nodes,
 this plugin does not allocate individual processors, but can allocate memory to jobs.

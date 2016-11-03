@@ -16,13 +16,13 @@ specifications:</p>
 The major type must be &quot;task.&quot; The minor type can be any recognizable
 abbreviation for the type of task management. We recommend, for example:</p>
 <ul>
-<li><b>affinity</b>&#151;A plugin that implements task binding to processors.
+<li><b>affinity</b> &mdash; A plugin that implements task binding to processors.
 The actual mechanism used to task binding is dependent upon the available
 infrastructure as determined by the "configure" program when Slurm is built
 and the value of the <b>TaskPluginParam</b> as defined in the <b>slurm.conf</b>
 (Slurm configuration file).</li>
-<li><b>cgroup</b>&#151;Use Linux cgroups for binding tasks to resources.</li>
-<li><b>none</b>&#151;A plugin that implements the API without providing any
+<li><b>cgroup</b> &mdash; Use Linux cgroups for binding tasks to resources.</li>
+<li><b>none</b> &mdash; A plugin that implements the API without providing any
 services. This is the default behavior and provides no task binding.</li>
 </ul>
 

@@ -62,8 +62,8 @@ The major type must be &quot;acct_gather_profile.&quot;
 The minor type can be any suitable name
 for the type of profile accounting. We currently use
 <ul>
-<li><b>none</b>&#151; No profile data is gathered.
-<li><b>hdf5</b>&#151;Gets profile data about energy use, i/o sources
+<li><b>none</b> &mdash; No profile data is gathered.
+<li><b>hdf5</b> &mdash; Gets profile data about energy use, i/o sources
 (Lustre, network) and task data such as local disk i/o,  CPU and memory usage.
 </ul>
 
