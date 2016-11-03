@@ -81,8 +81,6 @@ may be found in the <a href="http://slurm.schedmd.com/archive/">archive</a>.
 </ul>
 <li>External Schedulers</li>
 <ul>
-<li><a href="maui.html">Maui Scheduler Integration Guide</a></li>
-<li><a href="moab.html">Moab Cluster Suite Integration Guide</a></li>
 <li><a href="http://docs.hp.com/en/5991-4847/ch09s02.html">Submitting Jobs through LSF</a></li>
 </ul>
 <li>Specific Systems</li>
