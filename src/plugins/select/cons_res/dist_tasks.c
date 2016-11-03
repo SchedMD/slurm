@@ -985,11 +985,24 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type,
 
 	if ((job_ptr->job_resrcs->node_req == NODE_CR_RESERVED) ||
 	    (job_ptr->details->whole_node == 1)) {
+		int n, i;
+		job_resources_t *job_res = job_ptr->job_resrcs;
 		/* The job has been allocated an EXCLUSIVE set of nodes,
 		 * so it gets all of the bits in the core_bitmap and
 		 * all of the available CPUs in the cpus array. */
-		int size = bit_size(job_ptr->job_resrcs->core_bitmap);
-		bit_nset(job_ptr->job_resrcs->core_bitmap, 0, size-1);
+		int size = bit_size(job_res->core_bitmap);
+		bit_nset(job_res->core_bitmap, 0, size-1);
+
+		/* Up to this point we might not have the job_res pointer have
+		 * the right cpu count.  It is most likely a core count.  We
+		 * will fix that so we can layout tasks correctly.
+		 */
+		size = bit_size(job_res->node_bitmap);
+		for (i = 0, n = bit_ffs(job_res->node_bitmap); n < size; n++) {
+			if (bit_test(job_res->node_bitmap, n) == 0)
+				continue;
+			job_res->cpus[i++] = select_node_record[n].cpus;
+		}
 		return SLURM_SUCCESS;
 	}
 
