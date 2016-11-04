@@ -12,6 +12,10 @@ documents those changes that are of interest to users and administrators.
  -- Fix regression in 16.05.6 where if you request multiple cpus per task (-c2)
     and request --ntasks-per-core=1 and only 1 task on the node
     the slurmd would abort on an infinite loop fatal.
+ -- cray/busrt_buffer - Internally track both allocated and unusable space.
+    The reported UsedSpace in a pool is now the allocated space (previously was
+    unusable space). Base available space on whichever value leaves least free
+    space.
 
 * Changes in Slurm 16.05.6
 ==========================

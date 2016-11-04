@@ -4721,11 +4721,12 @@ void slurm_init_trigger_msg(trigger_info_t *trigger_info_msg);
 
 /* Information about alternate pools or other burst buffer resources */
 typedef struct {
-	uint64_t total_space;	/* Total size of available resources, unused
-				 * by burst_buffer_resv_t */
 	uint64_t granularity;	/* Granularity of resource allocation size */
 	char *name;		/* Resource (pool) name */
-	uint64_t used_space;	/* Size of used resources */
+	uint64_t total_space;	/* Total size of available resources, unused
+				 * by burst_buffer_resv_t */
+	uint64_t used_space;	/* Allocated space, in bytes */
+	uint64_t unfree_space;	/* used plus drained space, units are bytes */
 } burst_buffer_pool_t;
 
 typedef struct {

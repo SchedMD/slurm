@@ -1357,25 +1357,27 @@ extern void bb_job_log(bb_state_t *state_ptr, bb_job_t *bb_job)
  * bb_size IN - Size of burst buffer
  * pool IN - Pool containing the burst buffer
  * state_ptr IN - Global state to update
- * update_pool_used IN - If true, update the pool's used space */
+ * update_pool_unfree IN - If true, update the pool's unfree space */
 extern void bb_limit_add(uint32_t user_id, uint64_t bb_size, char *pool,
-			 bb_state_t *state_ptr, bool update_pool_used)
+			 bb_state_t *state_ptr, bool update_pool_unfree)
 {
 	burst_buffer_pool_t *pool_ptr;
 	bb_user_t *bb_user;
 	int i;
 
-	/* Update the pool's used_space as necessary */
-	if (!update_pool_used) {
-		/* Buffer's space is already accounted for in pool used_space */
-	} else if (!pool || !xstrcmp(pool, state_ptr->bb_config.default_pool)) {
+	/* Update the pool's used_space, plus unfree_space if needed */
+	if (!pool || !xstrcmp(pool, state_ptr->bb_config.default_pool)) {
 		state_ptr->used_space += bb_size;
+		if (update_pool_unfree)
+			state_ptr->unfree_space += bb_size;
 	} else {
 		pool_ptr = state_ptr->bb_config.pool_ptr;
 		for (i = 0; i < state_ptr->bb_config.pool_cnt; i++, pool_ptr++){
 			if (xstrcmp(pool, pool_ptr->name))
 				continue;
 			pool_ptr->used_space += bb_size;
+			if (update_pool_unfree)
+				pool_ptr->unfree_space += bb_size;
 			break;
 		}
 		if (i >= state_ptr->bb_config.pool_cnt)
@@ -1404,6 +1406,12 @@ extern void bb_limit_rem(uint32_t user_id, uint64_t bb_size, char *pool,
 			error("%s: used_space underflow", __func__);
 			state_ptr->used_space = 0;
 		}
+		if (state_ptr->unfree_space >= bb_size) {
+			state_ptr->unfree_space -= bb_size;
+		} else {
+			error("%s: unfree_space underflow", __func__);
+			state_ptr->unfree_space = 0;
+		}
 	} else {
 		pool_ptr = state_ptr->bb_config.pool_ptr;
 		for (i = 0; i < state_ptr->bb_config.pool_cnt; i++, pool_ptr++){
@@ -1415,6 +1423,13 @@ extern void bb_limit_rem(uint32_t user_id, uint64_t bb_size, char *pool,
 				error("%s: used_space underflow for pool %s",
 				      __func__, pool);
 				pool_ptr->used_space = 0;
+			}
+			if (pool_ptr->unfree_space >= bb_size) {
+				pool_ptr->unfree_space -= bb_size;
+			} else {
+				error("%s: unfree_space underflow for pool %s",
+				      __func__, pool);
+				pool_ptr->unfree_space = 0;
 			}
 			break;
 		}

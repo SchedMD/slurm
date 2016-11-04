@@ -201,7 +201,9 @@ typedef struct bb_state {
 	uint64_t	total_space;	/* units are bytes */
 	int		tres_id;	/* TRES ID, for limits */
 	int		tres_pos;	/* TRES index, for limits */
-	uint64_t	used_space;	/* units are bytes */
+	uint64_t	used_space;	/* Allocated space, in bytes */
+	uint64_t	unfree_space;	/* Includes alloc_space (above) plus
+					 * drained, units are bytes */
 } bb_state_t;
 
 /* Allocate burst buffer hash tables */
@@ -338,9 +340,9 @@ extern char *bb_run_script(char *script_type, char *script_path,
  * bb_size IN - Size of burst buffer
  * pool IN - Pool containing the burst buffer
  * state_ptr IN - Global state to update
- * update_pool_used IN - If true, update the pool's used space */
+ * update_pool_unfree IN - If true, update the pool's unfree space */
 extern void bb_limit_add(uint32_t user_id, uint64_t bb_size, char *pool,
-			 bb_state_t *state_ptr, bool update_pool_used);
+			 bb_state_t *state_ptr, bool update_pool_unfree);
 
 /* Release claim against resource limit for a user */
 extern void bb_limit_rem(uint32_t user_id, uint64_t bb_size, char *pool,
