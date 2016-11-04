@@ -20,11 +20,6 @@ Linux kernel coding style</a>. <i>(Some components of Slurm have been taken from
 various sources. Some of these components do not conform to the Linux kernel
 coding style. However, new code written for Slurm should follow these standards.)</i>
 
-<p>Many of these modules have been built and tested on a variety of Unix computers
-including Red Hat Linux, Sun's Solaris, and Compaq's Tru-64. The only
-module at this time that is operating system dependent is <span class="commandline">src/slurmd/read_proc.c</span>.
-We will be porting and testing on additional platforms in future releases.
-
 <h2>Plugins</h2>
 
 <p>To make the use of different infrastructures possible, Slurm uses a general
@@ -275,6 +270,6 @@ host1> slurmd -N foo21
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 12 February 2014</p>
+<p style="text-align:center;">Last modified 2 November 2016</p>
 
 <!--#include virtual="footer.txt"-->
