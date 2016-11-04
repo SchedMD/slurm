@@ -94,20 +94,7 @@ extern slurmd_conf_t *conf;
 extern int
 get_procs(uint16_t *procs)
 {
-#ifdef LPAR_INFO_FORMAT2
-	/* AIX 5.3 only */
-	lpar_info_format2_t info;
-
-	*procs = 1;
-	if (lpar_get_info(LPAR_INFO_FORMAT2, &info, sizeof(info)) != 0) {
-		error("lpar_get_info() failed");
-		return EINVAL;
-	}
-
-	*procs = (uint16_t) info.online_vcpus;
-#else /* !LPAR_INFO_FORMAT2 */
-
-#  ifdef _SC_NPROCESSORS_ONLN
+#ifdef _SC_NPROCESSORS_ONLN
 	int my_proc_tally;
 
 	*procs = 1;
@@ -118,8 +105,7 @@ get_procs(uint16_t *procs)
 	}
 
 	*procs = (uint16_t) my_proc_tally;
-#  else
-#    ifdef HAVE_SYSCTLBYNAME
+#elif define(HAVE_SYSCTLBYNAME)
 	int ncpu;
 	size_t len = sizeof(ncpu);
 
@@ -129,11 +115,9 @@ get_procs(uint16_t *procs)
 		return EINVAL;
 	}
 	*procs = (uint16_t) ncpu;
-#    else /* !HAVE_SYSCTLBYNAME */
+#else
 	*procs = 1;
-#    endif /* HAVE_SYSCTLBYNAME */
-#  endif /* _SC_NPROCESSORS_ONLN */
-#endif /* LPAR_INFO_FORMAT2 */
+#endif
 
 	return 0;
 }
