@@ -616,9 +616,7 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
 	/* gather data */
 	num_jobs = 0;
 	for (i = 0; i < p_ptr->num_rows; i++) {
-		if (p_ptr->row[i].num_jobs) {
-			num_jobs += p_ptr->row[i].num_jobs;
-		}
+		num_jobs += p_ptr->row[i].num_jobs;
 	}
 	if (num_jobs == 0) {
 		size = bit_size(p_ptr->row[0].row_bitmap);
@@ -1263,7 +1261,7 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 						p_ptr->row[i].job_list[j+1];
 				}
 				p_ptr->row[i].job_list[j] = NULL;
-				p_ptr->row[i].num_jobs -= 1;
+				p_ptr->row[i].num_jobs--;
 				/* found job - we're done */
 				n = 1;
 				i = p_ptr->num_rows;
