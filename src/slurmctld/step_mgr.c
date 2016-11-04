@@ -2628,9 +2628,6 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	struct job_record *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	slurm_step_layout_req_t step_layout_req;
-	uint16_t ntasks_per_core = 0;
-	uint16_t ntasks_per_socket = 0;
-	uint32_t cpus_task = 0;
 
 #ifndef HAVE_BGQ
 	uint32_t gres_cpus;
@@ -2641,6 +2638,9 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	int first_bit, last_bit;
 	uint32_t cpu_count_reps[node_count];
 	uint32_t cpus_task_reps[node_count];
+	uint32_t cpus_task = 0;
+	uint16_t ntasks_per_core = 0;
+	uint16_t ntasks_per_socket = 0;
 #else
 	uint32_t cpu_count_reps[1];
 	uint32_t cpus_task_reps[1];
