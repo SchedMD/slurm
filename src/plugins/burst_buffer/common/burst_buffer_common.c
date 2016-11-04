@@ -947,6 +947,7 @@ extern bb_alloc_t *bb_alloc_name_rec(bb_state_t *state_ptr, char *name,
 	xassert((bb_alloc->magic = BB_ALLOC_MAGIC));	/* Sets value */
 	bb_alloc->next = state_ptr->bb_ahash[i];
 	state_ptr->bb_ahash[i] = bb_alloc;
+	bb_alloc->burst_buffer_ptr->array_task_id = NO_VAL;
 	bb_alloc->name = xstrdup(name);
 	bb_alloc->state = BB_STATE_ALLOCATED;
 	bb_alloc->state_time = now;

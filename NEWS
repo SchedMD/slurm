@@ -16,6 +16,7 @@ documents those changes that are of interest to users and administrators.
     The reported UsedSpace in a pool is now the allocated space (previously was
     unusable space). Base available space on whichever value leaves least free
     space.
+ -- cray/burst_buffer - Preserve job ID and don't translate to job array ID.
 
 * Changes in Slurm 16.05.6
 ==========================
