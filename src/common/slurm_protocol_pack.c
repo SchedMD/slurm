@@ -11885,7 +11885,102 @@ static int _unpack_burst_buffer_info_msg(
 	safe_unpack32(&bb_msg_ptr->record_count, buffer);
 	bb_msg_ptr->burst_buffer_array = xmalloc(sizeof(burst_buffer_info_t) *
 						 bb_msg_ptr->record_count);
-	if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
+		for (i = 0, bb_info_ptr = bb_msg_ptr->burst_buffer_array;
+		     i < bb_msg_ptr->record_count; i++, bb_info_ptr++) {
+			safe_unpackstr_xmalloc(&bb_info_ptr->name, &uint32_tmp,
+					       buffer);
+			safe_unpackstr_xmalloc(&bb_info_ptr->allow_users,
+					       &uint32_tmp, buffer);
+			safe_unpackstr_xmalloc(&bb_info_ptr->create_buffer,
+					       &uint32_tmp, buffer);
+			safe_unpackstr_xmalloc(&bb_info_ptr->default_pool,
+					       &uint32_tmp, buffer);
+			safe_unpackstr_xmalloc(&bb_info_ptr->deny_users,
+					       &uint32_tmp, buffer);
+			safe_unpackstr_xmalloc(&bb_info_ptr->destroy_buffer,
+					       &uint32_tmp, buffer);
+			safe_unpack32(&bb_info_ptr->flags, buffer);
+			safe_unpackstr_xmalloc(&bb_info_ptr->get_sys_state,
+					       &uint32_tmp, buffer);
+			safe_unpack64(&bb_info_ptr->granularity, buffer);
+			safe_unpack32(&bb_info_ptr->pool_cnt, buffer);
+			bb_info_ptr->pool_ptr = xmalloc(bb_info_ptr->pool_cnt *
+						sizeof(burst_buffer_pool_t));
+			for (j = 0; j < bb_info_ptr->pool_cnt; j++) {
+				safe_unpackstr_xmalloc(
+					&bb_info_ptr->pool_ptr[j].name,
+					&uint32_tmp, buffer);
+				safe_unpack64(
+					&bb_info_ptr->pool_ptr[j].total_space,
+					     buffer);
+				safe_unpack64(
+					&bb_info_ptr->pool_ptr[j].granularity,
+					     buffer);
+				safe_unpack64(
+					&bb_info_ptr->pool_ptr[j].unfree_space,
+					buffer);
+				safe_unpack64(
+					&bb_info_ptr->pool_ptr[j].used_space,
+					buffer);
+			}
+			safe_unpack32(&bb_info_ptr->other_timeout, buffer);
+			safe_unpackstr_xmalloc(&bb_info_ptr->start_stage_in,
+					       &uint32_tmp, buffer);
+			safe_unpackstr_xmalloc(&bb_info_ptr->start_stage_out,
+					       &uint32_tmp, buffer);
+			safe_unpackstr_xmalloc(&bb_info_ptr->stop_stage_in,
+					       &uint32_tmp, buffer);
+			safe_unpackstr_xmalloc(&bb_info_ptr->stop_stage_out,
+					       &uint32_tmp, buffer);
+			safe_unpack32(&bb_info_ptr->stage_in_timeout, buffer);
+			safe_unpack32(&bb_info_ptr->stage_out_timeout, buffer);
+			safe_unpack64(&bb_info_ptr->total_space, buffer);
+			safe_unpack64(&bb_info_ptr->unfree_space, buffer);
+			safe_unpack64(&bb_info_ptr->used_space, buffer);
+			safe_unpack32(&bb_info_ptr->validate_timeout, buffer);
+
+			safe_unpack32(&bb_info_ptr->buffer_count, buffer);
+			bb_info_ptr->burst_buffer_resv_ptr =
+				xmalloc(sizeof(burst_buffer_resv_t) *
+					bb_info_ptr->buffer_count);
+			for (j = 0,
+			     bb_resv_ptr = bb_info_ptr->burst_buffer_resv_ptr;
+			     j < bb_info_ptr->buffer_count; j++, bb_resv_ptr++){
+				safe_unpackstr_xmalloc(&bb_resv_ptr->account,
+						       &uint32_tmp, buffer);
+				safe_unpack32(&bb_resv_ptr->array_job_id,
+					      buffer);
+				safe_unpack32(&bb_resv_ptr->array_task_id,
+					      buffer);
+				safe_unpack_time(&bb_resv_ptr->create_time,
+						 buffer);
+				safe_unpack32(&bb_resv_ptr->job_id, buffer);
+				safe_unpackstr_xmalloc(&bb_resv_ptr->name,
+						       &uint32_tmp, buffer);
+				safe_unpackstr_xmalloc(&bb_resv_ptr->partition,
+						       &uint32_tmp, buffer);
+				safe_unpackstr_xmalloc(&bb_resv_ptr->pool,
+						       &uint32_tmp, buffer);
+				safe_unpackstr_xmalloc(&bb_resv_ptr->qos,
+						       &uint32_tmp, buffer);
+				safe_unpack64(&bb_resv_ptr->size, buffer);
+				safe_unpack16(&bb_resv_ptr->state, buffer);
+				safe_unpack32(&bb_resv_ptr->user_id, buffer);
+			}
+
+			safe_unpack32(&bb_info_ptr->use_count, buffer);
+			bb_info_ptr->burst_buffer_use_ptr =
+				xmalloc(sizeof(burst_buffer_use_t) *
+					bb_info_ptr->use_count);
+			for (j = 0,
+			     bb_use_ptr = bb_info_ptr->burst_buffer_use_ptr;
+			     j < bb_info_ptr->use_count; j++, bb_use_ptr++) {
+				safe_unpack64(&bb_use_ptr->used, buffer);
+				safe_unpack32(&bb_use_ptr->user_id, buffer);
+			}
+		}
+	} else if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
 		for (i = 0, bb_info_ptr = bb_msg_ptr->burst_buffer_array;
 		     i < bb_msg_ptr->record_count; i++, bb_info_ptr++) {
 			safe_unpackstr_xmalloc(&bb_info_ptr->name, &uint32_tmp,
@@ -11920,6 +12015,8 @@ static int _unpack_burst_buffer_info_msg(
 				safe_unpack64(
 					&bb_info_ptr->pool_ptr[j].used_space,
 					buffer);
+				bb_info_ptr->pool_ptr[j].unfree_space =
+					bb_info_ptr->pool_ptr[j].used_space;
 			}
 			safe_unpack32(&bb_info_ptr->other_timeout, buffer);
 			safe_unpackstr_xmalloc(&bb_info_ptr->start_stage_in,
@@ -11934,6 +12031,7 @@ static int _unpack_burst_buffer_info_msg(
 			safe_unpack32(&bb_info_ptr->stage_out_timeout, buffer);
 			safe_unpack64(&bb_info_ptr->total_space, buffer);
 			safe_unpack64(&bb_info_ptr->used_space, buffer);
+			bb_info_ptr->unfree_space = bb_info_ptr->used_space;
 			safe_unpack32(&bb_info_ptr->validate_timeout, buffer);
 
 			safe_unpack32(&bb_info_ptr->buffer_count, buffer);
@@ -12011,6 +12109,8 @@ static int _unpack_burst_buffer_info_msg(
 				safe_unpack64(
 					&bb_info_ptr->pool_ptr[j].used_space,
 					buffer);
+				bb_info_ptr->pool_ptr[j].unfree_space =
+					bb_info_ptr->pool_ptr[j].used_space;
 			}
 			safe_unpackstr_xmalloc(&bb_info_ptr->start_stage_in,
 					       &uint32_tmp, buffer);
@@ -12024,6 +12124,7 @@ static int _unpack_burst_buffer_info_msg(
 			safe_unpack32(&bb_info_ptr->stage_out_timeout, buffer);
 			safe_unpack64(&bb_info_ptr->total_space, buffer);
 			safe_unpack64(&bb_info_ptr->used_space, buffer);
+			bb_info_ptr->unfree_space = bb_info_ptr->used_space;
 
 			safe_unpack32(&bb_info_ptr->buffer_count, buffer);
 			bb_info_ptr->burst_buffer_resv_ptr =

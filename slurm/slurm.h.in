@@ -4792,7 +4792,8 @@ typedef struct {
 	char *stop_stage_in;
 	char *stop_stage_out;
 	uint64_t total_space;		/* In bytes */
-	uint64_t used_space;		/* In bytes */
+	uint64_t unfree_space;		/* Allocated or drained, in bytes */
+	uint64_t used_space;		/* Allocated, in bytes */
 	uint32_t validate_timeout;	/* Seconds or zero */
 
 	uint32_t  buffer_count;

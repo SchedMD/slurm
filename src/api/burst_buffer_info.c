@@ -242,14 +242,18 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 		int verbose)
 {
 	char tmp_line[512];
-	char g_sz_buf[32],t_sz_buf[32], u_sz_buf[32];
+	char f_sz_buf[32], g_sz_buf[32],t_sz_buf[32], u_sz_buf[32];
 	char *out_buf = NULL;
+	uint64_t free_space;
 	burst_buffer_resv_t *bb_resv_ptr;
 	burst_buffer_use_t  *bb_use_ptr;
 	bool has_acl = false;
 	int i;
 
 	/****** Line ******/
+	free_space = burst_buffer_ptr->total_space -
+		     burst_buffer_ptr->unfree_space;
+	_get_size_str(f_sz_buf, sizeof(f_sz_buf), free_space);
 	_get_size_str(g_sz_buf, sizeof(g_sz_buf),
 		      burst_buffer_ptr->granularity);
 	_get_size_str(t_sz_buf, sizeof(t_sz_buf),
@@ -258,9 +262,9 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 		      burst_buffer_ptr->used_space);
 	snprintf(tmp_line, sizeof(tmp_line),
 		 "Name=%s DefaultPool=%s Granularity=%s TotalSpace=%s "
-		 "UsedSpace=%s",
+		 "FreeSpace=%s UsedSpace=%s",
 		 burst_buffer_ptr->name, burst_buffer_ptr->default_pool,
-		 g_sz_buf, t_sz_buf, u_sz_buf);
+		 g_sz_buf, t_sz_buf, f_sz_buf, u_sz_buf);
 	xstrcat(out_buf, tmp_line);
 	if (!one_liner)
 		xstrcat(out_buf, "\n");
@@ -268,6 +272,9 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 	/****** Line (optional) ******/
 	/* Alternate pool information */
 	for (i = 0; i < burst_buffer_ptr->pool_cnt; i++) {
+		free_space = burst_buffer_ptr->pool_ptr[i].total_space -
+			     burst_buffer_ptr->pool_ptr[i].unfree_space;
+		_get_size_str(f_sz_buf, sizeof(f_sz_buf), free_space);
 		_get_size_str(g_sz_buf, sizeof(g_sz_buf),
 			      burst_buffer_ptr->pool_ptr[i].granularity);
 		_get_size_str(t_sz_buf, sizeof(t_sz_buf),
@@ -276,9 +283,9 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 			      burst_buffer_ptr->pool_ptr[i].used_space);
 		snprintf(tmp_line, sizeof(tmp_line),
 			 "  AltPoolName[%d]=%s Granularity=%s TotalSpace=%s "
-			 "UsedSpace=%s",
+			 "FreeSpace=%s UsedSpace=%s",
 			 i, burst_buffer_ptr->pool_ptr[i].name,
-			 g_sz_buf, t_sz_buf, u_sz_buf);
+			 g_sz_buf, t_sz_buf, f_sz_buf, u_sz_buf);
 		xstrcat(out_buf, tmp_line);
 		if (!one_liner)
 			xstrcat(out_buf, "\n");
