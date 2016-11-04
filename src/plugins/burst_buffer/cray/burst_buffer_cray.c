@@ -691,15 +691,20 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
  * update that user's limit */
 static void _apply_limits(void)
 {
+	bool update_pool_unfree = false;
 	bb_alloc_t *bb_alloc;
 	int i;
+
+	if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
+		update_pool_unfree = true;
 
 	for (i = 0; i < BB_HASH_SIZE; i++) {
 		bb_alloc = bb_state.bb_ahash[i];
 		while (bb_alloc) {
 			_set_assoc_mgr_ptrs(bb_alloc);
 			bb_limit_add(bb_alloc->user_id, bb_alloc->size,
-				     bb_alloc->pool, &bb_state, false);
+				     bb_alloc->pool, &bb_state,
+				     update_pool_unfree);
 			bb_alloc = bb_alloc->next;
 		}
 	}
@@ -1128,8 +1133,6 @@ static void _load_state(bool init_config)
 			bb_state.bb_config.granularity = pools[i].granularity;
 			bb_state.total_space = pools[i].quantity *
 					       pools[i].granularity;
-			if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
-				continue;
 			bb_state.unfree_space = pools[i].quantity -
 						pools[i].free;
 			bb_state.unfree_space *= pools[i].granularity;
@@ -1161,8 +1164,6 @@ static void _load_state(bool init_config)
 		pool_ptr->total_space = pools[i].quantity *
 					pools[i].granularity;
 		pool_ptr->granularity = pools[i].granularity;
-		if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
-			continue;
 		pool_ptr->unfree_space = pools[i].quantity - pools[i].free;
 		pool_ptr->unfree_space *= pools[i].granularity;
 	}
