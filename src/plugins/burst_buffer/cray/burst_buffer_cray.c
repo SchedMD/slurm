@@ -1104,7 +1104,6 @@ static void _load_state(bool init_config)
 	char *end_ptr = NULL;
 	time_t now = time(NULL);
 	uint32_t timeout;
-	uint64_t total_space_new, total_space_lost, used_space;
 	assoc_mgr_lock_t assoc_locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
 					 NO_LOCK, NO_LOCK, NO_LOCK };
 	bool found_pool;
@@ -1137,28 +1136,13 @@ static void _load_state(bool init_config)
 		if (xstrcmp(pools[i].id,
 			    bb_state.bb_config.default_pool) == 0) {
 			bb_state.bb_config.granularity = pools[i].granularity;
-			total_space_new = pools[i].quantity *
-					  pools[i].granularity;
-			if (bb_state.total_space > total_space_new) {
-				total_space_lost = bb_state.total_space -
-						   total_space_new;
-			} else
-				total_space_lost = 0;
-			bb_state.total_space = total_space_new;
+			bb_state.total_space = pools[i].quantity *
+					       pools[i].granularity;
 			if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
 				continue;
-			used_space = pools[i].quantity - pools[i].free;
-			used_space *= pools[i].granularity;
-			if (total_space_lost) {
-				/* Reset used_space,
-				 * ignore in allocations in progress */
-				bb_state.used_space = used_space;
-			} else {
-				/* Don't decrease used_space in case buffer
-				 * allocation in progress */
-				bb_state.used_space = MAX(bb_state.used_space,
-							  used_space);
-			}
+			bb_state.unfree_space = pools[i].quantity -
+						pools[i].free;
+			bb_state.unfree_space *= pools[i].granularity;
 
 			/* Everything else is an alternate pool */
 			bb_state.bb_config.pool_cnt = 0;
@@ -1184,28 +1168,13 @@ static void _load_state(bool init_config)
 			bb_state.bb_config.pool_cnt++;
 		}
 
-		total_space_new = pools[i].quantity * pools[i].granularity;
-		if (pool_ptr->total_space > total_space_new) {
-			total_space_lost = pool_ptr->total_space -
-					   total_space_new;
-		} else
-			total_space_lost = 0;
-		pool_ptr->total_space = total_space_new;
+		pool_ptr->total_space = pools[i].quantity *
+					pools[i].granularity;
 		pool_ptr->granularity = pools[i].granularity;
 		if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
 			continue;
-		used_space = pools[i].quantity - pools[i].free;
-		used_space *= pools[i].granularity;
-		if (total_space_lost) {
-			/* Reset used_space,
-			 * ignore in allocations in progress */
-			pool_ptr->used_space = used_space;
-		} else {
-			/* Don't decrease used_space in case buffer allocation
-			 * in progress */
-			pool_ptr->used_space = MAX(pool_ptr->used_space,
-						   used_space);
-		}
+		pool_ptr->unfree_space = pools[i].quantity - pools[i].free;
+		pool_ptr->unfree_space *= pools[i].granularity;
 	}
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 	_bb_free_pools(pools, num_pools);
@@ -2098,6 +2067,7 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 {
 	int64_t *add_space = NULL, *avail_space = NULL, *granularity = NULL;
 	int64_t *preempt_space = NULL, *resv_space = NULL, *total_space = NULL;
+	uint64_t unfree_space;
 	burst_buffer_info_msg_t *resv_bb = NULL;
 	struct preempt_bb_recs *preempt_ptr = NULL;
 	char **pool_name, *my_pool;
@@ -2125,15 +2095,17 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 	total_space = xmalloc(sizeof(int64_t) * ds_len);
 	for (i = 0, pool_ptr = bb_state.bb_config.pool_ptr;
 	     i < bb_state.bb_config.pool_cnt; i++, pool_ptr++) {
-		if (pool_ptr->total_space >= pool_ptr->used_space)
-			avail_space[i] = pool_ptr->total_space -
-					 pool_ptr->used_space;
+		unfree_space = MAX(pool_ptr->used_space,
+				   pool_ptr->unfree_space);
+		if (pool_ptr->total_space >= unfree_space)
+			avail_space[i] = pool_ptr->total_space - unfree_space;
 		granularity[i] = pool_ptr->granularity;
 		pool_name[i] = pool_ptr->name;
 		total_space[i] = pool_ptr->total_space;
 	}
-	if (bb_state.total_space - bb_state.used_space)
-		avail_space[i] = bb_state.total_space - bb_state.used_space;
+	unfree_space = MAX(bb_state.used_space, bb_state.unfree_space);
+	if (bb_state.total_space - unfree_space)
+		avail_space[i] = bb_state.total_space - unfree_space;
 	granularity[i] = bb_state.bb_config.granularity;
 	pool_name[i] = bb_state.bb_config.default_pool;
 	total_space[i] = bb_state.total_space;
@@ -2179,11 +2151,13 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 					my_pool =
 						bb_state.bb_config.default_pool;
 				}
+				unfree_space = MAX(pool_ptr->used_space,
+						   pool_ptr->unfree_space);
 				for (k = 0; k < ds_len; k++) {
 					if (xstrcmp(my_pool, pool_name[k]))
 						continue;
 					resv_space[k] += bb_granularity(
-							pool_ptr->used_space,
+							unfree_space,
 							granularity[k]);
 					break;
 				}
