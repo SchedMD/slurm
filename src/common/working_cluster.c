@@ -129,9 +129,6 @@ extern uint32_t slurmdb_setup_cluster_flags(void)
 
 static uint32_t _str_2_cluster_flags(char *flags_in)
 {
-	if (xstrcasestr(flags_in, "AIX"))
-		return CLUSTER_FLAG_AIX;
-
 	if (xstrcasestr(flags_in, "BGQ"))
 		return CLUSTER_FLAG_BGQ;
 
@@ -175,12 +172,6 @@ extern uint32_t slurmdb_str_2_cluster_flags(char *flags_in)
 extern char *slurmdb_cluster_flags_2_str(uint32_t flags_in)
 {
 	char *cluster_flags = NULL;
-
-	if (flags_in & CLUSTER_FLAG_AIX) {
-		if (cluster_flags)
-			xstrcat(cluster_flags, ",");
-		xstrcat(cluster_flags, "AIX");
-	}
 
 	if (flags_in & CLUSTER_FLAG_BG) {
 		if (cluster_flags)

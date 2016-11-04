@@ -141,9 +141,6 @@ static int _setup_particulars(uint32_t cluster_flags,
 			verbose("Can't set BASIL_RESERVATION_ID "
 			        "environment variable");
 		}
-
-	} else if (cluster_flags & CLUSTER_FLAG_AIX) {
-		setenvf(dest, "LOADLBATCH", "%s", "yes");
 	}
 
 	return rc;
@@ -786,27 +783,6 @@ int setup_env(env_t *env, bool preserve_env)
 		rc = SLURM_FAILURE;
 	}
 
-	if (cluster_flags & CLUSTER_FLAG_AIX) {
-		char res_env[128];
-		char *debug_env = (char *)getenv("SLURM_LL_API_DEBUG");
-		int  debug_num = 0;
-
-		/* MP_POERESTART_ENV causes a warning message for "poe", but
-		 * is needed for "poerestart". Presently we have no means to
-		 * determine what command a user will execute. We could
-		 * possibly add a "srestart" command which would set
-		 * MP_POERESTART_ENV, but that presently seems unnecessary. */
-		/* setenvf(&env->env, "MP_POERESTART_ENV", res_env); */
-		if (debug_env)
-			debug_num = atoi(debug_env);
-		snprintf(res_env, sizeof(res_env), "SLURM_LL_API_DEBUG=%d",
-			debug_num);
-
-		/* Required for AIX/POE systems indicating pre-allocation */
-		setenvf(&env->env, "LOADLBATCH", "yes");
-		setenvf(&env->env, "LOADL_ACTIVE", "3.2.0");
-	}
-
 	if (env->pty_port
 	&&  setenvf(&env->env, "SLURM_PTY_PORT", "%hu", env->pty_port)) {
 		error("Can't set SLURM_PTY_PORT env variable");
@@ -978,7 +954,6 @@ extern char *uint32_compressed_to_str(uint32_t array_len,
  *	SLURM_JOB_NODELIST
  *	SLURM_JOB_CPUS_PER_NODE
  *	SLURM_NODE_ALIASES
- *	LOADLBATCH (AIX only)
  *	SLURM_BG_NUM_NODES, MPIRUN_PARTITION, MPIRUN_NOFREE, and
  *	MPIRUN_NOALLOCATE (BG only)
  *
@@ -1146,7 +1121,6 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
  *	SLURM_NODE_ALIASES
  *	ENVIRONMENT=BATCH
  *	HOSTNAME
- *	LOADLBATCH (AIX only)
  *
  * Sets OBSOLETE variables (needed for MPI, do not remove):
  *	SLURM_JOBID
