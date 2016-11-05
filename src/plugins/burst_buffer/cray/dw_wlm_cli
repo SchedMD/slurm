@@ -48,10 +48,18 @@ if [ $2 == "show_configurations" ]; then
    echo '{ "configurations": [ ] }'
 fi
 if [ $2 == "show_instances" ]; then
-   echo '{ "instances": [ ] }'
+   echo '{ "instances": [
+{"capacity": {"bytes": 1099511627776, "nodes": 2}, "created": 1478231657, "expiration": 0, "expired": false, "id": 74, "intact": true, "label": "alpha", "limits": {"write_window_length": 86400, "write_window_multiplier": 10}, "links": {"configurations": [72], "session": 74}, "public": true, "state": {"actualized": true, "fuse_blown": false, "goal": "create", "mixed": false, "transitioning": false}},
+ {"capacity": {"bytes": 1099511627776, "nodes": 2}, "created": 1478232104, "expiration": 0, "expired": false, "id": 75, "intact": true, "label": "I75-0", "limits": {"write_window_length": 86400, "write_window_multiplier": 10}, "links": {"configurations": [73], "session": 75}, "public": false, "state": {"actualized": true, "fuse_blown": false, "goal": "create", "mixed": false, "transitioning": false}}
+] }'
 fi
+
+# Create a job with ID 347 or the buffer will get torn down at slurmctld startup
 if [ $2 == "show_sessions" ]; then
-   echo '{ "sessions": [ ] }'
+   echo '{ "sessions": [
+ {"created": 1478231657, "creator": "CLI", "expiration": 0, "expired": false, "id": 74, "links": {"client_nodes": []}, "owner": 1001, "state": {"actualized": true, "fuse_blown": false, "goal": "create", "mixed": false, "transitioning": false}, "token": "alpha"},
+{"created": 1478232104, "creator": "SLURM", "expiration": 0, "expired": false, "id": 75, "links": {"client_nodes": ["nid00039"]}, "owner": 1001, "state": {"actualized": true, "fuse_blown": false, "goal": "create", "mixed": false, "transitioning": false}, "token": "347"}
+] }'
 fi
 if [ $2 == "teardown" ]; then
    sleep 0.1

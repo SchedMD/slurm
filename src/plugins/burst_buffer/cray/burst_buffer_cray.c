@@ -139,7 +139,6 @@ typedef struct bb_configs {
 typedef struct bb_instances {
 	uint32_t id;
 	uint64_t bytes;
-	char *label;
 	uint32_t session;
 } bb_instances_t;
 
@@ -248,6 +247,8 @@ static int	_parse_bb_opts(struct job_descriptor *job_desc,
 static void	_parse_config_links(json_object *instance, bb_configs_t *ent);
 static void	_parse_instance_capacity(json_object *instance,
 					 bb_instances_t *ent);
+static void	_parse_instance_links(json_object *instance,
+				      bb_instances_t *ent);
 static void	_pick_alloc_account(bb_alloc_t *bb_alloc);
 static void	_purge_bb_files(uint32_t job_id, struct job_record *job_ptr);
 static void	_purge_vestigial_bufs(void);
@@ -4711,12 +4712,6 @@ _bb_free_configs(bb_configs_t *ents, int num_ent)
 static void
 _bb_free_instances(bb_instances_t *ents, int num_ent)
 {
-	int i;
-
-	for (i = 0; i < num_ent; i++) {
-		xfree(ents[i].label);
-	}
-
 	xfree(ents);
 }
 
@@ -4917,8 +4912,7 @@ _parse_instance_capacity(json_object *instance, bb_instances_t *ent)
 	}
 }
 
-
-/* Parse "links" object in the "session" object */
+/* Parse "links" object in the "instance" object */
 static void
 _parse_instance_links(json_object *instance, bb_instances_t *ent)
 {
@@ -4948,7 +4942,6 @@ _json_parse_instances_object(json_object *jobj, bb_instances_t *ent)
 	enum json_type type;
 	struct json_object_iter iter;
 	int64_t x;
-	const char *p;
 
 	json_object_object_foreachC(jobj, iter) {
 		type = json_object_get_type(iter.val);
@@ -4963,12 +4956,6 @@ _json_parse_instances_object(json_object *jobj, bb_instances_t *ent)
 			x = json_object_get_int64(iter.val);
 			if (xstrcmp(iter.key, "id") == 0) {
 				ent->id = x;
-			}
-			break;
-		case json_type_string:
-			p = json_object_get_string(iter.val);
-			if (xstrcmp(iter.key, "label") == 0) {
-				ent->label = xstrdup(p);
 			}
 			break;
 		default:

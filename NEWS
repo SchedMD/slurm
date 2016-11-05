@@ -154,6 +154,8 @@ documents those changes that are of interest to users and administrators.
     unusable space). Base available space on whichever value leaves least free
     space.
  -- cray/burst_buffer - Preserve job ID and don't translate to job array ID.
+ -- cray/burst_buffer - Update "instance" parsing to match updated dw_wlm_cli
+    output.
 
 * Changes in Slurm 16.05.6
 ==========================
