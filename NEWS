@@ -157,6 +157,8 @@ documents those changes that are of interest to users and administrators.
  -- cray/burst_buffer - Update "instance" parsing to match updated dw_wlm_cli
     output.
  -- knl_cray plugin - Avoid abort from backup slurmctld at start time.
+ -- sched/backfill - Insure we don't try to start a job that was already started
+    and requeued by the main scheduling logic.
 
 * Changes in Slurm 16.05.6
 ==========================
