@@ -324,8 +324,8 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 
 	START_TIMER;
 	apid = SLURM_ID_HASH(job->jobid, job->stepid);
-	debug("task_p_pre_launch: %u.%u, apid %"PRIu64", task %d",
-	      job->jobid, job->stepid, apid, job->envtp->procid);
+	debug2("task_p_pre_launch: %u.%u, apid %"PRIu64", task %d",
+	       job->jobid, job->stepid, apid, job->envtp->procid);
 
 	/*
 	 * Send the rank to the application's PMI layer via an environment
