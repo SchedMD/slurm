@@ -2726,7 +2726,8 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 			if ((job_resrcs_ptr->whole_node != 1)
 			    && (slurmctld_conf.select_type_param
 				& (CR_CORE | CR_SOCKET))
-			    && ((job_ptr->details->cpu_bind_type !=
+			    && (job_ptr->details &&
+				(job_ptr->details->cpu_bind_type !=
 				 (uint16_t)NO_VAL)
 				&& (job_ptr->details->cpu_bind_type
 				    & CPU_BIND_ONE_THREAD_PER_CORE))) {
