@@ -105,7 +105,7 @@ get_procs(uint16_t *procs)
 	}
 
 	*procs = (uint16_t) my_proc_tally;
-#elif define(HAVE_SYSCTLBYNAME)
+#elif defined (HAVE_SYSCTLBYNAME)
 	int ncpu;
 	size_t len = sizeof(ncpu);
 
