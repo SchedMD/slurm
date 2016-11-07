@@ -852,6 +852,26 @@ static bool _job_part_valid(struct job_record *job_ptr,
 	return rc;
 }
 
+/* Determine if job in the backfill queue is still runnable.
+ * Job state could change when lock are periodically released */
+static bool _job_runnable_now(struct job_record *job_ptr)
+{
+	uint16_t cleaning = 0;
+
+	if (!IS_JOB_PENDING(job_ptr))	/* Started in other partition */
+		return false;
+	if (job_ptr->priority == 0)	/* Job has been held */
+		return false;
+	if (IS_JOB_COMPLETING(job_ptr))	/* Started, requeue and completing */
+		return false;
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+				    SELECT_JOBDATA_CLEANING, &cleaning);
+	if (cleaning)			/* Started, requeue and completing */
+		return false;
+
+	return true;
+}
+
 static int _attempt_backfill(void)
 {
 	DEF_TIMERS;
@@ -1040,8 +1060,8 @@ static int _attempt_backfill(void)
 			if (!job_ptr)	/* All task array elements started */
 				continue;
 		}
-		if (!IS_JOB_PENDING(job_ptr) ||	/* Started in other partition */
-		    (job_ptr->priority == 0))	/* Job has been held */
+
+		if (!_job_runnable_now(job_ptr))
 			continue;
 
 		part_ptr = job_queue_rec->part_ptr;
@@ -1350,8 +1370,7 @@ next_task:
 			if ((job_ptr->magic  != JOB_MAGIC) ||
 			    (job_ptr->job_id != save_job_id))
 				continue;
-			if (!IS_JOB_PENDING(job_ptr) ||	/* Already started */
-			    (job_ptr->priority == 0))	/* Job has been held */
+			if (!_job_runnable_now(job_ptr))
 				continue;
 			if (!avail_front_end(job_ptr))
 				continue;	/* No available frontend */
