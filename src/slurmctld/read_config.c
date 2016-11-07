@@ -1085,9 +1085,6 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	init_requeue_policy();
 
-	/* NOTE: Run restore_node_features before _restore_job_dependencies */
-	restore_node_features(recover);
-
 	if (node_features_g_count() > 0) {
 		if (node_features_g_get_node(NULL) != SLURM_SUCCESS)
 			error("failed to initialize node features");
@@ -1095,6 +1092,9 @@ int read_slurm_conf(int recover, bool reconfig)
 	if ((rc = _build_bitmaps())) /* must follow node_features_g_get_node()
 				      * and preceed build_features_list_*() */
 		fatal("_build_bitmaps failure");
+
+	/* NOTE: Run restore_node_features after _build_bitmaps and before _restore_job_dependencies */
+	restore_node_features(recover);
 
 	if (node_features_g_count() > 0) {
 		build_feature_list_ne();

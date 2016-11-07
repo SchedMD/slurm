@@ -19,6 +19,7 @@ documents those changes that are of interest to users and administrators.
  -- cray/burst_buffer - Preserve job ID and don't translate to job array ID.
  -- cray/burst_buffer - Update "instance" parsing to match updated dw_wlm_cli
     output.
+ -- knl_cray plugin - Avoid abort from backup slurmctld at start time.
 
 * Changes in Slurm 16.05.6
 ==========================
