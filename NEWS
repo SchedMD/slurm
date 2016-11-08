@@ -25,6 +25,7 @@ documents those changes that are of interest to users and administrators.
  -- job_submit/lua - add access to the job features field in job_record.
  -- select/linear plugin modified to better support heterogeneous clusters when
     topology/none is also configured.
+ -- Permit cancellation of jobs in configuring state.
 
 * Changes in Slurm 16.05.6
 ==========================
