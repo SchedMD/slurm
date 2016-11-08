@@ -723,7 +723,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		     uint32_t min_nodes, uint32_t max_nodes,
 		     uint32_t req_nodes)
 {
-	int i, index, error_code = EINVAL, sufficient;
+	int i, error_code = EINVAL, sufficient;
 	int *consec_nodes;	/* how many nodes we can add from this
 				 * consecutive set of nodes */
 	int *consec_cpus;	/* how many nodes we can add from this
@@ -737,6 +737,9 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	int best_fit_nodes, best_fit_cpus, best_fit_req;
 	int best_fit_location = 0, best_fit_sufficient;
 	int avail_cpus, total_cpus = 0;
+	int *avail_cpu_cnt;	/* Available CPU count on each node */
+	int first_cpu_cnt = 0, total_node_cnt = 0, low_cpu_cnt = 99999;
+	bool heterogeneous = false; /* Nodes have heterogeneous CPU counts */
 
 	if (bit_set_count(bitmap) < min_nodes)
 		return error_code;
@@ -782,24 +785,32 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	else
 		rem_nodes = min_nodes;
 
-	for (index = 0; index < select_node_cnt; index++) {
-		if (bit_test(bitmap, index)) {
+	avail_cpu_cnt = xmalloc(sizeof(int) * select_node_cnt);
+	for (i = 0; i < select_node_cnt; i++) {
+		if (bit_test(bitmap, i)) {
+			avail_cpu_cnt[i] = _get_avail_cpus(job_ptr, i);
+			if (++total_node_cnt == 1)
+				first_cpu_cnt = avail_cpu_cnt[i];
+			else if (first_cpu_cnt != avail_cpu_cnt[i])
+				heterogeneous = true;
+			low_cpu_cnt = MIN(low_cpu_cnt, avail_cpu_cnt[i]);
+
 			if (consec_nodes[consec_index] == 0)
-				consec_start[consec_index] = index;
-			avail_cpus = _get_avail_cpus(job_ptr, index);
+				consec_start[consec_index] = i;
+			avail_cpus = avail_cpu_cnt[i];
 			if (job_ptr->details->req_node_bitmap	&&
 			    (max_nodes > 0)			&&
-			    bit_test(job_ptr->details->req_node_bitmap,index)){
+			    bit_test(job_ptr->details->req_node_bitmap, i)) {
 				if (consec_req[consec_index] == -1) {
 					/* first required node in set */
-					consec_req[consec_index] = index;
+					consec_req[consec_index] = i;
 				}
 				rem_nodes--;
 				max_nodes--;
 				rem_cpus   -= avail_cpus;
-				total_cpus += _get_total_cpus(index);
+				total_cpus += _get_total_cpus(i);
 			} else {	 /* node not required (yet) */
-				bit_clear(bitmap, index);
+				bit_clear(bitmap, i);
 				consec_cpus[consec_index] += avail_cpus;
 				consec_nodes[consec_index]++;
 			}
@@ -808,7 +819,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			/* already picked up any required nodes */
 			/* re-use this record */
 		} else {
-			consec_end[consec_index] = index - 1;
+			consec_end[consec_index] = i - 1;
 			if (++consec_index >= consec_size) {
 				consec_size *= 2;
 				xrealloc(consec_cpus,
@@ -828,7 +839,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		}
 	}
 	if (consec_nodes[consec_index] != 0)
-		consec_end[consec_index++] = index - 1;
+		consec_end[consec_index++] = i - 1;
 
 #if SELECT_DEBUG
 	/* don't compile this, it slows things down too much */
@@ -848,9 +859,35 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 #endif
 
+	if (heterogeneous && (rem_cpus > (low_cpu_cnt * rem_nodes))) {
+		while ((max_nodes > 0) &&
+		       ((rem_nodes > 0) || (rem_cpus > 0))) {
+			int high_cpu_cnt = 0, high_cpu_inx = -1;
+			for (i = 0; i < select_node_cnt; i++) {
+				if (high_cpu_cnt > avail_cpu_cnt[i])
+					continue;
+				if (bit_test(bitmap, i))
+					continue;
+				high_cpu_cnt = avail_cpu_cnt[i];
+				high_cpu_inx = i;
+			}
+			if (high_cpu_inx == -1)
+				break;	/* No more available CPUs */
+			bit_set(bitmap, high_cpu_inx);
+			rem_nodes--;
+			max_nodes--;
+			avail_cpus = avail_cpu_cnt[high_cpu_inx];
+			rem_cpus   -= avail_cpus;
+			total_cpus +=_get_total_cpus(high_cpu_inx);
+			avail_cpu_cnt[high_cpu_inx] = 0;
+		}
+	} else {
+		heterogeneous = false;
+	}
+
 	/* accumulate nodes from these sets of consecutive nodes until */
 	/*   sufficient resources have been accumulated */
-	while (consec_index && (max_nodes > 0)) {
+	while (consec_index && (max_nodes > 0) && !heterogeneous) {
 		best_fit_cpus = best_fit_nodes = best_fit_sufficient = 0;
 		best_fit_req = -1;	/* first required node, -1 if none */
 		for (i = 0; i < consec_index; i++) {
@@ -922,7 +959,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				bit_set(bitmap, i);
 				rem_nodes--;
 				max_nodes--;
-				avail_cpus = _get_avail_cpus(job_ptr, i);
+				avail_cpus = avail_cpu_cnt[i];
 				rem_cpus   -= avail_cpus;
 				total_cpus += _get_total_cpus(i);
 			}
@@ -936,7 +973,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				bit_set(bitmap, i);
 				rem_nodes--;
 				max_nodes--;
-				avail_cpus = _get_avail_cpus(job_ptr, i);
+				avail_cpus = avail_cpu_cnt[i];
 				rem_cpus   -= avail_cpus;
 				total_cpus += _get_total_cpus(i);
 			}
@@ -951,11 +988,12 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				bit_set(bitmap, i);
 				rem_nodes--;
 				max_nodes--;
-				avail_cpus = _get_avail_cpus(job_ptr, i);
+				avail_cpus = avail_cpu_cnt[i];
 				rem_cpus   -= avail_cpus;
 				total_cpus += _get_total_cpus(i);
 			}
 		}
+
 		if (job_ptr->details->contiguous ||
 		    ((rem_nodes <= 0) && (rem_cpus <= 0))) {
 			error_code = SLURM_SUCCESS;
@@ -974,6 +1012,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		job_ptr->total_cpus = total_cpus;
 	}
 
+	xfree(avail_cpu_cnt);
 	xfree(consec_cpus);
 	xfree(consec_nodes);
 	xfree(consec_start);

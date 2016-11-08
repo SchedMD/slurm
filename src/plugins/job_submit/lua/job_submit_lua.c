@@ -293,6 +293,11 @@ static int _job_rec_field(const struct job_record *job_ptr,
 		lua_pushnumber (L, job_ptr->delay_boot);
 	} else if (!xstrcmp(name, "direct_set_prio")) {
 		lua_pushnumber (L, job_ptr->direct_set_prio);
+	} else if (!xstrcmp(name, "features")) {
+		if (job_ptr->details)
+			lua_pushstring (L, job_ptr->details->features);
+		else
+			lua_pushnil (L);
 	} else if (!xstrcmp(name, "gres")) {
 		lua_pushstring (L, job_ptr->gres);
 	} else if (!xstrcmp(name, "job_id")) {
