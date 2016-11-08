@@ -2827,9 +2827,14 @@ for a Cray system.
 The default value is "select/cray" for all Cray systems.
 .TP
 \fBselect/linear\fR
-for allocation of entire nodes assuming a
-one\-dimensional array of nodes in which sequentially ordered
-nodes are preferable.
+for allocation of entire nodes assuming a one\-dimensional array of nodes in
+which sequentially ordered nodes are preferable.
+For a heterogeneous cluster (e.g. different CPU counts on the various nodes),
+resource allocations will favor nodes with high CPU counts as needed based upon
+the job's node and CPU specification if \fBTopologyPlugin=topology/none\fR is
+configured. Use of other topology plugins with select/linear and heterogeneous
+nodes is not recommended and may result in valid job allocation requests being
+rejected.
 This is the default value for non\-BlueGene systems.
 .TP
 \fBselect/serial\fR

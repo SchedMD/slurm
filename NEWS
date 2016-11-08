@@ -23,6 +23,8 @@ documents those changes that are of interest to users and administrators.
  -- sched/backfill - Insure we don't try to start a job that was already started
     and requeued by the main scheduling logic.
  -- job_submit/lua - add access to the job features field in job_record.
+ -- select/linear plugin modified to better support heterogeneous clusters when
+    topology/none is also configured.
 
 * Changes in Slurm 16.05.6
 ==========================
