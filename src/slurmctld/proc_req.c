@@ -5468,7 +5468,6 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 inline static void _slurm_rpc_reboot_nodes(slurm_msg_t * msg)
 {
 	int rc;
-	time_t now = time(NULL);
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 #ifndef HAVE_FRONT_END
@@ -5480,6 +5479,7 @@ inline static void _slurm_rpc_reboot_nodes(slurm_msg_t * msg)
 	/* Locks: write node lock */
 	slurmctld_lock_t node_write_lock = {
 		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+	time_t now = time(NULL);
 #endif
 	DEF_TIMERS;
 
