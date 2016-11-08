@@ -793,7 +793,8 @@ extern void slurm_free_sib_msg(sib_msg_t *msg)
 {
 	if (msg) {
 		free_buf(msg->data_buffer);
-		slurm_free_msg_data(msg->data_type, msg->data);
+		if (msg->data)
+			slurm_free_msg_data(msg->data_type, msg->data);
 		xfree(msg);
 	}
 }
