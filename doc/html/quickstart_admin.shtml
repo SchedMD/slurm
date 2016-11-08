@@ -514,9 +514,9 @@ SlurmUser=slurm
 SlurmctldPort=7002
 SlurmctldTimeout=300
 SlurmdPort=7003
-SlurmdSpoolDir=/var/tmp/slurmd.spool
+SlurmdSpoolDir=/var/spool/slurmd.spool
 SlurmdTimeout=300
-StateSaveLocation=/tmp/slurm.state
+StateSaveLocation=/var/spool/slurm.state
 SwitchType=switch/none
 TreeWidth=50
 #
