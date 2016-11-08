@@ -4483,7 +4483,8 @@ extern int job_fail(uint32_t job_id, uint32_t job_state)
 		suspended = true;
 	}
 
-	if (IS_JOB_RUNNING(job_ptr) || suspended) {
+	if (IS_JOB_CONFIGURING(job_ptr) || IS_JOB_RUNNING(job_ptr) ||
+	    suspended) {
 		/* No need to signal steps, deallocate kills them */
 		job_ptr->time_last_active       = now;
 		if (suspended) {
@@ -4507,6 +4508,7 @@ extern int job_fail(uint32_t job_id, uint32_t job_state)
 	/* All other states */
 	verbose("job_fail: job %u can't be killed from state=%s",
 		job_id, job_state_string(job_ptr->job_state));
+
 	return ESLURM_TRANSITION_STATE_NO_UPDATE;
 
 }
@@ -4525,9 +4527,6 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
 
-	if (IS_JOB_CONFIGURING(job_ptr))
-		return ESLURM_TRANSITION_STATE_NO_UPDATE;
-
 	/* let node select plugin do any state-dependent signalling actions */
 	select_g_job_signal(job_ptr, signal);
 	last_job_update = now;
@@ -4543,6 +4542,19 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 		/* build_cg_bitmap() not needed, job already completing */
 		verbose("%s: of requeuing %s successful",
 			__func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)));
+		return SLURM_SUCCESS;
+	}
+
+	if (IS_JOB_CONFIGURING(job_ptr) && (signal == SIGKILL)) {
+		last_job_update         = now;
+		job_ptr->end_time       = now;
+		job_ptr->job_state      = JOB_CANCELLED | JOB_COMPLETING;
+		build_cg_bitmap(job_ptr);
+		job_completion_logger(job_ptr, false);
+		deallocate_nodes(job_ptr, false, false, false);
+		verbose("%s: %u of configuring %s successful",
+			__func__, signal, jobid2str(job_ptr, jbuf,
+						    sizeof(jbuf)));
 		return SLURM_SUCCESS;
 	}
 
