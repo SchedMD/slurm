@@ -1551,10 +1551,11 @@ static void _queue_reboot_msg(void)
 	want_nodes_reboot = false;
 	for (i = 0, node_ptr = node_record_table_ptr;
 	     i < node_record_count; i++, node_ptr++) {
-		if (!IS_NODE_MAINT(node_ptr))
-			continue;
-		if (is_node_in_maint_reservation(i)) {
-			/* defer if node isn't in reservation */
+		if (!IS_NODE_MAINT(node_ptr) && !IS_NODE_REBOOT(node_ptr))
+			continue;	/* No reboot needed */
+		if (!IS_NODE_REBOOT(node_ptr) &&
+		    is_node_in_maint_reservation(i)) {
+			/* node in current maintenance reservation */
 			want_nodes_reboot = true;
 			continue;
 		}
@@ -1597,7 +1598,6 @@ static void _queue_reboot_msg(void)
 		node_ptr->node_state &= ~NODE_STATE_MAINT;
 		node_ptr->node_state &=  NODE_STATE_FLAGS;
 		node_ptr->node_state |=  NODE_STATE_DOWN;
-		node_ptr->reason = xstrdup("Scheduled reboot");
 		bit_clear(avail_node_bitmap, i);
 		bit_clear(idle_node_bitmap, i);
 		node_ptr->boot_req_time = now;

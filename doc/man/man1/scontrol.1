@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "January 2016" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "November 2016" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -245,9 +245,11 @@ Print no warning or informational messages, only fatal error messages.
 Terminate the execution of scontrol.
 
 .TP
-\fBreboot_nodes\fP [\fINodeList\fP]
+\fBreboot\fP [ASAP] [\fINodeList\fP]
 Reboot all nodes in the system when they become idle using the
 \fBRebootProgram\fP as configured in Slurm's slurm.conf file.
+The option "ASAP" prevents initiation of additional jobs so the node can be
+rebooted and returned to service "As Soon As Possible" (i.e. ASAP).
 Accepts an option list of nodes to reboot. By default all nodes are rebooted.
 NOTE: This command does not prevent additional jobs from being scheduled on
 these nodes, so many jobs can be executed on the nodes prior to them being
@@ -255,10 +257,10 @@ rebooted. You can explicitly drain the nodes in order to reboot nodes as soon
 as possible, but the nodes must also explicitly be returned to service after
 being rebooted. You can alternately create an advanced reservation to
 prevent additional jobs from being initiated on nodes to be rebooted.
-NOTE: Nodes will be placed in a state of "MAINT" until rebooted and returned
+NOTE: Nodes will be placed in a state of "REBOOT" until rebooted and returned
 to service with a normal state.
-Alternately the node's state "MAINT" may be cleared by using the scontrol
-command to set the node state to "RESUME", which clears the "MAINT" flag.
+Alternately the node's state "REBOOT" may be cleared by using the scontrol
+command to set the node state to "RESUME", which clears the "REBOOT" flag.
 
 .TP
 \fBreconfigure\fP
@@ -1056,8 +1058,8 @@ node are in use, rendering this node as not usable for any other jobs.
 "RESERVED" indicates the node is in an advanced reservation and not generally
 available.
 "RESUME" is not an actual node state, but will change a node state from
-"DRAINED", "DRAINING", "DOWN" or "MAINT" to either "IDLE" or "ALLOCATED"
-state as appropriate.
+"DRAINED", "DRAINING", "DOWN", "MAINT" or "REBOOT" to either
+"IDLE" or "ALLOCATED" state as appropriate.
 "UNDRAIN" clears the node from being drained (like "RESUME"), but will
 not change the node's base state (e.g. "DOWN").
 Setting a node "DOWN" will cause all running and suspended jobs on that
@@ -1077,8 +1079,9 @@ running at reduced frequency).
 If the node state code is followed by "#", this indicates
 the node is presently being powered up or configured.
 If the node state code is followed by "$", this indicates
-the node is currently in a reservation with a flag value of "maintenance"
-or is scheduled to be rebooted.
+the node is currently in a reservation with a flag value of "maintenance".
+If the node state code is followed by "@", this indicates
+the node is currently scheduled to be rebooted.
 Generally only "DRAIN", "FAIL" and "RESUME" should be used.
 NOTE: The scontrol command should not be used to change node state on Cray
 systems. Use Cray tools such as \fIxtprocadmin\fR instead.

@@ -1173,8 +1173,8 @@ static int _handle_subgrps(List sinfo_list, uint16_t part_num,
 				if ((((state[i] == NODE_STATE_ALLOCATED)
 				      && IS_NODE_DRAINING(tmp_node_ptr))
 				     || (*node_state == NODE_STATE_DRAIN))
-				    || (*node_state == state[i])
-				    || (*node_state == NODE_STATE_RES))
+				     || (*node_state == state[i])
+				     || (*node_state == NODE_STATE_RES))
 					break;
 			}
 			list_iterator_reset(iterator);
@@ -1201,8 +1201,8 @@ static int _handle_subgrps(List sinfo_list, uint16_t part_num,
 			tmp_node_ptr->node_state = *node_state;
 			if (((*node_state == NODE_STATE_DRAIN)
 			     || IS_NODE_DRAINED(tmp_node_ptr))
-			    || (*node_state == NODE_STATE_IDLE)
-			    || (*node_state == NODE_STATE_RES))
+			     || (*node_state == NODE_STATE_IDLE)
+			     || (*node_state == NODE_STATE_RES))
 				break;
 		}
 		list_iterator_destroy(iterator);

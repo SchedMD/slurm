@@ -748,6 +748,7 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 			 "Power Down", true, -1},
 			{G_TYPE_NONE, NODE_STATE_POWER_UP,
 			 "Power Up", true, -1},
+			{G_TYPE_NONE, NODE_STATE_REBOOT, "Reboot", true, -1},
 			{G_TYPE_NONE, NODE_STATE_RES | NODE_STATE_IDLE,
 			 "Reserved", true, -1},
 			{G_TYPE_NONE, NODE_STATE_UNKNOWN, "Unknown", true, -1},

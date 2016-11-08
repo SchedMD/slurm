@@ -137,6 +137,8 @@
 	(_X->node_state & NODE_STATE_POWER_UP)
 #define IS_NODE_MAINT(_X)		\
 	(_X->node_state & NODE_STATE_MAINT)
+#define IS_NODE_REBOOT(_X)		\
+	(_X->node_state & NODE_STATE_REBOOT)
 
 #define THIS_FILE ((strrchr(__FILE__, '/') ?: __FILE__ - 1) + 1)
 #define INFO_LINE(fmt, ...) \
@@ -685,8 +687,10 @@ typedef struct epilog_complete_msg {
 	char    *node_name;
 } epilog_complete_msg_t;
 
+#define REBOOT_FLAGS_ASAP 0x0001	/* Drain to reboot ASAP */
 typedef struct reboot_msg {
 	char *features;
+	uint16_t flags;
 	char *node_list;
 } reboot_msg_t;
 

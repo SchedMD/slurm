@@ -9,6 +9,11 @@ documents those changes that are of interest to users and administrators.
     by default at step startup.
  -- Add "FreeSpace" information for each pool to the "scontrol show burstbuffer"
     output. Required changes to the burst_buffer_info_t data structure.
+ -- Add new node state flag of NODE_STATE_REBOOT for node reboots triggered by
+    "scontrol reboot" commands. Previous logic re-used NODE_STATE_MAINT flag,
+    which could lead to inconsistencies. Add "ASAP" option to "scontrol reboot"
+    command that will drain a node in order to reboot it as soon as possible,
+    then return it to service.
 
 * Changes in Slurm 17.02.0pre3
 ==============================

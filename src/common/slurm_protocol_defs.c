@@ -2463,6 +2463,7 @@ extern char *node_state_string(uint32_t inx)
 	bool fail_flag       = (inx & NODE_STATE_FAIL);
 	bool maint_flag      = (inx & NODE_STATE_MAINT);
 	bool net_flag        = (inx & NODE_STATE_NET);
+	bool reboot_flag     = (inx & NODE_STATE_REBOOT);
 	bool res_flag        = (inx & NODE_STATE_RES);
 	bool resume_flag     = (inx & NODE_RESUME);
 	bool no_resp_flag    = (inx & NODE_STATE_NO_RESPOND);
@@ -2477,6 +2478,15 @@ extern char *node_state_string(uint32_t inx)
 			return "MAINT*";
 		else
 			return "MAINT";
+	}
+	if (reboot_flag) {
+		if ((base == NODE_STATE_ALLOCATED) ||
+		    (base == NODE_STATE_MIXED))
+			;
+		else if (no_resp_flag)
+			return "REBOOT*";
+		else
+			return "REBOOT";
 	}
 	if (drain_flag) {
 		if (comp_flag
@@ -2520,6 +2530,8 @@ extern char *node_state_string(uint32_t inx)
 	if (base == NODE_STATE_ALLOCATED) {
 		if (maint_flag)
 			return "ALLOCATED$";
+		if (reboot_flag)
+			return "ALLOCATED@";
 		if (power_up_flag)
 			return "ALLOCATED#";
 		if (power_down_flag)
@@ -2538,6 +2550,8 @@ extern char *node_state_string(uint32_t inx)
 	if (base == NODE_STATE_IDLE) {
 		if (maint_flag)
 			return "IDLE$";
+		if (reboot_flag)
+			return "IDLE@";
 		if (power_up_flag)
 			return "IDLE#";
 		if (power_down_flag)
@@ -2553,6 +2567,8 @@ extern char *node_state_string(uint32_t inx)
 	if (base == NODE_STATE_ERROR) {
 		if (maint_flag)
 			return "ERROR$";
+		if (reboot_flag)
+			return "ERROR@";
 		if (power_up_flag)
 			return "ERROR#";
 		if (power_down_flag)
@@ -2564,6 +2580,8 @@ extern char *node_state_string(uint32_t inx)
 	if (base == NODE_STATE_MIXED) {
 		if (maint_flag)
 			return "MIXED$";
+		if (reboot_flag)
+			return "MIXED@";
 		if (power_up_flag)
 			return "MIXED#";
 		if (power_down_flag)
@@ -2594,6 +2612,7 @@ extern char *node_state_string_compact(uint32_t inx)
 	bool fail_flag       = (inx & NODE_STATE_FAIL);
 	bool maint_flag      = (inx & NODE_STATE_MAINT);
 	bool net_flag        = (inx & NODE_STATE_NET);
+	bool reboot_flag     = (inx & NODE_STATE_REBOOT);
 	bool res_flag        = (inx & NODE_STATE_RES);
 	bool resume_flag     = (inx & NODE_RESUME);
 	bool no_resp_flag    = (inx & NODE_STATE_NO_RESPOND);
@@ -2609,6 +2628,14 @@ extern char *node_state_string_compact(uint32_t inx)
 			return "MAINT*";
 		else
 			return "MAINT";
+	}
+	if (reboot_flag) {
+		if ((inx == NODE_STATE_ALLOCATED) || (inx == NODE_STATE_MIXED))
+			;
+		else if (no_resp_flag)
+			return "BOOT*";
+		else
+			return "BOOT";
 	}
 	if (drain_flag) {
 		if (comp_flag
@@ -2650,6 +2677,10 @@ extern char *node_state_string_compact(uint32_t inx)
 	}
 
 	if (inx == NODE_STATE_ALLOCATED) {
+		if (maint_flag)
+			return "ALLOC$";
+		if (reboot_flag)
+			return "ALLOC@";
 		if (power_up_flag)
 			return "ALLOC#";
 		if (power_down_flag)
@@ -2668,6 +2699,8 @@ extern char *node_state_string_compact(uint32_t inx)
 	if (inx == NODE_STATE_IDLE) {
 		if (maint_flag)
 			return "IDLE$";
+		if (reboot_flag)
+			return "IDLE@";
 		if (power_up_flag)
 			return "IDLE#";
 		if (power_down_flag)
@@ -2683,6 +2716,8 @@ extern char *node_state_string_compact(uint32_t inx)
 	if (inx == NODE_STATE_ERROR) {
 		if (maint_flag)
 			return "ERR$";
+		if (reboot_flag)
+			return "ERR@";
 		if (power_up_flag)
 			return "ERR#";
 		if (power_down_flag)
@@ -2694,6 +2729,8 @@ extern char *node_state_string_compact(uint32_t inx)
 	if (inx == NODE_STATE_MIXED) {
 		if (maint_flag)
 			return "MIX$";
+		if (reboot_flag)
+			return "MIX@";
 		if (power_up_flag)
 			return "MIX#";
 		if (power_down_flag)

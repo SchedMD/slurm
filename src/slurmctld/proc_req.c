@@ -5468,6 +5468,7 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 inline static void _slurm_rpc_reboot_nodes(slurm_msg_t * msg)
 {
 	int rc;
+	time_t now = time(NULL);
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 #ifndef HAVE_FRONT_END
@@ -5500,7 +5501,7 @@ inline static void _slurm_rpc_reboot_nodes(slurm_msg_t * msg)
 		bit_nset(bitmap, 0, (node_record_count - 1));
 	} else if (node_name2bitmap(nodelist, false, &bitmap) != 0) {
 		FREE_NULL_BITMAP(bitmap);
-		error("Invalid node list in REBOOT_NODES request");
+		error("Bad node list in REBOOT_NODES request: %s", nodelist);
 		slurm_send_rc_msg(msg, ESLURM_INVALID_NODE_NAME);
 		return;
 	}
@@ -5516,7 +5517,15 @@ inline static void _slurm_rpc_reboot_nodes(slurm_msg_t * msg)
 			bit_clear(bitmap, i);
 			continue;
 		}
-		node_ptr->node_state |= NODE_STATE_MAINT;
+		node_ptr->node_state |= NODE_STATE_REBOOT;
+		if (reboot_msg->flags & REBOOT_FLAGS_ASAP) {
+			node_ptr->node_state |= NODE_STATE_DRAIN;
+			if (node_ptr->reason == NULL) {
+				node_ptr->reason = xstrdup("Reboot ASAP");
+				node_ptr->reason_time = now;
+				node_ptr->reason_uid = uid;
+			}
+		}
 		want_nodes_reboot = true;
 	}
 
