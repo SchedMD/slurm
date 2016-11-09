@@ -220,13 +220,18 @@ static slurmd_conf_t * read_slurmd_conf_lite (int fd)
 	int rc;
 	int len;
 	Buf buffer;
-	slurmd_conf_t *confl;
+	slurmd_conf_t *confl, *local_conf = NULL;
 	int tmp_int = 0;
 
 	/*  First check to see if we've already initialized the
 	 *   global slurmd_conf_t in 'conf'. Allocate memory if not.
 	 */
-	confl = conf ? conf : xmalloc (sizeof (*confl));
+	if (conf) {
+		confl = conf;
+	} else {
+		local_conf = xmalloc(sizeof(slurmd_conf_t));
+		confl = local_conf;
+	}
 
 	safe_read(fd, &len, sizeof(int));
 
@@ -265,7 +270,9 @@ static slurmd_conf_t * read_slurmd_conf_lite (int fd)
 
 
 	return (confl);
+
 rwfail:
+	xfree(local_conf);
 	return (NULL);
 }
 

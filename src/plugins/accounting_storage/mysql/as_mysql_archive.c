@@ -2489,7 +2489,7 @@ extern int as_mysql_jobacct_process_archive_load(
 {
 	char *data = NULL, *cluster_name = NULL;
 	int error_code = SLURM_SUCCESS;
-	Buf buffer;
+	Buf buffer = NULL;
 	time_t buf_time;
 	uint16_t type = 0, ver = 0;
 	uint32_t data_size = 0, rec_cnt = 0, tmp32 = 0;
@@ -2573,7 +2573,7 @@ extern int as_mysql_jobacct_process_archive_load(
 		      "got %u need <= %u", ver,
 		      SLURM_PROTOCOL_VERSION);
 		error("***********************************************");
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		return EFAULT;
 	}
 	safe_unpack_time(&buf_time, buffer);
@@ -2584,7 +2584,7 @@ extern int as_mysql_jobacct_process_archive_load(
 	if (!rec_cnt) {
 		error("we didn't get any records from this file of type '%s'",
 		      slurmdbd_msg_type_2_str(type, 0));
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		goto got_sql;
 	}
 
@@ -2608,7 +2608,7 @@ extern int as_mysql_jobacct_process_archive_load(
 		error("Unknown type '%u' to load from archive", type);
 		break;
 	}
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 
 got_sql:
 	if (!data) {
@@ -2620,8 +2620,9 @@ got_sql:
 	error_code = mysql_db_query_check_after(mysql_conn, data);
 	xfree(data);
 	if (error_code != SLURM_SUCCESS) {
-	unpack_error:
+unpack_error:
 		error("Couldn't load old data");
+		FREE_NULL_BUFFER(buffer);
 		return SLURM_ERROR;
 	}
 

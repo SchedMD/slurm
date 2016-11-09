@@ -396,7 +396,7 @@ _handle_accept(void *arg)
 	stepd_step_rec_t *job = ((struct request_params *)arg)->job;
 	int req;
 	int len;
-	Buf buffer;
+	Buf buffer = NULL;
 	void *auth_cred;
 	int rc;
 	uid_t uid;
@@ -431,7 +431,7 @@ _handle_accept(void *arg)
 		      g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
 		xfree(auth_info);
 		(void) g_slurm_auth_destroy(auth_cred);
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		goto fail;
 	}
 
@@ -441,7 +441,7 @@ _handle_accept(void *arg)
 	xfree(auth_info);
 	debug3("  Identity: uid=%d, gid=%d", uid, gid);
 	g_slurm_auth_destroy(auth_cred);
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 
 	rc = SLURM_PROTOCOL_VERSION;
 	safe_write(fd, &rc, sizeof(int));
@@ -470,6 +470,7 @@ rwfail:
 	if (close(fd) == -1)
 		error("Closing accepted fd after error: %m");
 	debug("Leaving  _handle_accept on an error");
+	FREE_NULL_BUFFER(buffer);
 	return NULL;
 }
 

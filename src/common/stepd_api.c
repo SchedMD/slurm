@@ -940,7 +940,9 @@ stepd_completion(int fd, uint16_t protocol_version, step_complete_msg_t *sent)
 
 	errno = errnum;
 	return rc;
+
 rwfail:
+	FREE_NULL_BUFFER(buffer);
 	return -1;
 }
 

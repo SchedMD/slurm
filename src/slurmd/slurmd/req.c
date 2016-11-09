@@ -474,9 +474,11 @@ static int _send_slurmd_conf_lite (int fd, slurmd_conf_t *cf)
 	len = get_buf_offset(buffer);
 	safe_write(fd, &len, sizeof(int));
 	safe_write(fd, get_buf_data(buffer), len);
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	return (0);
+
  rwfail:
+	FREE_NULL_BUFFER(buffer);
 	return (-1);
 }
 

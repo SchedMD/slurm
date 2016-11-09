@@ -687,7 +687,7 @@ extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
 	double *dub = (double *) data;
 	jobacct_id_t *jobacct_id = (jobacct_id_t *) data;
 	struct jobacctinfo *send = (struct jobacctinfo *) data;
-
+	Buf buffer = NULL;
 	if (!plugin_polling)
 		return SLURM_SUCCESS;
 
@@ -698,13 +698,13 @@ extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
 	case JOBACCT_DATA_PIPE:
 		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			int len;
-			Buf buffer = init_buf(0);
+			buffer = init_buf(0);
 			jobacctinfo_pack(jobacct, protocol_version,
 					 PROTOCOL_TYPE_SLURM, buffer);
 			len = get_buf_offset(buffer);
 			safe_write(*fd, &len, sizeof(int));
 			safe_write(*fd, get_buf_data(buffer), len);
-			free_buf(buffer);
+			FREE_NULL_BUFFER(buffer);
 		}
 
 		break;
@@ -781,7 +781,9 @@ extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
 	}
 
 	return rc;
+
 rwfail:
+	FREE_NULL_BUFFER(buffer);
 	return SLURM_ERROR;
 }
 

@@ -767,13 +767,17 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	}
 
 	if (exit_code) {
+		xfree(default_acct);
+		xfree(default_wckey);
 		slurmdb_destroy_wckey_cond(wckey_cond);
 		slurmdb_destroy_assoc_cond(assoc_cond);
 		return SLURM_ERROR;
 	} else if (!list_count(assoc_cond->user_list)) {
+		xfree(default_acct);
+		xfree(default_wckey);
 		slurmdb_destroy_wckey_cond(wckey_cond);
 		slurmdb_destroy_assoc_cond(assoc_cond);
-		exit_code=1;
+		exit_code = 1;
 		fprintf(stderr, " Need name of user to add.\n");
 		return SLURM_ERROR;
 	} else {
@@ -794,9 +798,11 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	}
 
 	if (!local_user_list) {
-		exit_code=1;
+		exit_code = 1;
 		fprintf(stderr, " Problem getting users from database.  "
 			"Contact your admin.\n");
+		xfree(default_acct);
+		xfree(default_wckey);
 		slurmdb_destroy_wckey_cond(wckey_cond);
 		slurmdb_destroy_assoc_cond(assoc_cond);
 		return SLURM_ERROR;
@@ -806,6 +812,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	if (!list_count(assoc_cond->cluster_list)) {
 		if (_check_and_set_cluster_list(assoc_cond->cluster_list)
 		    != SLURM_SUCCESS) {
+			xfree(default_acct);
+			xfree(default_wckey);
 			slurmdb_destroy_wckey_cond(wckey_cond);
 			slurmdb_destroy_assoc_cond(assoc_cond);
 			FREE_NULL_LIST(local_user_list);
@@ -814,6 +822,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		}
 	} else if (sacctmgr_validate_cluster_list(assoc_cond->cluster_list)
 		   != SLURM_SUCCESS) {
+		xfree(default_acct);
+		xfree(default_wckey);
 		slurmdb_destroy_wckey_cond(wckey_cond);
 		slurmdb_destroy_assoc_cond(assoc_cond);
 		FREE_NULL_LIST(local_user_list);
@@ -823,9 +833,11 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 
 	if (!list_count(assoc_cond->acct_list)) {
 		if (!list_count(wckey_cond->name_list)) {
+			xfree(default_acct);
+			xfree(default_wckey);
 			slurmdb_destroy_wckey_cond(wckey_cond);
 			slurmdb_destroy_assoc_cond(assoc_cond);
-			exit_code=1;
+			exit_code = 1;
 			fprintf(stderr, " Need name of account to "
 				"add user to.\n");
 			return SLURM_ERROR;
@@ -1197,7 +1209,7 @@ no_default:
 		rc = SLURM_ERROR;
 		goto end_it;
 	} else if (!assoc_str && !wckey_str) {
-		exit_code=1;
+		exit_code = 1;
 		fprintf(stderr, " No associations or wckeys created.\n");
 		goto end_it;
 	}
@@ -1250,7 +1262,7 @@ no_default:
 			rc = acct_storage_g_add_wckeys(db_conn, my_uid,
 						       wckey_list);
 	} else {
-		exit_code=1;
+		exit_code = 1;
 		fprintf(stderr, " Problem adding users: %s\n",
 			slurm_strerror(rc));
 		rc = SLURM_ERROR;
@@ -1268,7 +1280,7 @@ no_default:
 			acct_storage_g_commit(db_conn, 0);
 		}
 	} else {
-		exit_code=1;
+		exit_code = 1;
 		fprintf(stderr, " Problem adding user associations: %s\n",
 			slurm_strerror(rc));
 		rc = SLURM_ERROR;
@@ -1287,7 +1299,7 @@ end_it:
 extern int sacctmgr_add_coord(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	int i=0;
+	int i = 0;
 	int cond_set = 0, prev_set = 0;
 	slurmdb_user_cond_t *user_cond = xmalloc(sizeof(slurmdb_user_cond_t));
 	char *name = NULL;
