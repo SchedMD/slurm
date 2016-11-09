@@ -1,4 +1,3 @@
-/* -*- Mode: C; tab-width:8 ; c-basic-offset:8 ; indent-tabs-mode:t -*- */
 /*****************************************************************************\
  *  read_config.c - read the overall slurm configuration file
  *****************************************************************************
