@@ -444,6 +444,9 @@ Server version: 5.0.51a-3ubuntu5.1 (Ubuntu)
 
 Type 'help;' or '\h' for help. Type '\c' to clear the buffer.
 
+mysql> create user 'slurm'@'localhost' identified by 'password';
+Query OK, 0 rows affected (0.00 sec)
+
 mysql> grant all on slurm_acct_db.* TO 'slurm'@'localhost';
 Query OK, 0 rows affected (0.00 sec)
 </pre>
@@ -699,7 +702,7 @@ as deleted.
 If an entity has existed for less than 1 day, the entity will be removed
 completely. This is meant to clean up after typographic errors.</p>
 
-<p style="text-align:center;">Last modified 6 April 2015</p>
+<p style="text-align:center;">Last modified 9 November 2016</p>
 
 <!--#include virtual="footer.txt"-->
 
