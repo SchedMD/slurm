@@ -168,6 +168,9 @@ documents those changes that are of interest to users and administrators.
  -- select/linear plugin modified to better support heterogeneous clusters when
     topology/none is also configured.
  -- Permit cancellation of jobs in configuring state.
+ -- acct_gather_energy/rapl - prevent segfault in slurmd from race to gather
+    data at slurmd startup.
+ -- Integrate node_feature/knl_generic with "hbm" GRES information.
 
 * Changes in Slurm 16.05.6
 ==========================

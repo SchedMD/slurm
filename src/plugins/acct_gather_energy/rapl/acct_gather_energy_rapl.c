@@ -435,6 +435,12 @@ extern int acct_gather_energy_p_update_node_energy(void)
 
 	xassert(_run_in_daemon());
 
+	if (!local_energy) {
+		debug("%s: trying to update node energy, but no local_energy"
+		      "yet.", __func__);
+		acct_gather_energy_p_conf_set(NULL);
+	}
+
 	if (local_energy->current_watts == NO_VAL)
 		return rc;
 
