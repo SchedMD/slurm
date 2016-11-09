@@ -91,6 +91,7 @@ print_field_t fields[] = {
 	{10, "MaxVMSize", print_fields_str, PRINT_MAXVSIZE},
 	{14, "MaxVMSizeNode", print_fields_str, PRINT_MAXVSIZENODE},
 	{14, "MaxVMSizeTask", print_fields_uint, PRINT_MAXVSIZETASK},
+	{12, "McsLabel", print_fields_str, PRINT_MCS_LABEL},
 	{10, "MinCPU", print_fields_str, PRINT_MINCPU},
 	{10, "MinCPUNode", print_fields_str, PRINT_MINCPUNODE},
 	{10, "MinCPUTask", print_fields_uint, PRINT_MINCPUTASK},

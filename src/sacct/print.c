@@ -1406,6 +1406,24 @@ extern void print_fields(type_t type, void *object)
 					     tmp_uint32,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_MCS_LABEL:
+			switch(type) {
+			case JOB:
+				if (job->mcs_label)
+					tmp_char = job->mcs_label;
+				break;
+			case JOBSTEP:
+				break;
+			case JOBCOMP:
+				break;
+			default:
+				tmp_char = "n/a";
+				break;
+			}
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_MINCPU:
 			if (got_stats) {
 				switch(type) {
