@@ -79,7 +79,7 @@
 
 /* Intel Knights Landing Configuration Modes */
 #define KNL_NUMA_CNT	5
-#define KNL_MCDRAM_CNT	4
+#define KNL_MCDRAM_CNT	5
 #define KNL_NUMA_FLAG	0x00ff
 #define KNL_ALL2ALL	0x0001
 #define KNL_SNC2	0x0002
@@ -92,6 +92,10 @@
 #define KNL_HYBRID	0x0400
 #define KNL_FLAT	0x0800
 #define KNL_AUTO	0x1000
+
+#ifndef DEFAULT_MCDRAM_SIZE
+#define DEFAULT_MCDRAM_SIZE ((uint64_t) 16 * 1024 * 1024 * 1024)
+#endif
 
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
@@ -570,7 +574,7 @@ extern int init(void)
 	char *knl_conf_file, *tmp_str = NULL, *resume_program;
 	s_p_hashtbl_t *tbl;
 	struct stat stat_buf;
-	int i, rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
 
 	/* Set default values */
 	allow_mcdram = KNL_MCDRAM_FLAG;
@@ -580,8 +584,15 @@ extern int init(void)
 	debug_flag = false;
 	default_mcdram = KNL_CACHE;
 	default_numa = KNL_ALL2ALL;
-	for (i = 0; i < KNL_MCDRAM_CNT; i++)
-		mcdram_pct[i] = -1;
+
+//FIXME: Need better mechanism to get MCDRAM percentages
+//	for (i = 0; i < KNL_MCDRAM_CNT; i++)
+//		mcdram_pct[i] = -1;
+	mcdram_pct[0] = 100;	// KNL_CACHE
+	mcdram_pct[1] = 50;	// KNL_EQUAL
+	mcdram_pct[2] = 50;	// KNL_HYBRID
+	mcdram_pct[3] = 0;	// KNL_FLAT
+	mcdram_pct[4] = 0;	// KNL_AUTO
 
 	knl_conf_file = get_extra_conf_path("knl_generic.conf");
 	if ((stat(knl_conf_file, &stat_buf) == 0) &&
@@ -1119,8 +1130,9 @@ extern int node_features_p_node_update(char *active_features,
 	if (mcdram_per_node == NULL) {
 //FIXME: Additional logic is needed to determine the available MCDRAM space
 //FIXME: Additional logic will also be required to handle heterogeneous sizes
-		verbose("%s: mcdram_per_node is NULL", __func__);
-		return SLURM_ERROR;
+		mcdram_per_node = xmalloc(sizeof(uint64_t) * node_record_count);
+		for (i = 0; i < node_record_count; i++)
+			mcdram_per_node[i] = DEFAULT_MCDRAM_SIZE;
 	}
 	mcdram_inx = _knl_mcdram_parse(active_features, ",");
 	if (mcdram_inx == 0)
