@@ -343,6 +343,7 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 	while ((rc == SLURM_SUCCESS) && (tok = strsep(&p, ";"))) {
 		if (xstrcasecmp(tok, "help") == 0) {
 			slurm_print_cpu_bind_help();
+			xfree(buf);
 			return 1;
 		}
 		if (!have_binding && log_binding) {
