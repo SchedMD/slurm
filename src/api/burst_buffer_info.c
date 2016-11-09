@@ -157,7 +157,7 @@ static void _print_burst_buffer_resv(FILE *out,
 				     int one_liner, bool verbose)
 {
 	char sz_buf[32], time_buf[64], tmp_line[512];
-	char *out_buf = NULL;
+	char *out_buf = NULL, *user_name;
 
 	/****** Line 1 ******/
 	if (burst_buffer_ptr->job_id &&
@@ -183,6 +183,8 @@ static void _print_burst_buffer_resv(FILE *out,
 		time_t now = time(NULL);
 		slurm_make_time_str(&now, time_buf, sizeof(time_buf));
 	}
+
+	user_name = uid_to_string(burst_buffer_ptr->user_id);
 	if (verbose) {
 		snprintf(tmp_line, sizeof(tmp_line),
 			 "Account=%s CreateTime=%s Partition=%s Pool=%s QOS=%s "
@@ -191,16 +193,15 @@ static void _print_burst_buffer_resv(FILE *out,
 			 burst_buffer_ptr->partition, burst_buffer_ptr->pool,
 			 burst_buffer_ptr->qos,
 			 sz_buf, bb_state_string(burst_buffer_ptr->state),
-			 uid_to_string(burst_buffer_ptr->user_id),
-			 burst_buffer_ptr->user_id);
+			 user_name, burst_buffer_ptr->user_id);
 	} else {
 		snprintf(tmp_line, sizeof(tmp_line),
 			 "CreateTime=%s Pool=%s Size=%s State=%s UserID=%s(%u)",
 			 time_buf, burst_buffer_ptr->pool, sz_buf,
 			 bb_state_string(burst_buffer_ptr->state),
-			 uid_to_string(burst_buffer_ptr->user_id),
-			 burst_buffer_ptr->user_id);
+			 user_name, burst_buffer_ptr->user_id);
 	}
+	xfree(user_name);
 	xstrcat(out_buf, tmp_line);
 
 	xstrcat(out_buf, "\n");
@@ -213,12 +214,14 @@ static void _print_burst_buffer_use(FILE *out,
 				    int one_liner)
 {
 	char tmp_line[512], sz_buf[32];
-	char *out_buf = NULL;
+	char *out_buf = NULL, *user_name;
 
+	user_name = uid_to_string(usage_ptr->user_id);
 	_get_size_str(sz_buf, sizeof(sz_buf), usage_ptr->used);
 	snprintf(tmp_line, sizeof(tmp_line),
 		 "    UserID=%s(%u) Used=%s",
-	         uid_to_string(usage_ptr->user_id), usage_ptr->user_id, sz_buf);
+	         user_name, usage_ptr->user_id, sz_buf);
+	xfree(user_name);
 
 	xstrcat(out_buf, tmp_line);
 	xstrcat(out_buf, "\n");
