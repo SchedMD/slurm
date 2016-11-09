@@ -2573,21 +2573,23 @@ _unpack_network_callerid_msg(network_callerid_msg_t **msg_ptr, Buf buffer,
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackmem_xmalloc(&charptr_tmp, &uint32_tmp, buffer);
 		memcpy(msg->ip_src, charptr_tmp, uint32_tmp);
+		xfree(charptr_tmp);
 		safe_unpackmem_xmalloc(&charptr_tmp, &uint32_tmp, buffer);
 		memcpy(msg->ip_dst, charptr_tmp, uint32_tmp);
+		xfree(charptr_tmp);
 		safe_unpack32(&msg->port_src,		buffer);
 		safe_unpack32(&msg->port_dst,		buffer);
 		safe_unpack32((uint32_t *)&msg->af,	buffer);
 	} else {
-		error("_unpack_network_callerid_msg: protocol_version "
-		      "%hu not supported", protocol_version);
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
 		goto unpack_error;
 	}
 
 	return SLURM_SUCCESS;
 
 unpack_error:
-	info("_unpack_network_callerid_msg error");
+	info("%s: error", __func__);
 	*msg_ptr = NULL;
 	slurm_free_network_callerid_msg(msg);
 	return SLURM_ERROR;
@@ -2625,15 +2627,15 @@ static int _unpack_network_callerid_resp_msg(network_callerid_resp_t **msg_ptr,
 		safe_unpackmem_xmalloc(&msg->node_name, &uint32_tmp, buffer);
 	} else {
 
-		error("_unpack_network_callerid_msg: protocol_version "
-		      "%hu not supported", protocol_version);
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
 		goto unpack_error;
 	}
 
 	return SLURM_SUCCESS;
 
 unpack_error:
-	info("_unpack_network_callerid_msg error");
+	info("%s: error", __func__);
 	*msg_ptr = NULL;
 	slurm_free_network_callerid_resp(msg);
 	return SLURM_ERROR;
@@ -3002,7 +3004,7 @@ _unpack_priority_factors_request_msg(priority_factors_request_msg_t ** msg,
 				     Buf buffer,
 				     uint16_t protocol_version)
 {
-	uint32_t* uint32_tmp;
+	uint32_t *uint32_tmp = NULL;
 	uint32_t count = NO_VAL;
 	int i;
 	priority_factors_request_msg_t *object_ptr = NULL;
@@ -3015,20 +3017,22 @@ _unpack_priority_factors_request_msg(priority_factors_request_msg_t ** msg,
 	safe_unpack32(&count, buffer);
 	if (count != NO_VAL) {
 		object_ptr->job_id_list = list_create(slurm_destroy_uint32_ptr);
-		for (i=0; i<count; i++) {
+		for (i = 0; i < count; i++) {
 			uint32_tmp = xmalloc(sizeof(uint32_t));
 			safe_unpack32(uint32_tmp, buffer);
 			list_append(object_ptr->job_id_list, uint32_tmp);
+			uint32_tmp = NULL;
 		}
 	}
 
 	safe_unpack32(&count, buffer);
 	if (count != NO_VAL) {
 		object_ptr->uid_list = list_create(slurm_destroy_uint32_ptr);
-		for (i=0; i<count; i++) {
+		for (i = 0; i < count; i++) {
 			uint32_tmp = xmalloc(sizeof(uint32_t));
 			safe_unpack32(uint32_tmp, buffer);
 			list_append(object_ptr->uid_list, uint32_tmp);
+			uint32_tmp = NULL;
 		}
 	}
 	return SLURM_SUCCESS;
@@ -3036,6 +3040,7 @@ _unpack_priority_factors_request_msg(priority_factors_request_msg_t ** msg,
 unpack_error:
 	slurm_free_priority_factors_request_msg(object_ptr);
 	*msg = NULL;
+	xfree(uint32_tmp);
 	return SLURM_ERROR;
 }
 
@@ -3716,6 +3721,7 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 	return SLURM_SUCCESS;
 
 unpack_error:
+	xfree(gres_info);
 	slurm_free_node_registration_status_msg(node_reg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
@@ -5310,7 +5316,7 @@ _unpack_composite_msg(composite_msg_t **msg, Buf buffer,
 
 	if (count != NO_VAL) {
 		object_ptr->msg_list = list_create(slurm_free_comp_msg_list);
-		for (i=0; i<count; i++) {
+		for (i = 0; i < count; i++) {
 			tmp_info = xmalloc_nz(sizeof(slurm_msg_t));
 			slurm_msg_t_init(tmp_info);
 			safe_unpack16(&tmp_info->protocol_version, buffer);
@@ -5346,10 +5352,12 @@ _unpack_composite_msg(composite_msg_t **msg, Buf buffer,
 	}
 	xfree(auth_info);
 	return SLURM_SUCCESS;
+
 unpack_error:
 	slurm_free_composite_msg(object_ptr);
 	*msg = NULL;
 	xfree(auth_info);
+	xfree(tmp_info);
 	return SLURM_ERROR;
 }
 
@@ -5819,7 +5827,7 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer,
 			      uint16_t protocol_version)
 {
 	uint32_t uint32_tmp = 0;
-	char *node_inx_str;
+	char *node_inx_str = NULL;
 
 	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		safe_unpack32(&step->array_job_id, buffer);
@@ -5960,6 +5968,7 @@ unpack_error:
 	   since this is freed in _unpack_job_step_info_response_msg
 	*/
 	//slurm_free_job_step_info_members(step);
+	xfree(node_inx_str);
 	return SLURM_ERROR;
 }
 
