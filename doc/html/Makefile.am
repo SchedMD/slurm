@@ -134,7 +134,6 @@ html_DATA = \
 	slurmstyles.css \
 	Slurm_Entity.pdf \
 	Slurm_Individual.pdf \
-	sponsors.gif \
 	squeue_color.png \
 	topo_ex1.gif \
 	topo_ex2.gif \
