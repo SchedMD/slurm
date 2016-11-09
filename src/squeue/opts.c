@@ -1839,7 +1839,7 @@ _build_state_list( char* str )
 
 static void _append_state_list(List my_list, uint32_t state_id)
 {
-	uint16_t *state_rec;
+	uint32_t *state_rec;
 
 	state_rec = xmalloc(sizeof(uint32_t));
 	*state_rec = state_id;
