@@ -581,7 +581,7 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 				//bb_job->buf_ptr[inx].create = false;
 				bb_job->buf_ptr[inx].destroy = true;
 				bb_job->buf_ptr[inx].hurry = (bb_hurry != NULL);
-				bb_job->buf_ptr[inx].name = xstrdup(bb_name);
+				bb_job->buf_ptr[inx].name = bb_name;
 				//bb_job->buf_ptr[inx].pool = NULL;
 				//bb_job->buf_ptr[inx].size = 0;
 				bb_job->buf_ptr[inx].state = BB_STATE_PENDING;
@@ -633,7 +633,7 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 				//bb_job->buf_ptr[inx].create = false;
 				//bb_job->buf_ptr[inx].destroy = false;
 				//bb_job->buf_ptr[inx].hurry = false;
-				bb_job->buf_ptr[inx].name = xstrdup(bb_name);
+				bb_job->buf_ptr[inx].name = bb_name;
 				//bb_job->buf_ptr[inx].size = 0;
 				bb_job->buf_ptr[inx].state = BB_STATE_PENDING;
 				//bb_job->buf_ptr[inx].type = NULL;
@@ -4504,6 +4504,10 @@ _bb_get_configs(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	xfree(resp_msg);
 
 	json_object_object_foreachC(j, iter) {
+		if (ents) {
+			error("%s: Multiple configuration objects", __func__);
+			break;
+		}
 		ents = _json_parse_configs_array(j, iter.key, num_ent);
 	}
 	json_object_put(j);	/* Frees json memory */
@@ -4567,6 +4571,10 @@ _bb_get_instances(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	xfree(resp_msg);
 
 	json_object_object_foreachC(j, iter) {
+		if (ents) {
+			error("%s: Multiple instance objects", __func__);
+			break;
+		}
 		ents = _json_parse_instances_array(j, iter.key, num_ent);
 	}
 	json_object_put(j);	/* Frees json memory */
@@ -4632,6 +4640,10 @@ _bb_get_pools(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	xfree(resp_msg);
 
 	json_object_object_foreachC(j, iter) {
+		if (ents) {
+			error("%s: Multiple pool objects", __func__);
+			break;
+		}
 		ents = _json_parse_pools_array(j, iter.key, num_ent);
 	}
 	json_object_put(j);	/* Frees json memory */
@@ -4692,6 +4704,10 @@ _bb_get_sessions(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	xfree(resp_msg);
 
 	json_object_object_foreachC(j, iter) {
+		if (ents) {
+			error("%s: Multiple session objects", __func__);
+			break;
+		}
 		ents = _json_parse_sessions_array(j, iter.key, num_ent);
 	}
 	json_object_put(j);	/* Frees json memory */
@@ -5069,6 +5085,7 @@ extern char *bb_p_xlate_bb_2_tres_str(char *burst_buffer)
 
 		tok = strtok_r(NULL, ",", &save_ptr);
 	}
+	xfree(tmp);
 
 	if (total)
 		xstrfmtcat(result, "%d=%"PRIu64, bb_state.tres_id, total);
