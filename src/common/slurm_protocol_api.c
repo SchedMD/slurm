@@ -4767,14 +4767,14 @@ extern void convert_num_unit2(double num, char *buf, int buf_size,
 		/* convert until we would loose precision */
 		/* half values  (e.g., 2.5G) are still considered precise */
 
-		while (num > divisor
+		while (num >= divisor
 		       && ((uint64_t)num % (divisor / 2) == 0)) {
 			num /= divisor;
 			orig_type++;
 		}
 	} else {
 		/* aggressively convert values */
-		while (num > divisor) {
+		while (num >= divisor) {
 			num /= divisor;
 			orig_type++;
 		}

@@ -14,6 +14,7 @@ documents those changes that are of interest to users and administrators.
     which could lead to inconsistencies. Add "ASAP" option to "scontrol reboot"
     command that will drain a node in order to reboot it as soon as possible,
     then return it to service.
+ -- Allow unit conversion routine to convert 1024M to 1G.
 
 * Changes in Slurm 17.02.0pre3
 ==============================
