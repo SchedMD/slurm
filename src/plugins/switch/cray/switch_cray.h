@@ -64,7 +64,7 @@
  * path that does not vary regardless of where Slurm is installed.
  */
 #ifndef LEGACY_SPOOL_DIR
-#define LEGACY_SPOOL_DIR	"/var/spool/alps/"
+#define LEGACY_SPOOL_DIR	"/var/opt/cray/alps/spool/"
 #endif
 
 // Magic value signifying that jobinfo wasn't NULL

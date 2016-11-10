@@ -15,6 +15,7 @@ documents those changes that are of interest to users and administrators.
     command that will drain a node in order to reboot it as soon as possible,
     then return it to service.
  -- Allow unit conversion routine to convert 1024M to 1G.
+ -- switch/cray plugin - change legacy spool directory location.
 
 * Changes in Slurm 17.02.0pre3
 ==============================
