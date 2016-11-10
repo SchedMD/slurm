@@ -1233,9 +1233,12 @@ extern void node_features_p_step_config(bool mem_sort, bitstr_t *numa_bitmap)
 	if (mem_sort && (numa_available() != -1)) {
 //FIXME: after reboot of SchedMD KNL nodes, run:
 // insmod /home/tim/kmod/xppsl-addons/zonesort_module.ko
+		struct stat sb;
 		int buf_len, fd, i, len;
 		char buf[8];
-		(void) system(MODPROBE_PATH " zonesort_module");
+
+		if (stat(ZONE_SORT_PATH, &sb) == -1)
+			(void) system(MODPROBE_PATH " zonesort_module");
 		if ((fd = open(ZONE_SORT_PATH, O_WRONLY | O_SYNC)) == -1) {
 			error("%s: Could not open file %s: %m",
 			      __func__, ZONE_SORT_PATH);
