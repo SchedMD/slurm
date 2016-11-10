@@ -8,6 +8,13 @@ Slurm as their documentation. A quick description of the subdirectories
 of the Slurm contribs distribution follows:
 
   cray/               [Tools for use on Cray systems]
+     capmc                 - Script used to emulate some capmc functionality
+                             for testing without access to a Cray system
+     capmc_resume.c        - Program used to reboot Cray nodes. Resets KNL node
+                             MCDRAM and/or NUMA mode as requested.
+     capmc_suspend.c       - Program used to power dowen Cray nodes.
+     cnselect              - Script used to emulate some cnselect functionality
+                             for testing without access to a Cray system.
      etc_sysconfig_slurm   - /etc/sysconfig/slurm for Cray XT/XE systems
      libalps_test_programs.tar.gz - set of tools to verify ALPS/BASIL support
 			     logic. Note that this currently requires:
