@@ -4746,17 +4746,10 @@ extern void convert_num_unit2(double num, char *buf, int buf_size,
 	if ((int64_t)num == 0) {
 		snprintf(buf, buf_size, "0");
 		return;
-	} else if (spec_type == NO_VAL && (flags & CONVERT_NUM_UNIT_EXACT)) {
-		i = (uint64_t)num % (divisor / 2);
-
-		if (i > 0) {
-			snprintf(buf, buf_size, "%"PRIu64"%c",
-				 (uint64_t)num, unit[orig_type]);
-			return;
-		}
 	}
 
 	if (spec_type != NO_VAL) {
+		/* spec_type overrides all flags */
 		if (spec_type < orig_type) {
 			while (spec_type < orig_type) {
 				num *= divisor;
@@ -4768,7 +4761,19 @@ extern void convert_num_unit2(double num, char *buf, int buf_size,
 				orig_type++;
 			}
 		}
-	} else if (!(flags & CONVERT_NUM_UNIT_NO)) {
+	} else if (flags & CONVERT_NUM_UNIT_NO) {
+		/* no op */
+	} else if (flags & CONVERT_NUM_UNIT_EXACT) {
+		/* convert until we would loose precision */
+		/* half values  (e.g., 2.5G) are still considered precise */
+
+		while (num > divisor
+		       && ((uint64_t)num % (divisor / 2) == 0)) {
+			num /= divisor;
+			orig_type++;
+		}
+	} else {
+		/* aggressively convert values */
 		while (num > divisor) {
 			num /= divisor;
 			orig_type++;

@@ -1,0 +1,37 @@
+#!/bin/bash
+if [ $# -lt 2 ] ; then
+echo 'no argument'
+exit 1
+fi
+
+if [ "$2" = "numa_cfg.eq.a2a" ] ; then
+echo '1-3'
+exit 0
+fi
+
+if [ "$2" = "numa_cfg.eq.quad" ] ; then
+echo ''
+exit 0
+fi
+
+# cache
+if [ "$2" = "hbmcachepct.eq.100" ] ; then
+echo ''
+exit 0
+fi
+
+# equal
+if [ "$2" = "hbmcachepct.eq.50" ] ; then
+echo ''
+exit 0
+fi
+
+# flat
+if [ "$2" = "hbmcachepct.eq.0" ] ; then
+echo '1-3'
+exit 0
+fi
+
+# DEFAULT
+echo ''
+exit 0

@@ -397,14 +397,6 @@ echo '{
         {
             "mcdram_cfg": "flat,0,split,25,equal,50,cache,100", 
             "nid": 4
-        }, 
-        {
-            "mcdram_cfg": "flat,0,split,25,equal,50,cache,100", 
-            "nid": 5
-        }, 
-        {
-            "mcdram_cfg": "flat,0,split,25,equal,50,cache,100", 
-            "nid": 6
         }
     ], 
     "err_msg": "Success; nids not eligible for mcdram operations were ignored", 
@@ -443,20 +435,6 @@ echo '{
             "mcdram_size": "8192MB", 
             "nid": 4, 
             "dram_size": "96GB"
-        }, 
-        {
-            "mcdram_cfg": "flat", 
-            "mcdram_pct": "0", 
-            "mcdram_size": "8192MB", 
-            "nid": 5, 
-            "dram_size": "96GB"
-        }, 
-        {
-            "mcdram_cfg": "flat", 
-            "mcdram_pct": "0", 
-            "mcdram_size": "8192MB", 
-            "nid": 6, 
-            "dram_size": "96GB"
         }
     ], 
     "err_msg": "Success; nids not eligible for mcdram operations were ignored", 
@@ -483,14 +461,6 @@ echo '{
         {
             "numa_cfg": "a2a,snc2,snc4,hemi,quad", 
             "nid": 4
-        },
-        {
-            "numa_cfg": "a2a,snc2,snc4,hemi,quad", 
-            "nid": 5
-        },
-        {
-            "numa_cfg": "a2a,snc2,snc4,hemi,quad", 
-            "nid": 6
         }
     ], 
     "err_msg": "Success; nids not eligible for numa operations were ignored", 
@@ -513,18 +483,6 @@ echo '{
         {
             "numa_cfg": "a2a", 
             "nid": 3
-        },
-        {
-            "numa_cfg": "a2a", 
-            "nid": 4
-        }, 
-        {
-            "numa_cfg": "a2a", 
-            "nid": 5
-        }, 
-        {
-            "numa_cfg": "a2a", 
-            "nid": 6
         }
     ], 
     "err_msg": "Success; nids not eligible for numa operations were ignored", 
@@ -534,7 +492,6 @@ exit 0
 fi
 
 if [ "$1" = "json" ]; then
-cat >>/home/jette/Desktop/SLURM/install.linux/sbin/capmc2.log
 echo '{
     "e":0,
     "err_msg":""

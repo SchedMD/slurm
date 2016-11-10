@@ -1951,10 +1951,7 @@ static int _update_node_avail_features(char *node_names, char *avail_features)
 		FREE_NULL_BITMAP(tmp_bitmap);
 	}
 	list_iterator_destroy(config_iterator);
-	if (avail_feature_list) {	/* List not set at startup */
-		update_feature_list(avail_feature_list, avail_features,
-				    node_bitmap);
-	}
+	update_feature_list(avail_feature_list, avail_features, node_bitmap);
 	FREE_NULL_BITMAP(node_bitmap);
 
 	info("%s: nodes %s available features set to: %s",
