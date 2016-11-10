@@ -28,6 +28,7 @@ documents those changes that are of interest to users and administrators.
  -- acct_gather_energy/rapl - prevent segfault in slurmd from race to gather
     data at slurmd startup.
  -- Integrate node_feature/knl_generic with "hbm" GRES information.
+ -- Fix output routines to prevent rounding the TRES values for memory or BB.
 
 * Changes in Slurm 16.05.6
 ==========================
