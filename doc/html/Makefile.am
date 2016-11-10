@@ -119,7 +119,6 @@ html_DATA = \
 	ibm_pe_fig1.png \
 	ibm_pe_fig2.png \
 	k_function.gif \
-	linuxstyles.css \
 	mc_support.gif \
 	plane_ex1.gif \
 	plane_ex2.gif \
@@ -128,12 +127,14 @@ html_DATA = \
 	plane_ex5.gif \
 	plane_ex6.gif \
 	plane_ex7.gif \
+	reset.css \
 	slurm_logo.png \
 	schedmd.png \
-	slurmstyles.css \
+	slurm.css \
 	Slurm_Entity.pdf \
 	Slurm_Individual.pdf \
 	squeue_color.png \
+	style.css \
 	topo_ex1.gif \
 	topo_ex2.gif \
 	tutorial_intro_files.tar \

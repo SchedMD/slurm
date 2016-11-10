@@ -1,0 +1,169 @@
+body:before {
+	background: #FCFCFC;
+}
+
+
+/* ELEMENT: Slurm Logo */
+/* ---------------------------- */
+
+.slurm-logo {
+	display: block;
+	width: 100%;
+	height: 0;
+	padding-top: 91.8%;
+	background: url("slurm_logo.png") no-repeat 0 0;
+	background-size: contain;
+	text-indent: -99999em;
+}
+
+
+/* ELEMENT: Slurm Title */
+/* ---------------------------- */
+
+.slurm-title {
+	display: none;
+	max-width: 160px;
+	margin: 0 auto 36px;
+	text-align: center;
+}
+
+.slurm-title__version {
+	color: #888888;
+	font-size: 18px;
+	font-weight: 600;
+	margin-top: .5em;
+	line-height: 1.2em;
+	font-family: 'Ubuntu', 'Source Sans Pro', Helvetica, Arial, sans-serif;
+}
+
+
+/* ELEMENT: Slurm Menu */
+/* ---------------------------- */
+
+.slurm-menu__item {
+	margin-bottom: 27px;
+}
+
+.slurm-menu__sub {
+	margin-top: 9px;
+}
+
+.slurm-menu__sub li a {
+	text-transform: none;
+	letter-spacing: 0;
+}
+
+.slurm-menu__sub a {
+	padding: 2px 18px;
+	font-size: 17px;
+}
+
+
+/* ELEMENT: Figure */
+/* ---------------------------- */
+
+.figure {
+	text-align: center;
+	margin-bottom: 2em;
+	color: #555555;
+}
+
+.figure img {
+	margin-bottom: 0.5em;
+	display: inline;
+}
+
+
+/* ELEMENT: Google Custom Search */
+/* ---------------------------- */
+
+.slurm-search {
+	background: #FCFCFC;
+	border-bottom: 1px solid #D8D8D8;
+	padding: 14px 0 10px;
+}
+
+#cse * {
+	box-sizing: content-box;
+}
+
+.gsc-input-box {
+	height: auto !important;
+}
+
+.gsc-search-button {
+	vertical-align: top;
+}
+
+.gsc-control-cse {
+	padding: 0 !important;
+}
+
+
+/* STRUCTURE: Masthead; */
+/* ---------------------------- */
+
+.site-masthead__title {
+	float: left;
+}
+
+.site-masthead__title--slurm {
+	width: 71px;
+}
+
+
+/* STRUCTURE: Site Navigation */
+/* ---------------------------- */
+
+.site-nav {
+	padding-top: 36px;
+}
+
+.site-nav__menu {
+	max-width: 160px;
+	margin: 0 auto;
+}
+
+
+/* Large Size */
+@media screen and (min-width: 54em) {
+
+	body:after {
+		position: absolute;
+		top: 0;
+		width: 100%;
+		height: 67px;
+		content: "";
+		background: linear-gradient(to right, #F5F5F5 0, #F5F5F5 50%, #FCFCFC 50%, #FCFCFC 100%);
+		z-index: -1;
+		border-bottom: 1px solid #D8D8D8;
+	}
+
+	.site-header {
+		background: #FCFCFC;
+	}
+
+	.site-masthead {
+		overflow: hidden;
+		border-bottom: 1px solid #D8D8D8;
+		background: #F5F5F5;
+	}
+
+	.site-masthead__title {
+		padding: 18px 0;
+		width: 130px;
+		margin: 0 auto;
+		float: none;
+	}
+
+	.site-masthead__title--slurm {
+		position: absolute;
+		left: -99999em;
+	}
+
+	.slurm-title {
+		display: block;
+	}
+}
+
+

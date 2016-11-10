@@ -1,17 +1,18 @@
-</div> <!-- closes "row" -->
-</div> <!-- closes "content" -->
-<div id="row">
-<div id="footer">
-<div id="left">&nbsp;&nbsp;<a href="disclaimer.shtml" target="_blank" class="privacy">Legal Notices</a></div>
-<div id="right"><span class="ucrlnum"></span></div>
-</div>
+			</div> <!-- END .container -->
+		</div> <!-- END .section -->
+	</div> <!-- END .content -->
+</div> <!-- END .main -->
 
-<div id="footer2">
-<div style="clear:both;"></div>
-</div>
-</div> <!-- closes "row" -->
 
-</div> <!-- closes "container" -->
+<footer class="site-footer" role="contentinfo">
+
+	<nav class="footer-nav section">
+		<div class="container">
+			<p><a href="disclaimer.shtml" target="_blank" class="privacy">Legal Notices</a></p>
+		</div>
+	</nav>
+
+</footer>
 
 </body>
 </html>
