@@ -63,8 +63,8 @@ int create_apid_dir(uint64_t apid, uid_t uid, gid_t gid)
 
 	rc = mkdir(apid_dir, 0700);
 	if (rc) {
-		xfree(apid_dir);
 		CRAY_ERR("mkdir failed to make directory %s: %m", apid_dir);
+		xfree(apid_dir);
 		return SLURM_ERROR;
 	}
 
