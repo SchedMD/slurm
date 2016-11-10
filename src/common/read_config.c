@@ -1558,8 +1558,6 @@ static int _get_hash_idx(const char *name)
 	index %= NAME_HASH_LEN;
 	if (index < 0)
 		index += NAME_HASH_LEN;
-	if (index < 0)
-		index = 0; /* Can never happen, but clears a Coverity error */
 
 	return index;
 }
