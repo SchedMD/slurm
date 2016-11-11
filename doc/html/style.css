@@ -683,6 +683,7 @@ input[type="checkbox"] {
 	.site-header {
 		float: left;
 		width: 360px;
+		min-width: 360px;
 		z-index: 1000;
 		border-bottom-width: 0;
 		border-right-width: 1px;
@@ -727,7 +728,7 @@ input[type="checkbox"] {
 	}
 
 	.content .container {
-		padding: 0 12.2% 0 9.2%;
+		padding: 0 8% 0 8%;
 		margin: 0;
 	}
 

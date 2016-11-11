@@ -81,6 +81,7 @@ body:before {
 	background: #FCFCFC;
 	border-bottom: 1px solid #D8D8D8;
 	padding: 14px 0 10px;
+	height: 70px;
 }
 
 #cse * {
@@ -141,6 +142,12 @@ body:before {
 	}
 
 	.site-header {
+		float: left;
+		width: 360px;
+		min-width: 360px;
+		z-index: 1000;
+		border-bottom-width: 0;
+		border-right-width: 1px;
 		background: #FCFCFC;
 	}
 
@@ -148,6 +155,7 @@ body:before {
 		overflow: hidden;
 		border-bottom: 1px solid #D8D8D8;
 		background: #F5F5F5;
+		height: 70px
 	}
 
 	.site-masthead__title {
