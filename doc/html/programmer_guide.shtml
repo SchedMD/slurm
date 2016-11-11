@@ -4,14 +4,11 @@
 
 <h2>Overview</h2>
 
-<p>Simple Linux Utility for Resource Management (Slurm) is an open source, fault-tolerant,
+<p>Slurm is an open source, fault-tolerant,
 and highly scalable cluster management and job scheduling system for large and
 small Linux clusters. Components include machine status, partition management,
 job management, scheduling, and stream copy modules. Slurm requires no kernel
 modifications for it operation and is relatively self-contained.
-<p>There is an overview of the components and their interactions available in
-a separate document, <a href="slurm_design.pdf"> Slurm: Simple Linux Utility for
-Resource Management</a> [PDF].
 
 <p>Slurm is written in the C language and uses a GNU <b>autoconf</b> configuration
 engine. While initially written for Linux, other UNIX-like operating systems should

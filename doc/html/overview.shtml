@@ -2,7 +2,7 @@
 
 <h1><a name="top">Overview</a></h1>
 
-<p>The Simple Linux Utility for Resource Management (Slurm) is an open source,
+<p>Slurm is an open source,
 fault-tolerant, and highly scalable cluster management and job scheduling system
 for large and small Linux clusters. Slurm requires no kernel modifications for
 its operation and is relatively self-contained. As a cluster workload manager,
