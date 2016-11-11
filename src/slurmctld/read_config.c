@@ -106,6 +106,9 @@ static void _add_config_feature_inx(List feature_list, char *feature,
 				    int node_inx);
 static int  _build_bitmaps(void);
 static void _build_bitmaps_pre_select(void);
+static int  _compare_hostnames(struct node_record *old_node_table,
+			       int old_node_count,
+			       struct node_record *node_table, int node_count);
 static void _gres_reconfig(bool reconfig);
 static int  _init_all_slurm_conf(void);
 static void _list_delete_feature(void *feature_entry);
@@ -133,10 +136,6 @@ static int  _sync_nodes_to_active_job(struct job_record *job_ptr);
 static void _sync_nodes_to_suspended_job(struct job_record *job_ptr);
 static void _sync_part_prio(void);
 static int  _update_preempt(uint16_t old_enable_preempt);
-static int _compare_hostnames(struct node_record *old_node_table,
-							  int old_node_count,
-							  struct node_record *node_table,
-							  int node_count);
 
 
 /* Verify that Slurm directories are secure, not world writable */
