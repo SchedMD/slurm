@@ -119,6 +119,7 @@ static int  _preserve_plugins(slurm_ctl_conf_t * ctl_conf_ptr,
 static void _purge_old_node_state(struct node_record *old_node_table_ptr,
 				int old_node_record_count);
 static void _purge_old_part_state(List old_part_list, char *old_def_part_name);
+static int  _reset_node_bitmaps(void *x, void *arg);
 static int  _restore_job_dependencies(void);
 static int  _restore_node_state(int recover,
 				struct node_record *old_node_table_ptr,
@@ -261,7 +262,9 @@ static void _reorder_nodes_by_rank(void)
 static void _build_bitmaps_pre_select(void)
 {
 	struct part_record   *part_ptr;
+	struct node_record   *node_ptr;
 	ListIterator part_iterator;
+	int i;
 
 	/* scan partition table and identify nodes in each */
 	part_iterator = list_iterator_create(part_list);
@@ -271,6 +274,16 @@ static void _build_bitmaps_pre_select(void)
 					part_ptr->name);
 	}
 	list_iterator_destroy(part_iterator);
+
+	/* initialize the configuration bitmaps */
+	list_for_each(config_list, _reset_node_bitmaps, NULL);
+
+	for (i = 0, node_ptr = node_record_table_ptr;
+	     i < node_record_count; i++, node_ptr++) {
+		if (node_ptr->config_ptr)
+			bit_set(node_ptr->config_ptr->node_bitmap, i);
+	}
+
 	return;
 }
 
@@ -334,9 +347,6 @@ static int _build_bitmaps(void)
 	share_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
 	up_node_bitmap    = (bitstr_t *) bit_alloc(node_record_count);
 
-	/* initialize the configuration bitmaps */
-	list_for_each(config_list, _reset_node_bitmaps, NULL);
-
 	/* Set all bits, all nodes initially available for sharing */
 	bit_set_all(share_node_bitmap);
 
@@ -368,8 +378,6 @@ static int _build_bitmaps(void)
 		}
 		if (IS_NODE_POWER_SAVE(node_ptr))
 			bit_set(power_node_bitmap, i);
-		if (node_ptr->config_ptr)
-			bit_set(node_ptr->config_ptr->node_bitmap, i);
 	}
 
 	return error_code;
