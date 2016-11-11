@@ -301,6 +301,6 @@ $ scontrol create reservation StartTime=16:00 duration=60 \
   BurstBuffer=cray:pool_test:4G
 </pre>
 
-<p style="text-align:center;">Last modified 1 November 2016</p>
+<p style="text-align:center;">Last modified 10 November 2016</p>
 
 <!--#include virtual="footer.txt"-->
