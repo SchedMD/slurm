@@ -8,13 +8,13 @@
 
 	<link rel="shortcut icon" href="favicon.ico" />
 
-	<link href="https://fonts.googleapis.com/css?family=Source+Code+Pro|Source+Sans+Pro:400,400i,600,600i|Ubuntu:300,300i,400,400i,500,500i" rel="stylesheet">
-
+	<link rel="stylesheet" type="text/css" href="fonts.css" />
 	<link rel="stylesheet" type="text/css" href="reset.css" />
 	<link rel="stylesheet" type="text/css" href="style.css" />
 	<link rel="stylesheet" type="text/css" href="slurm.css" />
 
-	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+	<script src="jquery.min.js"></script>
+	<script src="https://www.google.com/jsapi" type="text/javascript"></script>
 	<script type="text/javascript">
 	jQuery(document).ready(function() {
 		jQuery('.menu-trigger').bind('click touchstart', function() {
@@ -24,31 +24,14 @@
 			return false;
 		});
 	});
-	</script>
-	<script src="https://www.google.com/jsapi" type="text/javascript"></script>
-	<script type="text/javascript">
-	  google.load('search', '1', {language : 'en', style : google.loader.themes.V2_DEFAULT});
-	  google.setOnLoadCallback(function() {
+
+	google.load('search', '1', {language : 'en', style : google.loader.themes.V2_DEFAULT});
+	google.setOnLoadCallback(function() {
 	    var customSearchOptions = {};  var customSearchControl = new google.search.CustomSearchControl(
 	      '011890816164765777536:jvrtxrd3f0w', customSearchOptions);
 	    customSearchControl.setResultSetSize(google.search.Search.SMALL_RESULTSET);
 	    customSearchControl.draw('cse');
-	  }, true);
-
-	function window_check ()
-	{
-		obj = document.getElementById('navigation');
-		if ((window.innerWidth>=800) && (window.innerHeight>=700) &&
-		    (screen.width>=800) && (screen.height>=700)) {
-		   obj.style.position = 'fixed';
-		} else {
-		   obj.style.position = 'absolute';
-		}
-	}
-
-	window.onload = window_check;
-	window.onresize = window_check;
-
+	}, true);
 	</script>
 </head>
 
@@ -115,7 +98,7 @@
 					<ul class="slurm-menu__sub">
 						<li><a href="http://www.schedmd.com/#services" class="nav">Support</a></li>
 						<li><a href="mail.shtml" class="nav">Mailing Lists</a></li>
-						<li><a href="http://www.schedmd.com/#services" class="nav">Training</a></li>
+						<li><a href="http://www.schedmd.com/services.php" class="nav">Training</a></li>
 						<li><a href="troubleshoot.shtml" class="nav">Troubleshooting</a></li>
 					</ul>
 				</li>

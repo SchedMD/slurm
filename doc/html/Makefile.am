@@ -114,10 +114,13 @@ html_DATA = \
 	configurator.easy.html \
 	entities.gif \
 	example_usage.gif \
+	fonts.css \
+	fonts.ttf \
 	hdf5_task_attr.png \
 	hdf5_job_outline.png \
 	ibm_pe_fig1.png \
 	ibm_pe_fig2.png \
+	jquery.min.js \
 	k_function.gif \
 	mc_support.gif \
 	plane_ex1.gif \
