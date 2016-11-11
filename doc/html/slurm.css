@@ -22,8 +22,8 @@ body:before {
 
 .slurm-title {
 	display: none;
-	max-width: 160px;
-	margin: 0 auto 36px;
+	max-width: 200px;
+	margin: 0 auto 12px;
 	text-align: center;
 }
 
@@ -116,15 +116,6 @@ body:before {
 
 /* STRUCTURE: Site Navigation */
 /* ---------------------------- */
-
-.site-nav {
-	padding-top: 36px;
-}
-
-.site-nav__menu {
-	max-width: 160px;
-	margin: 0 auto;
-}
 
 
 /* Large Size */

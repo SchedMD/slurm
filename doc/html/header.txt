@@ -65,41 +65,41 @@
 				<div class="slurm-title__version">Version @SLURM_VERSION@</div>
 			</div>
 
-			<ul class="site-nav__menu slurm-menu menu" role="navigation">
-				<li class="site-menu__item slurm-menu__item">
-					About
-					<ul class="slurm-menu__sub">
-						<li><a href="overview.shtml" class="nav">Overview</a></li>
-						<li><a href="news.shtml" class="nav">What's New</a></li>
-						<li><a href="team.shtml" class="nav">Slurm Team</a></li>
-						<li><a href="meetings.shtml" class="nav">Meetings</a></li>
-						<li><a href="testimonials.shtml" class="nav">Testimonials</a></li>
-						<li><a href="disclaimer.shtml" class="nav">Legal Notices</a></li>
+			<ul class="site-nav__menu site-menu menu" role="navigation">
+				<li class="site-menu__item">
+				        <div>About</div>
+					<ul>
+						<li><a href="overview.shtml">Overview</a></li>
+						<li><a href="news.shtml">What's New</a></li>
+						<li><a href="team.shtml">Slurm Team</a></li>
+						<li><a href="meetings.shtml">Meetings</a></li>
+						<li><a href="testimonials.shtml">Testimonials</a></li>
+						<li><a href="disclaimer.shtml">Legal Notices</a></li>
 					</ul>
 				</li>
-				<li class="site-menu__item slurm-menu__item">
-					Using
-					<ul class="slurm-menu__sub">
-						<li><a href="tutorials.shtml" class="nav">Tutorials</a></li>
-						<li><a href="documentation.shtml" class="nav">Documentation</a></li>
-						<li><a href="faq.shtml" class="nav">FAQ</a></li>
-						<li><a href="publications.shtml" class="nav">Publications</a></li>
+				<li class="site-menu__item">
+					<div>Using</div>
+					<ul>
+						<li><a href="tutorials.shtml">Tutorials</a></li>
+						<li><a href="documentation.shtml">Documentation</a></li>
+						<li><a href="faq.shtml">FAQ</a></li>
+						<li><a href="publications.shtml">Publications</a></li>
 					</ul>
 				</li>
-				<li class="site-menu__item slurm-menu__item">
-					Installing
-					<ul class="slurm-menu__sub">
-						<li><a href="download.shtml" class="nav">Download</a></li>
-						<li><a href="quickstart_admin.shtml" class="nav">Installation Guide</a></li>
+				<li class="site-menu__item">
+					<div>Installing</div>
+					<ul>
+						<li><a href="download.shtml">Download</a></li>
+						<li><a href="quickstart_admin.shtml">Installation Guide</a></li>
 					</ul>
 				</li>
-				<li class="site-menu__item slurm-menu__item">
-					Getting Help
-					<ul class="slurm-menu__sub">
-						<li><a href="http://www.schedmd.com/#services" class="nav">Support</a></li>
-						<li><a href="mail.shtml" class="nav">Mailing Lists</a></li>
-						<li><a href="http://www.schedmd.com/services.php" class="nav">Training</a></li>
-						<li><a href="troubleshoot.shtml" class="nav">Troubleshooting</a></li>
+				<li class="site-menu__item">
+					<div>Getting Help</div>
+					<ul>
+						<li><a href="http://www.schedmd.com/services.php">Support</a></li>
+						<li><a href="mail.shtml">Mailing Lists</a></li>
+						<li><a href="http://www.schedmd.com/services.php">Training</a></li>
+						<li><a href="troubleshoot.shtml">Troubleshooting</a></li>
 					</ul>
 				</li>
 			</ul>
