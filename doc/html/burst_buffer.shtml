@@ -191,7 +191,7 @@ job.
 A sample batch script follows:</p>
 <pre>
 #!/bin/bash
-#BB create_persistent name=alpha capacity=32GB access=striped
+#BB create_persistent name=alpha capacity=32GB access=striped type=scratch
 #DW jobdw type=scratch capacity=1GB access_mode=striped
 #DW stage_in  type=file source=/home/alan/data.in  destination=$DW_JOB_STRIPED/data
 #DW stage_out type=file destination=/home/alan/data.out source=$DW_JOB_STRIPED/data
@@ -303,6 +303,6 @@ $ scontrol create reservation StartTime=16:00 duration=60 \
   BurstBuffer=cray:pool_test:4G
 </pre>
 
-<p style="text-align:center;">Last modified 17 October 2016</p>
+<p style="text-align:center;">Last modified 10 November 2016</p>
 
 <!--#include virtual="footer.txt"-->
