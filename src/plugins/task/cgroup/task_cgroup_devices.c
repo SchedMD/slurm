@@ -97,7 +97,6 @@ extern int task_cgroup_devices_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 
 	(void) gres_plugin_node_config_load(cpunum, conf->node_name, NULL);
 
-
 	strcpy(cgroup_allowed_devices_file,
 	       slurm_cgroup_conf->allowed_devices_file);
 	if (xcgroup_ns_create(slurm_cgroup_conf, &devices_ns, "", "devices")
@@ -109,6 +108,7 @@ extern int task_cgroup_devices_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	return SLURM_SUCCESS;
 
 error:
+	xcgroup_ns_destroy(&devices_ns);
 	xcpuinfo_fini();
 	return SLURM_ERROR;
 }

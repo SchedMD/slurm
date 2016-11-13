@@ -32,6 +32,7 @@ documents those changes that are of interest to users and administrators.
  -- switch/cray plugin - fix use after free error.
  -- docs - elaborate on how way to clear TRES limits in sacctmgr.
  -- knl_cray plugin - Avoid abort from backup slurmctld at start time.
+ -- cgroup plugins - fix two minor memory leaks.
 
 * Changes in Slurm 16.05.6
 ==========================
