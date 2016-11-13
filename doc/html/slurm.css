@@ -125,7 +125,7 @@ body:before {
 		position: absolute;
 		top: 0;
 		width: 100%;
-		height: 67px;
+		height: 70px;
 		content: "";
 		background: linear-gradient(to right, #F5F5F5 0, #F5F5F5 50%, #FCFCFC 50%, #FCFCFC 100%);
 		z-index: -1;
