@@ -1407,7 +1407,7 @@ MCS Plugin Parameters.
 The supported parameters are specific to the \fBMCSPlugin\fR.
 Changes to this value take effect when the Slurm daemons are reconfigured.
 More information about MCS is available here
-<http://slurm.schedmd.com/mcs_Plugins.html>.
+<https://slurm.schedmd.com/mcs_Plugins.html>.
 
 .TP
 \fBMCSPlugin\fR
@@ -1469,7 +1469,7 @@ Currently supported versions include:
 \fBopenmpi\fR.
 \fBpmi2\fR,
 More information about MPI use is available here
-<http://slurm.schedmd.com/mpi_guide.html>.
+<https://slurm.schedmd.com/mpi_guide.html>.
 
 .TP
 \fBMpiParams\fR
@@ -1566,7 +1566,7 @@ System power management parameters.
 The supported parameters are specific to the \fBPowerPlugin\fR.
 Changes to this value take effect when the Slurm daemons are reconfigured.
 More information about system power management is available here
-<http://slurm.schedmd.com/power_mgmt.html>.
+<https://slurm.schedmd.com/power_mgmt.html>.
 Options current supported by any plugins are listed below.
 .RS
 .TP
@@ -1668,7 +1668,7 @@ Currently supported plugins include:
 \fBnone\fR.
 Changes to this value require restarting Slurm daemons to take effect.
 More information about system power management is available here
-<http://slurm.schedmd.com/power_mgmt.html>.
+<https://slurm.schedmd.com/power_mgmt.html>.
 By default, no power plugin is loaded.
 
 .TP
@@ -2146,7 +2146,7 @@ The user limits can not exceed hard limits under which the slurmd daemon
 operates. If the user limits are not propagated, the limits from the slurmd
 daemon will be propagated to the user's job. The limits used for the Slurm
 daemons can be set in the /etc/sysconf/slurm file. For more information, see:
-http://slurm.schedmd.com/faq.html#memlock
+https://slurm.schedmd.com/faq.html#memlock
 The following limit names are supported by Slurm (although some
 options may not be supported on some systems):
 .RS
@@ -2274,7 +2274,7 @@ Related configuration options include \fBResumeTimeout\fR, \fBResumeRate\fR,
 \fBSuspendRate\fR, \fBSuspendTime\fR, \fBSuspendTimeout\fR, \fBSuspendProgram\fR,
 \fBSuspendExcNodes\fR, and \fBSuspendExcParts\fR.
 More information is available at the Slurm web site
-( http://slurm.schedmd.com/power_save.html ).
+( https://slurm.schedmd.com/power_save.html ).
 
 .TP
 \fBResumeRate\fR
@@ -2300,7 +2300,7 @@ Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR,
 \fBSuspendRate\fR, \fBSuspendTime\fR, \fBSuspendTimeout\fR, \fBSuspendProgram\fR,
 \fBSuspendExcNodes\fR and \fBSuspendExcParts\fR.
 More information is available at the Slurm web site
-( http://slurm.schedmd.com/power_save.html ).
+( https://slurm.schedmd.com/power_save.html ).
 
 .TP
 \fBResvEpilog\fR
@@ -3332,7 +3332,7 @@ Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR,
 \fBResumeTimeout\fR, \fBSuspendRate\fR, \fBSuspendTime\fR, \fBSuspendProgram\fR,
 \fBSuspendExcNodes\fR and \fBSuspendExcParts\fR.
 More information is available at the Slurm web site
-( http://slurm.schedmd.com/power_save.html ).
+( https://slurm.schedmd.com/power_save.html ).
 
 .TP
 \fBSwitchType\fR
@@ -3796,7 +3796,7 @@ Isolation of the Slurm daemons from user jobs may improve
 performance.  If this option and \fBCPUSpecList\fR are both designated for a
 node, an error is generated.  For information on the algorithm used by Slurm
 to select the cores refer to the core specialization documentation
-( http://slurm.schedmd.com/core_spec.html ). This option has no effect
+( https://slurm.schedmd.com/core_spec.html ). This option has no effect
 unless cgroup job confinement is also configured (\fBTaskPlugin=task/cgroup\fR
 with \fBConstrainCores=yes\fR in cgroup.conf).
 
@@ -4457,13 +4457,13 @@ The default value is "NO".
 For more information see the following web pages:
 .br
 .na
-\fIhttp://slurm.schedmd.com/cons_res.html\fR,
+\fIhttps://slurm.schedmd.com/cons_res.html\fR,
 .br
-\fIhttp://slurm.schedmd.com/cons_res_share.html\fR,
+\fIhttps://slurm.schedmd.com/cons_res_share.html\fR,
 .br
-\fIhttp://slurm.schedmd.com/gang_scheduling.html\fR, and
+\fIhttps://slurm.schedmd.com/gang_scheduling.html\fR, and
 .br
-\fIhttp://slurm.schedmd.com/preempt.html\fR.
+\fIhttps://slurm.schedmd.com/preempt.html\fR.
 .ad
 
 .RS
@@ -4809,7 +4809,7 @@ Slurm is able to optimize job allocations to minimize network contention.
 Special Slurm logic is used to optimize allocations on systems with a
 three\-dimensional interconnect (BlueGene, etc.)
 and information about configuring those systems are available on
-web pages available here: <http://slurm.schedmd.com/>.
+web pages available here: <https://slurm.schedmd.com/>.
 For a hierarchical network, Slurm needs to have detailed information
 about how nodes are configured on the network switches.
 .LP
@@ -5182,7 +5182,7 @@ Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 Copyright (C) 2010-2016 SchedMD LLC.
 .LP
 This file is part of Slurm, a resource management program.
-For details, see <http://slurm.schedmd.com/>.
+For details, see <https://slurm.schedmd.com/>.
 .LP
 Slurm is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free

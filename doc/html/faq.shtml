@@ -200,7 +200,7 @@ then while there is no license fee, its use is not without cost.</p>
 <p>If your work is important, you'll want the leading Slurm experts at your
 disposal to keep your systems operating at peak efficiency.
 While Slurm has a global development community incorporating leading edge
-technology, <a href="http://www.schedmd.com">SchedMD</a> personnel have developed
+technology, <a href="https://www.schedmd.com">SchedMD</a> personnel have developed
 most of the code and can provide competitively priced commercial support.
 SchedMD works with various organizations to provide a range of support
 options ranging from remote level-3 support to 24x7 on-site personnel.
@@ -2192,7 +2192,7 @@ A job submit plugin is designed to have access to a job request from a user,
 plus information about all of the available system partitions/queue.
 An administrator can write a C plugin or LUA script to set an incoming job's
 partition based upon its size, time limit, etc.
-See the <a href="http://slurm.schedmd.com/job_submit_plugins.html"> Job Submit Plugin API<a>
+See the <a href="https://slurm.schedmd.com/job_submit_plugins.html"> Job Submit Plugin API<a>
 guide for more information.
 Also see the available job submit plugins distributed with Slurm for examples
 (look in the "src/plugins/job_submit" directory).</p>

@@ -48,7 +48,7 @@
 				</a>
 			</h1>
 			<div class="site-masthead__title">
-				<a href="http://www.schedmd.com/" rel="home">
+				<a href="https://www.schedmd.com/" rel="home">
 					<span class="site-logo">SchedMD</span>
 				</a>
 			</div>
@@ -96,9 +96,9 @@
 				<li class="site-menu__item">
 					<div>Getting Help</div>
 					<ul>
-						<li><a href="http://www.schedmd.com/services.php">Support</a></li>
+						<li><a href="https://www.schedmd.com/services.php">Support</a></li>
 						<li><a href="mail.shtml">Mailing Lists</a></li>
-						<li><a href="http://www.schedmd.com/services.php">Training</a></li>
+						<li><a href="https://www.schedmd.com/services.php">Training</a></li>
 						<li><a href="troubleshoot.shtml">Troubleshooting</a></li>
 					</ul>
 				</li>
