@@ -81,6 +81,22 @@ is to execute.  If you want munge authentication, which is highly
 recommended, you will also need to install
 the <i>slurm-munge</i> RPM.</p>
 
+<p>Note if you switch from using the MySQL plugin to use the SlurmDBD plugin
+  you must make sure the cluster has been added to the database.  The MySQL
+  plugin doesn't require this, but also will not hurt things if you have it
+  there when using the MySQL plugin.  You can verify with
+<pre>
+sacctmgr list cluster
+</pre>
+If the cluster isn't there add it (where my clusters name were snowflake):
+<pre>
+sacctmgr add cluster snowflake
+</pre>
+Failure to do so will result in the slurmctld failing to talk to the slurmdbd
+after the switch.  If you plan to upgrade to a new version of Slurm don't switch
+plugins at the same time or you may get unexpected results.  Do one then the
+other.</p>
+
 <p>If SlurmDBD is configured for use but not responding then <i>slurmctld</i> 
 will utilize an interal cache until SlurmDBD is returned to service.
 The cached data is written by <i>slurmctld</i> to local storage upon shutdown
