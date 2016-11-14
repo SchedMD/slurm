@@ -1414,6 +1414,9 @@ static int _schedule(uint32_t job_limit)
 	bit_not(avail_node_bitmap);
 	unavail_node_str = bitmap2node_name(avail_node_bitmap);
 	bit_not(avail_node_bitmap);
+	bit_not(booting_node_bitmap);
+	bit_and(avail_node_bitmap, booting_node_bitmap);
+	bit_not(booting_node_bitmap);
 
 	if (max_jobs_per_part) {
 		ListIterator part_iterator;
@@ -3637,6 +3640,7 @@ extern int reboot_job_nodes(struct job_record *job_ptr)
 		node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 		node_ptr->node_state |= NODE_STATE_POWER_UP;
 		bit_clear(avail_node_bitmap, i);
+		bit_set(booting_node_bitmap, i);
 		node_ptr->last_response = now + slurmctld_conf.resume_timeout;
 	}
 	FREE_NULL_BITMAP(boot_node_bitmap);
@@ -3875,6 +3879,7 @@ static void *_run_prolog(void *arg)
 		for (i=0; i<node_record_count; i++) {
 			if (bit_test(job_ptr->node_bitmap, i) == 0)
 				continue;
+			bit_clear(booting_node_bitmap, i);
 			node_record_table_ptr[i].node_state &=
 				(~NODE_STATE_POWER_UP);
 		}
@@ -3882,6 +3887,7 @@ static void *_run_prolog(void *arg)
 		for (i=0; i<node_record_count; i++) {
 			if (bit_test(node_bitmap, i) == 0)
 				continue;
+			bit_clear(booting_node_bitmap, i);
 			node_record_table_ptr[i].node_state &=
 				(~NODE_STATE_POWER_UP);
 		}

@@ -33,6 +33,8 @@ documents those changes that are of interest to users and administrators.
  -- docs - elaborate on how way to clear TRES limits in sacctmgr.
  -- knl_cray plugin - Avoid abort from backup slurmctld at start time.
  -- cgroup plugins - fix two minor memory leaks.
+ -- If a node is booting for some job, don't allocate additional jobs to the
+    node until the boot completes.
 
 * Changes in Slurm 16.05.6
 ==========================

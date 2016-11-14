@@ -323,12 +323,14 @@ static int _build_bitmaps(void)
 
 	/* initialize the idle and up bitmaps */
 	FREE_NULL_BITMAP(avail_node_bitmap);
+	FREE_NULL_BITMAP(booting_node_bitmap);
 	FREE_NULL_BITMAP(cg_node_bitmap);
 	FREE_NULL_BITMAP(idle_node_bitmap);
 	FREE_NULL_BITMAP(power_node_bitmap);
 	FREE_NULL_BITMAP(share_node_bitmap);
 	FREE_NULL_BITMAP(up_node_bitmap);
 	avail_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
+	booting_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
 	cg_node_bitmap    = (bitstr_t *) bit_alloc(node_record_count);
 	idle_node_bitmap  = (bitstr_t *) bit_alloc(node_record_count);
 	power_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
@@ -369,6 +371,8 @@ static int _build_bitmaps(void)
 		if ((IS_NODE_IDLE(node_ptr) && (job_cnt == 0)) ||
 		    IS_NODE_DOWN(node_ptr))
 			bit_set(idle_node_bitmap, i);
+		if (IS_NODE_POWER_UP(node_ptr))
+			bit_set(booting_node_bitmap, i);
 		if (IS_NODE_COMPLETING(node_ptr))
 			bit_set(cg_node_bitmap, i);
 		if (IS_NODE_IDLE(node_ptr) || IS_NODE_ALLOCATED(node_ptr)) {

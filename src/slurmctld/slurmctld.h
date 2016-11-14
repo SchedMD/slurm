@@ -259,6 +259,7 @@ extern List avail_feature_list;	/* list of available node features */
  *
  *  avail_node_bitmap       Set if node's state is not DOWN, DRAINING/DRAINED,
  *                          FAILING or NO_RESPOND (i.e. available to run a job)
+ *  booting_node_bitmap     Set if node in process of booting
  *  cg_node_bitmap          Set if node in completing state
  *  idle_node_bitmap        Set if node has no jobs allocated to it
  *  power_node_bitmap       Set for nodes which are powered down
@@ -270,6 +271,7 @@ extern List avail_feature_list;	/* list of available node features */
 \*****************************************************************************/
 extern bitstr_t *avail_node_bitmap;	/* bitmap of available nodes,
 					 * state not DOWN, DRAIN or FAILING */
+extern bitstr_t *booting_node_bitmap;	/* bitmap of booting nodes */
 extern bitstr_t *cg_node_bitmap;	/* bitmap of completing nodes */
 extern bitstr_t *idle_node_bitmap;	/* bitmap of idle nodes */
 extern bitstr_t *power_node_bitmap;	/* Powered down nodes */

@@ -1054,6 +1054,9 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 
 	if (!save_avail_node_bitmap)
 		save_avail_node_bitmap = bit_copy(avail_node_bitmap);
+	bit_not(booting_node_bitmap);
+	bit_and(avail_node_bitmap, booting_node_bitmap);
+	bit_not(booting_node_bitmap);
 	filter_by_node_owner(job_ptr, avail_node_bitmap);
 
 	/* get mcs_select */
