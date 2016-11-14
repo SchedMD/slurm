@@ -68,42 +68,42 @@ def llnl_references(line):
         lineFix = line.replace(manStr,htmlStr)
         if lineFix != line:
             return lineFix
-        manStr = '<A HREF="http://slurm.schedmd.com/mc_support.html">http://slurm.schedmd.com/mc_support.html</A>'
+        manStr = '<A HREF="https://slurm.schedmd.com/mc_support.html">https://slurm.schedmd.com/mc_support.html</A>'
         htmlStr = 'the <a href="mc_support.html">mc_support</a> document'
         lineFix = line.replace(manStr,htmlStr)
         if lineFix != line:
             return lineFix
-        manStr = '<A HREF="http://slurm.schedmd.com/dist_plane.html.">http://slurm.schedmd.com/dist_plane.html.</A>'
+        manStr = '<A HREF="https://slurm.schedmd.com/dist_plane.html.">https://slurm.schedmd.com/dist_plane.html.</A>'
         htmlStr = 'the <a href="dist_plane.html">dist_plane</a> document'
         lineFix = line.replace(manStr,htmlStr)
         if lineFix != line:
             return lineFix
-        manStr = '&lt;<A HREF="http://slurm.schedmd.com/mpi_guide.html">http://slurm.schedmd.com/mpi_guide.html</A>&gt;'
+        manStr = '&lt;<A HREF="https://slurm.schedmd.com/mpi_guide.html">https://slurm.schedmd.com/mpi_guide.html</A>&gt;'
         htmlStr = '<a href="mpi_guide.html">mpi_guide</a>'
         lineFix = line.replace(manStr,htmlStr)
         if lineFix != line:
             return lineFix
-        manStr = '(<A HREF="http://slurm.schedmd.com/power_save.html).">http://slurm.schedmd.com/power_save.html).</A>'
+        manStr = '(<A HREF="https://slurm.schedmd.com/power_save.html).">https://slurm.schedmd.com/power_save.html).</A>'
         htmlStr = '<a href="power_save.html">power_save</a>'
         lineFix = line.replace(manStr,htmlStr)
         if lineFix != line:
             return lineFix
-        manStr = '<A HREF="http://slurm.schedmd.com/cons_res.html">http://slurm.schedmd.com/cons_res.html</A>'
+        manStr = '<A HREF="https://slurm.schedmd.com/cons_res.html">https://slurm.schedmd.com/cons_res.html</A>'
         htmlStr = '<a href="cons_res.html">cons_res</a>'
         lineFix = line.replace(manStr,htmlStr)
         if lineFix != line:
             return lineFix
-        manStr = '<A HREF="http://slurm.schedmd.com/cons_res_share.html">http://slurm.schedmd.com/cons_res_share.html</A>'
+        manStr = '<A HREF="https://slurm.schedmd.com/cons_res_share.html">https://slurm.schedmd.com/cons_res_share.html</A>'
         htmlStr = '<a href="cons_res_share.html">cons_res_share</a>'
         lineFix = line.replace(manStr,htmlStr)
         if lineFix != line:
             return lineFix
-        manStr = '<A HREF="http://slurm.schedmd.com/gang_scheduling.html">http://slurm.schedmd.com/gang_scheduling.html</A>'
+        manStr = '<A HREF="https://slurm.schedmd.com/gang_scheduling.html">https://slurm.schedmd.com/gang_scheduling.html</A>'
         htmlStr = '<a href="gang_scheduling.html">gang_scheduling</a>'
         lineFix = line.replace(manStr,htmlStr)
         if lineFix != line:
             return lineFix
-        manStr = '<A HREF="http://slurm.schedmd.com/preempt.html">http://slurm.schedmd.com/preempt.html</A>'
+        manStr = '<A HREF="https://slurm.schedmd.com/preempt.html">https://slurm.schedmd.com/preempt.html</A>'
         htmlStr = '<a href="preempt.html">preempt</a>'
         lineFix = line.replace(manStr,htmlStr)
         if lineFix != line:

@@ -4,7 +4,7 @@
 
 <p><b>NOTE: This documentation is for Slurm version @SLURM_VERSION@.<br>
 Documentation for older versions of Slurm are distributed with the source, or
-may be found in the <a href="http://slurm.schedmd.com/archive/">archive</a>.
+may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 </b></p>
 
 <p>Also see <a href="tutorials.html">Tutorials</a> and

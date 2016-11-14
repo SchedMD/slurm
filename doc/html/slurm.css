@@ -22,8 +22,8 @@ body:before {
 
 .slurm-title {
 	display: none;
-	max-width: 160px;
-	margin: 0 auto 36px;
+	max-width: 200px;
+	margin: 0 auto 12px;
 	text-align: center;
 }
 
@@ -117,15 +117,6 @@ body:before {
 /* STRUCTURE: Site Navigation */
 /* ---------------------------- */
 
-.site-nav {
-	padding-top: 36px;
-}
-
-.site-nav__menu {
-	max-width: 160px;
-	margin: 0 auto;
-}
-
 
 /* Large Size */
 @media screen and (min-width: 54em) {
@@ -134,7 +125,7 @@ body:before {
 		position: absolute;
 		top: 0;
 		width: 100%;
-		height: 67px;
+		height: 70px;
 		content: "";
 		background: linear-gradient(to right, #F5F5F5 0, #F5F5F5 50%, #FCFCFC 50%, #FCFCFC 100%);
 		z-index: -1;

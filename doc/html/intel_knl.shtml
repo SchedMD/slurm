@@ -292,7 +292,7 @@ uses the Linux <i>reboot</i> program to reboot the compute node in order for
 modifications in MCDRAM and/or NUMA mode to take effect.
 Make sure that RebootProgram is defined in the slurm.conf file.
 This plugin currently does <u>not</u> permit the specification of ResumeProgram,
-SuspendProgram, SuspendTimem etc. in slurm.conf, however that limitation may
+SuspendProgram, SuspendTime, etc. in slurm.conf, however that limitation may
 be removed in the future (the ResumeProgram currently has no means of changing
 the node's MCDRAM and/or NUMA mode prior to reboot).</p>
 

@@ -92,6 +92,7 @@
 
 /* Global variables */
 bitstr_t *avail_node_bitmap = NULL;	/* bitmap of available nodes */
+bitstr_t *booting_node_bitmap = NULL;	/* bitmap of booting nodes */
 bitstr_t *cg_node_bitmap    = NULL;	/* bitmap of completing nodes */
 bitstr_t *idle_node_bitmap  = NULL;	/* bitmap of idle nodes */
 bitstr_t *power_node_bitmap = NULL;	/* bitmap of powered down nodes */
@@ -2323,6 +2324,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 		debug("Still waiting for boot of node %s", node_ptr->name);
 		return SLURM_SUCCESS;
 	}
+	bit_clear(booting_node_bitmap, node_inx);
 
 	if (cr_flag == NO_VAL) {
 		cr_flag = 0;  /* call is no-op for select/linear and bluegene */
@@ -3882,6 +3884,7 @@ extern void node_fini (void)
 	FREE_NULL_LIST(active_feature_list);
 	FREE_NULL_LIST(avail_feature_list);
 	FREE_NULL_BITMAP(avail_node_bitmap);
+	FREE_NULL_BITMAP(booting_node_bitmap);
 	FREE_NULL_BITMAP(cg_node_bitmap);
 	FREE_NULL_BITMAP(idle_node_bitmap);
 	FREE_NULL_BITMAP(power_node_bitmap);

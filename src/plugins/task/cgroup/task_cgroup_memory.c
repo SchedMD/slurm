@@ -183,8 +183,10 @@ extern int task_cgroup_memory_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)
 
 	if (user_cgroup_path[0] == '\0' ||
 	     job_cgroup_path[0] == '\0' ||
-	     jobstep_cgroup_path[0] == '\0')
+	     jobstep_cgroup_path[0] == '\0') {
+		xcgroup_ns_destroy(&memory_ns);
 		return SLURM_SUCCESS;
+	}
 	/*
 	 * Lock the root memcg and try to remove the different memcgs.
 	 * The reason why we are locking here is that if a concurrent

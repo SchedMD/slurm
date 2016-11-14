@@ -7,6 +7,7 @@
 
 * > :last-child {
 	margin-bottom: 0;
+	overflow: auto;
 }
 
 body:before {
@@ -364,11 +365,13 @@ input[type="checkbox"] {
 	margin: 0 0 1.5em;
 }
 
+.site-menu__item div {
+	padding: 24px 0px 0px 38px;
+}
+
 .site-menu__item a {
 	font-size: 20px;
 	color: #595959;
-	padding: 9px 18px;
-	position: relative;
 }
 
 .site-menu__item span {
@@ -709,7 +712,8 @@ input[type="checkbox"] {
 	}
 
 	.site-menu__item a {
-		padding: 12px 0px 12px 38px;
+		padding: 8px 0px 0px 60px;
+		font-size: 90%;
 	}
 
 	.site-menu__item--current a:before  {

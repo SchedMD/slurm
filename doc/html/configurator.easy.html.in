@@ -5,7 +5,7 @@ Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 Written by Morris Jette <jette1@llnl.gov> and Danny Auble <da@llnl.gov>
 
 This file is part of Slurm, a resource management program.
-For details, see <http://slurm.schedmd.com/>.
+For details, see <https://slurm.schedmd.com/>.
 
 Slurm is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free
@@ -218,7 +218,7 @@ file. It will appear on your web browser. Save the file in text format
 as <I>slurm.conf</I> for use by Slurm.
 
 <P>For more information about Slurm, see
-<A HREF="http://slurm.schedmd.com/slurm.html">http://slurm.schedmd.com/slurm.html</A>
+<A HREF="https://slurm.schedmd.com/slurm.html">https://slurm.schedmd.com/slurm.html</A>
 
 <H2>Control Machines</H2>
 Define the hostname of the computer on which the Slurm controller and
