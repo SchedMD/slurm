@@ -181,6 +181,7 @@ Lead Slurm developers are:
 <br>
 <li>Bryan O'Sullivan (Pathscale)</li>
 <li>Gennaro Oliva (Institute of High Performance Computing and Networking, Italy)</li>
+<li>Thomas Opfer (Technische Universit&auml;t Darmstadt, Germany)</li>
 <li>Alan Orth (International Livestock Research Institute, Kenya)</li>
 <br>
 <li>Juan Pancorbo (Leibniz-Rechenzentrum, Germany)</li>
@@ -259,6 +260,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 10 November 2016</p>
+<p style="text-align:center;">Last modified 18 November 2016</p>
 
 <!--#include virtual="footer.txt"-->
