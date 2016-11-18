@@ -1113,63 +1113,55 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 			job_desc_msg->alloc_node, job_desc_msg->alloc_sid, uid);
 	}
 #endif
-	if (!slurm_get_peer_addr(msg->conn_fd, &resp_addr)) {
+	if (error_code) {
+		reject_job = true;
+	} else if (!slurm_get_peer_addr(msg->conn_fd, &resp_addr)) {
 		job_desc_msg->resp_host = xmalloc(16);
 		slurm_get_ip_str(&resp_addr, &port,
 				 job_desc_msg->resp_host, 16);
 		dump_job_desc(job_desc_msg);
-		if (error_code == SLURM_SUCCESS) {
-			do_unlock = true;
-			_throttle_start(&active_rpc_cnt);
+		do_unlock = true;
+		_throttle_start(&active_rpc_cnt);
 
-			if (job_desc_msg->job_id == SLURM_BATCH_SCRIPT &&
-			    fed_mgr_is_active()) {
-				uint32_t job_id;
-				if (fed_mgr_job_allocate(
-							msg, job_desc_msg, true,
-							uid,
-							msg->protocol_version,
-							&job_id, &error_code,
-							&err_msg)) {
-					do_unlock = false;
-					_throttle_fini(&active_rpc_cnt);
-					reject_job = true;
-				} else {
-					/* fed_mgr_job_allocate grabs and
-					 * releases job_write_lock on its own to
-					 * prevent waiting/locking on siblings
-					 * to reply. Now grab the lock and grab
-					 * the jobid. */
-					lock_slurmctld(job_write_lock);
-					if (!(job_ptr =
-					      find_job_record(job_id))) {
-						error("%s: can't find fed job that was just created. this should never happen",
-						      __func__);
-						reject_job = true;
-						error_code = SLURM_ERROR;
-					}
-				}
+		if (job_desc_msg->job_id == SLURM_BATCH_SCRIPT &&
+		    fed_mgr_is_active()) {
+			uint32_t job_id;
+			if (fed_mgr_job_allocate(msg, job_desc_msg, true, uid,
+						 msg->protocol_version, &job_id,
+						 &error_code, &err_msg)) {
+				do_unlock = false;
+				_throttle_fini(&active_rpc_cnt);
+				reject_job = true;
 			} else {
+				/* fed_mgr_job_allocate grabs and
+				 * releases job_write_lock on its own to
+				 * prevent waiting/locking on siblings
+				 * to reply. Now grab the lock and grab
+				 * the jobid. */
 				lock_slurmctld(job_write_lock);
-
-				error_code = job_allocate(
-						job_desc_msg, immediate, false,
-						NULL, true, uid, &job_ptr,
-						&err_msg,
-						msg->protocol_version);
-				/* unlock after finished using the job structure
-				 * data */
-
-				/* return result */
-				if (!job_ptr ||
-				    (error_code &&
-				     job_ptr->job_state == JOB_FAILED))
+				if (!(job_ptr = find_job_record(job_id))) {
+					error("%s: can't find fed job that was just created. this should never happen",
+					      __func__);
 					reject_job = true;
+					error_code = SLURM_ERROR;
+				}
 			}
-			END_TIMER2("_slurm_rpc_allocate_resources");
 		} else {
-			reject_job = true;
+			lock_slurmctld(job_write_lock);
+
+			error_code = job_allocate(job_desc_msg, immediate,
+						  false, NULL, true, uid,
+						  &job_ptr, &err_msg,
+						  msg->protocol_version);
+			/* unlock after finished using the job structure
+			 * data */
+
+			/* return result */
+			if (!job_ptr ||
+			    (error_code && job_ptr->job_state == JOB_FAILED))
+				reject_job = true;
 		}
+		END_TIMER2("_slurm_rpc_allocate_resources");
 	} else {
 		reject_job = true;
 		if (errno)
