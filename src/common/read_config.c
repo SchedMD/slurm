@@ -3737,6 +3737,9 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		else if (xstrcasestr(temp_str, "FAIR_TREE"))
 			conf->priority_flags |= PRIORITY_FLAGS_FAIR_TREE;
 
+		if (xstrcasestr(temp_str, "INCR_ONLY"))
+			conf->priority_flags |= PRIORITY_FLAGS_INCR_ONLY;
+
 		if (xstrcasestr(temp_str, "MAX_TRES"))
 			conf->priority_flags |= PRIORITY_FLAGS_MAX_TRES;
 

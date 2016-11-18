@@ -981,6 +981,8 @@ enum ctx_keys {
 						 * pending jobs. */
 #define PRIORITY_FLAGS_FAIR_TREE	0x0020	/* Prioritize by level in
 						 * account hierarchy. */
+#define PRIORITY_FLAGS_INCR_ONLY	0x0040	/* Priority can only increase,
+						 * never decrease in value */
 
 /* These bits are set in the bitflags field of job_desc_msg_t */
 #define KILL_INV_DEP       0x00000001	/* Kill job on invalid dependency */

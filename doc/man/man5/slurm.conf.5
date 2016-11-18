@@ -1805,15 +1805,19 @@ or holds.
 If set, priorities will be recalculated not only for pending jobs, but also
 running and suspended jobs.
 .TP
+\fBDEPTH_OBLIVIOUS\fR
+If set, priority will be calculated based similar to the normal multifactor
+calculation, but depth of the associations in the tree do not adversely effect
+their priority.
+.TP
 \fBFAIR_TREE\fR
 If set, priority will be calculated in such a way that if accounts A and B are
 siblings and A has a higher fairshare factor than B, all children of A will have
 higher fairshare factors than all children of B.
 .TP
-\fBDEPTH_OBLIVIOUS\fR
-If set, priority will be calculated based similar to the normal multifactor
-calculation, but depth of the associations in the tree do not adversely effect
-their priority.
+\fBINCR_ONLY\fR
+If set, priority values will only increase in value. Job priority will never
+decrease in value.
 .TP
 \fBMAX_TRES\fR
 If set, the weighted TRES value (e.g. TRESBillingWeights) is calculated as the

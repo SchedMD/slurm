@@ -16,6 +16,8 @@ documents those changes that are of interest to users and administrators.
     then return it to service.
  -- Allow unit conversion routine to convert 1024M to 1G.
  -- switch/cray plugin - change legacy spool directory location.
+ -- Add new PriorityFlags option of INCR_ONLY, which prevents a job's priority
+    from being decremented.
 
 * Changes in Slurm 17.02.0pre3
 ==============================

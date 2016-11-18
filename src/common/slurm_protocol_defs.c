@@ -2387,6 +2387,11 @@ extern char *priority_flags_string(uint16_t priority_flags)
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "FAIR_TREE");
 	}
+	if (priority_flags & PRIORITY_FLAGS_INCR_ONLY) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "INCR_ONLY");
+	}
 	if (priority_flags & PRIORITY_FLAGS_MAX_TRES) {
 		if (flag_str[0])
 			xstrcat(flag_str, ",");

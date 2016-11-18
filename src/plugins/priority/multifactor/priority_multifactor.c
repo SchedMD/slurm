@@ -611,8 +611,12 @@ static uint32_t _get_priority_internal(time_t start_time,
 				tmp_64 = 0xffffffff;
 				priority_part = (double) tmp_64;
 			}
-			job_ptr->priority_array[i] = (uint32_t) priority_part;
-
+			if (((flags & PRIORITY_FLAGS_INCR_ONLY) == 0) ||
+			    (job_ptr->priority_array[i] <
+			     (uint32_t) priority_part)) {
+				job_ptr->priority_array[i] =
+					(uint32_t) priority_part;
+			}
 			debug("Job %u has more than one partition (%s)(%u)",
 			      job_ptr->job_id, part_ptr->name,
 			      job_ptr->priority_array[i]);
@@ -1898,6 +1902,8 @@ extern bool decay_apply_new_usage(struct job_record *job_ptr,
 extern int decay_apply_weighted_factors(struct job_record *job_ptr,
 					 time_t *start_time_ptr)
 {
+	uint32_t new_prio;
+
 	/* Always return SUCCESS so that list_for_each will
 	 * continue processing list of jobs. */
 
@@ -1911,8 +1917,13 @@ extern int decay_apply_weighted_factors(struct job_record *job_ptr,
 	     !(flags & PRIORITY_FLAGS_CALCULATE_RUNNING)))
 		return SLURM_SUCCESS;
 
-	job_ptr->priority = _get_priority_internal(*start_time_ptr, job_ptr);
-	last_job_update = time(NULL);
+	new_prio = _get_priority_internal(*start_time_ptr, job_ptr);
+	if (((flags & PRIORITY_FLAGS_INCR_ONLY) == 0) ||
+	    (job_ptr->priority <= new_prio)) {
+		job_ptr->priority = new_prio;
+		last_job_update = time(NULL);
+	}
+
 	debug2("priority for job %u is now %u",
 	       job_ptr->job_id, job_ptr->priority);
 
