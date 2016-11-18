@@ -1919,7 +1919,7 @@ extern int decay_apply_weighted_factors(struct job_record *job_ptr,
 
 	new_prio = _get_priority_internal(*start_time_ptr, job_ptr);
 	if (((flags & PRIORITY_FLAGS_INCR_ONLY) == 0) ||
-	    (job_ptr->priority <= new_prio)) {
+	    (job_ptr->priority < new_prio)) {
 		job_ptr->priority = new_prio;
 		last_job_update = time(NULL);
 	}
