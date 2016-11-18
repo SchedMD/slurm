@@ -21788,8 +21788,10 @@ fi
 
 
 	if test x$_x_ac_mysql_bin = xno; then
-    		# Extract the first word of "mysql_config", so it can be a program name with args.
-set dummy mysql_config; ac_word=$2
+		for ac_prog in mysql_config mariadb_config
+do
+  # Extract the first word of "$ac_prog", so it can be a program name with args.
+set dummy $ac_prog; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_HAVEMYSQLCONFIG+:} false; then :
@@ -21815,7 +21817,6 @@ done
   done
 IFS=$as_save_IFS
 
-  test -z "$ac_cv_path_HAVEMYSQLCONFIG" && ac_cv_path_HAVEMYSQLCONFIG="no"
   ;;
 esac
 fi
@@ -21829,9 +21830,15 @@ $as_echo "no" >&6; }
 fi
 
 
+  test -n "$HAVEMYSQLCONFIG" && break
+done
+test -n "$HAVEMYSQLCONFIG" || HAVEMYSQLCONFIG="no"
+
 	else
-   		# Extract the first word of "mysql_config", so it can be a program name with args.
-set dummy mysql_config; ac_word=$2
+		for ac_prog in mysql_config mariadb_config
+do
+  # Extract the first word of "$ac_prog", so it can be a program name with args.
+set dummy $ac_prog; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_HAVEMYSQLCONFIG+:} false; then :
@@ -21857,7 +21864,6 @@ done
   done
 IFS=$as_save_IFS
 
-  test -z "$ac_cv_path_HAVEMYSQLCONFIG" && ac_cv_path_HAVEMYSQLCONFIG="no"
   ;;
 esac
 fi
@@ -21870,6 +21876,10 @@ else
 $as_echo "no" >&6; }
 fi
 
+
+  test -n "$HAVEMYSQLCONFIG" && break
+done
+test -n "$HAVEMYSQLCONFIG" || HAVEMYSQLCONFIG="no"
 
 	fi
 
