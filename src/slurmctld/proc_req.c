@@ -1167,6 +1167,8 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 					reject_job = true;
 			}
 			END_TIMER2("_slurm_rpc_allocate_resources");
+		} else {
+			reject_job = true;
 		}
 	} else {
 		reject_job = true;
