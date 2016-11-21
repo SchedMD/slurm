@@ -36,7 +36,13 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "config.h"
+
 #include <signal.h>
+
+#if HAVE_SYS_PRCTL_H
+  #include <sys/prctl.h>
+#endif
 
 #include "src/common/slurm_auth.h"
 #include "src/common/gres.h"
@@ -628,6 +634,15 @@ static int _handle_init_msg(slurmdbd_conn_t *slurmdbd_conn,
 	      slurmdbd_conn->conn->rem_host, slurmdbd_conn->conn->fd);
 
 	slurmdbd_conn->conn->cluster_name = xstrdup(init_msg->cluster_name);
+
+#if HAVE_SYS_PRCTL_H
+	{
+	char *name = xstrdup_printf("p-%s", slurmdbd_conn->conn->cluster_name);
+	if (prctl(PR_SET_NAME, name, NULL, NULL, NULL) < 0)
+		error("%s: cannot set my name to %s %m", __func__, name);
+	xfree(name);
+	}
+#endif
 
 	/* When dealing with rollbacks it turns out it is much faster
 	   to do the commit once or once in a while instead of
