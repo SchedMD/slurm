@@ -30,7 +30,7 @@ documents those changes that are of interest to users and administrators.
  -- Modify cpu_bind and mem_bind map and mask options to accept a repetition
     count to better support large task count. For example:
     "mask_mem:0x0f*2,0xf0*2" is equivalent to "mask_mem:0x0f,0x0f,0xf0,0xf0".
- -- Add suppoprt for --mem_bind=prefer option to prefer, but not restrict memory
+ -- Add support for --mem_bind=prefer option to prefer, but not restrict memory
     use to the identified NUMA node.
  -- Add mechanism to constrain kernel memory allocation using cgroups. New
     cgroup.conf parameters added: ConstrainKmemSpace, MaxKmemPercent, and
@@ -70,11 +70,11 @@ documents those changes that are of interest to users and administrators.
  -- Add new RPC (REQUEST_EVENT_LOG) so that slurmd and slurmstepd can log events
     through the slurmctld daemon.
  -- Remove sbatch --bb option. That option was never supported.
- -- Automically cleanup task/cgroup cpuset and devices cgroups after steps are
-    done.
+ -- Automatically clean up task/cgroup cpuset and devices cgroups after steps
+    are completed.
  -- Add federation read/write locks.
  -- Limit job purge run time to 1 second at a time.
- -- The database index for jobs is now 64 bit.  If you happen to be close to
+ -- The database index for jobs is now 64 bits.  If you happen to be close to
     4 billion jobs in your database you will want to update your slurmctld at
     the same time as your slurmdbd to prevent roll over of this variable as
     it is 32 bit previous versions of Slurm.

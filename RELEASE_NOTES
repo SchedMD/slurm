@@ -36,22 +36,22 @@ NOTE: If you are not using Munge, but are using the "service" scripts to
 HIGHLIGHTS
 ==========
  -- Added infrastructure for managing workload across a federation of clusters.
-    (partitial functionality in version 17.02, fully operational in May 2017)
+    (partial functionality in version 17.02, fully operational in May 2017)
  -- In order to support federated jobs, the MaxJobID configuration parameter
     default value has been reduced from 2,147,418,112 to 67,043,328 and its
     maximum value is now 67,108,863. Upon upgrading, any pre-existing jobs that
     have a job ID above the new range will continue to run and new jobs will get
     job IDs in the new range.
  -- Add MailDomain configuration parameter to qualify email addresses.
- -- Automically clean up task/cgroup cpuset and devices cgroups after steps are
-    completed.
+ -- Automatically clean up task/cgroup cpuset and devices cgroups after steps
+    are completed.
  -- Added burst buffer support for job arrays. Add new SchedulerParameters
     configuration parameter of bb_array_stage_cnt=# to indicate how many pending
     tasks of a job array should be made available for burst buffer resource
     allocation.
  -- Add new sacctmgr commands: "shutdown" (shutdown the server), "list stats"
     (get server statistics) "clear stats" (clear server statistics).
- -- The database index for jobs is now 64 bit.  If you happen to be close to
+ -- The database index for jobs is now 64 bits.  If you happen to be close to
     4 billion jobs in your database you will want to update your slurmctld at
     the same time as your slurmdbd to prevent roll over of this variable as
     it is 32 bit previous versions of Slurm.
@@ -68,7 +68,7 @@ RPMBUILD CHANGES
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
- -- Add new TRESWeights configuration parameter to NodeName line for caclulating
+ -- Add new TRESWeights configuration parameter to NodeName line for calculating
     how busy a node is. Currently only used for federation configurations.
  -- Add new PriorityFlags option of INCR_ONLY, which prevents a job's priority
     from being decremented.
@@ -89,7 +89,7 @@ COMMAND CHANGES (see man pages for details)
  -- Modify cpu_bind and mem_bind map and mask options to accept a repetition
     count to better support large task count. For example:
     "mask_mem:0x0f*2,0xf0*2" is equivalent to "mask_mem:0x0f,0x0f,0xf0,0xf0".
- -- Add suppoprt for --mem_bind=prefer option to prefer, but not restrict memory
+ -- Add support for --mem_bind=prefer option to prefer, but not restrict memory
     use to the identified NUMA node.
  -- Add --mem_bind option of "sort" to run zonesort on KNL nodes at step start.
  -- Do not process SALLOC_HINT, SBATCH_HINT or SLURM_HINT environment variables
