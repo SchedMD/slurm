@@ -185,8 +185,7 @@ inline static void  _slurm_rpc_set_debug_flags(slurm_msg_t *msg);
 inline static void  _slurm_rpc_set_debug_level(slurm_msg_t *msg);
 inline static void  _slurm_rpc_set_schedlog_level(slurm_msg_t *msg);
 inline static void  _slurm_rpc_shutdown_controller(slurm_msg_t * msg);
-inline static void  _slurm_rpc_shutdown_controller_immediate(slurm_msg_t *
-							     msg);
+inline static void  _slurm_rpc_shutdown_controller_immediate(slurm_msg_t *msg);
 
 inline static void _slurm_rpc_sib_job_willrun(slurm_msg_t *msg);
 inline static void _slurm_rpc_sib_submit_batch_job(slurm_msg_t *msg);
