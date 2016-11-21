@@ -2573,7 +2573,7 @@ extern void slurmdb_pack_tres_cond(void *in, uint16_t protocol_version,
 		list_iterator_destroy(itr);
 	}
 
-	safe_pack16(object->with_deleted, buffer);
+	pack16(object->with_deleted, buffer);
 }
 
 extern int slurmdb_unpack_tres_cond(void **object, uint16_t protocol_version,

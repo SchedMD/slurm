@@ -705,10 +705,10 @@ extern void trigger_burst_buffer(void)
 static void _dump_trigger_state(trig_mgr_info_t *trig_ptr, Buf buffer)
 {
 	/* write trigger pull state flags */
-	safe_pack8(ctld_failure,    buffer);
-	safe_pack8(bu_ctld_failure, buffer);
-	safe_pack8(dbd_failure,     buffer);
-	safe_pack8(db_failure,      buffer);
+	pack8(ctld_failure,    buffer);
+	pack8(bu_ctld_failure, buffer);
+	pack8(dbd_failure,     buffer);
+	pack8(db_failure,      buffer);
 
 	pack16   (trig_ptr->flags,     buffer);
 	pack32   (trig_ptr->trig_id,   buffer);
