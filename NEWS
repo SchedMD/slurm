@@ -91,12 +91,12 @@ documents those changes that are of interest to users and administrators.
     a later time.
  -- Add job burst_buffer_state and delay_boot fields to scontrol and squeue
     output. Also add ability to modify delay_boot from scontrol.
- -- Fix for node's available tres array getting filled in with configured gres
+ -- Fix for node's available TRES array getting filled in with configured GRES
     model types.
  -- Log if job --bb option contains any unrecognized content.
- -- Display configured and allocated tres for nodes in scontrol show nodes.
+ -- Display configured and allocated TRES for nodes in scontrol show nodes.
  -- Change all memory values (in MB) to uint64_t to accommodate > 2TB per node.
- -- Add MailDomain option to qualify email addresses.
+ -- Add MailDomain configuration parameter to qualify email addresses.
  -- Refactor the persistent connections within the federation code to use
     the same logic that was found in the slurmdbd.  Now both functionalities
     share the same code.
@@ -116,22 +116,23 @@ documents those changes that are of interest to users and administrators.
     slurm.h. This is needed to avoid breaking Python with by using one of its
     keywords in a Slurm data structure.
  -- Remove eligible_time from jobcomp/elasticsearch.
- -- Fix issue where if no clusters were added but yet a QOS needed to be
-    deleted make it possible.
+ -- Enable the deletion of a QOS, even if no clusters have been added to the
+    database.
  -- SlurmDBD - change all timestamps to bigint from int to solve Y2038 problem.
- -- Add salloc/sbatch/srun --spread-job to distribute tasks over as many nodes
-    as possible. This also treats the --ntasks-per-node option as a maximum
-    value.
+ -- Add salloc/sbatch/srun --spread-job option to distribute tasks over as many
+    nodes as possible. This also treats the --ntasks-per-node option as a
+    maximum value.
  -- Add ConstrainKmemSpace to cgroup.conf, defaulting to yes, to allow
     cgroup Kmem enforcement to be disabled while still using ConstrainRAMSpace.
- -- Add support for sbatch --bbf option.
- -- Add burst buffer support for job arrays. Add new SchedulerParameters option
-    of bb_array_stage_cnt=# to indicate how many pending tasks of a job array
-    should be made available for burst buffer resource allocation.
+ -- Add support for sbatch --bbf option to specify a burst buffer input file.
+ -- Added burst buffer support for job arrays. Add new SchedulerParameters
+    configuration parameter of bb_array_stage_cnt=# to indicate how many pending
+    tasks of a job array should be made available for burst buffer resource
+    allocation.
  -- Fix small memory leak when a job fails to load from state save.
- -- Fix invalid read when attempting to delete clusters from db with running
-    jobs.
- -- Fix small memory leak when deleting clusters from db.
+ -- Fix invalid read when attempting to delete clusters from database with
+    running jobs.
+ -- Fix small memory leak when deleting clusters from database.
  -- Add SLURM_ARRAY_TASK_COUNT environment variable. Total number of tasks in a
     job array (e.g. "--array=2,4,8" will set SLURM_ARRAY_TASK_COUNT=3).
  -- Add new sacctmgr commands: "shutdown" (shutdown the server), "list stats"
@@ -323,8 +324,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix bug in PMIX_Ring in the pmi2 plugin so that it supports singleton mode.
     It also updates the testpmixring.c test program so it can be used to check
     singleton runs.
- -- Automically cleanup task/cgroup cpuset and devices cgroups after steps are
-    done.
+ -- Automically clean up task/cgroup cpuset and devices cgroups after steps are
+    completed.
  -- Testsuite - Fix test1.83 to handle gaps in node names properly.
  -- BlueGene - correctly scale node counts when enforcing MaxNodes limit.
  -- Make sure no attempt is made to schedule a requeued job until all steps are
