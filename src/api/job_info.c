@@ -1409,35 +1409,39 @@ int slurm_job_cpus_allocated_str_on_node_id(char *cpus,
 					    job_resources_t *job_resrcs_ptr,
 					    int node_id)
 {
-	int start_node = -1; /* start with -1 less so the array reps
-			      * lines up correctly */
 	uint32_t threads = 1;
 	int inx = 0;
 	bitstr_t *cpu_bitmap;
-	int j, k, bit_inx, bit_reps;
+	int j, k, bit_inx, bit_reps, hi;
 
 	if (!job_resrcs_ptr || node_id < 0)
 		slurm_seterrno_ret(EINVAL);
 
-	/* find index in sock_core_rep_count[] for this node id
-	 */
-	do {
-		start_node += job_resrcs_ptr->sock_core_rep_count[inx];
-		inx++;
-	} while (start_node < node_id);
-	/* back to previous index since inx is always one step further
-	 * after previous loop
-	 */
-	inx--;
+	/* find index in and first bit index in sock_core_rep_count[]
+	 * for this node id */
+	bit_inx = 0;
+	hi = node_id + 1;    /* change from 0-origin to 1-origin */
+	for (inx = 0; hi; inx++) {
+		if (hi > job_resrcs_ptr->sock_core_rep_count[inx]) {
+			bit_inx += job_resrcs_ptr->sockets_per_node[inx] *
+				   job_resrcs_ptr->cores_per_socket[inx] *
+				   job_resrcs_ptr->sock_core_rep_count[inx];
+			hi -= job_resrcs_ptr->sock_core_rep_count[inx];
+		} else {
+			bit_inx += job_resrcs_ptr->sockets_per_node[inx] *
+				   job_resrcs_ptr->cores_per_socket[inx] *
+				   (hi - 1);
+			break;
+		}
+	}
 
 	bit_reps = job_resrcs_ptr->sockets_per_node[inx] *
-		job_resrcs_ptr->cores_per_socket[inx];
+		   job_resrcs_ptr->cores_per_socket[inx];
 
 	/* get the number of threads per core on this node
 	 */
 	if (job_node_ptr)
 		threads = job_node_ptr->node_array[node_id].threads;
-	bit_inx = 0;
 	cpu_bitmap = bit_alloc(bit_reps * threads);
 	for (j = 0; j < bit_reps; j++) {
 		if (bit_test(job_resrcs_ptr->core_bitmap, bit_inx)){

@@ -41,6 +41,7 @@ documents those changes that are of interest to users and administrators.
     time window that grows exponentially rather than linearly. After one second
     of wall time, simulate the termination of all remaining running jobs in
     order to respond in a reasonable time frame.
+ -- Fix slurm_job_cpus_allocated_str_on_node_id() API call.
 
 * Changes in Slurm 16.05.6
 ==========================
