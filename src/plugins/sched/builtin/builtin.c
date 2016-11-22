@@ -260,7 +260,7 @@ extern void *builtin_agent(void *args)
 	static time_t last_sched_time = 0;
 	/* Read config, nodes and partitions; Write jobs */
 	slurmctld_lock_t all_locks = {
-		READ_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
+		READ_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK, READ_LOCK };
 
 	_load_config();
 	last_sched_time = time(NULL);

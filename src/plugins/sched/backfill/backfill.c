@@ -83,6 +83,7 @@
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/burst_buffer.h"
+#include "src/slurmctld/fed_mgr.h"
 #include "src/slurmctld/front_end.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
@@ -737,7 +738,7 @@ extern void *backfill_agent(void *args)
 	static time_t last_backfill_time = 0;
 	/* Read config and partitions; Write jobs and nodes */
 	slurmctld_lock_t all_locks = {
-		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
+		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	bool load_config;
 	bool short_sleep = false;
 
@@ -804,7 +805,7 @@ static void _clear_job_start_times(void)
 static int _yield_locks(int usec)
 {
 	slurmctld_lock_t all_locks = {
-		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
+		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	time_t job_update, node_update, part_update;
 	bool load_config = false;
 	int max_rpc_cnt;
@@ -1603,7 +1604,31 @@ next_task:
 			uint32_t save_time_limit = job_ptr->time_limit;
 			uint32_t hard_limit;
 			bool reset_time = false;
-			int rc = _start_job(job_ptr, resv_bitmap);
+			int rc;
+
+			/* get fed job lock from origin cluster */
+			if (fed_mgr_job_lock(job_ptr, INFINITE)) {
+				xfree(job_ptr->state_desc);
+				job_ptr->state_reason = WAIT_FED_JOB_LOCK;
+				info("sched: JobId=%u can't get fed job lock from origin cluster to backfill job",
+				     job_ptr->job_id);
+				last_job_update = now;
+				continue;
+			}
+
+			rc = _start_job(job_ptr, resv_bitmap);
+
+			if (rc == SLURM_SUCCESS) {
+				/* If the following fails because of network
+				 * connectivity, the origin cluster should ask
+				 * when it comes back up if the cluster_lock
+				 * cluster actually started the job */
+				fed_mgr_job_start(job_ptr, INFINITE,
+						  job_ptr->start_time);
+			} else {
+				fed_mgr_job_unlock(job_ptr, INFINITE);
+			}
+
 			if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE)) {
 				if (orig_time_limit == NO_VAL) {
 					acct_policy_alter_job(

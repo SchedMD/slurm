@@ -292,6 +292,10 @@ typedef enum {
 	REQUEST_JOB_NOTIFY,
 	REQUEST_JOB_SBCAST_CRED,
 	RESPONSE_JOB_SBCAST_CRED,
+	REQUEST_SIB_JOB_START,
+	REQUEST_SIB_JOB_REVOKE,
+	REQUEST_SIB_JOB_LOCK,
+	REQUEST_SIB_JOB_UNLOCK,
 	REQUEST_SIB_JOB_WILL_RUN,
 	REQUEST_SIB_SUBMIT_BATCH_JOB,
 	REQUEST_SIB_RESOURCE_ALLOCATION,
@@ -1215,6 +1219,7 @@ typedef struct slurm_event_log_msg {
 } slurm_event_log_msg_t;
 
 typedef struct {
+	uint32_t cluster_id;	/* cluster id of cluster making request */
 	void    *data;		/* Unpacked buffer
 				 * Only populated on the receiving side. */
 	Buf      data_buffer;	/* Buffer that holds an unpacked data type.
@@ -1224,6 +1229,7 @@ typedef struct {
 	uint64_t fed_siblings;	/* sibling bitmap of job */
 	uint32_t job_id;	/* job_id of job - set in job_desc on receiving
 				 * side */
+	time_t   start_time;    /* time sibling job started */
 } sib_msg_t;
 
 /*****************************************************************************\

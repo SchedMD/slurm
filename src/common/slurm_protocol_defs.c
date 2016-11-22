@@ -1818,6 +1818,8 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "PartitionConfig";
 	case WAIT_ACCOUNT_POLICY:
 		return "AccountingPolicy";
+	case WAIT_FED_JOB_LOCK:
+		return "FedJobLock";
 	default:
 		snprintf(val, sizeof(val), "%d", inx);
 		return val;
@@ -3895,6 +3897,10 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_UPDATE_JOB:
 		slurm_free_job_desc_msg(data);
 		break;
+	case REQUEST_SIB_JOB_START:
+	case REQUEST_SIB_JOB_REVOKE:
+	case REQUEST_SIB_JOB_LOCK:
+	case REQUEST_SIB_JOB_UNLOCK:
 	case REQUEST_SIB_JOB_WILL_RUN:
 	case REQUEST_SIB_SUBMIT_BATCH_JOB:
 	case REQUEST_SIB_RESOURCE_ALLOCATION:
@@ -4501,6 +4507,14 @@ rpc_num2string(uint16_t opcode)
 		return "RESPONSE_JOB_ATTACH";
 	case REQUEST_JOB_WILL_RUN:
 		return "REQUEST_JOB_WILL_RUN";
+	case REQUEST_SIB_JOB_START:
+		return "REQUEST_SIB_JOB_START";
+	case REQUEST_SIB_JOB_REVOKE:
+		return "REQUEST_SIB_JOB_REVOKE";
+	case REQUEST_SIB_JOB_LOCK:
+		return "REQUEST_SIB_JOB_LOCK";
+	case REQUEST_SIB_JOB_UNLOCK:
+		return "REQUEST_SIB_JOB_UNLOCK";
 	case REQUEST_SIB_JOB_WILL_RUN:
 		return "REQUEST_SIB_JOB_WILL_RUN";
 	case REQUEST_SIB_SUBMIT_BATCH_JOB:

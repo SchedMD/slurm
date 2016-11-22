@@ -185,7 +185,6 @@ static void _job_purge_start(void);
 static void _job_timed_out(struct job_record *job_ptr);
 static void _kill_dependent(struct job_record *job_ptr);
 static void _list_delete_job(void *job_entry);
-static int  _list_find_job_id(void *job_entry, void *key);
 static int  _list_find_job_old(void *job_entry, void *key);
 static int  _load_job_details(struct job_record *job_ptr, Buf buffer,
 			      uint16_t protocol_version);
@@ -5178,6 +5177,8 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		deallocate_nodes(job_ptr, false, suspended, false);
 	}
 
+	fed_mgr_job_complete(job_id, job_return_code, job_ptr->start_time);
+
 	info("%s: %s done", __func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)));
 
 	return SLURM_SUCCESS;
@@ -8291,11 +8292,11 @@ static void _list_delete_job(void *job_entry)
 
 
 /*
- * _list_find_job_id - find specific job_id entry in the job list,
+ * list_find_job_id - find specific job_id entry in the job list,
  *	see common/list.h for documentation, key is job_id_ptr
  * global- job_list - the global partition list
  */
-static int _list_find_job_id(void *job_entry, void *key)
+extern int list_find_job_id(void *job_entry, void *key)
 {
 	uint32_t *job_id_ptr = (uint32_t *) key;
 
@@ -9685,7 +9686,7 @@ void purge_old_job(void)
  */
 static int _purge_job_record(uint32_t job_id)
 {
-	return list_delete_all(job_list, &_list_find_job_id, (void *) &job_id);
+	return list_delete_all(job_list, &list_find_job_id, (void *) &job_id);
 }
 
 

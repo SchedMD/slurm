@@ -563,6 +563,7 @@ typedef struct {
 } acct_policy_limit_set_t;
 
 typedef struct {
+	uint32_t cluster_lock;	/* sibling that has lock on job */
 	char    *origin_str;	/* origin cluster name */
 	uint64_t siblings;	/* bitmap of sibling cluster ids */
 	char    *siblings_str;	/* comma separated list of sibling names */
@@ -1646,6 +1647,13 @@ extern int list_find_feature(void *feature_entry, void *key);
  * global- part_list - the global partition list
  */
 extern int list_find_part (void *part_entry, void *key);
+
+/*
+ * list_find_job_id - find specific job_id entry in the job list,
+ *	see common/list.h for documentation, key is job_id_ptr
+ * global- job_list - the global partition list
+ */
+extern int list_find_job_id(void *job_entry, void *key);
 
 /*
  * load_all_job_state - load the job state from file, recover from last

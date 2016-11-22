@@ -968,6 +968,10 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 				   msg->data, buffer,
 				   msg->protocol_version);
 		break;
+	case REQUEST_SIB_JOB_START:
+	case REQUEST_SIB_JOB_REVOKE:
+	case REQUEST_SIB_JOB_LOCK:
+	case REQUEST_SIB_JOB_UNLOCK:
 	case REQUEST_SIB_JOB_WILL_RUN:
 	case REQUEST_SIB_SUBMIT_BATCH_JOB:
 	case REQUEST_SIB_RESOURCE_ALLOCATION:
@@ -1645,6 +1649,10 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 					  buffer,
 					  msg->protocol_version);
 		break;
+	case REQUEST_SIB_JOB_START:
+	case REQUEST_SIB_JOB_REVOKE:
+	case REQUEST_SIB_JOB_LOCK:
+	case REQUEST_SIB_JOB_UNLOCK:
 	case REQUEST_SIB_JOB_WILL_RUN:
 	case REQUEST_SIB_SUBMIT_BATCH_JOB:
 	case REQUEST_SIB_RESOURCE_ALLOCATION:
@@ -8575,10 +8583,12 @@ _pack_sib_msg(sib_msg_t *sib_msg_ptr, Buf buffer, uint16_t protocol_version)
 	xassert(sib_msg_ptr);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack32(sib_msg_ptr->cluster_id, buffer);
 		pack16(sib_msg_ptr->data_type, buffer);
 		pack16(sib_msg_ptr->data_version, buffer);
 		pack64(sib_msg_ptr->fed_siblings, buffer);
 		pack32(sib_msg_ptr->job_id, buffer);
+		pack_time(sib_msg_ptr->start_time, buffer);
 
 		/* add already packed data_buffer to buffer */
 		if (sib_msg_ptr->data_buffer &&
@@ -8619,10 +8629,12 @@ _unpack_sib_msg(sib_msg_t **sib_msg_buffer_ptr, Buf buffer,
 		*sib_msg_buffer_ptr = sib_msg_ptr;
 
 		/* load the data values */
+		safe_unpack32(&sib_msg_ptr->cluster_id, buffer);
 		safe_unpack16(&sib_msg_ptr->data_type, buffer);
 		safe_unpack16(&sib_msg_ptr->data_version, buffer);
 		safe_unpack64(&sib_msg_ptr->fed_siblings, buffer);
 		safe_unpack32(&sib_msg_ptr->job_id, buffer);
+		safe_unpack_time(&sib_msg_ptr->start_time, buffer);
 
 		safe_unpack16(&tmp_uint16, buffer);
 		if (tmp_uint16) {

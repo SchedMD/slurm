@@ -1185,7 +1185,7 @@ static int _schedule(uint32_t job_limit)
 	int *sched_part_jobs = NULL, bb_wait_cnt = 0;
 	/* Locks: Read config, write job, write node, read partition */
 	slurmctld_lock_t job_write_lock =
-	    { READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
+	    { READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	char jbuf[JBUFSIZ];
 	bool is_job_array_head;
 #ifdef HAVE_BG
@@ -1804,8 +1804,31 @@ next_task:
 			save_time_limit = job_ptr->time_limit;
 			job_ptr->time_limit = deadline_time_limit;
 		}
+
+		/* get fed job lock from origin cluster */
+		if (fed_mgr_job_lock(job_ptr, INFINITE)) {
+			job_ptr->state_reason = WAIT_FED_JOB_LOCK;
+			xfree(job_ptr->state_desc);
+			info("sched: JobId=%u can't get fed job lock from origin cluster to start job",
+			     job_ptr->job_id);
+			last_job_update = now;
+			continue;
+		}
+
 		error_code = select_nodes(job_ptr, false, NULL,
 					  unavail_node_str, NULL);
+
+		if (error_code == SLURM_SUCCESS) {
+			/* If the following fails because of network
+			 * connectivity, the origin cluster should ask
+			 * when it comes back up if the cluster_lock
+			 * cluster actually started the job */
+			fed_mgr_job_start(job_ptr, INFINITE,
+					  job_ptr->start_time);
+		} else {
+			fed_mgr_job_unlock(job_ptr, INFINITE);
+		}
+
 		fail_by_part = false;
 		if ((error_code != SLURM_SUCCESS) && deadline_time_limit)
 			job_ptr->time_limit = save_time_limit;

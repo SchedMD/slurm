@@ -187,6 +187,10 @@ inline static void  _slurm_rpc_set_schedlog_level(slurm_msg_t *msg);
 inline static void  _slurm_rpc_shutdown_controller(slurm_msg_t * msg);
 inline static void  _slurm_rpc_shutdown_controller_immediate(slurm_msg_t *msg);
 
+inline static void _slurm_rpc_sib_job_start(slurm_msg_t *msg);
+inline static void _slurm_rpc_sib_job_revoke(slurm_msg_t *msg);
+inline static void _slurm_rpc_sib_job_lock(slurm_msg_t *msg);
+inline static void _slurm_rpc_sib_job_unlock(slurm_msg_t *msg);
 inline static void _slurm_rpc_sib_job_willrun(slurm_msg_t *msg);
 inline static void _slurm_rpc_sib_submit_batch_job(slurm_msg_t *msg);
 inline static void _slurm_rpc_sib_resource_allocation(slurm_msg_t *msg);
@@ -361,6 +365,18 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		break;
 	case REQUEST_JOB_WILL_RUN:
 		_slurm_rpc_job_will_run(msg, true);
+		break;
+	case REQUEST_SIB_JOB_START:
+		_slurm_rpc_sib_job_start(msg);
+		break;
+	case REQUEST_SIB_JOB_REVOKE:
+		_slurm_rpc_sib_job_revoke(msg);
+		break;
+	case REQUEST_SIB_JOB_LOCK:
+		_slurm_rpc_sib_job_lock(msg);
+		break;
+	case REQUEST_SIB_JOB_UNLOCK:
+		_slurm_rpc_sib_job_unlock(msg);
 		break;
 	case REQUEST_SIB_JOB_WILL_RUN:
 		_slurm_rpc_sib_job_willrun(msg);
@@ -1296,7 +1312,7 @@ static void _slurm_rpc_dump_jobs(slurm_msg_t * msg)
 		(job_info_request_msg_t *) msg->data;
 	/* Locks: Read config job, write partition (for hiding) */
 	slurmctld_lock_t job_read_lock = {
-		READ_LOCK, READ_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+		READ_LOCK, READ_LOCK, NO_LOCK, WRITE_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 
@@ -1345,7 +1361,7 @@ static void _slurm_rpc_dump_jobs_user(slurm_msg_t * msg)
 		(job_user_id_msg_t *) msg->data;
 	/* Locks: Read config job, write node (for hiding) */
 	slurmctld_lock_t job_read_lock = {
-		READ_LOCK, READ_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+		READ_LOCK, READ_LOCK, NO_LOCK, WRITE_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 
@@ -1385,7 +1401,7 @@ static void _slurm_rpc_dump_job_single(slurm_msg_t * msg)
 	job_id_msg_t *job_id_msg = (job_id_msg_t *) msg->data;
 	/* Locks: Read config, job, and node info */
 	slurmctld_lock_t job_read_lock = {
-		READ_LOCK, READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
+		READ_LOCK, READ_LOCK, NO_LOCK, READ_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 
@@ -1978,7 +1994,7 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t * msg)
 		(complete_job_allocation_msg_t *) msg->data;
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 	struct job_record *job_ptr;
@@ -2079,7 +2095,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
 		(complete_batch_script_msg_t *) msg->data;
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 	bool job_requeue = false;
@@ -4613,7 +4629,7 @@ inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg)
 	checkpoint_msg_t *ckpt_ptr = (checkpoint_msg_t *) msg->data;
 	/* Locks: write job lock, read node lock */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 	char *op;
@@ -6184,6 +6200,109 @@ end_it:
 
 	/* Don't free this here, it will be done elsewhere */
 	//slurm_persist_conn_destroy(persist_conn);
+}
+
+static void _slurm_rpc_sib_job_start(slurm_msg_t *msg)
+{
+
+	int rc;
+	struct job_record *job_ptr;
+	sib_msg_t *sib_msg = msg->data;
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
+
+	lock_slurmctld(job_write_lock);
+
+	if (!(job_ptr = find_job_record(sib_msg->job_id))) {
+		error("Unable to find federated job for id:%d",
+		      sib_msg->job_id);
+		rc = SLURM_ERROR;
+	} else {
+		rc = fed_mgr_job_start(job_ptr, sib_msg->cluster_id,
+				       sib_msg->start_time);
+	}
+
+	unlock_slurmctld(job_write_lock);
+
+	slurm_send_rc_msg(msg, rc);
+}
+
+/* complete tracker job */
+static void _slurm_rpc_sib_job_revoke(slurm_msg_t *msg)
+{
+	int rc = SLURM_SUCCESS;
+	struct job_record *job_ptr;
+	sib_msg_t *sib_msg = msg->data;
+
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
+
+	lock_slurmctld(job_write_lock);
+
+	if (!(job_ptr = find_job_record(sib_msg->job_id))) {
+		error("Unable to find federated job for id:%d",
+		      sib_msg->job_id);
+		rc = SLURM_ERROR;
+	} else {
+		job_ptr->job_state  = JOB_CANCELLED | JOB_REVOKED;
+		job_ptr->start_time = 0;
+		job_ptr->end_time   = sib_msg->start_time;
+		job_completion_logger(job_ptr, false);
+
+		/* purge revoked job */
+		list_delete_all(job_list, &list_find_job_id,
+				(void *)&job_ptr->job_id);
+	}
+
+	unlock_slurmctld(job_write_lock);
+
+	slurm_send_rc_msg(msg, rc);
+}
+
+static void _slurm_rpc_sib_job_lock(slurm_msg_t *msg)
+{
+	int rc;
+	struct job_record *job_ptr;
+	sib_msg_t *sib_msg = msg->data;
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
+
+	lock_slurmctld(job_write_lock);
+
+	if (!(job_ptr = find_job_record(sib_msg->job_id))) {
+		error("Unable to find federated job for id:%d",
+		      sib_msg->job_id);
+		rc = SLURM_ERROR;
+	} else {
+		rc = fed_mgr_job_lock(job_ptr, sib_msg->cluster_id);
+	}
+
+	unlock_slurmctld(job_write_lock);
+
+	slurm_send_rc_msg(msg, rc);
+}
+
+static void _slurm_rpc_sib_job_unlock(slurm_msg_t *msg)
+{
+	int rc;
+	struct job_record *job_ptr;
+	sib_msg_t *sib_msg = msg->data;
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
+
+	lock_slurmctld(job_write_lock);
+
+	if (!(job_ptr = find_job_record(sib_msg->job_id))) {
+		error("Unable to find federated job for id:%d",
+		      sib_msg->job_id);
+		rc = SLURM_ERROR;
+	} else {
+		rc = fed_mgr_job_unlock(job_ptr, sib_msg->cluster_id);
+	}
+
+	unlock_slurmctld(job_write_lock);
+
+	slurm_send_rc_msg(msg, rc);
 }
 
 static void _slurm_rpc_sib_job_willrun(slurm_msg_t *msg)

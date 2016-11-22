@@ -678,6 +678,162 @@ end_it:
 	return rc;
 }
 
+/*
+ * Remove a sibling job that won't be scheduled
+ *
+ * IN conn       - sibling connection
+ * IN job_id     - the job's id
+ * IN start_time - time the fed job started
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+static int _persist_fed_job_revoke(slurmdb_cluster_rec_t *conn, uint32_t job_id,
+				   time_t start_time)
+{
+	int rc;
+	slurm_msg_t req_msg;
+	slurm_msg_t resp_msg;
+	sib_msg_t   sib_msg;
+
+	slurm_msg_t_init(&req_msg);
+
+	memset(&sib_msg, 0, sizeof(sib_msg));
+	sib_msg.job_id     = job_id;
+	sib_msg.start_time = start_time;
+
+	req_msg.msg_type = REQUEST_SIB_JOB_REVOKE;
+	req_msg.data	 = &sib_msg;
+
+	if (_send_recv_msg(conn, &req_msg, &resp_msg, false)) {
+		rc = SLURM_PROTOCOL_ERROR;
+		goto end_it;
+	}
+
+	switch (resp_msg.msg_type) {
+	case RESPONSE_SLURM_RC:
+		if ((rc = slurm_get_return_code(resp_msg.msg_type,
+						resp_msg.data))) {
+			slurm_seterrno(rc);
+			rc = SLURM_PROTOCOL_ERROR;
+		}
+		break;
+	default:
+		slurm_seterrno(SLURM_UNEXPECTED_MSG_ERROR);
+		rc = SLURM_PROTOCOL_ERROR;
+	}
+
+end_it:
+	slurm_free_msg_members(&resp_msg);
+
+	return rc;
+}
+
+/*
+ * Grab the fed lock on the sibling job.
+ *
+ * IN conn       - sibling connection
+ * IN job_id     - the job's id
+ * IN cluster_id - cluster id of the cluster locking
+ * IN do_lock    - true == lock, false == unlock
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+static int _persist_fed_job_lock(slurmdb_cluster_rec_t *conn, uint32_t job_id,
+				 uint32_t cluster_id, bool do_lock)
+{
+	int rc;
+	slurm_msg_t req_msg, resp_msg;
+
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
+
+	sib_msg_t sib_msg;
+	memset(&sib_msg, 0, sizeof(sib_msg_t));
+	sib_msg.job_id     = job_id;
+	sib_msg.cluster_id = cluster_id;
+
+	if (do_lock)
+		req_msg.msg_type = REQUEST_SIB_JOB_LOCK;
+	else
+		req_msg.msg_type = REQUEST_SIB_JOB_UNLOCK;
+
+	req_msg.data     = &sib_msg;
+
+	if (_send_recv_msg(conn, &req_msg, &resp_msg, false)) {
+		rc = SLURM_PROTOCOL_ERROR;
+		goto end_it;
+	}
+
+	switch (resp_msg.msg_type) {
+	case RESPONSE_SLURM_RC:
+		if ((rc = slurm_get_return_code(resp_msg.msg_type,
+						resp_msg.data))) {
+			slurm_seterrno(rc);
+			rc = SLURM_PROTOCOL_ERROR;
+		}
+		break;
+	default:
+		slurm_seterrno(SLURM_UNEXPECTED_MSG_ERROR);
+		rc = SLURM_PROTOCOL_ERROR;
+		break;
+	}
+
+end_it:
+	slurm_free_msg_members(&resp_msg);
+
+	return rc;
+}
+
+/*
+ * Tell the origin cluster that the job was started
+ *
+ * IN conn       - sibling connection
+ * IN job_id     - the job's id
+ * IN cluster_id - cluster id of the cluster that started the job
+ * IN start_time - time the fed job started
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+static int _persist_fed_job_start(slurmdb_cluster_rec_t *conn,
+				  uint32_t job_id, uint32_t cluster_id,
+				  time_t start_time)
+{
+	int rc;
+	slurm_msg_t req_msg, resp_msg;
+
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
+
+	sib_msg_t sib_msg;
+	memset(&sib_msg, 0, sizeof(sib_msg_t));
+	sib_msg.job_id     = job_id;
+	sib_msg.cluster_id = cluster_id;
+	sib_msg.start_time = start_time;
+
+	req_msg.msg_type = REQUEST_SIB_JOB_START;
+	req_msg.data     = &sib_msg;
+
+	if (_send_recv_msg(conn, &req_msg, &resp_msg, false)) {
+		rc = SLURM_PROTOCOL_ERROR;
+		goto end_it;
+	}
+
+	switch (resp_msg.msg_type) {
+	case RESPONSE_SLURM_RC:
+		if ((rc = slurm_get_return_code(resp_msg.msg_type,
+						resp_msg.data))) {
+			slurm_seterrno(rc);
+			rc = SLURM_PROTOCOL_ERROR;
+		}
+		break;
+	default:
+		slurm_seterrno(SLURM_UNEXPECTED_MSG_ERROR);
+		rc = SLURM_PROTOCOL_ERROR;
+		break;
+	}
+
+end_it:
+	slurm_free_msg_members(&resp_msg);
+
+	return rc;
+}
 
 static int _find_sibling_by_id(void *x, void *key)
 {
@@ -695,6 +851,40 @@ static slurmdb_cluster_rec_t *_get_cluster_by_id(uint32_t id)
 	return list_find_first(fed_mgr_fed_rec->cluster_list,
 			       _find_sibling_by_id, (void *)(intptr_t)id);
 }
+
+/*
+ * Revoke all sibling jobs except from cluster_id -- which the request came from
+ *
+ * IN job_ptr    - job to revoke
+ * IN cluster_id - cluster id of cluster that initiated call. Don're revoke
+ * 	the job on this cluster -- it's the one that started the fed job.
+ * IN start_time - time the fed job started
+ */
+static void _revoke_sibling_jobs(struct job_record *job_ptr, uint32_t cluster_id,
+				time_t start_time)
+{
+	int id = 1;
+	uint64_t tmp_sibs = job_ptr->fed_details->siblings;
+	while (tmp_sibs) {
+		if ((tmp_sibs & 1) &&
+		    (id != fed_mgr_cluster_rec->fed.id) &&
+		    (id != cluster_id)) {
+			slurmdb_cluster_rec_t *cluster = _get_cluster_by_id(id);
+			if (!cluster) {
+				error("couldn't find cluster rec by id %d", id);
+				goto next_job;
+			}
+
+			_persist_fed_job_revoke(cluster, job_ptr->job_id,
+						start_time);
+		}
+
+next_job:
+		tmp_sibs >>= 1;
+		id++;
+	}
+}
+
 extern int fed_mgr_init(void *db_conn)
 {
 	int rc = SLURM_SUCCESS;
@@ -1162,6 +1352,7 @@ static void *_sib_will_run(void *arg)
 		struct job_record *job_ptr = NULL;
 		job_desc_msg_t *job_desc;
 		sib_msg_t *sib_msg = sib_willrun->sib_msg;
+		/* don't need read_fed_lock -- set in fed_mgr_job_allocate */
 		slurmctld_lock_t job_write_lock = {
 			NO_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
 
@@ -1756,22 +1947,23 @@ end_it:
 extern bool fed_mgr_is_tracker_only_job(struct job_record *job_ptr)
 {
 	bool rc = false;
-	slurmctld_lock_t fed_read_lock = {
-		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 
 	xassert(job_ptr);
 
-	lock_slurmctld(fed_read_lock);
+	if (!fed_mgr_cluster_rec)
+		return rc;
 
 	if (job_ptr->fed_details &&
-	    fed_mgr_cluster_rec &&
 	    (fed_mgr_get_cluster_id(job_ptr->job_id) ==
 	     fed_mgr_cluster_rec->fed.id) &&
 	    (!(job_ptr->fed_details->siblings &
 	      FED_SIBLING_BIT(fed_mgr_cluster_rec->fed.id))))
 		rc = true;
 
-	unlock_slurmctld(fed_read_lock);
+	if (job_ptr->fed_details &&
+	    job_ptr->fed_details->cluster_lock &&
+	    job_ptr->fed_details->cluster_lock != fed_mgr_cluster_rec->fed.id)
+		rc = true;
 
 	return rc;
 }
@@ -1791,6 +1983,254 @@ extern char *fed_mgr_get_cluster_name(uint32_t id)
 	return name;
 }
 
+/*
+ * Attempt to grab the job's federation cluster lock so that the requesting
+ * cluster can attempt to start to the job.
+ *
+ * IN job - job to lock
+ * IN cluster_id - cluster id of cluster wanting to lock the job. If INFINITE,
+ * 	the cluster cluster's fed id will be used.
+ * RET returns SLURM_SUCCESS if the lock was granted, SLURM_ERROR otherwise
+ */
+extern int fed_mgr_job_lock(struct job_record *job_ptr, uint32_t cluster_id)
+{
+	int rc = SLURM_SUCCESS;
+	uint32_t origin_id;
+
+	xassert(job_ptr);
+
+	if (!fed_mgr_cluster_rec)
+		return SLURM_SUCCESS;
+
+	if ((!job_ptr->fed_details) ||
+	    (!(origin_id = fed_mgr_get_cluster_id(job_ptr->job_id)))) {
+		info("job %d not a federated job", job_ptr->job_id);
+		return SLURM_SUCCESS;
+	}
+
+	if (cluster_id == INFINITE)
+		cluster_id = fed_mgr_cluster_rec->fed.id;
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+		info("attempting fed job lock on %d by cluster_id %d",
+		     job_ptr->job_id, cluster_id);
+
+	/* if this cluster is the only sibling, then just assume the lock */
+	if ((job_ptr->fed_details->siblings & FED_SIBLING_BIT(cluster_id)) &&
+	    (!(job_ptr->fed_details->siblings & ~FED_SIBLING_BIT(cluster_id))))
+		return SLURM_SUCCESS;
+
+	if (origin_id != fed_mgr_cluster_rec->fed.id) {
+		slurmdb_cluster_rec_t *origin_cluster;
+		if (!(origin_cluster = _get_cluster_by_id(origin_id))) {
+			error("Unable to find origin cluster for job %d from origin id %d",
+			      job_ptr->job_id, origin_id);
+			return SLURM_ERROR;
+		}
+		return _persist_fed_job_lock(origin_cluster, job_ptr->job_id,
+					     cluster_id, true);
+	}
+
+	if (job_ptr->fed_details->cluster_lock &&
+	    (job_ptr->fed_details->cluster_lock != cluster_id)) {
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+			info("fed job %d already locked by cluster %d",
+			     job_ptr->job_id,
+			     job_ptr->fed_details->cluster_lock);
+		rc = SLURM_ERROR;
+	} else {
+		job_ptr->fed_details->cluster_lock = cluster_id;
+		rc = SLURM_SUCCESS;
+	}
+
+	return rc;
+}
+
+/*
+ * Release the job's federation cluster lock so that other cluster's can try to
+ * start the job.
+ *
+ * IN job        - job to unlock
+ * IN cluster_id - cluster id of cluster wanting to unlock the job. If INFINITE,
+ * 	the cluster cluster's fed id will be used.
+ * RET returns SLURM_SUCCESS if the lock was released, SLURM_ERROR otherwise
+ */
+extern int fed_mgr_job_unlock(struct job_record *job_ptr, uint32_t cluster_id)
+{
+	int rc = SLURM_SUCCESS;
+	uint32_t origin_id;
+
+	if (!fed_mgr_cluster_rec)
+		return SLURM_SUCCESS;
+
+	if ((!job_ptr->fed_details) ||
+	    (!(origin_id = fed_mgr_get_cluster_id(job_ptr->job_id)))) {
+		info("job %d not a federated job", job_ptr->job_id);
+		return SLURM_SUCCESS;
+	}
+
+	if (cluster_id == INFINITE)
+		cluster_id = fed_mgr_cluster_rec->fed.id;
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+		info("releasing fed job lock on %d by cluster_id %d",
+		     job_ptr->job_id, cluster_id);
+
+	/* if this cluster is the only sibling, then dont worry */
+	if ((job_ptr->fed_details->siblings & FED_SIBLING_BIT(cluster_id)) &&
+	    (!(job_ptr->fed_details->siblings & ~FED_SIBLING_BIT(cluster_id))))
+		return SLURM_SUCCESS;
+
+	if (origin_id != fed_mgr_cluster_rec->fed.id) {
+		slurmdb_cluster_rec_t *origin_cluster;
+		if (!(origin_cluster = _get_cluster_by_id(origin_id))) {
+			error("Unable to find origin cluster for job %d from origin id %d",
+			      job_ptr->job_id, origin_id);
+			return SLURM_ERROR;
+		}
+		return _persist_fed_job_lock(origin_cluster, job_ptr->job_id,
+					     cluster_id, false);
+	}
+
+	if (job_ptr->fed_details->cluster_lock &&
+	    (job_ptr->fed_details->cluster_lock != cluster_id)) {
+		error("attempt to unlock sib job %d by cluster %d which doesn't have job lock",
+		      job_ptr->job_id, cluster_id);
+		rc = SLURM_ERROR;
+	} else {
+		job_ptr->fed_details->cluster_lock = 0;
+	}
+
+	return rc;
+}
+
+/*
+ * Notify origin cluster that cluster_id started job.
+ *
+ * Cancels remaining sibling jobs.
+ *
+ * IN job_id     - job_id of to unlock
+ * IN cluster_id - cluster id of cluster wanting to unlock the job. If INFINITE,
+ * 	the cluster cluster's fed id will be used.
+ * IN start_time - start_time of the job.
+ * RET returns SLURM_SUCCESS if the lock was released, SLURM_ERROR otherwise
+ */
+extern int fed_mgr_job_start(struct job_record *job_ptr, uint32_t cluster_id,
+			     time_t start_time)
+{
+	int rc = SLURM_SUCCESS;
+	uint32_t origin_id;
+
+	assert(job_ptr);
+
+	if (!fed_mgr_cluster_rec)
+		return SLURM_SUCCESS;
+
+	if ((!job_ptr->fed_details) ||
+	    (!(origin_id = fed_mgr_get_cluster_id(job_ptr->job_id)))) {
+		info("job %d not a federated job", job_ptr->job_id);
+		return SLURM_SUCCESS;
+	}
+
+	if (cluster_id == INFINITE)
+		cluster_id = fed_mgr_cluster_rec->fed.id;
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+		info("start fed job %d by cluster_id %d",
+		     job_ptr->job_id, cluster_id);
+
+	if (origin_id != fed_mgr_cluster_rec->fed.id) {
+		slurmdb_cluster_rec_t *origin_cluster;
+		if (!(origin_cluster = _get_cluster_by_id(origin_id))) {
+			error("Unable to find origin cluster for job %d from origin id %d",
+			      job_ptr->job_id, origin_id);
+			return SLURM_ERROR;
+		}
+
+		set_job_fed_details(job_ptr, FED_SIBLING_BIT(cluster_id));
+
+		return _persist_fed_job_start(origin_cluster, job_ptr->job_id,
+					      cluster_id, job_ptr->start_time);
+	}
+
+	/* Origin Cluster: */
+	if ((job_ptr->fed_details->siblings & FED_SIBLING_BIT(cluster_id)) &&
+	    (!(job_ptr->fed_details->siblings & ~FED_SIBLING_BIT(cluster_id))))
+	{
+		/* if this cluster is the only sibling, then just assume the
+		 * lock */
+		job_ptr->fed_details->cluster_lock = cluster_id;
+	} else if (!job_ptr->fed_details->cluster_lock) {
+		error("attempt to start sib job %d by cluster %d but it's not locked",
+		      job_ptr->job_id, cluster_id);
+		rc = SLURM_ERROR;
+	} else if (job_ptr->fed_details->cluster_lock &&
+		   (job_ptr->fed_details->cluster_lock != cluster_id)) {
+		error("attempt to start sib job %d by cluster %d which doesn't have job lock",
+		     job_ptr->job_id, cluster_id);
+		rc = SLURM_ERROR;
+	} else if (job_ptr->fed_details->siblings &
+		   ~FED_SIBLING_BIT(cluster_id)) {
+		/* cancel all sibling jobs if there are more siblings than just
+		 * the cluster that it came from */
+		_revoke_sibling_jobs(job_ptr, cluster_id, start_time);
+	}
+
+	if (!rc) {
+		/* Update where sibling jobs are running */
+		set_job_fed_details(job_ptr, FED_SIBLING_BIT(cluster_id));
+
+		if (cluster_id != fed_mgr_cluster_rec->fed.id) {
+			/* leave as pending so that it will stay around */
+			job_ptr->job_state  = JOB_REVOKED;
+			job_ptr->start_time = 0;
+			job_ptr->end_time   = start_time;
+			job_completion_logger(job_ptr, false);
+		}
+	}
+
+	return rc;
+}
+
+/*
+ * Complete the federated job. If the job ran on a cluster other than the
+ * origin_cluster then it notifies the origin cluster that the job finished.
+ *
+ * Tells the origin cluster to revoke the tracking job.
+ *
+ * IN job_id - job_id of job to complete.
+ * IN return_code - return code of job
+ * RET returns SLURM_SUCCESS if fed job was completed, SLURM_ERROR otherwise
+ */
+extern int fed_mgr_job_complete(uint32_t job_id, uint32_t return_code,
+				time_t start_time)
+{
+	uint32_t origin_id;
+
+	if (!fed_mgr_cluster_rec)
+		return SLURM_SUCCESS;
+
+	if (!(origin_id = fed_mgr_get_cluster_id(job_id))) {
+		info("job not a federated job");
+		return SLURM_SUCCESS;
+	}
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+		info("complete fed job %d by cluster_id %d",
+		     job_id, fed_mgr_cluster_rec->fed.id);
+
+	if (origin_id == fed_mgr_cluster_rec->fed.id)
+		return SLURM_SUCCESS;
+
+	slurmdb_cluster_rec_t *conn = _get_cluster_by_id(origin_id);
+	if (!conn) {
+		error("Unable to find origin cluster for job %d from origin id %d",
+		      job_id, origin_id);
+		return SLURM_ERROR;
+	}
+
+	return _persist_fed_job_revoke(conn, job_id, start_time);
+}
 
 /* Convert cluster ids to cluster names.
  *
