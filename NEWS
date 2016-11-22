@@ -38,7 +38,9 @@ documents those changes that are of interest to users and administrators.
  -- testsuite - fix job id output in test17.39.
  -- Modify backfill algorithm to improve performance with large numbers of
     running jobs. Group running jobs that end in a "similar" time frame using a
-    time window that grows exponentially rather than linearly.
+    time window that grows exponentially rather than linearly. After one second
+    of wall time, simulate the termination of all remaining running jobs in
+    order to respond in a reasonable time frame.
 
 * Changes in Slurm 16.05.6
 ==========================
