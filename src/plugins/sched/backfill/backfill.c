@@ -125,6 +125,7 @@ static uint64_t debug_flags = 0;
 static int backfill_interval = BACKFILL_INTERVAL;
 static int backfill_resolution = BACKFILL_RESOLUTION;
 static int backfill_window = BACKFILL_WINDOW;
+static int bf_job_part_count_reserve = 0;
 static int bf_max_job_array_resv = BF_MAX_JOB_ARRAY_RESV;
 static int bf_min_age_reserve = 0;
 static uint32_t bf_min_prio_reserve = 0;
@@ -606,6 +607,18 @@ static void _load_config(void)
 		     max_backfill_job_per_user, max_backfill_job_cnt);
 	}
 
+	bf_job_part_count_reserve = 0;
+	if (sched_params &&
+	    (tmp_ptr = strstr(sched_params, "bf_job_part_count_reserve="))) {
+		int job_cnt = atoi(tmp_ptr + 26);
+		if (job_cnt < 0) {
+			error("Invalid SchedulerParameters bf_job_part_count_reserve: %d",
+			      job_cnt);
+		} else {
+			bf_job_part_count_reserve = job_cnt;
+		}
+	}
+
 	bf_min_age_reserve = 0;
 	if (sched_params &&
 	    (tmp_ptr = strstr(sched_params, "bf_min_age_reserve="))) {
@@ -891,7 +904,8 @@ static int _attempt_backfill(void)
 	struct timeval bf_time1, bf_time2;
 	int rc = 0;
 	int job_test_count = 0, test_time_count = 0, pend_time;
-	uint32_t *uid = NULL, nuser = 0, bf_parts = 0, *bf_part_jobs = NULL;
+	uint32_t *uid = NULL, nuser = 0, bf_parts = 0;
+	uint32_t *bf_part_jobs = NULL, *bf_part_resv = NULL;
 	uint16_t *njobs = NULL;
 	bool already_counted;
 	uint32_t reject_array_job_id = 0;
@@ -978,12 +992,13 @@ static int _attempt_backfill(void)
 	if (debug_flags & DEBUG_FLAG_BACKFILL_MAP)
 		_dump_node_space_table(node_space);
 
-	if (max_backfill_job_per_part) {
+	if (bf_job_part_count_reserve || max_backfill_job_per_part) {
 		ListIterator part_iterator;
 		struct part_record *part_ptr;
 		bf_parts = list_count(part_list);
 		bf_part_ptr  = xmalloc(sizeof(struct part_record *) * bf_parts);
 		bf_part_jobs = xmalloc(sizeof(uint32_t) * bf_parts);
+		bf_part_resv = xmalloc(sizeof(uint32_t) * bf_parts);
 		part_iterator = list_iterator_create(part_list);
 		i = 0;
 		while ((part_ptr = (struct part_record *)
@@ -996,6 +1011,7 @@ static int _attempt_backfill(void)
 		uid = xmalloc(BF_MAX_USERS * sizeof(uint32_t));
 		njobs = xmalloc(BF_MAX_USERS * sizeof(uint16_t));
 	}
+
 	sort_job_queue(job_queue);
 	while (1) {
 		job_queue_rec = (job_queue_rec_t *) list_pop(job_queue);
@@ -1137,6 +1153,18 @@ static int _attempt_backfill(void)
 					     job_ptr->details->begin_time);
 			if (pend_time < bf_min_age_reserve)
 				job_no_reserve = TEST_NOW_ONLY;
+		}
+
+		if ((job_no_reserve == 0) && bf_job_part_count_reserve) {
+			bool skip_job = false;
+			for (j = 0; j < bf_parts; j++) {
+				if (bf_part_ptr[j] != job_ptr->part_ptr)
+					continue;
+				if (bf_part_resv[j] >=
+				    bf_job_part_count_reserve)
+					job_no_reserve = TEST_NOW_ONLY;
+				break;
+			}
 		}
 
 		orig_start_time = job_ptr->start_time;
@@ -1738,6 +1766,19 @@ next_task:
 			_dump_job_sched(job_ptr, end_reserve, avail_bitmap);
 		if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE))
 			continue;
+		if (bf_job_part_count_reserve) {
+			bool do_reserve = true;
+			for (j = 0; j < bf_parts; j++) {
+				if (bf_part_ptr[j] != job_ptr->part_ptr)
+					continue;
+				if (bf_part_resv[j]++ >=
+				    bf_job_part_count_reserve)
+					do_reserve = false;
+				break;
+			}
+			if (!do_reserve)
+				continue;
+		}
 		reject_array_job_id = 0;
 		reject_array_part   = NULL;
 		xfree(job_ptr->sched_nodes);
@@ -1766,6 +1807,7 @@ next_task:
 		}
 	}
 	xfree(bf_part_jobs);
+	xfree(bf_part_resv);
 	xfree(bf_part_ptr);
 	xfree(uid);
 	xfree(njobs);

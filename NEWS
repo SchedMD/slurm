@@ -21,6 +21,8 @@ documents those changes that are of interest to users and administrators.
  -- Make it so we don't purge job start messages until after we purge step
     messages.  Hopefully this will reduce the number of messages lost when
     filling up memory when the database/DBD is down.
+ -- Added SchedulingParameters option of "bf_job_part_count_reserve". Jobs below
+    the specified threshold will not have resources reserved for them.
 
 * Changes in Slurm 17.02.0pre3
 ==============================

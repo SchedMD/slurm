@@ -2504,6 +2504,20 @@ The backfill scheduler will start over after reaching this time limit
 been reached.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
 The default value is 30 seconds.
+
+.TP
+\fBbf_job_part_count_reserve=#\fR
+The backfill scheduling logic will reserve resources for the specified count
+of highest priority jobs in each partition.
+For example, bf_job_part_count_reserve=10 will cause the backfill scheduler to
+reserve resources for the ten highest priority jobs in each partition.
+Any lower priority job that can be started using currently available resources
+and not adversely impact the expected start time of these higher priority jobs
+will be started by the backfill scheduler
+The default value is zero, which will reserve resources for any pending job
+and delay initiation of lower priority jobs.
+Also see bf_min_age_reserve and bf_min_prio_reserve.
+
 .TP
 \fBbf_max_job_array_resv=#\fR
 The maximum number of tasks from a job array for which to reserve resources in
@@ -2563,7 +2577,7 @@ This can be valuable if jobs lack time limits or all time limits have the same
 value.
 The default value is zero, which will reserve resources for any pending job
 and delay initiation of lower priority jobs.
-Also see bf_min_prio_reserve.
+Also see bf_job_part_count_reserve and bf_min_prio_reserve.
 .TP
 \fBbf_min_prio_reserve=#\fR
 The backfill and main scheduling logic will not reserve resources for pending
@@ -2574,7 +2588,7 @@ This can be valuable if one wished to maximum system utilization without regard
 for job priority below a certain threshold.
 The default value is zero, which will reserve resources for any pending job
 and delay initiation of lower priority jobs.
-Also see bf_min_age_reserve.
+Also see bf_job_part_count_reserve and bf_min_age_reserve.
 .TP
 \fBbf_resolution=#\fR
 The number of seconds in the resolution of data maintained about when jobs
