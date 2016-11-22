@@ -2050,6 +2050,8 @@ extern char *job_state_string(uint32_t inx)
 		return "SPECIAL_EXIT";
 	if (inx & JOB_STOPPED)
 		return "STOPPED";
+	if (inx & JOB_REVOKED)
+		return "REVOKED";
 
 
 	/* Process JOB_STATE_BASE */
@@ -2098,6 +2100,8 @@ extern char *job_state_string_compact(uint32_t inx)
 		return "SE";
 	if (inx & JOB_STOPPED)
 		return "ST";
+	if (inx & JOB_REVOKED)
+		return "RV";
 
 	/* Process JOB_STATE_BASE */
 	switch (inx & JOB_STATE_BASE) {
@@ -2152,6 +2156,8 @@ extern uint32_t job_state_num(const char *state_name)
 		return JOB_CONFIGURING;
 	if (_job_name_test(JOB_RESIZING, state_name))
 		return JOB_RESIZING;
+	if (_job_name_test(JOB_REVOKED, state_name))
+		return JOB_REVOKED;
 	if (_job_name_test(JOB_SPECIAL_EXIT, state_name))
 		return JOB_SPECIAL_EXIT;
 

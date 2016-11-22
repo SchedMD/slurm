@@ -363,14 +363,15 @@ Actual or expected start time of the job or job step.
 Job state, compact form:
 PD (pending), R (running), CA (cancelled), CF(configuring),
 CG (completing), CD (completed),
-F (failed), TO (timeout), NF (node failure) and SE (special exit state).
+F (failed), TO (timeout), NF (node failure), RV (revoked) and SE
+(special exit state).
 See the \fBJOB STATE CODES\fR section below for more information.
 (Valid for jobs only)
 .TP
 \fB%T\fR
 Job state, extended form:
 PENDING, RUNNING, SUSPENDED, CANCELLED, COMPLETING, COMPLETED, CONFIGURING,
-FAILED, TIMEOUT, PREEMPTED, NODE_FAIL and SPECIAL_EXIT.
+FAILED, TIMEOUT, PREEMPTED, NODE_FAIL, REVOKED and SPECIAL_EXIT.
 See the \fBJOB STATE CODES\fR section below for more information.
 (Valid for jobs only)
 .TP
@@ -834,7 +835,7 @@ Actual or expected start time of the job or job step.
 \fBstate\fR
 Job state, extended form:
 PENDING, RUNNING, STOPPED, SUSPENDED, CANCELLED, COMPLETING, COMPLETED,
-CONFIGURING, FAILED, TIMEOUT, PREEMPTED, NODE_FAIL and SPECIAL_EXIT.
+CONFIGURING, FAILED, TIMEOUT, PREEMPTED, NODE_FAIL, REVOKED and SPECIAL_EXIT.
 See the \fBJOB STATE CODES\fR section below for more information.
 (Valid for jobs only)
 .TP
@@ -842,7 +843,7 @@ See the \fBJOB STATE CODES\fR section below for more information.
 Job state, compact form:
 PD (pending), R (running), CA (cancelled), CF(configuring),
 CG (completing), CD (completed),
-F (failed), TO (timeout), NF (node failure) and SE (special exit state).
+F (failed), TO (timeout), NF (node failure), RV (revoked) and SE (special exit state).
 See the \fBJOB STATE CODES\fR section below for more information.
 (Valid for jobs only)
 .TP
@@ -995,8 +996,8 @@ reported. If no state is specified then pending, running, and completing
 jobs are reported. Valid states (in both extended and compact form) include:
 PENDING (PD), RUNNING (R), SUSPENDED (S), STOPPED (ST),
 COMPLETING (CG), COMPLETED (CD), CONFIGURING (CF), CANCELLED (CA),
-FAILED (F), TIMEOUT (TO), PREEMPTED (PR), BOOT_FAIL (BF) , NODE_FAIL (NF)
-and SPECIAL_EXIT (SE).
+FAILED (F), TIMEOUT (TO), PREEMPTED (PR), BOOT_FAIL (BF) , NODE_FAIL (NF),
+REVOKED (RV), and SPECIAL_EXIT (SE).
 Note the \fB<state_list>\fR supplied is case insensitive ("pd" and "PD" are
 equivalent).
 See the \fBJOB STATE CODES\fR section below for more information.
@@ -1182,6 +1183,9 @@ Job is awaiting resource allocation.
 .TP
 \fBPR  PREEMPTED\fR
 Job terminated due to preemption.
+.TP
+\fBR   REVOKED\fR
+Sibling was removed from cluster due to other cluster starting the job.
 .TP
 \fBR   RUNNING\fR
 Job currently has an allocation.

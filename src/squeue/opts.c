@@ -493,6 +493,8 @@ _parse_state( char* str, uint32_t* states )
 	xstrcat(state_names, ",");
 	xstrcat(state_names, job_state_string(JOB_RESIZING));
 	xstrcat(state_names, ",");
+	xstrcat(state_names, job_state_string(JOB_REVOKED));
+	xstrcat(state_names, ",");
 	xstrcat(state_names, job_state_string(JOB_SPECIAL_EXIT));
 	error("Valid job states include: %s\n", state_names);
 	xfree (state_names);
@@ -1863,6 +1865,7 @@ _build_all_states_list( void )
 
 	_append_state_list(my_list, JOB_COMPLETING);
 	_append_state_list(my_list, JOB_CONFIGURING);
+	_append_state_list(my_list, JOB_REVOKED);
 	_append_state_list(my_list, JOB_SPECIAL_EXIT);
 
 	return my_list;

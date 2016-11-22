@@ -100,6 +100,8 @@
 	(_X->job_state & JOB_REQUEUE)
 #define IS_JOB_UPDATE_DB(_X)		\
 	(_X->job_state & JOB_UPDATE_DB)
+#define IS_JOB_REVOKED(_X)		\
+	(_X->job_state & JOB_REVOKED)
 
 /* Defined node states */
 #define IS_NODE_UNKNOWN(_X)		\
