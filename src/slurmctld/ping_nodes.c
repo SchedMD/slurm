@@ -396,12 +396,12 @@ extern void run_health_check(void)
 	 */
 	select_g_select_nodeinfo_set_all();
 
+#ifdef HAVE_FRONT_END
 	check_agent_args = xmalloc (sizeof (agent_arg_t));
 	check_agent_args->msg_type = REQUEST_HEALTH_CHECK;
 	check_agent_args->retry = 0;
 	check_agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 	check_agent_args->hostlist = hostlist_create(NULL);
-#ifdef HAVE_FRONT_END
 	for (i = 0, front_end_ptr = front_end_nodes;
 	     i < front_end_node_cnt; i++, front_end_ptr++) {
 		if (IS_NODE_NO_RESPOND(front_end_ptr))
@@ -443,6 +443,11 @@ extern void run_health_check(void)
 		select_g_select_nodeinfo_set_all();
 	}
 
+	check_agent_args = xmalloc (sizeof (agent_arg_t));
+	check_agent_args->msg_type = REQUEST_HEALTH_CHECK;
+	check_agent_args->retry = 0;
+	check_agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
+	check_agent_args->hostlist = hostlist_create(NULL);
 	for (i = 0; i < node_record_count; i++) {
 		if (run_cyclic) {
 			if (node_test_cnt++ >= node_limit)
