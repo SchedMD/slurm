@@ -36,6 +36,9 @@ documents those changes that are of interest to users and administrators.
  -- If a node is booting for some job, don't allocate additional jobs to the
     node until the boot completes.
  -- testsuite - fix job id output in test17.39.
+ -- Modify backfill algorithm to improve performance with large numbers of
+    running jobs. Group running jobs that end in a "similar" time frame using a
+    time window that grows exponentially rather than linearly.
 
 * Changes in Slurm 16.05.6
 ==========================
