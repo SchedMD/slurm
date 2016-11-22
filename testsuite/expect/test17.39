@@ -182,7 +182,7 @@ wait_for_job $fast_id DONE
 
 # Wait for dependency job to start once the fast job is complete
 if {[wait_for_job $dep_id RUNNING]} {
-	send_user "\nFAILURE: job $dep_job should be running\n"
+	send_user "\nFAILURE: job $dep_id should be running\n"
 	set exit_code 1
 }
 

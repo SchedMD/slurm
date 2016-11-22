@@ -35,6 +35,7 @@ documents those changes that are of interest to users and administrators.
  -- cgroup plugins - fix two minor memory leaks.
  -- If a node is booting for some job, don't allocate additional jobs to the
     node until the boot completes.
+ -- testsuite - fix job id output in test17.39.
 
 * Changes in Slurm 16.05.6
 ==========================
