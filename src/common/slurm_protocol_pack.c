@@ -8581,16 +8581,21 @@ _pack_sib_msg(sib_msg_t *sib_msg_ptr, Buf buffer, uint16_t protocol_version)
 		pack32(sib_msg_ptr->job_id, buffer);
 
 		/* add already packed data_buffer to buffer */
-		if (size_buf(sib_msg_ptr->data_buffer)) {
+		if (sib_msg_ptr->data_buffer &&
+		    size_buf(sib_msg_ptr->data_buffer)) {
 			Buf dbuf = sib_msg_ptr->data_buffer;
 			uint32_t grow_size =
 				size_buf(dbuf) - get_buf_offset(dbuf);
+
+			pack16(1, buffer);
 
 			grow_buf(buffer, grow_size);
 			memcpy(&buffer->head[get_buf_offset(buffer)],
 			       &dbuf->head[get_buf_offset(dbuf)], grow_size);
 			set_buf_offset(buffer,
 				       get_buf_offset(buffer) + grow_size);
+		} else {
+			pack16(0, buffer);
 		}
 	} else {
 		error("_pack_sib_msg: protocol_version "
@@ -8604,6 +8609,7 @@ _unpack_sib_msg(sib_msg_t **sib_msg_buffer_ptr, Buf buffer,
 {
 	sib_msg_t *sib_msg_ptr = NULL;
 	slurm_msg_t tmp_msg;
+	uint16_t tmp_uint16;
 
 	xassert(sib_msg_buffer_ptr);
 
@@ -8618,7 +8624,8 @@ _unpack_sib_msg(sib_msg_t **sib_msg_buffer_ptr, Buf buffer,
 		safe_unpack64(&sib_msg_ptr->fed_siblings, buffer);
 		safe_unpack32(&sib_msg_ptr->job_id, buffer);
 
-		if (remaining_buf(buffer)) {
+		safe_unpack16(&tmp_uint16, buffer);
+		if (tmp_uint16) {
 			slurm_msg_t_init(&tmp_msg);
 			tmp_msg.msg_type         = sib_msg_ptr->data_type;
 			tmp_msg.protocol_version = sib_msg_ptr->data_version;
