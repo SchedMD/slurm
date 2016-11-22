@@ -1881,15 +1881,20 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	 * pending job after each one (or a few jobs that end close in time). */
 	if ((rc != SLURM_SUCCESS) &&
 	    ((job_ptr->bit_flags & TEST_NOW_ONLY) == 0)) {
-		int time_window = 0;
+		int time_window = 30;
 		bool more_jobs = true;
+		bool timed_out = false;
+		DEF_TIMERS;
+
 		list_sort(cr_job_list, _cr_job_list_sort);
+		START_TIMER;
 		job_iterator = list_iterator_create(cr_job_list);
 		while (more_jobs) {
 			struct job_record *first_job_ptr = NULL;
 			struct job_record *last_job_ptr = NULL;
 			struct job_record *next_job_ptr = NULL;
 			int overlap, rm_job_cnt = 0;
+
 			while (true) {
 				tmp_job_ptr = list_next(job_iterator);
 				if (!tmp_job_ptr) {
@@ -1908,21 +1913,23 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				last_job_ptr = tmp_job_ptr;
 				_rm_job_from_res(future_part, future_usage,
 						 tmp_job_ptr, 0);
-				if (rm_job_cnt++ > 20)
+				if ((rm_job_cnt++ > 200) && !timed_out)
 					break;
 				next_job_ptr = list_peek_next(job_iterator);
 				if (!next_job_ptr) {
 					more_jobs = false;
 					break;
+				} else if (timed_out) {
+					continue;
 				} else if (next_job_ptr->end_time >
 				 	   (first_job_ptr->end_time +
 					    time_window)) {
 					break;
 				}
 			}
-			if (!last_job_ptr)
+			if (!last_job_ptr)	/* Should never happen */
 				break;
-			time_window += 60;
+			time_window *= 2;
 			rc = cr_job_test(job_ptr, bitmap, min_nodes,
 					 max_nodes, req_nodes,
 					 SELECT_MODE_WILL_RUN, tmp_cr_type,
@@ -1941,6 +1948,12 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				}
 				break;
 			}
+			/* After 1 second of iterating over groups of running
+			 * jobs, simulate the termination of all remaining jobs
+			 * in order to determine if pending job can ever run */
+			END_TIMER;
+			if (DELTA_TIMER >= 1000000)
+				timed_out = true;
 		}
 		list_iterator_destroy(job_iterator);
 	}
