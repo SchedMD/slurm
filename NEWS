@@ -18,6 +18,9 @@ documents those changes that are of interest to users and administrators.
  -- switch/cray plugin - change legacy spool directory location.
  -- Add new PriorityFlags option of INCR_ONLY, which prevents a job's priority
     from being decremented.
+ -- Make it so we don't purge job start messages until after we purge step
+    messages.  Hopefully this will reduce the number of messages lost when
+    filling up memory when the database/DBD is down.
 
 * Changes in Slurm 17.02.0pre3
 ==============================

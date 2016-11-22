@@ -107,6 +107,7 @@ static int    _get_return_code(void);
 static Buf    _load_dbd_rec(int fd);
 static void   _load_dbd_state(void);
 static void   _open_slurmdbd_conn(bool db_needed);
+static int    _purge_step_req(void);
 static int    _purge_job_start_req(void);
 static int    _save_dbd_rec(int fd, Buf buffer);
 static void   _save_dbd_state(void);
@@ -353,6 +354,8 @@ extern int slurm_send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 		if (slurmdbd_conn->trigger_callbacks.dbd_fail)
 			(slurmdbd_conn->trigger_callbacks.dbd_fail)();
 	}
+	if (cnt == (max_agent_queue - 1))
+		cnt -= _purge_step_req();
 	if (cnt == (max_agent_queue - 1))
 		cnt -= _purge_job_start_req();
 	if (cnt < max_agent_queue) {
@@ -2316,7 +2319,36 @@ static void _sig_handler(int signal)
 {
 }
 
-/* Purge queued job/step start records from the agent queue
+/* Purge queued step records from the agent queue
+ * RET number of records purged */
+static int _purge_step_req(void)
+{
+	int purged = 0;
+	ListIterator iter;
+	uint16_t msg_type;
+	uint32_t offset;
+	Buf buffer;
+
+	iter = list_iterator_create(agent_list);
+	while ((buffer = list_next(iter))) {
+		offset = get_buf_offset(buffer);
+		if (offset < 2)
+			continue;
+		set_buf_offset(buffer, 0);
+		unpack16(&msg_type, buffer);
+		set_buf_offset(buffer, offset);
+		if ((msg_type == DBD_STEP_START) ||
+		    (msg_type == DBD_STEP_COMPLETE)) {
+			list_remove(iter);
+			purged++;
+		}
+	}
+	list_iterator_destroy(iter);
+	info("slurmdbd: purge %d step records", purged);
+	return purged;
+}
+
+/* Purge queued job start records from the agent queue
  * RET number of records purged */
 static int _purge_job_start_req(void)
 {
@@ -2334,15 +2366,13 @@ static int _purge_job_start_req(void)
 		set_buf_offset(buffer, 0);
 		unpack16(&msg_type, buffer);
 		set_buf_offset(buffer, offset);
-		if ((msg_type == DBD_JOB_START) ||
-		    (msg_type == DBD_STEP_START) ||
-		    (msg_type == DBD_STEP_COMPLETE)) {
+		if (msg_type == DBD_JOB_START) {
 			list_remove(iter);
 			purged++;
 		}
 	}
 	list_iterator_destroy(iter);
-	info("slurmdbd: purge %d job/step start records", purged);
+	info("slurmdbd: purge %d job start records", purged);
 	return purged;
 }
 
