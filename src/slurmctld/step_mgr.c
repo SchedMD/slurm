@@ -2740,7 +2740,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 				cpus /= threads;
 				cpus_used /= threads;
 				cpus_per_task_array[0] = cpus_per_task;
-				cpu_count_reps[0] = node_count;
+				cpus_task_reps[0] = node_count;
 			} else {
 				/* Here we are trying to figure out how many
 				 * cpus each task really needs.  This really
