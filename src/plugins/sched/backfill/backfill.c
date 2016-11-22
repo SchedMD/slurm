@@ -1156,7 +1156,6 @@ static int _attempt_backfill(void)
 		}
 
 		if ((job_no_reserve == 0) && bf_job_part_count_reserve) {
-			bool skip_job = false;
 			for (j = 0; j < bf_parts; j++) {
 				if (bf_part_ptr[j] != job_ptr->part_ptr)
 					continue;
