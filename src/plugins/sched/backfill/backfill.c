@@ -985,7 +985,7 @@ static int _attempt_backfill(void)
 		struct part_record *part_ptr;
 		bf_parts = list_count(part_list);
 		bf_part_ptr  = xmalloc(sizeof(struct part_record *) * bf_parts);
-		bf_part_jobs = xmalloc(sizeof(int) * bf_parts);
+		bf_part_jobs = xmalloc(sizeof(uint32_t) * bf_parts);
 		part_iterator = list_iterator_create(part_list);
 		i = 0;
 		while ((part_ptr = (struct part_record *)
