@@ -526,8 +526,7 @@ static int _persist_job_will_run(slurmdb_cluster_rec_t *conn,
 	req_msg.msg_type = REQUEST_SIB_JOB_WILL_RUN;
 	req_msg.data     = sib_msg;
 
-	rc = _send_recv_msg(conn, &req_msg, &resp_msg, false);
-	if (rc < 0) {
+	if (_send_recv_msg(conn, &req_msg, &resp_msg, false)) {
 		rc = SLURM_PROTOCOL_ERROR;
 		goto end_it;
 	}
@@ -572,15 +571,15 @@ static int _persist_submit_batch_job(slurmdb_cluster_rec_t *conn,
 	req_msg.msg_type = REQUEST_SIB_SUBMIT_BATCH_JOB;
 	req_msg.data     = sib_msg;
 
-	rc = _send_recv_msg(conn, &req_msg, &resp_msg, false);
-	if (rc) {
+	if (_send_recv_msg(conn, &req_msg, &resp_msg, false)) {
 		rc = SLURM_PROTOCOL_ERROR;
 		goto end_it;
 	}
 
 	switch (resp_msg.msg_type) {
 	case RESPONSE_SLURM_RC:
-		if ((rc = ((return_code_msg_t *) resp_msg.data)->return_code)) {
+		if ((rc = slurm_get_return_code(resp_msg.msg_type,
+						resp_msg.data))) {
 			slurm_seterrno(rc);
 			rc = SLURM_PROTOCOL_ERROR;
 		}
@@ -615,15 +614,15 @@ static int _persist_allocte_resources(slurmdb_cluster_rec_t *conn,
 	req_msg.msg_type = REQUEST_SIB_RESOURCE_ALLOCATION;
 	req_msg.data     = sib_msg;
 
-	rc = _send_recv_msg(conn, &req_msg, &resp_msg, false);
-	if (rc) {
+	if (_send_recv_msg(conn, &req_msg, &resp_msg, false)) {
 		rc = SLURM_PROTOCOL_ERROR;
 		goto end_it;
 	}
 
 	switch (resp_msg.msg_type) {
 	case RESPONSE_SLURM_RC:
-		if ((rc = ((return_code_msg_t *) resp_msg.data)->return_code)) {
+		if ((rc = slurm_get_return_code(resp_msg.msg_type,
+						resp_msg.data))) {
 			slurm_seterrno(rc);
 			rc = SLURM_PROTOCOL_ERROR;
 		}
@@ -654,25 +653,29 @@ static int _persist_update_job(slurmdb_cluster_rec_t *conn,
 	req_msg.msg_type = REQUEST_UPDATE_JOB;
 	req_msg.data     = data;
 
-	rc = _send_recv_msg(conn, &req_msg, &resp_msg, false);
-	if (rc == SLURM_SOCKET_ERROR)
-		return SLURM_ERROR;
+	if (_send_recv_msg(conn, &req_msg, &resp_msg, false)) {
+		rc = SLURM_PROTOCOL_ERROR;
+		goto end_it;
+	}
 
 	switch (resp_msg.msg_type) {
 	case RESPONSE_SLURM_RC:
-		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
-		if (rc) {
-			slurm_free_msg_members(&resp_msg);
-			slurm_seterrno_ret(rc);
+		if ((rc = slurm_get_return_code(resp_msg.msg_type,
+						resp_msg.data))) {
+			slurm_seterrno(rc);
+			rc = SLURM_PROTOCOL_ERROR;
 		}
 		break;
 	default:
-		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
+		slurm_seterrno(SLURM_UNEXPECTED_MSG_ERROR);
+		rc = SLURM_PROTOCOL_ERROR;
+		break;
 	}
 
+end_it:
 	slurm_free_msg_members(&resp_msg);
 
-        return SLURM_PROTOCOL_SUCCESS;
+	return rc;
 }
 
 extern int fed_mgr_init(void *db_conn)
