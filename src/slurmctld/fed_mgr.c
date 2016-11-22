@@ -678,6 +678,23 @@ end_it:
 	return rc;
 }
 
+
+static int _find_sibling_by_id(void *x, void *key)
+{
+	slurmdb_cluster_rec_t *object = (slurmdb_cluster_rec_t *)x;
+	int id = (intptr_t)key;
+
+	if (object->fed.id == id)
+		return 1;
+
+	return 0;
+}
+
+static slurmdb_cluster_rec_t *_get_cluster_by_id(uint32_t id)
+{
+	return list_find_first(fed_mgr_fed_rec->cluster_list,
+			       _find_sibling_by_id, (void *)(intptr_t)id);
+}
 extern int fed_mgr_init(void *db_conn)
 {
 	int rc = SLURM_SUCCESS;
@@ -993,17 +1010,6 @@ unpack_error:
 	free_buf(buffer);
 
 	return NULL;
-}
-
-static int _find_sibling_by_id(void *x, void *key)
-{
-	slurmdb_cluster_rec_t *object = (slurmdb_cluster_rec_t *)x;
-	int id = (intptr_t)key;
-
-	if (object->fed.id == id)
-		return 1;
-
-	return 0;
 }
 
 /*
@@ -1778,10 +1784,7 @@ extern char *fed_mgr_get_cluster_name(uint32_t id)
 	slurmdb_cluster_rec_t *sibling;
 	char *name = NULL;
 
-	if ((sibling =
-	     list_find_first(fed_mgr_fed_rec->cluster_list,
-			     _find_sibling_by_id,
-			     (void *)(intptr_t)id))) {
+	if ((sibling = _get_cluster_by_id(id))) {
 		name = xstrdup(sibling->name);
 	}
 
@@ -1805,10 +1808,7 @@ extern char *fed_mgr_cluster_ids_to_names(uint64_t cluster_ids)
 	while (cluster_ids) {
 		if (cluster_ids & 1) {
 			slurmdb_cluster_rec_t *sibling;
-			if ((sibling =
-			     list_find_first(fed_mgr_fed_rec->cluster_list,
-					     _find_sibling_by_id,
-					     (void *)(intptr_t)bit))){
+			if ((sibling = _get_cluster_by_id(bit))) {
 				xstrfmtcat(names, "%s%s",
 					   (names) ? "," : "", sibling->name);
 			} else {
