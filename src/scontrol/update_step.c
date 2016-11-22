@@ -105,8 +105,10 @@ static int _parse_comp_file(
 
 	if (!fgets(line, BUFFER_SIZE, fd)) {
 		fprintf(stderr, "Empty step update completion file\n");
+		(void) fclose(fd);
 		return SLURM_ERROR;
 	}
+	(void) fclose(fd);
 
 	fptr = line;	/* break the record into NULL-terminated strings */
 	for (i = 0; i < MAX_RECORD_FIELDS; i++) {
