@@ -319,6 +319,7 @@ extern int slurm_addto_char_list(List char_list, char *names)
 					}
 				}
 				hostlist_destroy(host_list);
+				xfree(name);
 			}
 			i++;
 		}
