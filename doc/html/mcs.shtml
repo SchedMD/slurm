@@ -61,7 +61,7 @@ to MCS labels by the mcs/group plugin.</li>
 
 <p>slurm.conf:
 <pre>
-MCSPlugin=mcs/user
+MCSPlugin=mcs/account
 MCSParameters=enforced,select,privatedata
 </pre>
 
@@ -72,6 +72,15 @@ or
 MCSPlugin=mcs/group
 MCSParameters=ondemand,noselect:groupA|groupB|groupC
 </pre>
+
+or
+
+<p>
+<pre>
+MCSPlugin=mcs/user
+MCSParameters=enforced,select,privatedata
+</pre>
+
 
 <h2>View MCS parameters</h2>
 
@@ -92,6 +101,10 @@ srun -n10 -t 1000 --mcs-label=groupB ./job &
 srun -n10 -t 1000 --mcs-label=groupB --exclusive=mcs ./job &
 </pre>
 
+<h2>With mcs/account plugin : put a different account/mcs-label in job </h2>
+<pre>
+srun -n10 -t 1000 -A another_account_than_default ./job &
+</pre>
 
 <h2>View MCS parameters in usage</h2>
 
