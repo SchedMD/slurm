@@ -45,6 +45,8 @@ documents those changes that are of interest to users and administrators.
  -- sched/backfill plugin: Make malloc match data type (defined as uint32_t and
     allocated as int).
  -- srun - prevent segfault when terminating job step before step has launched.
+ -- sacctmgr - prevent segfault when trying to reset usage for an invalid
+    account name.
 
 * Changes in Slurm 16.05.6
 ==========================
