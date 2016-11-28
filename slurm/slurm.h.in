@@ -1576,6 +1576,9 @@ typedef struct job_info {
 	uint64_t fed_siblings;	/* bitmap of sibling cluster ids */
 	char *fed_siblings_str;	/* string of sibling cluster names */
 	char *gres;		/* comma separated list of generic resources */
+	uint32_t gres_detail_cnt; /* Count of gres_detail_str records,
+				 * one per allocated node */
+	char **gres_detail_str;	/* Details of GRES index alloc per node */
 	uint32_t group_id;	/* group job submitted as */
 	uint32_t job_id;	/* job ID */
 	job_resources_t *job_resrcs; /* opaque data type, job resources */

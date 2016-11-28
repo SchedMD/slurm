@@ -158,6 +158,7 @@ static void _add_job_hash(struct job_record *job_ptr);
 static void _add_job_array_hash(struct job_record *job_ptr);
 static int  _checkpoint_job_record (struct job_record *job_ptr,
 				    char *image_dir);
+static void _clear_job_gres_details(struct job_record *job_ptr);
 static int  _copy_job_desc_files(uint32_t job_id_src, uint32_t job_id_dest);
 static int  _copy_job_desc_to_file(job_desc_msg_t * job_desc,
 				   uint32_t job_id);
@@ -3312,6 +3313,17 @@ extern bool allocated_session_in_use(job_desc_msg_t *new_alloc)
 	return job_ptr != NULL;
 }
 
+/* Clear a job's GRES details per node strings, rebuilt later on demand */
+static void _clear_job_gres_details(struct job_record *job_ptr)
+{
+	int i;
+
+	for (i = 0; i < job_ptr->gres_detail_cnt; i++)
+		xfree(job_ptr->gres_detail_str[i]);
+	xfree(job_ptr->gres_detail_str);
+	job_ptr->gres_detail_cnt = 0;
+}
+
 /*
  * kill_running_job_by_node_name - Given a node name, deallocate RUNNING
  *	or COMPLETING jobs from the node or kill them
@@ -3386,6 +3398,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 				kill_step_on_node(job_ptr, node_ptr, true);
 				excise_node_from_job(job_ptr, node_ptr);
 				(void) gs_job_start(job_ptr);
+				_clear_job_gres_details(job_ptr);
 				job_post_resize_acctg(job_ptr);
 			} else if (job_ptr->batch_flag && job_ptr->details &&
 				   job_ptr->details->requeue) {
@@ -8286,6 +8299,7 @@ static void _list_delete_job(void *job_entry)
 	free_job_resources(&job_ptr->job_resrcs);
 	xfree(job_ptr->gres);
 	xfree(job_ptr->gres_alloc);
+	_clear_job_gres_details(job_ptr);
 	xfree(job_ptr->gres_req);
 	xfree(job_ptr->gres_used);
 	FREE_NULL_LIST(job_ptr->gres_list);
@@ -8627,6 +8641,27 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 	return SLURM_SUCCESS;
 }
 
+static void _pack_job_gres(struct job_record *dump_job_ptr, Buf buffer,
+			   uint16_t protocol_version)
+{
+	if (!IS_JOB_STARTED(dump_job_ptr) || IS_JOB_FINISHED(dump_job_ptr) ||
+	    (dump_job_ptr->gres_list == NULL)) {
+		packstr_array(NULL, 0, buffer);
+		return;
+	}
+
+	if ((dump_job_ptr->gres_detail_cnt == 0) &&
+	    (dump_job_ptr->gres_detail_str == NULL)) {
+		/* Populate job GRES details */
+		gres_build_job_details(dump_job_ptr->gres_list,
+				       &dump_job_ptr->gres_detail_cnt,
+				       &dump_job_ptr->gres_detail_str);
+	}
+
+	packstr_array(dump_job_ptr->gres_detail_str,
+		      dump_job_ptr->gres_detail_cnt, buffer);
+}
+
 /*
  * pack_job - dump all configuration information about a specific job in
  *	machine independent form (for network transmission)
@@ -8790,9 +8825,10 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		if (show_flags & SHOW_DETAIL) {
 			pack_job_resources(dump_job_ptr->job_resrcs, buffer,
 					   protocol_version);
+			_pack_job_gres(dump_job_ptr, buffer, protocol_version);
 		} else {
-			uint32_t empty = NO_VAL;
-			pack32(empty, buffer);
+			pack32((uint32_t) NO_VAL, buffer);
+			pack32((uint32_t) 0, buffer);
 		}
 
 		packstr(dump_job_ptr->name, buffer);
@@ -10477,6 +10513,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				excise_node_from_job(job_ptr, node_ptr);
 			}
 			(void) gs_job_start(job_ptr);
+			_clear_job_gres_details(job_ptr);
 			job_post_resize_acctg(job_ptr);
 			/* Since job_post_resize_acctg will restart
 			 * things, don't do it again. */
@@ -11720,6 +11757,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			 * things don't do it again. */
 			update_accounting = false;
 		}
+
+		_clear_job_gres_details(job_ptr);
 	}
 
 	if (job_specs->array_inx && job_ptr->array_recs) {

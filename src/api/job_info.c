@@ -333,7 +333,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 {
 	int i, j, k;
 	char time_str[32], *group_name, *user_name;
-	char tmp1[128], tmp2[128];
+	char *gres_last = "", tmp1[128], tmp2[128];
 	char *tmp6_ptr;
 	char tmp_line[1024 * 128];
 	char tmp_path[MAXPATHLEN];
@@ -706,6 +706,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		i = sock_inx = sock_reps = 0;
 		abs_node_inx = job_ptr->node_inx[i];
 
+		gres_last = "";
 		/* tmp1[] stores the current cpu(s) allocated */
 		tmp2[0] = '\0';	/* stores last cpu(s) allocated */
 		for (rel_node_inx=0; rel_node_inx < job_resrcs->nhosts;
@@ -739,6 +740,9 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 			 * group of hosts that had identical allocation values.
 			 */
 			if (xstrcmp(tmp1, tmp2) ||
+			    ((rel_node_inx < job_ptr->gres_detail_cnt) &&
+			     xstrcmp(job_ptr->gres_detail_str[rel_node_inx],
+				     gres_last)) ||
 			    (last_mem_alloc_ptr != job_resrcs->memory_allocated) ||
 			    (job_resrcs->memory_allocated &&
 			     (last_mem_alloc !=
@@ -749,10 +753,12 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 						hl_last);
 					xstrfmtcat(out,
 						   "  Nodes=%s CPU_IDs=%s "
-						   "Mem=%"PRIu64"",
+						   "Mem=%"PRIu64" GRES_IDX=%s",
 						   last_hosts, tmp2,
 						   last_mem_alloc_ptr ?
-						   last_mem_alloc : 0);
+						   last_mem_alloc : 0,
+						   job_ptr->gres_detail_str
+							[rel_node_inx-1]);
 					xfree(last_hosts);
 					xstrcat(out, line_end);
 
@@ -760,6 +766,12 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 					hl_last = hostlist_create(NULL);
 				}
 				strcpy(tmp2, tmp1);
+				if (rel_node_inx < job_ptr->gres_detail_cnt) {
+					gres_last = job_ptr->
+						    gres_detail_str[rel_node_inx];
+				} else {
+					gres_last = "";
+				}
 				last_mem_alloc_ptr = job_resrcs->memory_allocated;
 				if (last_mem_alloc_ptr)
 					last_mem_alloc = job_resrcs->
@@ -783,9 +795,10 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 		if (hostlist_count(hl_last)) {
 			last_hosts = hostlist_ranged_string_xmalloc(hl_last);
-			xstrfmtcat(out, "  Nodes=%s CPU_IDs=%s Mem=%"PRIu64"",
+			xstrfmtcat(out, "  Nodes=%s CPU_IDs=%s Mem=%"PRIu64" GRES_IDX=%s",
 				 last_hosts, tmp2,
-				 last_mem_alloc_ptr ? last_mem_alloc : 0);
+				 last_mem_alloc_ptr ? last_mem_alloc : 0,
+				 gres_last);
 			xfree(last_hosts);
 			xstrcat(out, line_end);
 		}

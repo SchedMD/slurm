@@ -904,6 +904,8 @@ extern void slurm_free_job_info(job_info_t * job)
 
 extern void slurm_free_job_info_members(job_info_t * job)
 {
+	int i;
+
 	if (job) {
 		xfree(job->account);
 		xfree(job->alloc_node);
@@ -921,6 +923,9 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->exc_node_inx);
 		xfree(job->features);
 		xfree(job->gres);
+		for (i = 0; i < job->gres_detail_cnt; i++)
+			xfree(job->gres_detail_str[i]);
+		xfree(job->gres_detail_str);
 		xfree(job->licenses);
 		xfree(job->mcs_label);
 		xfree(job->name);

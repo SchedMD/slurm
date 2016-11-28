@@ -6221,6 +6221,8 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpack32(&job->derived_ec, buffer);
 		unpack_job_resources(&job->job_resrcs, buffer,
 				     protocol_version);
+		safe_unpackstr_array(&job->gres_detail_str,
+				     &job->gres_detail_cnt, buffer);
 
 		safe_unpackstr_xmalloc(&job->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->wckey, &uint32_tmp, buffer);

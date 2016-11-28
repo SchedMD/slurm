@@ -642,6 +642,9 @@ struct job_record {
 	List gres_list;			/* generic resource allocation detail */
 	char *gres_alloc;		/* Allocated GRES added over all nodes
 					 * to be passed to slurmdbd */
+	uint32_t gres_detail_cnt;	/* Count of gres_detail_str records,
+					 * one per allocated node */
+	char **gres_detail_str;		/* Details of GRES index alloc per node */
 	char *gres_req;			/* Requested GRES added over all nodes
 					 * to be passed to slurmdbd */
 	char *gres_used;		/* Actual GRES use added over all nodes

@@ -6394,6 +6394,73 @@ extern int gres_get_job_info(List job_gres_list, char *gres_name,
 	return rc;
 }
 
+/* Given a job's GRES data structure, return the indecies for selected elements
+ * IN job_gres_list  - job's GRES data structure
+ * OUT gres_detail_cnt - Number of elements (nodes) in gres_detail_str
+ * OUT gres_detail_str - Description of GRES on each node
+ */
+extern void gres_build_job_details(List job_gres_list,
+				   uint32_t *gres_detail_cnt,
+				   char ***gres_detail_str)
+{
+	int i, j;
+	ListIterator job_gres_iter;
+	gres_state_t *job_gres_ptr;
+	gres_job_state_t *job_gres_data;
+	char *sep1, *sep2, tmp_str[128], *type, **my_gres_details = NULL;
+	uint32_t my_gres_cnt = 0;
+
+	if (job_gres_list == NULL) {	/* No GRES allocated */
+		*gres_detail_cnt = 0;
+		*gres_detail_str = NULL;
+		return;
+	}
+
+	(void) gres_plugin_init();
+
+	slurm_mutex_lock(&gres_context_lock);
+	job_gres_iter = list_iterator_create(job_gres_list);
+	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
+		job_gres_data = (gres_job_state_t *) job_gres_ptr->gres_data;
+		if (job_gres_data->gres_bit_alloc == NULL)
+			continue;
+		if (my_gres_details == NULL) {
+			my_gres_cnt = job_gres_data->node_cnt;
+			my_gres_details = xmalloc(sizeof(char *) * my_gres_cnt);
+		}
+		for (i = 0; i < gres_context_cnt; i++) {
+			if (job_gres_ptr->plugin_id !=
+			    gres_context[i].plugin_id)
+				continue;
+			for (j = 0; j < my_gres_cnt; j++) {
+				if (j >= job_gres_data->node_cnt)
+					break;	/* node count mismatch */
+				if (my_gres_details[j])
+					sep1 = ",";
+				else
+					sep1 = "";
+				if (job_gres_data->type_model) {
+					sep2 = ":";
+					type = job_gres_data->type_model;
+				} else {
+					sep2 = "";
+					type = "";
+				}
+				bit_fmt(tmp_str, sizeof(tmp_str),
+                                        job_gres_data->gres_bit_alloc[j]);
+				xstrfmtcat(my_gres_details[j], "%s%s%s%s(IDX:%s)",
+					   sep1, gres_context[i].gres_name,
+					   sep2, type, tmp_str);
+			}
+			break;
+		}
+	}
+	list_iterator_destroy(job_gres_iter);
+	slurm_mutex_unlock(&gres_context_lock);
+	*gres_detail_cnt = my_gres_cnt;
+	*gres_detail_str = my_gres_details;
+}
+
 /* Get generic GRES data types here. Call the plugin for others */
 static int _get_step_info(int gres_inx, gres_step_state_t *step_gres_data,
 			  uint32_t node_inx, enum gres_step_data_type data_type,
