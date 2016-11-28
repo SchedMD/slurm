@@ -44,6 +44,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix slurm_job_cpus_allocated_str_on_node_id() API call.
  -- sched/backfill plugin: Make malloc match data type (defined as uint32_t and
     allocated as int).
+ -- srun - prevent segfault when terminating job step before step has launched.
 
 * Changes in Slurm 16.05.6
 ==========================

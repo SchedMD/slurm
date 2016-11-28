@@ -709,6 +709,11 @@ extern int launch_p_step_wait(srun_job_t *job, bool got_alloc)
 
 extern int launch_p_step_terminate(void)
 {
+	if (!local_srun_job) {
+		debug("%s: local_srun_job does not exist yet", __func__);
+		return SLURM_ERROR;
+	}
+
 	info("Terminating job step %u.%u",
 	     local_srun_job->jobid, local_srun_job->stepid);
 	return slurm_kill_job_step(local_srun_job->jobid,
@@ -723,6 +728,11 @@ extern void launch_p_print_status(void)
 
 extern void launch_p_fwd_signal(int signal)
 {
+	if (!local_srun_job) {
+		debug("%s: local_srun_job does not exist yet", __func__);
+		return;
+	}
+
 	switch (signal) {
 	case SIGKILL:
 		slurm_step_launch_abort(local_srun_job->step_ctx);
