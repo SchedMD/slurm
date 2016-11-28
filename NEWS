@@ -23,6 +23,9 @@ documents those changes that are of interest to users and administrators.
     filling up memory when the database/DBD is down.
  -- Added SchedulingParameters option of "bf_job_part_count_reserve". Jobs below
     the specified threshold will not have resources reserved for them.
+ -- If GRES are configured with file IDs, then "scontrol -d show node" will
+    not only identify the count of currently allocated GRES, but their specific
+    index numbers (e.g. "GresUsed=gpu:alpha:2(IDX:0,2),gpu:beta:0(IDX:N/A)").
 
 * Changes in Slurm 17.02.0pre3
 ==============================

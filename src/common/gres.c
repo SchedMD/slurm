@@ -2502,18 +2502,77 @@ static char *_node_gres_used(void *gres_data, char *gres_name)
 {
 	gres_node_state_t *gres_node_ptr;
 	char *sep = "";
-	int i;
+	int i, j;
 
 	xassert(gres_data);
 	gres_node_ptr = (gres_node_state_t *) gres_data;
 
-	if (gres_node_ptr->gres_used) {
+	if ((gres_node_ptr->topo_cnt != 0) &&
+	    (gres_node_ptr->no_consume == false)) {
+		bitstr_t *topo_printed = bit_alloc(gres_node_ptr->topo_cnt);
+		xfree(gres_node_ptr->gres_used);    /* Free any cached value */
+		for (i = 0; i < gres_node_ptr->topo_cnt; i++) {
+			bitstr_t *topo_gres_bitmap = NULL;
+			uint64_t gres_alloc_cnt = 0;
+			char *gres_alloc_idx, tmp_str[64];
+			if (bit_test(topo_printed, i))
+				continue;
+			bit_set(topo_printed, i);
+			if (gres_node_ptr->topo_gres_bitmap[i]) {
+				topo_gres_bitmap =
+					bit_copy(gres_node_ptr->
+						 topo_gres_bitmap[i]);
+			}
+			for (j = i + 1; j < gres_node_ptr->topo_cnt; j++) {
+				if (bit_test(topo_printed, j))
+					continue;
+				if (xstrcmp(gres_node_ptr->topo_model[i],
+					    gres_node_ptr->topo_model[j]))
+					continue;
+				bit_set(topo_printed, j);
+				if (gres_node_ptr->topo_gres_bitmap[j]) {
+					if (!topo_gres_bitmap) {
+						topo_gres_bitmap =
+							bit_copy(gres_node_ptr->
+								 topo_gres_bitmap[j]);
+					} else if (bit_size(topo_gres_bitmap) ==
+						   bit_size(gres_node_ptr->
+							    topo_gres_bitmap[j])){
+						bit_or(topo_gres_bitmap,
+						       gres_node_ptr->
+						       topo_gres_bitmap[j]);
+					}
+				}		
+			}
+			if (gres_node_ptr->gres_bit_alloc && topo_gres_bitmap &&
+			    (bit_size(topo_gres_bitmap) ==
+			     bit_size(gres_node_ptr->gres_bit_alloc))) {
+				bit_and(topo_gres_bitmap,
+					gres_node_ptr->gres_bit_alloc);
+				gres_alloc_cnt = bit_set_count(topo_gres_bitmap);
+			}
+			if (gres_alloc_cnt > 0) {
+				bit_fmt(tmp_str, sizeof(tmp_str),
+					topo_gres_bitmap);
+				gres_alloc_idx = tmp_str;
+			} else {
+				gres_alloc_idx = "N/A";
+			}
+			xstrfmtcat(gres_node_ptr->gres_used,
+				   "%s%s:%s:%"PRIu64"(IDX:%s)", sep, gres_name,
+				   gres_node_ptr->topo_model[i], gres_alloc_cnt,
+				   gres_alloc_idx);
+			sep = ",";
+			FREE_NULL_BITMAP(topo_gres_bitmap);
+		}
+		FREE_NULL_BITMAP(topo_printed);
+	} else if (gres_node_ptr->gres_used) {
 		;	/* Used cached value */
 	} else if (gres_node_ptr->type_cnt == 0) {
 		if (gres_node_ptr->no_consume) {
 			xstrfmtcat(gres_node_ptr->gres_used, "%s:0", gres_name);
 		} else {
-			xstrfmtcat(gres_node_ptr->gres_used, "%s:%"PRIu64"",
+			xstrfmtcat(gres_node_ptr->gres_used, "%s:%"PRIu64,
 				   gres_name, gres_node_ptr->gres_cnt_alloc);
 		}
 	} else {
@@ -2524,7 +2583,7 @@ static char *_node_gres_used(void *gres_data, char *gres_name)
 					   gres_node_ptr->type_model[i]);
 			} else {
 				xstrfmtcat(gres_node_ptr->gres_used,
-					   "%s%s:%s:%"PRIu64"", sep, gres_name,
+					   "%s%s:%s:%"PRIu64, sep, gres_name,
 					   gres_node_ptr->type_model[i],
 					   gres_node_ptr->type_cnt_alloc[i]);
 			}
@@ -2553,7 +2612,7 @@ static void _node_state_log(void *gres_data, char *node_name, char *gres_name)
 	}
 
 	if (gres_node_ptr->no_consume) {
-		info("  gres_cnt found:%s configured:%"PRIu64" "
+		info("  gres_cnt found:%s configured:%"PRIu64" "	
 		     "avail:%"PRIu64" no_consume",
 		     tmp_str, gres_node_ptr->gres_cnt_config,
 		     gres_node_ptr->gres_cnt_avail);
