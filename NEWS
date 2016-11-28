@@ -26,6 +26,7 @@ documents those changes that are of interest to users and administrators.
  -- If GRES are configured with file IDs, then "scontrol -d show node" will
     not only identify the count of currently allocated GRES, but their specific
     index numbers (e.g. "GresUsed=gpu:alpha:2(IDX:0,2),gpu:beta:0(IDX:N/A)").
+ -- Add new mcs/account plugin.
 
 * Changes in Slurm 17.02.0pre3
 ==============================
