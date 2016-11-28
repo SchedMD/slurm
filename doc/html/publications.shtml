@@ -6,6 +6,24 @@
 
 <h2>Presentations</h2>
 
+<!-- SC16 Slurm Booth + BOF-->
+<li><b>Presentations from Slurm Booth and Birds of a Feather, SC16, November 2016</b></li>
+<ul>
+
+<li>Booth: <a href="SC16/PMIxSLURM.pdf">Process Management Interface - Exascale (PMIx)</a>,
+Ralph H. Castain</li>
+
+<li>Booth: <a href="SC16/slurm_arrays.pdf">Expanding Serial Analysis with Slurm Arrays</a>
+Christopher Coffey, Northern Arizona University</li>
+
+<li>Booth: <a href="SC16/SlurmOverview.pdf">Slurm Overview</a>
+Moe Jette, SchedMD</li>
+
+<li>BOF: <a href="SC16/Slurm-BoF.pdf">Slurm State of the Union; v16.05, v17.02 and Beyond</a>,
+Tim Wickberg, SchedMD</li>
+
+</ul>
+
 <!--Slurm User Group Meeting 2016-->
 <li><b>Presentations from Slurm User Group Meeting, September 2016</b></li>
 <ul>
