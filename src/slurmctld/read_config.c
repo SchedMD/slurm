@@ -2168,7 +2168,7 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 			continue;
 
 		if (job_ptr->details &&
-		    (job_ptr->details->whole_node == 2)) {
+		    (job_ptr->details->whole_node == WHOLE_NODE_USER)) {
 			node_ptr->owner_job_cnt++;
 			node_ptr->owner = job_ptr->user_id;
 		}

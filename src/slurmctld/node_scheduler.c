@@ -836,8 +836,10 @@ extern void build_active_feature_bitmap(struct job_record *job_ptr,
  *	1		= share=yes
  *
  * job_ptr->details->whole_node:
- *	0		= default
- *	1		= exclusive
+ *				  0	= default
+ *	WHOLE_NODE_REQUIRED	= 1	= exclusive
+ *	WHOLE_NODE_USER		= 2	= user
+ *	WHOLE_NODE_MCS		= 3	= mcs
  *
  * Return values:
  *	0 = requires idle nodes
@@ -868,13 +870,13 @@ _resolve_shared_status(struct job_record *job_ptr, uint16_t part_max_share,
 
 	if (cons_res_flag) {
 		if ((job_ptr->details->share_res  == 0) ||
-		    (job_ptr->details->whole_node == 1)) {
+		    (job_ptr->details->whole_node == WHOLE_NODE_REQUIRED)) {
 			job_ptr->details->share_res = 0;
 			return 0;
 		}
 		return 1;
 	} else {
-		job_ptr->details->whole_node = 1;
+		job_ptr->details->whole_node = WHOLE_NODE_REQUIRED;
 		if (part_max_share == 1) { /* partition configured Shared=NO */
 			job_ptr->details->share_res = 0;
 			return 0;
@@ -902,9 +904,9 @@ extern void filter_by_node_owner(struct job_record *job_ptr,
 
 	if ((job_ptr->details->whole_node == 0) &&
 	    (job_ptr->part_ptr->flags & PART_FLAG_EXCLUSIVE_USER))
-		job_ptr->details->whole_node = 2;
+		job_ptr->details->whole_node = WHOLE_NODE_USER;
 
-	if (job_ptr->details->whole_node == 2) {
+	if (job_ptr->details->whole_node == WHOLE_NODE_USER) {
 		/* Need to remove all nodes allocated to any active job from
 		 * any other user */
 		job_iterator = list_iterator_create(job_list);

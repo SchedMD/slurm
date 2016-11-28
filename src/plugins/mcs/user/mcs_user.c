@@ -105,8 +105,8 @@ extern int mcs_p_set_mcs_label (struct job_record *job_ptr, char *label)
 			rc = SLURM_ERROR;
 		}
 	} else {
-		if ((slurm_mcs_get_enforced() == 0) &&
-		   job_ptr->details && (job_ptr->details->whole_node != 3)) {
+		if ((slurm_mcs_get_enforced() == 0) && job_ptr->details &&
+		    (job_ptr->details->whole_node != WHOLE_NODE_MCS)) {
 			;
 		} else {
 			job_ptr->mcs_label = xstrdup(user);

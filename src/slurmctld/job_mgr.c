@@ -7372,16 +7372,16 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		set_job_fed_details(job_ptr, job_desc->fed_siblings);
 	if ((job_desc->shared == JOB_SHARED_NONE) && (select_serial == 0)) {
 		detail_ptr->share_res  = 0;
-		detail_ptr->whole_node = 1;
+		detail_ptr->whole_node = WHOLE_NODE_REQUIRED;
 	} else if (job_desc->shared == JOB_SHARED_OK) {
 		detail_ptr->share_res  = 1;
 		detail_ptr->whole_node = 0;
 	} else if (job_desc->shared == JOB_SHARED_USER) {
 		detail_ptr->share_res  = (uint8_t) NO_VAL;
-		detail_ptr->whole_node = JOB_SHARED_USER;
+		detail_ptr->whole_node = WHOLE_NODE_USER;
 	} else if (job_desc->shared == JOB_SHARED_MCS) {
 		detail_ptr->share_res  = (uint8_t) NO_VAL;
-		detail_ptr->whole_node = JOB_SHARED_MCS;
+		detail_ptr->whole_node = WHOLE_NODE_MCS;
 	} else {
 		detail_ptr->share_res  = (uint8_t) NO_VAL;
 		detail_ptr->whole_node = 0;
@@ -9212,16 +9212,16 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 	else if (detail_ptr->share_res == 1)	/* User --share */
 		shared = 1;
 	else if ((detail_ptr->share_res == 0) ||
-		 (detail_ptr->whole_node == 1))	/* User --exclusive */
-		shared = 0;
-	else if (detail_ptr->whole_node == 2)	/* User --exclusive=user */
-		shared = 2;
-	else if (detail_ptr->whole_node == 3)   /* User --exclusive=mcs */
-		shared = 3;
+		 (detail_ptr->whole_node == 1))
+		shared = 0;			/* User --exclusive */
+	else if (detail_ptr->whole_node == WHOLE_NODE_USER)
+		shared = JOB_SHARED_USER;	/* User --exclusive=user */
+	else if (detail_ptr->whole_node == WHOLE_NODE_MCS)
+		shared = JOB_SHARED_MCS;	/* User --exclusive=mcs */
 	else if (job_ptr->part_ptr) {
 		/* Report shared status based upon latest partition info */
 		if (job_ptr->part_ptr->flags & PART_FLAG_EXCLUSIVE_USER)
-			shared = 2;
+			shared = JOB_SHARED_USER;
 		else if ((job_ptr->part_ptr->max_share & SHARED_FORCE) &&
 			 ((job_ptr->part_ptr->max_share & (~SHARED_FORCE)) > 1))
 			shared = 1;		/* Partition Shared=force */
@@ -15508,13 +15508,13 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->reservation       = xstrdup(job_ptr->resv_name);
 	job_desc->script            = get_job_script(job_ptr);
 	if (details->share_res == 1)
-		job_desc->shared     = 1;
-	else if (details->whole_node == 1)
-		job_desc->shared     = 0;
-	else if (details->whole_node == 2)
-		job_desc->shared     = 2;
-	else if (details->whole_node == 3)
-		job_desc->shared     = 3;
+		job_desc->shared     = JOB_SHARED_OK;
+	else if (details->whole_node == WHOLE_NODE_REQUIRED)
+		job_desc->shared     =  JOB_SHARED_NONE;
+	else if (details->whole_node == WHOLE_NODE_USER)
+		job_desc->shared     =  JOB_SHARED_USER;
+	else if (details->whole_node == WHOLE_NODE_MCS)
+		job_desc->shared     =  JOB_SHARED_MCS;
 	else
 		job_desc->shared     = (uint16_t) NO_VAL;
 	job_desc->spank_job_env_size = job_ptr->spank_job_env_size;

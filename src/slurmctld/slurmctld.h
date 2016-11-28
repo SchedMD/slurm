@@ -447,6 +447,14 @@ typedef struct job_feature {
 	uint8_t op_code;		/* separator, see FEATURE_OP_ above */
 } job_feature_t;
 
+/*
+ * these related to the JOB_SHARED_ macros in slurm.h
+ * but with the logic for zero vs one inverted
+ */
+#define WHOLE_NODE_REQUIRED	0x01
+#define WHOLE_NODE_USER		0x02
+#define WHOLE_NODE_MCS		0x03
+
 /* job_details - specification of a job's constraints,
  * can be purged after initiation */
 struct job_details {
@@ -530,9 +538,9 @@ struct job_details {
 					 * useful when Consumable Resources
 					 * is enabled */
 	uint32_t usable_nodes;		/* node count needed by preemption */
-	uint8_t whole_node;		/* 1: --exclusive
-					 * 2: --exclusive=user
-					 * 3: --exclusive=mcs */
+	uint8_t whole_node;		/* WHOLE_NODE_REQUIRED: 1: --exclusive
+					 * WHOLE_NODE_USER: 2: --exclusive=user
+					 * WHOLE_NODE_MCS:  3: --exclusive=mcs */
 	char *work_dir;			/* pathname of working directory */
 };
 

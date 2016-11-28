@@ -3546,7 +3546,8 @@ extern void make_node_alloc(struct node_record *node_ptr,
 		(node_ptr->no_share_job_cnt)++;
 	}
 
-	if (job_ptr->details && (job_ptr->details->whole_node == 2)) {
+	if (job_ptr->details &&
+	    (job_ptr->details->whole_node == WHOLE_NODE_USER)) {
 		node_ptr->owner_job_cnt++;
 		node_ptr->owner = job_ptr->user_id;
 	}
@@ -3750,7 +3751,8 @@ void make_node_idle(struct node_record *node_ptr,
 		}
 	}
 
-	if (job_ptr && job_ptr->details && (job_ptr->details->whole_node == 2)){
+	if (job_ptr && job_ptr->details &&
+	    (job_ptr->details->whole_node == WHOLE_NODE_USER)) {
 		if (--node_ptr->owner_job_cnt == 0) {
 			node_ptr->owner = NO_VAL;
 			xfree(node_ptr->mcs_label);
