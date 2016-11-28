@@ -47,6 +47,7 @@ documents those changes that are of interest to users and administrators.
  -- srun - prevent segfault when terminating job step before step has launched.
  -- sacctmgr - prevent segfault when trying to reset usage for an invalid
     account name.
+ -- Make the openssl crypto plugin compile with openssl >= 1.1.
 
 * Changes in Slurm 16.05.6
 ==========================
