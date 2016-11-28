@@ -3224,8 +3224,8 @@ extern int gres_plugin_job_state_pack(List gres_list, Buf buffer,
 			}
 			rec_cnt++;
 		} else {
-			error("gres_plugin_node_state_pack: protocol_version"
-			      " %hu not supported", protocol_version);
+			error("%s: protocol_version %hu not supported",
+			      __func__, protocol_version);
 			break;
 		}
 	}
