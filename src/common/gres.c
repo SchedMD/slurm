@@ -821,8 +821,8 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	if (s_p_get_string(&tmp_str, "Count", tbl)) {
 		tmp_uint64 = strtoll(tmp_str, &last, 10);
 		if ((tmp_uint64 == LONG_MIN) || (tmp_uint64 == LONG_MAX)) {
-			fatal("Invalid gres data for %s, Count=%s", p->name,
-			      tmp_str);
+			fatal("Invalid gres record for %s, invalid count %s",
+			      p->name, tmp_str);
 		}
 		if ((last[0] == 'k') || (last[0] == 'K'))
 			tmp_uint64 *= 1024;
@@ -836,12 +836,12 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 			tmp_uint64 *= ((uint64_t)1024 * 1024 * 1024 * 1024 *
 				       1024);
 		else if (last[0] != '\0') {
-			fatal("Invalid gres data for %s, Count=%s", p->name,
-			      tmp_str);
+			fatal("Invalid gres record for %s, invalid count %s",
+			      p->name, tmp_str);
 		}
 		if (p->count && (p->count != tmp_uint64)) {
-			fatal("Invalid gres data for %s, Count does not match "
-			      "File value", p->name);
+			fatal("Invalid gres record for %s, count does not match File value",
+			      p->name);
 		}
 		if (tmp_uint64 >= NO_VAL64) {
 			fatal("Gres %s has invalid count value %"PRIu64,
@@ -859,7 +859,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 			break;
 	}
 	if (i >= gres_context_cnt) {
-		error("Ignoring gres.conf Name=%s", p->name);
+		error("Ignoring gres.conf record, invalid name: %s", p->name);
 		_destroy_gres_slurmd_conf(p);
 		return 0;
 	}
