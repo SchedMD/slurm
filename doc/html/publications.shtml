@@ -13,10 +13,20 @@
 <li>Booth: <a href="SC16/PMIxSLURM.pdf">Process Management Interface - Exascale (PMIx)</a>,
 Ralph H. Castain</li>
 
-<li>Booth: <a href="SC16/slurm_arrays.pdf">Expanding Serial Analysis with Slurm Arrays</a>
+<li>Booth: <a href="SC16/BULL_Slurm-devs-SC2016.pdf">Bull Slurm Related Developments</a>,
+<a href="SC16/job_packs_demo.mp4">Job Packs demo video</a>,
+Yiannis Georgiou, Bull AtoS</li>
+
+<li>Booth: <a href="SC16/Pfaff_SC16_Slurm_Hangout-3slides.pdf">Transition Hangout (a.k.a. how we converted to Slurm)</a>,
+Ryan Cox (BYU), Bruce Pfaff (NASA)</li>
+
+<li>Booth: <a href="SC16/slurm_arrays.pdf">Expanding Serial Analysis with Slurm Arrays</a>,
 Christopher Coffey, Northern Arizona University</li>
 
-<li>Booth: <a href="SC16/SlurmOverview.pdf">Slurm Overview</a>
+<li>Booth: <a href="SC16/HPC_Orchestrator_SC16.pdf">Intel HPC Orchestrator</a>,
+Tom Krueger, Intel</li>
+
+<li>Booth: <a href="SC16/SlurmOverview.pdf">Slurm Overview</a>,
 Moe Jette, SchedMD</li>
 
 <li>BOF: <a href="SC16/Slurm-BoF.pdf">Slurm State of the Union; v16.05, v17.02 and Beyond</a>,
@@ -792,6 +802,6 @@ Danny Auble of LLNL about Slurm.</p>
 Learning Chef: Compute Cluter with Slurm</a>
 A Slurm Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 6 October 2016</p>
+<p style="text-align:center;">Last modified 29 November 2016</p>
 
 <!--#include virtual="footer.txt"-->
