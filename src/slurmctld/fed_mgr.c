@@ -1984,6 +1984,23 @@ extern char *fed_mgr_get_cluster_name(uint32_t id)
 	return name;
 }
 
+static int _is_fed_job(struct job_record *job_ptr, uint32_t *origin_id)
+{
+	xassert(job_ptr);
+	xassert(origin_id);
+
+	if (!fed_mgr_cluster_rec)
+		return false;
+
+	if ((!job_ptr->fed_details) ||
+	    (!(*origin_id = fed_mgr_get_cluster_id(job_ptr->job_id)))) {
+		info("job %d not a federated job", job_ptr->job_id);
+		return false;
+	}
+
+	return true;
+}
+
 /*
  * Attempt to grab the job's federation cluster lock so that the requesting
  * cluster can attempt to start to the job.
@@ -2000,14 +2017,8 @@ extern int fed_mgr_job_lock(struct job_record *job_ptr, uint32_t cluster_id)
 
 	xassert(job_ptr);
 
-	if (!fed_mgr_cluster_rec)
+	if (!_is_fed_job(job_ptr, &origin_id))
 		return SLURM_SUCCESS;
-
-	if ((!job_ptr->fed_details) ||
-	    (!(origin_id = fed_mgr_get_cluster_id(job_ptr->job_id)))) {
-		info("job %d not a federated job", job_ptr->job_id);
-		return SLURM_SUCCESS;
-	}
 
 	if (cluster_id == INFINITE)
 		cluster_id = fed_mgr_cluster_rec->fed.id;
@@ -2061,14 +2072,8 @@ extern int fed_mgr_job_unlock(struct job_record *job_ptr, uint32_t cluster_id)
 	int rc = SLURM_SUCCESS;
 	uint32_t origin_id;
 
-	if (!fed_mgr_cluster_rec)
+	if (!_is_fed_job(job_ptr, &origin_id))
 		return SLURM_SUCCESS;
-
-	if ((!job_ptr->fed_details) ||
-	    (!(origin_id = fed_mgr_get_cluster_id(job_ptr->job_id)))) {
-		info("job %d not a federated job", job_ptr->job_id);
-		return SLURM_SUCCESS;
-	}
 
 	if (cluster_id == INFINITE)
 		cluster_id = fed_mgr_cluster_rec->fed.id;
@@ -2110,7 +2115,7 @@ extern int fed_mgr_job_unlock(struct job_record *job_ptr, uint32_t cluster_id)
  *
  * Cancels remaining sibling jobs.
  *
- * IN job_id     - job_id of to unlock
+ * IN job_ptr    - job_ptr of job to unlock
  * IN cluster_id - cluster id of cluster wanting to unlock the job. If INFINITE,
  * 	the cluster cluster's fed id will be used.
  * IN start_time - start_time of the job.
@@ -2124,14 +2129,8 @@ extern int fed_mgr_job_start(struct job_record *job_ptr, uint32_t cluster_id,
 
 	assert(job_ptr);
 
-	if (!fed_mgr_cluster_rec)
+	if (!_is_fed_job(job_ptr, &origin_id))
 		return SLURM_SUCCESS;
-
-	if ((!job_ptr->fed_details) ||
-	    (!(origin_id = fed_mgr_get_cluster_id(job_ptr->job_id)))) {
-		info("job %d not a federated job", job_ptr->job_id);
-		return SLURM_SUCCESS;
-	}
 
 	if (cluster_id == INFINITE)
 		cluster_id = fed_mgr_cluster_rec->fed.id;
@@ -2199,26 +2198,21 @@ extern int fed_mgr_job_start(struct job_record *job_ptr, uint32_t cluster_id,
  *
  * Tells the origin cluster to revoke the tracking job.
  *
- * IN job_id - job_id of job to complete.
+ * IN job_ptr     - job_ptr of job to complete.
  * IN return_code - return code of job
  * RET returns SLURM_SUCCESS if fed job was completed, SLURM_ERROR otherwise
  */
-extern int fed_mgr_job_complete(uint32_t job_id, uint32_t return_code,
-				time_t start_time)
+extern int fed_mgr_job_complete(struct job_record *job_ptr,
+				uint32_t return_code, time_t start_time)
 {
 	uint32_t origin_id;
 
-	if (!fed_mgr_cluster_rec)
+	if (!_is_fed_job(job_ptr, &origin_id))
 		return SLURM_SUCCESS;
-
-	if (!(origin_id = fed_mgr_get_cluster_id(job_id))) {
-		info("job not a federated job");
-		return SLURM_SUCCESS;
-	}
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 		info("complete fed job %d by cluster_id %d",
-		     job_id, fed_mgr_cluster_rec->fed.id);
+		     job_ptr->job_id, fed_mgr_cluster_rec->fed.id);
 
 	if (origin_id == fed_mgr_cluster_rec->fed.id)
 		return SLURM_SUCCESS;
@@ -2226,11 +2220,11 @@ extern int fed_mgr_job_complete(uint32_t job_id, uint32_t return_code,
 	slurmdb_cluster_rec_t *conn = _get_cluster_by_id(origin_id);
 	if (!conn) {
 		error("Unable to find origin cluster for job %d from origin id %d",
-		      job_id, origin_id);
+		      job_ptr->job_id, origin_id);
 		return SLURM_ERROR;
 	}
 
-	return _persist_fed_job_revoke(conn, job_id, start_time);
+	return _persist_fed_job_revoke(conn, job_ptr->job_id, start_time);
 }
 
 /* Convert cluster ids to cluster names.

@@ -58,8 +58,8 @@ extern int       fed_mgr_job_allocate(slurm_msg_t *msg,
 				      uid_t uid, uint16_t protocol_version,
 				      uint32_t *job_id_ptr, int *alloc_code,
 				      char **err_msg);
-extern int       fed_mgr_job_complete(uint32_t job_id, uint32_t return_code,
-				      time_t start_time);
+extern int       fed_mgr_job_complete(struct job_record *job_ptr,
+				      uint32_t return_code, time_t start_time);
 extern int       fed_mgr_job_lock(struct job_record *job_ptr,
 				  uint32_t cluster_id);
 extern int       fed_mgr_job_unlock(struct job_record *job_ptr,

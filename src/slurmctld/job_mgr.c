@@ -5192,7 +5192,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		deallocate_nodes(job_ptr, false, suspended, false);
 	}
 
-	fed_mgr_job_complete(job_id, job_return_code, job_ptr->start_time);
+	fed_mgr_job_complete(job_ptr, job_return_code, job_ptr->start_time);
 
 	info("%s: %s done", __func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)));
 
