@@ -233,6 +233,12 @@ static int _send_recv_msg(slurmdb_cluster_rec_t *cluster, slurm_msg_t *req,
 {
 	int rc;
 
+	xassert(cluster);
+	xassert(req);
+	xassert(resp);
+
+	slurm_msg_t_init(resp);
+
 	if (!locked)
 		slurm_mutex_lock(&cluster->lock);
 
@@ -254,7 +260,6 @@ static int _ping_controller(slurmdb_cluster_rec_t *cluster)
 	slurm_msg_t resp_msg;
 
 	slurm_msg_t_init(&req_msg);
-	slurm_msg_t_init(&resp_msg);
 	req_msg.msg_type = REQUEST_PING;
 
 	slurm_mutex_lock(&cluster->lock);
@@ -521,7 +526,6 @@ static int _persist_job_will_run(slurmdb_cluster_rec_t *conn,
 	slurm_msg_t req_msg, resp_msg;
 
 	slurm_msg_t_init(&req_msg);
-	slurm_msg_t_init(&resp_msg);
 
 	req_msg.msg_type = REQUEST_SIB_JOB_WILL_RUN;
 	req_msg.data     = sib_msg;
@@ -566,7 +570,6 @@ static int _persist_submit_batch_job(slurmdb_cluster_rec_t *conn,
 	*resp = NULL;
 
 	slurm_msg_t_init(&req_msg);
-	slurm_msg_t_init(&resp_msg);
 
 	req_msg.msg_type = REQUEST_SIB_SUBMIT_BATCH_JOB;
 	req_msg.data     = sib_msg;
@@ -609,7 +612,6 @@ static int _persist_allocte_resources(slurmdb_cluster_rec_t *conn,
 	*resp = NULL;
 
 	slurm_msg_t_init(&req_msg);
-	slurm_msg_t_init(&resp_msg);
 
 	req_msg.msg_type = REQUEST_SIB_RESOURCE_ALLOCATION;
 	req_msg.data     = sib_msg;
@@ -650,6 +652,7 @@ static int _persist_update_job(slurmdb_cluster_rec_t *conn,
 	slurm_msg_t resp_msg;
 
 	slurm_msg_t_init(&req_msg);
+
 	req_msg.msg_type = REQUEST_UPDATE_JOB;
 	req_msg.data     = data;
 
@@ -743,7 +746,6 @@ static int _persist_fed_job_lock(slurmdb_cluster_rec_t *conn, uint32_t job_id,
 	slurm_msg_t req_msg, resp_msg;
 
 	slurm_msg_t_init(&req_msg);
-	slurm_msg_t_init(&resp_msg);
 
 	sib_msg_t sib_msg;
 	memset(&sib_msg, 0, sizeof(sib_msg_t));
@@ -799,7 +801,6 @@ static int _persist_fed_job_start(slurmdb_cluster_rec_t *conn,
 	slurm_msg_t req_msg, resp_msg;
 
 	slurm_msg_t_init(&req_msg);
-	slurm_msg_t_init(&resp_msg);
 
 	sib_msg_t sib_msg;
 	memset(&sib_msg, 0, sizeof(sib_msg_t));
