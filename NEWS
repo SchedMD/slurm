@@ -48,6 +48,7 @@ documents those changes that are of interest to users and administrators.
  -- sacctmgr - prevent segfault when trying to reset usage for an invalid
     account name.
  -- Make the openssl crypto plugin compile with openssl >= 1.1.
+ -- Fix SuspendExcNodes and SuspendExcParts on slurmctld reconfiguration.
 
 * Changes in Slurm 16.05.6
 ==========================
