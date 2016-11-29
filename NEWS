@@ -28,6 +28,7 @@ documents those changes that are of interest to users and administrators.
     index numbers (e.g. "GresUsed=gpu:alpha:2(IDX:0,2),gpu:beta:0(IDX:N/A)").
     Ditto for job information with "scontrol -d show job".
  -- Add new mcs/account plugin.
+ -- Add "GresEnforceBind=Yes" to "scontrol show job" output if so configured.
 
 * Changes in Slurm 17.02.0pre3
 ==============================

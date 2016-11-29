@@ -757,8 +757,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 						   last_hosts, tmp2,
 						   last_mem_alloc_ptr ?
 						   last_mem_alloc : 0,
-						   job_ptr->gres_detail_str
-							[rel_node_inx-1]);
+						    gres_last);
 					xfree(last_hosts);
 					xstrcat(out, line_end);
 
@@ -973,6 +972,8 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	/****** Line 38 (optional) ******/
 	if (job_ptr->bitflags) {
 		xstrcat(out, line_end);
+		if (job_ptr->bitflags & GRES_ENFORCE_BIND)
+			xstrcat(out, "GresEnforceBind=Yes");
 		if (job_ptr->bitflags & KILL_INV_DEP)
 			xstrcat(out, "KillOInInvalidDependent=Yes");
 		if (job_ptr->bitflags & NO_KILL_INV_DEP)
