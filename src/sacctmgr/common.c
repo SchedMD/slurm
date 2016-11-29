@@ -824,6 +824,11 @@ extern int sacctmgr_remove_assoc_usage(slurmdb_assoc_cond_t *assoc_cond)
 		}
 	}
 
+	if (!assoc_cond->acct_list || !list_count(assoc_cond->acct_list)) {
+		error("An association name is required to remove usage");
+		return SLURM_ERROR;
+	}
+
 	if (!commit_check("Would you like to reset usage?")) {
 		printf(" Changes Discarded\n");
 		return rc;

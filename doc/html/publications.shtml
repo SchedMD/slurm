@@ -1,13 +1,39 @@
 <!--#include virtual="header.txt"-->
 
-<h1>Publications and Presentations</h1>
+<h1>Presentations</h1>
 
 <p>Note that some of the older material contains dated information.</p>
 
-<h2>Presentations</h2>
+<!-- SC16 Slurm Booth + BOF-->
+<h2>Presentations from Slurm Booth and Birds of a Feather, SC16, November 2016</h2>
+<ul>
+
+<li>Booth: <a href="SC16/PMIxSLURM.pdf">Process Management Interface - Exascale (PMIx)</a>,
+Ralph H. Castain</li>
+
+<li>Booth: <a href="SC16/BULL_Slurm-devs-SC2016.pdf">Bull Slurm Related Developments</a>,
+<a href="SC16/job_packs_demo.mp4">Job Packs demo video</a>,
+Yiannis Georgiou, Bull AtoS</li>
+
+<li>Booth: <a href="SC16/Pfaff_SC16_Slurm_Hangout-3slides.pdf">Transition Hangout (a.k.a. how we converted to Slurm)</a>,
+Ryan Cox (BYU), Bruce Pfaff (NASA)</li>
+
+<li>Booth: <a href="SC16/slurm_arrays.pdf">Expanding Serial Analysis with Slurm Arrays</a>,
+Christopher Coffey, Northern Arizona University</li>
+
+<li>Booth: <a href="SC16/HPC_Orchestrator_SC16.pdf">Intel HPC Orchestrator</a>,
+Tom Krueger, Intel</li>
+
+<li>Booth: <a href="SC16/SlurmOverview.pdf">Slurm Overview</a>,
+Moe Jette, SchedMD</li>
+
+<li>BOF: <a href="SC16/Slurm-BoF.pdf">Slurm State of the Union; v16.05, v17.02 and Beyond</a>,
+Tim Wickberg, SchedMD</li>
+
+</ul>
 
 <!--Slurm User Group Meeting 2016-->
-<li><b>Presentations from Slurm User Group Meeting, September 2016</b></li>
+<h2>Presentations from Slurm User Group Meeting, September 2016</h2>
 <ul>
 
 <!--- <li>Welcome: <a href="SLUG16/welcome.pdf">SLUG 2016 Welcome</a>,
@@ -82,7 +108,7 @@ Nikos Nikoloutsakos, GRNET</li>
 </ul>
 
 <!--SC15 Slurm Booth + BOF-->
-<li><b>Presentations from Slurm Booth and Birds of a Feather, SC15, November 2015</b></li>
+<h2>Presentations from Slurm Booth and Birds of a Feather, SC15, November 2015</h2>
 <ul>
 <li>Booth: <a href="SC15/PMIx.pdf">PMIx - Enabling Application-driven Execution at Exascale </a>,
 Ralph H. Castain</li>
@@ -117,7 +143,7 @@ David Glesser, Bull</li>
 </ul>
 
 <!--Slurm User Group Meeting 2015-->
-<li><b>Presentations from Slurm User Group Meeting, September 2015</b></li>
+<h2>Presentations from Slurm User Group Meeting, September 2015</h2>
 <ul>
 <!--<li><a href="SLUG15/logo.pdf">Logo</a></li>-->
 
@@ -210,7 +236,7 @@ Tim Wickberg, GW</li>
 
 
 <!-- SC14 Slurm BOF-->
-<li><b>Presentations from Slurm Birds of a Feather and the Slurm booth, SC14, November 2014</b></li>
+<h2>Presentations from Slurm Birds of a Feather and the Slurm booth, SC14, November 2014</h2>
 <ul>
 <li><a href="SC14/Slurm_Overview.pdf">Slurm Overview</a>,
 Danny Auble and Brian Christiansen, SchedMD</li>
@@ -233,7 +259,7 @@ Chris Samuel (VLSCI)</li>
 
 
 <!--Slurm User Group Meeting 2014-->
-<li><b>Presentations from Slurm User Group Meeting, September 2014</b></li>
+<h2>Presentations from Slurm User Group Meeting, September 2014</h2>
 <ul>
 
 <li><a href="http://www.hsiphotography.com/p96779352/h24431f4d#h33c5b153">Group photo</a>
@@ -279,8 +305,6 @@ Denis Trystram (University Grenoble-Alpes)</li>
 Yiannis Georgiou and David Glesser (Bull),
 Krzysztof Rzadca (University of Warsaw),
 Denis Trystram (University Grenoble-Alpes)</li>
-
-<li><a href="SUG14/data_movement.pdf">High Performance Data movement between Lustre and Enterprise storage systems</a>
 Aamir Rashid (Terascala)</li>
 
 <li><a href="SUG14/remote_gpu.pdf">Extending Slurm with Support for Remote GPU Virtualization</a>
@@ -340,7 +364,7 @@ Tim Wickberg (George Washington University)</li>
 </ul>
 
 <!-- SC13 Slurm BOF-->
-<li><b>Presentations from Slurm Birds of a Feather, SC13, November 2013</b></li>
+<h2>Presentations from Slurm Birds of a Feather, SC13, November 2013</h2>
 <ul>
 <li><a href="SC13_BOF/SC13_BOF_SchedMD.pdf">Slurm Workload Manager Project Report</a>,
 Morris Jette and Danny Auble, SchedMD</li>
@@ -353,7 +377,7 @@ David Wallace, Cray</li>
 </ul>
 
 <!--Slurm User Group Meeting 2013-->
-<li><b>Presentations from Slurm User Group Meeting, September 2013</b></li>
+<h2>Presentations from Slurm User Group Meeting, September 2013</h2>
 <ul>
 
 <li><a href="SUG13/SUG2013_photo.jpg">Group photo</a></li>
@@ -435,7 +459,7 @@ Morris Jette, Danny Auble (SchedMD), Yiannis Georgiou (Bull)</li>
 </ul>
 
 <!-- SC12 Slurm BOF-->
-<li><b>Presentations from Slurm Birds of a Feather, SuperComputing 2012, November 2012</b></li>
+<h2>Presentations from Slurm Birds of a Feather, SC12, November 2012</h2>
 <ul>
 <li><a href="SC12_BOF/SC12_Status.pdf">Slurm Workload Manager Project Report</a>,
 Morris Jette and Danny Auble, SchedMD</li>
@@ -455,7 +479,7 @@ Tim Wickberg, Rensselaer Polytechnic Institute</li>
 </ul>
 
 <!-- Slurm User Group Meeting 2012 -->
-<li><b>Presentations from Slurm User Group Meeting, October 2012</b></li>
+<h2>Presentations from Slurm User Group Meeting, October 2012</h2>
 <ul>
 
 <li><a href="slurm_ug_2012/SUG12_photo.jpg">Group photo</a></li>
@@ -481,8 +505,7 @@ Alfonso Pardo Diaz, CIEMAT</li>
 <li>Porting Slurm to Bluegene/Q,
 Don Lipari, LLNL</li>
 
-<li>Tutorial: <a href="slurm_ug_2012/SUG_Oct2012_DBD.pdf">Slurm Database Use,
-Accounting and Limits</a>,
+<li>Tutorial: <a href="slurm_ug_2012/SUG_Oct2012_DBD.pdf">Slurm Database Use, Accounting and Limits</a>,
 Danny Auble, SchedMD</li>
 
 <li>Tutorial: <a href="slurm_ug_2012/SUG-2012-Scheduling.pdf">The Slurm Scheduler Design</a>,
@@ -499,8 +522,7 @@ Matthieu Hautreux, CEA</li>
 <li>Keynote: <a href="slurm_ug_2012/2012-BSC-challenge.pdf">Challenges in Evaluating Parallel Job Schedulers</a>,
 Dror Feitelson, Hebrew University</li>
 
-<li><a href="slurm_ug_2012/SUG_Oct2012_PE.pdf">Integration of Slurm with IBM's
-Parallel Environment</a>,
+<li><a href="slurm_ug_2012/SUG_Oct2012_PE.pdf">Integration of Slurm with IBM's Parallel Environment</a>,
 Morris Jette and Danny Auble, SchedMD</li>
 
 <li><a href="slurm_ug_2012/SUG2012-TCHPC-sbank.pdf">Slurm Bank</a>,
@@ -522,26 +544,25 @@ Mark Roberts (AWE) and Stephan Gorget (EDF)</li>
 <li><a href="slurm_ug_2012/SUG_Oct2012_HTC.pdf">High Throughput Computing with Slurm</a>,
 Morris Jette and Danny Auble, SchedMD</li>
 
-<li><a href="slurm_ug_2012/RJMS-scalability_SUG2012.pdf">Evaluating Scalability
-and Efficiency of the Resource and Job Management System on large HPC clusters</a>,
+<li><a href="slurm_ug_2012/RJMS-scalability_SUG2012.pdf">Evaluating Scalability and Efficiency of the Resource and Job Management System on large HPC clusters</a>,
 Yiannis Georgiou (Bull) and Matthieu Hautreux (CEA)</li>
 
-<li><a href="slurm_ug_2012/SUG2012-Soner.pdf">Integer Programming Based
-Herogeneous CPU-GPU Clusters</a>,
+<li><a href="slurm_ug_2012/SUG2012-Soner.pdf">Integer Programming Based Herogeneous CPU-GPU Clusters</a>,
 Seren Soner, Bogazici University</li>
 
-<li><a href="slurm_ug_2012/SUG2012_Emeras.pdf">Job Resource Utilizaiton as a Metric for
-Clusters Comparision and Optimization</a>,
+<li><a href="slurm_ug_2012/SUG2012_Emeras.pdf">Job Resource Utilizaiton as a Metric for Clusters Comparision and Optimization</a>,
 Joseph Emeras, INRIA/LIG</li>
 
 </ul>
 
+<h2>Presentations from the Sixth Linux Collaboration Summit, April 2012</h2>
+<ul>
 <li><a href="pdfs/LCS_cgroups_BULL.pdf">Resource Management with Linux Control Groups in HPC Clusters</a>
-Yiannis Georgiou, Bull
-(6th Linux Collaboration Summit, April 2012)</li><br>
+Yiannis Georgiou, Bull</li>
 
-<li><b>Presentations from Slurm Birds Of a Feather,
-SuperComputing 2011, November 2011</b></li>
+</ul>
+
+<h2>Presentations from Slurm Birds Of a Feather, SC11, November 2011</h2>
 <ul>
 <li><a href="SC11_BOF/SchedMD_BOF_SC11.pdf">Slurm Version 2.3 and Beyond</a>
 Morris Jette, SchedMD LLC</li>
@@ -554,157 +575,138 @@ Martijn de Vries, Bright Computing</li>
 </ul>
 
 <!-- Slurm User Group Meeting 2011 -->
-<li><b>Presentations from Slurm User Group Meeting, September 2011</b></li>
+<h2>Presentations from Slurm User Group Meeting, September 2011</h2>
 <ul>
 
 <li><a href="slurm_ug_2011/SUG2011_photo.jpg">Group photo</a></li>
 
-<li><a href="slurm_ug_2011/Basic_Configuration_Usage.pdf">Basic
-    Configuration and Usage</a>,
+<li><a href="slurm_ug_2011/Basic_Configuration_Usage.pdf">Basic Configuration and Usage</a>,
 Rod Schultz, Groupe Bull</li>
 
-<li><a href="slurm_ug_2011/Advanced_Usage_Tutorial.pdf">SLURM:
-    Advanced Usage</a>,
+<li><a href="slurm_ug_2011/Advanced_Usage_Tutorial.pdf">SLURM: Advanced Usage</a>,
 Rod Schultz, Groupe Bull</li>
 
-<li><a href="slurm_ug_2011/cons_res.pdf">CPU Management Allocation
-    and Binding</a>,
-Martin Perry, Groupe Bull
-</li>
+<li><a href="slurm_ug_2011/cons_res.pdf">CPU Management Allocation and Binding</a>,
+Martin Perry, Groupe Bull</li>
 
 <li><a href="slurm_ug_2011/SLURM_HA_Tutorial.pdf">Configuring Slurm for HA</a>,
-David Egolf - Bill Brophy, Groupe Bull
-</li>
+David Egolf and Bill Brophy, Groupe Bull</li>
 
 <li><a href="slurm_ug_2011/SLURM_UserGroup2011_cgroups.pdf">Slurm Resources isolation through cgroups</a>,
-Yiannis Georgiou, Groupe Bull
-<br>Matthieu Hautreux, CEA
-</li>
+Yiannis Georgiou (Groupe Bull), Matthieu Hautreux (CEA)</li>
 
 <li><a href="slurm_ug_2011/SLURM.Cray.pdf">Slurm Operation on Cray XT and XE</a>,
-Moe Jette, SchedMD LLC
-</li>
+Moe Jette, SchedMD LLC</li>
 
 <!-- day 2 -->
 
 <li><a href="slurm_ug_2011/SLURM-Keynote-v.pdf">Challenges and Opportunities for Exascale
 Resource Management and How Today's Petascale Systems are Guiding the Way</a>,
-William Kramer, NCSA
-</li>
+William Kramer, NCSA</li>
 
 <li><a href="slurm_ug_2011/cea_site_report-1.0.pdf">CEA Site report</a>,
-Matthieu Hautreux, CEA
-</li>
+Matthieu Hautreux, CEA</li>
 
 <li><a href="slurm_ug_2011/LLNL_Site_Report_2011.pdf">LLNL Site Report</a>,
-Don Lipari, LLNL
-</li>
+Don Lipari, LLNL</li>
 
-<li><a href="slurm_ug_2011/SLURM.v23.status.pdf">Slurm Version 2.3 and
-    Beyond</a>,
-Moe Jette, SchedMD LLC
-</li>
+<li><a href="slurm_ug_2011/SLURM.v23.status.pdf">Slurm Version 2.3 and Beyond</a>,
+Moe Jette, SchedMD LLC</li>
 
 <li><a href="slurm_ug_2011/slurm_simulator_phoenix.pdf">Slurm Simulator</a>,
-Alejandro Lucero, BSC
-</li>
+Alejandro Lucero, BSC</li>
 
-<li><a href="slurm_ug_2011/SLURM_Grid_Ideas.pdf">Proposed Design for Enhanced
-Enterprise-wide Scheduling</a>,
-Don Lipari, LLNL
-</li>
+<li><a href="slurm_ug_2011/SLURM_Grid_Ideas.pdf">Proposed Design for Enhanced Enterprise-wide Scheduling</a>,
+Don Lipari, LLNL</li>
 
-<li><a href="slurm_ug_2011/Bright_Computing_SLURM_integration.pdf">Bright
-    Cluster Manager & SLURM</ Slurm</a>,
-Robert Stober, Bright Computing
-</li>
+<li><a href="slurm_ug_2011/Bright_Computing_SLURM_integration.pdf">Bright Cluster Manager &amp; SLURM</ Slurm</a>,
+Robert Stober, Bright Computing</li>
 
 <li><a href="slurm_ug_2011/User.steps.design.pdf">Job Step Management in User Space</a>,
-Moe Jette, SchedMD LLC
-</li>
+Moe Jette, SchedMD LLC</li>
 
 <li><a href="slurm_ug_2011/SLURM.BGQ.pdf">Slurm Operation IBM BlueGene/Q</a>,
-Danny Auble, SchedMD LLC
-</li>
+Danny Auble, SchedMD LLC</li>
+
 </ul>
 
+<h2>Presentations from Slurm Birds Of a Feather, SC10, November 2010</h2>
+<ul>
 <!-- Use LLNL-PRES-461787 -->
 <li><a href="pdfs/slurm_sc10_bof.pdf">Slurm Version 2.2: Features and Release Plans</a>,
-Morris Jette, Danny Auble and Donald Lipari, Lawrence Livermore National Laboratory
-(Supercomputing 2010, November 2010)</li><br>
+Morris Jette, Danny Auble and Donald Lipari, Lawrence Livermore National Laboratory</li>
 
-<li><b>Presentations from Slurm User Group Meeting, October 2010</b></li>
+</ul>
+
+<h2>Presentations from Slurm User Group Meeting, October 2010</h2>
 <ul>
 <li><a href="slurm_ug_2010/SUG2010_photo.jpg">Group photo</a></li>
 
 <!-- Use LLNL-PRES-453794 -->
-<li><a href="slurm_ug_2010/01-keynote.pdf">Slurm: Resource Management from the Simple to the
-Sophisticated</a>,
-Morris Jette and Danny Auble, Lawrence Livermore National Laboratory
-(SLURM User Group Meeting, October 2010)</li>
+<li><a href="slurm_ug_2010/01-keynote.pdf">Slurm: Resource Management from the Simple to the Sophisticated</a>,
+Morris Jette and Danny Auble, Lawrence Livermore National Laboratory</li>
 
 <!-- Use LLNL-PRES-461852 -->
 <li><a href="slurm_ug_2010/01-mh-cea.pdf">Slurm at CEA</a>,
-Matthieu Hautreux, CEA/DAM/DIF
-(SLURM User Group Meeting, October 2010)</li>
+Matthieu Hautreux, CEA/DAM/DIF</li>
 
 <!-- Use LLNL-PRES-461778 -->
 <li><a href="slurm_ug_2010/02-mp-bull.pdf">Slurm Support for Linux Control Groups</a>,
-Martin Perry, Bull Information Systems
-(SLURM User Group Meeting, October 2010)</li>
+Martin Perry, Bull Information Systems</li>
 
 <!-- Use LLNL-PRES-459615 -->
 <li><a href="slurm_ug_2010/03-cf-bsc.pdf">Slurm at BSC</a>,
-Carles Fenoy and Alejandro Lucero, Barcelona Supercomputing Center
-(SLURM User Group Meeting, October 2010)</li>
+Carles Fenoy and Alejandro Lucero, Barcelona Supercomputing Center</li>
 
 <!-- Use LLNL-PRES-461840 -->
 <li><a href="slurm_ug_2010/04-ns-cscs.pdf">Porting Slurm to the Cray XT and XE</a>,
-Neil Stringfellow and Gerrit Renker, Swiss National Supercomputer Centre
-(SLURM User Group Meeting, October 2010)</li>
+Neil Stringfellow and Gerrit Renker, Swiss National Supercomputer Centre</li>
 
 <!-- Use LLNL-PRES-461831 -->
-<li><a href="slurm_ug_2010/05-yg-bull.pdf">Real Scale Experimentations of Slurm Resource
-and Job Management System</a>,
-Yiannis Georgiou, Bull Information Systems
-(SLURM User Group Meeting, October 2010)</li>
+<li><a href="slurm_ug_2010/05-yg-bull.pdf">Real Scale Experimentations of Slurm Resource and Job Management System</a>,
+Yiannis Georgiou, Bull Information Systems</li>
 
 <!-- Use LLNL-PRES-453831 -->
 <li><a href="slurm_ug_2010/06-mjda-llnl.pdf">Slurm Version 2.2: Features and Release Plans</a>,
-Morris Jette and Danny Auble, Lawrence Livermore National Laboratory
-(SLURM User Group Meeting, October 2010)</li>
+Morris Jette and Danny Auble, Lawrence Livermore National Laboratory</li>
+
 </ul>
 
+<h2>Presentations from Slurm Birds of a Feather, SC09, November 2009</h2>
+<ul>
 <!-- Use LLNL-PRES-402832 -->
 <li><a href="pdfs/slurm_sc09_bof.pdf">Slurm Community Meeting</a>,
-Morris Jette, Danny Auble and Don Lipari, Lawrence Livermore National Laboratory
-(Supercomputing 2009, November 2009)</li><br>
+Morris Jette, Danny Auble and Don Lipari, Lawrence Livermore National Laboratory</li>
+</ul>
 
+<h2>Presentations from Slurm Birds of a Feather, SC08, November 2008</h2>
+<ul>
 <!-- Use LLNL-PRES-408498 -->
-<li><a href="pdfs/slurm.sc08.bof.pdf">High Scalability Resource Management with
-SLURM</a>,
-Morris Jette, Lawrence Livermore National Laboratory
-(Supercomputing 2008, November 2008)</li><br>
+<li><a href="pdfs/slurm.sc08.bof.pdf">High Scalability Resource Management with SLURM</a>,
+Morris Jette, Lawrence Livermore National Laboratory</li>
 
 <!-- Use LLNL-PRES-408510 -->
 <li><a href="pdfs/slurm.sc08.status.pdf">Slurm Status Report</a>,
-Morris Jette and Danny Auble, Lawrence Livermore National Laboratory
-(Supercomputing 2008, November 2008)</li><br>
+Morris Jette and Danny Auble, Lawrence Livermore National Laboratory</li>
 
+</ul>
+
+<h2>Other Presentations</h2>
+<ul>
 <!-- Use LLNL-PRES-402832 -->
 <li><a href="pdfs/slurm_v1.3.pdf">Slurm Version 1.3</a>,
 Morris Jette and Danny Auble, Lawrence Livermore National Laboratory
-(May 2008)</li><br>
+(May 2008)</li>
 
 <!-- Use LLNL-PRES-403148 -->
 <li><a href="pdfs/slurm_moab.pdf">Managing Clusters with Moab and Slurm</a>,
 Morris Jette and Donald Lipari, Lawrence Livermore National Laboratory
-(May 2008)</li><br>
+(May 2008)</li>
 
 <!-- Use UCRL-PRES-230170 -->
 <li><a href="pdfs/slurm_v1.2.pdf">Resource Management at LLNL, Slurm Version 1.2</a>,
 Morris Jette, Danny Auble and Chris Morrone, Lawrence Livermore National Laboratory
-(April 2007)</li><br>
+(April 2007)</li>
 
 <!-- Use UCRL-PRES-219562 -->
 <li><a href="pdfs/lci.7.tutorial.pdf">Resource Management Using Slurm</a>,
@@ -712,14 +714,13 @@ Morris Jette, Lawrence Livermore National Laboratory
 (Tutorial, The 7th International Conference on Linux Clusters, May 2006)</li>
 </ul>
 
-<h2>Publications</h2>
+<h1>Publications</h1>
 
 <ul>
 
 <li>Energy Accounting and Control with Slurm Resource and Job Management System,
 Yiannis Georgiou, et. al.
 (ICDCN 2014, January 2014)</li>
-
 
 <li><a href="http://www.cs.huji.ac.il/~feit/parsched/jsspp12/p8-georgiou.pdf">
 Evaluating scalability and efficiency of the Resource and Job Management System on large HPC Clusters</b></a>,
@@ -761,19 +762,19 @@ pages 44-60,
 Springer-Verlag, 2003.</li>
 </ul>
 
-<h2>Interview</h2>
+<h1>Interview</h1>
 
 <p><a href="http://www.rce-cast.com/index.php/Podcast/rce-10-slurm.html">
 RCE 10: Slurm (podcast)</a>:
 Brock Palen and Jeff Squyres speak with Morris Jette and
 Danny Auble of LLNL about Slurm.</p>
 
-<h2>Other Resources</h2>
+<h1>Other Resources</h1>
 
 <p><a href="http://blog.ajdecon.org/learning-chef-compute-cluster-with-slurm">
 Learning Chef: Compute Cluter with Slurm</a>
 A Slurm Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 6 October 2016</p>
+<p style="text-align:center;">Last modified 29 November 2016</p>
 
 <!--#include virtual="footer.txt"-->
