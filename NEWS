@@ -49,6 +49,8 @@ documents those changes that are of interest to users and administrators.
     account name.
  -- Make the openssl crypto plugin compile with openssl >= 1.1.
  -- Fix SuspendExcNodes and SuspendExcParts on slurmctld reconfiguration.
+ -- sbcast - prevent segfault in slurmd due to race condition between file
+    transfers from separate jobs using zlib compression
 
 * Changes in Slurm 16.05.6
 ==========================
