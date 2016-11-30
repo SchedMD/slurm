@@ -211,6 +211,8 @@ documents those changes that are of interest to users and administrators.
     transfers from separate jobs using zlib compression
  -- cray/burst_buffer - Increase time to synchronize operations between threads
     from 5 to 60 seconds ("setup" operation time observed over 17 seconds).
+ -- node_features/knl_cray - Fix possible race condition when changing node
+    state that could result in old KNL mode as an active features.
 
 * Changes in Slurm 16.05.6
 ==========================
