@@ -318,7 +318,7 @@ static char *_node_names_2_nid_list(char *node_names)
 	return nid_list;
 }
 
-/* Attempt to shutdown all nodes in a single capmc call.
+/* Attempt to modify modes and reboot nodes in a single capmc call.
  * RET 0 on success, -1 on failure */
 static int _update_all_nodes(char *host_list)
 {
@@ -561,7 +561,7 @@ int main(int argc, char *argv[])
 		xfree(features);
 	}
 
-	/* Attempt to update and restart all nodes in a single capmc call */
+	/* Attempt to update modes and restart nodes in a single capmc call */
 	node_bitmap = bit_alloc(100000);
 	if (_update_all_nodes(argv[1]) != 0) {
 		/* Could not reboot nodes.
