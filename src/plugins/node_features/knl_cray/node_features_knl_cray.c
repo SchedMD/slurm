@@ -2238,8 +2238,11 @@ static int _update_node_state(char *node_list, bool set_locks)
 			unlock_slurmctld(write_nodes_lock);
 		hostlist_destroy(host_list);
 	} else {
+		time_t now = time(NULL);
 		for (i = 0, node_ptr = node_record_table_ptr;
 		     i < node_record_count; i++, node_ptr++) {
+			if (node_ptr->last_response > now)
+				continue;	/* Reboot in likely progress */
 			xfree(node_ptr->features_act);
 			_strip_knl_opts(&node_ptr->features);
 			if (node_ptr->features && !node_ptr->features_act) {
