@@ -447,7 +447,7 @@ static int _bcast_file(struct bcast_parameters *params)
 static int _decompress_data_zlib(file_bcast_msg_t *req)
 {
 #if HAVE_LIBZ
-	static z_stream strm;
+	z_stream strm;
 	int chunk = (256 * 1024); /* must match common/file_bcast.c */
 	int ret;
 	int flush = Z_NO_FLUSH, have;

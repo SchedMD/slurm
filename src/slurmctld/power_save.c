@@ -85,6 +85,7 @@ int idle_time, suspend_rate, resume_timeout, resume_rate, suspend_timeout;
 char *suspend_prog = NULL, *resume_prog = NULL;
 char *exc_nodes = NULL, *exc_parts = NULL;
 time_t last_config = (time_t) 0, last_suspend = (time_t) 0;
+time_t last_log = (time_t) 0, last_work_scan = (time_t) 0;
 uint16_t slurmd_timeout;
 
 bitstr_t *exc_node_bitmap = NULL;
@@ -108,7 +109,6 @@ static bool  _valid_prog(char *file_name);
 /* Perform any power change work to nodes */
 static void _do_power_work(time_t now)
 {
-	static time_t last_log = 0, last_work_scan = 0;
 	int i, wake_cnt = 0, sleep_cnt = 0, susp_total = 0;
 	time_t delta_t;
 	uint32_t susp_state;
@@ -574,6 +574,8 @@ static int _init_power_config(void)
 	slurm_ctl_conf_t *conf = slurm_conf_lock();
 
 	last_config     = slurmctld_conf.last_update;
+	last_work_scan  = 0;
+	last_log	= 0;
 	idle_time       = conf->suspend_time - 1;
 	suspend_rate    = conf->suspend_rate;
 	resume_timeout  = conf->resume_timeout;
