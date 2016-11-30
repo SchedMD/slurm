@@ -693,20 +693,19 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
  * update that user's limit */
 static void _apply_limits(void)
 {
-	bool update_pool_unfree = false;
+	bool emulate_cray = false;
 	bb_alloc_t *bb_alloc;
 	int i;
 
 	if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
-		update_pool_unfree = true;
+		emulate_cray = true;
 
 	for (i = 0; i < BB_HASH_SIZE; i++) {
 		bb_alloc = bb_state.bb_ahash[i];
 		while (bb_alloc) {
 			_set_assoc_mgr_ptrs(bb_alloc);
 			bb_limit_add(bb_alloc->user_id, bb_alloc->size,
-				     bb_alloc->pool, &bb_state,
-				     update_pool_unfree);
+				     bb_alloc->pool, &bb_state, emulate_cray);
 			bb_alloc = bb_alloc->next;
 		}
 	}
