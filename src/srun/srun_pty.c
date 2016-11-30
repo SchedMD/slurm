@@ -55,6 +55,7 @@
 
 #include "opt.h"
 #include "srun_job.h"
+#include "srun_pty.h"
 
 #define MAX_RETRIES 3
 

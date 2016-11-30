@@ -60,6 +60,7 @@
 #include "src/common/xstring.h"
 
 #include "debugger.h"
+#include "multi_prog.h"
 #include "opt.h"
 
 /* Given a program name, translate it to a fully qualified pathname
