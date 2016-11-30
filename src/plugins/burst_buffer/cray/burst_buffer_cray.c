@@ -76,7 +76,7 @@
 #include "src/plugins/burst_buffer/common/burst_buffer_common.h"
 
 #define _DEBUG 0	/* Detailed debugging information */
-#define TIME_SLOP 5	/* time allowed to synchronize operations between
+#define TIME_SLOP 60	/* Time allowed to synchronize operations between
 			 * threads */
 #define MAX_RETRY_CNT 2	/* Hold job if "pre_run" operation fails more than
 			 * 2 times */

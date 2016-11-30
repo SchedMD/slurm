@@ -51,6 +51,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix SuspendExcNodes and SuspendExcParts on slurmctld reconfiguration.
  -- sbcast - prevent segfault in slurmd due to race condition between file
     transfers from separate jobs using zlib compression
+ -- cray/burst_buffer - Increase time to synchronize operations between threads
+    from 5 to 60 seconds ("setup" operation time observed over 17 seconds).
 
 * Changes in Slurm 16.05.6
 ==========================
