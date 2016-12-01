@@ -96,7 +96,7 @@ to examine the available partitions, reservations, etc.
 can be stored here. The error message is expected to have allocated memory
 which Slurm will release using the xfree function. The error message is
 propagated to the caller only when the return code of this function is
-not SLURM_SUCESS.<br>
+not SLURM_SUCCESS.<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
 <span class="commandline">SLURM_ERROR</span> on failure.

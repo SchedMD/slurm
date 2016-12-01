@@ -205,7 +205,7 @@ static void *_msg_thread(void *no_data)
 
 /*****************************************************************************\
  * parse_wiki_config - Results go into global variables
- * RET SLURM_SUCESS or error code
+ * RET SLURM_SUCCESS or error code
  *
  * wiki_conf options
  * JobPriority=hold|run

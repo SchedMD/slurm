@@ -1289,7 +1289,7 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
  * job_end_time - Process JOB_END_TIME
  * IN time_req_msg - job end time request
  * OUT timeout_msg - job timeout response to be sent
- * RET SLURM_SUCESS or an error code
+ * RET SLURM_SUCCESS or an error code
  */
 extern int job_end_time(job_alloc_info_msg_t *time_req_msg,
 			srun_timeout_msg_t *timeout_msg);
