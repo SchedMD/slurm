@@ -36,8 +36,15 @@ commands will reflect all CPUS on all allocated nodes as will the job's
 accounting.</p>
 
 <h2>Core Selection</h2>
-<p>Cores selected for specialization will always follow the same assignment
-algorithm.
+<p>The specific resources to be used for specialization may be identified using
+the <i>CPUSpecList</i> configuration parameter associated with each node in
+the <i>slurm.conf</i> file.
+Note that the <i>core_spec/cray</i> does not currently support identification of
+specific cores, so that plugin should not be used in conjunction with the
+<i>CPUSpecList</i> configuration parameter, even on Cray systems.
+If <i>CoreSpecCount</i> is configured, but not <i>CPUSpecList</i>, the cores
+selected for specialization will always follow the assignment algorithm
+described below.
 The first core selected will be the highest numbered core on the highest
 numbered socket.
 Subsequent cores selected will be the highest numbered core on the lower
@@ -86,6 +93,6 @@ If the core count is not configured and the CPUs value is configured to the
 count of hyperthreads, then hyperthreads rather than cores will be reserved for
 system use.</p>
 
-<p style="text-align:center;">Last modified 6 June 2014</p>
+<p style="text-align:center;">Last modified 1 December 2016</p>
 
 <!--#include virtual="footer.txt"-->
