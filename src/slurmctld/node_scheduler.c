@@ -2379,8 +2379,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		 */
 		if (error_code != SLURM_SUCCESS)
 			debug2("Replacing scheduling error code for job %u from '%s' to 'Accounting policy'",
-			     job_ptr->job_id,
-			     slurm_strerror(error_code));
+			       job_ptr->job_id,
+			       slurm_strerror(error_code));
 		error_code = ESLURM_ACCOUNTING_POLICY;
 		goto cleanup;
 	}
