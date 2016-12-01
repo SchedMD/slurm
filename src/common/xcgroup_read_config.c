@@ -153,7 +153,6 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		{"MinKmemSpace", S_P_UINT64},
 		{"AllowedSwapSpace", S_P_STRING},
 		{"MaxSwapPercent", S_P_STRING},
-		{"ConstrainCores", S_P_BOOLEAN},
 		{"MemoryLimitEnforcement", S_P_BOOLEAN},
 		{"MemoryLimitThreshold", S_P_STRING},
 		{"ConstrainDevices", S_P_BOOLEAN},
