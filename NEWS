@@ -55,6 +55,10 @@ documents those changes that are of interest to users and administrators.
     from 5 to 60 seconds ("setup" operation time observed over 17 seconds).
  -- node_features/knl_cray - Fix possible race condition when changing node
     state that could result in old KNL mode as an active features.
+ -- Make sure if a job can't run because of resources we also check accounting
+    limits after the node selection to make sure it doesn't violate those limits
+    and if it does change the reason for waiting so we don't reserve resources
+    on jobs violating accounting limits.
 
 * Changes in Slurm 16.05.6
 ==========================
