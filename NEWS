@@ -61,6 +61,7 @@ documents those changes that are of interest to users and administrators.
     on jobs violating accounting limits.
  -- NRT - Make it so a system running against IBM's PE will work with PE
     version 1.3.
+ -- NRT - Make it so protocols pgas and test are allowed to be used.
 
 * Changes in Slurm 16.05.6
 ==========================
