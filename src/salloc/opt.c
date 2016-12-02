@@ -412,7 +412,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_CLUSTERS",      OPT_STRING,     &opt.clusters,      NULL          },
   {"SLURM_CLUSTERS",       OPT_STRING,     &opt.clusters,      NULL          },
   {"SALLOC_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL          },
-  {"SALLOC_CONSTRAINT",     OPT_STRING,     &opt.constraints,   NULL          },
+  {"SALLOC_CONSTRAINT",    OPT_STRING,     &opt.constraints,   NULL          },
   {"SALLOC_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL          },
   {"SALLOC_CPU_FREQ_REQ",  OPT_CPU_FREQ,   NULL,               NULL          },
   {"SALLOC_DEBUG",         OPT_DEBUG,      NULL,               NULL          },
