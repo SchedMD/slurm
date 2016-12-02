@@ -537,7 +537,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 				if (protocol)
 					xstrcat(protocol, ",");
 				xstrcat(protocol, token);
-				setenv("MP_MSG_API", protocol, 0);
+				setenv("MP_MSG_API", protocol, 1);
 			/* adapter options */
 			} else if (!xstrcasecmp(token, "sn_all")) {
 				setenv("MP_EUIDEVICE", "sn_all", 1);
