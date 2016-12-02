@@ -486,6 +486,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_CLUSTERS",      OPT_STRING,     &opt.clusters,      NULL          },
   {"SLURM_CLUSTERS",       OPT_STRING,     &opt.clusters,      NULL          },
   {"SBATCH_CNLOAD_IMAGE",  OPT_STRING,     &opt.linuximage,    NULL          },
+  {"SBATCH_CONSTRAINT",     OPT_STRING,     &opt.constraints,   NULL          },
   {"SBATCH_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL          },
   {"SBATCH_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL          },
   {"SBATCH_CPU_FREQ_REQ",  OPT_CPU_FREQ,   NULL,               NULL          },
@@ -3139,7 +3140,7 @@ extern int   spank_unset_job_env(const char *name)
  *
  * warning: returns pointer to memory allocated on the stack.
  */
-static char *print_constraints()
+static char *print_constraints(void)
 {
 	char *buf = xstrdup("");
 

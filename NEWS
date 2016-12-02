@@ -29,6 +29,9 @@ documents those changes that are of interest to users and administrators.
     Ditto for job information with "scontrol -d show job".
  -- Add new mcs/account plugin.
  -- Add "GresEnforceBind=Yes" to "scontrol show job" output if so configured.
+ -- Add support for SALLOC_CONSTRAINT, SBATCH_CONSTRAINT and SLURM_CONSTRAINT
+    environment variables to set default constraints for salloc, sbatch and
+    srun commands respectively.
 
 * Changes in Slurm 17.02.0pre3
 ==============================

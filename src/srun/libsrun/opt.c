@@ -593,6 +593,7 @@ env_vars_t env_vars[] = {
 {"SLURM_CNLOAD_IMAGE",  OPT_STRING,     &opt.linuximage,    NULL             },
 {"SLURM_COMPRESS",      OPT_COMPRESS,   NULL,               NULL             },
 {"SLURM_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL             },
+{"SLURM_CONSTRAINT",    OPT_STRING,     &opt.constraints,   NULL             },
 {"SLURM_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL             },
 {"SLURM_CPUS_PER_TASK", OPT_INT,        &opt.cpus_per_task, &opt.cpus_set    },
 {"SLURM_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL             },
