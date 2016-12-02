@@ -545,11 +545,15 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 				dev_type = NRT_HFI;
 			} else if (!xstrcasecmp(type_ptr, "iponly")) {
 				dev_type = NRT_IPONLY;
-			} else if (!xstrcasecmp(type_ptr, "hpce")) {
+			}
+#if NRT_VERSION < 1300
+			else if (!xstrcasecmp(type_ptr, "hpce")) {
 				dev_type = NRT_HPCE;
 			} else if (!xstrcasecmp(type_ptr, "kmux")) {
 				dev_type = NRT_KMUX;
-			} else if (!xstrcasecmp(type_ptr, "sn_all")) {
+			}
+#endif
+			else if (!xstrcasecmp(type_ptr, "sn_all")) {
 				sn_all = true;
 			} else if (!xstrcasecmp(type_ptr, "sn_single")) {
 				sn_all = false;
@@ -781,7 +785,7 @@ extern char *switch_p_sprint_jobinfo(switch_jobinfo_t *switch_jobinfo,
  */
 static bool _nrt_version_ok(void)
 {
-	if ((NRT_VERSION >= 1100) && (NRT_VERSION <= 1200))
+	if ((NRT_VERSION >= 1100) && (NRT_VERSION <= 1300))
 		return true;
 	error("switch/nrt: Incompatable NRT version");
 	return false;

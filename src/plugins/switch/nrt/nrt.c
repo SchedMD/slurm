@@ -754,7 +754,9 @@ _window_state_set(slurm_nrt_jobinfo_t *jp, char *hostname, win_state_t state)
 						       hfi_tbl_ptr->win_id,
 						       task_id);
 					}
-				} else if ((adapter->adapter_type==NRT_HPCE) ||
+				}
+#if NRT_VERSION < 1300
+				else if ((adapter->adapter_type==NRT_HPCE) ||
 					   (adapter->adapter_type==NRT_KMUX)) {
 					nrt_hpce_task_info_t *hpce_tbl_ptr;
 					hpce_tbl_ptr  = tableinfo[i].table;
@@ -777,7 +779,9 @@ _window_state_set(slurm_nrt_jobinfo_t *jp, char *hostname, win_state_t state)
 						       hpce_tbl_ptr->win_id,
 						       task_id);
 					}
-				} else {
+				}
+#endif
+				else {
 					error("switch/nrt: _window_state_set:"
 					      " Missing support for adapter "
 					      "type %s",
@@ -903,8 +907,10 @@ static void _table_alloc(nrt_tableinfo_t *tableinfo, int table_inx,
 		table_size = sizeof(nrt_hfi_task_info_t);
 	else if (adapter_type == NRT_IPONLY)
 		table_size = sizeof(nrt_ip_task_info_t);
+#if NRT_VERSION < 1300
 	else if ((adapter_type == NRT_HPCE) || (adapter_type == NRT_KMUX))
 		table_size = sizeof(nrt_hpce_task_info_t);
+#endif
 	else {
 		error("Missing support for adapter type %s",
 		      _adapter_type_str(adapter_type));
@@ -1219,7 +1225,9 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 					hfi_table->lpar_id = adapter->special;
 					hfi_table->task_id = task_id;
 					hfi_table->win_id = window->window_id;
-				} else if ((adapter->adapter_type == NRT_HPCE)||
+				}
+#if NRT_VERSION < 1300
+				else if ((adapter->adapter_type == NRT_HPCE)||
 					   (adapter->adapter_type == NRT_KMUX)){
 					nrt_hpce_task_info_t *hpce_table;
 					_table_alloc(tableinfo, table_inx,
@@ -1230,7 +1238,9 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 					hpce_table->node_number = node_number;
 					hpce_table->task_id = task_id;
 					hpce_table->win_id = window->window_id;
-				} else {
+				}
+#endif
+				else {
 					error("switch/nrt: Missing support "
 					      "for adapter type %s",
 					      _adapter_type_str(adapter->
@@ -1410,7 +1420,9 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 				hfi_table->lpar_id = adapter->special;
 				hfi_table->task_id = task_id;
 				hfi_table->win_id = window->window_id;
-			} else if ((adapter_type == NRT_HPCE) ||
+			}
+#if NRT_VERSION < 1300
+			else if ((adapter_type == NRT_HPCE) ||
 				   (adapter_type == NRT_KMUX)) {
 				nrt_hpce_task_info_t *hpce_table;
 				_table_alloc(tableinfo, table_inx,
@@ -1420,7 +1432,9 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 				hpce_table += task_id;
 				hpce_table->task_id = task_id;
 				hpce_table->win_id = window->window_id;
-			} else {
+			}
+#endif
+			else {
 				error("Missing support for adapter type %s",
 				      _adapter_type_str(adapter_type));
 				goto alloc_fail;
@@ -1484,10 +1498,12 @@ _adapter_type_str(nrt_adapter_t type)
 		return "HFI";
 	case NRT_IPONLY:
 		return "IP_ONLY";
+#if NRT_VERSION < 1300
 	case NRT_HPCE:
 		return "HPC_Ethernet";
 	case NRT_KMUX:
 		return "Kernel_Emulated_HPCE";
+#endif
 	default:
 		snprintf(buf, sizeof(buf), "%d", type);
 		return buf;
@@ -1749,7 +1765,9 @@ _print_table(void *table, int size, nrt_adapter_t adapter_type, bool ip_v4)
 			info("  lpar_id: %u", hfi_tbl_ptr->lpar_id);
 			info("  lid: %u", hfi_tbl_ptr->lid);
 			info("  win_id: %hu", hfi_tbl_ptr->win_id);
-		} else if ((adapter_type == NRT_HPCE) ||
+		}
+#if NRT_VERSION < 1300
+		else if ((adapter_type == NRT_HPCE) ||
 		           (adapter_type == NRT_KMUX)) {
 			nrt_hpce_task_info_t *hpce_tbl_ptr;
 			hpce_tbl_ptr = table;
@@ -1761,7 +1779,9 @@ _print_table(void *table, int size, nrt_adapter_t adapter_type, bool ip_v4)
 			info("  node_number: %s", addr_str);
 /*			info("  node_number: %u", hpce_tbl_ptr->node_number); */
 			info("  device_name: %s", hpce_tbl_ptr->device_name);
-		} else if (adapter_type == NRT_IPONLY) {
+		}
+#endif
+		else if (adapter_type == NRT_IPONLY) {
 			nrt_ip_task_info_t *ip_tbl_ptr;
 			char addr_str[128];
 			ip_tbl_ptr = table;
@@ -2978,10 +2998,12 @@ _adapter_type_pref(nrt_adapter_t adapter_type)
 		return 8;
 	if (adapter_type == NRT_IB)
 		return 7;
+#if NRT_VERSION < 1300
 	if (adapter_type == NRT_HPCE)
 		return 6;
 	if (adapter_type == NRT_KMUX)
 		return 5;
+#endif
 	return 0;
 }
 
@@ -3296,7 +3318,9 @@ _pack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf, slurm_nrt_jobinfo_t *jp,
 			tmp_8 = hfi_tbl_ptr->win_id;
 			pack8(tmp_8, buf);
 		}
-	} else if ((adapter_type == NRT_HPCE) || (adapter_type == NRT_KMUX)) {
+	}
+#if NRT_VERSION < 1300
+	else if ((adapter_type == NRT_HPCE) || (adapter_type == NRT_KMUX)) {
 		nrt_hpce_task_info_t *hpce_tbl_ptr;
 		for (i = 0, hpce_tbl_ptr = tableinfo->table;
 		     i < tableinfo->table_length;
@@ -3307,7 +3331,9 @@ _pack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf, slurm_nrt_jobinfo_t *jp,
 			packmem(hpce_tbl_ptr->device_name,
 				NRT_MAX_DEVICENAME_SIZE, buf);
 		}
-	} else {
+	}
+#endif
+	else {
 		error("_pack_tableinfo: Missing support for adapter type %s",
 		      _adapter_type_str(adapter_type));
 	}
@@ -3447,7 +3473,9 @@ _unpack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf, slurm_nrt_jobinfo_t *jp,
 			safe_unpack8(&tmp_8, buf);
 			hfi_tbl_ptr->win_id = tmp_8;
 		}
-	} else if ((adapter_type == NRT_HPCE) || (adapter_type == NRT_KMUX)) {
+	}
+#if NRT_VERSION < 1300
+	else if ((adapter_type == NRT_HPCE) || (adapter_type == NRT_KMUX)) {
 		nrt_hpce_task_info_t *hpce_tbl_ptr;
 		tableinfo->table = (nrt_hpce_task_info_t *)
 				   xmalloc(tableinfo->table_length *
@@ -3462,7 +3490,9 @@ _unpack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf, slurm_nrt_jobinfo_t *jp,
 			if (tmp_32 != NRT_MAX_DEVICENAME_SIZE)
 				goto unpack_error;
 		}
-	} else {
+	}
+#endif
+	else {
 		error("_unpack_tableinfo: Missing support for adapter type %s",
 		      _adapter_type_str(adapter_type));
 	}
@@ -3700,7 +3730,9 @@ _wait_for_all_windows(nrt_tableinfo_t *tableinfo)
 			if (hfi_tbl_ptr->lpar_id != my_lpar_id)
 				continue;
 			window_id = hfi_tbl_ptr->win_id;
-		} else if ((tableinfo->adapter_type == NRT_HPCE) ||
+		}
+#if NRT_VERSION < 1300
+		else if ((tableinfo->adapter_type == NRT_HPCE) ||
 		           (tableinfo->adapter_type == NRT_KMUX)) {
 			nrt_hpce_task_info_t *hpce_tbl_ptr;
 			hpce_tbl_ptr = (nrt_hpce_task_info_t *) tableinfo->
@@ -3709,7 +3741,9 @@ _wait_for_all_windows(nrt_tableinfo_t *tableinfo)
 			if (hpce_tbl_ptr->node_number != my_network_id)
 				continue;
 			window_id = hpce_tbl_ptr->win_id;
-		} else {
+		}
+#endif
+		else {
 			error("_wait_for_all_windows: Missing support for "
 			      "adapter_type %s",
 			      _adapter_type_str(tableinfo->adapter_type));

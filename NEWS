@@ -59,6 +59,8 @@ documents those changes that are of interest to users and administrators.
     limits after the node selection to make sure it doesn't violate those limits
     and if it does change the reason for waiting so we don't reserve resources
     on jobs violating accounting limits.
+ -- NRT - Make it so a system running against IBM's PE will work with PE
+    version 1.3.
 
 * Changes in Slurm 16.05.6
 ==========================
