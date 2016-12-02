@@ -2610,9 +2610,8 @@ extern int jobacct_storage_p_job_complete(void *db_conn,
 	req.admin_comment = job_ptr->admin_comment;
 
 	if (slurmctld_conf.acctng_store_job_comment)
-		req.comment     = job_ptr->comment;
-	else
-		req.comment     = NULL;
+		req.comment = job_ptr->comment;
+
 	req.db_index    = job_ptr->db_index;
 	req.derived_ec  = job_ptr->derived_ec;
 	req.exit_code   = job_ptr->exit_code;
