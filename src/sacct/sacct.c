@@ -49,6 +49,7 @@ print_field_t fields[] = {
 	{10, "AllocNodes", print_fields_str, PRINT_ALLOC_NODES},
 	{10, "AllocTRES", print_fields_str, PRINT_TRESA},
 	{10, "Account", print_fields_str, PRINT_ACCOUNT},
+	{15, "AdminComment", print_fields_str, PRINT_ADMIN_COMMENT},
 	{7,  "AssocID", print_fields_uint, PRINT_ASSOCID},
 	{10, "AveCPU", print_fields_str, PRINT_AVECPU},
 	{10, "AveCPUFreq", print_fields_str, PRINT_ACT_CPUFREQ},

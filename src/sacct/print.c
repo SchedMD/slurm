@@ -396,6 +396,21 @@ void print_fields(type_t type, void *object)
 					     outbuf,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_ADMIN_COMMENT:
+			switch(type) {
+			case JOB:
+				tmp_char = job->admin_comment;
+				break;
+			case JOBSTEP:
+			case JOBCOMP:
+			default:
+				tmp_char = NULL;
+				break;
+			}
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_ASSOCID:
 			switch(type) {
 			case JOB:

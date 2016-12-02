@@ -230,6 +230,7 @@ typedef struct dbd_fini_msg {
 } dbd_fini_msg_t;
 
 typedef struct dbd_job_comp_msg {
+	char *	 admin_comment;	/* job admin comment field */
 	uint32_t assoc_id;	/* accounting association id needed to
 				 * find job record in db */
 	char *	 comment;	/* job comment field */

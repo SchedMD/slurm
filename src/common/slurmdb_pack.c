@@ -4249,6 +4249,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 
 	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		packstr(job->account, buffer);
+		packstr(job->admin_comment, buffer);
 		packstr(job->alloc_gres, buffer);
 		pack32(job->alloc_nodes, buffer);
 		pack32(job->array_job_id, buffer);
@@ -4412,6 +4413,8 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 	job_ptr->array_task_id = NO_VAL;
 	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&job_ptr->account, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->admin_comment, &uint32_tmp,
+				       buffer);
 		safe_unpackstr_xmalloc(&job_ptr->alloc_gres, &uint32_tmp,
 				       buffer);
 		safe_unpack32(&job_ptr->alloc_nodes, buffer);

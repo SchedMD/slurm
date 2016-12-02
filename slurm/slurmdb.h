@@ -695,6 +695,7 @@ typedef struct {
 
 typedef struct {
 	char    *account;
+	char	*admin_comment;
 	char	*alloc_gres;
 	uint32_t alloc_nodes;
 	uint32_t array_job_id;	/* job_id of a job array or 0 if N/A */

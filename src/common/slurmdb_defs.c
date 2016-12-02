@@ -838,6 +838,7 @@ extern void slurmdb_destroy_job_rec(void *object)
 	slurmdb_job_rec_t *job = (slurmdb_job_rec_t *)object;
 	if (job) {
 		xfree(job->account);
+		xfree(job->admin_comment);
 		xfree(job->alloc_gres);
 		xfree(job->array_task_str);
 		xfree(job->blockid);

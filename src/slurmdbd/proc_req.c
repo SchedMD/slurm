@@ -1780,6 +1780,7 @@ static int  _job_complete(slurmdbd_conn_t *slurmdbd_conn,
 	memset(&job, 0, sizeof(struct job_record));
 	memset(&details, 0, sizeof(struct job_details));
 
+	job.admin_comment = job_comp_msg->admin_comment;
 	job.assoc_id = job_comp_msg->assoc_id;
 	job.comment = job_comp_msg->comment;
 	if (job_comp_msg->db_index != NO_VAL64)
