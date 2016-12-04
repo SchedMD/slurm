@@ -72,6 +72,7 @@ documents those changes that are of interest to users and administrators.
     in slurm.conf) when using FastSchedule=0.
  -- Fix parsing in regression test1.92 for some prompts.
  -- sbcast - use slurmd's gid cache rather than a separate lookup.
+ -- slurmd - return error if setgroups() call fails in _drop_privileges().
 
 * Changes in Slurm 16.05.6
 ==========================
