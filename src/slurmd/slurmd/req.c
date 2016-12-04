@@ -5896,14 +5896,16 @@ _gids_cache_register(char *user, gid_t gid, gids_t *gids)
 	debug2("Cached group access list for %s/%d", user, gid);
 }
 
-static gids_t *
-_gids_cache_lookup(char *user, gid_t gid)
+/* how many groups to use by default to avoid repeated calls to getgrouplist */
+#define NGROUPS_START 64
+
+static gids_t *_gids_cache_lookup(char *user, gid_t gid)
 {
 	size_t idx;
 	gids_cache_t *p;
 	bool found_but_old = false;
 	time_t now = 0;
-	int ngroups = 0;
+	int ngroups = NGROUPS_START;
 	gid_t *groups;
 	gids_t *ret_gids = NULL;
 
@@ -5932,10 +5934,11 @@ _gids_cache_lookup(char *user, gid_t gid)
 	}
 	/* Cache lookup failed or cached value was too old, fetch new
 	 * value and insert it into cache.  */
-	getgrouplist(user, gid, NULL, &ngroups);
 	groups = xmalloc(ngroups * sizeof(gid_t));
-	if (getgrouplist(user, gid, groups, &ngroups) == -1)
-		error("getgrouplist failed");
+	while (getgrouplist(user, gid, groups, &ngroups) == -1) {
+		/* group list larger than array, resize array to fit */
+		groups = xrealloc(groups, ngroups * sizeof(gid_t));
+	}
 	if (found_but_old) {
 		xfree(p->gids->gids);
 		p->gids->gids = groups;
