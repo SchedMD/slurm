@@ -231,13 +231,6 @@ _dump_node_state (struct node_record *dump_node_ptr, Buf buffer)
 	pack16  (dump_node_ptr->core_spec_cnt, buffer);
 	pack16  (dump_node_ptr->threads, buffer);
 	pack64  (dump_node_ptr->real_memory, buffer);
-	/* mem_spec_limit which should have never been packed in the first
-	 * place.  We don't need to keep state as the value is always read
-	 * from the slurm.conf.  If we used this value it would over write that
-	 * value so we will throw it away when unpacked.  In 17.02 this will be
-	 * removed.
-	 */
-	pack64  (dump_node_ptr->mem_spec_limit, buffer);
 	pack32  (dump_node_ptr->tmp_disk, buffer);
 	pack32  (dump_node_ptr->reason_uid, buffer);
 	pack_time(dump_node_ptr->reason_time, buffer);
@@ -298,7 +291,7 @@ extern int load_all_node_state ( bool state_only )
 	uint16_t core_spec_cnt = 0;
 	uint32_t node_state;
 	uint16_t cpus = 1, boards = 1, sockets = 1, cores = 1, threads = 1;
-	uint64_t real_memory, mem_spec_limit = 0;
+	uint64_t real_memory;
 	uint32_t tmp_disk, data_size = 0, name_len;
 	uint32_t reason_uid = NO_VAL;
 	time_t boot_req_time = 0, reason_time = 0;
@@ -387,13 +380,6 @@ extern int load_all_node_state ( bool state_only )
 			safe_unpack16 (&core_spec_cnt, buffer);
 			safe_unpack16 (&threads,     buffer);
 			safe_unpack64 (&real_memory, buffer);
-			/* Following unpack was for mem_spec_limit which should
-			 * have never been packed in the first place.  We
-			 * don't need to keep state as the value is always read
-			 * from the slurm.conf.  If we used this value it would
-			 * over write that value so we will throw it away here.
-			 */
-			safe_unpack64 (&mem_spec_limit, buffer);
 			safe_unpack32 (&tmp_disk,    buffer);
 			safe_unpack32 (&reason_uid,  buffer);
 			safe_unpack_time (&reason_time, buffer);
@@ -433,7 +419,6 @@ extern int load_all_node_state ( bool state_only )
 			 * over write that value so we will throw it away here.
 			 */
 			safe_unpack32 (&tmp_mem, buffer);
-			mem_spec_limit = xlate_mem_old2new(tmp_mem);
 			safe_unpack32 (&tmp_disk,    buffer);
 			safe_unpack32 (&reason_uid,  buffer);
 			safe_unpack_time (&reason_time, buffer);
@@ -471,7 +456,6 @@ extern int load_all_node_state ( bool state_only )
 			 * over write that value so we will throw it away here.
 			 */
 			safe_unpack32 (&tmp_mem, buffer);
-			mem_spec_limit = xlate_mem_old2new(tmp_mem);
 			safe_unpack32 (&tmp_disk,    buffer);
 			safe_unpack32 (&reason_uid,  buffer);
 			safe_unpack_time (&reason_time, buffer);
