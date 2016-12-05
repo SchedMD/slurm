@@ -3891,8 +3891,7 @@ static void *_run_prolog(void *arg)
 		error("prolog_slurmctld job %u prolog exit status %u:%u",
 		      job_id, WEXITSTATUS(status), WTERMSIG(status));
 		lock_slurmctld(job_write_lock);
-		if ((rc = job_requeue(0, job_id, -1, (uint16_t) NO_VAL,
-				      false, 0))) {
+		if ((rc = job_requeue(0, job_id, NULL, false, 0))) {
 			info("unable to requeue job %u: %m", job_id);
 			kill_job = true;
 		}

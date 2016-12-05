@@ -14537,20 +14537,16 @@ reply:
  * job_requeue - Requeue a running or pending batch job
  * IN uid - user id of user issuing the RPC
  * IN job_id - id of the job to be requeued
- * IN conn_fd - file descriptor on which to send reply
- * IN protocol_version - slurm protocol version of client
+ * IN msg - slurm_msg to send response back on
  * IN preempt - true if job being preempted
  * IN state - may be set to JOB_SPECIAL_EXIT and/or JOB_REQUEUE_HOLD
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_requeue(uid_t uid, uint32_t job_id,
-		       int conn_fd, uint16_t protocol_version,
+extern int job_requeue(uid_t uid, uint32_t job_id, slurm_msg_t *msg,
 		       bool preempt, uint32_t state)
 {
 	int rc = SLURM_SUCCESS;
 	struct job_record *job_ptr = NULL;
-	slurm_msg_t resp_msg;
-	return_code_msg_t rc_msg;
 
 	/* find the job */
 	job_ptr = find_job_record(job_id);
@@ -14560,14 +14556,10 @@ extern int job_requeue(uid_t uid, uint32_t job_id,
 		rc = _job_requeue(uid, job_ptr, preempt, state);
 	}
 
-	if (conn_fd >= 0) {
-		slurm_msg_t_init(&resp_msg);
-		resp_msg.protocol_version = protocol_version;
-		resp_msg.msg_type  = RESPONSE_SLURM_RC;
-		rc_msg.return_code = rc;
-		resp_msg.data      = &rc_msg;
-		slurm_send_node_msg(conn_fd, &resp_msg);
+	if (msg) {
+		slurm_send_rc_msg(msg, rc);
 	}
+
 	return rc;
 }
 
@@ -14575,14 +14567,12 @@ extern int job_requeue(uid_t uid, uint32_t job_id,
  * job_requeue2 - Requeue a running or pending batch job
  * IN uid - user id of user issuing the RPC
  * IN req_ptr - request including ID of the job to be requeued
- * IN conn_fd - file descriptor on which to send reply
- * IN protocol_version - slurm protocol version of client
+ * IN msg - slurm_msg to send response back on
  * IN preempt - true if job being preempted
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr,
-		        int conn_fd, uint16_t protocol_version,
-		        bool preempt)
+extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
+			bool preempt)
 {
 	slurm_ctl_conf_t *conf;
 	int rc = SLURM_SUCCESS, rc2;
@@ -14695,9 +14685,10 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr,
 	}
 
     reply:
-	if (conn_fd >= 0) {
+	if (msg) {
 		slurm_msg_t_init(&resp_msg);
-		resp_msg.protocol_version = protocol_version;
+		resp_msg.protocol_version = msg->protocol_version;
+		resp_msg.conn             = msg->conn;
 		if (resp_array) {
 			resp_array_msg = _resp_array_xlate(resp_array, job_id);
 			resp_msg.msg_type  = RESPONSE_JOB_ARRAY_ERRORS;
@@ -14707,7 +14698,7 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr,
 			rc_msg.return_code = rc;
 			resp_msg.data      = &rc_msg;
 		}
-		slurm_send_node_msg(conn_fd, &resp_msg);
+		slurm_send_node_msg(msg->conn_fd, &resp_msg);
 
 		if (resp_array_msg) {
 			slurm_free_job_array_resp(resp_array_msg);
