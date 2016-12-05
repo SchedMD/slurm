@@ -1410,7 +1410,11 @@ extern void bb_limit_rem(uint32_t user_id, uint64_t bb_size, char *pool,
 		if (state_ptr->unfree_space >= bb_size) {
 			state_ptr->unfree_space -= bb_size;
 		} else {
-			error("%s: unfree_space underflow", __func__);
+			/* This will happen if we reload burst buffer state
+			 * after making a claim against resources, but before
+			 * the buffer actually gets created */
+			debug2("%s: unfree_space underflow (%"PRIu64" < %"PRIu64")",
+			        __func__, state_ptr->unfree_space, bb_size);
 			state_ptr->unfree_space = 0;
 		}
 	} else {
