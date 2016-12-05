@@ -227,6 +227,8 @@ documents those changes that are of interest to users and administrators.
  -- cray/burst_buffer - If slurmctld daemon restarts with pending job and burst
     buffer having unknown file stage-in status, teardown the buffer, defer the
     job, and start stage-in over again.
+ -- On state restore in the slurmctld don't overwrite the mem_spec_limit given
+    from the slurm.conf when using FastSchedule=0.
 
 * Changes in Slurm 16.05.6
 ==========================
