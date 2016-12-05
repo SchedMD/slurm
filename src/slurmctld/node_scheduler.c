@@ -2373,7 +2373,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		selected_node_cnt = bit_set_count(select_bitmap);
 #endif
 		job_ptr->node_cnt_wag = selected_node_cnt;
-	}
+	} else
+		selected_node_cnt = req_nodes;
 
 	memcpy(tres_req_cnt, job_ptr->tres_req_cnt, sizeof(tres_req_cnt));
 	tres_req_cnt[TRES_ARRAY_CPU] =
@@ -2390,9 +2391,17 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			      tres_req_cnt,
 			      false);
 
-	if (!test_only && (error_code == SLURM_SUCCESS)
-	    && (selected_node_cnt != NO_VAL)
-	    && !acct_policy_job_runnable_post_select(job_ptr, tres_req_cnt)) {
+	if (!test_only && (selected_node_cnt != NO_VAL) &&
+	    !acct_policy_job_runnable_post_select(job_ptr, tres_req_cnt)) {
+		/* If there was an reason we couldn't schedule before hand we
+		 * want to check if an accounting limit was also breached.  If
+		 * it was we want to override the other reason so if we are
+		 * backfilling we don't reserve resources if we don't have to.
+		 */
+		if (error_code != SLURM_SUCCESS)
+			debug2("Replacing scheduling error code for job %u from '%s' to 'Accounting policy'",
+			       job_ptr->job_id,
+			       slurm_strerror(error_code));
 		error_code = ESLURM_ACCOUNTING_POLICY;
 		goto cleanup;
 	}

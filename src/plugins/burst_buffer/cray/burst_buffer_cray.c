@@ -2792,21 +2792,40 @@ extern int fini(void)
 }
 
 /* Identify and purge any vestigial buffers (i.e. we have a job buffer, but
- * the matching job is either gone or completed) */
+ * the matching job is either gone or completed OR we have a job buffer and a
+ * pending job, but don't know the status of stage-in) */
 static void _purge_vestigial_bufs(void)
 {
 	bb_alloc_t *bb_alloc = NULL;
+	time_t defer_time = time(NULL) + 60;
 	int i;
 
 	for (i = 0; i < BB_HASH_SIZE; i++) {
 		bb_alloc = bb_state.bb_ahash[i];
 		while (bb_alloc) {
-			if (bb_alloc->job_id &&
-			    !find_job_record(bb_alloc->job_id)) {
+			struct job_record *job_ptr = NULL;
+			if (bb_alloc->job_id)
+				job_ptr = find_job_record(bb_alloc->job_id);
+			if (bb_alloc->job_id == 0) {
+				/* Persistent buffer, do not purge */
+			} else if (!job_ptr) {
 				info("%s: Purging vestigial buffer for job %u",
 				     plugin_type, bb_alloc->job_id);
 				_queue_teardown(bb_alloc->job_id,
 						bb_alloc->user_id, false);
+			} else if (!IS_JOB_STARTED(job_ptr)) {
+				/* We do not know the state of file staging,
+				 * so teardown the buffer and defer the job
+				 * for at least 60 seconds (for the teardown) */
+				debug("%s: Purging buffer for pending job %u",
+				      plugin_type, bb_alloc->job_id);
+				_queue_teardown(bb_alloc->job_id,
+						bb_alloc->user_id, true);
+				if (job_ptr->details &&
+				    (job_ptr->details->begin_time <defer_time)){
+					job_ptr->details->begin_time =
+						defer_time;
+				}
 			}
 			bb_alloc = bb_alloc->next;
 		}
