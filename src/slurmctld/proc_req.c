@@ -6244,14 +6244,7 @@ static void _slurm_rpc_sib_job_revoke(slurm_msg_t *msg)
 		      sib_msg->job_id);
 		rc = SLURM_ERROR;
 	} else {
-		job_ptr->job_state  = JOB_CANCELLED | JOB_REVOKED;
-		job_ptr->start_time = 0;
-		job_ptr->end_time   = sib_msg->start_time;
-		job_completion_logger(job_ptr, false);
-
-		/* purge revoked job */
-		list_delete_all(job_list, &list_find_job_id,
-				(void *)&job_ptr->job_id);
+		fed_mgr_job_revoke(job_ptr, true, sib_msg->start_time);
 	}
 
 	unlock_slurmctld(job_write_lock);

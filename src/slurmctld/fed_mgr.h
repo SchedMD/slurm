@@ -64,6 +64,8 @@ extern int       fed_mgr_job_lock(struct job_record *job_ptr,
 				  uint32_t cluster_id);
 extern int       fed_mgr_job_unlock(struct job_record *job_ptr,
 				    uint32_t cluster_id);
+extern int       fed_mgr_job_revoke(struct job_record *job_ptr,
+				    bool job_complete, time_t start_time);
 extern int       fed_mgr_job_start(struct job_record *job_ptr,
 				   uint32_t cluster_id, time_t start_time);
 extern int       fed_mgr_sib_will_run(slurm_msg_t *msg,

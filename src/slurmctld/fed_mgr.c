@@ -2182,10 +2182,7 @@ extern int fed_mgr_job_start(struct job_record *job_ptr, uint32_t cluster_id,
 
 		if (cluster_id != fed_mgr_cluster_rec->fed.id) {
 			/* leave as pending so that it will stay around */
-			job_ptr->job_state  = JOB_REVOKED;
-			job_ptr->start_time = 0;
-			job_ptr->end_time   = start_time;
-			job_completion_logger(job_ptr, false);
+			fed_mgr_job_revoke(job_ptr, false, start_time);
 		}
 	}
 
@@ -2225,6 +2222,45 @@ extern int fed_mgr_job_complete(struct job_record *job_ptr,
 	}
 
 	return _persist_fed_job_revoke(conn, job_ptr->job_id, start_time);
+}
+
+/*
+ * Revokes the federated job.
+ *
+ * IN job_ptr      - job_ptr of job to revoke.
+ * IN job_complete - whether the job is done or not. If completed then sets the
+ * 	state to JOB_REVOKED | JOB_CANCELLED. JOB_REVOKED otherwise.
+ * IN start_time   - start time of the job that actually ran.
+ * RET returns SLURM_SUCCESS if fed job was completed, SLURM_ERROR otherwise
+ */
+extern int fed_mgr_job_revoke(struct job_record *job_ptr, bool job_complete,
+			      time_t start_time)
+{
+	uint32_t origin_id;
+	uint32_t state = JOB_REVOKED;
+
+	if (!_is_fed_job(job_ptr, &origin_id))
+		return SLURM_SUCCESS;
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+		info("revoking fed job %d", job_ptr->job_id);
+
+	if (job_complete)
+		state |= JOB_CANCELLED;
+
+	job_ptr->job_state  = state;
+	job_ptr->start_time = 0;
+	job_ptr->end_time   = start_time;
+	job_completion_logger(job_ptr, false);
+
+	/* Don't remove the origin job */
+	if (origin_id == fed_mgr_cluster_rec->fed.id)
+		return SLURM_SUCCESS;
+
+	list_delete_all(job_list, &list_find_job_id,
+			(void *)&job_ptr->job_id);
+
+	return SLURM_SUCCESS;
 }
 
 /* Convert cluster ids to cluster names.
