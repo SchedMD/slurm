@@ -81,21 +81,21 @@ char *_elapsed_time(long secs, long usecs)
 	return str;
 }
 
-static char *_find_qos_name_from_list(
-	List qos_list, int qosid)
+static int _find_qosid_in_qos_list(void *x, void *key)
 {
-	ListIterator itr = NULL;
-	slurmdb_qos_rec_t *qos = NULL;
+	slurmdb_qos_rec_t *qos = (slurmdb_qos_rec_t *) x;
+	int *qosid =  (int *) key;
+	return (*qosid == qos->id);
+}
+
+static char *_find_qos_name_from_list(List qos_list, int qosid)
+{
+	slurmdb_qos_rec_t *qos;
 
 	if (!qos_list || qosid == NO_VAL)
 		return NULL;
 
-	itr = list_iterator_create(qos_list);
-	while((qos = list_next(itr))) {
-		if (qosid == qos->id)
-			break;
-	}
-	list_iterator_destroy(itr);
+	qos = list_find_first(qos_list, _find_qosid_in_qos_list, &qosid);
 
 	if (qos)
 		return qos->name;
