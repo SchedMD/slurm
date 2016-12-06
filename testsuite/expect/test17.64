@@ -34,7 +34,7 @@ set test_id      "17.64"
 set exit_code    0
 set cwd          "[$bin_pwd]"
 set config_path  ""
-set tmp_job      "test$test_id\_tmp_job"
+set tmp_job      "test$test_id\.bash"
 
 print_header $test_id
 
@@ -66,7 +66,7 @@ proc get_conf_path { } {
 
 	if {$got_config != 1} {
 		send_user "\nFAILURE: did not get slurm.conf path\n"
-		exit 0
+		exit 1
 	}
 }
 
@@ -163,27 +163,33 @@ send_user "\n---Checking sbatch fails with a bad mcs-label ---\n"
 
 set timeout $max_job_delay
 make_bash_script $tmp_job "sleep 10"
-
+set job_id 0
 spawn $sbatch -N1 --mcs-label=foo -t1 $tmp_job
 expect {
 	-re "Batch job submission failed: Invalid mcs_label specified" {
 		send_user "\nThis error is expected, no worries\n"
 		exp_continue
 	}
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
 	timeout {
-	send_user "\nFAILURE: sbatch not responding\n"
-	exit 1
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
 	}
 	eof {
-	wait
+		wait
 	}
 }
-
+if {$job_id != 0} {
+	send_user "\nFAILURE: job was submitted with invalid mcs-label\n"
+	set exit_code 1
+}
 
 ###### Check that sbatch uses mcs-label=account ######
 send_user "\n---Checking sbatch uses mcs-label=account---\n"
 
-make_bash_script $tmp_job "sleep 10"
 set job_id 0
 spawn $sbatch -N1 -o/dev/null --exclusive=mcs -t1 $tmp_job
 expect {
@@ -199,18 +205,33 @@ expect {
 		wait
 	}
 }
-
 if {$job_id == 0} {
 	send_user "\nFAILURE: job was not submitted\n"
 	set exit_code 1
-	exit 1
+}
+
+set user_name "NOT_SET"
+spawn $bin_id -n -u
+expect {
+	-re "($alpha_numeric_under)" {
+		set user_name $expect_out(1,string)
+		exp_continue
+	}
+	eof {
+		wait
+	}
 }
 
 set account_name "NOT_SET"
-spawn -noecho $bin_bash -c "exec $sacctmgr -nP list user user=roya format=defaultaccount"
+spawn $bin_bash -c "exec $sacctmgr -nP list user user=$user_name format=defaultaccount"
 expect {
 	-re "($alpha_numeric_under)" {
 		set account_name $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr is not responding\n"
+		set exit_code 1
 	}
 	eof {
 		wait
@@ -245,7 +266,6 @@ if {$found == 0} {
 
 cancel_job $job_id
 
-make_bash_script $tmp_job "sleep 30"
 set job_id 0
 spawn $sbatch -N1 -A $account_name --exclusive=mcs -o/dev/null -t10 $tmp_job
 expect {
@@ -357,8 +377,6 @@ update_conf
 
 ###### Check that sbatch uses mcs-label=account ######
 send_user "\n---Checking sbatch uses mcs-label=account---\n"
-
-make_bash_script $tmp_job "sleep 10"
 
 spawn $sbatch -N1 -o/dev/null -t1 $tmp_job
 expect {
