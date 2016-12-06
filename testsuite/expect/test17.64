@@ -30,7 +30,7 @@
 ############################################################################
 source ./globals
 
-set test_id      17.70
+set test_id      "17.64"
 set exit_code    0
 set cwd          "[$bin_pwd]"
 set config_path  ""
@@ -206,6 +206,7 @@ if {$job_id == 0} {
 	exit 1
 }
 
+set account_name "NOT_SET"
 spawn -noecho $bin_bash -c "exec $sacctmgr -nP list user user=roya format=defaultaccount"
 expect {
 	-re "($alpha_numeric_under)" {
