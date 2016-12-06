@@ -189,7 +189,7 @@ if {$cpu_cnt != $task_cnt} {
 if {$cpu_cnt != $task_cnt} {
 	send_user "FAILURE: Should have run $cpu_cnt tasks (one per core) "
 	send_user "instead of $task_cnt tasks\n"
-	send_user "NOTE: This could be due to memory limit per allocated CPU, MaxCPUsPerNode, or OverSubscribe=FORCE\n\n"
+	send_user "NOTE: This could be due to memory limit per allocated CPU, MaxCPUsPerNode, CR_ONE_TASK_PER_CORE, or OverSubscribe=FORCE\n\n"
 	set exit_code 1
 }
 if {$cpu_cnt < 2} {
