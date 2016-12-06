@@ -586,7 +586,13 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 		} else if (!xstrcasecmp(token, "us")) {
 			user_space = true;
 
-		/* protocol options */
+		/* protocol options
+		 *
+		 *  NOTE: Slurm supports the values listed below, and
+		 *        does not support poe user_defined_parallelAPI values.
+		 *        If you add to this list please add to the list in
+		 *        src/plugins/launch/poe/launch_poe.c
+		 */
 		} else if ((!strncasecmp(token, "lapi",  4)) ||
 			   (!strncasecmp(token, "mpi",   3)) ||
 			   (!strncasecmp(token, "pami",  4)) ||
@@ -597,7 +603,6 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 			if (protocol)
 				xstrcat(protocol, ",");
 			xstrcat(protocol, token);
-
 		/* adapter options */
 		} else if (!xstrcasecmp(token, "sn_all")) {
 			sn_all = true;

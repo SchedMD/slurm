@@ -3959,13 +3959,20 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data,
 		}
 		job_gres_ptr->gres_bit_alloc = xmalloc(sizeof(bitstr_t *) *
 						       node_cnt);
-	} else if (job_gres_ptr->node_cnt < node_cnt) {
-		error("gres/%s: job %u node_cnt increase from %u to %d",
+	}
+	/* These next 2 checks were added long before job resizing was allowed.
+	 * They are not errors as we need to keep the original size around for
+	 * any steps that might still be out there with the larger size.  If the
+	 * job was sized up the gres_plugin_job_merge() function handles the
+	 * resize so we are set there.
+	 */
+	else if (job_gres_ptr->node_cnt < node_cnt) {
+		debug2("gres/%s: job %u node_cnt is now larger than it was when allocated from %u to %d",
 		      gres_name, job_id, job_gres_ptr->node_cnt, node_cnt);
 		if (node_offset >= job_gres_ptr->node_cnt)
 			return SLURM_ERROR;
 	} else if (job_gres_ptr->node_cnt > node_cnt) {
-		error("gres/%s: job %u node_cnt decrease from %u to %d",
+		debug2("gres/%s: job %u node_cnt is now smaller than it was when allocated %u to %d",
 		      gres_name, job_id, job_gres_ptr->node_cnt, node_cnt);
 	}
 
@@ -3985,7 +3992,7 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data,
 	}
 
 	if (!node_offset && job_gres_ptr->gres_cnt_step_alloc) {
-		uint64_t *tmp = xmalloc(sizeof(uint64_t) * job_gres_ptr->node_cnt);
+		uint64_t *tmp = xmalloc(sizeof(uint64_t) * node_cnt);
 		memcpy(tmp, job_gres_ptr->gres_cnt_step_alloc,
 		       sizeof(uint64_t) * MIN(node_cnt,
 					      job_gres_ptr->node_cnt));
@@ -3994,7 +4001,7 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data,
 	}
 	if (job_gres_ptr->gres_cnt_step_alloc == NULL) {
 		job_gres_ptr->gres_cnt_step_alloc =
-			xmalloc(sizeof(uint64_t) * job_gres_ptr->node_cnt);
+			xmalloc(sizeof(uint64_t) * node_cnt);
 	}
 
 	/*

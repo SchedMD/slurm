@@ -70,9 +70,15 @@ SLURM_NETWORK environment variable. Supported network options include:</p>
   <li><b>lapi</b> Low-level Application Programming Interface</li>
   <li><b>mpi</b> Message Passing Interface (default)</li>
   <li><b>pami</b> Parallel Active Message Interface</li>
+  <li><b>pgas</b> Partitioned Global Address Programming</li>
   <li><b>shmem</b> OpenSHMEM interface</li>
+  <li><b>test</b> Test Protocol</li>
   <li><b>upc</b> Unified Parallel C Interface</li>
+  <br>
+  <b>NOTE:</b> Slurm supports the values listed above, and does not
+    support poe user_defined_parallelAPI values.
   </ul>
+
 <li>Other options</li>
   <ul>
   <li><b>bulk_xfer [=<i>resources</i>]</b>
