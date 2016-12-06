@@ -4192,7 +4192,7 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data,
 	}
 
 	if (!node_offset && job_gres_ptr->gres_cnt_step_alloc) {
-		uint64_t *tmp = xmalloc(sizeof(uint64_t) * node_cnt);
+		uint64_t *tmp = xmalloc(sizeof(uint64_t) * job_gres_ptr->node_cnt);
 		memcpy(tmp, job_gres_ptr->gres_cnt_step_alloc,
 		       sizeof(uint64_t) * MIN(node_cnt,
 					      job_gres_ptr->node_cnt));
@@ -4201,7 +4201,7 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data,
 	}
 	if (job_gres_ptr->gres_cnt_step_alloc == NULL) {
 		job_gres_ptr->gres_cnt_step_alloc =
-			xmalloc(sizeof(uint64_t) * node_cnt);
+			xmalloc(sizeof(uint64_t) * job_gres_ptr->node_cnt);
 	}
 
 	/*
