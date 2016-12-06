@@ -65,12 +65,12 @@ proc sacct_job { soption } {
 			set not_support 1
 			exp_continue
 		}
-		-re "AllocCPUS.*AllocGRES.*Account.*AssocID" {
+		-re "Account.*AdminComment.*AllocCPUS.*AllocGRES" {
 			if {$debug} {send_user "\nmatch1\n"}
 			incr matches
 			exp_continue
 		}
-		-re "AveCPU.*AveCPUFreq.*AveDiskRead.*AveDiskWrite" {
+		-re "AllocNodes.*AllocTRES.*AssocID.*AveCPU" {
 			if {$debug} {send_user "\nmatch2\n"}
 			incr matches
 			exp_continue
