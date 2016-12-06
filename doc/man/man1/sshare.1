@@ -14,8 +14,8 @@ being provided by \fBslurmdbd\fR (Slurm Database daemon) which is
 read in from the slurmctld and used to process the shares available
 to a given association.  sshare provides Slurm share information of
 Account, User, Raw Shares, Normalized Shares, Raw Usage, Normalized
-Usage, Effective Usage, the Fair-share factor, the GrpCPUMins limit,
-Partitions and accumulated currently running CPU-minutes for each association.
+Usage, Effective Usage, the Fair-share factor, the GrpTRESMins limit,
+Partitions and accumulated currently running TRES-minutes for each association.
 
 
 .SH "OPTIONS"
@@ -118,15 +118,15 @@ The Fair-Share factor, based on a user or account's assigned shares and
 the effective usage charged to them or their accounts.
 
 .TP
-\f3GrpCPUMins\fP
-The CPU-minutes limit set on the account. The total number of cpu
+\f3GrpTRESMins\fP
+The TRES-minutes limit set on the account. The total number of cpu
 minutes that can possibly be used by past, present and future jobs
 running from this account and its children.
 
 .TP
-\f3CPURunMins\fP
-The number of CPU-minutes allocated by jobs currently running against
-the account. Used to limit the combined total number of CPU minutes
+\f3TRESRunMins\fP
+The number of TRES-minutes allocated by jobs currently running against
+the account. Used to limit the combined total number of TRES minutes
 used by all jobs running with this account and its children.
 This takes into consideration time limit of running jobs and consumes it,
 if the limit is reached no new jobs are started until other jobs finish
