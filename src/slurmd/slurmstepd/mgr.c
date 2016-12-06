@@ -2466,6 +2466,7 @@ _drop_privileges(stepd_step_rec_t *job, bool do_setuid,
 
 	if (_initgroups(job) < 0) {
 		error("_initgroups: %m");
+		return -1;
 	}
 
 	if (do_setuid && seteuid(job->uid) < 0) {
