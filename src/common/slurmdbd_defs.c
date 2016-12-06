@@ -4152,7 +4152,7 @@ extern int
 slurmdbd_unpack_step_start_msg(dbd_step_start_msg_t **msg,
 			       uint16_t rpc_version, Buf buffer)
 {
-	uint32_t uint32_tmp;
+	uint32_t uint32_tmp = 0;
 	dbd_step_start_msg_t *msg_ptr = xmalloc(sizeof(dbd_step_start_msg_t));
 	*msg = msg_ptr;
 
