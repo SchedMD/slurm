@@ -68,6 +68,8 @@ documents those changes that are of interest to users and administrators.
     job, and start stage-in over again.
  -- On state restore in the slurmctld don't overwrite the mem_spec_limit given
     from the slurm.conf when using FastSchedule=0.
+ -- Recognize a KNL's proper NUMA count (rather than setting it to the value
+    in slurm.conf) when using FastSchedule=0.
 
 * Changes in Slurm 16.05.6
 ==========================

@@ -2389,12 +2389,13 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 			xstrcat(reason_down, "Low socket*core count");
 		} else if ((slurmctld_conf.fast_schedule == 0) &&
 			   ((cr_flag == 1) || gang_flag) &&
-			   ((sockets1 > sockets2) || (cores1 > cores2) ||
-			    (threads1 > threads2))) {
+			   ((cores1 > cores2) || (threads1 > threads2))) {
 			error("Node %s has high socket,core,thread count "
 			      "(%d,%d,%d > %d,%d,%d), extra resources ignored",
-			      reg_msg->node_name, sockets1, cores1, threads1,
-			      sockets2, cores2, threads2);
+			      reg_msg->node_name, reg_msg->sockets,
+			      reg_msg->cores, reg_msg->threads,
+			      config_ptr->sockets, config_ptr->cores,
+			      config_ptr->threads);
 			/* Preserve configured values */
 			reg_msg->boards  = config_ptr->boards;
 			reg_msg->sockets = config_ptr->sockets;
