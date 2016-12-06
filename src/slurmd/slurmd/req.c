@@ -159,8 +159,6 @@ static int  _abort_step(uint32_t job_id, uint32_t step_id);
 static char **_build_env(job_env_t *job_env);
 static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc);
 static void _destroy_env(char **env);
-static int  _get_grouplist(char **user_name, uid_t my_uid, gid_t my_gid,
-			   int *ngroups, gid_t **groups);
 static bool _is_batch_job_finished(uint32_t job_id);
 static void _job_limits_free(void *x);
 static int  _job_limits_match(void *x, void *key);
@@ -3694,33 +3692,6 @@ static void  _rpc_pid2jid(slurm_msg_t *msg)
 	}
 }
 
-/* Creates an array of group ids and stores in it the list of groups
- * that user my_uid belongs to. The pointer to the list is returned
- * in groups and the count of gids in ngroups. The caller must free
- * the group list array pointed to by groups */
-static int
-_get_grouplist(char **user_name, uid_t my_uid, gid_t my_gid,
-	       int *ngroups, gid_t **groups)
-{
-	if (!*user_name)
-		*user_name = uid_to_string(my_uid);
-
-	if (!*user_name) {
-		error("sbcast: Could not find uid %ld", (long)my_uid);
-		return -1;
-	}
-
-	*groups = (gid_t *) xmalloc(*ngroups * sizeof(gid_t));
-
-	if (getgrouplist(*user_name, my_gid, *groups, ngroups) < 0) {
-		*groups = xrealloc(*groups, *ngroups * sizeof(gid_t));
-		getgrouplist(*user_name, my_gid, *groups, ngroups);
-	}
-
-	return 0;
-
-}
-
 /* Validate sbcast credential.
  * NOTE: We can only perform the full credential validation once with
  * Munge without generating a credential replay error
@@ -4022,27 +3993,24 @@ static int _receive_fd(int socket)
 	return fd;
 }
 
-
 static int _file_bcast_register_file(slurm_msg_t *msg,
 				     file_bcast_info_t *key)
 {
 	file_bcast_msg_t *req = msg->data;
 	int fd, flags, rc;
 	int pipe[2];
-	int ngroups = 16;
-	gid_t *groups;
+	gids_t *gids;
 	pid_t child;
 	file_bcast_info_t *file_info;
 
-	if ((rc = _get_grouplist(&req->user_name, key->uid,
-				 key->gid, &ngroups, &groups)) < 0) {
-		error("sbcast: getgrouplist(%u): %m", key->uid);
-		return rc;
+	if (!(gids = _gids_cache_lookup(req->user_name, key->gid))) {
+		error("sbcast: gids_cache_lookup for %s failed", req->user_name);
+		return SLURM_ERROR;
 	}
 
 	if ((rc = container_g_create(key->job_id))) {
 		error("sbcast: container_g_create(%u): %m", key->job_id);
-		xfree(groups);
+		_dealloc_gids(gids);
 		return rc;
 	}
 
@@ -4051,7 +4019,7 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 
 	if (socketpair(AF_UNIX, SOCK_DGRAM, 0, pipe) != 0) {
 		error("%s: Failed to open pipe: %m", __func__);
-		xfree(groups);
+		_dealloc_gids(gids);
 		return SLURM_ERROR;
 	}
 
@@ -4063,7 +4031,7 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 		/* get fd back from pipe */
 		close(pipe[0]);
 		waitpid(child, &rc, 0);
-		xfree(groups);
+		_dealloc_gids(gids);
 		if (rc)
 			return WEXITSTATUS(rc);
 
@@ -4084,6 +4052,8 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 
 		return SLURM_SUCCESS;
 	}
+
+	/* child process below here */
 
 	close(pipe[1]);
 
@@ -4112,10 +4082,11 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 	 * Change the code below with caution.
 	\*********************************************************************/
 
-	if (setgroups(ngroups, groups) < 0) {
-		error("sbcast: uid: %u setgroups: %m", key->uid);
+	if (setgroups(gids->ngids, gids->gids) < 0) {
+		error("sbcast: uid: %u setgroups failed: %m", key->uid);
 		exit(errno);
 	}
+	_dealloc_gids(gids);
 
 	if (setgid(key->gid) < 0) {
 		error("sbcast: uid:%u setgid(%u): %m", key->uid, key->gid);

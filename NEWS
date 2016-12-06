@@ -232,6 +232,7 @@ documents those changes that are of interest to users and administrators.
  -- Recognize a KNL's proper NUMA count (rather than setting it to the value
     in slurm.conf) when using FastSchedule=0.
  -- Fix parsing in regression test1.92 for some prompts.
+ -- sbcast - use slurmd's gid cache rather than a separate lookup.
 
 * Changes in Slurm 16.05.6
 ==========================
