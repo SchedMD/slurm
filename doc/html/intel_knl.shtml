@@ -142,8 +142,14 @@ additional nodes will be required.</p>
 
 <h2>System Administration</h2>
 
-<p>Three important components are required to use Slurm on an Intel KNL system.</p>
+<p>Four important components are required to use Slurm on an Intel KNL system.</p>
 <ol>
+<li>Slurm needs a mechanism to determine the node's current topology (e.g.
+how many NUMA exist and which cores are associated with each NUMA). Slurm
+relies upon <a href="http://www.open-mpi.org/projects/hwloc/">
+Portable Hardware Locality (HWLOC)</a> for this functionality. Please install
+HWLOC before building Slurm.</li>
+
 <li>The node features plugin manages the available and active features
 information available for each KNL node.</li>
 
@@ -334,6 +340,6 @@ NodeName=nid[00000-00127] State=UNKNOWN
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 2 November 2016</p>
+<p style="text-align:center;">Last modified 5 December 2016</p>
 
 <!--#include virtual="footer.txt"-->

@@ -38,6 +38,7 @@ set test_id     "1.92"
 set exit_code   0
 set file_bash   "test$test_id.bash"
 set job_id      0
+set prompt      "PROMPT: "
 
 print_header $test_id
 
@@ -58,9 +59,10 @@ exit 0
 # Create an allocation
 #
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -N2 --ntasks-per-node=2 --verbose -t4 $bin_bash]
+set salloc_pid [spawn $salloc -N2 --ntasks-per-node=2 --verbose -t2 $bin_bash]
 expect {
 	-re "salloc: Granted job allocation ($number)" {
+		send "export PS1=\"$prompt\"\r"
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
@@ -68,6 +70,10 @@ expect {
 		send_user "\nWARNING: can't test srun task distribution\n"
 		file delete $file_bash
 		exit 0
+	}
+	-re "\"$prompt" {
+		# skip this, just echo of setting prompt"
+		exp_continue
 	}
 	-re $prompt {
 		send "$srun -l -c1 ./$file_bash | $bin_sort -V\r"
