@@ -3,8 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 16.05.7
 ==========================
- -- Fix issue in the priority/multifactor plugin where on a slurmctld restart
-    more time than should be allowed would be accounted for.
+ -- Fix issue in the priority/multifactor plugin where on a slurmctld restart,
+    where more time is accounted for than should be allowed.
  -- cray/busrt_buffer - If total_space in a pool decreases, reset used_space
     rather than trying to account for buffer allocations in progress.
  -- cray/busrt_buffer - Fix for double counting of used_space at slurmctld
