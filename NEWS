@@ -74,6 +74,8 @@ documents those changes that are of interest to users and administrators.
  -- sbcast - use slurmd's gid cache rather than a separate lookup.
  -- slurmd - return error if setgroups() call fails in _drop_privileges().
  -- Fix possible memory corruption if a job is using GRES and changing size.
+ -- Remove error messages about gres counts changing when a job is resized on
+    a slurmctld restart or reconfig, as they aren't really error messages.
 
 * Changes in Slurm 16.05.6
 ==========================
