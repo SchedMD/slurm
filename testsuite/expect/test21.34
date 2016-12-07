@@ -241,6 +241,10 @@ if {[test_select_type_params "CR_SOCKET"]} {
 	send_user "\nWARNING: This test is incompatible with CR_SOCKET allocations\n"
 	exit 0
 }
+if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
+        send_user "\nWARNING: This test is incompatible with CR_ONE_TASK_PER_CORE allocations\n"
+        exit 0
+}
 
 if { ![string compare [priority_type] "multifactor"] } {
 	set prio_multifactor 1
