@@ -861,8 +861,8 @@ static slurmdb_cluster_rec_t *_get_cluster_by_id(uint32_t id)
  * 	the job on this cluster -- it's the one that started the fed job.
  * IN start_time - time the fed job started
  */
-static void _revoke_sibling_jobs(struct job_record *job_ptr, uint32_t cluster_id,
-				time_t start_time)
+static void _revoke_sibling_jobs(struct job_record *job_ptr,
+				 uint32_t cluster_id, time_t start_time)
 {
 	int id = 1;
 	uint64_t tmp_sibs = job_ptr->fed_details->siblings;
