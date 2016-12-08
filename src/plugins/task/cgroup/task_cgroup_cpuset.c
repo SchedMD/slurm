@@ -1529,14 +1529,24 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 	    (job->job_core_spec != CORE_SPEC_THREAD)) {
 		spec_threads = job->job_core_spec & (~CORE_SPEC_THREAD);
 	}
-	if (npus >= (jnpus + spec_threads) || bind_type & CPU_BIND_TO_THREADS) {
+
+	/* Set this to PU but realise it could be overridden later if we can
+	 * fill up a core.
+	 */
+	if (npus >= (jnpus + spec_threads)) {
 		hwtype = HWLOC_OBJ_PU;
 		nobj = npus;
 	}
-	if (ncores >= jnpus || bind_type & CPU_BIND_TO_CORES) {
+
+	/* Force to bind to Threads */
+	if (bind_type & CPU_BIND_TO_THREADS) {
+		hwtype = HWLOC_OBJ_PU;
+		nobj = npus;
+	} else if (ncores >= jnpus || bind_type & CPU_BIND_TO_CORES) {
 		hwtype = HWLOC_OBJ_CORE;
 		nobj = ncores;
 	}
+
 	if (nsockets >= jntasks &&
 	    bind_type & CPU_BIND_TO_SOCKETS) {
 		hwtype = socket_or_node;
