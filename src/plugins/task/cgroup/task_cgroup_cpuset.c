@@ -851,7 +851,8 @@ static int _task_cgroup_cpuset_dist_cyclic(
 		/* hwloc_get_obj_below_by_type() fails if no CPU set
 		 * configured, see hwloc documentation for details */
 		error("task/cgroup: hwloc_get_obj_below_by_type() failing, "
-		      "task/affinity plugin also required");
+		      "task/affinity plugin may be required to address bug "
+		      "fixed in HWLOC version 1.11.5");
 		return XCGROUP_ERROR;
 	} else if (sock_loop > npdist) {
 		char buf[128] = "";
@@ -944,7 +945,8 @@ static int _task_cgroup_cpuset_dist_block(
 			/* hwloc_get_obj_below_by_type() fails if no CPU set
 			 * configured, see hwloc documentation for details */
 			error("task/cgroup: hwloc_get_obj_below_by_type() "
-			      "failing, task/affinity plugin also required");
+			      "failing, task/affinity plugin may be required"
+			      "to address bug fixed in HWLOC version 1.11.5");
 			return XCGROUP_ERROR;
 		} else if (core_loop > npdist) {
 			char buf[128] = "";
