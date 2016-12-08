@@ -1,4 +1,4 @@
-.TH "cgroup.conf" "5" "Slurm Configuration File" "October 2016" "Slurm Configuration File"
+.TH "cgroup.conf" "5" "Slurm Configuration File" "December 2016" "Slurm Configuration File"
 
 .SH "NAME"
 cgroup.conf \- Slurm configuration file for the cgroup support
@@ -79,7 +79,8 @@ Also see \fBConstrainSwapSpace\fR.
 .TP
 \fBConstrainCores\fR=<yes|no>
 If configured to "yes" then constrain allowed cores to the subset of
-allocated resources. It uses the cpuset subsystem.
+allocated resources. This functionality makes use of the cpuset subsystem,
+which requires the task/affinity plugin be used in addition to task/cgroup.
 The default value is "no".
 
 .TP
@@ -194,7 +195,7 @@ ConstrainCores=yes
 Copyright (C) 2010\-2012 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
-Copyright (C) 2010\-2015 SchedMD LLC.
+Copyright (C) 2010\-2016 SchedMD LLC.
 .LP
 This file is part of Slurm, a resource management program.
 For details, see <https://slurm.schedmd.com/>.

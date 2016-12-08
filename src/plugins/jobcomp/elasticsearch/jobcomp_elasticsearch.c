@@ -740,7 +740,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	}
 
 	if (job_ptr->details && (job_ptr->details->num_tasks != NO_VAL)) {
-		xstrfmtcat(buffer, ",\"ntasks\":%hu",
+		xstrfmtcat(buffer, ",\"ntasks\":%u",
 			   job_ptr->details->num_tasks);
 	}
 

@@ -678,6 +678,7 @@ static int _task_cgroup_cpuset_dist_cyclic(
 	bitstr_t *spec_threads = NULL;
 	uint32_t obj_idxs[3], cps, tpc, i, j, sock_loop, ntskip, npdist;;
 	bool core_cyclic, core_fcyclic, sock_fcyclic;
+	bool hwloc_success = true;
 
 	if (_get_cpuinfo(&nsockets, &ncores, &nthreads, &npus)) {
 		/* Fall back to use allocated resources, but this may result
@@ -767,6 +768,8 @@ static int _task_cgroup_cpuset_dist_cyclic(
 			obj = hwloc_get_obj_below_by_type(
 				topology, HWLOC_OBJ_SOCKET, s_ix,
 				hwtype, c_ixc[s_ix]);
+			if ((obj == NULL) && (s_ix == 0) && (c_ixc[s_ix] == 0))
+				hwloc_success = false;	/* Complete failure */
 			if ((obj != NULL) &&
 			    (hwloc_bitmap_first(obj->allowed_cpuset) != -1)) {
 				if (hwloc_compare_types(hwtype, HWLOC_OBJ_PU)
@@ -844,7 +847,13 @@ static int _task_cgroup_cpuset_dist_cyclic(
 	}
 
 	/* should never happen in normal scenario */
-	if (sock_loop > npdist) {
+	if ((sock_loop > npdist) && !hwloc_success) {
+		/* hwloc_get_obj_below_by_type() fails if no CPU set
+		 * configured, see hwloc documentation for details */
+		error("task/cgroup: hwloc_get_obj_below_by_type() failing, "
+		      "task/affinity plugin also required");
+		return XCGROUP_ERROR;
+	} else if (sock_loop > npdist) {
 		char buf[128] = "";
 		hwloc_bitmap_snprintf(buf, sizeof(buf), cpuset);
 		error("task/cgroup: task[%u] infinite loop broken while trying "
@@ -868,6 +877,7 @@ static int _task_cgroup_cpuset_dist_block(
 	uint32_t npus, ncores, nsockets;
 	int spec_thread_cnt = 0;
 	bitstr_t *spec_threads = NULL;
+	bool hwloc_success = true;
 
 	uint32_t core_idx;
 	bool core_fcyclic, core_block;
@@ -902,6 +912,9 @@ static int _task_cgroup_cpuset_dist_block(
 				obj = hwloc_get_obj_below_by_type(
 					topology, HWLOC_OBJ_CORE, core_idx,
 					hwtype, thread_idx[core_idx]);
+				if ((obj == NULL) && (core_idx == 0) &&
+				    (thread_idx[core_idx] == 0))
+					hwloc_success = false;
 				if (obj != NULL) {
 					thread_idx[core_idx]++;
 					j++;
@@ -927,7 +940,13 @@ static int _task_cgroup_cpuset_dist_block(
 		xfree(thread_idx);
 
 		/* should never happen in normal scenario */
-		if (core_loop > npdist) {
+		if ((core_loop > npdist) && !hwloc_success) {
+			/* hwloc_get_obj_below_by_type() fails if no CPU set
+			 * configured, see hwloc documentation for details */
+			error("task/cgroup: hwloc_get_obj_below_by_type() "
+			      "failing, task/affinity plugin also required");
+			return XCGROUP_ERROR;
+		} else if (core_loop > npdist) {
 			char buf[128] = "";
 			hwloc_bitmap_snprintf(buf, sizeof(buf), cpuset);
 			error("task/cgroup: task[%u] infinite loop broken while "
