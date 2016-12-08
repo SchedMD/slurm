@@ -77,6 +77,8 @@ documents those changes that are of interest to users and administrators.
     a slurmctld restart or reconfig, as they aren't really error messages.
  -- Fix possible memory corruption if a job is using GRES and changing size.
  -- jobcomp/elasticsearch - fix printf format for a value on 32-bit builds.
+ -- task/cgroup - Change error message if CPU binding can not take place to
+    better identify the root cause of the problem.
 
 * Changes in Slurm 16.05.6
 ==========================
