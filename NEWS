@@ -79,7 +79,7 @@ documents those changes that are of interest to users and administrators.
  -- jobcomp/elasticsearch - fix printf format for a value on 32-bit builds.
  -- task/cgroup - Change error message if CPU binding can not take place to
     better identify the root cause of the problem.
- -- Fix issue where task/cgroup would not always hone --cpu_bind=threads.
+ -- Fix issue where task/cgroup would not always honor --cpu_bind=threads.
 
 * Changes in Slurm 16.05.6
 ==========================
