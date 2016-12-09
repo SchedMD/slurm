@@ -3951,12 +3951,16 @@ Also see \fBFeature\fR.
 
 .TP
 \fBMemSpecLimit\fR
-Limit on combined real memory allocation for compute node daemons
-(slurmd, slurmstepd), in megabytes. This memory is not available to job
-allocations. The daemons won't be killed when they exhaust the memory allocation
-(ie. the OOM Killer is disabled for the daemon's memory cgroup). This option has
-no effect unless cgroup job confinement is also configured
-(\fBTaskPlugin=task/cgroup\fR with \fBConstrainRAMSpace=yes\fR in cgroup.conf).
+Amount of memory, in megabytes, reserved for system use and not available
+for user allocations.
+If the task/cgroup plugin is configured and that plugin constrains memory
+allocations (i.e. \fBTaskPlugin=task/cgroup\fR in slurm.conf, plus
+\fBConstrainRAMSpace=yes\fR in cgroup.conf), then Slurm compute node daemons
+(slurmd plus slurmstepd) will be allocated the specified memory limit.
+The daemons will not be killed if they exhaust the memory allocation
+(ie. the Out-Of-Memory Killer is disabled for the daemon's memory cgroup).
+If the task/cgroup plugin is not configured, the specified memory will only be
+unavailable for user allocations.
 
 .TP
 \fBPort\fR

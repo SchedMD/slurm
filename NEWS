@@ -32,6 +32,8 @@ documents those changes that are of interest to users and administrators.
  -- Add support for SALLOC_CONSTRAINT, SBATCH_CONSTRAINT and SLURM_CONSTRAINT
     environment variables to set default constraints for salloc, sbatch and
     srun commands respectively.
+ -- Provide limited support for the MemSpecLimit configuration parameter without
+    the task/cgroup plugin.
 
 * Changes in Slurm 17.02.0pre3
 ==============================

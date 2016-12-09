@@ -2189,8 +2189,14 @@ static int _memory_spec_init(void)
 		return SLURM_SUCCESS;
 	}
 	if (!check_memspec_cgroup_job_confinement()) {
+		if (slurm_get_select_type_param() & CR_MEMORY) {
+			error("Resource spec: Limited MemSpecLimit support. "
+			     "Slurmd daemon not memory constrained. "
+			     "Reserved %"PRIu64" MB", conf->mem_spec_limit);
+			return SLURM_SUCCESS;
+		}
 		error("Resource spec: cgroup job confinement not configured. "
-		      "MemSpecLimit requires TaskPlugin=task/cgroup and "
+		      "Full MemSpecLimit support requires task/cgroup and "
 		      "ConstrainRAMSpace=yes in cgroup.conf");
 		return SLURM_ERROR;
 	}
