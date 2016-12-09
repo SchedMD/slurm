@@ -2935,12 +2935,17 @@ static void _help(void)
 "      --ntasks-per-socket=n   number of tasks to invoke on each socket\n");
 	conf = slurm_conf_lock();
 	if (conf->task_plugin != NULL
-	    && xstrcasecmp(conf->task_plugin, "task/affinity") == 0) {
+	    && ((strstr(conf->task_plugin, "affinity"))
+		|| (strstr(conf->task_plugin, "cgroup")))) {
 		printf(
 "      --cpu_bind=             Bind tasks to CPUs\n"
 "                              (see \"--cpu_bind=help\" for options)\n"
 "      --hint=                 Bind tasks according to application hints\n"
-"                              (see \"--hint=help\" for options)\n"
+"                              (see \"--hint=help\" for options)\n");
+	}
+	if (conf->task_plugin != NULL
+	    && (strstr(conf->task_plugin, "affinity"))) {
+		printf(
 "      --mem_bind=             Bind memory to locality domains (ldom)\n"
 "                              (see \"--mem_bind=help\" for options)\n");
 	}
