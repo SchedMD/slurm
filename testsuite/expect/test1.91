@@ -102,7 +102,8 @@ if {[string compare $node_name ""] == 0} {
 	exit 1
 }
 
-# Determine how many sockets, cores, and threads the node has
+# Determine how many cpus, sockets, cores, and threads the node has
+set num_cputot  0
 set num_sockets 0
 set num_cores   0
 set num_threads 0
@@ -111,6 +112,10 @@ spawn $scontrol show node $node_name
 expect {
 	-re "CoresPerSocket=($number)" {
 	   	set num_cores $expect_out(1,string)
+		exp_continue
+	}
+	-re "CPUTot=($number)" {
+		set num_cputot $expect_out(1,string)
 		exp_continue
 	}
 	-re "Sockets=($number)" {
@@ -126,8 +131,8 @@ expect {
 	}
 }
 log_user 1
-if {$num_sockets == 0 || $num_cores == 0 || $num_threads == 0} {
-	send_user "\nWARNING: Could not determine number of Sockets:Cores:Threads (saw $num_sockets:$num_cores:$num_threads)\n"
+if {$num_cputot == 0 || $num_sockets == 0 || $num_cores == 0 || $num_threads == 0} {
+	send_user "\nWARNING: Could not determine number of CPUs:Sockets:Cores:Threads (saw $num_cputot:$num_sockets:$num_cores:$num_threads)\n"
 	exit 0
 }
 # Intel KNL nodes with 272 threads generate huge numeric masks
@@ -138,7 +143,12 @@ if {$total_thread_count > 64} {
 	send_user "WARNING: Expect unable to work with more than 32-bit numbers\n"
 	exit 0
 }
-send_user "Node config: Sockets=$num_sockets Cores=$num_cores Threads=$num_threads\n\n"
+send_user "Node config: CPUs=$num_cputot Sockets=$num_sockets Cores=$num_cores Threads=$num_threads\n\n"
+if {$num_cputot < $total_thread_count} {
+	send_user "WARNING: CPUs=$num_cputot < (Sockets($num_sockets)*Cores($num_cores)*Threads($num_threads))\n"
+	send_user "WARNING: Test incompatible with lowered CPUs count.\n"
+	exit 0
+}
 
 #
 # Build a test program to report affinity by task
@@ -224,7 +234,6 @@ expect {
 	}
 	-re $prompt
 }
-
 #############################################################################
 #
 # Run a job step with affinity to verify unique masks with min -B 1:1:1
