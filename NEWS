@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 16.05.8
 ==========================
+ -- Remove StoragePass from being printed out in the slurmdbd log at debug2
+    level.
 
 * Changes in Slurm 16.05.7
 ==========================
