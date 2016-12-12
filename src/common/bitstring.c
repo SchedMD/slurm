@@ -158,17 +158,12 @@ strong_alias(bit_get_pos_num,	slurm_bit_get_pos_num);
  *   nbits (IN)		valid bits in new bitstring, initialized to all clear
  *   RETURN		new bitstring
  */
-bitstr_t *
-bit_alloc(bitoff_t nbits)
+bitstr_t *bit_alloc(bitoff_t nbits)
 {
 	bitstr_t *new;
 
 	_assert_valid_size(nbits);
-	new = (bitstr_t *)xmalloc(_bitstr_words(nbits) * sizeof(bitstr_t));
-	if (!new) {
-		log_oom(__FILE__, __LINE__, __func__);
-		abort();
-	}
+	new = xmalloc(_bitstr_words(nbits) * sizeof(bitstr_t));
 
 	_bitstr_magic(new) = BITSTR_MAGIC;
 	_bitstr_bits(new) = nbits;
@@ -181,18 +176,13 @@ bit_alloc(bitoff_t nbits)
  *   nbits (IN)		valid bits in new bitstr
  *   RETURN		new bitstring
  */
-bitstr_t *
-bit_realloc(bitstr_t *b, bitoff_t nbits)
+bitstr_t *bit_realloc(bitstr_t *b, bitoff_t nbits)
 {
 	bitstr_t *new = NULL;
 
 	_assert_bitstr_valid(b);
 	_assert_valid_size(nbits);
 	new = xrealloc(b, _bitstr_words(nbits) * sizeof(bitstr_t));
-	if (!new) {
-		log_oom(__FILE__, __LINE__, __func__);
-		abort();
-	}
 
 	_assert_bitstr_valid(new);
 	_bitstr_bits(new) = nbits;
@@ -1412,4 +1402,3 @@ bit_get_pos_num(bitstr_t *b, bitoff_t pos)
 
 	return cnt;
 }
-
