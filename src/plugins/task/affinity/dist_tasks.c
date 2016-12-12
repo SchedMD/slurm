@@ -1248,9 +1248,9 @@ static bitstr_t *_lllp_map_abstract_mask(bitstr_t *bitmask)
 			if (bit < bit_size(newmask))
 				bit_set(newmask, bit);
 			else
-				error("%s: can't go from %d -> %d since we "
-				      "only have " BITSTR_SINGLE_FMT " bits",
-				      __func__, i, bit, bit_size(newmask));
+				error("_lllp_map_abstract_mask: can't go from "
+				      "%d -> %d since we only have %d bits",
+				      i, bit, bit_size(newmask));
 		}
 	}
 	return newmask;
@@ -1308,8 +1308,8 @@ static void _lllp_generate_cpu_bind(launch_tasks_request_msg_t *req,
 	charsize += 3;				/* "0x" and trailing "," */
 	masks_len = maxtasks * charsize + 1;	/* number of masks + null */
 
-	debug3("_lllp_generate_cpu_bind %d " BITSTR_SINGLE_FMT " %d",
-	       maxtasks, charsize, masks_len);
+	debug3("_lllp_generate_cpu_bind %d %d %d", maxtasks, charsize,
+		masks_len);
 
 	masks_str = xmalloc(masks_len);
 	masks_len = 0;
