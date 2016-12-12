@@ -74,9 +74,6 @@ typedef struct kill_thread {
 } kill_thread_t;
 
 static struct io_buf *_alloc_io_buf(void);
-#if 0
-static void     _free_io_buf(struct io_buf *buf);
-#endif
 static void	_init_stdio_eio_objs(slurm_step_io_fds_t fds,
 				     client_io_t *cio);
 static void	_handle_io_init_msg(int fd, client_io_t *cio);
@@ -975,18 +972,6 @@ _alloc_io_buf(void)
 
 	return buf;
 }
-
-#if 0
-static void
-_free_io_buf(struct io_buf *buf)
-{
-	if (buf) {
-		if (buf->data)
-			xfree(buf->data);
-		xfree(buf);
-	}
-}
-#endif
 
 static void
 _init_stdio_eio_objs(slurm_step_io_fds_t fds, client_io_t *cio)
