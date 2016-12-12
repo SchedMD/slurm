@@ -77,9 +77,6 @@ int print_steps_list(List steps, List format);
 int print_jobs_array(job_info_t * jobs, int size, List format);
 int print_steps_array(job_step_info_t * steps, int size, List format);
 
-int print_job_from_format(squeue_job_rec_t * job_rec_ptr, List list);
-int print_step_from_format(job_step_info_t * job_step, List list);
-
 /*****************************************************************************
  * Job Line Format Options
  *****************************************************************************/
