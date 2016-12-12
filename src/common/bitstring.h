@@ -81,6 +81,18 @@ typedef bitstr_t bitoff_t;
 #endif
 
 /*
+ * XXX the relationship between stdint types and "unsigned [long] long"
+ * types is architecture/compiler dependent, so this may have to be tweaked.
+ */
+#ifdef	USE_64BIT_BITSTR
+#define BITSTR_RANGE_FMT	"%"PRIu64"-%"PRIu64","
+#define BITSTR_SINGLE_FMT	"%"PRIu64","
+#else
+#define BITSTR_RANGE_FMT	"%u-%u,"
+#define BITSTR_SINGLE_FMT	"%u,"
+#endif
+
+/*
  * internal macros / defs
  */
 
