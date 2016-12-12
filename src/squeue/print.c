@@ -75,22 +75,6 @@ static partition_info_msg_t *part_info_msg = NULL;
  * Global Print Functions
  *****************************************************************************/
 
-int print_steps(List steps, List format)
-{
-	print_step_from_format(NULL, format);
-
-	if (list_count(steps) > 0) {
-		job_step_info_t *step = NULL;
-		ListIterator i = list_iterator_create(steps);
-
-		while ((step = (job_step_info_t *) list_next(i)) != NULL) {
-			print_step_from_format(step, format);
-		}
-	}
-
-	return SLURM_SUCCESS;
-}
-
 int print_jobs_array(job_info_t * jobs, int size, List format)
 {
 	squeue_job_rec_t *job_rec_ptr;
