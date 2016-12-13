@@ -103,19 +103,25 @@ sockets, cores per socket and/or threads per core.
 NOTE: These options do not specify the resource allocation size.
 Each value specified is considered a minimum.
 An asterisk (*) can be used as a placeholder indicating that all available
-resources of that type are to be utilized.
-The individual levels can also be specified in separate options if desired:
+resources of that type are to be utilized. Values can also be specified as
+min-max. The individual levels can also be specified in separate options if
+desired:
 .nf
     \fB\-\-sockets\-per\-node\fR=<\fIsockets\fR>
     \fB\-\-cores\-per\-socket\fR=<\fIcores\fR>
     \fB\-\-threads\-per\-core\fR=<\fIthreads\fR>
 .fi
+If task/affinity plugin is enabled, then specifying an allocation in this
+manner also sets a default \fB\-\-cpu_bind\fR option of \fIthreads\fR
+if the \fB\-B\fR option specifies a thread count, otherwise an option of
+\fIcores\fR if a core count is specified, otherwise an option of \fIsockets\fR.
 If SelectType is configured to select/cons_res, it must have a parameter of
 CR_Core, CR_Core_Memory, CR_Socket, or CR_Socket_Memory for this option
 to be honored.
 This option is not supported on BlueGene systems (select/bluegene plugin
 is configured).
-If not specified, the scontrol show job will display 'ReqS:C:T=*:*:*'.
+If not specified, the scontrol show job will display 'ReqS:C:T=*:*:*'. This
+option applies to job allocations.
 
 .TP
 \fB\-\-bb\fR=<\fIspec\fR>

@@ -601,7 +601,7 @@ extern void log_config(void)
 	debug2("StorageBackupHost = %s", slurmdbd_conf->storage_backup_host);
 	debug2("StorageHost       = %s", slurmdbd_conf->storage_host);
 	debug2("StorageLoc        = %s", slurmdbd_conf->storage_loc);
-	debug2("StoragePass       = %s", slurmdbd_conf->storage_pass);
+	/* debug2("StoragePass       = %s", slurmdbd_conf->storage_pass); */
 	debug2("StoragePort       = %u", slurmdbd_conf->storage_port);
 	debug2("StorageType       = %s", slurmdbd_conf->storage_type);
 	debug2("StorageUser       = %s", slurmdbd_conf->storage_user);
