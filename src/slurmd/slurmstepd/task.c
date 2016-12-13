@@ -332,7 +332,6 @@ _setup_mpi(stepd_step_rec_t *job, int ltaskid)
 
 	return mpi_hook_slurmstepd_task(info, &job->env);
 }
-extern void block_daemon(void);
 
 /*
  *  Current process is running as the user when this is called.
