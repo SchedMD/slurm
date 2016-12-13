@@ -168,6 +168,7 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Remove StoragePass from being printed out in the slurmdbd log at debug2
     level.
+ -- Defer PATH search for task program until launch in slurmstepd.
 
 * Changes in Slurm 16.05.7
 ==========================

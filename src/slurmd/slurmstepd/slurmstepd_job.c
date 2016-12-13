@@ -65,7 +65,6 @@
 #include "src/slurmd/slurmstepd/fname.h"
 #include "src/slurmd/slurmstepd/multi_prog.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
-#include "src/slurmd/slurmstepd/task.h"
 
 #ifdef HAVE_NATIVE_CRAY
 static bool already_validated_uid = true;
@@ -156,12 +155,6 @@ _job_init_task_info(stepd_step_rec_t *job, uint32_t **gtid,
 
 	job->task = (stepd_step_task_info_t **)
 		xmalloc(job->node_tasks * sizeof(stepd_step_task_info_t *));
-
-	if (((job->flags & LAUNCH_MULTI_PROG) == 0) && job->argv) {
-		char *new_path = build_path(job->argv[0], job->env, job->cwd);
-		xfree(job->argv[0]);
-		job->argv[0] = new_path;
-	}
 
 	for (i = 0; i < job->node_tasks; i++) {
 		in = _expand_stdio_filename(ifname, gtid[node_id][i], job);

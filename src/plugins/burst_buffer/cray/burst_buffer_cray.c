@@ -698,7 +698,7 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 }
 
 /* At slurmctld start up time, for every currently active burst buffer,
- * update that user's limit */
+ * update that user's limit. Also log every recovered buffer */
 static void _apply_limits(void)
 {
 	bool emulate_cray = false;
@@ -711,6 +711,9 @@ static void _apply_limits(void)
 	for (i = 0; i < BB_HASH_SIZE; i++) {
 		bb_alloc = bb_state.bb_ahash[i];
 		while (bb_alloc) {
+			info("Recovered buffer Name:%s User:%u Pool:%s Size:%"PRIu64,
+			     bb_alloc->name, bb_alloc->user_id,
+			     bb_alloc->pool, bb_alloc->size);
 			_set_assoc_mgr_ptrs(bb_alloc);
 			bb_limit_add(bb_alloc->user_id, bb_alloc->size,
 				     bb_alloc->pool, &bb_state, emulate_cray);

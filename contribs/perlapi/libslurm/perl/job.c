@@ -486,7 +486,7 @@ hv_to_job_info_msg(HV *hv, job_info_msg_t *job_info_msg)
 	FETCH_FIELD(hv, job_info_msg, last_update, time_t, TRUE);
 	svp = hv_fetch(hv, "job_array", 9, FALSE);
 	if (! (svp && SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVAV)) {
-		Perl_warn (aTHX_ "job_array is not an arrary reference in HV for job_info_msg_t");
+		Perl_warn (aTHX_ "job_array is not an array reference in HV for job_info_msg_t");
 		return -1;
 	}
 	av = (AV*)SvRV(*svp);
