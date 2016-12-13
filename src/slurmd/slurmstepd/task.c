@@ -360,7 +360,7 @@ extern void block_daemon(void);
 void
 exec_task(stepd_step_rec_t *job, int i)
 {
-	uint32_t *gtids;		/* pointer to arrary of ranks */
+	uint32_t *gtids;		/* pointer to array of ranks */
 	int fd, j;
 	stepd_step_task_info_t *task = job->task[i];
 	char **tmp_env;
