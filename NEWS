@@ -10,6 +10,8 @@ documents those changes that are of interest to users and administrators.
     logging to reduce likelyhood of Expect buffer overflow.
  -- Do not PATH search for mult-prog launches if LaunchParamters=test_exec is
     enabled.
+ -- Fix for possible infinite loop in select/cons_res plugin when trying to
+    satisfy a job's ntasks_per_core or socket specification.
 
 * Changes in Slurm 16.05.7
 ==========================

@@ -111,8 +111,8 @@
 #define _DEBUG 0
 
 static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
-			      bitstr_t *part_core_map, const uint32_t node_i,
-			      bool entire_sockets_only);
+			     bitstr_t *part_core_map, const uint32_t node_i,
+			     int *cpu_alloc_size, bool entire_sockets_only);
 static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 			 uint32_t min_nodes, uint32_t max_nodes,
 			 uint32_t req_nodes, uint32_t cr_node_cnt,
@@ -168,11 +168,14 @@ static uint32_t _socks_per_node(struct job_record *job_ptr);
  * IN/OUT core_map  - core_bitmap of available cores
  * IN part_core_map - bitmap of cores already allocated from this partition
  * IN node_i        - index of node to be evaluated
+ * IN/OUT cpu_alloc_size - minimum allocation size, in CPUs
  */
 uint16_t _allocate_sockets(struct job_record *job_ptr, bitstr_t *core_map,
-			   bitstr_t *part_core_map, const uint32_t node_i)
+			   bitstr_t *part_core_map, const uint32_t node_i,
+			   int *cpu_alloc_size)
 {
-	return _allocate_sc(job_ptr, core_map, part_core_map, node_i, true);
+	return _allocate_sc(job_ptr, core_map, part_core_map, node_i,
+			    cpu_alloc_size, true);
 }
 
 /* _allocate_cores - Given the job requirements, determine which cores
@@ -184,13 +187,15 @@ uint16_t _allocate_sockets(struct job_record *job_ptr, bitstr_t *core_map,
  * IN/OUT core_map  - bitmap of cores available for use/selected for use
  * IN part_core_map - bitmap of cores already allocated from this partition
  * IN node_i        - index of node to be evaluated
+ * IN/OUT cpu_alloc_size - minimum allocation size, in CPUs
  * IN cpu_type      - if true, allocate CPUs rather than cores
  */
 uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 			 bitstr_t *part_core_map, const uint32_t node_i,
-			 bool cpu_type)
+			 int *cpu_alloc_size, bool cpu_type)
 {
-	return _allocate_sc(job_ptr, core_map, part_core_map, node_i, false);
+	return _allocate_sc(job_ptr, core_map, part_core_map, node_i,
+			    cpu_alloc_size, false);
 }
 
 /* _allocate_sc - Given the job requirements, determine which cores/sockets
@@ -202,12 +207,13 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
  * IN/OUT core_map  - bitmap of cores available for use/selected for use
  * IN part_core_map - bitmap of cores already allocated from this partition
  * IN node_i        - index of node to be evaluated
+ * IN/OUT cpu_alloc_size - minimum allocation size, in CPUs
  * IN entire_sockets_only - if true, allocate cores only on sockets that
  *                        - have no other allocated cores.
  */
 static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
-			      bitstr_t *part_core_map, const uint32_t node_i,
-			      bool entire_sockets_only)
+			     bitstr_t *part_core_map, const uint32_t node_i,
+			     int *cpu_alloc_size, bool entire_sockets_only)
 {
 	uint16_t cpu_count = 0, cpu_cnt = 0;
 	uint16_t si, cps, avail_cpus = 0, num_tasks = 0;
@@ -249,6 +255,7 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 		    (mc_ptr->threads_per_core <  ncpus_per_core)) {
 			ncpus_per_core = mc_ptr->threads_per_core;
 		}
+		*cpu_alloc_size = MIN(*cpu_alloc_size, ncpus_per_core);
 		ntasks_per_socket = mc_ptr->ntasks_per_socket;
 
 		if ((ncpus_per_core != (uint16_t) NO_VAL) &&
@@ -502,8 +509,7 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 					tmp_cpt = cpus_per_task;
 				else
 					tmp_cpt -= used;
-			}
-			else {
+			} else {
 				cpu_count += avail_cpus;
 				avail_cpus = 0;
 			}
@@ -612,20 +618,21 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 		return (uint16_t) 0;
 
 	if (cr_type & CR_CORE) {
-		cpus = _allocate_cores(job_ptr, core_map, part_core_map,
-				       node_i, false);
 		/* cpu_alloc_size = CPUs per core */
 		cpu_alloc_size = select_node_record[node_i].vpus;
+		cpus = _allocate_cores(job_ptr, core_map, part_core_map,
+				       node_i, &cpu_alloc_size, false);
+
 	} else if (cr_type & CR_SOCKET) {
-		cpus = _allocate_sockets(job_ptr, core_map, part_core_map,
-					 node_i);
 		/* cpu_alloc_size = CPUs per socket */
 		cpu_alloc_size = select_node_record[node_i].cores *
 				 select_node_record[node_i].vpus;
+		cpus = _allocate_sockets(job_ptr, core_map, part_core_map,
+					 node_i, &cpu_alloc_size);
 	} else {
-		cpus = _allocate_cores(job_ptr, core_map, part_core_map,
-				       node_i, true);
 		cpu_alloc_size = 1;
+		cpus = _allocate_cores(job_ptr, core_map, part_core_map,
+				       node_i, &cpu_alloc_size, true);
 	}
 
 	if (cr_type & CR_MEMORY) {
@@ -655,9 +662,14 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 					 > avail_mem))
 					cpus -= 1;
 			} else {
-				while ((cpus > 0) &&
-				       ((req_mem * cpus) > avail_mem))
-					cpus -= cpu_alloc_size;
+				while ((req_mem * cpus) > avail_mem) {
+					if (cpus >= cpu_alloc_size) {
+						cpus -= cpu_alloc_size;
+					} else {
+						cpus = 0;
+						break;
+					}
+				}
 			}
 
 			if (job_ptr->details->cpus_per_task > 1) {
