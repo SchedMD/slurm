@@ -4307,10 +4307,10 @@ _kill_all_active_steps(uint32_t jobid, int sig, bool batch)
 		}
 
 		debug2("container signal %d to job %u.%u",
-		       sig, jobid, stepd->stepid);
+		       sig, stepd->jobid, stepd->stepid);
 		if (stepd_signal_container(
 			    fd, stepd->protocol_version, sig) < 0)
-			debug("kill jobid=%u failed: %m", jobid);
+			debug("kill jobid=%u failed: %m", stepd->jobid);
 		close(fd);
 	}
 	list_iterator_destroy(i);
@@ -4320,6 +4320,48 @@ _kill_all_active_steps(uint32_t jobid, int sig, bool batch)
 	return step_cnt;
 }
 
+/*
+ * ume_notify - Notify all jobs and steps on this node that a Uncorrectable
+ *	Memory Error (UME) has occured by sending SIG_UME (to log event in
+ *	stderr)
+ * RET count of signaled job steps
+ */
+extern int ume_notify(void)
+{
+	List steps;
+	ListIterator i;
+	step_loc_t *stepd;
+	int step_cnt  = 0;
+	int fd;
+
+	steps = stepd_available(conf->spooldir, conf->node_name);
+	i = list_iterator_create(steps);
+	while ((stepd = list_next(i))) {
+		step_cnt++;
+
+		fd = stepd_connect(stepd->directory, stepd->nodename,
+				   stepd->jobid, stepd->stepid,
+				   &stepd->protocol_version);
+		if (fd == -1) {
+			debug3("Unable to connect to step %u.%u",
+			       stepd->jobid, stepd->stepid);
+			continue;
+		}
+
+		debug2("container SIG_UME to job %u.%u",
+		       stepd->jobid, stepd->stepid);
+		if (stepd_signal_container(
+			    fd, stepd->protocol_version, SIG_UME) < 0)
+			debug("kill jobid=%u failed: %m", stepd->jobid);
+		close(fd);
+	}
+	list_iterator_destroy(i);
+	FREE_NULL_LIST(steps);
+
+	if (step_cnt == 0)
+		debug2("No steps to send SIG_UME");
+	return step_cnt;
+}
 /*
  * _terminate_all_steps - signals the container of all steps of a job
  * jobid IN - id of job to signal

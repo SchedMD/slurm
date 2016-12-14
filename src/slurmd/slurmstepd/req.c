@@ -831,6 +831,9 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 			      "failure mode) ***",
 			      entity, job->node_name);
 			msg_sent = 1;
+		} else if (sig == SIG_UME) {
+			error("*** %s ON %s UNCORRECTABLE MEMORY ERROR AT %s ***",
+			      entity, job->node_name, time_str);
 		} else if ((sig == SIGTERM) || (sig == SIGKILL)) {
 			error("*** %s ON %s CANCELLED AT %s ***",
 			      entity, job->node_name, time_str);
@@ -839,7 +842,7 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 	}
 	if ((sig == SIG_TIME_LIMIT) || (sig == SIG_NODE_FAIL) ||
 	    (sig == SIG_PREEMPTED)  || (sig == SIG_FAILURE) ||
-	    (sig == SIG_REQUEUED))
+	    (sig == SIG_REQUEUED)   || (sig == SIG_UME))
 		goto done;
 
 	if (sig == SIG_ABORT) {

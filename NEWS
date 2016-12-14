@@ -34,6 +34,10 @@ documents those changes that are of interest to users and administrators.
     srun commands respectively.
  -- Provide limited support for the MemSpecLimit configuration parameter without
     the task/cgroup plugin.
+ -- node_features/knl_generic - Add capability to detected Uncorrectable Memory
+    Errors (UME) and if detected then log the event in all job and step stderr
+    with a message of the form:
+    error: *** STEP 1.2 ON tux1 UNCORRECTABLE MEMORY ERROR AT 2016-12-14T09:09:37 ***
 
 * Changes in Slurm 17.02.0pre3
 ==============================
