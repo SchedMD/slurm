@@ -12,6 +12,8 @@ documents those changes that are of interest to users and administrators.
     enabled.
  -- Fix for possible infinite loop in select/cons_res plugin when trying to
     satisfy a job's ntasks_per_core or socket specification.
+ -- If job is held for bad constraints make it so once updated the job doesn't
+    go into JobAdminHeld.
 
 * Changes in Slurm 16.05.7
 ==========================
