@@ -89,7 +89,7 @@ exec $bin_chmod 700 $file_prog
 # Create an allocation
 #
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -N1 --exclusive -v -t5 $bin_bash]
+set salloc_pid [spawn $salloc -N1 --exclusive -t5 $bin_bash]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -142,7 +142,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding "
 		send_user "or failure to recognize prompt\n"
-		slow_kill $salloc_pid
+		cancel_job $job_id
 		exit 1
 	}
 	-re $prompt {
@@ -159,8 +159,8 @@ if {$task_cnt > 32} {
 		timeout {
 			send_user "\nFAILURE: salloc not responding "
 			send_user "or failure to recognize prompt\n"
-			slow_kill $salloc_pid
-			set exit_code 1
+			cancel_job $job_id
+			exit 1
 		}
 		eof {
 			wait
@@ -193,7 +193,8 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding "
 		send_user "or failure to recognize prompt\n"
-		set exit_code 1
+		cancel_job $job_id
+		exit 1
 	}
 	-re $prompt {
 	}
@@ -238,9 +239,11 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding "
 		send_user "or failure to recognize prompt\n"
-		set exit_code 1
+		cancel_job $job_id
+		exit 1
 	}
-	-re $prompt
+	-re $prompt {
+	}
 }
 if {$task_mask != $task_cnt} {
 	send_user "\nFAILURE: affinity mask inconsistent ($task_mask != $task_cnt)\n"
@@ -261,9 +264,11 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding "
 		send_user "or failure to recognize prompt\n"
-		set exit_code 1
+		cancel_job $job_id
+		exit 1
 	}
-	-re $prompt
+	-re $prompt {
+	}
 }
 # Both task/affinity and task/cpu will generate verbose message,
 # so check for double messages in case both plugins are configured.
@@ -293,10 +298,11 @@ while {$cpu_cnt < $task_cnt} {
 		timeout {
 			send_user "\nFAILURE: salloc not "
 			send_user "responding or failure to recognize prompt\n"
-			set exit_code 1
-			exp_continue
+			cancel_job $job_id
+			exit 1
 		}
-		-re $prompt
+		-re $prompt {
+		}
 	}
 	if {$mask_sum != $task_cnt * $mask} {
 		send_user "\nFAILURE: affinity mask inconsistent ($mask_sum != $task_cnt * $mask)\n"
@@ -327,10 +333,11 @@ while {$cpu_cnt < $task_cnt} {
 		timeout {
 			send_user "\nFAILURE: salloc not "
 			send_user "responding or failure to recognize prompt\n"
-			set exit_code 1
-			exp_continue
+			cancel_job $job_id
+			exit 1
 		}
-		-re $prompt
+		-re $prompt {
+		}
 	}
 	if {$mask_sum != $task_cnt * $mask} {
 		send_user "\nFAILURE: affinity mask inconsistent ($mask_sum != $task_cnt * $mask)\n"
@@ -403,10 +410,11 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding "
 		send_user "or failure to recognize prompt\n"
-		set exit_code 1
-		exp_continue
+		cancel_job $job_id
+		exit 1
 	}
-	-re $prompt
+	-re $prompt {
+	}
 }
 if {$task_mask != $full_mask} {
 	send_user "\nFAILURE: affinity mask inconsistent ($task_mask != $full_mask)\n"
@@ -431,10 +439,11 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding "
 		send_user "or failure to recognize prompt\n"
-		set exit_code 1
-		exp_continue
+		cancel_job $job_id
+		exit 1
 	}
-	-re $prompt
+	-re $prompt {
+	}
 }
 if {$task_mask != $full_mask} {
 	send_user "\nFAILURE: affinity mask inconsistent ($task_mask != $full_mask)\n"
@@ -459,10 +468,11 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding "
 		send_user "or failure to recognize prompt\n"
-		set exit_code 1
-		exp_continue
+		cancel_job $job_id
+		exit 1
 	}
-	-re $prompt
+	-re $prompt {
+	}
 }
 if {$task_mask != $full_mask} {
 	send_user "\nFAILURE: affinity mask inconsistent ($task_mask != $full_mask)\n"
@@ -487,10 +497,11 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding "
 		send_user "or failure to recognize prompt\n"
-		set exit_code 1
-		exp_continue
+		cancel_job $job_id
+		exit 1
 	}
-	-re $prompt
+	-re $prompt {
+	}
 }
 if {$task_mask != $full_mask} {
 	send_user "\nFAILURE: affinity mask inconsistent ($task_mask != $full_mask)\n"
@@ -515,10 +526,11 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding "
 		send_user "or failure to recognize prompt\n"
-		set exit_code 1
-		exp_continue
+		cancel_job $job_id
+		exit 1
 	}
-	-re $prompt
+	-re $prompt {
+	}
 }
 if {$task_mask != $full_mask} {
 	send_user "\nFAILURE: affinity mask inconsistent ($task_mask != $full_mask)\n"
@@ -543,10 +555,11 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding "
 		send_user "or failure to recognize prompt\n"
-		set exit_code 1
-		exp_continue
+		cancel_job $job_id
+		exit 1
 	}
-	-re $prompt
+	-re $prompt {
+	}
 }
 if {$task_mask != $full_mask} {
 	send_user "\nFAILURE: affinity mask inconsistent ($task_mask != $full_mask)\n"
@@ -565,7 +578,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: salloc not responding "
 		send_user "or failure to recognize prompt\n"
-		slow_kill $salloc_pid
+		cancel_job $job_id
 		set exit_code 1
 	}
 	eof {
