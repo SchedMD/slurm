@@ -380,6 +380,7 @@ exec_task(stepd_step_rec_t *job, int i)
 	 * references. */
 	job->envtp->env = env_array_copy((const char **) job->env);
 	setup_env(job->envtp, false);
+	setenvf(&job->envtp->env, "SLURM_JOB_GID", "%d", job->gid);
 	setenvf(&job->envtp->env, "SLURMD_NODENAME", "%s", conf->node_name);
 	tmp_env = job->env;
 	job->env = job->envtp->env;

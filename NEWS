@@ -38,6 +38,7 @@ documents those changes that are of interest to users and administrators.
     Errors (UME) and if detected then log the event in all job and step stderr
     with a message of the form:
     error: *** STEP 1.2 ON tux1 UNCORRECTABLE MEMORY ERROR AT 2016-12-14T09:09:37 ***
+ -- Add SLURM_JOB_GID to TaskProlog environment.
 
 * Changes in Slurm 17.02.0pre3
 ==============================
