@@ -687,6 +687,14 @@ extern int load_all_node_state ( bool state_only )
 			else
 				node_ptr->protocol_version = protocol_version;
 
+			/* Sanity check to make sure we can take a version we
+			 * actually understand.
+			 */
+			if (node_ptr->protocol_version <
+			    SLURM_MIN_PROTOCOL_VERSION)
+				node_ptr->protocol_version =
+					SLURM_MIN_PROTOCOL_VERSION;
+
 			if (!IS_NODE_POWER_SAVE(node_ptr))
 				node_ptr->last_idle = now;
 			select_g_update_node_state(node_ptr);
