@@ -104,6 +104,46 @@ slurm_print_node_table ( FILE * out, node_info_t * node_ptr,
 	xfree(print_this);
 }
 
+/* Given data structures containing information about nodes and partitions,
+ * populate the node's "partitions" field */
+void
+slurm_populate_node_partitions(node_info_msg_t *node_buffer_ptr,
+			       partition_info_msg_t *part_buffer_ptr)
+{
+	int i, j, n, p;
+	node_info_t *node_ptr;
+	partition_info_t *part_ptr;
+
+	if (!node_buffer_ptr || (node_buffer_ptr->record_count == 0) ||
+	    !part_buffer_ptr || (part_buffer_ptr->record_count == 0))
+		return;
+
+	for (n = 0, node_ptr = node_buffer_ptr->node_array;
+	     n < node_buffer_ptr->record_count; n++, node_ptr++) {
+		xfree(node_ptr->partitions);
+	}
+
+	for (p = 0, part_ptr = part_buffer_ptr->partition_array;
+	     p < part_buffer_ptr->record_count; p++, part_ptr++) {
+		for (i = 0; ; i++) {
+			if (part_ptr->node_inx[i] == -1)
+				break;
+			for (j = part_ptr->node_inx[i];
+			     j <= part_ptr->node_inx[i+1]; j++) {
+				char *sep = "";
+				if ((j < 0) ||
+				    (j >= node_buffer_ptr->record_count))
+					continue;
+				node_ptr = node_buffer_ptr->node_array + j;
+				if (node_ptr->partitions)
+					sep = ",";
+				xstrfmtcat(node_ptr->partitions, "%s%s", sep,
+					   part_ptr->name);
+			}		
+		}
+	}
+}
+
 /*
  * slurm_sprint_node_table - output information about a specific Slurm nodes
  *	based upon message as loaded using slurm_load_node
@@ -299,6 +339,12 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 		   (node_ptr->mcs_label == NULL) ? "N/A" : node_ptr->mcs_label);
 
 	xstrcat(out, line_end);
+
+	/****** Line ******/
+	if (node_ptr->partitions) {
+		xstrfmtcat(out, "Partitions=%s ", node_ptr->partitions);
+		xstrcat(out, line_end);
+	}
 
 	/****** Line ******/
 	if (node_ptr->boot_time) {

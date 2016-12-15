@@ -84,10 +84,20 @@ scontrol_load_nodes (node_info_msg_t ** node_buffer_pptr, uint16_t show_flags)
  *	last name match
  */
 extern void
-scontrol_print_node (char *node_name, node_info_msg_t  * node_buffer_ptr)
+scontrol_print_node(char *node_name, node_info_msg_t *node_buffer_ptr)
 {
-	int i, j, print_cnt = 0;
+	int error_code, i, j, print_cnt = 0;
 	static int last_inx = 0;
+	partition_info_msg_t *part_info_ptr = NULL;
+
+	error_code = scontrol_load_partitions(&part_info_ptr);
+	if (error_code) {
+		part_info_ptr = NULL;
+		exit_code = 1;
+		if (quiet_flag != 1)
+			slurm_perror("slurm_load_partitions error");
+	}
+	slurm_populate_node_partitions(node_buffer_ptr, part_info_ptr);
 
 	for (j = 0; j < node_buffer_ptr->record_count; j++) {
 		if (node_name) {

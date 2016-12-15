@@ -3369,11 +3369,12 @@ extern void slurm_free_node_info_members(node_info_t * node)
 		xfree(node->node_addr);
 		xfree(node->node_hostname);
 		xfree(node->os);
+		xfree(node->partitions);
 		xfree(node->reason);
 		select_g_select_nodeinfo_free(node->select_nodeinfo);
 		node->select_nodeinfo = NULL;
-		xfree(node->version);
 		xfree(node->tres_fmt_str);
+		xfree(node->version);
 		/* Do NOT free node, it is an element of an array */
 	}
 }

@@ -2024,6 +2024,9 @@ typedef struct node_info {
 	uint32_t node_state;	/* see enum node_states */
 	char *os;		/* operating system currently running */
 	uint32_t owner;		/* User allowed to use this node or NO_VAL */
+	char *partitions;	/* Comma separated list of partitions containing
+				 * this node, NOT supplied by slurmctld, but
+				 * populated by scontrol */
 	uint64_t real_memory;	/* configured MB of real memory on the node */
 	char *reason;		/* reason for node being DOWN or DRAINING */
 	time_t reason_time;	/* Time stamp when reason was set, ignore if
@@ -3948,6 +3951,12 @@ extern int slurm_load_node(time_t update_time,
 extern int slurm_load_node_single(node_info_msg_t **resp,
 				  char *node_name,
 				  uint16_t show_flags);
+
+/* Given data structures containing information about nodes and partitions,
+ * populate the node's "partitions" field */
+void
+slurm_populate_node_partitions(node_info_msg_t *node_buffer_ptr,
+			       partition_info_msg_t *part_buffer_ptr);
 
 /*
  * slurm_get_node_energy_n - issue RPC to get the energy data of all

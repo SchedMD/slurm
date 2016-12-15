@@ -64,10 +64,10 @@ scontrol_load_partitions (partition_info_msg_t **part_buffer_pptr)
 			if (quiet_flag == -1)
 				printf ("slurm_load_part no change in data\n");
 		}
-	}
-	else
+	} else {
 		error_code = slurm_load_partitions((time_t) NULL,
 						   &part_info_ptr, show_flags);
+	}
 
 	if (error_code == SLURM_SUCCESS) {
 		old_part_info_ptr = part_info_ptr;

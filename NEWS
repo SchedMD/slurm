@@ -41,6 +41,7 @@ documents those changes that are of interest to users and administrators.
  -- Add SLURM_JOB_GID to TaskProlog environment.
  -- burst_buffer/cray - Remove leading zeros from node ID lists passed to
     dw_wlm_cli program.
+ -- Add "Partitions" field to "scontrol show node" output.
 
 * Changes in Slurm 17.02.0pre3
 ==============================
