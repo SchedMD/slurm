@@ -1301,14 +1301,16 @@ static void _load_state(bool init_config)
 static int _write_nid_file(char *file_name, char *node_list, uint32_t job_id)
 {
 #if defined(HAVE_NATIVE_CRAY)
-	char *tmp, *sep, *tok, *save_ptr = NULL, *buf = NULL;
-	int i, rc;
+	char *tmp, *sep, *buf = NULL;
+	int i, j, rc;
 
 	xassert(file_name);
 	tmp = xstrdup(node_list);
+	/* Remove any trailing "]" */
 	sep = strrchr(tmp, ']');
 	if (sep)
 		sep[0] = '\0';
+	/* Skip over "nid[" or "nid" */
 	sep = strchr(tmp, '[');
 	if (sep) {
 		sep++;
@@ -1317,21 +1319,32 @@ static int _write_nid_file(char *file_name, char *node_list, uint32_t job_id)
 		for (i = 0; !isdigit(sep[0]) && sep[0]; i++)
 			sep++;
 	}
-	tok = strtok_r(sep, ",", &save_ptr);
-	while (tok) {
-		xstrfmtcat(buf, "%s\n", tok);
-		tok = strtok_r(NULL, ",", &save_ptr);
+	/* Copy numeric portion */
+	buf = xmalloc(strlen(sep) + 1);
+	for (i = 0, j = 0; sep[i]; i++) {
+		/* Skip leading zeros */
+		if ((sep[i] == '0') && isdigit(sep[i+1]))
+			continue;
+		/* Copy significant digits and separator */
+		while (sep[i]) {
+			buf[j++] = sep[i];
+			if ((sep[i] == '-') || (sep[i] == ','))
+				break;
+			i++;
+		}
+		if (!sep[i])
+			break;
 	}
 	xfree(tmp);
 
-	if (buf) {
+	if (buf[0]) {
 		rc = _write_file(file_name, buf);
-		xfree(buf);
 	} else {
 		error("%s: job %u has node list without numeric component (%s)",
 		      __func__, job_id, node_list);
 		rc = EINVAL;
 	}
+	xfree(buf);
 	return rc;
 #else
 	char *tok, *buf = NULL;

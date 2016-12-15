@@ -39,6 +39,8 @@ documents those changes that are of interest to users and administrators.
     with a message of the form:
     error: *** STEP 1.2 ON tux1 UNCORRECTABLE MEMORY ERROR AT 2016-12-14T09:09:37 ***
  -- Add SLURM_JOB_GID to TaskProlog environment.
+ -- burst_buffer/cray - Remove leading zeros from node ID lists passed to
+    dw_wlm_cli program.
 
 * Changes in Slurm 17.02.0pre3
 ==============================
