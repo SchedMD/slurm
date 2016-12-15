@@ -693,8 +693,11 @@ stepd_cleanup_sockets(const char *directory, const char *nodename)
 			if (fd == -1) {
 				debug("Unable to connect to socket %s", path);
 			} else {
-				stepd_signal_container(
-					fd, protocol_version, SIGKILL);
+				if (stepd_signal_container(
+					fd, protocol_version, SIGKILL) == -1) {
+					debug("Error sending SIGKILL to job step %u.%u",
+					      jobid, stepid);
+				}
 				close(fd);
 			}
 
