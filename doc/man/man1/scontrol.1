@@ -68,15 +68,10 @@ Print version information and exit.
 \fBCOMMANDS\fR
 
 .TP
-\fBall\fP
-Show all partitions, their jobs and jobs steps. This causes information to be
-displayed about partitions that are configured as hidden and partitions that
-are unavailable to user's group.
-
-.TP
 \fBabort\fP
 Instruct the Slurm controller to terminate immediately and generate a core file.
-See "man slurmctld" for information about where the core file will be written.
+See "man slurmctld" for information about where the core file will be
+written.
 
 .TP
 \fBcheckpoint\fP \fICKPT_OP\fP \fIID\fP
@@ -156,37 +151,12 @@ no associated jobs at the time of their deletion (modify the job's first).
 If the specified partition is in use, the request is denied.
 
 .TP
-\fBdetails\fP
-Causes the \fIshow\fP command to provide additional details where available.
-Job information will include CPUs and NUMA memory allocated on each node.
-Note that on computers with hyperthreading enabled and Slurm configured to
-allocate cores, each listed CPU represents one physical core.
-Each hyperthread on that core can be allocated a separate task, so a job's
-CPU count and task count may differ.
-See the \fB\-\-cpu_bind\fR and \fB\-\-mem_bind\fR option descriptions in
-srun man pages for more information.
-The \fBdetails\fP option is currently only supported for the \fIshow job\fP
-command. To also list the batch script for batch jobs, in addition to the
-details, use the \fBscript\fP option described below instead of this option.
-
-.TP
 \fBerrnumstr\fP \fIERRNO\fP
 Given a Slurm error number, return a descriptive string.
 
 .TP
-\fBexit\fP
-Terminate the execution of scontrol.
-This is an independent command with no options meant for use in interactive mode.
-
-.TP
 \fBhelp\fP
 Display a description of scontrol options and commands.
-
-.TP
-\fBhide\fP
-Do not display partition, job or jobs step information for partitions that are
-configured as hidden or partitions that are unavailable to the user's group.
-This is the default behavior.
 
 .TP
 \fBhold\fP \fIjob_list\fP
@@ -204,10 +174,6 @@ be released by the job's owner.
 \fBnotify\fP \fIjob_id\fP \fImessage\fP
 Send a message to standard error of the salloc or srun command or batch job
 associated with the specified \fIjob_id\fP.
-
-.TP
-\fBoneliner\fP
-Print information one line per record.
 
 .TP
 \fBpidinfo\fP \fIproc_id\fP
@@ -235,14 +201,6 @@ one host are, in general, only used by Slurm developers.
 \fBping\fP
 Ping the primary and secondary slurmctld daemon and report if
 they are responding.
-
-.TP
-\fBquiet\fP
-Print no warning or informational messages, only fatal error messages.
-
-.TP
-\fBquit\fP
-Terminate the execution of scontrol.
 
 .TP
 \fBreboot\fP [ASAP] [\fINodeList\fP]
@@ -330,12 +288,6 @@ This value is temporary and will be overwritten when the slurmctld
 daemon reads the slurm.conf configuration file (e.g. when the daemon
 is restarted or \fBscontrol reconfigure\fR is executed) if the
 SlurmSchedLogLevel parameter is present.
-
-.TP
-\fBscript\fP
-Causes the \fIshow job\fP command to list the batch script for batch
-jobs in addition to the detail information described under the
-\fBdetails\fP option above.
 
 .TP
 \fBsetdebug\fP \fILEVEL\fP
@@ -480,11 +432,6 @@ accomplished through editing the Slurm configuration file and executing
 the \fIreconfigure\fP command (described above).
 
 .TP
-\fBverbose\fP
-Print detailed event logging.
-This includes time\-stamps on data structures, record counts, etc.
-
-.TP
 \fBversion\fP
 Display the version number of scontrol being executed.
 
@@ -500,6 +447,65 @@ automatically as needed.
 Write the current configuration to a file with the naming convention of
 "slurm.conf.<datetime>" in the same directory as the original slurm.conf
 file.
+
+.TP
+\fBINTERACTIVE COMMANDS\fR
+\fBNOTE:\fP
+All commands listed below can be used in the interactive mode, but \fINOT\fP
+on the initial command line.
+
+.TP
+\fBall\fP
+Show all partitions, their jobs and jobs steps. This causes information to be
+displayed about partitions that are configured as hidden and partitions that
+are unavailable to user's group.
+
+.TP
+\fBdetails\fP
+Causes the \fIshow\fP command to provide additional details where available.
+Job information will include CPUs and NUMA memory allocated on each node.
+Note that on computers with hyperthreading enabled and Slurm configured to
+allocate cores, each listed CPU represents one physical core.
+Each hyperthread on that core can be allocated a separate task, so a job's
+CPU count and task count may differ.
+See the \fB\-\-cpu_bind\fR and \fB\-\-mem_bind\fR option descriptions in
+srun man pages for more information.
+The \fBdetails\fP option is currently only supported for the \fIshow job\fP
+command. To also list the batch script for batch jobs, in addition to the
+details, use the \fBscript\fP option described below instead of this option.
+
+.TP
+\fBexit\fP
+Terminate scontrol interactive session.
+
+.TP
+\fBhide\fP
+Do not display partition, job or jobs step information for partitions that are
+configured as hidden or partitions that are unavailable to the user's group.
+This is the default behavior.
+
+.TP
+\fBoneliner\fP
+Print information one line per record.
+
+.TP
+\fBquiet\fP
+Print no warning or informational messages, only fatal error messages.
+
+.TP
+\fBquit\fP
+Terminate the execution of scontrol.
+
+.TP
+\fBscript\fP
+Causes the \fIshow job\fP command to list the batch script for batch
+jobs in addition to the detail information described under the
+\fBdetails\fP option above.
+
+.TP
+\fBverbose\fP
+Print detailed event logging.
+This includes time\-stamps on data structures, record counts, etc.
 
 .TP
 \fB!!\fP
