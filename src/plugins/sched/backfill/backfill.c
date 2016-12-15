@@ -1490,7 +1490,7 @@ next_task:
 		if (active_bitmap) {
 			j = _try_sched(job_ptr, &active_bitmap, min_nodes,
 				       max_nodes, req_nodes, exc_core_bitmap);
-			if (j != SLURM_SUCCESS) {
+			if (j == SLURM_SUCCESS) {
 				FREE_NULL_BITMAP(avail_bitmap);
 				avail_bitmap = active_bitmap;
 				active_bitmap = NULL;

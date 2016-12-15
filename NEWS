@@ -14,6 +14,8 @@ documents those changes that are of interest to users and administrators.
     satisfy a job's ntasks_per_core or socket specification.
  -- If job is held for bad constraints make it so once updated the job doesn't
     go into JobAdminHeld.
+ -- sched/backfill - Fix logic to reserve resources for jobs that require a
+    node reboot (i.e. to change KNL mode) in order to start.
 
 * Changes in Slurm 16.05.7
 ==========================
