@@ -11357,7 +11357,19 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			      job_ptr->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
+	} else if (job_ptr->state_reason == FAIL_BAD_CONSTRAINTS) {
+		/* We need to check if the state is BadConstraints here since we
+		 * are altering the job the bad constraint might have gone
+		 * away.  If it did the priority (0) wouldn't get reset so the
+		 * job would just go into JobAdminHeld otherwise.
+		 */
+		job_ptr->direct_set_prio = 0;
+		set_job_prio(job_ptr);
+		debug("sched: update: job request changed somehow, removing the bad constraints to reevaluate job_id %u uid %u",
+		     job_ptr->job_id, uid);
+		job_ptr->state_reason = WAIT_NO_REASON;
 	}
+
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 

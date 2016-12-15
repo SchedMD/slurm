@@ -1985,8 +1985,10 @@ static void _opt_args(int argc, char **argv)
 		}
 	}
 #else
+	/* may exit() if an error with the multi_prog script */
 	(void) launch_g_handle_multi_prog_verify(command_pos);
-	if (test_exec || opt.bcast_flag) {
+
+	if (!opt.multi_prog && (test_exec || opt.bcast_flag)) {
 		if ((fullpath = search_path(opt.cwd, opt.argv[command_pos],
 					    false, X_OK, true))) {
 			xfree(opt.argv[command_pos]);
