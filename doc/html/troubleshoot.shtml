@@ -104,6 +104,7 @@ or excluded nodes, so jobs which specify nodes will substantially
 reduce the effectiveness of backfill scheduling.
 See the <a href="faq.html#backfill">backfill documentation</a>
 for more details.</li>
+</ul>
 
 <p class="footer"><a href="#top">top</a></p>
 
