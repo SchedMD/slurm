@@ -195,10 +195,8 @@ function displayfile()
    "#DefMemPerCPU=0 <br>" +
    "FastSchedule=" + get_radio_value(document.config.fast_schedule) + "<br>" +
    "#MaxMemPerCPU=0 <br>" +
-   "#SchedulerRootFilter=1 <br>" +
    "#SchedulerTimeSlice=30 <br>" +
    "SchedulerType=sched/" + get_radio_value(document.config.sched_type) + "<br>" +
-   get_field("SchedulerPort",document.config.scheduler_port) + "<br>" +
    "SelectType=select/" + get_radio_value(document.config.select_type) + "<br>" +
    get_select_type_params() + "<br>" +
    "# <br>" +
@@ -488,13 +486,6 @@ Select one value for <B>SchedulerType</B>:<BR>
 FIFO with backfill<BR>
 <input type="radio" name="sched_type" value="builtin">  <B>Builtin</B>: First-In
 First-Out (FIFO)<BR>
-<input type="radio" name="sched_type" value="wiki"> <B>Wiki</B>: Wiki interface
-to Maui (configuration parameter <B>SchedulerPort</B> must specified)<BR>
-<input type="radio" name="sched_type" value="wiki2"> <B>Wiki2</B>: Wiki interface
-to Moab (configuration parameter <B>SchedulerPort</B> must specified)<BR>
-<P>
-<input type="text" name="scheduler_port" value="7321"> <B>SchedulerPort</B>: scheduler
-communications port (used by Wiki and Wiki2 only)
 <P>
 Define what node configuration (sockets, cores, memory, etc.) should be used.
 Using values defined in the configuration file will provide faster scheduling.<BR>
@@ -816,5 +807,5 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <a href="disclaimer.html" target="_blank" class="privacy">Legal Notices</a><br>
-Last modified 3 February 2015</P>
+Last modified 15 December 2016</P>
 </BODY>

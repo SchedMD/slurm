@@ -655,9 +655,6 @@ including state, job ids and allocated nodes counter.
 .TP
 \fBTriggers\fR
 Slurmctld triggers
-.TP
-\fBWiki\fR
-Sched/wiki and wiki2 communications
 .RE
 
 .TP
@@ -1690,9 +1687,6 @@ scheduling be enabled (i.e, "PreemptMode=SUSPEND,GANG").
 .TP 12
 \fBOFF\fR
 is the default value and disables job preemption and gang scheduling.
-This is the only option compatible with \fBSchedulerType=sched/wiki\fR
-or \fBSchedulerType=sched/wiki2\fR (used by Maui and Moab respectively,
-which provide their own job preemption functionality).
 .TP
 \fBCANCEL\fR
 always cancel the job.
@@ -1859,9 +1853,8 @@ Cleared on the first day of each year at time 00:00.
 \fBPriorityType\fR
 This specifies the plugin to be used in establishing a job's scheduling
 priority. Supported values are "priority/basic" (jobs are prioritized
-by order of arrival, also suitable for sched/wiki and sched/wiki2),
-"priority/multifactor" (jobs are prioritized based upon size, age,
-fair\-share of allocation, etc).
+by order of arrival), "priority/multifactor" (jobs are prioritized based
+upon size, age, fair\-share of allocation, etc).
 Also see \fBPriorityFlags\fR for configuration options.
 The default value is "priority/basic".
 
@@ -2794,12 +2787,6 @@ priority job.
 \fBsched/hold\fR
 To hold all newly arriving jobs if a file "/etc/slurm.hold"
 exists otherwise use the built\-in FIFO scheduler
-.TP
-\fBsched/wiki\fR
-For the Wiki interface to the Maui Scheduler
-.TP
-\fBsched/wiki2\fR
-For the Wiki interface to the Moab Cluster Suite
 .RE
 
 .TP
@@ -5203,4 +5190,4 @@ details.
 \fBgetrlimit\fR (2), \fBgres.conf\fR(5), \fBgroup\fR (5), \fBhostname\fR (1),
 \fBscontrol\fR(1), \fBslurmctld\fR(8), \fBslurmd\fR(8),
 \fBslurmdbd\fR(8), \fBslurmdbd.conf\fR(5), \fBsrun(1)\fR,
-\fBspank(8)\fR, \fBsyslog\fR (2), \fBtopology.conf\fR(5), \fBwiki.conf\fR(5)
+\fBspank(8)\fR, \fBsyslog\fR (2), \fBtopology.conf\fR(5)

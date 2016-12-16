@@ -5,10 +5,6 @@
 <p>Familiarity with Slurm's <a href="accounting.html">Accounting</a> web page
 is strongly recommended before use of this document.</p>
 
-<p><b>Note for users of Maui or Moab schedulers:</b><br>
-Maui and Moab are not integrated with Slurm's resource limits,
-but should use their own resource limits mechanisms.</p>
-
 <h2>Hierarchy</h2>
 
 <p>Slurm's hierarchical limits are enforced in the following order
@@ -97,10 +93,6 @@ user names and optional partition name.)
 Without AccountingStorageEnforce being set (the default behavior)
 jobs will be executed based upon policies configured in Slurm on each
 cluster.
-<br>
-It is advisable to run without the 'limits' option set when running a
-scheduler on top of Slurm, like Moab, that does not update in real
-time its limits per association.
 </p>
 
 <h2>Tools</h2>
@@ -262,6 +254,6 @@ data maintained in the Slurm database.  More information can be found
 in the <a href="priority_multifactor.html">priority/multifactor</a>
 plugin description.</p>
 
-<p style="text-align: center;">Last modified 19 October 2015</p>
+<p style="text-align: center;">Last modified 15 December 2016</p>
 
 </ul></body></html>
