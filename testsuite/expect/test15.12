@@ -39,12 +39,6 @@ set file_in     "test$test_id.input"
 
 print_header $test_id
 
-if {[test_wiki_sched] == 1} {
-	send_user "\nWARNING: not compatible with sched/wiki (Maui)\n"
-	send_user "         or sched/wiki2 (Moab) schedulers\n"
-	exit $exit_code
-}
-
 #
 # Submit a job with invalid constraint requirement
 #

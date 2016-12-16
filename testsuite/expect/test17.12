@@ -44,12 +44,6 @@ array set def_node_feat {}
 
 print_header $test_id
 
-if {[test_wiki_sched] == 1} {
-	send_user "\nWARNING: not compatible with sched/wiki (Maui)\n"
-	send_user "         or sched/wiki2 (Moab) schedulers\n"
-	exit $exit_code
-}
-
 proc check_job {nnode test_job} {
 	global exit_code sbatch test_part file_in bin_sleep
 	global feat1 feat2 number scontrol alpha_numeric_nodelist bin_bash

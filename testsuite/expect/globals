@@ -1296,32 +1296,6 @@ proc test_track_wckey { } {
 }
 
 ################################################################
-# Proc: test_wiki_sched
-#
-# Return 1 if using sched/wiki or sched/wiki2 (Maui or Moab),
-#        0 otherwise
-################################################################
-proc test_wiki_sched { } {
-	global scontrol
-
-	log_user 0
-	set sched_wiki   0
-	spawn $scontrol show config
-	expect {
-		-re "SchedulerType *= sched/wiki" {
-			set sched_wiki 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	return $sched_wiki
-}
-
-################################################################
 #
 # Proc: test_account_storage
 #
@@ -1994,9 +1968,6 @@ proc get_cycle_count { } {
 
 	if {$enable_memory_leak_debug != 0} {
 		return 2
-	}
-	if {[test_wiki_sched] == 1} {
-		return 5
 	}
 	return 100
 }

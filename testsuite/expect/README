@@ -349,12 +349,8 @@ test7.4    Test of TotalView operation with srun, with and without bulk
 	   transfer.
 test7.5    Test of TotalView termination logic for srun.
 test7.6    Test of TotalView operation with sattach
-test7.7    Test of sched/wiki2 plugin. This is intended to execute in the
-	   place of Moab or Maui and emulate its actions to confirm proper
-	   operation of the plugin.
-test7.8    Test of sched/wiki plugin. This is intended to execute in the
-	   place of Maui and emulate its actions to confirm proper
-	   operation of the plugin.
+test7.7    (removed)
+test7.8    (removed)
 test7.9    Test that no files are open in spawned tasks (except stdin,
 	   stdout, and stderr) to insure successful checkpoint/restart.
 test7.10   Test if we can trick SLURM into using the wrong user ID
@@ -377,7 +373,7 @@ test8.3    Test of Blue Gene specific job geometry support
 test8.4    Test of Blue Gene MPI job execution
 test8.5    Test creation of all blocks 1 midplane and smaller.
 test8.6    Stress test Dynamic mode block creation.
-test8.7    Test of Blue Gene scheduling with sched/wik2 plugin.
+test8.7    (removed)
 test8.8    Test result of marking smaller blocks in an error state.
 test8.9    Bluegene/Q only: Test to make sure if a nodeboard goes unavailable
 	   while another block is using it for passthrough to make sure the

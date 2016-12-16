@@ -40,11 +40,6 @@ set name_read   ""
 
 print_header $test_id
 
-if {[test_wiki_sched] == 1} {
-	send_user "\nWARNING: not compatible with sched/wiki (Maui)\n"
-	send_user "         or sched/wiki2 (Moab) schedulers\n"
-	exit $exit_code
-}
 set prio_type [priority_type]
 if {[string compare $prio_type "multifactor"] == 0} {
 	send_user "\nWARNING: not compatible with priority/multifactor\n"
