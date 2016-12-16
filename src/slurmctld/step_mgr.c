@@ -516,6 +516,12 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 		return ESLURM_INVALID_JOB_ID;
 	}
 
+	if ((job_ptr->user_id != uid) && !validate_slurm_user(uid)) {
+		error("Security violation, JOB_CANCEL RPC from uid %d",
+		      uid);
+		return ESLURM_USER_ID_MISSING;
+	}
+
 	if (IS_JOB_FINISHED(job_ptr)) {
 		rc = ESLURM_ALREADY_DONE;
 		if (signal != SIG_NODE_FAIL)
@@ -526,12 +532,6 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 			job_state_string(job_ptr->job_state));
 		if (signal != SIG_NODE_FAIL)
 			return ESLURM_TRANSITION_STATE_NO_UPDATE;
-	}
-
-	if ((job_ptr->user_id != uid) && !validate_slurm_user(uid)) {
-		error("Security violation, JOB_CANCEL RPC from uid %d",
-		      uid);
-		return ESLURM_USER_ID_MISSING;
 	}
 
 	step_ptr = find_step_record(job_ptr, step_id);
