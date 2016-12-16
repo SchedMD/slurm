@@ -973,6 +973,7 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 		packstr (dump_node_ptr->name, buffer);
 		packstr (dump_node_ptr->node_hostname, buffer);
 		packstr (dump_node_ptr->comm_name, buffer);
+		pack16(dump_node_ptr->port, buffer);
 		pack32(dump_node_ptr->node_state, buffer);
 		packstr (dump_node_ptr->version, buffer);
 		/* On a bluegene system always use the regular node

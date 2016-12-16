@@ -2027,6 +2027,7 @@ typedef struct node_info {
 	char *partitions;	/* Comma separated list of partitions containing
 				 * this node, NOT supplied by slurmctld, but
 				 * populated by scontrol */
+	uint16_t port;		/* TCP port number of the slurmd */
 	uint64_t real_memory;	/* configured MB of real memory on the node */
 	char *reason;		/* reason for node being DOWN or DRAINING */
 	time_t reason_time;	/* Time stamp when reason was set, ignore if

@@ -276,9 +276,15 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 
 	/****** Line (optional) ******/
 	if (node_ptr->node_hostname || node_ptr->node_addr) {
-		xstrfmtcat(out, "NodeAddr=%s NodeHostName=%s Version=%s",
-			   node_ptr->node_addr, node_ptr->node_hostname,
-			   node_ptr->version);
+		if (node_ptr->port && node_ptr->port != slurm_get_slurmd_port())
+			xstrfmtcat(out, "NodeAddr=%s NodeHostName=%s Port=%u "
+				   "Version=%s", node_ptr->node_addr,
+				   node_ptr->node_hostname, node_ptr->port,
+				   node_ptr->version);
+		else
+			xstrfmtcat(out, "NodeAddr=%s NodeHostName=%s "
+				   "Version=%s", node_ptr->node_addr,
+				   node_ptr->node_hostname, node_ptr->version);
 		xstrcat(out, line_end);
 	}
 

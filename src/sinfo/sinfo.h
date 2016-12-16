@@ -61,6 +61,7 @@
 
 /* Collection of data for printing reports. Like data is combined here */
 typedef struct {
+	uint16_t port;
 	uint32_t node_state;
 
 	uint32_t nodes_alloc;
@@ -136,6 +137,7 @@ struct sinfo_match_flags {
 	bool memory_flag;
 	bool node_addr_flag;
 	bool partition_flag;
+	bool port_flag;
 	bool preempt_mode_flag;
 	bool priority_job_factor_flag;
 	bool priority_tier_flag;

@@ -830,6 +830,9 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 	if (params.match_flags.free_mem_flag &&
 	    (node_ptr->free_mem        != sinfo_ptr->min_free_mem))
 		return false;
+	if (params.match_flags.port_flag &&
+	    (node_ptr->port != sinfo_ptr->port))
+		return false;
 	if (params.match_flags.version_flag &&
 	    (node_ptr->version     != sinfo_ptr->version))
 		return false;
@@ -951,6 +954,7 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 		sinfo_ptr->max_disk   = node_ptr->tmp_disk;
 		sinfo_ptr->min_mem    = node_ptr->real_memory;
 		sinfo_ptr->max_mem    = node_ptr->real_memory;
+		sinfo_ptr->port       = node_ptr->port;
 		sinfo_ptr->min_weight = node_ptr->weight;
 		sinfo_ptr->max_weight = node_ptr->weight;
 		sinfo_ptr->min_cpu_load = node_ptr->cpu_load;

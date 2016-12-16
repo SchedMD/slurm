@@ -215,6 +215,12 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 		        xstrfmtcat(tmp_str, " Feature=%s",
 				   node_info_ptr->node_array[i].features);
 
+		if (node_info_ptr->node_array[i].port &&
+		    node_info_ptr->node_array[i].port
+		    != slurm_ctl_conf_ptr->slurmd_port)
+		        xstrfmtcat(tmp_str, " Port=%u",
+				   node_info_ptr->node_array[i].port);
+
 		/* check for duplicate records */
 		for (crp = rp; crp != NULL; crp = crp->next) {
 			if (!xstrcmp(crp->rec, tmp_str)) {
@@ -1475,7 +1481,6 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->slurmd_plugstack);
 	list_append(ret_list, key_pair);
 
-#ifndef MULTIPLE_SLURMD
 	snprintf(tmp_str, sizeof(tmp_str), "%u",
 		 slurm_ctl_conf_ptr->slurmd_port);
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -1483,7 +1488,6 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(tmp_str);
 	list_append(ret_list, key_pair);
 
-#endif
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("SlurmdSpoolDir");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->slurmd_spooldir);

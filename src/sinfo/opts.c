@@ -1011,6 +1011,12 @@ static int _parse_long_format (char* format_long)
 						   field_size,
 						   right_justify,
 						   suffix );
+		} else if (!xstrcasecmp(token, "port")) {
+			params.match_flags.port_flag = true;
+			format_add_port( params.format_list,
+					 field_size,
+					 right_justify,
+					 suffix );
 		} else if (!xstrcasecmp(token, "preemptmode")) {
 			params.match_flags.preempt_mode_flag = true;
 			format_add_preempt_mode( params.format_list,
@@ -1267,6 +1273,8 @@ void _print_options( void )
 	printf("memory_flag     = %s\n", params.match_flags.memory_flag ?
 			"true" : "false");
 	printf("partition_flag  = %s\n", params.match_flags.partition_flag ?
+			"true" : "false");
+	printf("port_flag       = %s\n", params.match_flags.port_flag ?
 			"true" : "false");
 	printf("priority_job_factor_flag   = %s\n",
 			params.match_flags.priority_job_factor_flag ?

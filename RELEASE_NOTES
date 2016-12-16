@@ -136,6 +136,7 @@ In slurm_msg_t: Added buffer to keep received message buffer to use for later
 In job_desc_msg_t: Added fed_siblings to track which clusters have sibling jobs.
 In slurm_job_info_t: Added fed_origin_str, fed_siblings, fed_siblings_str to
 		      display job federation information.
+In struct node_info: Added port.
 
 Added the following struct definitions
 ======================================

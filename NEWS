@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 17.02.0pre5
 ==============================
+ -- Add port info to 'sinfo' and 'scontrol show node'.
 
 * Changes in Slurm 17.02.0pre4
 ==============================
