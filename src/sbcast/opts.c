@@ -199,7 +199,12 @@ extern void parse_command_line(int argc, char *argv[])
 		if (sep)
 			sep[0] = ',';
 	} else {
+#ifdef HAVE_GET_CURRENT_DIR_NAME
 		tmp = get_current_dir_name();
+#else
+		tmp = malloc(PATH_MAX);
+		tmp = getcwd(tmp, PATH_MAX);
+#endif
 		xstrfmtcat(params.dst_fname, "%s/%s", tmp, argv[optind+1]);
 		free(tmp);
 	}
