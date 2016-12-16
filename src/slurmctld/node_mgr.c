@@ -1048,6 +1048,7 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 				     protocol_version);
 
 		packstr(dump_node_ptr->tres_fmt_str,buffer);
+		pack16(dump_node_ptr->port, buffer);
 	} else if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
 		packstr (dump_node_ptr->name, buffer);
 		packstr (dump_node_ptr->node_hostname, buffer);

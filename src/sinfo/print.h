@@ -112,6 +112,8 @@ void print_sinfo_reservation(reserve_info_msg_t *resv_ptr);
 	format_add_function(list,wid,right,suffix,_print_partition)
 #define format_add_partition_name(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_partition_name)
+#define format_add_port(list,wid,right,suffix) \
+	format_add_function(list,wid,right,suffix,_print_port)
 #define format_add_prefix(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_prefix)
 #define format_add_preempt_mode(list,wid,right,suffix) \
@@ -206,6 +208,8 @@ int _print_oversubscribe(sinfo_data_t * sinfo_data, int width,
 int _print_partition(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_partition_name(sinfo_data_t * sinfo_data, int width,
+			bool right_justify, char *suffix);
+int _print_port(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_prefix(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);

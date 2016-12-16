@@ -73,6 +73,8 @@ typedef struct {
 	uint32_t cpus_other;
 	uint32_t cpus_total;
 
+	uint16_t min_port;
+	uint16_t max_port;
 	uint32_t min_cpus;
 	uint32_t max_cpus;
 	uint32_t min_sockets;
@@ -136,6 +138,7 @@ struct sinfo_match_flags {
 	bool memory_flag;
 	bool node_addr_flag;
 	bool partition_flag;
+	bool port_flag;
 	bool preempt_mode_flag;
 	bool priority_job_factor_flag;
 	bool priority_tier_flag;

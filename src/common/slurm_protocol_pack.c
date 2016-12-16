@@ -4253,6 +4253,7 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 
 		safe_unpackstr_xmalloc(&node->tres_fmt_str, &uint32_tmp,
 				       buffer);
+		safe_unpack16(&node->port, buffer);
 	} else if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
 		uint32_t tmp_mem;
 		safe_unpackstr_xmalloc(&node->name, &uint32_tmp, buffer);
