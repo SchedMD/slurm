@@ -391,11 +391,11 @@ static int _delete_part_record(char *name)
 	int i;
 
 	last_part_update = time(NULL);
-	if (name == NULL) {
-		i = list_delete_all(part_list, &list_find_part,
-				    "universal_key");
-	} else
+	if (name == NULL)
+		i = list_flush(part_list);
+	else
 		i = list_delete_all(part_list, &list_find_part, name);
+
 	if ((name == NULL) || (i != 0))
 		return 0;
 
@@ -1109,23 +1109,16 @@ static void _list_delete_part(void *part_entry)
 /*
  * list_find_part - find an entry in the partition list, see common/list.h
  *	for documentation
- * IN key - partition name or "universal_key" for all partitions
+ * IN key - partition name
  * RET 1 if matches key, 0 otherwise
  * global- part_list - the global partition list
  */
-int list_find_part(void *part_entry, void *key)
+int list_find_part(void *x, void *key)
 {
-	if (key == NULL)
-		return 0;
+	struct part_record *part_ptr = (struct part_record *) x;
+	char *part = (char *)key;
 
-	if (xstrcmp(key, "universal_key") == 0)
-		return 1;
-
-	if (xstrcmp(((struct part_record *)part_entry)->name,
-		    (char *) key) == 0)
-		return 1;
-
-	return 0;
+	return (!xstrcmp(part_ptr->name, part));
 }
 
 /*
