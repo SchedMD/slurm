@@ -105,13 +105,6 @@ reduce the effectiveness of backfill scheduling.
 See the <a href="faq.html#backfill">backfill documentation</a>
 for more details.</li>
 
-<li>If the scheduler type is <i>wiki</i>, this represents
-<a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
-The Maui Scheduler</a> or
-<a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
-Moab Cluster Suite</a>.
-Please refer to its documentation for help.</li>
-</ul>
 <p class="footer"><a href="#top">top</a></p>
 
 
@@ -305,6 +298,6 @@ partition 000.
 </ol>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 15 April 2015</p>
+<p style="text-align:center;">Last modified 15 December 2016</p>
 
 <!--#include virtual="footer.txt"-->

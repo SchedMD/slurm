@@ -10,9 +10,6 @@ scheduler plugins.</p>
 <p>It is noteworthy that two different models are used for job scheduling.
 The <b>backfill</b> scheduler let. Slurm establish the initial job priority
 and can periodically alter job priorities to change their order within the queue.
-The <b>wiki</b> scheduler establishes an initial priority of zero (held) for
-all jobs. These jobs only begin execution when the <b>wiki</b> scheduler
-explicitly raises their priority (releasing them).
 Developers may use the model that best fits their needs.
 Note that a separate <a href="selectplugins.html">node selection plugin</a>
 is available for controlling that aspect of scheduling.</p>
@@ -28,15 +25,6 @@ abbreviation for the type of scheduler. We recommend, for example:</p>
 scheduling services. This is the default behavior and implements first-in-first-out scheduling.</li>
 <li><b>backfill</b> &mdash; Raise the priority of jobs if doing so results in their starting earlier
 without any delay in the expected initiation time of any higher priority job.</li>
-<li><b>wiki</b> &mdash; Uses
-<a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
-The Maui Scheduler</a> (Wiki version)
-as an external entity to control Slurm job scheduling.</li>
-<li><b>wiki2</b> &mdash; Uses
-<a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
-Moab Cluster Suite</a> as an external entity to control Slurm job scheduling.
-Note that wiki2 is an expanded version of the wiki plugin with additional
-functions supported specifically for Moab.</li>
 </ul>
 
 <p><span class="commandline">const char plugin_name[]</span><br>
@@ -186,6 +174,6 @@ specific error code.</p>
 or NULL if no description found in this plugin.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 27 March 2015</p>
+<p style="text-align:center;">Last modified 15 December 2016</p>
 
 <!--#include virtual="footer.txt"-->

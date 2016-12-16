@@ -899,6 +899,14 @@ extern int load_all_front_end_state(bool state_only)
 			else
 				front_end_ptr->protocol_version =
 					protocol_version;
+
+			/* Sanity check to make sure we can take a version we
+			 * actually understand.
+			 */
+			if (front_end_ptr->protocol_version <
+			    SLURM_MIN_PROTOCOL_VERSION)
+				front_end_ptr->protocol_version =
+					SLURM_MIN_PROTOCOL_VERSION;
 		}
 
 		xfree(node_name);

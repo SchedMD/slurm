@@ -12,8 +12,7 @@ man5_MANS = \
 	nonstop.conf.5 \
 	slurm.conf.5 \
 	slurmdbd.conf.5 \
-	topology.conf.5 \
-	wiki.conf.5
+	topology.conf.5
 
 EXTRA_DIST = $(man5_MANS)
 
@@ -31,8 +30,7 @@ html_DATA = \
 	nonstop.conf.html \
 	slurm.conf.html \
 	slurmdbd.conf.html \
-	topology.conf.html \
-	wiki.conf.html
+	topology.conf.html
 
 MOSTLYCLEANFILES = ${html_DATA}
 

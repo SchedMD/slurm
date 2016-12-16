@@ -9,17 +9,17 @@ scontrol \- Used view and modify Slurm configuration and state.
 .SH "DESCRIPTION"
 \fBscontrol\fR is used to view or modify Slurm configuration including: job,
 job step, node, partition, reservation, and overall system configuration. Most
-of the commands can only be executed by user root. If an attempt to view or modify
-configuration information is made by an unauthorized user, an error message
-will be printed and the requested action will not occur. If no command is
-entered on the execute line, \fBscontrol\fR will operate in an interactive
-mode and prompt for input. It will continue prompting for input and executing
-commands until explicitly terminated. If a command is entered on the execute
-line, \fBscontrol\fR will execute that command and terminate. All commands
-and options are case\-insensitive, although node names, partition names, and
-reservation names are case\-sensitive (node names "LX" and "lx" are distinct).
-All commands and options can be abbreviated to the extent that the
-specification is unique.  A modified Slurm configuration can be written to
+of the commands can only be executed by user root or an Administrator. If an
+attempt to view or modify configuration information is made by an unauthorized
+user, an error message will be printed and the requested action will not occur.
+If no command is entered on the execute line, \fBscontrol\fR will operate in an
+interactive mode and prompt for input. It will continue prompting for input and
+executing commands until explicitly terminated. If a command is entered on the
+execute line, \fBscontrol\fR will execute that command and terminate. All
+commands and options are case\-insensitive, although node names, partition
+names, and reservation names are case\-sensitive (node names "LX" and "lx" are
+distinct). All commands and options can be abbreviated to the extent that the
+specification is unique. A modified Slurm configuration can be written to
 a file using the \fIscontrol write config\fR command. The resulting file
 will be named using the convention "slurm.conf.<datetime>" and located in the
 same directory as the original "slurm.conf" file. The directory containing
@@ -513,6 +513,13 @@ Repeat the last command executed.
 
 .TP
 \fBSPECIFICATIONS FOR UPDATE COMMAND, JOBS\fR
+.LP
+Note that update requests done by either root, SlurmUser or Administrators are
+not subject to certain restrictions. For instance, if an Administrator changes
+the QOS on a pending job, certain limits such as the TimeLimit will not be
+changed automatically as changes made by the Administrators are allowed to
+violate these restrictions.
+
 .TP
 \fIAccount\fP=<account>
 Account name to be changed for this job's resource use.

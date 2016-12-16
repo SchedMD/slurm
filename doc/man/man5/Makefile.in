@@ -460,8 +460,7 @@ man5_MANS = \
 	nonstop.conf.5 \
 	slurm.conf.5 \
 	slurmdbd.conf.5 \
-	topology.conf.5 \
-	wiki.conf.5
+	topology.conf.5
 
 EXTRA_DIST = $(man5_MANS) $(am__append_1)
 @HAVE_MAN2HTML_TRUE@html_DATA = \
@@ -476,8 +475,7 @@ EXTRA_DIST = $(man5_MANS) $(am__append_1)
 @HAVE_MAN2HTML_TRUE@	nonstop.conf.html \
 @HAVE_MAN2HTML_TRUE@	slurm.conf.html \
 @HAVE_MAN2HTML_TRUE@	slurmdbd.conf.html \
-@HAVE_MAN2HTML_TRUE@	topology.conf.html \
-@HAVE_MAN2HTML_TRUE@	wiki.conf.html
+@HAVE_MAN2HTML_TRUE@	topology.conf.html
 
 @HAVE_MAN2HTML_TRUE@MOSTLYCLEANFILES = ${html_DATA}
 @HAVE_MAN2HTML_TRUE@SUFFIXES = .html

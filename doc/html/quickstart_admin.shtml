@@ -339,12 +339,6 @@ backfill scheduling does require users to specify job time limits.</li>
 <li><i>gang</i> time-slices jobs in the same partition/queue and can be
 used to preempt jobs from lower-priority queues in order to execute
 jobs in higher priority queues.</li>
-<li><i>wiki</i> is an interface for use with
-<a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
-The Maui Scheduler</a></li>
-<li><i>wiki2</i> is an interface for use with the
-<a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
-Moab Cluster Suite</a>
 </ul>
 
 <p>For more information about scheduling options see
@@ -849,6 +843,6 @@ options such as mysql and gui tools via a configuration menu.</p>
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 17 August 2016</p>
+<p style="text-align:center;">Last modified 15 December 2016</p>
 
 <!--#include virtual="footer.txt"-->
