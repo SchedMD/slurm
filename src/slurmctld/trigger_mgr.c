@@ -1539,7 +1539,7 @@ static void _trigger_run_program(trig_mgr_info_t *trig_in)
 		trig_in->child_pid = child_pid;
 	} else if (child_pid == 0) {
 		int i;
-		bool run_as_self = (uid == getuid());
+		bool run_as_self = (uid == slurmctld_conf.slurm_user_id);
 
 		for (i = 0; i < 1024; i++)
 			(void) close(i);

@@ -1476,8 +1476,9 @@ static int _init_tres(void)
 	FREE_NULL_LIST(char_list);
 
 	if (add_list) {
-		if (acct_storage_g_add_tres(acct_db_conn, getuid(), add_list)
-		    != SLURM_SUCCESS)
+		if (acct_storage_g_add_tres(acct_db_conn,
+					    slurmctld_conf.slurm_user_id,
+					    add_list) != SLURM_SUCCESS)
 			fatal("Problem adding tres to the database, "
 			      "can't continue until database is able to "
 			      "make new tres");
@@ -2862,7 +2863,7 @@ static void _become_slurm_user(void)
 		    (setgroups(0, NULL) != 0)) {
 			fatal("Failed to drop supplementary groups, "
 			      "setgroups: %m");
-		} else if ((slurmctld_conf.slurm_user_id != getuid()) &&
+		} else if ((slurmctld_conf.slurm_user_id != 0) &&
 			   initgroups(slurmctld_conf.slurm_user_name,
 				      slurm_user_gid)) {
 			fatal("Failed to set supplementary groups, "

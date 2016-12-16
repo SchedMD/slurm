@@ -1261,7 +1261,7 @@ void set_slurmd_addr (void)
 		xfree(node_ptr->reason);
 		node_ptr->reason = xstrdup("NO NETWORK ADDRESS FOUND");
 		node_ptr->reason_time = time(NULL);
-		node_ptr->reason_uid = getuid();
+		node_ptr->reason_uid = slurmctld_conf.slurm_user_id;
 	}
 
 	END_TIMER2("set_slurmd_addr");
@@ -2970,7 +2970,8 @@ extern int validate_nodes_via_front_end(
 			continue;
 #endif
 		info("Killing orphan batch job %u", job_ptr->job_id);
-		job_complete(job_ptr->job_id, 0, false, false, 0);
+		job_complete(job_ptr->job_id, slurmctld_conf.slurm_user_id,
+			     false, false, 0);
 	}
 	list_iterator_destroy(job_iterator);
 

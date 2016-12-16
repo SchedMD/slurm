@@ -1872,7 +1872,7 @@ extern int validate_group(struct part_record *part_ptr, uid_t run_uid)
 
 	if (part_ptr->allow_groups == NULL)
 		return 1;	/* all users allowed */
-	if ((run_uid == 0) || (run_uid == getuid()))
+	if (validate_slurm_user(run_uid))
 		return 1;	/* super-user can run anywhere */
 	if (part_ptr->allow_uids == NULL)
 		return 0;	/* no non-super-users in the list */

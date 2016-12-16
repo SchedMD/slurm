@@ -941,7 +941,7 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
  */
 extern bool validate_slurm_user(uid_t uid)
 {
-	if ((uid == 0) || (uid == getuid()))
+	if ((uid == 0) || (uid == slurmctld_conf.slurm_user_id))
 		return true;
 	else
 		return false;
@@ -955,7 +955,7 @@ extern bool validate_slurm_user(uid_t uid)
  */
 extern bool validate_super_user(uid_t uid)
 {
-	if ((uid == 0) || (uid == getuid()) ||
+	if ((uid == 0) || (uid == slurmctld_conf.slurm_user_id) ||
 	    assoc_mgr_get_admin_level(acct_db_conn, uid) >=
 	    SLURMDB_ADMIN_SUPER_USER)
 		return true;
@@ -971,7 +971,7 @@ extern bool validate_super_user(uid_t uid)
  */
 extern bool validate_operator(uid_t uid)
 {
-	if ((uid == 0) || (uid == getuid()) ||
+	if ((uid == 0) || (uid == slurmctld_conf.slurm_user_id) ||
 	    assoc_mgr_get_admin_level(acct_db_conn, uid) >=
 	    SLURMDB_ADMIN_OPERATOR)
 		return true;
@@ -991,7 +991,7 @@ static void _kill_job_on_msg_fail(uint32_t job_id)
 	error("Job allocate response msg send failure, killing JobId=%u",
 	      job_id);
 	lock_slurmctld(job_write_lock);
-	job_complete(job_id, 0, false, false, 0);
+	job_complete(job_id, slurmctld_conf.slurm_user_id, false, false, 0);
 	unlock_slurmctld(job_write_lock);
 }
 
@@ -2289,7 +2289,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
 #else
 			error_code = drain_nodes(comp_msg->node_name,
 						 "batch job complete failure",
-						 getuid());
+						 slurmctld_conf.slurm_user_id);
 #endif	/* !HAVE_FRONT_END */
 #endif	/* !HAVE_BG */
 			if ((comp_msg->job_rc != SLURM_SUCCESS) && job_ptr &&

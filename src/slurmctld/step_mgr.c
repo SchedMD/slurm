@@ -528,7 +528,7 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 			return ESLURM_TRANSITION_STATE_NO_UPDATE;
 	}
 
-	if ((job_ptr->user_id != uid) && (uid != 0) && (uid != getuid())) {
+	if ((job_ptr->user_id != uid) && !validate_slurm_user(uid)) {
 		error("Security violation, JOB_CANCEL RPC from uid %d",
 		      uid);
 		return ESLURM_USER_ID_MISSING;
@@ -782,7 +782,7 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 		return ESLURM_INVALID_JOB_ID;
 	}
 
-	if ((job_ptr->user_id != uid) && (uid != 0) && (uid != getuid())) {
+	if ((job_ptr->user_id != uid) && !validate_slurm_user(uid)) {
 		error("Security violation, JOB_COMPLETE RPC from uid %d",
 		      uid);
 		return ESLURM_USER_ID_MISSING;
@@ -4190,8 +4190,8 @@ extern void step_checkpoint(void)
 			ckpt_req.job_id = job_ptr->job_id;
 			ckpt_req.step_id = SLURM_BATCH_SCRIPT;
 			ckpt_req.image_dir = NULL;
-			job_checkpoint(&ckpt_req, getuid(), -1,
-				       (uint16_t)NO_VAL);
+			job_checkpoint(&ckpt_req, slurmctld_conf.slurm_user_id,
+				       -1, (uint16_t)NO_VAL);
 			job_ptr->ckpt_time = now;
 			last_job_update = now;
 			continue; /* ignore periodic step ckpt */

@@ -2155,7 +2155,8 @@ extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr,
 		 * batch script and should never happen. We are too deep into
 		 * the job launch to gracefully clean up here. */
 		slurm_free_job_launch_msg(launch_msg_ptr);
-		(void) job_complete(job_ptr->job_id, getuid(), true, false, 0);
+		job_complete(job_ptr->job_id, slurmctld_conf.slurm_user_id,
+			     true, false, 0);
 		return NULL;
 	}
 
@@ -2173,7 +2174,8 @@ extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr,
 		error("uid %ld not found on system, aborting job %u",
 		      (long)launch_msg_ptr->uid, job_ptr->job_id);
 		slurm_free_job_launch_msg(launch_msg_ptr);
-		(void) job_complete(job_ptr->job_id, getuid(), false, true, 0);
+		job_complete(job_ptr->job_id, slurmctld_conf.slurm_user_id,
+			     false, true, 0);
 		return NULL;
 #endif
 	} else
@@ -2200,7 +2202,8 @@ extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr,
 		slurm_free_job_launch_msg(launch_msg_ptr);
 		job_ptr->batch_flag = 1;	/* Allow repeated requeue */
 		job_ptr->details->begin_time = time(NULL) + 120;
-		(void) job_complete(job_ptr->job_id, getuid(), true, false, 0);
+		job_complete(job_ptr->job_id, slurmctld_conf.slurm_user_id,
+			     true, false, 0);
 		return NULL;
 	}
 
@@ -2227,7 +2230,8 @@ extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr,
 		error("%s: environment missing or corrupted aborting job %u",
 		      __func__, job_ptr->job_id);
 		slurm_free_job_launch_msg(launch_msg_ptr);
-		job_complete(job_ptr->job_id, getuid(), false, true, 0);
+		job_complete(job_ptr->job_id, slurmctld_conf.slurm_user_id,
+			     false, true, 0);
 		return NULL;
 	}
 	launch_msg_ptr->job_mem = job_ptr->details->pn_min_memory;

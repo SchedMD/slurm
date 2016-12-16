@@ -388,7 +388,7 @@ static int _background_process_msg(slurm_msg_t * msg)
 		uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, auth_info);
 
 		xfree(auth_info);
-		if ((uid == 0) || (uid == getuid()))
+		if (validate_slurm_user(uid))
 			super_user = true;
 
 		if (super_user &&
