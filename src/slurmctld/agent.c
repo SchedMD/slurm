@@ -994,6 +994,22 @@ static void *_thread_per_group_rpc(void *args)
 				     _wif_status());
 			unlock_slurmctld(job_write_lock);
 			continue;
+		} else if ((msg_type == RESPONSE_RESOURCE_ALLOCATION) &&
+		    (rc == SLURM_COMMUNICATIONS_CONNECTION_ERROR)) {
+			/* Communication issue to srun that launched the job
+			 * Cancel rather than leave a stray-but-empty job
+			 * behind on the allocated nodes. */
+			resource_allocation_response_msg_t *msg_ptr =
+				task_ptr->msg_args_ptr;
+			uint32_t job_id = msg_ptr->job_id;
+			info("Killing interactive job %u: %s",
+			     job_id, slurm_strerror(rc));
+			thread_state = DSH_FAILED;
+			lock_slurmctld(job_write_lock);
+			job_complete(job_id, slurmctld_conf.slurm_user_id,
+				     false, false, _wif_status());
+			unlock_slurmctld(job_write_lock);
+			continue;
 		}
 
 		if (((msg_type == REQUEST_SIGNAL_TASKS) ||

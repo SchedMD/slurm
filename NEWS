@@ -26,6 +26,8 @@ documents those changes that are of interest to users and administrators.
     the salloc or srun command as needed.
  -- Prevent possible out-of-bounds read in slurmstepd on an invalid #! line.
  -- Fix check for PluginDir within slurmctld to work with multiple directories.
+ -- Cancel interactive jobs automatically on communication error to launching
+    srun/salloc process.
 
 * Changes in Slurm 16.05.7
 ==========================
