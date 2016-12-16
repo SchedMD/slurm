@@ -61,6 +61,7 @@
 #include "src/common/working_cluster.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
@@ -1864,8 +1865,7 @@ _hostlist_create_bracketed(const char *hostlist, char *sep,
 	struct _range *ranges = NULL;
 	int capacity = 0;
 	int nr, err;
-	char *p, *tok, *str, *orig;
-	char cur_tok[1024];
+	char *cur_tok = NULL, *p, *tok, *str, *orig;
 
 	if (hostlist == NULL)
 		return new;
@@ -1876,7 +1876,6 @@ _hostlist_create_bracketed(const char *hostlist, char *sep,
 	}
 
 	while ((tok = _next_tok(sep, &str)) != NULL) {
-		strncpy(cur_tok, tok, 1024);
 		if ((p = strrchr(tok, '[')) != NULL) {
 			char *q, *prefix = tok;
 			*p++ = '\0';
@@ -1900,17 +1899,20 @@ _hostlist_create_bracketed(const char *hostlist, char *sep,
 				 * Not likely what the user
 				 * wanted. We will just tack one on
 				 * the end. */
-				strcat(cur_tok, "]");
-				if (prefix && prefix[0])
+				if (prefix && prefix[0]) {
+					xstrfmtcat(cur_tok, "%s]", tok);
 					hostlist_push_host_dims(
 						new, cur_tok, dims);
-				else
+					xfree(cur_tok);
+				} else {
 					hostlist_push_host_dims(new, p, dims);
+				}
 
 			}
 
-		} else
-			hostlist_push_host_dims(new, cur_tok, dims);
+		} else {
+			hostlist_push_host_dims(new, tok, dims);
+		}
 	}
 	xfree(ranges);
 
