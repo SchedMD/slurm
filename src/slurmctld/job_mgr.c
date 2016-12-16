@@ -106,7 +106,6 @@
 #define DETAILS_FLAG 0xdddd
 #define MAX_EXIT_VAL 255	/* Maximum value returned by WIFEXITED() */
 #define SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0 0
-#define STEP_FLAG 0xbbbb
 #define TOP_PRIORITY 0xffff0000	/* large, but leave headroom for higher */
 #define ONE_YEAR	(365 * 24 * 60 * 60)
 
@@ -174,7 +173,7 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	char *resv_name, slurmdb_assoc_rec_t *assoc_ptr,
 	bool admin, slurmdb_qos_rec_t *qos_rec,	int *error_code, bool locked);
 static void _dump_job_details(struct job_details *detail_ptr, Buf buffer);
-static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer);
+static int  _dump_job_state(void *x, void *y);
 static void _free_job_fed_details(job_fed_details_t **fed_details_pptr);
 static void _get_batch_job_dir_ids(List batch_dirs);
 static time_t _get_last_state_write_time(void);
@@ -659,8 +658,6 @@ int dump_all_job_state(void)
 	/* Locks: Read config and job */
 	slurmctld_lock_t job_read_lock =
 		{ READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
-	ListIterator job_iterator;
-	struct job_record *job_ptr;
 	Buf buffer = init_buf(high_buffer_size);
 	time_t now = time(NULL);
 	time_t last_state_file_time;
@@ -701,12 +698,7 @@ int dump_all_job_state(void)
 
 	/* write individual job records */
 	lock_slurmctld(job_read_lock);
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		xassert (job_ptr->magic == JOB_MAGIC);
-		_dump_job_state(job_ptr, buffer);
-	}
-	list_iterator_destroy(job_iterator);
+	list_for_each(job_list, _dump_job_state, buffer);
 
 	/* write the buffer to file */
 	old_file = xstrdup(slurmctld_conf.state_save_location);
@@ -1096,12 +1088,14 @@ unpack_error:
  * IN dump_job_ptr - pointer to job for which information is requested
  * IN/OUT buffer - location to store data, pointers automatically advanced
  */
-static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
+static int _dump_job_state(void *x, void *arg)
 {
+	struct job_record *dump_job_ptr = (struct job_record *) x;
+	Buf buffer = (Buf) arg;
 	struct job_details *detail_ptr;
-	ListIterator step_iterator;
-	struct step_record *step_ptr;
 	uint32_t tmp_32;
+
+	xassert(dump_job_ptr->magic == JOB_MAGIC);
 
 	/* Dump basic job info */
 	pack32(dump_job_ptr->array_job_id, buffer);
@@ -1240,15 +1234,8 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 		pack16((uint16_t) 0, buffer);	/* no details flag */
 
 	/* Dump job steps */
-	step_iterator = list_iterator_create(dump_job_ptr->step_list);
-	while ((step_ptr = (struct step_record *)
-		list_next(step_iterator))) {
-		if (step_ptr->state < JOB_RUNNING)
-			continue;
-		pack16((uint16_t) STEP_FLAG, buffer);
-		dump_job_step_state(dump_job_ptr, step_ptr, buffer);
-	}
-	list_iterator_destroy(step_iterator);
+	list_for_each(dump_job_ptr->step_list, dump_job_step_state, buffer);
+
 	pack16((uint16_t) 0, buffer);	/* no step flag */
 	pack32(dump_job_ptr->bit_flags, buffer);
 	packstr(dump_job_ptr->tres_alloc_str, buffer);
@@ -1258,6 +1245,8 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	packstr_array(dump_job_ptr->pelog_env,
 		      dump_job_ptr->pelog_env_size, buffer);
 	pack32(dump_job_ptr->pack_leader, buffer);
+
+	return 0;
 }
 
 /* Unpack a job's state information from a buffer */

@@ -811,6 +811,8 @@ struct	depend_spec {
 	struct job_record *job_ptr;	/* pointer to this job */
 };
 
+#define STEP_FLAG 0xbbbb
+
 struct 	step_record {
 	uint16_t batch_step;		/* 1 if batch job step, 0 otherwise */
 	uint16_t ckpt_interval;		/* checkpoint interval in minutes */
@@ -1038,12 +1040,10 @@ extern void dump_job_desc(job_desc_msg_t * job_specs);
 /*
  * dump_job_step_state - dump the state of a specific job step to a buffer,
  *	load with load_step_state
- * IN job_ptr - pointer to job for which information is to be dumpped
- * IN step_ptr - pointer to job step for which information is to be dumpped
+ * IN step_ptr - pointer to job step for which information is to be dumped
  * IN/OUT buffer - location to store data, pointers automatically advanced
  */
-extern void dump_job_step_state(struct job_record *job_ptr,
-				struct step_record *step_ptr, Buf buffer);
+extern int dump_job_step_state(void *x, void *arg);
 
 /*
  * dump_step_desc - dump the incoming step initiate request message

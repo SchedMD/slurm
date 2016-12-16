@@ -3764,13 +3764,19 @@ resume_job_step(struct job_record *job_ptr)
 /*
  * dump_job_step_state - dump the state of a specific job step to a buffer,
  *	load with load_step_state
- * IN job_ptr - pointer to job for which information is to be dumpped
- * IN step_ptr - pointer to job step for which information is to be dumpped
+ * IN step_ptr - pointer to job step for which information is to be dumped
  * IN/OUT buffer - location to store data, pointers automatically advanced
  */
-extern void dump_job_step_state(struct job_record *job_ptr,
-				struct step_record *step_ptr, Buf buffer)
+extern int dump_job_step_state(void *x, void *arg)
 {
+	struct step_record *step_ptr = (struct step_record *) x;
+	Buf buffer = (Buf) arg;
+
+	if (step_ptr->state < JOB_RUNNING)
+		return 0;
+
+	pack16((uint16_t) STEP_FLAG, buffer);
+
 	pack32(step_ptr->step_id, buffer);
 	pack16(step_ptr->cyclic_alloc, buffer);
 	pack32(step_ptr->srun_pid, buffer);
@@ -3817,7 +3823,8 @@ extern void dump_job_step_state(struct job_record *job_ptr,
 
 	packstr(step_ptr->gres, buffer);
 	(void) gres_plugin_step_state_pack(step_ptr->gres_list, buffer,
-					   job_ptr->job_id, step_ptr->step_id,
+					   step_ptr->job_ptr->job_id,
+					   step_ptr->step_id,
 					   SLURM_PROTOCOL_VERSION);
 
 	pack16(step_ptr->batch_step, buffer);
@@ -3833,6 +3840,8 @@ extern void dump_job_step_state(struct job_record *job_ptr,
 				     SLURM_PROTOCOL_VERSION);
 	packstr(step_ptr->tres_alloc_str, buffer);
 	packstr(step_ptr->tres_fmt_alloc_str, buffer);
+
+	return 0;
 }
 
 /*
