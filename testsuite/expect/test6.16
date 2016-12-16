@@ -52,7 +52,7 @@ make_bash_script $file_in "
 #
 # Spawn sbatch job
 #
-set sbatch_pid [spawn $sbatch -N1 -n3 --mem=30 --output=/dev/null --error=/dev/null --job-name=job.$test_id -t5 $file_in]
+set sbatch_pid [spawn $sbatch -n1 --mem=30 --output=/dev/null --error=/dev/null --job-name=job.$test_id -t5 $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
