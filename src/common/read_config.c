@@ -308,6 +308,8 @@ s_p_options_t slurm_conf_options[] = {
 	{"SbcastParameters", S_P_STRING},
 	{"SchedulerAuth", S_P_STRING, _defunct_option},
 	{"SchedulerParameters", S_P_STRING},
+	{"SchedulerPort", S_P_UINT16},
+	{"SchedulerRootFilter", S_P_UINT16},
 	{"SchedulerTimeSlice", S_P_UINT16},
 	{"SchedulerType", S_P_STRING},
 	{"SelectType", S_P_STRING},
@@ -3964,6 +3966,14 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	(void) s_p_get_string(&conf->sched_params, "SchedulerParameters",
 			      hashtbl);
+
+	if (s_p_get_uint16(&uint16_tmp, "SchedulerPort", hashtbl)) {
+		debug("Ignoring obsolete SchedulerPort option.");
+	}
+
+	if (s_p_get_uint16(&uint16_tmp, "SchedulerRootFilter", hashtbl)) {
+		debug("Ignoring obsolete SchedulerRootFilter option.");
+	}
 
 	if (!s_p_get_uint16(&conf->sched_time_slice, "SchedulerTimeSlice",
 	    hashtbl))
