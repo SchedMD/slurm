@@ -303,8 +303,7 @@ extern void parse_command_line(int argc, char *argv[])
 			params.node_field_flag = true;	/* compute size later */
 			params.part_field_flag = true;	/* compute size later */
 			params.format = params.long_output ?
-			  "%N %.6D %.9P %.11T %.4c %.8z %.6m %.8d %.6w %.6j "
-			  "%.8f %20E" :
+			  "%N %.6D %.9P %.11T %.4c %.8z %.6m %.8d %.6w %.8f %20E" :
 			  "%N %.6D %.9P %6t";
 
 		} else if (params.list_reasons) {
@@ -687,12 +686,6 @@ _parse_format( char* format )
 					field_size,
 					right_justify,
 					suffix);
-		} else if (field[0] == 'j') {
-			params.match_flags.port_flag = true;
-			format_add_port( params.format_list,
-					field_size,
-					right_justify,
-					suffix );
 		} else if (field[0] == 'l') {
 			params.match_flags.max_time_flag = true;
 			format_add_time( params.format_list,
@@ -1018,12 +1011,6 @@ static int _parse_long_format (char* format_long)
 						   field_size,
 						   right_justify,
 						   suffix );
-		} else if (!xstrcasecmp(token, "port")) {
-			params.match_flags.port_flag = true;
-			format_add_port( params.format_list,
-					 field_size,
-					 right_justify,
-					 suffix );
 		} else if (!xstrcasecmp(token, "preemptmode")) {
 			params.match_flags.preempt_mode_flag = true;
 			format_add_preempt_mode( params.format_list,
@@ -1280,8 +1267,6 @@ void _print_options( void )
 	printf("memory_flag     = %s\n", params.match_flags.memory_flag ?
 			"true" : "false");
 	printf("partition_flag  = %s\n", params.match_flags.partition_flag ?
-			"true" : "false");
-	printf("port_flag       = %s\n", params.match_flags.port_flag ?
 			"true" : "false");
 	printf("priority_job_factor_flag   = %s\n",
 			params.match_flags.priority_job_factor_flag ?

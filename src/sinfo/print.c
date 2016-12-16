@@ -920,24 +920,6 @@ int _print_partition_name(sinfo_data_t * sinfo_data, int width,
 	return SLURM_SUCCESS;
 }
 
-int _print_port(sinfo_data_t * sinfo_data, int width,
-			bool right_justify, char *suffix)
-{
-	char id[FORMAT_STRING_SIZE];
-	if (sinfo_data) {
-		_build_min_max_16_string(id, FORMAT_STRING_SIZE,
-				      sinfo_data->min_port,
-				      sinfo_data->max_port, false);
-		_print_str(id, width, right_justify, true);
-	} else {
-		_print_str("PORT", width, right_justify, true);
-	}
-
-	if (suffix)
-		printf("%s", suffix);
-	return SLURM_SUCCESS;
-}
-
 int _print_prefix(sinfo_data_t * job, int width, bool right_justify,
 		char* suffix)
 {

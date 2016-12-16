@@ -215,10 +215,6 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 		        xstrfmtcat(tmp_str, " Feature=%s",
 				   node_info_ptr->node_array[i].features);
 
-		if (node_info_ptr->node_array[i].port)
-		        xstrfmtcat(tmp_str, " Port=%u",
-				   node_info_ptr->node_array[i].port);
-
 		/* check for duplicate records */
 		for (crp = rp; crp != NULL; crp = crp->next) {
 			if (!xstrcmp(crp->rec, tmp_str)) {

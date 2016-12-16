@@ -63,7 +63,6 @@ enum {
 	SORTID_NODE_ADDR,
 	SORTID_NODE_HOSTNAME,
 	SORTID_OWNER,
-	SORTID_PORT,
 	SORTID_REAL_MEMORY,
 	SORTID_REASON,
 	SORTID_RACK_MP,
@@ -141,8 +140,6 @@ static display_data_t display_data_node[] = {
 	{G_TYPE_STRING, SORTID_USED_MEMORY, "Used Memory", false,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_FREE_MEM, "Free Memory", false, EDIT_NONE,
-	 refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_PORT, "Port", false, EDIT_NONE,
 	 refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_TMP_DISK, "Tmp Disk", false, EDIT_NONE,
 	 refresh_node, create_model_node, admin_edit_node},
@@ -377,13 +374,6 @@ static void _layout_node_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
 						 SORTID_CORES),
-				   tmp_cnt);
-
-	convert_num_unit((float)node_ptr->port, tmp_cnt, sizeof(tmp_cnt),
-			 UNIT_NONE, NO_VAL, working_sview_config.convert_flags);
-	add_display_treestore_line(update, treestore, &iter,
-				   find_col_name(display_data_node,
-						 SORTID_PORT),
 				   tmp_cnt);
 
 	convert_num_unit((float)node_ptr->threads, tmp_cnt, sizeof(tmp_cnt),

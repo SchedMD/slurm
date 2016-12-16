@@ -74,7 +74,6 @@ static int _sort_by_nodes_ai(void *void1, void *void2);
 static int _sort_by_nodes(void *void1, void *void2);
 static int _sort_by_oversubscribe(void *void1, void *void2);
 static int _sort_by_partition(void *void1, void *void2);
-static int _sort_by_port(void *void1, void *void2);
 static int _sort_by_preempt_mode(void *void1, void *void2);
 static int _sort_by_priority_job_factor(void *void1, void *void2);
 static int _sort_by_priority_tier(void *void1, void *void2);
@@ -135,8 +134,6 @@ void sort_sinfo_list(List sinfo_list)
 			list_sort(sinfo_list, _sort_by_oversubscribe);
 		else if (params.sort[i] == 'H')
 			list_sort(sinfo_list, _sort_by_reason_time);
-		else if (params.sort[i] == 'j')
-			list_sort(sinfo_list, _sort_by_port);
 		else if (params.sort[i] == 'l')
 			list_sort(sinfo_list, _sort_by_max_time);
 		else if (params.sort[i] == 'm')
@@ -702,21 +699,6 @@ static int _sort_by_partition(void *void1, void *void2)
 			val2 = sinfo2->part_info->name;
 		diff = xstrcmp(val1, val2);
 	}
-
-	if (reverse_order)
-		diff = -diff;
-	return diff;
-}
-
-static int _sort_by_port(void *void1, void *void2)
-{
-	int diff;
-	sinfo_data_t *sinfo1;
-	sinfo_data_t *sinfo2;
-
-	_get_sinfo_from_void(&sinfo1, &sinfo2, void1, void2);
-
-	diff = _diff_uint32(sinfo1->min_port, sinfo2->min_port);
 
 	if (reverse_order)
 		diff = -diff;
