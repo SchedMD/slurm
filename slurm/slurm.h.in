@@ -1369,7 +1369,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint16_t ckpt_interval;	/* periodically checkpoint this job */
 	char *ckpt_dir;	 	/* directory to store checkpoint images */
 	char *clusters;		/* cluster names used for multi-cluster jobs */
-	char *comment;		/* arbitrary comment (used by Moab scheduler) */
+	char *comment;		/* arbitrary comment */
 	uint16_t contiguous;	/* 1 if job requires contiguous nodes,
 				 * 0 otherwise,default=0 */
 	uint16_t core_spec;	/* specialized core/thread count,
@@ -1550,7 +1550,7 @@ typedef struct job_info {
 	char *burst_buffer_state; /* burst buffer state info */
 	char *command;		/* command to be executed, built from submitted
 				 * job's argv and NULL for salloc command */
-	char *comment;		/* arbitrary comment (used by Moab scheduler) */
+	char *comment;		/* arbitrary comment */
 	uint16_t contiguous;	/* 1 if job requires contiguous nodes */
 	uint16_t core_spec;	/* specialized core count */
 	uint16_t cores_per_socket; /* cores per socket required by job  */
@@ -2481,7 +2481,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_STEPS	0x0000000000000002 /* slurmctld steps */
 #define DEBUG_FLAG_TRIGGERS	0x0000000000000004 /* slurmctld triggers */
 #define DEBUG_FLAG_CPU_BIND	0x0000000000000008 /* CPU binding */
-#define DEBUG_FLAG_WIKI		0x0000000000000010 /* wiki communications */
+#define DEBUG_FLAG_WIKI		0x0000000000000010 /* unused, was wiki plugin */
 #define DEBUG_FLAG_NO_CONF_HASH	0x0000000000000020 /* no warning about
 						    * slurm.conf files checksum
 						    * mismatch */
@@ -2762,7 +2762,6 @@ typedef struct slurm_ctl_conf {
 				 * contents of scheduler plugin config file */
 	uint16_t sched_time_slice;	/* gang scheduler slice time, secs */
 	char *schedtype;	/* type of scheduler to use */
-	uint16_t schedport;	/* port for scheduler connection */
 	uint16_t schedrootfltr;	/* 1 if rootOnly partitions should be
 				 * filtered from scheduling (if needed) */
 	char *select_type;	/* type of node selector to use */

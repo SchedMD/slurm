@@ -206,8 +206,6 @@ static int agent_thread_cnt = 0;
 static uint16_t message_timeout = (uint16_t) NO_VAL;
 
 static bool run_scheduler    = false;
-static bool wiki2_sched      = false;
-static bool wiki2_sched_test = false;
 
 /*
  * agent - party responsible for transmitting an common RPC in parallel
@@ -242,13 +240,6 @@ void *agent(void *args)
 	     list_count(retry_list));
 #endif
 	slurm_mutex_lock(&agent_cnt_mutex);
-	if (!wiki2_sched_test) {
-		char *sched_type = slurm_get_sched_type();
-		if (xstrcmp(sched_type, "sched/wiki2") == 0)
-			wiki2_sched = true;
-		xfree(sched_type);
-		wiki2_sched_test = true;
-	}
 
 	rpc_thread_cnt = 2 + MIN(agent_arg_ptr->node_count, AGENT_THREAD_COUNT);
 	while (1) {

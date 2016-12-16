@@ -486,8 +486,7 @@ struct job_details {
 	char *dependency;		/* wait for other jobs */
 	char *orig_dependency;		/* original value (for archiving) */
 	uint16_t env_cnt;		/* size of env_sup (see below) */
-	char **env_sup;			/* supplemental environment variables
-					 * as set by Moab */
+	char **env_sup;			/* supplemental environment variables */
 	bitstr_t *exc_node_bitmap;	/* bitmap of excluded nodes */
 	char *exc_nodes;		/* excluded nodes */
 	uint32_t expanding_jobid;	/* ID of job to be expanded */
@@ -521,7 +520,6 @@ struct job_details {
 	uint32_t reserved_resources;	/* CPU minutes of resources reserved
 					 * for this job while it was pending */
 	bitstr_t *req_node_bitmap;	/* bitmap of required nodes */
-	uint16_t *req_node_layout;	/* task layout for required nodes */
 	time_t preempt_start_time;	/* time that preeption began to start
 					 * this job */
 	char *req_nodes;		/* required nodes */

@@ -58,6 +58,7 @@ HIGHLIGHTS
  -- All memory values (in MB) are now 64 bit. Previously, nodes with > 2TB of
     memory would not schedule or enforce memory limits correctly.
  -- Removed AIX, BlueGene/L and BlueGene/P support.
+ -- Remove sched/wiki and sched/wiki2 plugins and associated code.
 
 RPMBUILD CHANGES
 ================
@@ -118,7 +119,6 @@ Memory conversion to uint64_t in: job_descriptor, job_info, node_info,
 Variables converted are: actual_real_mem, def_mem_per_cpu, free_mem,
 	max_mem_per_cpu, mem_spec_limit, pn_min_memory, real_memory, req_mem.
 
-
 Added members to the following struct definitions
 =================================================
 In slurmdb_cluster_cond_t: Added List federation_list
@@ -146,6 +146,7 @@ Added sib_msg_t for sending messages to siblings.
 
 Removed members from the following struct definitions
 =====================================================
+Removed schedport from slurm_ctl_conf.
 
 Changed the following enums and #defines
 ========================================
@@ -167,3 +168,7 @@ Added slurm_get_priority_flags() to retrieve priority flags from slurmctld_conf.
 
 Changed the following API's
 ============================
+
+Removed the following API's
+===========================
+Removed slurm_get_sched_port() .

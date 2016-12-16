@@ -692,8 +692,6 @@ Update the job with an adjusted scheduling priority within Slurm. With no
 adjustment value the scheduling priority is decreased by 100. A negative nice
 value increases the priority, otherwise decreases it. The adjustment range is
 +/\- 2147483645. Only privileged users can specify a negative adjustment.
-NOTE: This option is presently ignored if \fISchedulerType=sched/wiki\fR or
-\fISchedulerType=sched/wiki2\fR.
 .TP
 \fINodeList\fP=<nodes>
 Change the nodes allocated to a running job to shrink it's size.

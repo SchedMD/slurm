@@ -42,6 +42,7 @@ documents those changes that are of interest to users and administrators.
  -- burst_buffer/cray - Remove leading zeros from node ID lists passed to
     dw_wlm_cli program.
  -- Add "Partitions" field to "scontrol show node" output.
+ -- Remove sched/wiki and sched/wiki2 plugins and associated code.
 
 * Changes in Slurm 17.02.0pre3
 ==============================

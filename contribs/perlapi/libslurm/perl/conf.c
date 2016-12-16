@@ -309,7 +309,6 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 	STORE_FIELD(hv, conf, sched_time_slice, uint16_t);
 	if (conf->schedtype)
 		STORE_FIELD(hv, conf, schedtype, charp);
-	STORE_FIELD(hv, conf, schedport, uint16_t);
 	STORE_FIELD(hv, conf, schedrootfltr, uint16_t);
 
 	STORE_PTR_FIELD(hv, conf, select_conf_key_pairs, "Slurm::List"); /* TODO: Think about memory management */
@@ -558,7 +557,6 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	FETCH_FIELD(hv, conf, sched_params, charp, FALSE);
 	FETCH_FIELD(hv, conf, sched_time_slice, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, schedtype, charp, FALSE);
-	FETCH_FIELD(hv, conf, schedport, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, schedrootfltr, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, select_conf_key_pairs, charp, FALSE);
 	FETCH_FIELD(hv, conf, select_type, charp, FALSE);

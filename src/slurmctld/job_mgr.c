@@ -149,9 +149,6 @@ static struct timeval purge_start_time = {0, 0};
 static bitstr_t *requeue_exit = NULL;
 static bitstr_t *requeue_exit_hold = NULL;
 static int	select_serial = -1;
-static bool     wiki_sched = false;
-static bool     wiki2_sched = false;
-static bool     wiki_sched_test = false;
 
 /* Local functions */
 static void _add_job_hash(struct job_record *job_ptr);
@@ -522,7 +519,6 @@ void delete_job_details(struct job_record *job_entry)
 	xfree(job_entry->details->mem_bind);
 	xfree(job_entry->details->std_out);
 	FREE_NULL_BITMAP(job_entry->details->req_node_bitmap);
-	xfree(job_entry->details->req_node_layout);
 	xfree(job_entry->details->req_nodes);
 	xfree(job_entry->details->restart_dir);
 	xfree(job_entry->details->work_dir);
@@ -3999,13 +3995,6 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 		details_new->req_node_bitmap =
 			bit_copy(job_details->req_node_bitmap);
 	}
-	if (job_details->req_node_layout && job_details->req_node_bitmap) {
-		i = bit_set_count(job_details->req_node_bitmap) *
-		    sizeof(uint16_t);
-		details_new->req_node_layout = xmalloc(i);
-		memcpy(details_new->req_node_layout,
-		       job_details->req_node_layout, i);
-	}
 	details_new->req_nodes = xstrdup(job_details->req_nodes);
 	details_new->restart_dir = xstrdup(job_details->restart_dir);
 	details_new->std_err = xstrdup(job_details->std_err);
@@ -4659,20 +4648,6 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t flags,
 {
 	struct job_record *job_ptr;
 
-	/* Jobs submitted using Moab command should be cancelled using
-	 * Moab command for accurate job records */
-	if (!wiki_sched_test) {
-		char *sched_type = slurm_get_sched_type();
-		if (xstrcmp(sched_type, "sched/wiki") == 0)
-			wiki_sched  = true;
-		if (xstrcmp(sched_type, "sched/wiki2") == 0) {
-			wiki_sched  = true;
-			wiki2_sched = true;
-		}
-		xfree(sched_type);
-		wiki_sched_test = true;
-	}
-
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
 		info("job_signal: invalid job id %u", job_id);
@@ -4684,13 +4659,6 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t flags,
 					  job_ptr->account)) {
 		error("Security violation, JOB_CANCEL RPC for jobID %u from "
 		      "uid %d", job_ptr->job_id, uid);
-		return ESLURM_ACCESS_DENIED;
-	}
-	if (!validate_slurm_user(uid) && (signal == SIGKILL) &&
-	    job_ptr->part_ptr &&
-	    (job_ptr->part_ptr->flags & PART_FLAG_ROOT_ONLY) && wiki2_sched) {
-		info("Attempt to cancel Moab job using Slurm command from "
-		     "uid %d", uid);
 		return ESLURM_ACCESS_DENIED;
 	}
 
@@ -4721,19 +4689,6 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 	int32_t i, i_first, i_last;
 	int rc = SLURM_SUCCESS, rc2, len;
 
-	/* Jobs submitted using Moab command should be cancelled using
-	 * Moab command for accurate job records */
-	if (!wiki_sched_test) {
-		char *sched_type = slurm_get_sched_type();
-		if (xstrcmp(sched_type, "sched/wiki") == 0)
-			wiki_sched  = true;
-		if (xstrcmp(sched_type, "sched/wiki2") == 0) {
-			wiki_sched  = true;
-			wiki2_sched = true;
-		}
-		xfree(sched_type);
-		wiki_sched_test = true;
-	}
 	if (max_array_size == NO_VAL) {
 		conf = slurm_conf_lock();
 		max_array_size = conf->max_array_sz;
@@ -4862,14 +4817,6 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 					  job_ptr->account)) {
 		error("%s: Security violation JOB_CANCEL RPC for jobID %s from "
 		      "uid %d", __func__, job_id_str, uid);
-		rc = ESLURM_ACCESS_DENIED;
-		goto endit;
-	}
-	if (!validate_slurm_user(uid) && (signal == SIGKILL) &&
-	    job_ptr->part_ptr &&
-	    (job_ptr->part_ptr->flags & PART_FLAG_ROOT_ONLY) && wiki2_sched) {
-		info("%s: Attempt to cancel Moab job using Slurm command from "
-		     "uid %d", __func__, uid);
 		rc = ESLURM_ACCESS_DENIED;
 		goto endit;
 	}
@@ -6040,13 +5987,6 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	/* This must be done after we have the assoc_ptr set */
 	memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
 	qos_rec.name = job_desc->qos;
-	if (wiki_sched && job_desc->comment &&
-	    strstr(job_desc->comment, "QOS:")) {
-		if (strstr(job_desc->comment, "FLAGS:PREEMPTOR"))
-			qos_rec.name = "expedite";
-		else if (strstr(job_desc->comment, "FLAGS:PREEMPTEE"))
-			qos_rec.name = "standby";
-	}
 
 	qos_ptr = _determine_and_validate_qos(
 		job_desc->reservation, assoc_ptr, false, &qos_rec, &qos_error,
@@ -7021,8 +6961,7 @@ _read_data_array_from_file(int fd, char *file_name, char ***data,
 		xrealloc(buffer, buf_size);
 	}
 
-	/* Allocate extra space for supplemental environment variables
-	 * as set by Moab */
+	/* Allocate extra space for supplemental environment variables */
 	if (job_ptr->details->env_cnt) {
 		for (j = 0; j < job_ptr->details->env_cnt; j++)
 			pos += (strlen(job_ptr->details->env_sup[j]) + 1);
@@ -7042,7 +6981,7 @@ _read_data_array_from_file(int fd, char *file_name, char ***data,
 		}
 	}
 
-	/* Add supplemental environment variables for Moab */
+	/* Add supplemental environment variables */
 	if (job_ptr->details->env_cnt) {
 		char *tmp_chr;
 		int env_len, name_len;
@@ -7305,17 +7244,6 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->network    = xstrdup(job_desc->network);
 	job_ptr->resv_name  = xstrdup(job_desc->reservation);
 	job_ptr->comment    = xstrdup(job_desc->comment);
-	if (!wiki_sched_test) {
-		char *sched_type = slurm_get_sched_type();
-		if (xstrcmp(sched_type, "sched/wiki") == 0)
-			wiki_sched  = true;
-		if (xstrcmp(sched_type, "sched/wiki2") == 0) {
-			wiki_sched  = true;
-			wiki2_sched = true;
-		}
-		xfree(sched_type);
-		wiki_sched_test = true;
-	}
 
 	if (job_desc->kill_on_node_fail != (uint16_t) NO_VAL)
 		job_ptr->kill_on_node_fail = job_desc->kill_on_node_fail;
@@ -7369,8 +7297,6 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->req_nodes =
 			_copy_nodelist_no_dup(job_desc->req_nodes);
 		detail_ptr->req_node_bitmap = *req_bitmap;
-		detail_ptr->req_node_layout = NULL; /* Layout specified at
-						     * start time */
 		*req_bitmap = NULL;	/* Reused nothing left to free */
 	}
 	if (job_desc->exc_nodes) {
@@ -9588,7 +9514,6 @@ static void _pack_pending_job_details(struct job_details *detail_ptr,
 
 			packstr(detail_ptr->req_nodes, buffer);
 			pack_bit_fmt(detail_ptr->req_node_bitmap, buffer);
-			/* detail_ptr->req_node_layout is not packed */
 			packstr(detail_ptr->exc_nodes, buffer);
 			pack_bit_fmt(detail_ptr->exc_node_bitmap, buffer);
 
@@ -9630,7 +9555,6 @@ static void _pack_pending_job_details(struct job_details *detail_ptr,
 
 			packstr(detail_ptr->req_nodes, buffer);
 			pack_bit_fmt(detail_ptr->req_node_bitmap, buffer);
-			/* detail_ptr->req_node_layout is not packed */
 			packstr(detail_ptr->exc_nodes, buffer);
 			pack_bit_fmt(detail_ptr->exc_node_bitmap, buffer);
 
@@ -9903,9 +9827,7 @@ static int _reset_detail_bitmaps(struct job_record *job_ptr)
 		return SLURM_SUCCESS;
 
 	FREE_NULL_BITMAP(job_ptr->details->req_node_bitmap);
-	xfree(job_ptr->details->req_node_layout); /* layout info is lost
-						   * but should be re-generated
-						   * at job start time */
+
 	if ((job_ptr->details->req_nodes) &&
 	    (node_name2bitmap(job_ptr->details->req_nodes, false,
 			      &job_ptr->details->req_node_bitmap))) {
@@ -10421,18 +10343,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			job_specs->time_limit = NO_VAL;
 	}
 
-	if (!wiki_sched_test) {
-		char *sched_type = slurm_get_sched_type();
-		if (xstrcmp(sched_type, "sched/wiki") == 0)
-			wiki_sched  = true;
-		if (xstrcmp(sched_type, "sched/wiki2") == 0) {
-			wiki_sched  = true;
-			wiki2_sched = true;
-		}
-		xfree(sched_type);
-		wiki_sched_test = true;
-	}
-
 	if (job_specs->account
 	    && !xstrcmp(job_specs->account, job_ptr->account)) {
 		debug("sched: update_job: new account identical to "
@@ -10531,7 +10441,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		else if (job_specs->req_nodes[0] == '\0') {
 			xfree(detail_ptr->req_nodes);
 			FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
-			xfree(detail_ptr->req_node_layout);
 		} else {
 			if (node_name2bitmap(job_specs->req_nodes, false,
 					     &req_bitmap)) {
@@ -10545,7 +10454,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				detail_ptr->req_nodes =
 					xstrdup(job_specs->req_nodes);
 				FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
-				xfree(detail_ptr->req_node_layout);
 				detail_ptr->req_node_bitmap = req_bitmap;
 				info("sched: update_job: setting req_nodes to "
 				     "%s for job_id %u", job_specs->req_nodes,
@@ -10740,7 +10648,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 	/* Always do this last just in case the assoc_ptr changed */
 	if (job_specs->admin_comment && !validate_slurm_user(uid)) {
-		/* User must use Moab command to change job comment */
 		error("Attempt to change admin_comment for job %u",
 		      job_ptr->job_id);
 		error_code = ESLURM_ACCESS_DENIED;
@@ -10760,61 +10667,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	}
 
 	/* Always do this last just in case the assoc_ptr changed */
-	if (job_specs->comment && wiki_sched && !validate_slurm_user(uid)) {
-		/* User must use Moab command to change job comment */
-		error("Attempt to change comment for job %u",
-		      job_ptr->job_id);
-		error_code = ESLURM_ACCESS_DENIED;
-	} else if (job_specs->comment) {
+	if (job_specs->comment) {
 		xfree(job_ptr->comment);
 		job_ptr->comment = xstrdup(job_specs->comment);
 		info("update_job: setting comment to %s for job_id %u",
 		     job_ptr->comment, job_ptr->job_id);
-
-		if (wiki_sched && strstr(job_ptr->comment, "QOS:")) {
-			if (!IS_JOB_PENDING(job_ptr))
-				error_code = ESLURM_JOB_NOT_PENDING;
-			else {
-				slurmdb_qos_rec_t qos_rec;
-				slurmdb_qos_rec_t *new_qos_ptr;
-				char *resv_name;
-				if (job_specs->reservation
-				    && job_specs->reservation[0] != '\0')
-					resv_name = job_specs->reservation;
-				else
-					resv_name = job_ptr->resv_name;
-
-				memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
-				if (strstr(job_ptr->comment,
-					   "FLAGS:PREEMPTOR"))
-					qos_rec.name = "expedite";
-				else if (strstr(job_ptr->comment,
-						"FLAGS:PREEMPTEE"))
-					qos_rec.name = "standby";
-
-				new_qos_ptr = _determine_and_validate_qos(
-					resv_name, job_ptr->assoc_ptr,
-					authorized, &qos_rec, &error_code,
-					false);
-				if (error_code == SLURM_SUCCESS) {
-					info("update_job: setting qos to %s "
-					     "for job_id %u",
-					     job_specs->qos, job_ptr->job_id);
-					if (job_ptr->qos_id != qos_rec.id) {
-						job_ptr->qos_id = qos_rec.id;
-						job_ptr->qos_ptr = new_qos_ptr;
-						job_ptr->limit_set.qos =
-							acct_policy_limit_set.
-							qos;
-						update_accounting = true;
-					} else
-						debug("sched: update_job: "
-						      "new qos identical to "
-						      "old qos %u",
-						      job_ptr->job_id);
-				}
-			}
-		}
 	}
 
 	if (error_code != SLURM_SUCCESS)
@@ -13849,8 +13706,7 @@ static void _suspend_job(struct job_record *job_ptr, uint16_t op,
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	agent_args->msg_type = REQUEST_SUSPEND_INT;
-	agent_args->retry = 0;	/* don't resend, gang scheduler
-				 * sched/wiki or sched/wiki2 can
+	agent_args->retry = 0;	/* don't resend, gang scheduler can
 				 * quickly induce huge backlog
 				 * of agent.c RPCs */
 	agent_args->hostlist = hostlist_create(NULL);
@@ -14121,18 +13977,8 @@ static int _job_suspend(struct job_record *job_ptr, uint16_t op, bool indf_susp)
 		job_ptr->job_state = JOB_RUNNING;
 		job_ptr->tot_sus_time +=
 			difftime(now, job_ptr->suspend_time);
-		if (!wiki_sched_test) {
-			char *sched_type = slurm_get_sched_type();
-			if (xstrcmp(sched_type, "sched/wiki") == 0)
-				wiki_sched  = true;
-			if (xstrcmp(sched_type, "sched/wiki2") == 0) {
-				wiki_sched  = true;
-				wiki2_sched = true;
-			}
-			xfree(sched_type);
-			wiki_sched_test = true;
-		}
-		if ((job_ptr->time_limit != INFINITE) && (!wiki2_sched) &&
+
+		if ((job_ptr->time_limit != INFINITE) &&
 		    (!job_ptr->preempt_time)) {
 			debug3("Job %u resumed, updating end_time",
 			       job_ptr->job_id);
@@ -14479,8 +14325,6 @@ static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
 		deallocate_nodes(job_ptr, false, is_suspended, preempt);
 		job_ptr->job_state &= (~JOB_COMPLETING);
 	}
-
-	xfree(job_ptr->details->req_node_layout);
 
 	/* do this after the epilog complete, setting it here is too early */
 	//job_ptr->db_index = 0;

@@ -308,7 +308,6 @@ s_p_options_t slurm_conf_options[] = {
 	{"SbcastParameters", S_P_STRING},
 	{"SchedulerAuth", S_P_STRING, _defunct_option},
 	{"SchedulerParameters", S_P_STRING},
-	{"SchedulerPort", S_P_UINT16},
 	{"SchedulerRootFilter", S_P_UINT16},
 	{"SchedulerTimeSlice", S_P_UINT16},
 	{"SchedulerType", S_P_STRING},
@@ -2569,7 +2568,6 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree( ctl_conf_ptr->sched_params );
 	ctl_conf_ptr->sched_time_slice		= (uint16_t) NO_VAL;
 	xfree( ctl_conf_ptr->schedtype );
-	ctl_conf_ptr->schedport			= (uint16_t) NO_VAL;
 	ctl_conf_ptr->schedrootfltr		= (uint16_t) NO_VAL;
 	xfree( ctl_conf_ptr->select_type );
 	ctl_conf_ptr->select_type_param         = (uint16_t) NO_VAL;
@@ -3969,15 +3967,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	(void) s_p_get_string(&conf->sched_params, "SchedulerParameters",
 			      hashtbl);
 
-	if (s_p_get_uint16(&conf->schedport, "SchedulerPort", hashtbl)) {
-		if (conf->schedport == 0) {
-			error("SchedulerPort=0 is invalid");
-			conf->schedport = DEFAULT_SCHEDULER_PORT;
-		}
-	} else {
-		conf->schedport = DEFAULT_SCHEDULER_PORT;
-	}
-
 	if (!s_p_get_uint16(&conf->schedrootfltr,
 			    "SchedulerRootFilter", hashtbl))
 		conf->schedrootfltr = DEFAULT_SCHEDROOTFILTER;
@@ -3992,27 +3981,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_string(&conf->schedtype, "SchedulerType", hashtbl))
 		conf->schedtype = xstrdup(DEFAULT_SCHEDTYPE);
-
-	if (xstrcmp(conf->priority_type, "priority/multifactor") == 0) {
-		if (tot_prio_weight &&
-		    (!xstrcmp(conf->schedtype, "sched/wiki") ||
-		     !xstrcmp(conf->schedtype, "sched/wiki2"))) {
-			error("PriorityType=priority/multifactor is "
-			      "incompatible with SchedulerType=%s",
-			      conf->schedtype);
-			return SLURM_ERROR;
-		}
-	}
-
-	if (conf->preempt_mode) {
-		if ((xstrcmp(conf->schedtype, "sched/wiki")  == 0) ||
-		    (xstrcmp(conf->schedtype, "sched/wiki2") == 0)) {
-			error("Job preemption is incompatible with "
-			      "SchedulerType=%s",
-			      conf->schedtype);
-			return SLURM_ERROR;
-		}
-	}
 
 	if (!s_p_get_string(&conf->select_type, "SelectType", hashtbl))
 		conf->select_type = xstrdup(DEFAULT_SELECT_TYPE);
@@ -4754,11 +4722,6 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Triggers");
 	}
-	if (debug_flags & DEBUG_FLAG_WIKI) {
-		if (rc)
-			xstrcat(rc, ",");
-		xstrcat(rc, "Wiki");
-	}
 
 	return rc;
 }
@@ -4875,8 +4838,6 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_TRIGGERS;
 		else if (xstrcasecmp(tok, "Triggers") == 0)
 			(*flags_out) |= DEBUG_FLAG_TRIGGERS;
-		else if (xstrcasecmp(tok, "Wiki") == 0)
-			(*flags_out) |= DEBUG_FLAG_WIKI;
 		else if (xstrcasecmp(tok, "CpuFrequency") == 0)
 			(*flags_out) |= DEBUG_FLAG_CPU_FREQ;
 		else if (xstrcasecmp(tok, "Power") == 0)

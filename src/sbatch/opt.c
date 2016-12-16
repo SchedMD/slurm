@@ -2948,16 +2948,6 @@ static bool _opt_verify(void)
 	if ((opt.egid != (gid_t) -1) && (opt.egid != opt.gid))
 		opt.gid = opt.egid;
 
-	if (opt.immediate) {
-		char *sched_name = slurm_get_sched_type();
-		if (xstrcmp(sched_name, "sched/wiki") == 0) {
-			info("WARNING: Ignoring the -I/--immediate option "
-			     "(not supported by Maui)");
-			opt.immediate = false;
-		}
-		xfree(sched_name);
-	}
-
 	if (opt.open_mode) {
 		/* Propage mode to spawned job using environment variable */
 		if (opt.open_mode == OPEN_MODE_APPEND)

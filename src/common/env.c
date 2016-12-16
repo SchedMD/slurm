@@ -2088,7 +2088,7 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 		if (config_timeout >= 2) {
 			/* Non-killable processes are indicative of file system
 			 * problems. The process will remain as a zombie, but
-			 * slurmd/salloc/moab will not otherwise be effected. */
+			 * slurmd/salloc will not otherwise be effected. */
 			error("Failed to kill program loading user environment");
 			break;
 		}

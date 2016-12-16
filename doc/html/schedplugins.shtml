@@ -8,7 +8,7 @@ them. It is intended as a resource to programmers wishing to write their own SLU
 scheduler plugins.</p>
 
 <p>It is noteworthy that two different models are used for job scheduling.
-The <b>backfill</b> scheduler let. Slurm establish the initial job priority
+The <b>backfill</b> scheduler let. Slurm establishes the initial job priority
 and can periodically alter job priorities to change their order within the queue.
 Developers may use the model that best fits their needs.
 Note that a separate <a href="selectplugins.html">node selection plugin</a>

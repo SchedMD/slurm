@@ -743,7 +743,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man5/nonstop.*
 %{_mandir}/man5/slurm.*
 %{_mandir}/man5/topology.*
-%{_mandir}/man5/wiki.*
 %{_mandir}/man8/slurmctld.*
 %{_mandir}/man8/slurmd.*
 %{_mandir}/man8/slurmstepd*
@@ -902,8 +901,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/sched_backfill.so
 %{_libdir}/slurm/sched_builtin.so
 %{_libdir}/slurm/sched_hold.so
-%{_libdir}/slurm/sched_wiki.so
-%{_libdir}/slurm/sched_wiki2.so
 %{_libdir}/slurm/select_alps.so
 %{_libdir}/slurm/select_cray.so
 %{_libdir}/slurm/select_cons_res.so

@@ -1195,7 +1195,6 @@ static int _schedule(uint32_t job_limit)
 	static bool backfill_sched = false;
 #endif
 	static time_t sched_update = 0;
-	static bool wiki_sched = false;
 	static bool fifo_sched = false;
 	static bool assoc_limit_stop = false;
 	static int sched_timeout = 0;
@@ -1246,10 +1245,6 @@ static int _schedule(uint32_t job_limit)
 			fifo_sched = true;
 		else
 			fifo_sched = false;
-		/* Disable avoiding of fragmentation with sched/wiki */
-		if ((xstrcmp(sched_type, "sched/wiki") == 0) ||
-		    (xstrcmp(sched_type, "sched/wiki2") == 0))
-			wiki_sched = true;
 		xfree(sched_type);
 		xfree(prio_type);
 
@@ -1445,7 +1440,7 @@ static int _schedule(uint32_t job_limit)
 		goto out;
 	}
 	/* Avoid resource fragmentation if important */
-	if ((!wiki_sched) && job_is_completing()) {
+	if (job_is_completing()) {
 		unlock_slurmctld(job_write_lock);
 		debug("sched: schedule() returning, some job is still "
 		      "completing");
@@ -1935,14 +1930,12 @@ next_task:
 			info("sched: schedule: %s non-runnable: %s",
 			     jobid2str(job_ptr, jbuf, sizeof(jbuf)),
 			     slurm_strerror(error_code));
-			if (!wiki_sched) {
-				last_job_update = now;
-				job_ptr->job_state = JOB_PENDING;
-				job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
-				xfree(job_ptr->state_desc);
-				job_ptr->start_time = job_ptr->end_time = now;
-				job_ptr->priority = 0;
-			}
+			last_job_update = now;
+			job_ptr->job_state = JOB_PENDING;
+			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
+			xfree(job_ptr->state_desc);
+			job_ptr->start_time = job_ptr->end_time = now;
+			job_ptr->priority = 0;
 		}
 
 #ifdef HAVE_BG

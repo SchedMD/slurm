@@ -3349,7 +3349,7 @@ top:	if ((rc != SLURM_SUCCESS) && preemptee_candidates &&
 /* Determine where and when the job at job_ptr can begin execution by updating
  * a scratch cr_record structure to reflect each job terminating at the
  * end of its time limit and use this to show where and when the job at job_ptr
- * will begin execution. Used by SLURM's sched/backfill plugin and Moab. */
+ * will begin execution. Used by Slurm's sched/backfill plugin. */
 static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes,
 			  int max_share, uint32_t req_nodes,

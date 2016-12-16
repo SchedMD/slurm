@@ -1099,12 +1099,9 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	job_ptr->details->min_cpus = 1;
 	tmp_node_set_ptr = xmalloc(sizeof(struct node_set) * node_set_size * 2);
 
-	/* Accumulate nodes with required feature counts.
-	 * Ignored if job_ptr->details->req_node_layout is set (by wiki2).
-	 * Selected nodes become part of job's required node list. */
+	/* Accumulate nodes with required feature counts. */
 	preemptee_candidates = slurm_find_preemptable_jobs(job_ptr);
-	if (job_ptr->details->feature_list &&
-	    (job_ptr->details->req_node_layout == NULL)) {
+	if (job_ptr->details->feature_list) {
 		ListIterator feat_iter;
 		job_feature_t *feat_ptr;
 		uint64_t smallest_min_mem = INFINITE64;

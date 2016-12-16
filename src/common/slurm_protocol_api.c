@@ -2525,22 +2525,6 @@ extern char *slurm_get_sched_params(void)
 	return params;
 }
 
-/* slurm_get_sched_port
- * RET uint16_t  - Value of SchedulerPort */
-extern uint16_t slurm_get_sched_port(void)
-{
-	uint16_t port = 0;
-	slurm_ctl_conf_t *conf;
-
- 	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		port = conf->schedport;
-		slurm_conf_unlock();
-	}
-	return port;
-}
-
 /* slurm_get_sched_type
  * get sched type from slurmctld_conf object
  * RET char *   - sched type, MUST be xfreed by caller

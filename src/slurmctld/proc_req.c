@@ -861,7 +861,6 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 		conf_ptr->sched_params = xstrdup(conf->sched_params);
 	else
 		conf_ptr->sched_params = slurm_sched_g_get_conf();
-	conf_ptr->schedport           = conf->schedport;
 	conf_ptr->schedrootfltr       = conf->schedrootfltr;
 	conf_ptr->sched_logfile       = xstrdup(conf->sched_logfile);
 	conf_ptr->sched_log_level     = conf->sched_log_level;
