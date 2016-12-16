@@ -1553,7 +1553,7 @@ static int _get_hash_idx(const char *name)
 	for (j = 1; *name; name++, j++)
 		index += (int)*name * j;
 	index %= NAME_HASH_LEN;
-	if (index < 0)
+	while (index < 0) /* Coverity thinks "index" could be negative with "if" */
 		index += NAME_HASH_LEN;
 
 	return index;
