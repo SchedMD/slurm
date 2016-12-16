@@ -1580,50 +1580,51 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 static void
 _prolog_error(batch_job_launch_msg_t *req, int rc)
 {
-	char *err_name_ptr, err_name[256], path_name[MAXPATHLEN];
+	char *err_name = NULL, *path_name = NULL;
 	char *fmt_char;
 	int fd;
 
 	if (req->std_err || req->std_out) {
 		if (req->std_err)
-			strncpy(err_name, req->std_err, sizeof(err_name));
+			err_name = xstrdup(req->std_err);
 		else
-			strncpy(err_name, req->std_out, sizeof(err_name));
+			err_name = xstrdup(req->std_out);
 		if ((fmt_char = strchr(err_name, (int) '%')) &&
 		    (fmt_char[1] == 'j') && !strchr(fmt_char+1, (int) '%')) {
-			char tmp_name[256];
+			char *tmp_name = NULL;
 			fmt_char[1] = 'u';
-			snprintf(tmp_name, sizeof(tmp_name), err_name,
-				 req->job_id);
-			strncpy(err_name, tmp_name, sizeof(err_name));
+			xstrfmtcat(tmp_name, err_name, req->job_id);
+			xfree(err_name);
+			err_name = tmp_name;
+			//tmp_name = NULL;
 		}
 	} else {
-		snprintf(err_name, sizeof(err_name), "slurm-%u.out",
-			 req->job_id);
+		xstrfmtcat(err_name, "slurm-%u.out", req->job_id);
 	}
-	err_name_ptr = err_name;
-	if (err_name_ptr[0] == '/')
-		snprintf(path_name, MAXPATHLEN, "%s", err_name_ptr);
+	if (err_name[0] == '/')
+		xstrfmtcat(path_name, "%s", err_name);
 	else if (req->work_dir)
-		snprintf(path_name, MAXPATHLEN, "%s/%s",
-			req->work_dir, err_name_ptr);
+		xstrfmtcat(path_name, "%s/%s", req->work_dir, err_name);
 	else
-		snprintf(path_name, MAXPATHLEN, "/%s", err_name_ptr);
+		xstrfmtcat(path_name, "/%s", err_name);
+	xfree(err_name);
 
-	if ((fd = open(path_name, (O_CREAT|O_APPEND|O_WRONLY), 0644)) == -1) {
+	fd = open(path_name, (O_CREAT|O_APPEND|O_WRONLY), 0644);
+	xfree(path_name);
+	if (fd == -1) {
 		error("Unable to open %s: %s", path_name,
 		      slurm_strerror(errno));
 		return;
 	}
-	snprintf(err_name, sizeof(err_name),
-		 "Error running slurm prolog: %d\n", WEXITSTATUS(rc));
+	xstrfmtcat(err_name, "Error running slurm prolog: %d\n",
+		   WEXITSTATUS(rc));
 	safe_write(fd, err_name, strlen(err_name));
 	if (fchown(fd, (uid_t) req->uid, (gid_t) req->gid) == -1) {
-		snprintf(err_name, sizeof(err_name),
-			 "Couldn't change fd owner to %u:%u: %m\n",
-			 req->uid, req->gid);
+		error("%s: Couldn't change fd owner to %u:%u: %m",
+		      __func__, req->uid, req->gid);
 	}
 rwfail:
+	xfree(err_name);
 	close(fd);
 }
 
