@@ -308,7 +308,6 @@ s_p_options_t slurm_conf_options[] = {
 	{"SbcastParameters", S_P_STRING},
 	{"SchedulerAuth", S_P_STRING, _defunct_option},
 	{"SchedulerParameters", S_P_STRING},
-	{"SchedulerRootFilter", S_P_UINT16},
 	{"SchedulerTimeSlice", S_P_UINT16},
 	{"SchedulerType", S_P_STRING},
 	{"SelectType", S_P_STRING},
@@ -2568,7 +2567,6 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree( ctl_conf_ptr->sched_params );
 	ctl_conf_ptr->sched_time_slice		= (uint16_t) NO_VAL;
 	xfree( ctl_conf_ptr->schedtype );
-	ctl_conf_ptr->schedrootfltr		= (uint16_t) NO_VAL;
 	xfree( ctl_conf_ptr->select_type );
 	ctl_conf_ptr->select_type_param         = (uint16_t) NO_VAL;
 	ctl_conf_ptr->slurm_user_id		= (uint16_t) NO_VAL;
@@ -3966,10 +3964,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	(void) s_p_get_string(&conf->sched_params, "SchedulerParameters",
 			      hashtbl);
-
-	if (!s_p_get_uint16(&conf->schedrootfltr,
-			    "SchedulerRootFilter", hashtbl))
-		conf->schedrootfltr = DEFAULT_SCHEDROOTFILTER;
 
 	if (!s_p_get_uint16(&conf->sched_time_slice, "SchedulerTimeSlice",
 	    hashtbl))

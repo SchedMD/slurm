@@ -2493,22 +2493,6 @@ uint32_t slurm_get_slurmd_user_id(void)
 	return slurmd_uid;
 }
 
-/* slurm_get_root_filter
- * RET uint16_t  - Value of SchedulerRootFilter */
-extern uint16_t slurm_get_root_filter(void)
-{
-	uint16_t root_filter = 0;
-	slurm_ctl_conf_t *conf;
-
- 	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		root_filter = conf->schedrootfltr;
-		slurm_conf_unlock();
-	}
-	return root_filter;
-}
-
 /* slurm_get_sched_params
  * RET char * - Value of SchedulerParameters, MUST be xfreed by caller */
 extern char *slurm_get_sched_params(void)

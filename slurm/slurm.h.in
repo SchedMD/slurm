@@ -2762,8 +2762,6 @@ typedef struct slurm_ctl_conf {
 				 * contents of scheduler plugin config file */
 	uint16_t sched_time_slice;	/* gang scheduler slice time, secs */
 	char *schedtype;	/* type of scheduler to use */
-	uint16_t schedrootfltr;	/* 1 if rootOnly partitions should be
-				 * filtered from scheduling (if needed) */
 	char *select_type;	/* type of node selector to use */
 	void *select_conf_key_pairs; /* key-pair list which can be
 				      * listed with slurm_print_key_pairs() */

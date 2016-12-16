@@ -59,7 +59,6 @@ Waittime=0
 # SCHEDULING
 SchedulerType=sched/backfill
 #SchedulerAuth=
-#SchedulerRootFilter=
 SelectType=select/linear
 FastSchedule=1
 #PriorityType=priority/multifactor

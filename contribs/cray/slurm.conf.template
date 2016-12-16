@@ -102,7 +102,6 @@ Waittime=0
 DefMemPerCPU={defmem}
 FastSchedule=0
 MaxMemPerCPU={maxmem}
-#SchedulerRootFilter=1
 #SchedulerTimeSlice=30
 SchedulerType=sched/backfill
 SelectType=select/cray

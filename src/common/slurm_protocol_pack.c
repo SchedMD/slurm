@@ -6837,7 +6837,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->salloc_default_command, buffer);
 		packstr(build_ptr->sbcast_parameters, buffer);
 		packstr(build_ptr->sched_params, buffer);
-		pack16(build_ptr->schedrootfltr, buffer);
 		packstr(build_ptr->sched_logfile, buffer);
 		pack16(build_ptr->sched_log_level, buffer);
 		pack16(build_ptr->sched_time_slice, buffer);
@@ -7118,7 +7117,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->salloc_default_command, buffer);
 		packstr(build_ptr->sched_params, buffer);
 		pack16(0, buffer);
-		pack16(build_ptr->schedrootfltr, buffer);
+		pack16(0, buffer);
 		packstr(build_ptr->sched_logfile, buffer);
 		pack16(build_ptr->sched_log_level, buffer);
 		pack16(build_ptr->sched_time_slice, buffer);
@@ -7394,7 +7393,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->salloc_default_command, buffer);
 		packstr(build_ptr->sched_params, buffer);
 		pack16(0, buffer);
-		pack16(build_ptr->schedrootfltr, buffer);
+		pack16(0, buffer);
 		packstr(build_ptr->sched_logfile, buffer);
 		pack16(build_ptr->sched_log_level, buffer);
 		pack16(build_ptr->sched_time_slice, buffer);
@@ -7780,7 +7779,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->sched_params,
 				       &uint32_tmp, buffer);
-		safe_unpack16(&build_ptr->schedrootfltr, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->sched_logfile,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->sched_log_level, buffer);
@@ -8179,7 +8177,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->sched_params,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&uint16_tmp, buffer); /* was schedport */
-		safe_unpack16(&build_ptr->schedrootfltr, buffer);
+		safe_unpack16(&uint16_tmp, buffer); /* was schedrootfltr */
 		safe_unpackstr_xmalloc(&build_ptr->sched_logfile,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->sched_log_level, buffer);
@@ -8572,7 +8570,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->sched_params,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&uint16_tmp, buffer); /* was schedport */
-		safe_unpack16(&build_ptr->schedrootfltr, buffer);
+		safe_unpack16(&uint16_tmp, buffer); /* was schedrootfltr */
 		safe_unpackstr_xmalloc(&build_ptr->sched_logfile,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->sched_log_level, buffer);

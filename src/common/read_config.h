@@ -147,7 +147,6 @@ extern char *default_plugstack;
 #define DEFAULT_RESUME_TIMEOUT      60
 #define DEFAULT_ROUTE_PLUGIN   	    "route/default"
 #define DEFAULT_SAVE_STATE_LOC      "/var/spool"
-#define DEFAULT_SCHEDROOTFILTER     1
 #define DEFAULT_SCHED_LOG_LEVEL     0
 #define DEFAULT_SCHED_TIME_SLICE    30
 #define DEFAULT_SCHEDTYPE           "sched/backfill"

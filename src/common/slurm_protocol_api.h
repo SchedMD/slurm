@@ -785,10 +785,6 @@ char *slurm_get_ext_sensors_type(void);
  */
 extern uint16_t slurm_get_ext_sensors_freq(void);
 
-/* slurm_get_root_filter
- * RET uint16_t  - Value of SchedulerRootFilter */
-extern uint16_t slurm_get_root_filter(void);
-
 /* slurm_get_route_plugin
  * returns the value of route_plugin in slurmctld_conf object
  * RET char *    - routing type, MUST be xfreed by caller

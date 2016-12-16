@@ -2822,15 +2822,6 @@ The default value is 60 seconds.
 .RE
 
 .TP
-\fBSchedulerRootFilter\fR
-Identifies whether or not \fBRootOnly\fR partitions should be filtered from
-any external scheduling activities. If set to 0, then \fBRootOnly\fR partitions
-are treated like any other partition. If set to 1, then \fBRootOnly\fR
-partitions are exempt from any external scheduling activities. The
-default value is 1. Currently only used by the built\-in backfill
-scheduling module "sched/backfill" (see \fBSchedulerType\fR).
-
-.TP
 \fBSchedulerTimeSlice\fR
 Number of seconds in each time slice when gang scheduling is enabled
 (\fBPreemptMode=SUSPEND,GANG\fR).

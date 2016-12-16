@@ -1386,12 +1386,6 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->sched_params);
 	list_append(ret_list, key_pair);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("SchedulerRootFilter");
-	key_pair->value = xstrdup_printf(
-		"%u", slurm_ctl_conf_ptr->schedrootfltr);
-	list_append(ret_list, key_pair);
-
 	snprintf(tmp_str, sizeof(tmp_str), "%u sec",
 		 slurm_ctl_conf_ptr->sched_time_slice);
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -2013,7 +2007,6 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 		if (!xstrcasecmp(key_pair->name, "SelectType") ||
 		    !xstrcasecmp(key_pair->name, "SelectTypeParameters") ||
 		    !xstrcasecmp(key_pair->name, "SchedulerParameters") ||
-		    !xstrcasecmp(key_pair->name, "SchedulerRootFilter") ||
 		    !xstrcasecmp(key_pair->name, "SchedulerTimeSlice") ||
 		    !xstrcasecmp(key_pair->name, "SchedulerType") ||
 		    !xstrcasecmp(key_pair->name, "SlurmSchedLogLevel") ||
