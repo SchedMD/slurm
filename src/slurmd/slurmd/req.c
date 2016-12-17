@@ -1609,13 +1609,13 @@ _prolog_error(batch_job_launch_msg_t *req, int rc)
 		xstrfmtcat(path_name, "/%s", err_name);
 	xfree(err_name);
 
-	fd = open(path_name, (O_CREAT|O_APPEND|O_WRONLY), 0644);
-	xfree(path_name);
-	if (fd == -1) {
+	if ((fd = open(path_name, (O_CREAT|O_APPEND|O_WRONLY), 0644)) == -1) {
 		error("Unable to open %s: %s", path_name,
 		      slurm_strerror(errno));
+		xfree(path_name);
 		return;
 	}
+	xfree(path_name);
 	xstrfmtcat(err_name, "Error running slurm prolog: %d\n",
 		   WEXITSTATUS(rc));
 	safe_write(fd, err_name, strlen(err_name));
