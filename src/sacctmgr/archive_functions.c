@@ -399,10 +399,10 @@ extern int sacctmgr_archive_dump(int argc, char *argv[])
 	int rc = SLURM_SUCCESS;
 	slurmdb_archive_cond_t *arch_cond =
 		xmalloc(sizeof(slurmdb_archive_cond_t));
-	int i=0;
+	int i;
 	struct stat st;
 
-	for (i=0; i<argc; i++) {
+	for (i = 0; i < argc; i++) {
 		int command_len = strlen(argv[i]);
 		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
 		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3)))
@@ -434,6 +434,7 @@ extern int sacctmgr_archive_dump(int argc, char *argv[])
 				"the directory must be on "
 				"the calling host.\n",
 				arch_cond->archive_dir, slurm_strerror(errno));
+			slurmdb_destroy_archive_cond(arch_cond);
 			return SLURM_ERROR;
 		}
 
@@ -442,6 +443,7 @@ extern int sacctmgr_archive_dump(int argc, char *argv[])
 			fprintf(stderr, " dump: "
 				"archive dir %s isn't a directory\n",
 				arch_cond->archive_dir);
+			slurmdb_destroy_archive_cond(arch_cond);
 			return SLURM_ERROR;
 		}
 
@@ -450,6 +452,7 @@ extern int sacctmgr_archive_dump(int argc, char *argv[])
 			fprintf(stderr, " dump: "
 				"archive dir %s is not writable\n",
 				arch_cond->archive_dir);
+			slurmdb_destroy_archive_cond(arch_cond);
 			return SLURM_ERROR;
 		}
 	}
@@ -462,6 +465,7 @@ extern int sacctmgr_archive_dump(int argc, char *argv[])
 				"the calling host.\n",
 				arch_cond->archive_script,
 				slurm_strerror(errno));
+			slurmdb_destroy_archive_cond(arch_cond);
 			return SLURM_ERROR;
 		}
 		if (!(st.st_mode & S_IFREG)) {
@@ -469,6 +473,7 @@ extern int sacctmgr_archive_dump(int argc, char *argv[])
 			fprintf(stderr, " dump: "
 				"archive script %s isn't a regular file\n",
 				arch_cond->archive_script);
+			slurmdb_destroy_archive_cond(arch_cond);
 			return SLURM_ERROR;
 		}
 
@@ -477,6 +482,7 @@ extern int sacctmgr_archive_dump(int argc, char *argv[])
 			fprintf(stderr, " dump: "
 				"archive script %s is not executable\n",
 				arch_cond->archive_script);
+			slurmdb_destroy_archive_cond(arch_cond);
 			return SLURM_ERROR;
 		}
 	}
@@ -490,7 +496,7 @@ extern int sacctmgr_archive_dump(int argc, char *argv[])
 			acct_storage_g_commit(db_conn, 0);
 		}
 	} else {
-		exit_code=1;
+		exit_code = 1;
 		fprintf(stderr, " Problem dumping archive: %s\n",
 			slurm_strerror(rc));
 		rc = SLURM_ERROR;
@@ -505,10 +511,10 @@ extern int sacctmgr_archive_load(int argc, char *argv[])
 	int rc = SLURM_SUCCESS;
 	slurmdb_archive_rec_t *arch_rec =
 		xmalloc(sizeof(slurmdb_archive_rec_t));
-	int i=0, command_len = 0;
+	int i, command_len = 0;
 	struct stat st;
 
-	for (i=0; i<argc; i++) {
+	for (i = 0; i < argc; i++) {
 		int end = parse_option_end(argv[i]);
 		if (!end)
 			command_len=strlen(argv[i]);
@@ -527,7 +533,7 @@ extern int sacctmgr_archive_load(int argc, char *argv[])
 					 MAX(command_len, 2))) {
 			arch_rec->insert = strip_quotes(argv[i]+end, NULL, 1);
 		} else {
-			exit_code=1;
+			exit_code = 1;
 			fprintf(stderr, " Unknown option: %s\n", argv[i]);
 		}
 	}
@@ -557,6 +563,7 @@ extern int sacctmgr_archive_load(int argc, char *argv[])
 				"Note: For archive load, the file must be on "
 				"the calling host.\n",
 				arch_rec->archive_file, slurm_strerror(errno));
+			slurmdb_destroy_archive_rec(arch_rec);
 			return SLURM_ERROR;
 		}
 	}
@@ -570,7 +577,7 @@ extern int sacctmgr_archive_load(int argc, char *argv[])
 			acct_storage_g_commit(db_conn, 0);
 		}
 	} else {
-		exit_code=1;
+		exit_code = 1;
 		fprintf(stderr, " Problem loading archive file: %s\n",
 			slurm_strerror(rc));
 		rc = SLURM_ERROR;
