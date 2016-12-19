@@ -191,6 +191,8 @@ documents those changes that are of interest to users and administrators.
     node reboot (i.e. to change KNL mode) in order to start.
  -- When unpacking a node or front_end record from state and the protocol
     version is lower than the min version, set it to the min.
+ -- Remove redundant lookup for part_ptr when updating a reservation's nodes.
+ -- Fix memory and file descriptor leaks in slurmd daemon's sbcast logic.
 
 * Changes in Slurm 16.05.7
 ==========================

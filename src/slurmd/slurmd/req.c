@@ -4027,16 +4027,22 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 	child = fork();
 	if (child == -1) {
 		error("sbcast: fork failure");
+		_dealloc_gids(gids);
+		close(pipe[0]);
+		close(pipe[1]);
 		return errno;
 	} else if (child > 0) {
 		/* get fd back from pipe */
 		close(pipe[0]);
 		waitpid(child, &rc, 0);
 		_dealloc_gids(gids);
-		if (rc)
+		if (rc) {
+			close(pipe[1]);
 			return WEXITSTATUS(rc);
+		}
 
 		fd = _receive_fd(pipe[1]);
+		close(pipe[1]);
 
 		file_info = xmalloc(sizeof(file_bcast_info_t));
 		file_info->fd = fd;
