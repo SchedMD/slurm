@@ -795,7 +795,6 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 	if (exit_code) {
 		FREE_NULL_LIST(name_list);
 		slurmdb_destroy_qos_rec(start_qos);
-		xfree(description);
 		return SLURM_ERROR;
 	} else if (!list_count(name_list)) {
 		FREE_NULL_LIST(name_list);
@@ -815,7 +814,6 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 				"Contact your admin.\n");
 			FREE_NULL_LIST(name_list);
 			slurmdb_destroy_qos_rec(start_qos);
-			xfree(description);
 			return SLURM_ERROR;
 		}
 	}
@@ -829,12 +827,12 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 			qos = xmalloc(sizeof(slurmdb_qos_rec_t));
 			slurmdb_init_qos_rec(qos, 0, NO_VAL);
 			qos->name = xstrdup(name);
-			if (start_qos->description)
+			if (start_qos->description) {
 				qos->description =
 					xstrdup(start_qos->description);
-			else
+			} else
 				qos->description = xstrdup(name);
-
+			description = qos->description;	/* No copy */
 			slurmdb_copy_qos_rec_limits(qos, start_qos);
 
 			xstrfmtcat(qos_str, "  %s\n", name);
@@ -890,7 +888,6 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 end_it:
 	FREE_NULL_LIST(qos_list);
 	slurmdb_destroy_qos_rec(start_qos);
-	xfree(description);
 
 	return rc;
 }
