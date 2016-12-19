@@ -400,7 +400,9 @@ int powercap_get_job_optimal_cpufreq(uint32_t powercap, int *allowed_freqs)
 	bit_not(tmp_bitmap);
 
 	cur_max_watts = powercap_get_node_bitmap_maxwatts_dvfs(tmp_bitmap,
-			  idle_node_bitmap,tmp_max_watts_dvfs,allowed_freqs,0);
+				idle_node_bitmap, tmp_max_watts_dvfs,
+				allowed_freqs, 0);
+	FREE_NULL_BITMAP(tmp_bitmap);
 
 	if (cur_max_watts > powercap) {
 		while (tmp_max_watts_dvfs[k] > powercap &&
@@ -409,13 +411,15 @@ int powercap_get_job_optimal_cpufreq(uint32_t powercap, int *allowed_freqs)
 		}
 		if (k == allowed_freqs[0] + 1)
 			k--;
-	} else
+	} else {
 		k = 1;
+	}
+	xfree(tmp_max_watts_dvfs);
 
 	return k;
 }
 
-int* powercap_get_job_nodes_numfreq(bitstr_t *select_bitmap, 
+int *powercap_get_job_nodes_numfreq(bitstr_t *select_bitmap,
 				    uint32_t cpu_freq_min,
 				    uint32_t cpu_freq_max)
 {
@@ -426,7 +430,7 @@ int* powercap_get_job_nodes_numfreq(bitstr_t *select_bitmap,
 	uint32_t cpufreq;
 
 	if (!_powercap_enabled())
-		return 0;
+		return NULL;
 	if ((cpu_freq_min == NO_VAL) && (cpu_freq_max == NO_VAL)) {
 		allowed_freqs = xmalloc(sizeof(int) * 2);
 		/* allowed_freqs[0] = 0; Default value */
@@ -439,7 +443,7 @@ int* powercap_get_job_nodes_numfreq(bitstr_t *select_bitmap,
 			layouts_entity_get_kv(L_NAME, node_ptr->name,
 					L_NUM_FREQ, &num_freq, L_T_UINT16);
 			allowed_freqs = xmalloc(sizeof(int)*((int)num_freq+2));
-			allowed_freqs[-1] = (int) num_freq;
+			allowed_freqs[0] = (int) num_freq;
 			for (p = num_freq; p > 0; p--) {
 				sprintf(ename, "Cpufreq%d", p);
 				layouts_entity_get_kv(L_NAME,
