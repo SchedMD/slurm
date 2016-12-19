@@ -809,7 +809,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man5/nonstop.*
 %{_mandir}/man5/slurm.*
 %{_mandir}/man5/topology.*
-%{_mandir}/man5/wiki.*
 %{_mandir}/man8/slurmctld.*
 %{_mandir}/man8/slurmd.*
 %{_mandir}/man8/slurmstepd*
