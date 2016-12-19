@@ -771,7 +771,7 @@ end_it:
 extern int sacctmgr_add_qos(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	int i=0, limit_set=0;
+	int i, limit_set = 0;
 	ListIterator itr = NULL;
 	slurmdb_qos_rec_t *qos = NULL;
 	slurmdb_qos_rec_t *start_qos = xmalloc(sizeof(slurmdb_qos_rec_t));
@@ -783,7 +783,7 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 
 	slurmdb_init_qos_rec(start_qos, 0, NO_VAL);
 
-	for (i=0; i<argc; i++) {
+	for (i = 0; i < argc; i++) {
 		int command_len = strlen(argv[i]);
 		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
 		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3)))
@@ -794,12 +794,13 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 
 	if (exit_code) {
 		FREE_NULL_LIST(name_list);
+		slurmdb_destroy_qos_rec(start_qos);
 		xfree(description);
 		return SLURM_ERROR;
 	} else if (!list_count(name_list)) {
 		FREE_NULL_LIST(name_list);
 		slurmdb_destroy_qos_rec(start_qos);
-		exit_code=1;
+		exit_code = 1;
 		fprintf(stderr, " Need name of qos to add.\n");
 		return SLURM_SUCCESS;
 	}
@@ -808,11 +809,12 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 		g_qos_list = acct_storage_g_get_qos(db_conn, my_uid, NULL);
 
 		if (!g_qos_list) {
-			exit_code=1;
+			exit_code = 1;
 			fprintf(stderr, " Problem getting qos's "
 				"from database.  "
 				"Contact your admin.\n");
 			FREE_NULL_LIST(name_list);
+			slurmdb_destroy_qos_rec(start_qos);
 			xfree(description);
 			return SLURM_ERROR;
 		}
@@ -821,7 +823,7 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 	qos_list = list_create(slurmdb_destroy_qos_rec);
 
 	itr = list_iterator_create(name_list);
-	while((name = list_next(itr))) {
+	while ((name = list_next(itr))) {
 		qos = NULL;
 		if (!sacctmgr_find_qos_from_list(g_qos_list, name)) {
 			qos = xmalloc(sizeof(slurmdb_qos_rec_t));
@@ -879,7 +881,7 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 			acct_storage_g_commit(db_conn, 0);
 		}
 	} else {
-		exit_code=1;
+		exit_code = 1;
 		fprintf(stderr, " Problem adding QOS: %s\n",
 			slurm_strerror(rc));
 		rc = SLURM_ERROR;
@@ -887,6 +889,7 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 
 end_it:
 	FREE_NULL_LIST(qos_list);
+	slurmdb_destroy_qos_rec(start_qos);
 	xfree(description);
 
 	return rc;
