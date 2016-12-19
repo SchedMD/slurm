@@ -1339,7 +1339,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		uint32_t cur_max_watts, tmp_max_watts = 0;
 		uint32_t cpus_per_node, *tmp_max_watts_dvfs = NULL;
 		bitstr_t *tmp_bitmap;
-		int k = 1, *allowed_freqs;
+		int k = 1, *allowed_freqs = NULL;
 		float ratio = 0;
 
 		/*
@@ -1466,6 +1466,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 						  job_ptr->time_min);
 			}
 		}
+		xfree(allowed_freqs);
 		xfree(tmp_max_watts_dvfs);
 
 		debug2("powercapping: checking job %u : min=%u cur=%u "
@@ -2016,6 +2017,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		if (error_code != SLURM_SUCCESS)
 			break;
 	}
+	FREE_NULL_BITMAP(avail_bitmap);
 
 	/* The job is not able to start right now, return a
 	 * value indicating when the job can start */
