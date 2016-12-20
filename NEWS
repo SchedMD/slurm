@@ -24,7 +24,7 @@ documents those changes that are of interest to users and administrators.
  -- Cancel interactive job if Prolog failure with "PrologFlags=contain" or
     "PrologFlags=alloc" configured. Send new error prolog failure message to
     the salloc or srun command as needed.
-
+ -- Prevent possible out-of-bounds read in slurmstepd on an invalid #! line.
 
 * Changes in Slurm 16.05.7
 ==========================
