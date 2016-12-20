@@ -4377,6 +4377,7 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 {
 	struct job_record *job_ptr;
 	struct step_record *step_ptr = NULL;
+	struct step_record *step2_ptr = NULL;
 	ListIterator step_iterator;
 	int mod_cnt = 0;
 	bool new_step = 0;
@@ -4437,14 +4438,14 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 	 * any steps with any time limit */
 	if (req->step_id == NO_VAL) {
 		step_iterator = list_iterator_create(job_ptr->step_list);
-		while ((step_ptr = (struct step_record *)
+		while ((step2_ptr = (struct step_record *)
 				   list_next (step_iterator))) {
-			if (step_ptr->state != JOB_RUNNING)
+			if (step2_ptr->state != JOB_RUNNING)
 				continue;
-			step_ptr->time_limit = req->time_limit;
+			step2_ptr->time_limit = req->time_limit;
 			mod_cnt++;
 			info("Updating step %u.%u time limit to %u",
-			     req->job_id, step_ptr->step_id, req->time_limit);
+			     req->job_id, step2_ptr->step_id, req->time_limit);
 		}
 		list_iterator_destroy (step_iterator);
 	} else {
