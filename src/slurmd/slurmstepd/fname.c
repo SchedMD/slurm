@@ -76,14 +76,14 @@ static void _step_path_check(char **p, char **q, char **name, unsigned int wid,
 char *
 fname_create(stepd_step_rec_t *job, const char *format, int taskid)
 {
-	char *name = NULL;
-	char *orig = xstrdup(format);
+	char *name = NULL, *orig;
 	int id;
 	char *esc;
 
 	if (((id = fname_single_task_io (format)) >= 0) && (taskid != id))
 		return (xstrdup ("/dev/null"));
 
+	orig = xstrdup(format);
 	esc = is_path_escaped(orig);
 
 	/* If format doesn't specify an absolute pathname, use cwd

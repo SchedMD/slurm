@@ -152,7 +152,7 @@ static bool _pid_to_wake(pid_t pid)
 	sprintf (proc_name, "/proc/%d/stat", (int) pid);
 	if ((proc_fd = open(proc_name, O_RDONLY, 0)) == -1)
 		return false;  /* process is now gone */
-	proc_stat = xmalloc(4096);
+	proc_stat = xmalloc(4097);
 	len = read(proc_fd, proc_stat, 4096);
 	close(proc_fd);
 	if (len < 14) {

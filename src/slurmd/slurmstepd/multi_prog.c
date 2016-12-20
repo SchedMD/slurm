@@ -205,7 +205,7 @@ extern int multi_prog_get_argv(char *config_data, char **prog_env,
 			continue;
 
 		/* skip all whitspace after the range spec */
-		while(*p != '\0' && isspace (*p))
+		while (*p != '\0' && isspace (*p))
 			p++;
 
 		args_spec = p;

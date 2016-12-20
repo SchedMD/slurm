@@ -158,11 +158,15 @@ _create_socket(const char *name)
 	len = strlen(addr.sun_path)+1 + sizeof(addr.sun_family);
 
 	/* bind the name to the descriptor */
-	if (bind(fd, (struct sockaddr *) &addr, len) < 0)
+	if (bind(fd, (struct sockaddr *) &addr, len) < 0) {
+		(void) close(fd);
 		return -2;
+	}
 
-	if (listen(fd, 32) < 0)
+	if (listen(fd, 32) < 0) {
+		(void) close(fd);
 		return -3;
+	}
 
 	return fd;
 }
@@ -993,7 +997,9 @@ done:
 	safe_write(fd, &rc, sizeof(int));
 	xfree(image_dir);
 	return SLURM_SUCCESS;
+
 rwfail:
+	xfree(image_dir);
 	return SLURM_FAILURE;
 }
 
@@ -1029,7 +1035,9 @@ done:
 	safe_write(fd, &rc, sizeof(int));
 	xfree(message);
 	return SLURM_SUCCESS;
+
 rwfail:
+	xfree(message);
 	return SLURM_FAILURE;
 }
 
@@ -1120,6 +1128,8 @@ _handle_attach(int fd, stepd_step_rec_t *job, uid_t uid)
 {
 	srun_info_t *srun;
 	int rc = SLURM_SUCCESS;
+	uint32_t *gtids = NULL, *pids = NULL;
+	int len, i;
 
 	debug("_handle_attach for job %u.%u", job->jobid, job->stepid);
 
@@ -1156,6 +1166,7 @@ _handle_attach(int fd, stepd_step_rec_t *job, uid_t uid)
 
 	list_prepend(job->sruns, (void *) srun);
 	rc = io_client_connect(srun, job);
+	srun = NULL;
 	debug("  back from io_client_connect, rc = %d", rc);
 done:
 	/* Send the return code */
@@ -1164,8 +1175,7 @@ done:
 	debug("  in _handle_attach rc = %d", rc);
 	if (rc == SLURM_SUCCESS) {
 		/* Send response info */
-		uint32_t *pids, *gtids;
-		int len, i;
+
 
 		debug("  in _handle_attach sending response info");
 		len = job->node_tasks * sizeof(uint32_t);
@@ -1201,6 +1211,12 @@ done:
 
 	return SLURM_SUCCESS;
 rwfail:
+	if (srun) {
+		xfree(srun->key);
+		xfree(srun);
+	}
+	xfree(pids);
+	xfree(gtids);
 	return SLURM_FAILURE;
 }
 
@@ -1581,7 +1597,7 @@ _handle_completion(int fd, stepd_step_rec_t *job, uid_t uid)
 	int last;
 	jobacctinfo_t *jobacct = NULL;
 	int step_rc;
-	char* buf;
+	char *buf = NULL;
 	int len;
 	Buf buffer;
 	bool lock_set = false;
@@ -1618,6 +1634,7 @@ _handle_completion(int fd, stepd_step_rec_t *job, uid_t uid)
 	buf = xmalloc(len);
 	safe_read(fd, buf, len);
 	buffer = create_buf(buf, len);
+	buf = NULL;
 	jobacctinfo_unpack(&jobacct, SLURM_PROTOCOL_VERSION,
 			   PROTOCOL_TYPE_SLURM, buffer, 1);
 	free_buf(buffer);
@@ -1676,6 +1693,7 @@ rwfail:	if (lock_set) {
 		slurm_cond_signal(&step_complete.cond);
 		slurm_mutex_unlock(&step_complete.lock);
 	}
+	xfree(buf);
 	return SLURM_FAILURE;
 }
 
@@ -1719,7 +1737,9 @@ _handle_stat_jobacct(int fd, stepd_step_rec_t *job, uid_t uid)
 	jobacctinfo_destroy(jobacct);
 
 	return SLURM_SUCCESS;
+
 rwfail:
+	jobacctinfo_destroy(jobacct);
 	return SLURM_ERROR;
 }
 

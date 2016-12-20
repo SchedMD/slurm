@@ -1444,6 +1444,7 @@ io_close_all(stepd_step_rec_t *job)
 	} else {
 		if (dup2(devnull, STDERR_FILENO) < 0)
 			error("Unable to dup /dev/null onto stderr");
+		(void) close(devnull);
 	}
 
 	/* Signal IO thread to close appropriate
@@ -1783,18 +1784,18 @@ _send_eof_msg(struct task_read_info *out)
 
 	/* Add eof message to the msg_queue of all clients */
 	clients = list_iterator_create(out->job->clients);
-	while((eio = list_next(clients))) {
+	while ((eio = list_next(clients))) {
 		client = (struct client_io_info *)eio->arg;
 		debug5("======================== Enqueued eof message");
 		xassert(client->magic == CLIENT_IO_MAGIC);
 
-		/* Send eof message to all clients.
-		 */
-
+		/* Send eof message to all clients */
 		if (list_enqueue(client->msg_queue, msg))
 			msg->ref_count++;
 	}
 	list_iterator_destroy(clients);
+	if (msg->ref_count == 0)
+		free_io_buf(msg);
 
 	debug4("Leaving  _send_eof_msg");
 }
