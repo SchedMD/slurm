@@ -2339,6 +2339,7 @@ static void _parse_commandline(int argc, char *argv[])
 			daemonize = 0;
 			break;
 		case 'f':
+			xfree(slurm_conf_filename);
 			slurm_conf_filename = xstrdup(optarg);
 			break;
 		case 'h':
@@ -2346,6 +2347,7 @@ static void _parse_commandline(int argc, char *argv[])
 			exit(0);
 			break;
 		case 'L':
+			xfree(debug_logfile);
 			debug_logfile = xstrdup(optarg);
 			break;
 		case 'n':

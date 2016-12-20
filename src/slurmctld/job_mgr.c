@@ -1042,6 +1042,7 @@ extern int load_last_job_id( void )
 
 	/* Ignore the state for individual jobs stored here */
 
+	xfree(ver_str);
 	free_buf(buffer);
 	return error_code;
 
@@ -6935,7 +6936,7 @@ _read_data_array_from_file(int fd, char *file_name, char ***data,
 
 	pos = 0;
 	buf_size = BUF_SIZE;
-	buffer = xmalloc(buf_size);
+	buffer = xmalloc(buf_size + 1);
 	while (1) {
 		amount = read(fd, &buffer[pos], BUF_SIZE);
 		if (amount < 0) {
@@ -6947,7 +6948,7 @@ _read_data_array_from_file(int fd, char *file_name, char ***data,
 		if (amount < BUF_SIZE)	/* end of file */
 			break;
 		buf_size += amount;
-		xrealloc(buffer, buf_size);
+		xrealloc(buffer, buf_size + 1);
 	}
 
 	/* Allocate extra space for supplemental environment variables */
