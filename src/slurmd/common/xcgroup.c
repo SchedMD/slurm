@@ -759,7 +759,7 @@ int xcgroup_get_uint64_param(xcgroup_t* cg, char* param, uint64_t* value)
 	int fstatus = XCGROUP_ERROR;
 	char file_path[PATH_MAX];
 	char *cpath = cg->path;
-	uint64_t *values;
+	uint64_t *values = NULL;
 	int vnb;
 
 	if (snprintf(file_path, PATH_MAX, "%s/%s", cpath, param) >= PATH_MAX) {
