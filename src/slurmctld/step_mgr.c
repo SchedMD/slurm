@@ -2533,7 +2533,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 			info("_step_create: step time greater than partition's "
 			     "(%u > %u)", step_specs->time_limit,
 			     job_ptr->part_ptr->max_time);
-			delete_step_record (job_ptr, step_ptr->step_id);
+			delete_step_record(job_ptr, step_ptr->step_id);
+			xfree(step_node_list);
 			return ESLURM_INVALID_TIME_LIMIT;
 		}
 		step_ptr->time_limit = step_specs->time_limit;

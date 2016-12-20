@@ -1975,7 +1975,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	struct part_record *part_ptr = NULL;
 	bitstr_t *node_bitmap = NULL;
 	bitstr_t *core_bitmap = NULL;
-	slurmctld_resv_t *resv_ptr;
+	slurmctld_resv_t *resv_ptr = NULL;
 	int account_cnt = 0, user_cnt = 0;
 	char **account_list = NULL;
 	uid_t *user_list = NULL;
@@ -2408,9 +2408,10 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	for (i = 0; i < account_cnt; i++)
 		xfree(account_list[i]);
 	xfree(account_list);
+	FREE_NULL_BITMAP(core_bitmap);
 	FREE_NULL_LIST(license_list);
 	FREE_NULL_BITMAP(node_bitmap);
-	FREE_NULL_BITMAP(core_bitmap);
+	xfree(resv_ptr);
 	xfree(user_list);
 	return rc;
 }
