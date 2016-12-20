@@ -1571,14 +1571,15 @@ static void *_mail_proc(void *arg)
 	if (pid < 0) {		/* error */
 		error("fork(): %m");
 	} else if (pid == 0) {	/* child */
-		int fd, i;
+		int fd_0, fd_1, fd_2, i;
 		for (i = 0; i < 1024; i++)
 			(void) close(i);
-		fd = open("/dev/null", O_RDWR); // fd = 0
-		if (dup(fd) == -1)		// fd = 1
-			error("Couldn't do a dup for 1: %m");
-		if (dup(fd) == -1)		// fd = 2
-			error("Couldn't do a dup for 2 %m");
+		if ((fd_0 = open("/dev/null", O_RDWR)) == -1)	// fd = 0
+			error("Couldn't open /dev/null: %m");
+		if ((fd_1 = dup(fd_0)) == -1)			// fd = 1
+			error("Couldn't do a dup on fd 1: %m");
+		if ((fd_2 = dup(fd_0)) == -1)			// fd = 2
+			error("Couldn't do a dup on fd 2 %m");
 		execle(slurmctld_conf.mail_prog, "mail",
 			"-s", mi->message, mi->user_name,
 			NULL, NULL);
