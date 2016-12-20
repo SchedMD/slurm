@@ -219,15 +219,15 @@ static bool _test_core_dumping(char* stat_fname)
 	int proc_fd, proc_stat_size = BUF_SIZE;
 	bool dumping_results = false;
 
-	proc_stat = (char *) xmalloc(proc_stat_size);
 	proc_fd = open(stat_fname, O_RDONLY, 0);
 	if (proc_fd == -1)
 		return false;  /* process is now gone */
+	proc_stat = xmalloc(proc_stat_size + 1);
 	while ((num = read(proc_fd, proc_stat, proc_stat_size)) > 0) {
 		if (num < (proc_stat_size-1))
 			break;
 		proc_stat_size += BUF_SIZE;
-		xrealloc(proc_stat, proc_stat_size);
+		xrealloc(proc_stat, proc_stat_size + 1);
 		if (lseek(proc_fd, (off_t) 0, SEEK_SET) != 0)
 			break;
 	}
@@ -236,9 +236,8 @@ static bool _test_core_dumping(char* stat_fname)
 	/* split into "PID (cmd" and "<rest>" */
 	str_ptr = (char *)strrchr(proc_stat, ')');
 	if (str_ptr == NULL) {
-		error("\
-%s: unexpected format of %s (%s) bracket missing?", __func__,
-		      stat_fname, proc_stat);
+		error("%s: unexpected format of %s (%s) bracket missing?",
+		      __func__, stat_fname, proc_stat);
 		xfree(proc_stat);
 		return false;
 	}

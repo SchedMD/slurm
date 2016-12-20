@@ -249,7 +249,7 @@ read_proc(void)
 		} 
 	} 
 	proc_stat_size = BUF_SIZE;
-	proc_stat = (char *) xmalloc(proc_stat_size);
+	proc_stat = (char *) xmalloc(proc_stat_size + 1);
 	proc_fs = opendir("/proc");
 	if (proc_fs == NULL) {
 		error ("read_proc: opendir unable to open /proc %m");
@@ -276,7 +276,7 @@ read_proc(void)
 			if (n < (proc_stat_size-1))
 				break;
 			proc_stat_size += BUF_SIZE;
-			xrealloc(proc_stat, proc_stat_size);
+			xrealloc(proc_stat, proc_stat_size + 1);
 			if (lseek(proc_fd, (off_t) 0, SEEK_SET) != 0) 
 				break;
 		}

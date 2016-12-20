@@ -707,8 +707,8 @@ int xcgroup_get_uint32_param(xcgroup_t* cg, char* param, uint32_t* value)
 {
 	int fstatus = XCGROUP_ERROR;
 	char file_path[PATH_MAX];
-	char* cpath = cg->path;
-	uint32_t* values;
+	char *cpath = cg->path;
+	uint32_t *values = NULL;
 	int vnb;
 
 	if (snprintf(file_path, PATH_MAX, "%s/%s", cpath, param) >= PATH_MAX) {
@@ -724,9 +724,9 @@ int xcgroup_get_uint32_param(xcgroup_t* cg, char* param, uint32_t* value)
 				__func__, param, cpath);
 		} else {
 			*value = values[0];
-			xfree(values);
 			fstatus = XCGROUP_SUCCESS;
 		}
+		xfree(values);
 	}
 	return fstatus;
 }
@@ -758,8 +758,8 @@ int xcgroup_get_uint64_param(xcgroup_t* cg, char* param, uint64_t* value)
 {
 	int fstatus = XCGROUP_ERROR;
 	char file_path[PATH_MAX];
-	char* cpath = cg->path;
-	uint64_t* values;
+	char *cpath = cg->path;
+	uint64_t *values;
 	int vnb;
 
 	if (snprintf(file_path, PATH_MAX, "%s/%s", cpath, param) >= PATH_MAX) {
@@ -776,9 +776,9 @@ int xcgroup_get_uint64_param(xcgroup_t* cg, char* param, uint64_t* value)
 				__func__, param, cpath);
 		} else {
 			*value = values[0];
-			xfree(values);
 			fstatus = XCGROUP_SUCCESS;
 		}
+		xfree(values);
 	}
 	return fstatus;
 }
@@ -1056,7 +1056,7 @@ int _file_read_uint32s(char* file_path, uint32_t** pvalues, int* pnb)
 	}
 
 	/* get file size */
-	fsize=_file_getsize(fd);
+	fsize =_file_getsize(fd);
 	if (fsize == -1) {
 		close(fd);
 		return XCGROUP_ERROR;
@@ -1140,7 +1140,6 @@ int _file_read_content(char* file_path, char** content, size_t *csize)
 	int fstatus;
 	int rc;
 	int fd;
-
 	size_t fsize;
 	char* buf;
 
@@ -1166,7 +1165,7 @@ int _file_read_content(char* file_path, char** content, size_t *csize)
 	}
 
 	/* read file contents */
-	buf = (char*) xmalloc((fsize+1)*sizeof(char));
+	buf = xmalloc((fsize+1)*sizeof(char));
 	buf[fsize]='\0';
 	do {
 		rc = read(fd, buf, fsize);
@@ -1177,6 +1176,8 @@ int _file_read_content(char* file_path, char** content, size_t *csize)
 		*content = buf;
 		*csize = rc;
 		fstatus = XCGROUP_SUCCESS;
+	} else {
+		xfree(buf);
 	}
 
 	/* close file */

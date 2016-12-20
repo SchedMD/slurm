@@ -1788,7 +1788,7 @@ cleanup:
 	xfree(new_file);
 	if (buffer)
 		free_buf(buffer);
-	if (cred_fd > 0)
+	if (cred_fd >= 0)
 		close(cred_fd);
 	return error_code;
 }
