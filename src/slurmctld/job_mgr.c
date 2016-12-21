@@ -15773,13 +15773,11 @@ extern void job_hold_requeue(struct job_record *job_ptr)
 	job_ptr->warn_flags &= ~WARN_SENT;
 
 	/* Test if user wants to requeue the job
-	 * in hold or with a special exit value.
-	 */
+	 * in hold or with a special exit value.  */
 	if (state & JOB_SPECIAL_EXIT) {
 		/* JOB_SPECIAL_EXIT means requeue the
 		 * the job, put it on hold and display
-		 * it as JOB_SPECIAL_EXIT.
-		 */
+		 * it as JOB_SPECIAL_EXIT.  */
 		job_ptr->job_state |= JOB_SPECIAL_EXIT;
 		job_ptr->state_reason = WAIT_HELD_USER;
 		job_ptr->priority = 0;
