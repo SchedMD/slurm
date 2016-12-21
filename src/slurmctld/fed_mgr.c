@@ -1678,6 +1678,65 @@ static void *_update_sibling_job(void *arg)
 	return NULL;
 }
 
+static void _update_sib_job_siblings(job_desc_msg_t *job_desc, uint64_t sibs)
+{
+	/* failed to submit a job to sibling. Need to update all of the
+	 * job's fed_siblings bitmaps */
+	ListIterator sib_itr, thread_itr;
+	slurmdb_cluster_rec_t *sibling;
+	List update_threads = list_create(_xfree_f);
+	job_desc_msg_t job_update_msg;
+	pthread_attr_t attr;
+	sib_update_t *tmp_sub = NULL;
+
+	slurm_attr_init(&attr);
+
+	slurm_init_job_desc_msg(&job_update_msg);
+	job_update_msg.job_id       = job_desc->job_id;
+	job_update_msg.fed_siblings = job_desc->fed_siblings;
+
+	sib_itr = list_iterator_create(fed_mgr_fed_rec->cluster_list);
+	while ((sibling = list_next(sib_itr))) {
+		pthread_t thread_id = 0;
+		sib_update_t *sub;
+
+		/* Local is handled outside */
+		if (sibling == fed_mgr_cluster_rec)
+			continue;
+
+		if (!(sibs & FED_SIBLING_BIT(sibling->fed.id)))
+			continue;
+
+		sub = xmalloc(sizeof(sib_submit_t));
+		sub->job_desc = &job_update_msg;
+		sub->sibling  = sibling;
+		if (pthread_create(&thread_id, &attr,
+				   _update_sibling_job, sub) != 0) {
+			error("failed to create submit_sibling_job_thread");
+			xfree(sub);
+			continue;
+		}
+		sub->thread_id = thread_id;
+
+		list_append(update_threads, sub);
+	}
+	list_iterator_destroy(sib_itr);
+	slurm_attr_destroy(&attr);
+
+	thread_itr = list_iterator_create(update_threads);
+	while ((tmp_sub = list_next(thread_itr))) {
+		pthread_join(tmp_sub->thread_id, NULL);
+		if (tmp_sub->thread_rc) {
+			error("failed to update sibling job with updated sibling bitmap on sibling %s",
+			      tmp_sub->sibling->name);
+			/* other cluster should get updated when it syncs
+			 * up */
+		}
+	}
+	list_iterator_destroy(thread_itr);
+	FREE_NULL_LIST(update_threads);
+}
+
 /*
  * Submit sibling jobs to designated (job_desc->fed_siblings) siblings.
  *
@@ -1742,6 +1801,7 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 
 		list_append(submit_threads, sub);
 	}
+	list_iterator_destroy(sib_itr);
 
 	thread_itr = list_iterator_create(submit_threads);
 	while ((tmp_sub = list_next(thread_itr))) {
@@ -1757,58 +1817,10 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 	list_iterator_destroy(thread_itr);
 
 	if (rc && job_desc->fed_siblings) {
-		/* failed to submit a job to sibling. Need to update all of the
-		 * job's fed_siblings bitmaps */
-		List update_threads = list_create(_xfree_f);
-		job_desc_msg_t job_update_msg;
-
-		slurm_init_job_desc_msg(&job_update_msg);
-		job_update_msg.job_id       = job_desc->job_id;
-		job_update_msg.fed_siblings = job_desc->fed_siblings;
-
-		list_iterator_reset(sib_itr);
-		while ((sibling = list_next(sib_itr))) {
-			pthread_t thread_id = 0;
-			sib_update_t *sub;
-
-			/* Local is handled outside */
-			if (sibling == fed_mgr_cluster_rec)
-				continue;
-
-			if (!(job_desc->fed_siblings &
-			      FED_SIBLING_BIT(sibling->fed.id)))
-				continue;
-
-			sub = xmalloc(sizeof(sib_submit_t));
-			sub->job_desc = &job_update_msg;
-			sub->sibling  = sibling;
-			if (pthread_create(&thread_id, &attr,
-					   _update_sibling_job, sub) != 0) {
-				error("failed to create submit_sibling_job_thread");
-				xfree(sub);
-				continue;
-			}
-			sub->thread_id = thread_id;
-
-			list_append(update_threads, sub);
-		}
-
-		thread_itr = list_iterator_create(update_threads);
-		while ((tmp_sub = list_next(thread_itr))) {
-			pthread_join(tmp_sub->thread_id, NULL);
-			if (tmp_sub->thread_rc) {
-				error("failed to update sibling job with updated sibling bitmap on sibling %s",
-				      tmp_sub->sibling->name);
-				/* other cluster should get update when it syncs
-				 * up */
-			}
-		}
-		list_iterator_destroy(thread_itr);
-		FREE_NULL_LIST(update_threads);
+		_update_sib_job_siblings(job_desc, INFINITE64);
 	}
 
 	slurm_attr_destroy(&attr);
-	list_iterator_destroy(sib_itr);
 	FREE_NULL_LIST(submit_threads);
 
 	return rc;
