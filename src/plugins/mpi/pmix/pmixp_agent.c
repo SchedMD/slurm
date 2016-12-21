@@ -146,7 +146,7 @@ static int _server_conn_read(eio_obj_t *obj, List objs)
 
 		PMIXP_DEBUG("accepted connection: sd=%d", fd);
 		/* read command from socket and handle it */
-		pmix_server_new_conn(fd);
+		pmixp_server_slurm_api_conn(fd);
 	}
 	return 0;
 }
