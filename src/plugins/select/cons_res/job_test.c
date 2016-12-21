@@ -3517,11 +3517,11 @@ alloc_job:
 	 * distribute the job on the bits, and exit
 	 */
 	FREE_NULL_BITMAP(orig_map);
-	FREE_NULL_BITMAP(avail_cores);
 	FREE_NULL_BITMAP(tmpcore);
 	FREE_NULL_BITMAP(part_core_map);
 	if ((!cpu_count) || (!job_ptr->best_switch)) {
 		/* we were sent here to cleanup and exit */
+		FREE_NULL_BITMAP(avail_cores);
 		FREE_NULL_BITMAP(free_cores);
 		if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 			info("cons_res: exiting cr_job_test with no "
@@ -3545,6 +3545,7 @@ alloc_job:
 					  job_ptr->details->min_nodes);
 	}
 	if ((error_code != SLURM_SUCCESS) || (mode != SELECT_MODE_RUN_NOW)) {
+		FREE_NULL_BITMAP(avail_cores);
 		FREE_NULL_BITMAP(free_cores);
 		xfree(cpu_count);
 		return error_code;
@@ -3583,6 +3584,7 @@ alloc_job:
 					  select_fast_schedule);
 	if (error_code != SLURM_SUCCESS) {
 		free_job_resources(&job_res);
+		FREE_NULL_BITMAP(avail_cores);
 		FREE_NULL_BITMAP(free_cores);
 		return error_code;
 	}
@@ -3650,7 +3652,8 @@ alloc_job:
 
 	/* distribute the tasks and clear any unused cores */
 	job_ptr->job_resrcs = job_res;
-	error_code = cr_dist(job_ptr, cr_type, preempt_mode);
+	error_code = cr_dist(job_ptr, cr_type, preempt_mode, avail_cores);
+	FREE_NULL_BITMAP(avail_cores);
 	if (error_code != SLURM_SUCCESS) {
 		free_job_resources(&job_ptr->job_resrcs);
 		return error_code;

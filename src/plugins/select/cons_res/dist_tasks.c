@@ -953,6 +953,33 @@ fini:	xfree(sock_avoid);
 	return error_code;
 }
 
+/* Remove any specialized cores from those allocated to the job */
+static void _clear_spec_cores(bitstr_t *alloc_node_bitmap,
+			      bitstr_t *alloc_core_bitmap,
+			      bitstr_t *avail_core_bitmap)
+{
+	int first_node, last_node, i_node;
+	int first_core, last_core, i_core;
+	int alloc_core = -1;
+
+	first_node = bit_ffs(alloc_node_bitmap);
+	if (first_node >= 0)
+		last_node = bit_fls(alloc_node_bitmap);
+	else
+		last_node = first_node - 1;
+
+	for (i_node = first_node; i_node <= last_node; i_node++) {
+		if (!bit_test(alloc_node_bitmap, i_node))
+			continue;
+		first_core = cr_get_coremap_offset(i_node);
+		last_core  = cr_get_coremap_offset(i_node + 1) - 1;
+		for (i_core = first_core; i_core <= last_core; i_core++) {
+			alloc_core++;
+			if (!bit_test(avail_core_bitmap, i_core))
+				bit_clear(alloc_core_bitmap, alloc_core);
+		}
+	}
+}
 
 /* To effectively deal with heterogeneous nodes, we fake a cyclic
  * distribution to figure out how many cpus are needed on each node.
@@ -985,9 +1012,11 @@ fini:	xfree(sock_avoid);
  * IN job_ptr - job to be allocated resources
  * IN cr_type - allocation type (sockets, cores, etc.)
  * IN preempt_mode - true if testing with simulated preempted jobs
+ * IN avail_core_bitmap - system-wide bitmap of cores originally available to
+ *		the job, only used to identify specialized cores
  */
 extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type,
-		   bool preempt_mode)
+		   bool preempt_mode, bitstr_t *avail_core_bitmap)
 {
 	int error_code, cr_cpu = 1;
 
@@ -1003,7 +1032,10 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type,
 		 * so it gets all of the bits in the core_bitmap and
 		 * all of the available CPUs in the cpus array. */
 		int size = bit_size(job_ptr->job_resrcs->core_bitmap);
-		bit_nset(job_ptr->job_resrcs->core_bitmap, 0, size-1);
+		bit_nset(job_ptr->job_resrcs->core_bitmap, 0, size - 1);
+		_clear_spec_cores(job_ptr->job_resrcs->node_bitmap,
+				  job_ptr->job_resrcs->core_bitmap,
+				  avail_core_bitmap);
 		return SLURM_SUCCESS;
 	}
 
