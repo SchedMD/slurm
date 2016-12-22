@@ -216,25 +216,16 @@ extern void unlock_slurmctld(slurmctld_lock_t lock_levels)
  *	Wait until there are no write locks AND
  *	no pending write locks (write_wait_lock == 0)
  *
- *	NOTE: Always favoring write locks can result in starvation for
- *	read locks. To prevent this, read locks were permitted to be satisified
- *	after 10 consecutive write locks. This prevented starvation, but
- *	deadlock has been observed with some values for the count. */
+ *	NOTE: Always favoring write locks could result in starvation for
+ *	read locks. */
 static bool _wr_rdlock(lock_datatype_t datatype, bool wait_lock)
 {
 	bool success = true;
 
 	slurm_mutex_lock(&locks_mutex);
 	while (1) {
-#if 1
 		if ((slurmctld_locks.entity[write_lock(datatype)] == 0) &&
 		    (slurmctld_locks.entity[write_wait_lock(datatype)] == 0)) {
-#else
-		/* SEE NOTE ABOVE */
-		if ((slurmctld_locks.entity[write_lock(datatype)] == 0) &&
-		    ((slurmctld_locks.entity[write_wait_lock(datatype)] == 0) ||
-		     (slurmctld_locks.entity[write_cnt_lock(datatype)] > 10))) {
-#endif
 			slurmctld_locks.entity[read_lock(datatype)]++;
 			slurmctld_locks.entity[write_cnt_lock(datatype)] = 0;
 			break;
