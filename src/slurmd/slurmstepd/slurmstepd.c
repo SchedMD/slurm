@@ -84,7 +84,7 @@ static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, slurm_addr_t *self,
 #ifdef MEMORY_LEAK_DEBUG
 static void _step_cleanup(stepd_step_rec_t *job, slurm_msg_t *msg, int rc);
 #endif
-static int _process_cmdline (int argc, char *argv[]);
+static int _process_cmdline (int argc, char **argv);
 
 int slurmstepd_blocked_signals[] = {
 	SIGPIPE, 0
@@ -95,7 +95,7 @@ slurmd_conf_t * conf;
 extern char  ** environ;
 
 int
-main (int argc, char *argv[])
+main (int argc, char **argv)
 {
 	slurm_addr_t *cli;
 	slurm_addr_t *self;
@@ -298,7 +298,7 @@ static int get_jobid_uid_from_env (uint32_t *jobidp, uid_t *uidp)
 	return (0);
 }
 
-static int _handle_spank_mode (int argc, char *argv[])
+static int _handle_spank_mode (int argc, char **argv)
 {
 	char prefix[64] = "spank-";
 	const char *mode = argv[2];
@@ -354,7 +354,7 @@ static int _handle_spank_mode (int argc, char *argv[])
 /*
  *  Process special "modes" of slurmstepd passed as cmdline arguments.
  */
-static int _process_cmdline (int argc, char *argv[])
+static int _process_cmdline (int argc, char **argv)
 {
 	if ((argc == 2) && (xstrcmp(argv[1], "getenv") == 0)) {
 		print_rlimits();

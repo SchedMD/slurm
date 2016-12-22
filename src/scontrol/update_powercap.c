@@ -65,7 +65,7 @@ static uint32_t _parse_watts(char * watts_str)
  *			error message and returns 0
  */
 extern int
-scontrol_update_powercap (int argc, char *argv[])
+scontrol_update_powercap (int argc, char **argv)
 {
 	update_powercap_msg_t powercap_msg;
 	int i;

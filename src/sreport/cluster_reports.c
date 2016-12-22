@@ -63,7 +63,7 @@ enum {
 static List print_fields_list = NULL; /* types are of print_field_t */
 
 
-static int _set_wckey_cond(int *start, int argc, char *argv[],
+static int _set_wckey_cond(int *start, int argc, char **argv,
 			   slurmdb_wckey_cond_t *wckey_cond,
 			   List format_list)
 {
@@ -171,7 +171,7 @@ static int _set_wckey_cond(int *start, int argc, char *argv[],
 	return set;
 }
 
-static int _set_assoc_cond(int *start, int argc, char *argv[],
+static int _set_assoc_cond(int *start, int argc, char **argv,
 			   slurmdb_assoc_cond_t *assoc_cond,
 			   List format_list)
 {
@@ -276,7 +276,7 @@ static int _set_assoc_cond(int *start, int argc, char *argv[],
 	return set;
 }
 
-static int _set_cluster_cond(int *start, int argc, char *argv[],
+static int _set_cluster_cond(int *start, int argc, char **argv,
 			     slurmdb_cluster_cond_t *cluster_cond,
 			     List format_list)
 {
@@ -578,7 +578,7 @@ static void _set_usage_column_width(List print_fields_list,
 				       slurmdb_report_cluster_list);
 }
 
-static List _get_cluster_list(int argc, char *argv[], uint32_t *total_time,
+static List _get_cluster_list(int argc, char **argv, uint32_t *total_time,
 			      char *report_name, List format_list)
 {
 	slurmdb_cluster_cond_t *cluster_cond =
@@ -753,7 +753,7 @@ static void _cluster_account_by_user_tres_report(
 	printf("\n");
 }
 
-extern int cluster_account_by_user(int argc, char *argv[])
+extern int cluster_account_by_user(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_assoc_cond_t *assoc_cond =
@@ -962,7 +962,7 @@ static void _cluster_user_by_account_tres_report(slurmdb_tres_rec_t *tres,
 	printf("\n");
 }
 
-extern int cluster_user_by_account(int argc, char *argv[])
+extern int cluster_user_by_account(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_assoc_cond_t *assoc_cond =
@@ -1155,7 +1155,7 @@ static void _cluster_user_by_wckey_tres_report(slurmdb_tres_rec_t *tres,
 	printf("\n");
 }
 
-extern int cluster_user_by_wckey(int argc, char *argv[])
+extern int cluster_user_by_wckey(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_wckey_cond_t *wckey_cond =
@@ -1374,7 +1374,7 @@ static void _cluster_util_tres_report(slurmdb_tres_rec_t *tres,
 	printf("\n");
 }
 
-extern int cluster_utilization(int argc, char *argv[])
+extern int cluster_utilization(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	ListIterator itr = NULL;
@@ -1615,7 +1615,7 @@ static void _cluster_wckey_by_user_tres_report(slurmdb_tres_rec_t *tres,
 	printf("\n");
 }
 
-extern int cluster_wckey_by_user(int argc, char *argv[])
+extern int cluster_wckey_by_user(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_wckey_cond_t *wckey_cond =

@@ -112,7 +112,7 @@ static uint16_t _parse_preempt_modes(char *names)
 	return preempt_mode;
 }
 
-static int _set_cond(int *start, int argc, char *argv[],
+static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_qos_cond_t *qos_cond,
 		     List format_list)
 {
@@ -231,7 +231,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 	return set;
 }
 
-static int _set_rec(int *start, int argc, char *argv[],
+static int _set_rec(int *start, int argc, char **argv,
 		    List name_list,
 		    slurmdb_qos_rec_t *qos)
 {
@@ -768,7 +768,7 @@ end_it:
 }
 
 
-extern int sacctmgr_add_qos(int argc, char *argv[])
+extern int sacctmgr_add_qos(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	int i, limit_set = 0;
@@ -892,7 +892,7 @@ end_it:
 	return rc;
 }
 
-extern int sacctmgr_list_qos(int argc, char *argv[])
+extern int sacctmgr_list_qos(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_qos_cond_t *qos_cond = xmalloc(sizeof(slurmdb_qos_cond_t));
@@ -1232,7 +1232,7 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 	return rc;
 }
 
-extern int sacctmgr_modify_qos(int argc, char *argv[])
+extern int sacctmgr_modify_qos(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_qos_cond_t *qos_cond = xmalloc(sizeof(slurmdb_qos_cond_t));
@@ -1331,7 +1331,7 @@ extern int sacctmgr_modify_qos(int argc, char *argv[])
 	return rc;
 }
 
-extern int sacctmgr_delete_qos(int argc, char *argv[])
+extern int sacctmgr_delete_qos(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_qos_cond_t *qos_cond =

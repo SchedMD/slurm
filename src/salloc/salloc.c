@@ -160,7 +160,7 @@ static void _reset_input_mode (void)
 		tcsetpgrp(STDIN_FILENO, getpgid(getppid()));
 }
 
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	job_desc_msg_t desc;

@@ -78,7 +78,7 @@ static void *_resize_handler(int sig);
 static int  _set_pairs(void);
 static void _smap_exit(int rc);
 
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 	node_info_msg_t *node_info_ptr = NULL;

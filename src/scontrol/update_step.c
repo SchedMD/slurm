@@ -170,7 +170,7 @@ static int _parse_comp_file(
  * RET 0 if no slurm error, errno otherwise. parsing error prints
  *			error message and returns 0
  */
-extern int scontrol_update_step (int argc, char *argv[])
+extern int scontrol_update_step (int argc, char **argv)
 {
 	int i, update_cnt = 0;
 	char *tag, *val;

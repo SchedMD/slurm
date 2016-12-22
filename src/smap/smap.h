@@ -163,7 +163,7 @@ extern int main_ycord;
 extern smap_parameters_t params;
 extern int text_line_cnt;
 
-extern void parse_command_line(int argc, char *argv[]);
+extern void parse_command_line(int argc, char **argv);
 
 extern smap_system_t *smap_system_ptr;
 extern int quiet_flag;
@@ -178,7 +178,7 @@ extern int set_grid_bg(int *start, int *end, int count, int set);
 extern void print_grid(void);
 bitstr_t *get_requested_node_bitmap(void);
 
-extern void parse_command_line(int argc, char *argv[]);
+extern void parse_command_line(int argc, char **argv);
 extern void print_date(void);
 extern void clear_window(WINDOW *win);
 extern char *resolve_mp(char *desc, node_info_msg_t *node_info_ptr);

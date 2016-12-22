@@ -1540,7 +1540,7 @@ extern int print_file_slurmdb_hierarchical_rec_list(
 	return SLURM_SUCCESS;
 }
 
-extern void load_sacctmgr_cfg_file (int argc, char *argv[])
+extern void load_sacctmgr_cfg_file (int argc, char **argv)
 {
 	DEF_TIMERS;
 	char line[BUFFER_SIZE];

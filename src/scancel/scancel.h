@@ -81,7 +81,7 @@ opt_t opt;
  * 3. update options with commandline args
  * 4. perform some verification that options are reasonable
  */
-extern int initialize_and_process_args(int argc, char *argv[]);
+extern int initialize_and_process_args(int argc, char **argv);
 
 /*
  * No job filtering options were specified (e.g. by user or state), only the

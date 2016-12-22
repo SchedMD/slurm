@@ -132,7 +132,7 @@ static void _print_overcommit(slurmdb_res_rec_t *res,
 	}
 }
 
-static int _set_res_cond(int *start, int argc, char *argv[],
+static int _set_res_cond(int *start, int argc, char **argv,
 			     slurmdb_res_cond_t *res_cond,
 			     List format_list)
 {
@@ -273,7 +273,7 @@ static int _set_res_cond(int *start, int argc, char *argv[],
 	return set;
 }
 
-static int _set_res_rec(int *start, int argc, char *argv[],
+static int _set_res_rec(int *start, int argc, char **argv,
 			List name_list, List cluster_list,
 			slurmdb_res_rec_t *res)
 {
@@ -497,7 +497,7 @@ static void _print_res_format(slurmdb_res_rec_t *res,
 	printf("\n");
 }
 
-extern int sacctmgr_add_res(int argc, char *argv[])
+extern int sacctmgr_add_res(int argc, char **argv)
 
 {
 	int rc = SLURM_SUCCESS;
@@ -769,7 +769,7 @@ end_it:
 	return rc;
 }
 
-extern int sacctmgr_list_res(int argc, char *argv[])
+extern int sacctmgr_list_res(int argc, char **argv)
 
 {
 	int rc = SLURM_SUCCESS;
@@ -849,7 +849,7 @@ extern int sacctmgr_list_res(int argc, char *argv[])
 	return rc;
 }
 
-extern int sacctmgr_modify_res(int argc, char *argv[])
+extern int sacctmgr_modify_res(int argc, char **argv)
 
 {
 	int rc = SLURM_SUCCESS;
@@ -959,7 +959,7 @@ extern int sacctmgr_modify_res(int argc, char *argv[])
 	return rc;
 }
 
-extern int sacctmgr_delete_res(int argc, char *argv[])
+extern int sacctmgr_delete_res(int argc, char **argv)
 
 {
 	int rc = SLURM_SUCCESS;

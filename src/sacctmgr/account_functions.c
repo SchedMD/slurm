@@ -41,7 +41,7 @@
 #include "src/sacctmgr/sacctmgr.h"
 #include "src/common/assoc_mgr.h"
 
-static int _set_cond(int *start, int argc, char *argv[],
+static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_account_cond_t *acct_cond,
 		     List format_list)
 {
@@ -163,7 +163,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 	return 0;
 }
 
-static int _set_rec(int *start, int argc, char *argv[],
+static int _set_rec(int *start, int argc, char **argv,
 		    List acct_list,
 		    List cluster_list,
 		    slurmdb_account_rec_t *acct,
@@ -351,7 +351,7 @@ static int _isdefault(int cond_set, List acct_list, List assoc_list)
 	return rc;
 }
 
-extern int sacctmgr_add_account(int argc, char *argv[])
+extern int sacctmgr_add_account(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	int i=0;
@@ -669,7 +669,7 @@ end_it:
 	return rc;
 }
 
-extern int sacctmgr_list_account(int argc, char *argv[])
+extern int sacctmgr_list_account(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_account_cond_t *acct_cond =
@@ -857,7 +857,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 	return rc;
 }
 
-extern int sacctmgr_modify_account(int argc, char *argv[])
+extern int sacctmgr_modify_account(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_account_cond_t *acct_cond =
@@ -1041,7 +1041,7 @@ assoc_end:
 	return rc;
 }
 
-extern int sacctmgr_delete_account(int argc, char *argv[])
+extern int sacctmgr_delete_account(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_account_cond_t *acct_cond =

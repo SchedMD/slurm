@@ -99,7 +99,7 @@ static int _handle_subgrps(List sinfo_list, uint16_t part_num,
 			   node_info_t *node_ptr, uint32_t node_scaling);
 static int _find_part_list(void *x, void *key);
 
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 	int rc = 0;

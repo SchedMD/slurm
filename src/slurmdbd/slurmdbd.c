@@ -110,7 +110,7 @@ static void  _init_config(void);
 static void  _init_dbd_stats(void);
 static void  _init_pidfile(void);
 static void  _kill_old_slurmdbd(void);
-static void  _parse_commandline(int argc, char *argv[]);
+static void  _parse_commandline(int argc, char **argv);
 static void  _restart_self(int argc, char **argv);
 static void  _request_registrations(void *db_conn);
 static void  _rollup_handler_cancel(void);
@@ -123,7 +123,7 @@ static void  _update_nice(void);
 static void  _usage(char *prog_name);
 
 /* main - slurmctld main function, start various threads and process RPCs */
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
 	pthread_attr_t thread_attr;
 	char node_name_short[128];
@@ -436,7 +436,7 @@ static void  _init_config(void)
  * IN argv - the command line arguments
  * IN/OUT conf_ptr - pointer to current configuration, update as needed
  */
-static void _parse_commandline(int argc, char *argv[])
+static void _parse_commandline(int argc, char **argv)
 {
 	int c = 0;
 	char *tmp_char;

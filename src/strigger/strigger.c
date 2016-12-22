@@ -64,7 +64,7 @@ static char *_trig_flags(uint16_t flags);
 static int   _trig_offset(uint16_t offset);
 static char *_trig_user(uint32_t user_id);
 
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
 	int rc = 0;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;

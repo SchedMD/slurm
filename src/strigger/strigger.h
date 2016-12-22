@@ -87,6 +87,6 @@ struct strigger_parameters {
 
 extern struct strigger_parameters params;
 
-extern void parse_command_line(int argc, char *argv[]);
+extern void parse_command_line(int argc, char **argv);
 
 #endif

@@ -37,7 +37,7 @@
 
 #include "src/sacctmgr/sacctmgr.h"
 
-static int _set_cond(int *start, int argc, char *argv[],
+static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_federation_cond_t *federation_cond,
 		     List format_list)
 {
@@ -107,7 +107,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 	return a_set;
 }
 
-static int _set_rec(int *start, int argc, char *argv[],
+static int _set_rec(int *start, int argc, char **argv,
 		    List name_list, slurmdb_federation_rec_t *fed)
 {
 	int i;
@@ -376,7 +376,7 @@ extern int verify_fed_clusters(List cluster_list, const char *fed_name,
 	return SLURM_SUCCESS;
 }
 
-extern int sacctmgr_add_federation(int argc, char *argv[])
+extern int sacctmgr_add_federation(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	int i = 0, limit_set = 0;
@@ -505,7 +505,7 @@ end_it:
 	return rc;
 }
 
-extern int sacctmgr_list_federation(int argc, char *argv[])
+extern int sacctmgr_list_federation(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_federation_cond_t *federation_cond =
@@ -784,7 +784,7 @@ static int _change_assigns_to_adds(List cluster_list)
 	return rc;
 }
 
-extern int sacctmgr_modify_federation(int argc, char *argv[])
+extern int sacctmgr_modify_federation(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	int i=0;
@@ -924,7 +924,7 @@ end_it:
 	return rc;
 }
 
-extern int sacctmgr_delete_federation(int argc, char *argv[])
+extern int sacctmgr_delete_federation(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_federation_cond_t *fed_cond =

@@ -46,7 +46,7 @@ static void _usage(void);
 /*
  * parse_command_line, fill in params data structure with data
  */
-void parse_command_line(int argc, char *argv[])
+void parse_command_line(int argc, char **argv)
 {
 	int opt_char;
 	int option_index;

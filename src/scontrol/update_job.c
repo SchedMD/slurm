@@ -54,10 +54,14 @@ static bool	_is_job_id(char *job_str);
 static bool	_is_single_job(char *job_id_str);
 static char *	_job_name2id(char *job_name, uint32_t job_uid);
 static char *	_next_job_id(void);
-static int	_parse_checkpoint_args(int argc, char **argv,
-				       uint16_t *max_wait, char **image_dir);
-static int	_parse_restart_args(int argc, char **argv,
-				    uint16_t *stick, char **image_dir);
+static int	_parse_checkpoint_args(int argc,
+				       char **argv,
+				       uint16_t *max_wait,
+				       char **image_dir);
+static int	_parse_restart_args(int argc,
+				    char **argv,
+				    uint16_t *stick,
+				    char **image_dir);
 static void	_update_job_size(uint32_t job_id);
 
 /* Local variables for managing job IDs */
@@ -213,8 +217,10 @@ fini:	xfree(local_job_str);
  * RET 0 if no slurm error, errno otherwise. parsing error prints
  *			error message and returns 0
  */
-extern int
-scontrol_checkpoint(char *op, char *job_step_id_str, int argc, char *argv[])
+extern int scontrol_checkpoint(char *op,
+			       char *job_step_id_str,
+			       int argc,
+			       char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	uint32_t job_id = 0, step_id = 0;
@@ -313,9 +319,10 @@ scontrol_checkpoint(char *op, char *job_step_id_str, int argc, char *argv[])
 	return rc;
 }
 
-static int
-_parse_checkpoint_args(int argc, char **argv, uint16_t *max_wait,
-		       char **image_dir)
+static int _parse_checkpoint_args(int argc,
+				  char **argv,
+				  uint16_t *max_wait,
+				  char **image_dir)
 {
 	int i;
 
@@ -335,8 +342,10 @@ _parse_checkpoint_args(int argc, char **argv, uint16_t *max_wait,
 	return 0;
 }
 
-static int
-_parse_restart_args(int argc, char **argv, uint16_t *stick, char **image_dir)
+static int _parse_restart_args(int argc,
+			       char **argv,
+			       uint16_t *stick,
+			       char **image_dir)
 {
 	int i;
 
@@ -715,8 +724,7 @@ scontrol_top_job(char *job_id_str)
  * RET 0 if no slurm error, errno otherwise. parsing error prints
  *			error message and returns 0
  */
-extern int
-scontrol_update_job (int argc, char *argv[])
+extern int scontrol_update_job(int argc, char **argv)
 {
 	bool update_size = false;
 	int i, update_cnt = 0, rc = SLURM_SUCCESS, rc2;
@@ -1312,8 +1320,7 @@ scontrol_update_job (int argc, char *argv[])
  * argv[0] == jobid
  * argv[1]++ the message
  */
-extern int
-scontrol_job_notify(int argc, char *argv[])
+extern int scontrol_job_notify(int argc, char **argv)
 {
 	int i;
 	uint32_t job_id;

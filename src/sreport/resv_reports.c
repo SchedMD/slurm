@@ -71,7 +71,7 @@ static int _find_resv(void *x, void *key)
 	return 0;
 }
 
-static int _set_resv_cond(int *start, int argc, char *argv[],
+static int _set_resv_cond(int *start, int argc, char **argv,
 			  slurmdb_reservation_cond_t *resv_cond,
 			  List format_list)
 {
@@ -329,7 +329,7 @@ static int _setup_print_fields_list(List format_list)
 	return SLURM_SUCCESS;
 }
 
-static List _get_resv_list(int argc, char *argv[],
+static List _get_resv_list(int argc, char **argv,
 			   char *report_name, List format_list)
 {
 	slurmdb_reservation_cond_t *resv_cond =
@@ -492,7 +492,7 @@ static void _resv_tres_report(slurmdb_tres_rec_t *tres,
 	printf("\n");
 }
 
-extern int resv_utilization(int argc, char *argv[])
+extern int resv_utilization(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	ListIterator itr = NULL;

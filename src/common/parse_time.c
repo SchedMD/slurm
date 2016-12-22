@@ -646,7 +646,7 @@ extern time_t parse_time(char *time_str, int past)
 }
 
 #if _RUN_STAND_ALONE
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
 	char in_line[128];
 	time_t when;

@@ -103,7 +103,7 @@ static	uint32_t max_resp_time = 0;
 static	int request_count = 0;
 
 int
-main (int argc, char *argv[])
+main (int argc, char **argv)
 {
 	log_options_t log_opts = LOG_OPTS_STDERR_ONLY ;
 	int rc = 0;

@@ -76,7 +76,7 @@ static void  _set_submit_dir_env(void);
 static int   _set_umask_env(void);
 static int   _job_wait(uint32_t job_id);
 
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	job_desc_msg_t desc;

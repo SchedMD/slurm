@@ -69,7 +69,7 @@ static int  _print_job ( bool clear_old );
 static int  _print_job_steps( bool clear_old );
 
 int
-main (int argc, char *argv[])
+main (int argc, char **argv)
 {
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 	int error_code = SLURM_SUCCESS;

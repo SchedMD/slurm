@@ -97,12 +97,12 @@ extern int	parse_requeue_flags(char *s, uint32_t *flags);
 extern int	scontrol_callerid(int argc, char **argv);
 extern int	scontrol_checkpoint(char *op, char *job_step_id_str, int argc,
 				    char **argv);
-extern int	scontrol_create_part(int argc, char *argv[]);
-extern int	scontrol_create_res(int argc, char *argv[]);
+extern int	scontrol_create_part(int argc, char **argv);
+extern int	scontrol_create_res(int argc, char **argv);
 extern int	scontrol_encode_hostlist(char *hostlist, bool sorted);
 extern uint16_t	scontrol_get_job_state(uint32_t job_id);
 extern int	scontrol_hold(char *op, char *job_id_str);
-extern int	scontrol_job_notify(int argc, char *argv[]);
+extern int	scontrol_job_notify(int argc, char **argv);
 extern int	scontrol_job_ready(char *job_id_str);
 extern void	scontrol_list_pids(const char *jobid_str,
 				   const char *node_name);
@@ -117,7 +117,7 @@ extern int 	scontrol_load_partitions (partition_info_msg_t **
 					  part_info_pptr);
 extern int 	scontrol_load_block (block_info_msg_t **block_info_pptr);
 extern void	scontrol_pid_info(pid_t job_pid);
-extern void	scontrol_print_assoc_mgr_info(int argc, char *argv[]);
+extern void	scontrol_print_assoc_mgr_info(int argc, char **argv);
 extern void	scontrol_print_burst_buffer(void);
 extern void	scontrol_print_completing (void);
 extern void	scontrol_print_completing_job(job_info_t *job_ptr,
@@ -138,19 +138,19 @@ extern void	scontrol_print_block (char *block_name);
 extern void	scontrol_print_res (char *reservation_name);
 extern void	scontrol_print_step (char *job_step_id_str);
 extern void	scontrol_print_topo (char *node_list);
-extern void	scontrol_print_layout (int argc, char *argv[]);
+extern void	scontrol_print_layout (int argc, char **argv);
 extern void	scontrol_print_powercap (char *node_list);
 extern void	scontrol_requeue(char *job_str);
 extern void	scontrol_requeue_hold(uint32_t state_flag, char *job_str);
 extern void	scontrol_suspend(char *op, char *job_id_str);
 extern void	scontrol_top_job(char *job_str);
-extern int	scontrol_update_front_end (int argc, char *argv[]);
-extern int	scontrol_update_job (int argc, char *argv[]);
-extern int	scontrol_update_layout (int argc, char *argv[]);
-extern int	scontrol_update_node (int argc, char *argv[]);
-extern int	scontrol_update_part (int argc, char *argv[]);
-extern int	scontrol_update_res (int argc, char *argv[]);
-extern int	scontrol_update_step (int argc, char *argv[]);
-extern int	scontrol_update_powercap (int argc, char *argv[]);
+extern int	scontrol_update_front_end (int argc, char **argv);
+extern int	scontrol_update_job (int argc, char **argv);
+extern int	scontrol_update_layout (int argc, char **argv);
+extern int	scontrol_update_node (int argc, char **argv);
+extern int	scontrol_update_part (int argc, char **argv);
+extern int	scontrol_update_res (int argc, char **argv);
+extern int	scontrol_update_step (int argc, char **argv);
+extern int	scontrol_update_powercap (int argc, char **argv);
 
 #endif

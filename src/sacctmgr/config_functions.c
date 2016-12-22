@@ -164,7 +164,7 @@ extern int sacctmgr_list_config(bool have_db_conn)
 	return SLURM_SUCCESS;
 }
 
-extern int sacctmgr_list_stats(int argc, char *argv[])
+extern int sacctmgr_list_stats(int argc, char **argv)
 {
 	uint32_t *rpc_type_ave_time = NULL, *rpc_user_ave_time = NULL;
 	slurmdb_stats_rec_t *buf = NULL;

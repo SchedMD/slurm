@@ -276,7 +276,7 @@ extern resource_allocation_response_msg_t *global_resp;
  * 3. update options with commandline args
  * 4. perform some verification that options are reasonable
  */
-int initialize_and_process_args(int argc, char *argv[]);
+int initialize_and_process_args(int argc, char **argv);
 
 /* external functions available for SPANK plugins to modify the environment
  * exported to the SLURM Prolog and Epilog programs */

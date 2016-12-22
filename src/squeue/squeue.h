@@ -114,7 +114,7 @@ struct squeue_parameters {
 
 extern struct squeue_parameters params;
 
-extern void parse_command_line( int argc, char* argv[] );
+extern void parse_command_line( int argc, char* *argv );
 extern int  parse_format( char* format );
 extern int  parse_long_format( char* format_long);
 extern void sort_job_list( List job_list );

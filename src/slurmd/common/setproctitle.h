@@ -51,7 +51,7 @@ extern void setproctitle(const char *fmt, ...)
   __attribute__ ((format (printf, 1, 2)));
 #endif
 
-extern void init_setproctitle(int argc, char *argv[]);
+extern void init_setproctitle(int argc, char **argv);
 extern void fini_setproctitle(void);
 
 #endif /* _BSD_SETPROCTITLE_H */

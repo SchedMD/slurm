@@ -39,7 +39,7 @@
 
 #include "src/sacctmgr/sacctmgr.h"
 
-static int _set_cond(int *start, int argc, char *argv[],
+static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_assoc_cond_t *assoc_cond,
 		     List format_list)
 {
@@ -124,7 +124,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 	return set;
 }
 
-extern int sacctmgr_list_problem(int argc, char *argv[])
+extern int sacctmgr_list_problem(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_assoc_cond_t *assoc_cond =

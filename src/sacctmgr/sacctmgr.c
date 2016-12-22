@@ -64,19 +64,18 @@ List g_res_list = NULL;
 List g_tres_list = NULL;
 bool tree_display = 0;
 
-static void	_add_it (int argc, char *argv[]);
-static void	_archive_it (int argc, char *argv[]);
-static void	_clear_it (int argc, char *argv[]);
-static void	_show_it (int argc, char *argv[]);
-static void	_modify_it (int argc, char *argv[]);
-static void	_delete_it (int argc, char *argv[]);
-static int	_get_command (int *argc, char *argv[]);
-static void     _print_version( void );
-static int	_process_command (int argc, char *argv[]);
-static void	_usage ();
+static void	_add_it(int argc, char **argv);
+static void	_archive_it(int argc, char **argv);
+static void	_clear_it(int argc, char **argv);
+static void	_show_it(int argc, char **argv);
+static void	_modify_it(int argc, char **argv);
+static void	_delete_it(int argc, char **argv);
+static int	_get_command(int *argc, char **argv);
+static void     _print_version(void);
+static int	_process_command(int argc, char **argv);
+static void	_usage(void);
 
-int
-main (int argc, char *argv[])
+int main(int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS, i, opt_char, input_field_count;
 	char **input_fields;
@@ -288,8 +287,7 @@ static char *_getline(const char *prompt)
  * OUT argc - location to store count of arguments
  * OUT argv - location to store the argument list
  */
-static int
-_get_command (int *argc, char **argv)
+static int _get_command (int *argc, char **argv)
 {
 	char *in_line;
 	static char *last_in_line = NULL;
@@ -380,8 +378,7 @@ static void _print_version(void)
  * IN argv - the arguments
  * RET 0 or errno (only for errors fatal to sacctmgr)
  */
-static int
-_process_command (int argc, char *argv[])
+static int _process_command (int argc, char **argv)
 {
 	int command_len = 0, rc;
 
@@ -545,7 +542,7 @@ _process_command (int argc, char *argv[])
  * IN argc - count of arguments
  * IN argv - list of arguments
  */
-static void _add_it (int argc, char *argv[])
+static void _add_it(int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS;
 	int command_len = 0;
@@ -599,7 +596,7 @@ static void _add_it (int argc, char *argv[])
  * IN argc - count of arguments
  * IN argv - list of arguments
  */
-static void _archive_it (int argc, char *argv[])
+static void _archive_it(int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS;
 	int command_len = 0;
@@ -640,7 +637,7 @@ static void _archive_it (int argc, char *argv[])
  * IN argc - count of arguments
  * IN argv - list of arguments
  */
-static void _clear_it (int argc, char *argv[])
+static void _clear_it(int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS;
 	int command_len = 0;
@@ -673,7 +670,7 @@ static void _clear_it (int argc, char *argv[])
  * undocumented association options wopi and wopl
  * without parent info and without parent limits
  */
-static void _show_it (int argc, char *argv[])
+static void _show_it(int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS;
 	int command_len = 0;
@@ -755,7 +752,7 @@ static void _show_it (int argc, char *argv[])
  * IN argc - count of arguments
  * IN argv - list of arguments
  */
-static void _modify_it (int argc, char *argv[])
+static void _modify_it(int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS;
 	int command_len = 0;
@@ -810,7 +807,7 @@ static void _modify_it (int argc, char *argv[])
  * IN argc - count of arguments
  * IN argv - list of arguments
  */
-static void _delete_it (int argc, char *argv[])
+static void _delete_it(int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS;
 	int command_len = 0;
@@ -863,7 +860,8 @@ static void _delete_it (int argc, char *argv[])
 }
 
 /* _usage - show the valid sacctmgr commands */
-void _usage () {
+void _usage()
+{
 	printf ("\
 sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
     Valid <OPTION> values are:                                             \n\
@@ -1124,4 +1122,3 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
   All commands entitys, and options are case-insensitive.               \n\n");
 
 }
-

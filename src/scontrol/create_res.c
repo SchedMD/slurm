@@ -327,7 +327,7 @@ error:
  * RET 0 on success, -1 on err and prints message
  */
 extern int
-scontrol_parse_res_options(int argc, char *argv[], const char *msg,
+scontrol_parse_res_options(int argc, char **argv, const char *msg,
 			   resv_desc_msg_t  *resv_msg_ptr,
 			   int *free_user_str, int *free_acct_str,
 			   int *free_tres_license, int *free_tres_bb,
@@ -493,7 +493,7 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
  *     error message and returns 0.
  */
 extern int
-scontrol_update_res(int argc, char *argv[])
+scontrol_update_res(int argc, char **argv)
 {
 	resv_desc_msg_t   resv_msg;
 	int err, ret = 0;
@@ -549,7 +549,7 @@ SCONTROL_UPDATE_RES_CLEANUP:
  *     error message and returns 0.
  */
 extern int
-scontrol_create_res(int argc, char *argv[])
+scontrol_create_res(int argc, char **argv)
 {
 	resv_desc_msg_t resv_msg;
 	char *new_res_name = NULL;

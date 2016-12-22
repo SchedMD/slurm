@@ -155,7 +155,7 @@ static size_t ps_buffer_size;		/* space determined at run time */
 static char **new_environ = (char **) NULL;
 #endif
 
-/* save the original argv[] location here */
+/* save the original *argv location here */
 static int	save_argc;
 static char **save_argv;
 
@@ -190,7 +190,7 @@ setproctitle(const char *fmt, ...)
 #endif /* PS_USE_CLOBBER_ARGV */
 
 	/*
-	 * Overwrite argv[] to point at appropriate space, if needed
+	 * Overwrite *argv to point at appropriate space, if needed
 	 */
 #if SETPROCTITLE_STRATEGY == PS_USE_CHANGE_ARGV
 	save_argv[0] = ps_buffer;
@@ -250,13 +250,13 @@ static void _init__progname (const char *argv0)
 /*
  * Call this early in startup to save the original argc/argv values.
  *
- * argv[] will not be overwritten by this routine, but may be overwritten
+ * *argv will not be overwritten by this routine, but may be overwritten
  * during setproctitle. Also, the physical location of the environment
  * strings may be moved, so this should be called before any code that
  * might try to hang onto a getenv() result.
  */
 void
-init_setproctitle(int argc, char *argv[])
+init_setproctitle(int argc, char **argv)
 {
 #if SETPROCTITLE_STRATEGY == PS_USE_CLOBBER_ARGV
 	char *end_of_area = NULL;

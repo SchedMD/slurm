@@ -63,6 +63,6 @@ extern int all_blocks;
 extern int remove_blocks;
 extern bool wait_full;
 
-extern void parse_command_line(int argc, char *argv[]);
+extern void parse_command_line(int argc, char **argv);
 
 #endif

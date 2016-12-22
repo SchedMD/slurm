@@ -47,7 +47,7 @@ typedef struct {
 	char *user;
 } regret_t;
 
-static int _set_cond(int *start, int argc, char *argv[],
+static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_user_cond_t *user_cond,
 		     List format_list)
 {
@@ -197,7 +197,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 	return 0;
 }
 
-static int _set_rec(int *start, int argc, char *argv[],
+static int _set_rec(int *start, int argc, char **argv,
 		    slurmdb_user_rec_t *user,
 		    slurmdb_assoc_rec_t *assoc)
 {
@@ -651,7 +651,7 @@ static bool _check_user_has_default_assoc(char *user_name, List assoc_list)
 }
 
 
-extern int sacctmgr_add_user(int argc, char *argv[])
+extern int sacctmgr_add_user(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	int i=0;
@@ -1296,7 +1296,7 @@ end_it:
 	return rc;
 }
 
-extern int sacctmgr_add_coord(int argc, char *argv[])
+extern int sacctmgr_add_coord(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	int i = 0;
@@ -1372,7 +1372,7 @@ extern int sacctmgr_add_coord(int argc, char *argv[])
 	return rc;
 }
 
-extern int sacctmgr_list_user(int argc, char *argv[])
+extern int sacctmgr_list_user(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_user_cond_t *user_cond = xmalloc(sizeof(slurmdb_user_cond_t));
@@ -1646,7 +1646,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 	return rc;
 }
 
-extern int sacctmgr_modify_user(int argc, char *argv[])
+extern int sacctmgr_modify_user(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_user_cond_t *user_cond = xmalloc(sizeof(slurmdb_user_cond_t));
@@ -1871,7 +1871,7 @@ assoc_end:
 	return rc;
 }
 
-extern int sacctmgr_delete_user(int argc, char *argv[])
+extern int sacctmgr_delete_user(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_user_cond_t *user_cond = xmalloc(sizeof(slurmdb_user_cond_t));
@@ -2082,7 +2082,7 @@ end_it:
 	return rc;
 }
 
-extern int sacctmgr_delete_coord(int argc, char *argv[])
+extern int sacctmgr_delete_coord(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	int i=0, set=0;

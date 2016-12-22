@@ -56,7 +56,7 @@ extern bool sort_by_time2;
 /*
  * parse_command_line, fill in params data structure with data
  */
-extern void parse_command_line(int argc, char *argv[])
+extern void parse_command_line(int argc, char **argv)
 {
 	int opt_char;
 	int option_index;

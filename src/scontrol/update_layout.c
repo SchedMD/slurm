@@ -44,7 +44,7 @@
  *			error message and returns 0
  */
 extern int
-scontrol_update_layout (int argc, char *argv[])
+scontrol_update_layout (int argc, char **argv)
 {
 	int rc = 0;
 	int i = 0, tag_len = 0;

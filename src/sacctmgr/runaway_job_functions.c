@@ -36,7 +36,7 @@
 #include "src/sacctmgr/sacctmgr.h"
 #include "src/common/assoc_mgr.h"
 
-static int _set_cond(int *start, int argc, char *argv[],
+static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_job_cond_t *job_cond,
 		     List format_list)
 {
@@ -282,7 +282,7 @@ static List _get_runaway_jobs(slurmdb_job_cond_t *job_cond)
 /*
  * List and ask user if they wish to fix the runaway jobs
  */
-extern int sacctmgr_list_runaway_jobs(int argc, char *argv[])
+extern int sacctmgr_list_runaway_jobs(int argc, char **argv)
 {
 	List runaway_jobs = NULL;
 	int rc = SLURM_SUCCESS;

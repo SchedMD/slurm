@@ -68,7 +68,7 @@
 /* global variables */
 struct bcast_parameters params;	/* program parameters */
 
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
 	int rc;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;

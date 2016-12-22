@@ -43,6 +43,6 @@
 
 #include "sreport.h"
 
-extern int user_top(int argc, char *argv[]);
+extern int user_top(int argc, char **argv);
 
 #endif

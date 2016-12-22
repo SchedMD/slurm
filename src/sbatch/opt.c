@@ -991,7 +991,7 @@ char *process_options_first_pass(int argc, char **argv)
  * 3. update options with commandline args
  * 4. perform some verification that options are reasonable
  */
-int process_options_second_pass(int argc, char *argv[], const char *file,
+int process_options_second_pass(int argc, char **argv, const char *file,
 				const void *script_body, int script_size)
 {
 	int i;

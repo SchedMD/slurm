@@ -1446,7 +1446,7 @@ extern void close_tab(GtkWidget *widget, GdkEventButton *event,
 	//g_print("hid %d\n", display_data->extra);
 }
 
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
 	GtkWidget *menubar = NULL;
 	GtkWidget *table = NULL;

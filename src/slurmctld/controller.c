@@ -212,7 +212,7 @@ static void         _default_sigaction(int sig);
 static void         _init_config(void);
 static void         _init_pidfile(void);
 static void         _kill_old_slurmctld(void);
-static void         _parse_commandline(int argc, char *argv[]);
+static void         _parse_commandline(int argc, char **argv);
 inline static int   _ping_backup_controller(void);
 static void         _remove_assoc(slurmdb_assoc_rec_t *rec);
 static void         _remove_qos(slurmdb_qos_rec_t *rec);
@@ -238,7 +238,7 @@ static bool         _valid_controller(void);
 static bool         _wait_for_server_thread(void);
 
 /* main - slurmctld main function, start various threads and process RPCs */
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
 	int cnt, error_code, i;
 	pthread_attr_t thread_attr;
@@ -2315,7 +2315,7 @@ extern int optind, opterr, optopt;
  * IN argv - the command line arguments
  * IN/OUT conf_ptr - pointer to current configuration, update as needed
  */
-static void _parse_commandline(int argc, char *argv[])
+static void _parse_commandline(int argc, char **argv)
 {
 	int c = 0;
 	char *tmp_char;

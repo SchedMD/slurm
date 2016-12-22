@@ -206,7 +206,7 @@ static void      _wait_for_all_threads(int secs);
 static void      _wait_health_check(void);
 
 int
-main (int argc, char *argv[])
+main (int argc, char **argv)
 {
 	int i, pidfd;
 	int blocked_signals[] = {SIGPIPE, 0};

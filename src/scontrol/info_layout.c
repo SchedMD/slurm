@@ -42,7 +42,7 @@
  * IN layout_type - print information about the supplied layout 
  */
 extern void
-scontrol_print_layout (int argc, char *argv[])
+scontrol_print_layout (int argc, char **argv)
 {
 	int i = 0, tag_len = 0;
 	char *tag = NULL, *val = NULL;

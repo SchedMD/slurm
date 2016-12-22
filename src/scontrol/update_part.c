@@ -42,7 +42,7 @@
 #include "src/scontrol/scontrol.h"
 
 extern int
-scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
+scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			     update_part_msg_t *part_msg_ptr)
 {
 	int i, min, max;
@@ -431,7 +431,7 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
  *			error message and returns 0
  */
 extern int
-scontrol_update_part (int argc, char *argv[])
+scontrol_update_part (int argc, char **argv)
 {
 	int update_cnt = 0;
 	update_part_msg_t part_msg;
@@ -468,7 +468,7 @@ scontrol_update_part (int argc, char *argv[])
  *			error message and returns 0
  */
 extern int
-scontrol_create_part (int argc, char *argv[])
+scontrol_create_part (int argc, char **argv)
 {
 	int update_cnt = 0;
 	update_part_msg_t part_msg;

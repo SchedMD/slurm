@@ -57,7 +57,7 @@
 
 static void _wait_part_not_ready(uint32_t job_id);
 
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
 	char *job_id_char = NULL;
 	uint32_t job_id;

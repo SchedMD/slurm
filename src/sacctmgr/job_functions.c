@@ -39,7 +39,7 @@
 
 #include "src/sacctmgr/sacctmgr.h"
 
-static int _set_cond(int *start, int argc, char *argv[],
+static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_job_modify_cond_t *job_cond)
 {
 	char *next_str;
@@ -102,7 +102,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 	return set;
 }
 
-static int _set_rec(int *start, int argc, char *argv[],
+static int _set_rec(int *start, int argc, char **argv,
 		    slurmdb_job_rec_t *job)
 {
 	int i;
@@ -162,7 +162,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 	return set;
 }
 
-extern int sacctmgr_modify_job(int argc, char *argv[])
+extern int sacctmgr_modify_job(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_job_modify_cond_t *job_cond = xmalloc(sizeof(

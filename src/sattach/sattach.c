@@ -114,7 +114,7 @@ static struct termios termdefaults;
 /**********************************************************************
  * sattach
  **********************************************************************/
-int sattach(int argc, char *argv[])
+int sattach(int argc, char **argv)
 {
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	slurm_step_layout_t *layout;

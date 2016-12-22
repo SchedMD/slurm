@@ -119,7 +119,7 @@ static int _check_status()
 	return SLURM_SUCCESS;
 }
 
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 	update_block_msg_t msg;

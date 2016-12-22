@@ -63,7 +63,7 @@ uint32_t my_uid = 0;
 List clusters = NULL;
 uint16_t options = 0;
 
-int main (int argc, char *argv[])
+int main (int argc, char **argv)
 {
 	int opt_char;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;

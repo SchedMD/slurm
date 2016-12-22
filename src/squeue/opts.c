@@ -85,7 +85,7 @@ static bool _find_a_host(char *, node_info_msg_t *);
  * parse_command_line
  */
 extern void
-parse_command_line( int argc, char* argv[] )
+parse_command_line( int argc, char* *argv )
 {
 	char *env_val = NULL;
 	bool override_format_env = false;

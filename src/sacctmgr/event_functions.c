@@ -272,7 +272,7 @@ static int _addto_id_char_list(List char_list, char *names, bool gid)
 	return count;
 }
 
-static int _set_cond(int *start, int argc, char *argv[],
+static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_event_cond_t *event_cond,
 		     List format_list)
 {
@@ -449,7 +449,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 }
 
 
-extern int sacctmgr_list_event(int argc, char *argv[])
+extern int sacctmgr_list_event(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_event_cond_t *event_cond =

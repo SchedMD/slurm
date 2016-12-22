@@ -50,7 +50,7 @@ enum {
 	CLUS_ASSOC_SET
 };
 
-static int _set_cond(int *start, int argc, char *argv[],
+static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_cluster_cond_t *cluster_cond,
 		     List format_list)
 {
@@ -160,7 +160,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 	return 0;
 }
 
-static int _set_rec(int *start, int argc, char *argv[],
+static int _set_rec(int *start, int argc, char **argv,
 		    List name_list,
 		    slurmdb_assoc_rec_t *assoc,
 		    slurmdb_cluster_rec_t *cluster)
@@ -275,7 +275,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 }
 
 
-extern int sacctmgr_add_cluster(int argc, char *argv[])
+extern int sacctmgr_add_cluster(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	int i = 0;
@@ -446,7 +446,7 @@ end_it:
 	return rc;
 }
 
-extern int sacctmgr_list_cluster(int argc, char *argv[])
+extern int sacctmgr_list_cluster(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_cluster_cond_t *cluster_cond =
@@ -697,7 +697,7 @@ end_it:
 	return rc;
 }
 
-extern int sacctmgr_modify_cluster(int argc, char *argv[])
+extern int sacctmgr_modify_cluster(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	int i=0;
@@ -899,7 +899,7 @@ end_it:
 	return rc;
 }
 
-extern int sacctmgr_delete_cluster(int argc, char *argv[])
+extern int sacctmgr_delete_cluster(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_cluster_cond_t *cluster_cond =
@@ -992,7 +992,7 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 	return rc;
 }
 
-extern int sacctmgr_dump_cluster (int argc, char *argv[])
+extern int sacctmgr_dump_cluster (int argc, char **argv)
 {
 	slurmdb_user_cond_t user_cond;
 	slurmdb_user_rec_t *user = NULL;

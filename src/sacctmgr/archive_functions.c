@@ -137,7 +137,7 @@ extern int _addto_uid_char_list(List char_list, char *names)
 	return count;
 }
 
-static int _set_cond(int *start, int argc, char *argv[],
+static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_archive_cond_t *arch_cond)
 {
 	int i;
@@ -394,7 +394,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 	return set;
 }
 
-extern int sacctmgr_archive_dump(int argc, char *argv[])
+extern int sacctmgr_archive_dump(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_archive_cond_t *arch_cond =
@@ -506,7 +506,7 @@ extern int sacctmgr_archive_dump(int argc, char *argv[])
 	return rc;
 }
 
-extern int sacctmgr_archive_load(int argc, char *argv[])
+extern int sacctmgr_archive_load(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_archive_rec_t *arch_rec =

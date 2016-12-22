@@ -489,7 +489,7 @@ static void _print_assoc_mgr_info(assoc_mgr_info_msg_t *msg)
  *
  */
 
-extern void scontrol_print_assoc_mgr_info(int argc, char *argv[])
+extern void scontrol_print_assoc_mgr_info(int argc, char **argv)
 {
 	char *tag = NULL, *val = NULL;
 	int cc, tag_len, i;

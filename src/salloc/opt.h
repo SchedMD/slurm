@@ -186,7 +186,7 @@ extern int immediate_exit;	/* exit code for --imediate option & busy */
  * 3. update options with commandline args
  * 4. perform some verification that options are reasonable
  */
-int initialize_and_process_args(int argc, char *argv[]);
+int initialize_and_process_args(int argc, char **argv);
 
 /* set options based upon commandline args */
 void set_options(const int argc, char **argv);

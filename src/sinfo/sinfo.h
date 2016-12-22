@@ -192,7 +192,7 @@ struct sinfo_parameters {
 
 extern struct sinfo_parameters params;
 
-extern void parse_command_line( int argc, char* argv[] );
+extern void parse_command_line( int argc, char* *argv );
 extern int  parse_state( char* str, uint16_t* states );
 extern void sort_sinfo_list( List sinfo_list );
 

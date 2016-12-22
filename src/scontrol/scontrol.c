@@ -67,28 +67,27 @@ partition_info_msg_t *old_part_info_ptr = NULL;
 reserve_info_msg_t *old_res_info_ptr = NULL;
 slurm_ctl_conf_info_msg_t *old_slurm_ctl_conf_ptr = NULL;
 
-static void	_create_it (int argc, char *argv[]);
-static void	_delete_it (int argc, char *argv[]);
-static void     _show_it (int argc, char *argv[]);
-static int	_get_command (int *argc, char *argv[]);
+static void	_create_it(int argc, char **argv);
+static void	_delete_it(int argc, char **argv);
+static void     _show_it(int argc, char **argv);
+static int	_get_command(int *argc, char **argv);
 static void     _ping_slurmctld(char *control_machine,
 				char *backup_controller);
-static void	_print_config (char *config_param);
-static void     _print_daemons (void);
-static void     _print_aliases (char* node_hostname);
-static void	_print_ping (void);
+static void	_print_config(char *config_param);
+static void     _print_daemons(void);
+static void     _print_aliases(char* node_hostname);
+static void	_print_ping(void);
 static void	_print_slurmd(char *hostlist);
-static void     _print_version( void );
-static int	_process_command (int argc, char *argv[]);
-static void	_update_it (int argc, char *argv[]);
-static int	_update_bluegene_block (int argc, char *argv[]);
-static int      _update_bluegene_submp (int argc, char *argv[]);
+static void     _print_version(void);
+static int	_process_command(int argc, char **argv);
+static void	_update_it(int argc, char **argv);
+static int	_update_bluegene_block(int argc, char **argv);
+static int      _update_bluegene_submp(int argc, char **argv);
 static int	_update_slurmctld_debug(char *val);
-static void	_usage ();
-static void	_write_config (void);
+static void	_usage(void);
+static void	_write_config(void);
 
-int
-main (int argc, char *argv[])
+int main(int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS, i, opt_char, input_field_count = 0;
 	char **input_fields, *env_val;
@@ -272,8 +271,7 @@ static char *_getline(const char *prompt)
  * OUT argc - location to store count of arguments
  * OUT argv - location to store the argument list
  */
-static int
-_get_command (int *argc, char **argv)
+static int _get_command (int *argc, char **argv)
 {
 	char *in_line;
 	static char *last_in_line = NULL;
@@ -345,8 +343,7 @@ _get_command (int *argc, char **argv)
 /*
  * _write_config - write the configuration parameters and values to a file.
  */
-static void
-_write_config (void)
+static void _write_config(void)
 {
 	int error_code;
 	node_info_msg_t *node_info_ptr = NULL;
@@ -673,8 +670,7 @@ static int _reboot_nodes(char *node_list, bool asap)
  * IN argv - the arguments
  * RET 0 or errno (only for errors fatal to scontrol)
  */
-static int
-_process_command (int argc, char *argv[])
+static int _process_command (int argc, char **argv)
 {
 	int error_code = 0;
 	char *tag = argv[0];
@@ -1374,8 +1370,7 @@ _process_command (int argc, char *argv[])
  * IN argc - count of arguments
  * IN argv - list of arguments
  */
-static void
-_create_it (int argc, char *argv[])
+static void _create_it(int argc, char **argv)
 {
 	/* Scan for "res" first, anywhere in the args.  When creating
 	   a reservation there is a partition= option, which we don't
@@ -1416,8 +1411,7 @@ _create_it (int argc, char *argv[])
  * IN argc - count of arguments
  * IN argv - list of arguments
  */
-static void
-_delete_it (int argc, char *argv[])
+static void _delete_it(int argc, char **argv)
 {
 	char *tag = NULL, *val = NULL;
 	int tag_len = 0;
@@ -1486,8 +1480,7 @@ _delete_it (int argc, char *argv[])
  * IN argc - count of arguments
  * IN argv - list of arguments
  */
-static void
-_show_it (int argc, char *argv[])
+static void _show_it(int argc, char **argv)
 {
 	char *tag = NULL, *val = NULL;
 	int tag_len = 0;
@@ -1612,8 +1605,7 @@ _show_it (int argc, char *argv[])
  * IN argc - count of arguments
  * IN argv - list of arguments
  */
-static void
-_update_it (int argc, char *argv[])
+static void _update_it(int argc, char **argv)
 {
 	char *val = NULL;
 	int i, error_code = SLURM_SUCCESS;
@@ -1729,8 +1721,7 @@ _update_it (int argc, char *argv[])
  * RET 0 if no slurm error, errno otherwise. parsing error prints
  *			error message and returns 0
  */
-static int
-_update_bluegene_block (int argc, char *argv[])
+static int _update_bluegene_block(int argc, char **argv)
 {
 	int i, update_cnt = 0;
 	update_block_msg_t block_msg;
@@ -1816,8 +1807,7 @@ _update_bluegene_block (int argc, char *argv[])
  * RET 0 if no slurm error, errno otherwise. parsing error prints
  *			error message and returns 0
  */
-static int
-_update_bluegene_submp (int argc, char *argv[])
+static int _update_bluegene_submp(int argc, char **argv)
 {
 	int i, update_cnt = 0;
 	update_block_msg_t block_msg;
@@ -1915,8 +1905,8 @@ static int _update_slurmctld_debug(char *val)
 }
 
 /* _usage - show the valid scontrol commands */
-void
-_usage () {
+void _usage(void)
+{
 	printf ("\
 scontrol [<OPTION>] [<COMMAND>]                                            \n\
     Valid <OPTION> values are:                                             \n\

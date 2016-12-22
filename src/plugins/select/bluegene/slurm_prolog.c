@@ -61,7 +61,7 @@ static int  _get_job_size(uint32_t job_id);
 static int  _wait_part_ready(uint32_t job_id);
 static int  _partitions_dealloc();
 
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
 	char *job_id_char = NULL;
 	uint32_t job_id;
