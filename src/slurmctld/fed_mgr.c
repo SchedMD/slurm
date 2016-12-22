@@ -1896,7 +1896,7 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	job_desc->job_id = get_next_job_id(false);
 	unlock_slurmctld(job_write_lock);
 
-	if (job_desc->begin_time <= now) {
+	if ((job_desc->priority != 0) && (job_desc->begin_time <= now)) {
 		/* Don't job/node write lock on _find_start_now_sib. It locks
 		 * inside _sib_will_run */
 		start_now_sib = _find_start_now_sib(msg, job_desc, uid,
@@ -1911,7 +1911,11 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		avail_sibs = _get_all_sibling_bits();
 	}
 
-	if (start_now_sib == NULL) {
+	if (job_desc->priority == 0) {
+		/* don't submit siblings if the job held, siblings will be
+		 * submitted when the job is released. */
+		job_desc->fed_siblings = 0;
+	} else if (start_now_sib == NULL) {
 		job_desc->fed_siblings = avail_sibs;
 	} else if (start_now_sib == fed_mgr_cluster_rec) {
 		job_desc->fed_siblings |=
@@ -1939,11 +1943,17 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 
 	*job_id_ptr = job_ptr->job_id;
 
-	info("Submitted %sfederated job %u to %s(self)",
-	     (!(job_ptr->fed_details->siblings &
-		FED_SIBLING_BIT(fed_mgr_cluster_rec->fed.id)) ?
-	      "tracking " : ""),
-	     job_ptr->job_id, fed_mgr_cluster_rec->name);
+	if (job_desc->priority == 0) {
+		job_ptr->fed_details = xmalloc(sizeof(job_fed_details_t));
+		info("Submitted held federated job %u to %s(self)",
+		     job_ptr->job_id, fed_mgr_cluster_rec->name);
+	} else {
+		info("Submitted %sfederated job %u to %s(self)",
+		     (!(job_ptr->fed_details->siblings &
+			FED_SIBLING_BIT(fed_mgr_cluster_rec->fed.id)) ?
+		      "tracking " : ""),
+		     job_ptr->job_id, fed_mgr_cluster_rec->name);
+	}
 
 	unlock_slurmctld(job_write_lock);
 
