@@ -5265,7 +5265,7 @@ _pack_composite_msg(composite_msg_t *msg, Buf buffer, uint16_t protocol_version)
 				/* FIXME: this should handle the
 				 * _global_auth_key() as well. */
 				tmp_info->auth_cred =
-					g_slurm_auth_create(NULL, 2, auth_info);
+					g_slurm_auth_create(auth_info);
 				xfree(auth_info);
 			}
 

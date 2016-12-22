@@ -61,7 +61,7 @@ static bool init_run = false;
  * end of the structure.
  */
 typedef struct slurm_auth_ops {
-        void *       (*create)    ( void *argv[], char *auth_info );
+        void *       (*create)    ( char *auth_info );
         int          (*destroy)   ( void *cred );
         int          (*verify)    ( void *cred, char *auth_info );
         uid_t        (*get_uid)   ( void *cred, char *auth_info );
@@ -96,19 +96,6 @@ static const char *syms[] = {
 static slurm_auth_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t      context_lock = PTHREAD_MUTEX_INITIALIZER;
-
-static void **
-_slurm_auth_marshal_args(void *hosts, int timeout)
-{
-        void **argv;
-
-        argv = xmalloc(ARG_COUNT * sizeof(void *));
-        argv[ARG_HOST_LIST] = hosts;
-        /* This strange looking code avoids warnings on IA64 */
-        argv[ARG_TIMEOUT] = ((char *) NULL) + timeout;
-
-        return argv;
-}
 
 static const char *
 slurm_auth_generic_errstr( int slurm_errno )
@@ -202,25 +189,15 @@ slurm_auth_fini( void )
  * the API function dispatcher.
  */
 
-void *
-g_slurm_auth_create( void *hosts, int timeout, char *auth_info )
+void *g_slurm_auth_create(char *auth_info)
 {
-        void **argv;
-        void *ret;
-
-	if ( slurm_auth_init(NULL) < 0 )
+	if (slurm_auth_init(NULL) < 0)
 		return NULL;
 
-	if ( auth_dummy )
+	if (auth_dummy)
 		return xmalloc(0);
 
-        if ( ( argv = _slurm_auth_marshal_args(hosts, timeout) ) == NULL ) {
-                return NULL;
-        }
-
-        ret = (*(ops.create))( argv, auth_info );
-        xfree( argv );
-        return ret;
+        return (*(ops.create))(auth_info);
 }
 
 int

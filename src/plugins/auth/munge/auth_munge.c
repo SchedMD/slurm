@@ -155,8 +155,7 @@ int init ( void )
  * allocate a credential.  Whether the credential is populated with useful
  * data at this time is implementation-dependent.
  */
-slurm_auth_credential_t *
-slurm_auth_create( void *argv[], char *opts )
+slurm_auth_credential_t *slurm_auth_create(char *opts)
 {
 	int rc, retry = RETRY_COUNT, auth_ttl;
 	slurm_auth_credential_t *cred = NULL;
@@ -214,7 +213,7 @@ slurm_auth_create( void *argv[], char *opts )
 	 */
 	ohandler = xsignal(SIGALRM, (SigFunc *)SIG_BLOCK);
 
-    again:
+again:
 	err = munge_encode(&cred->m_str, ctx, cred->buf, cred->len);
 	if (err != EMUNGE_SUCCESS) {
 		if ((err == EMUNGE_SOCKET) && retry--) {

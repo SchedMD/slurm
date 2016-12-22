@@ -245,7 +245,7 @@ stepd_connect(const char *directory, const char *nodename,
 	buffer = init_buf(0);
 	/* Create an auth credential */
 	auth_info = slurm_get_auth_info();
-	auth_cred = g_slurm_auth_create(NULL, 2, auth_info);
+	auth_cred = g_slurm_auth_create(auth_info);
 	xfree(auth_info);
 	if (auth_cred == NULL) {
 		error("Creating authentication credential: %s",

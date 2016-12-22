@@ -148,13 +148,10 @@ extern int fini ( void )
  * Allocate and initializes a credential.  This function should return
  * NULL if it cannot allocate a credential.
  */
-slurm_auth_credential_t *
-slurm_auth_create( void *argv[], char *auth_info )
+slurm_auth_credential_t *slurm_auth_create(char *auth_info)
 {
 	slurm_auth_credential_t *cred;
-
-	cred = ((slurm_auth_credential_t *)
-		xmalloc( sizeof( slurm_auth_credential_t ) ));
+	cred = xmalloc(sizeof(slurm_auth_credential_t));
 	cred->cr_errno = SLURM_SUCCESS;
 	cred->uid = geteuid();
 	cred->gid = getegid();

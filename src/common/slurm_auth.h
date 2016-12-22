@@ -131,7 +131,7 @@ extern int slurm_auth_fini( void );
 /*
  * Static bindings for the global authentication context.
  */
-extern void *	g_slurm_auth_create( void *hosts, int timeout, char *auth_info );
+extern void *	g_slurm_auth_create(char *auth_info);
 extern int	g_slurm_auth_destroy( void *cred );
 extern int	g_slurm_auth_verify( void *cred, void *hosts, int timeout,
 				     char *auth_info );
