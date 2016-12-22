@@ -212,19 +212,15 @@ g_slurm_auth_destroy( void *cred )
         return (*(ops.destroy))( cred );
 }
 
-int
-g_slurm_auth_verify( void *cred, void *hosts, int timeout, char *auth_info )
+int g_slurm_auth_verify(void *cred, char *auth_info)
 {
-        int ret;
-
-        if ( slurm_auth_init(NULL) < 0 )
+        if (slurm_auth_init(NULL) < 0)
                 return SLURM_ERROR;
 
-	if ( auth_dummy )
+	if (auth_dummy)
 		return SLURM_SUCCESS;
 
-        ret = (*(ops.verify))( cred, auth_info );
-        return ret;
+        return (*(ops.verify))(cred, auth_info);
 }
 
 uid_t

@@ -5337,8 +5337,7 @@ _unpack_composite_msg(composite_msg_t **msg, Buf buffer,
 			if (unpack_msg(tmp_info, buffer) != SLURM_SUCCESS)
 				goto unpack_error;
 
-			rc = g_slurm_auth_verify(
-				tmp_info->auth_cred, NULL, 2, auth_info);
+			rc = g_slurm_auth_verify(tmp_info->auth_cred, auth_info);
 
 			if (rc != SLURM_SUCCESS) {
 				error("authentication: %s ",

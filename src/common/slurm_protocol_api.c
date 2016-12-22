@@ -3144,11 +3144,10 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, Buf buffer)
 		goto total_return;
 	}
 	if (header.flags & SLURM_GLOBAL_AUTH_KEY) {
-		rc = g_slurm_auth_verify( auth_cred, NULL, 2,
-					  _global_auth_key() );
+		rc = g_slurm_auth_verify(auth_cred, _global_auth_key());
 	} else {
 		char *auth_info = slurm_get_auth_info();
-		rc = g_slurm_auth_verify( auth_cred, NULL, 2, auth_info );
+		rc = g_slurm_auth_verify(auth_cred, auth_info);
 		xfree(auth_info);
 	}
 
@@ -3421,11 +3420,10 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 		goto total_return;
 	}
 	if (header.flags & SLURM_GLOBAL_AUTH_KEY) {
-		rc = g_slurm_auth_verify( auth_cred, NULL, 2,
-					  _global_auth_key() );
+		rc = g_slurm_auth_verify(auth_cred, _global_auth_key());
 	} else {
 		char *auth_info = slurm_get_auth_info();
-		rc = g_slurm_auth_verify( auth_cred, NULL, 2, auth_info );
+		rc = g_slurm_auth_verify(auth_cred, auth_info);
 		xfree(auth_info);
 	}
 
@@ -3656,11 +3654,10 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 		goto total_return;
 	}
 	if (header.flags & SLURM_GLOBAL_AUTH_KEY) {
-		rc = g_slurm_auth_verify( auth_cred, NULL, 2,
-					  _global_auth_key() );
+		rc = g_slurm_auth_verify(auth_cred, _global_auth_key());
 	} else {
 		char *auth_info = slurm_get_auth_info();
-		rc = g_slurm_auth_verify( auth_cred, NULL, 2, auth_info );
+		rc = g_slurm_auth_verify(auth_cred, auth_info);
 		xfree(auth_info);
 	}
 

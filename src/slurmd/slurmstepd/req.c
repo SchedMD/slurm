@@ -429,7 +429,7 @@ _handle_accept(void *arg)
 		goto fail;
 	}
 	auth_info = slurm_get_auth_info();
-	rc = g_slurm_auth_verify(auth_cred, NULL, 2, auth_info);
+	rc = g_slurm_auth_verify(auth_cred, auth_info);
 	if (rc != SLURM_SUCCESS) {
 		error("Verifying authentication credential: %s",
 		      g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
