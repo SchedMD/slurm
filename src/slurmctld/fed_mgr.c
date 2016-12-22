@@ -1826,6 +1826,25 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 	return rc;
 }
 
+static uint64_t _get_all_sibling_bits()
+{
+	ListIterator itr;
+	slurmdb_cluster_rec_t *cluster;
+	uint64_t sib_bits = 0;
+
+	if (!fed_mgr_fed_rec || !fed_mgr_fed_rec->cluster_list)
+		goto fini;
+
+	itr = list_iterator_create(fed_mgr_fed_rec->cluster_list);
+	while ((cluster = list_next(itr))) {
+		sib_bits |= FED_SIBLING_BIT(cluster->fed.id);
+	}
+	list_iterator_destroy(itr);
+
+fini:
+	return sib_bits;
+}
+
 /* Determine how to submit a federated a job.
  *
  * First tries to find a cluster that can start the job now. If a cluster can
@@ -1854,9 +1873,10 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 				char **err_msg)
 {
 	int rc = SLURM_SUCCESS;
-	slurmdb_cluster_rec_t *start_now_sib;
+	slurmdb_cluster_rec_t *start_now_sib = NULL;
 	uint64_t avail_sibs = 0;
 	struct job_record *job_ptr = NULL;
+	time_t now = time(NULL);
 	slurmctld_lock_t fed_read_lock = {
 		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 	slurmctld_lock_t job_write_lock = {
@@ -1876,13 +1896,19 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	job_desc->job_id = get_next_job_id(false);
 	unlock_slurmctld(job_write_lock);
 
-	/* Don't job/node write lock on _find_start_now_sib. It locks inside
-	 * _sib_will_run */
-	start_now_sib = _find_start_now_sib(msg, job_desc, uid, &avail_sibs);
+	if (job_desc->begin_time <= now) {
+		/* Don't job/node write lock on _find_start_now_sib. It locks
+		 * inside _sib_will_run */
+		start_now_sib = _find_start_now_sib(msg, job_desc, uid,
+						    &avail_sibs);
 
-	if (!avail_sibs) {
-		debug("No cluster responded to sibling will_runs, submitting to self");
-		avail_sibs = FED_SIBLING_BIT(fed_mgr_cluster_rec->fed.id);
+		if (!avail_sibs) {
+			debug("No cluster responded to sibling will_runs, submitting to self");
+			avail_sibs =
+				FED_SIBLING_BIT(fed_mgr_cluster_rec->fed.id);
+		}
+	} else {
+		avail_sibs = _get_all_sibling_bits();
 	}
 
 	if (start_now_sib == NULL) {
