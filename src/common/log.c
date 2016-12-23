@@ -1116,23 +1116,6 @@ log_flush()
 	slurm_mutex_unlock(&log_lock);
 }
 
-/* LLNL Software development Toolbox (LSD-Tools)
- * fatal() and nomem() functions
- */
-void
-lsd_fatal_error(char *file, int line, char *msg)
-{
-	error("%s:%d %s: %m", file, line, msg);
-}
-
-void *
-lsd_nomem_error(char *file, int line, char *msg)
-{
-	error("%s:%d %s: %m", file, line, msg);
-	slurm_seterrno(ENOMEM);
-	return NULL;
-}
-
 /*
  * attempt to log message and exit()
  */
