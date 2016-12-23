@@ -265,6 +265,9 @@ static inline char *pmixp_info_step_host(int nodeid)
 static inline char *pmixp_info_job_host(int nodeid)
 {
 	xassert(nodeid < _pmixp_job_info.nnodes_job);
+	if( nodeid >= _pmixp_job_info.nnodes_job ){
+		return NULL;
+	}
 	char *p = hostlist_nth(_pmixp_job_info.job_hl, nodeid);
 	char *ret = xstrdup(p);
 	free(p);
