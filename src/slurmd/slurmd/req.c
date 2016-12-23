@@ -78,7 +78,6 @@
 #include "src/common/node_select.h"
 #include "src/common/plugstack.h"
 #include "src/common/read_config.h"
-#include "src/common/siphash.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_acct_gather_energy.h"
@@ -6077,7 +6076,15 @@ _dealloc_gids_cache(gids_cache_t *p)
 static size_t
 _gids_hashtbl_idx(const char *user)
 {
-	uint64_t x = siphash_str(user);
+	uint64_t x = 0;
+	int i = 0;
+	/* copied from _get_hash_idx in slurmctld */
+	/* step through string, multiply value times position
+	 * to get a bit of entropy back */
+	while (*user) {
+		x += i++ * (int) *user++;
+	}
+
 	return x % GIDS_HASH_LEN;
 }
 

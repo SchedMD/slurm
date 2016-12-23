@@ -33,7 +33,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "src/common/siphash.h"
 #include "src/common/xhash.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
