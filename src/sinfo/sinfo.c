@@ -731,7 +731,7 @@ static void _sort_hostlist(List sinfo_list)
  * data to print. Return true if it is duplicate/redundant data. */
 static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 {
-	uint32_t tmp = 0;
+	uint64_t tmp = 0;
 
 	if (params.node_flag)
 		return false;
