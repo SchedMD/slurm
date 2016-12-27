@@ -319,12 +319,6 @@ static void _process_server_request(pmixp_base_hdr_t *hdr, void *payload)
 		buf = create_buf(NULL, 0);
 		break;
 	}
-	case PMIXP_MSG_HEALTH_CHK: {
-		/* this is just health ping.
-		 * TODO: can we do something more sophisticated?
-		 */
-		break;
-	}
 	default:
 		PMIXP_ERROR("Unknown message type %d", hdr->type);
 		break;
@@ -531,41 +525,5 @@ int pmixp_server_send(char *hostlist, pmixp_srv_cmd_t type, uint32_t seq,
 		PMIXP_ERROR("Cannot send message to %s, size = %u, hostlist:\n%s",
 			    addr, (uint32_t) size, hostlist);
 	}
-	return rc;
-}
-
-int pmixp_server_health_chk(char *hostlist,  const char *addr)
-{
-	pmixp_slurm_api_shdr_t hdr;
-	pmixp_base_hdr_t *bhdr = &hdr.base_hdr;
-	char nhdr[sizeof(hdr)];
-	size_t hsize;
-	Buf buf = pmixp_server_new_buf();
-	char *data = get_buf_data(buf);
-	int rc;
-
-	bhdr->magic = PMIX_SERVER_MSG_MAGIC;
-	bhdr->type = PMIXP_MSG_HEALTH_CHK;
-	bhdr->msgsize = 1;
-	bhdr->seq = 0;
-	/* Store global nodeid that is
-	 *  independent from exact collective */
-	bhdr->nodeid = pmixp_info_nodeid_job();
-
-	/* Temp: for the verification purposes */
-	hdr.rport = 100;
-
-	hsize = pmixp_slurm_api_pack_hdr(&hdr, nhdr);
-	memcpy(data, nhdr, hsize);
-
-	grow_buf(buf, sizeof(char));
-	pack8('\n', buf);
-
-	rc = pmixp_stepd_send(hostlist, addr, data, get_buf_offset(buf), 4, 14, 1);
-	if (SLURM_SUCCESS != rc) {
-		PMIXP_ERROR("Was unable to wait for the parent %s to become alive on addr %s",
-			    hostlist, addr);
-	}
-
 	return rc;
 }

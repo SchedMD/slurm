@@ -567,15 +567,6 @@ static void _progress_fan_in(pmixp_coll_t *coll)
 
 	/* Check for the singletone case */
 	if (NULL != hostlist) {
-		if( 0 == coll->seq && NULL != coll->parent_host ){
-			/* This is the first message sent to the parent.
-			 * There might be a race condition where parent
-			 * is not ready to receive the messages.
-			 * Use zero-size message to check parent status first
-			 * and then send the full message.
-			 */
-			pmixp_server_health_chk(hostlist, addr);
-		}
 		rc = pmixp_server_send(hostlist, type, coll->seq, addr,
 				get_buf_data(coll->buf),
 				get_buf_offset(coll->buf), is_p2p);
