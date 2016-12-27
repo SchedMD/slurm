@@ -42,16 +42,30 @@
 #include "pmixp_common.h"
 #include "pmixp_utils.h"
 
-/* Message management */
+/* Message access callbacks */
+typedef uint32_t (*pmixp_io_payload_size_cb_t)(void *hdr);
 
-typedef uint32_t (*pmix_io_engine_hsize_cb_t)(void *hdr);
-typedef int (*pmix_io_engine_hpack_cb_t)(void *hdr_host, void *hdr_net);
-typedef int (*pmix_io_engine_hunpack_cb_t)(void *hdr_net, void *hdr_host);
+typedef int (*pmixp_io_hdr_pack_cb_t)(void *hdr_host, void *hdr_net);
+typedef int (*pmixp_io_hdr_unpack_cb_t)(void *hdr_net, void *hdr_host);
+
+typedef void *(*pmixp_io_hdr_ptr_cb_t)(void *msg);
+typedef void *(*pmixp_io_payload_ptr_cb_t)(void *msg);
+typedef void (*pmixp_io_msg_free_cb_t)(void *msg);
+
 typedef struct {
-	uint32_t host_size, net_size;
-	pmix_io_engine_hpack_cb_t pack_hdr_cb;
-	pmix_io_engine_hunpack_cb_t unpack_hdr_cb;
-	pmix_io_engine_hsize_cb_t pay_size_cb;
+	/* generic callback */
+	pmixp_io_payload_size_cb_t payload_size_cb;
+	/* receiver-related fields */
+	bool recv_on;
+	uint32_t recv_host_hsize, recv_net_hsize;
+	pmixp_io_hdr_unpack_cb_t hdr_unpack_cb;
+	/* transmitter-related fields */
+	bool send_on;
+	uint32_t send_host_hsize, send_net_hsize;
+	pmixp_io_hdr_pack_cb_t hdr_pack_cb;
+	pmixp_io_hdr_ptr_cb_t hdr_ptr_cb;
+	pmixp_io_payload_ptr_cb_t payload_ptr_cb;
+	pmixp_io_msg_free_cb_t msg_free_cb;
 } pmixp_io_engine_header_t;
 
 typedef struct {
@@ -62,11 +76,11 @@ typedef struct {
 	/* User supplied information */
 	int sd;
 	int error;
-	pmixp_io_engine_header_t header;
+	pmixp_io_engine_header_t h;
 	bool operating;
 	/* receiver */
 	uint32_t rcvd_hdr_offs;
-	void *rcvd_hdr;
+	void *rcvd_hdr_net;
 	void *rcvd_hdr_host;
 	uint32_t rcvd_pay_size;
 	uint32_t rcvd_pay_offs;
@@ -84,43 +98,42 @@ typedef struct {
 	List send_queue;
 } pmixp_io_engine_t;
 
-static inline void pmix_io_rcvd_padding(pmixp_io_engine_t *eng,
+static inline void pmixp_io_rcvd_padding(pmixp_io_engine_t *eng,
 		uint32_t padsize)
 {
 	xassert(eng->magic == PMIX_MSGSTATE_MAGIC);
 	eng->rcvd_padding = padsize;
 }
 
-static inline bool pmix_io_rcvd_ready(pmixp_io_engine_t *eng)
+static inline bool pmixp_io_rcvd_ready(pmixp_io_engine_t *eng)
 {
 	xassert(eng->magic == PMIX_MSGSTATE_MAGIC);
-	return (eng->rcvd_hdr_offs == eng->header.net_size)
+	return (eng->rcvd_hdr_offs == eng->h.recv_net_hsize)
 			&& (eng->rcvd_pay_size == eng->rcvd_pay_offs);
 }
 
-static inline bool pmix_io_finalized(pmixp_io_engine_t *eng)
+static inline bool pmixp_io_finalized(pmixp_io_engine_t *eng)
 {
 	xassert(eng->magic == PMIX_MSGSTATE_MAGIC);
 	return !(eng->operating);
 }
 
-static inline int pmix_io_error(pmixp_io_engine_t *eng)
+static inline int pmixp_io_error(pmixp_io_engine_t *eng)
 {
 	xassert(eng->magic == PMIX_MSGSTATE_MAGIC);
 	return eng->error;
 }
 
-void pmix_io_init(pmixp_io_engine_t *eng, int fd,
+int pmixp_io_init(pmixp_io_engine_t *eng, int fd,
 		pmixp_io_engine_header_t header);
-void pmix_io_finalize(pmixp_io_engine_t *eng, int error);
+void pmixp_io_finalize(pmixp_io_engine_t *eng, int error);
 
 /* Receiver */
-int pmix_io_first_header(int fd, void *buf, uint32_t *_offs, uint32_t len);
-void pmix_io_rcvd(pmixp_io_engine_t *eng);
-void *pmix_io_rcvd_extract(pmixp_io_engine_t *eng, void *header);
+void pmixp_io_rcvd_progress(pmixp_io_engine_t *eng);
+void *pmixp_io_rcvd_extract(pmixp_io_engine_t *eng, void *header);
 /* Transmitter */
-void pmix_io_send_enqueue(pmixp_io_engine_t *eng, void *msg);
-void pmix_io_send_progress(pmixp_io_engine_t *eng);
-bool pmix_io_send_pending(pmixp_io_engine_t *eng);
+void pmixp_io_send_enqueue(pmixp_io_engine_t *eng, void *msg);
+void pmixp_io_send_progress(pmixp_io_engine_t *eng);
+bool pmixp_io_send_pending(pmixp_io_engine_t *eng);
 
 #endif /* PMIXP_IO_H */

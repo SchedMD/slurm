@@ -343,11 +343,13 @@ static int _slurm_proto_unpack_hdr(void *net, void *host);
 static int _slurm_proto_new_msg(pmixp_io_engine_t *me);
 
 pmixp_io_engine_header_t srv_rcvd_header = {
-	.host_size = sizeof(pmixp_slurm_api_rhdr_t),
-	.net_size = PMIXP_SLURM_API_RHDR_SIZE,
-	.pack_hdr_cb = NULL,
-	.unpack_hdr_cb = _slurm_proto_unpack_hdr,
-	.pay_size_cb = _slurm_proto_msize
+	/* generic callbacks */
+	.payload_size_cb = _slurm_proto_msize,
+	/* receiver-related fields */
+	.recv_on = 1,
+	.recv_host_hsize = sizeof(pmixp_slurm_api_rhdr_t),
+	.recv_net_hsize = PMIXP_SLURM_API_RHDR_SIZE,
+	.hdr_unpack_cb = _slurm_proto_unpack_hdr,
 };
 
 /*
@@ -357,14 +359,14 @@ pmixp_io_engine_header_t srv_rcvd_header = {
 static int _slurm_proto_new_msg(pmixp_io_engine_t *me)
 {
 	int ret = 0;
-	pmix_io_rcvd(me);
-	if (pmix_io_rcvd_ready(me)) {
+	pmixp_io_rcvd_progress(me);
+	if (pmixp_io_rcvd_ready(me)) {
 		pmixp_slurm_api_rhdr_t hdr;
-		void *msg = pmix_io_rcvd_extract(me, &hdr);
+		void *msg = pmixp_io_rcvd_extract(me, &hdr);
 		_process_server_request(&hdr.sapi_shdr.base_hdr, msg);
 		ret = 1;
 	}
-	if (pmix_io_finalized(me)) {
+	if (pmixp_io_finalized(me)) {
 		ret = 2;
 	}
 	return ret;
@@ -386,13 +388,16 @@ void pmixp_server_slurm_conn(int fd)
 	fd_set_close_on_exec(fd);
 
 	pmixp_io_engine_t *eng = xmalloc(sizeof(pmixp_io_engine_t));
-	pmix_io_init(eng, fd, srv_rcvd_header);
+	if (SLURM_SUCCESS != pmixp_io_init(eng, fd, srv_rcvd_header)){
+		return;
+	}
+
 	/* We use slurm_forward_data to send message to stepd's
 	 * SLURM will put user ID there. We need to skip it.
 	 */
-	pmix_io_rcvd_padding(eng, sizeof(uint32_t));
+	pmixp_io_rcvd_padding(eng, sizeof(uint32_t));
 
-	if( 2 == _slurm_proto_new_msg(eng) ){
+	if (2 == _slurm_proto_new_msg(eng)) {
 		/* connection was fully processed here */
 		xfree(eng);
 		return;
