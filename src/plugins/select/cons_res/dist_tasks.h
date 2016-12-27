@@ -46,8 +46,10 @@
  * IN job_ptr - job to be allocated resources
  * IN cr_type - allocation type (sockets, cores, etc.)
  * IN preempt_mode - true if testing with simulated preempted jobs
+ * IN avail_core_bitmap - system-wide bitmap of cores originally available to
+ *		the job, only used to identify specialized cores
  */
 extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type,
-		   bool preeempt_mode);
+		   bool preempt_mode, bitstr_t *avail_core_bitmap);
 
 #endif /* !_CONS_RES_DIST_TASKS_H */

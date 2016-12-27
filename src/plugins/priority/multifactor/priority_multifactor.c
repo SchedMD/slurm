@@ -663,7 +663,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 		}
 
 		info("Job %u priority: %.2f + %.2f + %.2f + %.2f + %.2f + %2.f "
-		     "- %"PRIi64" = %.2f",
+		     "- %"PRId64" = %.2f",
 		     job_ptr->job_id, job_ptr->prio_factors->priority_age,
 		     job_ptr->prio_factors->priority_fs,
 		     job_ptr->prio_factors->priority_js,

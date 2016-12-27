@@ -939,6 +939,40 @@ fini:	xfree(sock_avoid);
 	return error_code;
 }
 
+/* Remove any specialized cores from those allocated to the job */
+static void _clear_spec_cores(job_resources_t *job_res,
+			      bitstr_t *avail_core_bitmap)
+{
+	int first_node, last_node, i_node;
+	int first_core, last_core, i_core;
+	int alloc_node = -1, alloc_core = -1, size;
+
+	size = bit_size(job_res->core_bitmap);
+	bit_nset(job_res->core_bitmap, 0, size - 1);
+
+	first_node = bit_ffs(job_res->node_bitmap);
+	if (first_node >= 0)
+		last_node = bit_fls(job_res->node_bitmap);
+	else
+		last_node = first_node - 1;
+
+	for (i_node = first_node; i_node <= last_node; i_node++) {
+		if (!bit_test(job_res->node_bitmap, i_node))
+			continue;
+		job_res->cpus[++alloc_node] = 0;
+		first_core = cr_get_coremap_offset(i_node);
+		last_core  = cr_get_coremap_offset(i_node + 1) - 1;
+		for (i_core = first_core; i_core <= last_core; i_core++) {
+			alloc_core++;
+			if (bit_test(avail_core_bitmap, i_core)) {
+				job_res->cpus[alloc_node] +=
+					select_node_record[i_node].vpus;
+			} else {
+				bit_clear(job_res->core_bitmap, alloc_core);
+			}
+		}
+	}
+}
 
 /* To effectively deal with heterogeneous nodes, we fake a cyclic
  * distribution to figure out how many cpus are needed on each node.
@@ -971,9 +1005,11 @@ fini:	xfree(sock_avoid);
  * IN job_ptr - job to be allocated resources
  * IN cr_type - allocation type (sockets, cores, etc.)
  * IN preempt_mode - true if testing with simulated preempted jobs
+ * IN avail_core_bitmap - system-wide bitmap of cores originally available to
+ *		the job, only used to identify specialized cores
  */
 extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type,
-		   bool preempt_mode)
+		   bool preempt_mode, bitstr_t *avail_core_bitmap)
 {
 	int error_code, cr_cpu = 1;
 
@@ -985,24 +1021,12 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type,
 
 	if ((job_ptr->job_resrcs->node_req == NODE_CR_RESERVED) ||
 	    (job_ptr->details->whole_node == 1)) {
-		int n, i;
-		job_resources_t *job_res = job_ptr->job_resrcs;
 		/* The job has been allocated an EXCLUSIVE set of nodes,
-		 * so it gets all of the bits in the core_bitmap and
-		 * all of the available CPUs in the cpus array. */
-		int size = bit_size(job_res->core_bitmap);
-		bit_nset(job_res->core_bitmap, 0, size-1);
-
-		/* Up to this point we might not have the job_res pointer have
-		 * the right cpu count.  It is most likely a core count.  We
-		 * will fix that so we can layout tasks correctly.
-		 */
-		size = bit_size(job_res->node_bitmap);
-		for (i = 0, n = bit_ffs(job_res->node_bitmap); n < size; n++) {
-			if (bit_test(job_res->node_bitmap, n) == 0)
-				continue;
-			job_res->cpus[i++] = select_node_record[n].cpus;
-		}
+		 * so it gets all of the bits in the core_bitmap and all of
+		 * the available CPUs in the cpus array. Up to this point
+		 * we might not have the correct CPU count, but a core count
+		 * and ignoring specialized cores. Fix that too. */
+		_clear_spec_cores(job_ptr->job_resrcs, avail_core_bitmap);
 		return SLURM_SUCCESS;
 	}
 

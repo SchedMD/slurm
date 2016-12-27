@@ -193,6 +193,7 @@ documents those changes that are of interest to users and administrators.
     version is lower than the min version, set it to the min.
  -- Remove redundant lookup for part_ptr when updating a reservation's nodes.
  -- Fix memory and file descriptor leaks in slurmd daemon's sbcast logic.
+ -- Do not allocate specialized cores to jobs using the --exclusive option.
 
 * Changes in Slurm 16.05.7
 ==========================
