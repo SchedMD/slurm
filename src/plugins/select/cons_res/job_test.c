@@ -935,10 +935,10 @@ clear_bit:	/* This node is not usable by this job */
 extern bitstr_t *make_core_bitmap(bitstr_t *node_map, uint16_t core_spec)
 {
 	uint32_t c, nodes, size;
-	int spec_cores, res_core, res_sock, res_off;
+	int res_core, res_sock, res_off;
 	int n, n_first, n_last;
 	uint32_t coff;
-	uint16_t i;
+	uint16_t spec_cores, i, use_spec_cores;
 	struct node_record *node_ptr;
 
 	nodes = bit_size(node_map);
@@ -964,37 +964,53 @@ extern bitstr_t *make_core_bitmap(bitstr_t *node_map, uint16_t core_spec)
 			bit_clear(node_map, n);
 			continue;
 		}
-		bit_nset(core_map, c, coff-1);
+		bit_nset(core_map, c, coff - 1);
 
-		if ((core_spec != 0) && (core_spec != (uint16_t) NO_VAL)) {
-			/* Remove specialized cores right now */
-			spec_cores = core_spec;
-			for (res_core = select_node_record[n].cores - 1;
-			     (spec_cores && (res_core >= 0)); res_core--) {
-				for (res_sock = select_node_record[n].sockets-1;
-				     (spec_cores && (res_sock >= 0));
-				     res_sock--) {
-					res_off =
-					  (res_sock*select_node_record[n].cores)
-					  + res_core;
-					bit_clear(core_map, c + res_off);
-					spec_cores--;
-				}
-			}
-			continue;
-		}
 		node_ptr = select_node_record[n].node_ptr;
-		if ((core_spec == 0) || !node_ptr->cpu_spec_list)
+		use_spec_cores =  slurm_get_use_spec_resources();
+		if ((use_spec_cores && (core_spec == 0)) ||
+		    !node_ptr->cpu_spec_list)
 			continue;
 		if (!node_ptr->node_spec_bitmap) {
 			info("CPUSpecList not registered for node %s yet",
 			     node_ptr->name);
 			continue;
 		}
-		/* remove node's specialized CPUs now */
-		for (i = 0; i < (coff - c) ; i++) {
-			if (!bit_test(node_ptr->node_spec_bitmap, i))
-				bit_clear(core_map, c + i);
+
+		/* remove node's specialized cores accounting toward the
+		 * requested limit if allowed by configuration */
+		spec_cores = core_spec;
+		for (i = 0; i < (coff - c); i++) {
+			if (!bit_test(node_ptr->node_spec_bitmap, i)) {
+	 			bit_clear(core_map, c + i);
+				if (!use_spec_cores)
+					continue;
+				if (--spec_cores == 0)
+					break;
+			}
+		}
+
+		/* if enough cores specialized or not necessary to
+		 * specialize some of them for the job, continue */
+		if ((spec_cores == 0) ||
+		    (core_spec == (uint16_t) NO_VAL))
+			continue;
+
+		/* if more cores need to be specialized, look for
+		 * them in the non specialized cores */
+		for (res_core = select_node_record[n].cores - 1;
+		     ((spec_cores > 0) && (res_core >= 0)); res_core--) {
+			for (res_sock = select_node_record[n].sockets-1;
+			     ((spec_cores > 0) && (res_sock >= 0));
+			     res_sock--) {
+				res_off = (res_sock*select_node_record[n].cores)
+					  + res_core;
+				if (bit_test(node_ptr->node_spec_bitmap,
+					     res_off)) {
+					bit_clear(core_map, c + res_off);
+					spec_cores--;
+				}
+			}
 		}
 	}
 	return core_map;
