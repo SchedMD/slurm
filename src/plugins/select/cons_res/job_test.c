@@ -992,7 +992,7 @@ extern bitstr_t *make_core_bitmap(bitstr_t *node_map, uint16_t core_spec)
 
 		/* if enough cores specialized or not necessary to
 		 * specialize some of them for the job, continue */
-		if ((spec_cores == 0) ||
+		if (!use_spec_cores || (spec_cores == 0) ||
 		    (core_spec == (uint16_t) NO_VAL))
 			continue;
 
