@@ -1160,8 +1160,28 @@ static int _process_old_sql_line(const char *data_in,
 			xstrcat(fields, "cpus_req");
 			i+=8;
 		} else if (!xstrncmp("alloc_nodes", data_in+i, 11)) {
-			xstrcat(fields, "nodes_alloc");
 			i+=11;
+			if (!delete) {
+				xstrcat(fields, "nodes_alloc");
+			} else {
+				char *nodes =  NULL;
+				while (data_in[i] && data_in[i-1] != '\'')
+					i++;
+				start = i;
+				while (data_in[i] && data_in[i] != '\'')
+					i++;
+				if (!data_in[i]) {
+					error("returning here nodes_alloc");
+					rc = SLURM_ERROR;
+					goto end_it;
+				}
+				xstrncat(nodes, data_in+start, (i-start));
+				if (!fields)
+					xstrcat(fields, "where ");
+				xstrfmtcat(fields, "nodes_alloc='%s'", nodes);
+				xfree(nodes);
+				i++;
+			}
 		} else if (!xstrncmp("name", data_in+i, 4)) {
 			if (table == job_table)
 				xstrcat(fields, "job_name");
@@ -1258,7 +1278,8 @@ static int _process_old_sql_line(const char *data_in,
 		if (data_in[i]) {
 			if (!delete || ((table != assoc_day_table)
 					&& (table != assoc_hour_table)
-					&& (table != assoc_month_table))) {
+					&& (table != assoc_month_table)
+					&& (table != job_table))) {
 				if (data_in[i] == ',')
 					xstrcat(fields, ", ");
 				else if (data_in[i] == ')'
