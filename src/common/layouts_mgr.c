@@ -672,17 +672,16 @@ int _layouts_entity_get_mkv(layout_t* l, entity_t* e, char* keys, void* value,
 	while ((key = hostlist_shift(kl))) {
 		if (processed >= length) {
 			rc++;
-			continue;
-		}
-		if (_layouts_entity_get_kv_size(l, e, key, &elt_size) ||
-		    (processed + elt_size) > length ||
-		    _layouts_entity_get_kv(l, e, key, value, key_type)) {
+		} else if (_layouts_entity_get_kv_size(l, e, key, &elt_size) ||
+			   (processed + elt_size) > length ||
+			   _layouts_entity_get_kv(l, e, key, value, key_type)) {
 			rc++;
 			processed = length;
-			continue;
+		} else {
+			value += elt_size;
+			processed += elt_size;
 		}
-		value += elt_size;
-		processed += elt_size;
+		free(key);
 	}
 	hostlist_destroy(kl);
 
@@ -734,15 +733,14 @@ int _layouts_entity_get_mkv_ref(layout_t* l, entity_t* e, char* keys,
 	while ((key = hostlist_shift(kl))) {
 		if (processed >= length) {
 			rc++;
-			continue;
-		}
-		if (_layouts_entity_get_kv_ref(l, e, key, value, key_type)) {
+		} else if (_layouts_entity_get_kv_ref(l, e, key, value, key_type)) {
 			rc++;
 			processed = length;
-			continue;
+		} else {
+			value += elt_size;
+			processed += elt_size;
 		}
-		value += elt_size;
-		processed += elt_size;
+		free(key);
 	}
 	hostlist_destroy(kl);
 

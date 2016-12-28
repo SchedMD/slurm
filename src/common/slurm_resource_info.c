@@ -571,6 +571,7 @@ int slurm_verify_mem_bind(const char *arg, char **mem_bind,
 	while ((rc == SLURM_SUCCESS) && (tok = strsep(&p, ";"))) {
 		if (xstrcasecmp(tok, "help") == 0) {
 			slurm_print_mem_bind_help();
+			xfree(buf);
 			return 1;
 		} else if ((xstrcasecmp(tok, "p") == 0) ||
 			   (xstrcasecmp(tok, "prefer") == 0)) {

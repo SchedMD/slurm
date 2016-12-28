@@ -1793,6 +1793,7 @@ _push_range_list(hostlist_t hl, char *prefix, struct _range *range,
 	char new_prefix[1024], tmp_prefix[1024];
 
 	strncpy(tmp_prefix, prefix, sizeof(tmp_prefix));
+	tmp_prefix[sizeof(tmp_prefix) - 1] = '\0';
 	if (((p = strrchr(tmp_prefix, '[')) != NULL) &&
 	    ((q = strrchr(p, ']')) != NULL)) {
 		struct _range *prefix_range = NULL;
