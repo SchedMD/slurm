@@ -21,6 +21,8 @@ documents those changes that are of interest to users and administrators.
  -- Remove redundant lookup for part_ptr when updating a reservation's nodes.
  -- Fix memory and file descriptor leaks in slurmd daemon's sbcast logic.
  -- Do not allocate specialized cores to jobs using the --exclusive option.
+ -- Cancel interactive job if Prolog failure with "PrologFlags=contain"
+    configured.
 
 * Changes in Slurm 16.05.7
 ==========================
