@@ -215,11 +215,11 @@ ending:
 }
 
 
-static slurmd_conf_t * read_slurmd_conf_lite (int fd)
+static slurmd_conf_t *read_slurmd_conf_lite(int fd)
 {
 	int rc;
 	int len;
-	Buf buffer;
+	Buf buffer = NULL;
 	slurmd_conf_t *confl, *local_conf = NULL;
 	int tmp_int = 0;
 
@@ -272,6 +272,7 @@ static slurmd_conf_t * read_slurmd_conf_lite (int fd)
 	return (confl);
 
 rwfail:
+	FREE_NULL_BUFFER(buffer);
 	xfree(local_conf);
 	return (NULL);
 }

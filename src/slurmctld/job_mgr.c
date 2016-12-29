@@ -1048,6 +1048,7 @@ extern int load_last_job_id( void )
 
 unpack_error:
 	debug("Invalid job data checkpoint file");
+	xfree(ver_str);
 	free_buf(buffer);
 	return SLURM_FAILURE;
 }
@@ -6944,6 +6945,7 @@ _read_data_array_from_file(int fd, char *file_name, char ***data,
 			xfree(buffer);
 			return -1;
 		}
+		buffer[pos + amount] = '\0';
 		pos += amount;
 		if (amount < BUF_SIZE)	/* end of file */
 			break;

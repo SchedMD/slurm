@@ -154,6 +154,8 @@ static bool _pid_to_wake(pid_t pid)
 		return false;  /* process is now gone */
 	proc_stat = xmalloc(4097);
 	len = read(proc_fd, proc_stat, 4096);
+	if (len >= 0)
+		proc_stat[len] = '\0';
 	close(proc_fd);
 	if (len < 14) {
 		xfree(proc_stat);

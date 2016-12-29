@@ -273,7 +273,8 @@ read_proc(void)
 		if (proc_fd == -1) 
 			continue;  /* process is now gone */
 		while ((n = read(proc_fd, proc_stat, proc_stat_size)) > 0) {
-			if (n < (proc_stat_size-1))
+			proc_stat[n] = '\0';
+			if (n < (proc_stat_size - 1))
 				break;
 			proc_stat_size += BUF_SIZE;
 			xrealloc(proc_stat, proc_stat_size + 1);

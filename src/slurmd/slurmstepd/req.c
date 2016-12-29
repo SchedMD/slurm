@@ -1208,8 +1208,12 @@ done:
 			}
 		}
 	}
-
+	if (srun) {
+		xfree(srun->key);
+		xfree(srun);
+	}
 	return SLURM_SUCCESS;
+
 rwfail:
 	if (srun) {
 		xfree(srun->key);

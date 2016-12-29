@@ -211,7 +211,7 @@ extern int multi_prog_get_argv(char *config_data, char **prog_env,
 		args_spec = p;
 		while (*args_spec != '\0') {
 			/* Only simple quote and escape supported */
-			prog_argv[prog_argc ++] = args_spec;
+			prog_argv[prog_argc++] = xstrdup(args_spec);
 			if ((prog_argc + 1) >= MAX_ARGC) {
 				info("Exceeded multi-prog argc limit");
 				break;
@@ -283,7 +283,7 @@ extern int multi_prog_get_argv(char *config_data, char **prog_env,
 
 		*argc = prog_argc;
 		*argv = prog_argv;
-		/* FIXME - local_data is leaked */
+		xfree(local_data);
 		return 0;
 	}
 

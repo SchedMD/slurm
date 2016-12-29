@@ -4380,7 +4380,7 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 	struct step_record *step2_ptr = NULL;
 	ListIterator step_iterator;
 	int mod_cnt = 0;
-	bool new_step = 0;
+	bool new_step = false;
 
 	job_ptr = find_job_record(req->job_id);
 	if (job_ptr == NULL) {
@@ -4476,12 +4476,6 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 
 			jobacct_storage_g_step_complete(acct_db_conn, step_ptr);
 
-			if (new_step) {
-				/* This was a temporary step record, never
-				 * linked to the job, so there is no need to
-				 * check SELECT_JOBDATA_CLEANING. */
-				_free_step_rec(step_ptr);
-			}
 			mod_cnt++;
 			info("Updating step %u.%u jobacct info",
 			     req->job_id, req->step_id);
@@ -4494,6 +4488,11 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 	}
 	if (mod_cnt)
 		last_job_update = time(NULL);
+	if (new_step) {
+		/* This was a temporary step record, never linked to the job,
+		 * so there is no need to check SELECT_JOBDATA_CLEANING. */
+		_free_step_rec(step_ptr);
+	}
 
 	return SLURM_SUCCESS;
 }
