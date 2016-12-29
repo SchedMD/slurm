@@ -22,9 +22,9 @@ AC_DEFUN([X_AC_DATABASES],
 		[_x_ac_mysql_bin="$withval"])
 
 	if test x$_x_ac_mysql_bin = xno; then
-    		AC_PATH_PROG(HAVEMYSQLCONFIG, mysql_config, no)
+		AC_PATH_PROGS(HAVEMYSQLCONFIG, [mysql_config mariadb_config], no)
 	else
-   		AC_PATH_PROG(HAVEMYSQLCONFIG, mysql_config, no, $_x_ac_mysql_bin)
+		AC_PATH_PROGS(HAVEMYSQLCONFIG, [mysql_config mariadb_config], no, $_x_ac_mysql_bin)
 	fi
 
 	if test x$HAVEMYSQLCONFIG = xno; then
