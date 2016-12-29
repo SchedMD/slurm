@@ -68,6 +68,13 @@ typedef struct {
 	pmixp_io_msg_free_cb_t msg_free_cb;
 } pmixp_io_engine_header_t;
 
+typedef enum {
+	PMIXP_IO_NONE = 0,
+	PMIXP_IO_INIT,
+	PMIXP_IO_OPERATING,
+	PMIXP_IO_FINALIZED
+} pmixp_io_state_t;
+
 typedef struct {
 #ifndef NDEBUG
 #define PMIX_MSGSTATE_MAGIC 0xC0FFEEEE
@@ -77,7 +84,7 @@ typedef struct {
 	int sd;
 	int error;
 	pmixp_io_engine_header_t h;
-	bool operating;
+	pmixp_io_state_t io_state;
 	/* receiver */
 	uint32_t rcvd_hdr_offs;
 	void *rcvd_hdr_net;
@@ -112,10 +119,23 @@ static inline bool pmixp_io_rcvd_ready(pmixp_io_engine_t *eng)
 			&& (eng->rcvd_pay_size == eng->rcvd_pay_offs);
 }
 
+static inline bool pmixp_io_operating(pmixp_io_engine_t *eng)
+{
+	xassert(eng->magic == PMIX_MSGSTATE_MAGIC);
+	return (PMIXP_IO_OPERATING == eng->io_state);
+}
+
+static inline bool pmixp_io_enqueue_ok(pmixp_io_engine_t *eng)
+{
+	xassert(eng->magic == PMIX_MSGSTATE_MAGIC);
+	return (PMIXP_IO_OPERATING == eng->io_state) ||
+			(PMIXP_IO_INIT == eng->io_state);
+}
+
 static inline bool pmixp_io_finalized(pmixp_io_engine_t *eng)
 {
 	xassert(eng->magic == PMIX_MSGSTATE_MAGIC);
-	return !(eng->operating);
+	return (PMIXP_IO_FINALIZED == eng->io_state);
 }
 
 static inline int pmixp_io_error(pmixp_io_engine_t *eng)
@@ -124,8 +144,9 @@ static inline int pmixp_io_error(pmixp_io_engine_t *eng)
 	return eng->error;
 }
 
-int pmixp_io_init(pmixp_io_engine_t *eng, int fd,
+void pmixp_io_init(pmixp_io_engine_t *eng,
 		pmixp_io_engine_header_t header);
+void pmixp_io_start(pmixp_io_engine_t *eng, int fd);
 void pmixp_io_finalize(pmixp_io_engine_t *eng, int error);
 
 /* Receiver */

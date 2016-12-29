@@ -196,7 +196,7 @@ Buf pmixp_server_new_buf(void)
  * - 1: one more message was successfuly processed
  * - 2: all messages are completed
  */
-typedef int (*pmixp_msg_callback_t)(pmixp_io_engine_t *eng);
+typedef bool (*pmixp_msg_callback_t)(pmixp_io_engine_t *eng);
 
 typedef struct {
 	pmixp_io_engine_t *eng;
@@ -231,17 +231,15 @@ static int _serv_read(eio_obj_t *obj, List objs)
 
 	/* Read and process all received messages */
 	while (proceed) {
-		switch( mhndl->process(eng) ){
-		case 2:
+		if( !mhndl->process(eng) ){
+			proceed = 0;
+		}
+		if( pmixp_io_finalized(eng) ){
 			obj->shutdown = true;
 			PMIXP_DEBUG("Connection finalized fd = %d", obj->fd);
 			/* cleanup after this connection */
 			eio_remove_obj(obj, objs);
 			xfree(eng);
-		case 0:
-			proceed = 0;
-		case 1:
-			break;
 		}
 	}
 	return 0;
@@ -340,7 +338,7 @@ static uint32_t _slurm_proto_msize(void *buf);
 static int _slurm_proto_pack_hdr(pmixp_slurm_api_shdr_t *shdr,
 				    void *net);
 static int _slurm_proto_unpack_hdr(void *net, void *host);
-static int _slurm_proto_new_msg(pmixp_io_engine_t *me);
+static bool _slurm_proto_new_msg(pmixp_io_engine_t *me);
 
 pmixp_io_engine_header_t srv_rcvd_header = {
 	/* generic callbacks */
@@ -356,18 +354,16 @@ pmixp_io_engine_header_t srv_rcvd_header = {
  * See process_handler_t prototype description
  * on the details of this function output values
  */
-static int _slurm_proto_new_msg(pmixp_io_engine_t *me)
+static inline bool
+_slurm_proto_new_msg(pmixp_io_engine_t *eng)
 {
 	int ret = 0;
-	pmixp_io_rcvd_progress(me);
-	if (pmixp_io_rcvd_ready(me)) {
+	pmixp_io_rcvd_progress(eng);
+	if (pmixp_io_rcvd_ready(eng)) {
 		pmixp_slurm_api_rhdr_t hdr;
-		void *msg = pmixp_io_rcvd_extract(me, &hdr);
+		void *msg = pmixp_io_rcvd_extract(eng, &hdr);
 		_process_server_request(&hdr.sapi_shdr.base_hdr, msg);
 		ret = 1;
-	}
-	if (pmixp_io_finalized(me)) {
-		ret = 2;
 	}
 	return ret;
 }
@@ -387,25 +383,27 @@ void pmixp_server_slurm_conn(int fd)
 	fd_set_nonblocking(fd);
 	fd_set_close_on_exec(fd);
 
+	/* prepare I/O engine */
 	pmixp_io_engine_t *eng = xmalloc(sizeof(pmixp_io_engine_t));
-	if (SLURM_SUCCESS != pmixp_io_init(eng, fd, srv_rcvd_header)){
-		return;
-	}
+	pmixp_io_init(eng, srv_rcvd_header);
+	pmixp_io_start(eng, fd);
 
 	/* We use slurm_forward_data to send message to stepd's
 	 * SLURM will put user ID there. We need to skip it.
 	 */
 	pmixp_io_rcvd_padding(eng, sizeof(uint32_t));
 
-	if (2 == _slurm_proto_new_msg(eng)) {
-		/* connection was fully processed here */
-		xfree(eng);
-		return;
+	if (_slurm_proto_new_msg(eng)) {
+		if (pmixp_io_finalized(eng)) {
+			/* connection was fully processed here */
+			xfree(eng);
+			return;
+		}
 	}
 
 	/* If it is a blocking operation: create AIO object to
 	 * handle it */
-	pmixp_msg_handler_t *hndl = xmalloc( sizeof(pmixp_msg_handler_t));
+	pmixp_msg_handler_t *hndl = xmalloc(sizeof(pmixp_msg_handler_t));
 	hndl->eng = eng;
 	hndl->process = _slurm_proto_new_msg;
 	obj = eio_obj_create(fd, &peer_ops, (void *)hndl);
