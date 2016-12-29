@@ -941,6 +941,7 @@ extern bitstr_t *make_core_bitmap(bitstr_t *node_map, uint16_t core_spec)
 	uint32_t coff;
 	uint16_t spec_cores, i, use_spec_cores;
 	struct node_record *node_ptr;
+	int from_core, to_core, incr_core, from_sock, to_sock, incr_sock;
 
 	nodes = bit_size(node_map);
 	size = cr_get_coremap_offset(nodes);
@@ -995,11 +996,27 @@ extern bitstr_t *make_core_bitmap(bitstr_t *node_map, uint16_t core_spec)
 
 		/* if more cores need to be specialized, look for
 		 * them in the non-specialized cores */
-		for (res_core = select_node_record[n].cores - 1;
-		     ((spec_cores > 0) && (res_core >= 0)); res_core--) {
-			for (res_sock = select_node_record[n].sockets - 1;
-			     ((spec_cores > 0) && (res_sock >= 0));
-			     res_sock--) {
+		if (spec_cores_first) {
+			from_core = 0;
+			to_core   = select_node_record[n].cores;
+			incr_core = 1;
+			from_sock = 0;
+			to_sock   = select_node_record[n].sockets;
+			incr_sock = 1;
+		} else {
+			from_core = select_node_record[n].cores - 1;
+			to_core   = -1;
+			incr_core = -1;
+			from_sock = select_node_record[n].sockets - 1;
+			to_sock   = -1;
+			incr_sock = -1;
+		}
+		for (res_core = from_core;
+		     ((spec_cores > 0) && (res_core != to_core));
+		     res_core += incr_core) {
+			for (res_sock = from_sock;
+			     ((spec_cores > 0) && (res_sock != to_sock));
+			     res_sock += incr_sock) {
 				res_off = (res_sock*select_node_record[n].cores)
 					  + res_core;
 				if (bit_test(core_map, c + res_off)) {

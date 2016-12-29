@@ -184,6 +184,7 @@ bool     preempt_by_qos       = false;
 uint16_t priority_flags       = 0;
 uint64_t select_debug_flags   = 0;
 uint16_t select_fast_schedule = 0;
+bool     spec_cores_first     = false;
 bool     topo_optional        = false;
 
 struct part_res_record *select_part_record = NULL;
@@ -2129,6 +2130,10 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 		pack_serial_at_end = true;
 	else
 		pack_serial_at_end = false;
+	if (sched_params && strstr(sched_params, "spec_cores_first"))
+		spec_cores_first = true;
+	else
+		spec_cores_first = false;
 	if (sched_params && strstr(sched_params, "bf_busy_nodes"))
 		backfill_busy_nodes = true;
 	else

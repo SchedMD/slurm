@@ -111,6 +111,7 @@ extern bool     preempt_by_part;
 extern bool     preempt_by_qos;
 extern uint64_t select_debug_flags;
 extern uint16_t select_fast_schedule;
+extern bool     spec_cores_first;
 extern bool     topo_optional;
 
 extern struct part_res_record *select_part_record;

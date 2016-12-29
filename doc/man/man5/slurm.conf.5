@@ -2807,6 +2807,12 @@ A value of zero will disable throttling of the scheduling logic interval.
 The default value is 1,000,000 microseconds on Cray/ALPS systems and
 zero microseconds (throttling is disabled) on other systems.
 .TP
+\fBspec_cores_first\fR
+Specialized cores will be selected from the first cores of the first sockets,
+cycling through the sockets on a round robin basis.
+By default, specialized cores will be selected from the last cores of the
+last sockets, cycling through the sockets on a round robin basis.
+.TP
 \fBstep_retry_count=#\fR
 When a step completes and there are steps ending resource allocation, then
 retry step allocations for at least this number of pending steps.
