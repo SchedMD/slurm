@@ -202,7 +202,7 @@ make_bash_script $spec_in "sleep 5"
 set job_id 0
 spawn $sbatch --exclusive -t1 -N2 -o$file_out $file_in
 expect {
-	-re "Node count specification invalid" {
+	-re "Batch job submission failed" {
 		send_user "\nWARNING: can't test srun task distribution\n"
 		exit $exit_code
 	}
