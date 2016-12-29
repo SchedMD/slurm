@@ -495,11 +495,10 @@ exec_task(stepd_step_rec_t *job, int i)
 		int sz;
 		sz = read(fd, buf, sizeof(buf));
 		if ((sz >= 3) && (xstrncmp(buf, "#!", 2) == 0)) {
+			buf[sizeof(buf)-1] = '\0';
 			eol = strchr(buf, '\n');
 			if (eol)
 				eol[0] = '\0';
-			else
-				buf[sizeof(buf)-1] = '\0';
 			slurm_seterrno(saved_errno);
 			error("execve(): bad interpreter(%s): %m", buf+2);
 			exit(errno);
