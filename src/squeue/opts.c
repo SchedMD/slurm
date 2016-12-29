@@ -1789,7 +1789,7 @@ static List
 _build_str_list(char* str)
 {
 	List my_list;
-	char *tok = NULL, *tmp_char = NULL, *my_str = NULL;
+	char *elem, *tok = NULL, *tmp_char = NULL, *my_str = NULL;
 
 	if (str == NULL)
 		return NULL;
@@ -1797,11 +1797,11 @@ _build_str_list(char* str)
 	my_str = xstrdup(str);
 	tok = strtok_r(my_str, ",", &tmp_char);
 	while (tok) {
-		list_append(my_list, tok);
+		elem = xstrdup(tok);
+		list_append(my_list, elem);
 		tok = strtok_r(NULL, ",", &tmp_char);
 	}
-	/* NOTE: Do NOT xfree my_list or the elements just added to the
-	 * list will also be freed. */
+	xfree(my_str);
 	return my_list;
 }
 
@@ -1817,22 +1817,22 @@ _build_state_list( char* str )
 	char *state = NULL, *tmp_char = NULL, *my_state_list = NULL;
 	uint32_t *state_id = NULL;
 
-	if ( str == NULL)
+	if (str == NULL)
 		return NULL;
-	if ( xstrcasecmp( str, "all" ) == 0 )
+	if (xstrcasecmp( str, "all") == 0)
 		return _build_all_states_list ();
 
-	my_list = list_create( NULL );
-	my_state_list = xstrdup( str );
+	my_list = list_create(NULL);
+	my_state_list = xstrdup(str);
 	state = strtok_r( my_state_list, ",", &tmp_char );
-	while (state)
-	{
-		state_id = xmalloc( sizeof( uint32_t ) );
-		if ( _parse_state( state, state_id ) != SLURM_SUCCESS )
-			exit( 1 );
-		list_append( my_list, state_id );
-		state = strtok_r( NULL, ",", &tmp_char );
+	while (state) {
+		state_id = xmalloc(sizeof(uint32_t));
+		if (_parse_state(state, state_id) != SLURM_SUCCESS)
+			exit(1);
+		list_append(my_list, state_id);
+		state = strtok_r(NULL, ",", &tmp_char);
 	}
+	xfree(my_state_list);
 	return my_list;
 
 }
@@ -1928,23 +1928,25 @@ _build_user_list( char* str )
 	char *user = NULL;
 	char *tmp_char = NULL, *my_user_list = NULL;
 
-	if ( str == NULL )
+	if (str == NULL)
 		return NULL;
-	my_list = list_create( NULL );
-	my_user_list = xstrdup( str );
-	user = strtok_r( my_user_list, ",", &tmp_char );
+
+	my_list = list_create(NULL);
+	my_user_list = xstrdup(str);
+	user = strtok_r(my_user_list, ",", &tmp_char);
 	while (user) {
 		uid_t some_uid;
-		if ( uid_from_string( user, &some_uid ) == 0 ) {
+		if (uid_from_string(user, &some_uid) == 0) {
 			uint32_t *user_id = NULL;
-			user_id = xmalloc( sizeof( uint32_t ));
+			user_id = xmalloc(sizeof(uint32_t));
 			*user_id = (uint32_t) some_uid;
-			list_append( my_list, user_id );
+			list_append(my_list, user_id);
 		} else {
-			error( "Invalid user: %s\n", user);
+			error("Invalid user: %s\n", user);
 		}
-		user = strtok_r (NULL, ",", &tmp_char);
+		user = strtok_r(NULL, ",", &tmp_char);
 	}
+	xfree(my_user_list);
 	return my_list;
 }
 
@@ -2029,9 +2031,11 @@ _check_node_names(hostset_t names)
 	while ((host = hostlist_next(itr))) {
 		if (!_find_a_host(host, node_info)) {
 			error("Invalid node name %s", host);
+			free(host);
 			hostlist_iterator_destroy(itr);
 			return false;
 		}
+		free(host);
 	}
 	hostlist_iterator_destroy(itr);
 

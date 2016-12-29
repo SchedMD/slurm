@@ -447,29 +447,30 @@ _build_job_list( char* str )
  * RET List of UIDs (uint32_t)
  */
 static List
-_build_user_list( char* str )
+_build_user_list(char* str)
 {
 	List my_list;
 	char *user = NULL;
 	char *tmp_char = NULL, *my_user_list = NULL;
 	uid_t uid = (uid_t) 0;
 
-	if ( str == NULL)
+	if (str == NULL)
 		return NULL;
 
-	my_list = list_create( NULL );
-	my_user_list = xstrdup( str );
-	user = strtok_r( my_user_list, ",", &tmp_char );
+	my_list = list_create(NULL);
+	my_user_list = xstrdup(str);
+	user = strtok_r(my_user_list, ",", &tmp_char);
 	while (user) {
-		if (uid_from_string (user, &uid) < 0) {
-			error( "Invalid user: %s\n", user);
+		if (uid_from_string(user, &uid) < 0) {
+			error("Invalid user: %s\n", user);
 		} else {
-			uint32_t *u_tmp = xmalloc( sizeof( uint32_t ));
+			uint32_t *u_tmp = xmalloc(sizeof( uint32_t ));
 			*u_tmp = (uint32_t) uid;
-			list_append( my_list, u_tmp );
+			list_append(my_list, u_tmp);
 		}
 		user = strtok_r (NULL, ",", &tmp_char);
 	}
+	xfree(my_user_list);
 	return my_list;
 }
 
