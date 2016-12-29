@@ -159,12 +159,16 @@ static void *_pty_thread(void *arg)
 
 	while (job->state <= SRUN_JOB_RUNNING) {
 		debug2("waiting for SIGWINCH");
-		poll(NULL, 0, -1);
+		if (poll(NULL, 0, -1) < 1) {
+			debug("%s: poll error %m", __func__);
+			continue;
+		}
 		if (winch) {
 			set_winsize(job);
 			_notify_winsize_change(fd, job);
 		}
 		winch = 0;
 	}
+	slurm_close(fd);
 	return NULL;
 }

@@ -143,7 +143,7 @@ job_create_noalloc(void)
 {
 	srun_job_t *job = NULL;
 	allocation_info_t *ai = xmalloc(sizeof(allocation_info_t));
-	uint16_t cpn = 1;
+	uint16_t cpn[2] = {1, 0};
 	hostlist_t  hl = hostlist_create(opt.nodelist);
 
 	if (!hl) {
@@ -152,16 +152,16 @@ job_create_noalloc(void)
 	}
 	srand48(getpid());
 	ai->jobid          = MIN_NOALLOC_JOBID +
-		((uint32_t) lrand48() %
-		 (MAX_NOALLOC_JOBID - MIN_NOALLOC_JOBID + 1));
+			     ((uint32_t) lrand48() %
+			      (MAX_NOALLOC_JOBID - MIN_NOALLOC_JOBID + 1));
 	ai->stepid         = (uint32_t) (lrand48());
 	ai->nodelist       = opt.nodelist;
 	ai->nnodes         = hostlist_count(hl);
 
 	hostlist_destroy(hl);
 
-	cpn = (opt.ntasks + ai->nnodes - 1) / ai->nnodes;
-	ai->cpus_per_node  = &cpn;
+	cpn[0] = (opt.ntasks + ai->nnodes - 1) / ai->nnodes;
+	ai->cpus_per_node  = cpn;
 	ai->cpu_count_reps = &ai->nnodes;
 
 	/*

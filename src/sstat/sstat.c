@@ -118,6 +118,7 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
 			error("problem getting step_layout for %u.%u: %s",
 			      jobid, stepid, slurm_strerror(rc));
 		}
+		slurm_job_step_pids_response_msg_free(step_stat_response);
 		return rc;
 	}
 
