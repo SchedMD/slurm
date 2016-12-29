@@ -1067,9 +1067,9 @@ extern grid_button_t *create_grid_button_from_another(
 }
 
 /* start == -1 for all */
-extern char *change_grid_color(List button_list, int start, int end,
-			       int color_inx, bool only_change_unused,
-			       enum node_states state_override)
+extern void change_grid_color(List button_list, int start, int end,
+			      int color_inx, bool only_change_unused,
+			      enum node_states state_override)
 {
 	ListIterator itr = NULL;
 	grid_button_t *grid_button = NULL;
@@ -1077,7 +1077,7 @@ extern char *change_grid_color(List button_list, int start, int end,
 	char *new_col = NULL;
 
 	if (!button_list)
-		return NULL;
+		return;
 
 	if (color_inx >= 0) {
 		color_inx %= sview_colors_cnt;
@@ -1102,8 +1102,6 @@ extern char *change_grid_color(List button_list, int start, int end,
 				     color, only_change_unused, state_override);
 	}
 	list_iterator_destroy(itr);
-
-	return sview_colors[color_inx];
 }
 
 /* This variation of change_grid_color() is faster when changing many

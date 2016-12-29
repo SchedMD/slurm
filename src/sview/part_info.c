@@ -3139,6 +3139,7 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		if (!model2) {
 			g_print("In change part, no model set up for %d(%s)\n",
 				SORTID_PART_STATE, partid);
+			xfree(part_msg);
 			return;
 		}
 		entry = gtk_combo_box_new_with_model(model2);

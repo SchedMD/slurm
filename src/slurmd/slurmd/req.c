@@ -2067,14 +2067,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 			_spawn_prolog_stepd(msg);
 	} else {
 		_launch_job_fail(req->job_id, rc);
-		/*
-		 *  If job prolog failed or we could not reply,
-		 *  initiate message to slurmctld with current state
-		 */
-		if ((rc == ESLURMD_PROLOG_FAILED) ||
-		    (rc == SLURM_COMMUNICATIONS_SEND_ERROR) ||
-		    (rc == ESLURMD_SETUP_ENVIRONMENT_ERROR))
-			send_registration_msg(rc, false);
+		send_registration_msg(rc, false);
 	}
 }
 

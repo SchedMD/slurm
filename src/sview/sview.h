@@ -376,9 +376,9 @@ extern void destroy_grid_button(void *arg);
 extern grid_button_t *create_grid_button_from_another(
 	grid_button_t *grid_button, char *name, int color_inx);
 /* do not free the char * from this function it is static */
-extern char *change_grid_color(List button_list, int start, int end,
-			       int color_inx, bool change_unused,
-			       enum node_states state_override);
+extern void change_grid_color(List button_list, int start, int end,
+			      int color_inx, bool change_unused,
+			      enum node_states state_override);
 extern void change_grid_color_array(List button_list, int array_len,
 				    int *color_inx, bool *color_set_flag,
 				    bool only_change_unused,
