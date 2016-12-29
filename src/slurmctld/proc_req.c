@@ -1350,10 +1350,8 @@ static void _slurm_rpc_dump_jobs(slurm_msg_t * msg)
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
 	} else {
 		pack_all_jobs(&dump, &dump_size,
-			      job_info_request_msg->show_flags,
-			      g_slurm_auth_get_uid(msg->auth_cred,
-						   slurmctld_config.auth_info),
-			      NO_VAL, msg->protocol_version);
+			      job_info_request_msg->show_flags, uid, NO_VAL,
+			      msg->protocol_version);
 		unlock_slurmctld(job_read_lock);
 		END_TIMER2("_slurm_rpc_dump_jobs");
 #if 0
@@ -1394,10 +1392,7 @@ static void _slurm_rpc_dump_jobs_user(slurm_msg_t * msg)
 	START_TIMER;
 	debug3("Processing RPC: REQUEST_JOB_USER_INFO from uid=%d", uid);
 	lock_slurmctld(job_read_lock);
-	pack_all_jobs(&dump, &dump_size,
-		      job_info_request_msg->show_flags,
-		      g_slurm_auth_get_uid(msg->auth_cred,
-					   slurmctld_config.auth_info),
+	pack_all_jobs(&dump, &dump_size, job_info_request_msg->show_flags, uid,
 		      job_info_request_msg->user_id, msg->protocol_version);
 	unlock_slurmctld(job_read_lock);
 	END_TIMER2("_slurm_rpc_dump_job_user");
@@ -1439,10 +1434,7 @@ static void _slurm_rpc_dump_job_single(slurm_msg_t * msg)
 	lock_slurmctld(job_read_lock);
 
 	rc = pack_one_job(&dump, &dump_size, job_id_msg->job_id,
-			  job_id_msg->show_flags,
-			  g_slurm_auth_get_uid(msg->auth_cred,
-					       slurmctld_config.auth_info),
-			  msg->protocol_version);
+			  job_id_msg->show_flags, uid, msg->protocol_version);
 	unlock_slurmctld(job_read_lock);
 	END_TIMER2("_slurm_rpc_dump_job_single");
 #if 0
