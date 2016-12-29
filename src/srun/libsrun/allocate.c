@@ -125,6 +125,7 @@ static void *_safe_signal_while_allocating(void *in_data)
 	if (pending_job_id != 0) {
 		info("Job allocation %u has been revoked", pending_job_id);
 		slurm_complete_job(pending_job_id, NO_VAL);
+		destroy_job = 1;
 	}
 
 	return NULL;
@@ -356,6 +357,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 	double cur_delay = 0;
 	double cur_sleep = 0;
 	int suspend_time, resume_time, max_delay;
+	bool job_killed = false;
 
 	suspend_time = slurm_get_suspend_timeout();
 	resume_time  = slurm_get_resume_timeout();
@@ -381,13 +383,14 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 		}
 
 		rc = slurm_job_node_ready(alloc->job_id);
-
 		if (rc == READY_JOB_FATAL)
 			break;				/* fatal error */
 		if ((rc == READY_JOB_ERROR) || (rc == EAGAIN))
 			continue;			/* retry */
-		if ((rc & READY_JOB_STATE) == 0)	/* job killed */
+		if ((rc & READY_JOB_STATE) == 0) {	/* job killed */
+			job_killed = true;
 			break;
+		}
 		if (rc & READY_NODE_STATE) {		/* job and node ready */
 			is_ready = 1;
 			break;
@@ -408,9 +411,14 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 			resp->alias_list = tmp_str;
 			slurm_free_resource_allocation_response_msg(resp);
 		}
-	} else if (!destroy_job)
-		error("Nodes %s are still not ready", alloc->node_list);
-	else	/* allocation_interrupted and slurmctld not responing */
+	} else if (!destroy_job) {
+		if (job_killed) {
+			error("Job allocation %u has been revoked",
+			      alloc->job_id);
+			destroy_job = true;
+		} else
+			error("Nodes %s are still not ready", alloc->node_list);
+	} else	/* allocation_interrupted and slurmctld not responing */
 		is_ready = 0;
 
 	pending_job_id = 0;
@@ -527,8 +535,7 @@ allocate_nodes(bool handle_signals)
 
 		if (!_wait_nodes_ready(resp)) {
 			if (!destroy_job)
-				error("Something is wrong with the "
-				      "boot of the nodes.");
+				error("Something is wrong with the boot of the nodes.");
 			goto relinquish;
 		}
 #endif
