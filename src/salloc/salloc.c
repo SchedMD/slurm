@@ -369,15 +369,13 @@ int main(int argc, char *argv[])
 #ifdef HAVE_BG
 		if (!_wait_bluegene_block_ready(alloc)) {
 			if (!allocation_interrupted)
-				error("Something is wrong with the "
-				      "boot of the block.");
+				error("Something is wrong with the boot of the block.");
 			goto relinquish;
 		}
 #else
 		if (!_wait_nodes_ready(alloc)) {
 			if (!allocation_interrupted)
-				error("Something is wrong with the "
-				      "boot of the nodes.");
+				error("Something is wrong with the boot of the nodes.");
 			goto relinquish;
 		}
 #endif
@@ -893,6 +891,7 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
 			} else {
 				info("Job allocation %u has been revoked.",
 				     comp->job_id);
+				allocation_interrupted = true;
 			}
 		}
 		allocation_state = REVOKED;
@@ -1123,6 +1122,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 	int is_ready = 0, i, rc;
 	int cur_delay = 0;
 	int suspend_time, resume_time, max_delay;
+	bool job_killed = false;
 
 	suspend_time = slurm_get_suspend_timeout();
 	resume_time  = slurm_get_resume_timeout();
@@ -1155,8 +1155,10 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 			break;				/* fatal error */
 		if ((rc == READY_JOB_ERROR) || (rc == EAGAIN))
 			continue;			/* retry */
-		if ((rc & READY_JOB_STATE) == 0)	/* job killed */
+		if ((rc & READY_JOB_STATE) == 0) {	/* job killed */
+			job_killed = true;
 			break;
+		}
 		if ((rc & READY_JOB_STATE) && 
 		    ((rc & READY_NODE_STATE) || !opt.wait_all_nodes)) {
 			is_ready = 1;
@@ -1178,9 +1180,14 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 			resp->alias_list = tmp_str;
 			slurm_free_resource_allocation_response_msg(resp);
 		}
-	} else if (!allocation_interrupted)
-		error("Nodes %s are still not ready", alloc->node_list);
-	else	/* allocation_interrupted or slurmctld not responing */
+	} else if (!allocation_interrupted) {
+		if (job_killed) {
+			error("Job allocation %u has been revoked",
+			      alloc->job_id);
+			allocation_interrupted = true;
+		} else
+			error("Nodes %s are still not ready", alloc->node_list);
+	} else	/* allocation_interrupted or slurmctld not responing */
 		is_ready = 0;
 
 	pending_job_id = 0;

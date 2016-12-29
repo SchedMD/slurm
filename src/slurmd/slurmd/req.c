@@ -2203,6 +2203,16 @@ _launch_job_fail(uint32_t job_id, uint32_t slurm_rc)
 	    ((rc == ESLURM_DISABLED) || (rc == ESLURM_BATCH_ONLY))) {
 		info("Could not launch job %u and not able to requeue it, "
 		     "cancelling job", job_id);
+
+		if ((slurm_rc == ESLURMD_PROLOG_FAILED) &&
+		    (rc == ESLURM_BATCH_ONLY)) {
+			char *buf = NULL;
+			xstrfmtcat(buf, "Prolog failure on node %s",
+				   conf->node_name);
+			slurm_notify_job(job_id, buf);
+			xfree(buf);
+		}
+
 		comp_msg.job_id = job_id;
 		comp_msg.job_rc = INFINITE;
 		comp_msg.slurm_rc = slurm_rc;
