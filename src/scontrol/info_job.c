@@ -545,8 +545,8 @@ static void
 _list_pids_one_step(const char *node_name, uint32_t jobid, uint32_t stepid)
 {
 	int fd;
-	slurmstepd_task_info_t *task_info;
-	uint32_t *pids;
+	slurmstepd_task_info_t *task_info = NULL;
+	uint32_t *pids = NULL;
 	uint32_t count = 0;
 	uint32_t tcount = 0;
 	int i;
@@ -598,10 +598,8 @@ _list_pids_one_step(const char *node_name, uint32_t jobid, uint32_t stepid)
 		}
 	}
 
-	if (count > 0)
-		xfree(pids);
-	if (tcount > 0)
-		xfree(task_info);
+	xfree(pids);
+	xfree(task_info);
 	close(fd);
 }
 
@@ -785,6 +783,7 @@ scontrol_encode_hostlist(char *hostlist, bool sorted)
 	hl = hostlist_create(tmp_list);
 	if (hl == NULL) {
 		fprintf(stderr, "Invalid hostlist: %s\n", tmp_list);
+		xfree(io_buf);
 		return SLURM_ERROR;
 	}
 	if (sorted)

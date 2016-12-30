@@ -270,6 +270,7 @@ static void print_layout_info(slurm_step_layout_t *layout)
 		printf("\n");
 		free(name);
 	}
+	hostlist_destroy(nl);
 }
 
 

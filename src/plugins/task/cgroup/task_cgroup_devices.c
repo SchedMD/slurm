@@ -435,6 +435,7 @@ error:
 	xcgroup_destroy(&devices_cg);
 	xfree(gres_step_bit_alloc);
 	xfree(gres_job_bit_alloc);
+	xfree(gres_count);
 	xfree(gres_name);
 	xfree(dev_path);
 	xfree(gres_cgroup);
