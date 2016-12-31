@@ -108,6 +108,7 @@ pthread_mutex_t allocation_state_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool exit_flag = false;
 static bool suspend_flag = false;
 static bool allocation_interrupted = false;
+static bool allocation_revoked = false;
 static uint32_t pending_job_id = 0;
 static time_t last_timeout = 0;
 static struct termios saved_tty_attributes;
@@ -908,7 +909,7 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
 			} else {
 				info("Job allocation %u has been revoked.",
 				     comp->job_id);
-				allocation_interrupted = true;
+				allocation_revoked = true;
 			}
 		}
 		allocation_state = REVOKED;
@@ -1076,7 +1077,7 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
 			is_ready = 1;
 			break;
 		}
-		if (allocation_interrupted)
+		if (allocation_interrupted || allocation_revoked)
 			break;
 	}
 	if (is_ready)
@@ -1181,7 +1182,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 			is_ready = 1;
 			break;
 		}
-		if (allocation_interrupted)
+		if (allocation_interrupted || allocation_revoked)
 			break;
 	}
 	if (is_ready) {
