@@ -218,8 +218,7 @@ _run_script_and_set_env(const char *name, const char *path,
 
 		argv[0] = xstrdup(path);
 		argv[1] = NULL;
-		close(1);
-		if (dup(pfd[1]) == -1)
+		if (dup2(pfd[1], 1) == -1)
 			error("couldn't do the dup: %m");
 		close(2);
 		close(0);

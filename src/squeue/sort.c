@@ -421,6 +421,7 @@ static int _sort_job_by_node_list(void *void1, void *void2)
 	job_info_t *job2;
 	hostlist_t hostlist1, hostlist2;
 	char *val1, *val2;
+	char *ptr1, *ptr2;
 #if	PURE_ALPHA_SORT == 0
 	int inx;
 #endif
@@ -430,40 +431,44 @@ static int _sort_job_by_node_list(void *void1, void *void2)
 	hostlist1 = hostlist_create(job1->nodes);
 	hostlist_sort(hostlist1);
 	val1 = hostlist_shift(hostlist1);
-	if (val1 == NULL)
-		val1 = "";
+	if (val1)
+		ptr1 = val1;
+	else
+		ptr1 = "";
 	hostlist_destroy(hostlist1);
 
 	hostlist2 = hostlist_create(job2->nodes);
 	hostlist_sort(hostlist2);
 	val2 = hostlist_shift(hostlist2);
-	if (val2 == NULL)
-		val2 = "";
+	if (val2)
+		ptr2 = val2;
+	else
+		ptr2 = "";
 	hostlist_destroy(hostlist2);
 
 #if	PURE_ALPHA_SORT
-	diff = xstrcmp(val1, val2);
+	diff = xstrcmp(ptr1, ptr2);
 #else
-	for (inx=0; ; inx++) {
-		if (val1[inx] == val2[inx]) {
-			if (val1[inx] == '\0')
+	for (inx = 0; ; inx++) {
+		if (ptr1[inx] == ptr2[inx]) {
+			if (ptr1[inx] == '\0')
 				break;
 			continue;
 		}
-		if ((isdigit((int)val1[inx])) &&
-		    (isdigit((int)val2[inx]))) {
+		if ((isdigit((int)ptr1[inx])) &&
+		    (isdigit((int)ptr2[inx]))) {
 			int num1, num2;
-			num1 = atoi(val1+inx);
-			num2 = atoi(val2+inx);
+			num1 = atoi(ptr1 + inx);
+			num2 = atoi(ptr2 + inx);
 			diff = num1 - num2;
 		} else
-			diff = xstrcmp(val1, val2);
+			diff = xstrcmp(ptr1, ptr2);
 		break;
 	}
 #endif
-	if (strlen(val1))
+	if (val1)
 		free(val1);
-	if (strlen(val2))
+	if (val2)
 		free(val2);
 
 	if (reverse_order)

@@ -377,7 +377,7 @@ extern int sacctmgr_add_account(int argc, char **argv)
 
 	slurmdb_init_assoc_rec(start_assoc, 0);
 
-	for (i=0; i<argc; i++) {
+	for (i = 0; i < argc; i++) {
 		int command_len = strlen(argv[i]);
 		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))
 		    || !strncasecmp(argv[i], "Set", MAX(command_len, 3)))
@@ -385,15 +385,18 @@ extern int sacctmgr_add_account(int argc, char **argv)
 		limit_set += _set_rec(&i, argc, argv, name_list, cluster_list,
 				      start_acct, start_assoc);
 	}
-	if (exit_code)
+	if (exit_code) {
+		slurmdb_destroy_assoc_rec(start_assoc);
+		slurmdb_destroy_account_rec(start_acct);
 		return SLURM_ERROR;
+	}
 
 	if (!name_list || !list_count(name_list)) {
 		FREE_NULL_LIST(name_list);
 		FREE_NULL_LIST(cluster_list);
 		slurmdb_destroy_assoc_rec(start_assoc);
 		slurmdb_destroy_account_rec(start_acct);
-		exit_code=1;
+		exit_code = 1;
 		fprintf(stderr, " Need name of account to add.\n");
 		return SLURM_SUCCESS;
 	} else {
@@ -409,7 +412,7 @@ extern int sacctmgr_add_account(int argc, char **argv)
 	}
 
 	if (!local_account_list) {
-		exit_code=1;
+		exit_code = 1;
 		fprintf(stderr, " Problem getting accounts from database.  "
 			"Contact your admin.\n");
 		FREE_NULL_LIST(name_list);

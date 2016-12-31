@@ -157,8 +157,7 @@ int sacctmgr_list_reservation(int argc, char **argv)
 	char *tmp_char;
 
  	/* If we don't have any arguments make sure we set up the
-	   time correctly for just the past day.
-	*/
+	 * time correctly for just the past day. */
 	if (argc == 0) {
                 struct tm start_tm;
 		reservation_cond->time_start = time(NULL);
@@ -168,6 +167,7 @@ int sacctmgr_list_reservation(int argc, char **argv)
                         fprintf(stderr,
                                 " Couldn't get localtime from %ld",
                                 (long)reservation_cond->time_start);
+			xfree(reservation_cond);
                         exit_code = 1;
                         return 0;
                 }

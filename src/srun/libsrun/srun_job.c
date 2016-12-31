@@ -143,7 +143,8 @@ job_create_noalloc(void)
 {
 	srun_job_t *job = NULL;
 	allocation_info_t *ai = xmalloc(sizeof(allocation_info_t));
-	uint16_t cpn[2] = {1, 0};
+	uint16_t cpn[1];
+	uint32_t cpu_count_reps[1];
 	hostlist_t  hl = hostlist_create(opt.nodelist);
 
 	if (!hl) {
@@ -162,7 +163,9 @@ job_create_noalloc(void)
 
 	cpn[0] = (opt.ntasks + ai->nnodes - 1) / ai->nnodes;
 	ai->cpus_per_node  = cpn;
-	ai->cpu_count_reps = &ai->nnodes;
+	cpu_count_reps[0] = ai->nnodes;
+	ai->cpu_count_reps = cpu_count_reps;
+	ai->num_cpu_groups = 1;
 
 	/*
 	 * Create job, then fill in host addresses

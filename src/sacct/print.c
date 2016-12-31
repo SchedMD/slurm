@@ -191,16 +191,13 @@ static void _xlate_task_str(slurmdb_job_rec_t *job_ptr)
 	if (job_ptr->array_max_tasks)
 		xstrfmtcat(out_buf, "%c%u", '%', job_ptr->array_max_tasks);
 
+	bit_free(task_bitmap);
 	xfree(job_ptr->array_task_str);
 	job_ptr->array_task_str = out_buf;
 }
 
 void print_fields(type_t type, void *object)
 {
-	if (!object) {
-		fatal ("Job or step record is NULL");
-		return;
-	}
 
 	slurmdb_job_rec_t *job = (slurmdb_job_rec_t *)object;
 	slurmdb_step_rec_t *step = (slurmdb_step_rec_t *)object;
@@ -213,8 +210,14 @@ void print_fields(type_t type, void *object)
 	bool got_stats = false;
 	int cpu_tres_rec_count = 0;
 	int step_cpu_tres_rec_count = 0;
+	char tmp1[128];
 
-	switch(type) {
+	if (!object) {
+		fatal("Job or step record is NULL");
+		return;
+	}
+
+	switch (type) {
 	case JOB:
 		step = NULL;
 		if (!job->track_steps)
@@ -2012,14 +2015,13 @@ void print_fields(type_t type, void *object)
 			xfree(tmp_char);
 			break;
 		case PRINT_TIMELIMIT:
-			switch(type) {
+			switch (type) {
 			case JOB:
 				if (job->timelimit == INFINITE)
 					tmp_char = "UNLIMITED";
 				else if (job->timelimit == NO_VAL)
 					tmp_char = "Partition_Limit";
 				else if (job->timelimit) {
-					char tmp1[128];
 					mins2time_str(job->timelimit,
 						      tmp1, sizeof(tmp1));
 					tmp_char = tmp1;
@@ -2031,7 +2033,6 @@ void print_fields(type_t type, void *object)
 				tmp_char = job_comp->timelimit;
 				break;
 			default:
-
 				break;
 			}
 			field->print_routine(field,

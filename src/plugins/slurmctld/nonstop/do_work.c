@@ -264,6 +264,7 @@ unpack_error:
 		xfree(job_fail_ptr->fail_node_names[i]);
 	xfree(job_fail_ptr->fail_node_names);
 	xfree(job_fail_ptr->pending_node_name);
+	xfree(job_fail_ptr);
 	return SLURM_ERROR;
 }
 

@@ -772,6 +772,7 @@ scontrol_encode_hostlist(char *hostlist, bool sorted)
 		if (buf_read >= buf_size) {
 			/* If over 1MB, the file is almost certainly invalid */
 			fprintf(stderr, "File %s is too large\n", hostlist);
+			xfree(io_buf);
 			return SLURM_ERROR;
 		}
 		io_buf[buf_read] = '\0';

@@ -1882,37 +1882,38 @@ _build_step_list( char* str )
 	int job_id, array_id, step_id;
 	squeue_job_step_t *job_step_id = NULL;
 
-	if ( str == NULL)
+	if (str == NULL)
 		return NULL;
-	my_list = list_create( NULL );
-	my_step_list = xstrdup( str );
-	step = strtok_r( my_step_list, ",", &tmp_char );
+
+	my_list = list_create(NULL);
+	my_step_list = xstrdup(str);
+	step = strtok_r(my_step_list, ",", &tmp_char);
 	while (step) {
-		job_name = strtok_r( step, ".", &tmps_char );
-		step_name = strtok_r( NULL, ".", &tmps_char );
-		job_id = strtol( job_name, &end_ptr, 10 );
+		job_name = strtok_r(step, ".", &tmps_char);
+		step_name = strtok_r(NULL, ".", &tmps_char);
+		job_id = strtol(job_name, &end_ptr, 10);
 		if (end_ptr[0] == '_')
-			array_id = strtol( end_ptr + 1, &end_ptr, 10 );
+			array_id = strtol(end_ptr + 1, &end_ptr, 10);
 		else
 			array_id = NO_VAL;
 		if (step_name == NULL) {
-			error ( "Invalid job_step id: %s.??",
-				 job_name );
-			exit( 1 );
+			error("Invalid job_step id: %s.??", job_name);
+			exit(1);
 		}
 		step_id = strtol( step_name, &end_ptr, 10 );
 		if ((job_id <= 0) || (step_id < 0)) {
-			error( "Invalid job_step id: %s.%s",
-				job_name, step_name );
-			exit( 1 );
+			error("Invalid job_step id: %s.%s",
+			      job_name, step_name);
+			exit(1);
 		}
-		job_step_id = xmalloc( sizeof( squeue_job_step_t ) );
+		job_step_id = xmalloc(sizeof(squeue_job_step_t));
 		job_step_id->job_id   = job_id;
 		job_step_id->array_id = array_id;
 		job_step_id->step_id  = step_id;
-		list_append( my_list, job_step_id );
-		step = strtok_r( NULL, ",", &tmp_char);
+		list_append(my_list, job_step_id);
+		step = strtok_r(NULL, ",", &tmp_char);
 	}
+	xfree(my_step_list);
 	return my_list;
 }
 

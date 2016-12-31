@@ -424,20 +424,22 @@ _build_job_list( char* str )
 
 	if ( str == NULL)
 		return NULL;
-	my_list = list_create( NULL );
-	my_job_list = xstrdup( str );
-	job = strtok_r( my_job_list, ",", &tmp_char );
+
+	my_list = list_create(NULL);
+	my_job_list = xstrdup(str);
+	job = strtok_r(my_job_list, ",", &tmp_char);
 	while (job) {
 		i = slurm_xlate_job_id(job);
 		if (i <= 0) {
-			error( "Invalid job id: %s", job );
-			exit( 1 );
+			error("Invalid job id: %s", job);
+			exit(1);
 		}
-		job_id = xmalloc( sizeof( uint32_t ) );
+		job_id = xmalloc(sizeof(uint32_t));
 		*job_id = (uint32_t) i;
-		list_append( my_list, job_id );
-		job = strtok_r (NULL, ",", &tmp_char);
+		list_append(my_list, job_id);
+		job = strtok_r(NULL, ",", &tmp_char);
 	}
+	xfree(my_job_list);
 	return my_list;
 }
 

@@ -1595,7 +1595,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 	/* reset the connection to get the most recent stuff */
 	acct_storage_g_commit(db_conn, 0);
 
-	for (i=0; i<argc; i++) {
+	for (i = 0; i < argc; i++) {
 		int end = parse_option_end(argv[i]);
 		if (!end)
 			command_len=strlen(argv[i]);
@@ -1636,7 +1636,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 	}
 
 	if (!file_name) {
-		exit_code=1;
+		exit_code = 1;
 		xfree(cluster_name);
 		fprintf(stderr,
 			" No filename given, specify one with file=''\n");
@@ -1647,7 +1647,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 	fd = fopen(file_name, "r");
 	xfree(file_name);
 	if (fd == NULL) {
-		exit_code=1;
+		exit_code = 1;
 		fprintf(stderr, " Unable to read \"%s\": %s\n", argv[0],
 			slurm_strerror(errno));
 		xfree(cluster_name);
@@ -1693,9 +1693,9 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 		if (!object[0])
 			continue;
 
-		while (line[start] != ' ' && start<len)
+		while ((line[start] != ' ') && (start < len))
 			start++;
-		if (start>=len) {
+		if (start >= len) {
 			exit_code=1;
 			fprintf(stderr, " Nothing after object "
 				"name '%s'. line(%d)\n",
@@ -1710,7 +1710,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 			slurmdb_assoc_cond_t assoc_cond;
 
 			if (cluster_name && !cluster_name_set) {
-				exit_code=1;
+				exit_code = 1;
 				fprintf(stderr, " You can only add one cluster "
 					"at a time.\n");
 				rc = SLURM_ERROR;
@@ -1720,7 +1720,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 			file_opts = _parse_options(line+start);
 
 			if (!file_opts) {
-				exit_code=1;
+				exit_code = 1;
 				fprintf(stderr,
 					" error: Problem with line(%d)\n", lc);
 				rc = SLURM_ERROR;
@@ -1755,11 +1755,14 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 			user_name = uid_to_string_cached(my_uid);
 			if (!(user = sacctmgr_find_user_from_list(
 				      curr_user_list, user_name))) {
-				exit_code=1;
+				exit_code =1;
 				fprintf(stderr, " Your uid (%u) is not in the "
 					"accounting system, can't load file.\n",
 					my_uid);
 				FREE_NULL_LIST(curr_user_list);
+				fclose(fd);
+				_destroy_sacctmgr_file_opts(file_opts);
+				xfree(parent);
 				return;
 
 			} else {
@@ -1767,12 +1770,15 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 				    && my_uid != 0
 				    && (user->admin_level
 					< SLURMDB_ADMIN_SUPER_USER)) {
-					exit_code=1;
+					exit_code = 1;
 					fprintf(stderr,
 						" Your user does not have "
 						"sufficient "
 						"privileges to load files.\n");
 					FREE_NULL_LIST(curr_user_list);
+					fclose(fd);
+					_destroy_sacctmgr_file_opts(file_opts);
+					xfree(parent);
 					return;
 				}
 			}
@@ -1855,7 +1861,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 				FREE_NULL_LIST(cluster_list);
 
 				if (rc != SLURM_SUCCESS) {
-					exit_code=1;
+					exit_code = 1;
 					fprintf(stderr,
 						" Problem adding cluster: %s\n",
 						slurm_strerror(rc));
@@ -1889,7 +1895,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 			//info("got %d assocs", list_count(curr_assoc_list));
 			continue;
 		} else if (!cluster_name) {
-			exit_code=1;
+			exit_code = 1;
 			fprintf(stderr, " You need to specify a cluster name "
 				"first with 'Cluster - $NAME' in your file\n");
 			break;

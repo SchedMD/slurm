@@ -908,6 +908,8 @@ extern int sacctmgr_remove_assoc_usage(slurmdb_assoc_cond_t *assoc_cond)
 				cluster_rec->control_host,
 				cluster_rec->control_port,
 				cluster_rec->rpc_version);
+		} else {
+			slurmdb_destroy_update_object(update_obj);
 		}
 		FREE_NULL_LIST(update_list);
 	}
@@ -919,6 +921,7 @@ end_it:
 
 	FREE_NULL_LIST(local_assoc_list);
 	FREE_NULL_LIST(local_cluster_list);
+	slurmdb_destroy_update_object(update_obj);
 
 	return rc;
 }
@@ -936,7 +939,6 @@ extern int sacctmgr_remove_qos_usage(slurmdb_qos_cond_t *qos_cond)
 	slurmdb_update_object_t* update_obj = NULL;
 	slurmdb_cluster_cond_t cluster_cond;
 	int rc = SLURM_SUCCESS;
-	bool free_cluster_name = 0;
 
 	cluster_list = qos_cond->description_list;
 	qos_cond->description_list = NULL;
@@ -1005,6 +1007,8 @@ extern int sacctmgr_remove_qos_usage(slurmdb_qos_cond_t *qos_cond)
 				cluster_rec->control_host,
 				cluster_rec->control_port,
 				cluster_rec->rpc_version);
+		} else {
+			slurmdb_destroy_update_object(update_obj);
 		}
 		FREE_NULL_LIST(update_list);
 	}
@@ -1014,9 +1018,8 @@ end_it:
 
 	FREE_NULL_LIST(update_list);
 	FREE_NULL_LIST(local_qos_list);
-
-	if (free_cluster_name)
-		xfree(cluster_name);
+	xfree(cluster_name);
+	slurmdb_destroy_update_object(update_obj);
 
 	return rc;
 }

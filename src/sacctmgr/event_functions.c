@@ -456,7 +456,7 @@ extern int sacctmgr_list_event(int argc, char **argv)
 		xmalloc(sizeof(slurmdb_event_cond_t));
 	List event_list = NULL;
 	slurmdb_event_rec_t *event = NULL;
-	int i=0;
+	int i = 0;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
 	int field_count = 0;
@@ -479,6 +479,7 @@ extern int sacctmgr_list_event(int argc, char **argv)
 				" Couldn't get localtime from %ld",
 				(long)event_cond->period_start);
 			exit_code = 1;
+			slurmdb_destroy_event_cond(event_cond);
 			return 0;
 		}
 		start_tm.tm_sec = 0;

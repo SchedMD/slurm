@@ -325,7 +325,7 @@ int	slurm_get_cpuset(char *path, pid_t pid, size_t size, cpu_set_t *mask)
 		error("open(%s): %m", file_path);
 		return SLURM_ERROR;
 	}
-	rc = read(fd, mstr, sizeof(mstr) - 1);
+	rc = read(fd, mstr, (sizeof(mstr) - 1));
 	close(fd);
 	if (rc < 1) {
 		error("read(%s): %m", file_path);
