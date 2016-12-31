@@ -571,7 +571,7 @@ extern int sacctmgr_add_res(int argc, char **argv)
 	if (cluster_list)
 		clus_itr = list_iterator_create(cluster_list);
 	while ((name = list_next(itr))) {
-		bool added = 0;
+		bool added = false;
 		found_res = sacctmgr_find_res_from_list(
 			g_res_list, NO_VAL, name, start_res->server);
 		if (!found_res) {
@@ -589,7 +589,6 @@ extern int sacctmgr_add_res(int argc, char **argv)
 					"count to initially add '%s'.\n", name);
 				break;
 			}
-			added = 1;
 			res = xmalloc(sizeof(slurmdb_res_rec_t));
 			slurmdb_init_res_rec(res, 0);
 			res->name = xstrdup(name);
@@ -606,7 +605,7 @@ extern int sacctmgr_add_res(int argc, char **argv)
 			xstrfmtcat(res_str, "  %s@%s\n",
 				   res->name, res->server);
 			list_append(res_list, res);
-			res = NULL;
+			added = true;
 		}
 
 		if (cluster_list && list_count(cluster_list)) {
@@ -645,17 +644,17 @@ extern int sacctmgr_add_res(int argc, char **argv)
 
 				if (!clus_res) {
 					if (!added) {
-						added = 1;
 						xstrfmtcat(res_str,
 							   "  %s@%s\n", name,
 							   res->server);
 						list_append(res_list, res);
+						added = true;
 					}
 					/* make sure we don't overcommit */
 					res->percent_used +=
 						start_res->percent_used;
 					if (res->percent_used > 100) {
-						exit_code=1;
+						exit_code = 1;
 						fprintf(stderr,
 							" Adding this %d "
 							"clusters to resource "
@@ -760,7 +759,7 @@ extern int sacctmgr_add_res(int argc, char **argv)
 			acct_storage_g_commit(db_conn, 0);
 		}
 	} else {
-		exit_code=1;
+		exit_code = 1;
 		fprintf(stderr, " Problem adding system resource: %s\n",
 			slurm_strerror(rc));
 		rc = SLURM_ERROR;
