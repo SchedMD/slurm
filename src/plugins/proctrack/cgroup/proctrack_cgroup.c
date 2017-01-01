@@ -166,7 +166,6 @@ int _slurm_cgroup_create(stepd_step_rec_t *job, uint64_t id, uid_t uid, gid_t gi
 			     "%s/uid_%u", pre, uid) >= PATH_MAX) {
 			error("unable to build uid %u cgroup relative path : %m",
 			      uid);
-			xfree(pre);
 			goto bail;
 		}
 	}
@@ -250,6 +249,7 @@ int _slurm_cgroup_create(stepd_step_rec_t *job, uint64_t id, uid_t uid, gid_t gi
 	return SLURM_SUCCESS;
 
 bail:
+	xfree(pre);
 	xcgroup_destroy(&slurm_freezer_cg);
 	xcgroup_unlock(&freezer_cg);
 	xcgroup_destroy(&freezer_cg);
