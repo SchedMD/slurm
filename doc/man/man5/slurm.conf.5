@@ -2090,6 +2090,10 @@ block until the prolog is finished on each node.  The blocking will happen when
 steps reach the slurmd and before any execution has happened in the step.
 This is a much faster way to work and if using srun to launch your tasks you
 should use this flag.
+\fBSerial\fR
+By default, the Prolog and Epilog scripts run concurrently on each node.
+This flag forces those scripts to run serially within each node, but with
+a significant penalty to job throughput on each node.
 .RE
 
 .TP

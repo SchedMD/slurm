@@ -273,6 +273,7 @@ static pthread_cond_t  job_state_cond    = PTHREAD_COND_INITIALIZER;
 static uint32_t active_job_id[JOB_STATE_CNT];
 
 static pthread_mutex_t prolog_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t prolog_serial_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #define FILE_BCAST_TIMEOUT 300
 static pthread_mutex_t file_bcast_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -5913,6 +5914,7 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 	pthread_mutex_t timer_mutex = PTHREAD_MUTEX_INITIALIZER;
 	timer_struct_t  timer_struct;
 	bool prolog_fini = false;
+	bool script_lock = false;
 	char **my_env;
 
 	my_env = _build_env(job_env);
@@ -5935,6 +5937,11 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 	slurm_mutex_lock(&conf->config_mutex);
 	my_prolog = xstrdup(conf->prolog);
 	slurm_mutex_unlock(&conf->config_mutex);
+
+	if (slurmctld_conf.prolog_flags & PROLOG_FLAG_SERIAL) {
+		slurm_mutex_lock(&prolog_serial_mutex);
+		script_lock = true;
+	}
 
 	slurm_attr_init(&timer_attr);
 	timer_struct.job_id      = job_env->jobid;
@@ -5972,6 +5979,9 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 	_destroy_env(my_env);
 
 	pthread_join(timer_id, NULL);
+	if (script_lock)
+		slurm_mutex_unlock(&prolog_serial_mutex);
+
 	return rc;
 }
 #endif
@@ -5985,6 +5995,7 @@ _run_epilog(job_env_t *job_env)
 	int error_code, diff_time;
 	char *my_epilog;
 	char **my_env = _build_env(job_env);
+	bool script_lock = false;
 
 	if (msg_timeout == 0)
 		msg_timeout = slurm_get_msg_timeout();
@@ -5997,6 +6008,11 @@ _run_epilog(job_env_t *job_env)
 	slurm_mutex_unlock(&conf->config_mutex);
 
 	_wait_for_job_running_prolog(job_env->jobid);
+
+	if (slurmctld_conf.prolog_flags & PROLOG_FLAG_SERIAL) {
+		slurm_mutex_lock(&prolog_serial_mutex);
+		script_lock = true;
+	}
 
 	if (timeout == (uint16_t)NO_VAL)
 		error_code = _run_job_script("epilog", my_epilog, job_env->jobid,
@@ -6013,6 +6029,9 @@ _run_epilog(job_env_t *job_env)
 		info("epilog for job %u ran for %d seconds",
 		     job_env->jobid, diff_time);
 	}
+
+	if (script_lock)
+		slurm_mutex_unlock(&prolog_serial_mutex);
 
 	return error_code;
 }

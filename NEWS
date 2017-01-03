@@ -46,6 +46,8 @@ documents those changes that are of interest to users and administrators.
  -- Remove SchedulerRootFilter option and slurm_get_root_filter() API call.
  -- Add SchedulerParameters option of spec_cores_first to select specialized
     cores from the lowest rather than highest number cores and sockets.
+ -- Add PrologFlags option of Serial to disable concurrent launch of
+    Prolog and Epilog scripts.
 
 * Changes in Slurm 17.02.0pre3
 ==============================

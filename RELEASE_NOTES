@@ -59,6 +59,8 @@ HIGHLIGHTS
     memory would not schedule or enforce memory limits correctly.
  -- Removed AIX, BlueGene/L and BlueGene/P support.
  -- Remove sched/wiki and sched/wiki2 plugins and associated code.
+ -- Added PrologFlags=Serial to disable concurrent execution of prolog/epilog
+    scripts.
 
 RPMBUILD CHANGES
 ================

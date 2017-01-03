@@ -4437,6 +4437,12 @@ extern char * prolog_flags2str(uint16_t prolog_flags)
 		xstrcat(rc, "NoHold");
 	}
 
+	if (prolog_flags & PROLOG_FLAG_SERIAL) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "Serial");
+	}
+
 	return rc;
 }
 
@@ -4462,6 +4468,8 @@ extern uint16_t prolog_str2flags(char *prolog_flags)
 			rc |= (PROLOG_FLAG_ALLOC | PROLOG_FLAG_CONTAIN);
 		else if (xstrcasecmp(tok, "NoHold") == 0)
 			rc |= PROLOG_FLAG_NOHOLD;
+		else if (xstrcasecmp(tok, "Serial") == 0)
+			rc |= PROLOG_FLAG_SERIAL;
 		else {
 			error("Invalid PrologFlag: %s", tok);
 			rc = (uint16_t)NO_VAL;
