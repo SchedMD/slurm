@@ -730,6 +730,9 @@ documents those changes that are of interest to users and administrators.
  -- Add Max*PerAccount options for QOS.
  -- Protect slurm_mutex_* calls with abort() on failure.
 
+* Changes in Slurm 15.08.14
+===========================
+
 * Changes in Slurm 15.08.13
 ===========================
  -- Fix issue where slurmd could core when running the ipmi energy plugin.
@@ -758,6 +761,9 @@ documents those changes that are of interest to users and administrators.
     reconfiguration.
  -- Ignore warnings about depricated functions. This is primarily there for
     new glibc 2.24+ that depricates readdir_r.
+ -- Fix security issue caused by insecure file path handling triggered by the
+    failure of a Prolog script. To exploit this a user needs to anticipate or
+    cause the Prolog to fail for their job. CVE-2016-10030.
 
 * Changes in Slurm 15.08.12
 ===========================
