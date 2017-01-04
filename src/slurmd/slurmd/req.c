@@ -165,6 +165,7 @@ static void _note_batch_job_finished(uint32_t job_id);
 static int  _prolog_is_running (uint32_t jobid);
 static int  _step_limits_match(void *x, void *key);
 static int  _terminate_all_steps(uint32_t jobid, bool batch);
+static int  _receive_fd(int socket);
 static void _rpc_launch_tasks(slurm_msg_t *);
 static void _rpc_abort_job(slurm_msg_t *);
 static void _rpc_batch_job(slurm_msg_t *msg, bool new_msg);
@@ -225,6 +226,7 @@ static void _add_job_running_prolog(uint32_t job_id);
 static void _remove_job_running_prolog(uint32_t job_id);
 static int  _match_jobid(void *s0, void *s1);
 static void _wait_for_job_running_prolog(uint32_t job_id);
+static int _open_as_other(char *path_name, batch_job_launch_msg_t *req);
 
 /*
  *  List of threads waiting for jobs to complete
@@ -1384,10 +1386,8 @@ _prolog_error(batch_job_launch_msg_t *req, int rc)
 			req->work_dir, err_name_ptr);
 	else
 		snprintf(path_name, MAXPATHLEN, "/%s", err_name_ptr);
-
-	if ((fd = open(path_name, (O_CREAT|O_APPEND|O_WRONLY), 0644)) == -1) {
-		error("Unable to open %s: %s", path_name,
-		      slurm_strerror(errno));
+	if ((fd = _open_as_other(path_name, req)) == -1) {
+		error("Unable to open %s: Permission denied", path_name);
 		return;
 	}
 	snprintf(err_name, sizeof(err_name),
@@ -6170,4 +6170,157 @@ static void _launch_complete_wait(uint32_t job_id)
 	}
 	slurm_mutex_unlock(&job_state_mutex);
 	_launch_complete_log("job wait", job_id);
+}
+
+/* pass an open file descriptor back to the parent process */
+static void _send_back_fd(int socket, int fd)
+{
+	struct msghdr msg = { 0 };
+	struct cmsghdr *cmsg;
+	char buf[CMSG_SPACE(sizeof(fd))];
+	memset(buf, '\0', sizeof(buf));
+
+	msg.msg_iov = NULL;
+	msg.msg_iovlen = 0;
+	msg.msg_control = buf;
+	msg.msg_controllen = sizeof(buf);
+
+	cmsg = CMSG_FIRSTHDR(&msg);
+	cmsg->cmsg_level = SOL_SOCKET;
+	cmsg->cmsg_type = SCM_RIGHTS;
+	cmsg->cmsg_len = CMSG_LEN(sizeof(fd));
+
+	memmove(CMSG_DATA(cmsg), &fd, sizeof(fd));
+	msg.msg_controllen = cmsg->cmsg_len;
+
+	if (sendmsg(socket, &msg, 0) < 0)
+		error("%s: failed to send fd: %m", __func__);
+}
+
+/* receive an open file descriptor from fork()'d child over unix socket */
+static int _receive_fd(int socket)
+{
+	struct msghdr msg = {0};
+	struct cmsghdr *cmsg;
+	int fd;
+	msg.msg_iov = NULL;
+	msg.msg_iovlen = 0;
+	char c_buffer[256];
+	msg.msg_control = c_buffer;
+	msg.msg_controllen = sizeof(c_buffer);
+
+	if (recvmsg(socket, &msg, 0) < 0) {
+		error("%s: failed to receive fd: %m", __func__);
+		return -1;
+	}
+
+	cmsg = CMSG_FIRSTHDR(&msg);
+	memmove(&fd, CMSG_DATA(cmsg), sizeof(fd));
+	return fd;
+}
+
+/*
+ * Open file based upon permissions of a different user
+ * IN path_name - name of file to open
+ * IN uid - User ID to use for file access check
+ * IN gid - Group ID to use for file access check
+ * RET -1 on error, file descriptor otherwise
+ */
+static int _open_as_other(char *path_name, batch_job_launch_msg_t *req)
+{
+	pid_t child;
+	int ngroups = 16;
+	gid_t *groups;
+	int pipe[2];
+	int fd = -1, rc = 0;
+
+	if ((rc = _get_grouplist(&req->user_name, req->uid,
+				 req->gid, &ngroups, &groups)) < 0) {
+		error("%s: getgrouplist(%u): %m", __func__, req->uid);
+		return rc;
+	}
+
+	if ((rc = container_g_create(req->job_id))) {
+		error("%s: container_g_create(%u): %m", __func__, req->job_id);
+		xfree(groups);
+		return -1;
+	}
+
+	/* child process will setuid to the user, register the process
+	 * with the container, and open the file for us. */
+	if (socketpair(AF_UNIX, SOCK_DGRAM, 0, pipe) != 0) {
+		error("%s: Failed to open pipe: %m", __func__);
+		xfree(groups);
+		return -1;
+	}
+
+	child = fork();
+	if (child == -1) {
+		error("%s: fork failure", __func__);
+		xfree(groups);
+		close(pipe[0]);
+		close(pipe[1]);
+		return -1;
+	} else if (child > 0) {
+		close(pipe[0]);
+		(void) waitpid(child, &rc, 0);
+		xfree(groups);
+		if (WIFEXITED(rc) && (WEXITSTATUS(rc) == 0))
+			fd = _receive_fd(pipe[1]);
+		close(pipe[1]);
+		return fd;
+	}
+
+	/* child process below here */
+
+	close(pipe[1]);
+
+	/* container_g_add_pid needs to be called in the
+	 * forked process part of the fork to avoid a race
+	 * condition where if this process makes a file or
+	 * detacts itself from a child before we add the pid
+	 * to the container in the parent of the fork. */
+	if (container_g_add_pid(req->job_id, getpid(), req->uid)) {
+		error("%s container_g_add_pid(%u): %m", __func__, req->job_id);
+		exit(SLURM_ERROR);
+	}
+
+	/* The child actually performs the I/O and exits with
+	 * a return code, do not return! */
+
+	/*********************************************************************\
+	 * NOTE: It would be best to do an exec() immediately after the fork()
+	 * in order to help prevent a possible deadlock in the child process
+	 * due to locks being set at the time of the fork and being freed by
+	 * the parent process, but not freed by the child process. Performing
+	 * the work inline is done for simplicity. Note that the logging
+	 * performed by error() should be safe due to the use of
+	 * atfork_install_handlers() as defined in src/common/log.c.
+	 * Change the code below with caution.
+	\*********************************************************************/
+
+	if (setgroups(ngroups, groups) < 0) {
+		error("%s: uid: %u setgroups failed: %m", __func__, req->uid);
+		exit(errno);
+	}
+	xfree(groups);
+
+	if (setgid(req->gid) < 0) {
+		error("%s: uid:%u setgid(%u): %m", __func__, req->uid,req->gid);
+		exit(errno);
+	}
+	if (setuid(req->uid) < 0) {
+		error("%s: getuid(%u): %m", __func__, req->uid);
+		exit(errno);
+	}
+
+	fd = open(path_name, (O_CREAT|O_APPEND|O_WRONLY), 0644);
+	if (fd == -1) {
+		error("%s: uid:%u can't open `%s`: %m",
+		      __func__, req->uid, path_name);
+		exit(errno);
+	}
+	_send_back_fd(pipe[0], fd);
+	close(fd);
+	exit(SLURM_SUCCESS);
 }
