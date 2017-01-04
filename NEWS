@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 16.05.9
+==========================
+
 * Changes in Slurm 16.05.8
 ==========================
  -- Remove StoragePass from being printed out in the slurmdbd log at debug2
