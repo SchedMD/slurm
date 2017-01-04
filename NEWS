@@ -28,6 +28,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix check for PluginDir within slurmctld to work with multiple directories.
  -- Cancel interactive jobs automatically on communication error to launching
     srun/salloc process.
+ -- Fix security issue caused by insecure file path handling triggered by the
+    failure of a Prolog script. To exploit this a user needs to anticipate or
+    cause the Prolog to fail for their job. CVE-2016-10030.
 
 * Changes in Slurm 16.05.7
 ==========================
