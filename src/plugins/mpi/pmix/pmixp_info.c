@@ -41,35 +41,59 @@
 #include "pmixp_info.h"
 
 /* Server communication */
-static char *_server_addr = NULL;
-static int _server_fd = -1;
+static char *_srv_usock_path = NULL;
+static int _srv_usock_fd = -1;
+static int _srv_tsock_port = -1;
+static int _srv_tsock_fd = -1;
 
 pmix_jobinfo_t _pmixp_job_info = {0};
 
 static int _resources_set(char ***env);
 static int _env_set(char ***env);
 
-/* stepd global contact information */
-void pmixp_info_srv_contacts(char *path, int fd)
+/* stepd global UNIX socket contact information */
+void pmixp_info_srv_usock_set(char *path, int fd)
 {
-	_server_addr = _pmixp_job_info.server_addr_unfmt;
-	_server_fd = fd;
+	_srv_usock_path = _pmixp_job_info.server_addr_unfmt;
+	_srv_usock_fd = fd;
 }
 
-const char *pmixp_info_srv_addr(void)
+const char *pmixp_info_srv_usock_path(void)
 {
 	/* Check that Server address was initialized */
-	xassert(_server_addr != NULL);
-	return _server_addr;
+	xassert(NULL != _srv_usock_path);
+	return _srv_usock_path;
 }
 
-int pmixp_info_srv_fd(void)
+int pmixp_info_srv_usock_fd(void)
 {
 	/* Check that Server fd was created */
-	xassert(_server_fd >= 0);
-	return _server_fd;
+	xassert(0 <= _srv_usock_fd);
+	return _srv_usock_fd;
 }
 
+/* stepd global UNIX socket contact information */
+void pmixp_info_srv_tsock_set(uint16_t port, int fd)
+{
+	_srv_tsock_port = (int)port;
+	_srv_tsock_fd = fd;
+}
+
+const uint16_t pmixp_info_srv_tsock_port(void)
+{
+	/* Check that Server address was initialized */
+	xassert(0 < _srv_tsock_port);
+	return (uint16_t)_srv_tsock_port;
+}
+
+int pmixp_info_srv_tsock_fd(void)
+{
+	/* Check that Server fd was created */
+	xassert(0 <= _srv_tsock_fd);
+	return _srv_tsock_fd;
+}
+
+/* Job information */
 int pmixp_info_set(const stepd_step_rec_t *job, char ***env)
 {
 	int i, rc;

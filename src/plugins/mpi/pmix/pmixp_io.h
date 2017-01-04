@@ -59,6 +59,7 @@ typedef struct {
 	bool recv_on;
 	uint32_t recv_host_hsize, recv_net_hsize;
 	pmixp_io_hdr_unpack_cb_t hdr_unpack_cb;
+	uint32_t recv_padding;
 	/* transmitter-related fields */
 	bool send_on;
 	uint32_t send_host_hsize, send_net_hsize;
@@ -72,6 +73,7 @@ typedef enum {
 	PMIXP_IO_NONE = 0,
 	PMIXP_IO_INIT,
 	PMIXP_IO_OPERATING,
+	PMIXP_IO_CONN_CLOSED,
 	PMIXP_IO_FINALIZED
 } pmixp_io_state_t;
 
@@ -92,7 +94,6 @@ typedef struct {
 	uint32_t rcvd_pay_size;
 	uint32_t rcvd_pay_offs;
 	void *rcvd_payload;
-	uint32_t rcvd_padding;
 	uint32_t rcvd_pad_recvd;
 	/* sender */
 	void *send_current;
@@ -105,13 +106,6 @@ typedef struct {
 	List send_queue;
 } pmixp_io_engine_t;
 
-static inline void pmixp_io_rcvd_padding(pmixp_io_engine_t *eng,
-		uint32_t padsize)
-{
-	xassert(eng->magic == PMIX_MSGSTATE_MAGIC);
-	eng->rcvd_padding = padsize;
-}
-
 static inline bool pmixp_io_rcvd_ready(pmixp_io_engine_t *eng)
 {
 	xassert(eng->magic == PMIX_MSGSTATE_MAGIC);
@@ -123,6 +117,12 @@ static inline bool pmixp_io_operating(pmixp_io_engine_t *eng)
 {
 	xassert(eng->magic == PMIX_MSGSTATE_MAGIC);
 	return (PMIXP_IO_OPERATING == eng->io_state);
+}
+
+static inline bool pmixp_io_conn_closed(pmixp_io_engine_t *eng)
+{
+	xassert(eng->magic == PMIX_MSGSTATE_MAGIC);
+	return (PMIXP_IO_CONN_CLOSED == eng->io_state);
 }
 
 static inline bool pmixp_io_enqueue_ok(pmixp_io_engine_t *eng)
@@ -144,15 +144,57 @@ static inline int pmixp_io_error(pmixp_io_engine_t *eng)
 	return eng->error;
 }
 
+/* initialize all the data structures to prepare
+ * engine for operation.
+ * file descriptor needs to be provided to put it
+ * to the operation mode
+ */
 void pmixp_io_init(pmixp_io_engine_t *eng,
 		pmixp_io_engine_header_t header);
-void pmixp_io_start(pmixp_io_engine_t *eng, int fd);
+
+/* attach engine to the specific file descriptor */
+static inline void
+pmixp_io_attach(pmixp_io_engine_t *eng, int fd)
+{
+	/* Initialize general options */
+	xassert(PMIX_MSGSTATE_MAGIC == eng->magic);
+	xassert(PMIXP_IO_INIT == eng->io_state);
+	eng->sd = fd;
+	eng->io_state = PMIXP_IO_OPERATING;
+}
+
+/* detach engine from the current file descriptor.
+ * the `fd` is returned and can be used with other
+ * engine if needed
+ */
+int pmixp_io_detach(pmixp_io_engine_t *eng);
+
+/* cleanup all the data structures allocated by this
+ * engine.
+ * If engine wasn't detached, corresponding `fd` will
+ * be also closed
+ */
 void pmixp_io_finalize(pmixp_io_engine_t *eng, int error);
 
 /* Receiver */
 void pmixp_io_rcvd_progress(pmixp_io_engine_t *eng);
 void *pmixp_io_rcvd_extract(pmixp_io_engine_t *eng, void *header);
+static inline void*
+pmixp_io_recv_hdr_alloc_host(pmixp_io_engine_t *eng)
+{
+	xassert(eng->magic == PMIX_MSGSTATE_MAGIC);
+	return xmalloc(eng->h.recv_host_hsize);
+}
+
+static inline void*
+pmixp_io_recv_hdr_alloc_net(pmixp_io_engine_t *eng)
+{
+	xassert(eng->magic == PMIX_MSGSTATE_MAGIC);
+	return xmalloc(eng->h.recv_net_hsize);
+}
+
 /* Transmitter */
+/* thread-safe function, only calls SLURM list append */
 void pmixp_io_send_enqueue(pmixp_io_engine_t *eng, void *msg);
 void pmixp_io_send_progress(pmixp_io_engine_t *eng);
 bool pmixp_io_send_pending(pmixp_io_engine_t *eng);

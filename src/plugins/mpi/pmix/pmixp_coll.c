@@ -516,7 +516,7 @@ static int _copy_payload(Buf inbuf, size_t offs, Buf *outbuf)
 static void _progress_fan_in(pmixp_coll_t *coll)
 {
 	pmixp_srv_cmd_t type;
-	const char *addr = pmixp_info_srv_addr();
+	const char *addr = pmixp_info_srv_usock_path();
 	char *hostlist = NULL;
 	int rc, is_p2p = 0;
 	Buf root_buf;

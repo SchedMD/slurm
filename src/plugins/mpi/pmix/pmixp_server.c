@@ -2,7 +2,7 @@
  **  pmix_server.c - PMIx server side functionality
  *****************************************************************************
  *  Copyright (C) 2014-2015 Artem Polyakov. All rights reserved.
- *  Copyright (C) 2015-2016 Mellanox Technologies. All rights reserved.
+ *  Copyright (C) 2015-2017 Mellanox Technologies. All rights reserved.
  *  Written by Artem Polyakov <artpol84@gmail.com, artemp@mellanox.com>.
  *
  *  This file is part of SLURM, a resource management program.
@@ -46,8 +46,151 @@
 #include "pmixp_state.h"
 #include "pmixp_client.h"
 #include "pmixp_dmdx.h"
+#include "pmixp_conn.h"
+#include "pmixp_dconn.h"
 
 #include <pmix_server.h>
+
+/*
+ * --------------------- I/O protocol -------------------
+ */
+
+#define PMIX_SERVER_MSG_MAGIC 0xCAFECA11
+typedef struct {
+	uint32_t magic;
+	uint32_t type;
+	uint32_t seq;
+	uint32_t nodeid;
+	uint32_t msgsize;
+} pmixp_base_hdr_t;
+
+#define PMIXP_BASE_HDR_SIZE (5 * sizeof(uint32_t))
+
+typedef struct {
+	pmixp_base_hdr_t base_hdr;
+	uint16_t rport;		/* STUB: remote port for persistent connection */
+} pmixp_slurm_shdr_t;
+#define PMIXP_SLURM_API_SHDR_SIZE (PMIXP_BASE_HDR_SIZE + sizeof(uint16_t))
+
+#define PMIXP_MAX_SEND_HDR PMIXP_SLURM_API_SHDR_SIZE
+
+typedef struct {
+	uint32_t size;		/* Has to be first (appended by SLURM API) */
+	pmixp_slurm_shdr_t shdr;
+} pmixp_slurm_rhdr_t;
+#define PMIXP_SLURM_API_RHDR_SIZE (sizeof(uint32_t) + PMIXP_SLURM_API_SHDR_SIZE)
+
+Buf pmixp_server_new_buf(void)
+{
+	Buf buf = create_buf(xmalloc(PMIXP_MAX_SEND_HDR), PMIXP_MAX_SEND_HDR);
+	/* Skip header. It will be filled right before the sending */
+	set_buf_offset(buf, PMIXP_MAX_SEND_HDR);
+	return buf;
+}
+
+static void _base_hdr_pack(Buf packbuf, pmixp_base_hdr_t *hdr)
+{
+	pack32(hdr->magic, packbuf);
+	pack32(hdr->type, packbuf);
+	pack32(hdr->seq, packbuf);
+	pack32(hdr->nodeid, packbuf);
+	pack32(hdr->msgsize, packbuf);
+}
+
+static int _base_hdr_unpack(Buf packbuf, pmixp_base_hdr_t *hdr)
+{
+	if (unpack32(&hdr->magic, packbuf)) {
+		return -EINVAL;
+	}
+	xassert(PMIX_SERVER_MSG_MAGIC == hdr->magic);
+
+	if (unpack32(&hdr->type, packbuf)) {
+		return -EINVAL;
+	}
+
+	if (unpack32(&hdr->seq, packbuf)) {
+		return -EINVAL;
+	}
+
+	if (unpack32(&hdr->nodeid, packbuf)) {
+		return -EINVAL;
+	}
+
+	if (unpack32(&hdr->msgsize, packbuf)) {
+		return -EINVAL;
+	}
+	return 0;
+}
+
+static void _slurm_hdr_pack(Buf packbuf, pmixp_slurm_shdr_t *hdr)
+{
+	_base_hdr_pack(packbuf, &hdr->base_hdr);
+	pack16(hdr->rport, packbuf);
+}
+
+static int _slurm_hdr_unpack(Buf packbuf, pmixp_slurm_rhdr_t *hdr)
+{
+	if (unpack32(&hdr->size, packbuf)) {
+		return -EINVAL;
+	}
+
+	if (_base_hdr_unpack(packbuf, &hdr->shdr.base_hdr)) {
+		return -EINVAL;
+	}
+
+	if (unpack16(&hdr->shdr.rport, packbuf)) {
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+/* SLURM protocol I/O header */
+static uint32_t _slurm_proto_msize(void *buf);
+static int _slurm_pack_hdr(void *host, void *net);
+static int _slurm_proto_unpack_hdr(void *net, void *host);
+static void _slurm_new_msg(pmixp_conn_t *conn,
+			   void *_hdr, void *msg);
+
+pmixp_io_engine_header_t _slurm_proto = {
+	/* generic callbacks */
+	.payload_size_cb = _slurm_proto_msize,
+	/* receiver-related fields */
+	.recv_on = 1,
+	.recv_host_hsize = sizeof(pmixp_slurm_rhdr_t),
+	.recv_net_hsize = PMIXP_SLURM_API_RHDR_SIZE, /*need to skip user ID*/
+	.recv_padding = sizeof(uint32_t),
+	.hdr_unpack_cb = _slurm_proto_unpack_hdr,
+};
+
+/* direct protocol I/O header */
+static uint32_t _direct_msize(void *hdr);
+static int _direct_hdr_pack(void *host, void *net);
+static int _direct_hdr_unpack(void *net, void *host);
+static void *_direct_hdr_ptr(void *msg);
+static void *_direct_payload_ptr(void *msg);
+static void _direct_msg_free(void *msg);
+static void _direct_new_msg(pmixp_conn_t *conn, void *_hdr, void *msg);
+
+pmixp_io_engine_header_t _direct_proto = {
+	/* generic callback */
+	.payload_size_cb = _direct_msize,
+	/* receiver-related fields */
+	.recv_on = 1,
+	.recv_host_hsize = sizeof(pmixp_base_hdr_t),
+	.recv_net_hsize = PMIXP_BASE_HDR_SIZE,
+	.recv_padding = 0, /* no padding for the direct proto */
+	.hdr_unpack_cb = _direct_hdr_unpack,
+	/* transmitter-related fields */
+	.send_on = 1,
+	.send_host_hsize = sizeof(pmixp_base_hdr_t),
+	.send_net_hsize = PMIXP_BASE_HDR_SIZE,
+	.hdr_pack_cb = _direct_hdr_pack,
+	.hdr_ptr_cb = _direct_hdr_ptr,
+	.payload_ptr_cb = _direct_payload_ptr,
+	.msg_free_cb = _direct_msg_free
+};
+
 
 /*
  * --------------------- Initi/Finalize -------------------
@@ -59,29 +202,42 @@ int pmixp_stepd_init(const stepd_step_rec_t *job, char ***env)
 {
 	char *path;
 	int fd, rc;
+	uint16_t port;
 
 	if (SLURM_SUCCESS != (rc = pmixp_info_set(job, env))) {
 		PMIXP_ERROR("pmixp_info_set(job, env) failed");
-		return rc;
+		goto err_info;
 	}
 
 	/* Create UNIX socket for slurmd communication */
 	path = pmixp_info_nspace_usock(pmixp_info_namespace());
 	if (NULL == path) {
-		PMIXP_ERROR("Out-of-memory");
+		PMIXP_ERROR("pmixp_info_nspace_usock: out-of-memory");
 		rc = SLURM_ERROR;
 		goto err_path;
 	}
 	if ((fd = pmixp_usock_create_srv(path)) < 0) {
+		PMIXP_ERROR("pmixp_usock_create_srv");
 		rc = SLURM_ERROR;
 		goto err_usock;
 	}
 	fd_set_close_on_exec(fd);
-	pmixp_info_srv_contacts(path, fd);
+	pmixp_info_srv_usock_set(path, fd);
+
+
+	/* Create TCP socket for slurmd communication */
+	if (0 > net_stream_listen(&fd, &port)) {
+		PMIXP_ERROR("net_stream_listen");
+		goto err_tsock;
+	}
+	pmixp_info_srv_tsock_set(port, fd);
+
+	pmixp_conn_init(_slurm_proto, _direct_proto);
+	pmixp_dconn_init(pmixp_info_nodes(), _direct_proto);
 
 	if (SLURM_SUCCESS != (rc = pmixp_nspaces_init())) {
 		PMIXP_ERROR("pmixp_nspaces_init() failed");
-		goto err_usock;
+		goto err_nspaces;
 	}
 
 	if (SLURM_SUCCESS != (rc = pmixp_state_init())) {
@@ -116,10 +272,15 @@ err_dmdx:
 	pmixp_state_finalize();
 err_state:
 	pmixp_nspaces_finalize();
+err_nspaces:
+	close(pmixp_info_srv_tsock_fd());
+err_tsock:
+	close(pmixp_info_srv_usock_fd());
 err_usock:
 	xfree(path);
 err_path:
 	pmixp_info_free();
+err_info:
 	return rc;
 }
 
@@ -131,14 +292,20 @@ int pmixp_stepd_finalize(void)
 		return 0;
 	}
 
+	pmixp_conn_fini();
+	pmixp_dconn_fini();
+
 	pmixp_libpmix_finalize();
 	pmixp_dmdx_finalize();
 	pmixp_state_finalize();
 	pmixp_nspaces_finalize();
 
-	/* cleanup the usock */
+	/* close TCP socket */
+	close(pmixp_info_srv_tsock_fd());
+
+	/* cleanup the UNIX socket */
 	PMIXP_DEBUG("Remove PMIx plugin usock");
-	close(pmixp_info_srv_fd());
+	close(pmixp_info_srv_usock_fd());
 	path = pmixp_info_nspace_usock(pmixp_info_namespace());
 	unlink(path);
 	xfree(path);
@@ -148,99 +315,122 @@ int pmixp_stepd_finalize(void)
 	return SLURM_SUCCESS;
 }
 
-/*
- * --------------------- I/O protocol -------------------
- */
-
-
-#define PMIX_SERVER_MSG_MAGIC 0xCAFECA11
-typedef struct {
-	uint32_t magic;
-	uint32_t type;
-	uint32_t seq;
-	uint32_t nodeid;
-	uint32_t msgsize;
-} pmixp_base_hdr_t;
-
-#define PMIX_BASE_HDR_SIZE (5 * sizeof(uint32_t))
-
-typedef struct {
-	pmixp_base_hdr_t base_hdr;
-	uint16_t rport;		/* STUB: remote port for persistent connection */
-} pmixp_slurm_api_shdr_t;
-#define PMIXP_SLURM_API_SHDR_SIZE (PMIX_BASE_HDR_SIZE + sizeof(uint16_t))
-
-#define PMIXP_MAX_SEND_HDR PMIXP_SLURM_API_SHDR_SIZE
-
-typedef struct {
-	uint32_t size;		/* Has to be first (appended by SLURM API) */
-	pmixp_slurm_api_shdr_t sapi_shdr;
-} pmixp_slurm_api_rhdr_t;
-#define PMIXP_SLURM_API_RHDR_SIZE (sizeof(uint32_t) + PMIXP_SLURM_API_SHDR_SIZE)
-
-Buf pmixp_server_new_buf(void)
+void pmixp_server_cleanup(void)
 {
-	Buf buf = create_buf(xmalloc(PMIXP_MAX_SEND_HDR), PMIXP_MAX_SEND_HDR);
-	/* Skip header. It will be filled right before the sending */
-	set_buf_offset(buf, PMIXP_MAX_SEND_HDR);
-	return buf;
+	pmixp_conn_cleanup();
 }
 
 /*
  * --------------------- Generic I/O functionality -------------------
  */
 
-/* this routine tries to complete message processing on message
- * engine (me). Return value:
- * - 0: no progress was observed on the descriptor
- * - 1: one more message was successfuly processed
- * - 2: all messages are completed
- */
-typedef bool (*pmixp_msg_callback_t)(pmixp_io_engine_t *eng);
-
-typedef struct {
-	pmixp_io_engine_t *eng;
-	pmixp_msg_callback_t process;
-} pmixp_msg_handler_t;
-
 static bool _serv_readable(eio_obj_t *obj);
 static int _serv_read(eio_obj_t *obj, List objs);
+static bool _serv_writable(eio_obj_t *obj);
+static int _serv_write(eio_obj_t *obj, List objs);
 static void _process_server_request(pmixp_base_hdr_t *hdr, void *payload);
 
 
-static struct io_operations peer_ops = {
+static struct io_operations slurm_peer_ops = {
 	.readable = _serv_readable,
 	.handle_read = _serv_read
 };
 
+static struct io_operations direct_peer_ops = {
+	.readable	= _serv_readable,
+	.handle_read	= _serv_read,
+	.writable	= _serv_writable,
+	.handle_write	= _serv_write
+};
+
+
 static bool _serv_readable(eio_obj_t *obj)
 {
+	/* sanity check */
+	xassert(NULL != obj );
 	/* We should delete connection right when it  was closed or failed */
-	xassert(obj->shutdown == false);
+	xassert(false == obj->shutdown);
+
 	return true;
 }
 
 static int _serv_read(eio_obj_t *obj, List objs)
 {
+	/* sanity check */
+	xassert(NULL != obj );
+	/* We should delete connection right when it  was closed or failed */
+	xassert(false == obj->shutdown);
+
 	PMIXP_DEBUG("fd = %d", obj->fd);
-	pmixp_msg_handler_t *mhndl = (pmixp_msg_handler_t *)obj->arg;
-	pmixp_io_engine_t *eng = mhndl->eng;
+	pmixp_conn_t *conn = (pmixp_conn_t *)obj->arg;
 	bool proceed = true;
 
-	pmixp_debug_hang(0);
+	/* debug stub */
+	static int dbg_block = 0;
+	pmixp_debug_hang(dbg_block);
 
 	/* Read and process all received messages */
 	while (proceed) {
-		if( !mhndl->process(eng) ){
+		if( !pmixp_conn_progress_rcv(conn) ){
 			proceed = 0;
 		}
-		if( pmixp_io_finalized(eng) ){
+		if( !pmixp_conn_is_alive(conn) ){
 			obj->shutdown = true;
-			PMIXP_DEBUG("Connection finalized fd = %d", obj->fd);
+			PMIXP_DEBUG("Connection closed fd = %d", obj->fd);
 			/* cleanup after this connection */
 			eio_remove_obj(obj, objs);
-			xfree(eng);
+			pmixp_conn_return(conn);
 		}
+	}
+	return 0;
+}
+
+static bool _serv_writable(eio_obj_t *obj)
+{
+	/* sanity check */
+	xassert(NULL != obj );
+	/* We should delete connection right when it  was closed or failed */
+	xassert(false == obj->shutdown);
+
+	/* get I/O engine */
+	pmixp_conn_t *conn = (pmixp_conn_t *)obj->arg;
+	pmixp_io_engine_t *eng = conn->eng;
+
+	/* debug stub */
+	static int dbg_block = 0;
+	pmixp_debug_hang(dbg_block);
+
+	/* check if we have something to send */
+	if( pmixp_io_send_pending(eng) ){
+		return true;
+	}
+	return false;
+}
+
+static int _serv_write(eio_obj_t *obj, List objs)
+{
+	/* sanity check */
+	xassert(NULL != obj );
+	/* We should delete connection right when it  was closed or failed */
+	xassert(false == obj->shutdown);
+
+	PMIXP_DEBUG("fd = %d", obj->fd);
+	pmixp_conn_t *conn = (pmixp_conn_t *)obj->arg;
+
+	/* debug stub */
+	static int dbg_block = 0;
+	pmixp_debug_hang(dbg_block);
+
+	/* progress sends */
+	pmixp_conn_progress_snd(conn);
+
+	/* if we are done with this connection - remove it */
+	if( !pmixp_conn_is_alive(conn) ){
+		obj->shutdown = true;
+		PMIXP_DEBUG("Connection finalized fd = %d", obj->fd);
+		/* cleanup after this connection */
+		eio_remove_obj(obj, objs);
+		pmixp_conn_return(conn);
 	}
 	return 0;
 }
@@ -329,177 +519,10 @@ exit:
 	}
 }
 
-
-/*
- * ------------------- SLURM API communication -----------------------
- */
-
-static uint32_t _slurm_proto_msize(void *buf);
-static int _slurm_proto_pack_hdr(pmixp_slurm_api_shdr_t *shdr,
-				    void *net);
-static int _slurm_proto_unpack_hdr(void *net, void *host);
-static bool _slurm_proto_new_msg(pmixp_io_engine_t *me);
-
-pmixp_io_engine_header_t srv_rcvd_header = {
-	/* generic callbacks */
-	.payload_size_cb = _slurm_proto_msize,
-	/* receiver-related fields */
-	.recv_on = 1,
-	.recv_host_hsize = sizeof(pmixp_slurm_api_rhdr_t),
-	.recv_net_hsize = PMIXP_SLURM_API_RHDR_SIZE,
-	.hdr_unpack_cb = _slurm_proto_unpack_hdr,
-};
-
-/*
- * See process_handler_t prototype description
- * on the details of this function output values
- */
-static inline bool
-_slurm_proto_new_msg(pmixp_io_engine_t *eng)
-{
-	int ret = 0;
-	pmixp_io_rcvd_progress(eng);
-	if (pmixp_io_rcvd_ready(eng)) {
-		pmixp_slurm_api_rhdr_t hdr;
-		void *msg = pmixp_io_rcvd_extract(eng, &hdr);
-		_process_server_request(&hdr.sapi_shdr.base_hdr, msg);
-		ret = 1;
-	}
-	return ret;
-}
-
-
-/*
- * TODO: we need to keep track of the "me"
- * structures created here, because we need to
- * free them in "pmixp_stepd_finalize"
- */
-void pmixp_server_slurm_conn(int fd)
-{
-	eio_obj_t *obj;
-	PMIXP_DEBUG("Request from fd = %d", fd);
-
-	/* Set nonblocking */
-	fd_set_nonblocking(fd);
-	fd_set_close_on_exec(fd);
-
-	/* prepare I/O engine */
-	pmixp_io_engine_t *eng = xmalloc(sizeof(pmixp_io_engine_t));
-	pmixp_io_init(eng, srv_rcvd_header);
-	pmixp_io_start(eng, fd);
-
-	/* We use slurm_forward_data to send message to stepd's
-	 * SLURM will put user ID there. We need to skip it.
-	 */
-	pmixp_io_rcvd_padding(eng, sizeof(uint32_t));
-
-	if (_slurm_proto_new_msg(eng)) {
-		if (pmixp_io_finalized(eng)) {
-			/* connection was fully processed here */
-			xfree(eng);
-			return;
-		}
-	}
-
-	/* If it is a blocking operation: create AIO object to
-	 * handle it */
-	pmixp_msg_handler_t *hndl = xmalloc(sizeof(pmixp_msg_handler_t));
-	hndl->eng = eng;
-	hndl->process = _slurm_proto_new_msg;
-	obj = eio_obj_create(fd, &peer_ops, (void *)hndl);
-	eio_new_obj(pmixp_info_io(), obj);
-}
-
-/*
- *  Server message processing
- */
-
-static uint32_t _slurm_proto_msize(void *buf)
-{
-	pmixp_slurm_api_rhdr_t *ptr = (pmixp_slurm_api_rhdr_t *)buf;
-	pmixp_base_hdr_t *hdr = &ptr->sapi_shdr.base_hdr;
-	xassert(ptr->size == hdr->msgsize + PMIXP_SLURM_API_SHDR_SIZE);
-	xassert(hdr->magic == PMIX_SERVER_MSG_MAGIC);
-	return hdr->msgsize;
-}
-
-/*
- * Pack message header.
- * Returns packed size
- * Note: asymmetric to _recv_unpack_hdr because of additional SLURM header
- */
-static int _slurm_proto_pack_hdr(pmixp_slurm_api_shdr_t *shdr, void *net)
-{
-	pmixp_base_hdr_t *bhdr = &shdr->base_hdr;
-	Buf packbuf = create_buf(net, sizeof(pmixp_slurm_api_shdr_t));
-	int size = 0;
-	pack32(bhdr->magic, packbuf);
-	pack32(bhdr->type, packbuf);
-	pack32(bhdr->seq, packbuf);
-	pack32(bhdr->nodeid, packbuf);
-	pack32(bhdr->msgsize, packbuf);
-	pack16(shdr->rport, packbuf);
-	size = get_buf_offset(packbuf);
-	xassert(size == PMIXP_SLURM_API_SHDR_SIZE);
-	/* free the Buf packbuf, but not the memory it points to */
-	packbuf->head = NULL;
-	free_buf(packbuf);
-	return size;
-}
-
-/*
- * Unpack message header.
- * Returns 0 on success and -errno on failure
- * Note: asymmetric to _send_pack_hdr because of additional SLURM header
- */
-static int _slurm_proto_unpack_hdr(void *net, void *host)
-{
-	pmixp_slurm_api_rhdr_t *rhdr = (pmixp_slurm_api_rhdr_t *)host;
-	pmixp_slurm_api_shdr_t *shdr = &rhdr->sapi_shdr;
-	pmixp_base_hdr_t *bhdr = &shdr->base_hdr;
-	Buf packbuf = create_buf(net, sizeof(pmixp_slurm_api_rhdr_t));
-	if (unpack32(&rhdr->size, packbuf)) {
-		return -EINVAL;
-	}
-	if (unpack32(&bhdr->magic, packbuf)) {
-		return -EINVAL;
-	}
-	xassert(PMIX_SERVER_MSG_MAGIC == bhdr->magic);
-
-	if (unpack32(&bhdr->type, packbuf)) {
-		return -EINVAL;
-	}
-
-	if (unpack32(&bhdr->seq, packbuf)) {
-		return -EINVAL;
-	}
-
-	if (unpack32(&bhdr->nodeid, packbuf)) {
-		return -EINVAL;
-	}
-
-	if (unpack32(&bhdr->msgsize, packbuf)) {
-		return -EINVAL;
-	}
-
-	if (unpack16(&shdr->rport, packbuf)) {
-		return -EINVAL;
-	}
-	/* Temp: we don't use rport now, but will in the future.
-	 * Just check that it is = 100 for now
-	 */
-	xassert(100 == shdr->rport);
-
-	/* free the Buf packbuf, but not the memory it points to */
-	packbuf->head = NULL;
-	free_buf(packbuf);
-	return 0;
-}
-
 int pmixp_server_send(char *hostlist, pmixp_srv_cmd_t type, uint32_t seq,
 		const char *addr, void *data, size_t size, int p2p)
 {
-	pmixp_slurm_api_shdr_t hdr;
+	pmixp_slurm_shdr_t hdr;
 	pmixp_base_hdr_t *bhdr = &hdr.base_hdr;
 	char nhdr[sizeof(hdr)];
 	size_t hsize;
@@ -516,7 +539,7 @@ int pmixp_server_send(char *hostlist, pmixp_srv_cmd_t type, uint32_t seq,
 	/* Temp: for the verification purposes */
 	hdr.rport = 100;
 
-	hsize = _slurm_proto_pack_hdr(&hdr, nhdr);
+	hsize = _slurm_pack_hdr(&hdr, nhdr);
 	memcpy(data, nhdr, hsize);
 
 	if( !p2p ){
@@ -530,3 +553,271 @@ int pmixp_server_send(char *hostlist, pmixp_srv_cmd_t type, uint32_t seq,
 	}
 	return rc;
 }
+
+/*
+ * ------------------- DIRECT communication protocol -----------------------
+ */
+
+
+typedef struct {
+	pmixp_base_hdr_t hdr;
+	void *payload;
+}_direct_proto_message_t;
+
+/*
+ *  Server message processing
+ */
+
+static uint32_t _direct_msize(void *buf)
+{
+	pmixp_base_hdr_t *hdr = (pmixp_base_hdr_t *)buf;
+	return hdr->msgsize;
+}
+
+/*
+ * Unpack message header.
+ * Returns 0 on success and -errno on failure
+ * Note: asymmetric to _send_pack_hdr because of additional SLURM header
+ */
+static int _direct_hdr_unpack(void *net, void *host)
+{
+	pmixp_base_hdr_t *hdr = (pmixp_base_hdr_t *)host;
+	Buf packbuf = create_buf(net, PMIXP_BASE_HDR_SIZE);
+
+	if (_base_hdr_unpack(packbuf,hdr)) {
+		return -EINVAL;
+	}
+
+	/* free the Buf packbuf, but not the memory it points to */
+	packbuf->head = NULL;
+	free_buf(packbuf);
+	return 0;
+}
+
+/*
+ * Pack message header.
+ * Returns packed size
+ * Note: asymmetric to _recv_unpack_hdr because of additional SLURM header
+ */
+static int _direct_hdr_pack(void *host, void *net)
+{
+	pmixp_base_hdr_t *hdr = (pmixp_base_hdr_t *)host;
+	Buf packbuf = create_buf(net, PMIXP_BASE_HDR_SIZE);
+	int size = 0;
+	_base_hdr_pack(packbuf, hdr);
+	size = get_buf_offset(packbuf);
+	xassert(size == PMIXP_BASE_HDR_SIZE);
+	/* free the Buf packbuf, but not the memory it points to */
+	packbuf->head = NULL;
+	free_buf(packbuf);
+	return size;
+}
+
+/*
+ * Get te pointer to the message header.
+ * Returns packed size
+ * Note: asymmetric to _recv_unpack_hdr because of additional SLURM header
+ */
+static void *_direct_hdr_ptr(void *msg)
+{
+	_direct_proto_message_t *_msg = (_direct_proto_message_t*)msg;
+	return &_msg->hdr;
+}
+
+static void *_direct_payload_ptr(void *msg)
+{
+	_direct_proto_message_t *_msg = (_direct_proto_message_t*)msg;
+	return &_msg->payload;
+}
+
+static void _direct_msg_free(void *msg)
+{
+	_direct_proto_message_t *_msg = (_direct_proto_message_t*)msg;
+	xfree(_msg->payload);
+	xfree(_msg);
+}
+
+/*
+ * See process_handler_t prototype description
+ * on the details of this function output values
+ */
+static void _direct_new_msg(pmixp_conn_t *conn, void *_hdr, void *msg)
+{
+	pmixp_slurm_rhdr_t *hdr = (pmixp_slurm_rhdr_t *)_hdr;
+	_process_server_request(&hdr->shdr.base_hdr, msg);
+}
+
+static void _direct_connection_drop(pmixp_conn_t *conn)
+{
+	pmixp_dconn_t *dconn = (pmixp_dconn_t*)pmixp_conn_get_data(conn);
+	pmixp_dconn_lock(dconn->nodeid);
+	/* TODO: close conn:
+	 * pmixp_dconn_close(dconn);
+	 */
+	pmixp_dconn_unlock(dconn);
+}
+
+/*
+ * Receive the first message identifying initiator
+ */
+static void
+_direct_conn_establish(pmixp_conn_t *conn, void *_hdr, void *msg)
+{
+	pmixp_io_engine_t *eng = pmixp_conn_get_eng(conn);
+	pmixp_base_hdr_t *hdr = (pmixp_base_hdr_t *)hdr;
+	pmixp_dconn_t *dconn = NULL;
+	pmixp_conn_t *new_conn;
+	eio_obj_t *obj;
+	int fd;
+
+	xassert(0 == hdr->msgsize);
+	fd = pmixp_io_detach(eng);
+
+	dconn = pmixp_dconn_establish(hdr->nodeid, fd);
+	if( NULL == dconn ){
+		/* connection was refused because we already
+			 * have established connection
+			 * It seems that some sort of race condition occured
+			 */
+	}
+	new_conn = pmixp_conn_new_persist(PMIXP_PROTO_DIRECT, pmixp_dconn_engine(dconn),
+				      _direct_new_msg, _direct_connection_drop, dconn);
+	obj = eio_obj_create(fd, &direct_peer_ops, (void *)new_conn);
+	eio_new_obj(pmixp_info_io(), obj);
+}
+
+/*
+ * TODO: we need to keep track of the "me"
+ * structures created here, because we need to
+ * free them in "pmixp_stepd_finalize"
+ */
+void pmixp_server_direct_conn(int fd)
+{
+	eio_obj_t *obj;
+	pmixp_conn_t *conn;
+	PMIXP_DEBUG("Request from fd = %d", fd);
+
+	/* Set nonblocking */
+	fd_set_nonblocking(fd);
+	fd_set_close_on_exec(fd);
+	conn = pmixp_conn_new_temp(PMIXP_PROTO_DIRECT, fd, _direct_conn_establish);
+
+	/* try to process right here */
+	pmixp_conn_progress_rcv(conn);
+	if (!pmixp_conn_is_alive(conn)) {
+		/* success, don't need this connection anymore */
+		pmixp_conn_return(conn);
+		return;
+	}
+
+	/* If it is a blocking operation: create AIO object to
+	 * handle it */
+	obj = eio_obj_create(fd, &direct_peer_ops, (void *)conn);
+	eio_new_obj(pmixp_info_io(), obj);
+}
+
+/*
+ * ------------------- SLURM communication protocol -----------------------
+ */
+
+/*
+ * See process_handler_t prototype description
+ * on the details of this function output values
+ */
+static void _slurm_new_msg(pmixp_conn_t *conn,
+			   void *_hdr, void *msg)
+{
+	pmixp_slurm_rhdr_t *hdr = (pmixp_slurm_rhdr_t *)_hdr;
+	_process_server_request(&hdr->shdr.base_hdr, msg);
+}
+
+
+/*
+ * TODO: we need to keep track of the "me"
+ * structures created here, because we need to
+ * free them in "pmixp_stepd_finalize"
+ */
+void pmixp_server_slurm_conn(int fd)
+{
+	eio_obj_t *obj;
+	pmixp_conn_t *conn = NULL;
+
+	PMIXP_DEBUG("Request from fd = %d", fd);
+    pmixp_debug_hang(0);
+
+	/* Set nonblocking */
+	fd_set_nonblocking(fd);
+	fd_set_close_on_exec(fd);
+	conn = pmixp_conn_new_temp(PMIXP_PROTO_SLURM, fd, _slurm_new_msg);
+
+	/* try to process right here */
+	pmixp_conn_progress_rcv(conn);
+	if (!pmixp_conn_is_alive(conn)) {
+		/* success, don't need this connection anymore */
+		pmixp_conn_return(conn);
+		return;
+	}
+
+	/* If it is a blocking operation: create AIO object to
+	 * handle it */
+	obj = eio_obj_create(fd, &slurm_peer_ops, (void *)conn);
+	eio_new_obj(pmixp_info_io(), obj);
+}
+
+/*
+ *  Server message processing
+ */
+
+static uint32_t _slurm_proto_msize(void *buf)
+{
+pmixp_slurm_rhdr_t *ptr = (pmixp_slurm_rhdr_t *)buf;
+	pmixp_base_hdr_t *hdr = &ptr->shdr.base_hdr;
+	xassert(ptr->size == hdr->msgsize + PMIXP_SLURM_API_SHDR_SIZE);
+	xassert(hdr->magic == PMIX_SERVER_MSG_MAGIC);
+	return hdr->msgsize;
+}
+
+/*
+ * Pack message header.
+ * Returns packed size
+ * Note: asymmetric to _recv_unpack_hdr because of additional SLURM header
+ */
+static int _slurm_pack_hdr(void *host, void *net)
+{
+	pmixp_slurm_shdr_t *shdr = (pmixp_slurm_shdr_t *)host;
+	Buf packbuf = create_buf(net, PMIXP_SLURM_API_SHDR_SIZE);
+	int size = 0;
+	/* TODO: use real rport in future */
+	shdr->rport = 100;
+
+	_slurm_hdr_pack(packbuf, shdr);
+	size = get_buf_offset(packbuf);
+	xassert(size == PMIXP_SLURM_API_SHDR_SIZE);
+	/* free the Buf packbuf, but not the memory it points to */
+	packbuf->head = NULL;
+	free_buf(packbuf);
+	return size;
+}
+
+/*
+ * Unpack message header.
+ * Returns 0 on success and -errno on failure
+ * Note: asymmetric to _send_pack_hdr because of additional SLURM header
+ */
+static int _slurm_proto_unpack_hdr(void *net, void *host)
+{
+	pmixp_slurm_rhdr_t *rhdr = (pmixp_slurm_rhdr_t *)host;
+	Buf packbuf = create_buf(net, PMIXP_SLURM_API_RHDR_SIZE);
+	if (_slurm_hdr_unpack(packbuf, rhdr) ) {
+		return -EINVAL;
+	}
+	/* free the Buf packbuf, but not the memory it points to */
+	packbuf->head = NULL;
+	free_buf(packbuf);
+
+	/* TODO: get rid of this */
+	xassert(rhdr->shdr.rport == 100);
+	return 0;
+}
+
+

@@ -144,9 +144,16 @@ static int _server_conn_read(eio_obj_t *obj, List objs)
 			return 0;
 		}
 
-		PMIXP_DEBUG("accepted connection: sd=%d", fd);
-		/* read command from socket and handle it */
-		pmixp_server_slurm_conn(fd);
+		if( pmixp_info_srv_usock_fd() == obj->fd ){
+			PMIXP_DEBUG("SLURM PROTO: accepted connection: sd=%d", fd);
+			/* read command from socket and handle it */
+			pmixp_server_slurm_conn(fd);
+		} else if( pmixp_info_srv_tsock_fd() == obj->fd ){
+			PMIXP_DEBUG("DIRECT PROTO: accepted connection: sd=%d", fd);
+			/* read command from socket and handle it */
+			pmixp_server_direct_conn(fd);
+
+		}
 	}
 	return 0;
 }
@@ -170,6 +177,9 @@ static int _timer_conn_read(eio_obj_t *obj, List objs)
 
 	/* check collective statuses */
 	pmixp_state_coll_cleanup();
+
+	/* cleanup server structures */
+	pmixp_server_cleanup();
 
 	return 0;
 }
@@ -244,7 +254,10 @@ static void *_agent_thread(void *unused)
 
 	_io_handle = eio_handle_create(0);
 
-	obj = eio_obj_create(pmixp_info_srv_fd(), &srv_ops, (void *)(-1));
+	obj = eio_obj_create(pmixp_info_srv_usock_fd(), &srv_ops, (void *)(-1));
+	eio_new_initial_obj(_io_handle, obj);
+
+	obj = eio_obj_create(pmixp_info_srv_tsock_fd(), &srv_ops, (void *)(-1));
 	eio_new_initial_obj(_io_handle, obj);
 
 	obj = eio_obj_create(timer_data.work_in, &to_ops, (void *)(-1));
