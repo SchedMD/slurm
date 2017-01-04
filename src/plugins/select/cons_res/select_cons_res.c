@@ -1914,14 +1914,20 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				last_job_ptr = tmp_job_ptr;
 				_rm_job_from_res(future_part, future_usage,
 						 tmp_job_ptr, 0);
-				if ((rm_job_cnt++ > 200) && !timed_out)
+				if (timed_out) {
+					/* After timeout, remove ALL remaining
+					 * jobs and test if the pending job can
+					 * start, rather than executing the slow
+					 * cr_job_test() operation after
+					 * removing every 200 jobs */
+					continue;
+				}
+				if (rm_job_cnt++ > 200)
 					break;
 				next_job_ptr = list_peek_next(job_iterator);
 				if (!next_job_ptr) {
 					more_jobs = false;
 					break;
-				} else if (timed_out) {
-					continue;
 				} else if (next_job_ptr->end_time >
 				 	   (first_job_ptr->end_time +
 					    time_window)) {

@@ -144,10 +144,11 @@ static void _stat_slurm_dirs(void)
 	struct stat stat_buf;
 	char *problem_dir = NULL;
 
-	if ((stat(slurmctld_conf.plugindir, &stat_buf) == 0) &&
-	    (stat_buf.st_mode & S_IWOTH)) {
-		problem_dir = "PluginDir";
-	}
+	/*
+	 * PluginDir may have multiple values, and is checked by
+	 * _is_valid_path() instead
+	 */
+
 	if ((stat(slurmctld_conf.plugstack, &stat_buf) == 0) &&
 	    (stat_buf.st_mode & S_IWOTH)) {
 		problem_dir = "PlugStack";

@@ -48,6 +48,9 @@ documents those changes that are of interest to users and administrators.
     cores from the lowest rather than highest number cores and sockets.
  -- Add PrologFlags option of Serial to disable concurrent launch of
     Prolog and Epilog scripts.
+ -- Fix security issue caused by insecure file path handling triggered by the
+    failure of a Prolog script. To exploit this a user needs to anticipate or
+    cause the Prolog to fail for their job. CVE-2016-10030.
 
 * Changes in Slurm 17.02.0pre3
 ==============================
@@ -178,6 +181,9 @@ documents those changes that are of interest to users and administrators.
  -- Added infrastructure for setting up federations in database and establishing
     connections between federation clusters.
 
+* Changes in Slurm 16.05.9
+==========================
+
 * Changes in Slurm 16.05.8
 ==========================
  -- Remove StoragePass from being printed out in the slurmdbd log at debug2
@@ -202,6 +208,12 @@ documents those changes that are of interest to users and administrators.
     "PrologFlags=alloc" configured. Send new error prolog failure message to
     the salloc or srun command as needed.
  -- Prevent possible out-of-bounds read in slurmstepd on an invalid #! line.
+ -- Fix check for PluginDir within slurmctld to work with multiple directories.
+ -- Cancel interactive jobs automatically on communication error to launching
+    srun/salloc process.
+ -- Fix security issue caused by insecure file path handling triggered by the
+    failure of a Prolog script. To exploit this a user needs to anticipate or
+    cause the Prolog to fail for their job. CVE-2016-10030.
 
 * Changes in Slurm 16.05.7
 ==========================
@@ -905,6 +917,9 @@ documents those changes that are of interest to users and administrators.
  -- Add Max*PerAccount options for QOS.
  -- Protect slurm_mutex_* calls with abort() on failure.
 
+* Changes in Slurm 15.08.14
+===========================
+
 * Changes in Slurm 15.08.13
 ===========================
  -- Fix issue where slurmd could core when running the ipmi energy plugin.
@@ -933,6 +948,9 @@ documents those changes that are of interest to users and administrators.
     reconfiguration.
  -- Ignore warnings about depricated functions. This is primarily there for
     new glibc 2.24+ that depricates readdir_r.
+ -- Fix security issue caused by insecure file path handling triggered by the
+    failure of a Prolog script. To exploit this a user needs to anticipate or
+    cause the Prolog to fail for their job. CVE-2016-10030.
 
 * Changes in Slurm 15.08.12
 ===========================
