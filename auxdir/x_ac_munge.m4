@@ -37,6 +37,7 @@ AC_DEFUN([X_AC_MUNGE], [
           test -f "$d/include/munge.h" || continue
           for bit in $_x_ac_munge_libs; do
             test -d "$d/$bit" || continue
+            test -f "$d/$bit/libmunge.so" || continue
             _x_ac_munge_libs_save="$LIBS"
             LIBS="-L$d/$bit -lmunge $LIBS"
             AC_LINK_IFELSE(
