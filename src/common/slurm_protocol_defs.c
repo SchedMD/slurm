@@ -687,8 +687,10 @@ extern void slurm_free_job_id_response_msg(job_id_response_msg_t * msg)
 
 extern void slurm_free_job_step_kill_msg(job_step_kill_msg_t * msg)
 {
-	xfree(msg->sjob_id);
-	xfree(msg);
+	if (msg) {
+		xfree(msg->sjob_id);
+		xfree(msg);
+	}
 }
 
 extern void slurm_free_job_info_request_msg(job_info_request_msg_t *msg)
