@@ -94,7 +94,7 @@ extern void parse_command_line(int argc, char *argv[])
 		{NULL,        0,                 0, 0}
 	};
 
-	if (getenv("SBCAST_COMPRESS"))
+	if ((env_val = getenv("SBCAST_COMPRESS")))
 		params.compress = parse_compress_type(env_val);
 	if ( ( env_val = getenv("SBCAST_FANOUT") ) )
 		params.fanout = atoi(env_val);

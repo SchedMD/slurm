@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 16.05.9
 ==========================
+ -- Fix parsing of SBCAST_COMPRESS environment variable in sbcast.
 
 * Changes in Slurm 16.05.8
 ==========================
