@@ -7,7 +7,6 @@
 # --with blcr        %_with_blcr          1     require blcr support
 # --with cray        %_with_cray          1     build for a Cray system without ALPS
 # --with cray_network %_with_cray_network 1     build for a non-Cray system with a Cray network
-# --without debug    %_without_debug      1     don't compile with debugging symbols
 # --with pmix        %_with_pmix          1     build pmix support
 # --with lua         %_with_lua           1     build Slurm lua bindings (proctrack only for now)
 # --without munge    %_without_munge      path  don't build auth-munge RPM
@@ -47,9 +46,6 @@
 
 # Use readline by default on all systems
 %slurm_with_opt readline
-
-# Use debug by default on all systems
-%slurm_with_opt debug
 
 # Build with PAM by default on linux
 %ifos linux
@@ -298,7 +294,6 @@ according to the Slurm
 
 %build
 %configure \
-	%{!?slurm_with_debug:--disable-debug} \
 	%{?slurm_with_partial_attach:--enable-partial-attach} \
 	%{?with_db2_dir:--with-db2-dir=%{?with_db2_dir}} \
 	%{?with_pam_dir:--with-pam_dir=%{?with_pam_dir}} \
