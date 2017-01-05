@@ -2446,4 +2446,11 @@ extern void set_job_fed_details(struct job_record *job_ptr,
  */
 extern int purge_job_record(uint32_t job_id);
 
+/*
+ * copy_job_record_to_job_desc - construct a job_desc_msg_t for a job.
+ * IN job_ptr - the job record
+ * RET the job_desc_msg_t, NULL on error
+ */
+extern job_desc_msg_t *copy_job_record_to_job_desc(struct job_record *job_ptr);
+
 #endif /* !_HAVE_SLURMCTLD_H */

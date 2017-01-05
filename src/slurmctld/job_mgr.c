@@ -162,8 +162,6 @@ static int  _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 					 struct job_record **job_ptr,
 					 bitstr_t ** exc_bitmap,
 					 bitstr_t ** req_bitmap);
-static job_desc_msg_t * _copy_job_record_to_job_desc(
-				struct job_record *job_ptr);
 static char *_copy_nodelist_no_dup(char *node_list);
 static struct job_record *_create_job_record(int *error_code,
 					     uint32_t num_jobs);
@@ -15334,7 +15332,7 @@ static void _pack_job_for_ckpt (struct job_record *job_ptr, Buf buffer)
 	packstr(job_ptr->nodes, buffer);
 
 	/* save job req */
-	job_desc = _copy_job_record_to_job_desc(job_ptr);
+	job_desc = copy_job_record_to_job_desc(job_ptr);
 	msg.msg_type = REQUEST_SUBMIT_BATCH_JOB;
 	msg.protocol_version = SLURM_PROTOCOL_VERSION;
 	msg.data = job_desc;
@@ -15351,12 +15349,11 @@ static void _pack_job_for_ckpt (struct job_record *job_ptr, Buf buffer)
 }
 
 /*
- * _copy_job_record_to_job_desc - construct a job_desc_msg_t for a job.
+ * copy_job_record_to_job_desc - construct a job_desc_msg_t for a job.
  * IN job_ptr - the job record
  * RET the job_desc_msg_t, NULL on error
  */
-static job_desc_msg_t *
-_copy_job_record_to_job_desc(struct job_record *job_ptr)
+extern job_desc_msg_t *copy_job_record_to_job_desc(struct job_record *job_ptr)
 {
 	job_desc_msg_t *job_desc;
 	struct job_details *details = job_ptr->details;
