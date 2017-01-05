@@ -206,7 +206,6 @@ static void _pack_pending_job_details(struct job_details *detail_ptr,
 				      Buf buffer,
 				      uint16_t protocol_version);
 static bool _parse_array_tok(char *tok, bitstr_t *array_bitmap, uint32_t max);
-static int  _purge_job_record(uint32_t job_id);
 static void _purge_missing_jobs(int node_inx, time_t now);
 static int  _read_data_array_from_file(int fd, char *file_name, char ***data,
 				       uint32_t * size,
@@ -2259,7 +2258,7 @@ unpack_error:
 	if (job_ptr) {
 		if (job_ptr->job_id == 0)
 			job_ptr->job_id = NO_VAL;
-		_purge_job_record(job_ptr->job_id);
+		purge_job_record(job_ptr->job_id);
 	}
 	for (i=0; i<pelog_env_size; i++)
 		xfree(pelog_env[i]);
@@ -4367,7 +4366,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		job_ptr->job_state  = JOB_FAILED;
 		job_ptr->exit_code  = 1;
 		job_ptr->start_time = job_ptr->end_time = now;
-		_purge_job_record(job_ptr->job_id);
+		purge_job_record(job_ptr->job_id);
 		return rc;
 	}
 
@@ -4446,7 +4445,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		job_ptr->job_state  = JOB_FAILED;
 		job_ptr->exit_code  = 1;
 		job_ptr->start_time = job_ptr->end_time = now;
-		_purge_job_record(job_ptr->job_id);
+		purge_job_record(job_ptr->job_id);
 	} else if (!with_slurmdbd)
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
@@ -6302,7 +6301,7 @@ cleanup_fail:
 		job_ptr->state_reason = FAIL_SYSTEM;
 		xfree(job_ptr->state_desc);
 		job_ptr->start_time = job_ptr->end_time = time(NULL);
-		_purge_job_record(job_ptr->job_id);
+		purge_job_record(job_ptr->job_id);
 		*job_pptr = (struct job_record *) NULL;
 	}
 	FREE_NULL_LIST(license_list);
@@ -9691,7 +9690,7 @@ void purge_old_job(void)
 
 
 /*
- * _purge_job_record - purge specific job record. No testing is performed to
+ * purge_job_record - purge specific job record. No testing is performed to
  *	insure the job records has no active references. Use only for job
  *	records that were never fully operational (e.g. WILL_RUN test, failed
  *	job load, failed job create, etc.).
@@ -9699,7 +9698,7 @@ void purge_old_job(void)
  * RET int - count of job's purged
  * global: job_list - global job table
  */
-static int _purge_job_record(uint32_t job_id)
+extern int purge_job_record(uint32_t job_id)
 {
 	return list_delete_all(job_list, &list_find_job_id, (void *) &job_id);
 }

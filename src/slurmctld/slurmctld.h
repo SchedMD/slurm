@@ -2434,4 +2434,16 @@ extern void set_partition_tres();
  */
 extern void set_job_fed_details(struct job_record *job_ptr,
 				uint64_t fed_siblings);
+
+/*
+ * purge_job_record - purge specific job record. No testing is performed to
+ *	insure the job records has no active references. Use only for job
+ *	records that were never fully operational (e.g. WILL_RUN test, failed
+ *	job load, failed job create, etc.).
+ * IN job_id - job_id of job record to be purged
+ * RET int - count of job's purged
+ * global: job_list - global job table
+ */
+extern int purge_job_record(uint32_t job_id);
+
 #endif /* !_HAVE_SLURMCTLD_H */
