@@ -1248,6 +1248,7 @@ static int _dump_job_state(void *x, void *arg)
 		      dump_job_ptr->pelog_env_size, buffer);
 	pack32(dump_job_ptr->pack_leader, buffer);
 
+	packstr(dump_job_ptr->clusters, buffer);
 	_dump_job_fed_details(dump_job_ptr->fed_details, buffer);
 
 	return 0;
@@ -1289,6 +1290,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	char *gres_alloc = NULL, *gres_req = NULL, *gres_used = NULL;
 	char *burst_buffer = NULL, *burst_buffer_state = NULL;
 	char *admin_comment = NULL, *task_id_str = NULL, *mcs_label = NULL;
+	char *clusters = NULL;
 	uint32_t task_id_size = NO_VAL;
 	char **spank_job_env = (char **) NULL;
 	List gres_list = NULL, part_ptr_list = NULL;
@@ -1509,7 +1511,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpackstr_array(&pelog_env, &pelog_env_size,
 				     buffer);
 		safe_unpack32(&pack_leader, buffer);
-
+		safe_unpackstr_xmalloc(&clusters, &name_len, buffer);
 		if ((error_code = _load_job_fed_details(&job_fed_details,
 							buffer,
 							protocol_version)))
@@ -2213,6 +2215,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->pelog_env    = pelog_env;
 	job_ptr->pelog_env_size = pelog_env_size;
 	job_ptr->pack_leader  = pack_leader;
+	job_ptr->clusters     = clusters;
 	job_ptr->fed_details  = job_fed_details;
 	return SLURM_SUCCESS;
 
@@ -2223,6 +2226,7 @@ unpack_error:
 	xfree(admin_comment);
 	xfree(batch_host);
 	xfree(burst_buffer);
+	xfree(clusters);
 	xfree(comment);
 	xfree(gres);
 	xfree(gres_alloc);
@@ -7400,6 +7404,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	else
 		detail_ptr->ckpt_dir = xstrdup(detail_ptr->work_dir);
 
+	job_ptr->clusters = xstrdup(job_desc->clusters);
+
 	/* The priority needs to be set after this since we don't have
 	 * an association rec yet
 	 */
@@ -8253,6 +8259,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->burst_buffer);
 	checkpoint_free_jobinfo(job_ptr->check_job);
 	xfree(job_ptr->comment);
+	xfree(job_ptr->clusters);
 	_free_job_fed_details(&job_ptr->fed_details);
 	free_job_resources(&job_ptr->job_resrcs);
 	xfree(job_ptr->gres);
@@ -15380,6 +15387,7 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->begin_time        = details->begin_time;
 	job_desc->ckpt_interval     = job_ptr->ckpt_interval;
 	job_desc->ckpt_dir          = xstrdup(details->ckpt_dir);
+	job_desc->clusters          = xstrdup(job_ptr->clusters);
 	job_desc->comment           = xstrdup(job_ptr->comment);
 	job_desc->contiguous        = details->contiguous;
 	job_desc->core_spec         = details->core_spec;

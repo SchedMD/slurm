@@ -604,6 +604,8 @@ struct job_record {
 	uint16_t ckpt_interval;		/* checkpoint interval in minutes */
 	time_t ckpt_time;		/* last time job was periodically
 					 * checkpointed */
+	char *clusters;			/* clusters job is submitted to with -M
+					   option */
 	char *comment;			/* arbitrary comment */
 	uint32_t cpu_cnt;		/* current count of CPUs held
 					 * by the job, decremented while job is
