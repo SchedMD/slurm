@@ -9,7 +9,6 @@
 # --with cray_network %_with_cray_network 1     build for a non-Cray system with a Cray network
 # --with pmix        %_with_pmix          1     build pmix support
 # --with lua         %_with_lua           1     build Slurm lua bindings (proctrack only for now)
-# --without munge    %_without_munge      path  don't build auth-munge RPM
 # --with mysql       %_with_mysql         1     require mysql/mariadb support
 # --without netloc   %_without_netloc     path  require netloc support
 # --with openssl     %_with_openssl       1     require openssl RPM to be installed
@@ -37,9 +36,6 @@
 %slurm_without_opt mysql
 %slurm_without_opt blcr
 %slurm_without_opt openssl
-
-# Build with munge by default on all platforms (disable using --without munge)
-%slurm_with_opt munge
 
 # Build with OpenSSL by default on all platforms (disable using --without openssl)
 %slurm_with_opt openssl
@@ -121,6 +117,7 @@ BuildRequires: glib2-devel
 BuildRequires: pkgconfig
 %endif
 
+BuildRequires: munge-devel
 BuildRequires: perl(ExtUtils::MakeMaker)
 
 %description
@@ -194,20 +191,6 @@ Requires: slurm
 %description devel
 Development package for Slurm.  This package includes the header files
 and static libraries for the Slurm API
-
-# This is named munge instead of auth-munge since there are 2 plugins in the
-# package.  auth-munge and crypto-munge
-%if %{slurm_with munge}
-%package munge
-Summary: Slurm authentication and crypto implementation using Munge
-Group: System Environment/Base
-Requires: slurm munge
-BuildRequires: munge-devel munge-libs
-Obsoletes: slurm-auth-munge
-%description munge
-Slurm authentication and crypto implementation using Munge. Used to
-authenticate user originating an RPC, digitally sign and/or encrypt messages
-%endif
 
 %package slurmdbd
 Summary: Slurm database daemon
@@ -303,7 +286,6 @@ according to the Slurm
 	%{?with_mysql_config:--with-mysql_config=%{?with_mysql_config}} \
 	%{?with_pg_config:--with-pg_config=%{?with_pg_config}} \
 	%{?with_ssl:--with-ssl=%{?with_ssl}} \
-	%{?with_munge:--with-munge=%{?with_munge}}\
 	%{?with_netloc:--with-netloc=%{?with_netloc}}\
 	%{?with_blcr:--with-blcr=%{?with_blcr}}\
 	%{?slurm_with_cray:--enable-native-cray}\
@@ -407,10 +389,6 @@ rm -f $RPM_BUILD_ROOT/%{_mandir}/man5/bluegene*
 rm -f $RPM_BUILD_ROOT/%{_sbindir}/sfree
 rm -f $RPM_BUILD_ROOT/%{_sbindir}/slurm_epilog
 rm -f $RPM_BUILD_ROOT/%{_sbindir}/slurm_prolog
-%if ! %{slurm_with munge}
-rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/auth_munge.so
-rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/crypto_munge.so
-%endif
 rm -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/.packlist
 rm -f $RPM_BUILD_ROOT/%{_perlarchlibdir}/perllocal.pod
 rm -f $RPM_BUILD_ROOT/%{_perldir}/perllocal.pod
@@ -638,14 +616,6 @@ rm -rf $RPM_BUILD_ROOT
 #%{_mandir}/man3/slurmdb_*
 #############################################################################
 
-%if %{slurm_with munge}
-%files munge
-%defattr(-,root,root)
-%{_libdir}/slurm/auth_munge.so
-%{_libdir}/slurm/crypto_munge.so
-%endif
-#############################################################################
-
 %files perlapi
 %defattr(-,root,root)
 %{_perldir}/Slurm.pm
@@ -685,11 +655,13 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/acct_gather_infiniband_none.so
 %{_libdir}/slurm/acct_gather_energy_none.so
 %{_libdir}/slurm/acct_gather_profile_none.so
+%{_libdir}/slurm/auth_munge.so
 %{_libdir}/slurm/burst_buffer_generic.so
 %{_libdir}/slurm/checkpoint_none.so
 %{_libdir}/slurm/checkpoint_ompi.so
 %{_libdir}/slurm/core_spec_cray.so
 %{_libdir}/slurm/core_spec_none.so
+%{_libdir}/slurm/crypto_munge.so
 %{_libdir}/slurm/ext_sensors_none.so
 %{_libdir}/slurm/gres_gpu.so
 %{_libdir}/slurm/gres_mic.so
