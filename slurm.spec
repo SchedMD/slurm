@@ -3,11 +3,6 @@
 #
 # build options      .rpmmacros options      change to default action
 # ===============    ====================    ========================
-# --enable-multiple-slurmd %_with_multiple_slurmd 1  build with the multiple slurmd
-#                                               option.  Typically used to simulate a
-#                                               larger system than one has access to.
-# --enable-salloc-background %_with_salloc_background 1  on a cray system alloc salloc
-#                                               to execute as a background process.
 # --prefix           %_prefix             path  install path for commands, libraries, etc.
 # --with auth_none   %_with_auth_none     1     build auth-none RPM
 # --with blcr        %_with_blcr          1     require blcr support
@@ -38,8 +33,6 @@
 %slurm_without_opt auth_none
 %slurm_without_opt cray
 %slurm_without_opt cray_network
-%slurm_without_opt salloc_background
-%slurm_without_opt multiple_slurmd
 %slurm_without_opt pmix
 
 # These options are only here to force there to be these on the build.
@@ -331,9 +324,7 @@ according to the Slurm
 	%{?with_blcr:--with-blcr=%{?with_blcr}}\
 	%{?slurm_with_cray:--enable-native-cray}\
 	%{?slurm_with_cray_network:--enable-cray-network}\
-	%{?slurm_with_salloc_background:--enable-salloc-background} \
 	%{!?slurm_with_readline:--without-readline} \
-	%{?slurm_with_multiple_slurmd:--enable-multiple-slurmd} \
 	%{?slurm_with_pmix:--with-pmix=%{?with_pmix_dir}} \
 	%{?with_freeipmi:--with-freeipmi=%{?with_freeipmi}}\
 	%{?with_cflags}
