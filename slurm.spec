@@ -89,20 +89,6 @@ Requires: slurm-plugins
 BuildRequires: python
 %endif
 
-%ifos solaris
-Requires:	SUNWgnome-base-libs
-BuildRequires:	SUNWgnome-base-libs
-
-Requires:	SUNWopenssl
-BuildRequires:	SUNWopenssl
-
-BuildRequires:	SUNWaconf
-BuildRequires:	SUNWgnu-automake-110
-BuildRequires:	SUNWlibtool
-BuildRequires:	SUNWgcc
-BuildRequires:	SUNWgnome-common-devel
-%endif
-
 # not sure if this is always an actual rpm or not so leaving the requirement out
 #%if %{slurm_with blcr}
 #BuildRequires: blcr
