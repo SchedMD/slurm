@@ -14277,7 +14277,9 @@ static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
 			uint32_t state)
 {
 	bool is_running = false, is_suspended = false, is_completed = false;
+	bool is_completing = false;
 	time_t now = time(NULL);
+	uint32_t completing_flags;
 
 	/* validate the request */
 	if ((uid != job_ptr->user_id) && !validate_operator(uid) &&
@@ -14321,10 +14323,8 @@ static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
 	 * of done/exit/exiting jobs.
 	 */
 	if (IS_JOB_COMPLETING(job_ptr)) {
-		uint32_t flags;
-		flags = job_ptr->job_state & JOB_STATE_FLAGS;
-		job_ptr->job_state = JOB_PENDING | flags;
-		goto reply;
+		completing_flags = job_ptr->job_state & JOB_STATE_FLAGS;
+		is_completing = true;
 	}
 
 	if (IS_JOB_SUSPENDED(job_ptr)) {
@@ -14341,7 +14341,7 @@ static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
 	job_ptr->time_last_active  = now;
 	if (is_suspended)
 		job_ptr->end_time = job_ptr->suspend_time;
-	else
+	else if (!is_completing)
 		job_ptr->end_time = now;
 
 	/* Save the state of the job so that
@@ -14359,6 +14359,11 @@ static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
 	job_ptr->job_state  = JOB_REQUEUE;
 	build_cg_bitmap(job_ptr);
 	job_completion_logger(job_ptr, true);
+
+	if (is_completing) {
+		job_ptr->job_state = JOB_PENDING | completing_flags;
+		goto reply;
+	}
 
 	/* Deallocate resources only if the job has some.
 	 * JOB_COMPLETING is needed to properly clean up steps. */
