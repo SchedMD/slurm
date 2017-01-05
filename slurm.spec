@@ -35,10 +35,6 @@
 # If they are not set they will still be compiled if the packages exist.
 %slurm_without_opt mysql
 %slurm_without_opt blcr
-%slurm_without_opt openssl
-
-# Build with OpenSSL by default on all platforms (disable using --without openssl)
-%slurm_with_opt openssl
 
 # Use readline by default on all systems
 %slurm_with_opt readline
