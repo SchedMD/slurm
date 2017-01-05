@@ -979,16 +979,6 @@ rm -rf $RPM_BUILD_ROOT
 #############################################################################
 
 %pre
-#if [ -x /etc/init.d/slurm ]; then
-#    if /etc/init.d/slurm status | grep -q running; then
-#        /etc/init.d/slurm stop
-#    fi
-#fi
-#if [ -x /etc/init.d/slurmdbd ]; then
-#    if /etc/init.d/slurmdbd status | grep -q running; then
-#        /etc/init.d/slurmdbd stop
-#    fi
-#fi
 
 %post
 if [ -x /sbin/ldconfig ]; then
