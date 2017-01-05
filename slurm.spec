@@ -12,7 +12,6 @@
 # --with auth_none   %_with_auth_none     1     build auth-none RPM
 # --with blcr        %_with_blcr          1     require blcr support
 # --with cray        %_with_cray          1     build for a Cray system without ALPS
-# --with cray_alps   %_with_cray_alps     1     build for a Cray system with ALPS
 # --with cray_network %_with_cray_network 1     build for a non-Cray system with a Cray network
 # --without debug    %_without_debug      1     don't compile with debugging symbols
 # --with pmix        %_with_pmix          1     build pmix support
@@ -40,7 +39,6 @@
 #  Options that are off by default (enable with --with <opt>)
 %slurm_without_opt auth_none
 %slurm_without_opt cray
-%slurm_without_opt cray_alps
 %slurm_without_opt cray_network
 %slurm_without_opt salloc_background
 %slurm_without_opt multiple_slurmd
@@ -72,10 +70,6 @@
 %slurm_without_opt sgijob
 %slurm_without_opt lua
 %slurm_without_opt partial-attach
-
-%if %{slurm_with cray_alps}
-%slurm_with_opt sgijob
-%endif
 
 Name:    see META file
 Version: see META file
@@ -129,14 +123,6 @@ BuildRequires: openssl-devel >= 0.9.6 openssl >= 0.9.6
 BuildRequires: mysql-devel >= 5.0.0
 %else
 BuildRequires: mariadb-devel >= 5.0.0
-%endif
-%endif
-
-%if %{slurm_with cray_alps}
-%if %{use_mysql_devel}
-BuildRequires: mysql-devel
-%else
-BuildRequires: mariadb-devel
 %endif
 %endif
 
@@ -424,7 +410,7 @@ fi
 
 # Do not package Slurm's version of libpmi on Cray systems.
 # Cray's version of libpmi should be used.
-%if %{slurm_with cray} || %{slurm_with cray_alps}
+%if %{slurm_with cray}
    rm -f $RPM_BUILD_ROOT/%{_libdir}/libpmi*
    %if %{slurm_with cray}
       install -D -m644 contribs/cray/plugstack.conf.template ${RPM_BUILD_ROOT}%{_sysconfdir}/plugstack.conf.template
@@ -721,7 +707,7 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_libdir}/slurm/src
 %dir /etc/ld.so.conf.d
 /etc/ld.so.conf.d/slurm.conf
-%if %{slurm_with cray} || %{slurm_with cray_alps}
+%if %{slurm_with cray}
 %dir /opt/modulefiles/slurm
 %endif
 %if %{slurm_with cray}
@@ -857,7 +843,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/sched_backfill.so
 %{_libdir}/slurm/sched_builtin.so
 %{_libdir}/slurm/sched_hold.so
-%{_libdir}/slurm/select_alps.so
 %{_libdir}/slurm/select_cray.so
 %{_libdir}/slurm/select_cons_res.so
 %{_libdir}/slurm/select_linear.so
