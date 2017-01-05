@@ -275,17 +275,32 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	}
 
 	/****** Line (optional) ******/
-	if (node_ptr->node_hostname || node_ptr->node_addr) {
-		if (node_ptr->port && node_ptr->port != slurm_get_slurmd_port())
-			xstrfmtcat(out, "NodeAddr=%s NodeHostName=%s Port=%u "
-				   "Version=%s", node_ptr->node_addr,
-				   node_ptr->node_hostname, node_ptr->port,
-				   node_ptr->version);
-		else
-			xstrfmtcat(out, "NodeAddr=%s NodeHostName=%s "
-				   "Version=%s", node_ptr->node_addr,
-				   node_ptr->node_hostname, node_ptr->version);
-		xstrcat(out, line_end);
+	{
+		bool line_used = false;
+
+		if (node_ptr->node_addr) {
+			xstrfmtcat(out, "NodeAddr=%s ", node_ptr->node_addr);
+			line_used = true;
+		}
+
+		if (node_ptr->node_hostname) {
+			xstrfmtcat(out, "NodeHostName=%s ",
+				   node_ptr->node_hostname);
+			line_used = true;
+		}
+
+		if (node_ptr->port != slurm_get_slurmd_port()) {
+			xstrfmtcat(out, "Port=%u ", node_ptr->port);
+			line_used = true;
+		}
+
+		if (node_ptr->version && xstrcmp(node_ptr->version, slurmctld_conf.version)) {
+			xstrfmtcat(out, "Version=%s", node_ptr->version);
+			line_used = true;
+		}
+
+		if (line_used)
+			xstrcat(out, line_end);
 	}
 
 	/****** Line ******/
