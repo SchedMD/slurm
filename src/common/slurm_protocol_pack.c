@@ -8771,6 +8771,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		pack16(job_desc_ptr->mail_type, buffer);
 		packstr(job_desc_ptr->mail_user, buffer);
 		packstr(job_desc_ptr->reservation, buffer);
+		pack16(job_desc_ptr->restart_cnt, buffer);
 		pack16(job_desc_ptr->warn_flags, buffer);
 		pack16(job_desc_ptr->warn_signal, buffer);
 		pack16(job_desc_ptr->warn_time, buffer);
@@ -9313,6 +9314,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->reservation,
 				       &uint32_tmp, buffer);
+		safe_unpack16(&job_desc_ptr->restart_cnt, buffer);
 		safe_unpack16(&job_desc_ptr->warn_flags, buffer);
 		safe_unpack16(&job_desc_ptr->warn_signal, buffer);
 		safe_unpack16(&job_desc_ptr->warn_time, buffer);

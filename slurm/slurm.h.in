@@ -1444,6 +1444,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *qos;		/* Quality of Service */
 	uint16_t reboot;	/* force node reboot before startup */
 	char *resp_host;	/* NOTE: Set by slurmctld */
+	uint16_t restart_cnt;	/* count of job restarts */
 	uint8_t resv_port;      /* jobpack resv-port for nodes flag */
 	char *req_nodes;	/* comma separated list of required nodes
 				 * default NONE */
