@@ -13,7 +13,6 @@
 # --without netloc   %_without_netloc     path  require netloc support
 # --with openssl     %_with_openssl       1     require openssl RPM to be installed
 # --without pam      %_without_pam        1     don't require pam-devel RPM to be installed
-# --without readline %_without_readline   1     don't require readline-devel RPM to be installed
 #
 #  Allow defining --with and --without build options or %_with and %without in .rpmmacros
 #    slurm_with    builds option by default unless --without is specified
@@ -35,9 +34,6 @@
 # If they are not set they will still be compiled if the packages exist.
 %slurm_without_opt mysql
 %slurm_without_opt blcr
-
-# Use readline by default on all systems
-%slurm_with_opt readline
 
 # Build with PAM by default on linux
 %ifos linux
@@ -69,10 +65,6 @@ BuildRequires: python
 #%if %{slurm_with blcr}
 #BuildRequires: blcr
 #%endif
-
-%if %{slurm_with readline}
-BuildRequires: readline-devel
-%endif
 
 %if %{slurm_with openssl}
 BuildRequires: openssl-devel >= 0.9.6 openssl >= 0.9.6
@@ -115,6 +107,7 @@ BuildRequires: pkgconfig
 
 BuildRequires: munge-devel
 BuildRequires: perl(ExtUtils::MakeMaker)
+BuildRequires: readline-devel
 
 %description
 Slurm is an open source, fault-tolerant, and highly
@@ -286,7 +279,6 @@ according to the Slurm
 	%{?with_blcr:--with-blcr=%{?with_blcr}}\
 	%{?slurm_with_cray:--enable-native-cray}\
 	%{?slurm_with_cray_network:--enable-cray-network}\
-	%{!?slurm_with_readline:--without-readline} \
 	%{?slurm_with_pmix:--with-pmix=%{?with_pmix_dir}} \
 	%{?with_freeipmi:--with-freeipmi=%{?with_freeipmi}}\
 	%{?with_cflags}
