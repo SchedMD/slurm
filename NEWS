@@ -4,6 +4,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 17.02.0pre5
 ==============================
  -- Add port info to 'sinfo' and 'scontrol show node'.
+ -- Fix errant definition of USE_64BIT_BITSTR which can lead to core dumps.
 
 * Changes in Slurm 17.02.0pre4
 ==============================

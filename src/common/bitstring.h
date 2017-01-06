@@ -59,8 +59,6 @@
 
 #include <inttypes.h>
 
-#define USE_64BIT_BITSTR
-
 #define BITSTR_SHIFT_WORD8	3
 #define BITSTR_SHIFT_WORD32	5
 #define BITSTR_SHIFT_WORD64	6
