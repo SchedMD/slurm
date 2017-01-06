@@ -1539,7 +1539,8 @@ static void _slurm_rpc_get_fed(slurm_msg_t * msg)
 	slurm_msg_t response_msg;
 	slurmctld_lock_t fed_read_lock = {
 		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
-	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, slurm_get_auth_info());
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
+					 slurmctld_config.auth_info);
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_FED_INFO from uid=%d", uid);
