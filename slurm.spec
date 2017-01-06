@@ -178,16 +178,10 @@ and static libraries for the Slurm API
 %package slurmdbd
 Summary: Slurm database daemon
 Group: System Environment/Base
-Requires: slurm-plugins slurm-sql
+Requires: slurm-plugins
 %description slurmdbd
 Slurm database daemon. Used to accept and process database RPCs and upload
 database changes to slurmctld daemons on each cluster
-
-%package sql
-Summary: Slurm SQL support
-Group: System Environment/Base
-%description sql
-Slurm SQL support. Contains interfaces to MySQL.
 
 %package plugins
 Summary: Slurm plugins (loadable shared objects)
@@ -443,15 +437,11 @@ touch $LIST
 test -f %{buildroot}/usr/lib/systemd/system/slurmdbd.service	&&
   echo /usr/lib/systemd/system/slurmdbd.service		>> $LIST
 
-LIST=./sql.files
-touch $LIST
-test -f %{buildroot}/%{_libdir}/slurm/accounting_storage_mysql.so &&
-   echo %{_libdir}/slurm/accounting_storage_mysql.so >> $LIST
-test -f %{buildroot}/%{_libdir}/slurm/jobcomp_mysql.so            &&
-   echo %{_libdir}/slurm/jobcomp_mysql.so            >> $LIST
 
 LIST=./plugins.files
 touch $LIST
+test -f %{buildroot}/%{_libdir}/slurm/accounting_storage_mysql.so &&
+   echo %{_libdir}/slurm/accounting_storage_mysql.so >> $LIST
 test -f %{buildroot}/%{_libdir}/slurm/acct_gather_energy_cray.so  &&
    echo %{_libdir}/slurm/acct_gather_energy_cray.so  >> $LIST
 test -f %{buildroot}/%{_libdir}/slurm/acct_gather_energy_ibmaem.so &&
@@ -474,6 +464,8 @@ test -f %{buildroot}/%{_libdir}/slurm/ext_sensors_rrd.so          &&
    echo %{_libdir}/slurm/ext_sensors_rrd.so          >> $LIST
 test -f %{buildroot}/%{_libdir}/slurm/jobcomp_elasticsearch.so    &&
    echo %{_libdir}/slurm/jobcomp_elasticsearch.so    >> $LIST
+test -f %{buildroot}/%{_libdir}/slurm/jobcomp_mysql.so            &&
+   echo %{_libdir}/slurm/jobcomp_mysql.so            >> $LIST
 test -f %{buildroot}/%{_libdir}/slurm/launch_slurm.so             &&
    echo %{_libdir}/slurm/launch_slurm.so             >> $LIST
 test -f %{buildroot}/%{_libdir}/slurm/launch_aprun.so             &&
@@ -613,11 +605,6 @@ rm -rf %{buildroot}
 %{_mandir}/man5/slurmdbd.*
 %{_mandir}/man8/slurmdbd.*
 %config %{_sysconfdir}/slurmdbd.conf.example
-#############################################################################
-
-%files -f sql.files sql
-%defattr(-,root,root)
-%dir %{_libdir}/slurm
 #############################################################################
 
 %files -f plugins.files plugins
