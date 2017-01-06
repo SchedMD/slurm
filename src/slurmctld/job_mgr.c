@@ -8373,7 +8373,8 @@ static int _list_find_job_old(void *job_entry, void *key)
 		return 0;	/* No job record purging */
 
 	min_age  = now - slurmctld_conf.min_job_age;
-	if (job_ptr->end_time > min_age)
+	if (fed_mgr_is_origin_job(job_ptr) &&
+	    (job_ptr->end_time > min_age))
 		return 0;	/* Too new to purge */
 
 	if (!(IS_JOB_COMPLETED(job_ptr)))
