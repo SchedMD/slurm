@@ -261,13 +261,10 @@ according to the Slurm
 %build
 %configure \
 	%{?slurm_with_partial_attach:--enable-partial-attach} \
-	%{?with_db2_dir:--with-db2-dir=%{?with_db2_dir}} \
 	%{?with_pam_dir:--with-pam_dir=%{?with_pam_dir}} \
 	%{?with_proctrack:--with-proctrack=%{?with_proctrack}}\
 	%{?with_cpusetdir:--with-cpusetdir=%{?with_cpusetdir}} \
-	%{?with_apbasildir:--with-apbasildir=%{?with_apbasildir}} \
 	%{?with_mysql_config:--with-mysql_config=%{?with_mysql_config}} \
-	%{?with_pg_config:--with-pg_config=%{?with_pg_config}} \
 	%{?with_ssl:--with-ssl=%{?with_ssl}} \
 	%{?with_netloc:--with-netloc=%{?with_netloc}}\
 	%{?with_blcr:--with-blcr=%{?with_blcr}}\
