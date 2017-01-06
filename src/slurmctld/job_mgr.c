@@ -15767,14 +15767,12 @@ extern void job_hold_requeue(struct job_record *job_ptr)
 	if (! (state & JOB_REQUEUE))
 		return;
 
-	/* Sent event requeue to the database.
-	 */
+	/* Sent event requeue to the database.  */
 	jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
 
 	debug("%s: job %u state 0x%x", __func__, job_ptr->job_id, state);
 
-	/* Set the job pending
-	 */
+	/* Set the job pending */
 	flags = job_ptr->job_state & JOB_STATE_FLAGS;
 	job_ptr->job_state = JOB_PENDING | flags;
 
