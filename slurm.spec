@@ -129,12 +129,6 @@ scheduling and accounting modules
 %{!?_slurm_mandir: %global _slurm_mandir %{_datadir}/man}
 %define _mandir %{_slurm_mandir}
 
-#  Allow override of infodir via _slurm_infodir.
-#  (Not currently used for anything)
-%{!?_slurm_infodir: %global _slurm_infodir %{_datadir}/info}
-%define _infodir %{_slurm_infodir}
-
-
 #
 # Never allow rpm to strip binaries as this will break
 #  parallel debugging capability
