@@ -2245,6 +2245,7 @@ extern int fed_mgr_job_start(struct job_record *job_ptr, uint32_t cluster_id,
  *
  * IN job_ptr     - job_ptr of job to complete.
  * IN return_code - return code of job
+ * IN start_time  - start time of the job that actually ran.
  * RET returns SLURM_SUCCESS if fed job was completed, SLURM_ERROR otherwise
  */
 extern int fed_mgr_job_complete(struct job_record *job_ptr,
