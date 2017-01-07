@@ -1324,7 +1324,7 @@ extern int job_fail(uint32_t job_id, uint32_t job_state);
  * The requeue can happen directly from job_requeue() or from
  * job_epilog_complete() after the last component has finished.
  */
-extern void job_hold_requeue(struct job_record *job_ptr);
+extern bool job_hold_requeue(struct job_record *job_ptr);
 
 /*
  * determine if job is ready to execute per the node select plugin

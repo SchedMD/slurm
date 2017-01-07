@@ -15762,8 +15762,10 @@ extern void build_cg_bitmap(struct job_record *job_ptr)
  * If JOB_REQUEUE then requeue and let it run again.
  * The requeue can happen directly from job_requeue() or from
  * job_epilog_complete() after the last component has finished.
+ *
+ * RET returns true if the job was requeued
  */
-extern void job_hold_requeue(struct job_record *job_ptr)
+extern bool job_hold_requeue(struct job_record *job_ptr)
 {
 	uint32_t state;
 	uint32_t flags;
@@ -15773,18 +15775,24 @@ extern void job_hold_requeue(struct job_record *job_ptr)
 	/* If the job is already pending it was
 	 * eventually requeued somewhere else.
 	 */
-	if (IS_JOB_PENDING(job_ptr))
-		return;
+	if (IS_JOB_PENDING(job_ptr) && !IS_JOB_REVOKED(job_ptr))
+		return false;
+
+	/* If the job is not on the origin cluster, then don't worry about
+	 * requeueing the job here. The exit code will be sent the origin
+	 * cluster and the origin cluster will decide if the job should be
+	 * requeued or not. */
+	if (!fed_mgr_is_origin_job(job_ptr))
+		return false;
 
 	/* Check if the job exit with one of the
-	 * configured requeue values.
-	 */
+	 * configured requeue values. */
 	_set_job_requeue_exit_value(job_ptr);
 
 	state = job_ptr->job_state;
 
 	if (! (state & JOB_REQUEUE))
-		return;
+		return false;
 
 	/* Sent event requeue to the database.  */
 	jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
@@ -15816,6 +15824,8 @@ extern void job_hold_requeue(struct job_record *job_ptr)
 	debug("%s: job %u state 0x%x reason %u priority %d", __func__,
 	      job_ptr->job_id, job_ptr->job_state,
 	      job_ptr->state_reason, job_ptr->priority);
+
+	return true;
 }
 
 /* init_requeue_policy()
