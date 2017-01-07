@@ -4557,9 +4557,14 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 		last_job_update         = now;
 		job_ptr->end_time       = now;
 		job_ptr->job_state      = JOB_CANCELLED | JOB_COMPLETING;
+		if (flags & KILL_FED_REQUEUE)
+			job_ptr->job_state |= JOB_REQUEUE;
 		build_cg_bitmap(job_ptr);
 		job_completion_logger(job_ptr, false);
 		deallocate_nodes(job_ptr, false, false, false);
+		if (flags & KILL_FED_REQUEUE) {
+			job_ptr->job_state &= (~JOB_REQUEUE);
+		}
 		verbose("%s: %u of configuring %s successful",
 			__func__, signal, jobid2str(job_ptr, jbuf,
 						    sizeof(jbuf)));
@@ -4568,10 +4573,15 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 
 	if (IS_JOB_PENDING(job_ptr) && (signal == SIGKILL)) {
 		job_ptr->job_state	= JOB_CANCELLED;
+		if (flags & KILL_FED_REQUEUE)
+			job_ptr->job_state |= JOB_REQUEUE;
 		job_ptr->start_time	= now;
 		job_ptr->end_time	= now;
 		srun_allocate_abort(job_ptr);
 		job_completion_logger(job_ptr, false);
+		if (flags & KILL_FED_REQUEUE) {
+			job_ptr->job_state &= (~JOB_REQUEUE);
+		}
 		verbose("%s: of pending %s successful",
 			__func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)));
 		return SLURM_SUCCESS;
@@ -4586,9 +4596,13 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 		job_ptr->end_time       = job_ptr->suspend_time;
 		job_ptr->tot_sus_time  += difftime(now, job_ptr->suspend_time);
 		job_ptr->job_state      = job_term_state | JOB_COMPLETING;
+		if (flags & KILL_FED_REQUEUE)
+			job_ptr->job_state |= JOB_REQUEUE;
 		build_cg_bitmap(job_ptr);
 		jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
 		job_completion_logger(job_ptr, false);
+		if (flags & KILL_FED_REQUEUE)
+			job_ptr->job_state &= (~JOB_REQUEUE);
 		deallocate_nodes(job_ptr, false, true, preempt);
 		verbose("%s: %u of suspended %s successful",
 			__func__, signal, jobid2str(job_ptr, jbuf,
@@ -4611,9 +4625,13 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 			job_ptr->end_time		= now;
 			last_job_update			= now;
 			job_ptr->job_state = job_term_state | JOB_COMPLETING;
+			if (flags & KILL_FED_REQUEUE)
+				job_ptr->job_state |= JOB_REQUEUE;
 			build_cg_bitmap(job_ptr);
 			job_completion_logger(job_ptr, false);
 			deallocate_nodes(job_ptr, false, false, preempt);
+			if (flags & KILL_FED_REQUEUE)
+				job_ptr->job_state &= (~JOB_REQUEUE);
 		} else if (job_ptr->batch_flag &&
 			   ((flags & KILL_FULL_JOB)  ||
 			    (flags & KILL_JOB_BATCH) ||
@@ -4923,12 +4941,12 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal, uint16_t flags)
 		      __func__, job_ptr->job_id);
 		return;
 	}
-	if (flags > 0xf) {	/* Top 4 bits used for KILL_* flags */
+	if (flags > 0xff) {	/* Top 8 bits used for KILL_* flags */
 		error("%s: signal flags %u for job %u exceed limit",
 		      __func__, flags, job_ptr->job_id);
 		return;
 	}
-	if (signal > 0xfff) {	/* Top 4 bits used for KILL_* flags */
+	if (signal > 0xfff) {	/* Top 8 bits used for KILL_* flags */
 		error("%s: signal value %u for job %u exceed limit",
 		      __func__, signal, job_ptr->job_id);
 		return;
