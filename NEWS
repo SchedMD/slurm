@@ -10,7 +10,6 @@ documents those changes that are of interest to users and administrators.
  -- Add SchedulerParameters configuration parameter of "default_gbytes", which
     treats numeric only (no suffix) value for memory and tmp disk space as being
     in units of Gigabytes. Mostly for compatability with LSF.
- -- Adjust configure check for libmunge to explicitly check for the .so file.
 
 * Changes in Slurm 17.02.0pre4
 ==============================
