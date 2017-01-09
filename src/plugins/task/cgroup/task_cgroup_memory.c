@@ -458,6 +458,7 @@ extern int task_cgroup_memory_create(stepd_step_rec_t *job)
 		goto error;
 	}
 
+	fstatus = SLURM_SUCCESS;
 error:
 	xcgroup_unlock(&memory_cg);
 	xcgroup_destroy(&memory_cg);
