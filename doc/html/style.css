@@ -23,7 +23,7 @@ body:before {
 .container {
 	margin: 0 auto;
 	padding: 0 18px;
-	max-width: 1400px;
+	max-width: 90%;
 }
 
 .container--main {
@@ -732,7 +732,7 @@ input[type="checkbox"] {
 	}
 
 	.content .container {
-		padding: 0 8% 0 8%;
+		padding: 0 0 0 100px;
 		margin: 0;
 	}
 
