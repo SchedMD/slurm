@@ -23733,6 +23733,7 @@ else
           test -f "$d/include/munge.h" || continue
           for bit in $_x_ac_munge_libs; do
             test -d "$d/$bit" || continue
+            test -f "$d/$bit/libmunge.so" || continue
             _x_ac_munge_libs_save="$LIBS"
             LIBS="-L$d/$bit -lmunge $LIBS"
             cat confdefs.h - <<_ACEOF >conftest.$ac_ext
