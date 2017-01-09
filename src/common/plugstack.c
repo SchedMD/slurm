@@ -2241,38 +2241,62 @@ spank_err_t spank_unsetenv (spank_t spank, const char *var)
  */
 const char *dyn_spank_get_job_env (const char *name)
 {
-	void *h = dlopen (NULL, 0);
+	void *h = dlopen(NULL, 0);
 	char * (*fn)(const char *n);
+	char *rc;
 
-	fn = dlsym (h, "spank_get_job_env");
-	if (fn == NULL)
+	if (h == NULL)
 		return NULL;
 
-	return ((*fn) (name));
+	fn = dlsym(h, "spank_get_job_env");
+	if (fn == NULL) {
+		(void) dlclose(h);
+		return NULL;
+	}
+
+	rc = ((*fn) (name));
+	(void) dlclose(h);
+	return rc;
 }
 
-int dyn_spank_set_job_env (const char *n, const char *v, int overwrite)
+extern int dyn_spank_set_job_env (const char *n, const char *v, int overwrite)
 {
 	void *h = dlopen (NULL, 0);
 	int (*fn)(const char *n, const char *v, int overwrite);
+	int rc;
 
-	fn = dlsym (h, "spank_set_job_env");
-	if (fn == NULL)
+	if (h == NULL)
 		return (-1);
 
-	return ((*fn) (n, v, overwrite));
+	fn = dlsym (h, "spank_set_job_env");
+	if (fn == NULL) {
+		(void) dlclose(h);
+		return (-1);
+	}
+
+	rc = ((*fn) (n, v, overwrite));
+	(void) dlclose(h);
+	return rc;
 }
 
 extern int dyn_spank_unset_job_env (const char *n)
 {
 	void *h = dlopen (NULL, 0);
 	int (*fn)(const char *n);
+	int rc;
 
-	fn = dlsym (h, "spank_unset_job_env");
-	if (fn == NULL)
+	if (h == NULL)
 		return (-1);
 
-	return ((*fn) (n));
+	fn = dlsym(h, "spank_unset_job_env");
+	if (fn == NULL) {
+		(void) dlclose(h);
+		return (-1);
+	}
+
+	rc = ((*fn) (n));
+	(void) dlclose(h);
+	return rc;
 }
 
 static spank_err_t spank_job_control_access_check (spank_t spank)

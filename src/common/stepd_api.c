@@ -1026,6 +1026,7 @@ stepd_task_info(int fd, uint16_t protocol_version,
 	}
 
 	if (ntasks == 0) {
+		xfree(task);
 		*task_info_count = 0;
 		*task_info = NULL;
 	} else {
@@ -1035,6 +1036,7 @@ stepd_task_info(int fd, uint16_t protocol_version,
 
 	return SLURM_SUCCESS;
 rwfail:
+	xfree(task);
 	*task_info_count = 0;
 	*task_info = NULL;
 	xfree(task);

@@ -923,9 +923,9 @@ bool verify_hint(const char *arg, int *min_sockets, int *min_cores,
 		 cpu_bind_type_t *cpu_bind_type)
 {
 	char *buf, *p, *tok;
-	if (!arg) {
+
+	if (!arg)
 		return true;
-	}
 
 	buf = xstrdup(arg);
 	p = buf;
@@ -947,6 +947,7 @@ bool verify_hint(const char *arg, int *min_sockets, int *min_cores,
 "        memory_bound    use only one core in each socket\n"
 "        [no]multithread [don't] use extra threads with in-core multi-threading\n"
 "        help            show this help message\n");
+			xfree(buf);
 			return 1;
 		} else if (xstrcasecmp(tok, "compute_bound") == 0) {
 			*min_sockets = NO_VAL;

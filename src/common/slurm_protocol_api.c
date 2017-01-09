@@ -920,12 +920,13 @@ static int _tres_weight_item(double *weights, char *item_str)
 double *slurm_get_tres_weight_array(char *weights_str, int tres_cnt)
 {
 	double *weights;
-	char *tmp_str = xstrdup(weights_str);
+	char *tmp_str;
 	char *token, *last = NULL;
 
 	if (!weights_str || !*weights_str || !tres_cnt)
 		return NULL;
 
+	tmp_str = xstrdup(weights_str);
 	weights = xmalloc(sizeof(double) * tres_cnt);
 
 	token = strtok_r(tmp_str, ",", &last);
@@ -1897,11 +1898,14 @@ static char *_global_auth_key(void)
 		conf = slurm_conf_lock();
 		if (conf->accounting_storage_pass) {
 			if (strlen(conf->accounting_storage_pass) >
-			    sizeof(storage_pass))
+			    sizeof(storage_pass)) {
 				fatal("AccountingStoragePass is too long");
-			strncpy(storage_pass, conf->accounting_storage_pass,
-				sizeof(storage_pass));
-			storage_pass_ptr = storage_pass;
+			} else {
+				strncpy(storage_pass,
+					conf->accounting_storage_pass,
+					sizeof(storage_pass));
+				storage_pass_ptr = storage_pass;
+			}
 		}
 		slurm_conf_unlock();
 	}
@@ -3042,6 +3046,7 @@ int slurm_open_controller_conn(slurm_addr_t *addr, bool *use_backup)
 		}
 	}
 	addr = NULL;
+	xfree(myproto);
 	slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR);
 
 end_it:

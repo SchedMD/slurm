@@ -799,6 +799,7 @@ extern int jobacctinfo_getinfo(
 	jobacct_id_t *jobacct_id = (jobacct_id_t *) data;
 	struct rusage *rusage = (struct rusage *)data;
 	struct jobacctinfo *send = (struct jobacctinfo *) data;
+	char *buf = NULL;
 
 	if (!plugin_polling)
 		return SLURM_SUCCESS;
@@ -812,7 +813,6 @@ extern int jobacctinfo_getinfo(
 		break;
 	case JOBACCT_DATA_PIPE:
 		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-			char* buf;
 			int len;
 			Buf buffer;
 
@@ -897,7 +897,9 @@ extern int jobacctinfo_getinfo(
 		debug("jobacct_g_set_getinfo data_type %d invalid", type);
 	}
 	return rc;
+
 rwfail:
+	xfree(buf);
 	return SLURM_ERROR;
 }
 
