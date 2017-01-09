@@ -130,7 +130,7 @@ allocations, when and where they run.</p>
 		</tr>
 	</tbody></table>
 </center>
-
+<br>
 <p>This second table below identifies what prologs and epilogs are available for job
 step allocations, when and where they run.</p>
 

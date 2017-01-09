@@ -194,6 +194,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 16.05.9
 ==========================
+ -- Fix parsing of SBCAST_COMPRESS environment variable in sbcast.
+ -- Change some debug messages to errors in task/cgroup plugin.
 
 * Changes in Slurm 16.05.8
 ==========================
