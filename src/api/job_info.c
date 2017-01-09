@@ -928,13 +928,6 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrfmtcat(out, "StdOut=%s", tmp_path);
 	}
 
-	/****** Line 33 (optional) ******/
-	if (job_ptr->batch_script) {
-		xstrcat(out, line_end);
-		xstrcat(out, "BatchScript=\n");
-		xstrcat(out, job_ptr->batch_script);
-	}
-
 	/****** Line 34 (optional) ******/
 	if (job_ptr->req_switch) {
 		char time_buf[32];
@@ -981,6 +974,14 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		if (job_ptr->bitflags & SPREAD_JOB)
 			xstrcat(out, "SpreadJob=Yes");
 	}
+
+	/****** Last line ******/
+	if (job_ptr->batch_script) {
+		xstrcat(out, line_end);
+		xstrcat(out, "BatchScript=\n");
+		xstrcat(out, job_ptr->batch_script);
+	}
+	/* NOTE: Keep BatchScript last so it is more easily readable */
 
 	/****** END OF JOB RECORD ******/
 	if (one_liner)
