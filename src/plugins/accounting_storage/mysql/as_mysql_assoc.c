@@ -1588,18 +1588,18 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			}
 			xfree(tmp_qos);
 
-			set_qos_vals=1;
+			set_qos_vals = 1;
 		}
 
 
-		if (account_type)
+		if (account_type) {
 			_modify_unset_users(mysql_conn,
 					    mod_assoc,
 					    row[MASSOC_ACCT],
 					    lft, rgt,
 					    ret_list,
 					    moved_parent);
-		else if ((assoc->is_def == 1) && row[MASSOC_USER][0]) {
+		} else if ((assoc->is_def == 1) && row[MASSOC_USER][0]) {
 			/* Use fresh one here so we don't have to
 			   worry about dealing with bad values.
 			*/
@@ -1613,6 +1613,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 				     mysql_conn, &tmp_assoc, &reset_query,
 				     moved_parent ? 0 : 1))
 			    != SLURM_SUCCESS) {
+				slurmdb_destroy_assoc_rec(mod_assoc);
 				xfree(reset_query);
 				goto end_it;
 			}
