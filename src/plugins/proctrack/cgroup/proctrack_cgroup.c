@@ -143,6 +143,7 @@ int _slurm_cgroup_create(stepd_step_rec_t *job, uint64_t id, uid_t uid, gid_t gi
 
 	if (xcgroup_create(&freezer_ns, &slurm_freezer_cg, pre,
 			   getuid(), getgid()) != XCGROUP_SUCCESS) {
+		xfree(pre);
 		return SLURM_ERROR;
 	}
 
@@ -154,7 +155,10 @@ int _slurm_cgroup_create(stepd_step_rec_t *job, uint64_t id, uid_t uid, gid_t gi
 	 * shared directories that could result in the failure of the
 	 * hierarchy setup
 	 */
-	xcgroup_lock(&freezer_cg);
+	if (xcgroup_lock(&freezer_cg) != XCGROUP_SUCCESS) {
+		error("%s: xcgroup_lock error", __func__);
+		goto bail;
+	}
 
 	/* create slurm cgroup in the freezer ns (it could already exist) */
 	if (xcgroup_instantiate(&slurm_freezer_cg) != XCGROUP_SUCCESS)
@@ -272,7 +276,10 @@ static int _move_current_to_root_cgroup(xcgroup_ns_t *ns)
 
 int _slurm_cgroup_destroy(void)
 {
-	xcgroup_lock(&freezer_cg);
+	if (xcgroup_lock(&freezer_cg) != XCGROUP_SUCCESS) {
+		error("%s: xcgroup_lock error", __func__);
+		return SLURM_ERROR;
+	}
 
 	/*
 	 *  First move slurmstepd process to the root cgroup, otherwise

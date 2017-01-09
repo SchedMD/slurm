@@ -1220,7 +1220,7 @@ static void mvapich_barrier (mvapich_state_t *st)
 	mvapich_poll_reset (mp);
 	while ((m = mvapich_poll_next (mp, 0)))
 		mvapich_write (m, &m->rank, sizeof (m->rank));
-
+	mvapich_poll_destroy (mp);
 	return;
 }
 

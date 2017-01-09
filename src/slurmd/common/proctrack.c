@@ -223,7 +223,7 @@ static bool _test_core_dumping(char* stat_fname)
 	if (proc_fd == -1)
 		return false;  /* process is now gone */
 	proc_stat = xmalloc(proc_stat_size + 1);
-	while ((num = read(proc_fd, proc_stat, proc_stat_size)) > 0) {
+	while ((num = read(proc_fd, proc_stat, proc_stat_size)) >= 0) {
 		proc_stat[num] = '\0';
 		if (num < proc_stat_size)
 			break;

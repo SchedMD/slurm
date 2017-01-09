@@ -341,12 +341,15 @@ extern pid_t find_ancestor(pid_t process, char *process_name)
 			break;
 		}
 		buf_used = read(fd, rbuf, 4096);
+		if (buf_used >= 0)
+			rbuf[buf_used] = '\0';
+		else
+			rbuf[0] = '\0';	
 		if ((buf_used <= 0) || (buf_used >= 4096)) {
 			close(fd);
 			pid = 0;
 			break;
 		}
-		rbuf[buf_used] = '\0';
 		close(fd);
 		if (sscanf(rbuf, "%ld %*s %*s %ld", &pid, &ppid) != 2) {
 			pid = 0;
@@ -358,11 +361,14 @@ extern pid_t find_ancestor(pid_t process, char *process_name)
 			continue;
 		}
 		buf_used = read(fd, rbuf, 4096);
+		if (buf_used >= 0)
+			rbuf[buf_used] = '\0';
+		else
+			rbuf[0] = '\0';	
 		if ((buf_used <= 0) || (buf_used >= 4096)) {
 			close(fd);
 			continue;
 		}
-		rbuf[buf_used] = '\0';
 		close(fd);
 	} while (!strstr(rbuf, process_name));
 	xfree(rbuf);

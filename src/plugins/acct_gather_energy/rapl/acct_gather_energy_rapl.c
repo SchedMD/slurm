@@ -248,13 +248,13 @@ static void _hardware(void)
 		if (!xstrncmp(buf, "physical id", sizeof("physical id") - 1)) {
 			sscanf(buf, "physical id\t: %d", &pkg);
 
-			if (pkg >= MAX_PKGS)
+			if (pkg >= MAX_PKGS) {
 				fatal("Slurm can only handle %d sockets for "
 				      "rapl, you seem to have more than that.  "
 				      "Update src/plugins/acct_gather_energy/"
 				      "rapl/acct_gather_energy_rapl.h "
 				      "(MAX_PKGS) and recompile.", MAX_PKGS);
-			if (pkg2cpu[pkg] == -1) {
+			} else if (pkg2cpu[pkg] == -1) {
 				nb_pkg++;
 				pkg2cpu[pkg] = cpu;
 			}

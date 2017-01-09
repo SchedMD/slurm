@@ -307,7 +307,7 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 	xfree(option);
 
 	if (!file_opts->name) {
-		exit_code=1;
+		exit_code = 1;
 		fprintf(stderr, " No name given\n");
 	}
 
@@ -1906,7 +1906,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 			xfree(parent);
 
 			if (!file_opts) {
-				exit_code=1;
+				exit_code = 1;
 				fprintf(stderr, " Problem with line(%d)\n", lc);
 				rc = SLURM_ERROR;
 				break;
@@ -2302,4 +2302,5 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 	FREE_NULL_LIST(curr_assoc_list);
 	FREE_NULL_LIST(curr_cluster_list);
 	FREE_NULL_LIST(curr_user_list);
+	_destroy_sacctmgr_file_opts(file_opts);
 }

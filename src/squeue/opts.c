@@ -1776,6 +1776,7 @@ _build_job_list( char* str )
 		list_append( my_list, job_step_id );
 		job = strtok_r (NULL, ",", &tmp_char);
 	}
+	xfree(my_job_list);
 	return my_list;
 }
 
