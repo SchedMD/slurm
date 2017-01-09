@@ -55,7 +55,7 @@
  * --------------------- I/O protocol -------------------
  */
 
-#define PMIX_SERVER_MSG_MAGIC 0xCAFECA11
+#define PMIXP_SERVER_MSG_MAGIC 0xCAFECA11
 typedef struct {
 	uint32_t magic;
 	uint32_t type;
@@ -80,12 +80,62 @@ typedef struct {
 } pmixp_slurm_rhdr_t;
 #define PMIXP_SLURM_API_RHDR_SIZE (sizeof(uint32_t) + PMIXP_SLURM_API_SHDR_SIZE)
 
-Buf pmixp_server_new_buf(void)
+#define PMIXP_SERVER_BUF_MAGIC 0xCA11CAFE
+Buf pmixp_server_buf_new(void)
 {
 	Buf buf = create_buf(xmalloc(PMIXP_MAX_SEND_HDR), PMIXP_MAX_SEND_HDR);
+#ifndef NDEBUG
+	/* Makesure that we only use buffers allocated through
+	 * this call, because we reserve the space for the
+	 * header here
+	 */
+	xassert( PMIXP_MAX_SEND_HDR >= sizeof(uint32_t));
+	uint32_t tmp = PMIXP_SERVER_BUF_MAGIC;
+	pack32(tmp, buf);
+#endif
+
 	/* Skip header. It will be filled right before the sending */
 	set_buf_offset(buf, PMIXP_MAX_SEND_HDR);
 	return buf;
+}
+
+size_t pmixp_server_buf_reset(Buf buf)
+{
+#ifndef NDEBUG
+	xassert( PMIXP_MAX_SEND_HDR <= get_buf_offset(buf) );
+	set_buf_offset(buf,0);
+	/* Restore the protection magic number
+	 */
+	uint32_t tmp = PMIXP_SERVER_BUF_MAGIC;
+	pack32(tmp, buf);
+#endif
+	set_buf_offset(buf, PMIXP_MAX_SEND_HDR);
+	return PMIXP_MAX_SEND_HDR;
+}
+
+
+static void *_buf_finalize(Buf buf, void *nhdr, size_t hsize,
+			  size_t *dsize)
+{
+	char *ptr = get_buf_data(buf);
+	size_t offset = PMIXP_MAX_SEND_HDR - hsize;
+#ifndef NDEBUG
+	Buf tbuf = create_buf(ptr, get_buf_offset(buf));
+	xassert(PMIXP_MAX_SEND_HDR >= hsize);
+	xassert(PMIXP_MAX_SEND_HDR <= get_buf_offset(buf));
+	uint32_t tmp;
+	unpack32(&tmp, tbuf);
+	xassert(PMIXP_SERVER_BUF_MAGIC == tmp);
+	tbuf->head = NULL;
+	free_buf(tbuf);
+#endif
+	/* Enough space for any header was reserved at the
+	 * time of buffer initialization in `pmixp_server_new_buf`
+	 * put the header in place and return proper pointer
+	 */
+	memcpy(ptr + offset, nhdr, hsize);
+	*dsize = get_buf_offset(buf) - offset;
+	return ptr + offset;
 }
 
 static void _base_hdr_pack(Buf packbuf, pmixp_base_hdr_t *hdr)
@@ -102,7 +152,7 @@ static int _base_hdr_unpack(Buf packbuf, pmixp_base_hdr_t *hdr)
 	if (unpack32(&hdr->magic, packbuf)) {
 		return -EINVAL;
 	}
-	xassert(PMIX_SERVER_MSG_MAGIC == hdr->magic);
+	xassert(PMIXP_SERVER_MSG_MAGIC == hdr->magic);
 
 	if (unpack32(&hdr->type, packbuf)) {
 		return -EINVAL;
@@ -151,6 +201,8 @@ static int _slurm_pack_hdr(void *host, void *net);
 static int _slurm_proto_unpack_hdr(void *net, void *host);
 static void _slurm_new_msg(pmixp_conn_t *conn,
 			   void *_hdr, void *msg);
+static int _slurm_send(pmixp_ep_t *ep,
+		       pmixp_base_hdr_t bhdr, Buf buf);
 
 pmixp_io_engine_header_t _slurm_proto = {
 	/* generic callbacks */
@@ -366,8 +418,7 @@ static int _serv_read(eio_obj_t *obj, List objs)
 	bool proceed = true;
 
 	/* debug stub */
-	static int dbg_block = 0;
-	pmixp_debug_hang(dbg_block);
+	pmixp_debug_hang(0);
 
 	/* Read and process all received messages */
 	while (proceed) {
@@ -397,8 +448,7 @@ static bool _serv_writable(eio_obj_t *obj)
 	pmixp_io_engine_t *eng = conn->eng;
 
 	/* debug stub */
-	static int dbg_block = 0;
-	pmixp_debug_hang(dbg_block);
+	pmixp_debug_hang(0);
 
 	/* check if we have something to send */
 	if( pmixp_io_send_pending(eng) ){
@@ -418,8 +468,7 @@ static int _serv_write(eio_obj_t *obj, List objs)
 	pmixp_conn_t *conn = (pmixp_conn_t *)obj->arg;
 
 	/* debug stub */
-	static int dbg_block = 0;
-	pmixp_debug_hang(dbg_block);
+	pmixp_debug_hang(0);
 
 	/* progress sends */
 	pmixp_conn_progress_snd(conn);
@@ -519,39 +568,19 @@ exit:
 	}
 }
 
-int pmixp_server_send(char *hostlist, pmixp_srv_cmd_t type, uint32_t seq,
-		const char *addr, void *data, size_t size, int p2p)
+int pmixp_server_send(pmixp_ep_t *ep, pmixp_srv_cmd_t type, uint32_t seq, Buf buf)
 {
-	pmixp_slurm_shdr_t hdr;
-	pmixp_base_hdr_t *bhdr = &hdr.base_hdr;
-	char nhdr[sizeof(hdr)];
-	size_t hsize;
-	int rc;
+	pmixp_base_hdr_t bhdr;
 
-	bhdr->magic = PMIX_SERVER_MSG_MAGIC;
-	bhdr->type = type;
-	bhdr->msgsize = size - PMIXP_SLURM_API_SHDR_SIZE;
-	bhdr->seq = seq;
+	bhdr.magic = PMIXP_SERVER_MSG_MAGIC;
+	bhdr.type = type;
+	bhdr.msgsize = get_buf_offset(buf) - PMIXP_MAX_SEND_HDR;
+	bhdr.seq = seq;
 	/* Store global nodeid that is
 	 *  independent from exact collective */
-	bhdr->nodeid = pmixp_info_nodeid_job();
+	bhdr.nodeid = pmixp_info_nodeid_job();
 
-	/* Temp: for the verification purposes */
-	hdr.rport = 100;
-
-	hsize = _slurm_pack_hdr(&hdr, nhdr);
-	memcpy(data, nhdr, hsize);
-
-	if( !p2p ){
-		rc = pmixp_stepd_send(hostlist, addr, data, size, 500, 7, 0);
-	} else {
-		rc = pmixp_p2p_send(hostlist, addr, data, size, 500, 7, 0);
-	}
-	if (SLURM_SUCCESS != rc) {
-		PMIXP_ERROR("Cannot send message to %s, size = %u, hostlist:\n%s",
-			    addr, (uint32_t) size, hostlist);
-	}
-	return rc;
+	return _slurm_send(ep, bhdr, buf);
 }
 
 /*
@@ -743,7 +772,7 @@ void pmixp_server_slurm_conn(int fd)
 	pmixp_conn_t *conn = NULL;
 
 	PMIXP_DEBUG("Request from fd = %d", fd);
-    pmixp_debug_hang(0);
+	pmixp_debug_hang(0);
 
 	/* Set nonblocking */
 	fd_set_nonblocking(fd);
@@ -773,7 +802,7 @@ static uint32_t _slurm_proto_msize(void *buf)
 pmixp_slurm_rhdr_t *ptr = (pmixp_slurm_rhdr_t *)buf;
 	pmixp_base_hdr_t *hdr = &ptr->shdr.base_hdr;
 	xassert(ptr->size == hdr->msgsize + PMIXP_SLURM_API_SHDR_SIZE);
-	xassert(hdr->magic == PMIX_SERVER_MSG_MAGIC);
+	xassert(hdr->magic == PMIXP_SERVER_MSG_MAGIC);
 	return hdr->msgsize;
 }
 
@@ -787,8 +816,6 @@ static int _slurm_pack_hdr(void *host, void *net)
 	pmixp_slurm_shdr_t *shdr = (pmixp_slurm_shdr_t *)host;
 	Buf packbuf = create_buf(net, PMIXP_SLURM_API_SHDR_SIZE);
 	int size = 0;
-	/* TODO: use real rport in future */
-	shdr->rport = 100;
 
 	_slurm_hdr_pack(packbuf, shdr);
 	size = get_buf_offset(packbuf);
@@ -820,4 +847,42 @@ static int _slurm_proto_unpack_hdr(void *net, void *host)
 	return 0;
 }
 
+static int _slurm_send(pmixp_ep_t *ep, pmixp_base_hdr_t bhdr, Buf buf)
+{
+	const char *addr = NULL, *data = NULL, *hostlist = NULL;
+	pmixp_slurm_shdr_t hdr;
+	char nhdr[sizeof(hdr)];
+	size_t hsize = 0, dsize = 0;
+	int rc;
+
+	/* setup the header */
+	hdr.base_hdr = bhdr;
+	/* TODO: change to correspond to a real remote port */
+	hdr.rport = 100;
+
+	hsize = _slurm_pack_hdr(&hdr, nhdr);
+	data = _buf_finalize(buf, nhdr, hsize, &dsize);
+
+
+
+	addr = pmixp_info_srv_usock_path();
+	switch( ep->type ){
+	case PMIXP_EP_HLIST:
+		hostlist = ep->ep.hostlist;
+		break;
+	case PMIXP_EP_HNAME:
+		hostlist = ep->ep.hostname;
+		break;
+	default:
+		PMIXP_ERROR("Bad value of the EP type: %d", (int)ep->type);
+		abort();
+	}
+
+	rc = pmixp_stepd_send(hostlist, addr, data, dsize, 500, 7, 0);
+	if (SLURM_SUCCESS != rc) {
+		PMIXP_ERROR("Cannot send message to %s, size = %u, hostlist:\n%s",
+			    addr, (uint32_t) dsize, hostlist);
+	}
+	return rc;
+}
 

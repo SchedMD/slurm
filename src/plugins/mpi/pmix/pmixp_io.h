@@ -79,7 +79,7 @@ typedef enum {
 
 typedef struct {
 #ifndef NDEBUG
-#define PMIX_MSGSTATE_MAGIC 0xC0FFEEEE
+#define PMIXP_MSGSTATE_MAGIC 0xC0FFEEEE
 	int magic;
 #endif
 	/* User supplied information */
@@ -108,39 +108,39 @@ typedef struct {
 
 static inline bool pmixp_io_rcvd_ready(pmixp_io_engine_t *eng)
 {
-	xassert(eng->magic == PMIX_MSGSTATE_MAGIC);
+	xassert(eng->magic == PMIXP_MSGSTATE_MAGIC);
 	return (eng->rcvd_hdr_offs == eng->h.recv_net_hsize)
 			&& (eng->rcvd_pay_size == eng->rcvd_pay_offs);
 }
 
 static inline bool pmixp_io_operating(pmixp_io_engine_t *eng)
 {
-	xassert(eng->magic == PMIX_MSGSTATE_MAGIC);
+	xassert(eng->magic == PMIXP_MSGSTATE_MAGIC);
 	return (PMIXP_IO_OPERATING == eng->io_state);
 }
 
 static inline bool pmixp_io_conn_closed(pmixp_io_engine_t *eng)
 {
-	xassert(eng->magic == PMIX_MSGSTATE_MAGIC);
+	xassert(eng->magic == PMIXP_MSGSTATE_MAGIC);
 	return (PMIXP_IO_CONN_CLOSED == eng->io_state);
 }
 
 static inline bool pmixp_io_enqueue_ok(pmixp_io_engine_t *eng)
 {
-	xassert(eng->magic == PMIX_MSGSTATE_MAGIC);
+	xassert(eng->magic == PMIXP_MSGSTATE_MAGIC);
 	return (PMIXP_IO_OPERATING == eng->io_state) ||
 			(PMIXP_IO_INIT == eng->io_state);
 }
 
 static inline bool pmixp_io_finalized(pmixp_io_engine_t *eng)
 {
-	xassert(eng->magic == PMIX_MSGSTATE_MAGIC);
+	xassert(eng->magic == PMIXP_MSGSTATE_MAGIC);
 	return (PMIXP_IO_FINALIZED == eng->io_state);
 }
 
 static inline int pmixp_io_error(pmixp_io_engine_t *eng)
 {
-	xassert(eng->magic == PMIX_MSGSTATE_MAGIC);
+	xassert(eng->magic == PMIXP_MSGSTATE_MAGIC);
 	return eng->error;
 }
 
@@ -157,7 +157,7 @@ static inline void
 pmixp_io_attach(pmixp_io_engine_t *eng, int fd)
 {
 	/* Initialize general options */
-	xassert(PMIX_MSGSTATE_MAGIC == eng->magic);
+	xassert(PMIXP_MSGSTATE_MAGIC == eng->magic);
 	xassert(PMIXP_IO_INIT == eng->io_state);
 	eng->sd = fd;
 	eng->io_state = PMIXP_IO_OPERATING;
@@ -182,14 +182,14 @@ void *pmixp_io_rcvd_extract(pmixp_io_engine_t *eng, void *header);
 static inline void*
 pmixp_io_recv_hdr_alloc_host(pmixp_io_engine_t *eng)
 {
-	xassert(eng->magic == PMIX_MSGSTATE_MAGIC);
+	xassert(eng->magic == PMIXP_MSGSTATE_MAGIC);
 	return xmalloc(eng->h.recv_host_hsize);
 }
 
 static inline void*
 pmixp_io_recv_hdr_alloc_net(pmixp_io_engine_t *eng)
 {
-	xassert(eng->magic == PMIX_MSGSTATE_MAGIC);
+	xassert(eng->magic == PMIXP_MSGSTATE_MAGIC);
 	return xmalloc(eng->h.recv_net_hsize);
 }
 

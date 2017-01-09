@@ -61,7 +61,7 @@ typedef enum {
 
 typedef struct {
 #ifndef NDEBUG
-#define PMIXP_COLL_STATE_MAGIC 0xCA11CAFE
+#define PMIXP_COLL_STATE_MAGIC 0xC011CAFE
 	int magic;
 #endif
 	/* element-wise lock */

@@ -274,7 +274,7 @@ bool pmixp_fd_write_ready(int fd, int *shutdown)
 	return ((rc == 1) && (pfd[0].revents & POLLOUT));
 }
 
-int pmixp_stepd_send(char *nodelist, const char *address, char *data,
+int pmixp_stepd_send(const char *nodelist, const char *address, const char *data,
 		     uint32_t len, unsigned int start_delay,
 		     unsigned int retry_cnt, int silent)
 {
@@ -309,7 +309,7 @@ int pmixp_stepd_send(char *nodelist, const char *address, char *data,
 	return rc;
 }
 
-static int _pmix_p2p_send_core(char *nodename, const char *address, char *data,
+static int _pmix_p2p_send_core(const char *nodename, const char *address, const char *data,
 				uint32_t len)
 {
 	int rc, timeout;
@@ -323,7 +323,8 @@ static int _pmix_p2p_send_core(char *nodename, const char *address, char *data,
 	PMIXP_DEBUG("nodelist=%s, address=%s, len=%u", nodename, address, len);
 	req.address = (char *)address;
 	req.len = len;
-	req.data = data;
+	/* there is not much we can do - just cast) */
+	req.data = (char*)data;
 
 	msg.msg_type = REQUEST_FORWARD_DATA;
 	msg.data = &req;
@@ -338,7 +339,7 @@ static int _pmix_p2p_send_core(char *nodename, const char *address, char *data,
 	msg.forward.timeout = timeout;
 	msg.forward.cnt = 0;
 	msg.forward.nodelist = NULL;
-	ret_list = slurm_send_addr_recv_msgs(&msg, nodename, timeout);
+	ret_list = slurm_send_addr_recv_msgs(&msg, (char*)nodename, timeout);
 	if (!ret_list) {
 		/* This should never happen (when this was
 		 * written slurm_send_addr_recv_msgs always
@@ -367,7 +368,7 @@ static int _pmix_p2p_send_core(char *nodename, const char *address, char *data,
 	return rc;
 }
 
-int pmixp_p2p_send(char *nodename, const char *address, char *data,
+int pmixp_p2p_send(const char *nodename, const char *address, const char *data,
 		     uint32_t len, unsigned int start_delay,
 		     unsigned int retry_cnt, int silent)
 {

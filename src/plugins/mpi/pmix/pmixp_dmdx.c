@@ -184,21 +184,21 @@ static void _respond_with_error(int seq_num, char *sender_host,
 				char *sender_ns, int status)
 {
 	Buf buf = create_buf(NULL, 0);
-	char *addr;
+	pmixp_ep_t ep;
 	int rc;
 
+	ep.type = PMIXP_EP_HNAME;
+	ep.ep.hostlist = sender_host;
+
 	/* rank doesn't matter here, don't send it */
-	_setup_header(buf, DMDX_RESPONSE, pmixp_info_namespace(), -1, status);
-	/* generate namespace usocket name */
-	addr = pmixp_info_nspace_usock(sender_ns);
+	_setup_header(buf, DMDX_RESPONSE, sender_ns, -1, status);
+
 	/* send response */
-	rc = pmixp_server_send(sender_host, PMIXP_MSG_DMDX, seq_num, addr,
-			get_buf_data(buf), get_buf_offset(buf), 1);
+	rc = pmixp_server_send(&ep, PMIXP_MSG_DMDX, seq_num, buf);
 	if (SLURM_SUCCESS != rc) {
 		PMIXP_ERROR("Cannot send direct modex error" " response to %s",
 				sender_host);
 	}
-	xfree(addr);
 	free_buf(buf);
 }
 
@@ -206,8 +206,8 @@ static void _dmdx_pmix_cb(pmix_status_t status, char *data, size_t sz,
 		void *cbdata)
 {
 	dmdx_caddy_t *caddy = (dmdx_caddy_t *)cbdata;
-	Buf buf = pmixp_server_new_buf();
-	char *addr;
+	Buf buf = pmixp_server_buf_new();
+	pmixp_ep_t ep;
 	int rc;
 
 	/* setup response header */
@@ -217,19 +217,15 @@ static void _dmdx_pmix_cb(pmix_status_t status, char *data, size_t sz,
 	/* pack the response */
 	packmem(data, sz, buf);
 
-	/* setup response address */
-	addr = pmixp_info_nspace_usock(caddy->sender_ns);
-
 	/* send the request */
-	rc = pmixp_server_send(caddy->sender_host, PMIXP_MSG_DMDX,
-			caddy->seq_num, addr, get_buf_data(buf),
-			get_buf_offset(buf), 1);
+	ep.type = PMIXP_EP_HNAME;
+	ep.ep.hostname = caddy->sender_host;
+	rc = pmixp_server_send(&ep, PMIXP_MSG_DMDX, caddy->seq_num, buf);
 	if (SLURM_SUCCESS != rc) {
 		/* not much we can do here. Caller will react by timeout */
 		PMIXP_ERROR("Cannot send direct modex response to %s",
 				caddy->sender_host);
 	}
-	xfree(addr);
 	free_buf(buf);
 	_dmdx_free_caddy(caddy);
 }
@@ -238,24 +234,19 @@ int pmixp_dmdx_get(const char *nspace, int rank,
 		   pmix_modex_cbfunc_t cbfunc, void *cbdata)
 {
 	dmdx_req_info_t *req;
-	char *addr, *host;
 	Buf buf;
 	int rc;
 	uint32_t seq;
+	pmixp_ep_t ep;
 
 	/* need to send the request */
-	host = pmixp_nspace_resolve(nspace, rank);
-	xassert(NULL != host);
-	if (NULL == host) {
-		return SLURM_ERROR;
-	}
+	ep.type = PMIXP_EP_HNAME;
+	ep.ep.hostname = pmixp_nspace_resolve(nspace, rank);
 
-	buf = pmixp_server_new_buf();
-
+	buf = pmixp_server_buf_new();
 	/* setup message header */
 	_setup_header(buf, DMDX_REQUEST, nspace, rank, SLURM_SUCCESS);
-	/* generate namespace usocket name */
-	addr = pmixp_info_nspace_usock(nspace);
+
 	/* store cur seq. num and move to the next request */
 	seq = _dmdx_seq_num++;
 
@@ -272,19 +263,19 @@ int pmixp_dmdx_get(const char *nspace, int rank,
 	list_append(_dmdx_requests, req);
 
 	/* send the request */
-	rc = pmixp_server_send(host, PMIXP_MSG_DMDX, seq, addr,
-			get_buf_data(buf), get_buf_offset(buf), 1);
-
-	/* cleanup the resources */
-	xfree(addr);
-	free_buf(buf);
+	rc = pmixp_server_send(&ep, PMIXP_MSG_DMDX, seq, buf);
 
 	/* check the return status */
 	if (SLURM_SUCCESS != rc) {
-		PMIXP_ERROR("Cannot send direct modex request to %s", host);
+		PMIXP_ERROR("Cannot send direct modex request to %s, size %d",
+			    ep.ep.hostname, get_buf_offset(buf));
 		cbfunc(PMIX_ERROR, NULL, 0, cbdata, NULL, NULL);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
 	}
+
+	/* cleanup */
+	free_buf(buf);
+	xfree(ep.ep.hostname);
 
 	return rc;
 }
@@ -457,7 +448,7 @@ void pmixp_dmdx_timeout_cleanup(void)
 				    req->nspace, req->rank,
 				    (NULL != host) ? host : "unknown", ts);
 			if (NULL != host) {
-				free(host);
+				xfree(host);
 			}
 #endif
 			req->cbfunc(PMIX_ERR_TIMEOUT, NULL, 0, req->cbdata,

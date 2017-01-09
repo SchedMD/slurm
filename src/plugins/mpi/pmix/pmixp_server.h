@@ -46,15 +46,30 @@ typedef enum {
 	PMIXP_MSG_DMDX
 } pmixp_srv_cmd_t;
 
+typedef enum {
+	/* use non as to check non-init case */
+	PMIXP_EP_NONE = 0,
+	PMIXP_EP_HLIST,
+	PMIXP_EP_HNAME,
+} pmixp_ep_type_t;
+
+typedef struct {
+	pmixp_ep_type_t type;
+	union {
+		char *hostlist;
+		char* hostname;
+	} ep;
+} pmixp_ep_t;
+
 int pmixp_stepd_init(const stepd_step_rec_t *job, char ***env);
 int pmixp_stepd_finalize(void);
 void pmixp_server_cleanup(void);
 int pmix_srun_init(const mpi_plugin_client_info_t *job, char ***env);
 void pmixp_server_slurm_conn(int fd);
 void pmixp_server_direct_conn(int fd);
-int pmixp_server_send(char *hostlist, pmixp_srv_cmd_t type, uint32_t seq,
-		      const char *addr, void *data, size_t size, int p2p);
-
-Buf pmixp_server_new_buf(void);
+int pmixp_server_send(pmixp_ep_t *ep, pmixp_srv_cmd_t type,
+		      uint32_t seq, Buf buf);
+Buf pmixp_server_buf_new(void);
+size_t pmixp_server_buf_reset(Buf buf);
 
 #endif /* PMIXP_SERVER_H */

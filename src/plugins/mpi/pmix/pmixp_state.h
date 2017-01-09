@@ -50,7 +50,7 @@
 
 typedef struct {
 #ifndef NDEBUG
-#define PMIX_STATE_MAGIC 0xFEEDCAFE
+#define PMIXP_STATE_MAGIC 0xFEEDCAFE
 	int magic;
 #endif
 	List coll;
@@ -69,7 +69,7 @@ void pmixp_state_finalize(void);
 
 static inline void pmixp_state_sanity_check(void)
 {
-	xassert(_pmixp_state.magic == PMIX_STATE_MAGIC);
+	xassert(_pmixp_state.magic == PMIXP_STATE_MAGIC);
 }
 
 /*

@@ -106,7 +106,7 @@ static void _fan_in_finished(pmixp_coll_t *coll)
 	memset(coll->ch_contribs, 0, sizeof(int) * coll->children_cnt);
 	coll->contrib_cntr = 0;
 	coll->contrib_local = 0;
-	set_buf_offset(coll->buf, coll->serv_offs);
+	coll->serv_offs = pmixp_server_buf_reset(coll->buf);
 	if (SLURM_SUCCESS != _pack_ranges(coll)) {
 		PMIXP_ERROR("Cannot pack ranges to coll message header!");
 	}
@@ -140,7 +140,7 @@ static void _reset_coll(pmixp_coll_t *coll)
 		break;
 	case PMIXP_COLL_FAN_IN:
 	case PMIXP_COLL_FAN_OUT:
-		set_buf_offset(coll->buf, coll->serv_offs);
+		coll->serv_offs = pmixp_server_buf_reset(coll->buf);
 		if (SLURM_SUCCESS != _pack_ranges(coll)) {
 			PMIXP_ERROR(
 					"Cannot pack ranges to coll message header!");
@@ -305,7 +305,7 @@ int pmixp_coll_init(pmixp_coll_t *coll, const pmix_proc_t *procs,
 	}
 
 	/* Collective data */
-	coll->buf = pmixp_server_new_buf();
+	coll->buf = pmixp_server_buf_new();
 	coll->serv_offs = get_buf_offset(coll->buf);
 
 	if (SLURM_SUCCESS != _pack_ranges(coll)) {
@@ -516,10 +516,12 @@ static int _copy_payload(Buf inbuf, size_t offs, Buf *outbuf)
 static void _progress_fan_in(pmixp_coll_t *coll)
 {
 	pmixp_srv_cmd_t type;
-	const char *addr = pmixp_info_srv_usock_path();
+	pmixp_ep_t ep = {0};
 	char *hostlist = NULL;
-	int rc, is_p2p = 0;
+	int rc;
 	Buf root_buf;
+
+	ep.type = PMIXP_EP_NONE;
 
 	PMIXP_DEBUG("%s:%d: start, local=%d, child_cntr=%d",
 			pmixp_info_namespace(), pmixp_info_nodeid(),
@@ -544,15 +546,16 @@ static void _progress_fan_in(pmixp_coll_t *coll)
 
 	/* The root of the collective will have parent_host == NULL */
 	if (NULL != coll->parent_host) {
-		hostlist = xstrdup(coll->parent_host);
+		ep.type = PMIXP_EP_HNAME;
+		ep.ep.hostname = coll->parent_host;
 		type = PMIXP_MSG_FAN_IN;
 		PMIXP_DEBUG("%s:%d: switch to PMIXP_COLL_FAN_OUT state",
 			    pmixp_info_namespace(), pmixp_info_nodeid());
-		is_p2p = 1;
 	} else {
 		if (0 < hostlist_count(coll->all_children)) {
-			hostlist = hostlist_ranged_string_xmalloc(
-					coll->all_children);
+			ep.type = PMIXP_EP_HLIST;
+			ep.ep.hostlist = hostlist_ranged_string_xmalloc(
+						coll->all_children);
 			type = PMIXP_MSG_FAN_OUT;
 			pmixp_debug_hang(0);
 		}
@@ -565,11 +568,10 @@ static void _progress_fan_in(pmixp_coll_t *coll)
 	PMIXP_DEBUG("%s:%d: send data to %s", pmixp_info_namespace(),
 			pmixp_info_nodeid(), hostlist);
 
+
 	/* Check for the singletone case */
-	if (NULL != hostlist) {
-		rc = pmixp_server_send(hostlist, type, coll->seq, addr,
-				get_buf_data(coll->buf),
-				get_buf_offset(coll->buf), is_p2p);
+	if (PMIXP_EP_NONE != ep.type) {
+		rc = pmixp_server_send(&ep, type, coll->seq, coll->buf);
 
 		if (SLURM_SUCCESS != rc) {
 			PMIXP_ERROR(
@@ -600,12 +602,23 @@ static void _progress_fan_in(pmixp_coll_t *coll)
 	}
 
 unlock:
-	if (NULL != hostlist) {
-		xfree(hostlist);
+	/* unlock the collective */
+	slurm_mutex_unlock(&coll->lock);
+
+	/* release the endpoint */
+	switch( ep.type ){
+	case PMIXP_EP_HLIST:
+		xfree(ep.ep.hostlist);
+		break;
+	case PMIXP_EP_HNAME:
+		/* hostname was a copy of parent_host
+		 * don't need to free it
+		 */
+		break;
+	default:
+		break;
 	}
 
-	/* lock the */
-	slurm_mutex_unlock(&coll->lock);
 }
 
 void _progres_fan_out(pmixp_coll_t *coll, Buf buf)

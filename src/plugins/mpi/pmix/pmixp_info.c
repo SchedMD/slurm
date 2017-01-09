@@ -100,7 +100,7 @@ int pmixp_info_set(const stepd_step_rec_t *job, char ***env)
 	size_t msize;
 	memset(&_pmixp_job_info, 0, sizeof(_pmixp_job_info));
 #ifndef NDEBUG
-	_pmixp_job_info.magic = PMIX_INFO_MAGIC;
+	_pmixp_job_info.magic = PMIXP_INFO_MAGIC;
 #endif
 	/* security info */
 	_pmixp_job_info.uid = job->uid;

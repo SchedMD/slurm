@@ -46,7 +46,7 @@
 
 typedef struct {
 #ifndef NDEBUG
-#define PMIX_INFO_MAGIC 0xCAFEFACE
+#define PMIXP_INFO_MAGIC 0xCAFE01F0
 	int magic;
 #endif
 	char nspace[PMIX_MAX_NSLEN];
@@ -88,7 +88,7 @@ int pmixp_info_srv_tsock_fd(void);
 
 static inline int pmixp_info_timeout(void)
 {
-	xassert(_pmixp_job_info.magic == PMIX_INFO_MAGIC);
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
 	return _pmixp_job_info.timeout;
 }
 
@@ -125,31 +125,31 @@ int pmixp_info_free(void);
 
 static inline uint32_t pmixp_info_jobuid(void)
 {
-	xassert(_pmixp_job_info.magic == PMIX_INFO_MAGIC);
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
 	return _pmixp_job_info.uid;
 }
 
 static inline uint32_t pmixp_info_jobgid(void)
 {
-	xassert(_pmixp_job_info.magic == PMIX_INFO_MAGIC);
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
 	return _pmixp_job_info.gid;
 }
 
 static inline uint32_t pmixp_info_jobid(void)
 {
-	xassert(_pmixp_job_info.magic == PMIX_INFO_MAGIC);
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
 	return _pmixp_job_info.jobid;
 }
 
 static inline uint32_t pmixp_info_stepid(void)
 {
-	xassert(_pmixp_job_info.magic == PMIX_INFO_MAGIC);
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
 	return _pmixp_job_info.stepid;
 }
 
 static inline char *pmixp_info_namespace(void)
 {
-	xassert(_pmixp_job_info.magic == PMIX_INFO_MAGIC);
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
 	return _pmixp_job_info.nspace;
 }
 
@@ -175,56 +175,56 @@ static inline uint32_t pmixp_info_nodeid_job(void)
 
 static inline uint32_t pmixp_info_nodes(void)
 {
-	xassert(_pmixp_job_info.magic == PMIX_INFO_MAGIC);
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
 	return _pmixp_job_info.nnodes;
 }
 
 static inline uint32_t pmixp_info_nodes_uni(void)
 {
-	xassert(_pmixp_job_info.magic == PMIX_INFO_MAGIC);
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
 	return _pmixp_job_info.nnodes_job;
 }
 
 static inline uint32_t pmixp_info_tasks(void)
 {
-	xassert(_pmixp_job_info.magic == PMIX_INFO_MAGIC);
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
 	return _pmixp_job_info.ntasks;
 }
 
 static inline uint32_t pmixp_info_tasks_node(uint32_t nodeid)
 {
-	xassert(_pmixp_job_info.magic == PMIX_INFO_MAGIC);
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
 	xassert(nodeid < _pmixp_job_info.nnodes);
 	return _pmixp_job_info.task_cnts[nodeid];
 }
 
 static inline uint32_t *pmixp_info_tasks_cnts(void)
 {
-	xassert(_pmixp_job_info.magic == PMIX_INFO_MAGIC);
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
 	return _pmixp_job_info.task_cnts;
 }
 
 static inline uint32_t pmixp_info_tasks_loc(void)
 {
-	xassert(_pmixp_job_info.magic == PMIX_INFO_MAGIC);
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
 	return _pmixp_job_info.node_tasks;
 }
 
 static inline uint32_t pmixp_info_tasks_uni(void)
 {
-	xassert(_pmixp_job_info.magic == PMIX_INFO_MAGIC);
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
 	return _pmixp_job_info.ntasks_job;
 }
 
 static inline uint32_t pmixp_info_cpus(void)
 {
-	xassert(_pmixp_job_info.magic == PMIX_INFO_MAGIC);
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
 	return _pmixp_job_info.ncpus_job;
 }
 
 static inline uint32_t pmixp_info_taskid(uint32_t localid)
 {
-	xassert(_pmixp_job_info.magic == PMIX_INFO_MAGIC);
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
 	xassert(localid < _pmixp_job_info.node_tasks);
 	return _pmixp_job_info.gtids[localid];
 }
@@ -237,7 +237,7 @@ static inline uint32_t pmixp_info_taskid(uint32_t localid)
 static inline int pmixp_info_taskid2localid(uint32_t taskid)
 {
 	int i;
-	xassert(_pmixp_job_info.magic == PMIX_INFO_MAGIC);
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
 	xassert(taskid < _pmixp_job_info.ntasks);
 
 	for (i = 0; i < _pmixp_job_info.node_tasks; i++) {

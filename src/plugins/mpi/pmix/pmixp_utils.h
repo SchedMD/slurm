@@ -50,10 +50,10 @@ size_t pmixp_write_buf(int fd, void *buf, size_t count, int *shutdown,
 bool pmixp_fd_read_ready(int fd, int *shutdown);
 bool pmixp_fd_write_ready(int fd, int *shutdown);
 int pmixp_srun_send(slurm_addr_t *addr, uint32_t len, char *data);
-int pmixp_stepd_send(char *nodelist, const char *address, char *data,
+int pmixp_stepd_send(const char *nodelist, const char *address, const char *data,
 		     uint32_t len, unsigned int start_delay, unsigned int retry_cnt,
 		     int silent);
-int pmixp_p2p_send(char *nodename, const char *address, char *data,
+int pmixp_p2p_send(const char *nodename, const char *address, const char *data,
 		     uint32_t len, unsigned int start_delay,
 		     unsigned int retry_cnt, int silent);
 int pmixp_rmdir_recursively(char *path);

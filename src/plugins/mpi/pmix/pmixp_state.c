@@ -54,7 +54,7 @@ void _xfree_coll(void *x)
 int pmixp_state_init(void)
 {
 #ifndef NDEBUG
-	_pmixp_state.magic = PMIX_STATE_MAGIC;
+	_pmixp_state.magic = PMIXP_STATE_MAGIC;
 #endif
 	_pmixp_state.coll = list_create(_xfree_coll);
 
