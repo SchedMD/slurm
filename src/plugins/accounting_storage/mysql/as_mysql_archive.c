@@ -2570,8 +2570,8 @@ extern int as_mysql_jobacct_process_archive_load(
 			     arch_rec->archive_file);
 			error_code = ENOENT;
 		} else {
-			data_allocated = BUF_SIZE;
-			data = xmalloc(data_allocated);
+			data_allocated = BUF_SIZE + 1;
+			data = xmalloc_nz(data_allocated);
 			while (1) {
 				data_read = read(state_fd, &data[data_size],
 						 BUF_SIZE);
@@ -2583,11 +2583,13 @@ extern int as_mysql_jobacct_process_archive_load(
 						      arch_rec->archive_file);
 						break;
 					}
-				} else if (data_read == 0)	/* eof */
+				}
+				data[data_read] = '\0';
+				if (data_read == 0)	/* eof */
 					break;
 				data_size      += data_read;
 				data_allocated += data_read;
-				xrealloc(data, data_allocated);
+				xrealloc_nz(data, data_allocated);
 			}
 			close(state_fd);
 		}
