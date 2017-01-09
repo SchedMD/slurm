@@ -1878,9 +1878,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	    ((job_ptr->bit_flags & TEST_NOW_ONLY) == 0)) {
 		int time_window = 30;
 		bool more_jobs = true;
-		bool timed_out = false;
 		DEF_TIMERS;
-
 		list_sort(cr_job_list, _cr_job_list_sort);
 		START_TIMER;
 		job_iterator = list_iterator_create(cr_job_list);
@@ -1908,14 +1906,6 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				last_job_ptr = tmp_job_ptr;
 				_rm_job_from_res(future_part, future_usage,
 						 tmp_job_ptr, 0);
-				if (timed_out) {
-					/* After timeout, remove ALL remaining
-					 * jobs and test if the pending job can
-					 * start, rather than executing the slow
-					 * cr_job_test() operation after
-					 * removing every 200 jobs */
-					continue;
-				}
 				if (rm_job_cnt++ > 200)
 					break;
 				next_job_ptr = list_peek_next(job_iterator);
@@ -1949,12 +1939,9 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				}
 				break;
 			}
-			/* After 1 second of iterating over groups of running
-			 * jobs, simulate the termination of all remaining jobs
-			 * in order to determine if pending job can ever run */
 			END_TIMER;
-			if (DELTA_TIMER >= 1000000)
-				timed_out = true;
+			if (DELTA_TIMER >= 2000000)
+				break;	/* Quit after 2 seconds wall time */
 		}
 		list_iterator_destroy(job_iterator);
 	}

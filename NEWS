@@ -5,6 +5,9 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Fix parsing of SBCAST_COMPRESS environment variable in sbcast.
  -- Change some debug messages to errors in task/cgroup plugin.
+ -- backfill scheduler: Stop trying to determine expected start time for a job
+    after 2 seconds of wall time. This can happen if there are many running jobs
+    and a pending job can not be started soon.
 
 * Changes in Slurm 16.05.8
 ==========================
