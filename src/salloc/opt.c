@@ -1040,7 +1040,7 @@ void set_options(const int argc, char **argv)
 			opt.threads_per_core_set = true;
 			break;
 		case LONG_OPT_MEM:
-			opt.realmem = (int64_t) str_to_mbytes(optarg);
+			opt.realmem = (int64_t) str_to_mbytes2(optarg);
 			if (opt.realmem < 0) {
 				error("invalid memory constraint %s",
 				      optarg);
@@ -1048,7 +1048,7 @@ void set_options(const int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_MEM_PER_CPU:
-			opt.mem_per_cpu = (int64_t) str_to_mbytes(optarg);
+			opt.mem_per_cpu = (int64_t) str_to_mbytes2(optarg);
 			if (opt.mem_per_cpu < 0) {
 				error("invalid memory constraint %s",
 				      optarg);
@@ -1056,7 +1056,7 @@ void set_options(const int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_TMP:
-			opt.tmpdisk = str_to_mbytes(optarg);
+			opt.tmpdisk = str_to_mbytes2(optarg);
 			if (opt.tmpdisk < 0) {
 				error("invalid tmp value %s", optarg);
 				exit(error_exit);

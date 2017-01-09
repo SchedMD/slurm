@@ -2659,6 +2659,11 @@ The argument is in units of minutes.
 Individual jobs may override this default value with the \fB\-\-delay\-boot\fR
 option.
 .TP
+\fBdefault_gbytes\fR
+The default units in job submission memory and temporary disk size specification
+will be gigabytes rather than megabytes.
+Users can override the default by using a suffix of "M" for megabytes.
+.TP
 \fBdisable_user_top\fR
 Disable use of the "scontrol top" command by non-privileged users.
 .TP

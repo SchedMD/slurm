@@ -745,8 +745,10 @@ This parameter is a group among the groups of the user.
 Default value is calculated by the Plugin mcs if it's enabled.
 
 .TP
-\fB\-\-mem\fR=<\fIMB\fR>
-Specify the real memory required per node in megabytes.
+\fB\-\-mem\fR=<\fIsize[units]\fR>
+Specify the real memory required per node.
+Default units are megabytes unless the SchedulerParameters configuration
+parameter includes the "default_gbytes" option for gigabytes.
 Different units can be specified using the suffix [K|M|G|T].
 Default value is \fBDefMemPerNode\fR and the maximum value is
 \fBMaxMemPerNode\fR. If configured, both of parameters can be
@@ -769,8 +771,10 @@ the job's Resident Set Size (RSS). A task may exceed the memory limit until
 the next periodic accounting sample.
 
 .TP
-\fB\-\-mem\-per\-cpu\fR=<\fIMB\fR>
-Minimum memory required per allocated CPU in megabytes.
+\fB\-\-mem\-per\-cpu\fR=<\fIsize[units]\fR>
+Minimum memory required per allocated CPU.
+Default units are megabytes unless the SchedulerParameters configuration
+parameter includes the "default_gbytes" option for gigabytes.
 Different units can be specified using the suffix [K|M|G|T].
 Default value is \fBDefMemPerCPU\fR and the maximum value is \fBMaxMemPerCPU\fR
 (see exception below). If configured, both of parameters can be
@@ -1338,8 +1342,11 @@ Acceptable time formats include "minutes", "minutes:seconds",
 "days\-hours:minutes:seconds".
 
 .TP
-\fB\-\-tmp\fR=<\fIMB\fR>
-Specify a minimum amount of temporary disk space.
+\fB\-\-tmp\fR=<\fIsize[units]\fR>
+Specify a minimum amount of temporary disk space per node.
+Default units are megabytes unless the SchedulerParameters configuration
+parameter includes the "default_gbytes" option for gigabytes.
+Different units can be specified using the suffix [K|M|G|T].
 
 .TP
 \fB\-u\fR, \fB\-\-usage\fR

@@ -68,6 +68,7 @@
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/proc_args.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -587,11 +588,7 @@ char * base_name(char* command)
 	return name;
 }
 
-/*
- * str_to_mbytes(): verify that arg is numeric with optional "K", "M", "G"
- * or "T" at end and return the number in mega-bytes
- */
-long str_to_mbytes(const char *arg)
+static long _str_to_mbtyes(const char *arg, int use_gbytes)
 {
 	long result;
 	char *endptr;
@@ -600,7 +597,9 @@ long str_to_mbytes(const char *arg)
 	result = strtol(arg, &endptr, 10);
 	if ((errno != 0) && ((result == LONG_MIN) || (result == LONG_MAX)))
 		result = -1;
-	else if (endptr[0] == '\0')
+	else if ((endptr[0] == '\0') && (use_gbytes == 1))  /* GB default */
+		result *= 1024;
+	else if (endptr[0] == '\0')	/* MB default */
 		;
 	else if ((endptr[0] == 'k') || (endptr[0] == 'K'))
 		result = (result + 1023) / 1024;	/* round up */
@@ -614,6 +613,36 @@ long str_to_mbytes(const char *arg)
 		result = -1;
 
 	return result;
+}
+
+/*
+ * str_to_mbytes(): verify that arg is numeric with optional "K", "M", "G"
+ * or "T" at end and return the number in mega-bytes. Default units are MB.
+ */
+long str_to_mbytes(const char *arg)
+{
+	return _str_to_mbtyes(arg, 0);
+}
+
+/*
+ * str_to_mbytes2(): verify that arg is numeric with optional "K", "M", "G"
+ * or "T" at end and return the number in mega-bytes. Default units are GB
+ * if "SchedulerParameters=default_gbytes" is configured, otherwise MB.
+ */
+long str_to_mbytes2(const char *arg)
+{
+	static int use_gbytes = -1;
+
+	if (use_gbytes == -1) {
+		char *sched_params = slurm_get_sched_params();
+		if (sched_params && strstr(sched_params, "default_gbytes"))
+			use_gbytes = 1;
+		else
+			use_gbytes = 0;
+		xfree(sched_params);
+	}
+
+	return _str_to_mbtyes(arg, use_gbytes);
 }
 
 /* Convert a string into a node count */

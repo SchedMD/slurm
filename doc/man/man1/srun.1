@@ -1106,8 +1106,10 @@ Default value is calculated by the Plugin mcs if it's enabled. This option
 applies to job allocations.
 
 .TP
-\fB\-\-mem\fR=<\fIMB\fR>
-Specify the real memory required per node in megabytes.
+\fB\-\-mem\fR=<\fIsize[units]\fR>
+Specify the real memory required per node.
+Default units are megabytes unless the SchedulerParameters configuration
+parameter includes the "default_gbytes" option for gigabytes.
 Different units can be specified using the suffix [K|M|G|T].
 Default value is \fBDefMemPerNode\fR and the maximum value is
 \fBMaxMemPerNode\fR. If configured, both of parameters can be
@@ -1135,8 +1137,10 @@ the next periodic accounting sample.
 This option applies to job and step allocations.
 
 .TP
-\fB\-\-mem\-per\-cpu\fR=<\fIMB\fR>
-Minimum memory required per allocated CPU in megabytes.
+\fB\-\-mem\-per\-cpu\fR=<\fIsize[units]\fR>
+Minimum memory required per allocated CPU.
+Default units are megabytes unless the SchedulerParameters configuration
+parameter includes the "default_gbytes" option for gigabytes.
 Different units can be specified using the suffix [K|M|G|T].
 Default value is \fBDefMemPerCPU\fR and the maximum value is \fBMaxMemPerCPU\fR
 (see exception below). If configured, both of parameters can be
@@ -1993,9 +1997,12 @@ Acceptable time formats include "minutes", "minutes:seconds",
 "days\-hours:minutes:seconds". This option applies to job allocations.
 
 .TP
-\fB\-\-tmp\fR=<\fIMB\fR>
-Specify a minimum amount of temporary disk space. This option applies to job
-allocations.
+\fB\-\-tmp\fR=<\fIsize[units]\fR>
+Specify a minimum amount of temporary disk space per node.
+Default units are megabytes unless the SchedulerParameters configuration
+parameter includes the "default_gbytes" option for gigabytes.
+Different units can be specified using the suffix [K|M|G|T].
+This option applies to job allocations.
 
 .TP
 \fB\-u\fR, \fB\-\-unbuffered\fR
