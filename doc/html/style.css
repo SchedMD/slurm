@@ -23,7 +23,6 @@ body:before {
 .container {
 	margin: 0 auto;
 	padding: 0 18px;
-	max-width: 90%;
 }
 
 .container--main {
@@ -661,6 +660,7 @@ input[type="checkbox"] {
 @media screen and (min-width: 32em) {
 	.container {
 		padding: 0 36px;
+		max-width: 100%;
 	}
 }
 
@@ -673,6 +673,7 @@ input[type="checkbox"] {
 
 	.container {
 		padding: 0 48px;
+		max-width: 90%;
 	}
 
 	.container--main {
@@ -772,6 +773,9 @@ input[type="checkbox"] {
 
 /* Extra Large Size */
 @media screen and (min-width: 78em) {
-
+	.container {
+		padding: 0 48px;
+		max-width: 90%;
+	}
 }
 
