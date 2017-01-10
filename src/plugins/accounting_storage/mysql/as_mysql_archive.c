@@ -2600,6 +2600,7 @@ extern int as_mysql_jobacct_process_archive_load(
 	} else {
 		error("Nothing was set in your "
 		      "slurmdb_archive_rec so I am unable to process.");
+		xfree(data);
 		return SLURM_ERROR;
 	}
 
@@ -2620,6 +2621,7 @@ extern int as_mysql_jobacct_process_archive_load(
 	}
 
 	buffer = create_buf(data, data_size);
+	data = NULL;	/* Moved to "buffer" */
 
 	safe_unpack16(&ver, buffer);
 	if (debug_flags & DEBUG_FLAG_DB_ARCHIVE)
@@ -2651,7 +2653,7 @@ extern int as_mysql_jobacct_process_archive_load(
 		goto got_sql;
 	}
 
-	switch(type) {
+	switch (type) {
 	case DBD_GOT_EVENTS:
 		data = _load_events(ver, buffer, cluster_name, rec_cnt);
 		break;
