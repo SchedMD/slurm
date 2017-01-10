@@ -329,7 +329,7 @@ extern pid_t find_ancestor(pid_t process, char *process_name)
 
 	rbuf = xmalloc_nz(4097);
 	pid = ppid = (long)process;
-	do {
+	while (1) {
 		if (ppid <= 1) {
 			pid = 0;
 			break;
@@ -370,7 +370,9 @@ extern pid_t find_ancestor(pid_t process, char *process_name)
 			continue;
 		}
 		close(fd);
-	} while (!strstr(rbuf, process_name));
+		if (strcmp(rbuf, process_name) == 0)
+			break;
+	}
 	xfree(rbuf);
 
 	return pid;
