@@ -65,9 +65,6 @@ char *version_string = "VERSION:17.02";
  * socket, abort after _MAX_RETRIES poll() failures. */
 #define _MAX_RETRIES	10
 
-/* Maximum size of any single field returned (e.g. node list, job name). */
-#define _MAX_NAME_SIZE	256
-
 static bool thread_running = false;
 static bool thread_shutdown = false;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;

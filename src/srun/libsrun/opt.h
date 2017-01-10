@@ -58,8 +58,6 @@
 #define DEFAULT_IMMEDIATE	1
 #define MAX_THREADS		60
 
-#define INT_UNASSIGNED ((int)-1)
-
 /* global variables relating to user options */
 extern int _verbose;
 

@@ -108,8 +108,6 @@
 #define RETRY_DELAY 15		/* retry every 15 seconds */
 #define MAX_RETRY   240		/* retry 240 times (one hour max) */
 
-#define EPIL_RETRY_MAX 2	/* max retries of epilog complete message */
-
 #ifndef MAXHOSTNAMELEN
 #define MAXHOSTNAMELEN	64
 #endif

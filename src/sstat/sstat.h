@@ -68,8 +68,6 @@
 
 #define STAT_FIELDS_PID "jobid,nodelist,pids"
 
-#define STATE_COUNT 10
-
 #define MAX_PRINTFIELDS 100
 
 #define SECONDS_IN_MINUTE 60

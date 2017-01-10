@@ -53,7 +53,6 @@
 #include <signal.h>
 
 #define _DEBUG 1
-#define _DEBUG_STATS 1
 
 /*
  * These variables are required by the generic plugin interface.  If they

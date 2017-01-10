@@ -95,8 +95,6 @@
 #define OPEN_MPI_PORT_ERROR 108
 #endif
 
-#define MAX_ENTRIES 50
-
 static struct termios termdefaults;
 static uint32_t global_rc = 0;
 static srun_job_t *job = NULL;

@@ -49,8 +49,6 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/srun_comm.h"
 
-#define SRUN_LAUNCH_MSG 0
-
 /* Launch the srun request. Note that retry is always zero since
  * we don't want to clog the system up with messages destined for
  * defunct srun processes

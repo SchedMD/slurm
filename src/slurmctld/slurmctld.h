@@ -434,7 +434,6 @@ extern time_t last_job_update;	/* time of last update to job records */
 
 #define DETAILS_MAGIC	0xdea84e7
 #define JOB_MAGIC	0xf0b7392c
-#define STEP_MAGIC	0xce593bc1
 
 #define FEATURE_OP_OR   0
 #define FEATURE_OP_AND  1
