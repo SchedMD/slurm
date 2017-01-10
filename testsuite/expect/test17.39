@@ -85,13 +85,8 @@ proc check_state {id state} {
 	}
 }
 
-if {[test_select_type_params "MEMORY"]} {
-	set job_mem  10
-} else {
-	set job_mem  1
-}
-
 # Submit job 1 of 3
+set job_mem  10
 spawn $sbatch -t3 -o/dev/null --mem=${job_mem} $slow_job
 expect {
 	-re "Submitted batch job ($number)" {
