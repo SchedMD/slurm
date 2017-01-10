@@ -171,7 +171,7 @@ client_req_init(uint32_t len, char *buf)
 	req->parse_idx = 0;
 
 	if (_parse_cmd(req) != SLURM_SUCCESS) {
-		req = NULL;
+		xfree(req);
 	}
 
 	return req;
