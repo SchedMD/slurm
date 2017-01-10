@@ -2584,7 +2584,7 @@ extern int as_mysql_jobacct_process_archive_load(
 						break;
 					}
 				}
-				data[data_read] = '\0';
+				data[data_size + data_read] = '\0';
 				if (data_read == 0)	/* eof */
 					break;
 				data_size      += data_read;
