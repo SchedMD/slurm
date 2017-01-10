@@ -1867,6 +1867,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 						slurm_strerror(rc));
 					rc = SLURM_ERROR;
 					_destroy_sacctmgr_file_opts(file_opts);
+					file_opts = NULL;
 					break;
 				}
 				/* This needs to be commited or
@@ -1879,6 +1880,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 			}
 
 			_destroy_sacctmgr_file_opts(file_opts);
+			file_opts = NULL;
 
 			/* assoc_cond if set up above */
 			curr_assoc_list = acct_storage_g_get_assocs(
@@ -1886,7 +1888,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 			FREE_NULL_LIST(assoc_cond.cluster_list);
 
 			if (!curr_assoc_list) {
-				exit_code=1;
+				exit_code = 1;
 				fprintf(stderr, " Problem getting assocs "
 					"for this cluster\n");
 				rc = SLURM_ERROR;
@@ -1926,6 +1928,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 				break;
 			}
 			_destroy_sacctmgr_file_opts(file_opts);
+			file_opts = NULL;
 			continue;
 		} else if (!parent) {
 			parent = xstrdup("root");
@@ -2026,6 +2029,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 				}
 			}
 			_destroy_sacctmgr_file_opts(file_opts);
+			file_opts = NULL;
 			continue;
 		} else if (!xstrcasecmp("User", object)) {
 			file_opts = _parse_options(line+start);
@@ -2136,9 +2140,10 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 			}
 			//info("got a user %s", file_opts->name);
 			_destroy_sacctmgr_file_opts(file_opts);
+			file_opts = NULL;
 			continue;
 		} else {
-			exit_code=1;
+			exit_code = 1;
 			fprintf(stderr,
 				" Misformatted line(%d): %s\n", lc, line);
 			rc = SLURM_ERROR;
