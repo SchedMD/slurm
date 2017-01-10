@@ -97,10 +97,6 @@
 
 #define MAX_ENTRIES 50
 
-#define	TYPE_NOT_TEXT	0
-#define	TYPE_TEXT	1
-#define	TYPE_SCRIPT	2
-
 static struct termios termdefaults;
 static uint32_t global_rc = 0;
 static srun_job_t *job = NULL;
