@@ -85,7 +85,6 @@
 #include "src/plugins/select/bluegene/bg_enums.h"
 
 #define _DEBUG		0
-#define MAX_RETRIES	10
 
 /* No need to change we always pack SLURM_PROTOCOL_VERSION */
 #define NODE_STATE_VERSION        "PROTOCOL_VERSION"

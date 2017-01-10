@@ -51,9 +51,6 @@
 #include "src/slurmctld/ping_nodes.h"
 #include "src/slurmctld/slurmctld.h"
 
-/* Attempt to fork a thread at most MAX_RETRIES times before aborting */
-#define MAX_RETRIES 10
-
 /* Request that nodes re-register at most every MAX_REG_FREQUENCY pings */
 #define MAX_REG_FREQUENCY 20
 

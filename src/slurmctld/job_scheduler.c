@@ -97,7 +97,6 @@
 #endif
 #define BUILD_TIMEOUT 2000000	/* Max build_job_queue() run time in usec */
 #define MAX_FAILED_RESV 10
-#define MAX_RETRIES 10
 
 typedef struct epilog_arg {
 	char *epilog_slurmctld;

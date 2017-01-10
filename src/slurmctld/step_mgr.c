@@ -74,8 +74,6 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/srun_comm.h"
 
-#define MAX_RETRIES 10
-
 static void _build_pending_step(struct job_record  *job_ptr,
 				job_step_create_request_msg_t *step_specs);
 static int  _count_cpus(struct job_record *job_ptr, bitstr_t *bitmap,

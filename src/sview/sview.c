@@ -42,7 +42,6 @@
 #include "sview.h"
 
 #define _DEBUG 0
-#define MAX_RETRIES 3		/* g_thread_create retries */
 
 typedef struct {
 	GtkTable *table;

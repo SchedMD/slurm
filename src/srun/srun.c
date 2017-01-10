@@ -95,7 +95,6 @@
 #define OPEN_MPI_PORT_ERROR 108
 #endif
 
-#define MAX_RETRIES 20
 #define MAX_ENTRIES 50
 
 #define	TYPE_NOT_TEXT	0

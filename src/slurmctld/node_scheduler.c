@@ -86,7 +86,6 @@
 #include "src/slurmctld/slurmctld_plugstack.h"
 
 #define MAX_FEATURES  32	/* max exclusive features "[fs1|fs2]"=2 */
-#define MAX_RETRIES   10
 
 struct node_set {		/* set of nodes with same configuration */
 	uint16_t cpus_per_node;	/* NOTE: This is the minimum count,

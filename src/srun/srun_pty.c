@@ -57,8 +57,6 @@
 #include "srun_job.h"
 #include "srun_pty.h"
 
-#define MAX_RETRIES 3
-
 /*  Processed by pty_thr() */
 static int pty_sigarray[] = { SIGWINCH, 0 };
 static int winch;
