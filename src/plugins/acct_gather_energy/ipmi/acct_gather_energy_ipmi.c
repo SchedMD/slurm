@@ -83,7 +83,6 @@ slurmd_conf_t *conf = NULL;
 #define _DEBUG 1
 #define _DEBUG_ENERGY 1
 #define IPMI_VERSION 2		/* Data structure version number */
-#define NBFIRSTREAD 3
 #define MAX_LOG_ERRORS 5	/* Max sensor reading errors log messages */
 
 /*

@@ -91,7 +91,6 @@ extern uint64_t job_getjid(pid_t pid);
 extern pid_t getpgid(pid_t pid);
 #endif
 
-#define HASH_RECS	100
 #define MAX_RETRIES	10
 #define POLL_SLEEP	3	/* retry interval in seconds  */
 

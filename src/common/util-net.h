@@ -46,9 +46,6 @@
 #include "src/common/macros.h"
 #include "src/common/xmalloc.h"
 
-#define HOSTENT_SIZE 8192               /* cf. Stevens UNPv1 11.15 p304 */
-
-
 struct hostent * get_host_by_name(const char *name,
     void *buf, int buflen, int *h_err);
 /*
