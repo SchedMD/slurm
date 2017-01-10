@@ -156,11 +156,6 @@ extern int slurm_unpack_block_info_msg(
 	block_info_msg_t **block_info_msg_pptr, Buf buffer,
 	uint16_t protocol_version);
 
-/* Translate task_dist value from v15.08+ format to v14.11- format */
-extern uint16_t task_dist_new2old(uint32_t new_task_dist);
-/* Translate task_dist value from v14.11- format to v15.08+ format */
-extern uint32_t task_dist_old2new(uint16_t old_task_dist);
-
 /* Translate memory limits from old format to new */
 /* Remove when version 16.05 support is no longer required. */
 extern uint32_t xlate_mem_new2old(uint64_t new_mem);
