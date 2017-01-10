@@ -298,19 +298,9 @@ extern int slurm_select_init(bool only_default)
 				continue;
 
 			len = strlen(e->d_name);
-#if defined(__CYGWIN__)
-			len -= 4;
-#else
 			len -= 3;
-#endif
 			/* Check only shared object files */
-			if (xstrcmp(e->d_name+len,
-#if defined(__CYGWIN__)
-				   ".dll"
-#else
-				   ".so"
-#endif
-				    ))
+			if (xstrcmp(e->d_name+len, ".so"))
 				continue;
 			/* add one for the / */
 			len++;

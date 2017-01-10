@@ -88,7 +88,7 @@ extern uid_t *get_group_members(char *group_name)
 	uid_t *group_uids = NULL, my_uid;
 	gid_t my_gid;
 	int buflen = PW_BUF_SIZE, i, j, res, uid_cnt;
-#if defined (__APPLE__) || defined (__CYGWIN__)
+#if defined (__APPLE__)
 #else
 	char pw_buffer[PW_BUF_SIZE];
 	struct passwd pw;
@@ -156,7 +156,7 @@ extern uid_t *get_group_members(char *group_name)
 	 * databases), the rest of this function essentially does
 	 * nothing.  */
 
-#if defined (__APPLE__) || defined (__CYGWIN__)
+#if defined (__APPLE__)
 	setgrent();
 	while (1) {
 		if ((grp_result = getgrent()) == NULL)
@@ -209,7 +209,7 @@ extern uid_t *get_group_members(char *group_name)
 	setpwent();
 #if defined (__sun)
 	while ((pwd_result = getpwent_r(&pw, pw_buffer, PW_BUF_SIZE)) != NULL) {
-#elif defined (__APPLE__) || defined (__CYGWIN__)
+#elif defined (__APPLE__)
 	while ((pwd_result = getpwent()) != NULL) {
 #else
 	while (!getpwent_r(&pw, pw_buffer, PW_BUF_SIZE, &pwd_result)) {
