@@ -1762,6 +1762,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 				FREE_NULL_LIST(curr_user_list);
 				fclose(fd);
 				_destroy_sacctmgr_file_opts(file_opts);
+				xfree(cluster_name);
 				xfree(parent);
 				return;
 
@@ -1778,6 +1779,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 					FREE_NULL_LIST(curr_user_list);
 					fclose(fd);
 					_destroy_sacctmgr_file_opts(file_opts);
+					xfree(cluster_name);
 					xfree(parent);
 					return;
 				}
