@@ -2308,7 +2308,7 @@ _send_launch_failure(launch_tasks_request_msg_t *msg, slurm_addr_t *cli, int rc,
 	resp.count_of_pids = 0;
 
 	if (_send_srun_resp_msg(&resp_msg, msg->nnodes) != SLURM_SUCCESS)
-		error("Failed to send RESPONSE_LAUNCH_TASKS: %m");
+		error("%s: Failed to send RESPONSE_LAUNCH_TASKS: %m", __func__);
 	xfree(name);
 	return;
 }
@@ -2344,7 +2344,7 @@ _send_launch_resp(stepd_step_rec_t *job, int rc)
 	}
 
 	if (_send_srun_resp_msg(&resp_msg, job->nnodes) != SLURM_SUCCESS)
-		error("failed to send RESPONSE_LAUNCH_TASKS: %m");
+		error("%s: Failed to send RESPONSE_LAUNCH_TASKS: %m", __func__);
 
 	xfree(resp.local_pids);
 	xfree(resp.task_ids);
