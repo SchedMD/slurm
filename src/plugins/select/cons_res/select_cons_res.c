@@ -544,21 +544,24 @@ static void _swap_rows(struct part_row_data *a, struct part_row_data *b)
 /* sort the rows of a partition from "most allocated" to "least allocated" */
 extern void cr_sort_part_rows(struct part_res_record *p_ptr)
 {
-	uint32_t i, j, a, b;
+	uint32_t i, j, b;
+	uint32_t a[p_ptr->num_rows];
 
 	if (!p_ptr->row)
 		return;
 
 	for (i = 0; i < p_ptr->num_rows; i++) {
 		if (p_ptr->row[i].row_bitmap)
-			a = bit_set_count(p_ptr->row[i].row_bitmap);
+			a[i] = bit_set_count(p_ptr->row[i].row_bitmap);
 		else
-			a = 0;
+			a[i] = 0;
+	}
+	for (i = 0; i < p_ptr->num_rows; i++) {
 		for (j = i+1; j < p_ptr->num_rows; j++) {
-			if (!p_ptr->row[j].row_bitmap)
-				continue;
-			b = bit_set_count(p_ptr->row[j].row_bitmap);
-			if (b > a) {
+			if (a[j] > a[i]) {
+				b = a[j];
+				a[j] = a[i];
+				a[i] = b;
 				_swap_rows(&(p_ptr->row[i]), &(p_ptr->row[j]));
 			}
 		}
