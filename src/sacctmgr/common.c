@@ -994,6 +994,7 @@ extern int sacctmgr_remove_qos_usage(slurmdb_qos_cond_t *qos_cond)
 			if (!rec) {
 				error("Failed to find QOS %s", qos_name);
 				rc = SLURM_ERROR;
+				slurmdb_destroy_update_object(update_obj);
 				goto end_it;
 			}
 			list_append(update_obj->objects, rec);
@@ -1019,7 +1020,6 @@ end_it:
 	FREE_NULL_LIST(update_list);
 	FREE_NULL_LIST(local_qos_list);
 	xfree(cluster_name);
-	slurmdb_destroy_update_object(update_obj);
 
 	return rc;
 }
