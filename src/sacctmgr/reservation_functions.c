@@ -147,7 +147,7 @@ int sacctmgr_list_reservation(int argc, char **argv)
         List reservation_list;
         ListIterator itr;
 	ListIterator itr2;
-	List format_list = list_create(slurm_destroy_char);
+	List format_list;
 	List print_fields_list;
         slurmdb_reservation_cond_t *reservation_cond =
 		xmalloc(sizeof(slurmdb_reservation_cond_t));
@@ -178,6 +178,8 @@ int sacctmgr_list_reservation(int argc, char **argv)
                 start_tm.tm_isdst = -1;
                 reservation_cond->time_start = slurm_mktime(&start_tm);
         }
+
+	format_list = list_create(slurm_destroy_char);
    	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
 		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))
