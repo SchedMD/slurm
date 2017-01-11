@@ -9,6 +9,8 @@ documents those changes that are of interest to users and administrators.
     after 2 seconds of wall time. This can happen if there are many running jobs
     and a pending job can not be started soon.
  -- Improve performance of cr_sort_part_rows() in cons_res plugin.
+ -- CRAY - Fix dealock issue when updating accounting in the slurmctld and
+    scheduling a Datawarp job.
 
 * Changes in Slurm 16.05.8
 ==========================
