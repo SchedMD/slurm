@@ -60,23 +60,18 @@
 #include <inttypes.h>
 
 #define BITSTR_SHIFT_WORD8	3
-#define BITSTR_SHIFT_WORD32	5
 #define BITSTR_SHIFT_WORD64	6
+#define BITSTR_MAXVAL           0xffffffffffffffff
+#define BITSTR_FMT		PRId64
 
+/* Below are also defined in src/slurm/slurm.h.in.  If it changes please update
+ * that as well.
+ */
 #ifndef   __bitstr_datatypes_defined
 #  define __bitstr_datatypes_defined
 
-#ifdef USE_64BIT_BITSTR
 typedef int64_t bitstr_t;
 #define BITSTR_SHIFT 		BITSTR_SHIFT_WORD64
-#define BITSTR_MAXVAL           0xffffffffffffffff
-#define BITSTR_FMT		PRId64
-#else
-typedef int32_t bitstr_t;
-#define BITSTR_SHIFT 		BITSTR_SHIFT_WORD32
-#define BITSTR_MAXVAL           0xffffffff
-#define BITSTR_FMT		PRId32
-#endif
 
 typedef bitstr_t bitoff_t;
 

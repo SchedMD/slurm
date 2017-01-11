@@ -687,27 +687,9 @@ bit_copybits(bitstr_t *dest, bitstr_t *src)
 	memcpy(&dest[BITSTR_OVERHEAD], &src[BITSTR_OVERHEAD], len);
 }
 
-#if !defined(USE_64BIT_BITSTR)
 /*
  * Returns the hamming weight (i.e. the number of bits set) in a word.
  * NOTE: This routine borrowed from Linux 2.4.9 <linux/bitops.h>.
- */
-static uint32_t
-hweight(uint32_t w)
-{
-	uint32_t res;
-
-	res = (w   & 0x55555555) + ((w >> 1)    & 0x55555555);
-	res = (res & 0x33333333) + ((res >> 2)  & 0x33333333);
-	res = (res & 0x0F0F0F0F) + ((res >> 4)  & 0x0F0F0F0F);
-	res = (res & 0x00FF00FF) + ((res >> 8)  & 0x00FF00FF);
-	res = (res & 0x0000FFFF) + ((res >> 16) & 0x0000FFFF);
-
-	return res;
-}
-#else
-/*
- * A 64 bit version crafted from 32-bit one borrowed above.
  */
 static uint64_t
 hweight(uint64_t w)
@@ -723,7 +705,6 @@ hweight(uint64_t w)
 
 	return res;
 }
-#endif /* !USE_64BIT_BITSTR */
 
 /*
  * Count the number of bits set in bitstring.

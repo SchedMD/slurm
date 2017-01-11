@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
     in units of Gigabytes. Mostly for compatability with LSF.
  -- Fix race condtion in srun/sattach logic which would prevent srun from
     terminating.
+ -- Bitstring operations are now 64bit instead of 32bit.
 
 * Changes in Slurm 17.02.0pre4
 ==============================
