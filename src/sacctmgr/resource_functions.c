@@ -690,11 +690,11 @@ extern int sacctmgr_add_res(int argc, char **argv)
 			if (!added)
 				slurmdb_destroy_res_rec(res);
 
-			if (res->percent_used > 100)
-				break;
-
 			if (found_itr)
 				list_iterator_destroy(found_itr);
+
+			if (res->percent_used > 100)
+				break;
 
 			list_iterator_reset(clus_itr);
 		}
