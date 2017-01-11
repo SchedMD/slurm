@@ -755,14 +755,14 @@ static int _split_block(List block_list, List new_blocks,
 #ifdef HAVE_BGL
 	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 		info("Asking for %u 32CNBlocks, and %u 128CNBlocks "
-		     "from a %u block, starting at ionode %d.",
+		     "from a %u block, starting at ionode %"BITSTR_FMT".",
 		     blockreq.small32, blockreq.small128,
 		     bg_record->cnode_cnt, start);
 #else
 	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 		info("Asking for %u 16CNBlocks, %u 32CNBlocks, "
 		     "%u 64CNBlocks, %u 128CNBlocks, and %u 256CNBlocks "
-		     "from a %u block, starting at ionode %d.",
+		     "from a %u block, starting at ionode %"BITSTR_FMT".",
 		     blockreq.small16, blockreq.small32,
 		     blockreq.small64, blockreq.small128,
 		     blockreq.small256, bg_record->cnode_cnt, start);
