@@ -3472,7 +3472,6 @@ static void _kill_job(struct job_record *job_ptr, bool hold_job)
 {
 	last_job_update = time(NULL);
 	job_ptr->end_time = last_job_update;
-	job_ptr->job_state = JOB_PENDING | JOB_COMPLETING;
 	if (hold_job)
 		job_ptr->priority = 0;
 	build_cg_bitmap(job_ptr);
@@ -3480,7 +3479,11 @@ static void _kill_job(struct job_record *job_ptr, bool hold_job)
 	job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
 	xfree(job_ptr->state_desc);
 	job_ptr->state_desc = xstrdup("Burst buffer pre_run error");
-	job_completion_logger(job_ptr, false);
+
+	job_ptr->job_state  = JOB_REQUEUE;
+	job_completion_logger(job_ptr, true);
+	job_ptr->job_state = JOB_PENDING | JOB_COMPLETING;
+
 	deallocate_nodes(job_ptr, false, false, false);
 }
 

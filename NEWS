@@ -11,6 +11,8 @@ documents those changes that are of interest to users and administrators.
  -- Improve performance of cr_sort_part_rows() in cons_res plugin.
  -- CRAY - Fix dealock issue when updating accounting in the slurmctld and
     scheduling a Datawarp job.
+ -- Correct the job state accounting information for jobs requeued due to burst
+    buffer errors.
 
 * Changes in Slurm 16.05.8
 ==========================
