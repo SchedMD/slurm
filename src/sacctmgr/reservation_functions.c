@@ -167,8 +167,8 @@ int sacctmgr_list_reservation(int argc, char **argv)
                         fprintf(stderr,
                                 " Couldn't get localtime from %ld",
                                 (long)reservation_cond->time_start);
-			xfree(reservation_cond);
-                        exit_code = 1;
+			slurmdb_destroy_reservation_cond(reservation_cond);
+			exit_code = 1;
                         return 0;
                 }
                 start_tm.tm_sec = 0;
