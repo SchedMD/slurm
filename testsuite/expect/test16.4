@@ -108,6 +108,10 @@ if {$matches != $task_cnt} {
 	exit 1
 }
 
+# Wait for startup to complete (including RESPONSE_LAUNCH_TASKS message to srun)
+# before attempting to attach
+sleep 0.1
+
 #
 # Get task layout information
 #

@@ -1278,8 +1278,6 @@ job_manager(stepd_step_rec_t *job)
 	xsignal_block (mgr_sigarray);
 	reattach_job = job;
 
-	_set_job_state(job, SLURMSTEPD_STEP_RUNNING);
-
 	/* Attach slurmstepd to system cgroups, if configured */
 	attach_system_cgroup_pid(getpid());
 
@@ -1291,6 +1289,7 @@ job_manager(stepd_step_rec_t *job)
 
 	/* Send job launch response with list of pids */
 	_send_launch_resp(job, 0);
+	_set_job_state(job, SLURMSTEPD_STEP_RUNNING);
 
 #ifdef PR_SET_DUMPABLE
 	/* RHEL6 requires setting "dumpable" flag AGAIN; after euid changes */

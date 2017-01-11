@@ -10,6 +10,8 @@ documents those changes that are of interest to users and administrators.
  -- Add SchedulerParameters configuration parameter of "default_gbytes", which
     treats numeric only (no suffix) value for memory and tmp disk space as being
     in units of Gigabytes. Mostly for compatability with LSF.
+ -- Fix race condtion in srun/sattach logic which would prevent srun from
+    terminating.
 
 * Changes in Slurm 17.02.0pre4
 ==============================
