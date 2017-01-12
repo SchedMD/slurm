@@ -38,6 +38,7 @@
 
 #include <ctype.h>
 #include <pthread.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 
@@ -72,8 +73,6 @@
 /*****************************************************************************\
  *                            STRUCTURES AND TYPES                           *
 \*****************************************************************************/
-
-void free(void*);
 
 /*
  * layouts_conf_spec_t - structure used to keep track of layouts conf details
