@@ -19,6 +19,8 @@ documents those changes that are of interest to users and administrators.
     the "--jobname=" command line argument.
  -- scancel modified to note that no jobs satisfy the filter options when the
     --verbose option is used along with one or more job filters (e.g. "--qos=").
+ -- Change _pack_cred to use pack_bit_str_hex instead of pack_bit_fmt for
+    better scalability and performance.
 
 * Changes in Slurm 17.02.0pre4
 ==============================

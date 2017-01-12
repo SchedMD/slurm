@@ -1292,7 +1292,6 @@ slurm_cred_unpack(Buf buffer, uint16_t protocol_version)
 {
 	uint32_t     cred_uid, len;
 	slurm_cred_t *cred = NULL;
-	char        *bit_fmt = NULL;
 	char       **sigp;
 	uint32_t     cluster_flags = slurmdb_setup_cluster_flags();
 
@@ -1326,18 +1325,8 @@ slurm_cred_unpack(Buf buffer, uint16_t protocol_version)
 		if (!(cluster_flags & CLUSTER_FLAG_BG)) {
 			uint32_t tot_core_cnt;
 			safe_unpack32(&tot_core_cnt, buffer);
-			safe_unpackstr_xmalloc(&bit_fmt, &len, buffer);
-			cred->job_core_bitmap =
-				bit_alloc((bitoff_t) tot_core_cnt);
-			if (bit_unfmt(cred->job_core_bitmap, bit_fmt))
-				goto unpack_error;
-			xfree(bit_fmt);
-			safe_unpackstr_xmalloc(&bit_fmt, &len, buffer);
-			cred->step_core_bitmap =
-				bit_alloc((bitoff_t) tot_core_cnt);
-			if (bit_unfmt(cred->step_core_bitmap, bit_fmt))
-				goto unpack_error;
-			xfree(bit_fmt);
+			unpack_bit_str_hex(&cred->job_core_bitmap, buffer);
+			unpack_bit_str_hex(&cred->step_core_bitmap, buffer);
 			safe_unpack16(&cred->core_array_size, buffer);
 			if (cred->core_array_size) {
 				safe_unpack16_array(&cred->cores_per_socket,
@@ -1393,6 +1382,7 @@ slurm_cred_unpack(Buf buffer, uint16_t protocol_version)
 
 		if (!(cluster_flags & CLUSTER_FLAG_BG)) {
 			uint32_t tot_core_cnt;
+			char *bit_fmt = NULL;
 			safe_unpack32(&tot_core_cnt, buffer);
 			safe_unpackstr_xmalloc(&bit_fmt, &len, buffer);
 			cred->job_core_bitmap =
@@ -1759,8 +1749,8 @@ _pack_cred(slurm_cred_t *cred, Buf buffer, uint16_t protocol_version)
 			if (cred->job_core_bitmap)
 				tot_core_cnt = bit_size(cred->job_core_bitmap);
 			pack32(tot_core_cnt, buffer);
-			pack_bit_fmt(cred->job_core_bitmap, buffer);
-			pack_bit_fmt(cred->step_core_bitmap, buffer);
+			pack_bit_str_hex(cred->job_core_bitmap, buffer);
+			pack_bit_str_hex(cred->step_core_bitmap, buffer);
 			pack16(cred->core_array_size, buffer);
 			if (cred->core_array_size) {
 				pack16_array(cred->cores_per_socket,
