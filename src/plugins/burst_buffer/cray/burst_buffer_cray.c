@@ -3383,6 +3383,7 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 
 	/* Run "paths" function, get DataWarp environment variables */
 	if (_have_dw_cmd_opts(bb_job)) {
+		/* Setup "paths" operation */
 		if (bb_state.bb_config.validate_timeout)
 			timeout = bb_state.bb_config.validate_timeout * 1000;
 		else
@@ -3422,48 +3423,50 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 		}
 		xfree(resp_msg);
 		_free_script_argv(script_argv);
-	}
 
-	pre_run_argv = xmalloc(sizeof(char *) * 10);
-	pre_run_argv[0] = xstrdup("dw_wlm_cli");
-	pre_run_argv[1] = xstrdup("--function");
-	pre_run_argv[2] = xstrdup("pre_run");
-	pre_run_argv[3] = xstrdup("--token");
-	xstrfmtcat(pre_run_argv[4], "%u", job_ptr->job_id);
-	pre_run_argv[5] = xstrdup("--job");
-	xstrfmtcat(pre_run_argv[6], "%s/script", job_dir);
-	if (client_nodes_file_nid) {
+		/* Setup "pre_run" operation */
+		pre_run_argv = xmalloc(sizeof(char *) * 10);
+		pre_run_argv[0] = xstrdup("dw_wlm_cli");
+		pre_run_argv[1] = xstrdup("--function");
+		pre_run_argv[2] = xstrdup("pre_run");
+		pre_run_argv[3] = xstrdup("--token");
+		xstrfmtcat(pre_run_argv[4], "%u", job_ptr->job_id);
+		pre_run_argv[5] = xstrdup("--job");
+		xstrfmtcat(pre_run_argv[6], "%s/script", job_dir);
+		if (client_nodes_file_nid) {
 #if defined(HAVE_NATIVE_CRAY)
-		pre_run_argv[7] = xstrdup("--nidlistfile");
+			pre_run_argv[7] = xstrdup("--nidlistfile");
 #else
-		pre_run_argv[7] = xstrdup("--nodehostnamefile");
+			pre_run_argv[7] = xstrdup("--nodehostnamefile");
 #endif
-		pre_run_argv[8] = xstrdup(client_nodes_file_nid);
-	}
-	pre_run_args = xmalloc(sizeof(pre_run_args_t));
-	pre_run_args->args    = pre_run_argv;
-	pre_run_args->job_id  = job_ptr->job_id;
-	pre_run_args->timeout = bb_state.bb_config.other_timeout;
-	pre_run_args->user_id = job_ptr->user_id;
-	if (job_ptr->details)	/* Prevent launch until "pre_run" completes */
-		job_ptr->details->prolog_running++;
-
-	slurm_attr_init(&pre_run_attr);
-	if (pthread_attr_setdetachstate(&pre_run_attr, PTHREAD_CREATE_DETACHED))
-		error("pthread_attr_setdetachstate error %m");
-	while (pthread_create(&pre_run_tid, &pre_run_attr, _start_pre_run,
-			      pre_run_args)) {
-		if (errno != EAGAIN) {
-			error("%s: pthread_create: %m", __func__);
-			_start_pre_run(pre_run_argv);	/* Do in-line */
-			break;
+			pre_run_argv[8] = xstrdup(client_nodes_file_nid);
 		}
-		usleep(100000);
-	}
-	slurm_attr_destroy(&pre_run_attr);
+		pre_run_args = xmalloc(sizeof(pre_run_args_t));
+		pre_run_args->args    = pre_run_argv;
+		pre_run_args->job_id  = job_ptr->job_id;
+		pre_run_args->timeout = bb_state.bb_config.other_timeout;
+		pre_run_args->user_id = job_ptr->user_id;
+		if (job_ptr->details)	/* Defer launch until completion */
+			job_ptr->details->prolog_running++;
 
-	xfree(job_dir);
+		slurm_attr_init(&pre_run_attr);
+		if (pthread_attr_setdetachstate(&pre_run_attr,
+						PTHREAD_CREATE_DETACHED))
+			error("pthread_attr_setdetachstate error %m");
+		while (pthread_create(&pre_run_tid, &pre_run_attr,
+				      _start_pre_run, pre_run_args)) {
+			if (errno != EAGAIN) {
+				error("%s: pthread_create: %m", __func__);
+				_start_pre_run(pre_run_argv);	/* Do in-line */
+				break;
+			}
+			usleep(100000);
+		}
+		slurm_attr_destroy(&pre_run_attr);
+}
+
 	xfree(client_nodes_file_nid);
+	xfree(job_dir);
 	return rc;
 }
 

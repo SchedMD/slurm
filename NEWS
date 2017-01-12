@@ -13,6 +13,8 @@ documents those changes that are of interest to users and administrators.
     scheduling a Datawarp job.
  -- Correct the job state accounting information for jobs requeued due to burst
     buffer errors.
+ -- burst_buffer/cray - Avoid "pre_run" operation if not using buffer (i.e.
+    just creating or deleting a persistent burst buffer).
 
 * Changes in Slurm 16.05.8
 ==========================
