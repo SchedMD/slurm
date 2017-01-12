@@ -220,19 +220,19 @@ plugin_load_from_file(plugin_handle_t *p, const char *fq_path)
 
 plugin_handle_t
 plugin_load_and_link(const char *type_name, int n_syms,
-		    const char *names[], void *ptrs[])
+		     const char *names[], void *ptrs[])
 {
 	plugin_handle_t plug = PLUGIN_INVALID_HANDLE;
 	struct stat st;
-	char *head=NULL, *dir_array=NULL, *so_name = NULL,
-		*file_name=NULL;
-	int i=0;
+	char *head = NULL, *dir_array = NULL, *so_name = NULL;
+	char *file_name = NULL;
+	int i = 0;
 	plugin_err_t err = EPLUGIN_NOTFOUND;
 
 	if (!type_name)
 		return plug;
 	so_name = xstrdup_printf("%s.so", type_name);
-	while(so_name[i]) {
+	while (so_name[i]) {
 		if (so_name[i] == '/')
 			so_name[i] = '_';
 		i++;
@@ -244,7 +244,7 @@ plugin_load_and_link(const char *type_name, int n_syms,
 	}
 
 	head = dir_array;
-	for (i=0; ; i++) {
+	for (i = 0; ; i++) {
 		bool got_colon = 0;
 		if (dir_array[i] == ':') {
 			dir_array[i] = '\0';
@@ -263,12 +263,12 @@ plugin_load_and_link(const char *type_name, int n_syms,
 			if ((err = plugin_load_from_file(&plug, file_name))
 			   == EPLUGIN_SUCCESS) {
 				if (plugin_get_syms(plug, n_syms,
-						    names, ptrs) >=
-				       n_syms) {
+						    names, ptrs) >= n_syms) {
 					debug3("Success.");
 					xfree(file_name);
 					break;
 				} else {
+					(void) dlclose(plug);
 					err = EPLUGIN_MISSING_SYMBOL;
 					plug = PLUGIN_INVALID_HANDLE;
 				}
