@@ -393,6 +393,12 @@
    member named physmem. */
 #undef HAVE__SYSTEM_CONFIGURATION
 
+/* Define to 1 if the system has the `__builtin_clzll' built-in function */
+#undef HAVE___BUILTIN_CLZLL
+
+/* Define to 1 if the system has the `__builtin_ctzll' built-in function */
+#undef HAVE___BUILTIN_CTZLL
+
 /* Define to 1 if the system has the `__builtin_popcountll' built-in function
    */
 #undef HAVE___BUILTIN_POPCOUNTLL
