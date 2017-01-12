@@ -689,21 +689,15 @@ bit_copybits(bitstr_t *dest, bitstr_t *src)
 
 /*
  * Returns the hamming weight (i.e. the number of bits set) in a word.
- * NOTE: This routine borrowed from Linux 2.4.9 <linux/bitops.h>.
+ * NOTE: This routine borrowed from Linux 4.9 <tools/lib/hweight.c>.
  */
 static uint64_t
 hweight(uint64_t w)
 {
-	uint64_t res;
-
-	res = (w   & 0x5555555555555555) + ((w >> 1)    & 0x5555555555555555);
-	res = (res & 0x3333333333333333) + ((res >> 2)  & 0x3333333333333333);
-	res = (res & 0x0F0F0F0F0F0F0F0F) + ((res >> 4)  & 0x0F0F0F0F0F0F0F0F);
-	res = (res & 0x00FF00FF00FF00FF) + ((res >> 8)  & 0x00FF00FF00FF00FF);
-	res = (res & 0x0000FFFF0000FFFF) + ((res >> 16) & 0x0000FFFF0000FFFF);
-	res = (res & 0x00000000FFFFFFFF) + ((res >> 32) & 0x00000000FFFFFFFF);
-
-	return res;
+        w -= (w >> 1) & 0x5555555555555555ul;
+        w =  (w & 0x3333333333333333ul) + ((w >> 2) & 0x3333333333333333ul);
+        w =  (w + (w >> 4)) & 0x0f0f0f0f0f0f0f0ful;
+        return (w * 0x0101010101010101ul) >> 56;
 }
 
 /*
