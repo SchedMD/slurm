@@ -222,13 +222,18 @@ static bool _test_core_dumping(char* stat_fname)
 	proc_fd = open(stat_fname, O_RDONLY, 0);
 	if (proc_fd == -1)
 		return false;  /* process is now gone */
-	proc_stat = xmalloc(proc_stat_size + 1);
-	while ((num = read(proc_fd, proc_stat, proc_stat_size)) >= 0) {
+	proc_stat = xmalloc_nz(proc_stat_size + 1);
+	while (1) {
+		num = read(proc_fd, proc_stat, proc_stat_size);
+		if (num < 0) {
+			proc_stat[0] = '\0';
+			break;
+		}
 		proc_stat[num] = '\0';
 		if (num < proc_stat_size)
 			break;
 		proc_stat_size += BUF_SIZE;
-		xrealloc(proc_stat, proc_stat_size + 1);
+		xrealloc_nz(proc_stat, proc_stat_size + 1);
 		if (lseek(proc_fd, (off_t) 0, SEEK_SET) != 0)
 			break;
 	}

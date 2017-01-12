@@ -1887,7 +1887,7 @@ static char *_global_auth_key(void)
 
 	if (slurmdbd_conf) {
 		if (slurmdbd_conf->auth_info) {
-			if (strlen(slurmdbd_conf->auth_info) >
+			if (strlen(slurmdbd_conf->auth_info) >=
 			    sizeof(storage_pass))
 				fatal("AuthInfo is too long");
 			strncpy(storage_pass, slurmdbd_conf->auth_info,
@@ -1897,7 +1897,7 @@ static char *_global_auth_key(void)
 	} else {
 		conf = slurm_conf_lock();
 		if (conf->accounting_storage_pass) {
-			if (strlen(conf->accounting_storage_pass) >
+			if (strlen(conf->accounting_storage_pass) >=
 			    sizeof(storage_pass)) {
 				fatal("AccountingStoragePass is too long");
 			} else {

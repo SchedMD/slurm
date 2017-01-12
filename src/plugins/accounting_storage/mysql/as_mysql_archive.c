@@ -2576,6 +2576,7 @@ extern int as_mysql_jobacct_process_archive_load(
 				data_read = read(state_fd, &data[data_size],
 						 BUF_SIZE);
 				if (data_read < 0) {
+					data[data_size] = '\0';
 					if (errno == EINTR)
 						continue;
 					else {
