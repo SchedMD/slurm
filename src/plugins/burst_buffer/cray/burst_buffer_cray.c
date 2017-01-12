@@ -3071,9 +3071,13 @@ static void _update_job_env(struct job_record *job_ptr, char *file_path)
 		stat_buf.st_size = 2048;
 	} else if (stat_buf.st_size == 0)
 		goto fini;
-	data_buf = xmalloc(stat_buf.st_size + 1);
+	data_buf = xmalloc_nz(stat_buf.st_size + 1);
 	while (inx < stat_buf.st_size) {
 		read_size = read(path_fd, data_buf + inx, stat_buf.st_size);
+		if (read_size < 0)
+			data_buf[inx] = '\0';
+		else
+			data_buf[inx + read_size] = '\0';
 		if (read_size > 0) {
 			inx += read_size;
 		} else if (read_size == 0) {	/* EOF */
