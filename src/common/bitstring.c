@@ -480,6 +480,9 @@ bit_ffs(bitstr_t *b)
 			bit += sizeof(bitstr_t)*8;
 			continue;
 		}
+#if HAVE___BUILTIN_CTZLL
+		value = bit + __builtin_ctzll(b[word]);
+#else
 		while (bit < _bitstr_bits(b) && _bit_word(bit) == word) {
 			if (bit_test(b, bit)) {
 				value = bit;
@@ -487,6 +490,7 @@ bit_ffs(bitstr_t *b)
 			}
 			bit++;
 		}
+#endif
 	}
 	return value;
 }
@@ -523,6 +527,9 @@ bit_fls(bitstr_t *b)
 			bit -= sizeof(bitstr_t) * 8;
 			continue;
 		}
+#if HAVE___BUILTIN_CLZLL
+		value = bit - __builtin_clzll(b[word]);
+#else
 		while (bit >= 0) {
 			if (bit_test(b, bit)) {
 				value = bit;
@@ -530,6 +537,7 @@ bit_fls(bitstr_t *b)
 			}
 			bit--;
 		}
+#endif
 	}
 	return value;
 }
