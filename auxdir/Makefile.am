@@ -4,6 +4,7 @@
 
 EXTRA_DIST = \
     ax_check_zlib.m4 \
+    ax_gcc_builtin.m4 \
     ax_lib_hdf5.m4 \
     ax_pthread.m4 \
     slurm.m4 \

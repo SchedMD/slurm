@@ -393,6 +393,10 @@
    member named physmem. */
 #undef HAVE__SYSTEM_CONFIGURATION
 
+/* Define to 1 if the system has the `__builtin_popcountll' built-in function
+   */
+#undef HAVE___BUILTIN_POPCOUNTLL
+
 /* Defined if libcurl supports AsynchDNS */
 #undef LIBCURL_FEATURE_ASYNCHDNS
 
