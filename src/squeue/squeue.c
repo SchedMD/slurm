@@ -175,9 +175,6 @@ _print_job ( bool clear_old )
 	if (params.all_flag || (params.job_list && list_count(params.job_list)))
 		show_flags |= SHOW_ALL;
 
-	if (params.show_fedtrack)
-		show_flags |= SHOW_FED_TRACK;
-
 	/* We require detail data when CPUs are requested */
 	if (params.format && strstr(params.format, "C"))
 		show_flags |= SHOW_DETAIL;
