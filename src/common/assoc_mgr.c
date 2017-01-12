@@ -5340,7 +5340,7 @@ extern int load_assoc_usage(char *state_save_location)
 	uint32_t data_size = 0;
 	uint16_t ver = 0;
 	int state_fd;
-	char *data = NULL, *state_file;
+	char *data = NULL, *state_file, *tmp_str = NULL;
 	Buf buffer = NULL;
 	time_t buf_time;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, READ_LOCK, NO_LOCK, NO_LOCK,
@@ -5406,7 +5406,6 @@ extern int load_assoc_usage(char *state_save_location)
 		uint32_t grp_used_wall = 0;
 		long double usage_raw = 0;
 		slurmdb_assoc_rec_t *assoc = NULL;
-		char *tmp_str = NULL;
 		uint32_t tmp32;
 		long double usage_tres_raw[g_tres_count];
 
@@ -5449,6 +5448,7 @@ extern int load_assoc_usage(char *state_save_location)
 unpack_error:
 	if (buffer)
 		free_buf(buffer);
+	xfree(tmp_str);
 	assoc_mgr_unlock(&locks);
 	return SLURM_ERROR;
 }
@@ -5459,7 +5459,7 @@ extern int load_qos_usage(char *state_save_location)
 	uint32_t data_size = 0;
 	uint16_t ver = 0;
 	int state_fd;
-	char *data = NULL, *state_file;
+	char *data = NULL, *state_file, *tmp_str = NULL;
 	Buf buffer = NULL;
 	time_t buf_time;
 	ListIterator itr = NULL;
@@ -5528,7 +5528,6 @@ extern int load_qos_usage(char *state_save_location)
 		uint32_t tmp32;
 		long double usage_raw = 0;
 		slurmdb_qos_rec_t *qos = NULL;
-		char *tmp_str = NULL;
 
 		safe_unpack32(&qos_id, buffer);
 		safe_unpacklongdouble(&usage_raw, buffer);
@@ -5559,6 +5558,7 @@ unpack_error:
 		free_buf(buffer);
 	if (itr)
 		list_iterator_destroy(itr);
+	xfree(tmp_str);
 	assoc_mgr_unlock(&locks);
 	return SLURM_ERROR;
 }
