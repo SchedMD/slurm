@@ -201,6 +201,13 @@ documents those changes that are of interest to users and administrators.
  -- backfill scheduler: Stop trying to determine expected start time for a job
     after 2 seconds of wall time. This can happen if there are many running jobs
     and a pending job can not be started soon.
+ -- Improve performance of cr_sort_part_rows() in cons_res plugin.
+ -- CRAY - Fix dealock issue when updating accounting in the slurmctld and
+    scheduling a Datawarp job.
+ -- Correct the job state accounting information for jobs requeued due to burst
+    buffer errors.
+ -- burst_buffer/cray - Avoid "pre_run" operation if not using buffer (i.e.
+    just creating or deleting a persistent burst buffer).
 
 * Changes in Slurm 16.05.8
 ==========================

@@ -1214,8 +1214,8 @@ static void _load_state(bool init_config)
 		num_instances = 0;	/* Redundant, but fixes CLANG bug */
 	}
 	sessions = _bb_get_sessions(&num_sessions, &bb_state, timeout);
-	slurm_mutex_lock(&bb_state.bb_mutex);
 	assoc_mgr_lock(&assoc_locks);
+	slurm_mutex_lock(&bb_state.bb_mutex);
 	bb_state.last_load_time = time(NULL);
 	for (i = 0; i < num_sessions; i++) {
 		if (!init_config) {
@@ -1268,8 +1268,8 @@ static void _load_state(bool init_config)
 		if (bb_alloc->job_id == 0)
 			bb_post_persist_create(NULL, bb_alloc, &bb_state);
 	}
-	assoc_mgr_unlock(&assoc_locks);
 	slurm_mutex_unlock(&bb_state.bb_mutex);
+	assoc_mgr_unlock(&assoc_locks);
 	_bb_free_sessions(sessions, num_sessions);
 	_bb_free_instances(instances, num_instances);
 
@@ -3629,6 +3629,7 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 
 	/* Run "paths" function, get DataWarp environment variables */
 	if (_have_dw_cmd_opts(bb_job)) {
+		/* Setup "paths" operation */
 		if (bb_state.bb_config.validate_timeout)
 			timeout = bb_state.bb_config.validate_timeout * 1000;
 		else
@@ -3668,48 +3669,50 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 		}
 		xfree(resp_msg);
 		_free_script_argv(script_argv);
-	}
 
-	pre_run_argv = xmalloc(sizeof(char *) * 10);
-	pre_run_argv[0] = xstrdup("dw_wlm_cli");
-	pre_run_argv[1] = xstrdup("--function");
-	pre_run_argv[2] = xstrdup("pre_run");
-	pre_run_argv[3] = xstrdup("--token");
-	xstrfmtcat(pre_run_argv[4], "%u", job_ptr->job_id);
-	pre_run_argv[5] = xstrdup("--job");
-	xstrfmtcat(pre_run_argv[6], "%s/script", job_dir);
-	if (client_nodes_file_nid) {
+		/* Setup "pre_run" operation */
+		pre_run_argv = xmalloc(sizeof(char *) * 10);
+		pre_run_argv[0] = xstrdup("dw_wlm_cli");
+		pre_run_argv[1] = xstrdup("--function");
+		pre_run_argv[2] = xstrdup("pre_run");
+		pre_run_argv[3] = xstrdup("--token");
+		xstrfmtcat(pre_run_argv[4], "%u", job_ptr->job_id);
+		pre_run_argv[5] = xstrdup("--job");
+		xstrfmtcat(pre_run_argv[6], "%s/script", job_dir);
+		if (client_nodes_file_nid) {
 #if defined(HAVE_NATIVE_CRAY)
-		pre_run_argv[7] = xstrdup("--nidlistfile");
+			pre_run_argv[7] = xstrdup("--nidlistfile");
 #else
-		pre_run_argv[7] = xstrdup("--nodehostnamefile");
+			pre_run_argv[7] = xstrdup("--nodehostnamefile");
 #endif
-		pre_run_argv[8] = xstrdup(client_nodes_file_nid);
-	}
-	pre_run_args = xmalloc(sizeof(pre_run_args_t));
-	pre_run_args->args    = pre_run_argv;
-	pre_run_args->job_id  = job_ptr->job_id;
-	pre_run_args->timeout = bb_state.bb_config.other_timeout;
-	pre_run_args->user_id = job_ptr->user_id;
-	if (job_ptr->details)	/* Prevent launch until "pre_run" completes */
-		job_ptr->details->prolog_running++;
-
-	slurm_attr_init(&pre_run_attr);
-	if (pthread_attr_setdetachstate(&pre_run_attr, PTHREAD_CREATE_DETACHED))
-		error("pthread_attr_setdetachstate error %m");
-	while (pthread_create(&pre_run_tid, &pre_run_attr, _start_pre_run,
-			      pre_run_args)) {
-		if (errno != EAGAIN) {
-			error("%s: pthread_create: %m", __func__);
-			_start_pre_run(pre_run_argv);	/* Do in-line */
-			break;
+			pre_run_argv[8] = xstrdup(client_nodes_file_nid);
 		}
-		usleep(100000);
-	}
-	slurm_attr_destroy(&pre_run_attr);
+		pre_run_args = xmalloc(sizeof(pre_run_args_t));
+		pre_run_args->args    = pre_run_argv;
+		pre_run_args->job_id  = job_ptr->job_id;
+		pre_run_args->timeout = bb_state.bb_config.other_timeout;
+		pre_run_args->user_id = job_ptr->user_id;
+		if (job_ptr->details)	/* Defer launch until completion */
+			job_ptr->details->prolog_running++;
 
-	xfree(job_dir);
+		slurm_attr_init(&pre_run_attr);
+		if (pthread_attr_setdetachstate(&pre_run_attr,
+						PTHREAD_CREATE_DETACHED))
+			error("pthread_attr_setdetachstate error %m");
+		while (pthread_create(&pre_run_tid, &pre_run_attr,
+				      _start_pre_run, pre_run_args)) {
+			if (errno != EAGAIN) {
+				error("%s: pthread_create: %m", __func__);
+				_start_pre_run(pre_run_argv);	/* Do in-line */
+				break;
+			}
+			usleep(100000);
+		}
+		slurm_attr_destroy(&pre_run_attr);
+}
+
 	xfree(client_nodes_file_nid);
+	xfree(job_dir);
 	return rc;
 }
 
@@ -3718,7 +3721,6 @@ static void _kill_job(struct job_record *job_ptr, bool hold_job)
 {
 	last_job_update = time(NULL);
 	job_ptr->end_time = last_job_update;
-	job_ptr->job_state = JOB_PENDING | JOB_COMPLETING;
 	if (hold_job)
 		job_ptr->priority = 0;
 	build_cg_bitmap(job_ptr);
@@ -3726,7 +3728,11 @@ static void _kill_job(struct job_record *job_ptr, bool hold_job)
 	job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
 	xfree(job_ptr->state_desc);
 	job_ptr->state_desc = xstrdup("Burst buffer pre_run error");
-	job_completion_logger(job_ptr, false);
+
+	job_ptr->job_state  = JOB_REQUEUE;
+	job_completion_logger(job_ptr, true);
+	job_ptr->job_state = JOB_PENDING | JOB_COMPLETING;
+
 	deallocate_nodes(job_ptr, false, false, false);
 }
 
@@ -4338,6 +4344,7 @@ static void *_create_persistent(void *x)
 			error("%s: unable to find job record for job %u",
 			      __func__, create_args->job_id);
 		}
+		assoc_mgr_lock(&assoc_locks);
 		slurm_mutex_lock(&bb_state.bb_mutex);
 		_reset_buf_state(create_args->user_id, create_args->job_id,
 				 create_args->name, BB_STATE_ALLOCATED,
@@ -4346,7 +4353,6 @@ static void *_create_persistent(void *x)
 					     create_args->user_id);
 		bb_alloc->size = create_args->size;
 		bb_alloc->pool = xstrdup(create_args->pool);
-		assoc_mgr_lock(&assoc_locks);
 		if (job_ptr) {
 			bb_alloc->account   = xstrdup(job_ptr->account);
 			if (job_ptr->assoc_ptr) {
@@ -4392,8 +4398,8 @@ static void *_create_persistent(void *x)
 		}
 		(void) bb_post_persist_create(job_ptr, bb_alloc, &bb_state);
 		bb_state.last_update_time = time(NULL);
-		assoc_mgr_unlock(&assoc_locks);
 		slurm_mutex_unlock(&bb_state.bb_mutex);
+		assoc_mgr_unlock(&assoc_locks);
 		unlock_slurmctld(job_write_lock);
 	}
 	xfree(resp_msg);
@@ -4477,6 +4483,9 @@ static void *_destroy_persistent(void *x)
 		assoc_mgr_lock_t assoc_locks =
 			{ READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
 			  NO_LOCK, NO_LOCK, NO_LOCK };
+		/* assoc_mgr needs locking to call bb_post_persist_delete */
+		if (bb_alloc)
+			assoc_mgr_lock(&assoc_locks);
 		slurm_mutex_lock(&bb_state.bb_mutex);
 		_reset_buf_state(destroy_args->user_id, destroy_args->job_id,
 				 destroy_args->name, BB_STATE_DELETED, 0);
@@ -4489,14 +4498,14 @@ static void *_destroy_persistent(void *x)
 			bb_limit_rem(bb_alloc->user_id, bb_alloc->size,
 				     bb_alloc->pool, &bb_state);
 
-			assoc_mgr_lock(&assoc_locks);
 			(void) bb_post_persist_delete(bb_alloc, &bb_state);
-			assoc_mgr_unlock(&assoc_locks);
 
 			(void) bb_free_alloc_rec(&bb_state, bb_alloc);
 		}
 		bb_state.last_update_time = time(NULL);
 		slurm_mutex_unlock(&bb_state.bb_mutex);
+		if (bb_alloc)
+			assoc_mgr_unlock(&assoc_locks);
 	}
 	xfree(resp_msg);
 	_free_create_args(destroy_args);
