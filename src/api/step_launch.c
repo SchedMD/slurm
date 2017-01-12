@@ -968,12 +968,11 @@ static int _connect_srun_cr(char *addr)
 	unsigned int sa_len;
 	int fd, rc;
 
-#ifdef UNIX_PATH_MAX
-	if (addr && (strlen(addr) > UNIX_PATH_MAX)) {
+	if (addr && (strlen(addr) > sizeof(sa.sun_path))) {
 		error("%s: socket path name too long (%s)", __func__, addr);
 		return -1;
 	}
-#endif
+
 	fd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (fd < 0) {
 		error("failed creating cr socket: %m");
@@ -982,7 +981,7 @@ static int _connect_srun_cr(char *addr)
 	memset(&sa, 0, sizeof(sa));
 
 	sa.sun_family = AF_UNIX;
-	strcpy(sa.sun_path, addr);
+	strncpy(sa.sun_path, addr, sizeof(sa.sun_path));
 	sa_len = strlen(sa.sun_path) + sizeof(sa.sun_family);
 
 	while (((rc = connect(fd, (struct sockaddr *)&sa, sa_len)) < 0) &&
