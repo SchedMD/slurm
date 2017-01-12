@@ -969,6 +969,8 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 				   msg->protocol_version);
 		break;
 	case REQUEST_SIB_JOB_START:
+	case REQUEST_SIB_JOB_CANCEL:
+	case REQUEST_SIB_JOB_REQUEUE:
 	case REQUEST_SIB_JOB_REVOKE:
 	case REQUEST_SIB_JOB_LOCK:
 	case REQUEST_SIB_JOB_UNLOCK:
@@ -1650,6 +1652,8 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 					  msg->protocol_version);
 		break;
 	case REQUEST_SIB_JOB_START:
+	case REQUEST_SIB_JOB_CANCEL:
+	case REQUEST_SIB_JOB_REQUEUE:
 	case REQUEST_SIB_JOB_REVOKE:
 	case REQUEST_SIB_JOB_LOCK:
 	case REQUEST_SIB_JOB_UNLOCK:
@@ -8588,7 +8592,9 @@ _pack_sib_msg(sib_msg_t *sib_msg_ptr, Buf buffer, uint16_t protocol_version)
 		pack16(sib_msg_ptr->data_version, buffer);
 		pack64(sib_msg_ptr->fed_siblings, buffer);
 		pack32(sib_msg_ptr->job_id, buffer);
+		pack32(sib_msg_ptr->return_code, buffer);
 		pack_time(sib_msg_ptr->start_time, buffer);
+		pack32(sib_msg_ptr->req_uid, buffer);
 
 		/* add already packed data_buffer to buffer */
 		if (sib_msg_ptr->data_buffer &&
@@ -8634,7 +8640,9 @@ _unpack_sib_msg(sib_msg_t **sib_msg_buffer_ptr, Buf buffer,
 		safe_unpack16(&sib_msg_ptr->data_version, buffer);
 		safe_unpack64(&sib_msg_ptr->fed_siblings, buffer);
 		safe_unpack32(&sib_msg_ptr->job_id, buffer);
+		safe_unpack32(&sib_msg_ptr->return_code, buffer);
 		safe_unpack_time(&sib_msg_ptr->start_time, buffer);
+		safe_unpack32(&sib_msg_ptr->req_uid, buffer);
 
 		safe_unpack16(&tmp_uint16, buffer);
 		if (tmp_uint16) {

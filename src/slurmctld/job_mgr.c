@@ -4582,6 +4582,12 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 		if (flags & KILL_FED_REQUEUE) {
 			job_ptr->job_state &= (~JOB_REQUEUE);
 		}
+		/* Send back a response to the origin cluster, in other cases
+		 * where the job is running the job will send back a response
+		 * after the job is is completed. This can happen when the
+		 * pending origin job is put into a hold state and the siblings
+		 * are removed or when the job is canceled from the origin. */
+		fed_mgr_job_complete(job_ptr, 0, job_ptr->start_time);
 		verbose("%s: of pending %s successful",
 			__func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)));
 		return SLURM_SUCCESS;
@@ -5210,8 +5216,6 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		build_cg_bitmap(job_ptr);
 		deallocate_nodes(job_ptr, false, suspended, false);
 	}
-
-	fed_mgr_job_complete(job_ptr, job_return_code, job_ptr->start_time);
 
 	info("%s: %s done", __func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)));
 
@@ -11225,6 +11229,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			job_ptr->job_state &= ~JOB_SPECIAL_EXIT;
 			xfree(job_ptr->state_desc);
 			job_ptr->exit_code = 0;
+
+			fed_mgr_job_requeue(job_ptr); /* submit sibling jobs */
 		} else if ((job_ptr->priority == 0) &&
 			   (job_specs->priority != INFINITE)) {
 			info("ignore priority reset request on held job %u",
@@ -11259,6 +11265,12 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				} else
 					job_ptr->state_reason = WAIT_HELD;
 				xfree(job_ptr->state_desc);
+
+				/* remove pending remote sibling jobs */
+				if (IS_JOB_PENDING(job_ptr) &&
+				    !IS_JOB_REVOKED(job_ptr)) {
+					fed_mgr_job_revoke_sibs(job_ptr);
+				}
 			}
 		} else if ((job_ptr->priority != 0) &&
 			   (job_specs->priority == INFINITE) &&
@@ -13354,6 +13366,14 @@ void batch_requeue_fini(struct job_record  *job_ptr)
 	job_ptr->db_index = 0;
 	if (!with_slurmdbd)
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+
+	/* Submit new sibling jobs for fed jobs */
+	if (fed_mgr_is_origin_job(job_ptr)) {
+		if (fed_mgr_job_requeue(job_ptr)) {
+			error("failed to submit requeued sibling jobs for fed job %d",
+			      job_ptr->job_id);
+		}
+	}
 }
 
 
@@ -14328,10 +14348,21 @@ static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
 		return ESLURM_BATCH_ONLY;
 	}
 
-
-	/* If the job is already pending, just return an error. */
-	if (IS_JOB_PENDING(job_ptr))
+	/* If the job is already pending, just return an error.
+	 * A federated origin job can be pending and revoked while a sibling job
+	 * runs on another cluster. */
+	if (IS_JOB_PENDING(job_ptr) && !IS_JOB_REVOKED(job_ptr))
 		return ESLURM_JOB_PENDING;
+
+	if (job_ptr->fed_details) {
+		int rc;
+		if ((rc = fed_mgr_job_requeue_test(job_ptr, state)))
+			return rc;
+
+		/* Sent requeue request to origin cluster */
+		if (job_ptr->job_state & JOB_REQUEUE_FED)
+			return SLURM_SUCCESS;
+	}
 
 	slurm_sched_g_requeue(job_ptr, "Job requeued by user/admin");
 	last_job_update = now;
@@ -14372,12 +14403,22 @@ static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
 	else if (IS_JOB_COMPLETED(job_ptr))
 		is_completed = true;
 
-	/* We want this job to have the requeued state in the
-	 * accounting logs. Set a new submit time so the restarted
-	 * job looks like a new job. */
-	job_ptr->job_state  = JOB_REQUEUE;
-	build_cg_bitmap(job_ptr);
-	job_completion_logger(job_ptr, true);
+	/* Only change state to requeue for local jobs */
+	if (fed_mgr_is_origin_job(job_ptr) &&
+	    !fed_mgr_is_tracker_only_job(job_ptr)) {
+
+		/* We want this job to have the requeued state in the
+		 * accounting logs. Set a new submit time so the restarted
+		 * job looks like a new job. */
+		job_ptr->job_state  = JOB_REQUEUE;
+		build_cg_bitmap(job_ptr);
+		job_completion_logger(job_ptr, true);
+	}
+
+	/* Increment restart counter before completing reply so that completing
+	 * jobs get counted and so that fed jobs get counted before submitting
+	 * new sibs in batch_requeue_fini */
+	job_ptr->restart_cnt++;
 
 	if (is_completing) {
 		job_ptr->job_state = JOB_PENDING | completing_flags;
@@ -14399,6 +14440,19 @@ static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
 	job_ptr->job_state = JOB_PENDING;
 	if (job_ptr->node_cnt)
 		job_ptr->job_state |= JOB_COMPLETING;
+
+	/* Mark the origin job as requeueing. Will finish requeueing fed job
+	 * after job has completed.
+	 * If it's completed, batch_requeue_fini is called below and will call
+	 * fed_mgr_job_requeue() to submit new siblings.
+	 * If it's not completed, batch_requeue_fini will either be called when
+	 * the running origin job finishes or the running remote sibling job
+	 * reports that the job is finished. */
+	if (job_ptr->fed_details && !is_completed) {
+		job_ptr->job_state |= JOB_COMPLETING;
+		job_ptr->job_state |= JOB_REQUEUE_FED;
+	}
+
 	/* If we set the time limit it means the user didn't so reset
 	   it here or we could bust some limit when we try again */
 	if (job_ptr->limit_set.time == 1) {
@@ -14406,20 +14460,10 @@ static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
 		job_ptr->limit_set.time = 0;
 	}
 
-	/* When jobs are requeued while running/completing batch_requeue_fini is
-	 * called after the job is completely finished.  If the job is already
-	 * finished it needs to be called to clear out states (especially the
-	 * db_index or we will just write over the last job in the database).
-	 */
-	if (is_completed)
-		batch_requeue_fini(job_ptr);
-
 reply:
 	job_ptr->pre_sus_time = (time_t) 0;
 	job_ptr->suspend_time = (time_t) 0;
 	job_ptr->tot_sus_time = (time_t) 0;
-
-	job_ptr->restart_cnt++;
 
 	/* clear signal sent flag on requeue */
 	job_ptr->warn_flags &= ~WARN_SENT;
@@ -14447,6 +14491,16 @@ reply:
 				= xstrdup("job requeued in held state");
 		job_ptr->priority = 0;
 	}
+
+	/* When jobs are requeued while running/completing batch_requeue_fini is
+	 * called after the job is completely finished.  If the job is already
+	 * finished it needs to be called to clear out states (especially the
+	 * db_index or we will just write over the last job in the database).
+	 * Call batch_requeue_fini after setting priority to 0 for requeue_hold
+	 * and special_exit so federation doesn't submit siblings for held job.
+	 */
+	if (is_completed)
+		batch_requeue_fini(job_ptr);
 
 	debug("%s: job %u state 0x%x reason %u priority %d", __func__,
 	      job_ptr->job_id, job_ptr->job_state,
@@ -15504,6 +15558,9 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->ntasks_per_node   = details->ntasks_per_node;
 	job_desc->ntasks_per_socket = mc_ptr->ntasks_per_socket;
 	job_desc->ntasks_per_core   = mc_ptr->ntasks_per_core;
+
+	if (job_ptr->fed_details)
+		job_desc->fed_siblings = job_ptr->fed_details->siblings;
 #if 0
 	/* select_jobinfo is unused at job submit time, only it's
 	 * components are set. We recover those from the structure below.

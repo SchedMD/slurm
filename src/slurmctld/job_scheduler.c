@@ -3940,7 +3940,7 @@ static void *_run_prolog(void *arg)
 	if (status != 0) {
 		bool kill_job = false;
 		slurmctld_lock_t job_write_lock = {
-			NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+			NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 		error("prolog_slurmctld job %u prolog exit status %u:%u",
 		      job_id, WEXITSTATUS(status), WTERMSIG(status));
 		lock_slurmctld(job_write_lock);
@@ -4003,6 +4003,11 @@ extern void prolog_running_decr(struct job_record *job_ptr)
 
 	if (job_ptr->details && job_ptr->details->prolog_running &&
 	    (--job_ptr->details->prolog_running > 0))
+		return;
+
+	/* Federated job notified the origin that the job is to be requeued,
+	 * need to wait for this job to be cancelled. */
+	if (job_ptr->job_state & JOB_REQUEUE_FED)
 		return;
 
 	job_ptr->job_state &= ~JOB_CONFIGURING;
@@ -4303,6 +4308,8 @@ cleanup_completing(struct job_record *job_ptr)
 	delete_step_records(job_ptr);
 	job_ptr->job_state &= (~JOB_COMPLETING);
 	job_hold_requeue(job_ptr);
+
+	fed_mgr_job_complete(job_ptr, job_ptr->exit_code, job_ptr->start_time);
 
 	slurm_sched_g_schedule();
 }

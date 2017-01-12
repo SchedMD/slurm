@@ -2048,6 +2048,8 @@ extern char *job_state_string(uint32_t inx)
 		return "RESIZING";
 	if (inx & JOB_REQUEUE)
 		return "REQUEUED";
+	if (inx & JOB_REQUEUE_FED)
+		return "REQUEUE_FED";
 	if (inx & JOB_REQUEUE_HOLD)
 		return "REQUEUE_HOLD";
 	if (inx & JOB_SPECIAL_EXIT)
@@ -2098,6 +2100,8 @@ extern char *job_state_string_compact(uint32_t inx)
 		return "RS";
 	if (inx & JOB_REQUEUE)
 		return "RQ";
+	if (inx & JOB_REQUEUE_FED)
+		return "RF";
 	if (inx & JOB_REQUEUE_HOLD)
 		return "RH";
 	if (inx & JOB_SPECIAL_EXIT)
@@ -3900,6 +3904,8 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		slurm_free_job_desc_msg(data);
 		break;
 	case REQUEST_SIB_JOB_START:
+	case REQUEST_SIB_JOB_CANCEL:
+	case REQUEST_SIB_JOB_REQUEUE:
 	case REQUEST_SIB_JOB_REVOKE:
 	case REQUEST_SIB_JOB_LOCK:
 	case REQUEST_SIB_JOB_UNLOCK:
@@ -4511,6 +4517,10 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_JOB_WILL_RUN";
 	case REQUEST_SIB_JOB_START:
 		return "REQUEST_SIB_JOB_START";
+	case REQUEST_SIB_JOB_CANCEL:
+		return "REQUEST_SIB_JOB_CANCEL";
+	case REQUEST_SIB_JOB_REQUEUE:
+		return "REQUEST_SIB_JOB_REQUEUE";
 	case REQUEST_SIB_JOB_REVOKE:
 		return "REQUEST_SIB_JOB_REVOKE";
 	case REQUEST_SIB_JOB_LOCK:

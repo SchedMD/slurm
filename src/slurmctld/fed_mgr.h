@@ -52,6 +52,7 @@ extern uint32_t  fed_mgr_get_job_id(uint32_t orig);
 extern uint32_t  fed_mgr_get_local_id(uint32_t id);
 extern int       fed_mgr_init(void *db_conn);
 extern bool      fed_mgr_is_active();
+extern int       fed_mgr_is_origin_job(struct job_record *job_ptr);
 extern bool      fed_mgr_is_tracker_only_job(struct job_record *job_ptr);
 extern int       fed_mgr_job_allocate(slurm_msg_t *msg,
 				      job_desc_msg_t *job_desc, bool alloc_only,
@@ -64,8 +65,13 @@ extern int       fed_mgr_job_lock(struct job_record *job_ptr,
 				  uint32_t cluster_id);
 extern int       fed_mgr_job_unlock(struct job_record *job_ptr,
 				    uint32_t cluster_id);
+extern int       fed_mgr_job_requeue(struct job_record *job_ptr);
+extern int       fed_mgr_job_requeue_test(struct job_record *job_ptr,
+					  uint32_t state);
 extern int       fed_mgr_job_revoke(struct job_record *job_ptr,
-				    bool job_complete, time_t start_time);
+				    bool job_complete, uint32_t exit_code,
+				    time_t start_time);
+extern int       fed_mgr_job_revoke_sibs(struct job_record *job_ptr);
 extern int       fed_mgr_job_start(struct job_record *job_ptr,
 				   uint32_t cluster_id, time_t start_time);
 extern int       fed_mgr_sib_will_run(slurm_msg_t *msg,

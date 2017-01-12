@@ -98,6 +98,8 @@
 	(_X->job_state & JOB_RESIZING)
 #define IS_JOB_REQUEUED(_X)		\
 	(_X->job_state & JOB_REQUEUE)
+#define IS_JOB_FED_REQUEUED(_X)		\
+	(_X->job_state & JOB_REQUEUE_FED)
 #define IS_JOB_UPDATE_DB(_X)		\
 	(_X->job_state & JOB_UPDATE_DB)
 #define IS_JOB_REVOKED(_X)		\
@@ -293,6 +295,8 @@ typedef enum {
 	REQUEST_JOB_SBCAST_CRED,
 	RESPONSE_JOB_SBCAST_CRED,
 	REQUEST_SIB_JOB_START,
+	REQUEST_SIB_JOB_CANCEL,
+	REQUEST_SIB_JOB_REQUEUE,
 	REQUEST_SIB_JOB_REVOKE,
 	REQUEST_SIB_JOB_LOCK,
 	REQUEST_SIB_JOB_UNLOCK,
@@ -1229,7 +1233,12 @@ typedef struct {
 	uint64_t fed_siblings;	/* sibling bitmap of job */
 	uint32_t job_id;	/* job_id of job - set in job_desc on receiving
 				 * side */
+	uint32_t return_code;   /* return code of job */
 	time_t   start_time;    /* time sibling job started */
+	uint32_t req_uid;       /* uid of user making the request. e.g if a
+				   cancel is happening from a user and being
+				   passed to a remote then the uid will be the
+				   user and not the SlurmUser. */
 } sib_msg_t;
 
 /*****************************************************************************\

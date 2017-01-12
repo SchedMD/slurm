@@ -94,6 +94,10 @@ typedef struct {
 } sib_update_t;
 
 
+/* Local Prototypes */
+static int _is_fed_job(struct job_record *job_ptr, uint32_t *origin_id);
+
+
 static int _close_controller_conn(slurmdb_cluster_rec_t *cluster)
 {
 	int rc = SLURM_SUCCESS;
@@ -684,13 +688,14 @@ end_it:
 /*
  * Remove a sibling job that won't be scheduled
  *
- * IN conn       - sibling connection
- * IN job_id     - the job's id
- * IN start_time - time the fed job started
+ * IN conn        - sibling connection
+ * IN job_id      - the job's id
+ * IN return_code - return code of job.
+ * IN start_time  - time the fed job started
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 static int _persist_fed_job_revoke(slurmdb_cluster_rec_t *conn, uint32_t job_id,
-				   time_t start_time)
+				   uint32_t return_code, time_t start_time)
 {
 	int rc;
 	slurm_msg_t req_msg;
@@ -700,8 +705,9 @@ static int _persist_fed_job_revoke(slurmdb_cluster_rec_t *conn, uint32_t job_id,
 	slurm_msg_t_init(&req_msg);
 
 	memset(&sib_msg, 0, sizeof(sib_msg));
-	sib_msg.job_id     = job_id;
-	sib_msg.start_time = start_time;
+	sib_msg.job_id      = job_id;
+	sib_msg.start_time  = start_time;
+	sib_msg.return_code = return_code;
 
 	req_msg.msg_type = REQUEST_SIB_JOB_REVOKE;
 	req_msg.data	 = &sib_msg;
@@ -836,6 +842,143 @@ end_it:
 	return rc;
 }
 
+/*
+ * Send the specified signal to all steps of an existing job
+ * IN job_id - the job's id
+ * IN signal - signal number
+ * IN flags  - see KILL_JOB_* flags above
+ * IN uid    - uid of user making the request.
+ * RET SLURM_SUCCESS on success, SLURM_ERROR otherwise.
+ */
+static int _persist_fed_job_cancel(slurmdb_cluster_rec_t *conn, uint32_t job_id,
+				   uint16_t signal, uint16_t flags,
+				   uid_t uid)
+{
+	int rc = SLURM_SUCCESS;
+	slurm_msg_t req_msg, resp_msg, tmp_msg;
+	sib_msg_t   sib_msg;
+	job_step_kill_msg_t kill_req;
+	Buf buffer;
+
+	/* Build and pack a kill_req msg to put in a sib_msg */
+	memset(&kill_req, 0, sizeof(job_step_kill_msg_t));
+	kill_req.job_id      = job_id;
+	kill_req.sjob_id     = NULL;
+	kill_req.job_step_id = NO_VAL;
+	kill_req.signal      = signal;
+	kill_req.flags       = flags;
+
+	slurm_msg_t_init(&tmp_msg);
+	tmp_msg.msg_type         = REQUEST_CANCEL_JOB_STEP;
+	tmp_msg.data             = &kill_req;
+	tmp_msg.protocol_version = SLURM_PROTOCOL_VERSION;
+
+	buffer = init_buf(BUF_SIZE);
+	pack_msg(&tmp_msg, buffer);
+	set_buf_offset(buffer, 0);
+
+	memset(&sib_msg, 0, sizeof(sib_msg));
+	sib_msg.data_buffer  = buffer;
+	sib_msg.data_type    = tmp_msg.msg_type;
+	sib_msg.data_version = tmp_msg.protocol_version;
+	sib_msg.req_uid      = uid;
+
+	slurm_msg_t_init(&req_msg);
+	req_msg.msg_type = REQUEST_SIB_JOB_CANCEL;
+	req_msg.data     = &sib_msg;
+
+	if (_send_recv_msg(conn, &req_msg, &resp_msg, false)) {
+		rc = SLURM_PROTOCOL_ERROR;
+		goto end_it;
+	}
+
+	switch (resp_msg.msg_type) {
+	case RESPONSE_SLURM_RC:
+		if ((rc = slurm_get_return_code(resp_msg.msg_type,
+						resp_msg.data))) {
+			slurm_seterrno(rc);
+			rc = SLURM_PROTOCOL_ERROR;
+		}
+		break;
+	default:
+		slurm_seterrno(SLURM_UNEXPECTED_MSG_ERROR);
+		rc = SLURM_PROTOCOL_ERROR;
+	}
+
+end_it:
+	slurm_free_msg_members(&resp_msg);
+	free_buf(buffer);
+
+	return rc;
+}
+
+/*
+ * Tell the origin cluster to requeue the job
+ *
+ * IN conn       - sibling connection
+ * IN job_id     - the job's id
+ * IN start_time - time the fed job started
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+static int _persist_fed_job_requeue(slurmdb_cluster_rec_t *conn,
+				    uint32_t job_id, uint32_t state)
+{
+	int rc;
+	requeue_msg_t requeue_req;
+	slurm_msg_t   req_msg, resp_msg, tmp_msg;
+	sib_msg_t     sib_msg;
+	Buf buffer;
+
+	xassert(conn);
+
+	requeue_req.job_id     = job_id;
+	requeue_req.job_id_str = NULL;
+	requeue_req.state      = state;
+
+	slurm_msg_t_init(&tmp_msg);
+	tmp_msg.msg_type         = REQUEST_JOB_REQUEUE;
+	tmp_msg.data             = &requeue_req;
+	tmp_msg.protocol_version = SLURM_PROTOCOL_VERSION;
+
+	buffer = init_buf(BUF_SIZE);
+	pack_msg(&tmp_msg, buffer);
+	set_buf_offset(buffer, 0);
+
+	memset(&sib_msg, 0, sizeof(sib_msg));
+	sib_msg.job_id       = job_id;
+	sib_msg.data_buffer  = buffer;
+	sib_msg.data_type    = tmp_msg.msg_type;
+	sib_msg.data_version = tmp_msg.protocol_version;
+
+	slurm_msg_t_init(&req_msg);
+	req_msg.msg_type    = REQUEST_SIB_JOB_REQUEUE;
+	req_msg.data        = &sib_msg;
+
+	if (_send_recv_msg(conn, &req_msg, &resp_msg, false)) {
+		rc = SLURM_PROTOCOL_ERROR;
+		goto end_it;
+	}
+
+	switch (resp_msg.msg_type) {
+	case RESPONSE_SLURM_RC:
+		if ((rc = slurm_get_return_code(resp_msg.msg_type,
+						resp_msg.data))) {
+			slurm_seterrno(rc);
+			rc = SLURM_PROTOCOL_ERROR;
+		}
+		break;
+	default:
+		slurm_seterrno(SLURM_UNEXPECTED_MSG_ERROR);
+		rc = SLURM_PROTOCOL_ERROR;
+	}
+
+end_it:
+	slurm_free_msg_members(&resp_msg);
+	free_buf(buffer);
+
+	return rc;
+}
+
 static int _find_sibling_by_id(void *x, void *key)
 {
 	slurmdb_cluster_rec_t *object = (slurmdb_cluster_rec_t *)x;
@@ -876,7 +1019,7 @@ static void _revoke_sibling_jobs(struct job_record *job_ptr,
 				goto next_job;
 			}
 
-			_persist_fed_job_revoke(cluster, job_ptr->job_id,
+			_persist_fed_job_revoke(cluster, job_ptr->job_id, 0,
 						start_time);
 		}
 
@@ -1996,15 +2139,16 @@ end_it:
 extern bool fed_mgr_is_tracker_only_job(struct job_record *job_ptr)
 {
 	bool rc = false;
+	uint32_t origin_id;
 
 	xassert(job_ptr);
 
-	if (!fed_mgr_cluster_rec)
+	if (!_is_fed_job(job_ptr, &origin_id))
 		return rc;
 
 	if (job_ptr->fed_details &&
-	    (fed_mgr_get_cluster_id(job_ptr->job_id) ==
-	     fed_mgr_cluster_rec->fed.id) &&
+	    (origin_id == fed_mgr_cluster_rec->fed.id) &&
+	    job_ptr->fed_details->siblings &&
 	    (!(job_ptr->fed_details->siblings &
 	      FED_SIBLING_BIT(fed_mgr_cluster_rec->fed.id))))
 		rc = true;
@@ -2230,7 +2374,7 @@ extern int fed_mgr_job_start(struct job_record *job_ptr, uint32_t cluster_id,
 
 		if (cluster_id != fed_mgr_cluster_rec->fed.id) {
 			/* leave as pending so that it will stay around */
-			fed_mgr_job_revoke(job_ptr, false, start_time);
+			fed_mgr_job_revoke(job_ptr, false, 0, start_time);
 		}
 	}
 
@@ -2270,7 +2414,33 @@ extern int fed_mgr_job_complete(struct job_record *job_ptr,
 		return SLURM_ERROR;
 	}
 
-	return _persist_fed_job_revoke(conn, job_ptr->job_id, start_time);
+	return _persist_fed_job_revoke(conn, job_ptr->job_id, return_code,
+				       start_time);
+}
+
+/*
+ * Revoke all sibling jobs.
+ *
+ * IN job_ptr - job to revoke sibling jobs from.
+ * RET SLURM_SUCCESS on success, SLURM_ERROR otherwise.
+ */
+extern int fed_mgr_job_revoke_sibs(struct job_record *job_ptr)
+{
+	uint32_t origin_id;
+
+	if (!_is_fed_job(job_ptr, &origin_id))
+		return SLURM_SUCCESS;
+
+	if (origin_id != fed_mgr_cluster_rec->fed.id)
+		return SLURM_SUCCESS;
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+		info("revoke fed job %d's siblings", job_ptr->job_id);
+
+	_revoke_sibling_jobs(job_ptr, fed_mgr_cluster_rec->fed.id,
+			     job_ptr->start_time);
+
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -2279,11 +2449,12 @@ extern int fed_mgr_job_complete(struct job_record *job_ptr,
  * IN job_ptr      - job_ptr of job to revoke.
  * IN job_complete - whether the job is done or not. If completed then sets the
  * 	state to JOB_REVOKED | JOB_CANCELLED. JOB_REVOKED otherwise.
+ * IN exit_code    - exit_code of job.
  * IN start_time   - start time of the job that actually ran.
  * RET returns SLURM_SUCCESS if fed job was completed, SLURM_ERROR otherwise
  */
 extern int fed_mgr_job_revoke(struct job_record *job_ptr, bool job_complete,
-			      time_t start_time)
+			      uint32_t exit_code, time_t start_time)
 {
 	uint32_t origin_id;
 	uint32_t state = JOB_REVOKED;
@@ -2294,6 +2465,13 @@ extern int fed_mgr_job_revoke(struct job_record *job_ptr, bool job_complete,
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 		info("revoking fed job %d", job_ptr->job_id);
 
+	/* Check if the job exited with one of the configured requeue values. */
+	job_ptr->exit_code = exit_code;
+	if (job_hold_requeue(job_ptr)) {
+		batch_requeue_fini(job_ptr);
+		return SLURM_SUCCESS;
+	}
+
 	if (job_complete)
 		state |= JOB_CANCELLED;
 
@@ -2302,12 +2480,17 @@ extern int fed_mgr_job_revoke(struct job_record *job_ptr, bool job_complete,
 	job_ptr->end_time   = start_time;
 	job_completion_logger(job_ptr, false);
 
+	/* remove JOB_REVOKED for completed jobs so that job shows completed on
+	 * controller. */
+	if (job_complete)
+		job_ptr->job_state &= ~JOB_REVOKED;
+
 	/* Don't remove the origin job */
 	if (origin_id == fed_mgr_cluster_rec->fed.id)
 		return SLURM_SUCCESS;
 
-	list_delete_all(job_list, &list_find_job_id,
-			(void *)&job_ptr->job_id);
+	/* Purge the revoked job -- remote only */
+	purge_job_record(job_ptr->job_id);
 
 	return SLURM_SUCCESS;
 }
@@ -2401,4 +2584,191 @@ extern int fed_mgr_sib_will_run(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	unlock_slurmctld(fed_read_lock);
 
 	return rc;
+}
+
+/*
+ * Tests whether a federated job can be requeued.
+ *
+ * If called from the remote cluster (non-origin) then it will send a requeue
+ * request to the origin to have the origin cancel this job. In this case, it
+ * will return success and set the JOB_REQUEUE_FED flag and wait to be killed.
+ *
+ * If it is the origin job, it will also cancel a running remote job. New
+ * federated sibling jobs will be submitted after the job has completed (e.g.
+ * after epilog) in fed_mgr_job_requeue().
+ *
+ * IN job_ptr - job to requeue.
+ * IN state   - the state of the requeue (e.g. JOB_RECONFIG_FAIL).
+ * RET returns SLURM_SUCCESS if siblings submitted successfully, SLURM_ERROR
+ * 	otherwise.
+ */
+extern int fed_mgr_job_requeue_test(struct job_record *job_ptr, uint32_t state)
+{
+	uint32_t origin_id;
+
+	if (!_is_fed_job(job_ptr, &origin_id))
+		return SLURM_SUCCESS;
+
+	if (origin_id != fed_mgr_cluster_rec->fed.id) {
+		slurmdb_cluster_rec_t *origin_cluster;
+		if (!(origin_cluster = _get_cluster_by_id(origin_id))) {
+			error("Unable to find origin cluster for job %d from origin id %d",
+			      job_ptr->job_id, origin_id);
+			return SLURM_ERROR;
+		}
+
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+			info("requeueing fed job %d on origin cluster %d",
+			     job_ptr->job_id, origin_id);
+
+		_persist_fed_job_requeue(origin_cluster, job_ptr->job_id,
+					 state);
+
+		job_ptr->job_state |= JOB_REQUEUE_FED;
+
+		return SLURM_SUCCESS;
+	}
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+		info("requeueing fed job on %d by cluster_id %d",
+		     job_ptr->job_id, fed_mgr_cluster_rec->fed.id);
+
+	/* If the job is currently running locally, then cancel the running job
+	 * and set a flag that it's being requeued. Then when the epilog
+	 * complete comes in submit the siblings to the other clusters.
+	 * Have to check this after checking for origin else it won't get to the
+	 * origin. */
+	if (IS_JOB_RUNNING(job_ptr))
+		return SLURM_SUCCESS;
+
+	/* If a sibling job is running remotely, then cancel the remote job and
+	 * wait till job finishes (e.g. after long epilog) and then resubmit the
+	 * siblings in fed_mgr_job_requeue(). */
+	if (IS_JOB_PENDING(job_ptr) && IS_JOB_REVOKED(job_ptr)) {
+		slurmdb_cluster_rec_t *remote_cluster;
+		if (!(remote_cluster =
+		      _get_cluster_by_id(job_ptr->fed_details->cluster_lock))) {
+			error("Unable to find remote cluster for job %d from cluster lock %d",
+			      job_ptr->job_id,
+			      job_ptr->fed_details->cluster_lock);
+			return SLURM_ERROR;
+		}
+
+		if (_persist_fed_job_cancel(remote_cluster, job_ptr->job_id,
+					    SIGKILL, KILL_FED_REQUEUE, 0)) {
+			error("failed to kill/requeue fed job %d",
+			      job_ptr->job_id);
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Submits requeued sibling jobs.
+ *
+ * IN job_ptr - job to requeue.
+ * RET returns SLURM_SUCCESS if siblings submitted successfully, SLURM_ERROR
+ * 	otherwise.
+ */
+extern int fed_mgr_job_requeue(struct job_record *job_ptr)
+{
+	int rc = SLURM_SUCCESS;
+	uint32_t origin_id;
+	job_desc_msg_t *job_desc;
+	Buf buffer;
+	slurm_msg_t msg;
+
+	xassert(job_ptr);
+
+	if (!_is_fed_job(job_ptr, &origin_id))
+		return SLURM_SUCCESS;
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+		info("requeueing fed job %d", job_ptr->job_id);
+
+	/* don't submit siblings for jobs that are held */
+	if (job_ptr->priority == 0) {
+		job_ptr->job_state &= (~JOB_REQUEUE_FED);
+
+		/* clear siblings */
+		set_job_fed_details(job_ptr, 0);
+
+		/* clear cluster lock */
+		job_ptr->fed_details->cluster_lock = 0;
+
+		return SLURM_SUCCESS;
+	}
+
+	if (!(job_desc = copy_job_record_to_job_desc(job_ptr)))
+		return SLURM_ERROR;
+
+	/* Don't worry about testing which clusters can start the job the
+	 * soonest since they can't start the job for 120 seconds anyways. */
+
+	if (job_ptr->clusters)
+		job_desc->fed_siblings =
+			_cluster_names_to_ids(job_ptr->clusters);
+	else
+		job_desc->fed_siblings = _get_all_sibling_bits();
+
+	/* have to pack job_desc into a buffer */
+	slurm_msg_t_init(&msg);
+	msg.msg_type         = REQUEST_RESOURCE_ALLOCATION;
+	msg.data             = job_desc;
+	msg.protocol_version = SLURM_PROTOCOL_VERSION;
+
+	buffer               = init_buf(BUF_SIZE);
+	pack_msg(&msg, buffer);
+	set_buf_offset(buffer, 0);
+	msg.buffer           = buffer;
+
+	if (_submit_sibling_jobs(job_desc, &msg, false)) {
+		/* failed to submit a sibling job to a sibling. Need to update
+		 * the local job's sibling bitmap */
+		if (!job_desc->fed_siblings) {
+			/* we know that we already have a job_ptr so
+			 * just make it a locallly scheduleable job. */
+			error("Failed to submit fed job to siblings, submitting to local cluster");
+			job_desc->fed_siblings |=
+				FED_SIBLING_BIT(fed_mgr_cluster_rec->fed.id);
+		}
+	}
+
+	/* set local job's fed_siblings. Could have been modified in
+	 * _submit_sibling_jobs() */
+	set_job_fed_details(job_ptr, job_desc->fed_siblings);
+
+	free_buf(buffer);
+	/* free the environment since all strings are stored in one
+	 * xmalloced buffer */
+	if (job_desc->environment) {
+		xfree(job_desc->environment[0]);
+		xfree(job_desc->environment);
+		job_desc->env_size = 0;
+	}
+	slurm_free_job_desc_msg(job_desc);
+
+	/* clear cluster lock */
+	job_ptr->fed_details->cluster_lock = 0;
+
+	job_ptr->job_state &= (~JOB_REQUEUE_FED);
+	job_ptr->job_state &= (~JOB_REVOKED);
+
+	return rc;
+}
+
+extern int fed_mgr_is_origin_job(struct job_record *job_ptr)
+{
+	uint32_t origin_id;
+
+	xassert(job_ptr);
+
+	if (!_is_fed_job(job_ptr, &origin_id))
+		return true;
+
+	if (fed_mgr_cluster_rec->fed.id != origin_id)
+		return false;
+
+	return true;
 }

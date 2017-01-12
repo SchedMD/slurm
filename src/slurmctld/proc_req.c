@@ -162,7 +162,7 @@ inline static void  _slurm_rpc_get_priority_factors(slurm_msg_t *msg);
 inline static void  _slurm_rpc_job_notify(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_ready(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg);
-inline static void  _slurm_rpc_job_step_kill(slurm_msg_t * msg);
+inline static void  _slurm_rpc_job_step_kill(uint32_t uid, slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_step_create(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_step_get_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_will_run(slurm_msg_t * msg, bool allow_sibs);
@@ -188,6 +188,8 @@ inline static void  _slurm_rpc_shutdown_controller(slurm_msg_t * msg);
 inline static void  _slurm_rpc_shutdown_controller_immediate(slurm_msg_t *msg);
 
 inline static void _slurm_rpc_sib_job_start(uint32_t uid, slurm_msg_t *msg);
+inline static void _slurm_rpc_sib_job_cancel(uint32_t uid, slurm_msg_t *msg);
+inline static void _slurm_rpc_sib_job_requeue(uint32_t uid, slurm_msg_t *msg);
 inline static void _slurm_rpc_sib_job_revoke(uint32_t uid, slurm_msg_t *msg);
 inline static void _slurm_rpc_sib_job_lock(uint32_t uid, slurm_msg_t *msg);
 inline static void _slurm_rpc_sib_job_unlock(uint32_t uid, slurm_msg_t *msg);
@@ -346,7 +348,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		_slurm_rpc_epilog_complete(msg, (bool *)&i, 0);
 		break;
 	case REQUEST_CANCEL_JOB_STEP:
-		_slurm_rpc_job_step_kill(msg);
+		_slurm_rpc_job_step_kill(rpc_uid, msg);
 		break;
 	case REQUEST_COMPLETE_JOB_ALLOCATION:
 		_slurm_rpc_complete_job_allocation(msg);
@@ -370,6 +372,12 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		break;
 	case REQUEST_SIB_JOB_START:
 		_slurm_rpc_sib_job_start(rpc_uid, msg);
+		break;
+	case REQUEST_SIB_JOB_CANCEL:
+		_slurm_rpc_sib_job_cancel(rpc_uid, msg);
+		break;
+	case REQUEST_SIB_JOB_REQUEUE:
+		_slurm_rpc_sib_job_requeue(rpc_uid, msg);
 		break;
 	case REQUEST_SIB_JOB_REVOKE:
 		_slurm_rpc_sib_job_revoke(rpc_uid, msg);
@@ -1873,7 +1881,7 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t *msg,
 
 /* _slurm_rpc_job_step_kill - process RPC to cancel an entire job or
  * an individual job step */
-static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
+static void _slurm_rpc_job_step_kill(uint32_t uid, slurm_msg_t * msg)
 {
 	static int active_rpc_cnt = 0;
 	int error_code = SLURM_SUCCESS;
@@ -1883,8 +1891,6 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
 	/* Locks: Read config, write job, write node */
 	slurmctld_lock_t job_write_lock = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
-	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
-					 slurmctld_config.auth_info);
 	struct job_record *job_ptr;
 
 	START_TIMER;
@@ -3651,7 +3657,7 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 	job_desc_msg_t *job_desc_msg = (job_desc_msg_t *) msg->data;
 	/* Locks: Write job, read node, read partition */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 
@@ -3795,7 +3801,7 @@ static void _slurm_rpc_update_node(slurm_msg_t * msg)
 		(update_node_msg_t *) msg->data;
 	/* Locks: Write job and write node */
 	slurmctld_lock_t node_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 
@@ -4592,7 +4598,7 @@ inline static void _slurm_rpc_requeue(slurm_msg_t * msg)
 	requeue_msg_t *req_ptr = (requeue_msg_t *)msg->data;
 	/* Locks: write job and node */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 
@@ -6236,10 +6242,59 @@ static void _slurm_rpc_sib_job_start(uint32_t uid, slurm_msg_t *msg)
 	slurm_send_rc_msg(msg, rc);
 }
 
+static void _slurm_rpc_sib_job_cancel(uint32_t uid, slurm_msg_t *msg)
+{
+	uint32_t req_uid;
+	sib_msg_t *sib_msg = msg->data;
+	job_step_kill_msg_t *kill_msg = (job_step_kill_msg_t *)sib_msg->data;
+
+	if (!msg->conn) {
+		error("Security violation, SIB_JOB_CANCEL RPC from uid=%d",
+		      uid);
+		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
+		return;
+	}
+
+	if (sib_msg->req_uid)
+		req_uid = sib_msg->req_uid;
+	else
+		req_uid = uid;
+
+	msg->data = kill_msg;
+	_slurm_rpc_job_step_kill(req_uid, msg);
+	msg->data = sib_msg;
+}
+
+static void _slurm_rpc_sib_job_requeue(uint32_t uid, slurm_msg_t *msg)
+{
+	int rc = SLURM_SUCCESS;
+	sib_msg_t *sib_msg     = msg->data;
+	requeue_msg_t *req_ptr = (requeue_msg_t *)sib_msg->data;
+
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
+
+	if (!msg->conn) {
+		error("Security violation, SIB_JOB_REQUEUE  RPC from uid=%d",
+		      uid);
+		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
+		return;
+	}
+
+	/* reply immediately or else deadlock (until timeout) */
+	slurm_send_rc_msg(msg, rc);
+
+	lock_slurmctld(job_write_lock);
+	if ((rc = job_requeue(uid, req_ptr->job_id, NULL, false,
+			      req_ptr->state)))
+		error("failed to requeue fed job %d - rc:%d",
+		      req_ptr->job_id, rc);
+	unlock_slurmctld(job_write_lock);
+}
+
 /* complete tracker job */
 static void _slurm_rpc_sib_job_revoke(uint32_t uid, slurm_msg_t *msg)
 {
-	int rc = SLURM_SUCCESS;
 	struct job_record *job_ptr;
 	sib_msg_t *sib_msg = msg->data;
 
@@ -6253,19 +6308,27 @@ static void _slurm_rpc_sib_job_revoke(uint32_t uid, slurm_msg_t *msg)
 		return;
 	}
 
+	/* send success now so that the remote cluster can release the lock */
+	slurm_send_rc_msg(msg, SLURM_SUCCESS);
+
 	lock_slurmctld(job_write_lock);
 
 	if (!(job_ptr = find_job_record(sib_msg->job_id))) {
 		error("Unable to find federated job for id:%d",
 		      sib_msg->job_id);
-		rc = SLURM_ERROR;
+	} else if (job_ptr->job_state & JOB_REQUEUE_FED) {
+		/* Remove JOB_REQUEUE_FED and JOB_COMPLETING once sibling
+		 * reports that sibling job is done. Leave other state in place.
+		 * JOB_SPECIAL_EXIT may be in the states. */
+		job_ptr->job_state &= ~(JOB_PENDING | JOB_COMPLETING);
+		batch_requeue_fini(job_ptr);
 	} else {
-		fed_mgr_job_revoke(job_ptr, true, sib_msg->start_time);
+		/* change to job_complete? */
+		fed_mgr_job_revoke(job_ptr, true, sib_msg->return_code,
+				   sib_msg->start_time);
 	}
 
 	unlock_slurmctld(job_write_lock);
-
-	slurm_send_rc_msg(msg, rc);
 }
 
 static void _slurm_rpc_sib_job_lock(uint32_t uid, slurm_msg_t *msg)
@@ -6347,11 +6410,15 @@ static void _slurm_rpc_sib_job_willrun(uint32_t uid, slurm_msg_t *msg)
 
 static void _slurm_rpc_sib_submit_batch_job(uint32_t uid, slurm_msg_t *msg)
 {
+	struct job_record *job_ptr;
 	uint16_t tmp_version     = msg->protocol_version;
 	sib_msg_t *sib_msg       = msg->data;
 	job_desc_msg_t *job_desc = sib_msg->data;
 	job_desc->job_id         = sib_msg->job_id;
 	job_desc->fed_siblings   = sib_msg->fed_siblings;
+
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 
 	if (!msg->conn) {
 		error("Security violation, SIB_SUBMIT_BATCH_JOB RPC from uid=%d",
@@ -6365,6 +6432,14 @@ static void _slurm_rpc_sib_submit_batch_job(uint32_t uid, slurm_msg_t *msg)
 	 * not the calling controllers. */
 	msg->protocol_version = sib_msg->data_version;
 	msg->data = job_desc;
+
+	lock_slurmctld(job_write_lock);
+	if ((job_ptr = find_job_record(sib_msg->job_id))) {
+		info("Found existing fed job %d, going to requeue/kill it",
+		     sib_msg->job_id);
+		purge_job_record(job_ptr->job_id);
+	}
+	unlock_slurmctld(job_write_lock);
 
 	_slurm_rpc_submit_batch_job(msg);
 
