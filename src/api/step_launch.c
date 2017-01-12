@@ -968,7 +968,11 @@ static int _connect_srun_cr(char *addr)
 	unsigned int sa_len;
 	int fd, rc;
 
-	if (addr && (strlen(addr) > sizeof(sa.sun_path))) {
+	if (!addr) {
+		error("%s: socket path name is NULL", __func__);
+		return -1;
+	}
+	if (strlen(addr) >= sizeof(sa.sun_path)) {
 		error("%s: socket path name too long (%s)", __func__, addr);
 		return -1;
 	}
