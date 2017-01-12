@@ -305,6 +305,8 @@ Denis Trystram (University Grenoble-Alpes)</li>
 Yiannis Georgiou and David Glesser (Bull),
 Krzysztof Rzadca (University of Warsaw),
 Denis Trystram (University Grenoble-Alpes)</li>
+
+<li><a href="SUG14/data_movement.pdf">High Performance Data movement between Lustre and Enterprise storage systems</a>
 Aamir Rashid (Terascala)</li>
 
 <li><a href="SUG14/remote_gpu.pdf">Extending Slurm with Support for Remote GPU Virtualization</a>
@@ -775,6 +777,6 @@ Danny Auble of LLNL about Slurm.</p>
 Learning Chef: Compute Cluter with Slurm</a>
 A Slurm Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 29 November 2016</p>
+<p style="text-align:center;">Last modified 12 January 2017</p>
 
 <!--#include virtual="footer.txt"-->
