@@ -142,29 +142,6 @@ int net_accept_stream(int fd)
 	return sd;
 }
 
-int readn(int fd, void *buf, size_t nbytes)
-{
-	int n = 0;
-	char *pbuf = (char *)buf;
-	size_t nleft = nbytes;
-
-	while (nleft > 0) {
-		n = read(fd, (void *)pbuf, nleft);
-		if (n > 0) {
-			pbuf+=n;
-			nleft-=n;
-		} else if (n == 0) 	/* EOF */
-			break;
-		else if (errno == EINTR)
-			continue;
-		else {
-			debug("read error: %m");
-			break;
-		}
-	}
-	return(n);
-}
-
 int net_set_low_water(int sock, socklen_t size)
 {
 	if (setsockopt(sock, SOL_SOCKET, SO_RCVLOWAT,
