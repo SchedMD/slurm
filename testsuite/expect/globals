@@ -433,16 +433,7 @@ proc get_my_gid {  } {
 proc kill_salloc {  } {
 	global bin_id bin_pkill bin_sleep number
 
-	spawn $bin_id -u
-	expect {
-		-re "($number)" {
-			set uid $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
+	set uid [get_my_uid]
 	catch {exec $bin_pkill -INT -u $uid salloc}
 	catch {exec $bin_pkill -INT -u $uid salloc}
 	sleep  1
@@ -469,16 +460,7 @@ proc kill_salloc {  } {
 proc kill_srun {  } {
 	global bin_id bin_pkill bin_sleep number
 
-	spawn $bin_id -u
-	expect {
-		-re "($number)" {
-			set uid $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
+	set uid [get_my_uid]
 	catch {exec $bin_pkill -INT -u $uid srun}
 	catch {exec $bin_pkill -INT -u $uid srun}
 	sleep  1
@@ -1546,15 +1528,7 @@ proc get_default_acct { user } {
 	set def_acct ""
 
 	if { !$user } {
-		spawn $bin_id -un
-		expect {
-		       -re "($alpha_numeric_under)" {
-			   set user $expect_out(1,string)
-		       }
-		       eof {
-			   wait
-		       }
-		}
+		set user [get_my_nuid]
 	}
 
 	spawn $sacctmgr -n list user $user format="DefaultAccount"
@@ -2098,17 +2072,7 @@ proc test_super_user { } {
 #	Check if user root
 #
 	log_user 0
-	spawn $bin_id -u
-	set uid -1
-	expect {
-		-re "($number)" {
-			set uid $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
+	set uid [get_my_uid]
 	if {$uid == 0} {
 		log_user 1
 		set super_user 1
@@ -2440,17 +2404,7 @@ proc is_super_user { } {
 	global alpha_numeric_under bin_id scontrol
 
 	log_user 0
-	set user_name "nobody"
-	spawn $bin_id -u -n
-	expect {
-		-re "($alpha_numeric_under)" {
-			set user_name $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
+	set user_name [get_my_nuid]
 	if {[string compare $user_name "root"] == 0} {
 		log_user 1
 		return 1
@@ -3974,4 +3928,36 @@ proc check_hosts_contiguous {part check_hosts_list} {
 	}
 
 	return 0
+}
+
+
+#####################################################################
+#
+# Proc: stop_root_user
+#
+# Purpose:	Detect, warn, and stop root user
+#
+#
+# Input
+#
+# Returns: uid if not root user, exits otherwise
+#
+#####################################################################
+
+
+proc stop_root_user {} {
+
+	global bin_id number
+
+	set uid [get_my_uid]
+	if {$uid == -1} {
+		send_user "\nCan't get my uid\n"
+		exit 1
+	} elseif {$uid == 0} {
+		send_user "\nWARNING: Can't run this test as user root\n"
+		exit 0
+	}
+
+	return $uid
+
 }

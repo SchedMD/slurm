@@ -192,16 +192,8 @@ expect {
 #
 # Check the squeue user filter option with id
 #
-spawn $bin_id -u
-expect {
-	-re "($number)" {
-		set this_uid $expect_out(1,string)
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
+set this_uid [get_my_uid]
+
 spawn $squeue --format=%u --noheader --user=$this_uid
 expect {
 	-re "($alpha_numeric_under)" {

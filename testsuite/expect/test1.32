@@ -75,15 +75,7 @@ exec $bin_chmod 700 $file_prog
 #
 # Get uid
 #
-spawn $bin_id -u
-expect {
-	-re "($number)" {
-		set uid $expect_out(1,string)
-	}
-	eof {
-		wait
-	}
-}
+set uid [get_my_uid]
 
 #
 # Spawn initial program via srun

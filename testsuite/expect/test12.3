@@ -94,17 +94,7 @@ if { $node_count < 3 } {
 # Identify the user and his current default account
 #
 set acct_name ""
-set user_name ""
-spawn $bin_id -u -n
-expect {
-	 -re "($alpha_numeric_under)" {
-		set user_name $expect_out(1,string)
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
+set user_name [get_my_nuid]
 set s_pid [spawn $sacctmgr show user $user_name]
 expect {
 	-re "$user_name *($alpha_numeric_under)" {

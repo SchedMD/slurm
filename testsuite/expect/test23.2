@@ -83,7 +83,6 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 # Identify the user and his current default account
 #
 set acct_name ""
-set user_gid  ""
 set user_name ""
 spawn $bin_id -u -n
 expect {
@@ -96,16 +95,6 @@ expect {
 	}
 }
 
-spawn $bin_id -u
-expect {
-	 -re "($alpha_numeric_under)" {
-		set user_gid $expect_out(1,string)
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
 
 set s_pid [spawn $sacctmgr show user $user_name]
 expect {

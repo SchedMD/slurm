@@ -66,16 +66,7 @@ if { [test_using_slurmdbd] == 0 } {
 	exit $exit_code
 }
 
-spawn $bin_id -u -n
-expect {
-	-re "($alpha_numeric_under)" {
-		set user $expect_out(1,string)
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
+set user [get_my_nuid]
 
 proc cleanup { } {
 	global acct acct_c1 acct_c2 exit_code qos

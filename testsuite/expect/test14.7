@@ -47,21 +47,7 @@ if {[test_front_end] != 0} {
 	exit 0
 }
 
-set uid 0
-spawn $bin_id
-expect {
-	-re "uid=($number)" {
-		set uid $expect_out(1,string)
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-if {$uid == 0} {
-	send_user "\nWARNING: This test is unsuitable for execution as user root\n"
-	exit 0
-}
+stop_root_user
 
 # Delete left-over stdout/err files
 file delete $file_out $file_err

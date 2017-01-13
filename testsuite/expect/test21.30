@@ -382,16 +382,8 @@ expect {
 }
 
 # Gets user
-spawn $bin_id -u -n
-expect {
-	-re "($alpha_numeric_under)" {
-		set user_name $expect_out(1,string)
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
+set user_name [get_my_nuid]
+
 
 # add qos
 set qosmatch 0
