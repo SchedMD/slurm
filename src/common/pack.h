@@ -328,6 +328,15 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 		*bitmap = NULL;						\
 } while (0)
 
+/* note: this would be faster if collapsed into a single function
+ * rather than a combination of unpack_bit_str_hex and bitstr2inx */
+#define unpack_bit_str_hex_as_inx(inx, buf) do {	\
+	bitstr_t *b = NULL;				\
+	unpack_bit_str_hex(&b, buf);			\
+	*inx = bitstr2inx(b);				\
+	bit_free(b);					\
+} while (0)
+
 #define unpackstr_ptr		                        \
         unpackmem_ptr
 
