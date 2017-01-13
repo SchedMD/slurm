@@ -65,12 +65,12 @@
 #define MAX_THREADS 10
 
 static void  _add_delay(void);
-static int   _cancel_jobs (int filter_cnt);
+static int   _cancel_jobs(void);
 static void *_cancel_job_id (void *cancel_info);
 static void *_cancel_step_id (void *cancel_info);
 
 static int  _confirmation(job_info_t *job_ptr, uint32_t step_id);
-static int  _filter_job_records (void);
+static void _filter_job_records(void);
 static void _load_job_records (void);
 static int  _multi_cluster(List clusters);
 static int  _proc_cluster(void);
@@ -145,7 +145,6 @@ _multi_cluster(List clusters)
 static int
 _proc_cluster(void)
 {
-	int filter_cnt = 0;
 	int rc;
 
 	if (has_default_opt() && !has_job_steps()) {
@@ -164,9 +163,9 @@ _proc_cluster(void)
 	    (opt.state != JOB_END) ||
 	    (opt.user_name) ||
 	    (opt.wckey)) {
-		filter_cnt = _filter_job_records();
+		_filter_job_records();
 	}
-	rc = MAX(_cancel_jobs(filter_cnt), rc);
+	rc = MAX(_cancel_jobs(), rc);
 	slurm_free_job_info_msg(job_buffer_ptr);
 
 	return rc;
@@ -294,10 +293,9 @@ static int _verify_job_ids(void)
 
 /* _filter_job_records - filtering job information per user specification
  * RET Count of job's filtered out OTHER than for job ID value */
-static int _filter_job_records (void)
+static void _filter_job_records(void)
 {
-	int filter_cnt = 0;
-	int i;
+	int i, job_matches = 0;
 	job_info_t *job_ptr = NULL;
 	uint32_t job_base_state;
 
@@ -313,60 +311,51 @@ static int _filter_job_records (void)
 		    (job_base_state != JOB_RUNNING) &&
 		    (job_base_state != JOB_SUSPENDED)) {
 			job_ptr->job_id = 0;
-			filter_cnt++;
 			continue;
 		}
 
-		if (opt.account != NULL &&
+		if (opt.account &&
 		    xstrcmp(job_ptr->account, opt.account)) {
 			job_ptr->job_id = 0;
-			filter_cnt++;
 			continue;
 		}
 
-		if (opt.job_name != NULL &&
+		if (opt.job_name &&
 		    xstrcmp(job_ptr->name, opt.job_name)) {
 			job_ptr->job_id = 0;
-			filter_cnt++;
 			continue;
 		}
 
-		if ((opt.partition != NULL) &&
+		if (opt.partition &&
 		    xstrcmp(job_ptr->partition, opt.partition)) {
 			job_ptr->job_id = 0;
-			filter_cnt++;
 			continue;
 		}
 
-		if ((opt.qos != NULL) &&
-		    xstrcmp(job_ptr->qos, opt.qos)) {
+		if (opt.qos && xstrcmp(job_ptr->qos, opt.qos)) {
 			job_ptr->job_id = 0;
-			filter_cnt++;
 			continue;
 		}
 
-		if ((opt.reservation != NULL) &&
+		if (opt.reservation &&
 		    xstrcmp(job_ptr->resv_name, opt.reservation)) {
 			job_ptr->job_id = 0;
-			filter_cnt++;
 			continue;
 		}
 
 		if ((opt.state != JOB_END) &&
 		    (job_ptr->job_state != opt.state)) {
 			job_ptr->job_id = 0;
-			filter_cnt++;
 			continue;
 		}
 
-		if ((opt.user_name != NULL) &&
+		if ((opt.user_name) &&
 		    (job_ptr->user_id != opt.user_id)) {
 			job_ptr->job_id = 0;
-			filter_cnt++;
 			continue;
 		}
 
-		if (opt.nodelist != NULL) {
+		if (opt.nodelist) {
 			/* If nodelist contains a '/', treat it as a file name */
 			if (strchr(opt.nodelist, '/') != NULL) {
 				char *reallist;
@@ -381,7 +370,6 @@ static int _filter_job_records (void)
 			hostset_t hs = hostset_create(job_ptr->nodes);
 			if (!hostset_intersects(hs, opt.nodelist)) {
 				job_ptr->job_id = 0;
-				filter_cnt++;
 				hostset_destroy(hs);
 				continue;
 			} else {
@@ -389,7 +377,7 @@ static int _filter_job_records (void)
 			}
 		}
 
-		if (opt.wckey != NULL) {
+		if (opt.wckey) {
 			char *job_key = job_ptr->wckey;
 
 			/*
@@ -403,13 +391,43 @@ static int _filter_job_records (void)
 
 			if (xstrcmp(job_key, opt.wckey) != 0) {
 				job_ptr->job_id = 0;
-				filter_cnt++;
 				continue;
 			}
 		}
+
+		job_matches++;
 	}
 
-	return filter_cnt;
+
+	if ((job_matches == 0) && (opt.verbose > 0)) {
+		char *err_msg = NULL;
+		if (opt.account)
+			xstrfmtcat(err_msg, "account=%s ", opt.account);
+		if (opt.job_name)
+			xstrfmtcat(err_msg, "job_name=%s ", opt.job_name);
+		if (opt.nodelist)
+			xstrfmtcat(err_msg, "nodelist=%s ", opt.nodelist);
+		if (opt.partition)
+			xstrfmtcat(err_msg, "partition=%s ", opt.partition);
+		if (opt.qos)
+			xstrfmtcat(err_msg, "qos=%s ", opt.qos);
+		if (opt.reservation)
+			xstrfmtcat(err_msg, "reservation=%s ", opt.reservation);
+		if (opt.state != JOB_END) {
+			xstrfmtcat(err_msg, "state=%s ",
+				   job_state_string(opt.state));
+		}
+		if (opt.user_name)
+			xstrfmtcat(err_msg, "user_name=%s ", opt.user_name);
+		if (opt.wckey)
+			xstrfmtcat(err_msg, "wckey=%s ", opt.wckey);
+		if (err_msg) {
+			error("No active jobs matching ALL job filters, including: %s",
+			      err_msg);
+			xfree(err_msg);
+		}
+	}
+	return;
 }
 
 static char *_build_jobid_str(job_info_t *job_ptr)
@@ -429,7 +447,7 @@ static char *_build_jobid_str(job_info_t *job_ptr)
 	return result;
 }
 
-static void _cancel_jobid_by_state(uint32_t job_state, int filter_cnt, int *rc)
+static void _cancel_jobid_by_state(uint32_t job_state, int *rc)
 {
 	job_cancel_info_t *cancel_info;
 	job_info_t *job_ptr;
@@ -536,7 +554,7 @@ static void _cancel_jobid_by_state(uint32_t job_state, int filter_cnt, int *rc)
 }
 
 static void
-_cancel_jobs_by_state(uint32_t job_state, int filter_cnt, int *rc)
+_cancel_jobs_by_state(uint32_t job_state, int *rc)
 {
 	int i, err;
 	job_cancel_info_t *cancel_info;
@@ -546,7 +564,7 @@ _cancel_jobs_by_state(uint32_t job_state, int filter_cnt, int *rc)
 	/* Spawn a thread to cancel each job or job step marked for
 	 * cancellation */
 	if (opt.job_cnt) {
-		_cancel_jobid_by_state(job_state, filter_cnt, rc);
+		_cancel_jobid_by_state(job_state, rc);
 		return;
 	}
 
@@ -604,7 +622,7 @@ _cancel_jobs_by_state(uint32_t job_state, int filter_cnt, int *rc)
 }
 
 /* _cancel_jobs - filter then cancel jobs or job steps per request */
-static int _cancel_jobs(int filter_cnt)
+static int _cancel_jobs(void)
 {
 	int rc = 0;
 
@@ -615,7 +633,7 @@ static int _cancel_jobs(int filter_cnt)
 	slurm_mutex_init(&num_active_threads_lock);
 	slurm_cond_init(&num_active_threads_cond, NULL);
 
-	_cancel_jobs_by_state(JOB_PENDING, filter_cnt, &rc);
+	_cancel_jobs_by_state(JOB_PENDING, &rc);
 	/* Wait for any cancel of pending jobs to complete before starting
 	 * cancellation of running jobs so that we don't have a race condition
 	 * with pending jobs getting scheduled while running jobs are also
@@ -627,7 +645,7 @@ static int _cancel_jobs(int filter_cnt)
 	}
 	slurm_mutex_unlock(&num_active_threads_lock);
 
-	_cancel_jobs_by_state(JOB_END, filter_cnt, &rc);
+	_cancel_jobs_by_state(JOB_END, &rc);
 	/* Wait for any spawned threads that have not finished */
 	slurm_mutex_lock( &num_active_threads_lock );
 	while (num_active_threads > 0) {
