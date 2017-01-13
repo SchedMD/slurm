@@ -363,7 +363,7 @@ static void _opt_env(void)
 static void _opt_args(int argc, char **argv)
 {
 	char **rest = NULL;
-	int i, opt_char, option_index;
+	int opt_char, option_index;
 	static struct option long_options[] = {
 		{"account",	required_argument, 0, 'A'},
 		{"batch",	no_argument,       0, 'b'},
@@ -471,15 +471,9 @@ static void _opt_args(int argc, char **argv)
 
 	if (optind < argc)
 		rest = argv + optind;
-	if (rest && (rest[0][0] >= '0') && (rest[0][0] <= '9')) {
+
+	if (rest)
 		opt.job_list = _xlate_job_step_ids(rest);
-	} else if (rest) {
-		for (i = optind; i < argc; i++) {
-			if (opt.job_name)
-				xstrcat(opt.job_name, ",");
-			xstrcat(opt.job_name, argv[i]);
-		}
-	}
 
 	if (!_opt_verify())
 		exit(1);
@@ -514,7 +508,7 @@ _xlate_job_step_ids(char **rest)
 	for (i = 0; id_args[i] && (buf_offset < buf_size); i++) {
 		job_id = strtol(id_args[i], &next_str, 10);
 		if (job_id <= 0) {
-			error ("Invalid job_id %s", id_args[i]);
+			error ("Invalid job id %s", id_args[i]);
 			exit (1);
 		}
 		opt.job_id[buf_offset] = job_id;
@@ -591,7 +585,7 @@ _xlate_job_step_ids(char **rest)
 			next_str[0] = '\0';
 			id_args[i+1] = xstrdup(next_str + 1);
 		} else if (next_str[0] != '\0') {
-			error ("Invalid job ID %s", id_args[i]);
+			error ("Invalid job id %s", id_args[i]);
 			exit (1);
 		}
 	}
