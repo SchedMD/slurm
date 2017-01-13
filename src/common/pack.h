@@ -282,22 +282,6 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 		packmem(NULL,(uint32_t)0,buf);		\
 } while (0)
 
-/* NOTE: un/pack_bit_str_hex() is much faster than un/pack_bit_str(),
- * especially for larger and/or sparse bitmaps. */
-#define pack_bit_str(bitmap,buf) do {			\
-	assert(buf->magic == BUF_MAGIC);		\
-	if (bitmap) {					\
-		char _tmp_str[0xfffe];			\
-		uint32_t _size;				\
-		bit_fmt(_tmp_str,0xfffe,bitmap);	\
-		_size = bit_size(bitmap);               \
-		pack32(_size, buf);              	\
-		_size = strlen(_tmp_str)+1;		\
-		packmem(_tmp_str,_size,buf);	        \
-	} else						\
-		pack32(NO_VAL, buf);                 	\
-} while (0)
-
 #define pack_bit_str_hex(bitmap,buf) do {		\
 	assert(buf->magic == BUF_MAGIC);		\
 	if (bitmap) {					\
