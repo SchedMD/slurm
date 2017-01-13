@@ -5656,7 +5656,32 @@ _unpack_reserve_info_members(reserve_info_t * resv, Buf buffer,
 	char *node_inx_str = NULL;
 	uint32_t uint32_tmp;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&resv->accounts,	&uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&resv->burst_buffer,&uint32_tmp, buffer);
+		safe_unpack32(&resv->core_cnt,          buffer);
+		safe_unpack_time(&resv->end_time,	buffer);
+		safe_unpackstr_xmalloc(&resv->features,	&uint32_tmp, buffer);
+		safe_unpack32(&resv->flags,		buffer);
+		safe_unpackstr_xmalloc(&resv->licenses, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&resv->name,	&uint32_tmp, buffer);
+		safe_unpack32(&resv->node_cnt,		buffer);
+		safe_unpackstr_xmalloc(&resv->node_list, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&resv->partition, &uint32_tmp, buffer);
+		safe_unpack32(&resv->resv_watts,        buffer);
+		safe_unpack_time(&resv->start_time,	buffer);
+
+		safe_unpackstr_xmalloc(&resv->tres_str, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&resv->users,	&uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node_inx_str,   &uint32_tmp, buffer);
+		if (node_inx_str == NULL)
+			resv->node_inx = bitfmt2int("");
+		else {
+			resv->node_inx = bitfmt2int(node_inx_str);
+			xfree(node_inx_str);
+			node_inx_str = NULL;
+		}
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&resv->accounts,	&uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&resv->burst_buffer,&uint32_tmp, buffer);
 		safe_unpack32(&resv->core_cnt,          buffer);
