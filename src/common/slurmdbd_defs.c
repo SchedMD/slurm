@@ -336,7 +336,7 @@ extern int slurm_send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 		slurmdbd_conn, (persist_msg_t *)req);
 	if (!buffer)	/* pack error */
 		return SLURM_ERROR;
-		
+
 	slurm_mutex_lock(&agent_lock);
 	if ((agent_tid == 0) || (agent_list == NULL)) {
 		_create_agent();
