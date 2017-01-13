@@ -56,6 +56,7 @@
  * working.  If you need to add fields, add them to the end of the structure.
  */
 typedef struct node_features_ops {
+	uint32_t(*boot_time)	(void);
 	int	(*get_node)	(char *node_list);
 	int	(*job_valid)	(char *job_features);
 	char *	(*job_xlate)	(char *job_features);
@@ -75,6 +76,7 @@ typedef struct node_features_ops {
  * declared for node_features_ops_t.
  */
 static const char *syms[] = {
+	"node_features_p_boot_time",
 	"node_features_p_get_node",
 	"node_features_p_job_valid",
 	"node_features_p_job_xlate",
@@ -423,4 +425,23 @@ extern bool node_features_g_user_update(uid_t uid)
 	END_TIMER2("node_features_g_user_update");
 
 	return result;
+}
+
+/* Return estimated reboot time, in seconds */
+extern uint32_t node_features_g_boot_time(void)
+{
+	DEF_TIMERS;
+	uint32_t boot_time = 0;
+	int i;
+
+	START_TIMER;
+	(void) node_features_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; i < g_context_cnt; i++) {
+		boot_time = MAX(boot_time, (*(ops[i].boot_time))());
+	}
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2("node_features_g_user_update");
+
+	return boot_time;
 }

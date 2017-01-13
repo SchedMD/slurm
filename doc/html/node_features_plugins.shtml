@@ -69,6 +69,13 @@ The system <span class="commandline">_init()</span> is called before the Slurm
   <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
   <span class="commandline">SLURM_ERROR</span> on failure.</p>
 
+<p class="commandline"> uint32_t node_features_p_boot_time(void)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+  Return the estimated node reboot time in units of seconds.
+  Used as a basis for optimizing scheduling decisions.
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+  Estimated boot time in seconds.</p>
+
 <p class="commandline"> int node_features_p_get_node(char *node_list)
 <p style="margin-left:.2in"><b>Description</b>:<br>
   Update active and available features on specified nodes.
@@ -171,6 +178,6 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 31 October 2016</p>
+<p style="text-align:center;">Last modified 13 January 2017</p>
 
 <!--#include virtual="footer.txt"-->

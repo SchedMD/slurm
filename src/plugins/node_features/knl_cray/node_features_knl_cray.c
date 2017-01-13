@@ -176,6 +176,7 @@ static uint16_t allow_mcdram = KNL_MCDRAM_FLAG;
 static uint16_t allow_numa = KNL_NUMA_FLAG;
 static uid_t *allowed_uid = NULL;
 static int allowed_uid_cnt = 0;
+static uint32_t boot_time = (45 * 60);	/* 45 minute estimated boot time */
 static uint16_t default_mcdram = KNL_CACHE;
 static uint16_t default_numa = KNL_ALL2ALL;
 static char *syscfg_path = NULL;
@@ -199,6 +200,7 @@ static s_p_options_t knl_conf_file_options[] = {
 	{"AllowMCDRAM", S_P_STRING},
 	{"AllowNUMA", S_P_STRING},
 	{"AllowUserBoot", S_P_STRING},
+	{"BootTime", S_P_UINT32},
 	{"CapmcPath", S_P_STRING},
 	{"CapmcPollFreq", S_P_UINT32},
 	{"CapmcRetries", S_P_UINT32},
@@ -1608,6 +1610,7 @@ extern int init(void)
 			_make_uid_array(tmp_str);
 			xfree(tmp_str);
 		}
+		(void) s_p_get_uint32(&boot_time, "BootTime", tbl);
 		(void) s_p_get_string(&capmc_path, "CapmcPath", tbl);
 		(void) s_p_get_uint32(&capmc_poll_freq, "CapmcPollFreq", tbl);
 		(void) s_p_get_uint32(&capmc_retries, "CapmcRetries", tbl);
@@ -1655,6 +1658,7 @@ extern int init(void)
 		info("AllowMCDRAM=%s AllowNUMA=%s",
 		     allow_mcdram_str, allow_numa_str);
 		info("AllowUserBoot=%s", allow_user_str);
+		info("BootTIme=%u", boot_time);
 		info("CapmcPath=%s", capmc_path);
 		info("CapmcPollFreq=%u sec", capmc_poll_freq);
 		info("CapmcRetries=%u", capmc_retries);
@@ -2555,4 +2559,10 @@ extern bool node_features_p_user_update(uid_t uid)
 	}
 
 	return false;
+}
+
+/* Return estimated reboot time, in seconds */
+extern uint32_t node_features_p_boot_time(void)
+{
+	return boot_time;
 }

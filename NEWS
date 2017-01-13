@@ -21,6 +21,10 @@ documents those changes that are of interest to users and administrators.
     --verbose option is used along with one or more job filters (e.g. "--qos=").
  -- Change _pack_cred to use pack_bit_str_hex instead of pack_bit_fmt for
     better scalability and performance.
+ -- Add BootTime configuration parameter to knl.conf file to optimize resource
+    allocations with respect to required node reboots.
+ -- Add node_features_p_boot_time() to node_features plugin to optimize
+    scheduling with respect to node reboots.
 
 * Changes in Slurm 17.02.0pre4
 ==============================

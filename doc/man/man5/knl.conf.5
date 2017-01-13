@@ -80,6 +80,13 @@ A comma delimited list of users allowed to modify a node's MCDRAM or NUMA state.
 If not specified then any user can change a node's state and reboot it.
 
 .TP
+\fBBootTime\fR
+Estimated time to reboot a node in seconds.
+Used as a basis for optimizing scheduling decisions.
+The default value is 300 seconds (5 minutes) for the "knl_generic" plugin
+and 2700 seconds (45 minutes) for the "knl_cray" plugin.
+
+.TP
 \fBCapmcPath\fR
 Fully qualified path to the \fBcapmc\fR program.
 The default value is "/opt/cray/capmc/default/bin/capmc".

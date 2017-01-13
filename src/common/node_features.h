@@ -105,4 +105,7 @@ extern void node_features_g_step_config(bool mem_sort, bitstr_t *numa_bitmap);
  * features */
 extern bool node_features_g_user_update(uid_t uid);
 
+/* Return estimated reboot time, in seconds */
+extern uint32_t node_features_g_boot_time(void);
+
 #endif /* !_NODE_FEATURES_H */
