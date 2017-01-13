@@ -1159,6 +1159,49 @@ int inx2bitstr(bitstr_t *b, int32_t *inx)
 	return rc;
 }
 
+/*
+ * convert a bitstring to inx format
+ * returns an xmalloc()'d array of int32_t that must be xfree()'d
+ */
+int32_t *bitstr2inx(bitstr_t *b)
+{
+	bitoff_t start, bit, pos = 0;
+	int32_t *bit_inx;
+
+	if (!b) {
+		bit_inx = xmalloc(sizeof(int32_t));
+		bit_inx[0] = -1;
+		return bit_inx;
+	}
+
+	/* worst case: every other bit set, resulting in an array of length
+	 * bitstr_bits(b) + 1 (if an odd number of elements)
+	 * + 1 (for trailing -1) */
+	bit_inx = xmalloc_nz(sizeof(int32_t) * (_bitstr_bits(b) + 2));
+
+	for (bit = 0; bit < _bitstr_bits(b); ) {
+		/* skip past empty words */
+		if (!b[_bit_word(bit)]) {
+			bit += sizeof(bitstr_t) * 8;
+			continue;
+		}
+
+		if (bit_test(b, bit)) {
+			start = bit;
+			while (bit + 1 < _bitstr_bits(b)
+			       && bit_test(b, bit + 1))
+				bit++;
+			bit_inx[pos++] = start;
+			bit_inx[pos++] = bit;
+		}
+		bit++;
+	}
+	/* terminate array with -1 */
+	bit_inx[pos] = -1;
+
+	return bit_inx;
+}
+
 /* bit_fmt_hexmask
  *
  * Given a bitstr_t, allocate and return a string in the form of:
