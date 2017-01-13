@@ -334,7 +334,7 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 	bitstr_t *b = NULL;				\
 	unpack_bit_str_hex(&b, buf);			\
 	*inx = bitstr2inx(b);				\
-	bit_free(b);					\
+	FREE_NULL_BITMAP(b);				\
 } while (0)
 
 #define unpackstr_ptr		                        \
