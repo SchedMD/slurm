@@ -266,6 +266,10 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 	packmem(NULL, 0, buf); \
 } while (0)
 
+/* DEPRECATED - DO NOT USE THIS IN NEW CODE */
+/* On larger systems the full result from bit_fmt can be
+ * longer than 0xfffe bytes and thus truncated.
+ * Use pack_bit_str_hex instead. */
 #define pack_bit_fmt(bitmap,buf) do {			\
 	assert(buf->magic == BUF_MAGIC);		\
 	if (bitmap) {					\
