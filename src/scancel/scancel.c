@@ -422,7 +422,7 @@ static void _filter_job_records(void)
 		if (opt.wckey)
 			xstrfmtcat(err_msg, "wckey=%s ", opt.wckey);
 		if (err_msg) {
-			error("No active jobs matching ALL job filters, including: %s",
+			error("No active jobs match ALL job filters, including: %s",
 			      err_msg);
 			xfree(err_msg);
 		}
