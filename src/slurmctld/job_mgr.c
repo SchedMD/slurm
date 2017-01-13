@@ -8756,9 +8756,9 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 
 		packstr(dump_job_ptr->alloc_node, buffer);
 		if (!IS_JOB_COMPLETING(dump_job_ptr))
-			pack_bit_fmt(dump_job_ptr->node_bitmap, buffer);
+			pack_bit_str_hex(dump_job_ptr->node_bitmap, buffer);
 		else
-			pack_bit_fmt(dump_job_ptr->node_bitmap_cg, buffer);
+			pack_bit_str_hex(dump_job_ptr->node_bitmap_cg, buffer);
 
 		select_g_select_jobinfo_pack(dump_job_ptr->select_jobinfo,
 					     buffer, protocol_version);
@@ -9505,9 +9505,9 @@ static void _pack_pending_job_details(struct job_details *detail_ptr,
 			pack32(detail_ptr->pn_min_tmp_disk, buffer);
 
 			packstr(detail_ptr->req_nodes, buffer);
-			pack_bit_fmt(detail_ptr->req_node_bitmap, buffer);
+			pack_bit_str_hex(detail_ptr->req_node_bitmap, buffer);
 			packstr(detail_ptr->exc_nodes, buffer);
-			pack_bit_fmt(detail_ptr->exc_node_bitmap, buffer);
+			pack_bit_str_hex(detail_ptr->exc_node_bitmap, buffer);
 
 			packstr(detail_ptr->std_err, buffer);
 			packstr(detail_ptr->std_in, buffer);

@@ -1538,7 +1538,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 			packstr(resv_ptr->tres_str,	buffer);
 			pack8(resv_ptr->user_not,	buffer);
 		} else {
-			pack_bit_fmt(resv_ptr->node_bitmap, buffer);
+			pack_bit_str_hex(resv_ptr->node_bitmap, buffer);
 		}
 	} else if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
 		packstr(resv_ptr->accounts,	buffer);

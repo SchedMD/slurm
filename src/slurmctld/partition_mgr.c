@@ -1286,7 +1286,7 @@ void pack_part(struct part_record *part_ptr, Buf buffer,
 		packstr(part_ptr->deny_accounts, buffer);
 		packstr(part_ptr->deny_qos, buffer);
 		packstr(part_ptr->nodes, buffer);
-		pack_bit_fmt(part_ptr->node_bitmap, buffer);
+		pack_bit_str_hex(part_ptr->node_bitmap, buffer);
 		packstr(part_ptr->billing_weights_str, buffer);
 		packstr(part_ptr->tres_fmt_str, buffer);
 	} else if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {

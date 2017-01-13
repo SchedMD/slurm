@@ -2956,7 +2956,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
 		packstr(node_list, buffer);
 		packstr(step_ptr->name, buffer);
 		packstr(step_ptr->network, buffer);
-		pack_bit_fmt(pack_bitstr, buffer);
+		pack_bit_str_hex(pack_bitstr, buffer);
 		packstr(step_ptr->ckpt_dir, buffer);
 		packstr(step_ptr->gres, buffer);
 		select_g_select_jobinfo_pack(step_ptr->select_jobinfo, buffer,
@@ -3792,18 +3792,9 @@ extern int dump_job_step_state(void *x, void *arg)
 	pack64(step_ptr->pn_min_memory, buffer);
 	pack32(step_ptr->exit_code, buffer);
 	if (step_ptr->exit_code != NO_VAL) {
-		uint16_t bit_cnt = 0;
-		if (step_ptr->exit_node_bitmap)
-			bit_cnt = bit_size(step_ptr->exit_node_bitmap);
-		pack_bit_fmt(step_ptr->exit_node_bitmap, buffer);
-		pack16(bit_cnt, buffer);
+		pack_bit_str_hex(step_ptr->exit_node_bitmap, buffer);
 	}
-	if (step_ptr->core_bitmap_job) {
-		uint32_t core_size = bit_size(step_ptr->core_bitmap_job);
-		pack32(core_size, buffer);
-		pack_bit_fmt(step_ptr->core_bitmap_job, buffer);
-	} else
-		pack32((uint32_t) 0, buffer);
+	pack_bit_str_hex(step_ptr->core_bitmap_job, buffer);
 	pack32(step_ptr->time_limit, buffer);
 	pack32(step_ptr->cpu_freq_min, buffer);
 	pack32(step_ptr->cpu_freq_max, buffer);
@@ -3853,11 +3844,12 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 			   uint16_t protocol_version)
 {
 	struct step_record *step_ptr = NULL;
+	bitstr_t *exit_node_bitmap = NULL, *core_bitmap_job = NULL;
 	uint8_t no_kill;
 	uint16_t cyclic_alloc, port, batch_step, bit_cnt;
 	uint16_t start_protocol_ver = SLURM_MIN_PROTOCOL_VERSION;
 	uint16_t ckpt_interval, cpus_per_task, resv_port_cnt, state;
-	uint32_t core_size, cpu_count, exit_code, name_len, srun_pid = 0;
+	uint32_t core_size = 0, cpu_count, exit_code, name_len, srun_pid = 0;
 	uint32_t step_id, time_limit, cpu_freq_min, cpu_freq_max, cpu_freq_gov;
 	uint64_t pn_min_memory;
 	time_t start_time, pre_sus_time, tot_sus_time, ckpt_time;
@@ -3888,12 +3880,10 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 		safe_unpack64(&pn_min_memory, buffer);
 		safe_unpack32(&exit_code, buffer);
 		if (exit_code != NO_VAL) {
-			safe_unpackstr_xmalloc(&bit_fmt, &name_len, buffer);
-			safe_unpack16(&bit_cnt, buffer);
+			unpack_bit_str_hex(&exit_node_bitmap, buffer);
 		}
-		safe_unpack32(&core_size, buffer);
-		if (core_size)
-			safe_unpackstr_xmalloc(&core_job, &name_len, buffer);
+		unpack_bit_str_hex(&core_bitmap_job, buffer);
+
 		safe_unpack32(&time_limit, buffer);
 		safe_unpack32(&cpu_freq_min, buffer);
 		safe_unpack32(&cpu_freq_max, buffer);
@@ -4092,7 +4082,12 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 		step_ptr->ext_sensors = ext_sensors_alloc();
 
 	step_ptr->exit_code    = exit_code;
-	if (bit_fmt) {
+
+	if (exit_node_bitmap) {
+		step_ptr->exit_node_bitmap = exit_node_bitmap;
+		exit_node_bitmap = NULL;
+	} else if (bit_fmt) {
+		/* pre-17.02 compatibility */
 		/* NOTE: This is only recovered if a job step completion
 		 * is actively in progress at step save time. Otherwise
 		 * the bitmap is NULL. */
@@ -4103,7 +4098,11 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 		}
 		xfree(bit_fmt);
 	}
-	if (core_size) {
+	if (core_bitmap_job) {
+		step_ptr->core_bitmap_job = core_bitmap_job;
+		core_bitmap_job = NULL;
+	} else if (core_size) {
+		/* pre-17.02 compatibility */
 		step_ptr->core_bitmap_job = bit_alloc(core_size);
 		if (bit_unfmt(step_ptr->core_bitmap_job, core_job)) {
 			error("error recovering core_bitmap_job from %s",
@@ -4127,6 +4126,8 @@ unpack_error:
 	xfree(ckpt_dir);
 	xfree(gres);
 	FREE_NULL_LIST(gres_list);
+	bit_free(exit_node_bitmap);
+	bit_free(core_bitmap_job);
 	xfree(bit_fmt);
 	xfree(core_job);
 	if (switch_tmp)
