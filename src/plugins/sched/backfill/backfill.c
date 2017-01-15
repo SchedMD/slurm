@@ -1347,7 +1347,6 @@ next_task:
 		else if (job_ptr->time_min && (job_ptr->time_min < time_limit))
 			time_limit = job_ptr->time_limit = job_ptr->time_min;
 
-		/* Determine impact of any resource reservations */
 		later_start = now;
  TRY_LATER:
 		if (slurmctld_config.shutdown_time ||
@@ -1414,6 +1413,7 @@ next_task:
 		FREE_NULL_BITMAP(exc_core_bitmap);
 		start_res   = later_start;
 		later_start = 0;
+		/* Determine impact of any advance reservations */
 		j = job_test_resv(job_ptr, &start_res, true, &avail_bitmap,
 				  &exc_core_bitmap, &resv_overlap);
 		if (j != SLURM_SUCCESS) {
