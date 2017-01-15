@@ -15,6 +15,7 @@ documents those changes that are of interest to users and administrators.
     buffer errors.
  -- burst_buffer/cray - Avoid "pre_run" operation if not using buffer (i.e.
     just creating or deleting a persistent burst buffer).
+ -- Fix slurm.spec file support for BlueGene builds.
 
 * Changes in Slurm 16.05.8
 ==========================
