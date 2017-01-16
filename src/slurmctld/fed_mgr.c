@@ -60,8 +60,8 @@
 
 #define FED_SIBLING_BIT(x) ((uint64_t)1 << (x - 1))
 
-slurmdb_federation_rec_t     *fed_mgr_fed_rec      = NULL;
-static slurmdb_cluster_rec_t *fed_mgr_cluster_rec  = NULL;
+slurmdb_federation_rec_t *fed_mgr_fed_rec     = NULL;
+slurmdb_cluster_rec_t    *fed_mgr_cluster_rec = NULL;
 
 static pthread_t ping_thread  = 0;
 static bool      stop_pinging = false, inited = false;
@@ -2756,6 +2756,58 @@ extern int fed_mgr_job_requeue(struct job_record *job_ptr)
 	job_ptr->job_state &= (~JOB_REVOKED);
 
 	return rc;
+}
+
+/* Cancel sibling jobs. Just send request to itself */
+static int _cancel_sibling_jobs(struct job_record *job_ptr, uint16_t signal,
+				uint16_t flags, uid_t uid)
+{
+	int id = 1;
+	uint64_t tmp_sibs = job_ptr->fed_details->siblings;
+	while (tmp_sibs) {
+		if ((tmp_sibs & 1) &&
+		    (id != fed_mgr_cluster_rec->fed.id)) {
+			slurmdb_cluster_rec_t *cluster = _get_cluster_by_id(id);
+			if (!cluster) {
+				error("couldn't find cluster rec by id %d", id);
+				goto next_job;
+			}
+
+			_persist_fed_job_cancel(cluster, job_ptr->job_id,
+						signal, flags, uid);
+		}
+
+next_job:
+		tmp_sibs >>= 1;
+		id++;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+/* Cancel sibling jobs of a federated job
+ *
+ * IN job_ptr - job to cancel
+ * IN signal  - signal to send to job
+ * IN flags   - KILL_.* flags
+ * IN uid     - uid making request
+ */
+extern int fed_mgr_job_cancel(struct job_record *job_ptr, uint16_t signal,
+			      uint16_t flags, uid_t uid)
+{
+	uint32_t origin_id;
+
+	xassert(job_ptr);
+
+	if (!_is_fed_job(job_ptr, &origin_id))
+		return SLURM_SUCCESS;
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+		info("cancel fed job %d by origin", job_ptr->job_id);
+
+	_cancel_sibling_jobs(job_ptr, signal, flags, uid);
+
+	return SLURM_SUCCESS;
 }
 
 extern int fed_mgr_is_origin_job(struct job_record *job_ptr)

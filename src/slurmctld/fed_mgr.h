@@ -41,6 +41,7 @@
 #include "slurm/slurmdb.h"
 
 extern slurmdb_federation_rec_t *fed_mgr_fed_rec;
+extern slurmdb_cluster_rec_t    *fed_mgr_cluster_rec;
 
 extern int       fed_mgr_add_sibling_conn(slurm_persist_conn_t *persist_conn,
 					  char **out_buffer);
@@ -59,6 +60,8 @@ extern int       fed_mgr_job_allocate(slurm_msg_t *msg,
 				      uid_t uid, uint16_t protocol_version,
 				      uint32_t *job_id_ptr, int *alloc_code,
 				      char **err_msg);
+extern int       fed_mgr_job_cancel(struct job_record *job_ptr, uint16_t signal,
+				    uint16_t flags, uid_t uid);
 extern int       fed_mgr_job_complete(struct job_record *job_ptr,
 				      uint32_t return_code, time_t start_time);
 extern int       fed_mgr_job_lock(struct job_record *job_ptr,

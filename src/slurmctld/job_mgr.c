@@ -4535,6 +4535,20 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
 
+	/* If is origin job then cancel siblings -- if they exist.
+	 * origin job = because it knows where the siblings are
+	 * If the job is running locally then just do the normal signalling */
+	if (job_ptr->fed_details &&
+	    fed_mgr_is_origin_job(job_ptr) &&
+	    job_ptr->fed_details->cluster_lock != fed_mgr_cluster_rec->fed.id) {
+		int rc = fed_mgr_job_cancel(job_ptr, signal, flags, uid);
+		/* If the job is running on a remote cluster then wait for the
+		 * job to report back that it's completed, otherwise just signal
+		 * the pending siblings and itself (by not returning). */
+		if (job_ptr->fed_details->cluster_lock)
+			return rc;
+	}
+
 	/* let node select plugin do any state-dependent signalling actions */
 	select_g_job_signal(job_ptr, signal);
 	last_job_update = now;
