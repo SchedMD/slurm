@@ -46,10 +46,6 @@
 
 #include "task_cgroup.h"
 
-#ifndef PATH_MAX
-#define PATH_MAX 256
-#endif
-
 extern slurmd_conf_t *conf;
 
 static char user_cgroup_path[PATH_MAX];

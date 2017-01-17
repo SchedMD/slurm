@@ -54,10 +54,6 @@
 
 #include "xcgroup.h"
 
-#ifndef PATH_MAX
-#define PATH_MAX 256
-#endif
-
 /* internal functions */
 size_t _file_getsize(int fd);
 int _file_read_uint32s(char* file_path, uint32_t** pvalues, int* pnb);

@@ -55,10 +55,6 @@
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-#ifndef PATH_MAX
-#define PATH_MAX 256
-#endif
-
 static xcgroup_t system_cpuset_cg = {NULL, NULL, NULL, 0, 0, 0, 0};
 static xcgroup_t system_memory_cg = {NULL, NULL, NULL, 0, 0, 0, 0};
 

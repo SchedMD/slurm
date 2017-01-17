@@ -46,10 +46,6 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
-#ifndef PATH_MAX
-#define PATH_MAX 256
-#endif
-
 static char user_cgroup_path[PATH_MAX];
 static char job_cgroup_path[PATH_MAX];
 static char jobstep_cgroup_path[PATH_MAX];

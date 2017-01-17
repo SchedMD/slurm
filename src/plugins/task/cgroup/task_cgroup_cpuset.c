@@ -119,10 +119,6 @@ static uint16_t bind_mode_ldom =
 
 #endif
 
-#ifndef PATH_MAX
-#define PATH_MAX 256
-#endif
-
 static bool cpuset_prefix_set = false;
 static char *cpuset_prefix = "";
 

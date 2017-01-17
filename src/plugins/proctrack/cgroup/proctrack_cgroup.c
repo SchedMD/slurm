@@ -82,10 +82,6 @@ const char plugin_name[]      = "Process tracking via linux cgroup freezer subsy
 const char plugin_type[]      = "proctrack/cgroup";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-#ifndef PATH_MAX
-#define PATH_MAX 256
-#endif
-
 static slurm_cgroup_conf_t slurm_cgroup_conf;
 
 static char user_cgroup_path[PATH_MAX];
