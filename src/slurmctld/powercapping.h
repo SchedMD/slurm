@@ -104,11 +104,13 @@ uint32_t powercap_get_node_bitmap_maxwatts(bitstr_t* select_bitmap);
  * return the cap value of a job taking into account the current cap
  * as well as the power reservations defined on the interval
  *
- * IN struct job_record* job_ptr
- * IN time_t when
- * RET uint32_t - the cap the job is restricted to
+ * IN job_ptr - job under consideration
+ * IN when - time of job start
+ * IN reboot - node reboot required
+ * RET - The power cap this job is restricted to
  */
-uint32_t powercap_get_job_cap(struct job_record *job_ptr, time_t when);
+uint32_t powercap_get_job_cap(struct job_record *job_ptr, time_t when,
+			      bool reboot);
 
 /**
  * power_layout_ready

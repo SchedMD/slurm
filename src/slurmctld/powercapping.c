@@ -343,7 +343,8 @@ uint32_t powercap_get_node_bitmap_maxwatts(bitstr_t *idle_bitmap)
 	return max_watts;
 }
 
-uint32_t powercap_get_job_cap(struct job_record *job_ptr, time_t when)
+uint32_t powercap_get_job_cap(struct job_record *job_ptr, time_t when,
+			      bool reboot)
 {
 	uint32_t powercap = 0, resv_watts;
 
@@ -354,7 +355,7 @@ uint32_t powercap_get_job_cap(struct job_record *job_ptr, time_t when)
 		return 0; /* should not happened */
 
 	/* get the amount of watts reserved for the job */
-	resv_watts = job_test_watts_resv(job_ptr, when, false);
+	resv_watts = job_test_watts_resv(job_ptr, when, reboot);
 
 	/* avoid underflow of the cap value, return at least 0 */
 	if (resv_watts > powercap)

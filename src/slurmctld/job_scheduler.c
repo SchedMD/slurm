@@ -3585,8 +3585,10 @@ static void *_run_epilog(void *arg)
 	return NULL;
 }
 
-/* Return a node bitmap identifying which nodes must be rebooted for a job
- * to start. */
+/* Determine which nodes must be rebooted for a job
+ * IN job_ptr - pointer to job that will be initiated
+ * RET bitmap of nodes requiring a reboot
+ */
 extern bitstr_t *node_features_reboot(struct job_record *job_ptr)
 {
 	bitstr_t *active_bitmap = NULL, *boot_node_bitmap = NULL;
@@ -3602,12 +3604,10 @@ extern bitstr_t *node_features_reboot(struct job_record *job_ptr)
 
 	build_active_feature_bitmap(job_ptr, job_ptr->node_bitmap,
 				    &active_bitmap);
-	boot_node_bitmap = bit_copy(job_ptr->node_bitmap);
-	if (active_bitmap == NULL) {
-		FREE_NULL_BITMAP(boot_node_bitmap);
-		return boot_node_bitmap;
-	}
+	if (active_bitmap == NULL)	/* All have desired features */
+		return NULL;
 
+	boot_node_bitmap = bit_copy(job_ptr->node_bitmap);
 	bit_not(active_bitmap);	/* Change to INactive_bitmap */
 	bit_and(boot_node_bitmap, active_bitmap);
 	FREE_NULL_BITMAP(active_bitmap);
@@ -3617,6 +3617,40 @@ extern bitstr_t *node_features_reboot(struct job_record *job_ptr)
 		job_ptr->wait_all_nodes = 1;
 
 	return boot_node_bitmap;
+}
+
+/* Determine if node boot required for this job
+ * IN job_ptr - pointer to job that will be initiated
+ * IN node_bitmap - nodes to be allocated
+ * RET - true if reboot required
+ */
+extern bool node_features_reboot_test(struct job_record *job_ptr,
+				      bitstr_t *node_bitmap)
+{
+	bitstr_t *active_bitmap = NULL, *boot_node_bitmap = NULL;
+	int node_cnt;
+
+	if (job_ptr->reboot)
+		return true;
+
+	if ((node_features_g_count() == 0) ||
+	    !node_features_g_user_update(job_ptr->user_id))
+		return false;
+
+	build_active_feature_bitmap(job_ptr, node_bitmap, &active_bitmap);
+	if (active_bitmap == NULL)	/* All have desired features */
+		return false;
+
+	boot_node_bitmap = bit_copy(node_bitmap);
+	bit_not(active_bitmap);	/* Change to INactive_bitmap */
+	bit_and(boot_node_bitmap, active_bitmap);
+	node_cnt = bit_set_count(boot_node_bitmap);
+	FREE_NULL_BITMAP(active_bitmap);
+	FREE_NULL_BITMAP(boot_node_bitmap);
+
+	if (node_cnt == 0)
+		return false;
+	return true;
 }
 
 /*

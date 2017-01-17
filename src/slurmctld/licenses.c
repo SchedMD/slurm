@@ -630,9 +630,11 @@ extern int license_job_test(struct job_record *job_ptr, time_t when)
 			rc = EAGAIN;
 			break;
 		} else {
+			/* Assume node reboot required since we have not
+			 * selected the compute nodes yet */
 			resv_licenses = job_test_lic_resv(job_ptr,
 							  license_entry->name,
-							  when, false);
+							  when, true);
 			if ((license_entry->total + match->used +
 			     resv_licenses) > match->total) {
 				rc = EAGAIN;

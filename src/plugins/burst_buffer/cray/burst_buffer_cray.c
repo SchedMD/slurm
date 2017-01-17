@@ -2174,8 +2174,9 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 	}
 
 	/* Account for reserved resources. Reduce reservation size for
-	 * resources already claimed from the reservation. */
-	resv_bb = job_test_bb_resv(job_ptr, now, false);
+	 * resources already claimed from the reservation. Assume node reboot
+	 * required since we have not selected the compute nodes yet. */
+	resv_bb = job_test_bb_resv(job_ptr, now, true);
 	if (resv_bb) {
 		burst_buffer_info_t *resv_bb_ptr;
 		for (i = 0, resv_bb_ptr = resv_bb->burst_buffer_array;

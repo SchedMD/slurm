@@ -70,6 +70,7 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
+#include "src/common/node_features.h"
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
 #include "src/common/power.h"
@@ -892,7 +893,7 @@ static int _attempt_backfill(void)
 	int bb, i, j, node_space_recs, mcs_select = 0;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr, **bf_part_ptr = NULL;
-	uint32_t end_time, end_reserve, deadline_time_limit;
+	uint32_t end_time, end_reserve, deadline_time_limit, boot_time;
 	uint32_t time_limit, comp_time_limit, orig_time_limit, part_time_limit;
 	uint32_t min_nodes, max_nodes, req_nodes;
 	bitstr_t *active_bitmap = NULL, *avail_bitmap = NULL;
@@ -1435,7 +1436,7 @@ next_task:
 		bit_and(avail_bitmap, up_node_bitmap);
 		filter_by_node_owner(job_ptr, avail_bitmap);
 		filter_by_node_mcs(job_ptr, mcs_select, avail_bitmap);
-		for (j=0; ; ) {
+		for (j = 0; ; ) {
 			if ((node_space[j].end_time > start_res) &&
 			     node_space[j].next && (later_start == 0))
 				later_start = node_space[j].end_time;
@@ -1524,7 +1525,20 @@ next_task:
 				test_fini = 0;
 			}
 		}
+		boot_time = 0;
 		if (test_fini != 1) {
+			/* Unable to start job using currently currently active
+			 * features, need to use features which can be made
+			 * available after node reboot */
+			bitstr_t *tmp_bitmap = NULL;
+			FREE_NULL_BITMAP(exc_core_bitmap);
+			/* Determine impact of any advance reservations */
+			j = job_test_resv(job_ptr, &start_res, true,
+					  &tmp_bitmap, &exc_core_bitmap,
+					  &resv_overlap, true);
+			bit_and(avail_bitmap, tmp_bitmap);
+			FREE_NULL_BITMAP(tmp_bitmap);
+			boot_time = node_features_g_boot_time();
 			j = _try_sched(job_ptr, &avail_bitmap, min_nodes,
 				       max_nodes, req_nodes, exc_core_bitmap);
 			if (test_fini == 0) {
@@ -1700,7 +1714,8 @@ next_task:
 		}
 
 		start_time  = job_ptr->start_time;
-		end_reserve = job_ptr->start_time + (time_limit * 60);
+		end_reserve = job_ptr->start_time + boot_time +
+			      (time_limit * 60);
 		start_time  = (start_time / backfill_resolution) *
 			      backfill_resolution;
 		end_reserve = (end_reserve / backfill_resolution) *

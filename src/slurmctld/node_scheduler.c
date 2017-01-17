@@ -771,7 +771,7 @@ extern void build_active_feature_bitmap(struct job_record *job_ptr,
 		    (node_feat_ptr->node_bitmap == NULL)) {
 			if (!tmp_bitmap)
 				tmp_bitmap = bit_alloc(node_record_count);
-			bit_nset(tmp_bitmap, 0, node_record_count-1);
+			bit_nset(tmp_bitmap, 0, node_record_count - 1);
 			continue;
 		}
 		if (!tmp_bitmap) {
@@ -1029,11 +1029,12 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 
 	/* Mark nodes reserved for other jobs as off limit for this job.
 	 * If the job has a reservation, we've already limited the contents
-	 * of select_bitmap to those nodes */
+	 * of select_bitmap to those nodes. Assume node reboot required
+	 * since we have not selected the compute nodes yet. */
 	if (job_ptr->resv_name == NULL) {
 		time_t start_res = time(NULL);
 		rc = job_test_resv(job_ptr, &start_res, false, &resv_bitmap,
-				   &exc_core_bitmap, &resv_overlap, false);
+				   &exc_core_bitmap, &resv_overlap, true);
 		if (rc == ESLURM_NODES_BUSY) {
 			save_avail_node_bitmap = avail_node_bitmap;
 			avail_node_bitmap = bit_alloc(node_record_count);
@@ -1066,7 +1067,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		/* We do not care about return value.
 		 * We are just interested in exc_core_bitmap creation */
 		(void) job_test_resv(job_ptr, &start_res, false, &resv_bitmap,
-				     &exc_core_bitmap, &resv_overlap, false);
+				     &exc_core_bitmap, &resv_overlap, true);
 		FREE_NULL_BITMAP(resv_bitmap);
 	}
 
@@ -1340,6 +1341,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		bitstr_t *tmp_bitmap;
 		int k = 1, *allowed_freqs = NULL;
 		float ratio = 0;
+		bool reboot;
 
 		/*
 		 *centralized synchronization of all key/values
@@ -1394,7 +1396,8 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		 * powercap or the max_wattswill be returned.
 		 * select the return code based on the impact of
 		 * reservations on the failure */
-		job_cap = powercap_get_job_cap(job_ptr, time(NULL));
+		reboot = node_features_reboot_test(job_ptr, *select_bitmap);
+		job_cap = powercap_get_job_cap(job_ptr, time(NULL), reboot);
 
 		if ((layout_power == 1) ||
 		    ((layout_power == 2) && (allowed_freqs[0] == 0))) {
@@ -3125,11 +3128,13 @@ static int _build_node_list(struct job_record *job_ptr,
 	}
 
 	if (job_ptr->resv_name) {
-		/* Limit node selection to those in selected reservation */
+		/* Limit node selection to those in selected reservation.
+		 * Assume node reboot required since we have not selected the
+		 * compute nodes yet. */
 		time_t start_res = time(NULL);
 		rc = job_test_resv(job_ptr, &start_res, false,
 				   &usable_node_mask, NULL, &resv_overlap,
-				   false);
+				   true);
 		if (rc != SLURM_SUCCESS) {
 			job_ptr->state_reason = WAIT_RESERVATION;
 			xfree(job_ptr->state_desc);
