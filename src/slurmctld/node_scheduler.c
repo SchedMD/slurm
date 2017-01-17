@@ -1033,7 +1033,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	if (job_ptr->resv_name == NULL) {
 		time_t start_res = time(NULL);
 		rc = job_test_resv(job_ptr, &start_res, false, &resv_bitmap,
-				   &exc_core_bitmap, &resv_overlap);
+				   &exc_core_bitmap, &resv_overlap, false);
 		if (rc == ESLURM_NODES_BUSY) {
 			save_avail_node_bitmap = avail_node_bitmap;
 			avail_node_bitmap = bit_alloc(node_record_count);
@@ -1066,7 +1066,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		/* We do not care about return value.
 		 * We are just interested in exc_core_bitmap creation */
 		(void) job_test_resv(job_ptr, &start_res, false, &resv_bitmap,
-				     &exc_core_bitmap, &resv_overlap);
+				     &exc_core_bitmap, &resv_overlap, false);
 		FREE_NULL_BITMAP(resv_bitmap);
 	}
 
@@ -3128,7 +3128,8 @@ static int _build_node_list(struct job_record *job_ptr,
 		/* Limit node selection to those in selected reservation */
 		time_t start_res = time(NULL);
 		rc = job_test_resv(job_ptr, &start_res, false,
-				   &usable_node_mask, NULL, &resv_overlap);
+				   &usable_node_mask, NULL, &resv_overlap,
+				   false);
 		if (rc != SLURM_SUCCESS) {
 			job_ptr->state_reason = WAIT_RESERVATION;
 			xfree(job_ptr->state_desc);

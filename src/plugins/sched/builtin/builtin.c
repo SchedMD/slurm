@@ -203,7 +203,7 @@ static void _compute_start_times(void)
 		}
 
 		j = job_test_resv(job_ptr, &now, true, &avail_bitmap,
-				  &exc_core_bitmap, &resv_overlap);
+				  &exc_core_bitmap, &resv_overlap, false);
 		if (j != SLURM_SUCCESS) {
 			FREE_NULL_BITMAP(avail_bitmap);
 			FREE_NULL_BITMAP(exc_core_bitmap);

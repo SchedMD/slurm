@@ -3243,7 +3243,7 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 		start_res = now;
 
 	i = job_test_resv(job_ptr, &start_res, true, &resv_bitmap,
-			  &exc_core_bitmap, &resv_overlap);
+			  &exc_core_bitmap, &resv_overlap, false);
 	if (i != SLURM_SUCCESS) {
 		FREE_NULL_BITMAP(avail_bitmap);
 		FREE_NULL_BITMAP(exc_core_bitmap);

@@ -1415,7 +1415,7 @@ next_task:
 		later_start = 0;
 		/* Determine impact of any advance reservations */
 		j = job_test_resv(job_ptr, &start_res, true, &avail_bitmap,
-				  &exc_core_bitmap, &resv_overlap);
+				  &exc_core_bitmap, &resv_overlap, false);
 		if (j != SLURM_SUCCESS) {
 			if (debug_flags & DEBUG_FLAG_BACKFILL)
 				info("backfill: job %u reservation defer",

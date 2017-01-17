@@ -2,7 +2,7 @@
  *  reservation.c - resource reservation management
  *****************************************************************************
  *  Copyright (C) 2009-2010 Lawrence Livermore National Security.
- *  Copyright (C) 2012-2015 SchedMD LLC <http://www.schedmd.com>
+ *  Copyright (C) 2012-2017 SchedMD LLC <http://www.schedmd.com>
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -58,6 +58,7 @@
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/node_features.h"
 #include "src/common/node_select.h"
 #include "src/common/pack.h"
 #include "src/common/parse_time.h"
@@ -147,7 +148,7 @@ static void _free_script_arg(resv_thread_args_t *args);
 static void _generate_resv_id(void);
 static void _generate_resv_name(resv_desc_msg_t *resv_ptr);
 static int  _get_core_resrcs(slurmctld_resv_t *resv_ptr);
-static uint32_t _get_job_duration(struct job_record *job_ptr);
+static uint32_t _get_job_duration(struct job_record *job_ptr, bool reboot);
 static bool _is_account_valid(char *account);
 static bool _is_resv_used(slurmctld_resv_t *resv_ptr);
 static bool _job_overlap(time_t start_time, uint32_t flags,
@@ -4423,7 +4424,12 @@ static int _license_cnt(List license_list, char *lic_name)
 	return lic_cnt;
 }
 
-static uint32_t _get_job_duration(struct job_record *job_ptr)
+/*
+ * get the run time of a job, in seconds
+ * job_ptr IN - pointer to the job record
+ * reboot IN - true if node reboot required
+ */
+static uint32_t _get_job_duration(struct job_record *job_ptr, bool reboot)
 {
 	uint32_t duration;
 	uint16_t time_slices = 1;
@@ -4447,6 +4453,9 @@ static uint32_t _get_job_duration(struct job_record *job_ptr)
 		 * value. */
 		duration *= time_slices;
 	}
+
+	if (reboot)
+		duration += node_features_g_boot_time();
 	return duration;
 }
 
@@ -4553,11 +4562,12 @@ static void _update_bb_resv(burst_buffer_info_msg_t **bb_resv, char *bb_spec)
  *
  * IN job_ptr   - job to test
  * IN when      - when the job is expected to start
+ * IN reboot    - true if node reboot required to start job
  * RET burst buffer reservation structure, call
  *	 slurm_free_burst_buffer_info_msg() to free
  */
 extern burst_buffer_info_msg_t *job_test_bb_resv(struct job_record *job_ptr,
-						 time_t when)
+						 time_t when, bool reboot)
 {
 	slurmctld_resv_t * resv_ptr;
 	time_t job_start_time, job_end_time, now = time(NULL);
@@ -4569,7 +4579,7 @@ extern burst_buffer_info_msg_t *job_test_bb_resv(struct job_record *job_ptr,
 		return bb_resv;
 
 	job_start_time = when;
-	job_end_time   = when + _get_job_duration(job_ptr);
+	job_end_time   = when + _get_job_duration(job_ptr, reboot);
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
 		if (resv_ptr->end_time <= now)
@@ -4597,10 +4607,11 @@ extern burst_buffer_info_msg_t *job_test_bb_resv(struct job_record *job_ptr,
  * IN job_ptr   - job to test
  * IN lic_name  - name of license
  * IN when      - when the job is expected to start
+ * IN reboot    - true if node reboot required to start job
  * RET number of licenses of this type the job is prevented from using
  */
 extern int job_test_lic_resv(struct job_record *job_ptr, char *lic_name,
-			     time_t when)
+			     time_t when, bool reboot)
 {
 	slurmctld_resv_t * resv_ptr;
 	time_t job_start_time, job_end_time, now = time(NULL);
@@ -4608,7 +4619,7 @@ extern int job_test_lic_resv(struct job_record *job_ptr, char *lic_name,
 	int resv_cnt = 0;
 
 	job_start_time = when;
-	job_end_time   = when + _get_job_duration(job_ptr);
+	job_end_time   = when + _get_job_duration(job_ptr, reboot);
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
 		if (resv_ptr->end_time <= now)
@@ -4802,9 +4813,11 @@ static void _print_constraint_planning(constraint_planning_t* sched)
  *
  * IN job_ptr   - job to test
  * IN when      - when the job is expected to start
+ * IN reboot    - true if node reboot required to start job
  * RET amount of watts the job is prevented from using
  */
-extern uint32_t job_test_watts_resv(struct job_record *job_ptr, time_t when)
+extern uint32_t job_test_watts_resv(struct job_record *job_ptr, time_t when,
+				    bool reboot)
 {
 	slurmctld_resv_t * resv_ptr;
 	time_t job_start_time, job_end_time, now = time(NULL);
@@ -4817,7 +4830,7 @@ extern uint32_t job_test_watts_resv(struct job_record *job_ptr, time_t when)
 	_init_constraint_planning(&wsched);
 
 	job_start_time = when;
-	job_end_time   = when + _get_job_duration(job_ptr);
+	job_end_time   = when + _get_job_duration(job_ptr, reboot);
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
 		if (resv_ptr->end_time <= now)
@@ -4862,6 +4875,10 @@ extern uint32_t job_test_watts_resv(struct job_record *job_ptr, time_t when)
  * OUT node_bitmap - nodes which the job can use, caller must free unless error
  * OUT exc_core_bitmap - cores which the job can NOT use, caller must free
  *			 unless error
+ * OUT resv_overlap - set to true if the job's run time and available nodes
+ *		      overlap with an advanced reservation, indicates that
+ *		      resources were removed from availability to the job
+ * IN reboot    - true if node reboot required to start job
  * RET	SLURM_SUCCESS if runable now
  *	ESLURM_RESERVATION_ACCESS access to reservation denied
  *	ESLURM_RESERVATION_INVALID reservation invalid
@@ -4871,7 +4888,8 @@ extern uint32_t job_test_watts_resv(struct job_record *job_ptr, time_t when)
  */
 extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			 bool move_time, bitstr_t **node_bitmap,
-			 bitstr_t **exc_core_bitmap, bool *resv_overlap)
+			 bitstr_t **exc_core_bitmap, bool *resv_overlap,
+			 bool reboot)
 {
 	slurmctld_resv_t * resv_ptr, *res2_ptr;
 	time_t job_start_time, job_end_time, lic_resv_time;
@@ -4880,8 +4898,9 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 	ListIterator iter;
 	int i, rc = SLURM_SUCCESS, rc2;
 
+	*resv_overlap = false;	/* initialize to false */
 	job_start_time = *when;
-	job_end_time   = *when + _get_job_duration(job_ptr);
+	job_end_time   = *when + _get_job_duration(job_ptr, reboot);
 	*node_bitmap = (bitstr_t *) NULL;
 
 	if (job_ptr->resv_name) {
@@ -5087,10 +5106,10 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 		if (rc == SLURM_SUCCESS)
 			break;
 		/* rc == ESLURM_NODES_BUSY here from above break */
-		if (move_time && (i<10)) {  /* Retry for later start time */
+		if (move_time && (i < 10)) {  /* Retry for later start time */
 			job_start_time = *when;
-			job_end_time   = *when + _get_job_duration(job_ptr);
-
+			job_end_time   = *when +
+					 _get_job_duration(job_ptr, reboot);
 			bit_nset(*node_bitmap, 0, (node_record_count - 1));
 			rc = SLURM_SUCCESS;
 			continue;
