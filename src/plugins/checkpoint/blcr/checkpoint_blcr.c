@@ -422,30 +422,29 @@ extern int slurm_ckpt_stepd_prefork(stepd_step_rec_t *job)
 	 */
 
 	/* set LD_PRELOAD for batch script shell */
-	//if (job->batch) {
-		old_env = getenvp(job->env, "LD_PRELOAD");
-		if (old_env) {
-			/* search and replace all libcr_run and libcr_omit
-			 * the old env value is messed up --
-			 * it will be replaced */
-			while ((ptr = strtok_r(old_env, " :", &save_ptr))) {
-				old_env = NULL;
-				if (!ptr)
-					break;
-				if (!xstrncmp(ptr, "libcr_run.so", 12) ||
-				    !xstrncmp(ptr, "libcr_omit.so", 13))
-					continue;
-				xstrcat(new_env, ptr);
-				xstrcat(new_env, ":");
-			}
+	old_env = getenvp(job->env, "LD_PRELOAD");
+	if (old_env) {
+		/* search and replace all libcr_run and libcr_omit
+		 * the old env value is messed up --
+		 * it will be replaced */
+		while ((ptr = strtok_r(old_env, " :", &save_ptr))) {
+			old_env = NULL;
+			if (!ptr)
+				break;
+			if (!xstrncmp(ptr, "libcr_run.so", 12) ||
+			    !xstrncmp(ptr, "libcr_omit.so", 13))
+				continue;
+			xstrcat(new_env, ptr);
+			xstrcat(new_env, ":");
 		}
-		ptr = xstrdup("libcr_run.so");
-		if (new_env)
-			xstrfmtcat(ptr, ":%s", new_env);
-		setenvf(&job->env, "LD_PRELOAD", ptr);
-		xfree(new_env);
-		xfree(ptr);
-		//}
+	}
+	ptr = xstrdup("libcr_run.so");
+	if (new_env)
+		xstrfmtcat(ptr, ":%s", new_env);
+	setenvf(&job->env, "LD_PRELOAD", ptr);
+	xfree(new_env);
+	xfree(ptr);
+
 	return SLURM_SUCCESS;
 }
 
