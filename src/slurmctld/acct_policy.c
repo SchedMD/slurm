@@ -1761,7 +1761,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		       qos_ptr->name,
 		       assoc_mgr_tres_name_array[tres_pos],
 		       qos_ptr->grp_tres_mins_ctld[tres_pos],
-		       tres_usage_mins[i]);
+		       tres_usage_mins[tres_pos]);
 		rc = false;
 		goto end_it;
 		break;
@@ -2737,7 +2737,7 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr)
 			 * parent or not
 			 */
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
+				   READ_LOCK, NO_LOCK, NO_LOCK };
 
 	/* check to see if we are enforcing associations */
 	if (!accounting_enforce)

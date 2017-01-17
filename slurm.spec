@@ -500,7 +500,6 @@ rm -f $RPM_BUILD_ROOT/lib64/security/pam_slurm_adopt.la
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/auth_none.so
 %endif
 %if ! %{slurm_with bluegene}
-rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/job_submit_cnode.so
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libsched_if.so
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libsched_if64.so
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/runjob_plugin.so
@@ -803,7 +802,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/slurm_epilog
 %{_sbindir}/slurm_prolog
 %{_sbindir}/sfree
-%{_libdir}/slurm/job_submit_cnode.so
 %config %{_sysconfdir}/bluegene.conf.example
 %endif
 #############################################################################
