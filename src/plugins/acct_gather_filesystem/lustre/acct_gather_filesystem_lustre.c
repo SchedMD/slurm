@@ -188,7 +188,7 @@ static int _read_lustre_counters(void)
 		    || xstrcmp(entry->d_name, "..") == 0)
 			continue;
 
-		snprintf(path_stats, PATH_MAX - 1, "%s/%s/stats", lustre_dir,
+		snprintf(path_stats, PATH_MAX, "%s/%s/stats", lustre_dir,
 			 entry->d_name);
 		debug3("%s: Found file %s", __func__, path_stats);
 
