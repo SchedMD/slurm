@@ -857,12 +857,16 @@ bool verify_socket_core_thread_count(const char *arg, int *min_sockets,
 				     int *min_cores, int *min_threads,
 				     cpu_bind_type_t *cpu_bind_type)
 {
-	bool tmp_val,ret_val;
+	bool tmp_val, ret_val;
 	int i, j;
 	int max_sockets = 0, max_cores = 0, max_threads = 0;
 	const char *cur_ptr = arg;
 	char buf[3][48]; /* each can hold INT64_MAX - INT64_MAX */
 
+	if (!arg) {
+		error("%s: argument is NULL", __func__);
+		return false;
+	}
 	memset(buf, 0, sizeof(buf));
 	for (j = 0; j < 3; j++) {
 		for (i = 0; i < 47; i++) {
