@@ -1532,14 +1532,18 @@ next_task:
 			/* Unable to start job using currently currently active
 			 * features, need to use features which can be made
 			 * available after node reboot */
-			bitstr_t *tmp_bitmap = NULL;
-			FREE_NULL_BITMAP(exc_core_bitmap);
+			bitstr_t *tmp_core_bitmap = NULL;
+			bitstr_t *tmp_node_bitmap = NULL;
 			/* Determine impact of any advance reservations */
 			j = job_test_resv(job_ptr, &start_res, true,
-					  &tmp_bitmap, &exc_core_bitmap,
+					  &tmp_node_bitmap, &tmp_core_bitmap,
 					  &resv_overlap, true);
-			bit_and(avail_bitmap, tmp_bitmap);
-			FREE_NULL_BITMAP(tmp_bitmap);
+			if (j == SLURM_SUCCESS) {
+				FREE_NULL_BITMAP(exc_core_bitmap);
+				exc_core_bitmap = tmp_core_bitmap;
+				bit_and(avail_bitmap, tmp_node_bitmap);
+				FREE_NULL_BITMAP(tmp_node_bitmap);
+			}
 			boot_time = node_features_g_boot_time();
 			j = _try_sched(job_ptr, &avail_bitmap, min_nodes,
 				       max_nodes, req_nodes, exc_core_bitmap);
