@@ -139,6 +139,7 @@ EXTRA_DIST = \
 	test1.112			\
 	test1.113			\
 	test1.114			\
+	test1.115			\
 	test2.1				\
 	test2.2				\
 	test2.3				\

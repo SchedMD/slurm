@@ -1,7 +1,7 @@
 ############################################################################
 # Copyright (C) 2002-2007 The Regents of the University of California.
 # Copyright (C) 2008-2011 Lawrence Livermore National Security.
-# Copyright (C) 2010-2015 SchedMD LLC
+# Copyright (C) 2010-2017 SchedMD LLC
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # Additions by Joseph Donaghy <donaghy1@llnl.gov>
@@ -220,6 +220,7 @@ test1.111  Test of --deadline and --begin option and time to be changed
 test1.112  Test of --deadline and --begin option and time not changed
 test1.113  Test of --use-min-nodes option.
 test1.114  Test of srun --spread-job option.
+test1.115  Test of srun not hanging on ignored stdin.
 
 test2.#    Testing of scontrol options (to be run as unprivileged user).
 ========================================================================
