@@ -7470,6 +7470,7 @@ extern void job_config_fini(struct job_record *job_ptr)
 {
 	time_t now = time(NULL);
 
+	last_job_update = now;
 	job_ptr->job_state &= (~JOB_CONFIGURING);
 	job_ptr->tot_sus_time = difftime(now, job_ptr->start_time);
 	if ((job_ptr->time_limit != INFINITE) && (job_ptr->tot_sus_time != 0)) {
@@ -12857,6 +12858,7 @@ job_alloc_info(uint32_t uid, uint32_t job_id, struct job_record **job_pptr)
 	if (job_ptr->alias_list && !xstrcmp(job_ptr->alias_list, "TBD") &&
 	    (prolog == 0) && job_ptr->node_bitmap &&
 	    (bit_overlap(power_node_bitmap, job_ptr->node_bitmap) == 0)) {
+		last_job_update = time(NULL);
 		job_ptr->job_state &= (~JOB_CONFIGURING);
 		set_job_alias_list(job_ptr);
 	}
