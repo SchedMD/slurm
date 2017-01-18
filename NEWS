@@ -21,6 +21,7 @@ documents those changes that are of interest to users and administrators.
     _qos_job_runnable_post_select().
  -- Prevent job timeout on node power up.
  -- MYSQL - Fix minor memory leak when querying steps and the sql fails.
+ -- Make it so sacctmgr accepts column headers like MaxTRESPU and not MaxTRESP.
 
 * Changes in Slurm 16.05.8
 ==========================

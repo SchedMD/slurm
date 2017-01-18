@@ -405,8 +405,10 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("MaxCPUsPU");
 		field->len = 9;
 		field->print_routine = print_fields_uint;
-	} else if (!strncasecmp("MaxTRESPerJob",
-				object, MAX(command_len, 7))) {
+	} else if (!strncasecmp("MaxTRES",
+				object, MAX(command_len, 7)) ||
+		   !strncasecmp("MaxTRESPerJob",
+				object, MAX(command_len, 11))) {
 		field->type = PRINT_MAXT;
 		field->name = xstrdup("MaxTRES");
 		field->len = 13;
@@ -452,7 +454,9 @@ static print_field_t *_get_print_field(char *object)
 		field->len = 13;
 		field->print_routine = sacctmgr_print_tres;
 	} else if (!strncasecmp("MaxTRESPerUser", object,
-				MAX(command_len, 11))) {
+				MAX(command_len, 11)) ||
+		   !strncasecmp("MaxTRESPU", object,
+				MAX(command_len, 9))) {
 		field->type = PRINT_MAXTU;
 		field->name = xstrdup("MaxTRESPU");
 		field->len = 13;
@@ -473,9 +477,9 @@ static print_field_t *_get_print_field(char *object)
 		field->len = 9;
 		field->print_routine = print_fields_uint;
 	} else if (!strncasecmp("MaxJobsPerUser", object,
-				MAX(command_len, 8)) ||
+				MAX(command_len, 11)) ||
 		   !strncasecmp("MaxJobsPU", object,
-				MAX(command_len, 8))) {
+				MAX(command_len, 9))) {
 		field->type = PRINT_MAXJ; /* used same as MaxJobs */
 		field->name = xstrdup("MaxJobsPU");
 		field->len = 9;
