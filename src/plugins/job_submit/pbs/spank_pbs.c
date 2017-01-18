@@ -4,11 +4,11 @@
  *  Note: The job_submit/pbs plugin establishes some environment
  *  variables for batch jobs to complement those configured here.
  *****************************************************************************
- *  Copyright (C) 2013 SchedMD <http://www.schedmd.com>.
+ *  Copyright (C) 2013 SchedMD <https://www.schedmd.com>.
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under

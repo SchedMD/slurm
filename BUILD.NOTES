@@ -1,6 +1,6 @@
 This information is meant primarily for the Slurm developers. 
 System administrators should read the instructions at
-http://slurm.schedmd.com/quickstart_admin.html
+https://slurm.schedmd.com/quickstart_admin.html
 (also found in the file doc/html/quickstart_admin.shtml).
 The "INSTALL" file contains generic Linux build instructions.
 

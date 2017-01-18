@@ -593,7 +593,7 @@ PACKAGE_TARNAME='slurm'
 PACKAGE_VERSION='17.02'
 PACKAGE_STRING='slurm 17.02'
 PACKAGE_BUGREPORT='slurm-dev@schedmd.com'
-PACKAGE_URL='http://slurm.schedmd.com'
+PACKAGE_URL='https://slurm.schedmd.com'
 
 ac_unique_file="configure.ac"
 # Factoring default headers for most tests.
@@ -1816,7 +1816,7 @@ Use these variables to override the choices made by `configure' or to help
 it to find libraries and programs with nonstandard names/locations.
 
 Report bugs to <slurm-dev@schedmd.com>.
-slurm home page: <http://slurm.schedmd.com>.
+slurm home page: <https://slurm.schedmd.com>.
 _ACEOF
 ac_status=$?
 fi
@@ -25145,7 +25145,7 @@ Configuration commands:
 $config_commands
 
 Report bugs to <slurm-dev@schedmd.com>.
-slurm home page: <http://slurm.schedmd.com>."
+slurm home page: <https://slurm.schedmd.com>."
 
 _ACEOF
 cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1

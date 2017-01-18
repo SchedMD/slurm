@@ -2,7 +2,7 @@
  * Fork apbasil process as co-process, parse output.
  *
  * Copyright (c) 2009-2011 Centro Svizzero di Calcolo Scientifico (CSCS)
- * Portions Copyright (C) 2011 SchedMD <http://www.schedmd.com>.
+ * Portions Copyright (C) 2011 SchedMD <https://www.schedmd.com>.
  * Licensed under the GPLv2.
  */
 #include "../basil_interface.h"
