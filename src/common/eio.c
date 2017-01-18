@@ -301,13 +301,16 @@ int eio_handle_mainloop(eio_handle_t *eio)
 			 * Note: xrealloc() also handles initial malloc
 			 */
 		}
+		if (!pollfds)  /* Fix for CLANG false positive */
+			goto done;
 
 		debug4("eio: handling events for %d objects",
 		       list_count(eio->obj_list));
 		nfds = _poll_setup_pollfds(pollfds, map, eio->obj_list);
-		if ((nfds <= 0) ||
-		    (pollfds == NULL))	/* Fix for CLANG false positive */
+		if (nfds <= 0) {
+			_mark_shutdown_true(eio->obj_list);
 			goto done;
+		}
 
 		/*
 		 *  Setup eio handle signalling fd
@@ -318,12 +321,14 @@ int eio_handle_mainloop(eio_handle_t *eio)
 
 		xassert(nfds <= maxnfds + 1);
 
+		/* Get shutdown_time to pass to _poll_internal */
 		slurm_mutex_lock(&eio->shutdown_mutex);
 		shutdown_time = eio->shutdown_time;
 		slurm_mutex_unlock(&eio->shutdown_mutex);
 		if (_poll_internal(pollfds, nfds, shutdown_time) < 0)
 			goto error;
 
+		/* See if we've been told to shut down by eio_signal_shutdown */
 		if (pollfds[nfds-1].revents & POLLIN)
 			_eio_wakeup_handler(eio);
 

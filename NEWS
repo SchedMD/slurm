@@ -27,6 +27,7 @@ documents those changes that are of interest to users and administrators.
     scheduling with respect to node reboots.
  -- Avoid allocating resources to a job in the event that its run time plus boot
     time (if needed) extent into an advanced reservation.
+ -- Fix srun I/O race condition on shutdown.
 
 * Changes in Slurm 17.02.0pre4
 ==============================

@@ -225,7 +225,7 @@ _client_readable(eio_obj_t *obj)
 	xassert(client->magic == CLIENT_IO_MAGIC);
 
 	if (client->in_eof) {
-		debug5("  false");
+		debug5("  false, in_eof");
 		/* We no longer want the _client_read() function to handle
 		   errors on write now that the read side of the connection
 		   is closed.  Setting handle_read to NULL will result in
@@ -237,7 +237,7 @@ _client_readable(eio_obj_t *obj)
 
 	if (obj->shutdown) {
 		debug5("  false, shutdown");
-		shutdown(obj->fd, SHUT_RD);
+		shutdown(obj->fd, SHUT_RDWR);
 		client->in_eof = true;
 		return false;
 	}
