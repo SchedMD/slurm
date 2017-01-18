@@ -3346,9 +3346,11 @@ extern void node_no_resp_msg(void)
 	char *host_str = NULL;
 	hostlist_t no_resp_hostlist = NULL;
 
-	for (i=0; i<node_record_count; i++) {
+	for (i = 0; i < node_record_count; i++) {
 		node_ptr = &node_record_table_ptr[i];
-		if (!node_ptr->not_responding)
+		if (!node_ptr->not_responding ||
+		    IS_NODE_POWER_SAVE(node_ptr) ||
+		    IS_NODE_POWER_UP(node_ptr))
 			continue;
 		if (no_resp_hostlist) {
 			(void) hostlist_push_host(no_resp_hostlist,
