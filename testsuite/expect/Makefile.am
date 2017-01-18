@@ -11,7 +11,6 @@ EXTRA_DIST = \
 	mpi-testscripts/script.slurm.sh	\
 	globals				\
 	globals_accounting		\
-	pkill				\
 	README				\
 	regression			\
 	regression.py			\

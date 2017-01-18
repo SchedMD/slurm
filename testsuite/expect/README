@@ -80,9 +80,7 @@ variety of systems before a SLURM release is made. This has resulted in
 high system reliability. When SLURM bugs are found or features added,
 this test suite is expanded.
 
-A summary of each test is shown below. There are also scripts to emulate
-some commands on systems lacking them (e.g.  AIX). These include pkill and
-usleep.
+A summary of each test is shown below.
 ############################################################################
 
 
