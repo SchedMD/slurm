@@ -290,8 +290,7 @@ int eio_handle_mainloop(eio_handle_t *eio)
 	xassert (eio != NULL);
 	xassert (eio->magic == EIO_MAGIC);
 
-	for (;;) {
-
+	while (1) {
 		/* Alloc memory for pfds and map if needed */
 		n = list_count(eio->obj_list);
 		if (maxnfds < n) {
@@ -359,7 +358,7 @@ _poll_internal(struct pollfd *pfds, unsigned int nfds, time_t shutdown_time)
 		timeout = -1;
 	while ((n = poll(pfds, nfds, timeout)) < 0) {
 		switch (errno) {
-		case EINTR :
+		case EINTR:
 			return 0;
 		case EAGAIN:
 			continue;
