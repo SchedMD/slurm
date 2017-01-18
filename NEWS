@@ -226,8 +226,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix missing TRES read lock in acct_policy_job_runnable_pre_select() code.
  -- Fix debug2 message printing value using wrong array index in
     _qos_job_runnable_post_select().
- -- Require the normal scheduler to set/clear an Assoc/QOS limit on a job
-    instead of also in the backfill scheduler.
+ -- Prevent job timeout on node power up.
 
 * Changes in Slurm 16.05.8
 ==========================

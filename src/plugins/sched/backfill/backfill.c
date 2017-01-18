@@ -1137,10 +1137,8 @@ static int _attempt_backfill(void)
 			continue;
 		}
 
-		/* If the job is held with an assoc/qos limit let the regular
-		 * scheduler handle it.
-		 */
-		if (!acct_policy_job_runnable_state(job_ptr))
+		if (!acct_policy_job_runnable_state(job_ptr) &&
+		    !acct_policy_job_runnable_pre_select(job_ptr))
 			continue;
 
 		job_no_reserve = 0;
