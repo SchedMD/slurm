@@ -20,6 +20,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix debug2 message printing value using wrong array index in
     _qos_job_runnable_post_select().
  -- Prevent job timeout on node power up.
+ -- MYSQL - Fix minor memory leak when querying steps and the sql fails.
 
 * Changes in Slurm 16.05.8
 ==========================
