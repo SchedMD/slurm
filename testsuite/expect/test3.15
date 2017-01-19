@@ -193,15 +193,7 @@ if {[test_select_type_params "MEMORY"]} {
 	set job_mem  1
 }
 
-spawn $bin_id -un
-expect {
-	-re "($alpha_numeric_under)" {
-		set user_name $expect_out(1,string)
-	}
-	eof {
-		wait
-	}
-}
+set user_name [get_my_user_name]
 
 #
 # Add licenses to system configuration, 8 licenses named "test3.15"

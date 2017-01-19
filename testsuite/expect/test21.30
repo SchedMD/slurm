@@ -382,7 +382,7 @@ expect {
 }
 
 # Gets user
-set user_name [get_my_nuid]
+set user_name [get_my_user_name]
 
 
 # add qos

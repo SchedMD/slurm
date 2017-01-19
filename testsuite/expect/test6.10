@@ -53,23 +53,7 @@ if {[job_submit_all_partitions] != 0} {
 # Execute 'id' to determine my login name
 #
 
-set got_login 0
-spawn $bin_id -un
-expect {
-        -re "($alpha_numeric_under)" {
-		set my_login $expect_out(1,string)
-		set got_login 1
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-
-if { $got_login == 0 } {
-	send_user "\nFAILURE: Unable to get login name\n"
-	exit 1
-}
+set my_login [get_my_user_name]
 
 #
 # Build input script file

@@ -229,20 +229,7 @@ proc test_part {acct qos part qos_con } {
 # Delete any vestigial qos or accounts
 cleanup
 
-spawn $bin_id -un
-expect {
-	-re "($alpha_numeric_under)" {
-		set user_name $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: id is not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
+set user_name [get_my_user_name]
 
 # Setup
 set partition [default_partition]

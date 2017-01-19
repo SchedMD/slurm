@@ -48,22 +48,7 @@ if {[test_front_end] != 0 && [test_super_user] == 0} {
 # Execute 'id' to determine my user and group ID...
 #
 
-spawn $bin_id -un
-expect {
-        -re "($alpha_numeric_under)" {
-		set login_grp_info $expect_out(1,string)
-		set got_login_grps 1
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-
-if {$got_login_grps == 0} {
-	send_user "\nFAILURE: Unable to get user and group ID info\n"
-	exit 1
-}
+set login_grp_info [get_my_user_name]
 
 #
 # Submit a slurm job that will execute 'id'

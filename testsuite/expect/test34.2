@@ -257,20 +257,8 @@ proc check_state { exp_state job_id } {
 
 make_bash_script $file_in "sleep 30"
 
-spawn $bin_id -un
-expect {
-	-re "($alpha_numeric_under)" {
-		set user $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: id is not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
+set user [get_my_user_name]
+
 
 ###################### Test preempt cancel ######################
 send_user "\n*** TEST PREEMPT CANCEL ***\n"

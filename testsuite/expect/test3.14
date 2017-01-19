@@ -55,15 +55,7 @@ if {$nb_nodes < 3} {
 	exit 0
 }
 
-spawn $bin_id -un
-expect {
-	-re "($alpha_numeric_under)" {
-		set user_name $expect_out(1,string)
-	}
-	eof {
-		wait
-	}
-}
+set user_name [get_my_user_name]
 
 #
 # Create the advanced reservation

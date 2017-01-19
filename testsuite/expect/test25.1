@@ -655,7 +655,7 @@ send_user "\nSubmitted 2 jobs successfully\n\n"
 #
 # Collect uid
 #
-set nuid [get_my_nuid]
+set user_name [get_my_user_name]
 
 #
 # Start testing sprio options and arguments
@@ -689,10 +689,10 @@ if {!$exit_code} {
 	sprio_args --format -j $jobid2
 }
 if {!$exit_code} {
-	sprio_args -u $nuid $jobid2
+	sprio_args -u $user_name $jobid2
 }
 if {!$exit_code} {
-	sprio_args --user= $nuid $jobid2
+	sprio_args --user= $user_name $jobid2
 }
 if {!$exit_code} {
 	sprio_args -v -j $jobid2

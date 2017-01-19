@@ -122,16 +122,7 @@ proc delete_test_acct { } {
 delete_test_acct
 
 # Get username
-spawn $bin_id -u -n
-expect {
-	-re "($alpha_numeric_under)" {
-		set test_user $expect_out(1,string)
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
+set test_user [get_my_user_name]
 
 if {[test_using_slurmdbd]} {
 	# Add test Account

@@ -321,7 +321,7 @@ proc slow_kill { pid } {
 
 ################################################################
 #
-# Proc: get_my_nuid
+# Proc: get_my_user_name
 #
 # Purpose:  gets the name uid from the running user
 #
@@ -330,16 +330,16 @@ proc slow_kill { pid } {
 #
 ################################################################
 
-proc get_my_nuid {  } {
+proc get_my_user_name {  } {
 	global bin_id alpha alpha_numeric
 
-	set uid -1
+	set user_name -1
 
 	log_user 0
 	spawn $bin_id -nu
 	expect {
 		-re "($alpha_numeric|$alpha)" {
-			set nuid $expect_out(1,string)
+			set user_name $expect_out(1,string)
 			exp_continue
 		}
 		eof {
@@ -348,7 +348,12 @@ proc get_my_nuid {  } {
 	}
 	log_user 1
 
-	return $nuid
+	if {$user_name == -1} {
+		send_user "\nFAILURE: Unable to get user name\n"
+		exit 1
+	}
+
+	return $user_name
 }
 
 ################################################################
@@ -1528,7 +1533,7 @@ proc get_default_acct { user } {
 	set def_acct ""
 
 	if { !$user } {
-		set user [get_my_nuid]
+		set user [get_my_user_name]
 	}
 
 	spawn $sacctmgr -n list user $user format="DefaultAccount"
@@ -2083,17 +2088,8 @@ proc test_super_user { } {
 #
 #	Check if SlurmUser
 #
-	spawn $bin_id -un
-	set user ""
-	expect {
-		-re "($alpha_numeric_under)" {
-			set user $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
+	set user [get_my_user_name]
+
 	spawn $scontrol show config
 	set slurm_user ""
 	expect {
@@ -2404,7 +2400,7 @@ proc is_super_user { } {
 	global alpha_numeric_under bin_id scontrol
 
 	log_user 0
-	set user_name [get_my_nuid]
+	set user_name [get_my_user_name]
 	if {[string compare $user_name "root"] == 0} {
 		log_user 1
 		return 1
@@ -2592,16 +2588,7 @@ proc check_accounting_admin_level { } {
 
 	log_user 0
 
-	spawn $bin_id -u -n
-	expect {
-		-re "($alpha_numeric_under)" {
-			set user_name $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
+	set user_name [get_my_user_name]
 
 	if { ![string length $user_name] } {
 		send_user "FAILURE: No name returned from id\n"

@@ -118,18 +118,7 @@ if {$start_cnt < $job_cnt} {
 	send_user "\nAll $start_cnt jobs submitted\n"
 }
 
-set user_name ""
-
-spawn $bin_id -un
-expect {
-	-re "($alpha_numeric_under)" {
-		set user_name $expect_out(1,string)
-	}
-	eof {
-		wait
-	}
-
-}
+set user_name [get_my_user_name]
 
 #
 # There could be hundreds of job steps, we don't want to see

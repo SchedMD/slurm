@@ -73,15 +73,8 @@ make_bash_script $file_script "
 #
 # Get the name of the current user
 #
-spawn $bin_id -un
-expect {
-	-re "($alpha_numeric_under)" {
-		set user_name $expect_out(1,string)
-	}
-	eof {
-		wait
-	}
-}
+
+set user_name [get_my_user_name]
 
 #
 # Spawn a sbatch command to verify that the default output file is

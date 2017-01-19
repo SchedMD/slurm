@@ -251,7 +251,7 @@ if {$match != 1} {
 	exit 1
 }
 
-spawn $sacctmgr -i create user name=[get_my_nuid] account=$test_acct
+spawn $sacctmgr -i create user name=[get_my_user_name] account=$test_acct
 expect {
 	timeout {
 		send_user"\nFAILURE: sacctmgr is not responding\n"
