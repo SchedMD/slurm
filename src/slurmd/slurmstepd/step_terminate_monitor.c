@@ -152,7 +152,7 @@ static void *_monitor(void *arg)
 			      entity, job->node_name, time_str);
 		}
 
-		stepd_cleanup(NULL, job, SLURM_ERROR, 0);
+		stepd_cleanup(NULL, job, NULL, NULL, SLURM_ERROR, 0);
 		abort();
 	} else if (rc != 0) {
 		error("Error waiting on condition in _monitor: %m");

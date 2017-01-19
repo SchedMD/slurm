@@ -182,13 +182,14 @@ main (int argc, char **argv)
 	 * and blocks until the step is complete */
 	rc = job_manager(job);
 
-	return stepd_cleanup(msg, job, rc, 0);
+	return stepd_cleanup(msg, job, cli, self, rc, 0);
 ending:
-	return stepd_cleanup(msg, job, rc, 1);
+	return stepd_cleanup(msg, job, cli, self, rc, 1);
 }
 
-extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *job, int rc,
-			 bool only_mem)
+extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *job,
+			 slurm_addr_t *cli, slurm_addr_t *self,
+			 int rc, bool only_mem)
 {
 	if (!only_mem) {
 		if (job->batch)
