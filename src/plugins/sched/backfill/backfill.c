@@ -135,6 +135,7 @@ static int max_backfill_job_per_part = 0;
 static int max_backfill_job_per_user = 0;
 static int max_backfill_jobs_start = 0;
 static bool backfill_continue = false;
+static bool assoc_limit_stop = false;
 static int defer_rpc_cnt = 0;
 static int sched_timeout = SCHED_TIMEOUT;
 static int yield_sleep   = YIELD_SLEEP;
@@ -639,6 +640,13 @@ static void _load_config(void)
 		backfill_continue = false;
 	}
 
+	if (sched_params && (strstr(sched_params, "assoc_limit_stop"))) {
+		assoc_limit_stop = true;
+	} else {
+		assoc_limit_stop = false;
+	}
+
+
 	if (sched_params &&
 	    (tmp_ptr = strstr(sched_params, "bf_yield_interval="))) {
 		sched_timeout = atoi(tmp_ptr + 18);
@@ -1127,7 +1135,8 @@ static int _attempt_backfill(void)
 		}
 
 		if (!acct_policy_job_runnable_state(job_ptr) &&
-		    !acct_policy_job_runnable_pre_select(job_ptr))
+		    (!assoc_limit_stop ||
+		     !acct_policy_job_runnable_pre_select(job_ptr)))
 			continue;
 
 		job_no_reserve = 0;
