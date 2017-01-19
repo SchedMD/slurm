@@ -372,6 +372,23 @@ static int _job_rec_field(const struct job_record *job_ptr,
 		lua_pushnumber (L, job_ptr->wait4switch);
 	} else if (!xstrcmp(name, "wckey")) {
 		lua_pushstring (L, job_ptr->wckey);
+    } else if (!strcmp(name, "spank_job_env")) {
+        if (job_ptr->spank_job_env_size == 0 || job_ptr->spank_job_env == NULL) {
+            lua_pushnil (L);
+        } else {
+            int idx = 0;
+            int lidx = 1;
+            lua_newtable(L);
+            for (idx = 0; idx < job_ptr->spank_job_env_size; idx++) {
+                if (job_ptr->spank_job_env[idx] != NULL) {
+                    lua_pushnumber (L, lidx++);
+                    lua_pushstring (L, job_ptr->spank_job_env[idx]);
+                    lua_settable (L, -3);
+                }
+            }
+        }
+    } else if (!strcmp(name, "spank_job_env_size")) {
+        lua_pushnumber (L, job_ptr->spank_job_env_size);
 	} else {
 		lua_pushnil (L);
 	}
@@ -802,6 +819,23 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 		lua_pushstring (L, job_desc->work_dir);
 	} else if (!xstrcmp(name, "wckey")) {
 		lua_pushstring (L, job_desc->wckey);
+    } else if (!strcmp(name, "spank_job_env")) {
+        if (job_desc->spank_job_env_size == 0 || job_desc->spank_job_env == NULL) {
+            lua_pushnil (L);
+        } else {
+            int idx = 0;
+            int lidx = 1;
+            lua_newtable(L);
+            for (idx = 0; idx < job_desc->spank_job_env_size; idx++) {
+                if (job_desc->spank_job_env[idx] != NULL) {
+                    lua_pushnumber (L, lidx++);
+                    lua_pushstring (L, job_desc->spank_job_env[idx]);
+                    lua_settable (L, -3);
+                }
+            }
+        }
+    } else if (!strcmp(name, "spank_job_env_size")) {
+        lua_pushnumber (L, job_desc->spank_job_env_size);
 	} else {
 		lua_pushnil (L);
 	}
