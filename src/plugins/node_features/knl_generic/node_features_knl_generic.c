@@ -51,6 +51,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 
 #if defined(__FreeBSD__) || defined(__NetBSD__)
@@ -589,7 +590,7 @@ static char *_make_uid_str(uid_t *uid_array, int uid_cnt)
 	return uid_str;
 }
 
-/* Watch for Uncorrectable Memory Errors. Shutdown if any detected */
+/* Watch for Uncorrectable Memory Errors. Notify jobs if any detected */
 static void *_ume_agent(void *args)
 {
 	struct timespec req;
