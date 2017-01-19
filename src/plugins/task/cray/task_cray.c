@@ -415,7 +415,7 @@ extern int task_p_post_term (stepd_step_rec_t *job,
 
 #ifdef HAVE_NATIVE_CRAY
 	debug("task_p_post_term: %u.%u, task %d",
-	      job->jobid, job->stepid, job->envtp->procid);
+	      job->jobid, job->stepid, task->id);
 
 	if (track_status) {
 		rc = _check_status_file(job, task);
@@ -656,7 +656,7 @@ static int _check_status_file(stepd_step_rec_t *job,
 	}
 
 	// Seek to the correct offset
-	rv = lseek(fd, job->envtp->localid + 1, SEEK_SET);
+	rv = lseek(fd, task->id + 1, SEEK_SET);
 	if (rv == -1) {
 		CRAY_ERR("lseek failed: %m");
 		TEMP_FAILURE_RETRY(close(fd));

@@ -2053,7 +2053,6 @@ _wait_for_any_task(stepd_step_rec_t *job, bool waitflag)
 						    job, -1, job->env);
 				xfree(my_epilog);
 			}
-			job->envtp->procid = t->id;
 
 			if (spank_task_exit (job, t->id) < 0) {
 				error ("Unable to spank task %d at exit",

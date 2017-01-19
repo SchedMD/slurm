@@ -531,7 +531,7 @@ extern int task_p_post_term (stepd_step_rec_t *job, stepd_step_task_info_t *task
 #endif
 	if (snprintf(path, PATH_MAX, "%s/slurm%u.%u_%d",
 				 base, job->jobid, job->stepid,
-				 job->envtp->localid) >= PATH_MAX) {
+				 task->id) >= PATH_MAX) {
 		error("%s: cpuset path too long", __func__);
 		return SLURM_ERROR;
 	}
