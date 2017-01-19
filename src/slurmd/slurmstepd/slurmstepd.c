@@ -581,6 +581,8 @@ _step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
 	env_array_overwrite(&job->env,"SLURM_TOPOLOGY_ADDR_PATTERN",
 			    conf->node_topo_pattern);
 
+	set_msg_node_id(job);
+
 	return job;
 }
 
