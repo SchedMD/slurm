@@ -3562,7 +3562,7 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
  */
 extern int bb_p_job_begin(struct job_record *job_ptr)
 {
-	char  *client_nodes_file_nid = NULL;
+	char *client_nodes_file_nid = NULL;
 	pre_run_args_t *pre_run_args;
 	char **pre_run_argv = NULL, **script_argv = NULL;
 	char *job_dir = NULL, *path_file, *resp_msg;
@@ -3572,6 +3572,7 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 	pthread_attr_t pre_run_attr;
 	pthread_t pre_run_tid = 0;
 	uint32_t timeout;
+	bool do_pre_run;
 	DEF_TIMERS;
 
 	if ((job_ptr->burst_buffer == NULL) ||
@@ -3608,6 +3609,7 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 		slurm_mutex_unlock(&bb_state.bb_mutex);
 		return SLURM_ERROR;
 	}
+	do_pre_run = _have_dw_cmd_opts(bb_job);
 
 	/* Confirm that persistent burst buffers work has been completed */
 	if ((_create_bufs(job_ptr, bb_job, true) > 0)) {
@@ -3624,7 +3626,10 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 	xstrfmtcat(job_dir, "%s/hash.%d/job.%u", state_save_loc, hash_inx,
 		   job_ptr->job_id);
 	xstrfmtcat(client_nodes_file_nid, "%s/client_nids", job_dir);
-	bb_job->state = BB_STATE_RUNNING;
+	if (do_pre_run)
+		bb_job->state = BB_STATE_PRE_RUN;
+	else
+		bb_job->state = BB_STATE_RUNNING;
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	if (_write_nid_file(client_nodes_file_nid, job_ptr->job_resrcs->nodes,
@@ -3633,7 +3638,7 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 	}
 
 	/* Run "paths" function, get DataWarp environment variables */
-	if (_have_dw_cmd_opts(bb_job)) {
+	if (do_pre_run) {
 		/* Setup "paths" operation */
 		if (bb_state.bb_config.validate_timeout)
 			timeout = bb_state.bb_config.validate_timeout * 1000;
@@ -3784,15 +3789,17 @@ static void *_start_pre_run(void *x)
 		info("%s: dws_pre_run for %s ran for %s", __func__,
 		     jobid_buf, TIME_STR);
 	}
+	if (job_ptr)
+		bb_job = _get_bb_job(job_ptr);
 	_log_script_argv(pre_run_args->args, resp_msg);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		/* Pre-run failure */
 		trigger_burst_buffer();
 		error("%s: dws_pre_run for %s status:%u response:%s", __func__,
 		      jobid_buf, status, resp_msg);
 		if (job_ptr) {
 			if (IS_JOB_RUNNING(job_ptr))
 				run_kill_job = true;
-			bb_job = _get_bb_job(job_ptr);
 			if (bb_job) {
 				bb_job->state = BB_STATE_TEARDOWN;
 				if (bb_job->retry_cnt++ > MAX_RETRY_CNT)
@@ -3801,6 +3808,9 @@ static void *_start_pre_run(void *x)
 		}
 		_queue_teardown(pre_run_args->job_id, pre_run_args->user_id,
 				true);
+	} else if (bb_job) {
+		/* Pre-run success and the job's BB record exists */
+		bb_job->state = BB_STATE_RUNNING;
 	}
 	if (job_ptr)
 		prolog_running_decr(job_ptr);
@@ -3845,6 +3855,10 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 		/* No job buffers. Assuming use of persistent buffers only */
 		verbose("%s: %s bb job record not found", __func__,
 			jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
+	} else if (bb_job->state < BB_STATE_RUNNING) {
+		/* Job never started. Just teardown the buffer */
+		bb_job->state = BB_STATE_TEARDOWN;
+		_queue_teardown(job_ptr->job_id, job_ptr->user_id, true);
 	} else if (bb_job->state < BB_STATE_POST_RUN) {
 		bb_job->state = BB_STATE_POST_RUN;
 		_queue_stage_out(bb_job);

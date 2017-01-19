@@ -4755,6 +4755,7 @@ void slurm_init_trigger_msg(trigger_info_t *trigger_info_msg);
 #define BB_STATE_DELETED	0x0006		/* Cray: bbs_setup started */
 #define BB_STATE_STAGING_IN	0x0011		/* Cray: bbs_data_in started */
 #define BB_STATE_STAGED_IN	0x0012		/* Cray: bbs_data_in complete */
+#define BB_STATE_PRE_RUN	0x0018		/* Cray: bbs_pre_run started */
 #define BB_STATE_RUNNING	0x0021		/* Job is running */
 #define BB_STATE_SUSPEND	0x0022		/* Job is suspended (future) */
 #define BB_STATE_POST_RUN	0x0029		/* Cray: bbs_post_run started */

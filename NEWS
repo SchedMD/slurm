@@ -28,6 +28,7 @@ documents those changes that are of interest to users and administrators.
  -- Avoid allocating resources to a job in the event that its run time plus boot
     time (if needed) extent into an advanced reservation.
  -- Fix srun I/O race condition on shutdown.
+ -- Burst_buffer/cray - Avoid stage-out operation if job never started.
 
 * Changes in Slurm 17.02.0pre4
 ==============================
