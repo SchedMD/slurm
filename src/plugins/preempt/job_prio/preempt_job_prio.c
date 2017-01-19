@@ -855,15 +855,18 @@ extern List find_preemptable_jobs(struct job_record *job_ptr)
 extern uint16_t job_preempt_mode(struct job_record *job_ptr)
 {
 	uint16_t mode;
+	slurmdb_qos_rec_t *qos_ptr =(slurmdb_qos_rec_t *)job_ptr->qos_ptr;
 
-	if (job_ptr->qos_ptr &&
-	   ((slurmdb_qos_rec_t *)job_ptr->qos_ptr)->preempt_mode) {
-		mode = ((slurmdb_qos_rec_t *)job_ptr->qos_ptr)->preempt_mode;
+	if (qos_ptr && qos_ptr->preempt_mode) {
+		mode = qos_ptr->preempt_mode;
 		if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
 			info("%s: in job_preempt_mode return = %s",
 			     plugin_type, preempt_mode_string(mode));
 		}
-		return mode;
+		if (mode & PREEMPT_MODE_GANG)
+			verbose("QOS '%s' preempt mode 'gang' has no sense. "
+				"Filtered out.\n", qos_ptr->name);
+		return (mode & (~PREEMPT_MODE_GANG));
 	}
 
 	mode = slurm_get_preempt_mode() & (~PREEMPT_MODE_GANG);
