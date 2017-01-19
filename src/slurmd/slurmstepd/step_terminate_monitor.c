@@ -34,6 +34,7 @@
 #include <time.h>
 
 #include "src/common/macros.h"
+#include "src/common/parse_time.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/read_config.h"
@@ -52,7 +53,7 @@ static uint32_t recorded_jobid = NO_VAL;
 static uint32_t recorded_stepid = NO_VAL;
 
 static void *_monitor(void *);
-static int _call_external_program(void);
+static int _call_external_program(stepd_step_rec_t *job);
 
 void step_terminate_monitor_start(stepd_step_rec_t *job)
 {
@@ -67,12 +68,6 @@ void step_terminate_monitor_start(stepd_step_rec_t *job)
 	}
 
 	conf = slurm_conf_lock();
-	if (conf->unkillable_program == NULL) {
-		/* do nothing */
-		slurm_conf_unlock();
-		slurm_mutex_unlock(&lock);
-		return;
-	}
 	timeout = conf->unkillable_timeout;
 	program_name = xstrdup(conf->unkillable_program);
 	slurm_conf_unlock();
@@ -123,7 +118,7 @@ static void *_monitor(void *arg)
 	struct timespec ts = {0, 0};
 	int rc;
 
-	info("_monitor is running");
+	debug2("step_terminate_monitor will run for %d secs", timeout);
 
 	ts.tv_sec = time(NULL) + 1 + timeout;
 
@@ -133,30 +128,56 @@ static void *_monitor(void *arg)
 
 	rc = pthread_cond_timedwait(&cond, &lock, &ts);
 	if (rc == ETIMEDOUT) {
-		_call_external_program();
+		char entity[24], time_str[24];
+		time_t now = time(NULL);
+		_call_external_program(job);
+
+		if (job->stepid == SLURM_BATCH_SCRIPT) {
+			snprintf(entity, sizeof(entity),
+				 "JOB %u", job->jobid);
+		} else if (job->stepid == SLURM_EXTERN_CONT) {
+			snprintf(entity, sizeof(entity),
+				 "EXTERN STEP FOR %u", job->jobid);
+		} else {
+			snprintf(entity, sizeof(entity), "STEP %u.%u",
+				 job->jobid, job->stepid);
+		}
+		slurm_make_time_str(&now, time_str, sizeof(time_str));
+
+		if (job->state != SLURMSTEPD_STEP_RUNNING) {
+			error("*** %s STEPD TERMINATED ON %s AT %s DUE TO JOB NOT RUNNING ***",
+			      entity, job->node_name, time_str);
+		} else {
+			error("*** %s STEPD TERMINATED ON %s AT %s DUE TO JOB NOT ENDING WITH SIGNALS ***",
+			      entity, job->node_name, time_str);
+		}
+
+		stepd_cleanup(NULL, job, SLURM_ERROR, 0);
+		abort();
 	} else if (rc != 0) {
 		error("Error waiting on condition in _monitor: %m");
 	}
 done:
 	slurm_mutex_unlock(&lock);
 
-	info("_monitor is stopping");
+	debug2("step_terminate_monitor is stopping");
 	return NULL;
 }
 
 
-static int _call_external_program(void)
+static int _call_external_program(stepd_step_rec_t *job)
 {
 	int status, rc, opt;
 	pid_t cpid;
 	int max_wait = 300; /* seconds */
 	int time_remaining;
 
+	if ((job->state != SLURMSTEPD_STEP_RUNNING) ||
+	    program_name == NULL || program_name[0] == '\0')
+		return 0;
+
 	debug("step_terminate_monitor: unkillable after %d sec, calling: %s",
 	     timeout, program_name);
-
-	if (program_name == NULL || program_name[0] == '\0')
-		return 0;
 
 	if (access(program_name, R_OK | X_OK) < 0) {
 		debug("step_terminate_monitor not running %s: %m",
