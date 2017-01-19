@@ -37,8 +37,6 @@
 
 #include "sacct.h"
 
-void invalidSwitchCombo(char *good, char *bad);
-
 /*
  * Globals
  */
@@ -178,11 +176,4 @@ int main(int argc, char **argv)
 
 	sacct_fini();
 	return (rc);
-}
-
-
-void invalidSwitchCombo(char *good, char *bad)
-{
-	fprintf(stderr, "\"%s\" may not be used with %s\n", good, bad);
-	return;
 }
