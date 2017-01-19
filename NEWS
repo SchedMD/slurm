@@ -29,6 +29,11 @@ documents those changes that are of interest to users and administrators.
     time (if needed) extent into an advanced reservation.
  -- Fix srun I/O race condition on shutdown.
  -- Burst_buffer/cray - Avoid stage-out operation if job never started.
+ -- node_features/knl_cray - Add capability to detected Uncorrectable Memory
+    Errors (UME) and if detected then log the event in all job and step stderr
+    with a message of the form:
+    error: *** STEP 1.2 ON tux1 UNCORRECTABLE MEMORY ERROR AT 2016-12-14T09:09:37 ***
+    Similar logic added to node_features/knl_generic in version 17.02.0pre4.
 
 * Changes in Slurm 17.02.0pre4
 ==============================

@@ -40,6 +40,7 @@
 
 #define _GNU_SOURCE	/* For POLLRDHUP */
 #include <ctype.h>
+#include <fcntl.h>
 #ifdef HAVE_NUMA
 #undef NUMA_VERSION1_COMPATIBILITY
 #include <numa.h>
@@ -49,6 +50,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 
 #if HAVE_JSON_C_INC
@@ -83,6 +85,7 @@
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
+#include "src/slurmd/slurmd/req.h"
 
 /* Maximum poll wait time for child processes, in milliseconds */
 #define MAX_POLL_WAIT 500
@@ -164,25 +167,29 @@ List active_feature_list;
 #endif
 
 /* Configuration Paramters */
-static char *capmc_path = NULL;
-static uint32_t capmc_poll_freq = 45;	/* capmc state polling frequency */
-static uint32_t capmc_retries = DEFAULT_CAPMC_RETRIES;
-static uint32_t capmc_timeout = 0;	/* capmc command timeout in msec */
-static bitstr_t *capmc_node_bitmap = NULL;	/* Nodes found by capmc */
-static bitstr_t *knl_node_bitmap = NULL;	/* KNL nodes found by capmc */
-static char *cnselect_path = NULL;
-static bool  debug_flag = false;
 static uint16_t allow_mcdram = KNL_MCDRAM_FLAG;
 static uint16_t allow_numa = KNL_NUMA_FLAG;
 static uid_t *allowed_uid = NULL;
 static int allowed_uid_cnt = 0;
 static uint32_t boot_time = (45 * 60);	/* 45 minute estimated boot time */
+static char *capmc_path = NULL;
+static uint32_t capmc_poll_freq = 45;	/* capmc state polling frequency */
+static uint32_t capmc_retries = DEFAULT_CAPMC_RETRIES;
+static uint32_t capmc_timeout = 0;	/* capmc command timeout in msec */
+static bitstr_t *capmc_node_bitmap = NULL;	/* Nodes found by capmc */
+static char *cnselect_path = NULL;
+static bool debug_flag = false;
 static uint16_t default_mcdram = KNL_CACHE;
 static uint16_t default_numa = KNL_ALL2ALL;
+static char *mc_path = NULL;
 static char *syscfg_path = NULL;
 static pthread_mutex_t config_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool reconfig = false;
+static uint32_t ume_check_interval = 0;
+static pthread_mutex_t ume_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_t ume_thread = 0;
 
+static bitstr_t *knl_node_bitmap = NULL;	/* KNL nodes found by capmc */
 static pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 static char *node_list_queue = NULL;
 static time_t node_time_queue = (time_t) 0;
@@ -209,7 +216,9 @@ static s_p_options_t knl_conf_file_options[] = {
 	{"DefaultMCDRAM", S_P_STRING},
 	{"DefaultNUMA", S_P_STRING},
 	{"LogFile", S_P_STRING},
+	{"McPath", S_P_STRING},
 	{"SyscfgPath", S_P_STRING},
+	{"UmeCheckInterval", S_P_UINT32},
 	{NULL}
 };
 
@@ -297,6 +306,7 @@ static int  _queue_node_update(char *node_list);
 static char *_run_script(char *cmd_path, char **script_argv, int *status);
 static void _strip_knl_opts(char **features);
 static int  _tot_wait (struct timeval *start_time);
+static void *_ume_agent(void *args);
 static void _update_all_node_features(
 				mcdram_cap_t *mcdram_cap, int mcdram_cap_cnt,
 				mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt,
@@ -1562,6 +1572,73 @@ static char *_make_uid_str(uid_t *uid_array, int uid_cnt)
 	return uid_str;
 }
 
+/* Watch for Uncorrectable Memory Errors. Notify jobs if any detected */
+static void *_ume_agent(void *args)
+{
+	struct timespec req;
+	int i, mc_num, csrow_num, ue_count, last_ue_count = -1;
+	int *fd = NULL, fd_cnt = 0, fd_size = 0, ume_path_size;
+	char buf[8], *ume_path;
+	ssize_t rd_size;
+
+	/* Identify and open array of UME file descriptors */
+	ume_path_size = strlen(mc_path) + 32;
+	ume_path = xmalloc(ume_path_size);
+	for (mc_num = 0; ; mc_num++) {
+		for (csrow_num = 0; ; csrow_num++) {
+			if (fd_cnt == fd_size) {
+				fd_size += 64;
+				fd = xrealloc(fd, sizeof(int) * fd_size);
+			}
+			snprintf(ume_path, ume_path_size,
+				 "%s/mc%d/csrow%d/ue_count",
+				 mc_path, mc_num, csrow_num);
+			if ((fd[fd_cnt] = open(ume_path, 0)) >= 0)
+				fd_cnt++;
+			else
+				break;
+		}
+		if (csrow_num == 0)
+			break;
+	}
+	xfree(ume_path);
+
+	while (!shutdown_time) {
+		/* Get current UME count */
+		ue_count = 0;
+		for (i = 0; i < fd_cnt; i++) {
+			(void) lseek(fd[i], 0, SEEK_SET);
+			rd_size = read(fd[i], buf, 7);
+			if (rd_size <= 0)
+				continue;
+			buf[rd_size] = '\0';
+			ue_count += atoi(buf);
+		}
+
+		if (shutdown_time)
+			break;
+		/* If UME count changed, notify all steps */
+		if ((last_ue_count < ue_count) && (last_ue_count != -1)) {
+			i = ume_notify();
+			error("UME error detected. Notified %d job steps", i);
+		}
+		last_ue_count = ue_count;
+
+		if (shutdown_time)
+			break;
+		/* Sleep before retry */
+		req.tv_sec  =  ume_check_interval / 1000000;
+		req.tv_nsec = (ume_check_interval % 1000000) * 1000;
+		(void) nanosleep(&req, NULL);
+	}
+
+	for (i = 0; i < fd_cnt; i++)
+		(void) close(fd[i]);
+	xfree(fd);
+
+	return NULL;
+}
+
 /* Load configuration */
 extern int init(void)
 {
@@ -1632,7 +1709,10 @@ extern int init(void)
 			}
 			xfree(tmp_str);
 		}
+		(void) s_p_get_string(&mc_path, "McPath", tbl);
 		(void) s_p_get_string(&syscfg_path, "SyscfgPath", tbl);
+		(void) s_p_get_uint32(&ume_check_interval, "UmeCheckInterval",
+				      tbl);
 		s_p_hashtbl_destroy(tbl);
 	} else {
 		error("something wrong with opening/reading knl_cray.conf");
@@ -1643,6 +1723,8 @@ extern int init(void)
 	capmc_timeout = MAX(capmc_timeout, MIN_CAPMC_TIMEOUT);
 	if (!cnselect_path)
 		cnselect_path = xstrdup("/opt/cray/sdb/default/bin/cnselect");
+	if (!mc_path)
+		mc_path = xstrdup("/sys/devices/system/edac/mc");
 	if (!syscfg_path)
 		verbose("SyscfgPath is not configured");
 
@@ -1666,7 +1748,9 @@ extern int init(void)
 		info("CnselectPath=%s", cnselect_path);
 		info("DefaultMCDRAM=%s DefaultNUMA=%s",
 		     default_mcdram_str, default_numa_str);
+		info("McPath=%s", mc_path);
 		info("SyscfgPath=%s", syscfg_path);
+		info("UmeCheckInterval=%u", ume_check_interval);
 		xfree(allow_mcdram_str);
 		xfree(allow_numa_str);
 		xfree(allow_user_str);
@@ -1674,6 +1758,18 @@ extern int init(void)
 		xfree(default_numa_str);
 	}
 	gres_plugin_add("hbm");
+
+	if (ume_check_interval && run_in_daemon("slurmd")) {
+		pthread_attr_t attr;
+		slurm_attr_init(&attr);
+		slurm_mutex_lock(&ume_mutex);
+		if (pthread_create(&ume_thread, &attr, _ume_agent, NULL)) {
+			error("%s: Unable to start UME monitor thread: %m",
+			       __func__);
+		}
+		slurm_mutex_unlock(&ume_mutex);
+		slurm_attr_destroy(&attr);
+	}
 
 	slurm_mutex_lock(&queue_mutex);
 	if (queue_thread == 0) {
@@ -1691,24 +1787,31 @@ extern int init(void)
 /* Release allocated memory */
 extern int fini(void)
 {
-	xfree(allowed_uid);
-	allowed_uid_cnt = 0;
-	xfree(capmc_path);
-	xfree(cnselect_path);
-	capmc_timeout = 0;
-	debug_flag = false;
-	xfree(mcdram_per_node);
-	xfree(syscfg_path);
-	FREE_NULL_BITMAP(capmc_node_bitmap);
-	FREE_NULL_BITMAP(knl_node_bitmap);
-
 	shutdown_time = time(NULL);
+	slurm_mutex_lock(&ume_mutex);
+	if (ume_thread) {
+		pthread_join(ume_thread, NULL);
+		ume_thread = 0;
+	}
+	slurm_mutex_unlock(&ume_mutex);
 	pthread_join(queue_thread, NULL);
 	slurm_mutex_lock(&queue_mutex);
 	xfree(node_list_queue);	/* just drop requessts */
 	shutdown_time = (time_t) 0;
 	queue_thread = 0;
 	slurm_mutex_unlock(&queue_mutex);
+
+	xfree(allowed_uid);
+	allowed_uid_cnt = 0;
+	xfree(capmc_path);
+	xfree(cnselect_path);
+	capmc_timeout = 0;
+	debug_flag = false;
+	xfree(mc_path);
+	xfree(mcdram_per_node);
+	xfree(syscfg_path);
+	FREE_NULL_BITMAP(capmc_node_bitmap);
+	FREE_NULL_BITMAP(knl_node_bitmap);
 
 	return SLURM_SUCCESS;
 }
