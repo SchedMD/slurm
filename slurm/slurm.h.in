@@ -224,6 +224,8 @@ enum job_states {
 					but sent SIGSTOP */
 #define JOB_RECONFIG_FAIL 0x00020000 /* Node configuration for job failed,
 					not job state, just job requeue flag */
+#define	JOB_POWER_UP_NODE  0x00040000 /* Allocated powered down nodes,
+				      * waiting for reboot */
 
 
 #define READY_JOB_FATAL	   -2	/* fatal error */

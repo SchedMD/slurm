@@ -1889,6 +1889,7 @@ extern bool decay_apply_new_usage(struct job_record *job_ptr,
 	/* apply new usage */
 	if (((flags & PRIORITY_FLAGS_CALCULATE_RUNNING) ||
 	     !IS_JOB_PENDING(job_ptr)) &&
+	    !IS_JOB_POWER_UP_NODE(job_ptr) &&
 	    job_ptr->start_time && job_ptr->assoc_ptr) {
 		if (!_apply_new_usage(job_ptr, g_last_ran, *start_time_ptr, 0))
 			return false;
@@ -1910,6 +1911,7 @@ extern int decay_apply_weighted_factors(struct job_record *job_ptr,
 	 * re_calculation for non-pending jobs.
 	 */
 	if ((job_ptr->priority == 0) ||
+	    IS_JOB_POWER_UP_NODE(job_ptr) ||
 	    (!IS_JOB_PENDING(job_ptr) &&
 	     !(flags & PRIORITY_FLAGS_CALCULATE_RUNNING)))
 		return SLURM_SUCCESS;

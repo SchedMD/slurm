@@ -34,6 +34,8 @@ documents those changes that are of interest to users and administrators.
     with a message of the form:
     error: *** STEP 1.2 ON tux1 UNCORRECTABLE MEMORY ERROR AT 2016-12-14T09:09:37 ***
     Similar logic added to node_features/knl_generic in version 17.02.0pre4.
+ -- If job is allocated nodes which are powered down, then reset job start time
+    when the nodes are ready and do not charge the job for power up time.
 
 * Changes in Slurm 17.02.0pre4
 ==============================

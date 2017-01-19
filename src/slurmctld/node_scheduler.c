@@ -2516,6 +2516,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	/* This job may be getting requeued, clear vestigial state information
 	 * before over-writing and leaking memory or referencing old GRES or
 	 * step data. */
+	job_ptr->job_state &= ~JOB_POWER_UP_NODE;
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->sched_nodes);
@@ -2629,8 +2630,9 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	slurm_sched_g_newalloc(job_ptr);
 	power_g_job_start(job_ptr);
 
-	if (configuring ||
-	    bit_overlap(job_ptr->node_bitmap, power_node_bitmap) ||
+	if (bit_overlap(job_ptr->node_bitmap, power_node_bitmap))
+		job_ptr->job_state |= JOB_POWER_UP_NODE;
+	if (configuring || IS_JOB_POWER_UP_NODE(job_ptr) ||
 	    !bit_super_set(job_ptr->node_bitmap, avail_node_bitmap)) {
 		job_ptr->job_state |= JOB_CONFIGURING;
 	}

@@ -7518,13 +7518,27 @@ extern void job_config_fini(struct job_record *job_ptr)
 	time_t now = time(NULL);
 
 	last_job_update = now;
-	job_ptr->job_state &= (~JOB_CONFIGURING);
-	job_ptr->tot_sus_time = difftime(now, job_ptr->start_time);
-	if ((job_ptr->time_limit != INFINITE) && (job_ptr->tot_sus_time != 0)) {
-		verbose("Extending job %u time limit by %u secs for configuration",
-			job_ptr->job_id, (uint32_t) job_ptr->tot_sus_time);
-		job_ptr->end_time_exp = job_ptr->end_time =
-			now + (job_ptr->time_limit * 60);
+	job_ptr->job_state &= ~JOB_CONFIGURING;
+	if (IS_JOB_POWER_UP_NODE(job_ptr)) {
+		info("Resetting job %u start time for node power up",
+		     job_ptr->job_id);
+		job_ptr->job_state &= ~JOB_POWER_UP_NODE;
+		job_ptr->start_time = now;
+		if (job_ptr->time_limit != INFINITE) {
+			job_ptr->end_time_exp = job_ptr->end_time =
+				now + (job_ptr->time_limit * 60);
+		}
+		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+	} else {
+		job_ptr->tot_sus_time = difftime(now, job_ptr->start_time);
+		if ((job_ptr->time_limit != INFINITE) &&
+		    (job_ptr->tot_sus_time != 0)) {
+			verbose("Extending job %u time limit by %u secs for configuration",
+				job_ptr->job_id,
+				(uint32_t) job_ptr->tot_sus_time);
+			job_ptr->end_time_exp = job_ptr->end_time =
+				now + (job_ptr->time_limit * 60);
+		}
 	}
 }
 
