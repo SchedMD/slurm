@@ -189,6 +189,10 @@ static int _set_cond(int *start, int argc, char **argv,
 					  MAX(command_len, 1))) {
 			arch_cond->purge_suspend |= SLURMDB_PURGE_ARCHIVE;
 			set = 1;
+		} else if (!end && !strncasecmp(argv[i], "txn",
+					  MAX(command_len, 1))) {
+			arch_cond->purge_txn |= SLURMDB_PURGE_ARCHIVE;
+			set = 1;
 		} else if (!end
 			  || !strncasecmp(argv[i], "Clusters",
 					  MAX(command_len, 1))) {
@@ -315,6 +319,15 @@ static int _set_cond(int *start, int argc, char **argv,
 				arch_cond->purge_suspend |= tmp;
 				set = 1;
 			}
+		} else if (!strncasecmp (argv[i], "PurgeTXNAfter",
+					 MAX(command_len, 10))) {
+			if ((tmp = slurmdb_parse_purge(argv[i]+end))
+			    == NO_VAL) {
+				exit_code = 1;
+			} else {
+				arch_cond->purge_txn |= tmp;
+				set = 1;
+			}
 		} else if (!strncasecmp (argv[i], "PurgeEventMonths",
 					 MAX(command_len, 6))) {
 			if (get_uint(argv[i]+end, &tmp, "PurgeEventMonths")
@@ -363,6 +376,17 @@ static int _set_cond(int *start, int argc, char **argv,
 			} else {
 				arch_cond->purge_suspend |= tmp;
 				arch_cond->purge_suspend
+					|= SLURMDB_PURGE_MONTHS;
+				set = 1;
+			}
+		} else if (!strncasecmp (argv[i], "PurgeTXNMonths",
+					 MAX(command_len, 6))) {
+			if (get_uint(argv[i]+end, &tmp, "PurgeTXNMonths")
+			    != SLURM_SUCCESS) {
+				exit_code = 1;
+			} else {
+				arch_cond->purge_txn |= tmp;
+				arch_cond->purge_txn
 					|= SLURMDB_PURGE_MONTHS;
 				set = 1;
 			}
@@ -420,6 +444,8 @@ extern int sacctmgr_archive_dump(int argc, char **argv)
 		arch_cond->purge_step = NO_VAL;
 	if (!arch_cond->purge_suspend)
 		arch_cond->purge_suspend = NO_VAL;
+	if (!arch_cond->purge_txn)
+		arch_cond->purge_txn = NO_VAL;
 
 	if (exit_code) {
 		slurmdb_destroy_archive_cond(arch_cond);

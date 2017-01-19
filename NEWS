@@ -36,6 +36,7 @@ documents those changes that are of interest to users and administrators.
     Similar logic added to node_features/knl_generic in version 17.02.0pre4.
  -- If job is allocated nodes which are powered down, then reset job start time
     when the nodes are ready and do not charge the job for power up time.
+ -- Add the ability to purge transactions from the database.
 
 * Changes in Slurm 17.02.0pre4
 ==============================

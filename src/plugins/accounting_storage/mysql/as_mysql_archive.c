@@ -185,8 +185,17 @@ typedef struct {
 	char *period_start;
 } local_suspend_t;
 
-/* if this changes you will need to edit the corresponding
- * enum below */
+typedef struct {
+	char *id;
+	char *timestamp;
+	char *action;
+	char *name;
+	char *actor;
+	char *info;
+	char *cluster;
+} local_txn_t;
+
+/* if this changes you will need to edit the corresponding enum below */
 char *event_req_inx[] = {
 	"time_start",
 	"time_end",
@@ -210,8 +219,7 @@ enum {
 	EVENT_REQ_COUNT
 };
 
-/* if this changes you will need to edit the corresponding
- * enum below */
+/* if this changes you will need to edit the corresponding enum below */
 static char *job_req_inx[] = {
 	"account",
 	"array_max_tasks",
@@ -317,8 +325,7 @@ enum {
 	RESV_REQ_COUNT
 };
 
-/* if this changes you will need to edit the corresponding
- * enum below */
+/* if this changes you will need to edit the corresponding enum below */
 static char *step_req_inx[] = {
 	"job_db_inx",
 	"id_step",
@@ -423,10 +430,7 @@ enum {
 	STEP_REQ_COUNT,
 };
 
-static void _init_local_job(local_job_t *);
-
-/* if this changes you will need to edit the corresponding
- * enum below */
+/* if this changes you will need to edit the corresponding enum below */
 static char *suspend_req_inx[] = {
 	"job_db_inx",
 	"id_assoc",
@@ -442,12 +446,35 @@ enum {
 	SUSPEND_REQ_COUNT
 };
 
+/* if this changes you will need to edit the corresponding enum below */
+static char *txn_req_inx[] = {
+	"id",
+	"timestamp",
+	"action",
+	"name",
+	"actor",
+	"info",
+	"cluster"
+};
+
+enum {
+	TXN_REQ_ID,
+	TXN_REQ_TS,
+	TXN_REQ_ACTION,
+	TXN_REQ_NAME,
+	TXN_REQ_ACTOR,
+	TXN_REQ_INFO,
+	TXN_REQ_CLUSTER,
+	TXN_REQ_COUNT
+};
+
 typedef enum {
 	PURGE_EVENT,
 	PURGE_SUSPEND,
 	PURGE_RESV,
 	PURGE_JOB,
-	PURGE_STEP
+	PURGE_STEP,
+	PURGE_TXN
 } purge_type_t;
 
 char *purge_type_str[] = {
@@ -455,8 +482,11 @@ char *purge_type_str[] = {
 	"suspend",
 	"resv",
 	"job",
-	"step"
+	"step",
+	"txn"
 };
+
+static void _init_local_job(local_job_t *);
 
 static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 			       char *cluster_name, time_t period_end,
@@ -1005,6 +1035,36 @@ static int _unpack_local_suspend(local_suspend_t *object,
 	return SLURM_SUCCESS;
 }
 
+static void _pack_local_txn(local_txn_t *object,
+			    uint16_t rpc_version, Buf buffer)
+{
+	packstr(object->id, buffer);
+	packstr(object->timestamp, buffer);
+	packstr(object->action, buffer);
+	packstr(object->name, buffer);
+	packstr(object->actor, buffer);
+	packstr(object->info, buffer);
+	packstr(object->cluster, buffer);
+}
+
+/* this needs to be allocated before calling, and since we aren't
+ * doing any copying it needs to be used before destroying buffer */
+static int _unpack_local_txn(local_txn_t *object,
+			     uint16_t rpc_version, Buf buffer)
+{
+	uint32_t tmp32;
+
+	unpackstr_ptr(&object->id, &tmp32, buffer);
+	unpackstr_ptr(&object->timestamp, &tmp32, buffer);
+	unpackstr_ptr(&object->action, &tmp32, buffer);
+	unpackstr_ptr(&object->name, &tmp32, buffer);
+	unpackstr_ptr(&object->actor, &tmp32, buffer);
+	unpackstr_ptr(&object->info, &tmp32, buffer);
+	unpackstr_ptr(&object->cluster, &tmp32, buffer);
+
+	return SLURM_SUCCESS;
+}
+
 static int _process_old_sql_line(const char *data_in,
 				 char **cluster_name, char **data_full_out)
 {
@@ -1067,6 +1127,9 @@ static int _process_old_sql_line(const char *data_in,
 	} else if (!xstrncmp("suspend_table", data_in+i, 13)) {
 		i+=13;
 		table = suspend_table;
+	} else if (!xstrncmp("txn_table", data_in+i, 9)) {
+		i+=9;
+		table = txn_table;
 	} else if (!xstrncmp("cluster_day_usage_table", data_in+i, 23)) {
 		i+=23;
 		table = cluster_day_table;
@@ -1586,6 +1649,10 @@ static char *_get_archive_columns(purge_type_t type)
 	case PURGE_STEP:
 		cols      = step_req_inx;
 		col_count = STEP_REQ_COUNT;
+		break;
+	case PURGE_TXN:
+		cols      = txn_req_inx;
+		col_count = TXN_REQ_COUNT;
 		break;
 	default:
 		xassert(0);
@@ -2170,6 +2237,91 @@ static char *_load_suspend(uint16_t rpc_version, Buf buffer,
 	return insert;
 }
 
+static Buf _pack_archive_txns(MYSQL_RES *result, char *cluster_name,
+			      uint32_t cnt, time_t *period_start)
+{
+	MYSQL_ROW row;
+	Buf buffer;
+	local_txn_t txn;
+
+	buffer = init_buf(high_buffer_size);
+	pack16(SLURM_PROTOCOL_VERSION, buffer);
+	pack_time(time(NULL), buffer);
+	pack16(DBD_GOT_TXN, buffer);
+	packstr(cluster_name, buffer);
+	pack32(cnt, buffer);
+
+	while ((row = mysql_fetch_row(result))) {
+		if (period_start && !*period_start)
+			*period_start = slurm_atoul(row[TXN_REQ_TS]);
+
+		memset(&txn, 0, sizeof(local_txn_t));
+
+		txn.id = row[TXN_REQ_ID];
+		txn.timestamp = row[TXN_REQ_TS];
+		txn.action = row[TXN_REQ_ACTION];
+		txn.name = row[TXN_REQ_NAME];
+		txn.actor = row[TXN_REQ_ACTOR];
+		txn.info = row[TXN_REQ_INFO];
+		txn.cluster = row[TXN_REQ_CLUSTER];
+
+		_pack_local_txn(&txn, SLURM_PROTOCOL_VERSION, buffer);
+	}
+
+	return buffer;
+}
+
+
+/* returns sql statement from archived data or NULL on error */
+static char *_load_txn(uint16_t rpc_version, Buf buffer,
+		       char *cluster_name, uint32_t rec_cnt)
+{
+	char *insert = NULL, *format = NULL;
+	local_txn_t object;
+	char *tmp = NULL;
+	int i = 0;
+
+	xstrfmtcat(insert, "insert into \"%s\" (%s",
+		   txn_table, txn_req_inx[0]);
+	xstrcat(format, "('%s'");
+	for(i=1; i<TXN_REQ_COUNT; i++) {
+		xstrfmtcat(insert, ", %s", txn_req_inx[i]);
+		xstrcat(format, ", '%s'");
+	}
+	xstrcat(insert, ") values ");
+	xstrcat(format, ")");
+	for(i=0; i<rec_cnt; i++) {
+		memset(&object, 0, sizeof(local_txn_t));
+		if (_unpack_local_txn(&object, rpc_version, buffer)
+		    != SLURM_SUCCESS) {
+			error("issue unpacking");
+			xfree(format);
+			xfree(insert);
+			break;
+		}
+
+		if (i)
+			xstrcat(insert, ", ");
+
+		/* object.info has a bunch of "'" in it */
+		tmp = slurm_add_slash_to_quotes(object.info);
+		xstrfmtcat(insert, format,
+			   object.id,
+			   object.timestamp,
+			   object.action,
+			   object.name,
+			   object.actor,
+			   tmp,
+			   object.cluster);
+		xfree(tmp);
+	}
+//	END_TIMER2("txn query");
+//	info("txn query took %s", TIME_STR);
+	xfree(format);
+
+	return insert;
+}
+
 /* returns count of events archived or SLURM_ERROR on error */
 static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 			       char *cluster_name, time_t period_end,
@@ -2232,6 +2384,15 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 				       cols, cluster_name, step_table,
 				       period_end);
 		break;
+	case PURGE_TXN:
+		pack_func = &_pack_archive_txns;
+		query = xstrdup_printf("select %s from \"%s\" where "
+				       "timestamp <= %ld && cluster='%s' "
+				       "order by timestamp asc "
+				       "for update",
+				       cols, txn_table,
+				       period_end, cluster_name);
+		break;
 	default:
 		fatal("Unknown purge type: %d", type);
 		return SLURM_ERROR;
@@ -2293,8 +2454,8 @@ uint32_t _get_begin_next_month(time_t start)
  * 1 found purgeable record.
  */
 static int _get_oldest_record(mysql_conn_t *mysql_conn, char *cluster,
-				 char *table, char *col_name,
-				 time_t period_end, time_t *record_start)
+			      char *table, char *col_name,
+			      time_t period_end, time_t *record_start)
 {
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -2304,10 +2465,19 @@ static int _get_oldest_record(mysql_conn_t *mysql_conn, char *cluster,
 		return SLURM_ERROR;
 
 	/* get oldest record */
-	query = xstrdup_printf("select %s from \"%s_%s\" where %s <= %ld "
-			       "&& time_end != 0 order by %s asc LIMIT 1",
-			       col_name, cluster, table, col_name, period_end,
-			       col_name);
+	if (table == txn_table) {
+		query = xstrdup_printf(
+			"select %s from \"%s\" where %s <= %ld "
+			"&& cluster='%s' order by %s asc LIMIT 1",
+			col_name, table, col_name, period_end, cluster,
+			col_name);
+	} else {
+		query = xstrdup_printf(
+			"select %s from \"%s_%s\" where %s <= %ld "
+			"&& time_end != 0 order by %s asc LIMIT 1",
+			col_name, cluster, table, col_name, period_end,
+			col_name);
+	}
 
 	if (debug_flags & DEBUG_FLAG_DB_ARCHIVE)
 		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
@@ -2374,6 +2544,11 @@ static int _archive_purge_table(purge_type_t purge_type,
 		sql_table  = step_table;
 		col_name   = step_req_inx[STEP_REQ_START];
 		break;
+	case PURGE_TXN:
+		purge_attr = arch_cond->purge_txn;
+		sql_table  = txn_table;
+		col_name   = txn_req_inx[TXN_REQ_TS];
+		break;
 	default:
 		fatal("Unknown purge type: %d", purge_type);
 		return SLURM_ERROR;
@@ -2418,10 +2593,18 @@ static int _archive_purge_table(purge_type_t purge_type,
 				return rc;
 		}
 
-		query = xstrdup_printf("delete from \"%s_%s\" where "
-				       "%s <= %ld && time_end != 0 LIMIT %d",
-				       cluster_name, sql_table, col_name,
-				       tmp_end, MAX_PURGE_LIMIT);
+		if (sql_table == txn_table)
+			query = xstrdup_printf(
+				"delete from \"%s\" where "
+				"%s <= %ld && cluster='%s' LIMIT %d",
+				sql_table, col_name,
+				tmp_end, cluster_name, MAX_PURGE_LIMIT);
+		else
+			query = xstrdup_printf(
+				"delete from \"%s_%s\" where "
+				"%s <= %ld && time_end != 0 LIMIT %d",
+				cluster_name, sql_table, col_name,
+				tmp_end, MAX_PURGE_LIMIT);
 		if (debug_flags & DEBUG_FLAG_DB_ARCHIVE)
 			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 
@@ -2439,7 +2622,8 @@ static int _archive_purge_table(purge_type_t purge_type,
 
 		xfree(query);
 		if (rc != SLURM_SUCCESS) {
-			error("Couldn't remove old event data");
+			error("Couldn't remove old data from %s table",
+			      sql_table);
 			return SLURM_ERROR;
 		} else if (mysql_db_commit(mysql_conn)) {
 			error("Couldn't commit cluster (%s) purge",
@@ -2491,6 +2675,12 @@ static int _execute_archive(mysql_conn_t *mysql_conn,
 
 	if (arch_cond->purge_resv != NO_VAL) {
 		if ((rc = _archive_purge_table(PURGE_RESV, mysql_conn,
+					       cluster_name, arch_cond)))
+			return rc;
+	}
+
+	if (arch_cond->purge_txn != NO_VAL) {
+		if ((rc = _archive_purge_table(PURGE_TXN, mysql_conn,
 					       cluster_name, arch_cond)))
 			return rc;
 	}
@@ -2669,6 +2859,9 @@ extern int as_mysql_jobacct_process_archive_load(
 		break;
 	case DBD_JOB_SUSPEND:
 		data = _load_suspend(ver, buffer, cluster_name, rec_cnt);
+		break;
+	case DBD_GOT_TXN:
+		data = _load_txn(ver, buffer, cluster_name, rec_cnt);
 		break;
 	default:
 		error("Unknown type '%u' to load from archive", type);

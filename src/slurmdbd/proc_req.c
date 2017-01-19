@@ -1006,6 +1006,8 @@ static int _archive_dump(slurmdbd_conn_t *slurmdbd_conn,
 		arch_cond->purge_step = slurmdbd_conf->purge_step;
 	if (arch_cond->purge_suspend == NO_VAL)
 		arch_cond->purge_suspend = slurmdbd_conf->purge_suspend;
+	if (arch_cond->purge_txn == NO_VAL)
+		arch_cond->purge_txn = slurmdbd_conf->purge_txn;
 
 	rc = jobacct_storage_g_archive(slurmdbd_conn->db_conn, arch_cond);
 	if (rc != SLURM_SUCCESS) {

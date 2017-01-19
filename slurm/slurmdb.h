@@ -377,6 +377,10 @@ typedef struct {
 				 * in months by default set the
 				 * SLURMDB_PURGE_ARCHIVE bit for
 				 * archiving */
+	uint32_t purge_txn; /* purge transaction data older than this
+			     * in months by default set the
+			     * SLURMDB_PURGE_ARCHIVE bit for
+			     * archiving */
 } slurmdb_archive_cond_t;
 
 typedef struct {
