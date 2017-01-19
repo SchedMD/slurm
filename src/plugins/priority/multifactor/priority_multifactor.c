@@ -1906,9 +1906,8 @@ extern int decay_apply_weighted_factors(struct job_record *job_ptr,
 	 * continue processing list of jobs. */
 
 	/*
-	 * Priority 0 is reserved for held
-	 * jobs. Also skip priority
-	 * calculation for non-pending jobs.
+	 * Priority 0 is reserved for held jobs. Also skip priority
+	 * re_calculation for non-pending jobs.
 	 */
 	if ((job_ptr->priority == 0) ||
 	    (!IS_JOB_PENDING(job_ptr) &&
