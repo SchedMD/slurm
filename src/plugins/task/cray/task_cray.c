@@ -619,9 +619,6 @@ static int _check_status_file(stepd_step_rec_t *job,
 	char status;
 	int rv, fd;
 
-	debug("task_p_post_term: %u.%u, task %d",
-	      job->jobid, job->stepid, job->envtp->procid);
-
 	// We only need to special case termination with exit(0)
 	// srun already handles abnormal exit conditions fine
 	if (!WIFEXITED(task->estatus) || (WEXITSTATUS(task->estatus) != 0))
