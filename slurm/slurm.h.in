@@ -145,6 +145,7 @@ typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
 
 /* INFINITE is used to identify unlimited configurations,  */
 /* eg. the maximum count of nodes any job may use in some partition */
+#define	INFINITE16 (0xffff)
 #define	INFINITE   (0xffffffff)
 #define	INFINITE64 (0xffffffffffffffff)
 #define NO_VAL16   (0xfffe)
