@@ -1049,10 +1049,6 @@ _handle_terminate(int fd, stepd_step_rec_t *job, uid_t uid)
 	stepd_step_task_info_t *task;
 	uint32_t i;
 
-	debug("_handle_terminate for step=%u.%u uid=%d",
-	      job->jobid, job->stepid, uid);
-	step_terminate_monitor_start(job->jobid, job->stepid);
-
 	if (uid != job->uid && !_slurm_authorized_user(uid)) {
 		debug("terminate req from uid %ld for job %u.%u "
 		      "owned by uid %ld",
@@ -1061,6 +1057,10 @@ _handle_terminate(int fd, stepd_step_rec_t *job, uid_t uid)
 		errnum = EPERM;
 		goto done;
 	}
+
+	debug("_handle_terminate for step=%u.%u uid=%d",
+	      job->jobid, job->stepid, uid);
+	step_terminate_monitor_start(job);
 
 	/*
 	 * Sanity checks

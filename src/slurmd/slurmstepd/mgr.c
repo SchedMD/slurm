@@ -1073,7 +1073,7 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	 * the cgroup hierarchy.
 	 */
 	_set_job_state(job, SLURMSTEPD_STEP_ENDING);
-	step_terminate_monitor_start(job->jobid, job->stepid);
+	step_terminate_monitor_start(job);
 	proctrack_g_signal(job->cont_id, SIGKILL);
 	proctrack_g_wait(job->cont_id);
 	step_terminate_monitor_stop();
@@ -1322,7 +1322,7 @@ fail2:
 	 * switch_g_job_postfini().
 	 */
 	_set_job_state(job, SLURMSTEPD_STEP_ENDING);
-	step_terminate_monitor_start(job->jobid, job->stepid);
+	step_terminate_monitor_start(job);
 	if (job->cont_id != 0) {
 		proctrack_g_signal(job->cont_id, SIGKILL);
 		proctrack_g_wait(job->cont_id);

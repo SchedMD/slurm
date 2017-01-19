@@ -29,6 +29,8 @@
 #ifndef _SLURMD_TERM_MONITOR_H
 #define _SLURMD_TERM_MONITOR_H
 
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
+
 /*
  * Start a monitor pthread that will wait for a period of time,
  * as defined in the slurm.conf variable UnkillableStepTimeout,
@@ -45,7 +47,7 @@
  * If step_terminate_monitor_stop() is called before the time runs
  * out, the external program will not be called.
  */
-void step_terminate_monitor_start(uint32_t jobid, uint32_t stepid);
+void step_terminate_monitor_start(stepd_step_rec_t *job);
 
 /*
  * Stop the timer in the step terminate monitor pthread, and kill

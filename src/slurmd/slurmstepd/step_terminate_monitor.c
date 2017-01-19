@@ -39,6 +39,7 @@
 #include "src/common/read_config.h"
 #include "src/slurmd/common/job_container_plugin.h"
 #include "src/slurmd/slurmstepd/step_terminate_monitor.h"
+#include "src/slurmd/slurmstepd/slurmstepd.h"
 
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
@@ -53,7 +54,7 @@ static uint32_t recorded_stepid = NO_VAL;
 static void *_monitor(void *);
 static int _call_external_program(void);
 
-void step_terminate_monitor_start(uint32_t jobid, uint32_t stepid)
+void step_terminate_monitor_start(stepd_step_rec_t *job)
 {
 	slurm_ctl_conf_t *conf;
 	pthread_attr_t attr;
@@ -77,11 +78,11 @@ void step_terminate_monitor_start(uint32_t jobid, uint32_t stepid)
 	slurm_conf_unlock();
 
 	slurm_attr_init(&attr);
-	pthread_create(&tid, &attr, _monitor, NULL);
+	pthread_create(&tid, &attr, _monitor, job);
 	slurm_attr_destroy(&attr);
 	running_flag = 1;
-	recorded_jobid = jobid;
-	recorded_stepid = stepid;
+	recorded_jobid = job->jobid;
+	recorded_stepid = job->stepid;
 
 	slurm_mutex_unlock(&lock);
 
@@ -116,8 +117,9 @@ void step_terminate_monitor_stop(void)
 }
 
 
-static void *_monitor(void *notused)
+static void *_monitor(void *arg)
 {
+	stepd_step_rec_t *job = (stepd_step_rec_t *)arg;
 	struct timespec ts = {0, 0};
 	int rc;
 
