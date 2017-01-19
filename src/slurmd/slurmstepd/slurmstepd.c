@@ -182,14 +182,23 @@ main (int argc, char **argv)
 	 * and blocks until the step is complete */
 	rc = job_manager(job);
 
-	if (job->batch)
-		batch_finish(job, rc); /* sends batch complete message */
-
-	/* signal the message thread to shutdown, and wait for it */
-	eio_signal_shutdown(job->msg_handle);
-	pthread_join(job->msgid, NULL);
-
+	return stepd_cleanup(msg, job, rc, 0);
 ending:
+	return stepd_cleanup(msg, job, rc, 1);
+}
+
+extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *job, int rc,
+			 bool only_mem)
+{
+	if (!only_mem) {
+		if (job->batch)
+			batch_finish(job, rc); /* sends batch complete message */
+
+		/* signal the message thread to shutdown, and wait for it */
+		eio_signal_shutdown(job->msg_handle);
+		pthread_join(job->msgid, NULL);
+	}
+
 	mpi_fini();	/* Remove stale PMI2 sockets */
 #ifdef MEMORY_LEAK_DEBUG
 	acct_gather_conf_destroy();
@@ -621,25 +630,27 @@ _step_cleanup(stepd_step_rec_t *job, slurm_msg_t *msg, int rc)
 		if (!job->batch)
 			stepd_step_rec_destroy(job);
 	}
-	/*
-	 * The message cannot be freed until the jobstep is complete
-	 * because the job struct has pointers into the msg, such
-	 * as the switch jobinfo pointer.
-	 */
-	switch(msg->msg_type) {
-	case REQUEST_BATCH_JOB_LAUNCH:
-		slurm_free_job_launch_msg(msg->data);
-		break;
-	case REQUEST_LAUNCH_TASKS:
-		slurm_free_launch_tasks_request_msg(msg->data);
-		break;
-	default:
-		fatal("handle_launch_message: Unrecognized launch RPC");
-		break;
+
+	if (msg) {
+		/*
+		 * The message cannot be freed until the jobstep is complete
+		 * because the job struct has pointers into the msg, such
+		 * as the switch jobinfo pointer.
+		 */
+		switch(msg->msg_type) {
+		case REQUEST_BATCH_JOB_LAUNCH:
+			slurm_free_job_launch_msg(msg->data);
+			break;
+		case REQUEST_LAUNCH_TASKS:
+			slurm_free_launch_tasks_request_msg(msg->data);
+			break;
+		default:
+			fatal("handle_launch_message: Unrecognized launch RPC");
+			break;
+		}
+		xfree(msg);
 	}
 	jobacctinfo_destroy(step_complete.jobacct);
-
-	xfree(msg);
 }
 #endif
 
