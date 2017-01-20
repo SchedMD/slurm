@@ -581,4 +581,16 @@ extern bool run_in_daemon(char *daemons);
  * RET - String MUST be xfreed */
 extern char *xlate_features(char *job_features);
 
+/*
+ * Add nodes and corresponding pre-configured slurm_addr_t's to node conf hash
+ * tables.
+ *
+ * IN node_list  - node_list allocated to job
+ * IN node_addrs - array of slurm_addr_t that corresponds to nodes built from
+ * 	host_list. See build_node_details().
+ * RET return SLURM_SUCCESS on success, SLURM_ERROR otherwise.
+ */
+extern int add_remote_nodes_to_conf_tbls(char *node_list,
+					 slurm_addr_t *node_addrs);
+
 #endif /* !_READ_CONFIG_H */

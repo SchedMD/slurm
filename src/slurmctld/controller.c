@@ -549,12 +549,14 @@ int main(int argc, char **argv)
 		}
 		slurm_attr_destroy(&thread_attr);
 
-		fed_mgr_init(acct_db_conn);
-
 		clusteracct_storage_g_register_ctld(
 			acct_db_conn,
 			slurmctld_conf.slurmctld_port);
 		_accounting_cluster_ready();
+
+		/* call after registering so that the current cluster's
+		 * control_host and control_port will be filled in. */
+		fed_mgr_init(acct_db_conn);
 
 		if (slurm_priority_init() != SLURM_SUCCESS)
 			fatal("failed to initialize priority plugin");

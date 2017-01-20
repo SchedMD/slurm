@@ -3101,10 +3101,12 @@ extern void slurm_free_resource_allocation_response_msg_members (
 		for (i = 0; i < msg->env_size; i++)
 			xfree(msg->environment[i]);
 		xfree(msg->environment);
+		xfree(msg->node_addr);
 		xfree(msg->node_list);
 		xfree(msg->partition);
 		xfree(msg->qos);
 		xfree(msg->resv_name);
+		slurmdb_destroy_cluster_rec(msg->working_cluster_rec);
 	}
 }
 

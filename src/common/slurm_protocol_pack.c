@@ -3631,6 +3631,15 @@ _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *msg,
 		pack32(msg->error_code, buffer);
 		pack32(msg->job_id, buffer);
 		pack32(msg->node_cnt, buffer);
+
+		/* pack node_addr after node_cnt -- need it for unpacking */
+		if (msg->node_addr && msg->node_cnt > 0) {
+			pack8(1, buffer); /* non-null node_addr */
+			_pack_slurm_addr_array(msg->node_addr, msg->node_cnt,
+					       buffer, protocol_version);
+		} else
+			pack8(0, buffer);
+
 		packstr(msg->node_list, buffer);
 		pack16(msg->ntasks_per_board, buffer);
 		pack16(msg->ntasks_per_core, buffer);
@@ -3651,6 +3660,14 @@ _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *msg,
 		select_g_select_jobinfo_pack(msg->select_jobinfo,
 					     buffer,
 					     protocol_version);
+
+		if (msg->working_cluster_rec) {
+			pack8(1, buffer);
+			slurmdb_pack_cluster_rec(msg->working_cluster_rec,
+						 protocol_version, buffer);
+		} else
+			pack8(0, buffer);
+
 	} else if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
 		packstr(msg->account, buffer);
 		packstr(msg->alias_list, buffer);
@@ -3714,6 +3731,7 @@ _unpack_resource_allocation_response_msg(
 	resource_allocation_response_msg_t** msg, Buf buffer,
 	uint16_t protocol_version)
 {
+	uint8_t  uint8_tmp;
 	uint32_t uint32_tmp;
 	resource_allocation_response_msg_t *tmp_ptr;
 
@@ -3732,6 +3750,19 @@ _unpack_resource_allocation_response_msg(
 		safe_unpack32(&tmp_ptr->error_code, buffer);
 		safe_unpack32(&tmp_ptr->job_id, buffer);
 		safe_unpack32(&tmp_ptr->node_cnt, buffer);
+
+		/* unpack node_addr after node_cnt -- need it to unpack */
+		safe_unpack8(&uint8_tmp, buffer);
+		if (uint8_tmp) {
+			if (_unpack_slurm_addr_array(&(tmp_ptr->node_addr),
+						     &uint32_tmp, buffer,
+						     protocol_version))
+				goto unpack_error;
+			if (uint32_tmp != tmp_ptr->node_cnt)
+				goto unpack_error;
+		} else
+			tmp_ptr->node_addr = NULL;
+
 		safe_unpackstr_xmalloc(&tmp_ptr->node_list, &uint32_tmp,
 				       buffer);
 		safe_unpack16(&tmp_ptr->ntasks_per_board, buffer);
@@ -3760,6 +3791,13 @@ _unpack_resource_allocation_response_msg(
 		if (select_g_select_jobinfo_unpack(&tmp_ptr->select_jobinfo,
 						   buffer, protocol_version))
 			goto unpack_error;
+
+		safe_unpack8(&uint8_tmp, buffer);
+		if (uint8_tmp) {
+			slurmdb_unpack_cluster_rec(
+					(void **)&tmp_ptr->working_cluster_rec,
+					protocol_version, buffer);
+		}
 
 	} else if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
 		uint32_t tmp_mem;

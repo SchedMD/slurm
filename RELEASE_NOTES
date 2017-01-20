@@ -137,6 +137,8 @@ In job_desc_msg_t: Added fed_siblings to track which clusters have sibling jobs.
 In slurm_job_info_t: Added fed_origin_str, fed_siblings, fed_siblings_str to
 		      display job federation information.
 In struct node_info: Added port.
+In resource_allocation_msg_t: added node_addr and working_cluster_rec for
+		     federated interactive jobs.
 
 Added the following struct definitions
 ======================================
