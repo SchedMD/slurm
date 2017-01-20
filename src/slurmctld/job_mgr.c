@@ -4540,6 +4540,7 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 	 * origin job = because it knows where the siblings are
 	 * If the job is running locally then just do the normal signalling */
 	if (job_ptr->fed_details &&
+	    fed_mgr_cluster_rec &&
 	    fed_mgr_is_origin_job(job_ptr) &&
 	    job_ptr->fed_details->cluster_lock != fed_mgr_cluster_rec->fed.id) {
 		int rc = fed_mgr_job_cancel(job_ptr, signal, flags, uid);
