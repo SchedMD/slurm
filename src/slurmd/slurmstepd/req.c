@@ -125,6 +125,7 @@ typedef struct {
 static pthread_mutex_t message_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t message_cond = PTHREAD_COND_INITIALIZER;
 static int message_connections;
+static int msg_target_node_id = 0;
 
 /*
  *  Returns true if "uid" is a "slurm authorized user" - i.e. uid == 0
@@ -741,8 +742,6 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 	int errnum = 0;
 	int sig;
 	static int msg_sent = 0;
-	char *ptr = NULL;
-	int target_node_id = 0;
 	stepd_step_task_info_t *task;
 	uint32_t i;
 	uint32_t flag;
@@ -794,11 +793,8 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 		}
 	}
 
-	ptr = getenvp(job->env, "SLURM_STEP_KILLED_MSG_NODE_ID");
-	if (ptr)
-		target_node_id = atoi(ptr);
 	if ((job->stepid != SLURM_EXTERN_CONT) &&
-	    (job->nodeid == target_node_id) && (msg_sent == 0) &&
+	    (job->nodeid == msg_target_node_id) && (msg_sent == 0) &&
 	    (job->state < SLURMSTEPD_STEP_ENDING)) {
 		time_t now = time(NULL);
 		char entity[24], time_str[24];
@@ -1842,4 +1838,11 @@ extern void wait_for_resumed(uint16_t msg_type)
 			     msg_type);
 		}
 	}
+}
+
+extern void set_msg_node_id(stepd_step_rec_t *job)
+{
+	char *ptr = getenvp(job->env, "SLURM_STEP_KILLED_MSG_NODE_ID");
+	if (ptr)
+		msg_target_node_id = atoi(ptr);
 }

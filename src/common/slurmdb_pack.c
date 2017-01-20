@@ -868,6 +868,11 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 		goto unpack_error;
 	}
 
+	/* Take the lower of the remote cluster is using and what I am or I
+	 * won't be able to talk to the remote cluster. domo arigato. */
+	object_ptr->rpc_version = MIN(SLURM_PROTOCOL_VERSION,
+				      object_ptr->rpc_version);
+
 	return SLURM_SUCCESS;
 
 unpack_error:

@@ -788,6 +788,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			      mysql_conn, query, 0))) {
 			xfree(query);
 			rc = SLURM_ERROR;
+			mysql_free_result(result);
 			goto end_it;
 		}
 		xfree(query);

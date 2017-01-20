@@ -239,6 +239,14 @@ documents those changes that are of interest to users and administrators.
  -- Fix debug2 message printing value using wrong array index in
     _qos_job_runnable_post_select().
  -- Prevent job timeout on node power up.
+ -- MYSQL - Fix minor memory leak when querying steps and the sql fails.
+ -- Make it so sacctmgr accepts column headers like MaxTRESPU and not MaxTRESP.
+ -- Only look at SLURM_STEP_KILLED_MSG_NODE_ID on startup, to avoid race
+    condition later when looking at a steps env.
+ -- Make backfill scheduler behave like regular scheduler in respect to
+    'assoc_limit_stop'.
+ -- Allow a lower version client command to talk to a higher version contoller
+    using the multi-cluster options (e.g. squeue -M<clsuter>).
 
 * Changes in Slurm 16.05.8
 ==========================
