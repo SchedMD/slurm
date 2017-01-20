@@ -3946,5 +3946,106 @@ proc stop_root_user {} {
 	}
 
 	return $uid
+}
 
+################################################################
+#
+# Proc: get_requeue_exit
+#
+# Purpose: get RequeueExit configuration parameter
+#
+# Returns RequeueExit number
+#
+################################################################
+proc get_requeue_exit { } {
+	global scontrol number exit_code
+
+	log_user 0
+	set re 0
+	set scon_pid [spawn -noecho $scontrol show config]
+	expect {
+		-re "RequeueExit *= ($number)" {
+			set re $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			slow_kill $scon_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	return $re
+}
+
+################################################################
+#
+# Proc: get_requeue_exit_hold
+#
+# Purpose: get RequeueExitHold configuration parameter
+#
+# Returns RequeueExitHold number
+#
+################################################################
+proc get_requeue_exit_hold { } {
+	global scontrol number exit_code
+
+	log_user 0
+	set re 0
+	set scon_pid [spawn -noecho $scontrol show config]
+	expect {
+		-re "RequeueExitHold *= ($number)" {
+			set re $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			slow_kill $scon_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	return $re
+}
+
+################################################################
+#
+# Proc: get_prolog
+#
+# Purpose: get Prolog configuration parameter
+#
+# Returns Prolog parameter
+#
+################################################################
+proc get_prolog { } {
+	global scontrol alpha_numeric exit_code
+
+	log_user 0
+	set prolog 0
+	set scon_pid [spawn -noecho $scontrol show config]
+	expect {
+		-re "^Prolog *= ($alpha_numeric)" {
+			set re $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			slow_kill $scon_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	return $prolog
 }
