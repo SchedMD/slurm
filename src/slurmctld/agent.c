@@ -1529,10 +1529,15 @@ static void _purge_agent_args(agent_arg_t *agent_arg_ptr)
 			slurmctld_free_batch_job_launch_msg(agent_arg_ptr->
 							    msg_args);
 		else if (agent_arg_ptr->msg_type ==
-				RESPONSE_RESOURCE_ALLOCATION)
+				RESPONSE_RESOURCE_ALLOCATION) {
+			resource_allocation_response_msg_t *alloc_msg =
+				agent_arg_ptr->msg_args;
+			/* NULL out working_cluster_rec because it's pointing to
+			 * the actual cluster_rec. */
+			alloc_msg->working_cluster_rec = NULL;
 			slurm_free_resource_allocation_response_msg(
 					agent_arg_ptr->msg_args);
-		else if ((agent_arg_ptr->msg_type == REQUEST_ABORT_JOB)      ||
+		} else if ((agent_arg_ptr->msg_type == REQUEST_ABORT_JOB)      ||
 			 (agent_arg_ptr->msg_type == REQUEST_TERMINATE_JOB)  ||
 			 (agent_arg_ptr->msg_type == REQUEST_KILL_PREEMPTED) ||
 			 (agent_arg_ptr->msg_type == REQUEST_KILL_TIMELIMIT))

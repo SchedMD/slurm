@@ -137,6 +137,8 @@ In job_desc_msg_t: Added fed_siblings to track which clusters have sibling jobs.
 In slurm_job_info_t: Added fed_origin_str, fed_siblings, fed_siblings_str to
 		      display job federation information.
 In struct node_info: Added port.
+In resource_allocation_msg_t: added node_addr and working_cluster_rec for
+		     federated interactive jobs.
 
 Added the following struct definitions
 ======================================
@@ -163,6 +165,8 @@ Added SELECT_NODEDATA_TRES_ALLOC_WEIGHTED to select_nodedata_type.
 Changed MEM_PER_CPU flag to 0x8000000000000000 from 0x80000000.
 Added SLURM_MSG_KEEP_BUFFER msg flag to instruct slurm_receive_msg() to save the
 	buffer ptr.
+Added JOB_REVOKED job state to indicate that federated job started on another
+	cluster.
 
 Added the following API's
 =========================

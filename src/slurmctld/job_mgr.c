@@ -162,8 +162,6 @@ static int  _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 					 struct job_record **job_ptr,
 					 bitstr_t ** exc_bitmap,
 					 bitstr_t ** req_bitmap);
-static job_desc_msg_t * _copy_job_record_to_job_desc(
-				struct job_record *job_ptr);
 static char *_copy_nodelist_no_dup(char *node_list);
 static struct job_record *_create_job_record(int *error_code,
 					     uint32_t num_jobs);
@@ -174,6 +172,8 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	bool admin, slurmdb_qos_rec_t *qos_rec,	int *error_code, bool locked);
 static void _dump_job_details(struct job_details *detail_ptr, Buf buffer);
 static int  _dump_job_state(void *x, void *y);
+static void _dump_job_fed_details(job_fed_details_t *fed_details_ptr,
+				  Buf buffer);
 static void _free_job_fed_details(job_fed_details_t **fed_details_pptr);
 static void _get_batch_job_dir_ids(List batch_dirs);
 static time_t _get_last_state_write_time(void);
@@ -185,10 +185,11 @@ static void _job_purge_start(void);
 static void _job_timed_out(struct job_record *job_ptr);
 static void _kill_dependent(struct job_record *job_ptr);
 static void _list_delete_job(void *job_entry);
-static int  _list_find_job_id(void *job_entry, void *key);
 static int  _list_find_job_old(void *job_entry, void *key);
 static int  _load_job_details(struct job_record *job_ptr, Buf buffer,
 			      uint16_t protocol_version);
+static int  _load_job_fed_details(job_fed_details_t **fed_details_pptr,
+				  Buf buffer, uint16_t protocol_version);
 static int  _load_job_state(Buf buffer,	uint16_t protocol_version);
 static bitstr_t *_make_requeue_array(char *conf_buf);
 static uint32_t _max_switch_wait(uint32_t input_wait);
@@ -203,7 +204,6 @@ static void _pack_pending_job_details(struct job_details *detail_ptr,
 				      Buf buffer,
 				      uint16_t protocol_version);
 static bool _parse_array_tok(char *tok, bitstr_t *array_bitmap, uint32_t max);
-static int  _purge_job_record(uint32_t job_id);
 static void _purge_missing_jobs(int node_inx, time_t now);
 static int  _read_data_array_from_file(int fd, char *file_name, char ***data,
 				       uint32_t * size,
@@ -1248,6 +1248,9 @@ static int _dump_job_state(void *x, void *arg)
 		      dump_job_ptr->pelog_env_size, buffer);
 	pack32(dump_job_ptr->pack_leader, buffer);
 
+	packstr(dump_job_ptr->clusters, buffer);
+	_dump_job_fed_details(dump_job_ptr->fed_details, buffer);
+
 	return 0;
 }
 
@@ -1287,6 +1290,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	char *gres_alloc = NULL, *gres_req = NULL, *gres_used = NULL;
 	char *burst_buffer = NULL, *burst_buffer_state = NULL;
 	char *admin_comment = NULL, *task_id_str = NULL, *mcs_label = NULL;
+	char *clusters = NULL;
 	uint32_t task_id_size = NO_VAL;
 	char **spank_job_env = (char **) NULL;
 	List gres_list = NULL, part_ptr_list = NULL;
@@ -1306,6 +1310,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	uint32_t pelog_env_size = 0;
 	char **pelog_env = (char **) NULL;
 	uint32_t pack_leader = 0;
+	job_fed_details_t *job_fed_details = NULL;
 
 	memset(&limit_set, 0, sizeof(acct_policy_limit_set_t));
 	limit_set.tres = xmalloc(sizeof(uint16_t) * slurmctld_tres_cnt);
@@ -1506,6 +1511,12 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpackstr_array(&pelog_env, &pelog_env_size,
 				     buffer);
 		safe_unpack32(&pack_leader, buffer);
+		safe_unpackstr_xmalloc(&clusters, &name_len, buffer);
+		if ((error_code = _load_job_fed_details(&job_fed_details,
+							buffer,
+							protocol_version)))
+			goto unpack_error;
+
 	} else if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
 		safe_unpack32(&array_job_id, buffer);
 		safe_unpack32(&array_task_id, buffer);
@@ -2204,6 +2215,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->pelog_env    = pelog_env;
 	job_ptr->pelog_env_size = pelog_env_size;
 	job_ptr->pack_leader  = pack_leader;
+	job_ptr->clusters     = clusters;
+	job_ptr->fed_details  = job_fed_details;
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -2213,11 +2226,13 @@ unpack_error:
 	xfree(admin_comment);
 	xfree(batch_host);
 	xfree(burst_buffer);
+	xfree(clusters);
 	xfree(comment);
 	xfree(gres);
 	xfree(gres_alloc);
 	xfree(gres_req);
 	xfree(gres_used);
+	_free_job_fed_details(&job_fed_details);
 	free_job_resources(&job_resources);
 	xfree(resp_host);
 	xfree(licenses);
@@ -2245,7 +2260,7 @@ unpack_error:
 	if (job_ptr) {
 		if (job_ptr->job_id == 0)
 			job_ptr->job_id = NO_VAL;
-		_purge_job_record(job_ptr->job_id);
+		purge_job_record(job_ptr->job_id);
 	}
 	for (i=0; i<pelog_env_size; i++)
 		xfree(pelog_env[i]);
@@ -3057,6 +3072,7 @@ extern int kill_job_by_part_name(char *part_name)
 			job_ptr->end_time	= now;
 			job_ptr->exit_code	= 1;
 			job_completion_logger(job_ptr, false);
+			fed_mgr_job_complete(job_ptr, 0, job_ptr->start_time);
 		}
 		job_ptr->part_ptr = NULL;
 		FREE_NULL_LIST(job_ptr->part_ptr_list);
@@ -4353,16 +4369,20 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		job_ptr->job_state  = JOB_FAILED;
 		job_ptr->exit_code  = 1;
 		job_ptr->start_time = job_ptr->end_time = now;
-		_purge_job_record(job_ptr->job_id);
+		purge_job_record(job_ptr->job_id);
 		return rc;
 	}
 
-	test_only = will_run || job_ptr->deadline || (allocate == 0);
+	/* fed jobs need to go to the siblings first so don't attempt to
+	 * schedule the job now. */
+	test_only = will_run || job_ptr->deadline || (allocate == 0) ||
+		    job_ptr->fed_details;
 
 	no_alloc = test_only || too_fragmented || _has_deadline(job_ptr) ||
 		   (!top_prio) || (!independent) || !avail_front_end(job_ptr);
 
 	no_alloc = no_alloc || (bb_g_job_test_stage_in(job_ptr, no_alloc) != 1);
+
 	error_code = _select_nodes_parts(job_ptr, no_alloc, NULL, err_msg);
 	if (!test_only) {
 		last_job_update = now;
@@ -4432,7 +4452,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		job_ptr->job_state  = JOB_FAILED;
 		job_ptr->exit_code  = 1;
 		job_ptr->start_time = job_ptr->end_time = now;
-		_purge_job_record(job_ptr->job_id);
+		purge_job_record(job_ptr->job_id);
 	} else if (!with_slurmdbd)
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
@@ -4520,6 +4540,21 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
 
+	/* If is origin job then cancel siblings -- if they exist.
+	 * origin job = because it knows where the siblings are
+	 * If the job is running locally then just do the normal signalling */
+	if (job_ptr->fed_details &&
+	    fed_mgr_cluster_rec &&
+	    fed_mgr_is_origin_job(job_ptr) &&
+	    job_ptr->fed_details->cluster_lock != fed_mgr_cluster_rec->fed.id) {
+		int rc = fed_mgr_job_cancel(job_ptr, signal, flags, uid);
+		/* If the job is running on a remote cluster then wait for the
+		 * job to report back that it's completed, otherwise just signal
+		 * the pending siblings and itself (by not returning). */
+		if (job_ptr->fed_details->cluster_lock)
+			return rc;
+	}
+
 	/* let node select plugin do any state-dependent signalling actions */
 	select_g_job_signal(job_ptr, signal);
 	last_job_update = now;
@@ -4542,9 +4577,14 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 		last_job_update         = now;
 		job_ptr->end_time       = now;
 		job_ptr->job_state      = JOB_CANCELLED | JOB_COMPLETING;
+		if (flags & KILL_FED_REQUEUE)
+			job_ptr->job_state |= JOB_REQUEUE;
 		build_cg_bitmap(job_ptr);
 		job_completion_logger(job_ptr, false);
 		deallocate_nodes(job_ptr, false, false, false);
+		if (flags & KILL_FED_REQUEUE) {
+			job_ptr->job_state &= (~JOB_REQUEUE);
+		}
 		verbose("%s: %u of configuring %s successful",
 			__func__, signal, jobid2str(job_ptr, jbuf,
 						    sizeof(jbuf)));
@@ -4553,10 +4593,21 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 
 	if (IS_JOB_PENDING(job_ptr) && (signal == SIGKILL)) {
 		job_ptr->job_state	= JOB_CANCELLED;
+		if (flags & KILL_FED_REQUEUE)
+			job_ptr->job_state |= JOB_REQUEUE;
 		job_ptr->start_time	= now;
 		job_ptr->end_time	= now;
 		srun_allocate_abort(job_ptr);
 		job_completion_logger(job_ptr, false);
+		if (flags & KILL_FED_REQUEUE) {
+			job_ptr->job_state &= (~JOB_REQUEUE);
+		}
+		/* Send back a response to the origin cluster, in other cases
+		 * where the job is running the job will send back a response
+		 * after the job is is completed. This can happen when the
+		 * pending origin job is put into a hold state and the siblings
+		 * are removed or when the job is canceled from the origin. */
+		fed_mgr_job_complete(job_ptr, 0, job_ptr->start_time);
 		verbose("%s: of pending %s successful",
 			__func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)));
 		return SLURM_SUCCESS;
@@ -4571,9 +4622,13 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 		job_ptr->end_time       = job_ptr->suspend_time;
 		job_ptr->tot_sus_time  += difftime(now, job_ptr->suspend_time);
 		job_ptr->job_state      = job_term_state | JOB_COMPLETING;
+		if (flags & KILL_FED_REQUEUE)
+			job_ptr->job_state |= JOB_REQUEUE;
 		build_cg_bitmap(job_ptr);
 		jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
 		job_completion_logger(job_ptr, false);
+		if (flags & KILL_FED_REQUEUE)
+			job_ptr->job_state &= (~JOB_REQUEUE);
 		deallocate_nodes(job_ptr, false, true, preempt);
 		verbose("%s: %u of suspended %s successful",
 			__func__, signal, jobid2str(job_ptr, jbuf,
@@ -4596,9 +4651,13 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 			job_ptr->end_time		= now;
 			last_job_update			= now;
 			job_ptr->job_state = job_term_state | JOB_COMPLETING;
+			if (flags & KILL_FED_REQUEUE)
+				job_ptr->job_state |= JOB_REQUEUE;
 			build_cg_bitmap(job_ptr);
 			job_completion_logger(job_ptr, false);
 			deallocate_nodes(job_ptr, false, false, preempt);
+			if (flags & KILL_FED_REQUEUE)
+				job_ptr->job_state &= (~JOB_REQUEUE);
 		} else if (job_ptr->batch_flag &&
 			   ((flags & KILL_FULL_JOB)  ||
 			    (flags & KILL_JOB_BATCH) ||
@@ -4908,12 +4967,12 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal, uint16_t flags)
 		      __func__, job_ptr->job_id);
 		return;
 	}
-	if (flags > 0xf) {	/* Top 4 bits used for KILL_* flags */
+	if (flags > 0xff) {	/* Top 8 bits used for KILL_* flags */
 		error("%s: signal flags %u for job %u exceed limit",
 		      __func__, flags, job_ptr->job_id);
 		return;
 	}
-	if (signal > 0xfff) {	/* Top 4 bits used for KILL_* flags */
+	if (signal > 0xfff) {	/* Top 8 bits used for KILL_* flags */
 		error("%s: signal value %u for job %u exceed limit",
 		      __func__, signal, job_ptr->job_id);
 		return;
@@ -6286,7 +6345,7 @@ cleanup_fail:
 		job_ptr->state_reason = FAIL_SYSTEM;
 		xfree(job_ptr->state_desc);
 		job_ptr->start_time = job_ptr->end_time = time(NULL);
-		_purge_job_record(job_ptr->job_id);
+		purge_job_record(job_ptr->job_id);
 		*job_pptr = (struct job_record *) NULL;
 	}
 	FREE_NULL_LIST(license_list);
@@ -7235,6 +7294,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->gres       = xstrdup(job_desc->gres);
 	job_ptr->network    = xstrdup(job_desc->network);
 	job_ptr->resv_name  = xstrdup(job_desc->reservation);
+	job_ptr->restart_cnt = job_desc->restart_cnt;
 	job_ptr->comment    = xstrdup(job_desc->comment);
 
 	if (job_desc->kill_on_node_fail != (uint16_t) NO_VAL)
@@ -7385,6 +7445,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->ckpt_dir = xstrdup(job_desc->ckpt_dir);
 	else
 		detail_ptr->ckpt_dir = xstrdup(detail_ptr->work_dir);
+
+	job_ptr->clusters = xstrdup(job_desc->clusters);
 
 	/* The priority needs to be set after this since we don't have
 	 * an association rec yet
@@ -8239,6 +8301,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->burst_buffer);
 	checkpoint_free_jobinfo(job_ptr->check_job);
 	xfree(job_ptr->comment);
+	xfree(job_ptr->clusters);
 	_free_job_fed_details(&job_ptr->fed_details);
 	free_job_resources(&job_ptr->job_resrcs);
 	xfree(job_ptr->gres);
@@ -8291,11 +8354,11 @@ static void _list_delete_job(void *job_entry)
 
 
 /*
- * _list_find_job_id - find specific job_id entry in the job list,
+ * list_find_job_id - find specific job_id entry in the job list,
  *	see common/list.h for documentation, key is job_id_ptr
  * global- job_list - the global partition list
  */
-static int _list_find_job_id(void *job_entry, void *key)
+extern int list_find_job_id(void *job_entry, void *key)
 {
 	uint32_t *job_id_ptr = (uint32_t *) key;
 
@@ -8352,7 +8415,8 @@ static int _list_find_job_old(void *job_entry, void *key)
 		return 0;	/* No job record purging */
 
 	min_age  = now - slurmctld_conf.min_job_age;
-	if (job_ptr->end_time > min_age)
+	if (fed_mgr_is_origin_job(job_ptr) &&
+	    (job_ptr->end_time > min_age))
 		return 0;	/* Too new to purge */
 
 	if (!(IS_JOB_COMPLETED(job_ptr)))
@@ -8423,7 +8487,7 @@ static bool _all_parts_hidden(struct job_record *job_ptr)
 static bool _hide_job(struct job_record *job_ptr, uid_t uid,
 		      uint16_t show_flags)
 {
-	if (!(show_flags & SHOW_FED_TRACK) &&
+	if (!(show_flags & SHOW_ALL) &&
 	    job_ptr->fed_details && fed_mgr_is_tracker_only_job(job_ptr))
 		return true;
 
@@ -9675,7 +9739,7 @@ void purge_old_job(void)
 
 
 /*
- * _purge_job_record - purge specific job record. No testing is performed to
+ * purge_job_record - purge specific job record. No testing is performed to
  *	insure the job records has no active references. Use only for job
  *	records that were never fully operational (e.g. WILL_RUN test, failed
  *	job load, failed job create, etc.).
@@ -9683,9 +9747,9 @@ void purge_old_job(void)
  * RET int - count of job's purged
  * global: job_list - global job table
  */
-static int _purge_job_record(uint32_t job_id)
+extern int purge_job_record(uint32_t job_id)
 {
-	return list_delete_all(job_list, &_list_find_job_id, (void *) &job_id);
+	return list_delete_all(job_list, &list_find_job_id, (void *) &job_id);
 }
 
 
@@ -11185,6 +11249,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			job_ptr->job_state &= ~JOB_SPECIAL_EXIT;
 			xfree(job_ptr->state_desc);
 			job_ptr->exit_code = 0;
+
+			fed_mgr_job_requeue(job_ptr); /* submit sibling jobs */
 		} else if ((job_ptr->priority == 0) &&
 			   (job_specs->priority != INFINITE)) {
 			info("ignore priority reset request on held job %u",
@@ -11219,6 +11285,12 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				} else
 					job_ptr->state_reason = WAIT_HELD;
 				xfree(job_ptr->state_desc);
+
+				/* remove pending remote sibling jobs */
+				if (IS_JOB_PENDING(job_ptr) &&
+				    !IS_JOB_REVOKED(job_ptr)) {
+					fed_mgr_job_revoke_sibs(job_ptr);
+				}
 			}
 		} else if ((job_ptr->priority != 0) &&
 			   (job_specs->priority == INFINITE) &&
@@ -13314,6 +13386,14 @@ void batch_requeue_fini(struct job_record  *job_ptr)
 	job_ptr->db_index = 0;
 	if (!with_slurmdbd)
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+
+	/* Submit new sibling jobs for fed jobs */
+	if (fed_mgr_is_origin_job(job_ptr)) {
+		if (fed_mgr_job_requeue(job_ptr)) {
+			error("failed to submit requeued sibling jobs for fed job %d",
+			      job_ptr->job_id);
+		}
+	}
 }
 
 
@@ -13426,8 +13506,15 @@ extern void job_completion_logger(struct job_record *job_ptr, bool requeue)
 		 * since it will throw off displays of the job. */
 		job_ptr->job_state &= ~JOB_CONFIGURING;
 
-		/* make sure all parts of the job are notified */
-		srun_job_complete(job_ptr);
+		/* make sure all parts of the job are notified
+		 * Fed Jobs: only signal the srun from where the was running or
+		 * from the origin if the job wasn't running. */
+		if (!job_ptr->fed_details ||
+		    (fed_mgr_cluster_rec && (job_ptr->fed_details->cluster_lock
+					     == fed_mgr_cluster_rec->fed.id)) ||
+		    (fed_mgr_is_origin_job(job_ptr) &&
+		     !job_ptr->fed_details->cluster_lock))
+			srun_job_complete(job_ptr);
 
 		/* mail out notifications of completion */
 		base_state = job_ptr->job_state & JOB_STATE_BASE;
@@ -14256,7 +14343,9 @@ static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
 			uint32_t state)
 {
 	bool is_running = false, is_suspended = false, is_completed = false;
+	bool is_completing = false;
 	time_t now = time(NULL);
+	uint32_t completing_flags;
 
 	/* validate the request */
 	if ((uid != job_ptr->user_id) && !validate_operator(uid) &&
@@ -14286,10 +14375,21 @@ static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
 		return ESLURM_BATCH_ONLY;
 	}
 
-
-	/* If the job is already pending, just return an error. */
-	if (IS_JOB_PENDING(job_ptr))
+	/* If the job is already pending, just return an error.
+	 * A federated origin job can be pending and revoked while a sibling job
+	 * runs on another cluster. */
+	if (IS_JOB_PENDING(job_ptr) && !IS_JOB_REVOKED(job_ptr))
 		return ESLURM_JOB_PENDING;
+
+	if (job_ptr->fed_details) {
+		int rc;
+		if ((rc = fed_mgr_job_requeue_test(job_ptr, state)))
+			return rc;
+
+		/* Sent requeue request to origin cluster */
+		if (job_ptr->job_state & JOB_REQUEUE_FED)
+			return SLURM_SUCCESS;
+	}
 
 	slurm_sched_g_requeue(job_ptr, "Job requeued by user/admin");
 	last_job_update = now;
@@ -14300,10 +14400,8 @@ static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
 	 * of done/exit/exiting jobs.
 	 */
 	if (IS_JOB_COMPLETING(job_ptr)) {
-		uint32_t flags;
-		flags = job_ptr->job_state & JOB_STATE_FLAGS;
-		job_ptr->job_state = JOB_PENDING | flags;
-		goto reply;
+		completing_flags = job_ptr->job_state & JOB_STATE_FLAGS;
+		is_completing = true;
 	}
 
 	if (IS_JOB_SUSPENDED(job_ptr)) {
@@ -14320,7 +14418,7 @@ static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
 	job_ptr->time_last_active  = now;
 	if (is_suspended)
 		job_ptr->end_time = job_ptr->suspend_time;
-	else
+	else if (!is_completing)
 		job_ptr->end_time = now;
 
 	/* Save the state of the job so that
@@ -14332,12 +14430,27 @@ static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
 	else if (IS_JOB_COMPLETED(job_ptr))
 		is_completed = true;
 
-	/* We want this job to have the requeued state in the
-	 * accounting logs. Set a new submit time so the restarted
-	 * job looks like a new job. */
-	job_ptr->job_state  = JOB_REQUEUE;
-	build_cg_bitmap(job_ptr);
-	job_completion_logger(job_ptr, true);
+	/* Only change state to requeue for local jobs */
+	if (fed_mgr_is_origin_job(job_ptr) &&
+	    !fed_mgr_is_tracker_only_job(job_ptr)) {
+
+		/* We want this job to have the requeued state in the
+		 * accounting logs. Set a new submit time so the restarted
+		 * job looks like a new job. */
+		job_ptr->job_state  = JOB_REQUEUE;
+		build_cg_bitmap(job_ptr);
+		job_completion_logger(job_ptr, true);
+	}
+
+	/* Increment restart counter before completing reply so that completing
+	 * jobs get counted and so that fed jobs get counted before submitting
+	 * new sibs in batch_requeue_fini */
+	job_ptr->restart_cnt++;
+
+	if (is_completing) {
+		job_ptr->job_state = JOB_PENDING | completing_flags;
+		goto reply;
+	}
 
 	/* Deallocate resources only if the job has some.
 	 * JOB_COMPLETING is needed to properly clean up steps. */
@@ -14354,6 +14467,19 @@ static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
 	job_ptr->job_state = JOB_PENDING;
 	if (job_ptr->node_cnt)
 		job_ptr->job_state |= JOB_COMPLETING;
+
+	/* Mark the origin job as requeueing. Will finish requeueing fed job
+	 * after job has completed.
+	 * If it's completed, batch_requeue_fini is called below and will call
+	 * fed_mgr_job_requeue() to submit new siblings.
+	 * If it's not completed, batch_requeue_fini will either be called when
+	 * the running origin job finishes or the running remote sibling job
+	 * reports that the job is finished. */
+	if (job_ptr->fed_details && !is_completed) {
+		job_ptr->job_state |= JOB_COMPLETING;
+		job_ptr->job_state |= JOB_REQUEUE_FED;
+	}
+
 	/* If we set the time limit it means the user didn't so reset
 	   it here or we could bust some limit when we try again */
 	if (job_ptr->limit_set.time == 1) {
@@ -14361,20 +14487,10 @@ static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
 		job_ptr->limit_set.time = 0;
 	}
 
-	/* When jobs are requeued while running/completing batch_requeue_fini is
-	 * called after the job is completely finished.  If the job is already
-	 * finished it needs to be called to clear out states (especially the
-	 * db_index or we will just write over the last job in the database).
-	 */
-	if (is_completed)
-		batch_requeue_fini(job_ptr);
-
 reply:
 	job_ptr->pre_sus_time = (time_t) 0;
 	job_ptr->suspend_time = (time_t) 0;
 	job_ptr->tot_sus_time = (time_t) 0;
-
-	job_ptr->restart_cnt++;
 
 	/* clear signal sent flag on requeue */
 	job_ptr->warn_flags &= ~WARN_SENT;
@@ -14402,6 +14518,16 @@ reply:
 				= xstrdup("job requeued in held state");
 		job_ptr->priority = 0;
 	}
+
+	/* When jobs are requeued while running/completing batch_requeue_fini is
+	 * called after the job is completely finished.  If the job is already
+	 * finished it needs to be called to clear out states (especially the
+	 * db_index or we will just write over the last job in the database).
+	 * Call batch_requeue_fini after setting priority to 0 for requeue_hold
+	 * and special_exit so federation doesn't submit siblings for held job.
+	 */
+	if (is_completed)
+		batch_requeue_fini(job_ptr);
 
 	debug("%s: job %u state 0x%x reason %u priority %d", __func__,
 	      job_ptr->job_id, job_ptr->job_state,
@@ -15319,7 +15445,7 @@ static void _pack_job_for_ckpt (struct job_record *job_ptr, Buf buffer)
 	packstr(job_ptr->nodes, buffer);
 
 	/* save job req */
-	job_desc = _copy_job_record_to_job_desc(job_ptr);
+	job_desc = copy_job_record_to_job_desc(job_ptr);
 	msg.msg_type = REQUEST_SUBMIT_BATCH_JOB;
 	msg.protocol_version = SLURM_PROTOCOL_VERSION;
 	msg.data = job_desc;
@@ -15336,12 +15462,11 @@ static void _pack_job_for_ckpt (struct job_record *job_ptr, Buf buffer)
 }
 
 /*
- * _copy_job_record_to_job_desc - construct a job_desc_msg_t for a job.
+ * copy_job_record_to_job_desc - construct a job_desc_msg_t for a job.
  * IN job_ptr - the job record
  * RET the job_desc_msg_t, NULL on error
  */
-static job_desc_msg_t *
-_copy_job_record_to_job_desc(struct job_record *job_ptr)
+extern job_desc_msg_t *copy_job_record_to_job_desc(struct job_record *job_ptr)
 {
 	job_desc_msg_t *job_desc;
 	struct job_details *details = job_ptr->details;
@@ -15367,6 +15492,7 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->begin_time        = details->begin_time;
 	job_desc->ckpt_interval     = job_ptr->ckpt_interval;
 	job_desc->ckpt_dir          = xstrdup(details->ckpt_dir);
+	job_desc->clusters          = xstrdup(job_ptr->clusters);
 	job_desc->comment           = xstrdup(job_ptr->comment);
 	job_desc->contiguous        = details->contiguous;
 	job_desc->core_spec         = details->core_spec;
@@ -15413,6 +15539,7 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->req_nodes         = xstrdup(details->req_nodes);
 	job_desc->requeue           = details->requeue;
 	job_desc->reservation       = xstrdup(job_ptr->resv_name);
+	job_desc->restart_cnt       = job_ptr->restart_cnt;
 	job_desc->script            = get_job_script(job_ptr);
 	if (details->share_res == 1)
 		job_desc->shared     = JOB_SHARED_OK;
@@ -15458,6 +15585,9 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->ntasks_per_node   = details->ntasks_per_node;
 	job_desc->ntasks_per_socket = mc_ptr->ntasks_per_socket;
 	job_desc->ntasks_per_core   = mc_ptr->ntasks_per_core;
+
+	if (job_ptr->fed_details)
+		job_desc->fed_siblings = job_ptr->fed_details->siblings;
 #if 0
 	/* select_jobinfo is unused at job submit time, only it's
 	 * components are set. We recover those from the structure below.
@@ -15716,8 +15846,10 @@ extern void build_cg_bitmap(struct job_record *job_ptr)
  * If JOB_REQUEUE then requeue and let it run again.
  * The requeue can happen directly from job_requeue() or from
  * job_epilog_complete() after the last component has finished.
+ *
+ * RET returns true if the job was requeued
  */
-extern void job_hold_requeue(struct job_record *job_ptr)
+extern bool job_hold_requeue(struct job_record *job_ptr)
 {
 	uint32_t state;
 	uint32_t flags;
@@ -15727,27 +15859,31 @@ extern void job_hold_requeue(struct job_record *job_ptr)
 	/* If the job is already pending it was
 	 * eventually requeued somewhere else.
 	 */
-	if (IS_JOB_PENDING(job_ptr))
-		return;
+	if (IS_JOB_PENDING(job_ptr) && !IS_JOB_REVOKED(job_ptr))
+		return false;
+
+	/* If the job is not on the origin cluster, then don't worry about
+	 * requeueing the job here. The exit code will be sent the origin
+	 * cluster and the origin cluster will decide if the job should be
+	 * requeued or not. */
+	if (!fed_mgr_is_origin_job(job_ptr))
+		return false;
 
 	/* Check if the job exit with one of the
-	 * configured requeue values.
-	 */
+	 * configured requeue values. */
 	_set_job_requeue_exit_value(job_ptr);
 
 	state = job_ptr->job_state;
 
 	if (! (state & JOB_REQUEUE))
-		return;
+		return false;
 
-	/* Sent event requeue to the database.
-	 */
+	/* Sent event requeue to the database.  */
 	jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
 
 	debug("%s: job %u state 0x%x", __func__, job_ptr->job_id, state);
 
-	/* Set the job pending
-	 */
+	/* Set the job pending */
 	flags = job_ptr->job_state & JOB_STATE_FLAGS;
 	job_ptr->job_state = JOB_PENDING | flags;
 
@@ -15757,13 +15893,11 @@ extern void job_hold_requeue(struct job_record *job_ptr)
 	job_ptr->warn_flags &= ~WARN_SENT;
 
 	/* Test if user wants to requeue the job
-	 * in hold or with a special exit value.
-	 */
+	 * in hold or with a special exit value.  */
 	if (state & JOB_SPECIAL_EXIT) {
 		/* JOB_SPECIAL_EXIT means requeue the
 		 * the job, put it on hold and display
-		 * it as JOB_SPECIAL_EXIT.
-		 */
+		 * it as JOB_SPECIAL_EXIT.  */
 		job_ptr->job_state |= JOB_SPECIAL_EXIT;
 		job_ptr->state_reason = WAIT_HELD_USER;
 		job_ptr->priority = 0;
@@ -15774,6 +15908,8 @@ extern void job_hold_requeue(struct job_record *job_ptr)
 	debug("%s: job %u state 0x%x reason %u priority %d", __func__,
 	      job_ptr->job_id, job_ptr->job_state,
 	      job_ptr->state_reason, job_ptr->priority);
+
+	return true;
 }
 
 /* init_requeue_policy()
@@ -16076,6 +16212,52 @@ static void _free_job_fed_details(job_fed_details_t **fed_details_pptr)
 	}
 }
 
+static void _dump_job_fed_details(job_fed_details_t *fed_details_ptr,
+				  Buf buffer)
+{
+	if (fed_details_ptr) {
+		pack16(1, buffer);
+		pack32(fed_details_ptr->cluster_lock, buffer);
+		packstr(fed_details_ptr->origin_str, buffer);
+		pack64(fed_details_ptr->siblings, buffer);
+		packstr(fed_details_ptr->siblings_str, buffer);
+	} else {
+		pack16(0, buffer);
+	}
+}
+
+static int _load_job_fed_details(job_fed_details_t **fed_details_pptr,
+				 Buf buffer,
+				 uint16_t protocol_version)
+{
+	uint16_t tmp_uint16;
+	uint32_t tmp_uint32;
+	job_fed_details_t *fed_details_ptr = NULL;
+
+	xassert(fed_details_pptr);
+
+	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
+		safe_unpack16(&tmp_uint16, buffer);
+		if (tmp_uint16) {
+			*fed_details_pptr = xmalloc(sizeof(job_fed_details_t));
+			fed_details_ptr = *fed_details_pptr;
+			safe_unpack32(&fed_details_ptr->cluster_lock, buffer);
+			safe_unpackstr_xmalloc(&fed_details_ptr->origin_str,
+					       &tmp_uint32, buffer);
+			safe_unpack64(&fed_details_ptr->siblings, buffer);
+			safe_unpackstr_xmalloc(&fed_details_ptr->siblings_str,
+					       &tmp_uint32, buffer);
+		}
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	_free_job_fed_details(fed_details_pptr);
+	*fed_details_pptr = NULL;
+
+	return SLURM_ERROR;
+}
 
 extern void set_job_fed_details(struct job_record *job_ptr,
 				uint64_t fed_siblings)

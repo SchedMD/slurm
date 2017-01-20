@@ -563,6 +563,7 @@ typedef struct {
 } acct_policy_limit_set_t;
 
 typedef struct {
+	uint32_t cluster_lock;	/* sibling that has lock on job */
 	char    *origin_str;	/* origin cluster name */
 	uint64_t siblings;	/* bitmap of sibling cluster ids */
 	char    *siblings_str;	/* comma separated list of sibling names */
@@ -603,6 +604,8 @@ struct job_record {
 	uint16_t ckpt_interval;		/* checkpoint interval in minutes */
 	time_t ckpt_time;		/* last time job was periodically
 					 * checkpointed */
+	char *clusters;			/* clusters job is submitted to with -M
+					   option */
 	char *comment;			/* arbitrary comment */
 	uint32_t cpu_cnt;		/* current count of CPUs held
 					 * by the job, decremented while job is
@@ -1321,7 +1324,7 @@ extern int job_fail(uint32_t job_id, uint32_t job_state);
  * The requeue can happen directly from job_requeue() or from
  * job_epilog_complete() after the last component has finished.
  */
-extern void job_hold_requeue(struct job_record *job_ptr);
+extern bool job_hold_requeue(struct job_record *job_ptr);
 
 /*
  * determine if job is ready to execute per the node select plugin
@@ -1646,6 +1649,13 @@ extern int list_find_feature(void *feature_entry, void *key);
  * global- part_list - the global partition list
  */
 extern int list_find_part (void *part_entry, void *key);
+
+/*
+ * list_find_job_id - find specific job_id entry in the job list,
+ *	see common/list.h for documentation, key is job_id_ptr
+ * global- job_list - the global partition list
+ */
+extern int list_find_job_id(void *job_entry, void *key);
 
 /*
  * load_all_job_state - load the job state from file, recover from last
@@ -2426,4 +2436,23 @@ extern void set_partition_tres();
  */
 extern void set_job_fed_details(struct job_record *job_ptr,
 				uint64_t fed_siblings);
+
+/*
+ * purge_job_record - purge specific job record. No testing is performed to
+ *	insure the job records has no active references. Use only for job
+ *	records that were never fully operational (e.g. WILL_RUN test, failed
+ *	job load, failed job create, etc.).
+ * IN job_id - job_id of job record to be purged
+ * RET int - count of job's purged
+ * global: job_list - global job table
+ */
+extern int purge_job_record(uint32_t job_id);
+
+/*
+ * copy_job_record_to_job_desc - construct a job_desc_msg_t for a job.
+ * IN job_ptr - the job record
+ * RET the job_desc_msg_t, NULL on error
+ */
+extern job_desc_msg_t *copy_job_record_to_job_desc(struct job_record *job_ptr);
+
 #endif /* !_HAVE_SLURMCTLD_H */

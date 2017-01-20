@@ -533,6 +533,9 @@ allocate_nodes(bool handle_signals)
 		opt.min_nodes = resp->node_cnt;
 		opt.max_nodes = resp->node_cnt;
 
+		if (resp->working_cluster_rec)
+			slurm_setup_remote_working_cluster(resp);
+
 		if (!_wait_nodes_ready(resp)) {
 			if (!destroy_job)
 				error("Something is wrong with the boot of the nodes.");

@@ -60,7 +60,6 @@
 #define OPT_LONG_HIDE      0x102
 #define OPT_LONG_START     0x103
 #define OPT_LONG_NOCONVERT 0x104
-#define OPT_LONG_FEDTRACK  0x105
 
 /* FUNCTIONS */
 static List  _build_job_list( char* str );
@@ -95,7 +94,6 @@ parse_command_line( int argc, char* *argv )
 		{"accounts",   required_argument, 0, 'A'},
 		{"all",        no_argument,       0, 'a'},
 		{"array",      no_argument,       0, 'r'},
-		{"fedtrack",   no_argument,       0, OPT_LONG_FEDTRACK},
 		{"Format",     required_argument, 0, 'O'},
 		{"format",     required_argument, 0, 'o'},
 		{"help",       no_argument,       0, OPT_LONG_HELP},
@@ -294,9 +292,6 @@ parse_command_line( int argc, char* *argv )
 				exit(1);
 			}
 			break;
-		case OPT_LONG_FEDTRACK:
-			params.show_fedtrack = true;
-			break;
 		case OPT_LONG_HELP:
 			_help();
 			exit(0);
@@ -492,6 +487,8 @@ _parse_state( char* str, uint32_t* states )
 	xstrcat(state_names, job_state_string(JOB_CONFIGURING));
 	xstrcat(state_names, ",");
 	xstrcat(state_names, job_state_string(JOB_RESIZING));
+	xstrcat(state_names, ",");
+	xstrcat(state_names, job_state_string(JOB_REVOKED));
 	xstrcat(state_names, ",");
 	xstrcat(state_names, job_state_string(JOB_SPECIAL_EXIT));
 	error("Valid job states include: %s\n", state_names);
@@ -1863,6 +1860,7 @@ _build_all_states_list( void )
 
 	_append_state_list(my_list, JOB_COMPLETING);
 	_append_state_list(my_list, JOB_CONFIGURING);
+	_append_state_list(my_list, JOB_REVOKED);
 	_append_state_list(my_list, JOB_SPECIAL_EXIT);
 
 	return my_list;

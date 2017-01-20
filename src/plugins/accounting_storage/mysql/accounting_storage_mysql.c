@@ -1221,7 +1221,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "node_inx", "text" },
 		{ "partition", "tinytext not null" },
 		{ "priority", "int unsigned not null" },
-		{ "state", "smallint unsigned not null" },
+		{ "state", "int unsigned not null" },
 		{ "timelimit", "int unsigned default 0 not null" },
 		{ "time_submit", "bigint unsigned default 0 not null" },
 		{ "time_eligible", "bigint unsigned default 0 not null" },

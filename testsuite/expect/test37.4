@@ -143,7 +143,7 @@ proc submit_fed_job { cname expected_origin expected_sib spec_clusters } {
 	if {$submit_cluster ne ""} {
 		set my_squeue "${fed_slurm_base}/$submit_cluster/bin/squeue"
 	}
-	spawn $my_squeue --jobs=$job_id --noheader -Ofedorigin,fedsiblings --fedtrack
+	spawn $my_squeue --jobs=$job_id --noheader -Ofedorigin,fedsiblings -a
 	expect {
 		-re "(\\S+)\\s+(\\S+)" {
 			set origin  $expect_out(1,string)

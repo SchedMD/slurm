@@ -842,6 +842,8 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 
 		if (IS_JOB_REQUEUED(job_ptr))
 			job_state = JOB_REQUEUE;
+		else if (IS_JOB_REVOKED(job_ptr))
+			job_state = JOB_REVOKED;
 		else
 			job_state = job_ptr->job_state & JOB_STATE_BASE;
 	}

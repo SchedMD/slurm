@@ -333,7 +333,7 @@ extern void bg_requeue_job(uint32_t job_id, bool wait_for_start,
 {
 	int rc;
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 
 	/* Wait for the slurmd to begin the batch script, slurm_fail_job()
 	   is a no-op if issued prior to the script initiation do

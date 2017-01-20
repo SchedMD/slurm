@@ -294,13 +294,6 @@ static int _setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec)
 		return SLURM_ERROR;
 	}
 
-	if (cluster_rec->rpc_version < 8) {
-		debug("Slurmctld on '%s' must be running at least "
-		      "SLURM 2.2 for cross-cluster communication.",
-		      cluster_rec->name);
-		return SLURM_ERROR;
-	}
-
 	if ((plugin_id_select = select_get_plugin_id_pos(
 		     cluster_rec->plugin_id_select)) == SLURM_ERROR) {
 		error("Cluster '%s' has an unknown select plugin_id %u",

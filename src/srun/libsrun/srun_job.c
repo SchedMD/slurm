@@ -523,6 +523,10 @@ extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
 			exit(error_exit);
 		}
 	} else if ((resp = existing_allocation())) {
+
+		if (resp->working_cluster_rec)
+			slurm_setup_remote_working_cluster(resp);
+
 		select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET,
 					&resp->node_cnt);
 		if (opt.nodes_set_env && !opt.nodes_set_opt &&

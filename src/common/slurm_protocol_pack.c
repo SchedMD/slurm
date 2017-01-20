@@ -968,6 +968,12 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 				   msg->data, buffer,
 				   msg->protocol_version);
 		break;
+	case REQUEST_SIB_JOB_START:
+	case REQUEST_SIB_JOB_CANCEL:
+	case REQUEST_SIB_JOB_REQUEUE:
+	case REQUEST_SIB_JOB_COMPLETE:
+	case REQUEST_SIB_JOB_LOCK:
+	case REQUEST_SIB_JOB_UNLOCK:
 	case REQUEST_SIB_JOB_WILL_RUN:
 	case REQUEST_SIB_SUBMIT_BATCH_JOB:
 	case REQUEST_SIB_RESOURCE_ALLOCATION:
@@ -1645,6 +1651,12 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 					  buffer,
 					  msg->protocol_version);
 		break;
+	case REQUEST_SIB_JOB_START:
+	case REQUEST_SIB_JOB_CANCEL:
+	case REQUEST_SIB_JOB_REQUEUE:
+	case REQUEST_SIB_JOB_COMPLETE:
+	case REQUEST_SIB_JOB_LOCK:
+	case REQUEST_SIB_JOB_UNLOCK:
 	case REQUEST_SIB_JOB_WILL_RUN:
 	case REQUEST_SIB_SUBMIT_BATCH_JOB:
 	case REQUEST_SIB_RESOURCE_ALLOCATION:
@@ -3619,6 +3631,15 @@ _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *msg,
 		pack32(msg->error_code, buffer);
 		pack32(msg->job_id, buffer);
 		pack32(msg->node_cnt, buffer);
+
+		/* pack node_addr after node_cnt -- need it for unpacking */
+		if (msg->node_addr && msg->node_cnt > 0) {
+			pack8(1, buffer); /* non-null node_addr */
+			_pack_slurm_addr_array(msg->node_addr, msg->node_cnt,
+					       buffer, protocol_version);
+		} else
+			pack8(0, buffer);
+
 		packstr(msg->node_list, buffer);
 		pack16(msg->ntasks_per_board, buffer);
 		pack16(msg->ntasks_per_core, buffer);
@@ -3639,6 +3660,14 @@ _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *msg,
 		select_g_select_jobinfo_pack(msg->select_jobinfo,
 					     buffer,
 					     protocol_version);
+
+		if (msg->working_cluster_rec) {
+			pack8(1, buffer);
+			slurmdb_pack_cluster_rec(msg->working_cluster_rec,
+						 protocol_version, buffer);
+		} else
+			pack8(0, buffer);
+
 	} else if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
 		packstr(msg->account, buffer);
 		packstr(msg->alias_list, buffer);
@@ -3702,6 +3731,7 @@ _unpack_resource_allocation_response_msg(
 	resource_allocation_response_msg_t** msg, Buf buffer,
 	uint16_t protocol_version)
 {
+	uint8_t  uint8_tmp;
 	uint32_t uint32_tmp;
 	resource_allocation_response_msg_t *tmp_ptr;
 
@@ -3720,6 +3750,19 @@ _unpack_resource_allocation_response_msg(
 		safe_unpack32(&tmp_ptr->error_code, buffer);
 		safe_unpack32(&tmp_ptr->job_id, buffer);
 		safe_unpack32(&tmp_ptr->node_cnt, buffer);
+
+		/* unpack node_addr after node_cnt -- need it to unpack */
+		safe_unpack8(&uint8_tmp, buffer);
+		if (uint8_tmp) {
+			if (_unpack_slurm_addr_array(&(tmp_ptr->node_addr),
+						     &uint32_tmp, buffer,
+						     protocol_version))
+				goto unpack_error;
+			if (uint32_tmp != tmp_ptr->node_cnt)
+				goto unpack_error;
+		} else
+			tmp_ptr->node_addr = NULL;
+
 		safe_unpackstr_xmalloc(&tmp_ptr->node_list, &uint32_tmp,
 				       buffer);
 		safe_unpack16(&tmp_ptr->ntasks_per_board, buffer);
@@ -3748,6 +3791,13 @@ _unpack_resource_allocation_response_msg(
 		if (select_g_select_jobinfo_unpack(&tmp_ptr->select_jobinfo,
 						   buffer, protocol_version))
 			goto unpack_error;
+
+		safe_unpack8(&uint8_tmp, buffer);
+		if (uint8_tmp) {
+			slurmdb_unpack_cluster_rec(
+					(void **)&tmp_ptr->working_cluster_rec,
+					protocol_version, buffer);
+		}
 
 	} else if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
 		uint32_t tmp_mem;
@@ -8575,22 +8625,31 @@ _pack_sib_msg(sib_msg_t *sib_msg_ptr, Buf buffer, uint16_t protocol_version)
 	xassert(sib_msg_ptr);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack32(sib_msg_ptr->cluster_id, buffer);
 		pack16(sib_msg_ptr->data_type, buffer);
 		pack16(sib_msg_ptr->data_version, buffer);
 		pack64(sib_msg_ptr->fed_siblings, buffer);
 		pack32(sib_msg_ptr->job_id, buffer);
+		pack32(sib_msg_ptr->return_code, buffer);
+		pack_time(sib_msg_ptr->start_time, buffer);
+		pack32(sib_msg_ptr->req_uid, buffer);
 
 		/* add already packed data_buffer to buffer */
-		if (size_buf(sib_msg_ptr->data_buffer)) {
+		if (sib_msg_ptr->data_buffer &&
+		    size_buf(sib_msg_ptr->data_buffer)) {
 			Buf dbuf = sib_msg_ptr->data_buffer;
 			uint32_t grow_size =
 				size_buf(dbuf) - get_buf_offset(dbuf);
+
+			pack16(1, buffer);
 
 			grow_buf(buffer, grow_size);
 			memcpy(&buffer->head[get_buf_offset(buffer)],
 			       &dbuf->head[get_buf_offset(dbuf)], grow_size);
 			set_buf_offset(buffer,
 				       get_buf_offset(buffer) + grow_size);
+		} else {
+			pack16(0, buffer);
 		}
 	} else {
 		error("_pack_sib_msg: protocol_version "
@@ -8604,6 +8663,7 @@ _unpack_sib_msg(sib_msg_t **sib_msg_buffer_ptr, Buf buffer,
 {
 	sib_msg_t *sib_msg_ptr = NULL;
 	slurm_msg_t tmp_msg;
+	uint16_t tmp_uint16;
 
 	xassert(sib_msg_buffer_ptr);
 
@@ -8613,12 +8673,17 @@ _unpack_sib_msg(sib_msg_t **sib_msg_buffer_ptr, Buf buffer,
 		*sib_msg_buffer_ptr = sib_msg_ptr;
 
 		/* load the data values */
+		safe_unpack32(&sib_msg_ptr->cluster_id, buffer);
 		safe_unpack16(&sib_msg_ptr->data_type, buffer);
 		safe_unpack16(&sib_msg_ptr->data_version, buffer);
 		safe_unpack64(&sib_msg_ptr->fed_siblings, buffer);
 		safe_unpack32(&sib_msg_ptr->job_id, buffer);
+		safe_unpack32(&sib_msg_ptr->return_code, buffer);
+		safe_unpack_time(&sib_msg_ptr->start_time, buffer);
+		safe_unpack32(&sib_msg_ptr->req_uid, buffer);
 
-		if (remaining_buf(buffer)) {
+		safe_unpack16(&tmp_uint16, buffer);
+		if (tmp_uint16) {
 			slurm_msg_t_init(&tmp_msg);
 			tmp_msg.msg_type         = sib_msg_ptr->data_type;
 			tmp_msg.protocol_version = sib_msg_ptr->data_version;
@@ -8752,6 +8817,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		pack16(job_desc_ptr->mail_type, buffer);
 		packstr(job_desc_ptr->mail_user, buffer);
 		packstr(job_desc_ptr->reservation, buffer);
+		pack16(job_desc_ptr->restart_cnt, buffer);
 		pack16(job_desc_ptr->warn_flags, buffer);
 		pack16(job_desc_ptr->warn_signal, buffer);
 		pack16(job_desc_ptr->warn_time, buffer);
@@ -9294,6 +9360,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->reservation,
 				       &uint32_tmp, buffer);
+		safe_unpack16(&job_desc_ptr->restart_cnt, buffer);
 		safe_unpack16(&job_desc_ptr->warn_flags, buffer);
 		safe_unpack16(&job_desc_ptr->warn_signal, buffer);
 		safe_unpack16(&job_desc_ptr->warn_time, buffer);
