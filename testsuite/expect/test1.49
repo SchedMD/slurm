@@ -135,17 +135,8 @@ if {$matches != $exp_matches} {
 #
 # Get my id to compare with output
 #
-set my_uid -1
-spawn $bin_id
-expect {
-	-re "uid=($number)" {
-		set my_uid $expect_out(1,string)
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
+
+set my_uid [get_my_uid]
 
 #
 # Make sure we have two records in both prolog and epilog output (one for each task)
