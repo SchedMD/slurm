@@ -73,6 +73,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_time.h"
+#include "src/common/strlcpy.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -985,7 +986,7 @@ static int _connect_srun_cr(char *addr)
 	memset(&sa, 0, sizeof(sa));
 
 	sa.sun_family = AF_UNIX;
-	strncpy(sa.sun_path, addr, sizeof(sa.sun_path));
+	strlcpy(sa.sun_path, addr, sizeof(sa.sun_path));
 	sa_len = strlen(sa.sun_path) + sizeof(sa.sun_family);
 
 	while (((rc = connect(fd, (struct sockaddr *)&sa, sa_len)) < 0) &&
