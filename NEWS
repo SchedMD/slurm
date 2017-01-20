@@ -26,6 +26,8 @@ documents those changes that are of interest to users and administrators.
     condition later when looking at a steps env.
  -- Make backfill scheduler behave like regular scheduler in respect to
     'assoc_limit_stop'.
+ -- Allow a lower version client command to talk to a higher version contoller
+    using the multi-cluster options (e.g. squeue -M<clsuter>).
 
 * Changes in Slurm 16.05.8
 ==========================

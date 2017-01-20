@@ -809,6 +809,8 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t rpc_version,
 			goto unpack_error;
 
 		safe_unpack16(&object_ptr->rpc_version, buffer);
+		object_ptr->rpc_version = MIN(SLURM_PROTOCOL_VERSION,
+					      object_ptr->rpc_version);
 		safe_unpackstr_xmalloc(&object_ptr->tres_str,
 				       &uint32_tmp, buffer);
 	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
