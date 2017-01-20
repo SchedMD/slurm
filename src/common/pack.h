@@ -299,12 +299,12 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 
 #define unpack_bit_str_hex(bitmap,buf) do {				\
 	char *tmp_str = NULL;						\
-	uint32_t _size = NO_VAL;					\
+	uint32_t _size, _tmp_uint32;					\
 	assert(*bitmap == NULL);					\
 	assert(buf->magic == BUF_MAGIC);				\
 	safe_unpack32(&_size, buf);					\
 	if (_size != NO_VAL) {						\
-		safe_unpackstr_xmalloc(&tmp_str, &_size, buf);		\
+		safe_unpackstr_xmalloc(&tmp_str, &_tmp_uint32, buf);	\
 		*bitmap = bit_alloc(_size);				\
 		bit_unfmt_hexmask(*bitmap, tmp_str);			\
 		xfree(tmp_str);						\
