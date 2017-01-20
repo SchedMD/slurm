@@ -845,7 +845,7 @@ uint32_t
 _cpu_freq_freqspec_num(uint32_t cpu_freq, int cpuidx)
 {
 	int fx, j;
-	if (!cpufreq || (cpufreq[cpuidx].nfreq == (uint8_t) NO_VAL))
+	if (!cpufreq || !cpufreq[cpuidx].nfreq)
 		return NO_VAL;
 	/* assume the frequency list is in ascending order */
 	if (cpu_freq & CPU_FREQ_RANGE_FLAG) {	/* Named values */
@@ -874,19 +874,37 @@ _cpu_freq_freqspec_num(uint32_t cpu_freq, int cpuidx)
 			return NO_VAL;
 		}
 	}		
-	for (j = 0; j < cpufreq[cpuidx].nfreq; j++) {
+
+	/* check for request above or below available values */
+	if (cpu_freq < cpufreq[cpuidx].avail_freq[0]) {
+		error("Rounding requested frequency %d "
+		      "up to lowest available %d", cpu_freq,
+		      cpufreq[cpuidx].avail_freq[0]);
+		return cpufreq[cpuidx].avail_freq[0];
+	} else if (cpufreq[cpuidx].avail_freq[cpufreq[cpuidx].nfreq - 1]
+		   < cpu_freq) {
+		error("Rounding requested frequency %d "
+		      "down to highest available %d", cpu_freq,
+		      cpufreq[cpuidx].avail_freq[cpufreq[cpuidx].nfreq - 1]);
+		return cpufreq[cpuidx].avail_freq[cpufreq[cpuidx].nfreq - 1];
+	}
+
+	/* check for frequency, round up if no exact match */
+	for (j = 0; j < cpufreq[cpuidx].nfreq; ) {
 		if (cpu_freq == cpufreq[cpuidx].avail_freq[j]) {
 			return cpufreq[cpuidx].avail_freq[j];
 		}
-		if (j > 0) {
-			if ((cpu_freq > cpufreq[cpuidx].avail_freq[j-1]) &&
-			    (cpu_freq < cpufreq[cpuidx].avail_freq[j])) {
-				return cpufreq[cpuidx].avail_freq[j];
-			}
+		j++; 	/* step up to next element to round up *
+			 * safe to advance due to bounds checks above here */
+		if (cpu_freq < cpufreq[cpuidx].avail_freq[j]) {
+			info("Rounding requested frequency %d "
+			     "up to next available %d", cpu_freq,
+			     cpufreq[cpuidx].avail_freq[j]);
+			return cpufreq[cpuidx].avail_freq[j];
 		}
 	}
-
-	error("failed to find frequency %d on cpu=%d", cpu_freq, cpuidx);
+	/* loop above must return due to previous bounds checks
+	 * but return NO_VAL here anyways to silence compiler warnings */
 	return NO_VAL;
 }
 
