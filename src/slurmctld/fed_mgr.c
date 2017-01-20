@@ -709,7 +709,7 @@ static int _persist_fed_job_revoke(slurmdb_cluster_rec_t *conn, uint32_t job_id,
 	sib_msg.start_time  = start_time;
 	sib_msg.return_code = return_code;
 
-	req_msg.msg_type = REQUEST_SIB_JOB_REVOKE;
+	req_msg.msg_type = REQUEST_SIB_JOB_COMPLETE;
 	req_msg.data	 = &sib_msg;
 
 	if (_send_recv_msg(conn, &req_msg, &resp_msg, false)) {

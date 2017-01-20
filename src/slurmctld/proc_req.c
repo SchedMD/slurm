@@ -190,7 +190,7 @@ inline static void  _slurm_rpc_shutdown_controller_immediate(slurm_msg_t *msg);
 inline static void _slurm_rpc_sib_job_start(uint32_t uid, slurm_msg_t *msg);
 inline static void _slurm_rpc_sib_job_cancel(uint32_t uid, slurm_msg_t *msg);
 inline static void _slurm_rpc_sib_job_requeue(uint32_t uid, slurm_msg_t *msg);
-inline static void _slurm_rpc_sib_job_revoke(uint32_t uid, slurm_msg_t *msg);
+inline static void _slurm_rpc_sib_job_complete(uint32_t uid, slurm_msg_t *msg);
 inline static void _slurm_rpc_sib_job_lock(uint32_t uid, slurm_msg_t *msg);
 inline static void _slurm_rpc_sib_job_unlock(uint32_t uid, slurm_msg_t *msg);
 inline static void _slurm_rpc_sib_job_willrun(uint32_t uid, slurm_msg_t *msg);
@@ -379,8 +379,8 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 	case REQUEST_SIB_JOB_REQUEUE:
 		_slurm_rpc_sib_job_requeue(rpc_uid, msg);
 		break;
-	case REQUEST_SIB_JOB_REVOKE:
-		_slurm_rpc_sib_job_revoke(rpc_uid, msg);
+	case REQUEST_SIB_JOB_COMPLETE:
+		_slurm_rpc_sib_job_complete(rpc_uid, msg);
 		break;
 	case REQUEST_SIB_JOB_LOCK:
 		_slurm_rpc_sib_job_lock(rpc_uid, msg);
@@ -6293,7 +6293,7 @@ static void _slurm_rpc_sib_job_requeue(uint32_t uid, slurm_msg_t *msg)
 }
 
 /* complete tracker job */
-static void _slurm_rpc_sib_job_revoke(uint32_t uid, slurm_msg_t *msg)
+static void _slurm_rpc_sib_job_complete(uint32_t uid, slurm_msg_t *msg)
 {
 	struct job_record *job_ptr;
 	sib_msg_t *sib_msg = msg->data;
@@ -6302,7 +6302,7 @@ static void _slurm_rpc_sib_job_revoke(uint32_t uid, slurm_msg_t *msg)
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 
 	if (!msg->conn) {
-		error("Security violation, SIB_JOB_REVOKE RPC from uid=%d",
+		error("Security violation, SIB_JOB_COMPLETE RPC from uid=%d",
 		      uid);
 		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
 		return;
