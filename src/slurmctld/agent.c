@@ -1859,7 +1859,7 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 	agent_arg_t *agent_arg_ptr;
 	batch_job_launch_msg_t *launch_msg_ptr;
 	time_t now = time(NULL);
-	struct job_record  *job_ptr;
+	struct job_record *job_ptr;
 	int nodes_ready = 0, tmp = 0;
 
 	agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
@@ -1881,6 +1881,9 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 		return -1;	/* job cancelled while waiting */
 	}
 
+	if (job_ptr->details && job_ptr->details->prolog_running)
+		return 1;
+
 	if (job_ptr->wait_all_nodes) {
 		(void) job_node_ready(launch_msg_ptr->job_id, &tmp);
 		if (tmp == (READY_JOB_STATE | READY_NODE_STATE)) {
@@ -1889,9 +1892,6 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 			    !xstrcmp(launch_msg_ptr->alias_list, "TBD")) {
 				/* Update launch RPC with correct node
 				 * aliases */
-				struct job_record *job_ptr;
-				job_ptr = find_job_record(launch_msg_ptr->
-							  job_id);
 				xfree(launch_msg_ptr->alias_list);
 				launch_msg_ptr->alias_list = xstrdup(job_ptr->
 								     alias_list);
@@ -1923,7 +1923,8 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 	}
 
 	if (nodes_ready) {
-		job_config_fini(job_ptr);
+		if (IS_JOB_CONFIGURING(job_ptr))
+			job_config_fini(job_ptr);
 		queued_req_ptr->last_attempt = (time_t) 0;
 		return 0;
 	}
