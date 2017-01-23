@@ -981,8 +981,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				return NULL;
 			}
 		}
-		if (job_ptr->details
-		    && job_ptr->details->prolog_running == 0) {
+		if (IS_JOB_CONFIGURING(job_ptr)) {
 			info("%s: Configuration for job %u is complete",
 			      __func__, job_ptr->job_id);
 			job_config_fini(job_ptr);
