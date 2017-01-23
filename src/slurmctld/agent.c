@@ -1267,11 +1267,10 @@ static void _list_delete_retry(void *retry_entry)
  * IN mail_too - Send pending email too, note this performed using a
  *	fork/waitpid, so it can take longer than just creating a pthread
  *	to send RPCs
- * RET count of queued requests remaining
  */
-extern int agent_retry (int min_wait, bool mail_too)
+extern void agent_retry(int min_wait, bool mail_too)
 {
-	int list_size = 0, rc;
+	int rc;
 	time_t now = time(NULL);
 	queued_request_t *queued_req_ptr = NULL;
 	agent_arg_t *agent_arg_ptr = NULL;
@@ -1283,13 +1282,14 @@ extern int agent_retry (int min_wait, bool mail_too)
 	slurm_mutex_lock(&retry_mutex);
 	if (retry_list) {
 		static time_t last_msg_time = (time_t) 0;
-		uint32_t msg_type[5] = {0, 0, 0, 0, 0}, i = 0;
+		uint32_t msg_type[5] = {0, 0, 0, 0, 0};
+		int i = 0, list_size;
 		list_size = list_count(retry_list);
 		if ((list_size > 100) &&
 		    (difftime(now, last_msg_time) > 300)) {
 			/* Note sizable backlog of work */
 			info("slurmctld: agent retry_list size is %d",
-				list_size);
+			     list_size);
 			retry_iter = list_iterator_create(retry_list);
 			while ((queued_req_ptr = (queued_request_t *)
 					list_next(retry_iter))) {
@@ -1311,13 +1311,12 @@ extern int agent_retry (int min_wait, bool mail_too)
 		/* too much work already */
 		slurm_mutex_unlock(&agent_cnt_mutex);
 		slurm_mutex_unlock(&retry_mutex);
-		return list_size;
+		return;
 	}
 	slurm_mutex_unlock(&agent_cnt_mutex);
 
 	if (retry_list) {
 		/* first try to find a new (never tried) record */
-
 		retry_iter = list_iterator_create(retry_list);
 		while ((queued_req_ptr = (queued_request_t *)
 				list_next(retry_iter))) {
@@ -1327,14 +1326,12 @@ extern int agent_retry (int min_wait, bool mail_too)
 						  agent_arg_ptr);
 				xfree(queued_req_ptr);
 				list_remove(retry_iter);
-				list_size--;
 				continue;
 			}
 			if (rc > 0)
 				continue;
  			if (queued_req_ptr->last_attempt == 0) {
 				list_remove(retry_iter);
-				list_size--;
 				break;
 			}
 		}
@@ -1356,7 +1353,6 @@ extern int agent_retry (int min_wait, bool mail_too)
 						  agent_arg_ptr);
 				xfree(queued_req_ptr);
 				list_remove(retry_iter);
-				list_size--;
 				continue;
 			}
 			if (rc > 0)
@@ -1364,7 +1360,6 @@ extern int agent_retry (int min_wait, bool mail_too)
 			age = difftime(now, queued_req_ptr->last_attempt);
 			if (age > min_wait) {
 				list_remove(retry_iter);
-				list_size--;
 				break;
 			}
 		}
@@ -1406,7 +1401,7 @@ extern int agent_retry (int min_wait, bool mail_too)
 		slurm_mutex_unlock(&agent_cnt_mutex);
 	}
 
-	return list_size;
+	return;
 }
 
 /*
