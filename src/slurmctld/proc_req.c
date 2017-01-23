@@ -3381,8 +3381,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 				_throttle_fini(&active_rpc_cnt);
 				goto fini;
 			}
-			if (job_ptr->details &&
-			    job_ptr->details->prolog_running) {
+			if (IS_JOB_CONFIGURING(job_ptr)) {
 				slurm_send_rc_msg(msg, EAGAIN);
 				unlock_slurmctld(job_write_lock);
 				_throttle_fini(&active_rpc_cnt);
