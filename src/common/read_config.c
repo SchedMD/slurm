@@ -5068,7 +5068,10 @@ extern int add_remote_nodes_to_conf_tbls(char *node_list,
 				  NULL, 0, 0,
 				  0, 0, 0, 0, false, NULL, 0,
 				  0, &node_addrs[i++], true);
+		free(hostname);
 	}
+
+	hostlist_destroy(host_list);
 
 	return SLURM_SUCCESS;
 }
