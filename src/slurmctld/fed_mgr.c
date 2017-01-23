@@ -2680,6 +2680,7 @@ extern int fed_mgr_job_requeue(struct job_record *job_ptr)
 	slurm_msg_t msg;
 
 	xassert(job_ptr);
+	xassert(job_ptr->details);
 
 	if (!_is_fed_job(job_ptr, &origin_id))
 		return SLURM_SUCCESS;

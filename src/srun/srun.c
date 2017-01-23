@@ -449,6 +449,8 @@ static void _setup_env_working_cluster()
 			slurm_set_addr(&working_cluster_rec->control_addr,
 				       working_cluster_rec->control_port,
 				       working_cluster_rec->control_host);
+		} else {
+			xfree(working_cluster);
 		}
 		xfree(cluster_name);
 	}
