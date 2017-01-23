@@ -247,6 +247,8 @@ documents those changes that are of interest to users and administrators.
     'assoc_limit_stop'.
  -- Allow a lower version client command to talk to a higher version contoller
     using the multi-cluster options (e.g. squeue -M<clsuter>).
+ -- slurmctld/agent race condition fix: Prevent job launch while PrologSlurmctld
+    daemon is running or node boot in progress.
 
 * Changes in Slurm 16.05.8
 ==========================

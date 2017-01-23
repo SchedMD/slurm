@@ -3593,8 +3593,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 				reject_job = true;
 				goto unlock;
 			}
-			if (job_ptr->details &&
-			    job_ptr->details->prolog_running) {
+			if (IS_JOB_CONFIGURING(job_ptr)) {
 				error_code = EAGAIN;
 				reject_job = true;
 				goto unlock;
