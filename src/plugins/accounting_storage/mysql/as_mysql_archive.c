@@ -477,15 +477,6 @@ typedef enum {
 	PURGE_TXN
 } purge_type_t;
 
-char *purge_type_str[] = {
-	"event",
-	"suspend",
-	"resv",
-	"job",
-	"step",
-	"txn"
-};
-
 static void _init_local_job(local_job_t *);
 
 static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
@@ -2418,7 +2409,7 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 
 	error_code = archive_write_file(buffer, cluster_name,
 					period_start, period_end,
-					arch_dir, purge_type_str[type],
+					arch_dir, sql_table,
 					archive_period);
 	free_buf(buffer);
 
@@ -2555,7 +2546,7 @@ static int _archive_purge_table(purge_type_t purge_type,
 	}
 
 	if (!(curr_end = archive_setup_end_time(last_submit, purge_attr))) {
-		error("Parsing purge %s", purge_type_str[purge_type]);
+		error("Parsing purge %s_%s", cluster_name, sql_table);
 		return SLURM_ERROR;
 	}
 
@@ -2578,9 +2569,8 @@ static int _archive_purge_table(purge_type_t purge_type,
 			tmp_end = curr_end;
 
 		if (debug_flags & DEBUG_FLAG_DB_ARCHIVE)
-			debug("Purging %s entries before %ld for %s",
-			      purge_type_str[purge_type],
-			      tmp_end, cluster_name);
+			debug("Purging %s_%s before %ld",
+			      cluster_name, sql_table, tmp_end);
 
 		if (SLURMDB_PURGE_ARCHIVE_SET(purge_attr)) {
 			rc = _archive_table(purge_type, mysql_conn,
