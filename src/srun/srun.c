@@ -422,26 +422,27 @@ static void _pty_restore(void)
 
 static void _setup_env_working_cluster()
 {
-	char *working_cluster = NULL;
-	char *cluster_name    = NULL;
+	char *working_env  = NULL;
+	char *cluster_name = NULL;
 
-	if ((working_cluster = xstrdup(getenv("SLURM_WORKING_CLUSTER")))) {
-		char *port_ptr = strchr(working_cluster, ':');
-		char *rpc_ptr  = strrchr(working_cluster, ':');
+	if ((working_env = xstrdup(getenv("SLURM_WORKING_CLUSTER")))) {
+		char *port_ptr = strchr(working_env, ':');
+		char *rpc_ptr  = strrchr(working_env, ':');
 		if (!port_ptr || !rpc_ptr || (port_ptr == rpc_ptr)) {
 			error("malformed cluster addr and port in SLURM_WORKING_CLUSTER env var: '%s'",
-			      working_cluster);
+			      working_env);
 			exit(1);
 		}
 		*port_ptr++ = '\0';
 		*rpc_ptr++  = '\0';
 
 		cluster_name = slurm_get_cluster_name();
-		if (strcmp(cluster_name, working_cluster)) {
-			working_cluster_rec = xmalloc(sizeof(slurmdb_cluster_rec_t));
+		if (strcmp(cluster_name, working_env)) {
+			working_cluster_rec =
+				xmalloc(sizeof(slurmdb_cluster_rec_t));
 			slurmdb_init_cluster_rec(working_cluster_rec, false);
 
-			working_cluster_rec->control_host = working_cluster;
+			working_cluster_rec->control_host = working_env;
 			working_cluster_rec->control_port = strtol(port_ptr,
 								   NULL, 10);
 			working_cluster_rec->rpc_version  = strtol(rpc_ptr,
@@ -450,7 +451,7 @@ static void _setup_env_working_cluster()
 				       working_cluster_rec->control_port,
 				       working_cluster_rec->control_host);
 		} else {
-			xfree(working_cluster);
+			xfree(working_env);
 		}
 		xfree(cluster_name);
 	}
