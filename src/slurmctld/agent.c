@@ -1309,11 +1309,15 @@ static void *_agent_retry(void *arg)
 	pthread_t thread_mail = 0;
 	pthread_attr_t attr_mail;
 	mail_info_t *mi = NULL;
+	/* Write lock on jobs */
+	slurmctld_lock_t job_write_lock =
+		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 
 	mail_too = retry_args_ptr->mail_too;
 	min_wait = retry_args_ptr->min_wait;
 	xfree(arg);
 
+	lock_slurmctld(job_write_lock);
 	slurm_mutex_lock(&retry_mutex);
 	if (retry_list) {
 		static time_t last_msg_time = (time_t) 0;
@@ -1346,6 +1350,7 @@ static void *_agent_retry(void *arg)
 		/* too much work already */
 		slurm_mutex_unlock(&agent_cnt_mutex);
 		slurm_mutex_unlock(&retry_mutex);
+		unlock_slurmctld(job_write_lock);
 		return NULL;
 	}
 	slurm_mutex_unlock(&agent_cnt_mutex);
@@ -1401,6 +1406,7 @@ static void *_agent_retry(void *arg)
 		list_iterator_destroy(retry_iter);
 	}
 	slurm_mutex_unlock(&retry_mutex);
+	unlock_slurmctld(job_write_lock);
 
 	if (queued_req_ptr) {
 		agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
