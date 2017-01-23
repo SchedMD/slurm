@@ -687,6 +687,9 @@ bit_copybits(bitstr_t *dest, bitstr_t *src)
 	memcpy(&dest[BITSTR_OVERHEAD], &src[BITSTR_OVERHEAD], len);
 }
 
+#ifdef HAVE___BUILTIN_POPCOUNTLL
+#define hweight __builtin_popcountll
+#else
 /*
  * Returns the hamming weight (i.e. the number of bits set) in a word.
  * NOTE: This routine borrowed from Linux 4.9 <tools/lib/hweight.c>.
@@ -699,6 +702,7 @@ hweight(uint64_t w)
         w =  (w + (w >> 4)) & 0x0f0f0f0f0f0f0f0ful;
         return (w * 0x0101010101010101ul) >> 56;
 }
+#endif
 
 /*
  * Count the number of bits set in bitstring.
