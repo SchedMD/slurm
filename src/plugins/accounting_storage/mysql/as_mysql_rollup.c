@@ -427,6 +427,10 @@ static int _process_purge(mysql_conn_t *mysql_conn,
 		arch_cond.purge_txn = slurmdbd_conf->purge_txn;
 	else
 		arch_cond.purge_txn = NO_VAL;
+	if (purge_period & slurmdbd_conf->purge_usage)
+		arch_cond.purge_usage = slurmdbd_conf->purge_usage;
+	else
+		arch_cond.purge_usage = NO_VAL;
 
 	job_cond.cluster_list = list_create(NULL);
 	list_append(job_cond.cluster_list, cluster_name);

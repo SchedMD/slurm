@@ -39,6 +39,7 @@ documents those changes that are of interest to users and administrators.
  -- Add the ability to purge transactions from the database.
  -- Add support for requeue'ing of federated jobs (BETA).
  -- Add support for interactive federated jobs (BETA).
+ -- Add the ability to purge rolled up usage from the database.
 
 * Changes in Slurm 17.02.0pre4
 ==============================
