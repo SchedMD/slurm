@@ -89,7 +89,7 @@ proc run_gpu_test { gres_cnt } {
 		}
 	}
 	if {$invalid != 0} {
-		send_user "\WARNING: Insufficient resources to test 2 GPUs\n"
+		send_user "\WARNING: Insufficient resources to test $gres_cnt GPUs\n"
 		return 0
 	} elseif {$bad_format != 0} {
 		send_user "\nFAILURE: Duplicated device number in GRES allocation\n"
