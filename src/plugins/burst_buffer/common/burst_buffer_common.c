@@ -580,7 +580,7 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 static void _pack_alloc(struct bb_alloc *bb_alloc, Buf buffer,
 			uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(bb_alloc->account,      buffer);
 		pack32(bb_alloc->array_job_id,  buffer);
 		pack32(bb_alloc->array_task_id, buffer);
@@ -589,19 +589,6 @@ static void _pack_alloc(struct bb_alloc *bb_alloc, Buf buffer,
 		packstr(bb_alloc->name,         buffer);
 		packstr(bb_alloc->partition,    buffer);
 		packstr(bb_alloc->pool,   	buffer);
-		packstr(bb_alloc->qos,          buffer);
-		pack64(bb_alloc->size,          buffer);
-		pack16(bb_alloc->state,         buffer);
-		pack32(bb_alloc->user_id,       buffer);
-	} else {
-		packstr(bb_alloc->account,      buffer);
-		pack32(bb_alloc->array_job_id,  buffer);
-		pack32(bb_alloc->array_task_id, buffer);
-		pack_time(bb_alloc->create_time, buffer);
-		pack32((uint32_t)0, buffer);
-		pack32(bb_alloc->job_id,        buffer);
-		packstr(bb_alloc->name,         buffer);
-		packstr(bb_alloc->partition,    buffer);
 		packstr(bb_alloc->qos,          buffer);
 		pack64(bb_alloc->size,          buffer);
 		pack16(bb_alloc->state,         buffer);
@@ -678,7 +665,7 @@ extern void bb_pack_state(bb_state_t *state_ptr, Buf buffer,
 		pack64(state_ptr->unfree_space,      buffer);
 		pack64(state_ptr->used_space,        buffer);
 		pack32(config_ptr->validate_timeout, buffer);
-	} else if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(config_ptr->allow_users_str, buffer);
 		packstr(config_ptr->create_buffer,   buffer);
 		packstr(config_ptr->default_pool,    buffer);
@@ -704,29 +691,6 @@ extern void bb_pack_state(bb_state_t *state_ptr, Buf buffer,
 		pack64(state_ptr->total_space,       buffer);
 		pack64(state_ptr->used_space,        buffer);
 		pack32(config_ptr->validate_timeout, buffer);
-	} else {
-		packstr(config_ptr->allow_users_str, buffer);
-		packstr(config_ptr->create_buffer,   buffer);
-		packstr(config_ptr->default_pool,    buffer);
-		packstr(config_ptr->deny_users_str,  buffer);
-		packstr(config_ptr->destroy_buffer,  buffer);
-		pack32(config_ptr->flags,            buffer);
-		packstr(config_ptr->get_sys_state,   buffer);
-		pack64(config_ptr->granularity,      buffer);
-		pack32(config_ptr->pool_cnt,         buffer);
-		for (i = 0; i < config_ptr->pool_cnt; i++) {
-			packstr(config_ptr->pool_ptr[i].name, buffer);
-			pack64(config_ptr->pool_ptr[i].total_space, buffer);
-			pack64(config_ptr->pool_ptr[i].used_space, buffer);
-		}
-		packstr(config_ptr->start_stage_in,  buffer);
-		packstr(config_ptr->start_stage_out, buffer);
-		packstr(config_ptr->stop_stage_in,   buffer);
-		packstr(config_ptr->stop_stage_out,  buffer);
-		pack32(config_ptr->stage_in_timeout, buffer);
-		pack32(config_ptr->stage_out_timeout,buffer);
-		pack64(state_ptr->total_space,       buffer);
-		pack64(state_ptr->used_space,        buffer);
 	}
 }
 

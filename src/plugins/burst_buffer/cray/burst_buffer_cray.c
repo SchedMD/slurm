@@ -213,7 +213,6 @@ static bb_pools_t *_bb_get_pools(int *num_ent, bb_state_t *state_ptr,
 				 uint32_t timeout);
 static bb_sessions_t *_bb_get_sessions(int *num_ent, bb_state_t *state_ptr,
 				       uint32_t timeout);
-static int	_build_bb_script(struct job_record *job_ptr, char *script_file);
 static int	_create_bufs(struct job_record *job_ptr, bb_job_t *bb_job,
 			     bool job_ready);
 static void *	_create_persistent(void *x);
@@ -935,7 +934,7 @@ static void _recover_bb_state(void)
 
 	safe_unpack32(&rec_count, buffer);
 	for (i = 0; i < rec_count; i++) {
-		if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			safe_unpackstr_xmalloc(&account,   &name_len, buffer);
 			safe_unpack_time(&create_time, buffer);
 			safe_unpack32(&id, buffer);
@@ -946,17 +945,6 @@ static void _recover_bb_state(void)
 			safe_unpack32(&user_id, buffer);
 			if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
 				safe_unpack64(&size, buffer);
-		} else {
-			safe_unpackstr_xmalloc(&account,   &name_len, buffer);
-			safe_unpack_time(&create_time, buffer);
-			safe_unpack32(&id, buffer);
-			safe_unpackstr_xmalloc(&name,      &name_len, buffer);
-			safe_unpackstr_xmalloc(&partition, &name_len, buffer);
-			safe_unpackstr_xmalloc(&qos,       &name_len, buffer);
-			safe_unpack32(&user_id, buffer);
-			if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
-				safe_unpack64(&size, buffer);
-			pool = xstrdup(bb_state.bb_config.default_pool);
 		}
 
 		if ((bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY) &&
@@ -2742,21 +2730,6 @@ fini:	xfree(access);
 	return rc;
 }
 
-/* For interactive jobs, build a script containing the relevant DataWarp
- * commands, as needed by the Cray API */
-static int _build_bb_script(struct job_record *job_ptr, char *script_file)
-{
-	char *out_buf = NULL;
-	int rc;
-
-	xstrcat(out_buf, "#!/bin/bash\n");
-	xstrcat(out_buf, job_ptr->burst_buffer);
-	rc = _write_file(script_file, out_buf);
-	xfree(out_buf);
-
-	return rc;
-}
-
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Read and validate configuration file here. Spawn thread to
@@ -3225,18 +3198,6 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 		} else {
 			xfree(hash_dir);
 		}
-	}
-	/* Standard file location for all regular jobs and
-	 * job arrays in versions 14.11 & 15.08 */
-	if (fd < 0) {
-		hash_inx = job_ptr->job_id % 10;
-		xstrfmtcat(hash_dir, "%s/hash.%d", state_save_loc, hash_inx);
-		(void) mkdir(hash_dir, 0700);
-		xstrfmtcat(job_dir, "%s/job.%u", hash_dir, job_ptr->job_id);
-		(void) mkdir(job_dir, 0700);
-		xstrfmtcat(script_file, "%s/script", job_dir);
-		if (job_ptr->batch_flag == 0)
-			rc = _build_bb_script(job_ptr, script_file);
 	}
 
 	/* Run "job_process" function, validates user script */
