@@ -217,15 +217,22 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 	uint32_t core_end      = cr_get_coremap_offset(node_i+1);
 	uint32_t c;
 	uint16_t cpus_per_task = job_ptr->details->cpus_per_task;
-	uint16_t *used_cores, *free_cores = NULL, free_core_count = 0;
+	uint16_t free_core_count = 0;
 	uint16_t i, j, sockets    = select_node_record[node_i].sockets;
 	uint16_t cores_per_socket = select_node_record[node_i].cores;
 	uint16_t threads_per_core = select_node_record[node_i].vpus;
 	uint16_t min_cores = 1, min_sockets = 1, ntasks_per_socket = 0;
 	uint16_t ncpus_per_core = 0xffff;	/* Usable CPUs per core */
 	uint16_t ntasks_per_core = 0xffff;
-	uint32_t free_cpu_count = 0, used_cpu_count = 0, *used_cpu_array = NULL;
+	uint32_t free_cpu_count = 0, used_cpu_count = 0;
 	int tmp_cpt = 0; /* cpus_per_task */
+	uint16_t free_cores[sockets];
+	uint16_t used_cores[sockets];
+	uint32_t used_cpu_array[sockets];
+
+	memset(free_cores, 0, sockets * sizeof(uint16_t));
+	memset(used_cores, 0, sockets * sizeof(uint16_t));
+	memset(used_cpu_array, 0, sockets * sizeof(uint32_t));
 
 	if (entire_sockets_only && job_ptr->details->whole_node &&
 	    (job_ptr->details->core_spec != (uint16_t) NO_VAL)) {
@@ -322,9 +329,6 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 
 	/* Step 1: create and compute core-count-per-socket
 	 * arrays and total core counts */
-	free_cores = xmalloc(sockets * sizeof(uint16_t));
-	used_cores = xmalloc(sockets * sizeof(uint16_t));
-	used_cpu_array = xmalloc(sockets * sizeof(uint32_t));
 
 	for (c = core_begin; c < core_end; c++) {
 		i = (uint16_t) (c - core_begin) / cores_per_socket;
@@ -351,8 +355,6 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 		if (used_cpu_array[i])
 			used_cpu_count += used_cores[i] * threads_per_core;
 	}
-	xfree(used_cores);
-	xfree(used_cpu_array);
 
 	/* Ignore resources that would push a job allocation over the
 	 * partition CPU limit (if any) */
@@ -524,7 +526,6 @@ fini:
 		bit_nclear(core_map, core_begin, core_end-1);
 		cpu_count = 0;
 	}
-	xfree(free_cores);
 
 	if ((job_ptr->details->core_spec != (uint16_t) NO_VAL) &&
 	    (job_ptr->details->core_spec & CORE_SPEC_THREAD)   &&
