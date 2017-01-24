@@ -101,7 +101,7 @@ pmixp_conn_new_temp(pmixp_conn_proto_t proto, int fd,
 	pmixp_io_attach(conn->eng, fd);
 	conn->rcv_progress_cb = nmsg_cb;
 	conn->ret_cb = NULL;
-	conn->data = NULL;
+	conn->ret_data = NULL;
 	conn->hdr = NULL;
 	return conn;
 }
@@ -128,7 +128,7 @@ pmixp_conn_new_persist(pmixp_conn_proto_t proto,
 	conn->eng = eng;
 	conn->rcv_progress_cb = nmsg_cb;
 	conn->ret_cb = ret_cb;
-	conn->data = ret_data;
+	conn->ret_data = ret_data;
 	conn->hdr = NULL;
 	return conn;
 }
@@ -145,9 +145,14 @@ pmixp_conn_return(pmixp_conn_t *conn)
 	}
 	switch (conn->type){
 	case PMIXP_CONN_PERSIST:
-		/* corresponding I/O engine will be allocated somewhere else */
+		/* corresponding I/O engine was allocated somewhere else */
 		break;
-	case PMIXP_CONN_TEMP:
+	case PMIXP_CONN_TEMP: {
+		if( pmixp_io_conn_closed(conn->eng) ){
+			int fd = pmixp_io_detach(conn->eng);
+			close(fd);
+		}
+
 		/* grab the temp I/O engine of the corresponding type */
 		switch (conn->proto) {
 		case PMIXP_PROTO_SLURM:
@@ -162,6 +167,7 @@ pmixp_conn_return(pmixp_conn_t *conn)
 			abort();
 		}
 		break;
+	}
 	default:
 		/* should not happen */
 		PMIXP_ERROR("Bad connection type: %d", conn->type);

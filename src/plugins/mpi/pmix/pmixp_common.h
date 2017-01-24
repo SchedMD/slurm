@@ -99,6 +99,7 @@
  */
 #define PMIXP_TMPDIR_SRV "SLURM_PMIX_SRV_TMPDIR"
 #define PMIXP_TMPDIR_CLI "SLURM_PMIX_TMPDIR"
+#define PMIXP_DIRECT_CONN "SLURM_PMIX_DIRECT_CONN"
 #define PMIXP_TMPDIR_DEFAULT "/tmp/"
 #define PMIXP_OS_TMPDIR_ENV "TMPDIR"
 /* This variable will be propagated to server-side

@@ -149,6 +149,9 @@ void pmixp_io_init(pmixp_io_engine_t *eng,
 static inline void
 _pmixp_io_drop_messages(pmixp_io_engine_t *eng)
 {
+	xassert(NULL != eng);
+	xassert(PMIXP_MSGSTATE_MAGIC == eng->magic);
+
 	if (eng->h.recv_on) {
 		if (NULL != eng->rcvd_payload) {
 			xfree(eng->rcvd_payload);
@@ -173,6 +176,7 @@ int pmixp_io_detach(pmixp_io_engine_t *eng)
 {
 	int ret = 0;
 	/* Initialize general options */
+	xassert(NULL != eng);
 	xassert(PMIXP_MSGSTATE_MAGIC == eng->magic);
 	xassert(PMIXP_IO_OPERATING == eng->io_state ||
 		PMIXP_IO_CONN_CLOSED == eng->io_state);
@@ -185,6 +189,9 @@ int pmixp_io_detach(pmixp_io_engine_t *eng)
 
 void pmixp_io_finalize(pmixp_io_engine_t *eng, int err)
 {
+	xassert(NULL != eng);
+	xassert(PMIXP_MSGSTATE_MAGIC == eng->magic);
+
 	switch (eng->io_state)
 	{
 	case PMIXP_IO_FINALIZED:
@@ -233,6 +240,9 @@ void pmixp_io_finalize(pmixp_io_engine_t *eng, int err)
 
 static inline void _rcvd_clear_counters(pmixp_io_engine_t *eng)
 {
+	xassert(NULL != eng);
+	xassert(PMIXP_MSGSTATE_MAGIC == eng->magic);
+
 	eng->rcvd_pad_recvd = 0;
 	eng->rcvd_hdr_offs = 0;
 	eng->rcvd_pay_offs = eng->rcvd_pay_size = 0;
@@ -243,6 +253,7 @@ static inline void _rcvd_clear_counters(pmixp_io_engine_t *eng)
 static inline int _rcvd_swithch_to_body(pmixp_io_engine_t *eng)
 {
 	int rc;
+	xassert(NULL != eng);
 	xassert(PMIXP_MSGSTATE_MAGIC == eng->magic);
 	xassert(NULL != eng->rcvd_hdr_net);
 	xassert(pmixp_io_operating(eng));
@@ -265,6 +276,7 @@ static inline int _rcvd_swithch_to_body(pmixp_io_engine_t *eng)
 
 static inline bool _rcvd_have_padding(pmixp_io_engine_t *eng)
 {
+	xassert(NULL != eng);
 	xassert(PMIXP_MSGSTATE_MAGIC == eng->magic);
 	xassert(NULL != eng->rcvd_hdr_net);
 	xassert(pmixp_io_operating(eng));
@@ -274,6 +286,7 @@ static inline bool _rcvd_have_padding(pmixp_io_engine_t *eng)
 
 static inline bool _rcvd_need_header(pmixp_io_engine_t *eng)
 {
+	xassert(NULL != eng);
 	xassert(PMIXP_MSGSTATE_MAGIC == eng->magic);
 	xassert(NULL != eng->rcvd_hdr_net);
 	xassert(pmixp_io_operating(eng));
@@ -287,12 +300,15 @@ void pmixp_io_rcvd_progress(pmixp_io_engine_t *eng)
 	size_t size, remain;
 	void *offs;
 	int shutdown;
-	int fd = eng->sd;
+	int fd;
 
+	xassert(NULL != eng);
 	xassert(PMIXP_MSGSTATE_MAGIC == eng->magic);
 	xassert(NULL != eng->rcvd_hdr_net);
 	xassert(pmixp_io_operating(eng));
 	xassert(eng->h.recv_on);
+
+	fd = eng->sd;
 
 	if (!pmixp_io_operating(eng)) {
 		return;
@@ -372,6 +388,7 @@ void pmixp_io_rcvd_progress(pmixp_io_engine_t *eng)
 
 void *pmixp_io_rcvd_extract(pmixp_io_engine_t *eng, void *header)
 {
+	xassert(NULL != eng);
 	xassert(PMIXP_MSGSTATE_MAGIC == eng->magic);
 	xassert(NULL != eng->rcvd_hdr_net);
 	xassert(pmixp_io_operating(eng));
@@ -392,6 +409,7 @@ void *pmixp_io_rcvd_extract(pmixp_io_engine_t *eng, void *header)
 
 static inline int _send_set_current(pmixp_io_engine_t *eng, void *msg)
 {
+	xassert(NULL != eng);
 	xassert(PMIXP_MSGSTATE_MAGIC == eng->magic);
 	xassert(NULL != eng->rcvd_hdr_net);
 	xassert(pmixp_io_enqueue_ok(eng));
@@ -416,6 +434,7 @@ static inline int _send_set_current(pmixp_io_engine_t *eng, void *msg)
 
 static inline void _send_free_current(pmixp_io_engine_t *eng)
 {
+	xassert(NULL != eng);
 	xassert(PMIXP_MSGSTATE_MAGIC == eng->magic);
 	xassert(NULL != eng->rcvd_hdr_net);
 	xassert(pmixp_io_operating(eng));
@@ -431,6 +450,7 @@ static inline void _send_free_current(pmixp_io_engine_t *eng)
 
 static inline int _send_header_ok(pmixp_io_engine_t *eng)
 {
+	xassert(NULL != eng);
 	xassert(PMIXP_MSGSTATE_MAGIC == eng->magic);
 	xassert(NULL != eng->rcvd_hdr_net);
 	xassert(pmixp_io_operating(eng));
@@ -443,18 +463,19 @@ static inline int _send_header_ok(pmixp_io_engine_t *eng)
 
 static inline int _send_payload_ok(pmixp_io_engine_t *eng)
 {
+	xassert(NULL != eng);
 	xassert(PMIXP_MSGSTATE_MAGIC == eng->magic);
 	xassert(NULL != eng->rcvd_hdr_net);
 	xassert(pmixp_io_enqueue_ok(eng));
 	xassert(eng->h.send_on);
-	xassert(NULL != eng->send_current);
 
 	return (eng->send_current != NULL) && _send_header_ok(eng)
 			&& (eng->send_pay_offs == eng->send_pay_size);
 }
 
-void pmixp_io_send_enqueue(pmixp_io_engine_t *eng, void *msg)
+int pmixp_io_send_enqueue(pmixp_io_engine_t *eng, void *msg)
 {
+	xassert(NULL != eng);
 	xassert(PMIXP_MSGSTATE_MAGIC == eng->magic);
 	xassert(NULL != eng->rcvd_hdr_net);
 	xassert(pmixp_io_enqueue_ok(eng));
@@ -464,15 +485,17 @@ void pmixp_io_send_enqueue(pmixp_io_engine_t *eng, void *msg)
 	 * to accept new messages
 	 */
 	if( !pmixp_io_enqueue_ok(eng)){
-		return;
+		PMIXP_ERROR("Trying to enqueue to unprepared engine");
+		return SLURM_ERROR;
 	}
-
 	list_enqueue(eng->send_queue, msg);
+	return SLURM_SUCCESS;
 }
 
 bool pmixp_io_send_pending(pmixp_io_engine_t *eng)
 {
 	int rc;
+	xassert(NULL != eng);
 	xassert(PMIXP_MSGSTATE_MAGIC == eng->magic);
 	xassert(NULL != eng->rcvd_hdr_net);
 	xassert(pmixp_io_enqueue_ok(eng));
@@ -506,12 +529,15 @@ bool pmixp_io_send_pending(pmixp_io_engine_t *eng)
 
 void pmixp_io_send_progress(pmixp_io_engine_t *eng)
 {
-	int fd = eng->sd;
+	int fd;
 	uint32_t size, remain;
 	void *offs;
 
+	xassert(NULL != eng);
 	xassert(eng->magic == PMIXP_MSGSTATE_MAGIC);
 	xassert(pmixp_io_operating(eng));
+
+	fd = eng->sd;
 
 	if (!pmixp_io_operating(eng)){
 		/* no progress until in the operational mode */

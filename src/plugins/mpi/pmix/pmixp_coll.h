@@ -90,7 +90,7 @@ typedef struct {
 	bool *ch_contribs;
 
 	/* collective data */
-	Buf buf;
+	Buf buf, root_buf;
 	size_t serv_offs;
 
 	/* libpmix callback data */
@@ -103,6 +103,7 @@ typedef struct {
 
 static inline void pmixp_coll_sanity_check(pmixp_coll_t *coll)
 {
+	xassert(NULL != coll);
 	xassert(coll->magic == PMIXP_COLL_STATE_MAGIC);
 }
 
@@ -119,8 +120,10 @@ static inline void pmixp_coll_set_callback(pmixp_coll_t *coll,
 	 * - only slurm thread may touch this data during fan-out stage
 	 */
 	pmixp_coll_sanity_check(coll);
+	slurm_mutex_lock(&coll->lock);
 	coll->cbfunc = cbfunc;
 	coll->cbdata = cbdata;
+	slurm_mutex_unlock(&coll->lock);
 }
 
 /*
@@ -195,7 +198,7 @@ static inline int pmixp_coll_check_seq(pmixp_coll_t *coll, uint32_t seq,
 int pmixp_coll_contrib_local(pmixp_coll_t *coll, char *data,
 			     size_t ndata);
 int pmixp_coll_contrib_node(pmixp_coll_t *coll, char *nodename, Buf buf);
-void pmixp_coll_bcast(pmixp_coll_t *coll, Buf buf);
+void pmixp_coll_bcast(pmixp_coll_t *coll);
 bool pmixp_coll_progress(pmixp_coll_t *coll, char *fwd_node,
 			 void **data, uint64_t size);
 int pmixp_coll_unpack_ranges(Buf buf, pmixp_coll_type_t *type,

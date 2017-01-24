@@ -84,6 +84,7 @@ int pmixp_info_srv_usock_fd(void);
 void pmixp_info_srv_tsock_set(uint16_t port, int fd);
 const uint16_t pmixp_info_srv_tsock_port(void);
 int pmixp_info_srv_tsock_fd(void);
+bool pmixp_info_srv_direct_conn();
 
 
 static inline int pmixp_info_timeout(void)
@@ -266,6 +267,11 @@ static inline char *pmixp_info_step_host(int nodeid)
 	return ret;
 }
 
+static inline int pmixp_info_step_hostid(char *hostname)
+{
+	return hostlist_find(_pmixp_job_info.step_hl, hostname);
+}
+
 static inline char *pmixp_info_job_host(int nodeid)
 {
 	xassert(nodeid < _pmixp_job_info.nnodes_job);
@@ -276,6 +282,11 @@ static inline char *pmixp_info_job_host(int nodeid)
 	char *ret = xstrdup(p);
 	free(p);
 	return ret;
+}
+
+static inline int pmixp_info_job_hostid(char *hostname)
+{
+	return hostlist_find(_pmixp_job_info.job_hl, hostname);
 }
 
 /* namespaces list operations */

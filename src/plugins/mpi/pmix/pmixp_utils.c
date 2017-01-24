@@ -318,6 +318,8 @@ static int _pmix_p2p_send_core(const char *nodename, const char *address, const 
 	List ret_list;
 	ret_data_info_t *ret_data_info = NULL;
 
+	pmixp_debug_hang(0);
+
 	slurm_msg_t_init(&msg);
 
 	PMIXP_DEBUG("nodelist=%s, address=%s, len=%u", nodename, address, len);
@@ -372,9 +374,10 @@ int pmixp_p2p_send(const char *nodename, const char *address, const char *data,
 		     uint32_t len, unsigned int start_delay,
 		     unsigned int retry_cnt, int silent)
 {
-
 	int retry = 0, rc;
 	unsigned int delay = start_delay; /* in milliseconds */
+
+	pmixp_debug_hang(0);
 
 	while (1) {
 		if (!silent && retry >= 1) {
@@ -421,6 +424,7 @@ int pmixp_rmdir_recursively(char *path)
 
 	int rc;
 
+    return 0;
 	/*
 	 * Make sure that "directory" exists and is a directory.
 	 */

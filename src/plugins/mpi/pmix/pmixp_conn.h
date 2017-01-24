@@ -32,8 +32,8 @@ typedef struct  pmixp_conn_struct{
 				void *hdr, void *msg);
 	pmixp_conn_proto_t proto;
 	pmixp_conn_type_t type;
-	void (*ret_cb)(struct pmixp_conn_struct *hndl);
-	void *data;
+	void (*ret_cb)(struct  pmixp_conn_struct *conn);
+	void *ret_data;
 } pmixp_conn_t;
 
 typedef void (*pmixp_conn_new_msg_cb_t)(pmixp_conn_t *conn,
@@ -75,15 +75,6 @@ pmixp_conn_progress_rcv(pmixp_conn_t *conn)
 		ret = true;
 	}
 
-	if (pmixp_io_conn_closed(conn->eng)){
-		int fd = pmixp_io_detach(conn->eng);
-		close(fd);
-		/* stopping operation will cause connection
-		 * connection handler to be returned and dconn
-		 * will be notified that this connection was dropped.
-		 */
-	}
-
 	return ret;
 }
 
@@ -102,7 +93,7 @@ pmixp_conn_get_eng(pmixp_conn_t *conn)
 static inline void *
 pmixp_conn_get_data(pmixp_conn_t *conn)
 {
-	return conn->data;
+	return conn->ret_data;
 }
 
 

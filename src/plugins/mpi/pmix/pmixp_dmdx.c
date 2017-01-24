@@ -194,12 +194,12 @@ static void _respond_with_error(int seq_num, char *sender_host,
 	_setup_header(buf, DMDX_RESPONSE, sender_ns, -1, status);
 
 	/* send response */
-	rc = pmixp_server_send(&ep, PMIXP_MSG_DMDX, seq_num, buf);
+	rc = pmixp_server_send_nb(&ep, PMIXP_MSG_DMDX, seq_num, buf,
+				  pmixp_server_sent_buf_cb, buf);
 	if (SLURM_SUCCESS != rc) {
 		PMIXP_ERROR("Cannot send direct modex error" " response to %s",
 				sender_host);
 	}
-	free_buf(buf);
 }
 
 static void _dmdx_pmix_cb(pmix_status_t status, char *data, size_t sz,
@@ -220,13 +220,13 @@ static void _dmdx_pmix_cb(pmix_status_t status, char *data, size_t sz,
 	/* send the request */
 	ep.type = PMIXP_EP_HNAME;
 	ep.ep.hostname = caddy->sender_host;
-	rc = pmixp_server_send(&ep, PMIXP_MSG_DMDX, caddy->seq_num, buf);
+	rc = pmixp_server_send_nb(&ep, PMIXP_MSG_DMDX, caddy->seq_num, buf,
+				  pmixp_server_sent_buf_cb, buf);
 	if (SLURM_SUCCESS != rc) {
 		/* not much we can do here. Caller will react by timeout */
 		PMIXP_ERROR("Cannot send direct modex response to %s",
 				caddy->sender_host);
 	}
-	free_buf(buf);
 	_dmdx_free_caddy(caddy);
 }
 
@@ -263,7 +263,8 @@ int pmixp_dmdx_get(const char *nspace, int rank,
 	list_append(_dmdx_requests, req);
 
 	/* send the request */
-	rc = pmixp_server_send(&ep, PMIXP_MSG_DMDX, seq, buf);
+	rc = pmixp_server_send_nb(&ep, PMIXP_MSG_DMDX, seq, buf,
+				  pmixp_server_sent_buf_cb, buf);
 
 	/* check the return status */
 	if (SLURM_SUCCESS != rc) {
@@ -274,7 +275,6 @@ int pmixp_dmdx_get(const char *nspace, int rank,
 	}
 
 	/* cleanup */
-	free_buf(buf);
 	xfree(ep.ep.hostname);
 
 	return rc;

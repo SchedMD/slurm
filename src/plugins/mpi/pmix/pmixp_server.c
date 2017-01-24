@@ -133,7 +133,9 @@ static void *_buf_finalize(Buf buf, void *nhdr, size_t hsize,
 	 * time of buffer initialization in `pmixp_server_new_buf`
 	 * put the header in place and return proper pointer
 	 */
-	memcpy(ptr + offset, nhdr, hsize);
+	if( 0 != hsize ){
+		memcpy(ptr + offset, nhdr, hsize);
+	}
 	*dsize = get_buf_offset(buf) - offset;
 	return ptr + offset;
 }
@@ -223,6 +225,10 @@ static void *_direct_hdr_ptr(void *msg);
 static void *_direct_payload_ptr(void *msg);
 static void _direct_msg_free(void *msg);
 static void _direct_new_msg(pmixp_conn_t *conn, void *_hdr, void *msg);
+static void _direct_send(pmixp_dconn_t *dconn, pmixp_ep_t *ep,
+			 pmixp_base_hdr_t bhdr, Buf buf,
+			pmixp_server_sent_cb_t complete_cb, void *cb_data);
+
 
 pmixp_io_engine_header_t _direct_proto = {
 	/* generic callback */
@@ -400,9 +406,13 @@ static bool _serv_readable(eio_obj_t *obj)
 {
 	/* sanity check */
 	xassert(NULL != obj );
-	/* We should delete connection right when it  was closed or failed */
-	xassert(false == obj->shutdown);
-
+	if( obj->shutdown ){
+		if (obj->fd != -1) {
+			close(obj->fd);
+			obj->fd = -1;
+		}
+		return false;
+	}
 	return true;
 }
 
@@ -431,6 +441,7 @@ static int _serv_read(eio_obj_t *obj, List objs)
 			/* cleanup after this connection */
 			eio_remove_obj(obj, objs);
 			pmixp_conn_return(conn);
+			proceed = 0;
 		}
 	}
 	return 0;
@@ -441,7 +452,13 @@ static bool _serv_writable(eio_obj_t *obj)
 	/* sanity check */
 	xassert(NULL != obj );
 	/* We should delete connection right when it  was closed or failed */
-	xassert(false == obj->shutdown);
+	if( obj->shutdown ){
+		if (obj->fd != -1) {
+			close(obj->fd);
+			obj->fd = -1;
+		}
+		return false;
+	}
 
 	/* get I/O engine */
 	pmixp_conn_t *conn = (pmixp_conn_t *)obj->arg;
@@ -535,7 +552,8 @@ static void _process_server_request(pmixp_base_hdr_t *hdr, void *payload)
 			pmixp_coll_contrib_node(coll, nodename, buf);
 			goto exit;
 		} else {
-			pmixp_coll_bcast(coll, buf);
+			coll->root_buf = buf;
+			pmixp_coll_bcast(coll);
 			/* buf will be free'd by the PMIx callback so protect the data by
 			 * voiding the buffer.
 			 * Use the statement below instead of (buf = NULL) to maintain
@@ -568,9 +586,21 @@ exit:
 	}
 }
 
-int pmixp_server_send(pmixp_ep_t *ep, pmixp_srv_cmd_t type, uint32_t seq, Buf buf)
+void pmixp_server_sent_buf_cb(int rc, pmixp_srv_cb_context_t ctx, void *data)
+{
+	Buf buf = (Buf)data;
+	free_buf(buf);
+	return;
+}
+
+int pmixp_server_send_nb(pmixp_ep_t *ep, pmixp_srv_cmd_t type,
+			 uint32_t seq, Buf buf,
+			 pmixp_server_sent_cb_t complete_cb,
+			 void *cb_data)
 {
 	pmixp_base_hdr_t bhdr;
+	int rc = SLURM_ERROR;
+	pmixp_dconn_t *dconn = NULL;
 
 	bhdr.magic = PMIXP_SERVER_MSG_MAGIC;
 	bhdr.type = type;
@@ -580,7 +610,62 @@ int pmixp_server_send(pmixp_ep_t *ep, pmixp_srv_cmd_t type, uint32_t seq, Buf bu
 	 *  independent from exact collective */
 	bhdr.nodeid = pmixp_info_nodeid_job();
 
-	return _slurm_send(ep, bhdr, buf);
+	/* if direct connection is not enabled
+	 * always use SLURM protocol
+	 */
+	if (!pmixp_info_srv_direct_conn()) {
+		goto send_slurm;
+	}
+
+	switch (ep->type) {
+	case PMIXP_EP_HLIST:
+		goto send_slurm;
+	case PMIXP_EP_HNAME:{
+		int hostid = pmixp_info_job_hostid(ep->ep.hostname);
+		xassert(0 <= hostid);
+		dconn = pmixp_dconn_lock(hostid);
+		switch (pmixp_dconn_state(dconn)) {
+		case PMIXP_DIRECT_PORT_SENT:
+		case PMIXP_DIRECT_CONNECTED:
+			/* keep the lock here and proceed
+			 * to the direct send
+			 */
+			goto send_direct;
+		case PMIXP_DIRECT_INIT:
+			pmixp_dconn_req_sent(dconn);
+			pmixp_dconn_unlock(dconn);
+			goto send_slurm;
+		default:{
+			pmixp_dconn_unlock(dconn);
+			/* this is a bug! */
+			pmixp_dconn_state_t state = pmixp_dconn_state(dconn);
+			PMIXP_ERROR("Bad direct connection state: %d",
+				    (int)pmixp_dconn_state(dconn));
+			xassert( (state == PMIXP_DIRECT_INIT) ||
+				 (state == PMIXP_DIRECT_PORT_SENT) ||
+				 (state == PMIXP_DIRECT_CONNECTED) );
+			abort();
+		}
+		}
+	}
+	default:
+		PMIXP_ERROR("Bad value of the endpoint type: %d",
+			    (int)ep->type);
+		xassert( PMIXP_EP_HLIST == ep->type ||
+			 PMIXP_EP_HNAME == ep->type);
+		abort();
+	}
+
+	return rc;
+send_slurm:
+	rc = _slurm_send(ep, bhdr, buf);
+	complete_cb(rc, PMIXP_SRV_CB_INLINE, cb_data);
+	return SLURM_SUCCESS;
+send_direct:
+	xassert( NULL != dconn );
+	_direct_send(dconn, ep, bhdr, buf, complete_cb, cb_data);
+	pmixp_dconn_unlock(dconn);
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -591,6 +676,9 @@ int pmixp_server_send(pmixp_ep_t *ep, pmixp_srv_cmd_t type, uint32_t seq, Buf bu
 typedef struct {
 	pmixp_base_hdr_t hdr;
 	void *payload;
+	Buf buf_ptr;
+	pmixp_server_sent_cb_t sent_cb;
+	void *cbdata;
 }_direct_proto_message_t;
 
 /*
@@ -656,14 +744,14 @@ static void *_direct_hdr_ptr(void *msg)
 static void *_direct_payload_ptr(void *msg)
 {
 	_direct_proto_message_t *_msg = (_direct_proto_message_t*)msg;
-	return &_msg->payload;
+	return _msg->payload;
 }
 
-static void _direct_msg_free(void *msg)
+static void _direct_msg_free(void *_msg)
 {
-	_direct_proto_message_t *_msg = (_direct_proto_message_t*)msg;
-	xfree(_msg->payload);
-	xfree(_msg);
+	_direct_proto_message_t *msg = (_direct_proto_message_t*)_msg;
+	msg->sent_cb(SLURM_SUCCESS, PMIXP_SRV_CB_REGULAR, msg->cbdata);
+	xfree(msg);
 }
 
 /*
@@ -672,17 +760,18 @@ static void _direct_msg_free(void *msg)
  */
 static void _direct_new_msg(pmixp_conn_t *conn, void *_hdr, void *msg)
 {
-	pmixp_slurm_rhdr_t *hdr = (pmixp_slurm_rhdr_t *)_hdr;
-	_process_server_request(&hdr->shdr.base_hdr, msg);
+	pmixp_base_hdr_t *hdr = (pmixp_base_hdr_t*)_hdr;
+	_process_server_request(hdr, msg);
 }
 
-static void _direct_connection_drop(pmixp_conn_t *conn)
+/* Process direct connection closure
+ */
+
+static void _direct_return_connection(pmixp_conn_t *conn)
 {
-	pmixp_dconn_t *dconn = (pmixp_dconn_t*)pmixp_conn_get_data(conn);
+	pmixp_dconn_t *dconn = (pmixp_dconn_t *)pmixp_conn_get_data(conn);
 	pmixp_dconn_lock(dconn->nodeid);
-	/* TODO: close conn:
-	 * pmixp_dconn_close(dconn);
-	 */
+	pmixp_dconn_disconnect(dconn);
 	pmixp_dconn_unlock(dconn);
 }
 
@@ -693,7 +782,7 @@ static void
 _direct_conn_establish(pmixp_conn_t *conn, void *_hdr, void *msg)
 {
 	pmixp_io_engine_t *eng = pmixp_conn_get_eng(conn);
-	pmixp_base_hdr_t *hdr = (pmixp_base_hdr_t *)hdr;
+	pmixp_base_hdr_t *hdr = (pmixp_base_hdr_t *)_hdr;
 	pmixp_dconn_t *dconn = NULL;
 	pmixp_conn_t *new_conn;
 	eio_obj_t *obj;
@@ -701,8 +790,8 @@ _direct_conn_establish(pmixp_conn_t *conn, void *_hdr, void *msg)
 
 	xassert(0 == hdr->msgsize);
 	fd = pmixp_io_detach(eng);
+	dconn = pmixp_dconn_accept(hdr->nodeid, fd);
 
-	dconn = pmixp_dconn_establish(hdr->nodeid, fd);
 	if( NULL == dconn ){
 		/* connection was refused because we already
 			 * have established connection
@@ -710,16 +799,14 @@ _direct_conn_establish(pmixp_conn_t *conn, void *_hdr, void *msg)
 			 */
 	}
 	new_conn = pmixp_conn_new_persist(PMIXP_PROTO_DIRECT, pmixp_dconn_engine(dconn),
-				      _direct_new_msg, _direct_connection_drop, dconn);
+				      _direct_new_msg, _direct_return_connection, dconn);
+	pmixp_dconn_unlock(dconn);
 	obj = eio_obj_create(fd, &direct_peer_ops, (void *)new_conn);
 	eio_new_obj(pmixp_info_io(), obj);
+	/* wakeup this connection to get processed */
+	eio_signal_wakeup(pmixp_info_io());
 }
 
-/*
- * TODO: we need to keep track of the "me"
- * structures created here, because we need to
- * free them in "pmixp_stepd_finalize"
- */
 void pmixp_server_direct_conn(int fd)
 {
 	eio_obj_t *obj;
@@ -743,6 +830,32 @@ void pmixp_server_direct_conn(int fd)
 	 * handle it */
 	obj = eio_obj_create(fd, &direct_peer_ops, (void *)conn);
 	eio_new_obj(pmixp_info_io(), obj);
+	/* wakeup this connection to get processed */
+	eio_signal_wakeup(pmixp_info_io());
+}
+
+static void
+_direct_send(pmixp_dconn_t *dconn, pmixp_ep_t *ep,
+			 pmixp_base_hdr_t bhdr, Buf buf,
+			pmixp_server_sent_cb_t complete_cb, void *cb_data)
+{
+	size_t dsize = 0;
+	int rc;
+
+	xassert(PMIXP_EP_HNAME == ep->type);
+	/* TODO: I think we can avoid locking */
+	_direct_proto_message_t *msg = xmalloc(sizeof(*msg));
+	msg->sent_cb = complete_cb;
+	msg->cbdata = cb_data;
+	msg->hdr = bhdr;
+	msg->payload = _buf_finalize(buf, NULL, 0, &dsize);
+	msg->buf_ptr = buf;
+	rc = pmixp_dconn_send(dconn, msg);
+	if (SLURM_SUCCESS != rc) {
+		msg->sent_cb(rc, PMIXP_SRV_CB_INLINE, msg->cbdata);
+		xfree( msg );
+	}
+	eio_signal_wakeup(pmixp_info_io());
 }
 
 /*
@@ -757,6 +870,39 @@ static void _slurm_new_msg(pmixp_conn_t *conn,
 			   void *_hdr, void *msg)
 {
 	pmixp_slurm_rhdr_t *hdr = (pmixp_slurm_rhdr_t *)_hdr;
+
+	if( 0 != hdr->shdr.rport ){
+		pmixp_dconn_t *dconn;
+		dconn = pmixp_dconn_connect(hdr->shdr.base_hdr.nodeid,
+					    hdr->shdr.rport);
+		if( NULL != dconn ){
+			pmixp_conn_t *conn;
+			conn = pmixp_conn_new_persist(PMIXP_PROTO_DIRECT,
+						      pmixp_dconn_engine(dconn),
+						      _direct_new_msg,
+						      _direct_return_connection,
+						      dconn);
+			if( NULL != conn ){
+				eio_obj_t *obj;
+				obj = eio_obj_create(pmixp_dconn_fd(dconn),
+						     &direct_peer_ops,
+						     (void *)conn);
+				eio_new_obj(pmixp_info_io(), obj);
+				eio_signal_wakeup(pmixp_info_io());
+				pmixp_dconn_unlock(dconn);
+
+				pmixp_ep_t ep;
+				ep.type = PMIXP_EP_HNAME;
+				ep.ep.hostname = pmixp_info_job_host(hdr->shdr.base_hdr.nodeid);
+				Buf buf = pmixp_server_buf_new();
+				pmixp_server_send_nb(&ep, PMIXP_MSG_INIT_DIRECT, 0, buf,
+						     pmixp_server_sent_buf_cb, buf);
+				xfree(ep.ep.hostname);
+			} else {
+				pmixp_dconn_unlock(dconn);
+			}
+		}
+	}
 	_process_server_request(&hdr->shdr.base_hdr, msg);
 }
 
@@ -842,8 +988,6 @@ static int _slurm_proto_unpack_hdr(void *net, void *host)
 	packbuf->head = NULL;
 	free_buf(packbuf);
 
-	/* TODO: get rid of this */
-	xassert(rhdr->shdr.rport == 100);
 	return 0;
 }
 
@@ -857,28 +1001,32 @@ static int _slurm_send(pmixp_ep_t *ep, pmixp_base_hdr_t bhdr, Buf buf)
 
 	/* setup the header */
 	hdr.base_hdr = bhdr;
-	/* TODO: change to correspond to a real remote port */
-	hdr.rport = 100;
+	addr = pmixp_info_srv_usock_path();
+
+	hdr.rport = 0;
+	if (pmixp_info_srv_direct_conn() && PMIXP_EP_HNAME == ep->type) {
+		hdr.rport = pmixp_info_srv_tsock_port();
+	}
 
 	hsize = _slurm_pack_hdr(&hdr, nhdr);
 	data = _buf_finalize(buf, nhdr, hsize, &dsize);
 
-
-
-	addr = pmixp_info_srv_usock_path();
 	switch( ep->type ){
 	case PMIXP_EP_HLIST:
 		hostlist = ep->ep.hostlist;
+		rc = pmixp_stepd_send(ep->ep.hostlist, addr,
+				 data, dsize, 500, 7, 0);
 		break;
 	case PMIXP_EP_HNAME:
 		hostlist = ep->ep.hostname;
+		rc = pmixp_p2p_send(ep->ep.hostname, addr,
+			       data, dsize, 500, 7, 0);
 		break;
 	default:
 		PMIXP_ERROR("Bad value of the EP type: %d", (int)ep->type);
 		abort();
 	}
 
-	rc = pmixp_stepd_send(hostlist, addr, data, dsize, 500, 7, 0);
 	if (SLURM_SUCCESS != rc) {
 		PMIXP_ERROR("Cannot send message to %s, size = %u, hostlist:\n%s",
 			    addr, (uint32_t) dsize, hostlist);
