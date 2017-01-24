@@ -37,6 +37,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <limits.h>
+
 #include "affinity.h"
 static bool cpuset_prefix_set = false;
 static char *cpuset_prefix = "";

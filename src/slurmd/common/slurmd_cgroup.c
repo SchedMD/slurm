@@ -40,6 +40,7 @@
 
 #define _GNU_SOURCE
 #include <ctype.h>
+#include <limits.h>
 #include <sched.h>
 #include <stdlib.h>
 #include <sys/types.h>
