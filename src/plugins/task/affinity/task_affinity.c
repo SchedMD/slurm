@@ -43,6 +43,7 @@
 
 #include <ctype.h>
 #include <dirent.h>
+#include <limits.h>
 #include <signal.h>
 #include <sys/types.h>
 
