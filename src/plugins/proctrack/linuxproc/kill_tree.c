@@ -324,9 +324,10 @@ extern pid_t find_ancestor(pid_t process, char *process_name)
 {
 	char path[PATH_MAX], *rbuf;
 	ssize_t buf_used;
-	int fd;
+	int fd, len;
 	long pid, ppid;
 
+	len = strlen(process_name);
 	rbuf = xmalloc_nz(4097);
 	pid = ppid = (long)process;
 	while (1) {
@@ -370,7 +371,7 @@ extern pid_t find_ancestor(pid_t process, char *process_name)
 			continue;
 		}
 		close(fd);
-		if (strcmp(rbuf, process_name) == 0)
+		if (strncmp(rbuf, process_name, len) == 0)
 			break;
 	}
 	xfree(rbuf);
