@@ -1285,7 +1285,7 @@ extern void agent_retry(int min_wait, bool mail_too)
 	retry_args_ptr->min_wait = min_wait;
 
 	slurm_attr_init(&thread_attr);
-	if (pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_JOINABLE))
+	if (pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_DETACHED))
 		error("pthread_attr_setdetachstate error %m");
 	if (pthread_create(&thread_id, &thread_attr, _agent_retry,
 			   (void *) retry_args_ptr)) {
