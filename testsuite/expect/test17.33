@@ -59,17 +59,7 @@ exec echo "$bin_echo INITIAL_VALUE" >$file_out
 #
 # Get user id and group id for comparison with stdout
 #
-spawn $bin_id
-expect {
-	-re "(uid=$number)" {
-		set login_grp_info $expect_out(1,string)
-		set got_login_grps 1
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
+set login_grp_info "uid=[get_my_uid]"
 
 #
 # Spawn a shell via srun that uses stdin/out/err in truncate mode
@@ -113,10 +103,6 @@ if {[wait_for_file $file_out] == 0} {
 	}
 }
 
-if {$got_login_grps == 0} {
-	send_user "\nFAILURE: Unable to get user and group ID info\n"
-	set exit_code 1
-}
 if {$got_job_grps != 1} {
 	send_user "\nFAILURE: User and group ID info missing from stdout\n"
 	set exit_code 1

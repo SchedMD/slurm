@@ -138,11 +138,11 @@ extern void
 scontrol_pid_info(pid_t job_pid)
 {
 	int error_code;
-	uint32_t job_id;
+	uint32_t job_id = 0;
 	time_t end_time;
 	long rem_time;
 
-	error_code = slurm_pid2jobid (job_pid, &job_id);
+	error_code = slurm_pid2jobid(job_pid, &job_id);
 	if (error_code) {
 		exit_code = 1;
 		if (quiet_flag != 1)

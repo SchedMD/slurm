@@ -155,25 +155,34 @@ Memory conversion to uint64_t in: job_descriptor, job_info, node_info,
 	slurmd_status_msg, slurm_step_ctx_params_t
 Variables converted are: actual_real_mem, def_mem_per_cpu, free_mem,
 	max_mem_per_cpu, mem_spec_limit, pn_min_memory, real_memory, req_mem.
+In slurm_step_io_fds_t: changed "in" to "input".
 
 Added members to the following struct definitions
 =================================================
-In slurmdb_cluster_cond_t: Added List federation_list
-In slurmdb_cluster_rec_t: Added fed, lock, sockfd
-In struct job_record: Added fed_details
+In burst_buffer_info_t: Added unfree_space (Drained or allocates space)
+In burst_buffer_pool_t: Added unfree_space
 In connection_arg_t: Added bool persist
-In slurmctld_lock_t: Added federation
-In will_run_response_msg_t: Added double sys_usage_per to report back how busy a
-	cluster is.
-In slurm_ctl_conf: Added mail_domain.
-In slurm_msg_t: Added buffer to keep received message buffer to use for later
-		      purposes.
-In job_desc_msg_t: Added fed_siblings to track which clusters have sibling jobs.
-In slurm_job_info_t: Added fed_origin_str, fed_siblings, fed_siblings_str to
-		      display job federation information.
-In struct node_info: Added port.
+In job_desc_msg_t: Added admin_comment, delay_boot, fed_siblings (to track which
+	clusters have sibling jobs), group_number, numpack, pack_leader,
+	pelog_env, pelog_env_size and restart_cnt.
+In slurm_job_info_t: Added admin_comment, burst_buffer_state, delay_boot,
+	fed_origin_str, fed_siblings, fed_siblings_str, gres_detail_cnt and
+	gres_detail_str.
+In job_step_info_t: Added packjobid, packstepid, srun_host and srun_pid.
+In node_info_t: Added partitions and port.
+In partition_info_t: Added over_time_limit
 In resource_allocation_msg_t: added node_addr and working_cluster_rec for
 		     federated interactive jobs.
+In slurm_ctl_conf: Added mail_domain and sbcast_parameters.
+In slurm_job_info_t: Added fed_origin_str, fed_siblings, fed_siblings_str to
+		      display job federation information.
+In slurm_msg_t: Added buffer to keep received message buffer to use for later
+	purposes.
+In slurmctld_lock_t: Added federation
+In slurmdb_cluster_cond_t: Added List federation_list
+In slurmdb_cluster_rec_t: Added fed, lock, sockfd
+In will_run_response_msg_t: Added double sys_usage_per to report back how busy a
+	cluster is.
 
 Added the following struct definitions
 ======================================
@@ -183,6 +192,7 @@ Added slurmdb_federation_cond_t for selecting federations from db.
 Added slurmdb_federation_rec_t to represent federation objects.
 Added job_fed_details_t for storing federated job information.
 Added sib_msg_t for sending messages to siblings.
+Added slurm_step_layout_req_t to improve slurmctld control over task layout
 
 Removed members from the following struct definitions
 =====================================================
@@ -191,23 +201,41 @@ Removed schedrootfltr from slurm_ctl_conf.
 
 Changed the following enums and #defines
 ========================================
-Added MAX_JOB_ID (0x03FFFFFF)
+Added BB_STATE_PRE_RUN for burst buffer state information
+Added CR_NHC_ABSOLUTELY_NO to disable Cray Node Health Check
 Added DEBUG_FLAG_FEDR flag for federation debugging.
 Added cluster_fed_states enum and defines for federation states.
 Changed DEFAULT_MAX_JOB_ID from 0x7fff0000 to 0x03ff0000.
+Added the following job state flags: JOB_REVOKED (to indicate that federated
+	job started on another cluster), JOB_REQUEUE_FED, JOB_POWER_UP_NODE
+	and JOB_RECONFIG_FAIL.
+Added MAX_JOB_ID (0x03FFFFFF).
+Added MEM_BIND_PREFER and MEM_BIND_SORT memory binding options.
+Changed MEM_PER_CPU flag to 0x8000000000000000 from 0x80000000.
+Added NO_VAL16 (0xfffe).
+Changed NODE_STATE_FLAGS to 0xfffffff0 from 0xfff0.
+Added NODE_STATE_REBOOT to request node reboot.
+Added the following job options: NODE_MEM_CALC, NODE_REBOOT, SPREAD_JOB and
+	USE_MIN_NODES.
+Added PROLOG_FLAG_SERIAL to serially execute prolog/epilog.
 Added SELECT_NODEDATA_TRES_ALLOC_FMT_STR to select_nodedata_type.
 Added SELECT_NODEDATA_TRES_ALLOC_WEIGHTED to select_nodedata_type.
-Changed MEM_PER_CPU flag to 0x8000000000000000 from 0x80000000.
+Added SHOW_FED_TRACK to show only federated jobs.
 Added SLURM_MSG_KEEP_BUFFER msg flag to instruct slurm_receive_msg() to save the
 	buffer ptr.
-Added JOB_REVOKED job state to indicate that federated job started on another
-	cluster.
+Added SLURM_PENDING_STEP (step for external process container)
+Added TRIGGER_RES_TYPE_OTHER for burst buffer event trigger
+Added TRIGGER_TYPE_BURST_BUFFER for burst buffer event trigger
+Added the following job wait reasons: WAIT_PART_CONFIG, WAIT_ACCOUNT_POLICY,
+	WAIT_FED_JOB_LOCK.
 
 Added the following API's
 =========================
 Added slurm_load_federation() to retrieve federation info from cluster.
 Added slurm_print_federation() to print federation info retrieved from cluster.
 Added slurm_get_priority_flags() to retrieve priority flags from slurmctld_conf.
+Added slurm_populate_node_partitions() to identify all partitions associated
+	with nodes
 
 Changed the following API's
 ============================
