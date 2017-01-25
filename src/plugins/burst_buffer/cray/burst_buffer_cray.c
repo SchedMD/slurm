@@ -213,6 +213,7 @@ static bb_pools_t *_bb_get_pools(int *num_ent, bb_state_t *state_ptr,
 				 uint32_t timeout);
 static bb_sessions_t *_bb_get_sessions(int *num_ent, bb_state_t *state_ptr,
 				       uint32_t timeout);
+static int	_build_bb_script(struct job_record *job_ptr, char *script_file);
 static int	_create_bufs(struct job_record *job_ptr, bb_job_t *bb_job,
 			     bool job_ready);
 static void *	_create_persistent(void *x);
@@ -2727,6 +2728,21 @@ fini:	xfree(access);
 	xfree(pool);
 	xfree(swap);
 	xfree(type);
+	return rc;
+}
+
+/* For interactive jobs, build a script containing the relevant DataWarp
+ * commands, as needed by the Cray API */
+static int _build_bb_script(struct job_record *job_ptr, char *script_file)
+{
+	char *out_buf = NULL;
+	int rc;
+
+	xstrcat(out_buf, "#!/bin/bash\n");
+	xstrcat(out_buf, job_ptr->burst_buffer);
+	rc = _write_file(script_file, out_buf);
+	xfree(out_buf);
+
 	return rc;
 }
 
