@@ -247,7 +247,6 @@ int main(int argc, char **argv)
 	slurmctld_lock_t config_write_lock = {
 		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 	slurm_trigger_callbacks_t callbacks;
-	char *dir_name;
 	bool create_clustername_file;
 	/*
 	 * Make sure we have no extra open files which
@@ -606,9 +605,7 @@ int main(int argc, char **argv)
 		_slurmctld_background(NULL);
 
 		/* termination of controller */
-		dir_name = slurm_get_state_save_location();
-		switch_g_save(dir_name);
-		xfree(dir_name);
+		switch_g_save(slurmctld_conf.state_save_location);
 		slurm_priority_fini();
 		slurmctld_plugstack_fini();
 		shutdown_state_save();
@@ -693,10 +690,8 @@ int main(int argc, char **argv)
 	purge_front_end_state();
 	resv_fini();
 	trigger_fini();
-	dir_name = slurm_get_state_save_location();
 	fed_mgr_fini();
-	assoc_mgr_fini(dir_name);
-	xfree(dir_name);
+	assoc_mgr_fini(slurmctld_conf.state_save_location);
 	reserve_port_config(NULL);
 	free_rpc_stats();
 
@@ -1253,8 +1248,8 @@ static int _accounting_mark_all_nodes_down(char *reason)
 	time_t event_time;
 	int rc = SLURM_ERROR;
 
-	state_file = slurm_get_state_save_location();
-	xstrcat (state_file, "/node_state");
+	state_file = xstrdup_printf("%s/node_state",
+				    slurmctld_conf.state_save_location);
 	if (stat(state_file, &stat_buf)) {
 		debug("_accounting_mark_all_nodes_down: could not stat(%s) "
 		      "to record node down time", state_file);
@@ -1989,8 +1984,6 @@ static void *_slurmctld_background(void *no_data)
 /* save_all_state - save entire slurmctld state for later recovery */
 extern void save_all_state(void)
 {
-	char *save_loc;
-
 	/* Each of these functions lock their own databases */
 	schedule_front_end_save();
 	schedule_job_save();
@@ -1999,12 +1992,9 @@ extern void save_all_state(void)
 	schedule_resv_save();
 	schedule_trigger_save();
 
-	if ((save_loc = slurm_get_state_save_location())) {
-		select_g_state_save(save_loc);
-		dump_assoc_mgr_state(save_loc);
-		fed_mgr_state_save(save_loc);
-		xfree(save_loc);
-	}
+	select_g_state_save(slurmctld_conf.state_save_location);
+	dump_assoc_mgr_state(slurmctld_conf.state_save_location);
+	fed_mgr_state_save(slurmctld_conf.state_save_location);
 }
 
 /* make sure the assoc_mgr is up and running with the most current state */

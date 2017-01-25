@@ -529,23 +529,16 @@ static void _delete_job_desc_files(uint32_t job_id)
 {
 	char *dir_name = NULL, *file_name = NULL;
 	struct stat sbuf;
-	int hash = job_id % 10, stat_rc;
+	int hash = job_id % 10;
 	DIR *f_dir;
 	struct dirent *dir_ent;
 
-	dir_name = slurm_get_state_save_location();
-	xstrfmtcat(dir_name, "/hash.%d/job.%u", hash, job_id);
-	stat_rc = stat(dir_name, &sbuf);
-	if (stat_rc != 0) {
-		/* Read version 14.03 or earlier state format */
+	dir_name = xstrdup_printf("%s/hash.%d/job.%u",
+				  slurmctld_conf.state_save_location,
+				  hash, job_id);
+	if (stat(dir_name, &sbuf)) {
 		xfree(dir_name);
-		dir_name = slurm_get_state_save_location();
-		xstrfmtcat(dir_name, "/job.%u", job_id);
-		stat_rc = stat(dir_name, &sbuf);
-		if (stat_rc != 0) {
-			xfree(dir_name);
-			return;
-		}
+		return;
 	}
 
 	f_dir = opendir(dir_name);
@@ -786,8 +779,8 @@ static int _open_job_state_file(char **state_file)
 	int state_fd;
 	struct stat stat_buf;
 
-	*state_file = slurm_get_state_save_location();
-	xstrcat(*state_file, "/job_state");
+	*state_file = xstrdup_printf("%s/job_state",
+				     slurmctld_conf.state_save_location);
 	state_fd = open(*state_file, O_RDONLY);
 	if (state_fd < 0) {
 		error("Could not open job state file %s: %m", *state_file);
@@ -986,8 +979,8 @@ extern int load_last_job_id( void )
 	uint16_t protocol_version = (uint16_t)NO_VAL;
 
 	/* read the file */
-	state_file = slurm_get_state_save_location();
-	xstrcat(state_file, "/job_state");
+	state_file = xstrdup_printf("%s/job_state",
+				    slurmctld_conf.state_save_location);
 	lock_state_files();
 	state_fd = open(state_file, O_RDONLY);
 	if (state_fd < 0) {
@@ -6622,24 +6615,21 @@ static int
 _copy_job_desc_to_file(job_desc_msg_t * job_desc, uint32_t job_id)
 {
 	int error_code = 0, hash;
-	char *dir_name, job_dir[32], *file_name;
+	char *dir_name, *file_name;
 	DEF_TIMERS;
 
 	START_TIMER;
-	/* Create state_save_location directory */
-	dir_name = slurm_get_state_save_location();
 
 	/* Create directory based upon job ID due to limitations on the number
 	 * of files possible in a directory on some file system types (e.g.
 	 * up to 64k files on a FAT32 file system). */
 	hash = job_id % 10;
-	sprintf(job_dir, "/hash.%d", hash);
-	xstrcat(dir_name, job_dir);
+	dir_name = xstrdup_printf("%s/hash.%d",
+				  slurmctld_conf.state_save_location, hash);
 	(void) mkdir(dir_name, 0700);
 
 	/* Create job_id specific directory */
-	sprintf(job_dir, "/job.%u", job_id);
-	xstrcat(dir_name, job_dir);
+	xstrfmtcat(dir_name, "/job.%u", job_id);
 	if (mkdir(dir_name, 0700)) {
 		if (!slurmctld_primary && (errno == EEXIST)) {
 			error("Apparent duplicate job ID %u. Two primary "
@@ -6652,8 +6642,7 @@ _copy_job_desc_to_file(job_desc_msg_t * job_desc, uint32_t job_id)
 	}
 
 	/* Create environment file, and write data to it */
-	file_name = xstrdup(dir_name);
-	xstrcat(file_name, "/environment");
+	file_name = xstrdup_printf("%s/environment", dir_name);
 	error_code = _write_data_array_to_file(file_name,
 					       job_desc->environment,
 					       job_desc->env_size);
@@ -6661,8 +6650,7 @@ _copy_job_desc_to_file(job_desc_msg_t * job_desc, uint32_t job_id)
 
 	if (error_code == 0) {
 		/* Create script file */
-		file_name = xstrdup(dir_name);
-		xstrcat(file_name, "/script");
+		file_name = xstrdup_printf("%s/script", dir_name);
 		error_code = _write_data_to_file(file_name, job_desc->script);
 		xfree(file_name);
 	}
@@ -6677,16 +6665,13 @@ _copy_job_desc_to_file(job_desc_msg_t * job_desc, uint32_t job_id)
  * split-brain, where two slurmctld daemons are running as primary. */
 static bool _dup_job_file_test(uint32_t job_id)
 {
-	char *dir_name_src, job_dir[40];
+	char *dir_name_src;
 	struct stat buf;
-	int rc, hash;
+	int rc, hash = job_id % 10;
 
-	dir_name_src  = slurm_get_state_save_location();
-	hash = job_id % 10;
-	sprintf(job_dir, "/hash.%d", hash);
-	xstrcat(dir_name_src, job_dir);
-	sprintf(job_dir, "/job.%u", job_id);
-	xstrcat(dir_name_src, job_dir);
+	dir_name_src = xstrdup_printf("%s/hash.%d/job.%u",
+				      slurmctld_conf.state_save_location,
+				      hash, job_id);
 	rc = stat(dir_name_src, &buf);
 	xfree(dir_name_src);
 	if (rc == 0) {
@@ -6704,34 +6689,28 @@ static int
 _copy_job_desc_files(uint32_t job_id_src, uint32_t job_id_dest)
 {
 	int error_code = SLURM_SUCCESS, hash;
-	char *dir_name_src, *dir_name_dest, job_dir[40];
-
-	/* Create state_save_location directory */
-	dir_name_src  = slurm_get_state_save_location();
-	dir_name_dest = xstrdup(dir_name_src);
+	char *dir_name;
 
 	/* Create directory based upon job ID due to limitations on the number
 	 * of files possible in a directory on some file system types (e.g.
 	 * up to 64k files on a FAT32 file system). */
 	hash = job_id_dest % 10;
-	sprintf(job_dir, "/hash.%d", hash);
-	xstrcat(dir_name_dest, job_dir);
-	(void) mkdir(dir_name_dest, 0700);
+	dir_name = xstrdup_printf("%s/hash.%d",
+				  slurmctld_conf.state_save_location, hash);
+	(void) mkdir(dir_name, 0700);
 
 	/* Create job_id_dest specific directory */
-	sprintf(job_dir, "/job.%u", job_id_dest);
-	xstrcat(dir_name_dest, job_dir);
-	if (mkdir(dir_name_dest, 0700)) {
+	xstrfmtcat(dir_name, "/job.%u", job_id_dest);
+	if (mkdir(dir_name, 0700)) {
 		if (!slurmctld_primary && (errno == EEXIST)) {
 			error("Apparent duplicate job ID %u. Two primary "
 			      "slurmctld daemons might currently be active",
 			      job_id_dest);
 		}
-		error("mkdir(%s) error %m", dir_name_dest);
+		error("mkdir(%s) error %m", dir_name);
 		error_code = ESLURM_WRITING_TO_FILE;
 	}
-	xfree(dir_name_src);
-	xfree(dir_name_dest);
+	xfree(dir_name);
 
 	return error_code;
 }
@@ -6830,28 +6809,24 @@ static int _write_data_to_file(char *file_name, char *data)
  */
 char **get_job_env(struct job_record *job_ptr, uint32_t * env_size)
 {
-	char *file_name = NULL, job_dir[40], **environment = NULL;
+	char *file_name = NULL, **environment = NULL;
 	int cc, fd = -1, hash;
 
 	/* Standard file location for job arrays, version 16.05+ */
 	if (job_ptr->array_task_id != NO_VAL) {
 		hash = job_ptr->array_job_id % 10;
-		sprintf(job_dir, "/hash.%d/job.%u/environment",
-			hash, job_ptr->array_job_id);
-		xfree(file_name);
-		file_name = slurm_get_state_save_location();
-		xstrcat(file_name, job_dir);
+		file_name = xstrdup_printf("%s/hash.%d/job.%u/environment",
+					   slurmctld_conf.state_save_location,
+					   hash, job_ptr->array_job_id);
 		fd = open(file_name, 0);
 	}
 
 	/* Standard file location, versions 15.08 and 14.11 */
 	if (fd < 0) {
 		hash = job_ptr->job_id % 10;
-		sprintf(job_dir, "/hash.%d/job.%u/environment",
-			hash, job_ptr->job_id);
-		xfree(file_name);
-		file_name = slurm_get_state_save_location();
-		xstrcat(file_name, job_dir);
+		file_name = xstrdup_printf("%s/hash.%d/job.%u/environment",
+					   slurmctld_conf.state_save_location,
+					   hash, job_ptr->job_id);
 		fd = open(file_name, 0);
 	}
 
@@ -6865,9 +6840,9 @@ char **get_job_env(struct job_record *job_ptr, uint32_t * env_size)
 	 */
 	if (fd < 0) {
 		xfree(file_name);
-		file_name = slurm_get_state_save_location();
-		sprintf(job_dir, "/job.%u/environment", job_ptr->job_id);
-		xstrcat(file_name, job_dir);
+		file_name = xstrdup_printf("%s/hash.%d/job.%u/environment",
+					   slurmctld_conf.state_save_location,
+					   hash, job_ptr->array_job_id);
 		fd = open(file_name, 0);
 	}
 
@@ -6893,7 +6868,7 @@ char **get_job_env(struct job_record *job_ptr, uint32_t * env_size)
  */
 char *get_job_script(struct job_record *job_ptr)
 {
-	char *file_name = NULL, job_dir[40], *script = NULL;
+	char *file_name = NULL, *script = NULL;
 	int fd = -1, hash;
 
 	if (!job_ptr->batch_flag)
@@ -6902,22 +6877,19 @@ char *get_job_script(struct job_record *job_ptr)
 	/* Standard file location for job arrays, version 16.05+ */
 	if (job_ptr->array_task_id != NO_VAL) {
 		hash = job_ptr->array_job_id % 10;
-		sprintf(job_dir, "/hash.%d/job.%u/script",
-			hash, job_ptr->array_job_id);
-		xfree(file_name);
-		file_name = slurm_get_state_save_location();
-		xstrcat(file_name, job_dir);
+		file_name = xstrdup_printf("%s/hash.%d/job.%u/script",
+					   slurmctld_conf.state_save_location,
+					   hash, job_ptr->array_job_id);
 		fd = open(file_name, 0);
 	}
 
 	/* Standard file location, versions 15.08 and 14.11 */
 	if (fd < 0) {
-		hash = job_ptr->job_id % 10;
-		sprintf(job_dir, "/hash.%d/job.%u/script",
-			hash, job_ptr->job_id);
 		xfree(file_name);
-		file_name = slurm_get_state_save_location();
-		xstrcat(file_name, job_dir);
+		hash = job_ptr->job_id % 10;
+		file_name = xstrdup_printf("%s/hash.%d/job.%u/script",
+					   slurmctld_conf.state_save_location,
+					   hash, job_ptr->job_id);
 		fd = open(file_name, 0);
 	}
 
@@ -6931,9 +6903,9 @@ char *get_job_script(struct job_record *job_ptr)
 	 */
 	if (fd < 0) {
 		xfree(file_name);
-		file_name = slurm_get_state_save_location();
-		sprintf(job_dir, "/job.%u/script", job_ptr->job_id);
-		xstrcat(file_name, job_dir);
+		file_name = xstrdup_printf("%s/hash.%d/job.%u/script",
+					   slurmctld_conf.state_save_location,
+					   hash, job_ptr->job_id);
 		fd = open(file_name, 0);
 	}
 
