@@ -1121,13 +1121,14 @@ static int _get_accounts(slurmdbd_conn_t *slurmdbd_conn,
 			 persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_cond_msg_t *get_msg = msg->data;
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
 
 	debug2("DBD_GET_ACCOUNTS: called");
 
 	list_msg.my_list = acct_storage_g_get_accounts(slurmdbd_conn->db_conn,
 						       *uid, get_msg->cond);
+
 	if (!errno) {
 		if (!list_msg.my_list)
 			list_msg.my_list = list_create(NULL);
@@ -1153,7 +1154,7 @@ static int _get_tres(slurmdbd_conn_t *slurmdbd_conn,
 		     persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_cond_msg_t *get_msg = msg->data;
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
 
 	debug2("DBD_GET_TRES: called");
@@ -1185,7 +1186,7 @@ static int _get_assocs(slurmdbd_conn_t *slurmdbd_conn,
 		       persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_cond_msg_t *get_msg = msg->data;
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
 
 	debug2("DBD_GET_ASSOCS: called");
@@ -1217,7 +1218,7 @@ static int _get_clusters(slurmdbd_conn_t *slurmdbd_conn,
 			 persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_cond_msg_t *get_msg = msg->data;
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
 
 	debug2("DBD_GET_CLUSTERS: called");
@@ -1250,7 +1251,7 @@ static int _get_federations(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			    Buf *out_buffer, uint32_t *uid)
 {
 	dbd_cond_msg_t *get_msg = msg->data;
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
 
 	debug2("DBD_GET_FEDERATIONS: called");
@@ -1314,7 +1315,7 @@ static int _get_events(slurmdbd_conn_t *slurmdbd_conn,
 		       persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_cond_msg_t *get_msg = msg->data;
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
 
 	debug2("DBD_GET_EVENTS: called");
@@ -1347,7 +1348,7 @@ static int _get_jobs_cond(slurmdbd_conn_t *slurmdbd_conn,
 			  persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_cond_msg_t *cond_msg = msg->data;
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
 
 	debug2("DBD_GET_JOBS_COND: called");
@@ -1379,7 +1380,7 @@ static int _get_probs(slurmdbd_conn_t *slurmdbd_conn,
 		      persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_cond_msg_t *get_msg = msg->data;
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
 
 	debug2("DBD_GET_PROBS: called");
@@ -1411,7 +1412,7 @@ static int _get_qos(slurmdbd_conn_t *slurmdbd_conn,
 		    persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_cond_msg_t *cond_msg = msg->data;
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
 
 	debug2("DBD_GET_QOS: called");
@@ -1446,7 +1447,7 @@ static int _get_res(slurmdbd_conn_t *slurmdbd_conn,
 		    persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_cond_msg_t *get_msg = msg->data;
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
 
 	debug2("DBD_GET_RES: called");
@@ -1478,7 +1479,7 @@ static int _get_txn(slurmdbd_conn_t *slurmdbd_conn,
 		    persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_cond_msg_t *cond_msg = msg->data;
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
 
 	debug2("DBD_GET_TXN: called");
@@ -1565,7 +1566,7 @@ static int _get_users(slurmdbd_conn_t *slurmdbd_conn,
 		      persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_cond_msg_t *get_msg = msg->data;
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
 	slurmdb_user_cond_t * user_cond = NULL;
 
@@ -1614,7 +1615,7 @@ static int _get_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 		       persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_cond_msg_t *get_msg = msg->data;
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	char *comment = NULL;
 	int rc = SLURM_SUCCESS;
 
@@ -1663,7 +1664,7 @@ static int _get_reservations(slurmdbd_conn_t *slurmdbd_conn,
 			     uint32_t *uid)
 {
 	dbd_cond_msg_t *get_msg = msg->data;
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
 
 	debug2("DBD_GET_RESVS: called");
@@ -1923,7 +1924,7 @@ end_it:
 static int   _modify_accounts(slurmdbd_conn_t *slurmdbd_conn,
 			      persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
 {
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
 	dbd_modify_msg_t *get_msg = msg->data;
 	char *comment = NULL;
@@ -1969,7 +1970,7 @@ static int   _modify_accounts(slurmdbd_conn_t *slurmdbd_conn,
 static int   _modify_assocs(slurmdbd_conn_t *slurmdbd_conn,
 			    persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
 {
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
 	dbd_modify_msg_t *get_msg = msg->data;
 	char *comment = NULL;
@@ -2021,7 +2022,7 @@ static int   _modify_clusters(slurmdbd_conn_t *slurmdbd_conn,
 			      persist_msg_t *msg, Buf *out_buffer,
 			      uint32_t *uid)
 {
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
 	dbd_modify_msg_t *get_msg = msg->data;
 	char *comment = NULL;
@@ -2068,7 +2069,7 @@ static int _modify_federations(slurmdbd_conn_t *slurmdbd_conn,
 			       persist_msg_t *msg,
 			       Buf *out_buffer, uint32_t *uid)
 {
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
 	dbd_modify_msg_t *get_msg = msg->data;
 	char *comment = NULL;
@@ -2115,7 +2116,7 @@ static int _modify_federations(slurmdbd_conn_t *slurmdbd_conn,
 static int   _modify_job(slurmdbd_conn_t *slurmdbd_conn,
 			 persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
 {
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
 	dbd_modify_msg_t *get_msg = msg->data;
 	char *comment = NULL;
@@ -2161,7 +2162,7 @@ static int   _modify_job(slurmdbd_conn_t *slurmdbd_conn,
 static int   _modify_qos(slurmdbd_conn_t *slurmdbd_conn,
 			 persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
 {
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
 	dbd_modify_msg_t *get_msg = msg->data;
 	char *comment = NULL;
@@ -2210,7 +2211,7 @@ static int   _modify_qos(slurmdbd_conn_t *slurmdbd_conn,
 static int   _modify_res(slurmdbd_conn_t *slurmdbd_conn,
 			 persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
 {
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
 	dbd_modify_msg_t *get_msg = msg->data;
 	char *comment = NULL;
@@ -2256,7 +2257,7 @@ static int   _modify_res(slurmdbd_conn_t *slurmdbd_conn,
 static int   _modify_users(slurmdbd_conn_t *slurmdbd_conn,
 			   persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
 {
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
 	dbd_modify_msg_t *get_msg = msg->data;
 	char *comment = NULL;
@@ -2366,7 +2367,7 @@ is_same_user:
 static int   _modify_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 			    persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
 {
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
 	dbd_modify_msg_t *get_msg = msg->data;
 	char *comment = NULL;
@@ -2634,7 +2635,7 @@ static int   _register_ctld(slurmdbd_conn_t *slurmdbd_conn,
 	char *comment = NULL;
 	slurmdb_cluster_cond_t cluster_q;
 	slurmdb_cluster_rec_t cluster;
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 
 	if ((*uid != slurmdbd_conf->slurm_user_id) && (*uid != 0)) {
 		comment = "DBD_REGISTER_CTLD message from invalid uid";
@@ -2737,7 +2738,7 @@ static int   _remove_accounts(slurmdbd_conn_t *slurmdbd_conn,
 {
 	int rc = SLURM_SUCCESS;
 	dbd_cond_msg_t *get_msg = msg->data;
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	char *comment = NULL;
 
 	debug2("DBD_REMOVE_ACCOUNTS: called");
@@ -2783,7 +2784,7 @@ static int   _remove_account_coords(slurmdbd_conn_t *slurmdbd_conn,
 {
 	int rc = SLURM_SUCCESS;
 	dbd_acct_coord_msg_t *get_msg = msg->data;
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	char *comment = NULL;
 
 	debug2("DBD_REMOVE_ACCOUNT_COORDS: called");
@@ -2835,7 +2836,7 @@ static int   _remove_assocs(slurmdbd_conn_t *slurmdbd_conn,
 {
 	int rc = SLURM_SUCCESS;
 	dbd_cond_msg_t *get_msg = msg->data;
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	char *comment = NULL;
 
 	debug2("DBD_REMOVE_ASSOCS: called");
@@ -2887,7 +2888,7 @@ static int   _remove_clusters(slurmdbd_conn_t *slurmdbd_conn,
 {
 	int rc = SLURM_SUCCESS;
 	dbd_cond_msg_t *get_msg = msg->data;
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	char *comment = NULL;
 
 	debug2("DBD_REMOVE_CLUSTERS: called");
@@ -2933,7 +2934,7 @@ static int _remove_federations(slurmdbd_conn_t *slurmdbd_conn,
 {
 	int rc = SLURM_SUCCESS;
 	dbd_cond_msg_t *get_msg = msg->data;
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	char *comment = NULL;
 
 	debug2("DBD_REMOVE_FEDERATIONS: called");
@@ -2980,7 +2981,7 @@ static int   _remove_qos(slurmdbd_conn_t *slurmdbd_conn,
 {
 	int rc = SLURM_SUCCESS;
 	dbd_cond_msg_t *get_msg = msg->data;
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	char *comment = NULL;
 
 	debug2("DBD_REMOVE_QOS: called");
@@ -3025,7 +3026,7 @@ static int _remove_res(slurmdbd_conn_t *slurmdbd_conn,
 {
 	int rc = SLURM_SUCCESS;
 	dbd_cond_msg_t *get_msg = msg->data;
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	char *comment = NULL;
 
 	debug2("DBD_REMOVE_RES: called");
@@ -3070,7 +3071,7 @@ static int   _remove_users(slurmdbd_conn_t *slurmdbd_conn,
 {
 	int rc = SLURM_SUCCESS;
 	dbd_cond_msg_t *get_msg = msg->data;
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	char *comment = NULL;
 
 	debug2("DBD_REMOVE_USERS: called");
@@ -3115,7 +3116,7 @@ static int   _remove_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 {
 	int rc = SLURM_SUCCESS;
 	dbd_cond_msg_t *get_msg = msg->data;
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	char *comment = NULL;
 
 	debug2("DBD_REMOVE_WCKEYS: called");
@@ -3227,7 +3228,7 @@ static int   _send_mult_job_start(slurmdbd_conn_t *slurmdbd_conn,
 				  uint32_t *uid)
 {
 	dbd_list_msg_t *get_msg = msg->data;
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	char *comment = NULL;
 	ListIterator itr = NULL;
 	dbd_job_start_msg_t *job_start_msg;
@@ -3272,7 +3273,7 @@ static int   _send_mult_msg(slurmdbd_conn_t *slurmdbd_conn,
 			    uint32_t *uid)
 {
 	dbd_list_msg_t *get_msg = msg->data;
-	dbd_list_msg_t list_msg;
+	dbd_list_msg_t list_msg = { NULL };
 	char *comment = NULL;
 	ListIterator itr = NULL;
 	Buf req_buf = NULL, ret_buf = NULL;
