@@ -3181,7 +3181,7 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 	dw_cli_path = xstrdup(bb_state.bb_config.get_sys_state);
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 
-	/* Standard file location for job arrays, version 16.05+ */
+	/* Standard file location for job arrays */
 	if ((job_ptr->array_task_id != NO_VAL) &&
 	    (job_ptr->array_job_id != job_ptr->job_id)) {
 		hash_inx = job_ptr->array_job_id % 10;
@@ -3198,6 +3198,15 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 		} else {
 			xfree(hash_dir);
 		}
+	} else {
+		hash_inx = job_ptr->job_id % 10;
+		xstrfmtcat(hash_dir, "%s/hash.%d", state_save_loc, hash_inx);
+		(void) mkdir(hash_dir, 0700);
+		xstrfmtcat(job_dir, "%s/job.%u", hash_dir, job_ptr->job_id);
+		(void) mkdir(job_dir, 0700);
+		xstrfmtcat(script_file, "%s/script", job_dir);
+		if (job_ptr->batch_flag == 0)
+			rc = _build_bb_script(job_ptr, script_file);
 	}
 
 	/* Run "job_process" function, validates user script */
