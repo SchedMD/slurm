@@ -33,7 +33,6 @@ source ./globals
 set test_id       "28.7"
 set exit_code     0
 set array_size    3
-set script        "test$test_id\.bash"
 set top_array_task_id [expr $array_size - 1]
 
 print_header $test_id
@@ -43,20 +42,11 @@ if {$array_size > [get_array_config]} {
 	exit 0
 }
 
-if {[test_select_type_params "MEMORY"]} {
-	set job_mem  10
-} else {
-	set job_mem  1
-}
-
-exec $bin_rm -f $script
-make_bash_script $script "sleep \$(( ( RANDOM % 10 ) + 1 ))"
-
 #
 # Submit a job array for first dependency test
 #
 set job_id 0
-spawn $sbatch -N1 -t1 -a 0-$top_array_task_id -o /dev/null -e /dev/null --mem=${job_mem} $script
+spawn $sbatch -N1 -t1 -a 0-$top_array_task_id -o /dev/null -e /dev/null --wrap "sleep \$(( ( RANDOM % 10 ) + 1 ))"
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -80,7 +70,7 @@ if { $job_id == 0 } {
 #
 set timeout $max_job_delay
 set match_job_state 0
-set srun_pid [spawn $srun -t1 --dependency=afterany:$job_id\_$top_array_task_id --mem=${job_mem} $scontrol show job $job_id\_$top_array_task_id]
+set srun_pid [spawn $srun -t1 --dependency=afterany:$job_id\_$top_array_task_id $scontrol show job $job_id\_$top_array_task_id]
 expect {
 	-re "JobState=COMPLETED|COMPLETING" {
 		set match_job_state 1
@@ -108,7 +98,7 @@ send_user "\nSo far, so good\n\n\n"
 # Submit a job array for second dependency test
 #
 set job_id 0
-spawn $sbatch -N1 -t1 -a 0-[expr $array_size - 1] -o /dev/null -e /dev/null --mem=${job_mem} $script
+spawn $sbatch -N1 -t1 -a 0-[expr $array_size - 1] -o /dev/null -e /dev/null --wrap "sleep \$(( ( RANDOM % 10 ) + 1 ))"
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -132,7 +122,7 @@ if { $job_id == 0 } {
 #
 set timeout $max_job_delay
 set match_job_state 0
-set srun_pid [spawn $srun -t1 --dependency=afterany:$job_id --mem=${job_mem} $scontrol show job $job_id]
+set srun_pid [spawn $srun -t1 --dependency=afterany:$job_id $scontrol show job $job_id]
 expect {
 	-re "JobState=COMPLETED|COMPLETING" {
 		incr match_job_state
@@ -154,7 +144,6 @@ if {$match_job_state != $array_size} {
 
 cancel_job $job_id
 if {$exit_code == 0} {
-	exec $bin_rm -f $script
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
