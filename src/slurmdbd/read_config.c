@@ -203,8 +203,9 @@ extern int read_slurmdbd_conf(void)
 	if ((conf_path == NULL) || (stat(conf_path, &buf) == -1)) {
 		info("No slurmdbd.conf file (%s)", conf_path);
 	} else {
-		bool a_events = 0, a_jobs = 0, a_resv = 0,
-			a_steps = 0, a_suspend = 0, a_txn = 0, a_usage;
+		bool a_events = false, a_jobs = false, a_resv = false;
+		bool a_steps = false, a_suspend = false, a_txn = false;
+		bool a_usage = false;
 		debug("Reading slurmdbd.conf file %s", conf_path);
 
 		tbl = s_p_hashtbl_create(options);
