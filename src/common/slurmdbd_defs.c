@@ -3663,8 +3663,7 @@ extern void slurmdbd_pack_list_msg(dbd_list_msg_t *msg,
 		list_iterator_destroy(itr);
 	}
 
-	if (rpc_version >= 8)
-		pack32(msg->return_code, buffer);
+	pack32(msg->return_code, buffer);
 }
 
 extern int slurmdbd_unpack_list_msg(dbd_list_msg_t **msg, uint16_t rpc_version,
@@ -3785,8 +3784,7 @@ extern int slurmdbd_unpack_list_msg(dbd_list_msg_t **msg, uint16_t rpc_version,
 		}
 	}
 
-	if (rpc_version >= 8)
-		safe_unpack32(&msg_ptr->return_code, buffer);
+	safe_unpack32(&msg_ptr->return_code, buffer);
 
 	return SLURM_SUCCESS;
 
