@@ -3750,10 +3750,10 @@ extern int prolog_slurmctld(struct job_record *job_ptr)
 		return errno;
 	}
 
-	if (job_ptr->details)
+	if (job_ptr->details) {
 		job_ptr->details->prolog_running++;
-
-	job_ptr->job_state |= JOB_CONFIGURING;
+		job_ptr->job_state |= JOB_CONFIGURING;
+	}
 
 	slurm_attr_init(&thread_attr_prolog);
 	pthread_attr_setdetachstate(&thread_attr_prolog,
