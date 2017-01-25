@@ -6559,21 +6559,15 @@ char **get_job_env(struct job_record *job_ptr, uint32_t * env_size)
 {
 	char *file_name = NULL, **environment = NULL;
 	int cc, fd = -1, hash;
+	uint32_t use_id;
 
-	/* Standard file location for job arrays */
-	if (job_ptr->array_task_id != NO_VAL) {
-		hash = job_ptr->array_job_id % 10;
-		file_name = xstrdup_printf("%s/hash.%d/job.%u/environment",
-					   slurmctld_conf.state_save_location,
-					   hash, job_ptr->array_job_id);
-		fd = open(file_name, 0);
-	} else {
-		hash = job_ptr->job_id % 10;
-		file_name = xstrdup_printf("%s/hash.%d/job.%u/environment",
-					   slurmctld_conf.state_save_location,
-					   hash, job_ptr->job_id);
-		fd = open(file_name, 0);
-	}
+	use_id = (job_ptr->array_task_id != NO_VAL) ?
+		job_ptr->array_job_id : job_ptr->job_id;
+	hash = use_id % 10;
+	file_name = xstrdup_printf("%s/hash.%d/job.%u/environment",
+				   slurmctld_conf.state_save_location,
+				   hash, use_id);
+	fd = open(file_name, 0);
 
 	if (fd >= 0) {
 		cc = _read_data_array_from_file(fd, file_name, &environment,
@@ -6599,24 +6593,18 @@ char *get_job_script(struct job_record *job_ptr)
 {
 	char *file_name = NULL, *script = NULL;
 	int fd = -1, hash;
+	uint32_t use_id;
 
 	if (!job_ptr->batch_flag)
 		return NULL;
 
-	/* Standard file location for job arrays */
-	if (job_ptr->array_task_id != NO_VAL) {
-		hash = job_ptr->array_job_id % 10;
-		file_name = xstrdup_printf("%s/hash.%d/job.%u/script",
-					   slurmctld_conf.state_save_location,
-					   hash, job_ptr->array_job_id);
-		fd = open(file_name, 0);
-	} else {
-		hash = job_ptr->job_id % 10;
-		file_name = xstrdup_printf("%s/hash.%d/job.%u/script",
-					   slurmctld_conf.state_save_location,
-					   hash, job_ptr->job_id);
-		fd = open(file_name, 0);
-	}
+	use_id = (job_ptr->array_task_id != NO_VAL) ?
+		job_ptr->array_job_id : job_ptr->job_id;
+	hash = use_id % 10;
+	file_name = xstrdup_printf("%s/hash.%d/job.%u/script",
+				   slurmctld_conf.state_save_location,
+				   hash, use_id);
+	fd = open(file_name, 0);
 
 	if (fd >= 0) {
 		_read_data_from_file(fd, file_name, &script);
