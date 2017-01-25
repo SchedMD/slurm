@@ -7,8 +7,8 @@
 #
 #  DESCRIPTION:
 #    Add support for the "--enable-debug", "--enable-memory-leak-debug",
-#    "--disable-partial-attach", "--enable-front-end", "--enable-developer" and
-#    "--enable-simulator" configure script options.
+#    "--disable-partial-attach", "--enable-front-end", and "--enable-developer"
+#    configure script options.
 #
 #    options.
 #    If debugging is enabled, CFLAGS will be prepended with the debug flags.
@@ -154,23 +154,5 @@ AC_DEFUN([X_AC_DEBUG], [
   else
     AC_MSG_RESULT([no])
   fi
-
-  AC_MSG_CHECKING([whether to enable slurm simulator])
-  AC_ARG_ENABLE(
-    [simulator],
-    AS_HELP_STRING(--enable-simulator, enable slurm simulator),
-    [ case "$enableval" in
-        yes) x_ac_simulator=yes ;;
-         no) x_ac_simulator=no ;;
-          *) AC_MSG_RESULT([doh!])
-             AC_MSG_ERROR([bad value "$enableval" for --enable-simulator]) ;;
-      esac
-    ]
-  )
-  if test "$x_ac_simulator" = yes; then
-    AC_DEFINE(SLURM_SIMULATOR, 1, [Define to 1 if running slurm simulator])
-  fi
-  AC_MSG_RESULT([${x_ac_simulator=no}])
-
   ]
 )

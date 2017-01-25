@@ -1018,7 +1018,6 @@ enable_front_end
 enable_partial_attach
 enable_salloc_kill_cmd
 enable_salloc_background
-enable_simulator
 with_slurmctld_port
 with_slurmd_port
 with_slurmdbd_port
@@ -1729,7 +1728,6 @@ Optional Features:
                           termination
   --disable-salloc-background
                           disable salloc execution in the background
-  --enable-simulator      enable slurm simulator
   --enable-multiple-slurmd
                           enable multiple-slurmd support
 
@@ -22911,30 +22909,6 @@ $as_echo "yes" >&6; }
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
   fi
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable slurm simulator" >&5
-$as_echo_n "checking whether to enable slurm simulator... " >&6; }
-  # Check whether --enable-simulator was given.
-if test "${enable_simulator+set}" = set; then :
-  enableval=$enable_simulator;  case "$enableval" in
-        yes) x_ac_simulator=yes ;;
-         no) x_ac_simulator=no ;;
-          *) { $as_echo "$as_me:${as_lineno-$LINENO}: result: doh!" >&5
-$as_echo "doh!" >&6; }
-             as_fn_error $? "bad value \"$enableval\" for --enable-simulator" "$LINENO" 5 ;;
-      esac
-
-
-fi
-
-  if test "$x_ac_simulator" = yes; then
-
-$as_echo "#define SLURM_SIMULATOR 1" >>confdefs.h
-
-  fi
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${x_ac_simulator=no}" >&5
-$as_echo "${x_ac_simulator=no}" >&6; }
-
 
 
  if test "x$ac_debug" = "xtrue"; then
