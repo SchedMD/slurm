@@ -12352,17 +12352,7 @@ static void _get_batch_job_dir_ids(List batch_dirs)
 	}
 
 	while ((dir_ent = readdir(f_dir))) {
-		if (!xstrncmp("job.#", dir_ent->d_name, 4)) {
-			/* Read version 14.03 or earlier format state */
-			long_job_id = strtol(&dir_ent->d_name[4], &endptr, 10);
-			if ((long_job_id == 0) || (endptr[0] != '\0'))
-				continue;
-			debug3("found batch directory for job_id %ld",
-			      long_job_id);
-			job_id_ptr = xmalloc(sizeof(uint32_t));
-			*job_id_ptr = long_job_id;
-			list_append(batch_dirs, job_id_ptr);
-		} else if (!xstrncmp("hash.#", dir_ent->d_name, 5)) {
+		if (!xstrncmp("hash.#", dir_ent->d_name, 5)) {
 			char *h_path = NULL;
 			xstrfmtcat(h_path, "%s/%s",
 				   slurmctld_conf.state_save_location,
