@@ -61,8 +61,8 @@ typedef enum {
 	DBD_FLUSH_JOBS, 	/* End jobs that are still running
 				 * when a controller is restarted.	*/
 	DBD_GET_ACCOUNTS,	/* Get account information		*/
-	DBD_GET_ASSOCS,         /* Get association information   	*/
-	DBD_GET_ASSOC_USAGE,  	/* Get assoc usage information  	*/
+	DBD_GET_ASSOCS,         /* #1410, Get association information   */
+	DBD_GET_ASSOC_USAGE,  	/* Get assoc usage information   	*/
 	DBD_GET_CLUSTERS,	/* Get account information		*/
 	DBD_GET_CLUSTER_USAGE, 	/* Get cluster usage information	*/
 	DBD_RECONFIG,   	/* Reread the slurmdbd.conf     	*/
@@ -71,7 +71,7 @@ typedef enum {
 	DBD_GOT_ASSOCS, 	/* Response to DBD_GET_ASSOCS   	*/
 	DBD_GOT_ASSOC_USAGE,  	/* Response to DBD_GET_ASSOC_USAGE    	*/
 	DBD_GOT_CLUSTERS,	/* Response to DBD_GET_CLUSTERS		*/
-	DBD_GOT_CLUSTER_USAGE, 	/* Response to DBD_GET_CLUSTER_USAGE   	*/
+	DBD_GOT_CLUSTER_USAGE, 	/* #1420, Response to DBD_GET_CLUSTER_USAGE */
 	DBD_GOT_JOBS,		/* Response to DBD_GET_JOBS		*/
 	DBD_GOT_LIST,           /* Response to DBD_MODIFY/REMOVE MOVE_* */
 	DBD_GOT_USERS,  	/* Response to DBD_GET_USERS		*/
@@ -83,7 +83,7 @@ typedef enum {
 	DBD_JOB_SUSPEND,	/* Record job suspension		*/
 	DBD_MODIFY_ACCOUNTS,    /* Modify existing account              */
 	DBD_MODIFY_ASSOCS,      /* Modify existing association          */
-	DBD_MODIFY_CLUSTERS,    /* 1430 Modify existing cluster         */
+	DBD_MODIFY_CLUSTERS,    /* #1430, Modify existing cluster       */
 	DBD_MODIFY_USERS,       /* Modify existing user                 */
 	DBD_NODE_STATE,		/* Record node state transition		*/
 	DBD_RC, 		/* DEFUNCT, use PERSIST_RC instead.	*/
@@ -94,7 +94,7 @@ typedef enum {
 	DBD_REMOVE_ASSOCS,      /* Remove existing association          */
 	DBD_REMOVE_CLUSTERS,    /* Remove existing cluster              */
 	DBD_REMOVE_USERS,       /* Remove existing user                 */
-	DBD_ROLL_USAGE,         /* Roll up usage                        */
+	DBD_ROLL_USAGE,         /* #1440 Roll up usage                  */
 	DBD_STEP_COMPLETE,	/* Record step completion		*/
 	DBD_STEP_START,		/* Record step starting			*/
 	DBD_UPDATE_SHARES_USED,	/* Doesn't do anything but
@@ -106,7 +106,7 @@ typedef enum {
 	DBD_ADD_QOS,		/* Add QOS information   	        */
 	DBD_GET_QOS,		/* Get QOS information   	        */
 	DBD_GOT_QOS,		/* Got QOS information   	        */
-	DBD_REMOVE_QOS,		/* Remove QOS information   	        */
+	DBD_REMOVE_QOS,		/* #1450, Remove QOS information        */
 	DBD_MODIFY_QOS,         /* Modify existing QOS                  */
 	DBD_ADD_WCKEYS,		/* Add WCKEY information   	        */
 	DBD_GET_WCKEYS,		/* Get WCKEY information   	        */
@@ -117,7 +117,7 @@ typedef enum {
 	DBD_GOT_WCKEY_USAGE,  	/* Get wckey usage information  	*/
 	DBD_ARCHIVE_DUMP,    	/* issue a request to dump jobs to
 				 * archive */
-	DBD_ARCHIVE_LOAD,    	/* 1460 load an archive file   	        */
+	DBD_ARCHIVE_LOAD,    	/* #1460, load an archive file          */
 	DBD_ADD_RESV,    	/* add a reservation                    */
 	DBD_REMOVE_RESV,    	/* remove a reservation                 */
 	DBD_MODIFY_RESV,    	/* modify a reservation                 */
@@ -127,7 +127,7 @@ typedef enum {
 	DBD_GOT_CONFIG,		/* Response to DBD_GET_CONFIG		*/
 	DBD_GET_PROBS,  	/* Get problems existing in accounting	*/
 	DBD_GOT_PROBS,		/* Response to DBD_GET_PROBS		*/
-	DBD_GET_EVENTS, 	/* Get event information		*/
+	DBD_GET_EVENTS, 	/* #1470, Get event information		*/
 	DBD_GOT_EVENTS, 	/* Response to DBD_GET_EVENTS		*/
 	DBD_SEND_MULT_JOB_START,/* Send multiple job starts		*/
 	DBD_GOT_MULT_JOB_START,	/* Get response to DBD_SEND_MULT_JOB_START */
@@ -137,17 +137,17 @@ typedef enum {
 	DBD_ADD_RES,    	/* Add new system resource to the mix   */
 	DBD_GET_RES,		/* Get resource information		*/
 	DBD_GOT_RES,		/* Got resource information		*/
-	DBD_REMOVE_RES,     	/* Remove existing resource      	*/
+	DBD_REMOVE_RES,     	/* #1480, Remove existing resource      */
 	DBD_MODIFY_RES,     	/* Modify existing resource      	*/
 	DBD_ADD_CLUS_RES,    	/* Add cluster using a resource    	*/
 	DBD_REMOVE_CLUS_RES,   	/* Remove existing cluster resource    	*/
 	DBD_MODIFY_CLUS_RES,   	/* Modify existing cluster resource   	*/
-	DBD_ADD_TRES,         /* Add tres to the database           */
-	DBD_GET_TRES,         /* Get tres from the database         */
-	DBD_GOT_TRES,         /* Got tres from the database         */
+	DBD_ADD_TRES,           /* Add tres to the database           */
+	DBD_GET_TRES,           /* Get tres from the database         */
+	DBD_GOT_TRES,           /* Got tres from the database         */
 	DBD_FIX_RUNAWAY_JOB,    /* Fix any runaway jobs */
 	DBD_GET_STATS,		/* Get daemon statistics */
-	DBD_GOT_STATS,		/* 1490 Got daemon statistics data */
+	DBD_GOT_STATS,		/* #1490 ,Got daemon statistics data */
 	DBD_CLEAR_STATS,	/* Clear daemon statistics */
 	DBD_SHUTDOWN,		/* Shutdown daemon */
 	DBD_ADD_FEDERATIONS,    /* Add new federation to the mix        */
