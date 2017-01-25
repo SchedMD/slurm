@@ -502,7 +502,6 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		local_cluster_list = setup_cluster_list_with_inx(
 			mysql_conn, job_cond, (void **)&curr_cluster);
 		if (!local_cluster_list) {
-			mysql_free_result(result);
 			rc = SLURM_ERROR;
 			goto end_it;
 		}

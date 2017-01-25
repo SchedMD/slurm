@@ -312,7 +312,6 @@ static uint32_t _get_res_used(mysql_conn_t *mysql_conn, uint32_t res_id,
 
 	if (!(row = mysql_fetch_row(result))) {
 		error("Resource id %u is not known on the system", res_id);
-		mysql_free_result(result);
 		return percent_used;
 	}
 
@@ -384,7 +383,6 @@ static int _fill_in_res_rec(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *res)
 
 	if (!(row = mysql_fetch_row(result))) {
 		error("Resource id %u is not known on the system", res->id);
-		mysql_free_result(result);
 		return SLURM_ERROR;
 	}
 
@@ -1102,8 +1100,6 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if (!query_clusters && !vals) {
 		xfree(clus_vals);
-		if (result)
-			mysql_free_result(result);
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("Nothing to change");
 		return NULL;
