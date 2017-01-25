@@ -1199,6 +1199,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					      mysql_conn,
 					      query, 0))) {
 					rc = SLURM_ERROR;
+					mysql_free_result(result);
 					goto end_it;
 				}
 				xfree(query);
