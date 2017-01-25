@@ -35,8 +35,6 @@ set test_id       17.39
 set slow_id       0
 set fast_id       0
 set dep_id        0
-set slow_job      "test$test_id\_slow_sc"
-set fast_job      "test$test_id\_fast_sc"
 set exit_code     0
 
 print_header $test_id
@@ -55,9 +53,6 @@ if {![string compare $select_type "linear"]} {
 		exit $exit_code
 	}
 }
-
-make_bash_script $slow_job "sleep 120"
-make_bash_script $fast_job "sleep 30"
 
 proc check_state {id state} {
 	global squeue exit_code
@@ -86,8 +81,7 @@ proc check_state {id state} {
 }
 
 # Submit job 1 of 3
-set job_mem  10
-spawn $sbatch -t3 -o/dev/null --mem=${job_mem} $slow_job
+spawn $sbatch -t3 -o /dev/null --wrap "sleep 120"
 expect {
 	-re "Submitted batch job ($number)" {
 		set slow_id $expect_out(1,string)
@@ -107,7 +101,7 @@ if {$slow_id == 0} {
 }
 
 # Submit job 2 of 3
-spawn $sbatch -t3 -o/dev/null --mem=${job_mem} $fast_job
+spawn $sbatch -t3 -o /dev/null --wrap "sleep 30"
 expect {
 	-re "Node count specification invalid" {
 		send_user "\nWARNING: can't test with less than two nodes\n"
@@ -131,7 +125,7 @@ if {$fast_id == 0} {
 }
 
 # Submit dependency job, 3 of 3
-spawn $sbatch --dependency=afterok:$slow_id?afterok:$fast_id -o/dev/null --mem=${job_mem} $slow_job
+spawn $sbatch --dependency=afterok:$slow_id?afterok:$fast_id -o /dev/null --wrap "sleep 120"
 expect {
 	-re "Submitted batch job ($number)" {
 		set dep_id $expect_out(1,string)
@@ -192,7 +186,6 @@ cancel_job $slow_id
 cancel_job $dep_id
 
 if {$exit_code == 0} {
-	exec $bin_rm -f $slow_job $fast_job
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
