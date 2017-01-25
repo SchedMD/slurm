@@ -250,6 +250,9 @@ documents those changes that are of interest to users and administrators.
     using the multi-cluster options (e.g. squeue -M<clsuter>).
  -- slurmctld/agent race condition fix: Prevent job launch while PrologSlurmctld
     daemon is running or node boot in progress.
+ -- MYSQL - Fix a few other minor memory leaks when uncommon failures occur.
+ -- burst_buffer/cray - Fix race condition that could cause multiple batch job
+    launch requests resulting in drained nodes.
 
 * Changes in Slurm 16.05.8
 ==========================
