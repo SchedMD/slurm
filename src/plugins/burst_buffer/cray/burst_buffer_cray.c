@@ -3672,8 +3672,10 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 		pre_run_args->job_id  = job_ptr->job_id;
 		pre_run_args->timeout = bb_state.bb_config.other_timeout;
 		pre_run_args->user_id = job_ptr->user_id;
-		if (job_ptr->details)	/* Defer launch until completion */
+		if (job_ptr->details) {	/* Defer launch until completion */
 			job_ptr->details->prolog_running++;
+			job_ptr->job_state |= JOB_CONFIGURING;
+		}
 
 		slurm_attr_init(&pre_run_attr);
 		if (pthread_attr_setdetachstate(&pre_run_attr,
