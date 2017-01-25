@@ -35,7 +35,6 @@ source ./globals
 
 set test_id     "2.8"
 set exit_code   0
-set file_in     "test$test_id.input"
 set is_bluegene 0
 set job_id1     0
 set job_id2     0
@@ -65,26 +64,10 @@ if {[test_launch_poe]} {
 	set step_id 0
 }
 
-if {[test_select_type_params "MEMORY"]} {
-	set job_mem  20
-	set step_mem 10
-} else {
-	set job_mem  1
-	set step_mem 1
-}
-
-#
-# Build input script file
-#
-make_bash_script $file_in "
-  $srun --mem=${step_mem} $bin_sleep 60 &
-  $srun --mem=${step_mem} $bin_sleep 60
-"
-
 #
 # Submit a couple jobs so we have something to work with
 #
-set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null -t5 --mem=${job_mem} $file_in]
+set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null -t5 --wrap "$srun $bin_sleep 60"]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id1 $expect_out(1,string)
@@ -104,7 +87,7 @@ if {$job_id1 == 0} {
 	exit 1
 }
 
-set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null -t5 --mem=${job_mem} $file_in]
+set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null -t5 --wrap "$srun $bin_sleep 60"]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id2 $expect_out(1,string)
@@ -125,8 +108,6 @@ if {$job_id2 == 0} {
 	cancel_job $job_id1
 	exit 1
 }
-
-exec $bin_rm -f $file_in
 
 if {[wait_for_job $job_id1 "RUNNING"] != 0} {
         send_user "\nFAILURE: waiting for job $job_id1 to start\n"
@@ -451,4 +432,3 @@ if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
-
