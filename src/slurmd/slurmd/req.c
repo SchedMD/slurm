@@ -2453,8 +2453,8 @@ no_job:
 static int
 _launch_job_fail(uint32_t job_id, uint32_t slurm_rc)
 {
-	complete_batch_script_msg_t comp_msg;
-	struct requeue_msg req_msg;
+	complete_batch_script_msg_t comp_msg = {0};
+	struct requeue_msg req_msg = {0};
 	slurm_msg_t resp_msg;
 	int rc = 0, rpc_rc;
 	static time_t config_update = 0;
