@@ -5290,7 +5290,6 @@ extern void fini_job_resv_check(void)
 		}
 		_advance_resv_time(resv_ptr);
 		if ((resv_ptr->job_run_cnt    == 0) &&
-		    (resv_ptr->flags_set_node == false) &&
 		    ((resv_ptr->flags & RESERVE_FLAG_DAILY ) == 0) &&
 		    ((resv_ptr->flags & RESERVE_FLAG_WEEKLY) == 0)) {
 			if (resv_ptr->job_pend_cnt) {
