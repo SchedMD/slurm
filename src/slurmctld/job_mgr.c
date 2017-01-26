@@ -5998,12 +5998,10 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	}
 
 	if (launch_type_poe == -1) {
-		char *launch_type = slurm_get_launch_type();
-		if (!xstrcmp(launch_type, "launch/poe"))
+		if (!xstrcmp(slurmctld_conf.launch_type, "launch/poe"))
 			launch_type_poe = 1;
 		else
 			launch_type_poe = 0;
-		xfree(launch_type);
 	}
 	if (launch_type_poe == 1)
 		job_ptr->next_step_id = 1;
@@ -12635,11 +12633,8 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 			 * This would most likely kill other jobs sharing that
 			 * midplane and that is not what we want. */
 			if (return_code) {
-				static uint32_t slurm_user_id = NO_VAL;
-				if (slurm_user_id == NO_VAL)
-					slurm_user_id=slurm_get_slurm_user_id();
 				drain_nodes(node_ptr->name, "Epilog error",
-					    slurm_user_id);
+					    slurmctld_conf.slurm_user_id);
 			}
 #endif
 			/* Change job from completing to completed */
@@ -12652,7 +12647,7 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 		      __func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)),
 		      node_name);
 		drain_nodes(node_name, "Epilog error",
-			    slurm_get_slurm_user_id());
+			    slurmctld_conf.slurm_user_id);
 	}
 	/* Change job from completing to completed */
 	node_ptr = find_node_record(node_name);
@@ -13053,13 +13048,11 @@ static void _signal_job(struct job_record *job_ptr, int signal)
 	int notify_srun = 0;
 
 	if (notify_srun_static == -1) {
-		char *launch_type = slurm_get_launch_type();
 		/* do this for all but slurm (poe, aprun, etc...) */
-		if (xstrcmp(launch_type, "launch/slurm"))
+		if (xstrcmp(slurmctld_conf.launch_type, "launch/slurm"))
 			notify_srun_static = 1;
 		else
 			notify_srun_static = 0;
-		xfree(launch_type);
 	}
 
 #ifdef HAVE_FRONT_END

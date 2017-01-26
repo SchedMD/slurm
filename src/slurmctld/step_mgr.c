@@ -498,14 +498,12 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 	static bool front_end = false;
 
 	if (notify_srun == -1) {
-		char *launch_type = slurm_get_launch_type();
 		/* do this for all but slurm (poe, aprun, etc...) */
-		if (xstrcmp(launch_type, "launch/slurm")) {
+		if (xstrcmp(slurmctld_conf.launch_type, "launch/slurm")) {
 			notify_srun = 1;
 			notify_slurmd = false;
 		} else
 			notify_srun = 0;
-		xfree(launch_type);
 	}
 
 	job_ptr = find_job_record(job_id);
@@ -4206,13 +4204,11 @@ static void _signal_step_timelimit(struct job_record *job_ptr,
 #if defined HAVE_BG_FILES
 		notify_srun = 1;
 #else
-		char *launch_type = slurm_get_launch_type();
 		/* do this for all but slurm (poe, aprun, etc...) */
-		if (xstrcmp(launch_type, "launch/slurm"))
+		if (xstrcmp(slurmctld_conf.launch_type, "launch/slurm"))
 			notify_srun = 1;
 		else
 			notify_srun = 0;
-		xfree(launch_type);
 #endif
 	}
 

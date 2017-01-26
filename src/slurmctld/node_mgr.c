@@ -2486,7 +2486,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 			else
 				reason = "Job env setup error";
 			drain_nodes(reg_msg->node_name, reason,
-				    slurm_get_slurm_user_id());
+				    slurmctld_conf.slurm_user_id);
 			last_node_update = time (NULL);
 		}
 	} else {
@@ -2568,7 +2568,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 					xfree(node_ptr->reason);
 				node_ptr->reason_time = now;
 				node_ptr->reason_uid =
-					slurm_get_slurm_user_id();
+					slurmctld_conf.slurm_user_id;
 				node_ptr->reason = xstrdup(
 					"Node unexpectedly rebooted");
 			}
@@ -3302,7 +3302,7 @@ void set_node_down_ptr (struct node_record *node_ptr, char *reason)
 		xfree(node_ptr->reason);
 		node_ptr->reason = xstrdup(reason);
 		node_ptr->reason_time = now;
-		node_ptr->reason_uid = slurm_get_slurm_user_id();
+		node_ptr->reason_uid = slurmctld_conf.slurm_user_id;
 	}
 	_make_node_down(node_ptr, now);
 	(void) kill_running_job_by_node_name(node_ptr->name);
@@ -3531,7 +3531,7 @@ extern void make_node_comp(struct node_record *node_ptr,
 			clusteracct_storage_g_node_down(
 				acct_db_conn,
 				node_ptr, now, NULL,
-				slurm_get_slurm_user_id());
+				slurmctld_conf.slurm_user_id);
 		}
 	}
 
@@ -3697,7 +3697,7 @@ void make_node_idle(struct node_record *node_ptr,
 		trigger_node_drained(node_ptr);
 		clusteracct_storage_g_node_down(acct_db_conn,
 						node_ptr, now, NULL,
-						slurm_get_slurm_user_id());
+						slurmctld_conf.slurm_user_id);
 	} else if (node_ptr->run_job_cnt) {
 		node_ptr->node_state = NODE_STATE_ALLOCATED | node_flags;
 		if (!IS_NODE_NO_RESPOND(node_ptr) &&
@@ -3776,7 +3776,7 @@ extern int send_nodes_to_accounting(time_t event_time)
 						acct_db_conn,
 						&send_node, event_time,
 						reason,
-						slurm_get_slurm_user_id());
+						slurmctld_conf.slurm_user_id);
 				}
 			}
 		} else
@@ -3784,7 +3784,7 @@ extern int send_nodes_to_accounting(time_t event_time)
 				acct_db_conn,
 				node_ptr, event_time,
 				reason,
-				slurm_get_slurm_user_id());
+				slurmctld_conf.slurm_user_id);
 		if (rc == SLURM_ERROR)
 			break;
 	}

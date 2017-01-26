@@ -5530,7 +5530,7 @@ static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
 			clusteracct_storage_g_node_down(
 				acct_db_conn,
 				node_ptr, now, NULL,
-				slurm_get_slurm_user_id());
+				slurmctld_conf.slurm_user_id);
 		}
 	}
 }
