@@ -913,17 +913,6 @@ Multiple license names should be comma separated (e.g.
 "\-\-licenses=foo:4,bar"). This option applies to job allocations.
 
 .TP
-\fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
-Clusters to issue commands to.  Multiple cluster names may be comma separated.
-The job will be submitted to the one cluster providing the earliest expected
-job initiation time. The default value is the current cluster. A value of
-\(aq\fIall\fR' will query to run on all clusters.  Note the
-\fB\-\-export\fR option to control environment variables exported
-between clusters.
-This option applies only to job allocations.
-Note that the SlurmDBD must be up for this option to work properly.
-
-.TP
 .na
 \fB\-m\fR, \fB\-\-distribution\fR=
 \fI*\fR|\fIblock\fR|\fIcyclic\fR|\fIarbitrary\fR|\fIplane=<options>

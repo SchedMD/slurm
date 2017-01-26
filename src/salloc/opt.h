@@ -60,7 +60,7 @@
 typedef enum {BELL_NEVER, BELL_AFTER_DELAY, BELL_ALWAYS} bell_flag_t;
 
 typedef struct salloc_options {
-	char *clusters;		/* cluster to run this on. */
+
 	char *progname;		/* argv[0] of this program or
 				 * configuration file if multi_prog */
 	char* user;		/* local username		*/
