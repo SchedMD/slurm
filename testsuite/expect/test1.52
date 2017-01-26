@@ -37,7 +37,7 @@ set test_id     "1.52"
 set exit_code   0
 set num_nodes   2
 set num_tasks   2
-set node_count  0
+set idle_nodes  0
 set max_nodes   0
 set task_count  0
 set hostfile    "test$test_id.hostfile"
@@ -71,10 +71,6 @@ expect {
 		set max_nodes 999999
 		exp_continue
 	}
-	-re "TotalNodes=($number)" {
-		set node_count $expect_out(1,string)
-		exp_continue
-	}
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
 		exit 1
@@ -83,8 +79,14 @@ expect {
 		wait
 	}
 }
-if { ($node_count < 3) || ($max_nodes < 3) } {
-	send_user "WARNING: system must have at least 3 nodes to run this test on. $node_count $max_nodes\n"
+
+set idle_nodes [available_nodes $def_part idle]
+if { ($idle_nodes < 3) || ($max_nodes < 3) } {
+	if { $max_nodes == 999999 } {
+		send_user "WARNING: partition $def_part must have at least 3 idle nodes and MaxNodes >= 3 to run this test on. IDLE:$idle_nodes MaxNodes:UNLIMITED\n"
+	} else {
+		send_user "WARNING: partition $def_part must have at least 3 idle nodes and MaxNodes >= 3 to run this test on. IDLE:$idle_nodes MaxNodes:$max_nodes\n"
+	}
 	exit $exit_code
 }
 
