@@ -6250,12 +6250,10 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	}
 
 	if (launch_type_poe == -1) {
-		char *launch_type = slurm_get_launch_type();
-		if (!xstrcmp(launch_type, "launch/poe"))
+		if (!xstrcmp(slurmctld_conf.launch_type, "launch/poe"))
 			launch_type_poe = 1;
 		else
 			launch_type_poe = 0;
-		xfree(launch_type);
 	}
 	if (launch_type_poe == 1)
 		job_ptr->next_step_id = 1;
@@ -13661,13 +13659,11 @@ static void _signal_job(struct job_record *job_ptr, int signal)
 	int notify_srun = 0;
 
 	if (notify_srun_static == -1) {
-		char *launch_type = slurm_get_launch_type();
 		/* do this for all but slurm (poe, aprun, etc...) */
-		if (xstrcmp(launch_type, "launch/slurm"))
+		if (xstrcmp(slurmctld_conf.launch_type, "launch/slurm"))
 			notify_srun_static = 1;
 		else
 			notify_srun_static = 0;
-		xfree(launch_type);
 	}
 
 #ifdef HAVE_FRONT_END
