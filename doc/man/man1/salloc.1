@@ -615,6 +615,16 @@ Multiple license names should be comma separated (e.g.
 "\-\-licenses=foo:4,bar").
 
 .TP
+\fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
+Clusters to issue commands to.  Multiple cluster names may be comma separated.
+The job will be submitted to the one cluster providing the earliest expected
+job initiation time. The default value is the current cluster. A value of
+\(aq\fIall\fR' will query to run on all clusters.  Note the
+\fB\-\-export\fR option to control environment variables exported
+between clusters.
+Note that the SlurmDBD must be up for this option to work properly.
+
+.TP
 \fB\-m\fR, \fB\-\-distribution\fR=
 \fIarbitrary\fR|<\fIblock\fR|\fIcyclic\fR|\fIplane=<options>\fR[:\fIblock\fR|\fIcyclic\fR|\fIfcyclic\fR]>
 
@@ -1491,6 +1501,9 @@ Same as \fB\-\-bell\fR
 .TP
 \fBSALLOC_BURST_BUFFER\fR
 Same as \fB\-\-bb\fR
+.TP
+\fBSALLOC_CLUSTERS\fR or \fBSLURM_CLUSTERS\fR
+Same as \fB\-\-clusters\fR
 .TP
 \fBSALLOC_CONN_TYPE\fR
 Same as \fB\-\-conn\-type\fR

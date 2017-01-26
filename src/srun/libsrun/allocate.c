@@ -50,6 +50,7 @@
 #include "src/common/forward.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/proc_args.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_time.h"
@@ -879,6 +880,16 @@ job_desc_msg_create_from_opts (void)
 	if (opt.mcs_label)
 		j->mcs_label = opt.mcs_label;
 	j->wait_all_nodes = 1;
+
+	/* If can run on multiple clusters find the earliest run time
+	 * and run it there */
+	j->clusters = xstrdup(opt.clusters);
+	if (opt.clusters &&
+	    slurmdb_get_first_avail_cluster(j, opt.clusters,
+				&working_cluster_rec) != SLURM_SUCCESS) {
+		print_db_notok(opt.clusters, 0);
+		exit(error_exit);
+	}
 
 	return j;
 }

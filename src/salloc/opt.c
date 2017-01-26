@@ -286,6 +286,7 @@ static void _opt_default()
 	opt.uid = uid;
 	opt.gid = getgid();
 
+	opt.clusters = NULL;
 	opt.cwd = NULL;
 	opt.progname = NULL;
 
@@ -408,6 +409,8 @@ env_vars_t env_vars[] = {
   {"SALLOC_ACCTG_FREQ",    OPT_STRING,     &opt.acctg_freq,    NULL          },
   {"SALLOC_BELL",          OPT_BELL,       NULL,               NULL          },
   {"SALLOC_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL          },
+  {"SALLOC_CLUSTERS",      OPT_STRING,     &opt.clusters,      NULL          },
+  {"SLURM_CLUSTERS",       OPT_STRING,     &opt.clusters,      NULL          },
   {"SALLOC_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL          },
   {"SALLOC_CONSTRAINT",    OPT_STRING,     &opt.constraints,   NULL          },
   {"SALLOC_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL          },
@@ -683,6 +686,8 @@ void set_options(const int argc, char **argv)
 		{"kill-command",  optional_argument, 0, 'K'},
 		{"licenses",      required_argument, 0, 'L'},
 		{"distribution",  required_argument, 0, 'm'},
+		{"cluster",       required_argument, 0, 'M'},
+		{"clusters",      required_argument, 0, 'M'},
 		{"tasks",         required_argument, 0, 'n'},
 		{"ntasks",        required_argument, 0, 'n'},
 		{"nodes",         required_argument, 0, 'N'},
@@ -764,7 +769,7 @@ void set_options(const int argc, char **argv)
 		{NULL,            0,                 0, 0}
 	};
 	char *opt_string =
-		"+A:B:c:C:d:D:F:g:hHI::J:kK::L:m:n:N:Op:P:QRsS:t:uU:vVw:W:x:";
+		"+A:B:c:C:d:D:F:g:hHI::J:kK::L:m:M:n:N:Op:P:QRsS:t:uU:vVw:W:x:";
 	char *pos_delimit;
 
 	struct option *optz = spank_option_table_create(long_options);
@@ -882,6 +887,10 @@ void set_options(const int argc, char **argv)
 				      "is not recognized", optarg);
 				exit(error_exit);
 			}
+			break;
+		case 'M':
+			xfree(opt.clusters);
+			opt.clusters = xstrdup(optarg);
 			break;
 		case 'n':
 			opt.ntasks_set = true;
@@ -2095,6 +2104,7 @@ static void _usage(void)
 "              [--immediate[=secs]] [--no-kill] [--overcommit] [-D path]\n"
 "              [--oversubscribe] [-J jobname] [--jobid=id]\n"
 "              [--verbose] [--gid=group] [--uid=user] [--licenses=names]\n"
+"              [--clusters=cluster_names]\n"
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "              [--account=name] [--dependency=type:jobid] [--comment=name]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
@@ -2147,6 +2157,10 @@ static void _help(void)
 "  -k, --no-kill               do not kill job on node failure\n"
 "  -K, --kill-command[=signal] signal to send terminating job\n"
 "  -L, --licenses=names        required license, comma separated\n"
+"  -M, --clusters=names        Comma separated list of clusters to issue\n"
+"                              commands to.  Default is current cluster.\n"
+"                              Name of 'all' will submit to run on all clusters.\n"
+"                              NOTE: SlurmDBD must up.\n"
 "  -m, --distribution=type     distribution method for processes to nodes\n"
 "                              (type = block|cyclic|arbitrary)\n"
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
