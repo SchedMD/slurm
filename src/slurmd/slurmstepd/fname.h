@@ -42,9 +42,8 @@
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-char *fname_create(stepd_step_rec_t *job, const char *fmt, int taskid);
-int   fname_trunc_all(stepd_step_rec_t *job, const char *fmt);
-int   fname_single_task_io (const char *fmt);
+extern char *fname_create(stepd_step_rec_t *job, const char *fmt, int taskid);
+extern int   fname_single_task_io(const char *fmt);
 extern char *is_path_escaped(char *);
 
 #endif /* !_SLURMD_FNAME_H */

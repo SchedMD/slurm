@@ -73,8 +73,7 @@ static void _step_path_check(char **p, char **q, char **name, unsigned int wid,
 /* Create an IO filename from job parameters and the filename format
  * sent from client
  */
-char *
-fname_create(stepd_step_rec_t *job, const char *format, int taskid)
+extern char *fname_create(stepd_step_rec_t *job, const char *format, int taskid)
 {
 	char *name = NULL, *orig;
 	int id;
@@ -154,8 +153,8 @@ static char *_create_batch_fname(char *name, char *path, stepd_step_rec_t *job,
 	return name;
 }
 
-static char *_create_step_fname (char *name, char *path, stepd_step_rec_t *job,
-				 int taskid)
+static char *_create_step_fname(char *name, char *path, stepd_step_rec_t *job,
+				int taskid)
 {
 
 	unsigned int wid   = 0;
@@ -319,7 +318,7 @@ static void _batch_path_check(char **p, char **q, char **name,
  * Return >= 0 if fmt specifies "single task only" IO
  *  i.e. if it specifies a single integer only
  */
-int fname_single_task_io (const char *fmt)
+extern int fname_single_task_io (const char *fmt)
 {
 	unsigned long taskid;
 	char *p;
@@ -338,8 +337,7 @@ int fname_single_task_io (const char *fmt)
  * The new path will tell the caller not to
  * translate escaped characters.
  */
-char *
-is_path_escaped(char *p)
+extern char *is_path_escaped(char *p)
 {
 	char *buf;
 	bool t;

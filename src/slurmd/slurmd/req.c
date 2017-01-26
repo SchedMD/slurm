@@ -1695,7 +1695,7 @@ _prolog_error(batch_job_launch_msg_t *req, int rc)
 		else
 			err_name = xstrdup(req->std_out);
 		if ((fmt_char = strchr(err_name, (int) '%')) &&
-		    (fmt_char[1] == 'j') && !strchr(fmt_char+1, (int) '%')) {
+		    (fmt_char[1] == 'j') && !strchr(fmt_char + 1, (int) '%')) {
 			char *tmp_name = NULL;
 			fmt_char[1] = 'u';
 			xstrfmtcat(tmp_name, err_name, req->job_id);
