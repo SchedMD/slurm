@@ -96,6 +96,7 @@
 #include "src/slurmd/slurmd/get_mach_stat.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
+#include "src/slurmd/common/fname.h"
 #include "src/slurmd/common/job_container_plugin.h"
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/run_script.h"
@@ -1686,34 +1687,9 @@ static void
 _prolog_error(batch_job_launch_msg_t *req, int rc)
 {
 	char *err_name = NULL, *path_name = NULL;
-	char *fmt_char;
 	int fd;
 
-	if (req->std_err || req->std_out) {
-		if (req->std_err)
-			err_name = xstrdup(req->std_err);
-		else
-			err_name = xstrdup(req->std_out);
-		if ((fmt_char = strchr(err_name, (int) '%')) &&
-		    (fmt_char[1] == 'j') && !strchr(fmt_char + 1, (int) '%')) {
-			char *tmp_name = NULL;
-			fmt_char[1] = 'u';
-			xstrfmtcat(tmp_name, err_name, req->job_id);
-			xfree(err_name);
-			err_name = tmp_name;
-			//tmp_name = NULL;
-		}
-	} else {
-		xstrfmtcat(err_name, "slurm-%u.out", req->job_id);
-	}
-	if (err_name[0] == '/')
-		xstrfmtcat(path_name, "%s", err_name);
-	else if (req->work_dir)
-		xstrfmtcat(path_name, "%s/%s", req->work_dir, err_name);
-	else
-		xstrfmtcat(path_name, "/%s", err_name);
-	xfree(err_name);
-
+	path_name = fname_create2(req);
 	if ((fd = _open_as_other(path_name, req)) == -1) {
 		error("Unable to open %s: Permission denied", path_name);
 		xfree(path_name);

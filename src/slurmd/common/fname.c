@@ -70,15 +70,14 @@ static void _step_path_check(char **p, char **q, char **name, unsigned int wid,
 #define MAX_WIDTH 10
 
 /* Create an IO filename from job parameters and the filename format
- * sent from client
- */
+ * sent from client. Used by slurmstepd. */
 extern char *fname_create(stepd_step_rec_t *job, const char *format, int taskid)
 {
 	char *name = NULL, *orig;
 	int id;
 	char *esc;
 
-	if (((id = fname_single_task_io (format)) >= 0) && (taskid != id))
+	if (((id = fname_single_task_io(format)) >= 0) && (taskid != id))
 		return (xstrdup ("/dev/null"));
 
 	orig = xstrdup(format);
@@ -106,6 +105,54 @@ extern char *fname_create(stepd_step_rec_t *job, const char *format, int taskid)
 		name = _create_batch_fname(name, orig, job, taskid);
 	else
 		name = _create_step_fname(name, orig, job, taskid);
+
+fini:
+	xfree(orig);
+	return name;
+}
+
+/* Create an IO filename from job parameters and the filename format
+ * sent from client. Used by slurmd for prolog errors. */
+extern char *fname_create2(batch_job_launch_msg_t *req)
+{
+	stepd_step_rec_t job;
+	char *esc, *name = NULL, *orig = NULL;
+
+	if (req->std_err)
+		orig = xstrdup(req->std_err);
+	else if (req->std_out)
+		orig = xstrdup(req->std_out);
+	else
+		xstrfmtcat(orig, "slurm-%u.out", req->job_id);
+	esc = is_path_escaped(orig);
+
+	/* If format doesn't specify an absolute pathname, use cwd
+	 */
+	if (orig[0] != '/') {
+		xstrcat(name, req->work_dir);
+		if (esc) {
+			xstrcat(name, esc);
+			goto fini;
+		}
+		if (name[strlen(name)-1] != '/')
+			xstrcatchar(name, '/');
+	}
+
+	if (esc) {
+		/* esc is malloc */
+		name = esc;
+		goto fini;
+	}
+
+	memset(&job, 0, sizeof(stepd_step_rec_t));
+	job.array_job_id	= req->array_job_id;
+	job.array_task_id	= req->array_task_id;
+	job.jobid		= req->job_id;
+//	job->nodeid		= TBD;
+	job.stepid		= req->step_id;
+	job.uid			= req->uid;
+	job.user_name		= req->user_name;
+	name = _create_batch_fname(name, orig, &job, 0);
 
 fini:
 	xfree(orig);
