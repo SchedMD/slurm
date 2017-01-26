@@ -1271,7 +1271,7 @@ static int _accounting_mark_all_nodes_down(char *reason)
 		if ((rc = clusteracct_storage_g_node_down(
 			    acct_db_conn,
 			    node_ptr, event_time,
-			    reason, slurm_get_slurm_user_id()))
+			    reason, slurmctld_conf.slurm_user_id))
 		   == SLURM_ERROR)
 			break;
 	}
