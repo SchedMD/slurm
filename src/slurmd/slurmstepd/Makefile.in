@@ -149,8 +149,8 @@ am__installdirs = "$(DESTDIR)$(sbindir)"
 PROGRAMS = $(sbin_PROGRAMS)
 am_slurmstepd_OBJECTS = slurmstepd.$(OBJEXT) mgr.$(OBJEXT) \
 	task.$(OBJEXT) slurmstepd_job.$(OBJEXT) io.$(OBJEXT) \
-	fname.$(OBJEXT) ulimits.$(OBJEXT) pdebug.$(OBJEXT) \
-	pam_ses.$(OBJEXT) req.$(OBJEXT) multi_prog.$(OBJEXT) \
+	ulimits.$(OBJEXT) pdebug.$(OBJEXT) pam_ses.$(OBJEXT) \
+	req.$(OBJEXT) multi_prog.$(OBJEXT) \
 	step_terminate_monitor.$(OBJEXT)
 slurmstepd_OBJECTS = $(am_slurmstepd_OBJECTS)
 am__DEPENDENCIES_1 =
@@ -495,7 +495,6 @@ slurmstepd_SOURCES = \
 	task.c task.h			\
 	slurmstepd_job.c slurmstepd_job.h \
 	io.c io.h			\
-	fname.c fname.h			\
 	ulimits.c ulimits.h     	\
 	pdebug.c pdebug.h		\
 	pam_ses.c pam_ses.h		\
@@ -597,7 +596,6 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fname.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/io.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mgr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/multi_prog.Po@am__quote@

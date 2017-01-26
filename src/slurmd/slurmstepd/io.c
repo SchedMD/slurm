@@ -72,10 +72,9 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
-
+#include "src/slurmd/common/fname.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/io.h"
-#include "src/slurmd/slurmstepd/fname.h"
 #include "src/slurmd/slurmstepd/slurmstepd.h"
 
 /**********************************************************************

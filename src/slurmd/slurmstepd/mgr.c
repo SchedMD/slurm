@@ -94,6 +94,7 @@
 #include "src/slurmd/slurmd/slurmd.h"
 
 #include "src/slurmd/common/core_spec_plugin.h"
+#include "src/slurmd/common/fname.h"
 #include "src/slurmd/common/job_container_plugin.h"
 #include "src/slurmd/common/log_ctld.h"
 #include "src/slurmd/common/proctrack.h"
@@ -114,7 +115,6 @@
 #include "src/slurmd/slurmstepd/pam_ses.h"
 #include "src/slurmd/slurmstepd/ulimits.h"
 #include "src/slurmd/slurmstepd/step_terminate_monitor.h"
-#include "src/slurmd/slurmstepd/fname.h"
 
 #define RETRY_DELAY 15		/* retry every 15 seconds */
 #define MAX_RETRY   240		/* retry 240 times (one hour max) */

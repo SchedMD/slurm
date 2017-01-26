@@ -1,6 +1,5 @@
 /*****************************************************************************\
- * src/slurmd/slurmstepd/fname.c - IO filename creation routine
- *                                 (slurmstepd specific)
+ * src/slurmd/common/fname.c - IO filename creation routine
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -36,18 +35,18 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+#include <ctype.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
 #include <unistd.h>
 
+#include "src/slurmd/common/fname.h"
 #include "src/slurmd/slurmd/slurmd.h"
-#include "src/slurmd/slurmstepd/fname.h"
 
 #include "src/common/uid.h"
 #include "src/common/xassert.h"
