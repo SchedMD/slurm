@@ -395,7 +395,6 @@ static void _opt_default(void)
 	opt.cwd = xstrdup(buf);
 	opt.cwd_set = false;
 
-	opt.clusters = NULL;
 	opt.progname = NULL;
 
 	opt.ntasks = 1;
@@ -587,7 +586,6 @@ env_vars_t env_vars[] = {
 {"SLURM_BCAST",         OPT_BCAST,      NULL,               NULL             },
 {"SLURM_BLRTS_IMAGE",   OPT_STRING,     &opt.blrtsimage,    NULL             },
 {"SLURM_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL             },
-{"SLURM_CLUSTERS",      OPT_STRING,     &opt.clusters,      NULL             },
 {"SLURM_CHECKPOINT",    OPT_STRING,     &opt.ckpt_interval_str, NULL         },
 {"SLURM_CHECKPOINT_DIR",OPT_STRING,     &opt.ckpt_dir,      NULL             },
 {"SLURM_CNLOAD_IMAGE",  OPT_STRING,     &opt.linuximage,    NULL             },
@@ -945,8 +943,6 @@ static void _set_options(const int argc, char **argv)
 		{"kill-on-bad-exit", optional_argument, 0, 'K'},
 		{"label",         no_argument,       0, 'l'},
 		{"licenses",      required_argument, 0, 'L'},
-		{"cluster",       required_argument, 0, 'M'},
-		{"clusters",      required_argument, 0, 'M'},
 		{"distribution",  required_argument, 0, 'm'},
 		{"ntasks",        required_argument, 0, 'n'},
 		{"nodes",         required_argument, 0, 'N'},
@@ -1057,7 +1053,7 @@ static void _set_options(const int argc, char **argv)
 		{"wckey",            required_argument, 0, LONG_OPT_WCKEY},
 		{NULL,               0,                 0, 0}
 	};
-	char *opt_string = "+A:B:c:C:d:D:e:Eg:hHi:I::jJ:kK::lL:m:M:n:N:"
+	char *opt_string = "+A:B:c:C:d:D:e:Eg:hHi:I::jJ:kK::lL:m:n:N:"
 		"o:Op:P:qQr:RsS:t:T:uU:vVw:W:x:XZ";
 	char *pos_delimit;
 	bool ntasks_set_opt = false;
@@ -1196,10 +1192,6 @@ static void _set_options(const int argc, char **argv)
 		case 'L':
 			xfree(opt.licenses);
 			opt.licenses = xstrdup(optarg);
-			break;
-		case 'M':
-			xfree(opt.clusters);
-			opt.clusters = xstrdup(optarg);
 			break;
 		case (int)'m':
 			opt.distribution = verify_dist_type(optarg,
@@ -2760,7 +2752,7 @@ static void _usage(void)
 "            [--oversubscribe] [--label] [--unbuffered] [-m dist] [-J jobname]\n"
 "            [--jobid=id] [--verbose] [--slurmd_debug=#] [--gres=list]\n"
 "            [-T threads] [-W sec] [--checkpoint=time] [--gres-flags=opts]\n"
-"            [--checkpoint-dir=dir] [--licenses=names] [--clusters=cluster_names]\n"
+"            [--checkpoint-dir=dir]  [--licenses=names]\n"
 "            [--restart-dir=dir] [--qos=qos] [--time-min=minutes]\n"
 "            [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "            [--mpi=type] [--account=name] [--dependency=type:jobid]\n"
@@ -2837,14 +2829,10 @@ static void _help(void)
 "  -K, --kill-on-bad-exit      kill the job if any task terminates with a\n"
 "                              non-zero exit code\n"
 "  -l, --label                 prepend task number to lines of stdout/err\n"
+"  -L, --licenses=names        required license, comma separated\n"
 "      --launch-cmd            print external launcher command line if not SLURM\n"
 "      --launcher-opts=        options for the external launcher command if not\n"
 "                              SLURM\n"
-"  -L, --licenses=names        required license, comma separated\n"
-"  -M, --clusters=names        Comma separated list of clusters to issue\n"
-"                              commands to.  Default is current cluster.\n"
-"                              Name of 'all' will submit to run on all clusters.\n"
-"                              NOTE: SlurmDBD must up.\n"
 "  -m, --distribution=type     distribution method for processes to nodes\n"
 "                              (type = block|cyclic|arbitrary)\n"
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
