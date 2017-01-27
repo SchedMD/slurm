@@ -115,7 +115,7 @@ extern enum basil_version get_basil_version(void)
 		bv = BV_1_1;
 	else
 		fatal("unsupported ALPS Engine version '%s', please edit "
-		      "src/plugins/select/cray/libalps/do_query.c "
+		      "src/plugins/select/alps/libalps/do_query.c "
 		      "for this version",
 		      engine_version);
 
