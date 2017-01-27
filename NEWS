@@ -27,7 +27,6 @@ documents those changes that are of interest to users and administrators.
     scheduling with respect to node reboots.
  -- Avoid allocating resources to a job in the event that its run time plus boot
     time (if needed) extent into an advanced reservation.
- -- Fix srun I/O race condition on shutdown.
  -- Burst_buffer/cray - Avoid stage-out operation if job never started.
  -- node_features/knl_cray - Add capability to detected Uncorrectable Memory
     Errors (UME) and if detected then log the event in all job and step stderr
