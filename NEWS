@@ -253,6 +253,7 @@ documents those changes that are of interest to users and administrators.
  -- burst_buffer/cray - Fix race condition that could cause multiple batch job
     launch requests resulting in drained nodes.
  -- Correct logic to purge old reservations.
+ -- Fix DBD cache restore from previous versions.
 
 * Changes in Slurm 16.05.8
 ==========================
