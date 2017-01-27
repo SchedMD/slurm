@@ -46,7 +46,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/agent.h"
-#include "src/slurmctld/fed_mgr.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/srun_comm.h"
 
@@ -128,17 +127,6 @@ extern void srun_allocate (uint32_t job_id)
 		msg_arg->select_jobinfo = select_g_select_jobinfo_copy(
 				job_ptr->select_jobinfo);
 		msg_arg->error_code	= SLURM_SUCCESS;
-
-		if (!(fed_mgr_is_origin_job(job_ptr))) {
-			/* msg->working_cluster_rec is NULL'ed out before being
-			 * free'd in _purge_agent_args() */
-			msg_arg->working_cluster_rec = fed_mgr_cluster_rec;
-			msg_arg->node_addr =
-				xmalloc(sizeof(slurm_addr_t) *
-					job_ptr->node_cnt);
-			memcpy(msg_arg->node_addr, job_ptr->node_addr,
-			       (sizeof(slurm_addr_t) * job_ptr->node_cnt));
-		}
 
 		_srun_agent_launch(addr, job_ptr->alloc_node,
 				   RESPONSE_RESOURCE_ALLOCATION, msg_arg,

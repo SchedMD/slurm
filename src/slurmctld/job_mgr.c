@@ -4366,16 +4366,12 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		return rc;
 	}
 
-	/* fed jobs need to go to the siblings first so don't attempt to
-	 * schedule the job now. */
-	test_only = will_run || job_ptr->deadline || (allocate == 0) ||
-		    job_ptr->fed_details;
+	test_only = will_run || job_ptr->deadline || (allocate == 0);
 
 	no_alloc = test_only || too_fragmented || _has_deadline(job_ptr) ||
 		   (!top_prio) || (!independent) || !avail_front_end(job_ptr);
 
 	no_alloc = no_alloc || (bb_g_job_test_stage_in(job_ptr, no_alloc) != 1);
-
 	error_code = _select_nodes_parts(job_ptr, no_alloc, NULL, err_msg);
 	if (!test_only) {
 		last_job_update = now;
@@ -13431,15 +13427,8 @@ extern void job_completion_logger(struct job_record *job_ptr, bool requeue)
 		 * since it will throw off displays of the job. */
 		job_ptr->job_state &= ~JOB_CONFIGURING;
 
-		/* make sure all parts of the job are notified
-		 * Fed Jobs: only signal the srun from where the was running or
-		 * from the origin if the job wasn't running. */
-		if (!job_ptr->fed_details ||
-		    (fed_mgr_cluster_rec && (job_ptr->fed_details->cluster_lock
-					     == fed_mgr_cluster_rec->fed.id)) ||
-		    (fed_mgr_is_origin_job(job_ptr) &&
-		     !job_ptr->fed_details->cluster_lock))
-			srun_job_complete(job_ptr);
+		/* make sure all parts of the job are notified */
+		srun_job_complete(job_ptr);
 
 		/* mail out notifications of completion */
 		base_state = job_ptr->job_state & JOB_STATE_BASE;
