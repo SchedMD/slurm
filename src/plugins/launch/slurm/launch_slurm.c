@@ -568,7 +568,7 @@ extern int launch_p_step_launch(
 	launch_params.multi_prog = opt.multi_prog ? true : false;
 	launch_params.cwd = opt.cwd;
 	launch_params.slurmd_debug = opt.slurmd_debug;
-	launch_params.buffered_stdio = opt.unbuffered;
+	launch_params.buffered_stdio = !opt.unbuffered;
 	launch_params.labelio = opt.labelio ? true : false;
 	launch_params.remote_output_filename =fname_remote_string(job->ofname);
 	launch_params.remote_input_filename = fname_remote_string(job->ifname);
