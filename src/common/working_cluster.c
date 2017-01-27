@@ -221,24 +221,3 @@ extern uint32_t slurmdb_setup_plugin_id_select(void)
 		return working_cluster_rec->plugin_id_select;
 	return select_get_plugin_id();
 }
-
-extern void
-slurm_setup_remote_working_cluster(resource_allocation_response_msg_t *msg)
-{
-	xassert(msg);
-	xassert(msg->working_cluster_rec);
-	xassert(msg->node_list);
-	xassert(msg->node_addr);
-
-	if (working_cluster_rec)
-		slurmdb_destroy_cluster_rec(working_cluster_rec);
-
-	working_cluster_rec = (slurmdb_cluster_rec_t *)msg->working_cluster_rec;
-	msg->working_cluster_rec = NULL;
-
-	slurm_set_addr(&working_cluster_rec->control_addr,
-		       working_cluster_rec->control_port,
-		       working_cluster_rec->control_host);
-
-	add_remote_nodes_to_conf_tbls(msg->node_list, msg->node_addr);
-}

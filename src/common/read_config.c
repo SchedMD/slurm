@@ -1567,8 +1567,7 @@ static void _push_to_hashtbls(char *alias, char *hostname,
 			      uint16_t sockets, uint16_t cores,
 			      uint16_t threads, bool front_end,
 			      char *cpu_spec_list, uint16_t core_spec_cnt,
-			      uint64_t mem_spec_limit, slurm_addr_t *addr,
-			      bool initialized)
+			      uint64_t mem_spec_limit)
 {
 	int hostname_idx, alias_idx;
 	names_ll_t *p, *new;
@@ -1614,13 +1613,10 @@ static void _push_to_hashtbls(char *alias, char *hostname,
 	new->sockets	= sockets;
 	new->cores	= cores;
 	new->threads	= threads;
-	new->addr_initialized = initialized;
+	new->addr_initialized = false;
 	new->cpu_spec_list = xstrdup(cpu_spec_list);
 	new->core_spec_cnt = core_spec_cnt;
 	new->mem_spec_limit = mem_spec_limit;
-
-	if (addr)
-		memcpy(&new->addr, addr, sizeof(slurm_addr_t));
 
 	/* Put on end of each list */
 	new->next_alias	= NULL;
@@ -1777,7 +1773,7 @@ static int _register_conf_node_aliases(slurm_conf_node_t *node_ptr)
 				  node_ptr->sockets, node_ptr->cores,
 				  node_ptr->threads, 0, node_ptr->cpu_spec_list,
 				  node_ptr->core_spec_cnt,
-				  node_ptr->mem_spec_limit, NULL, false);
+				  node_ptr->mem_spec_limit);
 		free(alias);
 	}
 	if (address)
@@ -1837,7 +1833,7 @@ static int _register_front_ends(slurm_conf_frontend_t *front_end_ptr)
 
 		_push_to_hashtbls(hostname, hostname, address,
 				  front_end_ptr->port, 1, 1, 1, 1, 1, 1,
-				  NULL, 0, 0, NULL, false);
+				  NULL, 0, 0);
 		free(hostname);
 		free(address);
 	}
@@ -5030,49 +5026,5 @@ extern bool run_in_daemon(char *daemons)
 	xfree(full);
 
 	return false;
-}
-
-/*
- * Add nodes and corresponding pre-configured slurm_addr_t's to node conf hash
- * tables.
- *
- * IN node_list - node_list allocated to job
- * IN node_addrs - array of slurm_addr_t that corresponds to nodes built from
- * 	host_list. See build_node_details().
- * RET return SLURM_SUCCESS on success, SLURM_ERROR otherwise.
- */
-extern int add_remote_nodes_to_conf_tbls(char *node_list,
-					 slurm_addr_t *node_addrs)
-{
-	char *hostname       = NULL;
-	hostlist_t host_list = NULL;
-	int i = 0;
-
-	xassert(node_list);
-	xassert(node_addrs);
-
-	if ((host_list = hostlist_create(node_list)) == NULL) {
-		error("hostlist_create error for %s: %m",
-		      node_list);
-		return SLURM_ERROR;
-	}
-
-	/* flush tables since clusters could share the same nodes names.
-	 * Leave nodehash_intialized so that the tables don't get overridden
-	 * later */
-	_free_name_hashtbl();
-	nodehash_initialized = true;
-
-	while ((hostname = hostlist_shift(host_list))) {
-		_push_to_hashtbls(hostname, hostname,
-				  NULL, 0, 0,
-				  0, 0, 0, 0, false, NULL, 0,
-				  0, &node_addrs[i++], true);
-		free(hostname);
-	}
-
-	hostlist_destroy(host_list);
-
-	return SLURM_SUCCESS;
 }
 

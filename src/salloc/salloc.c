@@ -375,17 +375,6 @@ int main(int argc, char **argv)
 		 */
 		info("Granted job allocation %u", alloc->job_id);
 		pending_job_id = alloc->job_id;
-
-		if (alloc->working_cluster_rec) {
-			slurm_setup_remote_working_cluster(alloc);
-
-			/* set env for srun's to find the right cluster */
-			setenvf(NULL, "SLURM_WORKING_CLUSTER", "%s:%d:%d",
-				working_cluster_rec->control_host,
-				working_cluster_rec->control_port,
-				working_cluster_rec->rpc_version);
-		}
-
 #ifdef HAVE_BG
 		if (!_wait_bluegene_block_ready(alloc)) {
 			if (!allocation_interrupted)

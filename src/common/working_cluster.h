@@ -74,11 +74,4 @@ extern char *slurmdb_cluster_flags_2_str(uint32_t flags_in);
  */
 extern uint32_t slurmdb_setup_plugin_id_select(void);
 
-/*
- * Setup the working_cluster_rec with the working_cluster_rec and node_addrs
- * returned in an allocation response msg.
- */
-extern void
-slurm_setup_remote_working_cluster(resource_allocation_response_msg_t *msg);
-
 #endif
