@@ -69,10 +69,12 @@ exec $bin_cc -fPIC -shared -I${slurm_dir}/include -o ${file_prog}.so ${file_prog
 #
 log_user 0
 set config_dir ""
+set ctld_slurm_ver ""
 spawn $scontrol show config
 expect {
-	-re "SLURM_CONF.*= (/.*)/slurm.conf.*SLURM_VERSION" {
+	-re "SLURM_CONF.*= (.*)/slurm.conf.*SLURM_VERSION *= ($float)" {
 		set config_dir $expect_out(1,string)
+		set ctld_slurm_ver $expect_out(2,string)
 		exp_continue
 	}
 	eof {
@@ -84,6 +86,27 @@ if {[string compare $config_dir ""] == 0} {
 	send_user "\nFAILURE: Could not locate slurm.conf directory\n"
 	exit 1
 }
+
+log_user 0
+set loc_slurm_ver ""
+spawn $scontrol -V
+expect {
+	-re "slurm ($float)" {
+		set loc_slurm_ver $expect_out(1,string)
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+
+if {[string compare $ctld_slurm_ver $loc_slurm_ver]} {
+	send_user "\nWARNING: slurmctld ($ctld_slurm_ver) and local Slurm ($loc_slurm_ver) versions are not the same, can not continue.\n"
+	exit 0
+}
+
+
 set spank_conf_file ${config_dir}/plugstack.conf
 exec $bin_rm -f $orig_spank_conf $new_spank_conf $file_out $spank_out
 if {[file exists $spank_conf_file]} {
