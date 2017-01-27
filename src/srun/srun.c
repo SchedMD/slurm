@@ -112,6 +112,7 @@ static int   _file_bcast(void);
 static void  _pty_restore(void);
 static void  _set_exit_code(void);
 static void  _set_node_alias(void);
+static void  _setup_env_working_cluster();
 static int   _slurm_debug_env_val (void);
 static char *_uint16_array_to_str(int count, const uint16_t *array);
 
@@ -163,6 +164,8 @@ int srun(int ac, char **av)
 
 	if (switch_init() != SLURM_SUCCESS )
 		fatal("failed to initialize switch plugin");
+
+	_setup_env_working_cluster();
 
 	init_srun(ac, av, &logopt, debug_level, 1);
 	create_srun_job(&job, &got_alloc, 0, 1);
@@ -415,4 +418,41 @@ static void _pty_restore(void)
 	/* STDIN is probably closed by now */
 	if (tcsetattr(STDOUT_FILENO, TCSANOW, &termdefaults) < 0)
 		fprintf(stderr, "tcsetattr: %s\n", strerror(errno));
+}
+
+static void _setup_env_working_cluster()
+{
+	char *working_env  = NULL;
+	char *cluster_name = NULL;
+
+	if ((working_env = xstrdup(getenv("SLURM_WORKING_CLUSTER")))) {
+		char *port_ptr = strchr(working_env, ':');
+		char *rpc_ptr  = strrchr(working_env, ':');
+		if (!port_ptr || !rpc_ptr || (port_ptr == rpc_ptr)) {
+			error("malformed cluster addr and port in SLURM_WORKING_CLUSTER env var: '%s'",
+			      working_env);
+			exit(1);
+		}
+		*port_ptr++ = '\0';
+		*rpc_ptr++  = '\0';
+
+		cluster_name = slurm_get_cluster_name();
+		if (strcmp(cluster_name, working_env)) {
+			working_cluster_rec =
+				xmalloc(sizeof(slurmdb_cluster_rec_t));
+			slurmdb_init_cluster_rec(working_cluster_rec, false);
+
+			working_cluster_rec->control_host = working_env;
+			working_cluster_rec->control_port = strtol(port_ptr,
+								   NULL, 10);
+			working_cluster_rec->rpc_version  = strtol(rpc_ptr,
+								   NULL, 10);
+			slurm_set_addr(&working_cluster_rec->control_addr,
+				       working_cluster_rec->control_port,
+				       working_cluster_rec->control_host);
+		} else {
+			xfree(working_env);
+		}
+		xfree(cluster_name);
+	}
 }

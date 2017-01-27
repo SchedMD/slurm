@@ -1249,10 +1249,13 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		if (slurm_send_node_msg(msg->conn_fd, &response_msg) < 0)
 			_kill_job_on_msg_fail(job_ptr->job_id);
 
-		slurm_free_resource_allocation_response_msg_members(&alloc_msg);
-
 		schedule_job_save();	/* has own locks */
 		schedule_node_save();	/* has own locks */
+
+		if (!alloc_msg.node_cnt) /* didn't get an allocation */
+			queue_job_scheduler();
+
+		slurm_free_resource_allocation_response_msg_members(&alloc_msg);
 	} else {	/* allocate error */
 		if (do_unlock) {
 			unlock_slurmctld(job_write_lock);
@@ -2929,6 +2932,21 @@ static void _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg)
 		job_info_resp_msg.job_id         = job_info_msg->job_id;
 		job_info_resp_msg.node_cnt       = job_ptr->node_cnt;
 		job_info_resp_msg.node_list      = xstrdup(job_ptr->nodes);
+
+		if (!(fed_mgr_is_origin_job(job_ptr))) {
+			/* msg.working_cluster_rec will be NULL'ed out before
+			 * being free'd below since it's point to the actual
+			 * fed_mgr_cluster_rec. */
+			job_info_resp_msg.working_cluster_rec =
+				fed_mgr_cluster_rec;
+
+			job_info_resp_msg.node_addr =
+				xmalloc(sizeof(slurm_addr_t) *
+					job_ptr->node_cnt);
+			memcpy(job_info_resp_msg.node_addr, job_ptr->node_addr,
+			       (sizeof(slurm_addr_t) * job_ptr->node_cnt));
+		}
+
 		job_info_resp_msg.partition      = xstrdup(job_ptr->partition);
 		if (job_ptr->qos_ptr) {
 			slurmdb_qos_rec_t *qos;
@@ -2958,6 +2976,9 @@ static void _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg)
 
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 
+		/* NULL out msg->working_cluster_rec because it's pointing to
+		 * the actual memory */
+		job_info_resp_msg.working_cluster_rec = NULL;
 		slurm_free_resource_allocation_response_msg_members(
 			&job_info_resp_msg);
 	}
