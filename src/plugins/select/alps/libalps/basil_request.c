@@ -274,10 +274,10 @@ int basil_request(struct basil_parse_data *bp)
 
 	switch (bp->method) {
 	case BM_engine:
-		_write_xml(apbasil, "type=\"ENGINE\"/>");
+		_write_xml(apbasil, "type=\"ENGINE\"/>\n");
 		break;
 	case BM_inventory:
-		_write_xml(apbasil, "type=\"INVENTORY\"/>");
+		_write_xml(apbasil, "type=\"INVENTORY\"/>\n");
 		break;
 	case BM_reserve:
 		_write_xml(apbasil, ">\n");

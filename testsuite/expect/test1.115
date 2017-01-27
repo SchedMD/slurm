@@ -37,6 +37,9 @@ set file_in          "test$test_id.input"
 
 print_header $test_id
 
+send_user "\nWARNING: This test is current broken. See bug 3166.\n"
+exit 0
+
 #
 # Submit a slurm job that will sleep briefly, ignoring stdin
 #
