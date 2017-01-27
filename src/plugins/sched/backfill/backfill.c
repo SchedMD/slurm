@@ -1020,15 +1020,24 @@ static int _attempt_backfill(void)
 
 	sort_job_queue(job_queue);
 	while (1) {
+		uint32_t bf_job_id, bf_array_task_id, bf_job_priority;
+
 		job_queue_rec = (job_queue_rec_t *) list_pop(job_queue);
 		if (!job_queue_rec) {
 			if (debug_flags & DEBUG_FLAG_BACKFILL)
 				info("backfill: reached end of job queue");
 			break;
 		}
+
+		job_ptr          = job_queue_rec->job_ptr;
+		part_ptr         = job_queue_rec->part_ptr;
+		bf_job_id        = job_queue_rec->job_id;
+		bf_job_priority  = job_queue_rec->priority;
+		bf_array_task_id = job_queue_rec->array_task_id;
+		xfree(job_queue_rec);
+
 		if (slurmctld_config.shutdown_time ||
 		    (difftime(time(NULL),orig_sched_start)>=backfill_interval)){
-			xfree(job_queue_rec);
 			break;
 		}
 		if (((defer_rpc_cnt > 0) &&
@@ -1052,7 +1061,6 @@ static int _attempt_backfill(void)
 					     job_test_count);
 				}
 				rc = 1;
-				xfree(job_queue_rec);
 				break;
 			}
 			/* Reset backfill scheduling timers, resume testing */
@@ -1063,17 +1071,14 @@ static int _attempt_backfill(void)
 			START_TIMER;
 		}
 
-		job_ptr  = job_queue_rec->job_ptr;
-
 		/* With bf_continue configured, the original job could have
 		 * been cancelled and purged. Validate pointer here. */
 		if ((job_ptr->magic  != JOB_MAGIC) ||
-		    (job_ptr->job_id != job_queue_rec->job_id)) {
-			xfree(job_queue_rec);
+		    (job_ptr->job_id != bf_job_id)) {
 			continue;
 		}
-		if ((job_ptr->array_task_id != job_queue_rec->array_task_id) &&
-		    (job_queue_rec->array_task_id == NO_VAL)) {
+		if ((job_ptr->array_task_id != bf_array_task_id) &&
+		    (bf_array_task_id == NO_VAL)) {
 			/* Job array element started in other partition,
 			 * reset pointer to "master" job array record */
 			job_ptr = find_job_record(job_ptr->array_job_id);
@@ -1084,9 +1089,8 @@ static int _attempt_backfill(void)
 		if (!_job_runnable_now(job_ptr))
 			continue;
 
-		part_ptr = job_queue_rec->part_ptr;
 		job_ptr->part_ptr = part_ptr;
-		job_ptr->priority = job_queue_rec->priority;
+		job_ptr->priority = bf_job_priority;
 		mcs_select = slurm_mcs_get_select(job_ptr);
 
 		if (job_ptr->state_reason == FAIL_ACCOUNT) {
@@ -1175,7 +1179,6 @@ static int _attempt_backfill(void)
 
 		orig_start_time = job_ptr->start_time;
 		orig_time_limit = job_ptr->time_limit;
-		xfree(job_queue_rec);
 
 next_task:
 		job_test_count++;
