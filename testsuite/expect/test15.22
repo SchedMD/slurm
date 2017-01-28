@@ -131,9 +131,15 @@ if (![string compare $other_part_name ""]) {
 #
 # Submit job explicitly to a non-default partition
 #
-set job_id           0
+set job_id          0
+set legit_failure   0
 set salloc_pid [spawn $salloc --partition=$other_part_name -t1 $bin_sleep 1]
 expect {
+	-re "Required node not available" {
+		set legit_failure 1
+		exec $bin_kill -INT $salloc_pid
+		exp_continue
+	}
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
@@ -151,7 +157,9 @@ expect {
 	}
 }
 # Confirm the job's partition
-if {$job_id == 0} {
+if {$legit_failure == 1} {
+	send_user "\nWARNING: partition '$other_part_name' is not usable\n"
+} elseif {$job_id == 0} {
 	send_user "\nFAILURE: batch submit failure\n"
 	set exit_code 1
 } else {
