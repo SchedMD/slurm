@@ -156,6 +156,19 @@ proc thread_spec_job {task node thread_spec exp_nodes} {
 
 print_header $test_id
 
+set select_type [test_select_type]
+if {![string compare $select_type "linear"] || ![string compare $select_type "serial"]} {
+	send_user "\nWARNING: This test is incompatible with select/$select_type\n"
+	exit 0
+} elseif {![string compare $select_type "cray"] && ![test_select_type_params "other_cons_res"]} {
+	send_user "\nWARNING: This test is incompatible with select/linear\n"
+	exit 0
+}
+if {[test_select_type_params "CR_SOCKET"]} {
+	send_user "\nWARNING: This test is incompatible with CR_SOCKET allocations\n"
+	exit 0
+}
+
 log_user 0
 set allow_spec 0
 spawn $scontrol show config
@@ -176,17 +189,6 @@ log_user 1
 if {$allow_spec == 0} {
 	send_user "WARNING: AllowSpecResourcesUsage not configured to permit thread specialization\n"
 	exit $exit_code
-}
-
-set select_type [test_select_type]
-if {![string compare $select_type "linear"] || ![string compare $select_type "serial"]} {
-	send_user "\nWARNING: This test is incompatible with select/$select_type\n"
-	exit 0
-}
-
-if {[test_select_type_params "CR_SOCKET"]} {
-	send_user "\nWARNING: This test is incompatible with CR_SOCKET allocations\n"
-	exit 0
 }
 
 # Remove any vestigial files

@@ -62,8 +62,14 @@ proc core_spec_job {task node core_spec exp_nodes} {
 	} else {
 		set task_limit 1
 	}
+
+	set ntasks [expr abs($task_limit + $task)]
+	if {$ntasks == 0} {
+		set ntasks 1
+	}
+
 	set error_chk 0
-	spawn $sbatch -t1 -w$node -S$core_spec -n[expr abs($task_limit + $task)] -o$file_out $spec_in
+	spawn $sbatch -t1 -w$node -S$core_spec -n$ntasks -o$file_out $spec_in
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -156,6 +162,19 @@ proc core_spec_job {task node core_spec exp_nodes} {
 
 print_header $test_id
 
+set select_type [test_select_type]
+if {![string compare $select_type "linear"] || ![string compare $select_type "serial"]} {
+	send_user "\nWARNING: This test is incompatible with select/$select_type\n"
+	exit 0
+} elseif {![string compare $select_type "cray"] && ![test_select_type_params "other_cons_res"]} {
+	send_user "\nWARNING: This test is incompatible with select/linear\n"
+	exit 0
+}
+if {[test_select_type_params "CR_SOCKET"]} {
+	send_user "\nWARNING: This test is incompatible with CR_SOCKET allocations\n"
+	exit 0
+}
+
 log_user 0
 set allow_spec 0
 spawn $scontrol show config
@@ -176,16 +195,6 @@ log_user 1
 if {$allow_spec == 0} {
 	send_user "WARNING: AllowSpecResourcesUsage not configured to permit core specialization\n"
 	exit $exit_code
-}
-
-set select_type [test_select_type]
-if {![string compare $select_type "linear"]} {
-	send_user "\nWARNING: This test is incompatible with select/$select_type\n"
-	exit 0
-}
-if {[test_select_type_params "CR_SOCKET"]} {
-	send_user "\nWARNING: This test is incompatible with CR_SOCKET allocations\n"
-	exit 0
 }
 
 # Remove any vestigial files
