@@ -41,6 +41,11 @@ set job_id      0
 
 print_header $test_id
 
+if {[test_alps]} {
+	send_user "\nWARNING: This test is incompatible with Cray/ALPS systems\n"
+	exit $exit_code
+}
+
 #
 # Delete left-over programs and rebuild them.
 #
