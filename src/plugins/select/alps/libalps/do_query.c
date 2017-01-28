@@ -81,38 +81,21 @@ extern enum basil_version get_basil_version(void)
 
 	if (_get_alps_engine(engine_version, sizeof(engine_version)) == NULL)
 		fatal("can not determine ALPS Engine version");
-	else if (strncmp(engine_version, "latest", 6) == 0) {
-		bv = BV_5_2_3;
-	} else if (strncmp(engine_version, "5.2", 3) == 0) {
+	else if (strncmp(engine_version, "5.0", 3) == 0)
+		bv = BV_5_0;
+	else if (strncmp(engine_version, "5.1", 3) == 0)
+		bv = BV_5_1;
+	else if (strncmp(engine_version, "5.2", 3) == 0) {
 		int macro = atoi(engine_version+4);
 		if (macro >= 3) /* means 5.2.44+ */
 			bv = BV_5_2_3;
 		else
 			bv = BV_5_2;
-	} else if (strncmp(engine_version, "5.1", 3) == 0)
-		bv = BV_5_1;
-	else if (strncmp(engine_version, "5.0", 3) == 0)
-		bv = BV_5_0;
-	else if (strncmp(engine_version, "4.2.0", 5) == 0)
-		bv = BV_4_1;
-	else if (strncmp(engine_version, "4.1.0", 5) == 0)
-		bv = BV_4_1;
-	else if (strncmp(engine_version, "4.0", 3) == 0)
-		bv = BV_4_0;
-	else if (strncmp(engine_version, "3.1.0", 5) == 0)
-		bv = BV_3_1;
-	else if (strncmp(engine_version, "1.3.0", 5) == 0)
-		/*
-		 * Cray Bug#762417 - strictly speaking, we should be
-		 * returning BV_3_0 here. Alps Engine Version 1.3.0
-		 * is reserved for the Cozla release (CLE 3.0), which
-		 * however was only a short time on the market.
-		 */
-		bv = BV_3_1;
-	else if (strncmp(engine_version, "1.2.0", 5) == 0)
-		bv = BV_1_2;
-	else if (strncmp(engine_version, "1.1", 3) == 0)
-		bv = BV_1_1;
+	} else if ((strncmp(engine_version, "5.#", 2) == 0) ||
+		   (strncmp(engine_version, "6.#", 2) == 0))
+		bv = BV_5_2_3;
+	else if (strncmp(engine_version, "latest", 6) == 0) {
+		bv = BV_5_2_3;
 	else
 		fatal("unsupported ALPS Engine version '%s', please edit "
 		      "src/plugins/select/alps/libalps/do_query.c "
