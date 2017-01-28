@@ -8057,7 +8057,8 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 		struct job_record *dup_job_ptr;
 		if ((submit_uid != 0) &&
 		    (submit_uid != slurmctld_conf.slurm_user_id)) {
-			info("attempt by uid %u to set job_id", submit_uid);
+			info("attempt by uid %u to set job_id to %u",
+			     submit_uid, job_desc_msg->job_id);
 			return ESLURM_INVALID_JOB_ID;
 		}
 		if (job_desc_msg->job_id == 0) {
