@@ -89,6 +89,10 @@ if {[test_using_slurmdbd] == 0} {
 	send_user "\nWARNING: This test can't be run without AccountStorageType=slurmdbd\n"
 	exit 0
 }
+if {[string compare [check_accounting_admin_level] "Administrator"]} {
+	send_user "\nThis test can't be run without being an Accounting administrator.\n"
+	exit 0
+}
 
 # Remove pre-existing items
 cleanup

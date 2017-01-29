@@ -151,13 +151,13 @@
 
 <li>Task</li>
 <p>
-  Set <b><i>TaskPlugin=cray,cgroup</i></b> to use. Use of the
-  <b><i>task/cgroup</i></b> plugin is required alongside <i>task/cray</i>.
+  Set <b><i>TaskPlugin=cgroup,cray</i></b> to use. Use of the
+  <b><i>task/cgroup</i></b> plugin is required in addition <i>task/cray</i>.
   You may also use the <i>task/affinity</i> plugin along with
-  <i>task/cray,task/cgroup</i> if desired (i.e.
-  <b><i>TaskPlugin=cray,affinity,cgroup</i></b>). Note that plugins
+  <i>task/cgroup,task/cray</i> if desired (i.e.
+  <b><i>TaskPlugin=affinity,cgroup,cray</i></b>). Note that plugins
   are used in the order they are defined in the comma separated list,
-  and that <i>task/cray</i> must be listed before <i>task/cgroup</i>
+  and that <i>task/cray</i> must be listed after <i>task/cgroup</i>
   due to internal dependencies between the two plugins.
 </p>
 </ul>
@@ -208,6 +208,6 @@ is down and prevents any new jobs from being started.
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 23 December 2015</p>
+<p style="text-align:center;">Last modified 29 January 2017</p>
 
 <!--#include virtual="footer.txt"-->
