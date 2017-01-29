@@ -91,10 +91,10 @@ $srun -w$node2 mkdir /tmp/$node2
 $srun -N1 -n1 -r1 ./$file_in2
 
 echo -n \"Checking node 1: \"
-$srun -N1 -n1 -w$node2 ls /tmp/$node2/test$test_id\_file
+$srun -Q -N1 -n1 -w$node2 ls /tmp/$node2/test$test_id\_file
 
 echo -n \"Checking node 0: \"
-$srun -N1 -n1 -w$node1 ls /tmp/$node1/test$test_id\_file
+$srun -Q -N1 -n1 -w$node1 ls /tmp/$node1/test$test_id\_file
 
 $srun $bin_rm -f /tmp/$node1/test$test_id\_file
 $srun $bin_rm -fr /tmp/$node1
