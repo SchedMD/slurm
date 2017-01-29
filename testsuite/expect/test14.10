@@ -107,6 +107,7 @@ $sbcast -f -j\$SLURM_JOBID.\$SLURM_STEPID $srun /tmp/\$SLURMD_NODENAME/test$test
 "
 
 # Make allocations
+set timeout $max_job_delay
 set matches 0
 spawn $salloc -N2 -w$hostlist -t1 ./$file_in1
 expect {

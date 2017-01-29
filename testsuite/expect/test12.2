@@ -186,7 +186,7 @@ proc _get_file_size {prog} {
 	# Compute error in MB
 	set diff_io [expr $max_disk_write - $max_disk_read]
 	set error_io [expr abs($diff_io)]
-	if { $error_io > 0.05 } {
+	if { $error_io > 0.3 } {
 		send_user "\nFAILURE: written file size does not match read size "
 		send_user "file_size:$mb_file_size MB "
 		send_user "max_disk_write:$max_disk_write MB "
@@ -196,7 +196,7 @@ proc _get_file_size {prog} {
 
 	set diff_io [expr $ave_disk_write - $ave_disk_read]
 	set error_io [expr abs($diff_io)] 
-	if { $error_io > 0.05 } {
+	if { $error_io > 0.3 } {
 		send_user "\nFAILURE: average written file size "
 		send_user "does not match average read size "
 		send_user "file_size:$mb_file_size MB "

@@ -166,7 +166,7 @@ if { [test_account_storage] == 1 } {
 		}
 	}
 	if {$matches != 4} {
-		send_user "\nFAILURE: sacct of $job_id failed ($matches != 5)\n"
+		send_user "\nFAILURE: sacct of $job_id failed ($matches != 4)\n"
 		exit 1
 	}
 }
