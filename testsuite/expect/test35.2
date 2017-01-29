@@ -146,6 +146,9 @@ if {$job_id_use == 0} {
 	set exit_code 1
 }
 
+# Wait for purge of buffer to complete
+sleep 10
+
 set found 0
 spawn $scontrol show burst
 expect {
