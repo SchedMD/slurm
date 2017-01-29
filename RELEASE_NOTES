@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 17.02
-21 November 2016
+24 January 2017
 
 IMPORTANT NOTES:
 THE MAXJOBID IS NOW 67,108,863. ANY PRE-EXISTING JOBS WILL CONTINUE TO RUN BUT
@@ -46,29 +46,29 @@ HIGHLIGHTS
     maximum value is now 67,108,863. Upon upgrading, any pre-existing jobs that
     have a job ID above the new range will continue to run and new jobs will get
     job IDs in the new range.
- -- Add MailDomain configuration parameter to qualify email addresses.
+ -- Added "MailDomain" configuration parameter to qualify email addresses.
  -- Automatically clean up task/cgroup cpuset and devices cgroups after steps
     are completed.
- -- Added burst buffer support for job arrays. Add new SchedulerParameters
+ -- Added burst buffer support for job arrays. Added new SchedulerParameters
     configuration parameter of bb_array_stage_cnt=# to indicate how many pending
     tasks of a job array should be made available for burst buffer resource
     allocation.
- -- Add new sacctmgr commands: "shutdown" (shutdown the server), "list stats"
+ -- Added new sacctmgr commands: "shutdown" (shutdown the server), "list stats"
     (get server statistics) "clear stats" (clear server statistics).
  -- The database index for jobs is now 64 bits.  If you happen to be close to
     4 billion jobs in your database you will want to update your slurmctld at
     the same time as your slurmdbd to prevent roll over of this variable as
     it is 32 bit previous versions of Slurm.
- -- All memory values (in MB) are now 64 bit. Previously, nodes with > 2TB of
-    memory would not schedule or enforce memory limits correctly.
+ -- All memory values (in MB) are now 64 bit. Previously, nodes with more than
+    of memory would not schedule or enforce memory limits correctly.
  -- Removed AIX, BlueGene/L and BlueGene/P support.
- -- Remove sched/wiki and sched/wiki2 plugins and associated code.
+ -- Removed sched/wiki and sched/wiki2 plugins and associated code.
  -- Added PrologFlags=Serial to disable concurrent execution of prolog/epilog
     scripts.
 
 RPMBUILD CHANGES
 ================
- -- Remove separate slurm_blcr package. If Slurm is built with BLCR support,
+ -- Removed separate slurm_blcr package. If Slurm is built with BLCR support,
     the files will now be part of the main Slurm packages.
  -- Replace sjstat, seff and sjobexit RPM packages with a single "contribs"
     package.
@@ -77,44 +77,79 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
  -- CRAY systems only: TaskPlugins must list task/cgroup before task/cray in
     order for the cgroup files to be created before task/cray runs.
- -- Add new TRESWeights configuration parameter to NodeName line for calculating
-    how busy a node is. Currently only used for federation configurations.
- -- Add new PriorityFlags option of INCR_ONLY, which prevents a job's priority
-    from being decremented.
+ -- Added new "TRESWeights" configuration parameter to "NodeName" line for
+    calculating how busy a node is. Currently only used for federation
+    configurations.
+ -- Added new "PriorityFlags" option of "INCR_ONLY", which prevents a job's
+    priority from being decremented.
+ -- Added "SchedulerParameters" configuration parameter of "default_gbytes",
+    which treats numeric only (no suffix) value for memory and tmp disk space as
+    being in units of Gigabytes. Mostly for compatability with LSF.
+ -- Added "BootTime" configuration parameter to knl.conf file to optimize
+    resource allocations with respect to required node reboots.
+ -- Added "SchedulingParameters" option of "bf_job_part_count_reserve". Jobs
+    below the specified threshold will not have resources reserved for them.
+ -- Added "SchedulerParameters" option of "spec_cores_first" to select
+    specialized cores from the lowest rather than highest number cores and
+    sockets.
+ -- Added "PrologFlags" option of "Serial" to disable concurrent launch of
+    Prolog and Epilog scripts.
+ -- Removed "SchedulerRootFilter" configuration parameter.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
- -- Add commands to sacctmgr for managing and displaying federations.
- -- Add salloc, sbatch and srun option of --delay-boot=<time>, which will
+ -- Added commands to sacctmgr for managing and displaying federations.
+ -- Added salloc, sbatch and srun option of "--delay-boot=<time>", which will
     temporarily delay booting nodes into the desired state for a job in the
     hope of using nodes already in the proper state which will be available at
     a later time.
- -- Add salloc/sbatch/srun --spread-job option to distribute tasks over as many
-    nodes as possible. This also treats the --ntasks-per-node option as a
+ -- Added salloc/sbatch/srun "--spread-job" option to distribute tasks over as
+    many nodes as possible. This also treats the "--ntasks-per-node" option as a
     maximum value.
- -- Add support for sbatch --bbf option to specify a burst buffer input file.
- -- Add SLURM_ARRAY_TASK_COUNT environment variable. Total number of tasks in a
-    job array (e.g. "--array=2,4,8" will set SLURM_ARRAY_TASK_COUNT=3).
+ -- Added support for sbatch --bbf option to specify a burst buffer input file.
+ -- Added SLURM_ARRAY_TASK_COUNT environment variable. Total number of tasks in
+    a job array (e.g. "--array=2,4,8" will set SLURM_ARRAY_TASK_COUNT=3).
  -- Modify cpu_bind and mem_bind map and mask options to accept a repetition
     count to better support large task count. For example:
     "mask_mem:0x0f*2,0xf0*2" is equivalent to "mask_mem:0x0f,0x0f,0xf0,0xf0".
- -- Add support for --mem_bind=prefer option to prefer, but not restrict memory
-    use to the identified NUMA node.
- -- Add --mem_bind option of "sort" to run zonesort on KNL nodes at step start.
+ -- Added support for "--mem_bind=prefer" option to prefer, but not restrict
+    memory use to the identified NUMA node.
+ -- Added "--mem_bind=sort" option to run zonesort on KNL nodes at step start.
  -- Do not process SALLOC_HINT, SBATCH_HINT or SLURM_HINT environment variables
     if any of the following salloc, sbatch or srun command line options are
     specified: -B, --cpu_bind, --hint, --ntasks-per-core, or --threads-per-core.
+ -- Added port info to "sinfo" and "scontrol show node" output.
+ -- Move BatchScript to end of each job's information when using
+    "scontrol -dd show job" to make it more readable.
+ -- The scancel command would treat a non-numeric argument as the name of jobs
+    to be cancelled (a non-documented feature). Cancelling jobs by name now
+    require the "--jobname=" command line argument.
+ -- If GRES are configured with file IDs, then "scontrol -d show node" will
+    not only identify the count of currently allocated GRES, but their specific
+    index numbers (e.g. "GresUsed=gpu:alpha:2(IDX:0,2),gpu:beta:0(IDX:N/A)").
+    Ditto for job information with "scontrol -d show job".
+ -- Added "GresEnforceBind=Yes" to "scontrol show job" output if so configured.
+ -- Added "Partitions" field to "scontrol show node" output.
 
 OTHER CHANGES
 =============
- -- Add event trigger on burst buffer errors (see strigger man page,
-    --burst_buffer option).
- -- Add job AdminComment field which can only be set by a Slurm administrator.
- -- Add mechanism to constrain kernel memory allocation using cgroups. New
+ -- Added event trigger on burst buffer errors (see strigger man page,
+    "--burst_buffer" option).
+ -- Added job AdminComment field which can only be set by a Slurm administrator.
+ -- Added mechanism to constrain kernel memory allocation using cgroups. New
     cgroup.conf parameters added: ConstrainKmemSpace, MaxKmemPercent, and
     MinKmemSpace.
  -- burst_buffer/cray: Accept new jobs on backup slurmctld daemon without access
     to dw_wlm_cli command. No burst buffer actions will take place.
+ -- node_features/knl_cray and knl_generic - Added capability to detected
+    Uncorrectable Memory Errors (UME) and if detected then log the event in all
+    job and step stderr with a message of the form:
+    error: *** STEP 1.2 ON tux1 UNCORRECTABLE MEMORY ERROR AT 2016-12-14T09:09:37 ***
+ -- If job is allocated nodes which are powered down, then reset job start time
+    when the nodes are ready and do not charge the job for power up time.
+ -- Added the ability to purge transactions from the database.
+ -- Added the ability to purge rolled up usage from the database.
+ -- Added new mcs/account plugin.
 
 API CHANGES
 ===========
