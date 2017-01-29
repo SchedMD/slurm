@@ -4187,8 +4187,15 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	/* see above for switch_type, order dependent */
 
-	if (!s_p_get_string(&conf->task_plugin, "TaskPlugin", hashtbl))
+	if (!s_p_get_string(&conf->task_plugin, "TaskPlugin", hashtbl)) {
 		conf->task_plugin = xstrdup(DEFAULT_TASK_PLUGIN);
+	} else {
+		char *cray_ptr = strstr(conf->task_plugin, "cray");
+		char *cgroup_ptr = strstr(conf->task_plugin, "cgroup");
+		if (cray_ptr && (!cgroup_ptr || (cgroup_ptr > cray_ptr)))
+			fatal("TaskPlugin: task/cgroup must preceed task/cray");
+	}
+
 #ifdef HAVE_FRONT_END
 	if (xstrcmp(conf->task_plugin, "task/none")) {
 		error("On FrontEnd systems TaskPlugin=task/none is required");
