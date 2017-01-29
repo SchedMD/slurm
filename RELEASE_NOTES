@@ -59,8 +59,8 @@ HIGHLIGHTS
     4 billion jobs in your database you will want to update your slurmctld at
     the same time as your slurmdbd to prevent roll over of this variable as
     it is 32 bit previous versions of Slurm.
- -- All memory values (in MB) are now 64 bit. Previously, nodes with > 2TB of
-    memory would not schedule or enforce memory limits correctly.
+ -- All memory values (in MB) are now 64 bit. Previously, nodes with more than
+    of memory would not schedule or enforce memory limits correctly.
  -- Removed AIX, BlueGene/L and BlueGene/P support.
  -- Removed sched/wiki and sched/wiki2 plugins and associated code.
  -- Added PrologFlags=Serial to disable concurrent execution of prolog/epilog
