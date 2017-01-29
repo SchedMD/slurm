@@ -39,6 +39,8 @@ documents those changes that are of interest to users and administrators.
  -- Add support for requeue'ing of federated jobs (BETA).
  -- Add support for interactive federated jobs (BETA).
  -- Add the ability to purge rolled up usage from the database.
+ -- CRAY systems only: TaskPlugins must list task/cgroup before task/cray in
+    order for the cgroup files to be created before task/cray runs.
 
 * Changes in Slurm 17.02.0pre4
 ==============================
