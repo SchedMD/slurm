@@ -119,7 +119,7 @@ syn match    	shSlurmOption	contained	'--nice=' nextgroup=shSlurmNumber
 syn match    	shSlurmOption	contained	'--no-requeue'
 syn match 	shSlurmOption	contained	'--ntasks-per-core=' nextgroup=shSlurmNumber
 syn match    	shSlurmOption	contained	'--ntasks-per-socket=' nextgroup=shSlurmNumber
-syn match    	shSlurmOption	contained	'--ntasls-per-node=' nextgroup=shSlurmNumber
+syn match    	shSlurmOption	contained	'--ntasks-per-node=' nextgroup=shSlurmNumber
 syn match    	shSlurmOption	contained	'--overcommit'
 syn match    	shSlurmOption	contained	'--output=' nextgroup=shSlurmString
 syn match    	shSlurmOption	contained	'--open-mode=' nextgroup=shSlurmMode
