@@ -3572,7 +3572,19 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 				reject_job = true;
 				goto unlock;
 			}
-			if (IS_JOB_CONFIGURING(job_ptr)) {
+			if (
+#ifdef HAVE_BG
+				/* On a bluegene system we need to run the
+				 * prolog while the job is CONFIGURING so this
+				 * can't work off the CONFIGURING flag as done
+				 * elsewhere.
+				 */
+				job_ptr->details &&
+				job_ptr->details->prolog_running
+#else
+				IS_JOB_CONFIGURING(job_ptr)
+#endif
+				) {
 				error_code = EAGAIN;
 				reject_job = true;
 				goto unlock;
