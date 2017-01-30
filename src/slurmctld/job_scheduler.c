@@ -624,6 +624,7 @@ extern void set_job_elig_time(void)
 	ListIterator job_iterator;
 	slurmctld_lock_t job_write_lock =
 		{ READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
+	time_t now = time(NULL);
 #ifdef HAVE_BG
 	static uint16_t cpus_per_node = 0;
 	if (!cpus_per_node)
@@ -641,7 +642,8 @@ extern void set_job_elig_time(void)
 			continue;
 		if (part_ptr == NULL)
 			continue;
-		if ((job_ptr->details == NULL) || job_ptr->details->begin_time)
+		if ((job_ptr->details == NULL) ||
+		    (job_ptr->details->begin_time > now))
 			continue;
 		if ((part_ptr->state_up & PARTITION_SCHED) == 0)
 			continue;
@@ -3257,7 +3259,8 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 	}
 
 	/* Enforce reservation: access control, time and nodes */
-	if (job_ptr->details->begin_time)
+	if (job_ptr->details->begin_time &&
+	    (job_ptr->details->begin_time > now))
 		start_res = job_ptr->details->begin_time;
 	else
 		start_res = now;

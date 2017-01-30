@@ -3268,6 +3268,7 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 		xstrfmtcat(hash_dir, "%s/hash.%d", state_save_loc, hash_inx);
 		(void) mkdir(hash_dir, 0700);
 		xstrfmtcat(job_dir, "%s/job.%u", hash_dir, job_ptr->job_id);
+		xfree(hash_dir);
 		(void) mkdir(job_dir, 0700);
 		xstrfmtcat(task_script_file, "%s/script", job_dir);
 		if ((link(script_file, task_script_file) != 0) &&
