@@ -155,19 +155,19 @@ extern int node_config_load(List gres_conf_list)
  * Set environment variables as appropriate for a job (i.e. all tasks) based
  * upon the job's GRES state.
  */
-extern void job_set_env(char ***job_env_ptr, void *gres_ptr)
+extern void job_set_env(char ***job_env_ptr, void *gres_ptr, int node_inx)
 {
 	int i, len;
 	char *dev_list = NULL;
 	gres_job_state_t *gres_job_ptr = (gres_job_state_t *) gres_ptr;
 
 	if ((gres_job_ptr != NULL) &&
-	    (gres_job_ptr->node_cnt == 1) &&
+	    (node_inx >= 0) && (node_inx < gres_job_ptr->node_cnt) &&
 	    (gres_job_ptr->gres_bit_alloc != NULL) &&
-	    (gres_job_ptr->gres_bit_alloc[0] != NULL)) {
-		len = bit_size(gres_job_ptr->gres_bit_alloc[0]);
+	    (gres_job_ptr->gres_bit_alloc[node_inx] != NULL)) {
+		len = bit_size(gres_job_ptr->gres_bit_alloc[node_inx]);
 		for (i=0; i<len; i++) {
-			if (!bit_test(gres_job_ptr->gres_bit_alloc[0], i))
+			if (!bit_test(gres_job_ptr->gres_bit_alloc[node_inx],i))
 				continue;
 			if (!dev_list)
 				dev_list = xmalloc(128);
