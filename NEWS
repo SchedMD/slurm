@@ -35,6 +35,8 @@ documents those changes that are of interest to users and administrators.
     launch requests resulting in drained nodes.
  -- Correct logic to purge old reservations.
  -- Fix DBD cache restore from previous versions.
+ -- Fix to logic for getting expected start time of existing job ID with
+    explicit begin time that is in the past.
 
 * Changes in Slurm 16.05.8
 ==========================
