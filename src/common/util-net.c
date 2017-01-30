@@ -87,6 +87,12 @@ struct hostent * get_host_by_name(const char *name,
 	assert(buf != NULL);
 
 	slurm_mutex_lock(&hostentLock);
+	/* It appears gethostbyname leaks memory once.  Under the covers it
+	 * calls gethostbyname_r (at least on Ubuntu 16.10).  This leak doesn't
+	 * appear to get worst, meaning it only happens once, so we should be
+	 * ok.  Though gethostbyname is obsolete now we can't really change
+	 * since aliases don't work we can't change.
+	 */
 	if ((hptr = gethostbyname(name)))
 		n = copy_hostent(hptr, buf, buflen);
 	if (h_err)
