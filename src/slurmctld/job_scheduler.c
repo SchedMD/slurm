@@ -865,7 +865,20 @@ next_part:		part_ptr = (struct part_record *)
 			info("sched: Allocate JobId=%u Partition=%s NodeList=%s #CPUs=%u",
 			     job_ptr->job_id, job_ptr->part_ptr->name,
 			     job_ptr->nodes, job_ptr->total_cpus);
-			if (!IS_JOB_CONFIGURING(job_ptr)) {
+
+			if (
+#ifdef HAVE_BG
+				/* On a bluegene system we need to run the
+				 * prolog while the job is CONFIGURING so this
+				 * can't work off the CONFIGURING flag as done
+				 * elsewhere.
+				 */
+				!job_ptr->details->prolog_running &&
+				!(job_ptr->bit_flags & NODE_REBOOT)
+#else
+				!IS_JOB_CONFIGURING(job_ptr)
+#endif
+				) {
 				launch_msg = build_launch_job_msg(job_ptr,
 							msg->protocol_version);
 			}
@@ -1843,7 +1856,19 @@ next_task:
 #endif
 			if (job_ptr->batch_flag == 0)
 				srun_allocate(job_ptr->job_id);
-			else if (!IS_JOB_CONFIGURING(job_ptr))
+			else if (
+#ifdef HAVE_BG
+				/* On a bluegene system we need to run the
+				 * prolog while the job is CONFIGURING so this
+				 * can't work off the CONFIGURING flag as done
+				 * elsewhere.
+				 */
+				!job_ptr->details->prolog_running &&
+				!(job_ptr->bit_flags & NODE_REBOOT)
+#else
+				!IS_JOB_CONFIGURING(job_ptr)
+#endif
+				)
 				launch_job(job_ptr);
 			rebuild_job_part_list(job_ptr);
 			job_cnt++;

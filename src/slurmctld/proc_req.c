@@ -3381,7 +3381,20 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 				_throttle_fini(&active_rpc_cnt);
 				goto fini;
 			}
-			if (IS_JOB_CONFIGURING(job_ptr)) {
+
+			if (
+#ifdef HAVE_BG
+				/* On a bluegene system we need to run the
+				 * prolog while the job is CONFIGURING so this
+				 * can't work off the CONFIGURING flag as done
+				 * elsewhere.
+				 */
+				job_ptr->details &&
+				job_ptr->details->prolog_running
+#else
+				IS_JOB_CONFIGURING(job_ptr)
+#endif
+				) {
 				slurm_send_rc_msg(msg, EAGAIN);
 				unlock_slurmctld(job_write_lock);
 				_throttle_fini(&active_rpc_cnt);
