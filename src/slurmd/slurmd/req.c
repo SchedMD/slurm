@@ -5979,6 +5979,31 @@ static void *_prolog_timer(void *x)
 	return NULL;
 }
 
+static int _get_node_inx(char *hostlist)
+{
+	char *host;
+	int node_inx = -1;
+	hostset_t hset;
+
+	if (!conf->node_name)
+		return node_inx;
+
+	if ((hset = hostset_create(hostlist))) {
+		int inx = 0;
+		while ((host = hostset_shift(hset))) {
+			if (!strcmp(host, conf->node_name)) {
+				node_inx = inx;
+				free(host);
+				break;
+			}
+			inx++;
+			free(host);
+		}
+		hostset_destroy(hset);
+	}
+	return node_inx;
+}
+
 static int
 _run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 {
@@ -6004,7 +6029,8 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 		slurm_cred_get_args(cred, &cred_arg);
 		setenvf(&my_env, "SLURM_JOB_CONSTRAINTS", "%s",
 			cred_arg.job_constraints);
-		gres_plugin_job_set_env(&my_env, cred_arg.job_gres_list);
+		gres_plugin_job_set_env(&my_env, cred_arg.job_gres_list,
+					_get_node_inx(cred_arg.step_hostlist));
 		slurm_cred_free_args(&cred_arg);
 	}
 

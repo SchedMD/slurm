@@ -85,7 +85,7 @@ resource was included in the <i>gres.conf</i> file.
 <span class="commandline">SLURM_ERROR</span> on failure.
 
 <p class="commandline">
-void job_set_env(char ***job_env_ptr, void *gres_ptr)
+void job_set_env(char ***job_env_ptr, void *gres_ptr, int node_inx)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 This function is called by the <i>slurmd</i> daemon after the getting a job
 credential and can be used to set environment variables for the job based
@@ -95,6 +95,8 @@ upon GRES state information in that credential.
 (input/output) pointer to the job's environment variable structure.<br>
 <span class="commandline">gres_ptr</span>
 (input) pointer to the job's GRES allocation information.<br>
+<span class="commandline">node_inx</span>
+(input) zero origin node index, used to interpret node specific GRES data.<br>
 
 <p class="commandline">
 void step_set_env(char ***job_env_ptr, void *gres_ptr)

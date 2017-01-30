@@ -3271,6 +3271,7 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 		xfree(hash_dir);
 		(void) mkdir(job_dir, 0700);
 		xstrfmtcat(task_script_file, "%s/script", job_dir);
+		xfree(job_dir);
 		if ((link(script_file, task_script_file) != 0) &&
 		    (errno != EEXIST)) {
 			error("%s: link(%s,%s): %m", __func__, script_file,
