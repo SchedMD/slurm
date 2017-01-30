@@ -37,6 +37,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix DBD cache restore from previous versions.
  -- Fix to logic for getting expected start time of existing job ID with
     explicit begin time that is in the past.
+ -- Clear job's reason of "BeginTime" in a more timely fashion and/or prevents
+    them from being stuck in a PENDING state.
 
 * Changes in Slurm 16.05.8
 ==========================
