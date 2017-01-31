@@ -248,6 +248,8 @@ extern int slurm_jobcomp_set_location(char *location)
 	}
 
 	debug2("mysql_connect() called for db %s", db_name);
+	/* Just make sure our connection is gone. */
+	fini();
 	jobcomp_mysql_conn = create_mysql_conn(0, 0, NULL);
 
 	db_info = create_mysql_db_info(SLURM_MYSQL_PLUGIN_JC);
