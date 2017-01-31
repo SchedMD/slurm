@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 17.02.0rc2
+==============================
+
 * Changes in Slurm 17.02.0rc1
 ==============================
  -- Add port info to 'sinfo' and 'scontrol show node'.
