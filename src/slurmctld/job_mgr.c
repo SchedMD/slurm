@@ -7597,7 +7597,7 @@ extern void job_validate_mem(struct job_record *job_ptr)
  * job_time_limit - terminate jobs which have exceeded their time limit
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
- * NOTE: READ lock_slurmctld config before entry
+ * NOTE: Job Write lock_slurmctld config before entry
  */
 void job_time_limit(void)
 {
@@ -7609,14 +7609,35 @@ void job_time_limit(void)
 	time_t over_run;
 	int resv_status = 0;
 	uint16_t over_time_limit;
+	int job_test_count = 0;
+
+	/* locks same as in _slurmctld_background() (The only current place this
+	 * is called). */
+	slurmctld_lock_t job_write_lock = {
+		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
+	DEF_TIMERS;
+
 #ifndef HAVE_BG
 	uint8_t prolog;
 #endif
 
 	begin_job_resv_check();
 	job_iterator = list_iterator_create(job_list);
+	START_TIMER;
 	while ((job_ptr =(struct job_record *) list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
+                if (slurm_delta_tv(&tv1) >= 3000000) {
+			END_TIMER;
+			debug("%s: yielding locks after testing %d jobs, %s",
+			      __func__, job_test_count, TIME_STR);
+			unlock_slurmctld(job_write_lock);
+			usleep(1000000);
+			lock_slurmctld(job_write_lock);
+			START_TIMER;
+			job_test_count = 0;
+		}
+
+		job_test_count++;
 
 #ifndef HAVE_BG
 		/* If the CONFIGURING flag is removed elsewhere like
