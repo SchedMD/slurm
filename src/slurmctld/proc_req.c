@@ -5843,20 +5843,6 @@ _slurm_rpc_kill_job2(slurm_msg_t *msg)
 	END_TIMER2("_slurm_rpc_kill_job2");
 }
 
-/* Return the number of micro-seconds between now and argument "tv" */
-static int _delta_tv(struct timeval *tv)
-{
-	struct timeval now = {0, 0};
-	int delta_t;
-
-	if (gettimeofday(&now, NULL))
-		return 1;		/* Some error */
-
-	delta_t  = (now.tv_sec - tv->tv_sec) * 1000000;
-	delta_t += (now.tv_usec - tv->tv_usec);
-	return delta_t;
-}
-
 /* The batch messages when made for the comp_msg need to be freed
  * differently than the normal free, so do that here.
  */
@@ -5982,7 +5968,7 @@ static void  _slurm_rpc_comp_msg_list(composite_msg_t * comp_msg,
 
 	itr = list_iterator_create(comp_msg->msg_list);
 	while ((next_msg = list_next(itr))) {
-		if (_delta_tv(start_tv) >= timeout) {
+		if (slurm_delta_tv(start_tv) >= timeout) {
 			END_TIMER;
 			if (slurmctld_conf.debug_flags & DEBUG_FLAG_ROUTE)
 				info("composite message processing "

@@ -148,7 +148,6 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 			     int *node_space_recs);
 static int  _attempt_backfill(void);
 static void _clear_job_start_times(void);
-static int  _delta_tv(struct timeval *tv);
 static void _do_diag_stats(struct timeval *tv1, struct timeval *tv2);
 static bool _job_part_valid(struct job_record *job_ptr,
 			    struct part_record *part_ptr);
@@ -453,20 +452,6 @@ extern void stop_backfill_agent(void)
 	stop_backfill = true;
 	slurm_cond_signal(&term_cond);
 	slurm_mutex_unlock(&term_lock);
-}
-
-/* Return the number of micro-seconds between now and argument "tv" */
-static int _delta_tv(struct timeval *tv)
-{
-	struct timeval now = {0, 0};
-	int delta_t;
-
-	if (gettimeofday(&now, NULL))
-		return 1;		/* Some error */
-
-	delta_t  = (now.tv_sec - tv->tv_sec) * 1000000;
-	delta_t += (now.tv_usec - tv->tv_usec);
-	return delta_t;
 }
 
 /* Sleep for at least specified time, returns actual sleep time in usec */
@@ -1042,7 +1027,7 @@ static int _attempt_backfill(void)
 		}
 		if (((defer_rpc_cnt > 0) &&
 		     (slurmctld_config.server_thread_count >= defer_rpc_cnt)) ||
-		    (_delta_tv(&start_tv) >= sched_timeout)) {
+		    (slurm_delta_tv(&start_tv) >= sched_timeout)) {
 			if (debug_flags & DEBUG_FLAG_BACKFILL) {
 				END_TIMER;
 				info("backfill: yielding locks after testing "
@@ -1372,7 +1357,7 @@ next_task:
 		test_time_count++;
 		if (((defer_rpc_cnt > 0) &&
 		     (slurmctld_config.server_thread_count >= defer_rpc_cnt)) ||
-		    (_delta_tv(&start_tv) >= sched_timeout)) {
+		    (slurm_delta_tv(&start_tv) >= sched_timeout)) {
 			uint32_t save_job_id = job_ptr->job_id;
 			uint32_t save_time_limit = job_ptr->time_limit;
 			_set_job_time_limit(job_ptr, orig_time_limit);
