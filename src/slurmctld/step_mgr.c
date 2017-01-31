@@ -1561,12 +1561,11 @@ _pick_step_nodes (struct job_record  *job_ptr,
 							 cpus_needed,
 							 usable_cpu_cnt);
 			if (node_tmp) {
-				bit_or  (nodes_picked, node_tmp);
-				bit_not (node_tmp);
-				bit_and (nodes_idle, node_tmp);
-				bit_and (nodes_avail, node_tmp);
-				FREE_NULL_BITMAP (node_tmp);
-				node_tmp = NULL;
+				bit_or(nodes_picked, node_tmp);
+				bit_not(node_tmp);
+				bit_and(nodes_idle, node_tmp);
+				bit_and(nodes_avail, node_tmp);
+				FREE_NULL_BITMAP(node_tmp);
 				nodes_picked_cnt = step_spec->min_nodes;
 				nodes_needed = 0;
 			}
@@ -1609,7 +1608,6 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			bit_or(nodes_picked, node_tmp);
 			bit_and_not(nodes_avail, node_tmp);
 			FREE_NULL_BITMAP(node_tmp);
-			node_tmp = NULL;
 			nodes_picked_cnt = step_spec->min_nodes;
 		} else if (nodes_needed > 0) {
 			if ((step_spec->max_nodes <= nodes_picked_cnt) &&
@@ -1652,7 +1650,6 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				bit_or(nodes_picked, node_tmp);
 				bit_and_not(nodes_avail, node_tmp);
 				FREE_NULL_BITMAP(node_tmp);
-				node_tmp = NULL;
 				nodes_picked_cnt += 1;
 				if (step_spec->min_nodes)
 					step_spec->min_nodes = nodes_picked_cnt;

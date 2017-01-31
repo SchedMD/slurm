@@ -577,7 +577,6 @@ extern void qos_list_build(char *qos, bitstr_t **qos_bits)
 
 	if (!qos) {
 		FREE_NULL_BITMAP(*qos_bits);
-		*qos_bits = NULL;
 		return;
 	}
 
@@ -589,7 +588,6 @@ extern void qos_list_build(char *qos, bitstr_t **qos_bits)
 		      qos);
 		assoc_mgr_unlock(&locks);
 		FREE_NULL_BITMAP(*qos_bits);
-		*qos_bits = NULL;
 		return;
 	}
 
