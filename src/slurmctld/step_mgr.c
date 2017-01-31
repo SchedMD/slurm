@@ -1438,8 +1438,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				selected_nodes = NULL;
 			} else {
 				nodes_picked = bit_copy(selected_nodes);
-				bit_not(selected_nodes);
-				bit_and(nodes_avail, selected_nodes);
+				bit_and_not(nodes_avail, selected_nodes);
 				FREE_NULL_BITMAP(selected_nodes);
 			}
 		}
@@ -1462,9 +1461,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			      step_spec->relative, job_ptr->job_id);
 			goto cleanup;
 		}
-		bit_not (relative_nodes);
-		bit_and (nodes_avail, relative_nodes);
-		FREE_NULL_BITMAP (relative_nodes);
+		bit_and_not(nodes_avail, relative_nodes);
+		FREE_NULL_BITMAP(relative_nodes);
 	} else {
 		nodes_idle = bit_alloc (bit_size (nodes_avail) );
 		step_iterator = list_iterator_create(job_ptr->step_list);
@@ -1608,10 +1606,9 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				}
 				goto cleanup;
 			}
-			bit_or  (nodes_picked, node_tmp);
-			bit_not (node_tmp);
-			bit_and (nodes_avail, node_tmp);
-			FREE_NULL_BITMAP (node_tmp);
+			bit_or(nodes_picked, node_tmp);
+			bit_and_not(nodes_avail, node_tmp);
+			FREE_NULL_BITMAP(node_tmp);
 			node_tmp = NULL;
 			nodes_picked_cnt = step_spec->min_nodes;
 		} else if (nodes_needed > 0) {
@@ -1647,16 +1644,14 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				if (cpu_cnt == 0) {
 					/* Node not usable (memory insufficient
 					 * to allocate any CPUs, etc.) */
-					bit_not(node_tmp);
-					bit_and(nodes_avail, node_tmp);
+					bit_and_not(nodes_avail, node_tmp);
 					FREE_NULL_BITMAP(node_tmp);
 					continue;
 				}
 
-				bit_or  (nodes_picked, node_tmp);
-				bit_not (node_tmp);
-				bit_and (nodes_avail, node_tmp);
-				FREE_NULL_BITMAP (node_tmp);
+				bit_or(nodes_picked, node_tmp);
+				bit_and_not(nodes_avail, node_tmp);
+				FREE_NULL_BITMAP(node_tmp);
 				node_tmp = NULL;
 				nodes_picked_cnt += 1;
 				if (step_spec->min_nodes)
@@ -2127,10 +2122,8 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 			      __func__, job_ptr->job_id, step_ptr->step_id,
 			      job_core_size, step_core_size);
 		} else {
-			bit_not(step_ptr->core_bitmap_job);
-			bit_and(job_resrcs_ptr->core_bitmap_used,
-				step_ptr->core_bitmap_job);
-			/* no need for bit_not(step_ptr->core_bitmap_job); */
+			bit_and_not(job_resrcs_ptr->core_bitmap_used,
+				    step_ptr->core_bitmap_job);
 		}
 		FREE_NULL_BITMAP(step_ptr->core_bitmap_job);
 	}

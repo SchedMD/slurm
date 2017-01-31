@@ -4475,7 +4475,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 	time_t now = time(NULL);
 	char *end_ptr = NULL, *tok, *tmp;
 	long int long_id;
-	bitstr_t *array_bitmap = NULL, *tmp_bitmap;
+	bitstr_t *array_bitmap = NULL;
 	bool valid = true;
 	int32_t i, i_first, i_last;
 	int rc = SLURM_SUCCESS, rc2, len;
@@ -4624,14 +4624,11 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			job_ptr->array_recs->task_id_bitmap = bit_realloc(
 				job_ptr->array_recs->task_id_bitmap, i_last);
 		}
-		tmp_bitmap = bit_copy(job_ptr->array_recs->task_id_bitmap);
 		if (signal == SIGKILL) {
 			uint32_t orig_task_cnt, new_task_count;
-			bit_not(array_bitmap);
-			bit_and(job_ptr->array_recs->task_id_bitmap,
+			bit_and_not(job_ptr->array_recs->task_id_bitmap,
 				array_bitmap);
 			xfree(job_ptr->array_recs->task_id_str);
-			bit_not(array_bitmap);
 			orig_task_cnt = job_ptr->array_recs->task_cnt;
 			new_task_count = bit_set_count(job_ptr->array_recs->
 						       task_id_bitmap);
@@ -4657,13 +4654,11 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			 * limit for submitted jobs correctly.
 			 */
 			job_ptr->array_recs->task_cnt = new_task_count;
-			bit_not(tmp_bitmap);
-			bit_and(array_bitmap, tmp_bitmap);
-			FREE_NULL_BITMAP(tmp_bitmap);
+			bit_and_not(array_bitmap,
+				    job_ptr->array_recs->task_id_bitmap);
 		} else {
-			bit_not(tmp_bitmap);
-			bit_and(array_bitmap, tmp_bitmap);
-			FREE_NULL_BITMAP(tmp_bitmap);
+			bit_and_not(array_bitmap,
+				    job_ptr->array_recs->task_id_bitmap);
 			rc = ESLURM_TRANSITION_STATE_NO_UPDATE;
 		}
 	}
@@ -11677,10 +11672,8 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			/* Update the record with all pending tasks */
 			rc2 = _update_job(job_ptr, job_specs, uid);
 			_resp_array_add(&resp_array, job_ptr, rc2);
-			bit_not(job_ptr->array_recs->task_id_bitmap);
-			bit_and(array_bitmap,
-				job_ptr->array_recs->task_id_bitmap);
-			bit_not(job_ptr->array_recs->task_id_bitmap);
+			bit_and_not(array_bitmap,
+				    job_ptr->array_recs->task_id_bitmap);
 		} else {
 			/* Need to split out tasks to separate job records */
 			tmp_bitmap = bit_copy(job_ptr->array_recs->

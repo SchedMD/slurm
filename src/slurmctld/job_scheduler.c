@@ -1462,9 +1462,7 @@ static int _schedule(uint32_t job_limit)
 	bit_not(avail_node_bitmap);
 	unavail_node_str = bitmap2node_name(avail_node_bitmap);
 	bit_not(avail_node_bitmap);
-	bit_not(booting_node_bitmap);
-	bit_and(avail_node_bitmap, booting_node_bitmap);
-	bit_not(booting_node_bitmap);
+	bit_and_not(avail_node_bitmap, booting_node_bitmap);
 
 	if (max_jobs_per_part) {
 		ListIterator part_iterator;
@@ -1860,10 +1858,8 @@ next_task:
 				       job_reason_string(job_ptr->
 							 state_reason),
 				       job_ptr->priority);
-				bit_not(job_ptr->resv_ptr->node_bitmap);
-				bit_and(avail_node_bitmap,
+				bit_and_not(avail_node_bitmap,
 					job_ptr->resv_ptr->node_bitmap);
-				bit_not(job_ptr->resv_ptr->node_bitmap);
 			} else {
 				/* The job has no reservation but requires
 				 * nodes that are currently in some reservation
@@ -1980,10 +1976,8 @@ next_task:
 			fail_by_part = false;
 			/* Do not schedule more jobs on nodes required by this
 			 * job, but don't block the entire queue/partition. */
-			bit_not(job_ptr->details->req_node_bitmap);
-			bit_and(avail_node_bitmap,
+			bit_and_not(avail_node_bitmap,
 				job_ptr->details->req_node_bitmap);
-			bit_not(job_ptr->details->req_node_bitmap);
 		}
 #endif
 		if (fail_by_part && job_ptr->resv_name) {
@@ -2014,10 +2008,8 @@ next_task:
 		 	/* do not schedule more jobs in this partition or on
 			 * nodes in this partition */
 			failed_parts[failed_part_cnt++] = job_ptr->part_ptr;
-			bit_not(job_ptr->part_ptr->node_bitmap);
-			bit_and(avail_node_bitmap,
+			bit_and_not(avail_node_bitmap,
 				job_ptr->part_ptr->node_bitmap);
-			bit_not(job_ptr->part_ptr->node_bitmap);
 		}
 
 		if ((reject_array_job_id == job_ptr->array_job_id) &&

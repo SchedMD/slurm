@@ -1740,8 +1740,7 @@ static int _update_node_weight(char *node_names, uint32_t weight)
 			_update_config_ptr(tmp_bitmap, new_config_ptr);
 
 			/* Update remaining records */
-			bit_not(tmp_bitmap);
-			bit_and(config_ptr->node_bitmap, tmp_bitmap);
+			bit_and_not(config_ptr->node_bitmap, tmp_bitmap);
 			xfree(config_ptr->nodes);
 			config_ptr->nodes = bitmap2node_name(
 				config_ptr->node_bitmap);
@@ -1837,8 +1836,7 @@ static int _update_node_avail_features(char *node_names, char *avail_features)
 			_update_config_ptr(tmp_bitmap, new_config_ptr);
 
 			/* Update remaining records */
-			bit_not(tmp_bitmap);
-			bit_and(config_ptr->node_bitmap, tmp_bitmap);
+			bit_and_not(config_ptr->node_bitmap, tmp_bitmap);
 			xfree(config_ptr->nodes);
 			config_ptr->nodes = bitmap2node_name(config_ptr->
 							     node_bitmap);
@@ -1914,8 +1912,7 @@ static int _update_node_gres(char *node_names, char *gres)
 			_update_config_ptr(tmp_bitmap, new_config_ptr);
 
 			/* Update remaining records */
-			bit_not(tmp_bitmap);
-			bit_and(config_ptr->node_bitmap, tmp_bitmap);
+			bit_and_not(config_ptr->node_bitmap, tmp_bitmap);
 			xfree(config_ptr->nodes);
 			config_ptr->nodes = bitmap2node_name(config_ptr->
 							     node_bitmap);

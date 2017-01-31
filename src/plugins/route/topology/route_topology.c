@@ -230,8 +230,7 @@ extern int route_p_split_hostlist(hostlist_t hl,
 		}
 		(*sp_hl)[hl_ndx] = bitmap2hostlist(fwd_bitmap);
 		/* Now remove nodes from this switch from message list */
-		bit_not(fwd_bitmap);
-		bit_and(nodes_bitmap, fwd_bitmap);
+		bit_and_not(nodes_bitmap, fwd_bitmap);
 		FREE_NULL_BITMAP(fwd_bitmap);
 		if (debug_flags & DEBUG_FLAG_ROUTE) {
 			buf = hostlist_ranged_string_xmalloc((*sp_hl)[hl_ndx]);

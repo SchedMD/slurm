@@ -916,9 +916,7 @@ extern void filter_by_node_owner(struct job_record *job_ptr,
 			    (job_ptr->user_id == job_ptr2->user_id) ||
 			    !job_ptr2->node_bitmap)
 				continue;
-			bit_not(job_ptr2->node_bitmap);
-			bit_and(usable_node_mask, job_ptr2->node_bitmap);
-			bit_not(job_ptr2->node_bitmap);
+			bit_and_not(usable_node_mask, job_ptr2->node_bitmap);
 		}
 		list_iterator_destroy(job_iterator);
 		return;
@@ -989,9 +987,7 @@ static void _filter_by_node_feature(struct job_record *job_ptr,
 	for (i = 0; i < node_set_size; i++) {
 		if (node_set_ptr[i].weight != INFINITE)
 			continue;
-		bit_not(node_set_ptr[i].my_bitmap);
-		bit_and(avail_node_bitmap, node_set_ptr[i].my_bitmap);
-		bit_not(node_set_ptr[i].my_bitmap);
+		bit_and_not(avail_node_bitmap, node_set_ptr[i].my_bitmap);
 	}
 }
 
@@ -1073,9 +1069,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 
 	if (!save_avail_node_bitmap)
 		save_avail_node_bitmap = bit_copy(avail_node_bitmap);
-	bit_not(booting_node_bitmap);
-	bit_and(avail_node_bitmap, booting_node_bitmap);
-	bit_not(booting_node_bitmap);
+	bit_and_not(avail_node_bitmap, booting_node_bitmap);
 	filter_by_node_owner(job_ptr, avail_node_bitmap);
 	if (can_reboot && !test_only)
 		_filter_by_node_feature(job_ptr, node_set_ptr, node_set_size);
@@ -1177,8 +1171,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 				tmp_node_set_ptr[tmp_node_set_size].nodes =
 					bit_set_count(tmp_node_set_ptr
 					[tmp_node_set_size].my_bitmap);
-				bit_not(inactive_bitmap);
-				bit_and(tmp_node_set_ptr[tmp_node_set_size-1].
+				bit_and_not(tmp_node_set_ptr[tmp_node_set_size-1].
 					my_bitmap, inactive_bitmap);
 				tmp_node_set_ptr[tmp_node_set_size-1].nodes =
 					bit_set_count(tmp_node_set_ptr
@@ -1365,9 +1358,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		 * configuration to check that is is allowed by the current
 		 * power cap */
 		tmp_bitmap = bit_copy(idle_node_bitmap);
-		bit_not(*select_bitmap);
-		bit_and(tmp_bitmap, *select_bitmap);
-		bit_not(*select_bitmap);
+		bit_and_not(tmp_bitmap, *select_bitmap);
 		if (layout_power == 1)
 			tmp_max_watts =
 				 powercap_get_node_bitmap_maxwatts(tmp_bitmap);
@@ -1784,10 +1775,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 					bit_and(node_set_ptr[i].my_bitmap,
 						share_node_bitmap);
 #ifndef HAVE_BG
-					bit_not(cg_node_bitmap);
-					bit_and(node_set_ptr[i].my_bitmap,
-						cg_node_bitmap);
-					bit_not(cg_node_bitmap);
+					bit_and_not(node_set_ptr[i].my_bitmap,
+						    cg_node_bitmap);
 #endif
 				} else {
 					bit_and(node_set_ptr[i].my_bitmap,
@@ -1796,10 +1785,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				}
 			} else {
 #ifndef HAVE_BG
-				bit_not(cg_node_bitmap);
-				bit_and(node_set_ptr[i].my_bitmap,
-					cg_node_bitmap);
-				bit_not(cg_node_bitmap);
+				bit_and_not(node_set_ptr[i].my_bitmap,
+					    cg_node_bitmap);
 #endif
 			}
 			if (!nodes_busy) {
@@ -3170,9 +3157,7 @@ static int _build_node_list(struct job_record *job_ptr,
 
 	if (detail_ptr->exc_node_bitmap) {
 		if (usable_node_mask) {
-			bit_not(detail_ptr->exc_node_bitmap);
-			bit_and(usable_node_mask, detail_ptr->exc_node_bitmap);
-			bit_not(detail_ptr->exc_node_bitmap);
+			bit_and_not(usable_node_mask, detail_ptr->exc_node_bitmap);
 		} else {
 			usable_node_mask =
 				bit_copy(detail_ptr->exc_node_bitmap);
@@ -3318,8 +3303,7 @@ static int _build_node_list(struct job_record *job_ptr,
 		node_set_ptr[node_set_inx].real_memory =
 			config_ptr->real_memory;
 		node_set_ptr[node_set_inx].weight = INFINITE;
-		bit_not(inactive_bitmap);
-		bit_and(node_set_ptr[node_set_inx-1].my_bitmap,inactive_bitmap);
+		bit_and_not(node_set_ptr[node_set_inx-1].my_bitmap,inactive_bitmap);
 		node_set_ptr[node_set_inx-1].nodes -= bit_set_count(
 			node_set_ptr[node_set_inx-1].my_bitmap);
 		FREE_NULL_BITMAP(inactive_bitmap);

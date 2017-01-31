@@ -3342,9 +3342,7 @@ extern bitstr_t * select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 			_make_core_bitmap_filtered(switches_bitmap[i], 1);
 
 		if (*core_bitmap) {
-			bit_not(*core_bitmap);
-			bit_and(switches_core_bitmap[i], *core_bitmap);
-			bit_not(*core_bitmap);
+			bit_and_not(switches_core_bitmap[i], *core_bitmap);
 		}
 		bit_fmt(str, sizeof(str), switches_core_bitmap[i]);
 		switches_cpu_cnt[i] = bit_set_count(switches_core_bitmap[i]);

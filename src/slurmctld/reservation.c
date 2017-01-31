@@ -3281,9 +3281,7 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 			busy_nodes_needed = resv_ptr->node_cnt - new_nodes
 					    - preserve_nodes;
 			if (busy_nodes_needed > 0) {
-				bit_not(preserve_bitmap);
-				bit_and(resv_ptr->node_bitmap, preserve_bitmap);
-				bit_not(preserve_bitmap);
+				bit_and_not(resv_ptr->node_bitmap, preserve_bitmap);
 				tmp_bitmap = bit_pick_cnt(resv_ptr->node_bitmap,
 							  busy_nodes_needed);
 				bit_and(resv_ptr->node_bitmap, tmp_bitmap);
@@ -3578,16 +3576,13 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 			if (i > delta_node_cnt) {
 				tmp2_bitmap = bit_pick_cnt(tmp1_bitmap,
 							   delta_node_cnt);
-				bit_not(tmp2_bitmap);
-				bit_and(resv_ptr->node_bitmap, tmp2_bitmap);
+				bit_and_not(resv_ptr->node_bitmap, tmp2_bitmap);
 				FREE_NULL_BITMAP(tmp1_bitmap);
 				FREE_NULL_BITMAP(tmp2_bitmap);
 				delta_node_cnt = 0;	/* ALL DONE */
 			} else if (i) {
-				bit_not(idle_node_bitmap);
-				bit_and(resv_ptr->node_bitmap,
+				bit_and_not(resv_ptr->node_bitmap,
 					idle_node_bitmap);
-				bit_not(idle_node_bitmap);
 				resv_ptr->node_cnt = bit_set_count(
 						resv_ptr->node_bitmap);
 				delta_node_cnt = resv_ptr->node_cnt -
@@ -3699,9 +3694,7 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 				resv_ptr->full_nodes = 1;
 			}
 			if (resv_ptr->full_nodes || !resv_desc_ptr->core_cnt) {
-				bit_not(resv_ptr->node_bitmap);
-				bit_and(node_bitmap, resv_ptr->node_bitmap);
-				bit_not(resv_ptr->node_bitmap);
+				bit_and_not(node_bitmap, resv_ptr->node_bitmap);
 			} else {
 				_create_cluster_core_bitmap(core_bitmap);
 				bit_or(*core_bitmap, resv_ptr->core_bitmap);
@@ -3878,8 +3871,7 @@ static bitstr_t *_pick_idle_nodes(bitstr_t *avail_bitmap,
 			bit_or(ret_bitmap, tmp_bitmap);
 		else
 			ret_bitmap = bit_copy(tmp_bitmap);
-		bit_not(tmp_bitmap);
-		bit_and(avail_bitmap, tmp_bitmap);
+		bit_and_not(avail_bitmap, tmp_bitmap);
 		FREE_NULL_BITMAP(tmp_bitmap);
 
 #ifdef HAVE_BG
@@ -4023,9 +4015,7 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 			continue;
 
 		if (!resv_desc_ptr->core_cnt) {
-			bit_not(job_ptr->node_bitmap);
-			bit_and(avail_bitmap, job_ptr->node_bitmap);
-			bit_not(job_ptr->node_bitmap);
+			bit_and_not(avail_bitmap, job_ptr->node_bitmap);
 		} else {
 			_check_job_compatibility(job_ptr, avail_bitmap,
 						 core_bitmap);
@@ -4872,9 +4862,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 				continue;
 			if (bit_overlap(*node_bitmap, res2_ptr->node_bitmap)) {
 				*resv_overlap = true;
-				bit_not(res2_ptr->node_bitmap);
-				bit_and(*node_bitmap, res2_ptr->node_bitmap);
-				bit_not(res2_ptr->node_bitmap);
+				bit_and_not(*node_bitmap, res2_ptr->node_bitmap);
 			}
 		}
 		list_iterator_destroy(iter);
@@ -4984,9 +4972,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 				     "will not share nodes",
 				     resv_ptr->name, job_ptr->job_id);
 #endif
-				bit_not(resv_ptr->node_bitmap);
-				bit_and(*node_bitmap, resv_ptr->node_bitmap);
-				bit_not(resv_ptr->node_bitmap);
+				bit_and_not(*node_bitmap, resv_ptr->node_bitmap);
 			} else {
 #if _DEBUG
 				info("job_test_resv: reservation %s uses "

@@ -5831,10 +5831,8 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
 	gres_bit_alloc = bit_copy(job_gres_ptr->gres_bit_alloc[node_offset]);
 	if (job_gres_ptr->gres_bit_step_alloc &&
 	    job_gres_ptr->gres_bit_step_alloc[node_offset]) {
-		bit_not(job_gres_ptr->gres_bit_step_alloc[node_offset]);
-		bit_and(gres_bit_alloc,
+		bit_and_not(gres_bit_alloc,
 			job_gres_ptr->gres_bit_step_alloc[node_offset]);
-		bit_not(job_gres_ptr->gres_bit_step_alloc[node_offset]);
 	}
 
 	gres_needed = step_gres_ptr->gres_cnt_alloc;

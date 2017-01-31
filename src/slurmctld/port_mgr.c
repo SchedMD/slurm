@@ -288,16 +288,14 @@ extern void resv_port_free(struct step_record *step_ptr)
 	if (step_ptr->resv_port_array == NULL)
 		return;
 
-	bit_not(step_ptr->step_node_bitmap);
 	for (i=0; i<step_ptr->resv_port_cnt; i++) {
 		if ((step_ptr->resv_port_array[i] < port_resv_min) ||
 		    (step_ptr->resv_port_array[i] > port_resv_max))
 			continue;
 		j = step_ptr->resv_port_array[i] - port_resv_min;
-		bit_and(port_resv_table[j], step_ptr->step_node_bitmap);
+		bit_and_not(port_resv_table[j], step_ptr->step_node_bitmap);
 
 	}
-	bit_not(step_ptr->step_node_bitmap);
 	xfree(step_ptr->resv_port_array);
 
 	debug("freed ports %s for step %u.%u",

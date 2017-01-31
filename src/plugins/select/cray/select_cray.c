@@ -1880,9 +1880,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 					bit_nclear(bitmap, 0,
 						   bit_size(bitmap) - 1);
 			} else {
-				bit_not(blade_nodes_running_npc);
-				bit_and(bitmap, blade_nodes_running_npc);
-				bit_not(blade_nodes_running_npc);
+				bit_and_not(bitmap, blade_nodes_running_npc);
 			}
 		}
 	}

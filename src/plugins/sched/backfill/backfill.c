@@ -1454,10 +1454,8 @@ next_task:
 		}
 
 		if (job_ptr->details->exc_node_bitmap) {
-			bit_not(job_ptr->details->exc_node_bitmap);
-			bit_and(avail_bitmap,
+			bit_and_not(avail_bitmap,
 				job_ptr->details->exc_node_bitmap);
-			bit_not(job_ptr->details->exc_node_bitmap);
 		}
 
 		/* Test if insufficient nodes remain OR
