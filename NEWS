@@ -223,6 +223,9 @@ documents those changes that are of interest to users and administrators.
  -- Added infrastructure for setting up federations in database and establishing
     connections between federation clusters.
 
+* Changes in Slurm 16.05.10
+===========================
+
 * Changes in Slurm 16.05.9
 ==========================
  -- Fix parsing of SBCAST_COMPRESS environment variable in sbcast.
