@@ -365,26 +365,6 @@ static bool _job_runnable_test2(struct job_record *job_ptr, bool check_min_time)
 	return true;
 }
 
-/* Return the number of micro-seconds between now and argument "tv",
- * Initialize tv to NOW if zero on entry */
-static int _delta_tv(struct timeval *tv)
-{
-	struct timeval now = {0, 0};
-	int delta_t;
-
-	if (gettimeofday(&now, NULL))
-		return 1;		/* Some error */
-
-	if (tv->tv_sec == 0) {
-		tv->tv_sec  = now.tv_sec;
-		tv->tv_usec = now.tv_usec;
-		return 0;
-	}
-
-	delta_t  = (now.tv_sec - tv->tv_sec) * 1000000;
-	delta_t += (now.tv_usec - tv->tv_usec);
-	return delta_t;
-}
 /*
  * build_job_queue - build (non-priority ordered) list of pending jobs
  * IN clear_start - if set then clear the start_time for pending jobs,
@@ -408,7 +388,8 @@ extern List build_job_queue(bool clear_start, bool backfill)
 	int job_part_pairs = 0;
 	time_t now = time(NULL);
 
-	(void) _delta_tv(&start_tv);
+	/* init the timer */
+	(void) slurm_delta_tv(&start_tv);
 	job_queue = list_create(_job_queue_rec_del);
 
 	/* Create individual job records for job arrays that need burst buffer
@@ -504,7 +485,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (((tested_jobs % 100) == 0) &&
-		    (_delta_tv(&start_tv) >= build_queue_timeout)) {
+		    (slurm_delta_tv(&start_tv) >= build_queue_timeout)) {
 			if (difftime(now, last_log_time) > 600) {
 				/* Log at most once every 10 minutes */
 				info("%s has run for %d usec, exiting with %d "

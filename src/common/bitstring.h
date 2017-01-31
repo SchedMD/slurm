@@ -113,6 +113,7 @@ void	bit_free(bitstr_t *b);
 bitstr_t *bit_realloc(bitstr_t *b, bitoff_t nbits);
 bitoff_t bit_size(bitstr_t *b);
 void	bit_and(bitstr_t *b1, bitstr_t *b2);
+void	bit_and_not(bitstr_t *b1, bitstr_t *b2);
 void	bit_not(bitstr_t *b);
 void	bit_or(bitstr_t *b1, bitstr_t *b2);
 int32_t	bit_set_count(bitstr_t *b);
