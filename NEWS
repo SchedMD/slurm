@@ -6,7 +6,10 @@ documents those changes that are of interest to users and administrators.
  -- Interpet all format options in output/error file to log prolog errors. Prior
     logic only supported "%j" (job ID) option.
 
-* Changes in Slurm 17.02.0pre5
+* Changes in Slurm 17.02.0rc2
+==============================
+
+* Changes in Slurm 17.02.0rc1
 ==============================
  -- Add port info to 'sinfo' and 'scontrol show node'.
  -- Fix errant definition of USE_64BIT_BITSTR which can lead to core dumps.
@@ -227,6 +230,9 @@ documents those changes that are of interest to users and administrators.
     job IDs in the new range.
  -- Added infrastructure for setting up federations in database and establishing
     connections between federation clusters.
+
+* Changes in Slurm 16.05.10
+===========================
 
 * Changes in Slurm 16.05.9
 ==========================
