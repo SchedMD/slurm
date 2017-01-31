@@ -261,6 +261,7 @@ documents those changes that are of interest to users and administrators.
     explicit begin time that is in the past.
  -- Clear job's reason of "BeginTime" in a more timely fashion and/or prevents
     them from being stuck in a PENDING state.
+ -- Make sure acct policy limits imposed on a job are correct after requeue.
 
 * Changes in Slurm 16.05.8
 ==========================
