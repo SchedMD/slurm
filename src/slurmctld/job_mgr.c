@@ -13865,6 +13865,8 @@ reply:
 	 * to add it again. */
 	acct_policy_add_job_submit(job_ptr);
 
+	acct_policy_update_pending_job(job_ptr);
+
 	if (state & JOB_SPECIAL_EXIT) {
 		job_ptr->job_state |= JOB_SPECIAL_EXIT;
 		job_ptr->state_reason = WAIT_HELD_USER;
