@@ -637,6 +637,7 @@ AC_CONFIG_FILES([Makefile
 		 testsuite/slurm_unit/api/Makefile
 		 testsuite/slurm_unit/api/manual/Makefile
 		 testsuite/slurm_unit/common/Makefile
+		 testsuite/slurm_unit/common/slurmdb_pack/Makefile
 		 ]
 )
 
