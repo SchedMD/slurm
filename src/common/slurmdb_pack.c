@@ -277,6 +277,10 @@ extern int slurmdb_unpack_user_rec(void **object, uint16_t protocol_version,
 			}
 		}
 
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
 	}
 
 	return SLURM_SUCCESS;

@@ -12,7 +12,7 @@ START_TEST(invalid_protocol)
 	int rc;
 	slurmdb_cluster_rec_t *rec = NULL;
 
-	rc = slurmdb_unpack_cluster_rec((void **)&rec, 0, NULL);
+	rc = slurmdb_unpack_user_rec((void **)&rec, 0, NULL);
 	ck_assert_int_eq(rc, SLURM_ERROR);
 }
 END_TEST
