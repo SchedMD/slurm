@@ -37,14 +37,14 @@ set file_in          "test$test_id.input"
 
 print_header $test_id
 
-send_user "\nWARNING: This test is current broken. See bug 3166.\n"
-exit 0
+print_time
 
 #
 # Submit a slurm job that will sleep briefly, ignoring stdin
 #
 set timeout $max_job_delay
-make_bash_script $file_in "dd if=/dev/zero bs=1k | $srun -N1 -t1 sleep 10"
+set match 0
+make_bash_script $file_in "dd if=/dev/zero bs=1k | $srun -v -N1 -t1 sleep 10"
 spawn ./$file_in
 expect {
 	-re "error" {
@@ -52,6 +52,10 @@ expect {
 		set exit_code 1
 		exp_continue
 	}
+	-re "Dropped pending I/O" {
+		incr match
+		exp_continue
+	}	
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		set exit_code 1
@@ -60,6 +64,12 @@ expect {
 		wait
 	}
 }
+# Note if timing dependent message is not logged, not really a problem
+if {$match != 1} {
+	send_user "\nWARNING: Dropped I/O not logged\n"
+}
+
+print_time
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in

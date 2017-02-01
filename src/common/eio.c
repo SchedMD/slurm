@@ -307,10 +307,8 @@ int eio_handle_mainloop(eio_handle_t *eio)
 		debug4("eio: handling events for %d objects",
 		       list_count(eio->obj_list));
 		nfds = _poll_setup_pollfds(pollfds, map, eio->obj_list);
-		if (nfds <= 0) {
-// See bug 3166		_mark_shutdown_true(eio->obj_list);
+		if (nfds <= 0)
 			goto done;
-		}
 
 		/*
 		 *  Setup eio handle signalling fd
