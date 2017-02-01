@@ -3243,11 +3243,7 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 	if (job_req_node_filter(job_ptr, avail_bitmap, true))
 		rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	if (job_ptr->details->exc_node_bitmap) {
-		bitstr_t *exc_node_mask = NULL;
-		exc_node_mask = bit_copy(job_ptr->details->exc_node_bitmap);
-		bit_not(exc_node_mask);
-		bit_and(avail_bitmap, exc_node_mask);
-		FREE_NULL_BITMAP(exc_node_mask);
+		bit_and_not(avail_bitmap, job_ptr->details->exc_node_bitmap);
 	}
 	if (job_ptr->details->req_node_bitmap) {
 		if (!bit_super_set(job_ptr->details->req_node_bitmap,
@@ -3629,8 +3625,7 @@ extern bitstr_t *node_features_reboot(struct job_record *job_ptr)
 		return NULL;
 
 	boot_node_bitmap = bit_copy(job_ptr->node_bitmap);
-	bit_not(active_bitmap);	/* Change to INactive_bitmap */
-	bit_and(boot_node_bitmap, active_bitmap);
+	bit_and_not(boot_node_bitmap, active_bitmap);
 	FREE_NULL_BITMAP(active_bitmap);
 	if (bit_set_count(boot_node_bitmap) == 0)
 		FREE_NULL_BITMAP(boot_node_bitmap);
@@ -3663,8 +3658,7 @@ extern bool node_features_reboot_test(struct job_record *job_ptr,
 		return false;
 
 	boot_node_bitmap = bit_copy(node_bitmap);
-	bit_not(active_bitmap);	/* Change to INactive_bitmap */
-	bit_and(boot_node_bitmap, active_bitmap);
+	bit_and_not(boot_node_bitmap, active_bitmap);
 	node_cnt = bit_set_count(boot_node_bitmap);
 	FREE_NULL_BITMAP(active_bitmap);
 	FREE_NULL_BITMAP(boot_node_bitmap);

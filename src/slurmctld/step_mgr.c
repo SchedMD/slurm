@@ -1562,9 +1562,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 							 usable_cpu_cnt);
 			if (node_tmp) {
 				bit_or(nodes_picked, node_tmp);
-				bit_not(node_tmp);
-				bit_and(nodes_idle, node_tmp);
-				bit_and(nodes_avail, node_tmp);
+				bit_and_not(nodes_idle, node_tmp);
+				bit_and_not(nodes_avail, node_tmp);
 				FREE_NULL_BITMAP(node_tmp);
 				nodes_picked_cnt = step_spec->min_nodes;
 				nodes_needed = 0;

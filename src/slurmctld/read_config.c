@@ -299,7 +299,6 @@ static int _reset_node_bitmaps(void *x, void *arg)
 
 static int _set_share_node_bitmap(void *x, void *arg)
 {
-	bitstr_t *tmp_bits;
 	struct job_record *job_ptr = (struct job_record *) x;
 
 	if (!IS_JOB_RUNNING(job_ptr) ||
@@ -308,10 +307,7 @@ static int _set_share_node_bitmap(void *x, void *arg)
 	    (job_ptr->details->share_res != 0))
 		return 0;
 
-	tmp_bits = bit_copy(job_ptr->node_bitmap);
-	bit_not(tmp_bits);
-	bit_and(share_node_bitmap, tmp_bits);
-	FREE_NULL_BITMAP(tmp_bits);
+	bit_and_not(share_node_bitmap, job_ptr->node_bitmap);
 
 	return 0;
 }
@@ -1375,12 +1371,10 @@ extern void update_feature_list(List feature_list, char *new_features,
 	/* Clear these nodes from the feature_list record,
 	 * then restore as needed */
 	feature_iter = list_iterator_create(feature_list);
-	bit_not(node_bitmap);
 	while ((feature_ptr = (node_feature_t *) list_next(feature_iter))) {
-		bit_and(feature_ptr->node_bitmap, node_bitmap);
+		bit_and_not(feature_ptr->node_bitmap, node_bitmap);
 	}
 	list_iterator_destroy(feature_iter);
-	bit_not(node_bitmap);
 
 	if (new_features) {
 		tmp_str = xstrdup(new_features);

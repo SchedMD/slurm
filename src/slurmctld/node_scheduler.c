@@ -3104,7 +3104,7 @@ static int _build_node_list(struct job_record *job_ptr,
 	ListIterator config_iterator;
 	int check_node_config;
 	struct job_details *detail_ptr = job_ptr->details;
-	bitstr_t *power_up_bitmap = NULL, *usable_node_mask = NULL;
+	bitstr_t *usable_node_mask = NULL;
 	bitstr_t *inactive_bitmap = NULL;
 	multi_core_data_t *mc_ptr = detail_ptr->mc_ptr;
 	bitstr_t *tmp_feature;
@@ -3375,11 +3375,7 @@ static int _build_node_list(struct job_record *job_ptr,
 			bit_copy(node_set_ptr[i].my_bitmap);
 		bit_and(node_set_ptr[node_set_inx].my_bitmap,
 			power_node_bitmap);
-		if (power_up_bitmap == NULL) {
-			power_up_bitmap = bit_copy(power_node_bitmap);
-			bit_not(power_up_bitmap);
-		}
-		bit_and(node_set_ptr[i].my_bitmap, power_up_bitmap);
+		bit_and_not(node_set_ptr[i].my_bitmap, power_node_bitmap);
 
 		node_set_inx++;
 		if (node_set_inx >= node_set_len) {
@@ -3387,7 +3383,6 @@ static int _build_node_list(struct job_record *job_ptr,
 			break;
 		}
 	}
-	FREE_NULL_BITMAP(power_up_bitmap);
 
 	*node_set_size = node_set_inx;
 	*node_set_pptr = node_set_ptr;
