@@ -337,7 +337,7 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 			free_core_count++;
 		} else if (!part_core_map) {
 			used_cores[i]++;
-		} else if (part_core_map && bit_test(part_core_map, c)) {
+		} else if (bit_test(part_core_map, c)) {
 			used_cores[i]++;
 			used_cpu_array[i]++;
 		}
