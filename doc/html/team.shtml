@@ -66,6 +66,7 @@ Lead Slurm developers are:
 <li>John Brunelle (Harvard University FAS Research Computing)</li>
 <li>Andrew E. Bruno (University at Buffalo)</li>
 <li>Jacek Budzowski (Academic Computer Centre CYFRONET AGH, Poland)</li>
+<li>Chansup Byun (Lincoln Laboratory)</li>
 <br>
 <li>Luis Cabellos (Instituto de Fisica de Cantabria, Spain)</li>
 <li>Thomas Cadeau (Bull)</li>
@@ -260,6 +261,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 18 November 2016</p>
+<p style="text-align:center;">Last modified 1 February 2017</p>
 
 <!--#include virtual="footer.txt"-->
