@@ -658,6 +658,7 @@ struct job_record {
 	uint32_t job_state;		/* state of the job */
 	uint16_t kill_on_node_fail;	/* 1 if job should be killed on
 					 * node failure */
+	time_t last_sched_eval;		/* last time job was evaluated for scheduling */
 	char *licenses;			/* licenses required by the job */
 	List license_list;		/* structure with license info */
 	acct_policy_limit_set_t limit_set; /* flags if indicate an

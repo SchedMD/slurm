@@ -5588,6 +5588,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpack_time(&job->suspend_time, buffer);
 		safe_unpack_time(&job->pre_sus_time, buffer);
 		safe_unpack_time(&job->resize_time, buffer);
+		safe_unpack_time(&job->last_sched_eval, buffer);
 		safe_unpack_time(&job->preempt_time, buffer);
 		safe_unpack32(&job->priority, buffer);
 		safe_unpackdouble(&job->billable_tres, buffer);
