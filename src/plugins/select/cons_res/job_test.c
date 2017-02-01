@@ -3334,6 +3334,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		}
 		goto alloc_job;
 	}
+	xfree(cpu_count);
 
 	if ((gang_mode == 0) && (job_node_req == NODE_CR_ONE_ROW)) {
 		/* This job CANNOT share CPUs regardless of priority,
@@ -3589,10 +3590,9 @@ alloc_job:
 		/* we were sent here to cleanup and exit */
 		FREE_NULL_BITMAP(avail_cores);
 		FREE_NULL_BITMAP(free_cores);
-		if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-			info("cons_res: exiting cr_job_test with no "
-			     "allocation");
-		}
+		xfree(cpu_count);
+		if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+			info("cons_res: exiting cr_job_test with no allocation");
 		return SLURM_ERROR;
 	}
 
