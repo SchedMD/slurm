@@ -298,14 +298,20 @@ _server_read(eio_obj_t *obj, List objs)
 
 		n = io_hdr_read_fd(obj->fd, &s->header);
 		if (n <= 0) { /* got eof or error on socket read */
-			if (n < 0) { /* Error */
-				if (getenv("SLURM_PTY_PORT") == NULL) {
-					error("%s: fd %d error reading header: %m",
-					      __func__, obj->fd);
-				}
-				if (s->cio->sls) {
-					step_launch_notify_io_failure(
-						s->cio->sls, s->node_id);
+			if (n < 0) {	/* Error */
+				if (obj->shutdown) {
+					verbose("%s: Dropped pending I/O for terminated task",
+						__func__);
+				} else {
+					if (getenv("SLURM_PTY_PORT") == NULL) {
+						error("%s: fd %d error reading header: %m",
+						      __func__, obj->fd);
+					}
+					if (s->cio->sls) {
+						step_launch_notify_io_failure(
+							s->cio->sls,
+							s->node_id);
+					}
 				}
 			}
 			close(obj->fd);

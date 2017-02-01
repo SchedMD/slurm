@@ -246,6 +246,28 @@ cset super_user_set 0
 
 ################################################################
 #
+# Proc: print_time
+#
+# Purpose:  Print the current data and time
+#
+################################################################
+proc print_time { } {
+	global bin_date
+
+	send_user "\n"
+	spawn $bin_date
+	expect {
+		eof {
+			wait
+		}
+	}
+	send_user "\n"
+
+	return
+}
+
+################################################################
+#
 # Proc: cancel_job
 #
 # Purpose:  Cancel the specified job
@@ -255,7 +277,6 @@ cset super_user_set 0
 # Input: job_id  -- The SLURM job id of a job we want to cancel.
 #
 ################################################################
-
 proc cancel_job { job_id } {
 	global scancel bin_sleep
 
