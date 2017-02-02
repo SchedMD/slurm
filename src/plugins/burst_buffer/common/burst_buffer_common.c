@@ -318,7 +318,7 @@ extern bb_user_t *bb_find_user_rec(uint32_t user_id, bb_state_t *state_ptr)
 		user_ptr = user_ptr->next;
 	}
 	user_ptr = xmalloc(sizeof(bb_user_t));
-	xassert((user_ptr->magic = BB_USER_MAGIC));	/* Sets value */
+	user_ptr->magic = BB_USER_MAGIC;
 	user_ptr->next = state_ptr->bb_uhash[inx];
 	/* user_ptr->size = 0;	initialized by xmalloc */
 	user_ptr->user_id = user_id;
@@ -970,7 +970,7 @@ extern bb_alloc_t *bb_alloc_name_rec(bb_state_t *state_ptr, char *name,
 	state_ptr->last_update_time = now;
 	bb_alloc = xmalloc(sizeof(bb_alloc_t));
 	i = user_id % BB_HASH_SIZE;
-	xassert((bb_alloc->magic = BB_ALLOC_MAGIC));	/* Sets value */
+	bb_alloc->magic = BB_ALLOC_MAGIC;
 	bb_alloc->next = state_ptr->bb_ahash[i];
 	state_ptr->bb_ahash[i] = bb_alloc;
 	bb_alloc->array_task_id = NO_VAL;
@@ -1002,7 +1002,7 @@ extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
 	bb_alloc->array_task_id = job_ptr->array_task_id;
 	bb_alloc->assoc_ptr = job_ptr->assoc_ptr;
 	bb_alloc->job_id = job_ptr->job_id;
-	xassert((bb_alloc->magic = BB_ALLOC_MAGIC));	/* Sets value */
+	bb_alloc->magic = BB_ALLOC_MAGIC;
 	i = job_ptr->user_id % BB_HASH_SIZE;
 	xstrfmtcat(bb_alloc->name, "%u", job_ptr->job_id);
 	bb_alloc->next = state_ptr->bb_ahash[i];
@@ -1265,7 +1265,7 @@ extern bb_job_t *bb_job_alloc(bb_state_t *state_ptr, uint32_t job_id)
 	bb_job_t *bb_job = xmalloc(sizeof(bb_job_t));
 
 	xassert(state_ptr);
-	xassert((bb_job->magic = BB_JOB_MAGIC));	/* Sets value */
+	bb_job->magic = BB_JOB_MAGIC;
 	bb_job->next = state_ptr->bb_jhash[inx];
 	bb_job->job_id = job_id;
 	state_ptr->bb_jhash[inx] = bb_job;
