@@ -380,7 +380,8 @@ int main(int argc, char **argv)
 			slurm_setup_remote_working_cluster(alloc);
 
 			/* set env for srun's to find the right cluster */
-			setenvf(NULL, "SLURM_WORKING_CLUSTER", "%s:%d:%d",
+			setenvf(NULL, "SLURM_WORKING_CLUSTER", "%s:%s:%d:%d",
+				working_cluster_rec->name,
 				working_cluster_rec->control_host,
 				working_cluster_rec->control_port,
 				working_cluster_rec->rpc_version);
