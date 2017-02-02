@@ -210,6 +210,7 @@ extern int   sched_interval;
 extern bool  slurmctld_init_db;
 extern int   slurmctld_primary;
 extern int   slurmctld_tres_cnt;
+extern slurmdb_cluster_rec_t *response_cluster_rec;
 
 /* Buffer size use to print the jobid2str()
  * jobid, taskid and state.
@@ -692,6 +693,8 @@ struct job_record {
 	char *nodes_completing;		/* nodes still in completing state
 					 * for this job, used to insure
 					 * epilog is not re-run for job */
+	char *origin_cluster;		/* cluster name that the job was
+					 * submitted from */
 	uint16_t other_port;		/* port for client communications */
 	uint32_t pack_leader;		/* job_id of pack_leader for job_pack
 	                                 * or 0 */
@@ -2455,5 +2458,21 @@ extern int purge_job_record(uint32_t job_id);
  * RET the job_desc_msg_t, NULL on error
  */
 extern job_desc_msg_t *copy_job_record_to_job_desc(struct job_record *job_ptr);
+
+
+/*
+ * Set the allocation response with the current cluster's information and the
+ * job's allocated node's addr's if the allocation is being filled by a cluster
+ * other than the cluster that submitted the job
+ *
+ * Note: make sure that the resp's working_cluster_rec is NULL'ed out before the
+ * resp is free'd since it points to global memory.
+ *
+ * IN resp - allocation response being sent back to client.
+ * IN job_ptr - allocated job
+ */
+extern void
+set_remote_working_response(resource_allocation_response_msg_t *resp,
+			    struct job_record *job_ptr);
 
 #endif /* !_HAVE_SLURMCTLD_H */

@@ -1245,6 +1245,8 @@ static int _dump_job_state(void *x, void *arg)
 	packstr(dump_job_ptr->clusters, buffer);
 	_dump_job_fed_details(dump_job_ptr->fed_details, buffer);
 
+	packstr(dump_job_ptr->origin_cluster, buffer);
+
 	return 0;
 }
 
@@ -1511,6 +1513,9 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 							buffer,
 							protocol_version)))
 			goto unpack_error;
+
+		safe_unpackstr_xmalloc(&job_ptr->origin_cluster, &name_len,
+				       buffer);
 
 	} else if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		safe_unpack32(&array_job_id, buffer);
@@ -7187,6 +7192,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_desc->spank_job_env = (char **) NULL; /* nothing left to free */
 	job_desc->spank_job_env_size = 0;         /* nothing left to free */
 	job_ptr->mcs_label = xstrdup(job_desc->mcs_label);
+	job_ptr->origin_cluster = xstrdup(job_desc->origin_cluster);
 
 	if (job_desc->wait_all_nodes == (uint16_t) NO_VAL)
 		job_ptr->wait_all_nodes = _default_wait_all_nodes(job_desc);
@@ -8212,6 +8218,7 @@ static void _list_delete_job(void *job_entry)
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->nodes_completing);
+	xfree(job_ptr->origin_cluster);
 	xfree(job_ptr->partition);
 	FREE_NULL_LIST(job_ptr->part_ptr_list);
 	xfree(job_ptr->priority_array);
@@ -15280,6 +15287,7 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->nice              = details->nice;
 	job_desc->num_tasks         = details->num_tasks;
 	job_desc->open_mode         = details->open_mode;
+	job_desc->origin_cluster    = xstrdup(job_ptr->origin_cluster);
 	job_desc->other_port        = job_ptr->other_port;
 	job_desc->power_flags       = job_ptr->power_flags;
 	job_desc->overcommit        = details->overcommit;
@@ -16034,4 +16042,51 @@ extern void set_job_fed_details(struct job_record *job_ptr,
 	job_ptr->fed_details->origin_str =
 		fed_mgr_get_cluster_name(
 				fed_mgr_get_cluster_id(job_ptr->job_id));
+}
+
+
+/*
+ * Set the allocation response with the current cluster's information and the
+ * job's allocated node's addr's if the allocation is being filled by a cluster
+ * other than the cluster that submitted the job
+ *
+ * Note: make sure that the resp's working_cluster_rec is NULL'ed out before the
+ * resp is free'd since it points to global memory.
+ *
+ * IN resp - allocation response being sent back to client.
+ * IN job_ptr - allocated job
+ */
+extern void
+set_remote_working_response(resource_allocation_response_msg_t *resp,
+			    struct job_record *job_ptr)
+{
+	xassert(resp);
+	xassert(job_ptr);
+
+	if (job_ptr->node_cnt &&
+	    (!(fed_mgr_is_origin_job(job_ptr)) ||
+	     xstrcmp(slurmctld_conf.cluster_name, job_ptr->origin_cluster))) {
+		if (job_ptr->fed_details) {
+			resp->working_cluster_rec = fed_mgr_cluster_rec;
+		} else {
+			if (!response_cluster_rec) {
+				response_cluster_rec =
+					xmalloc(sizeof(slurmdb_cluster_rec_t));
+				response_cluster_rec->name =
+					slurmctld_conf.cluster_name;
+				response_cluster_rec->control_host =
+					slurmctld_conf.control_addr;
+				response_cluster_rec->control_port =
+					slurmctld_conf.slurmctld_port;
+				response_cluster_rec->rpc_version =
+					SLURM_PROTOCOL_VERSION;
+			}
+			resp->working_cluster_rec = response_cluster_rec;
+		}
+
+		resp->node_addr = xmalloc(sizeof(slurm_addr_t) *
+					  job_ptr->node_cnt);
+		memcpy(resp->node_addr, job_ptr->node_addr,
+		       (sizeof(slurm_addr_t) * job_ptr->node_cnt));
+	}
 }

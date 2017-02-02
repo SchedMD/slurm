@@ -1428,6 +1428,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * for batch only */
 	uint8_t open_mode;	/* out/err open mode truncate or append,
 				 * see OPEN_MODE_* */
+	char *origin_cluster;	/* cluster name that initiated the job. */
 	uint16_t other_port;	/* port to send various notification msg to */
 	uint8_t overcommit;	/* over subscribe resources, for batch only */
 	uint32_t pack_leader;	/* job_id of pack_leader for job_pack or 0 */

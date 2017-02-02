@@ -315,6 +315,7 @@ int main(int argc, char **argv)
 		print_db_notok(opt.clusters, 0);
 		exit(error_exit);
 	}
+	desc.origin_cluster = xstrdup(slurmctld_conf.cluster_name);
 
 	callbacks.ping = _ping_handler;
 	callbacks.timeout = _timeout_handler;
@@ -380,7 +381,8 @@ int main(int argc, char **argv)
 			slurm_setup_remote_working_cluster(alloc);
 
 			/* set env for srun's to find the right cluster */
-			setenvf(NULL, "SLURM_WORKING_CLUSTER", "%s:%d:%d",
+			setenvf(NULL, "SLURM_WORKING_CLUSTER", "%s:%s:%d:%d",
+				working_cluster_rec->name,
 				working_cluster_rec->control_host,
 				working_cluster_rec->control_port,
 				working_cluster_rec->rpc_version);
@@ -444,8 +446,11 @@ int main(int argc, char **argv)
 	}
 	if (opt.network)
 		env_array_append_fmt(&env, "SLURM_NETWORK", "%s", opt.network);
-	cluster_name = slurm_get_cluster_name();
-	if (cluster_name) {
+
+	if (working_cluster_rec && working_cluster_rec->name) {
+		env_array_append_fmt(&env, "SLURM_CLUSTER_NAME", "%s",
+				     working_cluster_rec->name);
+	} else if ((cluster_name = slurm_get_cluster_name())) {
 		env_array_append_fmt(&env, "SLURM_CLUSTER_NAME", "%s",
 				     cluster_name);
 		xfree(cluster_name);

@@ -1231,6 +1231,8 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		if (job_ptr->resv_name)
 			alloc_msg.resv_name = xstrdup(job_ptr->resv_name);
 
+		set_remote_working_response(&alloc_msg, job_ptr);
+
 		/* This check really isn't needed, but just doing it
 		 * to be more complete.
 		 */
@@ -1255,6 +1257,9 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		if (!alloc_msg.node_cnt) /* didn't get an allocation */
 			queue_job_scheduler();
 
+		/* NULL out working_cluster_rec since it's pointing to global
+		 * memory */
+		alloc_msg.working_cluster_rec = NULL;
 		slurm_free_resource_allocation_response_msg_members(&alloc_msg);
 	} else {	/* allocate error */
 		if (do_unlock) {
@@ -2927,19 +2932,7 @@ static void _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg)
 		job_info_resp_msg.node_cnt       = job_ptr->node_cnt;
 		job_info_resp_msg.node_list      = xstrdup(job_ptr->nodes);
 
-		if (!(fed_mgr_is_origin_job(job_ptr))) {
-			/* msg.working_cluster_rec will be NULL'ed out before
-			 * being free'd below since it's point to the actual
-			 * fed_mgr_cluster_rec. */
-			job_info_resp_msg.working_cluster_rec =
-				fed_mgr_cluster_rec;
-
-			job_info_resp_msg.node_addr =
-				xmalloc(sizeof(slurm_addr_t) *
-					job_ptr->node_cnt);
-			memcpy(job_info_resp_msg.node_addr, job_ptr->node_addr,
-			       (sizeof(slurm_addr_t) * job_ptr->node_cnt));
-		}
+		set_remote_working_response(&job_info_resp_msg, job_ptr);
 
 		job_info_resp_msg.partition      = xstrdup(job_ptr->partition);
 		if (job_ptr->qos_ptr) {
@@ -2971,7 +2964,7 @@ static void _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg)
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 
 		/* NULL out msg->working_cluster_rec because it's pointing to
-		 * the actual memory */
+		 * the global memory */
 		job_info_resp_msg.working_cluster_rec = NULL;
 		slurm_free_resource_allocation_response_msg_members(
 			&job_info_resp_msg);

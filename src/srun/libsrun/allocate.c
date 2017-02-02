@@ -451,6 +451,8 @@ allocate_nodes(bool handle_signals)
 	if (!j)
 		return NULL;
 
+	j->origin_cluster = xstrdup(slurmctld_conf.cluster_name);
+
 	/* Do not re-use existing job id when submitting new job
 	 * from within a running job */
 	if ((j->job_id != NO_VAL) && !opt.jobid_set) {
