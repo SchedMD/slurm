@@ -1349,6 +1349,8 @@ static void _set_options(int argc, char **argv)
 			   to do anything */
 			break;
 		case 'B':
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			opt.extra_set = verify_socket_core_thread_count(
 				optarg,
 				&opt.sockets_per_node,
@@ -1364,6 +1366,8 @@ static void _set_options(int argc, char **argv)
 			opt.threads_per_core_set = true;
 			break;
 		case 'c':
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			opt.cpus_set = true;
 			opt.cpus_per_task = parse_int("cpus-per-task",
 						      optarg, true);
@@ -1377,6 +1381,8 @@ static void _set_options(int argc, char **argv)
 			opt.dependency = xstrdup(optarg);
 			break;
 		case 'D':
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			xfree(opt.cwd);
 			if (is_full_path(optarg))
 				opt.cwd = xstrdup(optarg);
@@ -1384,6 +1390,8 @@ static void _set_options(int argc, char **argv)
 				opt.cwd = make_full_path(optarg);
 			break;
 		case 'e':
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			xfree(opt.efname);
 			if (xstrcasecmp(optarg, "none") == 0)
 				opt.efname = xstrdup("/dev/null");
@@ -1391,6 +1399,8 @@ static void _set_options(int argc, char **argv)
 				opt.efname = xstrdup(optarg);
 			break;
 		case 'F':
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			xfree(opt.nodelist);
 			tmp = slurm_read_hostfile(optarg, 0);
 			if (tmp != NULL) {
@@ -1403,6 +1413,8 @@ static void _set_options(int argc, char **argv)
 			}
 			break;
 		case 'g':
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			if (verify_geometry(optarg, opt.geometry))
 				exit(error_exit);
 			break;
@@ -1413,6 +1425,8 @@ static void _set_options(int argc, char **argv)
 			opt.hold = true;
 			break;
 		case 'i':
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			xfree(opt.ifname);
 			if (xstrcasecmp(optarg, "none") == 0)
 				opt.ifname = xstrdup("/dev/null");
@@ -1434,6 +1448,8 @@ static void _set_options(int argc, char **argv)
 			opt.licenses = xstrdup(optarg);
 			break;
 		case 'm':
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			opt.distribution = verify_dist_type(optarg,
 							    &opt.plane_size);
 			if (opt.distribution == SLURM_DIST_UNKNOWN) {
@@ -1452,6 +1468,8 @@ static void _set_options(int argc, char **argv)
 				parse_int("number of tasks", optarg, true);
 			break;
 		case 'N':
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			opt.nodes_set =
 				verify_node_count(optarg,
 						  &opt.min_nodes,
@@ -1463,6 +1481,8 @@ static void _set_options(int argc, char **argv)
 			}
 			break;
 		case 'o':
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			xfree(opt.ofname);
 			if (xstrcasecmp(optarg, "none") == 0)
 				opt.ofname = xstrdup("/dev/null");
@@ -1510,6 +1530,8 @@ static void _set_options(int argc, char **argv)
 			opt.wait = true;
 			break;
 		case 'x':
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			xfree(opt.exc_nodes);
 			opt.exc_nodes = xstrdup(optarg);
 			if (!_valid_node_list(&opt.exc_nodes))
@@ -1519,6 +1541,8 @@ static void _set_options(int argc, char **argv)
 			opt.contiguous = true;
 			break;
 		case LONG_OPT_DEADLINE:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			opt.deadline = parse_time(optarg, 0);
 			if (errno == ESLURM_INVALID_TIME_VALUE) {
 				error("Invalid deadline specification %s",
@@ -1527,6 +1551,8 @@ static void _set_options(int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_DELAY_BOOT:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			i = time_str2secs(optarg);
 			if (i == NO_VAL) {
 				error("Invalid delay-boot specification %s",
@@ -1548,11 +1574,15 @@ static void _set_options(int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_MEM_BIND:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			if (slurm_verify_mem_bind(optarg, &opt.mem_bind,
 						  &opt.mem_bind_type))
 				exit(error_exit);
 			break;
 		case LONG_OPT_MINCPU:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			opt.mincpus = parse_int("mincpus", optarg, true);
 			if (opt.mincpus < 0) {
 				error("invalid mincpus constraint %s", optarg);
@@ -1560,6 +1590,8 @@ static void _set_options(int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_MINCORES:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			verbose("mincores option has been deprecated, use "
 				"cores-per-socket");
 			opt.cores_per_socket = parse_int("mincores",
@@ -1571,6 +1603,8 @@ static void _set_options(int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_MINSOCKETS:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			verbose("minsockets option has been deprecated, use "
 				"sockets-per-node");
 			opt.sockets_per_node = parse_int("minsockets",
@@ -1582,6 +1616,8 @@ static void _set_options(int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_MINTHREADS:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			verbose("minthreads option has been deprecated, use "
 				"threads-per-core");
 			opt.threads_per_core = parse_int("minthreads",
@@ -1594,6 +1630,8 @@ static void _set_options(int argc, char **argv)
 			opt.threads_per_core_set = true;
 			break;
 		case LONG_OPT_MEM:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			opt.realmem = (int64_t) str_to_mbytes2(optarg);
 			if (opt.realmem < 0) {
 				error("invalid memory constraint %s",
@@ -1602,6 +1640,8 @@ static void _set_options(int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_MEM_PER_CPU:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			opt.mem_per_cpu = (int64_t) str_to_mbytes2(optarg);
 			if (opt.mem_per_cpu < 0) {
 				error("invalid memory constraint %s",
@@ -1610,6 +1650,8 @@ static void _set_options(int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_TMP:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			opt.tmpdisk = str_to_mbytes2(optarg);
 			if (opt.tmpdisk < 0) {
 				error("invalid tmp value %s", optarg);
@@ -1617,33 +1659,43 @@ static void _set_options(int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_JOBID:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			opt.jobid = parse_int("jobid", optarg, true);
 			opt.jobid_set = true;
 			break;
 		case LONG_OPT_UID:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			if (opt.euid != (uid_t) -1) {
 				error("duplicate --uid option");
 				exit(error_exit);
 			}
-			if (uid_from_string (optarg, &opt.euid) < 0) {
+			if (uid_from_string(optarg, &opt.euid) < 0) {
 				error("--uid=\"%s\" invalid", optarg);
 				exit(error_exit);
 			}
 			break;
 		case LONG_OPT_GID:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			if (opt.egid != (gid_t) -1) {
 				error("duplicate --gid option");
 				exit(error_exit);
 			}
-			if (gid_from_string (optarg, &opt.egid) < 0) {
+			if (gid_from_string(optarg, &opt.egid) < 0) {
 				error("--gid=\"%s\" invalid", optarg);
 				exit(error_exit);
 			}
 			break;
 		case LONG_OPT_CONNTYPE:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			verify_conn_type(optarg, opt.conn_type);
 			break;
 		case LONG_OPT_BEGIN:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			opt.begin = parse_time(optarg, 0);
 			if (opt.begin == 0) {
 				error("Invalid time specification %s", optarg);
@@ -1651,6 +1703,8 @@ static void _set_options(int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_MAIL_TYPE:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			opt.mail_type |= parse_mail_type(optarg);
 			if (opt.mail_type == (uint16_t)INFINITE) {
 				error("--mail-type=%s invalid", optarg);
@@ -1658,15 +1712,20 @@ static void _set_options(int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_MAIL_USER:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			xfree(opt.mail_user);
 			opt.mail_user = xstrdup(optarg);
 			break;
-		case LONG_OPT_MCS_LABEL: {
+		case LONG_OPT_MCS_LABEL:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			xfree(opt.mcs_label);
 			opt.mcs_label = xstrdup(optarg);
 			break;
-		}
 		case LONG_OPT_BURST_BUFFER_FILE:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			xfree(opt.burst_buffer_file);
 			opt.burst_buffer_file = _read_file(optarg);
 			break;
@@ -1694,9 +1753,9 @@ static void _set_options(int argc, char **argv)
 			break;
 		}
 		case LONG_OPT_PRIORITY:
-			if (!optarg) { /* CLANG Fix */
-				;
-			} else if (strcasecmp(optarg, "TOP") == 0) {
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
+			if (strcasecmp(optarg, "TOP") == 0) {
 				opt.priority = NO_VAL - 1;
 			} else {
 				priority = strtoll(optarg, NULL, 10);
@@ -1719,6 +1778,8 @@ static void _set_options(int argc, char **argv)
 			opt.requeue = 1;
 			break;
 		case LONG_OPT_PROFILE:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			opt.profile = acct_gather_profile_from_string(optarg);
 			break;
 		case LONG_OPT_COMMENT:
@@ -1730,6 +1791,8 @@ static void _set_options(int argc, char **argv)
 			opt.qos = xstrdup(optarg);
 			break;
 		case LONG_OPT_SOCKETSPERNODE:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			max_val = 0;
 			get_resource_arg_range( optarg, "sockets-per-node",
 						&opt.sockets_per_node,
@@ -1739,6 +1802,8 @@ static void _set_options(int argc, char **argv)
 				opt.sockets_per_node = NO_VAL;
 			break;
 		case LONG_OPT_CORESPERSOCKET:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			max_val = 0;
 			get_resource_arg_range( optarg, "cores-per-socket",
 						&opt.cores_per_socket,
@@ -1748,6 +1813,8 @@ static void _set_options(int argc, char **argv)
 				opt.cores_per_socket = NO_VAL;
 			break;
 		case LONG_OPT_THREADSPERCORE:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			max_val = 0;
 			get_resource_arg_range( optarg, "threads-per-core",
 						&opt.threads_per_core,
@@ -1758,6 +1825,8 @@ static void _set_options(int argc, char **argv)
 			opt.threads_per_core_set = true;
 			break;
 		case LONG_OPT_NTASKSPERNODE:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			opt.ntasks_per_node = parse_int("ntasks-per-node",
 							optarg, true);
 			if (opt.ntasks_per_node > 0)
@@ -1765,12 +1834,16 @@ static void _set_options(int argc, char **argv)
 					opt.ntasks_per_node);
 			break;
 		case LONG_OPT_NTASKSPERSOCKET:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			opt.ntasks_per_socket = parse_int("ntasks-per-socket",
 							  optarg, true);
 			setenvf(NULL, "SLURM_NTASKS_PER_SOCKET", "%d",
 				opt.ntasks_per_socket);
 			break;
 		case LONG_OPT_NTASKSPERCORE:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			opt.ntasks_per_core = parse_int("ntasks-per-core",
 							optarg, true);
 			setenvf(NULL, "SLURM_NTASKS_PER_CORE", "%d",
@@ -1778,6 +1851,8 @@ static void _set_options(int argc, char **argv)
 			opt.ntasks_per_core = true;
 			break;
 		case LONG_OPT_HINT:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			/* Keep after other options filled in */
 			if (verify_hint(optarg,
 					&opt.sockets_per_node,
@@ -1827,8 +1902,8 @@ static void _set_options(int argc, char **argv)
 				opt.get_user_env_time = 0;
 			break;
 		case LONG_OPT_OPEN_MODE:
-			if (!optarg) /* CLANG Fix */
-				break;
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			if ((optarg[0] == 'a') || (optarg[0] == 'A'))
 				opt.open_mode = OPEN_MODE_APPEND;
 			else if ((optarg[0] == 't') || (optarg[0] == 'T'))
@@ -1870,6 +1945,8 @@ static void _set_options(int argc, char **argv)
 			opt.ckpt_dir = xstrdup(optarg);
 			break;
 		case LONG_OPT_SIGNAL:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			if (get_signal_opts(optarg, &opt.warn_signal,
 					    &opt.warn_time, &opt.warn_flags)) {
 				error("Invalid signal specification: %s",
@@ -1882,6 +1959,8 @@ static void _set_options(int argc, char **argv)
 			opt.time_min_str = xstrdup(optarg);
 			break;
 		case LONG_OPT_GRES:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			if (!xstrcasecmp(optarg, "help") ||
 			    !xstrcasecmp(optarg, "list")) {
 				print_gres_help();
@@ -1891,6 +1970,8 @@ static void _set_options(int argc, char **argv)
 			opt.gres = xstrdup(optarg);
 			break;
 		case LONG_OPT_GRES_FLAGS:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			if (!xstrcasecmp(optarg, "enforce-binding")) {
 				opt.job_flags |= GRES_ENFORCE_BIND;
 			} else {
@@ -1900,8 +1981,8 @@ static void _set_options(int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_WAIT_ALL_NODES:
-			if (!optarg) /* CLANG Fix */
-				break;
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			if ((optarg[0] < '0') || (optarg[0] > '9')) {
 				error("Invalid --wait-all-nodes argument: %s",
 				      optarg);
@@ -1910,6 +1991,8 @@ static void _set_options(int argc, char **argv)
 			opt.wait_all_nodes = strtol(optarg, NULL, 10);
 			break;
 		case LONG_OPT_EXPORT:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			xfree(opt.export_env);
 			opt.export_env = xstrdup(optarg);
 			if (!xstrcasecmp(opt.export_env, "ALL"))
@@ -1922,14 +2005,16 @@ static void _set_options(int argc, char **argv)
 			opt.export_file = xstrdup(optarg);
 			break;
 		case LONG_OPT_CPU_FREQ:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			if (cpu_freq_verify_cmdline(optarg, &opt.cpu_freq_min,
 						    &opt.cpu_freq_max, &opt.cpu_freq_gov))
 				error("Invalid --cpu-freq argument: %s. "
 				      "Ignored", optarg);
 			break;
 		case LONG_OPT_REQ_SWITCH:
-			if (!optarg) /* CLANG Fix */
-				break;
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			pos_delimit = strstr(optarg,"@");
 			if (pos_delimit != NULL) {
 				pos_delimit[0] = '\0';
@@ -1948,14 +2033,20 @@ static void _set_options(int argc, char **argv)
 			opt.parsable = true;
 			break;
 		case LONG_OPT_POWER:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			opt.power_flags = power_flags_id(optarg);
 			break;
 		case LONG_OPT_THREAD_SPEC:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			opt.core_spec = parse_int("thread_spec",
 						  optarg, false) |
 				CORE_SPEC_THREAD;
 			break;
 		case LONG_OPT_KILL_INV_DEP:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			if (xstrcasecmp(optarg, "yes") == 0)
 				opt.job_flags |= KILL_INV_DEP;
 			if (xstrcasecmp(optarg, "no") == 0)
