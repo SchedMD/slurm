@@ -824,6 +824,8 @@ void set_options(const int argc, char **argv)
 			opt.dependency = xstrdup(optarg);
 			break;
 		case 'D':
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			xfree(opt.cwd);
 			if (is_full_path(optarg))
 				opt.cwd = xstrdup(optarg);
@@ -898,6 +900,8 @@ void set_options(const int argc, char **argv)
 				parse_int("number of tasks", optarg, true);
 			break;
 		case 'N':
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			opt.nodes_set =
 				verify_node_count(optarg,
 						  &opt.min_nodes,
@@ -972,6 +976,8 @@ void set_options(const int argc, char **argv)
 			opt.contiguous = true;
 			break;
 		case LONG_OPT_DEADLINE:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			opt.deadline = parse_time(optarg, 0);
 			if (errno == ESLURM_INVALID_TIME_VALUE) {
 				error("Invalid deadline specification %s",
@@ -1040,6 +1046,8 @@ void set_options(const int argc, char **argv)
 			opt.threads_per_core_set = true;
 			break;
 		case LONG_OPT_MEM:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			opt.realmem = (int64_t) str_to_mbytes2(optarg);
 			if (opt.realmem < 0) {
 				error("invalid memory constraint %s",
@@ -1048,6 +1056,8 @@ void set_options(const int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_MEM_PER_CPU:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			opt.mem_per_cpu = (int64_t) str_to_mbytes2(optarg);
 			if (opt.mem_per_cpu < 0) {
 				error("invalid memory constraint %s",
@@ -1056,6 +1066,8 @@ void set_options(const int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_TMP:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			opt.tmpdisk = str_to_mbytes2(optarg);
 			if (opt.tmpdisk < 0) {
 				error("invalid tmp value %s", optarg);
@@ -1086,6 +1098,8 @@ void set_options(const int argc, char **argv)
 			verify_conn_type(optarg, opt.conn_type);
 			break;
 		case LONG_OPT_BEGIN:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			opt.begin = parse_time(optarg, 0);
 			if (opt.begin == 0) {
 				error("Invalid time specification %s",
@@ -1171,6 +1185,8 @@ void set_options(const int argc, char **argv)
 			opt.qos = xstrdup(optarg);
 			break;
 		case LONG_OPT_SOCKETSPERNODE:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			max_val = 0;
 			get_resource_arg_range( optarg, "sockets-per-node",
 						&opt.sockets_per_node,
@@ -1180,6 +1196,8 @@ void set_options(const int argc, char **argv)
 				opt.sockets_per_node = NO_VAL;
 			break;
 		case LONG_OPT_CORESPERSOCKET:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			max_val = 0;
 			get_resource_arg_range( optarg, "cores-per-socket",
 						&opt.cores_per_socket,
@@ -1189,6 +1207,8 @@ void set_options(const int argc, char **argv)
 				opt.cores_per_socket = NO_VAL;
 			break;
 		case LONG_OPT_THREADSPERCORE:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			max_val = 0;
 			get_resource_arg_range( optarg, "threads-per-core",
 						&opt.threads_per_core,
@@ -1342,10 +1362,14 @@ void set_options(const int argc, char **argv)
 			opt.req_switch = parse_int("switches", optarg, true);
 			break;
 		case LONG_OPT_BURST_BUFFER_SPEC:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			xfree(opt.burst_buffer);
 			opt.burst_buffer = xstrdup(optarg);
 			break;
 		case LONG_OPT_BURST_BUFFER_FILE:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
 			xfree(opt.burst_buffer);
 			opt.burst_buffer = _read_file(optarg);
 			break;
