@@ -8781,6 +8781,8 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		safe_unpack64(&msg->step_mem_lim, buffer);
 
 		safe_unpack32(&msg->nnodes, buffer);
+		if (msg->nnodes >= NO_VAL32)
+			goto unpack_error;
 		safe_unpack16(&msg->cpus_per_task, buffer);
 		safe_unpack32(&msg->task_dist, buffer);
 		safe_unpack16(&msg->node_cpus, buffer);
