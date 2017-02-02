@@ -2927,19 +2927,7 @@ static void _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg)
 		job_info_resp_msg.node_cnt       = job_ptr->node_cnt;
 		job_info_resp_msg.node_list      = xstrdup(job_ptr->nodes);
 
-		if (!(fed_mgr_is_origin_job(job_ptr))) {
-			/* msg.working_cluster_rec will be NULL'ed out before
-			 * being free'd below since it's point to the actual
-			 * fed_mgr_cluster_rec. */
-			job_info_resp_msg.working_cluster_rec =
-				fed_mgr_cluster_rec;
-
-			job_info_resp_msg.node_addr =
-				xmalloc(sizeof(slurm_addr_t) *
-					job_ptr->node_cnt);
-			memcpy(job_info_resp_msg.node_addr, job_ptr->node_addr,
-			       (sizeof(slurm_addr_t) * job_ptr->node_cnt));
-		}
+		set_remote_working_response(&job_info_resp_msg, job_ptr);
 
 		job_info_resp_msg.partition      = xstrdup(job_ptr->partition);
 		if (job_ptr->qos_ptr) {

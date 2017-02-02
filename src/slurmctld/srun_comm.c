@@ -129,16 +129,7 @@ extern void srun_allocate (uint32_t job_id)
 				job_ptr->select_jobinfo);
 		msg_arg->error_code	= SLURM_SUCCESS;
 
-		if (!(fed_mgr_is_origin_job(job_ptr))) {
-			/* msg->working_cluster_rec is NULL'ed out before being
-			 * free'd in _purge_agent_args() */
-			msg_arg->working_cluster_rec = fed_mgr_cluster_rec;
-			msg_arg->node_addr =
-				xmalloc(sizeof(slurm_addr_t) *
-					job_ptr->node_cnt);
-			memcpy(msg_arg->node_addr, job_ptr->node_addr,
-			       (sizeof(slurm_addr_t) * job_ptr->node_cnt));
-		}
+		set_remote_working_response(msg_arg, job_ptr);
 
 		_srun_agent_launch(addr, job_ptr->alloc_node,
 				   RESPONSE_RESOURCE_ALLOCATION, msg_arg,

@@ -2456,4 +2456,20 @@ extern int purge_job_record(uint32_t job_id);
  */
 extern job_desc_msg_t *copy_job_record_to_job_desc(struct job_record *job_ptr);
 
+
+/*
+ * Set the allocation response with the current cluster's information and the
+ * job's allocated node's addr's if the allocation is being filled by a cluster
+ * other than the cluster that submitted the job
+ *
+ * Note: make sure that the resp's working_cluster_rec is NULL'ed out before the
+ * resp is free'd since it points to global memory.
+ *
+ * IN resp - allocation response being sent back to client.
+ * IN job_ptr - allocated job
+ */
+extern void
+set_remote_working_response(resource_allocation_response_msg_t *resp,
+			    struct job_record *job_ptr);
+
 #endif /* !_HAVE_SLURMCTLD_H */
