@@ -1884,9 +1884,6 @@ extern char *slurmdb_res_type_str(slurmdb_resource_type_t type)
 	case SLURMDB_RESOURCE_LICENSE:
 		return "License";
 		break;
-	default:
-		return "Unknown";
-		break;
 	}
 	return "Unknown";
 }
@@ -1905,9 +1902,6 @@ extern char *slurmdb_admin_level_str(slurmdb_admin_level_t level)
 		break;
 	case SLURMDB_ADMIN_SUPER_USER:
 		return "Administrator";
-		break;
-	default:
-		return "Unknown";
 		break;
 	}
 	return "Unknown";
