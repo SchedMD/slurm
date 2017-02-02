@@ -210,6 +210,7 @@ extern int   sched_interval;
 extern bool  slurmctld_init_db;
 extern int   slurmctld_primary;
 extern int   slurmctld_tres_cnt;
+extern slurmdb_cluster_rec_t *response_cluster_rec;
 
 /* Buffer size use to print the jobid2str()
  * jobid, taskid and state.
@@ -692,6 +693,8 @@ struct job_record {
 	char *nodes_completing;		/* nodes still in completing state
 					 * for this job, used to insure
 					 * epilog is not re-run for job */
+	char *origin_cluster;		/* cluster name that the job was
+					 * submitted from */
 	uint16_t other_port;		/* port for client communications */
 	uint32_t pack_leader;		/* job_id of pack_leader for job_pack
 	                                 * or 0 */

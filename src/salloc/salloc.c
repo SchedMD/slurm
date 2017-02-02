@@ -315,6 +315,7 @@ int main(int argc, char **argv)
 		print_db_notok(opt.clusters, 0);
 		exit(error_exit);
 	}
+	desc.origin_cluster = xstrdup(slurmctld_conf.cluster_name);
 
 	callbacks.ping = _ping_handler;
 	callbacks.timeout = _timeout_handler;

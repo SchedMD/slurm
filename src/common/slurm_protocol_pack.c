@@ -7540,6 +7540,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		packstr(job_desc_ptr->qos, buffer);
 		packstr(job_desc_ptr->mcs_label, buffer);
 
+		packstr(job_desc_ptr->origin_cluster, buffer);
 		pack8(job_desc_ptr->open_mode,   buffer);
 		pack8(job_desc_ptr->overcommit,  buffer);
 		packstr(job_desc_ptr->acctg_freq, buffer);
@@ -8076,6 +8077,8 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&job_desc_ptr->mcs_label, &uint32_tmp,
 					buffer);
 
+		safe_unpackstr_xmalloc(&job_desc_ptr->origin_cluster,
+				       &uint32_tmp, buffer);
 		safe_unpack8(&job_desc_ptr->open_mode,   buffer);
 		safe_unpack8(&job_desc_ptr->overcommit,  buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->acctg_freq,

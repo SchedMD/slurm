@@ -767,6 +767,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		xfree(msg->mloaderimage);
 		xfree(msg->name);
 		xfree(msg->network);
+		xfree(msg->origin_cluster);
 		xfree(msg->qos);
 		xfree(msg->std_out);
 		xfree(msg->partition);
