@@ -240,5 +240,9 @@ slurm_setup_remote_working_cluster(resource_allocation_response_msg_t *msg)
 		       working_cluster_rec->control_port,
 		       working_cluster_rec->control_host);
 
+	if (setenvf(NULL, "SLURM_CLUSTER_NAME", "%s",
+		    working_cluster_rec->name) < 0)
+		error("unable to set SLURM_CLUSTER_NAME in environment");
+
 	add_remote_nodes_to_conf_tbls(msg->node_list, msg->node_addr);
 }

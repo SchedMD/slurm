@@ -445,8 +445,11 @@ int main(int argc, char **argv)
 	}
 	if (opt.network)
 		env_array_append_fmt(&env, "SLURM_NETWORK", "%s", opt.network);
-	cluster_name = slurm_get_cluster_name();
-	if (cluster_name) {
+
+	if (working_cluster_rec && working_cluster_rec->name) {
+		env_array_append_fmt(&env, "SLURM_CLUSTER_NAME", "%s",
+				     working_cluster_rec->name);
+	} else if ((cluster_name = slurm_get_cluster_name())) {
 		env_array_append_fmt(&env, "SLURM_CLUSTER_NAME", "%s",
 				     cluster_name);
 		xfree(cluster_name);
