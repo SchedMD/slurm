@@ -9144,6 +9144,8 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 				goto unpack_error;
 		}
 		safe_unpack16(&msg->num_resp_port, buffer);
+		if (msg->num_resp_port >= NO_VAL16)
+			goto unpack_error;
 		if (msg->num_resp_port > 0) {
 			msg->resp_port = xmalloc(sizeof(uint16_t) *
 						 msg->num_resp_port);
@@ -9169,6 +9171,8 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 			safe_unpackstr_xmalloc(&msg->ifname, &uint32_tmp,
 					       buffer);
 			safe_unpack16(&msg->num_io_port, buffer);
+			if (msg->num_io_port >= NO_VAL16)
+				goto unpack_error;
 			if (msg->num_io_port > 0) {
 				msg->io_port = xmalloc(sizeof(uint16_t) *
 						       msg->num_io_port);
@@ -9204,10 +9208,10 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		safe_unpack32(&msg->cpu_freq_gov, buffer);
 		safe_unpackstr_xmalloc(&msg->ckpt_dir, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg->restart_dir, &uint32_tmp, buffer);
-		if (!(cluster_flags & CLUSTER_FLAG_BG)) {
-			select_g_select_jobinfo_unpack(&msg->select_jobinfo,
-						       buffer,
-						       protocol_version);
+		if (!(cluster_flags & CLUSTER_FLAG_BG) &&
+		    select_g_select_jobinfo_unpack(&msg->select_jobinfo,
+						   buffer, protocol_version)) {
+			goto unpack_error;
 		}
 		safe_unpackstr_array(&msg->pelog_env,
 				     &msg->pelog_env_size, buffer);
@@ -9231,6 +9235,8 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		msg->step_mem_lim = xlate_mem_old2new(tmp_mem);
 
 		safe_unpack32(&msg->nnodes, buffer);
+		if (msg->nnodes >= NO_VAL32)
+			goto unpack_error;
 		safe_unpack16(&msg->cpus_per_task, buffer);
 		safe_unpack32(&msg->task_dist, buffer);
 		safe_unpack16(&msg->node_cpus, buffer);
@@ -9251,6 +9257,8 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 				goto unpack_error;
 		}
 		safe_unpack16(&msg->num_resp_port, buffer);
+		if (msg->num_resp_port >= NO_VAL16)
+			goto unpack_error;
 		if (msg->num_resp_port > 0) {
 			msg->resp_port = xmalloc(sizeof(uint16_t) *
 						 msg->num_resp_port);
@@ -9280,6 +9288,8 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 			safe_unpack8(&buffered_stdio, buffer);
 			safe_unpack8(&labelio, buffer);
 			safe_unpack16(&msg->num_io_port, buffer);
+			if (msg->num_io_port >= NO_VAL16)
+				goto unpack_error;
 			if (msg->num_io_port > 0) {
 				msg->io_port = xmalloc(sizeof(uint16_t) *
 						       msg->num_io_port);
@@ -9316,10 +9326,10 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		safe_unpack32(&msg->cpu_freq_gov, buffer);
 		safe_unpackstr_xmalloc(&msg->ckpt_dir, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg->restart_dir, &uint32_tmp, buffer);
-		if (!(cluster_flags & CLUSTER_FLAG_BG)) {
-			select_g_select_jobinfo_unpack(&msg->select_jobinfo,
-						       buffer,
-						       protocol_version);
+		if (!(cluster_flags & CLUSTER_FLAG_BG) &&
+		    select_g_select_jobinfo_unpack(&msg->select_jobinfo,
+						   buffer, protocol_version)) {
+			goto unpack_error;
 		}
 		if (task_flags)
 			msg->flags |= LAUNCH_PARALLEL_DEBUG;
@@ -10383,6 +10393,8 @@ static int _unpack_burst_buffer_info_msg(
 
 	bb_msg_ptr = xmalloc(sizeof(burst_buffer_info_msg_t));
 	safe_unpack32(&bb_msg_ptr->record_count, buffer);
+	if (bb_msg_ptr->record_count >= NO_VAL32)
+		goto unpack_error;
 	bb_msg_ptr->burst_buffer_array = xmalloc(sizeof(burst_buffer_info_t) *
 						 bb_msg_ptr->record_count);
 	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
@@ -10405,6 +10417,8 @@ static int _unpack_burst_buffer_info_msg(
 					       &uint32_tmp, buffer);
 			safe_unpack64(&bb_info_ptr->granularity, buffer);
 			safe_unpack32(&bb_info_ptr->pool_cnt, buffer);
+			if (bb_info_ptr->pool_cnt >= NO_VAL32)
+				goto unpack_error;
 			bb_info_ptr->pool_ptr = xmalloc(bb_info_ptr->pool_cnt *
 						sizeof(burst_buffer_pool_t));
 			for (j = 0; j < bb_info_ptr->pool_cnt; j++) {
@@ -10441,6 +10455,8 @@ static int _unpack_burst_buffer_info_msg(
 			safe_unpack32(&bb_info_ptr->validate_timeout, buffer);
 
 			safe_unpack32(&bb_info_ptr->buffer_count, buffer);
+			if (bb_info_ptr->buffer_count >= NO_VAL32)
+				goto unpack_error;
 			bb_info_ptr->burst_buffer_resv_ptr =
 				xmalloc(sizeof(burst_buffer_resv_t) *
 					bb_info_ptr->buffer_count);
@@ -10470,6 +10486,8 @@ static int _unpack_burst_buffer_info_msg(
 			}
 
 			safe_unpack32(&bb_info_ptr->use_count, buffer);
+			if (bb_info_ptr->use_count >= NO_VAL32)
+				goto unpack_error;
 			bb_info_ptr->burst_buffer_use_ptr =
 				xmalloc(sizeof(burst_buffer_use_t) *
 					bb_info_ptr->use_count);
@@ -10500,6 +10518,8 @@ static int _unpack_burst_buffer_info_msg(
 					       &uint32_tmp, buffer);
 			safe_unpack64(&bb_info_ptr->granularity, buffer);
 			safe_unpack32(&bb_info_ptr->pool_cnt, buffer);
+			if (bb_info_ptr->pool_cnt >= NO_VAL32)
+				goto unpack_error;
 			bb_info_ptr->pool_ptr = xmalloc(bb_info_ptr->pool_cnt *
 						sizeof(burst_buffer_pool_t));
 			for (j = 0; j < bb_info_ptr->pool_cnt; j++) {
@@ -10535,6 +10555,8 @@ static int _unpack_burst_buffer_info_msg(
 			safe_unpack32(&bb_info_ptr->validate_timeout, buffer);
 
 			safe_unpack32(&bb_info_ptr->buffer_count, buffer);
+			if (bb_info_ptr->buffer_count >= NO_VAL32)
+				goto unpack_error;
 			bb_info_ptr->burst_buffer_resv_ptr =
 				xmalloc(sizeof(burst_buffer_resv_t) *
 					bb_info_ptr->buffer_count);
@@ -10564,6 +10586,8 @@ static int _unpack_burst_buffer_info_msg(
 			}
 
 			safe_unpack32(&bb_info_ptr->use_count, buffer);
+			if (bb_info_ptr->use_count >= NO_VAL32)
+				goto unpack_error;
 			bb_info_ptr->burst_buffer_use_ptr =
 				xmalloc(sizeof(burst_buffer_use_t) *
 					bb_info_ptr->use_count);
