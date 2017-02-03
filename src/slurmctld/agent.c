@@ -1228,13 +1228,9 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 	queued_req_ptr->agent_arg_ptr = agent_arg_ptr;
 	queued_req_ptr->last_attempt  = time(NULL);
 	slurm_mutex_lock(&retry_mutex);
-	if (retry_list == NULL) {
+	if (retry_list == NULL)
 		retry_list = list_create(_list_delete_retry);
-		if (retry_list == NULL)
-			fatal("list_create failed");
-	}
-	if (list_append(retry_list, (void *) queued_req_ptr) == 0)
-		fatal("list_append failed");
+	(void) list_append(retry_list, (void *) queued_req_ptr);
 	slurm_mutex_unlock(&retry_mutex);
 }
 
@@ -1443,7 +1439,7 @@ void agent_queue_request(agent_arg_t *agent_arg_ptr)
 	queued_request_t *queued_req_ptr = NULL;
 
 	if ((AGENT_THREAD_COUNT + 2) >= MAX_SERVER_THREADS)
-		fatal("AGENT_THREAD_COUNT value is too low relative to MAX_SERVER_THREADS");
+		fatal("AGENT_THREAD_COUNT value is too high relative to MAX_SERVER_THREADS");
 
 	if (message_timeout == (uint16_t) NO_VAL) {
 		message_timeout = MAX(slurm_get_msg_timeout(), 30);
@@ -1473,11 +1469,8 @@ void agent_queue_request(agent_arg_t *agent_arg_ptr)
 
 	slurm_mutex_lock(&retry_mutex);
 
-	if (retry_list == NULL) {
+	if (retry_list == NULL)
 		retry_list = list_create(_list_delete_retry);
-		if (retry_list == NULL)
-			fatal("list_create failed");
-	}
 	list_append(retry_list, (void *)queued_req_ptr);
 	slurm_mutex_unlock(&retry_mutex);
 
