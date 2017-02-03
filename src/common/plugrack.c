@@ -188,10 +188,6 @@ plugrack_t plugrack_create( void )
 	rack->major_type   = NULL;
 	rack->uid          = PLUGRACK_UID_NOBODY;
 	rack->entries      = list_create( plugrack_entry_destructor );
-	if ( rack->entries == NULL ) {
-		xfree( rack );
-		return NULL;
-	}
 	return rack;
 }
 

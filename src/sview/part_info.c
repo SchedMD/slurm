@@ -1874,10 +1874,6 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 		last_list = info_list;
 
 	info_list = list_create(_part_info_list_del);
-	if (!info_list) {
-		g_print("malloc error\n");
-		return NULL;
-	}
 
 	if (last_list)
 		last_list_itr = list_iterator_create(last_list);

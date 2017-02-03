@@ -508,10 +508,6 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 	}
 
 	block_list = list_create(_block_list_del);
-	if (!block_list) {
-		g_print("malloc error\n");
-		return NULL;
-	}
 
 	last_block_info_ptr = block_info_ptr;
 

@@ -1685,11 +1685,6 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 	}
 
 	exec_wait_list = list_create ((ListDelF) _exec_wait_info_destroy);
-	if (!exec_wait_list) {
-		error ("Unable to create exec_wait_list");
-		rc = SLURM_ERROR;
-		goto fail4;
-	}
 
 	/*
 	 * Fork all of the task processes.
