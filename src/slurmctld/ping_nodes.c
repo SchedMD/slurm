@@ -115,7 +115,7 @@ void ping_end (void)
 	if (ping_count > 0)
 		ping_count--;
 	else
-		fatal ("ping_count < 0");
+		error("%s: ping_count < 0", __func__);
 	ping_start = 0;
 	slurm_mutex_unlock(&lock_mutex);
 }
