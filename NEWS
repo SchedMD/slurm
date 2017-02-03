@@ -4,6 +4,8 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 16.05.10
 ===========================
  -- Record job state as PREEMPTED instead of TIMEOUT when GraceTime is reached.
+ -- task/cgroup - print warnings to stderr when --cpu_bind=verbose is enabled
+    and the requested processor affinity cannot be set.
 
 * Changes in Slurm 16.05.9
 ==========================

@@ -1576,13 +1576,20 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 	if (hwloc_compare_types(hwtype, HWLOC_OBJ_MACHINE) == 0) {
 		info("task/cgroup: task[%u] disabling affinity because of %s "
 		     "granularity",taskid, hwloc_obj_type_string(hwtype));
-
+		if (job->cpu_bind_type & CPU_BIND_VERBOSE)
+			fprintf(stderr,"task/cgroup: task[%u] disabling "
+				"affinity because of %s granularity\n",
+				taskid, hwloc_obj_type_string(hwtype));
 	} else if ((hwloc_compare_types(hwtype, HWLOC_OBJ_CORE) >= 0) &&
 		   (nobj < jnpus)) {
 		info("task/cgroup: task[%u] not enough %s objects (%d < %d), "
 		     "disabling affinity",
 		     taskid, hwloc_obj_type_string(hwtype), nobj, jnpus);
-
+		if (job->cpu_bind_type & CPU_BIND_VERBOSE)
+			fprintf(stderr, "task/cgroup: task[%u] not enough %s "
+				"objects (%d < %d), disabling affinity\n",
+				taskid, hwloc_obj_type_string(hwtype),
+				nobj, jnpus);
 	} else if (bind_type & bind_mode) {
 		/* Explicit binding mode specified by the user
 		 * Bind the taskid in accordance with the specified mode
