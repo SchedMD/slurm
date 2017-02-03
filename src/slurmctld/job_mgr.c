@@ -163,8 +163,7 @@ static int  _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 					 bitstr_t ** exc_bitmap,
 					 bitstr_t ** req_bitmap);
 static char *_copy_nodelist_no_dup(char *node_list);
-static struct job_record *_create_job_record(int *error_code,
-					     uint32_t num_jobs);
+static struct job_record *_create_job_record(uint32_t num_jobs);
 static void _del_batch_list_rec(void *x);
 static void _delete_job_desc_files(uint32_t job_id);
 static slurmdb_qos_rec_t *_determine_and_validate_qos(
@@ -437,7 +436,6 @@ static job_array_resp_msg_t *_resp_array_xlate(resp_array_struct_t *resp,
 /*
  * _create_job_record - create an empty job_record including job_details.
  *	load its values with defaults (zeros, nulls, and magic cookie)
- * OUT error_code - set to zero if no error, errno otherwise
  * IN num_jobs - number of jobs this record should represent
  *    = 0 - split out a job array record to its own job record
  *    = 1 - simple job OR job array with one task
@@ -445,7 +443,7 @@ static job_array_resp_msg_t *_resp_array_xlate(resp_array_struct_t *resp,
  * RET pointer to the record or NULL if error
  * NOTE: allocates memory that should be xfreed with _list_delete_job
  */
-static struct job_record *_create_job_record(int *error_code, uint32_t num_jobs)
+static struct job_record *_create_job_record(uint32_t num_jobs)
 {
 	struct job_record  *job_ptr;
 	struct job_details *detail_ptr;
@@ -456,7 +454,6 @@ static struct job_record *_create_job_record(int *error_code, uint32_t num_jobs)
 	}
 
 	job_count += num_jobs;
-	*error_code = 0;
 	last_job_update = time(NULL);
 
 	job_ptr    = (struct job_record *) xmalloc(sizeof(struct job_record));
@@ -1342,8 +1339,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 
 		job_ptr = find_job_record(job_id);
 		if (job_ptr == NULL) {
-			job_ptr = _create_job_record(&error_code, 1);
-			if (error_code) {
+			job_ptr = _create_job_record(1);
+			if (!job_ptr) {
 				error("Create job entry failed for job_id %u",
 				      job_id);
 				goto unpack_error;
@@ -1548,8 +1545,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 
 		job_ptr = find_job_record(job_id);
 		if (job_ptr == NULL) {
-			job_ptr = _create_job_record(&error_code, 1);
-			if (error_code) {
+			job_ptr = _create_job_record(1);
+			if (!job_ptr) {
 				error("Create job entry failed for job_id %u",
 				      job_id);
 				goto unpack_error;
@@ -1749,8 +1746,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 
 		job_ptr = find_job_record(job_id);
 		if (job_ptr == NULL) {
-			job_ptr = _create_job_record(&error_code, 1);
-			if (error_code) {
+			job_ptr = _create_job_record(1);
+			if (!job_ptr) {
 				error("Create job entry failed for job_id %u",
 				      job_id);
 				goto unpack_error;
@@ -2633,8 +2630,9 @@ static void _remove_job_hash(struct job_record *job_entry)
 		job_pptr = &job_ptr->job_next;
 	}
 	if (job_pptr == NULL) {
-		fatal("job hash error");
-		return; /* Fix CLANG false positive error */
+		error("%s: Could not find hash entry for job %u",
+		      __func__, job_entry->job_id);
+		return;
 	}
 	*job_pptr = job_entry->job_next;
 	job_entry->job_next = NULL;
@@ -3766,13 +3764,10 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 	uint64_t save_db_index = job_ptr->db_index;
 	priority_factors_object_t *save_prio_factors;
 	List save_step_list;
-	int error_code = SLURM_SUCCESS;
 	int i;
 
-	job_ptr_pend = _create_job_record(&error_code, 0);
-	if (!job_ptr_pend)     /* MaxJobCount checked when job array submitted */
-		fatal("%s: _create_job_record error", __func__);
-	if (error_code != SLURM_SUCCESS)
+	job_ptr_pend = _create_job_record(0);
+	if (!job_ptr_pend)
 		return NULL;
 
 	_remove_job_hash(job_ptr);
@@ -7116,9 +7111,9 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		}
 	}
 
-	job_ptr = _create_job_record(&error_code, 1);
-	if (error_code)
-		return error_code;
+	job_ptr = _create_job_record(1);
+	if (!job_ptr)
+		return SLURM_ERROR;
 
 	*job_rec_ptr = job_ptr;
 	job_ptr->partition = xstrdup(job_desc->partition);
