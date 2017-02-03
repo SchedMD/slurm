@@ -4410,8 +4410,6 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 				int nodes = bit_set_count(
 					step_ptr->step_node_bitmap);
 				step_ptr->exit_node_bitmap = bit_alloc(nodes);
-				if (!step_ptr->exit_node_bitmap)
-					fatal("bit_alloc: %m");
 			}
 			step_ptr->exit_code = req->exit_code;
 
