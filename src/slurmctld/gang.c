@@ -1156,6 +1156,7 @@ static void _scan_slurm_job_list(void)
 static void _spawn_timeslicer_thread(void)
 {
 	pthread_attr_t thread_attr_msg;
+	int retries = 0;
 
 	slurm_mutex_lock( &thread_flag_mutex );
 	if (thread_running) {
@@ -1166,10 +1167,13 @@ static void _spawn_timeslicer_thread(void)
 	}
 
 	slurm_attr_init(&thread_attr_msg);
-	if (pthread_create(&timeslicer_thread_id, &thread_attr_msg,
-			_timeslicer_thread, NULL))
-		fatal("pthread_create %m");
-
+	while (pthread_create(&timeslicer_thread_id, &thread_attr_msg,
+			      _timeslicer_thread, NULL)) {
+		error("pthread_create error %m");
+		if (++retries > 3)
+			fatal("Can't create pthread");
+		usleep(10000);	/* sleep and retry */
+	}
 	slurm_attr_destroy(&thread_attr_msg);
 	thread_running = true;
 	slurm_mutex_unlock(&thread_flag_mutex);
