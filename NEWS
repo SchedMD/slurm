@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 16.05.10
 ===========================
+ -- Record job state as PREEMPTED instead of TIMEOUT when GraceTime is reached.
 
 * Changes in Slurm 16.05.9
 ==========================
