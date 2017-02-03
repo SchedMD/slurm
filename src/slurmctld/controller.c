@@ -947,9 +947,9 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 
 	/* threads to process individual RPC's are detached */
 	slurm_attr_init(&thread_attr_rpc_req);
-	if (pthread_attr_setdetachstate
-	    (&thread_attr_rpc_req, PTHREAD_CREATE_DETACHED))
-		fatal("pthread_attr_setdetachstate %m");
+	if (pthread_attr_setdetachstate(&thread_attr_rpc_req,
+					PTHREAD_CREATE_DETACHED))
+		error("pthread_attr_setdetachstate %m");
 
 	/* set node_addr to bind to (NULL means any) */
 	if (slurmctld_conf.backup_controller && slurmctld_conf.backup_addr &&
