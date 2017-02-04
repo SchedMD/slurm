@@ -1,6 +1,5 @@
 /*****************************************************************************\
- *  tres_functions.c - functions dealing with TRES in the
- *                        accounting system.
+ *  tres_functions.c - functions dealing with TRES in the accounting system.
  *****************************************************************************
  *  Copyright (C) 2015 SchedMD LLC.
  *  Written by David Bigagli <david@schedmd.com>
@@ -67,12 +66,11 @@ static int _set_cond(int *start, int argc, char **argv,
 		if (!strncasecmp(argv[i], "Set", MAX(command_len, 3))) {
 			i--;
 			break;
-		} else if (!end &&
-			   !strncasecmp(argv[i], "WithDeleted",
-					 MAX(command_len, 5))) {
+		} else if (!end && !strncasecmp(argv[i], "WithDeleted",
+						MAX(command_len, 5))) {
 			tres_cond->with_deleted = 1;
 		} else if (!end && !strncasecmp(argv[i], "where",
-					       MAX(command_len, 5))) {
+						MAX(command_len, 5))) {
 			continue;
 		} else if (!end
 			  || !strncasecmp(argv[i], "Type",
@@ -127,13 +125,13 @@ static int _set_cond(int *start, int argc, char **argv,
  */
 int sacctmgr_list_tres(int argc, char **argv)
 {
-        List tres_list;
-        ListIterator itr;
+	List tres_list;
+	ListIterator itr;
 	ListIterator itr2;
 	List format_list = list_create(slurm_destroy_char);
 	List print_fields_list;
-        slurmdb_tres_cond_t *tres_cond = xmalloc(sizeof(slurmdb_tres_cond_t));
-        slurmdb_tres_rec_t *tres;
+	slurmdb_tres_cond_t *tres_cond = xmalloc(sizeof(slurmdb_tres_cond_t));
+	slurmdb_tres_rec_t *tres;
 	int field_count, i;
 	print_field_t *field;
 
@@ -176,14 +174,14 @@ int sacctmgr_list_tres(int argc, char **argv)
 	print_fields_list = sacctmgr_process_format_list(format_list);
 	FREE_NULL_LIST(format_list);
 
-        itr = list_iterator_create(tres_list);
+	itr = list_iterator_create(tres_list);
 	itr2 = list_iterator_create(print_fields_list);
 	print_fields_header(print_fields_list);
 	field_count = list_count(print_fields_list);
 
 	/* For each tres prints the data structure members
 	 */
-        while ((tres = list_next(itr))) {
+	while ((tres = list_next(itr))) {
 		while ((field = list_next(itr2))) {
 			switch (field->type) {
 				case PRINT_NAME:
@@ -205,11 +203,11 @@ int sacctmgr_list_tres(int argc, char **argv)
 		}
 		list_iterator_reset(itr2);
 		printf("\n");
-        }
+	}
 	list_iterator_destroy(itr);
 	list_iterator_destroy(itr2);
 	FREE_NULL_LIST(tres_list);
 	FREE_NULL_LIST(print_fields_list);
 
-        return 0;
+	return 0;
 }
