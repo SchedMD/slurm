@@ -3143,10 +3143,6 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 		info_list = list_create(NULL);
 		odd_info_list = list_create(_job_info_list_del);
 	}
-	if (!info_list || !odd_info_list) {
-		g_print("malloc error\n");
-		return NULL;
-	}
 	if (last_list)
 		last_list_itr = list_iterator_create(last_list);
 	for (i=0; i<job_info_ptr->record_count; i++) {
