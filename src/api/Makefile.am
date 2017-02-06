@@ -10,6 +10,10 @@ VERSION_SCRIPT = \
 	version.map
 OTHER_FLAGS = \
 	-Wl,--version-script=$(VERSION_SCRIPT)
+FULL_VERSION_SCRIPT = \
+	full_version.map
+FULL_OTHER_FLAGS = \
+	-Wl,--version-script=$(FULL_VERSION_SCRIPT)
 PMI_VERSION_SCRIPT = \
 	pmi_version.map
 PMI_OTHER_FLAGS = \
@@ -57,13 +61,13 @@ libpmi_current = 0
 libpmi_age     = 0
 libpmi_rev     = 0
 
-lib_LTLIBRARIES = libslurm.la libpmi.la
+lib_LTLIBRARIES = libslurm.la libslurmfull.la libpmi.la
 
 # BUILT_SOURCES tells automake that when "make" is called, these targets
 # need to be built before anything else.  For instance, this takes care
 # of libpmi.la's dependency on libslurm.la, as long as you use "make"
 # and NOT "make libpmi.la".
-BUILT_SOURCES = $(VERSION_SCRIPT) $(PMI_VERSION_SCRIPT) libslurm.la
+BUILT_SOURCES = $(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT) $(PMI_VERSION_SCRIPT) libslurm.la
 
 # Note that libslurmhelper is mostly the same as libslurm, except that
 # it exports ALL symbols used by the process, libcommon, libeio, etc.
@@ -142,6 +146,13 @@ libslurm_la_LDFLAGS        = \
         $(LIB_LDFLAGS) \
         -version-info $(current):$(rev):$(age) \
         $(OTHER_FLAGS)
+
+libslurmfull_la_SOURCES =
+libslurmfull_la_LIBADD = $(convenience_libs)
+libslurmfull_la_LDFLAGS        = \
+        $(LIB_LDFLAGS) \
+        -version-info $(current):$(rev):$(age) \
+        $(FULL_OTHER_FLAGS)
 #
 # The libpmi_la_LIBADD specification below causes libpmi.la to relink
 # when running "make install", but removing it prevents essential slurm
@@ -178,6 +189,11 @@ $(VERSION_SCRIPT) :
 	 echo "  local: *;"; \
 	 echo "};") > $(VERSION_SCRIPT)
 
+$(FULL_VERSION_SCRIPT) :
+	(echo "{ global: *;";   \
+	 echo "  local: *;"; \
+	 echo "};") > $(FULL_VERSION_SCRIPT)
+
 $(PMI_VERSION_SCRIPT) :
 	(echo "{ global:"; \
 	 echo "   PMI_*;"; \
@@ -185,7 +201,7 @@ $(PMI_VERSION_SCRIPT) :
 	 echo "};") > $(PMI_VERSION_SCRIPT)
 
 CLEANFILES = \
-	$(VERSION_SCRIPT) $(PMI_VERSION_SCRIPT)
+	$(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT) $(PMI_VERSION_SCRIPT)
 
 DISTCLEANFILES = \
-	$(VERSION_SCRIPT) $(PMI_VERSION_SCRIPT)
+	$(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT) $(PMI_VERSION_SCRIPT)
