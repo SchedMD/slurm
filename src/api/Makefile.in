@@ -191,6 +191,13 @@ libslurm_la_OBJECTS = $(am_libslurm_la_OBJECTS)
 libslurm_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(libslurm_la_LDFLAGS) $(LDFLAGS) -o $@
+libslurmfull_la_DEPENDENCIES = $(convenience_libs)
+am_libslurmfull_la_OBJECTS =
+libslurmfull_la_OBJECTS = $(am_libslurmfull_la_OBJECTS)
+libslurmfull_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(libslurmfull_la_LDFLAGS) $(LDFLAGS) \
+	-o $@
 am__DEPENDENCIES_1 = $(common_dir)/libcommon.la \
 	$(common_dir)/libspank.la $(common_dir)/libeio.la
 libslurmhelper_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
@@ -250,9 +257,11 @@ am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = $(libpmi_la_SOURCES) $(libslurm_la_SOURCES) \
-	$(libslurmhelper_la_SOURCES) $(libslurm_o_SOURCES)
+	$(libslurmfull_la_SOURCES) $(libslurmhelper_la_SOURCES) \
+	$(libslurm_o_SOURCES)
 DIST_SOURCES = $(libpmi_la_SOURCES) $(libslurm_la_SOURCES) \
-	$(libslurmhelper_la_SOURCES) $(libslurm_o_SOURCES)
+	$(libslurmfull_la_SOURCES) $(libslurmhelper_la_SOURCES) \
+	$(libslurm_o_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -376,6 +385,10 @@ LIBCURL_CPPFLAGS = @LIBCURL_CPPFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
+LIB_SLURM = @LIB_SLURM@
+LIB_SLURMDB = @LIB_SLURMDB@
+LIB_SLURMDB_BUILD = @LIB_SLURMDB_BUILD@
+LIB_SLURM_BUILD = @LIB_SLURM_BUILD@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
@@ -541,6 +554,12 @@ AM_CPPFLAGS = -I$(top_srcdir) $(BG_INCLUDES)
 @WITH_GNU_LD_TRUE@OTHER_FLAGS = \
 @WITH_GNU_LD_TRUE@	-Wl,--version-script=$(VERSION_SCRIPT)
 
+@WITH_GNU_LD_TRUE@FULL_VERSION_SCRIPT = \
+@WITH_GNU_LD_TRUE@	full_version.map
+
+@WITH_GNU_LD_TRUE@FULL_OTHER_FLAGS = \
+@WITH_GNU_LD_TRUE@	-Wl,--version-script=$(FULL_VERSION_SCRIPT)
+
 @WITH_GNU_LD_TRUE@PMI_VERSION_SCRIPT = \
 @WITH_GNU_LD_TRUE@	pmi_version.map
 
@@ -588,13 +607,13 @@ rev = $(SLURM_API_REVISION)
 libpmi_current = 0
 libpmi_age = 0
 libpmi_rev = 0
-lib_LTLIBRARIES = libslurm.la libpmi.la
+lib_LTLIBRARIES = libslurm.la libslurmfull.la libpmi.la
 
 # BUILT_SOURCES tells automake that when "make" is called, these targets
 # need to be built before anything else.  For instance, this takes care
 # of libpmi.la's dependency on libslurm.la, as long as you use "make"
 # and NOT "make libpmi.la".
-BUILT_SOURCES = $(VERSION_SCRIPT) $(PMI_VERSION_SCRIPT) libslurm.la
+BUILT_SOURCES = $(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT) $(PMI_VERSION_SCRIPT) libslurm.la
 
 # Note that libslurmhelper is mostly the same as libslurm, except that
 # it exports ALL symbols used by the process, libcommon, libeio, etc.
@@ -669,6 +688,13 @@ libslurm_la_LDFLAGS = \
         -version-info $(current):$(rev):$(age) \
         $(OTHER_FLAGS)
 
+libslurmfull_la_SOURCES = 
+libslurmfull_la_LIBADD = $(convenience_libs)
+libslurmfull_la_LDFLAGS = \
+        $(LIB_LDFLAGS) \
+        -version-info $(current):$(rev):$(age) \
+        $(FULL_OTHER_FLAGS)
+
 #
 # The libpmi_la_LIBADD specification below causes libpmi.la to relink
 # when running "make install", but removing it prevents essential slurm
@@ -689,10 +715,10 @@ libslurm_o_LDADD = $(top_builddir)/src/common/libeio.o	\
 	$(top_builddir)/src/common/libcommon.o
 
 CLEANFILES = \
-	$(VERSION_SCRIPT) $(PMI_VERSION_SCRIPT)
+	$(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT) $(PMI_VERSION_SCRIPT)
 
 DISTCLEANFILES = \
-	$(VERSION_SCRIPT) $(PMI_VERSION_SCRIPT)
+	$(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT) $(PMI_VERSION_SCRIPT)
 
 all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-am
@@ -780,6 +806,9 @@ libpmi.la: $(libpmi_la_OBJECTS) $(libpmi_la_DEPENDENCIES) $(EXTRA_libpmi_la_DEPE
 
 libslurm.la: $(libslurm_la_OBJECTS) $(libslurm_la_DEPENDENCIES) $(EXTRA_libslurm_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libslurm_la_LINK) -rpath $(libdir) $(libslurm_la_OBJECTS) $(libslurm_la_LIBADD) $(LIBS)
+
+libslurmfull.la: $(libslurmfull_la_OBJECTS) $(libslurmfull_la_DEPENDENCIES) $(EXTRA_libslurmfull_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(libslurmfull_la_LINK) -rpath $(libdir) $(libslurmfull_la_OBJECTS) $(libslurmfull_la_LIBADD) $(LIBS)
 
 libslurmhelper.la: $(libslurmhelper_la_OBJECTS) $(libslurmhelper_la_DEPENDENCIES) $(EXTRA_libslurmhelper_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libslurmhelper_la_LINK)  $(libslurmhelper_la_OBJECTS) $(libslurmhelper_la_LIBADD) $(LIBS)
@@ -1093,6 +1122,11 @@ $(VERSION_SCRIPT) :
 	 echo "   plugin_context_*;"; \
 	 echo "  local: *;"; \
 	 echo "};") > $(VERSION_SCRIPT)
+
+$(FULL_VERSION_SCRIPT) :
+	(echo "{ global: *;";   \
+	 echo "  local: *;"; \
+	 echo "};") > $(FULL_VERSION_SCRIPT)
 
 $(PMI_VERSION_SCRIPT) :
 	(echo "{ global:"; \

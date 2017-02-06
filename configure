@@ -793,6 +793,10 @@ WITH_JSON_PARSER_FALSE
 WITH_JSON_PARSER_TRUE
 JSON_LDFLAGS
 JSON_CPPFLAGS
+LIB_SLURMDB_BUILD
+LIB_SLURM_BUILD
+LIB_SLURMDB
+LIB_SLURM
 PAM_DIR
 HAVE_PAM_FALSE
 HAVE_PAM_TRUE
@@ -989,6 +993,7 @@ enable_libtool_lock
 with_cpusetdir
 enable_pam
 with_pam_dir
+with_shared_libslurm
 enable_iso8601
 enable_load_env_no_login
 with_json
@@ -1746,6 +1751,9 @@ Optional Packages:
   --with-cpusetdir=PATH   specify path to cpuset directory default is
                           /dev/cpuset
   --with-pam_dir=PATH     Specify path to PAM module installation
+  --with-shared-libslurm  use the shared libslurm lib instead of statically
+                          linking to libslurm.o - can dramatically reduce the
+                          footprint of Slurm.
   --with-json=PATH        Specify path to json-c installation
   --with-dimensions=N     set system dimension count for generic computer
                           system
@@ -18371,6 +18379,48 @@ fi
 cat >>confdefs.h <<_ACEOF
 #define PAM_DIR "$pam_dir"
 _ACEOF
+
+
+
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking Link to libslurm.so instead of libslurm.o" >&5
+$as_echo_n "checking Link to libslurm.so instead of libslurm.o... " >&6; }
+
+# Check whether --with-shared-libslurm was given.
+if test "${with_shared_libslurm+set}" = set; then :
+  withval=$with_shared_libslurm; x_ac_shared_libslurm=yes
+else
+  x_ac_shared_libslurm=no
+fi
+
+
+  if test "$x_ac_shared_libslurm" = no; then
+    LIB_SLURM_BUILD='$(top_builddir)/src/api/libslurm.o'
+    LIB_SLURMDB_BUILD='$(top_builddir)/src/db_api/libslurmdb.o'
+    LIB_SLURM=$LIB_SLURM_BUILD
+    LIB_SLURMDB=$LIB_SLURMDB_BUILD
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: static" >&5
+$as_echo "static" >&6; };
+  else
+    # The *_BUILD variables are here to make sure these are made before
+    # compiling the bin
+    LIB_SLURM_BUILD='$(top_builddir)/src/api/full_version.map $(top_builddir)/src/api/libslurmfull.la'
+    LIB_SLURMDB_BUILD='$(top_builddir)/src/db_api/version.map $(top_builddir)/src/db_api/libslurmdb.la'
+    # You will notice " or ' each does something different when resolving
+    # variables.  Some need to be resolved now ($libdir) and others
+    # ($(top_builddir)) need to be resolved when dealing with the Makefile.am's
+    LIB_SLURM="-Wl,--rpath=$libdir -L$libdir"
+    LIB_SLURM+=' -L$(top_builddir)/src/api/.libs -lslurmfull'
+
+    LIB_SLURMDB="-Wl,--rpath=$libdir -L$libdir"
+    LIB_SLURMDB+=' -L$(top_builddir)/src/api/.libs -L$(top_builddir)/src/db_api/.libs -lslurmdb -lslurmfull'
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: shared" >&5
+$as_echo "shared" >&6; };
+  fi
+
+
+
 
 
 

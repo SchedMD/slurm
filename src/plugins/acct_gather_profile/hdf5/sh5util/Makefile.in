@@ -153,9 +153,6 @@ am__objects_1 = sh5util.$(OBJEXT)
 am__EXTRA_sh5util_SOURCES_DIST = sh5util.c sh5util.h
 sh5util_OBJECTS = $(am_sh5util_OBJECTS)
 am__DEPENDENCIES_1 =
-@BUILD_HDF5_TRUE@sh5util_DEPENDENCIES =  \
-@BUILD_HDF5_TRUE@	$(top_builddir)/src/api/libslurm.o \
-@BUILD_HDF5_TRUE@	$(am__DEPENDENCIES_1) ../libhdf5_api.la
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -322,6 +319,10 @@ LIBCURL_CPPFLAGS = @LIBCURL_CPPFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
+LIB_SLURM = @LIB_SLURM@
+LIB_SLURMDB = @LIB_SLURMDB@
+LIB_SLURMDB_BUILD = @LIB_SLURMDB_BUILD@
+LIB_SLURM_BUILD = @LIB_SLURM_BUILD@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
@@ -486,9 +487,10 @@ AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS = -I$(top_srcdir) -I../ $(HDF5_CPPFLAGS)
 SHDF5_SOURCES = sh5util.c sh5util.h
 @BUILD_HDF5_TRUE@sh5util_SOURCES = $(SHDF5_SOURCES)
-@BUILD_HDF5_TRUE@sh5util_LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS) \
+@BUILD_HDF5_TRUE@sh5util_LDADD = $(LIB_SLURM) $(DL_LIBS) \
 @BUILD_HDF5_TRUE@	../libhdf5_api.la
 
+@BUILD_HDF5_TRUE@sh5util_DEPENDENCIES = $(LIB_SLURM_BUILD) ../libhdf5_api.la
 @BUILD_HDF5_TRUE@sh5util_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
 @BUILD_HDF5_TRUE@	$(HDF5_LDFLAGS) $(HDF5_LIBS)
 

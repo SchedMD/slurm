@@ -152,8 +152,6 @@ am_sacct_OBJECTS = options.$(OBJEXT) print.$(OBJEXT) process.$(OBJEXT) \
 	sacct.$(OBJEXT)
 sacct_OBJECTS = $(am_sacct_OBJECTS)
 am__DEPENDENCIES_1 =
-sacct_DEPENDENCIES = $(top_builddir)/src/db_api/libslurmdb.o \
-	$(am__DEPENDENCIES_1)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -320,6 +318,10 @@ LIBCURL_CPPFLAGS = @LIBCURL_CPPFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
+LIB_SLURM = @LIB_SLURM@
+LIB_SLURMDB = @LIB_SLURMDB@
+LIB_SLURMDB_BUILD = @LIB_SLURMDB_BUILD@
+LIB_SLURM_BUILD = @LIB_SLURM_BUILD@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
@@ -480,7 +482,8 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 AM_CPPFLAGS = -I$(top_srcdir)
-sacct_LDADD = $(top_builddir)/src/db_api/libslurmdb.o $(DL_LIBS)
+sacct_LDADD = $(LIB_SLURMDB) $(DL_LIBS)
+sacct_DEPENDENCIES = $(LIB_SLURM_BUILD) $(LIB_SLURMDB_BUILD)
 sacct_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 noinst_HEADERS = sacct.c
 sacct_SOURCES = \
@@ -825,7 +828,7 @@ uninstall-am: uninstall-binPROGRAMS
 
 
 force:
-$(sacct_LDADD) : force
+$(sacct_DEPENDENCIES) : force
 	 @cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

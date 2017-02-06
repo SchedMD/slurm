@@ -152,11 +152,6 @@ am__objects_1 = slurmd.$(OBJEXT) req.$(OBJEXT) get_mach_stat.$(OBJEXT) \
 am_slurmd_OBJECTS = $(am__objects_1)
 slurmd_OBJECTS = $(am_slurmd_OBJECTS)
 am__DEPENDENCIES_1 =
-slurmd_DEPENDENCIES = $(top_builddir)/src/common/libdaemonize.la \
-	$(top_builddir)/src/bcast/libfile_bcast.la \
-	../common/libslurmd_common.o $(am__DEPENDENCIES_1) \
-	$(top_builddir)/src/api/libslurm.o $(am__DEPENDENCIES_1) \
-	../common/libslurmd_reverse_tree_math.la
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -322,6 +317,10 @@ LIBCURL_CPPFLAGS = @LIBCURL_CPPFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
+LIB_SLURM = @LIB_SLURM@
+LIB_SLURMDB = @LIB_SLURMDB@
+LIB_SLURMDB_BUILD = @LIB_SLURMDB_BUILD@
+LIB_SLURM_BUILD = @LIB_SLURM_BUILD@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
@@ -483,13 +482,11 @@ AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS = -DLIBSLURM_SO=\"$(libdir)/libslurm.so\" \
 	-I$(top_srcdir) $(HWLOC_CPPFLAGS)
 
-slurmd_LDADD = \
-	$(top_builddir)/src/common/libdaemonize.la \
+depend_libs = $(top_builddir)/src/common/libdaemonize.la \
 	$(top_builddir)/src/bcast/libfile_bcast.la \
-	../common/libslurmd_common.o $(HWLOC_LIBS) \
-	$(top_builddir)/src/api/libslurm.o $(DL_LIBS)  \
-	../common/libslurmd_reverse_tree_math.la
+	../common/libslurmd_common.o ../common/libslurmd_reverse_tree_math.la
 
+slurmd_LDADD = $(depend_libs) $(LIB_SLURM) $(HWLOC_LIBS) $(DL_LIBS)
 slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(HWLOC_LDFLAGS) $(NUMA_LIBS)
 SLURMD_SOURCES = \
 	slurmd.c slurmd.h \
@@ -499,6 +496,7 @@ SLURMD_SOURCES = \
 	slurmd_plugstack.c slurmd_plugstack.h
 
 slurmd_SOURCES = $(SLURMD_SOURCES)
+slurmd_DEPENDENCIES = $(depend_libs) $(LIB_SLURM_BUILD)
 all: all-am
 
 .SUFFIXES:
@@ -835,7 +833,7 @@ uninstall-am: uninstall-sbinPROGRAMS
 
 
 force:
-$(slurmd_LDADD) : force
+$(slurmd_DEPENDENCIES) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

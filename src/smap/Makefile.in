@@ -169,10 +169,6 @@ am__EXTRA_smap_SOURCES_DIST = smap.h smap.c job_functions.c \
 	reservation_functions.c opts.c
 smap_OBJECTS = $(am_smap_OBJECTS)
 am__DEPENDENCIES_1 =
-@BUILD_SMAP_TRUE@smap_DEPENDENCIES =  \
-@BUILD_SMAP_TRUE@	$(top_builddir)/src/api/libslurm.o \
-@BUILD_SMAP_TRUE@	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-@BUILD_SMAP_TRUE@	$(am__append_1)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -340,6 +336,10 @@ LIBCURL_CPPFLAGS = @LIBCURL_CPPFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
+LIB_SLURM = @LIB_SLURM@
+LIB_SLURMDB = @LIB_SLURMDB@
+LIB_SLURMDB_BUILD = @LIB_SLURMDB_BUILD@
+LIB_SLURM_BUILD = @LIB_SLURM_BUILD@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
@@ -504,8 +504,9 @@ AM_CPPFLAGS = -I$(top_srcdir) $(BG_INCLUDES)
 @BUILD_SMAP_TRUE@	partition_functions.c grid_functions.c \
 @BUILD_SMAP_TRUE@	reservation_functions.c opts.c \
 @BUILD_SMAP_TRUE@	$(am__append_2)
-@BUILD_SMAP_TRUE@smap_LDADD = $(top_builddir)/src/api/libslurm.o \
-@BUILD_SMAP_TRUE@	$(DL_LIBS) $(NCURSES) $(am__append_1)
+@BUILD_SMAP_TRUE@smap_LDADD = $(LIB_SLURM) $(DL_LIBS) $(NCURSES) \
+@BUILD_SMAP_TRUE@	$(am__append_1)
+@BUILD_SMAP_TRUE@smap_DEPENDENCIES = $(LIB_SLURM_BUILD)
 @BLUEGENE_LOADED_TRUE@@BUILD_SMAP_TRUE@bg_dir = $(top_builddir)/src/plugins/select/bluegene
 @BUILD_SMAP_TRUE@smap_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 @BUILD_SMAP_FALSE@EXTRA_smap_SOURCES = smap.h smap.c \
