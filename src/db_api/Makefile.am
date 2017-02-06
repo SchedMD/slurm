@@ -94,7 +94,6 @@ $(libslurmdb_o_LDADD) $(libslurmdb_la_LIBADD) : force
 
 $(VERSION_SCRIPT) :
 	(echo "{ global:";   \
-	 echo "   slurm_*;"; \
 	 echo "   slurmdb_*;"; \
 	 echo "   working_cluster_rec;"; \
 	 echo "  local: *;"; \
