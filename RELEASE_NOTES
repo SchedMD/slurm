@@ -43,6 +43,10 @@ HIGHLIGHTS
  -- Add the configure option --with-shared-libslurm which will link to
     libslurm.so instead of libslurm.o thus reducing the footprint of all the
     binaries.
+ -- In switch plugin, added plugin_id symbol to plugins and wrapped
+    switch_jobinfo_t with dynamic_plugin_data_t in interface calls in
+    order to pass switch information between clusters with different switch
+    types.
 
 RPMBUILD CHANGES
 ================

@@ -155,7 +155,7 @@ typedef struct {
 	uint32_t cpu_freq_min; /* Minimum cpu frequency  */
 	uint32_t cpu_freq_max; /* Maximum cpu frequency  */
 	uint32_t cpu_freq_gov; /* cpu frequency governor */
-	switch_jobinfo_t *switch_job; /* switch-specific job information     */
+	dynamic_plugin_data_t *switch_job; /* switch-specific job information     */
 	uid_t         uid;     /* user id for job                           */
 	char          *user_name;
 	gid_t         gid;     /* group ID for job                          */

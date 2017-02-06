@@ -162,8 +162,8 @@ int srun(int ac, char **av)
 	if (slurm_select_init(1) != SLURM_SUCCESS )
 		fatal( "failed to initialize node selection plugin" );
 
-	if (switch_init() != SLURM_SUCCESS )
-		fatal("failed to initialize switch plugin");
+	if (switch_init(0) != SLURM_SUCCESS )
+		fatal("failed to initialize switch plugins");
 
 	_setup_env_working_cluster();
 

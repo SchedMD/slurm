@@ -96,6 +96,7 @@ uint64_t debug_flags = 0;
 const char plugin_name[] = "switch CRAY plugin";
 const char plugin_type[] = "switch/cray";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
+const uint32_t plugin_id      = SWITCH_PLUGIN_CRAY;
 
 /*
  * init() is called when the plugin is loaded, before any other functions

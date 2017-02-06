@@ -549,6 +549,14 @@ enum select_plugin_type {
 	SELECT_PLUGIN_CRAY_CONS_RES = 108  /* Cons Res on a Native Cray */
 };
 
+/* switch plugin (id) in use by cluster */
+enum switch_plugin_type {
+	SWITCH_PLUGIN_NONE         = 100, /* NONE */
+	SWITCH_PLUGIN_GENERIC      = 101, /* Genereic */
+	SWITCH_PLUGIN_CRAY         = 102, /* NRT */
+	SWITCH_PLUGIN_NRT          = 103, /* Cray */
+};
+
 enum select_jobdata_type {
 	SELECT_JOBDATA_GEOMETRY,/* data-> uint16_t geometry[SYSTEM_DIMENSIONS] */
 	SELECT_JOBDATA_ROTATE,	/* data-> uint16_t rotate */
@@ -3396,7 +3404,7 @@ extern int slurm_step_ctx_get(slurm_step_ctx_t *ctx, int ctx_key, ...);
  * OUT data - the requested data type
  * RET SLURM_SUCCESS or SLURM_ERROR (with slurm_errno set)
  */
-extern int slurm_jobinfo_ctx_get(switch_jobinfo_t *jobinfo,
+extern int slurm_jobinfo_ctx_get(dynamic_plugin_data_t *jobinfo,
 				 int data_type,
 				 void *data);
 

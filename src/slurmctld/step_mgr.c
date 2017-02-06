@@ -3801,7 +3801,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	char *resv_ports = NULL, *name = NULL, *network = NULL;
 	char *bit_fmt = NULL, *gres = NULL;
 	char *tres_alloc_str = NULL, *tres_fmt_alloc_str = NULL;
-	switch_jobinfo_t *switch_tmp = NULL;
+	dynamic_plugin_data_t *switch_tmp = NULL;
 	check_jobinfo_t check_tmp = NULL;
 	slurm_step_layout_t *step_layout = NULL;
 	List gres_list = NULL;

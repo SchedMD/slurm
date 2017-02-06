@@ -65,7 +65,7 @@ Get credential of the created job step. $cred will be an opaque object blessed t
 
 =item * $rc = $ctx->get(SLURM_STEP_CTX_SWITCH_JOB, $switch_info);
 
-Get switch plugin specific info of the step. $switch_info will be an opaque object blessed to "Slurm::switch_jobinfo_t".
+Get switch plugin specific info of the step. $switch_info will be an opaque object blessed to "Slurm::dynamic_plugin_data_t".
 
 =item * $rc = $ctx->get(SLURM_STEP_CTX_NUM_HOSTS, $num);
 

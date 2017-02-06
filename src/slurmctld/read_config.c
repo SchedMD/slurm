@@ -980,7 +980,7 @@ int read_slurm_conf(int recover, bool reconfig)
 		/* gs_init() must immediately follow slurm_sched_init() */
 		fatal("Failed to initialize gang scheduler");
 	}
-	if (switch_init() != SLURM_SUCCESS)
+	if (switch_init(1) != SLURM_SUCCESS)
 		fatal("Failed to initialize switch plugin");
 
 	if (default_part_loc == NULL)

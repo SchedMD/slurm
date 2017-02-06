@@ -1127,7 +1127,7 @@ job_manager(stepd_step_rec_t *job)
 	 * (i.e. due to a Slurm upgrade) after the process starts.
 	 */
 	if ((core_spec_g_init() != SLURM_SUCCESS)		||
-	    (switch_init() != SLURM_SUCCESS)			||
+	    (switch_init(1) != SLURM_SUCCESS)			||
 	    (slurmd_task_init() != SLURM_SUCCESS)		||
 	    (slurm_proctrack_init() != SLURM_SUCCESS)		||
 	    (checkpoint_init(ckpt_type) != SLURM_SUCCESS)	||

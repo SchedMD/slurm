@@ -70,6 +70,7 @@
 const char plugin_name[]        = "switch NONE plugin";
 const char plugin_type[]        = "switch/none";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
+const uint32_t plugin_id	= SWITCH_PLUGIN_NONE;
 
 /*
  * init() is called when the plugin is loaded, before any other functions

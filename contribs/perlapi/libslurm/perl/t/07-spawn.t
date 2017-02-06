@@ -112,7 +112,7 @@ SKIP: {
     foreach my $key (SLURM_STEP_CTX_SWITCH_JOB) {
 	undef $data;
 	$rc = $ctx->get($key, $data);
-	ok($rc == SLURM_SUCCESS && (!defined($data) || ref($data) eq "Slurm::switch_jobinfo_t"), "step ctx get SWITCH_JOB")
+	ok($rc == SLURM_SUCCESS && (!defined($data) || ref($data) eq "Slurm::dynamic_plugin_data_t"), "step ctx get SWITCH_JOB")
 	    or diag("step_ctx_get: SWITCH_JOB, $rc, $data, " . $slurm->strerror());
     }
 }

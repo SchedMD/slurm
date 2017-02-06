@@ -124,6 +124,7 @@ static slurm_errtab_t slurm_errtab[] = {
 const char plugin_name[]        = "switch NRT plugin";
 const char plugin_type[]        = "switch/nrt";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
+const uint32_t plugin_id	= SWITCH_PLUGIN_NRT;
 
 uint64_t debug_flags = 0;
 
@@ -853,7 +854,7 @@ extern void switch_p_job_suspend_info_get(switch_jobinfo_t *jobinfo,
 {
 	DEF_TIMERS;
 
-	if ( switch_init() < 0 )
+	if ( switch_init(0) < 0 )
 		return;
 
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
@@ -872,7 +873,7 @@ extern void switch_p_job_suspend_info_get(switch_jobinfo_t *jobinfo,
 extern void switch_p_job_suspend_info_pack(void *suspend_info, Buf buffer,
 					   uint16_t protocol_version)
 {
-	if ( switch_init() < 0 )
+	if ( switch_init(0) < 0 )
 		return;
 
 	nrt_suspend_job_info_pack(suspend_info, buffer, protocol_version);
@@ -882,7 +883,7 @@ extern void switch_p_job_suspend_info_pack(void *suspend_info, Buf buffer,
 extern int switch_p_job_suspend_info_unpack(void **suspend_info, Buf buffer,
 					    uint16_t protocol_version)
 {
-	if ( switch_init() < 0 )
+	if ( switch_init(0) < 0 )
 		return SLURM_ERROR;
 
 	return nrt_suspend_job_info_unpack(suspend_info, buffer,
@@ -891,7 +892,7 @@ extern int switch_p_job_suspend_info_unpack(void **suspend_info, Buf buffer,
 
 extern void switch_p_job_suspend_info_free(void *suspend_info)
 {
-	if ( switch_init() < 0 )
+	if ( switch_init(0) < 0 )
 		return;
 
 	nrt_suspend_job_info_free(suspend_info);

@@ -756,7 +756,7 @@ slurm_step_ctx_get(slurm_step_ctx_t *ctx, int ctx_key, INOUT ...)
 		job_step_create_response_msg_t *resp_msg;
 #endif
 		slurm_cred_t *cred;
-		switch_jobinfo_t *switch_info;
+		dynamic_plugin_data_t *switch_info;
 		char *tmp_str;
 		int i, tmp_int, *tmp_int_ptr;
 	CODE:
@@ -859,7 +859,7 @@ slurm_step_ctx_get(slurm_step_ctx_t *ctx, int ctx_key, INOUT ...)
 			}
 			RETVAL = slurm_step_ctx_get(ctx, ctx_key, &switch_info);
 			if (RETVAL == SLURM_SUCCESS && switch_info) {
-				sv_setref_pv(ST(2), "Slurm::switch_jobinfo_t", (void*)switch_info);
+				sv_setref_pv(ST(2), "Slurm::dynamic_plugin_data_t", (void*)switch_info);
 			} else if (RETVAL == SLURM_SUCCESS) {
 				/* the returned switch_info is NULL */
 				sv_setsv(ST(2), &PL_sv_undef);
