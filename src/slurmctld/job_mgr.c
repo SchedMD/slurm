@@ -7626,9 +7626,9 @@ void job_time_limit(void)
 				last_job_update = now;
 				info("%s: Preemption GraceTime reached JobId=%u",
 				     __func__, job_ptr->job_id);
-				_job_timed_out(job_ptr);
 				job_ptr->job_state = JOB_PREEMPTED |
 						     JOB_COMPLETING;
+				_job_timed_out(job_ptr);
 				xfree(job_ptr->state_desc);
 			}
 			continue;
@@ -7957,7 +7957,8 @@ static void _job_timed_out(struct job_record *job_ptr)
 		time_t now      = time(NULL);
 		job_ptr->end_time           = now;
 		job_ptr->time_last_active   = now;
-		job_ptr->job_state          = JOB_TIMEOUT | JOB_COMPLETING;
+		if (!job_ptr->preempt_time)
+			job_ptr->job_state = JOB_TIMEOUT | JOB_COMPLETING;
 		build_cg_bitmap(job_ptr);
 		job_ptr->exit_code = MAX(job_ptr->exit_code, 1);
 		job_completion_logger(job_ptr, false);
