@@ -40,6 +40,9 @@ NOTE: If you are upgrading with any jobs from 14.03 or earlier
 
 HIGHLIGHTS
 ==========
+ -- Add the configure option --with-shared-libslurm which will link to
+    libslurm.so instead of libslurm.o thus reducing the footprint of all the
+    binaries.
 
 RPMBUILD CHANGES
 ================

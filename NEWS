@@ -5,6 +5,9 @@ documents those changes that are of interest to users and administrators.
 ==============================
  -- Interpet all format options in output/error file to log prolog errors. Prior
     logic only supported "%j" (job ID) option.
+ -- Add the configure option --with-shared-libslurm which will link to
+    libslurm.so instead of libslurm.o thus reducing the footprint of all the
+    binaries.
 
 * Changes in Slurm 17.02.0rc2
 ==============================

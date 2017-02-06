@@ -145,6 +145,10 @@ dnl Check for PAM module support
 X_AC_PAM
 
 dnl
+dnl Check to see how we link to libslurm
+X_AC_LIBSLURM
+
+dnl
 dnl Check for ISO compliance
 X_AC_ISO
 
