@@ -27,15 +27,11 @@ scontrol_SOURCES =	\
 	update_step.c   \
 	update_powercap.c
 
-convenience_libs = $(top_builddir)/src/api/libslurm.o $(DL_LIBS) -lm
-
-
-scontrol_LDADD = \
-	$(convenience_libs) \
-	$(READLINE_LIBS)
+scontrol_LDADD = $(LIB_SLURM) $(DL_LIBS) -lm $(READLINE_LIBS)
+scontrol_DEPENDENCIES = $(LIB_SLURM_BUILD)
 
 scontrol_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
 force:
-$(convenience_libs) : force
+$(scontrol_DEPENDENCIES) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`

@@ -7,11 +7,13 @@ sbin_PROGRAMS = slurmstepd
 
 AM_CPPFLAGS = -I$(top_srcdir)
 
-slurmstepd_LDADD = 				   \
+depend_libs = 				   \
 	$(top_builddir)/src/common/libdaemonize.la \
-	../common/libslurmd_common.o $(HWLOC_LDFLAGS) $(HWLOC_LIBS) \
-	$(top_builddir)/src/api/libslurm.o $(DL_LIBS) \
-	$(PAM_LIBS) $(UTIL_LIBS)
+	../common/libslurmd_common.o
+
+slurmstepd_LDADD = $(depend_libs) $(LIB_SLURM) \
+	$(HWLOC_LDFLAGS) $(HWLOC_LIBS) \
+	$(DL_LIBS) $(PAM_LIBS) $(UTIL_LIBS)
 
 slurmstepd_SOURCES = 	        	\
 	slurmstepd.c slurmstepd.h	\
@@ -28,6 +30,8 @@ slurmstepd_SOURCES = 	        	\
 
 slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
+slurmstepd_DEPENDENCIES = $(depend_libs) $(LIB_SLURM_BUILD)
+
 force:
-$(slurmstepd_LDADD) : force
+$(slurmstepd_DEPENDENCIES) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`

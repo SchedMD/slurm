@@ -6,7 +6,8 @@ AM_CPPFLAGS = -I$(top_srcdir)
 
 bin_PROGRAMS = sstat
 
-sstat_LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
+sstat_LDADD = $(LIB_SLURM) $(DL_LIBS)
+sstat_DEPENDENCIES = $(LIB_SLURM_BUILD)
 
 sstat_SOURCES =		\
 	options.c	\

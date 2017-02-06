@@ -7,7 +7,8 @@ if BUILD_SVIEW
 
 bin_PROGRAMS = sview
 
-sview_LDADD = $(top_builddir)/src/db_api/libslurmdb.o $(DL_LIBS)
+sview_LDADD = $(LIB_SLURMDB) $(DL_LIBS)
+sview_DEPENDENCIES = $(LIB_SLURM_BUILD) $(LIB_SLURMDB_BUILD)
 
 noinst_HEADERS = sview.h gthread_helper.h
 sview_SOURCES = sview.c popups.c grid.c part_info.c job_info.c \

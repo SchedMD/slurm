@@ -7,7 +7,8 @@ AM_CPPFLAGS = -I$(top_srcdir)
 
 bin_PROGRAMS = sacct
 
-sacct_LDADD = 	$(top_builddir)/src/db_api/libslurmdb.o $(DL_LIBS)
+sacct_LDADD = $(LIB_SLURMDB) $(DL_LIBS)
+sacct_DEPENDENCIES = $(LIB_SLURM_BUILD) $(LIB_SLURMDB_BUILD)
 
 sacct_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
@@ -20,7 +21,5 @@ sacct_SOURCES =		\
 	sacct.h
 
 force:
-$(sacct_LDADD) : force
+$(sacct_DEPENDENCIES) : force
 	 @cd `dirname $@` && $(MAKE) `basename $@`
-
-
