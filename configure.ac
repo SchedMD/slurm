@@ -491,9 +491,9 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/acct_gather_energy/ibmaem/Makefile
 		 src/plugins/acct_gather_energy/ipmi/Makefile
 		 src/plugins/acct_gather_energy/none/Makefile
-		 src/plugins/acct_gather_infiniband/Makefile
-		 src/plugins/acct_gather_infiniband/ofed/Makefile
-		 src/plugins/acct_gather_infiniband/none/Makefile
+		 src/plugins/acct_gather_interconnect/Makefile
+		 src/plugins/acct_gather_interconnect/ofed/Makefile
+		 src/plugins/acct_gather_interconnect/none/Makefile
 		 src/plugins/acct_gather_filesystem/Makefile
 		 src/plugins/acct_gather_filesystem/lustre/Makefile
 		 src/plugins/acct_gather_filesystem/none/Makefile

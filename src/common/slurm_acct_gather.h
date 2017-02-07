@@ -43,7 +43,7 @@
 #include "read_config.h"
 #include "slurm_acct_gather_energy.h"
 #include "slurm_acct_gather_profile.h"
-#include "slurm_acct_gather_infiniband.h"
+#include "slurm_acct_gather_interconnect.h"
 #include "slurm_acct_gather_filesystem.h"
 
 extern int acct_gather_conf_init(void);

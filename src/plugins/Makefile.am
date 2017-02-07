@@ -2,7 +2,7 @@ SUBDIRS = \
 	accounting_storage	\
 	acct_gather_energy	\
 	acct_gather_profile	\
-	acct_gather_infiniband  \
+	acct_gather_interconnect\
 	acct_gather_filesystem  \
 	auth			\
 	burst_buffer		\

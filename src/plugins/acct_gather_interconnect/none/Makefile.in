@@ -14,10 +14,7 @@
 
 @SET_MAKE@
 
-# Makefile for acct_gather_infiniband/ofed plugin
-
-#dprx need to uncomment this when safe to build
-#SUBDIRS = include lib
+# Makefile for acct_gather_interconnect/none plugin
 
 VPATH = @srcdir@
 am__is_gnu_make = { \
@@ -94,7 +91,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = src/plugins/acct_gather_infiniband/ofed
+subdir = src/plugins/acct_gather_interconnect/none
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_zlib.m4 \
 	$(top_srcdir)/auxdir/ax_gcc_builtin.m4 \
@@ -175,26 +172,19 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-am__DEPENDENCIES_1 =
-@BUILD_OFED_TRUE@acct_gather_infiniband_ofed_la_DEPENDENCIES =  \
-@BUILD_OFED_TRUE@	$(am__DEPENDENCIES_1)
-am__acct_gather_infiniband_ofed_la_SOURCES_DIST =  \
-	acct_gather_infiniband_ofed.c acct_gather_infiniband_ofed.h
-@BUILD_OFED_TRUE@am_acct_gather_infiniband_ofed_la_OBJECTS = acct_gather_infiniband_ofed_la-acct_gather_infiniband_ofed.lo
-am__EXTRA_acct_gather_infiniband_ofed_la_SOURCES_DIST =  \
-	acct_gather_infiniband_ofed.c acct_gather_infiniband_ofed.h
-acct_gather_infiniband_ofed_la_OBJECTS =  \
-	$(am_acct_gather_infiniband_ofed_la_OBJECTS)
+acct_gather_interconnect_none_la_LIBADD =
+am_acct_gather_interconnect_none_la_OBJECTS =  \
+	acct_gather_interconnect_none.lo
+acct_gather_interconnect_none_la_OBJECTS =  \
+	$(am_acct_gather_interconnect_none_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-acct_gather_infiniband_ofed_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+acct_gather_interconnect_none_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(acct_gather_infiniband_ofed_la_CFLAGS) $(CFLAGS) \
-	$(acct_gather_infiniband_ofed_la_LDFLAGS) $(LDFLAGS) -o $@
-@BUILD_OFED_TRUE@am_acct_gather_infiniband_ofed_la_rpath = -rpath \
-@BUILD_OFED_TRUE@	$(pkglibdir)
+	$(AM_CFLAGS) $(CFLAGS) \
+	$(acct_gather_interconnect_none_la_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -229,10 +219,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(acct_gather_infiniband_ofed_la_SOURCES) \
-	$(EXTRA_acct_gather_infiniband_ofed_la_SOURCES)
-DIST_SOURCES = $(am__acct_gather_infiniband_ofed_la_SOURCES_DIST) \
-	$(am__EXTRA_acct_gather_infiniband_ofed_la_SOURCES_DIST)
+SOURCES = $(acct_gather_interconnect_none_la_SOURCES)
+DIST_SOURCES = $(acct_gather_interconnect_none_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -517,20 +505,13 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
+PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
-@BUILD_OFED_TRUE@PLUGIN_FLAGS = -module -avoid-version --export-dynamic
-@BUILD_OFED_TRUE@pkglib_LTLIBRARIES = acct_gather_infiniband_ofed.la
+pkglib_LTLIBRARIES = acct_gather_interconnect_none.la
 
-# Infiniband accounting ofed plugin.
-@BUILD_OFED_TRUE@acct_gather_infiniband_ofed_la_SOURCES = acct_gather_infiniband_ofed.c \
-@BUILD_OFED_TRUE@                                     acct_gather_infiniband_ofed.h
-
-@BUILD_OFED_TRUE@acct_gather_infiniband_ofed_la_CFLAGS = $(OFED_CPPFLAGS)
-@BUILD_OFED_TRUE@acct_gather_infiniband_ofed_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(OFED_LDFLAGS)
-@BUILD_OFED_TRUE@acct_gather_infiniband_ofed_la_LIBADD = $(OFED_LIBS)
-@BUILD_OFED_FALSE@EXTRA_acct_gather_infiniband_ofed_la_SOURCES = acct_gather_infiniband_ofed.c \
-@BUILD_OFED_FALSE@                                     acct_gather_infiniband_ofed.h
-
+# Null job completion logging plugin.
+acct_gather_interconnect_none_la_SOURCES = acct_gather_interconnect_none.c
+acct_gather_interconnect_none_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -544,9 +525,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/acct_gather_infiniband/ofed/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/acct_gather_interconnect/none/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign src/plugins/acct_gather_infiniband/ofed/Makefile
+	  $(AUTOMAKE) --foreign src/plugins/acct_gather_interconnect/none/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -600,8 +581,8 @@ clean-pkglibLTLIBRARIES:
 	  rm -f $${locs}; \
 	}
 
-acct_gather_infiniband_ofed.la: $(acct_gather_infiniband_ofed_la_OBJECTS) $(acct_gather_infiniband_ofed_la_DEPENDENCIES) $(EXTRA_acct_gather_infiniband_ofed_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(acct_gather_infiniband_ofed_la_LINK) $(am_acct_gather_infiniband_ofed_la_rpath) $(acct_gather_infiniband_ofed_la_OBJECTS) $(acct_gather_infiniband_ofed_la_LIBADD) $(LIBS)
+acct_gather_interconnect_none.la: $(acct_gather_interconnect_none_la_OBJECTS) $(acct_gather_interconnect_none_la_DEPENDENCIES) $(EXTRA_acct_gather_interconnect_none_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(acct_gather_interconnect_none_la_LINK) -rpath $(pkglibdir) $(acct_gather_interconnect_none_la_OBJECTS) $(acct_gather_interconnect_none_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -609,7 +590,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/acct_gather_infiniband_ofed_la-acct_gather_infiniband_ofed.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/acct_gather_interconnect_none.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -631,13 +612,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
-
-acct_gather_infiniband_ofed_la-acct_gather_infiniband_ofed.lo: acct_gather_infiniband_ofed.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(acct_gather_infiniband_ofed_la_CFLAGS) $(CFLAGS) -MT acct_gather_infiniband_ofed_la-acct_gather_infiniband_ofed.lo -MD -MP -MF $(DEPDIR)/acct_gather_infiniband_ofed_la-acct_gather_infiniband_ofed.Tpo -c -o acct_gather_infiniband_ofed_la-acct_gather_infiniband_ofed.lo `test -f 'acct_gather_infiniband_ofed.c' || echo '$(srcdir)/'`acct_gather_infiniband_ofed.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/acct_gather_infiniband_ofed_la-acct_gather_infiniband_ofed.Tpo $(DEPDIR)/acct_gather_infiniband_ofed_la-acct_gather_infiniband_ofed.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='acct_gather_infiniband_ofed.c' object='acct_gather_infiniband_ofed_la-acct_gather_infiniband_ofed.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(acct_gather_infiniband_ofed_la_CFLAGS) $(CFLAGS) -c -o acct_gather_infiniband_ofed_la-acct_gather_infiniband_ofed.lo `test -f 'acct_gather_infiniband_ofed.c' || echo '$(srcdir)/'`acct_gather_infiniband_ofed.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
