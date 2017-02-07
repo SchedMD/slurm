@@ -3046,8 +3046,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->acct_gather_interconnect_type =
 			xstrdup(DEFAULT_ACCT_GATHER_INTERCONNECT_TYPE);
 	else
-		xstrsubstitute(conf->acct_gather_interconnect_type,
-			       "infiniband", "interconnect");
+		xstrsubstituteall(conf->acct_gather_interconnect_type,
+				  "infiniband", "interconnect");
 
 	if (!s_p_get_string(&conf->acct_gather_filesystem_type,
 			   "AcctGatherFilesystemType", hashtbl))
