@@ -258,7 +258,7 @@ extern int slurm_select_init(bool only_default)
 	select_context_cnt = 0;
 	if (only_default) {
 		ops = xmalloc(sizeof(slurm_select_ops_t));
-		select_context = xmalloc(sizeof(plugin_context_t));
+		select_context = xmalloc(sizeof(plugin_context_t *));
 		if ((select_context[0] = plugin_context_create(
 			     plugin_type, type, (void **)&ops[0],
 			     node_select_syms, sizeof(node_select_syms)))) {
@@ -316,7 +316,7 @@ extern int slurm_select_init(bool only_default)
 					 (sizeof(slurm_select_ops_t) *
 					  (select_context_cnt + 1)));
 				xrealloc(select_context,
-					 (sizeof(plugin_context_t) *
+					 (sizeof(plugin_context_t *) *
 					  (select_context_cnt + 1)));
 
 				select_context[select_context_cnt] =

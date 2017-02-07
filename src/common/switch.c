@@ -222,7 +222,7 @@ extern int switch_init(bool only_default)
 
 	if (only_default) {
 		ops = xmalloc(sizeof(slurm_switch_ops_t));
-		switch_context = xmalloc(sizeof(plugin_context_t));
+		switch_context = xmalloc(sizeof(plugin_context_t *));
 		if ((switch_context[0] = plugin_context_create(
 			     plugin_type, type, (void **)&ops[0],
 			     syms, sizeof(syms)))) {
@@ -281,7 +281,7 @@ extern int switch_init(bool only_default)
 					 (sizeof(slurm_switch_ops_t) *
 					  (switch_context_cnt + 1)));
 				xrealloc(switch_context,
-					 (sizeof(plugin_context_t) *
+					 (sizeof(plugin_context_t *) *
 					  (switch_context_cnt + 1)));
 
 				switch_context[switch_context_cnt] =
