@@ -398,7 +398,8 @@ according to the Slurm
 	%{?slurm_with_multiple_slurmd:--enable-multiple-slurmd} \
 	%{?slurm_with_pmix:--with-pmix=%{?with_pmix_dir}} \
 	%{?with_freeipmi:--with-freeipmi=%{?with_freeipmi}}\
-	%{?with_cflags}
+        %{?slurm_with_shared_libslurm:--with-shared-libslurm}\
+        %{?with_cflags} \
 
 %__make %{?_smp_mflags}
 
