@@ -147,7 +147,7 @@ typedef struct slurmd_config {
 	char           *job_acct_gather_params; /* job accounting gather params */
 	char           *acct_gather_energy_type; /*  */
 	char           *acct_gather_filesystem_type; /*  */
-	char           *acct_gather_infiniband_type; /*  */
+	char           *acct_gather_interconnect_type; /*  */
 	char           *acct_gather_profile_type; /*  */
 	char           *msg_aggr_params;      /* message aggregation params */
 	uint64_t        msg_aggr_window_msgs; /* msg aggr window size in msgs */

@@ -30,7 +30,7 @@ typically gathered at job_acct_gather interval or acct_gather_energy interval
 and the volume is not expected to be burdensome.
 
 <p>The <i>hdf5</i> implementation records I/O counts from the
-network interface (Infiniband), I/O counts from the node from the Lustre
+network interface (Interconnect), I/O counts from the node from the Lustre
 parallel file system, disk I/O counts, cpu and memory utilization
 for each task, and a record of energy use.
 
@@ -249,7 +249,7 @@ for jobs. The hdf5 plugin also includes;</p>
 <b>lustre</b> sample i/o to the Lustre file system for the node.
 </li>
 <li>
-<b>network</b> sample i/o through the network (infiniband) interface
+<b>network</b> sample i/o through the network (interconnect) interface
 for the node.
 </li>
 <li>

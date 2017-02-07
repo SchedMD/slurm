@@ -171,6 +171,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"AcctGatherEnergyType", S_P_STRING},
 	{"AcctGatherNodeFreq", S_P_UINT16},
 	{"AcctGatherProfileType", S_P_STRING},
+	{"AcctGatherInterconnectType", S_P_STRING},
 	{"AcctGatherInfinibandType", S_P_STRING},
 	{"AcctGatherFilesystemType", S_P_STRING},
 	{"AllowSpecResourcesUsage", S_P_BOOLEAN},
@@ -2340,7 +2341,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	FREE_NULL_LIST(ctl_conf_ptr->acct_gather_conf);
 	xfree (ctl_conf_ptr->acct_gather_energy_type);
 	xfree (ctl_conf_ptr->acct_gather_profile_type);
-	xfree (ctl_conf_ptr->acct_gather_infiniband_type);
+	xfree (ctl_conf_ptr->acct_gather_interconnect_type);
 	xfree (ctl_conf_ptr->acct_gather_filesystem_type);
 	xfree (ctl_conf_ptr->authinfo);
 	xfree (ctl_conf_ptr->authtype);
@@ -2484,7 +2485,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->acct_gather_node_freq	= 0;
 	xfree (ctl_conf_ptr->acct_gather_energy_type);
 	xfree (ctl_conf_ptr->acct_gather_profile_type);
-	xfree (ctl_conf_ptr->acct_gather_infiniband_type);
+	xfree (ctl_conf_ptr->acct_gather_interconnect_type);
 	xfree (ctl_conf_ptr->acct_gather_filesystem_type);
 	ctl_conf_ptr->ext_sensors_freq		= 0;
 	xfree (ctl_conf_ptr->ext_sensors_type);
@@ -3038,10 +3039,15 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->acct_gather_profile_type =
 			xstrdup(DEFAULT_ACCT_GATHER_PROFILE_TYPE);
 
-	if (!s_p_get_string(&conf->acct_gather_infiniband_type,
+	if (!s_p_get_string(&conf->acct_gather_interconnect_type,
+			    "AcctGatherInterconnectType", hashtbl) &&
+	    !s_p_get_string(&conf->acct_gather_interconnect_type,
 			    "AcctGatherInfinibandType", hashtbl))
-		conf->acct_gather_infiniband_type =
-			xstrdup(DEFAULT_ACCT_GATHER_INFINIBAND_TYPE);
+		conf->acct_gather_interconnect_type =
+			xstrdup(DEFAULT_ACCT_GATHER_INTERCONNECT_TYPE);
+	else
+		xstrsubstitute(conf->acct_gather_interconnect_type,
+			       "infiniband", "interconnect");
 
 	if (!s_p_get_string(&conf->acct_gather_filesystem_type,
 			   "AcctGatherFilesystemType", hashtbl))
@@ -4650,10 +4656,10 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Gres");
 	}
-	if (debug_flags & DEBUG_FLAG_INFINIBAND) {
+	if (debug_flags & DEBUG_FLAG_INTERCONNECT) {
 		if (rc)
 			xstrcat(rc, ",");
-		xstrcat(rc, "Infiniband");
+		xstrcat(rc, "Interconnect");
 	}
 	if (debug_flags & DEBUG_FLAG_JOB_CONT) {
 		if (rc)
@@ -4823,8 +4829,8 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_GANG;
 		else if (xstrcasecmp(tok, "Gres") == 0)
 			(*flags_out) |= DEBUG_FLAG_GRES;
-		else if (xstrcasecmp(tok, "Infiniband") == 0)
-			(*flags_out) |= DEBUG_FLAG_INFINIBAND;
+		else if (xstrcasecmp(tok, "Interconnect") == 0)
+			(*flags_out) |= DEBUG_FLAG_INTERCONNECT;
 		else if (xstrcasecmp(tok, "Filesystem") == 0)
 			(*flags_out) |= DEBUG_FLAG_FILESYSTEM;
 		else if (xstrcasecmp(tok, "JobContainer") == 0)

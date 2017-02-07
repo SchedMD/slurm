@@ -1,5 +1,6 @@
 /*****************************************************************************\
- *  acct_gather_infiniband_ofed.h -slurm infiniband accounting plugin.for ofed
+ *  acct_gather_interconnect_ofed.h - slurm interconnect accounting plugin for
+ *                                    ofed
  *****************************************************************************
  *  Copyright (C) 2013
  *  Written by Bull- Yiannis Georgiou
@@ -37,18 +38,19 @@
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-#ifndef _GATHER_INFINIBAND_H_
-#define _GATHER_INFINIBAND_H_
+#ifndef _GATHER_INTERCONNECT_H_
+#define _GATHER_INTERCONNECT_H_
 
-#define INFINIBAND_DEFAULT_PORT 1
+#define INTERCONNECT_DEFAULT_PORT 1
 
 extern int init ( void );
 extern int fini ( void );
-extern int acct_gather_infiniband_p_update_node(void);
-extern void acct_gather_infiniband_p_conf_options(s_p_options_t **full_options,
-                                              int *full_options_cnt);
-extern void acct_gather_infiniband_p_conf_set(s_p_hashtbl_t *tbl);
-extern List acct_gather_infiniband_p_get_config(void);
+extern int acct_gather_interconnect_p_update_node(void);
+extern void acct_gather_interconnect_p_conf_options(
+	s_p_options_t **full_options,
+	int *full_options_cnt);
+extern void acct_gather_interconnect_p_conf_set(s_p_hashtbl_t *tbl);
+extern List acct_gather_interconnect_p_get_config(void);
 
 #endif
 

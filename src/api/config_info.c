@@ -557,9 +557,9 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("AcctGatherInfinibandType");
+	key_pair->name = xstrdup("AcctGatherInterconnectType");
 	key_pair->value =
-		xstrdup(slurm_ctl_conf_ptr->acct_gather_infiniband_type);
+		xstrdup(slurm_ctl_conf_ptr->acct_gather_interconnect_type);
 	list_append(ret_list, key_pair);
 
 	snprintf(tmp_str, sizeof(tmp_str), "%u sec",
@@ -1984,7 +1984,7 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 		    !xstrcasecmp(key_pair->name, "AccountingStoreJobComment") ||
 		    !xstrcasecmp(key_pair->name, "AcctGatherEnergyType") ||
 		    !xstrcasecmp(key_pair->name, "AcctGatherFilesystemType") ||
-		    !xstrcasecmp(key_pair->name, "AcctGatherInfinibandType") ||
+		    !xstrcasecmp(key_pair->name, "AcctGatherInterconnectType") ||
 		    !xstrcasecmp(key_pair->name, "AcctGatherNodeFreq") ||
 		    !xstrcasecmp(key_pair->name, "AcctGatherProfileType") ||
 		    !xstrcasecmp(key_pair->name, "JobAcctGatherFrequency") ||

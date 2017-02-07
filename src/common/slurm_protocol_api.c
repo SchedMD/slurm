@@ -2066,23 +2066,23 @@ char *slurm_get_acct_gather_profile_type(void)
 	return acct_gather_profile_type;
 }
 
-/* slurm_get_infiniband_accounting_type
- * get InfinibandAccountingType from slurmctld_conf object
- * RET char *   - infiniband_accounting type, MUST be xfreed by caller
+/* slurm_get_interconnect_accounting_type
+ * get InterconnectAccountingType from slurmctld_conf object
+ * RET char *   - interconnect_accounting type, MUST be xfreed by caller
  */
-char *slurm_get_acct_gather_infiniband_type(void)
+char *slurm_get_acct_gather_interconnect_type(void)
 {
-	char *acct_gather_infiniband_type = NULL;
+	char *acct_gather_interconnect_type = NULL;
 	slurm_ctl_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
 		conf = slurm_conf_lock();
-		acct_gather_infiniband_type =
-			xstrdup(conf->acct_gather_infiniband_type);
+		acct_gather_interconnect_type =
+			xstrdup(conf->acct_gather_interconnect_type);
 		slurm_conf_unlock();
 	}
-	return acct_gather_infiniband_type;
+	return acct_gather_interconnect_type;
 }
 
 /* slurm_get_filesystem_accounting_type

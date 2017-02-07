@@ -2530,7 +2530,7 @@ typedef struct reservation_name_msg {
 						    * plugin */
 #define DEBUG_FLAG_PROFILE	0x0000000000200000 /* AcctGatherProfile
 						    * plugin */
-#define DEBUG_FLAG_INFINIBAND	0x0000000000400000 /* AcctGatherInfiniband
+#define DEBUG_FLAG_INTERCONNECT	0x0000000000400000 /* AcctGatherInterconnect
 						    * plugin */
 #define DEBUG_FLAG_FILESYSTEM 	0x0000000000800000 /* AcctGatherFilesystem
 						    * plugin */
@@ -2621,7 +2621,7 @@ typedef struct slurm_ctl_conf {
 	void *acct_gather_conf; /* account gather config */
 	char *acct_gather_energy_type; /* energy accounting type */
 	char *acct_gather_profile_type; /* profile accounting type */
-	char *acct_gather_infiniband_type; /* infiniband accounting type */
+	char *acct_gather_interconnect_type; /* interconnect accounting type */
 	char *acct_gather_filesystem_type; /* filesystem accounting type */
 	uint16_t acct_gather_node_freq; /* secs between node acct request */
 	char *authinfo;		/* authentication info */

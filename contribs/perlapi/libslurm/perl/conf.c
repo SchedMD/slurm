@@ -24,8 +24,8 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 		STORE_FIELD(hv, conf, acct_gather_energy_type, charp);
 	if (conf->acct_gather_filesystem_type)
 		STORE_FIELD(hv, conf, acct_gather_filesystem_type, charp);
-	if (conf->acct_gather_infiniband_type)
-		STORE_FIELD(hv, conf, acct_gather_infiniband_type, charp);
+	if (conf->acct_gather_interconnect_type)
+		STORE_FIELD(hv, conf, acct_gather_interconnect_type, charp);
 	STORE_FIELD(hv, conf, acct_gather_node_freq, uint16_t);
 	if (conf->acct_gather_profile_type)
 		STORE_FIELD(hv, conf, acct_gather_profile_type, charp);
@@ -413,7 +413,7 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	FETCH_FIELD(hv, conf, acct_gather_conf, charp, FALSE);
 	FETCH_FIELD(hv, conf, acct_gather_energy_type, charp, FALSE);
 	FETCH_FIELD(hv, conf, acct_gather_filesystem_type, charp, FALSE);
-	FETCH_FIELD(hv, conf, acct_gather_infiniband_type, charp, FALSE);
+	FETCH_FIELD(hv, conf, acct_gather_interconnect_type, charp, FALSE);
 	FETCH_FIELD(hv, conf, acct_gather_node_freq, uint16_t, FALSE);
 	FETCH_FIELD(hv, conf, acct_gather_profile_type, charp, FALSE);
 	FETCH_FIELD(hv, conf, acctng_store_job_comment, uint16_t, FALSE);

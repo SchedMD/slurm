@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  acct_gather_infiniband_ofed.c -slurm infiniband accounting plugin for ofed
+ *  acct_gather_interconnect_ofed.c -slurm interconnect accounting plugin for ofed
  *****************************************************************************
  *  Copyright (C) 2013
  *  Written by Bull- Yiannis Georgiou
@@ -69,7 +69,7 @@
 
 
 #define _DEBUG 1
-#define _DEBUG_INFINIBAND 1
+#define _DEBUG_INTERCONNECT 1
 #define TIMEOUT 20
 #define IB_FREQ 4
 
@@ -99,8 +99,8 @@
  * (major.minor.micro combined into a single number).
  */
 
-const char plugin_name[] = "AcctGatherInfiniband OFED plugin";
-const char plugin_type[] = "acct_gather_infiniband/ofed";
+const char plugin_name[] = "AcctGatherInterconnect OFED plugin";
+const char plugin_type[] = "acct_gather_interconnect/ofed";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 typedef struct {
@@ -187,7 +187,7 @@ static int _read_ofed_values(void)
 		if (!srcport){
 			error("Failed to open '%s' port '%d'", ibd_ca,
 			      ofed_conf.port);
-			debug("INFINIBAND: failed");
+			debug("OFED: failed");
 			return SLURM_ERROR;
 		}
 
@@ -215,7 +215,7 @@ static int _read_ofed_values(void)
 		mad_decode_field(pc, IB_PC_EXT_RCV_PKTS_F,
 				 &last_update_rcvpkts);
 
-		if (debug_flags & DEBUG_FLAG_INFINIBAND)
+		if (debug_flags & DEBUG_FLAG_INTERCONNECT)
 			info("%s ofed init", plugin_name);
 
 		first = 0;
@@ -257,7 +257,7 @@ static int _read_ofed_values(void)
  * _thread_update_node_energy calls _read_ipmi_values and updates all values
  * for node consumption
  */
-static int _update_node_infiniband(void)
+static int _update_node_interconnect(void)
 {
 	int rc;
 
@@ -285,7 +285,7 @@ static int _update_node_infiniband(void)
 	if (dataset_id < 0) {
 		dataset_id = acct_gather_profile_g_create_dataset("Network",
 			NO_PARENT, dataset);
-		if (debug_flags & DEBUG_FLAG_INFINIBAND)
+		if (debug_flags & DEBUG_FLAG_INTERCONNECT)
 			debug("IB: dataset created (id = %d)", dataset_id);
 		if (dataset_id == SLURM_ERROR) {
 			error("IB: Failed to create the dataset for ofed");
@@ -304,7 +304,7 @@ static int _update_node_infiniband(void)
 	data[FIELD_MBIN].d = (double) ofed_sens.rcvdata / (1 << 20);
 	data[FIELD_MBOUT].d = (double) ofed_sens.xmtdata / (1 << 20);
 
-	if (debug_flags & DEBUG_FLAG_INFINIBAND) {
+	if (debug_flags & DEBUG_FLAG_INTERCONNECT) {
 		info("ofed-thread = %d sec, transmitted %"PRIu64" bytes, "
 		     "received %"PRIu64" bytes",
 		     (int) (ofed_sens.update_time - ofed_sens.last_update_time),
@@ -352,17 +352,17 @@ extern int fini(void)
 		return SLURM_SUCCESS;
 
 	if (srcport) {
-		_update_node_infiniband();
+		_update_node_interconnect();
 		mad_rpc_close_port(srcport);
 	}
 
-	if (debug_flags & DEBUG_FLAG_INFINIBAND)
+	if (debug_flags & DEBUG_FLAG_INTERCONNECT)
 		info("ofed: ended");
 
 	return SLURM_SUCCESS;
 }
 
-extern int acct_gather_infiniband_p_node_update(void)
+extern int acct_gather_interconnect_p_node_update(void)
 {
 	uint32_t profile;
 	int rc = SLURM_SUCCESS;
@@ -379,18 +379,20 @@ extern int acct_gather_infiniband_p_node_update(void)
 	}
 
 	if (run)
-		_update_node_infiniband();
+		_update_node_interconnect();
 
 	return rc;
 }
 
 
-extern void acct_gather_infiniband_p_conf_set(s_p_hashtbl_t *tbl)
+extern void acct_gather_interconnect_p_conf_set(s_p_hashtbl_t *tbl)
 {
 	if (tbl) {
 		if (!s_p_get_uint32(&ofed_conf.port,
+				    "InterconnectOFEDPort", tbl) &&
+		    !s_p_get_uint32(&ofed_conf.port,
 				    "InfinibandOFEDPort", tbl))
-			ofed_conf.port = INFINIBAND_DEFAULT_PORT;
+			ofed_conf.port = INTERCONNECT_DEFAULT_PORT;
 	}
 
 	if (!_run_in_daemon())
@@ -400,10 +402,11 @@ extern void acct_gather_infiniband_p_conf_set(s_p_hashtbl_t *tbl)
 	ofed_sens.update_time = time(NULL);
 }
 
-extern void acct_gather_infiniband_p_conf_options(s_p_options_t **full_options,
-						  int *full_options_cnt)
+extern void acct_gather_interconnect_p_conf_options(
+	s_p_options_t **full_options, int *full_options_cnt)
 {
 	s_p_options_t options[] = {
+		{"InterconnectOFEDPort", S_P_UINT32},
 		{"InfinibandOFEDPort", S_P_UINT32},
 		{NULL} };
 
@@ -412,14 +415,14 @@ extern void acct_gather_infiniband_p_conf_options(s_p_options_t **full_options,
 	return;
 }
 
-extern void acct_gather_infiniband_p_conf_values(List *data)
+extern void acct_gather_interconnect_p_conf_values(List *data)
 {
 	config_key_pair_t *key_pair;
 
 	xassert(*data);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("InfinibandOFEDPort");
+	key_pair->name = xstrdup("InterconnectOFEDPort");
 	key_pair->value = xstrdup_printf("%u", ofed_conf.port);
 	list_append(*data, key_pair);
 

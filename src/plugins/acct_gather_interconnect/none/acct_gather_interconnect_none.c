@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  acct_gather_infiniband_none.c - slurm infiniband accounting plugin for none.
+ *  acct_gather_interconnect_none.c - slurm interconnect accounting plugin for none.
  *****************************************************************************
  *  Copyright (C) 2013 BULL
  *  Written by Yiannis Georgiou <yiannis.georgiou@bull.net>,
@@ -38,9 +38,9 @@
 \*****************************************************************************/
 
 
-/*   acct_gather_infiniband_none
+/*   acct_gather_interconnect_none
  * This plugin does not initiate a node-level thread.
- * It is the acct_gather_infiniband stub.
+ * It is the acct_gather_interconnect stub.
  */
 
 #include "src/common/slurm_xlator.h"
@@ -53,7 +53,7 @@
 #include <signal.h>
 
 #define _DEBUG 1
-#define _DEBUG_INFINIBAND 1
+#define _DEBUG_INTERCONNECT 1
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -80,8 +80,8 @@
  * plugin_version - an unsigned 32-bit integer containing the Slurm version
  * (major.minor.micro combined into a single number).
  */
-const char plugin_name[] = "AcctGatherInfiniband NONE plugin";
-const char plugin_type[] = "acct_gather_infiniband/none";
+const char plugin_name[] = "AcctGatherInterconnect NONE plugin";
+const char plugin_type[] = "acct_gather_interconnect/none";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -98,23 +98,23 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern int acct_gather_infiniband_p_node_update(void)
+extern int acct_gather_interconnect_p_node_update(void)
 {
 	return SLURM_SUCCESS;
 }
 
-extern void acct_gather_infiniband_p_conf_set(s_p_hashtbl_t *tbl)
+extern void acct_gather_interconnect_p_conf_set(s_p_hashtbl_t *tbl)
 {
 	return;
 }
 
-extern void acct_gather_infiniband_p_conf_options(s_p_options_t **full_options,
-                                              int *full_options_cnt)
+extern void acct_gather_interconnect_p_conf_options(
+	s_p_options_t **full_options, int *full_options_cnt)
 {
 	return;
 }
 
-extern void acct_gather_infiniband_p_conf_values(List *data)
+extern void acct_gather_interconnect_p_conf_values(List *data)
 {
 	return;
 }

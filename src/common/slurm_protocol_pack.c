@@ -6043,7 +6043,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 
 		packstr(build_ptr->acct_gather_energy_type, buffer);
 		packstr(build_ptr->acct_gather_filesystem_type, buffer);
-		packstr(build_ptr->acct_gather_infiniband_type, buffer);
+		packstr(build_ptr->acct_gather_interconnect_type, buffer);
 		pack16(build_ptr->acct_gather_node_freq, buffer);
 		packstr(build_ptr->acct_gather_profile_type, buffer);
 
@@ -6323,7 +6323,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 
 		packstr(build_ptr->acct_gather_energy_type, buffer);
 		packstr(build_ptr->acct_gather_filesystem_type, buffer);
-		packstr(build_ptr->acct_gather_infiniband_type, buffer);
+		packstr(build_ptr->acct_gather_interconnect_type, buffer);
 		pack16(build_ptr->acct_gather_node_freq, buffer);
 		packstr(build_ptr->acct_gather_profile_type, buffer);
 
@@ -6638,7 +6638,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->acct_gather_filesystem_type,
 				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->acct_gather_infiniband_type,
+		safe_unpackstr_xmalloc(&build_ptr->acct_gather_interconnect_type,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->acct_gather_node_freq, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->acct_gather_profile_type,
@@ -7035,7 +7035,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->acct_gather_filesystem_type,
 				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->acct_gather_infiniband_type,
+		safe_unpackstr_xmalloc(&build_ptr->acct_gather_interconnect_type,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->acct_gather_node_freq, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->acct_gather_profile_type,

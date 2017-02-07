@@ -85,7 +85,7 @@ extern char *default_plugstack;
 #define DEFAULT_JOB_ACCT_GATHER_FREQ  "30"
 #define DEFAULT_ACCT_GATHER_ENERGY_TYPE "acct_gather_energy/none"
 #define DEFAULT_ACCT_GATHER_PROFILE_TYPE "acct_gather_profile/none"
-#define DEFAULT_ACCT_GATHER_INFINIBAND_TYPE "acct_gather_infiniband/none"
+#define DEFAULT_ACCT_GATHER_INTERCONNECT_TYPE "acct_gather_interconnect/none"
 #define DEFAULT_ACCT_GATHER_FILESYSTEM_TYPE "acct_gather_filesystem/none"
 #define ACCOUNTING_STORAGE_TYPE_NONE "accounting_storage/none"
 #define DEFAULT_CORE_SPEC_PLUGIN    "core_spec/none"

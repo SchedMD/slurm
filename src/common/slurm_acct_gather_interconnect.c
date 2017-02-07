@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  slurm_acct_gather_infiniband.c - implementation-independent job infiniband
+ *  slurm_acct_gather_interconnect.c - implementation-independent job interconnect
  *  accounting plugin definitions
  *****************************************************************************
  *  Copyright (C) 2013 Bull.
@@ -57,25 +57,25 @@
 #include "src/common/slurm_acct_gather_profile.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-typedef struct slurm_acct_gather_infiniband_ops {
+typedef struct slurm_acct_gather_interconnect_ops {
 	int (*node_update)	(void);
 	void (*conf_options)	(s_p_options_t **full_options,
 				 int *full_options_cnt);
 	void (*conf_set)	(s_p_hashtbl_t *tbl);
 	void (*conf_values)      (List *data);
-} slurm_acct_gather_infiniband_ops_t;
+} slurm_acct_gather_interconnect_ops_t;
 /*
  * These strings must be kept in the same order as the fields
- * declared for slurm_acct_gather_infiniband_ops_t.
+ * declared for slurm_acct_gather_interconnect_ops_t.
  */
 static const char *syms[] = {
-	"acct_gather_infiniband_p_node_update",
-	"acct_gather_infiniband_p_conf_options",
-	"acct_gather_infiniband_p_conf_set",
-	"acct_gather_infiniband_p_conf_values",
+	"acct_gather_interconnect_p_node_update",
+	"acct_gather_interconnect_p_conf_options",
+	"acct_gather_interconnect_p_conf_set",
+	"acct_gather_interconnect_p_conf_values",
 };
 
-static slurm_acct_gather_infiniband_ops_t ops;
+static slurm_acct_gather_interconnect_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t g_context_lock =	PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
@@ -113,10 +113,10 @@ static void *_watch_node(void *arg)
 	return NULL;
 }
 
-extern int acct_gather_infiniband_init(void)
+extern int acct_gather_interconnect_init(void)
 {
 	int retval = SLURM_SUCCESS;
-	char *plugin_type = "acct_gather_infiniband";
+	char *plugin_type = "acct_gather_interconnect";
 	char *type = NULL;
 
 	if (init_run && g_context)
@@ -127,7 +127,7 @@ extern int acct_gather_infiniband_init(void)
 	if (g_context)
 		goto done;
 
-	type = slurm_get_acct_gather_infiniband_type();
+	type = slurm_get_acct_gather_interconnect_type();
 
 	g_context = plugin_context_create(
 		plugin_type, type, (void **)&ops, syms, sizeof(syms));
@@ -149,7 +149,7 @@ done:
 	return retval;
 }
 
-extern int acct_gather_infiniband_fini(void)
+extern int acct_gather_interconnect_fini(void)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -170,16 +170,16 @@ extern int acct_gather_infiniband_fini(void)
 	return rc;
 }
 
-extern int acct_gather_infiniband_startpoll(uint32_t frequency)
+extern int acct_gather_interconnect_startpoll(uint32_t frequency)
 {
 	int retval = SLURM_SUCCESS;
 	pthread_attr_t attr;
 
-	if (acct_gather_infiniband_init() < 0)
+	if (acct_gather_interconnect_init() < 0)
 		return SLURM_ERROR;
 
 	if (!acct_shutdown) {
-		error("acct_gather_infiniband_startpoll: "
+		error("acct_gather_interconnect_startpoll: "
 		      "poll already started!");
 		return retval;
 	}
@@ -189,42 +189,42 @@ extern int acct_gather_infiniband_startpoll(uint32_t frequency)
 	freq = frequency;
 
 	if (frequency == 0) {   /* don't want dynamic monitoring? */
-		debug2("acct_gather_infiniband dynamic logging disabled");
+		debug2("acct_gather_interconnect dynamic logging disabled");
 		return retval;
 	}
 
 	/* create polling thread */
 	slurm_attr_init(&attr);
 	if (pthread_create(&watch_node_thread_id, &attr, &_watch_node, NULL)) {
-		debug("acct_gather_infiniband failed to create _watch_node "
+		debug("acct_gather_interconnect failed to create _watch_node "
 		      "thread: %m");
 	} else
-		debug3("acct_gather_infiniband dynamic logging enabled");
+		debug3("acct_gather_interconnect dynamic logging enabled");
 	slurm_attr_destroy(&attr);
 
 	return retval;
 }
 
 
-extern void acct_gather_infiniband_g_conf_options(s_p_options_t **full_options,
-						  int *full_options_cnt)
+extern void acct_gather_interconnect_g_conf_options(
+	s_p_options_t **full_options, int *full_options_cnt)
 {
-	if (acct_gather_infiniband_init() < 0)
+	if (acct_gather_interconnect_init() < 0)
 		return;
 	(*(ops.conf_options))(full_options, full_options_cnt);
 }
 
-extern void acct_gather_infiniband_g_conf_set(s_p_hashtbl_t *tbl)
+extern void acct_gather_interconnect_g_conf_set(s_p_hashtbl_t *tbl)
 {
-	if (acct_gather_infiniband_init() < 0)
+	if (acct_gather_interconnect_init() < 0)
 		return;
 
 	(*(ops.conf_set))(tbl);
 }
 
-extern void acct_gather_infiniband_g_conf_values(void *data)
+extern void acct_gather_interconnect_g_conf_values(void *data)
 {
-	if (acct_gather_infiniband_init() < 0)
+	if (acct_gather_interconnect_init() < 0)
 		return;
 
 	(*(ops.conf_values))(data);

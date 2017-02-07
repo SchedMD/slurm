@@ -1014,8 +1014,8 @@ _read_config(void)
 		      xstrdup(cf->acct_gather_energy_type));
 	_free_and_set(conf->acct_gather_filesystem_type,
 		      xstrdup(cf->acct_gather_filesystem_type));
-	_free_and_set(conf->acct_gather_infiniband_type,
-		      xstrdup(cf->acct_gather_infiniband_type));
+	_free_and_set(conf->acct_gather_interconnect_type,
+		      xstrdup(cf->acct_gather_interconnect_type));
 	_free_and_set(conf->acct_gather_profile_type,
 		      xstrdup(cf->acct_gather_profile_type));
 	_free_and_set(conf->job_acct_gather_type,
@@ -1247,7 +1247,7 @@ _destroy_conf(void)
 	if (conf) {
 		xfree(conf->acct_gather_energy_type);
 		xfree(conf->acct_gather_filesystem_type);
-		xfree(conf->acct_gather_infiniband_type);
+		xfree(conf->acct_gather_interconnect_type);
 		xfree(conf->acct_gather_profile_type);
 		xfree(conf->auth_info);
 		xfree(conf->block_map);

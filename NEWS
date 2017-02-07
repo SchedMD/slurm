@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
     switch_jobinfo_t with dynamic_plugin_data_t in interface calls in
     order to pass switch information between clusters with different switch
     types.
+ -- Switch naming of acct_gather_infiniband to acct_gather_interconnect
 
 * Changes in Slurm 17.02.0rc2
 ==============================

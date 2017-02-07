@@ -752,11 +752,11 @@ char *slurm_get_acct_gather_energy_type(void);
  */
 char *slurm_get_acct_gather_profile_type(void);
 
-/* slurm_get_acct_infiniband_profile_type
- * get InfinibandAccountingType from slurmctld_conf object
- * RET char *   - acct_gather_infiniband_type, MUST be xfreed by caller
+/* slurm_get_acct_interconnect_profile_type
+ * get InterconnectAccountingType from slurmctld_conf object
+ * RET char *   - acct_gather_interconnect_type, MUST be xfreed by caller
  */
-char *slurm_get_acct_gather_infiniband_type(void);
+char *slurm_get_acct_gather_interconnect_type(void);
 
 /* slurm_get_acct_filesystem_profile_type
  * get FilesystemAccountingType from slurmctld_conf object

@@ -78,7 +78,7 @@ extern int acct_gather_conf_init(void)
 
 	acct_gather_energy_g_conf_options(&full_options, &full_options_cnt);
 	acct_gather_profile_g_conf_options(&full_options, &full_options_cnt);
-	acct_gather_infiniband_g_conf_options(&full_options, &full_options_cnt);
+	acct_gather_interconnect_g_conf_options(&full_options, &full_options_cnt);
 	acct_gather_filesystem_g_conf_options(&full_options, &full_options_cnt);
 	/* ADD MORE HERE */
 
@@ -116,7 +116,7 @@ extern int acct_gather_conf_init(void)
 	/* handle acct_gather.conf in each plugin */
 	acct_gather_energy_g_conf_set(tbl);
 	acct_gather_profile_g_conf_set(tbl);
-	acct_gather_infiniband_g_conf_set(tbl);
+	acct_gather_interconnect_g_conf_set(tbl);
 	acct_gather_filesystem_g_conf_set(tbl);
 	/*********************************************************************/
 	/* ADD MORE HERE AND FREE MEMORY IN acct_gather_conf_destroy() BELOW */
@@ -136,7 +136,7 @@ extern int acct_gather_conf_destroy(void)
 
 	rc = acct_gather_energy_fini();
 	rc = MAX(rc, acct_gather_filesystem_fini());
-	rc = MAX(rc, acct_gather_infiniband_fini());
+	rc = MAX(rc, acct_gather_interconnect_fini());
 	rc = MAX(rc, acct_gather_profile_fini());
 	return rc;
 }
@@ -147,7 +147,7 @@ extern List acct_gather_conf_values(void)
 
 	/* get acct_gather.conf in each plugin */
 	acct_gather_profile_g_conf_values(&acct_list);
-	acct_gather_infiniband_g_conf_values(&acct_list);
+	acct_gather_interconnect_g_conf_values(&acct_list);
 	acct_gather_energy_g_conf_values(&acct_list);
 	acct_gather_filesystem_g_conf_values(&acct_list);
 	/* ADD MORE HERE */

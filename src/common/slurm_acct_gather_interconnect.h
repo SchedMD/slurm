@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  slurm_acct_gather_infiniband.h - implementation-independent job infiniband
+ *  slurm_acct_gather_interconnect.h - implementation-independent job interconnect
  *  accounting plugin definitions
  *****************************************************************************
  *  Copyright (C) 2013 Bull
@@ -35,8 +35,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef __SLURM_ACCT_GATHER_INFINIBAND_H__
-#define __SLURM_ACCT_GATHER_INFINIBAND_H__
+#ifndef __SLURM_ACCT_GATHER_INTERCONNECT_H__
+#define __SLURM_ACCT_GATHER_INTERCONNECT_H__
 
 #include <inttypes.h>
 #include <sys/resource.h>
@@ -60,11 +60,11 @@ typedef struct acct_network_data {
 	double		size_out;       // currently in megabytes
 } acct_network_data_t;
 
-extern int acct_gather_infiniband_init(void); /* load the plugin */
-extern int acct_gather_infiniband_fini(void); /* unload the plugin */
-extern int acct_gather_infiniband_startpoll(uint32_t frequency);
+extern int acct_gather_interconnect_init(void); /* load the plugin */
+extern int acct_gather_interconnect_fini(void); /* unload the plugin */
+extern int acct_gather_interconnect_startpoll(uint32_t frequency);
 
-extern int acct_gather_infiniband_g_node_update(void);
+extern int acct_gather_interconnect_g_node_update(void);
 /*
  * Define plugin local conf for acct_gather.conf
  *
@@ -73,7 +73,7 @@ extern int acct_gather_infiniband_g_node_update(void);
  *                      definitions
  *      full_options_cnt -- count of plugin local definitions
  */
-extern void acct_gather_infiniband_g_conf_options(s_p_options_t **full_options,
+extern void acct_gather_interconnect_g_conf_options(s_p_options_t **full_options,
 						  int *full_options_cnt);
 /*
  * set plugin local conf from acct_gather.conf into its structure
@@ -81,13 +81,13 @@ extern void acct_gather_infiniband_g_conf_options(s_p_options_t **full_options,
  * Parameters
  *      tbl - hash table of acct_gather.conf key-values.
  */
-extern void acct_gather_infiniband_g_conf_set(s_p_hashtbl_t *tbl);
+extern void acct_gather_interconnect_g_conf_set(s_p_hashtbl_t *tbl);
 
 /* Get the values from the plugin that are setup in the .conf
  * file. This function should most likely only be called from
  * src/common/slurm_acct_gather.c (acct_gather_get_values())
  */
-extern void acct_gather_infiniband_g_conf_values(void *data);
+extern void acct_gather_interconnect_g_conf_values(void *data);
 
-#endif /*__SLURM_ACCT_GATHER_INFINIBAND_H__*/
+#endif /*__SLURM_ACCT_GATHER_INTERCONNECT_H__*/
 
