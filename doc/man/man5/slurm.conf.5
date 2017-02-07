@@ -2517,8 +2517,8 @@ Also see bf_min_age_reserve and bf_min_prio_reserve.
 
 .TP
 \fBbf_max_job_array_resv=#\fR
-The maximum number of tasks from a job array for which to reserve resources in
-the future.
+The maximum number of tasks from a job array for which the backfill scheduler
+will reserve resources in the future.
 Since job arrays can potentially have millions of tasks, the overhead in
 reserving resources for all tasks can be prohibitive.
 In addition various limits may prevent all the jobs from starting at the
