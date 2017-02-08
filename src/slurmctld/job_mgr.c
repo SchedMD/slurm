@@ -14334,12 +14334,19 @@ static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
 	else if (IS_JOB_COMPLETED(job_ptr))
 		is_completed = true;
 
-	/* We want this job to have the requeued state in the
+	/* We want this job to have the requeued/preempted state in the
 	 * accounting logs. Set a new submit time so the restarted
 	 * job looks like a new job. */
-	job_ptr->job_state  = JOB_REQUEUE;
-	build_cg_bitmap(job_ptr);
-	job_completion_logger(job_ptr, true);
+	if (preempt) {
+		job_ptr->job_state = JOB_PREEMPTED;
+		build_cg_bitmap(job_ptr);
+		job_completion_logger(job_ptr, false);
+		job_ptr->job_state = JOB_REQUEUE;
+	} else {
+		job_ptr->job_state  = JOB_REQUEUE;
+		build_cg_bitmap(job_ptr);
+		job_completion_logger(job_ptr, true);
+	}
 
 	/* Deallocate resources only if the job has some.
 	 * JOB_COMPLETING is needed to properly clean up steps. */
