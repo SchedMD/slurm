@@ -235,6 +235,8 @@ documents those changes that are of interest to users and administrators.
  -- task/cgroup - print warnings to stderr when --cpu_bind=verbose is enabled
     and the requested processor affinity cannot be set.
  -- power/cray - Disable power cap get and set operations on DOWN nodes.
+ -- Jobs preempted with PreemptMode=REQUEUE were incorrectly recorded as
+    REQUEUED in the accounting.
 
 * Changes in Slurm 16.05.9
 ==========================
