@@ -676,6 +676,8 @@ static void _build_full_nid_string(void)
 	lock_slurmctld(read_node_lock);
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
+		if (IS_NODE_DOWN(node_ptr))
+			continue;
 		if (!hs)
 			hs = hostset_create(_node_name2nid(node_ptr->name));
 		else
@@ -1316,6 +1318,8 @@ static void _clear_node_caps(void)
 
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
+		if (IS_NODE_DOWN(node_ptr))
+			continue;
 		if (!node_ptr->power)
 			continue;
 		if (node_ptr->power->state != 1)  /* Not ready, no change */
@@ -1332,6 +1336,8 @@ static void _set_node_caps(void)
 
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
+		if (IS_NODE_DOWN(node_ptr))
+			continue;
 		if (!node_ptr->power)
 			continue;
 		if (node_ptr->power->state != 1)  /* Not ready, no change */
@@ -1429,7 +1435,8 @@ static void _rebalance_node_power(void)
 	     i++, node_ptr++) {
 		if (!node_ptr->power)
 			continue;
-		if (node_ptr->power->state != 1) {  /* Not ready -> no change */
+		if (IS_NODE_DOWN(node_ptr) ||
+		    (node_ptr->power->state != 1)) {/* Not ready -> no change */
 			if (node_ptr->power->cap_watts == 0) {
 				node_ptr->power->new_cap_watts =
 					node_ptr->power->max_watts;
@@ -1498,6 +1505,8 @@ static void _rebalance_node_power(void)
 		red1 /= node_num;
 		for (i = 0, node_ptr = node_record_table_ptr;
 		     i < node_record_count; i++, node_ptr++) {
+			if (IS_NODE_DOWN(node_ptr))
+				continue;
 			if (!node_ptr->power || !node_ptr->power->new_cap_watts)
 				continue;
 			tmp_u32 = node_ptr->power->new_cap_watts -
@@ -1518,6 +1527,8 @@ static void _rebalance_node_power(void)
 		ave_power = avail_power / node_power_raise_cnt;
 		for (i = 0, node_ptr = node_record_table_ptr;
 		     i < node_record_count; i++, node_ptr++) {
+			if (IS_NODE_DOWN(node_ptr))
+				continue;
 			if (!node_ptr->power || (node_ptr->power->state != 1))
 				continue;
 			if (node_ptr->power->new_cap_watts)    /* Already set */
@@ -1618,7 +1629,8 @@ static void _set_power_caps(void)
 	/* Pass 1, decrease power for select nodes */
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
-		if (!node_ptr->power ||
+		if (IS_NODE_DOWN(node_ptr) ||
+		    !node_ptr->power ||
 		    (node_ptr->power->state != 1) ||
 		    (node_ptr->power->cap_watts <=
 		     node_ptr->power->new_cap_watts))
@@ -1659,7 +1671,8 @@ static void _set_power_caps(void)
 	/* Pass 2, increase power for select nodes */
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
-		if (!node_ptr->power ||
+		if (IS_NODE_DOWN(node_ptr) ||
+		    !node_ptr->power ||
 		    (node_ptr->power->state != 1) ||
 		    (node_ptr->power->cap_watts >=
 		     node_ptr->power->new_cap_watts))
