@@ -2208,7 +2208,6 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 			job_ptr->job_state = JOB_NODE_FAIL | JOB_COMPLETING;
 			build_cg_bitmap(job_ptr);
 			job_ptr->end_time = MIN(job_ptr->end_time, now);
-			job_ptr->exit_code = MAX(job_ptr->exit_code, 1);
 			job_ptr->state_reason = FAIL_DOWN_NODE;
 			xfree(job_ptr->state_desc);
 			job_completion_logger(job_ptr, false);
