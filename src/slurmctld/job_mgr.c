@@ -3000,7 +3000,6 @@ extern int kill_job_by_part_name(char *part_name)
 			     job_ptr->job_id, part_name);
 			job_ptr->job_state = JOB_NODE_FAIL | JOB_COMPLETING;
 			build_cg_bitmap(job_ptr);
-			job_ptr->exit_code = MAX(job_ptr->exit_code, 1);
 			job_ptr->state_reason = FAIL_DOWN_PARTITION;
 			xfree(job_ptr->state_desc);
 			if (suspended) {
@@ -3176,7 +3175,6 @@ extern int kill_job_by_front_end_name(char *node_name)
 				job_ptr->job_state = JOB_NODE_FAIL |
 						     JOB_COMPLETING;
 				build_cg_bitmap(job_ptr);
-				job_ptr->exit_code = MAX(job_ptr->exit_code, 1);
 				job_ptr->state_reason = FAIL_DOWN_NODE;
 				xfree(job_ptr->state_desc);
 				if (suspended) {
@@ -3428,7 +3426,6 @@ extern int kill_running_job_by_node_name(char *node_name)
 				job_ptr->job_state = JOB_NODE_FAIL |
 						     JOB_COMPLETING;
 				build_cg_bitmap(job_ptr);
-				job_ptr->exit_code = MAX(job_ptr->exit_code, 1);
 				job_ptr->state_reason = FAIL_DOWN_NODE;
 				xfree(job_ptr->state_desc);
 				if (suspended) {
@@ -5153,7 +5150,6 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 			 * over time has expired.
 			 */
 			job_ptr->job_state = JOB_TIMEOUT  | job_comp_flag;
-			job_ptr->exit_code = MAX(job_ptr->exit_code, 1);
 			job_ptr->state_reason = FAIL_TIMEOUT;
 			xfree(job_ptr->state_desc);
 		} else {
@@ -7960,7 +7956,6 @@ static void _job_timed_out(struct job_record *job_ptr)
 		if (!job_ptr->preempt_time)
 			job_ptr->job_state = JOB_TIMEOUT | JOB_COMPLETING;
 		build_cg_bitmap(job_ptr);
-		job_ptr->exit_code = MAX(job_ptr->exit_code, 1);
 		job_completion_logger(job_ptr, false);
 		deallocate_nodes(job_ptr, true, false, false);
 	} else
@@ -9651,7 +9646,6 @@ void reset_job_bitmaps(void)
 				jobacct_storage_g_job_suspend(acct_db_conn,
 							      job_ptr);
 			}
-			job_ptr->exit_code = MAX(job_ptr->exit_code, 1);
 			job_ptr->state_reason = FAIL_DOWN_NODE;
 			xfree(job_ptr->state_desc);
 			job_completion_logger(job_ptr, false);
@@ -14190,13 +14184,19 @@ static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
 	/* Only change state to requeue for local jobs */
 	if (fed_mgr_is_origin_job(job_ptr) &&
 	    !fed_mgr_is_tracker_only_job(job_ptr)) {
-
-		/* We want this job to have the requeued state in the
+		/* We want this job to have the requeued/preempted state in the
 		 * accounting logs. Set a new submit time so the restarted
 		 * job looks like a new job. */
-		job_ptr->job_state  = JOB_REQUEUE;
-		build_cg_bitmap(job_ptr);
-		job_completion_logger(job_ptr, true);
+		if (preempt) {
+			job_ptr->job_state = JOB_PREEMPTED;
+			build_cg_bitmap(job_ptr);
+			job_completion_logger(job_ptr, false);
+			job_ptr->job_state = JOB_REQUEUE;
+		} else {
+			job_ptr->job_state = JOB_REQUEUE;
+			build_cg_bitmap(job_ptr);
+			job_completion_logger(job_ptr, true);
+		}
 	}
 
 	/* Increment restart counter before completing reply so that completing

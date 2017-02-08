@@ -2037,7 +2037,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 }
 
 static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
-			  int *error_code)
+			  int *error_code, uint32_t preemptor)
 {
 	ListIterator iter;
 	struct job_record *job_ptr;
@@ -2053,12 +2053,14 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 			job_cnt++;
 			if (!kill_pending)
 				continue;
-			if (slurm_job_check_grace(job_ptr) == SLURM_SUCCESS)
+			if (slurm_job_check_grace(job_ptr, preemptor)
+			    == SLURM_SUCCESS)
 				continue;
 			rc = job_signal(job_ptr->job_id, SIGKILL, 0, 0, true);
 			if (rc == SLURM_SUCCESS) {
-				info("preempted job %u has been killed",
-				     job_ptr->job_id);
+				info("preempted job %u has been killed to "
+				     "reclaim resources for job %u",
+				     job_ptr->job_id, preemptor);
 			}
 		} else if (mode == PREEMPT_MODE_CHECKPOINT) {
 			job_cnt++;
@@ -2077,8 +2079,9 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 						    (uint16_t) NO_VAL);
 			}
 			if (rc == SLURM_SUCCESS) {
-				info("preempted job %u has been checkpointed",
-				     job_ptr->job_id);
+				info("preempted job %u has been checkpointed to"
+				     " reclaim resources for job %u",
+				     job_ptr->job_id, preemptor);
 			}
 		} else if (mode == PREEMPT_MODE_REQUEUE) {
 			job_cnt++;
@@ -2086,13 +2089,15 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 				continue;
 			rc = job_requeue(0, job_ptr->job_id, NULL, true, 0);
 			if (rc == SLURM_SUCCESS) {
-				info("preempted job %u has been requeued",
-				     job_ptr->job_id);
+				info("preempted job %u has been requeued to "
+				     "reclaim resources for job %u",
+				     job_ptr->job_id, preemptor);
 			}
 		} else if ((mode == PREEMPT_MODE_SUSPEND) &&
 			   (slurmctld_conf.preempt_mode & PREEMPT_MODE_GANG)) {
-			debug("preempted job %u suspended by gang scheduler",
-			      job_ptr->job_id);
+			debug("preempted job %u suspended by gang scheduler "
+			      "to reclaim resources for job %u",
+			      job_ptr->job_id, preemptor);
 		} else if (mode == PREEMPT_MODE_OFF) {
 			error("%s: Invalid preempt_mode %u for job %u",
 			      __func__, mode, job_ptr->job_id);
@@ -2101,7 +2106,7 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 
 		if (rc != SLURM_SUCCESS) {
 			if ((mode != PREEMPT_MODE_CANCEL)
-			    && (slurm_job_check_grace(job_ptr)
+			    && (slurm_job_check_grace(job_ptr, preemptor)
 				== SLURM_SUCCESS))
 				continue;
 
@@ -2410,7 +2415,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			 * do not cancel or requeue any more jobs yet */
 			kill_pending = false;
 		}
-		_preempt_jobs(preemptee_job_list, kill_pending, &error_code);
+		_preempt_jobs(preemptee_job_list, kill_pending, &error_code,
+			      job_ptr->job_id);
 		if ((error_code == ESLURM_NODES_BUSY) &&
 		    (detail_ptr->preempt_start_time == 0)) {
   			detail_ptr->preempt_start_time = now;
