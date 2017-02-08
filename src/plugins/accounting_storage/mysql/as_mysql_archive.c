@@ -2733,8 +2733,7 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 	case PURGE_TXN:
 		query = xstrdup_printf("select %s from \"%s\" where "
 				       "timestamp <= %ld && cluster='%s' "
-				       "order by timestamp asc "
-				       "for update",
+				       "order by timestamp asc for update",
 				       cols, sql_table,
 				       period_end, cluster_name);
 		break;
@@ -2742,8 +2741,7 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 	case PURGE_CLUSTER_USAGE:
 		query = xstrdup_printf("select %s from \"%s_%s\" where "
 				       "time_start <= %ld "
-				       "order by time_start asc "
-				       "for update",
+				       "order by time_start asc for update",
 				       cols, cluster_name, sql_table,
 				       period_end);
 		break;
