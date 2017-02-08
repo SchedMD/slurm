@@ -2757,8 +2757,7 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 	default:
 		query = xstrdup_printf("select %s from \"%s_%s\" where "
 				       "time_start <= %ld && time_end != 0 "
-				       "&& !deleted order by time_start asc "
-				       "for update",
+				       "order by time_start asc for update",
 				       cols, cluster_name, sql_table,
 				       period_end);
 		break;
