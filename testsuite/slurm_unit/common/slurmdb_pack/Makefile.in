@@ -90,7 +90,7 @@ host_triplet = @host@
 target_triplet = @target@
 check_PROGRAMS = $(am__EXEEXT_2)
 TESTS = pack_user_rec-test$(EXEEXT) pack_cluster_rec-test$(EXEEXT) \
-	$(am__EXEEXT_1)
+	pack_used_limits-test$(EXEEXT) $(am__EXEEXT_1)
 #MYCFLAGS += -D_ISO99_SOURCE -Wunused-but-set-variable
 @HAVE_CHECK_TRUE@am__append_1 = pack_user_rec-test
 subdir = testsuite/slurm_unit/common/slurmdb_pack
@@ -147,7 +147,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 @HAVE_CHECK_TRUE@am__EXEEXT_1 = pack_user_rec-test$(EXEEXT)
 am__EXEEXT_2 = pack_user_rec-test$(EXEEXT) \
-	pack_cluster_rec-test$(EXEEXT) $(am__EXEEXT_1)
+	pack_cluster_rec-test$(EXEEXT) pack_used_limits-test$(EXEEXT) \
+	$(am__EXEEXT_1)
 pack_cluster_rec_test_SOURCES = pack_cluster_rec-test.c
 pack_cluster_rec_test_OBJECTS =  \
 	pack_cluster_rec_test-pack_cluster_rec-test.$(OBJEXT)
@@ -163,6 +164,15 @@ am__v_lt_1 =
 pack_cluster_rec_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(pack_cluster_rec_test_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
+pack_used_limits_test_SOURCES = pack_used_limits-test.c
+pack_used_limits_test_OBJECTS =  \
+	pack_used_limits_test-pack_used_limits-test.$(OBJEXT)
+@HAVE_CHECK_TRUE@pack_used_limits_test_DEPENDENCIES =  \
+@HAVE_CHECK_TRUE@	$(am__DEPENDENCIES_2)
+pack_used_limits_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(pack_used_limits_test_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 pack_user_rec_test_SOURCES = pack_user_rec-test.c
 pack_user_rec_test_OBJECTS =  \
@@ -207,8 +217,10 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = pack_cluster_rec-test.c pack_user_rec-test.c
-DIST_SOURCES = pack_cluster_rec-test.c pack_user_rec-test.c
+SOURCES = pack_cluster_rec-test.c pack_used_limits-test.c \
+	pack_user_rec-test.c
+DIST_SOURCES = pack_cluster_rec-test.c pack_used_limits-test.c \
+	pack_user_rec-test.c
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -705,6 +717,8 @@ LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
 @HAVE_CHECK_TRUE@pack_user_rec_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@pack_cluster_rec_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@pack_cluster_rec_test_LDADD = $(LDADD) @CHECK_LIBS@
+@HAVE_CHECK_TRUE@pack_used_limits_test_CFLAGS = $(MYCFLAGS)
+@HAVE_CHECK_TRUE@pack_used_limits_test_LDADD = $(LDADD) @CHECK_LIBS@
 all: all-am
 
 .SUFFIXES:
@@ -752,6 +766,10 @@ pack_cluster_rec-test$(EXEEXT): $(pack_cluster_rec_test_OBJECTS) $(pack_cluster_
 	@rm -f pack_cluster_rec-test$(EXEEXT)
 	$(AM_V_CCLD)$(pack_cluster_rec_test_LINK) $(pack_cluster_rec_test_OBJECTS) $(pack_cluster_rec_test_LDADD) $(LIBS)
 
+pack_used_limits-test$(EXEEXT): $(pack_used_limits_test_OBJECTS) $(pack_used_limits_test_DEPENDENCIES) $(EXTRA_pack_used_limits_test_DEPENDENCIES) 
+	@rm -f pack_used_limits-test$(EXEEXT)
+	$(AM_V_CCLD)$(pack_used_limits_test_LINK) $(pack_used_limits_test_OBJECTS) $(pack_used_limits_test_LDADD) $(LIBS)
+
 pack_user_rec-test$(EXEEXT): $(pack_user_rec_test_OBJECTS) $(pack_user_rec_test_DEPENDENCIES) $(EXTRA_pack_user_rec_test_DEPENDENCIES) 
 	@rm -f pack_user_rec-test$(EXEEXT)
 	$(AM_V_CCLD)$(pack_user_rec_test_LINK) $(pack_user_rec_test_OBJECTS) $(pack_user_rec_test_LDADD) $(LIBS)
@@ -763,6 +781,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack_cluster_rec_test-pack_cluster_rec-test.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack_used_limits_test-pack_used_limits-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack_user_rec_test-pack_user_rec-test.Po@am__quote@
 
 .c.o:
@@ -799,6 +818,20 @@ pack_cluster_rec_test-pack_cluster_rec-test.obj: pack_cluster_rec-test.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pack_cluster_rec-test.c' object='pack_cluster_rec_test-pack_cluster_rec-test.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_cluster_rec_test_CFLAGS) $(CFLAGS) -c -o pack_cluster_rec_test-pack_cluster_rec-test.obj `if test -f 'pack_cluster_rec-test.c'; then $(CYGPATH_W) 'pack_cluster_rec-test.c'; else $(CYGPATH_W) '$(srcdir)/pack_cluster_rec-test.c'; fi`
+
+pack_used_limits_test-pack_used_limits-test.o: pack_used_limits-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_used_limits_test_CFLAGS) $(CFLAGS) -MT pack_used_limits_test-pack_used_limits-test.o -MD -MP -MF $(DEPDIR)/pack_used_limits_test-pack_used_limits-test.Tpo -c -o pack_used_limits_test-pack_used_limits-test.o `test -f 'pack_used_limits-test.c' || echo '$(srcdir)/'`pack_used_limits-test.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pack_used_limits_test-pack_used_limits-test.Tpo $(DEPDIR)/pack_used_limits_test-pack_used_limits-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pack_used_limits-test.c' object='pack_used_limits_test-pack_used_limits-test.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_used_limits_test_CFLAGS) $(CFLAGS) -c -o pack_used_limits_test-pack_used_limits-test.o `test -f 'pack_used_limits-test.c' || echo '$(srcdir)/'`pack_used_limits-test.c
+
+pack_used_limits_test-pack_used_limits-test.obj: pack_used_limits-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_used_limits_test_CFLAGS) $(CFLAGS) -MT pack_used_limits_test-pack_used_limits-test.obj -MD -MP -MF $(DEPDIR)/pack_used_limits_test-pack_used_limits-test.Tpo -c -o pack_used_limits_test-pack_used_limits-test.obj `if test -f 'pack_used_limits-test.c'; then $(CYGPATH_W) 'pack_used_limits-test.c'; else $(CYGPATH_W) '$(srcdir)/pack_used_limits-test.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pack_used_limits_test-pack_used_limits-test.Tpo $(DEPDIR)/pack_used_limits_test-pack_used_limits-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pack_used_limits-test.c' object='pack_used_limits_test-pack_used_limits-test.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_used_limits_test_CFLAGS) $(CFLAGS) -c -o pack_used_limits_test-pack_used_limits-test.obj `if test -f 'pack_used_limits-test.c'; then $(CYGPATH_W) 'pack_used_limits-test.c'; else $(CYGPATH_W) '$(srcdir)/pack_used_limits-test.c'; fi`
 
 pack_user_rec_test-pack_user_rec-test.o: pack_user_rec-test.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_user_rec_test_CFLAGS) $(CFLAGS) -MT pack_user_rec_test-pack_user_rec-test.o -MD -MP -MF $(DEPDIR)/pack_user_rec_test-pack_user_rec-test.Tpo -c -o pack_user_rec_test-pack_user_rec-test.o `test -f 'pack_user_rec-test.c' || echo '$(srcdir)/'`pack_user_rec-test.c
@@ -1027,6 +1060,13 @@ pack_cluster_rec-test.log: pack_cluster_rec-test$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+pack_used_limits-test.log: pack_used_limits-test$(EXEEXT)
+	@p='pack_used_limits-test$(EXEEXT)'; \
+	b='pack_used_limits-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 .test.log:
 	@p='$<'; \
 	$(am__set_b); \
@@ -1201,6 +1241,7 @@ uninstall-am:
 .PRECIOUS: Makefile
 
 @HAVE_CHECK_TRUE@	 pack_cluster_rec-test
+@HAVE_CHECK_TRUE@	 pack_used_limits-test
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
