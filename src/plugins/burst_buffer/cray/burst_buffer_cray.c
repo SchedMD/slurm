@@ -53,6 +53,7 @@
 #include "slurm/slurm.h"
 
 #include "src/common/assoc_mgr.h"
+#include "src/common/bitstring.h"
 #include "src/common/fd.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
@@ -1111,6 +1112,7 @@ static void _set_assoc_mgr_ptrs(bb_alloc_t *bb_alloc)
  */
 static void _load_state(bool init_config)
 {
+	static bool first_run = true;
 	burst_buffer_pool_t *pool_ptr;
 	bb_configs_t *configs;
 	bb_instances_t *instances;
@@ -1119,13 +1121,14 @@ static void _load_state(bool init_config)
 	bb_alloc_t *bb_alloc;
 	struct job_record *job_ptr;
 	int num_configs = 0, num_instances = 0, num_pools = 0, num_sessions = 0;
-	int i, j;
+	int i, j, pools_inx;
 	char *end_ptr = NULL;
 	time_t now = time(NULL);
 	uint32_t timeout;
 	assoc_mgr_lock_t assoc_locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
 					 NO_LOCK, NO_LOCK, NO_LOCK };
 	bool found_pool;
+	bitstr_t *pools_bitmap;
 
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	if (bb_state.bb_config.other_timeout)
@@ -1144,6 +1147,7 @@ static void _load_state(bool init_config)
 		return;
 	}
 
+	pools_bitmap = bit_alloc(bb_state.bb_config.pool_cnt + num_pools);
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	if (!bb_state.bb_config.default_pool && (num_pools > 0)) {
 		info("%s: Setting DefaultPool to %s", __func__, pools[0].id);
@@ -1160,9 +1164,6 @@ static void _load_state(bool init_config)
 			bb_state.unfree_space = pools[i].quantity -
 						pools[i].free;
 			bb_state.unfree_space *= pools[i].granularity;
-
-			/* Everything else is an alternate pool */
-			bb_state.bb_config.pool_cnt = 0;
 			continue;
 		}
 
@@ -1175,6 +1176,10 @@ static void _load_state(bool init_config)
 			}
 		}
 		if (!found_pool) {
+			if (!first_run) {
+				info("%s: Newly reported pool %s",
+				     __func__, pools[i].id);
+			}
 			bb_state.bb_config.pool_ptr
 				= xrealloc(bb_state.bb_config.pool_ptr,
 					   sizeof(burst_buffer_pool_t) *
@@ -1185,13 +1190,28 @@ static void _load_state(bool init_config)
 			bb_state.bb_config.pool_cnt++;
 		}
 
+		pools_inx = pool_ptr - bb_state.bb_config.pool_ptr;
+		bit_set(pools_bitmap, pools_inx);
 		pool_ptr->total_space = pools[i].quantity *
 					pools[i].granularity;
 		pool_ptr->granularity = pools[i].granularity;
 		pool_ptr->unfree_space = pools[i].quantity - pools[i].free;
 		pool_ptr->unfree_space *= pools[i].granularity;
 	}
+
+	pool_ptr = bb_state.bb_config.pool_ptr;
+	for (j = 0; j < bb_state.bb_config.pool_cnt; j++, pool_ptr++) {
+		if (bit_test(pools_bitmap, j) || (pool_ptr->total_space == 0))
+			continue;
+		error("%s: Pool %s no longer reported by system, setting size to zero",
+		      __func__,  pool_ptr->name);
+		pool_ptr->total_space  = 0;
+		pool_ptr->used_space   = 0;
+		pool_ptr->unfree_space = 0;
+	}
+	first_run = false;
 	slurm_mutex_unlock(&bb_state.bb_mutex);
+	FREE_NULL_BITMAP(pools_bitmap);
 	_bb_free_pools(pools, num_pools);
 
 	/*
