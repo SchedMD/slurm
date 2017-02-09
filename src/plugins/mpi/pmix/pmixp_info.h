@@ -272,12 +272,11 @@ static inline char *pmixp_info_job_host(int nodeid)
 /* namespaces list operations */
 static inline char *pmixp_info_nspace_usock(const char *nspace)
 {
-	char *spool, *usock = NULL;
+	char *spool;
 	debug("mpi/pmix: setup sockets");
-	spool = slurm_get_slurmd_spooldir();
-	xstrfmtcat(usock, "%s/stepd.%s", spool, nspace);
-	xfree(spool);
-	return usock;
+	spool = slurm_get_slurmd_spooldir(_pmixp_job_info.hostname);
+	xstrfmtcat(spool, "/stepd.%s", nspace);
+	return spool;
 }
 
 #endif /* PMIXP_INFO_H */
