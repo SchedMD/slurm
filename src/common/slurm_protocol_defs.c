@@ -1822,6 +1822,8 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "AccountingPolicy";
 	case WAIT_FED_JOB_LOCK:
 		return "FedJobLock";
+	case FAIL_OOM:
+		return "OutOfMemory";
 	default:
 		snprintf(val, sizeof(val), "%d", inx);
 		return val;
@@ -2084,6 +2086,8 @@ extern char *job_state_string(uint32_t inx)
 		return "BOOT_FAIL";
 	case JOB_DEADLINE:
 		return "DEADLINE";
+	case JOB_OOM:
+		return "OUT_OF_MEMORY";
 	default:
 		return "?";
 	}
@@ -2135,6 +2139,8 @@ extern char *job_state_string_compact(uint32_t inx)
 		return "BF";
 	case JOB_DEADLINE:
 		return "DL";
+	case JOB_OOM:
+		return "OOM";
 	default:
 		return "?";
 	}

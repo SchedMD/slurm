@@ -540,6 +540,7 @@ int failcnt_non_zero(xcgroup_t* cg, char* param)
 extern int task_cgroup_memory_check_oom(stepd_step_rec_t *job)
 {
 	xcgroup_t memory_cg;
+	int rc = SLURM_SUCCESS;
 
 	if (xcgroup_create(&memory_ns, &memory_cg, "", 0, 0)
 	    == XCGROUP_SUCCESS) {
@@ -549,37 +550,44 @@ extern int task_cgroup_memory_check_oom(stepd_step_rec_t *job)
 			 * can't tell which is which so we'll treat
 			 * them the same */
 			if (failcnt_non_zero(&step_memory_cg,
-					     "memory.memsw.failcnt"))
+					     "memory.memsw.failcnt")) {
 				/* reports the number of times that the
 				 * memory plus swap space limit has
 				 * reached the value set in
 				 * memory.memsw.limit_in_bytes.
 				 */
 				error("Exceeded step memory limit at some point.");
-			else if (failcnt_non_zero(&step_memory_cg,
-						  "memory.failcnt"))
+				rc = ENOMEM;
+			} else if (failcnt_non_zero(&step_memory_cg,
+						    "memory.failcnt")) {
 				/* reports the number of times that the
 				 * memory limit has reached the value set
 				 * in memory.limit_in_bytes.
 				 */
 				error("Exceeded step memory limit at some point.");
+				rc = ENOMEM;
+			}
 			if (failcnt_non_zero(&job_memory_cg,
-					     "memory.memsw.failcnt"))
+					     "memory.memsw.failcnt")) {
 				error("Exceeded job memory limit at some point.");
-			else if (failcnt_non_zero(&job_memory_cg,
-						  "memory.failcnt"))
+				rc = ENOMEM;
+			} else if (failcnt_non_zero(&job_memory_cg,
+						    "memory.failcnt")) {
 				error("Exceeded job memory limit at some point.");
+				rc = ENOMEM;
+			}
 			xcgroup_unlock(&memory_cg);
-		} else
+		} else {
 			error("task/cgroup task_cgroup_memory_check_oom: "
 			      "task_cgroup_memory_check_oom: unable to lock "
 			      "root memcg : %m");
+		}
 		xcgroup_destroy(&memory_cg);
 	} else
 		error("task/cgroup task_cgroup_memory_check_oom: "
 		      "unable to create root memcg : %m");
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 extern int task_cgroup_memory_add_pid(pid_t pid)

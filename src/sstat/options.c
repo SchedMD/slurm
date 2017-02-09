@@ -334,6 +334,8 @@ int decode_state_char(char *state)
 		return JOB_PREEMPTED;
 	else if (!xstrcasecmp(state, "dl"))
 		return JOB_DEADLINE;
+	else if (!xstrcasecmp(state, "oom"))
+		return JOB_OOM;
 	else
 		return -1; // unknown
 }

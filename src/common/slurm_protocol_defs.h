@@ -80,6 +80,8 @@
 	((_X->job_state & JOB_STATE_BASE) == JOB_NODE_FAIL)
 #define IS_JOB_DEADLINE(_X)		\
 	((_X->job_state & JOB_STATE_BASE) == JOB_DEADLINE)
+#define IS_JOB_OOM(_X)		\
+	((_X->job_state & JOB_STATE_BASE) == JOB_OOM)
 #define IS_JOB_POWER_UP_NODE(_X)	\
 	(_X->job_state & JOB_POWER_UP_NODE)
 
@@ -910,6 +912,8 @@ typedef struct composite_msg {
  * from getting the MPIRUN_PARTITION at that time. It is needed for
  * the job epilog. */
 
+#define SIG_OOM		253	/* Dummy signal value for out of memory
+				 * (OOM) notification */
 #define SIG_UME		992	/* Dummy signal value for uncorrectable memory
 				 * error (UME) notification */
 #define SIG_REQUEUED	993	/* Dummy signal value to job requeue */

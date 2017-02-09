@@ -3271,7 +3271,7 @@ static void _slurm_rpc_shutdown_controller_immediate(slurm_msg_t * msg)
 /* _slurm_rpc_step_complete - process step completion RPC to note the
  *      completion of a job step on at least some nodes.
  *	If the job step is complete, it may
- *	represent the termination of an entire job */
+ *	represent the termination of an entire job step */
 static void _slurm_rpc_step_complete(slurm_msg_t *msg, bool running_composite)
 {
 	static int active_rpc_cnt = 0;

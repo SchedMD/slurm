@@ -7,6 +7,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix srun I/O race condtion to eliminate a error message that might be
     generated if the application exits with outstanding stdin.
  -- Fix regression when purging/archiving jobs/events.
+ -- Add new job state JOB_OOM indicating Out Of Memory condition as detected
+    by task/cgroup plugin.
 
 * Changes in Slurm 17.02.0rc1
 ==============================

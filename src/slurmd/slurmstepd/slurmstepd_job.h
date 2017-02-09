@@ -228,6 +228,7 @@ typedef struct {
 	int		non_smp;	/* Set if task IDs are not monotonically
 					 * increasing across all nodes, set only
 					 * native Cray systems */
+	bool		oom_error;	/* step out of memory error */
 } stepd_step_rec_t;
 
 
