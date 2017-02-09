@@ -3045,7 +3045,7 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 		memcpy(node_addr, job_ptr->node_addr,
 		       (sizeof(slurm_addr_t) * node_cnt));
 	}
-	END_TIMER2("_slurm_rpc_job_alloc_info");
+	END_TIMER2("_slurm_rpc_job_sbcast_cred");
 
 	/* return result */
 	if (error_code || (job_ptr == NULL)) {
