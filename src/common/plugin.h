@@ -41,7 +41,9 @@
 
 #include <inttypes.h>
 #include <sys/types.h>
+#include <dirent.h>
 
+#include "src/common/list.h"
 #include "slurm/slurm_errno.h"
 
 /*
@@ -207,5 +209,13 @@ extern plugin_context_t *plugin_context_create(
  * Destroy a context created from plugin_context_create.
  */
 extern int plugin_context_destroy(plugin_context_t *c);
+
+/*
+ * Return a list of plugin names that match the given type.
+ *
+ * IN plugin_type - Type of plugin to search for in the plugin_dir.
+ * RET list of plugin names, NULL if none found.
+ */
+extern List plugin_get_plugins_of_type(char *plugin_type);
 
 #endif /*__GENERIC_PLUGIN_H__*/

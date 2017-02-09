@@ -480,3 +480,74 @@ extern int plugin_context_destroy(plugin_context_t *c)
 
 	return rc;
 }
+
+/*
+ * Return a list of plugin names that match the given type.
+ *
+ * IN plugin_type - Type of plugin to search for in the plugin_dir.
+ * RET list of plugin names, NULL if none found.
+ */
+extern List plugin_get_plugins_of_type(char *plugin_type)
+{
+	List plugin_names = NULL;
+	char *plugin_dir = NULL, *dir = NULL, *save_ptr = NULL;
+	char *type_under = NULL, *type_slash = NULL;
+	DIR *dirp;
+	struct dirent *e;
+	int len;
+
+	if (!(plugin_dir = slurm_get_plugin_dir())) {
+		error("%s: No plugin dir given", __func__);
+		goto done;
+	}
+
+	type_under = xstrdup_printf("%s_", plugin_type);
+	type_slash = xstrdup_printf("%s/", plugin_type);
+
+	dir = strtok_r(plugin_dir, ":", &save_ptr);
+	while (dir) {
+		/* Open the directory. */
+		if (!(dirp = opendir(dir))) {
+			error("cannot open plugin directory %s", dir);
+			goto done;
+		}
+
+		while (1) {
+			char full_name[128];
+
+			if (!(e = readdir( dirp )))
+				break;
+			/* Check only files with "plugintype_" in them. */
+			if (xstrncmp(e->d_name, type_under, strlen(type_under)))
+				continue;
+
+			len = strlen(e->d_name);
+			len -= 3;
+			/* Check only shared object files */
+			if (xstrcmp(e->d_name+len, ".so"))
+				continue;
+			/* add one for the / */
+			len++;
+			xassert(len < sizeof(full_name));
+			snprintf(full_name, len, "%s%s",
+				 type_slash, e->d_name + strlen(type_slash));
+
+			if (!plugin_names)
+				plugin_names = list_create(slurm_destroy_char);
+			if (!list_find_first(plugin_names,
+					     slurm_find_char_in_list,
+					     full_name))
+				list_append(plugin_names, xstrdup(full_name));
+		}
+		closedir(dirp);
+
+		dir = strtok_r(NULL, ":", &save_ptr);
+	}
+
+done:
+	xfree(plugin_dir);
+	xfree(type_under);
+	xfree(type_slash);
+
+	return plugin_names;
+}

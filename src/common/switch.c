@@ -196,18 +196,42 @@ static plugin_context_t   **switch_context = NULL;
 static pthread_mutex_t      context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
 
-static int switch_context_cnt = -1;
+static int switch_context_cnt     = -1;
 static int switch_context_default = -1;
+
+typedef struct _plugin_args {
+	char *plugin_type;
+	char *default_plugin;
+} _plugin_args_t;
+
+static int _load_plugins(void *x, void *arg)
+{
+	char *plugin_name     = (char *)x;
+	_plugin_args_t *pargs = (_plugin_args_t *)arg;
+
+	switch_context[switch_context_cnt] =
+		plugin_context_create(pargs->plugin_type, plugin_name,
+				      (void **)&ops[switch_context_cnt], syms,
+				      sizeof(syms));
+
+	if (switch_context[switch_context_cnt]) {
+		/* set the default */
+		if (!xstrcmp(plugin_name, pargs->default_plugin))
+			switch_context_default = switch_context_cnt;
+		switch_context_cnt++;
+	}
+
+	return 0;
+}
 
 extern int switch_init(bool only_default)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "switch";
-	char *type = NULL;
-	int i, j, len;
-	DIR *dirp;
-	struct dirent *e;
-	char *dir_array = NULL, *head = NULL;
+	char *switch_type = NULL;
+	int i, j, plugin_cnt;
+	List plugin_names = NULL;
+	_plugin_args_t plugin_args = {0};
 
 	if ( init_run && switch_context )
 		return retval;
@@ -218,99 +242,29 @@ extern int switch_init(bool only_default)
 		goto done;
 
 	switch_context_cnt = 0;
-	type = slurm_get_switch_type();
+
+	switch_type = slurm_get_switch_type();
+
+	plugin_args.plugin_type    = plugin_type;
+	plugin_args.default_plugin = switch_type;
 
 	if (only_default) {
-		ops = xmalloc(sizeof(slurm_switch_ops_t));
-		switch_context = xmalloc(sizeof(plugin_context_t *));
-		if ((switch_context[0] = plugin_context_create(
-			     plugin_type, type, (void **)&ops[0],
-			     syms, sizeof(syms)))) {
-			switch_context_default = 0;
-			switch_context_cnt++;
-		}
-		goto skip_load_all;
+		plugin_names = list_create(slurm_destroy_char);
+		list_append(plugin_names, xstrdup(switch_type));
+	} else {
+		plugin_names = plugin_get_plugins_of_type(plugin_type);
+	}
+	if (plugin_names && (plugin_cnt = list_count(plugin_names))) {
+		ops = xmalloc(sizeof(slurm_switch_ops_t) * plugin_cnt);
+		switch_context = xmalloc(sizeof(plugin_context_t *) *
+					 plugin_cnt);
+
+		list_for_each(plugin_names, _load_plugins, &plugin_args);
 	}
 
-	if (!(dir_array = slurm_get_plugin_dir())) {
-		error("plugin_load_and_link: No plugin dir given");
-		goto done;
-	}
 
-	head = dir_array;
-	for (i=0; ; i++) {
-		bool got_colon = 0;
-		if (dir_array[i] == ':') {
-			dir_array[i] = '\0';
-			got_colon = 1;
-		} else if (dir_array[i] != '\0')
-			continue;
-
-		/* Open the directory. */
-		if (!(dirp = opendir(head))) {
-			error("cannot open plugin directory %s", head);
-			goto done;
-		}
-
-		while (1) {
-			char full_name[128];
-
-			if (!(e = readdir( dirp )))
-				break;
-			/* Check only files with switch_ in them. */
-			if (xstrncmp(e->d_name, "switch_", strlen("switch_")))
-				continue;
-
-			len = strlen(e->d_name);
-			len -= 3;
-			/* Check only shared object files */
-			if (xstrcmp(e->d_name+len, ".so"))
-				continue;
-			/* add one for the / */
-			len++;
-			xassert(len < sizeof(full_name));
-			snprintf(full_name, len, "switch/%s", e->d_name +
-				 strlen("switch/"));
-			for (j = 0; j < switch_context_cnt; j++) {
-				if (!xstrcmp(full_name,
-					     switch_context[j]->type))
-					break;
-			}
-			if (j >= switch_context_cnt) {
-				xrealloc(ops,
-					 (sizeof(slurm_switch_ops_t) *
-					  (switch_context_cnt + 1)));
-				xrealloc(switch_context,
-					 (sizeof(plugin_context_t *) *
-					  (switch_context_cnt + 1)));
-
-				switch_context[switch_context_cnt] =
-					plugin_context_create(
-						plugin_type, full_name,
-						(void **)&ops[
-							switch_context_cnt],
-						syms, sizeof(syms));
-				if (switch_context[switch_context_cnt]) {
-					/* set the default */
-					if (!xstrcmp(full_name, type))
-						switch_context_default =
-							switch_context_cnt;
-					switch_context_cnt++;
-				}
-			}
-		}
-
-		closedir(dirp);
-
-		if (got_colon) {
-			head = dir_array + i + 1;
-		} else
-			break;
-	}
-
-skip_load_all:
 	if (switch_context_default == -1)
-		fatal("Can't find plugin for %s", type);
+		fatal("Can't find plugin for %s", switch_type);
 
 	/* Insure that plugin_id is valid and unique */
 	for (i = 0; i < switch_context_cnt; i++) {
@@ -329,15 +283,14 @@ skip_load_all:
 			      *(ops[i].plugin_id),
 			      switch_context[i]->type);
 		}
-
 	}
 
 	init_run = true;
 
 done:
 	slurm_mutex_unlock( &context_lock );
-	xfree(type);
-	xfree(dir_array);
+	xfree(switch_type);
+	FREE_NULL_LIST(plugin_names);
 
 	return retval;
 }
