@@ -2,7 +2,7 @@
  **  pmix_agent.c - PMIx agent thread
  *****************************************************************************
  *  Copyright (C) 2014-2015 Artem Polyakov. All rights reserved.
- *  Copyright (C) 2015      Mellanox Technologies. All rights reserved.
+ *  Copyright (C) 2015-2017 Mellanox Technologies. All rights reserved.
  *  Written by Artem Y. Polyakov <artpol84@gmail.com, artemp@mellanox.com>.
  *
  *  This file is part of SLURM, a resource management program.
@@ -51,8 +51,8 @@
 
 #define MAX_RETRIES 5
 
-static int _agent_is_running = 0;
-static int _timer_is_running = 0;
+static volatile int _agent_is_running = 0;
+static volatile int _timer_is_running = 0;
 static eio_handle_t *_io_handle = NULL;
 
 static int _agent_spawned = 0, _timer_spawned = 0;
