@@ -89,10 +89,12 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 check_PROGRAMS = $(am__EXEEXT_2)
-TESTS = pack_user_rec-test$(EXEEXT) pack_cluster_rec-test$(EXEEXT) \
-	pack_used_limits-test$(EXEEXT) $(am__EXEEXT_1)
+TESTS = $(am__EXEEXT_1)
 #MYCFLAGS += -D_ISO99_SOURCE -Wunused-but-set-variable
-@HAVE_CHECK_TRUE@am__append_1 = pack_user_rec-test
+@HAVE_CHECK_TRUE@am__append_1 = pack_user_rec-test \
+@HAVE_CHECK_TRUE@	 pack_cluster_rec-test \
+@HAVE_CHECK_TRUE@	 pack_used_limits-test
+
 subdir = testsuite/slurm_unit/common/slurmdb_pack
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_zlib.m4 \
@@ -145,10 +147,10 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h $(top_builddir)/slurm/slurm.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-@HAVE_CHECK_TRUE@am__EXEEXT_1 = pack_user_rec-test$(EXEEXT)
-am__EXEEXT_2 = pack_user_rec-test$(EXEEXT) \
-	pack_cluster_rec-test$(EXEEXT) pack_used_limits-test$(EXEEXT) \
-	$(am__EXEEXT_1)
+@HAVE_CHECK_TRUE@am__EXEEXT_1 = pack_user_rec-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@	pack_cluster_rec-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@	pack_used_limits-test$(EXEEXT)
+am__EXEEXT_2 = $(am__EXEEXT_1)
 pack_cluster_rec_test_SOURCES = pack_cluster_rec-test.c
 pack_cluster_rec_test_OBJECTS =  \
 	pack_cluster_rec_test-pack_cluster_rec-test.$(OBJEXT)
@@ -1240,8 +1242,6 @@ uninstall-am:
 
 .PRECIOUS: Makefile
 
-@HAVE_CHECK_TRUE@	 pack_cluster_rec-test
-@HAVE_CHECK_TRUE@	 pack_used_limits-test
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

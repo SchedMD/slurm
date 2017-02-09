@@ -6,16 +6,13 @@ LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
 check_PROGRAMS = \
 	$(TESTS)
 
-TESTS = \
-	pack_user_rec-test \
-	pack_cluster_rec-test \
-	pack_used_limits-test
+TESTS =
 
 if HAVE_CHECK
 MYCFLAGS  = @CHECK_CFLAGS@  #-Wall -ansi -pedantic -std=c99
 #MYCFLAGS += -D_ISO99_SOURCE -Wunused-but-set-variable
-TESTS += pack_user_rec-test
-	 pack_cluster_rec-test
+TESTS += pack_user_rec-test \
+	 pack_cluster_rec-test \
 	 pack_used_limits-test
 
 pack_user_rec_test_CFLAGS = $(MYCFLAGS)
