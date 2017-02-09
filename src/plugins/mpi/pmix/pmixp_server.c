@@ -100,7 +100,7 @@ static volatile int _was_initialized = 0;
 
 int pmixp_stepd_init(const stepd_step_rec_t *job, char ***env)
 {
-	char *path;
+	char *tmp_path, *path = NULL;
 	int fd, rc;
 
 	if (SLURM_SUCCESS != (rc = pmixp_info_set(job, env))) {
@@ -109,12 +109,14 @@ int pmixp_stepd_init(const stepd_step_rec_t *job, char ***env)
 	}
 
 	/* Create UNIX socket for slurmd communication */
-	path = pmixp_info_nspace_usock(pmixp_info_namespace());
-	if (NULL == path) {
+	if (!(tmp_path = pmixp_info_nspace_usock(pmixp_info_namespace()))) {
 		PMIXP_ERROR("Out-of-memory");
 		rc = SLURM_ERROR;
 		goto err_path;
 	}
+
+	path = slurm_conf_expand_slurmd_path(tmp_path, job->node_name);
+	xfree(tmp_path);
 	if ((fd = pmixp_usock_create_srv(path)) < 0) {
 		rc = SLURM_ERROR;
 		goto err_usock;
