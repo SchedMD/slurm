@@ -10,7 +10,6 @@ documents those changes that are of interest to users and administrators.
  -- Jobs preempted with PreemptMode=REQUEUE were incorrectly recorded as
     REQUEUED in the accounting.
  -- PMIX - Use volatile specifier to avoid flag caching.
- -- PMIX - Make it possible to use %n or %h in a spool dir.
 
 * Changes in Slurm 16.05.9
 ==========================

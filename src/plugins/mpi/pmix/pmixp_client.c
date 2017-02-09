@@ -221,39 +221,29 @@ int pmixp_libpmix_init(void)
 	int rc;
 	mode_t rights = (S_IRUSR | S_IWUSR | S_IXUSR) | (S_IRGRP | S_IWGRP | S_IXGRP);
 	pmix_info_t *kvp = NULL;
-	char *tmp_path, *path, *lib_path;
 
-	tmp_path = pmixp_info_tmpdir_lib();
-	lib_path = slurm_conf_expand_slurmd_path(tmp_path,
-						 pmixp_info_hostname());
-	rc = pmixp_mkdir(lib_path, rights);
-	if (rc) {
+	if (0 != (rc = pmixp_mkdir(pmixp_info_tmpdir_lib(), rights))) {
 		PMIXP_ERROR_STD("Cannot create server tmpdir: \"%s\"",
-				lib_path);
-		xfree(lib_path);
+				pmixp_info_tmpdir_lib());
 		return errno;
 	}
 
-	tmp_path = pmixp_info_tmpdir_cli();
-	path = slurm_conf_expand_slurmd_path(tmp_path, pmixp_info_hostname());
-	rc = pmixp_mkdir(path, rights);
-	if (rc) {
+	if (0 != (rc = pmixp_mkdir(pmixp_info_tmpdir_cli(), rights))) {
 		PMIXP_ERROR_STD("Cannot create client tmpdir: \"%s\"",
-				path);
-		xfree(path);
+				pmixp_info_tmpdir_cli());
 		return errno;
 	}
-	xfree(path);
+
 
 	/* TODO: must be deleted in future once info-key approach will harden */
-	setenv(PMIXP_PMIXLIB_TMPDIR, lib_path, 1);
+	setenv(PMIXP_PMIXLIB_TMPDIR, pmixp_info_tmpdir_lib(), 1);
 
 	PMIXP_INFO_ADD(kvp, PMIX_USERID, uint32_t, pmixp_info_jobuid());
 
 #ifdef PMIX_SERVER_TMPDIR
-	PMIXP_INFO_ADD(kvp, PMIX_SERVER_TMPDIR, string, lib_path);
+	PMIXP_INFO_ADD(kvp, PMIX_SERVER_TMPDIR, string,
+		       pmixp_info_tmpdir_lib());
 #endif
-	xfree(lib_path);
 
 	/* setup the server library */
 	if (PMIX_SUCCESS != (rc = PMIx_server_init(&_slurm_pmix_cb, kvp,
@@ -285,7 +275,6 @@ int pmixp_libpmix_init(void)
 int pmixp_libpmix_finalize(void)
 {
 	int rc = SLURM_SUCCESS, rc1;
-	char *p, *path;
 
 	/* deregister the errhandler */
 #if (HAVE_PMIX_VER == 1)
@@ -298,23 +287,17 @@ int pmixp_libpmix_finalize(void)
 		rc = SLURM_ERROR;
 	}
 
-	path = pmixp_info_tmpdir_lib();
-	p = slurm_conf_expand_slurmd_path(path, pmixp_info_hostname());
-	rc1 = pmixp_rmdir_recursively(p);
+	rc1 = pmixp_rmdir_recursively(pmixp_info_tmpdir_lib());
 	if (0 != rc1) {
-		PMIXP_ERROR_STD("Failed to remove %s\n", p);
+		PMIXP_ERROR_STD("Failed to remove %s\n", pmixp_info_tmpdir_lib());
 		/* Not considering this as fatal error */
 	}
-	xfree(p);
 
-	path = pmixp_info_tmpdir_cli();
-	p = slurm_conf_expand_slurmd_path(path, pmixp_info_hostname());
-	rc1 = pmixp_rmdir_recursively(path);
+	rc1 = pmixp_rmdir_recursively(pmixp_info_tmpdir_cli());
 	if (0 != rc1) {
-		PMIXP_ERROR_STD("Failed to remove %s\n", p);
+		PMIXP_ERROR_STD("Failed to remove %s\n", pmixp_info_tmpdir_cli());
 		/* Not considering this as fatal error */
 	}
-	xfree(p);
 
 	return rc;
 }
@@ -377,7 +360,7 @@ static void _general_proc_info(List lresp)
 static void _set_tmpdirs(List lresp)
 {
 	pmix_info_t *kvp;
-	char *p, *path;
+	char *p = NULL;
 	bool rmclean = true;
 
 	/* We consider two sources of the tempdir:
@@ -385,19 +368,14 @@ static void _set_tmpdirs(List lresp)
 	 * - env var SLURM_PMIX_TMPDIR;
 	 * do we need to do anything else?
 	 */
-	path = pmixp_info_tmpdir_cli_base();
-	p = slurm_conf_expand_slurmd_path(path, pmixp_info_hostname());
-
+	p = pmixp_info_tmpdir_cli_base();
 	PMIXP_ALLOC_KEY(kvp, PMIX_TMPDIR);
 	PMIX_VAL_SET(&kvp->value, string, p);
-	xfree(p);
 	list_append(lresp, kvp);
 
-	path = pmixp_info_tmpdir_cli();
-	p = slurm_conf_expand_slurmd_path(path, pmixp_info_hostname());
+	p = pmixp_info_tmpdir_cli();
 	PMIXP_ALLOC_KEY(kvp, PMIX_NSDIR);
 	PMIX_VAL_SET(&kvp->value, string, p);
-	xfree(p);
 	list_append(lresp, kvp);
 
 	PMIXP_ALLOC_KEY(kvp, PMIX_TDIR_RMCLEAN);
