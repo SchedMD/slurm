@@ -77,6 +77,9 @@ void *slurm_xmalloc(size_t size, bool clear,
 	size_t *p;
 	size_t total_size = size + 2 * sizeof(size_t);
 
+	if (size <= 0)
+		return NULL;
+
 	if (clear)
 		p = calloc(1, total_size);
 	else
@@ -102,6 +105,9 @@ void *slurm_try_xmalloc(size_t size, const char *file, int line,
 	void *new;
 	size_t *p;
 	size_t total_size = size + 2 * sizeof(size_t);
+
+	if (size <= 0)
+		return NULL;
 
 	p = calloc(1, total_size);
 	if (!p) {
