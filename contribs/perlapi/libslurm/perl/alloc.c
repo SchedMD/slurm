@@ -279,46 +279,6 @@ resource_allocation_response_msg_to_hv(resource_allocation_response_msg_t *resp_
 }
 
 /*
- * convert job_alloc_info_response_msg_t to perl HV
- */
-int
-job_alloc_info_response_msg_to_hv(job_alloc_info_response_msg_t *resp_msg, HV* hv)
-{
-	AV* av;
-	int i;
-
-	STORE_FIELD(hv, resp_msg, job_id, uint32_t);
-	if(resp_msg->node_list)
-		STORE_FIELD(hv, resp_msg, node_list, charp);
-	STORE_FIELD(hv, resp_msg, num_cpu_groups, uint16_t);
-	if(resp_msg->num_cpu_groups) {
-		av = newAV();
-		for(i = 0; i < resp_msg->num_cpu_groups; i ++) {
-			av_store_uint16_t(av, i, resp_msg->cpus_per_node[i]);
-		}
-		hv_store_sv(hv, "cpus_per_node", newRV_noinc((SV*)av));
-
-		av = newAV();
-		for(i = 0; i < resp_msg->num_cpu_groups; i ++) {
-			av_store_uint32_t(av, i, resp_msg->cpu_count_reps[i]);
-		}
-		hv_store_sv(hv, "cpu_count_reps", newRV_noinc((SV*)av));
-	}
-	STORE_FIELD(hv, resp_msg, node_cnt, uint32_t);
-	if(resp_msg->node_cnt) {
-		av = newAV();
-		for(i = 0; i < resp_msg->node_cnt; i ++) {
-			/* XXX: This is a packed inet address */
-			av_store(av, i, newSVpvn((char*)(resp_msg->node_addr + i), sizeof(slurm_addr_t)));
-		}
-		hv_store_sv(hv, "node_addr", newRV_noinc((SV*)av));
-	}
-	STORE_FIELD(hv, resp_msg, error_code, uint32_t);
-	STORE_PTR_FIELD(hv, resp_msg, select_jobinfo, "Slurm::dynamic_plugin_data_t");
-	return 0;
-}
-
-/*
  * convert submit_response_msg_t to perl HV
  */
 int

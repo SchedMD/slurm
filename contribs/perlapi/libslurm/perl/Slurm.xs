@@ -458,32 +458,6 @@ slurm_allocate_resources_blocking(slurm_t self, HV *user_req, time_t timeout=0, 
 
 
 HV *
-slurm_allocation_lookup(slurm_t self, uint32_t job_id)
-	PREINIT:
-		job_alloc_info_response_msg_t *resp_msg = NULL;
-		int rc;
-	CODE:
-		if (self); /* this is needed to avoid a warning about
-			      unused variables.  But if we take slurm_t self
-			      out of the mix Slurm-> doesn't work,
-			      only Slurm::
-			    */
-		rc = slurm_allocation_lookup(job_id, &resp_msg);
-		if(rc != SLURM_SUCCESS) {
-			slurm_free_job_alloc_info_response_msg(resp_msg);
-			XSRETURN_UNDEF;
-		}
-		RETVAL = newHV();
-		sv_2mortal((SV*)RETVAL);
-		rc = job_alloc_info_response_msg_to_hv(resp_msg, RETVAL);
-		slurm_free_job_alloc_info_response_msg(resp_msg);
-		if (rc < 0) {
-			XSRETURN_UNDEF;
-		}
-	OUTPUT:
-		RETVAL
-
-HV *
 slurm_allocation_lookup_lite(slurm_t self, uint32_t job_id)
 	PREINIT:
 		resource_allocation_response_msg_t *resp_msg = NULL;

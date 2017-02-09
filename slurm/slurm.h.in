@@ -2261,21 +2261,6 @@ typedef struct resource_allocation_response_msg {
 				    * doesn't know about slurmdb.h. */
 } resource_allocation_response_msg_t;
 
-typedef struct job_alloc_info_response_msg {
-	uint32_t job_id;	/* assigned job id */
-	char *node_list;	/* assigned list of nodes */
-	uint32_t num_cpu_groups;/* elements in below cpu arrays */
-	uint16_t *cpus_per_node;/* cpus per node */
-	uint32_t *cpu_count_reps;/* how many nodes have same cpu count */
-	uint32_t node_cnt;	/* count of nodes */
-	slurm_addr_t *node_addr;	/* network addresses */
-	uint32_t error_code;	/* error code for warning message */
-	dynamic_plugin_data_t *select_jobinfo;	/* opaque data structure,
-						 * use
-						 * slurm_get_select_jobinfo()
-						 * to access contents */
-} job_alloc_info_response_msg_t;
-
 typedef struct partition_info_msg {
 	time_t last_update;	/* time of latest info */
 	uint32_t record_count;	/* number of records */
@@ -3120,24 +3105,6 @@ extern resource_allocation_response_msg_t *slurm_allocate_resources_blocking(
  * NOTE: buffer is loaded by slurm_allocate_resources
  */
 extern void slurm_free_resource_allocation_response_msg(resource_allocation_response_msg_t *msg);
-
-/*
- * slurm_free_job_alloc_info_response_msg - free slurm resource
- *	allocation lookup message
- * IN msg - pointer to job allocation info response message
- * NOTE: buffer is loaded by slurm_allocation_lookup
- */
-extern void slurm_free_job_alloc_info_response_msg(job_alloc_info_response_msg_t *msg);
-
-/*
- * slurm_allocation_lookup - retrieve info for an existing resource allocation
- * IN job_id - job allocation identifier
- * OUT resp - job allocation information
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
- * NOTE: free "info" using slurm_free_job_alloc_info_response_msg
- */
-extern int slurm_allocation_lookup(uint32_t job_id,
-				   job_alloc_info_response_msg_t **info);
 
 /*
  * slurm_allocation_lookup_lite - retrieve minor info for an existing

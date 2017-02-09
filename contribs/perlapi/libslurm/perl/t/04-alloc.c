@@ -32,20 +32,12 @@ ok($jobid, "allocate resources blocking") or diag("allocate_resources_blocking: 
 # 4
 SKIP: {
     skip "resource allocation fail", 1 unless $jobid;
-    $resp = $slurm->allocation_lookup($jobid);
-    ok(defined $resp, "allocation lookup") or diag("allocation_lookup: " . $slurm->strerror());
-}
-
-
-# 5
-SKIP: {
-    skip "resource allocation fail", 1 unless $jobid;
     $resp = $slurm->allocation_lookup_lite($jobid);
     ok(defined $resp, "allocation lookup lite") or diag("allocation_lookup_lite: " . $slurm->strerror());
 }
 
 
-# 6
+# 5
 $callbacks = {
     ping => sub { print STDERR "ping from slurmctld, $_->{job_id}.$_->{step_id}\n"; },
     job_complete => sub { print STDERR "job complete, $_->{job_id}.$_->{step_id}\n"; },
@@ -59,7 +51,7 @@ ok(ref($thr) eq "Slurm::allocation_msg_thread_t" && defined $port, "allocation m
 $slurm->allocation_msg_thr_destroy($thr) if $thr;
 
 
-# 7
+# 6
 SKIP: {
     skip "resource allocation fail", 1 unless $jobid;
     $resp = $slurm->sbcast_lookup($jobid);
@@ -68,19 +60,19 @@ SKIP: {
 $slurm->kill_job($jobid, SIGKILL) if $jobid;
 
 
-# 8
+# 7
 $job_desc->{script} = "#!/bin/sh\nsleep 1000\n";
 $resp = $slurm->submit_batch_job($job_desc);
 ok($resp, "submit batch job") or diag("submit_batch_job: " . $slurm->strerror());
 $slurm->kill_job($resp->{job_id}, SIGKILL) if $resp;
 
 
-# 9 
+# 8
 $rc = $slurm->job_will_run($job_desc);
 ok(defined $rc, "job will run") or diag("job_will_run: " . $slurm->strerror());
 
 
-# 10
+# 9
 SKIP: {
     skip "do not know how to test", 1 if 1;
     $hl = $slurm->read_hostfile($file, 8);

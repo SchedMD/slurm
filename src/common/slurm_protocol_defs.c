@@ -3147,27 +3147,6 @@ extern void slurm_free_sbcast_cred_msg(job_sbcast_cred_msg_t * msg)
 }
 
 /*
- * slurm_free_job_alloc_info_response_msg - free slurm job allocation
- *					    info response message
- * IN msg - pointer to job allocation info response message
- * NOTE: buffer is loaded by slurm_allocate_resources
- */
-extern void slurm_free_job_alloc_info_response_msg(
-		job_alloc_info_response_msg_t *msg)
-{
-	if (msg) {
-		if (msg->select_jobinfo)
-			select_g_select_jobinfo_free(msg->select_jobinfo);
-		xfree(msg->node_list);
-		xfree(msg->cpus_per_node);
-		xfree(msg->cpu_count_reps);
-		xfree(msg->node_addr);
-		xfree(msg);
-	}
-}
-
-
-/*
  * slurm_free_job_step_create_response_msg - free slurm
  *	job step create response message
  * IN msg - pointer to job step create response message
@@ -3937,7 +3916,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		slurm_free_node_registration_status_msg(data);
 		break;
 	case REQUEST_JOB_END_TIME:
-	case REQUEST_JOB_ALLOCATION_INFO:
 	case REQUEST_JOB_ALLOCATION_INFO_LITE:
 		slurm_free_job_alloc_info_msg(data);
 		break;
@@ -4544,10 +4522,6 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_SIB_RESOURCE_ALLOCATION";
 	case RESPONSE_JOB_WILL_RUN:
 		return "RESPONSE_JOB_WILL_RUN";
-	case REQUEST_JOB_ALLOCATION_INFO:
-		return "REQUEST_JOB_ALLOCATION_INFO";
-	case RESPONSE_JOB_ALLOCATION_INFO:
-		return "RESPONSE_JOB_ALLOCATION_INFO";
 	case REQUEST_JOB_ALLOCATION_INFO_LITE:
 		return "REQUEST_JOB_ALLOCATION_INFO_LITE";
 	case RESPONSE_JOB_ALLOCATION_INFO_LITE:

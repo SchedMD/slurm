@@ -394,18 +394,6 @@ pending callback is given, it will be called with the job id of the pending job 
     
 =back
 
-=head3 $resp = $slurm->allocation_lookup($job_id);
-
-Retrieve info for an existing resource allocation.
-
-=over 2
-
-=item * IN $job_id: job allocation identifier.
-
-=item * RET: job allocation info, with structure of C<job_alloc_info_response_msg_t>. On failure C<undef> is returned with errno set.    
-
-=back
-
 =head3 $resp = $slurm->allocatiion_lookup_lite($job_id);
 
 Retrieve minor info for an existing resource allocation.

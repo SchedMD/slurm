@@ -417,48 +417,6 @@ slurm_job_step_create (job_step_create_request_msg_t *req,
 }
 
 /*
- * slurm_allocation_lookup - retrieve info for an existing resource allocation
- * IN jobid - job allocation identifier
- * OUT info - job allocation information
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
- * NOTE: free the "resp" using slurm_free_resource_allocation_response_msg
- */
-int
-slurm_allocation_lookup(uint32_t jobid,
-			job_alloc_info_response_msg_t **info)
-{
-	job_alloc_info_msg_t req;
-	slurm_msg_t req_msg;
-	slurm_msg_t resp_msg;
-
-	req.job_id = jobid;
-	slurm_msg_t_init(&req_msg);
-	slurm_msg_t_init(&resp_msg);
-	req_msg.msg_type = REQUEST_JOB_ALLOCATION_INFO;
-	req_msg.data     = &req;
-
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
-		return SLURM_ERROR;
-
-	switch(resp_msg.msg_type) {
-	case RESPONSE_SLURM_RC:
-		if (_handle_rc_msg(&resp_msg) < 0)
-			return SLURM_ERROR;
-		*info = NULL;
-		break;
-	case RESPONSE_JOB_ALLOCATION_INFO:
-		*info = (job_alloc_info_response_msg_t *)resp_msg.data;
-		return SLURM_PROTOCOL_SUCCESS;
-		break;
-	default:
-		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
-		break;
-	}
-
-	return SLURM_PROTOCOL_SUCCESS;
-}
-
-/*
  * slurm_allocation_lookup_lite - retrieve info for an existing resource
  *                                allocation without the addrs and such
  * IN jobid - job allocation identifier

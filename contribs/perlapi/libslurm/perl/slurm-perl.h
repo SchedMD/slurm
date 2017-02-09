@@ -47,8 +47,6 @@ extern int hv_to_job_desc_msg(HV *hv, job_desc_msg_t *job_desc);
 extern void free_job_desc_msg_memory(job_desc_msg_t *msg);
 extern int resource_allocation_response_msg_to_hv(
     resource_allocation_response_msg_t *resp_msg, HV *hv);
-extern int job_alloc_info_response_msg_to_hv(job_alloc_info_response_msg_t
-					     *resp_msg, HV *hv);
 extern int submit_response_msg_to_hv(submit_response_msg_t *resp_msg, HV *hv);
 extern int job_sbcast_cred_msg_to_hv(job_sbcast_cred_msg_t *msg, HV *hv);
 extern int srun_job_complete_msg_to_hv(srun_job_complete_msg_t *msg, HV *hv);

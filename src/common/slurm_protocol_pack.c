@@ -148,15 +148,6 @@ _unpack_resource_allocation_response_msg(resource_allocation_response_msg_t
 					 ** msg, Buf buffer,
 					 uint16_t protocol_version);
 
-static void
-_pack_job_alloc_info_response_msg(job_alloc_info_response_msg_t * msg,
-				  Buf buffer,
-				  uint16_t protocol_version);
-static int
-_unpack_job_alloc_info_response_msg(job_alloc_info_response_msg_t ** msg,
-				    Buf buffer,
-				    uint16_t protocol_version);
-
 static void _pack_submit_response_msg(submit_response_msg_t * msg,
 				      Buf buffer,
 				      uint16_t protocol_version);
@@ -947,7 +938,6 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 					  msg->protocol_version);
 		break;
 	case REQUEST_JOB_END_TIME:
-	case REQUEST_JOB_ALLOCATION_INFO:
 	case REQUEST_JOB_ALLOCATION_INFO_LITE:
 		_pack_job_alloc_info_msg((job_alloc_info_msg_t *) msg->data,
 					 buffer,
@@ -1014,12 +1004,6 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_will_run_response_msg((will_run_response_msg_t *)
 					    msg->data, buffer,
 					    msg->protocol_version);
-		break;
-	case RESPONSE_JOB_ALLOCATION_INFO:
-		_pack_job_alloc_info_response_msg(
-			(job_alloc_info_response_msg_t *)
-			msg->data, buffer,
-			msg->protocol_version);
 		break;
 	case REQUEST_UPDATE_FRONT_END:
 		_pack_update_front_end_msg((update_front_end_msg_t *) msg->data,
@@ -1630,7 +1614,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 			buffer, msg->protocol_version);
 		break;
 	case REQUEST_JOB_END_TIME:
-	case REQUEST_JOB_ALLOCATION_INFO:
 	case REQUEST_JOB_ALLOCATION_INFO_LITE:
 		rc = _unpack_job_alloc_info_msg((job_alloc_info_msg_t **) &
 						(msg->data), buffer,
@@ -1699,12 +1682,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_will_run_response_msg((will_run_response_msg_t **)
 						   &(msg->data), buffer,
 						   msg->protocol_version);
-		break;
-	case RESPONSE_JOB_ALLOCATION_INFO:
-		rc = _unpack_job_alloc_info_response_msg(
-			(job_alloc_info_response_msg_t **)
-			& (msg->data), buffer,
-			msg->protocol_version);
 		break;
 	case REQUEST_UPDATE_FRONT_END:
 		rc = _unpack_update_front_end_msg((update_front_end_msg_t **) &
@@ -3569,97 +3546,6 @@ _unpack_resource_allocation_response_msg(
 
 unpack_error:
 	slurm_free_resource_allocation_response_msg(tmp_ptr);
-	*msg = NULL;
-	return SLURM_ERROR;
-}
-
-static void
-_pack_job_alloc_info_response_msg(job_alloc_info_response_msg_t * msg,
-				  Buf buffer, uint16_t protocol_version)
-{
-	xassert(msg != NULL);
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack32(msg->error_code, buffer);
-		pack32(msg->job_id, buffer);
-		packstr(msg->node_list, buffer);
-
-		pack32(msg->num_cpu_groups, buffer);
-		if (msg->num_cpu_groups) {
-			pack16_array(msg->cpus_per_node, msg->num_cpu_groups,
-				     buffer);
-			pack32_array(msg->cpu_count_reps, msg->num_cpu_groups,
-				     buffer);
-		}
-
-		pack32(msg->node_cnt, buffer);
-		if (msg->node_cnt > 0)
-			_pack_slurm_addr_array(msg->node_addr, msg->node_cnt,
-					       buffer, protocol_version);
-
-		select_g_select_jobinfo_pack(msg->select_jobinfo, buffer,
-					     protocol_version);
-	} else {
-		error("_pack_job_alloc_info_response_msg: protocol_version "
-		      "%hu not supported", protocol_version);
-	}
-}
-
-static int
-_unpack_job_alloc_info_response_msg(job_alloc_info_response_msg_t ** msg,
-				    Buf buffer, uint16_t protocol_version)
-{
-	uint32_t uint32_tmp;
-	job_alloc_info_response_msg_t *tmp_ptr;
-
-	/* alloc memory for structure */
-	xassert(msg != NULL);
-	tmp_ptr = xmalloc(sizeof(job_alloc_info_response_msg_t));
-	*msg = tmp_ptr;
-
-	/* load the data values */
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&tmp_ptr->error_code, buffer);
-		safe_unpack32(&tmp_ptr->job_id, buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->node_list, &uint32_tmp,
-				       buffer);
-
-		safe_unpack32(&tmp_ptr->num_cpu_groups, buffer);
-		if (tmp_ptr->num_cpu_groups > 0) {
-			safe_unpack16_array(&tmp_ptr->cpus_per_node,
-					    &uint32_tmp, buffer);
-			if (tmp_ptr->num_cpu_groups != uint32_tmp)
-				goto unpack_error;
-			safe_unpack32_array(&tmp_ptr->cpu_count_reps,
-					    &uint32_tmp, buffer);
-			if (tmp_ptr->num_cpu_groups != uint32_tmp)
-				goto unpack_error;
-		}
-
-		safe_unpack32(&tmp_ptr->node_cnt, buffer);
-		if (tmp_ptr->node_cnt > 0) {
-			if (_unpack_slurm_addr_array(&(tmp_ptr->node_addr),
-						     &uint32_tmp, buffer,
-						     protocol_version))
-				goto unpack_error;
-			if (uint32_tmp != tmp_ptr->node_cnt)
-				goto unpack_error;
-		} else
-			tmp_ptr->node_addr = NULL;
-
-		if (select_g_select_jobinfo_unpack(&tmp_ptr->select_jobinfo,
-						   buffer,
-						   protocol_version))
-			goto unpack_error;
-	} else {
-		error("_unpack_job_alloc_info_response_msg: protocol_version "
-		      "%hu not supported", protocol_version);
-		goto unpack_error;
-	}
-	return SLURM_SUCCESS;
-
-unpack_error:
-	slurm_free_job_alloc_info_response_msg(tmp_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
