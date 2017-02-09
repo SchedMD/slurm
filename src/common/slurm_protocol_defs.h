@@ -1287,6 +1287,7 @@ extern List slurm_copy_char_list(List char_list);
 extern int slurm_addto_char_list(List char_list, char *names);
 extern int slurm_addto_mode_char_list(List char_list, char *names, int mode);
 extern int slurm_addto_step_list(List step_list, char *names);
+extern int slurm_find_char_in_list(void *x, void *key);
 extern int slurm_sort_char_list_asc(void *, void *);
 extern int slurm_sort_char_list_desc(void *, void *);
 

@@ -182,7 +182,7 @@ extern List slurm_copy_char_list(List char_list)
 	return ret_list;
 }
 
-static int _find_char_in_list(void *x, void *key)
+extern int slurm_find_char_in_list(void *x, void *key)
 {
 	char *char1 = (char *)x;
 	char *char2 = (char *)key;
@@ -192,7 +192,6 @@ static int _find_char_in_list(void *x, void *key)
 
 	return 0;
 }
-
 
 /* returns number of objects added to list */
 extern int slurm_addto_char_list(List char_list, char *names)
@@ -252,7 +251,7 @@ extern int slurm_addto_char_list(List char_list, char *names)
 					 * with qos.
 					 */
 					if (list_find(itr,
-						      _find_char_in_list,
+						      slurm_find_char_in_list,
 						      name)) {
 						list_delete_item(itr);
 					} else
@@ -302,9 +301,10 @@ extern int slurm_addto_char_list(List char_list, char *names)
 						 * needed for get associations
 						 * with qos.
 						 */
-						if (list_find(itr,
-							    _find_char_in_list,
-							    this_node_name)) {
+						if (list_find(
+							itr,
+							slurm_find_char_in_list,
+							this_node_name)) {
 							list_delete_item(itr);
 						} else
 							count++;
@@ -331,7 +331,7 @@ extern int slurm_addto_char_list(List char_list, char *names)
 			 * This is needed for get associations
 			 * with qos.
 			 */
-			if (list_find(itr, _find_char_in_list, name)) {
+			if (list_find(itr, slurm_find_char_in_list, name)) {
 				list_delete_item(itr);
 			} else
 				count++;

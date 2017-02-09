@@ -2986,17 +2986,6 @@ extern char *slurmdb_get_selected_step_id(
 	return job_id_str;
 }
 
-static int _find_char_in_list(void *name, void *key)
-{
-	char *name_str = (char *)name;
-	char *key_str  = (char *)key;
-
-	if (!xstrcmp(name_str,key_str))
-		return 1;
-
-	return 0;
-}
-
 /* Return the cluster with the fastest start_time.
  *
  * Note: The will_runs are not threaded. Currently it relies on the
@@ -3042,7 +3031,7 @@ extern int slurmdb_get_first_avail_cluster(job_desc_msg_t *req,
 
 		/* only try one cluster from each federation */
 		if (working_cluster_rec->fed.id &&
-		    list_find_first(tried_feds, _find_char_in_list,
+		    list_find_first(tried_feds, slurm_find_char_in_list,
 				    working_cluster_rec->fed.name))
 			continue;
 
