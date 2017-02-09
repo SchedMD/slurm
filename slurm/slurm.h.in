@@ -207,6 +207,7 @@ enum job_states {
 	JOB_PREEMPTED,		/* terminated due to preemption */
 	JOB_BOOT_FAIL,		/* terminated due to node boot failure */
 	JOB_DEADLINE,		/* terminated on deadline */
+	JOB_OOM,		/* experienced out of memory error */
 	JOB_END			/* not a real state, last entry in table */
 };
 #define	JOB_STATE_BASE	  0x000000ff	/* Used for job_states above */
@@ -494,6 +495,7 @@ enum job_state_reason {
 	WAIT_ACCOUNT_POLICY,          /* Generic accounting policy reason */
 
 	WAIT_FED_JOB_LOCK,            /* Can't get fed job lock */
+	FAIL_OOM		      /* Exhausted memory */
 };
 
 enum job_acct_types {

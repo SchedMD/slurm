@@ -997,6 +997,7 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 	} else if (!IS_JOB_COMPLETING(job)
 		   && (IS_JOB_PENDING(job)
 		       || IS_JOB_TIMEOUT(job)
+		       || IS_JOB_OOM(job)
 		       || IS_JOB_DEADLINE(job)
 		       || IS_JOB_FAILED(job))) {
 		char *reason_fmt = NULL, *reason = NULL;

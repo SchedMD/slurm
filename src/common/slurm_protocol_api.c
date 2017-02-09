@@ -2770,7 +2770,7 @@ char *slurm_get_job_container_plugin(void)
 
 /* slurm_get_slurmd_spooldir
  * RET slurmd_spooldir name, must be xfreed by caller */
-char *slurm_get_slurmd_spooldir(void)
+char *slurm_get_slurmd_spooldir(char *node_name)
 {
 	char *slurmd_spooldir = NULL;
 	slurm_ctl_conf_t *conf;
@@ -2778,7 +2778,11 @@ char *slurm_get_slurmd_spooldir(void)
 	if (slurmdbd_conf) {
 	} else {
 		conf = slurm_conf_lock();
-		slurmd_spooldir = xstrdup(conf->slurmd_spooldir);
+		if (!node_name)
+			slurmd_spooldir = xstrdup(conf->slurmd_spooldir);
+		else
+			slurmd_spooldir = slurm_conf_expand_slurmd_path(
+				conf->slurmd_spooldir, node_name);
 		slurm_conf_unlock();
 	}
 	return slurmd_spooldir;

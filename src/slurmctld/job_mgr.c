@@ -5012,16 +5012,6 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		return ESLURM_INVALID_JOB_ID;
 	}
 
-	if (WIFSIGNALED(job_return_code)) {
-		info("%s: %s WTERMSIG %d",  __func__,
-		     jobid2str(job_ptr, jbuf, sizeof(jbuf)),
-		     WTERMSIG(job_return_code));
-	} else {
-		info("%s: %s WEXITSTATUS %d",  __func__,
-		     jobid2str(job_ptr, jbuf, sizeof(jbuf)),
-		     WEXITSTATUS(job_return_code));
-	}
-
 	if (IS_JOB_FINISHED(job_ptr)) {
 		if (job_ptr->exit_code == 0)
 			job_ptr->exit_code = job_return_code;
@@ -5037,6 +5027,19 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 
 	if (IS_JOB_COMPLETING(job_ptr))
 		return SLURM_SUCCESS;	/* avoid replay */
+
+	if ((job_return_code & 0xff) == SIG_OOM) {
+		info("%s: %s OOM failure",  __func__,
+		     jobid2str(job_ptr, jbuf, sizeof(jbuf)));
+	} else if (WIFSIGNALED(job_return_code)) {
+		info("%s: %s WTERMSIG %d",  __func__,
+		     jobid2str(job_ptr, jbuf, sizeof(jbuf)),
+		     WTERMSIG(job_return_code));
+	} else {
+		info("%s: %s WEXITSTATUS %d",  __func__,
+		     jobid2str(job_ptr, jbuf, sizeof(jbuf)),
+		     WEXITSTATUS(job_return_code));
+	}
 
 	if (IS_JOB_RUNNING(job_ptr))
 		job_comp_flag = JOB_COMPLETING;
@@ -5137,6 +5140,11 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		} else if (job_return_code == NO_VAL) {
 			job_ptr->job_state = JOB_CANCELLED | job_comp_flag;
 			job_ptr->requid = uid;
+		} else if ((job_return_code & 0xff) == SIG_OOM) {
+			job_ptr->job_state = JOB_OOM | job_comp_flag;
+			job_ptr->exit_code = job_return_code & 0xffffff00;
+			job_ptr->state_reason = FAIL_OOM;
+			xfree(job_ptr->state_desc);
 		} else if (WIFEXITED(job_return_code) &&
 			   WEXITSTATUS(job_return_code)) {
 			job_ptr->job_state = JOB_FAILED   | job_comp_flag;

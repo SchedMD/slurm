@@ -286,26 +286,27 @@ err_exit:
 static int _env_set(char ***env)
 {
 	char *p = NULL;
-	char *spool = slurm_get_slurmd_spooldir();
+
+	xassert(_pmixp_job_info.hostname);
+
+	_pmixp_job_info.lib_tmpdir = slurm_get_slurmd_spooldir(
+		_pmixp_job_info.hostname);
 
 	/* ----------- Temp directories settings ------------- */
-	_pmixp_job_info.lib_tmpdir = xstrdup_printf("%s/pmix.%d.%d/", spool,
-			pmixp_info_jobid(), pmixp_info_stepid());
-	xfree(spool);
+	xstrfmtcat(_pmixp_job_info.lib_tmpdir, "/pmix.%d.%d/",
+		   pmixp_info_jobid(), pmixp_info_stepid());
 
 	/* save client temp directory if requested
 	 * TODO: We want to get TmpFS value as well if exists.
 	 * Need to sync with SLURM developers.
 	 */
 	p = getenvp(*env, PMIXP_TMPDIR_CLI);
-	if (NULL != p) {
+
+	if (p)
 		_pmixp_job_info.cli_tmpdir_base = xstrdup(p);
-	} else {
-		p = slurm_get_tmp_fs();
-		if (NULL != p) {
-			_pmixp_job_info.cli_tmpdir_base = p;
-		}
-	}
+	else
+		_pmixp_job_info.cli_tmpdir_base = slurm_get_tmp_fs();
+
 	_pmixp_job_info.cli_tmpdir =
 		xstrdup_printf("%s/spmix_appdir_%d.%d",
 			       _pmixp_job_info.cli_tmpdir_base,

@@ -683,11 +683,17 @@ _send_exit_msg(stepd_step_rec_t *job, uint32_t *tid, int n, int status)
 	ListIterator    i       = NULL;
 	srun_info_t    *srun    = NULL;
 
-	debug3("sending task exit msg for %d tasks status %d", n, status);
+	debug3("sending task exit msg for %d tasks status %d oom %d",
+	       n, status, job->oom_error);
 
 	msg.task_id_list	= tid;
 	msg.num_tasks		= n;
-	msg.return_code		= status;
+	/* FIXME: Add oom_error field to the RPC in version 17.11. For now,
+	 * pack SIG_OOM code into top 16 bits of 32-bit return_code field */
+	if (job->oom_error)
+		msg.return_code		= (status & 0xffffff00) + SIG_OOM;
+	else
+		msg.return_code		= status;
 	msg.job_id		= job->jobid;
 	msg.step_id		= job->stepid;
 	slurm_msg_t_init(&resp);
@@ -1931,7 +1937,10 @@ _log_task_exit(unsigned long taskid, unsigned long pid, int status)
 	 *   that code, but it is better than dropping a potentially useful
 	 *   exit status.
 	 */
-	if (WIFEXITED(status)) {
+	if ((status & 0xff) == SIG_OOM) {
+		verbose("task %lu (%lu) Out Of Memory (OOM)",
+			taskid, pid);
+	} else if (WIFEXITED(status)) {
 		verbose("task %lu (%lu) exited with exit code %d.",
 			taskid, pid, WEXITSTATUS(status));
 	} else if (WIFSIGNALED(status)) {
@@ -1964,7 +1973,7 @@ static int
 _wait_for_any_task(stepd_step_rec_t *job, bool waitflag)
 {
 	stepd_step_task_info_t *t = NULL;
-	int status = 0;
+	int rc, status = 0;
 	pid_t pid;
 	int completed = 0;
 	jobacctinfo_t *jobacct = NULL;
@@ -2053,7 +2062,9 @@ _wait_for_any_task(stepd_step_rec_t *job, bool waitflag)
 				error ("Unable to spank task %d at exit",
 				       t->id);
 			}
-			task_g_post_term(job, t);
+			rc = task_g_post_term(job, t);
+			if (rc == ENOMEM)
+				job->oom_error = true;
 		}
 
 	} while ((pid > 0) && !waitflag);

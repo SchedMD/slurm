@@ -272,7 +272,10 @@ _setup_stepd_sockets(const stepd_step_rec_t *job, char ***env)
 	}
 	sa.sun_family = PF_UNIX;
 
-	spool = slurm_get_slurmd_spooldir();
+	/* FIXME: We need to handle %n and %h in the spool dir, we have
+	 * job->node_name, but the other place we call get_slurmd_spooldir
+	 * we don't so we aren't using it here */
+	spool = slurm_get_slurmd_spooldir(NULL);
 	snprintf(sa.sun_path, sizeof(sa.sun_path), PMI2_SOCK_ADDR_FMT,
 		 spool, job->jobid, job->stepid);
 	unlink(sa.sun_path);    /* remove possible old socket */
@@ -628,7 +631,9 @@ _setup_srun_tree_info(const mpi_plugin_client_info_t *job)
 	} else
 		tree_info.srun_addr = NULL;
 
-	spool = slurm_get_slurmd_spooldir();
+	/* FIXME: We need to handle %n and %h in the spool dir, but don't have
+	 * the node name here */
+	spool = slurm_get_slurmd_spooldir(NULL);
 	snprintf(tree_sock_addr, 128, PMI2_SOCK_ADDR_FMT,
 		 spool, job->jobid, job->stepid);
 	xfree(spool);
