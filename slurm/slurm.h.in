@@ -2116,6 +2116,7 @@ typedef struct topo_info_response_msg {
 
 typedef struct job_alloc_info_msg {
 	uint32_t job_id;	/* job ID */
+	char    *req_cluster;   /* requesting cluster */
 } job_alloc_info_msg_t;
 
 typedef struct layout_info_msg {

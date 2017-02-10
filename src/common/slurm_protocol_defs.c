@@ -638,7 +638,10 @@ extern void slurm_free_shutdown_msg(shutdown_msg_t * msg)
 
 extern void slurm_free_job_alloc_info_msg(job_alloc_info_msg_t * msg)
 {
-	xfree(msg);
+	if (msg) {
+		xfree(msg->req_cluster);
+		xfree(msg);
+	}
 }
 
 extern void slurm_free_step_alloc_info_msg(step_alloc_info_msg_t * msg)

@@ -2470,9 +2470,11 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(struct job_record *job_ptr);
  *
  * IN resp - allocation response being sent back to client.
  * IN job_ptr - allocated job
+ * IN req_cluster - the cluster requesting the allocation info.
  */
 extern void
 set_remote_working_response(resource_allocation_response_msg_t *resp,
-			    struct job_record *job_ptr);
+			    struct job_record *job_ptr,
+			    const char *req_cluster);
 
 #endif /* !_HAVE_SLURMCTLD_H */

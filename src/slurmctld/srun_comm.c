@@ -129,7 +129,8 @@ extern void srun_allocate (uint32_t job_id)
 				job_ptr->select_jobinfo);
 		msg_arg->error_code	= SLURM_SUCCESS;
 
-		set_remote_working_response(msg_arg, job_ptr);
+		set_remote_working_response(msg_arg, job_ptr,
+					    job_ptr->origin_cluster);
 
 		_srun_agent_launch(addr, job_ptr->alloc_node,
 				   RESPONSE_RESOURCE_ALLOCATION, msg_arg,

@@ -71,6 +71,8 @@ Added members to the following struct definitions
 
 Added the following struct definitions
 ======================================
+In job_alloc_info_msg_t: add req_cluster to indicate where the request is coming
+	from.
 
 Removed members from the following struct definitions
 =====================================================

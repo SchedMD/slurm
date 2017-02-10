@@ -8015,7 +8015,8 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 
 	if (job_desc_msg->job_id != NO_VAL) {
 		struct job_record *dup_job_ptr;
-		if ((submit_uid != 0) &&
+		if (!fed_mgr_is_active() &&
+		    (submit_uid != 0) &&
 		    (submit_uid != slurmctld_conf.slurm_user_id)) {
 			info("attempt by uid %u to set job_id to %u",
 			     submit_uid, job_desc_msg->job_id);
@@ -16059,18 +16060,19 @@ extern void set_job_fed_details(struct job_record *job_ptr,
  *
  * IN resp - allocation response being sent back to client.
  * IN job_ptr - allocated job
+ * IN req_cluster - the cluster requsting the allocation info.
  */
 extern void
 set_remote_working_response(resource_allocation_response_msg_t *resp,
-			    struct job_record *job_ptr)
+			    struct job_record *job_ptr,
+			    const char *req_cluster)
 {
 	xassert(resp);
 	xassert(job_ptr);
 
 	if (job_ptr->node_cnt &&
-	    job_ptr->origin_cluster &&
-	    slurmctld_conf.cluster_name &&
-	    xstrcmp(slurmctld_conf.cluster_name, job_ptr->origin_cluster)) {
+	    req_cluster && slurmctld_conf.cluster_name &&
+	    xstrcmp(slurmctld_conf.cluster_name, req_cluster)) {
 		if (job_ptr->fed_details &&
 		    fed_mgr_cluster_rec) {
 			resp->working_cluster_rec = fed_mgr_cluster_rec;

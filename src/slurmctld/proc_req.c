@@ -1227,7 +1227,8 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		if (job_ptr->resv_name)
 			alloc_msg.resv_name = xstrdup(job_ptr->resv_name);
 
-		set_remote_working_response(&alloc_msg, job_ptr);
+		set_remote_working_response(&alloc_msg, job_ptr,
+					    job_ptr->origin_cluster);
 
 		/* This check really isn't needed, but just doing it
 		 * to be more complete.
@@ -2851,7 +2852,8 @@ static void _slurm_rpc_job_alloc_info(slurm_msg_t * msg)
 		job_info_resp_msg.node_cnt       = job_ptr->node_cnt;
 		job_info_resp_msg.node_list      = xstrdup(job_ptr->nodes);
 
-		set_remote_working_response(&job_info_resp_msg, job_ptr);
+		set_remote_working_response(&job_info_resp_msg, job_ptr,
+					    job_info_msg->req_cluster);
 
 		job_info_resp_msg.partition      = xstrdup(job_ptr->partition);
 		if (job_ptr->qos_ptr) {

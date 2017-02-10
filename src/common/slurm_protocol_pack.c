@@ -8425,7 +8425,15 @@ _pack_job_alloc_info_msg(job_alloc_info_msg_t * job_desc_ptr, Buf buffer,
 			 uint16_t protocol_version)
 {
 	/* load the data values */
-	pack32(job_desc_ptr->job_id, buffer);
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		pack32(job_desc_ptr->job_id, buffer);
+		packstr(job_desc_ptr->req_cluster, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack32(job_desc_ptr->job_id, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+	}
 }
 
 static int
@@ -8433,6 +8441,7 @@ _unpack_job_alloc_info_msg(job_alloc_info_msg_t **
 			   job_desc_buffer_ptr, Buf buffer,
 			   uint16_t protocol_version)
 {
+	uint32_t uint32_tmp = 0;
 	job_alloc_info_msg_t *job_desc_ptr;
 
 	/* alloc memory for structure */
@@ -8441,7 +8450,17 @@ _unpack_job_alloc_info_msg(job_alloc_info_msg_t **
 	*job_desc_buffer_ptr = job_desc_ptr;
 
 	/* load the data values */
-	safe_unpack32(&job_desc_ptr->job_id, buffer);
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		safe_unpack32(&job_desc_ptr->job_id, buffer);
+		safe_unpackstr_xmalloc(&job_desc_ptr->req_cluster, &uint32_tmp, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&job_desc_ptr->job_id, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
+
 	return SLURM_SUCCESS;
 
 unpack_error:

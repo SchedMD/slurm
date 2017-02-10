@@ -428,11 +428,12 @@ int
 slurm_allocation_lookup(uint32_t jobid,
 			resource_allocation_response_msg_t **info)
 {
-	job_alloc_info_msg_t req;
+	job_alloc_info_msg_t req = {0};
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
 
 	req.job_id = jobid;
+	req.req_cluster  = slurmctld_conf.cluster_name;
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 	req_msg.msg_type = REQUEST_JOB_ALLOCATION_INFO;
@@ -440,6 +441,8 @@ slurm_allocation_lookup(uint32_t jobid,
 
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
+
+	req.req_cluster = NULL;
 
 	switch(resp_msg.msg_type) {
 	case RESPONSE_SLURM_RC:

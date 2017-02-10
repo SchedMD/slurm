@@ -1270,7 +1270,7 @@ slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr)
 	int rc;
 	slurm_msg_t resp_msg;
 	slurm_msg_t req_msg;
-	job_alloc_info_msg_t job_msg;
+	job_alloc_info_msg_t job_msg = {0};
 	srun_timeout_msg_t *timeout_msg;
 	time_t now = time(NULL);
 	static uint32_t jobid_cache = 0;
