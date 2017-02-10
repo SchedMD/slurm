@@ -340,6 +340,7 @@ done:
 	}
 
 	xfree(select_type);
+	FREE_NULL_LIST(plugin_names);
 
 	return retval;
 }
