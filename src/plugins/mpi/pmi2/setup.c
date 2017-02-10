@@ -272,10 +272,16 @@ _setup_stepd_sockets(const stepd_step_rec_t *job, char ***env)
 	}
 	sa.sun_family = PF_UNIX;
 
-	/* FIXME: We need to handle %n and %h in the spool dir, we have
-	 * job->node_name, but the other place we call get_slurmd_spooldir
-	 * we don't so we aren't using it here */
+	/* tree_sock_addr has to remain unformatted since the formatting
+	 * happens on the slurmd side */
 	spool = slurm_get_slurmd_spooldir(NULL);
+	snprintf(tree_sock_addr, sizeof(tree_sock_addr), PMI2_SOCK_ADDR_FMT,
+		 spool, job->jobid, job->stepid);
+	/* Make sure we adjust for the spool dir coming in on the address to
+	 * point to the right spot.
+	 */
+	xstrsubstitute(spool, "%n", job->node_name);
+	xstrsubstitute(spool, "%h", job->node_name);
 	snprintf(sa.sun_path, sizeof(sa.sun_path), PMI2_SOCK_ADDR_FMT,
 		 spool, job->jobid, job->stepid);
 	unlink(sa.sun_path);    /* remove possible old socket */
@@ -291,9 +297,6 @@ _setup_stepd_sockets(const stepd_step_rec_t *job, char ***env)
 		unlink(sa.sun_path);
 		return SLURM_ERROR;
 	}
-
-	/* remove the tree socket file on exit */
-	strncpy(tree_sock_addr, sa.sun_path, 128);
 
 	task_socks = xmalloc(2 * job->node_tasks * sizeof(int));
 	for (i = 0; i < job->node_tasks; i ++) {

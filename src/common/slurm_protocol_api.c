@@ -1002,7 +1002,7 @@ char *slurm_get_state_save_location(void)
  * returns the TmpFS configuration parameter from slurmctld_conf object
  * RET char *    - tmp_fs, MUST be xfreed by caller
  */
-extern char *slurm_get_tmp_fs(void)
+extern char *slurm_get_tmp_fs(char *node_name)
 {
 	char *tmp_fs = NULL;
 	slurm_ctl_conf_t *conf = NULL;
@@ -1010,7 +1010,11 @@ extern char *slurm_get_tmp_fs(void)
 	if (slurmdbd_conf) {
 	} else {
 		conf = slurm_conf_lock();
-		tmp_fs = xstrdup(conf->tmp_fs);
+		if (!node_name)
+			tmp_fs = xstrdup(conf->tmp_fs);
+		else
+			tmp_fs = slurm_conf_expand_slurmd_path(
+				conf->tmp_fs, node_name);
 		slurm_conf_unlock();
 	}
 	return tmp_fs;
