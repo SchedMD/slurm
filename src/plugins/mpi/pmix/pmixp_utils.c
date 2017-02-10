@@ -527,7 +527,7 @@ int pmixp_mkdir(char *path, mode_t rights)
 
 	if (0 != mkdir(path, rights) ) {
 		PMIXP_ERROR_STD("Cannot create directory \"%s\"",
-				pmixp_info_tmpdir_lib());
+				path);
 		return errno;
 	}
 
@@ -540,7 +540,7 @@ int pmixp_mkdir(char *path, mode_t rights)
 	}
 
 	if (chown(path, (uid_t) pmixp_info_jobuid(), (gid_t) -1) < 0) {
-		error("%s: chown(%s): %m", __func__, pmixp_info_tmpdir_lib());
+		error("%s: chown(%s): %m", __func__, path);
 		return errno;
 	}
 	return 0;

@@ -105,7 +105,7 @@ static inline char *pmixp_info_tmpdir_cli_base(void)
 	return _pmixp_job_info.cli_tmpdir_base;
 }
 
-/* Cli tempdir */
+/* Lib tempdir */
 static inline char *pmixp_info_tmpdir_lib(void)
 {
 	return _pmixp_job_info.lib_tmpdir;
