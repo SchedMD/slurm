@@ -145,7 +145,6 @@ extern int acct_gather_interconnect_init(void)
 		if (xstrncmp(type, "acct_gather_interconnect/", 25) == 0)
 			type += 25; /* backward compatibility */
 		type = xstrdup_printf("%s/%s", plugin_type, type);
-		info("%d = %s", g_context_num, type);
 		g_context[g_context_num] = plugin_context_create(
 			plugin_type, type, (void **)&ops[g_context_num],
 			syms, sizeof(syms));
