@@ -16068,9 +16068,11 @@ set_remote_working_response(resource_allocation_response_msg_t *resp,
 	xassert(job_ptr);
 
 	if (job_ptr->node_cnt &&
-	    (!(fed_mgr_is_origin_job(job_ptr)) ||
-	     xstrcmp(slurmctld_conf.cluster_name, job_ptr->origin_cluster))) {
-		if (job_ptr->fed_details) {
+	    job_ptr->origin_cluster &&
+	    slurmctld_conf.cluster_name &&
+	    xstrcmp(slurmctld_conf.cluster_name, job_ptr->origin_cluster)) {
+		if (job_ptr->fed_details &&
+		    fed_mgr_cluster_rec) {
 			resp->working_cluster_rec = fed_mgr_cluster_rec;
 		} else {
 			if (!response_cluster_rec) {
