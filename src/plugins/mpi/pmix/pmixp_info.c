@@ -52,7 +52,7 @@ static int _env_set(char ***env);
 /* stepd global contact information */
 void pmixp_info_srv_contacts(char *path, int fd)
 {
-	_server_addr = xstrdup(path);
+	_server_addr = _pmixp_job_info.server_addr_unfmt;
 	_server_fd = fd;
 }
 
@@ -289,8 +289,15 @@ static int _env_set(char ***env)
 
 	xassert(_pmixp_job_info.hostname);
 
-	_pmixp_job_info.lib_tmpdir = slurm_get_slurmd_spooldir(
-		_pmixp_job_info.hostname);
+	_pmixp_job_info.server_addr_unfmt = slurm_get_slurmd_spooldir(NULL);
+
+	_pmixp_job_info.lib_tmpdir = slurm_conf_expand_slurmd_path(
+		_pmixp_job_info.server_addr_unfmt, _pmixp_job_info.hostname);
+
+	xstrfmtcat(_pmixp_job_info.server_addr_unfmt, "/stepd.slurm.pmix.%d.%d",
+		   pmixp_info_jobid(), pmixp_info_stepid());
+
+	_pmixp_job_info.spool_dir = xstrdup(_pmixp_job_info.lib_tmpdir);
 
 	/* ----------- Temp directories settings ------------- */
 	xstrfmtcat(_pmixp_job_info.lib_tmpdir, "/pmix.%d.%d/",

@@ -69,6 +69,8 @@ typedef struct {
 	int timeout;
 	char *cli_tmpdir, *cli_tmpdir_base;
 	char *lib_tmpdir;
+	char *server_addr_unfmt;
+	char *spool_dir;
 	uid_t uid;
 	gid_t gid;
 } pmix_jobinfo_t;
@@ -274,8 +276,8 @@ static inline char *pmixp_info_nspace_usock(const char *nspace)
 {
 	char *spool;
 	debug("mpi/pmix: setup sockets");
-	spool = slurm_get_slurmd_spooldir(_pmixp_job_info.hostname);
-	xstrfmtcat(spool, "/stepd.%s", nspace);
+	spool = xstrdup_printf("%s/stepd.%s",
+			       _pmixp_job_info.spool_dir, nspace);
 	return spool;
 }
 
