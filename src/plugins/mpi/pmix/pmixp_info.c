@@ -305,7 +305,8 @@ static int _env_set(char ***env)
 	if (p)
 		_pmixp_job_info.cli_tmpdir_base = xstrdup(p);
 	else
-		_pmixp_job_info.cli_tmpdir_base = slurm_get_tmp_fs();
+		_pmixp_job_info.cli_tmpdir_base = slurm_get_tmp_fs(
+			_pmixp_job_info.hostname);
 
 	_pmixp_job_info.cli_tmpdir =
 		xstrdup_printf("%s/spmix_appdir_%d.%d",
