@@ -1357,9 +1357,9 @@ static void _update_job_size(uint32_t job_id)
 	if (!getenv("SLURM_JOBID"))
 		return;		/*No job environment here to update */
 
-	if (slurm_allocation_lookup_lite(job_id, &alloc_info) !=
+	if (slurm_allocation_lookup(job_id, &alloc_info) !=
 	    SLURM_SUCCESS) {
-		slurm_perror("slurm_allocation_lookup_lite");
+		slurm_perror("slurm_allocation_lookup");
 		return;
 	}
 

@@ -458,7 +458,7 @@ slurm_allocate_resources_blocking(slurm_t self, HV *user_req, time_t timeout=0, 
 
 
 HV *
-slurm_allocation_lookup_lite(slurm_t self, uint32_t job_id)
+slurm_allocation_lookup(slurm_t self, uint32_t job_id)
 	PREINIT:
 		resource_allocation_response_msg_t *resp_msg = NULL;
 		int rc;
@@ -468,7 +468,7 @@ slurm_allocation_lookup_lite(slurm_t self, uint32_t job_id)
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-		rc = slurm_allocation_lookup_lite(job_id, &resp_msg);
+		rc = slurm_allocation_lookup(job_id, &resp_msg);
 		if(rc != SLURM_SUCCESS) {
 			slurm_free_resource_allocation_response_msg(resp_msg);
 			XSRETURN_UNDEF;

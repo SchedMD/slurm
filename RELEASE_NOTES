@@ -86,3 +86,5 @@ Changed the following API's
 
 Removed the following API's
 ===========================
+Removed unused slurm_allocation_lookup() and rename slurm_allocation_lookup_lite() to
+	slurm_allocation_lookup().

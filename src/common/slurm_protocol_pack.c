@@ -938,7 +938,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 					  msg->protocol_version);
 		break;
 	case REQUEST_JOB_END_TIME:
-	case REQUEST_JOB_ALLOCATION_INFO_LITE:
+	case REQUEST_JOB_ALLOCATION_INFO:
 		_pack_job_alloc_info_msg((job_alloc_info_msg_t *) msg->data,
 					 buffer,
 					 msg->protocol_version);
@@ -993,7 +993,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 					  msg->data, buffer,
 					  msg->protocol_version);
 		break;
-	case RESPONSE_JOB_ALLOCATION_INFO_LITE:
+	case RESPONSE_JOB_ALLOCATION_INFO:
 	case RESPONSE_RESOURCE_ALLOCATION:
 		_pack_resource_allocation_response_msg
 			((resource_allocation_response_msg_t *) msg->data,
@@ -1614,7 +1614,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 			buffer, msg->protocol_version);
 		break;
 	case REQUEST_JOB_END_TIME:
-	case REQUEST_JOB_ALLOCATION_INFO_LITE:
+	case REQUEST_JOB_ALLOCATION_INFO:
 		rc = _unpack_job_alloc_info_msg((job_alloc_info_msg_t **) &
 						(msg->data), buffer,
 						msg->protocol_version);
@@ -1671,7 +1671,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 						 & (msg->data), buffer,
 						 msg->protocol_version);
 		break;
-	case RESPONSE_JOB_ALLOCATION_INFO_LITE:
+	case RESPONSE_JOB_ALLOCATION_INFO:
 	case RESPONSE_RESOURCE_ALLOCATION:
 		rc = _unpack_resource_allocation_response_msg(
 			(resource_allocation_response_msg_t **)

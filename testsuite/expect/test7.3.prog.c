@@ -98,8 +98,8 @@ int main (int argc, char *argv[])
 		while ((job_resp->node_list == NULL) ||
 		       (strlen(job_resp->node_list) == 0)) {
 			sleep(5);
-			if (slurm_allocation_lookup_lite(job_resp->job_id,
-							 &job_resp) &&
+			if (slurm_allocation_lookup(job_resp->job_id,
+						    &job_resp) &&
 			    (slurm_get_errno() != ESLURM_JOB_PENDING)) {
 				slurm_perror("slurm_confirm_allocation");
 				exit(0);

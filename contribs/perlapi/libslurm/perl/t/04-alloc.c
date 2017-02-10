@@ -32,8 +32,8 @@ ok($jobid, "allocate resources blocking") or diag("allocate_resources_blocking: 
 # 4
 SKIP: {
     skip "resource allocation fail", 1 unless $jobid;
-    $resp = $slurm->allocation_lookup_lite($jobid);
-    ok(defined $resp, "allocation lookup lite") or diag("allocation_lookup_lite: " . $slurm->strerror());
+    $resp = $slurm->allocation_lookup($jobid);
+    ok(defined $resp, "allocation lookup lite") or diag("allocation_lookup: " . $slurm->strerror());
 }
 
 

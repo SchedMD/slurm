@@ -212,7 +212,7 @@ slurm_signal_job (uint32_t job_id, uint16_t signal)
 	resource_allocation_response_msg_t *alloc_info = NULL;
 	signal_job_msg_t rpc;
 
-	if (slurm_allocation_lookup_lite(job_id, &alloc_info)) {
+	if (slurm_allocation_lookup(job_id, &alloc_info)) {
 		rc = slurm_get_errno();
 		goto fail1;
 	}
@@ -249,7 +249,7 @@ slurm_signal_job_step (uint32_t job_id, uint32_t step_id, uint32_t signal)
 	int i;
 	int save_errno = 0;
 
-	if (slurm_allocation_lookup_lite(job_id, &alloc_info)) {
+	if (slurm_allocation_lookup(job_id, &alloc_info)) {
 		return -1;
 	}
 
@@ -307,7 +307,7 @@ slurm_terminate_job_step (uint32_t job_id, uint32_t step_id)
 	int i;
 	int save_errno = 0;
 
-	if (slurm_allocation_lookup_lite(job_id, &alloc_info)) {
+	if (slurm_allocation_lookup(job_id, &alloc_info)) {
 		return -1;
 	}
 

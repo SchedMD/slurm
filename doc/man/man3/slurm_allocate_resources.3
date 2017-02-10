@@ -3,7 +3,7 @@
 .SH "NAME"
 slurm_allocate_resources, slurm_allocate_resources_blocking,
 slurm_allocation_msg_thr_create, slurm_allocation_msg_thr_destroy,
-slurm_allocation_lookup_lite, slurm_confirm_allocation,
+slurm_allocation_lookup, slurm_confirm_allocation,
 slurm_free_submit_response_response_msg, slurm_init_job_desc_msg,
 slurm_job_will_run, slurm_job_will_run2,
 slurm_read_hostfile, slurm_submit_batch_job
@@ -42,7 +42,7 @@ void *\fBslurm_allocation_msg_thr_destroy\fR (
 .br
 );
 .LP
-int \fBslurm_allocation_lookup_lite\fR {
+int \fBslurm_allocation_lookup\fR {
 .br
 	uint32_t \fIjobid\fP,
 .br
@@ -128,7 +128,7 @@ structure's contents.
 Specifies the pointer to the structure to be created and filled in by the function
 \fIslurm_allocate_resources\fP,
 \fIslurm_allocate_resources_blocking\fP,
-\fIslurm_allocation_lookup_lite\fP,
+\fIslurm_allocation_lookup\fP,
 \fIslurm_confirm_allocation\fP, \fIslurm_job_will_run\fP or
 \fIslurm_job_will_run\fP.
 .TP
@@ -191,7 +191,7 @@ owner or user root.
 .LP
 \fBslurm_free_resource_allocation_response_msg\fR Release the storage generated in response
 to a call of the function \fBslurm_allocate_resources\fR
-or \fBslurm_allocation_lookup_lite\fR.
+or \fBslurm_allocation_lookup\fR.
 .LP
 \fBslurm_free_submit_response_msg\fR Release the storage generated in response
 to a call of the function \fBslurm_submit_batch_job\fR.

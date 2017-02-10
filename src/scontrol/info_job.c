@@ -953,12 +953,12 @@ extern int scontrol_job_ready(char *job_id_str)
 
 	if (cluster_flags & CLUSTER_FLAG_BG) {
 		resource_allocation_response_msg_t *alloc;
-		rc = slurm_allocation_lookup_lite(job_id, &alloc);
+		rc = slurm_allocation_lookup(job_id, &alloc);
 		if (rc == SLURM_SUCCESS) {
 			rc = _wait_bluegene_block_ready(alloc);
 			slurm_free_resource_allocation_response_msg(alloc);
 		} else {
-			error("slurm_allocation_lookup_lite: %m");
+			error("slurm_allocation_lookup: %m");
 			rc = SLURM_ERROR;
 		}
 	} else

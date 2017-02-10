@@ -417,16 +417,16 @@ slurm_job_step_create (job_step_create_request_msg_t *req,
 }
 
 /*
- * slurm_allocation_lookup_lite - retrieve info for an existing resource
- *                                allocation without the addrs and such
+ * slurm_allocation_lookup - retrieve info for an existing resource allocation
+ * 			     without the addrs and such
  * IN jobid - job allocation identifier
  * OUT info - job allocation information
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free the response using slurm_free_resource_allocation_response_msg()
  */
 int
-slurm_allocation_lookup_lite(uint32_t jobid,
-			     resource_allocation_response_msg_t **info)
+slurm_allocation_lookup(uint32_t jobid,
+			resource_allocation_response_msg_t **info)
 {
 	job_alloc_info_msg_t req;
 	slurm_msg_t req_msg;
@@ -435,7 +435,7 @@ slurm_allocation_lookup_lite(uint32_t jobid,
 	req.job_id = jobid;
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
-	req_msg.msg_type = REQUEST_JOB_ALLOCATION_INFO_LITE;
+	req_msg.msg_type = REQUEST_JOB_ALLOCATION_INFO;
 	req_msg.data     = &req;
 
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
@@ -447,7 +447,7 @@ slurm_allocation_lookup_lite(uint32_t jobid,
 			return SLURM_ERROR;
 		*info = NULL;
 		break;
-	case RESPONSE_JOB_ALLOCATION_INFO_LITE:
+	case RESPONSE_JOB_ALLOCATION_INFO:
 		*info = (resource_allocation_response_msg_t *) resp_msg.data;
 		return SLURM_PROTOCOL_SUCCESS;
 		break;
@@ -852,7 +852,7 @@ _wait_for_allocation_response(uint32_t job_id, const listen_t *listen,
 		 * Let's see if the controller thinks that the allocation
 		 * has been granted.
 		 */
-		if (slurm_allocation_lookup_lite(job_id, &resp) >= 0) {
+		if (slurm_allocation_lookup(job_id, &resp) >= 0) {
 			return resp;
 		}
 		if (slurm_get_errno() == ESLURM_JOB_PENDING) {

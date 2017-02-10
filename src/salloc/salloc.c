@@ -1206,7 +1206,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 		if (i > 0)
      			info("Nodes %s are ready for job", alloc->node_list);
 		if (alloc->alias_list && !xstrcmp(alloc->alias_list, "TBD") &&
-		    (slurm_allocation_lookup_lite(pending_job_id, &resp)
+		    (slurm_allocation_lookup(pending_job_id, &resp)
 		     == SLURM_SUCCESS)) {
 			tmp_str = alloc->alias_list;
 			alloc->alias_list = resp->alias_list;
