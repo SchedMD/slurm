@@ -6596,6 +6596,11 @@ _rpc_forward_data(slurm_msg_t *msg)
 	struct sockaddr_un sa;
 	int fd = -1, rc = 0;
 
+	/* Make sure we adjust for the spool dir coming in on the address to
+	 * point to the right spot.
+	 */
+	xstrsubstitute(req->address, "%n", conf->node_name);
+	xstrsubstitute(req->address, "%h", conf->node_name);
 	debug3("Entering _rpc_forward_data, address: %s, len: %u",
 	       req->address, req->len);
 

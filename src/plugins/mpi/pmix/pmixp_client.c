@@ -223,13 +223,13 @@ int pmixp_libpmix_init(void)
 	pmix_info_t *kvp = NULL;
 
 	if (0 != (rc = pmixp_mkdir(pmixp_info_tmpdir_lib(), rights))) {
-		PMIXP_ERROR_STD("Cannot create server tmpdir: \"%s\"",
+		PMIXP_ERROR_STD("Cannot create server lib tmpdir: \"%s\"",
 				pmixp_info_tmpdir_lib());
 		return errno;
 	}
 
 	if (0 != (rc = pmixp_mkdir(pmixp_info_tmpdir_cli(), rights))) {
-		PMIXP_ERROR_STD("Cannot create client tmpdir: \"%s\"",
+		PMIXP_ERROR_STD("Cannot create client cli tmpdir: \"%s\"",
 				pmixp_info_tmpdir_cli());
 		return errno;
 	}

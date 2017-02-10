@@ -51,8 +51,26 @@
 
 #define MAX_RETRIES 5
 
-static volatile int _agent_is_running = 0;
-static volatile int _timer_is_running = 0;
+static volatile bool _agent_is_running = false;
+static volatile bool _timer_is_running = false;
+static pthread_mutex_t _flag_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static void _run_flag_set(volatile bool *flag, bool val)
+{
+       slurm_mutex_lock(&_flag_mutex);
+       *flag = val;
+       slurm_mutex_unlock(&_flag_mutex);
+}
+
+static bool _run_flag_get(volatile bool *flag)
+{
+	bool rc;
+	slurm_mutex_lock(&_flag_mutex);
+	rc = *flag;
+	slurm_mutex_unlock(&_flag_mutex);
+	return rc;
+}
+
 static eio_handle_t *_io_handle = NULL;
 
 static int _agent_spawned = 0, _timer_spawned = 0;
@@ -234,14 +252,15 @@ static void *_agent_thread(void *unused)
 
 	pmixp_info_io_set(_io_handle);
 
-	_agent_is_running = 1;
+	_run_flag_set(&_agent_is_running, true);
 
 	eio_handle_mainloop(_io_handle);
 
 	PMIXP_DEBUG("agent thread exit");
 	eio_handle_destroy(_io_handle);
 
-	_agent_is_running = 0;
+	_run_flag_set(&_agent_is_running, false);
+
 	return NULL;
 }
 
@@ -258,7 +277,7 @@ static void *_pmix_timer_thread(void *unused)
 	pfds[0].fd = timer_data.stop_in;
 	pfds[0].events = POLLIN;
 
-	_timer_is_running = 1;
+	_run_flag_set(&_timer_is_running, true);
 
 	/* our job is to sleep 1 sec and then trigger
 	 * the timer event in the main loop */
@@ -278,7 +297,7 @@ static void *_pmix_timer_thread(void *unused)
 		write(timer_data.work_out, &c, 1);
 	}
 
-	_timer_is_running = 0;
+	_run_flag_set(&_timer_is_running, false);
 
 	return NULL;
 }
@@ -305,7 +324,7 @@ int pmixp_agent_start(void)
 	_agent_spawned = 1;
 
 	/* wait for the agent thread to initialize */
-	while (!_agent_is_running) {
+	while (!_run_flag_get(&_agent_is_running)) {
 		sched_yield();
 	}
 
@@ -325,7 +344,7 @@ int pmixp_agent_start(void)
 	_timer_spawned = 1;
 
 	/* wait for the agent thread to initialize */
-	while (!_timer_is_running) {
+	while (!_run_flag_get(&_timer_is_running)) {
 		sched_yield();
 	}
 
@@ -340,10 +359,10 @@ int pmixp_agent_start(void)
 int pmixp_agent_stop(void)
 {
 	char c = 1;
-	if (_agent_is_running) {
+	if (_run_flag_get(&_agent_is_running)) {
 		eio_signal_shutdown(_io_handle);
 		/* wait for the agent thread to stop */
-		while (_agent_is_running) {
+		while (_run_flag_get(&_agent_is_running)) {
 			sched_yield();
 		}
 	}
@@ -354,7 +373,7 @@ int pmixp_agent_stop(void)
 	if (timer_data.initialized) {
 		/* cancel timer */
 		write(timer_data.stop_out, &c, 1);
-		while (_timer_is_running) {
+		while (_run_flag_get(&_timer_is_running) ) {
 			sched_yield();
 		}
 		/* close timer fds */

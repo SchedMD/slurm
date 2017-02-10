@@ -3393,6 +3393,9 @@ Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR,
 \fBSuspendTime\fR
 Nodes which remain idle for this number of seconds will be placed into
 power save mode by \fBSuspendProgram\fR.
+For efficient system utilization, it is recommeded that the value of
+\fBSuspendTime\fR be at least as large as the sum of \fBSuspendTimeout\fR
+plus \fBResumeTimeout\fR.
 A value of \-1 disables power save mode and is the default.
 Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR,
 \fBResumeRate\fR, \fBSuspendProgram\fR, \fBSuspendRate\fR, \fBSuspendTimeout\fR,
