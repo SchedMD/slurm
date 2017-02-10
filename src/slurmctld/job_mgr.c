@@ -16077,7 +16077,7 @@ set_remote_working_response(resource_allocation_response_msg_t *resp,
 				response_cluster_rec =
 					xmalloc(sizeof(slurmdb_cluster_rec_t));
 				response_cluster_rec->name =
-					slurmctld_conf.cluster_name;
+					xstrdup(slurmctld_conf.cluster_name);
 				response_cluster_rec->control_host =
 					slurmctld_conf.control_addr;
 				response_cluster_rec->control_port =
