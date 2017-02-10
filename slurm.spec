@@ -646,8 +646,8 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_energy_ipmi.so  &&
    echo %{_libdir}/slurm/acct_gather_energy_ipmi.so  >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_energy_rapl.so  &&
    echo %{_libdir}/slurm/acct_gather_energy_rapl.so  >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_infiniband_ofed.so &&
-   echo %{_libdir}/slurm/acct_gather_infiniband_ofed.so >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_interconnect_ofed.so &&
+   echo %{_libdir}/slurm/acct_gather_interconnect_ofed.so >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_profile_hdf5.so &&
    echo %{_libdir}/slurm/acct_gather_profile_hdf5.so >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/burst_buffer_cray.so        &&
@@ -842,7 +842,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/accounting_storage_slurmdbd.so
 %{_libdir}/slurm/acct_gather_filesystem_lustre.so
 %{_libdir}/slurm/acct_gather_filesystem_none.so
-%{_libdir}/slurm/acct_gather_infiniband_none.so
+%{_libdir}/slurm/acct_gather_interconnect_none.so
 %{_libdir}/slurm/acct_gather_energy_none.so
 %{_libdir}/slurm/acct_gather_profile_none.so
 %{_libdir}/slurm/burst_buffer_generic.so
