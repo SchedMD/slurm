@@ -195,31 +195,18 @@ bool pmixp_fd_read_ready(int fd, int *shutdown)
 {
 	struct pollfd pfd[1];
 	int rc;
-	struct timeval tv;
-	double start, cur;
 	pfd[0].fd = fd;
 	pfd[0].events = POLLIN;
 	/* Drop shutdown before the check */
 	*shutdown = 0;
 
-	gettimeofday(&tv,NULL);
-	start = tv.tv_sec + 1E-6*tv.tv_usec;
-	cur = start;
-	while( cur - start < 0.01 ){
-		rc = poll(pfd, 1, 10);
-		
-		/* update current timestamp */
-		gettimeofday(&tv,NULL);
-		cur = tv.tv_sec + 1E-6*tv.tv_usec;
-		if( rc < 0 ){
-			if( errno == EINTR ){
-				continue;
-			} else {
-				*shutdown = -errno;
-				return false;
-			}
+	rc = poll(pfd, 1, 0);
+	
+	if( rc < 0 ){
+		if( errno != EINTR ){
+			*shutdown = -errno;
+			return false;
 		}
-		break;
 	}
 
 	bool ret = ((rc == 1) && (pfd[0].revents & POLLIN));
