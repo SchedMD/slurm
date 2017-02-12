@@ -63,6 +63,8 @@ int pmixp_dconn_connect_do(pmixp_dconn_t *dconn, uint16_t port)
 		return SLURM_ERROR;
 	}
 	dconn->fd = fd;
+	pmixp_fd_set_nodelay(fd);
+	fd_set_nonblocking(fd);
 	pmixp_io_attach(&dconn->eng, fd);
 	return SLURM_SUCCESS;
 }

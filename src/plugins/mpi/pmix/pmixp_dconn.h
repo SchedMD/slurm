@@ -118,6 +118,7 @@ pmixp_dconn_accept(int nodeid, int fd)
 		/* we request this connection some time ago
 		 * and now we finishing it's establishment
 		 */
+		pmixp_fd_set_nodelay(fd);
 		pmixp_io_attach(&dconn->eng, fd);
 		dconn->state = PMIXP_DIRECT_CONNECTED;
 	} else {

@@ -829,6 +829,7 @@ void pmixp_server_direct_conn(int fd)
 	/* Set nonblocking */
 	fd_set_nonblocking(fd);
 	fd_set_close_on_exec(fd);
+	pmixp_fd_set_nodelay(fd);
 	conn = pmixp_conn_new_temp(PMIXP_PROTO_DIRECT, fd, _direct_conn_establish);
 
 	/* try to process right here */

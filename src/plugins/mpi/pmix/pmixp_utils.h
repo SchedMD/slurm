@@ -47,6 +47,7 @@ size_t pmixp_read_buf(int fd, void *buf, size_t count, int *shutdown,
 		      bool blocking);
 size_t pmixp_write_buf(int fd, void *buf, size_t count, int *shutdown,
 		       bool blocking);
+int pmixp_fd_set_nodelay(int fd);
 bool pmixp_fd_read_ready(int fd, int *shutdown);
 bool pmixp_fd_write_ready(int fd, int *shutdown);
 int pmixp_srun_send(slurm_addr_t *addr, uint32_t len, char *data);
