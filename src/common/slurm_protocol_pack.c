@@ -8436,6 +8436,8 @@ static void
 _pack_job_alloc_info_msg(job_alloc_info_msg_t * job_desc_ptr, Buf buffer,
 			 uint16_t protocol_version)
 {
+	xassert(job_desc_ptr);
+
 	/* load the data values */
 	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		pack32(job_desc_ptr->job_id, buffer);
