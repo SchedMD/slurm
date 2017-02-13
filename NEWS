@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
  -- If QOS has been added to the system go refigure out Deny/AllowQOS on
     partitions.
  -- Deny job with duplicate GRES requested.
+ -- Fix loading super old assoc_mgr usage without segfaulting.
 
 * Changes in Slurm 17.02.0rc1
 ==============================
