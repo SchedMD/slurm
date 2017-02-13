@@ -7477,13 +7477,14 @@ extern void job_config_fini(struct job_record *job_ptr)
 	}
 }
 
-#ifndef HAVE_BG
-static bool _test_nodes_ready(struct job_record *job_ptr)
+/* Determine of the nodes are ready to run a job
+ * RET true if ready */
+extern bool test_job_nodes_ready(struct job_record *job_ptr)
 {
 	if (bit_overlap(job_ptr->node_bitmap, power_node_bitmap))
 		return false;
 
-	if (job_ptr->wait_all_nodes) {
+	if (job_ptr->wait_all_nodes || job_ptr->burst_buffer) {
 		/* Make sure all nodes ready to start job */
 		if ((select_g_job_ready(job_ptr) & READY_NODE_STATE) == 0)
 			return false;
@@ -7500,7 +7501,6 @@ static bool _test_nodes_ready(struct job_record *job_ptr)
 
 	return true;
 }
-#endif
 
 /*
  * Modify a job's memory limit if allocated all memory on a node and the node
@@ -7590,7 +7590,7 @@ void job_time_limit(void)
 		if (job_ptr->details)
 			prolog = job_ptr->details->prolog_running;
 		if ((prolog == 0) && IS_JOB_CONFIGURING(job_ptr) &&
-		    _test_nodes_ready(job_ptr)) {
+		    test_job_nodes_ready(job_ptr)) {
 			info("%s: Configuration for job %u is complete",
 			      __func__, job_ptr->job_id);
 			job_config_fini(job_ptr);
@@ -12716,7 +12716,6 @@ job_alloc_info(uint32_t uid, uint32_t job_id, struct job_record **job_pptr)
 	    (prolog == 0) && job_ptr->node_bitmap &&
 	    (bit_overlap(power_node_bitmap, job_ptr->node_bitmap) == 0)) {
 		last_job_update = time(NULL);
-		job_ptr->job_state &= ~JOB_CONFIGURING;
 		set_job_alias_list(job_ptr);
 	}
 
@@ -13444,7 +13443,7 @@ extern int job_node_ready(uint32_t job_id, int *ready)
 	    job_ptr->alias_list && !xstrcmp(job_ptr->alias_list, "TBD") &&
 	    job_ptr->node_bitmap &&
 	    (bit_overlap(power_node_bitmap, job_ptr->node_bitmap) == 0)) {
-		job_ptr->job_state &= ~JOB_CONFIGURING;
+		last_job_update = time(NULL);
 		set_job_alias_list(job_ptr);
 	}
 

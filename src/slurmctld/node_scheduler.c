@@ -2627,6 +2627,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		job_ptr->job_state |= JOB_POWER_UP_NODE;
 	if (configuring || IS_JOB_POWER_UP_NODE(job_ptr) ||
 	    !bit_super_set(job_ptr->node_bitmap, avail_node_bitmap)) {
+		/* This handles nodes explicitly requesting node reboot */
 		job_ptr->job_state |= JOB_CONFIGURING;
 	}
 

@@ -23,6 +23,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix regression when purging/archiving jobs/events.
  -- Add new job state JOB_OOM indicating Out Of Memory condition as detected
     by task/cgroup plugin.
+ -- If QOS has been added to the system go refigure out Deny/AllowQOS on
+    partitions.
 
 * Changes in Slurm 17.02.0rc1
 ==============================
@@ -260,6 +262,11 @@ documents those changes that are of interest to users and administrators.
  -- burst_buffer/cray - Support default pool which is not the first pool
     reported by DataWarp and log in Slurm when pools that are added or removed
     from DataWarp.
+ -- Insure job does not start running before node is booted and PrologSlurmctld
+    is complete.
+ -- Fix minor memory leak in the slurmctld when removing a QOS.
+ -- burst_buffer/cray - Do not execute "pre_run" operation until after all nodes
+    are booted and ready for use.
 
 * Changes in Slurm 16.05.9
 ==========================

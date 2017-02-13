@@ -1312,6 +1312,7 @@ static void _remove_qos(slurmdb_qos_rec_t *rec)
 			     part_ptr->name, rec->name);
 			part_ptr->qos_ptr = NULL;
 		}
+		list_iterator_destroy(itr);
 	}
 	unlock_slurmctld(part_write_lock);
 
@@ -1345,6 +1346,34 @@ static void _update_assoc(slurmdb_assoc_rec_t *rec)
 	}
 	list_iterator_destroy(job_iterator);
 	unlock_slurmctld(job_write_lock);
+}
+
+static void _resize_qos(void)
+{
+	ListIterator itr;
+	struct part_record *part_ptr;
+	slurmctld_lock_t part_write_lock =
+		{ NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+
+	lock_slurmctld(part_write_lock);
+	if (part_list) {
+		itr = list_iterator_create(part_list);
+		while ((part_ptr = list_next(itr))) {
+			if (part_ptr->allow_qos) {
+				info("got count for %s of %"BITSTR_FMT, part_ptr->name,
+				     bit_size(part_ptr->allow_qos_bitstr));
+				qos_list_build(part_ptr->allow_qos,
+					       &part_ptr->allow_qos_bitstr);
+				info("now count for %s of %"BITSTR_FMT, part_ptr->name,
+				     bit_size(part_ptr->allow_qos_bitstr));
+			}
+			if (part_ptr->deny_qos)
+				qos_list_build(part_ptr->deny_qos,
+					       &part_ptr->deny_qos_bitstr);
+		}
+		list_iterator_destroy(itr);
+	}
+	unlock_slurmctld(part_write_lock);
 }
 
 static void _update_qos(slurmdb_qos_rec_t *rec)
@@ -2009,6 +2038,7 @@ extern void ctld_assoc_mgr_init(slurm_trigger_callbacks_t *callbacks)
 	memset(&assoc_init_arg, 0, sizeof(assoc_init_args_t));
 	assoc_init_arg.enforce = accounting_enforce;
 	assoc_init_arg.add_license_notify = license_add_remote;
+	assoc_init_arg.resize_qos_notify = _resize_qos;
 	assoc_init_arg.remove_assoc_notify = _remove_assoc;
 	assoc_init_arg.remove_license_notify = license_remove_remote;
 	assoc_init_arg.remove_qos_notify = _remove_qos;

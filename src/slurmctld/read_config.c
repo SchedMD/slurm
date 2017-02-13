@@ -579,8 +579,13 @@ extern void qos_list_build(char *qos, bitstr_t **qos_bits)
 	/* Lock here to avoid g_qos_count changing under us */
 	assoc_mgr_lock(&locks);
 	if (!g_qos_count) {
-		fatal("No QOS's loaded in slurmctld. "
-		      "Cannot set Allow/DenyQOS value(s) '%s'.", qos);
+		error("We have no QOS on the system Ignoring invalid "
+		      "Allow/DenyQOS value(s) %s",
+		      qos);
+		assoc_mgr_unlock(&locks);
+		FREE_NULL_BITMAP(*qos_bits);
+		*qos_bits = NULL;
+		return;
 	}
 
 	tmp_qos_bitstr = bit_alloc(g_qos_count);
@@ -593,7 +598,7 @@ extern void qos_list_build(char *qos, bitstr_t **qos_bits)
 					   accounting_enforce,
 					   &qos_ptr, 1);
 		if ((rc != SLURM_SUCCESS) || (qos_rec.id >= g_qos_count)) {
-			fatal("Invalid Allow/DenyQOS value '%s'.",
+			error("Ignoring invalid Allow/DenyQOS value: %s",
 			      one_qos_name);
 		} else {
 			bit_set(tmp_qos_bitstr, qos_rec.id);
