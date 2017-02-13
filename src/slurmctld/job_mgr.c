@@ -6176,6 +6176,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	job_ptr->start_protocol_ver = protocol_version;
 	job_ptr->part_ptr = part_ptr;
 	job_ptr->part_ptr_list = part_ptr_list;
+	job_ptr->last_sched_eval = time(NULL);
 
 	part_ptr_list = NULL;
 	if ((error_code = checkpoint_alloc_jobinfo(&(job_ptr->check_job)))) {

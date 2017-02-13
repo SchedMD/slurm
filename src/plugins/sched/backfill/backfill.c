@@ -1074,6 +1074,7 @@ static int _attempt_backfill(void)
 		if (!_job_runnable_now(job_ptr))
 			continue;
 
+		job_ptr->last_sched_eval = time(NULL);
 		job_ptr->part_ptr = part_ptr;
 		job_ptr->priority = bf_job_priority;
 		mcs_select = slurm_mcs_get_select(job_ptr);

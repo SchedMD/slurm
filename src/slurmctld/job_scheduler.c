@@ -1557,6 +1557,8 @@ next_part:			part_ptr = (struct part_record *)
 			job_ptr->part_ptr = part_ptr;
 		}
 
+		job_ptr->last_sched_eval = time(NULL);
+
 		if (job_ptr->preempt_in_progress)
 			continue;	/* scheduled in another partition */
 
