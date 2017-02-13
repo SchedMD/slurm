@@ -2609,8 +2609,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	power_g_job_start(job_ptr);
 
 	if (configuring ||
-	    bit_overlap(job_ptr->node_bitmap, power_node_bitmap) ||
 	    !bit_super_set(job_ptr->node_bitmap, avail_node_bitmap)) {
+		/* This handles nodes explicitly requesting node reboot */
 		job_ptr->job_state |= JOB_CONFIGURING;
 	}
 

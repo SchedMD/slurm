@@ -296,8 +296,14 @@ extern int power_job_reboot(struct job_record *job_ptr)
 	pid_t pid;
 
 	boot_node_bitmap = node_features_reboot(job_ptr);
-	if (boot_node_bitmap == NULL)
+	if (boot_node_bitmap == NULL) {
+		/* Powered down nodes require reboot */
+		if (bit_overlap(power_node_bitmap, job_ptr->node_bitmap)) {
+			job_ptr->job_state |= JOB_CONFIGURING;
+			job_ptr->bit_flags |= NODE_REBOOT;
+		}
 		return SLURM_SUCCESS;
+	}
 
 	i_first = bit_ffs(boot_node_bitmap);
 	if (i_first >= 0)
@@ -322,6 +328,7 @@ extern int power_job_reboot(struct job_record *job_ptr)
 
 	nodes = bitmap2node_name(boot_node_bitmap);
 	if (nodes) {
+		/* Reboot nodes to change KNL NUMA and/or MCDRAM mode */
 		job_ptr->job_state |= JOB_CONFIGURING;
 		job_ptr->wait_all_nodes = 1;
 		job_ptr->bit_flags |= NODE_REBOOT;

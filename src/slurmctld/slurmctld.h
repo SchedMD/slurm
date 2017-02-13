@@ -2196,6 +2196,10 @@ extern bool test_job_array_finished(uint32_t array_job_id);
 /* Return true if ANY tasks of specific array job ID are pending */
 extern bool test_job_array_pending(uint32_t array_job_id);
 
+/* Determine of the nodes are ready to run a job
+ * RET true if ready */
+extern bool test_job_nodes_ready(struct job_record *job_ptr);
+
 /*
  * Synchronize the batch job in the system with their files.
  * All pending batch jobs must have script and environment files

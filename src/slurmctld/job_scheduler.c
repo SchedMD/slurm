@@ -3933,11 +3933,14 @@ extern void prolog_running_decr(struct job_record *job_ptr)
 	    (--job_ptr->details->prolog_running > 0))
 		return;
 
-	job_ptr->job_state &= ~JOB_CONFIGURING;
-	if (job_ptr->batch_flag &&
-	    ((job_ptr->bit_flags & NODE_REBOOT) == 0) &&
-	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
-		launch_job(job_ptr);
+	if (IS_JOB_CONFIGURING(job_ptr) && test_job_nodes_ready(job_ptr)) {
+		info("%s: Configuration for job %u is complete",
+		      __func__, job_ptr->job_id);
+		job_config_fini(job_ptr);
+		if (job_ptr->batch_flag &&
+		    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
+			launch_job(job_ptr);
+		}
 	}
 }
 
