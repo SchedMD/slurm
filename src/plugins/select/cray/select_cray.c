@@ -1763,7 +1763,11 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 		}
 		if (end_nn != topology_num_nodes) {
 			/* already looped */
-			fatal("Node %s(%d) isn't found on the system",
+			for (nn = 0; nn < topology_num_nodes; nn++) {
+				info("ALPS topology, record:%d nid:%d",
+				     nn, topology[nn].nid);
+			}
+			fatal("Node %s(%d) isn't found in the ALPS system topoloogy table",
 			      node_ptr->name, nodeinfo->nid);
 		} else if (!found) {
 			end_nn = last_nn;
