@@ -244,8 +244,8 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 				"MaxKmemPercent",
 				&slurm_cgroup_conf->max_kmem_percent);
 
-		s_p_get_uint64 (&slurm_cgroup_conf->min_kmem_space,
-				"MinKmemSpace", tbl);
+		(void) s_p_get_uint64 (&slurm_cgroup_conf->min_kmem_space,
+				       "MinKmemSpace", tbl);
 
 		conf_get_float (tbl,
 				"AllowedSwapSpace",
@@ -255,8 +255,8 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 				"MaxSwapPercent",
 				&slurm_cgroup_conf->max_swap_percent);
 
-		s_p_get_uint64 (&slurm_cgroup_conf->min_ram_space,
-		                "MinRAMSpace", tbl);
+		(void) s_p_get_uint64 (&slurm_cgroup_conf->min_ram_space,
+				      "MinRAMSpace", tbl);
 
 		/* Memory limits */
 		if (!s_p_get_boolean(&slurm_cgroup_conf->memlimit_enforcement,
