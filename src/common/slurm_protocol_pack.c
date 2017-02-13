@@ -6505,6 +6505,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack16(&build_ptr->acctng_store_job_comment, buffer);
 
 		safe_unpack32(&count, buffer);
+		if (count > NO_VAL32)
+			goto unpack_error;
 		if (count != NO_VAL) {
 			List tmp_list = list_create(destroy_config_key_pair);
 			config_key_pair_t *object = NULL;
@@ -6575,6 +6577,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 
 		safe_unpack32(&count, buffer);
+		if (count > NO_VAL32)
+			goto unpack_error;
 		if (count != NO_VAL) {
 			List tmp_list = list_create(destroy_config_key_pair);
 			config_key_pair_t *object = NULL;
@@ -6774,6 +6778,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->select_type,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&count, buffer);
+		if (count > NO_VAL32)
+			goto unpack_error;
 		if (count != NO_VAL) {
 			List tmp_list = list_create(destroy_config_key_pair);
 			config_key_pair_t *object = NULL;
@@ -6902,6 +6908,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack16(&build_ptr->acctng_store_job_comment, buffer);
 
 		safe_unpack32(&count, buffer);
+		if (count > NO_VAL32)
+			goto unpack_error;
 		if (count != NO_VAL) {
 			List tmp_list = list_create(destroy_config_key_pair);
 			config_key_pair_t *object = NULL;
@@ -6973,6 +6981,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 
 		safe_unpack32(&count, buffer);
+		if (count > NO_VAL32)
+			goto unpack_error;
 		if (count != NO_VAL) {
 			List tmp_list = list_create(destroy_config_key_pair);
 			config_key_pair_t *object = NULL;
@@ -7172,6 +7182,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->select_type,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&count, buffer);
+		if (count > NO_VAL32)
+			goto unpack_error;
 		if (count != NO_VAL) {
 			List tmp_list = list_create(destroy_config_key_pair);
 			config_key_pair_t *object = NULL;

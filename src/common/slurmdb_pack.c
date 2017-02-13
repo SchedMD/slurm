@@ -234,10 +234,12 @@ extern int slurmdb_unpack_user_rec(void **object, uint16_t protocol_version,
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack16(&object_ptr->admin_level, buffer);
 		safe_unpack32(&count, buffer);
+		if (count > NO_VAL32)
+			goto unpack_error;
 		if (count != NO_VAL) {
 			object_ptr->assoc_list =
 				list_create(slurmdb_destroy_assoc_rec);
-			for(i=0; i<count; i++) {
+			for (i = 0; i < count; i++) {
 				if (slurmdb_unpack_assoc_rec(
 					    (void *)&assoc, protocol_version,
 					    buffer)
@@ -247,10 +249,12 @@ extern int slurmdb_unpack_user_rec(void **object, uint16_t protocol_version,
 			}
 		}
 		safe_unpack32(&count, buffer);
+		if (count > NO_VAL32)
+			goto unpack_error;
 		if (count != NO_VAL) {
 			object_ptr->coord_accts =
 				list_create(slurmdb_destroy_coord_rec);
-			for(i=0; i<count; i++) {
+			for (i = 0; i < count; i++) {
 				if (slurmdb_unpack_coord_rec(
 					    (void *)&coord, protocol_version,
 					    buffer)
@@ -268,10 +272,12 @@ extern int slurmdb_unpack_user_rec(void **object, uint16_t protocol_version,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->uid, buffer);
 		safe_unpack32(&count, buffer);
+		if (count > NO_VAL32)
+			goto unpack_error;
 		if (count != NO_VAL) {
 			object_ptr->wckey_list =
 				list_create(slurmdb_destroy_wckey_rec);
-			for(i=0; i<count; i++) {
+			for (i = 0; i < count; i++) {
 				if (slurmdb_unpack_wckey_rec(
 					    (void *)&wckey, protocol_version,
 					    buffer)
@@ -2347,6 +2353,8 @@ extern int slurmdb_unpack_tres_cond(void **object, uint16_t protocol_version,
 	safe_unpack64(&object_ptr->count, buffer);
 
 	safe_unpack32(&count, buffer);
+	if (count > NO_VAL32)
+		goto unpack_error;
 	if (count != NO_VAL) {
 		if (!object_ptr->id_list)
 			object_ptr->id_list =
@@ -2360,6 +2368,8 @@ extern int slurmdb_unpack_tres_cond(void **object, uint16_t protocol_version,
 	}
 
 	safe_unpack32(&count, buffer);
+	if (count > NO_VAL32)
+		goto unpack_error;
 	if (count != NO_VAL) {
 		if (!object_ptr->name_list)
 			object_ptr->name_list =
@@ -2372,6 +2382,8 @@ extern int slurmdb_unpack_tres_cond(void **object, uint16_t protocol_version,
 		}
 	}
 	safe_unpack32(&count, buffer);
+	if (count > NO_VAL32)
+		goto unpack_error;
 	if (count != NO_VAL) {
 		if (!object_ptr->type_list)
 			object_ptr->type_list =
@@ -3491,9 +3503,11 @@ extern int slurmdb_unpack_event_cond(void **object, uint16_t protocol_version,
 	*object = object_ptr;
 
 	safe_unpack32(&count, buffer);
+	if (count > NO_VAL32)
+		goto unpack_error;
 	if (count != NO_VAL) {
 		object_ptr->cluster_list = list_create(slurm_destroy_char);
-		for(i=0; i<count; i++) {
+		for (i = 0; i < count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 					       buffer);
 			list_append(object_ptr->cluster_list, tmp_info);
@@ -3504,9 +3518,11 @@ extern int slurmdb_unpack_event_cond(void **object, uint16_t protocol_version,
 	safe_unpack16(&object_ptr->event_type, buffer);
 
 	safe_unpack32(&count, buffer);
+	if (count > NO_VAL32)
+		goto unpack_error;
 	if (count != NO_VAL) {
 		object_ptr->node_list = list_create(slurm_destroy_char);
-		for(i=0; i<count; i++) {
+		for (i = 0; i < count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 					       buffer);
 			list_append(object_ptr->node_list, tmp_info);
@@ -3517,9 +3533,11 @@ extern int slurmdb_unpack_event_cond(void **object, uint16_t protocol_version,
 	safe_unpack_time(&object_ptr->period_start, buffer);
 
 	safe_unpack32(&count, buffer);
+	if (count > NO_VAL32)
+		goto unpack_error;
 	if (count != NO_VAL) {
 		object_ptr->reason_list = list_create(slurm_destroy_char);
-		for(i=0; i<count; i++) {
+		for (i = 0; i < count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 					       buffer);
 			list_append(object_ptr->reason_list, tmp_info);
@@ -3527,9 +3545,11 @@ extern int slurmdb_unpack_event_cond(void **object, uint16_t protocol_version,
 	}
 
 	safe_unpack32(&count, buffer);
+	if (count > NO_VAL32)
+		goto unpack_error;
 	if (count != NO_VAL) {
 		object_ptr->reason_uid_list = list_create(slurm_destroy_char);
-		for(i=0; i<count; i++) {
+		for (i = 0; i < count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 					       buffer);
 			list_append(object_ptr->reason_uid_list, tmp_info);
@@ -3537,9 +3557,11 @@ extern int slurmdb_unpack_event_cond(void **object, uint16_t protocol_version,
 	}
 
 	safe_unpack32(&count, buffer);
+	if (count > NO_VAL32)
+		goto unpack_error;
 	if (count != NO_VAL) {
 		object_ptr->state_list = list_create(slurm_destroy_char);
-		for(i=0; i<count; i++) {
+		for (i = 0; i < count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 					       buffer);
 			list_append(object_ptr->state_list, tmp_info);
@@ -4468,10 +4490,12 @@ extern int slurmdb_unpack_qos_cond(void **object, uint16_t protocol_version,
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&count, buffer);
+		if (count > NO_VAL32)
+			goto unpack_error;
 		if (count != NO_VAL) {
 			object_ptr->description_list =
 				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
+			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
 				list_append(object_ptr->description_list,
@@ -4480,9 +4504,11 @@ extern int slurmdb_unpack_qos_cond(void **object, uint16_t protocol_version,
 		}
 
 		safe_unpack32(&count, buffer);
+		if (count > NO_VAL32)
+			goto unpack_error;
 		if (count != NO_VAL) {
 			object_ptr->id_list = list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
+			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
 				list_append(object_ptr->id_list, tmp_info);
@@ -4490,9 +4516,11 @@ extern int slurmdb_unpack_qos_cond(void **object, uint16_t protocol_version,
 		}
 
 		safe_unpack32(&count, buffer);
+		if (count > NO_VAL32)
+			goto unpack_error;
 		if (count != NO_VAL) {
 			object_ptr->name_list = list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
+			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
 				list_append(object_ptr->name_list, tmp_info);
