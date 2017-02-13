@@ -1142,10 +1142,12 @@ extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&count, buffer);
+		if (count > NO_VAL32)
+			goto unpack_error;
 		if (count != NO_VAL) {
 			object_ptr->accounting_list =
 				list_create(slurmdb_destroy_accounting_rec);
-			for(i=0; i<count; i++) {
+			for (i = 0; i < count; i++) {
 				if (slurmdb_unpack_accounting_rec(
 					    (void **)&slurmdb_info,
 					    protocol_version,
@@ -1603,6 +1605,8 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t protocol_version,
 		unpack_bit_str_hex(&object_ptr->preempt_bitstr, buffer);
 
 		safe_unpack32(&count, buffer);
+		if (count > NO_VAL32)
+			goto unpack_error;
 		if (count != NO_VAL) {
 			object_ptr->preempt_list =
 				list_create(slurm_destroy_char);
@@ -1715,6 +1719,8 @@ extern int slurmdb_unpack_qos_usage(void **object, uint16_t protocol_version,
 					    &count, buffer);
 
 		safe_unpack32(&count, buffer);
+		if (count > NO_VAL32)
+			goto unpack_error;
 		if (count != NO_VAL) {
 			object_ptr->user_limit_list =
 				list_create(slurmdb_destroy_used_limits);
@@ -1731,6 +1737,8 @@ extern int slurmdb_unpack_qos_usage(void **object, uint16_t protocol_version,
 		}
 
 		safe_unpack32(&count, buffer);
+		if (count > NO_VAL32)
+			goto unpack_error;
 		if (count != NO_VAL) {
 			object_ptr->acct_limit_list =
 				list_create(slurmdb_destroy_used_limits);
@@ -2202,10 +2210,12 @@ extern int slurmdb_unpack_wckey_rec(void **object, uint16_t protocol_version,
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&count, buffer);
+		if (count > NO_VAL32)
+			goto unpack_error;
 		if (count != NO_VAL) {
 			object_ptr->accounting_list =
 				list_create(slurmdb_destroy_accounting_rec);
-			for(i=0; i<count; i++) {
+			for (i = 0; i < count; i++) {
 				if (slurmdb_unpack_accounting_rec(
 					    (void **)&slurmdb_info,
 					    protocol_version,
@@ -5694,7 +5704,7 @@ extern void slurmdb_pack_update_object(slurmdb_update_object_t *object,
 	void (*my_function) (void *object, uint16_t protocol_version,
 			     Buf buffer);
 
-	switch(object->type) {
+	switch (object->type) {
 	case SLURMDB_MODIFY_USER:
 	case SLURMDB_ADD_USER:
 	case SLURMDB_REMOVE_USER:
@@ -5774,7 +5784,7 @@ extern int slurmdb_unpack_update_object(slurmdb_update_object_t **object,
 	*object = object_ptr;
 
 	safe_unpack16(&object_ptr->type, buffer);
-	switch(object_ptr->type) {
+	switch (object_ptr->type) {
 	case SLURMDB_MODIFY_USER:
 	case SLURMDB_ADD_USER:
 	case SLURMDB_REMOVE_USER:
@@ -5832,9 +5842,11 @@ extern int slurmdb_unpack_update_object(slurmdb_update_object_t **object,
 		goto unpack_error;
 	}
 	safe_unpack32(&count, buffer);
+	if (count > NO_VAL32)
+		goto unpack_error;
 	if (count != NO_VAL) {
 		object_ptr->objects = list_create((*(my_destroy)));
-		for(i=0; i<count; i++) {
+		for (i = 0; i < count; i++) {
 			if (((*(my_function))(&slurmdb_object,
 					      protocol_version, buffer))
 			    == SLURM_ERROR)

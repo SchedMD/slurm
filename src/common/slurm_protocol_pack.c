@@ -2518,9 +2518,11 @@ static int _unpack_shares_request_msg(shares_request_msg_t ** msg, Buf buffer,
 	*msg = object_ptr;
 
 	safe_unpack32(&count, buffer);
+	if (count > NO_VAL32)
+		goto unpack_error;
 	if (count != NO_VAL) {
 		object_ptr->acct_list = list_create(slurm_destroy_char);
-		for (i=0; i<count; i++) {
+		for (i = 0; i < count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info,
 					       &uint32_tmp, buffer);
 			list_append(object_ptr->acct_list, tmp_info);
@@ -2528,9 +2530,11 @@ static int _unpack_shares_request_msg(shares_request_msg_t ** msg, Buf buffer,
 	}
 
 	safe_unpack32(&count, buffer);
+	if (count > NO_VAL32)
+		goto unpack_error;
 	if (count != NO_VAL) {
 		object_ptr->user_list = list_create(slurm_destroy_char);
-		for (i=0; i<count; i++) {
+		for (i = 0; i < count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info,
 					       &uint32_tmp, buffer);
 			list_append(object_ptr->user_list, tmp_info);
@@ -2592,6 +2596,8 @@ static int _unpack_shares_response_msg(shares_response_msg_t ** msg,
 				     &object_ptr->tres_cnt, buffer);
 
 		safe_unpack32(&count, buffer);
+		if (count > NO_VAL32)
+			goto unpack_error;
 		if (count != NO_VAL) {
 			object_ptr->assoc_shares_list =
 				list_create(slurm_destroy_assoc_shares_object);
@@ -12544,9 +12550,11 @@ _unpack_will_run_response_msg(will_run_response_msg_t ** msg_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&msg->node_list, &uint32_tmp, buffer);
 
 		safe_unpack32(&count, buffer);
+		if (count > NO_VAL32)
+			goto unpack_error;
 		if (count && (count != NO_VAL)) {
 			msg->preemptee_job_id = list_create(_pre_list_del);
-			for (i=0; i<count; i++) {
+			for (i = 0; i < count; i++) {
 				safe_unpack32(&uint32_tmp, buffer);
 				job_id_ptr = xmalloc(sizeof(uint32_t));
 				job_id_ptr[0] = uint32_tmp;
@@ -12564,9 +12572,11 @@ _unpack_will_run_response_msg(will_run_response_msg_t ** msg_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&msg->node_list, &uint32_tmp, buffer);
 
 		safe_unpack32(&count, buffer);
+		if (count > NO_VAL32)
+			goto unpack_error;
 		if (count && (count != NO_VAL)) {
 			msg->preemptee_job_id = list_create(_pre_list_del);
-			for (i=0; i<count; i++) {
+			for (i = 0; i < count; i++) {
 				safe_unpack32(&uint32_tmp, buffer);
 				job_id_ptr = xmalloc(sizeof(uint32_t));
 				job_id_ptr[0] = uint32_tmp;
@@ -12651,9 +12661,11 @@ static int _unpack_accounting_update_msg(accounting_update_msg_t **msg,
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&count, buffer);
+		if (count > NO_VAL32)
+			goto unpack_error;
 		msg_ptr->update_list = list_create(
 			slurmdb_destroy_update_object);
-		for (i=0; i<count; i++) {
+		for (i = 0; i < count; i++) {
 			if ((slurmdb_unpack_update_object(
 				    &rec, protocol_version, buffer))
 			   == SLURM_ERROR)
@@ -13040,6 +13052,8 @@ static int  _unpack_job_array_resp_msg(job_array_resp_msg_t **msg, Buf buffer,
 
 	resp = xmalloc(sizeof(job_array_resp_msg_t));
 	safe_unpack32(&resp->job_array_count, buffer);
+	if (resp->job_array_count > NO_VAL32)
+		goto unpack_error;
 	resp->error_code   = xmalloc(sizeof(uint32_t) * resp->job_array_count);
 	resp->job_array_id = xmalloc(sizeof(char *)   * resp->job_array_count);
 	for (i = 0; i < resp->job_array_count; i++) {
@@ -13123,9 +13137,11 @@ _unpack_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t **msg,
 	*msg = object_ptr;
 
 	safe_unpack32(&count, buffer);
+	if (count > NO_VAL32)
+		goto unpack_error;
 	if (count != NO_VAL) {
 		object_ptr->acct_list = list_create(slurm_destroy_char);
-		for (i=0; i<count; i++) {
+		for (i = 0; i < count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info,
 					       &uint32_tmp, buffer);
 			list_append(object_ptr->acct_list, tmp_info);
@@ -13135,9 +13151,11 @@ _unpack_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t **msg,
 	safe_unpack32(&object_ptr->flags, buffer);
 
 	safe_unpack32(&count, buffer);
+	if (count > NO_VAL32)
+		goto unpack_error;
 	if (count != NO_VAL) {
 		object_ptr->qos_list = list_create(slurm_destroy_char);
-		for (i=0; i<count; i++) {
+		for (i = 0; i < count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info,
 					       &uint32_tmp, buffer);
 			list_append(object_ptr->qos_list, tmp_info);
@@ -13145,9 +13163,11 @@ _unpack_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t **msg,
 	}
 
 	safe_unpack32(&count, buffer);
+	if (count > NO_VAL32)
+		goto unpack_error;
 	if (count != NO_VAL) {
 		object_ptr->user_list = list_create(slurm_destroy_char);
-		for (i=0; i<count; i++) {
+		for (i = 0; i < count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info,
 					       &uint32_tmp, buffer);
 			list_append(object_ptr->user_list, tmp_info);

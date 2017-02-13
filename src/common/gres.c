@@ -1216,6 +1216,8 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 	safe_unpack16(&rec_cnt, buffer);
 	if (rec_cnt == 0)
 		return SLURM_SUCCESS;
+	if (rec_cnt > NO_VAL16)
+		goto unpack_error;
 
 	slurm_mutex_lock(&gres_context_lock);
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {

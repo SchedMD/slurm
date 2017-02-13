@@ -3384,10 +3384,12 @@ extern int assoc_mgr_info_unpack_msg(
 			     buffer);
 
 	safe_unpack32(&count, buffer);
+	if (count > NO_VAL32)
+		goto unpack_error;
 	if (count) {
 		object_ptr->assoc_list =
 			list_create(slurmdb_destroy_assoc_rec);
-		for (i=0; i<count; i++) {
+		for (i = 0; i < count; i++) {
 			if (slurmdb_unpack_assoc_rec_with_usage(
 				    &list_object, protocol_version,
 				    buffer)
@@ -3398,10 +3400,12 @@ extern int assoc_mgr_info_unpack_msg(
 	}
 
 	safe_unpack32(&count, buffer);
+	if (count > NO_VAL32)
+		goto unpack_error;
 	if (count) {
 		object_ptr->qos_list =
 			list_create(slurmdb_destroy_qos_rec);
-		for (i=0; i<count; i++) {
+		for (i = 0; i < count; i++) {
 			if (slurmdb_unpack_qos_rec_with_usage(
 				    &list_object, protocol_version, buffer)
 			    != SLURM_SUCCESS)
@@ -3411,10 +3415,12 @@ extern int assoc_mgr_info_unpack_msg(
 	}
 
 	safe_unpack32(&count, buffer);
+	if (count > NO_VAL32)
+		goto unpack_error;
 	if (count) {
 		object_ptr->user_list =
 			list_create(slurmdb_destroy_user_rec);
-		for (i=0; i<count; i++) {
+		for (i = 0; i < count; i++) {
 			if (slurmdb_unpack_user_rec(
 				    &list_object, protocol_version, buffer)
 			    != SLURM_SUCCESS)
