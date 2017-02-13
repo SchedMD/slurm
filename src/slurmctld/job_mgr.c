@@ -7488,7 +7488,7 @@ extern bool test_job_nodes_ready(struct job_record *job_ptr)
 	if (bit_overlap(job_ptr->node_bitmap, power_node_bitmap))
 		return false;
 
-	if (job_ptr->wait_all_nodes) {
+	if (job_ptr->wait_all_nodes || job_ptr->burst_buffer) {
 		/* Make sure all nodes ready to start job */
 		if ((select_g_job_ready(job_ptr) & READY_NODE_STATE) == 0)
 			return false;

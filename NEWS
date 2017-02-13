@@ -18,6 +18,8 @@ documents those changes that are of interest to users and administrators.
  -- Insure job does not start running before node is booted and PrologSlurmctld
     is complete.
  -- Fix minor memory leak in the slurmctld when removing a QOS.
+ -- burst_buffer/cray - Do not execute "pre_run" operation until after all nodes
+    are booted and ready for use.
 
 * Changes in Slurm 16.05.9
 ==========================
