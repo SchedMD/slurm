@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
     by task/cgroup plugin.
  -- If QOS has been added to the system go refigure out Deny/AllowQOS on
     partitions.
+ -- Deny job with duplicate GRES requested.
 
 * Changes in Slurm 17.02.0rc1
 ==============================
