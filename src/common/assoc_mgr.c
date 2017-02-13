@@ -4621,6 +4621,9 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 		FREE_NULL_LIST(update_list);
 	}
 
+	if (resize_qos_bitstr && init_setup.resize_qos_notify)
+		init_setup.resize_qos_notify();
+
 	return rc;
 }
 

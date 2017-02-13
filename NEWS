@@ -9,6 +9,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix regression when purging/archiving jobs/events.
  -- Add new job state JOB_OOM indicating Out Of Memory condition as detected
     by task/cgroup plugin.
+ -- If QOS has been added to the system go refigure out Deny/AllowQOS on
+    partitions.
 
 * Changes in Slurm 17.02.0rc1
 ==============================

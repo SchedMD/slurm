@@ -97,6 +97,7 @@ typedef struct {
  	uint16_t cache_level;
 	uint16_t enforce;
 	void (*add_license_notify) (slurmdb_res_rec_t *rec);
+	void (*resize_qos_notify) (void);
 	void (*remove_assoc_notify) (slurmdb_assoc_rec_t *rec);
 	void (*remove_license_notify) (slurmdb_res_rec_t *rec);
 	void (*remove_qos_notify) (slurmdb_qos_rec_t *rec);
