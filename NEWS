@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
     from DataWarp.
  -- Insure job does not start running before node is booted and PrologSlurmctld
     is complete.
+ -- Fix minor memory leak in the slurmctld when removing a QOS.
 
 * Changes in Slurm 16.05.9
 ==========================

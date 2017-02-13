@@ -1314,6 +1314,7 @@ static void _remove_qos(slurmdb_qos_rec_t *rec)
 			     part_ptr->name, rec->name);
 			part_ptr->qos_ptr = NULL;
 		}
+		list_iterator_destroy(itr);
 	}
 	unlock_slurmctld(part_write_lock);
 
