@@ -3772,6 +3772,9 @@ static void _kill_job(struct job_record *job_ptr, bool hold_job)
 
 static void *_start_pre_run(void *x)
 {
+	/* Locks: read job */
+	slurmctld_lock_t job_read_lock = {
+		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 	/* Locks: write job */
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
@@ -3783,8 +3786,23 @@ static void *_start_pre_run(void *x)
 	struct job_record *job_ptr;
 	bool run_kill_job = false;
 	uint32_t timeout;
-	bool hold_job = false;
+	bool hold_job = false, nodes_ready = false;
 	DEF_TIMERS;
+
+	/* Wait for node boot to complete */
+	while (!nodes_ready) {
+		lock_slurmctld(job_read_lock);
+		job_ptr = find_job_record(pre_run_args->job_id);
+		if (!job_ptr || IS_JOB_COMPLETED(job_ptr)) {
+			unlock_slurmctld(job_read_lock);
+			return NULL;
+		}
+		if (test_job_nodes_ready(job_ptr))
+			nodes_ready = true;
+		unlock_slurmctld(job_read_lock);
+		if (!nodes_ready)
+			sleep(60);
+	}
 
 	if (pre_run_args->timeout)
 		timeout = pre_run_args->timeout * 1000;
