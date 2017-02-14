@@ -874,6 +874,10 @@ static int _tres_weight_item(double *weights, char *item_str)
 	}
 
 	type = strtok_r(item_str, "=", &value_str);
+	if (type == NULL) {
+		error("\"%s\" is an invalid TRES weight entry", item_str);
+		return SLURM_ERROR;
+	}
 	if (strchr(type, '/'))
 		type = strtok_r(type, "/", &name);
 
@@ -890,7 +894,7 @@ static int _tres_weight_item(double *weights, char *item_str)
 
 	errno = 0;
 	weight_value = strtod(value_str, &val_unit);
-	if(errno) {
+	if (errno) {
 		error("Unable to convert %s value to double in %s",
 		      __func__, value_str);
 		return SLURM_ERROR;
@@ -4029,6 +4033,8 @@ int slurm_unpack_slurm_addr_array(slurm_addr_t ** slurm_address,
 
 	*slurm_address = NULL;
 	safe_unpack32(&nl, buffer);
+	if (nl > NO_VAL32)
+		goto unpack_error;
 	*size_val = ntohl(nl);
 	*slurm_address = xmalloc((*size_val) * sizeof(slurm_addr_t));
 

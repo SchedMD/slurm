@@ -959,7 +959,8 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 	uint32_t uint32_tmp;
 	uint8_t  uint8_tmp;
 
-	jobacct_gather_init();
+	if (jobacct_gather_init() < 0)
+		return SLURM_ERROR;
 
 	if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack8(&uint8_tmp, buffer);

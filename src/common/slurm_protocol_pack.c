@@ -2400,6 +2400,8 @@ _unpack_network_callerid_msg(network_callerid_msg_t **msg_ptr, Buf buffer,
 	*msg_ptr = msg;
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackmem_xmalloc(&charptr_tmp, &uint32_tmp, buffer);
+		if (uint32_tmp > NO_VAL32)
+			goto unpack_error;
 		memcpy(msg->ip_src, charptr_tmp, uint32_tmp);
 		xfree(charptr_tmp);
 		safe_unpackmem_xmalloc(&charptr_tmp, &uint32_tmp, buffer);
@@ -2746,7 +2748,7 @@ _unpack_priority_factors_request_msg(priority_factors_request_msg_t ** msg,
 				     uint16_t protocol_version)
 {
 	uint32_t *uint32_tmp = NULL;
-	uint32_t count = NO_VAL;
+	uint32_t count = NO_VAL32;
 	int i;
 	priority_factors_request_msg_t *object_ptr = NULL;
 
@@ -2767,7 +2769,9 @@ _unpack_priority_factors_request_msg(priority_factors_request_msg_t ** msg,
 	}
 
 	safe_unpack32(&count, buffer);
-	if (count != NO_VAL) {
+	if (count > NO_VAL32)
+		goto unpack_error;
+	if (count != NO_VAL32) {
 		object_ptr->uid_list = list_create(slurm_destroy_uint32_ptr);
 		for (i = 0; i < count; i++) {
 			uint32_tmp = xmalloc(sizeof(uint32_t));
@@ -2817,7 +2821,7 @@ _unpack_priority_factors_response_msg(priority_factors_response_msg_t ** msg,
 				      Buf buffer,
 				      uint16_t protocol_version)
 {
-	uint32_t count = NO_VAL;
+	uint32_t count = NO_VAL32;
 	int i = 0;
 	void *tmp_info = NULL;
 	priority_factors_response_msg_t *object_ptr = NULL;
@@ -2827,10 +2831,12 @@ _unpack_priority_factors_response_msg(priority_factors_response_msg_t ** msg,
 	*msg = object_ptr;
 
 	safe_unpack32(&count, buffer);
-	if (count != NO_VAL) {
+	if (count > NO_VAL32)
+		goto unpack_error;
+	if (count != NO_VAL32) {
 		object_ptr->priority_factors_list =
 			list_create(_priority_factors_resp_list_del);
-		for (i=0; i<count; i++) {
+		for (i = 0; i < count; i++) {
 			if (_unpack_priority_factors_object(&tmp_info, buffer,
 							    protocol_version)
 			    != SLURM_SUCCESS)
@@ -4688,7 +4694,9 @@ _unpack_composite_msg(composite_msg_t **msg, Buf buffer,
 	safe_unpack32(&count, buffer);
 	slurm_unpack_slurm_addr_no_alloc(&object_ptr->sender, buffer);
 
-	if (count != NO_VAL) {
+	if (count > NO_VAL32)
+		goto unpack_error;
+	if (count != NO_VAL32) {
 		object_ptr->msg_list = list_create(slurm_free_comp_msg_list);
 		for (i = 0; i < count; i++) {
 			tmp_info = xmalloc_nz(sizeof(slurm_msg_t));
@@ -10216,10 +10224,12 @@ extern int slurm_unpack_block_info_members(block_info_t *block_info, Buf buffer,
 			xfree(mp_inx_str);
 		}
 		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
+		if (count > NO_VAL32)
+			goto unpack_error;
+		if (count != NO_VAL32) {
 			block_info->job_list =
 				list_create(slurm_free_block_job_info);
-			for (i=0; i<count; i++) {
+			for (i = 0; i < count; i++) {
 				if (_unpack_block_job_info(&job, buffer,
 							   protocol_version)
 				    == SLURM_ERROR)
