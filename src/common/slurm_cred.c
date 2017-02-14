@@ -2118,7 +2118,7 @@ _job_state_unpack_one(Buf buffer)
 	}
 	if (j->expiration) {
 		strcpy(t3, " expires:");
-		timestr(&j->revoked, (t3+9), (64-9));
+		timestr(&j->expiration, (t3+9), (64-9));
 	} else {
 		t3[0] = '\0';
 	}
