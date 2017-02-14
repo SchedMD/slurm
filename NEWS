@@ -15,8 +15,9 @@ documents those changes that are of interest to users and administrators.
  -- burst_buffer/cray - Support default pool which is not the first pool
     reported by DataWarp and log in Slurm when pools that are added or removed
     from DataWarp.
- -- Insure job does not start running before node is booted and PrologSlurmctld
-    is complete.
+ -- Insure job does not start running before PrologSlurmctld is complete and
+    node is booted (all nodes for interactive job, at least first node for batch
+    job without burst buffers).
  -- Fix minor memory leak in the slurmctld when removing a QOS.
  -- burst_buffer/cray - Do not execute "pre_run" operation until after all nodes
     are booted and ready for use.
