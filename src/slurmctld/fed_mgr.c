@@ -2031,13 +2031,21 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	xassert(alloc_code);
 	xassert(err_msg);
 
-	lock_slurmctld(fed_read_lock);
+	if (job_desc->job_id != NO_VAL) {
+		error("attempt by uid %u to set job_id to %u. "
+		      "specifying a job_id is not allowed when in a federation",
+		      uid, job_desc->job_id);
+		*alloc_code = ESLURM_INVALID_JOB_ID;
+		return SLURM_ERROR;
+	}
 
 	lock_slurmctld(job_write_lock);
 	/* get job_id now. Can't submit job to get job_id as job_allocate will
 	 * change the job_desc. */
 	job_desc->job_id = get_next_job_id(false);
 	unlock_slurmctld(job_write_lock);
+
+	lock_slurmctld(fed_read_lock);
 
 	if ((job_desc->priority != 0) && (job_desc->begin_time <= now)) {
 		/* Don't job/node write lock on _find_start_now_sib. It locks
