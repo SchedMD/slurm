@@ -24,6 +24,8 @@ documents those changes that are of interest to users and administrators.
  -- scontrol - return an error when attempting to use the +=/-+ syntax to
     update a field where this is not appropriate.
  -- Fix task/affinity to work correctly with --ntasks-per-socket.
+ -- Honor --ntasks-per-node and --ntasks option when used with job constraints
+    that contain node counts.
 
 * Changes in Slurm 16.05.9
 ==========================
