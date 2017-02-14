@@ -275,6 +275,7 @@ documents those changes that are of interest to users and administrators.
     are booted and ready for use.
  -- scontrol - return an error when attempting to use the +=/-+ syntax to
     update a field where this is not appropriate.
+ -- Fix task/affinity to work correctly with --ntasks-per-socket.
 
 * Changes in Slurm 16.05.9
 ==========================
