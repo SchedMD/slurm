@@ -123,7 +123,8 @@ static void         _throttle_start(int *active_rpc_cnt);
 inline static void  _slurm_rpc_accounting_first_reg(slurm_msg_t *msg);
 inline static void  _slurm_rpc_accounting_register_ctld(slurm_msg_t *msg);
 inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg);
-inline static void  _slurm_rpc_allocate_resources(slurm_msg_t * msg);
+inline static void  _slurm_rpc_allocate_resources(slurm_msg_t * msg,
+						  bool is_sib_job);
 inline static void  _slurm_rpc_block_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_burst_buffer_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg);
@@ -199,7 +200,8 @@ inline static void  _slurm_rpc_step_complete(slurm_msg_t * msg,
 					     bool running_composite);
 inline static void  _slurm_rpc_step_layout(slurm_msg_t * msg);
 inline static void  _slurm_rpc_step_update(slurm_msg_t * msg);
-inline static void  _slurm_rpc_submit_batch_job(slurm_msg_t * msg);
+inline static void  _slurm_rpc_submit_batch_job(slurm_msg_t * msg,
+						bool is_sib_job);
 inline static void  _slurm_rpc_suspend(slurm_msg_t * msg);
 inline static void  _slurm_rpc_top_job(slurm_msg_t * msg);
 inline static void  _slurm_rpc_trigger_clear(slurm_msg_t * msg);
@@ -301,7 +303,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 
 	switch (msg->msg_type) {
 	case REQUEST_RESOURCE_ALLOCATION:
-		_slurm_rpc_allocate_resources(msg);
+		_slurm_rpc_allocate_resources(msg, false);
 		break;
 	case REQUEST_BUILD_INFO:
 		_slurm_rpc_dump_conf(msg);
@@ -421,7 +423,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		_slurm_rpc_shutdown_controller_immediate(msg);
 		break;
 	case REQUEST_SUBMIT_BATCH_JOB:
-		_slurm_rpc_submit_batch_job(msg);
+		_slurm_rpc_submit_batch_job(msg, false);
 		break;
 	case REQUEST_UPDATE_FRONT_END:
 		_slurm_rpc_update_front_end(msg);
@@ -1024,8 +1026,11 @@ static int _make_step_cred(struct step_record *step_ptr,
 }
 
 /* _slurm_rpc_allocate_resources:  process RPC to allocate resources for
- *	a job */
-static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
+ *	a job
+ *
+ * IN is_sib_job - job is a federated sib job and already has a fed job_id.
+ */
+static void _slurm_rpc_allocate_resources(slurm_msg_t * msg, bool is_sib_job)
 {
 	static int active_rpc_cnt = 0;
 	int i, error_code = SLURM_SUCCESS;
@@ -1100,8 +1105,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		do_unlock = true;
 		_throttle_start(&active_rpc_cnt);
 
-		if (job_desc_msg->job_id == SLURM_BATCH_SCRIPT &&
-		    fed_mgr_is_active()) {
+		if (!is_sib_job && fed_mgr_is_active()) {
 			uint32_t job_id;
 			if (fed_mgr_job_allocate(msg, job_desc_msg, true, uid,
 						 msg->protocol_version, &job_id,
@@ -3391,7 +3395,7 @@ static void _slurm_rpc_step_update(slurm_msg_t *msg)
 }
 
 /* _slurm_rpc_submit_batch_job - process RPC to submit a batch job */
-static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
+static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg, bool is_sib_job)
 {
 	static int active_rpc_cnt = 0;
 	int error_code = SLURM_SUCCESS;
@@ -3447,9 +3451,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 	}
 
 	_throttle_start(&active_rpc_cnt);
-	if (job_desc_msg->job_id == SLURM_BATCH_SCRIPT &&
-	    fed_mgr_is_active()) { /* make sure it's not a submitted sib job. */
-
+	if (!is_sib_job && fed_mgr_is_active()) {
 		if (fed_mgr_job_allocate(msg, job_desc_msg, false, uid,
 					 msg->protocol_version, &job_id,
 					 &error_code, &err_msg))
@@ -6068,7 +6070,7 @@ static void _slurm_rpc_sib_submit_batch_job(uint32_t uid, slurm_msg_t *msg)
 	}
 	unlock_slurmctld(job_write_lock);
 
-	_slurm_rpc_submit_batch_job(msg);
+	_slurm_rpc_submit_batch_job(msg, true);
 
 	msg->data = sib_msg;
 	msg->protocol_version = tmp_version;
@@ -6095,7 +6097,7 @@ static void _slurm_rpc_sib_resource_allocation(uint32_t uid, slurm_msg_t *msg)
 	msg->protocol_version = sib_msg->data_version;
 	msg->data = job_desc;
 
-	_slurm_rpc_allocate_resources(msg);
+	_slurm_rpc_allocate_resources(msg, true);
 
 	msg->data = sib_msg;
 	msg->protocol_version = tmp_version;
