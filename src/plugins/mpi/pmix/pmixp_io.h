@@ -98,11 +98,10 @@ typedef struct {
 	/* sender */
 	void *send_current;
 	void *send_hdr_net;
-	uint32_t send_hdr_offs;
+	uint32_t send_offs;
 	uint32_t send_hdr_size;
-	void *send_payload;
-	uint32_t send_pay_offs;
 	uint32_t send_pay_size;
+	void *send_payload;
 	List send_queue;
 } pmixp_io_engine_t;
 

@@ -47,6 +47,9 @@ size_t pmixp_read_buf(int fd, void *buf, size_t count, int *shutdown,
 		      bool blocking);
 size_t pmixp_write_buf(int fd, void *buf, size_t count, int *shutdown,
 		       bool blocking);
+size_t pmixp_writev_buf(int sd, struct iovec *iov, size_t iovcnt, 
+                        size_t offset, int *shutdown);
+
 int pmixp_fd_set_nodelay(int fd);
 bool pmixp_fd_read_ready(int fd, int *shutdown);
 bool pmixp_fd_write_ready(int fd, int *shutdown);

@@ -200,6 +200,68 @@ size_t pmixp_write_buf(int sd, void *buf, size_t count, int *shutdown,
 	return offs;
 }
 
+static int _iov_shift(struct iovec *iov, size_t iovcnt, int offset)
+{
+    int skip, i;
+    size_t count = 0;
+    
+    /* find out how many iov's was completely sent */
+    for(skip = 0; skip < iovcnt; skip++){
+        if( offset < count + iov[skip].iov_len ){
+            break;
+        }
+        count += iov[skip].iov_len;
+    }
+    
+    /* remove tose iov's from the list */
+    for(i = 0; i < iovcnt - skip; i++){
+        iov[i] = iov[i + skip];
+    }
+    
+    /* shift the current iov */
+    offset -= count;
+    iov[0].iov_base += offset;
+    iov[0].iov_len -= offset;
+    return iovcnt - skip;
+}
+
+size_t pmixp_writev_buf(int sd, struct iovec *iov, size_t iovcnt, 
+                        size_t offset, int *shutdown)
+{
+	ssize_t ret;
+	size_t size = 0, written = 0;
+	int i;
+	
+	for(i=0; i < iovcnt; i++){
+	    size += iov[i].iov_len;
+    }
+
+	/* Adjust initial buffer with the offset */
+	iovcnt = _iov_shift(iov, iovcnt, offset);
+
+	*shutdown = 0;
+
+	while (size - (offset + written) > 0) {
+		ret = writev(sd, iov, iovcnt);
+		if (ret > 0) {
+			written += ret;
+			iovcnt = _iov_shift(iov, iovcnt, ret);
+			continue;
+		}
+		switch (errno) {
+		case EINTR:
+			continue;
+		case EWOULDBLOCK:
+			return written;
+		default:
+			*shutdown = -errno;
+			return written;
+		}
+	}
+
+	return written;
+}
+
 bool pmixp_fd_read_ready(int fd, int *shutdown)
 {
 	struct pollfd pfd[1];

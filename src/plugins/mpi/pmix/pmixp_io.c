@@ -133,9 +133,9 @@ void pmixp_io_init(pmixp_io_engine_t *eng,
 
 	/* Init transmitter */
 	eng->send_current = NULL;
-	eng->send_hdr_size = eng->send_hdr_offs = 0;
+	eng->send_hdr_size = eng->send_pay_size = 0;
+	eng->send_offs = 0;
 	eng->send_payload = NULL;
-	eng->send_pay_size = eng->send_pay_offs = 0;
 	eng->send_queue = list_create(eng->h.msg_free_cb);
 	if (eng->h.send_on) {
 		/* we are going to send data */
@@ -168,7 +168,7 @@ _pmixp_io_drop_messages(pmixp_io_engine_t *eng)
 			eng->send_current = NULL;
 		}
 		eng->send_payload = NULL;
-		eng->send_pay_size = eng->send_pay_offs = 0;
+		eng->send_offs = 0;
 	}
 }
 
@@ -217,7 +217,8 @@ void pmixp_io_finalize(pmixp_io_engine_t *eng, int err)
 		/* Release all sender resources*/
 		if( eng->h.send_on ){
 			xfree(eng->send_hdr_net);
-			eng->send_hdr_size = eng->send_hdr_offs = 0;
+			eng->send_hdr_size = eng->send_pay_size;
+			eng->send_offs = 0;
 		}
 		break;
 	case PMIXP_IO_NONE:
@@ -423,12 +424,13 @@ static inline int _send_set_current(pmixp_io_engine_t *eng, void *msg)
 	/* Setup header for sending */
 	eng->send_hdr_size = eng->h.send_net_hsize;
 	eng->h.hdr_pack_cb(hdr, eng->send_hdr_net);
-	eng->send_hdr_offs = 0;
 
 	/* Setup payload for sending */
 	eng->send_payload = eng->h.payload_ptr_cb(msg);
 	eng->send_pay_size = eng->h.payload_size_cb(hdr);
-	eng->send_pay_offs = 0;
+
+    /* Setup send offset */
+	eng->send_offs = 0;
 	return 0;
 }
 
@@ -442,8 +444,8 @@ static inline void _send_free_current(pmixp_io_engine_t *eng)
 	xassert(NULL != eng->send_current);
 
 	eng->send_payload = NULL;
-	eng->send_pay_size = eng->send_pay_offs = 0;
-	eng->send_hdr_size = eng->send_hdr_offs = 0;
+	eng->send_pay_size = eng->send_hdr_size = 0;
+	eng->send_offs = 0;
 	eng->h.msg_free_cb(eng->send_current);
 	eng->send_current = NULL;
 }
@@ -457,8 +459,8 @@ static inline int _send_header_ok(pmixp_io_engine_t *eng)
 	xassert(eng->h.send_on);
 	xassert(NULL != eng->send_current);
 
-	return (NULL != eng->send_current) && (eng->send_hdr_size > 0)
-			&& (eng->send_hdr_offs == eng->send_hdr_size);
+	return (NULL != eng->send_current) && 
+				(eng->send_offs >= eng->send_hdr_size);
 }
 
 static inline int _send_payload_ok(pmixp_io_engine_t *eng)
@@ -470,7 +472,7 @@ static inline int _send_payload_ok(pmixp_io_engine_t *eng)
 	xassert(eng->h.send_on);
 
 	return (eng->send_current != NULL) && _send_header_ok(eng)
-			&& (eng->send_pay_offs == eng->send_pay_size);
+			&& (eng->send_offs == (eng->send_pay_size + eng->send_hdr_size));
 }
 
 int pmixp_io_send_enqueue(pmixp_io_engine_t *eng, void *msg)
@@ -530,8 +532,6 @@ bool pmixp_io_send_pending(pmixp_io_engine_t *eng)
 void pmixp_io_send_progress(pmixp_io_engine_t *eng)
 {
 	int fd;
-	uint32_t size, remain;
-	void *offs;
 
 	xassert(NULL != eng);
 	xassert(eng->magic == PMIXP_MSGSTATE_MAGIC);
@@ -549,40 +549,27 @@ void pmixp_io_send_progress(pmixp_io_engine_t *eng)
 		 * FIXME: maybe set some restriction on number of messages sended at once
 		 */
 		int shutdown = 0;
-		if (!_send_header_ok(eng)) {
-			size = eng->send_hdr_size;
-			remain = size - eng->send_hdr_offs;
-			offs = eng->send_hdr_net + eng->send_hdr_offs;
-			int cnt = pmixp_write_buf(fd, offs, remain, &shutdown,
-					false);
-			if (shutdown) {
-				pmixp_io_finalize(eng, shutdown);
-				return;
-			}
-			if (cnt == 0) {
-				break;
-			}
-			eng->send_hdr_offs += cnt;
-			if (!_send_header_ok(eng)) {
-				/* Go to the next interation and try to finish with the header */
-				continue;
-			}
+        struct iovec iov[2];
+        int iovcnt = 0;
+        size_t written = 0;
+        
+        iov[iovcnt].iov_base = eng->send_hdr_net;
+        iov[iovcnt].iov_len  = eng->send_hdr_size;
+        iovcnt++;
+        if( eng->send_pay_size ){
+            iov[iovcnt].iov_base = eng->send_payload;
+            iov[iovcnt].iov_len  = eng->send_pay_size;
+            iovcnt++;
+        }
+        written = pmixp_writev_buf(fd, iov, iovcnt, eng->send_offs, &shutdown);
+		if (shutdown) {
+			pmixp_io_finalize(eng, shutdown);
+			return;
 		}
-
-		if (_send_header_ok(eng)) {
-			size = eng->send_pay_size;
-			remain = size - eng->send_pay_offs;
-			offs = eng->send_payload + eng->send_pay_offs;
-			int cnt = pmixp_write_buf(fd, offs, remain, &shutdown,
-					false);
-			if (shutdown) {
-				pmixp_io_finalize(eng, shutdown);
-				return;
-			}
-			if (0 == cnt) {
-				break;
-			}
-			eng->send_pay_offs += cnt;
+		
+		eng->send_offs += written;
+		if( 0 == written ){
+		    break;
 		}
 	}
 }
