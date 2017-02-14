@@ -1181,7 +1181,6 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 			if ((req->ntasks_per_socket != 0) &&
 			    (socket_tasks[sock_inx] >= req->ntasks_per_socket))
 				continue;
-			socket_tasks[sock_inx]++;
 
 			if (!masks[taskcount])
 				masks[taskcount] = bit_alloc(
@@ -1195,7 +1194,11 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 
 			if (++c < req->cpus_per_task)
 				continue;
+
+			/* We found one! Increment the count on each unit */
 			core_tasks[core_inx]++;
+			socket_tasks[sock_inx]++;
+
 			/* Binding to cores, skip remaining of the threads */
 			if (!(req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)
 			    && ((req->cpu_bind_type & CPU_BIND_TO_CORES)
