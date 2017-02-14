@@ -694,7 +694,7 @@ static void _usage(void)
 	printf("               [-p partition] [-Q] [-q qos] [-R reservation][-s signal | integer]\n");
 	printf("               [-t PENDING | RUNNING | SUSPENDED] [--usage] [-u user_name]\n");
 	printf("               [--hurry] [-V] [-v] [-w hosts...] [--wckey=wckey]\n");
-	printf("                [job_id[_array_id][.step_id]]\n");
+	printf("               [job_id[_array_id][.step_id]]\n");
 }
 
 static void _help(void)
