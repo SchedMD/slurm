@@ -134,6 +134,9 @@ typedef struct gres_job_state {
 	 * gres_bit_step_alloc is a subset of gres_bit_alloc */
 	bitstr_t **gres_bit_step_alloc;
 	uint64_t  *gres_cnt_step_alloc;
+
+	/* key for searches with name and type */
+	uint32_t gres_name_type_id;
 } gres_job_state_t;
 
 /* Gres job step state as used by slurmctld daemon */

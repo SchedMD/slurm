@@ -6024,10 +6024,9 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		goto cleanup_fail;
 	}
 
-	if (gres_plugin_job_state_validate(job_desc->gres, &gres_list)) {
-		error_code = ESLURM_INVALID_GRES;
+	if ((error_code =
+	     gres_plugin_job_state_validate(job_desc->gres, &gres_list)))
 		goto cleanup_fail;
-	}
 
 	gres_set_job_tres_cnt(gres_list,
 			      job_desc->min_nodes,
@@ -10141,11 +10140,14 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		} else if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL)
 			   || (detail_ptr->expanding_jobid != 0)) {
 			error_code = ESLURM_JOB_NOT_PENDING;
-		} else if (gres_plugin_job_state_validate(job_specs->gres,
-							  &gres_list)) {
-			info("sched: update_job: invalid gres %s for job %u",
-			     job_specs->gres, job_ptr->job_id);
-			error_code = ESLURM_INVALID_GRES;
+		} else if ((error_code = gres_plugin_job_state_validate(
+				    job_specs->gres, &gres_list))) {
+			if (error_code == ESLURM_DUPLICATE_GRES)
+				info("sched: update_job: duplicate gres %s for job %u",
+				     job_specs->gres, job_ptr->job_id);
+			else
+				info("sched: update_job: invalid gres %s for job %u",
+				     job_specs->gres, job_ptr->job_id);
 		} else {
 			gres_set_job_tres_cnt(gres_list,
 					      detail_ptr->min_nodes,

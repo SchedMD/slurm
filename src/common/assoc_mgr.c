@@ -5395,8 +5395,7 @@ extern int load_assoc_usage(char *state_save_location)
 
 	safe_unpack16(&ver, buffer);
 	debug3("Version in assoc_usage header is %u", ver);
-	if ((ver < SLURM_MIN_PROTOCOL_VERSION) ||
-	    (ver > SLURM_PROTOCOL_VERSION)) {
+	if (ver > SLURM_PROTOCOL_VERSION || ver < SLURM_MIN_PROTOCOL_VERSION) {
 		error("***********************************************");
 		error("Can not recover assoc_usage state, "
 		      "incompatible version, got %u need > %u <= %u", ver,
@@ -5514,8 +5513,7 @@ extern int load_qos_usage(char *state_save_location)
 
 	safe_unpack16(&ver, buffer);
 	debug3("Version in qos_usage header is %u", ver);
-	if ((ver < SLURM_MIN_PROTOCOL_VERSION) ||
-	    (ver > SLURM_PROTOCOL_VERSION)) {
+	if (ver > SLURM_PROTOCOL_VERSION || ver < SLURM_MIN_PROTOCOL_VERSION) {
 		error("***********************************************");
 		error("Can not recover qos_usage state, "
 		      "incompatible version, got %u need > %u <= %u", ver,
