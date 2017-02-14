@@ -8019,7 +8019,8 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 
 	if (job_desc_msg->job_id != NO_VAL) {
 		struct job_record *dup_job_ptr;
-		if ((submit_uid != 0) &&
+		if (!fed_mgr_is_active() &&
+		    (submit_uid != 0) &&
 		    (submit_uid != slurmctld_conf.slurm_user_id)) {
 			info("attempt by uid %u to set job_id to %u",
 			     submit_uid, job_desc_msg->job_id);
