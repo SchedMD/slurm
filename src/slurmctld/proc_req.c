@@ -114,9 +114,6 @@ static pthread_cond_t throttle_cond = PTHREAD_COND_INITIALIZER;
 static void         _fill_ctld_conf(slurm_ctl_conf_t * build_ptr);
 static void         _kill_job_on_msg_fail(uint32_t job_id);
 static int          _is_prolog_finished(uint32_t job_id);
-static int	    _launch_batch_step(job_desc_msg_t *job_desc_msg,
-				       uid_t uid, uint32_t *step_id,
-				       uint16_t protocol_version);
 static int          _make_step_cred(struct step_record *step_rec,
 				    slurm_cred_t **slurm_cred,
 				    uint16_t protocol_version);
@@ -3461,96 +3458,22 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		lock_slurmctld(job_write_lock);
 		START_TIMER;	/* Restart after we have locks */
 
-		if (job_desc_msg->job_id != SLURM_BATCH_SCRIPT) {
-			job_ptr = find_job_record(job_desc_msg->job_id);
-			if (job_ptr && IS_JOB_FINISHED(job_ptr)) {
-				if (IS_JOB_COMPLETING(job_ptr)) {
-					info("Attempt to re-use active "
-					     "job id %u", job_ptr->job_id);
-					reject_job = true;
-					error_code = ESLURM_DUPLICATE_JOB_ID;
-					goto unlock;
-				}
-				job_ptr = NULL;	/* OK to re-use job id */
-			}
-		} else
-			job_ptr = NULL;
+		/* Create new job allocation */
+		error_code = job_allocate(job_desc_msg,
+					  job_desc_msg->immediate,
+					  false, NULL, 0, uid, &job_ptr,
+					  &err_msg,
+					  msg->protocol_version);
+		if (!job_ptr ||
+		    (error_code && job_ptr->job_state == JOB_FAILED))
+			reject_job = true;
+		else
+			job_id = job_ptr->job_id;
 
-		if (job_ptr) {	/* Active job allocation */
-#if defined HAVE_FRONT_END && !defined HAVE_BGQ	&& !defined HAVE_ALPS_CRAY
-			/* Limited job step support */
-			/* Non-super users not permitted to run job steps on
-			 * front-end. A single slurmd can not handle a heavy
-			 * load. */
-			if (!validate_slurm_user(uid)) {
-				info("Attempt to execute batch job step by "
-				     "uid=%d", uid);
-				error_code = ESLURM_NO_STEPS;
-				reject_job = true;
-				goto unlock;
-			}
-#endif
+		if (job_desc_msg->immediate &&
+		    (error_code != SLURM_SUCCESS))
+			error_code = ESLURM_CAN_NOT_START_IMMEDIATELY;
 
-			if (job_ptr->user_id != uid) {
-				error("Security violation, uid=%d attempting "
-				      "to execute a step within job %u owned "
-				      "by user %u",
-				      uid, job_ptr->job_id,
-				      job_ptr->user_id);
-				error_code = ESLURM_USER_ID_MISSING;
-				reject_job = true;
-				goto unlock;
-			}
-			if (
-#ifdef HAVE_BG
-				/* On a bluegene system we need to run the
-				 * prolog while the job is CONFIGURING so this
-				 * can't work off the CONFIGURING flag as done
-				 * elsewhere.
-				 */
-				job_ptr->details &&
-				job_ptr->details->prolog_running
-#else
-				IS_JOB_CONFIGURING(job_ptr)
-#endif
-				) {
-				error_code = EAGAIN;
-				reject_job = true;
-				goto unlock;
-			}
-
-			error_code = _launch_batch_step(job_desc_msg, uid,
-							&step_id,
-							msg->protocol_version);
-			if (error_code != SLURM_SUCCESS) {
-				info("_launch_batch_step: %s",
-				     slurm_strerror(error_code));
-				reject_job = true;
-				goto unlock;
-			}
-
-			job_id = job_desc_msg->job_id;
-
-			info("_launch_batch_step StepId=%u.%u %s",
-			     job_id, step_id, TIME_STR);
-		} else {
-			/* Create new job allocation */
-			error_code = job_allocate(job_desc_msg,
-						  job_desc_msg->immediate,
-						  false, NULL, 0, uid, &job_ptr,
-						  &err_msg,
-						  msg->protocol_version);
-			if (!job_ptr ||
-			    (error_code && job_ptr->job_state == JOB_FAILED))
-				reject_job = true;
-			else
-				job_id = job_ptr->job_id;
-
-			if (job_desc_msg->immediate &&
-			    (error_code != SLURM_SUCCESS))
-				error_code = ESLURM_CAN_NOT_START_IMMEDIATELY;
-		}
-unlock:
 		unlock_slurmctld(job_write_lock);
 	}
 
@@ -4735,228 +4658,6 @@ xduparray(uint32_t size, char ** array)
 		result[i] = xstrdup(array[i]);
 
 	return result;
-}
-
-/* Like xduparray(), but performs one xmalloc().  The output format of this
- * must be identical to _read_data_array_from_file() */
-static char **
-_xduparray2(uint32_t size, char ** array)
-{
-	int i, len = 0;
-	char *ptr, ** result;
-
-	if (size == 0)
-		return (char **) NULL;
-
-	for (i=0; i<size; i++)
-		len += (strlen(array[i]) + 1);
-	ptr = xmalloc(len);
-	result = (char **) xmalloc(sizeof(char *) * size);
-
-	for (i=0; i<size; i++) {
-		result[i] = ptr;
-		len = strlen(array[i]);
-		strcpy(ptr, array[i]);
-		ptr += (len + 1);
-	}
-
-	return result;
-}
-
-/* _launch_batch_step
- * IN: job_desc_msg from _slurm_rpc_submit_batch_job() but with jobid set
- *     which means it's trying to launch within a pre-existing allocation.
- * IN: uid launching this batch job, which has already been validated.
- * OUT: SLURM error code if launch fails, or SLURM_SUCCESS
- */
-static int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
-			      uint32_t *step_id, uint16_t protocol_version)
-{
-	struct job_record  *job_ptr;
-	time_t now = time(NULL);
-	int error_code = SLURM_SUCCESS;
-
-	batch_job_launch_msg_t *launch_msg_ptr;
-	agent_arg_t *agent_arg_ptr;
-	struct node_record *node_ptr;
-
-	/*
-	 * Create a job step. Note that a credential is not necessary,
-	 * since the slurmctld will be submitting this job directly to
-	 * the slurmd.
-	 */
-	job_step_create_request_msg_t req_step_msg;
-	struct step_record *step_rec;
-
-	if (job_desc_msg->array_inx && job_desc_msg->array_inx[0])
-		return ESLURM_INVALID_ARRAY;
-
-	/*
-	 * As far as the step record in slurmctld goes, we are just
-	 * launching a batch script which will be run on a single
-	 * processor on a single node. The actual launch request sent
-	 * to the slurmd should contain the proper allocation values
-	 * for subsequent srun jobs within the batch script.
-	 */
-	memset(&req_step_msg, 0, sizeof(job_step_create_request_msg_t));
-	req_step_msg.job_id = job_desc_msg->job_id;
-	req_step_msg.user_id = uid;
-	req_step_msg.min_nodes = 1;
-	req_step_msg.max_nodes = 0;
-	req_step_msg.cpu_count = 1;
-	req_step_msg.num_tasks = 1;
-	req_step_msg.task_dist = SLURM_DIST_CYCLIC;
-	req_step_msg.name = job_desc_msg->name;
-
-	error_code = step_create(&req_step_msg, &step_rec, true,
-				 protocol_version);
-	xfree(req_step_msg.node_list);	/* may be set by step_create */
-
-	if (error_code != SLURM_SUCCESS)
-		return error_code;
-
-	/*
-	 * TODO: check all instances of step_record to ensure there's no
-	 * problem with a null switch_job_info pointer.
-	 */
-
-	/* Get the allocation in order to construct the batch job
-	 * launch request for the slurmd.
-	 */
-
-	job_ptr = step_rec->job_ptr;
-
-	/* TODO: need to address batch job step request options such as
-	 * the ability to run a batch job on a subset of the nodes in the
-	 * current allocation.
-	 * TODO: validate the specific batch job request vs. the
-	 * existing allocation. Note that subsequent srun steps within
-	 * the batch script will work within the full allocation, but
-	 * the batch step options can still provide default settings via
-	 * environment variables
-	 *
-	 * NOTE: for now we are *ignoring* most of the job_desc_msg
-	 *       allocation-related settings. At some point we
-	 *       should perform better error-checking, otherwise
-	 *       the submitter will make some invalid assumptions
-	 *       about how this job actually ran.
-	 */
-	job_ptr->time_last_active = now;
-
-
-	/* Launch the batch job */
-	node_ptr = find_first_node_record(job_ptr->node_bitmap);
-	if (node_ptr == NULL) {
-		delete_step_record(job_ptr, step_rec->step_id);
-		return ESLURM_INVALID_JOB_ID;
-	}
-
-	/* Initialization of data structures */
-	launch_msg_ptr = (batch_job_launch_msg_t *)
-		xmalloc(sizeof(batch_job_launch_msg_t));
-	launch_msg_ptr->job_id = job_ptr->job_id;
-	launch_msg_ptr->step_id = step_rec->step_id;
-	launch_msg_ptr->gid = job_ptr->group_id;
-	launch_msg_ptr->uid = uid;
-	launch_msg_ptr->nodes = xstrdup(job_ptr->alias_list);
-	launch_msg_ptr->partition = xstrdup(job_ptr->partition);
-
-	launch_msg_ptr->restart_cnt = job_ptr->restart_cnt;
-	if (job_ptr->details) {
-		launch_msg_ptr->pn_min_memory = job_ptr->details->
-						pn_min_memory;
-	}
-
-	if (make_batch_job_cred(launch_msg_ptr, job_ptr, protocol_version)) {
-		error("aborting batch step %u.%u", job_ptr->job_id,
-		      job_ptr->group_id);
-		xfree(launch_msg_ptr->nodes);
-		xfree(launch_msg_ptr);
-		delete_step_record(job_ptr, step_rec->step_id);
-		return SLURM_ERROR;
-	}
-
-	launch_msg_ptr->std_err = xstrdup(job_desc_msg->std_err);
-	launch_msg_ptr->std_in = xstrdup(job_desc_msg->std_in);
-	launch_msg_ptr->std_out = xstrdup(job_desc_msg->std_out);
-	launch_msg_ptr->acctg_freq = xstrdup(job_desc_msg->acctg_freq);
-	launch_msg_ptr->open_mode = job_desc_msg->open_mode;
-	launch_msg_ptr->work_dir = xstrdup(job_desc_msg->work_dir);
-	launch_msg_ptr->argc = job_desc_msg->argc;
-	launch_msg_ptr->argv = xduparray(job_desc_msg->argc,
-					 job_desc_msg->argv);
-	launch_msg_ptr->array_job_id = job_ptr->array_job_id;
-	launch_msg_ptr->array_task_id = job_ptr->array_task_id;
-	launch_msg_ptr->spank_job_env_size = job_ptr->spank_job_env_size;
-	launch_msg_ptr->spank_job_env = xduparray(job_ptr->spank_job_env_size,
-						  job_ptr->spank_job_env);
-	launch_msg_ptr->script = xstrdup(job_desc_msg->script);
-	launch_msg_ptr->environment = _xduparray2(job_desc_msg->env_size,
-						  job_desc_msg->environment);
-	launch_msg_ptr->envc = job_desc_msg->env_size;
-	launch_msg_ptr->job_mem = job_desc_msg->pn_min_memory;
-	launch_msg_ptr->cpus_per_task = job_desc_msg->cpus_per_task;
-
-	/* job_ptr->total_cpus represents the total number of CPUs available
-	 * for this step (overcommit not supported yet). If job_desc_msg
-	 * contains a reasonable min_cpus request, use that value;
-	 * otherwise default to the allocation processor request.
-	 */
-	launch_msg_ptr->ntasks = job_ptr->total_cpus;
-	if (job_desc_msg->min_cpus > 0 &&
-	    job_desc_msg->min_cpus < launch_msg_ptr->ntasks)
-		launch_msg_ptr->ntasks = job_desc_msg->min_cpus;
-
-	launch_msg_ptr->num_cpu_groups = job_ptr->job_resrcs->cpu_array_cnt;
-	launch_msg_ptr->cpus_per_node  =
-		xmalloc(sizeof(uint16_t) * job_ptr->job_resrcs->cpu_array_cnt);
-	memcpy(launch_msg_ptr->cpus_per_node,
-	       job_ptr->job_resrcs->cpu_array_value,
-	       (sizeof(uint16_t) * job_ptr->job_resrcs->cpu_array_cnt));
-	launch_msg_ptr->cpu_count_reps  =
-		xmalloc(sizeof(uint32_t) * job_ptr->job_resrcs->cpu_array_cnt);
-	memcpy(launch_msg_ptr->cpu_count_reps,
-	       job_ptr->job_resrcs->cpu_array_reps,
-	       (sizeof(uint32_t) * job_ptr->job_resrcs->cpu_array_cnt));
-	launch_msg_ptr->select_jobinfo = select_g_select_jobinfo_copy(
-		job_ptr->select_jobinfo);
-
-	if (job_desc_msg->profile != ACCT_GATHER_PROFILE_NOT_SET)
-		launch_msg_ptr->profile = job_desc_msg->profile;
-	else
-		launch_msg_ptr->profile = job_ptr->profile;
-
-	/* FIXME: for some reason these CPU arrays total all the CPUs
-	 * actually allocated, rather than totaling up to the requested
-	 * CPU count for the allocation.
-	 * This means that SLURM_TASKS_PER_NODE will not match with
-	 * SLURM_NTASKS in the batch script environment.
-	 */
-
-	agent_arg_ptr = (agent_arg_t *) xmalloc(sizeof(agent_arg_t));
-	agent_arg_ptr->node_count = 1;
-	agent_arg_ptr->retry = 0;
-	xassert(job_ptr->batch_host);
-#ifdef HAVE_FRONT_END
-	if (job_ptr->front_end_ptr)
-		agent_arg_ptr->protocol_version =
-			job_ptr->front_end_ptr->protocol_version;
-#else
-	if ((node_ptr = find_node_record(job_ptr->batch_host)))
-		agent_arg_ptr->protocol_version = node_ptr->protocol_version;
-#endif
-
-	agent_arg_ptr->hostlist = hostlist_create(job_ptr->batch_host);
-	if (!agent_arg_ptr->hostlist)
-		fatal("Invalid batch host: %s", job_ptr->batch_host);
-	agent_arg_ptr->msg_type = REQUEST_BATCH_JOB_LAUNCH;
-	agent_arg_ptr->msg_args = (void *) launch_msg_ptr;
-
-	/* Launch the RPC via agent */
-	agent_queue_request(agent_arg_ptr);
-
-	*step_id = step_rec->step_id;
-	return SLURM_SUCCESS;
 }
 
 inline static void  _slurm_rpc_trigger_clear(slurm_msg_t * msg)
