@@ -255,6 +255,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix minor memory leak in the slurmctld when removing a QOS.
  -- burst_buffer/cray - Do not execute "pre_run" operation until after all nodes
     are booted and ready for use.
+ -- scontrol - return an error when attempting to use the +=/-+ syntax to
+    update a field where this is not appropriate.
 
 * Changes in Slurm 16.05.9
 ==========================
