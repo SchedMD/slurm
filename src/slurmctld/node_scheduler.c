@@ -1010,7 +1010,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		  uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes,
 		  bool test_only, List *preemptee_job_list, bool can_reboot)
 {
-	uint32_t saved_min_nodes, saved_job_min_nodes;
+	uint32_t saved_min_nodes, saved_job_min_nodes, saved_job_num_tasks;
 	bitstr_t *saved_req_node_bitmap = NULL;
 	bitstr_t *inactive_bitmap = NULL;
 	uint32_t saved_min_cpus, saved_req_nodes;
@@ -1189,8 +1189,14 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 			feature_bitmap = NULL;
 			min_nodes = feat_ptr->count;
 			req_nodes = feat_ptr->count;
+			saved_job_num_tasks = job_ptr->details->num_tasks;
 			job_ptr->details->min_nodes = feat_ptr->count;
 			job_ptr->details->min_cpus = feat_ptr->count;
+			if (job_ptr->details->ntasks_per_node &&
+			    job_ptr->details->num_tasks) {
+				job_ptr->details->num_tasks = min_nodes *
+					job_ptr->details->ntasks_per_node;
+			}
 			FREE_NULL_LIST(*preemptee_job_list);
 			job_ptr->details->pn_min_memory = orig_req_mem;
 			if (sort_again) {
@@ -1204,6 +1210,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 					preemptee_candidates,
 					preemptee_job_list, false,
 					exc_core_bitmap, resv_overlap);
+			job_ptr->details->num_tasks = saved_job_num_tasks;
 			if (job_ptr->details->pn_min_memory) {
 				if (job_ptr->details->pn_min_memory <
 				    smallest_min_mem)
