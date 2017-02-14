@@ -523,6 +523,8 @@ extern int acct_storage_p_close_connection(void **db_conn)
 {
 	if (db_conn)
 		*db_conn = NULL;
+
+	first = 1;
 	return slurm_close_slurmdbd_conn();
 }
 
@@ -1845,6 +1847,9 @@ extern List acct_storage_p_get_config(void *db_conn, char *config_name)
 	dbd_list_msg_t *got_msg;
 	int rc;
 	List ret_list = NULL;
+
+	if (first)
+		init();
 
 	req.msg_type = DBD_GET_CONFIG;
 	req.data = config_name;
