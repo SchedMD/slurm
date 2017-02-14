@@ -1260,6 +1260,12 @@ extern int parse_long_format( char* format_long )
 							   field_size,
 							   right_justify,
 							   suffix );
+			else if (!xstrcasecmp(token, "lastschedeval"))
+				job_format_add_job_last_sched_eval(
+					params.format_list,
+					field_size,
+					right_justify,
+					suffix );
 			else if (!xstrcasecmp(token, "statecompact"))
 				job_format_add_job_state_compact(
 					params.format_list,

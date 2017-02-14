@@ -141,6 +141,7 @@ enum {
 	SORTID_IMAGE_MLOADER,
 	SORTID_JOBID,
 	SORTID_JOBID_FORMATTED,
+	SORTID_LAST_SCHED_EVAL,
 	SORTID_LICENSES,
 	SORTID_MCS_LABEL,
 	SORTID_CPU_REQ,
@@ -400,6 +401,8 @@ static display_data_t display_data_job[] = {
 	{G_TYPE_STRING, SORTID_FEATURES, "Features",
 	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_GRES, "Gres",
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_LAST_SCHED_EVAL, "Last Sched Eval",
 	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_LICENSES, "Licenses",
 	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
@@ -1648,6 +1651,13 @@ static void _layout_job_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
 						 SORTID_JOBID),
+				   tmp_char);
+
+	slurm_make_time_str(&job_ptr->last_sched_eval, tmp_char,
+			    sizeof(tmp_char));
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_LAST_SCHED_EVAL),
 				   tmp_char);
 
 	add_display_treestore_line(update, treestore, &iter,

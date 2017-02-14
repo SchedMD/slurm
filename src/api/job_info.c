@@ -529,6 +529,12 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	xstrfmtcat(out, "SecsPreSuspend=%ld", (long int)job_ptr->pre_sus_time);
 	xstrcat(out, line_end);
 
+	/****** Line ******/
+	slurm_make_time_str(&job_ptr->last_sched_eval, time_str,
+			    sizeof(time_str));
+	xstrfmtcat(out, "LastSchedEval=%s", time_str);
+	xstrcat(out, line_end);
+
 	/****** Line 11 ******/
 	xstrfmtcat(out, "Partition=%s AllocNode:Sid=%s:%u",
 		   job_ptr->partition, job_ptr->alloc_node, job_ptr->alloc_sid);

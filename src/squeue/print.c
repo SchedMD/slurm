@@ -782,6 +782,18 @@ int _print_job_job_state(job_info_t * job, int width, bool right, char* suffix)
 	return SLURM_SUCCESS;
 }
 
+int _print_job_last_sched_eval(job_info_t *job, int width, bool right,
+			       char *suffix)
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("LAST_SCHED_EVAL", width, right, true);
+	else
+		_print_time(job->last_sched_eval, 0, width, right);
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_job_job_state_compact(job_info_t * job, int width, bool right,
 				 char* suffix)
 {

@@ -127,6 +127,9 @@ int job_format_add_function(List list, int width, bool right_justify,
         job_format_add_function(list,wid,right,suffix,_print_job_group_id)
 #define job_format_add_job_state(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_job_state)
+#define job_format_add_job_last_sched_eval(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,  \
+	                        _print_job_last_sched_eval)
 #define job_format_add_job_state_compact(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,  \
 	                        _print_job_job_state_compact)
@@ -339,6 +342,8 @@ int _print_job_group_name(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_job_state(job_info_t * job, int width, bool right_justify,
 			char* suffix);
+int _print_job_last_sched_eval(job_info_t * job, int width, bool right,
+			       char* suffix);
 int _print_job_job_state_compact(job_info_t * job, int width,
 			bool right_justify, char* suffix);
 int _print_job_time_left(job_info_t * job, int width, bool right_justify,

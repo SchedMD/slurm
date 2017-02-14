@@ -14,6 +14,8 @@ documents those changes that are of interest to users and administrators.
     types.
  -- Switch naming of acct_gather_infiniband to acct_gather_interconnect
  -- Make it so you can "stack" the interconnect plugins
+ -- Add a last_sched_eval timestamp to record when a job was last evaluated
+    by the main scheduler or backfill.
 
 * Changes in Slurm 17.02.0rc2
 ==============================
