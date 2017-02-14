@@ -718,6 +718,8 @@ _cancel_job_id (void *ci)
 		flags |= KILL_FULL_JOB;
 		job_type = "full ";
 	}
+	if (opt.hurry)
+		flags |= KILL_HURRY;
 	if (cancel_info->array_flag)
 		flags |= KILL_JOB_ARRAY;
 

@@ -1014,6 +1014,7 @@ enum ctx_keys {
 #define NODE_REBOOT        0x00000080	/* Waiting for node reboot */
 #define SPREAD_JOB         0x00000100	/* Spread job across max node count */
 #define USE_MIN_NODES      0x00000200	/* Prefer minimum node count */
+#define JOB_KILL_HURRY     0x00000400	/* Avoid burst buffer stage out */
 
 /*****************************************************************************\
  *      SLURM HOSTLIST FUNCTIONS
@@ -3242,7 +3243,8 @@ extern void slurm_free_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t *
 #define KILL_JOB_ARRAY	 0x0002	/* kill all elements of a job array */
 #define KILL_STEPS_ONLY	 0x0004	/* Do not signal batch script */
 #define KILL_FULL_JOB	 0x0008	/* Signal all steps, including batch script */
-#define KILL_FED_REQUEUE 0x0010  /* Mark job as requeued when requeued */
+#define KILL_FED_REQUEUE 0x0010 /* Mark job as requeued when requeued */
+#define KILL_HURRY	 0x0020	/* Skip burst buffer stage out */
 
 /* Use top bit of uint16_t in conjuction with KILL_* flags to indicate signal
  * has been sent to job previously. Does not need to be passed to slurmd. */

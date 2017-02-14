@@ -16,6 +16,7 @@ documents those changes that are of interest to users and administrators.
  -- Make it so you can "stack" the interconnect plugins.
  -- Add a last_sched_eval timestamp to record when a job was last evaluated
     by the main scheduler or backfill.
+ -- Add scancel "--hurry" option to avoid staging out any burst buffer data.
 
 * Changes in Slurm 17.02.0rc2
 ==============================

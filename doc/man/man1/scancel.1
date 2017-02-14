@@ -1,4 +1,4 @@
-.TH scancel "1" "Slurm Commands" "April 2015" "Slurm Commands"
+.TH scancel "1" "Slurm Commands" "February 2017" "Slurm Commands"
 
 .SH "NAME"
 scancel \- Used to signal jobs or job steps that are under the control of Slurm.
@@ -54,6 +54,10 @@ Also see the \fB\-b\fR, \fB\-\-batch\fR option.
 .TP
 \fB\-\-help\fR
 Print a help message describing all \fBscancel\fR options.
+
+.TP
+\fB\-H\fR, \fB\-\-hurry\fR
+Do not stage out any burst buffer data.
 
 .TP
 \fB\-i\fR, \fB\-\-interactive\fR
@@ -170,6 +174,9 @@ environment variables, along with their corresponding options, are listed below.
 .TP
 \fBSCANCEL_FULL\fR
 \fB\-f, \-\-full\fR
+.TP
+\fBSCANCEL_HURRY\fR
+\fB\-H\fR, \fB\-\-hurry\fR
 .TP
 \fBSCANCEL_INTERACTIVE\fR
 \fB\-i\fR, \fB\-\-interactive\fR

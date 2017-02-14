@@ -2509,6 +2509,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	/* This job may be getting requeued, clear vestigial state information
 	 * before over-writing and leaking memory or referencing old GRES or
 	 * step data. */
+	job_ptr->bit_flags &= ~JOB_KILL_HURRY;
 	job_ptr->job_state &= ~JOB_POWER_UP_NODE;
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
 	xfree(job_ptr->nodes);

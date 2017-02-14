@@ -4517,6 +4517,9 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 		return SLURM_SUCCESS;
 	}
 
+	if (flags & KILL_HURRY)
+		job_ptr->bit_flags |= JOB_KILL_HURRY;
+
 	if (IS_JOB_CONFIGURING(job_ptr) && (signal == SIGKILL)) {
 		last_job_update         = now;
 		job_ptr->end_time       = now;
@@ -13249,7 +13252,7 @@ extern void job_completion_logger(struct job_record *job_ptr, bool requeue)
 	xassert(job_ptr);
 
 	acct_policy_remove_job_submit(job_ptr);
-	if (job_ptr->nodes) {
+	if (job_ptr->nodes &&  ((job_ptr->bit_flags & JOB_KILL_HURRY) == 0)) {
 		(void) bb_g_job_start_stage_out(job_ptr);
 	} else {
 		/* Never allocated compute nodes

@@ -50,7 +50,7 @@
  * slurm_kill_job - send the specified signal to all steps of an existing job
  * IN job_id     - the job's id
  * IN signal     - signal number
- * IN flags      - see KILL_JOB_* flags above
+ * IN flags      - see KILL_JOB_* flags in slurm.h
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 extern int
