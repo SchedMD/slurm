@@ -2481,6 +2481,7 @@ _unpack_network_callerid_msg(network_callerid_msg_t **msg_ptr, Buf buffer,
 unpack_error:
 	info("%s: error", __func__);
 	*msg_ptr = NULL;
+	xfree(charptr_tmp);
 	slurm_free_network_callerid_msg(msg);
 	return SLURM_ERROR;
 }
