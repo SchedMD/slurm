@@ -239,27 +239,12 @@ static void _combine_pending_array_tasks(List job_list)
 				bit_fmt(job_rec_ptr->job_ptr->array_task_str,
 					bitstr_len, task_bitmap);
 			else {
-				int len;
 				/* Print the full bitmap's string
 				 * representation.  For huge bitmaps this can
 				 * take roughly one minute, so let the client do
 				 * the work */
-				bitstr_len = bit_size(task_bitmap) * 8;
-				while (1) {
-					job_rec_ptr->job_ptr->array_task_str =
-						xmalloc(bitstr_len);
-					bit_fmt(job_rec_ptr->job_ptr->
-						array_task_str,
-						bitstr_len, task_bitmap);
-					len = strlen(job_rec_ptr->job_ptr->
-						     array_task_str);
-					if ((len > 0) &&
-					    (len < (bitstr_len - 32)))
-						break;
-					xfree(job_rec_ptr->job_ptr->
-					      array_task_str);
-					bitstr_len *= 2;
-				}
+				job_rec_ptr->job_ptr->array_task_str =
+					bit_fmt_full(task_bitmap);
 			}
 		}
 	}
