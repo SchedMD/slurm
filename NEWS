@@ -21,6 +21,7 @@ documents those changes that are of interest to users and administrators.
     and no node count.
  -- Fix ordering of step task allocation to fill in a socket before going into
     another one.
+ -- Fix configure to not require C++
 
 * Changes in Slurm 17.02.0rc1
 ==============================
