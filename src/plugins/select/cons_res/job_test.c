@@ -2957,11 +2957,13 @@ static inline void _log_select_maps(char *loc, bitstr_t *node_map,
 
 	if (node_map) {
 		bit_fmt(str, (sizeof(str) - 1), node_map);
-		info("%s nodemap[0-%d]: %s", loc, bit_size(node_map)-1, str);
+		info("%s nodemap[0-%d]: %s",
+		     loc, (int)bit_size(node_map)-1, str);
 	}
 	if (core_map) {
 		bit_fmt(str, (sizeof(str) - 1), core_map);
-		info("%s coremap[0-%d]: %s", loc, bit_size(core_map)-1, str);
+		info("%s coremap[0-%d]: %s",
+		     loc, (int) bit_size(core_map)-1, str);
 	}
 #endif
 }
