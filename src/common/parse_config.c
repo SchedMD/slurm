@@ -100,6 +100,21 @@ static char *keyvalue_pattern =
 	"([[:space:]]|$)";
 static bool keyvalue_initialized = false;
 
+/* The following mutex and atfork() handler protect against receiving
+ * a corrupted keyvalue_re state in a forked() child. While regexec() itself
+ * appears to be thread-safe (due to internal locking), a process fork()'d
+ * while a regexec() is running in a separate thread will inherit an internally
+ * locked keyvalue_re leading to deadlock. This appears to have been fixed in
+ * glibc with a release in 2013, although I do not know the exact version.
+ */
+static pthread_mutex_t s_p_lock = PTHREAD_MUTEX_INITIALIZER;
+
+static void _s_p_atfork_child(void)
+{
+	pthread_mutex_init(&s_p_lock, NULL);
+	keyvalue_initialized = false;
+}
+
 struct s_p_values {
 	char *key;
 	int type;
@@ -281,14 +296,17 @@ void s_p_hashtbl_destroy(s_p_hashtbl_t *hashtbl) {
 
 static void _keyvalue_regex_init(void)
 {
+	slurm_mutex_lock(&s_p_lock);
 	if (!keyvalue_initialized) {
 		if (regcomp(&keyvalue_re, keyvalue_pattern,
 			    REG_EXTENDED) != 0) {
 			/* FIXME - should be fatal? */
 			error("keyvalue regex compilation failed");
 		}
+		pthread_atfork(NULL, NULL, _s_p_atfork_child);
 		keyvalue_initialized = true;
 	}
+	slurm_mutex_unlock(&s_p_lock);
 }
 
 /*

@@ -26,6 +26,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix task/affinity to work correctly with --ntasks-per-socket.
  -- Honor --ntasks-per-node and --ntasks option when used with job constraints
     that contain node counts.
+ -- Prevent deadlocked slurmstepd processes due to unsafe use of regcomp with
+    older glibc versions.
 
 * Changes in Slurm 16.05.9
 ==========================
