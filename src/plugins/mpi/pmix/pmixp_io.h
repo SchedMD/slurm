@@ -96,13 +96,14 @@ typedef struct {
 	void *rcvd_payload;
 	uint32_t rcvd_pad_recvd;
 	/* sender */
+	pthread_mutex_t send_lock;
 	void *send_current;
 	void *send_hdr_net;
 	uint32_t send_offs;
 	uint32_t send_hdr_size;
 	uint32_t send_pay_size;
 	void *send_payload;
-	List send_queue;
+	List send_queue, complete_queue;
 } pmixp_io_engine_t;
 
 static inline bool pmixp_io_rcvd_ready(pmixp_io_engine_t *eng)
@@ -197,5 +198,6 @@ pmixp_io_recv_hdr_alloc_net(pmixp_io_engine_t *eng)
 int pmixp_io_send_enqueue(pmixp_io_engine_t *eng, void *msg);
 void pmixp_io_send_progress(pmixp_io_engine_t *eng);
 bool pmixp_io_send_pending(pmixp_io_engine_t *eng);
+void pmixp_io_send_cleanup(pmixp_io_engine_t *eng);
 
 #endif /* PMIXP_IO_H */

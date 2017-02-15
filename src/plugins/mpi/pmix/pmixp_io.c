@@ -132,11 +132,13 @@ void pmixp_io_init(pmixp_io_engine_t *eng,
 	}
 
 	/* Init transmitter */
+	slurm_mutex_init(&eng->send_lock);
 	eng->send_current = NULL;
 	eng->send_hdr_size = eng->send_pay_size = 0;
 	eng->send_offs = 0;
 	eng->send_payload = NULL;
 	eng->send_queue = list_create(eng->h.msg_free_cb);
+	eng->complete_queue = list_create(eng->h.msg_free_cb);
 	if (eng->h.send_on) {
 		/* we are going to send data */
 		eng->send_hdr_net = xmalloc(eng->h.send_net_hsize);
@@ -160,9 +162,8 @@ _pmixp_io_drop_messages(pmixp_io_engine_t *eng)
 	}
 
 	if (eng->h.send_on) {
-		if (list_count(eng->send_queue)) {
-			list_destroy(eng->send_queue);
-		}
+		list_destroy(eng->send_queue);
+		list_destroy(eng->complete_queue);
 		if (NULL != eng->send_current) {
 			eng->h.msg_free_cb(eng->send_current);
 			eng->send_current = NULL;
@@ -446,7 +447,10 @@ static inline void _send_free_current(pmixp_io_engine_t *eng)
 	eng->send_payload = NULL;
 	eng->send_pay_size = eng->send_hdr_size = 0;
 	eng->send_offs = 0;
-	eng->h.msg_free_cb(eng->send_current);
+	/* Do not call the callback now. Defer to the
+	 * progress thread
+	 */
+	list_enqueue(eng->complete_queue, eng->send_current);
 	eng->send_current = NULL;
 }
 
@@ -475,26 +479,7 @@ static inline int _send_payload_ok(pmixp_io_engine_t *eng)
 			&& (eng->send_offs == (eng->send_pay_size + eng->send_hdr_size));
 }
 
-int pmixp_io_send_enqueue(pmixp_io_engine_t *eng, void *msg)
-{
-	xassert(NULL != eng);
-	xassert(PMIXP_MSGSTATE_MAGIC == eng->magic);
-	xassert(NULL != eng->rcvd_hdr_net);
-	xassert(pmixp_io_enqueue_ok(eng));
-	xassert(eng->h.send_on);
-
-	/* We should be in the proper state
-	 * to accept new messages
-	 */
-	if( !pmixp_io_enqueue_ok(eng)){
-		PMIXP_ERROR("Trying to enqueue to unprepared engine");
-		return SLURM_ERROR;
-	}
-	list_enqueue(eng->send_queue, msg);
-	return SLURM_SUCCESS;
-}
-
-bool pmixp_io_send_pending(pmixp_io_engine_t *eng)
+static bool _send_pending(pmixp_io_engine_t *eng)
 {
 	int rc;
 	xassert(NULL != eng);
@@ -529,7 +514,7 @@ bool pmixp_io_send_pending(pmixp_io_engine_t *eng)
 	return true;
 }
 
-void pmixp_io_send_progress(pmixp_io_engine_t *eng)
+static void _send_progress(pmixp_io_engine_t *eng)
 {
 	int fd;
 
@@ -544,32 +529,86 @@ void pmixp_io_send_progress(pmixp_io_engine_t *eng)
 		return;
 	}
 
-	while (pmixp_io_send_pending(eng)) {
+	while (_send_pending(eng)) {
 		/* try to send everything untill fd became blockable
 		 * FIXME: maybe set some restriction on number of messages sended at once
 		 */
 		int shutdown = 0;
-        struct iovec iov[2];
-        int iovcnt = 0;
-        size_t written = 0;
-        
-        iov[iovcnt].iov_base = eng->send_hdr_net;
-        iov[iovcnt].iov_len  = eng->send_hdr_size;
-        iovcnt++;
-        if( eng->send_pay_size ){
-            iov[iovcnt].iov_base = eng->send_payload;
-            iov[iovcnt].iov_len  = eng->send_pay_size;
-            iovcnt++;
-        }
-        written = pmixp_writev_buf(fd, iov, iovcnt, eng->send_offs, &shutdown);
+		struct iovec iov[2];
+		int iovcnt = 0;
+		size_t written = 0;
+
+		iov[iovcnt].iov_base = eng->send_hdr_net;
+		iov[iovcnt].iov_len  = eng->send_hdr_size;
+		iovcnt++;
+		if( eng->send_pay_size ){
+			iov[iovcnt].iov_base = eng->send_payload;
+			iov[iovcnt].iov_len  = eng->send_pay_size;
+			iovcnt++;
+		}
+		written = pmixp_writev_buf(fd, iov, iovcnt, eng->send_offs, &shutdown);
 		if (shutdown) {
 			pmixp_io_finalize(eng, shutdown);
-			return;
+			break;
 		}
 		
 		eng->send_offs += written;
 		if( 0 == written ){
-		    break;
+			break;
 		}
 	}
+}
+
+
+int pmixp_io_send_enqueue(pmixp_io_engine_t *eng, void *msg)
+{
+	xassert(NULL != eng);
+	xassert(PMIXP_MSGSTATE_MAGIC == eng->magic);
+	xassert(NULL != eng->rcvd_hdr_net);
+	xassert(pmixp_io_enqueue_ok(eng));
+	xassert(eng->h.send_on);
+
+	/* We should be in the proper state
+	 * to accept new messages
+	 */
+	if( !pmixp_io_enqueue_ok(eng)){
+		PMIXP_ERROR("Trying to enqueue to unprepared engine");
+		return SLURM_ERROR;
+	}
+	list_enqueue(eng->send_queue, msg);
+	
+	/* if we don't send anything now - try
+	 * to progress immediately
+	 */
+	slurm_mutex_lock(&eng->send_lock);
+	_send_progress(eng);
+	slurm_mutex_unlock(&eng->send_lock);
+
+	return SLURM_SUCCESS;
+}
+
+bool pmixp_io_send_pending(pmixp_io_engine_t *eng)
+{
+	bool ret;
+	slurm_mutex_lock(&eng->send_lock);
+	ret = _send_pending(eng);
+	slurm_mutex_unlock(&eng->send_lock);
+	return ret;
+}
+
+void pmixp_io_send_cleanup(pmixp_io_engine_t *eng)
+{
+	void *msg = NULL;
+	while( (msg = list_dequeue(eng->complete_queue) ) ){
+		eng->h.msg_free_cb(msg);
+	}
+}
+
+
+void pmixp_io_send_progress(pmixp_io_engine_t *eng)
+{
+	slurm_mutex_lock(&eng->send_lock);
+	_send_progress(eng);
+	slurm_mutex_unlock(&eng->send_lock);
+	pmixp_io_send_cleanup(eng);
 }
