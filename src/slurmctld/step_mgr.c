@@ -1805,8 +1805,8 @@ static void _pick_step_cores(struct step_record *step_ptr,
 		cpu_cnt *= step_ptr->cpus_per_task;
 
 	/* select idle cores first */
-	for (core_inx=0; core_inx<cores; core_inx++) {
-		for (sock_inx=0; sock_inx<sockets; sock_inx++) {
+	for (sock_inx=0; sock_inx<sockets; sock_inx++) {
+		for (core_inx=0; core_inx<cores; core_inx++) {
 			bit_offset = get_job_resources_offset(job_resrcs_ptr,
 							       job_node_inx,
 							       sock_inx,
