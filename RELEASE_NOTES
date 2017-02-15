@@ -75,8 +75,6 @@ RPMBUILD CHANGES
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
- -- CRAY systems only: TaskPlugins must list task/cgroup before task/cray in
-    order for the cgroup files to be created before task/cray runs.
  -- Added new "TRESWeights" configuration parameter to "NodeName" line for
     calculating how busy a node is. Currently only used for federation
     configurations.
