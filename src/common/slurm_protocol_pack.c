@@ -2400,18 +2400,20 @@ _unpack_network_callerid_msg(network_callerid_msg_t **msg_ptr, Buf buffer,
 	*msg_ptr = msg;
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackmem_xmalloc(&charptr_tmp, &uint32_tmp, buffer);
-		if (uint32_tmp > sizeof(msg->ip_src)) {
-			xfree(charptr_tmp);
+		if (uint32_tmp > (uint32_t)sizeof(msg->ip_src)) {
+			error("%s: ip_src that came across is %u and we can only handle %lu",
+			      __func__, uint32_tmp, sizeof(msg->ip_src));
 			goto unpack_error;
 		}
-		memcpy(msg->ip_src, charptr_tmp, uint32_tmp);
+		memcpy(msg->ip_src, charptr_tmp, (size_t)uint32_tmp);
 		xfree(charptr_tmp);
 		safe_unpackmem_xmalloc(&charptr_tmp, &uint32_tmp, buffer);
-		if (uint32_tmp > sizeof(msg->ip_dst)) {
-			xfree(charptr_tmp);
+		if (uint32_tmp > (uint32_t)sizeof(msg->ip_dst)) {
+			error("%s: ip_dst that came across is %u and we can only handle %lu",
+			      __func__, uint32_tmp, sizeof(msg->ip_dst));
 			goto unpack_error;
 		}
-		memcpy(msg->ip_dst, charptr_tmp, uint32_tmp);
+		memcpy(msg->ip_dst, charptr_tmp, (size_t)uint32_tmp);
 		xfree(charptr_tmp);
 		safe_unpack32(&msg->port_src,		buffer);
 		safe_unpack32(&msg->port_dst,		buffer);
