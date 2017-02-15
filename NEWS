@@ -30,6 +30,10 @@ documents those changes that are of interest to users and administrators.
     partitions.
  -- Deny job with duplicate GRES requested.
  -- Fix loading super old assoc_mgr usage without segfaulting.
+ -- CRAY systems: Restore TaskPlugins order of task/cray before task/cgroup.
+ -- Task/cray: Treat missing "mems" cgroup with "debug" messages rather than
+    "error" messages. The file may be missing at step termination due to a
+    change in how cgroups are released at job/step end.
 
 * Changes in Slurm 17.02.0rc1
 ==============================
@@ -69,8 +73,6 @@ documents those changes that are of interest to users and administrators.
  -- Add support for requeue'ing of federated jobs (BETA).
  -- Add support for interactive federated jobs (BETA).
  -- Add the ability to purge rolled up usage from the database.
- -- CRAY systems only: TaskPlugins must list task/cgroup before task/cray in
-    order for the cgroup files to be created before task/cray runs.
  -- Properly set SLURM_JOB_GPUS environment variable for Prolog.
 
 * Changes in Slurm 17.02.0pre4
