@@ -510,13 +510,16 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 
 	rc = _get_numa_nodes(path, &cnt, &numa_nodes);
 	if (rc < 0) {
-		CRAY_ERR("get_numa_nodes failed. Return code: %d", rc);
+		/* Failure common due to race condition in releasing cgroups */
+		debug("%s: _get_numa_nodes failed. Return code: %d",
+		      __func__, rc);
 		return SLURM_ERROR;
 	}
 
 	rc = _get_cpu_masks(cnt, numa_nodes, &cpuMasks);
 	if (rc < 0) {
-		CRAY_ERR("get_cpu_masks failed. Return code: %d", rc);
+		CRAY_ERR("_get_cpu_masks failed. Return code: %d", rc);
+		xfree(numa_nodes);
 		return SLURM_ERROR;
 	}
 
@@ -531,9 +534,8 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 	xfree(numa_nodes);
 	xfree(cpuMasks);
 
-	if (rc != 1) {
+	if (rc != 1)
 		return SLURM_ERROR;
-	}
 	END_TIMER;
 	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
@@ -710,14 +712,14 @@ static int _get_numa_nodes(char *path, int *cnt, int32_t **numa_array) {
 	char *lin = NULL;
 
 	rc = snprintf(buffer, sizeof(buffer), "%s/%s", path, "mems");
-	if (rc < 0) {
+	if (rc < 0)
 		CRAY_ERR("snprintf failed. Return code: %d", rc);
-	}
 
 	f = fopen(buffer, "r");
-	if (f == NULL ) {
-		CRAY_ERR("Failed to open file %s: %m", buffer);
-		return -1;
+	if (f == NULL) {
+		/* Failure common due to race condition in releasing cgroups */
+		debug("%s: Failed to open file %s: %m", __func__, buffer);
+		return SLURM_ERROR;
 	}
 
 	lsz = getline(&lin, &sz, f);
@@ -726,14 +728,14 @@ static int _get_numa_nodes(char *path, int *cnt, int32_t **numa_array) {
 			lin[strlen(lin) - 1] = '\0';
 		}
 		bm = numa_parse_nodestring(lin);
-		if (bm == NULL ) {
+		if (bm == NULL) {
 			CRAY_ERR("Error numa_parse_nodestring:"
 				 " Invalid node string: %s", lin);
 			free(lin);
 			return SLURM_ERROR;
 		}
 	} else {
-		CRAY_ERR("Reading %s failed", buffer);
+		debug("%s: Reading %s failed", __func__, buffer);
 		return SLURM_ERROR;
 	}
 	free(lin);

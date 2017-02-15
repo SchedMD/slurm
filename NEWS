@@ -14,6 +14,9 @@ documents those changes that are of interest to users and administrators.
  -- Deny job with duplicate GRES requested.
  -- Fix loading super old assoc_mgr usage without segfaulting.
  -- CRAY systems: Restore TaskPlugins order of task/cray before task/cgroup.
+ -- Task/cray: Treat missing "mems" cgroup with "debug" messages rather than
+    "error" messages. The file may be missing at step termination due to a
+    change in how cgroups are released at job/step end.
 
 * Changes in Slurm 17.02.0rc1
 ==============================
