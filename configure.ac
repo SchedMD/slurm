@@ -28,11 +28,17 @@ AM_MAINTAINER_MODE
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_HEADERS([slurm/slurm.h])
 
-dnl This needs to be close to the front to set CFLAGS=-m64
 X_AC_RPATH
+
+dnl This sets the first compiler to be C instead of C++ (which would happen
+dnl if X_AC_BGQ was the first thing called.
+X_AC_DATABASES
 
 X_AC_BG
 
+dnl This needs to be close to the front to set CFLAGS=-m64, but needs to
+dnl be after something that does a AC_LINK_IFELSE or the compiler configure
+dnl checks for will be C++ instead of C.
 X_AC_BGQ
 
 dnl We need to know if this is a Q system
@@ -273,8 +279,6 @@ if test "x$ac_glib_test" != "xyes" -o "x$ac_gtk_test" != "xyes"; then
 fi
 
 AM_CONDITIONAL(BUILD_SVIEW, [test "x$ac_glib_test" = "xyes"] && [test "x$ac_gtk_test" = "xyes"])
-
-X_AC_DATABASES
 
 dnl Cray ALPS/Basil support depends on mySQL
 X_AC_CRAY
