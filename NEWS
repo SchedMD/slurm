@@ -34,6 +34,8 @@ documents those changes that are of interest to users and administrators.
  -- Task/cray: Treat missing "mems" cgroup with "debug" messages rather than
     "error" messages. The file may be missing at step termination due to a
     change in how cgroups are released at job/step end.
+ -- Fix for job constraint specification with counts, --ntasks-per-node value,
+    and no node count.
 
 * Changes in Slurm 17.02.0rc1
 ==============================

@@ -2902,7 +2902,7 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 
 	if ((job_ptr->details->num_tasks > 1) &&
 	    (max_nodes > job_ptr->details->num_tasks))
-		max_nodes = job_ptr->details->num_tasks;
+		max_nodes = MAX(job_ptr->details->num_tasks, min_nodes);
 
 	origmap = bit_copy(node_map);
 
@@ -2957,11 +2957,13 @@ static inline void _log_select_maps(char *loc, bitstr_t *node_map,
 
 	if (node_map) {
 		bit_fmt(str, (sizeof(str) - 1), node_map);
-		info("%s nodemap[0-%d]: %s", loc, bit_size(node_map)-1, str);
+		info("%s nodemap[0-%d]: %s",
+		     loc, (int)bit_size(node_map)-1, str);
 	}
 	if (core_map) {
 		bit_fmt(str, (sizeof(str) - 1), core_map);
-		info("%s coremap[0-%d]: %s", loc, bit_size(core_map)-1, str);
+		info("%s coremap[0-%d]: %s",
+		     loc, (int) bit_size(core_map)-1, str);
 	}
 #endif
 }
