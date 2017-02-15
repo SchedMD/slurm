@@ -2392,7 +2392,7 @@ _unpack_network_callerid_msg(network_callerid_msg_t **msg_ptr, Buf buffer,
 			     uint16_t protocol_version)
 {
 	uint32_t uint32_tmp;
-	char *charptr_tmp;
+	char *charptr_tmp = NULL;
 	network_callerid_msg_t *msg;
 	xassert(msg_ptr != NULL);
 
@@ -2400,11 +2400,17 @@ _unpack_network_callerid_msg(network_callerid_msg_t **msg_ptr, Buf buffer,
 	*msg_ptr = msg;
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackmem_xmalloc(&charptr_tmp, &uint32_tmp, buffer);
-		if (uint32_tmp > NO_VAL32)
+		if (uint32_tmp > sizeof(msg->ip_src)) {
+			xfree(charptr_tmp);
 			goto unpack_error;
+		}
 		memcpy(msg->ip_src, charptr_tmp, uint32_tmp);
 		xfree(charptr_tmp);
 		safe_unpackmem_xmalloc(&charptr_tmp, &uint32_tmp, buffer);
+		if (uint32_tmp > sizeof(msg->ip_dst)) {
+			xfree(charptr_tmp);
+			goto unpack_error;
+		}
 		memcpy(msg->ip_dst, charptr_tmp, uint32_tmp);
 		xfree(charptr_tmp);
 		safe_unpack32(&msg->port_src,		buffer);

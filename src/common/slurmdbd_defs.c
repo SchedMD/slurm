@@ -264,14 +264,14 @@ extern int slurm_send_recv_slurmdbd_msg(uint16_t rpc_version,
 	halt_agent = 1;
 	slurm_mutex_lock(&slurmdbd_lock);
 	halt_agent = 0;
-	if (!slurmdbd_conn || slurmdbd_conn->fd < 0) {
+	if (!slurmdbd_conn || (slurmdbd_conn->fd < 0)) {
 		/* Either slurm_open_slurmdbd_conn() was not executed or
 		 * the connection to Slurm DBD has been closed */
 		if (req->msg_type == DBD_GET_CONFIG)
 			_open_slurmdbd_conn(0);
 		else
 			_open_slurmdbd_conn(1);
-		if (slurmdbd_conn->fd < 0) {
+		if (!slurmdbd_conn || (slurmdbd_conn->fd < 0)) {
 			rc = SLURM_ERROR;
 			goto end_it;
 		}
