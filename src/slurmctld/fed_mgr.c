@@ -51,6 +51,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/fed_mgr.h"
+#include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmdbd/read_config.h"
@@ -543,9 +544,7 @@ static int _persist_job_will_run(slurmdb_cluster_rec_t *conn,
 	case RESPONSE_SLURM_RC:
 		if ((rc = slurm_get_return_code(resp_msg.msg_type,
 						resp_msg.data))) {
-			info("persistent will_run failed/resources not avail: %d", rc);
 			slurm_seterrno(rc);
-			rc = SLURM_PROTOCOL_ERROR;
 		}
 		break;
 	case RESPONSE_JOB_WILL_RUN:
@@ -1494,24 +1493,22 @@ static void *_sib_will_run(void *arg)
 	if (sib_willrun->sibling == fed_mgr_cluster_rec) {
 		char *err_msg = NULL;
 		struct job_record *job_ptr = NULL;
-		job_desc_msg_t *job_desc;
 		sib_msg_t *sib_msg = sib_willrun->sib_msg;
+		job_desc_msg_t *job_desc = (job_desc_msg_t *)sib_msg->data;
 		/* don't need read_fed_lock -- set in fed_mgr_job_allocate */
 		slurmctld_lock_t job_write_lock = {
 			NO_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
 
 		lock_slurmctld(job_write_lock);
-		job_desc = sib_msg->data;
 
-		if (job_desc->job_id == NO_VAL) {
-			/* Get a job_id now without incrementing the job_id
-			 * count. This prevents burning job_ids on will_runs */
-			job_desc->job_id = get_next_job_id(true);
+		if (find_job_record(sib_msg->job_id)) {
+			rc = job_start_data(job_desc, &sib_willrun->resp);
+		} else {
+			rc = job_allocate(job_desc, false, true,
+					  &sib_willrun->resp, true,
+					  sib_willrun->uid, &job_ptr, &err_msg,
+					  sib_msg->data_version);
 		}
-
-		rc = job_allocate(sib_msg->data, false, true,
-				  &sib_willrun->resp, true, sib_willrun->uid,
-				  &job_ptr, &err_msg, sib_msg->data_version);
 		unlock_slurmctld(job_write_lock);
 
 		xfree(err_msg);
@@ -1521,8 +1518,9 @@ static void *_sib_will_run(void *arg)
 	} else if ((rc = _persist_job_will_run(sib_willrun->sibling,
 					       sib_willrun->sib_msg,
 					       &sib_willrun->resp))) {
-		error("Failed to get will_run response from sibling %s",
-		      sib_willrun->sibling->name);
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+			info("Didn't get will_run response from sibling %s",
+			     sib_willrun->sibling->name);
 	}
 
 	sib_willrun->thread_rc = rc;
@@ -1594,6 +1592,9 @@ static uint64_t _cluster_names_to_ids(char *clusters)
 
 /*
  * Get will_run responses from all clusters in a federation.
+ *
+ * Must have fed_read_lock before entering and NO job locks.
+ *
  * IN msg - contains the original job_desc buffer to send to the siblings and to
  * 	be able to create a job_desc copy to willrun itself.
  * IN job_desc - original job_desc. It contains the federated job_id to put on
@@ -1610,10 +1611,13 @@ static List _get_sib_will_runs(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	ListIterator sib_itr, resp_itr;
 	List sib_willruns = NULL;
 	pthread_attr_t attr;
-	sib_msg_t sib_msg;
+	sib_msg_t sib_msg = {0};
 	uint32_t buf_offset;
 	uint64_t cluster_list = INFINITE64; /* all clusters available */
 	slurm_msg_t tmp_msg;
+	struct job_record *job_ptr = NULL;
+	slurmctld_lock_t job_read_lock = {
+		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	xassert(job_desc);
 	xassert(msg);
@@ -1633,13 +1637,20 @@ static List _get_sib_will_runs(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	set_buf_offset(msg->buffer, buf_offset);
 
 	((job_desc_msg_t *)tmp_msg.data)->job_id = job_desc->job_id;
+	sib_msg.job_id       = job_desc->job_id;
 	sib_msg.data         = tmp_msg.data;
 	sib_msg.data_buffer  = msg->buffer;
 	sib_msg.data_version = msg->protocol_version;
 	sib_msg.data_type    = msg->msg_type;
 
-	if (job_desc->clusters)
+	/* only do will_runs to specific clusters */
+	lock_slurmctld(job_read_lock);
+	if ((job_ptr = find_job_record(job_desc->job_id)) &&
+	    job_ptr->fed_details)
+		cluster_list = job_ptr->fed_details->siblings;
+	else if (job_desc->clusters)
 		cluster_list = _cluster_names_to_ids(job_desc->clusters);
+	unlock_slurmctld(job_read_lock);
 
 	/* willrun the sibling clusters */
 	sib_itr = list_iterator_create(fed_mgr_fed_rec->cluster_list);
@@ -2538,6 +2549,9 @@ extern char *fed_mgr_cluster_ids_to_names(uint64_t cluster_ids)
 /* Find the earliest time a job can start by doing willruns to all clusters in
  * the federation and returning the fastest time.
  *
+ * Must not have job locks set before entering. Uses the job write lock to get
+ * the job's federated job id and to test an allocation creation.
+ *
  * IN msg - msg that contains packed job_desc msg to send to siblings.
  * IN job_desc - original job_desc msg.
  * IN uid - uid of user requesting will_run.
@@ -2548,19 +2562,28 @@ extern char *fed_mgr_cluster_ids_to_names(uint64_t cluster_ids)
 extern int fed_mgr_sib_will_run(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 				uid_t uid, will_run_response_msg_t **resp)
 {
-	int rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS, last_error = SLURM_SUCCESS;
 	ListIterator itr;
 	List sib_willruns;
 	sib_willrun_t *sib_willrun;
 	sib_willrun_t *earliest_willrun = NULL;
 	slurmctld_lock_t fed_read_lock = {
 		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	xassert(msg);
 	xassert(job_desc);
 	xassert(resp);
 
 	*resp = NULL;
+
+	/* Get new job_id now so that it will be the same across all clusters */
+	if (job_desc->job_id == NO_VAL) {
+		lock_slurmctld(job_write_lock);
+		job_desc->job_id = get_next_job_id(false);
+		unlock_slurmctld(job_write_lock);
+	}
 
 	lock_slurmctld(fed_read_lock);
 
@@ -2571,8 +2594,10 @@ extern int fed_mgr_sib_will_run(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 
 	itr = list_iterator_create(sib_willruns);
 	while ((sib_willrun = list_next(itr))) {
-		if (!sib_willrun->resp) /* no response if job couldn't run? */
+		if (!sib_willrun->resp) { /* no response if job couldn't run? */
+			last_error = sib_willrun->thread_rc;
 			continue;
+		}
 
 		if ((earliest_willrun == NULL) ||
 		    (sib_willrun->resp->start_time <
@@ -2584,6 +2609,8 @@ extern int fed_mgr_sib_will_run(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	if (earliest_willrun) {
 		*resp = earliest_willrun->resp;
 		earliest_willrun->resp = NULL;
+	} else if (last_error) {
+		rc = last_error;
 	} else {
 		rc = SLURM_ERROR;
 	}

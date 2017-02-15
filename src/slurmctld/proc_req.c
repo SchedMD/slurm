@@ -163,7 +163,7 @@ inline static void  _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_step_kill(uint32_t uid, slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_step_create(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_step_get_info(slurm_msg_t * msg);
-inline static void  _slurm_rpc_job_will_run(slurm_msg_t * msg, bool allow_sibs);
+inline static void  _slurm_rpc_job_will_run(slurm_msg_t * msg, bool is_sib_job);
 inline static void  _slurm_rpc_job_alloc_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_kill_job2(slurm_msg_t *msg);
 inline static void  _slurm_rpc_node_registration(slurm_msg_t *msg,
@@ -366,7 +366,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		_slurm_rpc_job_step_get_info(msg);
 		break;
 	case REQUEST_JOB_WILL_RUN:
-		_slurm_rpc_job_will_run(msg, true);
+		_slurm_rpc_job_will_run(msg, false);
 		break;
 	case REQUEST_SIB_JOB_START:
 		_slurm_rpc_sib_job_start(rpc_uid, msg);
@@ -2542,7 +2542,7 @@ static bool _is_valid_will_run_user(job_desc_msg_t *job_desc_msg, uid_t uid)
 
 /* _slurm_rpc_job_will_run - process RPC to determine if job with given
  *	configuration can be initiated */
-static void _slurm_rpc_job_will_run(slurm_msg_t * msg, bool allow_sibs)
+static void _slurm_rpc_job_will_run(slurm_msg_t * msg, bool is_sib_job)
 {
 	/* init */
 	DEF_TIMERS;
@@ -2589,25 +2589,34 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg, bool allow_sibs)
 				 job_desc_msg->resp_host, 16);
 		dump_job_desc(job_desc_msg);
 		if (error_code == SLURM_SUCCESS) {
-			if (job_desc_msg->job_id == NO_VAL) {
-				if (allow_sibs && fed_mgr_is_active()) {
-					/* don't job_write lock here. fed_mgr
-					 * locks around the job_allocate when
-					 * doing a will_run to itself. */
-					error_code =
-						fed_mgr_sib_will_run(
-							msg, job_desc_msg, uid,
-							&resp);
-				} else {
-					lock_slurmctld(job_write_lock);
+			bool existing_job = false;
+			if (job_desc_msg->job_id != NO_VAL) {
+				lock_slurmctld(job_read_lock);
+				if (find_job_record(job_desc_msg->job_id))
+					existing_job = true;
+				else if (!is_sib_job)
+					error_code = ESLURM_INVALID_JOB_ID;
+				unlock_slurmctld(job_read_lock);
+			}
+			if (error_code)
+				goto send_reply;
 
-					error_code = job_allocate(
-							job_desc_msg, false,
-							true, &resp, true, uid,
-							&job_ptr, &err_msg,
-							msg->protocol_version);
-					unlock_slurmctld(job_write_lock);
-				}
+			if (!is_sib_job && fed_mgr_is_active()) {
+				/* don't job_write lock here. fed_mgr
+				 * locks around the job_allocate when
+				 * doing a will_run to itself. */
+				error_code = fed_mgr_sib_will_run(msg,
+								  job_desc_msg,
+								  uid, &resp);
+			} else if (!existing_job) {
+				lock_slurmctld(job_write_lock);
+
+				error_code = job_allocate(job_desc_msg, false,
+							  true, &resp, true,
+							  uid, &job_ptr,
+							  &err_msg,
+							  msg->protocol_version);
+				unlock_slurmctld(job_write_lock);
 			} else {	/* existing job test */
 				lock_slurmctld(job_write_lock);
 				error_code = job_start_data(job_desc_msg,
@@ -2620,6 +2629,8 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg, bool allow_sibs)
 		error_code = errno;
 	else
 		error_code = SLURM_ERROR;
+
+send_reply:
 
 	/* return result */
 	if (error_code) {
@@ -6024,6 +6035,7 @@ static void _slurm_rpc_sib_job_willrun(uint32_t uid, slurm_msg_t *msg)
 {
 	sib_msg_t      *sib_msg  = msg->data;
 	job_desc_msg_t *job_desc = sib_msg->data;
+	job_desc->job_id         = sib_msg->job_id;
 
 	if (!msg->conn) {
 		error("Security violation, SIB_JOB_WILLRUN RPC from uid=%d",
@@ -6033,7 +6045,7 @@ static void _slurm_rpc_sib_job_willrun(uint32_t uid, slurm_msg_t *msg)
 	}
 
 	msg->data = job_desc;
-	_slurm_rpc_job_will_run(msg, false);
+	_slurm_rpc_job_will_run(msg, true);
 	msg->data = sib_msg;
 }
 
