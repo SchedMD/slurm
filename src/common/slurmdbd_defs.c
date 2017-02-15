@@ -271,7 +271,7 @@ extern int slurm_send_recv_slurmdbd_msg(uint16_t rpc_version,
 			_open_slurmdbd_conn(0);
 		else
 			_open_slurmdbd_conn(1);
-		if (slurmdbd_conn->fd < 0) {
+		if (!slurmdbd_conn || slurmdbd_conn->fd < 0) {
 			rc = SLURM_ERROR;
 			goto end_it;
 		}
