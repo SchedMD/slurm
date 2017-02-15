@@ -2902,7 +2902,7 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 
 	if ((job_ptr->details->num_tasks > 1) &&
 	    (max_nodes > job_ptr->details->num_tasks))
-		max_nodes = job_ptr->details->num_tasks;
+		max_nodes = MAX(job_ptr->details->num_tasks, min_nodes);
 
 	origmap = bit_copy(node_map);
 
