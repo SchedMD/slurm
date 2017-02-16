@@ -401,9 +401,9 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		tok = strtok_r(tmp_text, ",", &last);
 		while (tok) {
 			temp_int = strtol(tok, &temp_str, 10);
-			if ((temp_str[0] == 'k') || (temp_str[0] == 'k'))
+			if ((temp_str[0] == 'k') || (temp_str[0] == 'K'))
 				temp_int *= 1024;
-			if ((temp_str[0] == 'm') || (temp_str[0] == 'm'))
+			if ((temp_str[0] == 'm') || (temp_str[0] == 'M'))
 				temp_int *= (1024 * 1024);
 			xrealloc(resv_msg->node_cnt,
 				 (sizeof(uint32_t) * (block_inx + 2)));

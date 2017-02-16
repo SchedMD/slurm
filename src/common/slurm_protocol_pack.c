@@ -2429,6 +2429,7 @@ _unpack_network_callerid_msg(network_callerid_msg_t **msg_ptr, Buf buffer,
 unpack_error:
 	info("%s: error", __func__);
 	*msg_ptr = NULL;
+	xfree(charptr_tmp);
 	slurm_free_network_callerid_msg(msg);
 	return SLURM_ERROR;
 }
@@ -5421,16 +5422,7 @@ static void _xlate_task_str(job_info_t *job_ptr)
 		/* Print the full bitmap's string representation.
 		 * For huge bitmaps this can take roughly one minute,
 		 * so let the client do the work */
-		buf_size = bit_size(task_bitmap) * 8;
-		while (1) {
-			out_buf = xmalloc(buf_size);
-			bit_fmt(out_buf, buf_size, task_bitmap);
-			len = strlen(out_buf);
-			if ((len > 0) && (len < (buf_size - 32)))
-				break;
-			xfree(out_buf);
-			buf_size *= 2;
-		}
+		out_buf = bit_fmt_full(task_bitmap);
 	}
 
 out:
