@@ -99,7 +99,7 @@ way as when using the default node selection scheme.</li>
 exclusive mode even when consumable resources is enabled. see "man srun"
 for details. </li>
 
-<li>srun's <i>-s</i> or <i>--share</i> is incompatible with the consumable
+<li>srun's <i>-s</i> or <i>--oversubscribe</i> is incompatible with the consumable
 resource environment and will therefore not be honored. Since in this
 environment nodes are shared by default, <i>--exclusive</i> allows users to
 obtain dedicated nodes.</li>
