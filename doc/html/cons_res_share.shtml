@@ -37,7 +37,7 @@ per partition/queue.</TD>
 </TR><TR>
 <TD>OverSubscribe=YES</TD>
 <TD>By default same as OverSubscribe=NO. Nodes allocated to a job may be shared with
-other jobs if each job allows sharing via the <CODE>srun --shared</CODE>
+other jobs if each job allows sharing via the <CODE>srun --oversubscribe</CODE>
 option.</TD>
 </TR><TR>
 <TD>OverSubscribe=FORCE</TD>
@@ -54,7 +54,7 @@ per partition/queue.</TD>
 </TR><TR>
 <TD>OverSubscribe=YES</TD>
 <TD>By default same as OverSubscribe=NO. Cores allocated to a job may be shared with
-other jobs if each job allows sharing via the <CODE>srun --shared</CODE>
+other jobs if each job allows sharing via the <CODE>srun --oversubscribe</CODE>
 option.</TD>
 </TR><TR>
 <TD>OverSubscribe=FORCE</TD>
@@ -71,7 +71,7 @@ per partition/queue.</TD>
 </TR><TR>
 <TD>OverSubscribe=YES</TD>
 <TD>By default same as OverSubscribe=NO. CPUs allocated to a job may be shared with
-other jobs if each job allows sharing via the <CODE>srun --shared</CODE>
+other jobs if each job allows sharing via the <CODE>srun --oversubscribe</CODE>
 option.</TD>
 </TR><TR>
 <TD>OverSubscribe=FORCE</TD>
@@ -88,7 +88,7 @@ per partition/queue.</TD>
 </TR><TR>
 <TD>OverSubscribe=YES</TD>
 <TD>By default same as OverSubscribe=NO. Sockets allocated to a job may be shared with
-other jobs if each job allows sharing via the <CODE>srun --shared</CODE>
+other jobs if each job allows sharing via the <CODE>srun --oversubscribe</CODE>
 option.</TD>
 </TR><TR>
 <TD>OverSubscribe=FORCE</TD>
@@ -132,7 +132,7 @@ Slurm has supported configuring nodes in more than one partition since version
 different <CODE>OverSubscribe</CODE> settings will be allocated to jobs. Note that
 "shared" jobs are jobs that are submitted to partitions configured with
 <CODE>OverSubscribe=FORCE</CODE> or with <CODE>OverSubscribe=YES</CODE> and the job requested
-sharing with the <CODE>srun --shared</CODE> option. Conversely, "non-shared"
+sharing with the <CODE>srun --oversubscribe</CODE> option. Conversely, "non-shared"
 jobs are jobs that are submitted to partitions configured with
 <CODE>OverSubscribe=NO</CODE> or <CODE>OverSubscribe=YES</CODE> and the job did <U>not</U>
 request sharable resources.
