@@ -457,10 +457,6 @@ static int _resv_field(const slurmctld_resv_t *resv_ptr,
 		lua_pushboolean(L, resv_ptr->full_nodes);
 	} else if (!xstrcmp(name, "flags_set_node")) {
 		lua_pushboolean(L, resv_ptr->flags_set_node);
-	} else if (!xstrcmp(name, "job_pend_cnt")) {
-		lua_pushnumber(L, resv_ptr->job_pend_cnt);
-	} else if (!xstrcmp(name, "job_run_cnt")) {
-		lua_pushnumber(L, resv_ptr->job_run_cnt);
 	} else if (!xstrcmp(name, "licenses")) {
 		lua_pushstring(L, resv_ptr->licenses);
 	} else if (!xstrcmp(name, "node_cnt")) {
