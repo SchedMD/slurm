@@ -457,6 +457,10 @@ extern int slurmdb_unpack_account_rec(void **object, uint16_t protocol_version,
 		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->organization,
 				       &uint32_tmp, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
 	}
 
 	return SLURM_SUCCESS;
