@@ -22,6 +22,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix ordering of step task allocation to fill in a socket before going into
     another one.
  -- Fix configure to not require C++
+ -- job_submit/lua - Remove access to slurmctld internal reservation fields of
+    job_pend_cnt and job_run_cnt.
 
 * Changes in Slurm 17.02.0rc1
 ==============================

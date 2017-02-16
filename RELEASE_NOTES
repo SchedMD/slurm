@@ -148,6 +148,8 @@ OTHER CHANGES
  -- Added the ability to purge transactions from the database.
  -- Added the ability to purge rolled up usage from the database.
  -- Added new mcs/account plugin.
+ -- job_submit/lua - remove access to internal reservation job_run_cnt and
+    job_pend_cnt fields.
 
 API CHANGES
 ===========
