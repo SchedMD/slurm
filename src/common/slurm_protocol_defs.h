@@ -1236,6 +1236,7 @@ typedef struct {
 				 * side */
 	uint32_t return_code;   /* return code of job */
 	time_t   start_time;    /* time sibling job started */
+	char    *resp_host;     /* response host for interactive allocations */
 	uint32_t req_uid;       /* uid of user making the request. e.g if a
 				   cancel is happening from a user and being
 				   passed to a remote then the uid will be the

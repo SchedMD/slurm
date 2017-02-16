@@ -7330,6 +7330,7 @@ _pack_sib_msg(sib_msg_t *sib_msg_ptr, Buf buffer, uint16_t protocol_version)
 		pack32(sib_msg_ptr->job_id, buffer);
 		pack32(sib_msg_ptr->return_code, buffer);
 		pack_time(sib_msg_ptr->start_time, buffer);
+		packstr(sib_msg_ptr->resp_host, buffer);
 		pack32(sib_msg_ptr->req_uid, buffer);
 
 		/* add already packed data_buffer to buffer */
@@ -7389,6 +7390,7 @@ _unpack_sib_msg(sib_msg_t **sib_msg_buffer_ptr, Buf buffer,
 	sib_msg_t *sib_msg_ptr = NULL;
 	slurm_msg_t tmp_msg;
 	uint16_t tmp_uint16;
+	uint32_t tmp_uint32;
 
 	xassert(sib_msg_buffer_ptr);
 
@@ -7405,6 +7407,8 @@ _unpack_sib_msg(sib_msg_t **sib_msg_buffer_ptr, Buf buffer,
 		safe_unpack32(&sib_msg_ptr->job_id, buffer);
 		safe_unpack32(&sib_msg_ptr->return_code, buffer);
 		safe_unpack_time(&sib_msg_ptr->start_time, buffer);
+		safe_unpackstr_xmalloc(&sib_msg_ptr->resp_host, &tmp_uint32,
+				       buffer);
 		safe_unpack32(&sib_msg_ptr->req_uid, buffer);
 
 		safe_unpack16(&tmp_uint16, buffer);
@@ -7563,6 +7567,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		pack32(job_desc_ptr->group_id, buffer);
 
 		pack16(job_desc_ptr->alloc_resp_port, buffer);
+		packstr(job_desc_ptr->resp_host, buffer);
 		pack16(job_desc_ptr->other_port, buffer);
 		packstr(job_desc_ptr->network, buffer);
 		pack_time(job_desc_ptr->begin_time, buffer);
@@ -8114,6 +8119,8 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		safe_unpack32(&job_desc_ptr->group_id, buffer);
 
 		safe_unpack16(&job_desc_ptr->alloc_resp_port, buffer);
+		safe_unpackstr_xmalloc(&job_desc_ptr->resp_host, &uint32_tmp,
+				       buffer);
 		safe_unpack16(&job_desc_ptr->other_port, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->network,
 				       &uint32_tmp, buffer);
