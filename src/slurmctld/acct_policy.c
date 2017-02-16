@@ -2868,7 +2868,7 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr)
 				   ((wall_mins + time_limit) >
 				    assoc_ptr->grp_wall)) {
 				xfree(job_ptr->state_desc);
-				job_ptr->state_reason = WAIT_QOS_GRP_WALL;
+				job_ptr->state_reason = WAIT_ASSOC_GRP_WALL;
 				debug2("job %u being held, "
 				       "the job request with assoc %u "
 				       "will exceed group wall limit %u is ran "

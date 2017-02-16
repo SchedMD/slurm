@@ -34,6 +34,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix correct variables when validating GrpTresMins on a QOS.
  -- Better debug output when a job is being held because of a GrpTRES[Run]Min
     limits.
+ -- Fix correct state reason when job can't run 'safely' because of an
+    association GrpWall limit.
 
 * Changes in Slurm 16.05.9
 ==========================
