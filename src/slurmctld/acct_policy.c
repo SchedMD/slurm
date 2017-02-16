@@ -3063,8 +3063,8 @@ extern bool acct_policy_job_runnable_post_select(
 		i = _validate_tres_usage_limits_for_assoc(
 			&tres_pos, assoc_ptr->grp_tres_mins_ctld,
 			qos_rec.grp_tres_mins_ctld,
-			job_tres_time_limit, tres_run_mins,
-			tres_usage_mins, job_ptr->limit_set.tres,
+			job_tres_time_limit, tres_usage_mins,
+			tres_run_mins, job_ptr->limit_set.tres,
 			safe_limits);
 		switch (i) {
 		case 1:
