@@ -811,7 +811,7 @@ static GtkWidget *_admin_full_edit_part(update_part_msg_t *part_msg,
 
 	gtk_table_set_homogeneous(table, false);
 
-	for(i = 0; i < SORTID_CNT; i++) {
+	for (i = 0; i < SORTID_CNT; i++) {
 		while (display_data++) {
 			if (display_data->id == -1)
 				break;
@@ -861,10 +861,10 @@ static void _subdivide_part(sview_part_info_t *sview_part_info,
 		set = 1;
 	}
 	itr = list_iterator_create(sview_part_info->sub_list);
-	if (list_count(sview_part_info->sub_list) == 1) {
+	if ((list_count(sview_part_info->sub_list) == 1) &&
+	    (sview_part_sub = list_next(itr))) {
 		gtk_tree_store_set(GTK_TREE_STORE(model), iter,
 				   SORTID_ONLY_LINE, 1, -1);
-		sview_part_sub = list_next(itr);
 		_update_part_sub_record(sview_part_sub,
 					GTK_TREE_STORE(model),
 					iter);
@@ -955,7 +955,6 @@ static void _layout_part_record(GtkTreeView *treeview,
 	uint16_t temp_uint16 = 0;
 	int i;
 	int yes_no = -1;
-	int up_down = -1;
 	uint32_t limit_set = NO_VAL;
 	GtkTreeStore *treestore =
 		GTK_TREE_STORE(gtk_tree_view_get_model(treeview));
@@ -975,7 +974,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 	for (i = 0; i < SORTID_CNT; i++) {
 		switch (i) {
 		case SORTID_PART_STATE:
-			switch(part_ptr->state_up) {
+			switch (part_ptr->state_up) {
 			case PARTITION_UP:
 				temp_char = "up";
 				break;
@@ -1187,13 +1186,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 			break;
 		}
 
-		if (up_down != -1) {
-			if (up_down)
-				temp_char = "up";
-			else
-				temp_char = "down";
-			up_down = -1;
-		} else if (yes_no != -1) {
+		if (yes_no != -1) {
 			if (yes_no)
 				temp_char = "yes";
 			else
@@ -2159,7 +2152,7 @@ extern bool check_part_includes_node(int node_dx)
 		return false;
 	}
 
-	for (i=0; i<g_part_info_ptr->record_count; i++) {
+	for (i = 0; i < g_part_info_ptr->record_count; i++) {
 		/* don't include allow group or hidden excludes */
 		part_ptr = &(g_part_info_ptr->partition_array[i]);
 		if (part_ptr->flags & PART_FLAG_HIDDEN)
@@ -2206,7 +2199,7 @@ extern bool visible_part(char* part_name)
 
 	if (!g_part_info_ptr)
 		get_new_info_part(&part_info_ptr, force_refresh);
-	for (i=0; i<g_part_info_ptr->record_count; i++) {
+	for (i = 0; i < g_part_info_ptr->record_count; i++) {
 		m_part_ptr = &(g_part_info_ptr->partition_array[i]);
 		if (!xstrcmp(m_part_ptr->name, part_name)) {
 			if (m_part_ptr->flags & PART_FLAG_HIDDEN)
