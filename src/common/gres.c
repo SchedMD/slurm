@@ -3307,6 +3307,8 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 			safe_unpackstr_xmalloc(&gres_job_ptr->type_model,
 					       &utmp32, buffer);
 			safe_unpack32(&gres_job_ptr->node_cnt, buffer);
+			if (gres_job_ptr->node_cnt > NO_VAL32)
+				goto unpack_error;
 			safe_unpack8(&has_more, buffer);
 
 			if (has_more) {
@@ -5441,6 +5443,8 @@ extern int gres_plugin_step_state_unpack(List *gres_list, Buf buffer,
 			gres_step_ptr = xmalloc(sizeof(gres_step_state_t));
 			safe_unpack64(&gres_step_ptr->gres_cnt_alloc, buffer);
 			safe_unpack32(&gres_step_ptr->node_cnt, buffer);
+			if (gres_step_ptr->node_cnt > NO_VAL32)
+				goto unpack_error;
 			unpack_bit_str_hex(&gres_step_ptr->node_in_use, buffer);
 			safe_unpack8(&has_file, buffer);
 			if (has_file) {
@@ -5459,7 +5463,7 @@ extern int gres_plugin_step_state_unpack(List *gres_list, Buf buffer,
 			goto unpack_error;
 		}
 
-		for (i=0; i<gres_context_cnt; i++) {
+		for (i = 0; i < gres_context_cnt; i++) {
 			if (gres_context[i].plugin_id == plugin_id)
 				break;
 		}
