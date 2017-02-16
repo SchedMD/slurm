@@ -605,9 +605,9 @@ end_it:
 	return rc;
 }
 
-static int _persist_allocte_resources(slurmdb_cluster_rec_t *conn,
-				      sib_msg_t *sib_msg,
-				      resource_allocation_response_msg_t **resp)
+static int
+_persist_allocate_resources(slurmdb_cluster_rec_t *conn, sib_msg_t *sib_msg,
+			    resource_allocation_response_msg_t **resp)
 {
         int rc = SLURM_PROTOCOL_SUCCESS;
         slurm_msg_t req_msg, resp_msg;
@@ -1784,7 +1784,7 @@ static void *_submit_sibling_allocation(void *arg)
 	slurmdb_cluster_rec_t *sibling = sub->sibling;
 	sib_msg_t *sib_msg             = sub->sib_msg;
 
-	if ((rc = _persist_allocte_resources(sibling, sib_msg, &alloc_resp))) {
+	if ((rc = _persist_allocate_resources(sibling, sib_msg, &alloc_resp))) {
 		error("Failed to submit job to sibling %s: %m", sibling->name);
 	} else if (!alloc_resp) {
 		error("Got a success back without a resp. This shouldn't happen");
