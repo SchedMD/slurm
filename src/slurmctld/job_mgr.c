@@ -7630,8 +7630,6 @@ void job_time_limit(void)
 	uint8_t prolog;
 #endif
 
-	begin_job_resv_check();
-
 	job_iterator = list_iterator_create(job_list);
 	START_TIMER;
 	while ((job_ptr = list_next(job_iterator))) {
@@ -7845,7 +7843,6 @@ time_check:
 		}
 	}
 	list_iterator_destroy(job_iterator);
-	fini_job_resv_check();
 }
 
 /* job write lock must be locked before calling this */

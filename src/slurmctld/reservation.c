@@ -94,7 +94,6 @@ typedef struct resv_thread_args {
 
 time_t    last_resv_update = (time_t) 0;
 List      resv_list = (List) NULL;
-uint32_t  resv_over_run;
 uint32_t  top_suffix = 0;
 
 #ifdef HAVE_BG
@@ -5149,42 +5148,13 @@ extern time_t find_resv_end(time_t start_time)
 	return end_time;
 }
 
-/* Begin scan of all jobs for valid reservations and reset
- * running/pending counts */
-extern void begin_job_resv_check(void)
-{
-	ListIterator iter;
-	slurmctld_resv_t *resv_ptr;
-	slurm_ctl_conf_t *conf;
-
-	if (!resv_list)
-		return;
-
-	conf = slurm_conf_lock();
-	resv_over_run = conf->resv_over_run;
-	slurm_conf_unlock();
-	if (resv_over_run == (uint16_t) INFINITE)
-		resv_over_run = ONE_YEAR;
-	else
-		resv_over_run *= 60;
-
-	iter = list_iterator_create(resv_list);
-	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
-		resv_ptr->job_pend_cnt = 0;
-		resv_ptr->job_run_cnt  = 0;
-	}
-	list_iterator_destroy(iter);
-
-	list_for_each(job_list, _job_resv_check, NULL);
-}
-
 /* Test a particular job for valid reservation
  * and refill job_run_cnt/job_pend_cnt */
 static int _job_resv_check(void *x, void *arg)
 {
 	struct job_record *job_ptr = (struct job_record *) x;
 
-	if (!job_ptr->resv_name)
+	if (!job_ptr->resv_ptr)
 		return SLURM_SUCCESS;
 
 	xassert(job_ptr->resv_ptr->magic == RESV_MAGIC);
@@ -5331,13 +5301,23 @@ static int _resv_job_count(slurmctld_resv_t *resv_ptr)
 	return cnt;
 }
 
+static int _resv_list_reset_cnt(void *x, void *arg)
+{
+	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) x;
+
+	resv_ptr->job_pend_cnt = 0;
+	resv_ptr->job_run_cnt  = 0;
+
+	return 0;
+}
+
 /* Finish scan of all jobs for valid reservations
  *
  * Purge vestigial reservation records.
  * Advance daily or weekly reservations that are no longer
  *	being actively used.
  */
-extern void fini_job_resv_check(void)
+extern void job_resv_check(void)
 {
 	ListIterator iter;
 	slurmctld_resv_t *resv_backup, *resv_ptr;
@@ -5345,6 +5325,9 @@ extern void fini_job_resv_check(void)
 
 	if (!resv_list)
 		return;
+
+	list_for_each(resv_list, _resv_list_reset_cnt, NULL);
+	list_for_each(job_list, _job_resv_check, NULL);
 
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
