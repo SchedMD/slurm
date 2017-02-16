@@ -7322,7 +7322,34 @@ _pack_sib_msg(sib_msg_t *sib_msg_ptr, Buf buffer, uint16_t protocol_version)
 {
 	xassert(sib_msg_ptr);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		pack32(sib_msg_ptr->cluster_id, buffer);
+		pack16(sib_msg_ptr->data_type, buffer);
+		pack16(sib_msg_ptr->data_version, buffer);
+		pack64(sib_msg_ptr->fed_siblings, buffer);
+		pack32(sib_msg_ptr->job_id, buffer);
+		pack32(sib_msg_ptr->return_code, buffer);
+		pack_time(sib_msg_ptr->start_time, buffer);
+		pack32(sib_msg_ptr->req_uid, buffer);
+
+		/* add already packed data_buffer to buffer */
+		if (sib_msg_ptr->data_buffer &&
+		    size_buf(sib_msg_ptr->data_buffer)) {
+			Buf dbuf = sib_msg_ptr->data_buffer;
+			uint32_t grow_size =
+				size_buf(dbuf) - get_buf_offset(dbuf);
+
+			pack16(1, buffer);
+
+			grow_buf(buffer, grow_size);
+			memcpy(&buffer->head[get_buf_offset(buffer)],
+			       &dbuf->head[get_buf_offset(dbuf)], grow_size);
+			set_buf_offset(buffer,
+				       get_buf_offset(buffer) + grow_size);
+		} else {
+			pack16(0, buffer);
+		}
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(sib_msg_ptr->cluster_id, buffer);
 		pack16(sib_msg_ptr->data_type, buffer);
 		pack16(sib_msg_ptr->data_version, buffer);
@@ -7366,7 +7393,34 @@ _unpack_sib_msg(sib_msg_t **sib_msg_buffer_ptr, Buf buffer,
 	xassert(sib_msg_buffer_ptr);
 
 	/* alloc memory for structure */
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		sib_msg_ptr = xmalloc(sizeof(sib_msg_t));
+		*sib_msg_buffer_ptr = sib_msg_ptr;
+
+		/* load the data values */
+		safe_unpack32(&sib_msg_ptr->cluster_id, buffer);
+		safe_unpack16(&sib_msg_ptr->data_type, buffer);
+		safe_unpack16(&sib_msg_ptr->data_version, buffer);
+		safe_unpack64(&sib_msg_ptr->fed_siblings, buffer);
+		safe_unpack32(&sib_msg_ptr->job_id, buffer);
+		safe_unpack32(&sib_msg_ptr->return_code, buffer);
+		safe_unpack_time(&sib_msg_ptr->start_time, buffer);
+		safe_unpack32(&sib_msg_ptr->req_uid, buffer);
+
+		safe_unpack16(&tmp_uint16, buffer);
+		if (tmp_uint16) {
+			slurm_msg_t_init(&tmp_msg);
+			tmp_msg.msg_type         = sib_msg_ptr->data_type;
+			tmp_msg.protocol_version = sib_msg_ptr->data_version;
+
+			if (unpack_msg(&tmp_msg, buffer))
+				goto unpack_error;
+
+			sib_msg_ptr->data = tmp_msg.data;
+			tmp_msg.data = NULL;
+			slurm_free_msg_members(&tmp_msg);
+		}
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		sib_msg_ptr = xmalloc(sizeof(sib_msg_t));
 		*sib_msg_buffer_ptr = sib_msg_ptr;
 
