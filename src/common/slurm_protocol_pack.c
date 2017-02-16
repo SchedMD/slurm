@@ -7447,6 +7447,10 @@ _unpack_sib_msg(sib_msg_t **sib_msg_buffer_ptr, Buf buffer,
 			tmp_msg.data = NULL;
 			slurm_free_msg_members(&tmp_msg);
 		}
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
 	}
 
 	return SLURM_SUCCESS;
