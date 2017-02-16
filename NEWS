@@ -29,6 +29,8 @@ documents those changes that are of interest to users and administrators.
  -- Prevent deadlocked slurmstepd processes due to unsafe use of regcomp with
     older glibc versions.
  -- Fix squeue when SLURM_BITSTR_LEN=0 is set in the user environment.
+ -- Fix comments in acct_policy.c to reflect actual variables instead of
+    old ones.
 
 * Changes in Slurm 16.05.9
 ==========================
