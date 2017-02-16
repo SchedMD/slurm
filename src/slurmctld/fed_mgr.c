@@ -605,9 +605,9 @@ end_it:
 	return rc;
 }
 
-static int _persist_allocte_resources(slurmdb_cluster_rec_t *conn,
-				      sib_msg_t *sib_msg,
-				      resource_allocation_response_msg_t **resp)
+static int
+_persist_allocate_resources(slurmdb_cluster_rec_t *conn, sib_msg_t *sib_msg,
+			    resource_allocation_response_msg_t **resp)
 {
         int rc = SLURM_PROTOCOL_SUCCESS;
         slurm_msg_t req_msg, resp_msg;
@@ -1784,7 +1784,7 @@ static void *_submit_sibling_allocation(void *arg)
 	slurmdb_cluster_rec_t *sibling = sub->sibling;
 	sib_msg_t *sib_msg             = sub->sib_msg;
 
-	if ((rc = _persist_allocte_resources(sibling, sib_msg, &alloc_resp))) {
+	if ((rc = _persist_allocate_resources(sibling, sib_msg, &alloc_resp))) {
 		error("Failed to submit job to sibling %s: %m", sibling->name);
 	} else if (!alloc_resp) {
 		error("Got a success back without a resp. This shouldn't happen");
@@ -1911,7 +1911,7 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 	ListIterator sib_itr, thread_itr;
 	List submit_threads = NULL;
 	sib_submit_t *tmp_sub = NULL;
-	sib_msg_t sib_msg;
+	sib_msg_t sib_msg = {0};
 	slurmdb_cluster_rec_t *sibling = NULL;
 	pthread_attr_t attr;
 
@@ -1926,6 +1926,7 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 	sib_msg.data_version = msg->protocol_version;
 	sib_msg.fed_siblings = job_desc->fed_siblings;
 	sib_msg.job_id       = job_desc->job_id;
+	sib_msg.resp_host    = job_desc->resp_host;
 
 	sib_itr = list_iterator_create(fed_mgr_fed_rec->cluster_list);
 	while ((sibling = list_next(sib_itr))) {

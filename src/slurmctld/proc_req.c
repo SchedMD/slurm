@@ -1098,9 +1098,12 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg, bool is_sib_job)
 	if (error_code) {
 		reject_job = true;
 	} else if (!slurm_get_peer_addr(msg->conn_fd, &resp_addr)) {
-		job_desc_msg->resp_host = xmalloc(16);
-		slurm_get_ip_str(&resp_addr, &port,
-				 job_desc_msg->resp_host, 16);
+		/* resp_host could already be set from a federated cluster */
+		if (!job_desc_msg->resp_host) {
+			job_desc_msg->resp_host = xmalloc(16);
+			slurm_get_ip_str(&resp_addr, &port,
+					 job_desc_msg->resp_host, 16);
+		}
 		dump_job_desc(job_desc_msg);
 		do_unlock = true;
 		_throttle_start(&active_rpc_cnt);
@@ -6095,6 +6098,7 @@ static void _slurm_rpc_sib_resource_allocation(uint32_t uid, slurm_msg_t *msg)
 	job_desc_msg_t *job_desc = sib_msg->data;
 	job_desc->job_id         = sib_msg->job_id;
 	job_desc->fed_siblings   = sib_msg->fed_siblings;
+	job_desc->resp_host      = xstrdup(sib_msg->resp_host);
 
 	if (!msg->conn) {
 		error("Security violation, SIB_RESOURCE_ALLOCATION RPC from uid=%d",
