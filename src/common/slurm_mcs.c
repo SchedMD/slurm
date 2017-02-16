@@ -56,9 +56,9 @@ static slurm_mcs_ops_t ops;
 static plugin_context_t *g_mcs_context = NULL;
 static pthread_mutex_t g_mcs_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
-static uint32_t private_data = 0;
-static uint32_t enforced = 0;
-static uint32_t select_enforced = 0;
+static bool private_data = false;
+static bool label_strict_enforced = false;
+static uint32_t select_value = MCS_SELECT_ONDEMANDSELECT;
 static char *mcs_params = NULL;
 static char *mcs_params_common = NULL;
 static char *mcs_params_specific = NULL;
@@ -156,9 +156,9 @@ extern char *slurm_mcs_get_params_specific(void)
 
 static int _slurm_mcs_check_and_load_enforced(char *params)
 {
-	enforced = 0;
+	label_strict_enforced = false;
 	if ((params != NULL) && strstr(params, "enforced"))
-		enforced = 1;
+		label_strict_enforced = true;
 	else
 		info("mcs: MCSParameters = %s. ondemand set.", params);
 	return SLURM_SUCCESS;
@@ -166,16 +166,16 @@ static int _slurm_mcs_check_and_load_enforced(char *params)
 
 static int _slurm_mcs_check_and_load_select(char *params)
 {
-	select_enforced = 0;
+	select_value = MCS_SELECT_ONDEMANDSELECT;
 	if (params == NULL) {
 		return SLURM_SUCCESS;
 	}
 	if (strstr(params, "noselect")) {
-		select_enforced = 2;
+		select_value = MCS_SELECT_NOSELECT;
 	} else if (strstr(params, "ondemandselect")) {
-		select_enforced = 0;
+		select_value = MCS_SELECT_ONDEMANDSELECT;
 	} else if (strstr(params, "select")) {
-		select_enforced = 1;
+		select_value = MCS_SELECT_SELECT;
 	} else {
 		info("mcs: MCSParameters = %s. ondemandselect set.", params);
 	}
@@ -185,33 +185,34 @@ static int _slurm_mcs_check_and_load_select(char *params)
 static int _slurm_mcs_check_and_load_privatedata(char *params)
 {
 	if (params == NULL) {
-		private_data = 0;
+		private_data = false;
 		return SLURM_SUCCESS;
 	}
 	if (strstr(params, "privatedata")) {
-		private_data = 1;
+		private_data = true;
 	} else {
-		private_data = 0;
+		private_data = false;
 	}
 	return SLURM_SUCCESS;
 }
 
 extern int slurm_mcs_reset_params(void)
 {
-	enforced = 0;
-	select_enforced = 0;
-	private_data = 0;
+	label_strict_enforced = false;
+	select_value = MCS_SELECT_ONDEMANDSELECT;
+	private_data = false;
 	return SLURM_SUCCESS;
 }
 
 extern int slurm_mcs_get_enforced(void)
 {
-	return(enforced);
+	return(label_strict_enforced);
 }
 
 extern int slurm_mcs_get_select(struct job_record *job_ptr)
 {
-	if ((select_enforced == 1) || ((select_enforced == 0) &&
+	if ((select_value == MCS_SELECT_SELECT) ||
+	   ((select_value == MCS_SELECT_ONDEMANDSELECT) &&
 	    job_ptr->details &&
 	    (job_ptr->details->whole_node == WHOLE_NODE_MCS)))
 		return 1;
