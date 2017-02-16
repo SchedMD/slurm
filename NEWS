@@ -31,6 +31,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix squeue when SLURM_BITSTR_LEN=0 is set in the user environment.
  -- Fix comments in acct_policy.c to reflect actual variables instead of
     old ones.
+ -- Fix correct variables when validating GrpTresMins on a QOS.
 
 * Changes in Slurm 16.05.9
 ==========================
