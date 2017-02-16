@@ -495,8 +495,6 @@ test15.14  Test of job dependencies (--dependency option).
 test15.15  Test of user signal upon allocation (--bell and --no-bell options)
 test15.16  Verify that SLURM directed environment variables are processed:
 	   SALLOC_BELL and SALLOC_NO_BELL (can't really confirm from Expect)
-test15.17  Test the launch of a batch job within an existing job allocation.
-	   This logic is used by LSF
 test15.18  Test of running non-existent job, confirm timely termination.
 test15.19  Confirm that a job executes with the proper node count
 	   (--nodes option).
