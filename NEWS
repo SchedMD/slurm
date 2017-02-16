@@ -32,6 +32,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix comments in acct_policy.c to reflect actual variables instead of
     old ones.
  -- Fix correct variables when validating GrpTresMins on a QOS.
+ -- Better debug output when a job is being held because of a GrpTRES[Run]Min
+    limits.
 
 * Changes in Slurm 16.05.9
 ==========================
