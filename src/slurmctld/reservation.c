@@ -153,6 +153,7 @@ static bool _is_account_valid(char *account);
 static bool _is_resv_used(slurmctld_resv_t *resv_ptr);
 static bool _job_overlap(time_t start_time, uint32_t flags,
 			 bitstr_t *node_bitmap, char *resv_name);
+static int _job_resv_check(void *x, void *arg);
 static List _list_dup(List license_list);
 static int  _open_resv_state_file(char **state_file);
 static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
@@ -5148,7 +5149,8 @@ extern time_t find_resv_end(time_t start_time)
 	return end_time;
 }
 
-/* Begin scan of all jobs for valid reservations */
+/* Begin scan of all jobs for valid reservations and reset
+ * running/pending counts */
 extern void begin_job_resv_check(void)
 {
 	ListIterator iter;
@@ -5172,35 +5174,26 @@ extern void begin_job_resv_check(void)
 		resv_ptr->job_run_cnt  = 0;
 	}
 	list_iterator_destroy(iter);
+
+	list_for_each(job_list, _job_resv_check, NULL);
 }
 
 /* Test a particular job for valid reservation
- *
- * RET ESLURM_INVALID_TIME_VALUE if reservation is terminated
- *     SLURM_SUCCESS if reservation is still valid
- */
-extern int job_resv_check(struct job_record *job_ptr)
+ * and refill job_run_cnt/job_pend_cnt */
+static int _job_resv_check(void *x, void *arg)
 {
-	bool run_flag = false;
+	struct job_record *job_ptr = (struct job_record *) x;
 
 	if (!job_ptr->resv_name)
 		return SLURM_SUCCESS;
 
-	if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
-		run_flag = true;
-	else if (IS_JOB_PENDING(job_ptr))
-		run_flag = false;
-	else
-		return SLURM_SUCCESS;
-
 	xassert(job_ptr->resv_ptr->magic == RESV_MAGIC);
-	if (run_flag)
+
+	if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
 		job_ptr->resv_ptr->job_run_cnt++;
-	else
+	else if (IS_JOB_PENDING(job_ptr))
 		job_ptr->resv_ptr->job_pend_cnt++;
 
-	if ((job_ptr->resv_ptr->end_time + resv_over_run) < time(NULL))
-		return ESLURM_INVALID_TIME_VALUE;
 	return SLURM_SUCCESS;
 }
 

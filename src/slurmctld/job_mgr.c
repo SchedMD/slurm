@@ -7611,9 +7611,14 @@ void job_time_limit(void)
 	time_t old = now - ((slurmctld_conf.inactive_limit * 4 / 3) +
 			    slurmctld_conf.msg_timeout + 1);
 	time_t over_run;
-	int resv_status = 0;
 	uint16_t over_time_limit;
 	int job_test_count = 0;
+	uint32_t resv_over_run = slurmctld_conf.resv_over_run;
+
+	if (resv_over_run == (uint16_t) INFINITE)
+		resv_over_run = ONE_YEAR;
+	else
+		resv_over_run *= 60;
 
 	/* locks same as in _slurmctld_background() (The only current place this
 	 * is called). */
@@ -7626,21 +7631,11 @@ void job_time_limit(void)
 #endif
 
 	begin_job_resv_check();
+
 	job_iterator = list_iterator_create(job_list);
 	START_TIMER;
-	while ((job_ptr =(struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
-                if (slurm_delta_tv(&tv1) >= 3000000) {
-			END_TIMER;
-			debug("%s: yielding locks after testing %d jobs, %s",
-			      __func__, job_test_count, TIME_STR);
-			unlock_slurmctld(job_write_lock);
-			usleep(1000000);
-			lock_slurmctld(job_write_lock);
-			START_TIMER;
-			job_test_count = 0;
-		}
-
 		job_test_count++;
 
 #ifndef HAVE_BG
@@ -7667,12 +7662,16 @@ void job_time_limit(void)
 			}
 		}
 #endif
-		/* This needs to be near the top of the loop, checks every
-		 * running, suspended and pending job */
-		resv_status = job_resv_check(job_ptr);
-
 		if (IS_JOB_CONFIGURING(job_ptr))
 			continue;
+
+		if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))
+			continue;
+
+		/* everything above here is considered "quick", and skips the
+		 * timeout at the bottom of the loop by using a continue.
+		 * everything below is considered "slow", and needs to jump to
+		 * time_check before the next job is tested */
 
 		if (job_ptr->preempt_time &&
 		    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
@@ -7700,11 +7699,8 @@ void job_time_limit(void)
 				_job_timed_out(job_ptr);
 				xfree(job_ptr->state_desc);
 			}
-			continue;
+			goto time_check;
 		}
-
-		if (!IS_JOB_RUNNING(job_ptr))
-			continue;
 
 		if (slurmctld_conf.inactive_limit &&
 		    (job_ptr->batch_flag == 0)    &&
@@ -7718,7 +7714,7 @@ void job_time_limit(void)
 			_job_timed_out(job_ptr);
 			job_ptr->state_reason = FAIL_INACTIVE_LIMIT;
 			xfree(job_ptr->state_desc);
-			continue;
+			goto time_check;
 		}
 		if (job_ptr->time_limit != INFINITE) {
 			if ((job_ptr->warn_time) &&
@@ -7787,18 +7783,20 @@ void job_time_limit(void)
 				_job_timed_out(job_ptr);
 				job_ptr->state_reason = FAIL_TIMEOUT;
 				xfree(job_ptr->state_desc);
-				continue;
+				goto time_check;
 			}
 		}
 
-		if (resv_status != SLURM_SUCCESS) {
+		if (job_ptr->resv_ptr &&
+		    (job_ptr->resv_ptr->end_time + resv_over_run)
+		     < time(NULL)) {
 			last_job_update = now;
 			info("Reservation ended for JobId=%u",
 			     job_ptr->job_id);
 			_job_timed_out(job_ptr);
 			job_ptr->state_reason = FAIL_TIMEOUT;
 			xfree(job_ptr->state_desc);
-			continue;
+			goto time_check;
 		}
 
 		/* check if any individual job steps have exceeded
@@ -7813,12 +7811,38 @@ void job_time_limit(void)
 			last_job_update = now;
 			_job_timed_out(job_ptr);
 			xfree(job_ptr->state_desc);
-			continue;
+			goto time_check;
 		}
 
 		/* Give srun command warning message about pending timeout */
 		if (job_ptr->end_time <= (now + PERIODIC_TIMEOUT * 2))
 			srun_timeout (job_ptr);
+
+		/* _job_timed_out() and other calls can take a long time on
+		 * some platforms. This loop is holding the job_write lock;
+		 * if a lot of jobs need to be timed out within the same cycle
+		 * this stalls other threads from running and causes
+		 * communication issues within the cluster.
+		 *
+		 * This test happens last, as job_ptr may be pointing to a job
+		 * that would be deleted by a separate thread when the job_write
+		 * lock is released. However, list_next itself is thread safe,
+		 * and can be used again once the locks are reacquired.
+		 * list_peek_next is used in the unlikely event the timer has
+		 * expired just as the end of the job_list is reached. */
+time_check:
+		/* Use a hard-coded 3 second timeout, with a 1 second sleep. */
+		if (slurm_delta_tv(&tv1) >= 3000000 && list_peek_next(job_iterator) ) {
+			END_TIMER;
+			debug("%s: yielding locks after testing"
+			      " %d jobs, %s",
+			      __func__, job_test_count, TIME_STR);
+			unlock_slurmctld(job_write_lock);
+			usleep(1000000);
+			lock_slurmctld(job_write_lock);
+			START_TIMER;
+			job_test_count = 0;
+		}
 	}
 	list_iterator_destroy(job_iterator);
 	fini_job_resv_check();
