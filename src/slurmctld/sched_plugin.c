@@ -58,7 +58,6 @@ typedef struct slurm_sched_ops {
 	void            (*job_is_pending)     	( void );
 	int		(*reconfig)		( void );
 	void            (*partition_change)    	( void );
-	char *		(*strerror)		( int );
 	void		(*job_requeue)		( struct job_record *,
 						  char *reason );
 	char *		(*get_conf)		( void );
@@ -75,7 +74,6 @@ static const char *syms[] = {
 	"slurm_sched_p_job_is_pending",
 	"slurm_sched_p_reconfig",
 	"slurm_sched_p_partition_change",
-	"slurm_sched_p_strerror",
 	"slurm_sched_p_requeue",
 	"slurm_sched_p_get_conf"
 };
@@ -216,14 +214,6 @@ void slurm_sched_g_partition_change(void)
 		error( "cannot reconfigure gang scheduler" );
 
 	(*(ops.partition_change))();
-}
-
-char *slurm_sched_g_strerror(int errnum)
-{
-	if ( slurm_sched_init() < 0 )
-		return NULL;
-
-	return (*(ops.strerror))( errnum );
 }
 
 void slurm_sched_g_requeue(struct job_record *job_ptr, char *reason)

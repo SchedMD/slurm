@@ -104,11 +104,6 @@ void slurm_sched_g_job_is_pending( void );
 void slurm_sched_g_partition_change( void );
 
 /*
- * Return any plugin-specific error description
- */
-char *slurm_sched_g_strerror( int errnum );
-
-/*
  * Return any plugin-specific configuration information
  * Caller must xfree return value
  */

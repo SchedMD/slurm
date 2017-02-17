@@ -105,11 +105,6 @@ void slurm_sched_p_partition_change(void)
 	/* Empty. */
 }
 
-char *slurm_sched_p_strerror(int errnum)
-{
-	return NULL;
-}
-
 void slurm_sched_p_requeue(struct job_record *job_ptr, char *reason)
 {
 	/* Empty. */
