@@ -80,6 +80,16 @@ typedef struct {
 } pmixp_slurm_rhdr_t;
 #define PMIXP_SLURM_API_RHDR_SIZE (sizeof(uint32_t) + PMIXP_SLURM_API_SHDR_SIZE)
 
+#define PMIXP_BASE_HDR_SETUP(bhdr, mtype, mseq, buf)                  \
+{                                                                   \
+	bhdr.magic = PMIXP_SERVER_MSG_MAGIC;                        \
+	bhdr.type = mtype;                                           \
+	bhdr.msgsize = get_buf_offset(buf) - PMIXP_MAX_SEND_HDR;    \
+	bhdr.seq = mseq;                                             \
+	bhdr.nodeid = pmixp_info_nodeid_job();                      \
+}
+
+
 #define PMIXP_SERVER_BUF_MAGIC 0xCA11CAFE
 Buf pmixp_server_buf_new(void)
 {
@@ -618,13 +628,7 @@ int pmixp_server_send_nb(pmixp_ep_t *ep, pmixp_srv_cmd_t type,
 	int rc = SLURM_ERROR;
 	pmixp_dconn_t *dconn = NULL;
 
-	bhdr.magic = PMIXP_SERVER_MSG_MAGIC;
-	bhdr.type = type;
-	bhdr.msgsize = get_buf_offset(buf) - PMIXP_MAX_SEND_HDR;
-	bhdr.seq = seq;
-	/* Store global nodeid that is
-	 *  independent from exact collective */
-	bhdr.nodeid = pmixp_info_nodeid_job();
+	PMIXP_BASE_HDR_SETUP(bhdr, type, seq, buf);
 
 	/* if direct connection is not enabled
 	 * always use SLURM protocol
@@ -892,8 +896,20 @@ static void _slurm_new_msg(pmixp_conn_t *conn,
 
 	if( 0 != hdr->shdr.rport ){
 		pmixp_dconn_t *dconn;
+		Buf buf = pmixp_server_buf_new();
+		pmixp_base_hdr_t bhdr;
+		_direct_proto_message_t *init_msg = xmalloc(sizeof(*init_msg));
+		size_t dsize;
+
+		PMIXP_BASE_HDR_SETUP(bhdr, PMIXP_MSG_INIT_DIRECT, 0, buf);
+		init_msg->sent_cb = pmixp_server_sent_buf_cb;
+		init_msg->cbdata = buf;
+		init_msg->hdr = bhdr;
+		init_msg->payload = _buf_finalize(buf, NULL, 0, &dsize);
+		init_msg->buf_ptr = buf;
+
 		dconn = pmixp_dconn_connect(hdr->shdr.base_hdr.nodeid,
-					    hdr->shdr.rport);
+					    hdr->shdr.rport, init_msg);
 		if( NULL != dconn ){
 			pmixp_conn_t *conn;
 			conn = pmixp_conn_new_persist(PMIXP_PROTO_DIRECT,
@@ -908,18 +924,12 @@ static void _slurm_new_msg(pmixp_conn_t *conn,
 						     (void *)conn);
 				eio_new_obj(pmixp_info_io(), obj);
 				eio_signal_wakeup(pmixp_info_io());
-				pmixp_dconn_unlock(dconn);
 
-				pmixp_ep_t ep;
-				ep.type = PMIXP_EP_HNAME;
-				ep.ep.hostname = pmixp_info_job_host(hdr->shdr.base_hdr.nodeid);
-				Buf buf = pmixp_server_buf_new();
-				pmixp_server_send_nb(&ep, PMIXP_MSG_INIT_DIRECT, 0, buf,
-						     pmixp_server_sent_buf_cb, buf);
-				xfree(ep.ep.hostname);
-			} else {
-				pmixp_dconn_unlock(dconn);
 			}
+			pmixp_dconn_unlock(dconn);
+		} else {
+			/* need to release `init_msg` here */
+			xfree(init_msg);
 		}
 	}
 	_process_server_request(&hdr->shdr.base_hdr, msg);

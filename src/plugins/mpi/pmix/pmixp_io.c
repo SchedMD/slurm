@@ -559,7 +559,7 @@ static void _send_progress(pmixp_io_engine_t *eng)
 	}
 }
 
-
+/* Enqueue the message for send */
 int pmixp_io_send_enqueue(pmixp_io_engine_t *eng, void *msg)
 {
 	xassert(NULL != eng);
@@ -586,6 +586,29 @@ int pmixp_io_send_enqueue(pmixp_io_engine_t *eng, void *msg)
 
 	return SLURM_SUCCESS;
 }
+
+int pmixp_io_send_urgent(pmixp_io_engine_t *eng, void *msg)
+{
+	xassert(NULL != eng);
+	xassert(PMIXP_MSGSTATE_MAGIC == eng->magic);
+	xassert(NULL != eng->rcvd_hdr_net);
+	xassert(pmixp_io_enqueue_ok(eng));
+	xassert(eng->h.send_on);
+
+	/* We should be in the proper state
+	 * to accept new messages
+	 */
+	if( !pmixp_io_enqueue_ok(eng)){
+		PMIXP_ERROR("Trying to enqueue to unprepared engine");
+		return SLURM_ERROR;
+	}
+
+	/* Make this message to be first in line */
+	list_push(eng->send_queue, msg);
+
+	return SLURM_SUCCESS;
+}
+
 
 bool pmixp_io_send_pending(pmixp_io_engine_t *eng)
 {

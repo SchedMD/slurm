@@ -130,11 +130,11 @@ pmixp_dconn_accept(int nodeid, int fd)
 	return dconn;
 }
 
-int pmixp_dconn_connect_do(pmixp_dconn_t *dconn, uint16_t port);
+int pmixp_dconn_connect_do(pmixp_dconn_t *dconn, uint16_t port, void *init_msg);
 
 /* Returns locked direct connection descriptor */
 static inline pmixp_dconn_t *
-pmixp_dconn_connect(int nodeid, uint16_t port)
+pmixp_dconn_connect(int nodeid, uint16_t port, void *init_msg)
 {
 	int rc;
 	pmixp_dconn_t *dconn = pmixp_dconn_lock(nodeid);
@@ -161,7 +161,7 @@ pmixp_dconn_connect(int nodeid, uint16_t port)
 	}
 
 	/* establish the connection */
-	rc = pmixp_dconn_connect_do(dconn, port);
+	rc = pmixp_dconn_connect_do(dconn, port, init_msg);
 	if( SLURM_SUCCESS == rc ){
 		dconn->state = PMIXP_DIRECT_CONNECTED;
 		/* return locked structure */

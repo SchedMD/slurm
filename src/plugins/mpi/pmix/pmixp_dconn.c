@@ -28,7 +28,7 @@ void pmixp_dconn_fini()
 	_pmixp_dconn_conn_cnt = 0;
 }
 
-int pmixp_dconn_connect_do(pmixp_dconn_t *dconn, uint16_t port)
+int pmixp_dconn_connect_do(pmixp_dconn_t *dconn, uint16_t port, void *init_msg)
 {
 	char *nodename = pmixp_info_job_host(dconn->nodeid);
 	slurm_addr_t address;
@@ -65,6 +65,11 @@ int pmixp_dconn_connect_do(pmixp_dconn_t *dconn, uint16_t port)
 	dconn->fd = fd;
 	pmixp_fd_set_nodelay(fd);
 	fd_set_nonblocking(fd);
+
+	/* Init message has to be first in the line */
+	pmixp_io_send_urgent(&dconn->eng, init_msg);
+
+	/* enable send */
 	pmixp_io_attach(&dconn->eng, fd);
 	return SLURM_SUCCESS;
 }

@@ -196,6 +196,7 @@ pmixp_io_recv_hdr_alloc_net(pmixp_io_engine_t *eng)
 /* Transmitter */
 /* thread-safe function, only calls SLURM list append */
 int pmixp_io_send_enqueue(pmixp_io_engine_t *eng, void *msg);
+int pmixp_io_send_urgent(pmixp_io_engine_t *eng, void *msg);
 void pmixp_io_send_progress(pmixp_io_engine_t *eng);
 bool pmixp_io_send_pending(pmixp_io_engine_t *eng);
 void pmixp_io_send_cleanup(pmixp_io_engine_t *eng);
