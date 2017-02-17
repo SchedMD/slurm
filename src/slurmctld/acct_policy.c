@@ -813,67 +813,6 @@ static bool _validate_tres_limits_for_assoc(
 	return true;
 }
 
-/*
- * _validate_tres_usage_limits_for_assoc - validate the tres requested
- * against limits
- * of an association as well as qos skipping any limit an admin set
- *
- * OUT - tres_pos - if false is returned position in array of failed limit
- * IN - tres_limit_array - TRES limits from an association
- * IN - qos_tres_limit_array - TRES limits QOS has imposed already
- * IN - tres_req_cnt - TRES requested from the job
- * IN - tres_usage - TRES usage from the association (in minutes)
- * IN - curr_usage - TRES usage in use right now by the assoc (running jobs)
- * IN - admin_limit_set - TRES limits that have been overridden by an admin
- * IN - safe_limits - if the safe flag was set on AccountingStorageEnforce
- *
- * RET - True if no limit is violated, false otherwise with tres_pos
- * being set to the position of the failed limit.
- */
-static int _validate_tres_usage_limits_for_assoc(
-	int *tres_pos,
-	uint64_t *tres_limit_array,
-	uint64_t *qos_tres_limit_array,
-	uint64_t *tres_req_cnt,
-	uint64_t *tres_usage,
-	uint64_t *curr_usage,
-	uint16_t *admin_limit_set,
-	bool safe_limits)
-{
-	int i;
-	uint64_t usage = 0;
-
-	xassert(tres_limit_array);
-	xassert(qos_tres_limit_array);
-
-	for (i = 0; i < g_tres_count; i++) {
-		(*tres_pos) = i;
-
-		if ((admin_limit_set
-		     && admin_limit_set[i] == ADMIN_SET_LIMIT) ||
-		    (qos_tres_limit_array[i] != INFINITE64) ||
-		    (tres_limit_array[i] == INFINITE64))
-			continue;
-
-		if (curr_usage && (curr_usage[i] >= tres_limit_array[i]))
-			return 1;
-
-		if (safe_limits) {
-			xassert(tres_req_cnt);
-			if (tres_req_cnt[i] > tres_limit_array[i])
-				return 2;
-
-			if (curr_usage)
-				usage = curr_usage[i];
-			if (tres_usage &&
-			    ((tres_req_cnt[i] + tres_usage[i]) >
-			     (tres_limit_array[i] - usage)))
-				return 3;
-		}
-	}
-
-	return 0;
-}
 
 /*
  * _validate_tres_limits_for_qos - validate the tres requested against limits
@@ -1011,8 +950,6 @@ static bool _validate_time_limit(uint32_t *time_limit_in,
 	return true;
 }
 
-
-
 /*
  * _validate_tres_time_limits - validate the tres requested
  * against limits of an association as well as qos skipping any limit
@@ -1081,9 +1018,100 @@ static bool _validate_tres_time_limits(
 }
 
 /*
+ * _validate_tres_usage_limits - validate the TRES requested against
+ * specified limits; when checking for safe limits, also take into
+ * consideration already used and currently running TRES resources
+ *
+ * OUT - tres_pos - if function returns other than TRES_USAGE_OKAY,
+ *                  position in TRES array of failed limit
+ * IN - tres_limit_array - count of various TRES limits to check against
+ * OUT - out_tres_limit_array - optional; assigned values from tres_limit_array
+ *                              when out_tres_limit_set is true,
+ *                              skipped when any of:
+ *                              1) admin_limit_set is set and is an admin
+ *                                 limit
+ *                              2) out_tres_limit_array is set and its value
+ *                                 has been changed since initially being set
+ *                                 to INFINITE64
+ *                              3) tres_limit_array is INFINITE64
+ * IN - tres_req_cnt - must be set when safe_limits is true; the following
+ *                     is checked with tres_req_cnt:
+ *                     1) tres_req_cnt > tres_limit_array,
+ *                        return TRES_USAGE_REQ_EXCEEDS_LIMIT
+ *                     2) when tres_usage is set:
+ *                        (tres_req_cnt + tres_usage) >
+ *                        (tres_limit_array - curr_usage),
+ *                        return TRES_USAGE_REQ_NOT_SAFE_WITH_USAGE
+ *                        curr_usage will be 0 when not passed
+ * IN - tres_usage - TRES (already used) optional; see tres_req_cnt section
+ *                   above for tres_usage interaction
+ * IN - curr_usage - TRES (currently running) optional; when set, check if:
+ *                   1) curr_usage > tres_limit_array
+ *                      return TRES_USAGE_CUR_EXCEEDS_LIMIT
+ *                   2) when safe_limits is true, see tres_req_cnt section
+ *                      above for curr_usage interaction
+ * IN - admin_limit_set - limits that have been overridden by an admin, see
+ *                        out_tres_limit_array section above for interaction
+ * IN - safe_limits - requires tres_req_cnt when true; see tres_req_cnt
+ *                    section above for interaction
+ * IN - out_tres_limit_set - out_tres_limit_array is set as described above
+ *      when true; out_tres_limit_array is not modified when false
+ * RET - TRES_USAGE_OKAY if no limit is violated, otherwise one of the other
+ *       acct_policy_tres_usage_t enumerations with tres_pos being set to the
+ *       position of the failed limit.
+ */
+static tres_usage_t _validate_tres_usage_limits(
+	int *tres_pos,
+	uint64_t *tres_limit_array,
+	uint64_t *out_tres_limit_array,
+	uint64_t *tres_req_cnt,
+	uint64_t *tres_usage,
+	uint64_t *curr_usage,
+	uint16_t *admin_limit_set,
+	bool safe_limits,
+	bool out_tres_limit_set)
+{
+	int i;
+	uint64_t usage = 0;
+
+	xassert(tres_limit_array);
+
+	for (i = 0; i < g_tres_count; i++) {
+		(*tres_pos) = i;
+
+		if ((admin_limit_set &&
+		     admin_limit_set[i] == ADMIN_SET_LIMIT) ||
+		    (out_tres_limit_array &&
+		     out_tres_limit_array[i] != INFINITE64) ||
+		    (tres_limit_array[i] == INFINITE64))
+			continue;
+
+		if (out_tres_limit_set && out_tres_limit_array)
+			out_tres_limit_array[i] = tres_limit_array[i];
+
+		if (curr_usage && (curr_usage[i] >= tres_limit_array[i]))
+			return TRES_USAGE_CUR_EXCEEDS_LIMIT;
+
+		if (safe_limits) {
+			xassert(tres_req_cnt);
+			if (tres_req_cnt[i] > tres_limit_array[i])
+				return TRES_USAGE_REQ_EXCEEDS_LIMIT;
+
+			if (curr_usage)
+				usage = curr_usage[i];
+			if (tres_usage &&
+			    ((tres_req_cnt[i] + tres_usage[i]) >
+			     (tres_limit_array[i] - usage)))
+				return TRES_USAGE_REQ_NOT_SAFE_WITH_USAGE;
+		}
+	}
+
+	return TRES_USAGE_OKAY;
+}
+
+/*
  * _validate_tres_usage_limits_for_qos - validate the tres requested
- * against limits of an association as well as qos skipping any limit
- * an admin set
+ * against limits of an qos skipping any limit an admin set
  *
  * OUT - tres_pos - if false is returned position in array of failed limit
  * IN - tres_limit_array - TRES limits from an association
@@ -1098,7 +1126,7 @@ static bool _validate_tres_time_limits(
  * RET - True if no limit is violated, false otherwise with tres_pos
  * being set to the position of the failed limit.
  */
-static int _validate_tres_usage_limits_for_qos(
+static tres_usage_t _validate_tres_usage_limits_for_qos(
 	int *tres_pos,
 	uint64_t *tres_limit_array,
 	uint64_t *out_tres_limit_array,
@@ -1108,41 +1136,53 @@ static int _validate_tres_usage_limits_for_qos(
 	uint16_t *admin_limit_set,
 	bool safe_limits)
 {
-	uint64_t usage = 0;
-	int i;
+	return _validate_tres_usage_limits(tres_pos,
+					   tres_limit_array,
+					   out_tres_limit_array,
+					   tres_req_cnt,
+					   tres_usage,
+					   curr_usage,
+					   admin_limit_set,
+					   safe_limits,
+					   true);
+}
 
-	xassert(tres_limit_array);
-	xassert(out_tres_limit_array);
-
-	for (i = 0; i < g_tres_count; i++) {
-		(*tres_pos) = i;
-
-		if ((admin_limit_set
-		     && admin_limit_set[i] == ADMIN_SET_LIMIT) ||
-		    (out_tres_limit_array[i] != INFINITE64) ||
-		    (tres_limit_array[i] == INFINITE64))
-			continue;
-
-		out_tres_limit_array[i] = tres_limit_array[i];
-
-		if (curr_usage && (curr_usage[i] >= tres_limit_array[i]))
-			return 1;
-
-		if (safe_limits) {
-			xassert(tres_req_cnt);
-			if (tres_req_cnt[i] > tres_limit_array[i])
-				return 2;
-
-			if (curr_usage)
-				usage = curr_usage[i];
-			if (tres_usage &&
-			    ((tres_req_cnt[i] + tres_usage[i]) >
-			     (tres_limit_array[i] - usage)))
-				return 3;
-		}
-	}
-
-	return 0;
+/*
+ * _validate_tres_usage_limits_for_assoc - validate the tres requested
+ * against limits of an association as well as qos skipping any limit
+ * an admin set
+ *
+ * OUT - tres_pos - if false is returned position in array of failed limit
+ * IN - tres_limit_array - TRES limits from an association
+ * IN - qos_tres_limit_array - TRES limits QOS has imposed already
+ * IN - tres_req_cnt - TRES requested from the job
+ * IN - tres_usage - TRES usage from the association (in minutes)
+ * IN - curr_usage - TRES usage in use right now by the assoc (running jobs)
+ * IN - admin_limit_set - TRES limits that have been overridden by an admin
+ * IN - safe_limits - if the safe flag was set on AccountingStorageEnforce
+ *
+ * RET - True if no limit is violated, false otherwise with tres_pos
+ * being set to the position of the failed limit.
+ */
+static tres_usage_t _validate_tres_usage_limits_for_assoc(
+	int *tres_pos,
+	uint64_t *tres_limit_array,
+	uint64_t *qos_tres_limit_array,
+	uint64_t *tres_req_cnt,
+	uint64_t *tres_usage,
+	uint64_t *curr_usage,
+	uint16_t *admin_limit_set,
+	bool safe_limits)
+{
+	return _validate_tres_usage_limits(tres_pos,
+					   tres_limit_array,
+					   qos_tres_limit_array,
+					   tres_req_cnt,
+					   tres_usage,
+					   curr_usage,
+					   admin_limit_set,
+					   safe_limits,
+					   false);
 }
 
 static int _qos_policy_validate(job_desc_msg_t *job_desc,
