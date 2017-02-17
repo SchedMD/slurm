@@ -157,7 +157,7 @@ extern char *slurm_mcs_get_params_specific(void)
 static int _slurm_mcs_check_and_load_enforced(char *params)
 {
 	label_strict_enforced = false;
-	if ((params != NULL) && strstr(params, "enforced"))
+	if ((params != NULL) && xstrcasestr(params, "enforced"))
 		label_strict_enforced = true;
 	else
 		info("mcs: MCSParameters = %s. ondemand set.", params);
@@ -170,11 +170,11 @@ static int _slurm_mcs_check_and_load_select(char *params)
 	if (params == NULL) {
 		return SLURM_SUCCESS;
 	}
-	if (strstr(params, "noselect")) {
+	if (xstrcasestr(params, "noselect")) {
 		select_value = MCS_SELECT_NOSELECT;
-	} else if (strstr(params, "ondemandselect")) {
+	} else if (xstrcasestr(params, "ondemandselect")) {
 		select_value = MCS_SELECT_ONDEMANDSELECT;
-	} else if (strstr(params, "select")) {
+	} else if (xstrcasestr(params, "select")) {
 		select_value = MCS_SELECT_SELECT;
 	} else {
 		info("mcs: MCSParameters = %s. ondemandselect set.", params);
@@ -188,7 +188,7 @@ static int _slurm_mcs_check_and_load_privatedata(char *params)
 		private_data = false;
 		return SLURM_SUCCESS;
 	}
-	if (strstr(params, "privatedata")) {
+	if (xstrcasestr(params, "privatedata")) {
 		private_data = true;
 	} else {
 		private_data = false;
