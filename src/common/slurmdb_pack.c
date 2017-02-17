@@ -476,14 +476,19 @@ extern void slurmdb_pack_coord_rec(void *in, uint16_t protocol_version,
 {
 	slurmdb_coord_rec_t *object = (slurmdb_coord_rec_t *)in;
 
-	if (!object) {
-		packnull(buffer);
-		pack16(0, buffer);
-		return;
-	}
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (!object) {
+			packnull(buffer);
+			pack16(0, buffer);
+			return;
+		}
 
-	packstr(object->name, buffer);
-	pack16(object->direct, buffer);
+		packstr(object->name, buffer);
+		pack16(object->direct, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+	}
 }
 
 extern int slurmdb_unpack_coord_rec(void **object, uint16_t protocol_version,
@@ -492,9 +497,16 @@ extern int slurmdb_unpack_coord_rec(void **object, uint16_t protocol_version,
 	uint32_t uint32_tmp;
 	slurmdb_coord_rec_t *object_ptr = xmalloc(sizeof(slurmdb_coord_rec_t));
 
-	*object = object_ptr;
-	safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
-	safe_unpack16(&object_ptr->direct, buffer);
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		*object = object_ptr;
+		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
+		safe_unpack16(&object_ptr->direct, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
+
 	return SLURM_SUCCESS;
 
 unpack_error:
