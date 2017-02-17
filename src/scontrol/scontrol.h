@@ -84,6 +84,7 @@ extern int input_words;	/* number of words of input permitted */
 extern int one_liner;	/* one record per line if =1 */
 extern int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
 extern uint32_t cluster_flags; /* what type of cluster are we talking to */
+extern uint32_t euid; /* send request to the slurmctld in behave of this user */
 
 extern block_info_msg_t *old_block_info_ptr;
 extern front_end_info_msg_t *old_front_end_info_ptr;
@@ -145,7 +146,7 @@ extern void	scontrol_requeue_hold(uint32_t state_flag, char *job_str);
 extern void	scontrol_suspend(char *op, char *job_id_str);
 extern void	scontrol_top_job(char *job_str);
 extern int	scontrol_update_front_end (int argc, char **argv);
-extern int	scontrol_update_job (int argc, char **argv, uint32_t uid);
+extern int	scontrol_update_job (int argc, char **argv);
 extern int	scontrol_update_layout (int argc, char **argv);
 extern int	scontrol_update_node (int argc, char **argv);
 extern int	scontrol_update_part (int argc, char **argv);

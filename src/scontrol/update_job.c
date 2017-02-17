@@ -724,7 +724,7 @@ scontrol_top_job(char *job_id_str)
  * RET 0 if no slurm error, errno otherwise. parsing error prints
  *			error message and returns 0
  */
-extern int scontrol_update_job(int argc, char **argv, uint32_t euid)
+extern int scontrol_update_job(int argc, char **argv)
 {
 	bool update_size = false;
 	int i, update_cnt = 0, rc = SLURM_SUCCESS, rc2;
