@@ -45,6 +45,7 @@ documents those changes that are of interest to users and administrators.
  -- Prevent job_time_limit enforcement from blocking other internal operations
     if a large number of jobs need to be cancelled.
  -- Add 'preempt_youngest_order' option to preempt/partition_prio plugin.
+ -- Fix controller being able to talk to a pre-released DBD.
 
 * Changes in Slurm 17.02.0rc1
 ==============================

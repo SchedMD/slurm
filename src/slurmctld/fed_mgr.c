@@ -163,6 +163,7 @@ static int _open_controller_conn(slurmdb_cluster_rec_t *cluster, bool locked)
 		persist_conn->my_port = slurmctld_conf.slurmctld_port;
 		persist_conn->rem_host = xstrdup(cluster->control_host);
 		persist_conn->rem_port = cluster->control_port;
+		persist_conn->version  = cluster->rpc_version;
 		persist_conn->shutdown = &slurmctld_config.shutdown_time;
 		persist_conn->timeout = timeout; /* don't put this as 0 it
 						  * could cause deadlock */
