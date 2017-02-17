@@ -48,30 +48,30 @@
 #include "src/slurmctld/slurmctld.h"
 
 /* Initialize data structures and start the gang scheduling thread */
-extern int 	gs_init(void);
+extern void gs_init(void);
 
 /* Terminate the gang scheduling thread and free its data structures */
-extern int 	gs_fini(void);
+extern void gs_fini(void);
 
 /* Notify the gang scheduler that a job has been resumed or started.
  * In either case, add the job to gang scheduling. */
-extern int	gs_job_start(struct job_record *job_ptr);
+extern void gs_job_start(struct job_record *job_ptr);
 
 /* scan the master SLURM job list for any new jobs to add, or for any old jobs
  *	to remove */
-extern int	gs_job_scan(void);
+extern void gs_job_scan(void);
 
 /* Notify the gang scheduler that a job has been suspended or completed.
  * In either case, remove the job from gang scheduling. */
-extern int	gs_job_fini(struct job_record *job_ptr);
+extern void gs_job_fini(struct job_record *job_ptr);
 
 /* Gang scheduling has been disabled by change in configuration,
  *	resume any suspended jobs */
-extern void	gs_wake_jobs(void);
+extern void gs_wake_jobs(void);
 
 /* Tell gang scheduler that system reconfiguration has been performed
  *	configuration parameters may have changed. Rebuild data structures
  *	from scratch */
-extern int	gs_reconfig(void);
+extern void gs_reconfig(void);
 
 #endif

@@ -116,8 +116,7 @@ extern int slurm_sched_fini(void)
 	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
 
-	if (gs_fini() != SLURM_SUCCESS)
-		error( "cannot stop gang scheduler" );
+	gs_fini();
 
 	return rc;
 }
@@ -127,8 +126,7 @@ extern int slurm_sched_g_reconfig(void)
 	if ( slurm_sched_init() < 0 )
 		return SLURM_ERROR;
 
-	if (gs_reconfig() != SLURM_SUCCESS)
-		error( "cannot reconfigure gang scheduler" );
+	gs_reconfig();
 
 	return (*(ops.reconfig))();
 }

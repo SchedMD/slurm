@@ -980,10 +980,9 @@ int read_slurm_conf(int recover, bool reconfig)
 	g_slurm_jobcomp_init(slurmctld_conf.job_comp_loc);
 	if (slurm_sched_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize sched plugin");
-	if (!reconfig && (old_preempt_mode & PREEMPT_MODE_GANG) &&
-	    (gs_init() != SLURM_SUCCESS)) {
+	if (!reconfig && (old_preempt_mode & PREEMPT_MODE_GANG)) {
 		/* gs_init() must immediately follow slurm_sched_init() */
-		fatal("Failed to initialize gang scheduler");
+		gs_init();
 	}
 	if (switch_init(1) != SLURM_SUCCESS)
 		fatal("Failed to initialize switch plugin");
@@ -1954,13 +1953,15 @@ static int _update_preempt(uint16_t old_preempt_mode)
 
 	if (new_preempt_mode & PREEMPT_MODE_GANG) {
 		info("Enabling gang scheduling");
-		return gs_init();
+		gs_init();
+		return SLURM_SUCCESS;
 	}
 
 	if (old_preempt_mode == PREEMPT_MODE_GANG) {
 		info("Disabling gang scheduling");
 		gs_wake_jobs();
-		return gs_fini();
+		gs_fini();
+		return SLURM_SUCCESS;
 	}
 
 	error("Invalid gang scheduling mode change");
