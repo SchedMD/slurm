@@ -10,10 +10,12 @@
 START_TEST(invalid_protocol)
 {
 	int rc;
-	slurmdb_used_limits_t *used_limits = NULL;
+	slurmdb_used_limits_t *used_limits;
+	Buf buf = init_buf(1024);
 
-	rc = slurmdb_unpack_used_limits((void **)&used_limits, 0, 0, NULL);
+	rc = slurmdb_unpack_used_limits((void **)&used_limits, 0, 0, buf);
 	ck_assert_int_eq(rc, SLURM_ERROR);
+	free_buf(buf);
 }
 END_TEST
 

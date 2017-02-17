@@ -12,10 +12,13 @@
 START_TEST(invalid_protocol)
 {
 	int rc;
-	slurmdb_account_rec_t *account_rec = NULL;
+	slurmdb_account_rec_t *account_rec;
+	Buf buf = init_buf(1024);
 
-	rc = slurmdb_unpack_account_rec((void **)&account_rec, 0, NULL);
+
+	rc = slurmdb_unpack_account_rec((void **)&account_rec, 0, buf);
 	ck_assert_int_eq(rc, SLURM_ERROR);
+	free_buf(buf);
 }
 END_TEST
 
