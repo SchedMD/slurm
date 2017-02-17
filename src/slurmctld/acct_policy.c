@@ -1423,7 +1423,7 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 			if (strict_checking
 			    && job_desc->time_limit > qos_ptr->grp_wall) {
 				if (reason)
-					*reason = WAIT_ASSOC_GRP_WALL;
+					*reason = WAIT_QOS_GRP_WALL;
 				debug2("job submit for user %s(%u): "
 				       "time limit %u exceeds qos grp max %u",
 				       user_name,
@@ -1659,7 +1659,7 @@ static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
 			job_ptr->state_reason = WAIT_QOS_GRP_WALL;
 			debug2("job %u being held, "
 			       "the job request will exceed "
-			       "group wall limit %u is ran "
+			       "group wall limit %u if ran "
 			       "with %u for qos %s",
 			       job_ptr->job_id,
 			       qos_ptr->grp_wall,
@@ -2915,7 +2915,7 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr)
 				job_ptr->state_reason = WAIT_ASSOC_GRP_WALL;
 				debug2("job %u being held, "
 				       "the job request with assoc %u "
-				       "will exceed group wall limit %u is ran "
+				       "will exceed group wall limit %u if ran "
 				       "with %u for account %s",
 				       job_ptr->job_id, assoc_ptr->id,
 				       assoc_ptr->grp_wall,
