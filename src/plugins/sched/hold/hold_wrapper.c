@@ -69,21 +69,6 @@ int slurm_sched_p_reconfig(void)
 	return SLURM_SUCCESS;
 }
 
-int slurm_sched_p_schedule(void)
-{
-	return SLURM_SUCCESS;
-}
-
-int slurm_sched_p_newalloc(struct job_record *job_ptr)
-{
-	return SLURM_SUCCESS;
-}
-
-int slurm_sched_p_freealloc(struct job_record *job_ptr)
-{
-	return SLURM_SUCCESS;
-}
-
 uint32_t slurm_sched_p_initial_priority(uint32_t last_prio,
 					struct job_record *job_ptr)
 {
@@ -93,24 +78,4 @@ uint32_t slurm_sched_p_initial_priority(uint32_t last_prio,
 		return 0;	/* hold all new jobs */
 
 	return priority_g_set(last_prio, job_ptr);
-}
-
-void slurm_sched_p_job_is_pending(void)
-{
-	/* Empty. */
-}
-
-void slurm_sched_p_partition_change(void)
-{
-	/* Empty. */
-}
-
-void slurm_sched_p_requeue(struct job_record *job_ptr, char *reason)
-{
-	/* Empty. */
-}
-
-char *slurm_sched_p_get_conf(void)
-{
-	return NULL;
 }

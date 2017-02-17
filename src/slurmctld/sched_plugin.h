@@ -43,14 +43,14 @@
 #include "src/slurmctld/slurmctld.h"
 
 /*
- * Initialize the external scheduler adapter.
+ * Initialize the sched plugin.
  *
  * Returns a SLURM errno.
  */
-int slurm_sched_init( void );
+int slurm_sched_init(void);
 
 /*
- * Terminate external scheduler, free memory.
+ * Terminate sched plugin, free memory.
  *
  * Returns a SLURM errno.
  */
@@ -65,48 +65,12 @@ extern int slurm_sched_fini(void);
 /*
  * Perform reconfig, re-read any configuration files
  */
-int slurm_sched_g_reconfig( void );
+int slurm_sched_g_reconfig(void);
 
 /*
- * For passive schedulers, invoke a scheduling pass.
+ * Supply the initial priority for a newly-submitted job.
  */
-int slurm_sched_g_schedule( void );
-
-/*
- * Note the successful allocation of resources to a job.
- */
-int slurm_sched_g_newalloc( struct job_record *job_ptr );
-
-/*
- * Note the successful release of resources to a job.
- */
-int slurm_sched_g_freealloc( struct job_record *job_ptr );
-
-/*
- * Supply the initial SLURM priority for a newly-submitted job.
- */
-uint32_t slurm_sched_g_initial_priority( uint32_t max_prio,
-				       struct job_record *job_ptr );
-
-/*
- * Requeue a job
- */
-void slurm_sched_g_requeue( struct job_record *job_ptr, char *reason );
-
-/*
- * Note that some job is pending.
- */
-void slurm_sched_g_job_is_pending( void );
-
-/*
- * Note that some partition state change happened.
- */
-void slurm_sched_g_partition_change( void );
-
-/*
- * Return any plugin-specific configuration information
- * Caller must xfree return value
- */
-char *slurm_sched_g_get_conf( void );
+uint32_t slurm_sched_g_initial_priority(uint32_t max_prio,
+					struct job_record *job_ptr);
 
 #endif /*__SLURM_CONTROLLER_SCHED_PLUGIN_API_H__*/

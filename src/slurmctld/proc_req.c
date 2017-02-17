@@ -838,10 +838,7 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->salloc_default_command =xstrdup(conf->salloc_default_command);
 	conf_ptr->sbcast_parameters   = xstrdup(conf->sbcast_parameters);
 
-	if (conf->sched_params)
-		conf_ptr->sched_params = xstrdup(conf->sched_params);
-	else
-		conf_ptr->sched_params = slurm_sched_g_get_conf();
+	conf_ptr->sched_params        = xstrdup(conf->sched_params);
 	conf_ptr->sched_logfile       = xstrdup(conf->sched_logfile);
 	conf_ptr->sched_log_level     = conf->sched_log_level;
 	conf_ptr->sched_time_slice    = conf->sched_time_slice;
@@ -3080,7 +3077,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 			msg_to_slurmd(REQUEST_RECONFIGURE);
 		}
 		in_progress = false;
-		slurm_sched_g_partition_change();      /* notify sched plugin */
+		gs_reconfig();
 		unlock_slurmctld(config_write_lock);
 		assoc_mgr_set_missing_uids();
 		start_power_mgr(&slurmctld_config.thread_id_power);

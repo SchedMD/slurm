@@ -81,7 +81,6 @@
 #include "src/slurmctld/preempt.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/reservation.h"
-#include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/slurmctld_plugstack.h"
 
@@ -2499,16 +2498,11 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			else
 				job_ptr->state_reason = WAIT_RESOURCES;
 			xfree(job_ptr->state_desc);
-			if ((error_code == ESLURM_NODES_BUSY) ||
-			    (error_code == ESLURM_POWER_NOT_AVAIL) ||
-			    (error_code == ESLURM_POWER_RESERVED))
-				slurm_sched_g_job_is_pending();
 		}
 		goto cleanup;
 	}
 
 	if (test_only) {	/* set if job not highest priority */
-		slurm_sched_g_job_is_pending();
 		error_code = SLURM_SUCCESS;
 		goto cleanup;
 	}
@@ -2628,7 +2622,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 
 	prolog_slurmctld(job_ptr);
 	reboot_job_nodes(job_ptr);
-	slurm_sched_g_newalloc(job_ptr);
+	gs_job_start(job_ptr);
 	power_g_job_start(job_ptr);
 
 	if (bit_overlap(job_ptr->node_bitmap, power_node_bitmap))

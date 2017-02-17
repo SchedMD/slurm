@@ -3112,7 +3112,6 @@ extern int kill_job_by_front_end_name(char *node_name)
 					 "Job requeued due to failure "
 					 "of node %s",
 					 node_name);
-				slurm_sched_g_requeue(job_ptr, requeue_msg);
 				job_ptr->time_last_active  = now;
 				if (suspended) {
 					job_ptr->end_time =
@@ -3363,7 +3362,6 @@ extern int kill_running_job_by_node_name(char *node_name)
 					 "Job requeued due to failure "
 					 "of node %s",
 					 node_name);
-				slurm_sched_g_requeue(job_ptr, requeue_msg);
 				job_ptr->time_last_active  = now;
 				if (suspended) {
 					job_ptr->end_time =
@@ -4330,7 +4328,6 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	error_code = _select_nodes_parts(job_ptr, no_alloc, NULL, err_msg);
 	if (!test_only) {
 		last_job_update = now;
-		slurm_sched_g_schedule();	/* work for external scheduler */
 	}
 
        /* Moved this (_create_job_array) here to handle when a job
@@ -14178,7 +14175,6 @@ static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
 			return SLURM_SUCCESS;
 	}
 
-	slurm_sched_g_requeue(job_ptr, "Job requeued by user/admin");
 	last_job_update = now;
 
 	/* In the job is in the process of completing

@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
  -- Add a last_sched_eval timestamp to record when a job was last evaluated
     by the main scheduler or backfill.
  -- Add scancel "--hurry" option to avoid staging out any burst buffer data.
+ -- Simplify the sched plugin interface.
 
 * Changes in Slurm 17.02.0rc2
 ==============================

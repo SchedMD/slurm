@@ -50,32 +50,17 @@
 #include "src/slurmctld/slurmctld.h"
 
 typedef struct slurm_sched_ops {
-	int		(*schedule)		( void );
-	int		(*newalloc)		( struct job_record * );
-	int		(*freealloc)		( struct job_record * );
 	uint32_t	(*initial_priority)	( uint32_t,
 						  struct job_record * );
-	void            (*job_is_pending)     	( void );
 	int		(*reconfig)		( void );
-	void            (*partition_change)    	( void );
-	void		(*job_requeue)		( struct job_record *,
-						  char *reason );
-	char *		(*get_conf)		( void );
 } slurm_sched_ops_t;
 
 /*
  * Must be synchronized with slurm_sched_ops_t above.
  */
 static const char *syms[] = {
-	"slurm_sched_p_schedule",
-	"slurm_sched_p_newalloc",
-	"slurm_sched_p_freealloc",
 	"slurm_sched_p_initial_priority",
-	"slurm_sched_p_job_is_pending",
 	"slurm_sched_p_reconfig",
-	"slurm_sched_p_partition_change",
-	"slurm_sched_p_requeue",
-	"slurm_sched_p_get_conf"
 };
 
 static slurm_sched_ops_t ops;
@@ -148,46 +133,6 @@ extern int slurm_sched_g_reconfig(void)
 	return (*(ops.reconfig))();
 }
 
-int slurm_sched_g_schedule(void)
-{
-	if ( slurm_sched_init() < 0 )
-		return SLURM_ERROR;
-
-#if 0
-	/* Must have job write lock and node read lock set here */
-	if (gs_job_scan() != SLURM_SUCCESS)
-		error( "gang scheduler could not rescan jobs" );
-#endif
-
-	return (*(ops.schedule))();
-}
-
-int slurm_sched_g_newalloc(struct job_record *job_ptr)
-{
-	if ( slurm_sched_init() < 0 )
-		return SLURM_ERROR;
-
-	if (gs_job_start( job_ptr ) != SLURM_SUCCESS) {
-		error( "gang scheduler problem starting job %u",
-		       job_ptr->job_id);
-	}
-
-	return (*(ops.newalloc))( job_ptr );
-}
-
-int slurm_sched_g_freealloc(struct job_record *job_ptr)
-{
-	if ( slurm_sched_init() < 0 )
-		return SLURM_ERROR;
-
-	if (gs_job_fini( job_ptr ) != SLURM_SUCCESS) {
-		error( "gang scheduler problem finishing job %u",
-		       job_ptr->job_id);
-	}
-
-	return (*(ops.freealloc))( job_ptr );
-}
-
 uint32_t slurm_sched_g_initial_priority(uint32_t last_prio,
 					struct job_record *job_ptr)
 {
@@ -195,39 +140,4 @@ uint32_t slurm_sched_g_initial_priority(uint32_t last_prio,
 		return SLURM_ERROR;
 
 	return (*(ops.initial_priority))( last_prio, job_ptr );
-}
-
-void slurm_sched_g_job_is_pending(void)
-{
-	if ( slurm_sched_init() < 0 )
-		return;
-
-	(*(ops.job_is_pending))();
-}
-
-void slurm_sched_g_partition_change(void)
-{
-	if ( slurm_sched_init() < 0 )
-		return;
-
-	if (gs_reconfig() != SLURM_SUCCESS)
-		error( "cannot reconfigure gang scheduler" );
-
-	(*(ops.partition_change))();
-}
-
-void slurm_sched_g_requeue(struct job_record *job_ptr, char *reason)
-{
-        if ( slurm_sched_init() < 0 )
-                return;
-
-        (*(ops.job_requeue))( job_ptr, reason );
-}
-
-char *slurm_sched_g_get_conf(void)
-{
-        if ( slurm_sched_init() < 0 )
-                return NULL;
-
-        return (*(ops.get_conf))( );
 }
