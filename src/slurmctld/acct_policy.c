@@ -763,7 +763,7 @@ static void _qos_alter_job(struct job_record *job_ptr,
  * IN - qos_tres_array - TRES limits QOS has imposed already
  * IN - acct_policy_limit_set_array - limits that have been overridden
  *                                    by an admin
- * IN strick_checking - If a limit needs to be enforced now or not.
+ * IN strict_checking - If a limit needs to be enforced now or not.
  * IN update_call - If this is an update or a create call
  * IN max_limit - Limits are for MAX else, the limits are MIN.
  *
@@ -887,7 +887,7 @@ static int _validate_tres_usage_limits_for_assoc(
  *                               if a new limit is found the limit is filled in.
  * IN - acct_policy_limit_set_array - limits that have been overridden
  *                                    by an admin
- * IN strick_checking - If a limit needs to be enforced now or not.
+ * IN strict_checking - If a limit needs to be enforced now or not.
  * IN max_limit - Limits are for MAX else, the limits are MIN.
  *
  * RET - True if no limit is violated, false otherwise with tres_pos
@@ -1024,7 +1024,7 @@ static bool _validate_time_limit(uint32_t *time_limit_in,
  * OUT - out_max_tres_array - Max TRES limits as set by the various TRES
  * OUT - limit_set_time - set if the time_limit was set by a limit QOS/Assoc or
  *                        otherwise.
- * IN strick_checking - If a limit needs to be enforced now or not.
+ * IN strict_checking - If a limit needs to be enforced now or not.
  *
  * RET - True if no limit is violated, false otherwise with tres_pos
  * being set to the position of the failed limit.
