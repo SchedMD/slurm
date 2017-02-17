@@ -55,6 +55,13 @@ enum {
 	ACCT_POLICY_JOB_FINI
 };
 
+typedef enum {
+	TRES_USAGE_OKAY,
+	TRES_USAGE_CUR_EXCEEDS_LIMIT,
+	TRES_USAGE_REQ_EXCEEDS_LIMIT,
+	TRES_USAGE_REQ_NOT_SAFE_WITH_USAGE
+} tres_usage_t;
+
 static int _get_tres_state_reason(int tres_pos, int unk_reason)
 {
 	switch (tres_pos) {
@@ -1725,8 +1732,8 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 	uint64_t tres_run_mins[slurmctld_tres_cnt];
 	slurmdb_used_limits_t *used_limits = NULL, *used_limits_a = NULL;
 	bool safe_limits = false;
-	int rc = true;
-	int i, tres_pos = 0;
+	int rc = true, tres_pos = 0, i;
+	tres_usage_t tres_usage;
 	slurmdb_assoc_rec_t *assoc_ptr = job_ptr->assoc_ptr;
 
 	if (!qos_ptr || !qos_out_ptr || !assoc_ptr)
@@ -1754,13 +1761,13 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 	used_limits = _get_user_used_limits(&qos_ptr->usage->user_limit_list,
 					    job_ptr->user_id);
 
-	i = _validate_tres_usage_limits_for_qos(
+	tres_usage = _validate_tres_usage_limits_for_qos(
 		&tres_pos, qos_ptr->grp_tres_mins_ctld,
 		qos_out_ptr->grp_tres_mins_ctld, job_tres_time_limit,
 		tres_usage_mins, tres_run_mins, job_ptr->limit_set.tres,
 		safe_limits);
-	switch (i) {
-	case 1:
+	switch (tres_usage) {
+	case TRES_USAGE_CUR_EXCEEDS_LIMIT:
 		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = _get_tres_state_reason(
 			tres_pos, WAIT_QOS_GRP_UNK_MIN);
@@ -1775,7 +1782,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		rc = false;
 		goto end_it;
 		break;
-	case 2:
+	case TRES_USAGE_REQ_EXCEEDS_LIMIT:
 		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = _get_tres_state_reason(
 			tres_pos, WAIT_QOS_GRP_UNK_MIN);
@@ -1791,7 +1798,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		rc = false;
 		goto end_it;
 		break;
-	case 3:
+	case TRES_USAGE_REQ_NOT_SAFE_WITH_USAGE:
 		/*
 		 * If we're using safe limits start
 		 * the job only if there are
@@ -1821,7 +1828,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		rc = false;
 		goto end_it;
 		break;
-	default:
+	case TRES_USAGE_OKAY:
 		/* all good */
 		break;
 	}
@@ -1831,16 +1838,16 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 	 * cpu requirement has exceeded the limit for all CPUs
 	 * usable by the QOS
 	 */
-	i = _validate_tres_usage_limits_for_qos(
+	tres_usage = _validate_tres_usage_limits_for_qos(
 		&tres_pos,
 		qos_ptr->grp_tres_ctld,	qos_out_ptr->grp_tres_ctld,
 		tres_req_cnt, qos_ptr->usage->grp_used_tres,
 		NULL, job_ptr->limit_set.tres, 1);
-	switch (i) {
-	case 1:
+	switch (tres_usage) {
+	case TRES_USAGE_CUR_EXCEEDS_LIMIT:
 		/* not possible because the curr_usage sent in is NULL */
 		break;
-	case 2:
+	case TRES_USAGE_REQ_EXCEEDS_LIMIT:
 		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = _get_tres_state_reason(
 			tres_pos, WAIT_QOS_GRP_UNK);
@@ -1855,7 +1862,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		rc = false;
 		goto end_it;
 		break;
-	case 3:
+	case TRES_USAGE_REQ_NOT_SAFE_WITH_USAGE:
 		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = _get_tres_state_reason(
 			tres_pos, WAIT_QOS_GRP_UNK);
@@ -1872,23 +1879,23 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		       tres_req_cnt[tres_pos]);
 		rc = false;
 		goto end_it;
-	default:
+	case TRES_USAGE_OKAY:
 		/* all good */
 		break;
 	}
 
 	/* we don't need to check grp_jobs here */
 
-	i = _validate_tres_usage_limits_for_qos(
+	tres_usage = _validate_tres_usage_limits_for_qos(
 		&tres_pos,
 		qos_ptr->grp_tres_run_mins_ctld,
 		qos_out_ptr->grp_tres_run_mins_ctld,
 		job_tres_time_limit, tres_run_mins, NULL, NULL, 1);
-	switch (i) {
-	case 1:
+	switch (tres_usage) {
+	case TRES_USAGE_CUR_EXCEEDS_LIMIT:
 		/* not possible because the curr_usage sent in is NULL */
 		break;
-	case 2:
+	case TRES_USAGE_REQ_EXCEEDS_LIMIT:
 		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = _get_tres_state_reason(
 			tres_pos, WAIT_QOS_GRP_UNK_RUN_MIN);
@@ -1903,7 +1910,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		rc = false;
 		goto end_it;
 		break;
-	case 3:
+	case TRES_USAGE_REQ_NOT_SAFE_WITH_USAGE:
 		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = _get_tres_state_reason(
 			tres_pos, WAIT_QOS_GRP_UNK_RUN_MIN);
@@ -1920,7 +1927,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		rc = false;
 		goto end_it;
 		break;
-	default:
+	case TRES_USAGE_OKAY:
 		/* all good */
 		break;
 	}
@@ -2030,16 +2037,16 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		goto end_it;
 	}
 
-	i = _validate_tres_usage_limits_for_qos(
+	tres_usage = _validate_tres_usage_limits_for_qos(
 		&tres_pos,
 		qos_ptr->max_tres_pa_ctld, qos_out_ptr->max_tres_pa_ctld,
 		tres_req_cnt, used_limits_a->tres,
 		NULL, job_ptr->limit_set.tres, 1);
-	switch (i) {
-	case 1:
+	switch (tres_usage) {
+	case TRES_USAGE_CUR_EXCEEDS_LIMIT:
 		/* not possible because the curr_usage sent in is NULL */
 		break;
-	case 2:
+	case TRES_USAGE_REQ_EXCEEDS_LIMIT:
 		/* Hold the job if it exceeds the per-acct
 		 * TRES limit for the given QOS
 		 */
@@ -2059,7 +2066,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		rc = false;
 		goto end_it;
 		break;
-	case 3:
+	case TRES_USAGE_REQ_NOT_SAFE_WITH_USAGE:
 		/* Hold the job if the user has exceeded
 		 * the QOS per-user TRES limit with their
 		 * current usage */
@@ -2080,21 +2087,21 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		       tres_req_cnt[tres_pos]);
 		rc = false;
 		goto end_it;
-	default:
+	case TRES_USAGE_OKAY:
 		/* all good */
 		break;
 	}
 
-	i = _validate_tres_usage_limits_for_qos(
+	tres_usage = _validate_tres_usage_limits_for_qos(
 		&tres_pos,
 		qos_ptr->max_tres_pu_ctld, qos_out_ptr->max_tres_pu_ctld,
 		tres_req_cnt, used_limits->tres,
 		NULL, job_ptr->limit_set.tres, 1);
-	switch (i) {
-	case 1:
+	switch (tres_usage) {
+	case TRES_USAGE_CUR_EXCEEDS_LIMIT:
 		/* not possible because the curr_usage sent in is NULL */
 		break;
-	case 2:
+	case TRES_USAGE_REQ_EXCEEDS_LIMIT:
 		/* Hold the job if it exceeds the per-user
 		 * TRES limit for the given QOS
 		 */
@@ -2113,7 +2120,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		rc = false;
 		goto end_it;
 		break;
-	case 3:
+	case TRES_USAGE_REQ_NOT_SAFE_WITH_USAGE:
 		/* Hold the job if the user has exceeded
 		 * the QOS per-user TRES limit with their
 		 * current usage */
@@ -2133,7 +2140,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		       tres_req_cnt[tres_pos]);
 		rc = false;
 		goto end_it;
-	default:
+	case TRES_USAGE_OKAY:
 		/* all good */
 		break;
 	}
@@ -2161,6 +2168,7 @@ static int _qos_job_time_out(struct job_record *job_ptr,
 	uint64_t tres_usage_mins[slurmctld_tres_cnt];
 	uint32_t wall_mins;
 	int rc = true, tres_pos = 0, i;
+	tres_usage_t tres_usage;
 	time_t now = time(NULL);
 
 	if (!qos_ptr || !qos_out_ptr)
@@ -2179,12 +2187,12 @@ static int _qos_job_time_out(struct job_record *job_ptr,
 			(uint64_t)(qos_ptr->usage->usage_tres_raw[i] / 60.0);
 	wall_mins = qos_ptr->usage->grp_used_wall / 60;
 
-	i = _validate_tres_usage_limits_for_qos(
+	tres_usage = _validate_tres_usage_limits_for_qos(
 		&tres_pos, qos_ptr->grp_tres_mins_ctld,
 		qos_out_ptr->grp_tres_mins_ctld, NULL,
 		NULL, tres_usage_mins, NULL, 0);
-	switch (i) {
-	case 1:
+	switch (tres_usage) {
+	case TRES_USAGE_CUR_EXCEEDS_LIMIT:
 		last_job_update = now;
 		info("Job %u timed out, "
 		     "the job is at or exceeds QOS %s's "
@@ -2199,11 +2207,11 @@ static int _qos_job_time_out(struct job_record *job_ptr,
 		rc = false;
 		goto end_it;
 		break;
-	case 2:
+	case TRES_USAGE_REQ_EXCEEDS_LIMIT:
 		/* not possible safe_limits is 0 */
-	case 3:
+	case TRES_USAGE_REQ_NOT_SAFE_WITH_USAGE:
 		/* not possible safe_limits is 0 */
-	default:
+	case TRES_USAGE_OKAY:
 		/* all good */
 		break;
 	}
@@ -2227,15 +2235,15 @@ static int _qos_job_time_out(struct job_record *job_ptr,
 		}
 	}
 
-	i = _validate_tres_usage_limits_for_qos(
+	tres_usage = _validate_tres_usage_limits_for_qos(
 		&tres_pos, qos_ptr->max_tres_mins_pj_ctld,
 		qos_out_ptr->max_tres_mins_pj_ctld, job_tres_usage_mins,
 		NULL, NULL, NULL, 1);
-	switch (i) {
-	case 1:
+	switch (tres_usage) {
+	case TRES_USAGE_CUR_EXCEEDS_LIMIT:
 		/* not possible curr_usage is NULL */
 		break;
-	case 2:
+	case TRES_USAGE_REQ_EXCEEDS_LIMIT:
 		last_job_update = now;
 		info("Job %u timed out, "
 		     "the job is at or exceeds QOS %s's "
@@ -2249,9 +2257,9 @@ static int _qos_job_time_out(struct job_record *job_ptr,
 		rc = false;
 		goto end_it;
 		break;
-	case 3:
+	case TRES_USAGE_REQ_NOT_SAFE_WITH_USAGE:
 		/* not possible tres_usage is NULL */
-	default:
+	case TRES_USAGE_OKAY:
 		/* all good */
 		break;
 	}
@@ -2961,7 +2969,8 @@ extern bool acct_policy_job_runnable_post_select(
 	uint32_t time_limit;
 	bool rc = true;
 	bool safe_limits = false;
-	int i, tres_pos;
+	int i, tres_pos = 0;
+	tres_usage_t tres_usage;
 	int parent = 0; /* flag to tell us if we are looking at the
 			 * parent or not
 			 */
@@ -3056,14 +3065,14 @@ extern bool acct_policy_job_runnable_post_select(
 		 * If the association has a GrpCPUMins limit set (and there
 		 * is no QOS with GrpCPUMins set) we may hold the job
 		 */
-		i = _validate_tres_usage_limits_for_assoc(
+		tres_usage = _validate_tres_usage_limits_for_assoc(
 			&tres_pos, assoc_ptr->grp_tres_mins_ctld,
 			qos_rec.grp_tres_mins_ctld,
 			job_tres_time_limit, tres_usage_mins,
 			tres_run_mins, job_ptr->limit_set.tres,
 			safe_limits);
-		switch (i) {
-		case 1:
+		switch (tres_usage) {
+		case TRES_USAGE_CUR_EXCEEDS_LIMIT:
 			xfree(job_ptr->state_desc);
 			job_ptr->state_reason = _get_tres_state_reason(
 				tres_pos, WAIT_ASSOC_GRP_UNK_MIN);
@@ -3080,7 +3089,7 @@ extern bool acct_policy_job_runnable_post_select(
 			rc = false;
 			goto end_it;
 			break;
-		case 2:
+		case TRES_USAGE_REQ_EXCEEDS_LIMIT:
 			xfree(job_ptr->state_desc);
 			job_ptr->state_reason = _get_tres_state_reason(
 				tres_pos, WAIT_ASSOC_GRP_UNK_MIN);
@@ -3098,7 +3107,7 @@ extern bool acct_policy_job_runnable_post_select(
 			rc = false;
 			goto end_it;
 			break;
-		case 3:
+		case TRES_USAGE_REQ_NOT_SAFE_WITH_USAGE:
 			/*
 			 * If we're using safe limits start
 			 * the job only if there are
@@ -3129,22 +3138,22 @@ extern bool acct_policy_job_runnable_post_select(
 			rc = false;
 			goto end_it;
 			break;
-		default:
+		case TRES_USAGE_OKAY:
 			/* all good */
 			break;
 		}
 
 
-		i = _validate_tres_usage_limits_for_assoc(
+		tres_usage = _validate_tres_usage_limits_for_assoc(
 			&tres_pos,
 			assoc_ptr->grp_tres_ctld, qos_rec.grp_tres_ctld,
 			tres_req_cnt, assoc_ptr->usage->grp_used_tres,
 			NULL, job_ptr->limit_set.tres, 1);
-		switch (i) {
-		case 1:
+		switch (tres_usage) {
+		case TRES_USAGE_CUR_EXCEEDS_LIMIT:
 			/* not possible because the curr_usage sent in is NULL*/
 			break;
-		case 2:
+		case TRES_USAGE_REQ_EXCEEDS_LIMIT:
 			xfree(job_ptr->state_desc);
 			job_ptr->state_reason = _get_tres_state_reason(
 				tres_pos, WAIT_ASSOC_GRP_UNK);
@@ -3161,7 +3170,7 @@ extern bool acct_policy_job_runnable_post_select(
 			rc = false;
 			goto end_it;
 			break;
-		case 3:
+		case TRES_USAGE_REQ_NOT_SAFE_WITH_USAGE:
 			xfree(job_ptr->state_desc);
 			job_ptr->state_reason = _get_tres_state_reason(
 				tres_pos, WAIT_ASSOC_GRP_UNK);
@@ -3180,23 +3189,23 @@ extern bool acct_policy_job_runnable_post_select(
 			       tres_req_cnt[tres_pos]);
 			rc = false;
 			goto end_it;
-		default:
+		case TRES_USAGE_OKAY:
 			/* all good */
 			break;
 		}
 
 		/* we don't need to check grp_jobs here */
 
-		i = _validate_tres_usage_limits_for_assoc(
+		tres_usage = _validate_tres_usage_limits_for_assoc(
 			&tres_pos,
 			assoc_ptr->grp_tres_run_mins_ctld,
 			qos_rec.grp_tres_run_mins_ctld,
 			job_tres_time_limit, tres_run_mins, NULL, NULL, 1);
-		switch (i) {
-		case 1:
+		switch (tres_usage) {
+		case TRES_USAGE_CUR_EXCEEDS_LIMIT:
 			/* not possible because the curr_usage sent in is NULL*/
 			break;
-		case 2:
+		case TRES_USAGE_REQ_EXCEEDS_LIMIT:
 			xfree(job_ptr->state_desc);
 			job_ptr->state_reason = _get_tres_state_reason(
 				tres_pos, WAIT_ASSOC_GRP_UNK_RUN_MIN);
@@ -3213,7 +3222,7 @@ extern bool acct_policy_job_runnable_post_select(
 			rc = false;
 			goto end_it;
 			break;
-		case 3:
+		case TRES_USAGE_REQ_NOT_SAFE_WITH_USAGE:
 			xfree(job_ptr->state_desc);
 			job_ptr->state_reason = _get_tres_state_reason(
 				tres_pos, WAIT_ASSOC_GRP_UNK_RUN_MIN);
@@ -3233,7 +3242,7 @@ extern bool acct_policy_job_runnable_post_select(
 			rc = false;
 			goto end_it;
 			break;
-		default:
+		case TRES_USAGE_OKAY:
 			/* all good */
 			break;
 		}
@@ -3551,7 +3560,8 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
 	time_t now;
-	int i, tres_pos;
+	int i, tres_pos = 0;
+	tres_usage_t tres_usage;
 
 	/* Now see if we are enforcing limits.  If Safe is set then
 	 * return false as well since we are being safe if the limit
@@ -3607,12 +3617,12 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 					   / 60.0);
 		wall_mins = assoc->usage->grp_used_wall / 60;
 
-		i = _validate_tres_usage_limits_for_assoc(
+		tres_usage = _validate_tres_usage_limits_for_assoc(
 			&tres_pos, assoc->grp_tres_mins_ctld,
 			qos_rec.grp_tres_mins_ctld, NULL,
 			NULL, tres_usage_mins, NULL, 0);
-		switch (i) {
-		case 1:
+		switch (tres_usage) {
+		case TRES_USAGE_CUR_EXCEEDS_LIMIT:
 			last_job_update = now;
 			info("Job %u timed out, "
 			     "the job is at or exceeds assoc %u(%s/%s/%s) "
@@ -3627,11 +3637,11 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 			job_ptr->state_reason = FAIL_TIMEOUT;
 			goto job_failed;
 			break;
-		case 2:
+		case TRES_USAGE_REQ_EXCEEDS_LIMIT:
 			/* not possible safe_limits is 0 */
-		case 3:
+		case TRES_USAGE_REQ_NOT_SAFE_WITH_USAGE:
 			/* not possible safe_limits is 0 */
-		default:
+		case TRES_USAGE_OKAY:
 			/* all good */
 			break;
 		}
@@ -3650,15 +3660,15 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 			break;
 		}
 
-		i = _validate_tres_usage_limits_for_assoc(
+		tres_usage = _validate_tres_usage_limits_for_assoc(
 			&tres_pos, assoc->max_tres_mins_ctld,
 			qos_rec.max_tres_mins_pj_ctld, job_tres_usage_mins,
 			NULL, NULL, NULL, 1);
-		switch (i) {
-		case 1:
+		switch (tres_usage) {
+		case TRES_USAGE_CUR_EXCEEDS_LIMIT:
 			/* not possible curr_usage is NULL */
 			break;
-		case 2:
+		case TRES_USAGE_REQ_EXCEEDS_LIMIT:
 			last_job_update = now;
 			info("Job %u timed out, "
 			     "the job is at or exceeds assoc %u(%s/%s/%s) "
@@ -3673,9 +3683,9 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 			job_ptr->state_reason = FAIL_TIMEOUT;
 			goto job_failed;
 			break;
-		case 3:
+		case TRES_USAGE_REQ_NOT_SAFE_WITH_USAGE:
 			/* not possible tres_usage is NULL */
-		default:
+		case TRES_USAGE_OKAY:
 			/* all good */
 			break;
 		}
