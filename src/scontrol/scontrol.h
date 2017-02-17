@@ -145,7 +145,7 @@ extern void	scontrol_requeue_hold(uint32_t state_flag, char *job_str);
 extern void	scontrol_suspend(char *op, char *job_id_str);
 extern void	scontrol_top_job(char *job_str);
 extern int	scontrol_update_front_end (int argc, char **argv);
-extern int	scontrol_update_job (int argc, char **argv);
+extern int	scontrol_update_job (int argc, char **argv, uint32_t uid);
 extern int	scontrol_update_layout (int argc, char **argv);
 extern int	scontrol_update_node (int argc, char **argv);
 extern int	scontrol_update_part (int argc, char **argv);

@@ -3657,7 +3657,7 @@ send_msg:
  */
 static void _slurm_rpc_update_job(slurm_msg_t * msg)
 {
-	int error_code;
+	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
 	job_desc_msg_t *job_desc_msg = (job_desc_msg_t *) msg->data;
 	/* Locks: Write job, read node, read partition */
@@ -3668,18 +3668,38 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_UPDATE_JOB from uid=%d", uid);
+	/* job_desc_msg->user_id is set when the uid has been overriden with
+	 * -u <uid> or --uid=<uid>. NO_VAL is default. Verify the request has
+	 * come from an admin */
+	if (job_desc_msg->user_id != NO_VAL) {
+		if (!validate_super_user(uid)) {
+			error_code = ESLURM_USER_ID_MISSING;
+			error("Security violation, REQUEST_UPDATE_JOB RPC from uid=%d",
+			       uid);
+			/* Send back the error message for this case because
+			 * update_job also sends back an error message */
+			slurm_send_rc_msg(msg, error_code);
+		} else {
+			/* override uid allowed */
+			uid = job_desc_msg->user_id;
+		}
+	}
 
-	/* do RPC call */
-	dump_job_desc(job_desc_msg);
-	/* Insure everything that may be written to database is lower case */
-	xstrtolower(job_desc_msg->account);
-	xstrtolower(job_desc_msg->wckey);
-	lock_slurmctld(job_write_lock);
-	if (job_desc_msg->job_id_str)
-		error_code = update_job_str(msg, uid);
-	else
-		error_code = update_job(msg, uid);
-	unlock_slurmctld(job_write_lock);
+	if (error_code == SLURM_SUCCESS) {
+		/* do RPC call */
+		dump_job_desc(job_desc_msg);
+		/* Insure everything that may be written to database is lower case */
+		xstrtolower(job_desc_msg->account);
+		xstrtolower(job_desc_msg->wckey);
+		lock_slurmctld(job_write_lock);
+		/* Use UID provided by scontrol. May be overridden with -u <uid> or
+		 * --uid=<uid> */
+		if (job_desc_msg->job_id_str)
+			error_code = update_job_str(msg, uid);
+		else
+			error_code = update_job(msg, uid);
+		unlock_slurmctld(job_write_lock);
+	}
 	END_TIMER2("_slurm_rpc_update_job");
 
 	/* return result */

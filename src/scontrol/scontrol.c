@@ -44,6 +44,7 @@
 #include "scontrol.h"
 #include "src/plugins/select/bluegene/bg_enums.h"
 #include "src/common/proc_args.h"
+#include "src/common/uid.h"
 
 #define OPT_LONG_HIDE   0x102
 
@@ -58,6 +59,7 @@ int one_liner = 0;	/* one record per line if =1 */
 int quiet_flag = 0;	/* quiet=1, verbose=-1, normal=0 */
 int verbosity = 0;	/* count of "-v" options */
 uint32_t cluster_flags; /* what type of cluster are we talking to */
+uint32_t uid = NO_VAL;	/* run scontrol as user <uid> */
 
 block_info_msg_t *old_block_info_ptr = NULL;
 front_end_info_msg_t *old_front_end_info_ptr = NULL;
@@ -103,6 +105,7 @@ int main(int argc, char **argv)
 		{"hide",     0, 0, OPT_LONG_HIDE},
 		{"oneliner", 0, 0, 'o'},
 		{"quiet",    0, 0, 'Q'},
+		{"uid",	     1, 0, 'u'},
 		{"usage",    0, 0, 'h'},
 		{"verbose",  0, 0, 'v'},
 		{"version",  0, 0, 'V'},
@@ -127,7 +130,7 @@ int main(int argc, char **argv)
 		if ((optind < argc) &&
 		    !strncasecmp(argv[optind], "setdebugflags", 8))
 			break;	/* avoid parsing "-<flagname>" as option */
-		if ((opt_char = getopt_long(argc, argv, "adhM:oQvV",
+		if ((opt_char = getopt_long(argc, argv, "adhM:oQu:vV",
 					    long_options, &option_index)) == -1)
 			break;
 		switch (opt_char) {
@@ -166,6 +169,12 @@ int main(int argc, char **argv)
 			break;
 		case (int)'Q':
 			quiet_flag = 1;
+			break;
+		case (int)'u':
+			if (uid_from_string(optarg, &uid) < 0) {
+				error("--uid=\"%s\" invalid", optarg);
+				exit(exit_code);
+			}
 			break;
 		case (int)'v':
 			quiet_flag = -1;
@@ -1667,7 +1676,7 @@ static void _update_it(int argc, char **argv)
 	 * aren't any other duplicate tags.  */
 
 	if (job_tag)
-		jerror_code = scontrol_update_job (argc, argv);
+		jerror_code = scontrol_update_job (argc, argv, uid);
 	else if (step_tag)
 		error_code = scontrol_update_step (argc, argv);
 	else if (res_tag)
@@ -1918,6 +1927,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
              NOTE: SlurmDBD must be up.                                    \n\
      -o or --oneliner: equivalent to \"oneliner\" command                  \n\
      -Q or --quiet: equivalent to \"quiet\" command                        \n\
+     -u or --uid: Update job as user <uid> instead of the invoking user id.\n\
      -v or --verbose: equivalent to \"verbose\" command                    \n\
      -V or --version: equivalent to \"version\" command                    \n\
 									   \n\
