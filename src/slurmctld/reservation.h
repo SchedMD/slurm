@@ -204,22 +204,13 @@ extern int job_test_resv_now(struct job_record *job_ptr);
  *	reserved resources. Don't go below job's time_min value. */
 extern void job_time_adj_resv(struct job_record *job_ptr);
 
-/* Begin scan of all jobs for valid reservations */
-extern void begin_job_resv_check(void);
-
-/* Test a particular job for valid reservation
- *
- * RET ESLURM_INVALID_TIME_VALUE if reservation is terminated
- *     SLURM_SUCCESS if reservation is still valid
- */
-extern int job_resv_check(struct job_record *job_ptr);
-
-/* Finish scan of all jobs for valid reservations
+/*
+ * Scan all jobs for valid reservations
  *
  * Purge vestigial reservation records.
  * Advance daily or weekly reservations that are no longer
  *	being actively used.
  */
-extern void fini_job_resv_check(void);
+extern void job_resv_check(void);
 
 #endif /* !_RESERVATION_H */

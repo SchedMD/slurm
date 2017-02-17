@@ -41,6 +41,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix configure to not require C++
  -- job_submit/lua - Remove access to slurmctld internal reservation fields of
     job_pend_cnt and job_run_cnt.
+ -- Prevent job_time_limit enforcement from blocking other internal operations
+    if a large number of jobs need to be cancelled.
 
 * Changes in Slurm 17.02.0rc1
 ==============================
