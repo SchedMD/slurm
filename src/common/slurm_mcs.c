@@ -211,7 +211,8 @@ extern int slurm_mcs_get_enforced(void)
 
 extern int slurm_mcs_get_select(struct job_record *job_ptr)
 {
-	if ((select_enforced == 1) || (job_ptr->details &&
+	if ((select_enforced == 1) || ((select_enforced == 0) &&
+	    job_ptr->details &&
 	    (job_ptr->details->whole_node == WHOLE_NODE_MCS)))
 		return 1;
 	else
