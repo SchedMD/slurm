@@ -51,8 +51,8 @@ START_TEST(pack_1702_account_rec)
 	pack_ar->description           = xstrdup("default_acct");
 	pack_ar->name                  = xstrdup("default_name");
 	pack_ar->organization          = xstrdup("default_organization");
-	pack_ar->assoc_list            = list_create(NULL);
-	pack_ar->coordinators          = list_create(NULL);
+	pack_ar->assoc_list            = list_create(slurmdb_destroy_assoc_rec);
+	pack_ar->coordinators          = list_create(slurmdb_destroy_coord_rec);
 	slurmdb_coord_rec_t * j = xmalloc(sizeof(slurmdb_coord_rec_t));
 	slurmdb_assoc_rec_t * k = xmalloc(sizeof(slurmdb_assoc_rec_t));
 
@@ -86,9 +86,6 @@ START_TEST(pack_1702_account_rec)
 	ck_assert(bar.lft                == aar.lft);
 
 	free_buf(buf);
-	xfree(j->name);
-	xfree(j);
-	xfree(k);
 	slurmdb_destroy_account_rec(pack_ar);
 	slurmdb_destroy_account_rec(unpack_ar);
 }
