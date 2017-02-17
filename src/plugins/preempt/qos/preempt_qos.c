@@ -57,28 +57,19 @@ const uint32_t	plugin_version	= SLURM_VERSION_NUMBER;
 static uint32_t _gen_job_prio(struct job_record *job_ptr);
 static bool _qos_preemptable(struct job_record *preemptee,
 			     struct job_record *preemptor);
-static int  _sort_by_prio (void *x, void *y);
+static int _sort_by_prio (void *x, void *y);
 
-/**************************************************************************/
-/*  TAG(                              init                              ) */
-/**************************************************************************/
-extern int init( void )
+extern int init(void)
 {
 	verbose("preempt/qos loaded");
 	return SLURM_SUCCESS;
 }
 
-/**************************************************************************/
-/*  TAG(                              fini                              ) */
-/**************************************************************************/
-extern void fini( void )
+extern void fini(void)
 {
 	/* Empty. */
 }
 
-/**************************************************************************/
-/* TAG(                 find_preemptable_jobs                           ) */
-/**************************************************************************/
 extern List find_preemptable_jobs(struct job_record *job_ptr)
 {
 	ListIterator job_iterator;
@@ -174,7 +165,7 @@ static uint32_t _gen_job_prio(struct job_record *job_ptr)
 	return job_prio;
 }
 
-static int _sort_by_prio (void *x, void *y)
+static int _sort_by_prio(void *x, void *y)
 {
 	int rc;
 	uint32_t job_prio1, job_prio2;
@@ -194,9 +185,6 @@ static int _sort_by_prio (void *x, void *y)
 	return rc;
 }
 
-/**************************************************************************/
-/* TAG(                 job_preempt_mode                                ) */
-/**************************************************************************/
 extern uint16_t job_preempt_mode(struct job_record *job_ptr)
 {
 	if (job_ptr->qos_ptr &&
@@ -206,17 +194,12 @@ extern uint16_t job_preempt_mode(struct job_record *job_ptr)
 	return (slurm_get_preempt_mode() & (~PREEMPT_MODE_GANG));
 }
 
-/**************************************************************************/
-/* TAG(                 preemption_enabled                              ) */
-/**************************************************************************/
 extern bool preemption_enabled(void)
 {
 	return (slurm_get_preempt_mode() != PREEMPT_MODE_OFF);
 }
 
-/***************************************************************************/
 /* Return true if the preemptor can preempt the preemptee, otherwise false */
-/***************************************************************************/
 extern bool job_preempt_check(job_queue_rec_t *preemptor,
 			      job_queue_rec_t *preemptee)
 {

@@ -43,6 +43,7 @@ documents those changes that are of interest to users and administrators.
     job_pend_cnt and job_run_cnt.
  -- Prevent job_time_limit enforcement from blocking other internal operations
     if a large number of jobs need to be cancelled.
+ -- Add 'preempt_youngest_order' option to preempt/partition_prio plugin.
 
 * Changes in Slurm 17.02.0rc1
 ==============================

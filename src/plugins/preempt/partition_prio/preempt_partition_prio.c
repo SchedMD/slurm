@@ -46,6 +46,7 @@
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/plugin.h"
+#include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/job_scheduler.h"
 
@@ -54,28 +55,27 @@ const char	plugin_type[]	= "preempt/partition_prio";
 const uint32_t	plugin_version	= SLURM_VERSION_NUMBER;
 
 static uint32_t _gen_job_prio(struct job_record *job_ptr);
-static int  _sort_by_prio (void *x, void *y);
+static int _sort_by_prio(void *x, void *y);
+static int _sort_by_youngest(void *x, void *y);
 
-/**************************************************************************/
-/*  TAG(                              init                              ) */
-/**************************************************************************/
-extern int init( void )
+static bool youngest_order = false;
+
+extern int init(void)
 {
+	char *sched_params;
 	verbose("preempt/partition_prio loaded");
+	sched_params = slurm_get_sched_params();
+	if (xstrcasestr(sched_params, "preempt_youngest_order"))
+		youngest_order = true;
+	xfree(sched_params);
 	return SLURM_SUCCESS;
 }
 
-/**************************************************************************/
-/*  TAG(                              fini                              ) */
-/**************************************************************************/
-extern void fini( void )
+extern void fini(void)
 {
 	/* Empty. */
 }
 
-/**************************************************************************/
-/* TAG(                 find_preemptable_jobs                           ) */
-/**************************************************************************/
 extern List find_preemptable_jobs(struct job_record *job_ptr)
 {
 	ListIterator job_iterator;
@@ -129,8 +129,11 @@ extern List find_preemptable_jobs(struct job_record *job_ptr)
 	}
 	list_iterator_destroy(job_iterator);
 
-	if (preemptee_job_list)
+	if (preemptee_job_list && youngest_order)
+		list_sort(preemptee_job_list, _sort_by_youngest);
+	else if (preemptee_job_list)
 		list_sort(preemptee_job_list, _sort_by_prio);
+
 	return preemptee_job_list;
 }
 
@@ -155,7 +158,7 @@ static uint32_t _gen_job_prio(struct job_record *job_ptr)
 	return job_prio;
 }
 
-static int _sort_by_prio (void *x, void *y)
+static int _sort_by_prio(void *x, void *y)
 {
 	int rc;
 	uint32_t job_prio1, job_prio2;
@@ -175,9 +178,22 @@ static int _sort_by_prio (void *x, void *y)
 	return rc;
 }
 
-/**************************************************************************/
-/* TAG(                 job_preempt_mode                                ) */
-/**************************************************************************/
+static int _sort_by_youngest(void *x, void *y)
+{
+	int rc;
+	struct job_record *j1 = (struct job_record *) x;
+	struct job_record *j2 = (struct job_record *) y;
+
+	if (j1->start_time < j2->start_time)
+		rc = 1;
+	else if (j1->start_time > j2->start_time)
+		rc = -1;
+	else
+		rc = 0;
+
+	return rc;
+}
+
 extern uint16_t job_preempt_mode(struct job_record *job_ptr)
 {
 	struct part_record *part_ptr = job_ptr->part_ptr;
@@ -191,17 +207,12 @@ extern uint16_t job_preempt_mode(struct job_record *job_ptr)
 	return (slurm_get_preempt_mode() & (~PREEMPT_MODE_GANG));
 }
 
-/**************************************************************************/
-/* TAG(                 preemption_enabled                              ) */
-/**************************************************************************/
 extern bool preemption_enabled(void)
 {
 	return (slurm_get_preempt_mode() != PREEMPT_MODE_OFF);
 }
 
-/***************************************************************************/
 /* Return true if the preemptor can preempt the preemptee, otherwise false */
-/***************************************************************************/
 extern bool job_preempt_check(job_queue_rec_t *preemptor,
 			      job_queue_rec_t *preemptee)
 {
