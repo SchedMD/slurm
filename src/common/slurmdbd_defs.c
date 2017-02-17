@@ -440,6 +440,7 @@ static void _open_slurmdbd_conn(bool need_db)
 	}
 	slurmdbd_shutdown = 0;
 	slurmdbd_conn->shutdown = &slurmdbd_shutdown;
+	slurmdbd_conn->version  = SLURM_PROTOCOL_VERSION;
 
 	xfree(slurmdbd_conn->rem_host);
 	slurmdbd_conn->rem_host = slurm_get_accounting_storage_host();
