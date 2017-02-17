@@ -1732,7 +1732,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 	uint64_t tres_run_mins[slurmctld_tres_cnt];
 	slurmdb_used_limits_t *used_limits = NULL, *used_limits_a = NULL;
 	bool safe_limits = false;
-	int rc = true, tres_pos = 0, i;
+	int rc = true, i, tres_pos = 0;
 	tres_usage_t tres_usage;
 	slurmdb_assoc_rec_t *assoc_ptr = job_ptr->assoc_ptr;
 
