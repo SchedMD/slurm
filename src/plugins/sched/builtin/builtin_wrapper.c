@@ -60,10 +60,7 @@ static int plugin_errno = SLURM_SUCCESS;
 static pthread_t builtin_thread = 0;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-/**************************************************************************/
-/*  TAG(                              init                              ) */
-/**************************************************************************/
-int init( void )
+int init(void)
 {
 	pthread_attr_t attr;
 
@@ -87,10 +84,7 @@ int init( void )
 	return SLURM_SUCCESS;
 }
 
-/**************************************************************************/
-/*  TAG(                              fini                              ) */
-/**************************************************************************/
-void fini( void )
+void fini(void)
 {
 	slurm_mutex_lock( &thread_flag_mutex );
 	if ( builtin_thread ) {
@@ -102,97 +96,59 @@ void fini( void )
 	slurm_mutex_unlock( &thread_flag_mutex );
 }
 
-/**************************************************************************/
-/* TAG(              slurm_sched_p_reconfig                             ) */
-/**************************************************************************/
-int slurm_sched_p_reconfig( void )
+int slurm_sched_p_reconfig(void)
 {
 	builtin_reconfig();
 	return SLURM_SUCCESS;
 }
 
-/***************************************************************************/
-/*  TAG(                   slurm_sched_p_schedule                        ) */
-/***************************************************************************/
-int
-slurm_sched_p_schedule( void )
+int slurm_sched_p_schedule(void)
 {
 	return SLURM_SUCCESS;
 }
 
-/***************************************************************************/
-/*  TAG(                   slurm_sched_p_newalloc                        ) */
-/***************************************************************************/
-int
-slurm_sched_p_newalloc( struct job_record *job_ptr )
+int slurm_sched_p_newalloc(struct job_record *job_ptr)
 {
 	return SLURM_SUCCESS;
 }
 
-/***************************************************************************/
-/*  TAG(                   slurm_sched_p_freealloc                       ) */
-/***************************************************************************/
-int
-slurm_sched_p_freealloc( struct job_record *job_ptr )
+int slurm_sched_p_freealloc(struct job_record *job_ptr)
 {
 	return SLURM_SUCCESS;
 }
 
-
-/**************************************************************************/
-/* TAG(                   slurm_sched_p_initial_priority                ) */
-/**************************************************************************/
-uint32_t
-slurm_sched_p_initial_priority( uint32_t last_prio,
-				     struct job_record *job_ptr )
+uint32_t slurm_sched_p_initial_priority(uint32_t last_prio,
+					struct job_record *job_ptr)
 {
 	return priority_g_set(last_prio, job_ptr);
 }
 
-/**************************************************************************/
-/* TAG(              slurm_sched_p_job_is_pending                       ) */
-/**************************************************************************/
-void slurm_sched_p_job_is_pending( void )
+void slurm_sched_p_job_is_pending(void)
 {
 	/* Empty. */
 }
 
-/**************************************************************************/
-/* TAG(              slurm_sched_p_partition_change                     ) */
-/**************************************************************************/
-void slurm_sched_p_partition_change( void )
+void slurm_sched_p_partition_change(void)
 {
 	/* Empty. */
 }
 
-/**************************************************************************/
-/* TAG(              slurm_sched_p_get_errno                            ) */
-/**************************************************************************/
-int slurm_sched_p_get_errno( void )
+int slurm_sched_p_get_errno(void)
 {
 	return plugin_errno;
 }
 
-/**************************************************************************/
-/* TAG(              slurm_sched_p_strerror                             ) */
-/**************************************************************************/
-char *slurm_sched_p_strerror( int errnum )
+char *slurm_sched_p_strerror(int errnum)
 {
 	return NULL;
 }
 
-/**************************************************************************/
-/* TAG(              slurm_sched_p_requeue                              ) */
-/**************************************************************************/
-void slurm_sched_p_requeue( struct job_record *job_ptr, char *reason )
+void slurm_sched_p_requeue(struct job_record *job_ptr, char *reason)
 {
 	/* Empty. */
 }
 
-/**************************************************************************/
-/* TAG(              slurm_sched_p_get_conf                             ) */
-/**************************************************************************/
-char *slurm_sched_p_get_conf( void )
+char *slurm_sched_p_get_conf(void)
 {
 	return NULL;
 }

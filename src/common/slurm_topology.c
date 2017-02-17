@@ -59,9 +59,6 @@ struct hypercube_switch *hypercube_switch_table = NULL;
 int hypercube_switch_cnt = 0;
 struct hypercube_switch ***hypercube_switches = NULL; 
 
-/* ************************************************************************ */
-/*  TAG(                        slurm_topo_ops_t                         )  */
-/* ************************************************************************ */
 typedef struct slurm_topo_ops {
 	int		(*build_config)		( void );
 	bool		(*node_ranking)		( void );
@@ -84,16 +81,13 @@ static plugin_context_t	*g_context = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
 
-/* *********************************************************************** */
-/*  TAG(                        slurm_topo_init                         )  */
-/*                                                                         */
-/*  NOTE: The topology plugin can not be changed via reconfiguration       */
-/*        due to background threads, job priorities, etc. Slurmctld must   */
-/*        be restarted  and job priority changes may be required to change */
-/*        the topology type.                                               */
-/* *********************************************************************** */
-extern int
-slurm_topo_init( void )
+/*
+ * The topology plugin can not be changed via reconfiguration
+ * due to background threads, job priorities, etc. slurmctld must
+ * be restarted and job priority changes may be required to change
+ * the topology type.
+ */
+extern int slurm_topo_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "topo";
@@ -125,11 +119,7 @@ done:
 	return retval;
 }
 
-/* *********************************************************************** */
-/*  TAG(                        slurm_topo_fini                         )  */
-/* *********************************************************************** */
-extern int
-slurm_topo_fini( void )
+extern int slurm_topo_fini(void)
 {
 	int rc;
 
@@ -142,12 +132,7 @@ slurm_topo_fini( void )
 	return rc;
 }
 
-
-/* *********************************************************************** */
-/*  TAG(                      slurm_topo_build_config                   )  */
-/* *********************************************************************** */
-extern int
-slurm_topo_build_config( void )
+extern int slurm_topo_build_config(void)
 {
 	int rc;
 	DEF_TIMERS;
@@ -162,13 +147,11 @@ slurm_topo_build_config( void )
 	return rc;
 }
 
-/* *********************************************************************** */
-/*  TAG(                      slurm_topo_generate_node_ranking          )  */
-/* NOTE: This operation is only supported by those topology plugins for    */
-/*       which the node ordering between slurmd and slurmctld is invariant */
-/* *********************************************************************** */
-extern bool
-slurm_topo_generate_node_ranking( void )
+/*
+ * This operation is only supported by those topology plugins for
+ * which the node ordering between slurmd and slurmctld is invariant.
+ */
+extern bool slurm_topo_generate_node_ranking(void)
 {
 	if ( slurm_topo_init() < 0 )
 		return SLURM_ERROR;
@@ -176,15 +159,12 @@ slurm_topo_generate_node_ranking( void )
 	return (*(ops.node_ranking))();
 }
 
-/* *********************************************************************** */
-/*  TAG(                      slurm_topo_get_node_addr                  )  */
-/* *********************************************************************** */
-extern int
-slurm_topo_get_node_addr( char* node_name, char ** addr, char** pattern )
+extern int slurm_topo_get_node_addr(char* node_name,
+				    char **addr,
+				    char **pattern)
 {
 	if ( slurm_topo_init() < 0 )
 		return SLURM_ERROR;
 
 	return (*(ops.get_node_addr))(node_name,addr,pattern);
 }
-

@@ -65,9 +65,6 @@
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-/* ************************************************************************ */
-/*  TAG(                        slurm_proctrack_ops_t                    )  */
-/* ************************************************************************ */
 typedef struct slurm_proctrack_ops {
 	int              (*create)    (stepd_step_rec_t * job);
 	int              (*add)       (stepd_step_rec_t * job, pid_t pid);
@@ -98,12 +95,10 @@ static plugin_context_t *g_context = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
 
-/* *********************************************************************** */
-/*  TAG(                    slurm_proctrack_init                        )  */
-/*                                                                         */
-/*  NOTE: The proctrack plugin can only be changed by restarting slurmd    */
-/*        without preserving state (-c option).                            */
-/* *********************************************************************** */
+/*
+ * The proctrack plugin can only be changed by restarting slurmd
+ * without preserving state (-c option).
+ */
 extern int slurm_proctrack_init(void)
 {
 	int retval = SLURM_SUCCESS;
@@ -135,9 +130,6 @@ done:
 	return retval;
 }
 
-/* *********************************************************************** */
-/*  TAG(                    slurm_proctrack_fini                        )  */
-/* *********************************************************************** */
 extern int slurm_proctrack_fini(void)
 {
 	int rc;
@@ -469,8 +461,7 @@ extern int proctrack_g_wait(uint64_t cont_id)
  *   pids NULL), return SLURM_ERROR if container does not exist, or
  *   plugin does not implement the call.
  */
-extern int
-proctrack_g_get_pids(uint64_t cont_id, pid_t ** pids, int *npids)
+extern int proctrack_g_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 {
 	if (slurm_proctrack_init() < 0)
 		return SLURM_ERROR;
