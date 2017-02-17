@@ -60,7 +60,7 @@ typedef enum {
 	TRES_USAGE_CUR_EXCEEDS_LIMIT,
 	TRES_USAGE_REQ_EXCEEDS_LIMIT,
 	TRES_USAGE_REQ_NOT_SAFE_WITH_USAGE
-} tres_usage_t;
+} acct_policy_tres_usage_t;
 
 static int _get_tres_state_reason(int tres_pos, int unk_reason)
 {
@@ -1060,7 +1060,7 @@ static bool _validate_tres_time_limits(
  *       acct_policy_tres_usage_t enumerations with tres_pos being set to the
  *       position of the failed limit.
  */
-static tres_usage_t _validate_tres_usage_limits(
+static acct_policy_tres_usage_t _validate_tres_usage_limits(
 	int *tres_pos,
 	uint64_t *tres_limit_array,
 	uint64_t *out_tres_limit_array,
@@ -1126,7 +1126,7 @@ static tres_usage_t _validate_tres_usage_limits(
  * RET - True if no limit is violated, false otherwise with tres_pos
  * being set to the position of the failed limit.
  */
-static tres_usage_t _validate_tres_usage_limits_for_qos(
+static acct_policy_tres_usage_t _validate_tres_usage_limits_for_qos(
 	int *tres_pos,
 	uint64_t *tres_limit_array,
 	uint64_t *out_tres_limit_array,
@@ -1164,7 +1164,7 @@ static tres_usage_t _validate_tres_usage_limits_for_qos(
  * RET - True if no limit is violated, false otherwise with tres_pos
  * being set to the position of the failed limit.
  */
-static tres_usage_t _validate_tres_usage_limits_for_assoc(
+static acct_policy_tres_usage_t _validate_tres_usage_limits_for_assoc(
 	int *tres_pos,
 	uint64_t *tres_limit_array,
 	uint64_t *qos_tres_limit_array,
@@ -1773,7 +1773,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 	slurmdb_used_limits_t *used_limits = NULL, *used_limits_a = NULL;
 	bool safe_limits = false;
 	int rc = true, i, tres_pos = 0;
-	tres_usage_t tres_usage;
+	acct_policy_tres_usage_t tres_usage;
 	slurmdb_assoc_rec_t *assoc_ptr = job_ptr->assoc_ptr;
 
 	if (!qos_ptr || !qos_out_ptr || !assoc_ptr)
@@ -2208,7 +2208,7 @@ static int _qos_job_time_out(struct job_record *job_ptr,
 	uint64_t tres_usage_mins[slurmctld_tres_cnt];
 	uint32_t wall_mins;
 	int rc = true, tres_pos = 0, i;
-	tres_usage_t tres_usage;
+	acct_policy_tres_usage_t tres_usage;
 	time_t now = time(NULL);
 
 	if (!qos_ptr || !qos_out_ptr)
@@ -3010,7 +3010,7 @@ extern bool acct_policy_job_runnable_post_select(
 	bool rc = true;
 	bool safe_limits = false;
 	int i, tres_pos = 0;
-	tres_usage_t tres_usage;
+	acct_policy_tres_usage_t tres_usage;
 	int parent = 0; /* flag to tell us if we are looking at the
 			 * parent or not
 			 */
@@ -3601,7 +3601,7 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 				   READ_LOCK, NO_LOCK, NO_LOCK };
 	time_t now;
 	int i, tres_pos = 0;
-	tres_usage_t tres_usage;
+	acct_policy_tres_usage_t tres_usage;
 
 	/* Now see if we are enforcing limits.  If Safe is set then
 	 * return false as well since we are being safe if the limit
