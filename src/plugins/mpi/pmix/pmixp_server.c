@@ -1204,12 +1204,13 @@ struct pp_cbdata
 	Buf buf;
 	double start;
 	int size;
-} cbdata;
+};
 
 void pingpong_complete(int rc, pmixp_srv_cb_context_t ctx, void *data)
 {
 	struct pp_cbdata *d = (struct pp_cbdata*)data;
 	free_buf(d->buf);
+	xfree(data);
 	//    PMIXP_ERROR("Send complete: %d %lf", d->size, GET_TS - d->start);
 }
 
@@ -1218,15 +1219,16 @@ int pmixp_server_pp_send(const char *host, int size)
 	Buf buf = pmixp_server_buf_new();
 	int rc;
 	pmixp_ep_t ep;
+    struct pp_cbdata *cbdata = xmalloc(sizeof(*cbdata));
 
 	grow_buf(buf, size);
 	ep.type = PMIXP_EP_HNAME;
 	ep.ep.hostname = (char*)host;
-	cbdata.buf = buf;
-	cbdata.size = size;
+	cbdata->buf = buf;
+	cbdata->size = size;
 	set_buf_offset(buf,get_buf_offset(buf) + size);
 	rc = pmixp_server_send_nb(&ep, PMIXP_MSG_PINGPONG,
-				  _pmixp_pp_count, buf, pingpong_complete, (void*)&cbdata);
+				  _pmixp_pp_count, buf, pingpong_complete, (void*)cbdata);
 	if (SLURM_SUCCESS != rc) {
 		PMIXP_ERROR("Was unable to wait for the parent %s to become alive", host);
 	}
