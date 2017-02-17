@@ -49,6 +49,8 @@ static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 {
 	int i=0;
 
+	xassert(buffer);
+
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!stats) {
 			for (i=0; i<3; i++)
@@ -93,12 +95,18 @@ static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 		pack32(stats->disk_read_max_taskid, buffer);
 		pack32(stats->disk_write_max_nodeid, buffer);
 		pack32(stats->disk_write_max_taskid, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
 	}
 }
 
 static int _unpack_slurmdb_stats(slurmdb_stats_t *stats,
 				 uint16_t protocol_version, Buf buffer)
 {
+	xassert(stats);
+	xassert(buffer);
+
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack64(&stats->vsize_max, buffer);
 		safe_unpack64(&stats->rss_max, buffer);
@@ -151,6 +159,8 @@ extern void slurmdb_pack_user_rec(void *in, uint16_t protocol_version,
 	slurmdb_coord_rec_t *coord = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
 	slurmdb_wckey_rec_t *wckey = NULL;
+
+	xassert(buffer);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
@@ -215,6 +225,9 @@ extern void slurmdb_pack_user_rec(void *in, uint16_t protocol_version,
 			}
 			list_iterator_destroy(itr);
 		}
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
 	}
 }
 
@@ -228,6 +241,9 @@ extern int slurmdb_unpack_user_rec(void **object, uint16_t protocol_version,
 	slurmdb_assoc_rec_t *assoc = NULL;
 	slurmdb_wckey_rec_t *wckey = NULL;
 	int i;
+
+	xassert(object);
+	xassert(buffer);
 
 	*object = object_ptr;
 
@@ -306,6 +322,8 @@ extern void slurmdb_pack_used_limits(void *in, uint32_t tres_cnt,
 {
 	slurmdb_used_limits_t *object = (slurmdb_used_limits_t *)in;
 
+	xassert(buffer);
+
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			packnull(buffer);
@@ -323,6 +341,9 @@ extern void slurmdb_pack_used_limits(void *in, uint32_t tres_cnt,
 		pack64_array(object->tres, tres_cnt, buffer);
 		pack64_array(object->tres_run_mins, tres_cnt, buffer);
 		pack32(object->uid, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
 	}
 }
 
@@ -332,6 +353,9 @@ extern int slurmdb_unpack_used_limits(void **object, uint32_t tres_cnt,
 	slurmdb_used_limits_t *object_ptr =
 		xmalloc(sizeof(slurmdb_used_limits_t));
 	uint32_t tmp32;
+
+	xassert(object);
+	xassert(buffer);
 
 	*object = (void *)object_ptr;
 
@@ -368,6 +392,8 @@ extern void slurmdb_pack_account_rec(void *in, uint16_t protocol_version,
 	uint32_t count = NO_VAL;
 	slurmdb_account_rec_t *object = (slurmdb_account_rec_t *)in;
 	slurmdb_assoc_rec_t *assoc = NULL;
+
+	xassert(buffer);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
@@ -409,6 +435,9 @@ extern void slurmdb_pack_account_rec(void *in, uint16_t protocol_version,
 		packstr(object->description, buffer);
 		packstr(object->name, buffer);
 		packstr(object->organization, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
 	}
 }
 
@@ -422,6 +451,9 @@ extern int slurmdb_unpack_account_rec(void **object, uint16_t protocol_version,
 	slurmdb_assoc_rec_t *assoc = NULL;
 	slurmdb_account_rec_t *object_ptr =
 		xmalloc(sizeof(slurmdb_account_rec_t));
+
+	xassert(object);
+	xassert(buffer);
 
 	*object = object_ptr;
 
@@ -476,6 +508,8 @@ extern void slurmdb_pack_coord_rec(void *in, uint16_t protocol_version,
 {
 	slurmdb_coord_rec_t *object = (slurmdb_coord_rec_t *)in;
 
+	xassert(buffer);
+
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			packnull(buffer);
@@ -496,6 +530,9 @@ extern int slurmdb_unpack_coord_rec(void **object, uint16_t protocol_version,
 {
 	uint32_t uint32_tmp;
 	slurmdb_coord_rec_t *object_ptr = xmalloc(sizeof(slurmdb_coord_rec_t));
+
+	xassert(object);
+	xassert(buffer);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		*object = object_ptr;
@@ -521,6 +558,8 @@ extern void slurmdb_pack_cluster_accounting_rec(void *in,
 {
 	slurmdb_cluster_accounting_rec_t *object =
 		(slurmdb_cluster_accounting_rec_t *)in;
+
+	xassert(buffer);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
@@ -557,6 +596,9 @@ extern int slurmdb_unpack_cluster_accounting_rec(void **object,
 {
 	slurmdb_cluster_accounting_rec_t *object_ptr =
 		xmalloc(sizeof(slurmdb_cluster_accounting_rec_t));
+
+	xassert(object);
+	xassert(buffer);
 
 	*object = object_ptr;
 
