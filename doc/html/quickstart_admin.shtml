@@ -748,7 +748,7 @@ but may also include very minor enhancements.</p>
 <p>If the SlurmDBD daemon is used, it must be at the same or higher minor
 release number as the Slurmctld daemons.
 In other words, when changing the version to a higher release number (e.g
-from 15.08.x to 16.05.x) <b>always upgrade the SlurmDBD daemon first</b>.
+from 16.05.x to 17.02.x) <b>always upgrade the SlurmDBD daemon first</b>.
 Database table changes may be required for the upgrade, for example
 adding new fields to existing tables.
 If the database contains a large number of entries, <b>the SlurmDBD daemon
@@ -762,13 +762,14 @@ although rolling upgrades are also possible (i.e. upgrading the head node(s)
 first then upgrading the compute and login nodes later at various times).
 Also see the note above about reverse compatibility.</p>
 
-<p>Almost every new major and/or minor release of Slurm (e.g. 15.08.x to 16.05.x)
+<p>Almost every new major release of Slurm (e.g. 16.05.x to 17.02.x)
 involves changes to the state files with new data structures, new options, etc.
-Slurm permits upgrades of up to two major or minor updates (e.g. 14.11.x or 15.08.x
-to 16.05.x) without loss of jobs or other state information, but the state
-information from older state files versions will not be recognized and will be
+Slurm permits upgrades between any two versions whose major release numbers
+differ by two or less (e.g. 15.08.x or 16.05.x to 17.02.x) without loss of
+jobs or other state information.
+State information from older versions will not be recognized and will be
 discarded, resulting in loss of all running and pending jobs.
-State files are <b>not</b> recognized when downgrading (e.g. from 16.05.x to 15.08.x)
+State files are <b>not</b> recognized when downgrading (e.g. from 17.02.x to 16.05.x)
 and will be discarded, resulting in loss of all running and pending jobs.
 For this reason, creating backup copies of state files (as described below)
 can be of value.
@@ -843,6 +844,6 @@ options such as mysql and gui tools via a configuration menu.</p>
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 15 December 2016</p>
+<p style="text-align:center;">Last modified 17 Feburary 2017</p>
 
 <!--#include virtual="footer.txt"-->
