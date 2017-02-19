@@ -3248,6 +3248,8 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 		safe_unpack64(&node_reg_ptr->free_mem, buffer);
 
 		safe_unpack32(&node_reg_ptr->job_count, buffer);
+		if (node_reg_ptr->job_count > NO_VAL32)
+			goto unpack_error;
 		node_reg_ptr->job_id =
 			xmalloc(sizeof(uint32_t) * node_reg_ptr->job_count);
 		for (i = 0; i < node_reg_ptr->job_count; i++) {
@@ -3313,6 +3315,8 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 		node_reg_ptr->free_mem = xlate_mem_old2new(tmp_mem);
 
 		safe_unpack32(&node_reg_ptr->job_count, buffer);
+		if (node_reg_ptr->job_count > NO_VAL32)
+			goto unpack_error;
 		node_reg_ptr->job_id =
 			xmalloc(sizeof(uint32_t) * node_reg_ptr->job_count);
 		for (i = 0; i < node_reg_ptr->job_count; i++) {
@@ -4133,6 +4137,8 @@ _unpack_update_resv_msg(resv_desc_msg_t ** msg, Buf buffer,
 		safe_unpack32(&tmp_ptr->duration,      buffer);
 		safe_unpack32(&tmp_ptr->flags,         buffer);
 		safe_unpack32_array(&tmp_ptr->node_cnt, &uint32_tmp, buffer);
+		if (uint32_tmp > NO_VAL32)
+			goto unpack_error;
 		if (uint32_tmp > 0) {
 			/* Must be zero terminated */
 			if (tmp_ptr->node_cnt[uint32_tmp-1] != 0)
@@ -4142,6 +4148,8 @@ _unpack_update_resv_msg(resv_desc_msg_t ** msg, Buf buffer,
 			xfree(tmp_ptr->node_cnt);
 		}
 		safe_unpack32_array(&tmp_ptr->core_cnt, &uint32_tmp, buffer);
+		if (uint32_tmp > NO_VAL32)
+			goto unpack_error;
 		if (uint32_tmp > 0) {
 			/* Must be zero terminated */
 			if (tmp_ptr->core_cnt[uint32_tmp-1] != 0)
@@ -10277,7 +10285,7 @@ extern int slurm_unpack_block_info_members(block_info_t *block_info, Buf buffer,
 			      count, HIGHEST_DIMENSIONS);
 			goto unpack_error;
 		}
-		for (i=0; i<count; i++)
+		for (i = 0; i < count; i++)
 			safe_unpack16(&block_info->conn_type[i], buffer);
 		safe_unpackstr_xmalloc(&(block_info->ionode_str),
 				       &uint32_tmp, buffer);
@@ -10340,12 +10348,14 @@ extern int slurm_unpack_block_info_msg(
 	buf = xmalloc(sizeof(block_info_msg_t));
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&(buf->record_count), buffer);
-		safe_unpack_time(&(buf->last_update), buffer);
+		if (buf->record_count > NO_VAL32)
+			goto unpack_error;
+		safe_unpack_time(&buf->last_update, buffer);
 
 		buf->block_array = xmalloc(sizeof(block_info_t) *
 					   buf->record_count);
 
-		for (i=0; i<buf->record_count; i++) {
+		for (i = 0; i < buf->record_count; i++) {
 			if (slurm_unpack_block_info_members(
 				    &(buf->block_array[i]), buffer,
 				    protocol_version))
@@ -12162,7 +12172,7 @@ static void _pack_kvs_rec(struct kvs_comm *msg_ptr, Buf buffer,
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg_ptr->kvs_name, buffer);
 		pack32(msg_ptr->kvs_cnt, buffer);
-		for (i=0; i<msg_ptr->kvs_cnt; i++) {
+		for (i = 0; i < msg_ptr->kvs_cnt; i++) {
 			packstr(msg_ptr->kvs_keys[i], buffer);
 			packstr(msg_ptr->kvs_values[i], buffer);
 		}
@@ -12183,9 +12193,11 @@ static int  _unpack_kvs_rec(struct kvs_comm **msg_ptr, Buf buffer,
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&msg->kvs_name, &uint32_tmp, buffer);
 		safe_unpack32(&msg->kvs_cnt, buffer);
+		if (msg->kvs_cnt > NO_VAL32)
+			goto unpack_error;
 		msg->kvs_keys   = xmalloc(sizeof(char *) * msg->kvs_cnt);
 		msg->kvs_values = xmalloc(sizeof(char *) * msg->kvs_cnt);
-		for (i=0; i<msg->kvs_cnt; i++) {
+		for (i = 0; i < msg->kvs_cnt; i++) {
 			safe_unpackstr_xmalloc(&msg->kvs_keys[i],
 					       &uint32_tmp, buffer);
 			safe_unpackstr_xmalloc(&msg->kvs_values[i],
@@ -12228,6 +12240,8 @@ static int  _unpack_kvs_data(kvs_comm_set_t **msg_ptr, Buf buffer,
 	*msg_ptr = msg;
 
 	safe_unpack16(&msg->host_cnt, buffer);
+	if (msg->host_cnt > NO_VAL16)
+		goto unpack_error;
 	msg->kvs_host_ptr = xmalloc(sizeof(struct kvs_hosts) *
 				    msg->host_cnt);
 	for (i = 0; i < msg->host_cnt; i++) {
@@ -12237,6 +12251,8 @@ static int  _unpack_kvs_data(kvs_comm_set_t **msg_ptr, Buf buffer,
 	}
 
 	safe_unpack16(&msg->kvs_comm_recs, buffer);
+	if (msg->kvs_comm_recs > NO_VAL16)
+		goto unpack_error;
 	msg->kvs_comm_ptr = xmalloc(sizeof(struct kvs_comm) *
 				    msg->kvs_comm_recs);
 	for (i = 0; i < msg->kvs_comm_recs; i++) {
