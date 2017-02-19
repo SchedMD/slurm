@@ -5521,10 +5521,12 @@ extern int slurmdb_unpack_wckey_cond(void **object, uint16_t protocol_version,
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
+		if (count > NO_VAL32)
+			goto unpack_error;
+		if (count != NO_VAL32) {
 			object_ptr->cluster_list =
 				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
+			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
 				list_append(object_ptr->cluster_list,
@@ -5533,9 +5535,11 @@ extern int slurmdb_unpack_wckey_cond(void **object, uint16_t protocol_version,
 		}
 
 		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
+		if (count > NO_VAL32)
+			goto unpack_error;
+		if (count != NO_VAL32) {
 			object_ptr->id_list = list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
+			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
 				list_append(object_ptr->id_list, tmp_info);
@@ -5543,10 +5547,12 @@ extern int slurmdb_unpack_wckey_cond(void **object, uint16_t protocol_version,
 		}
 
 		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
+		if (count > NO_VAL32)
+			goto unpack_error;
+		if (count != NO_VAL32) {
 			object_ptr->name_list =
 				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
+			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
 				list_append(object_ptr->name_list, tmp_info);
@@ -5559,10 +5565,12 @@ extern int slurmdb_unpack_wckey_cond(void **object, uint16_t protocol_version,
 		safe_unpack_time(&object_ptr->usage_start, buffer);
 
 		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
+		if (count > NO_VAL32)
+			goto unpack_error;
+		if (count != NO_VAL32) {
 			object_ptr->user_list =
 				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
+			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
 				list_append(object_ptr->user_list, tmp_info);
