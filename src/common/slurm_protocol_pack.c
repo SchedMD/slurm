@@ -2401,7 +2401,7 @@ _unpack_network_callerid_msg(network_callerid_msg_t **msg_ptr, Buf buffer,
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackmem_xmalloc(&charptr_tmp, &uint32_tmp, buffer);
 		if (uint32_tmp > (uint32_t)sizeof(msg->ip_src)) {
-			error("%s: ip_src that came across is %u and we can only handle %lu",
+			error("%s: ip_src that came across is %u and we can only handle %u",
 			      __func__, uint32_tmp, sizeof(msg->ip_src));
 			goto unpack_error;
 		}
@@ -2409,7 +2409,7 @@ _unpack_network_callerid_msg(network_callerid_msg_t **msg_ptr, Buf buffer,
 		xfree(charptr_tmp);
 		safe_unpackmem_xmalloc(&charptr_tmp, &uint32_tmp, buffer);
 		if (uint32_tmp > (uint32_t)sizeof(msg->ip_dst)) {
-			error("%s: ip_dst that came across is %u and we can only handle %lu",
+			error("%s: ip_dst that came across is %u and we can only handle %u",
 			      __func__, uint32_tmp, sizeof(msg->ip_dst));
 			goto unpack_error;
 		}
