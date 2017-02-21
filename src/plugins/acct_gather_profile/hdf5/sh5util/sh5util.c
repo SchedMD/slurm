@@ -1233,7 +1233,7 @@ static void _item_analysis_uint(hsize_t nb_tables, hid_t *tables,
 	uint64_t v;
 	uint64_t values[nb_tables];
 	uint8_t  *buffer;
-	uint64_t et, et_max = 0;
+	uint64_t et = 0, et_max = 0;
 
 	buffer = xmalloc(buf_size);
 	for (;;) {
@@ -1334,7 +1334,7 @@ static void _item_analysis_double(hsize_t nb_tables, hid_t *tables,
 	double   v;
 	double   values[nb_tables];
 	uint8_t  *buffer;
-	uint64_t et, et_max = 0;
+	uint64_t et = 0, et_max = 0;
 
 	buffer = xmalloc(buf_size);
 	for (;;) {
