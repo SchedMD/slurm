@@ -1857,6 +1857,8 @@ _build_step_list( char* str )
 	step = strtok_r( my_step_list, ",", &tmp_char );
 	while (step) {
 		job_name = strtok_r( step, ".", &tmps_char );
+		if (job_name == NULL)
+			break;
 		step_name = strtok_r( NULL, ".", &tmps_char );
 		job_id = strtol( job_name, &end_ptr, 10 );
 		if (end_ptr[0] == '_')
