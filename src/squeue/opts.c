@@ -443,7 +443,7 @@ parse_command_line( int argc, char* *argv )
 		params.job_id = *job_id_ptr;
 		list_iterator_destroy(iterator);
 	}
-	if (params.user_list && (list_count(params.user_list) == 1)
+	if (params.user_list && (list_count(params.user_list) == 1) &&
 	    (iterator = list_iterator_create(params.user_list))) {
 		uint32_t *uid_ptr;
 		while ((uid_ptr = list_next(iterator))) {
