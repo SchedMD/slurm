@@ -8735,16 +8735,12 @@ _unpack_reattach_tasks_request_msg(reattach_tasks_request_msg_t ** msg_ptr,
 	safe_unpack32(&msg->job_id, buffer);
 	safe_unpack32(&msg->job_step_id, buffer);
 	safe_unpack16(&msg->num_resp_port, buffer);
-	if (msg->num_resp_port > NO_VAL16)
-		goto unpack_error;
 	if (msg->num_resp_port > 0) {
 		msg->resp_port = xmalloc(sizeof(uint16_t)*msg->num_resp_port);
 		for (i = 0; i < msg->num_resp_port; i++)
 			safe_unpack16(&msg->resp_port[i], buffer);
 	}
 	safe_unpack16(&msg->num_io_port, buffer);
-	if (msg->num_io_port > NO_VAL16)
-		goto unpack_error;
 	if (msg->num_io_port > 0) {
 		msg->io_port = xmalloc(sizeof(uint16_t)*msg->num_io_port);
 		for (i = 0; i < msg->num_io_port; i++)
