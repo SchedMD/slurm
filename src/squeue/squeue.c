@@ -219,7 +219,7 @@ _print_job ( bool clear_old )
 		return SLURM_ERROR;
 	}
 	old_job_ptr = new_job_ptr;
-	if (params.job_id || params.job_id)
+	if (params.job_id || params.user_id)
 		old_job_ptr->last_update = (time_t) 0;
 
 	if (params.verbose) {
