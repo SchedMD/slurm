@@ -90,6 +90,7 @@ parse_command_line( int argc, char* *argv )
 	bool override_format_env = false;
 	int opt_char;
 	int option_index;
+	ListIterator iterator;
 	static struct option long_options[] = {
 		{"accounts",   required_argument, 0, 'A'},
 		{"all",        no_argument,       0, 'a'},
@@ -435,18 +436,16 @@ parse_command_line( int argc, char* *argv )
 		}
 	}
 
-	if (params.job_list && (list_count(params.job_list) == 1)) {
-		ListIterator iterator;
+	if (params.job_list && (list_count(params.job_list) == 1) &&
+	    (iterator = list_iterator_create(params.job_list))) {
 		uint32_t *job_id_ptr;
-		iterator = list_iterator_create(params.job_list);
 		job_id_ptr = list_next(iterator);
 		params.job_id = *job_id_ptr;
 		list_iterator_destroy(iterator);
 	}
-	if (params.user_list && (list_count(params.user_list) == 1)) {
-		ListIterator iterator;
+	if (params.user_list && (list_count(params.user_list) == 1)
+	    (iterator = list_iterator_create(params.user_list))) {
 		uint32_t *uid_ptr;
-		iterator = list_iterator_create(params.user_list);
 		while ((uid_ptr = list_next(iterator))) {
 			params.user_id = *uid_ptr;
 			break;
@@ -1895,6 +1894,8 @@ _build_step_list( char* str )
 	step = strtok_r(my_step_list, ",", &tmp_char);
 	while (step) {
 		job_name = strtok_r(step, ".", &tmps_char);
+		if (job_name == NULL)
+			break;
 		step_name = strtok_r(NULL, ".", &tmps_char);
 		job_id = strtol(job_name, &end_ptr, 10);
 		if (end_ptr[0] == '_')
