@@ -288,6 +288,8 @@ documents those changes that are of interest to users and administrators.
     limits.
  -- Fix correct state reason when job can't run 'safely' because of an
     association GrpWall limit.
+ -- Squeue always loads new data if user_id option specified
+ -- Fix for possible job ID parsing failure and abort.
 
 * Changes in Slurm 16.05.9
 ==========================
