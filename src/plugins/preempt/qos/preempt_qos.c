@@ -46,6 +46,7 @@
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/plugin.h"
+#include "src/common/xstring.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/job_scheduler.h"
@@ -58,10 +59,18 @@ static uint32_t _gen_job_prio(struct job_record *job_ptr);
 static bool _qos_preemptable(struct job_record *preemptee,
 			     struct job_record *preemptor);
 static int _sort_by_prio (void *x, void *y);
+static int _sort_by_youngest(void *x, void *y);
+
+static bool youngest_order = false;
 
 extern int init(void)
 {
+	char *sched_params;
 	verbose("preempt/qos loaded");
+	sched_params = slurm_get_sched_params();
+	if (xstrcasestr(sched_params, "preempt_youngest_order"))
+		youngest_order = true;
+	xfree(sched_params);
 	return SLURM_SUCCESS;
 }
 
@@ -120,8 +129,11 @@ extern List find_preemptable_jobs(struct job_record *job_ptr)
 	}
 	list_iterator_destroy(job_iterator);
 
-	if (preemptee_job_list)
+	if (preemptee_job_list && youngest_order)
+		list_sort(preemptee_job_list, _sort_by_youngest);
+	else if (preemptee_job_list)
 		list_sort(preemptee_job_list, _sort_by_prio);
+
 	return preemptee_job_list;
 }
 
@@ -178,6 +190,22 @@ static int _sort_by_prio(void *x, void *y)
 	if (job_prio1 > job_prio2)
 		rc = 1;
 	else if (job_prio1 < job_prio2)
+		rc = -1;
+	else
+		rc = 0;
+
+	return rc;
+}
+
+static int _sort_by_youngest(void *x, void *y)
+{
+	int rc;
+	struct job_record *j1 = (struct job_record *) x;
+	struct job_record *j2 = (struct job_record *) y;
+
+	if (j1->start_time < j2->start_time)
+		rc = 1;
+	else if (j1->start_time > j2->start_time)
 		rc = -1;
 	else
 		rc = 0;
