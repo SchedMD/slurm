@@ -12012,8 +12012,29 @@ static void _pack_file_bcast(file_bcast_msg_t * msg , Buf buffer,
 
 	grow_buf(buffer,  msg->block_len);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack16 ( msg->block_no, buffer );
+	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
+		pack32(msg->block_no, buffer);
+		pack16(msg->compress, buffer);
+		pack16(msg->last_block, buffer);
+		pack16(msg->force, buffer);
+		pack16(msg->modes, buffer);
+
+		pack32(msg->uid, buffer);
+		packstr(msg->user_name, buffer);
+		pack32(msg->gid, buffer);
+
+		pack_time(msg->atime, buffer);
+		pack_time(msg->mtime, buffer);
+
+		packstr(msg->fname, buffer);
+		pack32(msg->block_len, buffer);
+		pack32(msg->uncomp_len, buffer);
+		pack64(msg->block_offset, buffer);
+		pack64(msg->file_size, buffer);
+		packmem (msg->block, msg->block_len, buffer);
+		pack_sbcast_cred(msg->cred, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack16 ( (uint16_t)msg->block_no, buffer );
 		pack16 ( msg->compress, buffer );
 		pack16 ( msg->last_block, buffer );
 		pack16 ( msg->force, buffer );
@@ -12029,7 +12050,7 @@ static void _pack_file_bcast(file_bcast_msg_t * msg , Buf buffer,
 		packstr ( msg->fname, buffer );
 		pack32 ( msg->block_len, buffer );
 		pack32(msg->uncomp_len, buffer);
-		pack32(msg->block_offset, buffer);
+		pack32((uint32_t)msg->block_offset, buffer);
 		pack64(msg->file_size, buffer);
 		packmem ( msg->block, msg->block_len, buffer );
 		pack_sbcast_cred( msg->cred, buffer );
@@ -12039,7 +12060,8 @@ static void _pack_file_bcast(file_bcast_msg_t * msg , Buf buffer,
 static int _unpack_file_bcast(file_bcast_msg_t ** msg_ptr , Buf buffer,
 			      uint16_t protocol_version)
 {
-	uint32_t uint32_tmp;
+	uint32_t uint32_tmp = 0;
+	uint16_t uint16_tmp = 0;
 	file_bcast_msg_t *msg ;
 
 	xassert ( msg_ptr != NULL );
@@ -12047,8 +12069,35 @@ static int _unpack_file_bcast(file_bcast_msg_t ** msg_ptr , Buf buffer,
 	msg = xmalloc ( sizeof (file_bcast_msg_t) ) ;
 	*msg_ptr = msg;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack16 ( & msg->block_no, buffer );
+	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->block_no, buffer);
+		safe_unpack16(&msg->compress, buffer);
+		safe_unpack16(&msg->last_block, buffer);
+		safe_unpack16(&msg->force, buffer);
+		safe_unpack16(&msg->modes, buffer);
+
+		safe_unpack32(&msg->uid, buffer);
+		safe_unpackstr_xmalloc(&msg->user_name, &uint32_tmp, buffer);
+		safe_unpack32 (&msg->gid, buffer);
+
+		safe_unpack_time(&msg->atime, buffer);
+		safe_unpack_time(&msg->mtime, buffer);
+
+		safe_unpackstr_xmalloc ( & msg->fname, &uint32_tmp, buffer );
+		safe_unpack32(&msg->block_len, buffer);
+		safe_unpack32(&msg->uncomp_len, buffer);
+		safe_unpack64(&msg->block_offset, buffer);
+		safe_unpack64(&msg->file_size, buffer);
+		safe_unpackmem_xmalloc ( & msg->block, &uint32_tmp , buffer ) ;
+		if ( uint32_tmp != msg->block_len )
+			goto unpack_error;
+
+		msg->cred = unpack_sbcast_cred( buffer );
+		if (msg->cred == NULL)
+			goto unpack_error;
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack16(&uint16_tmp, buffer);
+		msg->block_no = uint16_tmp;
 		safe_unpack16 ( & msg->compress, buffer );
 		safe_unpack16 ( & msg->last_block, buffer );
 		safe_unpack16 ( & msg->force, buffer );
@@ -12064,7 +12113,8 @@ static int _unpack_file_bcast(file_bcast_msg_t ** msg_ptr , Buf buffer,
 		safe_unpackstr_xmalloc ( & msg->fname, &uint32_tmp, buffer );
 		safe_unpack32 ( & msg->block_len, buffer );
 		safe_unpack32(&msg->uncomp_len, buffer);
-		safe_unpack32(&msg->block_offset, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		msg->block_offset = uint32_tmp;
 		safe_unpack64(&msg->file_size, buffer);
 		safe_unpackmem_xmalloc ( & msg->block, &uint32_tmp , buffer ) ;
 		if ( uint32_tmp != msg->block_len )
