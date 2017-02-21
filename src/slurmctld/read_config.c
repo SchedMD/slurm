@@ -1602,10 +1602,8 @@ static void _purge_old_node_state(struct node_record *old_node_table_ptr,
 	int i;
 	struct node_record *node_ptr;
 
-	if (old_node_table_ptr == NULL)
-		return;
 	node_ptr = old_node_table_ptr;
-	for (i = 0; i < old_node_record_count; i++, node_ptr++)
+	for (i=0; i< old_node_record_count; i++, node_ptr++)
 		purge_node_rec(node_ptr);
 
 	xfree(old_node_table_ptr);
@@ -2542,6 +2540,8 @@ extern int load_config_state_lite(void)
 	return SLURM_SUCCESS;
 
 unpack_error:
-	free_buf(buffer);
+	if (buffer)
+		free_buf(buffer);
+
 	return SLURM_ERROR;
 }

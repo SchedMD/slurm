@@ -4134,9 +4134,8 @@ extern void step_checkpoint(void)
 			ckpt_req.job_id = job_ptr->job_id;
 			ckpt_req.step_id = SLURM_BATCH_SCRIPT;
 			ckpt_req.image_dir = NULL;
-			(void) job_checkpoint(&ckpt_req,
-					      slurmctld_conf.slurm_user_id,
-					      -1, (uint16_t)NO_VAL);
+			job_checkpoint(&ckpt_req, slurmctld_conf.slurm_user_id,
+				       -1, (uint16_t)NO_VAL);
 			job_ptr->ckpt_time = now;
 			last_job_update = now;
 			continue; /* ignore periodic step ckpt */
