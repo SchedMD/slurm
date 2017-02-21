@@ -3967,7 +3967,8 @@ void file_bcast_purge(void)
 
 static int _rpc_file_bcast(slurm_msg_t *msg)
 {
-	int rc, offset, inx;
+	int rc;
+	int64_t offset, inx;
 	file_bcast_info_t *file_info;
 	file_bcast_msg_t *req = msg->data;
 	file_bcast_info_t key;

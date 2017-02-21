@@ -30,6 +30,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix controller being able to talk to a pre-released DBD.
  -- Added ability to override the invoking uid for "scontrol update job"
     by specifying "--uid=<uid>|-u <uid>".
+ -- Changed file broadcast "offset" from 32 to 64 bits in order to support files
+    over 2 GB.
 
 * Changes in Slurm 17.02.0rc1
 ==============================

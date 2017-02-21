@@ -150,6 +150,8 @@ OTHER CHANGES
  -- Added new mcs/account plugin.
  -- job_submit/lua - remove access to internal reservation job_run_cnt and
     job_pend_cnt fields.
+ -- Increased maximum file size supported by sbcast from 2 GB (32-bit integer
+    to 64-bits).
 
 API CHANGES
 ===========
@@ -162,6 +164,8 @@ Memory conversion to uint64_t in: job_descriptor, job_info, node_info,
 Variables converted are: actual_real_mem, def_mem_per_cpu, free_mem,
 	max_mem_per_cpu, mem_spec_limit, pn_min_memory, real_memory, req_mem.
 In slurm_step_io_fds_t: changed "in" to "input".
+In file_bcast_msg_t: changed block_no from uint16_t to uint32_t, changed
+	block_offset uint32_t to uint64_t.
 
 Added members to the following struct definitions
 =================================================
