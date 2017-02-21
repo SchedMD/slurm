@@ -44,9 +44,11 @@
 #include "scontrol.h"
 #include "src/plugins/select/bluegene/bg_enums.h"
 #include "src/common/proc_args.h"
+#include "src/common/uid.h"
 
 #define OPT_LONG_HIDE   0x102
 
+/* Global externs from scontrol.h */
 char *command_name;
 List clusters = NULL;
 int all_flag = 0;	/* display even hidden partitions */
@@ -58,6 +60,8 @@ int one_liner = 0;	/* one record per line if =1 */
 int quiet_flag = 0;	/* quiet=1, verbose=-1, normal=0 */
 int verbosity = 0;	/* count of "-v" options */
 uint32_t cluster_flags; /* what type of cluster are we talking to */
+uint32_t euid = NO_VAL;	 /* send request to the slurmctld in behave of
+			    this user */
 
 block_info_msg_t *old_block_info_ptr = NULL;
 front_end_info_msg_t *old_front_end_info_ptr = NULL;
@@ -103,6 +107,7 @@ int main(int argc, char **argv)
 		{"hide",     0, 0, OPT_LONG_HIDE},
 		{"oneliner", 0, 0, 'o'},
 		{"quiet",    0, 0, 'Q'},
+		{"uid",	     1, 0, 'u'},
 		{"usage",    0, 0, 'h'},
 		{"verbose",  0, 0, 'v'},
 		{"version",  0, 0, 'V'},
@@ -127,7 +132,7 @@ int main(int argc, char **argv)
 		if ((optind < argc) &&
 		    !strncasecmp(argv[optind], "setdebugflags", 8))
 			break;	/* avoid parsing "-<flagname>" as option */
-		if ((opt_char = getopt_long(argc, argv, "adhM:oQvV",
+		if ((opt_char = getopt_long(argc, argv, "adhM:oQu:vV",
 					    long_options, &option_index)) == -1)
 			break;
 		switch (opt_char) {
@@ -166,6 +171,12 @@ int main(int argc, char **argv)
 			break;
 		case (int)'Q':
 			quiet_flag = 1;
+			break;
+		case (int)'u':
+			if (uid_from_string(optarg, &euid) < 0) {
+				error("--uid=\"%s\" invalid", optarg);
+				exit(exit_code);
+			}
 			break;
 		case (int)'v':
 			quiet_flag = -1;
@@ -1918,6 +1929,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
              NOTE: SlurmDBD must be up.                                    \n\
      -o or --oneliner: equivalent to \"oneliner\" command                  \n\
      -Q or --quiet: equivalent to \"quiet\" command                        \n\
+     -u or --uid: Update job as user <uid> instead of the invoking user id.\n\
      -v or --verbose: equivalent to \"verbose\" command                    \n\
      -V or --version: equivalent to \"version\" command                    \n\
 									   \n\

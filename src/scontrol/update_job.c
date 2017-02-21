@@ -1248,6 +1248,11 @@ extern int scontrol_update_job(int argc, char **argv)
 		return 0;
 	}
 
+	/* If specified, override uid with effective uid provided by
+	 * -u <uid> or --uid=<uid> */
+	if (euid != NO_VAL)
+		job_msg.user_id = euid;
+
 	if (!job_msg.job_id_str && job_msg.name) {
 		/* Translate name to job ID string */
 		job_msg.job_id_str = _job_name2id(job_msg.name, job_uid);
