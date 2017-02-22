@@ -2425,6 +2425,10 @@ void slurm_init_update_block_msg(update_block_msg_t *update_block_msg);
 							 * nodes */
 #define RESERVE_FLAG_PURGE_COMP		0x00100000	/* Purge reservation
 							 * after last job done */
+#define RESERVE_FLAG_WEEKDAY		0x00200000	/* Set WEEKDAY flag */
+#define RESERVE_FLAG_NO_WEEKDAY		0x00400000	/* Clear WEEKDAY flag */
+#define RESERVE_FLAG_WEEKEND		0x00800000	/* Set WEEKEND flag */
+#define RESERVE_FLAG_NO_WEEKEND		0x01000000	/* Clear WEEKEND flag */
 
 typedef struct reserve_info {
 	char *accounts;		/* names of accounts permitted to use */

@@ -1973,6 +1973,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 					RESERVE_FLAG_OVERLAP  |
 					RESERVE_FLAG_IGN_JOBS |
 					RESERVE_FLAG_DAILY    |
+					RESERVE_FLAG_WEEKDAY  |
+					RESERVE_FLAG_WEEKEND  |
 					RESERVE_FLAG_WEEKLY   |
 					RESERVE_FLAG_STATIC   |
 					RESERVE_FLAG_ANY_NODES   |
@@ -2421,6 +2423,14 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 			resv_ptr->flags |= RESERVE_FLAG_DAILY;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_DAILY)
 			resv_ptr->flags &= (~RESERVE_FLAG_DAILY);
+		if (resv_desc_ptr->flags & RESERVE_FLAG_WEEKDAY)
+			resv_ptr->flags |= RESERVE_FLAG_WEEKDAY;
+		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_WEEKDAY)
+			resv_ptr->flags &= (~RESERVE_FLAG_WEEKDAY);
+		if (resv_desc_ptr->flags & RESERVE_FLAG_WEEKEND)
+			resv_ptr->flags |= RESERVE_FLAG_WEEKEND;
+		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_WEEKEND)
+			resv_ptr->flags &= (~RESERVE_FLAG_WEEKEND);
 		if (resv_desc_ptr->flags & RESERVE_FLAG_WEEKLY)
 			resv_ptr->flags |= RESERVE_FLAG_WEEKLY;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_WEEKLY)
@@ -5069,23 +5079,40 @@ static int _job_resv_check(void *x, void *arg)
  * as appropriate. */
 static void _advance_resv_time(slurmctld_resv_t *resv_ptr)
 {
+	time_t now;
+	struct tm tm;
 	int day_cnt = 0;
-	char *interval = "";
 
 	if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT)
 		return;		/* Not applicable */
 
 	if (resv_ptr->flags & RESERVE_FLAG_DAILY) {
 		day_cnt = 1;
-		interval = "day";
+	} else if (resv_ptr->flags & RESERVE_FLAG_WEEKDAY) {
+		now = time(NULL);
+		(void) slurm_localtime_r(&now, &tm);
+		if (tm.tm_wday == 5)		/* Friday */
+			day_cnt = 3;
+		else if (tm.tm_wday == 6)	/* Saturday */
+			day_cnt = 2;
+		else
+			day_cnt = 1;
+	} else if (resv_ptr->flags & RESERVE_FLAG_WEEKEND) {
+		now = time(NULL);
+		(void) slurm_localtime_r(&now, &tm);
+		if (tm.tm_wday == 0)		/* Sunday */
+			day_cnt = 6;
+		else if (tm.tm_wday == 6)	/* Saturday */
+			day_cnt = 1;
+		else
+			day_cnt = 6 - tm.tm_wday;
 	} else if (resv_ptr->flags & RESERVE_FLAG_WEEKLY) {
 		day_cnt = 7;
-		interval = "week";
 	}
 
 	if (day_cnt) {
-		verbose("Advance reservation %s one %s", resv_ptr->name,
-			interval);
+		verbose("Advance reservation %s by %d day(s)", resv_ptr->name,
+			day_cnt);
 		resv_ptr->start_time = resv_ptr->start_time_first;
 		_advance_time(&resv_ptr->start_time, day_cnt);
 		resv_ptr->start_time_prev = resv_ptr->start_time;
@@ -5252,8 +5279,10 @@ extern void job_resv_check(void)
 		}
 		_advance_resv_time(resv_ptr);
 		if ((resv_ptr->job_run_cnt    == 0) &&
-		    ((resv_ptr->flags & RESERVE_FLAG_DAILY ) == 0) &&
-		    ((resv_ptr->flags & RESERVE_FLAG_WEEKLY) == 0)) {
+		    ((resv_ptr->flags & RESERVE_FLAG_DAILY )  == 0) &&
+		    ((resv_ptr->flags & RESERVE_FLAG_WEEKDAY) == 0) &&
+		    ((resv_ptr->flags & RESERVE_FLAG_WEEKEND) == 0) &&
+		    ((resv_ptr->flags & RESERVE_FLAG_WEEKLY)  == 0)) {
 			if (resv_ptr->job_pend_cnt) {
 				info("Purging vestigial reservation %s "
 				     "with %u pending jobs",

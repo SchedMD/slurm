@@ -1721,6 +1721,18 @@ parse_resv_flags(const char *flagstr, const char *msg)
 				outflags |= RESERVE_FLAG_NO_DAILY;
 			else
 				outflags |= RESERVE_FLAG_DAILY;
+		} else if (strncasecmp(curr, "Weekday", MAX(taglen,1)) == 0) {
+			curr += taglen;
+			if (flip)
+				outflags |= RESERVE_FLAG_NO_WEEKDAY;
+			else
+				outflags |= RESERVE_FLAG_WEEKDAY;
+		} else if (strncasecmp(curr, "Weekend", MAX(taglen,1)) == 0) {
+			curr += taglen;
+			if (flip)
+				outflags |= RESERVE_FLAG_NO_WEEKEND;
+			else
+				outflags |= RESERVE_FLAG_WEEKEND;
 		} else if (strncasecmp(curr, "Weekly", MAX(taglen,1)) == 0) {
 			curr += taglen;
 			if (flip)

@@ -18,6 +18,9 @@ documents those changes that are of interest to users and administrators.
     by the main scheduler or backfill.
  -- Add scancel "--hurry" option to avoid staging out any burst buffer data.
  -- Simplify the sched plugin interface.
+ -- Add new advanced reservation flags of "weekday" (repeat on each weekday;
+    Monday through Friday) and "weekend" (repeat on each weekend day; Saturday
+    and Sunday).
 
 * Changes in Slurm 17.02.0rc2
 ==============================

@@ -2319,6 +2319,16 @@ extern char *reservation_flags_string(uint32_t flags)
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "NO_DAILY");
 	}
+	if (flags & RESERVE_FLAG_WEEKDAY) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "WEEKDAY");
+	}
+	if (flags & RESERVE_FLAG_WEEKEND) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "WEEKEND");
+	}
 	if (flags & RESERVE_FLAG_WEEKLY) {
 		if (flag_str[0])
 			xstrcat(flag_str, ",");
