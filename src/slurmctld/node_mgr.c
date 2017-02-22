@@ -676,6 +676,14 @@ extern int load_all_node_state ( bool state_only )
 
 		if (node_ptr) {
 			node_cnt++;
+			if (node_ptr->node_state & NODE_STATE_POWER_UP) {
+				/* last_response value not saved,
+				 * make best guess */
+				node_ptr->last_response = now +
+						slurmctld_conf.resume_timeout;
+			} else
+				node_ptr->last_response = (time_t) 0;
+
 			if (obj_protocol_version &&
 			    (obj_protocol_version != (uint16_t)NO_VAL))
 				node_ptr->protocol_version =

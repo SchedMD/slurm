@@ -290,6 +290,9 @@ documents those changes that are of interest to users and administrators.
     association GrpWall limit.
  -- Squeue always loads new data if user_id option specified
  -- Fix for possible job ID parsing failure and abort.
+ -- If node boot in progress when slurmctld daemon is restarted, then allow
+    sufficient time for reboot to complete and not prematurely DOWN the node as
+    "Not responding".
 
 * Changes in Slurm 16.05.9
 ==========================
