@@ -2770,6 +2770,11 @@ It may be desirable to set this configuration parameter when there are multiple
 priorities of preemptable jobs.
 The logic to support this option is only available in the select/cons_res plugin.
 .TP
+\fBpreempt_youngest_first\fR
+If set, then the preemption sorting algorithm will be changed to sort by the
+job start times to favor preempting younger jobs over older. (Requires
+preempt/partition_prio or preempt/qos plugins.)
+.TP
 \fBnohold_on_prolog_fail\fR
 By default if the Prolog exits with a non-zero value the job is requeued in
 held state. By specifying this parameter the job will be requeued but not
