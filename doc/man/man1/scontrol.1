@@ -1500,7 +1500,14 @@ If this flag is not set, a job using this reservation may use only the nodes
 and licenses associated with the reservation.
 .TP
 \fIDAILY\fR
-Repeat the reservation at the same time every day
+Repeat the reservation at the same time every day.
+.TP
+\fIFLEX\fR
+Permit jobs requesting the reservation to begin prior to the reservation's
+start time and use resources inside or outside of the reservation. A typical
+use case is to prevent jobs not explicitlg requesting the reservation from using
+those reserved resources rather than forcing jobs requesting the reservation to
+use those resources in the time frame reserved.
 .TP
 \fIFIRST_CORES\fR
 Use the lowest numbered cores on a node only.

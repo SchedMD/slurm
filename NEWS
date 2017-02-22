@@ -21,6 +21,12 @@ documents those changes that are of interest to users and administrators.
  -- Add new advanced reservation flags of "weekday" (repeat on each weekday;
     Monday through Friday) and "weekend" (repeat on each weekend day; Saturday
     and Sunday).
+ -- Add new advanced reservation flag of "flex", which permits jobs requesting
+    the reservation to begin prior to the reservation's start time and use
+    resources inside or outside of the reservation. A typical use case is to
+    prevent jobs not explicitlg requesting the reservation from using those
+    reserved resources rather than forcing jobs requesting the reservation to
+    use those resources in the time frame reserved.
 
 * Changes in Slurm 17.02.0rc2
 ==============================

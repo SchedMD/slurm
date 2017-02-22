@@ -1708,6 +1708,12 @@ parse_resv_flags(const char *flagstr, const char *msg)
 			/* "-OVERLAP" is not supported since that's the
 			 * default behavior and the option only applies
 			 * for reservation creation, not updates */
+		} else if (strncasecmp(curr, "Flex", MAX(taglen,1)) == 0) {
+			curr += taglen;
+			if (flip)
+				outflags |= RESERVE_FLAG_NO_FLEX;
+			else
+				outflags |= RESERVE_FLAG_FLEX;
 		} else if (strncasecmp(curr, "Ignore_Jobs", MAX(taglen,1))
 			   == 0) {
 			curr += taglen;

@@ -2299,6 +2299,11 @@ extern char *reservation_flags_string(uint32_t flags)
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "NO_MAINT");
 	}
+	if (flags & RESERVE_FLAG_FLEX) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "FLEX");
+	}
 	if (flags & RESERVE_FLAG_OVERLAP) {
 		if (flag_str[0])
 			xstrcat(flag_str, ",");

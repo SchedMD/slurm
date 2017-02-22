@@ -1970,6 +1970,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		resv_desc_ptr->flags &= (~RESERVE_FLAG_REPLACE);
 #endif
 		resv_desc_ptr->flags &= RESERVE_FLAG_MAINT    |
+					RESERVE_FLAG_FLEX     |
 					RESERVE_FLAG_OVERLAP  |
 					RESERVE_FLAG_IGN_JOBS |
 					RESERVE_FLAG_DAILY    |
@@ -2409,6 +2410,10 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 
 	/* Process the request */
 	if (resv_desc_ptr->flags != NO_VAL) {
+		if (resv_desc_ptr->flags & RESERVE_FLAG_FLEX)
+			resv_ptr->flags |= RESERVE_FLAG_FLEX;
+		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_FLEX)
+			resv_ptr->flags &= (~RESERVE_FLAG_FLEX);
 		if (resv_desc_ptr->flags & RESERVE_FLAG_MAINT)
 			resv_ptr->flags |= RESERVE_FLAG_MAINT;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_MAINT)
@@ -4239,6 +4244,9 @@ extern int job_test_resv_now(struct job_record *job_ptr)
 	if (rc != SLURM_SUCCESS)
 		return rc;
 
+	if (resv_ptr->flags & RESERVE_FLAG_FLEX)
+		return SLURM_SUCCESS;
+
 	now = time(NULL);
 	if (now < resv_ptr->start_time) {
 		/* reservation starts later */
@@ -4803,7 +4811,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			 bitstr_t **exc_core_bitmap, bool *resv_overlap,
 			 bool reboot)
 {
-	slurmctld_resv_t * resv_ptr, *res2_ptr;
+	slurmctld_resv_t *resv_ptr = NULL, *res2_ptr;
 	time_t job_start_time, job_end_time, lic_resv_time;
 	time_t start_relative, end_relative;
 	time_t now = time(NULL);
@@ -4822,40 +4830,49 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 		rc2 = _valid_job_access_resv(job_ptr, resv_ptr);
 		if (rc2 != SLURM_SUCCESS)
 			return rc2;
-		if (resv_ptr->end_time <= now)
-			_advance_resv_time(resv_ptr);
-		if (*when < resv_ptr->start_time) {
-			/* reservation starts later */
-			*when = resv_ptr->start_time;
-			return ESLURM_INVALID_TIME_VALUE;
-		}
-		if ((resv_ptr->node_cnt == 0) &&
-		    (!(resv_ptr->flags & RESERVE_FLAG_ANY_NODES))) {
-			/* empty reservation treated like it will start later */
-			*when = now + 600;
-			return ESLURM_INVALID_TIME_VALUE;
-		}
-		if (*when > resv_ptr->end_time) {
-			/* reservation ended earlier */
-			*when = resv_ptr->end_time;
-			if ((now > resv_ptr->end_time) ||
-			    ((job_ptr->details) &&
-			     (job_ptr->details->begin_time >
-			      resv_ptr->end_time)))
-				job_ptr->priority = 0;	/* admin hold */
-			return ESLURM_RESERVATION_INVALID;
-		}
-		if (job_ptr->details->req_node_bitmap &&
-		    (!(resv_ptr->flags & RESERVE_FLAG_ANY_NODES)) &&
-		    !bit_super_set(job_ptr->details->req_node_bitmap,
-				   resv_ptr->node_bitmap)) {
-			return ESLURM_RESERVATION_INVALID;
-		}
-		if (resv_ptr->flags & RESERVE_FLAG_ANY_NODES) {
+		if (resv_ptr->flags & RESERVE_FLAG_FLEX) {
+			/* Job not bound to reservation nodes or time */
 			*node_bitmap = bit_alloc(node_record_count);
 			bit_nset(*node_bitmap, 0, (node_record_count - 1));
-		} else
-			*node_bitmap = bit_copy(resv_ptr->node_bitmap);
+		} else {
+			if (resv_ptr->end_time <= now)
+				_advance_resv_time(resv_ptr);
+			if (*when < resv_ptr->start_time) {
+				/* reservation starts later */
+				*when = resv_ptr->start_time;
+				return ESLURM_INVALID_TIME_VALUE;
+			}
+			if ((resv_ptr->node_cnt == 0) &&
+			    (!(resv_ptr->flags & RESERVE_FLAG_ANY_NODES))) {
+				/* empty reservation treated like it will
+				 * start later */
+				*when = now + 600;
+				return ESLURM_INVALID_TIME_VALUE;
+			}
+			if (*when > resv_ptr->end_time) {
+				/* reservation ended earlier */
+				*when = resv_ptr->end_time;
+				if ((now > resv_ptr->end_time) ||
+				    ((job_ptr->details) &&
+				     (job_ptr->details->begin_time >
+				      resv_ptr->end_time)))
+					job_ptr->priority = 0;	/* admin hold */
+				return ESLURM_RESERVATION_INVALID;
+			}
+			if (job_ptr->details->req_node_bitmap &&
+			    (!(resv_ptr->flags & RESERVE_FLAG_ANY_NODES)) &&
+			    !bit_super_set(job_ptr->details->req_node_bitmap,
+					   resv_ptr->node_bitmap)) {
+				return ESLURM_RESERVATION_INVALID;
+			}
+			if (resv_ptr->flags & RESERVE_FLAG_ANY_NODES) {
+				*node_bitmap = bit_alloc(node_record_count);
+				bit_nset(*node_bitmap, 0,
+					 (node_record_count - 1));
+			} else {
+				*node_bitmap = bit_copy(resv_ptr->node_bitmap);
+			}
+		}
 
 		/* if there are any overlapping reservations, we need to
 		 * prevent the job from using those nodes (e.g. MAINT nodes) */
@@ -4872,7 +4889,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 				continue;
 			if (bit_overlap(*node_bitmap, res2_ptr->node_bitmap)) {
 				*resv_overlap = true;
-				bit_and_not(*node_bitmap, res2_ptr->node_bitmap);
+				bit_and_not(*node_bitmap,res2_ptr->node_bitmap);
 			}
 		}
 		list_iterator_destroy(iter);
@@ -4901,11 +4918,11 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 		return SLURM_SUCCESS;
 #ifdef HAVE_BG
 	/* Since on a bluegene we track cnodes instead of cpus do the
-	   adjustment since accounting is expecting cpus here.
-	*/
-	if (!cpus_per_mp)
-		(void)select_g_alter_node_cnt(
-			SELECT_GET_MP_CPU_CNT, &cpus_per_mp);
+	 * adjustment since accounting is expecting cpus here. */
+	if (!cpus_per_mp) {
+		(void) select_g_alter_node_cnt(SELECT_GET_MP_CPU_CNT,
+					       &cpus_per_mp);
+	}
 
 	/* If the job is looking for whole mp blocks we need to tell
 	 * the reservations about it so it sends the plugin the correct
