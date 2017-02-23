@@ -32,6 +32,9 @@ documents those changes that are of interest to users and administrators.
     change from "Linux" to
     "Linux 4.8.0-28-generic #28-Ubuntu SMP Sat Feb 8 09:15:00 UTC 2017").
 
+* Changes in Slurm 17.02.1
+==========================
+
 * Changes in Slurm 17.02.0
 ==========================
  -- job_submit/lua - Make "immediate" parameter available.
