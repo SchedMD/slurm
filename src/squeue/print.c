@@ -553,10 +553,7 @@ int _print_job_batch_host(job_info_t * job, int width, bool right, char* suffix)
 		_print_str("EXEC_HOST", width, right, true);
 	else {
 		char *eh = job->batch_flag ? job->batch_host : job->alloc_node;
-		char id[FORMAT_STRING_SIZE];
-
-		snprintf(id, FORMAT_STRING_SIZE, "%s", eh ? eh : "n/a");
-		_print_str(id, width, right, true);
+		_print_str(eh ? eh : "n/a", width, right, true);
 	}
 	if (suffix)
 		printf("%s", suffix);
@@ -568,9 +565,7 @@ int _print_job_burst_buffer(job_info_t * job, int width, bool right, char* suffi
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("BURST_BUFFER", width, right, true);
 	else {
-		char id[FORMAT_STRING_SIZE];
-		snprintf(id, FORMAT_STRING_SIZE, "%s", job->burst_buffer);
-		_print_str(id, width, right, true);
+		_print_str(job->burst_buffer, width, right, true);
 	}
 	if (suffix)
 		printf("%s", suffix);
@@ -651,9 +646,7 @@ int _print_job_partition(job_info_t * job, int width, bool right, char* suffix)
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("PARTITION", width, right, true);
 	else {
-		char id[FORMAT_STRING_SIZE];
-		snprintf(id, FORMAT_STRING_SIZE, "%s", job->partition);
-		_print_str(id, width, right, true);
+		_print_str(job->partition, width, right, true);
 	}
 	if (suffix)
 		printf("%s", suffix);
@@ -672,13 +665,12 @@ int _print_job_reason(job_info_t * job, int width, bool right, char* suffix)
 	if (job == NULL)        /* Print the Header instead */
 		_print_str("REASON", width, right, true);
 	else {
-		char id[FORMAT_STRING_SIZE], *reason;
+		char *reason;
 		if (job->state_desc)
 			reason = job->state_desc;
 		else
 			reason = job_reason_string(job->state_reason);
-		snprintf(id, FORMAT_STRING_SIZE, "%s", reason);
-		_print_str(id, width, right, true);
+		_print_str(reason, width, right, true);
 	}
 	if (suffix)
 		printf("%s", suffix);
@@ -2074,13 +2066,10 @@ int _print_step_id(job_step_info_t * step, int width, bool right, char* suffix)
 int _print_step_partition(job_step_info_t * step, int width, bool right,
 			  char* suffix)
 {
-	char id[FORMAT_STRING_SIZE];
-
 	if (step == NULL)	/* Print the Header instead */
 		_print_str("PARTITION", width, right, true);
 	else {
-		snprintf(id, FORMAT_STRING_SIZE, "%s", step->partition);
-		_print_str(id, width, right, true);
+		_print_str(step->partition, width, right, true);
 	}
 	if (suffix)
 		printf("%s", suffix);
