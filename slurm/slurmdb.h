@@ -134,6 +134,7 @@ typedef enum {
 #define	QOS_FLAG_REQ_RESV            0x00000020
 #define	QOS_FLAG_DENY_LIMIT          0x00000040
 #define	QOS_FLAG_OVER_PART_QOS       0x00000080
+#define	QOS_FLAG_NO_DECAY            0x00000100
 
 /* Define Server Resource flags */
 #define	SLURMDB_RES_FLAG_BASE        0x0fffffff /* apply to get real flags */

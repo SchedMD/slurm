@@ -130,6 +130,19 @@ override the requested partition's TimeLimit.
 reservation when submitting a job.  This option can be useful in
 restricting usage of a QOS that may have greater preemptive capability
 or additional resources to be allowed only within a reservation.
+
+<li><b>NoDecay</b> If set, this QOS will not have its GrpTRESMins,
+GrpWall and UsageRaw decayed by the slurm.conf PriorityDecayHalfLife
+or PriorityUsageResetPeriod settings.  This allows
+a QOS to provide aggregate limits that, once consumed, will not be
+replenished automatically.  Such a QOS will act as a time-limited quota
+of resources for an association that has access to it.  Account/user
+usage will still be decayed for associations using the QOS.  The QOS
+GrpTRESMins and GrpWall limits can be increased or
+the QOS RawUsage value reset to 0 (zero) to again allow jobs submitted
+with this QOS to be queued (if DenyOnLimit is set) or run (pending with
+QOSGrp{TRES}MinutesLimit or QOSGrpWallLimit
+reasons, where {TRES} is some type of trackable resource).
 </ul>
 
 <li><b>GraceTime</b> Preemption grace time to be extended to a job

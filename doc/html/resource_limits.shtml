@@ -132,8 +132,10 @@ is treated as a Max limit.</p>
   jobs will be allowed to run.  This usage is decayed (at a rate of
   PriorityDecayHalfLife).  It can also be reset (according to
   PriorityUsageResetPeriod) in order to allow jobs to run against the
-  association tree or QOS again.  This limit only applies when using
-  the Priority Multifactor plugin.
+  association tree or QOS again.  QOS that have the NoDecay flag set
+  do not decay GrpTRESMins, see <a href="qos.html#qos_other">QOS Options</a>
+  for details.
+  This limit only applies when using the Priority Multifactor plugin.
 </li>
 
 <li><b>GrpTRESRunMins=</b> Used to limit the combined total number of TRES
@@ -163,7 +165,12 @@ is treated as a Max limit.</p>
 
 <li><b>GrpWall=</b> The maximum wall clock time any job submitted to
   this group can run for.  If this limit is reached submission requests
-  will be denied.
+  will be denied.  This usage is decayed (at a rate of
+  PriorityDecayHalfLife).  It can also be reset (according to
+  PriorityUsageResetPeriod) in order to allow jobs to run against the
+  association tree or QOS again.  QOS that have the NoDecay flag set
+  do not decay GrpWall, see <a href="qos.html#qos_other">QOS Options</a> for
+  details.
 </li>
 
 <li><b>MaxTRESMinsPerJob=</b> A limit of TRES minutes to be used by a job.

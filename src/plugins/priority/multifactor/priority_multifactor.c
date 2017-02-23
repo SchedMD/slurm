@@ -197,6 +197,8 @@ static int _apply_decay(double real_decay)
 
 	itr = list_iterator_create(assoc_mgr_qos_list);
 	while ((qos = list_next(itr))) {
+		if (qos->flags & QOS_FLAG_NO_DECAY)
+			continue;
 		qos->usage->usage_raw *= real_decay;
 		for (i=0; i<slurmctld_tres_cnt; i++)
 			qos->usage->usage_tres_raw[i] *= real_decay;
@@ -966,9 +968,12 @@ static int _apply_new_usage(struct job_record *job_ptr,
 {
 	slurmdb_qos_rec_t *qos;
 	slurmdb_assoc_rec_t *assoc;
-	double run_delta = 0.0, run_decay = 0.0, real_decay = 0.0;
+	double run_delta = 0.0, run_decay = 0.0;
+	double billable_tres = 0.0;
+	double real_decay = 0.0, real_nodecay = 0.0;
 	uint64_t tres_run_delta[slurmctld_tres_cnt];
 	long double tres_run_decay[slurmctld_tres_cnt];
+	long double tres_run_nodecay[slurmctld_tres_cnt];
 	uint64_t tres_time_delta = 0;
 	int i;
 	uint64_t job_time_limit_ends = 0;
@@ -1059,6 +1064,7 @@ static int _apply_new_usage(struct job_record *job_ptr,
 	run_decay = run_delta * pow(decay_factor, run_delta);
 	/* clang needs these memset to avoid a warning */
 	memset(tres_run_decay, 0, sizeof(tres_run_decay));
+	memset(tres_run_nodecay, 0, sizeof(tres_run_nodecay));
 	memset(tres_run_delta, 0, sizeof(tres_run_delta));
 	if (job_ptr->tres_alloc_cnt) {
 		for (i=0; i<slurmctld_tres_cnt; i++) {
@@ -1068,12 +1074,16 @@ static int _apply_new_usage(struct job_record *job_ptr,
 				job_ptr->tres_alloc_cnt[i];
 			tres_run_decay[i] = (long double)run_decay *
 				(long double)job_ptr->tres_alloc_cnt[i];
+			tres_run_nodecay[i] = (long double)run_delta *
+				(long double)job_ptr->tres_alloc_cnt[i];
 		}
 	}
 
 	assoc_mgr_lock(&locks);
 
-	real_decay = run_decay * _calc_billable_tres(job_ptr, start_period);
+	billable_tres = _calc_billable_tres(job_ptr, start_period);
+	real_decay = run_decay * billable_tres;
+	real_nodecay = run_delta * billable_tres;
 
 	/* Just to make sure we don't make a
 	   window where the qos_ptr could of
@@ -1089,11 +1099,21 @@ static int _apply_new_usage(struct job_record *job_ptr,
 			real_decay *= qos->usage_factor;
 			run_decay *= qos->usage_factor;
 		}
-		qos->usage->grp_used_wall += run_decay;
-		qos->usage->usage_raw += (long double)real_decay;
+		if (qos->flags & QOS_FLAG_NO_DECAY) {
+			qos->usage->grp_used_wall += run_delta;
+			qos->usage->usage_raw += (long double)real_nodecay;
 
-		_handle_qos_tres_run_secs(tres_run_decay, tres_run_delta,
-					  job_ptr->job_id, qos);
+			_handle_qos_tres_run_secs(tres_run_nodecay,
+						  tres_run_delta,
+						  job_ptr->job_id, qos);
+		} else {
+			qos->usage->grp_used_wall += run_decay;
+			qos->usage->usage_raw += (long double)real_decay;
+
+			_handle_qos_tres_run_secs(tres_run_decay,
+						  tres_run_delta,
+						  job_ptr->job_id, qos);
+		}
 	}
 
 	/* sanity check, there should always be a part_ptr here, but only do
@@ -1110,11 +1130,21 @@ static int _apply_new_usage(struct job_record *job_ptr,
 		/* 	real_decay *= qos->usage_factor; */
 		/* 	run_decay *= qos->usage_factor; */
 		/* } */
-		qos->usage->grp_used_wall += run_decay;
-		qos->usage->usage_raw += (long double)real_decay;
+		if (qos->flags & QOS_FLAG_NO_DECAY) {
+			qos->usage->grp_used_wall += run_delta;
+			qos->usage->usage_raw += (long double)real_nodecay;
 
-		_handle_qos_tres_run_secs(tres_run_decay, tres_run_delta,
-					  job_ptr->job_id, qos);
+			_handle_qos_tres_run_secs(tres_run_nodecay,
+						  tres_run_delta,
+						  job_ptr->job_id, qos);
+		} else {
+			qos->usage->grp_used_wall += run_decay;
+			qos->usage->usage_raw += (long double)real_decay;
+
+			_handle_qos_tres_run_secs(tres_run_decay,
+						  tres_run_delta,
+						  job_ptr->job_id, qos);
+		}
 	}
 
 

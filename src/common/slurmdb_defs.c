@@ -369,6 +369,9 @@ static uint32_t _str_2_qos_flags(char *flags)
 	if (xstrcasestr(flags, "NoReserve"))
 		return QOS_FLAG_NO_RESERVE;
 
+	if (xstrcasestr(flags, "NoDecay"))
+		return QOS_FLAG_NO_DECAY;
+
 	return 0;
 }
 
@@ -1780,6 +1783,8 @@ extern char *slurmdb_qos_flags_str(uint32_t flags)
 		xstrcat(qos_flags, "PartitionTimeLimit,");
 	if (flags & QOS_FLAG_REQ_RESV)
 		xstrcat(qos_flags, "RequiresReservation,");
+	if (flags & QOS_FLAG_NO_DECAY)
+		xstrcat(qos_flags, "NoDecay,");
 
 	if (qos_flags)
 		qos_flags[strlen(qos_flags)-1] = '\0';
