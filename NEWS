@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 15.08.14
 ===========================
+ -- For job resize, correct logic to build "resize" script with new values.
+    Previously the scripts were based upon the original job size.
 
 * Changes in Slurm 15.08.13
 ===========================
