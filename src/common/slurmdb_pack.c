@@ -617,7 +617,7 @@ extern void slurmdb_pack_clus_res_rec(void *in, uint16_t rpc_version,
 
 	if (!object) {
 		packnull(buffer);
-		pack32(NO_VAL, buffer);
+		pack16((uint16_t)NO_VAL, buffer);
 		return;
 	}
 	packstr(object->cluster, buffer);
