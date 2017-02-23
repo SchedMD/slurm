@@ -1,8 +1,8 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
-* Changes in Slurm 17.02.0rc2
-==============================
+* Changes in Slurm 17.02.0
+==========================
  -- job_submit/lua - Make "immediate" parameter available.
  -- Fix srun I/O race condtion to eliminate a error message that might be
     generated if the application exits with outstanding stdin.
