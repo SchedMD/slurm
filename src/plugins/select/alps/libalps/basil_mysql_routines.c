@@ -189,7 +189,7 @@ MYSQL_STMT *prepare_stmt(MYSQL *handle, const char *query,
 
 	/* Verify the parameter count */
 	param_count = mysql_stmt_param_count(stmt);
-	if (nparams != nparams) {
+	if (param_count != nparams) {
 		error("expected %lu parameters for \"%s\" but got %lu",
 		      nparams, query, param_count);
 		goto prepare_failed;
