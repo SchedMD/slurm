@@ -175,14 +175,24 @@ sub {
 }
 
 code,
-pre {
+pre,
+.commandline {
 	font-family: 'Source Code Pro', monospace;
-	display: block;
+	font-size: .85em;
+}
+
+code,
+.commandline {
+	display: inline;
+	overflow: auto;
+}
+
+pre {
 	background: #333333;
 	color: #EEEEEE;
-	padding: 12px 18px;
+	display: block;
 	overflow: auto;
-	font-size: .85em;
+	padding: 12px 18px;
 }
 
 

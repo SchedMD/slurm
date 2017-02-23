@@ -28,7 +28,7 @@ a message.</li>
 <li><b>MUNGE</b> (recommended)<br>
 In order to compile the "auth/munge" authentication plugin for Slurm,
 you will need to build and install MUNGE, available from
-<a href="http://dun.github.io/munge/">http://dun.github.io/munge/</a> and
+<a href="https://dun.github.io/munge/">https://dun.github.io/munge/</a> and
 <a href="http://packages.debian.org/src:munge">Debian</a> and
 <a href="http://fedoraproject.org/">Fedora</a> and
 <a href="http://packages.ubuntu.com/src:munge">Ubuntu</a>.</li>
@@ -136,9 +136,9 @@ activity. This facility attempts to monitor all write activity of an
 application and trigger a set of user-defined actions when write activity
 as ceased for a configurable period of time. A SPANK plugin is provided
 for use with Slurm. See the README and man page in the package for more
-details. Download the latest source from:<br>
-<a href="http://io-watchdog.googlecode.com/files/io-watchdog-0.6.tar.bz2">
-http://io-watchdog.googlecode.com/files/io-watchdog-0.6.tar.bz2</a></li><br>
+details.
+<a href="https://github.com/grondo/io-watchdog">
+https://github.com/grondo/io-watchdog</a></li><br>
 
 <li><b>MPI</b> versions supported</li>
 <ul>
@@ -219,11 +219,8 @@ during the next job launch. Thus, the SPANK infrastructure provides
 administrators and other developers a low cost, low effort ability to
 dynamically modify the runtime behavior of Slurm job launch.
 As assortment of SPANK plugins are available from<br>
-<a href="http://code.google.com/p/slurm-spank-plugins/">
-http://code.google.com/p/slurm-spank-plugins/</a>.<br>
-The current source for the plugins can be checked out of the subversion
-repository with the following command:<br>
-<i>svn checkout http://slurm-spank-plugins.googlecode.com/svn/trunk/slurm-plugins</i><br><br>
+<a href="https://github.com/grondo/slurm-spank-plugins">
+https://github.com/grondo/slurm-spank-plugins</a>.<br>
 
 A SPANK plugin called "spunnel" to support ssh port forwarding is available
 from Harvard University.
@@ -234,7 +231,8 @@ It can be downloaded from the
 A set of scripts that leverages Slurm's job completion logging facility
 in provide information about what jobs were running at any point in the
 past as well as what resources they used. Download the code from:<br>
-<a href="http://sqlog.googlecode.com">http://sqlog.googlecode.com</a></li><br>
+<a href="https://github.com/grondo/sqlog">
+https://github.com/grondo/sqlog</a></li><br>
 
 <li><b>Task Affinity</b> plugins</li>
 <ul>

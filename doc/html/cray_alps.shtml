@@ -245,7 +245,7 @@ privileges will be required to install these files.</p>
 
 <p>Note the Munge installation process on Cray systems differs
 somewhat from that described in the
-<a href="http://code.google.com/p/munge/wiki/InstallationGuide">
+<a href="https://github.com/dun/munge/wiki/Installation-Guide">
 MUNGE Installation Guide</a>.</p>
 
 <p>Munge is the authentication daemon and needed by Slurm. You can get
