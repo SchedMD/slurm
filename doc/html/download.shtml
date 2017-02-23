@@ -136,9 +136,9 @@ activity. This facility attempts to monitor all write activity of an
 application and trigger a set of user-defined actions when write activity
 as ceased for a configurable period of time. A SPANK plugin is provided
 for use with Slurm. See the README and man page in the package for more
-details. Download the latest source from:<br>
-<a href="http://io-watchdog.googlecode.com/files/io-watchdog-0.6.tar.bz2">
-http://io-watchdog.googlecode.com/files/io-watchdog-0.6.tar.bz2</a></li><br>
+details.
+<a href="https://github.com/grondo/io-watchdog">
+https://github.com/grondo/io-watchdog</a></li><br>
 
 <li><b>MPI</b> versions supported</li>
 <ul>
@@ -231,7 +231,8 @@ It can be downloaded from the
 A set of scripts that leverages Slurm's job completion logging facility
 in provide information about what jobs were running at any point in the
 past as well as what resources they used. Download the code from:<br>
-<a href="http://sqlog.googlecode.com">http://sqlog.googlecode.com</a></li><br>
+<a href="https://github.com/grondo/sqlog">
+https://github.com/grondo/sqlog</a></li><br>
 
 <li><b>Task Affinity</b> plugins</li>
 <ul>
