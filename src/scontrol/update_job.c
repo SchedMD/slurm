@@ -1236,16 +1236,17 @@ scontrol_update_job (int argc, char *argv[])
 	if (update_size && !_is_single_job(job_msg.job_id_str)) {
 		exit_code = 1;
 		return 0;
-	} else if (update_size) {
-		/* See check above for one job ID */
-		job_msg.job_id = slurm_atoul(job_msg.job_id_str);
-		_update_job_size(job_msg.job_id);
 	}
 
 	if (_is_job_id(job_msg.job_id_str)) {
 		job_msg.job_id_str = _next_job_id();
 		while (job_msg.job_id_str) {
 			rc2 = slurm_update_job2(&job_msg, &resp);
+			if (update_size && (rc2 == SLURM_SUCCESS)) {
+				/* See check above for one job ID */
+				job_msg.job_id = slurm_atoul(job_msg.job_id_str);
+				_update_job_size(job_msg.job_id);
+			}
 			if (rc2 != SLURM_SUCCESS) {
 				rc2 = slurm_get_errno();
 				rc = MAX(rc, rc2);
@@ -1387,7 +1388,13 @@ static void _update_job_size(uint32_t job_id)
 		xfree(tmp);
 	}
 	if (getenv("SLURM_TASKS_PER_NODE")) {
-		/* We don't have sufficient information to recreate this */
+		/* We don't have sufficient information to recreate these */
+		fprintf(resize_sh, "unset SLURM_NPROCS\n");
+		fprintf(resize_csh, "unsetenv SLURM_NPROCS\n");
+
+		fprintf(resize_sh, "unset SLURM_NTASKS\n");
+		fprintf(resize_csh, "unsetenv SLURM_NTASKS\n");
+
 		fprintf(resize_sh, "unset SLURM_TASKS_PER_NODE\n");
 		fprintf(resize_csh, "unsetenv SLURM_TASKS_PER_NODE\n");
 	}
