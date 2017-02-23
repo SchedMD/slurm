@@ -219,11 +219,8 @@ during the next job launch. Thus, the SPANK infrastructure provides
 administrators and other developers a low cost, low effort ability to
 dynamically modify the runtime behavior of Slurm job launch.
 As assortment of SPANK plugins are available from<br>
-<a href="http://code.google.com/p/slurm-spank-plugins/">
-http://code.google.com/p/slurm-spank-plugins/</a>.<br>
-The current source for the plugins can be checked out of the subversion
-repository with the following command:<br>
-<i>svn checkout http://slurm-spank-plugins.googlecode.com/svn/trunk/slurm-plugins</i><br><br>
+<a href="https://github.com/grondo/slurm-spank-plugins">
+https://github.com/grondo/slurm-spank-plugins</a>.<br>
 
 A SPANK plugin called "spunnel" to support ssh port forwarding is available
 from Harvard University.
