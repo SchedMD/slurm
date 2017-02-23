@@ -28,6 +28,9 @@ documents those changes that are of interest to users and administrators.
     reserved resources rather than forcing jobs requesting the reservation to
     use those resources in the time frame reserved.
  -- Add NoDecay flag to QOS.
+ -- Node "OS" field expanded from "sysname" to "sysname release version" (e.g.
+    change from "Linux" to
+    "Linux 4.8.0-28-generic #28-Ubuntu SMP Sat Feb 8 09:15:00 UTC 2017").
 
 * Changes in Slurm 17.02.0rc2
 ==============================

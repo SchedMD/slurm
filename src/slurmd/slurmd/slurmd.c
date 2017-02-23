@@ -717,10 +717,12 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 		msg->arch = xstrdup(arch);
 	else
 		msg->arch = xstrdup(buf.machine);
-	if ((os = getenv("SLURM_OS")))
+	if ((os = getenv("SLURM_OS"))) {
 		msg->os   = xstrdup(os);
-	else
-		msg->os = xstrdup(buf.sysname);
+	} else {
+		xstrfmtcat(msg->os, "%s %s %s",
+			   buf.sysname, buf.release, buf.version);
+	}
 
 	if (msg->startup) {
 		if (switch_g_alloc_node_info(&msg->switch_nodeinfo))
