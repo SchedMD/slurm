@@ -32,6 +32,7 @@ documents those changes that are of interest to users and administrators.
     by specifying "--uid=<uid>|-u <uid>".
  -- Changed file broadcast "offset" from 32 to 64 bits in order to support files
     over 2 GB.
+ -- slurm.spec - do not install init scripts alongside systemd service files.
 
 * Changes in Slurm 17.02.0rc1
 ==============================

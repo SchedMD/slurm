@@ -72,6 +72,9 @@ RPMBUILD CHANGES
     the files will now be part of the main Slurm packages.
  -- Replace sjstat, seff and sjobexit RPM packages with a single "contribs"
     package.
+ -- Prevent installation of both init scripts and systemd service files.
+    Note that systemd services are not automatically enabled at this time,
+    unlike the init scripts which were automatically enabled with chkconfig.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
