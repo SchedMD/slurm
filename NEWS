@@ -59,6 +59,7 @@ documents those changes that are of interest to users and administrators.
     by specifying "--uid=<uid>|-u <uid>".
  -- Changed file broadcast "offset" from 32 to 64 bits in order to support files
     over 2 GB.
+ -- slurm.spec - do not install init scripts alongside systemd service files.
 
 * Changes in Slurm 17.02.0rc1
 ==============================
@@ -320,6 +321,8 @@ documents those changes that are of interest to users and administrators.
  -- If node boot in progress when slurmctld daemon is restarted, then allow
     sufficient time for reboot to complete and not prematurely DOWN the node as
     "Not responding".
+ -- For job resize, correct logic to build "resize" script with new values.
+    Previously the scripts were based upon the original job size.
 
 * Changes in Slurm 16.05.9
 ==========================
@@ -1096,6 +1099,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 15.08.14
 ===========================
+ -- For job resize, correct logic to build "resize" script with new values.
+    Previously the scripts were based upon the original job size.
 
 * Changes in Slurm 15.08.13
 ===========================

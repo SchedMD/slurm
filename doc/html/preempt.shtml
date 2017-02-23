@@ -187,8 +187,9 @@ each pending job which is a candidate to start.
 This list is sorted by either:
 </P>
 <ol>
-<li>QOS priority or</li>
-<li>Partition priority and job size (to favor preempting smaller jobs</li>
+<li>QOS priority,</li>
+<li>Partition priority and job size (to favor preempting smaller jobs), or</li>
+<li>Job start time (with <I>SchedulerParameters=preempt_youngest_first</I>).</li>
 </ol>
 <P>
 The select plugin will determine if the pending job can start without preempting

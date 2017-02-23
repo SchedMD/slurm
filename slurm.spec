@@ -420,17 +420,16 @@ rm -rf "$RPM_BUILD_ROOT"
 DESTDIR="$RPM_BUILD_ROOT" %__make install
 DESTDIR="$RPM_BUILD_ROOT" %__make install-contrib
 
-if [ -d /etc/init.d ]; then
+if [ -d /usr/lib/systemd/system ]; then
+   install -D -m644 etc/slurmctld.service $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmctld.service
+   install -D -m644 etc/slurmd.service    $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmd.service
+   install -D -m644 etc/slurmdbd.service  $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmdbd.service
+elif [ -d /etc/init.d ]; then
    install -D -m755 etc/init.d.slurm    $RPM_BUILD_ROOT/etc/init.d/slurm
    install -D -m755 etc/init.d.slurmdbd $RPM_BUILD_ROOT/etc/init.d/slurmdbd
    mkdir -p "$RPM_BUILD_ROOT/usr/sbin"
    ln -s ../../etc/init.d/slurm    $RPM_BUILD_ROOT/usr/sbin/rcslurm
    ln -s ../../etc/init.d/slurmdbd $RPM_BUILD_ROOT/usr/sbin/rcslurmdbd
-fi
-if [ -d /usr/lib/systemd/system ]; then
-   install -D -m644 etc/slurmctld.service $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmctld.service
-   install -D -m644 etc/slurmd.service    $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmd.service
-   install -D -m644 etc/slurmdbd.service  $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmdbd.service
 fi
 
 # Do not package Slurm's version of libpmi on Cray systems.
@@ -992,7 +991,9 @@ rm -rf $RPM_BUILD_ROOT
 if [ -x /sbin/ldconfig ]; then
     /sbin/ldconfig %{_libdir}
     if [ $1 = 1 ]; then
-	[ -x /sbin/chkconfig ] && /sbin/chkconfig --add slurm
+	if [ -x /etc/init.d/slurm ]; then
+	    [ -x /sbin/chkconfig ] && /sbin/chkconfig --add slurm
+        fi
     fi
 fi
 
@@ -1025,7 +1026,9 @@ fi
 
 %postun
 if [ "$1" -gt 1 ]; then
-    /etc/init.d/slurm condrestart
+    if [ -x /etc/init.d/slurmdbd ]; then
+        /etc/init.d/slurm condrestart
+    fi
 elif [ "$1" -eq 0 ]; then
     if [ -x /sbin/ldconfig ]; then
 	/sbin/ldconfig %{_libdir}
@@ -1037,7 +1040,9 @@ fi
 
 %postun slurmdbd
 if [ "$1" -gt 1 ]; then
-    /etc/init.d/slurmdbd condrestart
+    if [ -x /etc/init.d/slurmdbd ]; then
+        /etc/init.d/slurm condrestart
+    fi
 fi
 
 #############################################################################
