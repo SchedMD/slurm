@@ -296,6 +296,8 @@ documents those changes that are of interest to users and administrators.
     "Not responding".
  -- For job resize, correct logic to build "resize" script with new values.
     Previously the scripts were based upon the original job size.
+ -- Fix squeue to not limit the size of partition, burst_buffer, exec_host, or
+    reason to 32 chars.
 
 * Changes in Slurm 16.05.9
 ==========================
