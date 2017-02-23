@@ -134,7 +134,7 @@ users should have consistent names and IDs.</p>
 
 <p>The best way to insure security of the data is by authenticating
 communications to the SlurmDBD and we recommend
-<a href="https://code.google.com/p/munge/">MUNGE</a> for that purpose.
+<a href="https://dun.github.io/munge/">MUNGE</a> for that purpose.
 If you have one cluster managed by Slurm and execute the SlurmDBD
 on that one cluster, the normal MUNGE configuration will suffice.
 Otherwise MUNGE should then be installed on all nodes of all

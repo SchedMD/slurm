@@ -15,7 +15,7 @@ perform <a href="#upgrade">upgrades</a>.</p>
 <ol>
 <li>Make sure the clocks, users and groups (UIDs and GIDs) are synchronized
 across the cluster.</li>
-<li>Install <a href="https://code.google.com/p/munge/">MUNGE</a> for
+<li>Install <a href="https://dun.github.io/munge/">MUNGE</a> for
 authentication. Make sure that all nodes in your cluster have the
 same <i>munge.key</i>. Make sure the MUNGE daemon, <i>munged</i>
 is started before you start the Slurm daemons.</li>
@@ -294,7 +294,7 @@ users and groups must be configured on those hosts.</p>
 authentication infrastructure is provided by a dynamically loaded
 plugin chosen at runtime via the <b>AuthType</b> keyword in the Slurm
 configuration file.  Currently available authentication types include
-<a href="https://code.google.com/p/munge/">munge</a>, and none.
+<a href="https://dun.github.io/munge/">munge</a>, and none.
 The default authentication infrastructure is "munge", but this does
 require the installation of the MUNGE package.
 An authentication type of "none" requires no infrastructure, but permits
@@ -574,7 +574,7 @@ You must specify one &quot;auth&quot; plugin for this purpose using the
 Currently, only two authentication plugins are supported:
 <b>auth/none</b> and <b>auth/munge</b>.
 The auth/none plugin is built by default, but
-LLNL's <a href="https://code.google.com/p/munge/">MUNGE</a>
+<a href="https://dun.github.io/munge/">MUNGE</a>
 should be installed in order to get properly authenticated communications.
 We recommend the use of MUNGE.
 The configure script in the top-level directory of this distribution will
