@@ -633,13 +633,20 @@ extern void slurmdb_pack_clus_res_rec(void *in, uint16_t protocol_version,
 {
 	slurmdb_clus_res_rec_t *object = (slurmdb_clus_res_rec_t *)in;
 
-	if (!object) {
-		packnull(buffer);
-		pack16((uint16_t)NO_VAL, buffer);
-		return;
+	xassert(buffer);
+
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (!object) {
+			packnull(buffer);
+			pack16(NO_VAL16, buffer);
+			return;
+		}
+		packstr(object->cluster, buffer);
+		pack16(object->percent_allowed, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
 	}
-	packstr(object->cluster, buffer);
-	pack16(object->percent_allowed, buffer);
 }
 
 extern int slurmdb_unpack_clus_res_rec(void **object, uint16_t protocol_version,
@@ -649,11 +656,22 @@ extern int slurmdb_unpack_clus_res_rec(void **object, uint16_t protocol_version,
 	slurmdb_clus_res_rec_t *object_ptr =
 		xmalloc(sizeof(slurmdb_clus_res_rec_t));
 
+	xassert(object);
+	xassert(buffer);
+
 	*object = object_ptr;
 
 	slurmdb_init_clus_res_rec(object_ptr, 0);
-	safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp, buffer);
-	safe_unpack16(&object_ptr->percent_allowed, buffer);
+
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp,
+				       buffer);
+		safe_unpack16(&object_ptr->percent_allowed, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
 
 	return SLURM_SUCCESS;
 
