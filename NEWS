@@ -41,6 +41,8 @@ documents those changes that are of interest to users and administrators.
  -- If node boot in progress when slurmctld daemon is restarted, then allow
     sufficient time for reboot to complete and not prematurely DOWN the node as
     "Not responding".
+ -- For job resize, correct logic to build "resize" script with new values.
+    Previously the scripts were based upon the original job size.
 
 * Changes in Slurm 16.05.9
 ==========================
