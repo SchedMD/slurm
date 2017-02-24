@@ -33,6 +33,7 @@ documents those changes that are of interest to users and administrators.
     "Linux 4.8.0-28-generic #28-Ubuntu SMP Sat Feb 8 09:15:00 UTC 2017").
  -- Remove cgroup.conf parameters "CgroupReleaseAgentDir" and
     "CgroupSubsystems".
+ -- jobcomp_elasticsearch - Add "job_name" field to stored information.
 
 * Changes in Slurm 17.02.1
 ==========================

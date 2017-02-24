@@ -775,6 +775,9 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 			   (unsigned long) time_limit * 60);
 	}
 
+	if (job_ptr->name && job_ptr->name[0])
+		xstrfmtcat(buffer, ",\"job_name\":\"%s\"", job_ptr->name);
+
 	if (job_ptr->resv_name && job_ptr->resv_name[0]) {
 		xstrfmtcat(buffer, ",\"reservation_name\":\"%s\"",
 			   job_ptr->resv_name);
