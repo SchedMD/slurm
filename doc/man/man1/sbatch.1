@@ -475,7 +475,7 @@ For job arrays, the default file name is "slurm-%A_%a.out", "%A" is replaced
 by the job ID and "%a" with the array index.
 For other jobs, the default file name is "slurm-%j.out", where the "%j" is
 replaced by the job ID.
-See the \fB\-\-input\fR option for filename specification options.
+See the \fBfilename pattern\fR section below for filename specification options.
 
 .TP
 \fB\-\-exclusive[=user|mcs]\fR
@@ -623,37 +623,7 @@ directly to the file name specified in the "\fIfilename pattern\fR".
 By default, "/dev/null" is open on the batch script's standard input and both
 standard output and standard error are directed to a file of the name
 "slurm\-%j.out", where the "%j" is replaced with the job allocation number, as
-described below.
-
-The filename pattern may contain one or more replacement symbols, which are
-a percent sign "%" followed by a letter (e.g. %j).
-
-Supported replacement symbols are:
-.PD
-.RS
-.TP
-\fB\\\\\fR
-Do not process any of the replacement symbols.
-.TP
-\fB%%\fR
-The character "%".
-.TP
-\fB%A\fR
-Job array's master job allocation number.
-.TP
-\fB%a\fR
-Job array ID (index) number.
-.TP
-\fB%j\fR
-Job allocation number.
-.TP
-\fB%N\fR
-Node name.  Only one file is created, so %N will be replaced by the name of the
-first node in the job, which is the one that runs the script.
-.TP
-\fB%u\fR
-User name.
-.RE
+described below in the \fBfilename pattern\fR section.
 
 .TP
 \fB\-J\fR, \fB\-\-job\-name\fR=<\fIjobname\fR>
@@ -1240,7 +1210,7 @@ For job arrays, the default file name is "slurm-%A_%a.out", "%A" is replaced
 by the job ID and "%a" with the array index.
 For other jobs, the default file name is "slurm-%j.out", where the "%j" is
 replaced by the job ID.
-See the \fB\-\-input\fR option for filename specification options.
+See the \fBfilename pattern\fR section below for filename specification options.
 
 .TP
 \fB\-\-open\-mode\fR=append|truncate
@@ -1666,6 +1636,68 @@ By default the specified geometry can rotate in three dimensions.
 \fB\-\-ramdisk\-image\fR=<\fIpath\fR>
 Path to ramdisk image for bluegene block.  BGL only.
 Default from \fIblugene.conf\fR if not set.
+
+.SH \fBfilename pattern\fR
+.PP
+\fBsbatch\fR allows for a filename pattern to contain one or more replacement
+symbols, which are a percent sign "%" followed by a letter (e.g. %j).
+.TP
+\fB\\\\\fR
+Do not process any of the replacement symbols.
+.TP
+\fB%%\fR
+The character "%".
+.TP
+\fB%A\fR
+Job array's master job allocation number.
+.TP
+\fB%a\fR
+Job array ID (index) number.
+.TP
+\fB%J\fR
+jobid.stepid of the running job. (e.g. "128.0")
+.TP
+\fB%j\fR
+jobid of the running job.
+.TP
+\fB%N\fR
+short hostname. This will create a separate IO file per node.
+.TP
+\fB%n\fR
+Node identifier relative to current job (e.g. "0" is the first node of
+the running job) This will create a separate IO file per node.
+.TP
+\fB%s\fR
+stepid of the running job.
+.TP
+\fB%t\fR
+task identifier (rank) relative to current job. This will create a
+separate IO file per task.
+.TP
+\fB%u\fR
+User name.
+.TP
+\fB%x\fR
+Job name.
+.PP
+A number placed between the percent character and format specifier may be
+used to zero\-pad the result in the IO filename. This number is ignored if
+the format specifier corresponds to  non\-numeric data (%N for example).
+
+Some examples of how the format string may be used for a 4 task job step
+with a Job ID of 128 and step id of 0 are included below:
+.TP 15
+job%J.out
+job128.0.out
+.TP
+job%4j.out
+job0128.out
+.TP
+job%j\-%2t.out
+job128\-00.out, job128\-01.out, ...
+.PP
+.RS -10
+.PP
 
 .SH "INPUT ENVIRONMENT VARIABLES"
 .PP

@@ -59,6 +59,8 @@ static char *_is_path_escaped(char *);
 /*
  * Fill in as much of filename as possible from srun, update
  * filename type to one of the io types ALL, NONE, PER_TASK, ONE
+ * These options should mirror those used with "sbatch" (parsed in
+ * _batch_path_check found in src/slurmd/common/fname.c)
  */
 fname_t *
 fname_create(srun_job_t *job, char *format)
@@ -213,6 +215,11 @@ fname_create(srun_job_t *job, char *format)
 				tmp_perc = NULL;
 				q = p;
 				p++;
+				break;
+			case 'x':
+				xmemcat(name, q, p - 1);
+				xstrfmtcat(name, "%s", getenv("SLURM_JOB_NAME"));
+				q = ++p;
 				break;
 			default:
 				break;
