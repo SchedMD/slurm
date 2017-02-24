@@ -783,6 +783,9 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 			   job_ptr->resv_name);
 	}
 
+	if (job_ptr->wckey && job_ptr->wckey[0])
+		xstrfmtcat(buffer, ",\"wc_key\":\"%s\"", job_ptr->wckey);
+
 	if (job_ptr->gres_req && job_ptr->gres_req[0]) {
 		xstrfmtcat(buffer, ",\"gres_req\":\"%s\"", job_ptr->gres_req);
 	}

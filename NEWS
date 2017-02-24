@@ -33,7 +33,8 @@ documents those changes that are of interest to users and administrators.
     "Linux 4.8.0-28-generic #28-Ubuntu SMP Sat Feb 8 09:15:00 UTC 2017").
  -- Remove cgroup.conf parameters "CgroupReleaseAgentDir" and
     "CgroupSubsystems".
- -- jobcomp_elasticsearch - Add "job_name" field to stored information.
+ -- jobcomp/elasticsearch - Add "job_name" and "wc_key" fields to stored
+    information.
  -- jobcomp/textfile - Add ArrayJobId, ArrayTaskId, ReservationName, Gres,
     Account, QOS, WcKey, Cluster, SubmitTime, EligibleTime, DerivedExitCode and
     ExitCode.
