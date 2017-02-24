@@ -3,7 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 17.02.1
 ==========================
- -- Modify pam module to work when configured NodeName and NodeHostname differ. 
+ -- Modify pam module to work when configured NodeName and NodeHostname differ.
+ -- Update to sbatch/srun man pages to explain the "filename pattern" clearer
 
 * Changes in Slurm 17.02.0
 ==========================

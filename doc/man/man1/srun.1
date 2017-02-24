@@ -670,7 +670,7 @@ relative path to the directory where the command is executed. This
 option applies to job allocations.
 
 .TP
-\fB\-e\fR, \fB\-\-error\fR=<\fImode\fR>
+\fB\-e\fR, \fB\-\-error\fR=<\fIfilename pattern\fR>
 Specify how stderr is to be redirected. By default in interactive mode,
 .B srun
 redirects stderr to the same file as stdout, if one is specified. The
@@ -1589,13 +1589,14 @@ defined in the file \fIslurm.h\fR and is not a variable, it is set at
 Slurm build time.
 
 .TP
-\fB\-o\fR, \fB\-\-output\fR=<\fImode\fR>
-Specify the mode for stdout redirection. By default in interactive mode,
+\fB\-o\fR, \fB\-\-output\fR=<\fIfilename pattern\fR>
+Specify the "\fIfilename pattern\fR" for stdout redirection. By default in
+interactive mode,
 .B srun
 collects stdout from all tasks and sends this output via TCP/IP to
 the attached terminal. With \fB\-\-output\fR stdout may be redirected
 to a file, to one file per task, or to /dev/null. See section
-\fBIO Redirection\fR below for the various forms of \fImode\fR.
+\fBIO Redirection\fR below for the various forms of \fIfilename pattern\fR.
 If the specified file already exists, it will be overwritten.
 .br
 
@@ -2255,8 +2256,8 @@ that runs \fBsrun\fR.  Depending on the cluster's file system layout,
 this may result in the output appearing in different places depending
 on whether the job is run in batch mode.
 .TP
-\fBformat string\fR
-\fBsrun\fR allows for a format string to be used to generate the
+\fBfilename pattern\fR
+\fBsrun\fR allows for a filename pattern to be used to generate the
 named IO file
 described above. The following list of format specifiers may be
 used in the format string to generate a filename that will be

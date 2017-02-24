@@ -253,8 +253,9 @@ static void _step_path_check(char **p, char **q, char **name, unsigned int wid,
 }
 
 /*
- * Substitute the path option for a batch job
- *
+ * Substitute the path option for a batch job. These options should mirror
+ * those used with "srun" (parsed in fname_create found in
+ * src/srun/libsrun/fname.c).
  */
 static void _batch_path_check(char **p, char **q, char **name,
 			      unsigned int wid, stepd_step_rec_t *job,
