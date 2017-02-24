@@ -10,13 +10,12 @@
 START_TEST(invalid_protocol)
 {
 	int rc;
-	slurmdb_cluster_rec_t *rec = xmalloc(sizeof(slurmdb_cluster_rec_t));
+	slurmdb_cluster_rec_t *rec = NULL;
 	Buf buf = init_buf(1024);
-
 
 	rc = slurmdb_unpack_user_rec((void **)&rec, 0, buf);
 	ck_assert_int_eq(rc, SLURM_ERROR);
-	xfree(rec);
+
 	free_buf(buf);
 }
 END_TEST
