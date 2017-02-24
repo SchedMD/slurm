@@ -128,7 +128,7 @@ extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	}
 	xfree(query);
 
-	while((row = mysql_fetch_row(result))) {
+	while ((row = mysql_fetch_row(result))) {
 		lc++;
 
 		job = xmalloc(sizeof(jobcomp_job_rec_t));

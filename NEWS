@@ -34,6 +34,9 @@ documents those changes that are of interest to users and administrators.
  -- Remove cgroup.conf parameters "CgroupReleaseAgentDir" and
     "CgroupSubsystems".
  -- jobcomp_elasticsearch - Add "job_name" field to stored information.
+ -- jobcomp/textfile - Add ArrayJobId, ArrayTaskId, ReservationName, Gres,
+    Account, QOS, WcKey, Cluster, SubmitTime, EligibleTime, DerivedExitCode and
+    ExitCode.
 
 * Changes in Slurm 17.02.1
 ==========================

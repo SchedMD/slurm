@@ -97,8 +97,8 @@ static jobcomp_job_rec_t *_parse_line(List job_info_list)
 	time_t end_time = 0;
 
 	itr = list_iterator_create(job_info_list);
-	while((jobcomp_info = list_next(itr))) {
-		if (!xstrcasecmp("JobID", jobcomp_info->name)) {
+	while ((jobcomp_info = list_next(itr))) {
+		if (!xstrcasecmp("JobId", jobcomp_info->name)) {
 			job->jobid = atoi(jobcomp_info->val);
 		} else if (!xstrcasecmp("Partition", jobcomp_info->name)) {
 			job->partition = xstrdup(jobcomp_info->val);
@@ -108,7 +108,7 @@ static jobcomp_job_rec_t *_parse_line(List job_info_list)
 		} else if (!xstrcasecmp("EndTime", jobcomp_info->name)) {
 			job->end_time = xstrdup(jobcomp_info->val);
 			end_time = parse_time(job->end_time, 1);
-		} else if (!xstrcasecmp("Userid", jobcomp_info->name)) {
+		} else if (!xstrcasecmp("UserId", jobcomp_info->name)) {
 			temp = strstr(jobcomp_info->val, "(");
 			if (!temp) {
 				job->uid = atoi(jobcomp_info->val);
