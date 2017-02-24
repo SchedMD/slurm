@@ -6,6 +6,7 @@ documents those changes that are of interest to users and administrators.
  -- Modify pam module to work when configured NodeName and NodeHostname differ.
  -- Update to sbatch/srun man pages to explain the "filename pattern" clearer
  -- Add %x to sbatch/srun filename pattern to represent the job name.
+ -- job_submit/lua - Add job "bitflags" field.
 
 * Changes in Slurm 17.02.0
 ==========================
