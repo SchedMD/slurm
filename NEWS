@@ -35,7 +35,7 @@ documents those changes that are of interest to users and administrators.
     "CgroupSubsystems".
  -- jobcomp/elasticsearch - Add "job_name" and "wc_key" fields to stored
     information.
- -- jobcomp/textfile - Add ArrayJobId, ArrayTaskId, ReservationName, Gres,
+ -- jobcomp/filetxt - Add ArrayJobId, ArrayTaskId, ReservationName, Gres,
     Account, QOS, WcKey, Cluster, SubmitTime, EligibleTime, DerivedExitCode and
     ExitCode.
 
