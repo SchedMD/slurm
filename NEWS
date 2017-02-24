@@ -31,6 +31,8 @@ documents those changes that are of interest to users and administrators.
  -- Node "OS" field expanded from "sysname" to "sysname release version" (e.g.
     change from "Linux" to
     "Linux 4.8.0-28-generic #28-Ubuntu SMP Sat Feb 8 09:15:00 UTC 2017").
+ -- Remove cgroup.conf parameters "CgroupReleaseAgentDir" and
+    "CgroupSubsystems".
 
 * Changes in Slurm 17.02.1
 ==========================

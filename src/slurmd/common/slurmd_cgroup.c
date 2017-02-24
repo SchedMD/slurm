@@ -56,8 +56,8 @@
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-static xcgroup_t system_cpuset_cg = {NULL, NULL, NULL, 0, 0, 0, 0};
-static xcgroup_t system_memory_cg = {NULL, NULL, NULL, 0, 0, 0, 0};
+static xcgroup_t system_cpuset_cg = {NULL, NULL, NULL, 0, 0, 0};
+static xcgroup_t system_memory_cg = {NULL, NULL, NULL, 0, 0, 0};
 
 static bool cpuset_prefix_set = false;
 static char *cpuset_prefix = "";
@@ -336,7 +336,6 @@ static char* _system_cgroup_create_slurm_cg (xcgroup_ns_t* ns)
 		xfree(pre);
 		return pre;
 	}
-	slurm_cg.notify = 0;
 	if (xcgroup_instantiate(&slurm_cg) != XCGROUP_SUCCESS) {
 		error("system cgroup: unable to build slurm cgroup for "
 		      "ns %s: %m",
