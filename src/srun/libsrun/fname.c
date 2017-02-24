@@ -216,6 +216,11 @@ fname_create(srun_job_t *job, char *format)
 				q = p;
 				p++;
 				break;
+			case 'x':
+				xmemcat(name, q, p - 1);
+				xstrfmtcat(name, "%s", getenv("SLURM_JOB_NAME"));
+				q = ++p;
+				break;
 			default:
 				break;
 			}

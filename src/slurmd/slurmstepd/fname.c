@@ -312,6 +312,11 @@ static void _batch_path_check(char **p, char **q, char **name,
 		xstrfmtcat(*name, "%s", job->user_name);
 		*q = ++(*p);
 		break;
+	case 'x':  /* '%x' => job name       */
+		xmemcat(*name, *q, *p - 1);
+		xstrfmtcat(*name, "%s", getenvp(job->env, "SLURM_JOB_NAME"));
+		*q = ++(*p);
+		break;
 	default:
 		break;
 	}
