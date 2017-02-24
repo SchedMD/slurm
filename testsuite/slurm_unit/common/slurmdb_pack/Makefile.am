@@ -16,7 +16,8 @@ TESTS += pack_user_rec-test \
 	 pack_used_limits-test \
 	 pack_account_rec-test \
 	 pack_coord_rec-test \
-	 pack_cluster_acct_rec-test
+	 pack_cluster_acct_rec-test \
+	 pack_clus_res_rec-test
 
 pack_user_rec_test_CFLAGS = $(MYCFLAGS)
 pack_user_rec_test_LDADD  = $(LDADD) @CHECK_LIBS@
@@ -35,5 +36,8 @@ pack_coord_rec_test_LDADD  = $(LDADD) @CHECK_LIBS@
 
 pack_cluster_acct_rec_test_CFLAGS = $(MYCFLAGS)
 pack_cluster_acct_rec_test_LDADD  = $(LDADD) @CHECK_LIBS@
+
+pack_clus_res_rec_test_CFLAGS = $(MYCFLAGS)
+pack_clus_res_rec_test_LDADD  = $(LDADD) @CHECK_LIBS@
 
 endif
