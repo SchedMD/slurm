@@ -76,6 +76,8 @@ static void _clear_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	if (slurm_cgroup_conf) {
 		slurm_cgroup_conf->cgroup_automount = false ;
 		xfree(slurm_cgroup_conf->cgroup_mountpoint);
+		xfree(slurm_cgroup_conf->cgroup_subsystems);
+		xfree(slurm_cgroup_conf->cgroup_release_agent);
 		xfree(slurm_cgroup_conf->cgroup_prepend);
 		slurm_cgroup_conf->constrain_cores = false ;
 		slurm_cgroup_conf->task_affinity = false ;
@@ -171,7 +173,6 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	if ((conf_path == NULL) || (stat(conf_path, &buf) == -1)) {
 		debug2("%s: No cgroup.conf file (%s)", __func__, conf_path);
 	} else {
-		char *tmp = NULL;
 		debug("Reading cgroup.conf file %s", conf_path);
 
 		tbl = s_p_hashtbl_create(options);
@@ -191,19 +192,13 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 			slurm_cgroup_conf->cgroup_mountpoint =
 				xstrdup(DEFAULT_CGROUP_BASEDIR);
 
-		if (s_p_get_string(&tmp, "CgroupSubsystems", tbl)) {
-			/* NOTE: Option removed from Slurm version 17.11 */
-			error("CgroupSubsystems option ignored. "
-			      "Please remove from cgroup.conf");
-			xfree(tmp);
-		}
-
-		if (s_p_get_string(&tmp, "CgroupReleaseAgentDir", tbl)) {
-			/* NOTE: Option removed from Slurm version 17.11 */
-			error("CgroupReleaseAgentDir option ignored. "
-			      "Please remove from cgroup.conf");
-			xfree(tmp);
-		}
+		s_p_get_string(&slurm_cgroup_conf->cgroup_subsystems,
+			       "CgroupSubsystems", tbl);
+		s_p_get_string(&slurm_cgroup_conf->cgroup_release_agent,
+			       "CgroupReleaseAgentDir", tbl);
+		if (! slurm_cgroup_conf->cgroup_release_agent)
+			slurm_cgroup_conf->cgroup_release_agent =
+				xstrdup("/etc/slurm/cgroup");
 
 		/* cgroup prepend directory */
 #ifndef MULTIPLE_SLURMD

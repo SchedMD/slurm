@@ -304,8 +304,9 @@ static uint64_t kmem_limit_in_bytes (uint64_t mlb)
 	return allowed_kmem_space;
 }
 
-static int _memcg_initialize(xcgroup_ns_t *ns, xcgroup_t *cg, char *path,
-			     uint64_t mem_limit, uid_t uid, gid_t gid)
+static int memcg_initialize (xcgroup_ns_t *ns, xcgroup_t *cg,
+			     char *path, uint64_t mem_limit, uid_t uid,
+			     gid_t gid, uint32_t notify)
 {
 	uint64_t mlb = mem_limit_in_bytes (mem_limit, true);
 	uint64_t mlb_soft = mem_limit_in_bytes(mem_limit, false);
@@ -313,6 +314,8 @@ static int _memcg_initialize(xcgroup_ns_t *ns, xcgroup_t *cg, char *path,
 
 	if (xcgroup_create (ns, cg, path, uid, gid) != XCGROUP_SUCCESS)
 		return -1;
+
+	cg->notify = notify;
 
 	if (xcgroup_instantiate (cg) != XCGROUP_SUCCESS) {
 		xcgroup_destroy (cg);
@@ -469,9 +472,11 @@ extern int task_cgroup_memory_create(stepd_step_rec_t *job)
 	/*
 	 * Create job cgroup in the memory ns (it could already exist)
 	 * and set the associated memory limits.
+	 * Disable notify_on_release for this memcg, it will be
+	 * manually removed by the plugin at the end of the step.
 	 */
-	if (_memcg_initialize(&memory_ns, &job_memory_cg, job_cgroup_path,
-	                      job->job_mem, getuid(), getgid()) < 0) {
+	if (memcg_initialize (&memory_ns, &job_memory_cg, job_cgroup_path,
+	                      job->job_mem, getuid(), getgid(), 0) < 0) {
 		xcgroup_destroy (&user_memory_cg);
 		goto error;
 	}
@@ -479,9 +484,11 @@ extern int task_cgroup_memory_create(stepd_step_rec_t *job)
 	/*
 	 * Create step cgroup in the memory ns (it should not exists)
 	 * and set the associated memory limits.
+	 * Disable notify_on_release for the step memcg, it will be
+	 * manually removed by the plugin at the end of the step.
 	 */
-	if (_memcg_initialize(&memory_ns, &step_memory_cg, jobstep_cgroup_path,
-	                      job->step_mem, uid, gid) < 0) {
+	if (memcg_initialize (&memory_ns, &step_memory_cg, jobstep_cgroup_path,
+	                      job->step_mem, uid, gid, 0) < 0) {
 		xcgroup_destroy(&user_memory_cg);
 		xcgroup_destroy(&job_memory_cg);
 		goto error;
