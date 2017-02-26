@@ -336,7 +336,7 @@ static void _agent_proc_connect(int fe_comm_socket,uint32_t fe_auth_key)
 	}
 
 fini:	if (fe_comm_conn >= 0)
-		slurm_close(fe_comm_conn);
+		close(fe_comm_conn);
 	if (buffer)
 		free_buf(buffer);
 }

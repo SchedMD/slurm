@@ -3688,7 +3688,7 @@ _rpc_timelimit(slurm_msg_t *msg)
 	 *  Indicate to slurmctld that we've received the message
 	 */
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
-	slurm_close(msg->conn_fd);
+	close(msg->conn_fd);
 	msg->conn_fd = -1;
 
 	if (req->step_id != NO_VAL) {
@@ -4691,7 +4691,7 @@ _rpc_signal_job(slurm_msg_t *msg)
 		      req->job_id, req_uid);
 		if (msg->conn_fd >= 0) {
 			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
-			if (slurm_close(msg->conn_fd) < 0)
+			if (close(msg->conn_fd) < 0)
 				error ("_rpc_signal_job: close(%d): %m",
 				       msg->conn_fd);
 			msg->conn_fd = -1;
@@ -4751,7 +4751,7 @@ no_job:
 	 */
 	if (msg->conn_fd >= 0) {
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
-		if (slurm_close(msg->conn_fd) < 0)
+		if (close(msg->conn_fd) < 0)
 			error ("_rpc_signal_job: close(%d): %m", msg->conn_fd);
 		msg->conn_fd = -1;
 	}
@@ -4862,7 +4862,7 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	 * detected with the request */
 	if (msg->conn_fd >= 0) {
 		slurm_send_rc_msg(msg, rc);
-		if (slurm_close(msg->conn_fd) < 0)
+		if (close(msg->conn_fd) < 0)
 			error("_rpc_suspend_job: close(%d): %m",
 			      msg->conn_fd);
 		msg->conn_fd = -1;
@@ -5069,7 +5069,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 	 */
 	if (msg->conn_fd >= 0) {
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
-		if (slurm_close(msg->conn_fd) < 0)
+		if (close(msg->conn_fd) < 0)
 			error ("rpc_abort_job: close(%d): %m", msg->conn_fd);
 		msg->conn_fd = -1;
 	}
@@ -5402,7 +5402,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 			 */
 			debug("sent SUCCESS, waiting for step to start");
 			slurm_send_rc_msg (msg, SLURM_SUCCESS);
-			if (slurm_close(msg->conn_fd) < 0)
+			if (close(msg->conn_fd) < 0)
 				error ( "rpc_kill_job: close(%d): %m",
 					msg->conn_fd);
 			msg->conn_fd = -1;
@@ -5487,7 +5487,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	if (msg->conn_fd >= 0) {
 		debug4("sent SUCCESS");
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
-		if (slurm_close(msg->conn_fd) < 0)
+		if (close(msg->conn_fd) < 0)
 			error ("rpc_kill_job: close(%d): %m", msg->conn_fd);
 		msg->conn_fd = -1;
 	}

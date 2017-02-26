@@ -2715,7 +2715,7 @@ static int   _register_ctld(slurmdbd_conn_t *slurmdbd_conn,
 			/* We probably need to add matching recv_msg function
 			 * for an arbitray fd or should these be fire
 			 * and forget? */
-			slurm_close(fd);
+			close(fd);
 		}
 	}
 #endif

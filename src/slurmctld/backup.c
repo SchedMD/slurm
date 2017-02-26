@@ -368,11 +368,11 @@ static void *_background_rpc_mgr(void *no_data)
 
 		slurm_free_msg_members(&msg);
 
-		slurm_close(newsockfd);	/* close new socket */
+		close(newsockfd);	/* close new socket */
 	}
 
 	debug3("_background_rpc_mgr shutting down");
-	slurm_close(sockfd);	/* close the main socket */
+	close(sockfd);	/* close the main socket */
 	pthread_exit((void *) 0);
 	return NULL;
 }

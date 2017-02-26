@@ -194,7 +194,7 @@ void *_forward_thread(void *arg)
 				free_buf(buffer);
 				buffer = init_buf(fwd_struct->buf_len);
 				slurm_mutex_unlock(&fwd_struct->forward_mutex);
-				slurm_close(fd);
+				close(fd);
 				fd = -1;
 				/* Abandon tree. This way if all the
 				 * nodes in the branch are down we
@@ -265,7 +265,7 @@ void *_forward_thread(void *arg)
 				free_buf(buffer);
 				buffer = init_buf(fwd_struct->buf_len);
 				slurm_mutex_unlock(&fwd_struct->forward_mutex);
-				slurm_close(fd);
+				close(fd);
 				fd = -1;
 				continue;
 			}
@@ -334,7 +334,7 @@ void *_forward_thread(void *arg)
 	}
 	free(name);
 cleanup:
-	if ((fd >= 0) && slurm_close(fd) < 0)
+	if ((fd >= 0) && close(fd) < 0)
 		error ("close(%d): %m", fd);
 	hostlist_destroy(hl);
 	destroy_forward(&fwd_msg->header.forward);

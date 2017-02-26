@@ -220,7 +220,7 @@ again:
 	(*obj->ops->handle_msg)(obj->arg, msg);
 
 cleanup:
-	if ((msg->conn_fd >= 0) && (slurm_close(msg->conn_fd) < 0))
+	if ((msg->conn_fd >= 0) && (close(msg->conn_fd) < 0))
 		error ("close(%d): %m", msg->conn_fd);
 	slurm_free_msg(msg);
 

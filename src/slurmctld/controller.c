@@ -1104,7 +1104,7 @@ static void *_service_connection(void *arg)
 				       sizeof(addr_buf));
 		error("slurm_receive_msg [%s]: %m", addr_buf);
 		/* close the new socket */
-		slurm_close(conn->newsockfd);
+		close(conn->newsockfd);
 		goto cleanup;
 	}
 
@@ -1118,8 +1118,7 @@ static void *_service_connection(void *arg)
 		slurmctld_req(&msg, conn);
 	}
 
-	if ((conn->newsockfd >= 0) &&
-	    (slurm_close(conn->newsockfd) < 0))
+	if ((conn->newsockfd >= 0) && (close(conn->newsockfd) < 0))
 		error ("close(%d): %m",  conn->newsockfd);
 
 cleanup:

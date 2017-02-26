@@ -769,20 +769,20 @@ _accept_msg_connection(int listen_fd,
 		slurm_free_msg(msg);
 
 		if (errno == EINTR) {
-			slurm_close(conn_fd);
+			close(conn_fd);
 			*resp = NULL;
 			return 0;
 		}
 
 		error("_accept_msg_connection[%s]: %m", host);
-		slurm_close(conn_fd);
+		close(conn_fd);
 		return SLURM_ERROR;
 	}
 
 	rc = _handle_msg(msg, resp); /* _handle_msg transfers message payload */
 	slurm_free_msg(msg);
 
-	slurm_close(conn_fd);
+	close(conn_fd);
 	return rc;
 }
 

@@ -2936,7 +2936,7 @@ int slurm_init_msg_engine_addrname_port(char *addr_name, uint16_t port)
  */
 int slurm_shutdown_msg_engine(int fd)
 {
-	int rc = slurm_close(fd);
+	int rc = close(fd);
 	if (rc)
 		slurm_seterrno(SLURM_COMMUNICATIONS_SHUTDOWN_ERROR);
 	return rc;
@@ -2951,7 +2951,7 @@ int slurm_shutdown_msg_engine(int fd)
  */
 int slurm_shutdown_msg_conn(int fd)
 {
-	return slurm_close(fd);
+	return close(fd);
 }
 
 /**********************************************************************\

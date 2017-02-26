@@ -167,6 +167,6 @@ static void *_pty_thread(void *arg)
 		}
 		winch = 0;
 	}
-	slurm_close(fd);
+	close(fd);
 	return NULL;
 }

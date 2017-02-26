@@ -217,6 +217,4 @@ extern int slurm_getpeername (int __fd, struct sockaddr * __addr,
 extern int slurm_setsockopt (int __fd, int __level, int __optname,
 			     __const void *__optval, socklen_t __optlen) ;
 
-extern int slurm_close (int __fd ) ;
-
 #endif /* !_SLURM_PROTOCOL_INTERFACE_H */

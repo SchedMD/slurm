@@ -601,7 +601,7 @@ _service_connection(void *arg)
 		slurmd_req(msg);
 
 cleanup:
-	if ((msg->conn_fd >= 0) && slurm_close(msg->conn_fd) < 0)
+	if ((msg->conn_fd >= 0) && close(msg->conn_fd) < 0)
 		error ("close(%d): %m", con->fd);
 
 	xfree(con->cli_addr);

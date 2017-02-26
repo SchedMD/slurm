@@ -446,8 +446,8 @@ extern int slurm_init_msg_engine(slurm_addr_t *addr)
 	return fd;
 
     error:
-	if ((slurm_close(fd) < 0) && (errno == EINTR))
-		slurm_close(fd);	/* try again */
+	if ((close(fd) < 0) && (errno == EINTR))
+		close(fd);	/* try again */
 	return rc;
 
 }
@@ -502,8 +502,8 @@ extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 			goto error;
 		}
 
-		if ((slurm_close(fd) < 0) && (errno == EINTR))
-			slurm_close(fd);	/* try again */
+		if ((close(fd) < 0) && (errno == EINTR))
+			close(fd);	/* try again */
 	}
 
 	return fd;
@@ -512,8 +512,8 @@ extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 	slurm_get_ip_str(addr, &port, ip, sizeof(ip));
 	debug2("Error connecting slurm stream socket at %s:%d: %m",
 	       ip, ntohs(port));
-	if ((slurm_close(fd) < 0) && (errno == EINTR))
-		slurm_close(fd);	/* try again */
+	if ((close(fd) < 0) && (errno == EINTR))
+		close(fd);	/* try again */
 	return SLURM_SOCKET_ERROR;
 }
 
@@ -658,11 +658,6 @@ static int _slurm_setsockopt (int __fd, int __level, int __optname,
 			      __const void *__optval, socklen_t __optlen)
 {
 	return setsockopt ( __fd , __level , __optname , __optval , __optlen ) ;
-}
-
-extern int slurm_close (int __fd )
-{
-	return close ( __fd ) ;
 }
 
 static int _slurm_fcntl(int fd, int cmd, ... )
