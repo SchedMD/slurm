@@ -66,7 +66,6 @@
  * for details.
  */
 strong_alias(net_stream_listen,		slurm_net_stream_listen);
-strong_alias(net_accept_stream,		slurm_net_accept_stream);
 strong_alias(net_set_low_water,		slurm_net_set_low_water);
 
 #ifndef NET_DEFAULT_BACKLOG
@@ -122,24 +121,6 @@ int net_stream_listen(int *fd, uint16_t *port)
   cleanup:
 	close(*fd);
 	return -1;
-}
-
-
-int net_accept_stream(int fd)
-{
-	int sd;
-
-	while ((sd = accept(fd, NULL, NULL)) < 0) {
-		if (errno == EINTR)
-			continue;
-		if ((errno == EAGAIN) || (errno == EWOULDBLOCK))
-			return -1;
-		if (errno == ECONNABORTED)
-			return -1;
-		error("Unable to accept new connection");
-	}
-
-	return sd;
 }
 
 int net_set_low_water(int sock, socklen_t size)

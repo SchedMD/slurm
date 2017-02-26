@@ -54,10 +54,6 @@
  */
 extern int net_stream_listen(int *fd, uint16_t *port);
 
-/* accept the incoming connection on the stream socket fd
- */
-extern int net_accept_stream(int fd);
-
 /* set low water mark on socket
  */
 extern int net_set_low_water(int sock, socklen_t size);

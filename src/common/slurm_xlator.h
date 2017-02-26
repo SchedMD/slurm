@@ -219,7 +219,6 @@
 
 /* net.[ch] functions */
 #define net_stream_listen	slurm_net_stream_listen
-#define net_accept_stream	slurm_net_accept_stream
 #define net_set_low_water	slurm_net_set_low_water
 
 /* pack.[ch] functions */
