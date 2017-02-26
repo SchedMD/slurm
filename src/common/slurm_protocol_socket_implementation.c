@@ -81,8 +81,6 @@
 static int _slurm_connect(int __fd, struct sockaddr const * __addr,
 			  socklen_t __len);
 static int _slurm_create_socket ( slurm_socket_type_t type );
-static int _slurm_vfcntl(int fd, int cmd, va_list va );
-static int _slurm_fcntl(int fd, int cmd, ... );
 static int _slurm_socket (int __domain, int __type, int __protocol);
 
 
@@ -217,7 +215,7 @@ extern int slurm_send_timeout(int fd, char *buf, size_t size,
 	ufds.fd     = fd;
 	ufds.events = POLLOUT;
 
-	fd_flags = _slurm_fcntl(fd, F_GETFL);
+	fd_flags = fcntl(fd, F_GETFL);
 	fd_set_nonblocking(fd);
 
 	gettimeofday(&tstart, NULL);
@@ -300,7 +298,7 @@ extern int slurm_send_timeout(int fd, char *buf, size_t size,
 	/* Reset fd flags to prior state, preserve errno */
 	if (fd_flags != SLURM_PROTOCOL_ERROR) {
 		int slurm_err = slurm_get_errno();
-		_slurm_fcntl(fd , F_SETFL , fd_flags);
+		fcntl(fd, F_SETFL, fd_flags);
 		slurm_seterrno(slurm_err);
 	}
 
@@ -323,7 +321,7 @@ extern int slurm_recv_timeout(int fd, char *buffer, size_t size,
 	ufds.fd     = fd;
 	ufds.events = POLLIN;
 
-	fd_flags = _slurm_fcntl(fd, F_GETFL);
+	fd_flags = fcntl(fd, F_GETFL);
 	fd_set_nonblocking(fd);
 
 	gettimeofday(&tstart, NULL);
@@ -401,7 +399,7 @@ extern int slurm_recv_timeout(int fd, char *buffer, size_t size,
 	/* Reset fd flags to prior state, preserve errno */
 	if (fd_flags != SLURM_PROTOCOL_ERROR) {
 		int slurm_err = slurm_get_errno();
-		_slurm_fcntl(fd , F_SETFL , fd_flags);
+		fcntl(fd, F_SETFL, fd_flags);
 		slurm_seterrno(slurm_err);
 	}
 
@@ -622,36 +620,6 @@ done:
 
 	return 0;
 #endif
-}
-
-static int _slurm_fcntl(int fd, int cmd, ... )
-{
-	int rc ;
-	va_list va ;
-
-	va_start ( va , cmd ) ;
-	rc = _slurm_vfcntl ( fd , cmd , va ) ;
-	va_end ( va ) ;
-	return rc ;
-}
-
-static int _slurm_vfcntl(int fd, int cmd, va_list va )
-{
-	long arg ;
-
-	switch ( cmd )
-	{
-		case F_GETFL :
-			return fcntl ( fd , cmd ) ;
-			break ;
-		case F_SETFL :
-			arg = va_arg ( va , long ) ;
-			return fcntl ( fd , cmd , arg) ;
-			break ;
-		default :
-			return SLURM_PROTOCOL_ERROR ;
-			break ;
-	}
 }
 
 extern void slurm_set_addr_char (slurm_addr_t * addr, uint16_t port, char *host)
