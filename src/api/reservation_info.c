@@ -107,8 +107,9 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	bool is_bluegene = cluster_flags & CLUSTER_FLAG_BG;
 	char *line_end = (one_liner) ? " " : "\n   ";
+	int i;
 
-	/****** Line 1 ******/
+	/****** Line ******/
 	slurm_make_time_str(&resv_ptr->start_time, tmp1, sizeof(tmp1));
 	slurm_make_time_str(&resv_ptr->end_time,   tmp2, sizeof(tmp2));
 	if (resv_ptr->end_time >= resv_ptr->start_time) {
@@ -122,7 +123,7 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 		 resv_ptr->name, tmp1, tmp2, tmp3);
 	xstrcat(out, line_end);
 
-	/****** Line 2 ******/
+	/****** Line ******/
 	flag_str = reservation_flags_string(resv_ptr->flags);
 
 	xstrfmtcat(out, "%s=%s %sCnt=%u %sCnt=%u Features=%s "
@@ -135,12 +136,21 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 	xfree(flag_str);
 	xstrcat(out, line_end);
 
-	/****** Line 3 ******/
+	/****** Line (optional) ******/
+	for (i = 0; i < resv_ptr->core_spec_cnt; i++) {
+		xstrfmtcat(out,
+			 "  NodeName=%s CoreIDs=%s",
+			 resv_ptr->core_spec[i].node_name,
+			 resv_ptr->core_spec[i].core_id);
+		xstrcat(out, line_end);
+	}
+
+	/****** Line ******/
 	xstrfmtcat(out,
 		   "TRES=%s", resv_ptr->tres_str);
 	xstrcat(out, line_end);
 
-	/****** Line 4 ******/
+	/****** Line ******/
 	if (resv_ptr->resv_watts != (time_t) NO_VAL) {
 		snprintf(tmp1, 32, "%u", resv_ptr->resv_watts);
 	} else

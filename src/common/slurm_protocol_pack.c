@@ -5117,9 +5117,40 @@ static int
 _unpack_reserve_info_members(reserve_info_t * resv, Buf buffer,
 			     uint16_t protocol_version)
 {
-	uint32_t uint32_tmp;
+	uint32_t i, uint32_tmp;
 
-	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&resv->accounts,	&uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&resv->burst_buffer,&uint32_tmp, buffer);
+		safe_unpack32(&resv->core_cnt,          buffer);
+		safe_unpack_time(&resv->end_time,	buffer);
+		safe_unpackstr_xmalloc(&resv->features,	&uint32_tmp, buffer);
+		safe_unpack32(&resv->flags,		buffer);
+		safe_unpackstr_xmalloc(&resv->licenses, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&resv->name,	&uint32_tmp, buffer);
+		safe_unpack32(&resv->node_cnt,		buffer);
+		safe_unpackstr_xmalloc(&resv->node_list, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&resv->partition, &uint32_tmp, buffer);
+		safe_unpack32(&resv->resv_watts,        buffer);
+		safe_unpack_time(&resv->start_time,	buffer);
+
+		safe_unpackstr_xmalloc(&resv->tres_str, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&resv->users,	&uint32_tmp, buffer);
+
+		unpack_bit_str_hex_as_inx(&resv->node_inx, buffer);
+
+		safe_unpack32(&resv->core_spec_cnt,        buffer);
+		if (resv->core_spec_cnt > 0) {
+			resv->core_spec = xmalloc(sizeof(resv_core_spec_t) *
+						  resv->core_spec_cnt);
+		}
+		for (i = 0; i < resv->core_spec_cnt; i++) {
+			safe_unpackstr_xmalloc(&resv->core_spec[i].node_name,
+					       &uint32_tmp, buffer);
+			safe_unpackstr_xmalloc(&resv->core_spec[i].core_id,
+					       &uint32_tmp, buffer);
+		}
+	} else if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&resv->accounts,	&uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&resv->burst_buffer,&uint32_tmp, buffer);
 		safe_unpack32(&resv->core_cnt,          buffer);

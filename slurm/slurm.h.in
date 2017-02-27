@@ -2432,10 +2432,17 @@ void slurm_init_update_block_msg(update_block_msg_t *update_block_msg);
 #define RESERVE_FLAG_FLEX		0x02000000	/* Set FLEX flag */
 #define RESERVE_FLAG_NO_FLEX		0x04000000	/* Clear FLEX flag */
 
+typedef struct resv_core_spec {
+	char *node_name;	/* Name of reserved node */
+	char *core_id;		/* IDs of reserved cores */
+} resv_core_spec_t;
+
 typedef struct reserve_info {
 	char *accounts;		/* names of accounts permitted to use */
 	char *burst_buffer;	/* burst buffer resources to be included */
 	uint32_t core_cnt;	/* count of cores required */
+	uint32_t core_spec_cnt;	/* count of core_spec records */
+	resv_core_spec_t *core_spec; /* reserved cores specification */
 	time_t end_time;	/* end time of reservation */
 	char *features;		/* required node features */
 	uint32_t flags;		/* see RESERVE_FLAG_* above */

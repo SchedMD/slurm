@@ -36,6 +36,8 @@ documents those changes that are of interest to users and administrators.
  -- jobcomp/filetxt - Add ArrayJobId, ArrayTaskId, ReservationName, Gres,
     Account, QOS, WcKey, Cluster, SubmitTime, EligibleTime, DerivedExitCode and
     ExitCode.
+ -- scontrol modified to report core IDs for reservation containing individual
+    cores.
 
 * Changes in Slurm 17.02.1
 ==========================
