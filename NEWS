@@ -343,6 +343,8 @@ documents those changes that are of interest to users and administrators.
     reason to 32 chars.
  -- Fix potential packing error when packing a NULL slurmdb_clus_res_rec_t.
  -- Fix potential packing errors when packing a NULL slurmdb_reservation_cond_t.
+ -- Burst_buffer/cray - Prevent slurmctld daemon abort if "paths" operation
+    fails. Now job will be held.
 
 * Changes in Slurm 16.05.9
 ==========================
