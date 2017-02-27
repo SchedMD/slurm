@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
  -- Update to sbatch/srun man pages to explain the "filename pattern" clearer
  -- Add %x to sbatch/srun filename pattern to represent the job name.
  -- job_submit/lua - Add job "bitflags" field.
+ -- Update slurm.spec file to note obsolete RPMs.
 
 * Changes in Slurm 17.02.0
 ==========================

@@ -346,6 +346,7 @@ Includes the Slurm proctrack/lua and job_submit/lua plugin
 Summary: Perl tool to print Slurm job state information
 Group: Development/System
 Requires: slurm
+Obsoletes: slurm-sjobexit slurm-sjstat slurm-seff
 %description contribs
 seff is a mail program used directly by the Slurm daemons. On completion of a
 job, wait for it's accounting information to be available and include that
