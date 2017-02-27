@@ -1543,7 +1543,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
  *	5) If request can't be satisfied now, execute select_g_job_test()
  *	   against the list of nodes that exist in any state (perhaps DOWN
  *	   DRAINED or ALLOCATED) to determine if the request can
- *         ever be satified.
+ *         ever be satisfied.
  */
 static int
 _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,

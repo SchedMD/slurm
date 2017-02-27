@@ -1593,7 +1593,7 @@ extern int select_p_block_init(List part_list)
 
 /*
  * select_p_job_test - Given a specification of scheduling requirements,
- *	identify the nodes which "best" satify the request. The specified
+ *	identify the nodes which "best" satisfy the request. The specified
  *	nodes may be DOWN or BUSY at the time of this test as may be used
  *	to deterime if a job could ever run.
  * IN/OUT job_ptr - pointer to job being scheduled start_time is set
