@@ -125,6 +125,7 @@ bitstr_t *bit_rotate_copy(bitstr_t *b1, int32_t n, bitoff_t nbits);
 void	bit_rotate(bitstr_t *b1, int32_t n);
 char	*bit_fmt(char *str, int32_t len, bitstr_t *b);
 char    *bit_fmt_full(bitstr_t *b);
+char    *bit_fmt_range(bitstr_t *b, int offset, int len);
 int	bit_unfmt(bitstr_t *b, char *str);
 int32_t	*bitfmt2int (char *bit_str_ptr);
 char *  inx2bitfmt (int32_t *inx);
