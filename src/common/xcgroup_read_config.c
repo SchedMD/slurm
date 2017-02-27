@@ -76,7 +76,6 @@ static void _clear_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	if (slurm_cgroup_conf) {
 		slurm_cgroup_conf->cgroup_automount = false ;
 		xfree(slurm_cgroup_conf->cgroup_mountpoint);
-		xfree(slurm_cgroup_conf->cgroup_subsystems);
 		xfree(slurm_cgroup_conf->cgroup_release_agent);
 		xfree(slurm_cgroup_conf->cgroup_prepend);
 		slurm_cgroup_conf->constrain_cores = false ;
@@ -138,7 +137,6 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	s_p_options_t options[] = {
 		{"CgroupAutomount", S_P_BOOLEAN},
 		{"CgroupMountpoint", S_P_STRING},
-		{"CgroupSubsystems", S_P_STRING},
 		{"CgroupReleaseAgentDir", S_P_STRING},
 		{"ConstrainCores", S_P_BOOLEAN},
 		{"TaskAffinity", S_P_BOOLEAN},
@@ -192,8 +190,6 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 			slurm_cgroup_conf->cgroup_mountpoint =
 				xstrdup(DEFAULT_CGROUP_BASEDIR);
 
-		s_p_get_string(&slurm_cgroup_conf->cgroup_subsystems,
-			       "CgroupSubsystems", tbl);
 		s_p_get_string(&slurm_cgroup_conf->cgroup_release_agent,
 			       "CgroupReleaseAgentDir", tbl);
 		if (! slurm_cgroup_conf->cgroup_release_agent)
