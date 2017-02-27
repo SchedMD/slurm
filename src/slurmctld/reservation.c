@@ -1486,8 +1486,11 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 {
 	time_t now = time(NULL), start_relative, end_relative;
 	int i_first, i_last, i;
+	int offset_start, offset_end;
 	uint32_t i_cnt;
 	struct node_record *node_ptr;
+	job_resources_t *core_resrcs;
+	char *core_str;
 
 	if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT)
 		last_resv_update = now;
@@ -1544,19 +1547,31 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		} else {
 			pack_bit_str_hex(resv_ptr->node_bitmap, buffer);
 			if (!resv_ptr->core_bitmap ||
-			    (bit_ffs(resv_ptr->core_bitmap) == -1) ||
-			    ((i_cnt = bit_set_count(resv_ptr->node_bitmap))==0)){
-				pack32((uint32_t)0, buffer);
+			    !resv_ptr->core_resrcs ||
+			    !resv_ptr->core_resrcs->node_bitmap ||
+			    !resv_ptr->core_resrcs->core_bitmap ||
+			    (bit_ffs(resv_ptr->core_bitmap) == -1)) {
+				pack32((uint32_t) 0, buffer);
 			} else {
+				core_resrcs = resv_ptr->core_resrcs;
+				i_cnt = bit_set_count(core_resrcs->node_bitmap);
 				pack32(i_cnt, buffer);
-				i_first = bit_ffs(resv_ptr->node_bitmap);
-				i_last  = bit_ffs(resv_ptr->node_bitmap);
+				i_first = bit_ffs(core_resrcs->node_bitmap);
+				i_last  = bit_fls(core_resrcs->node_bitmap);
 				for (i = i_first; i <= i_last; i++) {
-					if (!bit_test(resv_ptr->node_bitmap, i))
+					if (!bit_test(core_resrcs->node_bitmap,
+						      i))
 						continue;
+					offset_start = cr_get_coremap_offset(i);
+					offset_end = cr_get_coremap_offset(i+1);
 					node_ptr = node_record_table_ptr + i;
 					packstr(node_ptr->name, buffer);
-packstr("TBD", buffer);
+					core_str = bit_fmt_range(
+						resv_ptr->core_bitmap,
+						offset_start,
+						(offset_end - offset_start));
+					packstr(core_str, buffer);
+					xfree(core_str);
 				}
 			}
 		}

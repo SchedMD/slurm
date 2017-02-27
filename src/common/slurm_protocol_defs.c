@@ -3490,11 +3490,13 @@ extern void slurm_free_reserve_info_members(reserve_info_t * resv)
 	if (resv) {
 		xfree(resv->accounts);
 		xfree(resv->burst_buffer);
-		for (i = 0; i < resv->core_spec_cnt; i++) {
-			xfree(resv->core_spec[i].node_name);
-			xfree(resv->core_spec[i].core_id);
+		if (resv->core_spec) {
+			for (i = 0; i < resv->core_spec_cnt; i++) {
+				xfree(resv->core_spec[i].node_name);
+				xfree(resv->core_spec[i].core_id);
+			}
+			xfree(resv->core_spec);
 		}
-		xfree(resv->core_spec);
 		xfree(resv->features);
 		xfree(resv->licenses);
 		xfree(resv->name);
