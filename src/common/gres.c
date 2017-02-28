@@ -1717,7 +1717,7 @@ extern int gres_gresid_to_gresname(uint32_t gres_id, char* gres_name,
 	return rc;
 }
 
-extern int _node_config_validate(char *node_name, char *orig_config,
+static int _node_config_validate(char *node_name, char *orig_config,
 				 char **new_config, gres_state_t *gres_ptr,
 				 uint16_t fast_schedule, char **reason_down,
 				 slurm_gres_context_t *context_ptr)
