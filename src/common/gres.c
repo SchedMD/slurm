@@ -4804,6 +4804,7 @@ extern uint64_t gres_plugin_get_job_value_by_type(List job_gres_list,
 	if (job_gres_list == NULL)
 		return NO_VAL64;
 
+	slurm_mutex_lock(&gres_context_lock);
 	gres_name_type_id = _build_id(gres_name_type);
 	gres_val = NO_VAL64;
 
@@ -4816,6 +4817,8 @@ extern uint64_t gres_plugin_get_job_value_by_type(List job_gres_list,
 		}
 	}
 	list_iterator_destroy(job_gres_iter);
+
+	slurm_mutex_unlock(&gres_context_lock);
 
 	return gres_val;
 }
