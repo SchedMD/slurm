@@ -6470,6 +6470,8 @@ extern void gres_build_job_details(List job_gres_list,
 			for (j = 0; j < my_gres_cnt; j++) {
 				if (j >= job_gres_data->node_cnt)
 					break;	/* node count mismatch */
+				if (job_gres_data->gres_bit_alloc[j] == NULL)
+					continue;
 				if (my_gres_details[j])
 					sep1 = ",";
 				else

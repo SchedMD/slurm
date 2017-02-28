@@ -13,6 +13,8 @@ documents those changes that are of interest to users and administrators.
     cause potential deadlock when/if TRES changed in the database and the
     slurmctld wasn't made aware of the change.  This would be very rare.
  -- Fix missing locks in gres logic to avoid potential memory race.
+ -- If gres is NULL on a job don't try to process it when returning detailed
+    information about a job to scontrol.
 
 * Changes in Slurm 17.02.0
 ==========================
