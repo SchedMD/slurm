@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
  -- Remove unneeded job lock when running assoc_mgr cache.  This lock could
     cause potential deadlock when/if TRES changed in the database and the
     slurmctld wasn't made aware of the change.  This would be very rare.
+ -- Fix missing locks in gres logic to avoid potential memory race.
 
 * Changes in Slurm 17.02.0
 ==========================
