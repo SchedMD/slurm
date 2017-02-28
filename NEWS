@@ -9,6 +9,9 @@ documents those changes that are of interest to users and administrators.
  -- job_submit/lua - Add job "bitflags" field.
  -- Update slurm.spec file to note obsolete RPMs.
  -- Fix deadlock scenario when dumping configuration in the slurmctld.
+ -- Remove unneeded job lock when running assoc_mgr cache.  This lock could
+    cause potential deadlock when/if TRES changed in the database and the
+    slurmctld wasn't made aware of the change.  This would be very rare.
 
 * Changes in Slurm 17.02.0
 ==========================
