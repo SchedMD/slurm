@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
  -- Add %x to sbatch/srun filename pattern to represent the job name.
  -- job_submit/lua - Add job "bitflags" field.
  -- Update slurm.spec file to note obsolete RPMs.
+ -- Fix deadlock scenario when dumping configuration in the slurmctld.
 
 * Changes in Slurm 17.02.0
 ==========================
