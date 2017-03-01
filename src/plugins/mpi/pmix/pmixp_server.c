@@ -362,11 +362,12 @@ int pmixp_stepd_finalize(void)
 		return 0;
 	}
 
+	pmixp_libpmix_finalize();
+	pmixp_dmdx_finalize();
+
 	pmixp_conn_fini();
 	pmixp_dconn_fini();
 
-	pmixp_libpmix_finalize();
-	pmixp_dmdx_finalize();
 	pmixp_state_finalize();
 	pmixp_nspaces_finalize();
 

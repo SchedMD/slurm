@@ -162,8 +162,16 @@ _pmixp_io_drop_messages(pmixp_io_engine_t *eng)
 	}
 
 	if (eng->h.send_on) {
-		list_destroy(eng->send_queue);
-		list_destroy(eng->complete_queue);
+		void *msg = NULL;
+
+		/* complete all messages */
+		pmixp_io_send_cleanup(eng);
+
+		/* drop all outstanding messages */
+		while( (msg = list_dequeue(eng->send_queue) ) ){
+			eng->h.msg_free_cb(msg);
+		}
+
 		if (NULL != eng->send_current) {
 			eng->h.msg_free_cb(eng->send_current);
 			eng->send_current = NULL;
@@ -217,6 +225,8 @@ void pmixp_io_finalize(pmixp_io_engine_t *eng, int err)
 
 		/* Release all sender resources*/
 		if( eng->h.send_on ){
+			list_destroy(eng->send_queue);
+			list_destroy(eng->complete_queue);
 			xfree(eng->send_hdr_net);
 			eng->send_hdr_size = eng->send_pay_size;
 			eng->send_offs = 0;
@@ -520,7 +530,6 @@ static void _send_progress(pmixp_io_engine_t *eng)
 
 	xassert(NULL != eng);
 	xassert(eng->magic == PMIXP_MSGSTATE_MAGIC);
-	xassert(pmixp_io_operating(eng));
 
 	fd = eng->sd;
 
