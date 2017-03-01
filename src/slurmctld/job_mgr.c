@@ -5316,7 +5316,9 @@ static int _part_access_check(struct part_record *part_ptr,
 
 	if ((part_ptr->state_up & PARTITION_SCHED) &&
 	    (job_min_nodes != NO_VAL) &&
-	    (job_min_nodes < min_nodes_tmp)) {
+	    (job_min_nodes < min_nodes_tmp) &&
+	    (!qos_ptr || (qos_ptr && !(qos_ptr->flags
+				       & QOS_FLAG_PART_MIN_NODE)))) {
 		info("_part_access_check: Job requested for nodes (%u) "
 		     "smaller than partition %s(%u) min nodes",
 		     job_min_nodes, part_ptr->name, min_nodes_tmp);
@@ -5325,7 +5327,9 @@ static int _part_access_check(struct part_record *part_ptr,
 
 	if ((part_ptr->state_up & PARTITION_SCHED) &&
 	    (job_max_nodes != NO_VAL) &&
-	    (job_max_nodes > max_nodes_tmp)) {
+	    (job_max_nodes > max_nodes_tmp) &&
+	    (!qos_ptr || (qos_ptr && !(qos_ptr->flags
+				       & QOS_FLAG_PART_MAX_NODE)))) {
 		info("_part_access_check: Job requested for nodes (%u) "
 		     "greater than partition %s(%u) max nodes",
 		     job_max_nodes, part_ptr->name, max_nodes_tmp);
@@ -5579,7 +5583,7 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 	} else if ((job_desc->min_nodes > max_nodes_orig) &&
 		   slurmctld_conf.enforce_part_limits &&
 		   (!qos_ptr || (qos_ptr && !(qos_ptr->flags &
-					      QOS_FLAG_PART_MIN_NODE)))) {
+					      QOS_FLAG_PART_MAX_NODE)))) {
 		info("%s: job's min nodes greater than "
 		     "partition's max nodes (%u > %u)",
 		     __func__, job_desc->min_nodes, max_nodes_orig);
@@ -5595,7 +5599,7 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 	    slurmctld_conf.enforce_part_limits &&
 	    (job_desc->max_nodes < min_nodes_orig) &&
 	    (!qos_ptr || (qos_ptr && !(qos_ptr->flags
-				       & QOS_FLAG_PART_MAX_NODE)))) {
+				       & QOS_FLAG_PART_MIN_NODE)))) {
 		info("%s: job's max nodes less than partition's "
 		     "min nodes (%u < %u)",
 		     __func__, job_desc->max_nodes, min_nodes_orig);
