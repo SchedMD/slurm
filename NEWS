@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
     information about a job to scontrol.
  -- Fix print of consumed energy in sstat when no energy is being collected.
  -- Print formatted tres string when creating/updating a reservation.
+ -- Fix issues with QOS flags Partition[Min|Max]Nodes to work correctly.
 
 * Changes in Slurm 17.02.0
 ==========================
@@ -319,6 +320,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix potential packing errors when packing a NULL slurmdb_reservation_cond_t.
  -- Burst_buffer/cray - Prevent slurmctld daemon abort if "paths" operation
     fails. Now job will be held. Update job update time when held.
+ -- Fix issues with QOS flags Partition[Min|Max]Nodes to work correctly.
 
 * Changes in Slurm 16.05.9
 ==========================
