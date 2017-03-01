@@ -16,6 +16,7 @@ documents those changes that are of interest to users and administrators.
  -- If gres is NULL on a job don't try to process it when returning detailed
     information about a job to scontrol.
  -- Fix print of consumed energy in sstat when no energy is being collected.
+ -- Print formatted tres string when creating/updating a reservation.
 
 * Changes in Slurm 17.02.0
 ==========================
