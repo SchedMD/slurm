@@ -1945,7 +1945,7 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 	     old_resv_ptr ? "Updated" : "Created",
 	     resv_ptr->name, name1, val1, name2, val2,
 	     resv_ptr->node_list, resv_ptr->core_cnt, resv_ptr->licenses,
-	     resv_ptr->tres_str, resv_ptr->resv_watts,
+	     resv_ptr->tres_fmt_str, resv_ptr->resv_watts,
 	     start_time, end_time);
 	if (old_resv_ptr)
 		_post_resv_update(resv_ptr, old_resv_ptr);

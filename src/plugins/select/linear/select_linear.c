@@ -1744,7 +1744,7 @@ static int _job_test_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 
 	/* phase 3 */
-	/* Determine lowest level switch satifying request with best fit */
+	/* Determine lowest level switch satisfying request with best fit */
 	best_fit_inx = -1;
 	for (j = 0; j < switch_record_cnt; j++) {
 #if SELECT_DEBUG
@@ -2039,7 +2039,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 
 	/* phase 3 */
-	/* Determine lowest level switch satifying request with best fit */
+	/* Determine lowest level switch satisfying request with best fit */
 	best_fit_inx = -1;
 	for (j = 0; j < switch_record_cnt; j++) {
 #if SELECT_DEBUG
@@ -4286,7 +4286,7 @@ extern bitstr_t * select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 	}
 #endif
 
-	/* Determine lowest level switch satifying request with best fit */
+	/* Determine lowest level switch satisfying request with best fit */
 	best_fit_inx = -1;
 	for (j=0; j<switch_record_cnt; j++) {
 		if (switches_node_cnt[j] < rem_nodes)

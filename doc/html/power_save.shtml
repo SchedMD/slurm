@@ -33,7 +33,7 @@ The following configuration parameters are available:
 <li><b>SuspendTime</b>:
 Nodes becomes eligible for power saving mode after being idle
 for this number of seconds.
-For efficient system utilization, it is recommeded that the value of SuspendTime
+For efficient system utilization, it is recommended that the value of SuspendTime
 be at least as large as the sum of SuspendTimeout plus ResumeTimeout.
 A negative number disables power saving mode.
 The default value is -1 (disabled).</li>

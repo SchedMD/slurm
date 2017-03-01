@@ -192,8 +192,8 @@ by configuration, but here is a suggested starting point:
 	<li>slurm-munge</li>
 	<li>slurm-perlapi</li>
 	<li>slurm-plugins</li>
-	<li>slurm-sjobexit</li>
-	<li>slurm-sjstat</li>
+	<li>slurm-sjobexit (only prior to version 17.02)</li>
+	<li>slurm-sjstat (only prior to version 17.02)</</li>
 	<li>slurm-torque</li>
 	</ul>
 <li>Slurmdbd Node</li>
@@ -768,6 +768,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 23 February 2017</p>
+<p style="text-align:center;">Last modified 1 March 2017</p>
 
 <!--#include virtual="footer.txt"-->

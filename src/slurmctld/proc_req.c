@@ -636,21 +636,19 @@ static void _throttle_fini(int *active_rpc_cnt)
  * _fill_ctld_conf - make a copy of current slurm configuration
  *	this is done with locks set so the data can change at other times
  * OUT conf_ptr - place to copy configuration to
+ *
+ * NOTE: Read config, job, partition, fed needs to be locked before hand
  */
 static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 {
 	slurm_ctl_conf_t *conf;
 	char *licenses_used;
 	uint32_t next_job_id;
-	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 
 	/* Do before config lock */
 	licenses_used = get_licenses_used();
 
-	lock_slurmctld(job_write_lock);
 	next_job_id   = get_next_job_id(true);
-	unlock_slurmctld(job_write_lock);
 
 	conf = slurm_conf_lock();
 
@@ -1281,9 +1279,9 @@ static void _slurm_rpc_dump_conf(slurm_msg_t * msg)
 	slurm_msg_t response_msg;
 	last_update_msg_t *last_time_msg = (last_update_msg_t *) msg->data;
 	slurm_ctl_conf_info_msg_t config_tbl;
-	/* Locks: Read config, partition*/
+	/* Locks: Read config, job, partition, fed */
 	slurmctld_lock_t config_read_lock = {
-		READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
+		READ_LOCK, READ_LOCK, NO_LOCK, READ_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 

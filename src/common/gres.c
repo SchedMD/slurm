@@ -1719,7 +1719,7 @@ extern int gres_gresid_to_gresname(uint32_t gres_id, char* gres_name,
 	return rc;
 }
 
-extern int _node_config_validate(char *node_name, char *orig_config,
+static int _node_config_validate(char *node_name, char *orig_config,
 				 char **new_config, gres_state_t *gres_ptr,
 				 uint16_t fast_schedule, char **reason_down,
 				 slurm_gres_context_t *context_ptr)
@@ -3930,6 +3930,7 @@ extern void gres_plugin_job_clear(List job_gres_list)
 		return;
 
 	(void) gres_plugin_init();
+	slurm_mutex_lock(&gres_context_lock);
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
 		job_state_ptr = (gres_job_state_t *) job_gres_ptr->gres_data;
@@ -3949,6 +3950,7 @@ extern void gres_plugin_job_clear(List job_gres_list)
 		job_state_ptr->node_cnt = 0;
 	}
 	list_iterator_destroy(job_gres_iter);
+	slurm_mutex_unlock(&gres_context_lock);
 }
 
 static int _job_alloc(void *job_gres_data, void *node_gres_data,
@@ -4806,6 +4808,7 @@ extern uint64_t gres_plugin_get_job_value_by_type(List job_gres_list,
 	if (job_gres_list == NULL)
 		return NO_VAL64;
 
+	slurm_mutex_lock(&gres_context_lock);
 	gres_name_type_id = _build_id(gres_name_type);
 	gres_val = NO_VAL64;
 
@@ -4818,6 +4821,8 @@ extern uint64_t gres_plugin_get_job_value_by_type(List job_gres_list,
 		}
 	}
 	list_iterator_destroy(job_gres_iter);
+
+	slurm_mutex_unlock(&gres_context_lock);
 
 	return gres_val;
 }
@@ -6472,6 +6477,8 @@ extern void gres_build_job_details(List job_gres_list,
 			for (j = 0; j < my_gres_cnt; j++) {
 				if (j >= job_gres_data->node_cnt)
 					break;	/* node count mismatch */
+				if (job_gres_data->gres_bit_alloc[j] == NULL)
+					continue;
 				if (my_gres_details[j])
 					sep1 = ",";
 				else

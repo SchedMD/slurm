@@ -127,7 +127,8 @@ void print_fields(slurmdb_step_rec_t *step)
 					     (curr_inx == field_count));
 			break;
 		case PRINT_CONSUMED_ENERGY:
-			if (!fuzzy_equal(step->stats.consumed_energy, NO_VAL)) {
+			if (!fuzzy_equal(step->stats.consumed_energy,
+					 NO_VAL64)) {
 				convert_num_unit2((double)
 						  step->stats.consumed_energy,
 						  outbuf, sizeof(outbuf),
