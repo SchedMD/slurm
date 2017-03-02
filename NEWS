@@ -30,6 +30,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issues with QOS flags Partition[Min|Max]Nodes to work correctly.
  -- Refactor slurmctld agent logic to eliminate some pthreads.
  -- Added "SyscfgTimeout" parameter to knl.conf configuration file.
+ -- Fix for CPU binding for job steps run under a batch job.
 
 * Changes in Slurm 17.02.0
 ==========================

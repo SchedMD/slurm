@@ -422,11 +422,12 @@ int setup_env(env_t *env, bool preserve_env)
 			unsetenvp(env->env, "SBATCH_CPU_BIND_LIST");
 			unsetenvp(env->env, "SBATCH_CPU_BIND_TYPE");
 			unsetenvp(env->env, "SBATCH_CPU_BIND_VERBOSE");
+		} else {
+			unsetenvp(env->env, "SLURM_CPU_BIND");
+			unsetenvp(env->env, "SLURM_CPU_BIND_LIST");
+			unsetenvp(env->env, "SLURM_CPU_BIND_TYPE");
+			unsetenvp(env->env, "SLURM_CPU_BIND_VERBOSE");
 		}
-		unsetenvp(env->env, "SLURM_CPU_BIND");
-		unsetenvp(env->env, "SLURM_CPU_BIND_LIST");
-		unsetenvp(env->env, "SLURM_CPU_BIND_TYPE");
-		unsetenvp(env->env, "SLURM_CPU_BIND_VERBOSE");
 
 		if (env->cpu_bind_type & CPU_BIND_VERBOSE)
 			str_verbose = "verbose";
@@ -492,27 +493,36 @@ int setup_env(env_t *env, bool preserve_env)
 				error("Unable to set SBATCH_CPU_BIND_LIST");
 				rc = SLURM_FAILURE;
 			}
+			if (setenvf(&env->env, "SBATCH_CPU_BIND_TYPE",
+				    str_bind_type)) {
+				error("Unable to set SBATCH_CPU_BIND_TYPE");
+				rc = SLURM_FAILURE;
+			}
 			if (setenvf(&env->env, "SBATCH_CPU_BIND_VERBOSE",
 				    str_verbose)) {
 				error("Unable to set SBATCH_CPU_BIND_VERBOSE");
 				rc = SLURM_FAILURE;
 			}
-		}
-		if (setenvf(&env->env, "SLURM_CPU_BIND", str_bind)) {
-			error("Unable to set SLURM_CPU_BIND");
-			rc = SLURM_FAILURE;
-		}
-		if (setenvf(&env->env, "SLURM_CPU_BIND_LIST", str_bind_list)) {
-			error("Unable to set SLURM_CPU_BIND_LIST");
-			rc = SLURM_FAILURE;
-		}
-		if (setenvf(&env->env, "SLURM_CPU_BIND_TYPE", str_bind_type)) {
-			error("Unable to set SLURM_CPU_BIND_TYPE");
-			rc = SLURM_FAILURE;
-		}
-		if (setenvf(&env->env, "SLURM_CPU_BIND_VERBOSE", str_verbose)) {
-			error("Unable to set SLURM_CPU_BIND_VERBOSE");
-			rc = SLURM_FAILURE;
+		} else {
+			if (setenvf(&env->env, "SLURM_CPU_BIND", str_bind)) {
+				error("Unable to set SLURM_CPU_BIND");
+				rc = SLURM_FAILURE;
+			}
+			if (setenvf(&env->env, "SLURM_CPU_BIND_LIST",
+				    str_bind_list)) {
+				error("Unable to set SLURM_CPU_BIND_LIST");
+				rc = SLURM_FAILURE;
+			}
+			if (setenvf(&env->env, "SLURM_CPU_BIND_TYPE",
+				    str_bind_type)) {
+				error("Unable to set SLURM_CPU_BIND_TYPE");
+				rc = SLURM_FAILURE;
+			}
+			if (setenvf(&env->env, "SLURM_CPU_BIND_VERBOSE",
+				    str_verbose)) {
+				error("Unable to set SLURM_CPU_BIND_VERBOSE");
+				rc = SLURM_FAILURE;
+			}
 		}
 
 		xfree(str_bind);
@@ -530,13 +540,14 @@ int setup_env(env_t *env, bool preserve_env)
 			unsetenvp(env->env, "SBATCH_MEM_BIND_PREFER");
 			unsetenvp(env->env, "SBATCH_MEM_BIND_TYPE");
 			unsetenvp(env->env, "SBATCH_MEM_BIND_VERBOSE");
+		} else {
+			unsetenvp(env->env, "SLURM_MEM_BIND");
+			unsetenvp(env->env, "SLURM_MEM_BIND_LIST");
+			unsetenvp(env->env, "SLURM_MEM_BIND_PREFER");
+			unsetenvp(env->env, "SLURM_MEM_BIND_SORT");
+			unsetenvp(env->env, "SLURM_MEM_BIND_TYPE");
+			unsetenvp(env->env, "SLURM_MEM_BIND_VERBOSE");
 		}
-		unsetenvp(env->env, "SLURM_MEM_BIND");
-		unsetenvp(env->env, "SLURM_MEM_BIND_LIST");
-		unsetenvp(env->env, "SLURM_MEM_BIND_PREFER");
-		unsetenvp(env->env, "SLURM_MEM_BIND_SORT");
-		unsetenvp(env->env, "SLURM_MEM_BIND_TYPE");
-		unsetenvp(env->env, "SLURM_MEM_BIND_VERBOSE");
 
 		if (env->mem_bind_type & MEM_BIND_VERBOSE)
 			str_verbose = "verbose";
@@ -608,27 +619,38 @@ int setup_env(env_t *env, bool preserve_env)
 				error("Unable to set SBATCH_MEM_BIND_VERBOSE");
 				rc = SLURM_FAILURE;
 			}
-		}
-		if (setenvf(&env->env, "SLURM_MEM_BIND", str_bind)) {
-			error("Unable to set SLURM_MEM_BIND");
-			rc = SLURM_FAILURE;
-		}
-		if (setenvf(&env->env, "SLURM_MEM_BIND_LIST", str_bind_list)) {
-			error("Unable to set SLURM_MEM_BIND_LIST");
-			rc = SLURM_FAILURE;
-		}
-		if (str_bind_sort &&
-		    setenvf(&env->env, "SLURM_MEM_BIND_SORT", str_bind_sort)) {
-			error("Unable to set SLURM_MEM_BIND_SORT");
-			rc = SLURM_FAILURE;
-		}
-		if (setenvf(&env->env, "SLURM_MEM_BIND_TYPE", str_bind_type)) {
-			error("Unable to set SLURM_MEM_BIND_TYPE");
-			rc = SLURM_FAILURE;
-		}
-		if (setenvf(&env->env, "SLURM_MEM_BIND_VERBOSE", str_verbose)) {
-			error("Unable to set SLURM_MEM_BIND_VERBOSE");
-			rc = SLURM_FAILURE;
+		} else {
+			if (setenvf(&env->env, "SLURM_MEM_BIND", str_bind)) {
+				error("Unable to set SLURM_MEM_BIND");
+				rc = SLURM_FAILURE;
+			}
+			if (setenvf(&env->env, "SLURM_MEM_BIND_LIST",
+				    str_bind_list)) {
+				error("Unable to set SLURM_MEM_BIND_LIST");
+				rc = SLURM_FAILURE;
+			}
+			if (str_prefer &&
+			    setenvf(&env->env, "SLURM_MEM_BIND_PREFER",
+				    str_prefer)) {
+				error("Unable to set SLURM_MEM_BIND_PREFER");
+				rc = SLURM_FAILURE;
+			}
+			if (str_bind_sort &&
+			    setenvf(&env->env, "SLURM_MEM_BIND_SORT",
+				    str_bind_sort)) {
+				error("Unable to set SLURM_MEM_BIND_SORT");
+				rc = SLURM_FAILURE;
+			}
+			if (setenvf(&env->env, "SLURM_MEM_BIND_TYPE",
+				    str_bind_type)) {
+				error("Unable to set SLURM_MEM_BIND_TYPE");
+				rc = SLURM_FAILURE;
+			}
+			if (setenvf(&env->env, "SLURM_MEM_BIND_VERBOSE",
+				    str_verbose)) {
+				error("Unable to set SLURM_MEM_BIND_VERBOSE");
+				rc = SLURM_FAILURE;
+			}
 		}
 
 		xfree(str_bind);
