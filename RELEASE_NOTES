@@ -106,6 +106,7 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- Added "PrologFlags" option of "Serial" to disable concurrent launch of
     Prolog and Epilog scripts.
  -- Removed "SchedulerRootFilter" configuration parameter.
+ -- Added "SyscfgTimeout" parameter to knl.conf configuration file.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

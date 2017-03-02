@@ -29,6 +29,7 @@ documents those changes that are of interest to users and administrators.
     fails. Now job will be held. Update job update time when held.
  -- Fix issues with QOS flags Partition[Min|Max]Nodes to work correctly.
  -- Refactor slurmctld agent logic to eliminate some pthreads.
+ -- Added "SyscfgTimeout" parameter to knl.conf configuration file.
 
 * Changes in Slurm 17.02.0
 ==========================
