@@ -50,6 +50,8 @@ documents those changes that are of interest to users and administrators.
  -- Burst_buffer/cray - Prevent slurmctld daemon abort if "paths" operation
     fails. Now job will be held. Update job update time when held.
  -- Fix issues with QOS flags Partition[Min|Max]Nodes to work correctly.
+ -- Increase number of ResumePrograms that can be managed without leaving
+    zombie/orphan processes from 10 to 100.
 
 * Changes in Slurm 16.05.9
 ==========================

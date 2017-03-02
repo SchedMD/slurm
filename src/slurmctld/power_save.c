@@ -76,7 +76,7 @@
 #endif /* defined HAVE_DECL_STRSIGNAL && !HAVE_DECL_STRSIGNAL */
 
 #define _DEBUG			0
-#define PID_CNT			10
+#define PID_CNT			100
 #define MAX_SHUTDOWN_DELAY	10	/* seconds to wait for child procs
 					 * to exit after daemon shutdown
 					 * request, then orphan or kill proc */
