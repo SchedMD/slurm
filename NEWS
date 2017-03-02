@@ -18,6 +18,10 @@ documents those changes that are of interest to users and administrators.
  -- Fix print of consumed energy in sstat when no energy is being collected.
  -- Print formatted tres string when creating/updating a reservation.
  -- Fix issues with QOS flags Partition[Min|Max]Nodes to work correctly.
+ -- Prevent manipulation of the cpu frequency and governor for batch or
+    extern steps. This addresses an issue where the batch step would
+    inadvertently set the cpu frequency maximum to the minimum value
+    supported on the node.
 
 * Changes in Slurm 17.02.0
 ==========================

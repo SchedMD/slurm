@@ -424,6 +424,10 @@ cpu_freq_cpuset_validate(stepd_step_rec_t *job)
 	char *cpu_str;
 	char *savestr = NULL;
 
+	if ((job->stepid == SLURM_BATCH_SCRIPT) ||
+	    (job->stepid == SLURM_EXTERN_CONT))
+		return;
+
 	debug_flags = slurm_get_debug_flags(); /* init for slurmstepd */
 	if (debug_flags & DEBUG_FLAG_CPU_FREQ) {
 		info("cpu_freq_cpuset_validate: request: min=(%12d  %8x) "
@@ -508,6 +512,10 @@ cpu_freq_cgroup_validate(stepd_step_rec_t *job, char *step_alloc_cores)
 	uint16_t end    = USHRT_MAX;
 	uint16_t cpuidx =  0;
 	char *core_range;
+
+	if ((job->stepid == SLURM_BATCH_SCRIPT) ||
+	    (job->stepid == SLURM_EXTERN_CONT))
+		return;
 
 	debug_flags = slurm_get_debug_flags(); /* init for slurmstepd */
 	if (debug_flags & DEBUG_FLAG_CPU_FREQ) {
