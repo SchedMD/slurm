@@ -43,6 +43,10 @@ NOTE: If you are upgrading with any jobs from 14.03 or earlier
       (i.e. quick upgrade from 14.03 -> 15.08 -> 17.02) you will need
       to wait until after those jobs are gone before you upgrade to 17.02.
 
+NOTE: If you interact with any memory values in a job_submit plugin, you will
+      need to test against NO_VAL64 instead of NO_VAL, and change your printf
+      format as well.
+
 HIGHLIGHTS
 ==========
  -- Added infrastructure for managing workload across a federation of clusters.
