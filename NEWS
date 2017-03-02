@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 16.05.11
+===========================
+
 * Changes in Slurm 16.05.10
 ===========================
  -- Record job state as PREEMPTED instead of TIMEOUT when GraceTime is reached.
