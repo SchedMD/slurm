@@ -52,6 +52,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issues with QOS flags Partition[Min|Max]Nodes to work correctly.
  -- Increase number of ResumePrograms that can be managed without leaving
     zombie/orphan processes from 10 to 100.
+ -- Refactor slurmctld agent logic to eliminate some pthreads.
 
 * Changes in Slurm 16.05.9
 ==========================
