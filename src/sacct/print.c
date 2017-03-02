@@ -630,18 +630,19 @@ void print_fields(type_t type, void *object)
 				switch (type) {
 				case JOB:
 					if (!job->track_steps)
-						tmp_dub = step->
+						tmp_uint64 = step->
 							stats.consumed_energy;
 					break;
 				case JOBSTEP:
-					tmp_dub = step->stats.consumed_energy;
+					tmp_uint64 =
+						step->stats.consumed_energy;
 					break;
 				default:
 					break;
 				}
 			}
-			if (!fuzzy_equal(tmp_dub, NO_VAL))
-				convert_num_unit2((double)tmp_dub, outbuf,
+			if (!fuzzy_equal(tmp_uint64, NO_VAL64))
+				convert_num_unit2((double)tmp_uint64, outbuf,
 						  sizeof(outbuf), UNIT_NONE,
 						  params.units, 1000,
 						  params.convert_flags &
@@ -656,11 +657,12 @@ void print_fields(type_t type, void *object)
 				switch (type) {
 				case JOB:
 					if (!job->track_steps)
-						tmp_dub = step->
+						tmp_uint64 = step->
 							stats.consumed_energy;
 					break;
 				case JOBSTEP:
-					tmp_dub = step->stats.consumed_energy;
+					tmp_uint64 = step->
+						stats.consumed_energy;
 					break;
 				default:
 					break;
@@ -668,7 +670,7 @@ void print_fields(type_t type, void *object)
 			}
 
 			field->print_routine(field,
-					     tmp_dub,
+					     tmp_uint64,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_CPU_TIME:

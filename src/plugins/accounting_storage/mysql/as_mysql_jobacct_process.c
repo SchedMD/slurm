@@ -928,7 +928,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 					atof(step_row[STEP_REQ_AVE_CPU]);
 				step->stats.act_cpufreq =
 					atof(step_row[STEP_REQ_ACT_CPUFREQ]);
-				step->stats.consumed_energy = atof(
+				step->stats.consumed_energy = slurm_atoull(
 					step_row[STEP_REQ_CONSUMED_ENERGY]);
 				step->stats.vsize_max_nodeid = slurm_atoul(
 					step_row[STEP_REQ_MAX_VSIZE_NODE]);

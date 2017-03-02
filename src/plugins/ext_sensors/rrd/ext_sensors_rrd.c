@@ -268,21 +268,21 @@ static uint64_t _rrd_consolidate_one(time_t t0, time_t t1,
 	if (status != 0){
 		if (debug_flags & DEBUG_FLAG_EXT_SENSORS)
 			info("ext_sensors: error rrd_fetch %s",filename);
-		return NO_VAL;
+		return NO_VAL64;
 	}
 
 	rrd_data_p = rrd_data;
 
 	do {
 		if (start == end) {
-			consumed_energy = (rrd_value_t)NO_VAL;
+			consumed_energy = (rrd_value_t)NO_VAL64;
 			break;
 		}
 		if (ds_count == 0) {
 			if (debug_flags & DEBUG_FLAG_EXT_SENSORS)
 				info("ext_sensors: error ds_count==0 in RRD %s",
 				     filename);
-			consumed_energy = (rrd_value_t)NO_VAL;
+			consumed_energy = (rrd_value_t)NO_VAL64;
 			break;
 		} else if (ds_count == 1 || rra_name == NULL)
 			rra_nb = 0;
@@ -298,7 +298,7 @@ static uint64_t _rrd_consolidate_one(time_t t0, time_t t1,
 					info("ext_sensors: error RRA %s not "
 					     "found in RRD %s",
 					     rra_name, filename);
-				consumed_energy = (rrd_value_t)NO_VAL;
+				consumed_energy = (rrd_value_t)NO_VAL64;
 				break;
 			}
 		}
@@ -419,14 +419,15 @@ extern uint64_t RRD_consolidate(time_t step_starttime, time_t step_endtime,
 	while ((node_name = hostlist_shift(hl))) {
 		if (!(path = _get_node_rrd_path(node_name,
 						EXT_SENSORS_VALUE_ENERGY)))
-			consumed_energy = (uint64_t)NO_VAL;
+			consumed_energy = NO_VAL64;
 		free(node_name);
 		if ((tmp = _rrd_consolidate_one(
 			     step_starttime, step_endtime, path,
-			     ext_sensors_cnf->energy_rra_name, true)) == NO_VAL)
-			consumed_energy = (uint64_t)NO_VAL;
+			     ext_sensors_cnf->energy_rra_name, true))
+		    == NO_VAL64)
+			consumed_energy = NO_VAL64;
 		xfree(path);
-		if (consumed_energy == (uint64_t)NO_VAL)
+		if (consumed_energy == NO_VAL64)
 			break;
 		consumed_energy += tmp;
 	}
@@ -456,7 +457,7 @@ static int _update_node_data(void)
 			if (!(path = _get_node_rrd_path(
 				      node_record_table_ptr[i].name,
 				      EXT_SENSORS_VALUE_ENERGY))) {
-				ext_sensors->consumed_energy = (uint64_t)NO_VAL;
+				ext_sensors->consumed_energy = NO_VAL64;
 				ext_sensors->current_watts = NO_VAL;
 				continue;
 			}
@@ -471,7 +472,7 @@ static int _update_node_data(void)
 			    (last_valid_watt != (rrd_value_t)NO_VAL)) {
 				if ((ext_sensors->consumed_energy <= 0) ||
 				    (ext_sensors->consumed_energy ==
-				     (uint64_t)NO_VAL)) {
+				     NO_VAL64)) {
 					ext_sensors->consumed_energy = tmp;
 				} else {
 					ext_sensors->consumed_energy += tmp;
@@ -675,7 +676,7 @@ extern int ext_sensors_p_get_stependdata(struct step_record *step_rec)
 		if (step_rec->jobacct &&
 		    (!step_rec->jobacct->energy.consumed_energy
 		     || (step_rec->jobacct->energy.consumed_energy ==
-			 (uint64_t)NO_VAL))) {
+			 NO_VAL64))) {
 			step_rec->jobacct->energy.consumed_energy =
 				step_rec->ext_sensors->consumed_energy;
 		}

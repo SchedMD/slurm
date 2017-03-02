@@ -130,7 +130,7 @@ extern ext_sensors_data_t *ext_sensors_alloc(void)
 	ext_sensors_data_t *ext_sensors =
 		xmalloc(sizeof(struct ext_sensors_data));
 
-	ext_sensors->consumed_energy = NO_VAL;
+	ext_sensors->consumed_energy = NO_VAL64;
 	ext_sensors->temperature = NO_VAL;
 
 	return ext_sensors;

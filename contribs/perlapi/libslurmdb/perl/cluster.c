@@ -644,7 +644,7 @@ stats_to_hv(slurmdb_stats_t *stats, HV* hv)
 {
     STORE_FIELD(hv, stats, act_cpufreq,           double);
     STORE_FIELD(hv, stats, cpu_ave,               double);
-    STORE_FIELD(hv, stats, consumed_energy,       double);
+    STORE_FIELD(hv, stats, consumed_energy,       uint64_t);
     STORE_FIELD(hv, stats, cpu_min,               uint32_t);
     STORE_FIELD(hv, stats, cpu_min_nodeid,        uint32_t);
     STORE_FIELD(hv, stats, cpu_min_taskid,        uint32_t);

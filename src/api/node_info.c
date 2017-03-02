@@ -420,7 +420,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 
 	/****** external sensors Line ******/
 	if (!node_ptr->ext_sensors
-	    || node_ptr->ext_sensors->consumed_energy == NO_VAL)
+	    || node_ptr->ext_sensors->consumed_energy == NO_VAL64)
 		xstrcat(out, "ExtSensorsJoules=n/s ");
 	else
 		xstrfmtcat(out, "ExtSensorsJoules=%"PRIu64" ",

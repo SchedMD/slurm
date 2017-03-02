@@ -58,7 +58,7 @@ print_field_t fields[] = {
 	{10, "AveRSS", print_fields_str, PRINT_AVERSS},
 	{10, "AveVMSize", print_fields_str, PRINT_AVEVSIZE},
 	{14, "ConsumedEnergy", print_fields_str, PRINT_CONSUMED_ENERGY},
-	{17, "ConsumedEnergyRaw", print_fields_double,
+	{17, "ConsumedEnergyRaw", print_fields_uint64,
 	 PRINT_CONSUMED_ENERGY_RAW},
 	{-12, "JobID", print_fields_str, PRINT_JOBID},
 	{12, "MaxDiskRead", print_fields_str, PRINT_MAXDISKREAD},

@@ -1286,7 +1286,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "min_cpu_node", "int unsigned default 0 not null" },
 		{ "ave_cpu", "double unsigned default 0.0 not null" },
 		{ "act_cpufreq", "double unsigned default 0.0 not null" },
-		{ "consumed_energy", "double unsigned default 0.0 not null" },
+		{ "consumed_energy", "bigint unsigned default 0 not null" },
 		{ "req_cpufreq_min", "int unsigned default 0 not null" },
 		{ "req_cpufreq", "int unsigned default 0 not null" }, /* max */
 		{ "req_cpufreq_gov", "int unsigned default 0 not null" },
