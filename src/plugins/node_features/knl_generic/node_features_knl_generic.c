@@ -84,7 +84,7 @@
 
 /* Maximum poll wait time for child processes, in milliseconds */
 #define MAX_POLL_WAIT   500
-#define SYSCFG_TIMEOUT 1000
+#define DEFAULT_SYSCFG_TIMEOUT 1000
 
 /* Intel Knights Landing Configuration Modes */
 #define KNL_NUMA_CNT	5
@@ -162,6 +162,7 @@ static bool debug_flag = false;
 static uint16_t default_mcdram = KNL_CACHE;
 static uint16_t default_numa = KNL_ALL2ALL;
 static char *mc_path = NULL;
+static uint32_t syscfg_timeout = 0;
 static bool reconfig = false;
 static time_t shutdown_time = 0;
 static char *syscfg_path = NULL;
@@ -183,6 +184,7 @@ static s_p_options_t knl_conf_file_options[] = {
 	{"LogFile", S_P_STRING},
 	{"McPath", S_P_STRING},
 	{"SyscfgPath", S_P_STRING},
+	{"SyscfgTimeout", S_P_UINT32},
 	{"UmeCheckInterval", S_P_UINT32},
 	{NULL}
 };
@@ -500,10 +502,10 @@ static char *_run_script(char *cmd_path, char **script_argv, int *status)
 			fds.fd = pfd[0];
 			fds.events = POLLIN | POLLHUP | POLLRDHUP;
 			fds.revents = 0;
-			new_wait = SYSCFG_TIMEOUT - _tot_wait(&tstart);
+			new_wait = syscfg_timeout - _tot_wait(&tstart);
 			if (new_wait <= 0) {
 				error("%s: %s poll timeout @ %d msec",
-				      __func__, script_argv[1], SYSCFG_TIMEOUT);
+				      __func__, script_argv[1], syscfg_timeout);
 				break;
 			}
 			new_wait = MIN(new_wait, MAX_POLL_WAIT);
@@ -672,6 +674,7 @@ extern int init(void)
 	allow_numa = KNL_NUMA_FLAG;
 	xfree(allowed_uid);
 	allowed_uid_cnt = 0;
+	syscfg_timeout = DEFAULT_SYSCFG_TIMEOUT;
 	debug_flag = false;
 	default_mcdram = KNL_CACHE;
 	default_numa = KNL_ALL2ALL;
@@ -727,6 +730,7 @@ extern int init(void)
 		}
 		(void) s_p_get_string(&mc_path, "McPath", tbl);
 		(void) s_p_get_string(&syscfg_path, "SyscfgPath", tbl);
+		(void) s_p_get_uint32(&syscfg_timeout, "SyscfgTimeout", tbl);
 		(void) s_p_get_uint32(&ume_check_interval, "UmeCheckInterval",
 				      tbl);
 
@@ -765,6 +769,7 @@ extern int init(void)
 		     default_mcdram_str, default_numa_str);
 		info("McPath=%s", mc_path);
 		info("SyscfgPath=%s", syscfg_path);
+		info("SyscfgTimeout=%u msec", syscfg_timeout);
 		info("UmeCheckInterval=%u", ume_check_interval);
 		xfree(allow_mcdram_str);
 		xfree(allow_numa_str);
@@ -805,6 +810,7 @@ extern int fini(void)
 	xfree(mcdram_per_node);
 	xfree(mc_path);
 	xfree(syscfg_path);
+	xfree(syscfg_timeout);
 	return SLURM_SUCCESS;
 }
 

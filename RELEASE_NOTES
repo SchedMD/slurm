@@ -44,6 +44,10 @@ NOTE: If you are upgrading with any jobs from 14.03 or earlier
       to wait until after those jobs are gone before you upgrade to 17.02
       or 17.11.
 
+NOTE: If you interact with any memory values in a job_submit plugin, you will
+      need to test against NO_VAL64 instead of NO_VAL, and change your printf
+      format as well.
+
 HIGHLIGHTS
 ==========
  -- Add the configure option --with-shared-libslurm which will link to

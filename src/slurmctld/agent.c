@@ -171,12 +171,7 @@ typedef struct mail_info {
 	char *message;
 } mail_info_t;
 
-typedef struct retry_args {
-	bool mail_too;			/* Time to wait between retries */
-	int min_wait;			/* Send pending email too */
-} retry_args_t;
-
-static void *_agent_retry(void *arg);
+static void _agent_retry(int min_wait, bool wait_too);
 static int  _batch_launch_defer(queued_request_t *queued_req_ptr);
 static inline int _comm_err(char *node_name, slurm_msg_type_t msg_type);
 static void _list_delete_retry(void *retry_entry);
@@ -209,7 +204,13 @@ static pthread_mutex_t agent_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  agent_cnt_cond  = PTHREAD_COND_INITIALIZER;
 static int agent_cnt = 0;
 static int agent_thread_cnt = 0;
-static uint16_t message_timeout = (uint16_t) NO_VAL;
+static uint16_t message_timeout = NO_VAL16;
+
+static pthread_mutex_t pending_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t  pending_cond = PTHREAD_COND_INITIALIZER;
+static int pending_wait_time = NO_VAL16;
+static bool pending_mail = false;
+static pthread_t pending_thread_id = (pthread_t) 0;
 
 static bool run_scheduler    = false;
 
@@ -369,7 +370,7 @@ void *agent(void *args)
 	slurm_mutex_unlock(&agent_cnt_mutex);
 
 	if (spawn_retry_agent)
-		agent_retry(RPC_RETRY_INTERVAL, true);
+		agent_trigger(RPC_RETRY_INTERVAL, true);
 
 	return NULL;
 }
@@ -1250,42 +1251,83 @@ static void _list_delete_retry(void *retry_entry)
 	xfree(queued_req_ptr);
 }
 
+/* Start a thread to manage queued agent requests */
+static void *_agent_init(void *arg)
+{
+	int min_wait;
+	bool mail_too;
+	struct timespec ts = {0, 0};
+
+	while (true) {
+		slurm_mutex_lock(&pending_mutex);
+		while (!slurmctld_config.shutdown_time &&
+		       !pending_mail && (pending_wait_time == NO_VAL16)) {
+			clock_gettime(CLOCK_REALTIME, &ts);
+			ts.tv_sec += 5;
+			slurm_cond_timedwait(&pending_cond, &pending_mutex,&ts);
+		}
+		if (slurmctld_config.shutdown_time) {
+			slurm_mutex_unlock(&pending_mutex);
+			break;
+		}
+		mail_too = pending_mail;
+		min_wait = pending_wait_time;
+		pending_mail = false;
+		pending_wait_time = NO_VAL16;
+		slurm_mutex_unlock(&pending_mutex);
+
+		_agent_retry(min_wait, mail_too);
+	}
+
+	slurm_mutex_lock(&pending_mutex);
+	pending_thread_id = (pthread_t) 0;
+	slurm_mutex_unlock(&pending_mutex);
+	return NULL;
+}
+extern void agent_init(void)
+{
+	pthread_attr_t thread_attr;
+
+	slurm_mutex_lock(&pending_mutex);
+	if (pending_thread_id != (pthread_t) 0) {
+		error("%s: thread already running", __func__);
+		slurm_mutex_unlock(&pending_mutex);
+		return;
+	}
+
+	slurm_attr_init(&thread_attr);
+	if (pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_DETACHED))
+		error("pthread_attr_setdetachstate error %m");
+	if (pthread_create(&pending_thread_id, &thread_attr, _agent_init, NULL))
+		fatal("pthread_create error %m");
+	slurm_mutex_unlock(&pending_mutex);
+	slurm_attr_destroy(&thread_attr);
+}
+
 /*
- * agent_retry - Spawn agent for retrying pending RPCs. One pending request is
- *	issued if it has been pending for at least min_wait seconds
+ * agent_trigger - Request processing of pending RPCs
  * IN min_wait - Minimum wait time between re-issue of a pending RPC
  * IN mail_too - Send pending email too, note this performed using a
  *	fork/waitpid, so it can take longer than just creating a pthread
  *	to send RPCs
  */
-extern void agent_retry(int min_wait, bool mail_too)
+extern void agent_trigger(int min_wait, bool mail_too)
 {
-	pthread_attr_t thread_attr;
-	pthread_t thread_id = (pthread_t) 0;
-	retry_args_t *retry_args_ptr;
-
-	retry_args_ptr = xmalloc(sizeof(struct retry_args));
-	retry_args_ptr->mail_too = mail_too;
-	retry_args_ptr->min_wait = min_wait;
-
-	slurm_attr_init(&thread_attr);
-	if (pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_DETACHED))
-		error("pthread_attr_setdetachstate error %m");
-	if (pthread_create(&thread_id, &thread_attr, _agent_retry,
-			   (void *) retry_args_ptr)) {
-		error("pthread_create error %m");
-		xfree(retry_args_ptr);
-	}
-	slurm_attr_destroy(&thread_attr);
+	slurm_mutex_lock(&pending_mutex);
+	if ((pending_wait_time == NO_VAL16) ||
+	    (pending_wait_time >  min_wait))
+		pending_wait_time = min_wait;
+	if (mail_too)
+		pending_mail = mail_too;
+	slurm_cond_broadcast(&pending_cond);
+	slurm_mutex_unlock(&pending_mutex);
 }
 
 /* Do the work requested by agent_retry (retry pending RPCs).
  * This is a separate thread so the job records can be locked */
-static void *_agent_retry(void *arg)
+static void _agent_retry(int min_wait, bool mail_too)
 {
-	retry_args_t *retry_args_ptr = (retry_args_t *) arg;
-	bool mail_too;
-	int min_wait, rc;
+	int rc;
 	time_t now = time(NULL);
 	queued_request_t *queued_req_ptr = NULL;
 	agent_arg_t *agent_arg_ptr = NULL;
@@ -1296,10 +1338,6 @@ static void *_agent_retry(void *arg)
 	/* Write lock on jobs */
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
-
-	mail_too = retry_args_ptr->mail_too;
-	min_wait = retry_args_ptr->min_wait;
-	xfree(arg);
 
 	lock_slurmctld(job_write_lock);
 	slurm_mutex_lock(&retry_mutex);
@@ -1335,7 +1373,7 @@ static void *_agent_retry(void *arg)
 		slurm_mutex_unlock(&agent_cnt_mutex);
 		slurm_mutex_unlock(&retry_mutex);
 		unlock_slurmctld(job_write_lock);
-		return NULL;
+		return;
 	}
 	slurm_mutex_unlock(&agent_cnt_mutex);
 
@@ -1426,7 +1464,7 @@ static void *_agent_retry(void *arg)
 		slurm_mutex_unlock(&agent_cnt_mutex);
 	}
 
-	return NULL;
+	return;
 }
 
 /*
@@ -1441,7 +1479,7 @@ void agent_queue_request(agent_arg_t *agent_arg_ptr)
 	if ((AGENT_THREAD_COUNT + 2) >= MAX_SERVER_THREADS)
 		fatal("AGENT_THREAD_COUNT value is too high relative to MAX_SERVER_THREADS");
 
-	if (message_timeout == (uint16_t) NO_VAL) {
+	if (message_timeout == NO_VAL16) {
 		message_timeout = MAX(slurm_get_msg_timeout(), 30);
 	}
 
@@ -1476,7 +1514,7 @@ void agent_queue_request(agent_arg_t *agent_arg_ptr)
 
 	/* now process the request in a separate pthread
 	 * (if we can create another pthread to do so) */
-	agent_retry(999, false);
+	agent_trigger(999, false);
 }
 
 /* _spawn_retry_agent - pthread_create an agent for the given task */

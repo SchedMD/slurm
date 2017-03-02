@@ -55,6 +55,19 @@ documents those changes that are of interest to users and administrators.
     information about a job to scontrol.
  -- Fix print of consumed energy in sstat when no energy is being collected.
  -- Print formatted tres string when creating/updating a reservation.
+ -- Fix issues with QOS flags Partition[Min|Max]Nodes to work correctly.
+ -- Prevent manipulation of the cpu frequency and governor for batch or
+    extern steps. This addresses an issue where the batch step would
+    inadvertently set the cpu frequency maximum to the minimum value
+    supported on the node.
+ -- Convert a slurmctd power management data structure from array to list in
+    order to eliminate the possibility of zombie child suspend/resume
+    processes.
+ -- Burst_buffer/cray - Prevent slurmctld daemon abort if "paths" operation
+    fails. Now job will be held. Update job update time when held.
+ -- Fix issues with QOS flags Partition[Min|Max]Nodes to work correctly.
+ -- Refactor slurmctld agent logic to eliminate some pthreads.
+ -- Added "SyscfgTimeout" parameter to knl.conf configuration file.
 
 * Changes in Slurm 17.02.0
 ==========================
@@ -357,6 +370,10 @@ documents those changes that are of interest to users and administrators.
  -- Fix potential packing errors when packing a NULL slurmdb_reservation_cond_t.
  -- Burst_buffer/cray - Prevent slurmctld daemon abort if "paths" operation
     fails. Now job will be held. Update job update time when held.
+ -- Fix issues with QOS flags Partition[Min|Max]Nodes to work correctly.
+ -- Increase number of ResumePrograms that can be managed without leaving
+    zombie/orphan processes from 10 to 100.
+ -- Refactor slurmctld agent logic to eliminate some pthreads.
 
 * Changes in Slurm 16.05.9
 ==========================
