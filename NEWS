@@ -22,6 +22,9 @@ documents those changes that are of interest to users and administrators.
     extern steps. This addresses an issue where the batch step would
     inadvertently set the cpu frequency maximum to the minimum value
     supported on the node.
+ -- Convert a slurmctd power management data structure from array to list in
+    order to eliminate the possibility of zombie child suspend/resume
+    processes.
 
 * Changes in Slurm 17.02.0
 ==========================
