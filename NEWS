@@ -285,6 +285,9 @@ documents those changes that are of interest to users and administrators.
  -- Added infrastructure for setting up federations in database and establishing
     connections between federation clusters.
 
+* Changes in Slurm 16.05.11
+===========================
+
 * Changes in Slurm 16.05.10
 ===========================
  -- Record job state as PREEMPTED instead of TIMEOUT when GraceTime is reached.
