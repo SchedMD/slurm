@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 17.02.2
+==========================
+
 * Changes in Slurm 17.02.1
 ==========================
  -- Modify pam module to work when configured NodeName and NodeHostname differ.
