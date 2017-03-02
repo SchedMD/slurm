@@ -39,6 +39,9 @@ documents those changes that are of interest to users and administrators.
  -- scontrol modified to report core IDs for reservation containing individual
     cores.
 
+* Changes in Slurm 17.02.2
+==========================
+
 * Changes in Slurm 17.02.1
 ==========================
  -- Modify pam module to work when configured NodeName and NodeHostname differ.
@@ -322,6 +325,9 @@ documents those changes that are of interest to users and administrators.
     job IDs in the new range.
  -- Added infrastructure for setting up federations in database and establishing
     connections between federation clusters.
+
+* Changes in Slurm 16.05.11
+===========================
 
 * Changes in Slurm 16.05.10
 ===========================
