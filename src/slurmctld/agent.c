@@ -204,11 +204,11 @@ static pthread_mutex_t agent_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  agent_cnt_cond  = PTHREAD_COND_INITIALIZER;
 static int agent_cnt = 0;
 static int agent_thread_cnt = 0;
-static uint16_t message_timeout = (uint16_t) NO_VAL;
+static uint16_t message_timeout = NO_VAL16;
 
 static pthread_mutex_t pending_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  pending_cond = PTHREAD_COND_INITIALIZER;
-static int pending_wait_time = (uint16_t) NO_VAL;
+static int pending_wait_time = NO_VAL16;
 static bool pending_mail = false;
 static pthread_t pending_thread_id = (pthread_t) 0;
 
@@ -1265,11 +1265,10 @@ static void *_agent_init(void *arg)
 	while (true) {
 		slurm_mutex_lock(&pending_mutex);
 		while (!slurmctld_config.shutdown_time &&
-		       !pending_mail &&
-		       (pending_wait_time == (uint16_t) NO_VAL)) {
+		       !pending_mail && (pending_wait_time == NO_VAL16)) {
 			clock_gettime(CLOCK_REALTIME, &ts);
 			ts.tv_sec += 5;
-			pthread_cond_timedwait(&pending_cond,&pending_mutex,&ts);
+			slurm_cond_timedwait(&pending_cond, &pending_mutex,&ts);
 		}
 		if (slurmctld_config.shutdown_time) {
 			slurm_mutex_unlock(&pending_mutex);
@@ -1278,7 +1277,7 @@ static void *_agent_init(void *arg)
 		mail_too = pending_mail;
 		min_wait = pending_wait_time;
 		pending_mail = false;
-		pending_wait_time = (uint16_t) NO_VAL;
+		pending_wait_time = NO_VAL16;
 		slurm_mutex_unlock(&pending_mutex);
 
 		_agent_retry(min_wait, mail_too);
@@ -1319,12 +1318,12 @@ extern void agent_init(void)
 extern void agent_trigger(int min_wait, bool mail_too)
 {
 	slurm_mutex_lock(&pending_mutex);
-	if ((pending_wait_time == (uint16_t) NO_VAL) ||
+	if ((pending_wait_time == NO_VAL16) ||
 	    (pending_wait_time >  min_wait))
 		pending_wait_time = min_wait;
 	if (mail_too)
 		pending_mail = mail_too;
-	pthread_cond_broadcast(&pending_cond);
+	slurm_cond_broadcast(&pending_cond);
 	slurm_mutex_unlock(&pending_mutex);
 }
 
@@ -1484,7 +1483,7 @@ void agent_queue_request(agent_arg_t *agent_arg_ptr)
 	if ((AGENT_THREAD_COUNT + 2) >= MAX_SERVER_THREADS)
 		fatal("AGENT_THREAD_COUNT value is too low relative to MAX_SERVER_THREADS");
 
-	if (message_timeout == (uint16_t) NO_VAL) {
+	if (message_timeout == NO_VAL16) {
 		message_timeout = MAX(slurm_get_msg_timeout(), 30);
 	}
 
