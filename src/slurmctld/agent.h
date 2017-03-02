@@ -63,6 +63,9 @@ typedef struct agent_arg {
 	void		*msg_args;	/* RPC data to be transmitted */
 } agent_arg_t;
 
+/* Start a thread to manage queued agent requests */
+extern void agent_init(void);
+
 /*
  * agent - party responsible for transmitting an common RPC in parallel
  *	across a set of nodes. agent_queue_request() if immediate
@@ -81,14 +84,13 @@ extern void *agent (void *args);
 extern void agent_queue_request(agent_arg_t *agent_arg_ptr);
 
 /*
- * agent_retry - Agent for retrying pending RPCs. One pending request is
- *	issued if it has been pending for at least min_wait seconds
+ * agent_trigger - Request processing of pending RPCs
  * IN min_wait - Minimum wait time between re-issue of a pending RPC
  * IN mail_too - Send pending email too, note this performed using a
  *	fork/waitpid, so it can take longer than just creating a pthread
  *	to send RPCs
  */
-extern void agent_retry(int min_wait, bool mail_too);
+extern void agent_trigger(int min_wait, bool mail_too);
 
 /* agent_purge - purge all pending RPC requests */
 extern void agent_purge (void);
