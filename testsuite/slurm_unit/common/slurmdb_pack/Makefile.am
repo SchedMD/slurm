@@ -19,7 +19,8 @@ TESTS += pack_user_rec-test \
 	 pack_cluster_acct_rec-test \
 	 pack_clus_res_rec-test \
 	 pack_federation_rec-test \
-	 pack_accting_rec-test
+	 pack_accting_rec-test \
+	 pack_assoc_rec-test
 
 pack_user_rec_test_CFLAGS = $(MYCFLAGS)
 pack_user_rec_test_LDADD  = $(LDADD) @CHECK_LIBS@
@@ -47,5 +48,8 @@ pack_federation_rec_test_LDADD  = $(LDADD) @CHECK_LIBS@
 
 pack_accting_rec_test_CFLAGS = $(MYCFLAGS)
 pack_accting_rec_test_LDADD  = $(LDADD) @CHECK_LIBS@
+
+pack_assoc_rec_test_CFLAGS = $(MYCFLAGS)
+pack_assoc_rec_test_LDADD  = $(LDADD) @CHECK_LIBS@
 
 endif
