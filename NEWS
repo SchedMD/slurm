@@ -1,8 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
-* Changes in Slurm 17.02.2
-==========================
+* Changes in Slurm 17.02.1-2
+============================
+ -- Replace clock_gettime with time(NULL) for very old systems without the call.
 
 * Changes in Slurm 17.02.1
 ==========================
@@ -288,8 +289,9 @@ documents those changes that are of interest to users and administrators.
  -- Added infrastructure for setting up federations in database and establishing
     connections between federation clusters.
 
-* Changes in Slurm 16.05.11
-===========================
+* Changes in Slurm 16.05.10-2
+=============================
+ -- Replace clock_gettime with time(NULL) for very old systems without the call.
 
 * Changes in Slurm 16.05.10
 ===========================
