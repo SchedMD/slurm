@@ -1262,7 +1262,7 @@ static void *_agent_init(void *arg)
 		slurm_mutex_lock(&pending_mutex);
 		while (!slurmctld_config.shutdown_time &&
 		       !pending_mail && (pending_wait_time == NO_VAL16)) {
-			ts.tv_sec  = time(NULL) + 5;
+			ts.tv_sec  = time(NULL) + 2;
 			pthread_cond_timedwait(&pending_cond,
 					       &pending_mutex,
 					       &ts);
