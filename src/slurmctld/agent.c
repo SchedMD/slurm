@@ -1262,9 +1262,10 @@ static void *_agent_init(void *arg)
 		slurm_mutex_lock(&pending_mutex);
 		while (!slurmctld_config.shutdown_time &&
 		       !pending_mail && (pending_wait_time == NO_VAL16)) {
-			clock_gettime(CLOCK_REALTIME, &ts);
-			ts.tv_sec += 5;
-			slurm_cond_timedwait(&pending_cond, &pending_mutex,&ts);
+			ts.tv_sec  = time(NULL) + 5;
+			pthread_cond_timedwait(&pending_cond,
+					       &pending_mutex,
+					       &ts);
 		}
 		if (slurmctld_config.shutdown_time) {
 			slurm_mutex_unlock(&pending_mutex);
