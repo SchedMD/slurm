@@ -90,6 +90,58 @@ START_TEST(pack_1702_federation_rec)
 END_TEST
 
 
+START_TEST(pack_1702_federation_rec_empty_list)
+{
+	int rc;
+
+	slurmdb_federation_rec_t *pack_fr = xmalloc(sizeof(slurmdb_federation_rec_t));
+	pack_fr->flags        = 7;
+	pack_fr->name         = xstrdup("Saint Augustine");
+	pack_fr->cluster_list = NULL;
+
+	Buf buf = init_buf(1024);
+	slurmdb_pack_federation_rec(pack_fr, SLURM_17_02_PROTOCOL_VERSION, buf);
+
+	set_buf_offset(buf, 0);
+
+	slurmdb_federation_rec_t *unpack_fr;
+	rc = slurmdb_unpack_federation_rec((void **)&unpack_fr, SLURM_17_02_PROTOCOL_VERSION, buf);
+	ck_assert(rc                    == SLURM_SUCCESS);
+	ck_assert_str_eq(pack_fr->name,    unpack_fr->name);
+	ck_assert(pack_fr->flags        == unpack_fr->flags);
+	ck_assert(pack_fr->cluster_list == unpack_fr->cluster_list);
+
+	free_buf(buf);
+	slurmdb_destroy_federation_rec(pack_fr);
+	slurmdb_destroy_federation_rec(unpack_fr);
+}
+END_TEST
+
+
+/* This test sets up the buffer so that it fail when unpacking the clsuter rec.
+ */
+START_TEST(pack_1702_federation_rec_fail)
+{
+	int rc;
+	char *name = xstrdup("Saint Augustine");
+
+	Buf buf = init_buf(18*sizeof(uint32_t));
+	packstr(name, buf);
+	pack32(7, buf);
+	pack32(1, buf);
+
+	set_buf_offset(buf, 0);
+
+	slurmdb_federation_rec_t *unpack_fr;
+	rc = slurmdb_unpack_federation_rec((void **)&unpack_fr, SLURM_17_02_PROTOCOL_VERSION, buf);
+	ck_assert_int_eq(rc, SLURM_ERROR);
+
+	free_buf(buf);
+	xfree(name);
+}
+END_TEST
+
+
 /*****************************************************************************
  * TEST SUITE                                                                *
  ****************************************************************************/
@@ -102,6 +154,8 @@ Suite* suite(void)
 	tcase_add_test(tc_core, pack_1702_federation_rec);
 	tcase_add_test(tc_core, pack_1702_null_federation_rec);
 	//tcase_add_test(tc_core, pack_1702_federation_rec_fail);
+	tcase_add_test(tc_core, pack_1702_federation_rec_empty_list);
+	tcase_add_test(tc_core, pack_1702_federation_rec_fail);
 	suite_add_tcase(s, tc_core);
 	return s;
 }
