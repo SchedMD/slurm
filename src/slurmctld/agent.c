@@ -1279,8 +1279,7 @@ static void *_agent_init(void *arg)
 		while (!slurmctld_config.shutdown_time &&
 		       !pending_mail &&
 		       (pending_wait_time == (uint16_t) NO_VAL)) {
-			clock_gettime(CLOCK_REALTIME, &ts);
-			ts.tv_sec += 5;
+			ts.tv_sec  = time(NULL) + 5;
 			pthread_cond_timedwait(&pending_cond,&pending_mutex,&ts);
 		}
 		if (slurmctld_config.shutdown_time) {
