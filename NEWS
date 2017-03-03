@@ -42,6 +42,10 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 17.02.2
 ==========================
 
+* Changes in Slurm 17.02.2
+==========================
+ -- Update hyperlink to LBNL Node Health Check program.
+
 * Changes in Slurm 17.02.1-2
 ============================
  -- Replace clock_gettime with time(NULL) for very old systems without the call.
