@@ -169,6 +169,15 @@ Slurm requires a full restart of the daemons. If you just change the partition
 <I>scontrol reconfig</I>.
 </P>
 
+<P>
+If a job request restricts Slurm's ability to run jobs from multiple users or
+accounts on a node by using the "--exclusive=user" or "--exclusive=mcs" job
+options, that may prevent preemption of jobs to start higher priority jobs. If
+preemption is used, it is generally advisable to disable the "--exclusive=user"
+and "--exclusive=mcs" job options by using a job_submit plugin (set the value of
+"shared" to "NO_VAL16").
+</P>
+
 <H2>Preemption Design and Operation</H2>
 
 <P>
@@ -432,6 +441,6 @@ order to support ideal placements such as this, which can quickly complicate
 the design. Any and all help is welcome here!
 </P>
 
-<p style="text-align:center;">Last modified 31 March 2016</p>
+<p style="text-align:center;">Last modified 6 March 2017</p>
 
 <!--#include virtual="footer.txt"-->
