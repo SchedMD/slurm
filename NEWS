@@ -4,6 +4,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 17.02.2
 ==========================
  -- Update hyperlink to LBNL Node Health Check program.
+ -- burst_buffer/cray - Add support for line continuation.
 
 * Changes in Slurm 17.02.1-2
 ============================
@@ -292,6 +293,10 @@ documents those changes that are of interest to users and administrators.
     job IDs in the new range.
  -- Added infrastructure for setting up federations in database and establishing
     connections between federation clusters.
+
+* Changes in Slurm 16.05.11
+===========================
+ -- burst_buffer/cray - Add support for line continuation.
 
 * Changes in Slurm 16.05.10-2
 =============================
