@@ -14345,6 +14345,13 @@ static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
 	if (IS_JOB_PENDING(job_ptr) && !IS_JOB_REVOKED(job_ptr))
 		return ESLURM_JOB_PENDING;
 
+	if ((state & JOB_RECONFIG_FAIL) && IS_JOB_CANCELLED(job_ptr)) {
+		/* Job was cancelled (likely be the user) while node
+		 * reconfiguration was in progress, so don't requeue it
+		 * if the node reconfiguration failed. */
+		return ESLURM_DISABLED;
+	}
+
 	if (job_ptr->fed_details) {
 		int rc;
 		if ((rc = fed_mgr_job_requeue_test(job_ptr, state)))

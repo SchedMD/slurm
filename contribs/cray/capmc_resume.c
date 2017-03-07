@@ -589,7 +589,7 @@ int main(int argc, char *argv[])
 	xfree(mcdram_mode);
 	xfree(numa_mode);
 
-	if ((argc == 3) && !syscfg_path) {
+	if (argc == 3) {
 		slurm_init_update_node_msg(&node_msg);
 		node_msg.node_names = argv[1];
 		node_msg.features_act = argv[2];
