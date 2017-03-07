@@ -4347,6 +4347,8 @@ If user root attempts to execute a job as another user (e.g. using
 srun's \-\-uid option), this other user must be in one of groups
 identified by AllowGroups for the job to successfully execute.
 The default value is "ALL".
+When set, all partitions that a user does not have access will be hidden from
+display regardless of the settings used for PrivateData.
 \fBNOTE:\fR For performance reasons, Slurm maintains a list of user IDs
 allowed to use each partition and this is checked at job submission time.
 This list of user IDs is updated when the \fBslurmctld\fR daemon is restarted,
