@@ -16,6 +16,8 @@ documents those changes that are of interest to users and administrators.
     allocation of "20,22" must be expressed as "20\n22".
  -- Fix pam_slurm_adopt.so (and other external code linked against libslurm)
     by exporting adding s_p_get_uint64 to slurm_xlator.h.
+ -- Fix rare segfault when shutting down slurmctld and still sending data to
+    the database.
 
 * Changes in Slurm 17.02.1-2
 ============================

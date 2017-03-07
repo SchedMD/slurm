@@ -419,6 +419,9 @@ static void _open_slurmdbd_conn(bool need_db)
 		/* clear errno (checked after this for errors) */
 		errno = 0;
 		return;
+	} else if (slurmdbd_shutdown) {
+		debug("Request to open slurmdbd_conn after shutdown, denied.");
+		return;
 	}
 
 	slurm_persist_conn_close(slurmdbd_conn);
