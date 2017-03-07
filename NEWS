@@ -4,6 +4,10 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 16.05.11
 ===========================
  -- burst_buffer/cray - Add support for line continuation.
+ -- If a job is cancelled by the user while it's allocated nodes are being
+    reconfigured (i.e. the capmc_resume program is rebooting nodes for the job)
+    and the node reconfiguration fails (i.e. the reboot fails), then don't
+    requeue the job but leave it in a cancelled state.
 
 * Changes in Slurm 16.05.10-2
 =============================
