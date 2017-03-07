@@ -8,6 +8,8 @@ documents those changes that are of interest to users and administrators.
     reconfigured (i.e. the capmc_resume program is rebooting nodes for the job)
     and the node reconfiguration fails (i.e. the reboot fails), then don't
     requeue the job but leave it in a cancelled state.
+ -- capmc_resume (Cray resume node script) - Do not disable changing a node's
+    active features if SyscfgPath is configured in the knl.conf file.
 
 * Changes in Slurm 16.05.10-2
 =============================
