@@ -259,6 +259,7 @@ Before new major release:
  - Test on ia64, i386, x86_64, BGQ, NRT/POE, Cray
  - Test on Elan and IB switches
  - Test fail-over of slurmctld
+ - Test pam_slurm and pam_slurm_adopt.
  - Test for memory leaks in slurmctld, slurmd and slurmdbd with various plugins
  - Change API version number
  - Run "make check" (requires "dejagnu" package)
