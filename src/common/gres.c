@@ -2997,18 +2997,18 @@ static bool _is_gres_cnt_zero(char *config)
 
 /*
  * Given a job's requested gres configuration, validate it and build a gres list
- * IN req_config - job request's gres input string
+ * IN req_config - job request's gres input string, modifiable to remove gres
  * OUT gres_list - List of Gres records for this job to track usage
  * RET SLURM_SUCCESS, ESLURM_INVALID_GRES, or ESLURM_DUPLICATE_GRES
  */
-extern int gres_plugin_job_state_validate(char *req_config, List *gres_list)
+extern int gres_plugin_job_state_validate(char **req_config, List *gres_list)
 {
 	char *tmp_str, *tok, *last = NULL;
 	int i, rc;
 	gres_state_t *gres_ptr;
 	gres_job_state_t *job_gres_data;
 
-	if ((req_config == NULL) || (req_config[0] == '\0')) {
+	if (!req_config || (*req_config == NULL) || (*req_config[0] == '\0')) {
 		*gres_list = NULL;
 		return SLURM_SUCCESS;
 	}
@@ -3018,7 +3018,7 @@ extern int gres_plugin_job_state_validate(char *req_config, List *gres_list)
 
 	slurm_mutex_lock(&gres_context_lock);
 
-	tmp_str = xstrdup(req_config);
+	tmp_str = xstrdup(*req_config);
 	tok = strtok_r(tmp_str, ",", &last);
 	while (tok && (rc == SLURM_SUCCESS)) {
 		rc = SLURM_ERROR;

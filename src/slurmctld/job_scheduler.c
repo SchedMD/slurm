@@ -3020,7 +3020,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 				job_ptr->gres = xstrdup(dep_job_ptr->gres);
 				FREE_NULL_LIST(job_ptr->gres_list);
 				gres_plugin_job_state_validate(
-					job_ptr->gres, &job_ptr->gres_list);
+					&job_ptr->gres, &job_ptr->gres_list);
 				assoc_mgr_lock(&locks);
 				gres_set_job_tres_cnt(job_ptr->gres_list,
 						      job_ptr->details ?

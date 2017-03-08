@@ -423,7 +423,7 @@ extern int gres_plugin_job_count(List gres_list, int arr_len,
  * OUT gres_list - List of Gres records for this job to track usage
  * RET SLURM_SUCCESS or ESLURM_INVALID_GRES
  */
-extern int gres_plugin_job_state_validate(char *req_config, List *gres_list);
+extern int gres_plugin_job_state_validate(char **req_config, List *gres_list);
 
 /*
  * Create a (partial) copy of a job's gres state for job binding

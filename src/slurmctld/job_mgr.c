@@ -6073,7 +6073,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	}
 
 	if ((error_code =
-	     gres_plugin_job_state_validate(job_desc->gres, &gres_list)))
+	     gres_plugin_job_state_validate(&job_desc->gres, &gres_list)))
 		goto cleanup_fail;
 
 	gres_set_job_tres_cnt(gres_list,
@@ -10346,7 +10346,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			   || (detail_ptr->expanding_jobid != 0)) {
 			error_code = ESLURM_JOB_NOT_PENDING;
 		} else if ((error_code = gres_plugin_job_state_validate(
-				    job_specs->gres, &gres_list))) {
+				    &job_specs->gres, &gres_list))) {
 			if (error_code == ESLURM_DUPLICATE_GRES)
 				info("sched: update_job: duplicate gres %s for job %u",
 				     job_specs->gres, job_ptr->job_id);
