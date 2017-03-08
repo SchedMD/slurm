@@ -542,7 +542,7 @@ no_rollup_change:
 		xstrfmtcat(query,
 			   ") on duplicate key update "
 			   "job_db_inx=LAST_INSERT_ID(job_db_inx), "
-			   "id_user=%u, id_group=%u, "
+			   "id_assoc=%u, id_user=%u, id_group=%u, "
 			   "nodelist='%s', id_resv=%u, timelimit=%u, "
 			   "time_submit=%ld, time_eligible=%ld, "
 			   "time_start=%ld, mod_time=UNIX_TIMESTAMP(), "
@@ -550,7 +550,8 @@ no_rollup_change:
 			   "state=greatest(state, %u), priority=%u, "
 			   "cpus_req=%u, nodes_alloc=%u, "
 			   "mem_req=%"PRIu64", id_array_job=%u, id_array_task=%u",
-			   job_ptr->user_id, job_ptr->group_id, nodes,
+			   job_ptr->assoc_id, job_ptr->user_id,
+			   job_ptr->group_id, nodes,
 			   job_ptr->resv_id, job_ptr->time_limit,
 			   submit_time, begin_time, start_time,
 			   jname, track_steps, job_ptr->qos_id, job_state,
