@@ -3018,7 +3018,7 @@ extern int gres_plugin_job_state_validate(char **req_config, List *gres_list)
 
 	slurm_mutex_lock(&gres_context_lock);
 
-	tmp_str = xstrdup(*req_config);
+	tmp_str = *req_config;
 	tok = strtok_r(tmp_str, ",", &last);
 	while (tok && (rc == SLURM_SUCCESS)) {
 		rc = SLURM_ERROR;
@@ -3067,7 +3067,6 @@ extern int gres_plugin_job_state_validate(char **req_config, List *gres_list)
 	xfree(*req_config);
 	*req_config = new_req_config;
 
-	xfree(tmp_str);
 	return rc;
 }
 
