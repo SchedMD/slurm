@@ -23,6 +23,8 @@ documents those changes that are of interest to users and administrators.
     multifactor.
  -- Fix segfault if slurmctld is shutting down and the slurmdbd plugin was
     in the middle of setting db_indexes.
+ -- Add ESLURM_JOB_SETTING_DB_INX to errno to note when a job can't be updated
+    because the dbd is setting a db_index.
 
 * Changes in Slurm 17.02.1-2
 ============================

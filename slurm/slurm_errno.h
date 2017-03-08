@@ -191,6 +191,7 @@ enum {
 	ESLURM_BURST_BUFFER_WAIT =			2100,
 	ESLURM_PARTITION_DOWN,
 	ESLURM_DUPLICATE_GRES,
+	ESLURM_JOB_SETTING_DB_INX,
 
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,
