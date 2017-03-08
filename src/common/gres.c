@@ -3003,7 +3003,7 @@ static bool _is_gres_cnt_zero(char *config)
  */
 extern int gres_plugin_job_state_validate(char **req_config, List *gres_list)
 {
-	char *tmp_str, *tok, *last = NULL;
+	char *tmp_str, *tok, *last = NULL, *new_req_config = NULL;
 	int i, rc;
 	gres_state_t *gres_ptr;
 	gres_job_state_t *job_gres_data;
@@ -3041,6 +3041,9 @@ extern int gres_plugin_job_state_validate(char **req_config, List *gres_list)
 				xfree(job_gres_data);
 				break;
 			}
+			if (new_req_config != NULL)
+			    xstrcat(new_req_config, ",");
+			xstrcat(new_req_config, tok);
 			gres_ptr = xmalloc(sizeof(gres_state_t));
 			gres_ptr->plugin_id = gres_context[i].plugin_id;
 			gres_ptr->gres_data = job_gres_data;
@@ -3060,6 +3063,9 @@ extern int gres_plugin_job_state_validate(char **req_config, List *gres_list)
 		tok = strtok_r(NULL, ",", &last);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
+
+	xfree(*req_config);
+	*req_config = new_req_config;
 
 	xfree(tmp_str);
 	return rc;

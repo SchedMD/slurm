@@ -18,6 +18,8 @@ documents those changes that are of interest to users and administrators.
     by exporting adding s_p_get_uint64 to slurm_xlator.h.
  -- Fix rare segfault when shutting down slurmctld and still sending data to
     the database.
+ -- Fix gres output of a job if it is updated while pending to be displayed
+    correctly with Slurm tools.
 
 * Changes in Slurm 17.02.1-2
 ============================
