@@ -417,12 +417,7 @@ int setup_env(env_t *env, bool preserve_env)
 		char *str_verbose, *str_bind1 = NULL, *str_bind2 = NULL;
 		char *str_bind_list, *str_bind_type = NULL, *str_bind = NULL;
 
-		if (env->batch_flag) {
-			unsetenvp(env->env, "SBATCH_CPU_BIND");
-			unsetenvp(env->env, "SBATCH_CPU_BIND_LIST");
-			unsetenvp(env->env, "SBATCH_CPU_BIND_TYPE");
-			unsetenvp(env->env, "SBATCH_CPU_BIND_VERBOSE");
-		} else {
+		if (!env->batch_flag) {
 			unsetenvp(env->env, "SLURM_CPU_BIND");
 			unsetenvp(env->env, "SLURM_CPU_BIND_LIST");
 			unsetenvp(env->env, "SLURM_CPU_BIND_TYPE");
@@ -483,27 +478,7 @@ int setup_env(env_t *env, bool preserve_env)
 		} else
 			str_bind_type = xstrdup("");
 
-		if (env->batch_flag) {
-			if (setenvf(&env->env, "SBATCH_CPU_BIND", str_bind)) {
-				error("Unable to set SBATCH_CPU_BIND");
-				rc = SLURM_FAILURE;
-			}
-			if (setenvf(&env->env, "SBATCH_CPU_BIND_LIST",
-				    str_bind_list)) {
-				error("Unable to set SBATCH_CPU_BIND_LIST");
-				rc = SLURM_FAILURE;
-			}
-			if (setenvf(&env->env, "SBATCH_CPU_BIND_TYPE",
-				    str_bind_type)) {
-				error("Unable to set SBATCH_CPU_BIND_TYPE");
-				rc = SLURM_FAILURE;
-			}
-			if (setenvf(&env->env, "SBATCH_CPU_BIND_VERBOSE",
-				    str_verbose)) {
-				error("Unable to set SBATCH_CPU_BIND_VERBOSE");
-				rc = SLURM_FAILURE;
-			}
-		} else {
+		if (!env->batch_flag) {
 			if (setenvf(&env->env, "SLURM_CPU_BIND", str_bind)) {
 				error("Unable to set SLURM_CPU_BIND");
 				rc = SLURM_FAILURE;
