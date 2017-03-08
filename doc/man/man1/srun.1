@@ -1793,12 +1793,13 @@ This is only supported with some system configurations and will otherwise be
 silently ignored. This option applies to job allocations.
 
 .TP
-\fB\-\-resv\-ports\fR
+\fB\-\-resv\-ports\fR[=\fIcount\fR]
 Reserve communication ports for this job. Users can specify the number
 of port they want to reserve. The parameter MpiParams=ports=12000-12999
-must be specified in \fIslurm.conf\fR. If not specified the default reserve
-number of ports equal to the number of tasks. If the number of reserved ports
-is zero no ports is reserved.
+must be specified in \fIslurm.conf\fR. If not specified and Slurm's OpenMPI
+plugin is used, then by default the number of reserved equal to the highest
+number of tasks on any node in the job step allocation.
+If the number of reserved ports is zero then no ports is reserved.
 Used for OpenMPI. This option applies to job and step allocations.
 
 .TP

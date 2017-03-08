@@ -386,6 +386,7 @@
 #define s_p_get_long		slurm_s_p_get_long
 #define s_p_get_uint16		slurm_s_p_get_uint16
 #define s_p_get_uint32		slurm_s_p_get_uint32
+#define s_p_get_uint64		slurm_s_p_get_uint64
 #define s_p_get_pointer		slurm_s_p_get_pointer
 #define s_p_get_array		slurm_s_p_get_array
 #define s_p_get_boolean		slurm_s_p_get_boolean
