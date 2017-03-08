@@ -128,7 +128,7 @@ desired:
     \fB\-\-threads\-per\-core\fR=<\fIthreads\fR>
 .fi
 If task/affinity plugin is enabled, then specifying an allocation in this
-manner also sets a default \fB\-\-cpu_bind\fR option of \fIthreads\fR
+manner also results in subsequently launched tasks being bound to threads
 if the \fB\-B\fR option specifies a thread count, otherwise an option of
 \fIcores\fR if a core count is specified, otherwise an option of \fIsockets\fR.
 If SelectType is configured to select/cons_res, it must have a parameter of
@@ -1889,25 +1889,6 @@ Do not free a block on Blue Gene L/P systems only.
 .TP
 \fBMPIRUN_PARTITION\fR
 The block name on Blue Gene systems only.
-.TP
-\fBSBATCH_CPU_BIND\fR
-Set to value of the \-\-cpu_bind\fR option.
-.TP
-\fBSBATCH_CPU_BIND_VERBOSE\fR
-Set to "verbose" if the \-\-cpu_bind\fR option includes the verbose option.
-Set to "quiet" otherwise.
-.TP
-\fBSBATCH_CPU_BIND_TYPE\fR
-Set to the CPU binding type specified with the \-\-cpu_bind\fR option.
-Possible values two possible comma separated strings.
-The first possible string identifies the entity to be bound to: "threads",
-"cores", "sockets", "ldoms" and "boards".
-The second string identifies manner in which tasks are bound:
-"none", "rank", "map_cpu", "mask_cpu", "rank_ldom", "map_ldom" or "mask_ldom".
-.TP
-\fBSBATCH_CPU_BIND_LIST\fR
-Set to bit mask used for CPU binding.
-
 .TP
 \fBSBATCH_MEM_BIND\fR
 Set to value of the \-\-mem_bind\fR option.
