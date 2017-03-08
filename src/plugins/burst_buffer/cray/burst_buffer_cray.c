@@ -1353,8 +1353,12 @@ static int _write_nid_file(char *file_name, char *node_list, uint32_t job_id)
 			continue;
 		/* Copy significant digits and separator */
 		while (sep[i]) {
+			if (sep[i] == ',') {
+				buf[j++] = '\n';
+				break;
+			}
 			buf[j++] = sep[i];
-			if ((sep[i] == '-') || (sep[i] == ','))
+			if (sep[i] == '-')
 				break;
 			i++;
 		}

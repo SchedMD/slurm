@@ -11,6 +11,8 @@ documents those changes that are of interest to users and administrators.
     requeue the job but leave it in a cancelled state.
  -- capmc_resume (Cray resume node script) - Do not disable changing a node's
     active features if SyscfgPath is configured in the knl.conf file.
+ -- burst_buffer/cray - Fix parsing for discontinuous allocated nodes. A job
+    allocation of "20,22" must be expressed as "20\n22".
 
 * Changes in Slurm 17.02.1-2
 ============================
