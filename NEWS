@@ -19,6 +19,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix gres output of a job if it is updated while pending to be displayed
     correctly with Slurm tools.
  -- Fix pam_slurm_adopt.
+ -- Fix missing unlock when job_list doesn't exist when starting priority/
+    multifactor.
 
 * Changes in Slurm 17.02.1-2
 ============================
