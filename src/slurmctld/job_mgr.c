@@ -10261,6 +10261,13 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 					&cpus_per_node);
 #endif
 
+	/* This means we are in the middle of requesting the db_inx from the
+	 * database. So we can't update right now.  You should try again outside
+	 * the job_write lock in a second or so.
+	 */
+	if (job_ptr->db_index == NO_VAL64)
+		return ESLURM_JOB_SETTING_DB_INX;
+
 	authorized = admin = validate_operator(uid);
 	if (job_specs->burst_buffer) {
 		/* burst_buffer contents are validated at job submit time and
@@ -12155,8 +12162,8 @@ extern int update_job(slurm_msg_t *msg, uid_t uid)
 	} else {
 		rc = _update_job(job_ptr, job_specs, uid);
 	}
-
-	slurm_send_rc_msg(msg, rc);
+	if (rc != ESLURM_JOB_SETTING_DB_INX)
+		slurm_send_rc_msg(msg, rc);
 	xfree(job_specs->job_id_str);
 
 	return rc;
@@ -12221,6 +12228,10 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			/* This is a job array */
 			job_ptr_done = job_ptr;
 			rc2 = _update_job(job_ptr, job_specs, uid);
+			if (rc2 == ESLURM_JOB_SETTING_DB_INX) {
+				rc = rc2;
+				goto reply;
+			}
 			_resp_array_add(&resp_array, job_ptr, rc2);
 		}
 
@@ -12235,6 +12246,10 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			if ((job_ptr->array_job_id == job_id) &&
 			    (job_ptr != job_ptr_done)) {
 				rc2 = _update_job(job_ptr, job_specs, uid);
+				if (rc2 == ESLURM_JOB_SETTING_DB_INX) {
+					rc = rc2;
+					goto reply;
+				}
 				_resp_array_add(&resp_array, job_ptr, rc2);
 			}
 			job_ptr = job_ptr->job_array_next_j;
@@ -12282,6 +12297,10 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 					 array_bitmap)) {
 			/* Update the record with all pending tasks */
 			rc2 = _update_job(job_ptr, job_specs, uid);
+			if (rc2 == ESLURM_JOB_SETTING_DB_INX) {
+				rc = rc2;
+				goto reply;
+			}
 			_resp_array_add(&resp_array, job_ptr, rc2);
 			bit_not(job_ptr->array_recs->task_id_bitmap);
 			bit_and(array_bitmap,
@@ -12334,11 +12353,15 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 		}
 
 		rc2 = _update_job(job_ptr, job_specs, uid);
+		if (rc2 == ESLURM_JOB_SETTING_DB_INX) {
+			rc = rc2;
+			goto reply;
+		}
 		_resp_array_add(&resp_array, job_ptr, rc2);
 	}
 
 reply:
-	if (msg->conn_fd >= 0) {
+	if ((rc != ESLURM_JOB_SETTING_DB_INX) && (msg->conn_fd >= 0)) {
 		slurm_msg_t_init(&resp_msg);
 		resp_msg.protocol_version = msg->protocol_version;
 		if (resp_array) {
