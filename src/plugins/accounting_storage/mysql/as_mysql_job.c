@@ -50,19 +50,18 @@
 #define BUFFER_SIZE 4096
 
 /* Used in job functions for getting the database index based off the
- * submit time, job and assoc id.  0 is returned if none is found
+ * submit time and job.  0 is returned if none is found
  */
 static uint64_t _get_db_index(mysql_conn_t *mysql_conn,
-			      time_t submit, uint32_t jobid, uint32_t associd)
+			      time_t submit, uint32_t jobid)
 {
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	uint64_t db_index = 0;
 	char *query = xstrdup_printf("select job_db_inx from \"%s_%s\" where "
-				     "time_submit=%d and id_job=%u "
-				     "and id_assoc=%u",
+				     "time_submit=%d and id_job=%u",
 				     mysql_conn->cluster_name, job_table,
-				     (int)submit, jobid, associd);
+				     (int)submit, jobid);
 
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
@@ -74,10 +73,10 @@ static uint64_t _get_db_index(mysql_conn_t *mysql_conn,
 	if (!row) {
 		mysql_free_result(result);
 		debug4("We can't get a db_index for this combo, "
-		       "time_submit=%d and id_job=%u and id_assoc=%u.  "
+		       "time_submit=%d and id_job=%u.  "
 		       "We must not have heard about the start yet, "
 		       "no big deal, we will get one right after this.",
-		       (int)submit, jobid, associd);
+		       (int)submit, jobid);
 		return 0;
 	}
 	db_index = slurm_atoull(row[0]);
@@ -303,8 +302,7 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 			job_ptr->db_index = _get_db_index(mysql_conn,
 							  job_ptr->details->
 							  submit_time,
-							  job_ptr->job_id,
-							  job_ptr->assoc_id);
+							  job_ptr->job_id);
 		}
 
 		if (job_ptr->db_index)
@@ -871,8 +869,7 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 		if (!(job_ptr->db_index =
 		      _get_db_index(mysql_conn,
 				    submit_time,
-				    job_ptr->job_id,
-				    job_ptr->assoc_id))) {
+				    job_ptr->job_id))) {
 			/* Comment is overloaded in job_start to be
 			   the block_id, so we will need to store this
 			   for later.
@@ -1053,8 +1050,7 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 		if (!(step_ptr->job_ptr->db_index =
 		      _get_db_index(mysql_conn,
 				    submit_time,
-				    step_ptr->job_ptr->job_id,
-				    step_ptr->job_ptr->assoc_id))) {
+				    step_ptr->job_ptr->job_id))) {
 			/* If we get an error with this just fall
 			 * through to avoid an infinite loop
 			 */
@@ -1184,8 +1180,7 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		if (!(step_ptr->job_ptr->db_index =
 		      _get_db_index(mysql_conn,
 				    submit_time,
-				    step_ptr->job_ptr->job_id,
-				    step_ptr->job_ptr->assoc_id))) {
+				    step_ptr->job_ptr->job_id))) {
 			/* If we get an error with this just fall
 			 * through to avoid an infinite loop
 			 */
@@ -1325,8 +1320,7 @@ extern int as_mysql_suspend(mysql_conn_t *mysql_conn,
 		if (!(job_ptr->db_index =
 		      _get_db_index(mysql_conn,
 				    submit_time,
-				    job_ptr->job_id,
-				    job_ptr->assoc_id))) {
+				    job_ptr->job_id))) {
 			/* If we get an error with this just fall
 			 * through to avoid an infinite loop
 			 */
