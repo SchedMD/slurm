@@ -41,9 +41,6 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 17.02.2
 ==========================
-
-* Changes in Slurm 17.02.2
-==========================
  -- Update hyperlink to LBNL Node Health Check program.
  -- burst_buffer/cray - Add support for line continuation.
  -- If a job is cancelled by the user while it's allocated nodes are being
