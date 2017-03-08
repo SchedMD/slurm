@@ -21,6 +21,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix pam_slurm_adopt.
  -- Fix missing unlock when job_list doesn't exist when starting priority/
     multifactor.
+ -- Fix segfault if slurmctld is shutting down and the slurmdbd plugin was
+    in the middle of setting db_indexes.
 
 * Changes in Slurm 17.02.1-2
 ============================
