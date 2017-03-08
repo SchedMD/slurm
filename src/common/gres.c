@@ -3028,10 +3028,10 @@ extern int gres_plugin_job_state_validate(char **req_config, List *gres_list)
 						 &gres_context[i]);
 			if (rc != SLURM_SUCCESS)
 				continue;
-			if (job_gres_data == NULL)    /* Name match, count=0 */
-				break;
 			if (*gres_list == NULL)
 				*gres_list = list_create(_gres_job_list_delete);
+			if (job_gres_data == NULL)    /* Name match, count=0 */
+				continue;
 			else if (list_find_first(
 					 *gres_list,
 					 _gres_find_job_name_type_id,
