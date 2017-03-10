@@ -135,7 +135,7 @@ static int _get_tres_state_reason(int tres_pos, int unk_reason)
 			break;
 		}
 		break;
-	case TRES_ARRAY_ENEGRY:
+	case TRES_ARRAY_ENERGY:
 		switch (unk_reason) {
 		case WAIT_ASSOC_GRP_UNK:
 			return WAIT_ASSOC_GRP_ENERGY;
