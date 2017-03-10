@@ -156,11 +156,12 @@ static int _set_rec(int *start, int argc, char **argv,
 			}
 
 			List cluster_names = list_create(slurm_destroy_char);
-			if (!slurm_addto_mode_char_list(cluster_names,
-							argv[i]+end, option)) {
+			if (slurm_addto_mode_char_list(cluster_names,
+						       argv[i]+end, option) < 0)
+			{
 				FREE_NULL_LIST(cluster_names);
 				exit_code = 1;
-				continue;
+				break;
 			}
 			itr = list_iterator_create(cluster_names);
 			fed->cluster_list =

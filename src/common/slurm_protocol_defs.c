@@ -372,7 +372,8 @@ endit:
 }
 
 /* Parses strings such as stra,+strb,-strc and appends the default mode to each
- * string in the list if no specific mode is listed. */
+ * string in the list if no specific mode is listed.
+ * RET: returns the number of items added to the list. -1 on error. */
 extern int slurm_addto_mode_char_list(List char_list, char *names, int mode)
 {
 	int i=0, start=0;
@@ -418,7 +419,7 @@ extern int slurm_addto_mode_char_list(List char_list, char *names, int mode)
 				name = xstrndup(names+start, (i-start));
 				if (tmp_mode) {
 					if (equal_set) {
-						count = 0;
+						count = -1;
 						error("%s", err_msg);
 						goto end_it;
 					}
@@ -427,7 +428,7 @@ extern int slurm_addto_mode_char_list(List char_list, char *names, int mode)
 						  "%c%s", tmp_mode, name);
 				} else {
 					if (add_set) {
-						count = 0;
+						count = -1;
 						error("%s", err_msg);
 						goto end_it;
 					}
@@ -446,9 +447,6 @@ extern int slurm_addto_mode_char_list(List char_list, char *names, int mode)
 				} else
 					xfree(m_name);
 				xfree(name);
-			} else if (!(i-start)) {
-				list_append(char_list, xstrdup(""));
-				count++;
 			}
 
 			i++;
@@ -462,6 +460,8 @@ extern int slurm_addto_mode_char_list(List char_list, char *names, int mode)
 		}
 		i++;
 	}
+
+	list_iterator_reset(itr);
 	if ((i-start) > 0) {
 		int tmp_mode = mode;
 		if (names[start] == '+' ||
@@ -472,7 +472,7 @@ extern int slurm_addto_mode_char_list(List char_list, char *names, int mode)
 		name = xstrndup(names+start, (i-start));
 		if (tmp_mode) {
 			if (equal_set) {
-				count = 0;
+				count = -1;
 				error("%s", err_msg);
 				goto end_it;
 			}
@@ -480,7 +480,7 @@ extern int slurm_addto_mode_char_list(List char_list, char *names, int mode)
 				  "%c%s", tmp_mode, name);
 		} else {
 			if (add_set) {
-				count = 0;
+				count = -1;
 				error("%s", err_msg);
 				goto end_it;
 			}
@@ -498,12 +498,6 @@ extern int slurm_addto_mode_char_list(List char_list, char *names, int mode)
 		} else
 			xfree(m_name);
 		xfree(name);
-	} else if (!(i-start)) {
-		list_append(char_list, xstrdup(""));
-		count++;
-	}
-	if (!count) {
-		error("You gave me an empty name list");
 	}
 
 end_it:
