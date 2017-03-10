@@ -453,9 +453,7 @@ extern void print_fields_time_from_secs(print_field_t *field,
 extern void print_fields_char_list(print_field_t *field, List value, int last)
 {
 	int abs_len = abs(field->len);
-	ListIterator itr = NULL;
 	char *print_this = NULL;
-	char *object = NULL;
 
 	if (!value || !list_count(value)) {
 		if (print_fields_parsable_print)
@@ -463,15 +461,7 @@ extern void print_fields_char_list(print_field_t *field, List value, int last)
 		else
 			print_this = xstrdup(" ");
 	} else {
-		list_sort(value, (ListCmpF)slurm_sort_char_list_asc);
-		itr = list_iterator_create(value);
-		while ((object = list_next(itr))) {
-			if (print_this)
-				xstrfmtcat(print_this, ",%s", object);
-			else
-				print_this = xstrdup(object);
-		}
-		list_iterator_destroy(itr);
+		print_this = slurm_char_list_to_xstr(value);
 	}
 
 	if (print_fields_parsable_print == PRINT_FIELDS_PARSABLE_NO_ENDING

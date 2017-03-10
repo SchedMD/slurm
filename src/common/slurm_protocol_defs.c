@@ -193,6 +193,32 @@ extern int slurm_find_char_in_list(void *x, void *key)
 	return 0;
 }
 
+static int _char_list_append_str(void *x, void *arg)
+{
+	char  *char_item = (char *)x;
+	char **out_str   = (char **)arg;
+
+	xassert(char_item);
+	xassert(out_str);
+
+	xstrfmtcat(*out_str, "%s%s", *out_str ? "," : "", char_item);
+
+	return SLURM_SUCCESS;
+}
+
+extern char *slurm_char_list_to_xstr(List char_list)
+{
+	char *out = NULL;
+
+	if (!char_list)
+		return NULL;
+
+	list_sort(char_list, (ListCmpF)slurm_sort_char_list_asc);
+	list_for_each(char_list, _char_list_append_str, &out);
+
+	return out;
+}
+
 /* returns number of objects added to list */
 extern int slurm_addto_char_list(List char_list, char *names)
 {
