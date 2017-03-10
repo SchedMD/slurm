@@ -76,6 +76,7 @@ static void _free_cluster_rec_members(slurmdb_cluster_rec_t *cluster)
 		xfree(cluster->dim_size);
 		xfree(cluster->fed.name);
 		slurm_persist_conn_destroy(cluster->fed.send);
+		slurm_mutex_destroy(&cluster->lock);
 		xfree(cluster->name);
 		xfree(cluster->nodes);
 		slurmdb_destroy_assoc_rec(cluster->root_assoc);
@@ -745,7 +746,6 @@ extern void slurmdb_destroy_cluster_rec(void *object)
 
 	if (slurmdb_cluster) {
 		_free_cluster_rec_members(slurmdb_cluster);
-		slurm_mutex_destroy(&slurmdb_cluster->lock);
 		xfree(slurmdb_cluster);
 	}
 }
