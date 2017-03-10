@@ -219,6 +219,22 @@ extern char *slurm_char_list_to_xstr(List char_list)
 	return out;
 }
 
+static int _char_list_copy(void *item, void *dst)
+{
+	list_append((List)dst, item);
+	return SLURM_SUCCESS;
+}
+
+extern int slurm_char_list_copy(List dst, List src)
+{
+	xassert(dst);
+	xassert(src);
+
+	list_for_each(src, _char_list_copy, dst);
+
+	return SLURM_SUCCESS;
+}
+
 /* returns number of objects added to list */
 extern int slurm_addto_char_list(List char_list, char *names)
 {
