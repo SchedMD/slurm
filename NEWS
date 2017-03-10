@@ -33,6 +33,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix sacct from returning way more than requested when querying against a job
     array task id.
  -- Fix double read lock of tres when updating gres or licenses on a job.
+ -- Make sure locks are always in place when calling
+    assoc_mgr_make_tres_str_from_array.
 
 * Changes in Slurm 17.02.1-2
 ============================
