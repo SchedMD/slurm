@@ -2999,18 +2999,18 @@ static bool _is_gres_cnt_zero(char *config)
 
 /*
  * Given a job's requested gres configuration, validate it and build a gres list
- * IN req_config - job request's gres input string
+ * IN req_config - job request's gres input string, modifiable to remove gres
  * OUT gres_list - List of Gres records for this job to track usage
  * RET SLURM_SUCCESS, ESLURM_INVALID_GRES, or ESLURM_DUPLICATE_GRES
  */
-extern int gres_plugin_job_state_validate(char *req_config, List *gres_list)
+extern int gres_plugin_job_state_validate(char **req_config, List *gres_list)
 {
-	char *tmp_str, *tok, *last = NULL;
+	char *tmp_str, *tok, *last = NULL, *new_req_config = NULL;
 	int i, rc;
 	gres_state_t *gres_ptr;
 	gres_job_state_t *job_gres_data;
 
-	if ((req_config == NULL) || (req_config[0] == '\0')) {
+	if (!req_config || (*req_config == NULL) || (*req_config[0] == '\0')) {
 		*gres_list = NULL;
 		return SLURM_SUCCESS;
 	}
@@ -3020,7 +3020,7 @@ extern int gres_plugin_job_state_validate(char *req_config, List *gres_list)
 
 	slurm_mutex_lock(&gres_context_lock);
 
-	tmp_str = xstrdup(req_config);
+	tmp_str = *req_config;
 	tok = strtok_r(tmp_str, ",", &last);
 	while (tok && (rc == SLURM_SUCCESS)) {
 		rc = SLURM_ERROR;
@@ -3030,10 +3030,10 @@ extern int gres_plugin_job_state_validate(char *req_config, List *gres_list)
 						 &gres_context[i]);
 			if (rc != SLURM_SUCCESS)
 				continue;
-			if (job_gres_data == NULL)    /* Name match, count=0 */
-				break;
 			if (*gres_list == NULL)
 				*gres_list = list_create(_gres_job_list_delete);
+			if (job_gres_data == NULL)    /* Name match, count=0 */
+				continue;
 			else if (list_find_first(
 					 *gres_list,
 					 _gres_find_job_name_type_id,
@@ -3043,6 +3043,9 @@ extern int gres_plugin_job_state_validate(char *req_config, List *gres_list)
 				xfree(job_gres_data);
 				break;
 			}
+			if (new_req_config != NULL)
+			    xstrcat(new_req_config, ",");
+			xstrcat(new_req_config, tok);
 			gres_ptr = xmalloc(sizeof(gres_state_t));
 			gres_ptr->plugin_id = gres_context[i].plugin_id;
 			gres_ptr->gres_data = job_gres_data;
@@ -3063,7 +3066,9 @@ extern int gres_plugin_job_state_validate(char *req_config, List *gres_list)
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 
-	xfree(tmp_str);
+	xfree(*req_config);
+	*req_config = new_req_config;
+
 	return rc;
 }
 

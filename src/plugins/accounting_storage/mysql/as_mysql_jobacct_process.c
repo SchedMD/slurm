@@ -1418,10 +1418,13 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 
 		if (job_ids)
 			xstrfmtcat(*extra, "t1.id_job in (%s) || ", job_ids);
-		if (array_job_ids)
+		if (array_job_ids) {
 			xstrfmtcat(*extra, "t1.id_array_job in (%s)", array_job_ids);
-		if (array_task_ids)
-			xstrfmtcat(*extra, " || t1.id_array_task in (%s)", array_task_ids);
+			if (array_task_ids)
+				xstrfmtcat(*extra,
+					   " && t1.id_array_task in (%s)",
+					   array_task_ids);
+		}
 
 		xstrcat(*extra, ")");
 		xfree(job_ids);

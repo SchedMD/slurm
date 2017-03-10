@@ -52,8 +52,27 @@ documents those changes that are of interest to users and administrators.
  -- Improve the srun documentation for the --resv-ports option.
  -- burst_buffer/cray - Fix parsing for discontinuous allocated nodes. A job
     allocation of "20,22" must be expressed as "20\n22".
- -- Fix pam_slurm_adopt.so (and other external code linked against libslurm)
-    by exporting adding s_p_get_uint64 to slurm_xlator.h.
+ -- Fix rare segfault when shutting down slurmctld and still sending data to
+    the database.
+ -- Fix gres output of a job if it is updated while pending to be displayed
+    correctly with Slurm tools.
+ -- Fix pam_slurm_adopt.
+ -- Fix missing unlock when job_list doesn't exist when starting priority/
+    multifactor.
+ -- Fix segfault if slurmctld is shutting down and the slurmdbd plugin was
+    in the middle of setting db_indexes.
+ -- Add ESLURM_JOB_SETTING_DB_INX to errno to note when a job can't be updated
+    because the dbd is setting a db_index.
+ -- Fix possible double insertion into database when a job is updated at the
+    moment the dbd is assigning a db_index.
+ -- Fix memory error when updating a job's licenses.
+ -- Fix seff to work correctly with non-standard perl installs.
+ -- Export missing slurmdbd_defs_[init|fini] needed for libslurmdb.so to work.
+ -- Fix sacct from returning way more than requested when querying against a job
+    array task id.
+ -- Fix double read lock of tres when updating gres or licenses on a job.
+ -- Make sure locks are always in place when calling
+    assoc_mgr_make_tres_str_from_array.
 
 * Changes in Slurm 17.02.1-2
 ============================
@@ -352,6 +371,8 @@ documents those changes that are of interest to users and administrators.
     requeue the job but leave it in a cancelled state.
  -- capmc_resume (Cray resume node script) - Do not disable changing a node's
     active features if SyscfgPath is configured in the knl.conf file.
+ -- Fix memory error when updating a job's licenses.
+ -- Fix double read lock of tres when updating gres or licenses on a job.
 
 * Changes in Slurm 16.05.10-2
 =============================

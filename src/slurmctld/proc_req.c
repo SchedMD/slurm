@@ -3555,20 +3555,37 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 	}
 
 	if (error_code == SLURM_SUCCESS) {
+		int db_inx_max_cnt = 5, i=0;
 		/* do RPC call */
 		dump_job_desc(job_desc_msg);
 		/* Insure everything that may be written to database is lower
 		 * case */
 		xstrtolower(job_desc_msg->account);
 		xstrtolower(job_desc_msg->wckey);
-		lock_slurmctld(job_write_lock);
-		/* Use UID provided by scontrol. May be overridden with -u <uid>
-		 * or --uid=<uid> */
-		if (job_desc_msg->job_id_str)
-			error_code = update_job_str(msg, uid);
-		else
-			error_code = update_job(msg, uid);
-		unlock_slurmctld(job_write_lock);
+		error_code = ESLURM_JOB_SETTING_DB_INX;
+		while (error_code == ESLURM_JOB_SETTING_DB_INX) {
+			lock_slurmctld(job_write_lock);
+			/* Use UID provided by scontrol. May be overridden with
+			 * -u <uid>  or --uid=<uid> */
+			if (job_desc_msg->job_id_str)
+				error_code = update_job_str(msg, uid);
+			else
+				error_code = update_job(msg, uid);
+			unlock_slurmctld(job_write_lock);
+			if (error_code == ESLURM_JOB_SETTING_DB_INX) {
+				if (i >= db_inx_max_cnt) {
+					info("%s: can't update job, waited %d seconds for job %s to get a db_index, but it hasn't happened yet.  Giving up and letting the user know.",
+					      __func__, db_inx_max_cnt,
+					      job_desc_msg->job_id_str);
+					slurm_send_rc_msg(msg, error_code);
+					break;
+				}
+				i++;
+				debug("%s: We cannot update job %s at the moment, we are setting the db index, waiting",
+				      __func__, job_desc_msg->job_id_str);
+				sleep(1);
+			}
+		}
 	}
 	END_TIMER2("_slurm_rpc_update_job");
 

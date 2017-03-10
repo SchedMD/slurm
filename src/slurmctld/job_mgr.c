@@ -6026,7 +6026,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	}
 
 	if ((error_code =
-	     gres_plugin_job_state_validate(job_desc->gres, &gres_list)))
+	     gres_plugin_job_state_validate(&job_desc->gres, &gres_list)))
 		goto cleanup_fail;
 
 	gres_set_job_tres_cnt(gres_list,
@@ -7517,6 +7517,9 @@ extern void job_validate_mem(struct job_record *job_ptr)
 
 	if ((job_ptr->bit_flags & NODE_MEM_CALC) &&
 	    (slurmctld_conf.fast_schedule == 0)) {
+		assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+					   READ_LOCK, NO_LOCK, NO_LOCK };
+
 		select_g_job_mem_confirm(job_ptr);
 		tres_count = job_ptr->details->pn_min_memory;
 		if (tres_count & MEM_PER_CPU) {
@@ -7526,6 +7529,8 @@ extern void job_validate_mem(struct job_record *job_ptr)
 			tres_count *= job_ptr->tres_alloc_cnt[TRES_ARRAY_NODE];
 		}
 		job_ptr->tres_alloc_cnt[TRES_ARRAY_MEM] = tres_count;
+
+		assoc_mgr_lock(&locks);
 		job_ptr->tres_alloc_str =
 			assoc_mgr_make_tres_str_from_array(
 			job_ptr->tres_alloc_cnt, TRES_STR_FLAG_SIMPLE, true);
@@ -7533,6 +7538,7 @@ extern void job_validate_mem(struct job_record *job_ptr)
 		job_ptr->tres_fmt_alloc_str =
 			assoc_mgr_make_tres_str_from_array(
 			job_ptr->tres_alloc_cnt, TRES_STR_CONVERT_UNITS, true);
+		assoc_mgr_unlock(&locks);
 		jobacct_storage_job_start_direct(acct_db_conn, job_ptr);
 	}
 }
@@ -10080,6 +10086,13 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 					&cpus_per_node);
 #endif
 
+	/* This means we are in the middle of requesting the db_inx from the
+	 * database. So we can't update right now.  You should try again outside
+	 * the job_write lock in a second or so.
+	 */
+	if (job_ptr->db_index == NO_VAL64)
+		return ESLURM_JOB_SETTING_DB_INX;
+
 	authorized = admin = validate_operator(uid);
 	if (job_specs->burst_buffer) {
 		/* burst_buffer contents are validated at job submit time and
@@ -10165,7 +10178,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			   || (detail_ptr->expanding_jobid != 0)) {
 			error_code = ESLURM_JOB_NOT_PENDING;
 		} else if ((error_code = gres_plugin_job_state_validate(
-				    job_specs->gres, &gres_list))) {
+				    &job_specs->gres, &gres_list))) {
 			if (error_code == ESLURM_DUPLICATE_GRES)
 				info("sched: update_job: duplicate gres %s for job %u",
 				     job_specs->gres, job_ptr->job_id);
@@ -10619,16 +10632,18 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			job_ptr->tres_req_cnt[TRES_ARRAY_CPU] =
 				(uint64_t)detail_ptr->min_cpus;
 			xfree(job_ptr->tres_req_str);
+			assoc_mgr_lock(&locks);
 			job_ptr->tres_req_str =
 				assoc_mgr_make_tres_str_from_array(
 					job_ptr->tres_req_cnt,
-					TRES_STR_FLAG_SIMPLE, false);
+					TRES_STR_FLAG_SIMPLE, true);
 
 			xfree(job_ptr->tres_fmt_req_str);
 			job_ptr->tres_fmt_req_str =
 				assoc_mgr_make_tres_str_from_array(
 					job_ptr->tres_req_cnt,
-					TRES_STR_CONVERT_UNITS, false);
+					TRES_STR_CONVERT_UNITS, true);
+			assoc_mgr_unlock(&locks);
 		}
 	}
 	if (job_specs->max_cpus != NO_VAL) {
@@ -10649,16 +10664,18 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			job_ptr->tres_req_cnt[TRES_ARRAY_CPU] =
 				(uint64_t)detail_ptr->min_cpus;
 			xfree(job_ptr->tres_req_str);
+			assoc_mgr_lock(&locks);
 			job_ptr->tres_req_str =
 				assoc_mgr_make_tres_str_from_array(
 					job_ptr->tres_req_cnt,
-					TRES_STR_FLAG_SIMPLE, false);
+					TRES_STR_FLAG_SIMPLE, true);
 
 			xfree(job_ptr->tres_fmt_req_str);
 			job_ptr->tres_fmt_req_str =
 				assoc_mgr_make_tres_str_from_array(
 					job_ptr->tres_req_cnt,
-					TRES_STR_CONVERT_UNITS, false);
+					TRES_STR_CONVERT_UNITS, true);
+			assoc_mgr_unlock(&locks);
 		}
 		if (save_max_cpus) {
 			detail_ptr->max_cpus = save_max_cpus;
@@ -10785,16 +10802,18 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		job_ptr->tres_req_cnt[TRES_ARRAY_NODE] =
 			(uint64_t)detail_ptr->min_nodes;
 		xfree(job_ptr->tres_req_str);
+		assoc_mgr_lock(&locks);
 		job_ptr->tres_req_str =
 			assoc_mgr_make_tres_str_from_array(
 				job_ptr->tres_req_cnt,
-				TRES_STR_FLAG_SIMPLE, false);
+				TRES_STR_FLAG_SIMPLE, true);
 
 		xfree(job_ptr->tres_fmt_req_str);
 		job_ptr->tres_fmt_req_str =
 			assoc_mgr_make_tres_str_from_array(
 				job_ptr->tres_req_cnt,
-				TRES_STR_CONVERT_UNITS, false);
+				TRES_STR_CONVERT_UNITS, true);
+		assoc_mgr_unlock(&locks);
 		update_accounting = true;
 	}
 	if (save_max_nodes && (save_max_nodes != detail_ptr->max_nodes)) {
@@ -11182,16 +11201,18 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			job_ptr->tres_req_cnt[TRES_ARRAY_MEM] =
 				detail_ptr->pn_min_memory;
 			xfree(job_ptr->tres_req_str);
+			assoc_mgr_lock(&locks);
 			job_ptr->tres_req_str =
 				assoc_mgr_make_tres_str_from_array(
 					job_ptr->tres_req_cnt,
-					TRES_STR_FLAG_SIMPLE, false);
+					TRES_STR_FLAG_SIMPLE, true);
 
 			xfree(job_ptr->tres_fmt_req_str);
 			job_ptr->tres_fmt_req_str =
 				assoc_mgr_make_tres_str_from_array(
 					job_ptr->tres_req_cnt,
-					TRES_STR_CONVERT_UNITS, false);
+					TRES_STR_CONVERT_UNITS, true);
+			assoc_mgr_unlock(&locks);
 		}
 	}
 	if (error_code != SLURM_SUCCESS)
@@ -11368,7 +11389,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		xfree(job_ptr->tres_fmt_req_str);
 		job_ptr->tres_fmt_req_str = assoc_mgr_make_tres_str_from_array(
 				job_ptr->tres_req_cnt,
-				TRES_STR_CONVERT_UNITS, false);
+				TRES_STR_CONVERT_UNITS, true);
 		assoc_mgr_unlock(&locks);
 	}
 
@@ -11633,7 +11654,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			job_ptr->tres_fmt_req_str =
 				assoc_mgr_make_tres_str_from_array(
 					job_ptr->tres_req_cnt,
-					TRES_STR_CONVERT_UNITS, false);
+					TRES_STR_CONVERT_UNITS, true);
 			assoc_mgr_unlock(&locks);
 		} else if (IS_JOB_RUNNING(job_ptr) &&
 			   (authorized || (license_list == NULL))) {
@@ -11642,6 +11663,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			license_job_return(job_ptr);
 			FREE_NULL_LIST(job_ptr->license_list);
 			job_ptr->license_list = license_list;
+			license_list = NULL;
 			info("sched: update_job: changing licenses from '%s' "
 			     "to '%s' for running job %u",
 			     job_ptr->licenses, job_specs->licenses,
@@ -11974,8 +11996,8 @@ extern int update_job(slurm_msg_t *msg, uid_t uid)
 	} else {
 		rc = _update_job(job_ptr, job_specs, uid);
 	}
-
-	slurm_send_rc_msg(msg, rc);
+	if (rc != ESLURM_JOB_SETTING_DB_INX)
+		slurm_send_rc_msg(msg, rc);
 	xfree(job_specs->job_id_str);
 
 	return rc;
@@ -12040,6 +12062,10 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			/* This is a job array */
 			job_ptr_done = job_ptr;
 			rc2 = _update_job(job_ptr, job_specs, uid);
+			if (rc2 == ESLURM_JOB_SETTING_DB_INX) {
+				rc = rc2;
+				goto reply;
+			}
 			_resp_array_add(&resp_array, job_ptr, rc2);
 		}
 
@@ -12054,6 +12080,10 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			if ((job_ptr->array_job_id == job_id) &&
 			    (job_ptr != job_ptr_done)) {
 				rc2 = _update_job(job_ptr, job_specs, uid);
+				if (rc2 == ESLURM_JOB_SETTING_DB_INX) {
+					rc = rc2;
+					goto reply;
+				}
 				_resp_array_add(&resp_array, job_ptr, rc2);
 			}
 			job_ptr = job_ptr->job_array_next_j;
@@ -12101,6 +12131,10 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 					 array_bitmap)) {
 			/* Update the record with all pending tasks */
 			rc2 = _update_job(job_ptr, job_specs, uid);
+			if (rc2 == ESLURM_JOB_SETTING_DB_INX) {
+				rc = rc2;
+				goto reply;
+			}
 			_resp_array_add(&resp_array, job_ptr, rc2);
 			bit_and_not(array_bitmap,
 				    job_ptr->array_recs->task_id_bitmap);
@@ -12151,11 +12185,15 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 		}
 
 		rc2 = _update_job(job_ptr, job_specs, uid);
+		if (rc2 == ESLURM_JOB_SETTING_DB_INX) {
+			rc = rc2;
+			goto reply;
+		}
 		_resp_array_add(&resp_array, job_ptr, rc2);
 	}
 
 reply:
-	if (msg->conn_fd >= 0) {
+	if ((rc != ESLURM_JOB_SETTING_DB_INX) && (msg->conn_fd >= 0)) {
 		slurm_msg_t_init(&resp_msg);
 		resp_msg.protocol_version = msg->protocol_version;
 		if (resp_array) {

@@ -69,10 +69,11 @@
 ** Define slurm-specific aliases for use by plugins, see slurm_xlator.h
 ** for details.
  */
+strong_alias(slurmdbd_defs_init,        slurmdb_slurmdbd_defs_init);
+strong_alias(slurmdbd_defs_fini,        slurmdb_slurmdbd_defs_fini);
 strong_alias(slurmdbd_free_list_msg,	slurmdb_slurmdbd_free_list_msg);
 strong_alias(slurmdbd_free_usage_msg,	slurmdb_slurmdbd_free_usage_msg);
 strong_alias(slurmdbd_free_id_rc_msg,	slurmdb_slurmdbd_free_id_rc_msg);
-
 
 #define DBD_MAGIC		0xDEAD3219
 #define MAX_AGENT_QUEUE		10000
