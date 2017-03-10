@@ -10,6 +10,7 @@ documents those changes that are of interest to users and administrators.
     requeue the job but leave it in a cancelled state.
  -- capmc_resume (Cray resume node script) - Do not disable changing a node's
     active features if SyscfgPath is configured in the knl.conf file.
+ -- Fix memory error when updating a job's licenses.
 
 * Changes in Slurm 16.05.10-2
 =============================
