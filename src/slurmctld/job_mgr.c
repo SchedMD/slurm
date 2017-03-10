@@ -11503,7 +11503,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		xfree(job_ptr->tres_fmt_req_str);
 		job_ptr->tres_fmt_req_str = assoc_mgr_make_tres_str_from_array(
 				job_ptr->tres_req_cnt,
-				TRES_STR_CONVERT_UNITS, false);
+				TRES_STR_CONVERT_UNITS, true);
 		assoc_mgr_unlock(&locks);
 	}
 
@@ -11766,7 +11766,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			job_ptr->tres_fmt_req_str =
 				assoc_mgr_make_tres_str_from_array(
 					job_ptr->tres_req_cnt,
-					TRES_STR_CONVERT_UNITS, false);
+					TRES_STR_CONVERT_UNITS, true);
 			assoc_mgr_unlock(&locks);
 		} else if (IS_JOB_RUNNING(job_ptr) &&
 			   (authorized || (license_list == NULL))) {

@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
  -- capmc_resume (Cray resume node script) - Do not disable changing a node's
     active features if SyscfgPath is configured in the knl.conf file.
  -- Fix memory error when updating a job's licenses.
+ -- Fix double read lock of tres when updating gres or licenses on a job.
 
 * Changes in Slurm 16.05.10-2
 =============================
