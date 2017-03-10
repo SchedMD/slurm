@@ -30,6 +30,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix memory error when updating a job's licenses.
  -- Fix seff to work correctly with non-standard perl installs.
  -- Export missing slurmdbd_defs_[init|fini] needed for libslurmdb.so to work.
+ -- Fix sacct from returning way more than requested when querying against a job
+    array task id.
 
 * Changes in Slurm 17.02.1-2
 ============================
