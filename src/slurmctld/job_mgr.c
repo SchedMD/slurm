@@ -11830,6 +11830,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			license_job_return(job_ptr);
 			FREE_NULL_LIST(job_ptr->license_list);
 			job_ptr->license_list = license_list;
+			license_list = NULL;
 			info("sched: update_job: changing licenses from '%s' "
 			     "to '%s' for running job %u",
 			     job_ptr->licenses, job_specs->licenses,

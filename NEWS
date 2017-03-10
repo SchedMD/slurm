@@ -27,6 +27,7 @@ documents those changes that are of interest to users and administrators.
     because the dbd is setting a db_index.
  -- Fix possible double insertion into database when a job is updated at the
     moment the dbd is assigning a db_index.
+ -- Fix memory error when updating a job's licenses.
 
 * Changes in Slurm 17.02.1-2
 ============================
@@ -325,6 +326,7 @@ documents those changes that are of interest to users and administrators.
     requeue the job but leave it in a cancelled state.
  -- capmc_resume (Cray resume node script) - Do not disable changing a node's
     active features if SyscfgPath is configured in the knl.conf file.
+ -- Fix memory error when updating a job's licenses.
 
 * Changes in Slurm 16.05.10-2
 =============================
