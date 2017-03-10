@@ -28,6 +28,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix possible double insertion into database when a job is updated at the
     moment the dbd is assigning a db_index.
  -- Fix memory error when updating a job's licenses.
+ -- Fix seff to work correctly with non-standard perl installs.
 
 * Changes in Slurm 17.02.1-2
 ============================

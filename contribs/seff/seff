@@ -8,6 +8,7 @@ use strict qw/vars/;
 use Getopt::Std;
 use POSIX qw/pow/;
 use Sys::Hostname;
+use lib "${FindBin::Bin}/../lib/perl";
 use Slurmdb ':all';
 use Slurm ':all';
 #use Data::Dumper;
