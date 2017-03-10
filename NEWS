@@ -29,6 +29,7 @@ documents those changes that are of interest to users and administrators.
     moment the dbd is assigning a db_index.
  -- Fix memory error when updating a job's licenses.
  -- Fix seff to work correctly with non-standard perl installs.
+ -- Export missing slurmdbd_defs_[init|fini] needed for libslurmdb.so to work.
 
 * Changes in Slurm 17.02.1-2
 ============================
