@@ -172,6 +172,8 @@ static int _set_rec(int *start, int argc, char **argv,
 	int command_len = 0;
 	int option = 0;
 
+	xassert(cluster);
+
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
 		if (!end)
@@ -200,18 +202,14 @@ static int _set_rec(int *start, int argc, char **argv,
 						      argv[i]+end);
 		} else if (!strncasecmp(argv[i], "Classification",
 					 MAX(command_len, 3))) {
-			if (cluster) {
-				cluster->classification =
-					str_2_classification(argv[i]+end);
-				if (cluster->classification)
-					rec_set = 1;
-			}
+			cluster->classification =
+				str_2_classification(argv[i]+end);
+			if (cluster->classification)
+				rec_set = 1;
 		} else if (!strncasecmp(argv[i], "Federation",
 					 MAX(command_len, 3))) {
-			if (cluster) {
-				cluster->fed.name = xstrdup(argv[i]+end);
-				rec_set = 1;
-			}
+			cluster->fed.name = xstrdup(argv[i]+end);
+			rec_set = 1;
 		} else if (!strncasecmp(argv[i], "FedState",
 					 MAX(command_len, 2))) {
 			if (cluster) {
@@ -228,10 +226,8 @@ static int _set_rec(int *start, int argc, char **argv,
 			}
 		} else if (!strncasecmp(argv[i], "Weight",
 					 MAX(command_len, 2))) {
-			if (cluster) {
-				cluster->fed.weight = slurm_atoul(argv[i]+end);
-				rec_set = 1;
-			}
+			cluster->fed.weight = slurm_atoul(argv[i]+end);
+			rec_set = 1;
 		} else if (!strncasecmp(argv[i], "GrpCPURunMins",
 					 MAX(command_len, 7)) ||
 			   !strncasecmp(argv[i], "GrpTRESRunMins",
