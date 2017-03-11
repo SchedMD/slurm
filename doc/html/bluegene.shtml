@@ -23,7 +23,7 @@ nodes each containing two or more cores;
 one core is typically designed primarily for managing communications while the
 other cores are used primarily for computations.
 Each <i>c-node</i> can execute only one process and thus are unable to execute
-both the user's application plu. Slurm's <i>slurmd</i> daemon.
+both the user's application plu and Slurm's <i>slurmd</i> daemon.
 Thus the <i>slurmd</i> daemon(s) executes on one or more of the BlueGene
 <i>Front End Nodes</i>.
 The <i>slurmd</i> daemons provide (almost) all of the normal Slurm services
