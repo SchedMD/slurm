@@ -245,6 +245,7 @@ typedef struct dbd_job_comp_msg {
 	time_t   start_time;	/* job start time */
 	time_t   submit_time;	/* job submit time needed to find job
 				 * record in db */
+	char    *tres_alloc_str;/* Simple comma separated list of TRES */
 } dbd_job_comp_msg_t;
 
 typedef struct dbd_job_start_msg {
@@ -351,6 +352,10 @@ typedef struct dbd_step_comp_msg {
 	uint32_t job_id;	/* job ID */
 	time_t   job_submit_time;/* job submit time needed to find job record
 				  * in db */
+	char    *job_tres_alloc_str;/* Simple comma separated list of TRES for
+				     * the job (primarily for the energy of the
+				     * completing job.  This is only filled in
+				     * on the last step in the job. */
 	uint32_t req_uid;	/* requester user ID */
 	time_t   start_time;	/* step start time */
 	uint16_t state;         /* current state of node.  Used to get
