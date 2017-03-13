@@ -245,6 +245,27 @@ static void _build_pending_step(struct job_record *job_ptr,
 static void _internal_step_complete(struct job_record *job_ptr,
 				    struct step_record *step_ptr)
 {
+	struct jobacctinfo *jobacct = (struct jobacctinfo *)step_ptr->jobacct;
+	if (jobacct && job_ptr->tres_alloc_cnt &&
+	    (jobacct->energy.consumed_energy != NO_VAL64)) {
+		if (job_ptr->tres_alloc_cnt[TRES_ARRAY_ENERGY] == NO_VAL64)
+			job_ptr->tres_alloc_cnt[TRES_ARRAY_ENERGY] = 0;
+		job_ptr->tres_alloc_cnt[TRES_ARRAY_ENERGY] +=
+			jobacct->energy.consumed_energy;
+	}
+
+	if (IS_JOB_FINISHED(job_ptr) &&
+	    (job_ptr->tres_alloc_cnt[TRES_ENERGY] != NO_VAL64) &&
+	    (list_count(job_ptr->step_list) == 1)) {
+		set_job_tres_alloc_str(job_ptr, false);
+		/* This flag says we have processed the tres alloc including
+		 * energy from all steps, so don't process or handle it again
+		 * with the job.  It also tells the slurmdbd plugin to send it
+		 * to the DBD.
+		 */
+		job_ptr->bit_flags |= TRES_STR_CALC;
+	}
+
 	jobacct_storage_g_step_complete(acct_db_conn, step_ptr);
 
 	if (step_ptr->step_id == SLURM_PENDING_STEP)

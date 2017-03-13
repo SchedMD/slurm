@@ -2202,9 +2202,13 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		/* make sure we have this job completed in the
 		 * database */
 		if (IS_JOB_FINISHED(job_ptr)) {
-			if (slurmctld_init_db)
-				jobacct_storage_g_job_complete(
-					acct_db_conn, job_ptr);
+			if (slurmctld_init_db &&
+			    !(job_ptr->bit_flags && TRES_STR_CALC) &&
+			    job_ptr->tres_alloc_cnt &&
+			    (job_ptr->tres_alloc_cnt[TRES_ENERGY] != NO_VAL64))
+				set_job_tres_alloc_str(job_ptr, false);
+			jobacct_storage_g_job_complete(
+				acct_db_conn, job_ptr);
 			job_finished = 1;
 		}
 	}
@@ -13325,6 +13329,11 @@ extern void job_completion_logger(struct job_record *job_ptr, bool requeue)
 	if (!with_slurmdbd && !job_ptr->db_index)
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
+	if (!(job_ptr->bit_flags && TRES_STR_CALC) &&
+	    job_ptr->tres_alloc_cnt &&
+	    (job_ptr->tres_alloc_cnt[TRES_ENERGY] != NO_VAL64))
+		set_job_tres_alloc_str(job_ptr, false);
+
 	jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
 }
 
@@ -15655,6 +15664,10 @@ extern bool job_hold_requeue(struct job_record *job_ptr)
 		return false;
 
 	/* Sent event requeue to the database.  */
+	if (!(job_ptr->bit_flags && TRES_STR_CALC) &&
+	    job_ptr->tres_alloc_cnt &&
+	    (job_ptr->tres_alloc_cnt[TRES_ENERGY] != NO_VAL64))
+		set_job_tres_alloc_str(job_ptr, false);
 	jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
 
 	debug("%s: job %u state 0x%x", __func__, job_ptr->job_id, state);

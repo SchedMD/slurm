@@ -1814,6 +1814,8 @@ static int  _job_complete(slurmdbd_conn_t *slurmdbd_conn,
 	job.nodes = job_comp_msg->nodes;
 	job.start_time = job_comp_msg->start_time;
 	details.submit_time = job_comp_msg->submit_time;
+	job.start_protocol_ver = slurmdbd_conn->conn->version;
+	job.tres_alloc_str = job_comp_msg->tres_alloc_str;
 
 	job.details = &details;
 
@@ -1904,6 +1906,7 @@ static int  _job_suspend(slurmdbd_conn_t *slurmdbd_conn,
 	job.job_id = job_suspend_msg->job_id;
 	job.job_state = job_suspend_msg->job_state;
 	details.submit_time = job_suspend_msg->submit_time;
+	job.start_protocol_ver = slurmdbd_conn->conn->version;
 	job.suspend_time = job_suspend_msg->suspend_time;
 
 	job.details = &details;
@@ -2552,6 +2555,7 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	job.qos_id = job_start_msg->qos_id;
 	job.resv_id = job_start_msg->resv_id;
 	job.priority = job_start_msg->priority;
+	job.start_protocol_ver = slurmdbd_conn->conn->version;
 	job.start_time = job_start_msg->start_time;
 	job.time_limit = job_start_msg->timelimit;
 	job.tres_alloc_str = job_start_msg->tres_alloc_str;
@@ -3359,7 +3363,9 @@ static int  _step_complete(slurmdbd_conn_t *slurmdbd_conn,
 	step.jobacct = step_comp_msg->jobacct;
 	job.job_id = step_comp_msg->job_id;
 	step.requid = step_comp_msg->req_uid;
+	job.start_protocol_ver = slurmdbd_conn->conn->version;
 	job.start_time = step_comp_msg->start_time;
+	job.tres_alloc_str = step_comp_msg->job_tres_alloc_str;
 	step.state = step_comp_msg->state;
 	step.step_id = step_comp_msg->step_id;
 	details.submit_time = step_comp_msg->job_submit_time;
@@ -3426,6 +3432,7 @@ static int  _step_start(slurmdbd_conn_t *slurmdbd_conn,
 	step.name = step_start_msg->name;
 	job.nodes = step_start_msg->nodes;
 	step.network = step_start_msg->node_inx;
+	job.start_protocol_ver = slurmdbd_conn->conn->version;
 	step.start_time = step_start_msg->start_time;
 	details.submit_time = step_start_msg->job_submit_time;
 	step.step_id = step_start_msg->step_id;

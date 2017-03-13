@@ -2645,6 +2645,9 @@ extern int jobacct_storage_p_job_complete(void *db_conn,
 			req.submit_time = job_ptr->details->submit_time;
 	}
 
+	if (!(job_ptr->bit_flags && TRES_STR_CALC))
+		req.tres_alloc_str = job_ptr->tres_alloc_str;
+
 	msg.msg_type    = DBD_JOB_COMPLETE;
 	msg.data        = &req;
 
@@ -2738,6 +2741,7 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 	req.total_tasks = tasks;
 
 	req.tres_alloc_str = step_ptr->tres_alloc_str;
+
 	req.req_cpufreq_min = step_ptr->cpu_freq_min;
 	req.req_cpufreq_max = step_ptr->cpu_freq_max;
 	req.req_cpufreq_gov = step_ptr->cpu_freq_gov;
@@ -2807,6 +2811,10 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 		req.job_submit_time   = step_ptr->job_ptr->resize_time;
 	else if (step_ptr->job_ptr->details)
 		req.job_submit_time   = step_ptr->job_ptr->details->submit_time;
+
+	if (step_ptr->job_ptr->bit_flags && TRES_STR_CALC)
+		req.job_tres_alloc_str = step_ptr->job_ptr->tres_alloc_str;
+
 	req.state       = step_ptr->state;
 	req.step_id     = step_ptr->step_id;
 	req.total_tasks = tasks;

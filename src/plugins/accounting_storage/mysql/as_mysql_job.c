@@ -1296,6 +1296,20 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
 
+	/* set the energy for the entire job. */
+	if (step_ptr->job_ptr->tres_alloc_str) {
+		query = xstrdup_printf(
+			"update \"%s_%s\" set tres_alloc='%s' where "
+			"job_db_inx=%"PRIu64,
+			mysql_conn->cluster_name, job_table,
+			step_ptr->job_ptr->tres_alloc_str,
+			step_ptr->job_ptr->db_index);
+		if (debug_flags & DEBUG_FLAG_DB_STEP)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+		rc = mysql_db_query(mysql_conn, query);
+		xfree(query);
+	}
+
 	return rc;
 }
 
