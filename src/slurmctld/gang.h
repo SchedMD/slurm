@@ -57,10 +57,6 @@ extern void gs_fini(void);
  * In either case, add the job to gang scheduling. */
 extern void gs_job_start(struct job_record *job_ptr);
 
-/* scan the master SLURM job list for any new jobs to add, or for any old jobs
- *	to remove */
-extern void gs_job_scan(void);
-
 /* Notify the gang scheduler that a job has been suspended or completed.
  * In either case, remove the job from gang scheduling. */
 extern void gs_job_fini(struct job_record *job_ptr);

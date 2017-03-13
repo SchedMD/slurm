@@ -1144,7 +1144,6 @@ static void _scan_slurm_job_list(void)
  * gs_init: initialize plugin
  *
  * gs_job_start: a new allocation has been created
- * gs_job_scan: synchronize with master job list
  * gs_job_fini: an existing allocation has been cleared
  * gs_reconfig: refresh partition and job data
  * _cycle_job_list: timeslicer thread is rotating jobs
@@ -1282,26 +1281,6 @@ extern void gs_job_start(struct job_record *job_ptr)
 	_preempt_job_dequeue();	/* MUST BE OUTSIDE OF data_mutex lock */
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
 		info("gang: leaving gs_job_start");
-}
-
-/* Scan the master SLURM job list for any new jobs to add, or for any old jobs
- *	to remove */
-extern void gs_job_scan(void)
-{
-	if (!(slurmctld_conf.preempt_mode & PREEMPT_MODE_GANG))
-		return;
-
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
-		info("gang: entering gs_job_scan");
-	slurm_mutex_lock(&data_mutex);
-	_scan_slurm_job_list();
-	slurm_mutex_unlock(&data_mutex);
-
-	_preempt_job_dequeue();	/* MUST BE OUTSIDE OF data_mutex lock */
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
-		info("gang: leaving gs_job_scan");
-
-	return;
 }
 
 /* Gang scheduling has been disabled by change in configuration,
