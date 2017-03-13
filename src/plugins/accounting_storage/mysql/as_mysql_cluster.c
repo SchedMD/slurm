@@ -255,9 +255,6 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		if ((rc = create_cluster_tables(mysql_conn,
 						object->name))
 		    != SLURM_SUCCESS) {
-			xfree(extra);
-			xfree(cols);
-			xfree(vals);
 			added = 0;
 			if (mysql_errno(mysql_conn->db_conn)
 			    == ER_WRONG_TABLE_NAME)
