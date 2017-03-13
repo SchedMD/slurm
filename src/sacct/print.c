@@ -629,9 +629,12 @@ void print_fields(type_t type, void *object)
 			if (got_stats) {
 				switch (type) {
 				case JOB:
-					if (!job->track_steps)
-						tmp_uint64 = step->
-							stats.consumed_energy;
+					if ((tmp_uint64 =
+					     slurmdb_find_tres_count_in_string(
+						     job->tres_alloc_str,
+						     TRES_ENERGY))
+					     == INFINITE64)
+						tmp_uint64 = 0;
 					break;
 				case JOBSTEP:
 					tmp_uint64 =
@@ -656,9 +659,12 @@ void print_fields(type_t type, void *object)
 			if (got_stats) {
 				switch (type) {
 				case JOB:
-					if (!job->track_steps)
-						tmp_uint64 = step->
-							stats.consumed_energy;
+					if ((tmp_uint64 =
+					     slurmdb_find_tres_count_in_string(
+						     job->tres_alloc_str,
+						     TRES_ENERGY))
+					     == INFINITE64)
+						tmp_uint64 = 0;
 					break;
 				case JOBSTEP:
 					tmp_uint64 = step->
