@@ -7902,6 +7902,8 @@ extern void job_set_alloc_tres(struct job_record *job_ptr,
 	}
 	job_ptr->tres_alloc_cnt[TRES_ARRAY_MEM] = tres_count;
 
+	job_ptr->tres_alloc_cnt[TRES_ARRAY_ENERGY] = NO_VAL64;
+
 	license_set_job_tres_cnt(job_ptr->license_list,
 				 job_ptr->tres_alloc_cnt,
 				 true);
