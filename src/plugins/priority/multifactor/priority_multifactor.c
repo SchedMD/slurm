@@ -802,6 +802,8 @@ static void _handle_qos_tres_run_secs(long double *tres_run_decay,
 		return;
 
 	for (i=0; i<slurmctld_tres_cnt; i++) {
+		if (i == TRES_ARRAY_ENERGY)
+			continue;
 		if (tres_run_decay)
 			qos->usage->usage_tres_raw[i] += tres_run_decay[i];
 
@@ -846,6 +848,8 @@ static void _handle_assoc_tres_run_secs(long double *tres_run_decay,
 		return;
 
 	for (i=0; i<slurmctld_tres_cnt; i++) {
+		if (i == TRES_ARRAY_ENERGY)
+			continue;
 		if (tres_run_decay)
 			assoc->usage->usage_tres_raw[i] += tres_run_decay[i];
 

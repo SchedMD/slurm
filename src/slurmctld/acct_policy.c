@@ -517,6 +517,14 @@ static void _qos_adjust_limit_usage(int type, struct job_record *job_ptr,
 	case ACCT_POLICY_JOB_BEGIN:
 		qos_ptr->usage->grp_used_jobs++;
 		for (i=0; i<slurmctld_tres_cnt; i++) {
+			/* tres_alloc_cnt for ENERGY is currently after the
+			 * fact, so don't add it here or you will get underflows
+			 * when you remove it.  If this ever changes this will
+			 * have to be moved to a new TRES ARRAY probably.
+			 */
+			if (i == TRES_ARRAY_ENERGY)
+				continue;
+
 			used_limits->tres[i] += job_ptr->tres_alloc_cnt[i];
 			used_limits_a->tres[i] += job_ptr->tres_alloc_cnt[i];
 
@@ -546,6 +554,8 @@ static void _qos_adjust_limit_usage(int type, struct job_record *job_ptr,
 		}
 
 		for (i=0; i<slurmctld_tres_cnt; i++) {
+			if (i == TRES_ARRAY_ENERGY)
+				continue;
 			if (job_ptr->tres_alloc_cnt[i] >
 			    qos_ptr->usage->grp_used_tres[i]) {
 				qos_ptr->usage->grp_used_tres[i] = 0;
@@ -624,9 +634,12 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 		priority_g_job_end(job_ptr);
 	else if (type == ACCT_POLICY_JOB_BEGIN) {
 		uint64_t time_limit_secs = (uint64_t)job_ptr->time_limit * 60;
-		for (i=0; i<slurmctld_tres_cnt; i++)
+		for (i=0; i<slurmctld_tres_cnt; i++) {
+			if (i == TRES_ARRAY_ENERGY)
+				continue;
 			used_tres_run_secs[i] =
 				job_ptr->tres_alloc_cnt[i] * time_limit_secs;
+		}
 	} else if (((type == ACCT_POLICY_ADD_SUBMIT) ||
 		    (type == ACCT_POLICY_REM_SUBMIT)) &&
 		   job_ptr->array_recs && job_ptr->array_recs->task_cnt)
@@ -659,6 +672,9 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 		case ACCT_POLICY_JOB_BEGIN:
 			assoc_ptr->usage->used_jobs++;
 			for (i=0; i<slurmctld_tres_cnt; i++) {
+				if (i == TRES_ARRAY_ENERGY)
+					continue;
+
 				assoc_ptr->usage->grp_used_tres[i] +=
 					job_ptr->tres_alloc_cnt[i];
 				assoc_ptr->usage->grp_used_tres_run_secs[i] +=
@@ -684,6 +700,8 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 				       assoc_ptr->acct);
 
 			for (i=0; i<slurmctld_tres_cnt; i++) {
+				if (i == TRES_ARRAY_ENERGY)
+					continue;
 				if (job_ptr->tres_alloc_cnt[i] >
 				    assoc_ptr->usage->grp_used_tres[i]) {
 					assoc_ptr->usage->grp_used_tres[i] = 0;
@@ -2376,6 +2394,8 @@ extern void acct_policy_alter_job(struct job_record *job_ptr,
 	memset(used_tres_run_secs, 0, sizeof(used_tres_run_secs));
 	memset(new_used_tres_run_secs, 0, sizeof(new_used_tres_run_secs));
 	for (i=0; i<slurmctld_tres_cnt; i++) {
+		if (i == TRES_ARRAY_ENERGY)
+			continue;
 		used_tres_run_secs[i] =
 			job_ptr->tres_alloc_cnt[i] * time_limit_secs;
 		new_used_tres_run_secs[i] =
@@ -3632,10 +3652,14 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 	/* find out how many cpu minutes this job has been
 	 * running for. We add 1 here to make it so we can check for
 	 * just > instead of >= in our checks */
-	for (i=0; i<slurmctld_tres_cnt; i++)
+	for (i=0; i<slurmctld_tres_cnt; i++) {
+		if (i == TRES_ARRAY_ENERGY)
+			continue;
+
 		if (job_ptr->tres_alloc_cnt[i])
 			job_tres_usage_mins[i] =
 				(time_delta * job_ptr->tres_alloc_cnt[i]) + 1;
+	}
 
 	/* check the first QOS setting it's values in the qos_rec */
 	if (qos_ptr_1 && !_qos_job_time_out(job_ptr, qos_ptr_1,
