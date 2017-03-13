@@ -610,7 +610,7 @@ static void _resume_job(uint32_t job_id)
 	}
 }
 
-void _preempt_job_list_del(void *x)
+static void _preempt_job_list_del(void *x)
 {
 	xfree(x);
 }
