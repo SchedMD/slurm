@@ -41,9 +41,23 @@
 static int _convert_job_table(mysql_conn_t *mysql_conn, char *cluster_name)
 {
 	int rc = SLURM_SUCCESS;
-	char *query = xstrdup_printf("update \"%s_%s\" set tres_alloc="
-				     "concat(concat('%d=', cpus_alloc));",
-				     cluster_name, job_table, TRES_CPU);
+	char *query = xstrdup_printf("update \"%s_%s\" as job "
+				     "left outer join ( select job_db_inx, "
+				     "SUM(consumed_energy) 'sum_energy' "
+				     "from \"%s_%s\" where id_step >= 0 "
+				     "and consumed_energy != %"PRIu64
+				     " group by job_db_inx ) step on "
+				     "job.job_db_inx=step.job_db_inx "
+				     "set job.tres_alloc=concat("
+				     "job.tres_alloc, concat(',%d=', "
+				     "case when step.sum_energy then "
+				     "step.sum_energy else %"PRIu64" END)) "
+				     "where job.tres_alloc != '' && "
+				     "job.tres_alloc not like '%%,%d=%%';",
+				     cluster_name, job_table,
+				     cluster_name, step_table,
+				     NO_VAL64, TRES_ENERGY, NO_VAL64,
+				     TRES_ENERGY);
 
 	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 	if ((rc = mysql_db_query(mysql_conn, query)) != SLURM_SUCCESS)
@@ -57,9 +71,10 @@ static int _convert_job_table(mysql_conn_t *mysql_conn, char *cluster_name)
 static int _convert_step_table(mysql_conn_t *mysql_conn, char *cluster_name)
 {
 	int rc = SLURM_SUCCESS;
-	char *query = xstrdup_printf(
-		"update \"%s_%s\" set tres_alloc=concat('%d=', cpus_alloc);",
-		cluster_name, step_table, TRES_CPU);
+	char *query = xstrdup_printf("update \"%s_%s\" set consumed_energy=%"
+				     PRIu64" where consumed_energy=%u;",
+				     cluster_name, step_table,
+				     NO_VAL64, NO_VAL);
 
 	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 	if ((rc = mysql_db_query(mysql_conn, query)) != SLURM_SUCCESS)
@@ -85,12 +100,12 @@ extern int as_mysql_convert_tables(mysql_conn_t *mysql_conn)
 		return SLURM_SUCCESS;
 
 
-	/* See if the old table exist first.  If already ran here
-	   default_acct and default_wckey won't exist.
+	/* See if the old table exist first.  In this case we would had already
+	 * have the energy tres in the tres_alloc.
 	*/
-	query = xstrdup_printf("show columns from \"%s_%s\" where "
-			       "Field='cpu_count' || Field='count';",
-			       cluster_name, event_table);
+	query = xstrdup_printf("select tres_alloc from \"%s_%s\" where "
+			       "tres_alloc like '%%,%d=%%' limit 1;",
+			       cluster_name, job_table, TRES_ENERGY);
 
 	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
@@ -102,36 +117,57 @@ extern int as_mysql_convert_tables(mysql_conn_t *mysql_conn)
 	mysql_free_result(result);
 	result = NULL;
 
-	if (!i) {
-		info("Conversion done: success!");
+	if (i) {
+		debug2("Conversion done: success!");
 		return SLURM_SUCCESS;
 	}
 
 	/* make it up to date */
 	itr = list_iterator_create(as_mysql_total_cluster_list);
 	while ((cluster_name = list_next(itr))) {
-		query = xstrdup_printf("show columns from \"%s_%s\" where "
-				       "Field='cpu_count' || Field='count';",
-				       cluster_name, event_table);
+		query = xstrdup_printf("select tres_alloc from \"%s_%s\" where "
+				       "tres_alloc like '%%,%d=%%' limit 1;",
+				       cluster_name, job_table, TRES_ENERGY);
 
 		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 		if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 			xfree(query);
-			error("QUERY BAD: No count col name for cluster %s, "
-			      "this should never happen", cluster_name);
+			error("QUERY BAD: No count col name for cluster %s, this should never happen",
+			      cluster_name);
 			continue;
 		}
 		xfree(query);
 
-		if (!mysql_num_rows(result)) {
-			error("No count col name for cluster %s, "
-			      "this should never happen", cluster_name);
-			mysql_free_result(result);
-			continue;
-		}
+		i = mysql_num_rows(result);
 		mysql_free_result(result);
+		result = NULL;
+		if (i) {
+			debug2("Conversion on cluster %s not needed",
+			       cluster_name);
+			continue;
+		} else {
+			/* Need to check if the database is empty */
+			query = xstrdup_printf(
+				"select tres_alloc from \"%s_%s\" limit 1;",
+				cluster_name, job_table);
+			debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+			if (!(result = mysql_db_query_ret(
+				      mysql_conn, query, 0))) {
+				xfree(query);
+				continue;
+			}
+			xfree(query);
+			i = mysql_num_rows(result);
+			mysql_free_result(result);
+			result = NULL;
 
-		/* Now convert the cluster usage tables */
+			if (!i) {
+				debug2("Conversion on cluster %s not needed, it doesn't have any rows in the table",
+				       cluster_name);
+				continue;
+			}
+		}
+
 		info("converting step table for %s", cluster_name);
 		if ((rc = _convert_step_table(mysql_conn, cluster_name)
 		     != SLURM_SUCCESS))
