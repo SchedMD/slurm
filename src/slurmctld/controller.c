@@ -116,7 +116,6 @@
 #include "src/slurmctld/trigger_mgr.h"
 
 
-#define CRED_LIFE         60	/* Job credential lifetime in seconds */
 #define DEFAULT_DAEMONIZE 1	/* Run as daemon by default if set */
 #define DEFAULT_RECOVER   1	/* Default state recovery on restart
 				 * 0 = use no saved state information
@@ -417,13 +416,6 @@ int main(int argc, char **argv)
 		xfree(sched_params);
 #endif
 	}
-
-
-	/* Not used in creator
-	 *
-	 * slurm_cred_ctx_set(slurmctld_config.cred_ctx,
-	 *                    SLURM_CRED_OPT_EXPIRY_WINDOW, CRED_LIFE);
-	 */
 
 	/*
 	 * Initialize plugins.
