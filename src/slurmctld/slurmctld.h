@@ -941,9 +941,6 @@ void batch_requeue_fini(struct job_record  *job_ptr);
 /* Build a bitmap of nodes completing this job */
 extern void build_cg_bitmap(struct job_record *job_ptr);
 
-/* Given a config_record with it's bitmap already set, update feature_list */
-extern void  build_config_feature_list(struct config_record *config_ptr);
-
 /*
  * create_part_record - create a partition record
  * RET a pointer to the record or NULL if error
