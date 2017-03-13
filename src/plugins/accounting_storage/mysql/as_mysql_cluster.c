@@ -367,6 +367,13 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			break;
 		}
 
+		/* Build up extra with cluster specfic values for txn table */
+		xstrfmtcat(extra, ", federation='%s', fed_id=%d, fed_state=%u, "
+				  "fed_weight=%u",
+			   (object->fed.name) ? object->fed.name : "",
+			   fed_id, fed_state, fed_weight);
+		xfree(features);
+
 		/* we always have a ', ' as the first 2 chars */
 		tmp_extra = slurm_add_slash_to_quotes(extra+2);
 
