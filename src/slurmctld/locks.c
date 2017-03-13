@@ -50,7 +50,6 @@ static pthread_cond_t locks_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static slurmctld_lock_flags_t slurmctld_locks;
-static int kill_thread = 0;
 
 static void _wr_rdlock(lock_datatype_t datatype);
 static void _wr_rdunlock(lock_datatype_t datatype);
@@ -141,8 +140,6 @@ static void _wr_rdlock(lock_datatype_t datatype)
 			break;
 		} else {	/* wait for state change and retry */
 			slurm_cond_wait(&locks_cond, &locks_mutex);
-			if (kill_thread)
-				pthread_exit(NULL);
 		}
 	}
 	slurm_mutex_unlock(&locks_mutex);
@@ -172,8 +169,6 @@ static void _wr_wrlock(lock_datatype_t datatype)
 			break;
 		} else {	/* wait for state change and retry */
 			slurm_cond_wait(&locks_cond, &locks_mutex);
-			if (kill_thread)
-				pthread_exit(NULL);
 		}
 	}
 	slurm_mutex_unlock(&locks_mutex);
@@ -195,13 +190,6 @@ void get_lock_values(slurmctld_lock_flags_t * lock_flags)
 	xassert(lock_flags);
 	memcpy((void *) lock_flags, (void *) &slurmctld_locks,
 	       sizeof(slurmctld_locks));
-}
-
-/* kill_locked_threads - Kill all threads waiting on semaphores */
-extern void kill_locked_threads(void)
-{
-	kill_thread = 1;
-	slurm_cond_broadcast(&locks_cond);
 }
 
 /* un/lock semaphore used for saving state of slurmctld */
