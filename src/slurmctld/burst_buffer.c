@@ -394,7 +394,7 @@ extern void bb_g_job_set_tres_cnt(struct job_record *job_ptr,
 }
 
 /* sort jobs by expected start time */
-extern int _sort_job_queue(void *x, void *y)
+static int _sort_job_queue(void *x, void *y)
 {
 	struct job_record *job_ptr1 = *(struct job_record **) x;
 	struct job_record *job_ptr2 = *(struct job_record **) y;
