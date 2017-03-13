@@ -35,6 +35,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix double read lock of tres when updating gres or licenses on a job.
  -- Make sure locks are always in place when calling
     assoc_mgr_make_tres_str_from_array.
+ -- Prevent slurmctld SEGV when creating reservation with duplicated name.
 
 * Changes in Slurm 17.02.1-2
 ============================

@@ -2383,6 +2383,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_desc_ptr->accounts = NULL;		/* Nothing left to free */
 	resv_ptr->account_cnt	= account_cnt;
 	resv_ptr->account_list	= account_list;
+	account_cnt = 0;
+	account_list = NULL;
 	resv_ptr->account_not	= account_not;
 	resv_ptr->burst_buffer	= resv_desc_ptr->burst_buffer;
 	resv_desc_ptr->burst_buffer = NULL;	/* Nothing left to free */
@@ -2393,6 +2395,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_ptr->licenses	= resv_desc_ptr->licenses;
 	resv_desc_ptr->licenses = NULL;		/* Nothing left to free */
 	resv_ptr->license_list	= license_list;
+	license_list = NULL;
 	resv_ptr->resv_id       = top_suffix;
 	xassert(resv_ptr->magic = RESV_MAGIC);	/* Sets value */
 	resv_ptr->name		= xstrdup(resv_desc_ptr->name);
@@ -2400,7 +2403,9 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_ptr->node_list	= resv_desc_ptr->node_list;
 	resv_desc_ptr->node_list = NULL;	/* Nothing left to free */
 	resv_ptr->node_bitmap	= node_bitmap;	/* May be unset */
+	node_bitmap = NULL;
 	resv_ptr->core_bitmap	= core_bitmap;	/* May be unset */
+	core_bitmap = NULL;
 	resv_ptr->partition	= resv_desc_ptr->partition;
 	resv_desc_ptr->partition = NULL;	/* Nothing left to free */
 	resv_ptr->part_ptr	= part_ptr;
@@ -2412,6 +2417,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_ptr->users		= resv_desc_ptr->users;
 	resv_ptr->user_cnt	= user_cnt;
 	resv_ptr->user_list	= user_list;
+	user_list = NULL;
 	resv_ptr->user_not	= user_not;
 	resv_desc_ptr->users 	= NULL;		/* Nothing left to free */
 
@@ -2428,8 +2434,10 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		resv_ptr->full_nodes = 0;
 	}
 
-	if ((rc = _set_assoc_list(resv_ptr)) != SLURM_SUCCESS)
+	if ((rc = _set_assoc_list(resv_ptr)) != SLURM_SUCCESS) {
+		_del_resv_rec(resv_ptr);
 		goto bad_parse;
+	}
 
 	if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT)
 		resv_ptr->start_time -= now;
@@ -2449,7 +2457,6 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	FREE_NULL_BITMAP(core_bitmap);
 	FREE_NULL_LIST(license_list);
 	FREE_NULL_BITMAP(node_bitmap);
-	xfree(resv_ptr);
 	xfree(user_list);
 	return rc;
 }
