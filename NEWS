@@ -38,6 +38,8 @@ documents those changes that are of interest to users and administrators.
     ExitCode.
  -- scontrol modified to report core IDs for reservation containing individual
     cores.
+ -- MYSQL - Get rid of table join during rollup which speeds up the process
+    dramatically on large job/step tables.
 
 * Changes in Slurm 17.02.2
 ==========================
