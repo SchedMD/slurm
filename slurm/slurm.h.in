@@ -1015,6 +1015,8 @@ enum ctx_keys {
 #define SPREAD_JOB         0x00000100	/* Spread job across max node count */
 #define USE_MIN_NODES      0x00000200	/* Prefer minimum node count */
 #define JOB_KILL_HURRY     0x00000400	/* Avoid burst buffer stage out */
+#define TRES_STR_CALC      0x00000800   /* Avoid calculating TRES strings at the
+					 * end of a job. */
 
 /*****************************************************************************\
  *      SLURM HOSTLIST FUNCTIONS
