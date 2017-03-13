@@ -930,6 +930,12 @@ extern void abort_job_on_node(uint32_t job_id, struct job_record *job_ptr,
  */
 extern bool allocated_session_in_use(job_desc_msg_t *new_alloc);
 
+/* set the tres_alloc_str and tres_alloc_fmt_str for the job.  assoc_mgr_locked
+ * is set if the assoc_mgr read lock is already set.
+ */
+extern void set_job_tres_alloc_str(struct job_record *job_ptr,
+				   bool assoc_mgr_locked);
+
 /* Note that the backup slurmctld has assumed primary control.
  * This function can be called multiple times. */
 extern void backup_slurmctld_restart(void);
