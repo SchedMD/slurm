@@ -170,7 +170,6 @@ uint32_t cluster_cpus = 0;
 time_t	last_proc_req_start = 0;
 bool	ping_nodes_now = false;
 int	sched_interval = 60;
-char *	slurmctld_cluster_name = NULL; /* name of cluster */
 slurmctld_config_t slurmctld_config;
 diag_stats_t slurmctld_diag_stats;
 int	slurmctld_primary = 1;
@@ -352,10 +351,6 @@ int main(int argc, char **argv)
 	if (xsignal_block(controller_sigarray) < 0)
 		error("Unable to block signals");
 
-	/* This needs to be copied for other modules to access the
-	 * memory, it will report 'HashBase' if it is not duped
-	 */
-	slurmctld_cluster_name = xstrdup(slurmctld_conf.cluster_name);
 	association_based_accounting =
 		slurm_get_is_association_based_accounting();
 	accounting_enforce = slurmctld_conf.accounting_storage_enforce;
@@ -387,8 +382,8 @@ int main(int argc, char **argv)
 	callbacks.db_fail     = trigger_primary_db_fail;
 	callbacks.db_resumed  = trigger_primary_db_res_op;
 
-	info("%s version %s started on cluster %s",
-	     slurm_prog_name, SLURM_VERSION_STRING, slurmctld_cluster_name);
+	info("%s version %s started on cluster %s", slurm_prog_name,
+	     SLURM_VERSION_STRING, slurmctld_conf.cluster_name);
 
 	if ((error_code = gethostname_short(node_name_short, MAX_SLURM_NAME)))
 		fatal("getnodename_short error %s", slurm_strerror(error_code));
@@ -515,7 +510,7 @@ int main(int argc, char **argv)
 		if (!acct_db_conn) {
 			acct_db_conn = acct_storage_g_get_connection(
 						&callbacks, 0, false,
-						slurmctld_cluster_name);
+						slurmctld_conf.cluster_name);
 			/* We only send in a variable the first time
 			 * we call this since we are setting up static
 			 * variables inside the function sending a
@@ -747,7 +742,6 @@ int main(int argc, char **argv)
 #endif
 
 	xfree(slurmctld_config.auth_info);
-	xfree(slurmctld_cluster_name);
 	if (cnt) {
 		info("Slurmctld shutdown completing with %d active agent "
 		     "thread", cnt);
@@ -2065,7 +2059,7 @@ extern void ctld_assoc_mgr_init(slurm_trigger_callbacks_t *callbacks)
 		acct_storage_g_close_connection(&acct_db_conn);
 
 	acct_db_conn = acct_storage_g_get_connection(callbacks, 0, false,
-						     slurmctld_cluster_name);
+						     slurmctld_conf.cluster_name);
 
 	if (assoc_mgr_init(acct_db_conn, &assoc_init_arg, errno)) {
 		if (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)

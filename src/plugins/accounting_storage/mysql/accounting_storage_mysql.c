@@ -65,16 +65,6 @@
 #include "as_mysql_user.h"
 #include "as_mysql_wckey.h"
 
-/* These are defined here so when we link with something other than
- * the slurmctld we will have these symbols defined.  They will get
- * overwritten when linking with the slurmctld.
- */
-#if defined (__APPLE__)
-char *slurmctld_cluster_name  __attribute__((weak_import)) = NULL;
-#else
-char *slurmctld_cluster_name = NULL;
-#endif
-
 List as_mysql_cluster_list = NULL;
 /* This total list is only used for converting things, so no
    need to keep it upto date even though it lives until the

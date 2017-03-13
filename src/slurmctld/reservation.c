@@ -781,7 +781,7 @@ static int _post_resv_create(slurmctld_resv_t *resv_ptr)
 
 	memset(&resv, 0, sizeof(slurmdb_reservation_rec_t));
 	resv.assocs = resv_ptr->assoc_list;
-	resv.cluster = slurmctld_cluster_name;
+	resv.cluster = slurmctld_conf.cluster_name;
 	resv.tres_str = resv_ptr->tres_str;
 
 	resv.flags = resv_ptr->flags;
@@ -812,7 +812,7 @@ static int _post_resv_delete(slurmctld_resv_t *resv_ptr)
 		return rc;
 
 	memset(&resv, 0, sizeof(slurmdb_reservation_rec_t));
-	resv.cluster = slurmctld_cluster_name;
+	resv.cluster = slurmctld_conf.cluster_name;
 	resv.id = resv_ptr->resv_id;
 	resv.name = resv_ptr->name;
 	resv.time_end = now;
@@ -842,7 +842,7 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 		return rc;
 
 	memset(&resv, 0, sizeof(slurmdb_reservation_rec_t));
-	resv.cluster = slurmctld_cluster_name;
+	resv.cluster = slurmctld_conf.cluster_name;
 	resv.id = resv_ptr->resv_id;
 	resv.time_end = resv_ptr->end_time;
 

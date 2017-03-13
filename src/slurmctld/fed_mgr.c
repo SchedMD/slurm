@@ -159,7 +159,7 @@ static int _open_controller_conn(slurmdb_cluster_rec_t *cluster, bool locked)
 		cluster->fed.send = persist_conn;
 
 		/* Since this connection is coming from us, make it so ;) */
-		persist_conn->cluster_name = xstrdup(slurmctld_cluster_name);
+		persist_conn->cluster_name = xstrdup(slurmctld_conf.cluster_name);
 		persist_conn->my_port = slurmctld_conf.slurmctld_port;
 		persist_conn->rem_host = xstrdup(cluster->control_host);
 		persist_conn->rem_port = cluster->control_port;
@@ -407,7 +407,7 @@ static void _fed_mgr_ptr_init(slurmdb_federation_rec_t *db_fed,
 		c_itr = list_iterator_create(db_fed->cluster_list);
 		while ((db_cluster = list_next(c_itr))) {
 			if (!xstrcmp(db_cluster->name,
-				     slurmctld_cluster_name)) {
+				     slurmctld_conf.cluster_name)) {
 				fed_mgr_cluster_rec = db_cluster;
 				continue;
 			}
@@ -1060,7 +1060,7 @@ extern int fed_mgr_init(void *db_conn)
 	} else {
 		slurmdb_init_federation_cond(&fed_cond, 0);
 		fed_cond.cluster_list = list_create(NULL);
-		list_append(fed_cond.cluster_list, slurmctld_cluster_name);
+		list_append(fed_cond.cluster_list, slurmctld_conf.cluster_name);
 
 		fed_list = acct_storage_g_get_federations(db_conn,
 							  slurmctld_conf.slurm_user_id,
@@ -1086,7 +1086,7 @@ extern int fed_mgr_init(void *db_conn)
 
 		if ((cluster = list_find_first(fed->cluster_list,
 					       slurmdb_find_cluster_in_list,
-					       slurmctld_cluster_name))) {
+					       slurmctld_conf.cluster_name))) {
 			_join_federation(fed, cluster, false);
 		} else {
 			error("failed to get cluster from federation that we requested");
@@ -1162,7 +1162,7 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 		if (fed->cluster_list &&
 		    (cluster = list_find_first(fed->cluster_list,
 					       slurmdb_find_cluster_in_list,
-					       slurmctld_cluster_name))) {
+					       slurmctld_conf.cluster_name))) {
 			_join_federation(fed, cluster, true);
 			break;
 		}
@@ -1405,7 +1405,7 @@ extern int fed_mgr_add_sibling_conn(slurm_persist_conn_t *persist_conn,
 		unlock_slurmctld(fed_read_lock);
 		*out_buffer = xstrdup_printf(
 			"no fed_mgr_fed_rec on cluster %s yet.",
-			slurmctld_cluster_name);
+			slurmctld_conf.cluster_name);
 		/* This really isn't an error.  If the cluster doesn't know it
 		 * is in a federation this could happen on the initial
 		 * connection from a sibling that found out about the addition
@@ -1423,7 +1423,7 @@ extern int fed_mgr_add_sibling_conn(slurm_persist_conn_t *persist_conn,
 		*out_buffer = xstrdup_printf(
 			"no fed_mgr_cluster_rec on cluster %s?  "
 			"This should never happen",
-			slurmctld_cluster_name);
+			slurmctld_conf.cluster_name);
 		error("%s: %s", __func__, *out_buffer);
 		return SLURM_ERROR;
 	}
@@ -1434,7 +1434,7 @@ extern int fed_mgr_add_sibling_conn(slurm_persist_conn_t *persist_conn,
 		unlock_slurmctld(fed_read_lock);
 		*out_buffer = xstrdup_printf(
 			"%s isn't a known sibling of ours, but tried to connect to cluster %s federation %s",
-			persist_conn->cluster_name, slurmctld_cluster_name,
+			persist_conn->cluster_name, slurmctld_conf.cluster_name,
 			fed_mgr_fed_rec->name);
 		error("%s: %s", __func__, *out_buffer);
 		return SLURM_ERROR;

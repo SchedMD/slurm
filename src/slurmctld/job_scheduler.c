@@ -3506,9 +3506,9 @@ static char **_build_env(struct job_record *job_ptr, bool is_epilog)
 		}
 	}
 
-	if (slurmctld_cluster_name) {
+	if (slurmctld_conf.cluster_name) {
 		setenvf(&my_env, "SLURM_CLUSTER_NAME", "%s",
-			slurmctld_cluster_name);
+			slurmctld_conf.cluster_name);
 	}
 
 	setenvf(&my_env, "SLURM_JOB_GID", "%u", job_ptr->group_id);

@@ -199,7 +199,6 @@ extern time_t	last_proc_req_start;
 extern diag_stats_t slurmctld_diag_stats;
 extern slurmctld_config_t slurmctld_config;
 extern int   bg_recover;		/* state recovery mode */
-extern char *slurmctld_cluster_name;	/* name of cluster */
 extern void *acct_db_conn;
 extern int   accounting_enforce;
 extern int   association_based_accounting;
