@@ -143,6 +143,7 @@ typedef struct sbatch_options {
 	int64_t realmem;	/* --mem=n			*/
 	long tmpdisk;		/* --tmp=n			*/
 	char *constraints;	/* --constraints=, -C constraint*/
+	char *c_constraints;	/* --cluster-constraints=       */
 	char *gres;		/* --gres			*/
 	bool contiguous;	/* --contiguous			*/
 	char *nodelist;		/* --nodelist=node1,node2,...	*/

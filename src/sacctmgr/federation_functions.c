@@ -544,7 +544,7 @@ extern int sacctmgr_list_federation(int argc, char **argv)
 	if (!list_count(format_list)) {
 		slurm_addto_char_list(format_list,
 				      "Federation,Flags%10,Cluster,ID%2,"
-				      "Weight,FedState");
+				      "Weight,Features,FedState");
 	}
 
 	print_fields_list = sacctmgr_process_format_list(format_list);
@@ -637,6 +637,17 @@ extern int sacctmgr_list_federation(int argc, char **argv)
 						field, tmp_str,
 						(curr_inx == field_count));
 					break;
+				case PRINT_FEATURES:
+				{
+					List tmp_list = NULL;
+					if (tmp_cluster)
+						tmp_list = tmp_cluster->
+							fed.feature_list;
+					field->print_routine(
+						field, tmp_list,
+						(curr_inx == field_count));
+					break;
+				}
 				case PRINT_FEDSTATE:
 					if (!tmp_cluster)
 						tmp_str = NULL;

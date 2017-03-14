@@ -1386,6 +1386,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint16_t ckpt_interval;	/* periodically checkpoint this job */
 	char *ckpt_dir;	 	/* directory to store checkpoint images */
 	char *clusters;		/* cluster names used for multi-cluster jobs */
+	char *cluster_features;	/* required cluster feature specification,
+				 * default NONE */
 	char *comment;		/* arbitrary comment */
 	uint16_t contiguous;	/* 1 if job requires contiguous nodes,
 				 * 0 otherwise,default=0 */
@@ -1567,6 +1569,8 @@ typedef struct job_info {
 	uint16_t boards_per_node;  /* boards per node required by job   */
 	char *burst_buffer;	/* burst buffer specifications */
 	char *burst_buffer_state; /* burst buffer state info */
+	char *cluster_features;	/* comma separated list of required cluster
+				 * features */
 	char *command;		/* command to be executed, built from submitted
 				 * job's argv and NULL for salloc command */
 	char *comment;		/* arbitrary comment */

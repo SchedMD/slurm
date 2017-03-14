@@ -838,6 +838,13 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	xstrfmtcat(out, "Features=%s DelayBoot=%s", job_ptr->features, tmp1);
 	xstrcat(out, line_end);
 
+	/****** Line (optional) ******/
+	if (job_ptr->cluster_features) {
+		xstrfmtcat(out, "ClusterFeatures=%s",
+			   job_ptr->cluster_features);
+		xstrcat(out, line_end);
+	}
+
 	/****** Line ******/
 	xstrfmtcat(out, "Gres=%s Reservation=%s",
 		   job_ptr->gres, job_ptr->resv_name);

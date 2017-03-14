@@ -206,6 +206,27 @@ static int _set_rec(int *start, int argc, char **argv,
 				str_2_classification(argv[i]+end);
 			if (cluster->classification)
 				rec_set = 1;
+		} else if (!strncasecmp(argv[i], "Features",
+					MAX(command_len, 2))) {
+			if (*(argv[i]+end) == '\0' &&
+			    (option == '+' || option == '-')) {
+				printf(" You didn't specify any features to %s\n",
+				       (option == '-') ? "remove" : "add");
+				exit_code = 1;
+				break;
+			}
+
+			if (!cluster->fed.feature_list)
+				cluster->fed.feature_list =
+					list_create(slurm_destroy_char);
+			if ((slurm_addto_mode_char_list(cluster->fed.feature_list,
+						   argv[i]+end, option) < 0)) {
+				FREE_NULL_LIST(cluster->fed.feature_list);
+				exit_code = 1;
+				break;
+			}
+			rec_set = 1;
+
 		} else if (!strncasecmp(argv[i], "Federation",
 					 MAX(command_len, 3))) {
 			cluster->fed.name = xstrdup(argv[i]+end);
@@ -486,8 +507,9 @@ extern int sacctmgr_list_cluster(int argc, char **argv)
 					      "MaxTRES,MaxS,MaxW,QOS,"
 					      "DefaultQOS");
 		if (with_fed)
-			slurm_addto_char_list(format_list,
-					      "Federation,ID,Weight,FedState");
+			slurm_addto_char_list(
+				format_list,
+				"Federation,ID,Weight,Features,FedState");
 	}
 
 	cluster_cond->with_deleted = with_deleted;
@@ -544,6 +566,11 @@ extern int sacctmgr_list_cluster(int argc, char **argv)
 				field->print_routine(field,
 						     get_classification_str(
 						     cluster->classification),
+						     (curr_inx == field_count));
+				break;
+			case PRINT_FEATURES:
+				field->print_routine(field,
+						     cluster->fed.feature_list,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_FEDERATION:

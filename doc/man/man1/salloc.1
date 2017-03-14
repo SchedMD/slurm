@@ -194,6 +194,12 @@ if the allocation is pending for more than ten seconds (and only if stdout
 is a tty). Also see the option \fB\-\-no\-bell\fR.
 
 .TP
+\fB\-\-cluster\-constraint\fR=<\fIlist\fR>
+Specifies features that a federated cluster must have to have a sibling job
+submitted to it. Slurm will attempt to submit a sibling job to a cluster if it
+has at least one of the specified features.
+
+.TP
 \fB\-\-comment\fR=<\fIstring\fR>
 An arbitrary comment.
 

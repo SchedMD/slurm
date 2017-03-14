@@ -463,6 +463,7 @@ struct job_details {
 					 * (all dependencies satisfied) */
 	char *ckpt_dir;			/* directory to store checkpoint
 					 * images */
+	char *cluster_features;		/* required cluster_features */
 	uint16_t contiguous;		/* set if requires contiguous nodes */
 	uint16_t core_spec;		/* specialized core/thread count,
 					 * threads if CORE_SPEC_THREAD flag set */

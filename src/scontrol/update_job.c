@@ -791,6 +791,11 @@ extern int scontrol_update_job(int argc, char **argv)
 			job_msg.comment = val;
 			update_cnt++;
 		}
+		else if (strncasecmp(tag, "ClusterFeatures",
+				     MAX(taglen, 3)) == 0) {
+			job_msg.cluster_features = val;
+			update_cnt++;
+		}
 		else if (strncasecmp(tag, "DelayBoot", MAX(taglen, 5)) == 0) {
 			int time_sec = time_str2secs(val);
 			if (time_sec == NO_VAL) {

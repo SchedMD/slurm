@@ -2583,11 +2583,13 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg, bool is_sib_job)
 				 job_desc_msg->resp_host, 16);
 		dump_job_desc(job_desc_msg);
 		if (error_code == SLURM_SUCCESS) {
-			bool existing_job = false;
 			if (job_desc_msg->job_id != NO_VAL) {
 				lock_slurmctld(job_read_lock);
-				if (find_job_record(job_desc_msg->job_id))
-					existing_job = true;
+				if ((job_ptr =
+				     find_job_record(job_desc_msg->job_id)) &&
+				    job_ptr->fed_details)
+					job_desc_msg->fed_siblings =
+						job_ptr->fed_details->siblings;
 				else if (!is_sib_job)
 					error_code = ESLURM_INVALID_JOB_ID;
 				unlock_slurmctld(job_read_lock);
@@ -2602,7 +2604,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg, bool is_sib_job)
 				error_code = fed_mgr_sib_will_run(msg,
 								  job_desc_msg,
 								  uid, &resp);
-			} else if (!existing_job) {
+			} else if (!job_ptr) {
 				lock_slurmctld(job_write_lock);
 
 				error_code = job_allocate(job_desc_msg, false,

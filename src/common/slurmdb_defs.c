@@ -74,6 +74,7 @@ static void _free_cluster_rec_members(slurmdb_cluster_rec_t *cluster)
 		FREE_NULL_LIST(cluster->accounting_list);
 		xfree(cluster->control_host);
 		xfree(cluster->dim_size);
+		FREE_NULL_LIST(cluster->fed.feature_list);
 		xfree(cluster->fed.name);
 		slurm_persist_conn_destroy(cluster->fed.send);
 		slurm_mutex_destroy(&cluster->lock);
@@ -3131,6 +3132,13 @@ extern void slurmdb_copy_cluster_rec(slurmdb_cluster_rec_t *out,
 		out->root_assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
 		slurmdb_init_assoc_rec(out->root_assoc, 0);
 		slurmdb_copy_assoc_rec_limits( out->root_assoc, in->root_assoc);
+	}
+
+	FREE_NULL_LIST(out->fed.feature_list);
+	if (in->fed.feature_list) {
+		out->fed.feature_list = list_create(slurm_destroy_char);
+		slurm_char_list_copy(out->fed.feature_list,
+				     in->fed.feature_list);
 	}
 
 	/* Not copied currently:

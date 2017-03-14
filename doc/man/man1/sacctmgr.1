@@ -705,6 +705,11 @@ The name of a user in the association.
 Type of machine, current classifications are capability and capacity.
 
 .TP
+\fIFeatures\fP=<comma separated list of feature names>
+Features that are specific to the cluster. Federated jobs can be directed to
+clusters that contain the job requested features.
+
+.TP
 \fIFederation\fP=<federation>
 The federation that this cluster should be a member of. A cluster can only be a
 member of one federation at a time.
@@ -760,7 +765,7 @@ is 1.
 .TP
 \fIWithFed\fP
 Appends federation related columns to default format options
-(e.g. Federation,ID,Weight,State).
+(e.g. Federation,ID,Weight,Features,FedState).
 
 .TP
 \fIWOLimits\fP
@@ -790,6 +795,10 @@ controller is placed here.
 \fIControlPort\fP
 When a slurmctld registers with the database the port the controller
 is listening on is placed here.
+
+.TP
+\fIFeatures\fP
+The list of features on the cluster (if any).
 
 .TP
 \fIFederation\fP
@@ -1022,6 +1031,10 @@ Slurm will pack jobs onto clusters in the federation.
 Display federations in a hierarchical fashion.
 
 .SH "LIST/SHOW FEDERATION FORMAT OPTIONS"
+
+.TP
+\fIFeatures\fP
+The list of features on the cluster.
 
 .TP
 \fIFederation\fP

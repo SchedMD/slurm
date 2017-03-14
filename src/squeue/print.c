@@ -1394,6 +1394,18 @@ int _print_job_features(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
+int _print_job_cluster_features(job_info_t * job, int width, bool right_justify,
+				char* suffix)
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("CLUSTER_FEATURES", width, right_justify, true);
+	else
+		_print_str(job->cluster_features, width, right_justify, true);
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_job_account(job_info_t * job, int width, bool right_justify,
 			char* suffix)
 {

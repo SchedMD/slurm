@@ -778,6 +778,7 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 			pack32(0, buffer);
 			pack16(1, buffer);
 
+			pack32(NO_VAL, buffer);
 			packnull(buffer);
 			pack32(0, buffer);
 			pack32(0, buffer);
@@ -819,6 +820,19 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 		pack32(object->control_port, buffer);
 		pack16(object->dimensions, buffer);
 
+		if (object->fed.feature_list)
+			count = list_count(object->fed.feature_list);
+		else
+			count = NO_VAL;
+
+		pack32(count, buffer);
+		if (count && (count != NO_VAL)) {
+			char *tmp_feature;
+			itr = list_iterator_create(object->fed.feature_list);
+			while ((tmp_feature = list_next(itr)))
+				packstr(tmp_feature, buffer);
+			list_iterator_destroy(itr);
+		}
 		packstr(object->fed.name, buffer);
 		pack32(object->fed.id, buffer);
 		pack32(object->fed.state, buffer);
@@ -1005,6 +1019,18 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 		safe_unpack32(&object_ptr->control_port, buffer);
 		safe_unpack16(&object_ptr->dimensions, buffer);
 
+		safe_unpack32(&count, buffer);
+		if (count != NO_VAL) {
+			object_ptr->fed.feature_list =
+				list_create(slurm_destroy_char);
+			for(i = 0; i < count; i++) {
+				char *tmp_feature = NULL;
+				safe_unpackstr_xmalloc(&tmp_feature,
+						       &uint32_tmp, buffer);
+				list_append(object_ptr->fed.feature_list,
+					    tmp_feature);
+			}
+		}
 		safe_unpackstr_xmalloc(&object_ptr->fed.name,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->fed.id, buffer);

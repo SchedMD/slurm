@@ -1117,6 +1117,11 @@ extern int parse_long_format( char* format_long )
 							 field_size,
 							 right_justify,
 							 suffix );
+			else if (!xstrcasecmp(token, "clusterfeature"))
+				job_format_add_cluster_features(
+							params.format_list,
+							field_size,
+							right_justify, suffix);
 			else if (!xstrcasecmp(token, "arrayjobid"))
 				job_format_add_array_job_id(
 					params.format_list,

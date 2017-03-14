@@ -795,6 +795,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		xfree(msg->std_err);
 		xfree(msg->exc_nodes);
 		xfree(msg->features);
+		xfree(msg->cluster_features);
 		xfree(msg->job_id_str);
 		xfree(msg->gres);
 		xfree(msg->std_in);

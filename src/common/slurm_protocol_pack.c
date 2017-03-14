@@ -5574,6 +5574,8 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 
 		/*** unpack default job details ***/
 		safe_unpackstr_xmalloc(&job->features,   &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->cluster_features, &uint32_tmp,
+				       buffer);
 		safe_unpackstr_xmalloc(&job->work_dir,   &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->dependency, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->command,    &uint32_tmp, buffer);
@@ -7519,6 +7521,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 
 	/* load the data values */
 	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		packstr(job_desc_ptr->cluster_features, buffer);
 		packstr(job_desc_ptr->clusters, buffer);
 		pack16(job_desc_ptr->contiguous, buffer);
 		pack16(job_desc_ptr->core_spec, buffer);
@@ -8042,6 +8045,8 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		*job_desc_buffer_ptr = job_desc_ptr;
 
 		/* load the data values */
+		safe_unpackstr_xmalloc(&job_desc_ptr->cluster_features,
+				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->clusters,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&job_desc_ptr->contiguous, buffer);

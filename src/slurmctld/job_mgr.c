@@ -510,6 +510,7 @@ void delete_job_details(struct job_record *job_entry)
 	xfree(job_entry->details->exc_nodes);
 	FREE_NULL_LIST(job_entry->details->feature_list);
 	xfree(job_entry->details->features);
+	xfree(job_entry->details->cluster_features);
 	xfree(job_entry->details->std_in);
 	xfree(job_entry->details->mc_ptr);
 	xfree(job_entry->details->mem_bind);
@@ -2350,6 +2351,7 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	packstr(detail_ptr->req_nodes,  buffer);
 	packstr(detail_ptr->exc_nodes,  buffer);
 	packstr(detail_ptr->features,   buffer);
+	packstr(detail_ptr->cluster_features, buffer);
 	packstr(detail_ptr->dependency, buffer);
 	packstr(detail_ptr->orig_dependency, buffer);
 
@@ -2372,7 +2374,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 {
 	char *acctg_freq = NULL, *req_nodes = NULL, *exc_nodes = NULL;
 	char *features = NULL, *cpu_bind = NULL, *dependency = NULL;
-	char *orig_dependency = NULL, *mem_bind;
+	char *orig_dependency = NULL, *mem_bind, *cluster_features = NULL;
 	char *err = NULL, *in = NULL, *out = NULL, *work_dir = NULL;
 	char *ckpt_dir = NULL, *restart_dir = NULL;
 	char **argv = (char **) NULL, **env_sup = (char **) NULL;
@@ -2435,6 +2437,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&req_nodes,  &name_len, buffer);
 		safe_unpackstr_xmalloc(&exc_nodes,  &name_len, buffer);
 		safe_unpackstr_xmalloc(&features,   &name_len, buffer);
+		safe_unpackstr_xmalloc(&cluster_features, &name_len, buffer);
 		safe_unpackstr_xmalloc(&dependency, &name_len, buffer);
 		safe_unpackstr_xmalloc(&orig_dependency, &name_len, buffer);
 
@@ -2598,6 +2601,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	xfree(job_ptr->details->env_sup);
 	xfree(job_ptr->details->exc_nodes);
 	xfree(job_ptr->details->features);
+	xfree(job_ptr->details->cluster_features);
 	xfree(job_ptr->details->std_in);
 	xfree(job_ptr->details->mem_bind);
 	xfree(job_ptr->details->std_out);
@@ -2626,6 +2630,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	job_ptr->details->std_err = err;
 	job_ptr->details->exc_nodes = exc_nodes;
 	job_ptr->details->features = features;
+	job_ptr->details->cluster_features = cluster_features;
 	job_ptr->details->std_in = in;
 	job_ptr->details->pn_min_cpus = pn_min_cpus;
 	job_ptr->details->pn_min_memory = pn_min_memory;
@@ -2672,6 +2677,7 @@ unpack_error:
 	xfree(err);
 	xfree(exc_nodes);
 	xfree(features);
+	xfree(cluster_features);
 	xfree(in);
 	xfree(mem_bind);
 	xfree(out);
@@ -3633,8 +3639,10 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	debug3("   pn_min_memory_%s=%"PRIu64" pn_min_tmp_disk=%ld",
 	       mem_type, pn_min_memory, pn_min_tmp_disk);
 	immediate = (job_specs->immediate == 0) ? 0L : 1L;
-	debug3("   immediate=%ld features=%s reservation=%s",
-	       immediate, job_specs->features, job_specs->reservation);
+	debug3("   immediate=%ld reservation=%s",
+	       immediate, job_specs->reservation);
+	debug3("   features=%s cluster_features=%s",
+	       job_specs->features, job_specs->cluster_features);
 
 	debug3("   req_nodes=%s exc_nodes=%s gres=%s",
 	       job_specs->req_nodes, job_specs->exc_nodes, job_specs->gres);
@@ -4014,6 +4022,7 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 	details_new->feature_list =
 		feature_list_copy(job_details->feature_list);
 	details_new->features = xstrdup(job_details->features);
+	details_new->cluster_features = xstrdup(job_details->cluster_features);
 	if (job_details->mc_ptr) {
 		i = sizeof(multi_core_data_t);
 		details_new->mc_ptr = xmalloc(i);
@@ -6537,6 +6546,8 @@ static int _test_job_desc_fields(job_desc_msg_t * job_desc)
 	    _test_strlen(job_desc->cpu_bind, "cpu_bind", 1024)		||
 	    _test_strlen(job_desc->dependency, "dependency", 1024*128)	||
 	    _test_strlen(job_desc->features, "features", 1024)		||
+	    _test_strlen(
+		job_desc->cluster_features, "cluster_features", 1024)   ||
 	    _test_strlen(job_desc->gres, "gres", 1024)			||
 	    _test_strlen(job_desc->licenses, "licenses", 1024)		||
 	    _test_strlen(job_desc->linuximage, "linuximage", 1024)	||
@@ -7313,6 +7324,9 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	}
 	if (job_desc->features)
 		detail_ptr->features = xstrdup(job_desc->features);
+	if (job_desc->cluster_features)
+		detail_ptr->cluster_features =
+			xstrdup(job_desc->cluster_features);
 	if (job_desc->fed_siblings)
 		set_job_fed_details(job_ptr, job_desc->fed_siblings);
 	if ((job_desc->shared == JOB_SHARED_NONE) && (select_serial == 0)) {
@@ -9341,6 +9355,7 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		if (detail_ptr) {
 			packstr(detail_ptr->features,   buffer);
+			packstr(detail_ptr->cluster_features, buffer);
 			packstr(detail_ptr->work_dir,   buffer);
 			packstr(detail_ptr->dependency, buffer);
 
@@ -11559,6 +11574,33 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			     job_ptr->job_id);
 			xfree(detail_ptr->features);
 			FREE_NULL_LIST(detail_ptr->feature_list);
+		}
+	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
+
+	if (job_specs->cluster_features) {
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
+			error_code = ESLURM_JOB_NOT_PENDING;
+		else if (job_specs->cluster_features[0] != '\0') {
+			if (!fed_mgr_is_active()) {
+				info("sched: update_job: setting ClusterFeatures on a non-active federated cluster for job %u",
+				     job_ptr->job_id);
+				error_code = ESLURM_INVALID_FEATURE;
+			} else if (fed_mgr_validate_cluster_features(
+					job_specs->cluster_features, NULL)) {
+				info("sched: update_job: invalid ClusterFeatures for job %u",
+				     job_ptr->job_id);
+				error_code = ESLURM_INVALID_FEATURE;
+			} else {
+				xfree(detail_ptr->cluster_features);
+				detail_ptr->cluster_features =
+					xstrdup(job_specs->cluster_features);
+			}
+		} else {
+			info("sched: update_job: cleared ClusterFeatures for job %u",
+			     job_ptr->job_id);
+			xfree(detail_ptr->cluster_features);
 		}
 	}
 	if (error_code != SLURM_SUCCESS)
@@ -15536,6 +15578,7 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(struct job_record *job_ptr)
 						  &job_desc->env_size);
 	job_desc->exc_nodes         = xstrdup(details->exc_nodes);
 	job_desc->features          = xstrdup(details->features);
+	job_desc->cluster_features  = xstrdup(details->cluster_features);
 	job_desc->gres              = xstrdup(job_ptr->gres);
 	job_desc->group_id          = job_ptr->group_id;
 	job_desc->immediate         = 0; /* nowhere to get this value */

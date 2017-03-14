@@ -669,6 +669,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.core_spec != (uint16_t) NO_VAL)
 		desc->core_spec = opt.core_spec;
 	desc->features = opt.constraints;
+	desc->cluster_features = opt.c_constraints;
 	desc->gres = opt.gres;
 	if (opt.immediate == 1)
 		desc->immediate = 1;
