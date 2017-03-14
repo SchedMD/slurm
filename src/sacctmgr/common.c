@@ -915,6 +915,7 @@ extern int sacctmgr_remove_assoc_usage(slurmdb_assoc_cond_t *assoc_cond)
 		} else {
 			slurmdb_destroy_update_object(update_obj);
 		}
+		update_obj = NULL;
 		FREE_NULL_LIST(update_list);
 	}
 end_it:
