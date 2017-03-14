@@ -75,6 +75,8 @@ documents those changes that are of interest to users and administrators.
     assoc_mgr_make_tres_str_from_array.
  -- Prevent slurmctld SEGV when creating reservation with duplicated name.
  -- Consider QOS flags Partition[Min|Max]Nodes when doing backfill.
+ -- Fix slurmdbd_defs.c to not have half symbols go to libslurm.so and the
+    other half go to libslurmdb.so.
 
 * Changes in Slurm 17.02.1-2
 ============================

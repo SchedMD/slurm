@@ -349,11 +349,11 @@
 #define reservation_flags_string slurm_reservation_flags_string
 
 /* slurmdbd_defs.[ch] functions */
-#define slurmdbd_defs_init      slurmdb_slurmdbd_defs_init
-#define slurmdbd_defs_fini      slurmdb_slurmdbd_defs_fini
-#define slurmdbd_free_list_msg	slurmdb_slurmdbd_free_list_msg
-#define slurmdbd_free_usage_msg slurmdb_slurmdbd_free_usage_msg
-#define slurmdbd_free_id_rc_msg slurmdb_slurmdbd_free_id_rc_msg
+#define slurmdbd_defs_init      slurm_slurmdbd_defs_init
+#define slurmdbd_defs_fini      slurm_slurmdbd_defs_fini
+#define slurmdbd_free_list_msg	slurm_slurmdbd_free_list_msg
+#define slurmdbd_free_usage_msg slurm_slurmdbd_free_usage_msg
+#define slurmdbd_free_id_rc_msg slurm_slurmdbd_free_id_rc_msg
 
 /* plugin.[ch] functions */
 #define plugin_get_syms         slurm_plugin_get_syms
