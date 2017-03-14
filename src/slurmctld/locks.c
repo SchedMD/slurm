@@ -150,6 +150,7 @@ static void _wr_rdunlock(lock_datatype_t datatype)
 {
 	slurm_mutex_lock(&locks_mutex);
 	slurmctld_locks.entity[read_lock(datatype)]--;
+	xassert(slurmctld_locks.entity[read_lock(datatype)] >= 0);
 	slurm_cond_broadcast(&locks_cond);
 	slurm_mutex_unlock(&locks_mutex);
 }
@@ -179,6 +180,7 @@ static void _wr_wrunlock(lock_datatype_t datatype)
 {
 	slurm_mutex_lock(&locks_mutex);
 	slurmctld_locks.entity[write_lock(datatype)]--;
+	xassert(slurmctld_locks.entity[write_lock(datatype)] >= 0);
 	slurm_cond_broadcast(&locks_cond);
 	slurm_mutex_unlock(&locks_mutex);
 }
