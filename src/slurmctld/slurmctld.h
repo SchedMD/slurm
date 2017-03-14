@@ -1937,6 +1937,9 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 			   uint16_t show_flags, uid_t uid, char *node_name,
 			   uint16_t protocol_version);
 
+/* part_is_visible - should user be able to see this partition */
+extern bool part_is_visible(struct part_record *part_ptr, uid_t uid);
+
 /* part_filter_clear - Clear the partition's hidden flag based upon a user's
  * group access. This must follow a call to part_filter_set() */
 extern void part_filter_clear(void);

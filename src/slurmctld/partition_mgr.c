@@ -1093,6 +1093,19 @@ static int _match_part_ptr(void *part_ptr, void *key)
 	return 0;
 }
 
+/* partition is visible to the user. must had part read lock before calling */
+extern bool part_is_visible(struct part_record *part_ptr, uid_t uid)
+{
+	if (validate_slurm_user(uid))
+		return true;
+	if (part_ptr->flags & PART_FLAG_HIDDEN)
+		return false;
+	if (validate_group(part_ptr, uid) == 0)
+		return false;
+
+	return true;
+}
+
 /* part_filter_set - Set the partition's hidden flag based upon a user's
  * group access. This must be followed by a call to part_filter_clear() */
 static int _part_filter_set(void *x, void *arg)
@@ -1171,9 +1184,8 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
 	part_iterator = list_iterator_create(part_list);
 	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		xassert (part_ptr->magic == PART_MAGIC);
-		if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
-		    ((part_ptr->flags & PART_FLAG_HIDDEN)
-		     || (validate_group (part_ptr, uid) == 0)))
+		if (((show_flags & SHOW_ALL) == 0) &&
+		    !part_is_visible(part_ptr, uid))
 			continue;
 		pack_part(part_ptr, buffer, protocol_version);
 		parts_packed++;
