@@ -1282,13 +1282,21 @@ next_task:
 		}
 
 		/* Determine minimum and maximum node counts */
-		min_nodes = MAX(job_ptr->details->min_nodes,
-				part_ptr->min_nodes);
+
+		/* check whether job is allowed to override partition limit */
+		if (qos_ptr && (qos_ptr->flags & QOS_FLAG_PART_MIN_NODE))
+			min_nodes = job_ptr->details->min_nodes;
+		else
+			min_nodes = MAX(job_ptr->details->min_nodes,
+					part_ptr->min_nodes);
 		if (job_ptr->details->max_nodes == 0)
 			max_nodes = part_ptr->max_nodes;
+		else if (qos_ptr && (qos_ptr->flags & QOS_FLAG_PART_MAX_NODE))
+			max_nodes = job_ptr->details->max_nodes;
 		else
 			max_nodes = MIN(job_ptr->details->max_nodes,
 					part_ptr->max_nodes);
+
 		max_nodes = MIN(max_nodes, 500000);     /* prevent overflows */
 		if (job_ptr->details->max_nodes)
 			req_nodes = max_nodes;
