@@ -1106,48 +1106,6 @@ extern bool part_is_visible(struct part_record *part_ptr, uid_t uid)
 	return true;
 }
 
-/* part_filter_set - Set the partition's hidden flag based upon a user's
- * group access. This must be followed by a call to part_filter_clear() */
-static int _part_filter_set(void *x, void *arg)
-{
-	struct part_record *part_ptr = (struct part_record *) x;
-	uid_t *uid = (uid_t *) arg;
-
-	if (part_ptr->flags & PART_FLAG_HIDDEN)
-		return 0;
-
-	if (validate_group(part_ptr, *uid) == 0) {
-		part_ptr->flags |= PART_FLAG_HIDDEN;
-		part_ptr->flags |= PART_FLAG_HIDDEN_CLR;
-	}
-
-	return 0;
-}
-
-extern void part_filter_set(uid_t uid)
-{
-	list_for_each(part_list, _part_filter_set, &uid);
-}
-
-/* part_filter_clear - Clear the partition's hidden flag based upon a user's
- * group access. This must follow a call to part_filter_set() */
-static int _part_filter_clear(void *x, void *arg)
-{
-	struct part_record *part_ptr = (struct part_record *) x;
-
-	if (part_ptr->flags & PART_FLAG_HIDDEN_CLR) {
-		part_ptr->flags &= (~PART_FLAG_HIDDEN);
-		part_ptr->flags &= (~PART_FLAG_HIDDEN_CLR);
-	}
-
-	return 0;
-}
-
-extern void part_filter_clear(void)
-{
-	list_for_each(part_list, _part_filter_clear, NULL);
-}
-
 /*
  * pack_all_part - dump all partition information for all partitions in
  *	machine independent form (for network transmission)
