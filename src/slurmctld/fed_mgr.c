@@ -2580,7 +2580,7 @@ extern int fed_mgr_job_revoke(struct job_record *job_ptr, bool job_complete,
 
 /* Convert cluster ids to cluster names.
  *
- * RET: return string of comma-separated clsuter names.
+ * RET: return string of comma-separated cluster names.
  *      Must free returned string.
  */
 extern char *fed_mgr_cluster_ids_to_names(uint64_t cluster_ids)
