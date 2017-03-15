@@ -39,6 +39,8 @@ documents those changes that are of interest to users and administrators.
  -- Consider QOS flags Partition[Min|Max]Nodes when doing backfill.
  -- Fix slurmdbd_defs.c to not have half symbols go to libslurm.so and the
     other half go to libslurmdb.so.
+ -- Fix 'scontrol show jobs' to remove an errant newline when 'Switches' is
+    printed.
 
 * Changes in Slurm 17.02.1-2
 ============================

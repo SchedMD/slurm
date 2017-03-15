@@ -934,7 +934,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, line_end);
 		secs2time_str((time_t) job_ptr->wait4switch, time_buf,
 			      sizeof(time_buf));
-		xstrfmtcat(out, "Switches=%u@%s\n", job_ptr->req_switch, time_buf);
+		xstrfmtcat(out, "Switches=%u@%s", job_ptr->req_switch, time_buf);
 	}
 
 	/****** Line 35 (optional) ******/
