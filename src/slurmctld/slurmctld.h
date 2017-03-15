@@ -1531,13 +1531,14 @@ extern int job_step_complete (uint32_t job_id, uint32_t job_step_id,
  * IN job_id - id of the job to be cancelled
  * IN step_id - id of the job step to be cancelled
  * IN signal - user id of user issuing the RPC
+ * IN flags - RPC flags
  * IN uid - user id of user issuing the RPC
  * RET 0 on success, otherwise ESLURM error code
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
-extern int job_step_signal(uint32_t job_id, uint32_t step_id,
-			   uint16_t signal, uid_t uid);
+int job_step_signal(uint32_t job_id, uint32_t step_id,
+		    uint16_t signal, uint16_t flags, uid_t uid);
 
 /*
  * job_time_limit - terminate jobs which have exceeded their time limit

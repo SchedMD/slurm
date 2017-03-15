@@ -13557,7 +13557,7 @@ static void _signal_job(struct job_record *job_ptr, int signal)
 			/* Since we have already checked the uid,
 			 * we can send this signal as uid 0. */
 			job_step_signal(job_ptr->job_id, step_ptr->step_id,
-					signal, 0);
+					signal, 0, 0);
 		}
 		list_iterator_destroy (step_iterator);
 

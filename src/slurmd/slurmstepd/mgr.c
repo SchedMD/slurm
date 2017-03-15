@@ -688,12 +688,10 @@ _send_exit_msg(stepd_step_rec_t *job, uint32_t *tid, int n, int status)
 
 	msg.task_id_list	= tid;
 	msg.num_tasks		= n;
-	/* FIXME: Add oom_error field to the RPC in version 17.11. For now,
-	 * pack SIG_OOM code into top 16 bits of 32-bit return_code field */
 	if (job->oom_error)
-		msg.return_code		= (status & 0xffffff00) + SIG_OOM;
+		msg.return_code = SIG_OOM;
 	else
-		msg.return_code		= status;
+		msg.return_code = status;
 	msg.job_id		= job->jobid;
 	msg.step_id		= job->stepid;
 	slurm_msg_t_init(&resp);
@@ -803,7 +801,10 @@ _one_step_complete_msg(stepd_step_rec_t *job, int first, int last)
 	msg.job_step_id = job->stepid;
 	msg.range_first = first;
 	msg.range_last = last;
-	msg.step_rc = step_complete.step_rc;
+	if (job->oom_error)
+		msg.step_rc = SIG_OOM;
+	else
+		msg.step_rc = step_complete.step_rc;
 	msg.jobacct = jobacctinfo_create(NULL);
 	/************* acct stuff ********************/
 	if (!acct_sent) {
@@ -2374,7 +2375,10 @@ _send_complete_batch_script_msg(stepd_step_rec_t *job, int err, int status)
 	}
 
 	req.job_id	= job->jobid;
-	req.job_rc      = status;
+	if (job->oom_error)
+		req.job_rc = SIG_OOM;
+	else
+		req.job_rc = status;
 	req.jobacct	= job->jobacct;
 	req.node_name	= job->node_name;
 	req.slurm_rc	= err;

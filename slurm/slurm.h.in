@@ -3249,7 +3249,7 @@ extern void slurm_free_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t *
 \*****************************************************************************/
 
 /* NOTE: Only 8 bits available for kill flags. kill_tasks_msg_t->signal is
- * uin32_t and only 12 bits are used for the signal. These flags are << 24
+ * uint32_t and only 12 bits are used for the signal. These flags are << 24
  * leaving 8 bits for flags.
  * See _signal_batch_job() controller and _rpc_signal_tasks() in slurmd. */
 #define KILL_JOB_BATCH	 0x0001	/* signal batch shell only */
@@ -3258,6 +3258,7 @@ extern void slurm_free_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t *
 #define KILL_FULL_JOB	 0x0008	/* Signal all steps, including batch script */
 #define KILL_FED_REQUEUE 0x0010 /* Mark job as requeued when requeued */
 #define KILL_HURRY	 0x0020	/* Skip burst buffer stage out */
+#define KILL_OOM	 0x0040	/* Kill due to Out-Of-Memory */
 
 /* Use top bit of uint16_t in conjuction with KILL_* flags to indicate signal
  * has been sent to job previously. Does not need to be passed to slurmd. */

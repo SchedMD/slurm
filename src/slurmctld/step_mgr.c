@@ -250,9 +250,10 @@ static void _internal_step_complete(struct job_record *job_ptr,
 	if (step_ptr->step_id == SLURM_PENDING_STEP)
 		return;
 
-	if (step_ptr->step_id != SLURM_EXTERN_CONT)
-		job_ptr->derived_ec = MAX(job_ptr->derived_ec,
-					  step_ptr->exit_code);
+	if ((step_ptr->step_id != SLURM_EXTERN_CONT) &&
+	    ((step_ptr->exit_code & SIG_OOM) ||
+	     (step_ptr->exit_code > job_ptr->derived_ec)))
+		job_ptr->derived_ec = step_ptr->exit_code;
 
 	step_ptr->state |= JOB_COMPLETING;
 	select_g_step_finish(step_ptr, false);
@@ -482,13 +483,14 @@ find_step_record(struct job_record *job_ptr, uint32_t step_id)
  * IN job_id - id of the job to be cancelled
  * IN step_id - id of the job step to be cancelled
  * IN signal - user id of user issuing the RPC
+ * IN flags - RPC flags
  * IN uid - user id of user issuing the RPC
  * RET 0 on success, otherwise ESLURM error code
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
 int job_step_signal(uint32_t job_id, uint32_t step_id,
-		    uint16_t signal, uid_t uid)
+		    uint16_t signal, uint16_t flags, uid_t uid)
 {
 	struct job_record *job_ptr;
 	struct step_record *step_ptr, step_rec;
@@ -557,6 +559,8 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 		step_rec.step_node_bitmap = job_ptr->node_bitmap;
 		step_ptr = &step_rec;
 		rc = ESLURM_ALREADY_DONE;
+	} else if (flags & KILL_OOM) {
+		step_ptr->exit_code = SIG_OOM;
 	}
 
 	/* If SIG_NODE_FAIL codes through it means we had nodes failed
@@ -3422,7 +3426,9 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		*/
 		req->range_last = nodes - 1;
 #endif
-		step_ptr->exit_code = MAX(step_ptr->exit_code, req->step_rc);
+		if ((req->step_rc & SIG_OOM) ||
+		    (req->step_rc > step_ptr->exit_code))
+			step_ptr->exit_code = req->step_rc;
 	}
 	if ((req->range_first >= nodes) || (req->range_last >= nodes) ||
 	    (req->range_first > req->range_last)) {

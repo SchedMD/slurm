@@ -1953,6 +1953,7 @@ static void _slurm_rpc_job_step_kill(uint32_t uid, slurm_msg_t * msg)
 		error_code = job_step_signal(job_step_kill_msg->job_id,
 					     job_step_kill_msg->job_step_id,
 					     job_step_kill_msg->signal,
+					     job_step_kill_msg->flags,
 					     uid);
 		unlock_slurmctld(job_write_lock);
 		_throttle_fini(&active_rpc_cnt);
