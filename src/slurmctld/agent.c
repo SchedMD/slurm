@@ -1561,7 +1561,7 @@ extern void slurmctld_free_batch_job_launch_msg(batch_job_launch_msg_t * msg)
 }
 
 /* agent_purge - purge all pending RPC requests */
-void agent_purge(void)
+extern void agent_purge(void)
 {
 	if (retry_list) {
 		slurm_mutex_lock(&retry_mutex);
@@ -1574,6 +1574,7 @@ void agent_purge(void)
 		slurm_mutex_unlock(&mail_mutex);
 	}
 }
+
 extern int get_agent_count(void)
 {
 	int cnt;
