@@ -16312,7 +16312,19 @@ static int _load_job_fed_details(job_fed_details_t **fed_details_pptr,
 
 	xassert(fed_details_pptr);
 
-	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		safe_unpack16(&tmp_uint16, buffer);
+		if (tmp_uint16) {
+			*fed_details_pptr = xmalloc(sizeof(job_fed_details_t));
+			fed_details_ptr = *fed_details_pptr;
+			safe_unpack32(&fed_details_ptr->cluster_lock, buffer);
+			safe_unpackstr_xmalloc(&fed_details_ptr->origin_str,
+					       &tmp_uint32, buffer);
+			safe_unpack64(&fed_details_ptr->siblings, buffer);
+			safe_unpackstr_xmalloc(&fed_details_ptr->siblings_str,
+					       &tmp_uint32, buffer);
+		}
+	} else if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		safe_unpack16(&tmp_uint16, buffer);
 		if (tmp_uint16) {
 			*fed_details_pptr = xmalloc(sizeof(job_fed_details_t));
