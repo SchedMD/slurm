@@ -5142,7 +5142,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 			job_ptr->requid = uid;
 		} else if ((job_return_code & 0xff) == SIG_OOM) {
 			job_ptr->job_state = JOB_OOM | job_comp_flag;
-			job_ptr->exit_code = job_return_code & 0xffffff00;
+			job_ptr->exit_code = SIG_OOM;
 			job_ptr->state_reason = FAIL_OOM;
 			xfree(job_ptr->state_desc);
 		} else if (WIFEXITED(job_return_code) &&

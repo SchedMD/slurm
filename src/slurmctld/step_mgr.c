@@ -251,7 +251,7 @@ static void _internal_step_complete(struct job_record *job_ptr,
 		return;
 
 	if ((step_ptr->step_id != SLURM_EXTERN_CONT) &&
-	    ((step_ptr->exit_code & SIG_OOM) ||
+	    ((step_ptr->exit_code == SIG_OOM) ||
 	     (step_ptr->exit_code > job_ptr->derived_ec)))
 		job_ptr->derived_ec = step_ptr->exit_code;
 
@@ -3426,7 +3426,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		*/
 		req->range_last = nodes - 1;
 #endif
-		if ((req->step_rc & SIG_OOM) ||
+		if ((req->step_rc == SIG_OOM) ||
 		    (req->step_rc > step_ptr->exit_code))
 			step_ptr->exit_code = req->step_rc;
 	}
