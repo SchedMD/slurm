@@ -38,6 +38,9 @@
 
 #include "as_mysql_convert.h"
 
+/* Any time you have to add to an existing convert update this number. */
+#define CONVERT_VERSION 1
+
 static int _convert_job_table(mysql_conn_t *mysql_conn, char *cluster_name)
 {
 	int rc = SLURM_SUCCESS;
@@ -89,9 +92,11 @@ extern int as_mysql_convert_tables(mysql_conn_t *mysql_conn)
 {
 	char *query;
 	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
 	int i = 0, rc = SLURM_SUCCESS;
 	ListIterator itr;
 	char *cluster_name;
+	uint32_t curr_ver = 0;
 
 	xassert(as_mysql_total_cluster_list);
 
@@ -99,6 +104,32 @@ extern int as_mysql_convert_tables(mysql_conn_t *mysql_conn)
 	if (!(cluster_name = list_peek(as_mysql_total_cluster_list)))
 		return SLURM_SUCCESS;
 
+	query = xstrdup_printf("select version from %s", convert_version_table);
+	debug4("%d(%s:%d) query\n%s", mysql_conn->conn,
+	       THIS_FILE, __LINE__, query);
+	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+	row = mysql_fetch_row(result);
+	if (row) {
+		curr_ver = slurm_atoul(row[0]);
+		mysql_free_result(result);
+		if (curr_ver == CONVERT_VERSION) {
+			debug4("No conversion needed, Horray!");
+			return SLURM_SUCCESS;
+		}
+	} else {
+		mysql_free_result(result);
+		query = xstrdup_printf("insert into %s (version) values (0);",
+				       convert_version_table);
+		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+		rc = mysql_db_query(mysql_conn, query);
+		xfree(query);
+		if (rc != SLURM_SUCCESS)
+			return SLURM_ERROR;
+	}
 
 	/* See if the old table exist first.  In this case we would had already
 	 * have the energy tres in the tres_alloc.
@@ -181,8 +212,15 @@ extern int as_mysql_convert_tables(mysql_conn_t *mysql_conn)
 	}
 	list_iterator_destroy(itr);
 
-	if (rc == SLURM_SUCCESS)
+	if (rc == SLURM_SUCCESS) {
 		info("Conversion done: success!");
+		query = xstrdup_printf("update %s set version=%d, "
+				       "mod_time=UNIX_TIMESTAMP()",
+				       convert_version_table, CONVERT_VERSION);
+		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+		rc = mysql_db_query(mysql_conn, query);
+		xfree(query);
+	}
 
 	return rc;
 }

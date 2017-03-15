@@ -120,6 +120,7 @@ char *cluster_day_table = "usage_day_table";
 char *cluster_hour_table = "usage_hour_table";
 char *cluster_month_table = "usage_month_table";
 char *cluster_table = "cluster_table";
+char *convert_version_table = "convert_version_table";
 char *federation_table = "federation_table";
 char *event_table = "event_table";
 char *job_table = "job_table";
@@ -539,6 +540,12 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		{ NULL, NULL}
 	};
 
+	storage_field_t convert_version_table_fields[] = {
+		{ "mod_time", "bigint unsigned default 0 not null" },
+		{ "version", "int default 0" },
+		{ NULL, NULL}
+	};
+
 	storage_field_t federation_table_fields[] = {
 		{ "creation_time", "int unsigned not null" },
 		{ "mod_time", "int unsigned default 0 not null" },
@@ -801,6 +808,15 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	char *cluster_name = NULL;
 	int rc = SLURM_SUCCESS, rc2;
 	ListIterator itr = NULL;
+
+	/* Make the convert version table since we will check that going
+	 * forward to see if we need to update or not.
+	 */
+
+	if (mysql_db_create_table(mysql_conn, convert_version_table,
+				  convert_version_table_fields,
+				  ", primary key (version))") == SLURM_ERROR)
+		return SLURM_ERROR;
 
 	/* Make the cluster table first since we build other tables
 	   built off this one */
