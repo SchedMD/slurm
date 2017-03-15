@@ -131,28 +131,6 @@ extern int as_mysql_convert_tables(mysql_conn_t *mysql_conn)
 			return SLURM_ERROR;
 	}
 
-	/* See if the old table exist first.  In this case we would had already
-	 * have the energy tres in the tres_alloc.
-	*/
-	query = xstrdup_printf("select tres_alloc from \"%s_%s\" where "
-			       "tres_alloc like '%%,%d=%%' limit 1;",
-			       cluster_name, job_table, TRES_ENERGY);
-
-	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
-		xfree(query);
-		return SLURM_ERROR;
-	}
-	xfree(query);
-	i = mysql_num_rows(result);
-	mysql_free_result(result);
-	result = NULL;
-
-	if (i) {
-		debug2("Conversion done: success!");
-		return SLURM_SUCCESS;
-	}
-
 	/* make it up to date */
 	itr = list_iterator_create(as_mysql_total_cluster_list);
 	while ((cluster_name = list_next(itr))) {
