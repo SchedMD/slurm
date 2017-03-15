@@ -900,10 +900,18 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 			break;
 	}
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
-
-	if (rc != SLURM_SUCCESS)
+	if (rc != SLURM_SUCCESS) {
+		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 		return rc;
+	}
+
+	rc = as_mysql_convert_tables(mysql_conn);
+
+	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+	if (rc != SLURM_SUCCESS) {
+		error("issue converting tables");
+		return rc;
+	}
 
 	if (mysql_db_create_table(mysql_conn, acct_coord_table,
 				  acct_coord_table_fields,
