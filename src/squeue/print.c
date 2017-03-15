@@ -1753,8 +1753,6 @@ int _print_job_max_cpus(job_info_t * job, int width, bool right_justify,
 	if (suffix)
 		printf("%s",suffix);
 	return SLURM_SUCCESS;
-
-
 }
 
 int _print_job_max_nodes(job_info_t * job, int width, bool right_justify,
