@@ -1061,7 +1061,10 @@ static bool _validate_tres_time_limits(
  *                        (tres_limit_array - curr_usage),
  *                        return TRES_USAGE_REQ_NOT_SAFE_WITH_USAGE
  *                        curr_usage will be 0 when not passed
- * IN - tres_usage - TRES (currently running) optional; see tres_req_cnt section
+ * IN - tres_usage - TRES (currently running if curr_usage is set, already used
+ *                   otherwise) optional; This value is used primarily only if
+ *                   safe_limits is true.  It will be added to tres_req_cnt to
+ *                   count as extra time to observe, see tres_req_cnt section
  *                   above for tres_usage interaction
  * IN - curr_usage - TRES (already used) optional; when set, check if:
  *                   1) curr_usage > tres_limit_array
