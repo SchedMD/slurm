@@ -1663,7 +1663,7 @@ int _print_job_fed_origin(job_info_t * job, int width, bool right_justify,
 			    char* suffix)
 {
 	if (job == NULL)
-		_print_str("FED_ORIGIN", width, right_justify, true);
+		_print_str("ORIGIN", width, right_justify, true);
 	else {
 		if (job->fed_origin_str)
 			_print_str(job->fed_origin_str, width, right_justify,
@@ -1681,7 +1681,7 @@ int _print_job_fed_origin_raw(job_info_t * job, int width, bool right_justify,
 			      char* suffix)
 {
 	if (job == NULL)
-		_print_str("FED_ORIGIN_RAW", width, right_justify, true);
+		_print_str("ORIGIN_RAW", width, right_justify, true);
 	else {
 		int id = job->job_id >> 26;
 		if (id)

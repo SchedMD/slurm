@@ -1384,12 +1384,12 @@ extern int parse_long_format( char* format_long )
 							 field_size,
 							 right_justify,
 							 suffix );
-			else if (!xstrcasecmp(token, "fedorigin"))
+			else if (!xstrcasecmp(token, "origin"))
 				job_format_add_fed_origin(params.format_list,
 							  field_size,
 							  right_justify,
 							  suffix );
-			else if (!xstrcasecmp(token, "fedoriginraw"))
+			else if (!xstrcasecmp(token, "originraw"))
 				job_format_add_fed_origin_raw(
 							params.format_list,
 							field_size,

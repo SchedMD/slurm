@@ -1705,7 +1705,6 @@ static List _get_sib_will_runs(slurm_msg_t *msg, job_desc_msg_t *job_desc,
  * 	the unpacked job_desc. This is not used for the actual will_run because
  * 	job_allocate will modify the job_desc.
  * IN uid - uid of user submitting the job
- * OUT avail_sibs - bitmap of cluster ids that returned a will_run_response.
  * RET returns a ptr to a cluster_rec that can or start the job now or NULL if
  * 	no cluster can start the job now.
  */
