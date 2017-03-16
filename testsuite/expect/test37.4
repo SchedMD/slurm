@@ -268,7 +268,7 @@ proc validate_fed_job { cname job_id expected_origin expected_sib submit_cluster
 	if {$submit_cluster ne ""} {
 		set my_squeue "${fed_slurm_base}/$submit_cluster/bin/squeue"
 	}
-	spawn $my_squeue --jobs=$job_id --noheader -Ofedorigin,fedsiblings -a
+	spawn $my_squeue --jobs=$job_id --noheader -Oorigin,siblingsactive -a
 	expect {
 		-re "(\\S+)\\s+(\\S+)" {
 			set origin  $expect_out(1,string)
@@ -295,7 +295,7 @@ proc validate_fed_job { cname job_id expected_origin expected_sib submit_cluster
 			continue
 		}
 		set my_squeue "${fed_slurm_base}/$tmp_sib/bin/squeue"
-		spawn $my_squeue --jobs=$job_id --noheader -Ofedorigin,fedsiblings
+		spawn $my_squeue --jobs=$job_id --noheader -Oorigin,siblingsactive
 		set match 0
 		expect {
 			-re "(\\S+)\\s+(\\S+)" {
