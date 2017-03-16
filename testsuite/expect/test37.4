@@ -325,6 +325,31 @@ proc validate_fed_job { cname job_id expected_origin expected_sib submit_cluster
 	return $sibling
 }
 
+proc validate_cluster_features { cname job_id expected_features } {
+	global fed_slurm_base bin_bash bin_grep
+
+	set my_scontrol "${fed_slurm_base}/$cname/bin/scontrol"
+	set matches 0
+	set scontrol_pid [spawn $bin_bash -c "$my_scontrol show jobid=$job_id | $bin_grep ClusterFeatures="]
+	expect {
+		"ClusterFeatures=$expected_features" {
+			incr matches
+		}
+		timeout {
+			log_error "scontrol not responding"
+			slow_kill $scontrol_pid
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		log_error "$matches didn't find ClusterFeatures=$expected_features on job"
+		end_it 1
+	}
+}
+
 if {[test_federation_setup]} {
 	log_warn "WARNING: This test can't be run without fed_slurm_base,\
 		fedc1, fedc2, fedc3 setup in globals.local."
@@ -1111,7 +1136,9 @@ if {$job_id == 0} {
 	end_it 1
 }
 
-log_info "Set Features"
+send_user "\n################################################################\n"
+send_user "Set Features"
+send_user "\n################################################################\n"
 # set features
 set scontrol_pid [spawn $my_scontrol update jobid=$job_id clusterfeatures=fa]
 expect {
@@ -1124,30 +1151,13 @@ expect {
 		wait
 	}
 }
+validate_cluster_features $fedc1 $job_id "fa"
 
-set matches 0
-set scontrol_pid [spawn $bin_bash -c "$my_scontrol show jobid=$job_id | $bin_grep ClusterFeatures=fa"]
-expect {
-	"ClusterFeatures=fa" {
-		incr matches
-	}
-	timeout {
-		log_error "scontrol not responding"
-		slow_kill $scontrol_pid
-		end_it 1
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 1} {
-	log_error "$matches didn't find ClusterFeatures=fa on job"
-	end_it 1
-}
-
-set matches 0
-log_info "Invalid Features - the feature should stay the same."
+send_user "\n################################################################\n"
+send_user "Invalid Features - the feature should stay the same."
+send_user "\n################################################################\n"
 set scontrol_pid [spawn $my_scontrol update jobid=$job_id clusterfeatures=invalid]
+set matches 0
 expect {
 	"Invalid cluster feature specification for job" {
 		incr matches
@@ -1166,27 +1176,12 @@ if {$matches != 1} {
 	end_it 1
 }
 
-set matches 0
-set scontrol_pid [spawn bash -c "$my_scontrol show jobid=$job_id | $bin_grep ClusterFeatures=fa"]
-expect {
-	"ClusterFeatures=fa" {
-		incr matches
-	}
-	timeout {
-		log_error "scontrol not responding"
-		slow_kill $scontrol_pid
-		end_it 1
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 1} {
-	log_error "$matches didn't find ClusterFeatures=fa on job"
-	end_it 1
-}
+validate_cluster_features $fedc1 $job_id "fa"
 
-log_info "Clear Features"
+
+send_user "\n################################################################\n"
+send_user "Clear features"
+send_user "\n################################################################\n"
 set matches 0
 set scontrol_pid [spawn $my_scontrol update jobid=$job_id clusterfeatures=]
 expect {
