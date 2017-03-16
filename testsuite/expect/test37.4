@@ -1145,11 +1145,11 @@ if {$matches != 1} {
 	end_it 1
 }
 
-log_info "Invalid Features"
 set matches 0
-set scontrol_pid [spawn bash -c "$my_scontrol show jobid=$job_id | $bin_grep ClusterFeatures=fa"]
+log_info "Invalid Features - the feature should stay the same."
+set scontrol_pid [spawn $my_scontrol update jobid=$job_id clusterfeatures=invalid]
 expect {
-	"ClusterFeatures=fa" {
+	"Invalid cluster feature specification for job" {
 		incr matches
 	}
 	timeout {
@@ -1162,7 +1162,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	log_error "$matches didn't find ClusterFeatures=fa on job"
+	log_error "$matches scontrol didn't spit out correct error message"
 	end_it 1
 }
 
