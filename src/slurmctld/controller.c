@@ -361,13 +361,9 @@ int main(int argc, char **argv)
 	}
 
 	if (accounting_enforce && !association_based_accounting) {
-		slurm_ctl_conf_t *conf = slurm_conf_lock();
-		conf->track_wckey = false;
-		conf->accounting_storage_enforce = 0;
 		accounting_enforce = 0;
 		slurmctld_conf.track_wckey = false;
 		slurmctld_conf.accounting_storage_enforce = 0;
-		slurm_conf_unlock();
 
 		error("You can not have AccountingStorageEnforce "
 		      "set for AccountingStorageType='%s'",
