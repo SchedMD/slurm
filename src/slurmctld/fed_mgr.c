@@ -2181,10 +2181,11 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	lock_slurmctld(fed_read_lock);
 
 	/* Set potential siblings */
-	job_desc->fed_siblings_viable = _get_all_sibling_bits();
 	if (job_desc->clusters)
-		job_desc->fed_siblings_viable &=
+		job_desc->fed_siblings_viable =
 			_cluster_names_to_ids(job_desc->clusters);
+	else
+		job_desc->fed_siblings_viable = _get_all_sibling_bits();
 	if (feature_sibs)
 		job_desc->fed_siblings_viable &= feature_sibs;
 
@@ -2710,7 +2711,7 @@ extern int fed_mgr_sib_will_run(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	if (!job_desc->fed_siblings_viable) { /* may have been set to existing job's */
 		/* Set potential siblings */
 		if (job_desc->clusters)
-			job_desc->fed_siblings_viable &=
+			job_desc->fed_siblings_viable =
 				_cluster_names_to_ids(job_desc->clusters);
 		else
 			job_desc->fed_siblings_viable = _get_all_sibling_bits();
@@ -2995,7 +2996,7 @@ extern int fed_mgr_update_job_cluster_features(struct job_record *job_ptr,
 		old_sibs = job_ptr->fed_details->siblings_active;
 
 		if (job_ptr->clusters)
-			new_sibs &= _cluster_names_to_ids(job_ptr->clusters);
+			new_sibs = _cluster_names_to_ids(job_ptr->clusters);
 		else
 			new_sibs = _get_all_sibling_bits();
 		if (feature_sibs)
