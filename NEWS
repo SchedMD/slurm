@@ -81,6 +81,10 @@ documents those changes that are of interest to users and administrators.
     other half go to libslurmdb.so.
  -- Fix 'scontrol show jobs' to remove an errant newline when 'Switches' is
     printed.
+ -- Better code for handling memory required by a task on a heterogeneous
+    system.
+ -- Fix regression in 17.02.0 with respects to GrpTresMins on a QOS or
+    Association.
 
 * Changes in Slurm 17.02.1-2
 ============================
@@ -381,6 +385,8 @@ documents those changes that are of interest to users and administrators.
     active features if SyscfgPath is configured in the knl.conf file.
  -- Fix memory error when updating a job's licenses.
  -- Fix double read lock of tres when updating gres or licenses on a job.
+ -- Fix regression in 16.05.10 with respects to GrpTresMins on a QOS or
+    Association.
 
 * Changes in Slurm 16.05.10-2
 =============================

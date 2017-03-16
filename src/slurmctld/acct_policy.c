@@ -1061,9 +1061,9 @@ static bool _validate_tres_time_limits(
  *                        (tres_limit_array - curr_usage),
  *                        return TRES_USAGE_REQ_NOT_SAFE_WITH_USAGE
  *                        curr_usage will be 0 when not passed
- * IN - tres_usage - TRES (already used) optional; see tres_req_cnt section
+ * IN - tres_usage - TRES (currently running) optional; see tres_req_cnt section
  *                   above for tres_usage interaction
- * IN - curr_usage - TRES (currently running) optional; when set, check if:
+ * IN - curr_usage - TRES (already used) optional; when set, check if:
  *                   1) curr_usage > tres_limit_array
  *                      return TRES_USAGE_CUR_EXCEEDS_LIMIT
  *                   2) when safe_limits is true, see tres_req_cnt section
@@ -1822,7 +1822,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 	tres_usage = _validate_tres_usage_limits_for_qos(
 		&tres_pos, qos_ptr->grp_tres_mins_ctld,
 		qos_out_ptr->grp_tres_mins_ctld, job_tres_time_limit,
-		tres_usage_mins, tres_run_mins, job_ptr->limit_set.tres,
+		tres_run_mins, tres_usage_mins, job_ptr->limit_set.tres,
 		safe_limits);
 	switch (tres_usage) {
 	case TRES_USAGE_CUR_EXCEEDS_LIMIT:
@@ -3128,8 +3128,8 @@ extern bool acct_policy_job_runnable_post_select(
 		tres_usage = _validate_tres_usage_limits_for_assoc(
 			&tres_pos, assoc_ptr->grp_tres_mins_ctld,
 			qos_rec.grp_tres_mins_ctld,
-			job_tres_time_limit, tres_usage_mins,
-			tres_run_mins, job_ptr->limit_set.tres,
+			job_tres_time_limit, tres_run_mins,
+			tres_usage_mins, job_ptr->limit_set.tres,
 			safe_limits);
 		switch (tres_usage) {
 		case TRES_USAGE_CUR_EXCEEDS_LIMIT:
