@@ -3017,15 +3017,13 @@ extern int fed_mgr_update_job_cluster_features(struct job_record *job_ptr,
 		}
 
 		/* Don't submit new sibilings if the job is held */
-		if (job_ptr->priority != 0 && add_sibs) {
+		if (job_ptr->priority != 0 && add_sibs)
 			_prepare_submit_siblings(job_ptr);
 
-			/* unrevoke the origin job and add active sib */
-			if (fed_mgr_is_origin_job(job_ptr) &&
-			    (add_sibs & FED_SIBLING_BIT(origin_id))) {
-				job_ptr->job_state &= ~JOB_REVOKED;
-			}
-		}
+		/* unrevoke the origin job */
+		if (fed_mgr_is_origin_job(job_ptr) &&
+		    (add_sibs & FED_SIBLING_BIT(origin_id)))
+			job_ptr->job_state &= ~JOB_REVOKED;
 
 		/* update siblings_viable bitmaps on existing siblings_active */
 		if (existing_sibs)
