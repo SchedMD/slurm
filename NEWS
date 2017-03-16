@@ -41,6 +41,8 @@ documents those changes that are of interest to users and administrators.
     other half go to libslurmdb.so.
  -- Fix 'scontrol show jobs' to remove an errant newline when 'Switches' is
     printed.
+ -- Better code for handling memory required by a task on a heterogeneous
+    system.
 
 * Changes in Slurm 17.02.1-2
 ============================

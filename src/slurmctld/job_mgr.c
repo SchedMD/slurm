@@ -7426,6 +7426,24 @@ static char *_copy_nodelist_no_dup(char *node_list)
 	return buf;
 }
 
+/* Return the number of CPUs on the first node in the identified partition */
+static uint16_t _cpus_per_node_part(struct part_record *part_ptr)
+{
+	int node_inx = -1;
+	struct node_record *node_ptr;
+
+	if (part_ptr->node_bitmap)
+		node_inx = bit_ffs(part_ptr->node_bitmap);
+	if (node_inx >= 0) {
+		node_ptr = node_record_table_ptr + node_inx;
+		if (slurmctld_conf.fast_schedule)
+			return node_ptr->config_ptr->cpus;
+		else
+			return node_ptr->cpus;
+	}
+	return 0;
+}
+
 static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg,
 			      struct part_record *part_ptr)
 {
@@ -7482,34 +7500,58 @@ static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg,
 		return false;
 	}
 
-	/* Our size is per CPU and limit per node or vice-versa.
-	 * CPU count my vary by node, but we don't have a good
-	 * way to identify specific nodes for the job at this
-	 * point, so just pick the first node as a basis for enforcing
-	 * MaxMemPerCPU and convert both numbers to per-node values. */
-	if (slurmctld_conf.fast_schedule)
-		cpus_per_node = node_record_table_ptr[0].config_ptr->cpus;
-	else
-		cpus_per_node = node_record_table_ptr[0].cpus;
-	if (job_desc_msg->min_cpus != NO_VAL)
-		cpus_per_node = MIN(cpus_per_node, job_desc_msg->min_cpus);
+	/* Job and system have different memory limit forms (i.e. one is a
+	 * per-job and the other is per-node). Covert them both to per-node
+	 * values for comparison. */
+	if ((part_ptr->max_share == 0) || (job_desc_msg->shared == 0)) {
+		/* Whole node allocation */
+		cpus_per_node = _cpus_per_node_part(part_ptr);
+	} else {
+		if ((job_desc_msg->ntasks_per_node != (uint16_t) NO_VAL) &&
+		    (job_desc_msg->ntasks_per_node != 0))
+			cpus_per_node = job_desc_msg->ntasks_per_node;
+		else
+			cpus_per_node = 1;
+
+		if ((job_desc_msg->num_tasks != NO_VAL) &&
+		    (job_desc_msg->num_tasks != 0)     &&
+		    (job_desc_msg->max_nodes != NO_VAL) &&
+		    (job_desc_msg->max_nodes != 0)) {
+			cpus_per_node = MAX(cpus_per_node,
+				((job_desc_msg->num_tasks +
+				  job_desc_msg->max_nodes - 1) /
+				 job_desc_msg->max_nodes));
+		}
+
+		if ((job_desc_msg->cpus_per_task != (uint16_t) NO_VAL) &&
+		    (job_desc_msg->cpus_per_task != 0))
+			cpus_per_node *= job_desc_msg->cpus_per_task;
+
+		if ((job_desc_msg->pn_min_cpus != (uint16_t) NO_VAL) &&
+		    (job_desc_msg->pn_min_cpus > cpus_per_node))
+			cpus_per_node = job_desc_msg->pn_min_cpus;
+	}
+
 	if (job_mem_limit & MEM_PER_CPU) {
+		/* Job has per-CPU memory limit, system has per-node limit */
 		job_mem_limit &= (~MEM_PER_CPU);
 		job_mem_limit *= cpus_per_node;
 	} else {
+		/* Job has per-node memory limit, system has per-CPU limit */
 		uint32_t min_cpus;
 		sys_mem_limit &= (~MEM_PER_CPU);
 		min_cpus = (job_mem_limit + sys_mem_limit - 1) / sys_mem_limit;
+
 		if ((job_desc_msg->pn_min_cpus == (uint16_t) NO_VAL) ||
 		    (job_desc_msg->pn_min_cpus < min_cpus)) {
 			debug("Setting job's pn_min_cpus to %u due to memory "
 			      "limit", min_cpus);
 			job_desc_msg->pn_min_cpus = min_cpus;
-			sys_mem_limit *= min_cpus;
-		} else {
-			sys_mem_limit *= cpus_per_node;
+			cpus_per_node = MAX(cpus_per_node, min_cpus);
 		}
+		sys_mem_limit *= cpus_per_node;
 	}
+
 	if (job_mem_limit <= sys_mem_limit)
 		return true;
 	return false;
