@@ -815,8 +815,8 @@ static bool _validate_tres_limits_for_assoc(
  * IN - tres_limit_array - TRES limits from an association
  * IN - qos_tres_limit_array - TRES limits QOS has imposed already
  * IN - tres_req_cnt - TRES requested from the job
- * IN - tres_usage - TRES usage from the association (in minutes)
- * IN - curr_usage - TRES usage in use right now by the assoc (running jobs)
+ * IN - tres_usage - TRES usage in use right now by the assoc (running jobs)
+ * IN - curr_usage - TRES usage from the association (in minutes)
  * IN - admin_limit_set - TRES limits that have been overridden by an admin
  * IN - safe_limits - if the safe flag was set on AccountingStorageEnforce
  *
@@ -1083,8 +1083,8 @@ static bool _validate_tres_time_limits(
  * IN/OUT - out_tres_limit_array - TRES limits QOS has imposed already, if a new
  *                                 limit is found the limit is filled in.
  * IN - tres_req_cnt - TRES requested from the job
- * IN - tres_usage - TRES usage from the QOS (in minutes)
- * IN - curr_usage - TRES usage in use right now by the QOS (running jobs)
+ * IN - tres_usage - TRES usage in use right now by the QOS (running jobs)
+ * IN - curr_usage - TRES usage from the QOS (in minutes)
  * IN - admin_limit_set - TRES limits that have been overridden by an admin
  * IN - safe_limits - if the safe flag was set on AccountingStorageEnforce
  *
@@ -1757,7 +1757,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 	i = _validate_tres_usage_limits_for_qos(
 		&tres_pos, qos_ptr->grp_tres_mins_ctld,
 		qos_out_ptr->grp_tres_mins_ctld, job_tres_time_limit,
-		tres_usage_mins, tres_run_mins, job_ptr->limit_set.tres,
+		tres_run_mins, tres_usage_mins, job_ptr->limit_set.tres,
 		safe_limits);
 	switch (i) {
 	case 1:
@@ -3059,8 +3059,8 @@ extern bool acct_policy_job_runnable_post_select(
 		i = _validate_tres_usage_limits_for_assoc(
 			&tres_pos, assoc_ptr->grp_tres_mins_ctld,
 			qos_rec.grp_tres_mins_ctld,
-			job_tres_time_limit, tres_usage_mins,
-			tres_run_mins, job_ptr->limit_set.tres,
+			job_tres_time_limit, tres_run_mins,
+			tres_usage_mins, job_ptr->limit_set.tres,
 			safe_limits);
 		switch (i) {
 		case 1:
