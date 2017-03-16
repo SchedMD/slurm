@@ -2052,6 +2052,20 @@ fini:
 	return sib_bits;
 }
 
+static uint64_t _get_viable_sibs(char *req_clusters, uint64_t feature_sibs)
+{
+	uint64_t viable_sibs = 0;
+
+	if (req_clusters)
+		viable_sibs = _cluster_names_to_ids(req_clusters);
+	else
+		viable_sibs = _get_all_sibling_bits();
+	if (feature_sibs)
+		viable_sibs &= feature_sibs;
+
+	return viable_sibs;
+}
+
 /*
  * Validate requested job cluster features against each cluster's features.
  *
@@ -2180,14 +2194,9 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 
 	lock_slurmctld(fed_read_lock);
 
-	/* Set potential siblings */
-	if (job_desc->clusters)
-		job_desc->fed_siblings_viable =
-			_cluster_names_to_ids(job_desc->clusters);
-	else
-		job_desc->fed_siblings_viable = _get_all_sibling_bits();
-	if (feature_sibs)
-		job_desc->fed_siblings_viable &= feature_sibs;
+	/* Set viable siblings */
+	job_desc->fed_siblings_viable = _get_viable_sibs(job_desc->clusters,
+							 feature_sibs);
 
 	if (!job_held && (job_desc->begin_time <= now)) {
 		/* Don't job/node write lock on _find_start_now_sib. It locks
@@ -2708,16 +2717,9 @@ extern int fed_mgr_sib_will_run(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		unlock_slurmctld(job_write_lock);
 	}
 
-	if (!job_desc->fed_siblings_viable) { /* may have been set to existing job's */
-		/* Set potential siblings */
-		if (job_desc->clusters)
-			job_desc->fed_siblings_viable =
-				_cluster_names_to_ids(job_desc->clusters);
-		else
-			job_desc->fed_siblings_viable = _get_all_sibling_bits();
-		if (feature_sibs)
-			job_desc->fed_siblings_viable &= feature_sibs;
-	}
+	if (!job_desc->fed_siblings_viable) /* not using job_ptr's */
+		job_desc->fed_siblings_viable =
+			_get_viable_sibs(job_desc->clusters, feature_sibs);
 
 	if (!(sib_willruns = _get_sib_will_runs(msg, job_desc, uid))) {
 		error("Failed to get any will_run responses from any sibs");
@@ -2995,12 +2997,7 @@ extern int fed_mgr_update_job_cluster_features(struct job_record *job_ptr,
 		 * new siblings. */
 		old_sibs = job_ptr->fed_details->siblings_active;
 
-		if (job_ptr->clusters)
-			new_sibs = _cluster_names_to_ids(job_ptr->clusters);
-		else
-			new_sibs = _get_all_sibling_bits();
-		if (feature_sibs)
-			new_sibs &= feature_sibs;
+		new_sibs = _get_viable_sibs(job_ptr->clusters, feature_sibs);
 		job_ptr->fed_details->siblings_viable = new_sibs;
 
 		add_sibs      =  new_sibs & ~old_sibs;
