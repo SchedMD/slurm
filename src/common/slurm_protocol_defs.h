@@ -910,7 +910,9 @@ typedef struct composite_msg {
  * the job epilog. */
 
 #define SIG_OOM		253	/* Dummy signal value for out of memory
-				 * (OOM) notification */
+				 * (OOM) notification. Exist status reported as
+				 * 0:125 (0x80 is the signal flag and
+				 * 253 - 128 = 125) */
 #define SIG_UME		992	/* Dummy signal value for uncorrectable memory
 				 * error (UME) notification */
 #define SIG_REQUEUED	993	/* Dummy signal value to job requeue */
