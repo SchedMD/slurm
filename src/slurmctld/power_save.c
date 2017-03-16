@@ -428,7 +428,6 @@ static pid_t _run_prog(char *prog, char *arg1, char *arg2, uint32_t job_id)
 	int i;
 	char *argv[4], job_id_str[32], *pname;
 	pid_t child;
-	slurm_ctl_conf_t *ctlconf;
 
 	if (prog == NULL)	/* disabled, useful for testing */
 		return -1;
@@ -449,9 +448,7 @@ static pid_t _run_prog(char *prog, char *arg1, char *arg2, uint32_t job_id)
 		for (i = 0; i < 1024; i++)
 			(void) close(i);
 		setpgid(0, 0);
-		ctlconf = slurm_conf_lock();
-		setenv("SLURM_CONF", ctlconf->slurm_conf, 1);
-		slurm_conf_unlock();
+		setenv("SLURM_CONF", slurmctld_conf.slurm_conf, 1);
 		if (job_id)
 			setenv("SLURM_JOB_ID", job_id_str, 1);
 		execv(prog, argv);
@@ -582,27 +579,24 @@ static void _clear_power_config(void)
  * otherwise log the problem and return -1 */
 static int _init_power_config(void)
 {
-	slurm_ctl_conf_t *conf = slurm_conf_lock();
-
 	last_config     = slurmctld_conf.last_update;
 	last_work_scan  = 0;
 	last_log	= 0;
-	idle_time       = conf->suspend_time - 1;
-	suspend_rate    = conf->suspend_rate;
-	resume_timeout  = conf->resume_timeout;
-	resume_rate     = conf->resume_rate;
-	slurmd_timeout  = conf->slurmd_timeout;
-	suspend_timeout = conf->suspend_timeout;
+	idle_time       = slurmctld_conf.suspend_time - 1;
+	suspend_rate    = slurmctld_conf.suspend_rate;
+	resume_timeout  = slurmctld_conf.resume_timeout;
+	resume_rate     = slurmctld_conf.resume_rate;
+	slurmd_timeout  = slurmctld_conf.slurmd_timeout;
+	suspend_timeout = slurmctld_conf.suspend_timeout;
 	_clear_power_config();
-	if (conf->suspend_program)
-		suspend_prog = xstrdup(conf->suspend_program);
-	if (conf->resume_program)
-		resume_prog = xstrdup(conf->resume_program);
-	if (conf->suspend_exc_nodes)
-		exc_nodes = xstrdup(conf->suspend_exc_nodes);
-	if (conf->suspend_exc_parts)
-		exc_parts = xstrdup(conf->suspend_exc_parts);
-	slurm_conf_unlock();
+	if (slurmctld_conf.suspend_program)
+		suspend_prog = xstrdup(slurmctld_conf.suspend_program);
+	if (slurmctld_conf.resume_program)
+		resume_prog = xstrdup(slurmctld_conf.resume_program);
+	if (slurmctld_conf.suspend_exc_nodes)
+		exc_nodes = xstrdup(slurmctld_conf.suspend_exc_nodes);
+	if (slurmctld_conf.suspend_exc_parts)
+		exc_parts = xstrdup(slurmctld_conf.suspend_exc_parts);
 
 	if (idle_time < 0) {	/* not an error */
 		debug("power_save module disabled, SuspendTime < 0");

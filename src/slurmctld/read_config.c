@@ -497,12 +497,10 @@ static int _build_all_nodeline_info(void)
 	/* Now perform operations on the node table as needed by slurmctld */
 #ifdef HAVE_BG
 {
-	slurm_ctl_conf_t *conf = slurm_conf_lock();
 	char *node_000 = NULL;
 	struct node_record *node_rec = NULL;
-	if (conf->node_prefix)
-		node_000 = xstrdup(conf->node_prefix);
-	slurm_conf_unlock();
+	if (slurmctld_conf.node_prefix)
+		node_000 = xstrdup(slurmctld_conf.node_prefix);
 #if (SYSTEM_DIMENSIONS == 3)
 	xstrcat(node_000, "000");
 #endif
@@ -1420,13 +1418,10 @@ static int _restore_node_state(int recover,
 	struct node_record *node_ptr, *old_node_ptr;
 	int i, rc = SLURM_SUCCESS;
 	hostset_t hs = NULL;
-	slurm_ctl_conf_t *conf = slurm_conf_lock();
 	bool power_save_mode = false;
 
-	if (conf->suspend_program && conf->resume_program)
+	if (slurmctld_conf.suspend_program && slurmctld_conf.resume_program)
 		power_save_mode = true;
-	slurm_conf_unlock();
-
 
 	for (i=0, node_ptr=node_record_table_ptr; i<node_record_count;
 	     i++, node_ptr++) {
