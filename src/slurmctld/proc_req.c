@@ -641,7 +641,7 @@ static void _throttle_fini(int *active_rpc_cnt)
  */
 static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 {
-	slurm_ctl_conf_t *conf;
+	slurm_ctl_conf_t *conf = &slurmctld_conf;
 	char *licenses_used;
 	uint32_t next_job_id;
 
@@ -649,8 +649,6 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	licenses_used = get_licenses_used();
 
 	next_job_id   = get_next_job_id(true);
-
-	conf = slurm_conf_lock();
 
 	memset(conf_ptr, 0, sizeof(slurm_ctl_conf_t));
 
@@ -904,9 +902,6 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->unkillable_timeout  = conf->unkillable_timeout;
 	conf_ptr->version             = xstrdup(SLURM_VERSION_STRING);
 	conf_ptr->vsize_factor        = conf->vsize_factor;
-
-	slurm_conf_unlock();
-	return;
 }
 
 /*
