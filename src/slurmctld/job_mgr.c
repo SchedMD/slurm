@@ -7503,7 +7503,8 @@ static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg,
 	/* Job and system have different memory limit forms (i.e. one is a
 	 * per-job and the other is per-node). Covert them both to per-node
 	 * values for comparison. */
-	if ((part_ptr->max_share == 0) || (job_desc_msg->shared == 0)) {
+	if ((part_ptr && part_ptr->max_share == 0) ||
+	    (job_desc_msg->shared == 0)) {
 		/* Whole node allocation */
 		cpus_per_node = _cpus_per_node_part(part_ptr);
 	} else {
