@@ -11591,31 +11591,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
-	if (job_specs->cluster_features) {
-		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
-			error_code = ESLURM_JOB_NOT_PENDING;
-		else if (job_specs->cluster_features[0] != '\0') {
-			if (!fed_mgr_is_active()) {
-				info("sched: update_job: setting ClusterFeatures on a non-active federated cluster for job %u",
-				     job_ptr->job_id);
-				error_code = ESLURM_INVALID_FEATURE;
-			} else if (fed_mgr_validate_cluster_features(
-					job_specs->cluster_features, NULL)) {
-				info("sched: update_job: invalid ClusterFeatures for job %u",
-				     job_ptr->job_id);
-				error_code = ESLURM_INVALID_FEATURE;
-			} else {
-				xfree(detail_ptr->cluster_features);
-				detail_ptr->cluster_features =
-					xstrdup(job_specs->cluster_features);
-			}
-		} else {
-			info("sched: update_job: cleared ClusterFeatures for job %u",
-			     job_ptr->job_id);
-			xfree(detail_ptr->cluster_features);
-		}
-	}
-	if (error_code != SLURM_SUCCESS)
+	if (job_specs->cluster_features &&
+	    (error_code = fed_mgr_update_job_cluster_features(
+					job_ptr, job_specs->cluster_features)))
 		goto fini;
 
 	if (gres_list) {
