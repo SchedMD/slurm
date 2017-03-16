@@ -1417,7 +1417,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * from job's allocation, default NONE */
 	char *features;		/* required feature specification,
 				 * default NONE */
-	uint64_t fed_siblings;	/* Bitmap of federation siblings */
+	uint64_t fed_siblings_active; /* Bitmap of active fed sibling ids */
+	uint64_t fed_siblings_viable; /* Bitmap of viable fed sibling ids */
 	char *gres;		/* comma separated list of required generic
 				 * resources, default NONE */
 	uint32_t group_id;	/* group to assume, if run as root. */
@@ -1596,8 +1597,10 @@ typedef struct job_info {
 	uint32_t exit_code;	/* exit code for job (status from wait call) */
 	char *features;		/* comma separated list of required features */
 	char *fed_origin_str;	/* Origin cluster's name */
-	uint64_t fed_siblings;	/* bitmap of sibling cluster ids */
-	char *fed_siblings_str;	/* string of sibling cluster names */
+	uint64_t fed_siblings_active;  /* bitmap of active fed sibling ids */
+	char *fed_siblings_active_str; /* string of active sibling names */
+	uint64_t fed_siblings_viable;  /* bitmap of viable fed sibling ids */
+	char *fed_siblings_viable_str; /* string of viable sibling names */
 	char *gres;		/* comma separated list of generic resources */
 	uint32_t gres_detail_cnt; /* Count of gres_detail_str records,
 				 * one per allocated node */

@@ -1695,14 +1695,14 @@ int _print_job_fed_origin_raw(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
-int _print_job_fed_siblings(job_info_t * job, int width, bool right_justify,
-			    char* suffix)
+int _print_job_fed_siblings_active(job_info_t * job, int width,
+				   bool right_justify, char* suffix)
 {
 	if (job == NULL)
-		_print_str("FED_SIBLINGS", width, right_justify, true);
+		_print_str("ACTIVE_SIBLINGS", width, right_justify, true);
 	else {
-		if (job->fed_siblings_str)
-			_print_str(job->fed_siblings_str, width, right_justify,
+		if (job->fed_siblings_active_str)
+			_print_str(job->fed_siblings_active_str, width, right_justify,
 				   true);
 		else
 			_print_str("NA", width, right_justify, true);
@@ -1713,15 +1713,60 @@ int _print_job_fed_siblings(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
-int _print_job_fed_siblings_raw(job_info_t * job, int width, bool right_justify,
-				char* suffix)
+int _print_job_fed_siblings_active_raw(job_info_t * job, int width,
+				       bool right_justify, char* suffix)
 {
 	if (job == NULL)
-		_print_str("FED_SIBLINGS_RAW", width, right_justify, true);
+		_print_str("ACTIVE_SIBLINGS_RAW", width, right_justify, true);
 	else {
 		int bit = 1;
 		char *ids = NULL;
-		uint64_t tmp_sibs = job->fed_siblings;
+		uint64_t tmp_sibs = job->fed_siblings_active;
+		while (tmp_sibs) {
+			if (tmp_sibs & 1)
+				xstrfmtcat(ids, "%s%d", (ids) ? "," : "", bit);
+
+			tmp_sibs >>= 1;
+			bit++;
+		}
+		if (ids)
+			_print_str(ids, width, right_justify, true);
+		else
+			_print_str("NA", width, right_justify, true);
+	}
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_fed_siblings_viable(job_info_t * job, int width,
+				   bool right_justify, char* suffix)
+{
+	if (job == NULL)
+		_print_str("VIABLE_SIBLINGS", width, right_justify, true);
+	else {
+		if (job->fed_siblings_viable_str)
+			_print_str(job->fed_siblings_viable_str, width,
+				   right_justify, true);
+		else
+			_print_str("NA", width, right_justify, true);
+	}
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_fed_siblings_viable_raw(job_info_t * job, int width,
+				       bool right_justify, char* suffix)
+{
+	if (job == NULL)
+		_print_str("VIALBLE_SIBLINGS_RAW", width, right_justify, true);
+	else {
+		int bit = 1;
+		char *ids = NULL;
+		uint64_t tmp_sibs = job->fed_siblings_viable;
 		while (tmp_sibs) {
 			if (tmp_sibs & 1)
 				xstrfmtcat(ids, "%s%d", (ids) ? "," : "", bit);

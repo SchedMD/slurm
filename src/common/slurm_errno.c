@@ -446,6 +446,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Clusters can only be assigned to one federation" 	},
 	{ ESLURM_INVALID_CLUSTER_FEATURE,
 	  "Invalid cluster feature specification"		},
+	{ ESLURM_JOB_NOT_FEDERATED,
+	  "Not a valid federated job"				},
 
 	/* plugin and custom errors */
 	{ ESLURM_MISSING_TIME_LIMIT,

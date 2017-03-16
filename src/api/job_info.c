@@ -563,9 +563,11 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	}
 
 	/****** Line 14a (optional) ******/
-	if (job_ptr->fed_siblings) {
-		xstrfmtcat(out, "FedOrigin=%s FedSiblings=%s",
-			   job_ptr->fed_origin_str, job_ptr->fed_siblings_str);
+	if (job_ptr->fed_siblings_active || job_ptr->fed_siblings_viable) {
+		xstrfmtcat(out, "FedOrigin=%s ViableSiblings=%s ActiveSiblings=%s",
+			   job_ptr->fed_origin_str,
+			   job_ptr->fed_siblings_viable_str,
+			   job_ptr->fed_siblings_active_str);
 		xstrcat(out, line_end);
 	}
 

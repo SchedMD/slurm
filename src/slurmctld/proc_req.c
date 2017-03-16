@@ -2588,8 +2588,8 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg, bool is_sib_job)
 				if ((job_ptr =
 				     find_job_record(job_desc_msg->job_id)) &&
 				    job_ptr->fed_details)
-					job_desc_msg->fed_siblings =
-						job_ptr->fed_details->siblings;
+					job_desc_msg->fed_siblings_viable =
+					job_ptr->fed_details->siblings_active;
 				else if (!is_sib_job)
 					error_code = ESLURM_INVALID_JOB_ID;
 				unlock_slurmctld(job_read_lock);
@@ -6084,7 +6084,7 @@ static void _slurm_rpc_sib_submit_batch_job(uint32_t uid, slurm_msg_t *msg)
 	sib_msg_t *sib_msg       = msg->data;
 	job_desc_msg_t *job_desc = sib_msg->data;
 	job_desc->job_id         = sib_msg->job_id;
-	job_desc->fed_siblings   = sib_msg->fed_siblings;
+	job_desc->fed_siblings_viable = sib_msg->fed_siblings;
 
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
@@ -6122,8 +6122,8 @@ static void _slurm_rpc_sib_resource_allocation(uint32_t uid, slurm_msg_t *msg)
 	sib_msg_t *sib_msg       = msg->data;
 	job_desc_msg_t *job_desc = sib_msg->data;
 	job_desc->job_id         = sib_msg->job_id;
-	job_desc->fed_siblings   = sib_msg->fed_siblings;
 	job_desc->resp_host      = xstrdup(sib_msg->resp_host);
+	job_desc->fed_siblings_viable = sib_msg->fed_siblings;
 
 	if (!msg->conn) {
 		error("Security violation, SIB_RESOURCE_ALLOCATION RPC from uid=%d",

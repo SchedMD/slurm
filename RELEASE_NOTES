@@ -81,11 +81,16 @@ Added members to the following struct definitions
 In slurmbdb_cluster_fed_t: Added feature_list to hold cluster features.
 In job_desc_msg_t: Added cluster_features for passing cluster features to
 	controller.
+		   Renamed fed_siblings to fed_siblings_active.
+		   Added fed_siblings_viable.
 In job_info_t: Added cluster_features for passing back a job's cluster features
 	from the controller.
+               Renamed fed_siblings[_str] fed_siblings_active[_str]
+	       Added fed_siblings_viable[_str].
 In struct job_details: Added cluster_features to hold requestsed cluster
 	features.
-
+In job_fed_details_t: Rename siblings to siblings_active.
+		      Added siblings_viable.
 
 Added the following struct definitions
 ======================================

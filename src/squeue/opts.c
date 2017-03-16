@@ -1395,13 +1395,24 @@ extern int parse_long_format( char* format_long )
 							field_size,
 							right_justify,
 							suffix );
-			else if (!xstrcasecmp(token, "fedsiblings"))
-				job_format_add_fed_siblings(params.format_list,
-							    field_size,
-							    right_justify,
-							    suffix );
-			else if (!xstrcasecmp(token, "fedsiblingsraw"))
-				job_format_add_fed_siblings_raw(
+			else if (!xstrcasecmp(token, "siblingsactive"))
+				job_format_add_fed_siblings_active(
+							params.format_list,
+							field_size,
+							right_justify, suffix );
+			else if (!xstrcasecmp(token, "siblingsactiveraw"))
+				job_format_add_fed_siblings_active_raw(
+							params.format_list,
+							field_size,
+							right_justify,
+							suffix );
+			else if (!xstrcasecmp(token, "siblingsviable"))
+				job_format_add_fed_siblings_viable(
+							params.format_list,
+							field_size,
+							right_justify, suffix );
+			else if (!xstrcasecmp(token, "siblingsviableraw"))
+				job_format_add_fed_siblings_viable_raw(
 							params.format_list,
 							field_size,
 							right_justify,

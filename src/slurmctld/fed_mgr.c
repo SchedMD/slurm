@@ -1008,7 +1008,7 @@ static void _revoke_sibling_jobs(struct job_record *job_ptr,
 				 uint32_t cluster_id, time_t start_time)
 {
 	int id = 1;
-	uint64_t tmp_sibs = job_ptr->fed_details->siblings;
+	uint64_t tmp_sibs = job_ptr->fed_details->siblings_active;
 	while (tmp_sibs) {
 		if ((tmp_sibs & 1) &&
 		    (id != fed_mgr_cluster_rec->fed.id) &&
@@ -1596,7 +1596,7 @@ static uint64_t _cluster_names_to_ids(char *clusters)
  *
  * Must have fed_read_lock before entering and NO job locks.
  *
- * Will send willruns to the clusters set in job_desc->fed.siblings.
+ * Will send willruns to the clusters set in job_desc->fed_siblings_viable.
  *
  * IN msg - contains the original job_desc buffer to send to the siblings and to
  * 	be able to create a job_desc copy to willrun itself.
@@ -1645,7 +1645,7 @@ static List _get_sib_will_runs(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	/* willrun the sibling clusters */
 	sib_itr = list_iterator_create(fed_mgr_fed_rec->cluster_list);
 	while ((sibling = list_next(sib_itr))) {
-		if (!(job_desc->fed_siblings &
+		if (!(job_desc->fed_siblings_viable &
 		      FED_SIBLING_BIT(sibling->fed.id))) {
 			if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 				info("skipping cluster %s -- not in cluster list to submit job to",
@@ -1711,8 +1711,7 @@ static List _get_sib_will_runs(slurm_msg_t *msg, job_desc_msg_t *job_desc,
  */
 static slurmdb_cluster_rec_t *_find_start_now_sib(slurm_msg_t *msg,
 						  job_desc_msg_t *job_desc,
-						  uid_t uid,
-						  uint64_t *avail_sibs)
+						  uid_t uid)
 {
 	ListIterator itr;
 	List sib_willruns;
@@ -1721,7 +1720,6 @@ static slurmdb_cluster_rec_t *_find_start_now_sib(slurm_msg_t *msg,
 	slurmdb_cluster_rec_t *ret_sib = NULL;
 	time_t now = 0;
 
-	xassert(avail_sibs);
 	xassert(job_desc);
 	xassert(msg);
 
@@ -1738,8 +1736,6 @@ static slurmdb_cluster_rec_t *_find_start_now_sib(slurm_msg_t *msg,
 	while ((sib_willrun = list_next(itr))) {
 		if (!sib_willrun->resp) /* no response if job couldn't run? */
 			continue;
-
-		*avail_sibs |= FED_SIBLING_BIT(sib_willrun->sibling->fed.id);
 
 		/* Pick first sibling that can start the job now. siblings are
 		 * sorted by weight and resources. */
@@ -1836,8 +1832,8 @@ static void _update_sib_job_siblings(job_desc_msg_t *job_desc, uint64_t sibs)
 	slurm_attr_init(&attr);
 
 	slurm_init_job_desc_msg(&job_update_msg);
-	job_update_msg.job_id       = job_desc->job_id;
-	job_update_msg.fed_siblings = job_desc->fed_siblings;
+	job_update_msg.job_id              = job_desc->job_id;
+	job_update_msg.fed_siblings_viable = job_desc->fed_siblings_viable;
 
 	sib_itr = list_iterator_create(fed_mgr_fed_rec->cluster_list);
 	while ((sibling = list_next(sib_itr))) {
@@ -1882,11 +1878,12 @@ static void _update_sib_job_siblings(job_desc_msg_t *job_desc, uint64_t sibs)
 }
 
 /*
- * Submit sibling jobs to designated (job_desc->fed_siblings) siblings.
+ * Submit sibling jobs to designated siblings (job_desc->fed_siblings_viable).
  *
- * Will update job_desc->fed_siblings if a sibling fails to submit a job.
+ * Will update job_desc->fed_siblings_active with the successful submissions.
  *
- * IN job_desc - job_desc containing job_id and fed_siblings of job to be.
+ * IN job_desc - job_desc containing job_id and fed_siblings_viable of job to be
+ * 	submitted.
  * IN msg - contains the original job_desc buffer to send to the siblings.
  * IN alloc_only - true if just an allocation. false if a batch job.
  * RET returns SLURM_SUCCESS if all siblings recieved the job sucessfully or
@@ -1914,7 +1911,7 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 	sib_msg.data_buffer  = msg->buffer;
 	sib_msg.data_type    = msg->msg_type;
 	sib_msg.data_version = msg->protocol_version;
-	sib_msg.fed_siblings = job_desc->fed_siblings;
+	sib_msg.fed_siblings = job_desc->fed_siblings_viable;
 	sib_msg.job_id       = job_desc->job_id;
 	sib_msg.resp_host    = job_desc->resp_host;
 
@@ -1926,9 +1923,14 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 		if (sibling == fed_mgr_cluster_rec)
 			continue;
 
-		/* fed_siblings is set prior to siblings that responded */
-		if (!(job_desc->fed_siblings &
+		/* Only send to available siblings */
+		if (!(job_desc->fed_siblings_viable &
 		      FED_SIBLING_BIT(sibling->fed.id)))
+			continue;
+
+		/* skip sibling if the sibling already has a job */
+		if (job_desc->fed_siblings_active &
+		    FED_SIBLING_BIT(sibling->fed.id))
 			continue;
 
 		sub = xmalloc(sizeof(sib_submit_t));
@@ -1953,17 +1955,12 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 		pthread_join(tmp_sub->thread_id, NULL);
 		rc |= tmp_sub->thread_rc;
 
-		/* take out the job from the siblings bitmap if there was an
-		 * error. The local host should stay in it if it's there. */
-		if (tmp_sub->thread_rc)
-			job_desc->fed_siblings &=
-				(~FED_SIBLING_BIT(tmp_sub->sibling->fed.id));
+		/* Mark successful submission as active in fed_siblings */
+		if (!tmp_sub->thread_rc)
+			job_desc->fed_siblings_active |=
+				FED_SIBLING_BIT(tmp_sub->sibling->fed.id);
 	}
 	list_iterator_destroy(thread_itr);
-
-	if (rc && job_desc->fed_siblings) {
-		_update_sib_job_siblings(job_desc, INFINITE64);
-	}
 
 	slurm_attr_destroy(&attr);
 	FREE_NULL_LIST(submit_threads);
@@ -2078,9 +2075,10 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_cluster_rec_t *start_now_sib = NULL;
-	uint64_t avail_sibs = 0, feature_sibs = 0;
+	uint64_t feature_sibs = 0;
 	struct job_record *job_ptr = NULL;
 	time_t now = time(NULL);
+	bool job_held = false;
 	slurmctld_lock_t fed_read_lock = {
 		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 	slurmctld_lock_t job_write_lock = {
@@ -2106,6 +2104,9 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		return SLURM_ERROR;
 	}
 
+	if (job_desc->priority == 0)
+		job_held = true;
+
 	lock_slurmctld(job_write_lock);
 	/* get job_id now. Can't submit job to get job_id as job_allocate will
 	 * change the job_desc. */
@@ -2115,41 +2116,25 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	lock_slurmctld(fed_read_lock);
 
 	/* Set potential siblings */
-	job_desc->fed_siblings = _get_all_sibling_bits();
+	job_desc->fed_siblings_viable = _get_all_sibling_bits();
 	if (job_desc->clusters)
-		job_desc->fed_siblings &=
+		job_desc->fed_siblings_viable &=
 			_cluster_names_to_ids(job_desc->clusters);
 	if (feature_sibs)
-		job_desc->fed_siblings &= feature_sibs;
-	/* Set avail_sibs to fed.siblings in case job can't start now or is
-	 * being held. */
-	avail_sibs = job_desc->fed_siblings;
+		job_desc->fed_siblings_viable &= feature_sibs;
 
-	if ((job_desc->priority != 0) && (job_desc->begin_time <= now)) {
+	if (!job_held && (job_desc->begin_time <= now)) {
 		/* Don't job/node write lock on _find_start_now_sib. It locks
 		 * inside _sib_will_run */
-		start_now_sib = _find_start_now_sib(msg, job_desc, uid,
-						    &avail_sibs);
-
-		if (!avail_sibs) {
-			debug("No cluster responded to sibling will_runs");
-			avail_sibs = job_desc->fed_siblings;
-		}
+		start_now_sib = _find_start_now_sib(msg, job_desc, uid);
 	}
 
-	if (job_desc->priority == 0) {
-		/* don't submit siblings if the job held, siblings will be
-		 * submitted when the job is released. */
-		job_desc->fed_siblings = 0;
-	} else if (start_now_sib == NULL) {
-		job_desc->fed_siblings = avail_sibs;
-	} else if (start_now_sib == fed_mgr_cluster_rec) {
-		job_desc->fed_siblings =
-			FED_SIBLING_BIT(fed_mgr_cluster_rec->fed.id);
-	} else {
-		job_desc->fed_siblings =
+	if (start_now_sib)
+		job_desc->fed_siblings_viable =
 			FED_SIBLING_BIT(start_now_sib->fed.id);
-	}
+
+	/* ensure that fed_siblings_active is clear since this is a new job */
+	job_desc->fed_siblings_active = 0;
 
 	/* Submit local job first. Then submit to all siblings. If the local job
 	 * fails, then don't worry about sending to the siblings. */
@@ -2167,46 +2152,32 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		goto end_it;
 	}
 
+	/* mark this cluster as an active sibling if it's in the viable list */
+	if (job_desc->fed_siblings_viable &
+	    FED_SIBLING_BIT(fed_mgr_cluster_rec->fed.id))
+		job_desc->fed_siblings_active |=
+			FED_SIBLING_BIT(fed_mgr_cluster_rec->fed.id);
+
 	*job_id_ptr = job_ptr->job_id;
 
-	if (job_desc->priority == 0) {
-		job_ptr->fed_details = xmalloc(sizeof(job_fed_details_t));
+	if (job_held) {
 		info("Submitted held federated job %u to %s(self)",
 		     job_ptr->job_id, fed_mgr_cluster_rec->name);
 	} else {
 		info("Submitted %sfederated job %u to %s(self)",
-		     (!(job_ptr->fed_details->siblings &
+		     (!(job_ptr->fed_details->siblings_viable &
 			FED_SIBLING_BIT(fed_mgr_cluster_rec->fed.id)) ?
 		      "tracking " : ""),
 		     job_ptr->job_id, fed_mgr_cluster_rec->name);
 	}
 
+	if (!job_held && _submit_sibling_jobs(job_desc, msg, alloc_only))
+		info("failed to submit sibling job to one or more siblings");
+
+	job_ptr->fed_details->siblings_active = job_desc->fed_siblings_active;
+	update_job_fed_details(job_ptr);
+
 	unlock_slurmctld(job_write_lock);
-
-	if (_submit_sibling_jobs(job_desc, msg, alloc_only)) {
-		/* failed to submit a sibling job to a sibling. Need to update
-		 * the local job's sibling bitmap */
-
-		lock_slurmctld(job_write_lock);
-		if ((job_ptr->magic  == JOB_MAGIC) &&
-		    (job_ptr->job_id == *job_id_ptr)) {
-
-			if (!job_desc->fed_siblings) {
-				/* we know that we already have a job_ptr so
-				 * just make it a locally scheduleable job. */
-				error("Failed to submit fed job to siblings, submitting to local cluster");
-				job_desc->fed_siblings |=
-					FED_SIBLING_BIT(
-						fed_mgr_cluster_rec->fed.id);
-			}
-			set_job_fed_details(job_ptr, job_desc->fed_siblings);
-		} else {
-			error("%s: job got messed up. this should never happen",
-			      __func__);
-		}
-
-		unlock_slurmctld(job_write_lock);
-	}
 
 end_it:
 	unlock_slurmctld(fed_read_lock);
@@ -2231,8 +2202,8 @@ extern bool fed_mgr_is_tracker_only_job(struct job_record *job_ptr)
 
 	if (job_ptr->fed_details &&
 	    (origin_id == fed_mgr_cluster_rec->fed.id) &&
-	    job_ptr->fed_details->siblings &&
-	    (!(job_ptr->fed_details->siblings &
+	    job_ptr->fed_details->siblings_active &&
+	    (!(job_ptr->fed_details->siblings_active &
 	      FED_SIBLING_BIT(fed_mgr_cluster_rec->fed.id))))
 		rc = true;
 
@@ -2303,8 +2274,10 @@ extern int fed_mgr_job_lock(struct job_record *job_ptr, uint32_t cluster_id)
 		     job_ptr->job_id, cluster_id);
 
 	/* if this cluster is the only sibling, then just assume the lock */
-	if ((job_ptr->fed_details->siblings & FED_SIBLING_BIT(cluster_id)) &&
-	    (!(job_ptr->fed_details->siblings & ~FED_SIBLING_BIT(cluster_id))))
+	if ((job_ptr->fed_details->siblings_viable &
+	     FED_SIBLING_BIT(cluster_id)) &&
+	    (!(job_ptr->fed_details->siblings_viable &
+	       ~FED_SIBLING_BIT(cluster_id))))
 		return SLURM_SUCCESS;
 
 	if (origin_id != fed_mgr_cluster_rec->fed.id) {
@@ -2358,8 +2331,10 @@ extern int fed_mgr_job_unlock(struct job_record *job_ptr, uint32_t cluster_id)
 		     job_ptr->job_id, cluster_id);
 
 	/* if this cluster is the only sibling, then dont worry */
-	if ((job_ptr->fed_details->siblings & FED_SIBLING_BIT(cluster_id)) &&
-	    (!(job_ptr->fed_details->siblings & ~FED_SIBLING_BIT(cluster_id))))
+	if ((job_ptr->fed_details->siblings_viable &
+	     FED_SIBLING_BIT(cluster_id)) &&
+	    (!(job_ptr->fed_details->siblings_viable &
+	       ~FED_SIBLING_BIT(cluster_id))))
 		return SLURM_SUCCESS;
 
 	if (origin_id != fed_mgr_cluster_rec->fed.id) {
@@ -2422,15 +2397,19 @@ extern int fed_mgr_job_start(struct job_record *job_ptr, uint32_t cluster_id,
 			return SLURM_ERROR;
 		}
 
-		set_job_fed_details(job_ptr, FED_SIBLING_BIT(cluster_id));
+		job_ptr->fed_details->siblings_active =
+			FED_SIBLING_BIT(cluster_id);
+		update_job_fed_details(job_ptr);
 
 		return _persist_fed_job_start(origin_cluster, job_ptr->job_id,
 					      cluster_id, job_ptr->start_time);
 	}
 
 	/* Origin Cluster: */
-	if ((job_ptr->fed_details->siblings & FED_SIBLING_BIT(cluster_id)) &&
-	    (!(job_ptr->fed_details->siblings & ~FED_SIBLING_BIT(cluster_id))))
+	if ((job_ptr->fed_details->siblings_viable &
+	     FED_SIBLING_BIT(cluster_id)) &&
+	    (!(job_ptr->fed_details->siblings_viable &
+	       ~FED_SIBLING_BIT(cluster_id))))
 	{
 		/* if this cluster is the only sibling, then just assume the
 		 * lock */
@@ -2444,7 +2423,7 @@ extern int fed_mgr_job_start(struct job_record *job_ptr, uint32_t cluster_id,
 		error("attempt to start sib job %d by cluster %d which doesn't have job lock",
 		     job_ptr->job_id, cluster_id);
 		rc = SLURM_ERROR;
-	} else if (job_ptr->fed_details->siblings &
+	} else if (job_ptr->fed_details->siblings_active &
 		   ~FED_SIBLING_BIT(cluster_id)) {
 		/* cancel all sibling jobs if there are more siblings than just
 		 * the cluster that it came from */
@@ -2453,7 +2432,9 @@ extern int fed_mgr_job_start(struct job_record *job_ptr, uint32_t cluster_id,
 
 	if (!rc) {
 		/* Update where sibling jobs are running */
-		set_job_fed_details(job_ptr, FED_SIBLING_BIT(cluster_id));
+		job_ptr->fed_details->siblings_active =
+			FED_SIBLING_BIT(cluster_id);
+		update_job_fed_details(job_ptr);
 
 		if (cluster_id != fed_mgr_cluster_rec->fed.id) {
 			/* leave as pending so that it will stay around */
@@ -2658,14 +2639,15 @@ extern int fed_mgr_sib_will_run(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		unlock_slurmctld(job_write_lock);
 	}
 
-	if (!job_desc->fed_siblings) { /* may have been set to existing job's */
+	if (!job_desc->fed_siblings_viable) { /* may have been set to existing job's */
 		/* Set potential siblings */
-		job_desc->fed_siblings = _get_all_sibling_bits();
 		if (job_desc->clusters)
-			job_desc->fed_siblings &=
+			job_desc->fed_siblings_viable &=
 				_cluster_names_to_ids(job_desc->clusters);
+		else
+			job_desc->fed_siblings_viable = _get_all_sibling_bits();
 		if (feature_sibs)
-			job_desc->fed_siblings &= feature_sibs;
+			job_desc->fed_siblings_viable &= feature_sibs;
 	}
 
 	if (!(sib_willruns = _get_sib_will_runs(msg, job_desc, uid))) {
@@ -2807,12 +2789,14 @@ extern int fed_mgr_job_requeue(struct job_record *job_ptr)
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 		info("requeueing fed job %d", job_ptr->job_id);
 
+	/* clear where actual siblings were */
+	job_ptr->fed_details->siblings_active = 0;
+
 	/* don't submit siblings for jobs that are held */
 	if (job_ptr->priority == 0) {
 		job_ptr->job_state &= (~JOB_REQUEUE_FED);
 
-		/* clear siblings */
-		set_job_fed_details(job_ptr, 0);
+		update_job_fed_details(job_ptr);
 
 		/* clear cluster lock */
 		job_ptr->fed_details->cluster_lock = 0;
@@ -2829,12 +2813,12 @@ extern int fed_mgr_job_requeue(struct job_record *job_ptr)
 					  &feature_sibs);
 
 	if (job_ptr->clusters)
-		job_desc->fed_siblings =
+		job_desc->fed_siblings_viable =
 			_cluster_names_to_ids(job_ptr->clusters);
 	else
-		job_desc->fed_siblings = _get_all_sibling_bits();
+		job_desc->fed_siblings_viable = _get_all_sibling_bits();
 	if (feature_sibs)
-		job_desc->fed_siblings &= feature_sibs;
+		job_desc->fed_siblings_viable &= feature_sibs;
 
 	/* have to pack job_desc into a buffer */
 	slurm_msg_t_init(&msg);
@@ -2847,21 +2831,18 @@ extern int fed_mgr_job_requeue(struct job_record *job_ptr)
 	set_buf_offset(buffer, 0);
 	msg.buffer           = buffer;
 
-	if (_submit_sibling_jobs(job_desc, &msg, false)) {
-		/* failed to submit a sibling job to a sibling. Need to update
-		 * the local job's sibling bitmap */
-		if (!job_desc->fed_siblings) {
-			/* we know that we already have a job_ptr so
-			 * just make it a locallly scheduleable job. */
-			error("Failed to submit fed job to siblings, submitting to local cluster");
-			job_desc->fed_siblings |=
-				FED_SIBLING_BIT(fed_mgr_cluster_rec->fed.id);
-		}
-	}
+	if (_submit_sibling_jobs(job_desc, &msg, false))
+		if (!job_desc->fed_siblings_active)
+			error("Failed to submit fed job to any siblings");
 
-	/* set local job's fed_siblings. Could have been modified in
-	 * _submit_sibling_jobs() */
-	set_job_fed_details(job_ptr, job_desc->fed_siblings);
+	/* mark this cluster as an active sibling */
+	if (job_desc->fed_siblings_viable &
+	    FED_SIBLING_BIT(fed_mgr_cluster_rec->fed.id))
+		job_desc->fed_siblings_active |=
+			FED_SIBLING_BIT(fed_mgr_cluster_rec->fed.id);
+
+	job_ptr->fed_details->siblings_active = job_desc->fed_siblings_active;
+	update_job_fed_details(job_ptr);
 
 	free_buf(buffer);
 	/* free the environment since all strings are stored in one
@@ -2887,7 +2868,7 @@ static int _cancel_sibling_jobs(struct job_record *job_ptr, uint16_t signal,
 				uint16_t flags, uid_t uid)
 {
 	int id = 1;
-	uint64_t tmp_sibs = job_ptr->fed_details->siblings;
+	uint64_t tmp_sibs = job_ptr->fed_details->siblings_active;
 	while (tmp_sibs) {
 		if ((tmp_sibs & 1) &&
 		    (id != fed_mgr_cluster_rec->fed.id)) {

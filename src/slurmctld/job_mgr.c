@@ -7327,8 +7327,12 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	if (job_desc->cluster_features)
 		detail_ptr->cluster_features =
 			xstrdup(job_desc->cluster_features);
-	if (job_desc->fed_siblings)
-		set_job_fed_details(job_ptr, job_desc->fed_siblings);
+	if (job_desc->fed_siblings_viable) {
+		job_ptr->fed_details = xmalloc(sizeof(job_fed_details_t));
+		job_ptr->fed_details->siblings_viable =
+			job_desc->fed_siblings_viable;
+		update_job_fed_details(job_ptr);
+	}
 	if ((job_desc->shared == JOB_SHARED_NONE) && (select_serial == 0)) {
 		detail_ptr->share_res  = 0;
 		detail_ptr->whole_node = WHOLE_NODE_REQUIRED;
@@ -8916,10 +8920,17 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 
 		if (dump_job_ptr->fed_details) {
 			packstr(dump_job_ptr->fed_details->origin_str, buffer);
-			pack64(dump_job_ptr->fed_details->siblings, buffer);
-			packstr(dump_job_ptr->fed_details->siblings_str,
+			pack64(dump_job_ptr->fed_details->siblings_active,
+			       buffer);
+			packstr(dump_job_ptr->fed_details->siblings_active_str,
+				buffer);
+			pack64(dump_job_ptr->fed_details->siblings_viable,
+			       buffer);
+			packstr(dump_job_ptr->fed_details->siblings_viable_str,
 				buffer);
 		} else {
+			packnull(buffer);
+			pack64((uint64_t)0, buffer);
 			packnull(buffer);
 			pack64((uint64_t)0, buffer);
 			packnull(buffer);
@@ -9104,8 +9115,9 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 
 		if (dump_job_ptr->fed_details) {
 			packstr(dump_job_ptr->fed_details->origin_str, buffer);
-			pack64(dump_job_ptr->fed_details->siblings, buffer);
-			packstr(dump_job_ptr->fed_details->siblings_str,
+			pack64(dump_job_ptr->fed_details->siblings_active,
+			       buffer);
+			packstr(dump_job_ptr->fed_details->siblings_active_str,
 				buffer);
 		} else {
 			packnull(buffer);
@@ -12156,21 +12168,20 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		}
 	}
 
-	if (job_specs->fed_siblings) {
-		slurmctld_lock_t fed_read_lock = {
-			NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
-		if (job_ptr->fed_details)
-			info("update_job: setting fed_siblings from %"PRIu64" to %"PRIu64" for job_id %u",
-			     job_ptr->fed_details->siblings,
-			     job_specs->fed_siblings,
-			     job_ptr->job_id);
-		else
-			info("update_job: setting fed_siblings to %"PRIu64" for job_id %u",
-			     job_specs->fed_siblings,
-			     job_ptr->job_id);
-		lock_slurmctld(fed_read_lock);
-		set_job_fed_details(job_ptr, job_specs->fed_siblings);
-		unlock_slurmctld(fed_read_lock);
+	if (job_specs->fed_siblings_viable) {
+		if (!job_ptr->fed_details) {
+			error_code = ESLURM_JOB_NOT_FEDERATED;
+			goto fini;
+		}
+
+		info("update_job: setting fed_siblings from %"PRIu64" to %"PRIu64" for job_id %u",
+		     job_ptr->fed_details->siblings_viable,
+		     job_specs->fed_siblings_viable,
+		     job_ptr->job_id);
+
+		job_ptr->fed_details->siblings_viable =
+			job_specs->fed_siblings_viable;
+		update_job_fed_details(job_ptr);
 	}
 
 fini:
@@ -15658,8 +15669,12 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->ntasks_per_socket = mc_ptr->ntasks_per_socket;
 	job_desc->ntasks_per_core   = mc_ptr->ntasks_per_core;
 
-	if (job_ptr->fed_details)
-		job_desc->fed_siblings = job_ptr->fed_details->siblings;
+	if (job_ptr->fed_details) {
+		job_desc->fed_siblings_active =
+			job_ptr->fed_details->siblings_active;
+		job_desc->fed_siblings_viable =
+			job_ptr->fed_details->siblings_viable;
+	}
 #if 0
 	/* select_jobinfo is unused at job submit time, only it's
 	 * components are set. We recover those from the structure below.
@@ -16282,7 +16297,8 @@ static void _free_job_fed_details(job_fed_details_t **fed_details_pptr)
 
 	if (fed_details_ptr) {
 		xfree(fed_details_ptr->origin_str);
-		xfree(fed_details_ptr->siblings_str);
+		xfree(fed_details_ptr->siblings_active_str);
+		xfree(fed_details_ptr->siblings_viable_str);
 		xfree(fed_details_ptr);
 		*fed_details_pptr = NULL;
 	}
@@ -16295,8 +16311,10 @@ static void _dump_job_fed_details(job_fed_details_t *fed_details_ptr,
 		pack16(1, buffer);
 		pack32(fed_details_ptr->cluster_lock, buffer);
 		packstr(fed_details_ptr->origin_str, buffer);
-		pack64(fed_details_ptr->siblings, buffer);
-		packstr(fed_details_ptr->siblings_str, buffer);
+		pack64(fed_details_ptr->siblings_active, buffer);
+		packstr(fed_details_ptr->siblings_active_str, buffer);
+		pack64(fed_details_ptr->siblings_viable, buffer);
+		packstr(fed_details_ptr->siblings_viable_str, buffer);
 	} else {
 		pack16(0, buffer);
 	}
@@ -16320,9 +16338,16 @@ static int _load_job_fed_details(job_fed_details_t **fed_details_pptr,
 			safe_unpack32(&fed_details_ptr->cluster_lock, buffer);
 			safe_unpackstr_xmalloc(&fed_details_ptr->origin_str,
 					       &tmp_uint32, buffer);
-			safe_unpack64(&fed_details_ptr->siblings, buffer);
-			safe_unpackstr_xmalloc(&fed_details_ptr->siblings_str,
-					       &tmp_uint32, buffer);
+			safe_unpack64(&fed_details_ptr->siblings_active,
+				      buffer);
+			safe_unpackstr_xmalloc(
+					&fed_details_ptr->siblings_active_str,
+					&tmp_uint32, buffer);
+			safe_unpack64(&fed_details_ptr->siblings_viable,
+				      buffer);
+			safe_unpackstr_xmalloc(
+					&fed_details_ptr->siblings_viable_str,
+					&tmp_uint32, buffer);
 		}
 	} else if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		safe_unpack16(&tmp_uint16, buffer);
@@ -16332,9 +16357,11 @@ static int _load_job_fed_details(job_fed_details_t **fed_details_pptr,
 			safe_unpack32(&fed_details_ptr->cluster_lock, buffer);
 			safe_unpackstr_xmalloc(&fed_details_ptr->origin_str,
 					       &tmp_uint32, buffer);
-			safe_unpack64(&fed_details_ptr->siblings, buffer);
-			safe_unpackstr_xmalloc(&fed_details_ptr->siblings_str,
-					       &tmp_uint32, buffer);
+			safe_unpack64(&fed_details_ptr->siblings_viable,
+				      buffer);
+			safe_unpackstr_xmalloc(
+					&fed_details_ptr->siblings_viable_str,
+					&tmp_uint32, buffer);
 		}
 	}
 
@@ -16347,24 +16374,26 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern void set_job_fed_details(struct job_record *job_ptr,
-				uint64_t fed_siblings)
+/* Set federated job's sibling strings. */
+extern void update_job_fed_details(struct job_record *job_ptr)
 {
 	xassert(job_ptr);
+	xassert(job_ptr->fed_details);
 
-	if (!job_ptr->fed_details) {
-		job_ptr->fed_details =
-			xmalloc(sizeof(job_fed_details_t));
-	} else {
-		xfree(job_ptr->fed_details->siblings_str);
-		xfree(job_ptr->fed_details->origin_str);
-	}
+	xfree(job_ptr->fed_details->siblings_active_str);
+	xfree(job_ptr->fed_details->siblings_viable_str);
 
-	job_ptr->fed_details->siblings = fed_siblings;
-	job_ptr->fed_details->siblings_str =
-		fed_mgr_cluster_ids_to_names(fed_siblings);
-	job_ptr->fed_details->origin_str =
-		fed_mgr_get_cluster_name(
+	job_ptr->fed_details->siblings_active_str =
+		fed_mgr_cluster_ids_to_names(
+					job_ptr->fed_details->siblings_active);
+	job_ptr->fed_details->siblings_viable_str =
+		fed_mgr_cluster_ids_to_names(
+					job_ptr->fed_details->siblings_viable);
+
+	/* only set once */
+	if (!job_ptr->fed_details->origin_str)
+		job_ptr->fed_details->origin_str =
+			fed_mgr_get_cluster_name(
 				fed_mgr_get_cluster_id(job_ptr->job_id));
 }
 
