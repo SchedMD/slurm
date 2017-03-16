@@ -1350,14 +1350,12 @@ extern int select_p_state_save(char *dir_name)
 	slurm_mutex_unlock(&blade_mutex);
 
 	/* write the buffer to file */
-	slurm_conf_lock();
-	old_file = xstrdup(slurmctld_conf.state_save_location);
+	old_file = xstrdup(dir_name);
 	xstrcat(old_file, "/blade_state.old");
-	reg_file = xstrdup(slurmctld_conf.state_save_location);
+	reg_file = xstrdup(dir_name);
 	xstrcat(reg_file, "/blade_state");
-	new_file = xstrdup(slurmctld_conf.state_save_location);
+	new_file = xstrdup(dir_name);
 	xstrcat(new_file, "/blade_state.new");
-	slurm_conf_unlock();
 
 	log_fd = creat(new_file, 0600);
 	if (log_fd < 0) {
