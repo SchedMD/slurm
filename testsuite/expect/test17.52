@@ -136,13 +136,14 @@ expect {
 	}
 }
 
-exec $bin_sed -i /MCS/d $config_path/slurm.conf
-exec $bin_sed -i /mcs/d $config_path/slurm.conf
-exec $bin_sed -i /PrivateData/d $config_path/slurm.conf
-exec $bin_echo MCSPlugin=mcs/group >> $config_path/slurm.conf
+exec $bin_sed -i /^\s*MCSPlugin\s*=/Id $config_path/slurm.conf
+exec $bin_sed -i /^\s*MCSParameters\s*=/Id $config_path/slurm.conf
+exec $bin_sed -i /^\s*PrivateData\s*=/Id $config_path/slurm.conf
+exec $bin_echo -e "\nMCSPlugin=mcs/group" >> $config_path/slurm.conf
 exec $bin_echo MCSParameters=ondemand,select,privatedata:$groups_name >> $config_path/slurm.conf
 exec $bin_echo PrivateData=jobs,nodes >> $config_path/slurm.conf
 update_conf
+
 
 #
 # verify slurm conf parameters MCS
@@ -358,13 +359,14 @@ cancel_job $job_id
 # test with enforced
 #
 send_user "\n---Checking sbatch uses mcs-label with all jobs (enforced mode)---\n"
-exec $bin_sed -i /MCS/d $config_path/slurm.conf
-exec $bin_sed -i /mcs/d $config_path/slurm.conf
-exec $bin_sed -i /PrivateData/d $config_path/slurm.conf
-exec $bin_echo MCSPlugin=mcs/group >> $config_path/slurm.conf
+exec $bin_sed -i /^\s*MCSPlugin\s*=/Id $config_path/slurm.conf
+exec $bin_sed -i /^\s*MCSParameters\s*=/Id $config_path/slurm.conf
+exec $bin_sed -i /^\s*PrivateData\s*=/Id $config_path/slurm.conf
+exec $bin_echo -e "\nMCSPlugin=mcs/group" >> $config_path/slurm.conf
 exec $bin_echo MCSParameters=enforced,noselect,privatedata:$groups_name >> $config_path/slurm.conf
 exec $bin_echo PrivateData=jobs,nodes >> $config_path/slurm.conf
 update_conf
+
 
 ###### Check that sbatch uses mcs-label=group ######
 send_user "\n---Checking sbatch uses mcs-label=group---\n"
