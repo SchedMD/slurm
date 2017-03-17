@@ -1247,13 +1247,10 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		if (slurm_send_node_msg(msg->conn_fd, &response_msg) < 0)
 			_kill_job_on_msg_fail(job_ptr->job_id);
 
+		slurm_free_resource_allocation_response_msg_members(&alloc_msg);
+
 		schedule_job_save();	/* has own locks */
 		schedule_node_save();	/* has own locks */
-
-		if (!alloc_msg.node_cnt) /* didn't get an allocation */
-			queue_job_scheduler();
-
-		slurm_free_resource_allocation_response_msg_members(&alloc_msg);
 	} else {	/* allocate error */
 		if (do_unlock) {
 			unlock_slurmctld(job_write_lock);

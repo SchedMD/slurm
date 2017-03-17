@@ -46,7 +46,6 @@ documents those changes that are of interest to users and administrators.
  -- Fix regression in 17.02.0 with respects to GrpTresMins on a QOS or
     Association.
  -- Cleanup to make make dist work.
- -- Schedule interactive jobs quicker.
 
 * Changes in Slurm 17.02.1-2
 ============================
