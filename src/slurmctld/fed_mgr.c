@@ -2871,6 +2871,9 @@ extern int fed_mgr_job_requeue(struct job_record *job_ptr)
 		return SLURM_SUCCESS;
 	}
 
+	/* Don't worry about testing which clusters can start the job the
+	 * soonest since they can't start the job for 120 seconds anyways. */
+
 	_prepare_submit_siblings(job_ptr);
 
 	/* clear cluster lock */
