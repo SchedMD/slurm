@@ -359,9 +359,9 @@ cancel_job $job_id
 # test with enforced
 #
 send_user "\n---Checking sbatch uses mcs-label with all jobs (enforced mode)---\n"
-exec $bin_sed -i /^\s*MCSPlugin\s*=/Id $config_path/slurm.conf
-exec $bin_sed -i /^\s*MCSParameters\s*=/Id $config_path/slurm.conf
-exec $bin_sed -i /^\s*PrivateData\s*=/Id $config_path/slurm.conf
+exec $bin_sed -i /^\[\t\s\]*MCSPlugin\[\t\s\]*=/Id $config_path/slurm.conf
+exec $bin_sed -i /^\[\t\s\]*MCSParameters\[\t\s\]*=/Id $config_path/slurm.conf
+exec $bin_sed -i /^\[\t\s\]*PrivateData\[\t\s\]*=/Id $config_path/slurm.conf
 exec $bin_echo -e "\nMCSPlugin=mcs/group" >> $config_path/slurm.conf
 exec $bin_echo MCSParameters=enforced,noselect,privatedata:$groups_name >> $config_path/slurm.conf
 exec $bin_echo PrivateData=jobs,nodes >> $config_path/slurm.conf
