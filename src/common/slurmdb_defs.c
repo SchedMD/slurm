@@ -74,8 +74,10 @@ static void _free_cluster_rec_members(slurmdb_cluster_rec_t *cluster)
 		FREE_NULL_LIST(cluster->accounting_list);
 		xfree(cluster->control_host);
 		xfree(cluster->dim_size);
+		FREE_NULL_LIST(cluster->fed.feature_list);
 		xfree(cluster->fed.name);
 		slurm_persist_conn_destroy(cluster->fed.send);
+		slurm_mutex_destroy(&cluster->lock);
 		xfree(cluster->name);
 		xfree(cluster->nodes);
 		slurmdb_destroy_assoc_rec(cluster->root_assoc);
@@ -745,7 +747,6 @@ extern void slurmdb_destroy_cluster_rec(void *object)
 
 	if (slurmdb_cluster) {
 		_free_cluster_rec_members(slurmdb_cluster);
-		slurm_mutex_destroy(&slurmdb_cluster->lock);
 		xfree(slurmdb_cluster);
 	}
 }
@@ -2213,7 +2214,6 @@ extern char *get_qos_complete_str_bitstr(List qos_list, bitstr_t *valid_qos)
 	List temp_list = NULL;
 	char *temp_char = NULL;
 	char *print_this = NULL;
-	ListIterator itr = NULL;
 	int i = 0;
 
 	if (!qos_list || !list_count(qos_list)
@@ -2228,15 +2228,7 @@ extern char *get_qos_complete_str_bitstr(List qos_list, bitstr_t *valid_qos)
 		if ((temp_char = slurmdb_qos_str(qos_list, i)))
 			list_append(temp_list, temp_char);
 	}
-	list_sort(temp_list, (ListCmpF)slurm_sort_char_list_asc);
-	itr = list_iterator_create(temp_list);
-	while((temp_char = list_next(itr))) {
-		if (print_this)
-			xstrfmtcat(print_this, ",%s", temp_char);
-		else
-			print_this = xstrdup(temp_char);
-	}
-	list_iterator_destroy(itr);
+	print_this = slurm_char_list_to_xstr(temp_list);
 	FREE_NULL_LIST(temp_list);
 
 	if (!print_this)
@@ -2276,15 +2268,8 @@ extern char *get_qos_complete_str(List qos_list, List num_qos_list)
 		}
 	}
 	list_iterator_destroy(itr);
-	list_sort(temp_list, (ListCmpF)slurm_sort_char_list_asc);
-	itr = list_iterator_create(temp_list);
-	while((temp_char = list_next(itr))) {
-		if (print_this)
-			xstrfmtcat(print_this, ",%s", temp_char);
-		else
-			print_this = xstrdup(temp_char);
-	}
-	list_iterator_destroy(itr);
+
+	print_this = slurm_char_list_to_xstr(temp_list);
 	FREE_NULL_LIST(temp_list);
 
 	if (!print_this)
@@ -3147,6 +3132,13 @@ extern void slurmdb_copy_cluster_rec(slurmdb_cluster_rec_t *out,
 		out->root_assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
 		slurmdb_init_assoc_rec(out->root_assoc, 0);
 		slurmdb_copy_assoc_rec_limits( out->root_assoc, in->root_assoc);
+	}
+
+	FREE_NULL_LIST(out->fed.feature_list);
+	if (in->fed.feature_list) {
+		out->fed.feature_list = list_create(slurm_destroy_char);
+		slurm_char_list_copy(out->fed.feature_list,
+				     in->fed.feature_list);
 	}
 
 	/* Not copied currently:

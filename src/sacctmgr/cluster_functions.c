@@ -172,6 +172,8 @@ static int _set_rec(int *start, int argc, char **argv,
 	int command_len = 0;
 	int option = 0;
 
+	xassert(cluster);
+
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
 		if (!end)
@@ -200,18 +202,35 @@ static int _set_rec(int *start, int argc, char **argv,
 						      argv[i]+end);
 		} else if (!strncasecmp(argv[i], "Classification",
 					 MAX(command_len, 3))) {
-			if (cluster) {
-				cluster->classification =
-					str_2_classification(argv[i]+end);
-				if (cluster->classification)
-					rec_set = 1;
+			cluster->classification =
+				str_2_classification(argv[i]+end);
+			if (cluster->classification)
+				rec_set = 1;
+		} else if (!strncasecmp(argv[i], "Features",
+					MAX(command_len, 2))) {
+			if (*(argv[i]+end) == '\0' &&
+			    (option == '+' || option == '-')) {
+				printf(" You didn't specify any features to %s\n",
+				       (option == '-') ? "remove" : "add");
+				exit_code = 1;
+				break;
 			}
+
+			if (!cluster->fed.feature_list)
+				cluster->fed.feature_list =
+					list_create(slurm_destroy_char);
+			if ((slurm_addto_mode_char_list(cluster->fed.feature_list,
+						   argv[i]+end, option) < 0)) {
+				FREE_NULL_LIST(cluster->fed.feature_list);
+				exit_code = 1;
+				break;
+			}
+			rec_set = 1;
+
 		} else if (!strncasecmp(argv[i], "Federation",
 					 MAX(command_len, 3))) {
-			if (cluster) {
-				cluster->fed.name = xstrdup(argv[i]+end);
-				rec_set = 1;
-			}
+			cluster->fed.name = xstrdup(argv[i]+end);
+			rec_set = 1;
 		} else if (!strncasecmp(argv[i], "FedState",
 					 MAX(command_len, 2))) {
 			if (cluster) {
@@ -228,10 +247,8 @@ static int _set_rec(int *start, int argc, char **argv,
 			}
 		} else if (!strncasecmp(argv[i], "Weight",
 					 MAX(command_len, 2))) {
-			if (cluster) {
-				cluster->fed.weight = slurm_atoul(argv[i]+end);
-				rec_set = 1;
-			}
+			cluster->fed.weight = slurm_atoul(argv[i]+end);
+			rec_set = 1;
 		} else if (!strncasecmp(argv[i], "GrpCPURunMins",
 					 MAX(command_len, 7)) ||
 			   !strncasecmp(argv[i], "GrpTRESRunMins",
@@ -490,8 +507,9 @@ extern int sacctmgr_list_cluster(int argc, char **argv)
 					      "MaxTRES,MaxS,MaxW,QOS,"
 					      "DefaultQOS");
 		if (with_fed)
-			slurm_addto_char_list(format_list,
-					      "Federation,ID,Weight,FedState");
+			slurm_addto_char_list(
+				format_list,
+				"Federation,ID,Weight,Features,FedState");
 	}
 
 	cluster_cond->with_deleted = with_deleted;
@@ -548,6 +566,11 @@ extern int sacctmgr_list_cluster(int argc, char **argv)
 				field->print_routine(field,
 						     get_classification_str(
 						     cluster->classification),
+						     (curr_inx == field_count));
+				break;
+			case PRINT_FEATURES:
+				field->print_routine(field,
+						     cluster->fed.feature_list,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_FEDERATION:

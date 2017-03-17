@@ -1394,6 +1394,18 @@ int _print_job_features(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
+int _print_job_cluster_features(job_info_t * job, int width, bool right_justify,
+				char* suffix)
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("CLUSTER_FEATURES", width, right_justify, true);
+	else
+		_print_str(job->cluster_features, width, right_justify, true);
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_job_account(job_info_t * job, int width, bool right_justify,
 			char* suffix)
 {
@@ -1651,7 +1663,7 @@ int _print_job_fed_origin(job_info_t * job, int width, bool right_justify,
 			    char* suffix)
 {
 	if (job == NULL)
-		_print_str("FED_ORIGIN", width, right_justify, true);
+		_print_str("ORIGIN", width, right_justify, true);
 	else {
 		if (job->fed_origin_str)
 			_print_str(job->fed_origin_str, width, right_justify,
@@ -1669,7 +1681,7 @@ int _print_job_fed_origin_raw(job_info_t * job, int width, bool right_justify,
 			      char* suffix)
 {
 	if (job == NULL)
-		_print_str("FED_ORIGIN_RAW", width, right_justify, true);
+		_print_str("ORIGIN_RAW", width, right_justify, true);
 	else {
 		int id = job->job_id >> 26;
 		if (id)
@@ -1683,14 +1695,14 @@ int _print_job_fed_origin_raw(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
-int _print_job_fed_siblings(job_info_t * job, int width, bool right_justify,
-			    char* suffix)
+int _print_job_fed_siblings_active(job_info_t * job, int width,
+				   bool right_justify, char* suffix)
 {
 	if (job == NULL)
-		_print_str("FED_SIBLINGS", width, right_justify, true);
+		_print_str("ACTIVE_SIBLINGS", width, right_justify, true);
 	else {
-		if (job->fed_siblings_str)
-			_print_str(job->fed_siblings_str, width, right_justify,
+		if (job->fed_siblings_active_str)
+			_print_str(job->fed_siblings_active_str, width, right_justify,
 				   true);
 		else
 			_print_str("NA", width, right_justify, true);
@@ -1701,15 +1713,60 @@ int _print_job_fed_siblings(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
-int _print_job_fed_siblings_raw(job_info_t * job, int width, bool right_justify,
-				char* suffix)
+int _print_job_fed_siblings_active_raw(job_info_t * job, int width,
+				       bool right_justify, char* suffix)
 {
 	if (job == NULL)
-		_print_str("FED_SIBLINGS_RAW", width, right_justify, true);
+		_print_str("ACTIVE_SIBLINGS_RAW", width, right_justify, true);
 	else {
 		int bit = 1;
 		char *ids = NULL;
-		uint64_t tmp_sibs = job->fed_siblings;
+		uint64_t tmp_sibs = job->fed_siblings_active;
+		while (tmp_sibs) {
+			if (tmp_sibs & 1)
+				xstrfmtcat(ids, "%s%d", (ids) ? "," : "", bit);
+
+			tmp_sibs >>= 1;
+			bit++;
+		}
+		if (ids)
+			_print_str(ids, width, right_justify, true);
+		else
+			_print_str("NA", width, right_justify, true);
+	}
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_fed_siblings_viable(job_info_t * job, int width,
+				   bool right_justify, char* suffix)
+{
+	if (job == NULL)
+		_print_str("VIABLE_SIBLINGS", width, right_justify, true);
+	else {
+		if (job->fed_siblings_viable_str)
+			_print_str(job->fed_siblings_viable_str, width,
+				   right_justify, true);
+		else
+			_print_str("NA", width, right_justify, true);
+	}
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_fed_siblings_viable_raw(job_info_t * job, int width,
+				       bool right_justify, char* suffix)
+{
+	if (job == NULL)
+		_print_str("VIALBLE_SIBLINGS_RAW", width, right_justify, true);
+	else {
+		int bit = 1;
+		char *ids = NULL;
+		uint64_t tmp_sibs = job->fed_siblings_viable;
 		while (tmp_sibs) {
 			if (tmp_sibs & 1)
 				xstrfmtcat(ids, "%s%d", (ids) ? "," : "", bit);
@@ -1741,8 +1798,6 @@ int _print_job_max_cpus(job_info_t * job, int width, bool right_justify,
 	if (suffix)
 		printf("%s",suffix);
 	return SLURM_SUCCESS;
-
-
 }
 
 int _print_job_max_nodes(job_info_t * job, int width, bool right_justify,

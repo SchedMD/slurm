@@ -1386,6 +1386,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint16_t ckpt_interval;	/* periodically checkpoint this job */
 	char *ckpt_dir;	 	/* directory to store checkpoint images */
 	char *clusters;		/* cluster names used for multi-cluster jobs */
+	char *cluster_features;	/* required cluster feature specification,
+				 * default NONE */
 	char *comment;		/* arbitrary comment */
 	uint16_t contiguous;	/* 1 if job requires contiguous nodes,
 				 * 0 otherwise,default=0 */
@@ -1415,7 +1417,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * from job's allocation, default NONE */
 	char *features;		/* required feature specification,
 				 * default NONE */
-	uint64_t fed_siblings;	/* Bitmap of federation siblings */
+	uint64_t fed_siblings_active; /* Bitmap of active fed sibling ids */
+	uint64_t fed_siblings_viable; /* Bitmap of viable fed sibling ids */
 	char *gres;		/* comma separated list of required generic
 				 * resources, default NONE */
 	uint32_t group_id;	/* group to assume, if run as root. */
@@ -1567,6 +1570,8 @@ typedef struct job_info {
 	uint16_t boards_per_node;  /* boards per node required by job   */
 	char *burst_buffer;	/* burst buffer specifications */
 	char *burst_buffer_state; /* burst buffer state info */
+	char *cluster_features;	/* comma separated list of required cluster
+				 * features */
 	char *command;		/* command to be executed, built from submitted
 				 * job's argv and NULL for salloc command */
 	char *comment;		/* arbitrary comment */
@@ -1592,8 +1597,10 @@ typedef struct job_info {
 	uint32_t exit_code;	/* exit code for job (status from wait call) */
 	char *features;		/* comma separated list of required features */
 	char *fed_origin_str;	/* Origin cluster's name */
-	uint64_t fed_siblings;	/* bitmap of sibling cluster ids */
-	char *fed_siblings_str;	/* string of sibling cluster names */
+	uint64_t fed_siblings_active;  /* bitmap of active fed sibling ids */
+	char *fed_siblings_active_str; /* string of active sibling names */
+	uint64_t fed_siblings_viable;  /* bitmap of viable fed sibling ids */
+	char *fed_siblings_viable_str; /* string of viable sibling names */
 	char *gres;		/* comma separated list of generic resources */
 	uint32_t gres_detail_cnt; /* Count of gres_detail_str records,
 				 * one per allocated node */

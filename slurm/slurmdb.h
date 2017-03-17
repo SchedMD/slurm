@@ -596,6 +596,7 @@ typedef struct {
 } slurmdb_cluster_cond_t;
 
 typedef struct {
+	List feature_list; /* list of cluster features */
 	uint32_t id; /* id of cluster in federation */
 	char *name; /* Federation name */
 	void *recv;  /* slurm_persist_conn_t we recv information about this

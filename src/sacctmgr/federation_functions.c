@@ -156,11 +156,12 @@ static int _set_rec(int *start, int argc, char **argv,
 			}
 
 			List cluster_names = list_create(slurm_destroy_char);
-			if (!slurm_addto_mode_char_list(cluster_names,
-							argv[i]+end, option)) {
+			if (slurm_addto_mode_char_list(cluster_names,
+						       argv[i]+end, option) < 0)
+			{
 				FREE_NULL_LIST(cluster_names);
 				exit_code = 1;
-				continue;
+				break;
 			}
 			itr = list_iterator_create(cluster_names);
 			fed->cluster_list =
@@ -543,7 +544,7 @@ extern int sacctmgr_list_federation(int argc, char **argv)
 	if (!list_count(format_list)) {
 		slurm_addto_char_list(format_list,
 				      "Federation,Flags%10,Cluster,ID%2,"
-				      "Weight,FedState");
+				      "Weight,Features,FedState");
 	}
 
 	print_fields_list = sacctmgr_process_format_list(format_list);
@@ -636,6 +637,17 @@ extern int sacctmgr_list_federation(int argc, char **argv)
 						field, tmp_str,
 						(curr_inx == field_count));
 					break;
+				case PRINT_FEATURES:
+				{
+					List tmp_list = NULL;
+					if (tmp_cluster)
+						tmp_list = tmp_cluster->
+							fed.feature_list;
+					field->print_routine(
+						field, tmp_list,
+						(curr_inx == field_count));
+					break;
+				}
 				case PRINT_FEDSTATE:
 					if (!tmp_cluster)
 						tmp_str = NULL;

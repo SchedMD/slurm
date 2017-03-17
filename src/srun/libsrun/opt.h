@@ -183,6 +183,7 @@ typedef struct srun_options {
 	int64_t mem_per_cpu;	/* --mem-per-cpu=n		*/
 	long pn_min_tmp_disk;	/* --tmp=n			*/
 	char *constraints;	/* --constraints=, -C constraint*/
+	char *c_constraints;	/* --cluster-constraints=       */
 	char *gres;		/* --gres=			*/
 	bool contiguous;	/* --contiguous			*/
 	char *nodelist;		/* --nodelist=node1,node2,...	*/

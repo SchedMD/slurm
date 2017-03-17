@@ -510,6 +510,7 @@ void delete_job_details(struct job_record *job_entry)
 	xfree(job_entry->details->exc_nodes);
 	FREE_NULL_LIST(job_entry->details->feature_list);
 	xfree(job_entry->details->features);
+	xfree(job_entry->details->cluster_features);
 	xfree(job_entry->details->std_in);
 	xfree(job_entry->details->mc_ptr);
 	xfree(job_entry->details->mem_bind);
@@ -2350,6 +2351,7 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	packstr(detail_ptr->req_nodes,  buffer);
 	packstr(detail_ptr->exc_nodes,  buffer);
 	packstr(detail_ptr->features,   buffer);
+	packstr(detail_ptr->cluster_features, buffer);
 	packstr(detail_ptr->dependency, buffer);
 	packstr(detail_ptr->orig_dependency, buffer);
 
@@ -2372,7 +2374,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 {
 	char *acctg_freq = NULL, *req_nodes = NULL, *exc_nodes = NULL;
 	char *features = NULL, *cpu_bind = NULL, *dependency = NULL;
-	char *orig_dependency = NULL, *mem_bind;
+	char *orig_dependency = NULL, *mem_bind, *cluster_features = NULL;
 	char *err = NULL, *in = NULL, *out = NULL, *work_dir = NULL;
 	char *ckpt_dir = NULL, *restart_dir = NULL;
 	char **argv = (char **) NULL, **env_sup = (char **) NULL;
@@ -2394,7 +2396,63 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	multi_core_data_t *mc_ptr;
 
 	/* unpack the job's details from the buffer */
-	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		safe_unpack32(&min_cpus, buffer);
+		safe_unpack32(&max_cpus, buffer);
+		safe_unpack32(&min_nodes, buffer);
+		safe_unpack32(&max_nodes, buffer);
+		safe_unpack32(&num_tasks, buffer);
+
+		safe_unpackstr_xmalloc(&acctg_freq, &name_len, buffer);
+		safe_unpack16(&contiguous, buffer);
+		safe_unpack16(&core_spec, buffer);
+		safe_unpack16(&cpus_per_task, buffer);
+		safe_unpack32(&nice, buffer);
+		safe_unpack16(&ntasks_per_node, buffer);
+		safe_unpack16(&requeue, buffer);
+		safe_unpack32(&task_dist, buffer);
+
+		safe_unpack8(&share_res, buffer);
+		safe_unpack8(&whole_node, buffer);
+
+		safe_unpackstr_xmalloc(&cpu_bind, &name_len, buffer);
+		safe_unpack16(&cpu_bind_type, buffer);
+		safe_unpackstr_xmalloc(&mem_bind, &name_len, buffer);
+		safe_unpack16(&mem_bind_type, buffer);
+		safe_unpack16(&plane_size, buffer);
+
+		safe_unpack8(&open_mode, buffer);
+		safe_unpack8(&overcommit, buffer);
+		safe_unpack8(&prolog_running, buffer);
+
+		safe_unpack32(&pn_min_cpus, buffer);
+		safe_unpack64(&pn_min_memory, buffer);
+		safe_unpack32(&pn_min_tmp_disk, buffer);
+		safe_unpack32(&cpu_freq_min, buffer);
+		safe_unpack32(&cpu_freq_max, buffer);
+		safe_unpack32(&cpu_freq_gov, buffer);
+		safe_unpack_time(&begin_time, buffer);
+		safe_unpack_time(&submit_time, buffer);
+
+		safe_unpackstr_xmalloc(&req_nodes,  &name_len, buffer);
+		safe_unpackstr_xmalloc(&exc_nodes,  &name_len, buffer);
+		safe_unpackstr_xmalloc(&features,   &name_len, buffer);
+		safe_unpackstr_xmalloc(&cluster_features, &name_len, buffer);
+		safe_unpackstr_xmalloc(&dependency, &name_len, buffer);
+		safe_unpackstr_xmalloc(&orig_dependency, &name_len, buffer);
+
+		safe_unpackstr_xmalloc(&err, &name_len, buffer);
+		safe_unpackstr_xmalloc(&in,  &name_len, buffer);
+		safe_unpackstr_xmalloc(&out, &name_len, buffer);
+		safe_unpackstr_xmalloc(&work_dir, &name_len, buffer);
+		safe_unpackstr_xmalloc(&ckpt_dir, &name_len, buffer);
+		safe_unpackstr_xmalloc(&restart_dir, &name_len, buffer);
+
+		if (unpack_multi_core_data(&mc_ptr, buffer, protocol_version))
+			goto unpack_error;
+		safe_unpackstr_array(&argv, &argc, buffer);
+		safe_unpackstr_array(&env_sup, &env_cnt, buffer);
+	} else if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		safe_unpack32(&min_cpus, buffer);
 		safe_unpack32(&max_cpus, buffer);
 		safe_unpack32(&min_nodes, buffer);
@@ -2543,6 +2601,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	xfree(job_ptr->details->env_sup);
 	xfree(job_ptr->details->exc_nodes);
 	xfree(job_ptr->details->features);
+	xfree(job_ptr->details->cluster_features);
 	xfree(job_ptr->details->std_in);
 	xfree(job_ptr->details->mem_bind);
 	xfree(job_ptr->details->std_out);
@@ -2571,6 +2630,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	job_ptr->details->std_err = err;
 	job_ptr->details->exc_nodes = exc_nodes;
 	job_ptr->details->features = features;
+	job_ptr->details->cluster_features = cluster_features;
 	job_ptr->details->std_in = in;
 	job_ptr->details->pn_min_cpus = pn_min_cpus;
 	job_ptr->details->pn_min_memory = pn_min_memory;
@@ -2617,6 +2677,7 @@ unpack_error:
 	xfree(err);
 	xfree(exc_nodes);
 	xfree(features);
+	xfree(cluster_features);
 	xfree(in);
 	xfree(mem_bind);
 	xfree(out);
@@ -3578,8 +3639,10 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	debug3("   pn_min_memory_%s=%"PRIu64" pn_min_tmp_disk=%ld",
 	       mem_type, pn_min_memory, pn_min_tmp_disk);
 	immediate = (job_specs->immediate == 0) ? 0L : 1L;
-	debug3("   immediate=%ld features=%s reservation=%s",
-	       immediate, job_specs->features, job_specs->reservation);
+	debug3("   immediate=%ld reservation=%s",
+	       immediate, job_specs->reservation);
+	debug3("   features=%s cluster_features=%s",
+	       job_specs->features, job_specs->cluster_features);
 
 	debug3("   req_nodes=%s exc_nodes=%s gres=%s",
 	       job_specs->req_nodes, job_specs->exc_nodes, job_specs->gres);
@@ -3959,6 +4022,7 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 	details_new->feature_list =
 		feature_list_copy(job_details->feature_list);
 	details_new->features = xstrdup(job_details->features);
+	details_new->cluster_features = xstrdup(job_details->cluster_features);
 	if (job_details->mc_ptr) {
 		i = sizeof(multi_core_data_t);
 		details_new->mc_ptr = xmalloc(i);
@@ -6482,6 +6546,8 @@ static int _test_job_desc_fields(job_desc_msg_t * job_desc)
 	    _test_strlen(job_desc->cpu_bind, "cpu_bind", 1024)		||
 	    _test_strlen(job_desc->dependency, "dependency", 1024*128)	||
 	    _test_strlen(job_desc->features, "features", 1024)		||
+	    _test_strlen(
+		job_desc->cluster_features, "cluster_features", 1024)   ||
 	    _test_strlen(job_desc->gres, "gres", 1024)			||
 	    _test_strlen(job_desc->licenses, "licenses", 1024)		||
 	    _test_strlen(job_desc->linuximage, "linuximage", 1024)	||
@@ -7258,8 +7324,15 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	}
 	if (job_desc->features)
 		detail_ptr->features = xstrdup(job_desc->features);
-	if (job_desc->fed_siblings)
-		set_job_fed_details(job_ptr, job_desc->fed_siblings);
+	if (job_desc->cluster_features)
+		detail_ptr->cluster_features =
+			xstrdup(job_desc->cluster_features);
+	if (job_desc->fed_siblings_viable) {
+		job_ptr->fed_details = xmalloc(sizeof(job_fed_details_t));
+		job_ptr->fed_details->siblings_viable =
+			job_desc->fed_siblings_viable;
+		update_job_fed_details(job_ptr);
+	}
 	if ((job_desc->shared == JOB_SHARED_NONE) && (select_serial == 0)) {
 		detail_ptr->share_res  = 0;
 		detail_ptr->whole_node = WHOLE_NODE_REQUIRED;
@@ -8847,10 +8920,17 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 
 		if (dump_job_ptr->fed_details) {
 			packstr(dump_job_ptr->fed_details->origin_str, buffer);
-			pack64(dump_job_ptr->fed_details->siblings, buffer);
-			packstr(dump_job_ptr->fed_details->siblings_str,
+			pack64(dump_job_ptr->fed_details->siblings_active,
+			       buffer);
+			packstr(dump_job_ptr->fed_details->siblings_active_str,
+				buffer);
+			pack64(dump_job_ptr->fed_details->siblings_viable,
+			       buffer);
+			packstr(dump_job_ptr->fed_details->siblings_viable_str,
 				buffer);
 		} else {
+			packnull(buffer);
+			pack64((uint64_t)0, buffer);
 			packnull(buffer);
 			pack64((uint64_t)0, buffer);
 			packnull(buffer);
@@ -9035,8 +9115,9 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 
 		if (dump_job_ptr->fed_details) {
 			packstr(dump_job_ptr->fed_details->origin_str, buffer);
-			pack64(dump_job_ptr->fed_details->siblings, buffer);
-			packstr(dump_job_ptr->fed_details->siblings_str,
+			pack64(dump_job_ptr->fed_details->siblings_active,
+			       buffer);
+			packstr(dump_job_ptr->fed_details->siblings_active_str,
 				buffer);
 		} else {
 			packnull(buffer);
@@ -9283,7 +9364,155 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 	} else
 		_find_node_config(&max_cpu_cnt, &max_core_cnt);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		if (detail_ptr) {
+			packstr(detail_ptr->features,   buffer);
+			packstr(detail_ptr->cluster_features, buffer);
+			packstr(detail_ptr->work_dir,   buffer);
+			packstr(detail_ptr->dependency, buffer);
+
+			if (detail_ptr->argv) {
+				/* Determine size needed for a string
+				 * containing all arguments */
+				for (i =0; detail_ptr->argv[i]; i++) {
+					len += strlen(detail_ptr->argv[i]);
+				}
+				len += i;
+
+				cmd_line = xmalloc(len*sizeof(char));
+				tmp = cmd_line;
+				for (i = 0; detail_ptr->argv[i]; i++) {
+					if (i != 0) {
+						*tmp = ' ';
+						tmp++;
+					}
+					strcpy(tmp,detail_ptr->argv[i]);
+					tmp += strlen(detail_ptr->argv[i]);
+				}
+				packstr(cmd_line, buffer);
+				xfree(cmd_line);
+			} else
+				packnull(buffer);
+
+			if (IS_JOB_COMPLETING(job_ptr) && job_ptr->cpu_cnt) {
+				pack32(job_ptr->cpu_cnt, buffer);
+				pack32((uint32_t) 0, buffer);
+			} else if (job_ptr->total_cpus &&
+				   !IS_JOB_PENDING(job_ptr)) {
+				/* If job is PENDING ignore total_cpus,
+				 * which may have been set by previous run
+				 * followed by job requeue. */
+				pack32(job_ptr->total_cpus, buffer);
+				pack32((uint32_t) 0, buffer);
+			} else {
+				pack32(detail_ptr->min_cpus, buffer);
+				if (detail_ptr->max_cpus != NO_VAL)
+					pack32(detail_ptr->max_cpus, buffer);
+				else
+					pack32((uint32_t) 0, buffer);
+			}
+
+			if (IS_JOB_COMPLETING(job_ptr) && job_ptr->node_cnt) {
+				pack32(job_ptr->node_cnt, buffer);
+				pack32((uint32_t) 0, buffer);
+			} else if (job_ptr->total_nodes) {
+				pack32(job_ptr->total_nodes, buffer);
+				pack32((uint32_t) 0, buffer);
+			} else if (job_ptr->node_cnt_wag) {
+				/* This should catch everything else, but
+				 * just incase this is 0 (startup or
+				 * whatever) we will keep the rest of
+				 * this if statement around.
+				 */
+				pack32(job_ptr->node_cnt_wag, buffer);
+				pack32((uint32_t) detail_ptr->max_nodes,
+				       buffer);
+			} else if (detail_ptr->ntasks_per_node) {
+				/* min_nodes based upon task count and ntasks
+				 * per node */
+				uint32_t min_nodes;
+				min_nodes = detail_ptr->num_tasks /
+					    detail_ptr->ntasks_per_node;
+				min_nodes = MAX(min_nodes,
+						detail_ptr->min_nodes);
+				pack32(min_nodes, buffer);
+				pack32(detail_ptr->max_nodes, buffer);
+			} else if (detail_ptr->cpus_per_task > 1) {
+				/* min_nodes based upon task count and cpus
+				 * per task */
+				uint32_t min_cpus, min_nodes;
+				min_cpus = detail_ptr->num_tasks *
+					   detail_ptr->cpus_per_task;
+				min_nodes = min_cpus + max_cpu_cnt - 1;
+				min_nodes /= max_cpu_cnt;
+				min_nodes = MAX(min_nodes,
+						detail_ptr->min_nodes);
+				pack32(min_nodes, buffer);
+				pack32(detail_ptr->max_nodes, buffer);
+			} else if (detail_ptr->mc_ptr &&
+				   detail_ptr->mc_ptr->ntasks_per_core &&
+				   (detail_ptr->mc_ptr->ntasks_per_core
+				    != (uint16_t)INFINITE)) {
+				/* min_nodes based upon task count and ntasks
+				 * per core */
+				uint32_t min_cores, min_nodes;
+				min_cores = detail_ptr->num_tasks +
+					    detail_ptr->mc_ptr->ntasks_per_core
+					    - 1;
+				min_cores /= detail_ptr->mc_ptr->ntasks_per_core;
+
+				min_nodes = min_cores + max_core_cnt - 1;
+				min_nodes /= max_core_cnt;
+				min_nodes = MAX(min_nodes,
+						detail_ptr->min_nodes);
+				pack32(min_nodes, buffer);
+				pack32(detail_ptr->max_nodes, buffer);
+			} else {
+				/* min_nodes based upon task count only */
+				uint32_t min_nodes;
+				min_nodes = detail_ptr->num_tasks +
+					    max_cpu_cnt - 1;
+				min_nodes /= max_cpu_cnt;
+				min_nodes = MAX(min_nodes,
+						detail_ptr->min_nodes);
+				pack32(min_nodes, buffer);
+				pack32(detail_ptr->max_nodes, buffer);
+			}
+
+			pack16(detail_ptr->requeue,   buffer);
+			pack16(detail_ptr->ntasks_per_node, buffer);
+			if (detail_ptr->num_tasks)
+				pack32(detail_ptr->num_tasks, buffer);
+			else if (IS_JOB_PENDING(job_ptr))
+				pack32(detail_ptr->min_nodes, buffer);
+			else
+				pack32(job_ptr->node_cnt, buffer);
+			pack16(shared, buffer);
+			pack32(detail_ptr->cpu_freq_min, buffer);
+			pack32(detail_ptr->cpu_freq_max, buffer);
+			pack32(detail_ptr->cpu_freq_gov, buffer);
+		} else {
+			packnull(buffer);
+			packnull(buffer);
+			packnull(buffer);
+			packnull(buffer);
+
+			if (job_ptr->total_cpus)
+				pack32(job_ptr->total_cpus, buffer);
+			else
+				pack32(job_ptr->cpu_cnt, buffer);
+			pack32((uint32_t) 0, buffer);
+
+			pack32(job_ptr->node_cnt, buffer);
+			pack32((uint32_t) 0, buffer);
+			pack16((uint16_t) 0, buffer);
+			pack16((uint16_t) 0, buffer);
+			pack16((uint16_t) 0, buffer);
+			pack32((uint32_t) 0, buffer);
+			pack32((uint32_t) 0, buffer);
+			pack32((uint32_t) 0, buffer);
+		}
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (detail_ptr) {
 			packstr(detail_ptr->features,   buffer);
 			packstr(detail_ptr->work_dir,   buffer);
@@ -11362,6 +11591,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
+	if (job_specs->cluster_features &&
+	    (error_code = fed_mgr_update_job_cluster_features(
+					job_ptr, job_specs->cluster_features)))
+		goto fini;
+
 	if (gres_list) {
 		info("sched: update_job: setting gres to %s for job_id %u",
 		     job_specs->gres, job_ptr->job_id);
@@ -11912,21 +12146,20 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		}
 	}
 
-	if (job_specs->fed_siblings) {
-		slurmctld_lock_t fed_read_lock = {
-			NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
-		if (job_ptr->fed_details)
-			info("update_job: setting fed_siblings from %"PRIu64" to %"PRIu64" for job_id %u",
-			     job_ptr->fed_details->siblings,
-			     job_specs->fed_siblings,
-			     job_ptr->job_id);
-		else
-			info("update_job: setting fed_siblings to %"PRIu64" for job_id %u",
-			     job_specs->fed_siblings,
-			     job_ptr->job_id);
-		lock_slurmctld(fed_read_lock);
-		set_job_fed_details(job_ptr, job_specs->fed_siblings);
-		unlock_slurmctld(fed_read_lock);
+	if (job_specs->fed_siblings_viable) {
+		if (!job_ptr->fed_details) {
+			error_code = ESLURM_JOB_NOT_FEDERATED;
+			goto fini;
+		}
+
+		info("update_job: setting fed_siblings from %"PRIu64" to %"PRIu64" for job_id %u",
+		     job_ptr->fed_details->siblings_viable,
+		     job_specs->fed_siblings_viable,
+		     job_ptr->job_id);
+
+		job_ptr->fed_details->siblings_viable =
+			job_specs->fed_siblings_viable;
+		update_job_fed_details(job_ptr);
 	}
 
 fini:
@@ -15334,6 +15567,7 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(struct job_record *job_ptr)
 						  &job_desc->env_size);
 	job_desc->exc_nodes         = xstrdup(details->exc_nodes);
 	job_desc->features          = xstrdup(details->features);
+	job_desc->cluster_features  = xstrdup(details->cluster_features);
 	job_desc->gres              = xstrdup(job_ptr->gres);
 	job_desc->group_id          = job_ptr->group_id;
 	job_desc->immediate         = 0; /* nowhere to get this value */
@@ -15413,8 +15647,12 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->ntasks_per_socket = mc_ptr->ntasks_per_socket;
 	job_desc->ntasks_per_core   = mc_ptr->ntasks_per_core;
 
-	if (job_ptr->fed_details)
-		job_desc->fed_siblings = job_ptr->fed_details->siblings;
+	if (job_ptr->fed_details) {
+		job_desc->fed_siblings_active =
+			job_ptr->fed_details->siblings_active;
+		job_desc->fed_siblings_viable =
+			job_ptr->fed_details->siblings_viable;
+	}
 #if 0
 	/* select_jobinfo is unused at job submit time, only it's
 	 * components are set. We recover those from the structure below.
@@ -16037,7 +16275,8 @@ static void _free_job_fed_details(job_fed_details_t **fed_details_pptr)
 
 	if (fed_details_ptr) {
 		xfree(fed_details_ptr->origin_str);
-		xfree(fed_details_ptr->siblings_str);
+		xfree(fed_details_ptr->siblings_active_str);
+		xfree(fed_details_ptr->siblings_viable_str);
 		xfree(fed_details_ptr);
 		*fed_details_pptr = NULL;
 	}
@@ -16050,8 +16289,10 @@ static void _dump_job_fed_details(job_fed_details_t *fed_details_ptr,
 		pack16(1, buffer);
 		pack32(fed_details_ptr->cluster_lock, buffer);
 		packstr(fed_details_ptr->origin_str, buffer);
-		pack64(fed_details_ptr->siblings, buffer);
-		packstr(fed_details_ptr->siblings_str, buffer);
+		pack64(fed_details_ptr->siblings_active, buffer);
+		packstr(fed_details_ptr->siblings_active_str, buffer);
+		pack64(fed_details_ptr->siblings_viable, buffer);
+		packstr(fed_details_ptr->siblings_viable_str, buffer);
 	} else {
 		pack16(0, buffer);
 	}
@@ -16067,7 +16308,7 @@ static int _load_job_fed_details(job_fed_details_t **fed_details_pptr,
 
 	xassert(fed_details_pptr);
 
-	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		safe_unpack16(&tmp_uint16, buffer);
 		if (tmp_uint16) {
 			*fed_details_pptr = xmalloc(sizeof(job_fed_details_t));
@@ -16075,9 +16316,30 @@ static int _load_job_fed_details(job_fed_details_t **fed_details_pptr,
 			safe_unpack32(&fed_details_ptr->cluster_lock, buffer);
 			safe_unpackstr_xmalloc(&fed_details_ptr->origin_str,
 					       &tmp_uint32, buffer);
-			safe_unpack64(&fed_details_ptr->siblings, buffer);
-			safe_unpackstr_xmalloc(&fed_details_ptr->siblings_str,
+			safe_unpack64(&fed_details_ptr->siblings_active,
+				      buffer);
+			safe_unpackstr_xmalloc(
+					&fed_details_ptr->siblings_active_str,
+					&tmp_uint32, buffer);
+			safe_unpack64(&fed_details_ptr->siblings_viable,
+				      buffer);
+			safe_unpackstr_xmalloc(
+					&fed_details_ptr->siblings_viable_str,
+					&tmp_uint32, buffer);
+		}
+	} else if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
+		safe_unpack16(&tmp_uint16, buffer);
+		if (tmp_uint16) {
+			*fed_details_pptr = xmalloc(sizeof(job_fed_details_t));
+			fed_details_ptr = *fed_details_pptr;
+			safe_unpack32(&fed_details_ptr->cluster_lock, buffer);
+			safe_unpackstr_xmalloc(&fed_details_ptr->origin_str,
 					       &tmp_uint32, buffer);
+			safe_unpack64(&fed_details_ptr->siblings_viable,
+				      buffer);
+			safe_unpackstr_xmalloc(
+					&fed_details_ptr->siblings_viable_str,
+					&tmp_uint32, buffer);
 		}
 	}
 
@@ -16090,24 +16352,26 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern void set_job_fed_details(struct job_record *job_ptr,
-				uint64_t fed_siblings)
+/* Set federated job's sibling strings. */
+extern void update_job_fed_details(struct job_record *job_ptr)
 {
 	xassert(job_ptr);
+	xassert(job_ptr->fed_details);
 
-	if (!job_ptr->fed_details) {
-		job_ptr->fed_details =
-			xmalloc(sizeof(job_fed_details_t));
-	} else {
-		xfree(job_ptr->fed_details->siblings_str);
-		xfree(job_ptr->fed_details->origin_str);
-	}
+	xfree(job_ptr->fed_details->siblings_active_str);
+	xfree(job_ptr->fed_details->siblings_viable_str);
 
-	job_ptr->fed_details->siblings = fed_siblings;
-	job_ptr->fed_details->siblings_str =
-		fed_mgr_cluster_ids_to_names(fed_siblings);
-	job_ptr->fed_details->origin_str =
-		fed_mgr_get_cluster_name(
+	job_ptr->fed_details->siblings_active_str =
+		fed_mgr_cluster_ids_to_names(
+					job_ptr->fed_details->siblings_active);
+	job_ptr->fed_details->siblings_viable_str =
+		fed_mgr_cluster_ids_to_names(
+					job_ptr->fed_details->siblings_viable);
+
+	/* only set once */
+	if (!job_ptr->fed_details->origin_str)
+		job_ptr->fed_details->origin_str =
+			fed_mgr_get_cluster_name(
 				fed_mgr_get_cluster_id(job_ptr->job_id));
 }
 

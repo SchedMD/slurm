@@ -524,6 +524,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		{ "plugin_id_select", "smallint unsigned default 0" },
 		{ "flags", "int unsigned default 0" },
 		{ "federation", "tinytext not null" },
+		{ "features", "text not null default ''" },
 		{ "fed_id", "int unsigned default 0 not null" },
 		{ "fed_state", "smallint unsigned not null" },
 		{ "fed_weight", "int unsigned default 1 not null" },

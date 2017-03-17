@@ -193,6 +193,48 @@ extern int slurm_find_char_in_list(void *x, void *key)
 	return 0;
 }
 
+static int _char_list_append_str(void *x, void *arg)
+{
+	char  *char_item = (char *)x;
+	char **out_str   = (char **)arg;
+
+	xassert(char_item);
+	xassert(out_str);
+
+	xstrfmtcat(*out_str, "%s%s", *out_str ? "," : "", char_item);
+
+	return SLURM_SUCCESS;
+}
+
+extern char *slurm_char_list_to_xstr(List char_list)
+{
+	char *out = NULL;
+
+	if (!char_list)
+		return NULL;
+
+	list_sort(char_list, (ListCmpF)slurm_sort_char_list_asc);
+	list_for_each(char_list, _char_list_append_str, &out);
+
+	return out;
+}
+
+static int _char_list_copy(void *item, void *dst)
+{
+	list_append((List)dst, item);
+	return SLURM_SUCCESS;
+}
+
+extern int slurm_char_list_copy(List dst, List src)
+{
+	xassert(dst);
+	xassert(src);
+
+	list_for_each(src, _char_list_copy, dst);
+
+	return SLURM_SUCCESS;
+}
+
 /* returns number of objects added to list */
 extern int slurm_addto_char_list(List char_list, char *names)
 {
@@ -346,7 +388,8 @@ endit:
 }
 
 /* Parses strings such as stra,+strb,-strc and appends the default mode to each
- * string in the list if no specific mode is listed. */
+ * string in the list if no specific mode is listed.
+ * RET: returns the number of items added to the list. -1 on error. */
 extern int slurm_addto_mode_char_list(List char_list, char *names, int mode)
 {
 	int i=0, start=0;
@@ -392,7 +435,7 @@ extern int slurm_addto_mode_char_list(List char_list, char *names, int mode)
 				name = xstrndup(names+start, (i-start));
 				if (tmp_mode) {
 					if (equal_set) {
-						count = 0;
+						count = -1;
 						error("%s", err_msg);
 						goto end_it;
 					}
@@ -401,7 +444,7 @@ extern int slurm_addto_mode_char_list(List char_list, char *names, int mode)
 						  "%c%s", tmp_mode, name);
 				} else {
 					if (add_set) {
-						count = 0;
+						count = -1;
 						error("%s", err_msg);
 						goto end_it;
 					}
@@ -420,9 +463,6 @@ extern int slurm_addto_mode_char_list(List char_list, char *names, int mode)
 				} else
 					xfree(m_name);
 				xfree(name);
-			} else if (!(i-start)) {
-				list_append(char_list, xstrdup(""));
-				count++;
 			}
 
 			i++;
@@ -436,6 +476,8 @@ extern int slurm_addto_mode_char_list(List char_list, char *names, int mode)
 		}
 		i++;
 	}
+
+	list_iterator_reset(itr);
 	if ((i-start) > 0) {
 		int tmp_mode = mode;
 		if (names[start] == '+' ||
@@ -446,7 +488,7 @@ extern int slurm_addto_mode_char_list(List char_list, char *names, int mode)
 		name = xstrndup(names+start, (i-start));
 		if (tmp_mode) {
 			if (equal_set) {
-				count = 0;
+				count = -1;
 				error("%s", err_msg);
 				goto end_it;
 			}
@@ -454,7 +496,7 @@ extern int slurm_addto_mode_char_list(List char_list, char *names, int mode)
 				  "%c%s", tmp_mode, name);
 		} else {
 			if (add_set) {
-				count = 0;
+				count = -1;
 				error("%s", err_msg);
 				goto end_it;
 			}
@@ -472,12 +514,6 @@ extern int slurm_addto_mode_char_list(List char_list, char *names, int mode)
 		} else
 			xfree(m_name);
 		xfree(name);
-	} else if (!(i-start)) {
-		list_append(char_list, xstrdup(""));
-		count++;
-	}
-	if (!count) {
-		error("You gave me an empty name list");
 	}
 
 end_it:
@@ -759,6 +795,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		xfree(msg->std_err);
 		xfree(msg->exc_nodes);
 		xfree(msg->features);
+		xfree(msg->cluster_features);
 		xfree(msg->job_id_str);
 		xfree(msg->gres);
 		xfree(msg->std_in);

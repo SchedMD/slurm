@@ -463,6 +463,7 @@ struct job_details {
 					 * (all dependencies satisfied) */
 	char *ckpt_dir;			/* directory to store checkpoint
 					 * images */
+	char *cluster_features;		/* required cluster_features */
 	uint16_t contiguous;		/* set if requires contiguous nodes */
 	uint16_t core_spec;		/* specialized core/thread count,
 					 * threads if CORE_SPEC_THREAD flag set */
@@ -561,10 +562,14 @@ typedef struct {
 } acct_policy_limit_set_t;
 
 typedef struct {
-	uint32_t cluster_lock;	/* sibling that has lock on job */
-	char    *origin_str;	/* origin cluster name */
-	uint64_t siblings;	/* bitmap of sibling cluster ids */
-	char    *siblings_str;	/* comma separated list of sibling names */
+	uint32_t cluster_lock;		/* sibling that has lock on job */
+	char    *origin_str;		/* origin cluster name */
+	uint64_t siblings_active;	/* bitmap of active sibling ids. */
+	char    *siblings_active_str;	/* comma separated list of actual
+					   sibling names */
+	uint64_t siblings_viable;	/* bitmap of viable sibling ids. */
+	char    *siblings_viable_str;	/* comma separated list of viable
+					   sibling names */
 } job_fed_details_t;
 
 /*
@@ -2441,10 +2446,11 @@ waitpid_timeout(const char *, pid_t, int *, int);
 extern void set_partition_tres();
 
 /*
- * Set job's siblings and make sibling strings
+ * Update job's federated siblings strings.
+ *
+ * IN job_ptr - job_ptr to update
  */
-extern void set_job_fed_details(struct job_record *job_ptr,
-				uint64_t fed_siblings);
+extern void update_job_fed_details(struct job_record *job_ptr);
 
 /*
  * purge_job_record - purge specific job record. No testing is performed to

@@ -563,9 +563,11 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	}
 
 	/****** Line 14a (optional) ******/
-	if (job_ptr->fed_siblings) {
-		xstrfmtcat(out, "FedOrigin=%s FedSiblings=%s",
-			   job_ptr->fed_origin_str, job_ptr->fed_siblings_str);
+	if (job_ptr->fed_siblings_active || job_ptr->fed_siblings_viable) {
+		xstrfmtcat(out, "FedOrigin=%s ViableSiblings=%s ActiveSiblings=%s",
+			   job_ptr->fed_origin_str,
+			   job_ptr->fed_siblings_viable_str,
+			   job_ptr->fed_siblings_active_str);
 		xstrcat(out, line_end);
 	}
 
@@ -837,6 +839,13 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	secs2time_str((time_t)job_ptr->delay_boot, tmp1, sizeof(tmp1));
 	xstrfmtcat(out, "Features=%s DelayBoot=%s", job_ptr->features, tmp1);
 	xstrcat(out, line_end);
+
+	/****** Line (optional) ******/
+	if (job_ptr->cluster_features) {
+		xstrfmtcat(out, "ClusterFeatures=%s",
+			   job_ptr->cluster_features);
+		xstrcat(out, line_end);
+	}
 
 	/****** Line ******/
 	xstrfmtcat(out, "Gres=%s Reservation=%s",

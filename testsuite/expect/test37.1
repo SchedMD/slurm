@@ -45,6 +45,7 @@ set tc1		"tc1_$test_id_2"
 set tc2		"tc2_$test_id_2"
 set tc3		"tc3_$test_id_2"
 set tc4		"tc4_$test_id_2"
+set tc5		"tc5_$test_id_2"
 
 set fed1 	"fed1_$test_id_2"
 set fed2 	"fed2_$test_id_2"
@@ -128,14 +129,14 @@ proc delete_federations { names } {
 }
 
 proc cleanup { } {
-	global tc1 tc2 tc3 tc4 fed1 fed2 fed3 exit_code test_id_2 max_federations
+	global tc1 tc2 tc3 tc4 tc5 fed1 fed2 fed3 exit_code test_id_2 max_federations
 
 	set tmp_clusters ""
 	for {set i 0} {$i <= $max_federations} {incr i} {
 		append  tmp_clusters "max${i}_$test_id_2,"
 	}
 
-	set exit_code [expr $exit_code + [delete_clusters "$tc1,$tc2,$tc3,$tc4,${tmp_clusters}"]]
+	set exit_code [expr $exit_code + [delete_clusters "$tc1,$tc2,$tc3,$tc4,$tc5,${tmp_clusters}"]]
 	set exit_code [expr $exit_code + [delete_federations "$fed1,$fed2,$fed3"]]
 }
 
@@ -582,7 +583,7 @@ if {$exit_code || $matches != 4} {
 set matches 0
 set my_pid [spawn $sacctmgr show cluster $tc1 $tc2 $tc3 WithFed]
 expect {
-	-re "Cluster\\s+.*?Federation\\s+ID\\s+Weight\\s+FedState $eol" {
+	-re "Cluster\\s+.*?Federation\\s+ID\\s+Weight\\s+Features\\s+FedState $eol" {
 		incr matches
 		exp_continue
 	}
@@ -2881,6 +2882,307 @@ expect {
 	}
 }
 if {$exit_code || $matches != $max_federations} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+
+#####################################
+# TEST: add/modify cluster features
+#####################################
+set matches 0
+set my_pid [spawn $sacctmgr -i add cluster $tc5 features=a,b]
+expect {
+	-re "Adding Cluster\\(s\\)$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+$tc5$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+Feature\\s+=\\s+a$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+Feature\\s+=\\s+b$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 5} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+set matches 0
+set my_pid [spawn $sacctmgr show cluster $tc5 format="cluster%20,features%20"]
+expect {
+	-re "Cluster\\s+Features $eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+a,b $eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 2} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+set matches 0
+set my_pid [spawn $sacctmgr -i modify cluster $tc5 set features=aa,ab]
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Feature\\s+=\\s+aa" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Feature\\s+=\\s+ab" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$tc5$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr mod not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 5} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+set matches 0
+set my_pid [spawn $sacctmgr show cluster $tc5 format="cluster%20,features%20"]
+expect {
+	-re "Cluster\\s+Features $eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+aa,ab $eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 2} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+set matches 0
+set my_pid [spawn $sacctmgr -i modify cluster $tc5 set features+=fc]
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Feature\\s+\\+=\\s+fc" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$tc5$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr mod not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 4} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+set matches 0
+set my_pid [spawn $sacctmgr show cluster $tc5 format="cluster%20,features%20"]
+expect {
+	-re "Cluster\\s+Features $eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+aa,ab,fc $eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 2} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+set matches 0
+set my_pid [spawn $sacctmgr -i modify cluster $tc5 set features-=ab]
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Feature\\s+-=\\s+ab" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$tc5$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr mod not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 4} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+set matches 0
+set my_pid [spawn $sacctmgr show cluster $tc5 format="cluster%20,features%20"]
+expect {
+	-re "Cluster\\s+Features $eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+aa,fc $eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 2} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+set matches 0
+set my_pid [spawn $sacctmgr -i modify cluster $tc5 set features-=aa,fc]
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Feature\\s+-=\\s+aa" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Feature\\s+-=\\s+fc" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$tc5$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr mod not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 5} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+set matches 0
+set my_pid [spawn $sacctmgr show cluster $tc5 format="cluster%20,features%20"]
+expect {
+	-re "Cluster\\s+Features $eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+ $eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 2} {
 	send_user "$matches FAILURE: unexpected error.\n"
 	end_it 1
 }

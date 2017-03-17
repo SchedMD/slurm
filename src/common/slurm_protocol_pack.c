@@ -5574,6 +5574,8 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 
 		/*** unpack default job details ***/
 		safe_unpackstr_xmalloc(&job->features,   &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->cluster_features, &uint32_tmp,
+				       buffer);
 		safe_unpackstr_xmalloc(&job->work_dir,   &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->dependency, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->command,    &uint32_tmp, buffer);
@@ -5633,9 +5635,12 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 
 		safe_unpackstr_xmalloc(&job->fed_origin_str, &uint32_tmp,
 				       buffer);
-		safe_unpack64(&job->fed_siblings, buffer);
-		safe_unpackstr_xmalloc(&job->fed_siblings_str, &uint32_tmp,
+		safe_unpack64(&job->fed_siblings_active, buffer);
+		safe_unpackstr_xmalloc(&job->fed_siblings_active_str, &uint32_tmp,
 				       buffer);
+		safe_unpack64(&job->fed_siblings_viable, buffer);
+		safe_unpackstr_xmalloc(&job->fed_siblings_viable_str,
+				       &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		safe_unpack32(&job->array_job_id, buffer);
 		safe_unpack32(&job->array_task_id, buffer);
@@ -5779,9 +5784,9 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 
 		safe_unpackstr_xmalloc(&job->fed_origin_str, &uint32_tmp,
 				       buffer);
-		safe_unpack64(&job->fed_siblings, buffer);
-		safe_unpackstr_xmalloc(&job->fed_siblings_str, &uint32_tmp,
-				       buffer);
+		safe_unpack64(&job->fed_siblings_viable, buffer);
+		safe_unpackstr_xmalloc(&job->fed_siblings_viable_str,
+				       &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		char *node_inx_str;
 		uint32_t tmp_mem;
@@ -7519,13 +7524,15 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 
 	/* load the data values */
 	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		packstr(job_desc_ptr->cluster_features, buffer);
 		packstr(job_desc_ptr->clusters, buffer);
 		pack16(job_desc_ptr->contiguous, buffer);
 		pack16(job_desc_ptr->core_spec, buffer);
 		pack32(job_desc_ptr->task_dist, buffer);
 		pack16(job_desc_ptr->kill_on_node_fail, buffer);
 		packstr(job_desc_ptr->features, buffer);
-		pack64(job_desc_ptr->fed_siblings, buffer);
+		pack64(job_desc_ptr->fed_siblings_active, buffer);
+		pack64(job_desc_ptr->fed_siblings_viable, buffer);
 		packstr(job_desc_ptr->gres, buffer);
 		pack32(job_desc_ptr->job_id, buffer);
 		packstr(job_desc_ptr->job_id_str, buffer);
@@ -7696,7 +7703,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		pack32(job_desc_ptr->task_dist, buffer);
 		pack16(job_desc_ptr->kill_on_node_fail, buffer);
 		packstr(job_desc_ptr->features, buffer);
-		pack64(job_desc_ptr->fed_siblings, buffer);
+		pack64(job_desc_ptr->fed_siblings_viable, buffer);
 		packstr(job_desc_ptr->gres, buffer);
 		pack32(job_desc_ptr->job_id, buffer);
 		packstr(job_desc_ptr->job_id_str, buffer);
@@ -8042,6 +8049,8 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		*job_desc_buffer_ptr = job_desc_ptr;
 
 		/* load the data values */
+		safe_unpackstr_xmalloc(&job_desc_ptr->cluster_features,
+				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->clusters,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&job_desc_ptr->contiguous, buffer);
@@ -8050,7 +8059,8 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		safe_unpack16(&job_desc_ptr->kill_on_node_fail, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->features,
 				       &uint32_tmp, buffer);
-		safe_unpack64(&job_desc_ptr->fed_siblings, buffer);
+		safe_unpack64(&job_desc_ptr->fed_siblings_active, buffer);
+		safe_unpack64(&job_desc_ptr->fed_siblings_viable, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->gres, &uint32_tmp,buffer);
 		safe_unpack32(&job_desc_ptr->job_id, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->job_id_str,
@@ -8223,7 +8233,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		safe_unpack16(&job_desc_ptr->kill_on_node_fail, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->features,
 				       &uint32_tmp, buffer);
-		safe_unpack64(&job_desc_ptr->fed_siblings, buffer);
+		safe_unpack64(&job_desc_ptr->fed_siblings_viable, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->gres, &uint32_tmp,buffer);
 		safe_unpack32(&job_desc_ptr->job_id, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->job_id_str,

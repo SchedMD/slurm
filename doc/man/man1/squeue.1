@@ -514,6 +514,10 @@ Prints the directory where the job checkpoint will be written to.
 Prints the time interval of the checkpoint.
 (Valid for job steps only)
 .TP
+\fBclusterfeature\fR
+Cluster features required by the job.
+(Valid for jobs only)
+.TP
 \fBcommand\fR
 The command to be executed.
 (Valid for jobs only)
@@ -579,22 +583,6 @@ The exit code for the job.
 \fBfeature\fR
 Features required by the job.
 (Valid for jobs only)
-.TP
-\fBfedorigin\fR
-Cluster name where federated job originated from.
-(Valid for federated jobs only)
-.TP
-\fBfedoriginraw\fR
-Cluster ID where federated job originated from.
-(Valid for federated jobs only)
-.TP
-\fBfedsiblings\fR
-Cluster names of where federated job can run.
-(Valid for federated jobs only)
-.TP
-\fBfedsiblingsraw\fR
-Cluster IDs of where federated job can run.
-(Valid for federated jobs only)
 .TP
 \fBgres\fR
 Generic resources (gres) required by the job or step.
@@ -718,6 +706,14 @@ Number of tasks requested by a job or job step.
 This reports the value of the \fB\-\-ntasks\fR option.
 (Valid for jobs and job steps)
 .TP
+\fBorigin\fR
+Cluster name where federated job originated from.
+(Valid for federated jobs only)
+.TP
+\fBoriginraw\fR
+Cluster ID where federated job originated from.
+(Valid for federated jobs only)
+.TP
 \fBoversubscribe\fR
 Can the compute resources allocated to the job be over subscribed by other jobs.
 The resources to be over subscribed can be nodes, sockets, cores, or
@@ -821,6 +817,22 @@ Connection type (TORUS, MESH, or NAV == torus else mesh),
 Permit rotation of geometry (yes or no),
 Node use (VIRTUAL or COPROCESSOR), etc.
 (Valid for jobs only)
+.TP
+\fBsiblingsactive\fR
+Cluster names of where federated sibling jobs exist.
+(Valid for federated jobs only)
+.TP
+\fBsiblingsactiveraw\fR
+Cluster IDs of where federated sibling jobs exist.
+(Valid for federated jobs only)
+.TP
+\fBsiblingsviable\fR
+Cluster names of where federated sibling jobs are viable to run.
+(Valid for federated jobs only)
+.TP
+\fBsiblingsviableraw\fR
+Cluster IDs of where federated sibling jobs viable to run.
+(Valid for federated jobs only)
 .TP
 \fBsockets\fR
 Number of sockets per node requested by the job.

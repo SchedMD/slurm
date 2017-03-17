@@ -25,6 +25,8 @@ START_TEST(pack_null_req)
 	msg.msg_type = REQUEST_JOB_ALLOCATION_INFO;
 
 	pack_msg(&msg, buf);
+
+	free_buf(buf);
 }
 END_TEST
 

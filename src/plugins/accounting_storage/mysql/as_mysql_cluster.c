@@ -255,9 +255,6 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		if ((rc = create_cluster_tables(mysql_conn,
 						object->name))
 		    != SLURM_SUCCESS) {
-			xfree(extra);
-			xfree(cols);
-			xfree(vals);
 			added = 0;
 			if (mysql_errno(mysql_conn->db_conn)
 			    == ER_WRONG_TABLE_NAME)
@@ -274,6 +271,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		int fed_id = 0;
 		uint16_t fed_state = CLUSTER_FED_STATE_NA;
 		uint32_t fed_weight = 1; /* default */
+		char *features = NULL;
 		xstrcat(cols, "creation_time, mod_time, acct");
 		xstrfmtcat(vals, "%ld, %ld, 'root'", now, now);
 		xstrfmtcat(extra, ", mod_time=%ld", now);
@@ -304,25 +302,35 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 				fed_state = CLUSTER_FED_STATE_ACTIVE;
 		}
 
+		if (object->fed.feature_list) {
+			features =
+				slurm_char_list_to_xstr(
+						object->fed.feature_list);
+			has_feds = 1;
+		}
+
 		if (object->fed.weight != NO_VAL)
 			fed_weight = object->fed.weight;
 
 		xstrfmtcat(query,
 			   "insert into %s (creation_time, mod_time, "
 			   "name, classification, federation, fed_id, "
-			   "fed_state, fed_weight) "
-			   "values (%ld, %ld, '%s', %u, '%s', %d, %u, %u) "
+			   "fed_state, fed_weight, features) "
+			   "values (%ld, %ld, '%s', %u, '%s', %d, %u, %u, '%s') "
 			   "on duplicate key update deleted=0, mod_time=%ld, "
 			   "control_host='', control_port=0, "
 			   "classification=%u, flags=0, federation='%s', "
-			   "fed_id=%d, fed_state=%u, fed_weight=%u",
+			   "fed_id=%d, fed_state=%u, fed_weight=%u, "
+			   "features='%s'",
 			   cluster_table,
 			   now, now, object->name, object->classification,
 			   (object->fed.name) ? object->fed.name : "",
 			   fed_id, fed_state, fed_weight,
+			   (features) ? features : "",
 			   now, object->classification,
 			   (object->fed.name) ? object->fed.name : "",
-			   fed_id, fed_state, fed_weight);
+			   fed_id, fed_state, fed_weight,
+			   (features) ? features : "");
 		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
 			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
@@ -332,6 +340,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			xfree(extra);
 			xfree(cols);
 			xfree(vals);
+			xfree(features);
 			added=0;
 			break;
 		}
@@ -343,6 +352,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			xfree(extra);
 			xfree(cols);
 			xfree(vals);
+			xfree(features);
 			continue;
 		}
 
@@ -366,9 +376,18 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (rc != SLURM_SUCCESS) {
 			error("Couldn't add cluster root assoc");
 			xfree(extra);
+			xfree(features);
 			added=0;
 			break;
 		}
+
+		/* Build up extra with cluster specfic values for txn table */
+		xstrfmtcat(extra, ", federation='%s', fed_id=%d, fed_state=%u, "
+				  "fed_weight=%u, features='%s'",
+			   (object->fed.name) ? object->fed.name : "",
+			   fed_id, fed_state, fed_weight,
+			   (features) ? features : "");
+		xfree(features);
 
 		/* we always have a ', ' as the first 2 chars */
 		tmp_extra = slurm_add_slash_to_quotes(extra+2);
@@ -443,6 +462,22 @@ end_it:
 		as_mysql_add_feds_to_update_list(mysql_conn);
 
 	return rc;
+}
+
+static int _reconcile_existing_features(void *object, void *arg)
+{
+	char *new_feature = (char *)object;
+	List existing_features = (List)arg;
+
+	if (new_feature[0] == '-')
+		list_delete_all(existing_features, slurm_find_char_in_list,
+				new_feature + 1);
+	else if (new_feature[0] == '+')
+		list_append(existing_features, xstrdup(new_feature + 1));
+	else
+		list_append(existing_features, xstrdup(new_feature));
+
+	return SLURM_SUCCESS;
 }
 
 extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
@@ -544,7 +579,7 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		fed_update = true;
 	}
 
-	if (!vals) {
+	if (!vals && !cluster->fed.feature_list) {
 		xfree(extra);
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("Nothing to change");
@@ -558,7 +593,7 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
-	xstrfmtcat(query, "select name, control_port, federation from %s%s;",
+	xstrfmtcat(query, "select name, control_port, federation, features from %s%s;",
 		   cluster_table, extra);
 
 	if (debug_flags & DEBUG_FLAG_DB_ASSOC)
@@ -619,6 +654,38 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 					   set_state);
 
 			xfree(curr_fed);
+		}
+
+		if (cluster->fed.feature_list) {
+			if (!list_count(cluster->fed.feature_list)) {
+				/* clear all existing features */
+				xstrfmtcat(tmp_vals, ", features=''");
+			} else {
+				char *features = NULL, *feature = NULL;
+				List existing_features =
+					list_create(slurm_destroy_char);
+
+				if ((feature =
+				     list_peek(cluster->fed.feature_list)) &&
+				    (feature[0] == '+' || feature[0] == '-'))
+					slurm_addto_char_list(existing_features,
+							      row[3]);
+
+				list_for_each(cluster->fed.feature_list,
+					      _reconcile_existing_features,
+					      existing_features);
+
+				features =
+					slurm_char_list_to_xstr(
+							existing_features);
+				xstrfmtcat(tmp_vals, ", features='%s'",
+					   features ? features : "");
+
+				xfree(features);
+				FREE_NULL_LIST(existing_features);
+			}
+
+			fed_update = true;
 		}
 
 		list_append(ret_list, object);
@@ -842,6 +909,7 @@ extern List as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 		"classification",
 		"control_host",
 		"control_port",
+		"features",
 		"federation",
 		"fed_id",
 		"fed_state",
@@ -856,6 +924,7 @@ extern List as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 		CLUSTER_REQ_CLASS,
 		CLUSTER_REQ_CH,
 		CLUSTER_REQ_CP,
+		CLUSTER_REQ_FEATURES,
 		CLUSTER_REQ_FEDR,
 		CLUSTER_REQ_FEDID,
 		CLUSTER_REQ_FEDSTATE,
@@ -916,6 +985,7 @@ empty:
 	while ((row = mysql_fetch_row(result))) {
 		MYSQL_RES *result2 = NULL;
 		MYSQL_ROW row2;
+		char *features = NULL;
 		cluster = xmalloc(sizeof(slurmdb_cluster_rec_t));
 		slurmdb_init_cluster_rec(cluster, 0);
 		list_append(cluster_list, cluster);
@@ -928,6 +998,13 @@ empty:
 		cluster->control_host = xstrdup(row[CLUSTER_REQ_CH]);
 		cluster->control_port = slurm_atoul(row[CLUSTER_REQ_CP]);
 		cluster->fed.name     = xstrdup(row[CLUSTER_REQ_FEDR]);
+		features              = row[CLUSTER_REQ_FEATURES];
+		if (features && *features) {
+			cluster->fed.feature_list =
+				list_create(slurm_destroy_char);
+			slurm_addto_char_list(cluster->fed.feature_list,
+					      features);
+		}
 		cluster->fed.id       = slurm_atoul(row[CLUSTER_REQ_FEDID]);
 		cluster->fed.state    = slurm_atoul(row[CLUSTER_REQ_FEDSTATE]);
 		cluster->fed.weight   = slurm_atoul(row[CLUSTER_REQ_FEDWEIGHT]);

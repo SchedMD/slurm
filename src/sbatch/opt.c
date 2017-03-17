@@ -189,6 +189,7 @@ enum wrappers {
 #define LONG_OPT_DEADLINE        0x166
 #define LONG_OPT_BURST_BUFFER_FILE 0x167
 #define LONG_OPT_DELAY_BOOT      0x168
+#define LONG_OPT_CLUSTER_CONSTRAINT 0x169
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -375,6 +376,7 @@ static void _opt_default(void)
 	opt.hold	    = false;
 	opt.parsable	    = false;
 	opt.constraints	    = NULL;
+	opt.c_constraints   = NULL;
 	opt.gres	    = NULL;
 	opt.contiguous	    = false;
 	opt.nodelist	    = NULL;
@@ -487,6 +489,7 @@ env_vars_t env_vars[] = {
   {"SLURM_CLUSTERS",       OPT_STRING,     &opt.clusters,      NULL          },
   {"SBATCH_CNLOAD_IMAGE",  OPT_STRING,     &opt.linuximage,    NULL          },
   {"SBATCH_CONSTRAINT",    OPT_STRING,     &opt.constraints,   NULL          },
+  {"SBATCH_CLUSTER_CONSTRAINT", OPT_STRING,&opt.c_constraints, NULL          },
   {"SBATCH_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL          },
   {"SBATCH_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL          },
   {"SBATCH_CPU_FREQ_REQ",  OPT_CPU_FREQ,   NULL,               NULL          },
@@ -770,6 +773,7 @@ static struct option long_options[] = {
 							 doesn't do anything */
 	{"extra-node-info", required_argument, 0, 'B'},
 	{"cpus-per-task", required_argument, 0, 'c'},
+	{"cluster-constraint",required_argument,0, LONG_OPT_CLUSTER_CONSTRAINT},
 	{"constraint",    required_argument, 0, 'C'},
 	{"dependency",    required_argument, 0, 'd'},
 	{"workdir",       required_argument, 0, 'D'},
@@ -1536,6 +1540,10 @@ static void _set_options(int argc, char **argv)
 			opt.exc_nodes = xstrdup(optarg);
 			if (!_valid_node_list(&opt.exc_nodes))
 				exit(error_exit);
+			break;
+		case LONG_OPT_CLUSTER_CONSTRAINT:
+			xfree(opt.c_constraints);
+			opt.c_constraints = xstrdup(optarg);
 			break;
 		case LONG_OPT_CONT:
 			opt.contiguous = true;
@@ -3258,6 +3266,9 @@ static char *print_constraints(void)
 	if (opt.constraints != NULL)
 		xstrfmtcat(buf, "constraints=`%s' ", opt.constraints);
 
+	if (opt.c_constraints != NULL)
+		xstrfmtcat(buf, "cluster-constraints=`%s' ", opt.c_constraints);
+
 	return buf;
 }
 
@@ -3523,6 +3534,7 @@ static void _help(void)
 
 "\n"
 "Constraint options:\n"
+"      --cluster-constraint=list specify a list of cluster constraints\n"
 "      --contiguous            demand a contiguous range of nodes\n"
 "  -C, --constraint=list       specify a list of constraints\n"
 "  -F, --nodefile=filename     request a specific list of hosts\n"
