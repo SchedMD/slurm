@@ -2846,6 +2846,7 @@ extern int fed_mgr_job_requeue(struct job_record *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	uint32_t origin_id;
+	uint64_t feature_sibs = 0;
 
 	xassert(job_ptr);
 	xassert(job_ptr->details);
@@ -2873,6 +2874,14 @@ extern int fed_mgr_job_requeue(struct job_record *job_ptr)
 
 	/* Don't worry about testing which clusters can start the job the
 	 * soonest since they can't start the job for 120 seconds anyways. */
+
+	/* Get new viable siblings since the job might just have one viable
+	 * sibling listed if the sibling was the cluster that could start the
+	 * job the soonest. */
+	fed_mgr_validate_cluster_features(job_ptr->details->cluster_features,
+					  &feature_sibs);
+	job_ptr->fed_details->siblings_viable =
+		_get_viable_sibs(job_ptr->clusters, feature_sibs);
 
 	_prepare_submit_siblings(job_ptr);
 
