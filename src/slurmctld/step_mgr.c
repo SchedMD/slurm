@@ -255,6 +255,7 @@ static void _internal_step_complete(struct job_record *job_ptr,
 	}
 
 	if (IS_JOB_FINISHED(job_ptr) &&
+	    job_ptr->tres_alloc_cnt &&
 	    (job_ptr->tres_alloc_cnt[TRES_ENERGY] != NO_VAL64) &&
 	    (list_count(job_ptr->step_list) == 1)) {
 		set_job_tres_alloc_str(job_ptr, false);
