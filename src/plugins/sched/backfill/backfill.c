@@ -896,7 +896,7 @@ static int _attempt_backfill(void)
 	time_t orig_sched_start, orig_start_time = (time_t) 0;
 	node_space_map_t *node_space;
 	struct timeval bf_time1, bf_time2;
-	int rc = 0;
+	int rc = 0, error_code;
 	int job_test_count = 0, test_time_count = 0, pend_time;
 	uint32_t *uid = NULL, nuser = 0, bf_parts = 0;
 	uint32_t *bf_part_jobs = NULL, *bf_part_resv = NULL;
@@ -910,7 +910,7 @@ static int _attempt_backfill(void)
 	struct timeval start_tv;
 	uint32_t test_array_job_id = 0;
 	uint32_t test_array_count = 0;
-	uint32_t acct_max_nodes, wait_reason = 0, job_no_reserve;
+	uint32_t job_no_reserve;
 	bool resv_overlap = false;
 	uint8_t save_share_res, save_whole_node;
 	int test_fini;
@@ -1282,39 +1282,25 @@ next_task:
 		}
 
 		/* Determine minimum and maximum node counts */
+		error_code = get_node_cnts(job_ptr, qos_ptr, part_ptr,
+					   &min_nodes, &req_nodes, &max_nodes);
 
-		/* check whether job is allowed to override partition limit */
-		if (qos_ptr && (qos_ptr->flags & QOS_FLAG_PART_MIN_NODE))
-			min_nodes = job_ptr->details->min_nodes;
-		else
-			min_nodes = MAX(job_ptr->details->min_nodes,
-					part_ptr->min_nodes);
-		if (job_ptr->details->max_nodes == 0)
-			max_nodes = part_ptr->max_nodes;
-		else if (qos_ptr && (qos_ptr->flags & QOS_FLAG_PART_MAX_NODE))
-			max_nodes = job_ptr->details->max_nodes;
-		else
-			max_nodes = MIN(job_ptr->details->max_nodes,
-					part_ptr->max_nodes);
-
-		max_nodes = MIN(max_nodes, 500000);     /* prevent overflows */
-		if (job_ptr->details->max_nodes)
-			req_nodes = max_nodes;
-		else
-			req_nodes = min_nodes;
-		if (min_nodes > max_nodes) {
+		if (error_code == ESLURM_ACCOUNTING_POLICY) {
+			if (debug_flags & DEBUG_FLAG_BACKFILL)
+				info("backfill: job %u acct policy node limit",
+				     job_ptr->job_id);
+			continue;
+		} else if (error_code ==
+			   ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) {
 			if (debug_flags & DEBUG_FLAG_BACKFILL)
 				info("backfill: job %u node count too high",
 				     job_ptr->job_id);
 			continue;
-		}
-		acct_max_nodes = acct_policy_get_max_nodes(job_ptr,
-							   &wait_reason);
-		if (acct_max_nodes < min_nodes) {
-			job_ptr->state_reason = wait_reason;
+		} else if (error_code != SLURM_SUCCESS) {
 			if (debug_flags & DEBUG_FLAG_BACKFILL)
-				info("backfill: job %u acct policy node limit",
-				     job_ptr->job_id);
+				info("backfill: error setting nodes for job %u: %s",
+				     job_ptr->job_id,
+				     slurm_strerror(error_code));
 			continue;
 		}
 

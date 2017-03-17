@@ -132,4 +132,20 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			bitstr_t **select_node_bitmap, char *unavail_node_str,
 			char **err_msg);
 
+/*
+ * get_node_cnts - determine the number of nodes for the requested job.
+ * IN job_ptr - pointer to the job record.
+ * IN qos_ptr - pointer to the job's qos.
+ * IN part_ptr - pointer to the job's partition.
+ * OUT min_nodes - The minimum number of nodes for the job.
+ * OUT req_nodes - The number of node the select plugin should target.
+ * OUT max_nodes - The max number of nodes for the job.
+ * RET SLURM_SUCCESS on success, ESLURM code from slurm_errno.h otherwise.
+ */
+extern int get_node_cnts(struct job_record *job_ptr,
+			 slurmdb_qos_rec_t *qos_ptr,
+			 struct part_record *part_ptr,
+			 uint32_t *min_nodes,
+			 uint32_t *req_nodes, uint32_t *max_nodes);
+
 #endif /* !_HAVE_NODE_SCHEDULER_H */
