@@ -2645,7 +2645,7 @@ extern int jobacct_storage_p_job_complete(void *db_conn,
 			req.submit_time = job_ptr->details->submit_time;
 	}
 
-	if (!(job_ptr->bit_flags && TRES_STR_CALC))
+	if (!(job_ptr->bit_flags & TRES_STR_CALC))
 		req.tres_alloc_str = job_ptr->tres_alloc_str;
 
 	msg.msg_type    = DBD_JOB_COMPLETE;
@@ -2812,7 +2812,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 	else if (step_ptr->job_ptr->details)
 		req.job_submit_time   = step_ptr->job_ptr->details->submit_time;
 
-	if (step_ptr->job_ptr->bit_flags && TRES_STR_CALC)
+	if (step_ptr->job_ptr->bit_flags & TRES_STR_CALC)
 		req.job_tres_alloc_str = step_ptr->job_ptr->tres_alloc_str;
 
 	req.state       = step_ptr->state;
