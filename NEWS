@@ -40,6 +40,8 @@ documents those changes that are of interest to users and administrators.
     cores.
  -- MYSQL - Get rid of table join during rollup which speeds up the process
     dramatically on large job/step tables.
+ -- Add ability to define features on clusters for directing federated jobs to
+    different clusters.
 
 * Changes in Slurm 17.02.2
 ==========================
