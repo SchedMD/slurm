@@ -280,7 +280,7 @@ static char *_set_energy_tres(mysql_conn_t *mysql_conn,
 
 		assoc_mgr_set_tres_cnt_array(
 			&tres_alloc_cnt, tres_alloc_str, 0, false);
-
+		xfree(tres_alloc_str);
 		if (row[1] && row[1][0]) {
 			if (tres_alloc_cnt[TRES_ARRAY_ENERGY] &&
 			    tres_alloc_cnt[TRES_ARRAY_ENERGY] != NO_VAL64)
@@ -756,13 +756,6 @@ no_rollup_change:
 		rc = mysql_db_query(mysql_conn, query);
 	}
 
-	xfree(block_id);
-	xfree(partition);
-	xfree(gres_req);
-	xfree(gres_alloc);
-	xfree(jname);
-	xfree(query);
-
 	/* now we will reset all the steps */
 	if (IS_JOB_RESIZING(job_ptr)) {
 		/* FIXME : Verify this is still needed */
@@ -771,6 +764,12 @@ no_rollup_change:
 	}
 end_it:
 	xfree(tres_alloc_str);
+	xfree(block_id);
+	xfree(partition);
+	xfree(gres_req);
+	xfree(gres_alloc);
+	xfree(jname);
+	xfree(query);
 
 	return rc;
 }
