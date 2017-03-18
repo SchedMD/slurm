@@ -56,6 +56,20 @@ static void _wr_rdunlock(lock_datatype_t datatype);
 static void _wr_wrlock(lock_datatype_t datatype);
 static void _wr_wrunlock(lock_datatype_t datatype);
 
+#ifndef NDEBUG
+/*
+ * Used to protect against double-locking within a single thread. Calling
+ * lock_slurmctld() while already holding locks will lead to deadlock;
+ * this will force such instances to abort() in development builds.
+ */
+/*
+ * FIXME: __thread is non-standard, and may cause build failures on unusual
+ * systems. Only used within development builds to mitigate possible problems
+ * with production builds.
+ */
+__thread bool slurmctld_locked = false;
+#endif
+
 /* init_locks - create locks used for slurmctld data structure access
  *	control */
 void init_locks(void)
@@ -67,6 +81,9 @@ void init_locks(void)
 /* lock_slurmctld - Issue the required lock requests in a well defined order */
 extern void lock_slurmctld(slurmctld_lock_t lock_levels)
 {
+	/* test, then set via xassert abuse */
+	xassert(!slurmctld_locked && (slurmctld_locked = true));
+
 	if (lock_levels.config == READ_LOCK)
 		_wr_rdlock(CONFIG_LOCK);
 	else if (lock_levels.config == WRITE_LOCK)
@@ -97,6 +114,9 @@ extern void lock_slurmctld(slurmctld_lock_t lock_levels)
  *	defined order */
 extern void unlock_slurmctld(slurmctld_lock_t lock_levels)
 {
+	/* test, then set via xassert abuse */
+	xassert(slurmctld_locked && !(slurmctld_locked = false));
+
 	if (lock_levels.federation == READ_LOCK)
 		_wr_rdunlock(FED_LOCK);
 	else if (lock_levels.federation == WRITE_LOCK)
