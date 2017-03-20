@@ -1090,7 +1090,9 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 
 extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 {
-	switch(msg_type) {
+	static char unk_str[64];
+
+	switch (msg_type) {
 	case DBD_INIT:
 		if (get_enum) {
 			return "DBD_INIT";
@@ -1638,7 +1640,8 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 			return "Shutdown daemon";
 		break;
 	default:
-		return "Unknown";
+		snprintf(unk_str, sizeof(unk_str), "MsgType=%d", msg_type);
+		return unk_str;
 		break;
 	}
 
@@ -1690,7 +1693,7 @@ static int _unpack_return_code(uint16_t rpc_version, Buf buffer)
 		return rc;
 	}
 
-	switch(resp.msg_type) {
+	switch (resp.msg_type) {
 	case DBD_ID_RC:
 		id_msg = resp.data;
 		rc = id_msg->return_code;
@@ -1776,7 +1779,7 @@ static int _handle_mult_rc_ret(void)
 		return rc;
 
 	safe_unpack16(&msg_type, buffer);
-	switch(msg_type) {
+	switch (msg_type) {
 	case DBD_GOT_MULT_MSG:
 		if (slurmdbd_unpack_list_msg(
 			    &list_msg, slurmdbd_conn->version,
@@ -2397,7 +2400,7 @@ extern void slurmdbd_free_cluster_tres_msg(dbd_cluster_tres_msg_t *msg)
 
 extern void slurmdbd_free_msg(slurmdbd_msg_t *msg)
 {
-	switch(msg->msg_type) {
+	switch (msg->msg_type) {
 	case DBD_ADD_ACCOUNTS:
 	case DBD_ADD_TRES:
 	case DBD_ADD_ASSOCS:
@@ -2542,7 +2545,7 @@ extern void slurmdbd_free_rec_msg(dbd_rec_msg_t *msg,
 	void (*my_destroy) (void *object);
 
 	if (msg) {
-		switch(type) {
+		switch (type) {
 		case DBD_ADD_RESV:
 		case DBD_REMOVE_RESV:
 		case DBD_MODIFY_RESV:
@@ -2564,7 +2567,7 @@ extern void slurmdbd_free_cond_msg(dbd_cond_msg_t *msg,
 	void (*my_destroy) (void *object);
 
 	if (msg) {
-		switch(type) {
+		switch (type) {
 		case DBD_GET_ACCOUNTS:
 		case DBD_REMOVE_ACCOUNTS:
 			my_destroy = slurmdb_destroy_account_cond;
@@ -2697,7 +2700,7 @@ extern void slurmdbd_free_modify_msg(dbd_modify_msg_t *msg,
 	void (*destroy_rec) (void *object);
 
 	if (msg) {
-		switch(type) {
+		switch (type) {
 		case DBD_MODIFY_ACCOUNTS:
 			destroy_cond = slurmdb_destroy_account_cond;
 			destroy_rec = slurmdb_destroy_account_rec;
@@ -2788,7 +2791,7 @@ extern void slurmdbd_free_usage_msg(dbd_usage_msg_t *msg,
 {
 	void (*destroy_rec) (void *object);
 	if (msg) {
-		switch(type) {
+		switch (type) {
 		case DBD_GET_ASSOC_USAGE:
 		case DBD_GOT_ASSOC_USAGE:
 			destroy_rec = slurmdb_destroy_assoc_rec;
@@ -2912,7 +2915,7 @@ extern void slurmdbd_pack_rec_msg(dbd_rec_msg_t *msg,
 {
 	void (*my_function) (void *object, uint16_t rpc_version, Buf buffer);
 
-	switch(type) {
+	switch (type) {
 	case DBD_ADD_RESV:
 	case DBD_REMOVE_RESV:
 	case DBD_MODIFY_RESV:
@@ -2933,7 +2936,7 @@ extern int slurmdbd_unpack_rec_msg(dbd_rec_msg_t **msg,
 	dbd_rec_msg_t *msg_ptr = NULL;
 	int (*my_function) (void **object, uint16_t rpc_version, Buf buffer);
 
-	switch(type) {
+	switch (type) {
 	case DBD_ADD_RESV:
 	case DBD_REMOVE_RESV:
 	case DBD_MODIFY_RESV:
@@ -2964,7 +2967,7 @@ extern void slurmdbd_pack_cond_msg(dbd_cond_msg_t *msg,
 {
 	void (*my_function) (void *object, uint16_t rpc_version, Buf buffer);
 
-	switch(type) {
+	switch (type) {
 	case DBD_GET_ACCOUNTS:
 	case DBD_REMOVE_ACCOUNTS:
 		my_function = slurmdb_pack_account_cond;
@@ -3031,7 +3034,7 @@ extern int slurmdbd_unpack_cond_msg(dbd_cond_msg_t **msg,
 	dbd_cond_msg_t *msg_ptr = NULL;
 	int (*my_function) (void **object, uint16_t rpc_version, Buf buffer);
 
-	switch(type) {
+	switch (type) {
 	case DBD_GET_ACCOUNTS:
 	case DBD_REMOVE_ACCOUNTS:
 		my_function = slurmdb_unpack_account_cond;
@@ -3606,7 +3609,7 @@ extern void slurmdbd_pack_list_msg(dbd_list_msg_t *msg,
 	void *object = NULL;
 	void (*my_function) (void *object, uint16_t rpc_version, Buf buffer);
 
-	switch(type) {
+	switch (type) {
 	case DBD_ADD_ACCOUNTS:
 	case DBD_GOT_ACCOUNTS:
 		my_function = slurmdb_pack_account_rec;
@@ -3706,7 +3709,7 @@ extern int slurmdbd_unpack_list_msg(dbd_list_msg_t **msg, uint16_t rpc_version,
 	int (*my_function) (void **object, uint16_t rpc_version, Buf buffer);
 	void (*my_destroy) (void *object);
 
-	switch(type) {
+	switch (type) {
 	case DBD_ADD_ACCOUNTS:
 	case DBD_GOT_ACCOUNTS:
 		my_function = slurmdb_unpack_account_rec;
@@ -3832,7 +3835,7 @@ extern void slurmdbd_pack_modify_msg(dbd_modify_msg_t *msg,
 	void (*my_cond) (void *object, uint16_t rpc_version, Buf buffer);
 	void (*my_rec) (void *object, uint16_t rpc_version, Buf buffer);
 
-	switch(type) {
+	switch (type) {
 	case DBD_MODIFY_ACCOUNTS:
 		my_cond = slurmdb_pack_account_cond;
 		my_rec = slurmdb_pack_account_rec;
@@ -3885,7 +3888,7 @@ extern int slurmdbd_unpack_modify_msg(dbd_modify_msg_t **msg,
 	msg_ptr = xmalloc(sizeof(dbd_modify_msg_t));
 	*msg = msg_ptr;
 
-	switch(type) {
+	switch (type) {
 	case DBD_MODIFY_ACCOUNTS:
 		my_cond = slurmdb_unpack_account_cond;
 		my_rec = slurmdb_unpack_account_rec;
@@ -4279,7 +4282,7 @@ extern void slurmdbd_pack_usage_msg(dbd_usage_msg_t *msg,
 {
 	void (*my_rec) (void *object, uint16_t rpc_version, Buf buffer);
 
-	switch(type) {
+	switch (type) {
 	case DBD_GET_ASSOC_USAGE:
 	case DBD_GOT_ASSOC_USAGE:
 		my_rec = slurmdb_pack_assoc_rec;
@@ -4313,7 +4316,7 @@ extern int slurmdbd_unpack_usage_msg(dbd_usage_msg_t **msg,
 	msg_ptr = xmalloc(sizeof(dbd_usage_msg_t));
 	*msg = msg_ptr;
 
-	switch(type) {
+	switch (type) {
 	case DBD_GET_ASSOC_USAGE:
 	case DBD_GOT_ASSOC_USAGE:
 		my_rec = slurmdb_unpack_assoc_rec;
