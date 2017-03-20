@@ -100,6 +100,11 @@ typedef struct {
 	int                    thread_rc;
 } sib_update_t;
 
+typedef struct {
+	Buf        buffer;
+	time_t     last_try;
+	int        last_defer;
+} agent_queue_t;
 
 /* Local Prototypes */
 static int _is_fed_job(struct job_record *job_ptr, uint32_t *origin_id);
@@ -268,12 +273,17 @@ static int _send_recv_msg(slurmdb_cluster_rec_t *cluster, slurm_msg_t *req,
 /* Free Buf record from a list */
 static void _ctld_free_list_msg(void *x)
 {
-	FREE_NULL_BUFFER(x);
+	agent_queue_t *agent_queue_ptr = (agent_queue_t *) x;
+	if (agent_queue_ptr) {
+		FREE_NULL_BUFFER(agent_queue_ptr->buffer);
+		xfree(x);
+	}
 }
 
 static int _queue_rpc(slurmdb_cluster_rec_t *cluster, slurm_msg_t *req,
 		      bool locked)
 {
+	agent_queue_t *agent_rec;
 	Buf buf;
 
 	if (!cluster->send_rpc)
@@ -289,10 +299,12 @@ static int _queue_rpc(slurmdb_cluster_rec_t *cluster, slurm_msg_t *req,
 	}
 
 	/* Queue the RPC and notify the agent of new work */
-	list_append(cluster->send_rpc, buf);
+	agent_rec = xmalloc(sizeof(agent_queue_t));
+	agent_rec->buffer = buf;
+	list_append(cluster->send_rpc, agent_rec);
 	slurm_mutex_lock(&agent_mutex);
 	agent_queue_size++;
-	slurm_cond_broadcast(&agent_cond);
+//	slurm_cond_broadcast(&agent_cond);
 	slurm_mutex_unlock(&agent_mutex);
 
 	return SLURM_SUCCESS;
@@ -335,7 +347,7 @@ static int _ping_controller(slurmdb_cluster_rec_t *cluster)
  * close all sibling conns
  * must lock before entering.
  */
-static int _close_sibling_conns()
+static int _close_sibling_conns(void)
 {
 	ListIterator itr;
 	slurmdb_cluster_rec_t *cluster;
@@ -994,7 +1006,7 @@ static void *_agent_thread(void *arg)
 	slurmdb_cluster_rec_t *cluster;
 	struct timespec ts = {0, 0};
 	ListIterator cluster_iter, rpc_iter;
-	Buf rpc_buf;
+	agent_queue_t *rpc_rec;
 	slurm_msg_t req_msg, resp_msg;
 	ctld_list_msg_t ctld_req_msg;
 	int rc;
@@ -1005,7 +1017,7 @@ static void *_agent_thread(void *arg)
 
 		/* Wait for new work or re-issue RPCs after 2 second wait */
 		slurm_mutex_lock(&agent_mutex);
-		while (!slurmctld_config.shutdown_time && !agent_queue_size) {
+		if (!slurmctld_config.shutdown_time && !agent_queue_size) {
 			ts.tv_sec  = time(NULL) + 2;
 			pthread_cond_timedwait(&agent_cond, &agent_mutex, &ts);
 		}
@@ -1019,20 +1031,33 @@ static void *_agent_thread(void *arg)
 					fed_mgr_fed_rec->cluster_list);
 		while (!slurmctld_config.shutdown_time &&
 		       (cluster = list_next(cluster_iter))) {
-			int i, rpc_cnt = 0;
+			time_t now = time(NULL);
 			if ((cluster->send_rpc == NULL) ||
 			   (list_count(cluster->send_rpc) == 0))
 				continue;
 
 			/* Move currently pending RPCs to new list */
-			ctld_req_msg.my_list = list_create(NULL);
+			ctld_req_msg.my_list = NULL;
 			rpc_iter = list_iterator_create(cluster->send_rpc);
-			while ((rpc_buf = list_next(rpc_iter)))
-				list_append(ctld_req_msg.my_list, rpc_buf);
+			while ((rpc_rec = list_next(rpc_iter))) {
+				if ((rpc_rec->last_try + rpc_rec->last_defer) >=
+				    now)
+					continue;
+				if (!ctld_req_msg.my_list)
+					ctld_req_msg.my_list =list_create(NULL);
+				list_append(ctld_req_msg.my_list,
+					    rpc_rec->buffer);
+				rpc_rec->last_try = now;
+				if (rpc_rec->last_defer)
+					rpc_rec->last_defer *= 2;
+				else
+					rpc_rec->last_defer = 2;
+			}
 			list_iterator_destroy(rpc_iter);
+			if (!ctld_req_msg.my_list)
+				continue;
 
 			/* Build, pack and send the combined RPC */
-			rpc_cnt = list_count(ctld_req_msg.my_list);
 			slurm_msg_t_init(&req_msg);
 			req_msg.msg_type = REQUEST_CTLD_MULT_MSG;
 			req_msg.data     = &ctld_req_msg;
@@ -1045,11 +1070,10 @@ static void *_agent_thread(void *arg)
 				/* Remove successfully processed RPCs */
 				rpc_iter = list_iterator_create(cluster->
 								send_rpc);
-				i = 0;
-				while ((rpc_buf = list_next(rpc_iter))) {
-//FIXME: Remove only RPCs with successful responses
-					if (i++ >= rpc_cnt)
-						break;
+				while ((rpc_rec = list_next(rpc_iter))) {
+					if (rpc_rec->last_try != now)
+						continue;
+// FIXME: Determine if success
 					list_remove(rpc_iter);
 				}
 				list_iterator_destroy(rpc_iter);
