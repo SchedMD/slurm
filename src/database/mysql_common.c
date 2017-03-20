@@ -272,11 +272,12 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 
 	itr = list_iterator_create(columns);
 	/* In MySQL 5.7.4 we lost the ability to run 'alter ignore'.  This was
-	 * needed when converting old tables to new schemas.  We found a back
-	 * door for this with set session old_alter_table=1 which we use below.
-	 * This seems to work just fine and we get what we are looking for.
+	 * needed when converting old tables to new schemas.  If people convert
+	 * in the future from an older version of Slurm that needed the ignore
+	 * to work they will have to downgrade mysql to <= 5.7.3 to make things
+	 * work correctly or manually edit the database to get things to work.
 	 */
-	query = xstrdup_printf("alter IGNORE table %s", table_name);
+	query = xstrdup_printf("alter table %s", table_name);
 	correct_query = xstrdup(query);
 	START_TIMER;
 	while (fields[i].name) {
@@ -458,7 +459,6 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 
 	query[strlen(query)-1] = ';';
 	correct_query[strlen(correct_query)-1] = ';';
-
 	//info("%d query\n%s", __LINE__, query);
 
 	/* see if we have already done this definition */
@@ -503,15 +503,10 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 			debug4("Table %s doesn't exist, adding", table_name);
 		else
 			debug("Table %s has changed.  Updating...", table_name);
-		query2 = xstrdup_printf("set session old_alter_table=1;"
-					"%s set session old_alter_table=0;",
-					query);
-		xfree(query);
-		if (mysql_db_query(mysql_conn, query2)) {
-			xfree(query2);
+		if (mysql_db_query(mysql_conn, query)) {
+			xfree(query);
 			return SLURM_ERROR;
 		}
-		xfree(query2);
 		quoted = slurm_add_slash_to_quotes(correct_query);
 		query2 = xstrdup_printf("insert into %s (creation_time, "
 					"mod_time, table_name, definition) "
