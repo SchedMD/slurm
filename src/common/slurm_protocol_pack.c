@@ -750,6 +750,11 @@ static void _pack_event_log_msg(slurm_event_log_msg_t *msg, Buf buffer,
 static int _unpack_event_log_msg(slurm_event_log_msg_t **msg, Buf buffer,
 				 uint16_t protocol_version);
 
+static void _pack_buf_list_msg(ctld_list_msg_t *msg, Buf buffer,
+			       uint16_t protocol_version);
+static int _unpack_buf_list_msg(ctld_list_msg_t **msg, Buf buffer,
+				 uint16_t protocol_version);
+
 /* pack_header
  * packs a slurm protocol header that precedes every slurm message
  * IN header - the header structure to pack
@@ -1501,11 +1506,15 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_event_log_msg((slurm_event_log_msg_t *) msg->data, buffer,
 				    msg->protocol_version);
 		break;
+	case REQUEST_CTLD_MULT_MSG:
+	case RESPONSE_CTLD_MULT_MSG:
+		_pack_buf_list_msg((ctld_list_msg_t *) msg->data, buffer,
+				   msg->protocol_version);
+		break;
 	default:
 		debug("No pack method for msg type %u", msg->msg_type);
 		return EINVAL;
 		break;
-
 	}
 	return SLURM_SUCCESS;
 }
@@ -2233,6 +2242,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_event_log_msg((slurm_event_log_msg_t **)
 					   &(msg->data), buffer,
 					   msg->protocol_version);
+		break;
+	case REQUEST_CTLD_MULT_MSG:
+	case RESPONSE_CTLD_MULT_MSG:
+		rc = _unpack_buf_list_msg((ctld_list_msg_t **) &(msg->data),
+					  buffer, msg->protocol_version);
 		break;
 	default:
 		debug("No unpack method for msg type %u", msg->msg_type);
@@ -13402,6 +13416,73 @@ _unpack_event_log_msg(slurm_event_log_msg_t **msg, Buf buffer,
 
 unpack_error:
 	slurm_free_event_log_msg(object_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+static void _pack_buf_list_msg(ctld_list_msg_t *msg, Buf buffer,
+			       uint16_t protocol_version)
+{
+	ListIterator iter = NULL;
+	Buf req_buf;
+	uint32_t size;
+
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		size = list_count(msg->my_list);
+		pack32(size, buffer);
+		iter = list_iterator_create(msg->my_list);
+		while ((req_buf = list_next(iter))) {
+			size = get_buf_offset(req_buf);
+			pack32(size, buffer);
+			packmem((char *) get_buf_data(req_buf), size,
+				buffer);
+		}
+		list_iterator_destroy(iter);
+	} else {
+		error("%s: protocol_version %hu not supported", __func__,
+		      protocol_version);
+	}
+}
+
+/* Free Buf record from a list */
+static void _ctld_free_list_msg(void *x)
+{
+	FREE_NULL_BUFFER(x);
+}
+
+static int _unpack_buf_list_msg(ctld_list_msg_t **msg, Buf buffer,
+				 uint16_t protocol_version)
+{
+	ctld_list_msg_t *object_ptr = NULL;
+	uint32_t i, list_size = 0, buf_size = 0, read_size = 0;
+	char *data = NULL;
+	Buf req_buf;
+
+	xassert(msg != NULL);
+
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		object_ptr = xmalloc(sizeof(ctld_list_msg_t));
+		*msg = object_ptr;
+
+		safe_unpack32(&list_size, buffer);
+		object_ptr->my_list = list_create(_ctld_free_list_msg);
+		for (i = 0; i < list_size; i++) {
+			safe_unpack32(&buf_size, buffer);
+			safe_unpackmem_xmalloc(&data, &read_size, buffer);
+			if (buf_size != read_size)
+				goto unpack_error;
+			req_buf = create_buf(data, buf_size);
+			list_append(object_ptr->my_list, req_buf);
+		}
+	} else {
+		error("%s: protocol_version %hu not supported", __func__,
+		      protocol_version);
+		goto unpack_error;
+	}
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_ctld_multi_msg(object_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }

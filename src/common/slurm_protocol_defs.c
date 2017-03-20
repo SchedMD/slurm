@@ -4258,6 +4258,10 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_EVENT_LOG:
 		slurm_free_event_log_msg(data);
 		break;
+	case REQUEST_CTLD_MULT_MSG:
+	case RESPONSE_CTLD_MULT_MSG:
+		slurm_free_ctld_multi_msg(data);
+		break;
 	default:
 		error("invalid type trying to be freed %u", type);
 		break;
@@ -4269,7 +4273,7 @@ extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data)
 {
 	uint32_t rc = 0;
 
-	switch(type) {
+	switch (type) {
 	case MESSAGE_EPILOG_COMPLETE:
 		rc = ((epilog_complete_msg_t *)data)->return_code;
 		break;
@@ -4308,6 +4312,14 @@ extern void slurm_free_job_notify_msg(job_notify_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->message);
+		xfree(msg);
+	}
+}
+
+extern void slurm_free_ctld_multi_msg(ctld_list_msg_t *msg)
+{
+	if (msg) {
+		FREE_NULL_LIST(msg->my_list);
 		xfree(msg);
 	}
 }
@@ -4566,30 +4578,14 @@ rpc_num2string(uint16_t opcode)
 		return "RESPONSE_JOB_ATTACH";
 	case REQUEST_JOB_WILL_RUN:
 		return "REQUEST_JOB_WILL_RUN";
-	case REQUEST_SIB_JOB_START:
-		return "REQUEST_SIB_JOB_START";
-	case REQUEST_SIB_JOB_CANCEL:
-		return "REQUEST_SIB_JOB_CANCEL";
-	case REQUEST_SIB_JOB_REQUEUE:
-		return "REQUEST_SIB_JOB_REQUEUE";
-	case REQUEST_SIB_JOB_COMPLETE:
-		return "REQUEST_SIB_JOB_COMPLETE";
-	case REQUEST_SIB_JOB_LOCK:
-		return "REQUEST_SIB_JOB_LOCK";
-	case REQUEST_SIB_JOB_UNLOCK:
-		return "REQUEST_SIB_JOB_UNLOCK";
-	case REQUEST_SIB_JOB_WILL_RUN:
-		return "REQUEST_SIB_JOB_WILL_RUN";
-	case REQUEST_SIB_SUBMIT_BATCH_JOB:
-		return "REQUEST_SIB_SUBMIT_BATCH_JOB";
-	case REQUEST_SIB_RESOURCE_ALLOCATION:
-		return "REQUEST_SIB_RESOURCE_ALLOCATION";
 	case RESPONSE_JOB_WILL_RUN:
 		return "RESPONSE_JOB_WILL_RUN";
 	case REQUEST_JOB_ALLOCATION_INFO:
 		return "REQUEST_JOB_ALLOCATION_INFO";
 	case RESPONSE_JOB_ALLOCATION_INFO:
 		return "RESPONSE_JOB_ALLOCATION_INFO";
+	/* case REQUEST_JOB_ALLOCATION_INFO_LITE:		DEFUNCT */
+	/* case RESPONSE_JOB_ALLOCATION_INFO_LITE:		DEFUNCT */
 	case REQUEST_UPDATE_JOB_TIME:
 		return "REQUEST_UPDATE_JOB_TIME";
 	case REQUEST_JOB_READY:
@@ -4604,6 +4600,28 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_JOB_SBCAST_CRED";
 	case RESPONSE_JOB_SBCAST_CRED:
 		return "RESPONSE_JOB_SBCAST_CRED";
+	case REQUEST_SIB_JOB_START:
+		return "REQUEST_SIB_JOB_START";
+	case REQUEST_SIB_JOB_CANCEL:
+		return "REQUEST_SIB_JOB_CANCEL";
+	case REQUEST_SIB_JOB_REQUEUE:
+		return "REQUEST_SIB_JOB_REQUEUE";
+	case REQUEST_SIB_JOB_COMPLETE:
+		return "REQUEST_SIB_JOB_COMPLETE";
+	case REQUEST_SIB_JOB_LOCK:
+		return "REQUEST_SIB_JOB_LOCK";
+	case REQUEST_SIB_JOB_UNLOCK:				/* 4030 */
+		return "REQUEST_SIB_JOB_UNLOCK";
+	case REQUEST_SIB_JOB_WILL_RUN:
+		return "REQUEST_SIB_JOB_WILL_RUN";
+	case REQUEST_SIB_SUBMIT_BATCH_JOB:
+		return "REQUEST_SIB_SUBMIT_BATCH_JOB";
+	case REQUEST_SIB_RESOURCE_ALLOCATION:
+		return "REQUEST_SIB_RESOURCE_ALLOCATION";
+	case REQUEST_CTLD_MULT_MSG:
+		return "REQUEST_CTLD_MULT_MSG";
+	case RESPONSE_CTLD_MULT_MSG:
+		return "RESPONSE_CTLD_MULT_MSG";
 
 	case REQUEST_JOB_STEP_CREATE:				/* 5001 */
 		return "REQUEST_JOB_STEP_CREATE";

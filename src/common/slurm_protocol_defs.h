@@ -305,6 +305,8 @@ typedef enum {
 	REQUEST_SIB_JOB_WILL_RUN,
 	REQUEST_SIB_SUBMIT_BATCH_JOB,
 	REQUEST_SIB_RESOURCE_ALLOCATION,
+	REQUEST_CTLD_MULT_MSG,
+	RESPONSE_CTLD_MULT_MSG,
 
 	REQUEST_JOB_STEP_CREATE = 5001,
 	RESPONSE_JOB_STEP_CREATE,
@@ -1247,6 +1249,11 @@ typedef struct {
 				   user and not the SlurmUser. */
 } sib_msg_t;
 
+typedef struct {
+	List my_list;		/* this list could be of any type as long as it
+				 * is handled correctly on both ends */
+} ctld_list_msg_t;
+
 /*****************************************************************************\
  *      ACCOUNTING PUSHS
 \*****************************************************************************/
@@ -1454,6 +1461,7 @@ extern void slurm_free_acct_gather_node_resp_msg(
 extern void slurm_free_acct_gather_energy_req_msg(
 	acct_gather_energy_req_msg_t *msg);
 extern void slurm_free_job_notify_msg(job_notify_msg_t * msg);
+extern void slurm_free_ctld_multi_msg(ctld_list_msg_t *msg);
 
 extern void slurm_free_accounting_update_msg(accounting_update_msg_t *msg);
 extern void slurm_free_spank_env_request_msg(spank_env_request_msg_t *msg);
