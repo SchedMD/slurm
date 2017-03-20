@@ -8025,8 +8025,8 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		pack16(job_desc_ptr->wait_all_nodes, buffer);
 		pack32(job_desc_ptr->bitflags, buffer);
 	} else {
-		error("_pack_job_desc_msg: protocol_version "
-		      "%hu not supported", protocol_version);
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
 	}
 }
 
@@ -12710,8 +12710,8 @@ _pack_will_run_response_msg(will_run_response_msg_t *msg, Buf buffer,
 			list_iterator_destroy(itr);
 		}
 	} else {
-		error("_pack_job_desc_msg: protocol_version "
-		      "%hu not supported", protocol_version);
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
 	}
 }
 
@@ -13373,8 +13373,8 @@ _pack_event_log_msg(slurm_event_log_msg_t *msg, Buf buffer,
 		pack16(msg->level, buffer);
 		packstr(msg->string, buffer);
 	} else {
-		error("_pack_job_desc_msg: protocol_version "
-		      "%hu not supported", protocol_version);
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
 	}
 }
 
