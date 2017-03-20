@@ -271,7 +271,7 @@ static void _ctld_free_list_msg(void *x)
 	FREE_NULL_BUFFER(x);
 }
 
-extern int _queue_rpc(slurmdb_cluster_rec_t *cluster, slurm_msg_t *req,
+static int _queue_rpc(slurmdb_cluster_rec_t *cluster, slurm_msg_t *req,
 		      bool locked)
 {
 	Buf buf;
@@ -738,7 +738,6 @@ static int _persist_fed_job_revoke(slurmdb_cluster_rec_t *conn, uint32_t job_id,
 {
 	int rc;
 	slurm_msg_t req_msg;
-	slurm_msg_t resp_msg;
 	sib_msg_t   sib_msg;
 
 	slurm_msg_t_init(&req_msg);
@@ -748,29 +747,11 @@ static int _persist_fed_job_revoke(slurmdb_cluster_rec_t *conn, uint32_t job_id,
 	sib_msg.start_time  = start_time;
 	sib_msg.return_code = return_code;
 
+	slurm_msg_t_init(&req_msg);
 	req_msg.msg_type = REQUEST_SIB_JOB_COMPLETE;
 	req_msg.data	 = &sib_msg;
 
-	if (_send_recv_msg(conn, &req_msg, &resp_msg, false)) {
-		rc = SLURM_PROTOCOL_ERROR;
-		goto end_it;
-	}
-
-	switch (resp_msg.msg_type) {
-	case RESPONSE_SLURM_RC:
-		if ((rc = slurm_get_return_code(resp_msg.msg_type,
-						resp_msg.data))) {
-			slurm_seterrno(rc);
-			rc = SLURM_PROTOCOL_ERROR;
-		}
-		break;
-	default:
-		slurm_seterrno(SLURM_UNEXPECTED_MSG_ERROR);
-		rc = SLURM_PROTOCOL_ERROR;
-	}
-
-end_it:
-	slurm_free_msg_members(&resp_msg);
+	rc = _queue_rpc(conn, &req_msg, false);
 
 	return rc;
 }
@@ -843,7 +824,7 @@ static int _persist_fed_job_start(slurmdb_cluster_rec_t *conn,
 				  time_t start_time)
 {
 	int rc;
-	slurm_msg_t req_msg, resp_msg;
+	slurm_msg_t req_msg;
 
 	slurm_msg_t_init(&req_msg);
 
@@ -856,27 +837,7 @@ static int _persist_fed_job_start(slurmdb_cluster_rec_t *conn,
 	req_msg.msg_type = REQUEST_SIB_JOB_START;
 	req_msg.data     = &sib_msg;
 
-	if (_send_recv_msg(conn, &req_msg, &resp_msg, false)) {
-		rc = SLURM_PROTOCOL_ERROR;
-		goto end_it;
-	}
-
-	switch (resp_msg.msg_type) {
-	case RESPONSE_SLURM_RC:
-		if ((rc = slurm_get_return_code(resp_msg.msg_type,
-						resp_msg.data))) {
-			slurm_seterrno(rc);
-			rc = SLURM_PROTOCOL_ERROR;
-		}
-		break;
-	default:
-		slurm_seterrno(SLURM_UNEXPECTED_MSG_ERROR);
-		rc = SLURM_PROTOCOL_ERROR;
-		break;
-	}
-
-end_it:
-	slurm_free_msg_members(&resp_msg);
+	rc = _queue_rpc(conn, &req_msg, false);
 
 	return rc;
 }
@@ -894,7 +855,7 @@ static int _persist_fed_job_cancel(slurmdb_cluster_rec_t *conn, uint32_t job_id,
 				   uid_t uid)
 {
 	int rc = SLURM_SUCCESS;
-	slurm_msg_t req_msg, resp_msg, tmp_msg;
+	slurm_msg_t req_msg, tmp_msg;
 	sib_msg_t   sib_msg;
 	job_step_kill_msg_t kill_req;
 	Buf buffer;
@@ -926,27 +887,7 @@ static int _persist_fed_job_cancel(slurmdb_cluster_rec_t *conn, uint32_t job_id,
 	req_msg.msg_type = REQUEST_SIB_JOB_CANCEL;
 	req_msg.data     = &sib_msg;
 
-	if (_send_recv_msg(conn, &req_msg, &resp_msg, false)) {
-		rc = SLURM_PROTOCOL_ERROR;
-		goto end_it;
-	}
-
-	switch (resp_msg.msg_type) {
-	case RESPONSE_SLURM_RC:
-		if ((rc = slurm_get_return_code(resp_msg.msg_type,
-						resp_msg.data))) {
-			slurm_seterrno(rc);
-			rc = SLURM_PROTOCOL_ERROR;
-		}
-		break;
-	default:
-		slurm_seterrno(SLURM_UNEXPECTED_MSG_ERROR);
-		rc = SLURM_PROTOCOL_ERROR;
-	}
-
-end_it:
-	slurm_free_msg_members(&resp_msg);
-	free_buf(buffer);
+	rc = _queue_rpc(conn, &req_msg, false);
 
 	return rc;
 }
@@ -964,7 +905,7 @@ static int _persist_fed_job_requeue(slurmdb_cluster_rec_t *conn,
 {
 	int rc;
 	requeue_msg_t requeue_req;
-	slurm_msg_t   req_msg, resp_msg, tmp_msg;
+	slurm_msg_t   req_msg, tmp_msg;
 	sib_msg_t     sib_msg;
 	Buf buffer;
 
@@ -993,27 +934,7 @@ static int _persist_fed_job_requeue(slurmdb_cluster_rec_t *conn,
 	req_msg.msg_type    = REQUEST_SIB_JOB_REQUEUE;
 	req_msg.data        = &sib_msg;
 
-	if (_send_recv_msg(conn, &req_msg, &resp_msg, false)) {
-		rc = SLURM_PROTOCOL_ERROR;
-		goto end_it;
-	}
-
-	switch (resp_msg.msg_type) {
-	case RESPONSE_SLURM_RC:
-		if ((rc = slurm_get_return_code(resp_msg.msg_type,
-						resp_msg.data))) {
-			slurm_seterrno(rc);
-			rc = SLURM_PROTOCOL_ERROR;
-		}
-		break;
-	default:
-		slurm_seterrno(SLURM_UNEXPECTED_MSG_ERROR);
-		rc = SLURM_PROTOCOL_ERROR;
-	}
-
-end_it:
-	slurm_free_msg_members(&resp_msg);
-	free_buf(buffer);
+	rc = _queue_rpc(conn, &req_msg, false);
 
 	return rc;
 }

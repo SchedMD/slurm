@@ -42,6 +42,7 @@ documents those changes that are of interest to users and administrators.
     dramatically on large job/step tables.
  -- Add ability to define features on clusters for directing federated jobs to
     different clusters.
+ -- Add new RPC to process multiple federation RPCs in a single communication.
 
 * Changes in Slurm 17.02.2
 ==========================
