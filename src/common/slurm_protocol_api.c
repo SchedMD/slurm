@@ -3113,7 +3113,6 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, Buf buffer)
 	header_t header;
 	int rc;
 	void *auth_cred = NULL;
-	uint32_t body_offset = 0;
 
 	if (unpack_header(&header, buffer) == SLURM_ERROR) {
 		rc = SLURM_COMMUNICATIONS_RECEIVE_ERROR;
@@ -3184,7 +3183,7 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, Buf buffer)
 	msg->msg_type = header.msg_type;
 	msg->flags = header.flags;
 
-	body_offset = get_buf_offset(buffer);
+	msg->body_offset =  get_buf_offset(buffer);
 
 	if ((header.body_length > remaining_buf(buffer)) ||
 	    (unpack_msg(msg, buffer) != SLURM_SUCCESS)) {
@@ -3192,8 +3191,6 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, Buf buffer)
 		(void) g_slurm_auth_destroy(auth_cred);
 		goto total_return;
 	}
-
-	set_buf_offset(buffer, body_offset);
 
 	msg->auth_cred = (void *)auth_cred;
 
@@ -3249,12 +3246,10 @@ int slurm_receive_msg(int fd, slurm_msg_t *msg, int timeout)
 		memset(&persist_msg, 0, sizeof(persist_msg_t));
 		rc = slurm_persist_msg_unpack(msg->conn, &persist_msg, buffer);
 
-		if (keep_buffer) {
-			set_buf_offset(buffer, 0);
+		if (keep_buffer)
 			msg->buffer = buffer;
-		} else {
+		else
 			free_buf(buffer);
-		}
 
 		if (rc) {
 			error("%s: Failed to unpack persist msg", __func__);

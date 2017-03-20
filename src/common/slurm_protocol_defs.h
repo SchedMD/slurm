@@ -454,6 +454,8 @@ typedef struct slurm_protocol_config {
 typedef struct slurm_msg {
 	slurm_addr_t address;
 	void *auth_cred;
+	uint32_t body_offset; /* DON'T PACK: offset in buffer where body part of
+				 buffer starts. */
 	Buf buffer; /* DON't PACK! ptr to buffer that msg was unpacked from. */
 	slurm_persist_conn_t *conn; /* DON'T PACK OR FREE! this is here to
 				     * distinquish a persistant connection from
@@ -1235,6 +1237,8 @@ typedef struct {
 				 * Only populated on the receiving side. */
 	Buf      data_buffer;	/* Buffer that holds an unpacked data type.
 				 * Only populated on the sending side. */
+	uint32_t data_offset;	/* DON'T PACK: offset where body part of buffer
+				 * starts -- the part that gets sent. */
 	uint16_t data_type;	/* date type to unpack */
 	uint16_t data_version;	/* Version that data is packed with */
 	uint64_t fed_siblings;	/* sibling bitmap of job */

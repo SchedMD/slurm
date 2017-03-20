@@ -7398,13 +7398,14 @@ _pack_sib_msg(sib_msg_t *sib_msg_ptr, Buf buffer, uint16_t protocol_version)
 		    size_buf(sib_msg_ptr->data_buffer)) {
 			Buf dbuf = sib_msg_ptr->data_buffer;
 			uint32_t grow_size =
-				size_buf(dbuf) - get_buf_offset(dbuf);
+				get_buf_offset(dbuf) - sib_msg_ptr->data_offset;
 
 			pack16(1, buffer);
 
 			grow_buf(buffer, grow_size);
 			memcpy(&buffer->head[get_buf_offset(buffer)],
-			       &dbuf->head[get_buf_offset(dbuf)], grow_size);
+			       &dbuf->head[sib_msg_ptr->data_offset],
+			       grow_size);
 			set_buf_offset(buffer,
 				       get_buf_offset(buffer) + grow_size);
 		} else {
@@ -7425,13 +7426,14 @@ _pack_sib_msg(sib_msg_t *sib_msg_ptr, Buf buffer, uint16_t protocol_version)
 		    size_buf(sib_msg_ptr->data_buffer)) {
 			Buf dbuf = sib_msg_ptr->data_buffer;
 			uint32_t grow_size =
-				size_buf(dbuf) - get_buf_offset(dbuf);
+				get_buf_offset(dbuf) - sib_msg_ptr->data_offset;
 
 			pack16(1, buffer);
 
 			grow_buf(buffer, grow_size);
 			memcpy(&buffer->head[get_buf_offset(buffer)],
-			       &dbuf->head[get_buf_offset(dbuf)], grow_size);
+			       &dbuf->head[sib_msg_ptr->data_offset],
+			       grow_size);
 			set_buf_offset(buffer,
 				       get_buf_offset(buffer) + grow_size);
 		} else {

@@ -887,7 +887,6 @@ static int _persist_fed_job_cancel(slurmdb_cluster_rec_t *conn, uint32_t job_id,
 
 	buffer = init_buf(BUF_SIZE);
 	pack_msg(&tmp_msg, buffer);
-	set_buf_offset(buffer, 0);
 
 	memset(&sib_msg, 0, sizeof(sib_msg));
 	sib_msg.data_buffer  = buffer;
@@ -934,7 +933,6 @@ static int _persist_fed_job_requeue(slurmdb_cluster_rec_t *conn,
 
 	buffer = init_buf(BUF_SIZE);
 	pack_msg(&tmp_msg, buffer);
-	set_buf_offset(buffer, 0);
 
 	memset(&sib_msg, 0, sizeof(sib_msg));
 	sib_msg.job_id       = job_id;
@@ -1717,7 +1715,7 @@ static List _get_sib_will_runs(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	List sib_willruns = NULL;
 	pthread_attr_t attr;
 	sib_msg_t sib_msg = {0};
-	uint32_t buf_offset;
+	uint32_t save_offset;
 	slurm_msg_t tmp_msg;
 
 	xassert(job_desc);
@@ -1728,19 +1726,21 @@ static List _get_sib_will_runs(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 
 	/* Create copy of submitted job_desc since job_allocate() can modify the
 	 * original job_desc. */
-	buf_offset = get_buf_offset(msg->buffer);
+	save_offset = get_buf_offset(msg->buffer);
+	set_buf_offset(msg->buffer, msg->body_offset);
 	slurm_msg_t_init(&tmp_msg);
 	tmp_msg.flags            = msg->flags;
 	tmp_msg.msg_type         = msg->msg_type;
 	tmp_msg.protocol_version = msg->protocol_version;
 
 	unpack_msg(&tmp_msg, msg->buffer);
-	set_buf_offset(msg->buffer, buf_offset);
+	set_buf_offset(msg->buffer, save_offset);
 
 	((job_desc_msg_t *)tmp_msg.data)->job_id = job_desc->job_id;
 	sib_msg.job_id       = job_desc->job_id;
 	sib_msg.data         = tmp_msg.data;
 	sib_msg.data_buffer  = msg->buffer;
+	sib_msg.data_offset  = msg->body_offset;
 	sib_msg.data_version = msg->protocol_version;
 	sib_msg.data_type    = msg->msg_type;
 
@@ -2015,6 +2015,7 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 	submit_threads = list_create(_xfree_f);
 
 	sib_msg.data_buffer  = msg->buffer;
+	sib_msg.data_offset  = msg->body_offset;
 	sib_msg.data_type    = msg->msg_type;
 	sib_msg.data_version = msg->protocol_version;
 	sib_msg.fed_siblings = job_desc->fed_siblings_viable;
@@ -2107,7 +2108,6 @@ static int _prepare_submit_siblings(struct job_record *job_ptr)
 
 	buffer               = init_buf(BUF_SIZE);
 	pack_msg(&msg, buffer);
-	set_buf_offset(buffer, 0);
 	msg.buffer           = buffer;
 
 	if (_submit_sibling_jobs(job_desc, &msg, false))
