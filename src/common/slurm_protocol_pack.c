@@ -13465,12 +13465,15 @@ static int _unpack_buf_list_msg(ctld_list_msg_t **msg, Buf buffer,
 		*msg = object_ptr;
 
 		safe_unpack32(&list_size, buffer);
+		if (list_size >= NO_VAL32)
+			goto unpack_error;
 		object_ptr->my_list = list_create(_ctld_free_list_msg);
 		for (i = 0; i < list_size; i++) {
 			safe_unpack32(&buf_size, buffer);
 			safe_unpackmem_xmalloc(&data, &read_size, buffer);
 			if (buf_size != read_size)
 				goto unpack_error;
+			/* Move "data" into "req_buf", NOT a memory leak */
 			req_buf = create_buf(data, buf_size);
 			list_append(object_ptr->my_list, req_buf);
 		}
