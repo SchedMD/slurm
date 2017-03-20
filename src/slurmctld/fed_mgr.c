@@ -46,6 +46,7 @@
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/parse_time.h"
+#include "src/slurmctld/proc_req.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/xmalloc.h"
@@ -63,6 +64,11 @@
 
 slurmdb_federation_rec_t *fed_mgr_fed_rec     = NULL;
 slurmdb_cluster_rec_t    *fed_mgr_cluster_rec = NULL;
+
+static pthread_cond_t  agent_cond = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t agent_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_t       agent_thread_id = (pthread_t) 0;
+static int             agent_queue_size = 0;
 
 static pthread_t ping_thread  = 0;
 static bool      stop_pinging = false, inited = false;
@@ -206,7 +212,7 @@ static int _check_send(slurmdb_cluster_rec_t *cluster)
 
 /* fed_mgr read lock needs to be set before coming in here,
  * not the write lock */
-static void _open_persist_sends()
+static void _open_persist_sends(void)
 {
 	ListIterator itr;
 	slurmdb_cluster_rec_t *cluster = NULL;
@@ -257,6 +263,39 @@ static int _send_recv_msg(slurmdb_cluster_rec_t *cluster, slurm_msg_t *req,
 		slurm_mutex_unlock(&cluster->lock);
 
 	return rc;
+}
+
+/* Free Buf record from a list */
+static void _ctld_free_list_msg(void *x)
+{
+	FREE_NULL_BUFFER(x);
+}
+
+extern int _queue_rpc(slurmdb_cluster_rec_t *cluster, slurm_msg_t *req,
+		      bool locked)
+{
+	Buf buf;
+
+	if (!cluster->send_rpc)
+		cluster->send_rpc = list_create(_ctld_free_list_msg);
+
+	buf = init_buf(1024);
+	pack16(req->msg_type, buf);
+	if (pack_msg(req, buf) != SLURM_SUCCESS) {
+		error("%s: failed to pack msg_type:%u",
+		      __func__, req->msg_type);
+		FREE_NULL_BUFFER(buf);
+		return SLURM_ERROR;
+	}
+
+	/* Queue the RPC and notify the agent of new work */
+	list_append(cluster->send_rpc, buf);
+	slurm_mutex_lock(&agent_mutex);
+	agent_queue_size++;
+	slurm_cond_broadcast(&agent_cond);
+	slurm_mutex_unlock(&agent_mutex);
+
+	return SLURM_SUCCESS;
 }
 
 static int _ping_controller(slurmdb_cluster_rec_t *cluster)
@@ -1028,6 +1067,121 @@ next_job:
 	}
 }
 
+/* Start a thread to manage queued agent requests */
+static void *_agent_thread(void *arg)
+{
+	slurmdb_cluster_rec_t *cluster;
+	struct timespec ts = {0, 0};
+	ListIterator cluster_iter, rpc_iter;
+	Buf rpc_buf;
+	slurm_msg_t req_msg, resp_msg;
+	ctld_list_msg_t ctld_req_msg;
+	int rc;
+
+	while (!slurmctld_config.shutdown_time) {
+		if (!fed_mgr_fed_rec || !fed_mgr_fed_rec->cluster_list)
+			continue;
+
+		/* Wait for new work or re-issue RPCs after 2 second wait */
+		slurm_mutex_lock(&agent_mutex);
+		while (!slurmctld_config.shutdown_time && !agent_queue_size) {
+			ts.tv_sec  = time(NULL) + 2;
+			pthread_cond_timedwait(&agent_cond, &agent_mutex, &ts);
+		}
+		agent_queue_size = 0;
+		slurm_mutex_unlock(&agent_mutex);
+		if (slurmctld_config.shutdown_time)
+			break;
+
+		/* Look for work on each cluster */
+		cluster_iter = list_iterator_create(
+					fed_mgr_fed_rec->cluster_list);
+		while (!slurmctld_config.shutdown_time &&
+		       (cluster = list_next(cluster_iter))) {
+			int i, rpc_cnt = 0;
+			if ((cluster->send_rpc == NULL) ||
+			   (list_count(cluster->send_rpc) == 0))
+				continue;
+
+			/* Move currently pending RPCs to new list */
+			ctld_req_msg.my_list = list_create(NULL);
+			rpc_iter = list_iterator_create(cluster->send_rpc);
+			while ((rpc_buf = list_next(rpc_iter)))
+				list_append(ctld_req_msg.my_list, rpc_buf);
+			list_iterator_destroy(rpc_iter);
+
+			/* Build, pack and send the combined RPC */
+			rpc_cnt = list_count(ctld_req_msg.my_list);
+			slurm_msg_t_init(&req_msg);
+			req_msg.msg_type = REQUEST_CTLD_MULT_MSG;
+			req_msg.data     = &ctld_req_msg;
+			rc = _send_recv_msg(cluster, &req_msg, &resp_msg,
+					    false);
+
+			/* Process the response */
+			if ((rc == SLURM_SUCCESS) &&
+			    (resp_msg.msg_type == RESPONSE_CTLD_MULT_MSG)) {
+				/* Remove successfully processed RPCs */
+				rpc_iter = list_iterator_create(cluster->
+								send_rpc);
+				i = 0;
+				while ((rpc_buf = list_next(rpc_iter))) {
+//FIXME: Remove only RPCs with successful responses
+					if (i++ >= rpc_cnt)
+						break;
+					list_remove(rpc_iter);
+				}
+				list_iterator_destroy(rpc_iter);
+			} else {
+				/* Failed to process combined RPC.
+				 * Leave all RPCs on the queue. */
+				if (rc != SLURM_SUCCESS) {
+					error("%s: Failed to send RPC: %s",
+					      __func__, slurm_strerror(rc));
+				} else if (resp_msg.msg_type ==
+					   PERSIST_RC) {
+					persist_rc_msg_t *msg;
+					char *err_str;
+					msg = resp_msg.data;
+					if (msg->comment)
+						err_str = msg->comment;
+					else
+						err_str=slurm_strerror(msg->rc);
+					error("%s: failed to process msg: %s",
+					      __func__, err_str);
+				} else if (resp_msg.msg_type ==
+					   RESPONSE_SLURM_RC) {
+					rc = slurm_get_return_code(
+						resp_msg.msg_type,
+						resp_msg.data);
+					error("%s: failed to process msg: %s",
+					      __func__, slurm_strerror(rc));
+				} else {
+					error("%s: Invalid response msg_type: %u",
+					      __func__, resp_msg.msg_type);
+				}
+			}
+
+			list_destroy(ctld_req_msg.my_list);
+		}
+		list_iterator_destroy(cluster_iter);
+	}
+
+	return NULL;
+}
+
+static void _spawn_agent_thread(void)
+{
+	pthread_attr_t thread_attr;
+
+	slurm_mutex_lock(&agent_mutex);
+	slurm_attr_init(&thread_attr);
+	if (pthread_create(&agent_thread_id, &thread_attr, _agent_thread, NULL))
+		fatal("pthread_create error %m");
+	slurm_mutex_unlock(&agent_mutex);
+	slurm_attr_destroy(&thread_attr);
+}
+
 extern int fed_mgr_init(void *db_conn)
 {
 	int rc = SLURM_SUCCESS;
@@ -1046,6 +1200,7 @@ extern int fed_mgr_init(void *db_conn)
 		goto end_it;
 
 	slurm_persist_conn_recv_server_init();
+	_spawn_agent_thread();
 
 	if (running_cache) {
 		debug("Database appears down, reading federations from state file.");
@@ -1100,7 +1255,7 @@ end_it:
 	return rc;
 }
 
-extern int fed_mgr_fini()
+extern int fed_mgr_fini(void)
 {
 	slurmctld_lock_t fed_write_lock = {
 		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
@@ -1120,6 +1275,9 @@ extern int fed_mgr_fini()
 	slurm_persist_conn_recv_server_fini();
 
 	unlock_slurmctld(fed_write_lock);
+
+	if (agent_thread_id)
+		pthread_join(agent_thread_id, NULL);
 
 	return SLURM_SUCCESS;
 }
@@ -1348,7 +1506,7 @@ unpack_error:
 /*
  * Returns true if the cluster is part of a federation.
  */
-extern bool fed_mgr_is_active()
+extern bool fed_mgr_is_active(void)
 {
 	int rc = false;
 	slurmctld_lock_t fed_read_lock = {

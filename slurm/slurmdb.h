@@ -628,6 +628,7 @@ typedef struct {
 	slurmdb_assoc_rec_t *root_assoc; /* root assoc for
 						* cluster */
 	uint16_t rpc_version; /* version of rpc this cluter is running */
+	List send_rpc;        /* For convenience only. DOESN'T GET PACKED */
 	char  	*tres_str;    /* comma separated list of TRES */
 } slurmdb_cluster_rec_t;
 

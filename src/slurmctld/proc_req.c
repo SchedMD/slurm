@@ -117,6 +117,7 @@ static int          _is_prolog_finished(uint32_t job_id);
 static int          _make_step_cred(struct step_record *step_rec,
 				    slurm_cred_t **slurm_cred,
 				    uint16_t protocol_version);
+inline static void  _proc_multi_msg(uint32_t rpc_uid, slurm_msg_t *msg);
 static void         _throttle_fini(int *active_rpc_cnt);
 static void         _throttle_start(int *active_rpc_cnt);
 
@@ -394,6 +395,9 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		break;
 	case REQUEST_SIB_RESOURCE_ALLOCATION:
 		_slurm_rpc_sib_resource_allocation(rpc_uid, msg);
+		break;
+	case REQUEST_CTLD_MULT_MSG:
+		_proc_multi_msg(rpc_uid, msg);
 		break;
 	case MESSAGE_NODE_REGISTRATION_STATUS:
 		_slurm_rpc_node_registration(msg, 0);
@@ -6142,4 +6146,114 @@ static void _slurm_rpc_sib_resource_allocation(uint32_t uid, slurm_msg_t *msg)
 
 	msg->data = sib_msg;
 	msg->protocol_version = tmp_version;
+}
+
+static Buf _build_rc_buf(int rc, uint16_t rpc_version)
+{
+	Buf buf = NULL;
+	slurm_msg_t msg;
+	return_code_msg_t data;
+
+	data.return_code = rc;
+	msg.msg_type = RESPONSE_SLURM_RC;
+	msg.data = &data;
+	buf = init_buf(128);
+	if (pack_msg(&msg, buf) != SLURM_SUCCESS)
+		FREE_NULL_BUFFER(buf);
+
+	return buf;
+}
+
+/* Free Buf record from a list */
+static void _ctld_free_list_msg(void *x)
+{
+	FREE_NULL_BUFFER(x);
+}
+
+static void _proc_multi_msg(uint32_t rpc_uid, slurm_msg_t *msg)
+{
+	slurm_msg_t sub_msg, response_msg;
+	ctld_list_msg_t *ctld_req_msg, ctld_resp_msg;
+	List full_resp_list = NULL;
+	Buf single_req_buf = NULL;
+	Buf ret_buf, resp_buf = NULL;
+	ListIterator iter = NULL;
+	int rc;
+
+	if (!msg->conn) {
+		error("Security violation, REQUEST_CTLD_MULT_MSG RPC from uid=%d",
+		      rpc_uid);
+		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
+		return;
+	}
+
+	ctld_req_msg = (ctld_list_msg_t *) msg->data;
+	full_resp_list = list_create(_ctld_free_list_msg);
+	iter = list_iterator_create(ctld_req_msg->my_list);
+	while ((single_req_buf = list_next(iter))) {
+		slurm_msg_t_init(&sub_msg);
+		if (unpack16(&sub_msg.msg_type, single_req_buf) ||
+		    unpack_msg(&sub_msg, single_req_buf)) {
+			error("Sub-message unpack error for REQUEST_CTLD_MULT_MSG %u RPC",
+			      sub_msg.msg_type);
+			ret_buf = _build_rc_buf(SLURM_ERROR,
+						msg->protocol_version);
+			list_append(full_resp_list, ret_buf);
+			continue;
+		}
+
+		ret_buf = NULL;
+		rc = SLURM_SUCCESS;
+
+		switch (sub_msg.msg_type) {
+		case REQUEST_PING:
+			rc = SLURM_SUCCESS;
+			ret_buf = _build_rc_buf(rc, msg->protocol_version);
+			break;
+//		case REQUEST_SIB_JOB_CANCEL:
+//			rc = _slurm_rpc_sib_job_cancel(rpc_uid, msg);
+//			ret_buf = _build_rc_buf(rc, msg->protocol_version);
+//			break;
+//		case REQUEST_SIB_JOB_COMPLETE:
+//			rc = _slurm_rpc_sib_job_complete(rpc_uid, msg);
+//			ret_buf = _build_rc_buf(rc, msg->protocol_version);
+//			break;
+//		case REQUEST_SIB_JOB_REQUEUE:
+//			rc = _slurm_rpc_sib_job_requeue(rpc_uid, msg);
+//			ret_buf = _build_rc_buf(rc, msg->protocol_version);
+//			break;
+//		case REQUEST_SIB_JOB_START:
+//			rc = _slurm_rpc_sib_job_start(rpc_uid, msg);
+//			ret_buf = _build_rc_buf(rc, msg->protocol_version);
+//			break;
+		default:
+			error("%s: Unrecognized MsgType:%u",
+			      __func__, sub_msg.msg_type);
+		}
+
+		if (ret_buf)
+			list_append(full_resp_list, ret_buf);
+		else
+			rc = SLURM_ERROR;
+		if (rc != SLURM_SUCCESS)
+			break;
+	}
+	list_iterator_destroy(iter);
+
+	ctld_resp_msg.my_list = full_resp_list;
+
+	/* Initialize response_msg structure */
+	slurm_msg_t_init(&response_msg);
+	response_msg.flags = msg->flags;
+	response_msg.protocol_version = msg->protocol_version;
+	response_msg.address = msg->address;
+	response_msg.conn = msg->conn;
+	response_msg.msg_type = RESPONSE_CTLD_MULT_MSG;
+	response_msg.data = &ctld_resp_msg;
+
+	/* Send message */
+	slurm_send_node_msg(msg->conn_fd, &response_msg);
+	FREE_NULL_LIST(full_resp_list);
+	free_buf(resp_buf);
+	return;
 }
