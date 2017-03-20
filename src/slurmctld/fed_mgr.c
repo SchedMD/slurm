@@ -2546,7 +2546,7 @@ extern int fed_mgr_job_start(struct job_record *job_ptr, uint32_t cluster_id,
 	if (origin_id != fed_mgr_cluster_rec->fed.id) {
 		slurmdb_cluster_rec_t *origin_cluster;
 		if (!(origin_cluster = _get_cluster_by_id(origin_id))) {
-			error("Unable to find origin cluster for job %d from origin id %d",
+			error("Unable to find origin cluster for job %u from origin id %u",
 			      job_ptr->job_id, origin_id);
 			return SLURM_ERROR;
 		}
@@ -2563,18 +2563,17 @@ extern int fed_mgr_job_start(struct job_record *job_ptr, uint32_t cluster_id,
 	if ((job_ptr->fed_details->siblings_viable &
 	     FED_SIBLING_BIT(cluster_id)) &&
 	    (!(job_ptr->fed_details->siblings_viable &
-	       ~FED_SIBLING_BIT(cluster_id))))
-	{
+	       ~FED_SIBLING_BIT(cluster_id)))) {
 		/* if this cluster is the only sibling, then just assume the
 		 * lock */
 		job_ptr->fed_details->cluster_lock = cluster_id;
 	} else if (!job_ptr->fed_details->cluster_lock) {
-		error("attempt to start sib job %d by cluster %d but it's not locked",
+		error("attempt to start sib job %u by cluster %u, but it's not locked",
 		      job_ptr->job_id, cluster_id);
 		rc = SLURM_ERROR;
 	} else if (job_ptr->fed_details->cluster_lock &&
 		   (job_ptr->fed_details->cluster_lock != cluster_id)) {
-		error("attempt to start sib job %d by cluster %d which doesn't have job lock",
+		error("attempt to start sib job %u by cluster %u, which doesn't have job lock",
 		     job_ptr->job_id, cluster_id);
 		rc = SLURM_ERROR;
 	} else if (job_ptr->fed_details->siblings_active &

@@ -5907,7 +5907,7 @@ static int _slurm_rpc_sib_job_start(uint32_t uid, slurm_msg_t *msg,
 	lock_slurmctld(job_write_lock);
 
 	if (!(job_ptr = find_job_record(sib_msg->job_id))) {
-		error("Unable to find federated job for id:%d",
+		error("Unable to find federated job for id:%u",
 		      sib_msg->job_id);
 		rc = SLURM_ERROR;
 	} else {
