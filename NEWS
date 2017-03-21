@@ -87,6 +87,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix for CPU binding for job steps run under a batch job.
  -- Fix 'flags' variable to be 32 bit from the old 16 bit value in the perl api.
  -- Export sched_nodes for a job in the perl api.
+ -- Improve error output when updating a reservation that has already started.
 
 * Changes in Slurm 17.02.0
 ==========================
