@@ -1221,6 +1221,16 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg, int timeout,
 			  bool quiet);
 
 /*
+ * Sends back reroute_msg_t which directs the client to make the request to
+ * another cluster.
+ *
+ * IN msg	  - msg to respond to.
+ * IN cluster_rec - cluster to direct msg to.
+ */
+int slurm_send_reroute_msg(slurm_msg_t *msg,
+			   slurmdb_cluster_rec_t *cluster_rec);
+
+/*
  *  Send a message to msg->address
  *    Then return List containing type (ret_data_info_t).
  * IN msg           - a slurm_msg struct to be sent by the function

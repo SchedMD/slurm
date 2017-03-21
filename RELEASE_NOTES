@@ -98,6 +98,7 @@ Added the following struct definitions
 ======================================
 In job_alloc_info_msg_t: add req_cluster to indicate where the request is coming
 	from.
+Added reroute_msg_t to route a message to a different cluster.
 
 Removed members from the following struct definitions
 =====================================================

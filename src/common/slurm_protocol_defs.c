@@ -690,6 +690,14 @@ extern void slurm_free_return_code_msg(return_code_msg_t * msg)
 	xfree(msg);
 }
 
+extern void slurm_free_reroute_msg(reroute_msg_t *msg)
+{
+	if (msg) {
+		slurmdb_destroy_cluster_rec(msg->working_cluster_rec);
+		xfree(msg);
+	}
+}
+
 extern void slurm_free_job_id_msg(job_id_msg_t * msg)
 {
 	xfree(msg);
@@ -4776,6 +4784,8 @@ rpc_num2string(uint16_t opcode)
 		return "RESPONSE_SLURM_RC";
 	case RESPONSE_SLURM_RC_MSG:
 		return "RESPONSE_SLURM_RC_MSG";
+	case RESPONSE_SLURM_REROUTE_MSG:
+		return "RESPONSE_SLURM_REROUTE_MSG";
 
 	case RESPONSE_FORWARD_FAILED:				/* 9001 */
 		return "RESPONSE_FORWARD_FAILED";
