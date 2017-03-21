@@ -988,7 +988,7 @@ static int _find_sibling_by_id(void *x, void *key)
 	return 0;
 }
 
-static slurmdb_cluster_rec_t *_get_cluster_by_id(uint32_t id)
+extern slurmdb_cluster_rec_t *fed_mgr_get_cluster_by_id(uint32_t id)
 {
 	return list_find_first(fed_mgr_fed_rec->cluster_list,
 			       _find_sibling_by_id, (void *)(intptr_t)id);
@@ -1011,7 +1011,8 @@ static void _revoke_sibling_jobs(uint32_t job_id, uint32_t cluster_id,
 		if ((revoke_sibs & 1) &&
 		    (id != fed_mgr_cluster_rec->fed.id) &&
 		    (id != cluster_id)) {
-			slurmdb_cluster_rec_t *cluster = _get_cluster_by_id(id);
+			slurmdb_cluster_rec_t *cluster =
+				fed_mgr_get_cluster_by_id(id);
 			if (!cluster) {
 				error("couldn't find cluster rec by id %d", id);
 				goto next_job;
@@ -2537,7 +2538,7 @@ extern char *fed_mgr_get_cluster_name(uint32_t id)
 	slurmdb_cluster_rec_t *sibling;
 	char *name = NULL;
 
-	if ((sibling = _get_cluster_by_id(id))) {
+	if ((sibling = fed_mgr_get_cluster_by_id(id))) {
 		name = xstrdup(sibling->name);
 	}
 
@@ -2596,7 +2597,7 @@ extern int fed_mgr_job_lock(struct job_record *job_ptr, uint32_t cluster_id)
 
 	if (origin_id != fed_mgr_cluster_rec->fed.id) {
 		slurmdb_cluster_rec_t *origin_cluster;
-		if (!(origin_cluster = _get_cluster_by_id(origin_id))) {
+		if (!(origin_cluster = fed_mgr_get_cluster_by_id(origin_id))) {
 			error("Unable to find origin cluster for job %d from origin id %d",
 			      job_ptr->job_id, origin_id);
 			return SLURM_ERROR;
@@ -2653,7 +2654,7 @@ extern int fed_mgr_job_unlock(struct job_record *job_ptr, uint32_t cluster_id)
 
 	if (origin_id != fed_mgr_cluster_rec->fed.id) {
 		slurmdb_cluster_rec_t *origin_cluster;
-		if (!(origin_cluster = _get_cluster_by_id(origin_id))) {
+		if (!(origin_cluster = fed_mgr_get_cluster_by_id(origin_id))) {
 			error("Unable to find origin cluster for job %d from origin id %d",
 			      job_ptr->job_id, origin_id);
 			return SLURM_ERROR;
@@ -2705,8 +2706,8 @@ extern int fed_mgr_job_start(struct job_record *job_ptr, uint32_t cluster_id,
 
 	if (origin_id != fed_mgr_cluster_rec->fed.id) {
 		slurmdb_cluster_rec_t *origin_cluster;
-		if (!(origin_cluster = _get_cluster_by_id(origin_id))) {
-			error("Unable to find origin cluster for job %u from origin id %u",
+		if (!(origin_cluster = fed_mgr_get_cluster_by_id(origin_id))) {
+			error("Unable to find origin cluster for job %d from origin id %d",
 			      job_ptr->job_id, origin_id);
 			return SLURM_ERROR;
 		}
@@ -2786,7 +2787,7 @@ extern int fed_mgr_job_complete(struct job_record *job_ptr,
 	if (origin_id == fed_mgr_cluster_rec->fed.id)
 		return SLURM_SUCCESS;
 
-	slurmdb_cluster_rec_t *conn = _get_cluster_by_id(origin_id);
+	slurmdb_cluster_rec_t *conn = fed_mgr_get_cluster_by_id(origin_id);
 	if (!conn) {
 		error("Unable to find origin cluster for job %d from origin id %d",
 		      job_ptr->job_id, origin_id);
@@ -2891,7 +2892,7 @@ extern char *fed_mgr_cluster_ids_to_names(uint64_t cluster_ids)
 	while (cluster_ids) {
 		if (cluster_ids & 1) {
 			slurmdb_cluster_rec_t *sibling;
-			if ((sibling = _get_cluster_by_id(bit))) {
+			if ((sibling = fed_mgr_get_cluster_by_id(bit))) {
 				xstrfmtcat(names, "%s%s",
 					   (names) ? "," : "", sibling->name);
 			} else {
@@ -3020,7 +3021,7 @@ extern int fed_mgr_job_requeue_test(struct job_record *job_ptr, uint32_t state)
 
 	if (origin_id != fed_mgr_cluster_rec->fed.id) {
 		slurmdb_cluster_rec_t *origin_cluster;
-		if (!(origin_cluster = _get_cluster_by_id(origin_id))) {
+		if (!(origin_cluster = fed_mgr_get_cluster_by_id(origin_id))) {
 			error("Unable to find origin cluster for job %d from origin id %d",
 			      job_ptr->job_id, origin_id);
 			return SLURM_ERROR;
@@ -3056,7 +3057,8 @@ extern int fed_mgr_job_requeue_test(struct job_record *job_ptr, uint32_t state)
 	if (IS_JOB_PENDING(job_ptr) && IS_JOB_REVOKED(job_ptr)) {
 		slurmdb_cluster_rec_t *remote_cluster;
 		if (!(remote_cluster =
-		      _get_cluster_by_id(job_ptr->fed_details->cluster_lock))) {
+		      fed_mgr_get_cluster_by_id(
+					job_ptr->fed_details->cluster_lock))) {
 			error("Unable to find remote cluster for job %d from cluster lock %d",
 			      job_ptr->job_id,
 			      job_ptr->fed_details->cluster_lock);
@@ -3141,7 +3143,8 @@ static int _cancel_sibling_jobs(struct job_record *job_ptr, uint16_t signal,
 	while (tmp_sibs) {
 		if ((tmp_sibs & 1) &&
 		    (id != fed_mgr_cluster_rec->fed.id)) {
-			slurmdb_cluster_rec_t *cluster = _get_cluster_by_id(id);
+			slurmdb_cluster_rec_t *cluster =
+				fed_mgr_get_cluster_by_id(id);
 			if (!cluster) {
 				error("couldn't find cluster rec by id %d", id);
 				goto next_job;

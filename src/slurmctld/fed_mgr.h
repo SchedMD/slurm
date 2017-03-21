@@ -49,6 +49,7 @@ extern char     *fed_mgr_cluster_ids_to_names(uint64_t cluster_ids);
 extern int       fed_mgr_fini(void);
 extern uint32_t  fed_mgr_get_cluster_id(uint32_t id);
 extern char     *fed_mgr_get_cluster_name(uint32_t id);
+extern slurmdb_cluster_rec_t *fed_mgr_get_cluster_by_id(uint32_t id);
 extern uint32_t  fed_mgr_get_job_id(uint32_t orig);
 extern uint32_t  fed_mgr_get_local_id(uint32_t id);
 extern int       fed_mgr_init(void *db_conn);
