@@ -22,7 +22,7 @@ reserve_info_to_hv(reserve_info_t *reserve_info, HV *hv)
 	STORE_FIELD(hv, reserve_info, end_time, time_t);
 	if (reserve_info->features)
 		STORE_FIELD(hv, reserve_info, features, charp);
-	STORE_FIELD(hv, reserve_info, flags, uint16_t);
+	STORE_FIELD(hv, reserve_info, flags, uint32_t);
 	if (reserve_info->licenses)
 		STORE_FIELD(hv, reserve_info, licenses, charp);
 	if (reserve_info->name)
@@ -68,7 +68,7 @@ hv_to_reserve_info(HV *hv, reserve_info_t *resv_info)
 	FETCH_FIELD(hv, resv_info, accounts, charp, FALSE);
 	FETCH_FIELD(hv, resv_info, end_time, time_t, TRUE);
 	FETCH_FIELD(hv, resv_info, features, charp, FALSE);
-	FETCH_FIELD(hv, resv_info, flags, uint16_t, TRUE);
+	FETCH_FIELD(hv, resv_info, flags, uint32_t, TRUE);
 	FETCH_FIELD(hv, resv_info, licenses, charp, FALSE);
 	FETCH_FIELD(hv, resv_info, name, charp, TRUE);
 	FETCH_FIELD(hv, resv_info, node_cnt, uint32_t, TRUE);
@@ -171,7 +171,7 @@ hv_to_update_reservation_msg(HV *hv, resv_desc_msg_t *resv_msg)
 	FETCH_FIELD(hv, resv_msg, duration, uint32_t, FALSE);
 	FETCH_FIELD(hv, resv_msg, end_time, time_t, FALSE);
 	FETCH_FIELD(hv, resv_msg, features, charp, FALSE);
-	FETCH_FIELD(hv, resv_msg, flags, uint16_t, FALSE);
+	FETCH_FIELD(hv, resv_msg, flags, uint32_t, FALSE);
 	FETCH_FIELD(hv, resv_msg, licenses, charp, FALSE);
 	FETCH_FIELD(hv, resv_msg, name, charp, FALSE);
 	FETCH_PTR_FIELD(hv, resv_msg, node_cnt, "SLURM::uint32_t", FALSE);

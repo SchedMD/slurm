@@ -2659,7 +2659,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 	if (resv_desc_ptr->start_time != (time_t) NO_VAL) {
 		if (resv_ptr->start_time <= time(NULL)) {
 			info("%s: reservation already started", __func__);
-			error_code = ESLURM_INVALID_TIME_VALUE;
+			error_code = ESLURM_RSV_ALREADY_STARTED;
 			goto update_failure;
 		}
 		if (resv_desc_ptr->start_time < (now - 60)) {

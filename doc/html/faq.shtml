@@ -185,6 +185,8 @@ script for Slurm?</a></li>
 <li><a href="#routing queue">How can a routing queue be configured?</a></li>
 <li><a href="#squeue_script">How can I suspend, resume, hold or release all
     of the jobs belonging to a speciic user, partition, etc?</a></li>
+<li><a href="#changed_uid">I had to change a user's UID and now they cannot submit
+    jobs. How do I get the new UID to take effect?</a></li>
 </ol>
 
 <h2>For Management</h2>
@@ -2179,6 +2181,15 @@ build a script which you can then execute. For example:
 <pre>
 > squeue -u adam -h -o "scontrol hold %i" &gt;hold_script
 </pre>
+
+<p><a name="changed_uid"><b>67. I had to change a user's UID and now they cannot submit
+    jobs. How do I get the new UID to take effect?</b></a><br>
+When changing UIDs, you will also need to restart the slurmctld for the changes to
+take effect. Normally, when adding a new user to the system, the UID is filled in
+automatically and immediately. If the user isn't known on the system yet, there is a
+thread that runs every hour that fills in those UIDs when they become known, but it
+doesn't recognize UID changes of preexisting users. But you can simply restart the
+slurmctld for those changes to be recognized.
 </li>
 
 <p class="footer"><a href="#top">top</a></p>

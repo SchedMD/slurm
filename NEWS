@@ -88,6 +88,14 @@ documents those changes that are of interest to users and administrators.
     system.
  -- Fix regression in 17.02.0 with respects to GrpTresMins on a QOS or
     Association.
+ -- Cleanup to make make dist work.
+ -- Schedule interactive jobs quicker.
+ -- Perl API - correct value of MEM_PER_CPU constant to correctly handle
+    memory values.
+ -- Fix 'flags' variable to be 32 bit from the old 16 bit value in the perl api.
+ -- Export sched_nodes for a job in the perl api.
+ -- Improve error output when updating a reservation that has already started.
+ -- Fix --ntasks-per-node issue with srun so DenyOnLimit would work correctly.
 
 * Changes in Slurm 17.02.1-2
 ============================

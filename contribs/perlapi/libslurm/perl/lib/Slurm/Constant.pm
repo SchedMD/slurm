@@ -244,7 +244,7 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =item * CR_CORE_DEFAULT_DIST_BLOCK 0x1000
 
-=item * MEM_PER_CPU                0x80000000
+=item * MEM_PER_CPU                0x8000000000000000
 
 =item * SHARED_FORCE               0x8000
 

@@ -2494,6 +2494,11 @@ static bool _opt_verify(void)
 
 	} /* else if (opt.ntasks_set && !opt.nodes_set) */
 
+	if ((opt.ntasks_per_node != NO_VAL) && (!opt.ntasks_set)) {
+		opt.ntasks = opt.min_nodes * opt.ntasks_per_node;
+		opt.ntasks_set = 1;
+	}
+
 	if (hl)
 		hostlist_destroy(hl);
 
