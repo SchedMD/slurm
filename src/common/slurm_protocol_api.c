@@ -4630,13 +4630,34 @@ int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc)
 {
 	int ret_c;
 	slurm_msg_t resp;
+	slurmdb_cluster_rec_t *save_working_cluster_rec = working_cluster_rec;
 
+tryagain:
 	if (!slurm_send_recv_controller_msg(req, &resp)) {
+		if (resp.msg_type == RESPONSE_SLURM_REROUTE_MSG) {
+			reroute_msg_t *rr_msg = (reroute_msg_t *)resp.data;
+
+			/* Don't expect mutliple hops but in the case it does
+			 * happen, free the previous rr cluster_rec. */
+			if (working_cluster_rec &&
+			    working_cluster_rec != save_working_cluster_rec)
+				slurmdb_destroy_cluster_rec(
+							working_cluster_rec);
+
+			working_cluster_rec = rr_msg->working_cluster_rec;
+			rr_msg->working_cluster_rec = NULL;
+			goto tryagain;
+		}
 		*rc = slurm_get_return_code(resp.msg_type, resp.data);
 		slurm_free_msg_data(resp.msg_type, resp.data);
 		ret_c = 0;
 	} else {
 		ret_c = -1;
+	}
+
+	if (working_cluster_rec != save_working_cluster_rec) {
+		slurmdb_destroy_cluster_rec(working_cluster_rec);
+		working_cluster_rec = save_working_cluster_rec;
 	}
 
 	return ret_c;
