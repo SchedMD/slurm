@@ -242,6 +242,8 @@ job_info_to_hv(job_info_t *job_info, HV *hv)
 	STORE_FIELD(hv, job_info, nice, uint16_t);
 	if(job_info->nodes)
 		STORE_FIELD(hv, job_info, nodes, charp);
+	if(job_info->sched_nodes)
+		STORE_FIELD(hv, job_info, sched_nodes, charp);
 	av = newAV();
 	for(j = 0; ; j += 2) {
 		if(job_info->node_inx[j] == -1)
@@ -375,6 +377,7 @@ hv_to_job_info(HV *hv, job_info_t *job_info)
 	FETCH_FIELD(hv, job_info, network, charp, FALSE);
 	FETCH_FIELD(hv, job_info, nice, uint16_t, TRUE);
 	FETCH_FIELD(hv, job_info, nodes, charp, FALSE);
+	FETCH_FIELD(hv, job_info, sched_nodes, charp, FALSE);
 	svp = hv_fetch(hv, "node_inx", 8, FALSE);
 	if (svp && SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVAV) {
 		av = (AV*)SvRV(*svp);
