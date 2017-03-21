@@ -6,6 +6,7 @@
 .libs
 Makefile
 autom4te.cache
+/api/full_version.map
 /config.h
 /config.log
 /config.status
