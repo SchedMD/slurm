@@ -47,8 +47,6 @@ documents those changes that are of interest to users and administrators.
     Association.
  -- Cleanup to make make dist work.
  -- Schedule interactive jobs quicker.
- -- Perl API - correct value of MEM_PER_CPU constant to correctly handle
-    memory values.
 
 * Changes in Slurm 17.02.1-2
 ============================
