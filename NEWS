@@ -49,7 +49,9 @@ documents those changes that are of interest to users and administrators.
  -- Schedule interactive jobs quicker.
  -- Perl API - correct value of MEM_PER_CPU constant to correctly handle
     memory values.
-
+ -- Fix 'flags' variable to be 32 bit from the old 16 bit value in the perl api.
+ -- Export sched_nodes for a job in the perl api.
+ -- Improve error output when updating a reservation that has already started.
 
 * Changes in Slurm 17.02.1-2
 ============================
@@ -85,9 +87,6 @@ documents those changes that are of interest to users and administrators.
  -- Refactor slurmctld agent logic to eliminate some pthreads.
  -- Added "SyscfgTimeout" parameter to knl.conf configuration file.
  -- Fix for CPU binding for job steps run under a batch job.
- -- Fix 'flags' variable to be 32 bit from the old 16 bit value in the perl api.
- -- Export sched_nodes for a job in the perl api.
- -- Improve error output when updating a reservation that has already started.
 
 * Changes in Slurm 17.02.0
 ==========================
