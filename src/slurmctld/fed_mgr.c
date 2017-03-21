@@ -102,8 +102,10 @@ typedef struct {
 
 typedef struct {
 	Buf        buffer;
+	uint32_t   job_id;
 	time_t     last_try;
 	int        last_defer;
+	uint16_t   msg_type;
 } agent_queue_t;
 
 /* Local Prototypes */
@@ -281,7 +283,7 @@ static void _ctld_free_list_msg(void *x)
 }
 
 static int _queue_rpc(slurmdb_cluster_rec_t *cluster, slurm_msg_t *req,
-		      bool locked)
+		      uint32_t job_id, bool locked)
 {
 	agent_queue_t *agent_rec;
 	Buf buf;
@@ -301,9 +303,12 @@ static int _queue_rpc(slurmdb_cluster_rec_t *cluster, slurm_msg_t *req,
 	/* Queue the RPC and notify the agent of new work */
 	agent_rec = xmalloc(sizeof(agent_queue_t));
 	agent_rec->buffer = buf;
+	agent_rec->job_id = job_id;
+	agent_rec->msg_type = req->msg_type;
 	list_append(cluster->send_rpc, agent_rec);
 	slurm_mutex_lock(&agent_mutex);
 	agent_queue_size++;
+//FIXME: Restore bcast
 //	slurm_cond_broadcast(&agent_cond);
 	slurm_mutex_unlock(&agent_mutex);
 
@@ -763,7 +768,7 @@ static int _persist_fed_job_revoke(slurmdb_cluster_rec_t *conn, uint32_t job_id,
 	req_msg.msg_type = REQUEST_SIB_JOB_COMPLETE;
 	req_msg.data	 = &sib_msg;
 
-	rc = _queue_rpc(conn, &req_msg, false);
+	rc = _queue_rpc(conn, &req_msg, job_id, false);
 
 	return rc;
 }
@@ -849,7 +854,7 @@ static int _persist_fed_job_start(slurmdb_cluster_rec_t *conn,
 	req_msg.msg_type = REQUEST_SIB_JOB_START;
 	req_msg.data     = &sib_msg;
 
-	rc = _queue_rpc(conn, &req_msg, false);
+	rc = _queue_rpc(conn, &req_msg, job_id, false);
 
 	return rc;
 }
@@ -898,7 +903,7 @@ static int _persist_fed_job_cancel(slurmdb_cluster_rec_t *conn, uint32_t job_id,
 	req_msg.msg_type = REQUEST_SIB_JOB_CANCEL;
 	req_msg.data     = &sib_msg;
 
-	rc = _queue_rpc(conn, &req_msg, false);
+	rc = _queue_rpc(conn, &req_msg, job_id, false);
 
 	return rc;
 }
@@ -944,7 +949,7 @@ static int _persist_fed_job_requeue(slurmdb_cluster_rec_t *conn,
 	req_msg.msg_type    = REQUEST_SIB_JOB_REQUEUE;
 	req_msg.data        = &sib_msg;
 
-	rc = _queue_rpc(conn, &req_msg, false);
+	rc = _queue_rpc(conn, &req_msg, job_id, false);
 
 	return rc;
 }
@@ -1010,7 +1015,7 @@ bitstr_t *_parse_resp_ctld_mult(slurm_msg_t *resp_msg)
 	Buf single_resp_buf = NULL;
 	int resp_cnt, resp_inx = -1;
 
-	xassert(resp_msg.msg_type == RESPONSE_CTLD_MULT_MSG);
+	xassert(resp_msg->msg_type == RESPONSE_CTLD_MULT_MSG);
 
 	ctld_resp_msg = (ctld_list_msg_t *) resp_msg->data;
 	if (!ctld_resp_msg->my_list) {
@@ -1027,16 +1032,14 @@ bitstr_t *_parse_resp_ctld_mult(slurm_msg_t *resp_msg)
 		slurm_msg_t_init(&sub_msg);
 		if (unpack16(&sub_msg.msg_type, single_resp_buf) ||
 		    unpack_msg(&sub_msg, single_resp_buf)) {
-//FIXME: CHANGE TO STRING
-			error("Sub-message unpack error for RESPONSE_CTLD_MULT_MSG %u RPC",
-			      sub_msg.msg_type);
+			error("%s: Sub-message unpack error for Message Type:%s",
+			      __func__, rpc_num2string(sub_msg.msg_type));
 			continue;
 		}
 
 		if (sub_msg.msg_type != RESPONSE_SLURM_RC) {
-//FIXME: CHANGE TO STRING
-			error("%s: Unrecognized MsgType:%u",
-			      __func__, sub_msg.msg_type);
+			error("%s: Unexpected Message Type:%s",
+			      __func__, rpc_num2string(sub_msg.msg_type));
 			continue;
 		}
 		rc_msg = (return_code_msg_t *) sub_msg.data;
@@ -1096,10 +1099,11 @@ static void *_agent_thread(void *arg)
 				list_append(ctld_req_msg.my_list,
 					    rpc_rec->buffer);
 				rpc_rec->last_try = now;
-				if (rpc_rec->last_defer == 512) {
-//FIXME: Log/identify repeated failures
-					error("%s: %s request to cluster %s is repeatedly failing",
-					      __func__, "TBD", "TBD");
+				if (rpc_rec->last_defer == 128) {
+					error("%s: %s %u request to cluster %s is repeatedly failing",
+					      __func__,
+					      rpc_num2string(rpc_rec->msg_type),
+					      rpc_rec->job_id, cluster->name);
 					rpc_rec->last_defer *= 2;
 				} else if (rpc_rec->last_defer)
 					rpc_rec->last_defer *= 2;

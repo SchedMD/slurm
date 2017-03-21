@@ -6255,9 +6255,8 @@ static void _proc_multi_msg(uint32_t rpc_uid, slurm_msg_t *msg)
 			ret_buf = _build_rc_buf(rc, msg->protocol_version);
 			break;
 		default:
-//FIXME: CHANGE TO STRING
-			error("%s: Unrecognized MsgType:%u",
-			      __func__, sub_msg.msg_type);
+			error("%s: Unsupported Message Type:%s",
+			      __func__, rpc_num2string(sub_msg.msg_type));
 		}
 
 		if (!ret_buf) {
