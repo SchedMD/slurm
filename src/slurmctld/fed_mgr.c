@@ -2672,8 +2672,10 @@ extern int fed_mgr_job_lock(struct job_record *job_ptr, uint32_t cluster_id)
 	    (job_ptr->fed_details->siblings_viable &
 	     FED_SIBLING_BIT(cluster_id)) &&
 	    (!(job_ptr->fed_details->siblings_viable &
-	       ~FED_SIBLING_BIT(cluster_id))))
+	       ~FED_SIBLING_BIT(cluster_id)))) {
+		job_ptr->fed_details->cluster_lock = cluster_id;
 		return SLURM_SUCCESS;
+	}
 
 	if (origin_id != fed_mgr_cluster_rec->fed.id) {
 		slurmdb_cluster_rec_t *origin_cluster;
@@ -2725,14 +2727,15 @@ extern int fed_mgr_job_unlock(struct job_record *job_ptr, uint32_t cluster_id)
 		info("releasing fed job lock on %d by cluster_id %d",
 		     job_ptr->job_id, cluster_id);
 
-	/* if this cluster is the only sibling, then dont worry */
-	if ((job_ptr->fed_details->siblings_viable &
+	/* if this cluster is the only sibling, then just release the lock */
 	if ((cluster_id == fed_mgr_cluster_rec->fed.id) &&
 	    (job_ptr->fed_details->siblings_viable &
 	     FED_SIBLING_BIT(cluster_id)) &&
 	    (!(job_ptr->fed_details->siblings_viable &
-	       ~FED_SIBLING_BIT(cluster_id))))
+	       ~FED_SIBLING_BIT(cluster_id)))) {
+		job_ptr->fed_details->cluster_lock = 0;
 		return SLURM_SUCCESS;
+	}
 
 	if (origin_id != fed_mgr_cluster_rec->fed.id) {
 		slurmdb_cluster_rec_t *origin_cluster;
