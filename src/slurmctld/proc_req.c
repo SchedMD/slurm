@@ -6182,6 +6182,7 @@ static Buf _build_rc_buf(int rc, uint16_t rpc_version)
 	msg.msg_type = RESPONSE_SLURM_RC;
 	msg.data = &data;
 	buf = init_buf(128);
+	pack16(msg.msg_type, buf);
 	if (pack_msg(&msg, buf) != SLURM_SUCCESS)
 		FREE_NULL_BUFFER(buf);
 
@@ -6254,16 +6255,16 @@ static void _proc_multi_msg(uint32_t rpc_uid, slurm_msg_t *msg)
 			ret_buf = _build_rc_buf(rc, msg->protocol_version);
 			break;
 		default:
+//FIXME: CHANGE TO STRING
 			error("%s: Unrecognized MsgType:%u",
 			      __func__, sub_msg.msg_type);
 		}
 
-		if (ret_buf)
-			list_append(full_resp_list, ret_buf);
-		else
-			rc = SLURM_ERROR;
-		if (rc != SLURM_SUCCESS)
-			break;
+		if (!ret_buf) {
+			ret_buf = _build_rc_buf(SLURM_ERROR,
+						msg->protocol_version);
+		}
+		list_append(full_resp_list, ret_buf);
 	}
 	list_iterator_destroy(iter);
 

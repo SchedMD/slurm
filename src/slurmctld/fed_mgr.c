@@ -998,6 +998,55 @@ next_job:
 	}
 }
 
+/* Parse a RESPONSE_CTLD_MULT_MSG message and return a bit set for every
+ * successful operation */
+bitstr_t *_parse_resp_ctld_mult(slurm_msg_t *resp_msg)
+{
+	ctld_list_msg_t *ctld_resp_msg;
+	ListIterator iter = NULL;
+	bitstr_t *success_bits;
+	slurm_msg_t sub_msg;
+	return_code_msg_t *rc_msg;
+	Buf single_resp_buf = NULL;
+	int resp_cnt, resp_inx = -1;
+
+	xassert(resp_msg.msg_type == RESPONSE_CTLD_MULT_MSG);
+
+	ctld_resp_msg = (ctld_list_msg_t *) resp_msg->data;
+	if (!ctld_resp_msg->my_list) {
+		error("%s: RESPONSE_CTLD_MULT_MSG has no list component",
+		      __func__);
+		return NULL;
+	}
+
+	resp_cnt = list_count(ctld_resp_msg->my_list);
+	success_bits = bit_alloc(resp_cnt);
+	iter = list_iterator_create(ctld_resp_msg->my_list);
+	while ((single_resp_buf = list_next(iter))) {
+		resp_inx++;
+		slurm_msg_t_init(&sub_msg);
+		if (unpack16(&sub_msg.msg_type, single_resp_buf) ||
+		    unpack_msg(&sub_msg, single_resp_buf)) {
+//FIXME: CHANGE TO STRING
+			error("Sub-message unpack error for RESPONSE_CTLD_MULT_MSG %u RPC",
+			      sub_msg.msg_type);
+			continue;
+		}
+
+		if (sub_msg.msg_type != RESPONSE_SLURM_RC) {
+//FIXME: CHANGE TO STRING
+			error("%s: Unrecognized MsgType:%u",
+			      __func__, sub_msg.msg_type);
+			continue;
+		}
+		rc_msg = (return_code_msg_t *) sub_msg.data;
+		if (rc_msg->return_code == SLURM_SUCCESS)
+			bit_set(success_bits, resp_inx);
+	}
+
+	return success_bits;
+}
+
 /* Start a thread to manage queued agent requests */
 static void *_agent_thread(void *arg)
 {
@@ -1007,7 +1056,8 @@ static void *_agent_thread(void *arg)
 	agent_queue_t *rpc_rec;
 	slurm_msg_t req_msg, resp_msg;
 	ctld_list_msg_t ctld_req_msg;
-	int rc;
+	bitstr_t *success_bits;
+	int rc, resp_inx, success_size;
 
 	while (!slurmctld_config.shutdown_time) {
 		if (!fed_mgr_fed_rec || !fed_mgr_fed_rec->cluster_list)
@@ -1046,7 +1096,12 @@ static void *_agent_thread(void *arg)
 				list_append(ctld_req_msg.my_list,
 					    rpc_rec->buffer);
 				rpc_rec->last_try = now;
-				if (rpc_rec->last_defer)
+				if (rpc_rec->last_defer == 512) {
+//FIXME: Log/identify repeated failures
+					error("%s: %s request to cluster %s is repeatedly failing",
+					      __func__, "TBD", "TBD");
+					rpc_rec->last_defer *= 2;
+				} else if (rpc_rec->last_defer)
 					rpc_rec->last_defer *= 2;
 				else
 					rpc_rec->last_defer = 2;
@@ -1066,15 +1121,25 @@ static void *_agent_thread(void *arg)
 			if ((rc == SLURM_SUCCESS) &&
 			    (resp_msg.msg_type == RESPONSE_CTLD_MULT_MSG)) {
 				/* Remove successfully processed RPCs */
+				resp_inx = 0;
+				success_bits = _parse_resp_ctld_mult(&resp_msg);
+				success_size = bit_size(success_bits);
 				rpc_iter = list_iterator_create(cluster->
 								send_rpc);
 				while ((rpc_rec = list_next(rpc_iter))) {
 					if (rpc_rec->last_try != now)
 						continue;
-// FIXME: Determine if success
-					list_remove(rpc_iter);
+					if (resp_inx >= success_size) {
+						error("%s: bitmap too small (%d >= %d)",
+						      __func__, resp_inx,
+						      success_size);
+						break;
+					}
+					if (bit_test(success_bits, resp_inx++))
+						list_remove(rpc_iter);
 				}
 				list_iterator_destroy(rpc_iter);
+				FREE_NULL_BITMAP(success_bits);
 			} else {
 				/* Failed to process combined RPC.
 				 * Leave all RPCs on the queue. */
