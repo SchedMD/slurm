@@ -2668,7 +2668,8 @@ extern int fed_mgr_job_lock(struct job_record *job_ptr, uint32_t cluster_id)
 		     job_ptr->job_id, cluster_id);
 
 	/* if this cluster is the only sibling, then just assume the lock */
-	if ((job_ptr->fed_details->siblings_viable &
+	if ((cluster_id == fed_mgr_cluster_rec->fed.id) &&
+	    (job_ptr->fed_details->siblings_viable &
 	     FED_SIBLING_BIT(cluster_id)) &&
 	    (!(job_ptr->fed_details->siblings_viable &
 	       ~FED_SIBLING_BIT(cluster_id))))
@@ -2726,6 +2727,8 @@ extern int fed_mgr_job_unlock(struct job_record *job_ptr, uint32_t cluster_id)
 
 	/* if this cluster is the only sibling, then dont worry */
 	if ((job_ptr->fed_details->siblings_viable &
+	if ((cluster_id == fed_mgr_cluster_rec->fed.id) &&
+	    (job_ptr->fed_details->siblings_viable &
 	     FED_SIBLING_BIT(cluster_id)) &&
 	    (!(job_ptr->fed_details->siblings_viable &
 	       ~FED_SIBLING_BIT(cluster_id))))
