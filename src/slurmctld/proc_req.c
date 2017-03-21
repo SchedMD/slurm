@@ -6228,7 +6228,6 @@ static void _proc_multi_msg(uint32_t rpc_uid, slurm_msg_t *msg)
 		}
 		sub_msg.conn = msg->conn;
 		ret_buf = NULL;
-		rc = SLURM_SUCCESS;
 
 		switch (sub_msg.msg_type) {
 		case REQUEST_PING:
