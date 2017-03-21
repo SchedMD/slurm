@@ -85,6 +85,7 @@ documents those changes that are of interest to users and administrators.
  -- Refactor slurmctld agent logic to eliminate some pthreads.
  -- Added "SyscfgTimeout" parameter to knl.conf configuration file.
  -- Fix for CPU binding for job steps run under a batch job.
+ -- Fix 'flags' variable to be 32 bit from the old 16 bit value in the perl api.
 
 * Changes in Slurm 17.02.0
 ==========================
