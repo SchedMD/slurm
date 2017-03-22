@@ -96,6 +96,7 @@ documents those changes that are of interest to users and administrators.
  -- Export sched_nodes for a job in the perl api.
  -- Improve error output when updating a reservation that has already started.
  -- Fix --ntasks-per-node issue with srun so DenyOnLimit would work correctly.
+ -- node_features/knl_cray plugin - Fix memory leak.
 
 * Changes in Slurm 17.02.1-2
 ============================
