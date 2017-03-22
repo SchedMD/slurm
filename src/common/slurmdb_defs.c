@@ -81,6 +81,7 @@ static void _free_cluster_rec_members(slurmdb_cluster_rec_t *cluster)
 		xfree(cluster->name);
 		xfree(cluster->nodes);
 		slurmdb_destroy_assoc_rec(cluster->root_assoc);
+		FREE_NULL_LIST(cluster->send_rpc);
 		xfree(cluster->tres_str);
 	}
 }

@@ -1222,7 +1222,7 @@ static char *_run_script(char *cmd_path, char **script_argv, int *status)
 				resp_offset += i;
 				if (resp_offset + 1024 >= resp_size) {
 					resp_size *= 2;
-					resp = xrealloc(resp, resp_size);
+					resp = xrealloc(resp, resp_size);	// LEAK
 				}
 			}
 		}

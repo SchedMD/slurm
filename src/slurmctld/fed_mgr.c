@@ -278,7 +278,7 @@ static void _ctld_free_list_msg(void *x)
 	agent_queue_t *agent_queue_ptr = (agent_queue_t *) x;
 	if (agent_queue_ptr) {
 		FREE_NULL_BUFFER(agent_queue_ptr->buffer);
-		xfree(x);
+		xfree(agent_queue_ptr);
 	}
 }
 
@@ -1039,11 +1039,13 @@ bitstr_t *_parse_resp_ctld_mult(slurm_msg_t *resp_msg)
 		if (sub_msg.msg_type != RESPONSE_SLURM_RC) {
 			error("%s: Unexpected Message Type:%s",
 			      __func__, rpc_num2string(sub_msg.msg_type));
-			continue;
+		} else {
+			rc_msg = (return_code_msg_t *) sub_msg.data;
+			if (rc_msg->return_code == SLURM_SUCCESS)
+				bit_set(success_bits, resp_inx);
 		}
-		rc_msg = (return_code_msg_t *) sub_msg.data;
-		if (rc_msg->return_code == SLURM_SUCCESS)
-			bit_set(success_bits, resp_inx);
+		(void) slurm_free_msg_data(sub_msg.msg_type, sub_msg.data);
+
 	}
 
 	return success_bits;
@@ -1139,7 +1141,7 @@ static void *_agent_thread(void *arg)
 						break;
 					}
 					if (bit_test(success_bits, resp_inx++))
-						list_remove(rpc_iter);
+						list_delete_item(rpc_iter);
 				}
 				list_iterator_destroy(rpc_iter);
 				FREE_NULL_BITMAP(success_bits);
@@ -1172,6 +1174,8 @@ static void *_agent_thread(void *arg)
 					      __func__, resp_msg.msg_type);
 				}
 			}
+			(void) slurm_free_msg_data(resp_msg.msg_type,
+						   resp_msg.data);
 
 			list_destroy(ctld_req_msg.my_list);
 		}
@@ -1189,6 +1193,7 @@ static void *_agent_thread(void *arg)
 			info("%s: %s %u request to cluster %s aborted",
 			     __func__, rpc_num2string(rpc_rec->msg_type),
 			     rpc_rec->job_id, cluster->name);
+			list_delete_item(rpc_iter);
 		}
 		list_iterator_destroy(rpc_iter);
 		FREE_NULL_LIST(cluster->send_rpc);
