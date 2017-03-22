@@ -610,6 +610,8 @@ typedef struct {
 typedef struct {
 	List accounting_list; /* list of slurmdb_cluster_accounting_rec_t *'s */
 	uint16_t classification; /* how this machine is classified */
+	time_t comm_fail_time;	/* avoid constatnt error messages. For
+			         * convenience only. DOESN"T GET PACKED */
 	slurm_addr_t control_addr; /* For convenience only.
 				    * DOESN'T GET PACKED */
 	char *control_host;
@@ -621,7 +623,7 @@ typedef struct {
 			* PACKED, is set up in slurmdb_get_info_cluster */
 	slurmdb_cluster_fed_t fed; /* Federation information */
 	uint32_t flags;      /* set of CLUSTER_FLAG_* */
-	pthread_mutex_t lock; /* For convenience only. DOESN"T GET PACK */
+	pthread_mutex_t lock; /* For convenience only. DOESN"T GET PACKED */
 	char *name;
 	char *nodes;
 	uint32_t plugin_id_select; /* id of the select plugin */

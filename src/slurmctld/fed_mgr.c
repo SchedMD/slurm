@@ -111,6 +111,19 @@ typedef struct {
 /* Local Prototypes */
 static int _is_fed_job(struct job_record *job_ptr, uint32_t *origin_id);
 
+/* Return true if communication failure should be logged. Only log failures
+ * every 10 minutes to avoid filling logs */
+static bool _comm_fail_log(slurmdb_cluster_rec_t *cluster)
+{
+	time_t now = time(NULL);
+	time_t old = now - 600;	/* Log failures once every 10 mins */
+
+	if (cluster->comm_fail_time < old) {
+		cluster->comm_fail_time = now;
+		return true;
+	}
+	return false;
+}
 
 static int _close_controller_conn(slurmdb_cluster_rec_t *cluster)
 {
@@ -193,12 +206,16 @@ static int _open_controller_conn(slurmdb_cluster_rec_t *cluster, bool locked)
 
 	rc = slurm_persist_conn_open(persist_conn);
 	if (rc != SLURM_SUCCESS) {
-		error("fed_mgr: Unable to open connection to cluster %s using host %s(%u)",
-		      cluster->name,
-		      persist_conn->rem_host, persist_conn->rem_port);
-	} else if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+		if (_comm_fail_log(cluster)) {
+			error("fed_mgr: Unable to open connection to cluster %s using host %s(%u)",
+			      cluster->name,
+			      persist_conn->rem_host, persist_conn->rem_port);
+		}
+	} else if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR) {
 		info("opened sibling conn to %s:%d",
 		     cluster->name, persist_conn->fd);
+	}
+
 	if (!locked)
 		slurm_mutex_unlock(&cluster->lock);
 
@@ -325,22 +342,29 @@ static int _ping_controller(slurmdb_cluster_rec_t *cluster)
 
 	slurm_mutex_lock(&cluster->lock);
 
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR) {
 		debug("pinging %s(%s:%d)", cluster->name, cluster->control_host,
 		      cluster->control_port);
+	}
 
 	if ((rc = _send_recv_msg(cluster, &req_msg, &resp_msg, true))) {
-		error("failed to ping %s(%s:%d)",
-		      cluster->name, cluster->control_host,
-		      cluster->control_port);
+		if (_comm_fail_log(cluster)) {
+			error("failed to ping %s(%s:%d)",
+			      cluster->name, cluster->control_host,
+			      cluster->control_port);
+		}
 	} else if ((rc = slurm_get_return_code(resp_msg.msg_type,
-					       resp_msg.data)))
+					       resp_msg.data))) {
 		error("ping returned error from %s(%s:%d)",
 		      cluster->name, cluster->control_host,
 		      cluster->control_port);
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+	}
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR) {
 		debug("finished pinging %s(%s:%d)", cluster->name,
 		      cluster->control_host, cluster->control_port);
+	}
+
 	slurm_mutex_unlock(&cluster->lock);
 	slurm_free_msg_members(&req_msg);
 	slurm_free_msg_members(&resp_msg);
@@ -1149,8 +1173,15 @@ static void *_agent_thread(void *arg)
 				/* Failed to process combined RPC.
 				 * Leave all RPCs on the queue. */
 				if (rc != SLURM_SUCCESS) {
-					error("%s: Failed to send RPC: %s",
-					      __func__, slurm_strerror(rc));
+					if (_comm_fail_log(cluster)) {
+						error("%s: Failed to send RPC: %s",
+						      __func__,
+						      slurm_strerror(rc));
+					} else {
+						debug("%s: Failed to send RPC: %s",
+						      __func__,
+						      slurm_strerror(rc));
+					}
 				} else if (resp_msg.msg_type ==
 					   PERSIST_RC) {
 					persist_rc_msg_t *msg;

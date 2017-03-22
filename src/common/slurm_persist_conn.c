@@ -95,6 +95,20 @@ static void _close_fd(int *fd)
 	}
 }
 
+/* Return true if communication failure should be logged. Only log failures
+ * every 10 minutes to avoid filling logs */
+static bool _comm_fail_log(slurm_persist_conn_t *persist_conn)
+{
+	time_t now = time(NULL);
+	time_t old = now - 600;	/* Log failures once every 10 mins */
+
+	if (persist_conn->comm_fail_time < old) {
+		persist_conn->comm_fail_time = now;
+		return true;
+	}
+	return false;
+}
+
 /* static void _reopen_persist_conn(slurm_persist_conn_t *persist_conn) */
 /* { */
 /*	xassert(persist_conn); */
@@ -526,8 +540,11 @@ extern int slurm_persist_conn_open_without_init(
 	slurm_set_addr_char(&addr, persist_conn->rem_port,
 			    persist_conn->rem_host);
 	if ((persist_conn->fd = slurm_open_msg_conn(&addr)) < 0) {
-		error("%s: failed to open persistent connection to %s:%d: %m",
-		      __func__, persist_conn->rem_host, persist_conn->rem_port);
+		if (_comm_fail_log(persist_conn)) {
+			error("%s: failed to open persistent connection to %s:%d: %m",
+			      __func__, persist_conn->rem_host,
+			      persist_conn->rem_port);
+		}
 		return SLURM_ERROR;
 	}
 	fd_set_nonblocking(persist_conn->fd);
@@ -578,7 +595,10 @@ extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
 		uint16_t flags = persist_conn->flags;
 
 		if (!buffer) {
-			error("%s: No response to persist_init", __func__);
+			if (_comm_fail_log(persist_conn)) {
+				error("%s: No response to persist_init",
+				      __func__);
+			}
 			_close_fd(&persist_conn->fd);
 			goto end_it;
 		}
@@ -767,7 +787,9 @@ extern int slurm_persist_conn_writeable(slurm_persist_conn_t *persist_conn)
 			return 0;
 		}
 		if (ufds.revents & POLLERR) {
-			error("persistent connection experienced an error: %m");
+			if (_comm_fail_log(persist_conn)) {
+				error("persistent connection experienced an error: %m");
+			}
 			if (persist_conn->trigger_callbacks.dbd_fail)
 				(persist_conn->trigger_callbacks.dbd_fail)();
 			return 0;
