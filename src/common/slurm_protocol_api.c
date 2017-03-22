@@ -4161,7 +4161,7 @@ extern int slurm_send_recv_msg(int fd, slurm_msg_t *req,
 	int rc = -1;
 	slurm_msg_t_init(resp);
 
-	/* If we are using a persistant connection make sure it is the one we
+	/* If we are using a persistent connection make sure it is the one we
 	 * actually want.  This should be the correct one already, but just make
 	 * sure.
 	 */

@@ -1474,7 +1474,7 @@ extern int bb_post_persist_create(struct job_record *job_ptr,
 		while (assoc_ptr) {
 			assoc_ptr->usage->grp_used_tres[state_ptr->tres_pos] +=
 				size_mb;
-			debug2("%s: after adding persistant bb %s(%u), "
+			debug2("%s: after adding persistent bb %s(%u), "
 			       "assoc %u(%s/%s/%s) grp_used_tres(%s) "
 			       "is %"PRIu64,
 			       __func__, bb_alloc->name, bb_alloc->id,
@@ -1487,7 +1487,7 @@ extern int bb_post_persist_create(struct job_record *job_ptr,
 			/* FIXME: should grp_used_tres_run_secs be
 			 * done some how? Same for QOS below.
 			 */
-			/* debug2("%s: after adding persistant bb %s(%u), " */
+			/* debug2("%s: after adding persistent bb %s(%u), " */
 			/*        "assoc %u(%s/%s/%s) grp_used_tres_run_secs(%s) " */
 			/*        "is %"PRIu64, */
 			/*        __func__, bb_alloc->name, bb_alloc->id, */
@@ -1546,7 +1546,7 @@ extern int bb_post_persist_delete(bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
 			    >= size_mb) {
 				assoc_ptr->usage->grp_used_tres[
 					state_ptr->tres_pos] -= size_mb;
-				debug2("%s: after removing persistant "
+				debug2("%s: after removing persistent "
 				       "bb %s(%u), assoc %u(%s/%s/%s) "
 				       "grp_used_tres(%s) is %"PRIu64,
 				       __func__, bb_alloc->name, bb_alloc->id,
@@ -1557,7 +1557,7 @@ extern int bb_post_persist_delete(bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
 				       assoc_ptr->usage->
 				       grp_used_tres[state_ptr->tres_pos]);
 			} else {
-				error("%s: underflow removing persistant "
+				error("%s: underflow removing persistent "
 				      "bb %s(%u), assoc %u(%s/%s/%s) "
 				      "grp_used_tres(%s) had %"PRIu64
 				      " but we are trying to remove %"PRIu64,
@@ -1575,7 +1575,7 @@ extern int bb_post_persist_delete(bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
 
 			/* FIXME: should grp_used_tres_run_secs be
 			 * done some how? Same for QOS below. */
-			/* debug2("%s: after removing persistant bb %s(%u), " */
+			/* debug2("%s: after removing persistent bb %s(%u), " */
 			/*        "assoc %u(%s/%s/%s) grp_used_tres_run_secs(%s) " */
 			/*        "is %"PRIu64, */
 			/*        __func__, bb_alloc->name, bb_alloc->id, */

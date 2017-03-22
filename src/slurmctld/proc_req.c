@@ -303,7 +303,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 			info("%s: received opcode %s from %s",
 			     __func__, p, inetbuf);
 		} else {
-			error("%s: No arg given and this doesn't appear to be a persistant connection, this should never happen", __func__);
+			error("%s: No arg given and this doesn't appear to be a persistent connection, this should never happen", __func__);
 		}
 	}
 
@@ -577,7 +577,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		break;
 	case REQUEST_PERSIST_INIT:
 		if (msg->conn)
-			error("We already have a persistant connect, this should never happen");
+			error("We already have a persistent connect, this should never happen");
 		_slurm_rpc_persist_init(msg, arg);
 		break;
 	case REQUEST_EVENT_LOG:

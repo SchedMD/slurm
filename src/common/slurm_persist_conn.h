@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  slurm_persist_conn.h - Definitions for communicating over a persistant
+ *  slurm_persist_conn.h - Definitions for communicating over a persistent
  *                         connection within Slurm.
  ******************************************************************************
  *  Copyright (C) 2016 SchedMD LLC
@@ -87,15 +87,15 @@ typedef struct {
 			    * of a message type sent. */
 } persist_rc_msg_t;
 
-/* setup a daemon to receive incoming persistant connections. */
+/* setup a daemon to receive incoming persistent connections. */
 extern void slurm_persist_conn_recv_server_init(void);
 
-/* finish up any persistant connections we are listening to */
+/* finish up any persistent connections we are listening to */
 extern void slurm_persist_conn_recv_server_fini(void);
 
 /* Create a thread that will wait listening on the fd in the
  * slurm_persist_conn_t.
- * IN - persist_conn - persistant connection to listen to.  This will be freed
+ * IN - persist_conn - persistent connection to listen to.  This will be freed
  *                     internally, so forget about once it enters here.
  * IN - thread_loc - location in the persist_conn thread pool.  This number can
  *                   be got from slurm_persist_conn_wait_for_thread_loc or given
@@ -116,31 +116,31 @@ extern int slurm_persist_conn_wait_for_thread_loc(void);
 extern void slurm_persist_conn_free_thread_loc(int thread_loc);
 
 
-/* Open a persistant socket connection
- * IN/OUT - persistant connection needing host and port filled in.  Returned
+/* Open a persistent socket connection
+ * IN/OUT - persistent connection needing host and port filled in.  Returned
  * mostly filled in without the version to use to communicate.
  * Returns SLURM_SUCCESS on success or SLURM_ERROR on failure */
 extern int slurm_persist_conn_open_without_init(
 	slurm_persist_conn_t *persist_conn);
 
-/* Open a persistant socket connection and sends an init message to establish
+/* Open a persistent socket connection and sends an init message to establish
  * the connection.
- * IN/OUT - persistant connection needing host and port filled in.  Returned
+ * IN/OUT - persistent connection needing host and port filled in.  Returned
  * completely filled in.
  * Returns SLURM_SUCCESS on success or SLURM_ERROR on failure */
 extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn);
 
-/* Close the persistant connection don't free structure or members */
+/* Close the persistent connection don't free structure or members */
 extern void slurm_persist_conn_close(slurm_persist_conn_t *persist_conn);
 
 extern int slurm_persist_conn_reopen(slurm_persist_conn_t *persist_conn,
 				     bool with_init);
 
-/* Close the persistant connection members, but don't free structure */
+/* Close the persistent connection members, but don't free structure */
 extern void slurm_persist_conn_members_destroy(
 	slurm_persist_conn_t *persist_conn);
 
-/* Close the persistant connection and free structure */
+/* Close the persistent connection and free structure */
 extern void slurm_persist_conn_destroy(slurm_persist_conn_t *persist_conn);
 
 extern int slurm_persist_conn_process_msg(slurm_persist_conn_t *persist_conn,
