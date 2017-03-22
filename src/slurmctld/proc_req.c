@@ -6257,6 +6257,7 @@ static void _proc_multi_msg(uint32_t rpc_uid, slurm_msg_t *msg)
 			error("%s: Unsupported Message Type:%s",
 			      __func__, rpc_num2string(sub_msg.msg_type));
 		}
+		(void) slurm_free_msg_data(sub_msg.msg_type, sub_msg.data);
 
 		if (!ret_buf) {
 			ret_buf = _build_rc_buf(SLURM_ERROR,
