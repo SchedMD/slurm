@@ -308,8 +308,7 @@ static int _queue_rpc(slurmdb_cluster_rec_t *cluster, slurm_msg_t *req,
 	list_append(cluster->send_rpc, agent_rec);
 	slurm_mutex_lock(&agent_mutex);
 	agent_queue_size++;
-//FIXME: Restore bcast
-//	slurm_cond_broadcast(&agent_cond);
+	slurm_cond_broadcast(&agent_cond);
 	slurm_mutex_unlock(&agent_mutex);
 
 	return SLURM_SUCCESS;
@@ -497,7 +496,7 @@ static void _fed_mgr_ptr_init(slurmdb_federation_rec_t *db_fed,
 /*
  * Must have FED write lock prior to entering
  */
-static void _leave_federation()
+static void _leave_federation(void)
 {
 	if (!fed_mgr_fed_rec)
 		return;
