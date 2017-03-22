@@ -1099,10 +1099,10 @@ static void *_agent_thread(void *arg)
 					    rpc_rec->buffer);
 				rpc_rec->last_try = now;
 				if (rpc_rec->last_defer == 128) {
-					error("%s: %s %u request to cluster %s is repeatedly failing",
-					      __func__,
-					      rpc_num2string(rpc_rec->msg_type),
-					      rpc_rec->job_id, cluster->name);
+					info("%s: %s %u request to cluster %s is repeatedly failing",
+					     __func__,
+					     rpc_num2string(rpc_rec->msg_type),
+					     rpc_rec->job_id, cluster->name);
 					rpc_rec->last_defer *= 2;
 				} else if (rpc_rec->last_defer)
 					rpc_rec->last_defer *= 2;
@@ -1177,6 +1177,23 @@ static void *_agent_thread(void *arg)
 		}
 		list_iterator_destroy(cluster_iter);
 	}
+
+	/* Log the abandoned RPCs */
+	cluster_iter = list_iterator_create(fed_mgr_fed_rec->cluster_list);
+	while ((cluster = list_next(cluster_iter))) {
+		if (cluster->send_rpc == NULL)
+			continue;
+
+		rpc_iter = list_iterator_create(cluster->send_rpc);
+		while ((rpc_rec = list_next(rpc_iter))) {
+			info("%s: %s %u request to cluster %s aborted",
+			     __func__, rpc_num2string(rpc_rec->msg_type),
+			     rpc_rec->job_id, cluster->name);
+		}
+		list_iterator_destroy(rpc_iter);
+		FREE_NULL_LIST(cluster->send_rpc);
+	}
+	list_iterator_destroy(cluster_iter);
 
 	return NULL;
 }
