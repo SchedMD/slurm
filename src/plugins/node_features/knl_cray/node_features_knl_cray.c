@@ -1876,6 +1876,7 @@ static void _check_node_status(void)
 		xfree(resp_msg);
 		return;
 	}
+	xfree(resp_msg);
 
 	FREE_NULL_BITMAP(capmc_node_bitmap);
 	capmc_node_bitmap = bit_alloc(100000);
