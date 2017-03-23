@@ -491,9 +491,7 @@ static void _fed_mgr_ptr_init(slurmdb_federation_rec_t *db_fed,
 				continue;
 			}
 			if (!(tmp_cluster =
-			      list_find_first(fed_mgr_fed_rec->cluster_list,
-					      slurmdb_find_cluster_in_list,
-					      db_cluster->name))) {
+			      fed_mgr_get_cluster_by_name(db_cluster->name))) {
 				/* don't worry about destroying the connection
 				 * here.  It will happen below when we free
 				 * fed_mgr_fed_rec (automagically).
@@ -555,9 +553,8 @@ static void _persist_callback_fini(void *arg)
 		return;
 	}
 
-	if (!(cluster = list_find_first(fed_mgr_fed_rec->cluster_list,
-					slurmdb_find_cluster_in_list,
-					persist_conn->cluster_name))) {
+	if (!(cluster =
+	      fed_mgr_get_cluster_by_name(persist_conn->cluster_name))) {
 		info("Couldn't find cluster %s?",
 		     persist_conn->cluster_name);
 		unlock_slurmctld(fed_write_lock);
@@ -992,6 +989,15 @@ extern slurmdb_cluster_rec_t *fed_mgr_get_cluster_by_id(uint32_t id)
 {
 	return list_find_first(fed_mgr_fed_rec->cluster_list,
 			       _find_sibling_by_id, (void *)(intptr_t)id);
+}
+
+extern slurmdb_cluster_rec_t *fed_mgr_get_cluster_by_name(char *sib_name)
+{
+	if (!fed_mgr_fed_rec)
+		return NULL;
+
+	return list_find_first(fed_mgr_fed_rec->cluster_list,
+			       slurmdb_find_cluster_in_list, sib_name);
 }
 
 /*
@@ -1665,9 +1671,8 @@ extern int fed_mgr_add_sibling_conn(slurm_persist_conn_t *persist_conn,
 		return SLURM_ERROR;
 	}
 
-	if (!(cluster = list_find_first(fed_mgr_fed_rec->cluster_list,
-					slurmdb_find_cluster_in_list,
-					persist_conn->cluster_name))) {
+	if (!(cluster =
+	      fed_mgr_get_cluster_by_name(persist_conn->cluster_name))) {
 		unlock_slurmctld(fed_read_lock);
 		*out_buffer = xstrdup_printf(
 			"%s isn't a known sibling of ours, but tried to connect to cluster %s federation %s",
@@ -1815,9 +1820,7 @@ static uint64_t _cluster_names_to_ids(char *clusters)
 
 		while ((cluster_name = list_next(itr))) {
 			if ((sibling =
-			     list_find_first(fed_mgr_fed_rec->cluster_list,
-					     slurmdb_find_cluster_in_list,
-					     cluster_name))) {
+			     fed_mgr_get_cluster_by_name(cluster_name))) {
 				cluster_ids |= FED_SIBLING_BIT(sibling->fed.id);
 			}
 		}
