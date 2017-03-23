@@ -1087,10 +1087,10 @@ static void *_agent_thread(void *arg)
 	bitstr_t *success_bits;
 	int rc, resp_inx, success_size;
 
-	while (!slurmctld_config.shutdown_time) {
-		if (!fed_mgr_fed_rec || !fed_mgr_fed_rec->cluster_list)
-			continue;
+	slurmctld_lock_t fed_read_lock = {
+		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 
+	while (!slurmctld_config.shutdown_time) {
 		/* Wait for new work or re-issue RPCs after 2 second wait */
 		slurm_mutex_lock(&agent_mutex);
 		if (!slurmctld_config.shutdown_time && !agent_queue_size) {
@@ -1101,6 +1101,12 @@ static void *_agent_thread(void *arg)
 		slurm_mutex_unlock(&agent_mutex);
 		if (slurmctld_config.shutdown_time)
 			break;
+
+		lock_slurmctld(fed_read_lock);
+		if (!fed_mgr_fed_rec || !fed_mgr_fed_rec->cluster_list) {
+			unlock_slurmctld(fed_read_lock);
+			continue;
+		}
 
 		/* Look for work on each cluster */
 		cluster_iter = list_iterator_create(
@@ -1211,9 +1217,15 @@ static void *_agent_thread(void *arg)
 			list_destroy(ctld_req_msg.my_list);
 		}
 		list_iterator_destroy(cluster_iter);
+
+		unlock_slurmctld(fed_read_lock);
 	}
 
 	/* Log the abandoned RPCs */
+	lock_slurmctld(fed_read_lock);
+	if (!fed_mgr_fed_rec)
+		goto end_it;
+
 	cluster_iter = list_iterator_create(fed_mgr_fed_rec->cluster_list);
 	while ((cluster = list_next(cluster_iter))) {
 		if (cluster->send_rpc == NULL)
@@ -1230,6 +1242,9 @@ static void *_agent_thread(void *arg)
 		FREE_NULL_LIST(cluster->send_rpc);
 	}
 	list_iterator_destroy(cluster_iter);
+
+end_it:
+	unlock_slurmctld(fed_read_lock);
 
 	return NULL;
 }
