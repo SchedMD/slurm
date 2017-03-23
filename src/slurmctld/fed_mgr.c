@@ -2125,21 +2125,24 @@ static void _update_sib_job_siblings(uint32_t job_id, uint64_t viable_sibs,
 }
 
 /*
- * Submit sibling jobs to designated siblings (job_desc->fed_siblings_viable).
+ * Submit sibling jobs to designated siblings.
  *
  * Will update job_desc->fed_siblings_active with the successful submissions.
+ * Will not send to siblings if they are in
+ * job_desc->fed_details->siblings_active.
  *
  * IN job_desc - job_desc containing job_id and fed_siblings_viable of job to be
  * 	submitted.
  * IN msg - contains the original job_desc buffer to send to the siblings.
  * IN alloc_only - true if just an allocation. false if a batch job.
+ * IN dest_sibs - bitmap of viable siblings to submit to.
  * RET returns SLURM_SUCCESS if all siblings recieved the job sucessfully or
  * 	SLURM_ERROR if any siblings failed to receive the job. If a sibling
  * 	fails, then the sucessful siblings will be updated with the correct
  * 	sibling bitmap.
  */
 static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
-				bool alloc_only)
+				bool alloc_only, uint64_t dest_sibs)
 {
 	int rc = SLURM_SUCCESS;
 	ListIterator sib_itr, thread_itr;
@@ -2171,9 +2174,8 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 		if (sibling == fed_mgr_cluster_rec)
 			continue;
 
-		/* Only send to viable siblings */
-		if (!(job_desc->fed_siblings_viable &
-		      FED_SIBLING_BIT(sibling->fed.id)))
+		/* Only send to specific siblings */
+		if (!(dest_sibs & FED_SIBLING_BIT(sibling->fed.id)))
 			continue;
 
 		/* skip sibling if the sibling already has a job */
@@ -2217,11 +2219,13 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 }
 
 /*
- * Prepare and submit new siblings jobs built from an existing job
+ * Prepare and submit new sibling jobs built from an existing job.
  *
  * IN job_ptr - job to submit to remote siblings.
+ * IN dest_sibs - bitmap of viable siblings to submit to.
  */
-static int _prepare_submit_siblings(struct job_record *job_ptr)
+static int _prepare_submit_siblings(struct job_record *job_ptr,
+				    uint64_t dest_sibs)
 {
 	int rc = SLURM_SUCCESS;
 	uint32_t origin_id;
@@ -2236,7 +2240,7 @@ static int _prepare_submit_siblings(struct job_record *job_ptr)
 		return SLURM_SUCCESS;
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-		info("submitting new sibilings for job %d", job_ptr->job_id);
+		info("submitting new siblings for job %d", job_ptr->job_id);
 
 	if (!(job_desc = copy_job_record_to_job_desc(job_ptr)))
 		return SLURM_ERROR;
@@ -2251,7 +2255,7 @@ static int _prepare_submit_siblings(struct job_record *job_ptr)
 	pack_msg(&msg, buffer);
 	msg.buffer           = buffer;
 
-	if (_submit_sibling_jobs(job_desc, &msg, false))
+	if (_submit_sibling_jobs(job_desc, &msg, false, dest_sibs))
 		error("Failed to submit fed job to siblings");
 
 	/* mark this cluster as an active sibling */
@@ -2490,7 +2494,9 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		     job_ptr->job_id, fed_mgr_cluster_rec->name);
 	}
 
-	if (!job_held && _submit_sibling_jobs(job_desc, msg, alloc_only))
+	if (!job_held && _submit_sibling_jobs(
+				job_desc, msg, alloc_only,
+				job_ptr->fed_details->siblings_viable))
 		info("failed to submit sibling job to one or more siblings");
 
 	job_ptr->fed_details->siblings_active = job_desc->fed_siblings_active;
@@ -3127,7 +3133,8 @@ extern int fed_mgr_job_requeue(struct job_record *job_ptr)
 	job_ptr->fed_details->siblings_viable =
 		_get_viable_sibs(job_ptr->clusters, feature_sibs);
 
-	_prepare_submit_siblings(job_ptr);
+	_prepare_submit_siblings(job_ptr,
+				 job_ptr->fed_details->siblings_viable);
 
 	/* clear cluster lock */
 	job_ptr->fed_details->cluster_lock = 0;
@@ -3273,7 +3280,9 @@ extern int fed_mgr_update_job_cluster_features(struct job_record *job_ptr,
 
 		/* Don't submit new sibilings if the job is held */
 		if (job_ptr->priority != 0 && add_sibs)
-			_prepare_submit_siblings(job_ptr);
+			_prepare_submit_siblings(
+					job_ptr,
+					job_ptr->fed_details->siblings_viable);
 
 		/* unrevoke the origin job */
 		if (fed_mgr_is_origin_job(job_ptr) &&
