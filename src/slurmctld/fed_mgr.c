@@ -573,7 +573,8 @@ static void _persist_callback_fini(void *arg)
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 			info("Closing send to sibling cluster %s",
 			     cluster->name);
-		slurm_persist_conn_close(persist_conn);
+		slurm_persist_conn_destroy(persist_conn);
+		cluster->fed.send = NULL;
 	}
 
 	slurm_mutex_unlock(&cluster->lock);
