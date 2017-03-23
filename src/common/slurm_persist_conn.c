@@ -664,7 +664,7 @@ extern void slurm_persist_conn_members_destroy(
 		return;
 
 	persist_conn->inited = false;
-	_close_fd(&persist_conn->fd);
+	slurm_persist_conn_close(persist_conn);
 
 	if (persist_conn->auth_cred) {
 		g_slurm_auth_destroy(persist_conn->auth_cred);
