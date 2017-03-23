@@ -8615,6 +8615,77 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 }
 
 /*
+ * pack_spec_jobs - dump job information for specified jobs in
+ *	machine independent form (for network transmission)
+ * OUT buffer_ptr - the pointer is set to the allocated buffer.
+ * OUT buffer_size - set to size of the buffer in bytes
+ * IN show_flags - job filtering options
+ * IN job_ids - list of job_ids to pack
+ * IN uid - uid of user making request (for partition filtering)
+ * IN filter_uid - pack only jobs belonging to this user if not NO_VAL
+ * global: job_list - global list of job records
+ * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
+ * NOTE: change _unpack_job_desc_msg() in common/slurm_protocol_pack.c
+ *	whenever the data format changes
+ */
+extern void pack_spec_jobs(char **buffer_ptr, int *buffer_size, List job_ids,
+			   uint16_t show_flags, uid_t uid, uint32_t filter_uid,
+			   uint16_t protocol_version)
+{
+	ListIterator itr;
+	struct job_record *job_ptr;
+	uint32_t jobs_packed = 0, tmp_offset, *jobid_ptr;
+	Buf buffer;
+
+	xassert(job_ids);
+
+	buffer_ptr[0] = NULL;
+	*buffer_size = 0;
+
+	buffer = init_buf(BUF_SIZE);
+
+	/* write message body header : size and time */
+	/* put in a place holder job record count of 0 for now */
+	pack32(jobs_packed, buffer);
+	pack_time(time(NULL), buffer);
+
+	/* write individual job records */
+	part_filter_set(uid);
+	itr = list_iterator_create(job_ids);
+	while ((jobid_ptr = (uint32_t *)list_next(itr))) {
+
+		if (!(job_ptr = find_job_record(*jobid_ptr)))
+			continue;
+
+		xassert (job_ptr->magic == JOB_MAGIC);
+
+		if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
+		    _all_parts_hidden(job_ptr))
+			continue;
+
+		if (_hide_job(job_ptr, uid, show_flags))
+			continue;
+
+		if ((filter_uid != NO_VAL) && (filter_uid != job_ptr->user_id))
+			continue;
+
+		pack_job(job_ptr, show_flags, buffer, protocol_version, uid);
+		jobs_packed++;
+	}
+	list_iterator_destroy(itr);
+	part_filter_clear();
+
+	/* put the real record count in the message body header */
+	tmp_offset = get_buf_offset(buffer);
+	set_buf_offset(buffer, 0);
+	pack32(jobs_packed, buffer);
+	set_buf_offset(buffer, tmp_offset);
+
+	*buffer_size = get_buf_offset(buffer);
+	buffer_ptr[0] = xfer_buf_data(buffer);
+}
+
+/*
  * pack_one_job - dump information for one jobs in
  *	machine independent form (for network transmission)
  * OUT buffer_ptr - the pointer is set to the allocated buffer.

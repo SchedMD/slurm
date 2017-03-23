@@ -612,6 +612,8 @@ typedef struct job_step_id_msg {
 typedef struct job_info_request_msg {
 	time_t last_update;
 	uint16_t show_flags;
+	List   job_ids;		/* Optional list of job_ids, otherwise show all
+				 * jobs. */
 } job_info_request_msg_t;
 
 typedef struct job_step_info_request_msg {
