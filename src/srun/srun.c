@@ -267,6 +267,8 @@ relaunch:
 	}
 
 	fini_srun(job, got_alloc, &global_rc, 0);
+	if ((global_rc & 0xff) == SIG_OOM)
+		global_rc = 1;	/* Exit code 1 */
 
 	return (int)global_rc;
 }
