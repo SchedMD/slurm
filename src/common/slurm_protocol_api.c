@@ -3767,8 +3767,9 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 		persist_msg_t persist_msg;
 
 		memset(&persist_msg, 0, sizeof(persist_msg_t));
-		persist_msg.msg_type = msg->msg_type;
-		persist_msg.data = msg->data;
+		persist_msg.msg_type  = msg->msg_type;
+		persist_msg.data      = msg->data;
+		persist_msg.data_size = msg->data_size;
 
 		buffer = slurm_persist_msg_pack(msg->conn, &persist_msg);
 		rc = slurm_persist_send_msg(msg->conn, buffer);

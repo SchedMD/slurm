@@ -48,6 +48,7 @@ typedef struct {
 	uint16_t msg_type;	/* see slurmdbd_msg_type_t or
 				 * slurm_msg_type_t */
 	void * data;		/* pointer to a message type below */
+	uint32_t data_size;     /* size of data */
 } persist_msg_t;
 
 typedef struct {
