@@ -1017,6 +1017,7 @@ enum ctx_keys {
 #define JOB_KILL_HURRY     0x00000400	/* Avoid burst buffer stage out */
 #define TRES_STR_CALC      0x00000800   /* Avoid calculating TRES strings at the
 					 * end of a job. */
+#define SIB_JOB_FLUSH      0x00001000   /* Don't send complete to origin */
 
 /*****************************************************************************\
  *      SLURM HOSTLIST FUNCTIONS

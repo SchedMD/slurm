@@ -2787,6 +2787,9 @@ extern int fed_mgr_job_complete(struct job_record *job_ptr,
 {
 	uint32_t origin_id;
 
+	if (job_ptr->bit_flags & SIB_JOB_FLUSH)
+		return SLURM_SUCCESS;
+
 	if (!_is_fed_job(job_ptr, &origin_id))
 		return SLURM_SUCCESS;
 
