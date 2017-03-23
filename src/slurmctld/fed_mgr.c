@@ -1087,10 +1087,10 @@ static void *_agent_thread(void *arg)
 	bitstr_t *success_bits;
 	int rc, resp_inx, success_size;
 
-	while (!slurmctld_config.shutdown_time) {
-		if (!fed_mgr_fed_rec || !fed_mgr_fed_rec->cluster_list)
-			continue;
+	slurmctld_lock_t fed_write_lock = {
+		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
 
+	while (!slurmctld_config.shutdown_time) {
 		/* Wait for new work or re-issue RPCs after 2 second wait */
 		slurm_mutex_lock(&agent_mutex);
 		if (!slurmctld_config.shutdown_time && !agent_queue_size) {
@@ -1100,7 +1100,11 @@ static void *_agent_thread(void *arg)
 		agent_queue_size = 0;
 		slurm_mutex_unlock(&agent_mutex);
 		if (slurmctld_config.shutdown_time)
-			break;
+			goto last;
+
+		lock_slurmctld(fed_write_lock);
+		if (!fed_mgr_fed_rec || !fed_mgr_fed_rec->cluster_list)
+			goto next;
 
 		/* Look for work on each cluster */
 		cluster_iter = list_iterator_create(
@@ -1110,7 +1114,7 @@ static void *_agent_thread(void *arg)
 			time_t now = time(NULL);
 			if ((cluster->send_rpc == NULL) ||
 			   (list_count(cluster->send_rpc) == 0))
-				continue;
+				goto next;
 
 			/* Move currently pending RPCs to new list */
 			ctld_req_msg.my_list = NULL;
@@ -1118,7 +1122,7 @@ static void *_agent_thread(void *arg)
 			while ((rpc_rec = list_next(rpc_iter))) {
 				if ((rpc_rec->last_try + rpc_rec->last_defer) >=
 				    now)
-					continue;
+					goto next;
 				if (!ctld_req_msg.my_list)
 					ctld_req_msg.my_list =list_create(NULL);
 				list_append(ctld_req_msg.my_list,
@@ -1137,7 +1141,7 @@ static void *_agent_thread(void *arg)
 			}
 			list_iterator_destroy(rpc_iter);
 			if (!ctld_req_msg.my_list)
-				continue;
+				goto next;
 
 			/* Build, pack and send the combined RPC */
 			slurm_msg_t_init(&req_msg);
@@ -1157,7 +1161,7 @@ static void *_agent_thread(void *arg)
 								send_rpc);
 				while ((rpc_rec = list_next(rpc_iter))) {
 					if (rpc_rec->last_try != now)
-						continue;
+						goto next;
 					if (resp_inx >= success_size) {
 						error("%s: bitmap too small (%d >= %d)",
 						      __func__, resp_inx,
@@ -1211,9 +1215,21 @@ static void *_agent_thread(void *arg)
 			list_destroy(ctld_req_msg.my_list);
 		}
 		list_iterator_destroy(cluster_iter);
+
+next:
+		unlock_slurmctld(fed_write_lock);
+		continue;
+
+last:
+		unlock_slurmctld(fed_write_lock);
+		break;
 	}
 
+	lock_slurmctld(fed_write_lock);
 	/* Log the abandoned RPCs */
+	if (!fed_mgr_fed_rec)
+		goto end_it;
+
 	cluster_iter = list_iterator_create(fed_mgr_fed_rec->cluster_list);
 	while ((cluster = list_next(cluster_iter))) {
 		if (cluster->send_rpc == NULL)
@@ -1230,6 +1246,9 @@ static void *_agent_thread(void *arg)
 		FREE_NULL_LIST(cluster->send_rpc);
 	}
 	list_iterator_destroy(cluster_iter);
+
+end_it:
+	unlock_slurmctld(fed_write_lock);
 
 	return NULL;
 }
