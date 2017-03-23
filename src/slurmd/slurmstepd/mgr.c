@@ -315,7 +315,12 @@ static uint32_t _get_exit_code(stepd_step_rec_t *job)
 			step_rc = job->task[i]->estatus;
 			break;
 		}
-		step_rc = MAX(step_complete.step_rc, job->task[i]->estatus);
+		if ((job->task[i]->estatus & 0xff) == SIG_OOM) {
+			step_rc = job->task[i]->estatus;
+		} else if ((step_rc  & 0xff) != SIG_OOM) {
+			step_rc = MAX(step_complete.step_rc,
+				      job->task[i]->estatus);
+		}
 	}
 	/* If we killed all the tasks by cmd give at least one return
 	   code. */

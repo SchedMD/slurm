@@ -314,7 +314,7 @@ static void _task_finish(task_exit_msg_t *msg)
 
 	/* Only build the "tasks" and "hosts" strings as needed. Buidling them
 	 * can take multiple milliseconds */
-	if ((msg->return_code == SIG_OOM) && !oom_printed) {
+	if (((msg->return_code & 0xff) == SIG_OOM) && !oom_printed) {
 		build_task_string = true;
 	} else if (WIFEXITED(msg->return_code)) {
 		if ((rc = WEXITSTATUS(msg->return_code)) == 0) {
@@ -344,8 +344,7 @@ static void _task_finish(task_exit_msg_t *msg)
 		if (!oom_printed)
 			error("%s: %s %s: Out Of Memory", hosts, task_str, tasks);
 		oom_printed = 1;
-		if (*local_global_rc == NO_VAL)
-			*local_global_rc = msg->return_code;
+		*local_global_rc = msg->return_code;
 	} else if (WIFEXITED(msg->return_code)) {
 		if ((rc = WEXITSTATUS(msg->return_code)) == 0) {
 			verbose("%s: %s %s: Completed", hosts, task_str, tasks);
@@ -360,8 +359,9 @@ static void _task_finish(task_exit_msg_t *msg)
 			      hosts, task_str, tasks, rc);
 			msg_printed = 1;
 		}
-		if (!WIFEXITED(*local_global_rc)
-		    || (rc > WEXITSTATUS(*local_global_rc)))
+		if (((*local_global_rc & 0xff) != SIG_OOM) &&
+		    (!WIFEXITED(*local_global_rc) ||
+		     (rc > WEXITSTATUS(*local_global_rc))))
 			*local_global_rc = msg->return_code;
 	} else if (WIFSIGNALED(msg->return_code)) {
 		const char *signal_str = strsignal(WTERMSIG(msg->return_code));
