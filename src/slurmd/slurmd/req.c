@@ -1472,14 +1472,11 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		job_env.user_name = req->user_name;
 		rc =  _run_prolog(&job_env, req->cred);
 		if (rc) {
-			int term_sig, exit_status;
-			if (WIFSIGNALED(rc)) {
-				exit_status = 0;
+			int term_sig = 0, exit_status = 0;
+			if (WIFSIGNALED(rc))
 				term_sig    = WTERMSIG(rc);
-			} else {
+			else if (WIFEXITED(rc))
 				exit_status = WEXITSTATUS(rc);
-				term_sig    = 0;
-			}
 			error("[job %u] prolog failed status=%d:%d",
 			      req->job_id, exit_status, term_sig);
 			errnum = ESLURMD_PROLOG_FAILED;
@@ -2078,14 +2075,11 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		error("Error starting prolog: %m");
 	}
 	if (rc) {
-		int term_sig, exit_status;
-		if (WIFSIGNALED(rc)) {
-			exit_status = 0;
+		int term_sig = 0, exit_status = 0;
+		if (WIFSIGNALED(rc))
 			term_sig    = WTERMSIG(rc);
-		} else {
+		else if (WIFEXITED(rc))
 			exit_status = WEXITSTATUS(rc);
-			term_sig    = 0;
-		}
 		error("[job %u] prolog start failed status=%d:%d",
 		      req->job_id, exit_status, term_sig);
 		rc = ESLURMD_PROLOG_FAILED;
@@ -2125,14 +2119,11 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		rc = _run_prolog(&job_env, req->cred);
 
 		if (rc) {
-			int term_sig, exit_status;
-			if (WIFSIGNALED(rc)) {
-				exit_status = 0;
+			int term_sig = 0, exit_status = 0;
+			if (WIFSIGNALED(rc))
 				term_sig    = WTERMSIG(rc);
-			} else {
+			else if (WIFEXITED(rc))
 				exit_status = WEXITSTATUS(rc);
-				term_sig    = 0;
-			}
 			error("[job %u] prolog failed status=%d:%d",
 			      req->job_id, exit_status, term_sig);
 			rc = ESLURMD_PROLOG_FAILED;
@@ -2247,14 +2238,11 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		rc = _run_prolog(&job_env, req->cred);
 		xfree(job_env.resv_id);
 		if (rc) {
-			int term_sig, exit_status;
-			if (WIFSIGNALED(rc)) {
-				exit_status = 0;
+			int term_sig = 0, exit_status = 0;
+			if (WIFSIGNALED(rc))
 				term_sig    = WTERMSIG(rc);
-			} else {
+			else if (WIFEXITED(rc))
 				exit_status = WEXITSTATUS(rc);
-				term_sig    = 0;
-			}
 			error("[job %u] prolog failed status=%d:%d",
 			      req->job_id, exit_status, term_sig);
 			_prolog_error(req, rc);
@@ -5208,14 +5196,11 @@ _rpc_terminate_batch_job(uint32_t job_id, uint32_t user_id, char *node_name)
 	/* NOTE: We lack the job's SPANK environment variables */
 	rc = _run_epilog(&job_env);
 	if (rc) {
-		int term_sig, exit_status;
-		if (WIFSIGNALED(rc)) {
-			exit_status = 0;
+		int term_sig = 0, exit_status = 0;
+		if (WIFSIGNALED(rc))
 			term_sig    = WTERMSIG(rc);
-		} else {
+		else if (WIFEXITED(rc))
 			exit_status = WEXITSTATUS(rc);
-			term_sig    = 0;
-		}
 		error("[job %u] epilog failed status=%d:%d",
 		      job_id, exit_status, term_sig);
 	} else
@@ -5537,14 +5522,11 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	xfree(job_env.resv_id);
 
 	if (rc) {
-		int term_sig, exit_status;
-		if (WIFSIGNALED(rc)) {
-			exit_status = 0;
+		int term_sig = 0, exit_status = 0;
+		if (WIFSIGNALED(rc))
 			term_sig    = WTERMSIG(rc);
-		} else {
+		else if (WIFEXITED(rc))
 			exit_status = WEXITSTATUS(rc);
-			term_sig    = 0;
-		}
 		error("[job %u] epilog failed status=%d:%d",
 		      req->job_id, exit_status, term_sig);
 		rc = ESLURMD_EPILOG_FAILED;

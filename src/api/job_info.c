@@ -421,19 +421,21 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	xstrfmtcat(out, "Requeue=%u Restarts=%u BatchFlag=%u Reboot=%u ",
 		 job_ptr->requeue, job_ptr->restart_cnt, job_ptr->batch_flag,
 		 job_ptr->reboot);
+	exit_status = term_sig = 0;
 	if (WIFSIGNALED(job_ptr->exit_code))
 		term_sig = WTERMSIG(job_ptr->exit_code);
-	exit_status = WEXITSTATUS(job_ptr->exit_code);
+	else if (WIFEXITED(job_ptr->exit_code))
+		exit_status = WEXITSTATUS(job_ptr->exit_code);
 	xstrfmtcat(out, "ExitCode=%u:%u", exit_status, term_sig);
 	xstrcat(out, line_end);
 
 	/****** Line 5a (optional) ******/
 	if (job_ptr->show_flags & SHOW_DETAIL) {
+		exit_status = term_sig = 0;
 		if (WIFSIGNALED(job_ptr->derived_ec))
 			term_sig = WTERMSIG(job_ptr->derived_ec);
-		else
-			term_sig = 0;
-		exit_status = WEXITSTATUS(job_ptr->derived_ec);
+		else if (WIFEXITED(job_ptr->derived_ec))
+			exit_status = WEXITSTATUS(job_ptr->derived_ec);
 		xstrfmtcat(out, "DerivedExitCode=%u:%u", exit_status, term_sig);
 		xstrcat(out, line_end);
 	}

@@ -1337,7 +1337,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 	int suspend_secs = 0;
 	job_info_t *job_ptr = sview_job_info_ptr->job_ptr;
 	struct group *group_info = NULL;
-	uint16_t term_sig = 0;
+	uint16_t term_code = 0, term_sig = 0;
 	uint64_t min_mem = 0;
 
 	GtkTreeIter iter;
@@ -1558,21 +1558,29 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_DEPENDENCY),
 				   job_ptr->dependency);
 
+	if (WIFEXITED(job_ptr->derived_ec))
+		term_code = WEXITSTATUS(job_ptr->derived_ec);
+	else
+		term_code = 0;
 	if (WIFSIGNALED(job_ptr->derived_ec))
 		term_sig = WTERMSIG(job_ptr->derived_ec);
-	snprintf(tmp_char, sizeof(tmp_char), "%u:%u",
-		 WEXITSTATUS(job_ptr->derived_ec), term_sig);
+	else
+		term_sig = 0;
+	snprintf(tmp_char, sizeof(tmp_char), "%u:%u", term_code, term_sig);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
 						 SORTID_DERIVED_EC),
 				   tmp_char);
 
+	if (WIFEXITED(job_ptr->exit_code))
+		term_code = WEXITSTATUS(job_ptr->exit_code);
+	else
+		term_code = 0;
 	if (WIFSIGNALED(job_ptr->exit_code))
 		term_sig = WTERMSIG(job_ptr->exit_code);
 	else
 		term_sig = 0;
-	snprintf(tmp_char, sizeof(tmp_char), "%u:%u",
-		 WEXITSTATUS(job_ptr->exit_code), term_sig);
+	snprintf(tmp_char, sizeof(tmp_char), "%u:%u", term_code, term_sig);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
 						 SORTID_EXIT_CODE),
@@ -2016,7 +2024,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	GtkTreeIter step_iter;
 	job_info_t *job_ptr = sview_job_info_ptr->job_ptr;
 	struct group *group_info = NULL;
-	uint16_t term_sig = 0;
+	uint16_t term_code = 0, term_sig = 0;
 	uint64_t min_mem = 0;
 
 	if (!iter)
@@ -2144,17 +2152,26 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			 sizeof(tmp_disk), UNIT_MEGA, NO_VAL,
 			 working_sview_config.convert_flags);
 
+	if (WIFEXITED(job_ptr->derived_ec))
+		term_code = WEXITSTATUS(job_ptr->derived_ec);
+	else
+		term_code = 0;
 	if (WIFSIGNALED(job_ptr->derived_ec))
 		term_sig = WTERMSIG(job_ptr->derived_ec);
+	else
+		term_sig = 0;
 	snprintf(tmp_derived_ec, sizeof(tmp_derived_ec), "%u:%u",
-		 WEXITSTATUS(job_ptr->derived_ec), term_sig);
+		 term_code, term_sig);
 
+	if (WIFEXITED(job_ptr->exit_code))
+		term_code = WEXITSTATUS(job_ptr->exit_code);
+	else
+		term_code = 0;
 	if (WIFSIGNALED(job_ptr->exit_code))
 		term_sig = WTERMSIG(job_ptr->exit_code);
 	else
 		term_sig = 0;
-	snprintf(tmp_exit, sizeof(tmp_exit), "%u:%u",
-		 WEXITSTATUS(job_ptr->exit_code), term_sig);
+	snprintf(tmp_exit, sizeof(tmp_exit), "%u:%u", term_code, term_sig);
 
 	group_info = getgrgid((gid_t) job_ptr->group_id);
 	if ( group_info && group_info->gr_name[ 0 ] ) {

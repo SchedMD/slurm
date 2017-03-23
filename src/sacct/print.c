@@ -277,7 +277,7 @@ void print_fields(type_t type, void *object)
 	list_iterator_reset(print_fields_itr);
 	while((field = list_next(print_fields_itr))) {
 		char *tmp_char = NULL, id[FORMAT_STRING_SIZE];
-		int tmp_int = NO_VAL, tmp_int2 = NO_VAL;
+		int exit_code, tmp_int = NO_VAL, tmp_int2 = NO_VAL;
 		double tmp_dub = (double)NO_VAL; /* don't use NO_VAL64
 						    unless we can
 						    confirm the values
@@ -718,17 +718,18 @@ void print_fields(type_t type, void *object)
 					     (curr_inx == field_count));
 			break;
 		case PRINT_DERIVED_EC:
-			tmp_int2 = 0;
-			switch(type) {
+			tmp_int = tmp_int2 = 0;
+			switch (type) {
 			case JOB:
-				tmp_int = job->derived_ec;
-				if (tmp_int == NO_VAL)
-					tmp_int = 0;
-				if (WIFSIGNALED(tmp_int))
-					tmp_int2 = WTERMSIG(tmp_int);
+				if (job->derived_ec == NO_VAL)
+					;
+				else if (WIFSIGNALED(job->derived_ec))
+					tmp_int2 = WTERMSIG(job->derived_ec);
+				else if (WIFEXITED(job->derived_ec))
+					tmp_int = WEXITSTATUS(job->derived_ec);
 
 				snprintf(outbuf, sizeof(outbuf), "%d:%d",
-					 WEXITSTATUS(tmp_int), tmp_int2);
+					 tmp_int, tmp_int2);
 				break;
 			case JOBSTEP:
 			case JOBCOMP:
@@ -816,29 +817,29 @@ void print_fields(type_t type, void *object)
 					     (curr_inx == field_count));
 			break;
 		case PRINT_EXITCODE:
-			tmp_int = 0;
-			tmp_int2 = 0;
-			switch(type) {
+			exit_code = NO_VAL;
+			switch (type) {
 			case JOB:
-				tmp_int = job->exitcode;
+				exit_code = job->exitcode;
 				break;
 			case JOBSTEP:
-				tmp_int = step->exitcode;
+				exit_code = step->exitcode;
 				break;
 			case JOBCOMP:
 			default:
 				break;
 			}
-			if (tmp_int != NO_VAL) {
-				if (WIFSIGNALED(tmp_int))
-					tmp_int2 = WTERMSIG(tmp_int);
-				tmp_int = WEXITSTATUS(tmp_int);
+			tmp_int = tmp_int2 = 0;
+			if (exit_code != NO_VAL) {
+				if (WIFSIGNALED(exit_code))
+					tmp_int2 = WTERMSIG(exit_code);
+				else if (WIFEXITED(exit_code))
+					tmp_int = WEXITSTATUS(exit_code);
 				if (tmp_int >= 128)
 					tmp_int -= 128;
 			}
 			snprintf(outbuf, sizeof(outbuf), "%d:%d",
 				 tmp_int, tmp_int2);
-
 			field->print_routine(field,
 					     outbuf,
 					     (curr_inx == field_count));
