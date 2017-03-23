@@ -3269,7 +3269,9 @@ extern int fed_mgr_update_job_cluster_features(struct job_record *job_ptr,
 		existing_sibs =  new_sibs &  old_sibs;
 
 		if (rem_sibs) {
-			_revoke_sibling_jobs(job_ptr->job_id, 0, rem_sibs, 0);
+			_revoke_sibling_jobs(job_ptr->job_id,
+					     fed_mgr_cluster_rec->fed.id,
+					     rem_sibs, 0);
 			if (fed_mgr_is_origin_job(job_ptr) &&
 			    (rem_sibs & FED_SIBLING_BIT(origin_id))) {
 				fed_mgr_job_revoke(job_ptr, false, 0, 0);
