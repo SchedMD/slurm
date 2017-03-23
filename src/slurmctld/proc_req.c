@@ -5887,6 +5887,10 @@ end_it:
 		debug("Problem sending response to connection %d uid(%d)",
 		      p_tmp.fd, uid);
 	}
+
+	if (!rc)
+		fed_mgr_sync(persist_conn->cluster_name);
+
 	xfree(comment);
 	free_buf(ret_buf);
 	END_TIMER;

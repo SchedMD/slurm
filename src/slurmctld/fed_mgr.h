@@ -84,6 +84,7 @@ extern int       fed_mgr_sib_will_run(slurm_msg_t *msg,
 				      will_run_response_msg_t **resp);
 extern slurmdb_federation_rec_t *fed_mgr_state_load(char *state_save_location);
 extern int       fed_mgr_state_save(char *state_save_location);
+extern int       fed_mgr_sync(const char *sib_name);
 extern int       fed_mgr_update_job_cluster_features(struct job_record *job_ptr,
 						     char *req_features);
 extern int       fed_mgr_update_feds(slurmdb_update_object_t *update);
