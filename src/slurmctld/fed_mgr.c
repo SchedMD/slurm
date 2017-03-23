@@ -1100,7 +1100,7 @@ static void *_agent_thread(void *arg)
 		agent_queue_size = 0;
 		slurm_mutex_unlock(&agent_mutex);
 		if (slurmctld_config.shutdown_time)
-			goto last;
+			break;
 
 		lock_slurmctld(fed_write_lock);
 		if (!fed_mgr_fed_rec || !fed_mgr_fed_rec->cluster_list)
@@ -1219,10 +1219,6 @@ static void *_agent_thread(void *arg)
 next:
 		unlock_slurmctld(fed_write_lock);
 		continue;
-
-last:
-		unlock_slurmctld(fed_write_lock);
-		break;
 	}
 
 	lock_slurmctld(fed_write_lock);
