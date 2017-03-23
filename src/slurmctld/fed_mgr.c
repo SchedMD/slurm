@@ -169,7 +169,7 @@ static int _open_controller_conn(slurmdb_cluster_rec_t *cluster, bool locked)
 	if (!cluster->control_host || !cluster->control_host[0] ||
 	    !cluster->control_port) {
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-			info("%s: Sibling cluster %s doesn't appear up yet, skipping",
+			info("%s: Sibling cluster %s doesn't appear to be up yet, skipping",
 			     __func__, cluster->name);
 		if (!locked)
 			slurm_mutex_unlock(&cluster->lock);
