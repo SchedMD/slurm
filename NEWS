@@ -54,6 +54,8 @@ documents those changes that are of interest to users and administrators.
  -- Improve error output when updating a reservation that has already started.
  -- Fix --ntasks-per-node issue with srun so DenyOnLimit would work correctly.
  -- node_features/knl_cray plugin - Fix memory leak.
+ -- Fix wrong cpu_per_task count issue on heterogeneous system when dealing with
+    steps.
 
 * Changes in Slurm 17.02.1-2
 ============================
