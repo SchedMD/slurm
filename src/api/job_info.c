@@ -1025,7 +1025,7 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 	int rc;
 	slurm_msg_t resp_msg;
 	slurm_msg_t req_msg;
-	job_info_request_msg_t req;
+	job_info_request_msg_t req = {0};
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);

@@ -10104,8 +10104,35 @@ static void
 _pack_job_info_request_msg(job_info_request_msg_t * msg, Buf buffer,
 			   uint16_t protocol_version)
 {
-	pack_time(msg->last_update, buffer);
-	pack16((uint16_t)msg->show_flags, buffer);
+	uint32_t count = NO_VAL;
+	ListIterator itr;
+
+	xassert(msg);
+	xassert(buffer);
+
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		pack_time(msg->last_update, buffer);
+		pack16((uint16_t)msg->show_flags, buffer);
+
+		if (msg->job_ids)
+			count = list_count(msg->job_ids);
+
+		pack32(count, buffer);
+		if (count && count != NO_VAL) {
+			itr = list_iterator_create(msg->job_ids);
+			uint32_t *uint32_ptr;
+			while ((uint32_ptr = list_next(itr)))
+				pack32(*uint32_ptr, buffer);
+			list_iterator_destroy(itr);
+		}
+
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack_time(msg->last_update, buffer);
+		pack16((uint16_t)msg->show_flags, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+	}
 }
 
 static int
@@ -10113,13 +10140,38 @@ _unpack_job_info_request_msg(job_info_request_msg_t** msg,
 			     Buf buffer,
 			     uint16_t protocol_version)
 {
-	job_info_request_msg_t*job_info;
+	int       i;
+	uint32_t  count;
+	uint32_t *uint32_ptr;
+	job_info_request_msg_t *job_info;
 
 	job_info = xmalloc(sizeof(job_step_info_request_msg_t));
 	*msg = job_info;
 
-	safe_unpack_time(&job_info->last_update, buffer);
-	safe_unpack16(&job_info->show_flags, buffer);
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		safe_unpack_time(&job_info->last_update, buffer);
+		safe_unpack16(&job_info->show_flags, buffer);
+
+		safe_unpack32(&count, buffer);
+		if (count != NO_VAL) {
+			job_info->job_ids =
+				list_create(slurm_destroy_uint32_ptr);
+			for (i = 0; i < count; i++) {
+				uint32_ptr = xmalloc(sizeof(uint32_t));
+				safe_unpack32(uint32_ptr, buffer);
+				list_append(job_info->job_ids, uint32_ptr);
+				uint32_ptr = NULL;
+			}
+		}
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack_time(&job_info->last_update, buffer);
+		safe_unpack16(&job_info->show_flags, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
+
 	return SLURM_SUCCESS;
 
 unpack_error:

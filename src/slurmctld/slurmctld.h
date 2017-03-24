@@ -1789,6 +1789,24 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 			  uint16_t protocol_version);
 
 /*
+ * pack_spec_jobs - dump job information for specified jobs in
+ *	machine independent form (for network transmission)
+ * OUT buffer_ptr - the pointer is set to the allocated buffer.
+ * OUT buffer_size - set to size of the buffer in bytes
+ * IN show_flags - job filtering options
+ * IN job_ids - list of job_ids to pack
+ * IN uid - uid of user making request (for partition filtering)
+ * IN filter_uid - pack only jobs belonging to this user if not NO_VAL
+ * global: job_list - global list of job records
+ * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
+ * NOTE: change _unpack_job_desc_msg() in common/slurm_protocol_pack.c
+ *	whenever the data format changes
+ */
+extern void pack_spec_jobs(char **buffer_ptr, int *buffer_size, List job_ids,
+			   uint16_t show_flags, uid_t uid, uint32_t filter_uid,
+			   uint16_t protocol_version);
+
+/*
  * pack_all_node - dump all configuration and node information for all nodes
  *	in machine independent form (for network transmission)
  * OUT buffer_ptr - pointer to the stored data

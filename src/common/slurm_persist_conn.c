@@ -664,7 +664,7 @@ extern void slurm_persist_conn_members_destroy(
 		return;
 
 	persist_conn->inited = false;
-	_close_fd(&persist_conn->fd);
+	slurm_persist_conn_close(persist_conn);
 
 	if (persist_conn->auth_cred) {
 		g_slurm_auth_destroy(persist_conn->auth_cred);
@@ -938,8 +938,9 @@ extern Buf slurm_persist_msg_pack(slurm_persist_conn_t *persist_conn,
 
 		slurm_msg_t_init(&msg);
 
-		msg.data = req_msg->data;
-		msg.msg_type = req_msg->msg_type;
+		msg.data      = req_msg->data;
+		msg.data_size = req_msg->data_size;
+		msg.msg_type  = req_msg->msg_type;
 		msg.protocol_version = persist_conn->version;
 
 		buffer = init_buf(BUF_SIZE);

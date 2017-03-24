@@ -125,6 +125,15 @@ typedef struct {
 	bitstr_t **resp_array_task_id;
 } resp_array_struct_t;
 
+typedef struct {
+	Buf       buffer;
+	uint32_t  filter_uid;
+	uint32_t *jobs_packed;
+	uint16_t  protocol_version;
+	uint16_t  show_flags;
+	uid_t     uid;
+} _foreach_pack_job_info_t;
+
 /* Global variables */
 List   job_list = NULL;		/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
@@ -8550,6 +8559,52 @@ static bool _hide_job(struct job_record *job_ptr, uid_t uid,
 	return false;
 }
 
+static void _pack_job(struct job_record *job_ptr,
+		      _foreach_pack_job_info_t *pack_info)
+{
+	xassert (job_ptr->magic == JOB_MAGIC);
+
+	if (((pack_info->show_flags & SHOW_ALL) == 0) &&
+	    (pack_info->uid != 0) &&
+	    _all_parts_hidden(job_ptr))
+		return;
+
+	if (_hide_job(job_ptr, pack_info->uid, pack_info->show_flags))
+		return;
+
+	if ((pack_info->filter_uid != NO_VAL) &&
+	    (pack_info->filter_uid != job_ptr->user_id))
+		return;
+
+	pack_job(job_ptr, pack_info->show_flags, pack_info->buffer,
+		 pack_info->protocol_version, pack_info->uid);
+
+	(*pack_info->jobs_packed)++;
+}
+
+static int _foreach_pack_job_ptr(void *object, void *arg)
+{
+	struct job_record *job_ptr = (struct job_record *)object;
+
+	_pack_job(job_ptr, (_foreach_pack_job_info_t *)arg);
+
+	return SLURM_SUCCESS;
+}
+
+static int _foreach_pack_jobid(void *object, void *arg)
+{
+	struct job_record *job_ptr;
+	uint32_t job_id = *(uint32_t *)object;
+	_foreach_pack_job_info_t *info = (_foreach_pack_job_info_t *)arg;
+
+	if (!(job_ptr = find_job_record(job_id)))
+		return SLURM_SUCCESS;
+
+	_pack_job(job_ptr, info);
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * pack_all_jobs - dump all job information for all jobs in
  *	machine independent form (for network transmission)
@@ -8567,9 +8622,8 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 			  uint16_t show_flags, uid_t uid, uint32_t filter_uid,
 			  uint16_t protocol_version)
 {
-	ListIterator job_iterator;
-	struct job_record *job_ptr;
 	uint32_t jobs_packed = 0, tmp_offset;
+	_foreach_pack_job_info_t pack_info = {0};
 	Buf buffer;
 
 	buffer_ptr[0] = NULL;
@@ -8584,24 +8638,74 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 
 	/* write individual job records */
 	part_filter_set(uid);
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		xassert (job_ptr->magic == JOB_MAGIC);
 
-		if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
-		    _all_parts_hidden(job_ptr))
-			continue;
+	pack_info.buffer           = buffer;
+	pack_info.filter_uid       = filter_uid;
+	pack_info.jobs_packed      = &jobs_packed;
+	pack_info.protocol_version = protocol_version;
+	pack_info.show_flags       = show_flags;
+	pack_info.uid              = uid;
 
-		if (_hide_job(job_ptr, uid, show_flags))
-			continue;
+	list_for_each(job_list, _foreach_pack_job_ptr, &pack_info);
 
-		if ((filter_uid != NO_VAL) && (filter_uid != job_ptr->user_id))
-			continue;
+	part_filter_clear();
 
-		pack_job(job_ptr, show_flags, buffer, protocol_version, uid);
-		jobs_packed++;
-	}
-	list_iterator_destroy(job_iterator);
+	/* put the real record count in the message body header */
+	tmp_offset = get_buf_offset(buffer);
+	set_buf_offset(buffer, 0);
+	pack32(jobs_packed, buffer);
+	set_buf_offset(buffer, tmp_offset);
+
+	*buffer_size = get_buf_offset(buffer);
+	buffer_ptr[0] = xfer_buf_data(buffer);
+}
+
+/*
+ * pack_spec_jobs - dump job information for specified jobs in
+ *	machine independent form (for network transmission)
+ * OUT buffer_ptr - the pointer is set to the allocated buffer.
+ * OUT buffer_size - set to size of the buffer in bytes
+ * IN show_flags - job filtering options
+ * IN job_ids - list of job_ids to pack
+ * IN uid - uid of user making request (for partition filtering)
+ * IN filter_uid - pack only jobs belonging to this user if not NO_VAL
+ * global: job_list - global list of job records
+ * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
+ * NOTE: change _unpack_job_desc_msg() in common/slurm_protocol_pack.c
+ *	whenever the data format changes
+ */
+extern void pack_spec_jobs(char **buffer_ptr, int *buffer_size, List job_ids,
+			   uint16_t show_flags, uid_t uid, uint32_t filter_uid,
+			   uint16_t protocol_version)
+{
+	uint32_t jobs_packed = 0, tmp_offset;
+	_foreach_pack_job_info_t pack_info = {0};
+	Buf buffer;
+
+	xassert(job_ids);
+
+	buffer_ptr[0] = NULL;
+	*buffer_size = 0;
+
+	buffer = init_buf(BUF_SIZE);
+
+	/* write message body header : size and time */
+	/* put in a place holder job record count of 0 for now */
+	pack32(jobs_packed, buffer);
+	pack_time(time(NULL), buffer);
+
+	/* write individual job records */
+	part_filter_set(uid);
+
+	pack_info.buffer           = buffer;
+	pack_info.filter_uid       = filter_uid;
+	pack_info.jobs_packed      = &jobs_packed;
+	pack_info.protocol_version = protocol_version;
+	pack_info.show_flags       = show_flags;
+	pack_info.uid              = uid;
+
+	list_for_each(job_ids, _foreach_pack_jobid, &pack_info);
+
 	part_filter_clear();
 
 	/* put the real record count in the message body header */

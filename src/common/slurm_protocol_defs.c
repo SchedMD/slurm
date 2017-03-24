@@ -734,7 +734,10 @@ extern void slurm_free_job_step_kill_msg(job_step_kill_msg_t * msg)
 
 extern void slurm_free_job_info_request_msg(job_info_request_msg_t *msg)
 {
-	xfree(msg);
+	if (msg) {
+		xfree(msg->job_ids);
+		xfree(msg);
+	}
 }
 
 extern void slurm_free_job_step_info_request_msg(job_step_info_request_msg_t *msg)
@@ -4261,6 +4264,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_CTLD_MULT_MSG:
 	case RESPONSE_CTLD_MULT_MSG:
 		slurm_free_ctld_multi_msg(data);
+		break;
+	case RESPONSE_JOB_INFO:
+		slurm_free_job_info(data);
 		break;
 	default:
 		error("invalid type trying to be freed %u", type);

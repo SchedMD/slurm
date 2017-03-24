@@ -49,6 +49,8 @@ extern char     *fed_mgr_cluster_ids_to_names(uint64_t cluster_ids);
 extern int       fed_mgr_fini(void);
 extern uint32_t  fed_mgr_get_cluster_id(uint32_t id);
 extern char     *fed_mgr_get_cluster_name(uint32_t id);
+extern slurmdb_cluster_rec_t *fed_mgr_get_cluster_by_id(uint32_t id);
+extern slurmdb_cluster_rec_t *fed_mgr_get_cluster_by_name(char *sib_name);
 extern uint32_t  fed_mgr_get_job_id(uint32_t orig);
 extern uint32_t  fed_mgr_get_local_id(uint32_t id);
 extern int       fed_mgr_init(void *db_conn);
@@ -82,6 +84,7 @@ extern int       fed_mgr_sib_will_run(slurm_msg_t *msg,
 				      will_run_response_msg_t **resp);
 extern slurmdb_federation_rec_t *fed_mgr_state_load(char *state_save_location);
 extern int       fed_mgr_state_save(char *state_save_location);
+extern int       fed_mgr_sync(const char *sib_name);
 extern int       fed_mgr_update_job_cluster_features(struct job_record *job_ptr,
 						     char *req_features);
 extern int       fed_mgr_update_feds(slurmdb_update_object_t *update);

@@ -1343,9 +1343,16 @@ static void _slurm_rpc_dump_jobs(slurm_msg_t * msg)
 		debug3("_slurm_rpc_dump_jobs, no change");
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
 	} else {
-		pack_all_jobs(&dump, &dump_size,
-			      job_info_request_msg->show_flags, uid, NO_VAL,
-			      msg->protocol_version);
+		if (job_info_request_msg->job_ids) {
+			pack_spec_jobs(&dump, &dump_size,
+				       job_info_request_msg->job_ids,
+				       job_info_request_msg->show_flags, uid,
+				       NO_VAL, msg->protocol_version);
+		} else {
+			pack_all_jobs(&dump, &dump_size,
+				      job_info_request_msg->show_flags, uid,
+				      NO_VAL, msg->protocol_version);
+		}
 		unlock_slurmctld(job_read_lock);
 		END_TIMER2("_slurm_rpc_dump_jobs");
 #if 0
@@ -5880,6 +5887,10 @@ end_it:
 		debug("Problem sending response to connection %d uid(%d)",
 		      p_tmp.fd, uid);
 	}
+
+	if (!rc)
+		fed_mgr_sync(persist_conn->cluster_name);
+
 	xfree(comment);
 	free_buf(ret_buf);
 	END_TIMER;
