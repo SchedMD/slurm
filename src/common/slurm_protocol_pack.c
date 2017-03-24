@@ -9765,7 +9765,7 @@ _unpack_update_job_step_msg(step_update_request_msg_t ** msg_ptr, Buf buffer,
 	*msg_ptr = msg;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		unpack_time(&msg->end_time, buffer);
+		safe_unpack_time(&msg->end_time, buffer);
 		safe_unpack32(&msg->exit_code, buffer);
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpack8(&with_jobacct, buffer);
@@ -9775,7 +9775,7 @@ _unpack_update_job_step_msg(step_update_request_msg_t ** msg_ptr, Buf buffer,
 			    != SLURM_SUCCESS)
 				goto unpack_error;
 		safe_unpackstr_xmalloc(&msg->name, &uint32_tmp, buffer);
-		unpack_time(&msg->start_time, buffer);
+		safe_unpack_time(&msg->start_time, buffer);
 		safe_unpack32(&msg->step_id, buffer);
 		safe_unpack32(&msg->time_limit, buffer);
 	} else {
@@ -10206,7 +10206,7 @@ _unpack_job_info_request_msg(job_info_request_msg_t** msg,
 {
 	int       i;
 	uint32_t  count;
-	uint32_t *uint32_ptr;
+	uint32_t *uint32_ptr = NULL;
 	job_info_request_msg_t *job_info;
 
 	job_info = xmalloc(sizeof(job_info_request_msg_t));
@@ -10217,7 +10217,9 @@ _unpack_job_info_request_msg(job_info_request_msg_t** msg,
 		safe_unpack16(&job_info->show_flags, buffer);
 
 		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
+		if (count > NO_VAL32)
+			goto unpack_error;
+		if (count != NO_VAL32) {
 			job_info->job_ids =
 				list_create(slurm_destroy_uint32_ptr);
 			for (i = 0; i < count; i++) {
@@ -10239,6 +10241,7 @@ _unpack_job_info_request_msg(job_info_request_msg_t** msg,
 	return SLURM_SUCCESS;
 
 unpack_error:
+	xfree(uint32_ptr);
 	slurm_free_job_info_request_msg(job_info);
 	*msg = NULL;
 	return SLURM_ERROR;

@@ -1084,8 +1084,8 @@ extern Buf slurm_persist_make_rc_msg(slurm_persist_conn_t *persist_conn,
 	persist_rc_msg_t msg;
 	persist_msg_t resp;
 
-	memset(&msg, 0, sizeof(persist_msg_t));
-	memset(&resp, 0, sizeof(persist_rc_msg_t));
+	memset(&msg, 0, sizeof(persist_rc_msg_t));
+	memset(&resp, 0, sizeof(persist_msg_t));
 
 	msg.rc = rc;
 	msg.comment = comment;
