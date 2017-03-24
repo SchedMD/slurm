@@ -611,21 +611,22 @@ extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
 		free_buf(buffer);
 
 		resp = (persist_rc_msg_t *)msg.data;
-		if (resp && rc == SLURM_SUCCESS) {
+		if (resp && (rc == SLURM_SUCCESS)) {
 			rc = resp->rc;
 			persist_conn->version = resp->ret_info;
 		}
 
 		if (rc != SLURM_SUCCESS) {
-			if (resp)
+			if (resp) {
 				error("%s: Something happened with the receiving/processing of the persistent connection init message to %s:%d: %s",
 				      __func__, persist_conn->rem_host,
 				      persist_conn->rem_port, resp->comment);
-			else
+			} else {
 				error("%s: Failed to unpack persistent connection init resp message from %s:%d",
 				      __func__,
 				      persist_conn->rem_host,
 				      persist_conn->rem_port);
+			}
 			_close_fd(&persist_conn->fd);
 		}
 	}
@@ -961,11 +962,11 @@ extern int slurm_persist_msg_unpack(slurm_persist_conn_t *persist_conn,
 	xassert(persist_conn);
 	xassert(resp_msg);
 
-	if (persist_conn->flags & PERSIST_FLAG_DBD)
+	if (persist_conn->flags & PERSIST_FLAG_DBD) {
 		rc = unpack_slurmdbd_msg((slurmdbd_msg_t *)resp_msg,
 					 persist_conn->version,
 					 buffer);
-	else {
+	} else {
 		slurm_msg_t msg;
 
 		slurm_msg_t_init(&msg);
