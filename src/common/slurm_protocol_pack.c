@@ -10209,7 +10209,7 @@ _unpack_job_info_request_msg(job_info_request_msg_t** msg,
 	uint32_t *uint32_ptr;
 	job_info_request_msg_t *job_info;
 
-	job_info = xmalloc(sizeof(job_step_info_request_msg_t));
+	job_info = xmalloc(sizeof(job_info_request_msg_t));
 	*msg = job_info;
 
 	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
