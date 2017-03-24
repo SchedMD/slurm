@@ -743,7 +743,7 @@ extern void slurm_free_job_step_kill_msg(job_step_kill_msg_t * msg)
 extern void slurm_free_job_info_request_msg(job_info_request_msg_t *msg)
 {
 	if (msg) {
-		xfree(msg->job_ids);
+		FREE_NULL_LIST(msg->job_ids);						//
 		xfree(msg);
 	}
 }
