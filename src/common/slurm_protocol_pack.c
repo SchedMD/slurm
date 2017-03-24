@@ -350,6 +350,11 @@ static void _pack_return_code2_msg(return_code2_msg_t * msg, Buf buffer,
 static int _unpack_return_code2_msg(return_code_msg_t ** msg, Buf buffer,
 				    uint16_t protocol_version);
 
+static void _pack_reroute_msg(reroute_msg_t * msg, Buf buffer,
+			      uint16_t protocol_version);
+static int _unpack_reroute_msg(reroute_msg_t **msg, Buf buffer,
+			       uint16_t protocol_version);
+
 static void _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr,
 				     Buf buffer, uint16_t protocol_version);
 static int _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
@@ -1224,6 +1229,10 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 				       buffer,
 				       msg->protocol_version);
 		break;
+	case RESPONSE_SLURM_REROUTE_MSG:
+		_pack_reroute_msg((reroute_msg_t *)msg->data, buffer,
+				  msg->protocol_version);
+		break;
 	case RESPONSE_JOB_STEP_CREATE:
 		pack_job_step_create_response_msg(
 			(job_step_create_response_msg_t *)
@@ -1928,6 +1937,10 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_return_code2_msg((return_code_msg_t **)
 					      & (msg->data), buffer,
 					      msg->protocol_version);
+		break;
+	case RESPONSE_SLURM_REROUTE_MSG:
+		rc = _unpack_reroute_msg((reroute_msg_t **)&(msg->data), buffer,
+					 msg->protocol_version);
 		break;
 	case RESPONSE_JOB_STEP_CREATE:
 		rc = unpack_job_step_create_response_msg(
@@ -8753,6 +8766,57 @@ _unpack_return_code2_msg(return_code_msg_t ** msg, Buf buffer,
 
 unpack_error:
 	slurm_free_return_code_msg(return_code_msg);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+static void
+_pack_reroute_msg(reroute_msg_t * msg, Buf buffer, uint16_t protocol_version)
+{
+	xassert(buffer);
+	xassert(msg != NULL);
+
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		if (msg->working_cluster_rec) {
+			pack8(1, buffer);
+			slurmdb_pack_cluster_rec(msg->working_cluster_rec,
+						 protocol_version, buffer);
+		} else
+			pack8(0, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+	}
+}
+
+static int
+_unpack_reroute_msg(reroute_msg_t **msg, Buf buffer, uint16_t protocol_version)
+{
+	reroute_msg_t *reroute_msg;
+	uint8_t uint8_tmp = 0;
+
+	xassert(buffer);
+	xassert(msg != NULL);
+
+	reroute_msg = xmalloc(sizeof(reroute_msg_t));
+	*msg = reroute_msg;
+
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		safe_unpack8(&uint8_tmp, buffer);
+		if (uint8_tmp) {
+			slurmdb_unpack_cluster_rec(
+				(void **)&reroute_msg->working_cluster_rec,
+				protocol_version, buffer);
+		}
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_reroute_msg(reroute_msg);
 	*msg = NULL;
 	return SLURM_ERROR;
 }

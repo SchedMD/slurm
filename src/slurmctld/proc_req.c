@@ -5490,6 +5490,8 @@ _slurm_rpc_kill_job2(slurm_msg_t *msg)
 	static int active_rpc_cnt = 0;
 	DEF_TIMERS;
 	job_step_kill_msg_t *kill;
+	slurmctld_lock_t fed_job_read_lock =
+		{NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 	slurmctld_lock_t lock = {READ_LOCK, WRITE_LOCK,
 				 WRITE_LOCK, NO_LOCK, READ_LOCK };
 	uid_t uid;
@@ -5498,6 +5500,43 @@ _slurm_rpc_kill_job2(slurm_msg_t *msg)
 	kill =	(job_step_kill_msg_t *)msg->data;
 	uid = g_slurm_auth_get_uid(msg->auth_cred,
 				   slurmctld_config.auth_info);
+
+	/* If the cluster is part of a federation and it isn't the origin of the
+	 * job then if it doesn't know about the federated job, then route the
+	 * request to the origin cluster via the client. If the cluster does
+	 * know about the job and it owns the job, the this cluster will cancel
+	 * the job and it will report the cancel back to the origin. */
+	lock_slurmctld(fed_job_read_lock);
+	if (fed_mgr_is_active()) {
+		uint32_t job_id, origin_id;
+		struct job_record *job_ptr;
+
+		job_id    = strtol(kill->sjob_id, NULL, 10);
+		origin_id = fed_mgr_get_cluster_id(job_id);
+
+		if ((origin_id && (origin_id != fed_mgr_cluster_rec->fed.id)) &&
+		    (!(job_ptr = find_job_record(job_id)) ||
+		     (job_ptr && job_ptr->fed_details &&
+		      (job_ptr->fed_details->cluster_lock !=
+		       fed_mgr_cluster_rec->fed.id)))) {
+
+			slurmdb_cluster_rec_t *dst =
+				fed_mgr_get_cluster_by_id(origin_id);
+			if (!dst) {
+				error("couldn't find cluster by cluster id %d",
+				      origin_id);
+				slurm_send_rc_msg(msg, SLURM_ERROR);
+			} else {
+				slurm_send_reroute_msg(msg, dst);
+				info("%s: REQUEST_KILL_JOB job %s uid %d routed to %s",
+				     __func__, kill->sjob_id, uid, dst->name);
+			}
+
+			unlock_slurmctld(fed_job_read_lock);
+			return;
+		}
+	}
+	unlock_slurmctld(fed_job_read_lock);
 
 	START_TIMER;
 	info("%s: REQUEST_KILL_JOB job %s uid %d",

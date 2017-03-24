@@ -4148,6 +4148,42 @@ int slurm_send_rc_err_msg(slurm_msg_t *msg, int rc, char *err_msg)
 }
 
 /*
+ * Sends back reroute_msg_t which directs the client to make the request to
+ * another cluster.
+ *
+ * IN msg	  - msg to respond to.
+ * IN cluster_rec - cluster to direct msg to.
+ */
+int slurm_send_reroute_msg(slurm_msg_t *msg, slurmdb_cluster_rec_t *cluster_rec)
+{
+	slurm_msg_t resp_msg;
+	reroute_msg_t reroute_msg = {0};
+
+	if (msg->conn_fd < 0) {
+		slurm_seterrno(ENOTCONN);
+		return SLURM_ERROR;
+	}
+
+	/* Don't free the cluster_rec, it's pointing to the actual object. */
+	reroute_msg.working_cluster_rec = cluster_rec;
+
+	slurm_msg_t_init(&resp_msg);
+	resp_msg.protocol_version = msg->protocol_version;
+	resp_msg.address          = msg->address;
+	resp_msg.msg_type         = RESPONSE_SLURM_REROUTE_MSG;
+	resp_msg.data             = &reroute_msg;
+	resp_msg.conn             = msg->conn;
+	resp_msg.flags            = msg->flags;
+	resp_msg.forward          = msg->forward;
+	resp_msg.forward_struct   = msg->forward_struct;
+	resp_msg.ret_list         = msg->ret_list;
+	resp_msg.orig_addr        = msg->orig_addr;
+
+	/* send message */
+	return slurm_send_node_msg(msg->conn_fd, &resp_msg);
+}
+
+/*
  * Send and recv a slurm request and response on the open slurm descriptor
  * Doesn't close the connection.
  * IN fd	- file descriptor to receive msg on
@@ -4594,13 +4630,34 @@ int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc)
 {
 	int ret_c;
 	slurm_msg_t resp;
+	slurmdb_cluster_rec_t *save_working_cluster_rec = working_cluster_rec;
 
+tryagain:
 	if (!slurm_send_recv_controller_msg(req, &resp)) {
+		if (resp.msg_type == RESPONSE_SLURM_REROUTE_MSG) {
+			reroute_msg_t *rr_msg = (reroute_msg_t *)resp.data;
+
+			/* Don't expect mutliple hops but in the case it does
+			 * happen, free the previous rr cluster_rec. */
+			if (working_cluster_rec &&
+			    working_cluster_rec != save_working_cluster_rec)
+				slurmdb_destroy_cluster_rec(
+							working_cluster_rec);
+
+			working_cluster_rec = rr_msg->working_cluster_rec;
+			rr_msg->working_cluster_rec = NULL;
+			goto tryagain;
+		}
 		*rc = slurm_get_return_code(resp.msg_type, resp.data);
 		slurm_free_msg_data(resp.msg_type, resp.data);
 		ret_c = 0;
 	} else {
 		ret_c = -1;
+	}
+
+	if (working_cluster_rec != save_working_cluster_rec) {
+		slurmdb_destroy_cluster_rec(working_cluster_rec);
+		working_cluster_rec = save_working_cluster_rec;
 	}
 
 	return ret_c;

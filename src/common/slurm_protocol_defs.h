@@ -389,6 +389,7 @@ typedef enum {
 
 	RESPONSE_SLURM_RC = 8001,
 	RESPONSE_SLURM_RC_MSG,
+	RESPONSE_SLURM_REROUTE_MSG,
 
 	RESPONSE_FORWARD_FAILED = 9001,
 
@@ -889,6 +890,10 @@ typedef struct return_code2_msg {
 	char *err_msg;
 } return_code2_msg_t;
 
+typedef struct {
+	slurmdb_cluster_rec_t *working_cluster_rec;
+} reroute_msg_t;
+
 /* defined in slurm.h
 typedef struct network_callerid_msg {
 	unsigned char ip_src[16];
@@ -1317,6 +1322,7 @@ extern int slurm_sort_char_list_desc(void *, void *);
 extern void slurm_free_checkpoint_tasks_msg(checkpoint_tasks_msg_t * msg);
 extern void slurm_free_last_update_msg(last_update_msg_t * msg);
 extern void slurm_free_return_code_msg(return_code_msg_t * msg);
+extern void slurm_free_reroute_msg(reroute_msg_t *msg);
 extern void slurm_free_job_alloc_info_msg(job_alloc_info_msg_t * msg);
 extern void slurm_free_job_info_request_msg(job_info_request_msg_t *msg);
 extern void slurm_free_job_step_info_request_msg(
