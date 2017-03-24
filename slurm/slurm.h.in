@@ -900,7 +900,6 @@ enum node_states {
 #define SHOW_DETAIL	0x0002	/* Show detailed resource information */
 #define SHOW_DETAIL2	0x0004	/* Show batch script listing */
 #define SHOW_MIXED	0x0008	/* Automatically set node MIXED state */
-#define SHOW_FED_TRACK	0x0010	/* Show tracking only federated jobs */
 
 /* Define keys for ctx_key argument of slurm_step_ctx_get() */
 enum ctx_keys {
