@@ -2544,6 +2544,9 @@ static int _filter_job(job_info_t * job)
 	char *account, *license, *qos, *name;
 	squeue_job_step_t *job_step_id;
 
+	if (job->job_id == 0)
+		return 1;
+
 	if (params.job_list) {
 		filter = 1;
 		iterator = list_iterator_create(params.job_list);

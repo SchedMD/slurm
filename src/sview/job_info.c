@@ -3203,6 +3203,8 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 		bool added_task = false;
 
 		job_ptr = &(job_info_ptr->job_array[i]);
+		if (job_ptr->job_id == 0)
+			continue;
 
 		sview_job_info_ptr = NULL;
 

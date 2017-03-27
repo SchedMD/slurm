@@ -51,6 +51,7 @@
 #include <time.h>
 
 #include "slurm/slurm.h"
+#include "slurm/slurmdb.h"
 #include "slurm/slurm_errno.h"
 
 #include "src/common/cpu_frequency.h"
@@ -61,7 +62,12 @@
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/uid.h"
+#include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+/* Use a hash table to identify duplicate job records across the clusters in
+ * a federation */
+#define JOB_HASH_SIZE 1000
 
 static pthread_mutex_t job_node_info_lock = PTHREAD_MUTEX_INITIALIZER;
 static node_info_msg_t *job_node_ptr = NULL;
@@ -75,6 +81,7 @@ static void _load_node_info(void)
 		(void) slurm_load_node((time_t) NULL, &job_node_ptr, 0);
 	slurm_mutex_unlock(&job_node_info_lock);
 }
+
 static uint32_t _threads_per_core(char *host)
 {
 	uint32_t i, threads = 1;
@@ -1009,12 +1016,21 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	return out;
 }
 
+/* Return true if the specified job id is local to a cluster
+ * (not a federated job) */
+static inline bool _test_local_job(uint32_t job_id)
+{
+	if ((job_id & (~MAX_JOB_ID)) == 0)
+		return true;
+	return false;
+}
+
 /*
  * slurm_load_jobs - issue RPC to get all job configuration
  *	information if changed since update_time
  * IN update_time - time of current configuration data
  * IN/OUT job_info_msg_pptr - place to store a job configuration pointer
- * IN show_flags -  job filtering option: 0, SHOW_ALL or SHOW_DETAIL
+ * IN show_flags -  job filtering option: 0, SHOW_ALL, SHOW_DETAIL or SHOW_LOCAL
  * RET 0 or -1 on error
  * NOTE: free the response using slurm_free_job_info_msg
  */
@@ -1022,10 +1038,20 @@ extern int
 slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 		 uint16_t show_flags)
 {
-	int rc;
-	slurm_msg_t resp_msg;
+	int i, j, rc;
+	int local_job_cnt;
+	slurm_msg_t resp_msg, resp_msg_fed;
 	slurm_msg_t req_msg;
 	job_info_request_msg_t req = {0};
+	job_info_msg_t *orig_msg, *new_msg;
+	uint32_t new_rec_cnt;
+	uint32_t hash_inx, *hash_tbl_size = NULL, **hash_job_id = NULL;
+	void *ptr = NULL;
+	slurmdb_federation_rec_t *fed;
+	slurmdb_cluster_rec_t *cluster;
+	ListIterator iter;
+	slurmdb_cluster_rec_t *orig_cluster_rec = NULL;
+	char *cluster_name = slurm_get_cluster_name();
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
@@ -1040,18 +1066,118 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 
 	switch (resp_msg.msg_type) {
 	case RESPONSE_JOB_INFO:
-		*job_info_msg_pptr = (job_info_msg_t *)resp_msg.data;
+		orig_msg = (job_info_msg_t *)resp_msg.data;
+		local_job_cnt = orig_msg->record_count;
+		*job_info_msg_pptr = orig_msg;
 		break;
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
 		slurm_free_return_code_msg(resp_msg.data);
-		if (rc)
-			slurm_seterrno_ret(rc);
+		slurm_seterrno_ret(rc);
 		break;
 	default:
 		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
 		break;
 	}
+
+	if ((show_flags & SHOW_LOCAL) || slurm_load_federation(&ptr))
+		return SLURM_PROTOCOL_SUCCESS;
+
+	/* Read the job information from other clusters in federation */
+	cluster_name = slurm_get_cluster_name();
+	orig_cluster_rec = working_cluster_rec;
+	update_time = (time_t) 0;	/* Need full info from all clusters */
+	fed = (slurmdb_federation_rec_t *) ptr;
+
+	iter = list_iterator_create(fed->cluster_list);
+	while ((cluster = (slurmdb_cluster_rec_t *) list_next(iter))) {
+		if (!xstrcmp(cluster->name, cluster_name))
+			continue;
+
+//FIXME: Parallel communications using pthreads. Need to modify use of working_cluster_rec
+		working_cluster_rec = cluster;
+		slurm_msg_t_init(&resp_msg_fed);
+		if (slurm_send_recv_controller_msg(&req_msg, &resp_msg_fed) <0){
+			verbose("Error reading job information from cluster %s: %m",
+				"TBD");
+			continue;
+		}
+
+		switch (resp_msg_fed.msg_type) {
+		case RESPONSE_JOB_INFO:
+			rc = 0;
+			new_msg = (job_info_msg_t *)resp_msg_fed.data;
+			break;
+		case RESPONSE_SLURM_RC:
+			rc = ((return_code_msg_t *) 
+				resp_msg_fed.data)->return_code;
+			slurm_free_return_code_msg(resp_msg_fed.data);
+			break;
+		default:
+			rc = SLURM_UNEXPECTED_MSG_ERROR;
+			break;
+		}
+		if (rc != SLURM_SUCCESS) {
+			verbose("Error reading job information from cluster %s: %s",
+				"TBD", slurm_strerror(rc));
+			continue;
+		}
+
+		/* Merge the job records into a single response message */
+		orig_msg->last_update = MIN(orig_msg->last_update,
+					    new_msg->last_update);
+		new_rec_cnt = orig_msg->record_count + new_msg->record_count;
+		orig_msg->job_array = xrealloc(orig_msg->job_array,
+					sizeof(slurm_job_info_t) * new_rec_cnt);
+		(void) memcpy(orig_msg->job_array + orig_msg->record_count,
+			      new_msg->job_array,
+			      sizeof(slurm_job_info_t) * new_msg->record_count);
+		orig_msg->record_count = new_rec_cnt;
+		xfree(new_msg->job_array);
+		xfree(new_msg->job_array);
+	}
+	list_iterator_destroy(iter);
+	slurm_destroy_federation_rec(ptr);
+	xfree(cluster_name);
+	working_cluster_rec = orig_cluster_rec;
+
+	/* Find duplicate job records and set their job_id == 0 so they get
+	 * skipped in reporting */
+	hash_tbl_size = xmalloc(sizeof(uint32_t) * JOB_HASH_SIZE);
+	hash_job_id = xmalloc(sizeof(uint32_t *) * JOB_HASH_SIZE);
+	for (i = 0; i < JOB_HASH_SIZE; i++) {
+		hash_tbl_size[i] = 100;
+		hash_job_id[i] = xmalloc(sizeof(uint32_t ) * hash_tbl_size[i]);
+	}
+	for (i = 0; i < orig_msg->record_count; i++) {
+		if ((i >= local_job_cnt) &&
+		    _test_local_job(orig_msg->job_array[i].job_id)) {
+			orig_msg->job_array[i].job_id = 0;
+			continue;
+		}
+		hash_inx = orig_msg->job_array[i].job_id % JOB_HASH_SIZE;
+		for (j = 0;
+		     (j < hash_tbl_size[hash_inx] && hash_job_id[hash_inx][j]);
+		     j++) {
+			if (orig_msg->job_array[i].job_id ==
+			    hash_job_id[hash_inx][j]) {
+				orig_msg->job_array[i].job_id = 0;
+				break;
+			}
+		}
+		if (orig_msg->job_array[i].job_id == 0) {
+			continue;	/* Duplicate */
+		} else if (j >= hash_tbl_size[hash_inx]) {
+			hash_tbl_size[hash_inx] *= 2;
+			xrealloc(hash_job_id[hash_inx],
+				 sizeof(uint32_t) * hash_tbl_size[hash_inx]);
+		}
+		hash_job_id[hash_inx][j] = orig_msg->job_array[i].job_id;
+	}
+	for (i = 0; i < JOB_HASH_SIZE; i++)
+		xfree(hash_job_id[i]);
+	xfree(hash_tbl_size);
+	xfree(hash_job_id);
 
 	return SLURM_PROTOCOL_SUCCESS;
 }

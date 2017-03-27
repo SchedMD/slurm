@@ -43,6 +43,8 @@ documents those changes that are of interest to users and administrators.
  -- Add ability to define features on clusters for directing federated jobs to
     different clusters.
  -- Add new RPC to process multiple federation RPCs in a single communication.
+ -- Modify slurm_load_jobs() function to load job information from all clusters
+    in a federation.
 
 * Changes in Slurm 17.02.2
 ==========================

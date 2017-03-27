@@ -249,10 +249,21 @@ Job filtering flags, may be ORed.
 Information about jobs in partitions that are configured as
 hidden and partitions that the user's group is unable to utilize
 are not reported by default.
-The \fBSHOW_ALL\fP flag will cause information about jobs in all
-partitions to be displayed.
-The \fBSHOW_DETAIL\fP flag will cause detailed resource allocation information
-to be reported (e.g. the could of CPUs allocated to a job on each node).
+.RS
+.TP 13
+\fBSHOW_ALL\fP
+Report information about jobs in all partitions, even partitions to which the
+user lacks access (this access can be blocked by system administers).
+.TP
+\fBSHOW_DETAIL\fP
+Report detailed resource allocation information (e.g. identification of the
+specific CPUs allocated to a job on each node).
+\.TP
+\fBSHOW_LOCAL\fP
+Report information only about jobs on the local cluster, even if the cluster
+is part of a federation.
+.RE
+
 .TP
 \fIupdate_time\fP
 For all of the following informational calls, if update_time is equal to or

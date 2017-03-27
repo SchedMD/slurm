@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  federation_info.c - functions dealing with Federations in the controller.
  *****************************************************************************
- *  Copyright (C) 2016 SchedMD LLC.
+ *  Copyright (C) 2016-2017 SchedMD LLC.
  *  Written by Brian Christiansen <brian@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
@@ -121,7 +121,7 @@ extern void slurm_print_federation(void *ptr)
 	list_sort(fed->cluster_list, (ListCmpF)_sort_clusters_by_name);
 	itr = list_iterator_create(fed->cluster_list);
 
-	/* Display local Cluster*/
+	/* Display local Cluster */
 	while ((cluster = list_next(itr))) {
 		if (!xstrcmp(cluster->name, cluster_name)) {
 			char *features =
@@ -168,4 +168,13 @@ extern void slurm_print_federation(void *ptr)
 	list_iterator_destroy(itr);
 	xfree(cluster_name);
 	xfree(fed_flag_str);
+}
+
+/*
+ * slurm_destroy_federation_rec - Release memory allocated by
+ *				  slurm_load_federation()
+ */
+extern void slurm_destroy_federation_rec(void *fed)
+{
+	slurmdb_destroy_federation_rec(fed);
 }

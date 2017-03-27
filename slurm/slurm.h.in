@@ -900,6 +900,8 @@ enum node_states {
 #define SHOW_DETAIL	0x0002	/* Show detailed resource information */
 #define SHOW_DETAIL2	0x0004	/* Show batch script listing */
 #define SHOW_MIXED	0x0008	/* Automatically set node MIXED state */
+#define SHOW_LOCAL	0x0010	/* Show only local information, even on
+				 * federated cluster */
 
 /* Define keys for ctx_key argument of slurm_step_ctx_get() */
 enum ctx_keys {
@@ -4931,19 +4933,28 @@ extern int slurm_top_job(char *job_id_str);
 /*****************************************************************************\
  *      SLURM FEDERATION FUNCTIONS
 \*****************************************************************************/
+
 /*
  * slurm_load_federation - issue RPC to get federation status from controller
  * IN/OUT fed_pptr - place to store returned federation information.
  * 		     slurmdb_federation_rec_t treated as a void pointer to since
  * 		     slurm.h doesn't have ties to slurmdb.h.
+ * NOTE: Use slurm_destroy_federation_rec() to release the returned memory
  * RET 0 or -1 on error
  */
 extern int slurm_load_federation(void **fed_pptr);
+
 /*
  * slurm_print_federation - prints slurmdb_federation_rec_t (passed as void*
  * 			    since slurm.h doesn't know about slurmdb.h).
  */
 extern void slurm_print_federation(void *fed);
+
+/*
+ * slurm_destroy_federation_rec - Release memory allocated by
+ *				  slurm_load_federation()
+ */
+extern void slurm_destroy_federation_rec(void *fed);
 
 #ifdef __cplusplus
 }
