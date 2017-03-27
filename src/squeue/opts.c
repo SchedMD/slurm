@@ -60,6 +60,8 @@
 #define OPT_LONG_HIDE      0x102
 #define OPT_LONG_START     0x103
 #define OPT_LONG_NOCONVERT 0x104
+#define OPT_LONG_LOCAL     0x105
+#define OPT_LONG_SIBLING   0x106
 
 /* FUNCTIONS */
 static List  _build_job_list( char* str );
@@ -100,6 +102,7 @@ parse_command_line( int argc, char* *argv )
 		{"hide",       no_argument,       0, OPT_LONG_HIDE},
 		{"iterate",    required_argument, 0, 'i'},
 		{"jobs",       optional_argument, 0, 'j'},
+		{"local",      no_argument,       0, OPT_LONG_LOCAL},
 		{"long",       no_argument,       0, 'l'},
 		{"licenses",   required_argument, 0, 'L'},
 		{"cluster",    required_argument, 0, 'M'},
@@ -114,6 +117,8 @@ parse_command_line( int argc, char* *argv )
 		{"priority",   no_argument,       0, 'P'},
 		{"qos",        required_argument, 0, 'q'},
 		{"reservation",required_argument, 0, 'R'},
+		{"sib",        no_argument,       0, OPT_LONG_SIBLING},
+		{"sibling",    no_argument,       0, OPT_LONG_SIBLING},
 		{"sort",       required_argument, 0, 'S'},
 		{"start",      no_argument,       0, OPT_LONG_START},
 		{"steps",      optional_argument, 0, 's'},
@@ -141,8 +146,12 @@ parse_command_line( int argc, char* *argv )
 		}
 		working_cluster_rec = list_peek(params.clusters);
 	}
+	if (getenv("SQUEUE_LOCAL"))
+		params.local_flag = true;
 	if (getenv("SQUEUE_PRIORITY"))
 		params.priority_flag = true;
+	if (getenv("SQUEUE_SIB") || getenv("SQUEUE_SIBLING"))
+		params.sibling_flag = true;
 	while ((opt_char = getopt_long(argc, argv,
 				       "A:ahi:j::lL:n:M:O:o:p:Pq:R:rs::S:t:u:U:vVw:",
 				       long_options, &option_index)) != -1) {
@@ -297,6 +306,12 @@ parse_command_line( int argc, char* *argv )
 			exit(0);
 		case OPT_LONG_HIDE:
 			params.all_flag = false;
+			break;
+		case OPT_LONG_LOCAL:
+			params.local_flag = true;
+			break;
+		case OPT_LONG_SIBLING:
+			params.sibling_flag = true;
 			break;
 		case OPT_LONG_START:
 			params.start_flag = true;
@@ -1661,11 +1676,13 @@ _print_options(void)
 	printf( "job_flag    = %d\n", params.job_flag );
 	printf( "jobs        = %s\n", params.jobs );
 	printf( "licenses    = %s\n", params.licenses );
+	printf( "local       = %s\n", params.local_flag ? "true" : "false");
 	printf( "names       = %s\n", params.names );
 	printf( "nodes       = %s\n", hostlist ) ;
 	printf( "partitions  = %s\n", params.partitions ) ;
 	printf( "priority    = %s\n", params.priority_flag ? "true" : "false");
 	printf( "reservation = %s\n", params.reservation ) ;
+	printf( "sibling      = %s\n", params.sibling_flag ? "true" : "false");
 	printf( "sort        = %s\n", params.sort ) ;
 	printf( "start_flag  = %d\n", params.start_flag );
 	printf( "states      = %s\n", params.states ) ;
@@ -1981,7 +1998,7 @@ Usage: squeue [-A account] [--clusters names] [-i seconds] [--job jobid]\n\
               [-n name] [-o format] [-p partitions] [--qos qos]\n\
               [--reservation reservation] [--sort fields] [--start]\n\
               [--step step_id] [-t states] [-u user_name] [--usage]\n\
-              [-L licenses] [-w nodes] [-ahjlrsv]\n");
+              [-L licenses] [-w nodes] [--local] [--sibling] [-ahjlrsv]\n");
 }
 
 static void _help(void)
@@ -1995,7 +2012,9 @@ Usage: squeue [OPTIONS]\n\
       --hide                      do not display jobs in hidden partitions\n\
   -i, --iterate=seconds           specify an interation period\n\
   -j, --job=job(s)                comma separated list of jobs IDs\n\
-				  to view, default is all\n\
+                                  to view, default is all\n\
+      --local                     Report information only about jobs on the\n\
+                                  local cluster\n\
   -l, --long                      long report\n\
   -L, --licenses=(license names)  comma separated list of license names to view\n\
   -M, --clusters=cluster_name     cluster to issue commands to.  Default is\n\
@@ -2012,6 +2031,8 @@ Usage: squeue [OPTIONS]\n\
 				  to view, default is all qos's\n\
   -R, --reservation=name          reservation to view, default is all\n\
   -r, --array                     display one job array element per line\n\
+      --sibling                   Report information about all sibling jobs\n\
+                                  on a federated cluster\n\
   -s, --step=step(s)              comma separated list of job steps\n\
 				  to view, default is all\n\
   -S, --sort=fields               comma separated list of fields to sort on\n\

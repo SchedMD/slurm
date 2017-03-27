@@ -69,6 +69,8 @@ struct squeue_parameters {
 	bool array_flag;
 	int  iterate;
 	bool job_flag;
+	bool local_flag;
+	bool sibling_flag;
 	bool start_flag;
 	bool step_flag;
 	bool long_format;

@@ -1141,13 +1141,16 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 	xfree(cluster_name);
 	working_cluster_rec = orig_cluster_rec;
 
-	/* Find duplicate job records and set their job_id == 0 so they get
-	 * skipped in reporting */
-	hash_tbl_size = xmalloc(sizeof(uint32_t) * JOB_HASH_SIZE);
-	hash_job_id = xmalloc(sizeof(uint32_t *) * JOB_HASH_SIZE);
-	for (i = 0; i < JOB_HASH_SIZE; i++) {
-		hash_tbl_size[i] = 100;
-		hash_job_id[i] = xmalloc(sizeof(uint32_t ) * hash_tbl_size[i]);
+	/* Find duplicate job records and jobs local to other clusters and set
+	  their job_id == 0 so they get skipped in reporting */
+	if ((show_flags & SHOW_SIBLING) == 0) {
+		hash_tbl_size = xmalloc(sizeof(uint32_t) * JOB_HASH_SIZE);
+		hash_job_id = xmalloc(sizeof(uint32_t *) * JOB_HASH_SIZE);
+		for (i = 0; i < JOB_HASH_SIZE; i++) {
+			hash_tbl_size[i] = 100;
+			hash_job_id[i] = xmalloc(sizeof(uint32_t ) *
+						 hash_tbl_size[i]);
+		}
 	}
 	for (i = 0; i < orig_msg->record_count; i++) {
 		if ((i >= local_job_cnt) &&
@@ -1155,6 +1158,8 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 			orig_msg->job_array[i].job_id = 0;
 			continue;
 		}
+		if (show_flags & SHOW_SIBLING)
+			continue;
 		hash_inx = orig_msg->job_array[i].job_id % JOB_HASH_SIZE;
 		for (j = 0;
 		     (j < hash_tbl_size[hash_inx] && hash_job_id[hash_inx][j]);
@@ -1174,10 +1179,12 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 		}
 		hash_job_id[hash_inx][j] = orig_msg->job_array[i].job_id;
 	}
-	for (i = 0; i < JOB_HASH_SIZE; i++)
-		xfree(hash_job_id[i]);
-	xfree(hash_tbl_size);
-	xfree(hash_job_id);
+	if ((show_flags & SHOW_SIBLING) == 0) {
+		for (i = 0; i < JOB_HASH_SIZE; i++)
+			xfree(hash_job_id[i]);
+		xfree(hash_tbl_size);
+		xfree(hash_job_id);
+	}
 
 	return SLURM_PROTOCOL_SUCCESS;
 }

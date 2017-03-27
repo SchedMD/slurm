@@ -45,6 +45,8 @@ documents those changes that are of interest to users and administrators.
  -- Add new RPC to process multiple federation RPCs in a single communication.
  -- Modify slurm_load_jobs() function to load job information from all clusters
     in a federation.
+ -- Add squeue --local and --sibling options to modify filtering of jobs on
+    federated clusters.
 
 * Changes in Slurm 17.02.2
 ==========================

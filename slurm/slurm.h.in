@@ -902,6 +902,7 @@ enum node_states {
 #define SHOW_MIXED	0x0008	/* Automatically set node MIXED state */
 #define SHOW_LOCAL	0x0010	/* Show only local information, even on
 				 * federated cluster */
+#define SHOW_SIBLING	0x0020	/* Show sibling jobs on a federated cluster */
 
 /* Define keys for ctx_key argument of slurm_step_ctx_get() */
 enum ctx_keys {

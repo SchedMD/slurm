@@ -68,6 +68,11 @@ Use the environment variable SLURM_BITSTR_LEN to specify larger field sizes.
 
 
 .TP
+\fB\-\-local\fR
+Show only jobs local to this cluster. Ignore other clusters in this federation
+(if any).
+
+.TP
 \fB\-l\fR, \fB\-\-long\fR
 Report more of the available information for the selected jobs or job steps,
 subject to any constraints specified.
@@ -976,6 +981,10 @@ and not include a space between them. For example "\-s1008.0" and not
 "\-s 1008.0".
 
 .TP
+\fB\-\-sibling\fR
+Show all sibling jobs on a federated cluster.
+
+.TP
 \fB\-S <sort_list>\fR, \fB\-\-sort=<sort_list>\fR
 Specification of the order in which records should be reported.
 This uses the same field specification as the <output_format>.
@@ -1276,6 +1285,9 @@ A valid strftime() format can also be specified. For example, a value of
 \fBSQUEUE_LICENSES\fR
 \fB\-p-l <license_list>, \-\-license=<license_list>\fR
 .TP
+\fBSQUEUE_LOCAL\fR
+\\fB\-\-local\fR
+.TP
 \fBSQUEUE_PARTITION\fR
 \fB\-p <part_list>, \-\-partition=<part_list>\fR
 .TP
@@ -1284,6 +1296,9 @@ A valid strftime() format can also be specified. For example, a value of
 .TP
 \fBSQUEUE_QOS\fR
 \fB\-p <qos_list>, \-\-qos=<qos_list>\fR
+.TP
+\fBSQUEUE_SIBLING\fR
+\\fB\-\-sibling\fR
 .TP
 \fBSQUEUE_SORT\fR
 \fB\-S <sort_list>, \-\-sort=<sort_list>\fR
