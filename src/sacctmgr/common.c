@@ -880,8 +880,6 @@ extern int sacctmgr_remove_assoc_usage(slurmdb_assoc_cond_t *assoc_cond)
 						      cluster, account,
 						      user);
 						rc = SLURM_ERROR;
-						slurmdb_destroy_update_object(
-							update_obj);
 						goto end_it;
 					}
 					list_append(update_obj->objects, rec);
@@ -900,8 +898,6 @@ extern int sacctmgr_remove_assoc_usage(slurmdb_assoc_cond_t *assoc_cond)
 					      "database",
 					      cluster, account);
 					rc = SLURM_ERROR;
-					slurmdb_destroy_update_object(
-						update_obj);
 					goto end_it;
 				}
 				list_append(update_obj->objects, rec);
@@ -929,6 +925,7 @@ end_it:
 
 	FREE_NULL_LIST(local_assoc_list);
 	FREE_NULL_LIST(local_cluster_list);
+	slurmdb_destroy_update_object(update_obj);
 
 	return rc;
 }
