@@ -807,21 +807,29 @@ next_part:		part_ptr = (struct part_record *)
 		if (job_ptr->qos_id) {
 			slurmdb_assoc_rec_t *assoc_ptr =
 				(slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
+			assoc_mgr_lock_t locks = {
+				READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
+				NO_LOCK, NO_LOCK, NO_LOCK };
+
+			assoc_mgr_lock(&locks);
 			if (assoc_ptr &&
-			    !bit_test(assoc_ptr->usage->valid_qos,
-				      job_ptr->qos_id) &&
+			    ((job_ptr->qos_id >= g_qos_count) ||
+			     !bit_test(assoc_ptr->usage->valid_qos,
+				       job_ptr->qos_id)) &&
 			    !job_ptr->limit_set.qos) {
 				info("sched: JobId=%u has invalid QOS",
 					job_ptr->job_id);
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason = FAIL_QOS;
 				last_job_update = now;
+				assoc_mgr_unlock(&locks);
 				continue;
 			} else if (job_ptr->state_reason == FAIL_QOS) {
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason = WAIT_NO_REASON;
 				last_job_update = now;
 			}
+			assoc_mgr_unlock(&locks);
 		}
 
 		if ((job_ptr->state_reason == WAIT_QOS_JOB_LIMIT)
@@ -1690,23 +1698,31 @@ next_task:
 		}
 		if (job_ptr->qos_id) {
 			slurmdb_assoc_rec_t *assoc_ptr;
+			assoc_mgr_lock_t locks = {
+				READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
+				NO_LOCK, NO_LOCK, NO_LOCK };
+
+			assoc_mgr_lock(&locks);
 			assoc_ptr = (slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
 			if (assoc_ptr
 			    && (accounting_enforce & ACCOUNTING_ENFORCE_QOS)
-			    && !bit_test(assoc_ptr->usage->valid_qos,
-					 job_ptr->qos_id)
+			    && ((job_ptr->qos_id >= g_qos_count) ||
+				!bit_test(assoc_ptr->usage->valid_qos,
+					  job_ptr->qos_id))
 			    && !job_ptr->limit_set.qos) {
 				debug("sched: JobId=%u has invalid QOS",
 				      job_ptr->job_id);
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason = FAIL_QOS;
 				last_job_update = now;
+				assoc_mgr_unlock(&locks);
 				continue;
 			} else if (job_ptr->state_reason == FAIL_QOS) {
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason = WAIT_NO_REASON;
 				last_job_update = now;
 			}
+			assoc_mgr_unlock(&locks);
 		}
 
 		deadline_time_limit = 0;
