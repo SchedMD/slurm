@@ -45,7 +45,7 @@ static char *_srv_usock_path = NULL;
 static int _srv_usock_fd = -1;
 static int _srv_tsock_port = -1;
 static int _srv_tsock_fd = -1;
-static bool _srv_use_direct_conn = 0;
+static bool _srv_use_direct_conn = true;
 
 pmix_jobinfo_t _pmixp_job_info = {0};
 
@@ -381,6 +381,9 @@ static int _env_set(char ***env)
 		if( !strcmp("1",p) || !strcasecmp("true", p) ||
 		    !strcasecmp("yes", p)){
 			_srv_use_direct_conn = true;
+		} else if( !strcmp("0",p) || !strcasecmp("false", p) ||
+		    !strcasecmp("no", p)){
+			_srv_use_direct_conn = false;
 		}
 	}
 
