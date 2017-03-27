@@ -68,8 +68,18 @@ options '--mpi=pmi2' has to be specified on the srun command line.
 Open MPI application using PMIx the '--mpi=pmix' option has to be
 specified on the srun command line.
 
-<p>
-For older versions of OMPI not compiled with the pmi support
+<p>A set of environment variables are available to control the behavior of SLURM
+PMIx plugin:
+<ul>
+<li><i>SLURM_PMIX_SRV_TMPDIR</i> base directory for PMIx/server service files.
+<li><i>SLURM_PMIX_TMPDIR</i> base directory for applications session directories.
+<li><i>SLURM_PMIX_DIRECT_CONN</i> (default - yes) enables (1/yes/true) or disables (0/no/false)
+controls wheter direct connections between slurmstepd's are astablished or SLURM RPCs are used
+for data exchange. Direct connection shows better performanse for fully-packed nodes when PMIx 
+is running in the direct-modex mode.
+</ul>
+
+<p>For older versions of OMPI not compiled with the pmi support
 the system administrator must specify the range of ports to be reserved
 in the <i>slurm.conf</i> file using the <i>MpiParams</i> parameter.
 For example: MpiParams=ports=12000-12999
