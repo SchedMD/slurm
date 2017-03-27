@@ -2790,7 +2790,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 					cpus_task = cpus_per_task;
 
 				if ((cpus_task_inx == -1) ||
-				    (cpus_task_reps[cpus_task_inx] !=
+				    (cpus_per_task_array[cpus_task_inx] !=
 				     cpus_task)) {
 					cpus_task_inx++;
 					cpus_per_task_array[cpus_task_inx] =
