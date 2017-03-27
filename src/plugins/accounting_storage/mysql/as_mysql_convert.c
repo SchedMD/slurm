@@ -39,34 +39,157 @@
 #include "as_mysql_convert.h"
 
 /* Any time you have to add to an existing convert update this number. */
-#define CONVERT_VERSION 1
+#define CONVERT_VERSION 2
+
+static uint32_t db_curr_ver = NO_VAL;
+
+static int _convert_job_table_pre(mysql_conn_t *mysql_conn, char *cluster_name)
+{
+	int rc = SLURM_SUCCESS;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	storage_field_t job_table_fields_17_02[] = {
+		{ "job_db_inx", "bigint unsigned not null auto_increment" },
+		{ "mod_time", "bigint unsigned default 0 not null" },
+		{ "deleted", "tinyint default 0 not null" },
+		{ "account", "tinytext" },
+		{ "admin_comment", "text" },
+		{ "array_task_str", "text" },
+		{ "array_max_tasks", "int unsigned default 0 not null" },
+		{ "array_task_pending", "int unsigned default 0 not null" },
+		{ "cpus_req", "int unsigned not null" },
+		{ "derived_ec", "int unsigned default 0 not null" },
+		{ "derived_es", "text" },
+		{ "exit_code", "int unsigned default 0 not null" },
+		{ "job_name", "tinytext not null" },
+		{ "id_assoc", "int unsigned not null" },
+		{ "id_array_job", "int unsigned default 0 not null" },
+		{ "id_array_task", "int unsigned default 0xfffffffe not null" },
+		{ "id_block", "tinytext" },
+		{ "id_job", "int unsigned not null" },
+		{ "id_qos", "int unsigned default 0 not null" },
+		{ "id_resv", "int unsigned not null" },
+		{ "id_wckey", "int unsigned not null" },
+		{ "id_user", "int unsigned not null" },
+		{ "id_group", "int unsigned not null" },
+		{ "kill_requid", "int default -1 not null" },
+		{ "mem_req", "bigint unsigned default 0 not null" },
+		{ "nodelist", "text" },
+		{ "nodes_alloc", "int unsigned not null" },
+		{ "node_inx", "text" },
+		{ "partition", "tinytext not null" },
+		{ "priority", "int unsigned not null" },
+		{ "state", "int unsigned not null" },
+		{ "timelimit", "int unsigned default 0 not null" },
+		{ "time_submit", "bigint unsigned default 0 not null" },
+		{ "time_eligible", "bigint unsigned default 0 not null" },
+		{ "time_start", "bigint unsigned default 0 not null" },
+		{ "time_end", "bigint unsigned default 0 not null" },
+		{ "time_suspended", "bigint unsigned default 0 not null" },
+		{ "gres_req", "text not null default ''" },
+		{ "gres_alloc", "text not null default ''" },
+		{ "gres_used", "text not null default ''" },
+		{ "wckey", "tinytext not null default ''" },
+		{ "track_steps", "tinyint not null" },
+		{ "tres_alloc", "text not null default ''" },
+		{ "tres_req", "text not null default ''" },
+		{ NULL, NULL}
+	};
+	char *query;
+	char table_name[200];
+
+	if (db_curr_ver < 1) {
+		snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
+			 cluster_name, job_table);
+		/* sacct_def is the index for query's with state as time_tart is
+		 * used in these queries. sacct_def2 is for plain sacct
+		 * queries. */
+		if (mysql_db_create_table(mysql_conn, table_name,
+					  job_table_fields_17_02,
+					  ", primary key (job_db_inx), "
+					  "unique index (id_job, "
+					  "id_assoc, time_submit), "
+					  "key rollup (time_eligible, time_end), "
+					  "key rollup2 (time_end, time_eligible), "
+					  "key nodes_alloc (nodes_alloc), "
+					  "key wckey (id_wckey), "
+					  "key qos (id_qos), "
+					  "key association (id_assoc), "
+					  "key array_job (id_array_job), "
+					  "key reserv (id_resv), "
+					  "key sacct_def (id_user, time_start, "
+					  "time_end), "
+					  "key sacct_def2 (id_user, time_end, "
+					  "time_eligible))")
+		    == SLURM_ERROR)
+			return SLURM_ERROR;
+	}
+
+	if (db_curr_ver < 2) {
+		query = xstrdup_printf(
+			"select id_job, time_submit, count(*) as count from "
+			"\"%s_%s\" group by id_job, time_submit having "
+			"count >= 2",
+			cluster_name, job_table);
+
+		debug4("%d(%s:%d) query\n%s", mysql_conn->conn,
+		       THIS_FILE, __LINE__, query);
+		if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+			xfree(query);
+			return SLURM_ERROR;
+		}
+		xfree(query);
+		while ((row = mysql_fetch_row(result))) {
+			query = xstrdup_printf(
+				"delete from \"%s_%s\" where id_job=%s and "
+				"time_submit=%s and tres_alloc='';",
+				cluster_name, job_table, row[0], row[1]);
+			debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+			if ((rc = mysql_db_query(mysql_conn, query)) !=
+			    SLURM_SUCCESS) {
+				error("Can't delete duplicates from %s_%s info: %m",
+				      cluster_name, job_table);
+				xfree(query);
+				break;
+			}
+			xfree(query);
+		}
+		mysql_free_result(result);
+	}
+
+	return rc;
+}
 
 static int _convert_job_table(mysql_conn_t *mysql_conn, char *cluster_name)
 {
 	int rc = SLURM_SUCCESS;
-	char *query = xstrdup_printf("update \"%s_%s\" as job "
-				     "left outer join ( select job_db_inx, "
-				     "SUM(consumed_energy) 'sum_energy' "
-				     "from \"%s_%s\" where id_step >= 0 "
-				     "and consumed_energy != %"PRIu64
-				     " group by job_db_inx ) step on "
-				     "job.job_db_inx=step.job_db_inx "
-				     "set job.tres_alloc=concat("
-				     "job.tres_alloc, concat(',%d=', "
-				     "case when step.sum_energy then "
-				     "step.sum_energy else %"PRIu64" END)) "
-				     "where job.tres_alloc != '' && "
-				     "job.tres_alloc not like '%%,%d=%%';",
-				     cluster_name, job_table,
-				     cluster_name, step_table,
-				     NO_VAL64, TRES_ENERGY, NO_VAL64,
-				     TRES_ENERGY);
+	char *query;
 
-	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-	if ((rc = mysql_db_query(mysql_conn, query)) != SLURM_SUCCESS)
-		error("Can't convert %s_%s info: %m",
-		      cluster_name, job_table);
-	xfree(query);
+	if (db_curr_ver < 1) {
+		query = xstrdup_printf("update \"%s_%s\" as job "
+				       "left outer join ( select job_db_inx, "
+				       "SUM(consumed_energy) 'sum_energy' "
+				       "from \"%s_%s\" where id_step >= 0 "
+				       "and consumed_energy != %"PRIu64
+				       " group by job_db_inx ) step on "
+				       "job.job_db_inx=step.job_db_inx "
+				       "set job.tres_alloc=concat("
+				       "job.tres_alloc, concat(',%d=', "
+				       "case when step.sum_energy then "
+				       "step.sum_energy else %"PRIu64" END)) "
+				       "where job.tres_alloc != '' && "
+				       "job.tres_alloc not like '%%,%d=%%';",
+				       cluster_name, job_table,
+				       cluster_name, step_table,
+				       NO_VAL64, TRES_ENERGY, NO_VAL64,
+				       TRES_ENERGY);
+
+		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+		if ((rc = mysql_db_query(mysql_conn, query)) != SLURM_SUCCESS)
+			error("Can't convert %s_%s info: %m",
+			      cluster_name, job_table);
+		xfree(query);
+	}
 
 	return rc;
 }
@@ -88,21 +211,21 @@ static int _convert_step_table(mysql_conn_t *mysql_conn, char *cluster_name)
 	return rc;
 }
 
-extern int as_mysql_convert_tables(mysql_conn_t *mysql_conn)
+static int _set_db_curr_ver(mysql_conn_t *mysql_conn)
 {
-	char *query;
+	char *query, *cluster_name;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	int i = 0, rc = SLURM_SUCCESS;
-	ListIterator itr;
-	char *cluster_name;
-	uint32_t curr_ver = 0;
+	int rc = SLURM_SUCCESS;
 
 	xassert(as_mysql_total_cluster_list);
 
+	if (db_curr_ver != NO_VAL)
+		return SLURM_SUCCESS;
+
 	/* no valid clusters, just return */
 	if (!(cluster_name = list_peek(as_mysql_total_cluster_list)))
-		return SLURM_SUCCESS;
+		goto insert_ver;
 
 	query = xstrdup_printf("select version from %s", convert_version_table);
 	debug4("%d(%s:%d) query\n%s", mysql_conn->conn,
@@ -113,15 +236,13 @@ extern int as_mysql_convert_tables(mysql_conn_t *mysql_conn)
 	}
 	xfree(query);
 	row = mysql_fetch_row(result);
+
 	if (row) {
-		curr_ver = slurm_atoul(row[0]);
+		db_curr_ver = slurm_atoul(row[0]);
 		mysql_free_result(result);
-		if (curr_ver == CONVERT_VERSION) {
-			debug4("No conversion needed, Horray!");
-			return SLURM_SUCCESS;
-		}
 	} else {
 		mysql_free_result(result);
+	insert_ver:
 		query = xstrdup_printf("insert into %s (version) values (0);",
 				       convert_version_table);
 		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
@@ -129,6 +250,53 @@ extern int as_mysql_convert_tables(mysql_conn_t *mysql_conn)
 		xfree(query);
 		if (rc != SLURM_SUCCESS)
 			return SLURM_ERROR;
+		db_curr_ver = 0;
+	}
+
+	return rc;
+}
+
+extern int as_mysql_convert_tables_pre_create(mysql_conn_t *mysql_conn)
+{
+	int rc = SLURM_SUCCESS;
+	ListIterator itr;
+	char *cluster_name;
+
+	if ((rc = _set_db_curr_ver(mysql_conn)) != SLURM_SUCCESS)
+		return rc;
+
+	if (db_curr_ver == CONVERT_VERSION) {
+		debug4("%s: No conversion needed, Horray!", __func__);
+		return SLURM_SUCCESS;
+	}
+
+	/* make it up to date */
+	itr = list_iterator_create(as_mysql_total_cluster_list);
+	while ((cluster_name = list_next(itr))) {
+		info("pre-converting job table for %s", cluster_name);
+		if ((rc = _convert_job_table_pre(mysql_conn, cluster_name)
+		     != SLURM_SUCCESS))
+			break;
+	}
+	list_iterator_destroy(itr);
+
+	return rc;
+}
+
+extern int as_mysql_convert_tables_post_create(mysql_conn_t *mysql_conn)
+{
+	char *query;
+	MYSQL_RES *result = NULL;
+	int i = 0, rc = SLURM_SUCCESS;
+	ListIterator itr;
+	char *cluster_name;
+
+	if ((rc = _set_db_curr_ver(mysql_conn)) != SLURM_SUCCESS)
+		return rc;
+
+	if (db_curr_ver == CONVERT_VERSION) {
+		debug4("%s: No conversion needed, Horray!", __func__);
+		return SLURM_SUCCESS;
 	}
 
 	/* make it up to date */

@@ -884,10 +884,11 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		return SLURM_ERROR;
 	}
 
-	if (as_mysql_convert_tables(mysql_conn) != SLURM_SUCCESS) {
-		error("issue converting tables");
+	if ((rc = as_mysql_convert_tables_pre_create(mysql_conn)) !=
+	    SLURM_SUCCESS) {
 		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
-		return SLURM_ERROR;
+		error("issue converting tables before create");
+		return rc;
 	}
 
 	/* might as well do all the cluster centric tables inside this
@@ -906,11 +907,11 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		return rc;
 	}
 
-	rc = as_mysql_convert_tables(mysql_conn);
+	rc = as_mysql_convert_tables_post_create(mysql_conn);
 
 	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 	if (rc != SLURM_SUCCESS) {
-		error("issue converting tables");
+		error("issue converting tables after create");
 		return rc;
 	}
 

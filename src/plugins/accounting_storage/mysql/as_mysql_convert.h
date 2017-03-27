@@ -41,6 +41,10 @@
 
 #include "accounting_storage_mysql.h"
 
-extern int as_mysql_convert_tables(mysql_conn_t *mysql_conn);
+/* Functions for converting tables before they are created in new schema */
+extern int as_mysql_convert_tables_pre_create(mysql_conn_t *mysql_conn);
+
+/* Functions for converting tables after they are created */
+extern int as_mysql_convert_tables_post_create(mysql_conn_t *mysql_conn);
 
 #endif
