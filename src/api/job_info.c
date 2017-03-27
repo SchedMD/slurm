@@ -1025,6 +1025,27 @@ static inline bool _test_local_job(uint32_t job_id)
 	return false;
 }
 
+/* Return true if this cluster_name is in a federation */
+static inline bool _in_federation_test(void *ptr, char *cluster_name)
+{
+	slurmdb_federation_rec_t *fed = (slurmdb_federation_rec_t *) ptr;
+	slurmdb_cluster_rec_t *cluster;
+	ListIterator iter;
+	bool status = false;
+
+	if (!fed->cluster_list)		/* NULL if no federations */
+		return status;
+	iter = list_iterator_create(fed->cluster_list);
+	while ((cluster = (slurmdb_cluster_rec_t *) list_next(iter))) {
+		if (!xstrcmp(cluster->name, cluster_name)) {
+			status = true;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+	return status;
+}
+
 /*
  * slurm_load_jobs - issue RPC to get all job configuration
  *	information if changed since update_time
@@ -1053,9 +1074,11 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 	slurmdb_cluster_rec_t *orig_cluster_rec = NULL;
 	char *cluster_name = NULL;
 
+	cluster_name = slurm_get_cluster_name();
 	if ((show_flags & SHOW_LOCAL) == 0) {
-		if (slurm_load_federation(&ptr)) {
-			/* Assume not in federation */
+		if (slurm_load_federation(&ptr) ||
+		    !_in_federation_test(ptr, cluster_name)) {
+			/* Not in federation */
 			show_flags |= SHOW_LOCAL;
 		} else {
 			/* In federation. Need full info from all clusters */
@@ -1091,12 +1114,12 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 	}
 	if ((rc != SLURM_SUCCESS) || (orig_msg == NULL) ||
 	    (show_flags & SHOW_LOCAL)) {
+		xfree(cluster_name);
 		slurm_destroy_federation_rec(ptr);
 		slurm_seterrno_ret(rc);
 	}
 
 	/* Read the job information from other clusters in federation */
-	cluster_name = slurm_get_cluster_name();
 	orig_cluster_rec = working_cluster_rec;
 	fed = (slurmdb_federation_rec_t *) ptr;
 
