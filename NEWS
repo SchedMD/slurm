@@ -56,7 +56,7 @@ documents those changes that are of interest to users and administrators.
  -- node_features/knl_cray plugin - Fix memory leak.
  -- Fix wrong cpu_per_task count issue on heterogeneous system when dealing with
     steps.
- -- Fix double free issue when updating QOS with sacctmgr.
+ -- Fix double free issue when removing usage from an association with sacctmgr.
 
 * Changes in Slurm 17.02.1-2
 ============================
