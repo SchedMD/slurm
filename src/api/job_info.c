@@ -1038,12 +1038,12 @@ extern int
 slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 		 uint16_t show_flags)
 {
-	int i, j, rc;
+	int i, j, rc = SLURM_SUCCESS;
 	int local_job_cnt;
 	slurm_msg_t resp_msg, resp_msg_fed;
 	slurm_msg_t req_msg;
 	job_info_request_msg_t req = {0};
-	job_info_msg_t *orig_msg, *new_msg;
+	job_info_msg_t *orig_msg = NULL, *new_msg;
 	uint32_t new_rec_cnt;
 	uint32_t hash_inx, *hash_tbl_size = NULL, **hash_job_id = NULL;
 	void *ptr = NULL;
@@ -1051,7 +1051,17 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 	slurmdb_cluster_rec_t *cluster;
 	ListIterator iter;
 	slurmdb_cluster_rec_t *orig_cluster_rec = NULL;
-	char *cluster_name = slurm_get_cluster_name();
+	char *cluster_name = NULL;
+
+	if ((show_flags & SHOW_LOCAL) == 0) {
+		if (slurm_load_federation(&ptr)) {
+			/* Assume not in federation */
+			show_flags |= SHOW_LOCAL;
+		} else {
+			/* In federation. Need full info from all clusters */
+			update_time = (time_t) 0;
+		}
+	}
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
@@ -1061,32 +1071,33 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 	req_msg.msg_type = REQUEST_JOB_INFO;
 	req_msg.data     = &req;
 
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
-		return SLURM_ERROR;
-
-	switch (resp_msg.msg_type) {
-	case RESPONSE_JOB_INFO:
-		orig_msg = (job_info_msg_t *)resp_msg.data;
-		local_job_cnt = orig_msg->record_count;
-		*job_info_msg_pptr = orig_msg;
-		break;
-	case RESPONSE_SLURM_RC:
-		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
-		slurm_free_return_code_msg(resp_msg.data);
-		slurm_seterrno_ret(rc);
-		break;
-	default:
-		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
-		break;
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0) {
+		rc = SLURM_ERROR;
+	} else {
+		switch (resp_msg.msg_type) {
+		case RESPONSE_JOB_INFO:
+			orig_msg = (job_info_msg_t *)resp_msg.data;
+			local_job_cnt = orig_msg->record_count;
+			*job_info_msg_pptr = orig_msg;
+			break;
+		case RESPONSE_SLURM_RC:
+			rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+			slurm_free_return_code_msg(resp_msg.data);
+			break;
+		default:
+			rc = SLURM_UNEXPECTED_MSG_ERROR;
+			break;
+		}
 	}
-
-	if ((show_flags & SHOW_LOCAL) || slurm_load_federation(&ptr))
-		return SLURM_PROTOCOL_SUCCESS;
+	if ((rc != SLURM_SUCCESS) || (orig_msg == NULL) ||
+	    (show_flags & SHOW_LOCAL)) {
+		slurm_destroy_federation_rec(ptr);
+		slurm_seterrno_ret(rc);
+	}
 
 	/* Read the job information from other clusters in federation */
 	cluster_name = slurm_get_cluster_name();
 	orig_cluster_rec = working_cluster_rec;
-	update_time = (time_t) 0;	/* Need full info from all clusters */
 	fed = (slurmdb_federation_rec_t *) ptr;
 
 	iter = list_iterator_create(fed->cluster_list);
