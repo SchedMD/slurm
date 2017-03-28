@@ -1053,7 +1053,7 @@ static int _load_jobs(slurm_msg_t *req_msg, job_info_msg_t **job_info_msg_pptr,
 	int i, j, rc = SLURM_SUCCESS;
 	int local_job_cnt;
 	slurm_msg_t resp_msg, resp_msg_fed;
-	job_info_msg_t *orig_msg = NULL, *new_msg;
+	job_info_msg_t *orig_msg = NULL, *new_msg = NULL;
 	uint32_t new_rec_cnt;
 	uint32_t hash_inx, *hash_tbl_size = NULL, **hash_job_id = NULL;
 	slurmdb_cluster_rec_t *cluster;
