@@ -321,9 +321,10 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 	char *print_this;
 
 	_load_node_info();
-	print_this = slurm_sprint_job_info(job_ptr, one_liner);
-	fprintf(out, "%s", print_this);
-	xfree(print_this);
+	if ((print_this = slurm_sprint_job_info(job_ptr, one_liner))) {
+		fprintf(out, "%s", print_this);
+		xfree(print_this);
+	}
 	_free_node_info();
 }
 
@@ -365,6 +366,9 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	uint32_t threads;
 	char *line_end = (one_liner) ? " " : "\n   ";
+
+	if (job_ptr->job_id == 0)	/* Duplicated sibling job record */
+		return NULL;
 
 	if (cluster_flags & CLUSTER_FLAG_BG) {
 		nodelist = "MidplaneList";
