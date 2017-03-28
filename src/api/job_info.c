@@ -1094,7 +1094,10 @@ static int _load_jobs(slurm_msg_t *req_msg, job_info_msg_t **job_info_msg_pptr,
 	iter = list_iterator_create(fed->cluster_list);
 	while ((cluster = (slurmdb_cluster_rec_t *) list_next(iter))) {
 		if (!xstrcmp(cluster->name, cluster_name))
-			continue;
+			continue;	/* This cluster, already done */
+		if ((cluster->control_host == NULL) ||
+		    (cluster->control_host[0] == '\0'))
+			continue;	/* Cluster down */
 
 //FIXME: Parallel communications using pthreads. Need to modify use of working_cluster_rec
 		working_cluster_rec = cluster;
