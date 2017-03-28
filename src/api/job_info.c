@@ -1046,55 +1046,22 @@ static inline bool _in_federation_test(void *ptr, char *cluster_name)
 	return status;
 }
 
-/*
- * slurm_load_jobs - issue RPC to get all job configuration
- *	information if changed since update_time
- * IN update_time - time of current configuration data
- * IN/OUT job_info_msg_pptr - place to store a job configuration pointer
- * IN show_flags -  job filtering option: 0, SHOW_ALL, SHOW_DETAIL or SHOW_LOCAL
- * RET 0 or -1 on error
- * NOTE: free the response using slurm_free_job_info_msg
- */
-extern int
-slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
-		 uint16_t show_flags)
+static int _load_jobs(slurm_msg_t *req_msg, job_info_msg_t **job_info_msg_pptr,
+		      uint16_t show_flags, char *cluster_name,
+		      slurmdb_federation_rec_t *fed)
 {
 	int i, j, rc = SLURM_SUCCESS;
 	int local_job_cnt;
 	slurm_msg_t resp_msg, resp_msg_fed;
-	slurm_msg_t req_msg;
-	job_info_request_msg_t req = {0};
 	job_info_msg_t *orig_msg = NULL, *new_msg;
 	uint32_t new_rec_cnt;
 	uint32_t hash_inx, *hash_tbl_size = NULL, **hash_job_id = NULL;
-	void *ptr = NULL;
-	slurmdb_federation_rec_t *fed;
 	slurmdb_cluster_rec_t *cluster;
 	ListIterator iter;
 	slurmdb_cluster_rec_t *orig_cluster_rec = NULL;
-	char *cluster_name = NULL;
 
-	cluster_name = slurm_get_cluster_name();
-	if ((show_flags & SHOW_LOCAL) == 0) {
-		if (slurm_load_federation(&ptr) ||
-		    !_in_federation_test(ptr, cluster_name)) {
-			/* Not in federation */
-			show_flags |= SHOW_LOCAL;
-		} else {
-			/* In federation. Need full info from all clusters */
-			update_time = (time_t) 0;
-		}
-	}
-
-	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
-
-	req.last_update  = update_time;
-	req.show_flags   = show_flags;
-	req_msg.msg_type = REQUEST_JOB_INFO;
-	req_msg.data     = &req;
-
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0) {
+	if (slurm_send_recv_controller_msg(req_msg, &resp_msg) < 0) {
 		rc = SLURM_ERROR;
 	} else {
 		switch (resp_msg.msg_type) {
@@ -1114,14 +1081,11 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 	}
 	if ((rc != SLURM_SUCCESS) || (orig_msg == NULL) ||
 	    (show_flags & SHOW_LOCAL)) {
-		xfree(cluster_name);
-		slurm_destroy_federation_rec(ptr);
 		slurm_seterrno_ret(rc);
 	}
 
 	/* Read the job information from other clusters in federation */
 	orig_cluster_rec = working_cluster_rec;
-	fed = (slurmdb_federation_rec_t *) ptr;
 
 	iter = list_iterator_create(fed->cluster_list);
 	while ((cluster = (slurmdb_cluster_rec_t *) list_next(iter))) {
@@ -1131,7 +1095,7 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 //FIXME: Parallel communications using pthreads. Need to modify use of working_cluster_rec
 		working_cluster_rec = cluster;
 		slurm_msg_t_init(&resp_msg_fed);
-		if (slurm_send_recv_controller_msg(&req_msg, &resp_msg_fed) <0){
+		if (slurm_send_recv_controller_msg(req_msg, &resp_msg_fed) < 0){
 			verbose("Error reading job information from cluster %s: %m",
 				"TBD");
 			continue;
@@ -1171,8 +1135,6 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 		xfree(new_msg->job_array);
 	}
 	list_iterator_destroy(iter);
-	slurm_destroy_federation_rec(ptr);
-	xfree(cluster_name);
 	working_cluster_rec = orig_cluster_rec;
 
 	/* Find duplicate job records and jobs local to other clusters and set
@@ -1224,6 +1186,53 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 }
 
 /*
+ * slurm_load_jobs - issue RPC to get all job configuration
+ *	information if changed since update_time
+ * IN update_time - time of current configuration data
+ * IN/OUT job_info_msg_pptr - place to store a job configuration pointer
+ * IN show_flags -  job filtering option: 0, SHOW_ALL, SHOW_DETAIL or SHOW_LOCAL
+ * RET 0 or -1 on error
+ * NOTE: free the response using slurm_free_job_info_msg
+ */
+extern int
+slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
+		 uint16_t show_flags)
+{
+	slurm_msg_t req_msg;
+	job_info_request_msg_t req = {0};
+	char *cluster_name = NULL;
+	void *ptr = NULL;
+	slurmdb_federation_rec_t *fed;
+	int rc;
+
+	cluster_name = slurm_get_cluster_name();
+	if ((show_flags & SHOW_LOCAL) == 0) {
+		if (slurm_load_federation(&ptr) ||
+		    !_in_federation_test(ptr, cluster_name)) {
+			/* Not in federation */
+			show_flags |= SHOW_LOCAL;
+		} else {
+			/* In federation. Need full info from all clusters */
+			update_time = (time_t) 0;
+		}
+	}
+
+	fed = (slurmdb_federation_rec_t *) ptr;
+	slurm_msg_t_init(&req_msg);
+	req.last_update  = update_time;
+	req.show_flags   = show_flags;
+	req_msg.msg_type = REQUEST_JOB_INFO;
+	req_msg.data     = &req;
+	rc = _load_jobs(&req_msg, job_info_msg_pptr, show_flags, cluster_name,
+			fed);
+	xfree(cluster_name);
+	if (ptr)
+		slurm_destroy_federation_rec(ptr);
+
+	return rc;
+}
+
+/*
  * slurm_load_job_user - issue RPC to get slurm information about all jobs
  *	to be run as the specified user
  * IN/OUT job_info_msg_pptr - place to store a job configuration pointer
@@ -1236,38 +1245,35 @@ extern int slurm_load_job_user (job_info_msg_t **job_info_msg_pptr,
 				uint32_t user_id,
 				uint16_t show_flags)
 {
-	int rc;
-	slurm_msg_t resp_msg;
 	slurm_msg_t req_msg;
-	job_user_id_msg_t req;
+	job_user_id_msg_t req = {0};
+	char *cluster_name = NULL;
+	void *ptr = NULL;
+	slurmdb_federation_rec_t *fed;
+	int rc;
 
+	cluster_name = slurm_get_cluster_name();
+	if ((show_flags & SHOW_LOCAL) == 0) {
+		if (slurm_load_federation(&ptr) ||
+		    !_in_federation_test(ptr, cluster_name)) {
+			/* Not in federation */
+			show_flags |= SHOW_LOCAL;
+		}
+	}
+
+	fed = (slurmdb_federation_rec_t *) ptr;
 	slurm_msg_t_init(&req_msg);
-	slurm_msg_t_init(&resp_msg);
-
 	req.show_flags   = show_flags;
 	req.user_id      = user_id;
 	req_msg.msg_type = REQUEST_JOB_USER_INFO;
 	req_msg.data     = &req;
+	rc = _load_jobs(&req_msg, job_info_msg_pptr, show_flags, cluster_name,
+			fed);
+	xfree(cluster_name);
+	if (ptr)
+		slurm_destroy_federation_rec(ptr);
 
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
-		return SLURM_ERROR;
-
-	switch (resp_msg.msg_type) {
-	case RESPONSE_JOB_INFO:
-		*job_info_msg_pptr = (job_info_msg_t *)resp_msg.data;
-		break;
-	case RESPONSE_SLURM_RC:
-		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
-		slurm_free_return_code_msg(resp_msg.data);
-		if (rc)
-			slurm_seterrno_ret(rc);
-		break;
-	default:
-		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
-		break;
-	}
-
-	return SLURM_PROTOCOL_SUCCESS;
+	return rc;
 }
 
 /*
@@ -1279,41 +1285,39 @@ extern int slurm_load_job_user (job_info_msg_t **job_info_msg_pptr,
  * NOTE: free the response using slurm_free_job_info_msg
  */
 extern int
-slurm_load_job (job_info_msg_t **resp, uint32_t job_id, uint16_t show_flags)
+slurm_load_job (job_info_msg_t **job_info_msg_pptr, uint32_t job_id,
+		uint16_t show_flags)
 {
-	int rc;
-	slurm_msg_t resp_msg;
 	slurm_msg_t req_msg;
-	job_id_msg_t req;
+	job_id_msg_t req = {0};
+	char *cluster_name = NULL;
+	void *ptr = NULL;
+	slurmdb_federation_rec_t *fed;
+	int rc;
 
-	slurm_msg_t_init(&req_msg);
-	slurm_msg_t_init(&resp_msg);
+	cluster_name = slurm_get_cluster_name();
+	if ((show_flags & SHOW_LOCAL) == 0) {
+		if (slurm_load_federation(&ptr) ||
+		    !_in_federation_test(ptr, cluster_name)) {
+			/* Not in federation */
+			show_flags |= SHOW_LOCAL;
+		}
+	}
 
+	fed = (slurmdb_federation_rec_t *) ptr;
 	bzero(&req, sizeof(job_id_msg_t));
+	slurm_msg_t_init(&req_msg);
 	req.job_id = job_id;
 	req.show_flags = show_flags;
 	req_msg.msg_type = REQUEST_JOB_INFO_SINGLE;
 	req_msg.data     = &req;
+	rc = _load_jobs(&req_msg, job_info_msg_pptr, show_flags, cluster_name,
+			fed);
+	xfree(cluster_name);
+	if (ptr)
+		slurm_destroy_federation_rec(ptr);
 
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
-		return SLURM_ERROR;
-
-	switch (resp_msg.msg_type) {
-	case RESPONSE_JOB_INFO:
-		*resp = (job_info_msg_t *)resp_msg.data;
-		break;
-	case RESPONSE_SLURM_RC:
-		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
-		slurm_free_return_code_msg(resp_msg.data);
-		if (rc)
-			slurm_seterrno_ret(rc);
-		break;
-	default:
-		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
-		break;
-	}
-
-	return SLURM_PROTOCOL_SUCCESS ;
+	return rc;
 }
 
 /*
