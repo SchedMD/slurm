@@ -1151,7 +1151,7 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 			rc = SLURM_UNEXPECTED_MSG_ERROR;
 			break;
 		}
-		if (rc != SLURM_SUCCESS) {
+		if ((rc != SLURM_SUCCESS) || (new_msg == NULL)) {
 			verbose("Error reading job information from cluster %s: %s",
 				"TBD", slurm_strerror(rc));
 			continue;
