@@ -6647,18 +6647,25 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 	 */
 	if ((job_desc->ntasks_per_node != (uint16_t) NO_VAL) &&
 	    (job_desc->min_nodes       != NO_VAL) &&
-	    (job_desc->min_nodes       == job_desc->max_nodes) &&
 	    (job_desc->num_tasks       == NO_VAL)) {
 		job_desc->num_tasks =
 			job_desc->ntasks_per_node * job_desc->min_nodes;
 	}
 
 
-	if ((job_desc->min_cpus  != NO_VAL) &&
-	    (job_desc->min_nodes != NO_VAL) &&
-	    (job_desc->min_cpus  <  job_desc->min_nodes) &&
-	    (job_desc->max_cpus  >= job_desc->min_nodes))
-		job_desc->min_cpus = job_desc->min_nodes;
+	if ((job_desc->min_cpus != NO_VAL) &&
+	    (job_desc->num_tasks > job_desc->min_cpus)) {
+		job_desc->min_cpus = job_desc->num_tasks;
+		if (job_desc->cpus_per_task != (uint16_t) NO_VAL)
+			job_desc->min_cpus *= job_desc->cpus_per_task;
+
+		/* This is just a sanity check as we wouldn't ever have a
+		 * max_cpus if we didn't have a min_cpus.
+		 */
+		if ((job_desc->max_cpus != NO_VAL) &&
+		    (job_desc->max_cpus < job_desc->min_cpus))
+			job_desc->max_cpus = job_desc->min_cpus;
+	}
 	if (job_desc->reboot && (job_desc->reboot != (uint16_t) NO_VAL))
 		job_desc->shared = 0;
 
