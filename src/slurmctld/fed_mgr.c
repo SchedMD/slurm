@@ -120,6 +120,8 @@ static int _is_fed_job(struct job_record *job_ptr, uint32_t *origin_id);
 extern int _persist_load_jobs(slurmdb_cluster_rec_t *conn, List jobids,
 			      time_t update_time,
 			      job_info_msg_t **job_info_msg_pptr);
+static uint64_t _get_all_sibling_bits();
+static int _validate_cluster_names(char *clusters, uint64_t *cluster_bitmap);
 
 /* Return true if communication failure should be logged. Only log failures
  * every 10 minutes to avoid filling logs */
@@ -1876,32 +1878,45 @@ static int _sort_sib_will_runs(void *x, void *y)
 /*
  * Convert comma separated list of cluster names to bitmap of cluster ids.
  */
-static uint64_t _cluster_names_to_ids(char *clusters)
+static int _validate_cluster_names(char *clusters, uint64_t *cluster_bitmap)
 {
+	int rc = SLURM_SUCCESS;
 	uint64_t cluster_ids = 0;
-	List cluster_names = list_create(slurm_destroy_char);
+	List cluster_names;
 
 	xassert(clusters);
 
-	if (!xstrcasecmp(clusters, "all"))
-	    return INFINITE64;
+	if (!xstrcasecmp(clusters, "all")) {
+		cluster_ids = _get_all_sibling_bits();
+		goto end_it;
+	}
 
+	cluster_names = list_create(slurm_destroy_char);
 	if (slurm_addto_char_list(cluster_names, clusters)) {
 		ListIterator itr = list_iterator_create(cluster_names);
 		char *cluster_name;
 		slurmdb_cluster_rec_t *sibling;
 
 		while ((cluster_name = list_next(itr))) {
-			if ((sibling =
+			if (!(sibling =
 			     fed_mgr_get_cluster_by_name(cluster_name))) {
-				cluster_ids |= FED_SIBLING_BIT(sibling->fed.id);
+				error("didn't find requested cluster name %s in list of federated clusters",
+				      cluster_name);
+				rc = SLURM_ERROR;
+				break;
 			}
+
+			cluster_ids |= FED_SIBLING_BIT(sibling->fed.id);
 		}
 		list_iterator_destroy(itr);
 	}
 	FREE_NULL_LIST(cluster_names);
 
-	return cluster_ids;
+end_it:
+	if (cluster_bitmap)
+		*cluster_bitmap = cluster_ids;
+
+	return rc;
 }
 
 /*
@@ -2373,8 +2388,9 @@ static uint64_t _get_viable_sibs(char *req_clusters, uint64_t feature_sibs)
 	uint64_t viable_sibs = 0;
 
 	if (req_clusters)
-		viable_sibs = _cluster_names_to_ids(req_clusters);
-	else
+		_validate_cluster_names(req_clusters, &viable_sibs);
+	if (!viable_sibs)
+		/* viable sibs could be empty if req_clusters was cleared. */
 		viable_sibs = _get_all_sibling_bits();
 	if (feature_sibs)
 		viable_sibs &= feature_sibs;
@@ -3338,6 +3354,54 @@ extern int fed_mgr_is_origin_job(struct job_record *job_ptr)
 		return false;
 
 	return true;
+}
+
+/*
+ * Update a job's required clusters.
+ *
+ * Results in siblings being removed and added.
+ *
+ * IN job_ptr      - job to update.
+ * IN req_features - comma-separated list of cluster names.
+ * RET return SLURM_SUCCESS on sucess, error code otherwise.
+ */
+extern int fed_mgr_update_job_clusters(struct job_record *job_ptr,
+				       char *spec_clusters)
+{
+	int rc = SLURM_SUCCESS;
+	uint32_t origin_id;
+
+	xassert(job_ptr);
+	xassert(spec_clusters);
+
+	if (!_is_fed_job(job_ptr, &origin_id)) {
+		info("sched: update_job: not a fed job");
+		rc = SLURM_ERROR;
+	} else if ((!IS_JOB_PENDING(job_ptr)) ||
+		   job_ptr->fed_details->cluster_lock) {
+		rc = ESLURM_JOB_NOT_PENDING;
+	} else if (!fed_mgr_is_active()) {
+		info("sched: update_job: setting Clusters on a non-active federated cluster for job %u",
+		     job_ptr->job_id);
+		rc = ESLURM_JOB_NOT_FEDERATED;
+	} else if (_validate_cluster_names(spec_clusters, NULL)) {
+		info("sched: update_job: invalid Clusters for job %u: %s",
+		     job_ptr->job_id, spec_clusters);
+		rc = ESLURM_INVALID_CLUSTER_NAME;
+	} else {
+		xfree(job_ptr->clusters);
+		if (spec_clusters[0] == '\0')
+			info("sched: update_job: cleared Clusters for job %u",
+			     job_ptr->job_id);
+		else if (*spec_clusters)
+			job_ptr->clusters =
+				xstrdup(spec_clusters);
+
+		if (fed_mgr_is_origin_job(job_ptr))
+			_add_remove_sibling_jobs(job_ptr);
+	}
+
+	return rc;
 }
 
 /*

@@ -11714,6 +11714,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 					job_ptr, job_specs->cluster_features)))
 		goto fini;
 
+	if (job_specs->clusters &&
+	    (error_code = fed_mgr_update_job_clusters(job_ptr,
+						     job_specs->clusters)))
+		goto fini;
+
 	if (gres_list) {
 		info("sched: update_job: setting gres to %s for job_id %u",
 		     job_specs->gres, job_ptr->job_id);

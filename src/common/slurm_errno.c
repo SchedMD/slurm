@@ -450,6 +450,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Invalid cluster feature specification"		},
 	{ ESLURM_JOB_NOT_FEDERATED,
 	  "Not a valid federated job"				},
+	{ ESLURM_INVALID_CLUSTER_NAME,
+	  "Invalid cluster name"				},
 
 	/* plugin and custom errors */
 	{ ESLURM_MISSING_TIME_LIMIT,

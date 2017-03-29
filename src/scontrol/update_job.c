@@ -791,8 +791,13 @@ extern int scontrol_update_job(int argc, char **argv)
 			job_msg.comment = val;
 			update_cnt++;
 		}
+		else if (strncasecmp(tag, "Clusters",
+				     MAX(taglen, 8)) == 0) {
+			job_msg.clusters = val;
+			update_cnt++;
+		}
 		else if (strncasecmp(tag, "ClusterFeatures",
-				     MAX(taglen, 3)) == 0) {
+				     MAX(taglen, 8)) == 0) {
 			job_msg.cluster_features = val;
 			update_cnt++;
 		}
