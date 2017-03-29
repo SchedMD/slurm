@@ -431,6 +431,36 @@ verify $fedc1 $job_id "RV\\s+$fedc3\\s+$fedc3" "Job not running on designated cl
 verify $fedc2 $job_id ".+Invalid.+" "Job found on wrong cluster"
 verify $fedc3 $job_id "R\\s+$fedc3\\s+$fedc3" "Job found on wrong cluster"
 
+#test clearing features
+
+cancel_all_jobs
+
+#fill up clusters with jobs
+
+sbatch $my_sbatch $script fa
+sbatch $my_sbatch $script fb
+sbatch $my_sbatch $script fc
+
+#add pending job
+
+set job_id [sbatch $my_sbatch $script "" --requeue]
+
+verify $fedc1 $job_id "PD\\s+fed1,fed2,fed3\\s+fed1,fed2,fed3" "Job not running on designated cluster"
+verify $fedc2 $job_id "PD\\s+fed1,fed2,fed3\\s+NA" "Job not running on designated cluster"
+verify $fedc3 $job_id "PD\\s+fed1,fed2,fed3\\s+NA" "Job not running on designated cluster"
+
+modify $job_id "fa" "empty" "did not allow user to modify features of pending job"
+
+verify $fedc1 $job_id "PD\\s+fed1\\s+fed1" "Job not running on designated cluster"
+verify $fedc2 $job_id ".+Invalid.+" "Job found on wrong cluster"
+verify $fedc3 $job_id ".+Invalid.+" "Job found on wrong cluster"
+
+modify $job_id "" "empty" "did not allow user to modify features of pending job"
+
+verify $fedc1 $job_id "PD\\s+fed1,fed2,fed3\\s+fed1,fed2,fed3" "Job not running on designated cluster"
+verify $fedc2 $job_id "PD\\s+fed1,fed2,fed3\\s+NA" "Job not running on designated cluster"
+verify $fedc3 $job_id "PD\\s+fed1,fed2,fed3\\s+NA" "Job not running on designated cluster"
+
 
 # All Done
 end_it 0
