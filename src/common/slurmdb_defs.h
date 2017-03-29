@@ -277,4 +277,7 @@ extern int slurmdb_get_old_tres_pos(slurmdb_tres_rec_t **new_array,
 
 extern int slurmdb_get_tres_base_unit(char *tres_type);
 
+/* Setup cluster rec with plugin_id that indexes into select list */
+extern int slurmdb_setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec);
+
 #endif
