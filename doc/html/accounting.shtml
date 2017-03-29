@@ -710,12 +710,20 @@ execute line:</p>
 <pre>
 sacctmgr remove user where default=test
 </pre>
+<p>will remove all user records where the default account is "test".</p>
+
+<pre>
+sacctmgr remove user brian where account=physics
+</pre>
+<p>will remove user "brian" from account "physics". If user "brian" has
+access to other accounts, those user records will remain.</p>
+
 <p>Note: In most cases, removed entities are preserved, but flagged
 as deleted.
 If an entity has existed for less than 1 day, the entity will be removed
 completely. This is meant to clean up after typographic errors.</p>
 
-<p style="text-align:center;">Last modified 15 December 2016</p>
+<p style="text-align:center;">Last modified 29 March 2017</p>
 
 <!--#include virtual="footer.txt"-->
 
