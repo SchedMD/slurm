@@ -2382,6 +2382,56 @@ static uint64_t _get_viable_sibs(char *req_clusters, uint64_t feature_sibs)
 	return viable_sibs;
 }
 
+static void _add_remove_sibling_jobs(struct job_record *job_ptr)
+{
+	uint32_t origin_id = 0;
+	uint64_t new_sibs = 0, old_sibs = 0, add_sibs = 0,
+		 rem_sibs = 0, feature_sibs = 0;
+
+	xassert(job_ptr);
+
+	origin_id = fed_mgr_get_cluster_id(job_ptr->job_id);
+
+	/* if job is not pending then remove removed siblings and add
+	 * new siblings. */
+	old_sibs = job_ptr->fed_details->siblings_active;
+
+	fed_mgr_validate_cluster_features(job_ptr->details->cluster_features,
+					  &feature_sibs);
+
+	new_sibs = _get_viable_sibs(job_ptr->clusters, feature_sibs);
+	job_ptr->fed_details->siblings_viable = new_sibs;
+
+	add_sibs      =  new_sibs & ~old_sibs;
+	rem_sibs      = ~new_sibs &  old_sibs;
+
+	if (rem_sibs) {
+		_revoke_sibling_jobs(job_ptr->job_id,
+				     fed_mgr_cluster_rec->fed.id,
+				     rem_sibs, 0);
+		if (fed_mgr_is_origin_job(job_ptr) &&
+		    (rem_sibs & FED_SIBLING_BIT(origin_id))) {
+			fed_mgr_job_revoke(job_ptr, false, 0, 0);
+		}
+
+		job_ptr->fed_details->siblings_active &= ~rem_sibs;
+	}
+
+	/* Don't submit new sibilings if the job is held */
+	if (job_ptr->priority != 0 && add_sibs)
+		_prepare_submit_siblings(
+				job_ptr,
+				job_ptr->fed_details->siblings_viable);
+
+	/* unrevoke the origin job */
+	if (fed_mgr_is_origin_job(job_ptr) &&
+	    (add_sibs & FED_SIBLING_BIT(origin_id)))
+		job_ptr->job_state &= ~JOB_REVOKED;
+
+	/* Update where sibling jobs are running */
+	update_job_fed_details(job_ptr);
+}
+
 /*
  * Validate requested job cluster features against each cluster's features.
  *
@@ -3303,8 +3353,6 @@ extern int fed_mgr_update_job_cluster_features(struct job_record *job_ptr,
 					       char *req_features)
 {
 	int rc = SLURM_SUCCESS;
-	uint64_t new_sibs = 0, old_sibs = 0, existing_sibs = 0, add_sibs = 0,
-		 rem_sibs = 0, feature_sibs = 0;
 	uint32_t origin_id;
 
 	xassert(job_ptr);
@@ -3320,8 +3368,7 @@ extern int fed_mgr_update_job_cluster_features(struct job_record *job_ptr,
 		info("sched: update_job: setting ClusterFeatures on a non-active federated cluster for job %u",
 		     job_ptr->job_id);
 		rc = ESLURM_JOB_NOT_FEDERATED;
-	} else if (fed_mgr_validate_cluster_features(req_features,
-						     &feature_sibs)) {
+	} else if (fed_mgr_validate_cluster_features(req_features, NULL)) {
 		info("sched: update_job: invalid ClusterFeatures for job %u",
 		     job_ptr->job_id);
 		rc = ESLURM_INVALID_CLUSTER_FEATURE;
@@ -3334,47 +3381,8 @@ extern int fed_mgr_update_job_cluster_features(struct job_record *job_ptr,
 			job_ptr->details->cluster_features =
 				xstrdup(req_features);
 
-		/* if job is not pending then remove removed siblings and add
-		 * new siblings. */
-		old_sibs = job_ptr->fed_details->siblings_active;
-
-		new_sibs = _get_viable_sibs(job_ptr->clusters, feature_sibs);
-		job_ptr->fed_details->siblings_viable = new_sibs;
-
-		add_sibs      =  new_sibs & ~old_sibs;
-		rem_sibs      = ~new_sibs &  old_sibs;
-		existing_sibs =  new_sibs &  old_sibs;
-
-		if (rem_sibs) {
-			_revoke_sibling_jobs(job_ptr->job_id,
-					     fed_mgr_cluster_rec->fed.id,
-					     rem_sibs, 0);
-			if (fed_mgr_is_origin_job(job_ptr) &&
-			    (rem_sibs & FED_SIBLING_BIT(origin_id))) {
-				fed_mgr_job_revoke(job_ptr, false, 0, 0);
-			}
-
-			job_ptr->fed_details->siblings_active &= ~rem_sibs;
-		}
-
-		/* Don't submit new sibilings if the job is held */
-		if (job_ptr->priority != 0 && add_sibs)
-			_prepare_submit_siblings(
-					job_ptr,
-					job_ptr->fed_details->siblings_viable);
-
-		/* unrevoke the origin job */
-		if (fed_mgr_is_origin_job(job_ptr) &&
-		    (add_sibs & FED_SIBLING_BIT(origin_id)))
-			job_ptr->job_state &= ~JOB_REVOKED;
-
-		/* update siblings_viable bitmaps on existing siblings_active */
-		if (existing_sibs)
-			_update_sib_job_siblings(job_ptr->job_id, new_sibs,
-						 existing_sibs);
-
-		/* Update where sibling jobs are running */
-		update_job_fed_details(job_ptr);
+		if (fed_mgr_is_origin_job(job_ptr))
+			_add_remove_sibling_jobs(job_ptr);
 	}
 
 	return rc;
