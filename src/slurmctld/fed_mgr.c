@@ -3377,7 +3377,7 @@ extern int fed_mgr_update_job_cluster_features(struct job_record *job_ptr,
 		if (req_features[0] == '\0')
 			info("sched: update_job: cleared ClusterFeatures for job %u",
 			     job_ptr->job_id);
-		else
+		else if (*req_features)
 			job_ptr->details->cluster_features =
 				xstrdup(req_features);
 
