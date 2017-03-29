@@ -12300,6 +12300,17 @@ fini:
 	    xstrcmp(slurmctld_conf.priority_type, "priority/basic"))
 		set_job_prio(job_ptr);
 
+	if ((error_code == SLURM_SUCCESS) &&
+	    fed_mgr_is_active() &&
+	    job_ptr->fed_details && fed_mgr_is_origin_job(job_ptr)) {
+		/* Send updates to sibling jobs */
+		/* Add the siblings_active to be updated. They could have been
+		 * updated if the job's ClusterFeatures were updated. */
+		job_specs->fed_siblings_viable = job_ptr->fed_details->siblings_viable;
+		fed_mgr_update_job(job_specs,
+				   job_ptr->fed_details->siblings_active);
+	}
+
 	return error_code;
 }
 

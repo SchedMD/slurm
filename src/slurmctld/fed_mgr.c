@@ -2138,21 +2138,15 @@ static void *_update_sibling_job(void *arg)
  * IN viable_sibs - viable siblings bitmap to send to sibling jobs.
  * IN update_sibs - bitmap of siblings to update.
  */
-static void _update_sib_job_siblings(uint32_t job_id, uint64_t viable_sibs,
-				     uint64_t update_sibs)
+extern int fed_mgr_update_job(job_desc_msg_t *job_specs, uint64_t update_sibs)
 {
 	ListIterator sib_itr, thread_itr;
 	slurmdb_cluster_rec_t *sibling;
 	List update_threads = list_create(_xfree_f);
-	job_desc_msg_t job_update_msg;
 	pthread_attr_t attr;
 	sib_update_t *tmp_sub = NULL;
 
 	slurm_attr_init(&attr);
-
-	slurm_init_job_desc_msg(&job_update_msg);
-	job_update_msg.job_id              = job_id;
-	job_update_msg.fed_siblings_viable = viable_sibs;
 
 	sib_itr = list_iterator_create(fed_mgr_fed_rec->cluster_list);
 	while ((sibling = list_next(sib_itr))) {
@@ -2167,7 +2161,7 @@ static void _update_sib_job_siblings(uint32_t job_id, uint64_t viable_sibs,
 			continue;
 
 		sub = xmalloc(sizeof(sib_submit_t));
-		sub->job_desc = &job_update_msg;
+		sub->job_desc = job_specs;
 		sub->sibling  = sibling;
 		if (pthread_create(&thread_id, &attr,
 				   _update_sibling_job, sub) != 0) {
@@ -2186,7 +2180,7 @@ static void _update_sib_job_siblings(uint32_t job_id, uint64_t viable_sibs,
 	while ((tmp_sub = list_next(thread_itr))) {
 		pthread_join(tmp_sub->thread_id, NULL);
 		if (tmp_sub->thread_rc) {
-			error("failed to update sibling job with updated sibling bitmap on sibling %s",
+			error("failed to update sibling job on sibling %s",
 			      tmp_sub->sibling->name);
 			/* other cluster should get updated when it syncs
 			 * up */
@@ -2194,6 +2188,8 @@ static void _update_sib_job_siblings(uint32_t job_id, uint64_t viable_sibs,
 	}
 	list_iterator_destroy(thread_itr);
 	FREE_NULL_LIST(update_threads);
+
+	return SLURM_SUCCESS;
 }
 
 /*
