@@ -12537,6 +12537,7 @@ reply:
 			rc_msg.return_code = rc;
 			resp_msg.data      = &rc_msg;
 		}
+		resp_msg.conn = msg->conn;
 		slurm_send_node_msg(msg->conn_fd, &resp_msg);
 
 		if (resp_array_msg) {
