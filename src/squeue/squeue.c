@@ -195,6 +195,8 @@ _print_job ( bool clear_old )
 							 params.user_id,
 							 show_flags);
 		} else {
+			if (params.clusters)
+				show_flags |= SHOW_LOCAL;
 			error_code = slurm_load_jobs(
 				old_job_ptr->last_update,
 				&new_job_ptr, show_flags);
