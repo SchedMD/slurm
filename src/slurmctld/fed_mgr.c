@@ -70,6 +70,11 @@ static pthread_mutex_t agent_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t       agent_thread_id = (pthread_t) 0;
 static int             agent_queue_size = 0;
 
+static pthread_cond_t  job_watch_cond = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t job_watch_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_t       job_watch_thread_id = (pthread_t)0;
+static bool            stop_job_watch_thread = false;
+
 static pthread_t ping_thread  = 0;
 static bool      stop_pinging = false, inited = false;
 static pthread_mutex_t open_send_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -122,6 +127,7 @@ extern int _persist_load_jobs(slurmdb_cluster_rec_t *conn, List jobids,
 			      job_info_msg_t **job_info_msg_pptr);
 static uint64_t _get_all_sibling_bits();
 static int _validate_cluster_names(char *clusters, uint64_t *cluster_bitmap);
+static void _leave_federation(void);
 
 /* Return true if communication failure should be logged. Only log failures
  * every 10 minutes to avoid filling logs */
@@ -475,6 +481,173 @@ static void _destroy_ping_thread()
 	}
 }
 
+static void _mark_self_as_drained()
+{
+	List ret_list;
+	slurmdb_cluster_cond_t cluster_cond;
+	slurmdb_cluster_rec_t  cluster_rec;
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+		info("%s: setting cluster fedstate to DRAINED", __func__);
+
+	slurmdb_init_cluster_cond(&cluster_cond, false);
+	slurmdb_init_cluster_rec(&cluster_rec, false);
+
+	cluster_cond.cluster_list = list_create(NULL);
+	list_append(cluster_cond.cluster_list, fed_mgr_cluster_rec->name);
+
+	cluster_rec.fed.state = CLUSTER_FED_STATE_INACTIVE |
+		(fed_mgr_cluster_rec->fed.state & ~CLUSTER_FED_STATE_BASE);
+
+	ret_list = acct_storage_g_modify_clusters(acct_db_conn,
+						  slurmctld_conf.slurm_user_id,
+						  &cluster_cond, &cluster_rec);
+	if (!ret_list || !list_count(ret_list)) {
+		error("Failed to set cluster state to drained");
+	}
+
+	FREE_NULL_LIST(cluster_cond.cluster_list);
+}
+
+static void _remove_self_from_federation()
+{
+	List ret_list;
+	slurmdb_federation_cond_t fed_cond;
+	slurmdb_federation_rec_t  fed_rec;
+	slurmdb_cluster_rec_t     cluster_rec;
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+		info("%s: removing self from federation %s",
+		     __func__, fed_mgr_fed_rec->name);
+
+	slurmdb_init_federation_cond(&fed_cond, false);
+	slurmdb_init_federation_rec(&fed_rec, false);
+	slurmdb_init_cluster_rec(&cluster_rec, false);
+
+	fed_cond.federation_list = list_create(NULL);
+	list_append(fed_cond.federation_list, fed_mgr_fed_rec->name);
+
+	cluster_rec.name = xstrdup_printf("-%s", fed_mgr_cluster_rec->name);
+	fed_rec.cluster_list = list_create(NULL);
+	list_append(fed_rec.cluster_list, &cluster_rec);
+
+	ret_list = acct_storage_g_modify_federations(
+					acct_db_conn,
+					slurmctld_conf.slurm_user_id, &fed_cond,
+					&fed_rec);
+	if (!ret_list || !list_count(ret_list)) {
+		error("Failed to remove federation from list");
+	}
+
+	FREE_NULL_LIST(fed_cond.federation_list);
+	FREE_NULL_LIST(fed_rec.cluster_list);
+	xfree(cluster_rec.name);
+
+	slurmctld_config.scheduling_disabled = false;
+	slurmctld_config.submissions_disabled = false;
+
+	_leave_federation();
+}
+
+static void *_job_watch_thread(void *arg)
+{
+	struct timespec ts = {0, 0};
+	slurmctld_lock_t job_read_lock = {
+		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+
+#if HAVE_SYS_PRCTL_H
+	if (prctl(PR_SET_NAME, "fed_jobw", NULL, NULL, NULL) < 0) {
+		error("%s: cannot set my name to %s %m", __func__, "fed_jobw");
+	}
+#endif
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+		info("%s: started job_watch thread", __func__);
+
+	while (!slurmctld_config.shutdown_time && !stop_job_watch_thread) {
+		int job_count = 0;
+
+		slurm_mutex_lock(&job_watch_mutex);
+		if (!slurmctld_config.shutdown_time && !stop_job_watch_thread) {
+			ts.tv_sec  = time(NULL) + 30;
+			pthread_cond_timedwait(&job_watch_cond,
+					       &job_watch_mutex, &ts);
+		}
+		slurm_mutex_unlock(&job_watch_mutex);
+
+		if (slurmctld_config.shutdown_time || stop_job_watch_thread)
+			break;
+
+		lock_slurmctld(job_read_lock);
+		if ((job_count = list_count(job_list))) {
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+				info("%s: %d remaining jobs before being removed from the federation",
+				     __func__, job_count);
+		} else {
+			slurmctld_lock_t fed_write_lock = {
+				NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
+
+			/* write lock to use fed_mgr_[fed|cluster]_rec and to
+			 * call _leave_federation */
+			lock_slurmctld(fed_write_lock);
+
+			if (fed_mgr_cluster_rec->fed.state &
+			    CLUSTER_FED_STATE_REMOVE)
+				_remove_self_from_federation();
+			else if (fed_mgr_cluster_rec->fed.state &
+				 CLUSTER_FED_STATE_DRAIN)
+				_mark_self_as_drained();
+
+			unlock_slurmctld(fed_write_lock);
+			unlock_slurmctld(job_read_lock);
+
+			break;
+		}
+
+		unlock_slurmctld(job_read_lock);
+	}
+
+	job_watch_thread_id = 0;
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+		info("%s: exiting job watch thread", __func__);
+
+	return NULL;
+}
+
+static void _spawn_job_watch_thread()
+{
+	pthread_attr_t thread_attr;
+
+	if (!job_watch_thread_id) {
+		slurm_attr_init(&thread_attr);
+		/* Detach the thread since it will exit once the cluster is
+		 * drained or removed. */
+		pthread_attr_setdetachstate(&thread_attr,
+					    PTHREAD_CREATE_DETACHED);
+
+		slurm_mutex_lock(&job_watch_mutex);
+		stop_job_watch_thread = false;
+		if (pthread_create(&job_watch_thread_id, &thread_attr,
+				   _job_watch_thread, NULL))
+			fatal("pthread_create error %m");
+		slurm_mutex_unlock(&job_watch_mutex);
+
+		slurm_attr_destroy(&thread_attr);
+	} else {
+		info("a job_watch_thread already exists");
+	}
+}
+
+static void _remove_job_watch_thread()
+{
+	if (job_watch_thread_id) {
+		slurm_mutex_lock(&job_watch_mutex);
+		stop_job_watch_thread = true;
+		slurm_cond_broadcast(&job_watch_cond);
+		slurm_mutex_unlock(&job_watch_mutex);
+	}
+}
+
 /*
  * Must have FED unlocked prior to entering
  */
@@ -483,6 +656,10 @@ static void _fed_mgr_ptr_init(slurmdb_federation_rec_t *db_fed,
 {
 	ListIterator c_itr;
 	slurmdb_cluster_rec_t *tmp_cluster, *db_cluster;
+	uint32_t cluster_state;
+	int  base_state;
+	bool drain_flag;
+
 	slurmctld_lock_t fed_write_lock = {
 		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
 
@@ -524,7 +701,31 @@ static void _fed_mgr_ptr_init(slurmdb_federation_rec_t *db_fed,
 		fed_mgr_cluster_rec = cluster;
 
 	fed_mgr_fed_rec = db_fed;
+
+	/* Set scheduling and submissions states */
+	cluster_state = fed_mgr_cluster_rec->fed.state;
+	base_state  = (cluster_state & CLUSTER_FED_STATE_BASE);
+	drain_flag  = (cluster_state & CLUSTER_FED_STATE_DRAIN);
+
 	unlock_slurmctld(fed_write_lock);
+
+	if (drain_flag) {
+		slurmctld_config.scheduling_disabled = false;
+		slurmctld_config.submissions_disabled = true;
+
+		/* INACTIVE + DRAIN == DRAINED (already) */
+		if (base_state == CLUSTER_FED_STATE_ACTIVE)
+			_spawn_job_watch_thread();
+
+	} else if (base_state == CLUSTER_FED_STATE_ACTIVE) {
+		slurmctld_config.scheduling_disabled = false;
+		slurmctld_config.submissions_disabled = false;
+	} else if (base_state == CLUSTER_FED_STATE_INACTIVE) {
+		slurmctld_config.scheduling_disabled = true;
+		slurmctld_config.submissions_disabled = true;
+	}
+	if (!drain_flag && job_watch_thread_id)
+		_remove_job_watch_thread();
 }
 
 /*
@@ -1436,6 +1637,8 @@ extern int fed_mgr_fini(void)
 
 	if (agent_thread_id)
 		pthread_join(agent_thread_id, NULL);
+
+	_remove_job_watch_thread();
 
 	return SLURM_SUCCESS;
 }
