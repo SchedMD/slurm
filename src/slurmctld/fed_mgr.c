@@ -2383,6 +2383,21 @@ fini:
 	return sib_bits;
 }
 
+static int _remove_inactive_sibs(void *object, void *arg)
+{
+	slurmdb_cluster_rec_t *sibling = (slurmdb_cluster_rec_t *)object;
+	uint64_t *viable_sibs = (uint64_t *)arg;
+	uint32_t cluster_state = sibling->fed.state;
+	int  base_state  = (cluster_state & CLUSTER_FED_STATE_BASE);
+	bool drain_flag  = (cluster_state & CLUSTER_FED_STATE_DRAIN);
+
+	if (drain_flag ||
+	    (base_state == CLUSTER_FED_STATE_INACTIVE))
+		*viable_sibs &= ~(FED_SIBLING_BIT(sibling->fed.id));
+
+	return SLURM_SUCCESS;
+}
+
 static uint64_t _get_viable_sibs(char *req_clusters, uint64_t feature_sibs)
 {
 	uint64_t viable_sibs = 0;
@@ -2394,6 +2409,10 @@ static uint64_t _get_viable_sibs(char *req_clusters, uint64_t feature_sibs)
 		viable_sibs = _get_all_sibling_bits();
 	if (feature_sibs)
 		viable_sibs &= feature_sibs;
+
+	/* filter out clusters that are inactive or draining */
+	list_for_each(fed_mgr_fed_rec->cluster_list, _remove_inactive_sibs,
+		      &viable_sibs);
 
 	return viable_sibs;
 }
