@@ -1053,6 +1053,13 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg, bool is_sib_job)
 	slurm_addr_t resp_addr;
 	char *err_msg = NULL;
 
+	if (slurmctld_config.submissions_disabled) {
+		info("Submissions disabled on system");
+		error_code = ESLURM_SUBMISSIONS_DISABLED;
+		reject_job = true;
+		goto send_msg;
+	}
+
 	START_TIMER;
 
 	/* Zero out the record as not all fields may be set.
@@ -1152,6 +1159,8 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg, bool is_sib_job)
 		else
 			error_code = SLURM_ERROR;
 	}
+
+send_msg:
 
 	if (!reject_job) {
 		xassert(job_ptr);
@@ -2572,6 +2581,12 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg, bool is_sib_job)
 	will_run_response_msg_t *resp = NULL;
 	char *err_msg = NULL;
 
+	if (slurmctld_config.submissions_disabled) {
+		info("Submissions disabled on system");
+		error_code = ESLURM_SUBMISSIONS_DISABLED;
+		goto send_reply;
+	}
+
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_JOB_WILL_RUN from uid=%d", uid);
 
@@ -3438,6 +3453,13 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg, bool is_sib_job)
 					 slurmctld_config.auth_info);
 	char *err_msg = NULL;
 	bool reject_job = false;
+
+	if (slurmctld_config.submissions_disabled) {
+		info("Submissions disabled on system");
+		error_code = ESLURM_SUBMISSIONS_DISABLED;
+		reject_job = true;
+		goto send_msg;
+	}
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_SUBMIT_BATCH_JOB from uid=%d", uid);

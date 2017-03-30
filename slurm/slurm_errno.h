@@ -193,6 +193,7 @@ enum {
 	ESLURM_DUPLICATE_GRES,
 	ESLURM_JOB_SETTING_DB_INX,
 	ESLURM_RSV_ALREADY_STARTED,
+	ESLURM_SUBMISSIONS_DISABLED,
 
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,

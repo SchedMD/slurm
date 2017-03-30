@@ -139,6 +139,7 @@ typedef struct slurmctld_config {
 	bool    scheduling_disabled;
 	int	server_thread_count;
 	time_t	shutdown_time;
+	bool    submissions_disabled;
 
 	slurm_cred_ctx_t cred_ctx;
 	pthread_mutex_t thread_count_lock;

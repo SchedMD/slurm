@@ -774,7 +774,8 @@ static void  _init_config(void)
 	slurmctld_config.server_thread_count = 0;
 	slurmctld_config.shutdown_time  = (time_t) 0;
 	slurmctld_config.thread_id_main = pthread_self();
-	slurmctld_config.scheduling_disabled = false;
+	slurmctld_config.scheduling_disabled  = false;
+	slurmctld_config.submissions_disabled = false;
 	slurm_mutex_init(&slurmctld_config.thread_count_lock);
 	slurmctld_config.thread_id_main    = (pthread_t) 0;
 	slurmctld_config.thread_id_sig     = (pthread_t) 0;
