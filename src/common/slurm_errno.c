@@ -332,7 +332,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_JOB_SETTING_DB_INX,
 	  "Job update not available right now, the DB index is being set, try again in a bit" },
 	{ ESLURM_RSV_ALREADY_STARTED,
-	  "Reservation already started"	},
+	  "Reservation already started"				},
 
 	/* slurmd error codes */
 	{ ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN,
