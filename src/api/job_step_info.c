@@ -337,7 +337,8 @@ slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id,
 	req_msg.msg_type = REQUEST_JOB_STEP_INFO;
 	req_msg.data	= &req;
 
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,
+					   working_cluster_rec) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {
@@ -374,9 +375,8 @@ slurm_job_step_layout_get(uint32_t job_id, uint32_t step_id)
 	data.job_id = job_id;
 	data.step_id = step_id;
 
-	if (slurm_send_recv_controller_msg(&req, &resp) < 0) {
+	if (slurm_send_recv_controller_msg(&req, &resp, working_cluster_rec) <0)
 		return NULL;
-	}
 
 	switch (resp.msg_type) {
 	case RESPONSE_STEP_LAYOUT:

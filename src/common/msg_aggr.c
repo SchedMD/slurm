@@ -146,7 +146,7 @@ static int _send_to_backup_collector(slurm_msg_t *msg, int rc)
 			info("_send_to_backup_collector: backup %s, "
 			     "sending msg to controller",
 			     rc ? "can't be reached" : "is null");
-		rc = slurm_send_only_controller_msg(msg);
+		rc = slurm_send_only_controller_msg(msg, working_cluster_rec);
 	}
 
 	return rc;

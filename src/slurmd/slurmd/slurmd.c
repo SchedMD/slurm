@@ -636,7 +636,8 @@ send_registration_msg(uint32_t status, bool startup)
 		req.msg_type = MESSAGE_NODE_REGISTRATION_STATUS;
 		req.data     = msg;
 
-		if (slurm_send_recv_controller_rc_msg(&req, &rc) < 0) {
+		if (slurm_send_recv_controller_rc_msg(&req, &rc,
+						working_cluster_rec) < 0) {
 			error("Unable to register: %m");
 			ret_val = SLURM_FAILURE;
 		}
@@ -1810,7 +1811,7 @@ static int _drain_node(char *reason)
 	req_msg.msg_type = REQUEST_UPDATE_NODE;
 	req_msg.data = &update_node_msg;
 
-	if (slurm_send_only_controller_msg(&req_msg) < 0)
+	if (slurm_send_only_controller_msg(&req_msg, working_cluster_rec) < 0)
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;

@@ -1729,7 +1729,8 @@ slurm_load_ctl_conf (time_t update_time, slurm_ctl_conf_t **confp)
 	req_msg.msg_type = REQUEST_BUILD_INFO;
 	req_msg.data     = &req;
 
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,
+					   working_cluster_rec) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {

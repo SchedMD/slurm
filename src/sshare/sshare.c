@@ -298,7 +298,8 @@ static int _get_info(shares_request_msg_t *shares_req,
         req_msg.msg_type = REQUEST_SHARE_INFO;
         req_msg.data     = shares_req;
 
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,
+					   working_cluster_rec) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {

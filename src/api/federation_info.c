@@ -61,7 +61,8 @@ extern int slurm_load_federation(void **fed_pptr)
 	req_msg.msg_type = REQUEST_FED_INFO;
 	req_msg.data     = NULL;
 
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,
+					   working_cluster_rec) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {

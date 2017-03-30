@@ -1868,7 +1868,8 @@ static void _notify_slurmctld_prolog_fini(
 	req_msg.msg_type= REQUEST_COMPLETE_PROLOG;
 	req_msg.data	= &req;
 
-	if ((slurm_send_recv_controller_rc_msg(&req_msg, &rc) < 0) ||
+	if ((slurm_send_recv_controller_rc_msg(&req_msg, &rc,
+					       working_cluster_rec) < 0) ||
 	    (rc != SLURM_SUCCESS))
 		error("Error sending prolog completion notification: %m");
 }
@@ -2455,7 +2456,8 @@ _launch_job_fail(uint32_t job_id, uint32_t slurm_rc)
 		resp_msg.data = &req_msg;
 	}
 
-	rpc_rc = slurm_send_recv_controller_rc_msg(&resp_msg, &rc);
+	rpc_rc = slurm_send_recv_controller_rc_msg(&resp_msg, &rc,
+						   working_cluster_rec);
 	if ((resp_msg.msg_type == REQUEST_JOB_REQUEUE) &&
 	    ((rc == ESLURM_DISABLED) || (rc == ESLURM_BATCH_ONLY))) {
 		info("Could not launch job %u and not able to requeue it, "
@@ -2477,7 +2479,8 @@ _launch_job_fail(uint32_t job_id, uint32_t slurm_rc)
 		comp_msg.jobacct = NULL; /* unused */
 		resp_msg.msg_type = REQUEST_COMPLETE_BATCH_SCRIPT;
 		resp_msg.data = &comp_msg;
-		rpc_rc = slurm_send_recv_controller_rc_msg(&resp_msg, &rc);
+		rpc_rc = slurm_send_recv_controller_rc_msg(&resp_msg, &rc,
+							   working_cluster_rec);
 	}
 
 	return rpc_rc;
@@ -2499,7 +2502,8 @@ _abort_step(uint32_t job_id, uint32_t step_id)
 	resp.jobacct      = jobacctinfo_create(NULL);
 	resp_msg.msg_type = REQUEST_STEP_COMPLETE;
 	resp_msg.data     = &resp;
-	rc2 = slurm_send_recv_controller_rc_msg(&resp_msg, &rc);
+	rc2 = slurm_send_recv_controller_rc_msg(&resp_msg, &rc,
+						working_cluster_rec);
 	/* Note: we are ignoring the RPC return code */
 	jobacctinfo_destroy(resp.jobacct);
 	return rc2;
@@ -2695,7 +2699,7 @@ _cancel_step_mem_limit(uint32_t job_id, uint32_t step_id)
 	notify_req.message     = "Exceeded job memory limit";
 	msg.msg_type    = REQUEST_JOB_NOTIFY;
 	msg.data        = &notify_req;
-	slurm_send_only_controller_msg(&msg);
+	slurm_send_only_controller_msg(&msg, working_cluster_rec);
 
 	memset(&kill_req, 0, sizeof(job_step_kill_msg_t));
 	kill_req.job_id      = job_id;
@@ -2704,7 +2708,7 @@ _cancel_step_mem_limit(uint32_t job_id, uint32_t step_id)
 	kill_req.flags       = KILL_OOM;
 	msg.msg_type    = REQUEST_CANCEL_JOB_STEP;
 	msg.data        = &kill_req;
-	slurm_send_only_controller_msg(&msg);
+	slurm_send_only_controller_msg(&msg, working_cluster_rec);
 }
 
 /* Enforce job memory limits here in slurmd. Step memory limits are
@@ -3313,7 +3317,8 @@ _rpc_step_complete_aggr(slurm_msg_t *msg)
 		slurm_msg_t req;
 		_setup_step_complete_msg(&req, msg->data);
 
-		while (slurm_send_recv_controller_rc_msg(&req, &rc) < 0) {
+		while (slurm_send_recv_controller_rc_msg(&req, &rc,
+						working_cluster_rec) < 0) {
 			error("Unable to send step complete, "
 			      "trying again in a minute: %m");
 		}
@@ -4637,7 +4642,8 @@ _epilog_complete(uint32_t jobid, int rc)
 
 		/* Note: No return code to message, slurmctld will resend
 		 * TERMINATE_JOB request if message send fails */
-		if (slurm_send_only_controller_msg(&msg) < 0) {
+		if (slurm_send_only_controller_msg(&msg, working_cluster_rec)
+		    < 0) {
 			error("Unable to send epilog complete message: %m");
 			ret = SLURM_ERROR;
 		} else {
@@ -5288,8 +5294,8 @@ _rpc_complete_batch(slurm_msg_t *msg)
 			slurm_msg_t_init(&req_msg);
 			req_msg.msg_type = msg_type;
 			req_msg.data	 = msg->data;
-			msg_rc = slurm_send_recv_controller_msg(
-				&req_msg, &resp_msg);
+			msg_rc = slurm_send_recv_controller_msg(&req_msg,
+						&resp_msg, working_cluster_rec);
 
 			if (msg_rc == SLURM_SUCCESS)
 				break;
@@ -5958,7 +5964,7 @@ static void *_prolog_timer(void *x)
 	notify_req.message	= srun_msg;
 	msg.msg_type	= REQUEST_JOB_NOTIFY;
 	msg.data	= &notify_req;
-	slurm_send_only_controller_msg(&msg);
+	slurm_send_only_controller_msg(&msg, working_cluster_rec);
 	return NULL;
 }
 

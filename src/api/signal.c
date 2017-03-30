@@ -371,7 +371,8 @@ extern int slurm_notify_job (uint32_t job_id, char *message)
 	msg.msg_type    = REQUEST_JOB_NOTIFY;
 	msg.data        = &req;
 
-	if (slurm_send_recv_controller_rc_msg(&msg, &rc) < 0)
+	if (slurm_send_recv_controller_rc_msg(&msg, &rc,
+					      working_cluster_rec) < 0)
 		return SLURM_FAILURE;
 
 	if (rc) {

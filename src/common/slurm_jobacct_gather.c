@@ -141,7 +141,7 @@ static void _acct_kill_step(void)
 	notify_req.message     = "Exceeded job memory limit";
 	msg.msg_type    = REQUEST_JOB_NOTIFY;
 	msg.data        = &notify_req;
-	slurm_send_only_controller_msg(&msg);
+	slurm_send_only_controller_msg(&msg, working_cluster_rec);
 
 	/*
 	 * Request message:
@@ -154,7 +154,7 @@ static void _acct_kill_step(void)
 	msg.msg_type    = REQUEST_CANCEL_JOB_STEP;
 	msg.data        = &req;
 
-	slurm_send_only_controller_msg(&msg);
+	slurm_send_only_controller_msg(&msg, working_cluster_rec);
 }
 
 static void _pack_jobacct_id(jobacct_id_t *jobacct_id,

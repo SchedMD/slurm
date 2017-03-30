@@ -115,7 +115,8 @@ slurm_allocate_resources (job_desc_msg_t *req,
 	req_msg.msg_type = REQUEST_RESOURCE_ALLOCATION;
 	req_msg.data     = req;
 
-	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg);
+	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg,
+					    working_cluster_rec);
 
 	/*
 	 *  Clear this hostname if set internally to this function
@@ -216,7 +217,8 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 	req_msg.msg_type = REQUEST_RESOURCE_ALLOCATION;
 	req_msg.data     = req;
 
-	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg);
+	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg,
+					    working_cluster_rec);
 
 	if (rc == SLURM_SOCKET_ERROR) {
 		int errnum = errno;
@@ -357,7 +359,8 @@ int slurm_job_will_run2 (job_desc_msg_t *req,
 	req_msg.msg_type = REQUEST_JOB_WILL_RUN;
 	req_msg.data     = req;
 
-	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg);
+	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg,
+					    working_cluster_rec);
 
 	if (rc < 0)
 		return SLURM_SOCKET_ERROR;
@@ -396,7 +399,8 @@ slurm_job_step_create (job_step_create_request_msg_t *req,
 	req_msg.msg_type = REQUEST_JOB_STEP_CREATE;
 	req_msg.data     = req;
 
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,
+					   working_cluster_rec) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {
@@ -439,7 +443,8 @@ slurm_allocation_lookup(uint32_t jobid,
 	req_msg.msg_type = REQUEST_JOB_ALLOCATION_INFO;
 	req_msg.data     = &req;
 
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,
+					   working_cluster_rec) < 0)
 		return SLURM_ERROR;
 
 	req.req_cluster = NULL;
@@ -485,7 +490,7 @@ int slurm_sbcast_lookup(uint32_t job_id, uint32_t step_id,
 	req_msg.msg_type = REQUEST_JOB_SBCAST_CRED;
 	req_msg.data     = &req;
 
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,working_cluster_rec) < 0)
 		return SLURM_ERROR;
 
 	switch(resp_msg.msg_type) {

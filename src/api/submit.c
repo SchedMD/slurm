@@ -86,7 +86,8 @@ slurm_submit_batch_job (job_desc_msg_t *req,
 	req_msg.msg_type = REQUEST_SUBMIT_BATCH_JOB ;
 	req_msg.data     = req;
 
-	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg);
+	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg,
+					    working_cluster_rec);
 
 	/*
 	 *  Clear this hostname if set internally to this function

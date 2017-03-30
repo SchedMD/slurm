@@ -877,7 +877,8 @@ _one_step_complete_msg(stepd_step_rec_t *job, int first, int last)
 	/* Retry step complete RPC send to slurmctld indefinitely.
 	 * Prevent orphan job step if slurmctld is down */
 	i = 1;
-	while (slurm_send_recv_controller_rc_msg(&req, &rc) < 0) {
+	while (slurm_send_recv_controller_rc_msg(&req, &rc,
+						 working_cluster_rec) < 0) {
 		if (i++ == 1) {
 			slurm_get_ip_str(&step_complete.parent_addr, &port,
 					 ip_buf, sizeof(ip_buf));
@@ -2280,7 +2281,7 @@ static int _drain_node(char *reason)
 	req_msg.msg_type = REQUEST_UPDATE_NODE;
 	req_msg.data = &update_node_msg;
 
-	if (slurm_send_only_controller_msg(&req_msg) < 0)
+	if (slurm_send_only_controller_msg(&req_msg, working_cluster_rec) < 0)
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
@@ -2398,8 +2399,8 @@ _send_complete_batch_script_msg(stepd_step_rec_t *job, int err, int status)
 	/* Note: these log messages don't go to slurmd.log from here */
 	for (i = 0; i <= MAX_RETRY; i++) {
 		if (msg_to_ctld) {
-			msg_rc = slurm_send_recv_controller_rc_msg(&req_msg,
-								   &rc);
+			msg_rc = slurm_send_recv_controller_rc_msg(&req_msg, &rc,
+							working_cluster_rec);
 		} else {
 			/* Send msg to slurmd, which forwards to slurmctld and
 			 * may get a new job to launch */

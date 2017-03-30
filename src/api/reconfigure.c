@@ -67,7 +67,8 @@ slurm_reconfigure (void)
 
 	req.msg_type = REQUEST_RECONFIGURE;
 
-	if (slurm_send_recv_controller_rc_msg(&req, &rc) < 0)
+	if (slurm_send_recv_controller_rc_msg(&req, &rc,
+					      working_cluster_rec) < 0)
 		return SLURM_ERROR;
 
 	if (rc)
@@ -156,7 +157,7 @@ _send_message_controller (enum controller_id dest, slurm_msg_t *req)
 	slurm_msg_t resp_msg;
 
 	/* always going to one node (primary or backup per value of "dest") */
-	if ((fd = slurm_open_controller_conn_spec(dest)) < 0)
+	if ((fd = slurm_open_controller_conn_spec(dest,working_cluster_rec)) <0)
 		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR);
 
 	if (slurm_send_node_msg(fd, req) < 0) {
@@ -209,7 +210,8 @@ slurm_set_debugflags (uint64_t debug_flags_plus, uint64_t debug_flags_minus)
 	req_msg.msg_type = REQUEST_SET_DEBUG_FLAGS;
 	req_msg.data     = &req;
 
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,
+					   working_cluster_rec) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {
@@ -246,7 +248,8 @@ slurm_set_debug_level (uint32_t debug_level)
 	req_msg.msg_type = REQUEST_SET_DEBUG_LEVEL;
 	req_msg.data     = &req;
 
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,
+					   working_cluster_rec) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {
@@ -283,7 +286,8 @@ slurm_set_schedlog_level (uint32_t schedlog_level)
 	req_msg.msg_type = REQUEST_SET_SCHEDLOG_LEVEL;
 	req_msg.data     = &req;
 
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,
+					   working_cluster_rec) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {

@@ -70,7 +70,8 @@ extern int slurm_load_topo(topo_info_response_msg_t **resp)
 	req_msg.msg_type = REQUEST_TOPO_INFO;
 	req_msg.data     = NULL;
 
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,
+					   working_cluster_rec) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {

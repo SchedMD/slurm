@@ -1056,10 +1056,20 @@ int slurm_send_node_msg(int open_fd, slurm_msg_t *msg);
  * IN/OUT addr       - address of controller contacted
  * IN/OUT use_backup - IN: whether to try the backup first or not
  *                     OUT: set to true if connection established with backup
+ * IN comm_cluster_rec	- Communication record (host/port/version)/
  * RET slurm_fd	- file descriptor of the connection created
  */
-extern int slurm_open_controller_conn(slurm_addr_t *addr, bool *use_backup);
-extern int slurm_open_controller_conn_spec(enum controller_id dest);
+extern int slurm_open_controller_conn(slurm_addr_t *addr, bool *use_backup,
+				      slurmdb_cluster_rec_t *comm_cluster_rec);
+
+/* calls connect to make a connection-less datagram connection to the
+ *	primary or secondary slurmctld message engine
+ * IN dest      - controller to contact, primary or secondary
+ * IN comm_cluster_rec	- Communication record (host/port/version)/
+ * RET int      - file descriptor of the connection created
+ */
+extern int slurm_open_controller_conn_spec(enum controller_id dest,
+				      slurmdb_cluster_rec_t *comm_cluster_rec);
 
 /* In the bsd socket implementation it creates a SOCK_STREAM socket
  *	and calls connect on it a SOCK_DGRAM socket called with connect
@@ -1189,10 +1199,13 @@ int slurm_send_rc_err_msg(slurm_msg_t *msg, int rc, char *err_msg);
  * listens for the response, then closes the connection
  * IN request_msg	- slurm_msg request
  * OUT response_msg	- slurm_msg response
+ * IN comm_cluster_rec	- Communication record (host/port/version)/
  * RET int 		- returns 0 on success, -1 on failure and sets errno
  */
-int slurm_send_recv_controller_msg(slurm_msg_t * request_msg,
-				   slurm_msg_t * response_msg);
+extern int slurm_send_recv_controller_msg(slurm_msg_t * request_msg,
+				slurm_msg_t * response_msg,
+				slurmdb_cluster_rec_t *comm_cluster_rec);
+
 
 /* slurm_send_recv_node_msg
  * opens a connection to node,
@@ -1250,18 +1263,27 @@ List slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout);
 int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout);
 
 /*
- *  Same as above, but send to controller
- *  returns 0 on success, -1 on failure and sets errno
+ * Send message to controller and get return code.
+ * Make use of slurm_send_recv_controller_msg(), which handles
+ * support for backup controller and retry during transistion.
+ * IN req - request to send
+ * OUT rc - return code
+ * IN comm_cluster_rec	- Communication record (host/port/version)
+ * RET - 0 on success, -1 on failure
  */
-int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc);
+extern int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc,
+				       slurmdb_cluster_rec_t *comm_cluster_rec);
 
 /* slurm_send_only_controller_msg
- * opens a connection to the controller, sends the node a message then,
- * closes the connection
+ * opens a connection to the controller, sends the controller a
+ * message then, closes the connection
  * IN request_msg	- slurm_msg request
- * RET int 		- return code
+ * IN comm_cluster_rec	- Communication record (host/port/version)
+ * RET int		- return code
+ * NOTE: NOT INTENDED TO BE CROSS-CLUSTER
  */
-int slurm_send_only_controller_msg(slurm_msg_t * request_msg);
+extern int slurm_send_only_controller_msg(slurm_msg_t *req,
+				slurmdb_cluster_rec_t *comm_cluster_rec);
 
 /* slurm_send_only_node_msg
  * opens a connection to node, sends the node a message then,

@@ -1627,7 +1627,8 @@ static int _fail_step_tasks(slurm_step_ctx_t *ctx, char *node, int ret_code)
 	if (ctx->step_resp->use_protocol_ver)
 		req.protocol_version = ctx->step_resp->use_protocol_ver;
 
-	if (slurm_send_recv_controller_rc_msg(&req, &rc) < 0)
+	if (slurm_send_recv_controller_rc_msg(&req, &rc,
+					      working_cluster_rec) < 0)
 	       return SLURM_ERROR;
 
 	return SLURM_SUCCESS;

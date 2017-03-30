@@ -1062,10 +1062,10 @@ static int _load_jobs(slurm_msg_t *req_msg, job_info_msg_t **job_info_msg_pptr,
 	uint32_t hash_inx, *hash_tbl_size = NULL, **hash_job_id = NULL;
 	slurmdb_cluster_rec_t *cluster;
 	ListIterator iter;
-	slurmdb_cluster_rec_t *orig_cluster_rec = NULL;
 
 	slurm_msg_t_init(&resp_msg);
-	if (slurm_send_recv_controller_msg(req_msg, &resp_msg) < 0) {
+	if (slurm_send_recv_controller_msg(req_msg, &resp_msg,
+					   working_cluster_rec) < 0) {
 		rc = SLURM_ERROR;
 	} else {
 		switch (resp_msg.msg_type) {
@@ -1089,8 +1089,6 @@ static int _load_jobs(slurm_msg_t *req_msg, job_info_msg_t **job_info_msg_pptr,
 	}
 
 	/* Read the job information from other clusters in federation */
-	orig_cluster_rec = working_cluster_rec;
-
 	iter = list_iterator_create(fed->cluster_list);
 	while ((cluster = (slurmdb_cluster_rec_t *) list_next(iter))) {
 		if (!xstrcmp(cluster->name, cluster_name))
@@ -1100,9 +1098,9 @@ static int _load_jobs(slurm_msg_t *req_msg, job_info_msg_t **job_info_msg_pptr,
 			continue;	/* Cluster down */
 
 //FIXME: Parallel communications using pthreads. Need to modify use of working_cluster_rec
-		working_cluster_rec = cluster;
 		slurm_msg_t_init(&resp_msg_fed);
-		if (slurm_send_recv_controller_msg(req_msg, &resp_msg_fed) < 0){
+		if (slurm_send_recv_controller_msg(req_msg, &resp_msg_fed,
+						   cluster) < 0){
 			verbose("Error reading job information from cluster %s: %m",
 				"TBD");
 			continue;
@@ -1142,7 +1140,6 @@ static int _load_jobs(slurm_msg_t *req_msg, job_info_msg_t **job_info_msg_pptr,
 		xfree(new_msg->job_array);
 	}
 	list_iterator_destroy(iter);
-	working_cluster_rec = orig_cluster_rec;
 
 	/* Find duplicate job records and jobs local to other clusters and set
 	  their job_id == 0 so they get skipped in reporting */
@@ -1506,8 +1503,8 @@ slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr)
 	req_msg.msg_type   = REQUEST_JOB_END_TIME;
 	req_msg.data       = &job_msg;
 
-	if (slurm_send_recv_controller_msg(
-		    &req_msg, &resp_msg) < 0)
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,
+					   working_cluster_rec) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {
@@ -1557,7 +1554,7 @@ extern int slurm_job_node_ready(uint32_t job_id)
 	req.msg_type = REQUEST_JOB_READY;
 	req.data     = &msg;
 
-	if (slurm_send_recv_controller_msg(&req, &resp) < 0)
+	if (slurm_send_recv_controller_msg(&req, &resp, working_cluster_rec) <0)
 		return READY_JOB_ERROR;
 
 	if (resp.msg_type == RESPONSE_JOB_READY) {

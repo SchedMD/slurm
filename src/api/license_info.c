@@ -84,7 +84,8 @@ slurm_load_licenses(time_t t,
 	req.show_flags = show_flags;
 	msg_request.data = &req;
 
-	cc = slurm_send_recv_controller_msg(&msg_request, &msg_reply);
+	cc = slurm_send_recv_controller_msg(&msg_request, &msg_reply,
+					    working_cluster_rec);
 	if (cc < 0)
 		return SLURM_ERROR;
 

@@ -61,7 +61,8 @@ static int _suspend_op(uint16_t op, uint32_t job_id)
 	req_msg.msg_type   = REQUEST_SUSPEND;
 	req_msg.data       = &sus_req;
 
-	if (slurm_send_recv_controller_rc_msg(&req_msg, &rc) < 0)
+	if (slurm_send_recv_controller_rc_msg(&req_msg, &rc,
+					      working_cluster_rec) < 0)
 		return SLURM_ERROR;
 
 	slurm_seterrno(rc);
@@ -111,7 +112,8 @@ static int _suspend_op2(uint16_t op, char *job_id_str,
 	req_msg.msg_type   = REQUEST_SUSPEND;
 	req_msg.data       = &sus_req;
 
-	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg);
+	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg,
+					    working_cluster_rec);
 	switch (resp_msg.msg_type) {
 	case RESPONSE_JOB_ARRAY_ERRORS:
 		*resp = (job_array_resp_msg_t *) resp_msg.data;
@@ -174,7 +176,8 @@ extern int slurm_requeue(uint32_t job_id, uint32_t state)
 	req_msg.msg_type	= REQUEST_JOB_REQUEUE;
 	req_msg.data		= &requeue_req;
 
-	if (slurm_send_recv_controller_rc_msg(&req_msg, &rc) < 0)
+	if (slurm_send_recv_controller_rc_msg(&req_msg, &rc,
+					      working_cluster_rec) < 0)
 		return SLURM_ERROR;
 
 	slurm_seterrno(rc);
@@ -203,7 +206,8 @@ extern int slurm_requeue2(char *job_id_str, uint32_t state,
 	req_msg.msg_type	= REQUEST_JOB_REQUEUE;
 	req_msg.data		= &requeue_req;
 
-	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg);
+	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg,
+					    working_cluster_rec);
 	switch (resp_msg.msg_type) {
 	case RESPONSE_JOB_ARRAY_ERRORS:
 		*resp = (job_array_resp_msg_t *) resp_msg.data;
