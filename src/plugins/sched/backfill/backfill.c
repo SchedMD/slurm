@@ -749,6 +749,10 @@ extern void *backfill_agent(void *args)
 			_my_sleep(backfill_interval * 1000000);
 		if (stop_backfill)
 			break;
+
+		if (slurmctld_config.scheduling_disabled)
+			continue;
+
 		slurm_mutex_lock(&config_lock);
 		if (config_flag) {
 			config_flag = false;
