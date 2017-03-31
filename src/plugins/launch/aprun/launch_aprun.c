@@ -278,7 +278,8 @@ static void _send_step_complete_rpc(srun_job_t *srun_job, int step_rc)
 /*	req.address = step_complete.parent_addr; */
 
 	debug3("Sending step complete RPC to slurmctld");
-	if (slurm_send_recv_controller_rc_msg(&req, &rc) < 0)
+	if (slurm_send_recv_controller_rc_msg(&req, &rc, working_cluster_rec)
+	    < 0)
 		error("Error sending step complete RPC to slurmctld");
 	jobacctinfo_destroy(msg.jobacct);
 }
