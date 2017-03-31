@@ -97,6 +97,33 @@ proc modify {job_id constraint reg_ex error_message} {
 	$bin_sleep 3
 }
 
+proc modify_with_clusters {job_id constraint reg_ex error_message} {
+	global fedc1 fed_slurm_base bin_sleep
+
+	set my_scontrol "${fed_slurm_base}/$fedc1/bin/scontrol"
+	set matches 0
+
+	spawn $my_scontrol update jobid=$job_id clusters=$constraint
+	expect {
+		-re "$reg_ex" {
+			incr matches
+		}
+		timeout {
+			log_error "scontrol not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {![string match "empty" $reg_ex] && $matches != 1} {
+		log_error "didn't match regex $reg_ex: $matches"
+		end_it 1
+	}
+
+	$bin_sleep 3
+}
+
 proc sbatch {my_sbatch script constraint args} {
 
 	global number bin_sleep node_count
@@ -392,7 +419,9 @@ verify $fedc1 $job_id "PD\\s+$fedc1,$fedc2,$fedc3\\s+$fedc1,$fedc2,$fedc3" "Job 
 verify $fedc2 $job_id "PD\\s+$fedc1,$fedc2,$fedc3\\s+NA" "Job not running on designated cluster"
 verify $fedc3 $job_id "PD\\s+$fedc1,$fedc2,$fedc3\\s+NA" "Job not running on designated cluster"
 
-#Held Jobs
+send_user "\n################################################################\n"
+send_user "Modify Feature of Held Job"
+send_user "\n################################################################\n"
 cancel_all_jobs
 
 set job_id [sbatch $my_sbatch $script fa -H]
@@ -431,7 +460,9 @@ verify $fedc1 $job_id "RV\\s+$fedc3\\s+$fedc3" "Job not running on designated cl
 verify $fedc2 $job_id ".+Invalid.+" "Job found on wrong cluster"
 verify $fedc3 $job_id "R\\s+$fedc3\\s+$fedc3" "Job found on wrong cluster"
 
-#test clearing features
+send_user "\n################################################################\n"
+send_user "Test Clearing Features"
+send_user "\n################################################################\n"
 
 cancel_all_jobs
 
@@ -460,6 +491,95 @@ modify $job_id "" "empty" "did not allow user to modify features of pending job"
 verify $fedc1 $job_id "PD\\s+fed1,fed2,fed3\\s+fed1,fed2,fed3" "Job not running on designated cluster"
 verify $fedc2 $job_id "PD\\s+fed1,fed2,fed3\\s+NA" "Job not running on designated cluster"
 verify $fedc3 $job_id "PD\\s+fed1,fed2,fed3\\s+NA" "Job not running on designated cluster"
+
+send_user "\n################################################################\n"
+send_user "Modify Federation Cluster Features"
+send_user "\n################################################################\n"
+cancel_all_jobs
+
+sbatch $my_sbatch $script fa
+sbatch $my_sbatch $script fb
+sbatch $my_sbatch $script fc
+
+set job_id [sbatch $my_sbatch $script ""]
+
+verify $fedc1 $job_id "PD\\s+fed1,fed2,fed3\\s+fed1,fed2,fed3" "Job not running on designated cluster"
+verify $fedc2 $job_id "PD\\s+fed1,fed2,fed3\\s+NA" "Job not running on designated cluster"
+verify $fedc3 $job_id "PD\\s+fed1,fed2,fed3\\s+NA" "Job not running on designated cluster"
+
+modify_with_clusters $job_id "fed1" "empty" "did not allow user to modify features of pending job"
+
+verify $fedc1 $job_id "PD\\s+fed1\\s+fed1" "Job not running on designated cluster"
+verify $fedc2 $job_id ".+Invalid.+" "Job found on wrong cluster"
+verify $fedc3 $job_id ".+Invalid.+" "Job found on wrong cluster"
+
+modify_with_clusters $job_id "fed1,fed2" "empty" "did not allow user to modify features of pending job"
+
+verify $fedc1 $job_id "PD\\s+fed1,fed2\\s+fed1,fed2" "Job not running on designated cluster"
+verify $fedc2 $job_id "PD\\s+fed1,fed2\\s+NA" "Job not running on designated cluster"
+verify $fedc3 $job_id ".+Invalid.+" "Job found on wrong cluster"
+
+modify_with_clusters $job_id "fed2" "empty" "did not allow user to modify features of pending job"
+
+verify $fedc1 $job_id "RV\\s+fed2\\s+fed2" "Job not running on designated cluster"
+verify $fedc2 $job_id "PD\\s+fed2\\s+NA" "Job not running on designated cluster"
+verify $fedc3 $job_id ".+Invalid.+" "Job found on wrong cluster"
+
+modify_with_clusters $job_id "" "empty" "did not allow user to modify features of pending job"
+
+verify $fedc1 $job_id "PD\\s+fed1,fed2,fed3\\s+fed1,fed2,fed3" "Job not running on designated cluster"
+verify $fedc2 $job_id "PD\\s+fed1,fed2,fed3\\s+NA" "Job not running on designated cluster"
+verify $fedc3 $job_id "PD\\s+fed1,fed2,fed3\\s+NA" "Job not running on designated cluster"
+
+#this one shows that the fed1 is routing the update from fed1 to fed2
+
+send_user "\n################################################################\n"
+send_user "fed1 routing the update from fed1 to fed2"
+send_user "\n################################################################\n"
+
+set job_id [sbatch $my_sbatch $script "" -Mfed2]
+
+verify $fedc2 $job_id "PD\\s+fed2\\s+fed2" "Job not running on designated cluster"
+verify $fedc1 $job_id ".+Invalid.+" "Job found on wrong cluster"
+verify $fedc3 $job_id ".+Invalid.+" "Job found on wrong cluster"
+
+modify_with_clusters $job_id "fed1" "empty" "did not allow user to modify features of pending job"
+
+verify $fedc2 $job_id "RV\\s+fed1\\s+fed1" "Job not running on designated cluster"
+verify $fedc1 $job_id "PD\\s+fed1\\s+NA" "Job not running on designated cluster"
+verify $fedc3 $job_id ".+Invalid.+" "Job found on wrong cluster"
+
+modify_with_clusters $job_id "" "empty" "did not allow user to modify features of pending job"
+
+verify $fedc2 $job_id "PD\\s+fed1,fed2,fed3\\s+fed1,fed2,fed3" "Job not running on designated cluster"
+verify $fedc1 $job_id "PD\\s+fed1,fed2,fed3\\s+NA" "Job not running on designated cluster"
+verify $fedc3 $job_id "PD\\s+fed1,fed2,fed3\\s+NA" "Job not running on designated cluster"
+
+#Federations and clusterfeatures (Fed1 and fb - so the job is not eligible
+#				  anywhere beacause it can't have both)
+
+send_user "\n################################################################\n"
+send_user "Federations and ClusterFeatures"
+send_user "\n################################################################\n"
+
+
+modify_with_clusters $job_id "fed1" "empty" "did not allow user to modify features of pending job"
+
+verify $fedc2 $job_id "RV\\s+fed1\\s+fed1" "Job not running on designated cluster"
+verify $fedc1 $job_id "PD\\s+fed1\\s+NA" "Job not running on designated cluster"
+verify $fedc3 $job_id ".+Invalid.+" "Job found on wrong cluster"
+
+modify $job_id "fb" "empty" "did not allow user to modify features of pending job"
+
+verify $fedc2 $job_id "RV\\s+NA\\s+NA" "Job not running on designated cluster"
+verify $fedc1 $job_id ".+Invalid.+" "Job found on wrong cluster"
+verify $fedc3 $job_id ".+Invalid.+" "Job found on wrong cluster"
+
+modify $job_id "fa" "empty" "did not allow user to modify features of pending job"
+
+verify $fedc2 $job_id "RV\\s+fed1\\s+fed1" "Job not running on designated cluster"
+verify $fedc1 $job_id "PD\\s+fed1\\s+NA" "Job not running on designated cluster"
+verify $fedc3 $job_id ".+Invalid.+" "Job found on wrong cluster"
 
 
 # All Done
