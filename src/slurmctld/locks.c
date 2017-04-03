@@ -68,6 +68,27 @@ static void _wr_wrunlock(lock_datatype_t datatype);
  * with production builds.
  */
 __thread bool slurmctld_locked = false;
+
+/*
+ * Used to detect any location where the acquired locks differ from the
+ * release locks.
+ */
+
+__thread slurmctld_lock_t thread_locks;
+
+static bool _store_locks(slurmctld_lock_t lock_levels)
+{
+	memcpy((void *) &thread_locks, (void *) &lock_levels,
+	       sizeof(slurmctld_lock_t));
+
+	return true;
+}
+
+static bool _clear_locks(slurmctld_lock_t lock_levels)
+{
+	return !memcmp((void *) &thread_locks, (void *) &lock_levels,
+		       sizeof(slurmctld_lock_t));
+}
 #endif
 
 /* init_locks - create locks used for slurmctld data structure access
@@ -83,6 +104,7 @@ extern void lock_slurmctld(slurmctld_lock_t lock_levels)
 {
 	/* test, then set via xassert abuse */
 	xassert(!slurmctld_locked && (slurmctld_locked = true));
+	xassert(_store_locks(lock_levels));
 
 	if (lock_levels.config == READ_LOCK)
 		_wr_rdlock(CONFIG_LOCK);
@@ -116,6 +138,7 @@ extern void unlock_slurmctld(slurmctld_lock_t lock_levels)
 {
 	/* test, then set via xassert abuse */
 	xassert(slurmctld_locked && !(slurmctld_locked = false));
+	xassert(_clear_locks(lock_levels));
 
 	if (lock_levels.federation == READ_LOCK)
 		_wr_rdunlock(FED_LOCK);
