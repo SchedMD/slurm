@@ -6541,13 +6541,19 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 	 * Check user permission for negative 'nice' and non-0 priority values
 	 * (restricted to root, SlurmUser, or SLURMDB_ADMIN_OPERATOR) _before_
 	 * running the job_submit plugin.
+	 * Also prevent unpriviledged users from submitting jobs with an
+	 * AdminComment field set.
 	 */
 	if (!validate_operator(submit_uid)) {
 		if (job_desc->priority != 0)
 			job_desc->priority = NO_VAL;
 		if (job_desc->nice < NICE_OFFSET)
 			job_desc->nice = NICE_OFFSET;
+
+		if (job_desc->admin_comment)
+			return ESLURM_ACCESS_DENIED;
 	}
+
 	rc = job_submit_plugin_submit(job_desc, (uint32_t) submit_uid, err_msg);
 	if (rc != SLURM_SUCCESS)
 		return rc;
