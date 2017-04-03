@@ -53,6 +53,7 @@
 #include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xassert.h"
 
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
@@ -379,6 +380,8 @@ void pack16_array(uint16_t * valp, uint32_t size_val, Buf buffer)
 {
 	uint32_t i = 0;
 
+	xassert(valp || !size_val);
+
 	pack32(size_val, buffer);
 
 	for (i = 0; i < size_val; i++) {
@@ -409,6 +412,8 @@ int unpack16_array(uint16_t ** valp, uint32_t * size_val, Buf buffer)
 void pack32_array(uint32_t * valp, uint32_t size_val, Buf buffer)
 {
 	uint32_t i = 0;
+
+	xassert(valp || !size_val);
 
 	pack32(size_val, buffer);
 
@@ -441,6 +446,8 @@ void pack64_array(uint64_t * valp, uint32_t size_val, Buf buffer)
 {
 	uint32_t i = 0;
 
+	xassert(valp || !size_val);
+
 	pack32(size_val, buffer);
 
 	for (i = 0; i < size_val; i++) {
@@ -453,6 +460,8 @@ void pack64_array(uint64_t * valp, uint32_t size_val, Buf buffer)
 void pack64_array_as_32(uint64_t * valp, uint32_t size_val, Buf buffer)
 {
 	uint32_t i = 0;
+
+	xassert(valp || !size_val);
 
 	pack32(size_val, buffer);
 
@@ -504,6 +513,8 @@ void packdouble_array(double *valp, uint32_t size_val, Buf buffer)
 {
 	uint32_t i = 0;
 
+	xassert(valp || !size_val);
+
 	pack32(size_val, buffer);
 
 	for (i = 0; i < size_val; i++) {
@@ -531,6 +542,8 @@ int unpackdouble_array(double **valp, uint32_t* size_val, Buf buffer)
 void packlongdouble_array(long double *valp, uint32_t size_val, Buf buffer)
 {
 	uint32_t i = 0;
+
+	xassert(valp || !size_val);
 
 	pack32(size_val, buffer);
 
