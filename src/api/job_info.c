@@ -1324,8 +1324,7 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 		fed = (slurmdb_federation_rec_t *) ptr;
 		rc = _load_fed_jobs(&req_msg, job_info_msg_pptr, show_flags,
 				    cluster_name, fed);
-		if (ptr)
-			slurm_destroy_federation_rec(ptr);
+		slurm_destroy_federation_rec(ptr);
 	}
 
 	xfree(cluster_name);
@@ -1374,8 +1373,7 @@ extern int slurm_load_job_user (job_info_msg_t **job_info_msg_pptr,
 		fed = (slurmdb_federation_rec_t *) ptr;
 		rc = _load_fed_jobs(&req_msg, job_info_msg_pptr, show_flags,
 				    cluster_name, fed);
-		if (ptr)
-			slurm_destroy_federation_rec(ptr);
+		slurm_destroy_federation_rec(ptr);
 	}
 
 	xfree(cluster_name);
@@ -1424,8 +1422,7 @@ slurm_load_job (job_info_msg_t **job_info_msg_pptr, uint32_t job_id,
 		fed = (slurmdb_federation_rec_t *) ptr;
 		rc = _load_fed_jobs(&req_msg, job_info_msg_pptr, show_flags,
 				    cluster_name, fed);
-		if (ptr)
-			slurm_destroy_federation_rec(ptr);
+		slurm_destroy_federation_rec(ptr);
 	}
 
 	xfree(cluster_name);
