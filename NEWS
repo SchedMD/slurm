@@ -57,6 +57,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix wrong cpu_per_task count issue on heterogeneous system when dealing with
     steps.
  -- Fix double free issue when removing usage from an association with sacctmgr.
+ -- Fix issue with SPANK plugins attempting to set null values as environment
+    variables, which leads to the command segfaulting on newer glibc versions.
 
 * Changes in Slurm 17.02.1-2
 ============================

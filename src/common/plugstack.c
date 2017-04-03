@@ -1373,11 +1373,27 @@ static char * _opt_env_name (struct spank_plugin_opt *p, char *buf, size_t siz)
 static int _option_setenv (struct spank_plugin_opt *option)
 {
 	char var[1024];
+	char *arg = option->optarg;
 
 	_opt_env_name(option, var, sizeof(var));
 
-	if (setenv(var, option->optarg, 1) < 0)
-		error("failed to set %s=%s in env", var, option->optarg);
+	/*
+	 * Old glibc behavior was to set the variable with an empty value if
+	 * the option was NULL. Newer glibc versions will segfault instead,
+	 * so feed it an empty string when necessary to maintain backwards
+	 * compatibility.
+	 */
+	if (!option->optarg)
+		arg = "";
+
+	if (setenv(var, arg, 1) < 0)
+		error("failed to set %s=%s in env", var, arg);
+
+	/*
+	 * Use the possibly-NULL value and let the command itself figure
+	 * out how to handle it. This will usually result in "(null)"
+	 * instead of "" used above.
+	 */
 
 	if (dyn_spank_set_job_env(var, option->optarg, 1) < 0)
 		error("failed to set %s=%s in env", var, option->optarg);
