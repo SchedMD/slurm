@@ -105,9 +105,7 @@ extern void slurm_print_federation(void *ptr)
 
 	slurmdb_federation_rec_t *fed = (slurmdb_federation_rec_t *)ptr;
 
-	xassert(fed);
-
-	if (!fed->name)
+	if (!fed || !fed->name)
 		return;
 
 	fed_flag_str = slurmdb_federation_flags_str(fed->flags);
