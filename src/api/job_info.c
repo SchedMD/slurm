@@ -1083,7 +1083,7 @@ _load_cluster_jobs(slurm_msg_t *req_msg, job_info_msg_t **job_info_msg_pptr,
 		   slurmdb_cluster_rec_t *cluster)
 {
 	slurm_msg_t resp_msg;
-	int rc;
+	int rc = SLURM_SUCCESS;
 
 	slurm_msg_t_init(&resp_msg);
 
