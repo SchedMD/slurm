@@ -1243,7 +1243,7 @@ static int _load_fed_jobs(slurm_msg_t *req_msg, job_info_msg_t **job_info_msg_pp
 						 hash_tbl_size[i]);
 		}
 	}
-	for (i = 0; i < orig_msg->record_count; i++) {
+	for (i = 0; orig_msg && i < orig_msg->record_count; i++) {
 		if ((i >= local_job_cnt) &&
 		    _test_local_job(orig_msg->job_array[i].job_id)) {
 			orig_msg->job_array[i].job_id = 0;
