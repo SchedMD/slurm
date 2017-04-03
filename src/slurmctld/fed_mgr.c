@@ -1661,6 +1661,9 @@ unpack_error:
 
 /*
  * Returns true if the cluster is part of a federation.
+ *
+ * Does it's own locking. Don't use this if the FED_[READ|WRITE] lock is already
+ * set.
  */
 extern bool fed_mgr_is_active(void)
 {
@@ -3317,7 +3320,7 @@ extern int fed_mgr_update_job_cluster_features(struct job_record *job_ptr,
 	} else if ((!IS_JOB_PENDING(job_ptr)) ||
 		   job_ptr->fed_details->cluster_lock) {
 		rc = ESLURM_JOB_NOT_PENDING;
-	} else if (!fed_mgr_is_active()) {
+	} else if (!fed_mgr_fed_rec) {
 		info("sched: update_job: setting ClusterFeatures on a non-active federated cluster for job %u",
 		     job_ptr->job_id);
 		rc = ESLURM_JOB_NOT_FEDERATED;

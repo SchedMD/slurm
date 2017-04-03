@@ -5507,7 +5507,7 @@ _slurm_rpc_kill_job2(slurm_msg_t *msg)
 	 * know about the job and it owns the job, the this cluster will cancel
 	 * the job and it will report the cancel back to the origin. */
 	lock_slurmctld(fed_job_read_lock);
-	if (fed_mgr_is_active()) {
+	if (fed_mgr_fed_rec) {
 		uint32_t job_id, origin_id;
 		struct job_record *job_ptr;
 
