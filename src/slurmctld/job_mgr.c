@@ -10778,7 +10778,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	}
 
 	/* Always do this last just in case the assoc_ptr changed */
-	if (job_specs->admin_comment && !validate_slurm_user(uid)) {
+	if (job_specs->admin_comment && !validate_super_user(uid)) {
 		error("Attempt to change admin_comment for job %u",
 		      job_ptr->job_id);
 		error_code = ESLURM_ACCESS_DENIED;
