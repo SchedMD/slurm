@@ -1052,7 +1052,7 @@ static inline bool _in_federation_test(void *ptr, char *cluster_name)
 	ListIterator iter;
 	bool status = false;
 
-	if (!fed->cluster_list)		/* NULL if no federations */
+	if (!fed || !fed->cluster_list)		/* NULL if no federations */
 		return status;
 	iter = list_iterator_create(fed->cluster_list);
 	while ((cluster = (slurmdb_cluster_rec_t *) list_next(iter))) {
@@ -1078,57 +1078,64 @@ static int _local_resp_first(void *x, void *y)
 	return 0;
 }
 
+extern int
+_load_cluster_jobs(slurm_msg_t *req_msg, job_info_msg_t **job_info_msg_pptr,
+		   slurmdb_cluster_rec_t *cluster)
+{
+	slurm_msg_t resp_msg;
+	int rc;
+
+	slurm_msg_t_init(&resp_msg);
+
+	if (slurm_send_recv_controller_msg(req_msg, &resp_msg, cluster) < 0)
+		return SLURM_ERROR;
+
+	switch (resp_msg.msg_type) {
+	case RESPONSE_JOB_INFO:
+		*job_info_msg_pptr = (job_info_msg_t *)resp_msg.data;
+		resp_msg.data = NULL;
+		break;
+	case RESPONSE_SLURM_RC:
+		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		slurm_free_return_code_msg(resp_msg.data);
+		break;
+	default:
+		rc = SLURM_UNEXPECTED_MSG_ERROR;
+		break;
+	}
+	if (rc)
+		slurm_seterrno(rc);
+
+	return SLURM_PROTOCOL_SUCCESS;
+}
+
 /* Thread to read job information from some cluster */
 static void *_load_job_thread(void *args)
 {
 	load_job_req_struct_t *load_args = (load_job_req_struct_t *) args;
 	slurmdb_cluster_rec_t *cluster = load_args->cluster;
-	slurm_msg_t *resp_msg_fed;
 	job_info_msg_t *new_msg = NULL;
 	int rc;
 
-	resp_msg_fed = xmalloc(sizeof(slurm_msg_t));
-	slurm_msg_t_init(resp_msg_fed);
-	if (slurm_send_recv_controller_msg(load_args->req_msg, resp_msg_fed,
-					   cluster) < 0) {
-		verbose("Error reading job information from cluster %s: %m",
-			cluster->name);
+	if ((rc = _load_cluster_jobs(load_args->req_msg, &new_msg, cluster)) ||
+	    !new_msg) {
+		verbose("Error reading job information from cluster %s: %s",
+			cluster->name, slurm_strerror(rc));
 	} else {
-		switch (resp_msg_fed->msg_type) {
-		case RESPONSE_JOB_INFO:
-			rc = 0;
-			new_msg = (job_info_msg_t *) resp_msg_fed->data;
-			break;
-		case RESPONSE_SLURM_RC:
-			rc = ((return_code_msg_t *) resp_msg_fed->data)->
-						    return_code;
-			slurm_free_return_code_msg(resp_msg_fed->data);
-			break;
-		default:
-			rc = SLURM_UNEXPECTED_MSG_ERROR;
-			break;
-		}
-		if ((rc != SLURM_SUCCESS) || (new_msg == NULL)) {
-			verbose("Error reading job information from cluster %s: %s",
-				cluster->name, slurm_strerror(rc));
-		}
-		if (new_msg) {
-			load_job_resp_struct_t *job_resp;
-			job_resp = xmalloc(sizeof(load_job_resp_struct_t));
-			job_resp->local_cluster = load_args->local_cluster;
-			job_resp->new_msg = new_msg;
-			list_append(load_args->resp_msg_list, job_resp);
-		}
+		load_job_resp_struct_t *job_resp;
+		job_resp = xmalloc(sizeof(load_job_resp_struct_t));
+		job_resp->local_cluster = load_args->local_cluster;
+		job_resp->new_msg = new_msg;
+		list_append(load_args->resp_msg_list, job_resp);
 	}
-	xfree(resp_msg_fed);
 	xfree(args);
 
 	return (void *) NULL;
 }
 
-static int _load_jobs(slurm_msg_t *req_msg, job_info_msg_t **job_info_msg_pptr,
-		      uint16_t show_flags, char *cluster_name,
-		      slurmdb_federation_rec_t *fed)
+static int _load_fed_jobs(slurm_msg_t *req_msg, job_info_msg_t **job_info_msg_pptr,
+			  uint16_t show_flags, char *cluster_name,
+			  slurmdb_federation_rec_t *fed)
 {
 	int i, j;
 	int local_job_cnt = 0;
@@ -1305,17 +1312,23 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 		}
 	}
 
-	fed = (slurmdb_federation_rec_t *) ptr;
 	slurm_msg_t_init(&req_msg);
 	req.last_update  = update_time;
 	req.show_flags   = show_flags;
 	req_msg.msg_type = REQUEST_JOB_INFO;
 	req_msg.data     = &req;
-	rc = _load_jobs(&req_msg, job_info_msg_pptr, show_flags, cluster_name,
-			fed);
+
+	if (!ptr || (show_flags & SHOW_LOCAL))
+		rc = _load_cluster_jobs(&req_msg, job_info_msg_pptr, NULL);
+	else {
+		fed = (slurmdb_federation_rec_t *) ptr;
+		rc = _load_fed_jobs(&req_msg, job_info_msg_pptr, show_flags,
+				    cluster_name, fed);
+		if (ptr)
+			slurm_destroy_federation_rec(ptr);
+	}
+
 	xfree(cluster_name);
-	if (ptr)
-		slurm_destroy_federation_rec(ptr);
 
 	return rc;
 }
@@ -1349,17 +1362,23 @@ extern int slurm_load_job_user (job_info_msg_t **job_info_msg_pptr,
 		}
 	}
 
-	fed = (slurmdb_federation_rec_t *) ptr;
 	slurm_msg_t_init(&req_msg);
 	req.show_flags   = show_flags;
 	req.user_id      = user_id;
 	req_msg.msg_type = REQUEST_JOB_USER_INFO;
 	req_msg.data     = &req;
-	rc = _load_jobs(&req_msg, job_info_msg_pptr, show_flags, cluster_name,
-			fed);
+
+	if (!ptr || (show_flags & SHOW_LOCAL))
+		rc = _load_cluster_jobs(&req_msg, job_info_msg_pptr, NULL);
+	else {
+		fed = (slurmdb_federation_rec_t *) ptr;
+		rc = _load_fed_jobs(&req_msg, job_info_msg_pptr, show_flags,
+				    cluster_name, fed);
+		if (ptr)
+			slurm_destroy_federation_rec(ptr);
+	}
+
 	xfree(cluster_name);
-	if (ptr)
-		slurm_destroy_federation_rec(ptr);
 
 	return rc;
 }
@@ -1392,18 +1411,24 @@ slurm_load_job (job_info_msg_t **job_info_msg_pptr, uint32_t job_id,
 		}
 	}
 
-	fed = (slurmdb_federation_rec_t *) ptr;
 	bzero(&req, sizeof(job_id_msg_t));
 	slurm_msg_t_init(&req_msg);
-	req.job_id = job_id;
-	req.show_flags = show_flags;
+	req.job_id       = job_id;
+	req.show_flags   = show_flags;
 	req_msg.msg_type = REQUEST_JOB_INFO_SINGLE;
 	req_msg.data     = &req;
-	rc = _load_jobs(&req_msg, job_info_msg_pptr, show_flags, cluster_name,
-			fed);
+
+	if (!ptr || (show_flags & SHOW_LOCAL))
+		rc = _load_cluster_jobs(&req_msg, job_info_msg_pptr, NULL);
+	else {
+		fed = (slurmdb_federation_rec_t *) ptr;
+		rc = _load_fed_jobs(&req_msg, job_info_msg_pptr, show_flags,
+				    cluster_name, fed);
+		if (ptr)
+			slurm_destroy_federation_rec(ptr);
+	}
+
 	xfree(cluster_name);
-	if (ptr)
-		slurm_destroy_federation_rec(ptr);
 
 	return rc;
 }
