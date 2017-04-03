@@ -285,6 +285,8 @@ static int _job_rec_field(const struct job_record *job_ptr,
 		lua_pushnil (L);
 	} else if (!xstrcmp(name, "account")) {
 		lua_pushstring (L, job_ptr->account);
+	} else if (!xstrcmp(name, "admin_comment")) {
+		lua_pushstring (L, job_ptr->admin_comment);
 	} else if (!xstrcmp(name, "burst_buffer")) {
 		lua_pushstring (L, job_ptr->burst_buffer);
 	} else if (!xstrcmp(name, "comment")) {
@@ -663,6 +665,8 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 		lua_pushstring (L, job_desc->account);
 	} else if (!xstrcmp(name, "acctg_freq")) {
 		lua_pushstring (L, job_desc->acctg_freq);
+	} else if (!xstrcmp(name, "admin_comment")) {
+		lua_pushstring (L, job_desc->admin_comment);
 	} else if (!xstrcmp(name, "alloc_node")) {
 		lua_pushstring (L, job_desc->alloc_node);
 	} else if (!xstrcmp(name, "array_inx")) {
@@ -864,6 +868,11 @@ static int _set_job_req_field(lua_State *L)
 		xfree(job_desc->acctg_freq);
 		if (strlen(value_str))
 			job_desc->acctg_freq = xstrdup(value_str);
+	} else if (!xstrcmp(name, "admin_comment")) {
+		value_str = luaL_checkstring(L, 3);
+		xfree(job_desc->admin_comment);
+		if (strlen(value_str))
+			job_desc->admin_comment = xstrdup(value_str);
 	} else if (!xstrcmp(name, "array_inx")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->array_inx);
