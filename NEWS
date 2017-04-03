@@ -59,6 +59,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix double free issue when removing usage from an association with sacctmgr.
  -- Fix issue with SPANK plugins attempting to set null values as environment
     variables, which leads to the command segfaulting on newer glibc versions.
+ -- Fix race condition on slurmctld startup when plugins have not gone through
+    init() ahead of the rpc_manager processing incoming messages.
 
 * Changes in Slurm 17.02.1-2
 ============================
