@@ -61,6 +61,7 @@ documents those changes that are of interest to users and administrators.
     variables, which leads to the command segfaulting on newer glibc versions.
  -- Fix race condition on slurmctld startup when plugins have not gone through
     init() ahead of the rpc_manager processing incoming messages.
+ -- job_submit/lua - expose admin_comment field.
 
 * Changes in Slurm 17.02.1-2
 ============================
