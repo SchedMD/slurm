@@ -98,21 +98,21 @@ extern int mcs_p_set_mcs_label(struct job_record *job_ptr, char *label)
 {
 	int rc = SLURM_SUCCESS;
 	xfree(job_ptr->mcs_label);
+
 	if (label != NULL) {
 		/* test label param */
-		if (!xstrcmp(label, job_ptr->account)) {
+		if (!xstrcmp(label, job_ptr->account))
 			job_ptr->mcs_label = xstrdup(job_ptr->account);
-		} else {
+		else
 			rc = SLURM_ERROR;
-		}
 	} else {
 		if ((slurm_mcs_get_enforced() == 0) && job_ptr->details &&
-		    (job_ptr->details->whole_node != WHOLE_NODE_MCS)) {
+		    (job_ptr->details->whole_node != WHOLE_NODE_MCS))
 			;
-		} else {
+		else
 			job_ptr->mcs_label = xstrdup(job_ptr->account);
-		}
 	}
+
 	return rc;
 }
 
@@ -127,14 +127,16 @@ extern int mcs_p_check_mcs_label(uint32_t user_id, char *mcs_label)
 	memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
 	assoc_rec.acct = mcs_label;
 	assoc_rec.uid = user_id;
+
 	if (mcs_label != NULL) {
 		if (!assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-					    accounting_enforce,
-					    (slurmdb_assoc_rec_t **)
-					    NULL, false))
+					     accounting_enforce,
+					     (slurmdb_assoc_rec_t **) NULL,
+					     false))
 			rc = SLURM_SUCCESS;
 		else
 			rc = SLURM_ERROR;
 	}
+
 	return rc;
 }
