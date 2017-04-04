@@ -2640,8 +2640,8 @@ static void _add_remove_sibling_jobs(struct job_record *job_ptr)
 	new_sibs = _get_viable_sibs(job_ptr->clusters, feature_sibs);
 	job_ptr->fed_details->siblings_viable = new_sibs;
 
-	add_sibs      =  new_sibs & ~old_sibs;
-	rem_sibs      = ~new_sibs &  old_sibs;
+	add_sibs =  new_sibs & ~old_sibs;
+	rem_sibs = ~new_sibs &  old_sibs;
 
 	if (rem_sibs) {
 		_revoke_sibling_jobs(job_ptr->job_id,
