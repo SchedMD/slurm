@@ -1702,21 +1702,26 @@ extern void slurmdb_pack_assoc_rec_with_usage(void *in,
 	slurmdb_pack_assoc_rec(in, protocol_version, buffer);
 	slurmdb_pack_assoc_usage(object->usage, protocol_version, buffer);
 
-	pack64_array(object->grp_tres_mins_ctld,
-		     object->usage->tres_cnt, buffer);
-	pack64_array(object->grp_tres_run_mins_ctld,
-		     object->usage->tres_cnt, buffer);
-	pack64_array(object->grp_tres_ctld,
-		     object->usage->tres_cnt, buffer);
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack64_array(object->grp_tres_mins_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->grp_tres_run_mins_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->grp_tres_ctld,
+			     object->usage->tres_cnt, buffer);
 
-	pack64_array(object->max_tres_mins_ctld,
+		pack64_array(object->max_tres_mins_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->max_tres_run_mins_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->max_tres_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->max_tres_pn_ctld,
 		     object->usage->tres_cnt, buffer);
-	pack64_array(object->max_tres_run_mins_ctld,
-		     object->usage->tres_cnt, buffer);
-	pack64_array(object->max_tres_ctld,
-		     object->usage->tres_cnt, buffer);
-	pack64_array(object->max_tres_pn_ctld,
-		     object->usage->tres_cnt, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+	}
 
 }
 
@@ -1728,30 +1733,40 @@ extern int slurmdb_unpack_assoc_rec_with_usage(void **object,
 	uint32_t uint32_tmp;
 	slurmdb_assoc_rec_t *object_ptr;
 
+	xassert(object);
+	xassert(buffer);
+
 	if ((rc = slurmdb_unpack_assoc_rec(object, protocol_version, buffer))
 	    != SLURM_SUCCESS)
 		return rc;
 
 	object_ptr = *object;
 
-	rc = slurmdb_unpack_assoc_usage((void **)&object_ptr->usage,
-					protocol_version, buffer);
+	if ((rc = slurmdb_unpack_assoc_usage((void **)&object_ptr->usage,
+					     protocol_version, buffer)))
+		goto unpack_error;
 
-	safe_unpack64_array(&object_ptr->grp_tres_mins_ctld,
-			    &uint32_tmp, buffer);
-	safe_unpack64_array(&object_ptr->grp_tres_run_mins_ctld,
-			    &uint32_tmp, buffer);
-	safe_unpack64_array(&object_ptr->grp_tres_ctld,
-			    &uint32_tmp, buffer);
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack64_array(&object_ptr->grp_tres_mins_ctld,
+				    &uint32_tmp, buffer);
+		safe_unpack64_array(&object_ptr->grp_tres_run_mins_ctld,
+				    &uint32_tmp, buffer);
+		safe_unpack64_array(&object_ptr->grp_tres_ctld,
+				    &uint32_tmp, buffer);
 
-	safe_unpack64_array(&object_ptr->max_tres_mins_ctld,
-			    &uint32_tmp, buffer);
-	safe_unpack64_array(&object_ptr->max_tres_run_mins_ctld,
-			    &uint32_tmp, buffer);
-	safe_unpack64_array(&object_ptr->max_tres_ctld,
-			    &uint32_tmp, buffer);
-	safe_unpack64_array(&object_ptr->max_tres_pn_ctld,
-			    &uint32_tmp, buffer);
+		safe_unpack64_array(&object_ptr->max_tres_mins_ctld,
+				    &uint32_tmp, buffer);
+		safe_unpack64_array(&object_ptr->max_tres_run_mins_ctld,
+				    &uint32_tmp, buffer);
+		safe_unpack64_array(&object_ptr->max_tres_ctld,
+				    &uint32_tmp, buffer);
+		safe_unpack64_array(&object_ptr->max_tres_pn_ctld,
+				    &uint32_tmp, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
 
 	return rc;
 
