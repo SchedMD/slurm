@@ -3602,7 +3602,7 @@ extern int fed_mgr_update_job_clusters(struct job_record *job_ptr,
 	} else if ((!IS_JOB_PENDING(job_ptr)) ||
 		   job_ptr->fed_details->cluster_lock) {
 		rc = ESLURM_JOB_NOT_PENDING;
-	} else if (!fed_mgr_is_active()) {
+	} else if (!fed_mgr_fed_rec) {
 		info("sched: update_job: setting Clusters on a non-active federated cluster for job %u",
 		     job_ptr->job_id);
 		rc = ESLURM_JOB_NOT_FEDERATED;

@@ -12306,7 +12306,7 @@ fini:
 		set_job_prio(job_ptr);
 
 	if ((error_code == SLURM_SUCCESS) &&
-	    fed_mgr_is_active() &&
+	    fed_mgr_fed_rec &&
 	    job_ptr->fed_details && fed_mgr_is_origin_job(job_ptr)) {
 		/* Send updates to sibling jobs */
 		/* Add the siblings_active to be updated. They could have been
