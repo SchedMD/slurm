@@ -4660,6 +4660,7 @@ tryagain:
 				slurmdb_destroy_cluster_rec(comm_cluster_rec);
 
 			comm_cluster_rec = rr_msg->working_cluster_rec;
+			slurmdb_setup_cluster_rec(comm_cluster_rec);
 			rr_msg->working_cluster_rec = NULL;
 			goto tryagain;
 		}

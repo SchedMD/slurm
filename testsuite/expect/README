@@ -801,3 +801,4 @@ test37.2   Validate federated clusters return federated job ids.
 test37.3   scontrol show federations
 test37.4   federated job submission
 test37.5   Federated Requeue
+test37.6   Federated Job Updates

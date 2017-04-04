@@ -285,7 +285,7 @@ static char *_get_qos_list_str(List qos_list)
 	return qos_char;
 }
 
-static int _setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec)
+extern int slurmdb_setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec)
 {
 	int plugin_id_select = 0;
 
@@ -1363,7 +1363,8 @@ extern List slurmdb_get_info_cluster(char *cluster_names)
 	itr = list_iterator_create(temp_list);
 	if (!cluster_names || all_clusters) {
 		while ((cluster_rec = list_next(itr))) {
-			if (_setup_cluster_rec(cluster_rec) != SLURM_SUCCESS) {
+			if (slurmdb_setup_cluster_rec(cluster_rec) !=
+			    SLURM_SUCCESS) {
 				list_delete_item(itr);
 			}
 		}
@@ -1380,7 +1381,8 @@ extern List slurmdb_get_info_cluster(char *cluster_names)
 				goto next;
 			}
 
-			if (_setup_cluster_rec(cluster_rec) != SLURM_SUCCESS) {
+			if (slurmdb_setup_cluster_rec(cluster_rec) !=
+			    SLURM_SUCCESS) {
 				list_delete_item(itr);
 			}
 		next:

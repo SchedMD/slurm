@@ -546,12 +546,16 @@ Burst buffer specification to be changed for this job's resource use.
 Value may be cleared with blank data value, "BurstBuffer=".
 Format is burst buffer plugin specific.
 .TP
-\fIComment\fP=<spec>
-Arbitrary descriptive string.
+\fIClusters\fP=<spec>
+Specifies the clusters that the federated job can run on.
+.TP
 \fIClusterFeatures\fP=<spec>
 Specifies features that a federated cluster must have to have a sibling job
 submitted to it. Slurm will attempt to submit a sibling job to a cluster if it
 has at least one of the specified features.
+.TP
+\fIComment\fP=<spec>
+Arbitrary descriptive string.
 .TP
 \fIConn\-Type\fP=<type>
 Reset the node connection type. Supported only on IBM BlueGene systems.

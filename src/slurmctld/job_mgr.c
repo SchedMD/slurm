@@ -11714,6 +11714,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 					job_ptr, job_specs->cluster_features)))
 		goto fini;
 
+	if (job_specs->clusters &&
+	    (error_code = fed_mgr_update_job_clusters(job_ptr,
+						     job_specs->clusters)))
+		goto fini;
+
 	if (gres_list) {
 		info("sched: update_job: setting gres to %s for job_id %u",
 		     job_specs->gres, job_ptr->job_id);
@@ -12300,6 +12305,17 @@ fini:
 	    xstrcmp(slurmctld_conf.priority_type, "priority/basic"))
 		set_job_prio(job_ptr);
 
+	if ((error_code == SLURM_SUCCESS) &&
+	    fed_mgr_is_active() &&
+	    job_ptr->fed_details && fed_mgr_is_origin_job(job_ptr)) {
+		/* Send updates to sibling jobs */
+		/* Add the siblings_active to be updated. They could have been
+		 * updated if the job's ClusterFeatures were updated. */
+		job_specs->fed_siblings_viable = job_ptr->fed_details->siblings_viable;
+		fed_mgr_update_job(job_specs,
+				   job_ptr->fed_details->siblings_active);
+	}
+
 	return error_code;
 }
 
@@ -12537,6 +12553,7 @@ reply:
 			rc_msg.return_code = rc;
 			resp_msg.data      = &rc_msg;
 		}
+		resp_msg.conn = msg->conn;
 		slurm_send_node_msg(msg->conn_fd, &resp_msg);
 
 		if (resp_array_msg) {
