@@ -66,6 +66,8 @@ documents those changes that are of interest to users and administrators.
  -- Allow AdminComment field to be changed by any Administrator.
  -- Fix key words in jobcomp select.
  -- MYSQL - Streamline job flush sql when doing a clean start on the slurmctld.
+ -- Fix potential infinite loop when talking to the DBD when shutting down
+    the slurmctld.
 
 * Changes in Slurm 17.02.1-2
 ============================
