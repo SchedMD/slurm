@@ -100,7 +100,9 @@ TESTS = $(am__EXEEXT_1)
 @HAVE_CHECK_TRUE@	 pack_clus_res_rec-test \
 @HAVE_CHECK_TRUE@	 pack_federation_rec-test \
 @HAVE_CHECK_TRUE@	 pack_accting_rec-test \
-@HAVE_CHECK_TRUE@	 pack_assoc_rec-test
+@HAVE_CHECK_TRUE@	 pack_assoc_rec-test \
+@HAVE_CHECK_TRUE@	 pack_assoc_usage-test \
+@HAVE_CHECK_TRUE@	 pack_assoc_rec_with_usage-test
 
 subdir = testsuite/slurm_unit/common/slurmdb_pack
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -163,7 +165,9 @@ CONFIG_CLEAN_VPATH_FILES =
 @HAVE_CHECK_TRUE@	pack_clus_res_rec-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	pack_federation_rec-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	pack_accting_rec-test$(EXEEXT) \
-@HAVE_CHECK_TRUE@	pack_assoc_rec-test$(EXEEXT)
+@HAVE_CHECK_TRUE@	pack_assoc_rec-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@	pack_assoc_usage-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@	pack_assoc_rec_with_usage-test$(EXEEXT)
 am__EXEEXT_2 = $(am__EXEEXT_1)
 pack_account_rec_test_SOURCES = pack_account_rec-test.c
 pack_account_rec_test_OBJECTS =  \
@@ -198,6 +202,24 @@ pack_assoc_rec_test_OBJECTS =  \
 pack_assoc_rec_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(pack_assoc_rec_test_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
+pack_assoc_rec_with_usage_test_SOURCES =  \
+	pack_assoc_rec_with_usage-test.c
+pack_assoc_rec_with_usage_test_OBJECTS = pack_assoc_rec_with_usage_test-pack_assoc_rec_with_usage-test.$(OBJEXT)
+@HAVE_CHECK_TRUE@pack_assoc_rec_with_usage_test_DEPENDENCIES =  \
+@HAVE_CHECK_TRUE@	$(am__DEPENDENCIES_2)
+pack_assoc_rec_with_usage_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(pack_assoc_rec_with_usage_test_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+pack_assoc_usage_test_SOURCES = pack_assoc_usage-test.c
+pack_assoc_usage_test_OBJECTS =  \
+	pack_assoc_usage_test-pack_assoc_usage-test.$(OBJEXT)
+@HAVE_CHECK_TRUE@pack_assoc_usage_test_DEPENDENCIES =  \
+@HAVE_CHECK_TRUE@	$(am__DEPENDENCIES_2)
+pack_assoc_usage_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(pack_assoc_usage_test_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 pack_clus_res_rec_test_SOURCES = pack_clus_res_rec-test.c
 pack_clus_res_rec_test_OBJECTS =  \
@@ -296,12 +318,14 @@ am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = pack_account_rec-test.c pack_accting_rec-test.c \
-	pack_assoc_rec-test.c pack_clus_res_rec-test.c \
+	pack_assoc_rec-test.c pack_assoc_rec_with_usage-test.c \
+	pack_assoc_usage-test.c pack_clus_res_rec-test.c \
 	pack_cluster_acct_rec-test.c pack_cluster_rec-test.c \
 	pack_coord_rec-test.c pack_federation_rec-test.c \
 	pack_used_limits-test.c pack_user_rec-test.c
 DIST_SOURCES = pack_account_rec-test.c pack_accting_rec-test.c \
-	pack_assoc_rec-test.c pack_clus_res_rec-test.c \
+	pack_assoc_rec-test.c pack_assoc_rec_with_usage-test.c \
+	pack_assoc_usage-test.c pack_clus_res_rec-test.c \
 	pack_cluster_acct_rec-test.c pack_cluster_rec-test.c \
 	pack_coord_rec-test.c pack_federation_rec-test.c \
 	pack_used_limits-test.c pack_user_rec-test.c
@@ -817,6 +841,10 @@ LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
 @HAVE_CHECK_TRUE@pack_accting_rec_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@pack_assoc_rec_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@pack_assoc_rec_test_LDADD = $(LDADD) @CHECK_LIBS@
+@HAVE_CHECK_TRUE@pack_assoc_usage_test_CFLAGS = $(MYCFLAGS)
+@HAVE_CHECK_TRUE@pack_assoc_usage_test_LDADD = $(LDADD) @CHECK_LIBS@
+@HAVE_CHECK_TRUE@pack_assoc_rec_with_usage_test_CFLAGS = $(MYCFLAGS)
+@HAVE_CHECK_TRUE@pack_assoc_rec_with_usage_test_LDADD = $(LDADD) @CHECK_LIBS@
 all: all-am
 
 .SUFFIXES:
@@ -872,6 +900,14 @@ pack_assoc_rec-test$(EXEEXT): $(pack_assoc_rec_test_OBJECTS) $(pack_assoc_rec_te
 	@rm -f pack_assoc_rec-test$(EXEEXT)
 	$(AM_V_CCLD)$(pack_assoc_rec_test_LINK) $(pack_assoc_rec_test_OBJECTS) $(pack_assoc_rec_test_LDADD) $(LIBS)
 
+pack_assoc_rec_with_usage-test$(EXEEXT): $(pack_assoc_rec_with_usage_test_OBJECTS) $(pack_assoc_rec_with_usage_test_DEPENDENCIES) $(EXTRA_pack_assoc_rec_with_usage_test_DEPENDENCIES) 
+	@rm -f pack_assoc_rec_with_usage-test$(EXEEXT)
+	$(AM_V_CCLD)$(pack_assoc_rec_with_usage_test_LINK) $(pack_assoc_rec_with_usage_test_OBJECTS) $(pack_assoc_rec_with_usage_test_LDADD) $(LIBS)
+
+pack_assoc_usage-test$(EXEEXT): $(pack_assoc_usage_test_OBJECTS) $(pack_assoc_usage_test_DEPENDENCIES) $(EXTRA_pack_assoc_usage_test_DEPENDENCIES) 
+	@rm -f pack_assoc_usage-test$(EXEEXT)
+	$(AM_V_CCLD)$(pack_assoc_usage_test_LINK) $(pack_assoc_usage_test_OBJECTS) $(pack_assoc_usage_test_LDADD) $(LIBS)
+
 pack_clus_res_rec-test$(EXEEXT): $(pack_clus_res_rec_test_OBJECTS) $(pack_clus_res_rec_test_DEPENDENCIES) $(EXTRA_pack_clus_res_rec_test_DEPENDENCIES) 
 	@rm -f pack_clus_res_rec-test$(EXEEXT)
 	$(AM_V_CCLD)$(pack_clus_res_rec_test_LINK) $(pack_clus_res_rec_test_OBJECTS) $(pack_clus_res_rec_test_LDADD) $(LIBS)
@@ -909,6 +945,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack_account_rec_test-pack_account_rec-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack_accting_rec_test-pack_accting_rec-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack_assoc_rec_test-pack_assoc_rec-test.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack_assoc_rec_with_usage_test-pack_assoc_rec_with_usage-test.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack_assoc_usage_test-pack_assoc_usage-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack_clus_res_rec_test-pack_clus_res_rec-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack_cluster_acct_rec_test-pack_cluster_acct_rec-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack_cluster_rec_test-pack_cluster_rec-test.Po@am__quote@
@@ -979,6 +1017,34 @@ pack_assoc_rec_test-pack_assoc_rec-test.obj: pack_assoc_rec-test.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pack_assoc_rec-test.c' object='pack_assoc_rec_test-pack_assoc_rec-test.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_assoc_rec_test_CFLAGS) $(CFLAGS) -c -o pack_assoc_rec_test-pack_assoc_rec-test.obj `if test -f 'pack_assoc_rec-test.c'; then $(CYGPATH_W) 'pack_assoc_rec-test.c'; else $(CYGPATH_W) '$(srcdir)/pack_assoc_rec-test.c'; fi`
+
+pack_assoc_rec_with_usage_test-pack_assoc_rec_with_usage-test.o: pack_assoc_rec_with_usage-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_assoc_rec_with_usage_test_CFLAGS) $(CFLAGS) -MT pack_assoc_rec_with_usage_test-pack_assoc_rec_with_usage-test.o -MD -MP -MF $(DEPDIR)/pack_assoc_rec_with_usage_test-pack_assoc_rec_with_usage-test.Tpo -c -o pack_assoc_rec_with_usage_test-pack_assoc_rec_with_usage-test.o `test -f 'pack_assoc_rec_with_usage-test.c' || echo '$(srcdir)/'`pack_assoc_rec_with_usage-test.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pack_assoc_rec_with_usage_test-pack_assoc_rec_with_usage-test.Tpo $(DEPDIR)/pack_assoc_rec_with_usage_test-pack_assoc_rec_with_usage-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pack_assoc_rec_with_usage-test.c' object='pack_assoc_rec_with_usage_test-pack_assoc_rec_with_usage-test.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_assoc_rec_with_usage_test_CFLAGS) $(CFLAGS) -c -o pack_assoc_rec_with_usage_test-pack_assoc_rec_with_usage-test.o `test -f 'pack_assoc_rec_with_usage-test.c' || echo '$(srcdir)/'`pack_assoc_rec_with_usage-test.c
+
+pack_assoc_rec_with_usage_test-pack_assoc_rec_with_usage-test.obj: pack_assoc_rec_with_usage-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_assoc_rec_with_usage_test_CFLAGS) $(CFLAGS) -MT pack_assoc_rec_with_usage_test-pack_assoc_rec_with_usage-test.obj -MD -MP -MF $(DEPDIR)/pack_assoc_rec_with_usage_test-pack_assoc_rec_with_usage-test.Tpo -c -o pack_assoc_rec_with_usage_test-pack_assoc_rec_with_usage-test.obj `if test -f 'pack_assoc_rec_with_usage-test.c'; then $(CYGPATH_W) 'pack_assoc_rec_with_usage-test.c'; else $(CYGPATH_W) '$(srcdir)/pack_assoc_rec_with_usage-test.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pack_assoc_rec_with_usage_test-pack_assoc_rec_with_usage-test.Tpo $(DEPDIR)/pack_assoc_rec_with_usage_test-pack_assoc_rec_with_usage-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pack_assoc_rec_with_usage-test.c' object='pack_assoc_rec_with_usage_test-pack_assoc_rec_with_usage-test.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_assoc_rec_with_usage_test_CFLAGS) $(CFLAGS) -c -o pack_assoc_rec_with_usage_test-pack_assoc_rec_with_usage-test.obj `if test -f 'pack_assoc_rec_with_usage-test.c'; then $(CYGPATH_W) 'pack_assoc_rec_with_usage-test.c'; else $(CYGPATH_W) '$(srcdir)/pack_assoc_rec_with_usage-test.c'; fi`
+
+pack_assoc_usage_test-pack_assoc_usage-test.o: pack_assoc_usage-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_assoc_usage_test_CFLAGS) $(CFLAGS) -MT pack_assoc_usage_test-pack_assoc_usage-test.o -MD -MP -MF $(DEPDIR)/pack_assoc_usage_test-pack_assoc_usage-test.Tpo -c -o pack_assoc_usage_test-pack_assoc_usage-test.o `test -f 'pack_assoc_usage-test.c' || echo '$(srcdir)/'`pack_assoc_usage-test.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pack_assoc_usage_test-pack_assoc_usage-test.Tpo $(DEPDIR)/pack_assoc_usage_test-pack_assoc_usage-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pack_assoc_usage-test.c' object='pack_assoc_usage_test-pack_assoc_usage-test.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_assoc_usage_test_CFLAGS) $(CFLAGS) -c -o pack_assoc_usage_test-pack_assoc_usage-test.o `test -f 'pack_assoc_usage-test.c' || echo '$(srcdir)/'`pack_assoc_usage-test.c
+
+pack_assoc_usage_test-pack_assoc_usage-test.obj: pack_assoc_usage-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_assoc_usage_test_CFLAGS) $(CFLAGS) -MT pack_assoc_usage_test-pack_assoc_usage-test.obj -MD -MP -MF $(DEPDIR)/pack_assoc_usage_test-pack_assoc_usage-test.Tpo -c -o pack_assoc_usage_test-pack_assoc_usage-test.obj `if test -f 'pack_assoc_usage-test.c'; then $(CYGPATH_W) 'pack_assoc_usage-test.c'; else $(CYGPATH_W) '$(srcdir)/pack_assoc_usage-test.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pack_assoc_usage_test-pack_assoc_usage-test.Tpo $(DEPDIR)/pack_assoc_usage_test-pack_assoc_usage-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pack_assoc_usage-test.c' object='pack_assoc_usage_test-pack_assoc_usage-test.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_assoc_usage_test_CFLAGS) $(CFLAGS) -c -o pack_assoc_usage_test-pack_assoc_usage-test.obj `if test -f 'pack_assoc_usage-test.c'; then $(CYGPATH_W) 'pack_assoc_usage-test.c'; else $(CYGPATH_W) '$(srcdir)/pack_assoc_usage-test.c'; fi`
 
 pack_clus_res_rec_test-pack_clus_res_rec-test.o: pack_clus_res_rec-test.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_clus_res_rec_test_CFLAGS) $(CFLAGS) -MT pack_clus_res_rec_test-pack_clus_res_rec-test.o -MD -MP -MF $(DEPDIR)/pack_clus_res_rec_test-pack_clus_res_rec-test.Tpo -c -o pack_clus_res_rec_test-pack_clus_res_rec-test.o `test -f 'pack_clus_res_rec-test.c' || echo '$(srcdir)/'`pack_clus_res_rec-test.c
@@ -1343,6 +1409,20 @@ pack_accting_rec-test.log: pack_accting_rec-test$(EXEEXT)
 pack_assoc_rec-test.log: pack_assoc_rec-test$(EXEEXT)
 	@p='pack_assoc_rec-test$(EXEEXT)'; \
 	b='pack_assoc_rec-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+pack_assoc_usage-test.log: pack_assoc_usage-test$(EXEEXT)
+	@p='pack_assoc_usage-test$(EXEEXT)'; \
+	b='pack_assoc_usage-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+pack_assoc_rec_with_usage-test.log: pack_assoc_rec_with_usage-test$(EXEEXT)
+	@p='pack_assoc_rec_with_usage-test$(EXEEXT)'; \
+	b='pack_assoc_rec_with_usage-test'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
