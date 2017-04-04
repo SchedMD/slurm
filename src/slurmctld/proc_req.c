@@ -3454,6 +3454,8 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg, bool is_sib_job)
 	char *err_msg = NULL;
 	bool reject_job = false;
 
+	START_TIMER;
+
 	if (slurmctld_config.submissions_disabled) {
 		info("Submissions disabled on system");
 		error_code = ESLURM_SUBMISSIONS_DISABLED;
@@ -3461,7 +3463,6 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg, bool is_sib_job)
 		goto send_msg;
 	}
 
-	START_TIMER;
 	debug2("Processing RPC: REQUEST_SUBMIT_BATCH_JOB from uid=%d", uid);
 
 	slurm_msg_t_init(&response_msg);
