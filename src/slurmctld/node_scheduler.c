@@ -944,11 +944,8 @@ extern void filter_by_node_mcs(struct job_record *job_ptr, int mcs_select,
 	struct node_record *node_ptr;
 	int i;
 
-	if (mcs_select != 1)
-		return;
-
 	/* Need to filter out any nodes allocated with other mcs */
-	if (job_ptr->mcs_label != NULL) {
+	if (job_ptr->mcs_label && (mcs_select == 1)) {
 		for (i = 0, node_ptr = node_record_table_ptr;
 		     i < node_record_count; i++, node_ptr++) {
 			/* if there is a mcs_label -> OK if it's the same */
