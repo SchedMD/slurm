@@ -78,6 +78,10 @@ __thread slurmctld_lock_t thread_locks;
 
 static bool _store_locks(slurmctld_lock_t lock_levels)
 {
+	if (slurmctld_locked)
+		return false;
+	slurmctld_locked = true;
+
 	memcpy((void *) &thread_locks, (void *) &lock_levels,
 	       sizeof(slurmctld_lock_t));
 
@@ -86,6 +90,10 @@ static bool _store_locks(slurmctld_lock_t lock_levels)
 
 static bool _clear_locks(slurmctld_lock_t lock_levels)
 {
+	if (!slurmctld_locked)
+		return false;
+	slurmctld_locked = false;
+
 	return !memcmp((void *) &thread_locks, (void *) &lock_levels,
 		       sizeof(slurmctld_lock_t));
 }
@@ -102,8 +110,6 @@ void init_locks(void)
 /* lock_slurmctld - Issue the required lock requests in a well defined order */
 extern void lock_slurmctld(slurmctld_lock_t lock_levels)
 {
-	/* test, then set via xassert abuse */
-	xassert(!slurmctld_locked && (slurmctld_locked = true));
 	xassert(_store_locks(lock_levels));
 
 	if (lock_levels.config == READ_LOCK)
@@ -136,8 +142,6 @@ extern void lock_slurmctld(slurmctld_lock_t lock_levels)
  *	defined order */
 extern void unlock_slurmctld(slurmctld_lock_t lock_levels)
 {
-	/* test, then set via xassert abuse */
-	xassert(slurmctld_locked && !(slurmctld_locked = false));
 	xassert(_clear_locks(lock_levels));
 
 	if (lock_levels.federation == READ_LOCK)
