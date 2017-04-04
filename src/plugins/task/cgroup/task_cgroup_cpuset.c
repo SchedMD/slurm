@@ -180,7 +180,7 @@ static int _xcgroup_cpuset_init(xcgroup_t* cg)
 
 	/* load ancestor cg */
 	acg_name = (char *)xstrdup(cg->name);
-	p = rindex(acg_name, '/');
+	p = xstrrchr(acg_name, '/');
 	if (p == NULL) {
 		debug2("task/cgroup: unable to get ancestor path for "
 		       "cpuset cg '%s' : %m", cg->path);
