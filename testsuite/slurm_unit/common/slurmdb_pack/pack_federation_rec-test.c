@@ -118,13 +118,12 @@ START_TEST(pack_1702_federation_rec_empty_list)
 END_TEST
 
 
-/* This test sets up the buffer so that it fail when unpacking the clsuter rec.
+/* This test sets up the buffer so that it fails when unpacking the cluster rec.
  */
 START_TEST(pack_1702_federation_rec_fail)
 {
 	int rc;
 	char *name = xstrdup("Saint Augustine");
-
 	Buf buf = init_buf(18*sizeof(uint32_t));
 	packstr(name, buf);
 	pack32(7, buf);
