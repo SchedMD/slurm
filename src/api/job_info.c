@@ -1106,7 +1106,7 @@ _load_cluster_jobs(slurm_msg_t *req_msg, job_info_msg_t **job_info_msg_pptr,
 	if (rc)
 		slurm_seterrno(rc);
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return rc;
 }
 
 /* Thread to read job information from some cluster */
@@ -1231,6 +1231,9 @@ static int _load_fed_jobs(slurm_msg_t *req_msg, job_info_msg_t **job_info_msg_pp
 	}
 	list_iterator_destroy(iter);
 	FREE_NULL_LIST(resp_msg_list);
+
+	if (!orig_msg)
+		slurm_seterrno_ret(ESLURM_INVALID_JOB_ID);
 
 	/* Find duplicate job records and jobs local to other clusters and set
 	 * their job_id == 0 so they get skipped in reporting */
