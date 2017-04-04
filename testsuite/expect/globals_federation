@@ -492,7 +492,7 @@ proc wait_for_fed_job { job_id desired_state clusters } {
 	while 1 {
 		foreach cluster $spec_clusters {
 			log_info "checking $cluster"
-			set fd [open "|$scontrol -M$cluster -a -o show job $job_id"]
+			set fd [open "|$scontrol -M$cluster --local -a -o show job $job_id"]
 			gets $fd line
 			catch {close $fd}
 			if {[regexp {JobState\s*=\s*(\w+)} $line foo state] != 1} {

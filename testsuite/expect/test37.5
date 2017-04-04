@@ -122,7 +122,7 @@ proc check_ctl_state { job_id state cluster } {
 	global scontrol
 
 	set job_state 0
-	spawn $scontrol -M$cluster show job $job_id -a
+	spawn $scontrol -M$cluster -a --local show job $job_id
 	expect {
 		-re "JobState=$state" {
 			set job_state 1
@@ -147,7 +147,7 @@ proc check_missing_job { job_id cluster } {
 	global scontrol
 
 	set matched 0
-	spawn $scontrol -M$cluster show job $job_id -a
+	spawn $scontrol -M$cluster -a --local show job $job_id
 	expect {
 		"slurm_load_jobs error: Invalid job id specified" {
 			set matched 1
@@ -268,7 +268,7 @@ proc check_hold { job } {
 	global scontrol number exit_code
 
 	set matches 0
-	spawn $scontrol show job $job
+	spawn $scontrol -a --local show job $job
 	expect {
 		"Priority=0" {
 			incr matches
@@ -298,7 +298,7 @@ proc check_exit_hold { job } {
 	global scontrol number exit_code
 
 	set matches 0
-	spawn $scontrol show job $job
+	spawn $scontrol -a --local show job $job
 	expect {
 		"Priority=0" {
 			incr matches

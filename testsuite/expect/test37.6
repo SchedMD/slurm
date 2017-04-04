@@ -162,7 +162,7 @@ proc verify {fed job_id pattern error_message} {
 
 	set matches 0
 	set my_squeue "${fed_slurm_base}/$fed/bin/squeue"
-	spawn $my_squeue -j $job_id --noheader \
+	spawn $my_squeue -a --local -j $job_id --noheader \
 		-Ostatecompact:.5,siblingsviable:.20,siblingsactive:.20
 	expect {
 		-re "\\s+$pattern" {
