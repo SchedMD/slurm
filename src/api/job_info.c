@@ -1319,7 +1319,8 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 	req_msg.data     = &req;
 
 	if (!ptr || (show_flags & SHOW_LOCAL))
-		rc = _load_cluster_jobs(&req_msg, job_info_msg_pptr, NULL);
+		rc = _load_cluster_jobs(&req_msg, job_info_msg_pptr,
+					working_cluster_rec);
 	else {
 		fed = (slurmdb_federation_rec_t *) ptr;
 		rc = _load_fed_jobs(&req_msg, job_info_msg_pptr, show_flags,
@@ -1368,7 +1369,8 @@ extern int slurm_load_job_user (job_info_msg_t **job_info_msg_pptr,
 	req_msg.data     = &req;
 
 	if (!ptr || (show_flags & SHOW_LOCAL))
-		rc = _load_cluster_jobs(&req_msg, job_info_msg_pptr, NULL);
+		rc = _load_cluster_jobs(&req_msg, job_info_msg_pptr,
+					working_cluster_rec);
 	else {
 		fed = (slurmdb_federation_rec_t *) ptr;
 		rc = _load_fed_jobs(&req_msg, job_info_msg_pptr, show_flags,
@@ -1417,7 +1419,8 @@ slurm_load_job (job_info_msg_t **job_info_msg_pptr, uint32_t job_id,
 	req_msg.data     = &req;
 
 	if (!ptr || (show_flags & SHOW_LOCAL))
-		rc = _load_cluster_jobs(&req_msg, job_info_msg_pptr, NULL);
+		rc = _load_cluster_jobs(&req_msg, job_info_msg_pptr,
+					working_cluster_rec);
 	else {
 		fed = (slurmdb_federation_rec_t *) ptr;
 		rc = _load_fed_jobs(&req_msg, job_info_msg_pptr, show_flags,
