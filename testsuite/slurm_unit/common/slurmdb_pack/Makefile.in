@@ -102,7 +102,8 @@ TESTS = $(am__EXEEXT_1)
 @HAVE_CHECK_TRUE@	 pack_accting_rec-test \
 @HAVE_CHECK_TRUE@	 pack_assoc_rec-test \
 @HAVE_CHECK_TRUE@	 pack_assoc_usage-test \
-@HAVE_CHECK_TRUE@	 pack_assoc_rec_with_usage-test
+@HAVE_CHECK_TRUE@	 pack_assoc_rec_with_usage-test \
+@HAVE_CHECK_TRUE@	 pack_event_rec-test
 
 subdir = testsuite/slurm_unit/common/slurmdb_pack
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -167,7 +168,8 @@ CONFIG_CLEAN_VPATH_FILES =
 @HAVE_CHECK_TRUE@	pack_accting_rec-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	pack_assoc_rec-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	pack_assoc_usage-test$(EXEEXT) \
-@HAVE_CHECK_TRUE@	pack_assoc_rec_with_usage-test$(EXEEXT)
+@HAVE_CHECK_TRUE@	pack_assoc_rec_with_usage-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@	pack_event_rec-test$(EXEEXT)
 am__EXEEXT_2 = $(am__EXEEXT_1)
 pack_account_rec_test_SOURCES = pack_account_rec-test.c
 pack_account_rec_test_OBJECTS =  \
@@ -256,6 +258,15 @@ pack_coord_rec_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(pack_coord_rec_test_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
+pack_event_rec_test_SOURCES = pack_event_rec-test.c
+pack_event_rec_test_OBJECTS =  \
+	pack_event_rec_test-pack_event_rec-test.$(OBJEXT)
+@HAVE_CHECK_TRUE@pack_event_rec_test_DEPENDENCIES =  \
+@HAVE_CHECK_TRUE@	$(am__DEPENDENCIES_2)
+pack_event_rec_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(pack_event_rec_test_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 pack_federation_rec_test_SOURCES = pack_federation_rec-test.c
 pack_federation_rec_test_OBJECTS =  \
 	pack_federation_rec_test-pack_federation_rec-test.$(OBJEXT)
@@ -321,14 +332,16 @@ SOURCES = pack_account_rec-test.c pack_accting_rec-test.c \
 	pack_assoc_rec-test.c pack_assoc_rec_with_usage-test.c \
 	pack_assoc_usage-test.c pack_clus_res_rec-test.c \
 	pack_cluster_acct_rec-test.c pack_cluster_rec-test.c \
-	pack_coord_rec-test.c pack_federation_rec-test.c \
-	pack_used_limits-test.c pack_user_rec-test.c
+	pack_coord_rec-test.c pack_event_rec-test.c \
+	pack_federation_rec-test.c pack_used_limits-test.c \
+	pack_user_rec-test.c
 DIST_SOURCES = pack_account_rec-test.c pack_accting_rec-test.c \
 	pack_assoc_rec-test.c pack_assoc_rec_with_usage-test.c \
 	pack_assoc_usage-test.c pack_clus_res_rec-test.c \
 	pack_cluster_acct_rec-test.c pack_cluster_rec-test.c \
-	pack_coord_rec-test.c pack_federation_rec-test.c \
-	pack_used_limits-test.c pack_user_rec-test.c
+	pack_coord_rec-test.c pack_event_rec-test.c \
+	pack_federation_rec-test.c pack_used_limits-test.c \
+	pack_user_rec-test.c
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -845,6 +858,8 @@ LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
 @HAVE_CHECK_TRUE@pack_assoc_usage_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@pack_assoc_rec_with_usage_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@pack_assoc_rec_with_usage_test_LDADD = $(LDADD) @CHECK_LIBS@
+@HAVE_CHECK_TRUE@pack_event_rec_test_CFLAGS = $(MYCFLAGS)
+@HAVE_CHECK_TRUE@pack_event_rec_test_LDADD = $(LDADD) @CHECK_LIBS@
 all: all-am
 
 .SUFFIXES:
@@ -924,6 +939,10 @@ pack_coord_rec-test$(EXEEXT): $(pack_coord_rec_test_OBJECTS) $(pack_coord_rec_te
 	@rm -f pack_coord_rec-test$(EXEEXT)
 	$(AM_V_CCLD)$(pack_coord_rec_test_LINK) $(pack_coord_rec_test_OBJECTS) $(pack_coord_rec_test_LDADD) $(LIBS)
 
+pack_event_rec-test$(EXEEXT): $(pack_event_rec_test_OBJECTS) $(pack_event_rec_test_DEPENDENCIES) $(EXTRA_pack_event_rec_test_DEPENDENCIES) 
+	@rm -f pack_event_rec-test$(EXEEXT)
+	$(AM_V_CCLD)$(pack_event_rec_test_LINK) $(pack_event_rec_test_OBJECTS) $(pack_event_rec_test_LDADD) $(LIBS)
+
 pack_federation_rec-test$(EXEEXT): $(pack_federation_rec_test_OBJECTS) $(pack_federation_rec_test_DEPENDENCIES) $(EXTRA_pack_federation_rec_test_DEPENDENCIES) 
 	@rm -f pack_federation_rec-test$(EXEEXT)
 	$(AM_V_CCLD)$(pack_federation_rec_test_LINK) $(pack_federation_rec_test_OBJECTS) $(pack_federation_rec_test_LDADD) $(LIBS)
@@ -951,6 +970,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack_cluster_acct_rec_test-pack_cluster_acct_rec-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack_cluster_rec_test-pack_cluster_rec-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack_coord_rec_test-pack_coord_rec-test.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack_event_rec_test-pack_event_rec-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack_federation_rec_test-pack_federation_rec-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack_used_limits_test-pack_used_limits-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack_user_rec_test-pack_user_rec-test.Po@am__quote@
@@ -1101,6 +1121,20 @@ pack_coord_rec_test-pack_coord_rec-test.obj: pack_coord_rec-test.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pack_coord_rec-test.c' object='pack_coord_rec_test-pack_coord_rec-test.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_coord_rec_test_CFLAGS) $(CFLAGS) -c -o pack_coord_rec_test-pack_coord_rec-test.obj `if test -f 'pack_coord_rec-test.c'; then $(CYGPATH_W) 'pack_coord_rec-test.c'; else $(CYGPATH_W) '$(srcdir)/pack_coord_rec-test.c'; fi`
+
+pack_event_rec_test-pack_event_rec-test.o: pack_event_rec-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_event_rec_test_CFLAGS) $(CFLAGS) -MT pack_event_rec_test-pack_event_rec-test.o -MD -MP -MF $(DEPDIR)/pack_event_rec_test-pack_event_rec-test.Tpo -c -o pack_event_rec_test-pack_event_rec-test.o `test -f 'pack_event_rec-test.c' || echo '$(srcdir)/'`pack_event_rec-test.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pack_event_rec_test-pack_event_rec-test.Tpo $(DEPDIR)/pack_event_rec_test-pack_event_rec-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pack_event_rec-test.c' object='pack_event_rec_test-pack_event_rec-test.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_event_rec_test_CFLAGS) $(CFLAGS) -c -o pack_event_rec_test-pack_event_rec-test.o `test -f 'pack_event_rec-test.c' || echo '$(srcdir)/'`pack_event_rec-test.c
+
+pack_event_rec_test-pack_event_rec-test.obj: pack_event_rec-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_event_rec_test_CFLAGS) $(CFLAGS) -MT pack_event_rec_test-pack_event_rec-test.obj -MD -MP -MF $(DEPDIR)/pack_event_rec_test-pack_event_rec-test.Tpo -c -o pack_event_rec_test-pack_event_rec-test.obj `if test -f 'pack_event_rec-test.c'; then $(CYGPATH_W) 'pack_event_rec-test.c'; else $(CYGPATH_W) '$(srcdir)/pack_event_rec-test.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pack_event_rec_test-pack_event_rec-test.Tpo $(DEPDIR)/pack_event_rec_test-pack_event_rec-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pack_event_rec-test.c' object='pack_event_rec_test-pack_event_rec-test.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_event_rec_test_CFLAGS) $(CFLAGS) -c -o pack_event_rec_test-pack_event_rec-test.obj `if test -f 'pack_event_rec-test.c'; then $(CYGPATH_W) 'pack_event_rec-test.c'; else $(CYGPATH_W) '$(srcdir)/pack_event_rec-test.c'; fi`
 
 pack_federation_rec_test-pack_federation_rec-test.o: pack_federation_rec-test.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_federation_rec_test_CFLAGS) $(CFLAGS) -MT pack_federation_rec_test-pack_federation_rec-test.o -MD -MP -MF $(DEPDIR)/pack_federation_rec_test-pack_federation_rec-test.Tpo -c -o pack_federation_rec_test-pack_federation_rec-test.o `test -f 'pack_federation_rec-test.c' || echo '$(srcdir)/'`pack_federation_rec-test.c
@@ -1423,6 +1457,13 @@ pack_assoc_usage-test.log: pack_assoc_usage-test$(EXEEXT)
 pack_assoc_rec_with_usage-test.log: pack_assoc_rec_with_usage-test$(EXEEXT)
 	@p='pack_assoc_rec_with_usage-test$(EXEEXT)'; \
 	b='pack_assoc_rec_with_usage-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+pack_event_rec-test.log: pack_event_rec-test$(EXEEXT)
+	@p='pack_event_rec-test$(EXEEXT)'; \
+	b='pack_event_rec-test'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
