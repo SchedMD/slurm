@@ -891,7 +891,7 @@ extern Buf slurm_persist_recv_msg(slurm_persist_conn_t *persist_conn)
 	return buffer;
 
 endit:
-	/* Close it since we abondoned it.  If the connection does still exist
+	/* Close it since we abandoned it.  If the connection does still exist
 	 * on the other end we can't rely on it after this point since we didn't
 	 * listen long enough for this response.
 	 */
