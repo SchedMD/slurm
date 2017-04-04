@@ -116,59 +116,51 @@ the expected behavior (related to exclusivity) for a subset of these use-cases:
 <br>
 <br>
 
-<table>
+<table style="page-break-inside: avoid; font-family: Arial,Helvetica,sans-serif;" border="1" bordercolor="#000000" cellpadding="6" cellspacing="0" width="100%">
 	<tr>
-		<td>
+		<td bgcolor="#e0e0e0">
+		        Node filtering:
 		</td>
-		<td>
-			Label enforcement:<br>
-			<b>ondemand</b>
+		<td bgcolor="#e0e0e0">
+			Label enforcement: <b>ondemand</b><br>
+			(MCS_label set only if requested.)
 		</td>
-		<td>
-			Label enforcement:<br>
-			<b>enforced</b>
+		<td bgcolor="#e0e0e0">
+			Label enforcement: <b>enforced</b><br>
+			(MCS_label is mandatory.)
 		</td>
 	</tr>
 	<tr>
-		<td>
-			Node filtering:<br>
+		<td bgcolor="#e0e0e0">
 			<b>noselect</b>
 		</td>
 		<td>
-			MCS_label set only if requested.<br>
-			No filter on nodes even if --excluisve=mcs requested.
+		        No filter on nodes even if --excluisve=mcs requested.
 		</td>
 		<td>
-			MCS_label is mandatory.<br>
 			No filter on nodes even if --excluisve=mcs requested.
 		</td>
 	</tr>
 	<tr>
-		<td>
-			Node filtering:<br>
+		<td bgcolor="#e0e0e0">
 			<b>select</b>
 		</td>
 		<td>
-			MCS_label set only if requested.<br>
-			Filter on nodes only if job MCS_label is set.<br>
+			Filter on nodes <b>only</b> if job MCS_label is set.
 		</td>
 		<td>
-			MCS_label is mandatory.<br>
 			Always filter on nodes.
 		</td>
 	</tr>
 	<tr>
-		<td>
-			Node filtering:<br>
+		<td bgcolor="#e0e0e0">
 			<b>ondemandselect</b>
 		</td>
 		<td>
-			MCS_label set only if requested.<br>
-			Filter on nodes only if --exclusive=mcs.
+			Filter on nodes <b>only</b> if --exclusive=mcs.
 		</td>
 		<td>
-			MCS_label is mandatory.<br>
-			Filter on nodes only if --exclusive=mcs.
+			Filter on nodes <b>only</b> if --exclusive=mcs.
 		</td>
 	</tr>
 </table>
