@@ -91,6 +91,10 @@ scontrol_load_job(job_info_msg_t ** job_buffer_pptr, uint32_t job_id)
 		if (detail_flag > 1)
 			show_flags |= SHOW_DETAIL2;
 	}
+	if (local_flag)
+		show_flags |= SHOW_LOCAL;
+	if (sibling_flag)
+		show_flags |= SHOW_SIBLING;
 
 	if (old_job_info_ptr) {
 		if (last_show_flags != show_flags)

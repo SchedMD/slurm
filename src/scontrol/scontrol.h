@@ -81,8 +81,10 @@ extern int detail_flag;	/* display additional details */
 extern int exit_code;	/* scontrol's exit code, =1 on any error at any time */
 extern int exit_flag;	/* program to terminate if =1 */
 extern int input_words;	/* number of words of input permitted */
+extern int local_flag;	/* show only local jobs -- not remote remote sib jobs */
 extern int one_liner;	/* one record per line if =1 */
 extern int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
+extern int sibling_flag; /* show sibling jobs (if any fed job). */
 extern uint32_t cluster_flags; /* what type of cluster are we talking to */
 extern uint32_t euid; /* send request to the slurmctld in behave of this user */
 

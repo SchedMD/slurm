@@ -46,6 +46,10 @@ Do not display information about hidden partitions, their jobs and job steps.
 By default, neither partitions that are configured as hidden nor those partitions
 unavailable to user's group will be displayed (i.e. this is the default behavior).
 .TP
+\fB\-\-local\fR
+Show only jobs local to this cluster. Ignore other clusters in this federation
+(if any).
+.TP
 \fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
 The cluster to issue commands to. Only one cluster name may be specified.
 Note that the SlurmDBD must be up for this option to work properly.
@@ -56,6 +60,9 @@ Print information one line per record.
 .TP
 \fB\-Q\fR, \fB\-\-quiet\fR
 Print no warning or informational messages, only fatal error messages.
+.TP
+\fB\-\-sibling\fR
+Show all sibling jobs on a federated cluster.
 .TP
 \fB\-u\fR, \fB\-\-uid\fR=<\fIuid\fR>
 Attempt to update a job as user <uid> instead of the invoking user id.
@@ -1795,6 +1802,12 @@ Commandline options will always override these settings.)
 .TP 20
 \fBSCONTROL_ALL\fR
 \fB\-a, \-\-all\fR
+.TP
+\fBSCONTROL_LOCAL\fR
+\\fB\-\-local\fR
+.TP
+\fBSCONTROL_SIBLING\fR
+\\fB\-\-sibling\fR
 .TP
 \fBSLURM_BITSTR_LEN\fR
 Specifies the string length to be used for holding a job array's task ID
