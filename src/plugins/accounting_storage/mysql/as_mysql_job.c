@@ -1554,20 +1554,21 @@ extern int as_mysql_flush_jobs_on_cluster(
 		if (state == JOB_SUSPENDED) {
 			if (suspended_char)
 				xstrfmtcat(suspended_char,
-					   " || job_db_inx=%s", row[0]);
+					   ", %s", row[0]);
 			else
-				xstrfmtcat(suspended_char, "job_db_inx=%s",
+				xstrfmtcat(suspended_char, "job_db_inx in (%s",
 					   row[0]);
 		}
 
 		if (id_char)
-			xstrfmtcat(id_char, " || job_db_inx=%s", row[0]);
+			xstrfmtcat(id_char, ", %s", row[0]);
 		else
-			xstrfmtcat(id_char, "job_db_inx=%s", row[0]);
+			xstrfmtcat(id_char, "job_db_inx in (%s", row[0]);
 	}
 	mysql_free_result(result);
 
 	if (suspended_char) {
+		xstrfmtcat(suspended_char, ")");
 		xstrfmtcat(query,
 			   "update \"%s_%s\" set "
 			   "time_suspended=%ld-time_suspended "
@@ -1588,6 +1589,7 @@ extern int as_mysql_flush_jobs_on_cluster(
 		xfree(suspended_char);
 	}
 	if (id_char) {
+		xstrfmtcat(id_char, ")");
 		xstrfmtcat(query,
 			   "update \"%s_%s\" set state=%d, "
 			   "time_end=%ld where %s;",

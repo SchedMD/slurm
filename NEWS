@@ -111,6 +111,13 @@ documents those changes that are of interest to users and administrators.
  -- job_submit/lua - expose admin_comment field.
  -- Allow AdminComment field to be set by the job_submit plugin.
  -- Allow AdminComment field to be changed by any Administrator.
+ -- Fix key words in jobcomp select.
+ -- MYSQL - Streamline job flush sql when doing a clean start on the slurmctld.
+ -- Fix potential infinite loop when talking to the DBD when shutting down
+    the slurmctld.
+ -- Fix MCS filter.
+ -- Make it so pmix can be included in the plugin rpm without having to
+    specify --with-pmix.
 
 * Changes in Slurm 17.02.1-2
 ============================

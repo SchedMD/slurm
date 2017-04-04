@@ -116,10 +116,11 @@ if {[is_super_user] == 0} {
 get_conf_path
 copy_conf
 
-send_user "\n---Checking sbatch uses mcs-label only for some jobs (ondemand mode)---\n"
+send_user "\n---Checking sbatch uses mcs-label only for some jobs (ondemand,select mode)---\n"
 
 #
 # Change the slurm.conf MCSparameters and MCSPlugin
+# test with ondemand,select
 #
 exec $bin_sed -i /^\[\t\s\]*MCSPlugin\[\t\s\]*=/Id $config_path/slurm.conf
 exec $bin_sed -i /^\[\t\s\]*MCSParameters\[\t\s\]*=/Id $config_path/slurm.conf
@@ -158,9 +159,9 @@ if {$found == 0} {
 send_user "\n---Checking sbatch fails with a bad mcs-label ---\n"
 
 set timeout $max_job_delay
-make_bash_script $tmp_job "sleep 10"
+make_bash_script $tmp_job "sleep 30"
 
-spawn $sbatch -N1 --mcs-label=foo -t1 $tmp_job
+spawn $sbatch -N1 --mcs-label=foo -t10 $tmp_job
 expect {
 	-re "Batch job submission failed: Invalid mcs_label specified" {
 		send_user "\nThis error is expected, no worries\n"
@@ -179,9 +180,9 @@ expect {
 ###### Check that sbatch uses mcs-label=user ######
 send_user "\n---Checking sbatch uses mcs-label=user---\n"
 
-make_bash_script $tmp_job "sleep 10"
+make_bash_script $tmp_job "sleep 30"
 set job_id 0
-spawn $sbatch -N1 -o/dev/null --exclusive=mcs -t1 $tmp_job
+spawn $sbatch -N1 -o/dev/null --exclusive=mcs -t10 $tmp_job
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -331,9 +332,9 @@ cancel_job $job_id
 
 #
 # Change the slurm.conf MCSparameters and MCSPlugin
-# test with enforced
+# test with enforced,noselect
 #
-send_user "\n---Checking sbatch uses mcs-label with all jobs (enforced mode)---\n"
+send_user "n---Checking sbatch uses mcs-label with all jobs (enforced,noselect mode)---\n"
 exec $bin_sed -i /^\[\t\s\]*MCSPlugin\[\t\s\]*=/Id $config_path/slurm.conf
 exec $bin_sed -i /^\[\t\s\]*MCSParameters\[\t\s\]*=/Id $config_path/slurm.conf
 exec $bin_sed -i /^\[\t\s\]*PrivateData\[\t\s\]*=/Id $config_path/slurm.conf
@@ -346,7 +347,7 @@ update_conf
 ###### Check that sbatch uses mcs-label=user ######
 send_user "\n---Checking sbatch uses mcs-label=user---\n"
 
-make_bash_script $tmp_job "sleep 10"
+make_bash_script $tmp_job "sleep 30"
 
 spawn $sbatch -N1 -o/dev/null -t1 $tmp_job
 expect {
@@ -439,6 +440,291 @@ expect {
 	eof {
 		wait
 	}
+}
+
+cancel_job $job_id
+
+#
+# Change the slurm.conf MCSparameters and MCSPlugin
+# test with ondemand,noselect
+#
+send_user "\n---Checking sbatch doesn't use mcs-label on filter (ondemand,noselect mode)---\n"
+exec $bin_sed -i /MCSPlugin/d $config_path/slurm.conf
+exec $bin_sed -i /MCSParameters/d $config_path/slurm.conf
+exec $bin_sed -i /PrivateData/d $config_path/slurm.conf
+exec $bin_echo MCSPlugin=mcs/user >> $config_path/slurm.conf
+exec $bin_echo MCSParameters=ondemand,noselect,privatedata >> $config_path/slurm.conf
+exec $bin_echo PrivateData=jobs,nodes >> $config_path/slurm.conf
+update_conf
+
+###### Check that sbatch uses mcs-label=user ######
+send_user "\n---Checking sbatch uses --exclusive=mcs ---\n"
+
+make_bash_script $tmp_job "sleep 30"
+
+spawn $sbatch -N1 --exclusive=mcs -o/dev/null -t10 $tmp_job
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch is not responding\n"
+		set exit_code 1
+		}
+	eof {
+		wait
+	}
+}
+
+if {$job_id == 0} {
+	send_user "\nFAILURE: job was not submitted\n"
+	set exit_code 1
+}
+
+set found 0
+sleep 3
+spawn $squeue --jobs=$job_id --noheader -O "mcslabel"
+expect {
+	-re "$user_name" {
+		send_user "\nMCS-label OK for this job\n"
+		set found 1
+		exp_continue
+	}
+	-re "(null)" {
+		send_user "\nFAILURE: NO MCS-label for this job\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: squeue is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$found == 0} {
+	send_user "\nFAILURE: job was submitted with a bad mcs-label\n"
+	set exit_code 1
+}
+
+set found 0
+set node 0
+spawn $squeue --jobs=$job_id --noheader -O "nodelist"
+expect {
+	-re "($alpha_numeric_under)" {
+		set node $expect_out(1,string)
+		send_user "\nNode for this job : $node\n"
+		set found 1
+	}
+	timeout {
+		send_user "\nFAILURE: squeue is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$found == 0} {
+	send_user "\nFAILURE: no node found in squeue command\n"
+	set exit_code 1
+}
+
+#
+# verify MCS of nodes
+#
+set found 0
+spawn -noecho $bin_bash -c "exec $scontrol show node=$node | $bin_grep MCS"
+expect {
+	-re "MCS_label=$user_name" {
+		send_user "\nFAILURE: a mcs_label is found for this job. It was not expected\n"
+		set exit_code 1
+	}
+	 -re "MCS_label=N/A" {
+		send_user "\nNo mcs_label for this node. It was expected\n"
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+cancel_job $job_id
+
+###### Check that sbatch doesn't use mcs-label ######
+send_user "\n---Checking sbatch uses --exclusive=mcs ---\n"
+
+make_bash_script $tmp_job "sleep 30"
+set job_id 0
+spawn $sbatch -N1 -o/dev/null -t10 $tmp_job
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$job_id == 0} {
+	send_user "\nFAILURE: job was not submitted\n"
+	set exit_code 1
+}
+set found 0
+
+set found 0
+spawn $squeue --jobs=$job_id --noheader -O "mcslabel"
+expect {
+	-re "(null)" {
+		send_user "\nNO MCS-label for this job : this is expected\n"
+		exp_continue
+	}
+	-re "$user_name" {
+		send_user "\na MCS-label for this job : this is not expected\n"
+		set found 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: squeue is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$found == 1} {
+	send_user "\nFAILURE: job was submitted with a bad mcs-label\n"
+	set exit_code 1
+}
+
+cancel_job $job_id
+sleep 5
+send_user "\n---Checking sbatch uses mcs-label for all jobs (enforced,select mode)---\n"
+
+#
+# Change the slurm.conf MCSparameters and MCSPlugin
+# test with enforced,select
+#
+exec $bin_sed -i /MCSPlugin/d $config_path/slurm.conf
+exec $bin_sed -i /MCSParameters/d $config_path/slurm.conf
+exec $bin_sed -i /PrivateData/d $config_path/slurm.conf
+exec $bin_echo MCSPlugin=mcs/user >> $config_path/slurm.conf
+exec $bin_echo MCSParameters=enforced,select,privatedata >> $config_path/slurm.conf
+exec $bin_echo PrivateData=jobs,nodes >> $config_path/slurm.conf
+update_conf
+
+###### Check that sbatch uses mcs-label=user ######
+send_user "\n---Checking sbatch with no --exclusive=mcs ---\n"
+
+make_bash_script $tmp_job "sleep 30"
+set job_id 0
+spawn $sbatch -N1 -o/dev/null -t20 $tmp_job
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$job_id == 0} {
+	send_user "\nFAILURE: job was not submitted\n"
+	set exit_code 1
+	exit 1
+}
+
+set found 0
+spawn $squeue --jobs=$job_id --noheader -O "mcslabel"
+expect {
+	-re "(null)" {
+		send_user "\nNO MCS-label for this job : this is not expected\n"
+		exp_continue
+	}
+	-re "$user_name" {
+		send_user "\nMCS-label OK for this job\n"
+		set found 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: squeue is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$found == 0} {
+	send_user "\nFAILURE: job was submitted with a bad mcs-label\n"
+	set exit_code 1
+}
+
+set found 0
+set node 0
+sleep 2
+spawn $squeue --jobs=$job_id --noheader -O "nodelist"
+expect {
+	-re "($alpha_numeric_under)" {
+		set node $expect_out(1,string)
+		send_user "\nNode for this job : $node\n"
+		set found 1
+	}
+	timeout {
+		send_user "\nFAILURE: squeue is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$found == 0} {
+	send_user "\nFAILURE: no node found in squeue command\n"
+	set exit_code 1
+}
+
+
+#
+# verify MCS of nodes
+#
+set found 0
+spawn -noecho $bin_bash -c "exec $scontrol show node=$node | $bin_grep MCS"
+expect {
+	-re "MCS_label=$user_name" {
+		send_user "\n mcs_label OK for node $node\n"
+		set found 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$found == 0} {
+	send_user "\nFAILURE: job was submitted with node with bad mcs-label\n"
+	set exit_code 1
 }
 
 cancel_job $job_id

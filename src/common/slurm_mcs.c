@@ -79,20 +79,20 @@ extern int slurm_mcs_init(void)
 
 	if (init_run && g_mcs_context)
 		return retval;
-	slurm_mutex_lock(&g_mcs_context_lock);
 
+	slurm_mutex_lock(&g_mcs_context_lock);
 	if (g_mcs_context)
 		goto done;
 
 	xfree(mcs_params);
 	xfree(mcs_params_common);
 	xfree(mcs_params_specific);
-
 	type = slurm_get_mcs_plugin();
 	mcs_params = slurm_get_mcs_plugin_params();
-	if (mcs_params == NULL) {
+
+	if (mcs_params == NULL)
 		info("No parameter for mcs plugin, default values set");
-	} else {
+	else {
 		mcs_params_common = xstrdup(mcs_params);
 		sep = xstrchr(mcs_params_common, ':');
 		if (sep != NULL) {
@@ -101,6 +101,7 @@ extern int slurm_mcs_init(void)
 			*sep = '\0';
 		}
 	}
+
 	_slurm_mcs_check_and_load_privatedata(mcs_params_common);
 	_slurm_mcs_check_and_load_enforced(mcs_params_common);
 	_slurm_mcs_check_and_load_select(mcs_params_common);
@@ -113,8 +114,8 @@ extern int slurm_mcs_init(void)
 		retval = SLURM_ERROR;
 		goto done;
 	}
-	init_run = true;
 
+	init_run = true;
 done:
 	slurm_mutex_unlock(&g_mcs_context_lock);
 	xfree(type);
@@ -140,7 +141,7 @@ extern int slurm_mcs_fini(void)
 extern int slurm_mcs_reconfig(void)
 {
 	slurm_mcs_fini();
-	return(slurm_mcs_init());
+	return slurm_mcs_init();
 }
 
 /* slurm_mcs_get_params_specific
@@ -157,28 +158,32 @@ extern char *slurm_mcs_get_params_specific(void)
 static int _slurm_mcs_check_and_load_enforced(char *params)
 {
 	label_strict_enforced = false;
+
 	if ((params != NULL) && xstrcasestr(params, "enforced"))
 		label_strict_enforced = true;
 	else
 		info("mcs: MCSParameters = %s. ondemand set.", params);
+
 	return SLURM_SUCCESS;
 }
 
 static int _slurm_mcs_check_and_load_select(char *params)
 {
 	select_value = MCS_SELECT_ONDEMANDSELECT;
+
 	if (params == NULL) {
 		return SLURM_SUCCESS;
 	}
-	if (xstrcasestr(params, "noselect")) {
+
+	if (xstrcasestr(params, "noselect"))
 		select_value = MCS_SELECT_NOSELECT;
-	} else if (xstrcasestr(params, "ondemandselect")) {
+	else if (xstrcasestr(params, "ondemandselect"))
 		select_value = MCS_SELECT_ONDEMANDSELECT;
-	} else if (xstrcasestr(params, "select")) {
+	else if (xstrcasestr(params, "select"))
 		select_value = MCS_SELECT_SELECT;
-	} else {
+	else
 		info("mcs: MCSParameters = %s. ondemandselect set.", params);
-	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -188,11 +193,12 @@ static int _slurm_mcs_check_and_load_privatedata(char *params)
 		private_data = false;
 		return SLURM_SUCCESS;
 	}
-	if (xstrcasestr(params, "privatedata")) {
+
+	if (xstrcasestr(params, "privatedata"))
 		private_data = true;
-	} else {
+	else
 		private_data = false;
-	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -201,18 +207,19 @@ extern int slurm_mcs_reset_params(void)
 	label_strict_enforced = false;
 	select_value = MCS_SELECT_ONDEMANDSELECT;
 	private_data = false;
+
 	return SLURM_SUCCESS;
 }
 
 extern int slurm_mcs_get_enforced(void)
 {
-	return(label_strict_enforced);
+	return label_strict_enforced;
 }
 
 extern int slurm_mcs_get_select(struct job_record *job_ptr)
 {
 	if ((select_value == MCS_SELECT_SELECT) ||
-	   ((select_value == MCS_SELECT_ONDEMANDSELECT) &&
+	    ((select_value == MCS_SELECT_ONDEMANDSELECT) &&
 	    job_ptr->details &&
 	    (job_ptr->details->whole_node == WHOLE_NODE_MCS)))
 		return 1;
@@ -237,5 +244,6 @@ extern int mcs_g_check_mcs_label(uint32_t user_id, char *mcs_label)
 {
 	if (slurm_mcs_init() < 0)
 		return 0;
-	return (int) (*(ops.check))(user_id, mcs_label);
+
+	return (int)(*(ops.check))(user_id, mcs_label);
 }
