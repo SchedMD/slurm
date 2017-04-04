@@ -69,6 +69,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix potential infinite loop when talking to the DBD when shutting down
     the slurmctld.
  -- Fix MCS filter.
+ -- Make it so pmix can be included in the plugin rpm without having to
+    specify --with-pmix.
 
 * Changes in Slurm 17.02.1-2
 ============================
