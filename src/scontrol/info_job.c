@@ -480,7 +480,7 @@ static int _parse_jobid(const char *jobid_str, uint32_t *out_jobid)
 	long jobid;
 
 	job = xstrdup(jobid_str);
-	ptr = index(job, '.');
+	ptr = xstrchr(job, '.');
 	if (ptr != NULL) {
 		*ptr = '\0';
 	}
@@ -504,7 +504,7 @@ static int _parse_stepid(const char *jobid_str, uint32_t *out_stepid)
 	long stepid;
 
 	job = xstrdup(jobid_str);
-	ptr = index(job, '.');
+	ptr = xstrchr(job, '.');
 	if (ptr == NULL) {
 		/* did not find a period, so no step ID in this string */
 		xfree(job);

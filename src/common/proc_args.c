@@ -682,7 +682,7 @@ bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes)
 
 	/* Does the string contain a "-" character?  If so, treat as a range.
 	 * otherwise treat as an absolute node count. */
-	if ((ptr = index(arg, '-')) != NULL) {
+	if ((ptr = xstrchr(arg, '-')) != NULL) {
 		min_str = xstrndup(arg, ptr-arg);
 		*min_nodes = _str_to_nodes(min_str, &leftover);
 		if (!xstring_is_whitespace(leftover)) {

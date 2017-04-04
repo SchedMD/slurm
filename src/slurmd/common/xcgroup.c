@@ -160,7 +160,7 @@ int xcgroup_ns_mount(xcgroup_ns_t* cgns)
 		}
 		mnt_point = xstrdup(cgns->mnt_point);
 		p = mnt_point;
-		while ((p = index(p+1, '/')) != NULL) {
+		while ((p = xstrchr(p+1, '/')) != NULL) {
 			*p = '\0';
 			fstatus = mkdir(mnt_point, 0755);
 			if (fstatus && errno != EEXIST) {
@@ -306,16 +306,16 @@ int xcgroup_ns_find_by_pid(xcgroup_ns_t* cgns, xcgroup_t* cg, pid_t pid)
 	if (fstatus == XCGROUP_SUCCESS) {
 		fstatus = XCGROUP_ERROR;
 		p = buf;
-		while ((e = index(p, '\n')) != NULL) {
+		while ((e = xstrchr(p, '\n')) != NULL) {
 			*e='\0';
 			/* get subsystems entry */
-			subsys = index(p, ':');
+			subsys = xstrchr(p, ':');
 			p = e + 1;
 			if (subsys == NULL)
 				continue;
 			subsys++;
 			/* get relative path entry */
-			entry = index(subsys, ':');
+			entry = xstrchr(subsys, ':');
 			if (entry == NULL)
 				continue;
 			*entry='\0';
@@ -600,14 +600,14 @@ int xcgroup_set_params(xcgroup_t* cg, char* parameters)
 
 	p = params;
 	while (p != NULL && *p != '\0') {
-		next = index(p, ' ');
+		next = xstrchr(p, ' ');
 		if (next) {
 			*next='\0';
 			next++;
 			while (*next == ' ')
 				next++;
 		}
-		value = index(p, '=');
+		value = xstrchr(p, '=');
 		if (value != NULL) {
 			*value='\0';
 			value++;
@@ -950,9 +950,9 @@ int _file_read_uint64s(char* file_path, uint64_t** pvalues, int* pnb)
 	i=0;
 	if (rc > 0) {
 		p = buf;
-		while (index(p, '\n') != NULL) {
+		while (xstrchr(p, '\n') != NULL) {
 			i++;
-			p = index(p, '\n') + 1;
+			p = xstrchr(p, '\n') + 1;
 		}
 	}
 
@@ -961,11 +961,11 @@ int _file_read_uint64s(char* file_path, uint64_t** pvalues, int* pnb)
 		pa = (uint64_t*) xmalloc(sizeof(uint64_t) * i);
 		p = buf;
 		i = 0;
-		while (index(p, '\n') != NULL) {
+		while (xstrchr(p, '\n') != NULL) {
 			long long unsigned int ll_tmp;
 			sscanf(p, "%llu", &ll_tmp);
 			pa[i++] = ll_tmp;
-			p = index(p, '\n') + 1;
+			p = xstrchr(p, '\n') + 1;
 		}
 	}
 
@@ -1072,9 +1072,9 @@ int _file_read_uint32s(char* file_path, uint32_t** pvalues, int* pnb)
 	i=0;
 	if (rc > 0) {
 		p = buf;
-		while (index(p, '\n') != NULL) {
+		while (xstrchr(p, '\n') != NULL) {
 			i++;
-			p = index(p, '\n') + 1;
+			p = xstrchr(p, '\n') + 1;
 		}
 	}
 
@@ -1083,9 +1083,9 @@ int _file_read_uint32s(char* file_path, uint32_t** pvalues, int* pnb)
 		pa = (uint32_t*) xmalloc(sizeof(uint32_t) * i);
 		p = buf;
 		i = 0;
-		while (index(p, '\n') != NULL) {
+		while (xstrchr(p, '\n') != NULL) {
 			sscanf(p, "%u", pa+i);
-			p = index(p, '\n') + 1;
+			p = xstrchr(p, '\n') + 1;
 			i++;
 		}
 	}

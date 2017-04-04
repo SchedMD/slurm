@@ -94,7 +94,7 @@ extern int slurm_mcs_init(void)
 		info("No parameter for mcs plugin, default values set");
 	} else {
 		mcs_params_common = xstrdup(mcs_params);
-		sep = index(mcs_params_common, ':');
+		sep = xstrchr(mcs_params_common, ':');
 		if (sep != NULL) {
 			if (sep[1] != '\0')
 				mcs_params_specific = xstrdup(sep + 1);
