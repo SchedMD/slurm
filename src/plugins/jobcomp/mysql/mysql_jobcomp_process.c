@@ -107,7 +107,7 @@ extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	while(jobcomp_table_fields[i].name) {
 		if (i)
 			xstrcat(tmp, ", ");
-		xstrcat(tmp, jobcomp_table_fields[i].name);
+		xstrfmtcat(tmp, "`%s`", jobcomp_table_fields[i].name);
 		i++;
 	}
 
