@@ -1781,6 +1781,8 @@ extern void slurmdb_pack_event_rec(void *in, uint16_t protocol_version,
 {
 	slurmdb_event_rec_t *object = (slurmdb_event_rec_t *)in;
 
+	xassert(buffer);
+
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			packnull(buffer);
@@ -1817,6 +1819,9 @@ extern int slurmdb_unpack_event_rec(void **object, uint16_t protocol_version,
 {
 	uint32_t uint32_tmp;
 	slurmdb_event_rec_t *object_ptr = xmalloc(sizeof(slurmdb_event_rec_t));
+
+	xassert(buffer);
+	xassert(object);
 
 	*object = object_ptr;
 
