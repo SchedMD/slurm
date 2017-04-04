@@ -895,7 +895,8 @@ endit:
 	 * on the other end we can't rely on it after this point since we didn't
 	 * listen long enough for this response.
 	 */
-	if (persist_conn->flags & PERSIST_FLAG_RECONNECT)
+	if (!(*persist_conn->shutdown) &&
+	    persist_conn->flags & PERSIST_FLAG_RECONNECT)
 		slurm_persist_conn_reopen(persist_conn, true);
 
 	return NULL;
