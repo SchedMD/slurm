@@ -321,6 +321,7 @@
 #define xstring_is_whitespace   slurm_xstring_is_whitespace
 #define	xstrtolower		slurm_xstrtolower
 #define xstrchr			slurm_xstrchr
+#define xstrrchr		slurm_xstrrchr
 #define xstrcmp			slurm_xstrcmp
 #define xstrcasecmp		slurm_xstrcasecmp
 #define xstrcasestr		slurm_xstrcasestr

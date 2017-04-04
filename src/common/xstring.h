@@ -185,6 +185,11 @@ char *xstrtolower(char *str);
 char *xstrchr(const char *s1, int c);
 
 /*
+ * safe strrchr (handles NULL values)
+ */
+char *xstrrchr(const char *s1, int c);
+
+/*
  * safe strcmp (handles NULL values)
  */
 int xstrcmp(const char *s1, const char *s2);

@@ -87,6 +87,7 @@ strong_alias(xshort_hostname,   slurm_xshort_hostname);
 strong_alias(xstring_is_whitespace, slurm_xstring_is_whitespace);
 strong_alias(xstrtolower,       slurm_xstrtolower);
 strong_alias(xstrchr,           slurm_xstrchr);
+strong_alias(xstrrchr,          slurm_xstrrchr);
 strong_alias(xstrcmp,           slurm_xstrcmp);
 strong_alias(xstrcasecmp,       slurm_xstrcasecmp);
 strong_alias(xstrcasestr,       slurm_xstrcasestr);
@@ -552,6 +553,12 @@ char *xstrtolower(char *str)
 char *xstrchr(const char *s1, int c)
 {
 	return s1 ? strchr(s1, c) : NULL;
+}
+
+/* safe strrchr */
+char *xstrrchr(const char *s1, int c)
+{
+	return s1 ? strrchr(s1, c) : NULL;
 }
 
 /* safe strcmp */
