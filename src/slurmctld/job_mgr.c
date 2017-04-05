@@ -6658,8 +6658,9 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 			job_desc->ntasks_per_node * job_desc->min_nodes;
 	}
 
-
-	if ((job_desc->min_cpus != NO_VAL) &&
+	/* Only set min and max cpus if overcommit isn't set */
+	if ((job_desc->overcommit == (uint8_t) NO_VAL) &&
+	    (job_desc->min_cpus != NO_VAL) &&
 	    (job_desc->num_tasks > job_desc->min_cpus)) {
 		job_desc->min_cpus = job_desc->num_tasks;
 		if (job_desc->cpus_per_task != (uint16_t) NO_VAL)
@@ -6672,6 +6673,7 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 		    (job_desc->max_cpus < job_desc->min_cpus))
 			job_desc->max_cpus = job_desc->min_cpus;
 	}
+
 	if (job_desc->reboot && (job_desc->reboot != (uint16_t) NO_VAL))
 		job_desc->shared = 0;
 
