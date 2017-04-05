@@ -9685,7 +9685,13 @@ static void
 _pack_job_step_kill_msg(job_step_kill_msg_t * msg, Buf buffer,
 			uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		packstr(msg->sjob_id, buffer);
+		pack32((uint32_t)msg->job_id, buffer);
+		pack32((uint32_t)msg->job_step_id, buffer);
+		pack16((uint16_t)msg->signal, buffer);
+		pack16((uint16_t)msg->flags, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->sjob_id, buffer);
 		pack32((uint32_t)msg->job_id, buffer);
 		pack32((uint32_t)msg->job_step_id, buffer);
@@ -9710,7 +9716,13 @@ _unpack_job_step_kill_msg(job_step_kill_msg_t ** msg_ptr, Buf buffer,
 	msg = xmalloc(sizeof(job_step_kill_msg_t));
 	*msg_ptr = msg;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&(msg)->sjob_id, &cc, buffer);
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->job_step_id, buffer);
+		safe_unpack16(&msg->signal, buffer);
+		safe_unpack16(&msg->flags, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&(msg)->sjob_id, &cc, buffer);
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpack32(&msg->job_step_id, buffer);
