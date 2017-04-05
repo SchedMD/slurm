@@ -390,6 +390,9 @@ sacct [<OPTION>]                                                            \n \
 	           Use this comma separated list of uids or user names      \n\
                    to select jobs to display.  By default, the running      \n\
                    user's uid is used.                                      \n\
+     --units=[KMGTP]:                                                       \n\
+                   Display values in specified unit type. Takes precedence  \n\
+		   over --noconvert option.                                 \n\
      --usage:      Display brief usage message.                             \n\
      -v, --verbose:                                                         \n\
 	           Primarily for debugging purposes, report the state of    \n\
