@@ -3260,6 +3260,15 @@ extern void slurm_free_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t *
  *	JOB/STEP SIGNALING FUNCTIONS
 \*****************************************************************************/
 
+typedef struct job_step_kill_msg {
+	uint32_t job_id;
+	char *sjob_id;
+	uint32_t job_step_id;
+	uint16_t signal;
+	uint16_t flags;
+	char *sibling;
+} job_step_kill_msg_t;
+
 /* NOTE: Only 8 bits available for kill flags. kill_tasks_msg_t->signal is
  * uint32_t and only 12 bits are used for the signal. These flags are << 24
  * leaving 8 bits for flags.

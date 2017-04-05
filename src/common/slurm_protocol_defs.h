@@ -581,15 +581,6 @@ typedef struct priority_factors_response_msg {
 	List	 priority_factors_list;	/* priority_factors_object_t list */
 } priority_factors_response_msg_t;
 
-typedef struct job_step_kill_msg {
-	uint32_t job_id;
-	char *sjob_id;
-	uint32_t job_step_id;
-	uint16_t signal;
-	uint16_t flags;
-	char *sibling;
-} job_step_kill_msg_t;
-
 typedef struct job_notify_msg {
 	uint32_t job_id;
 	uint32_t job_step_id;	/* currently not used */
