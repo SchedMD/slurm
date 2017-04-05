@@ -151,3 +151,28 @@ slurm_kill_job2(const char *job_id, uint16_t signal, uint16_t flags)
 
 	return SLURM_SUCCESS;
 }
+
+/*
+ * slurm_kill_job_msg - send kill msg to and existing job or step.
+ *
+ * IN msg_type - msg_type to send
+ * IN kill_msg - job_step_kill_msg_t parameters.
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+extern int slurm_kill_job_msg(uint16_t msg_type, job_step_kill_msg_t *kill_msg)
+{
+	int cc;
+	slurm_msg_t msg;
+	slurm_msg_t_init(&msg);
+
+	msg.msg_type = msg_type;
+        msg.data     = kill_msg;
+
+	if (slurm_send_recv_controller_rc_msg(&msg, &cc, working_cluster_rec)<0)
+		return SLURM_FAILURE;
+
+	if (cc)
+		slurm_seterrno_ret(cc);
+
+	return SLURM_SUCCESS;
+}

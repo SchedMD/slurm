@@ -746,10 +746,20 @@ _cancel_job_id (void *ci)
 	}
 
 	for (i = 0; i < MAX_CANCEL_RETRY; i++) {
+		job_step_kill_msg_t kill_msg;
+
 		_add_delay();
 		START_TIMER;
-		error_code = slurm_kill_job2(cancel_info->job_id_str,
-					     cancel_info->sig, flags);
+
+		memset(&kill_msg, 0, sizeof(job_step_kill_msg_t));
+		kill_msg.flags	= flags;
+		kill_msg.job_id      = NO_VAL;
+		kill_msg.job_step_id = NO_VAL;
+		kill_msg.signal      = cancel_info->sig;
+		kill_msg.sjob_id     = cancel_info->job_id_str;
+
+		error_code = slurm_kill_job_msg(REQUEST_KILL_JOB, &kill_msg);
+
 		END_TIMER;
 		slurm_mutex_lock(&max_delay_lock);
 		max_resp_time = MAX(max_resp_time, DELTA_TIMER);

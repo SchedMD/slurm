@@ -109,6 +109,7 @@ Changed the following enums and #defines
 
 Added the following API's
 =========================
+Added slurm_kill_job_msg: to send prepared job_step_kill_msg_t.
 
 Changed the following API's
 ============================
