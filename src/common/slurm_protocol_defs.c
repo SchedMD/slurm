@@ -735,6 +735,7 @@ extern void slurm_free_job_id_response_msg(job_id_response_msg_t * msg)
 extern void slurm_free_job_step_kill_msg(job_step_kill_msg_t * msg)
 {
 	if (msg) {
+		xfree(msg->sibling);
 		xfree(msg->sjob_id);
 		xfree(msg);
 	}

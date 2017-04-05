@@ -587,6 +587,7 @@ typedef struct job_step_kill_msg {
 	uint32_t job_step_id;
 	uint16_t signal;
 	uint16_t flags;
+	char *sibling;
 } job_step_kill_msg_t;
 
 typedef struct job_notify_msg {

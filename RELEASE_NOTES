@@ -93,6 +93,7 @@ In job_fed_details_t: Rename siblings to siblings_active.
 		      Added siblings_viable.
 In job_info_request_msg: Added job_ids to be able to request job info for
 		       specific jobs.
+In job_step_kill_msg_t: Added sibling string to remove active sibling job.
 
 Added the following struct definitions
 ======================================
