@@ -118,6 +118,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix MCS filter.
  -- Make it so pmix can be included in the plugin rpm without having to
     specify --with-pmix.
+ -- MYSQL - Fix initial load when not using he DBD.
 
 * Changes in Slurm 17.02.1-2
 ============================
