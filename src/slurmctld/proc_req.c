@@ -1114,31 +1114,20 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg, bool is_sib_job)
 		do_unlock = true;
 		_throttle_start(&active_rpc_cnt);
 
-		if (!is_sib_job && fed_mgr_is_active()) {
+		lock_slurmctld(job_write_lock);
+		if (!is_sib_job && fed_mgr_fed_rec) {
 			uint32_t job_id;
 			if (fed_mgr_job_allocate(msg, job_desc_msg, true, uid,
 						 msg->protocol_version, &job_id,
 						 &error_code, &err_msg)) {
-				do_unlock = false;
-				_throttle_fini(&active_rpc_cnt);
 				reject_job = true;
-			} else {
-				/* fed_mgr_job_allocate grabs and
-				 * releases job_write_lock on its own to
-				 * prevent waiting/locking on siblings
-				 * to reply. Now grab the lock and grab
-				 * the jobid. */
-				lock_slurmctld(job_write_lock);
-				if (!(job_ptr = find_job_record(job_id))) {
-					error("%s: can't find fed job that was just created. this should never happen",
-					      __func__);
-					reject_job = true;
-					error_code = SLURM_ERROR;
-				}
+			} else if (!(job_ptr = find_job_record(job_id))) {
+				error("%s: can't find fed job that was just created. this should never happen",
+				      __func__);
+				reject_job = true;
+				error_code = SLURM_ERROR;
 			}
 		} else {
-			lock_slurmctld(job_write_lock);
-
 			error_code = job_allocate(job_desc_msg, immediate,
 						  false, NULL, true, uid,
 						  &job_ptr, &err_msg,
@@ -2614,42 +2603,34 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg, bool is_sib_job)
 				 job_desc_msg->resp_host, 16);
 		dump_job_desc(job_desc_msg);
 		if (error_code == SLURM_SUCCESS) {
+			lock_slurmctld(job_write_lock);
 			if (job_desc_msg->job_id != NO_VAL) {
-				lock_slurmctld(job_read_lock);
 				if ((job_ptr =
 				     find_job_record(job_desc_msg->job_id)) &&
 				    job_ptr->fed_details)
 					job_desc_msg->fed_siblings_viable =
 					job_ptr->fed_details->siblings_active;
-				else if (!is_sib_job)
+				else if (!is_sib_job) {
 					error_code = ESLURM_INVALID_JOB_ID;
-				unlock_slurmctld(job_read_lock);
+					goto send_reply;
+				}
 			}
-			if (error_code)
-				goto send_reply;
 
-			if (!is_sib_job && fed_mgr_is_active()) {
-				/* don't job_write lock here. fed_mgr
-				 * locks around the job_allocate when
-				 * doing a will_run to itself. */
+			if (!is_sib_job && fed_mgr_fed_rec) {
 				error_code = fed_mgr_sib_will_run(msg,
 								  job_desc_msg,
 								  uid, &resp);
 			} else if (!job_ptr) {
-				lock_slurmctld(job_write_lock);
-
 				error_code = job_allocate(job_desc_msg, false,
 							  true, &resp, true,
 							  uid, &job_ptr,
 							  &err_msg,
 							  msg->protocol_version);
-				unlock_slurmctld(job_write_lock);
 			} else {	/* existing job test */
-				lock_slurmctld(job_write_lock);
 				error_code = job_start_data(job_desc_msg,
 							    &resp);
-				unlock_slurmctld(job_write_lock);
 			}
+			unlock_slurmctld(job_write_lock);
 			END_TIMER2("_slurm_rpc_job_will_run");
 		}
 	} else if (errno)
@@ -3497,15 +3478,15 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg, bool is_sib_job)
 	}
 
 	_throttle_start(&active_rpc_cnt);
-	if (!is_sib_job && fed_mgr_is_active()) {
+	lock_slurmctld(job_write_lock);
+	START_TIMER;	/* Restart after we have locks */
+
+	if (!is_sib_job && fed_mgr_fed_rec) {
 		if (fed_mgr_job_allocate(msg, job_desc_msg, false, uid,
 					 msg->protocol_version, &job_id,
 					 &error_code, &err_msg))
 			reject_job = true;
 	} else {
-		lock_slurmctld(job_write_lock);
-		START_TIMER;	/* Restart after we have locks */
-
 		/* Create new job allocation */
 		error_code = job_allocate(job_desc_msg,
 					  job_desc_msg->immediate,
@@ -3522,8 +3503,8 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg, bool is_sib_job)
 		    (error_code != SLURM_SUCCESS))
 			error_code = ESLURM_CAN_NOT_START_IMMEDIATELY;
 
-		unlock_slurmctld(job_write_lock);
 	}
+	unlock_slurmctld(job_write_lock);
 
 	_throttle_fini(&active_rpc_cnt);
 
