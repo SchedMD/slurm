@@ -507,6 +507,7 @@ static void _mark_self_as_drained()
 	}
 
 	FREE_NULL_LIST(cluster_cond.cluster_list);
+	FREE_NULL_LIST(ret_list);
 }
 
 static void _remove_self_from_federation()
@@ -539,6 +540,7 @@ static void _remove_self_from_federation()
 		error("Failed to remove federation from list");
 	}
 
+	FREE_NULL_LIST(ret_list);
 	FREE_NULL_LIST(fed_cond.federation_list);
 	FREE_NULL_LIST(fed_rec.cluster_list);
 	xfree(cluster_rec.name);
@@ -1131,6 +1133,8 @@ static int _persist_fed_job_cancel(slurmdb_cluster_rec_t *conn, uint32_t job_id,
 
 	rc = _queue_rpc(conn, &req_msg, job_id, false);
 
+	free_buf(buffer);
+
 	return rc;
 }
 
@@ -1176,6 +1180,8 @@ static int _persist_fed_job_requeue(slurmdb_cluster_rec_t *conn,
 	req_msg.data        = &sib_msg;
 
 	rc = _queue_rpc(conn, &req_msg, job_id, false);
+
+	free_buf(buffer);
 
 	return rc;
 }
@@ -3821,6 +3827,8 @@ extern int fed_mgr_sync(const char *sib_name)
 	lock_slurmctld(job_write_lock);
 	list_for_each(jobids, _reconcile_fed_job, &rec_sib);
 	unlock_slurmctld(job_write_lock);
+
+	slurm_free_job_info_msg(job_info_msg);
 
 end_it:
 	FREE_NULL_LIST(jobids);
