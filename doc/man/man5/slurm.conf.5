@@ -2560,13 +2560,23 @@ This option applies only to \fBSchedulerType=sched/backfill\fR.
 .TP
 \fBbf_max_job_user=#\fR
 The maximum number of jobs per user to attempt starting with the backfill
-scheduler. One can set this limit to prevent users from flooding the backfill
+scheduler for ALL partitions.
+One can set this limit to prevent users from flooding the backfill
 queue with jobs that cannot start and that prevent jobs from other users
 to start.  This is similar to the MAXIJOB limit in Maui.
 The default value is 0, which means no limit.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
-Also see the \fBbf_max_job_part\fR and \fBbf_max_job_test\fR options.
+Also see the \fBbf_max_job_part\fR, \fBbf_max_job_test\fR and
+\fBbf_max_job_user_part=#\fR options.
 Set \fBbf_max_job_test\fR to a value much higher than \fBbf_max_job_user\fR.
+.TP
+\fBbf_max_job_user_part=#\fR
+The maximum number of jobs per user per partition to attempt starting with the
+backfill scheduler for any single partition.
+The default value is 0, which means no limit.
+This option applies only to \fBSchedulerType=sched/backfill\fR.
+Also see the \fBbf_max_job_part\fR, \fBbf_max_job_test\fR and
+\fBbf_max_job_user=#\fR options.
 .TP
 \fBbf_min_age_reserve=#\fR
 The backfill and main scheduling logic will not reserve resources for pending

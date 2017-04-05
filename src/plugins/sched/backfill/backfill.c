@@ -112,6 +112,13 @@ typedef struct node_space_map {
 	int next;	/* next record, by time, zero termination */
 } node_space_map_t;
 
+typedef struct user_part_rec {
+	uint16_t *njobs;
+	struct part_record *part_ptr;
+	uint32_t *uid;
+	int user_cnt;
+} user_part_rec_t;
+
 /* Diag statistics */
 extern diag_stats_t slurmctld_diag_stats;
 uint32_t bf_sleep_usec = 0;
@@ -134,6 +141,7 @@ static uint32_t bf_min_prio_reserve = 0;
 static int max_backfill_job_cnt = 100;
 static int max_backfill_job_per_part = 0;
 static int max_backfill_job_per_user = 0;
+static int max_backfill_job_per_user_part = 0;
 static int max_backfill_jobs_start = 0;
 static bool backfill_continue = false;
 static bool assoc_limit_stop = false;
@@ -607,6 +615,23 @@ static void _load_config(void)
 		}
 	}
 
+	if (sched_params &&
+	    (tmp_ptr = strstr(sched_params, "bf_max_job_user_part="))) {
+		max_backfill_job_per_user_part = atoi(tmp_ptr + 21);
+		if (max_backfill_job_per_user_part < 0) {
+			error("Invalid SchedulerParameters bf_max_job_user_part: %d",
+			      max_backfill_job_per_user_part);
+			max_backfill_job_per_user_part = 0;
+		}
+	} else {
+		max_backfill_job_per_user_part = 0;
+	}
+	if ((max_backfill_job_per_user_part != 0) &&
+	    (max_backfill_job_per_user_part > max_backfill_job_cnt)) {
+		info("warning: bf_max_job_user_part > bf_max_job_test (%u > %u)",
+		     max_backfill_job_per_user_part, max_backfill_job_cnt);
+	}
+
 	bf_min_age_reserve = 0;
 	if (sched_params &&
 	    (tmp_ptr = strstr(sched_params, "bf_min_age_reserve="))) {
@@ -888,7 +913,7 @@ static int _attempt_backfill(void)
 	List job_queue;
 	job_queue_rec_t *job_queue_rec;
 	slurmdb_qos_rec_t *qos_ptr = NULL;
-	int bb, i, j, node_space_recs, mcs_select = 0;
+	int bb, i, j, k, node_space_recs, mcs_select = 0;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr, **bf_part_ptr = NULL;
 	uint32_t end_time, end_reserve, deadline_time_limit, boot_time;
@@ -899,6 +924,7 @@ static int _attempt_backfill(void)
 	time_t now, sched_start, later_start, start_res, resv_end, window_end;
 	time_t orig_sched_start, orig_start_time = (time_t) 0;
 	node_space_map_t *node_space;
+	user_part_rec_t *bf_user_part_ptr = NULL;
 	struct timeval bf_time1, bf_time2;
 	int rc = 0, error_code;
 	int job_test_count = 0, test_time_count = 0, pend_time;
@@ -1005,6 +1031,23 @@ static int _attempt_backfill(void)
 	if (max_backfill_job_per_user) {
 		uid = xmalloc(BF_MAX_USERS * sizeof(uint32_t));
 		njobs = xmalloc(BF_MAX_USERS * sizeof(uint16_t));
+	}
+	if (max_backfill_job_per_user_part) {
+		ListIterator part_iterator;
+		struct part_record *part_ptr;
+		bf_parts = list_count(part_list);
+		bf_user_part_ptr = xmalloc(sizeof(user_part_rec_t) * bf_parts);
+		part_iterator = list_iterator_create(part_list);
+		i = 0;
+		while ((part_ptr = (struct part_record *)
+				   list_next(part_iterator))) {
+			bf_user_part_ptr[i].part_ptr = part_ptr;
+			bf_user_part_ptr[i].njobs =
+				xmalloc(BF_MAX_USERS * sizeof(uint16_t));
+			bf_user_part_ptr[i++].uid =
+				xmalloc(BF_MAX_USERS * sizeof(uint32_t));
+		}
+		list_iterator_destroy(part_iterator);
 	}
 
 	sort_job_queue(job_queue);
@@ -1212,6 +1255,47 @@ next_task:
 			     job_ptr->part_ptr->name);
 		}
 
+		if (max_backfill_job_per_user_part) {
+			bool skip_job = false;
+			for (j = 0; j < bf_parts; j++) {
+				if (bf_user_part_ptr[j].part_ptr !=
+				    job_ptr->part_ptr)
+					continue;
+				for (k = 0; k < bf_user_part_ptr[j].user_cnt;
+				     k++) {
+					if (bf_user_part_ptr[j].uid[k] !=
+					    job_ptr->user_id)
+						continue;
+					if (bf_user_part_ptr[j].njobs[k]++ >=
+					    max_backfill_job_per_user_part)
+						skip_job = true;
+					break;
+				}
+				if ((k == bf_user_part_ptr[j].user_cnt) &&
+				    (k < BF_MAX_USERS)) {
+					bf_user_part_ptr[j].user_cnt++;
+					bf_user_part_ptr[j].uid[k] =
+						job_ptr->user_id;
+					if (bf_user_part_ptr[j].njobs[k]++ >=
+					    max_backfill_job_per_user_part)
+						skip_job = true;
+				}
+				break;
+			}
+			if (skip_job) {
+				if (debug_flags & DEBUG_FLAG_BACKFILL)
+					info("backfill: have already "
+					     "checked %u jobs for user %u on "
+					     "partition %s; skipping "
+					     "job %u",
+					     max_backfill_job_per_user_part,
+					     job_ptr->user_id,
+					     job_ptr->part_ptr->name,
+					     job_ptr->job_id);
+				continue;
+			}
+		}
+
 		if (max_backfill_job_per_part) {
 			bool skip_job = false;
 			for (j = 0; j < bf_parts; j++) {
@@ -1262,7 +1346,7 @@ next_task:
 					       "Total #users now %u",
 					       job_ptr->user_id, nuser);
 			} else {
-				if (njobs[j] >= max_backfill_job_per_user) {
+				if (njobs[j] > max_backfill_job_per_user) {
 					/* skip job */
 					if (debug_flags & DEBUG_FLAG_BACKFILL)
 						info("backfill: have already "
@@ -1851,6 +1935,13 @@ next_task:
 	xfree(bf_part_ptr);
 	xfree(uid);
 	xfree(njobs);
+	if (bf_user_part_ptr) {
+		for (i = 0; i < bf_parts; i++) {
+			xfree(bf_user_part_ptr[i].njobs);
+			xfree(bf_user_part_ptr[i].uid);
+		}
+		xfree(bf_user_part_ptr);
+	}
 	FREE_NULL_BITMAP(avail_bitmap);
 	FREE_NULL_BITMAP(exc_core_bitmap);
 	FREE_NULL_BITMAP(resv_bitmap);
