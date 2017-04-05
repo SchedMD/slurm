@@ -761,6 +761,30 @@ static int _convert2_tables(mysql_conn_t *mysql_conn)
 	if (!(cluster_name = list_peek(as_mysql_total_cluster_list)))
 		return SLURM_SUCCESS;
 
+	if (!slurmdbd_conf) {
+		/* If running directly (no DBD - bad idea I know, but people
+		 * like doing bad ideas).  The tables may not have been created
+		 * yet.
+		 */
+		query = xstrdup_printf("show tables like '\"%s_%s\"';",
+				       cluster_name, event_table);
+
+		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+		if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+			xfree(query);
+			return SLURM_ERROR;
+		}
+		xfree(query);
+		i = mysql_num_rows(result);
+		mysql_free_result(result);
+		result = NULL;
+
+		if (!i) {
+			debug2("No tables to convert yet!  Fresh install!");
+			return 2;
+		}
+	}
+
 	/* See if the old table exist first.  If already ran here
 	   default_acct and default_wckey won't exist.
 	*/

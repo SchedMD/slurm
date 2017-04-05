@@ -553,7 +553,7 @@ extern bool is_user_min_admin_level(void *db_conn, uid_t uid,
 		if ((uid != slurmdbd_conf->slurm_user_id && uid != 0)
 		   && assoc_mgr_get_admin_level(db_conn, uid) < min_level)
 			is_admin = 0;
-	} else if (uid != 0)
+	} else if ((uid != 0) && (uid != slurmctld_conf.slurm_user_id))
 		is_admin = 0;
 
 	return is_admin;
