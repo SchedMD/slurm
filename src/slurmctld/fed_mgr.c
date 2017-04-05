@@ -3828,3 +3828,45 @@ end_it:
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Remove active sibling from the given job.
+ *
+ * IN job_id   - job_id of job to remove active sibling from.
+ * IN sib_name - name of sibling job to remove from active siblings.
+ * RET SLURM_SUCCESS on sucess, error code on error.
+ */
+extern int fed_mgr_remove_active_sibling(uint32_t job_id, char *sib_name)
+{
+	uint32_t origin_id;
+	struct job_record *job_ptr = NULL;
+	slurmdb_cluster_rec_t *sibling;
+
+	if (!(job_ptr = find_job_record(job_id)))
+		return ESLURM_INVALID_JOB_ID;
+
+	if (!_is_fed_job(job_ptr, &origin_id))
+		return ESLURM_JOB_NOT_FEDERATED;
+
+	if (job_ptr->fed_details->cluster_lock)
+		return ESLURM_JOB_NOT_PENDING;
+
+	if (!(sibling = fed_mgr_get_cluster_by_name(sib_name)))
+		return ESLURM_INVALID_CLUSTER_NAME;
+
+	if (job_ptr->fed_details->siblings_active &
+	    FED_SIBLING_BIT(sibling->fed.id)) {
+		if (fed_mgr_cluster_rec == sibling)
+			fed_mgr_job_revoke(job_ptr, false, 0, 0);
+		else
+			_revoke_sibling_jobs(job_ptr->job_id,
+					     fed_mgr_cluster_rec->fed.id,
+					     FED_SIBLING_BIT(sibling->fed.id),
+					     0);
+		job_ptr->fed_details->siblings_active &=
+			~(FED_SIBLING_BIT(sibling->fed.id));
+		update_job_fed_details(job_ptr);
+	}
+
+	return SLURM_SUCCESS;
+}
+

@@ -5582,11 +5582,16 @@ _slurm_rpc_kill_job2(slurm_msg_t *msg)
 
 	_throttle_start(&active_rpc_cnt);
 	lock_slurmctld(lock);
-	cc = job_str_signal(kill->sjob_id,
-			    kill->signal,
-			    kill->flags,
-			    uid,
-			    0);
+	if (kill->sibling) {
+		uint32_t job_id = strtol(kill->sjob_id, NULL, 10);
+		cc = fed_mgr_remove_active_sibling(job_id, kill->sibling);
+	} else {
+		cc = job_str_signal(kill->sjob_id,
+				    kill->signal,
+				    kill->flags,
+				    uid,
+				    0);
+	}
 	unlock_slurmctld(lock);
 	_throttle_fini(&active_rpc_cnt);
 

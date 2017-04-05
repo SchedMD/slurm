@@ -755,6 +755,7 @@ _cancel_job_id (void *ci)
 		kill_msg.flags	= flags;
 		kill_msg.job_id      = NO_VAL;
 		kill_msg.job_step_id = NO_VAL;
+		kill_msg.sibling     = opt.sibling;
 		kill_msg.signal      = cancel_info->sig;
 		kill_msg.sjob_id     = cancel_info->job_id_str;
 

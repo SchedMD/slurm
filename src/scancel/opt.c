@@ -61,10 +61,11 @@
 #include "src/scancel/scancel.h"
 
 /* getopt_long options, integers but not characters */
-#define OPT_LONG_HELP  0x100
-#define OPT_LONG_USAGE 0x101
-#define OPT_LONG_CTLD  0x102
-#define OPT_LONG_WCKEY 0x103
+#define OPT_LONG_HELP    0x100
+#define OPT_LONG_USAGE   0x101
+#define OPT_LONG_CTLD    0x102
+#define OPT_LONG_WCKEY   0x103
+#define OPT_LONG_SIBLING 0x104
 
 #define SIZE(a) (sizeof(a)/sizeof(a[0]))
 
@@ -255,6 +256,7 @@ static void _opt_default(void)
 	opt.partition	= NULL;
 	opt.qos		= NULL;
 	opt.reservation	= NULL;
+	opt.sibling     = NULL;
 	opt.signal	= (uint16_t) NO_VAL;
 	opt.state	= JOB_END;
 	opt.user_id	= 0;
@@ -385,6 +387,7 @@ static void _opt_args(int argc, char **argv)
 		{"qos",         required_argument, 0, 'q'},
 		{"quiet",       no_argument,       0, 'Q'},
 		{"reservation", required_argument, 0, 'R'},
+		{"sibling",     required_argument, 0, OPT_LONG_SIBLING},
 		{"signal",      required_argument, 0, 's'},
 		{"state",       required_argument, 0, 't'},
 		{"usage",       no_argument,       0, OPT_LONG_USAGE},
@@ -464,6 +467,9 @@ static void _opt_args(int argc, char **argv)
 			exit(0);
 		case (int)'w':
 			opt.nodelist = xstrdup(optarg);
+			break;
+		case OPT_LONG_SIBLING:
+			opt.sibling = xstrdup(optarg);
 			break;
 		case OPT_LONG_WCKEY:
 			opt.wckey = xstrdup(optarg);
@@ -652,6 +658,7 @@ static void _opt_list(void)
 	info("partition      : %s", opt.partition);
 	info("qos            : %s", opt.qos);
 	info("reservation    : %s", opt.reservation);
+	info("sibling        : %s", opt.sibling);
 	if (opt.signal != (uint16_t) NO_VAL)
 		info("signal         : %u", opt.signal);
 	info("state          : %s", job_state_string(opt.state));
@@ -713,6 +720,7 @@ static void _help(void)
 	printf("  -Q, --quiet                     disable warnings\n");
 	printf("  -q, --qos=qos                   act only on jobs with this quality of service\n");
 	printf("  -R, --reservation=reservation   act only on jobs with this reservation\n");
+	printf("      --sibling=cluster_name      remove an active sibling job from a federated job\n");
 	printf("  -s, --signal=name | integer     signal to send to job, default is SIGKILL\n");
 	printf("  -t, --state=states              act only on jobs in this state.  Valid job\n");
 	printf("                                  states are PENDING, RUNNING and SUSPENDED\n");
