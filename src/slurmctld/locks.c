@@ -67,14 +67,14 @@ static void _wr_wrunlock(lock_datatype_t datatype);
  * systems. Only used within development builds to mitigate possible problems
  * with production builds.
  */
-__thread bool slurmctld_locked = false;
+static __thread bool slurmctld_locked = false;
 
 /*
  * Used to detect any location where the acquired locks differ from the
  * release locks.
  */
 
-__thread slurmctld_lock_t thread_locks;
+static __thread slurmctld_lock_t thread_locks;
 
 static bool _store_locks(slurmctld_lock_t lock_levels)
 {
@@ -94,8 +94,13 @@ static bool _clear_locks(slurmctld_lock_t lock_levels)
 		return false;
 	slurmctld_locked = false;
 
-	return !memcmp((void *) &thread_locks, (void *) &lock_levels,
-		       sizeof(slurmctld_lock_t));
+	if (memcmp((void *) &thread_locks, (void *) &lock_levels,
+		       sizeof(slurmctld_lock_t)))
+		return false;
+
+	memset((void *) &thread_locks, 0, sizeof(slurmctld_lock_t));
+
+	return true;
 }
 #endif
 
