@@ -276,7 +276,6 @@ static int _open_node_state_file(char **state_file)
  * IN state_only - if true, overwrite only node state and reason
  *	Use this to overwrite the "UNKNOWN state typically used in slurm.conf
  * RET 0 or error code
- * NOTE: READ lock_slurmctld config before entry
  */
 extern int load_all_node_state ( bool state_only )
 {
@@ -302,6 +301,8 @@ extern int load_all_node_state ( bool state_only )
 	hostset_t hs = NULL;
 	bool power_save_mode = false;
 	uint16_t protocol_version = (uint16_t)NO_VAL;
+
+	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
 
 	if (slurmctld_conf.suspend_program && slurmctld_conf.resume_program)
 		power_save_mode = true;
@@ -762,8 +763,6 @@ static bool _node_is_hidden(struct node_record *node_ptr, uid_t uid)
  * global: node_record_table_ptr - pointer to global node table
  * NOTE: the caller must xfree the buffer at *buffer_ptr
  * NOTE: change slurm_load_node() in api/node_info.c when data format changes
- * NOTE: READ lock_slurmctld config before entry
- * NOTE: WRITE lock_slurmctld part before entry for part_filter_set
  */
 extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 			   uint16_t show_flags, uid_t uid,
@@ -775,6 +774,9 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 	time_t now = time(NULL);
 	struct node_record *node_ptr = node_record_table_ptr;
 	bool hidden;
+
+	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
+	xassert(verify_lock(PART_LOCK, WRITE_LOCK));
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
@@ -854,8 +856,6 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
  * global: node_record_table_ptr - pointer to global node table
  * NOTE: the caller must xfree the buffer at *buffer_ptr
  * NOTE: change slurm_load_node() in api/node_info.c when data format changes
- * NOTE: READ lock_slurmctld config before entry
- * NOTE: WRITE lock_slurmctld part before entry for part_filter_set
  */
 extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 			   uint16_t show_flags, uid_t uid, char *node_name,
@@ -866,6 +866,9 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 	time_t now = time(NULL);
 	struct node_record *node_ptr;
 	bool hidden;
+
+	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
+	xassert(verify_lock(PART_LOCK, WRITE_LOCK));
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
@@ -932,12 +935,13 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
  * IN show_flags -
  * NOTE: if you make any changes here be sure to make the corresponding changes
  * 	to _unpack_node_info_members() in common/slurm_protocol_pack.c
- * NOTE: READ lock_slurmctld config before entry
  */
 static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 			uint16_t protocol_version, uint16_t show_flags)
 {
 	char *gres_drain = NULL, *gres_used = NULL;
+
+	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
 
 	if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		packstr (dump_node_ptr->name, buffer);
@@ -1112,7 +1116,6 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 /*
  * set_slurmd_addr - establish the slurm_addr_t for the slurmd on each node
  *	Uses common data structures.
- * NOTE: READ lock_slurmctld config before entry
  */
 void set_slurmd_addr (void)
 {
@@ -1120,6 +1123,8 @@ void set_slurmd_addr (void)
 	int i;
 	struct node_record *node_ptr = node_record_table_ptr;
 	DEF_TIMERS;
+
+	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
 
 	START_TIMER;
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
@@ -2189,7 +2194,6 @@ static void _split_node_config(struct node_record *node_ptr,
  * IN protocol_version - Version of Slurm on this node
  * OUT newly_up - set if node newly brought into service
  * RET 0 if no error, ENOENT if no such node, EINVAL if values too low
- * NOTE: READ lock_slurmctld config before entry
  */
 extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 			       uint16_t protocol_version, bool *newly_up)
@@ -2204,6 +2208,8 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	bool orig_node_avail;
 	static uint32_t cr_flag = NO_VAL;
 	int *cpu_spec_array;
+
+	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
 
 	node_ptr = find_node_record (reg_msg->node_name);
 	if (node_ptr == NULL)
@@ -2706,7 +2712,6 @@ static char *_build_step_id(char *buf, int buf_len,
  * IN protocol_version - Version of Slurm on this node
  * OUT newly_up - set if node newly brought into service
  * RET 0 if no error, SLURM error code otherwise
- * NOTE: READ lock_slurmctld config before entry
  */
 extern int validate_nodes_via_front_end(
 		slurm_node_registration_status_msg_t *reg_msg,
@@ -2724,6 +2729,8 @@ extern int validate_nodes_via_front_end(
 	uint32_t node_flags;
 	front_end_record_t *front_end_ptr;
 	char step_str[64];
+
+	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
 
 	if (reg_msg->up_time > now) {
 		error("Node up_time on %s is invalid: %u>%u",
@@ -3157,7 +3164,6 @@ static void _node_did_resp(struct node_record *node_ptr)
 /*
  * node_did_resp - record that the specified node is responding
  * IN name - name of the node
- * NOTE: READ lock_slurmctld config before entry
  */
 void node_did_resp (char *name)
 {
@@ -3168,6 +3174,9 @@ void node_did_resp (char *name)
 	struct node_record *node_ptr;
 	node_ptr = find_node_record (name);
 #endif
+
+	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
+
 	if (node_ptr == NULL) {
 		error ("node_did_resp unable to find node %s", name);
 		return;
