@@ -91,6 +91,8 @@
 #ifndef _SLURMCTLD_LOCKS_H
 #define _SLURMCTLD_LOCKS_H
 
+#include <stdbool.h>
+
 /* levels of locking required for each data structure */
 typedef enum {
 	NO_LOCK,
@@ -124,6 +126,10 @@ typedef enum {
 	FED_LOCK,
 	ENTITY_COUNT
 }	lock_datatype_t;
+
+#ifndef NDEBUG
+extern bool verify_lock(lock_datatype_t datatype, lock_level_t level);
+#endif
 
 #define read_lock(data_type)		(data_type * 4 + 0)
 #define write_lock(data_type)		(data_type * 4 + 1)

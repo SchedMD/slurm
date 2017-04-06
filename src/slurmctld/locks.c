@@ -102,6 +102,11 @@ static bool _clear_locks(slurmctld_lock_t lock_levels)
 
 	return true;
 }
+
+extern bool verify_lock(lock_datatype_t datatype, lock_level_t level)
+{
+	return (((lock_level_t *) &thread_locks)[datatype] >= level);
+}
 #endif
 
 /* init_locks - create locks used for slurmctld data structure access
