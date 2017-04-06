@@ -73,6 +73,7 @@ documents those changes that are of interest to users and administrators.
     specify --with-pmix.
  -- MYSQL - Fix initial load when not using he DBD.
  -- Fix scontrol top to not make jobs priority 0 (held).
+ -- Downgrade info message about exceeding partition time limit to a debug2.
 
 * Changes in Slurm 17.02.1-2
 ============================

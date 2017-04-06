@@ -5856,7 +5856,7 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 		   (time_check > part_ptr->max_time) &&
 		   (!qos_ptr || (qos_ptr && !(qos_ptr->flags &
 					     QOS_FLAG_PART_TIME_LIMIT)))) {
-		info("Job %u exceeds partition %s time limit (%u > %u)",
+		debug2("Job %u exceeds partition %s time limit (%u > %u)",
 		       job_ptr->job_id, part_ptr->name, time_check,
 		       part_ptr->max_time);
 		fail_reason = WAIT_PART_TIME_LIMIT;
