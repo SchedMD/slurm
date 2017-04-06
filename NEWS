@@ -48,6 +48,9 @@ documents those changes that are of interest to users and administrators.
  -- Add squeue --local and --sibling options to modify filtering of jobs on
     federated clusters.
 
+* Changes in Slurm 17.02.3
+==========================
+
 * Changes in Slurm 17.02.2
 ==========================
  -- Update hyperlink to LBNL Node Health Check program.
@@ -119,6 +122,8 @@ documents those changes that are of interest to users and administrators.
  -- Make it so pmix can be included in the plugin rpm without having to
     specify --with-pmix.
  -- MYSQL - Fix initial load when not using he DBD.
+ -- Fix scontrol top to not make jobs priority 0 (held).
+ -- Downgrade info message about exceeding partition time limit to a debug2.
 
 * Changes in Slurm 17.02.1-2
 ============================
