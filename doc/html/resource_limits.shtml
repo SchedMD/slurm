@@ -180,18 +180,6 @@ is treated as a Max limit.</p>
   allocation can use.
 </li>
 
-<li><b>MaxJobs=</b> The total number of jobs able to run at any given
-  time for the given association/QOS.  If this limit is reached new jobs will
-  be queued but only allowed to run after previous jobs complete from
-  the association/QOS.
-</li>
-
-<li><b>MaxSubmitJobs=</b> The maximum number of jobs able to be submitted
-  to the system at any given time from the given association/QOS.  If
-  this limit is reached new submission requests will be denied until
-  previous jobs complete from this association.
-</li>
-
 <li><b>MaxWallDurationPerJob=</b> The maximum wall clock time any job
   submitted can run for the given association/QOS.  If this limit is reached
   the job will be denied at submission.
@@ -223,20 +211,53 @@ is treated as a Max limit.</p>
   is affected.
 </li>
 
+<li><b>MaxJobs=</b> The total number of jobs able to run at any given
+  time for the given association.  If this limit is reached new jobs will
+  be queued but only allowed to run after previous jobs complete from
+  the association.
+</li>
+
+<li><b>MaxSubmitJobs=</b> The maximum number of jobs able to be submitted
+  to the system at any given time from the given association.  If
+  this limit is reached new submission requests will be denied until
+  previous jobs complete from this association.
+</li>
+
 <li><b>QOS=</b> comma separated list of QOS's an association is
   able to run.
 </li>
+
 </ul>
 
 <h2>QOS specific limits supported</h2>
 
 <ul>
-<li><b>MaxTRESPerUser=</b> The maximum number of limited TRES a user can
-  request (combo of all jobs running or pending).
+<li><b>MaxJobsPerAccount=</b> The maximum number of jobs an account (or
+  subaccount) can have running at a given time.
+</li>
+
+<li><b>MaxJobsPerUser=</b> The maximum number of jobs a user can
+  have running at a given time.
+</li>
+
+<li><b>MaxSubmitJobsPerAccount=</b> The maximum number of jobs an account (or
+  subaccount) can have running and pending at a given time.
+</li>
+
+<li><b>MaxSubmitJobsPerUser=</b> The maximum number of jobs a user can
+  have running and pending at a given time.
+</li>
+
+<li><b>MaxTRESPerAccount=</b> The maximum number of TRES an account can
+  allocate at a given time.
+</li>
+
+<li><b>MaxTRESPerUser=</b> The maximum number of TRES a user can
+  allocate at a given time.
 </li>
 
 <li><b>MinTRESPerJob=</b> The minimum size in TRES any given job can
-  have from when using the requested QOS.
+  have when using the requested QOS.
 </li>
 
 </ul>
@@ -254,6 +275,6 @@ data maintained in the Slurm database.  More information can be found
 in the <a href="priority_multifactor.html">priority/multifactor</a>
 plugin description.</p>
 
-<p style="text-align: center;">Last modified 15 December 2016</p>
+<p style="text-align: center;">Last modified 6 April 2017</p>
 
 </ul></body></html>
