@@ -72,6 +72,7 @@ documents those changes that are of interest to users and administrators.
  -- Make it so pmix can be included in the plugin rpm without having to
     specify --with-pmix.
  -- MYSQL - Fix initial load when not using he DBD.
+ -- Fix scontrol top to not make jobs priority 0 (held).
 
 * Changes in Slurm 17.02.1-2
 ============================

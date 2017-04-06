@@ -14840,7 +14840,7 @@ static int _set_top(struct job_record *job_ptr, uid_t uid)
 		for (i = 0; i < high_prio_job_cnt; i++) {
 			adj_prio = delta_nice / (high_prio_job_cnt - i);
 			job_test_ptr = job_adj_list[i];
-			adj_prio = MIN(job_test_ptr->priority, adj_prio);
+			adj_prio = MIN((job_test_ptr->priority - 1), adj_prio);
 			max_delta = (uint32_t) 0xffffffff -
 				    job_test_ptr->details->nice;
 			adj_prio = MIN(max_delta, adj_prio);
