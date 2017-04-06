@@ -47,10 +47,6 @@ documents those changes that are of interest to users and administrators.
     in a federation.
  -- Add squeue --local and --sibling options to modify filtering of jobs on
     federated clusters.
- -- Add SchedulerParameters option of bf_max_job_user_part to specifiy the
-    maximum number of jobs per user for any single partition. This differs from
-    bf_max_job_user in that a separate counter is applied to each partition
-    rather than having a single counter per user applied to all partitions.
 
 * Changes in Slurm 17.02.2
 ==========================
