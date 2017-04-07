@@ -3891,6 +3891,7 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 					   job_ptr->prio_factors);
 
 	job_ptr_pend->account = xstrdup(job_ptr->account);
+	job_ptr_pend->admin_comment = xstrdup(job_ptr->admin_comment);
 	job_ptr_pend->alias_list = xstrdup(job_ptr->alias_list);
 	job_ptr_pend->alloc_node = xstrdup(job_ptr->alloc_node);
 
