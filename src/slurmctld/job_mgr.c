@@ -6499,7 +6499,7 @@ static int _test_job_desc_fields(job_desc_msg_t * job_desc)
 	    _test_strlen(job_desc->burst_buffer, "burst_buffer",1024*8) ||
 	    _test_strlen(job_desc->ckpt_dir, "ckpt_dir", 1024)		||
 	    _test_strlen(job_desc->comment, "comment", 1024)		||
-	    _test_strlen(job_desc->cpu_bind, "cpu_bind", 1024)		||
+	    _test_strlen(job_desc->cpu_bind, "cpu_bind", 1024 * 128)	||
 	    _test_strlen(job_desc->dependency, "dependency", 1024*128)	||
 	    _test_strlen(job_desc->features, "features", 1024)		||
 	    _test_strlen(job_desc->gres, "gres", 1024)			||
@@ -6507,7 +6507,7 @@ static int _test_job_desc_fields(job_desc_msg_t * job_desc)
 	    _test_strlen(job_desc->linuximage, "linuximage", 1024)	||
 	    _test_strlen(job_desc->mail_user, "mail_user", 1024)	||
 	    _test_strlen(job_desc->mcs_label, "mcs_label", 1024)	||
-	    _test_strlen(job_desc->mem_bind, "mem_bind", 1024)		||
+	    _test_strlen(job_desc->mem_bind, "mem_bind", 1024 * 128)	||
 	    _test_strlen(job_desc->mloaderimage, "mloaderimage", 1024)	||
 	    _test_strlen(job_desc->name, "name", 1024)			||
 	    _test_strlen(job_desc->network, "network", 1024)		||

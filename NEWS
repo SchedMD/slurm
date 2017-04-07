@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 17.02.3
 ==========================
+ -- Increase --cpu_bind and --mem_bind field length limits.
 
 * Changes in Slurm 17.02.2
 ==========================
