@@ -51,6 +51,8 @@ documents those changes that are of interest to users and administrators.
     maximum number of jobs per user for any single partition. This differs from
     bf_max_job_user in that a separate counter is applied to each partition
     rather than having a single counter per user applied to all partitions.
+ -- Modify backfill logic so that bf_max_job_user, bf_max_job_part and
+    bf_max_job_user_part options can all be used independently of each other.
 
 * Changes in Slurm 17.02.3
 ==========================

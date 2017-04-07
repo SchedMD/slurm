@@ -944,6 +944,8 @@ static int _attempt_backfill(void)
 	bool resv_overlap = false;
 	uint8_t save_share_res, save_whole_node;
 	int test_fini;
+	int user_part_inx1, user_part_inx2;
+	int part_inx, user_inx;
 
 	bf_sleep_usec = 0;
 #ifdef HAVE_ALPS_CRAY
@@ -1255,8 +1257,11 @@ next_task:
 			     job_ptr->part_ptr->name);
 		}
 
+		/* Test to see if we've exceeded any per user/partition limit */
 		if (max_backfill_job_per_user_part) {
 			bool skip_job = false;
+			user_part_inx1 = -1;
+			user_part_inx2 = -1;
 			for (j = 0; j < bf_parts; j++) {
 				if (bf_user_part_ptr[j].part_ptr !=
 				    job_ptr->part_ptr)
@@ -1266,8 +1271,10 @@ next_task:
 					if (bf_user_part_ptr[j].uid[k] !=
 					    job_ptr->user_id)
 						continue;
-					if (bf_user_part_ptr[j].njobs[k]++ >=
-					    max_backfill_job_per_user_part)
+					user_part_inx1 = j;
+					user_part_inx2 = k;
+					if ((bf_user_part_ptr[j].njobs[k] + 1)
+					    > max_backfill_job_per_user_part)
 						skip_job = true;
 					break;
 				}
@@ -1276,9 +1283,8 @@ next_task:
 					bf_user_part_ptr[j].user_cnt++;
 					bf_user_part_ptr[j].uid[k] =
 						job_ptr->user_id;
-					if (bf_user_part_ptr[j].njobs[k]++ >=
-					    max_backfill_job_per_user_part)
-						skip_job = true;
+					user_part_inx1 = j;
+					user_part_inx2 = k;
 				}
 				break;
 			}
@@ -1295,13 +1301,14 @@ next_task:
 				continue;
 			}
 		}
-
 		if (max_backfill_job_per_part) {
 			bool skip_job = false;
+			part_inx = -1;
 			for (j = 0; j < bf_parts; j++) {
 				if (bf_part_ptr[j] != job_ptr->part_ptr)
 					continue;
-				if (bf_part_jobs[j]++ >=
+				part_inx = j;
+				if ((bf_part_jobs[j] + 1) >
 				    max_backfill_job_per_part)
 					skip_job = true;
 				break;
@@ -1319,21 +1326,23 @@ next_task:
 			}
 		}
 		if (max_backfill_job_per_user) {
+			user_inx = -1;
 			for (j = 0; j < nuser; j++) {
 				if (job_ptr->user_id == uid[j]) {
-					njobs[j]++;
-					if (debug_flags & DEBUG_FLAG_BACKFILL)
+					user_inx = j;
+					if (debug_flags & DEBUG_FLAG_BACKFILL) {
 						debug("backfill: user %u: "
 						      "#jobs %u",
 						      uid[j], njobs[j]);
+					}
 					break;
 				}
 			}
 			if (j == nuser) { /* user not found */
 				static bool bf_max_user_msg = true;
 				if (nuser < BF_MAX_USERS) {
+					user_inx = j;
 					uid[j] = job_ptr->user_id;
-					njobs[j] = 1;
 					nuser++;
 				} else if (bf_max_user_msg) {
 					bf_max_user_msg = false;
@@ -1341,14 +1350,15 @@ next_task:
 					      "queue. Consider increasing "
 					      "BF_MAX_USERS");
 				}
-				if (debug_flags & DEBUG_FLAG_BACKFILL)
+				if (debug_flags & DEBUG_FLAG_BACKFILL) {
 					debug2("backfill: found new user %u. "
 					       "Total #users now %u",
 					       job_ptr->user_id, nuser);
+				}
 			} else {
-				if (njobs[j] > max_backfill_job_per_user) {
+				if ((njobs[j] + 1) > max_backfill_job_per_user){
 					/* skip job */
-					if (debug_flags & DEBUG_FLAG_BACKFILL)
+					if (debug_flags & DEBUG_FLAG_BACKFILL) {
 						info("backfill: have already "
 						     "checked %u jobs for "
 						     "user %u; skipping "
@@ -1356,10 +1366,22 @@ next_task:
 						     max_backfill_job_per_user,
 						     job_ptr->user_id,
 						     job_ptr->job_id);
+					}
 					continue;
 				}
 			}
 		}
+
+		/* Increment our user/partition limit counters as needed */
+		if (max_backfill_job_per_user_part &&
+		    (user_part_inx1 != -1) && (user_part_inx2 != -1)) {
+			bf_user_part_ptr[user_part_inx1].
+				njobs[user_part_inx2]++;
+		}
+		if (max_backfill_job_per_part && (part_inx != -1))
+			bf_part_jobs[part_inx]++;
+		if (max_backfill_job_per_user && (user_inx != -1))
+			njobs[user_inx]++;
 
 		if (((part_ptr->state_up & PARTITION_SCHED) == 0) ||
 		    (part_ptr->node_bitmap == NULL)) {
