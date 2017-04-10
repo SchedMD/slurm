@@ -1073,8 +1073,8 @@ static inline bool _in_federation_test(void *ptr, char *cluster_name)
 /* Sort responses so local cluster response is first */
 static int _local_resp_first(void *x, void *y)
 {
-	load_job_resp_struct_t *resp_x = (load_job_resp_struct_t *)x;
-	load_job_resp_struct_t *resp_y = (load_job_resp_struct_t *)y;
+	load_job_resp_struct_t *resp_x = *(load_job_resp_struct_t **)x;
+	load_job_resp_struct_t *resp_y = *(load_job_resp_struct_t **)y;
 
 	if (resp_x->local_cluster)
 		return -1;
@@ -1919,6 +1919,19 @@ _load_cluster_job_prio(slurm_msg_t *req_msg,
 	return rc;
 }
 
+/* Sort responses so local cluster response is first */
+static int _local_resp_first_prio(void *x, void *y)
+{
+	load_job_prio_resp_struct_t *resp_x = *(load_job_prio_resp_struct_t **)x;
+	load_job_prio_resp_struct_t *resp_y = *(load_job_prio_resp_struct_t **)y;
+
+	if (resp_x->local_cluster)
+		return -1;
+	if (resp_y->local_cluster)
+		return 1;
+	return 0;
+}
+
 /* Thread to read job priority factor information from some cluster */
 static void *_load_job_prio_thread(void *args)
 {
@@ -2010,7 +2023,7 @@ static int _load_fed_job_prio(slurm_msg_t *req_msg,
 	xfree(load_thread);
 
 	/* Move the response from the local cluster (if any) to top of list */
-	list_sort(resp_msg_list, _local_resp_first);
+	list_sort(resp_msg_list, _local_resp_first_prio);
 
 	/* Merge the responses into a single response message */
 	iter = list_iterator_create(resp_msg_list);
@@ -2024,7 +2037,7 @@ static int _load_fed_job_prio(slurm_msg_t *req_msg,
 			}
 			*factors_resp = orig_msg;
 		} else {
-			/* Merge the job records into a single response message */
+			/* Merge prio records into a single response message */
 			list_transfer(orig_msg->priority_factors_list,
 				      new_msg->priority_factors_list);
 			FREE_NULL_LIST(new_msg->priority_factors_list);
@@ -2052,11 +2065,14 @@ static int _load_fed_job_prio(slurm_msg_t *req_msg,
 	iter = list_iterator_create(orig_msg->priority_factors_list);
 	i = 0;
 	while ((prio_obj = (priority_factors_object_t *) list_next(iter))) {
-		if ((i++ >= local_job_cnt) &&
-		    _test_local_job(prio_obj->job_id)) {
+		bool found_job = false, local_cluster = false;
+		if (i++ < local_job_cnt) {
+			local_cluster = true;
+		} else if (_test_local_job(prio_obj->job_id)) {
 			list_delete_item(iter);
 			continue;
 		}
+
 		if (show_flags & SHOW_SIBLING)
 			continue;
 		hash_inx = prio_obj->job_id % JOB_HASH_SIZE;
@@ -2065,12 +2081,17 @@ static int _load_fed_job_prio(slurm_msg_t *req_msg,
 		     j++) {
 			if (prio_obj->job_id ==
 			    hash_job_id[hash_inx][j]) {
-				prio_obj->job_id = 0;
+				found_job = true;
 				break;
 			}
 		}
-		if (prio_obj->job_id == 0) {
-			list_delete_item(iter);	/* Duplicate */
+		if (found_job && local_cluster) {
+			/* Local job in multiple partitions */
+			continue;
+		} if (found_job) {
+			/* Duplicate remote job,
+			 * possible in multiple partitions */
+			list_delete_item(iter);
 			continue;
 		} else if (j >= hash_tbl_size[hash_inx]) {
 			hash_tbl_size[hash_inx] *= 2;
