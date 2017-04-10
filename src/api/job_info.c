@@ -1078,7 +1078,7 @@ static int _local_resp_first(void *x, void *y)
 	return 0;
 }
 
-extern int
+static int
 _load_cluster_jobs(slurm_msg_t *req_msg, job_info_msg_t **job_info_msg_pptr,
 		   slurmdb_cluster_rec_t *cluster)
 {
@@ -1879,4 +1879,72 @@ slurm_network_callerid (network_callerid_msg_t req, uint32_t *job_id,
 
 	slurm_free_network_callerid_msg(resp_msg.data);
 	return SLURM_PROTOCOL_SUCCESS;
+}
+
+static int
+_load_cluster_job_prio(slurm_msg_t *req_msg,
+		       priority_factors_response_msg_t **factors_resp,
+		       slurmdb_cluster_rec_t *cluster)
+{
+	slurm_msg_t resp_msg;
+	int rc = SLURM_SUCCESS;
+
+	slurm_msg_t_init(&resp_msg);
+
+	if (slurm_send_recv_controller_msg(req_msg, &resp_msg, cluster) < 0)
+		return SLURM_ERROR;
+
+	switch (resp_msg.msg_type) {
+	case RESPONSE_PRIORITY_FACTORS:
+		*factors_resp =
+			(priority_factors_response_msg_t *) resp_msg.data;
+		resp_msg.data = NULL;
+		break;
+	case RESPONSE_SLURM_RC:
+		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		slurm_free_return_code_msg(resp_msg.data);
+		break;
+	default:
+		rc = SLURM_UNEXPECTED_MSG_ERROR;
+		break;
+	}
+	if (rc)
+		slurm_seterrno(rc);
+
+	return rc;
+}
+
+/*
+ * slurm_load_job_prio - issue RPC to get job priority information for
+ *	jobs which pass filter test
+ * OUT factors_resp - job priority factors
+ * IN job_id_list - list of job IDs to be reported
+ * IN partitions - comma delimited list of partition names to be reported
+ * IN uid_list - list of user IDs to be reported
+ * IN show_flags -  job filtering option: 0 or SHOW_LOCAL
+ * RET 0 or -1 on error
+ * NOTE: free the response using slurm_free_priority_factors_response_msg()
+ */
+extern int
+slurm_load_job_prio(priority_factors_response_msg_t **factors_resp,
+		    List job_id_list, char *partitions, List uid_list,
+		    uint16_t show_flags)
+{
+	slurm_msg_t req_msg;
+	priority_factors_request_msg_t factors_req;
+	int rc;
+
+	memset(&factors_req, 0, sizeof(priority_factors_request_msg_t));
+	factors_req.job_id_list = job_id_list;
+	factors_req.partitions  = partitions;
+	factors_req.uid_list    = uid_list;
+
+	slurm_msg_t_init(&req_msg);
+	req_msg.msg_type = REQUEST_PRIORITY_FACTORS;
+	req_msg.data     = &factors_req;
+
+	rc = _load_cluster_job_prio(&req_msg, factors_resp,
+				    working_cluster_rec);
+
+	return rc;
 }

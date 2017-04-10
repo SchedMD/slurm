@@ -1685,6 +1685,29 @@ typedef struct job_info {
 	char *work_dir;		/* pathname of working directory */
 } slurm_job_info_t;
 
+typedef struct priority_factors_object {
+	uint32_t job_id;
+	char *partition;
+	uint32_t user_id;
+
+	double	 priority_age;
+	double	 priority_fs;
+	double	 priority_js;
+	double	 priority_part;
+	double	 priority_qos;
+
+	double   *priority_tres;/* tres priorities with weights applied. */
+	uint32_t  tres_cnt;     /* number of configured tres' on system. */
+	char    **tres_names;	/* packed as assoc_mgr_tres_names[] */
+	double   *tres_weights; /* PriorityWeightTRES weights as an array */
+
+	uint32_t nice;
+} priority_factors_object_t;
+
+typedef struct priority_factors_response_msg {
+	List	 priority_factors_list;	/* priority_factors_object_t list */
+} priority_factors_response_msg_t;
+
 #ifndef __PERMAPI__H__
 /* If on an IBM PERCS machine the libpermapi.so file we generate in
  * the switch/nrt plugin will need to link to this file and the
@@ -3690,9 +3713,18 @@ extern int slurm_job_cpus_allocated_str_on_node(char *cpus,
 /*
  * slurm_free_job_info_msg - free the job information response message
  * IN msg - pointer to job information response message
- * NOTE: buffer is loaded by slurm_load_jobs.
+ * NOTE: buffer is loaded by slurm_load_jobs()
  */
 extern void slurm_free_job_info_msg(job_info_msg_t *job_buffer_ptr);
+
+/*
+ * slurm_free_priority_factors_response_msg - free the job priority factor
+ *	information response message
+ * IN msg - pointer to job priority information response message
+ * NOTE: buffer is loaded by slurm_load_job_prio()
+ */
+extern void slurm_free_priority_factors_response_msg(
+	priority_factors_response_msg_t *factors_resp);
 
 /*
  * slurm_get_end_time - get the expected end time for a given slurm job
@@ -3736,6 +3768,21 @@ extern int slurm_job_node_ready(uint32_t job_id);
 extern int slurm_load_job(job_info_msg_t **resp,
 			  uint32_t job_id,
 			  uint16_t show_flags);
+
+/*
+ * slurm_load_job_prio - issue RPC to get job priority information for
+ *	jobs which pass filter test
+ * OUT factors_resp - job priority factors
+ * IN job_id_list - list of job IDs to be reported
+ * IN partitions - comma delimited list of partition names to be reported
+ * IN uid_list - list of user IDs to be reported
+ * IN show_flags -  job filtering option: 0 or SHOW_LOCAL
+ * RET 0 or -1 on error
+ * NOTE: free the response using slurm_free_priority_factors_response_msg()
+ */
+extern int slurm_load_job_prio(priority_factors_response_msg_t **factors_resp,
+			       List job_id_list, char *partitions,
+			       List uid_list, uint16_t show_flags);
 
 /*
  * slurm_load_job_user - issue RPC to get slurm information about all jobs

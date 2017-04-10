@@ -554,34 +554,11 @@ typedef struct shares_response_msg {
 	char **tres_names;
 } shares_response_msg_t;
 
-typedef struct priority_factors_object {
-	uint32_t job_id;
-	char *partition;
-	uint32_t user_id;
-
-	double	 priority_age;
-	double	 priority_fs;
-	double	 priority_js;
-	double	 priority_part;
-	double	 priority_qos;
-
-	double   *priority_tres;/* tres priorities with weights applied. */
-	uint32_t  tres_cnt;     /* number of configured tres' on system. */
-	char    **tres_names;	/* packed as assoc_mgr_tres_names[] */
-	double   *tres_weights; /* PriorityWeightTRES weights as an array */
-
-	uint32_t nice;
-} priority_factors_object_t;
-
 typedef struct priority_factors_request_msg {
 	List	 job_id_list;
 	char    *partitions;
 	List	 uid_list;
 } priority_factors_request_msg_t;
-
-typedef struct priority_factors_response_msg {
-	List	 priority_factors_list;	/* priority_factors_object_t list */
-} priority_factors_response_msg_t;
 
 typedef struct job_notify_msg {
 	uint32_t job_id;
@@ -1341,8 +1318,6 @@ extern void slurm_copy_priority_factors_object(priority_factors_object_t *dest,
 					       priority_factors_object_t *src);
 extern void slurm_free_priority_factors_request_msg(
 	priority_factors_request_msg_t *msg);
-extern void slurm_free_priority_factors_response_msg(
-	priority_factors_response_msg_t *msg);
 extern void slurm_free_forward_data_msg(forward_data_msg_t *msg);
 extern void slurm_free_comp_msg_list(void *x);
 extern void slurm_free_composite_msg(composite_msg_t *msg);

@@ -61,14 +61,10 @@ uint32_t weight_part; /* weight for Partition factor */
 uint32_t weight_qos; /* weight for QOS factor */
 char    *weight_tres; /* weights for TRES factors */
 
-static int _get_info(priority_factors_request_msg_t *factors_req,
-		     priority_factors_response_msg_t **factors_resp);
-
 int main (int argc, char **argv)
 {
 	char *prio_type = NULL;
 	int error_code = SLURM_SUCCESS;
-	priority_factors_request_msg_t req_msg;
 	priority_factors_response_msg_t *resp_msg = NULL;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 
@@ -118,17 +114,8 @@ int main (int argc, char **argv)
 	}
 	xfree(prio_type);
 
-
-	memset(&req_msg, 0, sizeof(priority_factors_request_msg_t));
-
-	if (params.jobs)
-		req_msg.job_id_list = params.job_list;
-	if (params.parts)
-		req_msg.partitions = params.parts;
-	if (params.users)
-		req_msg.uid_list = params.user_list;
-
-	error_code = _get_info(&req_msg, &resp_msg);
+	error_code = slurm_load_job_prio(&resp_msg, params.job_list,
+					 params.parts, params.user_list, 0);
 	if (error_code) {
 		slurm_perror("Couldn't get priority factors from controller");
 		exit(error_code);
@@ -192,7 +179,8 @@ int main (int argc, char **argv)
 		print_jobs_array(resp_msg->priority_factors_list,
 				 params.format_list);
 	}
-#if 0
+
+#ifdef MEMORY_LEAK_DEBUG
 	/* Free storage here if we want to verify that logic.
 	 * Since we exit next, this is not important */
 	FREE_NULL_LIST(params.format_list);
@@ -200,41 +188,4 @@ int main (int argc, char **argv)
 #endif
 
 	exit (error_code);
-}
-
-static int _get_info(priority_factors_request_msg_t *factors_req,
-		     priority_factors_response_msg_t **factors_resp)
-{
-	int rc;
-        slurm_msg_t req_msg;
-        slurm_msg_t resp_msg;
-
-	slurm_msg_t_init(&req_msg);
-	slurm_msg_t_init(&resp_msg);
-
-        req_msg.msg_type = REQUEST_PRIORITY_FACTORS;
-        req_msg.data     = factors_req;
-
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,
-					   working_cluster_rec) < 0)
-		return SLURM_ERROR;
-
-	switch (resp_msg.msg_type) {
-	case RESPONSE_PRIORITY_FACTORS:
-		*factors_resp =
-			(priority_factors_response_msg_t *) resp_msg.data;
-		break;
-	case RESPONSE_SLURM_RC:
-		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
-		slurm_free_return_code_msg(resp_msg.data);
-		if (rc)
-			slurm_seterrno_ret(rc);
-		*factors_resp = NULL;
-		break;
-	default:
-		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
-		break;
-	}
-
-	return SLURM_PROTOCOL_SUCCESS;
 }
