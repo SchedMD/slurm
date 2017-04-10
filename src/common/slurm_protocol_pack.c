@@ -1,9 +1,9 @@
 /****************************************************************************\
  *  slurm_protocol_pack.c - functions to pack and unpack structures for RPCs
  *****************************************************************************
+ *  Portions Copyright (C) 2010-2017 SchedMD LLC <https://www.schedmd.com>.
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010-2015 SchedMD LLC <https://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -2988,6 +2988,7 @@ static void _priority_factors_resp_list_del(void *x)
 	int i;
 
 	if (tmp_info) {
+		xfree(tmp_info->cluster_name);
 		xfree(tmp_info->partition);
 		xfree(tmp_info->priority_tres);
 		if (tmp_info->tres_cnt && tmp_info->tres_names) {

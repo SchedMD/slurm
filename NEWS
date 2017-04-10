@@ -56,6 +56,7 @@ documents those changes that are of interest to users and administrators.
  -- Add sprio -p/--partition option to filter jobs by partition name.
  -- Add partition name to job priority factor response message.
  -- Add sprio --local and --sibling options for use in federation of clusters.
+ -- Add sprio "%c" format to print cluster name in federation mode.
 
 * Changes in Slurm 17.02.3
 ==========================

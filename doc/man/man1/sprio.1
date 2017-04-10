@@ -89,6 +89,9 @@ Normalized age priority
 \fB%A\fR
 Weighted age priority
 .TP
+\fB%c\fR
+Cluster name. Only applicable for federated clusters
+.TP
 \fB%f\fR
 Normalized fair-share priority
 .TP
@@ -146,6 +149,7 @@ all partitions.
 .TP
 \fB\-\-sibling\fR
 Show all sibling jobs on a federated cluster.
+Implicitly adds "%c" (cluster name) to the output format.
 
 .TP
 \fB\-u <user_list>\fR, \fB\-\-user=<user_list>\fR
@@ -253,7 +257,7 @@ Print the configured weights for each priority component
 Copyright (C) 2009 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
-Copyright (C) 2010\-2013 SchedMD LLC.
+Copyright (C) 2010\-2017 SchedMD LLC.
 .LP
 This file is part of Slurm, a resource management program.
 For details, see <https://slurm.schedmd.com/>.

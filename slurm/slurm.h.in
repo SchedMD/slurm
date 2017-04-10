@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010-2016 SchedMD LLC <https://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2017 SchedMD LLC <https://www.schedmd.com>.
  *  Portions Copyright (C) 2012-2013 Los Alamos National Security, LLC.
  *  Portions Copyright 2013 Cray Inc. All Rights Reserved.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -1686,6 +1686,7 @@ typedef struct job_info {
 } slurm_job_info_t;
 
 typedef struct priority_factors_object {
+	char *cluster_name;	/* Cluster name ONLY set in federation */
 	uint32_t job_id;
 	char *partition;
 	uint32_t user_id;

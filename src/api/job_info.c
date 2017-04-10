@@ -1,9 +1,9 @@
 /*****************************************************************************\
  *  job_info.c - get/print the job state information of slurm
  *****************************************************************************
+ *  Portions Copyright (C) 2010-2017 SchedMD LLC <https://www.schedmd.com>.
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010-2016 SchedMD <https://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -1932,6 +1932,22 @@ static int _local_resp_first_prio(void *x, void *y)
 	return 0;
 }
 
+/* Add cluster_name to job priority info records */
+static void _add_cluster_name(priority_factors_response_msg_t *new_msg,
+			      char *cluster_name)
+{
+	priority_factors_object_t *prio_obj;
+	ListIterator iter;
+
+	if (!new_msg || !new_msg->priority_factors_list)
+		return;
+
+	iter = list_iterator_create(new_msg->priority_factors_list);
+	while ((prio_obj = (priority_factors_object_t *) list_next(iter)))
+		prio_obj->cluster_name = xstrdup(cluster_name);
+	list_iterator_destroy(iter);
+}
+
 /* Thread to read job priority factor information from some cluster */
 static void *_load_job_prio_thread(void *args)
 {
@@ -1946,6 +1962,9 @@ static void *_load_job_prio_thread(void *args)
 			cluster->name, slurm_strerror(rc));
 	} else {
 		load_job_prio_resp_struct_t *job_resp;
+		_add_cluster_name(new_msg, cluster->name);
+
+
 		job_resp = xmalloc(sizeof(load_job_prio_resp_struct_t));
 		job_resp->local_cluster = load_args->local_cluster;
 		job_resp->new_msg = new_msg;
@@ -1994,7 +2013,7 @@ static int _load_fed_job_prio(slurm_msg_t *req_msg,
 		if ((show_flags & SHOW_LOCAL) && !local_cluster)
 			continue;
 
-		load_args = xmalloc(sizeof(load_job_req_struct_t));
+		load_args = xmalloc(sizeof(load_job_req_struct_t	));
 		load_args->cluster = cluster;
 		load_args->local_cluster = local_cluster;
 		load_args->req_msg = req_msg;

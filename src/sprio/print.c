@@ -1,6 +1,7 @@
 /*****************************************************************************\
  *  print.c - sprio print job functions
  *****************************************************************************
+ *  Portions Copyright (C) 2010-2017 SchedMD LLC <https://www.schedmd.com>.
  *  Copyright (C) 2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Don Lipari <lipari1@llnl.gov>
@@ -243,6 +244,18 @@ int _print_age_priority_weighted(priority_factors_object_t * job, int width,
 		_print_int(weight_age, width, right, true);
 	else
 		_print_int(job->priority_age, width, right, true);
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_cluster_name(priority_factors_object_t *job, int width,
+			bool right, char *suffix)
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("CLUSTER", width, right, true);
+	else
+		_print_str(job->cluster_name, width, right, true);
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
