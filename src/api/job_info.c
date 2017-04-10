@@ -84,6 +84,11 @@ typedef struct load_job_resp_struct {
 	job_info_msg_t *new_msg;
 } load_job_resp_struct_t;
 
+typedef struct load_job_prio_resp_struct {
+	bool local_cluster;
+	priority_factors_response_msg_t *new_msg;
+} load_job_prio_resp_struct_t;
+
 static pthread_mutex_t job_node_info_lock = PTHREAD_MUTEX_INITIALIZER;
 static node_info_msg_t *job_node_ptr = NULL;
 
@@ -1321,10 +1326,10 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 	req_msg.msg_type = REQUEST_JOB_INFO;
 	req_msg.data     = &req;
 
-	if (!ptr || (show_flags & SHOW_LOCAL))
+	if (!ptr || (show_flags & SHOW_LOCAL)) {
 		rc = _load_cluster_jobs(&req_msg, job_info_msg_pptr,
 					working_cluster_rec);
-	else {
+	} else {
 		fed = (slurmdb_federation_rec_t *) ptr;
 		rc = _load_fed_jobs(&req_msg, job_info_msg_pptr, show_flags,
 				    cluster_name, fed);
@@ -1914,6 +1919,177 @@ _load_cluster_job_prio(slurm_msg_t *req_msg,
 	return rc;
 }
 
+/* Thread to read job priority factor information from some cluster */
+static void *_load_job_prio_thread(void *args)
+{
+	load_job_req_struct_t *load_args = (load_job_req_struct_t *) args;
+	slurmdb_cluster_rec_t *cluster = load_args->cluster;
+	priority_factors_response_msg_t *new_msg = NULL;
+	int rc;
+
+	if ((rc = _load_cluster_job_prio(load_args->req_msg, &new_msg,
+					 cluster)) || !new_msg) {
+		verbose("Error reading job information from cluster %s: %s",
+			cluster->name, slurm_strerror(rc));
+	} else {
+		load_job_prio_resp_struct_t *job_resp;
+		job_resp = xmalloc(sizeof(load_job_prio_resp_struct_t));
+		job_resp->local_cluster = load_args->local_cluster;
+		job_resp->new_msg = new_msg;
+		list_append(load_args->resp_msg_list, job_resp);
+	}
+	xfree(args);
+
+	return (void *) NULL;
+}
+
+static int _load_fed_job_prio(slurm_msg_t *req_msg,
+			      priority_factors_response_msg_t **factors_resp,
+			      uint16_t show_flags, char *cluster_name,
+			      slurmdb_federation_rec_t *fed)
+{
+	int i, j;
+	int local_job_cnt = 0;
+	load_job_prio_resp_struct_t *job_resp;
+	priority_factors_response_msg_t *orig_msg = NULL, *new_msg = NULL;
+	priority_factors_object_t *prio_obj;
+	uint32_t hash_inx, *hash_tbl_size = NULL, **hash_job_id = NULL;
+	slurmdb_cluster_rec_t *cluster;
+	ListIterator iter;
+	pthread_attr_t load_attr;
+	int pthread_count = 0;
+	pthread_t *load_thread = 0;
+	load_job_req_struct_t *load_args;
+	List resp_msg_list;
+
+	*factors_resp = NULL;
+
+	/* Spawn one pthread per cluster to collect job information */
+	resp_msg_list = list_create(NULL);
+	load_thread = xmalloc(sizeof(pthread_attr_t) *
+			      list_count(fed->cluster_list));
+	iter = list_iterator_create(fed->cluster_list);
+	while ((cluster = (slurmdb_cluster_rec_t *) list_next(iter))) {
+		int retries = 0;
+		bool local_cluster = false;
+		if ((cluster->control_host == NULL) ||
+		    (cluster->control_host[0] == '\0'))
+			continue;	/* Cluster down */
+
+		if (!xstrcmp(cluster->name, cluster_name))
+			local_cluster = true;
+		if ((show_flags & SHOW_LOCAL) && !local_cluster)
+			continue;
+
+		load_args = xmalloc(sizeof(load_job_req_struct_t));
+		load_args->cluster = cluster;
+		load_args->local_cluster = local_cluster;
+		load_args->req_msg = req_msg;
+		load_args->resp_msg_list = resp_msg_list;
+		slurm_attr_init(&load_attr);
+		if (pthread_attr_setdetachstate(&load_attr,
+						PTHREAD_CREATE_JOINABLE))
+			error("pthread_attr_setdetachstate error %m");
+		while (pthread_create(&load_thread[pthread_count], &load_attr,
+				      _load_job_prio_thread,
+				      (void *) load_args)) {
+			error("pthread_create error %m");
+			if (++retries > MAX_RETRIES)
+				fatal("Can't create pthread");
+			usleep(10000);	/* sleep and retry */
+		}
+		pthread_count++;
+		slurm_attr_destroy(&load_attr);
+
+	}
+	list_iterator_destroy(iter);
+
+	/* Wait for all pthreads to complete */
+	for (i = 0; i < pthread_count; i++)
+		pthread_join(load_thread[i], NULL);
+	xfree(load_thread);
+
+	/* Move the response from the local cluster (if any) to top of list */
+	list_sort(resp_msg_list, _local_resp_first);
+
+	/* Merge the responses into a single response message */
+	iter = list_iterator_create(resp_msg_list);
+	while ((job_resp = (load_job_prio_resp_struct_t *) list_next(iter))) {
+		new_msg = job_resp->new_msg;
+		if (!orig_msg) {
+			orig_msg = new_msg;
+			if (job_resp->local_cluster) {
+				local_job_cnt = list_count(
+						new_msg->priority_factors_list);
+			}
+			*factors_resp = orig_msg;
+		} else {
+			/* Merge the job records into a single response message */
+			list_transfer(orig_msg->priority_factors_list,
+				      new_msg->priority_factors_list);
+			FREE_NULL_LIST(new_msg->priority_factors_list);
+			xfree(new_msg);
+		}
+		xfree(job_resp);
+	}
+	list_iterator_destroy(iter);
+	FREE_NULL_LIST(resp_msg_list);
+
+	if (!orig_msg)
+		slurm_seterrno_ret(ESLURM_INVALID_JOB_ID);
+
+	/* Find duplicate job records and jobs local to other clusters and set
+	 * their job_id == 0 so they get skipped in reporting */
+	if ((show_flags & SHOW_SIBLING) == 0) {
+		hash_tbl_size = xmalloc(sizeof(uint32_t) * JOB_HASH_SIZE);
+		hash_job_id = xmalloc(sizeof(uint32_t *) * JOB_HASH_SIZE);
+		for (i = 0; i < JOB_HASH_SIZE; i++) {
+			hash_tbl_size[i] = 100;
+			hash_job_id[i] = xmalloc(sizeof(uint32_t ) *
+						 hash_tbl_size[i]);
+		}
+	}
+	iter = list_iterator_create(orig_msg->priority_factors_list);
+	i = 0;
+	while ((prio_obj = (priority_factors_object_t *) list_next(iter))) {
+		if ((i++ >= local_job_cnt) &&
+		    _test_local_job(prio_obj->job_id)) {
+			list_delete_item(iter);
+			continue;
+		}
+		if (show_flags & SHOW_SIBLING)
+			continue;
+		hash_inx = prio_obj->job_id % JOB_HASH_SIZE;
+		for (j = 0;
+		     (j < hash_tbl_size[hash_inx] && hash_job_id[hash_inx][j]);
+		     j++) {
+			if (prio_obj->job_id ==
+			    hash_job_id[hash_inx][j]) {
+				prio_obj->job_id = 0;
+				break;
+			}
+		}
+		if (prio_obj->job_id == 0) {
+			list_delete_item(iter);	/* Duplicate */
+			continue;
+		} else if (j >= hash_tbl_size[hash_inx]) {
+			hash_tbl_size[hash_inx] *= 2;
+			xrealloc(hash_job_id[hash_inx],
+				 sizeof(uint32_t) * hash_tbl_size[hash_inx]);
+		}
+		hash_job_id[hash_inx][j] = prio_obj->job_id;
+	}
+	list_iterator_destroy(iter);
+	if ((show_flags & SHOW_SIBLING) == 0) {
+		for (i = 0; i < JOB_HASH_SIZE; i++)
+			xfree(hash_job_id[i]);
+		xfree(hash_tbl_size);
+		xfree(hash_job_id);
+	}
+
+	return SLURM_PROTOCOL_SUCCESS;
+}
+
 /*
  * slurm_load_job_prio - issue RPC to get job priority information for
  *	jobs which pass filter test
@@ -1921,7 +2097,7 @@ _load_cluster_job_prio(slurm_msg_t *req_msg,
  * IN job_id_list - list of job IDs to be reported
  * IN partitions - comma delimited list of partition names to be reported
  * IN uid_list - list of user IDs to be reported
- * IN show_flags -  job filtering option: 0 or SHOW_LOCAL
+ * IN show_flags -  job filtering option: 0, SHOW_LOCAL and/or SHOW_SIBLING
  * RET 0 or -1 on error
  * NOTE: free the response using slurm_free_priority_factors_response_msg()
  */
@@ -1932,7 +2108,19 @@ slurm_load_job_prio(priority_factors_response_msg_t **factors_resp,
 {
 	slurm_msg_t req_msg;
 	priority_factors_request_msg_t factors_req;
+	char *cluster_name = NULL;
+	void *ptr = NULL;
+	slurmdb_federation_rec_t *fed;
 	int rc;
+
+	cluster_name = slurm_get_cluster_name();
+	if ((show_flags & SHOW_LOCAL) == 0) {
+		if (slurm_load_federation(&ptr) ||
+		    !_in_federation_test(ptr, cluster_name)) {
+			/* Not in federation */
+			show_flags |= SHOW_LOCAL;
+		}
+	}
 
 	memset(&factors_req, 0, sizeof(priority_factors_request_msg_t));
 	factors_req.job_id_list = job_id_list;
@@ -1943,8 +2131,16 @@ slurm_load_job_prio(priority_factors_response_msg_t **factors_resp,
 	req_msg.msg_type = REQUEST_PRIORITY_FACTORS;
 	req_msg.data     = &factors_req;
 
-	rc = _load_cluster_job_prio(&req_msg, factors_resp,
-				    working_cluster_rec);
+	if (!ptr || (show_flags & SHOW_LOCAL)) {
+		rc = _load_cluster_job_prio(&req_msg, factors_resp,
+					    working_cluster_rec);
+	} else {
+		fed = (slurmdb_federation_rec_t *) ptr;
+		rc = _load_fed_job_prio(&req_msg, factors_resp, show_flags,
+					cluster_name, fed);
+		slurm_destroy_federation_rec(ptr);
+	}
 
+	xfree(cluster_name);
 	return rc;
 }
