@@ -556,6 +556,7 @@ typedef struct shares_response_msg {
 
 typedef struct priority_factors_object {
 	uint32_t job_id;
+	char *partition;
 	uint32_t user_id;
 
 	double	 priority_age;
@@ -574,6 +575,7 @@ typedef struct priority_factors_object {
 
 typedef struct priority_factors_request_msg {
 	List	 job_id_list;
+	char    *partitions;
 	List	 uid_list;
 } priority_factors_request_msg_t;
 

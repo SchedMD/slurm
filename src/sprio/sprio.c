@@ -75,7 +75,7 @@ int main (int argc, char **argv)
 	slurm_conf_init(NULL);
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_USER, NULL);
 
-	parse_command_line( argc, argv );
+	parse_command_line(argc, argv);
 	if (params.verbose) {
 		opts.stderr_level += params.verbose;
 		log_alter(opts, SYSLOG_FACILITY_USER, NULL);
@@ -123,16 +123,12 @@ int main (int argc, char **argv)
 
 	if (params.jobs)
 		req_msg.job_id_list = params.job_list;
-	else
-		req_msg.job_id_list = NULL;
-
+	if (params.parts)
+		req_msg.partitions = params.parts;
 	if (params.users)
 		req_msg.uid_list = params.user_list;
-	else
-		req_msg.uid_list = NULL;
 
 	error_code = _get_info(&req_msg, &resp_msg);
-
 	if (error_code) {
 		slurm_perror("Couldn't get priority factors from controller");
 		exit(error_code);
@@ -140,11 +136,11 @@ int main (int argc, char **argv)
 
 	if (params.format == NULL) {
 		if (params.normalized) {
-			if (params.long_list)
-				params.format = "%.15i %.8u %10y %10a %10f "
+			if (params.long_list) {
+				params.format = "%.15i %9r %.8u %10y %10a %10f "
 					"%10j %10p %10q %20t";
-			else{
-				params.format = xstrdup("%.15i");
+			} else {
+				params.format = xstrdup("%.15i %9r");
 				if (params.users)
 					xstrcat(params.format, " %.8u");
 				xstrcat(params.format, " %10y");
@@ -162,11 +158,11 @@ int main (int argc, char **argv)
 					xstrcat(params.format, " %20t");
 			}
 		} else {
-			if (params.long_list)
-				params.format = "%.15i %.8u %.10Y %.10A %.10F "
+			if (params.long_list) {
+				params.format = "%.15i %9r %.8u %.10Y %.10A %.10F "
 					"%.10J %.10P %.10Q %.11N %.20T";
-			else{
-				params.format = xstrdup("%.15i");
+			} else {
+				params.format = xstrdup("%.15i %9r");
 				if (params.users)
 					xstrcat(params.format, " %.8u");
 				xstrcat(params.format, " %.10Y");

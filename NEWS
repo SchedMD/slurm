@@ -53,6 +53,8 @@ documents those changes that are of interest to users and administrators.
     rather than having a single counter per user applied to all partitions.
  -- Modify backfill logic so that bf_max_job_user, bf_max_job_part and
     bf_max_job_user_part options can all be used independently of each other.
+ -- Add sprio -p/--partition option to filter jobs by partition name.
+ -- Add partition name to job priority factor response message.
 
 * Changes in Slurm 17.02.3
 ==========================

@@ -1,4 +1,4 @@
-.TH sprio "1" "Slurm Commands" "April 2015" "Slurm Commands"
+.TH sprio "1" "Slurm Commands" "March 2017" "Slurm Commands"
 
 .SH "NAME"
 sprio \- view the factors that comprise a job's scheduling priority
@@ -54,10 +54,10 @@ assigned non-zero weights are
 .RS
 .TP 15
 \fIdefault\fR
-"%.15i %.10Y %.10A %.10F %.10J %.10P %.10Q %20T"
+"%.15i %9r %.10Y %.10A %.10F %.10J %.10P %.10Q %20T"
 .TP
 \fI\-l, \-\-long\fR
-"%.15i %.8u %.10Y %.10A %.10F %.10J %.10P %.10Q %.6N %20T"
+"%.15i %9r %.8u %.10Y %.10A %.10F %.10J %.10P %.10Q %.6N %20T"
 .RE
 
 .IP
@@ -108,6 +108,9 @@ Normalized partition priority
 \fB%P\fR
 Weighted partition priority
 .TP
+\fB%r\fR
+Partition name
+.TP
 \fB%q\fR
 Normalized quality of service priority
 .TP
@@ -129,6 +132,11 @@ Job priority
 \fB%y\fR
 Normalized job priority
 .RE
+
+.TP
+\fB\-p <partition_list>\fR, \fB\-\-partition=<partition_list>\fR
+Requests a comma separated list of partitions to display.  Defaults to
+all partitions.
 
 .TP
 \fB\-u <user_list>\fR, \fB\-\-user=<user_list>\fR

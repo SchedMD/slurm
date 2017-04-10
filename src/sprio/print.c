@@ -67,9 +67,10 @@ int print_jobs_array(List jobs, List format)
 	}
 
 	/* Print the jobs of interest */
-	if (jobs)
+	if (jobs) {
 		list_for_each (jobs, (ListForF) print_job_from_format,
 			       (void *) format);
+	}
 
 	return SLURM_SUCCESS;
 }
@@ -381,6 +382,18 @@ int _print_part_priority_weighted(priority_factors_object_t * job, int width,
 		_print_int(weight_part, width, right, true);
 	else
 		_print_int(job->priority_part, width, right, true);
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_partition(priority_factors_object_t *job, int width, bool right,
+		     char *suffix)
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("PARTITION", width, right, true);
+	else
+		_print_str(job->partition, width, right, true);
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;

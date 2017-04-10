@@ -1390,17 +1390,23 @@ static void *_decay_thread(void *no_data)
 	return NULL;
 }
 
-/* Selects the specific jobs that the user wanted to see
- * Requests that include job id(s) and user id(s) must match both to be passed.
- * Returns 1 if job should be omitted */
-static int _filter_job(struct job_record *job_ptr, List req_job_list,
-		       List req_user_list)
+/* If the specified job record satisfies the filter specifications in req_msg
+ * and part_ptr_list (partition name filters), then add its priority specs
+ * to ret_list */
+static void _filter_job(struct job_record *job_ptr,
+			priority_factors_request_msg_t *req_msg,
+			List part_ptr_list, List ret_list)
 {
-	int filter = 0;
-	ListIterator iterator;
+	priority_factors_object_t *obj = NULL;
+	struct part_record *job_part_ptr = NULL, *filter_part_ptr = NULL;
+	List req_job_list, req_user_list;
+	int filter = 0, inx;
+	ListIterator iterator, job_iter, filter_iter;
 	uint32_t *job_id;
 	uint32_t *user_id;
 
+	/* Filter by job ID */
+	req_job_list = req_msg->job_id_list;
 	if (req_job_list) {
 		filter = 1;
 		iterator = list_iterator_create(req_job_list);
@@ -1411,11 +1417,12 @@ static int _filter_job(struct job_record *job_ptr, List req_job_list,
 			}
 		}
 		list_iterator_destroy(iterator);
-		if (filter == 1) {
-			return 1;
-		}
+		if (filter == 1)
+			return;
 	}
 
+	/* Filter by user/UID */
+	req_user_list = req_msg->uid_list;
 	if (req_user_list) {
 		filter = 1;
 		iterator = list_iterator_create(req_user_list);
@@ -1427,10 +1434,69 @@ static int _filter_job(struct job_record *job_ptr, List req_job_list,
 		}
 		list_iterator_destroy(iterator);
 		if (filter == 1)
-			return 1;
+			return;
 	}
 
-	return filter;
+	/* Filter by partition, job in one partition */
+	if (!job_ptr->part_ptr_list || !job_ptr->priority_array) {
+		job_part_ptr =  job_ptr->part_ptr;
+		filter = 0;
+		if (part_ptr_list) {
+			filter = 1;
+			filter_iter = list_iterator_create(part_ptr_list);
+			while ((filter_part_ptr = list_next(filter_iter))) {
+				if (filter_part_ptr == job_part_ptr) {
+					filter = 0;
+					break;
+				}
+			}
+			list_iterator_destroy(filter_iter);
+		}
+
+		if (filter == 0) {
+			obj = xmalloc(sizeof(priority_factors_object_t));
+			slurm_copy_priority_factors_object(obj,
+						job_ptr->prio_factors);
+			obj->job_id = job_ptr->job_id;
+			obj->partition = job_part_ptr->name;
+			obj->user_id = job_ptr->user_id;
+			list_append(ret_list, obj);
+		}
+		return;
+	}
+
+	/* Filter by partition, job in multiple partitions */
+	inx = 0;
+	job_iter = list_iterator_create(job_ptr->part_ptr_list);
+	while ((job_part_ptr = list_next(job_iter))) {
+		filter = 0;
+		if (part_ptr_list) {
+			filter = 1;
+			filter_iter = list_iterator_create(part_ptr_list);
+			while ((filter_part_ptr = list_next(filter_iter))) {
+				if (filter_part_ptr == job_part_ptr) {
+					filter = 0;
+					break;
+				}
+			}
+			list_iterator_destroy(filter_iter);
+		}
+
+		if (filter == 0) {
+			obj = xmalloc(sizeof(priority_factors_object_t));
+			slurm_copy_priority_factors_object(obj,
+						job_ptr->prio_factors);
+			obj->priority_part = job_part_ptr->priority_job_factor /
+					     (double)part_max_priority *
+					     (double)weight_part;
+			obj->job_id = job_ptr->job_id;
+			obj->partition = job_part_ptr->name;
+			obj->user_id = job_ptr->user_id;
+			list_append(ret_list, obj);
+		}
+		inx++;
+	}
+	list_iterator_destroy(job_iter);
 }
 
 static void *_cleanup_thread(void *no_data)
@@ -1825,23 +1891,31 @@ extern double priority_p_calc_fs_factor(long double usage_efctv,
 extern List priority_p_get_priority_factors_list(
 	priority_factors_request_msg_t *req_msg, uid_t uid)
 {
-	List req_job_list;
-	List req_user_list;
-	List ret_list = NULL;
+	List ret_list = NULL, part_filter_list = NULL;
 	ListIterator itr;
-	priority_factors_object_t *obj = NULL;
 	struct job_record *job_ptr = NULL;
+	struct part_record *part_ptr;
 	time_t start_time = time(NULL);
-
+	char *part_str, *tok, *last = NULL;
 	/* Read lock on jobs, nodes, and partitions */
 	slurmctld_lock_t job_read_lock =
 		{ NO_LOCK, READ_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
 
 	xassert(req_msg);
-	req_job_list = req_msg->job_id_list;
-	req_user_list = req_msg->uid_list;
 
 	lock_slurmctld(job_read_lock);
+	if (req_msg->partitions) {
+		part_filter_list = list_create(NULL);
+		part_str = xstrdup(req_msg->partitions);
+		tok = strtok_r(part_str, ",", &last);
+		while (tok) {
+			if ((part_ptr = find_part_record(tok)))
+				list_append(part_filter_list, part_ptr);
+			tok = strtok_r(NULL, ",", &last);
+		}
+		xfree(part_str);
+	}
+
 	if (job_list && list_count(job_list)) {
 		ret_list = list_create(slurm_destroy_priority_factors_object);
 		itr = list_iterator_create(job_list);
@@ -1869,9 +1943,6 @@ extern List priority_p_get_priority_factors_list(
 			if (job_ptr->direct_set_prio)
 				continue;
 
-			if (_filter_job(job_ptr, req_job_list, req_user_list))
-				continue;
-
 			if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
 			    (job_ptr->user_id != uid) &&
 			    !validate_operator(uid) &&
@@ -1883,21 +1954,15 @@ extern List priority_p_get_priority_factors_list(
 			       != 0))))
 				continue;
 
-			obj = xmalloc(sizeof(priority_factors_object_t));
-
-			slurm_copy_priority_factors_object(
-				obj, job_ptr->prio_factors);
-
-			obj->job_id = job_ptr->job_id;
-			obj->user_id = job_ptr->user_id;
-			list_append(ret_list, obj);
+			_filter_job(job_ptr, req_msg, part_filter_list,
+				    ret_list);
 		}
 		list_iterator_destroy(itr);
-		if (!list_count(ret_list)) {
+		if (!list_count(ret_list))
 			FREE_NULL_LIST(ret_list);
-		}
 	}
 	unlock_slurmctld(job_read_lock);
+	FREE_NULL_LIST(part_filter_list);
 
 	return ret_list;
 }
@@ -1970,10 +2035,10 @@ extern void set_priority_factors(time_t start_time, struct job_record *job_ptr)
 
 	xassert(job_ptr);
 
-	if (!job_ptr->prio_factors)
+	if (!job_ptr->prio_factors) {
 		job_ptr->prio_factors =
 			xmalloc(sizeof(priority_factors_object_t));
-	else {
+	} else {
 		xfree(job_ptr->prio_factors->tres_weights);
 		xfree(job_ptr->prio_factors->priority_tres);
 		memset(job_ptr->prio_factors, 0,

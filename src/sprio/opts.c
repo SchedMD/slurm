@@ -93,6 +93,7 @@ parse_command_line( int argc, char* *argv )
 		{"clusters",   required_argument, 0, 'M'},
 		{"norm",       no_argument,       0, 'n'},
 		{"format",     required_argument, 0, 'o'},
+		{"partition",  required_argument, 0, 'p'},
 		{"user",       required_argument, 0, 'u'},
 		{"users",      required_argument, 0, 'u'},
 		{"verbose",    no_argument,       0, 'v'},
@@ -106,8 +107,8 @@ parse_command_line( int argc, char* *argv )
 	/* get defaults from environment */
 	_opt_env();
 
-	while((opt_char = getopt_long(argc, argv, "hj::lM:no:u:vVw",
-				      long_options, &option_index)) != -1) {
+	while ((opt_char = getopt_long(argc, argv, "hj::lM:no:p:u:vVw",
+				       long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
 			fprintf(stderr, "Try \"sprio --help\" "
@@ -140,6 +141,10 @@ parse_command_line( int argc, char* *argv )
 		case (int) 'o':
 			xfree(params.format);
 			params.format = xstrdup(optarg);
+			break;
+		case (int) 'p':
+			xfree(params.parts);
+			params.parts = xstrdup(optarg);
 			break;
 		case (int) 'u':
 			xfree(params.users);
@@ -272,6 +277,10 @@ extern int parse_format( char* format )
 							      field_size,
 							      right_justify,
 							      suffix );
+		else if (field[0] == 'r')
+			job_format_add_partition(params.format_list,
+						 field_size, right_justify,
+						 suffix);
 		else if (field[0] == 'q')
 			job_format_add_qos_priority_normalized(params.format_list,
 							       field_size,
@@ -373,7 +382,7 @@ _parse_token( char *token, char *field, int *field_size, bool *right_justify,
 
 /* print the parameters specified */
 static void
-_print_options()
+_print_options(void)
 {
 	ListIterator iterator;
 	int i;
@@ -384,6 +393,7 @@ _print_options()
 	printf( "format     = %s\n", params.format );
 	printf( "job_flag   = %d\n", params.job_flag );
 	printf( "jobs       = %s\n", params.jobs );
+	printf( "partition  = %s\n", params.parts );
 	printf( "users      = %s\n", params.users );
 	printf( "verbose    = %d\n", params.verbose );
 
@@ -406,7 +416,7 @@ _print_options()
 	}
 
 	printf( "-----------------------------\n\n\n" );
-} ;
+}
 
 
 /*
@@ -478,7 +488,7 @@ _build_user_list(char* str)
 
 static void _usage(void)
 {
-	printf("Usage: sprio [-j jid[s]] [-u user_name[s]] [-o format] [--usage] [-hlnvVw]\n");
+	printf("Usage: sprio [-j jid[s]] [-u user_name[s]] [-o format] [-p partitions] [--usage] [-hlnvVw]\n");
 }
 
 static void _help(void)
@@ -495,6 +505,7 @@ Usage: sprio [OPTIONS]\n\
                                   NOTE: SlurmDBD must be up.\n\
   -n, --norm                      display normalized values\n\
   -o, --format=format             format specification\n\
+  -p, --partition=partition_name  comma separated list of partitions\n\
   -u, --user=user_name            comma separated list of users to view\n\
   -v, --verbose                   verbosity level\n\
   -V, --version                   output version information and exit\n\

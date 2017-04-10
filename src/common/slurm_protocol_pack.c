@@ -760,6 +760,8 @@ static void _pack_buf_list_msg(ctld_list_msg_t *msg, Buf buffer,
 static int _unpack_buf_list_msg(ctld_list_msg_t **msg, Buf buffer,
 				 uint16_t protocol_version);
 
+static void _priority_factors_resp_list_del(void *x);
+
 /* pack_header
  * packs a slurm protocol header that precedes every slurm message
  * IN header - the header structure to pack
@@ -2669,7 +2671,44 @@ static void _pack_priority_factors_object(void *in, Buf buffer,
 {
 	priority_factors_object_t *object = (priority_factors_object_t *)in;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		if (!object) {
+			char *null_str = NULL;
+			pack32(0, buffer);
+			pack32(0, buffer);
+
+			packdouble(0, buffer);
+			packdouble(0, buffer);
+			packdouble(0, buffer);
+			packdouble(0, buffer);
+			packdouble(0, buffer);
+
+			pack32(0, buffer);
+			packstr(null_str, buffer);
+
+			return;
+		}
+
+		pack32(object->job_id, buffer);
+		pack32(object->user_id, buffer);
+
+		packdouble(object->priority_age, buffer);
+		packdouble(object->priority_fs, buffer);
+		packdouble(object->priority_js, buffer);
+		packdouble(object->priority_part, buffer);
+		packdouble(object->priority_qos, buffer);
+
+		packdouble_array(object->priority_tres, object->tres_cnt,
+				 buffer);
+		pack32(object->tres_cnt, buffer);
+		packstr_array(assoc_mgr_tres_name_array, object->tres_cnt,
+			      buffer);
+		packdouble_array(object->tres_weights, object->tres_cnt,
+				 buffer);
+
+		pack32(object->nice, buffer);
+		packstr(object->partition, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			pack32(0, buffer);
 			pack32(0, buffer);
@@ -2709,13 +2748,34 @@ static void _pack_priority_factors_object(void *in, Buf buffer,
 static int _unpack_priority_factors_object(void **object, Buf buffer,
 					   uint16_t protocol_version)
 {
-	uint32_t tmp32;
+	uint32_t tmp32 = 0;
 
 	priority_factors_object_t *object_ptr =
 		xmalloc(sizeof(priority_factors_object_t));
 	*object = (void *) object_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		safe_unpack32(&object_ptr->job_id, buffer);
+		safe_unpack32(&object_ptr->user_id, buffer);
+
+		safe_unpackdouble(&object_ptr->priority_age, buffer);
+		safe_unpackdouble(&object_ptr->priority_fs, buffer);
+		safe_unpackdouble(&object_ptr->priority_js, buffer);
+		safe_unpackdouble(&object_ptr->priority_part, buffer);
+		safe_unpackdouble(&object_ptr->priority_qos, buffer);
+
+		safe_unpackdouble_array(&object_ptr->priority_tres, &tmp32,
+					buffer);
+		safe_unpack32(&object_ptr->tres_cnt, buffer);
+		safe_unpackstr_array(&object_ptr->tres_names,
+				     &object_ptr->tres_cnt, buffer);
+		safe_unpackdouble_array(&object_ptr->tres_weights, &tmp32,
+					buffer);
+
+		safe_unpack32(&object_ptr->nice, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->partition, &tmp32,
+				       buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&object_ptr->job_id, buffer);
 		safe_unpack32(&object_ptr->user_id, buffer);
 
@@ -2739,7 +2799,7 @@ static int _unpack_priority_factors_object(void **object, Buf buffer,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	xfree(object);
+	_priority_factors_resp_list_del(object);
 	*object = NULL;
 	return SLURM_ERROR;
 }
@@ -2749,33 +2809,66 @@ _pack_priority_factors_request_msg(priority_factors_request_msg_t * msg,
 				   Buf buffer,
 				   uint16_t protocol_version)
 {
-	uint32_t count = NO_VAL;
+	uint32_t count;
 	uint32_t* tmp = NULL;
 	ListIterator itr = NULL;
 
 	xassert(msg != NULL);
 
-	if (msg->job_id_list)
-		count = list_count(msg->job_id_list);
-	pack32(count, buffer);
-	if (count && count != NO_VAL) {
-		itr = list_iterator_create(msg->job_id_list);
-		while ((tmp = list_next(itr))) {
-			pack32(*tmp, buffer);
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		if (msg->job_id_list)
+			count = list_count(msg->job_id_list);
+		else
+			count = NO_VAL32;
+		pack32(count, buffer);
+		if (count && count != NO_VAL) {
+			itr = list_iterator_create(msg->job_id_list);
+			while ((tmp = list_next(itr))) {
+				pack32(*tmp, buffer);
+			}
+			list_iterator_destroy(itr);
 		}
-		list_iterator_destroy(itr);
-	}
 
-	count = NO_VAL;
-	if (msg->uid_list)
-		count = list_count(msg->uid_list);
-	pack32(count, buffer);
-	if (count && count != NO_VAL) {
-		itr = list_iterator_create(msg->uid_list);
-		while ((tmp = list_next(itr))) {
-			pack32(*tmp, buffer);
+		if (msg->uid_list)
+			count = list_count(msg->uid_list);
+		else
+			count = NO_VAL32;
+		pack32(count, buffer);
+		if (count && count != NO_VAL) {
+			itr = list_iterator_create(msg->uid_list);
+			while ((tmp = list_next(itr))) {
+				pack32(*tmp, buffer);
+			}
+			list_iterator_destroy(itr);
 		}
-		list_iterator_destroy(itr);
+
+		packstr(msg->partitions, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (msg->job_id_list)
+			count = list_count(msg->job_id_list);
+		else
+			count = NO_VAL32;
+		pack32(count, buffer);
+		if (count && count != NO_VAL) {
+			itr = list_iterator_create(msg->job_id_list);
+			while ((tmp = list_next(itr))) {
+				pack32(*tmp, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+
+		if (msg->uid_list)
+			count = list_count(msg->uid_list);
+		else
+			count = NO_VAL32;
+		pack32(count, buffer);
+		if (count && count != NO_VAL) {
+			itr = list_iterator_create(msg->uid_list);
+			while ((tmp = list_next(itr))) {
+				pack32(*tmp, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
 	}
 
 }
@@ -2786,7 +2879,8 @@ _unpack_priority_factors_request_msg(priority_factors_request_msg_t ** msg,
 				     uint16_t protocol_version)
 {
 	uint32_t *uint32_tmp = NULL;
-	uint32_t count = NO_VAL32;
+	uint32_t part_str_len = 0;
+	uint32_t count = 0;
 	int i;
 	priority_factors_request_msg_t *object_ptr = NULL;
 
@@ -2795,29 +2889,67 @@ _unpack_priority_factors_request_msg(priority_factors_request_msg_t ** msg,
 	object_ptr = xmalloc(sizeof(priority_factors_request_msg_t));
 	*msg = object_ptr;
 
-	safe_unpack32(&count, buffer);
-	if (count != NO_VAL) {
-		object_ptr->job_id_list = list_create(slurm_destroy_uint32_ptr);
-		for (i = 0; i < count; i++) {
-			uint32_tmp = xmalloc(sizeof(uint32_t));
-			safe_unpack32(uint32_tmp, buffer);
-			list_append(object_ptr->job_id_list, uint32_tmp);
-			uint32_tmp = NULL;
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		safe_unpack32(&count, buffer);
+		if (count > NO_VAL32)
+			goto unpack_error;
+		if (count != NO_VAL32) {
+			object_ptr->job_id_list =
+				list_create(slurm_destroy_uint32_ptr);
+			for (i = 0; i < count; i++) {
+				uint32_tmp = xmalloc(sizeof(uint32_t));
+				safe_unpack32(uint32_tmp, buffer);
+				list_append(object_ptr->job_id_list,uint32_tmp);
+				uint32_tmp = NULL;
+			}
+		}
+
+		safe_unpack32(&count, buffer);
+		if (count > NO_VAL32)
+			goto unpack_error;
+		if (count != NO_VAL32) {
+			object_ptr->uid_list =
+				list_create(slurm_destroy_uint32_ptr);
+			for (i = 0; i < count; i++) {
+				uint32_tmp = xmalloc(sizeof(uint32_t));
+				safe_unpack32(uint32_tmp, buffer);
+				list_append(object_ptr->uid_list, uint32_tmp);
+				uint32_tmp = NULL;
+			}
+		}
+
+		safe_unpackstr_xmalloc(&object_ptr->partitions, &part_str_len,
+				       buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&count, buffer);
+		if (count > NO_VAL32)
+			goto unpack_error;
+		if (count != NO_VAL32) {
+			object_ptr->job_id_list =
+				list_create(slurm_destroy_uint32_ptr);
+			for (i = 0; i < count; i++) {
+				uint32_tmp = xmalloc(sizeof(uint32_t));
+				safe_unpack32(uint32_tmp, buffer);
+				list_append(object_ptr->job_id_list,uint32_tmp);
+				uint32_tmp = NULL;
+			}
+		}
+
+		safe_unpack32(&count, buffer);
+		if (count > NO_VAL32)
+			goto unpack_error;
+		if (count != NO_VAL32) {
+			object_ptr->uid_list =
+				list_create(slurm_destroy_uint32_ptr);
+			for (i = 0; i < count; i++) {
+				uint32_tmp = xmalloc(sizeof(uint32_t));
+				safe_unpack32(uint32_tmp, buffer);
+				list_append(object_ptr->uid_list, uint32_tmp);
+				uint32_tmp = NULL;
+			}
 		}
 	}
 
-	safe_unpack32(&count, buffer);
-	if (count > NO_VAL32)
-		goto unpack_error;
-	if (count != NO_VAL32) {
-		object_ptr->uid_list = list_create(slurm_destroy_uint32_ptr);
-		for (i = 0; i < count; i++) {
-			uint32_tmp = xmalloc(sizeof(uint32_t));
-			safe_unpack32(uint32_tmp, buffer);
-			list_append(object_ptr->uid_list, uint32_tmp);
-			uint32_tmp = NULL;
-		}
-	}
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -2840,18 +2972,32 @@ _pack_priority_factors_response_msg(priority_factors_response_msg_t * msg,
 	if (msg->priority_factors_list)
 		count = list_count(msg->priority_factors_list);
 	pack32(count, buffer);
-	if (count && count != NO_VAL) {
+	if (count && (count != NO_VAL)) {
 		itr = list_iterator_create(msg->priority_factors_list);
-		while ((factors = list_next(itr)))
+		while ((factors = list_next(itr))) {
 			_pack_priority_factors_object(factors, buffer,
 						      protocol_version);
+		}
 		list_iterator_destroy(itr);
 	}
 }
 
 static void _priority_factors_resp_list_del(void *x)
 {
-	xfree(x);
+	priority_factors_object_t *tmp_info = (priority_factors_object_t *) x;
+	int i;
+
+	if (tmp_info) {
+		xfree(tmp_info->partition);
+		xfree(tmp_info->priority_tres);
+		if (tmp_info->tres_cnt && tmp_info->tres_names) {
+			for (i = 0; i < tmp_info->tres_cnt; i++)
+				xfree(tmp_info->tres_names[i]);
+		}
+		xfree(tmp_info->tres_names);
+		xfree(tmp_info->tres_weights);
+		xfree(tmp_info);
+	}
 }
 
 static int

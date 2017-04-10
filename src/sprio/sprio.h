@@ -70,6 +70,7 @@ struct sprio_parameters {
 
 	char* format;
 	char* jobs;
+	char* parts;
 	char* users;
 
 	List  format_list;

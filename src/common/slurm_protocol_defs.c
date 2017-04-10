@@ -3832,6 +3832,8 @@ extern void slurm_copy_priority_factors_object(priority_factors_object_t *dest,
 	size = sizeof(double) * src->tres_cnt;
 
 	memcpy(dest, src, sizeof(priority_factors_object_t));
+	dest->partition = xstrdup(src->partition);
+
 	if (src->priority_tres) {
 		dest->priority_tres = xmalloc(size);
 		memcpy(dest->priority_tres, src->priority_tres, size);
@@ -3854,6 +3856,7 @@ extern void slurm_free_priority_factors_request_msg(
 {
 	if (msg) {
 		FREE_NULL_LIST(msg->job_id_list);
+		xfree(msg->partitions);
 		FREE_NULL_LIST(msg->uid_list);
 		xfree(msg);
 	}
