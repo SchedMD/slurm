@@ -59,9 +59,11 @@
 
 struct sprio_parameters {
 	bool job_flag;
+	bool local;
 	bool long_list;
 	bool no_header;
 	bool normalized;
+	bool sibling;
 	bool weights;
 
 	int  verbose;

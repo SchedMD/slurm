@@ -33,6 +33,11 @@ and not include a space between them. For example "\-j1008,1009" and
 not "\-j 1008,1009".
 
 .TP
+\fB\-\-local\fR
+Show only jobs local to this cluster. Ignore other clusters in this federation
+(if any).
+
+.TP
 \fB\-l\fR, \fB\-\-long\fR
 Report more of the available information for the selected jobs.
 
@@ -139,6 +144,10 @@ Requests a comma separated list of partitions to display.  Defaults to
 all partitions.
 
 .TP
+\fB\-\-sibling\fR
+Show all sibling jobs on a federated cluster.
+
+.TP
 \fB\-u <user_list>\fR, \fB\-\-user=<user_list>\fR
 Request jobs from a comma separated list of users.  The list can
 consist of user names or user id numbers.
@@ -170,6 +179,12 @@ Same as \fB\-\-clusters\fR
 .TP
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file.
+
+\fBSPRIO_LONG\fR
+Same as \fB\-\-long\fR
+
+\fBSPRIO_SIBLING\fR
+Same as \fB\-\-sibling\fR
 
 .SH "EXAMPLES"
 .eo

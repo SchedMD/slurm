@@ -55,6 +55,7 @@ documents those changes that are of interest to users and administrators.
     bf_max_job_user_part options can all be used independently of each other.
  -- Add sprio -p/--partition option to filter jobs by partition name.
  -- Add partition name to job priority factor response message.
+ -- Add sprio --local and --sibling options for use in federation of clusters.
 
 * Changes in Slurm 17.02.3
 ==========================

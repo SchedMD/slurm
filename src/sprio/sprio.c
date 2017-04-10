@@ -67,6 +67,7 @@ int main (int argc, char **argv)
 	int error_code = SLURM_SUCCESS;
 	priority_factors_response_msg_t *resp_msg = NULL;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
+	uint16_t show_flags = 0;
 
 	slurm_conf_init(NULL);
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_USER, NULL);
@@ -114,8 +115,13 @@ int main (int argc, char **argv)
 	}
 	xfree(prio_type);
 
+	if (params.local)
+		show_flags |= SHOW_LOCAL;
+	if (params.sibling)
+		show_flags |= SHOW_SIBLING;
 	error_code = slurm_load_job_prio(&resp_msg, params.job_list,
-					 params.parts, params.user_list, 0);
+					 params.parts, params.user_list,
+					 show_flags);
 	if (error_code) {
 		slurm_perror("Couldn't get priority factors from controller");
 		exit(error_code);

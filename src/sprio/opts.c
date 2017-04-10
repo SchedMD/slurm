@@ -52,8 +52,10 @@
 #include "src/sprio/sprio.h"
 
 /* getopt_long options, integers but not characters */
-#define OPT_LONG_HELP  0x100
-#define OPT_LONG_USAGE 0x101
+#define OPT_LONG_HELP      0x100
+#define OPT_LONG_USAGE     0x101
+#define OPT_LONG_LOCAL     0x102
+#define OPT_LONG_SIBLING   0x103
 
 /* FUNCTIONS */
 static List  _build_job_list( char* str );
@@ -75,6 +77,10 @@ static void _opt_env(void)
 			exit(1);
 		}
 	}
+	if (getenv("SPRIO_LOCAL"))
+		params.local = true;
+	if (getenv("SPRIO_SIBLING"))
+		params.sibling = true;
 }
 
 /*
@@ -100,6 +106,9 @@ parse_command_line( int argc, char* *argv )
 		{"version",    no_argument,       0, 'V'},
 		{"weights",    no_argument,       0, 'w'},
 		{"help",       no_argument,       0, OPT_LONG_HELP},
+		{"local",      no_argument,       0, OPT_LONG_LOCAL},
+		{"sib",        no_argument,       0, OPT_LONG_SIBLING},
+		{"sibling",    no_argument,       0, OPT_LONG_SIBLING},
 		{"usage",      no_argument,       0, OPT_LONG_USAGE},
 		{NULL,         0,                 0, 0}
 	};
@@ -163,6 +172,12 @@ parse_command_line( int argc, char* *argv )
 		case OPT_LONG_HELP:
 			_help();
 			exit(0);
+		case OPT_LONG_LOCAL:
+			params.local = true;
+			break;
+		case OPT_LONG_SIBLING:
+			params.sibling = true;
+			break;
 		case OPT_LONG_USAGE:
 			_usage();
 			exit(0);
@@ -488,7 +503,8 @@ _build_user_list(char* str)
 
 static void _usage(void)
 {
-	printf("Usage: sprio [-j jid[s]] [-u user_name[s]] [-o format] [-p partitions] [--usage] [-hlnvVw]\n");
+	printf("Usage: sprio [-j jid[s]] [-u user_name[s]] [-o format] [-p partitions]\n");
+	printf("   [--local] [--sibling] [--usage] [-hlnvVw]\n");
 }
 
 static void _help(void)
@@ -498,6 +514,7 @@ Usage: sprio [OPTIONS]\n\
   -h, --noheader                  no headers on output\n\
   -j, --jobs                      comma separated list of jobs\n\
                                   to view, default is all\n\
+      --local                     display jobs on local cluster only\n\
   -l, --long                      long report\n\
   -M, --cluster=cluster_name      cluster to issue commands to.  Default is\n\
                                   current cluster.  cluster with no name will\n\
@@ -505,6 +522,7 @@ Usage: sprio [OPTIONS]\n\
                                   NOTE: SlurmDBD must be up.\n\
   -n, --norm                      display normalized values\n\
   -o, --format=format             format specification\n\
+      --sibling                   display job records separately for each federation cluster\n\
   -p, --partition=partition_name  comma separated list of partitions\n\
   -u, --user=user_name            comma separated list of users to view\n\
   -v, --verbose                   verbosity level\n\
