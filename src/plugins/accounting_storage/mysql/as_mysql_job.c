@@ -727,7 +727,7 @@ no_rollup_change:
 				   "array_task_pending=0, ");
 
 		if (tres_alloc_str)
-			xstrfmtcat(query, ", tres_alloc='%s'", tres_alloc_str);
+			xstrfmtcat(query, "tres_alloc='%s', ", tres_alloc_str);
 		else if (job_ptr->tres_alloc_str)
 			xstrfmtcat(query, "tres_alloc='%s', ",
 				   job_ptr->tres_alloc_str);
