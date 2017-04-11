@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010 SchedMD <https://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2017 SchedMD <https://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -96,13 +96,14 @@ typedef struct {
 	uint32_t max_cpus_per_node;
 	uint64_t alloc_memory;
 
-	char *version;
 	char *features;
 	char *features_act;
 	char *gres;
+	char *cluster_name;
 	char *reason;
 	time_t reason_time;
 	uint32_t reason_uid;
+	char *version;
 
 	hostlist_t hostnames;
 	hostlist_t node_addr;
@@ -164,6 +165,7 @@ struct sinfo_parameters {
 	bool dead_nodes;
 	bool exact_match;
 	bool filtering;
+	bool local;
 	bool long_output;
 	bool no_header;
 	bool node_field_flag;

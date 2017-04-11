@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010-2011 SchedMD <https://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2017 SchedMD <https://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -160,6 +160,8 @@ void print_sinfo_reservation(reserve_info_msg_t *resv_ptr);
 	format_add_function(list,wid,right,suffix,_print_version)
 #define format_add_alloc_mem(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_alloc_mem)
+#define format_add_cluster_name(list,wid,right,suffix) \
+	format_add_function(list,wid,right,suffix,_print_cluster_name)
 
 /*****************************************************************************
  * Print Field Functions
@@ -255,4 +257,6 @@ int _print_version(sinfo_data_t * sinfo_data, int width,
 		   bool right_justify, char *suffix);
 int _print_alloc_mem(sinfo_data_t * sinfo_data, int width,
 		     bool right_justify, char *suffix);
+int _print_cluster_name(sinfo_data_t *sinfo_data, int width,
+			bool right_justify, char *suffix);
 #endif
