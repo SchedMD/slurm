@@ -1817,7 +1817,7 @@ extern int validate_group(struct part_record *part_ptr, uid_t run_uid)
 	buflen = PW_BUF_SIZE;
 #if defined(_SC_GETPW_R_SIZE_MAX)
 	ii = sysconf(_SC_GETPW_R_SIZE_MAX);
-	if (ii > buflen)
+	if ((ii >= 0) && (ii > buflen))
 		buflen = ii;
 #endif
 	buf = xmalloc(buflen);
@@ -1846,7 +1846,9 @@ extern int validate_group(struct part_record *part_ptr, uid_t run_uid)
 	 * group with that GID.  */
 #ifdef _SC_GETGR_R_SIZE_MAX
 	ii = sysconf(_SC_GETGR_R_SIZE_MAX);
-	buflen = MAX(PW_BUF_SIZE, ii);
+	buflen = PW_BUF_SIZE;
+	if ((ii >= 0) && (ii > buflen))
+		buflen = ii;
 #endif
 	grp_buffer = xmalloc(buflen);
 	while (1) {
