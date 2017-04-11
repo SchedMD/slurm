@@ -213,7 +213,7 @@ static int _convert_step_table(mysql_conn_t *mysql_conn, char *cluster_name)
 
 static int _set_db_curr_ver(mysql_conn_t *mysql_conn)
 {
-	char *query, *cluster_name;
+	char *query;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	int rc = SLURM_SUCCESS;
@@ -222,10 +222,6 @@ static int _set_db_curr_ver(mysql_conn_t *mysql_conn)
 
 	if (db_curr_ver != NO_VAL)
 		return SLURM_SUCCESS;
-
-	/* no valid clusters, just return */
-	if (!(cluster_name = list_peek(as_mysql_total_cluster_list)))
-		goto insert_ver;
 
 	query = xstrdup_printf("select version from %s", convert_version_table);
 	debug4("%d(%s:%d) query\n%s", mysql_conn->conn,
@@ -241,16 +237,21 @@ static int _set_db_curr_ver(mysql_conn_t *mysql_conn)
 		db_curr_ver = slurm_atoul(row[0]);
 		mysql_free_result(result);
 	} else {
+		int tmp_ver = 0;
 		mysql_free_result(result);
-	insert_ver:
-		query = xstrdup_printf("insert into %s (version) values (0);",
-				       convert_version_table);
+
+		/* no valid clusters, just return */
+		if (!list_count(as_mysql_total_cluster_list))
+			tmp_ver = CONVERT_VERSION;
+
+		query = xstrdup_printf("insert into %s (version) values (%d);",
+				       convert_version_table, tmp_ver);
 		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 		if (rc != SLURM_SUCCESS)
 			return SLURM_ERROR;
-		db_curr_ver = 0;
+		db_curr_ver = tmp_ver;
 	}
 
 	return rc;
