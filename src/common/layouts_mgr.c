@@ -1884,8 +1884,8 @@ static int _autoupdate_entity_kv(layouts_keydef_t* keydef,
 /*
  * helper function used to update KVs of an entity using its xtree_node
  * looking for known inheritance in the neighborhood (parents/children) */
-static void _tree_update_node_entity_data(void* item, void* arg) {
-
+static void _tree_update_node_entity_data(void* item, void* arg)
+{
 	uint32_t action;
 	entity_data_t* data;
 	_autoupdate_tree_args_t *pargs;
@@ -1949,6 +1949,8 @@ static void _tree_update_node_entity_data(void* item, void* arg) {
 
 		/* get current node value reference */
 		oldvalue = entity_get_data_ref(cnode->entity, keydef->key);
+		if (!oldvalue)
+			return;
 
 		/* get siblings count */
 		child = node->start;
@@ -1983,6 +1985,8 @@ static void _tree_update_node_entity_data(void* item, void* arg) {
 
 		/* get current node value reference */
 		oldvalue = entity_get_data_ref(cnode->entity, keydef->key);
+		if (!oldvalue)
+			return;
 
 		/* get children count */
 		node = (xtree_node_t*)cnode->node;
