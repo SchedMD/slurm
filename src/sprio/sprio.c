@@ -115,7 +115,7 @@ int main (int argc, char **argv)
 	}
 	xfree(prio_type);
 
-	if (params.local)
+	if (params.clusters || params.local)
 		show_flags |= SHOW_LOCAL;
 	if (params.sibling)
 		show_flags |= SHOW_SIBLING;

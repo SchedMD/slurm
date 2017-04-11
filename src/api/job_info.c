@@ -1327,7 +1327,9 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 	req_msg.msg_type = REQUEST_JOB_INFO;
 	req_msg.data     = &req;
 
-	if (!ptr || (show_flags & SHOW_LOCAL)) {
+	/* With -M option, working_cluster_rec is set and  we only get
+	 * information for that cluster */
+	if (working_cluster_rec || !ptr || (show_flags & SHOW_LOCAL)) {
 		rc = _load_cluster_jobs(&req_msg, job_info_msg_pptr,
 					working_cluster_rec);
 	} else {
@@ -1377,7 +1379,9 @@ extern int slurm_load_job_user (job_info_msg_t **job_info_msg_pptr,
 	req_msg.msg_type = REQUEST_JOB_USER_INFO;
 	req_msg.data     = &req;
 
-	if (!ptr || (show_flags & SHOW_LOCAL))
+	/* With -M option, working_cluster_rec is set and  we only get
+	 * information for that cluster */
+	if (working_cluster_rec || !ptr || (show_flags & SHOW_LOCAL))
 		rc = _load_cluster_jobs(&req_msg, job_info_msg_pptr,
 					working_cluster_rec);
 	else {
@@ -1427,7 +1431,9 @@ slurm_load_job (job_info_msg_t **job_info_msg_pptr, uint32_t job_id,
 	req_msg.msg_type = REQUEST_JOB_INFO_SINGLE;
 	req_msg.data     = &req;
 
-	if (!ptr || (show_flags & SHOW_LOCAL))
+	/* With -M option, working_cluster_rec is set and  we only get
+	 * information for that cluster */
+	if (working_cluster_rec || !ptr || (show_flags & SHOW_LOCAL))
 		rc = _load_cluster_jobs(&req_msg, job_info_msg_pptr,
 					working_cluster_rec);
 	else {
@@ -2189,7 +2195,9 @@ slurm_load_job_prio(priority_factors_response_msg_t **factors_resp,
 	req_msg.msg_type = REQUEST_PRIORITY_FACTORS;
 	req_msg.data     = &factors_req;
 
-	if (!ptr || (show_flags & SHOW_LOCAL)) {
+	/* With -M option, working_cluster_rec is set and  we only get
+	 * information for that cluster */
+	if (working_cluster_rec || !ptr || (show_flags & SHOW_LOCAL)) {
 		rc = _load_cluster_job_prio(&req_msg, factors_resp,
 					    working_cluster_rec);
 	} else {
