@@ -158,10 +158,10 @@ struct sinfo_match_flags {
 /* Input parameters */
 struct sinfo_parameters {
 	bool all_flag;
+	bool bg_flag;
 	List clusters;
 	uint32_t cluster_flags;
 	uint32_t convert_flags;
-	bool bg_flag;
 	bool dead_nodes;
 	bool exact_match;
 	bool filtering;
