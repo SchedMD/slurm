@@ -52,7 +52,7 @@
 #else /* !NDEBUG */
 
 #  define xassert(__ex)  do { \
-     (__ex) ? ((void)0) : \
+     ((__ex)) ? ((void)0) : \
      __xassert_failed(__STRING(__ex), __FILE__,  __LINE__, __func__);\
      } while (0)
 
