@@ -1336,9 +1336,10 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 		fed = (slurmdb_federation_rec_t *) ptr;
 		rc = _load_fed_jobs(&req_msg, job_info_msg_pptr, show_flags,
 				    cluster_name, fed);
-		slurm_destroy_federation_rec(ptr);
 	}
 
+	if (ptr)
+		slurm_destroy_federation_rec(ptr);
 	xfree(cluster_name);
 
 	return rc;
@@ -1381,16 +1382,17 @@ extern int slurm_load_job_user (job_info_msg_t **job_info_msg_pptr,
 
 	/* With -M option, working_cluster_rec is set and  we only get
 	 * information for that cluster */
-	if (working_cluster_rec || !ptr || (show_flags & SHOW_LOCAL))
+	if (working_cluster_rec || !ptr || (show_flags & SHOW_LOCAL)) {
 		rc = _load_cluster_jobs(&req_msg, job_info_msg_pptr,
 					working_cluster_rec);
-	else {
+	} else {
 		fed = (slurmdb_federation_rec_t *) ptr;
 		rc = _load_fed_jobs(&req_msg, job_info_msg_pptr, show_flags,
 				    cluster_name, fed);
-		slurm_destroy_federation_rec(ptr);
 	}
 
+	if (ptr)
+		slurm_destroy_federation_rec(ptr);
 	xfree(cluster_name);
 
 	return rc;
@@ -1433,16 +1435,17 @@ slurm_load_job (job_info_msg_t **job_info_msg_pptr, uint32_t job_id,
 
 	/* With -M option, working_cluster_rec is set and  we only get
 	 * information for that cluster */
-	if (working_cluster_rec || !ptr || (show_flags & SHOW_LOCAL))
+	if (working_cluster_rec || !ptr || (show_flags & SHOW_LOCAL)) {
 		rc = _load_cluster_jobs(&req_msg, job_info_msg_pptr,
 					working_cluster_rec);
-	else {
+	} else {
 		fed = (slurmdb_federation_rec_t *) ptr;
 		rc = _load_fed_jobs(&req_msg, job_info_msg_pptr, show_flags,
 				    cluster_name, fed);
-		slurm_destroy_federation_rec(ptr);
 	}
 
+	if (ptr)
+		slurm_destroy_federation_rec(ptr);
 	xfree(cluster_name);
 
 	return rc;
@@ -2204,9 +2207,11 @@ slurm_load_job_prio(priority_factors_response_msg_t **factors_resp,
 		fed = (slurmdb_federation_rec_t *) ptr;
 		rc = _load_fed_job_prio(&req_msg, factors_resp, show_flags,
 					cluster_name, fed);
-		slurm_destroy_federation_rec(ptr);
 	}
 
+	if (ptr)
+		slurm_destroy_federation_rec(ptr);
 	xfree(cluster_name);
+
 	return rc;
 }
