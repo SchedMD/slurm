@@ -62,6 +62,7 @@
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/uid.h"
+#include "src/common/uthash/uthash.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -1985,7 +1986,8 @@ static int _load_fed_job_prio(slurm_msg_t *req_msg,
 	load_job_prio_resp_struct_t *job_resp;
 	priority_factors_response_msg_t *orig_msg = NULL, *new_msg = NULL;
 	priority_factors_object_t *prio_obj;
-	uint32_t hash_inx, *hash_tbl_size = NULL, **hash_job_id = NULL;
+	uint32_t hash_job_inx, *hash_tbl_size = NULL, **hash_job_id = NULL;
+	uint32_t hash_part_inx, **hash_part_id = NULL;
 	slurmdb_cluster_rec_t *cluster;
 	ListIterator iter;
 	pthread_attr_t load_attr;
@@ -2013,7 +2015,7 @@ static int _load_fed_job_prio(slurm_msg_t *req_msg,
 		if ((show_flags & SHOW_LOCAL) && !local_cluster)
 			continue;
 
-		load_args = xmalloc(sizeof(load_job_req_struct_t	));
+		load_args = xmalloc(sizeof(load_job_req_struct_t));
 		load_args->cluster = cluster;
 		load_args->local_cluster = local_cluster;
 		load_args->req_msg = req_msg;
@@ -2073,12 +2075,15 @@ static int _load_fed_job_prio(slurm_msg_t *req_msg,
 	/* Find duplicate job records and jobs local to other clusters and set
 	 * their job_id == 0 so they get skipped in reporting */
 	if ((show_flags & SHOW_SIBLING) == 0) {
-		hash_tbl_size = xmalloc(sizeof(uint32_t) * JOB_HASH_SIZE);
-		hash_job_id = xmalloc(sizeof(uint32_t *) * JOB_HASH_SIZE);
+		hash_tbl_size = xmalloc(sizeof(uint32_t)   * JOB_HASH_SIZE);
+		hash_job_id   = xmalloc(sizeof(uint32_t *) * JOB_HASH_SIZE);
+		hash_part_id  = xmalloc(sizeof(uint32_t *) * JOB_HASH_SIZE);
 		for (i = 0; i < JOB_HASH_SIZE; i++) {
 			hash_tbl_size[i] = 100;
-			hash_job_id[i] = xmalloc(sizeof(uint32_t ) *
-						 hash_tbl_size[i]);
+			hash_job_id[i]  = xmalloc(sizeof(uint32_t) *
+						  hash_tbl_size[i]);
+			hash_part_id[i] = xmalloc(sizeof(uint32_t) *
+						  hash_tbl_size[i]);
 		}
 	}
 	iter = list_iterator_create(orig_msg->priority_factors_list);
@@ -2094,12 +2099,21 @@ static int _load_fed_job_prio(slurm_msg_t *req_msg,
 
 		if (show_flags & SHOW_SIBLING)
 			continue;
-		hash_inx = prio_obj->job_id % JOB_HASH_SIZE;
+		hash_job_inx = prio_obj->job_id % JOB_HASH_SIZE;
+		if (prio_obj->partition) {
+			uint32_t hf_hashv = 0;
+			HASH_FCN(prio_obj->partition,
+				 strlen(prio_obj->partition), 1000000,
+				 hf_hashv, hash_part_inx);
+		} else {
+			hash_part_inx = 0;
+		}
 		for (j = 0;
-		     (j < hash_tbl_size[hash_inx] && hash_job_id[hash_inx][j]);
-		     j++) {
-			if (prio_obj->job_id ==
-			    hash_job_id[hash_inx][j]) {
+		     ((j < hash_tbl_size[hash_job_inx]) &&
+		      hash_job_id[hash_job_inx][j]); j++) {
+			if ((prio_obj->job_id ==
+			     hash_job_id[hash_job_inx][j]) &&
+			    (hash_part_inx == hash_part_id[hash_job_inx][j])) {
 				found_job = true;
 				break;
 			}
@@ -2112,19 +2126,23 @@ static int _load_fed_job_prio(slurm_msg_t *req_msg,
 			 * possible in multiple partitions */
 			list_delete_item(iter);
 			continue;
-		} else if (j >= hash_tbl_size[hash_inx]) {
-			hash_tbl_size[hash_inx] *= 2;
-			xrealloc(hash_job_id[hash_inx],
-				 sizeof(uint32_t) * hash_tbl_size[hash_inx]);
+		} else if (j >= hash_tbl_size[hash_job_inx]) {
+			hash_tbl_size[hash_job_inx] *= 2;
+			xrealloc(hash_job_id[hash_job_inx],
+				 sizeof(uint32_t) * hash_tbl_size[hash_job_inx]);
 		}
-		hash_job_id[hash_inx][j] = prio_obj->job_id;
+		hash_job_id[hash_job_inx][j]  = prio_obj->job_id;
+		hash_part_id[hash_job_inx][j] = hash_part_inx;
 	}
 	list_iterator_destroy(iter);
 	if ((show_flags & SHOW_SIBLING) == 0) {
-		for (i = 0; i < JOB_HASH_SIZE; i++)
+		for (i = 0; i < JOB_HASH_SIZE; i++) {
 			xfree(hash_job_id[i]);
+			xfree(hash_part_id[i]);
+		}
 		xfree(hash_tbl_size);
 		xfree(hash_job_id);
+		xfree(hash_part_id);
 	}
 
 	return SLURM_PROTOCOL_SUCCESS;
