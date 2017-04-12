@@ -192,6 +192,8 @@ struct sinfo_parameters {
 	List  part_list;
 	List  format_list;
 	List  state_list;
+
+	slurmdb_federation_rec_t *fed;
 };
 
 extern struct sinfo_parameters params;

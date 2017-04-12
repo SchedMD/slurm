@@ -607,7 +607,7 @@ typedef struct {
 	uint32_t weight; /* weight of cluster in federation */
 } slurmdb_cluster_fed_t;
 
-typedef struct {
+struct slurmdb_cluster_rec {
 	List accounting_list; /* list of slurmdb_cluster_accounting_rec_t *'s */
 	uint16_t classification; /* how this machine is classified */
 	time_t comm_fail_time;	/* avoid constatnt error messages. For
@@ -632,7 +632,12 @@ typedef struct {
 	uint16_t rpc_version; /* version of rpc this cluter is running */
 	List send_rpc;        /* For convenience only. DOESN'T GET PACKED */
 	char  	*tres_str;    /* comma separated list of TRES */
-} slurmdb_cluster_rec_t;
+};
+
+#ifndef __slurmdb_cluster_rec_t_defined
+#  define __slurmdb_cluster_rec_t_defined
+typedef struct slurmdb_cluster_rec slurmdb_cluster_rec_t;
+#endif
 
 typedef struct {
 	uint64_t alloc_secs; /* number of cpu seconds allocated */

@@ -3,6 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2010-2017 SchedMD LLC <https://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -506,32 +507,15 @@ static void _set_node_mixed(node_info_msg_t *resp)
 	}
 }
 
-/*
- * slurm_load_node - issue RPC to get slurm all node configuration information
- *	if changed since update_time
- * IN update_time - time of current configuration data
- * OUT resp - place to store a node configuration pointer
- * IN show_flags - node filtering options
- * RET 0 or a slurm error code
- * NOTE: free the response using slurm_free_node_info_msg
- */
-extern int slurm_load_node (time_t update_time,
-			    node_info_msg_t **resp, uint16_t show_flags)
+static int _load_nodes(slurm_msg_t *req_msg, node_info_msg_t **resp,
+		       slurmdb_cluster_rec_t *cluster, uint16_t show_flags)
 {
-	int rc;
-	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
-	node_info_request_msg_t req;
+	int rc;
 
-	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
-	req.last_update  = update_time;
-	req.show_flags   = show_flags;
-	req_msg.msg_type = REQUEST_NODE_INFO;
-	req_msg.data     = &req;
 
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,
-					   working_cluster_rec) < 0)
+	if (slurm_send_recv_controller_msg(req_msg, &resp_msg, cluster) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {
@@ -556,6 +540,49 @@ extern int slurm_load_node (time_t update_time,
 }
 
 /*
+ * slurm_load_node - issue RPC to get slurm all node configuration information
+ *	if changed since update_time
+ * IN update_time - time of current configuration data
+ * OUT resp - place to store a node configuration pointer
+ * IN show_flags - node filtering options
+ * RET 0 or a slurm error code
+ * NOTE: free the response using slurm_free_node_info_msg
+ */
+extern int slurm_load_node(time_t update_time, node_info_msg_t **resp,
+			   uint16_t show_flags)
+{
+	slurm_msg_t req_msg;
+	node_info_request_msg_t req;
+
+	slurm_msg_t_init(&req_msg);
+	req.last_update  = update_time;
+	req.show_flags   = show_flags;
+	req_msg.msg_type = REQUEST_NODE_INFO;
+	req_msg.data     = &req;
+
+	return _load_nodes(&req_msg, resp, working_cluster_rec, show_flags);
+}
+
+/*
+ * slurm_load_node2 - equivalent to slurm_load_node() with addition
+ *	of cluster record for communications in a federation
+ */
+extern int slurm_load_node2(time_t update_time, node_info_msg_t **resp,
+			    uint16_t show_flags, slurmdb_cluster_rec_t *cluster)
+{
+	slurm_msg_t req_msg;
+	node_info_request_msg_t req;
+
+	slurm_msg_t_init(&req_msg);
+	req.last_update  = update_time;
+	req.show_flags   = show_flags;
+	req_msg.msg_type = REQUEST_NODE_INFO;
+	req_msg.data     = &req;
+
+	return _load_nodes(&req_msg, resp, cluster, show_flags);
+}
+
+/*
  * slurm_load_node_single - issue RPC to get slurm configuration information
  *	for a specific node
  * OUT resp - place to store a node configuration pointer
@@ -564,44 +591,39 @@ extern int slurm_load_node (time_t update_time,
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_node_info_msg
  */
-extern int slurm_load_node_single (node_info_msg_t **resp,
-				   char *node_name, uint16_t show_flags)
+extern int slurm_load_node_single(node_info_msg_t **resp, char *node_name,
+				  uint16_t show_flags)
 {
-	int rc;
 	slurm_msg_t req_msg;
-	slurm_msg_t resp_msg;
 	node_info_single_msg_t req;
 
 	slurm_msg_t_init(&req_msg);
-	slurm_msg_t_init(&resp_msg);
 	req.node_name    = node_name;
 	req.show_flags   = show_flags;
 	req_msg.msg_type = REQUEST_NODE_INFO_SINGLE;
 	req_msg.data     = &req;
 
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,
-					   working_cluster_rec) < 0)
-		return SLURM_ERROR;
+	return _load_nodes(&req_msg, resp, working_cluster_rec, show_flags);
+}
 
-	switch (resp_msg.msg_type) {
-	case RESPONSE_NODE_INFO:
-		*resp = (node_info_msg_t *) resp_msg.data;
-		if (show_flags & SHOW_MIXED)
-			_set_node_mixed(*resp);
-		break;
-	case RESPONSE_SLURM_RC:
-		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
-		slurm_free_return_code_msg(resp_msg.data);
-		if (rc)
-			slurm_seterrno_ret(rc);
-		*resp = NULL;
-		break;
-	default:
-		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
-		break;
-	}
+/*
+ * slurm_load_node_single2 - equivalent to slurm_load_node_single() with
+ *	addition of cluster record for communications in a federation
+ */
+extern int slurm_load_node_single2(node_info_msg_t **resp, char *node_name,
+				   uint16_t show_flags,
+				   slurmdb_cluster_rec_t *cluster)
+{
+	slurm_msg_t req_msg;
+	node_info_single_msg_t req;
 
-	return SLURM_PROTOCOL_SUCCESS;
+	slurm_msg_t_init(&req_msg);
+	req.node_name    = node_name;
+	req.show_flags   = show_flags;
+	req_msg.msg_type = REQUEST_NODE_INFO_SINGLE;
+	req_msg.data     = &req;
+
+	return _load_nodes(&req_msg, resp, cluster, show_flags);
 }
 
 /*
@@ -685,7 +707,7 @@ extern int slurm_get_node_energy(char *host, uint16_t delta,
 		slurm_free_acct_gather_node_resp_msg(resp_msg.data);
 		break;
 	case RESPONSE_SLURM_RC:
-	        rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
 		slurm_free_return_code_msg(resp_msg.data);
 		if (rc)
 			slurm_seterrno_ret(rc);
