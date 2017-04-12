@@ -311,6 +311,7 @@ extern void parse_command_line(int argc, char **argv)
 		} else {
 			params.fed = (slurmdb_federation_rec_t *) ptr;
 		}
+		xfree(cluster_name);
 	}
 
 	if ( params.format == NULL ) {
