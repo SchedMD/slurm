@@ -965,9 +965,12 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 			return NULL;	/* Fix CLANG false positive */
 		}
 		fd_set_close_on_exec(sockfd[i]);
-		slurm_get_stream_addr(sockfd[i], &srv_addr);
-		slurm_get_ip_str(&srv_addr, &port, ip, sizeof(ip));
-		debug2("slurmctld listening on %s:%d", ip, ntohs(port));
+		if (slurm_get_stream_addr(sockfd[i], &srv_addr)) {
+			error("slurm_get_stream_addr error %m");
+		} else {
+			slurm_get_ip_str(&srv_addr, &port, ip, sizeof(ip));
+			debug2("slurmctld listening on %s:%d", ip, ntohs(port));
+		}
 	}
 	unlock_slurmctld(config_read_lock);
 
