@@ -200,7 +200,7 @@ proc sprio_opt { soption } {
 				set not_support 1
 				exp_continue
 			}
-			-re "Usage: sprio .-j jid.s.. .-u user_name.s.. .-o format. .--usage. .-hlnvVw." {
+			-re "Usage: sprio .-j jid.s.. .-u user_name.s.. .-o format. .-p partitions.\r\n   .--local. .--sibling. .--usage. .-hlnvVw." {
 				if {$debug} {send_user "\nmatch5\n"}
 				incr matches
 				exp_continue
@@ -269,7 +269,7 @@ proc sprio_opt { soption } {
 				set not_support 1
 				exp_continue
 			}
-			-re "JOBID *PRIORITY" {
+			-re "JOBID\\s+PARTITION\\s+PRIORITY" {
 				if {$debug} {send_user "\nmatch7\n"}
 				incr matches
 				exp_continue
@@ -329,7 +329,7 @@ proc sprio_args { soption sargs jobid} {
 				set not_support 1
 				exp_continue
 			}
-			-re "JOBID|PRIORITY|AGE|FAIRSHARE|JOBSIZE|PARTITION|QOS" {
+			-re "JOBID|PARTITION|PRIORITY|AGE|FAIRSHARE|JOBSIZE|PARTITION|QOS" {
 				if {$debug} {send_user "\nmatch9\n"}
 				incr matches
 				exp_continue
@@ -363,12 +363,12 @@ proc sprio_args { soption sargs jobid} {
 				set not_support 1
 				exp_continue
 			}
-			-re "JOBID.*PRIORITY" {
+			-re "JOBID\\s+PARTITION\\s+PRIORITY" {
 				if {$debug} {send_user "\nmatch10\n"}
 				incr matches
 				exp_continue
 			}
-			-re "$jobid *$number" {
+			-re "$jobid\\s+\\S+\\s+$number" {
 				if {$debug} {send_user "\nmatch11\n"}
 				incr matches
 				exp_continue
@@ -402,7 +402,7 @@ proc sprio_args { soption sargs jobid} {
 				set not_support 1
 				exp_continue
 			}
-			-re "JOBID     USER   PRIORITY        AGE  FAIRSHARE    JOBSIZE  PARTITION        QOS        NICE" {
+			-re "JOBID PARTITION     USER   PRIORITY        AGE  FAIRSHARE    JOBSIZE  PARTITION        QOS        NICE" {
 				if {$debug} {send_user "\nmatch12\n"}
 				incr matches
 				exp_continue
@@ -441,12 +441,12 @@ proc sprio_args { soption sargs jobid} {
 				set not_support 1
 				exp_continue
 			}
-			-re "JOBID *PRIORITY" {
+			-re "JOBID\\s+PARTITION\\s+PRIORITY" {
 				if {$debug} {send_user "\nmatch14\n"}
 				incr matches
 				exp_continue
 			}
-			-re "$jobid *$float" {
+			-re "$jobid\\s+\\S+\\s+$float" {
 				if {$debug} {send_user "\nmatch15\n"}
 				incr matches
 				exp_continue
@@ -524,12 +524,12 @@ proc sprio_args { soption sargs jobid} {
 				set not_support 1
 				exp_continue
 			}
-			-re "JOBID *USER" {
+			-re "JOBID\\s+PARTITION\\s+USER" {
 				if {$debug} {send_user "\nmatch19\n"}
 				incr matches
 				exp_continue
 			}
-			-re "$jobid *$sargs" {
+			-re "$jobid\\s+\\S+\\s+$sargs" {
 				if {$debug} {send_user "\nmatch20\n"}
 				incr matches
 				exp_continue
@@ -563,12 +563,12 @@ proc sprio_args { soption sargs jobid} {
 				set not_support 1
 				exp_continue
 			}
-			-re "JOBID *USER" {
+			-re "JOBID\\s+PARTITION\\s+USER" {
 				if {$debug} {send_user "\nmatch21\n"}
 				incr matches
 				exp_continue
 			}
-			-re "$jobid *$sargs" {
+			-re "$jobid\\s+\\S+\\s+$sargs" {
 				if {$debug} {send_user "\nmatch22\n"}
 				incr matches
 				exp_continue
@@ -607,12 +607,12 @@ proc sprio_args { soption sargs jobid} {
 				incr matches
 				exp_continue
 			}
-			-re "JOBID *PRIORITY" {
+			-re "JOBID\\s+PARTITION\\s+PRIORITY" {
 				if {$debug} {send_user "\nmatch24\n"}
 				incr matches
 				exp_continue
 			}
-			-re "$jobid *$number" {
+			-re "$jobid\\s+\\S+\\s+$number" {
 				if {$debug} {send_user "\nmatch25\n"}
 				incr matches
 				exp_continue
