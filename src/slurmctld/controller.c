@@ -1844,7 +1844,7 @@ static void *_slurmctld_background(void *no_data)
 		}
 
 		if (slurmctld_conf.inactive_limit &&
-		    (difftime(now, last_ping_srun_time) >=
+		    ((now - last_ping_srun_time) >=
 		     (slurmctld_conf.inactive_limit / 3))) {
 			now = time(NULL);
 			last_ping_srun_time = now;
