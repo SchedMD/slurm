@@ -177,7 +177,6 @@ static char *_print_flag(int flag)
 		default:
 			return "unknown";
 	}
-	return "unknown";
 }
 
 
