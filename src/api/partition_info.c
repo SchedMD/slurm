@@ -43,6 +43,7 @@
 #include <stdlib.h>
 
 #include "slurm/slurm.h"
+#include "slurm/slurmdb.h"
 
 #include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_api.h"
@@ -383,36 +384,15 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	return out;
 }
 
-
-/*
- * slurm_load_partitions - issue RPC to get slurm all partition configuration
- *	information if changed since update_time
- * IN update_time - time of current configuration data
- * IN partition_info_msg_pptr - place to store a partition configuration
- *	pointer
- * IN show_flags - partition filtering options
- * RET 0 or a slurm error code
- * NOTE: free the response using slurm_free_partition_info_msg
- */
-extern int slurm_load_partitions (time_t update_time,
-				  partition_info_msg_t **resp,
-				  uint16_t show_flags)
+static int _load_partitions(slurm_msg_t *req_msg, partition_info_msg_t **resp,
+			    slurmdb_cluster_rec_t *cluster)
 {
-        int rc;
-        slurm_msg_t req_msg;
-        slurm_msg_t resp_msg;
-        part_info_request_msg_t req;
+	slurm_msg_t resp_msg;
+	int rc;
 
-	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 
-	req.last_update  = update_time;
-	req.show_flags   = show_flags;
-	req_msg.msg_type = REQUEST_PARTITION_INFO;
-	req_msg.data     = &req;
-
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,
-					   working_cluster_rec) < 0)
+	if (slurm_send_recv_controller_msg(req_msg, &resp_msg, cluster) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {
@@ -432,4 +412,53 @@ extern int slurm_load_partitions (time_t update_time,
 	}
 
 	return SLURM_PROTOCOL_SUCCESS;
+}
+
+/*
+ * slurm_load_partitions - issue RPC to get slurm all partition configuration
+ *	information if changed since update_time
+ * IN update_time - time of current configuration data
+ * IN partition_info_msg_pptr - place to store a partition configuration
+ *	pointer
+ * IN show_flags - partition filtering options
+ * RET 0 or a slurm error code
+ * NOTE: free the response using slurm_free_partition_info_msg
+ */
+extern int slurm_load_partitions(time_t update_time,
+				 partition_info_msg_t **resp,
+				 uint16_t show_flags)
+{
+	slurm_msg_t req_msg;
+	part_info_request_msg_t req;
+
+	slurm_msg_t_init(&req_msg);
+
+	req.last_update  = update_time;
+	req.show_flags   = show_flags;
+	req_msg.msg_type = REQUEST_PARTITION_INFO;
+	req_msg.data     = &req;
+
+	return _load_partitions(&req_msg, resp, working_cluster_rec);
+}
+
+/*
+ * slurm_load_partitions2 - equivalent to slurm_load_partitions() with addition
+ *	of cluster record for communications in a federation
+ */
+extern int slurm_load_partitions2(time_t update_time,
+				  partition_info_msg_t **resp,
+				  uint16_t show_flags,
+				  slurmdb_cluster_rec_t *cluster)
+{
+	slurm_msg_t req_msg;
+	part_info_request_msg_t req;
+
+	slurm_msg_t_init(&req_msg);
+
+	req.last_update  = update_time;
+	req.show_flags   = show_flags;
+	req_msg.msg_type = REQUEST_PARTITION_INFO;
+	req_msg.data     = &req;
+
+	return _load_partitions(&req_msg, resp, cluster);
 }

@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010-2011 SchedMD <https://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2017 SchedMD <https://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>,
  *             Morris Jette <jette1@llnl.gov>, et. al.
@@ -53,6 +53,7 @@ static bool part_order;		/* order same as in part table */
 static void _get_sinfo_from_void(sinfo_data_t **s1, sinfo_data_t **s2,
 				 void *v1, void *v2);
 static int _sort_by_avail(void *void1, void *void2);
+static int _sort_by_cluster_name(void *void1, void *void2);
 static int _sort_by_cpu_load(void *void1, void *void2);
 static int _sort_by_free_mem(void *void1, void *void2);
 static int _sort_by_cpus(void *void1, void *void2);
@@ -170,6 +171,8 @@ void sort_sinfo_list(List sinfo_list)
 			list_sort(sinfo_list, _sort_by_reason_user);
 		else if (params.sort[i] == 'U')
 			list_sort(sinfo_list, _sort_by_reason_user);
+		else if (params.sort[i] == 'V')
+			list_sort(sinfo_list, _sort_by_cluster_name);
 		else if (params.sort[i] == 'w')
 			list_sort(sinfo_list, _sort_by_weight);
 		else if (params.sort[i] == 'X')
@@ -223,6 +226,22 @@ static int _sort_by_avail(void *void1, void *void2)
 	if (sinfo2->part_info)
 		val2 = sinfo2->part_info->state_up;
 	diff = val1 - val2;
+
+	if (reverse_order)
+		diff = -diff;
+	return diff;
+}
+
+
+static int _sort_by_cluster_name(void *void1, void *void2)
+{
+	int diff;
+	sinfo_data_t *sinfo1;
+	sinfo_data_t *sinfo2;
+
+	_get_sinfo_from_void(&sinfo1, &sinfo2, void1, void2);
+
+	diff = xstrcmp(sinfo1->cluster_name, sinfo2->cluster_name);
 
 	if (reverse_order)
 		diff = -diff;

@@ -44,6 +44,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include "slurm/slurmdb.h"
 #include "src/common/xstring.h"
 #include "src/common/proc_args.h"
 
@@ -63,6 +64,7 @@ static List  _build_all_states_list( void );
 static List  _build_part_list( char *parts );
 static char *_get_prefix(char *token);
 static void  _help( void );
+static bool  _in_federation_test(void *ptr, char *cluster_name);
 static int   _parse_format(char *);
 static int   _parse_long_format(char *);
 static bool  _node_state_equal(int state_id, const char *state_str);
@@ -298,6 +300,19 @@ extern void parse_command_line(int argc, char **argv)
 
 	params.cluster_flags = slurmdb_setup_cluster_flags();
 
+	if (!params.clusters && !params.local) {
+		void *ptr = NULL;
+		char *cluster_name = slurm_get_cluster_name();
+		if (slurm_load_federation(&ptr) ||
+		    !_in_federation_test(ptr, cluster_name)) {
+			/* Not in federation */
+			params.local = true;
+			slurm_destroy_federation_rec(ptr);
+		} else {
+			params.fed = (slurmdb_federation_rec_t *) ptr;
+		}
+	}
+
 	if ( params.format == NULL ) {
 		if ( params.summarize ) {
 			params.part_field_flag = true;	/* compute size later */
@@ -320,6 +335,12 @@ extern void parse_command_line(int argc, char **argv)
 		} else if ((env_val = getenv ("SINFO_FORMAT"))) {
 			params.format = xstrdup(env_val);
 
+
+		} else if (params.fed) {
+			params.part_field_flag = true;	/* compute size later */
+			params.format = params.long_output ?
+			  "%9P %8V %.5a %.10l %.10s %.4r %.8h %.10g %.6D %.11T %N" :
+			  "%9P %8V %.5a %.10l %.6D %.6t %N";
 		} else {
 			params.part_field_flag = true;	/* compute size later */
 			params.format = params.long_output ?
@@ -345,6 +366,28 @@ extern void parse_command_line(int argc, char **argv)
 
 	if (params.verbose)
 		_print_options();
+}
+
+
+/* Return true if this cluster_name is in a federation */
+static bool _in_federation_test(void *ptr, char *cluster_name)
+{
+	slurmdb_federation_rec_t *fed = (slurmdb_federation_rec_t *) ptr;
+	slurmdb_cluster_rec_t *cluster;
+	ListIterator iter;
+	bool status = false;
+
+	if (!fed || !fed->cluster_list)		/* NULL if no federations */
+		return status;
+	iter = list_iterator_create(fed->cluster_list);
+	while ((cluster = (slurmdb_cluster_rec_t *) list_next(iter))) {
+		if (!xstrcmp(cluster->name, cluster_name)) {
+			status = true;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+	return status;
 }
 
 static char *
