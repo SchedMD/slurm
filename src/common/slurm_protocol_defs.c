@@ -3009,7 +3009,6 @@ extern char *conn_type_string(enum connection_type conn_type)
 	default:
 		return "n/a";
 	}
-	return "n/a";
 }
 
 /* caller must xfree after call */
