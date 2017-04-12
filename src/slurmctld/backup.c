@@ -148,7 +148,7 @@ void run_backup(slurm_trigger_callbacks_t *callbacks)
 		/* Lock of slurmctld_conf below not important */
 		if (slurmctld_conf.slurmctld_timeout &&
 		    (takeover == false) &&
-		    (difftime(time(NULL), last_ping) <
+		    ((time(NULL) - last_ping) <
 		     (slurmctld_conf.slurmctld_timeout / 3)))
 			continue;
 
@@ -165,10 +165,8 @@ void run_backup(slurm_trigger_callbacks_t *callbacks)
 			timeout = slurmctld_conf.slurmctld_timeout;
 			unlock_slurmctld(config_read_lock);
 
-			if (difftime(time(NULL), last_controller_response) >
-			    timeout) {
+			if ((time(NULL) - last_controller_response) > timeout)
 				break;
-			}
 		}
 	}
 
