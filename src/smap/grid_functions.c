@@ -77,7 +77,7 @@ extern int *get_cluster_dims(node_info_msg_t *node_info_ptr)
 		return cray_dim_size;
 	}
 
-	if (dim_size == NULL) {
+	if ((dim_size == NULL) && node_info_ptr) {
 		static int default_dim_size[1];
 		default_dim_size[0] = node_info_ptr->record_count;
 		return default_dim_size;
