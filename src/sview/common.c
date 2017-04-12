@@ -2262,7 +2262,7 @@ extern void sview_radio_action_set_current_value(GtkRadioAction *action,
 
 extern char *page_to_str(int page)
 {
-	switch(page) {
+	switch (page) {
 	case JOB_PAGE:
 		return "Job";
 	case PART_PAGE:
@@ -2280,12 +2280,11 @@ extern char *page_to_str(int page)
 	default:
 		return NULL;
 	}
-	return NULL;
 }
 
 extern char *tab_pos_to_str(int pos)
 {
-	switch(pos) {
+	switch (pos) {
 	case GTK_POS_TOP:
 		return "Top";
 	case GTK_POS_BOTTOM:
@@ -2297,7 +2296,6 @@ extern char *tab_pos_to_str(int pos)
 	default:
 		return "Unknown";
 	}
-	return "Unknown";
 }
 
 extern char *visible_to_str(sview_config_t *sview_config)
