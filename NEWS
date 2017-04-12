@@ -70,6 +70,7 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Increase --cpu_bind and --mem_bind field length limits.
  -- Fix segfault when using AdminComment field with job arrays.
+ -- Clear Dependency field when all dependencies are satisfied.
 
 * Changes in Slurm 17.02.2
 ==========================
