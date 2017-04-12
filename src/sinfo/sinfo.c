@@ -290,7 +290,7 @@ static int _load_blocks(block_info_msg_t **block_pptr, bool clear_old)
 {
 	static block_info_msg_t *old_bg_ptr = NULL, *new_bg_ptr;
 	uint16_t show_flags = 0;
-	int error_code;
+	int error_code = SLURM_SUCCESS;
 
 	if (params.all_flag)
 		show_flags |= SHOW_ALL;
