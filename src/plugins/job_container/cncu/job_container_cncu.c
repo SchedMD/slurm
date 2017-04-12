@@ -316,11 +316,11 @@ extern int container_p_create(uint32_t job_id)
 			_stat_reservation("create", resv_id);
 		return SLURM_SUCCESS;
 	}
+	error("%s: create(%u): %m", plugin_type, job_id);
+	return SLURM_ERROR;
 #else
 	return SLURM_SUCCESS;
 #endif
-	error("%s: create(%u): %m", plugin_type, job_id);
-	return SLURM_ERROR;
 }
 
 /* Add proctrack container (PAGG) to a job container */
@@ -375,11 +375,11 @@ extern int container_p_add_cont(uint32_t job_id, uint64_t cont_id)
 			_stat_reservation("add", resv_id);
 		return SLURM_SUCCESS;
 	}
+	error("%s: add(%u.%"PRIu64"): %m", plugin_type, job_id, cont_id);
+	return SLURM_ERROR;
 #else
 	return SLURM_SUCCESS;
 #endif
-	error("%s: add(%u.%"PRIu64"): %m", plugin_type, job_id, cont_id);
-	return SLURM_ERROR;
 }
 
 /* Add a process to a job container, create the proctrack container to add */
