@@ -31,6 +31,13 @@ Without this option, the display will be optimized for use with job arrays
 array index values printed using a regular expression).
 
 .TP
+\fB\-\-array-unique\fR
+Display one unique pending job array element per line. Without this option,
+the pending job array elements will be grouped into the master array job to
+optimize the display.  This can also be set with the environment variable
+SQUEUE_ARRAY_UNIQUE.
+
+.TP
 \fB\-h\fR, \fB\-\-noheader\fR
 Do not print a header on the output.
 

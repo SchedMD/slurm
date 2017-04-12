@@ -216,6 +216,9 @@ static void _combine_pending_array_tasks(List job_list)
 			if (xstrcmp(task_rec_ptr->job_ptr->partition,
 				    job_rec_ptr->job_ptr->partition))
 				continue;	/* Different partition */
+			/* Want to see each reason separately */
+			if (params.array_unique_flag)
+				continue;
 			/* Combine this task into master job array record */
 			update_cnt++;
 			_merge_job_reason(job_rec_ptr->job_ptr,
