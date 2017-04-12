@@ -71,6 +71,8 @@ documents those changes that are of interest to users and administrators.
  -- Increase --cpu_bind and --mem_bind field length limits.
  -- Fix segfault when using AdminComment field with job arrays.
  -- Clear Dependency field when all dependencies are satisfied.
+ -- Add --array-unique to squeue which will display one unique pending job
+    array element per line.
 
 * Changes in Slurm 17.02.2
 ==========================
