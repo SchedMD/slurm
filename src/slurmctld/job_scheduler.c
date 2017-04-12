@@ -2487,10 +2487,11 @@ static void _depend_list2str(struct job_record *job_ptr, bool set_or_flag)
 	if (job_ptr->details == NULL)
 		return;
 
+	xfree(job_ptr->details->dependency);
+
 	if (job_ptr->details->depend_list == NULL
 		|| list_count(job_ptr->details->depend_list) == 0)
 		return;
-	xfree(job_ptr->details->dependency);
 
 	depend_iter = list_iterator_create(job_ptr->details->depend_list);
 	while ((dep_ptr = list_next(depend_iter))) {
