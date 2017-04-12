@@ -405,6 +405,8 @@ int _print_partition(priority_factors_object_t *job, int width, bool right,
 {
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("PARTITION", width, right, true);
+	else if (job == (priority_factors_object_t *) -1)
+		_print_str("", width, right, true);
 	else
 		_print_str(job->partition, width, right, true);
 	if (suffix)
