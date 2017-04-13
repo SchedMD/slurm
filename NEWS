@@ -10,6 +10,9 @@ documents those changes that are of interest to users and administrators.
     array element per line.
  -- Reset backfill timers correctly without skipping over them in certain
     circumstances.
+ -- When running the "scontrol top" command, make sure that all of the user's
+    jobs have a priority that is lower than the selected job. Previous logic
+    would permit other jobs with equal priority (no jobs with higher priority).
 
 * Changes in Slurm 17.02.2
 ==========================
