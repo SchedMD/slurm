@@ -14961,7 +14961,7 @@ static int _set_top(struct job_record *job_ptr, uid_t uid)
 	list_iterator_destroy(job_iterator);
 
 	/* Now adjust nice values and priorities of effected jobs */
-	if (high_prio > job_ptr->priority) {
+	if (high_prio >= job_ptr->priority) {
 		delta_nice = high_prio - job_ptr->priority;
 		delta_nice = MIN(job_ptr->details->nice, delta_nice);
 		job_ptr->priority += delta_nice;
@@ -14969,13 +14969,16 @@ static int _set_top(struct job_record *job_ptr, uid_t uid)
 		for (i = 0; i < high_prio_job_cnt; i++) {
 			adj_prio = delta_nice / (high_prio_job_cnt - i);
 			job_test_ptr = job_adj_list[i];
+			if (job_test_ptr->priority == high_prio)
+				adj_prio = MAX(adj_prio, 1);  /* ensure lower */
 			adj_prio = MIN((job_test_ptr->priority - 1), adj_prio);
 			max_delta = (uint32_t) 0xffffffff -
 				    job_test_ptr->details->nice;
 			adj_prio = MIN(max_delta, adj_prio);
 			job_test_ptr->priority -= adj_prio;
 			job_test_ptr->details->nice += adj_prio;
-			delta_nice -= adj_prio;
+			if (delta_nice >= adj_prio)
+				delta_nice -= adj_prio;
 		}
 		last_job_update = time(NULL);
 	}
