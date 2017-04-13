@@ -30,7 +30,12 @@ static struct slurm default_slurm_object;
 static slurm_t
 new_slurm(void)
 {
-	return xmalloc(sizeof(struct slurm));
+	int size = sizeof(struct slurm);
+	if (size == 0) {
+		/* Avoid returning NULL, which causes the perl APIs to fail */
+		size = 1;
+	}
+	return xmalloc(size);
 }
 
 static void
