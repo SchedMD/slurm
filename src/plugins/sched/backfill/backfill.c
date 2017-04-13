@@ -1495,6 +1495,13 @@ next_task:
 				break;
 			}
 
+			/* Reset backfill scheduling timers, resume testing */
+			sched_start = time(NULL);
+			gettimeofday(&start_tv, NULL);
+			job_test_count = 1;
+			test_time_count = 0;
+			START_TIMER;
+
 			/* With bf_continue configured, the original job could
 			 * have been scheduled or cancelled and purged.
 			 * Revalidate job the record here. */
@@ -1513,12 +1520,6 @@ next_task:
 
 			job_ptr->time_limit = save_time_limit;
 			job_ptr->part_ptr = part_ptr;
-			/* Reset backfill scheduling timers, resume testing */
-			sched_start = time(NULL);
-			gettimeofday(&start_tv, NULL);
-			job_test_count = 1;
-			test_time_count = 0;
-			START_TIMER;
 		}
 
 		FREE_NULL_BITMAP(avail_bitmap);
