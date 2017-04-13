@@ -1,12 +1,11 @@
 <!--#include virtual="header.txt"-->
 
 <h1>Meetings</h1>
-<!--
-<p><b>Slurm User Group Meeting 2016</b><br>
-26-27 September 2016<br>
-Athens, Greece<br>
-Host: <a href="http://www.grnet.gr/">Greek Research and Technology Network (GRNET)</a></p> -->
-<!-- <p>More information coming soon.</p> -->
+<p><b>Slurm User Group Meeting 2017</b><br>
+25-26 September 2017<br>
+Berkeley, California, USA<br>
+Host: <a href="http://www.nersc.gov/">National Energy Research Scientific Computing Center (NERSC)</a></p>
+<p>More information coming soon.</p>
 <!-- <p><a href="slurm_ug_cfp.html">Call for Abstracts: Due 30 June 2016</a></p> -->
 <!-- <p><a href="slurm_ug_agenda.html">Meeting agenda, registration information, etc.</a></p> -->
 <!-- <p><a href="slurm_ug_agenda.html#hotels">Meeting hotels</a></p> -->
