@@ -2059,7 +2059,9 @@ static int _load_fed_job_prio(slurm_msg_t *req_msg,
 	iter = list_iterator_create(resp_msg_list);
 	while ((job_resp = (load_job_prio_resp_struct_t *) list_next(iter))) {
 		new_msg = job_resp->new_msg;
-		if (!orig_msg) {
+		if (!new_msg->priority_factors_list) {
+			/* Just skip this one. */
+		} else if (!orig_msg) {
 			orig_msg = new_msg;
 			if (job_resp->local_cluster) {
 				local_job_cnt = list_count(
@@ -2078,8 +2080,15 @@ static int _load_fed_job_prio(slurm_msg_t *req_msg,
 	list_iterator_destroy(iter);
 	FREE_NULL_LIST(resp_msg_list);
 
-	if (!orig_msg)
-		slurm_seterrno_ret(ESLURM_INVALID_JOB_ID);
+	/* In a single cluster scenario with no jobs, the priority_factors_list
+	 * will be NULL. sprio will handle this above. If the user requests
+	 * specific jobids it will give the corresponding error otherwise the
+	 * header will be printed and no jobs will be printed out. */
+	if (!*factors_resp) {
+		*factors_resp =
+			xmalloc(sizeof(priority_factors_response_msg_t));
+		return SLURM_PROTOCOL_SUCCESS;
+	}
 
 	/* Find duplicate job records and jobs local to other clusters and set
 	 * their job_id == 0 so they get skipped in reporting */
