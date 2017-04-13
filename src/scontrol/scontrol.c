@@ -178,6 +178,7 @@ int main(int argc, char **argv)
 				exit(1);
 			}
 			working_cluster_rec = list_peek(clusters);
+			local_flag = 1;
 			break;
 		case (int)'o':
 			one_liner = 1;
