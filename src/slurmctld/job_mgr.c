@@ -11412,8 +11412,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			error_code = ESLURM_JOB_FINISHED;
 		else if (job_ptr->priority == job_specs->priority) {
 			debug("update_job: setting priority to current value");
-			if ((job_ptr->priority == 0) &&
-			    (job_ptr->user_id != uid) && authorized) {
+			if ((job_ptr->priority == 0) && authorized) {
 				/* Authorized user can change from user hold
 				 * to admin hold or admin hold to user hold */
 				if (job_specs->alloc_sid == ALLOC_SID_USER_HOLD)
@@ -11463,7 +11462,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			     job_ptr->job_id);
 			update_accounting = true;
 			if (job_ptr->priority == 0) {
-				if ((job_ptr->user_id == uid) ||
+				if (!authorized ||
 				    (job_specs->alloc_sid ==
 				     ALLOC_SID_USER_HOLD)) {
 					job_ptr->state_reason = WAIT_HELD_USER;
