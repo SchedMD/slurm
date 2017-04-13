@@ -57,6 +57,10 @@ documents those changes that are of interest to users and administrators.
  -- Add partition name to job priority factor response message.
  -- Add sprio --local and --sibling options for use in federation of clusters.
  -- Add sprio "%c" format to print cluster name in federation mode.
+ -- Modify sinfo logic to provided unified view of all nodes and partitions
+    in a federation, add --local option to only report local state information
+    even in a cluster, print cluster name with "%V" format option, and
+    optionally sort by cluster name.
 
 * Changes in Slurm 17.02.3
 ==========================
