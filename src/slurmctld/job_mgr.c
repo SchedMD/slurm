@@ -10446,7 +10446,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 {
 	int error_code = SLURM_SUCCESS;
 	enum job_state_reason fail_reason;
-	bool authorized = false, admin = false;
+	bool authorized = false;
 	uint32_t save_min_nodes = 0, save_max_nodes = 0;
 	uint32_t save_min_cpus = 0, save_max_cpus = 0;
 	struct job_details *detail_ptr;
@@ -10488,7 +10488,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	if (job_ptr->db_index == NO_VAL64)
 		return ESLURM_JOB_SETTING_DB_INX;
 
-	authorized = admin = validate_operator(uid);
+	authorized = validate_operator(uid);
 	if (job_specs->burst_buffer) {
 		/* burst_buffer contents are validated at job submit time and
 		 * data is possibly being staged at later times. It can not
@@ -11449,7 +11449,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				job_ptr->direct_set_prio = 0;
 				set_job_prio(job_ptr);
 			} else {
-				if (admin || (job_specs->priority == 0)) {
+				if (authorized || (job_specs->priority == 0)) {
 					/* Only administrator can make
 					 * persistent change to a job's
 					 * priority, except holding a job */
