@@ -1924,6 +1924,10 @@ extern List priority_p_get_priority_factors_list(
 			    !IS_JOB_PENDING(job_ptr))
 				continue;
 
+			/* Job is not active on this cluster. */
+			if (IS_JOB_REVOKED(job_ptr))
+				continue;
+
 			/*
 			 * This means the job is not eligible yet
 			 */
