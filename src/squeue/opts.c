@@ -1085,6 +1085,11 @@ extern int parse_long_format( char* format_long )
 							field_size,
 							right_justify,
 							suffix);
+			else if (!xstrcasecmp(token, "cluster"))
+				job_format_add_cluster_name(params.format_list,
+							    field_size,
+							    right_justify,
+							    suffix);
 			else if (!xstrcasecmp(token, "delayboot"))
 				job_format_add_delay_boot(params.format_list,
 							  field_size,

@@ -8947,6 +8947,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		pack32(dump_job_ptr->priority, buffer);
 		packdouble(dump_job_ptr->billable_tres, buffer);
 
+		packstr(slurmctld_conf.cluster_name, buffer);
 		/* Only send the allocated nodelist since we are only sending
 		 * the number of cpus and nodes that are currently allocated. */
 		if (!IS_JOB_COMPLETING(dump_job_ptr))

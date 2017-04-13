@@ -973,6 +973,7 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->batch_script);
 		xfree(job->burst_buffer);
 		xfree(job->burst_buffer_state);
+		xfree(job->cluster);
 		xfree(job->command);
 		xfree(job->comment);
 		xfree(job->dependency);

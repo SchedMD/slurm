@@ -520,6 +520,10 @@ Prints the directory where the job checkpoint will be written to.
 Prints the time interval of the checkpoint.
 (Valid for job steps only)
 .TP
+\fBcluster\fR
+Name of the cluster that is running the job.
+(Valid for jobs only)
+.TP
 \fBclusterfeature\fR
 Cluster features required by the job.
 (Valid for jobs only)
@@ -989,6 +993,8 @@ Show all sibling jobs on a federated cluster.
 \fB\-S <sort_list>\fR, \fB\-\-sort=<sort_list>\fR
 Specification of the order in which records should be reported.
 This uses the same field specification as the <output_format>.
+The long format option "cluster" can also be used to sort jobs by cluster name
+(e.g. federated jobs).
 Multiple sorts may be performed by listing multiple sort fields
 separated by commas.
 The field specifications may be preceded by "+" or "\-" for
