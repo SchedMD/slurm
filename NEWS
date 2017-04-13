@@ -8,6 +8,8 @@ documents those changes that are of interest to users and administrators.
  -- Clear Dependency field when all dependencies are satisfied.
  -- Add --array-unique to squeue which will display one unique pending job
     array element per line.
+ -- Reset backfill timers correctly without skipping over them in certain
+    circumstances.
 
 * Changes in Slurm 17.02.2
 ==========================
