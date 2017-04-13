@@ -54,6 +54,11 @@ Sleep for the indicated number of seconds between reports.
 By default, prints a time stamp with the header.
 
 .TP
+\fB\-\-local\fR
+Show only jobs local to this cluster. Ignore other clusters in this federation
+(if any).
+
+.TP
 \fB\-l\fR, \fB\-\-long\fR
 Print more detailed information.
 This is ignored if the \fB\-\-format\fR option is specified.
@@ -63,6 +68,7 @@ This is ignored if the \fB\-\-format\fR option is specified.
 Clusters to issue commands to.  Multiple cluster names may be comma separated.
 A value of of '\fIall\fR' will query to run on all clusters.
 Note that the SlurmDBD must be up for this option to work properly.
+This option implicitly sets the \fB\-\-local\fR option.
 
 .TP
 \fB\-n <nodes>\fR, \fB\-\-nodes=<nodes>\fR
