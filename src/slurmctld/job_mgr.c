@@ -177,7 +177,8 @@ static void _del_batch_list_rec(void *x);
 static void _delete_job_desc_files(uint32_t job_id);
 static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	char *resv_name, slurmdb_assoc_rec_t *assoc_ptr,
-	bool admin, slurmdb_qos_rec_t *qos_rec,	int *error_code, bool locked);
+	bool operator, slurmdb_qos_rec_t *qos_rec, int *error_code,
+	bool locked);
 static void _dump_job_details(struct job_details *detail_ptr, Buf buffer);
 static int  _dump_job_state(void *x, void *y);
 static void _dump_job_fed_details(job_fed_details_t *fed_details_ptr,
@@ -598,7 +599,7 @@ static uint32_t _max_switch_wait(uint32_t input_wait)
 
 static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	char *resv_name, slurmdb_assoc_rec_t *assoc_ptr,
-	bool admin, slurmdb_qos_rec_t *qos_rec, int *error_code,
+	bool operator, slurmdb_qos_rec_t *qos_rec, int *error_code,
 	bool locked)
 {
 	slurmdb_qos_rec_t *qos_ptr = NULL;
@@ -619,7 +620,7 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 
 	if ((accounting_enforce & ACCOUNTING_ENFORCE_QOS)
 	    && assoc_ptr
-	    && !admin
+	    && !operator
 	    && (!assoc_ptr->usage->valid_qos
 		|| !bit_test(assoc_ptr->usage->valid_qos, qos_rec->id))) {
 		error("This association %d(account='%s', "
@@ -10446,7 +10447,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 {
 	int error_code = SLURM_SUCCESS;
 	enum job_state_reason fail_reason;
-	bool authorized = false;
+	bool operator = false;
 	uint32_t save_min_nodes = 0, save_max_nodes = 0;
 	uint32_t save_min_cpus = 0, save_max_cpus = 0;
 	struct job_details *detail_ptr;
@@ -10488,13 +10489,13 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	if (job_ptr->db_index == NO_VAL64)
 		return ESLURM_JOB_SETTING_DB_INX;
 
-	authorized = validate_operator(uid);
+	operator = validate_operator(uid);
 	if (job_specs->burst_buffer) {
 		/* burst_buffer contents are validated at job submit time and
 		 * data is possibly being staged at later times. It can not
 		 * be changed except to clear the value on a completed job and
 		 * purge the record in order to recover from a failure mode */
-		if (IS_JOB_COMPLETED(job_ptr) && authorized &&
+		if (IS_JOB_COMPLETED(job_ptr) && operator &&
 		    (job_specs->burst_buffer[0] == '\0')) {
 			xfree(job_ptr->burst_buffer);
 			last_job_update = now;
@@ -10530,8 +10531,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	memset(&acct_policy_limit_set, 0, sizeof(acct_policy_limit_set_t));
 	acct_policy_limit_set.tres = tres;
 
-	if (authorized) {
-		/* set up the acct_policy if we are authorized */
+	if (operator) {
+		/* set up the acct_policy if we are at least an operator */
 		for (tres_pos = 0; tres_pos < slurmctld_tres_cnt; tres_pos++)
 			acct_policy_limit_set.tres[tres_pos] = ADMIN_SET_LIMIT;
 		acct_policy_limit_set.time = ADMIN_SET_LIMIT;
@@ -10539,7 +10540,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	} else
 		memset(tres, 0, sizeof(tres));
 
-	if ((job_ptr->user_id != uid) && !authorized &&
+	if ((job_ptr->user_id != uid) && !operator &&
 	    !assoc_mgr_is_user_acct_coord(
 		    acct_db_conn, uid, job_ptr->account)) {
 		error("Security violation, JOB_UPDATE RPC from uid %d",
@@ -10625,7 +10626,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	 */
 
 	acct_limit_already_set = false;
-	if (!authorized && (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
+	if (!operator && (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
 		uint32_t orig_time_limit = job_specs->time_limit;
 		if (!acct_policy_validate(job_specs, job_ptr->part_ptr,
 					  job_ptr->assoc_ptr, job_ptr->qos_ptr,
@@ -10812,7 +10813,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 		new_qos_ptr = _determine_and_validate_qos(
 			resv_name, job_ptr->assoc_ptr,
-			authorized, &qos_rec, &error_code, false);
+			operator, &qos_rec, &error_code, false);
 		if ((error_code == SLURM_SUCCESS) && new_qos_ptr) {
 			if (job_ptr->qos_id != qos_rec.id && IS_JOB_PENDING(job_ptr)) {
 				info("%s: setting QOS to %s for job_id %u",
@@ -10974,7 +10975,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
-	if (!authorized && (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
+	if (!operator && (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
 		uint32_t orig_time_limit = job_specs->time_limit;
 		if (!acct_policy_validate(job_specs, job_ptr->part_ptr,
 					  job_ptr->assoc_ptr, job_ptr->qos_ptr,
@@ -11218,7 +11219,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		else if (job_ptr->time_limit == job_specs->time_limit) {
 			debug("sched: update_job: new time limit identical to "
 			      "old time limit %u", job_ptr->job_id);
-		} else if (authorized ||
+		} else if (operator ||
 			   (job_ptr->time_limit > job_specs->time_limit)) {
 			time_t old_time =  job_ptr->time_limit;
 			if (old_time == INFINITE)	/* one year in mins */
@@ -11298,7 +11299,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			error_code = ESLURM_JOB_NOT_RUNNING;
 		} else if (job_specs->end_time < now) {
 			error_code = ESLURM_INVALID_TIME_VALUE;
-		} else if (authorized ||
+		} else if (operator ||
 			   (job_ptr->end_time > job_specs->end_time)) {
 			int delta_t  = job_specs->end_time - job_ptr->end_time;
 			job_ptr->end_time = job_specs->end_time;
@@ -11323,7 +11324,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				    sizeof(time_str));
 		if (job_specs->deadline < now) {
 			error_code = ESLURM_INVALID_TIME_VALUE;
-		} else if (authorized) {
+		} else if (operator) {
 			/* update deadline */
 			job_ptr->deadline = job_specs->deadline;
 			info("sched: update_job: setting deadline to %s for "
@@ -11412,7 +11413,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			error_code = ESLURM_JOB_FINISHED;
 		else if (job_ptr->priority == job_specs->priority) {
 			debug("update_job: setting priority to current value");
-			if ((job_ptr->priority == 0) && authorized) {
+			if ((job_ptr->priority == 0) && operator) {
 				/* Authorized user can change from user hold
 				 * to admin hold or admin hold to user hold */
 				if (job_specs->alloc_sid == ALLOC_SID_USER_HOLD)
@@ -11422,7 +11423,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			}
 		} else if ((job_ptr->priority == 0) &&
 			   (job_specs->priority == INFINITE) &&
-			   (authorized ||
+			   (operator ||
 			    (job_ptr->state_reason == WAIT_HELD_USER))) {
 			job_ptr->direct_set_prio = 0;
 			set_job_prio(job_ptr);
@@ -11440,7 +11441,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			info("ignore priority reset request on held job %u",
 			     job_ptr->job_id);
 			error_code = ESLURM_JOB_HELD;
-		} else if (authorized ||
+		} else if (operator ||
 			 (job_ptr->priority > job_specs->priority)) {
 			if (job_specs->priority != 0)
 				job_ptr->details->nice = NICE_OFFSET;
@@ -11448,7 +11449,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				job_ptr->direct_set_prio = 0;
 				set_job_prio(job_ptr);
 			} else {
-				if (authorized || (job_specs->priority == 0)) {
+				if (operator || (job_specs->priority == 0)) {
 					/* Only administrator can make
 					 * persistent change to a job's
 					 * priority, except holding a job */
@@ -11462,7 +11463,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			     job_ptr->job_id);
 			update_accounting = true;
 			if (job_ptr->priority == 0) {
-				if (!authorized ||
+				if (!operator ||
 				    (job_specs->alloc_sid ==
 				     ALLOC_SID_USER_HOLD)) {
 					job_ptr->state_reason = WAIT_HELD_USER;
@@ -11511,7 +11512,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			 (job_ptr->details->nice == job_specs->nice))
 			debug("sched: update_job: new nice identical to "
 			      "old nice %u", job_ptr->job_id);
-		else if (authorized || (job_specs->nice >= NICE_OFFSET)) {
+		else if (operator || (job_specs->nice >= NICE_OFFSET)) {
 			int64_t new_prio = job_ptr->priority;
 			new_prio += job_ptr->details->nice;
 			new_prio -= job_specs->nice;
@@ -11619,7 +11620,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	if (job_specs->shared != (uint16_t) NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL)) {
 			error_code = ESLURM_JOB_NOT_PENDING;
-		} else if (!authorized) {
+		} else if (!operator) {
 			error("sched: Attempt to change sharing for job %u",
 			      job_ptr->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
@@ -11641,7 +11642,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	if (job_specs->contiguous != (uint16_t) NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_JOB_NOT_PENDING;
-		else if (authorized
+		else if (operator
 			 || (detail_ptr->contiguous > job_specs->contiguous)) {
 			detail_ptr->contiguous = job_specs->contiguous;
 			info("sched: update_job: setting contiguous to %u "
@@ -11659,7 +11660,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	if (job_specs->core_spec != (uint16_t) NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_JOB_NOT_PENDING;
-		else if (authorized && slurm_get_use_spec_resources()) {
+		else if (operator && slurm_get_use_spec_resources()) {
 			if (job_specs->core_spec == (uint16_t) INFINITE)
 				detail_ptr->core_spec = (uint16_t) NO_VAL;
 			else
@@ -11915,7 +11916,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	if (job_specs->ntasks_per_node != (uint16_t) NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_JOB_NOT_PENDING;
-		else if (authorized) {
+		else if (operator) {
 			detail_ptr->ntasks_per_node =
 				job_specs->ntasks_per_node;
 			info("sched: update_job: setting ntasks_per_node to %u"
@@ -11997,7 +11998,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			set_job_tres_alloc_str(job_ptr, true);
 			assoc_mgr_unlock(&locks);
 		} else if (IS_JOB_RUNNING(job_ptr) &&
-			   (authorized || (license_list == NULL))) {
+			   (operator || (license_list == NULL))) {
 			/* NOTE: This can result in oversubscription of
 			 * licenses */
 			license_job_return(job_ptr);
@@ -12150,7 +12151,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	if (geometry[0] != (uint16_t) NO_VAL) {
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_JOB_NOT_PENDING;
-		else if (authorized) {
+		else if (operator) {
 			uint32_t i, tot = 1;
 			for (i=0; i<SYSTEM_DIMENSIONS; i++)
 				tot *= geometry[i];
