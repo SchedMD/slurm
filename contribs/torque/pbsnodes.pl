@@ -91,7 +91,9 @@ Main:
     # Use sole remaining argument as nodeIds
     my @nodeIds = @ARGV;
     my $slurm = Slurm::new();
-
+    if (!$slurm) {
+        die "Problem loading slurm.\n";
+    }
 
     # handle all of the node update operations
     if ( defined $clear || defined $offline || defined $reset ) {

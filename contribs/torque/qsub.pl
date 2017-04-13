@@ -418,6 +418,9 @@ if ($interactive) {
 	# If block is true wait for the job to finish
 	my($resp, $count);
 	my $slurm = Slurm::new();
+	if (!$slurm) {
+		die "Problem loading slurm.\n";
+	}
 	if ( (lc($block) eq "true" ) and ($command_exit_status == 0) ) {
 		sleep 2;
 		my($job) = $slurm->load_job($job_id);
