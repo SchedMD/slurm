@@ -1198,9 +1198,6 @@ extern void slurm_free_kill_job_msg(kill_job_msg_t * msg)
 	if (msg) {
 		int i;
 		xfree(msg->nodes);
-		for (i=0; i<msg->pelog_env_size; i++)
-			xfree(msg->pelog_env[i]);
-		xfree(msg->pelog_env);
 		select_g_select_jobinfo_free(msg->select_jobinfo);
 		msg->select_jobinfo = NULL;
 
