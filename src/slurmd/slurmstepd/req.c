@@ -834,7 +834,8 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 		} else if (sig == SIG_UME) {
 			error("*** %s ON %s UNCORRECTABLE MEMORY ERROR AT %s ***",
 			      entity, job->node_name, time_str);
-		} else if ((sig == SIGTERM) || (sig == SIGKILL)) {
+		} else if ((sig == SIGTERM) || (sig == SIGKILL) ||
+			   (sig == SIG_TERM_KILL)) {
 			error("*** %s ON %s CANCELLED AT %s ***",
 			      entity, job->node_name, time_str);
 			msg_sent = 1;
@@ -864,6 +865,14 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 			pdebug_wake_process(job, job->task[i]->pid);
 		slurm_mutex_unlock(&suspend_mutex);
 		goto done;
+	}
+
+	if (sig == SIG_TERM_KILL) {
+		uint16_t kill_wait = slurm_get_kill_wait();
+		(void) proctrack_g_signal(job->cont_id, SIGCONT);
+		(void) proctrack_g_signal(job->cont_id, SIGTERM);
+		sleep(kill_wait);
+		sig = SIGKILL;
 	}
 
 	if (flag & KILL_JOB_BATCH

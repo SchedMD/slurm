@@ -61,6 +61,9 @@ documents those changes that are of interest to users and administrators.
     in a federation, add --local option to only report local state information
     even in a cluster, print cluster name with "%V" format option, and
     optionally sort by cluster name.
+ -- If a task in a parallel job fails and it was launched with the
+    --kill-on-bad-exit option then terminated the remaining tasks using the
+    SIGCONT, SIGTERM and SIGKILL signals rather than just sending SIGKILL.
 
 * Changes in Slurm 17.02.3
 ==========================
