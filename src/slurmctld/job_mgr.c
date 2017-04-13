@@ -10815,7 +10815,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			resv_name, job_ptr->assoc_ptr,
 			operator, &qos_rec, &error_code, false);
 		if ((error_code == SLURM_SUCCESS) && new_qos_ptr) {
-			if (job_ptr->qos_id != qos_rec.id && IS_JOB_PENDING(job_ptr)) {
+			if (job_ptr->qos_id != qos_rec.id &&
+			    IS_JOB_PENDING(job_ptr)) {
 				info("%s: setting QOS to %s for job_id %u",
 				     __func__, new_qos_ptr->name,
 				     job_ptr->job_id);
