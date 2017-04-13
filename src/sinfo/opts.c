@@ -126,6 +126,9 @@ extern void parse_command_line(int argc, char **argv)
 		env_a_set = true;
 		params.all_flag = true;
 	}
+	if (getenv("SINFO_LOCAL")) {
+		params.local = true;
+	}
 	if ( ( env_val = getenv("SINFO_PARTITION") ) ) {
 		env_p_set = true;
 		params.partition = xstrdup(env_val);
