@@ -10530,8 +10530,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	memset(&acct_policy_limit_set, 0, sizeof(acct_policy_limit_set_t));
 	acct_policy_limit_set.tres = tres;
 
-	if (authorized ||
-	    assoc_mgr_is_user_acct_coord(acct_db_conn, uid, job_ptr->account)) {
+	if (authorized) {
 		/* set up the acct_policy if we are authorized */
 		for (tres_pos = 0; tres_pos < slurmctld_tres_cnt; tres_pos++)
 			acct_policy_limit_set.tres[tres_pos] = ADMIN_SET_LIMIT;
@@ -10540,7 +10539,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	} else
 		memset(tres, 0, sizeof(tres));
 
-	if ((job_ptr->user_id != uid) && !authorized) {
+	if ((job_ptr->user_id != uid) && !authorized &&
+	    !assoc_mgr_is_user_acct_coord(
+		    acct_db_conn, uid, job_ptr->account)) {
 		error("Security violation, JOB_UPDATE RPC from uid %d",
 		      uid);
 		return ESLURM_USER_ID_MISSING;
