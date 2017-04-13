@@ -699,16 +699,11 @@ struct job_record {
 	char *origin_cluster;		/* cluster name that the job was
 					 * submitted from */
 	uint16_t other_port;		/* port for client communications */
-	uint32_t pack_leader;		/* job_id of pack_leader for job_pack
-	                                 * or 0 */
 	char *partition;		/* name of job partition(s) */
 	List part_ptr_list;		/* list of pointers to partition recs */
 	bool part_nodes_missing;	/* set if job's nodes removed from this
 					 * partition */
 	struct part_record *part_ptr;	/* pointer to the partition record */
-	char **pelog_env;		/* other environment variables for job
-					   prolog and epilog scripts */
-	uint32_t pelog_env_size;	/* element count in pelog_env */
 	uint8_t power_flags;		/* power management flags,
 					 * see SLURM_POWER_FLAGS_ */
 	time_t pre_sus_time;		/* time job ran prior to last suspend */
