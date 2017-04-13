@@ -41,7 +41,6 @@
 #include "config.h"
 
 #include "src/sreport/sreport.h"
-#include "src/sreport/assoc_reports.h"
 #include "src/sreport/cluster_reports.h"
 #include "src/sreport/job_reports.h"
 #include "src/sreport/resv_reports.h"
