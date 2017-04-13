@@ -14558,9 +14558,10 @@ static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
 	}
 
 	/* If the job is already pending, just return an error.
-	 * A federated origin job can be pending and revoked while a sibling job
-	 * runs on another cluster. */
-	if (IS_JOB_PENDING(job_ptr) && !IS_JOB_REVOKED(job_ptr))
+	 * A federated origin job can be pending and revoked with a sibling job
+	 * on another cluster. */
+	if (IS_JOB_PENDING(job_ptr) &&
+	    (!job_ptr->fed_details || !job_ptr->fed_details->cluster_lock))
 		return ESLURM_JOB_PENDING;
 
 	if ((state & JOB_RECONFIG_FAIL) && IS_JOB_CANCELLED(job_ptr)) {

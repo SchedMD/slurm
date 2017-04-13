@@ -687,6 +687,8 @@ static void _fed_mgr_ptr_init(slurmdb_federation_rec_t *db_fed,
 			tmp_cluster->fed.send = NULL;
 			db_cluster->fed.recv = tmp_cluster->fed.recv;
 			tmp_cluster->fed.recv = NULL;
+			db_cluster->send_rpc = tmp_cluster->send_rpc;
+			tmp_cluster->send_rpc = NULL;
 			slurm_mutex_unlock(&tmp_cluster->lock);
 		}
 		list_iterator_destroy(c_itr);

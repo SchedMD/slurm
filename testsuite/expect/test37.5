@@ -421,19 +421,19 @@ set requeue_exit_num [get_requeue_exit]
 set requeue_exithold_num [get_requeue_exit_hold]
 
 make_bash_script $long_script     "sleep 9000"
-make_bash_script $complete_script "env; $bin_sleep 10"
+make_bash_script $complete_script "env; $bin_sleep 25"
 make_bash_script $fail_script     "BadCommand"
 make_bash_script $prolog_script    "exit 0"
 make_bash_script $prologctl_script "exit 0"
 make_bash_script $epilog_script    "exit 0"
 
 if {$requeue_exit_num} {
-	make_bash_script $exit_script     "env; $bin_sleep 20; exit $requeue_exit_num"
+	make_bash_script $exit_script     "env; $bin_sleep 25; exit $requeue_exit_num"
 } else {
 	log_warn "Configure RequeueExit=# to test."
 }
 if {$requeue_exithold_num} {
-	make_bash_script $exithold_script "env; $bin_sleep 20; exit $requeue_exithold_num"
+	make_bash_script $exithold_script "env; $bin_sleep 25; exit $requeue_exithold_num"
 } else {
 	log_warn "Configure RequeueExitHold=# to test."
 }
