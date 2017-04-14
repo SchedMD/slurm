@@ -1499,6 +1499,9 @@ extern uint32_t slurm_bb_str2flags(char *bb_str);
 extern int parse_part_enforce_type(char *enforce_part_type, uint16_t *param);
 extern char * parse_part_enforce_type_2str (uint16_t type);
 
+/* Return true if this cluster_name is in a federation */
+extern bool cluster_in_federation(void *ptr, char *cluster_name);
+
 /* Given a protocol opcode return its string
  * description mapping the slurm_msg_type_t
  * to its name.

@@ -64,7 +64,6 @@ static List  _build_all_states_list( void );
 static List  _build_part_list( char *parts );
 static char *_get_prefix(char *token);
 static void  _help( void );
-static bool  _in_federation_test(void *ptr, char *cluster_name);
 static int   _parse_format(char *);
 static int   _parse_long_format(char *);
 static bool  _node_state_equal(int state_id, const char *state_str);
@@ -307,7 +306,7 @@ extern void parse_command_line(int argc, char **argv)
 		void *ptr = NULL;
 		char *cluster_name = slurm_get_cluster_name();
 		if (slurm_load_federation(&ptr) ||
-		    !_in_federation_test(ptr, cluster_name)) {
+		    !cluster_in_federation(ptr, cluster_name)) {
 			/* Not in federation */
 			params.local = true;
 			slurm_destroy_federation_rec(ptr);
@@ -370,28 +369,6 @@ extern void parse_command_line(int argc, char **argv)
 
 	if (params.verbose)
 		_print_options();
-}
-
-
-/* Return true if this cluster_name is in a federation */
-static bool _in_federation_test(void *ptr, char *cluster_name)
-{
-	slurmdb_federation_rec_t *fed = (slurmdb_federation_rec_t *) ptr;
-	slurmdb_cluster_rec_t *cluster;
-	ListIterator iter;
-	bool status = false;
-
-	if (!fed || !fed->cluster_list)		/* NULL if no federations */
-		return status;
-	iter = list_iterator_create(fed->cluster_list);
-	while ((cluster = (slurmdb_cluster_rec_t *) list_next(iter))) {
-		if (!xstrcmp(cluster->name, cluster_name)) {
-			status = true;
-			break;
-		}
-	}
-	list_iterator_destroy(iter);
-	return status;
 }
 
 static char *

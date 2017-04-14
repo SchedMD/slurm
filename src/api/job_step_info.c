@@ -477,27 +477,6 @@ _load_fed_steps(slurm_msg_t *req_msg, job_step_info_response_msg_t **resp,
 	return SLURM_PROTOCOL_SUCCESS;
 }
 
-/* Return true if this cluster_name is in a federation */
-static inline bool _in_federation_test(void *ptr, char *cluster_name)
-{
-	slurmdb_federation_rec_t *fed = (slurmdb_federation_rec_t *) ptr;
-	slurmdb_cluster_rec_t *cluster;
-	ListIterator iter;
-	bool status = false;
-
-	if (!fed || !fed->cluster_list)		/* NULL if no federations */
-		return status;
-	iter = list_iterator_create(fed->cluster_list);
-	while ((cluster = (slurmdb_cluster_rec_t *) list_next(iter))) {
-		if (!xstrcmp(cluster->name, cluster_name)) {
-			status = true;
-			break;
-		}
-	}
-	list_iterator_destroy(iter);
-	return status;
-}
-
 /*
  * slurm_get_job_steps - issue RPC to get specific slurm job step
  *	configuration information if changed since update_time.
@@ -526,7 +505,7 @@ slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id,
 	cluster_name = slurm_get_cluster_name();
 	if ((show_flags & SHOW_LOCAL) == 0) {
 		if (slurm_load_federation(&ptr) ||
-		    !_in_federation_test(ptr, cluster_name)) {
+		    !cluster_in_federation(ptr, cluster_name)) {
 			/* Not in federation */
 			show_flags |= SHOW_LOCAL;
 		} else {

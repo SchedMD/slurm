@@ -1050,27 +1050,6 @@ static inline bool _test_local_job(uint32_t job_id)
 	return false;
 }
 
-/* Return true if this cluster_name is in a federation */
-static inline bool _in_federation_test(void *ptr, char *cluster_name)
-{
-	slurmdb_federation_rec_t *fed = (slurmdb_federation_rec_t *) ptr;
-	slurmdb_cluster_rec_t *cluster;
-	ListIterator iter;
-	bool status = false;
-
-	if (!fed || !fed->cluster_list)		/* NULL if no federations */
-		return status;
-	iter = list_iterator_create(fed->cluster_list);
-	while ((cluster = (slurmdb_cluster_rec_t *) list_next(iter))) {
-		if (!xstrcmp(cluster->name, cluster_name)) {
-			status = true;
-			break;
-		}
-	}
-	list_iterator_destroy(iter);
-	return status;
-}
-
 /* Sort responses so local cluster response is first */
 static int _local_resp_first(void *x, void *y)
 {
@@ -1314,7 +1293,7 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 	cluster_name = slurm_get_cluster_name();
 	if ((show_flags & SHOW_LOCAL) == 0) {
 		if (slurm_load_federation(&ptr) ||
-		    !_in_federation_test(ptr, cluster_name)) {
+		    !cluster_in_federation(ptr, cluster_name)) {
 			/* Not in federation */
 			show_flags |= SHOW_LOCAL;
 		} else {
@@ -1370,7 +1349,7 @@ extern int slurm_load_job_user (job_info_msg_t **job_info_msg_pptr,
 	cluster_name = slurm_get_cluster_name();
 	if ((show_flags & SHOW_LOCAL) == 0) {
 		if (slurm_load_federation(&ptr) ||
-		    !_in_federation_test(ptr, cluster_name)) {
+		    !cluster_in_federation(ptr, cluster_name)) {
 			/* Not in federation */
 			show_flags |= SHOW_LOCAL;
 		}
@@ -1422,7 +1401,7 @@ slurm_load_job (job_info_msg_t **job_info_msg_pptr, uint32_t job_id,
 	cluster_name = slurm_get_cluster_name();
 	if ((show_flags & SHOW_LOCAL) == 0) {
 		if (slurm_load_federation(&ptr) ||
-		    !_in_federation_test(ptr, cluster_name)) {
+		    !cluster_in_federation(ptr, cluster_name)) {
 			/* Not in federation */
 			show_flags |= SHOW_LOCAL;
 		}
@@ -2194,7 +2173,7 @@ slurm_load_job_prio(priority_factors_response_msg_t **factors_resp,
 	cluster_name = slurm_get_cluster_name();
 	if ((show_flags & SHOW_LOCAL) == 0) {
 		if (slurm_load_federation(&ptr) ||
-		    !_in_federation_test(ptr, cluster_name)) {
+		    !cluster_in_federation(ptr, cluster_name)) {
 			/* Not in federation */
 			show_flags |= SHOW_LOCAL;
 		}
