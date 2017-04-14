@@ -2089,7 +2089,8 @@ extern void sort_job_queue(List job_queue)
 }
 
 /* Note this differs from the ListCmpF typedef since we want jobs sorted
- *	in order of decreasing priority then by increasing job id */
+ * in order of decreasing priority then submit time and the by increasing
+ * job id */
 extern int sort_job_queue2(void *x, void *y)
 {
 	job_queue_rec_t *job_rec1 = *(job_queue_rec_t **) x;
@@ -2148,7 +2149,17 @@ extern int sort_job_queue2(void *x, void *y)
 	if (p1 > p2)
 		return -1;
 
-	/* If the priorities are the same sort by increasing job id's */
+	/* If the priorities are the same sort by submission time */
+	if (job_rec1->job_ptr->details && job_rec2->job_ptr->details) {
+		if (job_rec1->job_ptr->details->submit_time >
+		    job_rec2->job_ptr->details->submit_time)
+			return 1;
+		if (job_rec2->job_ptr->details->submit_time >
+		    job_rec1->job_ptr->details->submit_time)
+			return -1;
+	}
+
+	/* If the submission times are the same sort by increasing job id's */
 	if (job_rec1->array_task_id == NO_VAL)
 		job_id1 = job_rec1->job_id;
 	else

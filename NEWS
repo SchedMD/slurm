@@ -64,6 +64,7 @@ documents those changes that are of interest to users and administrators.
  -- If a task in a parallel job fails and it was launched with the
     --kill-on-bad-exit option then terminate the remaining tasks using the
     SIGCONT, SIGTERM and SIGKILL signals rather than just sending SIGKILL.
+ -- Include submit_time when doing the sort for job scheduling.
 
 * Changes in Slurm 17.02.3
 ==========================
