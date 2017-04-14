@@ -4171,7 +4171,7 @@ extern void
 slurmdbd_pack_step_start_msg(dbd_step_start_msg_t *msg, uint16_t rpc_version,
 			     Buf buffer)
 {
-	if (rpc_version >= SLURM_17_02_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		pack32(msg->assoc_id, buffer);
 		pack64(msg->db_index, buffer);
 		pack32(msg->job_id, buffer);
