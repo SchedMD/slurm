@@ -266,6 +266,8 @@ _print_job_steps( bool clear_old )
 
 	if (params.all_flag)
 		show_flags |= SHOW_ALL;
+	if (params.local_flag)
+		show_flags |= SHOW_LOCAL;
 
 	if (old_step_ptr) {
 		if (clear_old)

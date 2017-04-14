@@ -402,6 +402,8 @@ scontrol_print_step (char *job_step_id_str)
 
 	if (all_flag)
 		show_flags |= SHOW_ALL;
+	if (local_flag)
+		show_flags |= SHOW_LOCAL;
 
 	if ((old_job_step_info_ptr) && (last_job_id == job_id) &&
 	    (last_array_id == array_id) && (last_step_id == step_id)) {

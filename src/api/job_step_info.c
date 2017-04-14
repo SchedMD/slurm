@@ -50,6 +50,22 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#define MAX_RETRIES 5
+
+/* Data structures for pthreads used to gather step information from multiple
+ * clusters in parallel */
+typedef struct load_step_req_struct {
+	slurmdb_cluster_rec_t *cluster;
+	bool local_cluster;
+	slurm_msg_t *req_msg;
+	List resp_msg_list;
+} load_step_req_struct_t;
+
+typedef struct load_step_resp_struct {
+	bool local_cluster;
+	job_step_info_response_msg_t *new_msg;
+} load_step_resp_struct_t;
+
 static int _nodes_in_list(char *node_list)
 {
 	hostset_t host_set = hostset_create(node_list);
@@ -304,6 +320,184 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 	return out;
 }
 
+static int
+_load_cluster_steps(slurm_msg_t *req_msg, job_step_info_response_msg_t **resp,
+		    slurmdb_cluster_rec_t *cluster)
+{
+	slurm_msg_t resp_msg;
+	int rc = SLURM_SUCCESS;
+
+	slurm_msg_t_init(&resp_msg);
+
+	*resp = NULL;
+
+	if (slurm_send_recv_controller_msg(req_msg, &resp_msg, cluster) < 0)
+		return SLURM_ERROR;
+
+	switch (resp_msg.msg_type) {
+	case RESPONSE_JOB_STEP_INFO:
+		*resp = (job_step_info_response_msg_t *) resp_msg.data;
+		resp_msg.data = NULL;
+		break;
+	case RESPONSE_SLURM_RC:
+		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		slurm_free_return_code_msg(resp_msg.data);
+		break;
+	default:
+		rc = SLURM_UNEXPECTED_MSG_ERROR;
+		break;
+	}
+
+	if (rc)
+		slurm_seterrno_ret(rc);
+
+	return rc;
+}
+
+/* Thread to read step information from some cluster */
+static void *_load_step_thread(void *args)
+{
+	load_step_req_struct_t *load_args = (load_step_req_struct_t *)args;
+	slurmdb_cluster_rec_t *cluster = load_args->cluster;
+	job_step_info_response_msg_t *new_msg = NULL;
+	int rc;
+
+	if ((rc = _load_cluster_steps(load_args->req_msg, &new_msg, cluster)) ||
+	    !new_msg) {
+		verbose("Error reading step information from cluster %s: %s",
+			cluster->name, slurm_strerror(rc));
+	} else {
+		load_step_resp_struct_t *step_resp;
+		step_resp = xmalloc(sizeof(load_step_resp_struct_t));
+		step_resp->local_cluster = load_args->local_cluster;
+		step_resp->new_msg = new_msg;
+		list_append(load_args->resp_msg_list, step_resp);
+	}
+	xfree(args);
+
+	return (void *) NULL;
+}
+
+static int
+_load_fed_steps(slurm_msg_t *req_msg, job_step_info_response_msg_t **resp,
+		uint16_t show_flags, char *cluster_name,
+		slurmdb_federation_rec_t *fed)
+{
+	int i;
+	load_step_resp_struct_t *step_resp;
+	job_step_info_response_msg_t *orig_msg = NULL, *new_msg = NULL;
+	uint32_t new_rec_cnt;
+	slurmdb_cluster_rec_t *cluster;
+	ListIterator iter;
+	pthread_attr_t load_attr;
+	int pthread_count = 0;
+	pthread_t *load_thread = 0;
+	load_step_req_struct_t *load_args;
+	List resp_msg_list;
+
+	*resp = NULL;
+
+	/* Spawn one pthread per cluster to collect step information */
+	resp_msg_list = list_create(NULL);
+	load_thread = xmalloc(sizeof(pthread_attr_t) *
+			      list_count(fed->cluster_list));
+	iter = list_iterator_create(fed->cluster_list);
+	while ((cluster = (slurmdb_cluster_rec_t *) list_next(iter))) {
+		int retries = 0;
+		bool local_cluster = false;
+		if ((cluster->control_host == NULL) ||
+		    (cluster->control_host[0] == '\0'))
+			continue;	/* Cluster down */
+
+		if (!xstrcmp(cluster->name, cluster_name))
+			local_cluster = true;
+		if ((show_flags & SHOW_LOCAL) && !local_cluster)
+			continue;
+
+		load_args = xmalloc(sizeof(load_step_req_struct_t));
+		load_args->cluster = cluster;
+		load_args->local_cluster = local_cluster;
+		load_args->req_msg = req_msg;
+		load_args->resp_msg_list = resp_msg_list;
+		slurm_attr_init(&load_attr);
+		if (pthread_attr_setdetachstate(&load_attr,
+						PTHREAD_CREATE_JOINABLE))
+			error("pthread_attr_setdetachstate error %m");
+		while (pthread_create(&load_thread[pthread_count], &load_attr,
+				      _load_step_thread, (void *) load_args)) {
+			error("pthread_create error %m");
+			if (++retries > MAX_RETRIES)
+				fatal("Can't create pthread");
+			usleep(10000);	/* sleep and retry */
+		}
+		pthread_count++;
+		slurm_attr_destroy(&load_attr);
+
+	}
+	list_iterator_destroy(iter);
+
+	/* Wait for all pthreads to complete */
+	for (i = 0; i < pthread_count; i++)
+		pthread_join(load_thread[i], NULL);
+	xfree(load_thread);
+
+	/* Merge the responses into a single response message */
+	iter = list_iterator_create(resp_msg_list);
+	while ((step_resp = (load_step_resp_struct_t *) list_next(iter))) {
+		new_msg = step_resp->new_msg;
+		if (!orig_msg) {
+			orig_msg = new_msg;
+			*resp = orig_msg;
+		} else {
+			/* Merge the step records into a single response message */
+			orig_msg->last_update = MIN(orig_msg->last_update,
+						    new_msg->last_update);
+			new_rec_cnt = orig_msg->job_step_count +
+				      new_msg->job_step_count;
+			orig_msg->job_steps = xrealloc(orig_msg->job_steps,
+						sizeof(job_step_info_t) *
+						new_rec_cnt);
+			(void) memcpy(orig_msg->job_steps +
+				      orig_msg->job_step_count,
+				      new_msg->job_steps,
+				      sizeof(job_step_info_t) *
+				      new_msg->job_step_count);
+			orig_msg->job_step_count = new_rec_cnt;
+			xfree(new_msg->job_steps);
+			xfree(new_msg);
+		}
+		xfree(step_resp);
+	}
+	list_iterator_destroy(iter);
+	FREE_NULL_LIST(resp_msg_list);
+
+	if (!orig_msg)
+		slurm_seterrno_ret(ESLURM_INVALID_JOB_ID);
+
+	return SLURM_PROTOCOL_SUCCESS;
+}
+
+/* Return true if this cluster_name is in a federation */
+static inline bool _in_federation_test(void *ptr, char *cluster_name)
+{
+	slurmdb_federation_rec_t *fed = (slurmdb_federation_rec_t *) ptr;
+	slurmdb_cluster_rec_t *cluster;
+	ListIterator iter;
+	bool status = false;
+
+	if (!fed || !fed->cluster_list)		/* NULL if no federations */
+		return status;
+	iter = list_iterator_create(fed->cluster_list);
+	while ((cluster = (slurmdb_cluster_rec_t *) list_next(iter))) {
+		if (!xstrcmp(cluster->name, cluster_name)) {
+			status = true;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+	return status;
+}
+
 /*
  * slurm_get_job_steps - issue RPC to get specific slurm job step
  *	configuration information if changed since update_time.
@@ -324,40 +518,46 @@ slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id,
 {
 	int rc;
 	slurm_msg_t req_msg;
-	slurm_msg_t resp_msg;
-	job_step_info_request_msg_t req;
+	job_step_info_request_msg_t req = {0};
+	slurmdb_federation_rec_t *fed;
+	char *cluster_name = NULL;
+	void *ptr = NULL;
 
-	slurm_msg_t_init(&req_msg);
-	slurm_msg_t_init(&resp_msg);
-
-	req.last_update  = update_time;
-	req.job_id	= job_id;
-	req.step_id	= step_id;
-	req.show_flags	= show_flags;
-	req_msg.msg_type = REQUEST_JOB_STEP_INFO;
-	req_msg.data	= &req;
-
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,
-					   working_cluster_rec) < 0)
-		return SLURM_ERROR;
-
-	switch (resp_msg.msg_type) {
-	case RESPONSE_JOB_STEP_INFO:
-		*resp = (job_step_info_response_msg_t *) resp_msg.data;
-		break;
-	case RESPONSE_SLURM_RC:
-		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
-		slurm_free_return_code_msg(resp_msg.data);
-		if (rc)
-			slurm_seterrno_ret(rc);
-		*resp = NULL;
-		break;
-	default:
-		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
-		break;
+	cluster_name = slurm_get_cluster_name();
+	if ((show_flags & SHOW_LOCAL) == 0) {
+		if (slurm_load_federation(&ptr) ||
+		    !_in_federation_test(ptr, cluster_name)) {
+			/* Not in federation */
+			show_flags |= SHOW_LOCAL;
+		} else {
+			/* In federation. Need full info from all clusters */
+			update_time = (time_t) 0;
+		}
 	}
 
-	return SLURM_PROTOCOL_SUCCESS;
+	slurm_msg_t_init(&req_msg);
+	req.last_update  = update_time;
+	req.job_id       = job_id;
+	req.step_id      = step_id;
+	req.show_flags   = show_flags;
+	req_msg.msg_type = REQUEST_JOB_STEP_INFO;
+	req_msg.data     = &req;
+
+	/* With -M option, working_cluster_rec is set and  we only get
+	 * information for that cluster */
+	if (working_cluster_rec || !ptr || (show_flags & SHOW_LOCAL)) {
+		rc = _load_cluster_steps(&req_msg, resp, working_cluster_rec);
+	} else {
+		fed = (slurmdb_federation_rec_t *) ptr;
+		rc = _load_fed_steps(&req_msg, resp, show_flags, cluster_name,
+				     fed);
+	}
+
+	if (ptr)
+		slurm_destroy_federation_rec(ptr);
+	xfree(cluster_name);
+
+	return rc;
 }
 
 extern slurm_step_layout_t *
