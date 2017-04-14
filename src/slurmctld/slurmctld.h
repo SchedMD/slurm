@@ -849,8 +849,6 @@ struct 	step_record {
 	char *name;			/* name of job step */
 	char *network;			/* step's network specification */
 	uint8_t no_kill;		/* 1 if no kill on node failure */
-	uint32_t packjobid;		/* jobid of srun first step */
-	uint32_t packstepid;		/* stepid of srun first step */
 	uint16_t port;			/* port for srun communications */
 	time_t pre_sus_time;		/* time step ran prior to last suspend */
 	uint16_t start_protocol_ver;	/* Slurm version step was

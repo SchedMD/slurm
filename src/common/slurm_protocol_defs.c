@@ -933,8 +933,6 @@ extern void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 		msg->select_jobinfo = NULL;
 
 		slurm_cred_destroy(msg->cred);
-		xfree(msg->resv_name);
-		xfree(msg->resv_ports);
 		xfree(msg);
 	}
 }

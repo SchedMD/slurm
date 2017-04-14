@@ -731,8 +731,6 @@ typedef struct job_step_specs {
 	uint32_t num_tasks;	/* number of tasks required */
 	uint8_t overcommit;     /* flag, 1 to allow overcommit of processors,
 				   0 to disallow overcommit. default is 0 */
-	uint32_t packjobid;	/* jobid of srun first step */
-	uint32_t packstepid;	/* stepid of srun first step */
 	uint16_t plane_size;	/* plane size when task_dist =
 				   SLURM_DIST_PLANE */
 	uint16_t port;		/* port to contact initiating srun */
@@ -768,20 +766,12 @@ typedef struct job_step_create_response_msg {
 typedef struct launch_tasks_request_msg {
 	uint32_t  job_id;
 	uint32_t  job_step_id;
-	uint32_t  mpi_jobid;	/* MPI jobid (same for all steps) */
-	uint32_t  mpi_nnodes;	/* number of MPI nodes in all steps */
-	uint32_t  mpi_ntasks;	/* number of MPI tasks in all steps */
-	uint32_t  mpi_stepfnodeid; /* first MPI nodeid for this step */
-	uint32_t  mpi_stepftaskid; /* first MPI taskid for this step */
-	uint32_t  mpi_stepid;	/* MPI stepid (same for all steps) */
 	uint32_t  nnodes;	/* number of nodes in this job step       */
 	uint32_t  ntasks;	/* number of tasks in this job step   */
 	uint16_t  ntasks_per_board;/* number of tasks to invoke on each board */
 	uint16_t  ntasks_per_core; /* number of tasks to invoke on each core */
 	uint16_t  ntasks_per_socket;/* number of tasks to invoke on
 				     * each socket */
-	uint32_t  packjobid;	/* jobid of srun first step */
-	uint32_t  packstepid;	/* stepid of srun first step */
 	uint32_t  uid;
 	char     *user_name;
 	uint32_t  gid;
@@ -837,8 +827,6 @@ typedef struct launch_tasks_request_msg {
 	job_options_t options;  /* Arbitrary job options */
 	char *complete_nodelist;
 	char *ckpt_dir;		/* checkpoint path */
-	char **pelog_env;       /* prolog/epilog environment vars */
-	uint32_t pelog_env_size;
 	char *restart_dir;	/* restart from checkpoint if set */
 	char **spank_job_env;
 	uint32_t spank_job_env_size;
@@ -961,8 +949,6 @@ typedef struct prolog_launch_msg {
 	uint32_t nnodes;			/* count of nodes, passed via cred */
 	char *nodes;			/* list of nodes allocated to job_step */
 	char *partition;		/* partition the job is running in */
-	char **pelog_env;               /* prolog/epilog environment vars */
-	uint32_t pelog_env_size;
 	dynamic_plugin_data_t *select_jobinfo;	/* opaque data type */
 	char **spank_job_env;		/* SPANK job environment variables */
 	uint32_t spank_job_env_size;	/* size of spank_job_env */
@@ -1031,10 +1017,6 @@ typedef struct batch_job_launch_msg {
 	char **spank_job_env;	/* SPANK job environment variables */
 	uint32_t spank_job_env_size;	/* size of spank_job_env */
 	char *resv_name;        /* job's reservation */
-	char **pelog_env;       /* prolog/epilog environment vars */
-	uint32_t pelog_env_size;
-	char *resv_ports;       /* reserve ports for jobpack nodes */
-	uint32_t group_number;  /* jobpack group number index */
 } batch_job_launch_msg_t;
 
 typedef struct job_id_request_msg {
