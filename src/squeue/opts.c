@@ -937,7 +937,12 @@ extern int parse_long_format( char* format_long )
 
 		if (params.step_flag) {
 
-			if (!xstrcasecmp(token, "numtask"))
+			if (!xstrcasecmp(token, "cluster"))
+				step_format_add_cluster_name(params.format_list,
+							     field_size,
+							     right_justify,
+							     suffix);
+			else if (!xstrcasecmp(token, "numtask"))
 				step_format_add_num_tasks( params.format_list,
 							   field_size,
 							   right_justify,

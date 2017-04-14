@@ -2186,6 +2186,19 @@ step_format_add_function(List list, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
+int _print_step_cluster_name(job_step_info_t *step, int width, bool right,
+			     char* suffix)
+{
+	if (step == NULL)	/* Print the Header instead */
+		_print_str("CLUSTER", width, right, true);
+	else
+		_print_str(step->cluster, width, right, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_step_id(job_step_info_t * step, int width, bool right, char* suffix)
 {
 	char id[FORMAT_STRING_SIZE];

@@ -527,6 +527,8 @@ int step_format_add_function(List list, int width, bool right_justify,
 			     char * suffix,
 		int (*function) (job_step_info_t *, int, bool, char *));
 
+#define step_format_add_cluster_name(list,wid,right,suffix) \
+	step_format_add_function(list,wid,right,suffix,_print_step_cluster_name)
 #define step_format_add_id(list,wid,right,suffix) \
 	step_format_add_function(list,wid,right,suffix,_print_step_id)
 #define step_format_add_partition(list,wid,right,suffix) \
@@ -589,6 +591,8 @@ int step_format_add_function(List list, int width, bool right_justify,
 /*****************************************************************************
  * Step Line Print Functions
  *****************************************************************************/
+int _print_step_cluster_name(job_step_info_t * step, int width,
+			     bool right_justify, char *suffix);
 int _print_step_id(job_step_info_t * step, int width, bool right_justify,
 		   char *suffix);
 int _print_step_partition(job_step_info_t * step, int width,

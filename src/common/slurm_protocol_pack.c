@@ -5517,6 +5517,7 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer,
 		safe_unpack_time(&step->start_time, buffer);
 		safe_unpack_time(&step->run_time, buffer);
 
+		safe_unpackstr_xmalloc(&step->cluster, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&step->partition, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&step->srun_host, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&step->resv_ports, &uint32_tmp, buffer);

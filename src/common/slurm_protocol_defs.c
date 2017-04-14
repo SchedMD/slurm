@@ -3321,6 +3321,7 @@ extern void slurm_free_job_step_info_members (job_step_info_t * msg)
 {
 	if (msg != NULL) {
 		xfree(msg->ckpt_dir);
+		xfree(msg->cluster);
 		xfree(msg->gres);
 		xfree(msg->name);
 		xfree(msg->network);

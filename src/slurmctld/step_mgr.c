@@ -2961,6 +2961,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
 		}
 		pack_time(run_time, buffer);
 
+		packstr(slurmctld_conf.cluster_name, buffer);
 		if (step_ptr->job_ptr->part_ptr)
 			packstr(step_ptr->job_ptr->part_ptr->name, buffer);
 		else

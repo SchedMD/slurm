@@ -1982,6 +1982,7 @@ typedef struct {
 	uint32_t array_task_id;	/* task_id of a job array */
 	char *ckpt_dir;		/* path to store checkpoint image files */
 	uint16_t ckpt_interval;	/* checkpoint interval in minutes */
+	char *cluster;		/* cluster that the step is running on. */
 	char *gres;		/* generic resources required */
 	uint32_t job_id;	/* job ID */
 	char *name;		/* name of job step */
