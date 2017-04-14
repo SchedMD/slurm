@@ -2040,8 +2040,8 @@ Usage: squeue [OPTIONS]\n\
                                   current cluster.  cluster with no name will\n\
                                   reset to default.\n\
   -n, --name=job_name(s)          comma separated list of job names to view\n\
-  --noconvert                     don't convert units from their original type\n\
-				  (e.g. 2048M won't be converted to 2G).\n\
+      --noconvert                 don't convert units from their original type\n\
+                                  (e.g. 2048M won't be converted to 2G).\n\
   -o, --format=format             format specification\n\
   -O, --Format=format             format specification\n\
   -p, --partition=partition(s)    comma separated list of partitions\n\
