@@ -1268,9 +1268,6 @@ static int _dump_job_state(void *x, void *arg)
 	packstr(dump_job_ptr->tres_fmt_alloc_str, buffer);
 	packstr(dump_job_ptr->tres_req_str, buffer);
 	packstr(dump_job_ptr->tres_fmt_req_str, buffer);
-	packstr_array(dump_job_ptr->pelog_env,
-		      dump_job_ptr->pelog_env_size, buffer);
-	pack32(dump_job_ptr->pack_leader, buffer);
 
 	packstr(dump_job_ptr->clusters, buffer);
 	_dump_job_fed_details(dump_job_ptr->fed_details, buffer);
@@ -1535,9 +1532,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 				       &name_len, buffer);
 		safe_unpackstr_xmalloc(&tres_req_str, &name_len, buffer);
 		safe_unpackstr_xmalloc(&tres_fmt_req_str, &name_len, buffer);
-		safe_unpackstr_array(&pelog_env, &pelog_env_size,
-				     buffer);
-		safe_unpack32(&pack_leader, buffer);
 		safe_unpackstr_xmalloc(&clusters, &name_len, buffer);
 		if ((error_code = _load_job_fed_details(&job_fed_details,
 							buffer,
@@ -1741,8 +1735,11 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&tres_req_str, &name_len, buffer);
 		safe_unpackstr_xmalloc(&tres_fmt_req_str, &name_len, buffer);
 		safe_unpackstr_array(&pelog_env, &pelog_env_size,
-				     buffer);
-		safe_unpack32(&pack_leader, buffer);
+				     buffer);		/* Vestigial */
+		for (i = 0; i < pelog_env_size; i++)
+			xfree(pelog_env[i]);
+		xfree(pelog_env);
+		safe_unpack32(&pack_leader, buffer);	/* Vestigial */
 		safe_unpackstr_xmalloc(&clusters, &name_len, buffer);
 		if ((error_code = _load_job_fed_details(&job_fed_details,
 							buffer,
@@ -2257,9 +2254,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		job_set_req_tres(job_ptr, true);
 
 	build_node_details(job_ptr, false);	/* set node_addr */
-	job_ptr->pelog_env    = pelog_env;
-	job_ptr->pelog_env_size = pelog_env_size;
-	job_ptr->pack_leader  = pack_leader;
 	job_ptr->clusters     = clusters;
 	job_ptr->fed_details  = job_fed_details;
 	return SLURM_SUCCESS;

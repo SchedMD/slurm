@@ -823,9 +823,6 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		xfree(msg->qos);
 		xfree(msg->std_out);
 		xfree(msg->partition);
-		for (i = 0; i < msg->pelog_env_size; i++)
-			xfree(msg->pelog_env[i]);
-		xfree(msg->pelog_env);
 		xfree(msg->ramdiskimage);
 		xfree(msg->req_nodes);
 		xfree(msg->reservation);
@@ -871,9 +868,6 @@ extern void slurm_free_prolog_launch_msg(prolog_launch_msg_t * msg)
 		xfree(msg->alias_list);
 		xfree(msg->nodes);
 		xfree(msg->partition);
-		for (i = 0; i < msg->pelog_env_size; i++)
-			xfree(msg->pelog_env[i]);
-		xfree(msg->pelog_env);
 		xfree(msg->std_err);
 		xfree(msg->std_out);
 		xfree(msg->work_dir);
@@ -923,12 +917,6 @@ extern void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 			xfree(msg->argv);
 		}
 
-		if (msg->pelog_env) {
-			for (i = 0; i < msg->pelog_env_size; i++)
-				xfree(msg->pelog_env[i]);
-			xfree(msg->pelog_env);
-		}
-
 		if (msg->spank_job_env) {
 			for (i = 0; i < msg->spank_job_env_size; i++)
 				xfree(msg->spank_job_env[i]);
@@ -945,8 +933,6 @@ extern void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 		msg->select_jobinfo = NULL;
 
 		slurm_cred_destroy(msg->cred);
-		xfree(msg->resv_name);
-		xfree(msg->resv_ports);
 		xfree(msg);
 	}
 }
@@ -1199,9 +1185,6 @@ extern void slurm_free_kill_job_msg(kill_job_msg_t * msg)
 	if (msg) {
 		int i;
 		xfree(msg->nodes);
-		for (i=0; i<msg->pelog_env_size; i++)
-			xfree(msg->pelog_env[i]);
-		xfree(msg->pelog_env);
 		select_g_select_jobinfo_free(msg->select_jobinfo);
 		msg->select_jobinfo = NULL;
 
@@ -1257,9 +1240,6 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 		}
 		xfree(msg->argv);
 	}
-	for (i = 0; i < msg->pelog_env_size; i++)
-		xfree(msg->pelog_env[i]);
-	xfree(msg->pelog_env);
 	for (i = 0; i < msg->spank_job_env_size; i++) {
 		xfree(msg->spank_job_env[i]);
 	}
