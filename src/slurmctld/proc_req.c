@@ -408,6 +408,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		_slurm_rpc_node_registration(msg, 0);
 		break;
 	case REQUEST_JOB_ALLOCATION_INFO:
+	case REQUEST_JOB_ALLOCATION_INFO_LITE:
 		_slurm_rpc_job_alloc_info(msg);
 		break;
 	case REQUEST_JOB_SBCAST_CRED:
@@ -2899,7 +2900,12 @@ static void _slurm_rpc_job_alloc_info(slurm_msg_t * msg)
 		slurm_msg_t_init(&response_msg);
 		response_msg.flags = msg->flags;
 		response_msg.protocol_version = msg->protocol_version;
-		response_msg.msg_type    = RESPONSE_JOB_ALLOCATION_INFO;
+		if (msg->msg_type == REQUEST_JOB_ALLOCATION_INFO_LITE) {
+			response_msg.msg_type =
+				RESPONSE_JOB_ALLOCATION_INFO_LITE;
+		} else {
+			response_msg.msg_type = RESPONSE_JOB_ALLOCATION_INFO;
+		}
 		response_msg.data        = &job_info_resp_msg;
 
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
