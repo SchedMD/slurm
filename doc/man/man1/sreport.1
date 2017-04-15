@@ -1,4 +1,4 @@
-.TH sreport "1" "Slurm Commands" "June 2015" "Slurm Commands"
+.TH sreport "1" "Slurm Commands" "April 2017" "Slurm Commands"
 
 .SH "NAME"
 sreport \- Generate reports from the slurm accounting data.
@@ -20,8 +20,13 @@ Use all clusters instead of only the cluster from where the command was run.
 \fB\-h\fR, \fB\-\-help\fR
 Print a help message describing the usage of \fBsreport\fR.
 .TP
+\fB\-\-local\fR
+Generate a report for the local cluster, even if part of a federation.
+.TP
 \fB\-M\fR, \fB\-\-cluster\fR
-The cluster(s) to generate reports for. Default is local cluster.
+The cluster(s) to generate reports for. Default is local cluster, unless the
+local cluster is part of a federation and in that case generate a report for
+all clusters in the local federation.
 .TP
 \fB\-n\fR, \fB\-\-noheader\fR
 Don't display header when listing results.

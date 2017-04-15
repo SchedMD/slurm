@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  sreport.c - report generating tool for slurm accounting.
  *****************************************************************************
- *  Copyright (C) 2010-2015 SchedMD LLC.
+ *  Copyright (C) 2010-2017 SchedMD LLC.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -55,6 +55,7 @@ char *command_name;
 int exit_code;		/* sreport's exit code, =1 on any error at any time */
 int exit_flag;		/* program to terminate if =1 */
 int input_words;	/* number of words of input permitted */
+bool local_flag;	/* --local option */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
 char *tres_str = NULL;	/* --tres= value */
 List tres_list;		/* TRES to report, built from --tres= value */
@@ -67,6 +68,7 @@ uint32_t my_uid = 0;
 slurmdb_report_sort_t sort_flag = SLURMDB_REPORT_SORT_TIME;
 
 static void	_assoc_rep (int argc, char **argv);
+static char *	_build_cluster_string(void);
 static List	_build_tres_list(char *tres_str);
 static void	_cluster_rep (int argc, char **argv);
 static int	_get_command (int *argc, char **argv);
@@ -108,6 +110,7 @@ main (int argc, char **argv)
 	exit_code         = 0;
 	exit_flag         = 0;
 	input_field_count = 0;
+	local_flag        = false;
 	quiet_flag        = 0;
 	slurm_conf_init(NULL);
 	log_init("sreport", opts, SYSLOG_FACILITY_DAEMON, NULL);
@@ -126,6 +129,8 @@ main (int argc, char **argv)
 	}
 	xfree(temp);
 
+	if (getenv("SREPORT_LOCAL"))
+		local_flag = true;
 	temp = getenv("SREPORT_TRES");
 	if (temp)
 		tres_str = xstrdup(temp);
@@ -198,6 +203,9 @@ main (int argc, char **argv)
 		}
 	}
 
+	if (!all_clusters_flag && !cluster_flag && !local_flag)
+		cluster_flag = _build_cluster_string();
+
 	my_uid = getuid();
 	db_conn = slurmdb_connection_get();
 	if (errno) {
@@ -226,6 +234,32 @@ main (int argc, char **argv)
 	slurmdb_connection_close(&db_conn);
 	slurm_acct_storage_fini();
 	exit(exit_code);
+}
+
+static char *_build_cluster_string(void)
+{
+	char *cluster_name, *cluster_str = NULL;
+	void *ptr = NULL;
+	slurmdb_federation_rec_t *fed = NULL;
+	slurmdb_cluster_rec_t *cluster;
+	ListIterator iter;
+	char *sep = "";
+
+	cluster_name = slurm_get_cluster_name();
+	if ((slurm_load_federation(&ptr) == SLURM_SUCCESS) &&
+	    cluster_in_federation(ptr, cluster_name)) {
+		fed = (slurmdb_federation_rec_t *) ptr;
+		iter = list_iterator_create(fed->cluster_list);
+		while ((cluster = (slurmdb_cluster_rec_t *) list_next(iter))) {
+			xstrfmtcat(cluster_str, "%s%s", sep, cluster->name);
+			sep = ",";
+		}
+		list_iterator_destroy(iter);
+	}
+	xfree(cluster_name);
+	slurm_destroy_federation_rec(ptr);
+
+	return cluster_str;
 }
 
 static List _build_tres_list(char *tres_str)
@@ -597,6 +631,13 @@ _process_command (int argc, char **argv)
 				 argv[0]);
 		}
 		exit_flag = 1;
+	} else if (strncasecmp (argv[0], "local", MAX(command_len, 3)) == 0) {
+		if (argc > 1) {
+			exit_code = 1;
+			fprintf (stderr, "too many arguments for keyword:%s\n",
+				 argv[0]);
+		}
+		local_flag = true;
 	} else if (strncasecmp (argv[0], "nonparsable",
 				MAX(command_len, 4)) == 0) {
 		if (argc > 1) {
