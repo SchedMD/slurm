@@ -247,9 +247,10 @@ cluster from where \f3sacct\fP is called are displayed.
 Displays the statistics only for the jobs started on the clusters
 specified by the \f2cluster_list\fP operand, which is a
 comma\-separated list of clusters.  Space characters are not allowed
-in the \f2cluster_list\fP. Use \-1 for all clusters.  The default is
-current cluster you are executing the \f3sacct\fP command on or all clusters in
-the federation when executed on a federated cluster.
+in the \f2cluster_list\fP.
+A value of \(aq\fIall\fR' will query to run on all clusters.
+The default is current cluster you are executing the \f3sacct\fP command on or
+all clusters in the federation when executed on a federated cluster.
 
 .TP
 \f3\-n\fP\f3,\fP \f3\-\-noheader\fP

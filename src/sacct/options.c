@@ -206,7 +206,7 @@ static int _addto_id_char_list(List char_list, char *names, bool gid)
 /* returns number of objects added to list */
 static int _addto_state_char_list(List char_list, char *names)
 {
-	int i=0, start=0;
+	int i = 0, start = 0;
 	uint32_t c;
 	char *name = NULL, *tmp_char = NULL;
 	ListIterator itr = NULL;
@@ -227,7 +227,7 @@ static int _addto_state_char_list(List char_list, char *names)
 			i++;
 		}
 		start = i;
-		while(names[i]) {
+		while (names[i]) {
 			//info("got %d - %d = %d", i, start, i-start);
 			if (quote && names[i] == quote_c)
 				break;
@@ -277,7 +277,7 @@ static int _addto_state_char_list(List char_list, char *names)
 			xfree(name);
 			name = xstrdup_printf("%d", c);
 
-			while((tmp_char = list_next(itr))) {
+			while ((tmp_char = list_next(itr))) {
 				if (!xstrcasecmp(tmp_char, name))
 					break;
 			}
@@ -369,7 +369,8 @@ sacct [<OPTION>]                                                            \n \
                    ran on the cluster from where sacct is called are        \n\
                    displayed.                                               \n\
      -M, --clusters:                                                        \n\
-                   Only send data about these clusters. -1 for all clusters.\n\
+                   Only send data about these clusters. Use \"all\" for all \n\
+                   clusters.\n\
      -n, --noheader:                                                        \n\
 	           No header will be added to the beginning of output.      \n\
                    The default is to print a header.                        \n\
@@ -610,7 +611,8 @@ void parse_command_line(int argc, char **argv)
 			   everything else.
 			*/
 		case 'M':
-			if (!xstrcasecmp(optarg, "-1")) {
+			if (!xstrcasecmp(optarg, "all") ||
+			    !xstrcasecmp(optarg, "-1")) {	/* vestigial */
 				all_clusters = true;
 				break;
 			}
