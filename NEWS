@@ -65,6 +65,8 @@ documents those changes that are of interest to users and administrators.
     --kill-on-bad-exit option then terminate the remaining tasks using the
     SIGCONT, SIGTERM and SIGKILL signals rather than just sending SIGKILL.
  -- Include submit_time when doing the sort for job scheduling.
+ -- Modify sacct to report all jobs in federation by default. Also add --local
+    option.
 
 * Changes in Slurm 17.02.3
 ==========================

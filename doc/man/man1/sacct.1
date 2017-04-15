@@ -1,4 +1,4 @@
-.TH sacct "1" "Slurm Commands" "April 2015" "Slurm Commands"
+.TH sacct "1" "Slurm Commands" "April 2017" "Slurm Commands"
 
 .SH "NAME"
 sacct \- displays accounting data for all jobs and job steps in the
@@ -91,8 +91,9 @@ Displays a brief listing, which includes the following data:
 
 .TP
 \f3\-c\fP\f3,\fP \f3\-\-completion\fP
-Use job completion instead of job accounting.  The \f3JobCompType\fP
-parameter in the slurm.conf file must be defined to a non-none option.
+Use job completion data instead of job accounting.  The \f3JobCompType\fP
+parameter in the slurm.conf file must be defined to a non\-none option.
+Does not support federated cluster information (local data only).
 .IP
 
 .TP
@@ -219,6 +220,11 @@ Ignored by itself, but if timelimit_min is set this will be the
 maximum timelimit of the range.  Default is no restriction.
 
 .TP
+\f3\-\-local\fP
+Show only jobs local to this cluster. Ignore other clusters in this federation
+(if any).
+
+.TP
 \f3\-l\fP\f3,\fP \f3\-\-long\fP
 Equivalent to specifying:
 .IP
@@ -242,7 +248,8 @@ Displays the statistics only for the jobs started on the clusters
 specified by the \f2cluster_list\fP operand, which is a
 comma\-separated list of clusters.  Space characters are not allowed
 in the \f2cluster_list\fP. Use \-1 for all clusters.  The default is
-current cluster you are executing the \f3sacct\fP command on\&.
+current cluster you are executing the \f3sacct\fP command on or all clusters in
+the federation when executed on a federated cluster.
 
 .TP
 \f3\-n\fP\f3,\fP \f3\-\-noheader\fP
@@ -863,6 +870,9 @@ be set via environment variables. These environment variables,
 along with their corresponding options, are listed below. (Note:
 Commandline options will always override these settings.)
 .TP 20
+\fBSACCT_LOCAL\fR
+Same as \fB\-\-local\fR
+.TP
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file.
 .TP
