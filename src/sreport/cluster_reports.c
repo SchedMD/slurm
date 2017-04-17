@@ -578,6 +578,38 @@ static void _set_usage_column_width(List print_fields_list,
 				       slurmdb_report_cluster_list);
 }
 
+static void _merge_clusters(List cluster_list)
+{
+	slurmdb_cluster_rec_t *cluster = NULL, *first_cluster = NULL;
+	ListIterator iter = NULL;
+
+	if (list_count(cluster_list) < 2)
+		return;
+
+	iter = list_iterator_create(cluster_list);
+	while ((cluster = list_next(iter))) {
+		if (!first_cluster) {
+			first_cluster = cluster;
+			xfree(cluster->name);
+			if (cluster->fed.name) {
+				xstrfmtcat(cluster->name, "FED:%s",
+					   cluster->fed.name);
+			} else
+				cluster->name = xstrdup("FEDERATION");
+		} else if (!first_cluster->accounting_list) {
+			first_cluster->accounting_list =
+				cluster->accounting_list;
+			cluster->accounting_list = NULL;
+			list_delete_item(iter);
+		} else {
+			list_transfer(first_cluster->accounting_list,
+				      cluster->accounting_list);
+			list_delete_item(iter);
+		}
+	}
+	list_iterator_destroy(iter);
+}
+
 static List _get_cluster_list(int argc, char **argv, uint32_t *total_time,
 			      char *report_name, List format_list)
 {
@@ -598,6 +630,8 @@ static List _get_cluster_list(int argc, char **argv, uint32_t *total_time,
 		fprintf(stderr, " Problem with cluster query.\n");
 		return NULL;
 	}
+	if (federation)
+		_merge_clusters(cluster_list);
 
 	if (print_fields_have_header) {
 		char start_char[20];
