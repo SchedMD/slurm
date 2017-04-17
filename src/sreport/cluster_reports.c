@@ -630,7 +630,7 @@ static List _get_cluster_list(int argc, char **argv, uint32_t *total_time,
 		fprintf(stderr, " Problem with cluster query.\n");
 		return NULL;
 	}
-	if (federation)
+	if (fed_name)
 		_merge_clusters(cluster_list);
 
 	if (print_fields_have_header) {
@@ -1649,6 +1649,61 @@ static void _cluster_wckey_by_user_tres_report(slurmdb_tres_rec_t *tres,
 	printf("\n");
 }
 
+static void _merge_cluster_report(List slurmdb_report_cluster_list)
+{
+	slurmdb_report_cluster_rec_t *slurmdb_report_cluster = NULL;
+	slurmdb_report_cluster_rec_t *first_report_cluster = NULL;
+	ListIterator iter = NULL;
+
+	if (list_count(slurmdb_report_cluster_list) < 2)
+		return;
+
+	iter = list_iterator_create(slurmdb_report_cluster_list);
+	while ((slurmdb_report_cluster = list_next(iter))) {
+		if (!first_report_cluster) {
+			first_report_cluster = slurmdb_report_cluster;
+			if (fed_name) {
+				xstrfmtcat(first_report_cluster->name, "FED:%s",
+					   fed_name);
+			} else {
+				first_report_cluster->name =
+					xstrdup("FEDERATION");
+			}
+			continue;
+		}
+		if (!first_report_cluster->accounting_list) {
+			first_report_cluster->accounting_list =
+				slurmdb_report_cluster->accounting_list;
+		} else {
+			list_transfer(first_report_cluster->accounting_list,
+				      slurmdb_report_cluster->accounting_list);
+		}
+		if (!first_report_cluster->assoc_list) {
+			first_report_cluster->assoc_list =
+				slurmdb_report_cluster->assoc_list;
+		} else {
+			list_transfer(first_report_cluster->assoc_list,
+				      slurmdb_report_cluster->assoc_list);
+		}
+		if (!first_report_cluster->tres_list) {
+			first_report_cluster->tres_list =
+				slurmdb_report_cluster->tres_list;
+		} else {
+			list_transfer(first_report_cluster->tres_list,
+				      slurmdb_report_cluster->tres_list);
+		}
+		if (!first_report_cluster->user_list) {
+			first_report_cluster->user_list =
+				slurmdb_report_cluster->user_list;
+		} else {
+			list_transfer(first_report_cluster->user_list,
+				      slurmdb_report_cluster->user_list);
+		}
+		list_delete_item(iter);
+	}
+	list_iterator_destroy(iter);
+}
+
 extern int cluster_wckey_by_user(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
@@ -1688,6 +1743,8 @@ extern int cluster_wckey_by_user(int argc, char **argv)
 		exit_code = 1;
 		goto end_it;
 	}
+	if (fed_name)
+		_merge_cluster_report(slurmdb_report_cluster_list);
 
 	if (print_fields_have_header) {
 		char start_char[20];

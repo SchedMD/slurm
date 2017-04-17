@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  sreport.c - report generating tool for slurm accounting.
  *****************************************************************************
- *  Copyright (C) 2010-2017 SchedMD LLC.
+ *  Portions Copyright (C) 2010-2017 SchedMD LLC.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -54,7 +54,7 @@
 char *command_name;
 int exit_code;		/* sreport's exit code, =1 on any error at any time */
 int exit_flag;		/* program to terminate if =1 */
-bool federation = false; /* Operating in federation mode */
+char *fed_name = NULL;	/* Operating in federation mode */
 int input_words;	/* number of words of input permitted */
 bool local_flag;	/* --local option */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
@@ -253,8 +253,8 @@ static char *_build_cluster_string(void)
 	cluster_name = slurm_get_cluster_name();
 	if ((slurm_load_federation(&ptr) == SLURM_SUCCESS) &&
 	    cluster_in_federation(ptr, cluster_name)) {
-		federation = true;
 		fed = (slurmdb_federation_rec_t *) ptr;
+		fed_name = xstrdup(fed->name);
 		iter = list_iterator_create(fed->cluster_list);
 		while ((cluster = (slurmdb_cluster_rec_t *) list_next(iter))) {
 			xstrfmtcat(cluster_str, "%s%s", sep, cluster->name);
