@@ -86,6 +86,7 @@ extern char *time_format_string;
 extern char *command_name;
 extern int exit_code;	/* sacctmgr's exit code, =1 on any error at any time */
 extern int exit_flag;	/* program to terminate if =1 */
+extern bool federation;	/* Set if operating in federation mode */
 extern int input_words;	/* number of words of input permitted */
 extern int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
 extern char *tres_str;	/* --tres= value */

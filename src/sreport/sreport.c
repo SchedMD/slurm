@@ -48,12 +48,13 @@
 #include "src/common/xsignal.h"
 #include "src/common/proc_args.h"
 
-#define OPT_LONG_HIDE   0x102
-#define BUFFER_SIZE 4096
+#define BUFFER_SIZE		4096
+#define OPT_LONG_LOCAL		0x101
 
 char *command_name;
 int exit_code;		/* sreport's exit code, =1 on any error at any time */
 int exit_flag;		/* program to terminate if =1 */
+bool federation = false; /* Operating in federation mode */
 int input_words;	/* number of words of input permitted */
 bool local_flag;	/* --local option */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
@@ -94,6 +95,7 @@ main (int argc, char **argv)
 		{"cluster",  1, 0, 'M'},
 		{"help",     0, 0, 'h'},
 		{"immediate",0, 0, 'i'},
+		{"local",          no_argument,       0,    OPT_LONG_LOCAL},
 		{"noheader", 0, 0, 'n'},
 		{"parsable", 0, 0, 'p'},
 		{"parsable2",0, 0, 'P'},
@@ -149,6 +151,9 @@ main (int argc, char **argv)
 			break;
 		case (int)'a':
 			all_clusters_flag = 1;
+			break;
+		case OPT_LONG_LOCAL:
+			local_flag = true;
 			break;
 		case (int) 'M':
 			cluster_flag = xstrdup(optarg);
@@ -248,6 +253,7 @@ static char *_build_cluster_string(void)
 	cluster_name = slurm_get_cluster_name();
 	if ((slurm_load_federation(&ptr) == SLURM_SUCCESS) &&
 	    cluster_in_federation(ptr, cluster_name)) {
+		federation = true;
 		fed = (slurmdb_federation_rec_t *) ptr;
 		iter = list_iterator_create(fed->cluster_list);
 		while ((cluster = (slurmdb_cluster_rec_t *) list_next(iter))) {
@@ -774,13 +780,14 @@ static int _set_sort(char *format)
 
 
 /* _usage - show the valid sreport commands */
-void _usage () {
+void _usage (void) {
 	printf ("\
 sreport [<OPTION>] [<COMMAND>]                                             \n\
     Valid <OPTION> values are:                                             \n\
      -a or --all_clusters: Use all clusters instead of current             \n\
      -h or --help: equivalent to \"help\" command                          \n\
-     -n or --noheader: equivalent to \"noheader\" command                \n\
+     --local: Report local cluster, even when in federation of clusters    \n\
+     -n or --noheader: equivalent to \"noheader\" command                  \n\
      -p or --parsable: output will be '|' delimited with a '|' at the end  \n\
      -P or --parsable2: output will be '|' delimited without a '|' at the end\n\
      -Q or --quiet: equivalent to \"quiet\" command                        \n\

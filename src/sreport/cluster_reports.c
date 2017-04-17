@@ -809,7 +809,7 @@ extern int cluster_account_by_user(int argc, char **argv)
 		       start_char, end_char,
 		       (int)(assoc_cond->usage_end - assoc_cond->usage_start));
 
-		switch(time_format) {
+		switch (time_format) {
 		case SLURMDB_REPORT_TIME_PERCENT:
 			printf("Use reported in %s\n", time_format_string);
 			break;

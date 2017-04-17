@@ -440,7 +440,7 @@ extern int user_top(int argc, char **argv)
 		       (int)(user_cond->assoc_cond->usage_end
 			- user_cond->assoc_cond->usage_start));
 
-		switch(time_format) {
+		switch (time_format) {
 		case SLURMDB_REPORT_TIME_PERCENT:
 			printf("Use reported in %s\n", time_format_string);
 			break;

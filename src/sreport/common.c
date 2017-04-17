@@ -64,7 +64,7 @@ extern void slurmdb_report_print_time(print_field_t *field, uint64_t value,
 		double percent = (double)value;
 		double temp_d = (double)value;
 
-		switch(time_format) {
+		switch (time_format) {
 		case SLURMDB_REPORT_TIME_SECS:
 			output = xstrdup_printf("%"PRIu64"", value);
 			break;
@@ -164,7 +164,7 @@ extern char *strip_quotes(char *option, int *increased)
 		i++;
 	start = i;
 
-	while(option[i]) {
+	while (option[i]) {
 		if (option[i] == '\"' || option[i] == '\'') {
 			end++;
 			break;
@@ -184,7 +184,7 @@ extern char *strip_quotes(char *option, int *increased)
 
 extern void addto_char_list(List char_list, char *names)
 {
-	int i=0, start=0;
+	int i = 0, start = 0;
 	char *name = NULL, *tmp_char = NULL;
 	ListIterator itr = NULL;
 
