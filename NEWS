@@ -85,6 +85,10 @@ documents those changes that are of interest to users and administrators.
     jobs have a priority that is lower than the selected job. Previous logic
     would permit other jobs with equal priority (no jobs with higher priority).
  -- Fix perl api so we always get an allocation when calling Slurm::new().
+ -- Fix issue with cleaning up cpuset and devices cgroups when multiple steps
+    end at the same time.
+ -- Document that PriorityFlags option of DEPTH_OBLIVIOUS precludes the use of
+    FAIR_TREE.
 
 * Changes in Slurm 17.02.2
 ==========================
