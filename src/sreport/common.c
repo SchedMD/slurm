@@ -577,3 +577,52 @@ extern void sreport_set_usage_column_width(print_field_t *usage_field,
 	sreport_set_usage_col_width(usage_field, max_usage);
 	sreport_set_usage_col_width(energy_field, max_energy);
 }
+
+/* Return 1 if two TRES records have the same TRES ID */
+static int _match_tres_id(void *x, void *key)
+{
+	slurmdb_tres_rec_t *orig_tres = (slurmdb_tres_rec_t *) key;
+	slurmdb_tres_rec_t *dup_tres = (slurmdb_tres_rec_t *) x;
+
+	if (orig_tres->id == dup_tres->id)
+		return 1;
+	return 0;
+}
+
+/* Return 1 if a TRES alloc_secs is zero, the entry has already been merged */
+static int _zero_alloc_secs(void *x, void *key)
+{
+	slurmdb_tres_rec_t *dup_tres;
+
+	dup_tres = (slurmdb_tres_rec_t *) x;
+	if (dup_tres->alloc_secs == 0)
+		return 1;
+	return 0;
+}
+
+/* Given two TRES lists, combine the content of the second with the first,
+ * adding the counts for duplicate TRES IDs */
+extern void combine_tres_list(List orig_tres_list, List dup_tres_list)
+{
+	slurmdb_tres_rec_t *orig_tres, *dup_tres;
+	ListIterator iter = NULL;
+
+	/* Merge counts for common TRES */
+	iter = list_iterator_create(orig_tres_list);
+	while ((orig_tres = list_next(iter))) {
+		dup_tres = list_find_first(dup_tres_list, _match_tres_id,
+					   orig_tres);
+		if (!dup_tres)
+			continue;
+
+		orig_tres->alloc_secs += dup_tres->alloc_secs;
+		orig_tres->rec_count  += dup_tres->rec_count;
+		orig_tres->count      += dup_tres->count;
+		dup_tres->alloc_secs  = 0;
+	}
+	list_iterator_destroy(iter);
+
+	/* Now transfer TRES records that exists only in the duplicate */
+	list_delete_all(dup_tres_list, _zero_alloc_secs, NULL);
+	list_transfer(orig_tres_list, dup_tres_list);
+}
