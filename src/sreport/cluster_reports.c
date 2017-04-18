@@ -1079,6 +1079,38 @@ static void _cluster_user_by_account_tres_report(slurmdb_tres_rec_t *tres,
 	printf("\n");
 }
 
+static void _merge_clusters3(List cluster_list)
+{
+	slurmdb_report_cluster_rec_t *cluster = NULL, *first_cluster = NULL;
+	ListIterator iter = NULL;
+
+	if (list_count(cluster_list) < 2)
+		return;
+
+	iter = list_iterator_create(cluster_list);
+	while ((cluster = list_next(iter))) {
+		if (!first_cluster) {
+			first_cluster = cluster;
+			xfree(cluster->name);
+			if (fed_name)
+				xstrfmtcat(cluster->name, "FED:%s", fed_name);
+			else
+				cluster->name = xstrdup("FEDERATION");
+			continue;
+		}
+		combine_tres_list(first_cluster->tres_list, cluster->tres_list);
+		if (!first_cluster->user_list) {
+			first_cluster->user_list = cluster->user_list;
+			cluster->user_list = NULL;
+		} else {
+			combine_user_tres(first_cluster->user_list,
+					  cluster->user_list);
+		}
+		list_delete_item(iter);
+	}
+	list_iterator_destroy(iter);
+}
+
 extern int cluster_user_by_account(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
@@ -1118,6 +1150,8 @@ extern int cluster_user_by_account(int argc, char **argv)
 		exit_code = 1;
 		goto end_it;
 	}
+	if (fed_name)
+		_merge_clusters3(slurmdb_report_cluster_list);
 
 	if (print_fields_have_header) {
 		char start_char[20];

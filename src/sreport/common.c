@@ -626,3 +626,54 @@ extern void combine_tres_list(List orig_tres_list, List dup_tres_list)
 	list_delete_all(dup_tres_list, _zero_alloc_secs, NULL);
 	list_transfer(orig_tres_list, dup_tres_list);
 }
+
+
+/* Return 1 if a slurmdb user record has NULL tres_list */
+static int _find_empty_user_tres(void *x, void *key)
+{
+	slurmdb_report_user_rec_t *dup_report_user;
+
+	dup_report_user = (slurmdb_report_user_rec_t *) x;
+	if (dup_report_user->tres_list == NULL)
+		return 1;
+	return 0;
+}
+
+/* Return 1 if UID for two user records match */
+static int _match_user_acct(void *x, void *key)
+{
+	slurmdb_report_user_rec_t *orig_report_user;
+	slurmdb_report_user_rec_t *dup_report_user;
+
+	orig_report_user = (slurmdb_report_user_rec_t *) key;
+	dup_report_user  = (slurmdb_report_user_rec_t *) x;
+	if ((orig_report_user->uid == dup_report_user->uid) &&
+	    !xstrcmp(orig_report_user->acct, dup_report_user->acct))
+		return 1;
+	return 0;
+}
+
+/* For duplicate user/account records, combine TRES records into the original
+ * list and purge the duplicate records */
+extern void combine_user_tres(List first_user_list, List new_user_list)
+{
+	slurmdb_report_user_rec_t *orig_report_user = NULL;
+	slurmdb_report_user_rec_t *dup_report_user = NULL;
+	ListIterator iter = NULL;
+
+	iter = list_iterator_create(first_user_list);
+	while ((orig_report_user = list_next(iter))) {
+		dup_report_user = list_find_first(new_user_list,
+						  _match_user_acct,
+						  orig_report_user);
+		if (!dup_report_user)
+			continue;
+		combine_tres_list(orig_report_user->tres_list,
+				  dup_report_user->tres_list);
+		FREE_NULL_LIST(dup_report_user->tres_list);
+	}
+	list_iterator_destroy(iter);
+
+	(void) list_delete_all(new_user_list, _find_empty_user_tres, NULL);
+	list_transfer(first_user_list, new_user_list);
+}

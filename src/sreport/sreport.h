@@ -131,4 +131,7 @@ extern void sreport_set_usage_column_width(print_field_t *usage_field,
  * adding the counts for duplicate TRES IDs */
 extern void combine_tres_list(List orig_tres_list, List dup_tres_list);
 
+/* For duplicate user/account records, combine TRES records into the original
+ * list and purge the duplicate records */
+extern void combine_user_tres(List first_user_list, List new_user_list);
 #endif /* HAVE_SREPORT_H */

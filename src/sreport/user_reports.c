@@ -404,56 +404,6 @@ static void _set_usage_column_width(List print_fields_list,
 				       slurmdb_report_cluster_list);
 }
 
-/* Return 1 if a slurmdb user record has NULL tres_list */
-static int _find_empty_user_tres(void *x, void *key)
-{
-	slurmdb_report_user_rec_t *dup_report_user;
-
-	dup_report_user = (slurmdb_report_user_rec_t *) x;
-	if (dup_report_user->tres_list == NULL)
-		return 1;
-	return 0;
-}
-
-/* Return 1 if UID for two user records match */
-static int _match_user_acct(void *x, void *key)
-{
-	slurmdb_report_user_rec_t *orig_report_user;
-	slurmdb_report_user_rec_t *dup_report_user;
-
-	orig_report_user = (slurmdb_report_user_rec_t *) key;
-	dup_report_user  = (slurmdb_report_user_rec_t *) x;
-	if ((orig_report_user->uid == dup_report_user->uid) &&
-	    !xstrcmp(orig_report_user->acct, dup_report_user->acct))
-		return 1;
-	return 0;
-}
-
-/* For duplicate user/account records, combine TRES records into the original
- * list and purge the duplicate records */
-static void _combine_user_tres(List first_user_list, List new_user_list)
-{
-	slurmdb_report_user_rec_t *orig_report_user = NULL;
-	slurmdb_report_user_rec_t *dup_report_user = NULL;
-	ListIterator iter = NULL;
-
-	iter = list_iterator_create(first_user_list);
-	while ((orig_report_user = list_next(iter))) {
-		dup_report_user = list_find_first(new_user_list,
-						  _match_user_acct,
-						  orig_report_user);
-		if (!dup_report_user)
-			continue;
-		combine_tres_list(orig_report_user->tres_list,
-				  dup_report_user->tres_list);
-		FREE_NULL_LIST(dup_report_user->tres_list);
-	}
-	list_iterator_destroy(iter);
-
-	(void) list_delete_all(new_user_list, _find_empty_user_tres, NULL);
-	list_transfer(first_user_list, new_user_list);
-}
-
 /* Merge line user/account record List into a single list of unique records */
 static void _merge_user_report(List slurmdb_report_cluster_list)
 {
@@ -486,8 +436,8 @@ static void _merge_user_report(List slurmdb_report_cluster_list)
 			first_report_cluster->user_list =
 				slurmdb_report_cluster->user_list;
 		} else {
-			_combine_user_tres(first_report_cluster->user_list,
-					   slurmdb_report_cluster->user_list);
+			combine_user_tres(first_report_cluster->user_list,
+					  slurmdb_report_cluster->user_list);
 			combine_tres_list(first_report_cluster->tres_list,
 					  slurmdb_report_cluster->tres_list);
 		}
