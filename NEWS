@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
     end at the same time.
  -- Document that PriorityFlags option of DEPTH_OBLIVIOUS precludes the use of
     FAIR_TREE.
+ -- Fix issue if an invalid message came in a Slurm daemon/command may abort.
 
 * Changes in Slurm 17.02.2
 ==========================

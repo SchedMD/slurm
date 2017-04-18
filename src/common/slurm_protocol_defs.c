@@ -750,9 +750,11 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		xfree(msg->comment);
 		xfree(msg->cpu_bind);
 		xfree(msg->dependency);
-		for (i = 0; i < msg->env_size; i++)
-			xfree(msg->environment[i]);
-		xfree(msg->environment);
+		if (msg->environment) {
+			for (i = 0; i < msg->env_size; i++)
+				xfree(msg->environment[i]);
+			xfree(msg->environment);
+		}
 		xfree(msg->std_err);
 		xfree(msg->exc_nodes);
 		xfree(msg->features);
@@ -770,9 +772,11 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		xfree(msg->qos);
 		xfree(msg->std_out);
 		xfree(msg->partition);
-		for (i = 0; i < msg->pelog_env_size; i++)
-			xfree(msg->pelog_env[i]);
-		xfree(msg->pelog_env);
+		if (msg->pelog_env) {
+			for (i = 0; i < msg->pelog_env_size; i++)
+				xfree(msg->pelog_env[i]);
+			xfree(msg->pelog_env);
+		}
 		xfree(msg->ramdiskimage);
 		xfree(msg->req_nodes);
 		xfree(msg->reservation);
@@ -781,9 +785,11 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		select_g_select_jobinfo_free(msg->select_jobinfo);
 		msg->select_jobinfo = NULL;
 
-		for (i = 0; i < msg->spank_job_env_size; i++)
-			xfree(msg->spank_job_env[i]);
-		xfree(msg->spank_job_env);
+		if (msg->spank_job_env) {
+			for (i = 0; i < msg->spank_job_env_size; i++)
+				xfree(msg->spank_job_env[i]);
+			xfree(msg->spank_job_env);
+		}
 		xfree(msg->tres_req_cnt);
 		xfree(msg->wckey);
 		xfree(msg->work_dir);
@@ -817,17 +823,21 @@ extern void slurm_free_prolog_launch_msg(prolog_launch_msg_t * msg)
 		xfree(msg->alias_list);
 		xfree(msg->nodes);
 		xfree(msg->partition);
-		for (i = 0; i < msg->pelog_env_size; i++)
-			xfree(msg->pelog_env[i]);
-		xfree(msg->pelog_env);
+		if (msg->pelog_env) {
+			for (i = 0; i < msg->pelog_env_size; i++)
+				xfree(msg->pelog_env[i]);
+			xfree(msg->pelog_env);
+		}
 		xfree(msg->std_err);
 		xfree(msg->std_out);
 		xfree(msg->work_dir);
 		xfree(msg->user_name);
 
-		for (i = 0; i < msg->spank_job_env_size; i++)
-			xfree(msg->spank_job_env[i]);
-		xfree(msg->spank_job_env);
+		if (msg->spank_job_env) {
+			for (i = 0; i < msg->spank_job_env_size; i++)
+				xfree(msg->spank_job_env[i]);
+			xfree(msg->spank_job_env);
+		}
 		slurm_cred_destroy(msg->cred);
 
 		xfree(msg);
@@ -926,9 +936,11 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->exc_node_inx);
 		xfree(job->features);
 		xfree(job->gres);
-		for (i = 0; i < job->gres_detail_cnt; i++)
-			xfree(job->gres_detail_str[i]);
-		xfree(job->gres_detail_str);
+		if (job->gres_detail_str) {
+			for (i = 0; i < job->gres_detail_cnt; i++)
+				xfree(job->gres_detail_str[i]);
+			xfree(job->gres_detail_str);
+		}
 		xfree(job->licenses);
 		xfree(job->mcs_label);
 		xfree(job->name);
@@ -1089,9 +1101,11 @@ extern void slurm_free_layout_info_msg(layout_info_msg_t * msg)
 	int i;
 
 	if (msg) {
-		for (i = 0; i < msg->record_count; i++)
-			xfree(msg->records[i]);
-		xfree(msg->records);
+		if (msg->records) {
+			for (i = 0; i < msg->record_count; i++)
+				xfree(msg->records[i]);
+			xfree(msg->records);
+		}
 		xfree(msg);
 	}
 }
@@ -1144,15 +1158,19 @@ extern void slurm_free_kill_job_msg(kill_job_msg_t * msg)
 	if (msg) {
 		int i;
 		xfree(msg->nodes);
-		for (i=0; i<msg->pelog_env_size; i++)
-			xfree(msg->pelog_env[i]);
-		xfree(msg->pelog_env);
+		if (msg->pelog_env) {
+			for (i=0; i<msg->pelog_env_size; i++)
+				xfree(msg->pelog_env[i]);
+			xfree(msg->pelog_env);
+		}
 		select_g_select_jobinfo_free(msg->select_jobinfo);
 		msg->select_jobinfo = NULL;
 
-		for (i=0; i<msg->spank_job_env_size; i++)
-			xfree(msg->spank_job_env[i]);
-		xfree(msg->spank_job_env);
+		if (msg->spank_job_env) {
+			for (i = 0; i < msg->spank_job_env_size; i++)
+				xfree(msg->spank_job_env[i]);
+			xfree(msg->spank_job_env);
+		}
 		xfree(msg);
 	}
 }
@@ -1202,17 +1220,23 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 		}
 		xfree(msg->argv);
 	}
-	for (i = 0; i < msg->pelog_env_size; i++)
-		xfree(msg->pelog_env[i]);
-	xfree(msg->pelog_env);
-	for (i = 0; i < msg->spank_job_env_size; i++) {
-		xfree(msg->spank_job_env[i]);
+	if (msg->pelog_env) {
+		for (i = 0; i < msg->pelog_env_size; i++)
+			xfree(msg->pelog_env[i]);
+		xfree(msg->pelog_env);
 	}
-	xfree(msg->spank_job_env);
-	if (msg->nnodes && msg->global_task_ids)
-		for(i=0; i<msg->nnodes; i++) {
+	if (msg->spank_job_env) {
+		for (i = 0; i < msg->spank_job_env_size; i++) {
+			xfree(msg->spank_job_env[i]);
+		}
+		xfree(msg->spank_job_env);
+	}
+	if (msg->global_task_ids) {
+		for (i = 0; i < msg->nnodes; i++) {
 			xfree(msg->global_task_ids[i]);
 		}
+		xfree(msg->global_task_ids);
+	}
 	xfree(msg->tasks_to_launch);
 	xfree(msg->resp_port);
 	xfree(msg->io_port);
@@ -1267,10 +1291,12 @@ extern void slurm_free_reattach_tasks_response_msg(
 		xfree(msg->node_name);
 		xfree(msg->local_pids);
 		xfree(msg->gtids);
-		for (i = 0; i < msg->ntasks; i++) {
-			xfree(msg->executable_names[i]);
+		if (msg->executable_names) {
+			for (i = 0; i < msg->ntasks; i++) {
+				xfree(msg->executable_names[i]);
+			}
+			xfree(msg->executable_names);
 		}
-		xfree(msg->executable_names);
 		xfree(msg);
 	}
 }
@@ -1307,9 +1333,11 @@ extern void slurm_free_srun_exec_msg(srun_exec_msg_t *msg)
 	int i;
 
 	if (msg) {
-		for (i = 0; i < msg->argc; i++)
-			xfree(msg->argv[i]);
-		xfree(msg->argv);
+		if (msg->argv) {
+			for (i = 0; i < msg->argc; i++)
+				xfree(msg->argv[i]);
+			xfree(msg->argv);
+		}
 		xfree(msg);
 	}
 }
@@ -1435,9 +1463,11 @@ extern void slurm_free_spank_env_responce_msg(spank_env_responce_msg_t *msg)
 {
 	uint32_t i;
 
-	for (i = 0; i < msg->spank_job_env_size; i++)
-		xfree(msg->spank_job_env[i]);
-	xfree(msg->spank_job_env);
+	if (msg->spank_job_env) {
+		for (i = 0; i < msg->spank_job_env_size; i++)
+			xfree(msg->spank_job_env[i]);
+		xfree(msg->spank_job_env);
+	}
 	xfree(msg);
 }
 
@@ -1447,9 +1477,11 @@ extern void slurm_free_job_array_resp(job_array_resp_msg_t *msg)
 	uint32_t i;
 
 	if (msg) {
-		for (i = 0; i < msg->job_array_count; i++)
-			xfree(msg->job_array_id[i]);
-		xfree(msg->job_array_id);
+		if (msg->job_array_id) {
+			for (i = 0; i < msg->job_array_count; i++)
+				xfree(msg->job_array_id[i]);
+			xfree(msg->job_array_id);
+		}
 		xfree(msg->error_code);
 		xfree(msg);
 	}
@@ -1843,23 +1875,29 @@ extern void slurm_free_kvs_comm_set(kvs_comm_set_t *msg)
 	int i, j;
 
 	if (msg) {
-		for (i = 0; i < msg->host_cnt; i++)
-			xfree(msg->kvs_host_ptr[i].hostname);
-		xfree(msg->kvs_host_ptr);
-
-		for (i = 0; i < msg->kvs_comm_recs; i++) {
-			if (!msg->kvs_comm_ptr[i])
-				continue;
-
-			xfree(msg->kvs_comm_ptr[i]->kvs_name);
-			for (j = 0; j < msg->kvs_comm_ptr[i]->kvs_cnt; j++) {
-				xfree(msg->kvs_comm_ptr[i]->kvs_keys[j]);
-				xfree(msg->kvs_comm_ptr[i]->kvs_values[j]);
-			}
-			xfree(msg->kvs_comm_ptr[i]->kvs_keys);
-			xfree(msg->kvs_comm_ptr[i]->kvs_values);
+		if (msg->kvs_host_ptr) {
+			for (i = 0; i < msg->host_cnt; i++)
+				xfree(msg->kvs_host_ptr[i].hostname);
+			xfree(msg->kvs_host_ptr);
 		}
-		xfree(msg->kvs_comm_ptr);
+		if (msg->kvs_comm_ptr) {
+			for (i = 0; i < msg->kvs_comm_recs; i++) {
+				if (!msg->kvs_comm_ptr[i])
+					continue;
+
+				xfree(msg->kvs_comm_ptr[i]->kvs_name);
+				for (j = 0; j < msg->kvs_comm_ptr[i]->kvs_cnt;
+				     j++) {
+					xfree(msg->kvs_comm_ptr[i]->
+					      kvs_keys[j]);
+					xfree(msg->kvs_comm_ptr[i]->
+					      kvs_values[j]);
+				}
+				xfree(msg->kvs_comm_ptr[i]->kvs_keys);
+				xfree(msg->kvs_comm_ptr[i]->kvs_values);
+			}
+			xfree(msg->kvs_comm_ptr);
+		}
 		xfree(msg);
 	}
 }
@@ -3104,9 +3142,11 @@ extern void slurm_free_resource_allocation_response_msg_members (
 		xfree(msg->alias_list);
 		xfree(msg->cpus_per_node);
 		xfree(msg->cpu_count_reps);
-		for (i = 0; i < msg->env_size; i++)
-			xfree(msg->environment[i]);
-		xfree(msg->environment);
+		if (msg->environment) {
+			for (i = 0; i < msg->env_size; i++)
+				xfree(msg->environment[i]);
+			xfree(msg->environment);
+		}
 		xfree(msg->node_addr);
 		xfree(msg->node_list);
 		xfree(msg->partition);
@@ -3512,12 +3552,14 @@ extern void slurm_free_topo_info_msg(topo_info_response_msg_t *msg)
 	int i;
 
 	if (msg) {
-		for (i = 0; i < msg->record_count; i++) {
-			xfree(msg->topo_array[i].name);
-			xfree(msg->topo_array[i].nodes);
-			xfree(msg->topo_array[i].switches);
+		if (msg->topo_array) {
+			for (i = 0; i < msg->record_count; i++) {
+				xfree(msg->topo_array[i].name);
+				xfree(msg->topo_array[i].nodes);
+				xfree(msg->topo_array[i].switches);
+			}
+			xfree(msg->topo_array);
 		}
-		xfree(msg->topo_array);
 		xfree(msg);
 	}
 }
@@ -3669,7 +3711,7 @@ extern void slurm_free_block_info_msg(block_info_msg_t *block_info_msg)
 	if (block_info_msg) {
 		if (block_info_msg->block_array) {
 			int i;
-			for(i=0; i<block_info_msg->record_count; i++)
+			for (i=0; i<block_info_msg->record_count; i++)
 				slurm_free_block_info_members(
 					&(block_info_msg->block_array[i]));
 			xfree(block_info_msg->block_array);
@@ -4303,10 +4345,12 @@ slurm_free_license_info_msg(license_info_msg_t *msg)
 	if (msg == NULL)
 		return;
 
-	for (cc = 0; cc < msg->num_lic; cc++) {
-		xfree(msg->lic_array[cc].name);
+	if (msg->lic_array) {
+		for (cc = 0; cc < msg->num_lic; cc++) {
+			xfree(msg->lic_array[cc].name);
+		}
+		xfree(msg->lic_array);
 	}
-	xfree(msg->lic_array);
 	xfree(msg);
 }
 extern void slurm_free_license_info_request_msg(license_info_request_msg_t *msg)
