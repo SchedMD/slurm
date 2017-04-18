@@ -642,6 +642,14 @@ static void _remove_job_watch_thread()
 	}
 }
 
+static int _clear_recv_conns(void *object, void *arg)
+{
+	slurmdb_cluster_rec_t *cluster = (slurmdb_cluster_rec_t *)object;
+	cluster->fed.recv = NULL;
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * Must have FED unlocked prior to entering
  */
@@ -690,8 +698,18 @@ static void _fed_mgr_ptr_init(slurmdb_federation_rec_t *db_fed,
 			db_cluster->send_rpc = tmp_cluster->send_rpc;
 			tmp_cluster->send_rpc = NULL;
 			slurm_mutex_unlock(&tmp_cluster->lock);
+
+			list_delete_all(fed_mgr_fed_rec->cluster_list,
+					slurmdb_find_cluster_in_list,
+					db_cluster->name);
 		}
 		list_iterator_destroy(c_itr);
+
+		/* Remove any existing clusters that were part of the federation
+		 * before and are not now. Don't free the recv connection now,
+		 * it will get destroyed when the recv thread exits. */
+		list_for_each(fed_mgr_fed_rec->cluster_list, _clear_recv_conns,
+			      NULL);
 		slurmdb_destroy_federation_rec(fed_mgr_fed_rec);
 	} else
 		fed_mgr_cluster_rec = cluster;
