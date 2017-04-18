@@ -1662,6 +1662,7 @@ static void _merge_cluster_report(List slurmdb_report_cluster_list)
 	while ((slurmdb_report_cluster = list_next(iter))) {
 		if (!first_report_cluster) {
 			first_report_cluster = slurmdb_report_cluster;
+			xfree(first_report_cluster->name);
 			if (fed_name) {
 				xstrfmtcat(first_report_cluster->name, "FED:%s",
 					   fed_name);
