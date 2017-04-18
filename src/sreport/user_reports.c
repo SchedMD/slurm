@@ -422,7 +422,7 @@ static int _match_user_acct(void *x, void *key)
 	slurmdb_report_user_rec_t *dup_report_user;
 
 	orig_report_user = (slurmdb_report_user_rec_t *) key;
-	dup_report_user = (slurmdb_report_user_rec_t *) x;
+	dup_report_user  = (slurmdb_report_user_rec_t *) x;
 	if ((orig_report_user->uid == dup_report_user->uid) &&
 	    !xstrcmp(orig_report_user->acct, dup_report_user->acct))
 		return 1;
@@ -451,6 +451,7 @@ static void _combine_user_tres(List first_user_list, List new_user_list)
 	list_iterator_destroy(iter);
 
 	(void) list_delete_all(new_user_list, _find_empty_user_tres, NULL);
+	list_transfer(first_user_list, new_user_list);
 }
 
 /* Merge line user/account record List into a single list of unique records */
@@ -487,8 +488,6 @@ static void _merge_user_report(List slurmdb_report_cluster_list)
 		} else {
 			_combine_user_tres(first_report_cluster->user_list,
 					   slurmdb_report_cluster->user_list);
-			list_transfer(first_report_cluster->user_list,
-				      slurmdb_report_cluster->user_list);
 			combine_tres_list(first_report_cluster->tres_list,
 					  slurmdb_report_cluster->tres_list);
 		}
