@@ -3202,6 +3202,9 @@ extern int fed_mgr_job_revoke(struct job_record *job_ptr, bool job_complete,
 	uint32_t origin_id;
 	uint32_t state = JOB_REVOKED;
 
+	if (IS_JOB_COMPLETED(job_ptr)) /* job already completed */
+		return SLURM_SUCCESS;
+
 	if (!_is_fed_job(job_ptr, &origin_id))
 		return SLURM_SUCCESS;
 
