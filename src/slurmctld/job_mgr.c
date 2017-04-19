@@ -3122,7 +3122,7 @@ extern int kill_job_by_part_name(char *part_name)
 			job_ptr->end_time	= now;
 			job_ptr->exit_code	= 1;
 			job_completion_logger(job_ptr, false);
-			fed_mgr_job_complete(job_ptr, 0, job_ptr->start_time);
+			fed_mgr_job_complete(job_ptr, 0, now);
 		}
 		job_ptr->part_ptr = NULL;
 		FREE_NULL_LIST(job_ptr->part_ptr_list);
@@ -4664,7 +4664,7 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 		 * after the job is is completed. This can happen when the
 		 * pending origin job is put into a hold state and the siblings
 		 * are removed or when the job is canceled from the origin. */
-		fed_mgr_job_complete(job_ptr, 0, job_ptr->start_time);
+		fed_mgr_job_complete(job_ptr, 0, now);
 		verbose("%s: of pending %s successful",
 			__func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)));
 		return SLURM_SUCCESS;

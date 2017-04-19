@@ -2650,12 +2650,13 @@ static void _add_remove_sibling_jobs(struct job_record *job_ptr)
 	rem_sibs = ~new_sibs &  old_sibs;
 
 	if (rem_sibs) {
+		time_t now = time(NULL);
 		_revoke_sibling_jobs(job_ptr->job_id,
 				     fed_mgr_cluster_rec->fed.id,
-				     rem_sibs, 0);
+				     rem_sibs, now);
 		if (fed_mgr_is_origin_job(job_ptr) &&
 		    (rem_sibs & FED_SIBLING_BIT(origin_id))) {
-			fed_mgr_job_revoke(job_ptr, false, 0, 0);
+			fed_mgr_job_revoke(job_ptr, false, 0, now);
 		}
 
 		job_ptr->fed_details->siblings_active &= ~rem_sibs;
@@ -3168,6 +3169,7 @@ extern int fed_mgr_job_complete(struct job_record *job_ptr,
 extern int fed_mgr_job_revoke_sibs(struct job_record *job_ptr)
 {
 	uint32_t origin_id;
+	time_t now = time(NULL);
 
 	if (!_is_fed_job(job_ptr, &origin_id))
 		return SLURM_SUCCESS;
@@ -3179,8 +3181,7 @@ extern int fed_mgr_job_revoke_sibs(struct job_record *job_ptr)
 		info("revoke fed job %d's siblings", job_ptr->job_id);
 
 	_revoke_sibling_jobs(job_ptr->job_id, fed_mgr_cluster_rec->fed.id,
-			     job_ptr->fed_details->siblings_active,
-			     job_ptr->start_time);
+			     job_ptr->fed_details->siblings_active, now);
 
 	return SLURM_SUCCESS;
 }
@@ -3897,13 +3898,14 @@ extern int fed_mgr_remove_active_sibling(uint32_t job_id, char *sib_name)
 
 	if (job_ptr->fed_details->siblings_active &
 	    FED_SIBLING_BIT(sibling->fed.id)) {
+		time_t now = time(NULL);
 		if (fed_mgr_cluster_rec == sibling)
-			fed_mgr_job_revoke(job_ptr, false, 0, 0);
+			fed_mgr_job_revoke(job_ptr, false, 0, now);
 		else
 			_revoke_sibling_jobs(job_ptr->job_id,
 					     fed_mgr_cluster_rec->fed.id,
 					     FED_SIBLING_BIT(sibling->fed.id),
-					     0);
+					     now);
 		job_ptr->fed_details->siblings_active &=
 			~(FED_SIBLING_BIT(sibling->fed.id));
 		update_job_fed_details(job_ptr);
