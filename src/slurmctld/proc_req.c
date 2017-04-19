@@ -6328,6 +6328,7 @@ static void _proc_multi_msg(uint32_t rpc_uid, slurm_msg_t *msg)
 			continue;
 		}
 		sub_msg.conn = msg->conn;
+		sub_msg.auth_cred = msg->auth_cred;
 		ret_buf = NULL;
 
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
