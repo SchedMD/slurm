@@ -2028,17 +2028,11 @@ static int _start_job(struct job_record *job_ptr, bitstr_t *resv_bitmap)
 		FREE_NULL_BITMAP(orig_exc_nodes);
 	if (rc == SLURM_SUCCESS) {
 		/* job initiated */
+		char job_id_str[64];
 		last_job_update = time(NULL);
-		if (job_ptr->array_task_id == NO_VAL) {
-			info("backfill: Started JobId=%u in %s on %s",
-			     job_ptr->job_id, job_ptr->part_ptr->name,
-			     job_ptr->nodes);
-		} else {
-			info("backfill: Started JobId=%u_%u (%u) in %s on %s",
-			     job_ptr->array_job_id, job_ptr->array_task_id,
-			     job_ptr->job_id, job_ptr->part_ptr->name,
-			     job_ptr->nodes);
-		}
+		info("backfill: Started %s in %s on %s",
+		     jobid2fmt(job_ptr, job_id_str, sizeof(job_id_str)),
+		     job_ptr->part_ptr->name, job_ptr->nodes);
 		power_g_job_start(job_ptr);
 		if (job_ptr->batch_flag == 0)
 			srun_allocate(job_ptr->job_id);
