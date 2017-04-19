@@ -1252,9 +1252,10 @@ next_task:
 		job_ptr->part_ptr = part_ptr;
 
 		if (debug_flags & DEBUG_FLAG_BACKFILL) {
-			info("backfill test for JobID=%u Prio=%u Partition=%s",
-			     job_ptr->job_id, job_ptr->priority,
-			     job_ptr->part_ptr->name);
+			char job_id_str[64];
+			info("backfill test for %s Prio=%u Partition=%s",
+			     jobid2fmt(job_ptr, job_id_str, sizeof(job_id_str)),
+			     job_ptr->priority, job_ptr->part_ptr->name);
 		}
 
 		/* Test to see if we've exceeded any per user/partition limit */
