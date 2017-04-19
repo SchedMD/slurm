@@ -13,7 +13,7 @@
 # Written by Danny Auble <da@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
 #
-# Portions Copyright (C) 2012 SchedMD LLC
+# Portions Copyright (C) 2012-2017 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
 #
 # This file is part of SLURM, a resource management program.
@@ -105,7 +105,7 @@ proc inc22_1_3 { } {
 
 	send_user "\nTesting sreport for 3 days (Within: inc22.1.3)\n"
 	set matches 0
-	set my_pid [eval spawn $sreport cluster utilization cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,idle,down,alloc,res,over,reported]
+	set my_pid [eval spawn $sreport --local cluster utilization cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,idle,down,alloc,res,over,reported]
 	expect {
 		-re "There was a problem" {
 			send_user "FAILURE: there was a problem with the sacctmgr command (Within: inc22.1.3)\n"
@@ -142,7 +142,7 @@ proc inc22_1_3 { } {
 
 	# test the UserUtilizationByAccount report
 	set matches 0
-	set my_pid [eval spawn $sreport cluster UserUtilizationByAccount cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,login,account,used]
+	set my_pid [eval spawn $sreport --local cluster UserUtilizationByAccount cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,login,account,used]
 	expect {
 		-re "There was a problem" {
 			send_user "FAILURE: there was a problem with the sacctmgr command (Within: inc22.1.3)\n"
@@ -189,7 +189,7 @@ proc inc22_1_3 { } {
 
 	# test the AccountUtilizationByUser report
 	set matches 0
-	set my_pid [eval spawn $sreport cluster AccountUtilizationByUser cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,account,login,used]
+	set my_pid [eval spawn $sreport --local cluster AccountUtilizationByUser cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,account,login,used]
 	expect {
 		-re "There was a problem" {
 			send_user "FAILURE: there was a problem with the sacctmgr command (Within: inc22.1.3)\n"
@@ -249,7 +249,7 @@ proc inc22_1_3 { } {
 
 	# test the UserUtilizationByWckey report
 	set matches 0
-	set my_pid [eval spawn $sreport cluster UserUtilizationByWckey cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,login,wckey,used]
+	set my_pid [eval spawn $sreport --local cluster UserUtilizationByWckey cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,login,wckey,used]
 	expect {
 		-re "There was a problem" {
 			send_user "FAILURE: there was a problem with the sacctmgr command (Within: inc22.1.3)\n"
@@ -291,7 +291,7 @@ proc inc22_1_3 { } {
 
 	# test the WckeyUtilizationByUser report
 	set matches 0
-	set my_pid [eval spawn $sreport cluster WckeyUtilizationByUser cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,wckey,login,used]
+	set my_pid [eval spawn $sreport --local cluster WckeyUtilizationByUser cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,wckey,login,used]
 	expect {
 		-re "There was a problem" {
 			send_user "FAILURE: there was a problem with the sacctmgr command (Within: inc22.1.3)\n"
@@ -335,7 +335,7 @@ proc inc22_1_3 { } {
 
 	# test the User Top report
 	set matches 0
-	set my_pid [eval spawn $sreport user top cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,account,login,used]
+	set my_pid [eval spawn $sreport --local user top cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,account,login,used]
 	expect {
 		-re "There was a problem" {
 			send_user "FAILURE: there was a problem with the sacctmgr command (Within: inc22.1.3)\n"
@@ -379,7 +379,7 @@ proc inc22_1_3 { } {
 
 	# test the Job Size report
 	set matches 0
-	set my_pid [eval spawn $sreport job size grouping=2,4 cluster='$cluster' start=$start_str end=$end_str -tsec -p -n]
+	set my_pid [eval spawn $sreport --local job size grouping=2,4 cluster='$cluster' start=$start_str end=$end_str -tsec -p -n]
 	expect {
 		-re "There was a problem" {
 			send_user "FAILURE: there was a problem with the sacctmgr command (Within: inc22.1.3)\n"
@@ -419,7 +419,7 @@ proc inc22_1_3 { } {
 
 	# test the Job Size report down a level
 	set matches 0
-	set my_pid [eval spawn $sreport job size grouping=2,4 cluster='$cluster' account='$account2' start=$start_str end=$end_str -tsec -p -n]
+	set my_pid [eval spawn $sreport --local job size grouping=2,4 cluster='$cluster' account='$account2' start=$start_str end=$end_str -tsec -p -n]
 	expect {
 		-re "There was a problem" {
 			send_user "FAILURE: there was a problem with the sacctmgr command (Within: inc22.1.3)\n"
@@ -455,7 +455,7 @@ proc inc22_1_3 { } {
 
 	# test the Job Size by wckey report
 	set matches 0
-	set my_pid [eval spawn $sreport job sizesbywckey grouping=2,4 cluster='$cluster' start=$start_str end=$end_str -tsec -p -n]
+	set my_pid [eval spawn $sreport --local job sizesbywckey grouping=2,4 cluster='$cluster' start=$start_str end=$end_str -tsec -p -n]
 	expect {
 		-re "There was a problem" {
 			send_user "FAILURE: there was a problem with the sacctmgr command (Within: inc22.1.3)\n"
