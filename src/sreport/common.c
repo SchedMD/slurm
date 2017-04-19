@@ -578,6 +578,56 @@ extern void sreport_set_usage_column_width(print_field_t *usage_field,
 	sreport_set_usage_col_width(energy_field, max_energy);
 }
 
+/* Return 1 if UID for two association records match */
+static int _match_assoc(void *x, void *key)
+{
+	slurmdb_report_assoc_rec_t *orig_report_assoc;
+	slurmdb_report_assoc_rec_t *dup_report_assoc;
+
+	orig_report_assoc = (slurmdb_report_assoc_rec_t *) key;
+	dup_report_assoc  = (slurmdb_report_assoc_rec_t *) x;
+	if (!xstrcmp(orig_report_assoc->acct, dup_report_assoc->acct) &&
+	    !xstrcmp(orig_report_assoc->user, dup_report_assoc->user))
+		return 1;
+	return 0;
+}
+
+/* Return 1 if a slurmdb associatin record has NULL tres_list */
+static int _find_empty_assoc_tres(void *x, void *key)
+{
+	slurmdb_report_assoc_rec_t *dup_report_assoc;
+
+	dup_report_assoc = (slurmdb_report_assoc_rec_t *) x;
+	if (dup_report_assoc->tres_list == NULL)
+		return 1;
+	return 0;
+}
+
+/* For duplicate user/account records, combine TRES records into the original
+ * list and purge the duplicate records */
+extern void combine_assoc_tres(List first_assoc_list, List new_assoc_list)
+{
+	slurmdb_report_assoc_rec_t *orig_report_assoc = NULL;
+	slurmdb_report_assoc_rec_t *dup_report_assoc = NULL;
+	ListIterator iter = NULL;
+
+	iter = list_iterator_create(first_assoc_list);
+	while ((orig_report_assoc = list_next(iter))) {
+		dup_report_assoc = list_find_first(new_assoc_list,
+						   _match_assoc,
+						   orig_report_assoc);
+		if (!dup_report_assoc)
+			continue;
+		combine_tres_list(orig_report_assoc->tres_list,
+				  dup_report_assoc->tres_list);
+		FREE_NULL_LIST(dup_report_assoc->tres_list);
+	}
+	list_iterator_destroy(iter);
+
+	(void) list_delete_all(new_assoc_list, _find_empty_assoc_tres, NULL);
+	list_transfer(first_assoc_list, new_assoc_list);
+}
+
 /* Return 1 if two TRES records have the same TRES ID */
 static int _match_tres_id(void *x, void *key)
 {

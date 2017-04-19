@@ -127,6 +127,10 @@ extern void sreport_set_usage_column_width(print_field_t *usage_field,
 					   print_field_t *energy_field,
 					   List slurmdb_report_cluster_list);
 
+/* For duplicate user/account records, combine TRES records into the original
+ * list and purge the duplicate records */
+extern void combine_assoc_tres(List first_assoc_list, List new_assoc_list);
+
 /* Given two TRES lists, combine the content of the second with the first,
  * adding the counts for duplicate TRES IDs */
 extern void combine_tres_list(List orig_tres_list, List dup_tres_list);
@@ -134,4 +138,5 @@ extern void combine_tres_list(List orig_tres_list, List dup_tres_list);
 /* For duplicate user/account records, combine TRES records into the original
  * list and purge the duplicate records */
 extern void combine_user_tres(List first_user_list, List new_user_list);
+
 #endif /* HAVE_SREPORT_H */

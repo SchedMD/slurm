@@ -578,7 +578,7 @@ static void _set_usage_column_width(List print_fields_list,
 				       slurmdb_report_cluster_list);
 }
 
-static void _merge_clusters(List cluster_list)
+static void _merge_cluster_recs(List cluster_list)
 {
 	slurmdb_cluster_rec_t *cluster = NULL, *first_cluster = NULL;
 	ListIterator iter = NULL;
@@ -630,7 +630,7 @@ static List _get_cluster_list(int argc, char **argv, uint32_t *total_time,
 		return NULL;
 	}
 	if (fed_name)
-		_merge_clusters(cluster_list);
+		_merge_cluster_recs(cluster_list);
 
 	if (print_fields_have_header) {
 		char start_char[20];
@@ -786,57 +786,7 @@ static void _cluster_account_by_user_tres_report(
 	printf("\n");
 }
 
-/* Return 1 if UID for two association records match */
-static int _match_assoc(void *x, void *key)
-{
-	slurmdb_report_assoc_rec_t *orig_report_assoc;
-	slurmdb_report_assoc_rec_t *dup_report_assoc;
-
-	orig_report_assoc = (slurmdb_report_assoc_rec_t *) key;
-	dup_report_assoc  = (slurmdb_report_assoc_rec_t *) x;
-	if (!xstrcmp(orig_report_assoc->acct, dup_report_assoc->acct) &&
-	    !xstrcmp(orig_report_assoc->user, dup_report_assoc->user))
-		return 1;
-	return 0;
-}
-
-/* Return 1 if a slurmdb associatin record has NULL tres_list */
-static int _find_empty_assoc_tres(void *x, void *key)
-{
-	slurmdb_report_assoc_rec_t *dup_report_assoc;
-
-	dup_report_assoc = (slurmdb_report_assoc_rec_t *) x;
-	if (dup_report_assoc->tres_list == NULL)
-		return 1;
-	return 0;
-}
-
-/* For duplicate user/account records, combine TRES records into the original
- * list and purge the duplicate records */
-static void _combine_assoc_tres(List first_assoc_list, List new_assoc_list)
-{
-	slurmdb_report_assoc_rec_t *orig_report_assoc = NULL;
-	slurmdb_report_assoc_rec_t *dup_report_assoc = NULL;
-	ListIterator iter = NULL;
-
-	iter = list_iterator_create(first_assoc_list);
-	while ((orig_report_assoc = list_next(iter))) {
-		dup_report_assoc = list_find_first(new_assoc_list,
-						   _match_assoc,
-						   orig_report_assoc);
-		if (!dup_report_assoc)
-			continue;
-		combine_tres_list(orig_report_assoc->tres_list,
-				  dup_report_assoc->tres_list);
-		FREE_NULL_LIST(dup_report_assoc->tres_list);
-	}
-	list_iterator_destroy(iter);
-
-	(void) list_delete_all(new_assoc_list, _find_empty_assoc_tres, NULL);
-	list_transfer(first_assoc_list, new_assoc_list);
-}
-
-static void _merge_clusters2(List cluster_list)
+static void _merge_cluster_reps(List cluster_list)
 {
 	slurmdb_report_cluster_rec_t *cluster = NULL, *first_cluster = NULL;
 	ListIterator iter = NULL;
@@ -860,8 +810,15 @@ static void _merge_clusters2(List cluster_list)
 			first_cluster->assoc_list = cluster->assoc_list;
 			cluster->assoc_list = NULL;
 		} else {
-			_combine_assoc_tres(first_cluster->assoc_list,
-					    cluster->assoc_list);
+			combine_assoc_tres(first_cluster->assoc_list,
+					   cluster->assoc_list);
+		}
+		if (!first_cluster->user_list) {
+			first_cluster->user_list = cluster->user_list;
+			cluster->user_list = NULL;
+		} else {
+			combine_user_tres(first_cluster->user_list,
+					  cluster->user_list);
 		}
 		list_delete_item(iter);
 	}
@@ -910,7 +867,7 @@ extern int cluster_account_by_user(int argc, char **argv)
 		goto end_it;
 	}
 	if (fed_name)
-		_merge_clusters2(slurmdb_report_cluster_list);
+		_merge_cluster_reps(slurmdb_report_cluster_list);
 
 	if (print_fields_have_header) {
 		char start_char[20];
@@ -1079,38 +1036,6 @@ static void _cluster_user_by_account_tres_report(slurmdb_tres_rec_t *tres,
 	printf("\n");
 }
 
-static void _merge_clusters3(List cluster_list)
-{
-	slurmdb_report_cluster_rec_t *cluster = NULL, *first_cluster = NULL;
-	ListIterator iter = NULL;
-
-	if (list_count(cluster_list) < 2)
-		return;
-
-	iter = list_iterator_create(cluster_list);
-	while ((cluster = list_next(iter))) {
-		if (!first_cluster) {
-			first_cluster = cluster;
-			xfree(cluster->name);
-			if (fed_name)
-				xstrfmtcat(cluster->name, "FED:%s", fed_name);
-			else
-				cluster->name = xstrdup("FEDERATION");
-			continue;
-		}
-		combine_tres_list(first_cluster->tres_list, cluster->tres_list);
-		if (!first_cluster->user_list) {
-			first_cluster->user_list = cluster->user_list;
-			cluster->user_list = NULL;
-		} else {
-			combine_user_tres(first_cluster->user_list,
-					  cluster->user_list);
-		}
-		list_delete_item(iter);
-	}
-	list_iterator_destroy(iter);
-}
-
 extern int cluster_user_by_account(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
@@ -1151,7 +1076,7 @@ extern int cluster_user_by_account(int argc, char **argv)
 		goto end_it;
 	}
 	if (fed_name)
-		_merge_clusters3(slurmdb_report_cluster_list);
+		_merge_cluster_reps(slurmdb_report_cluster_list);
 
 	if (print_fields_have_header) {
 		char start_char[20];
@@ -1345,6 +1270,8 @@ extern int cluster_user_by_wckey(int argc, char **argv)
 		exit_code = 1;
 		goto end_it;
 	}
+	if (fed_name)
+		_merge_cluster_reps(slurmdb_report_cluster_list);
 
 	if (print_fields_have_header) {
 		char start_char[20];
@@ -1766,62 +1693,6 @@ static void _cluster_wckey_by_user_tres_report(slurmdb_tres_rec_t *tres,
 	printf("\n");
 }
 
-static void _merge_cluster_report(List slurmdb_report_cluster_list)
-{
-	slurmdb_report_cluster_rec_t *slurmdb_report_cluster = NULL;
-	slurmdb_report_cluster_rec_t *first_report_cluster = NULL;
-	ListIterator iter = NULL;
-
-	if (list_count(slurmdb_report_cluster_list) < 2)
-		return;
-
-	iter = list_iterator_create(slurmdb_report_cluster_list);
-	while ((slurmdb_report_cluster = list_next(iter))) {
-		if (!first_report_cluster) {
-			first_report_cluster = slurmdb_report_cluster;
-			xfree(first_report_cluster->name);
-			if (fed_name) {
-				xstrfmtcat(first_report_cluster->name, "FED:%s",
-					   fed_name);
-			} else {
-				first_report_cluster->name =
-					xstrdup("FEDERATION");
-			}
-			continue;
-		}
-		if (!first_report_cluster->accounting_list) {
-			first_report_cluster->accounting_list =
-				slurmdb_report_cluster->accounting_list;
-		} else {
-			list_transfer(first_report_cluster->accounting_list,
-				      slurmdb_report_cluster->accounting_list);
-		}
-		if (!first_report_cluster->assoc_list) {
-			first_report_cluster->assoc_list =
-				slurmdb_report_cluster->assoc_list;
-		} else {
-			list_transfer(first_report_cluster->assoc_list,
-				      slurmdb_report_cluster->assoc_list);
-		}
-		if (!first_report_cluster->tres_list) {
-			first_report_cluster->tres_list =
-				slurmdb_report_cluster->tres_list;
-		} else {
-			list_transfer(first_report_cluster->tres_list,
-				      slurmdb_report_cluster->tres_list);
-		}
-		if (!first_report_cluster->user_list) {
-			first_report_cluster->user_list =
-				slurmdb_report_cluster->user_list;
-		} else {
-			list_transfer(first_report_cluster->user_list,
-				      slurmdb_report_cluster->user_list);
-		}
-		list_delete_item(iter);
-	}
-	list_iterator_destroy(iter);
-}
-
 extern int cluster_wckey_by_user(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
@@ -1862,7 +1733,7 @@ extern int cluster_wckey_by_user(int argc, char **argv)
 		goto end_it;
 	}
 	if (fed_name)
-		_merge_cluster_report(slurmdb_report_cluster_list);
+		_merge_cluster_reps(slurmdb_report_cluster_list);
 
 	if (print_fields_have_header) {
 		char start_char[20];
