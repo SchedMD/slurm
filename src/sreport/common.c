@@ -611,6 +611,9 @@ extern void combine_assoc_tres(List first_assoc_list, List new_assoc_list)
 	slurmdb_report_assoc_rec_t *dup_report_assoc = NULL;
 	ListIterator iter = NULL;
 
+	if (!first_assoc_list || !new_assoc_list)
+		return;
+
 	iter = list_iterator_create(first_assoc_list);
 	while ((orig_report_assoc = list_next(iter))) {
 		dup_report_assoc = list_find_first(new_assoc_list,
@@ -656,6 +659,9 @@ extern void combine_tres_list(List orig_tres_list, List dup_tres_list)
 {
 	slurmdb_tres_rec_t *orig_tres, *dup_tres;
 	ListIterator iter = NULL;
+
+	if (!orig_tres_list || !dup_tres_list)
+		return;
 
 	/* Merge counts for common TRES */
 	iter = list_iterator_create(orig_tres_list);
@@ -710,6 +716,9 @@ extern void combine_user_tres(List first_user_list, List new_user_list)
 	slurmdb_report_user_rec_t *orig_report_user = NULL;
 	slurmdb_report_user_rec_t *dup_report_user = NULL;
 	ListIterator iter = NULL;
+
+	if (!first_user_list || !new_user_list)
+		return;
 
 	iter = list_iterator_create(first_user_list);
 	while ((orig_report_user = list_next(iter))) {

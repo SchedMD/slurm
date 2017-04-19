@@ -1188,19 +1188,19 @@ typedef struct {
 } slurmdb_report_job_grouping_t;
 
 typedef struct {
-	char *acct; /*account name */
+	char *acct;	/* account name */
 	uint32_t count; /* total count of jobs taken up by this acct */
-	List groups; /* containing slurmdb_report_job_grouping_t's*/
+	List groups;	/* containing slurmdb_report_job_grouping_t's*/
 	uint32_t lft;
 	uint32_t rgt;
 	List tres_list; /* list of slurmdb_tres_rec_t *'s */
 } slurmdb_report_acct_grouping_t;
 
 typedef struct {
-	List acct_list; /* containing slurmdb_report_acct_grouping_t's */
-	char *cluster; /*cluster name */
-	uint32_t count; /* total count of jobs taken up by this cluster */
-	List tres_list; /* list of slurmdb_tres_rec_t *'s */
+	List acct_list;	/* containing slurmdb_report_acct_grouping_t's */
+	char *cluster; 	/* cluster name */
+	uint32_t count;	/* total count of jobs taken up by this cluster */
+	List tres_list;	/* list of slurmdb_tres_rec_t *'s */
 } slurmdb_report_cluster_grouping_t;
 
 #define ROLLUP_HOUR	0

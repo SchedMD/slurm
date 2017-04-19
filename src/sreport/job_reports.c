@@ -2,7 +2,7 @@
  *  job_reports.c - functions for generating job reports
  *                  from accounting infrastructure.
  *****************************************************************************
- *  Copyright (C) 2010-2015 SchedMD LLC.
+ *  Copyright (C) 2010-2017 SchedMD LLC.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
@@ -609,6 +609,148 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 	return SLURM_SUCCESS;
 }
 
+/* Return 1 if a slurmdb job grouping record has NULL tres_list */
+static int _find_empty_job_tres(void *x, void *key)
+{
+	slurmdb_report_job_grouping_t *dup_job_group;
+
+	dup_job_group = (slurmdb_report_job_grouping_t *) x;
+	if (dup_job_group->tres_list == NULL)
+		return 1;
+	return 0;
+}
+
+/* Return 1 if account name for two records match */
+static int _match_job_group(void *x, void *key)
+{
+	slurmdb_report_job_grouping_t *orig_job_group;
+	slurmdb_report_job_grouping_t *dup_job_group;
+
+	orig_job_group = (slurmdb_report_job_grouping_t *) key;
+	dup_job_group  = (slurmdb_report_job_grouping_t *) x;
+	if ((orig_job_group->min_size == dup_job_group->min_size) &&
+	    (orig_job_group->max_size == dup_job_group->max_size))
+		return 1;
+	return 0;
+}
+
+/* For duplicate account records, combine TRES records into the original
+ * list and purge the duplicate records */
+static void _combine_job_groups(List first_job_list, List new_job_list)
+{
+	slurmdb_report_job_grouping_t *orig_job_group = NULL;
+	slurmdb_report_job_grouping_t *dup_job_group = NULL;
+	ListIterator iter = NULL;
+
+	if (!first_job_list || !new_job_list)
+		return;
+
+	iter = list_iterator_create(first_job_list);
+	while ((orig_job_group = list_next(iter))) {
+		dup_job_group = list_find_first(new_job_list,
+						_match_job_group,
+						orig_job_group);
+		if (!dup_job_group)
+			continue;
+		orig_job_group->count += dup_job_group->count;
+		combine_tres_list(orig_job_group->tres_list,
+				  dup_job_group->tres_list);
+		FREE_NULL_LIST(dup_job_group->tres_list);
+	}
+	list_iterator_destroy(iter);
+
+	(void) list_delete_all(new_job_list, _find_empty_job_tres, NULL);
+	list_transfer(first_job_list, new_job_list);
+}
+
+/* Return 1 if a slurmdb account record has NULL tres_list */
+static int _find_empty_acct_tres(void *x, void *key)
+{
+	slurmdb_report_acct_grouping_t *dup_report_acct;
+
+	dup_report_acct = (slurmdb_report_acct_grouping_t *) x;
+	if (dup_report_acct->tres_list == NULL)
+		return 1;
+	return 0;
+}
+
+/* Return 1 if account name for two records match */
+static int _match_acct_name(void *x, void *key)
+{
+	slurmdb_report_acct_grouping_t *orig_report_acct;
+	slurmdb_report_acct_grouping_t *dup_report_acct;
+
+	orig_report_acct = (slurmdb_report_acct_grouping_t *) key;
+	dup_report_acct  = (slurmdb_report_acct_grouping_t *) x;
+	if (!xstrcmp(orig_report_acct->acct, dup_report_acct->acct))
+		return 1;
+	return 0;
+}
+
+/* For duplicate account records, combine TRES records into the original
+ * list and purge the duplicate records */
+static void _combine_acct_groups(List first_acct_list, List new_acct_list)
+{
+	slurmdb_report_acct_grouping_t *orig_report_acct = NULL;
+	slurmdb_report_acct_grouping_t *dup_report_acct = NULL;
+	ListIterator iter = NULL;
+
+	if (!first_acct_list || !new_acct_list)
+		return;
+
+	iter = list_iterator_create(first_acct_list);
+	while ((orig_report_acct = list_next(iter))) {
+		dup_report_acct = list_find_first(new_acct_list,
+						  _match_acct_name,
+						  orig_report_acct);
+		if (!dup_report_acct)
+			continue;
+		orig_report_acct->count += dup_report_acct->count;
+		_combine_job_groups(orig_report_acct->groups,
+				    dup_report_acct->groups);
+		combine_tres_list(orig_report_acct->tres_list,
+				  dup_report_acct->tres_list);
+		FREE_NULL_LIST(dup_report_acct->tres_list);
+	}
+	list_iterator_destroy(iter);
+
+	(void) list_delete_all(new_acct_list, _find_empty_acct_tres, NULL);
+	list_transfer(first_acct_list, new_acct_list);
+}
+
+static void _merge_cluster_groups(List slurmdb_report_cluster_grouping_list)
+{
+	slurmdb_report_cluster_grouping_t *group = NULL, *first_group = NULL;
+	ListIterator iter = NULL;
+
+	if (list_count(slurmdb_report_cluster_grouping_list) < 2)
+		return;
+
+	iter = list_iterator_create(slurmdb_report_cluster_grouping_list);
+	while ((group = list_next(iter))) {
+		if (!first_group) {
+			first_group = group;
+			xfree(group->cluster);
+			if (fed_name)
+				xstrfmtcat(group->cluster, "FED:%s", fed_name);
+			else
+				group->cluster = xstrdup("FEDERATION");
+			continue;
+		}
+		first_group->count += group->count;
+		combine_tres_list(first_group->tres_list, group->tres_list);
+		if (!first_group->acct_list) {
+			first_group->acct_list = group->acct_list;
+			group->acct_list = NULL;
+		} else {
+			_combine_acct_groups(first_group->acct_list,
+					      group->acct_list);
+		}
+		list_delete_item(iter);
+	}
+	list_iterator_destroy(iter);
+}
+
 static int _run_report(int type, int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
@@ -681,6 +823,8 @@ static int _run_report(int type, int argc, char **argv)
 		goto end_it;
 		break;
 	}
+	if (fed_name)
+		_merge_cluster_groups(slurmdb_report_cluster_grouping_list);
 
 	itr2 = list_iterator_create(tres_list);
 	while ((tres = list_next(itr2))) {
