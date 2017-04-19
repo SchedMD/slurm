@@ -136,42 +136,45 @@ pdebug_stop_current(stepd_step_rec_t *job)
 /* Check if this PID should be woken for TotalView partitial attach */
 static int _being_traced(pid_t pid)
 {
-    FILE *fp = NULL;
-    size_t n = 0;
-    int tracer_id = 0;
-    char *match = NULL;
-    char buf[2048] = {0};
-    char sp[PATH_MAX] = {0};
+	FILE *fp = NULL;
+	size_t n = 0, max_len;
+	int tracer_id = 0;
+	char *match = NULL;
+	char buf[2048] = {0};
+	char sp[PATH_MAX] = {0};
 
-    if (snprintf(sp, PATH_MAX, "/proc/%lu/status", (unsigned long)pid) == -1)
-        return -1;
-    if ((fp = fopen((const char *)sp, "r")) == NULL)
-        return -1;
-    n = fread(buf, 1, sizeof(buf), fp);
-    fclose(fp);
-    if (n == 0 || n == sizeof (buf))
-        return -1;
-    if ((match = strstr(buf, "TracerPid:")) == NULL)
-        return -1;
-    if (sscanf(match, "TracerPid:\t%d", &tracer_id) == EOF)
-        return -1;
-    return tracer_id;
+	if (snprintf(sp, PATH_MAX, "/proc/%lu/status",(unsigned long)pid) == -1)
+		return -1;
+	if ((fp = fopen((const char *)sp, "r")) == NULL)
+		return -1;
+
+	max_len = sizeof(buf) - 1;
+	n = fread(buf, 1, max_len, fp);
+	fclose(fp);
+	if ((n == 0) || (n == max_len))
+		return -1;
+	buf[n] = '\0';	/* Insure string is terminated */
+	if ((match = strstr(buf, "TracerPid:")) == NULL)
+		return -1;
+	if (sscanf(match, "TracerPid:\t%d", &tracer_id) == EOF)
+		return -1;
+	return tracer_id;
 }
 
 static bool _pid_to_wake(pid_t pid)
 {
-    int rc = 0;
-    if ((rc = _being_traced(pid)) == -1) {
-        /* If an error occurred (e.g., /proc FS doesn't exist
-         * or TracerPid field doesn't exist, it is better to wake
-         * up the target process -- at the expense of potential
-         * side effects on the debugger.
-         */
-        debug("_pid_to_wake(%lu): %m\n", (unsigned long) pid);
-        errno = 0;
-        rc = 0;
-    }
-    return (rc == 0) ? true : false;
+	int rc = 0;
+
+	if ((rc = _being_traced(pid)) == -1) {
+		/* If an error occurred (e.g., /proc FS doesn't exist
+		 * or TracerPid field doesn't exist, it is better to wake
+		 * up the target process -- at the expense of potential
+		 * side effects on the debugger. */
+		debug("_pid_to_wake(%lu): %m\n", (unsigned long) pid);
+		errno = 0;
+		rc = 0;
+	}
+	return (rc == 0) ? true : false;
 }
 
 /*
