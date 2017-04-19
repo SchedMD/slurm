@@ -6330,6 +6330,11 @@ static void _proc_multi_msg(uint32_t rpc_uid, slurm_msg_t *msg)
 		sub_msg.conn = msg->conn;
 		ret_buf = NULL;
 
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
+			char *p = rpc_num2string(sub_msg.msg_type);
+			info("%s: received opcode %s", __func__, p);
+		}
+
 		switch (sub_msg.msg_type) {
 		case REQUEST_PING:
 			rc = SLURM_SUCCESS;
