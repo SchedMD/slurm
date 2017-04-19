@@ -3209,7 +3209,9 @@ extern int fed_mgr_job_revoke(struct job_record *job_ptr, bool job_complete,
 		return SLURM_SUCCESS;
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-		info("revoking fed job %d", job_ptr->job_id);
+		info("revoking fed job %d (%s)",
+		     job_ptr->job_id,
+		     job_complete ? "REVOKED|CANCELLED" : "REVOKED");
 
 	/* Check if the job exited with one of the configured requeue values. */
 	job_ptr->exit_code = exit_code;
