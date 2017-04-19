@@ -3219,7 +3219,7 @@ extern int fed_mgr_job_revoke(struct job_record *job_ptr, bool job_complete,
 		state |= JOB_CANCELLED;
 
 	job_ptr->job_state  = state;
-	job_ptr->start_time = 0;
+	job_ptr->start_time = start_time;
 	job_ptr->end_time   = start_time;
 	job_completion_logger(job_ptr, false);
 
