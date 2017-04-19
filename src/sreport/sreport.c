@@ -131,6 +131,9 @@ main (int argc, char **argv)
 	}
 	xfree(temp);
 
+	temp = getenv("SREPORT_CLUSTER");
+	if (temp)
+		cluster_flag = xstrdup(optarg);
 	if (getenv("SREPORT_LOCAL"))
 		local_flag = true;
 	temp = getenv("SREPORT_TRES");
@@ -190,11 +193,23 @@ main (int argc, char **argv)
 			exit(exit_code);
 			break;
 		default:
-			exit_code = 1;
 			fprintf(stderr, "getopt error, returned %c\n",
 				opt_char);
-			exit(exit_code);
+			exit(1);
 		}
+	}
+
+	i = 0;
+	if (all_clusters_flag)
+		i++;
+	if (cluster_flag)
+		i++;
+	if (local_flag)
+		i++;
+	if (i > 1) {
+		fprintf(stderr,
+			"Only one cluster option can be used (--all_clusters OR --cluster OR --local)\n"),
+		exit(1);
 	}
 
 	if (argc > MAX_INPUT_FIELDS)	/* bogus input, but continue anyway */
