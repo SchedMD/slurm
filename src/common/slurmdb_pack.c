@@ -999,10 +999,12 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 	slurmdb_init_cluster_rec(object_ptr, 0);
 	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
+		if (count > NO_VAL32)
+			goto unpack_error;
+		if (count != NO_VAL32) {
 			object_ptr->accounting_list = list_create(
 				slurmdb_destroy_cluster_accounting_rec);
-			for (i=0; i<count; i++) {
+			for (i = 0; i < count; i++) {
 				if (slurmdb_unpack_cluster_accounting_rec(
 					    (void *)&slurmdb_info,
 					    protocol_version, buffer) ==
@@ -1020,10 +1022,12 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 		safe_unpack16(&object_ptr->dimensions, buffer);
 
 		safe_unpack32(&count, buffer);
+		if (count > NO_VAL32)
+			goto unpack_error;
 		if (count != NO_VAL) {
 			object_ptr->fed.feature_list =
 				list_create(slurm_destroy_char);
-			for(i = 0; i < count; i++) {
+			for (i = 0; i < count; i++) {
 				char *tmp_feature = NULL;
 				safe_unpackstr_xmalloc(&tmp_feature,
 						       &uint32_tmp, buffer);
@@ -1067,10 +1071,12 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 				       &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
+		if (count > NO_VAL32)
+			goto unpack_error;
+		if (count != NO_VAL32) {
 			object_ptr->accounting_list = list_create(
 				slurmdb_destroy_cluster_accounting_rec);
-			for (i=0; i<count; i++) {
+			for (i = 0; i < count; i++) {
 				if (slurmdb_unpack_cluster_accounting_rec(
 					    (void *)&slurmdb_info,
 					    protocol_version, buffer) ==
@@ -1123,10 +1129,12 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 				       &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
+		if (count > NO_VAL32)
+			goto unpack_error;
+		if (count != NO_VAL32) {
 			object_ptr->accounting_list = list_create(
 				slurmdb_destroy_cluster_accounting_rec);
-			for (i=0; i<count; i++) {
+			for (i = 0; i < count; i++) {
 				if (slurmdb_unpack_cluster_accounting_rec(
 					    (void *)&slurmdb_info,
 					    protocol_version, buffer) ==
