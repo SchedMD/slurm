@@ -19,6 +19,8 @@ documents those changes that are of interest to users and administrators.
  -- Document that PriorityFlags option of DEPTH_OBLIVIOUS precludes the use of
     FAIR_TREE.
  -- Fix issue if an invalid message came in a Slurm daemon/command may abort.
+ -- Make it impossible to use CR_CPU* along with CR_ONE_TASK_PER_CORE. The
+    options are mutually exclusive.
 
 * Changes in Slurm 17.02.2
 ==========================
