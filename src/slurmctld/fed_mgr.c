@@ -1396,6 +1396,12 @@ static void *_agent_thread(void *arg)
 	slurmctld_lock_t fed_read_lock = {
 		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 
+#if HAVE_SYS_PRCTL_H
+	if (prctl(PR_SET_NAME, "fed_agent", NULL, NULL, NULL) < 0) {
+		error("%s: cannot set my name to %s %m", __func__, "fed_agent");
+	}
+#endif
+
 	while (!slurmctld_config.shutdown_time) {
 		/* Wait for new work or re-issue RPCs after 2 second wait */
 		slurm_mutex_lock(&agent_mutex);
