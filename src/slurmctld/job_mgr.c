@@ -770,6 +770,16 @@ int dump_all_job_state(void)
 	return error_code;
 }
 
+static int _find_resv_part(void *x, void *key)
+{
+	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) x;
+
+	if (resv_ptr->part_ptr != (struct part_record *) key)
+		return 0;
+	else
+		return 1;	/* match */
+}
+
 /* Open the job state save file, or backup if necessary.
  * state_file IN - the name of the state save file used
  * RET the file description to read from or error code
@@ -3246,7 +3256,7 @@ extern int kill_job_by_front_end_name(char *node_name)
 
 /*
  * partition_in_use - determine whether a partition is in use by a RUNNING
- *	PENDING or SUSPENDED job
+ *	PENDING or SUSPENDED job or reservations
  * IN part_name - name of a partition
  * RET true if the partition is in use, else false
  */
@@ -3260,6 +3270,7 @@ extern bool partition_in_use(char *part_name)
 	if (part_ptr == NULL)	/* No such partition */
 		return false;
 
+	/* check jobs */
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (job_ptr->part_ptr == part_ptr) {
@@ -3270,6 +3281,11 @@ extern bool partition_in_use(char *part_name)
 		}
 	}
 	list_iterator_destroy(job_iterator);
+
+	/* check reservations */
+	if (list_find_first(resv_list, _find_resv_part, part_ptr))
+		return true;
+
 	return false;
 }
 

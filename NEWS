@@ -23,6 +23,7 @@ documents those changes that are of interest to users and administrators.
     options are mutually exclusive.
  -- ALPS - Fix scheduling when ALPS doesn't agree with Slurm on what nodes
     are free.
+ -- When removing a partition make sure it isn't part of a reservation.
 
 * Changes in Slurm 17.02.2
 ==========================
