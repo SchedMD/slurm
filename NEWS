@@ -21,6 +21,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue if an invalid message came in a Slurm daemon/command may abort.
  -- Make it impossible to use CR_CPU* along with CR_ONE_TASK_PER_CORE. The
     options are mutually exclusive.
+ -- ALPS - Fix scheduling when ALPS doesn't agree with Slurm on what nodes
+    are free.
 
 * Changes in Slurm 17.02.2
 ==========================
@@ -397,6 +399,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix double read lock of tres when updating gres or licenses on a job.
  -- Fix regression in 16.05.10 with respects to GrpTresMins on a QOS or
     Association.
+ -- ALPS - Fix scheduling when ALPS doesn't agree with Slurm on what nodes
+    are free.
 
 * Changes in Slurm 16.05.10-2
 =============================
