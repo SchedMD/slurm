@@ -14,6 +14,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix double read lock of tres when updating gres or licenses on a job.
  -- Fix regression in 16.05.10 with respects to GrpTresMins on a QOS or
     Association.
+ -- ALPS - Fix scheduling when ALPS doesn't agree with Slurm on what nodes
+    are free.
 
 * Changes in Slurm 16.05.10-2
 =============================
