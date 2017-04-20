@@ -316,8 +316,8 @@ extern int bb_g_reconfig(void)
  */
 extern uint64_t bb_g_get_system_size(char *name)
 {
-	uint64_t i, size = 0;
-	int offset = 0;
+	uint64_t size = 0;
+	int i, offset = 0;
 
 	(void) bb_g_init();
 

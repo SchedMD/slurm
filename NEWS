@@ -16,6 +16,7 @@ documents those changes that are of interest to users and administrators.
     Association.
  -- ALPS - Fix scheduling when ALPS doesn't agree with Slurm on what nodes
     are free.
+ -- Fix seg fault if loading attempting to load non-existent burstbuffer plugin.
 
 * Changes in Slurm 16.05.10-2
 =============================
