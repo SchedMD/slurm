@@ -29,6 +29,8 @@ documents those changes that are of interest to users and administrators.
     submitted to multiple partitions are most likley to be effected.
  -- sched/backfill: Improve assoc_limit_stop configuration parameter support.
  -- CRAY - Add ansible play and README.
+ -- sched/backfill: Fix bug related to advanced reservations and the need to
+    reboot nodes to change KNL mode.
 
 * Changes in Slurm 17.02.2
 ==========================
