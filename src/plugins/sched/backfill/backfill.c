@@ -1134,10 +1134,11 @@ static int _attempt_backfill(void)
 			continue;
 		}
 
-		if (!acct_policy_job_runnable_state(job_ptr) &&
-		    (!assoc_limit_stop ||
-		     !acct_policy_job_runnable_pre_select(job_ptr)))
+		if (!assoc_limit_stop &&
+		    !acct_policy_job_runnable_state(job_ptr) &&
+		    !acct_policy_job_runnable_pre_select(job_ptr)) {
 			continue;
+		}
 
 		job_no_reserve = 0;
 		if (bf_min_prio_reserve &&
