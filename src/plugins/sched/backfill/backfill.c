@@ -1194,7 +1194,6 @@ static int _attempt_backfill(void)
 		}
 
 		if (!assoc_limit_stop &&
-		    !acct_policy_job_runnable_state(job_ptr) &&
 		    !acct_policy_job_runnable_pre_select(job_ptr)) {
 			continue;
 		}
