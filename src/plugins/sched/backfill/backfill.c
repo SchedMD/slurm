@@ -1788,7 +1788,8 @@ next_task:
 			}
 
 			if ((rc == ESLURM_RESERVATION_BUSY) ||
-			    (rc == ESLURM_ACCOUNTING_POLICY) ||
+			    (rc == ESLURM_ACCOUNTING_POLICY &&
+			     !assoc_limit_stop) ||
 			    (rc == ESLURM_POWER_NOT_AVAIL) ||
 			    (rc == ESLURM_POWER_RESERVED)) {
 				/* Unknown future start time, just skip job */
@@ -1799,6 +1800,19 @@ next_task:
 					job_ptr->start_time = 0;
 				_set_job_time_limit(job_ptr, orig_time_limit);
 				continue;
+			} else if (rc == ESLURM_ACCOUNTING_POLICY) {
+				/* Unknown future start time. Determining
+				 * when it can start with certainty requires
+				 * when every running and pending job starts
+				 * and ends and tracking all of there resources.
+				 * That requires very high overhead, that we
+				 * don't want to add. Estimate that it can start
+				 * after the next job ends (or in 5 minutes if
+				 * we don't have that information yet). */
+				if (later_start)
+					job_ptr->start_time = later_start;
+				else
+					job_ptr->start_time = now + 500;
 			} else if (rc != SLURM_SUCCESS) {
 				if (debug_flags & DEBUG_FLAG_BACKFILL) {
 					info("backfill: planned start of job %u"
