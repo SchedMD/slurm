@@ -27,6 +27,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix seg fault if loading attempting to load non-existent burstbuffer plugin.
  -- Fix to backfill scheduling with respect to QOS and association limits. Jobs
     submitted to multiple partitions are most likley to be effected.
+ -- sched/backfill: Improve assoc_limit_stop configuration parameter support.
 
 * Changes in Slurm 17.02.2
 ==========================
