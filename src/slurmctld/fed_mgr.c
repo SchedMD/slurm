@@ -580,6 +580,13 @@ static void *_job_watch_thread(void *arg)
 			break;
 
 		lock_slurmctld(job_read_fed_write_lock);
+
+		if (!fed_mgr_cluster_rec) {
+			/* not part of the federation anymore */
+			unlock_slurmctld(job_read_fed_write_lock);
+			break;
+		}
+
 		if ((job_count = list_count(job_list))) {
 			if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 				info("%s: %d remaining jobs before being removed from the federation",
@@ -755,6 +762,7 @@ static void _leave_federation(void)
 
 	_close_sibling_conns();
 	_destroy_ping_thread();
+	_remove_job_watch_thread();
 	slurmdb_destroy_federation_rec(fed_mgr_fed_rec);
 	fed_mgr_fed_rec = NULL;
 	fed_mgr_cluster_rec = NULL;
