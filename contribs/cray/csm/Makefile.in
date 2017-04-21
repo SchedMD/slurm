@@ -17,6 +17,7 @@
 #
 # Makefile for cray/csm scripts
 #
+
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
@@ -163,6 +164,7 @@ am__can_run_installinfo = \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
+DATA = $(noinst_DATA)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 am__DIST_COMMON = $(srcdir)/Makefile.in
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -422,8 +424,10 @@ top_srcdir = @top_srcdir@
 EXTRA_DIST = \
 	gres.conf.j2			\
 	slurm.conf.j2			\
-	slurmconfgen_smw.py
+	slurmconfgen_smw.py		\
+	slurm_playbook.yaml.in
 
+noinst_DATA = slurm_playbook.yaml
 all: all-am
 
 .SUFFIXES:
@@ -501,7 +505,7 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile
+all-am: Makefile $(DATA)
 installdirs:
 install: install-am
 install-exec: install-exec-am
@@ -523,8 +527,6 @@ install-strip:
 	    "INSTALL_PROGRAM_ENV=STRIPPROG='$(STRIP)'" install; \
 	fi
 mostlyclean-generic:
-
-clean-generic:
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
@@ -615,6 +617,14 @@ uninstall-am:
 
 .PRECIOUS: Makefile
 
+
+slurm_playbook.yaml: slurm_playbook.yaml.in Makefile
+	sed -e 's|@prefix[@]|$(prefix)|g' \
+	    -e 's|@bindir[@]|$(bindir)|g' \
+	    ${abs_srcdir}/slurm_playbook.yaml.in >slurm_playbook.yaml
+
+clean-generic:
+	rm -f slurm_playbook.yaml
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
