@@ -3020,6 +3020,7 @@ Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 Allocate one task per core by default.
 Without this option, by default one task will be allocated per
 thread on nodes with more than one \fBThreadsPerCore\fR configured.
+NOTE: This option cannot be used with CR_CPU*.
 .TP
 \fBCR_CORE_DEFAULT_DIST_BLOCK\fR
 Allocate cores within a node using block distribution by default.

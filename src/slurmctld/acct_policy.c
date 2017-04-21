@@ -2779,7 +2779,7 @@ end_it:
 }
 
 /*
- * Determine of the specified job can execute right now or is currently
+ * Determine if the specified job can execute right now or is currently
  * blocked by an association or QOS limit. Does not re-validate job state.
  */
 extern bool acct_policy_job_runnable_state(struct job_record *job_ptr)
@@ -2799,7 +2799,7 @@ extern bool acct_policy_job_runnable_state(struct job_record *job_ptr)
 }
 
 /*
- * acct_policy_job_runnable_pre_select - Determine of the specified
+ * acct_policy_job_runnable_pre_select - Determine if the specified
  *	job can execute right now or not depending upon accounting
  *	policy (e.g. running job limit for this association). If the
  *	association limits prevent the job from ever running (lowered
@@ -3608,7 +3608,7 @@ extern int acct_policy_update_pending_job(struct job_record *job_ptr)
 }
 
 /*
- * acct_policy_job_runnable - Determine of the specified job has timed
+ * acct_policy_job_runnable - Determine if the specified job has timed
  *	out based on it's QOS or association.
  */
 extern bool acct_policy_job_time_out(struct job_record *job_ptr)

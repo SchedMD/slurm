@@ -142,6 +142,13 @@ extern int task_cgroup_devices_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)
 				xfree(pids);
 			} while ((i < npids) && (cnt < MAX_MOVE_WAIT));
 
+			if (cnt < MAX_MOVE_WAIT)
+				debug3("Took %d checks before stepd pid was removed from the step cgroup.",
+				       cnt);
+			else
+				error("Pid %d is still in the step cgroup.  It might be left uncleaned after the job.",
+				      getpid());
+
 			if (xcgroup_delete(&step_devices_cg) != SLURM_SUCCESS)
                                 debug2("task/cgroup: unable to remove step "
                                        "devices : %m");

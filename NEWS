@@ -90,6 +90,14 @@ documents those changes that are of interest to users and administrators.
  -- Document that PriorityFlags option of DEPTH_OBLIVIOUS precludes the use of
     FAIR_TREE.
  -- Fix issue if an invalid message came in a Slurm daemon/command may abort.
+ -- Make it impossible to use CR_CPU* along with CR_ONE_TASK_PER_CORE. The
+    options are mutually exclusive.
+ -- ALPS - Fix scheduling when ALPS doesn't agree with Slurm on what nodes
+    are free.
+ -- When removing a partition make sure it isn't part of a reservation.
+ -- Fix seg fault if loading attempting to load non-existent burstbuffer plugin.
+ -- Fix to backfill scheduling with respect to QOS and association limits. Jobs
+    submitted to multiple partitions are most likley to be effected.
 
 * Changes in Slurm 17.02.2
 ==========================
@@ -466,6 +474,11 @@ documents those changes that are of interest to users and administrators.
  -- Fix double read lock of tres when updating gres or licenses on a job.
  -- Fix regression in 16.05.10 with respects to GrpTresMins on a QOS or
     Association.
+ -- ALPS - Fix scheduling when ALPS doesn't agree with Slurm on what nodes
+    are free.
+ -- Fix seg fault if loading attempting to load non-existent burstbuffer plugin.
+ -- Fix to backfill scheduling with respect to QOS and association limits. Jobs
+    submitted to multiple partitions are most likley to be effected.
 
 * Changes in Slurm 16.05.10-2
 =============================
