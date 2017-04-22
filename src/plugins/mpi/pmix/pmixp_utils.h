@@ -1,8 +1,8 @@
 /*****************************************************************************\
- **	pmix_utils.c - Various PMIx utility functions
+ ** pmix_utils.c - Various PMIx utility functions
  *****************************************************************************
  *  Copyright (C) 2014-2015 Artem Polyakov. All rights reserved.
- *  Copyright (C) 2015-2016 Mellanox Technologies. All rights reserved.
+ *  Copyright (C) 2015-2017 Mellanox Technologies. All rights reserved.
  *  Written by Artem Polyakov <artpol84@gmail.com, artemp@mellanox.com>.
  *
  *  This file is part of SLURM, a resource management program.
