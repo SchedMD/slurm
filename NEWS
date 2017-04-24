@@ -32,6 +32,7 @@ documents those changes that are of interest to users and administrators.
  -- sched/backfill: Fix bug related to advanced reservations and the need to
     reboot nodes to change KNL mode.
  -- Preempt plugins - fix check for 'preempt_youngest_first' option.
+ -- Preempt plugins - fix incorrect casts in preempt_youngest_first mode.
 
 * Changes in Slurm 17.02.2
 ==========================

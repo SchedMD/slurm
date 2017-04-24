@@ -200,8 +200,8 @@ static int _sort_by_prio(void *x, void *y)
 static int _sort_by_youngest(void *x, void *y)
 {
 	int rc;
-	struct job_record *j1 = (struct job_record *) x;
-	struct job_record *j2 = (struct job_record *) y;
+	struct job_record *j1 = *(struct job_record **) x;
+	struct job_record *j2 = *(struct job_record **) y;
 
 	if (j1->start_time < j2->start_time)
 		rc = 1;
