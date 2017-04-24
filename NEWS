@@ -33,6 +33,7 @@ documents those changes that are of interest to users and administrators.
     reboot nodes to change KNL mode.
  -- Preempt plugins - fix check for 'preempt_youngest_first' option.
  -- Preempt plugins - fix incorrect casts in preempt_youngest_first mode.
+ -- Preempt/job_prio - fix incorrect casts in sort function.
 
 * Changes in Slurm 17.02.2
 ==========================

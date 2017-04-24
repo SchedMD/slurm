@@ -699,8 +699,8 @@ static bool _job_prio_preemptable(struct job_record *preemptor,
 /* Sort jobs by priority. Use runtime as secondary key */
 static int _sort_by_job_prio(void *x, void *y)
 {
-	struct job_record *job_ptr1 = (struct job_record *) x;
-	struct job_record *job_ptr2 = (struct job_record *) y;
+	struct job_record *job_ptr1 = *(struct job_record **) x;
+	struct job_record *job_ptr2 = *(struct job_record **) y;
 
 	if      (job_ptr1->priority > job_ptr2->priority)
 		return 1;
