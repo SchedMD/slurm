@@ -31,6 +31,7 @@ documents those changes that are of interest to users and administrators.
  -- CRAY - Add ansible play and README.
  -- sched/backfill: Fix bug related to advanced reservations and the need to
     reboot nodes to change KNL mode.
+ -- Preempt plugins - fix check for 'preempt_youngest_first' option.
 
 * Changes in Slurm 17.02.2
 ==========================

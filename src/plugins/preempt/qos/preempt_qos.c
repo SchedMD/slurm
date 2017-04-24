@@ -68,7 +68,7 @@ extern int init(void)
 	char *sched_params;
 	verbose("preempt/qos loaded");
 	sched_params = slurm_get_sched_params();
-	if (xstrcasestr(sched_params, "preempt_youngest_order"))
+	if (xstrcasestr(sched_params, "preempt_youngest_first"))
 		youngest_order = true;
 	xfree(sched_params);
 	return SLURM_SUCCESS;
