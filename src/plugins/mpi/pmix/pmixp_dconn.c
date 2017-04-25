@@ -73,8 +73,10 @@ int pmixp_dconn_connect_do(pmixp_dconn_t *dconn, uint16_t port, void *init_msg)
 	if (slurm_conf_get_addr(nodename, &address) == SLURM_ERROR) {
 		PMIXP_ERROR("Can't find address for host "
 			    "%s, check slurm.conf", nodename);
+		xfree(nodename);
 		return SLURM_ERROR;
 	}
+	xfree(nodename);
 
 	/* need to change the port # from the slurmd's to
 	 * the provided stepd's

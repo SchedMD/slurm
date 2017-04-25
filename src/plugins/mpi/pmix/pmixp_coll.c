@@ -300,6 +300,7 @@ int pmixp_coll_init(pmixp_coll_t *coll, const pmix_proc_t *procs,
 		 */
 		p = hostlist_nth(hl, parent_id);
 		coll->parent_host = xstrdup(p);
+		coll->parent_nodeid = pmixp_info_job_hostid(coll->parent_host);
 		/* use empty hostlist here */
 		coll->all_children = hostlist_create("");
 		free(p);
@@ -583,8 +584,8 @@ static void _progress_fan_in(pmixp_coll_t *coll)
 
 	/* The root of the collective will have parent_host == NULL */
 	if (NULL != coll->parent_host) {
-		ep.type = PMIXP_EP_HNAME;
-		ep.ep.hostname = coll->parent_host;
+		ep.type = PMIXP_EP_NOIDEID;
+		ep.ep.nodeid = coll->parent_nodeid;
 		type = PMIXP_MSG_FAN_IN;
 		PMIXP_DEBUG("%s:%d: switch to PMIXP_COLL_FAN_OUT state",
 			    pmixp_info_namespace(), pmixp_info_nodeid());
@@ -625,11 +626,6 @@ static void _progress_fan_in(pmixp_coll_t *coll)
 	switch( ep.type ){
 	case PMIXP_EP_HLIST:
 		xfree(ep.ep.hostlist);
-		break;
-	case PMIXP_EP_HNAME:
-		/* hostname was a copy of parent_host
-		 * don't need to free it
-		 */
 		break;
 	default:
 		break;

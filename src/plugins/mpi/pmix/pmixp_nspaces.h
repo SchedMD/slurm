@@ -94,7 +94,7 @@ static inline hostlist_t pmixp_nspace_hostlist(pmixp_namespace_t *nsptr)
 
 hostlist_t pmixp_nspace_rankhosts(pmixp_namespace_t *nsptr,
 				  const int *ranks, size_t nranks);
-char *pmixp_nspace_resolve(const char *name, int rank);
+int pmixp_nspace_resolve(const char *name, int rank);
 
 size_t pmixp_nspace_mdx_lsize(List l);
 int pmixp_nspaces_push(Buf buf, int cnt);

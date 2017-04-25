@@ -526,9 +526,6 @@ static void _process_server_request(pmixp_base_hdr_t *hdr, void *payload)
 	char *nodename = pmixp_info_job_host(hdr->nodeid);
 	Buf buf = create_buf(payload, hdr->msgsize);
 	int rc;
-	if( NULL == nodename ){
-		goto exit;
-	}
 
 	switch (hdr->type) {
 	case PMIXP_MSG_FAN_IN:
@@ -549,7 +546,7 @@ static void _process_server_request(pmixp_base_hdr_t *hdr, void *payload)
 		PMIXP_DEBUG("FENCE collective message from node \"%s\", type = %s, seq = %d",
 			    nodename, (PMIXP_MSG_FAN_IN == hdr->type) ? "fan-in" : "fan-out",
 			    hdr->seq);
-		rc = pmixp_coll_check_seq(coll, hdr->seq, nodename);
+		rc = pmixp_coll_check_seq(coll, hdr->seq);
 		if (PMIXP_COLL_REQ_FAILURE == rc) {
 			/* this is unexepable event: either something went
 			 * really wrong or the state machine is incorrect.
@@ -585,7 +582,7 @@ static void _process_server_request(pmixp_base_hdr_t *hdr, void *payload)
 		break;
 	}
 	case PMIXP_MSG_DMDX: {
-		pmixp_dmdx_process(buf, nodename, hdr->seq);
+		pmixp_dmdx_process(buf, hdr->nodeid, hdr->seq);
 		/* buf will be free'd by pmixp_dmdx_process or the PMIx callback so
 		 * protect the data by voiding the buffer.
 		 * Use the statement below instead of (buf = NULL) to maintain
@@ -646,12 +643,13 @@ int pmixp_server_send_nb(pmixp_ep_t *ep, pmixp_srv_cmd_t type,
 	switch (ep->type) {
 	case PMIXP_EP_HLIST:
 		goto send_slurm;
-	case PMIXP_EP_HNAME:{
-		int hostid = pmixp_info_job_hostid(ep->ep.hostname);
+	case PMIXP_EP_NOIDEID:{
+		int hostid;
+		hostid = ep->ep.nodeid;
 		xassert(0 <= hostid);
 		dconn = pmixp_dconn_lock(hostid);
 		switch (pmixp_dconn_state(dconn)) {
-		case PMIXP_DIRECT_PORT_SENT:
+		case PMIXP_DIRECT_EP_SENT:
 		case PMIXP_DIRECT_CONNECTED:
 			/* keep the lock here and proceed
 			 * to the direct send
@@ -667,7 +665,7 @@ int pmixp_server_send_nb(pmixp_ep_t *ep, pmixp_srv_cmd_t type,
 			pmixp_dconn_unlock(dconn);
 			PMIXP_ERROR("Bad direct connection state: %d", (int)state);
 			xassert( (state == PMIXP_DIRECT_INIT) ||
-				 (state == PMIXP_DIRECT_PORT_SENT) ||
+				 (state == PMIXP_DIRECT_EP_SENT) ||
 				 (state == PMIXP_DIRECT_CONNECTED) );
 			abort();
 		}
@@ -677,7 +675,7 @@ int pmixp_server_send_nb(pmixp_ep_t *ep, pmixp_srv_cmd_t type,
 		PMIXP_ERROR("Bad value of the endpoint type: %d",
 			    (int)ep->type);
 		xassert( PMIXP_EP_HLIST == ep->type ||
-			 PMIXP_EP_HNAME == ep->type);
+			 PMIXP_EP_NOIDEID == ep->type);
 		abort();
 	}
 
@@ -868,7 +866,7 @@ _direct_send(pmixp_dconn_t *dconn, pmixp_ep_t *ep,
 	size_t dsize = 0;
 	int rc;
 
-	xassert(PMIXP_EP_HNAME == ep->type);
+	xassert(PMIXP_EP_NOIDEID == ep->type);
 	/* TODO: I think we can avoid locking */
 	_direct_proto_message_t *msg = xmalloc(sizeof(*msg));
 	msg->sent_cb = complete_cb;
@@ -1038,7 +1036,7 @@ static int _slurm_send(pmixp_ep_t *ep, pmixp_base_hdr_t bhdr, Buf buf)
 	addr = pmixp_info_srv_usock_path();
 
 	hdr.rport = 0;
-	if (pmixp_info_srv_direct_conn() && PMIXP_EP_HNAME == ep->type) {
+	if (pmixp_info_srv_direct_conn() && PMIXP_EP_NOIDEID == ep->type) {
 		hdr.rport = pmixp_info_srv_tsock_port();
 	}
 
@@ -1051,11 +1049,13 @@ static int _slurm_send(pmixp_ep_t *ep, pmixp_base_hdr_t bhdr, Buf buf)
 		rc = pmixp_stepd_send(ep->ep.hostlist, addr,
 				 data, dsize, 500, 7, 0);
 		break;
-	case PMIXP_EP_HNAME:
-		hostlist = ep->ep.hostname;
-		rc = pmixp_p2p_send(ep->ep.hostname, addr,
-			       data, dsize, 500, 7, 0);
+	case PMIXP_EP_NOIDEID: {
+		char *nodename = pmixp_info_job_host(ep->ep.nodeid);
+		rc = pmixp_p2p_send(nodename, addr, data, dsize,
+				    500, 7, 0);
+		xfree(nodename);
 		break;
+	}
 	default:
 		PMIXP_ERROR("Bad value of the EP type: %d", (int)ep->type);
 		abort();
@@ -1190,7 +1190,7 @@ void pmixp_server_run_pp()
 		count = pmixp_server_pp_count() + iters/10;
 		while( pmixp_server_pp_count() < count ){
 			int cur_count = pmixp_server_pp_count();
-			pmixp_server_pp_send(pmixp_info_job_host(1), i);
+			pmixp_server_pp_send(1, i);
 			while( cur_count == pmixp_server_pp_count() ){
 				usleep(1);
 			}
@@ -1229,16 +1229,16 @@ void pingpong_complete(int rc, pmixp_srv_cb_context_t ctx, void *data)
 	//    PMIXP_ERROR("Send complete: %d %lf", d->size, GET_TS - d->start);
 }
 
-int pmixp_server_pp_send(const char *host, int size)
+int pmixp_server_pp_send(int nodeid, int size)
 {
 	Buf buf = pmixp_server_buf_new();
 	int rc;
 	pmixp_ep_t ep;
-    struct pp_cbdata *cbdata = xmalloc(sizeof(*cbdata));
+	struct pp_cbdata *cbdata = xmalloc(sizeof(*cbdata));
 
 	grow_buf(buf, size);
-	ep.type = PMIXP_EP_HNAME;
-	ep.ep.hostname = (char*)host;
+	ep.type = PMIXP_EP_NOIDEID;
+	ep.ep.nodeid = nodeid;
 	cbdata->buf = buf;
 	cbdata->size = size;
 	set_buf_offset(buf,get_buf_offset(buf) + size);

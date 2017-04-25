@@ -77,6 +77,7 @@ typedef struct {
 	uint32_t nodeid;
 	/* tree structure */
 	char *parent_host;
+	int parent_nodeid;
 	hostlist_t all_children;
 	uint32_t children_cnt;
 
@@ -169,8 +170,7 @@ static inline void pmixp_coll_set_callback(pmixp_coll_t *coll,
  *    (e) at FAN-OUT waiting for the fan-out msg while receiving next fan-in message
  *        from one of our children (coll->seq + 1 == child_seq).
  */
-static inline int pmixp_coll_check_seq(pmixp_coll_t *coll, uint32_t seq,
-		char *nodename)
+static inline int pmixp_coll_check_seq(pmixp_coll_t *coll, uint32_t seq)
 {
 	if (coll->seq == seq) {
 		/* accept this message */

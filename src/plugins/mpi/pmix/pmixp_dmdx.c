@@ -62,7 +62,8 @@ typedef struct {
 typedef struct {
 	uint32_t seq_num;
 	pmix_proc_t proc;
-	char *sender_host, *sender_ns;
+    char *sender_ns;
+    int sender_nodeid;
 	int rank;
 } dmdx_caddy_t;
 
@@ -71,9 +72,6 @@ void _dmdx_free_caddy(dmdx_caddy_t *caddy)
 	if (NULL == caddy) {
 		/* nothing to do */
 		return;
-	}
-	if (NULL != caddy->sender_host) {
-		xfree(caddy->sender_host);
 	}
 	if (NULL != caddy->sender_ns) {
 		xfree(caddy->sender_ns);
@@ -84,7 +82,7 @@ void _dmdx_free_caddy(dmdx_caddy_t *caddy)
 static List _dmdx_requests;
 static uint32_t _dmdx_seq_num = 1;
 
-static void _respond_with_error(int seq_num, char *sender_host,
+static void _respond_with_error(int seq_num, int nodeid,
 				char *sender_ns, int status);
 
 int pmixp_dmdx_init(void)
@@ -180,15 +178,15 @@ static int _read_info(Buf buf, char **ns, int *rank,
 	return SLURM_SUCCESS;
 }
 
-static void _respond_with_error(int seq_num, char *sender_host,
+static void _respond_with_error(int seq_num, int nodeid,
 				char *sender_ns, int status)
 {
 	Buf buf = create_buf(NULL, 0);
 	pmixp_ep_t ep;
 	int rc;
 
-	ep.type = PMIXP_EP_HNAME;
-	ep.ep.hostlist = sender_host;
+	ep.type = PMIXP_EP_NOIDEID;
+	ep.ep.nodeid = nodeid;
 
 	/* rank doesn't matter here, don't send it */
 	_setup_header(buf, DMDX_RESPONSE, sender_ns, -1, status);
@@ -197,8 +195,10 @@ static void _respond_with_error(int seq_num, char *sender_host,
 	rc = pmixp_server_send_nb(&ep, PMIXP_MSG_DMDX, seq_num, buf,
 				  pmixp_server_sent_buf_cb, buf);
 	if (SLURM_SUCCESS != rc) {
+		char *nodename = pmixp_info_job_host(nodeid);
 		PMIXP_ERROR("Cannot send direct modex error" " response to %s",
-				sender_host);
+				nodename);
+		xfree(nodename);
 	}
 }
 
@@ -218,14 +218,15 @@ static void _dmdx_pmix_cb(pmix_status_t status, char *data, size_t sz,
 	packmem(data, sz, buf);
 
 	/* send the request */
-	ep.type = PMIXP_EP_HNAME;
-	ep.ep.hostname = caddy->sender_host;
+	ep.type = PMIXP_EP_NOIDEID;
+	ep.ep.nodeid = caddy->sender_nodeid;
 	rc = pmixp_server_send_nb(&ep, PMIXP_MSG_DMDX, caddy->seq_num, buf,
 				  pmixp_server_sent_buf_cb, buf);
 	if (SLURM_SUCCESS != rc) {
+		char *nodename = pmixp_info_job_host(caddy->sender_nodeid);
 		/* not much we can do here. Caller will react by timeout */
 		PMIXP_ERROR("Cannot send direct modex response to %s",
-				caddy->sender_host);
+			    nodename);
 	}
 	_dmdx_free_caddy(caddy);
 }
@@ -240,8 +241,8 @@ int pmixp_dmdx_get(const char *nspace, int rank,
 	pmixp_ep_t ep;
 
 	/* need to send the request */
-	ep.type = PMIXP_EP_HNAME;
-	ep.ep.hostname = pmixp_nspace_resolve(nspace, rank);
+	ep.type = PMIXP_EP_NOIDEID;
+	ep.ep.nodeid = pmixp_nspace_resolve(nspace, rank);
 
 	buf = pmixp_server_buf_new();
 	/* setup message header */
@@ -268,19 +269,18 @@ int pmixp_dmdx_get(const char *nspace, int rank,
 
 	/* check the return status */
 	if (SLURM_SUCCESS != rc) {
+		char *nodename = pmixp_info_job_host(ep.ep.nodeid);
 		PMIXP_ERROR("Cannot send direct modex request to %s, size %d",
-			    ep.ep.hostname, get_buf_offset(buf));
+			    nodename, get_buf_offset(buf));
+		xfree(nodename);
 		cbfunc(PMIX_ERROR, NULL, 0, cbdata, NULL, NULL);
 		rc = SLURM_ERROR;
 	}
 
-	/* cleanup */
-	xfree(ep.ep.hostname);
-
 	return rc;
 }
 
-static void _dmdx_req(Buf buf, char *sender_host, uint32_t seq_num)
+static void _dmdx_req(Buf buf, int nodeid, uint32_t seq_num)
 {
 	int rank, rc;
 	int status;
@@ -290,28 +290,34 @@ static void _dmdx_req(Buf buf, char *sender_host, uint32_t seq_num)
 
 	rc = _read_info(buf, &ns, &rank, &sender_ns,&status);
 	if (SLURM_SUCCESS != rc) {
+		char *nodename = pmixp_info_job_host(nodeid);
 		/* there is not much we can do here, but data corruption shouldn't happen */
 		PMIXP_ERROR("Fail to unpack header data in" " request from %s, rc = %d",
-			    sender_host, rc);
+			    nodename, rc);
+		xfree(nodename);
 		goto exit;
 	}
 
 	if (0 != xstrcmp(ns, pmixp_info_namespace())) {
 		/* request for namespase that is not controlled by this daemon
 		 * considered as error. This may change in future.  */
+		char *nodename = pmixp_info_job_host(nodeid);
 		PMIXP_ERROR("Bad request from %s: asked for" " nspace = %s, mine is %s",
-			    sender_host, ns, pmixp_info_namespace());
-		_respond_with_error(seq_num, sender_host, sender_ns,
-				PMIX_ERR_INVALID_NAMESPACE);
+			    nodename, ns, pmixp_info_namespace());
+		_respond_with_error(seq_num, nodeid, sender_ns,
+				    PMIX_ERR_INVALID_NAMESPACE);
+		xfree(nodename);
 		goto exit;
 	}
 
 	nsptr = pmixp_nspaces_local();
 	if (nsptr->ntasks <= rank) {
+		char *nodename = pmixp_info_job_host(nodeid);
 		PMIXP_ERROR("Bad request from %s: nspace \"%s\"" " has only %d ranks, asked for %d",
-			    sender_host, ns, nsptr->ntasks, rank);
-		_respond_with_error(seq_num, sender_host, sender_ns,
+			    nodename, ns, nsptr->ntasks, rank);
+		_respond_with_error(seq_num, nodeid, sender_ns,
 				PMIX_ERR_BAD_PARAM);
+		xfree(nodename);
 		goto exit;
 	}
 
@@ -325,8 +331,7 @@ static void _dmdx_req(Buf buf, char *sender_host, uint32_t seq_num)
 	caddy->proc.rank = rank;
 
 	/* sender_host was passed from outside - copy it */
-	caddy->sender_host = xstrdup(sender_host);
-	sender_host = NULL; /* protect the data */
+	caddy->sender_nodeid = nodeid;
 
 	/* sender_ns is a pointer inside incoming buffer */
 	caddy->sender_ns = xstrdup(sender_ns);
@@ -335,12 +340,14 @@ static void _dmdx_req(Buf buf, char *sender_host, uint32_t seq_num)
 	rc = PMIx_server_dmodex_request(&caddy->proc, _dmdx_pmix_cb,
 			(void *)caddy);
 	if (PMIX_SUCCESS != rc) {
-		PMIXP_ERROR("Can't request modex data from libpmix-server," "requesting host = %s, nspace = %s, rank = %d, rc = %d",
-			    caddy->sender_host, caddy->proc.nspace,
+		char *nodename = pmixp_info_job_host(nodeid);
+		PMIXP_ERROR("Can't request modex data from libpmix-server,"
+			    "requesting host = %s, nspace = %s, rank = %d, rc = %d",
+			    nodename, caddy->proc.nspace,
 			    caddy->proc.rank, rc);
-		_respond_with_error(seq_num, caddy->sender_host,
-				caddy->sender_ns, rc);
+		_respond_with_error(seq_num, nodeid, caddy->sender_ns, rc);
 		_dmdx_free_caddy(caddy);
+		xfree(nodename);
 	}
 exit:
 	/* we don't need this buffer anymore */
@@ -357,7 +364,7 @@ static int _dmdx_req_cmp(void *x, void *key)
 	return (req->seq_num == seq_num);
 }
 
-static void _dmdx_resp(Buf buf, char *sender_host, uint32_t seq_num)
+static void _dmdx_resp(Buf buf, int nodeid, uint32_t seq_num)
 {
 	dmdx_req_info_t *req;
 	int rank, rc = SLURM_SUCCESS;
@@ -370,11 +377,13 @@ static void _dmdx_resp(Buf buf, char *sender_host, uint32_t seq_num)
 	ListIterator it = list_iterator_create(_dmdx_requests);
 	req = (dmdx_req_info_t *)list_find(it, _dmdx_req_cmp, &seq_num);
 	if (NULL == req) {
+		char *nodename = pmixp_info_job_host(nodeid);
 		/* We haven't sent this request! */
 		PMIXP_ERROR("Received DMDX response with bad " "seq_num=%d from %s!",
-			    seq_num, sender_host);
+			    seq_num, nodename);
 		list_iterator_destroy(it);
 		rc = SLURM_ERROR;
+		xfree(nodename);
 		goto exit;
 	}
 
@@ -412,21 +421,24 @@ exit:
 	 * anyway. We've notified libpmix, that's enough */
 }
 
-void pmixp_dmdx_process(Buf buf, char *host, uint32_t seq)
+void pmixp_dmdx_process(Buf buf, int nodeid, uint32_t seq)
 {
 	dmdx_type_t type;
 	_read_type(buf, &type);
 
 	switch (type) {
 	case DMDX_REQUEST:
-		_dmdx_req(buf, host, seq);
+	_dmdx_req(buf, nodeid, seq);
 		break;
 	case DMDX_RESPONSE:
-		_dmdx_resp(buf, host, seq);
+	_dmdx_resp(buf, nodeid, seq);
 		break;
-	default:
-		PMIXP_ERROR("Bad request from host %s. Skip", host);
+	default:{
+		char *nodename = pmixp_info_job_host(nodeid);
+		PMIXP_ERROR("Bad request from host %s. Skip", nodename);
+		xfree(nodename);
 		break;
+	}
 	}
 }
 

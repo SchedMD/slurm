@@ -155,7 +155,7 @@ hostlist_t pmixp_nspace_rankhosts(pmixp_namespace_t *nsptr, const int *ranks,
 	return hl;
 }
 
-char *pmixp_nspace_resolve(const char *name, int rank)
+int pmixp_nspace_resolve(const char *name, int rank)
 {
 	pmixp_namespace_t *nsptr;
 	char *tmp, *ret;
@@ -178,10 +178,7 @@ char *pmixp_nspace_resolve(const char *name, int rank)
 	/* `hostlist_nth()` returns malloc'd string,
 	 * turn it to the xmalloc'd one to avoid confusion!
 	 */
-	tmp = hostlist_nth(nsptr->hl, nsptr->task_map[rank]);
-	ret = xstrdup(tmp);
-	free(tmp);
-	return ret;
+	return nsptr->task_map[rank];
 }
 
 size_t pmixp_nspace_mdx_lsize(List l)

@@ -44,7 +44,7 @@
 typedef enum {
 	PMIXP_DIRECT_NONE, /* shouldn't be used in this state */
 	PMIXP_DIRECT_INIT,
-	PMIXP_DIRECT_PORT_SENT,
+	PMIXP_DIRECT_EP_SENT,
 	PMIXP_DIRECT_CONNECTED
 } pmixp_dconn_state_t;
 
@@ -127,12 +127,13 @@ pmixp_dconn_req_sent(pmixp_dconn_t *dconn)
 		xassert(PMIXP_DIRECT_INIT == dconn->state);
 		abort();
 	}
-	dconn->state = PMIXP_DIRECT_PORT_SENT;
+	dconn->state = PMIXP_DIRECT_EP_SENT;
 }
 
 static inline int
 pmixp_dconn_send(pmixp_dconn_t *dconn, void *msg)
 {
+
 	int rc = pmixp_io_send_enqueue(&dconn->eng, msg);
 	if( SLURM_SUCCESS != rc) {
 		char *nodename = pmixp_info_job_host(dconn->nodeid);
@@ -150,7 +151,7 @@ static inline pmixp_dconn_t *
 pmixp_dconn_accept(int nodeid, int fd)
 {
 	pmixp_dconn_t *dconn = pmixp_dconn_lock(nodeid);
-	if( PMIXP_DIRECT_PORT_SENT == pmixp_dconn_state(dconn) ){
+	if( PMIXP_DIRECT_EP_SENT == pmixp_dconn_state(dconn) ){
 		/* we request this connection some time ago
 		 * and now we finishing it's establishment
 		 */
@@ -177,7 +178,7 @@ pmixp_dconn_connect(int nodeid, uint16_t port, void *init_msg)
 	switch( pmixp_dconn_state(dconn) ){
 	case PMIXP_DIRECT_INIT:
 		break;
-	case PMIXP_DIRECT_PORT_SENT:
+	case PMIXP_DIRECT_EP_SENT:
 		if( nodeid < pmixp_info_nodeid()){
 			break;
 		} else {
@@ -207,7 +208,7 @@ pmixp_dconn_connect(int nodeid, uint16_t port, void *init_msg)
 		 * if it will always be failing - we will always use
 		 * SLURM's protocol
 		 */
-		char *nodename =  pmixp_info_job_host(nodeid);
+		char *nodename = pmixp_info_job_host(nodeid);
 		xassert(NULL != nodename);
 		if (NULL == nodename) {
 			PMIXP_ERROR("Bad nodeid = %d in the incoming message", nodeid);
@@ -229,7 +230,7 @@ pmixp_dconn_disconnect(pmixp_dconn_t *dconn)
 {
 	switch( pmixp_dconn_state(dconn) ){
 	case PMIXP_DIRECT_INIT:
-	case PMIXP_DIRECT_PORT_SENT:
+	case PMIXP_DIRECT_EP_SENT:
 		break;
 	case PMIXP_DIRECT_CONNECTED:{
 		int fd = pmixp_io_detach(&dconn->eng);

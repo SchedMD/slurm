@@ -54,14 +54,14 @@ typedef enum {
 	/* use non as to check non-init case */
 	PMIXP_EP_NONE = 0,
 	PMIXP_EP_HLIST,
-	PMIXP_EP_HNAME
+	PMIXP_EP_NOIDEID
 } pmixp_ep_type_t;
 
 typedef struct {
 	pmixp_ep_type_t type;
 	union {
 		char *hostlist;
-		char* hostname;
+		int nodeid;
 	} ep;
 } pmixp_ep_t;
 
