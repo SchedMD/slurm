@@ -5993,10 +5993,7 @@ static int _slurm_rpc_sib_job_start(uint32_t uid, slurm_msg_t *msg,
 				    bool send_resp)
 {
 	int rc;
-	struct job_record *job_ptr;
 	sib_msg_t *sib_msg = msg->data;
-	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 
 	if (!msg->conn) {
 		error("Security violation, SIB_JOB_START RPC from uid=%d", uid);
@@ -6005,18 +6002,8 @@ static int _slurm_rpc_sib_job_start(uint32_t uid, slurm_msg_t *msg,
 		return ESLURM_ACCESS_DENIED;
 	}
 
-	lock_slurmctld(job_write_lock);
-
-	if (!(job_ptr = find_job_record(sib_msg->job_id))) {
-		error("Unable to find federated job for id:%u",
-		      sib_msg->job_id);
-		rc = SLURM_ERROR;
-	} else {
-		rc = fed_mgr_job_start(job_ptr, sib_msg->cluster_id,
-				       sib_msg->start_time);
-	}
-
-	unlock_slurmctld(job_write_lock);
+	rc = fed_mgr_job_lock_start(sib_msg->job_id, sib_msg->start_time,
+				    sib_msg->cluster_id, NULL);
 
 	if (send_resp)
 		slurm_send_rc_msg(msg, rc);
@@ -6131,10 +6118,7 @@ static int _slurm_rpc_sib_job_complete(uint32_t uid, slurm_msg_t *msg,
 static void _slurm_rpc_sib_job_lock(uint32_t uid, slurm_msg_t *msg)
 {
 	int rc;
-	struct job_record *job_ptr;
 	sib_msg_t *sib_msg = msg->data;
-	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 
 	if (!msg->conn) {
 		error("Security violation, SIB_JOB_LOCK RPC from uid=%d",
@@ -6143,17 +6127,7 @@ static void _slurm_rpc_sib_job_lock(uint32_t uid, slurm_msg_t *msg)
 		return;
 	}
 
-	lock_slurmctld(job_write_lock);
-
-	if (!(job_ptr = find_job_record(sib_msg->job_id))) {
-		error("Unable to find federated job for id:%d",
-		      sib_msg->job_id);
-		rc = SLURM_ERROR;
-	} else {
-		rc = fed_mgr_job_lock(job_ptr, sib_msg->cluster_id);
-	}
-
-	unlock_slurmctld(job_write_lock);
+	rc = fed_mgr_job_lock_set(sib_msg->job_id, sib_msg->cluster_id);
 
 	slurm_send_rc_msg(msg, rc);
 }
@@ -6161,10 +6135,7 @@ static void _slurm_rpc_sib_job_lock(uint32_t uid, slurm_msg_t *msg)
 static void _slurm_rpc_sib_job_unlock(uint32_t uid, slurm_msg_t *msg)
 {
 	int rc;
-	struct job_record *job_ptr;
 	sib_msg_t *sib_msg = msg->data;
-	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 
 	if (!msg->conn) {
 		error("Security violation, SIB_JOB_UNLOCK RPC from uid=%d",
@@ -6173,17 +6144,7 @@ static void _slurm_rpc_sib_job_unlock(uint32_t uid, slurm_msg_t *msg)
 		return;
 	}
 
-	lock_slurmctld(job_write_lock);
-
-	if (!(job_ptr = find_job_record(sib_msg->job_id))) {
-		error("Unable to find federated job for id:%d",
-		      sib_msg->job_id);
-		rc = SLURM_ERROR;
-	} else {
-		rc = fed_mgr_job_unlock(job_ptr, sib_msg->cluster_id);
-	}
-
-	unlock_slurmctld(job_write_lock);
+	rc = fed_mgr_job_lock_unset(sib_msg->job_id, sib_msg->cluster_id);
 
 	slurm_send_rc_msg(msg, rc);
 }

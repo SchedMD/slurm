@@ -65,8 +65,15 @@ extern int       fed_mgr_job_cancel(struct job_record *job_ptr, uint16_t signal,
 				    uint16_t flags, uid_t uid);
 extern int       fed_mgr_job_complete(struct job_record *job_ptr,
 				      uint32_t return_code, time_t start_time);
+extern bool      fed_mgr_job_is_locked(uint32_t job_id);
+extern bool      fed_mgr_job_is_self_owned(uint32_t job_id);
 extern int       fed_mgr_job_lock(struct job_record *job_ptr,
 				  uint32_t cluster_id);
+extern int       fed_mgr_job_lock_set(uint32_t job_id, uint32_t cluster_id);
+extern int       fed_mgr_job_lock_unset(uint32_t job_id, uint32_t cluster_id);
+extern int       fed_mgr_job_lock_start(uint32_t job_id, time_t start_time,
+					uint32_t cluster_id,
+					struct job_record *job_ptr);
 extern int       fed_mgr_job_unlock(struct job_record *job_ptr,
 				    uint32_t cluster_id);
 extern int       fed_mgr_job_requeue(struct job_record *job_ptr);
@@ -79,6 +86,7 @@ extern int       fed_mgr_job_revoke_sibs(struct job_record *job_ptr);
 extern int       fed_mgr_job_start(struct job_record *job_ptr,
 				   uint32_t cluster_id, time_t start_time);
 extern int       fed_mgr_remove_active_sibling(uint32_t job_id, char *sib_name);
+extern void      fed_mgr_remove_fed_job_info(uint32_t job_id);
 extern int       fed_mgr_sib_will_run(slurm_msg_t *msg,
 				      job_desc_msg_t *job_desc, uid_t uid,
 				      will_run_response_msg_t **resp);

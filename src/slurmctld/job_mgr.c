@@ -8325,6 +8325,9 @@ static void _list_delete_job(void *job_entry)
 	xassert (job_ptr->magic == JOB_MAGIC);
 	job_ptr->magic = 0;	/* make sure we don't delete record twice */
 
+	/* Remove record from fed_job_list */
+	fed_mgr_remove_fed_job_info(job_ptr->job_id);
+
 	/* Remove the record from job hash table */
 	job_pptr = &job_hash[JOB_HASH_INX(job_ptr->job_id)];
 	while ((job_pptr != NULL) && (*job_pptr != NULL) &&
@@ -13717,13 +13720,12 @@ extern void job_completion_logger(struct job_record *job_ptr, bool requeue)
 		job_ptr->job_state &= ~JOB_CONFIGURING;
 
 		/* make sure all parts of the job are notified
-		 * Fed Jobs: only signal the srun from where the was running or
-		 * from the origin if the job wasn't running. */
+		 * Fed Jobs: only signal the srun from where the job is running
+		 * or from the origin if the job wasn't running. */
 		if (!job_ptr->fed_details ||
-		    (fed_mgr_cluster_rec && (job_ptr->fed_details->cluster_lock
-					     == fed_mgr_cluster_rec->fed.id)) ||
+		    fed_mgr_job_is_self_owned(job_ptr->job_id) ||
 		    (fed_mgr_is_origin_job(job_ptr) &&
-		     !job_ptr->fed_details->cluster_lock))
+		     !fed_mgr_job_is_locked(job_ptr->job_id)))
 			srun_job_complete(job_ptr);
 
 		/* mail out notifications of completion */

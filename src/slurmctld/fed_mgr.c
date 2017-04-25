@@ -81,6 +81,13 @@ static pthread_mutex_t open_send_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t update_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+static List fed_job_list        = NULL;
+static List fed_job_update_list = NULL;
+static pthread_t       fed_job_update_thread_id = (pthread_t) 0;
+static pthread_mutex_t fed_job_list_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t  job_update_cond    = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t job_update_mutex   = PTHREAD_MUTEX_INITIALIZER;
+
 /* structs to pass to threads */
 typedef struct {
 	will_run_response_msg_t *resp;
@@ -113,6 +120,39 @@ typedef struct {
 	uint16_t   msg_type;
 } agent_queue_t;
 
+enum fed_job_update_type {
+	FED_JOB_NONE = 0,
+	FED_JOB_COMPLETE,
+	FED_JOB_REMOVE_ACTIVE_SIB_BIT,
+	FED_JOB_START,
+	FED_JOB_SUBMIT_BATCH,
+	FED_JOB_SUBMIT_INT,
+	FED_JOB_UPDATE,
+};
+
+typedef struct {
+	uint32_t        cluster_lock;
+	uint32_t        job_id;
+	bool            requeue;
+	uint32_t        return_code;
+	uint64_t        siblings_active;
+	uint64_t        siblings_viable;
+	char           *siblings_str;
+	time_t          start_time;
+	char           *submit_cluster;
+	job_desc_msg_t *submit_desc;
+	uint16_t        submit_proto_ver;
+	uint32_t        type;
+	uid_t           uid;
+} fed_job_update_info_t;
+
+typedef struct {
+	uint32_t        cluster_lock;
+	uint32_t        job_id;
+	uint64_t        siblings_active;
+	uint64_t        siblings_viable;
+} fed_job_info_t;
+
 /* Local Structs */
 typedef struct {
 	job_info_msg_t *job_info_msg;
@@ -128,6 +168,25 @@ extern int _persist_load_jobs(slurmdb_cluster_rec_t *conn, List jobids,
 static uint64_t _get_all_sibling_bits();
 static int _validate_cluster_names(char *clusters, uint64_t *cluster_bitmap);
 static void _leave_federation(void);
+
+static char *_job_update_type_str(enum fed_job_update_type type)
+{
+	switch (type) {
+	case FED_JOB_START:
+		return "FED_JOB_START";
+	default:
+		return "?";
+	}
+}
+
+static void _append_job_update(fed_job_update_info_t *job_update_info)
+{
+	list_append(fed_job_update_list, job_update_info);
+
+	slurm_mutex_lock(&job_update_mutex);
+	slurm_cond_broadcast(&job_update_cond);
+	slurm_mutex_unlock(&job_update_mutex);
+}
 
 /* Return true if communication failure should be logged. Only log failures
  * every 10 minutes to avoid filling logs */
@@ -1032,6 +1091,9 @@ static int _persist_fed_job_revoke(slurmdb_cluster_rec_t *conn, uint32_t job_id,
 /*
  * Grab the fed lock on the sibling job.
  *
+ * This message doesn't need to be queued because the other side just locks the
+ * fed_job_list, checks and gets out -- doesn't need the internal locks.
+ *
  * IN conn       - sibling connection
  * IN job_id     - the job's id
  * IN cluster_id - cluster id of the cluster locking
@@ -1085,6 +1147,9 @@ end_it:
 
 /*
  * Tell the origin cluster that the job was started
+ *
+ * This message is queued up as an rpc and a fed_job_update so that it can
+ * cancel the siblings without holding up the internal locks.
  *
  * IN conn       - sibling connection
  * IN job_id     - the job's id
@@ -1284,6 +1349,66 @@ static int _find_sibling_by_id(void *x, void *key)
 	return 0;
 }
 
+static int _delete_fed_job_info_by_id(void *object, void *arg)
+{
+	fed_job_info_t *job_info = (fed_job_info_t *)object;
+	uint32_t job_id          = *(uint32_t *)arg;
+
+	if (job_info->job_id == job_id)
+		return true;
+
+	return false;
+}
+
+extern void fed_mgr_remove_fed_job_info(uint32_t job_id)
+{
+	slurm_mutex_lock(&fed_job_list_mutex);
+
+	if (fed_job_list)
+		list_delete_all(fed_job_list, _delete_fed_job_info_by_id,
+				&job_id);
+
+	slurm_mutex_unlock(&fed_job_list_mutex);
+}
+
+static int _list_find_fed_job_info_by_jobid(void *x, void *key)
+{
+	fed_job_info_t *job_info = (fed_job_info_t *)x;
+	uint32_t        job_id   = *(uint32_t *)key;
+
+	if (job_info->job_id == job_id)
+		return 1;
+
+	return 0;
+}
+
+static fed_job_info_t *_find_fed_job_info(uint32_t job_id)
+{
+	return list_find_first(fed_job_list, _list_find_fed_job_info_by_jobid,
+			       &job_id);
+}
+
+static void _destroy_fed_job_info(void *object)
+{
+	fed_job_info_t *job_info = (fed_job_info_t *)object;
+
+	if (job_info) {
+		xfree(job_info);
+	}
+}
+
+static void _destroy_fed_job_update_info(void *object)
+{
+	fed_job_update_info_t *job_update_info =
+		(fed_job_update_info_t *)object;
+
+	if (job_update_info) {
+		xfree(job_update_info->submit_cluster);
+		slurm_free_job_desc_msg(job_update_info->submit_desc);
+		xfree(job_update_info);
+	}
+}
+
 extern slurmdb_cluster_rec_t *fed_mgr_get_cluster_by_id(uint32_t id)
 {
 	return list_find_first(fed_mgr_fed_rec->cluster_list,
@@ -1379,6 +1504,145 @@ bitstr_t *_parse_resp_ctld_mult(slurm_msg_t *resp_msg)
 	}
 
 	return success_bits;
+}
+
+/*
+ * Job has been started, revoke the sibling jobs.
+ *
+ * This is the common code between queued and local job starts.
+ * This can be done when the job is starting on the origin cluster without
+ * queueing because the cluster already has the job write lock and fed read
+ * lock.
+ *
+ * Must have fed_job_list mutex locked and job write_lock set.
+ */
+static void _fed_job_start_revoke(fed_job_info_t *job_info,
+				  struct job_record *job_ptr, time_t start_time)
+{
+	uint32_t cluster_lock;
+	uint64_t old_active;
+	uint64_t old_viable;
+
+	cluster_lock = job_info->cluster_lock;
+	old_active   = job_info->siblings_active;
+	old_viable   = job_info->siblings_viable;
+
+	job_ptr->fed_details->cluster_lock = cluster_lock;
+	job_ptr->fed_details->siblings_active =
+		job_info->siblings_active =
+		FED_SIBLING_BIT(cluster_lock);
+	update_job_fed_details(job_ptr);
+
+	if (old_active & ~FED_SIBLING_BIT(cluster_lock)) {
+		/* There are siblings that need to be removed */
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+			info("%s: %d is running on cluster id %d, revoking remote siblings (active:%"PRIu64" viable:%"PRIu64")",
+			     __func__, job_info->job_id, cluster_lock,
+			     old_active, old_viable);
+
+		_revoke_sibling_jobs(job_ptr->job_id, cluster_lock,
+				     old_active, start_time);
+	}
+}
+
+static void _handle_fed_job_start(fed_job_update_info_t *job_update_info)
+{
+	fed_job_info_t *job_info;
+	struct job_record *job_ptr;
+
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
+
+	lock_slurmctld(job_write_lock);
+	if (!(job_ptr = find_job_record(job_update_info->job_id))) {
+		error("%s: failed to find job_record for fed job_id %d",
+		      __func__, job_update_info->job_id);
+		unlock_slurmctld(job_write_lock);
+		return;
+	}
+
+	slurm_mutex_lock(&fed_job_list_mutex);
+	if (!(job_info =
+	      _find_fed_job_info(job_update_info->job_id))) {
+		error("%s: failed to find fed job info for fed job_id %d",
+		      __func__, job_update_info->job_id);
+		slurm_mutex_unlock(&fed_job_list_mutex);
+		unlock_slurmctld(job_write_lock);
+		return;
+	}
+
+	_fed_job_start_revoke(job_info, job_ptr, job_update_info->start_time);
+
+	/* Let go of mutex now. fed_mgr_job_revoke->job_completion_logger can
+	 * lock the mutex to see if the job is locked or not. */
+	slurm_mutex_unlock(&fed_job_list_mutex);
+
+	if (job_info->cluster_lock != fed_mgr_cluster_rec->fed.id) {
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+			info("%s: %d is running remotely, revoking origin tracking job",
+			     __func__, job_info->job_id);
+
+		/* leave as pending so that it will stay around */
+		fed_mgr_job_revoke(job_ptr, false, 0,
+				   job_update_info->start_time);
+	}
+
+	unlock_slurmctld(job_write_lock);
+}
+
+static int _foreach_fed_job_update_info(fed_job_update_info_t *job_update_info)
+{
+	if (!fed_mgr_cluster_rec) {
+		info("Not part of federation anymore, not performing fed job updates");
+		return SLURM_SUCCESS;
+	}
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+		info("%s: job_id:%u type:%s",
+		     __func__, job_update_info->job_id,
+		     _job_update_type_str(job_update_info->type));
+
+	switch (job_update_info->type) {
+	case FED_JOB_START:
+		_handle_fed_job_start(job_update_info);
+		break;
+	default:
+		error("Invalid fed_job type: %d jobid: %u",
+		      job_update_info->type, job_update_info->job_id);
+	}
+
+	return SLURM_SUCCESS;
+}
+
+/* Start a thread to manage queued sibling requests */
+static void *_fed_job_update_thread(void *arg)
+{
+	struct timespec ts = {0, 0};
+	fed_job_update_info_t *job_update_info;
+
+#if HAVE_SYS_PRCTL_H
+	if (prctl(PR_SET_NAME, "fed_jobs", NULL, NULL, NULL) < 0) {
+		error("%s: cannot set my name to %s %m", __func__, "fed_jobs");
+	}
+#endif
+
+	while (!slurmctld_config.shutdown_time) {
+		slurm_mutex_lock(&job_update_mutex);
+		ts.tv_sec  = time(NULL) + 2;
+		pthread_cond_timedwait(&job_update_cond,
+				       &job_update_mutex, &ts);
+		slurm_mutex_unlock(&job_update_mutex);
+
+		if (slurmctld_config.shutdown_time)
+			break;
+
+		while ((job_update_info = list_pop(fed_job_update_list))) {
+			_foreach_fed_job_update_info(job_update_info);
+			_destroy_fed_job_update_info(job_update_info);
+		}
+	}
+
+	return NULL;
 }
 
 /* Start a thread to manage queued agent requests */
@@ -1561,15 +1825,23 @@ end_it:
 	return NULL;
 }
 
-static void _spawn_agent_thread(void)
+static void _spawn_threads(void)
 {
 	pthread_attr_t thread_attr;
 
-	slurm_mutex_lock(&agent_mutex);
 	slurm_attr_init(&thread_attr);
+
+	slurm_mutex_lock(&agent_mutex);
 	if (pthread_create(&agent_thread_id, &thread_attr, _agent_thread, NULL))
 		fatal("pthread_create error %m");
 	slurm_mutex_unlock(&agent_mutex);
+
+	slurm_mutex_lock(&job_update_mutex);
+	if (pthread_create(&fed_job_update_thread_id, &thread_attr,
+			   _fed_job_update_thread, NULL))
+		fatal("pthread_create error %m");
+	slurm_mutex_unlock(&job_update_mutex);
+
 	slurm_attr_destroy(&thread_attr);
 }
 
@@ -1590,8 +1862,13 @@ extern int fed_mgr_init(void *db_conn)
 	if (!association_based_accounting)
 		goto end_it;
 
+	if (!fed_job_list)
+		fed_job_list = list_create(_destroy_fed_job_info);
+	if (!fed_job_update_list)
+		fed_job_update_list = list_create(_destroy_fed_job_update_info);
+
 	slurm_persist_conn_recv_server_init();
-	_spawn_agent_thread();
+	_spawn_threads();
 
 	if (running_cache) {
 		debug("Database appears down, reading federations from state file.");
@@ -2947,7 +3224,10 @@ extern int fed_mgr_job_lock(struct job_record *job_ptr, uint32_t cluster_id)
 	     FED_SIBLING_BIT(cluster_id)) &&
 	    (!(job_ptr->fed_details->siblings_viable &
 	       ~FED_SIBLING_BIT(cluster_id)))) {
+
 		job_ptr->fed_details->cluster_lock = cluster_id;
+		fed_mgr_job_lock_set(job_ptr->job_id, cluster_id);
+
 		return SLURM_SUCCESS;
 	}
 
@@ -2958,21 +3238,182 @@ extern int fed_mgr_job_lock(struct job_record *job_ptr, uint32_t cluster_id)
 			      job_ptr->job_id, origin_id);
 			return SLURM_ERROR;
 		}
-		return _persist_fed_job_lock(origin_cluster, job_ptr->job_id,
-					     cluster_id, true);
+
+		if (!(rc = _persist_fed_job_lock(origin_cluster,
+						 job_ptr->job_id, cluster_id,
+						 true))) {
+			job_ptr->fed_details->cluster_lock = cluster_id;
+			fed_mgr_job_lock_set(job_ptr->job_id, cluster_id);
+		}
+
+		return rc;
 	}
 
-	if (job_ptr->fed_details->cluster_lock &&
-	    (job_ptr->fed_details->cluster_lock != cluster_id)) {
+	/* origin cluster */
+	rc = fed_mgr_job_lock_set(job_ptr->job_id, cluster_id);
+
+	return rc;
+}
+
+extern int fed_mgr_job_lock_set(uint32_t job_id, uint32_t cluster_id)
+{
+	int rc = SLURM_SUCCESS;
+	fed_job_info_t *job_info;
+
+	slurm_mutex_lock(&fed_job_list_mutex);
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+		info("%s: attempting to set fed job %d lock to %u",
+		     __func__, job_id, cluster_id);
+
+	if (!(job_info = _find_fed_job_info(job_id))) {
+		error("Didn't find job %d in fed_job_list", job_id);
+		rc = SLURM_ERROR;
+	} else if (job_info->cluster_lock &&
+		   job_info->cluster_lock != cluster_id) {
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-			info("fed job %d already locked by cluster %d",
-			     job_ptr->job_id,
-			     job_ptr->fed_details->cluster_lock);
+			info("%s: fed job %d already locked by cluster %d",
+			     __func__, job_id, job_info->cluster_lock);
 		rc = SLURM_ERROR;
 	} else {
-		job_ptr->fed_details->cluster_lock = cluster_id;
-		rc = SLURM_SUCCESS;
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+			info("%s: fed job %d locked by %u",
+			     __func__, job_id, cluster_id);
+
+		job_info->cluster_lock = cluster_id;
 	}
+
+	slurm_mutex_unlock(&fed_job_list_mutex);
+
+	return rc;
+}
+
+extern bool fed_mgr_job_is_self_owned(uint32_t job_id)
+{
+	bool rc = false;
+	fed_job_info_t *job_info;
+
+	slurm_mutex_lock(&fed_job_list_mutex);
+
+	if (!fed_mgr_cluster_rec ||
+	    ((job_info = _find_fed_job_info(job_id)) &&
+	     (job_info->cluster_lock == fed_mgr_cluster_rec->fed.id)))
+		rc = true;
+
+	slurm_mutex_unlock(&fed_job_list_mutex);
+
+	return rc;
+}
+
+extern bool fed_mgr_job_is_locked(uint32_t job_id)
+{
+	bool rc = false;
+	fed_job_info_t *job_info;
+
+	slurm_mutex_lock(&fed_job_list_mutex);
+
+	if ((job_info = _find_fed_job_info(job_id)) &&
+	    job_info->cluster_lock)
+		rc = true;
+
+	slurm_mutex_unlock(&fed_job_list_mutex);
+
+	return rc;
+}
+
+static void _q_fed_job_start(uint32_t job_id, time_t start_time,
+			    uint32_t cluster_id)
+{
+	fed_job_update_info_t *job_update_info;
+
+	/* add todo to remove remote siblings if the origin job */
+	job_update_info = xmalloc(sizeof(fed_job_update_info_t));
+	job_update_info->job_id       = job_id;
+	job_update_info->start_time   = start_time;
+	job_update_info->cluster_lock = cluster_id;
+	job_update_info->type         = FED_JOB_START;
+
+	_append_job_update(job_update_info);
+}
+
+/*
+ * Set job_ptr's cluster_lock and revoke sibling jobs.
+ *
+ * If the job is started on the origin cluster then it will update the fed job
+ * table and the actual job ptr, other wise it will queue up the request so that
+ * the persistent connection can be released.
+ *
+ * IN job_id     - job_id to revoke siblings from.
+ * IN start_time - time the job started. It will be set as the end_time of the
+ * 	revoked sibling jobs.
+ * IN cluster_id - cluster_id that started the job.
+ * IN job_ptr    - set if job started on the origin cluster.
+ */
+extern int fed_mgr_job_lock_start(uint32_t job_id, time_t start_time,
+				  uint32_t cluster_id, struct job_record *job_ptr)
+{
+	int rc = SLURM_SUCCESS;
+	fed_job_info_t *job_info;
+
+	slurm_mutex_lock(&fed_job_list_mutex);
+
+	if (!(job_info = _find_fed_job_info(job_id))) {
+		error("Didn't find job %d in fed_job_list", job_id);
+		rc = SLURM_ERROR;
+	} else if ((job_info->siblings_viable & FED_SIBLING_BIT(cluster_id)) &&
+		   (!(job_info->siblings_viable & ~FED_SIBLING_BIT(cluster_id)))) {
+		/* if this cluster is the only sibling, then just assume the
+		 * lock */
+	} else if (!job_info->cluster_lock) {
+		error("attempt to start sib job %u by cluster %u, but it's not locked",
+		      job_info->job_id, cluster_id);
+		rc = SLURM_ERROR;
+	} else if (job_info->cluster_lock &&
+		   (job_info->cluster_lock != cluster_id)) {
+		error("attempt to start sib job %u by cluster %u, which doesn't have job lock",
+		     job_info->job_id, cluster_id);
+		rc = SLURM_ERROR;
+	}
+
+	if (!rc) {
+		if (job_ptr)
+			_fed_job_start_revoke(job_info, job_ptr, start_time);
+		else
+			_q_fed_job_start(job_id, start_time, cluster_id);
+	}
+
+	slurm_mutex_unlock(&fed_job_list_mutex);
+
+	return rc;
+}
+
+extern int fed_mgr_job_lock_unset(uint32_t job_id, uint32_t cluster_id)
+{
+	int rc = SLURM_SUCCESS;
+	fed_job_info_t * job_info;
+
+	slurm_mutex_lock(&fed_job_list_mutex);
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+		info("%s: attempting to unlock fed job %d by cluster %u",
+		     __func__, job_id, cluster_id);
+
+	if (!(job_info = _find_fed_job_info(job_id))) {
+		error("Didn't find job %d in fed_job_list", job_id);
+		rc = SLURM_ERROR;
+	} else if (job_info->cluster_lock &&
+		   job_info->cluster_lock != cluster_id) {
+		error("attempt to unlock sib job %d by cluster %d which doesn't have job lock",
+		      job_id, cluster_id);
+		rc = SLURM_ERROR;
+	} else {
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+			info("%s: fed job %d unlocked by %u",
+			     __func__, job_id, cluster_id);
+		job_info->cluster_lock = 0;
+	}
+
+	slurm_mutex_unlock(&fed_job_list_mutex);
 
 	return rc;
 }
@@ -3007,7 +3448,10 @@ extern int fed_mgr_job_unlock(struct job_record *job_ptr, uint32_t cluster_id)
 	     FED_SIBLING_BIT(cluster_id)) &&
 	    (!(job_ptr->fed_details->siblings_viable &
 	       ~FED_SIBLING_BIT(cluster_id)))) {
+
 		job_ptr->fed_details->cluster_lock = 0;
+		fed_mgr_job_lock_unset(job_ptr->job_id, cluster_id);
+
 		return SLURM_SUCCESS;
 	}
 
@@ -3018,18 +3462,18 @@ extern int fed_mgr_job_unlock(struct job_record *job_ptr, uint32_t cluster_id)
 			      job_ptr->job_id, origin_id);
 			return SLURM_ERROR;
 		}
-		return _persist_fed_job_lock(origin_cluster, job_ptr->job_id,
-					     cluster_id, false);
+
+		if (!(rc = _persist_fed_job_lock(origin_cluster, job_ptr->job_id,
+					  cluster_id, false))) {
+			job_ptr->fed_details->cluster_lock = 0;
+			fed_mgr_job_lock_unset(job_ptr->job_id, cluster_id);
+		}
+
+		return rc;
 	}
 
-	if (job_ptr->fed_details->cluster_lock &&
-	    (job_ptr->fed_details->cluster_lock != cluster_id)) {
-		error("attempt to unlock sib job %d by cluster %d which doesn't have job lock",
-		      job_ptr->job_id, cluster_id);
-		rc = SLURM_ERROR;
-	} else {
-		job_ptr->fed_details->cluster_lock = 0;
-	}
+	/* Origin Cluster */
+	rc = fed_mgr_job_lock_unset(job_ptr->job_id, cluster_id);
 
 	return rc;
 }
@@ -3080,42 +3524,8 @@ extern int fed_mgr_job_start(struct job_record *job_ptr, uint32_t cluster_id,
 	}
 
 	/* Origin Cluster: */
-	if ((job_ptr->fed_details->siblings_viable &
-	     FED_SIBLING_BIT(cluster_id)) &&
-	    (!(job_ptr->fed_details->siblings_viable &
-	       ~FED_SIBLING_BIT(cluster_id)))) {
-		/* if this cluster is the only sibling, then just assume the
-		 * lock */
-		job_ptr->fed_details->cluster_lock = cluster_id;
-	} else if (!job_ptr->fed_details->cluster_lock) {
-		error("attempt to start sib job %u by cluster %u, but it's not locked",
-		      job_ptr->job_id, cluster_id);
-		rc = SLURM_ERROR;
-	} else if (job_ptr->fed_details->cluster_lock &&
-		   (job_ptr->fed_details->cluster_lock != cluster_id)) {
-		error("attempt to start sib job %u by cluster %u, which doesn't have job lock",
-		     job_ptr->job_id, cluster_id);
-		rc = SLURM_ERROR;
-	} else if (job_ptr->fed_details->siblings_active &
-		   ~FED_SIBLING_BIT(cluster_id)) {
-		/* cancel all sibling jobs if there are more siblings than just
-		 * the cluster that it came from */
-		_revoke_sibling_jobs(job_ptr->job_id, cluster_id,
-				     job_ptr->fed_details->siblings_active,
-				     start_time);
-	}
-
-	if (!rc) {
-		/* Update where sibling jobs are running */
-		job_ptr->fed_details->siblings_active =
-			FED_SIBLING_BIT(cluster_id);
-		update_job_fed_details(job_ptr);
-
-		if (cluster_id != fed_mgr_cluster_rec->fed.id) {
-			/* leave as pending so that it will stay around */
-			fed_mgr_job_revoke(job_ptr, false, 0, start_time);
-		}
-	}
+	fed_mgr_job_lock_start(job_ptr->job_id, job_ptr->start_time,
+			       cluster_id, job_ptr);
 
 	return rc;
 }
