@@ -34,6 +34,8 @@ documents those changes that are of interest to users and administrators.
  -- Preempt plugins - fix check for 'preempt_youngest_first' option.
  -- Preempt plugins - fix incorrect casts in preempt_youngest_first mode.
  -- Preempt/job_prio - fix incorrect casts in sort function.
+ -- Fix to make task/affinity work with ldoms where there are more than 64
+    cpus on the node.
 
 * Changes in Slurm 17.02.2
 ==========================
