@@ -1002,6 +1002,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 				   msg->protocol_version);
 		break;
 	case RESPONSE_SUBMIT_BATCH_JOB:
+	case RESPONSE_SIB_SUBMISSION:
 		_pack_submit_response_msg((submit_response_msg_t *)
 					  msg->data, buffer,
 					  msg->protocol_version);
@@ -1690,6 +1691,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 					  msg->protocol_version);
 		break;
 	case RESPONSE_SUBMIT_BATCH_JOB:
+	case RESPONSE_SIB_SUBMISSION:
 		rc = _unpack_submit_response_msg((submit_response_msg_t **)
 						 & (msg->data), buffer,
 						 msg->protocol_version);

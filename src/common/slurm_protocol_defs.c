@@ -4002,6 +4002,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		slurm_free_will_run_response_msg(data);
 		break;
 	case RESPONSE_SUBMIT_BATCH_JOB:
+	case RESPONSE_SIB_SUBMISSION:
 		slurm_free_submit_response_response_msg(data);
 		break;
 	case RESPONSE_ACCT_GATHER_UPDATE:
@@ -4662,6 +4663,8 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_CTLD_MULT_MSG";
 	case RESPONSE_CTLD_MULT_MSG:
 		return "RESPONSE_CTLD_MULT_MSG";
+	case RESPONSE_SIB_SUBMISSION:
+		return "RESPONSE_SIB_SUBMISSION";
 
 	case REQUEST_JOB_STEP_CREATE:				/* 5001 */
 		return "REQUEST_JOB_STEP_CREATE";

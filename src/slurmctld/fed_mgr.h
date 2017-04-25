@@ -85,6 +85,11 @@ extern int       fed_mgr_job_revoke(struct job_record *job_ptr,
 extern int       fed_mgr_job_revoke_sibs(struct job_record *job_ptr);
 extern int       fed_mgr_job_start(struct job_record *job_ptr,
 				   uint32_t cluster_id, time_t start_time);
+extern int       fed_mgr_q_sib_submit_response(slurm_msg_t *msg);
+extern int       fed_mgr_q_sib_submission(char *cluster_name,
+					  job_desc_msg_t *job_desc,
+					  uint16_t client_protocol_version,
+					  bool interactive_job);
 extern int       fed_mgr_remove_active_sibling(uint32_t job_id, char *sib_name);
 extern void      fed_mgr_remove_fed_job_info(uint32_t job_id);
 extern int       fed_mgr_sib_will_run(slurm_msg_t *msg,

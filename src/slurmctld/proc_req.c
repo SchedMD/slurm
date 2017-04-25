@@ -199,6 +199,8 @@ inline static void _slurm_rpc_sib_job_unlock(uint32_t uid, slurm_msg_t *msg);
 inline static void _slurm_rpc_sib_job_willrun(uint32_t uid, slurm_msg_t *msg);
 inline static void _slurm_rpc_sib_submit_batch_job(uint32_t uid,
 						   slurm_msg_t *msg);
+inline static void _slurm_rpc_sib_submit_response(uint32_t uid,
+						  slurm_msg_t *msg);
 inline static void _slurm_rpc_sib_resource_allocation(uint32_t uid,
 						      slurm_msg_t *msg);
 
@@ -6169,15 +6171,10 @@ static void _slurm_rpc_sib_job_willrun(uint32_t uid, slurm_msg_t *msg)
 
 static void _slurm_rpc_sib_submit_batch_job(uint32_t uid, slurm_msg_t *msg)
 {
-	struct job_record *job_ptr;
-	uint16_t tmp_version     = msg->protocol_version;
 	sib_msg_t *sib_msg       = msg->data;
 	job_desc_msg_t *job_desc = sib_msg->data;
 	job_desc->job_id         = sib_msg->job_id;
 	job_desc->fed_siblings_viable = sib_msg->fed_siblings;
-
-	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 
 	if (!msg->conn) {
 		error("Security violation, SIB_SUBMIT_BATCH_JOB RPC from uid=%d",
@@ -6186,29 +6183,31 @@ static void _slurm_rpc_sib_submit_batch_job(uint32_t uid, slurm_msg_t *msg)
 		return;
 	}
 
+	/* NULL out the data pointer because we are storing the pointer on the
+	 * fed job update queue to be handled later. */
+	sib_msg->data = NULL;
+
 	/* set protocol version to that of the client's version so that
 	 * the job's start_protocol_version is that of the client's and
 	 * not the calling controllers. */
-	msg->protocol_version = sib_msg->data_version;
-	msg->data = job_desc;
+	fed_mgr_q_sib_submission(msg->conn->cluster_name, job_desc,
+				 msg->protocol_version, false);
+}
 
-	lock_slurmctld(job_write_lock);
-	if ((job_ptr = find_job_record(sib_msg->job_id))) {
-		info("Found existing fed job %d, going to requeue/kill it",
-		     sib_msg->job_id);
-		purge_job_record(job_ptr->job_id);
+static void _slurm_rpc_sib_submit_response(uint32_t uid, slurm_msg_t *msg)
+{
+	if (!msg->conn) {
+		error("Security violation, SIB_SUBMISSION RPC from uid=%d",
+		      uid);
+		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
+		return;
 	}
-	unlock_slurmctld(job_write_lock);
 
-	_slurm_rpc_submit_batch_job(msg, true);
-
-	msg->data = sib_msg;
-	msg->protocol_version = tmp_version;
+	fed_mgr_q_sib_submit_response(msg);
 }
 
 static void _slurm_rpc_sib_resource_allocation(uint32_t uid, slurm_msg_t *msg)
 {
-	uint16_t tmp_version     = msg->protocol_version;
 	sib_msg_t *sib_msg       = msg->data;
 	job_desc_msg_t *job_desc = sib_msg->data;
 	job_desc->job_id         = sib_msg->job_id;
@@ -6222,16 +6221,15 @@ static void _slurm_rpc_sib_resource_allocation(uint32_t uid, slurm_msg_t *msg)
 		return;
 	}
 
+	/* NULL out the data pointer because we are storing the pointer on the
+	 * fed_job_list to be handled later. */
+	sib_msg->data = NULL;
+
 	/* set protocol version to that of the client's version so that
 	 * the job's start_protocol_version is that of the client's and
 	 * not the calling controllers. */
-	msg->protocol_version = sib_msg->data_version;
-	msg->data = job_desc;
-
-	_slurm_rpc_allocate_resources(msg, true);
-
-	msg->data = sib_msg;
-	msg->protocol_version = tmp_version;
+	fed_mgr_q_sib_submission(msg->conn->cluster_name, job_desc,
+				 msg->protocol_version, true);
 }
 
 static Buf _build_rc_buf(int rc, uint16_t rpc_version)
@@ -6320,6 +6318,20 @@ static void _proc_multi_msg(uint32_t rpc_uid, slurm_msg_t *msg)
 		case REQUEST_SIB_JOB_START:
 			rc = _slurm_rpc_sib_job_start(rpc_uid, &sub_msg, false);
 			ret_buf = _build_rc_buf(rc, msg->protocol_version);
+			break;
+		case REQUEST_SIB_RESOURCE_ALLOCATION:
+			_slurm_rpc_sib_resource_allocation(rpc_uid, &sub_msg);
+			ret_buf = _build_rc_buf(SLURM_SUCCESS,
+						msg->protocol_version);
+			break;
+		case REQUEST_SIB_SUBMIT_BATCH_JOB:
+			_slurm_rpc_sib_submit_batch_job(rpc_uid, &sub_msg);
+			ret_buf = _build_rc_buf(SLURM_SUCCESS,
+						msg->protocol_version);
+			break;
+		case RESPONSE_SIB_SUBMISSION:
+			_slurm_rpc_sib_submit_response(rpc_uid, &sub_msg);
+			ret_buf = _build_rc_buf(SLURM_SUCCESS, msg->protocol_version);
 			break;
 		default:
 			error("%s: Unsupported Message Type:%s",
