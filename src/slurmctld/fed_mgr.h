@@ -85,6 +85,8 @@ extern int       fed_mgr_job_revoke(struct job_record *job_ptr,
 extern int       fed_mgr_job_revoke_sibs(struct job_record *job_ptr);
 extern int       fed_mgr_job_start(struct job_record *job_ptr,
 				   uint32_t cluster_id, time_t start_time);
+extern int       fed_mgr_q_job_complete(uint32_t job_id, time_t start_time,
+					uint32_t return_code);
 extern int       fed_mgr_q_sib_submit_response(slurm_msg_t *msg);
 extern int       fed_mgr_q_sib_submission(char *cluster_name,
 					  job_desc_msg_t *job_desc,

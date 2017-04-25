@@ -6078,11 +6078,7 @@ static int _slurm_rpc_sib_job_requeue(uint32_t uid, slurm_msg_t *msg,
 static int _slurm_rpc_sib_job_complete(uint32_t uid, slurm_msg_t *msg,
 				       bool send_resp)
 {
-	struct job_record *job_ptr;
 	sib_msg_t *sib_msg = msg->data;
-
-	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 
 	if (!msg->conn) {
 		error("Security violation, SIB_JOB_COMPLETE RPC from uid=%d",
@@ -6092,28 +6088,12 @@ static int _slurm_rpc_sib_job_complete(uint32_t uid, slurm_msg_t *msg,
 		return ESLURM_ACCESS_DENIED;
 	}
 
-	/* send success now so that the remote cluster can release the lock */
+	fed_mgr_q_job_complete(sib_msg->job_id, sib_msg->start_time,
+			       sib_msg->return_code);
+
 	if (send_resp)
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
-	lock_slurmctld(job_write_lock);
-
-	if (!(job_ptr = find_job_record(sib_msg->job_id))) {
-		error("Unable to find federated job for id:%u",
-		      sib_msg->job_id);
-	} else if (job_ptr->job_state & JOB_REQUEUE_FED) {
-		/* Remove JOB_REQUEUE_FED and JOB_COMPLETING once sibling
-		 * reports that sibling job is done. Leave other state in place.
-		 * JOB_SPECIAL_EXIT may be in the states. */
-		job_ptr->job_state &= ~(JOB_PENDING | JOB_COMPLETING);
-		batch_requeue_fini(job_ptr);
-	} else {
-		/* change to job_complete? */
-		fed_mgr_job_revoke(job_ptr, true, sib_msg->return_code,
-				   sib_msg->start_time);
-	}
-
-	unlock_slurmctld(job_write_lock);
 	return SLURM_SUCCESS;
 }
 

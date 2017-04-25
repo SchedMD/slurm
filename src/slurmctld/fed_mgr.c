@@ -159,6 +159,8 @@ static void _leave_federation(void);
 static char *_job_update_type_str(enum fed_job_update_type type)
 {
 	switch (type) {
+	case FED_JOB_COMPLETE:
+		return "FED_JOB_COMPLETE";
 	case FED_JOB_REMOVE_ACTIVE_SIB_BIT:
 		return "FED_JOB_REMOVE_ACTIVE_SIB_BIT";
 	case FED_JOB_START:
@@ -1532,6 +1534,35 @@ send_msg:
 	return SLURM_SUCCESS;
 }
 
+static void _handle_fed_job_complete(fed_job_update_info_t *job_update_info)
+{
+	struct job_record *job_ptr;
+
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
+
+	lock_slurmctld(job_write_lock);
+	if (!(job_ptr = find_job_record(job_update_info->job_id))) {
+		error("%s: failed to find job_record for fed job_id %d",
+		      __func__, job_update_info->job_id);
+		unlock_slurmctld(job_write_lock);
+		return;
+	}
+
+	if (job_ptr->job_state & JOB_REQUEUE_FED) {
+		/* Remove JOB_REQUEUE_FED and JOB_COMPLETING once
+		 * sibling reports that sibling job is done. Leave other
+		 * state in place. JOB_SPECIAL_EXIT may be in the
+		 * states. */
+		job_ptr->job_state &= ~(JOB_PENDING | JOB_COMPLETING);
+		batch_requeue_fini(job_ptr);
+	} else {
+		fed_mgr_job_revoke(job_ptr, true, job_update_info->return_code,
+				   job_update_info->start_time);
+	}
+	unlock_slurmctld(job_write_lock);
+}
+
 static void
 _handle_fed_job_remove_active_sib_bit(fed_job_update_info_t *job_update_info)
 {
@@ -1690,6 +1721,9 @@ static int _foreach_fed_job_update_info(fed_job_update_info_t *job_update_info)
 		     _job_update_type_str(job_update_info->type));
 
 	switch (job_update_info->type) {
+	case FED_JOB_COMPLETE:
+		_handle_fed_job_complete(job_update_info);
+		break;
 	case FED_JOB_REMOVE_ACTIVE_SIB_BIT:
 		_handle_fed_job_remove_active_sib_bit(job_update_info);
 		break;
@@ -3465,8 +3499,13 @@ extern int fed_mgr_job_complete(struct job_record *job_ptr,
 		info("complete fed job %d by cluster_id %d",
 		     job_ptr->job_id, fed_mgr_cluster_rec->fed.id);
 
-	if (origin_id == fed_mgr_cluster_rec->fed.id)
+	if (origin_id == fed_mgr_cluster_rec->fed.id) {
+		_revoke_sibling_jobs(job_ptr->job_id,
+				     fed_mgr_cluster_rec->fed.id,
+				     job_ptr->fed_details->siblings_active,
+				     job_ptr->start_time);
 		return SLURM_SUCCESS;
+	}
 
 	slurmdb_cluster_rec_t *conn = fed_mgr_get_cluster_by_id(origin_id);
 	if (!conn) {
@@ -4288,6 +4327,23 @@ extern int fed_mgr_q_sib_submit_response(slurm_msg_t *msg)
 			xstrdup(msg->conn->cluster_name);
 		_append_job_update(job_update_info);
 	}
+
+	return rc;
+}
+
+extern int fed_mgr_q_job_complete(uint32_t job_id, time_t start_time,
+				  uint32_t return_code)
+{
+	int rc = SLURM_SUCCESS;
+	fed_job_update_info_t *job_update_info =
+		xmalloc(sizeof(fed_job_update_info_t));
+
+	job_update_info->type        = FED_JOB_COMPLETE;
+	job_update_info->job_id      = job_id;
+	job_update_info->start_time  = start_time;
+	job_update_info->return_code = return_code;
+
+	_append_job_update(job_update_info);
 
 	return rc;
 }
