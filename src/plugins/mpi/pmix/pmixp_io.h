@@ -106,6 +106,12 @@ typedef struct {
 	List send_queue, complete_queue;
 } pmixp_io_engine_t;
 
+static inline bool pmixp_io_fd(pmixp_io_engine_t *eng)
+{
+	return eng->sd;
+}
+
+
 static inline bool pmixp_io_rcvd_ready(pmixp_io_engine_t *eng)
 {
 	xassert(eng->magic == PMIXP_MSGSTATE_MAGIC);

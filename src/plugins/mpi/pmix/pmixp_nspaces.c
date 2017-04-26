@@ -158,7 +158,6 @@ hostlist_t pmixp_nspace_rankhosts(pmixp_namespace_t *nsptr, const int *ranks,
 int pmixp_nspace_resolve(const char *name, int rank)
 {
 	pmixp_namespace_t *nsptr;
-	char *tmp, *ret;
 
 	xassert(_pmixp_nspaces.magic == PMIXP_NSPACE_DB_MAGIC);
 
@@ -171,13 +170,10 @@ int pmixp_nspace_resolve(const char *name, int rank)
 	}
 
 	if (NULL == nsptr) {
-		return NULL;
+		return SLURM_ERROR;
 	}
 	xassert(rank < nsptr->ntasks);
 
-	/* `hostlist_nth()` returns malloc'd string,
-	 * turn it to the xmalloc'd one to avoid confusion!
-	 */
 	return nsptr->task_map[rank];
 }
 

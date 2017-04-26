@@ -102,7 +102,7 @@ pmixp_server_buf_reserve(Buf buf, uint32_t size)
 void pmixp_server_init_pp(char ***env);
 bool pmixp_server_want_pp();
 void pmixp_server_run_pp();
-int pmixp_server_pp_send(const char *hostlist, int size);
+int pmixp_server_pp_send(int nodeid, int size);
 int pmixp_server_pp_count();
 void pmixp_server_pp_inc();
 #else

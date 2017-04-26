@@ -597,7 +597,7 @@ static void _process_server_request(pmixp_base_hdr_t *hdr, void *payload)
 		 * and receiver assumed to respond back to node 0
 		 */
 		if( pmixp_info_nodeid() ){
-			pmixp_server_pp_send(pmixp_info_job_host(0), hdr->msgsize);
+			pmixp_server_pp_send(0, hdr->msgsize);
 		}
 		pmixp_server_pp_inc();
 		break;
@@ -813,13 +813,18 @@ _direct_conn_establish(pmixp_conn_t *conn, void *_hdr, void *msg)
 
 	xassert(0 == hdr->msgsize);
 	fd = pmixp_io_detach(eng);
-	dconn = pmixp_dconn_accept(hdr->nodeid, fd);
 
+	dconn = pmixp_dconn_accept(hdr->nodeid, fd);
 	if( NULL == dconn ){
 		/* connection was refused because we already
-			 * have established connection
-			 * It seems that some sort of race condition occured
-			 */
+		 * have established connection
+		 * It seems that some sort of race condition occured
+		 */
+		char *nodename = pmixp_info_job_host(hdr->nodeid);
+		close(fd);
+		PMIXP_ERROR("Failed to accept direct connection from %s", nodename);
+		xfree(nodename);
+		return;
 	}
 	new_conn = pmixp_conn_new_persist(PMIXP_PROTO_DIRECT, pmixp_dconn_engine(dconn),
 				      _direct_new_msg, _direct_return_connection, dconn);
@@ -912,22 +917,41 @@ static void _slurm_new_msg(pmixp_conn_t *conn,
 		init_msg->buf_ptr = buf;
 
 		dconn = pmixp_dconn_connect(hdr->shdr.base_hdr.nodeid,
-					    hdr->shdr.rport, init_msg);
+					    &hdr->shdr.rport, sizeof(hdr->shdr.rport),
+					    init_msg);
 		if( NULL != dconn ){
-			pmixp_conn_t *conn;
-			conn = pmixp_conn_new_persist(PMIXP_PROTO_DIRECT,
-						      pmixp_dconn_engine(dconn),
-						      _direct_new_msg,
-						      _direct_return_connection,
-						      dconn);
-			if( NULL != conn ){
-				eio_obj_t *obj;
-				obj = eio_obj_create(pmixp_dconn_fd(dconn),
-						     &direct_peer_ops,
-						     (void *)conn);
-				eio_new_obj(pmixp_info_io(), obj);
-				eio_signal_wakeup(pmixp_info_io());
 
+			switch (pmixp_dconn_type(dconn)) {
+			case PMIXP_DIRECT_TYPE_POLL:{
+				/* this direct connection has fd that needs to be
+				 * polled to progress, use connection interface for that
+				 */
+				pmixp_io_engine_t *eng = pmixp_dconn_engine(dconn);
+				pmixp_conn_t *conn;
+				conn = pmixp_conn_new_persist(PMIXP_PROTO_DIRECT, eng,
+							      _direct_new_msg,
+							      _direct_return_connection,
+							      dconn);
+				if( NULL != conn ){
+					eio_obj_t *obj;
+					obj = eio_obj_create(pmixp_io_fd(eng),
+							     &direct_peer_ops,
+							     (void *)conn);
+					eio_new_obj(pmixp_info_io(), obj);
+					eio_signal_wakeup(pmixp_info_io());
+				} else {
+					/* TODO: handle this error */
+				}
+				break;
+			}
+			case PMIXP_DIRECT_TYPE_AM: {
+				pmixp_dconn_set_cb(dconn, NULL);
+				break;
+			}
+			default:
+				/* Should not happen */
+				xassert(0 && pmixp_dconn_type(dconn));
+				/* TODO: handle this error */
 			}
 			pmixp_dconn_unlock(dconn);
 		} else {
@@ -1201,7 +1225,7 @@ void pmixp_server_run_pp()
 		while( pmixp_server_pp_count() < count ){
 			int cur_count = pmixp_server_pp_count();
 			/* Send the message to the (nodeid == 1) */
-			pmixp_server_pp_send(pmixp_info_job_host(1), i);
+			pmixp_server_pp_send(1, i);
 			/* wait for the response */
 			while (cur_count == pmixp_server_pp_count());
 		}
@@ -1245,7 +1269,9 @@ int pmixp_server_pp_send(int nodeid, int size)
 	rc = pmixp_server_send_nb(&ep, PMIXP_MSG_PINGPONG,
 				  _pmixp_pp_count, buf, pingpong_complete, (void*)cbdata);
 	if (SLURM_SUCCESS != rc) {
-		PMIXP_ERROR("Was unable to wait for the parent %s to become alive", host);
+		char *nodename = pmixp_info_job_host(nodeid);
+		PMIXP_ERROR("Was unable to wait for the parent %s to become alive", nodename);
+		xfree(nodename);
 	}
 	return rc;
 }

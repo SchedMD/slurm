@@ -453,18 +453,19 @@ void pmixp_dmdx_timeout_cleanup(void)
 		if ((ts - req->ts) > pmixp_info_timeout()) {
 #ifndef NDEBUG
 			/* respond with the timeout to libpmix */
-			char *host = pmixp_nspace_resolve(req->nspace,
-					req->rank);
-			xassert(NULL != host);
+			int nodeid = pmixp_nspace_resolve(req->nspace,
+							  req->rank);
+			char *nodename = pmixp_info_job_host(nodeid);
+			xassert(NULL != nodename);
 			PMIXP_ERROR("timeout: ns=%s, rank=%d," " host=%s, ts=%lu",
 				    req->nspace, req->rank,
-				    (NULL != host) ? host : "unknown", ts);
-			if (NULL != host) {
-				xfree(host);
+				    (NULL != nodename) ? nodename : "unknown", ts);
+			if (NULL != nodename) {
+				xfree(nodename);
 			}
 #endif
 			req->cbfunc(PMIX_ERR_TIMEOUT, NULL, 0, req->cbdata,
-					NULL, NULL);
+				    NULL, NULL);
 			/* release tracker & list iterator */
 			list_delete_item(it);
 		}
