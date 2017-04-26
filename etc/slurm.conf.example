@@ -61,7 +61,7 @@ SchedulerType=sched/backfill
 #SchedulerAuth=
 #SchedulerPort=
 #SchedulerRootFilter=
-SelectType=select/linear
+#SelectType=select/linear
 FastSchedule=1
 #PriorityType=priority/multifactor
 #PriorityDecayHalfLife=14-0
@@ -92,4 +92,4 @@ JobCompType=jobcomp/none
 #
 # COMPUTE NODES
 NodeName=linux[1-32] Procs=1 State=UNKNOWN
-PartitionName=debug Nodes=linux[1-32] Default=YES MaxTime=INFINITE State=UP
+PartitionName=debug Nodes=ALL Default=YES MaxTime=INFINITE State=UP
