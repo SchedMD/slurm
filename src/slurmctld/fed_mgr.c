@@ -3161,19 +3161,6 @@ extern int fed_mgr_job_lock(struct job_record *job_ptr, uint32_t cluster_id)
 		info("attempting fed job lock on %d by cluster_id %d",
 		     job_ptr->job_id, cluster_id);
 
-	/* if this cluster is the only sibling, then just assume the lock */
-	if ((cluster_id == fed_mgr_cluster_rec->fed.id) &&
-	    (job_ptr->fed_details->siblings_viable &
-	     FED_SIBLING_BIT(cluster_id)) &&
-	    (!(job_ptr->fed_details->siblings_viable &
-	       ~FED_SIBLING_BIT(cluster_id)))) {
-
-		job_ptr->fed_details->cluster_lock = cluster_id;
-		fed_mgr_job_lock_set(job_ptr->job_id, cluster_id);
-
-		return SLURM_SUCCESS;
-	}
-
 	if (origin_id != fed_mgr_cluster_rec->fed.id) {
 		slurmdb_cluster_rec_t *origin_cluster;
 		if (!(origin_cluster = fed_mgr_get_cluster_by_id(origin_id))) {
@@ -3303,10 +3290,6 @@ extern int fed_mgr_job_lock_start(uint32_t job_id, time_t start_time,
 	if (!(job_info = _find_fed_job_info(job_id))) {
 		error("Didn't find job %d in fed_job_list", job_id);
 		rc = SLURM_ERROR;
-	} else if ((job_info->siblings_viable & FED_SIBLING_BIT(cluster_id)) &&
-		   (!(job_info->siblings_viable & ~FED_SIBLING_BIT(cluster_id)))) {
-		/* if this cluster is the only sibling, then just assume the
-		 * lock */
 	} else if (!job_info->cluster_lock) {
 		error("attempt to start sib job %u by cluster %u, but it's not locked",
 		      job_info->job_id, cluster_id);
@@ -3384,19 +3367,6 @@ extern int fed_mgr_job_unlock(struct job_record *job_ptr, uint32_t cluster_id)
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 		info("releasing fed job lock on %d by cluster_id %d",
 		     job_ptr->job_id, cluster_id);
-
-	/* if this cluster is the only sibling, then just release the lock */
-	if ((cluster_id == fed_mgr_cluster_rec->fed.id) &&
-	    (job_ptr->fed_details->siblings_viable &
-	     FED_SIBLING_BIT(cluster_id)) &&
-	    (!(job_ptr->fed_details->siblings_viable &
-	       ~FED_SIBLING_BIT(cluster_id)))) {
-
-		job_ptr->fed_details->cluster_lock = 0;
-		fed_mgr_job_lock_unset(job_ptr->job_id, cluster_id);
-
-		return SLURM_SUCCESS;
-	}
 
 	if (origin_id != fed_mgr_cluster_rec->fed.id) {
 		slurmdb_cluster_rec_t *origin_cluster;
