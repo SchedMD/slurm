@@ -194,6 +194,9 @@ inline static int  _slurm_rpc_sib_job_requeue(uint32_t uid, slurm_msg_t *msg,
 					      bool send_resp);
 inline static int  _slurm_rpc_sib_job_complete(uint32_t uid, slurm_msg_t *msg,
 					       bool send_resp);
+inline static int  _slurm_rpc_sib_job_update(uint32_t uid, slurm_msg_t *msg);
+inline static int  _slurm_rpc_sib_job_update_response(uint32_t uid,
+						      slurm_msg_t *msg);
 inline static void _slurm_rpc_sib_job_lock(uint32_t uid, slurm_msg_t *msg);
 inline static void _slurm_rpc_sib_job_unlock(uint32_t uid, slurm_msg_t *msg);
 inline static void _slurm_rpc_sib_job_willrun(uint32_t uid, slurm_msg_t *msg);
@@ -3631,7 +3634,7 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 			if (job_desc_msg->job_id_str)
 				error_code = update_job_str(msg, uid);
 			else
-				error_code = update_job(msg, uid);
+				error_code = update_job(msg, uid, true);
 			unlock_slurmctld(job_write_lock);
 			if (error_code == ESLURM_JOB_SETTING_DB_INX) {
 				if (i >= db_inx_max_cnt) {
@@ -6097,6 +6100,46 @@ static int _slurm_rpc_sib_job_complete(uint32_t uid, slurm_msg_t *msg,
 	return SLURM_SUCCESS;
 }
 
+static int _slurm_rpc_sib_job_update(uint32_t uid, slurm_msg_t *msg)
+{
+	int rc;
+	sib_msg_t *sib_msg       = msg->data;
+	job_desc_msg_t *job_desc = sib_msg->data;
+
+	/* NULL out the data pointer because we are storing the pointer on the
+	 * fed job update queue to be handled later. */
+	sib_msg->data = NULL;
+
+	if (!msg->conn) {
+		error("Security violation, SIB_JOB_UPDATE RPC from uid=%d",
+		      uid);
+		return ESLURM_ACCESS_DENIED;
+	}
+
+	rc = fed_mgr_q_job_update(msg->conn->cluster_name, sib_msg->job_id,
+				  job_desc, uid);
+
+	return rc;
+}
+
+static int _slurm_rpc_sib_job_update_response(uint32_t uid, slurm_msg_t *msg)
+{
+	int rc;
+	sib_msg_t *sib_msg = msg->data;
+
+	if (!msg->conn) {
+		error("Security violation, RESPONSE_SIB_JOB_UPDATE RPC from uid=%d",
+		      uid);
+		return ESLURM_ACCESS_DENIED;
+	}
+
+	rc = fed_mgr_q_sib_job_update_response(msg->conn->cluster_name,
+					       sib_msg->job_id,
+					       sib_msg->return_code);
+
+	return rc;
+}
+
 static void _slurm_rpc_sib_job_lock(uint32_t uid, slurm_msg_t *msg)
 {
 	int rc;
@@ -6299,6 +6342,15 @@ static void _proc_multi_msg(uint32_t rpc_uid, slurm_msg_t *msg)
 			rc = _slurm_rpc_sib_job_start(rpc_uid, &sub_msg, false);
 			ret_buf = _build_rc_buf(rc, msg->protocol_version);
 			break;
+		case REQUEST_SIB_JOB_UPDATE:
+			rc = _slurm_rpc_sib_job_update(rpc_uid, &sub_msg);
+			ret_buf = _build_rc_buf(rc, msg->protocol_version);
+			break;
+		case RESPONSE_SIB_JOB_UPDATE:
+			rc = _slurm_rpc_sib_job_update_response(rpc_uid,
+							       &sub_msg);
+			ret_buf = _build_rc_buf(rc, msg->protocol_version);
+			break;
 		case REQUEST_SIB_RESOURCE_ALLOCATION:
 			_slurm_rpc_sib_resource_allocation(rpc_uid, &sub_msg);
 			ret_buf = _build_rc_buf(SLURM_SUCCESS,
@@ -6311,7 +6363,8 @@ static void _proc_multi_msg(uint32_t rpc_uid, slurm_msg_t *msg)
 			break;
 		case RESPONSE_SIB_SUBMISSION:
 			_slurm_rpc_sib_submit_response(rpc_uid, &sub_msg);
-			ret_buf = _build_rc_buf(SLURM_SUCCESS, msg->protocol_version);
+			ret_buf = _build_rc_buf(SLURM_SUCCESS,
+						msg->protocol_version);
 			break;
 		default:
 			error("%s: Unsupported Message Type:%s",

@@ -941,6 +941,8 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case REQUEST_SIB_JOB_WILL_RUN:
 	case REQUEST_SIB_SUBMIT_BATCH_JOB:
 	case REQUEST_SIB_RESOURCE_ALLOCATION:
+	case REQUEST_SIB_JOB_UPDATE:
+	case RESPONSE_SIB_JOB_UPDATE:
 		_pack_sib_msg((sib_msg_t *)msg->data, buffer,
 			      msg->protocol_version);
 		break;
@@ -1628,6 +1630,8 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case REQUEST_SIB_JOB_WILL_RUN:
 	case REQUEST_SIB_SUBMIT_BATCH_JOB:
 	case REQUEST_SIB_RESOURCE_ALLOCATION:
+	case REQUEST_SIB_JOB_UPDATE:
+	case RESPONSE_SIB_JOB_UPDATE:
 		rc = _unpack_sib_msg((sib_msg_t **)&(msg->data), buffer,
 				     msg->protocol_version);
 		break;

@@ -87,6 +87,11 @@ extern int       fed_mgr_job_start(struct job_record *job_ptr,
 				   uint32_t cluster_id, time_t start_time);
 extern int       fed_mgr_q_job_complete(uint32_t job_id, time_t start_time,
 					uint32_t return_code);
+extern int       fed_mgr_q_job_update(char *cluster_name, uint32_t job_id,
+				      job_desc_msg_t *job_desc, uid_t uid);
+extern int       fed_mgr_q_sib_job_update_response(char *cluster_name,
+						   uint32_t job_id,
+						   uint32_t return_code);
 extern int       fed_mgr_q_sib_submit_response(slurm_msg_t *msg);
 extern int       fed_mgr_q_sib_submission(char *cluster_name,
 					  job_desc_msg_t *job_desc,
@@ -100,8 +105,8 @@ extern int       fed_mgr_sib_will_run(slurm_msg_t *msg,
 extern slurmdb_federation_rec_t *fed_mgr_state_load(char *state_save_location);
 extern int       fed_mgr_state_save(char *state_save_location);
 extern int       fed_mgr_sync(const char *sib_name);
-extern int       fed_mgr_update_job(job_desc_msg_t *job_specs,
-				    uint64_t update_sibs);
+extern int       fed_mgr_update_job(uint32_t job_id, job_desc_msg_t *job_specs,
+				    uint64_t update_sibs, uid_t uid);
 extern int       fed_mgr_update_job_clusters(struct job_record *job_ptr,
 					     char *spec_clusters);
 extern int       fed_mgr_update_job_cluster_features(struct job_record *job_ptr,

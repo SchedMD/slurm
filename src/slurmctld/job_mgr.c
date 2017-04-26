@@ -12347,9 +12347,10 @@ fini:
 		/* Send updates to sibling jobs */
 		/* Add the siblings_active to be updated. They could have been
 		 * updated if the job's ClusterFeatures were updated. */
-		job_specs->fed_siblings_viable = job_ptr->fed_details->siblings_viable;
-		fed_mgr_update_job(job_specs,
-				   job_ptr->fed_details->siblings_active);
+		job_specs->fed_siblings_viable =
+			job_ptr->fed_details->siblings_viable;
+		fed_mgr_update_job(job_ptr->job_id, job_specs,
+				   job_ptr->fed_details->siblings_active, uid);
 	}
 
 	return error_code;
@@ -12359,11 +12360,12 @@ fini:
  * update_job - update a job's parameters per the supplied specifications
  * IN msg - RPC to update job, including change specification
  * IN uid - uid of user issuing RPC
+ * IN send_msg - whether to send msg back or not
  * RET returns an error code from slurm_errno.h
  * global: job_list - global list of job entries
  *	last_job_update - time of last job table update
  */
-extern int update_job(slurm_msg_t *msg, uid_t uid)
+extern int update_job(slurm_msg_t *msg, uid_t uid, bool send_msg)
 {
 	job_desc_msg_t *job_specs = (job_desc_msg_t *) msg->data;
 	struct job_record *job_ptr;
@@ -12380,7 +12382,7 @@ extern int update_job(slurm_msg_t *msg, uid_t uid)
 	} else {
 		rc = _update_job(job_ptr, job_specs, uid);
 	}
-	if (rc != ESLURM_JOB_SETTING_DB_INX)
+	if (send_msg && rc != ESLURM_JOB_SETTING_DB_INX)
 		slurm_send_rc_msg(msg, rc);
 	xfree(job_specs->job_id_str);
 

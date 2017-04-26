@@ -115,6 +115,7 @@ enum fed_job_update_type {
 	FED_JOB_SUBMIT_BATCH,
 	FED_JOB_SUBMIT_INT,
 	FED_JOB_UPDATE,
+	FED_JOB_UPDATE_RESPONSE,
 };
 
 typedef struct {
@@ -138,6 +139,8 @@ typedef struct {
 	uint32_t        job_id;
 	uint64_t        siblings_active;
 	uint64_t        siblings_viable;
+	uint32_t        updating_sibs[MAX_FED_CLUSTERS];
+	time_t          updating_time[MAX_FED_CLUSTERS];
 } fed_job_info_t;
 
 /* Local Structs */
@@ -169,6 +172,10 @@ static char *_job_update_type_str(enum fed_job_update_type type)
 		return "FED_JOB_SUBMIT_BATCH";
 	case FED_JOB_SUBMIT_INT:
 		return "FED_JOB_SUBMIT_INT";
+	case FED_JOB_UPDATE:
+		return "FED_JOB_UPDATE";
+	case FED_JOB_UPDATE_RESPONSE:
+		return "FED_JOB_UPDATE_RESPONSE";
 	default:
 		return "?";
 	}
@@ -962,39 +969,56 @@ _persist_allocate_resources(slurmdb_cluster_rec_t *conn, sib_msg_t *sib_msg)
 	return rc;
 }
 
-static int _persist_update_job(slurmdb_cluster_rec_t *conn,
-			       job_desc_msg_t *data)
+static int _persist_update_job(slurmdb_cluster_rec_t *conn, uint32_t job_id,
+			       job_desc_msg_t *data, uid_t uid)
+{
+	int rc;
+	slurm_msg_t req_msg, tmp_msg;
+	sib_msg_t   sib_msg;
+	Buf buffer;
+
+	slurm_msg_t_init(&tmp_msg);
+	tmp_msg.msg_type         = REQUEST_UPDATE_JOB;
+	tmp_msg.data             = data;
+	tmp_msg.protocol_version = SLURM_PROTOCOL_VERSION;
+
+	buffer = init_buf(BUF_SIZE);
+	pack_msg(&tmp_msg, buffer);
+
+	memset(&sib_msg, 0, sizeof(sib_msg));
+	sib_msg.data_buffer  = buffer;
+	sib_msg.data_type    = tmp_msg.msg_type;
+	sib_msg.data_version = tmp_msg.protocol_version;
+	sib_msg.req_uid      = uid;
+	sib_msg.job_id       = job_id;
+
+	slurm_msg_t_init(&req_msg);
+	req_msg.msg_type = REQUEST_SIB_JOB_UPDATE;
+	req_msg.data     = &sib_msg;
+
+	rc = _queue_rpc(conn, &req_msg, 0, false);
+
+	return rc;
+}
+
+static int _persist_update_job_resp(slurmdb_cluster_rec_t *conn,
+				    uint32_t job_id, uint32_t return_code)
 {
 	int rc;
 	slurm_msg_t req_msg;
-	slurm_msg_t resp_msg;
+	sib_msg_t   sib_msg;
 
 	slurm_msg_t_init(&req_msg);
 
-	req_msg.msg_type = REQUEST_UPDATE_JOB;
-	req_msg.data     = data;
+	memset(&sib_msg, 0, sizeof(sib_msg));
+	sib_msg.job_id      = job_id;
+	sib_msg.return_code = return_code;
 
-	if (_send_recv_msg(conn, &req_msg, &resp_msg, false)) {
-		rc = SLURM_PROTOCOL_ERROR;
-		goto end_it;
-	}
+	slurm_msg_t_init(&req_msg);
+	req_msg.msg_type = RESPONSE_SIB_JOB_UPDATE;
+	req_msg.data	 = &sib_msg;
 
-	switch (resp_msg.msg_type) {
-	case RESPONSE_SLURM_RC:
-		if ((rc = slurm_get_return_code(resp_msg.msg_type,
-						resp_msg.data))) {
-			slurm_seterrno(rc);
-			rc = SLURM_PROTOCOL_ERROR;
-		}
-		break;
-	default:
-		slurm_seterrno(SLURM_UNEXPECTED_MSG_ERROR);
-		rc = SLURM_PROTOCOL_ERROR;
-		break;
-	}
-
-end_it:
-	slurm_free_msg_members(&resp_msg);
+	rc = _queue_rpc(conn, &req_msg, job_id, false);
 
 	return rc;
 }
@@ -1708,6 +1732,90 @@ static void _handle_fed_job_submission(fed_job_update_info_t *job_update_info)
 	unlock_slurmctld(job_write_lock);
 }
 
+static void _handle_fed_job_update(fed_job_update_info_t *job_update_info)
+{
+	int rc;
+	slurm_msg_t msg;
+	slurm_msg_t_init(&msg);
+	job_desc_msg_t *job_desc = job_update_info->submit_desc;
+	int db_inx_max_cnt = 5, i=0;
+	slurmdb_cluster_rec_t *sibling;
+
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK, READ_LOCK };
+	slurmctld_lock_t fed_read_lock = {
+		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
+
+	xassert(job_desc);
+
+	/* scontrol always sets job_id_str */
+	job_desc->job_id = job_update_info->job_id;
+	msg.data = job_desc;
+
+	rc = ESLURM_JOB_SETTING_DB_INX;
+	while (rc == ESLURM_JOB_SETTING_DB_INX) {
+		lock_slurmctld(job_write_lock);
+		rc = update_job(&msg, job_update_info->uid, false);
+		unlock_slurmctld(job_write_lock);
+
+		if (i >= db_inx_max_cnt) {
+			info("%s: can't update fed job, waited %d seconds for job %u to get a db_index, but it hasn't happened yet.  Giving up and letting the user know.",
+			     __func__, db_inx_max_cnt,
+			     job_update_info->job_id);
+			break;
+		}
+		i++;
+		debug("%s: We cannot update job %u at the moment, we are setting the db index, waiting",
+		      __func__, job_update_info->job_id);
+		sleep(1);
+	}
+
+	lock_slurmctld(fed_read_lock);
+	if (!(sibling =
+	      fed_mgr_get_cluster_by_name(job_update_info->submit_cluster))) {
+		error("Invalid sibling name");
+	} else {
+		_persist_update_job_resp(sibling, job_update_info->job_id, rc);
+	}
+	unlock_slurmctld(fed_read_lock);
+}
+
+static void
+_handle_fed_job_update_response(fed_job_update_info_t *job_update_info)
+{
+	fed_job_info_t *job_info;
+	slurmdb_cluster_rec_t *sibling;
+
+	slurmctld_lock_t fed_read_lock = {
+		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
+
+	slurm_mutex_lock(&fed_job_list_mutex);
+	if (!(job_info = _find_fed_job_info(job_update_info->job_id))) {
+		error("%s: failed to find fed job info for fed job_id %d",
+		      __func__, job_update_info->job_id);
+		slurm_mutex_unlock(&fed_job_list_mutex);
+		return;
+	}
+
+	lock_slurmctld(fed_read_lock);
+
+	if (!(sibling =
+	      fed_mgr_get_cluster_by_name(job_update_info->submit_cluster))) {
+		error("Invalid sibling name");
+		unlock_slurmctld(fed_read_lock);
+		slurm_mutex_unlock(&fed_job_list_mutex);
+		return;
+	}
+
+	if (job_info->updating_sibs[sibling->fed.id])
+		job_info->updating_sibs[sibling->fed.id]--;
+	else
+		error("%s this should never happen", __func__);
+
+	slurm_mutex_unlock(&fed_job_list_mutex);
+	unlock_slurmctld(fed_read_lock);
+}
+
 static int _foreach_fed_job_update_info(fed_job_update_info_t *job_update_info)
 {
 	if (!fed_mgr_cluster_rec) {
@@ -1733,6 +1841,12 @@ static int _foreach_fed_job_update_info(fed_job_update_info_t *job_update_info)
 	case FED_JOB_SUBMIT_BATCH:
 	case FED_JOB_SUBMIT_INT:
 		_handle_fed_job_submission(job_update_info);
+		break;
+	case FED_JOB_UPDATE:
+		_handle_fed_job_update(job_update_info);
+		break;
+	case FED_JOB_UPDATE_RESPONSE:
+		_handle_fed_job_update_response(job_update_info);
 		break;
 	default:
 		error("Invalid fed_job type: %d jobid: %u",
@@ -2610,24 +2724,24 @@ static List _get_sib_will_runs(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 /* Update remote sibling job's viable_siblings bitmaps.
  *
  * IN job_id      - job_id of job to update.
+ * IN job_specs   - job_specs to update job_id with.
  * IN viable_sibs - viable siblings bitmap to send to sibling jobs.
  * IN update_sibs - bitmap of siblings to update.
  */
-extern int fed_mgr_update_job(job_desc_msg_t *job_specs, uint64_t update_sibs)
+extern int fed_mgr_update_job(uint32_t job_id, job_desc_msg_t *job_specs,
+			      uint64_t update_sibs, uid_t uid)
 {
-	ListIterator sib_itr, thread_itr;
+	ListIterator sib_itr;
 	slurmdb_cluster_rec_t *sibling;
-	List update_threads = list_create(_xfree_f);
-	pthread_attr_t attr;
-	sib_update_t *tmp_sub = NULL;
+	fed_job_info_t *job_info;
 
-	slurm_attr_init(&attr);
+	if (!(job_info = _find_fed_job_info(job_id))) {
+		error("Didn't find job %d in fed_job_list", job_id);
+		return SLURM_ERROR;
+	}
 
 	sib_itr = list_iterator_create(fed_mgr_fed_rec->cluster_list);
 	while ((sibling = list_next(sib_itr))) {
-		pthread_t thread_id = 0;
-		sib_update_t *sub;
-
 		/* Local is handled outside */
 		if (sibling == fed_mgr_cluster_rec)
 			continue;
@@ -2635,34 +2749,16 @@ extern int fed_mgr_update_job(job_desc_msg_t *job_specs, uint64_t update_sibs)
 		if (!(update_sibs & FED_SIBLING_BIT(sibling->fed.id)))
 			continue;
 
-		sub = xmalloc(sizeof(sib_submit_t));
-		sub->job_desc = job_specs;
-		sub->sibling  = sibling;
-		if (pthread_create(&thread_id, &attr,
-				   _update_sibling_job, sub) != 0) {
-			error("failed to create submit_sibling_job_thread");
-			xfree(sub);
+		if (_persist_update_job(sibling, job_id, job_specs, uid)) {
+			error("failed to update sibling job on sibling %s",
+			      sibling->name);
 			continue;
 		}
-		sub->thread_id = thread_id;
 
-		list_append(update_threads, sub);
+		job_info->updating_sibs[sibling->fed.id]++;
+		job_info->updating_time[sibling->fed.id] = time(NULL);
 	}
 	list_iterator_destroy(sib_itr);
-	slurm_attr_destroy(&attr);
-
-	thread_itr = list_iterator_create(update_threads);
-	while ((tmp_sub = list_next(thread_itr))) {
-		pthread_join(tmp_sub->thread_id, NULL);
-		if (tmp_sub->thread_rc) {
-			error("failed to update sibling job on sibling %s",
-			      tmp_sub->sibling->name);
-			/* other cluster should get updated when it syncs
-			 * up */
-		}
-	}
-	list_iterator_destroy(thread_itr);
-	FREE_NULL_LIST(update_threads);
 
 	return SLURM_SUCCESS;
 }
@@ -2849,6 +2945,7 @@ static uint64_t _get_viable_sibs(char *req_clusters, uint64_t feature_sibs)
 
 static void _add_remove_sibling_jobs(struct job_record *job_ptr)
 {
+	fed_job_info_t *job_info;
 	uint32_t origin_id = 0;
 	uint64_t new_sibs = 0, old_sibs = 0, add_sibs = 0,
 		 rem_sibs = 0, feature_sibs = 0;
@@ -2894,8 +2991,50 @@ static void _add_remove_sibling_jobs(struct job_record *job_ptr)
 	    (add_sibs & FED_SIBLING_BIT(origin_id)))
 		job_ptr->job_state &= ~JOB_REVOKED;
 
+	/* Can't have the mutex while calling fed_mgr_job_revoke because it will
+	 * lock the mutex as well. */
+	slurm_mutex_lock(&fed_job_list_mutex);
+	if ((job_info = _find_fed_job_info(job_ptr->job_id))) {
+		job_info->siblings_viable =
+			job_ptr->fed_details->siblings_viable;
+		job_info->siblings_active =
+			job_ptr->fed_details->siblings_active;
+	}
+	slurm_mutex_unlock(&fed_job_list_mutex);
+
 	/* Update where sibling jobs are running */
 	update_job_fed_details(job_ptr);
+}
+
+static bool _job_has_pending_updates(fed_job_info_t *job_info)
+{
+	int i;
+	xassert(job_info);
+	static const int UPDATE_DELAY = 60;
+	time_t now = time(NULL);
+
+	for (i = 1; i <= MAX_FED_CLUSTERS; i++) {
+		if (job_info->updating_sibs[i]) {
+		    if (job_info->updating_time[i] > (now - UPDATE_DELAY)) {
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+				info("job %u is waiting for %d update responses from cluster id %d",
+				     job_info->job_id,
+				     job_info->updating_sibs[i], i);
+			return true;
+		    } else {
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+				info("job %u is had pending updates (%d) for cluster id %d, but haven't heard back from it for %ld seconds. Clearing the cluster's updating state",
+				     job_info->job_id,
+				     job_info->updating_sibs[i],
+				     i,
+				     now - job_info->updating_time[i]);
+			job_info->updating_sibs[i] = 0;
+		    }
+		}
+
+	}
+
+	return false;
 }
 
 /*
@@ -3198,6 +3337,11 @@ extern int fed_mgr_job_lock_set(uint32_t job_id, uint32_t cluster_id)
 
 	if (!(job_info = _find_fed_job_info(job_id))) {
 		error("Didn't find job %d in fed_job_list", job_id);
+		rc = SLURM_ERROR;
+	} else if (_job_has_pending_updates(job_info)) {
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+			info("%s: cluster %u can't get cluster lock for %u because it has pending updates",
+			     __func__, cluster_id, job_id);
 		rc = SLURM_ERROR;
 	} else if (job_info->cluster_lock &&
 		   job_info->cluster_lock != cluster_id) {
@@ -4301,6 +4445,23 @@ extern int fed_mgr_q_sib_submit_response(slurm_msg_t *msg)
 	return rc;
 }
 
+extern int fed_mgr_q_job_update(char *cluster_name, uint32_t job_id,
+				job_desc_msg_t *job_desc, uid_t uid)
+{
+	fed_job_update_info_t *job_update_info =
+		xmalloc(sizeof(fed_job_update_info_t));
+
+	job_update_info->type           = FED_JOB_UPDATE;
+	job_update_info->submit_desc    = job_desc;
+	job_update_info->job_id         = job_id;
+	job_update_info->uid            = uid;
+	job_update_info->submit_cluster = xstrdup(cluster_name);
+
+	_append_job_update(job_update_info);
+
+	return SLURM_SUCCESS;
+}
+
 extern int fed_mgr_q_job_complete(uint32_t job_id, time_t start_time,
 				  uint32_t return_code)
 {
@@ -4318,3 +4479,19 @@ extern int fed_mgr_q_job_complete(uint32_t job_id, time_t start_time,
 	return rc;
 }
 
+extern int fed_mgr_q_sib_job_update_response(char *cluster_name,
+					     uint32_t job_id,
+					     uint32_t return_code) {
+	int rc = SLURM_SUCCESS;
+	fed_job_update_info_t *job_update_info =
+		xmalloc(sizeof(fed_job_update_info_t));
+
+	job_update_info->type           = FED_JOB_UPDATE_RESPONSE;
+	job_update_info->job_id         = job_id;
+	job_update_info->return_code    = return_code;
+	job_update_info->submit_cluster = xstrdup(cluster_name);
+
+	_append_job_update(job_update_info);
+
+	return rc;
+}
