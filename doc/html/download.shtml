@@ -9,7 +9,7 @@ Slurm has also been packaged for
 <a href="http://packages.ubuntu.com/search?keywords=slurm-wlm">Ubuntu</a>
 (named <i>slurm-wlm</i> or <i>slurm-llnl</i> depending upon the version) and
 <a href="http://www.pkgsrc.org">NetBSD</a> (in pkgsrc) and
-<a href="http://www.freshports.org/sysutils/slurm-hpc/">FreeBSD</a>.</p>
+<a href="http://www.freshports.org/sysutils/slurm-wlm/">FreeBSD</a>.</p>
 
 <!--
 Slurm interface to PHP
