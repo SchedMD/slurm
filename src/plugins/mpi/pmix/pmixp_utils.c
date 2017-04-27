@@ -481,7 +481,6 @@ int pmixp_rmdir_recursively(char *path)
 
 	int rc;
 
-    return 0;
 	/*
 	 * Make sure that "directory" exists and is a directory.
 	 */

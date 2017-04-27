@@ -47,7 +47,7 @@ static int _srv_tsock_port = -1;
 static int _srv_tsock_fd = -1;
 static bool _srv_use_direct_conn = true;
 
-pmix_jobinfo_t _pmixp_job_info = {0};
+pmix_jobinfo_t _pmixp_job_info;
 
 static int _resources_set(char ***env);
 static int _env_set(char ***env);
