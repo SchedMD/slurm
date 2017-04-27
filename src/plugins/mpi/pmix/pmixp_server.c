@@ -419,10 +419,9 @@ static bool _serv_readable(eio_obj_t *obj)
 	/* sanity check */
 	xassert(NULL != obj );
 	if( obj->shutdown ){
-		if (obj->fd != -1) {
-			close(obj->fd);
-			obj->fd = -1;
-		}
+		/* corresponding connection will be
+		 * cleaned up during plugin finalize
+		 */
 		return false;
 	}
 	return true;
@@ -432,8 +431,12 @@ static int _serv_read(eio_obj_t *obj, List objs)
 {
 	/* sanity check */
 	xassert(NULL != obj );
-	/* We should delete connection right when it  was closed or failed */
-	xassert(false == obj->shutdown);
+	if( obj->shutdown ){
+		/* corresponding connection will be
+		 * cleaned up during plugin finalize
+		 */
+		return 0;
+	}
 
 	PMIXP_DEBUG("fd = %d", obj->fd);
 	pmixp_conn_t *conn = (pmixp_conn_t *)obj->arg;
@@ -463,12 +466,10 @@ static bool _serv_writable(eio_obj_t *obj)
 {
 	/* sanity check */
 	xassert(NULL != obj );
-	/* We should delete connection right when it  was closed or failed */
 	if( obj->shutdown ){
-		if (obj->fd != -1) {
-			close(obj->fd);
-			obj->fd = -1;
-		}
+		/* corresponding connection will be
+		 * cleaned up during plugin finalize
+		 */
 		return false;
 	}
 
@@ -493,8 +494,12 @@ static int _serv_write(eio_obj_t *obj, List objs)
 {
 	/* sanity check */
 	xassert(NULL != obj );
-	/* We should delete connection right when it  was closed or failed */
-	xassert(false == obj->shutdown);
+	if( obj->shutdown ){
+		/* corresponding connection will be
+		 * cleaned up during plugin finalize
+		 */
+		return 0;
+	}
 
 	PMIXP_DEBUG("fd = %d", obj->fd);
 	pmixp_conn_t *conn = (pmixp_conn_t *)obj->arg;
@@ -657,11 +662,10 @@ int pmixp_server_send_nb(pmixp_ep_t *ep, pmixp_srv_cmd_t type,
 			pmixp_dconn_unlock(dconn);
 			goto send_slurm;
 		default:{
-			pmixp_dconn_unlock(dconn);
 			/* this is a bug! */
 			pmixp_dconn_state_t state = pmixp_dconn_state(dconn);
-			PMIXP_ERROR("Bad direct connection state: %d",
-				    (int)pmixp_dconn_state(dconn));
+			pmixp_dconn_unlock(dconn);
+			PMIXP_ERROR("Bad direct connection state: %d", (int)state);
 			xassert( (state == PMIXP_DIRECT_INIT) ||
 				 (state == PMIXP_DIRECT_PORT_SENT) ||
 				 (state == PMIXP_DIRECT_CONNECTED) );
