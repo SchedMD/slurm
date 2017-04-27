@@ -353,6 +353,11 @@ AM_CONDITIONAL(HAVE_OPENSSL, test "x$ac_have_openssl" = "xyes")
 AC_SUBST(HAVE_OPENSSL)
 
 dnl
+dnl Check for systemd presence, version and system unit dir
+dnl
+X_AC_SYSTEMD
+
+dnl
 dnl Check for compilation of SLURM auth modules:
 dnl
 X_AC_MUNGE
