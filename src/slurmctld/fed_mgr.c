@@ -89,16 +89,6 @@ static pthread_mutex_t fed_job_list_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  job_update_cond    = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t job_update_mutex   = PTHREAD_MUTEX_INITIALIZER;
 
-/* structs to pass to threads */
-typedef struct {
-	will_run_response_msg_t *resp;
-	slurmdb_cluster_rec_t  	*sibling;
-	sib_msg_t               *sib_msg;
-	uid_t                    uid;
-	pthread_t                thread_id;
-	int                      thread_rc;
-} sib_willrun_t;
-
 typedef struct {
 	Buf        buffer;
 	uint32_t   job_id;
@@ -895,46 +885,6 @@ static void _join_federation(slurmdb_federation_rec_t *fed,
 		unlock_slurmctld(fed_read_lock);
 	}
 	_create_ping_thread();
-}
-
-static int _persist_job_will_run(slurmdb_cluster_rec_t *conn,
-				 sib_msg_t *sib_msg,
-				 will_run_response_msg_t **will_run_resp)
-{
-	int rc = SLURM_PROTOCOL_SUCCESS;
-	slurm_msg_t req_msg, resp_msg;
-
-	slurm_msg_t_init(&req_msg);
-
-	req_msg.msg_type = REQUEST_SIB_JOB_WILL_RUN;
-	req_msg.data     = sib_msg;
-
-	if (_send_recv_msg(conn, &req_msg, &resp_msg, false)) {
-		rc = SLURM_PROTOCOL_ERROR;
-		goto end_it;
-	}
-
-	switch (resp_msg.msg_type) {
-	case RESPONSE_SLURM_RC:
-		if ((rc = slurm_get_return_code(resp_msg.msg_type,
-						resp_msg.data))) {
-			slurm_seterrno(rc);
-		}
-		break;
-	case RESPONSE_JOB_WILL_RUN:
-		*will_run_resp = (will_run_response_msg_t *) resp_msg.data;
-		resp_msg.data = NULL;
-		break;
-	default:
-		slurm_seterrno(SLURM_UNEXPECTED_MSG_ERROR);
-		rc = SLURM_PROTOCOL_ERROR;
-		break;
-	}
-
-end_it:
-	slurm_free_msg_members(&resp_msg);
-
-	return rc;
 }
 
 static int _persist_submit_batch_job(slurmdb_cluster_rec_t *conn,
@@ -2523,52 +2473,6 @@ extern int fed_mgr_add_sibling_conn(slurm_persist_conn_t *persist_conn,
 	return rc;
 }
 
-static void _destroy_sib_willrun(void *object)
-{
-	sib_willrun_t *resp = (sib_willrun_t *)object;
-	if (resp) {
-		slurm_free_will_run_response_msg(resp->resp);
-		xfree(resp);
-	}
-}
-
-static void *_sib_will_run(void *arg)
-{
-	int rc = SLURM_SUCCESS;
-	sib_willrun_t *sib_willrun = (sib_willrun_t *)arg;
-
-	if (sib_willrun->sibling == fed_mgr_cluster_rec) {
-		char *err_msg = NULL;
-		struct job_record *job_ptr = NULL;
-		sib_msg_t *sib_msg = sib_willrun->sib_msg;
-		job_desc_msg_t *job_desc = (job_desc_msg_t *)sib_msg->data;
-
-		if (find_job_record(sib_msg->job_id)) {
-			rc = job_start_data(job_desc, &sib_willrun->resp);
-		} else {
-			rc = job_allocate(job_desc, false, true,
-					  &sib_willrun->resp, true,
-					  sib_willrun->uid, &job_ptr, &err_msg,
-					  sib_msg->data_version);
-		}
-
-		xfree(err_msg);
-
-		if (rc)
-			debug2("%s: %s", __func__, slurm_strerror(rc));
-	} else if ((rc = _persist_job_will_run(sib_willrun->sibling,
-					       sib_willrun->sib_msg,
-					       &sib_willrun->resp))) {
-		if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-			info("Didn't get will_run response from sibling %s",
-			     sib_willrun->sibling->name);
-	}
-
-	sib_willrun->thread_rc = rc;
-
-	return NULL;
-}
-
 /*
  * Convert comma separated list of cluster names to bitmap of cluster ids.
  */
@@ -2611,114 +2515,6 @@ end_it:
 		*cluster_bitmap = cluster_ids;
 
 	return rc;
-}
-
-/*
- * Get will_run responses from all clusters in a federation.
- *
- * Must have fed_read_lock before entering and NO job locks.
- *
- * Will send willruns to the clusters set in job_desc->fed_siblings_viable.
- *
- * IN msg - contains the original job_desc buffer to send to the siblings and to
- * 	be able to create a job_desc copy to willrun itself.
- * IN job_desc - original job_desc. It contains the federated job_id to put on
- * 	the unpacked job_desc. This is not used for the actual will_run because
- * 	job_allocate will modify the job_desc.
- * IN uid - uid of user submitting the job
- * RET returns a list of will_run_response_msg_t*'s.
- */
-static List _get_sib_will_runs(slurm_msg_t *msg, job_desc_msg_t *job_desc,
-			       uid_t uid)
-{
-	sib_willrun_t *sib_willrun     = NULL;
-	slurmdb_cluster_rec_t *sibling = NULL;
-	ListIterator sib_itr, resp_itr;
-	List sib_willruns = NULL;
-	pthread_attr_t attr;
-	sib_msg_t sib_msg = {0};
-	uint32_t save_offset;
-	slurm_msg_t tmp_msg;
-
-	xassert(job_desc);
-	xassert(msg);
-
-	slurm_attr_init(&attr);
-	sib_willruns = list_create(_destroy_sib_willrun);
-
-	/* Create copy of submitted job_desc since job_allocate() can modify the
-	 * original job_desc. */
-	save_offset = get_buf_offset(msg->buffer);
-	set_buf_offset(msg->buffer, msg->body_offset);
-	slurm_msg_t_init(&tmp_msg);
-	tmp_msg.flags            = msg->flags;
-	tmp_msg.msg_type         = msg->msg_type;
-	tmp_msg.protocol_version = msg->protocol_version;
-
-	unpack_msg(&tmp_msg, msg->buffer);
-	set_buf_offset(msg->buffer, save_offset);
-
-	((job_desc_msg_t *)tmp_msg.data)->job_id = job_desc->job_id;
-	sib_msg.job_id       = job_desc->job_id;
-	sib_msg.data         = tmp_msg.data;
-	sib_msg.data_buffer  = msg->buffer;
-	sib_msg.data_offset  = msg->body_offset;
-	sib_msg.data_version = msg->protocol_version;
-	sib_msg.data_type    = msg->msg_type;
-
-	/* willrun the sibling clusters */
-	sib_itr = list_iterator_create(fed_mgr_fed_rec->cluster_list);
-	while ((sibling = list_next(sib_itr))) {
-		if (!(job_desc->fed_siblings_viable &
-		      FED_SIBLING_BIT(sibling->fed.id))) {
-			if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-				info("skipping cluster %s -- not in cluster list to submit job to",
-				     sibling->name);
-			continue;
-		}
-
-		sib_willrun = xmalloc(sizeof(sib_willrun_t));
-		sib_willrun->sibling = sibling;
-		sib_willrun->uid     = uid;
-		sib_willrun->sib_msg = &sib_msg;
-
-		if (pthread_create(&sib_willrun->thread_id, &attr,
-				   _sib_will_run, sib_willrun) != 0) {
-			error("failed to create sib_will_run thread for sib %s",
-			      sibling->name);
-			_destroy_sib_willrun(sib_willrun);
-			continue;
-		}
-
-		list_append(sib_willruns, sib_willrun);
-	}
-	list_iterator_destroy(sib_itr);
-
-	slurm_attr_destroy(&attr);
-
-	resp_itr = list_iterator_create(sib_willruns);
-	while ((sib_willrun = list_next(resp_itr))) {
-		pthread_join(sib_willrun->thread_id, NULL);
-
-		if (sib_willrun->resp &&
-		    (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)) {
-			char buf[64];
-			slurm_make_time_str(&sib_willrun->resp->start_time,
-					    buf, sizeof(buf));
-			info("will_run_resp for %s: "
-			     "start:%s sys_usage:%-6.2f weight:%d",
-			     sib_willrun->sibling->name, buf,
-			     sib_willrun->resp->sys_usage_per,
-			     sib_willrun->sibling->fed.weight);
-		}
-	}
-
-	list_iterator_destroy(resp_itr);
-
-	/* Free unpacked job_desc data */
-	slurm_free_msg_members(&tmp_msg);
-
-	return sib_willruns;
 }
 
 /* Update remote sibling job's viable_siblings bitmaps.
@@ -3747,82 +3543,6 @@ extern char *fed_mgr_cluster_ids_to_names(uint64_t cluster_ids)
 	}
 
 	return names;
-}
-
-/* Find the earliest time a job can start by doing willruns to all clusters in
- * the federation and returning the fastest time.
- *
- * IN msg - msg that contains packed job_desc msg to send to siblings.
- * IN job_desc - original job_desc msg.
- * IN uid - uid of user requesting will_run.
- * OUT resp - will_run_response to return
- * RET returns a SLURM_SUCCESS if a will_run_response is found, SLURM_ERROR
- * 	otherwise.
- */
-extern int fed_mgr_sib_will_run(slurm_msg_t *msg, job_desc_msg_t *job_desc,
-				uid_t uid, will_run_response_msg_t **resp)
-{
-	int rc = SLURM_SUCCESS, last_error = SLURM_SUCCESS;
-	ListIterator itr;
-	List sib_willruns = NULL;
-	sib_willrun_t *sib_willrun;
-	sib_willrun_t *earliest_willrun = NULL;
-	uint64_t feature_sibs = 0;
-
-	xassert(msg);
-	xassert(job_desc);
-	xassert(resp);
-
-	*resp = NULL;
-
-	if (fed_mgr_validate_cluster_features(job_desc->cluster_features,
-					      &feature_sibs)) {
-		rc = ESLURM_INVALID_CLUSTER_FEATURE;
-		goto end_it;
-	}
-
-	/* Get new job_id now so that it will be the same across all clusters */
-	if (job_desc->job_id == NO_VAL) {
-		job_desc->job_id = get_next_job_id(false);
-	}
-
-	if (!job_desc->fed_siblings_viable) /* not using job_ptr's */
-		job_desc->fed_siblings_viable =
-			_get_viable_sibs(job_desc->clusters, feature_sibs);
-
-	if (!(sib_willruns = _get_sib_will_runs(msg, job_desc, uid))) {
-		error("Failed to get any will_run responses from any sibs");
-		rc = SLURM_ERROR;
-		goto end_it;
-	}
-
-	itr = list_iterator_create(sib_willruns);
-	while ((sib_willrun = list_next(itr))) {
-		if (!sib_willrun->resp) { /* no response if job couldn't run? */
-			last_error = sib_willrun->thread_rc;
-			continue;
-		}
-
-		if ((earliest_willrun == NULL) ||
-		    (sib_willrun->resp->start_time <
-		     earliest_willrun->resp->start_time))
-			earliest_willrun = sib_willrun;
-	}
-	list_iterator_destroy(itr);
-
-	if (earliest_willrun) {
-		*resp = earliest_willrun->resp;
-		earliest_willrun->resp = NULL;
-	} else if (last_error) {
-		rc = last_error;
-	} else {
-		rc = SLURM_ERROR;
-	}
-
-end_it:
-	FREE_NULL_LIST(sib_willruns);
-
-	return rc;
 }
 
 /*

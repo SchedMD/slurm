@@ -165,7 +165,7 @@ inline static int   _slurm_rpc_job_step_kill(uint32_t uid, slurm_msg_t * msg,
 					     bool send_resp);
 inline static void  _slurm_rpc_job_step_create(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_step_get_info(slurm_msg_t * msg);
-inline static void  _slurm_rpc_job_will_run(slurm_msg_t * msg, bool is_sib_job);
+inline static void  _slurm_rpc_job_will_run(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_alloc_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_kill_job2(slurm_msg_t *msg);
 inline static void  _slurm_rpc_node_registration(slurm_msg_t *msg,
@@ -199,7 +199,6 @@ inline static int  _slurm_rpc_sib_job_update_response(uint32_t uid,
 						      slurm_msg_t *msg);
 inline static void _slurm_rpc_sib_job_lock(uint32_t uid, slurm_msg_t *msg);
 inline static void _slurm_rpc_sib_job_unlock(uint32_t uid, slurm_msg_t *msg);
-inline static void _slurm_rpc_sib_job_willrun(uint32_t uid, slurm_msg_t *msg);
 inline static void _slurm_rpc_sib_submit_batch_job(uint32_t uid,
 						   slurm_msg_t *msg);
 inline static void _slurm_rpc_sib_submit_response(uint32_t uid,
@@ -377,7 +376,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		_slurm_rpc_job_step_get_info(msg);
 		break;
 	case REQUEST_JOB_WILL_RUN:
-		_slurm_rpc_job_will_run(msg, false);
+		_slurm_rpc_job_will_run(msg);
 		break;
 	case REQUEST_SIB_JOB_START:
 		(void) _slurm_rpc_sib_job_start(rpc_uid, msg, true);
@@ -396,9 +395,6 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		break;
 	case REQUEST_SIB_JOB_UNLOCK:
 		_slurm_rpc_sib_job_unlock(rpc_uid, msg);
-		break;
-	case REQUEST_SIB_JOB_WILL_RUN:
-		_slurm_rpc_sib_job_willrun(rpc_uid, msg);
 		break;
 	case REQUEST_SIB_SUBMIT_BATCH_JOB:
 		_slurm_rpc_sib_submit_batch_job(rpc_uid, msg);
@@ -2556,7 +2552,7 @@ static bool _is_valid_will_run_user(job_desc_msg_t *job_desc_msg, uid_t uid)
 
 /* _slurm_rpc_job_will_run - process RPC to determine if job with given
  *	configuration can be initiated */
-static void _slurm_rpc_job_will_run(slurm_msg_t * msg, bool is_sib_job)
+static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 {
 	/* init */
 	DEF_TIMERS;
@@ -2610,23 +2606,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg, bool is_sib_job)
 		dump_job_desc(job_desc_msg);
 		if (error_code == SLURM_SUCCESS) {
 			lock_slurmctld(job_write_lock);
-			if (job_desc_msg->job_id != NO_VAL) {
-				if ((job_ptr =
-				     find_job_record(job_desc_msg->job_id)) &&
-				    job_ptr->fed_details)
-					job_desc_msg->fed_siblings_viable =
-					job_ptr->fed_details->siblings_active;
-				else if (!is_sib_job) {
-					error_code = ESLURM_INVALID_JOB_ID;
-					goto send_reply;
-				}
-			}
-
-			if (!is_sib_job && fed_mgr_fed_rec) {
-				error_code = fed_mgr_sib_will_run(msg,
-								  job_desc_msg,
-								  uid, &resp);
-			} else if (!job_ptr) {
+			if (job_desc_msg->job_id == NO_VAL) {
 				error_code = job_allocate(job_desc_msg, false,
 							  true, &resp, true,
 							  uid, &job_ptr,
@@ -6172,24 +6152,6 @@ static void _slurm_rpc_sib_job_unlock(uint32_t uid, slurm_msg_t *msg)
 	rc = fed_mgr_job_lock_unset(sib_msg->job_id, sib_msg->cluster_id);
 
 	slurm_send_rc_msg(msg, rc);
-}
-
-static void _slurm_rpc_sib_job_willrun(uint32_t uid, slurm_msg_t *msg)
-{
-	sib_msg_t      *sib_msg  = msg->data;
-	job_desc_msg_t *job_desc = sib_msg->data;
-	job_desc->job_id         = sib_msg->job_id;
-
-	if (!msg->conn) {
-		error("Security violation, SIB_JOB_WILLRUN RPC from uid=%d",
-		      uid);
-		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
-		return;
-	}
-
-	msg->data = job_desc;
-	_slurm_rpc_job_will_run(msg, true);
-	msg->data = sib_msg;
 }
 
 static void _slurm_rpc_sib_submit_batch_job(uint32_t uid, slurm_msg_t *msg)
