@@ -176,7 +176,10 @@ static local_tres_usage_t *_add_time_tres(List tres_list, int type, uint32_t id,
 {
 	local_tres_usage_t *loc_tres;
 
-	if (!time)
+	/* Energy TRES could have a NO_VAL64, we want to skip those as it is the
+	 * same as a 0 since nothing was gathered.
+	 */
+	if (!time || (time == NO_VAL64))
 		return NULL;
 
 	loc_tres = list_find_first(tres_list, _find_loc_tres, &id);
