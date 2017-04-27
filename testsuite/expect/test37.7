@@ -1,0 +1,558 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test CFederated Cluster States
+#
+# Reqs:    1. Using slurmdbd accounting storage type and is up
+#          2. fed_slurm_base is defined in globals.local - set to directory that
+#          has access to each federation configure (fedc1, fedc2, fedc3).
+#          Eg.
+#          fedr/slurm/ (src)
+#          fedr/fed1/bin
+#          fedr/fed1/sbin
+#          fedr/fed1/etc
+#          fedr/fed1/...
+#          fedr/fed2/...
+#          fedr/fed3/...
+#          3. controllers are up and running.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2017 SchedMD LLC.
+# Written by Isaac Hartung <ihartung@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+source ./globals
+source ./globals_accounting
+source ./globals_federation
+
+set test_id      "37.7"
+set exit_code    0
+set fed_name     "feda"
+set file_in      "test$test_id.in"
+set user_name    ""
+set srun_job_cnt 0
+set my_scontrol  "${fed_slurm_base}/$fedc1/bin/scontrol"
+set my_sacctmgr  "${fed_slurm_base}/$fedc1/bin/sacctmgr"
+set my_sbatch    "${fed_slurm_base}/$fedc1/bin/sbatch"
+set my_srun      "${fed_slurm_base}/$fedc1/bin/srun"
+set my_salloc    "${fed_slurm_base}/$fedc1/bin/salloc"
+set my_squeue    "${fed_slurm_base}/$fedc1/bin/squeue"
+set min_job_age  [expr {[get_min_job_age] + 65}]
+
+set eol "\r\n"
+
+print_header $test_id
+
+#
+# Check accounting config and bail if not found.
+#
+if { [test_account_storage] == 0 } {
+	log_warn "This test can't be run without a usable AccountStorageType"
+	exit 0
+}
+
+if { [string compare [check_accounting_admin_level] "Administrator"] } {
+	log_warn "This test can't be run without being an Accounting administrator.\n \
+	 	  Use: sacctmgr mod user \$USER set admin=admin."
+	exit 0
+}
+
+proc sacctmgr_show { regex } {
+	global number bin_sleep node_count my_sacctmgr fed_name
+
+	set matches 0
+
+	spawn $my_sacctmgr show fed $fed_name --noheader
+	expect {
+		-re "$regex" {
+			incr matches
+		}
+		timeout {
+			log_error "scontrol not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		log_error "didn't match regex $regex: $matches"
+		end_it 1
+	}
+}
+
+proc sacctmgr_mod { state } {
+	global my_sacctmgr eol fedc1
+
+	set matches 0
+	set exit_code 0
+
+	spawn $my_sacctmgr mod cluster $fedc1 set fedstate=$state -i
+	expect {
+		-re "Setting$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "^\\s+FedState\\s+=\\s+$state" {
+			incr matches
+			exp_continue
+		}
+		-re "Modified cluster...$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "^\\s+$fedc1$eol" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr mod not responding\n"
+			slow_kill $my_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$exit_code || $matches != 4} {
+		send_user "$matches FAILURE: unexpected error.\n"
+		end_it 1
+	}
+
+}
+
+proc scontrol { category regex } {
+	global fedc1 fed_slurm_base bin_sleep my_scontrol
+
+	set matches 0
+
+	spawn $my_scontrol show $category
+	expect {
+		-re "$regex" {
+			incr matches
+		}
+		timeout {
+			log_error "scontrol not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		log_error "didn't match regex $regex: $matches"
+		end_it 1
+	}
+
+}
+
+proc sbatch { mfed error } {
+	global number bin_sleep node_count my_sbatch fedc1
+
+
+	set script "\"sleep 10\""
+	set matches 0
+	set job_id 0
+	set command "$my_sbatch -N$node_count --exclusive --output=/dev/null \
+		--error=/dev/null -t300 --requeue --wrap $script"
+	set regex "Submitted batch job ($number).+"
+	set collect 1
+
+	if { $error } {
+		set regex "sbatch: error: Batch job submission failed: System submissions disabled"
+		set collect 0
+	}
+	if {$mfed} {
+		append command " -M$fedc1"
+	}
+	spawn {*}$command
+	expect {
+		-re "$regex" {
+			incr matches
+			if { $collect } {
+				set job_id $expect_out(1,string)
+			}
+
+		}
+		timeout {
+			log_error "sbatch not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		log_error "batch submit failure"
+		end_it 1
+	}
+
+	$bin_sleep 3
+	return $job_id
+}
+
+proc squeue { regex } {
+	global fed_slurm_base fedc1
+
+	set matches 0
+	set my_squeue "${fed_slurm_base}/$fedc1/bin/squeue"
+	spawn $my_squeue --noheader -Ostatecompact:.5
+	expect {
+		-re "$regex" {
+			incr matches
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		log_error "unexpected error in squeue. expected $regex"
+		end_it 1
+	}
+}
+
+proc cancel_all_jobs { } {
+	global scancel user_name fedc1 fedc2 fedc3
+
+	spawn $scancel -M$fedc1,$fedc2,$fedc3 --user $user_name
+	expect {
+		eof {
+			wait
+		}
+	}
+	sleep 5
+}
+
+proc cleanup { } {
+	global scancel fed_name user_name bin_rm file_in fedc1 fedc2 fedc3
+	global test_id bin_bash my_sacctmgr
+
+	cancel_all_jobs
+	exec $bin_rm -f $file_in
+	exec $bin_bash -c "$bin_rm -f test$test_id*.out"
+
+	return [delete_federations $fed_name]
+}
+
+proc end_it { exit_code } {
+	global test_id
+	cleanup
+	if {$exit_code == 0} {
+		print_success $test_id
+	}
+	exit $exit_code
+}
+
+#start test
+
+if {[test_federation_setup]} {
+	log_warn "WARNING: This test can't be run without fed_slurm_base,\
+		fedc1, fedc2, fedc3 setup in globals.local."
+	exit 0
+}
+
+if {[test_cluster_up $fedc1] ||
+    [test_cluster_up $fedc2] ||
+    [test_cluster_up $fedc3]} {
+	end_it 1
+}
+
+set user_name [get_my_user_name]
+
+# Remove existing setup
+if {[cleanup] != 0} {
+	log_error "failed to cleanup"
+	end_it 1
+}
+
+# get number of nodes per cluster
+set node_count [available_nodes "" ""]
+
+make_bash_script $file_in "env; $bin_sleep 300"
+
+
+send_user "\n################################################################\n"
+send_user "Setup cluster features"
+send_user "\n################################################################\n"
+
+set job_id 0
+set matches 0
+
+send_user "here \n"
+
+
+exec $my_sacctmgr add Federation $fed_name clusters=$fedc1,$fedc2 -i
+
+
+send_user "here \n"
+
+
+set matches 0
+
+sacctmgr_show ".+ACTIVE.+ACTIVE.+"
+
+scontrol fed ".+ACTIVE.+ACTIVE.+"
+
+sbatch 1 0
+
+set job_id [sbatch 1 0]
+
+sacctmgr_mod INACTIVE
+
+squeue "PD\\s+R\\s+"
+
+sleep 10
+
+squeue "PD\\s+"
+
+sbatch 1 1
+
+set matches 0
+
+spawn $my_srun hostname
+expect {
+	-re "srun: error: Unable to allocate resources: System submissions disabled" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr mod not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 1} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+set matches 0
+
+spawn $my_salloc hostname
+expect {
+	-re "salloc: error: Job submit/allocate failed: System submissions disabled" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr mod not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 1} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+sacctmgr_mod ACTIVE
+
+wait_for_fed_job $job_id RUNNING $fedc1,$fedc2
+
+squeue "R\\s+"
+
+sbatch 1 0
+
+squeue "R\\s+"
+
+sbatch 1 0
+
+sbatch 1 0
+
+sacctmgr_mod DRAIN
+
+sbatch 1 1
+
+sacctmgr_show "\\s+DRAIN.+ACTIVE\\s+"
+
+scontrol fed ".+DRAIN.+ACTIVE.+"
+
+squeue "PD\\s+R\\s+"
+
+sleep 10
+
+squeue "R\\s+"
+
+sleep 10
+
+squeue ""
+
+sleep $min_job_age
+
+scontrol jobs "No jobs in the system"
+
+scontrol fed ".+DRAIN.+ACTIVE.+"
+
+sleep 35
+
+scontrol fed ".+DRAINED.+ACTIVE.+"
+
+sacctmgr_show "\\s+DRAINED.+ACTIVE\\s+"
+
+sacctmgr_mod ACTIVE
+
+sbatch 1 0
+
+squeue "R\\s+"
+
+set matches 0
+set exit_code 0
+
+spawn $my_sacctmgr mod cluster $fedc1 set fedstate=DRAIN+REMOVE -i
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+FedState\\s+=\\s+DRAIN\\+REMOVE" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$fedc1$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr mod not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 4} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+sbatch  1 1
+
+squeue ""
+
+scontrol jobs "JobId.+"
+
+sleep $min_job_age
+
+scontrol jobs "No jobs in the system"
+
+scontrol fed ""
+
+sacctmgr_show "\\s+ACTIVE\\s+"
+
+set matches 0
+
+spawn $my_sacctmgr mod fed $fed_name set clusters+=$fedc1 -i
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Cluster\\s+\\+=\\s+$fedc1" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified federation...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$fed_name$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr mod not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 4} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+
+sacctmgr_show "\\s+ACTIVE.+ACTIVE\\s+"
+
+set matches 0
+set exit_code 0
+
+spawn $my_sacctmgr mod cluster $fedc2 set fedstate=DRAIN -i
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+FedState\\s+=\\s+DRAIN" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$fedc2$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr mod not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 4} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+sacctmgr_show "\\s+ACTIVE.+DRAIN\\s+"
+
+scontrol fed ".+ACTIVE.+DRAIN.+"
+
+sbatch 0 0
+
+squeue "R\\s+"
+
+sbatch 0 0
+
+squeue "PD\\s+R\\s+"
+
+# All Done
+end_it 0
