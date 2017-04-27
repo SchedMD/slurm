@@ -135,10 +135,10 @@ the expected behavior (related to exclusivity) for a subset of these use-cases:
 			<b>noselect</b>
 		</td>
 		<td>
-		        No filter on nodes even if --excluisve=mcs requested.
+		        No filter on nodes even if --exclusive=mcs requested.
 		</td>
 		<td>
-			No filter on nodes even if --excluisve=mcs requested.
+			No filter on nodes even if --exclusive=mcs requested.
 		</td>
 	</tr>
 	<tr>
