@@ -36,6 +36,8 @@ documents those changes that are of interest to users and administrators.
  -- Preempt/job_prio - fix incorrect casts in sort function.
  -- Fix to make task/affinity work with ldoms where there are more than 64
     cpus on the node.
+ -- When using node_features/knl_generic make it so the slurmd doesn't segfault
+    when shutting down.
 
 * Changes in Slurm 17.02.2
 ==========================
