@@ -38,6 +38,8 @@ documents those changes that are of interest to users and administrators.
     cpus on the node.
  -- When using node_features/knl_generic make it so the slurmd doesn't segfault
     when shutting down.
+ -- Fix potential double-xfree() when using job arrays that can lead to
+    slurmctld crashing.
 
 * Changes in Slurm 17.02.2
 ==========================
