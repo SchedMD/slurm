@@ -3889,6 +3889,7 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 			checkpoint_copy_jobinfo(job_ptr->check_job);
 	}
 	job_ptr_pend->burst_buffer = xstrdup(job_ptr->burst_buffer);
+	job_ptr_pend->burst_buffer_state = xstrdup(job_ptr->burst_buffer_state);
 	job_ptr_pend->clusters = xstrdup(job_ptr->clusters);
 	job_ptr_pend->comment = xstrdup(job_ptr->comment);
 
