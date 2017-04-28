@@ -37,6 +37,8 @@
 #ifndef PMIXP_DCONN_UCX_H
 #define PMIXP_DCONN_UCX_H
 
+#include "pmixp_dconn.h"
+
 #ifdef HAVE_UCX
 
 #include <ucp/api/ucp.h>
@@ -47,9 +49,12 @@ void pmixp_ucx_check()
 	PMIXP_ERROR("UCX lib available: %d.%d.%d", major, minor, release);
 }
 
+int pmixp_dconn_ucx_set_handlers(pmixp_dconn_handlers_t *_pmixp_dconn_h);
+
 #else 
 
 #define pmixp_ucx_check()
+#define pmixp_dconn_ucx_set_handlers(_pmixp_dconn_h)
 
 #endif
 

@@ -42,12 +42,15 @@ uint32_t _pmixp_dconn_conn_cnt = 0;
 pmixp_dconn_handlers_t _pmixp_dconn_h;
 
 static pmixp_dconn_type_t _type;
+static int _poll_fd = -1;
+static char *ep_data = NULL;
+static uint16_t ep_len = 0;
 
 void pmixp_dconn_init(int node_cnt, pmixp_io_engine_header_t direct_hdr)
 {
 	int i;
 	memset(&_pmixp_dconn_h, 0, sizeof(_pmixp_dconn_h));
-	pmixp_dconn_tcp_set_handlers(&_pmixp_dconn_h);
+	_poll_fd = pmixp_dconn_tcp_prepare(&_pmixp_dconn_h, &ep_data, &ep_len);
 	_type = PMIXP_DIRECT_TYPE_POLL;
 
 	_pmixp_dconn_conns = xmalloc(sizeof(*_pmixp_dconn_conns) * node_cnt);
@@ -67,6 +70,7 @@ void pmixp_dconn_fini()
 		slurm_mutex_destroy(&_pmixp_dconn_conns[i].lock);
 		_pmixp_dconn_h.fini(_pmixp_dconn_conns[i].priv);
 	}
+	pmixp_dconn_tcp_finalize();
 	xfree(_pmixp_dconn_conns);
 	_pmixp_dconn_conn_cnt = 0;
 }
@@ -81,3 +85,17 @@ pmixp_dconn_type_t pmixp_dconn_type()
 	return _type;
 }
 
+int pmixp_dconn_poll_fd()
+{
+	return _poll_fd;
+}
+
+size_t pmixp_dconn_ep_len()
+{
+	return ep_len;
+}
+
+char *pmixp_dconn_ep_data()
+{
+	return ep_data;
+}

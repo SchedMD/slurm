@@ -48,6 +48,7 @@
 #include "pmixp_debug.h"
 #include "pmixp_nspaces.h"
 #include "pmixp_utils.h"
+#include "pmixp_dconn.h"
 
 #define MAX_RETRIES 5
 
@@ -148,7 +149,7 @@ static int _server_conn_read(eio_obj_t *obj, List objs)
 			PMIXP_DEBUG("SLURM PROTO: accepted connection: sd=%d", fd);
 			/* read command from socket and handle it */
 			pmixp_server_slurm_conn(fd);
-		} else if( pmixp_info_srv_tsock_fd() == obj->fd ){
+		} else if( pmixp_dconn_poll_fd() == obj->fd ){
 			PMIXP_DEBUG("DIRECT PROTO: accepted connection: sd=%d", fd);
 			/* read command from socket and handle it */
 			pmixp_server_direct_conn(fd);
@@ -257,7 +258,7 @@ static void *_agent_thread(void *unused)
 	obj = eio_obj_create(pmixp_info_srv_usock_fd(), &srv_ops, (void *)(-1));
 	eio_new_initial_obj(_io_handle, obj);
 
-	obj = eio_obj_create(pmixp_info_srv_tsock_fd(), &srv_ops, (void *)(-1));
+	obj = eio_obj_create(pmixp_dconn_poll_fd(), &srv_ops, (void *)(-1));
 	eio_new_initial_obj(_io_handle, obj);
 
 	obj = eio_obj_create(timer_data.work_in, &to_ops, (void *)(-1));

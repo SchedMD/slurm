@@ -43,8 +43,6 @@
 /* Server communication */
 static char *_srv_usock_path = NULL;
 static int _srv_usock_fd = -1;
-static int _srv_tsock_port = -1;
-static int _srv_tsock_fd = -1;
 static bool _srv_use_direct_conn = true;
 
 pmix_jobinfo_t _pmixp_job_info;
@@ -71,27 +69,6 @@ int pmixp_info_srv_usock_fd(void)
 	/* Check that Server fd was created */
 	xassert(0 <= _srv_usock_fd);
 	return _srv_usock_fd;
-}
-
-/* stepd global UNIX socket contact information */
-void pmixp_info_srv_tsock_set(uint16_t port, int fd)
-{
-	_srv_tsock_port = (int)port;
-	_srv_tsock_fd = fd;
-}
-
-const uint16_t pmixp_info_srv_tsock_port(void)
-{
-	/* Check that Server address was initialized */
-	xassert(0 < _srv_tsock_port);
-	return (uint16_t)_srv_tsock_port;
-}
-
-int pmixp_info_srv_tsock_fd(void)
-{
-	/* Check that Server fd was created */
-	xassert(0 <= _srv_tsock_fd);
-	return _srv_tsock_fd;
 }
 
 bool pmixp_info_srv_direct_conn(){

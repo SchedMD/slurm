@@ -81,9 +81,6 @@ extern pmix_jobinfo_t _pmixp_job_info;
 void pmixp_info_srv_usock_set(char *path, int fd);
 const char *pmixp_info_srv_usock_path(void);
 int pmixp_info_srv_usock_fd(void);
-void pmixp_info_srv_tsock_set(uint16_t port, int fd);
-const uint16_t pmixp_info_srv_tsock_port(void);
-int pmixp_info_srv_tsock_fd(void);
 bool pmixp_info_srv_direct_conn();
 
 

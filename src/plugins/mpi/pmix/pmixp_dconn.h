@@ -121,6 +121,9 @@ pmixp_dconn_unlock(pmixp_dconn_t *dconn)
 }
 
 pmixp_dconn_type_t pmixp_dconn_type();
+int pmixp_dconn_poll_fd();
+size_t pmixp_dconn_ep_len();
+char *pmixp_dconn_ep_data();
 
 static inline pmixp_dconn_state_t
 pmixp_dconn_state(pmixp_dconn_t *dconn)

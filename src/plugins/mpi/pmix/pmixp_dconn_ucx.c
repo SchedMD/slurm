@@ -33,3 +33,8 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
  \*****************************************************************************/
+
+int pmixp_dconn_ucx_set_handlers(pmixp_dconn_handlers_t *_pmixp_dconn_h)
+{
+
+}
