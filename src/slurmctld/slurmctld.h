@@ -571,7 +571,7 @@ typedef struct {
 
 /*
  * NOTE: When adding fields to the job_record, or any underlying structures,
- * be sure to sync with _rec_job_copy.
+ * be sure to sync with job_array_split.
  */
 struct job_record {
 	char    *account;		/* account number to charge */
