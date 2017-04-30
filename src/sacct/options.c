@@ -69,9 +69,8 @@ int field_count = 0;
 List g_qos_list = NULL;
 List g_tres_list = NULL;
 
-List _build_cluster_list(void *ptr)
+List _build_cluster_list(slurmdb_federation_rec_t *fed)
 {
-	slurmdb_federation_rec_t *fed = (slurmdb_federation_rec_t *) ptr;
 	slurmdb_cluster_rec_t *cluster;
 	ListIterator iter;
 	List cluster_list;
@@ -920,16 +919,29 @@ void parse_command_line(int argc, char **argv)
 	if (!all_clusters && !job_cond->cluster_list && !params.opt_local) {
 		/* Test if in federated cluster and if so, get information from
 		 * all clusters in that federation */
-		void *ptr = NULL;
+		slurmdb_federation_rec_t *fed = NULL;
+		slurmdb_federation_cond_t fed_cond;
+		List fed_list;
+		List cluster_list = list_create(NULL);
+
 		params.cluster_name = slurm_get_cluster_name();
-		if ((slurm_load_federation(&ptr) == SLURM_SUCCESS) &&
-		    cluster_in_federation(ptr, params.cluster_name)) {
-			job_cond->cluster_list = _build_cluster_list(ptr);
+
+		list_append(cluster_list, params.cluster_name);
+		slurmdb_init_federation_cond(&fed_cond, 0);
+		fed_cond.cluster_list = cluster_list;
+
+		if ((fed_list =
+		     acct_storage_g_get_federations(acct_db_conn, getuid(),
+						    &fed_cond)) &&
+		     list_count(fed_list) == 1) {
+			fed = list_pop(fed_list);
+			job_cond->cluster_list = _build_cluster_list(fed);
 			/* Leave cluster_name to identify remote only jobs */
 			// xfree(params.cluster_name);
 		} else
 			xfree(params.cluster_name);
-		slurm_destroy_federation_rec(ptr);
+		FREE_NULL_LIST(cluster_list);
+		slurm_destroy_federation_rec(fed);
 	}
 	if (all_clusters) {
 		if (job_cond->cluster_list

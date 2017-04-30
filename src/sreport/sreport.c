@@ -256,29 +256,41 @@ main (int argc, char **argv)
 	exit(exit_code);
 }
 
+static int _foreach_cluster_list_to_str(void *x, void *arg)
+{
+	slurmdb_cluster_rec_t *cluster = (slurmdb_cluster_rec_t *)x;
+	char **out_str = (char **)arg;
+
+	xassert(cluster);
+	xassert(out_str);
+
+	xstrfmtcat(*out_str, "%s%s", *out_str ? "," : "", cluster->name);
+
+	return SLURM_SUCCESS;
+}
+
 static char *_build_cluster_string(void)
 {
-	char *cluster_name, *cluster_str = NULL;
-	void *ptr = NULL;
+	char *cluster_str = NULL;
 	slurmdb_federation_rec_t *fed = NULL;
-	slurmdb_cluster_rec_t *cluster;
-	ListIterator iter;
-	char *sep = "";
+	slurmdb_federation_cond_t fed_cond;
+	List fed_list;
+	List cluster_list = list_create(NULL);
 
-	cluster_name = slurm_get_cluster_name();
-	if ((slurm_load_federation(&ptr) == SLURM_SUCCESS) &&
-	    cluster_in_federation(ptr, cluster_name)) {
-		fed = (slurmdb_federation_rec_t *) ptr;
+	list_append(cluster_list, slurmctld_conf.cluster_name);
+	slurmdb_init_federation_cond(&fed_cond, 0);
+	fed_cond.cluster_list = cluster_list;
+
+	if ((fed_list =
+	     acct_storage_g_get_federations(db_conn, my_uid, &fed_cond)) &&
+	     list_count(fed_list) == 1) {
+		fed = list_pop(fed_list);
 		fed_name = xstrdup(fed->name);
-		iter = list_iterator_create(fed->cluster_list);
-		while ((cluster = (slurmdb_cluster_rec_t *) list_next(iter))) {
-			xstrfmtcat(cluster_str, "%s%s", sep, cluster->name);
-			sep = ",";
-		}
-		list_iterator_destroy(iter);
+		list_for_each(fed->cluster_list, _foreach_cluster_list_to_str,
+			      &cluster_str);
 	}
-	xfree(cluster_name);
-	slurm_destroy_federation_rec(ptr);
+	slurm_destroy_federation_rec(fed);
+	FREE_NULL_LIST(cluster_list);
 
 	return cluster_str;
 }
