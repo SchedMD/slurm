@@ -40,6 +40,8 @@ documents those changes that are of interest to users and administrators.
     when shutting down.
  -- Fix potential double-xfree() when using job arrays that can lead to
     slurmctld crashing.
+ -- Fix priority/multifactor priorities on a slurmctld restart if not using
+    accounting_storage/[mysql|slurmdbd].
 
 * Changes in Slurm 17.02.2
 ==========================
