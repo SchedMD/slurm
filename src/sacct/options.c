@@ -921,7 +921,7 @@ void parse_command_line(int argc, char **argv)
 		 * all clusters in that federation */
 		slurmdb_federation_rec_t *fed = NULL;
 		slurmdb_federation_cond_t fed_cond;
-		List fed_list;
+		List fed_list = NULL;
 		List cluster_list = list_create(NULL);
 
 		params.cluster_name = slurm_get_cluster_name();
@@ -934,14 +934,14 @@ void parse_command_line(int argc, char **argv)
 		     acct_storage_g_get_federations(acct_db_conn, getuid(),
 						    &fed_cond)) &&
 		     list_count(fed_list) == 1) {
-			fed = list_pop(fed_list);
+			fed = list_peek(fed_list);
 			job_cond->cluster_list = _build_cluster_list(fed);
 			/* Leave cluster_name to identify remote only jobs */
 			// xfree(params.cluster_name);
 		} else
 			xfree(params.cluster_name);
 		FREE_NULL_LIST(cluster_list);
-		slurm_destroy_federation_rec(fed);
+		FREE_NULL_LIST(fed_list);
 	}
 	if (all_clusters) {
 		if (job_cond->cluster_list
