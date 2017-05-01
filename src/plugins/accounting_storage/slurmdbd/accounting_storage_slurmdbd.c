@@ -1837,7 +1837,6 @@ extern List acct_storage_p_get_federations(void *db_conn, uid_t uid,
 		slurmdbd_free_list_msg(got_msg);
 	}
 
-
 	return ret_list;
 }
 
