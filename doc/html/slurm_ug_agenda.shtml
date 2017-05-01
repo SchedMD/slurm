@@ -1,65 +1,55 @@
 <!--#include virtual="header.txt"-->
 
-<h1>Slurm User Group Meeting 2016</h1>
+<h1>Slurm User Group Meeting 2017</h1>
 
 <a name="registration"><h1>Registration</h1></a>
 
-<p>The conference cost is</p>
+<p>The conference cost is
 <ul>
-<li>$275 per person for early registration by 1 August 2016</li>
-<li>$375 per person for standard registration by 31 August 2016</li>
-<li>$650 per person for late registration starting 16 September 2016</li>
-</ul>
+<li>$300 per person for early registration by 2 July 2017</li>
+<li>$350 per person for standard registration by 31 August 2017</li>
+<li>$600 per person for late registration by 13 September 2017</li>
+</ul></p>
 <p>This includes presentations, tutorials, lunch and snacks on both days,
-plus dinner on Monday evening.<br>
-<a href="https://www.eventbrite.com/e/slurm-user-group-2016-tickets-26314495364?aff=eac2 ">Register here</a>.</p>
+the reception on Sunday evening, plus dinner on Monday evening.<br>
+<a href="https://slug17.eventbrite.com/">Register here.</a></p>
 
 <a name="hotels"><h1>Hotels</h1></a>
 
-<p>Many hotels are available in and around Athens.
- A few options are listed below for your convenience.<br>
-<br>
-Adrian Hotel ***<br>
-Closest metro station: Monastiraki (blue line, green line)<br>
-Website: <a href="https://adrian.reserve-online.net">https://adrian.reserve-online.net</a><br>
-Address: 74, Adrianou st., Plaka, 105 56 Athens Greece<br>
-Tel.: (+30) 210 32 21 553 - 32 50 454<br>
-Fax: (+30) 210 32 50 461<br>
-<br>
-Plaka Hotel ***<br>
-Closest metro station: Monastiraki (blue line, green line)<br>
-Website: <a href="http://www.plakahotel.gr">http://www.plakahotel.gr</a><br>
-Address: 7, Kapnikareas & Mitropoleos Street. GR 10556 Athens Greece<br>
-Reservations.: Tel.+30 2103222706|Fax. +30 2103211800<br>
-Email: plaka@athenshotelsgroup.com<br>
-<br>
-Herodion Hotel ****<br>
-Closest metro station: Acropolis (red line)<br>
-Website: <a href="http://www.herodion.gr/main.php">http://www.herodion.gr/main.php</a><br>
-Address: 4,Rovertou Galli Str., Acropolis, Athens Greece<br>
-Tel: +30 210 9236832<br>
-E-mail: herodion@herodion.gr<br>
-<br>
-The Athenian Callirhoe Exclusive Hotel ****<br>
-Closest metro station: Syngrou/Fix (red line)<br>
-Website: <a href="http://www.atheniancallirhoe.athenshotels.it">http://www.atheniancallirhoe.athenshotels.it</a><br>
-Address: 32, Kallirrois Av. & Petmeza, 117 43 Athens</p>
+<p>More information forthcoming.</p>
 
 <a name="agenda"><h1>Agenda</h1></a>
 
 <p>Hosted by the 
-<a href="http://www.grnet.gr/">Greek Research and Technology Network (GRNET)</a> and
+<a href="http://www.nersc.gov/">National Energy Research Scientific Computing Center (NERSC)</a> and
 <a href="https://www.schedmd.com/">SchedMD</a>.
-<p>The 2016 Slurm User Group Meeting will be held on 26 and 27 September at the
-Technopolis, 100 Pireos Street, Athens, Greece.
+<p>The 2017 Slurm User Group Meeting will be held on 24, 25 and 26 September at
+the National Energy Research Scientific Computing Center (NERSC), 1 Cyclotron Road, Berkeley, California, USA.
 The meeting will include an assortment of tutorials, technical presentations,
-and site reports.
-The <a href="#schedule">schedule</a> and <a href="#abstracts">abstracts</a>
-are shown below.</p>
+and site reports.</p>
 
 <a name="schedule"><h1>Schedule</h1></a>
 
-<h2>26 September 2016</h2>
+<h2>Sunday, 24 September 2017</h2>
+
+<ul>
+<li>18:00 - 20:00 &mdash; Opening Reception</li>
+</ul>
+
+<h2>Monday, 25 September 2017</h2>
+
+<ul>
+<li>Technical Program</li>
+<li>Dinner</li>
+</ul>
+
+<h2>Tuesday, 26 September 2017</h2>
+
+<ul>
+<li>Technical Program</li>
+</ul>
+
+<!--
 
 <table width="100%" border=1 cellspacing=0 cellpadding=4>
 
@@ -124,19 +114,14 @@ are shown below.</p>
 
 </table>
 
-
 <br><br>
 <a name="abstracts"><h1>Abstracts</h1></a>
 
-<!-- -------------------------------------------------------------------------- -->
-
-<h2>26 September 2015</h2>
-
-<h3>Keynote: Computer-aided drug design for novel anti-cancer agents</h3>
-<p>Dr. Zoe Cournia (Biomedical Research Foundation, Academy of Athens)</p>
+-->
 
 <!-- -------------------------------------------------------------------------- -->
 
+<!--
 <h3>Overview of Slurm Version 16.05</h3>
 <p>Danny Auble (SchedMD)<br>Yiannis Georgiou (Bull)</p>
 
@@ -153,464 +138,10 @@ talk. These enhancements include:</p>
 <li>Added support for GridEngine options to the qsub command wrapper</li>
 </ul>
 
-<!-- -------------------------------------------------------------------------- -->
-
-<h3>MCS (Multi-Category Security) Plugin</h3>
-<p>Aline Roy (CEA)</p>
-
-<p>Supercomputers are commonly shared between different populations of users.
- To ensure populations confinement, it is necessary to enforce constraints
- preventing users not belonging to a particular population to access nodes and/or
- view informations related to other populations. MCS logic aims at logically
- confining users, their jobs and the nodes they used using a modular approach
- to define populations. Thanks to a dedicated MCS plugin, a new security label is
- associated to every jobs to optionally ensure that nodes can only be shared
- among jobs sharing the same security label. Job and node informations can
- optionally be filtered based on their MCS labels in coordination with the
- PrivateData option.</p>
-
-<p>Different plugins are currently implemented in order to propose at
- configuration time different methods to aggregate users into categories:
- mcs/none, mcs/user, mcs/group.</p>
-
-<p>This talk will present the MCS logic, the Slurm options to use, as well as
-future improvements.</p>
+-->
 
 <!-- -------------------------------------------------------------------------- -->
 
-<h3>Burst Buffer Integration and Usage with Slurm</h3>
-<p>David Paul (NERSC)</p>
-<p>NERSC has been one of the early adopters of Burst Buffers (NVRAM-based
- storage).  Allocation and reservation of Burst Buffers via command line
- constructs can be a daunting task. Slurm's integration to Cray's DataWarp Burst
- Buffer implementation has greatly simplified the user and application access to
- this new, advanced technology.  This technical presentation will cover; NERSC's
- configuration, usage examples, burst buffer status determination, problem
- identification and error recovery.</p>
-
-<!-- -------------------------------------------------------------------------- -->
-
-<h3>Slurm Configuration Impact on Benchmarking</h3>
-<p>Jos&eacute; A. Mor&iacute;&ntilde;igo, Manuel Rodr&iacute;guez-Pascual,
- Rafael Mayo-Garc&iacute;a (CIEMAT)</p>
-
-<p>The present work summarizes the experiments conducted in a small, modern
- cluster located at CIEMAT, dedicated to research activities and presently
- managed by Slurm. In short, this cluster ACME comprises eight 8-cores/CPU
- dual-sockets nodes. It is mainly oriented to support the development of
- fault-tolerance techniques as well as to improve computational efficiency
- and usage of this production computing facility.</p>
-
-<p>This work discusses the results of running a bunch of building block algorithms,
- the Parallel Numerical Aerodynamic Simulator Benchmark (in short, NPB). NPB is
- developed by NASA and extensively used to the present, as it is characteristic
- of many scientific codes. Thus, it is expected that this contribution will be
- of interest as feedback to other scientific groups who are users of production
- clusters.</p>
-
-<p>This investigation explores how the setup parameters of the Slurm configuration
- may affect the results of executing NPB. Basically, MPI processes mapping in a
- systematic way have been conducted, partitioning the jobs into a diversity of
- configurations of nodes (that is, sets of cores of CPUs which can be placed in
- the same or not node). A key information to look at, is how the execution time
- varies depending on the sparsity of the MPI processes into the cluster and how
- the queued jobs are performing: sending the job in an isolated fashion to the
- nodes (sequentially); sharing the network; and, sharing both the network and
- nodes among the jobs.</p>
-
-<p>Which is better or what can be expected from doing so? The effect of sharing or
- not the sockets by various jobs at the same time is also analysed. The major
- interest of clarifying such an aspect of Slurm is defining criteria for Slurm
- configuration, optimizing processes mapping and improving the exploitation of
- HPC clusters in the context of scientific production. Also, it is a first and
- interesting first step to further design new scheduling algorithms that could
- be integrated into Slurm.</p>
-
-<!-- -------------------------------------------------------------------------- -->
-
-<h3>Real Time Performance Monitoring</h3>
-<p>Carlos Fenoy (Roche)</p>
-
-<p>With the increasing number of cpu cores in compute nodes of high performance
- clusters, proper monitoring tools become essential to understand the usage and
- the behavior of the applications running in the cluster. In this work a new
- approach to near real-time monitoring is presented, using the Slurm profiling
- plugin to display resource usage information for each of the processes running
- in the cluster. This data improves the understanding of the applications
- running and can help in highlighting to the user any application-related
- issue.</p>
-
-<!-- -------------------------------------------------------------------------- -->
-
-<h3>Optimising HPC resource allocation through monitoring</h3>
-<p>Beche Alexandre (EPFL)</p>
-
-<p>High performance computing is very much focusing on supercomputer performance;
- however, it is equally important to ensure the optimal usage of allocated
- resources. Reserving resources through Slurm in a shared cluster does not
- guarantee they will be used wisely, and thus could prevent other users to
- run their workload. To understand job behaviour, the Slurm accounting database
- is a rich source of information but lacks some visibility on compute nodes'
- system metrics. How can these two sources of information be correlated to
- provide good insights into job behaviour, optimal resource utilisation and
- potential bottlenecks?</p>
-
-<p>In the Blue Brain Project at EPFL, we have implemented such a system based
- on modern open source technologies. In this talk, we will present the
- challenges of resources usage optimisation and describe how we implemented
- our solution to collect, index, correlate and visualise accounting and
- monitoring high resolution data using standard tools such as collectd,
- ElasticSearch, Graphite and Grafana.</p>
-
-<!-- -------------------------------------------------------------------------- -->
-
-<h3>Simunix, a large scale platform simulator</h3>
-<p>David Glesser, Adrien Faure, Yiannis Georgiou (BULL)</p>
-
-<p>Slurm comes with a lot of scheduling features and possible configurations,
- thus, the installation of Slurm on a cluster can be very tedious. The
- configuration needs to be adjusted to fit the cluster's requirements.
- Furthermore, implementing new features in Slurm is difficult due to its
- complexity and the wide range of supported platforms. The Slurm Simulator
- provides a way to experiment with different scheduling configurations faster,
- however, the Slurm simulator does not test the real Slurm since core parts
- are modified.</p>
-
-<!-- -------------------------------------------------------------------------- -->
-
-<h3>Configure a Slurm cluster with Ansible</h3>
-<p>Johan Guldmyr (CSC)</p>
-
-<p>Ansible is a tool for agentless config management of servers. It can operate
- in Push mode ­ssh to the remote server and then in the order ensure that the
- remote host is configured as you want. In Pull mode with for example a cronjob
- the server fetches the latest/branch from a remote version control system and
- then configures itself.</p>
- 
-<p>An ansible playbook is a set of roles applied in top to bottom order.<br>
- An ansible role is a set of tasks executed in top to bottom order.<br>
- An ansible task takes in principle a module name and the module’s settings.</p>
- 
-<p>An example task: ensure slurmctld service is only started and enabled where
- we also install slurmctld.<br>
- An example role: configure slurm<br>
- An example playbook: configure slurm, sshd and install $vendor firmware
- tools on one more more hosts.</p>
- 
-<p>In a Finnish HPC Grid (FGCI, 8 clusters with different admins in each site.
- CSC IT Center for Science provides support) we are using ansible-­role-­slurm in
- push mode to configure slurmctld, slurmdbd and submit nodes. Pull mode from a
- local git mirror to configure slurmd on compute nodes.</p>
- 
-<p>Other ansible roles are used to configure everything else ­ this role idea is
- that ansible­-role-­slurm should do everything that's absolutely necessary for
- a slurm cluster such as: generate or install a munge key, install Slurm
- packages from a repository and sacctmgr create cluster.</p>
-
-<!-- -------------------------------------------------------------------------- -->
-
-<h3>Swiss National Supercomputer Centre (CSCS) Site Report</h3>
-<p>Nicholas Cardo</p>
-
-<!-- -------------------------------------------------------------------------- -->
-
-<h2>27 September 2015</h2>
-
-<h3>Checkpoint/restart in Slurm: current status and new developments</h3>
-<p>Manuel Rodr&iacute;guez-Pascual, Jos&eacute; A. Mor&iacute;&ntilde;igo, Rafael Mayo-Garc&iacute;a (CIEMAT)</p>
-
-<p>This talk will describe the existing status of checkpoint/restart
- technologies in Slurm and the new developments made by our group.</p>
-
-<p>In this conference, the integration between Slurm and DMTCP will be presented.
- DMTCP is an interesting checkpoint library because it is located in user
- space, thus there is no need to modify the machine kernel. Also, it does not
- require modifying or recompiling the application being executed. This is
- important because it allows checkpointing any application being run on the
- cluster, including legacy and proprietary ones (not only open source that
- can be recompiled to be linked against a particular library).  This integration
- has been made via a SPANK plugin. It adds a "--with-dmtcp" flag to the "sbatch"
- command. When set, Slurm will call DMTCP so it starts monitoring the application
- to be checkpointed. After that, slurm API and command calls regarding checkpoint
- (scontrol checkpoint create / vacate / restart) will seamlessly work.</p>
-
-<p>Another small yet useful development is the inclusion of checkpoint/restart
- calls in Slurm simulator. Until now the checkpoint-related operations were
- disabled in the simulator, so they have been implemented as part of this work
- and now any API call to slurm_checkpoint functions works as expected.</p>
-
-<p>In order to embrace the current status of checkpoint/restart, a brief revision
- of BLCR library and checkpoint mechanism will be documented too. This way the
- talk will include all the existing technologies and can serve as a reference
- to future users.</p>
-
-<!-- -------------------------------------------------------------------------- -->
-
-<h3>Support for Intel Knights Landing (KNL)</h3>
-<p>Morris Jette and Tim Wickberg (SchedMD)</p>
-
-<p>The Intel Knights Landing (KNL) chip has a number of unusual capabilities
- affecting resource management. The most significant feature for Slurm to manage
- is the chip's ability to modify its cache and NUMA configuration at boot time.
- This means that Slurm just not only track the node's current configuration, but
- the configurations which can be made available when the node is rebooted.
- Various quantities of cache resources can be made available user addressable
- high bandwidth memory (HBM), which Slurm treats as a generic resource (GRES)
- on the node. The various NUMA configurations necessitate support for dynamically
- changing the groupings of the cores and memory. Slurm has addressed these, and
- other challenges, through the addition of a new "node_features" plugin
- infrastructure.</p>
-
-<p>This presentation will cover an overview of the KNL architecture and the
-changes made to Slurm in order to support it, including work still underway.</p>
-
-<!-- -------------------------------------------------------------------------- -->
-
-<h3>Support of heterogeneous resources and MPMD-MPI</h3>
-<p>Martin Perry, Bill Brophy, Doug Parisek, Steve Melhberg, Nancy Kritkausky,
- Yiannis Georgiou (BULL/CEA), Matthieu Hautreux  (CEA)</p>
-
-<p>This presentation will provide details about the study and development efforts
- to extend the job description language of Slurm in order to better handle
- complex jobs having different tasks behaviors and resources requirements upon
- platforms. It will provide an analysis of the heterogeneous resources and the
- MPMD (Multiple Program Multiple Data) model support upon Slurm.</p>
-
-<p>Slurm, in its current stable versions provides support for SPMD (Single Program
- Multiple Data) as well as a limited MPMD support. By limited MPMD support,
- we mean that despite users can specify different binaries to be used within
- a parallel job, all the tasks are currently associated with the same resources
- requirements.</p>
-
-<p>Hence, the current functioning of Slurm is not very well suited to manage
- complex jobs. For example, users willing to leverage different types of
- hardware resources inside the same MPI application, having part of their
- code running on GPUs while another is running on standard CPUs and a last
- part on CPUs with large memory per core, have to request for the most
- complete set of resources for each task wasting some of the hardware with
- tasks that will not need all of them. In some cases, the total configuration
- required to run such a job does not even exist as all the nodes of the cluster
- may not provide all the hardware features.</p>
-
-<p>For example, applications needing real-time visualization where a big number of
- compute nodes should be allocated in conjunction with a small number of GPU
- nodes or complex workflows taking into account data locality and I/O-nodes
- allocation will be executed more efficiently with the support of heterogeneous
- resources and MPMD. In more detail, the MPI processes need to exchange
- information between the different heterogeneous resources hence demanding a
- participation of all processes in the same MPI_COMM_WORLD environment. The
- MPMD-MPI is supported through a tight integration of Slurm with the different
- MPI implementations using the PMI protocols. The related developments are part
- of the functionalities developed for the European funded H2020 project TANGO.</p>
-
-<!-- -------------------------------------------------------------------------- -->
-
-<h3>Improving system utilization under strict power budget using the layouts
- framework and RAPL</h3>
-<p>Dineshkumar Rajagopal, David Glesser, Yiannis Georgiou (BULL)</p>
-
-<p>This presentation will present optimizations of the power adaptive
- scheduling technique of Slurm developed for Linux platforms. These
- optimizations provide the capability to redistribute the power consumption
- used by applications, improving system utilization, based upon what they
- actually really use - not estimations - and guarantee with hardware mechanisms
- that the maximum power consumption budget will be respected. The new extensions
- are structured upon the support of RAPL powercapping on the socket-level, the
- layouts framework of Slurm for internal representation of power consumption
- per component and an automatic rebalancing of power usage between jobs by
- considering the RAPL power computations, following the guidelines of the power
- plugin in Slurm. The updates of nodes power consumption is provided by
- collecting RAPL model's energy consumption measures in regular intervals and
- calculating the average power consumption for that interval. By keeping the
- updates of components power consumption within Slurm (through layouts
- framework) we can redistribute the power on other running jobs that need it
- or on upcoming submissions hence contributing in improving system utilization
- respecting the determined power budget. Finally we will show performance
- evaluation experimentations upon emulated and real HPC platforms.</p>
-
-<!-- -------------------------------------------------------------------------- -->
-
-<h3>High definition power and energy monitoring support</h3>
-<p>Thomas Cadeau, Yiannis Georgiou (BULL)</p>
-
-<p>Slurm provides functionalities that enable power monitoring per node as well
- as power profiling and energy accounting per job based on in-band IPMI and RAPL
- measurement interfaces. The usage of in-band IPMI power measurement technique
- for extracting the power profile and calculating the energy consumption of a
- job has some drawbacks such as overhead and precision problems.This presentation
- will show the design and evaluation of new functionalities to support vendor
- specific hardware for high definition power and energy monitoring in Slurm to
- deal with the overhead and improve the accuracy of the measures. This
- presentation will briefly present the High Definition Energy Efficiency
- Monitoring (HDEEM) project, a sophisticated approach towards system wide
- and fine-grained power measurements which is a collaboration between BULL
- HPC vendor and TUD university. It will then focus into presenting the new
- developed plugin ipmi-raw to support the HDEEM interface which is a dedicated
- measurement FPGA installed on every blade improving spatial granularity to
- measure blade, CPU, and DRAM power consumption separately along with temporal
- granularity to up to 1 kSa/s.</p>
-
-<!-- -------------------------------------------------------------------------- -->
-
-<h3>Federated Cluster Scheduling</h3>
-<p>Brian Christiansen, Dominik Bartkiewicz (SchedMD)</p>
-
-<p>Slurm has provided limited support for resource management across multiple
- clusters, but with notable limitations. We have designed Slurm enhancements to
- eliminate these limitations in a scalable and reliable fashion while increasing
- both system utilization and responsiveness. This design allows jobs to be
- replicated across multiple clusters with the job’s executing cluster being
- determined through policies and the coordination of the clusters with the
- same job (e.g. starting on the cluster that can run the job the soonest).
- Unique enterprise-wide jobs IDs will be used to permit rapid enterprise-wide
- job operations such as job dependencies, status reports and cancellation.
- The SlurmDBD is responsible for configuring sets of clusters that will work
- together in a federated fashion and reporting the configurations to the Slurm
- daemons. Each cluster operates with a great deal of autonomy. A limited number
- of inter-cluster operations are coordinated directly between the Slurm daemons
- managing each individual cluster. We anticipate the overhead of this design to
- be sufficiently low for Slurm to retain the ability to executing hundreds of
- jobs per second per cluster. An overview of the design will be presented
- along with an analysis of its capabilities.</p>
-
-<!-- -------------------------------------------------------------------------- -->
-
-<h3>Slurm Roadmap</h3>
-<p>Danny Auble (SchedMD)<br>Yiannis Georgiou (BULL)</p>
-
-<p>This presentation will describe new capabilities planned in future releases of Slurm</p>
-<ul>
-<li>Advanced Xeon Phi Knights Landing support</li>
-<li>Generic burst buffer support</li>
-<li>Greater control over a computer&rsquo;s power consumption</li>
-<li>Control over a job&rsquo;s frequency limits based upon its QOS</li>
-<li>Inter-cluster job management</li>
-<li>Dynamic runtime settings environment</li>
-<li>Support of VM and containers management within Slurm (HPC, Cloud/Big Data)</li>
-<li>Deploy Big Data workflow upon HPC infrastructure</li>
-</ul>
-
-
-<!-- -------------------------------------------------------------------------- -->
-
-<h3>EDF Site Report</h3>
-<p>Cecile Yoshikawa (EDF)</p>
-
-<p>EDF (Electricit&eacute; de France) is one of the world's largest electric
- utility companies. EDF covers every sector of expertise, from electricity
- generation to trading and transmission grids. For all of that we extensively
- use high performance computing.</p>
-
-<p>Our researchers and engineers conduct calculations on a wide range of fields:
- structural mechanics, fluid mechanics, and in a more specific way neutronics.
- Most of the codes executed on our supercomputers are developed by our R&D
- departments. In response to their needs, we are designing and operating
- several top-class supercomputers. One of the characteristics at EDF is that
- most of our supercomputers run our in-house OS, Scibian, a Debian-based
- distribution dedicated to industrial engineering and that we are currently
- turning into an Open Source community project.</p>         
-
-<p>All of our supercomputers have been using Slurm as a job scheduler since
- 2012. This site report will first present a brief overview of the Slurm
- configuration and features we use. It will then focus on the monitoring
- tools we have been developing to work with Slurm, SlurmWeb and JobMetrics.
- The final part will detail our current work to execute our Slurm jobs into
- containers.</p>
-
-<!-- -------------------------------------------------------------------------- -->
-
-<h3>Leibniz Rechen Zentrum (LRZ) Site Report</h3>
-<p>Juan Pancorbo (LRZ)</p>
-
-<p>As a service provider for scientific high performance computing, Leibniz
- Rechen Zentrum (LRZ) operates compute systems for use by educational
- institutions in Munich, Bavaria, as well as on the national level.</p>
-
-<p>LRZ provides own computing resources as well as housing and managing
- computing resources from other institutions such as Max Planck Institute,
- Technical University Munich, or Ludwig Maximillian University.</p>
-
-<p>The tier 2 Linux cluster operated at LRZ is a heterogeneous system with different types of compute nodes, divided into 18 different clusters, each of which is managed by SLURM. The various clusters are configured for the different needs and services requested, ranging from single node thousand core NUMAlink shared memory clusters, to a 28-way infiniband- connected cluster for parallel job execution, or 28-way infiniband- connected cluster for serial job execution. Currently we have 9 clusters for general use (mostly European students), 8 housed cluster for the exclusive usage of different departments from Max Plank Institute and Munich Universities and 1 small test cluster.</p>
-
-<p>The management of all clusters is centralized on a single virtual machine.
- The required SLURM control daemons run concurrently on this VM.</p>
-
-<p>With the use of a wrapper script called MSLURM, the SLURM administrator
- can send SLURM commands to any cluster in an easy-to use and flexible manner,
- including starting or stopping the complete SLURM subsystem.</p>
-
-<p>On June 2015 we decommissioned our old 4-ways serial processing nodes
- (300 in total) and replaced them with the COOLMUC2 system (384 dual socket
- 14 core Haswell EP nodes). 60 of these nodes replace the old hardware on
- serial and a new cluster was created (mpp2) to handle the rest of the nodes.</p>
-
-<p>These nodes have the IBM Active Energy Manager which has among other tasks:
-<ul>
-<li> Monitoring power consumption data</li>
-<li>Collecting power consumption data</li>
-</ul></p>
-
-<p>Based on the slurm plugins acct_gather_energy_cray and acct_gather_energy_rapl
- we have used the IBM AEM interface to read the energy counters on the node and
- created the acct_gather_energy_ibmaem plugin. This plugin is currently included
- with the source code. The plugin runs on each of the compute nodes to gather
- the energy counter information during the job run and once that the job has
- finished it adds the energies on reported by all the nodes and shows them per
- step.</p>
-
-<p>We have checked the energy measurements of the plugin against the energy
- reported by the nodes chassis in the rack and we got consistent data between
- both systems with a maximum of 5% difference (which is also the maximum error
- of the energy reported by the chassis according to the manufacturer)</p>
-
-<!-- -------------------------------------------------------------------------- -->
-
-<h3>NERSC Site Report</h3>
-<p>Douglas Jacobsen (NERSC)</p>
-
-<p>The National Energy Research Scientific Computing Center (NERSC) recently
- transitioned both of its Cray XC class supercomputers to Slurm scheduling and
- resource management.  Most notably, NERSC has been working with Cray and
- SchedMD to integrate HPC and Data intensive workloads on the Cori system,
- one of the largest open science systems in the world, delivering both Intel
- Xeon Haswell and Intel Xeon Phi (Knights Landing) processors, integrating
- DataWarp burst buffers, environment virtualization through Shifter, and
- orchestrated by Slurm (among many other technologies bringing it all together).
-  This talk will focus on on the special use cases, customizations, and
- strategies used to bring Slurm onto these systems to deliver highly productive
- computing for the thousands of NERSC users.</p>
-
-<!-- -------------------------------------------------------------------------- -->
-
-<h3>Experience using Slurm on ARIS HPC System</h3>
-<p>N. Nikoloutsakos , D. Dellis, K. Gkinis , I. Liabotis , and E. Floros (GRNET)</p>
-
-<p>GRNET is the leading resource provider in Greece in the field of supercomputing
- infrastructures. It currently operates Greeces first national high-performance
- computing system ARIS (Advanced Research Information System) to support
- large-scale scientific applications. ARIS platform consists of 532 computational
- nodes which are partitioned in four architecture types between thin, fat, gpu
- and mic nodes, all connected under the same Infiniband FDR fat tree topology.
- Overall ARIS offers a theoretical peak performance of 444 TFlop/s. In addition
- ARIS incorporates 2 PB of fast access storage and 2 PB of archive storage for
- long term data preservation.</p>
-
-<p>More than 150 projects and 400 users have used ARIS platform. Access is open
- to the Greek academic community. GRNET publishes calls for Project Access
- according to a fixed schedule. Eligible projects are assessed via transparent
- peer-review process which will ensure fair usage of hpc resources and assure
- high impact results to the scientific community.</p>
-
-<p>This presentation will give an overview of the ARIS system, the Slurm batch
- system setup and the configuration of the fairshare priority model used to
- allocate resources among research groups from various disciplines, universities
- and research centers. We shall discuss our experiences of the use of Slurm
- among this year, usage evaluation , the evolution and tuning of our Slurm
-deployment, issues, solutions and open questions that could possibly provide
- insights to the benefits of Slurm.</p>
-
-<!-- -------------------------------------------------------------------------- -->
-
-<p style="text-align:center;">Last modified 23 September 2016</p>
+<p style="text-align:center;">Last modified 1 May 2017</p>
 
 <!--#include virtual="footer.txt"-->
