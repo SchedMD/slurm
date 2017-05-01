@@ -670,6 +670,11 @@ static void _json_parse_mcdram_cfg_object(json_object *jobj, mcdram_cfg_t *ent)
 	int64_t x;
 	const char *p;
 
+	/* Initialize object */
+	ent->dram_size   = NO_VAL;
+	ent->mcdram_pct  = NO_VAL16;
+	ent->mcdram_size = NO_VAL;
+
 	json_object_object_foreachC(jobj, iter) {
 		type = json_object_get_type(iter.val);
 		switch (type) {
@@ -2287,8 +2292,9 @@ static int _update_node_state(char *node_list, bool set_locks)
 			    !bit_test(mcdram_cfg2[k].node_bitmap,
 				      mcdram_cfg[i].nid))
 				continue;
-			if (mcdram_cfg[i].mcdram_pct !=
-			    mcdram_cfg2[k].cache_pct) {
+			if ((mcdram_cfg[i].mcdram_pct != NO_VAL16) &&
+			    (mcdram_cfg[i].mcdram_pct !=
+			     mcdram_cfg2[k].cache_pct)) {
 				info("%s: HBM mismatch between capmc and cnselect for nid %u (%u != %d)",
 				     __func__, mcdram_cfg[i].nid,
 				     mcdram_cfg[i].mcdram_pct,
