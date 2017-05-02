@@ -988,6 +988,19 @@ extern int jobacct_storage_g_job_suspend(void *db_conn,
 	return (*(ops.job_suspend))(db_conn, job_ptr);
 }
 
+static int _sort_desc_submit_time(void *x, void *y)
+{
+	slurmdb_job_rec_t *j1 = *(slurmdb_job_rec_t **)x;
+	slurmdb_job_rec_t *j2 = *(slurmdb_job_rec_t **)y;
+
+	if (j1->submit < j2->submit)
+		return -1;
+	else if (j1->submit > j2->submit)
+		return 1;
+
+	return 0;
+}
+
 /*
  * get info from the storage
  * returns List of job_rec_t *
@@ -996,9 +1009,20 @@ extern int jobacct_storage_g_job_suspend(void *db_conn,
 extern List jobacct_storage_g_get_jobs_cond(void *db_conn, uint32_t uid,
 					    slurmdb_job_cond_t *job_cond)
 {
+	List ret_list;
+
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(ops.get_jobs_cond))(db_conn, uid, job_cond);
+	ret_list = (*(ops.get_jobs_cond))(db_conn, uid, job_cond);
+
+	/* If multiple clusters were requested, the jobs are grouped together by
+	 * cluster -- each group sorted by submit time. Sort all the jobs by
+	 * submit time */
+	if (ret_list && job_cond && job_cond->cluster_list &&
+	    (list_count(job_cond->cluster_list) > 1))
+		list_sort(ret_list, (ListCmpF)_sort_desc_submit_time);
+
+	return ret_list;
 }
 
 /*
