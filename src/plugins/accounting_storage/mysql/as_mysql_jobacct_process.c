@@ -1248,6 +1248,12 @@ no_resv:
 		xstrcat(*extra, ")");
 	}
 
+	/* Don't show revoked sibling federated jobs w/out -D */
+	if (!job_cond->duplicates)
+		xstrfmtcat(*extra, " %s (state != %d)",
+			   *extra ? "&&" : "where",
+			   JOB_REVOKED);
+
 	return SLURM_SUCCESS;
 }
 
