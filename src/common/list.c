@@ -72,6 +72,7 @@ strong_alias(list_peek,		slurm_list_peek);
 strong_alias(list_enqueue,	slurm_list_enqueue);
 strong_alias(list_dequeue,	slurm_list_dequeue);
 strong_alias(list_iterator_create,	slurm_list_iterator_create);
+strong_alias(list_iterator_copy,	slurm_list_iterator_copy);
 strong_alias(list_iterator_reset,	slurm_list_iterator_reset);
 strong_alias(list_iterator_destroy,	slurm_list_iterator_destroy);
 strong_alias(list_next,		slurm_list_next);
@@ -616,6 +617,17 @@ list_iterator_create (List l)
 	slurm_mutex_unlock(&l->mutex);
 
 	return i;
+}
+
+void list_iterator_copy(ListIterator *dst, ListIterator src)
+{
+	assert(dst);
+	assert(src);
+
+	if (!*dst)
+		*dst = list_iterator_alloc();
+
+	memcpy(*dst, src, sizeof(struct listIterator));
 }
 
 /* list_iterator_reset()

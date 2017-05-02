@@ -448,11 +448,26 @@ void _init_params(void)
 	params.units = NO_VAL;
 }
 
+static int _find_job_dbrec(void *object, void *arg)
+{
+	slurmdb_job_rec_t *job     = (slurmdb_job_rec_t *)object;
+	slurmdb_job_rec_t *arg_job = (slurmdb_job_rec_t *)arg;
+
+	/* Show sibling jobs that that are related. e.g. when a pending sibling
+	 * job is cancelled all siblings have the state as cancelled. Since
+	 * jobids won't roll in a day -- unless the system is amazing -- just
+	 * remove jobs that are older than a day. */
+	if ((job->jobid == arg_job->jobid) &&
+	    (job->submit > (arg_job->submit + 86400)))
+		return true;
+	return false;
+}
+
 int get_data(void)
 {
 	slurmdb_job_rec_t *job = NULL;
 	slurmdb_step_rec_t *step = NULL;
-	ListIterator itr = NULL;
+	ListIterator itr = NULL, itr_cpy = NULL;
 	ListIterator itr_step = NULL;
 	slurmdb_job_cond_t *job_cond = params.job_cond;
 
@@ -468,6 +483,21 @@ int get_data(void)
 
 	itr = list_iterator_create(jobs);
 	while((job = list_next(itr))) {
+		if (params.cluster_name && !params.opt_dup) {
+			slurmdb_job_rec_t *ljob = NULL;
+
+			/* Remove duplicate federated jobs. The db will remove
+			 * duplicates for one cluster but not when jobs for
+			 * multiple clusters are requested. Remove this job if
+			 * there were jobs with the same id submitted in the
+			 * future. */
+			list_iterator_copy(&itr_cpy, itr);
+			if ((ljob = list_find(itr_cpy, _find_job_dbrec, job))) {
+				list_delete_item(itr);
+				continue;
+			}
+		}
+
 		if (job->user) {
 			struct	passwd *pw = NULL;
 			if ((pw=getpwnam(job->user)))
@@ -499,6 +529,8 @@ int get_data(void)
 		}
 		list_iterator_destroy(itr_step);
 	}
+	if (itr_cpy)
+		xfree(itr_cpy); /* only xfree since it's a copy of itr */
 	list_iterator_destroy(itr);
 
 	return SLURM_SUCCESS;

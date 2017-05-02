@@ -250,6 +250,11 @@ ListIterator list_iterator_create (List l);
  *    list [l], or lsd_nomem_error() on failure.
  */
 
+void list_iterator_copy(ListIterator *dst, ListIterator src);
+/*
+ *  Copy src into dst (return new dst if NULL).
+ */
+
 void list_iterator_reset (ListIterator i);
 /*
  *  Resets the list iterator [i] to start traversal at the beginning
