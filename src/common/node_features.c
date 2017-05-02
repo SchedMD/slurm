@@ -65,7 +65,8 @@ typedef struct node_features_ops {
 	void	(*node_state)	(char **avail_modes, char **current_mode);
 	int	(*node_update)	(char *active_features, bitstr_t *node_bitmap);
 	char *	(*node_xlate)	(char *new_features, char *orig_features,
-				 int mode);
+				 char *avail_features);
+	char *	(*node_xlate2)	(char *new_features);
 	void	(*step_config)	(bool mem_sort, bitstr_t *numa_bitmap);
 	int	(*reconfig)	(void);
 	bool	(*user_update)	(uid_t uid);
@@ -85,6 +86,7 @@ static const char *syms[] = {
 	"node_features_p_node_state",
 	"node_features_p_node_update",
 	"node_features_p_node_xlate",
+	"node_features_p_node_xlate2",
 	"node_features_p_step_config",
 	"node_features_p_reconfig",
 	"node_features_p_user_update"
@@ -374,14 +376,14 @@ extern int node_features_g_node_update(char *active_features,
 }
 
 /* Translate a node's feature specification by replacing any features associated
- * with this plugin in the original value with the new values, preserving any
- * features that are not associated with this plugin
- * IN new_features - newly specific features (active or available)
- * IN orig_features - original features (active or available)
- * IN mode - 1=registration, 2=update
+ *	with this plugin in the original value with the new values, preserving
+ *	andy features that are not associated with this plugin
+ * IN new_features - newly active features
+ * IN orig_features - original active features
+ * IN avail_features - original available features
  * RET node's new merged features, must be xfreed */
 extern char *node_features_g_node_xlate(char *new_features, char *orig_features,
-					int mode)
+					char *avail_features)
 {
 	DEF_TIMERS;
 	char *new_value = NULL, *tmp_str;
@@ -397,12 +399,39 @@ extern char *node_features_g_node_xlate(char *new_features, char *orig_features,
 			tmp_str = xstrdup(orig_features);
 		else
 			tmp_str = NULL;
-		new_value = (*(ops[i].node_xlate))(new_features, tmp_str, mode);
+		new_value = (*(ops[i].node_xlate))(new_features, tmp_str,
+						   avail_features);
 		xfree(tmp_str);
 
 	}
 	slurm_mutex_unlock(&g_context_lock);
 	END_TIMER2("node_features_g_node_xlate");
+
+	return new_value;
+}
+
+/* Translate a node's new feature specification into a "standard" ordering
+ * RET node's new merged features, must be xfreed */
+extern char *node_features_g_node_xlate2(char *new_features)
+{
+	DEF_TIMERS;
+	char *new_value = NULL, *tmp_str;
+	int i;
+
+	START_TIMER;
+	(void) node_features_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; i < g_context_cnt; i++) {
+		if (new_value)
+			tmp_str = xstrdup(new_value);
+		else
+			tmp_str = xstrdup(new_features);
+		new_value = (*(ops[i].node_xlate2))(tmp_str);
+		xfree(tmp_str);
+
+	}
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2("node_features_g_node_xlate2");
 
 	return new_value;
 }

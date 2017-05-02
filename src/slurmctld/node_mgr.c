@@ -1221,7 +1221,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 {
 	int error_code = 0, node_cnt, node_inx;
 	struct node_record *node_ptr = NULL;
-	char  *this_node_name = NULL;
+	char *this_node_name = NULL, *tmp_feature;
 	hostlist_t host_list, hostaddr_list = NULL, hostname_list = NULL;
 	uint32_t base_state = 0, node_flags, state_val;
 	time_t now = time(NULL);
@@ -1309,7 +1309,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 			xfree(node_ptr->features);
 			if (update_node_msg->features[0]) {
 				node_ptr->features =
-					xstrdup(update_node_msg->features);
+					node_features_g_node_xlate2(
+						update_node_msg->features);
 			}
 			/* _update_node_avail_features() logs and updates
 			 * avail_feature_list */
@@ -1323,11 +1324,12 @@ int update_node ( update_node_msg_t * update_node_msg )
 			     node_ptr->features);
 			error_code = ESLURM_INVALID_FEATURE;
 		} else if (update_node_msg->features_act) {
-			xfree(node_ptr->features_act);
-			node_ptr->features_act =
-				node_features_g_node_xlate(
+			tmp_feature = node_features_g_node_xlate(
 					update_node_msg->features_act,
-					node_ptr->features, 2);
+					node_ptr->features_act,
+					node_ptr->features);
+			xfree(node_ptr->features_act);
+			node_ptr->features_act = tmp_feature;
 			error_code = _update_node_active_features(
 						node_ptr->name,
 						node_ptr->features_act);
@@ -2195,7 +2197,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	int error_code, i, node_inx;
 	struct config_record *config_ptr;
 	struct node_record *node_ptr;
-	char *reason_down = NULL, *tmp_str, *orig_act;
+	char *reason_down = NULL;
 	uint32_t node_flags;
 	time_t now = time(NULL);
 	bool gang_flag = false;
@@ -2235,22 +2237,20 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 		gang_flag = true;
 
 	if (reg_msg->features_avail) {
-		tmp_str = node_features_g_node_xlate(reg_msg->features_avail,
-						     node_ptr->features, 1);
 		xfree(node_ptr->features);
-		node_ptr->features = tmp_str;
+		node_ptr->features = node_features_g_node_xlate2(
+					reg_msg->features_avail);
 		(void) _update_node_avail_features(node_ptr->name,
 						   node_ptr->features);
 	}
 	if (reg_msg->features_active) {
-		if (node_ptr->features_act)
-			orig_act = node_ptr->features_act;
-		else
-			orig_act = node_ptr->features;
-		tmp_str = node_features_g_node_xlate(reg_msg->features_active,
-						     orig_act, 1);
+		char *tmp_feature;
+		tmp_feature = node_features_g_node_xlate(			// DO HERE
+						reg_msg->features_active,
+						node_ptr->features_act,
+						node_ptr->features);
 		xfree(node_ptr->features_act);
-		node_ptr->features_act = tmp_str;
+		node_ptr->features_act = tmp_feature;
 		(void) _update_node_active_features(node_ptr->name,
 						    node_ptr->features_act);
 	}

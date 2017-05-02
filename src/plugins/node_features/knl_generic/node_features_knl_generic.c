@@ -1299,44 +1299,114 @@ extern int node_features_p_node_update(char *active_features,
 }
 
 /* Translate a node's feature specification by replacing any features associated
- * with this plugin in the original value with the new values, preserving any
- * features that are not associated with this plugin
+ *	with this plugin in the original value with the new values, preserving
+ *	andy features that are not associated with this plugin
+ * IN new_features - newly active features
+ * IN orig_features - original active features
+ * IN avail_features - original available features
  * RET node's new merged features, must be xfreed */
-extern char *node_features_p_node_xlate(char *new_features, char *orig_features)
+extern char *node_features_p_node_xlate(char *new_features, char *orig_features,
+					char *avail_features)
 {
 	char *node_features = NULL;
 	char *tmp, *save_ptr = NULL, *sep = "", *tok;
+	uint16_t new_mcdram = 0, new_numa = 0;
+	uint16_t tmp_mcdram, tmp_numa;
 
 	if (new_features) {
-		tmp = xstrdup(new_features);
+		/* Copy non-KNL features */
+		tmp = xstrdup(avail_features);
 		tok = strtok_r(tmp, ",", &save_ptr);
 		while (tok) {
-			if ((_knl_mcdram_token(tok) != 0) ||
-			    (_knl_numa_token(tok)   != 0)) {
+			if ((_knl_mcdram_token(tok) == 0) &&
+			    (_knl_numa_token(tok)   == 0)) {
 				xstrfmtcat(node_features, "%s%s", sep, tok);
 				sep = ",";
 			}
 			tok = strtok_r(NULL, ",", &save_ptr);
 		}
 		xfree(tmp);
-	}
 
-	if (!node_features) {	/* No new info from compute node */
-		node_features = xstrdup(orig_features);
-		return node_features;
-	}
+		/* Copy new KNL features in MCDRAM/NUMA order */
+		tmp = xstrdup(new_features);
+		tok = strtok_r(tmp, ",", &save_ptr);
+		while (tok) {
+			if ((tmp_mcdram = _knl_mcdram_token(tok)))
+				new_mcdram |= tmp_mcdram;
+			else if ((tmp_numa = _knl_numa_token(tok)))
+				new_numa |= tmp_numa;
+			tok = strtok_r(NULL, ",", &save_ptr);
+		}
+		xfree(tmp);
 
-	tmp = xstrdup(orig_features);
-	tok = strtok_r(tmp, ",", &save_ptr);
-	while (tok) {
-		if ((_knl_mcdram_token(tok) == 0) &&
-		    (_knl_numa_token(tok)   == 0)) {
-			xstrfmtcat(node_features, "%s%s", sep, tok);
+		if (((new_mcdram == 0) || (new_numa == 0)) && orig_features) {
+			/* New active features lacks current MCDRAM or NUMA,
+			 * copy value from original */
+			tmp = xstrdup(orig_features);
+			tok = strtok_r(tmp, ",", &save_ptr);
+			while (tok) {
+				if ((new_mcdram == 0) &&
+				    (tmp_mcdram = _knl_mcdram_token(tok)))
+					new_mcdram |= tmp_mcdram;
+				else if ((new_numa == 0) &&
+					 (tmp_numa = _knl_numa_token(tok)))
+					new_numa |= tmp_numa;
+				tok = strtok_r(NULL, ",", &save_ptr);
+			}
+			xfree(tmp);
+		}
+		if (new_mcdram) {
+			tmp = _knl_mcdram_str(new_mcdram);
+			xstrfmtcat(node_features, "%s%s", sep, tmp);
+			xfree(tmp);
 			sep = ",";
 		}
-		tok = strtok_r(NULL, ",", &save_ptr);
+		if (new_numa) {
+			tmp = _knl_numa_str(new_numa);
+			xstrfmtcat(node_features, "%s%s", sep, tmp);
+			xfree(tmp);
+		}
 	}
-	xfree(tmp);
+
+	return node_features;
+}
+
+/* Translate a node's new feature specification into a "standard" ordering
+ * RET node's new merged features, must be xfreed */
+extern char *node_features_p_node_xlate2(char *new_features)
+{
+	char *node_features = NULL;
+	char *tmp, *save_ptr = NULL, *sep = "", *tok;
+	uint16_t new_mcdram = 0, new_numa = 0;
+	uint16_t tmp_mcdram, tmp_numa;
+
+	if (new_features) {
+		tmp = xstrdup(new_features);
+		tok = strtok_r(tmp, ",", &save_ptr);
+		while (tok) {
+			if ((tmp_mcdram = _knl_mcdram_token(tok))) {
+				new_mcdram |= tmp_mcdram;
+			} else if ((tmp_numa = _knl_numa_token(tok))) {
+				new_numa |= tmp_numa;
+			} else {
+				xstrfmtcat(node_features, "%s%s", sep, tok);
+				sep = ",";
+			}
+			tok = strtok_r(NULL, ",", &save_ptr);
+		}
+		xfree(tmp);
+		if (new_mcdram) {
+			tmp = _knl_mcdram_str(new_mcdram);
+			xstrfmtcat(node_features, "%s%s", sep, tmp);
+			xfree(tmp);
+			sep = ",";
+		}
+		if (new_numa) {
+			tmp = _knl_numa_str(new_numa);
+			xstrfmtcat(node_features, "%s%s", sep, tmp);
+			xfree(tmp);
+		}
+	}
 
 	return node_features;
 }
