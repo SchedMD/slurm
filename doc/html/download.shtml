@@ -326,6 +326,11 @@ STUBL is a collection of supplemental tools and utility scripts for Slurm.<br>
     Max RAM Used.</dd>
 </dl></li><br>
 
+<li><b>pestat</b><br>
+pestat provides status information about compute nodes.<br>
+<a href="ftp://ftp.fysik.dtu.dk/pub/Slurm/pestat">pestat code</a></li><br>
+<!-- It would be nice to provide our own perl-based version of pestat -->
+
 <li><b>Slurmmon</b><br>
 Slurmmon is a system for gathering and plotting data about Slurm scheduling and
 job characteristics. It currently simply sends the data to ganglia, but it
@@ -410,6 +415,6 @@ Slurm-based HPC supercomputers. The website of Slurm-web, with screenshots:<br>
 
 </ul>
 
-<p style="text-align:center;">Last modified 9 July 2016</p>
+<p style="text-align:center;">Last modified 3 May 2017</p>
 
 <!--#include virtual="footer.txt"-->
