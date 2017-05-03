@@ -118,9 +118,6 @@ The default value is 300 seconds. The value should be reduced to a few
 seconds if possible. Use of accounting records for older jobs can increase
 the job throughput rate compared with retaining old jobs in the memory of
 the slurmctld daemon.</li>
-<li><b>ProctrackType</b>:
-Avoid using <i>proctrack/cgroup</i> it is considerably slower than
-other alternatives. <i>proctrack/pgid</i> (the default) is advised.</li>
 <li><b>PriorityType</b>:
 The <i>priority/builtin</i> is considerably faster than other options, but
 schedules jobs only on a First In First Out (FIFO) basis.</li>
