@@ -65,15 +65,11 @@ typedef struct {
 	} ep;
 } pmixp_ep_t;
 
-typedef enum {
-	PMIXP_SRV_CB_INLINE,
-	PMIXP_SRV_CB_REGULAR
-} pmixp_srv_cb_context_t;
-typedef void (*pmixp_server_sent_cb_t)(int rc, pmixp_srv_cb_context_t ctx, void *cb_data);
+typedef void (*pmixp_server_sent_cb_t)(int rc, pmixp_p2p_ctx_t ctx, void *cb_data);
 /* convenience callback to just release sent buffer
  * expects an object of type `Buf` to be passed as `cb_data`
  */
-void pmixp_server_sent_buf_cb(int rc, pmixp_srv_cb_context_t ctx, void *data);
+void pmixp_server_sent_buf_cb(int rc, pmixp_p2p_ctx_t ctx, void *data);
 
 int pmixp_stepd_init(const stepd_step_rec_t *job, char ***env);
 int pmixp_stepd_finalize(void);

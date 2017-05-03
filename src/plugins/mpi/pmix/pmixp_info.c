@@ -44,6 +44,11 @@
 static char *_srv_usock_path = NULL;
 static int _srv_usock_fd = -1;
 static bool _srv_use_direct_conn = true;
+#ifdef HAVE_UCX
+static bool _srv_use_direct_conn_ucx = true;
+#else
+static bool _srv_use_direct_conn_ucx = false;
+#endif
 
 pmix_jobinfo_t _pmixp_job_info;
 
@@ -73,6 +78,10 @@ int pmixp_info_srv_usock_fd(void)
 
 bool pmixp_info_srv_direct_conn(){
 	return _srv_use_direct_conn;
+}
+
+bool pmixp_info_srv_direct_conn_ucx(){
+	return _srv_use_direct_conn_ucx;
 }
 
 /* Job information */
@@ -363,6 +372,32 @@ static int _env_set(char ***env)
 			_srv_use_direct_conn = false;
 		}
 	}
+
+#ifdef HAVE_UCX
+	p = getenvp(*env, PMIXP_DIRECT_CONN_UCX);
+	if( NULL != p){
+		if( !strcmp("1",p) || !strcasecmp("true", p) ||
+		    !strcasecmp("yes", p)){
+			_srv_use_direct_conn_ucx = true;
+		} else if( !strcmp("0",p) || !strcasecmp("false", p) ||
+		    !strcasecmp("no", p)){
+			_srv_use_direct_conn_ucx = false;
+		}
+	}
+
+	/* Propagate UCX env */
+	p = getenvp(*env, "UCX_NET_DEVICES");
+	if( NULL != p){
+		setenv("UCX_NET_DEVICES", p, 1);
+	}
+
+	p = getenvp(*env, "UCX_TLS");
+	if( NULL != p){
+		setenv("UCX_TLS", p, 1);
+	}
+
+#endif
+
 
 	return SLURM_SUCCESS;
 }

@@ -42,31 +42,6 @@
 #include "pmixp_common.h"
 #include "pmixp_utils.h"
 
-/* Message access callbacks */
-typedef uint32_t (*pmixp_io_payload_size_cb_t)(void *hdr);
-
-typedef int (*pmixp_io_hdr_pack_cb_t)(void *hdr_host, void *hdr_net);
-typedef int (*pmixp_io_hdr_unpack_cb_t)(void *hdr_net, void *hdr_host);
-
-typedef void *(*pmixp_io_buf_ptr_cb_t)(void *msg);
-typedef size_t (*pmixp_io_buf_size_cb_t)(void *msg);
-typedef void (*pmixp_io_msg_free_cb_t)(void *msg);
-
-typedef struct {
-	/* generic callback */
-	pmixp_io_payload_size_cb_t payload_size_cb;
-	/* receiver-related fields */
-	bool recv_on;
-	uint32_t recv_host_hsize, recv_net_hsize;
-	pmixp_io_hdr_unpack_cb_t hdr_unpack_cb;
-	uint32_t recv_padding;
-	/* transmitter-related fields */
-	bool send_on;
-	pmixp_io_buf_ptr_cb_t  msg_ptr;
-	pmixp_io_buf_size_cb_t msg_size;
-	pmixp_io_msg_free_cb_t msg_free_cb;
-} pmixp_io_engine_header_t;
-
 typedef enum {
 	PMIXP_IO_NONE = 0,
 	PMIXP_IO_INIT,
@@ -83,7 +58,7 @@ typedef struct {
 	/* User supplied information */
 	int sd;
 	int error;
-	pmixp_io_engine_header_t h;
+	pmixp_p2p_data_t h;
 	pmixp_io_state_t io_state;
 	/* receiver */
 	uint32_t rcvd_hdr_offs;
@@ -111,7 +86,7 @@ static inline bool pmixp_io_fd(pmixp_io_engine_t *eng)
 static inline bool pmixp_io_rcvd_ready(pmixp_io_engine_t *eng)
 {
 	xassert(eng->magic == PMIXP_MSGSTATE_MAGIC);
-	return (eng->rcvd_hdr_offs == eng->h.recv_net_hsize)
+	return (eng->rcvd_hdr_offs == eng->h.rhdr_net_size)
 			&& (eng->rcvd_pay_size == eng->rcvd_pay_offs);
 }
 
@@ -152,7 +127,7 @@ static inline int pmixp_io_error(pmixp_io_engine_t *eng)
  * to the operation mode
  */
 void pmixp_io_init(pmixp_io_engine_t *eng,
-		pmixp_io_engine_header_t header);
+		pmixp_p2p_data_t header);
 
 /* attach engine to the specific file descriptor */
 static inline void
@@ -185,14 +160,14 @@ static inline void*
 pmixp_io_recv_hdr_alloc_host(pmixp_io_engine_t *eng)
 {
 	xassert(eng->magic == PMIXP_MSGSTATE_MAGIC);
-	return xmalloc(eng->h.recv_host_hsize);
+	return xmalloc(eng->h.rhdr_host_size);
 }
 
 static inline void*
 pmixp_io_recv_hdr_alloc_net(pmixp_io_engine_t *eng)
 {
 	xassert(eng->magic == PMIXP_MSGSTATE_MAGIC);
-	return xmalloc(eng->h.recv_net_hsize);
+	return xmalloc(eng->h.rhdr_net_size);
 }
 
 /* Transmitter */

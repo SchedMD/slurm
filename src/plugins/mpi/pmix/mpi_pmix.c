@@ -164,8 +164,6 @@ mpi_plugin_client_state_t *p_mpi_hook_client_prelaunch(
 	char *mapping = NULL;
 	PMIXP_DEBUG("setup process mapping in srun");
 
-	pmixp_ucx_check();
-
 	uint32_t nnodes = job->step_layout->node_cnt;
 	uint32_t ntasks = job->step_layout->task_cnt;
 	uint16_t *task_cnt = job->step_layout->tasks;

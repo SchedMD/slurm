@@ -39,25 +39,9 @@
 
 #include "pmixp_dconn.h"
 
-#ifdef HAVE_UCX
-
-#include <ucp/api/ucp.h>
-void pmixp_ucx_check()
-{
-	unsigned major, minor, release;
-	ucp_get_version(&major, &minor, &release);
-	PMIXP_ERROR("UCX lib available: %d.%d.%d", major, minor, release);
-}
-
-int pmixp_dconn_ucx_set_handlers(pmixp_dconn_handlers_t *_pmixp_dconn_h);
-
-#else 
-
-#define pmixp_ucx_check()
-#define pmixp_dconn_ucx_set_handlers(_pmixp_dconn_h)
-
-#endif
-
+int pmixp_dconn_ucx_prepare(pmixp_dconn_handlers_t *handlers,
+			    char **ep_data, size_t *ep_len);
+void pmixp_dconn_ucx_finalize();
 
 #endif
 

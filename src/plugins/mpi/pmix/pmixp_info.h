@@ -82,6 +82,7 @@ void pmixp_info_srv_usock_set(char *path, int fd);
 const char *pmixp_info_srv_usock_path(void);
 int pmixp_info_srv_usock_fd(void);
 bool pmixp_info_srv_direct_conn();
+bool pmixp_info_srv_direct_conn_ucx();
 
 
 static inline int pmixp_info_timeout(void)

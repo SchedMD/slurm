@@ -50,13 +50,27 @@ typedef enum {
 } pmixp_dconn_state_t;
 
 typedef enum {
-	/* This direct connection needs poll to progress */
-	PMIXP_DIRECT_TYPE_POLL,
-	/* This dconn works with active messaging */
-	PMIXP_DIRECT_TYPE_AM
-} pmixp_dconn_type_t;
+	/* This direct connection implementation needs software-level
+	 * progress engine (select/poll/epoll)
+	 */
+	PMIXP_DCONN_PROGRESS_SW,
+	/* This direct connection implementation has hardware-level
+	 * progress engine
+	 */
+	PMIXP_DCONN_PROGRESS_HW
+} pmixp_dconn_progress_type_t;
 
-typedef int (*pmixp_dconn_new_msg_t)(void *_hdr, void *msg);
+typedef enum {
+	/* This direct connection implementation requires
+	 * both sides to be involved in the connection
+	 * establishment
+	 */
+	PMIXP_DCONN_CONN_TYPE_TWOSIDE,
+	/* This direct connection implementation implements
+	 * one-sided connection semantics
+	 */
+	PMIXP_DCONN_CONN_TYPE_ONESIDE
+} pmixp_dconn_conn_type_t;
 
 typedef struct {
 	/* element-wise lock */
@@ -70,12 +84,13 @@ typedef struct {
 	void *priv;
 } pmixp_dconn_t;
 
-typedef void *(*pmixp_dconn_p2p_init_t)(int nodeid, pmixp_io_engine_header_t direct_hdr);
+typedef void *(*pmixp_dconn_p2p_init_t)(int nodeid, pmixp_p2p_data_t direct_hdr);
 typedef void (*pmixp_dconn_p2p_fini_t)(void *_priv);
 typedef int (*pmixp_dconn_p2p_connect_t)(void *_priv, void *ep_data, size_t ep_len,
 					 void *init_msg);
 typedef int (*pmixp_dconn_p2p_send_nb_t)(void *_priv, void *msg);
 typedef pmixp_io_engine_t *(*pmixp_dconn_p2p_getio_t)(void *_priv);
+typedef void (*pmixp_dconn_p2p_regio_t)(eio_handle_t *h);
 
 typedef struct {
 	pmixp_dconn_p2p_init_t init;
@@ -83,6 +98,7 @@ typedef struct {
 	pmixp_dconn_p2p_connect_t connect;
 	pmixp_dconn_p2p_send_nb_t send;
 	pmixp_dconn_p2p_getio_t getio;
+	pmixp_dconn_p2p_regio_t regio;
 } pmixp_dconn_handlers_t;
 
 
@@ -92,7 +108,7 @@ extern pmixp_dconn_t *_pmixp_dconn_conns;
 extern pmixp_dconn_handlers_t _pmixp_dconn_h;
 
 void pmixp_dconn_init(int node_cnt,
-		      pmixp_io_engine_header_t direct_hdr);
+		      pmixp_p2p_data_t direct_hdr);
 void pmixp_dconn_fini();
 
 #ifndef NDEBUG
@@ -120,7 +136,8 @@ pmixp_dconn_unlock(pmixp_dconn_t *dconn)
 	slurm_mutex_unlock(&dconn->lock);
 }
 
-pmixp_dconn_type_t pmixp_dconn_type();
+pmixp_dconn_progress_type_t pmixp_dconn_progress_type();
+pmixp_dconn_conn_type_t pmixp_dconn_connect_type();
 int pmixp_dconn_poll_fd();
 size_t pmixp_dconn_ep_len();
 char *pmixp_dconn_ep_data();
@@ -150,78 +167,94 @@ pmixp_dconn_send(pmixp_dconn_t *dconn, void *msg)
 	return _pmixp_dconn_h.send(dconn->priv, msg);
 }
 
+static inline void pmixp_dconn_regio(eio_handle_t *h)
+{
+	return _pmixp_dconn_h.regio(h);
+}
+
 int pmixp_dconn_connect_do(pmixp_dconn_t *dconn, void *ep_data, size_t ep_len, void *init_msg);
 
 /* Returns locked direct connection descriptor */
-static inline pmixp_dconn_t *
-pmixp_dconn_connect(int nodeid, void *ep_data, int ep_len, void *init_msg)
+
+static inline bool
+pmixp_dconn_require_connect(pmixp_dconn_t *dconn, bool *send_init)
 {
-	int rc;
-	pmixp_dconn_t *dconn = pmixp_dconn_lock(nodeid);
+	*send_init = false;
 	switch( pmixp_dconn_state(dconn) ){
 	case PMIXP_DIRECT_INIT:
-		break;
-	case PMIXP_DIRECT_EP_SENT:
-		if( nodeid < pmixp_info_nodeid()){
-			break;
-		} else {
-			/* just ignore this connection,
-			 * remote side will come with counter-connection
-			 */
+		*send_init = true;
+		return true;
+	case PMIXP_DIRECT_EP_SENT:{
+		switch (pmixp_dconn_connect_type()) {
+		case PMIXP_DCONN_CONN_TYPE_TWOSIDE: {
+			if( dconn->nodeid < pmixp_info_nodeid()){
+				*send_init = true;
+				return true;
+			} else {
+				/* just ignore this connection,
+				 * remote side will come with counter-connection
+				 */
+				return false;
+			}
 		}
-		goto unlock;
+		case PMIXP_DCONN_CONN_TYPE_ONESIDE:
+			*send_init = false;
+			return true;
+		default:
+			/* shouldn't happen */
+			PMIXP_ERROR("Unexpected direct connection semantics type: %d",
+				    pmixp_dconn_connect_type());
+			xassert(0 && pmixp_dconn_connect_type());
+			abort();
+		}
+		break;
+	}
 	case PMIXP_DIRECT_CONNECTED:
 		PMIXP_DEBUG("Trying to re-establish the connection");
-		goto unlock;
+		return false;
 	default:
 		/* shouldn't happen */
 		PMIXP_ERROR("Unexpected direct connection state: PMIXP_DIRECT_NONE");
 		xassert(0 && pmixp_dconn_state(dconn));
 		abort();
 	}
+	return false;
+}
 
+static inline int
+pmixp_dconn_connect(pmixp_dconn_t *dconn, void *ep_data, int ep_len, void *init_msg)
+{
+	int rc;
 	/* establish the connection */
 	rc = pmixp_dconn_connect_do(dconn, ep_data, ep_len, init_msg);
-	if( SLURM_SUCCESS == rc ){
+	if (SLURM_SUCCESS == rc){
 		dconn->state = PMIXP_DIRECT_CONNECTED;
-		/* return locked structure */
-		return dconn;
 	} else {
 		/* drop the state to INIT so we will try again later
 		 * if it will always be failing - we will always use
 		 * SLURM's protocol
 		 */
-		char *nodename = pmixp_info_job_host(nodeid);
-		xassert(NULL != nodename);
+		char *nodename = pmixp_info_job_host(dconn->nodeid);
+		xassert(nodename);
 		if (NULL == nodename) {
-			PMIXP_ERROR("Bad nodeid = %d in the incoming message", nodeid);
+			PMIXP_ERROR("Bad nodeid = %d in the incoming message", dconn->nodeid);
 			abort();
 		}
 		dconn->state = PMIXP_DIRECT_INIT;
 		PMIXP_ERROR("Cannot establish direct connection to %s (%d)",
-			   nodename, nodeid);
+			   nodename, dconn->nodeid);
 		xfree(nodename);
 	}
-unlock:
-	pmixp_dconn_unlock(dconn);
-	return NULL;
-}
-
-static inline int
-pmixp_dconn_set_cb(pmixp_dconn_t *dconn, pmixp_dconn_new_msg_t new_msg_cb)
-{
-	/* Disabled for now */
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /* POLL-based specific API */
-
 static inline pmixp_io_engine_t*
 pmixp_dconn_engine(pmixp_dconn_t *dconn)
 {
 	pmixp_dconn_verify(dconn);
-	xassert( PMIXP_DIRECT_TYPE_POLL == pmixp_dconn_type(dconn));
-	if( PMIXP_DIRECT_TYPE_POLL == pmixp_dconn_type(dconn) ){
+	xassert( PMIXP_DCONN_PROGRESS_SW == pmixp_dconn_progress_type(dconn));
+	if( PMIXP_DCONN_PROGRESS_SW == pmixp_dconn_progress_type(dconn) ){
 		return _pmixp_dconn_h.getio(dconn->priv);
 	}
 	return NULL;
@@ -231,10 +264,10 @@ pmixp_dconn_engine(pmixp_dconn_t *dconn)
 static inline pmixp_dconn_t *
 pmixp_dconn_accept(int nodeid, int fd)
 {
-	if( PMIXP_DIRECT_TYPE_POLL != pmixp_dconn_type() ){
+	if( PMIXP_DCONN_PROGRESS_SW != pmixp_dconn_progress_type() ){
 		PMIXP_ERROR("Accept is not supported by direct connection of type %d",
-			    (int)pmixp_dconn_type());
-		xassert( PMIXP_DIRECT_TYPE_POLL == pmixp_dconn_type());
+			    (int)pmixp_dconn_progress_type());
+		xassert( PMIXP_DCONN_PROGRESS_SW == pmixp_dconn_progress_type());
 		return NULL;
 	}
 	pmixp_dconn_t *dconn = pmixp_dconn_lock(nodeid);

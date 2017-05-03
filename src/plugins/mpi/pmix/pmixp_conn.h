@@ -76,8 +76,8 @@ typedef void (*pmixp_conn_new_msg_cb_t)(pmixp_conn_t *conn,
 					void *hdr, void *msg);
 typedef void (*pmixp_conn_ret_cb_t)(pmixp_conn_t *conn);
 
-void pmixp_conn_init(pmixp_io_engine_header_t slurm_hdr,
-			  pmixp_io_engine_header_t direct_hdr);
+void pmixp_conn_init(pmixp_p2p_data_t slurm_hdr,
+			  pmixp_p2p_data_t direct_hdr);
 void pmixp_conn_fini(void);
 void pmixp_conn_cleanup(void);
 

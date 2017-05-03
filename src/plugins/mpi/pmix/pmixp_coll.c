@@ -518,11 +518,11 @@ static int _copy_payload(Buf inbuf, size_t offs, Buf *outbuf)
 	return rc;
 }
 
-static void _sent_complete_cb(int rc, pmixp_srv_cb_context_t ctx, void *cb_data)
+static void _sent_complete_cb(int rc, pmixp_p2p_ctx_t ctx, void *cb_data)
 {
 	pmixp_coll_t *coll = (pmixp_coll_t *)cb_data;
 
-	if( PMIXP_SRV_CB_REGULAR == ctx ){
+	if( PMIXP_P2P_REGULAR == ctx ){
 		/* lock the collective */
 		slurm_mutex_lock(&coll->lock);
 	}
@@ -548,7 +548,7 @@ static void _sent_complete_cb(int rc, pmixp_srv_cb_context_t ctx, void *cb_data)
 		coll->cbfunc(PMIX_ERROR, NULL, 0, coll->cbdata, NULL, NULL);
 	}
 
-	if( PMIXP_SRV_CB_REGULAR == ctx ){
+	if( PMIXP_P2P_REGULAR == ctx ){
 		/* unlock the collective */
 		slurm_mutex_unlock(&coll->lock);
 	}

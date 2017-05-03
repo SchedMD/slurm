@@ -36,22 +36,36 @@
 
 #include "pmixp_dconn.h"
 #include "pmixp_dconn_tcp.h"
+#include "pmixp_dconn_ucx.h"
 
 pmixp_dconn_t *_pmixp_dconn_conns = NULL;
 uint32_t _pmixp_dconn_conn_cnt = 0;
 pmixp_dconn_handlers_t _pmixp_dconn_h;
 
-static pmixp_dconn_type_t _type;
+static pmixp_dconn_progress_type_t _progress_type;
+static pmixp_dconn_conn_type_t _conn_type;
 static int _poll_fd = -1;
 static char *ep_data = NULL;
-static uint16_t ep_len = 0;
+static size_t ep_len = 0;
 
-void pmixp_dconn_init(int node_cnt, pmixp_io_engine_header_t direct_hdr)
+void pmixp_dconn_init(int node_cnt, pmixp_p2p_data_t direct_hdr)
 {
 	int i;
 	memset(&_pmixp_dconn_h, 0, sizeof(_pmixp_dconn_h));
-	_poll_fd = pmixp_dconn_tcp_prepare(&_pmixp_dconn_h, &ep_data, &ep_len);
-	_type = PMIXP_DIRECT_TYPE_POLL;
+
+	if( pmixp_info_srv_direct_conn_ucx() ){
+		/* if UCX is disabled - it is always false */
+#ifdef HAVE_UCX
+		_poll_fd = pmixp_dconn_ucx_prepare(&_pmixp_dconn_h, &ep_data, &ep_len);
+		_progress_type = PMIXP_DCONN_PROGRESS_HW;
+		_conn_type = PMIXP_DCONN_CONN_TYPE_ONESIDE;
+#endif
+	} else {
+		_poll_fd = pmixp_dconn_tcp_prepare(&_pmixp_dconn_h, &ep_data, &ep_len);
+		_progress_type = PMIXP_DCONN_PROGRESS_SW;
+		_conn_type = PMIXP_DCONN_CONN_TYPE_TWOSIDE;
+	}
+
 
 	_pmixp_dconn_conns = xmalloc(sizeof(*_pmixp_dconn_conns) * node_cnt);
 	_pmixp_dconn_conn_cnt = node_cnt;
@@ -80,9 +94,14 @@ int pmixp_dconn_connect_do(pmixp_dconn_t *dconn, void *ep_data, size_t ep_len, v
 	return _pmixp_dconn_h.connect(dconn->priv, ep_data, ep_len, init_msg);
 }
 
-pmixp_dconn_type_t pmixp_dconn_type()
+pmixp_dconn_progress_type_t pmixp_dconn_progress_type()
 {
-	return _type;
+	return _progress_type;
+}
+
+pmixp_dconn_conn_type_t pmixp_dconn_connect_type()
+{
+	return _conn_type;
 }
 
 int pmixp_dconn_poll_fd()

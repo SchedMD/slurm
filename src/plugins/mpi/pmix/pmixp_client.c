@@ -778,7 +778,9 @@ pmix_status_t fencenb_fn(const pmix_proc_t procs[], size_t nprocs,
 	pmixp_coll_type_t type = PMIXP_COLL_TYPE_FENCE;
 	pmix_status_t status = PMIX_SUCCESS;
 
-	pmixp_debug_hang(0);
+    if( pmixp_info_nodeid() ){
+    	pmixp_debug_hang(1);
+    }
 
 	coll = pmixp_state_coll_get(type, procs, nprocs);
 	pmixp_coll_set_callback(coll, cbfunc, cbdata);
