@@ -87,6 +87,8 @@ extern int       fed_mgr_job_start(struct job_record *job_ptr,
 				   uint32_t cluster_id, time_t start_time);
 extern int       fed_mgr_q_job_complete(uint32_t job_id, time_t start_time,
 					uint32_t return_code);
+extern int       fed_mgr_q_job_requeue(uint32_t job_id, uid_t uid,
+				       uint32_t state);
 extern int       fed_mgr_q_job_update(char *cluster_name, uint32_t job_id,
 				      job_desc_msg_t *job_desc, uid_t uid);
 extern int       fed_mgr_q_sib_job_update_response(char *cluster_name,

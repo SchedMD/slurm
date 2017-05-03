@@ -101,6 +101,7 @@ enum fed_job_update_type {
 	FED_JOB_NONE = 0,
 	FED_JOB_COMPLETE,
 	FED_JOB_REMOVE_ACTIVE_SIB_BIT,
+	FED_JOB_REQUEUE,
 	FED_JOB_START,
 	FED_JOB_SUBMIT_BATCH,
 	FED_JOB_SUBMIT_INT,
@@ -117,6 +118,7 @@ typedef struct {
 	uint64_t        siblings_viable;
 	char           *siblings_str;
 	time_t          start_time;
+	uint32_t        state;
 	char           *submit_cluster;
 	job_desc_msg_t *submit_desc;
 	uint16_t        submit_proto_ver;
@@ -156,6 +158,8 @@ static char *_job_update_type_str(enum fed_job_update_type type)
 		return "FED_JOB_COMPLETE";
 	case FED_JOB_REMOVE_ACTIVE_SIB_BIT:
 		return "FED_JOB_REMOVE_ACTIVE_SIB_BIT";
+	case FED_JOB_REQUEUE:
+		return "FED_JOB_REQUEUE";
 	case FED_JOB_START:
 		return "FED_JOB_START";
 	case FED_JOB_SUBMIT_BATCH:
@@ -1576,6 +1580,20 @@ _handle_fed_job_remove_active_sib_bit(fed_job_update_info_t *job_update_info)
 	unlock_slurmctld(job_write_lock);
 }
 
+static void _handle_fed_job_requeue(fed_job_update_info_t *job_update_info)
+{
+	int rc;
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
+
+	lock_slurmctld(job_write_lock);
+	if ((rc = job_requeue(job_update_info->uid, job_update_info->job_id,
+			      NULL, false, job_update_info->state)))
+		error("failed to requeue fed job %d - rc:%d",
+		      job_update_info->job_id, rc);
+	unlock_slurmctld(job_write_lock);
+}
+
 /*
  * Job has been started, revoke the sibling jobs.
  *
@@ -1662,6 +1680,7 @@ static void _handle_fed_job_start(fed_job_update_info_t *job_update_info)
 
 static void _handle_fed_job_submission(fed_job_update_info_t *job_update_info)
 {
+	struct job_record *job_ptr;
 	bool interactive_job =
 		(job_update_info->type == FED_JOB_SUBMIT_INT) ?
 		true : false;
@@ -1676,6 +1695,13 @@ static void _handle_fed_job_submission(fed_job_update_info_t *job_update_info)
 		     job_update_info->submit_cluster);
 
 	lock_slurmctld(job_write_lock);
+
+	if ((job_ptr = find_job_record(job_update_info->job_id))) {
+		info("Found existing fed job %d, going to requeue/kill it",
+		     job_update_info->job_id);
+		purge_job_record(job_ptr->job_id);
+	}
+
 	_fed_mgr_job_allocate_sib(job_update_info->submit_cluster,
 				  job_update_info->submit_desc,
 				  interactive_job);
@@ -1784,6 +1810,9 @@ static int _foreach_fed_job_update_info(fed_job_update_info_t *job_update_info)
 		break;
 	case FED_JOB_REMOVE_ACTIVE_SIB_BIT:
 		_handle_fed_job_remove_active_sib_bit(job_update_info);
+		break;
+	case FED_JOB_REQUEUE:
+		_handle_fed_job_requeue(job_update_info);
 		break;
 	case FED_JOB_START:
 		_handle_fed_job_start(job_update_info);
@@ -3636,6 +3665,7 @@ extern int fed_mgr_job_requeue(struct job_record *job_ptr)
 	int rc = SLURM_SUCCESS;
 	uint32_t origin_id;
 	uint64_t feature_sibs = 0;
+	fed_job_info_t *job_info;
 
 	xassert(job_ptr);
 	xassert(job_ptr->details);
@@ -3680,6 +3710,18 @@ extern int fed_mgr_job_requeue(struct job_record *job_ptr)
 
 	job_ptr->job_state &= (~JOB_REQUEUE_FED);
 	job_ptr->job_state &= (~JOB_REVOKED);
+
+	slurm_mutex_lock(&fed_job_list_mutex);
+	if ((job_info = _find_fed_job_info(job_ptr->job_id))) {
+		job_info->siblings_viable =
+			job_ptr->fed_details->siblings_viable;
+		job_info->siblings_active =
+			job_ptr->fed_details->siblings_active;
+	} else {
+		error("%s: failed to find fed job info for fed job_id %d",
+		      __func__, job_ptr->job_id);
+	}
+	slurm_mutex_unlock(&fed_job_list_mutex);
 
 	return rc;
 }
@@ -4210,6 +4252,21 @@ extern int fed_mgr_q_sib_job_update_response(char *cluster_name,
 	job_update_info->job_id         = job_id;
 	job_update_info->return_code    = return_code;
 	job_update_info->submit_cluster = xstrdup(cluster_name);
+
+	_append_job_update(job_update_info);
+
+	return rc;
+}
+
+extern int fed_mgr_q_job_requeue(uint32_t job_id, uid_t uid, uint32_t state) {
+	int rc = SLURM_SUCCESS;
+	fed_job_update_info_t *job_update_info =
+		xmalloc(sizeof(fed_job_update_info_t));
+
+	job_update_info->type   = FED_JOB_REQUEUE;
+	job_update_info->job_id = job_id;
+	job_update_info->state  = state;
+	job_update_info->uid    = uid;
 
 	_append_job_update(job_update_info);
 
