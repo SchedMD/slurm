@@ -68,6 +68,7 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/assoc_mgr.h"
+#include "src/common/gres.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/node_features.h"
@@ -1856,6 +1857,42 @@ next_task:
 		/*
 		 * Add reservation to scheduling table if appropriate
 		 */
+		if (!assoc_limit_stop) {
+			uint32_t selected_node_cnt;
+			uint64_t tres_req_cnt[slurmctld_tres_cnt];
+
+			selected_node_cnt = bit_set_count(avail_bitmap);
+			memcpy(tres_req_cnt, job_ptr->tres_req_cnt,
+			       sizeof(tres_req_cnt));
+			tres_req_cnt[TRES_ARRAY_CPU] =
+				(uint64_t)(job_ptr->total_cpus ?
+					   job_ptr->total_cpus :
+					   job_ptr->details->min_cpus);
+
+			tres_req_cnt[TRES_ARRAY_MEM] = job_get_tres_mem(
+						job_ptr->details->pn_min_memory,
+						tres_req_cnt[TRES_ARRAY_CPU],
+						selected_node_cnt);
+
+			tres_req_cnt[TRES_ARRAY_NODE] =
+				(uint64_t)selected_node_cnt;
+
+			gres_set_job_tres_cnt(job_ptr->gres_list,
+					      selected_node_cnt,
+					      tres_req_cnt,
+					      false);
+
+			if (!acct_policy_job_runnable_post_select(job_ptr,
+							  tres_req_cnt)) {
+				if (debug_flags & DEBUG_FLAG_BACKFILL) {
+					info("backfill: adding reservation for "
+					     "job %u blocked by "
+					     "acct_policy_job_runnable_post_select",
+					     job_ptr->job_id);
+				}
+				continue;
+			}
+		}
 		if (debug_flags & DEBUG_FLAG_BACKFILL)
 			_dump_job_sched(job_ptr, end_reserve, avail_bitmap);
 		if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE))
