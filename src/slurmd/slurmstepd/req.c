@@ -1203,7 +1203,7 @@ done:
 		xfree(gtids);
 
 		for (i = 0; i < job->node_tasks; i++) {
-			if (job->task[i] && job->task[i]->argv) {
+			if (job->task && job->task[i] && job->task[i]->argv) {
 				len = strlen(job->task[i]->argv[0]) + 1;
 				safe_write(fd, &len, sizeof(int));
 				safe_write(fd, job->task[i]->argv[0], len);
