@@ -627,7 +627,8 @@ void list_iterator_copy(ListIterator *dst, ListIterator src)
 	if (!*dst)
 		*dst = list_iterator_alloc();
 
-	memcpy(*dst, src, sizeof(struct listIterator));
+	if (*dst)
+		memcpy(*dst, src, sizeof(struct listIterator));
 }
 
 /* list_iterator_reset()
