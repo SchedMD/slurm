@@ -6320,17 +6320,11 @@ static int
 _add_starting_step(uint16_t type, void *req)
 {
 	starting_step_t *starting_step;
-	int rc = SLURM_SUCCESS;
 
 	/* Add the step info to a list of starting processes that
 	   cannot reliably be contacted. */
-	slurm_mutex_lock(&conf->starting_steps_lock);
 	starting_step = xmalloc(sizeof(starting_step_t));
-	if (!starting_step) {
-		error("%s failed to allocate memory", __func__);
-		rc = SLURM_FAILURE;
-		goto fail;
-	}
+
 	switch (type) {
 	case LAUNCH_BATCH_JOB:
 		starting_step->job_id =
@@ -6350,21 +6344,15 @@ _add_starting_step(uint16_t type, void *req)
 		break;
 	default:
 		error("%s called with an invalid type: %u", __func__, type);
-		rc = SLURM_FAILURE;
 		xfree(starting_step);
-		goto fail;
+		return SLURM_FAILURE;
 	}
 
-	if (!list_append(conf->starting_steps, starting_step)) {
-		error("%s failed to allocate memory for list", __func__);
-		rc = SLURM_FAILURE;
-		xfree(starting_step);
-		goto fail;
-	}
-
-fail:
+	slurm_mutex_lock(&conf->starting_steps_lock);
+	list_append(conf->starting_steps, starting_step);
 	slurm_mutex_unlock(&conf->starting_steps_lock);
-	return rc;
+
+	return SLURM_SUCCESS;
 }
 
 
