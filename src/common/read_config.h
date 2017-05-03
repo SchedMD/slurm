@@ -135,7 +135,7 @@ extern char *default_plugstack;
 #if defined HAVE_REAL_CRAY/* ALPS requires cluster-unique job container IDs */
 #  define DEFAULT_PROCTRACK_TYPE    "proctrack/sgi_job"
 #else
-#  define DEFAULT_PROCTRACK_TYPE    "proctrack/pgid"
+#  define DEFAULT_PROCTRACK_TYPE    "proctrack/cgroup"
 #endif
 #define DEFAULT_PREEMPT_TYPE        "preempt/none"
 #define DEFAULT_PRIORITY_DECAY      604800 /* 7 days */

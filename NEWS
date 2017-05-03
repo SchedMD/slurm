@@ -74,6 +74,7 @@ documents those changes that are of interest to users and administrators.
  -- sched/backfill: Improve assoc_limit_stop configuration parameter support.
  -- KNL features: Always keep active and available features in the same order:
     first site-specific features, next MCDRAM modes, last NUMA modes.
+ -- Changed default ProctrackType to cgroup.
 
 * Changes in Slurm 17.02.3
 ==========================

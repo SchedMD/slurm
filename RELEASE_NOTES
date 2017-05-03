@@ -57,6 +57,7 @@ HIGHLIGHTS
     switch_jobinfo_t with dynamic_plugin_data_t in interface calls in
     order to pass switch information between clusters with different switch
     types.
+ -- Changed default ProctrackType to cgroup.
 
 RPMBUILD CHANGES
 ================
