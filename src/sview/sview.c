@@ -1331,7 +1331,7 @@ static GtkWidget *_create_cluster_combo(void)
 	if (list_count(cluster_list) > 1)
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_POINTER);
 
-	/* Set up the working_cluster_rec just incase we are on a node
+	/* Set up the working_cluster_rec just in case we are on a node
 	   that doesn't technically belong to a cluster (like
 	   the node running the slurmdbd).
 	*/

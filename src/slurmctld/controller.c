@@ -272,7 +272,7 @@ int main(int argc, char **argv)
 
 	/* Verify clustername from conf matches value in spool dir
 	 * exit if inconsistent to protect state files from corruption.
-	 * This needs to be done before we kill the old one just incase we
+	 * This needs to be done before we kill the old one just in case we
 	 * fail. */
 	create_clustername_file = _verify_clustername();
 

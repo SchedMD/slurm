@@ -391,7 +391,7 @@ extern void assoc_mgr_remove_assoc_usage(slurmdb_assoc_rec_t *assoc);
 extern void assoc_mgr_remove_qos_usage(slurmdb_qos_rec_t *qos);
 
 /*
- * Dump the state information of the association mgr just incase the
+ * Dump the state information of the association mgr just in case the
  * database isn't up next time we run.
  */
 extern int dump_assoc_mgr_state(char *state_save_location);

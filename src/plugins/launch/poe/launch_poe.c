@@ -666,7 +666,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 		 * purpose.  It makes it so each task has a separate
 		 * line. */
 		setenv("MP_STDOUTMODE", "unordered", 1);
-		/* Just incase we didn't specify a file in srun. */
+		/* Just in case we didn't specify a file in srun. */
 		setenv("SLURM_ARBITRARY_NODELIST", opt.nodelist, 1);
 	} else {
 		/* Since poe doesn't need to know about the partition and it

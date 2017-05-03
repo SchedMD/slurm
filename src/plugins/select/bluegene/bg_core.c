@@ -204,7 +204,7 @@ static void *_track_freeing_blocks(void *args)
 		bridge_status_update_block_list_state(track_list);
 
 		list_iterator_reset(itr);
-		/* just incase this changes from the update function */
+		/* just in case this changes from the update function */
 		track_cnt = list_count(track_list);
 		while ((bg_record = list_next(itr))) {
 			if (bg_record->magic != BLOCK_MAGIC) {
@@ -337,7 +337,7 @@ extern void bg_requeue_job(uint32_t job_id, bool wait_for_start,
 
 	/* Wait for the slurmd to begin the batch script, slurm_fail_job()
 	   is a no-op if issued prior to the script initiation do
-	   clean up just incase the fail job isn't ran. */
+	   clean up just in case the fail job isn't ran. */
 	if (wait_for_start)
 		sleep(2);
 
@@ -465,7 +465,7 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 		*/
 		if (bg_record->state & BG_BLOCK_ERROR_FLAG) {
 			/* This will set the state to ERROR(Free)
-			 * just incase the state was ERROR(SOMETHING ELSE) */
+			 * just in case the state was ERROR(SOMETHING ELSE) */
 			bg_record->state = BG_BLOCK_ERROR_FLAG;
 			break;
 		} else if (!wait || (count >= 3))

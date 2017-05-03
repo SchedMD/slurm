@@ -3624,7 +3624,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 	/*
 	 * header.orig_addr will be set to where the first message
 	 * came from if this is a forward else we set the
-	 * header.orig_addr to our addr just incase we need to send it off.
+	 * header.orig_addr to our addr just in case we need to send it off.
 	 */
 	if (header.orig_addr.sin_addr.s_addr != 0) {
 		memcpy(&msg->orig_addr, &header.orig_addr, sizeof(slurm_addr_t));

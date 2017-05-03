@@ -1532,7 +1532,7 @@ extern int as_mysql_fini_ctld(mysql_conn_t *mysql_conn,
 		return ESLURM_DB_CONNECTION;
 
 	/* Here we need to check make sure we are updating the entry
-	   correctly just incase the backup has already gained
+	   correctly just in case the backup has already gained
 	   control.  If we check the ip and port it is a pretty safe
 	   bet we have the right ctld.
 	*/

@@ -343,7 +343,7 @@ try_again:
 		      resv->time_start_prev, resv->cluster);
 		if (!set && resv->time_end) {
 			/* This should never really happen,
-			   but just incase the controller and the
+			   but just in case the controller and the
 			   database get out of sync we check
 			   to see if there is a reservation
 			   not deleted that hasn't ended yet. */
@@ -407,7 +407,7 @@ try_again:
 
 	_setup_resv_limits(resv, &cols, &vals, &extra);
 	/* use start below instead of resv->time_start_prev
-	 * just incase we have a different one from being out
+	 * just in case we have a different one from being out
 	 * of sync
 	 */
 	if ((start > now) || !set) {

@@ -312,7 +312,7 @@ extern int launch_p_setup_srun_opt(char **rest)
 		}
 	}
 
-	/* We need to do +2 here just incase multi-prog is needed (we
+	/* We need to do +2 here just in case multi-prog is needed (we
 	 * add an extra argv on so just make space for it). */
 	opt.argv = (char **) xmalloc((opt.argc + command_pos + 2) *
 		   sizeof(char *));

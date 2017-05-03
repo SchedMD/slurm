@@ -82,7 +82,7 @@ extern List create_dynamic_block(List block_list,
 	memset(&blockreq, 0, sizeof(select_ba_request_t));
 	memcpy(start_geo, request->geometry, sizeof(start_geo));
 
-	/* We need to lock this just incase a blocks_overlap is called
+	/* We need to lock this just in case a blocks_overlap is called
 	   which will in turn reset and set the system as it sees fit.
 	*/
 	slurm_mutex_lock(&block_state_mutex);
