@@ -42,6 +42,7 @@ documents those changes that are of interest to users and administrators.
     slurmctld crashing.
  -- Fix priority/multifactor priorities on a slurmctld restart if not using
     accounting_storage/[mysql|slurmdbd].
+ -- Fix NULL dereference reported by CLANG.
 
 * Changes in Slurm 17.02.2
 ==========================
