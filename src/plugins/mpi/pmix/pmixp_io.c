@@ -75,24 +75,12 @@ _verify_transceiver(pmixp_io_engine_header_t header)
 
 	/* sanity checks */
 	if( header.send_on ){
-		if (0 == header.send_host_hsize){
-			PMIXP_ERROR("Bad host header size");
+		if (NULL == header.msg_ptr){
+			PMIXP_ERROR("No message pointer callback provided");
 			goto check_fail;
 		}
-		if (0 == header.send_net_hsize){
-			PMIXP_ERROR("Bad net header size");
-			goto check_fail;
-		}
-		if (NULL == header.hdr_ptr_cb){
-			PMIXP_ERROR("No header pointer callback provided");
-			goto check_fail;
-		}
-		if (NULL == header.hdr_pack_cb){
-			PMIXP_ERROR("No header pack callback provided");
-			goto check_fail;
-		}
-		if (NULL == header.payload_ptr_cb){
-			PMIXP_ERROR("No payload pointer callback provided");
+		if (NULL == header.msg_size){
+			PMIXP_ERROR("No message size callback provided");
 			goto check_fail;
 		}
 		if (NULL == header.msg_free_cb){
@@ -134,18 +122,10 @@ void pmixp_io_init(pmixp_io_engine_t *eng,
 	/* Init transmitter */
 	slurm_mutex_init(&eng->send_lock);
 	eng->send_current = NULL;
-	eng->send_hdr_size = eng->send_pay_size = 0;
-	eng->send_offs = 0;
-	eng->send_payload = NULL;
+	eng->send_offs = eng->send_msg_size = 0;
+	eng->send_msg_ptr = NULL;
 	eng->send_queue = list_create(eng->h.msg_free_cb);
 	eng->complete_queue = list_create(eng->h.msg_free_cb);
-	if (eng->h.send_on) {
-		/* we are going to send data */
-		eng->send_hdr_net = xmalloc(eng->h.send_net_hsize);
-	} else {
-		/* transmitter won't be used */
-		eng->send_hdr_net = NULL;
-	}
 }
 
 static inline void
@@ -176,8 +156,8 @@ _pmixp_io_drop_messages(pmixp_io_engine_t *eng)
 			eng->h.msg_free_cb(eng->send_current);
 			eng->send_current = NULL;
 		}
-		eng->send_payload = NULL;
-		eng->send_offs = 0;
+		eng->send_msg_ptr = NULL;
+		eng->send_offs = eng->send_msg_size = 0;
 	}
 }
 
@@ -227,9 +207,7 @@ void pmixp_io_finalize(pmixp_io_engine_t *eng, int err)
 		if( eng->h.send_on ){
 			list_destroy(eng->send_queue);
 			list_destroy(eng->complete_queue);
-			xfree(eng->send_hdr_net);
-			eng->send_hdr_size = eng->send_pay_size;
-			eng->send_offs = 0;
+			eng->send_msg_size = eng->send_offs = 0;
 		}
 		break;
 	case PMIXP_IO_NONE:
@@ -423,24 +401,18 @@ static inline int _send_set_current(pmixp_io_engine_t *eng, void *msg)
 {
 	xassert(NULL != eng);
 	xassert(PMIXP_MSGSTATE_MAGIC == eng->magic);
-	xassert(NULL != eng->rcvd_hdr_net);
 	xassert(pmixp_io_enqueue_ok(eng));
 	xassert(eng->h.send_on);
 	xassert(NULL == eng->send_current);
-	void *hdr = eng->h.hdr_ptr_cb(msg);
 
 	/* Set message basis */
 	eng->send_current = msg;
 
-	/* Setup header for sending */
-	eng->send_hdr_size = eng->h.send_net_hsize;
-	eng->h.hdr_pack_cb(hdr, eng->send_hdr_net);
-
 	/* Setup payload for sending */
-	eng->send_payload = eng->h.payload_ptr_cb(msg);
-	eng->send_pay_size = eng->h.payload_size_cb(hdr);
+	eng->send_msg_ptr = eng->h.msg_ptr(msg);
+	eng->send_msg_size = eng->h.msg_size(msg);
 
-    /* Setup send offset */
+	/* Setup send offset */
 	eng->send_offs = 0;
 	return 0;
 }
@@ -454,39 +426,24 @@ static inline void _send_free_current(pmixp_io_engine_t *eng)
 	xassert(eng->h.send_on);
 	xassert(NULL != eng->send_current);
 
-	eng->send_payload = NULL;
-	eng->send_pay_size = eng->send_hdr_size = 0;
-	eng->send_offs = 0;
-	/* Do not call the callback now. Defer to the
+	eng->send_msg_ptr = NULL;
+	eng->send_msg_size = eng->send_offs = 0;
+	/* Do not call the callback now. Defer for the
 	 * progress thread
 	 */
 	list_enqueue(eng->complete_queue, eng->send_current);
 	eng->send_current = NULL;
 }
 
-static inline int _send_header_ok(pmixp_io_engine_t *eng)
+static inline int _send_msg_ok(pmixp_io_engine_t *eng)
 {
 	xassert(NULL != eng);
 	xassert(PMIXP_MSGSTATE_MAGIC == eng->magic);
-	xassert(NULL != eng->rcvd_hdr_net);
-	xassert(pmixp_io_operating(eng));
-	xassert(eng->h.send_on);
-	xassert(NULL != eng->send_current);
-
-	return (NULL != eng->send_current) && 
-				(eng->send_offs >= eng->send_hdr_size);
-}
-
-static inline int _send_payload_ok(pmixp_io_engine_t *eng)
-{
-	xassert(NULL != eng);
-	xassert(PMIXP_MSGSTATE_MAGIC == eng->magic);
-	xassert(NULL != eng->rcvd_hdr_net);
 	xassert(pmixp_io_enqueue_ok(eng));
 	xassert(eng->h.send_on);
 
-	return (eng->send_current != NULL) && _send_header_ok(eng)
-			&& (eng->send_offs == (eng->send_pay_size + eng->send_hdr_size));
+	return (eng->send_current != NULL)
+		&& (eng->send_offs == eng->send_msg_size);
 }
 
 static bool _send_pending(pmixp_io_engine_t *eng)
@@ -494,7 +451,6 @@ static bool _send_pending(pmixp_io_engine_t *eng)
 	int rc;
 	xassert(NULL != eng);
 	xassert(PMIXP_MSGSTATE_MAGIC == eng->magic);
-	xassert(NULL != eng->rcvd_hdr_net);
 	xassert(pmixp_io_enqueue_ok(eng));
 	xassert(eng->h.send_on);
 
@@ -502,7 +458,7 @@ static bool _send_pending(pmixp_io_engine_t *eng)
 		return false;
 	}
 
-	if (_send_payload_ok(eng)) {
+	if (_send_msg_ok(eng)) {
 		/* The current message is send. Cleanup current msg */
 		_send_free_current(eng);
 	}
@@ -547,14 +503,10 @@ static void _send_progress(pmixp_io_engine_t *eng)
 		int iovcnt = 0;
 		size_t written = 0;
 
-		iov[iovcnt].iov_base = eng->send_hdr_net;
-		iov[iovcnt].iov_len  = eng->send_hdr_size;
+		iov[iovcnt].iov_base = eng->send_msg_ptr;
+		iov[iovcnt].iov_len  = eng->send_msg_size;
 		iovcnt++;
-		if( eng->send_pay_size ){
-			iov[iovcnt].iov_base = eng->send_payload;
-			iov[iovcnt].iov_len  = eng->send_pay_size;
-			iovcnt++;
-		}
+
 		written = pmixp_writev_buf(fd, iov, iovcnt, eng->send_offs, &shutdown);
 		if (shutdown) {
 			pmixp_io_finalize(eng, shutdown);

@@ -75,8 +75,11 @@ typedef struct {
 
 #define PMIXP_SAPI_SHDR_SIZE (PMIXP_BASE_HDR_SIZE + sizeof(uint8_t))
 #define PMIXP_SAPI_SHDR_EXT_SIZE(ep_len) (sizeof(uint32_t) + ep_len)
-#define PMIXP_MAX_SEND_HDR (PMIXP_SAPI_SHDR_SIZE + \
+#define PMIXP_SAPI_SHDR_SIZE_MAX (PMIXP_SAPI_SHDR_SIZE + \
 			PMIXP_SAPI_SHDR_EXT_SIZE(pmixp_dconn_ep_len()))
+
+
+#define PMIXP_MAX_SEND_HDR (PMIXP_SAPI_SHDR_SIZE_MAX)
 
 typedef struct {
 	uint32_t size;		/* Has to be first (appended by SLURM API) */
@@ -250,12 +253,14 @@ pmixp_io_engine_header_t _slurm_proto = {
 };
 
 /* direct protocol I/O header */
-static uint32_t _direct_msize(void *hdr);
-static int _direct_hdr_pack(void *host, void *net);
+static uint32_t _direct_paysize(void *hdr);
+static size_t _direct_hdr_pack(void *host, void *net);
 static int _direct_hdr_unpack(void *net, void *host);
-static void *_direct_hdr_ptr(void *msg);
-static void *_direct_payload_ptr(void *msg);
+
+static void *_direct_msg_ptr(void *msg);
+static size_t _direct_msg_size(void *msg);
 static void _direct_msg_free(void *msg);
+
 static void _direct_new_msg(pmixp_conn_t *conn, void *_hdr, void *msg);
 static void _direct_send(pmixp_dconn_t *dconn, pmixp_ep_t *ep,
 			 pmixp_base_hdr_t bhdr, Buf buf,
@@ -264,7 +269,7 @@ static void _direct_send(pmixp_dconn_t *dconn, pmixp_ep_t *ep,
 
 pmixp_io_engine_header_t _direct_proto = {
 	/* generic callback */
-	.payload_size_cb = _direct_msize,
+	.payload_size_cb = _direct_paysize,
 	/* receiver-related fields */
 	.recv_on = 1,
 	.recv_host_hsize = sizeof(pmixp_base_hdr_t),
@@ -273,11 +278,8 @@ pmixp_io_engine_header_t _direct_proto = {
 	.hdr_unpack_cb = _direct_hdr_unpack,
 	/* transmitter-related fields */
 	.send_on = 1,
-	.send_host_hsize = sizeof(pmixp_base_hdr_t),
-	.send_net_hsize = PMIXP_BASE_HDR_SIZE,
-	.hdr_pack_cb = _direct_hdr_pack,
-	.hdr_ptr_cb = _direct_hdr_ptr,
-	.payload_ptr_cb = _direct_payload_ptr,
+	.msg_ptr = _direct_msg_ptr,
+	.msg_size = _direct_msg_size,
 	.msg_free_cb = _direct_msg_free
 };
 
@@ -706,7 +708,7 @@ send_direct:
 
 typedef struct {
 	pmixp_base_hdr_t hdr;
-	void *payload;
+	void *buffer;
 	Buf buf_ptr;
 	pmixp_server_sent_cb_t sent_cb;
 	void *cbdata;
@@ -716,7 +718,7 @@ typedef struct {
  *  Server message processing
  */
 
-static uint32_t _direct_msize(void *buf)
+static uint32_t _direct_paysize(void *buf)
 {
 	pmixp_base_hdr_t *hdr = (pmixp_base_hdr_t *)buf;
 	return hdr->msgsize;
@@ -747,7 +749,7 @@ static int _direct_hdr_unpack(void *net, void *host)
  * Returns packed size
  * Note: asymmetric to _recv_unpack_hdr because of additional SLURM header
  */
-static int _direct_hdr_pack(void *host, void *net)
+static size_t _direct_hdr_pack(void *host, void *net)
 {
 	pmixp_base_hdr_t *hdr = (pmixp_base_hdr_t *)host;
 	Buf packbuf = create_buf(net, PMIXP_BASE_HDR_SIZE);
@@ -766,16 +768,17 @@ static int _direct_hdr_pack(void *host, void *net)
  * Returns packed size
  * Note: asymmetric to _recv_unpack_hdr because of additional SLURM header
  */
-static void *_direct_hdr_ptr(void *msg)
+
+static void *_direct_msg_ptr(void *msg)
 {
 	_direct_proto_message_t *_msg = (_direct_proto_message_t*)msg;
-	return &_msg->hdr;
+	return _msg->buffer;
 }
 
-static void *_direct_payload_ptr(void *msg)
+static size_t _direct_msg_size(void *msg)
 {
 	_direct_proto_message_t *_msg = (_direct_proto_message_t*)msg;
-	return _msg->payload;
+	return (_msg->hdr.msgsize + PMIXP_BASE_HDR_SIZE);
 }
 
 static void _direct_msg_free(void *_msg)
@@ -877,8 +880,11 @@ _direct_send(pmixp_dconn_t *dconn, pmixp_ep_t *ep,
 			 pmixp_base_hdr_t bhdr, Buf buf,
 			pmixp_server_sent_cb_t complete_cb, void *cb_data)
 {
-	size_t dsize = 0;
+	char nhdr[PMIXP_BASE_HDR_SIZE];
+	size_t dsize = 0, hsize = 0;
 	int rc;
+
+	hsize = _direct_hdr_pack(&bhdr, nhdr);
 
 	xassert(PMIXP_EP_NOIDEID == ep->type);
 	/* TODO: I think we can avoid locking */
@@ -886,7 +892,7 @@ _direct_send(pmixp_dconn_t *dconn, pmixp_ep_t *ep,
 	msg->sent_cb = complete_cb;
 	msg->cbdata = cb_data;
 	msg->hdr = bhdr;
-	msg->payload = _buf_finalize(buf, NULL, 0, &dsize);
+	msg->buffer = _buf_finalize(buf, nhdr, hsize, &dsize);
 	msg->buf_ptr = buf;
 	
 	
@@ -918,18 +924,22 @@ static void _slurm_new_msg(pmixp_conn_t *conn,
 		 */
 		char *ep_data;
 		uint32_t ep_len;
-		_slurm_hdr_unpack_ep(buf_msg, &ep_data, &ep_len);
+		char nhdr[PMIXP_BASE_HDR_SIZE];
+		size_t dsize = 0, hsize = 0;
 		pmixp_dconn_t *dconn;
 		Buf buf_init = pmixp_server_buf_new();
 		pmixp_base_hdr_t bhdr;
 		_direct_proto_message_t *init_msg = xmalloc(sizeof(*init_msg));
-		size_t dsize;
 
 		PMIXP_BASE_HDR_SETUP(bhdr, PMIXP_MSG_INIT_DIRECT, 0, buf_init);
+		hsize = _direct_hdr_pack(&bhdr, nhdr);
+
+		_slurm_hdr_unpack_ep(buf_msg, &ep_data, &ep_len);
+
 		init_msg->sent_cb = pmixp_server_sent_buf_cb;
 		init_msg->cbdata = buf_init;
 		init_msg->hdr = bhdr;
-		init_msg->payload = _buf_finalize(buf_init, NULL, 0, &dsize);
+		init_msg->buffer = _buf_finalize(buf_init, nhdr, hsize, &dsize);
 		init_msg->buf_ptr = buf_init;
 
 		dconn = pmixp_dconn_connect(hdr->shdr.base_hdr.nodeid,
@@ -1066,7 +1076,7 @@ static int _slurm_send(pmixp_ep_t *ep, pmixp_base_hdr_t bhdr, Buf buf)
 {
 	const char *addr = NULL, *data = NULL, *hostlist = NULL;
 	pmixp_slurm_shdr_t hdr;
-	char nhdr[PMIXP_MAX_SEND_HDR];
+	char nhdr[PMIXP_SAPI_SHDR_SIZE_MAX];
 	size_t hsize = 0, dsize = 0;
 	int rc;
 

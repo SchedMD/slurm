@@ -48,8 +48,8 @@ typedef uint32_t (*pmixp_io_payload_size_cb_t)(void *hdr);
 typedef int (*pmixp_io_hdr_pack_cb_t)(void *hdr_host, void *hdr_net);
 typedef int (*pmixp_io_hdr_unpack_cb_t)(void *hdr_net, void *hdr_host);
 
-typedef void *(*pmixp_io_hdr_ptr_cb_t)(void *msg);
-typedef void *(*pmixp_io_payload_ptr_cb_t)(void *msg);
+typedef void *(*pmixp_io_buf_ptr_cb_t)(void *msg);
+typedef size_t (*pmixp_io_buf_size_cb_t)(void *msg);
 typedef void (*pmixp_io_msg_free_cb_t)(void *msg);
 
 typedef struct {
@@ -62,10 +62,8 @@ typedef struct {
 	uint32_t recv_padding;
 	/* transmitter-related fields */
 	bool send_on;
-	uint32_t send_host_hsize, send_net_hsize;
-	pmixp_io_hdr_pack_cb_t hdr_pack_cb;
-	pmixp_io_hdr_ptr_cb_t hdr_ptr_cb;
-	pmixp_io_payload_ptr_cb_t payload_ptr_cb;
+	pmixp_io_buf_ptr_cb_t  msg_ptr;
+	pmixp_io_buf_size_cb_t msg_size;
 	pmixp_io_msg_free_cb_t msg_free_cb;
 } pmixp_io_engine_header_t;
 
@@ -98,11 +96,9 @@ typedef struct {
 	/* sender */
 	pthread_mutex_t send_lock;
 	void *send_current;
-	void *send_hdr_net;
 	uint32_t send_offs;
-	uint32_t send_hdr_size;
-	uint32_t send_pay_size;
-	void *send_payload;
+	uint32_t send_msg_size;
+	void *send_msg_ptr;
 	List send_queue, complete_queue;
 } pmixp_io_engine_t;
 
