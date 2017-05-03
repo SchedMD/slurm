@@ -68,7 +68,7 @@ extern int init(void)
 	char *sched_params;
 	verbose("preempt/qos loaded");
 	sched_params = slurm_get_sched_params();
-	if (xstrcasestr(sched_params, "preempt_youngest_order"))
+	if (xstrcasestr(sched_params, "preempt_youngest_first"))
 		youngest_order = true;
 	xfree(sched_params);
 	return SLURM_SUCCESS;
@@ -200,8 +200,8 @@ static int _sort_by_prio(void *x, void *y)
 static int _sort_by_youngest(void *x, void *y)
 {
 	int rc;
-	struct job_record *j1 = (struct job_record *) x;
-	struct job_record *j2 = (struct job_record *) y;
+	struct job_record *j1 = *(struct job_record **) x;
+	struct job_record *j2 = *(struct job_record **) y;
 
 	if (j1->start_time < j2->start_time)
 		rc = 1;

@@ -917,6 +917,7 @@ static int _attempt_backfill(void)
 	struct job_record *job_ptr;
 	struct part_record *part_ptr, **bf_part_ptr = NULL;
 	uint32_t end_time, end_reserve, deadline_time_limit, boot_time;
+	uint32_t orig_end_time;
 	uint32_t time_limit, comp_time_limit, orig_time_limit, part_time_limit;
 	uint32_t min_nodes, max_nodes, req_nodes;
 	bitstr_t *active_bitmap = NULL, *avail_bitmap = NULL;
@@ -1637,12 +1638,15 @@ next_task:
 			}
 		}
 		boot_time = 0;
-		if (test_fini != 1) {
-			/* Unable to start job using currently currently active
-			 * features, need to use features which can be made
+		if (test_fini == 0) {
+			/* Unable to start job using currently active features,
+			 * need to try using features which can be made
 			 * available after node reboot */
 			bitstr_t *tmp_core_bitmap = NULL;
 			bitstr_t *tmp_node_bitmap = NULL;
+			debug2("backfill: entering _try_sched for job %u. "
+			       "Need to use features which can be made "
+			       "available after node reboot", job_ptr->job_id);
 			/* Determine impact of any advance reservations */
 			j = job_test_resv(job_ptr, &start_res, true,
 					  &tmp_node_bitmap, &tmp_core_bitmap,
@@ -1654,6 +1658,26 @@ next_task:
 				FREE_NULL_BITMAP(tmp_node_bitmap);
 			}
 			boot_time = node_features_g_boot_time();
+			orig_end_time = end_time;
+			end_time += boot_time;
+
+			for (j = 0; ; ) {
+				if (node_space[j].end_time <= start_res)
+					;
+				else if (node_space[j].begin_time <= end_time) {
+					if (node_space[j].begin_time >
+					    orig_end_time)
+						bit_and(avail_bitmap,
+						node_space[j].avail_bitmap);
+				} else
+					break;
+				if ((j = node_space[j].next) == 0)
+					break;
+			}
+		}
+		if (test_fini != 1) {
+			/* Either active_bitmap was NULL or not usable by the
+			 * job. Test using avail_bitmap instead */
 			j = _try_sched(job_ptr, &avail_bitmap, min_nodes,
 				       max_nodes, req_nodes, exc_core_bitmap);
 			if (test_fini == 0) {
@@ -1862,6 +1886,10 @@ next_task:
 		if (later_start && (job_ptr->start_time > later_start)) {
 			/* Try later when some nodes currently reserved for
 			 * pending jobs are free */
+			if (debug_flags & DEBUG_FLAG_BACKFILL) {
+				info("backfill: Try later job %u later_start %ld",
+			             job_ptr->job_id, later_start);
+			}
 			job_ptr->start_time = 0;
 			goto TRY_LATER;
 		}
@@ -1918,6 +1946,14 @@ next_task:
 			 * plugin does not know about. Try again later. */
 			later_start = job_ptr->start_time;
 			job_ptr->start_time = 0;
+			if (debug_flags & DEBUG_FLAG_BACKFILL) {
+				info("backfill: Job %u overlaps with existing "
+				     "reservation start_time=%u "
+				     "end_reserve=%u boot_time=%u "
+				     "later_start %ld", job_ptr->job_id,
+				     start_time, end_reserve, boot_time,
+				     later_start);
+			}
 			goto TRY_LATER;
 		}
 

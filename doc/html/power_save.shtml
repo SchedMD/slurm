@@ -116,7 +116,7 @@ be increased above its default value of 10 seconds.</li>
 (primary and backup server nodes).
 Use of <i>sudo</i> may be required for <i>SlurmUser</i>to power down
 and restart nodes.
-If you need to conver. Slurm's hostlist expression into individual node
+If you need to convert Slurm's hostlist expression into individual node
 names, the <i>scontrol show hostnames</i> command may prove useful.
 The commands used to boot or shut down nodes will depend upon your
 cluster management tools.</p>

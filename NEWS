@@ -102,6 +102,20 @@ documents those changes that are of interest to users and administrators.
  -- Fix to backfill scheduling with respect to QOS and association limits. Jobs
     submitted to multiple partitions are most likley to be effected.
  -- sched/backfill: Improve assoc_limit_stop configuration parameter support.
+ -- CRAY - Add ansible play and README.
+ -- sched/backfill: Fix bug related to advanced reservations and the need to
+    reboot nodes to change KNL mode.
+ -- Preempt plugins - fix check for 'preempt_youngest_first' option.
+ -- Preempt plugins - fix incorrect casts in preempt_youngest_first mode.
+ -- Preempt/job_prio - fix incorrect casts in sort function.
+ -- Fix to make task/affinity work with ldoms where there are more than 64
+    cpus on the node.
+ -- When using node_features/knl_generic make it so the slurmd doesn't segfault
+    when shutting down.
+ -- Fix potential double-xfree() when using job arrays that can lead to
+    slurmctld crashing.
+ -- Fix priority/multifactor priorities on a slurmctld restart if not using
+    accounting_storage/[mysql|slurmdbd].
 
 * Changes in Slurm 17.02.2
 ==========================

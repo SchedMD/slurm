@@ -1247,6 +1247,9 @@ Acceptable values at present include:
 .TP 20
 \fBnode_features/knl_cray\fR
 used only for Intel Knights Landing processors (KNL) on Cray systems
+.TP 20
+\fBnode_features/knl_generic\fR
+used for Intel Knights Landing processors (KNL) on a generic Linux system
 .RE
 
 .TP
@@ -1422,7 +1425,7 @@ MCS Plugin Parameters.
 The supported parameters are specific to the \fBMCSPlugin\fR.
 Changes to this value take effect when the Slurm daemons are reconfigured.
 More information about MCS is available here
-<https://slurm.schedmd.com/mcs_plugins.html>.
+<https://slurm.schedmd.com/mcs.html>.
 
 .TP
 \fBMCSPlugin\fR
@@ -2224,6 +2227,7 @@ Program to be executed on each compute node to reboot it. Invoked on each node
 once it becomes idle after the command "scontrol reboot_nodes" is executed by
 an authorized user or a job is submitted with the "\-\-reboot" option.
 After being rebooting, the node is returned to normal use.
+See \fBResumeTimeout\fR to configure the time you expect a reboot to finish in.
 NOTE: This configuration option does not apply to IBM BlueGene systems.
 
 .TP

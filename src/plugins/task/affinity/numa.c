@@ -39,6 +39,8 @@
 
 #ifdef HAVE_NUMA
 
+static uint16_t *numa_array = NULL;
+
 static char * _memset_to_str(nodemask_t *mask, char *str)
 {
 	int base, begin = 0;
@@ -236,79 +238,51 @@ int get_memset(nodemask_t *mask, stepd_step_rec_t *job)
 }
 
 
-static uint16_t *numa_array = NULL;
-
-/* helper function */
-static void _add_numa_mask_to_array(unsigned long *cpu_mask, int size,
-					uint16_t maxcpus, uint16_t nnode_id)
-{
-	unsigned long count = 1;
-	int i, j, x = sizeof(unsigned long) * 8;
-	for (i = 0; i < size; i++) {
-		/* iterate over each bit of this unsigned long */
-		for (j = 0, count = 1; j < x; j++, count *= 2) {
-			if (count & cpu_mask[i]) {
-				/* this bit in the cpu_mask is set */
-				int cpu = i * sizeof(unsigned long) + j;
-				if (cpu < maxcpus) {
-					numa_array[cpu] = nnode_id;
-				}
-			}
-		}
-	}
-}
-
 /* return the numa node for the given cpuid */
 extern uint16_t slurm_get_numa_node(uint16_t cpuid)
 {
-	uint16_t maxcpus = 0, nnid = 0;
-	int size, retry, max_node;
-	unsigned long *cpu_mask;
+	uint16_t maxcpus = 0;
+	int nnid, j, max_node;
+	struct bitmask *collective;
+
+	if (numa_array)
+		return numa_array[cpuid];
 
 	maxcpus = conf->sockets * conf->cores * conf->threads;
+
 	if (cpuid >= maxcpus)
 		return 0;
 
-	if (numa_array) {
-		return numa_array[cpuid];
-	}
-
 	/* need to load the numa_array */
 	max_node = numa_max_node();
+	numa_array = xmalloc(sizeof(uint16_t) * maxcpus);
 
-	/* The required size of the mask buffer for numa_node_to_cpus()
-	 * is goofed up. The third argument is supposed to be the size
-	 * of the mask, which is an array of unsigned longs. The *unit*
-	 * of the third argument is unclear - should it be in bytes or
-	 * in unsigned longs??? Since I don't know, I'm using this retry
-	 * loop to try and determine an acceptable size. If anyone can
-	 * fix this interaction, please do!!
-	 */
-	size = 8;
-	cpu_mask = xmalloc(sizeof(unsigned long) * size);
-	retry = 0;
-	while (retry++ < 8 && numa_node_to_cpus(nnid, cpu_mask, size) < 0) {
-		size *= 2;
-		xrealloc(cpu_mask, sizeof(unsigned long) * size);
-	}
-	if (retry >= 8) {
-		xfree(cpu_mask);
-		error("NUMA problem with numa_node_to_cpus arguments");
+	collective = numa_allocate_cpumask();
+	if (maxcpus > collective->size) {
+		error("%s: Size mismatch!!!! %d %"PRIu64,
+		      __func__, maxcpus, collective->size);
+		numa_free_cpumask(collective);
 		return 0;
 	}
-	numa_array = xmalloc(sizeof(uint16_t) * maxcpus);
-	_add_numa_mask_to_array(cpu_mask, size, maxcpus, nnid);
-	while (nnid++ < max_node) {
-		if (numa_node_to_cpus(nnid, cpu_mask, size) < 0) {
-			error("NUMA problem - numa_node_to_cpus 2nd call fail");
-			xfree(cpu_mask);
-			xfree(numa_array);
-			numa_array = NULL;
+
+	for (nnid = 0; nnid <= max_node; nnid++) {
+		/* FIXME: This is a hack to make it work like NUMA v2, but for
+		 * the time being we are stuck on v1. (numa_node_to_cpus will
+		 * multiple the size by 8 and the collective is already at the
+		 * correct size)
+		 */
+		if (numa_node_to_cpus(nnid, collective->maskp,
+				      collective->size / 8)) {
+			error("%s: numa_node_to_cpus: %m", __func__);
+			numa_free_cpumask(collective);
 			return 0;
 		}
-		_add_numa_mask_to_array(cpu_mask, size, maxcpus, nnid);
+		for (j = 0; j < maxcpus; j++)
+			if (numa_bitmask_isbitset(collective, j))
+				numa_array[j] = nnid;
 	}
-	xfree(cpu_mask);
+
+	numa_free_cpumask(collective);
 	return numa_array[cpuid];
 }
 

@@ -810,7 +810,7 @@ extern int fini(void)
 	xfree(mcdram_per_node);
 	xfree(mc_path);
 	xfree(syscfg_path);
-	xfree(syscfg_timeout);
+
 	return SLURM_SUCCESS;
 }
 
