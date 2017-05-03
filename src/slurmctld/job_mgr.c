@@ -2199,7 +2199,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 			job_ptr->qos_id = qos_rec.id;
 	}
 
-	/* do this after the format string just incase for some
+	/* do this after the format string just in case for some
 	 * reason the tres_alloc_str is NULL but not the fmt_str */
 	if (job_ptr->tres_alloc_str)
 		assoc_mgr_set_tres_cnt_array(
@@ -9396,7 +9396,7 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 				pack32((uint32_t) 0, buffer);
 			} else if (job_ptr->node_cnt_wag) {
 				/* This should catch everything else, but
-				 * just incase this is 0 (startup or
+				 * just in case this is 0 (startup or
 				 * whatever) we will keep the rest of
 				 * this if statement around.
 				 */
@@ -9548,7 +9548,7 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 				pack32((uint32_t) 0, buffer);
 			} else if (job_ptr->node_cnt_wag) {
 				/* This should catch everything else, but
-				 * just incase this is 0 (startup or
+				 * just in case this is 0 (startup or
 				 * whatever) we will keep the rest of
 				 * this if statement around.
 				 */

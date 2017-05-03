@@ -614,7 +614,7 @@ m4_popdef([AS_MESSAGE_LOG_FD])])])# _LT_GENERATED_FILE_INIT
 # LT_OUTPUT
 # ---------
 # This macro allows early generation of the libtool script (before
-# AC_OUTPUT is called), incase it is used in configure for compilation
+# AC_OUTPUT is called), in case it is used in configure for compilation
 # tests.
 AC_DEFUN([LT_OUTPUT],
 [: ${CONFIG_LT=./config.lt}

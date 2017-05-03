@@ -1101,7 +1101,7 @@ static int hostrange_hn_within(hostrange_t hr, hostname_t hn)
 			strncat(hn->prefix, hn->suffix, ldiff);
 			/* Now adjust the suffix of the hostname object. */
 			hn->suffix += ldiff;
-			/* And the numeric representation just incase
+			/* And the numeric representation just in case
 			 * whatever we just tacked on to the prefix
 			 * had something other than 0 in it.
 			 *

@@ -1699,7 +1699,7 @@ extern int select_p_job_ready(struct job_record *job_ptr)
 			} else if (!bg_record->free_cnt
 				   && (uid == job_ptr->user_id)
 				   && (bg_record->state == BG_BLOCK_INITED)) {
-				/* Clear the state just incase we
+				/* Clear the state just in case we
 				 * missed it somehow. */
 				job_ptr->job_state &= (~JOB_CONFIGURING);
 				last_job_update = time(NULL);

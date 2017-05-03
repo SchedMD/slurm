@@ -923,7 +923,7 @@ _forkexec_slurmstepd(uint16_t type, void *req,
 		}
 
 		/*
-		 * Just incase we (or someone we are linking to)
+		 * Just in case we (or someone we are linking to)
 		 * opened a file and didn't do a close on exec.  This
 		 * is needed mostly to protect us against libs we link
 		 * to that don't set the flag as we should already be

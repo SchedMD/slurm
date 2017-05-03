@@ -3417,7 +3417,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 
 	/* FIXME: It was changed in 16.05.3 to make the extern step
 	 * at the beginning of the job, so this isn't really needed
-	 * anymore, but just incase there were steps out on the nodes
+	 * anymore, but just in case there were steps out on the nodes
 	 * during an upgrade this was left in.  It can probably be
 	 * taken out in future releases though.
 	 */

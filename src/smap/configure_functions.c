@@ -172,7 +172,7 @@ static int _full_request(select_ba_request_t *request,
 	/*
 	 * Here is where we do the allocating of the partition.
 	 * It will send a request back which we will throw into
-	 * a list just incase we change something later.
+	 * a list just in case we change something later.
 	 */
 	if (!bg_configure_new_ba_request(request)) {
 		memset(error_string, 0, 255);

@@ -1828,7 +1828,7 @@ static int  _job_complete(slurmdbd_conn_t *slurmdbd_conn,
 	if (rc && errno == 740) /* meaning data is already there */
 		rc = SLURM_SUCCESS;
 
-	/* just incase this gets set we need to clear it */
+	/* just in case this gets set we need to clear it */
 	xfree(job.wckey);
 
 	if (!slurmdbd_conn->conn->rem_port) {
@@ -1912,7 +1912,7 @@ static int  _job_suspend(slurmdbd_conn_t *slurmdbd_conn,
 	if (rc && errno == 740) /* meaning data is already there */
 		rc = SLURM_SUCCESS;
 
-	/* just incase this gets set we need to clear it */
+	/* just in case this gets set we need to clear it */
 	xfree(job.wckey);
 end_it:
 	*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
@@ -2584,7 +2584,7 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	id_rc_msg->job_id = job.job_id;
 	id_rc_msg->db_index = job.db_index;
 
-	/* just incase job.wckey was set because we didn't send one */
+	/* just in case job.wckey was set because we didn't send one */
 	if (!job_start_msg->wckey)
 		xfree(job.wckey);
 
@@ -3372,7 +3372,7 @@ static int  _step_complete(slurmdbd_conn_t *slurmdbd_conn,
 
 	if (rc && errno == 740) /* meaning data is already there */
 		rc = SLURM_SUCCESS;
-	/* just incase this gets set we need to clear it */
+	/* just in case this gets set we need to clear it */
 	xfree(job.wckey);
 
 	if (!slurmdbd_conn->conn->rem_port) {
@@ -3447,7 +3447,7 @@ static int  _step_start(slurmdbd_conn_t *slurmdbd_conn,
 	if (rc && errno == 740) /* meaning data is already there */
 		rc = SLURM_SUCCESS;
 
-	/* just incase this gets set we need to clear it */
+	/* just in case this gets set we need to clear it */
 	xfree(job.wckey);
 
 	if (!slurmdbd_conn->conn->rem_port) {

@@ -260,7 +260,7 @@ extern void ba_create_system()
 					ba_setup_mp(ba_mp, true, false);
 					ba_mp->state = NODE_STATE_IDLE;
 					/* This might get changed
-					   later, but just incase set
+					   later, but just in case set
 					   it up here.
 					*/
 					ba_mp->index = i++;

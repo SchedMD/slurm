@@ -940,7 +940,7 @@ extern void select_p_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 		/* init the rest of the dim sizes. All current (2011)
 		 * XT/XE installations have a maximum dimension of 3,
 		 * smaller systems deploy a 2D Torus which has no
-		 * connectivity in X-dimension.  Just incase they
+		 * connectivity in X-dimension.  Just in case they
 		 * decide to change it where we only get 2 instead of
 		 * 3 we will initialize it later. */
 		for (i = 1; i < dims; i++)

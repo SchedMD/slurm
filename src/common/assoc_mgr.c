@@ -2525,7 +2525,7 @@ extern int assoc_mgr_fill_in_user(void *db_conn, slurmdb_user_rec_t *user,
 	if (user_pptr)
 		*user_pptr = found_user;
 
-	/* create coord_accts just incase the list does not exist */
+	/* create coord_accts just in case the list does not exist */
 	if (!found_user->coord_accts)
 		found_user->coord_accts =
 			list_create(slurmdb_destroy_coord_rec);
