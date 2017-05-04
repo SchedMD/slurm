@@ -120,6 +120,12 @@ documents those changes that are of interest to users and administrators.
  -- Fix NULL dereference reported by CLANG.
  -- Update proctrack documentation to strongly encourage use of
     proctrack/cgroup.
+ -- Fix potential memory leak if job fails to begin after nodes have been
+    selected for a job.
+ -- Handle a job that made it out of the select plugin without a job_resrcs
+    pointer.
+ -- Fix potential race condition when persistent connections are being closed at
+    shutdown.
 
 * Changes in Slurm 17.02.2
 ==========================
