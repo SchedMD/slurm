@@ -141,21 +141,39 @@ The system <span class="commandline">_init()</span> is called before the Slurm
   are currently in effect. Value is allocated or appended to as appropriate
   with xmalloc functions.</p>
 
-<p class="commandline"> char *node_features_p_node_xlate(char *new_features, char *orig_features)
+<p class="commandline"> char *node_features_p_node_xlate(char *new_features, char *orig_features, char *avail_features)
 <p style="margin-left:.2in"><b>Description</b>:<br>
-  Translate a node's new feature specification as needed to preserve any
+  Translate a node's new active feature specification as needed to preserve any
   original features (i.e. features outside of the domain of this plugin).
+  Also validate that the new features are a subset of available features.
   For example, a node's new features may be "cache,quad", while it's original
-  features may have been "flat,hemi,knl,rack1".
-  The available features with respect to this plugin are "flat,hemi", while
-  features outside of the domain of this plugin are "knl,rack1".
-  In this case, this function's return value will be "cache,quad,knl,rack1".
+  features may have been "knl,rack1,flat,hemi".
+  The original plugin-specific features are "flat,hemi", while
+  features configured outside of the domain of this plugin are "knl,rack1".
+  In this case, this function's return value will be "knl,rack1,cache,quad".
+  This function may also be used to insure a specific ordering of features
+  (e.g. on a KNL node, always put the MCDRAM mode before the NUMA mode).
   Executed from the slurmctld daemon only.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
-  <span class="commandline"> new_features:</span> Node's reported features.<br>
-  <span class="commandline"> orig_features:</span> Node's previous feature state.<br>
+  <span class="commandline"> new_features:</span> Node's new active features.<br>
+  <span class="commandline"> orig_features:</span> Node's previous active feature state.<br>
+  <span class="commandline"> avail_features:</span> Node's available features.<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
-  Node's currently features value
+  Node's currently active features, validate and sorted.
+  A string with it's memory allocated by xmalloc (i.e. the return value
+  must be released using Slurm's xfree function).</p>
+
+<p class="commandline"> char *node_features_p_node_xlate2(char *new_features)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+  Translate a node's newly configured available feature specification as needed
+  to order the entries as desired.
+  For example on a KNL node, always put the MCDRAM mode before the NUMA mode
+  (i.e. an input of "hemi,flat" is translated to "flat,hemi").
+  Executed from the slurmctld daemon only.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+  <span class="commandline"> new_features:</span> Node's newly configured features.<br>
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+  Node's currently available features, validate and sorted.
   A string with it's memory allocated by xmalloc (i.e. the return value
   must be released using Slurm's xfree function).</p>
 
@@ -178,6 +196,6 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 13 January 2017</p>
+<p style="text-align:center;">Last modified 4 May 2017</p>
 
 <!--#include virtual="footer.txt"-->
