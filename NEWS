@@ -51,6 +51,8 @@ documents those changes that are of interest to users and administrators.
     pointer.
  -- Fix potential race condition when persistent connections are being closed at
     shutdown.
+ -- Fix incorrect locks levels when submitting a batch job or updating a job
+    in general.
 
 * Changes in Slurm 17.02.2
 ==========================
