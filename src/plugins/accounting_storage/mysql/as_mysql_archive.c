@@ -540,8 +540,6 @@ typedef enum {
 	PURGE_CLUSTER_USAGE
 } purge_type_t;
 
-static void _init_local_job(local_job_t *);
-
 static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 			       char *cluster_name, time_t period_end,
 			       char *arch_dir, uint32_t archive_period,
@@ -643,6 +641,8 @@ static int _unpack_local_job(local_job_t *object,
 {
 	uint32_t tmp32;
 	char *tmp_char;
+
+	memset(object, 0, sizeof(local_job_t));
 
 	/* For protocols <= 14_11, job_req_inx and it's corresponding enum,
 	 * were out of sync. This caused the following variables to have the
@@ -782,6 +782,7 @@ static int _unpack_local_job(local_job_t *object,
 		object->tres_alloc_str = xstrdup_printf(
 			"%d=%s", TRES_CPU, tmp_char);
 		unpackstr_ptr(&object->alloc_nodes, &tmp32, buffer);
+		object->array_taskid = "4294967294";
 		unpackstr_ptr(&object->associd, &tmp32, buffer);
 		unpackstr_ptr(&object->blockid, &tmp32, buffer);
 		unpackstr_ptr(&object->derived_ec, &tmp32, buffer);
@@ -817,6 +818,7 @@ static int _unpack_local_job(local_job_t *object,
 		object->tres_alloc_str = xstrdup_printf(
 			"%d=%s", TRES_CPU, tmp_char);
 		unpackstr_ptr(&object->alloc_nodes, &tmp32, buffer);
+		object->array_taskid = "4294967294";
 		unpackstr_ptr(&object->associd, &tmp32, buffer);
 		unpackstr_ptr(&object->blockid, &tmp32, buffer);
 		unpackstr_ptr(&object->derived_ec, &tmp32, buffer);
@@ -1967,7 +1969,6 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 	xstrcat(format, ")");
 	for(i = 0; i < rec_cnt; i++) {
 
-		_init_local_job(&object);
 		if (_unpack_local_job(&object, rpc_version, buffer)
 		    != SLURM_SUCCESS) {
 			error("issue unpacking");
@@ -2027,17 +2028,6 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 	xfree(format);
 
 	return insert;
-}
-
-/* _init_local_job()
- */
-static void
-_init_local_job(local_job_t *job)
-{
-	/* Init the array_taskid to NO_VAL
-	 */
-	memset(job, 0, sizeof(local_job_t));
-	xstrcat(job->array_taskid, "4294967294");
 }
 
 static Buf _pack_archive_resvs(MYSQL_RES *result, char *cluster_name,
