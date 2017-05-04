@@ -2563,7 +2563,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		job_ptr->start_time = 0;
 		job_ptr->time_last_active = 0;
 		job_ptr->end_time = 0;
-		job_ptr->node_bitmap = NULL;
 		job_ptr->priority = 0;
 		job_ptr->state_reason = WAIT_HELD;
 		last_job_update = now;
@@ -2576,7 +2575,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		job_ptr->start_time = 0;
 		job_ptr->time_last_active = 0;
 		job_ptr->end_time = 0;
-		job_ptr->node_bitmap = NULL;
 		last_job_update = now;
 		goto cleanup;
 	}
@@ -2675,6 +2673,9 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		}
 		xfree(node_set_ptr);
 	}
+
+	if (error_code != SLURM_SUCCESS)
+		FREE_NULL_BITMAP(job_ptr->node_bitmap);
 
 #ifdef HAVE_BG
 	if (error_code != SLURM_SUCCESS)

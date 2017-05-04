@@ -45,6 +45,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix NULL dereference reported by CLANG.
  -- Update proctrack documentation to strongly encourage use of
     proctrack/cgroup.
+ -- Fix potential memory leak if job fails to begin after nodes have been
+    selected for a job.
 
 * Changes in Slurm 17.02.2
 ==========================
