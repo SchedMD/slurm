@@ -2587,7 +2587,15 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		job_ptr->nodes = xstrdup(job_ptr->job_resrcs->nodes);
 	else {
 		error("Select plugin failed to set job resources, nodes");
-		job_ptr->nodes = bitmap2node_name(select_bitmap);
+		/* Do not attempt to allocate the select_bitmap nodes since
+		 * select plugin failed to set job resources */
+		error_code = ESLURM_NODES_BUSY;
+		job_ptr->start_time = 0;
+		job_ptr->time_last_active = 0;
+		job_ptr->end_time = 0;
+		job_ptr->state_reason = WAIT_RESOURCES;
+		last_job_update = now;
+		goto cleanup;
 	}
 	select_bitmap = NULL;	/* nothing left to free */
 	allocate_nodes(job_ptr);
@@ -2604,7 +2612,17 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 
 	if (select_g_select_nodeinfo_set(job_ptr) != SLURM_SUCCESS) {
 		error("select_g_select_nodeinfo_set(%u): %m", job_ptr->job_id);
-		/* not critical ... by now */
+		if (!job_ptr->job_resrcs) {
+			/* If we don't exit earlier the empty job_resrcs might
+			 * be dereferenced later */
+			error_code = ESLURM_NODES_BUSY;
+			job_ptr->start_time = 0;
+			job_ptr->time_last_active = 0;
+			job_ptr->end_time = 0;
+			job_ptr->state_reason = WAIT_RESOURCES;
+			last_job_update = now;
+			goto cleanup;
+		}
 	}
 	if ((job_ptr->mail_type & MAIL_JOB_BEGIN) &&
 	    ((job_ptr->mail_type & MAIL_ARRAY_TASKS) ||

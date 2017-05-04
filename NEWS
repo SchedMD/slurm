@@ -47,6 +47,8 @@ documents those changes that are of interest to users and administrators.
     proctrack/cgroup.
  -- Fix potential memory leak if job fails to begin after nodes have been
     selected for a job.
+ -- Handle a job that made it out of the select plugin without a job_resrcs
+    pointer.
 
 * Changes in Slurm 17.02.2
 ==========================
