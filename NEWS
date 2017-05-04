@@ -53,6 +53,7 @@ documents those changes that are of interest to users and administrators.
     shutdown.
  -- Fix incorrect locks levels when submitting a batch job or updating a job
     in general.
+ -- CRAY - Move delay waiting for job cleanup to after we check once.
 
 * Changes in Slurm 17.02.2
 ==========================

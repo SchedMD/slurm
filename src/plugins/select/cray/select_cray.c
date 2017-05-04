@@ -1022,7 +1022,6 @@ static void _wait_job_completed(uint32_t job_id, struct job_record *job_ptr)
 		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	while (!fini) {
-		sleep(1);
 		lock_slurmctld(job_read_lock);
 		if ((job_ptr->magic  != JOB_MAGIC) ||
 		    (job_ptr->job_id != job_id)    ||
@@ -1030,6 +1029,8 @@ static void _wait_job_completed(uint32_t job_id, struct job_record *job_ptr)
 		     (bb_g_job_test_post_run(job_ptr) != 0)))
 			fini = true;
 		unlock_slurmctld(job_read_lock);
+		if (!fini)
+			sleep(1);
 	}
 }
 
