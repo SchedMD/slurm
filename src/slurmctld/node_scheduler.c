@@ -2599,17 +2599,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		goto cleanup;
 	}
 	select_bitmap = NULL;	/* nothing left to free */
-	allocate_nodes(job_ptr);
-	job_array_start(job_ptr);
-	build_node_details(job_ptr, true);
-	rebuild_job_part_list(job_ptr);
-
-	/* This could be set in the select plugin so we want to keep the flag */
-	configuring = IS_JOB_CONFIGURING(job_ptr);
-
-	job_ptr->job_state = JOB_RUNNING;
-	if (nonstop_ops.job_begin)
-		(nonstop_ops.job_begin)(job_ptr);
 
 	if (select_g_select_nodeinfo_set(job_ptr) != SLURM_SUCCESS) {
 		error("select_g_select_nodeinfo_set(%u): %m", job_ptr->job_id);
@@ -2625,6 +2614,19 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			goto cleanup;
 		}
 	}
+
+	allocate_nodes(job_ptr);
+	job_array_start(job_ptr);
+	build_node_details(job_ptr, true);
+	rebuild_job_part_list(job_ptr);
+
+	/* This could be set in the select plugin so we want to keep the flag */
+	configuring = IS_JOB_CONFIGURING(job_ptr);
+
+	job_ptr->job_state = JOB_RUNNING;
+	if (nonstop_ops.job_begin)
+		(nonstop_ops.job_begin)(job_ptr);
+
 	if ((job_ptr->mail_type & MAIL_JOB_BEGIN) &&
 	    ((job_ptr->mail_type & MAIL_ARRAY_TASKS) ||
 	     _first_array_task(job_ptr)))
