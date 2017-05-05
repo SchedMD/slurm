@@ -47,6 +47,7 @@ enum {
 	SORTID_BOARDS,
 	SORTID_BOOT_TIME,
 	SORTID_CAP_WATTS,
+	SORTID_CLUSTER_NAME,
 	SORTID_COLOR,
 	SORTID_CPUS,
 	SORTID_CPU_LOAD,
@@ -81,8 +82,6 @@ enum {
 	SORTID_CNT
 };
 
-
-
 typedef struct {
 	int node_col;
 	char *nodelist;
@@ -97,6 +96,8 @@ static char *_initial_page_opts = "Name,RackMidplane,State,CPU_Count,"
 static display_data_t display_data_node[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, false, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_CLUSTER_NAME, "ClusterName", false, EDIT_NONE,
+	 refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_NAME, "Name", false, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_COLOR, NULL, true, EDIT_COLOR, refresh_node,
@@ -235,6 +236,11 @@ static void _layout_node_record(GtkTreeView *treeview,
 		GTK_TREE_STORE(gtk_tree_view_get_model(treeview));
 	if (!treestore)
 		return;
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_node,
+						 SORTID_CLUSTER_NAME),
+				   node_ptr->cluster_name);
 
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
@@ -641,6 +647,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			   SORTID_LOWEST_JOULES, tmp_base_watts,
 			   SORTID_BOARDS,    node_ptr->boards,
 			   SORTID_BOOT_TIME, sview_node_info_ptr->boot_time,
+			   SORTID_CLUSTER_NAME, node_ptr->cluster_name,
 			   SORTID_CAP_WATTS, tmp_cap_watts,
 			   SORTID_COLOR,
 				sview_colors[sview_node_info_ptr->pos

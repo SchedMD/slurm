@@ -114,6 +114,7 @@ enum {
 	SORTID_BATCH_HOST,
 	SORTID_BLOCK,
 	SORTID_BURST_BUFFER,
+	SORTID_CLUSTER_NAME,
 	SORTID_COLOR,
 	SORTID_COLOR_INX,
 	SORTID_COMMAND,
@@ -362,6 +363,8 @@ static display_data_t display_data_job[] = {
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_BURST_BUFFER, "Burst Buffer", false,
 	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_CLUSTER_NAME, "ClusterName", false,
+	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_CPU_MIN, "CPUs Min",
 	 false, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_CPU_MAX, "CPUs Max",
@@ -1449,6 +1452,13 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_BURST_BUFFER),
 				   job_ptr->burst_buffer);
 
+	if (job_ptr->cluster) {
+		add_display_treestore_line(update, treestore, &iter,
+					   find_col_name(display_data_job,
+							 SORTID_CLUSTER_NAME),
+					   job_ptr->cluster);
+	}
+
 	if (cluster_flags & CLUSTER_FLAG_BG) {
 		add_display_treestore_line(update, treestore, &iter,
 					   find_col_name(display_data_job,
@@ -2357,6 +2367,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SORTID_BATCH,        tmp_batch,
 				   SORTID_BATCH_HOST,   job_ptr->batch_host,
 				   SORTID_BURST_BUFFER, job_ptr->burst_buffer,
+				   SORTID_CLUSTER_NAME, job_ptr->cluster,
 				   SORTID_COLOR,
 				   sview_colors[sview_job_info_ptr->color_inx],
 				   SORTID_COLOR_INX,
@@ -2386,6 +2397,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SORTID_BATCH,        tmp_batch,
 				   SORTID_BATCH_HOST,   job_ptr->batch_host,
 				   SORTID_BURST_BUFFER, job_ptr->burst_buffer,
+				   SORTID_CLUSTER_NAME, job_ptr->cluster,
 				   SORTID_COLOR,
 				   sview_colors[sview_job_info_ptr->color_inx],
 				   SORTID_COLOR_INX,
@@ -3587,11 +3599,13 @@ extern int get_new_info_job(job_info_msg_t **info_ptr,
 {
 	job_info_msg_t *new_job_ptr = NULL;
 	uint16_t show_flags = 0;
-	int error_code = SLURM_NO_CHANGE_IN_DATA;
+	int error_code = SLURM_NO_CHANGE_IN_DATA, i;
 	time_t now = time(NULL);
 	static time_t last;
 	static bool changed = 0;
 	static uint16_t last_flags = 0;
+	slurm_job_info_t *job_ptr;
+	char *local_cluster;
 
 	if (g_job_info_ptr && !force
 	    && ((now - last) < working_sview_config.refresh_delay)) {
@@ -3604,6 +3618,7 @@ extern int get_new_info_job(job_info_msg_t **info_ptr,
 	}
 	last = now;
 
+	show_flags |= SHOW_GLOBAL;
 	if (working_sview_config.show_hidden)
 		show_flags |= SHOW_ALL;
 	if (g_job_info_ptr) {
@@ -3625,6 +3640,24 @@ extern int get_new_info_job(job_info_msg_t **info_ptr,
 					     show_flags);
 		changed = 1;
 	}
+
+	/* If job not local, clear node_inx to avoid setting node colors */
+	if (!orig_cluster_name)
+		orig_cluster_name = slurm_get_cluster_name();
+	if (working_cluster_rec && working_cluster_rec->name)
+		local_cluster = xstrdup(working_cluster_rec->name);
+	else
+		local_cluster = xstrdup(orig_cluster_name);
+	if (error_code == SLURM_SUCCESS) {
+		for (i = 0, job_ptr = new_job_ptr->job_array;
+		     i < new_job_ptr->record_count; i++, job_ptr++) {
+			if (job_ptr->node_inx && job_ptr->cluster &&
+			     xstrcmp(job_ptr->cluster, local_cluster)) {
+				job_ptr->node_inx[0] = -1;
+			}
+		}
+	}
+	xfree(local_cluster);
 
 	last_flags = show_flags;
 	g_job_info_ptr = new_job_ptr;
@@ -4187,7 +4220,7 @@ display_it:
 	while ((sview_job_info_ptr = list_next(itr))) {
 		i++;
 		job_ptr = sview_job_info_ptr->job_ptr;
-		switch(spec_info->type) {
+		switch (spec_info->type) {
 		case JOB_PAGE:
 			switch(search_info->search_type) {
 			case SEARCH_JOB_ID:
@@ -4608,7 +4641,7 @@ static void process_foreach_list (jobs_foreach_common_t *jobs_foreach_common)
 	if (global_edit_error || global_error_code)
 		goto end_it;
 
-	switch(jobs_foreach_common->edit_type) {
+	switch (jobs_foreach_common->edit_type) {
 	case EDIT_SIGNAL:
 		tmp_char_ptr = g_strdup_printf(
 			"Signal successfully sent to job(s)%s",

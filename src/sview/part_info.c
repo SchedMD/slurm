@@ -84,6 +84,7 @@ enum {
 	SORTID_ALLOW_GROUPS,
 	SORTID_ALLOW_QOS,
 	SORTID_ALTERNATE,
+	SORTID_CLUSTER_NAME,
 	SORTID_COLOR,
 	SORTID_COLOR_INX,
 	SORTID_CPUS,
@@ -131,11 +132,13 @@ enum {
 
 /*these are the settings to apply for the user
  * on the first startup after a fresh slurm install.*/
-static char *_initial_page_opts = "Partition,Default,Part_State,"
-	"Time_Limit,Node_Count,Node_State,NodeList";
+static char *_initial_page_opts = "Partition,Default,Part_State,Time_Limit,"
+	"Node_Count,Node_State,NodeList";
 
 static display_data_t display_data_part[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, false, EDIT_NONE, refresh_part},
+	{G_TYPE_STRING, SORTID_CLUSTER_NAME, "ClusterName", false,
+	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_NAME, "Partition", false,
 	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_COLOR, NULL, true, EDIT_COLOR, refresh_part,
@@ -227,6 +230,8 @@ static display_data_t display_data_part[] = {
 
 static display_data_t create_data_part[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, false, EDIT_NONE, refresh_part},
+	{G_TYPE_STRING, SORTID_CLUSTER_NAME, "ClusterName", false,
+	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_NAME, "Name", false,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_ALTERNATE, "Alternate", false,
@@ -1038,6 +1043,10 @@ static void _layout_part_record(GtkTreeView *treeview,
 			else
 				temp_char = "all";
 			break;
+		case SORTID_CLUSTER_NAME:
+			if (part_ptr->cluster_name)
+				temp_char = part_ptr->cluster_name;
+			break;
 		case SORTID_DENY_ACCOUNTS:
 			if (part_ptr->deny_accounts)
 				temp_char = part_ptr->deny_accounts;
@@ -1401,6 +1410,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	 * the configuration of nodes within this partition. */
 	gtk_tree_store_set(treestore, &sview_part_info->iter_ptr,
 			   SORTID_ALTERNATE,  tmp_alt,
+			   SORTID_CLUSTER_NAME, part_ptr->cluster_name,
 			   SORTID_COLOR,
 				sview_colors[sview_part_info->color_inx],
 			   SORTID_COLOR_INX,  sview_part_info->color_inx,
@@ -1870,7 +1880,7 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 
 	if (last_list)
 		last_list_itr = list_iterator_create(last_list);
-	for (i=0; i<part_info_ptr->record_count; i++) {
+	for (i = 0; i < part_info_ptr->record_count; i++) {
 		part_ptr = &(part_info_ptr->partition_array[i]);
 
 		/* don't include configured excludes */
@@ -1906,9 +1916,9 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 		while (part_ptr->node_inx[j2] >= 0) {
 			int i2 = 0;
 
-			for(i2 = part_ptr->node_inx[j2];
-			    i2 <= part_ptr->node_inx[j2+1];
-			    i2++) {
+			for ((i2 = part_ptr->node_inx[j2]);
+			     (i2 <= part_ptr->node_inx[j2+1]);
+			     i2++) {
 				node_ptr = &(node_info_ptr->node_array[i2]);
 				_insert_sview_part_sub(sview_part_info,
 						       part_ptr,
@@ -2515,7 +2525,7 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 		goto no_input;
 	}
 
-	if (column != SORTID_NODE_STATE && column != SORTID_FEATURES ) {
+	if (column != SORTID_NODE_STATE && column != SORTID_FEATURES) {
 		if (old_text && !xstrcmp(old_text, new_text)) {
 			temp = g_strdup_printf("No change in value.");
 		} else if (slurm_update_partition(part_msg)
@@ -3032,7 +3042,7 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	popup_win->iter = *iter;
 	popup_win->node_inx_id = SORTID_NODE_INX;
 
-	switch(id) {
+	switch (id) {
 	case JOB_PAGE:
 	case BLOCK_PAGE:
 	case INFO_PAGE:
@@ -3275,7 +3285,7 @@ extern void cluster_change_part(void)
 		if (display_data->id == -1)
 			break;
 		if (cluster_flags & CLUSTER_FLAG_BG) {
-			switch(display_data->id) {
+			switch (display_data->id) {
 			case SORTID_NODELIST:
 				display_data->name = "MidplaneList";
 				break;
@@ -3283,7 +3293,7 @@ extern void cluster_change_part(void)
 				break;
 			}
 		} else {
-			switch(display_data->id) {
+			switch (display_data->id) {
 			case SORTID_NODELIST:
 				display_data->name = "NodeList";
 				break;
