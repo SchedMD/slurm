@@ -2608,6 +2608,11 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		goto cleanup;
 	}
 
+	/* This could be set in the select plugin so we want to keep the flag */
+	configuring = IS_JOB_CONFIGURING(job_ptr);
+
+	job_ptr->job_state = JOB_RUNNING;
+
 	if (select_g_select_nodeinfo_set(job_ptr) != SLURM_SUCCESS) {
 		error("select_g_select_nodeinfo_set(%u): %m", job_ptr->job_id);
 		if (!job_ptr->job_resrcs) {
@@ -2623,6 +2628,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			job_ptr->time_last_active = 0;
 			job_ptr->end_time = 0;
 			job_ptr->state_reason = WAIT_RESOURCES;
+			job_ptr->job_state = JOB_PENDING;
 			last_job_update = now;
 			goto cleanup;
 		}
@@ -2633,10 +2639,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	build_node_details(job_ptr, true);
 	rebuild_job_part_list(job_ptr);
 
-	/* This could be set in the select plugin so we want to keep the flag */
-	configuring = IS_JOB_CONFIGURING(job_ptr);
-
-	job_ptr->job_state = JOB_RUNNING;
 	if (nonstop_ops.job_begin)
 		(nonstop_ops.job_begin)(job_ptr);
 
