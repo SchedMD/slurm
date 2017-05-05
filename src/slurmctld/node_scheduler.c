@@ -2536,6 +2536,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		job_ptr->step_list = list_create(NULL);
 
 	job_ptr->node_bitmap = select_bitmap;
+	select_bitmap = NULL;	/* nothing left to free */
 
 	/* we need to have these times set to know when the endtime
 	 * is for the job when we place it
@@ -2598,7 +2599,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		last_job_update = now;
 		goto cleanup;
 	}
-	select_bitmap = NULL;	/* nothing left to free */
 
 	if (select_g_select_nodeinfo_set(job_ptr) != SLURM_SUCCESS) {
 		error("select_g_select_nodeinfo_set(%u): %m", job_ptr->job_id);
