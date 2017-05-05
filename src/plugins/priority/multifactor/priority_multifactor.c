@@ -1746,18 +1746,21 @@ int init ( void )
 			      "plugin");
 		assoc_mgr_root_assoc->usage->usage_efctv = 1.0;
 		slurm_attr_init(&thread_attr);
-		if (pthread_create(&decay_handler_thread, &thread_attr,
-				   _decay_thread, NULL))
-			fatal("pthread_create error %m");
 
 		/* The decay_thread sets up some global variables that are
 		 * needed outside of the decay_thread (i.e. decay_factor,
 		 * g_last_ran).  These are needed if a job was completing and
 		 * the slurmctld was reset.  If they aren't setup before
 		 * continuing we could get more time added than should be on a
-		 * restart.  So wait until they are set up.
-		 */
+		 * restart.  So wait until they are set up. Set the lock now so
+		 * that the decay thread won't trigger the conditional before we
+		 * wait for it. */
 		slurm_mutex_lock(&decay_init_mutex);
+
+		if (pthread_create(&decay_handler_thread, &thread_attr,
+				   _decay_thread, NULL))
+			fatal("pthread_create error %m");
+
 		pthread_cond_wait(&decay_init_cond, &decay_init_mutex);
 		slurm_mutex_unlock(&decay_init_mutex);
 

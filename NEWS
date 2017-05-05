@@ -135,6 +135,8 @@ documents those changes that are of interest to users and administrators.
     in general.
  -- CRAY - Move delay waiting for job cleanup to after we check once.
  -- MYSQL - Fix memory leak when loading archived jobs into the database.
+ -- Fix potential race condition when starting the priority/multifactor plugin's
+    decay thread.
 
 * Changes in Slurm 17.02.2
 ==========================

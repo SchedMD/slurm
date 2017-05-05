@@ -2475,6 +2475,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		job_ptr->step_list = list_create(NULL);
 
 	job_ptr->node_bitmap = select_bitmap;
+	select_bitmap = NULL;	/* nothing left to free */
 
 	/* we need to have these times set to know when the endtime
 	 * is for the job when we place it
@@ -2510,6 +2511,10 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	if (select_g_job_begin(job_ptr) != SLURM_SUCCESS) {
 		/* Leave job queued, something is hosed */
 		error("select_g_job_begin(%u): %m", job_ptr->job_id);
+
+		/* Since we began the job earlier we have to cancel it */
+		(void) bb_g_job_cancel(job_ptr);
+
 		error_code = ESLURM_NODES_BUSY;
 		job_ptr->start_time = 0;
 		job_ptr->time_last_active = 0;
@@ -2529,6 +2534,10 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		error("Select plugin failed to set job resources, nodes");
 		/* Do not attempt to allocate the select_bitmap nodes since
 		 * select plugin failed to set job resources */
+
+		/* Since we began the bb job earlier we have to cancel it */
+		(void) bb_g_job_cancel(job_ptr);
+
 		error_code = ESLURM_NODES_BUSY;
 		job_ptr->start_time = 0;
 		job_ptr->time_last_active = 0;
@@ -2537,33 +2546,41 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		last_job_update = now;
 		goto cleanup;
 	}
-	select_bitmap = NULL;	/* nothing left to free */
-	allocate_nodes(job_ptr);
-	job_array_start(job_ptr);
-	build_node_details(job_ptr, true);
-	rebuild_job_part_list(job_ptr);
 
 	/* This could be set in the select plugin so we want to keep the flag */
 	configuring = IS_JOB_CONFIGURING(job_ptr);
 
 	job_ptr->job_state = JOB_RUNNING;
-	if (nonstop_ops.job_begin)
-		(nonstop_ops.job_begin)(job_ptr);
 
 	if (select_g_select_nodeinfo_set(job_ptr) != SLURM_SUCCESS) {
 		error("select_g_select_nodeinfo_set(%u): %m", job_ptr->job_id);
 		if (!job_ptr->job_resrcs) {
 			/* If we don't exit earlier the empty job_resrcs might
 			 * be dereferenced later */
+
+			/* Since we began the bb job earlier we have to cancel
+			 * it */
+			(void) bb_g_job_cancel(job_ptr);
+
 			error_code = ESLURM_NODES_BUSY;
 			job_ptr->start_time = 0;
 			job_ptr->time_last_active = 0;
 			job_ptr->end_time = 0;
 			job_ptr->state_reason = WAIT_RESOURCES;
+			job_ptr->job_state = JOB_PENDING;
 			last_job_update = now;
 			goto cleanup;
 		}
 	}
+
+	allocate_nodes(job_ptr);
+	job_array_start(job_ptr);
+	build_node_details(job_ptr, true);
+	rebuild_job_part_list(job_ptr);
+
+	if (nonstop_ops.job_begin)
+		(nonstop_ops.job_begin)(job_ptr);
+
 	if ((job_ptr->mail_type & MAIL_JOB_BEGIN) &&
 	    ((job_ptr->mail_type & MAIL_ARRAY_TASKS) ||
 	     _first_array_task(job_ptr)))
