@@ -3439,6 +3439,7 @@ extern void slurm_free_node_info_members(node_info_t * node)
 {
 	if (node) {
 		xfree(node->arch);
+		xfree(node->cluster_name);
 		xfree(node->cpu_spec_list);
 		acct_gather_energy_destroy(node->energy);
 		ext_sensors_destroy(node->ext_sensors);
@@ -3500,6 +3501,7 @@ extern void slurm_free_partition_info_members(partition_info_t * part)
 	if (part) {
 		xfree(part->allow_alloc_nodes);
 		xfree(part->allow_accounts);
+		xfree(part->cluster_name);
 		xfree(part->allow_groups);
 		xfree(part->allow_qos);
 		xfree(part->alternate);

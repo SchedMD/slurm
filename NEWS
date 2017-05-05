@@ -75,6 +75,11 @@ documents those changes that are of interest to users and administrators.
  -- KNL features: Always keep active and available features in the same order:
     first site-specific features, next MCDRAM modes, last NUMA modes.
  -- Changed default ProctrackType to cgroup.
+ -- Add "cluster_name" field to node_info_t and partition_info_t data structure.
+    It is filled in only when the cluster is part of a federation and
+    SHOW_GLOBAL flag used.
+ -- Functions slurm_load_node() slurm_load_partitions() modified to show all
+    nodes/partitions in a federation when the SHOW_GLOBAL flag is used.
 
 * Changes in Slurm 17.02.3
 ==========================

@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "Slurm partition information functions" "April 2015" "Slurm partition information functions"
+.TH "Slurm API" "3" "Slurm partition information functions" "May 2017" "Slurm partition information functions"
 
 .SH "NAME"
 slurm_free_partition_info_msg, slurm_load_partitions,
@@ -74,6 +74,9 @@ hidden and partitions that the user's group is unable to utilize
 are not reported by default.
 The \fBSHOW_ALL\fP flag will cause information about partitions
 to be displayed.
+Only information about partitions on the local cluster will be returned unless
+the cluster is in a federation and the \fBSHOW_ALL\fP flag is set.
+
 .TP
 \fIupdate_time\fP
 For all of the following informational calls, if update_time is equal to or greater

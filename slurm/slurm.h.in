@@ -908,6 +908,8 @@ enum node_states {
 #define SHOW_LOCAL	0x0010	/* Show only local information, even on
 				 * federated cluster */
 #define SHOW_SIBLING	0x0020	/* Show sibling jobs on a federated cluster */
+#define SHOW_GLOBAL	0x0040	/* Show global/federated state information.
+				 * Shows local info if not in federation */
 
 /* Define keys for ctx_key argument of slurm_step_ctx_get() */
 enum ctx_keys {
@@ -2052,6 +2054,7 @@ typedef struct node_info {
 	char *arch;		/* computer architecture */
 	uint16_t boards;        /* total number of boards per node  */
 	time_t boot_time;	/* time of node boot */
+	char *cluster_name;	/* Cluster name ONLY set in federation */
 	uint16_t cores;         /* number of cores per socket       */
 	uint16_t core_spec_cnt; /* number of specialized cores on node */
 	uint32_t cpu_load;	/* CPU load * 100 */
@@ -2227,6 +2230,7 @@ typedef struct partition_info {
 				 * null indicates all */
 	char *alternate; 	/* name of alternate partition */
 	char *billing_weights_str;/* per TRES billing weights string */
+	char *cluster_name;	/* Cluster name ONLY set in federation */
 	uint16_t cr_type;	/* see CR_* values */
 	uint64_t def_mem_per_cpu; /* default MB memory per allocated CPU */
 	uint32_t default_time;	/* minutes, NO_VAL or INFINITE */
@@ -4016,7 +4020,7 @@ extern int slurm_update_step(step_update_request_msg_t *step_msg);
  *	if changed since update_time
  * IN update_time - time of current configuration data
  * OUT resp - place to store a node configuration pointer
- * IN show_flags - node filtering options
+ * IN show_flags - node filtering options (e.g. SHOW_GLOBAL)
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_node_info_msg
  */
@@ -4331,7 +4335,7 @@ extern void slurm_init_part_desc_msg(update_part_msg_t *update_part_msg);
  * IN update_time - time of current configuration data
  * IN partition_info_msg_pptr - place to store a partition configuration
  *	pointer
- * IN show_flags - partitions filtering options
+ * IN show_flags - partitions filtering options (e.g. SHOW_GLOBAL)
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_partition_info_msg
  */

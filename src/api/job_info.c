@@ -1120,7 +1120,8 @@ static void *_load_job_thread(void *args)
 	return (void *) NULL;
 }
 
-static int _load_fed_jobs(slurm_msg_t *req_msg, job_info_msg_t **job_info_msg_pptr,
+static int _load_fed_jobs(slurm_msg_t *req_msg,
+			  job_info_msg_t **job_info_msg_pptr,
 			  uint16_t show_flags, char *cluster_name,
 			  slurmdb_federation_rec_t *fed)
 {
@@ -1290,16 +1291,20 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 	slurmdb_federation_rec_t *fed;
 	int rc;
 
-	cluster_name = slurm_get_cluster_name();
-	if ((show_flags & SHOW_LOCAL) == 0) {
-		if (slurm_load_federation(&ptr) ||
-		    !cluster_in_federation(ptr, cluster_name)) {
-			/* Not in federation */
-			show_flags |= SHOW_LOCAL;
-		} else {
-			/* In federation. Need full info from all clusters */
-			update_time = (time_t) 0;
-		}
+	if (working_cluster_rec)
+		cluster_name = xstrdup(working_cluster_rec->name);
+	else
+		cluster_name = slurm_get_cluster_name();
+	if ((show_flags & SHOW_GLOBAL) &&
+	    (slurm_load_federation(&ptr) == SLURM_SUCCESS) &&
+	    cluster_in_federation(ptr, cluster_name)) {
+		/* In federation. Need full info from all clusters */
+		update_time = (time_t) 0;
+		show_flags &= (~SHOW_LOCAL);
+	} else {
+		/* Report local cluster info only */
+		show_flags |= SHOW_LOCAL;
+		show_flags &= (~SHOW_GLOBAL);
 	}
 
 	slurm_msg_t_init(&req_msg);
@@ -1308,15 +1313,13 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 	req_msg.msg_type = REQUEST_JOB_INFO;
 	req_msg.data     = &req;
 
-	/* With -M option, working_cluster_rec is set and  we only get
-	 * information for that cluster */
-	if (working_cluster_rec || !ptr || (show_flags & SHOW_LOCAL)) {
-		rc = _load_cluster_jobs(&req_msg, job_info_msg_pptr,
-					working_cluster_rec);
-	} else {
+	if (show_flags & SHOW_GLOBAL) {
 		fed = (slurmdb_federation_rec_t *) ptr;
 		rc = _load_fed_jobs(&req_msg, job_info_msg_pptr, show_flags,
 				    cluster_name, fed);
+	} else {
+		rc = _load_cluster_jobs(&req_msg, job_info_msg_pptr,
+					working_cluster_rec);
 	}
 
 	if (ptr)

@@ -51,6 +51,23 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#define MAX_RETRIES 5
+
+/* Data structures for pthreads used to gather partition information from
+ * multiple clusters in parallel */
+typedef struct load_part_req_struct {
+	slurmdb_cluster_rec_t *cluster;
+	int cluster_inx;
+	slurm_msg_t *req_msg;
+	List resp_msg_list;
+	uint16_t show_flags;
+} load_part_req_struct_t;
+
+typedef struct load_part_resp_struct {
+	int cluster_inx;
+	partition_info_msg_t *new_msg;
+} load_part_resp_struct_t;
+
 /*
  * slurm_print_partition_info_msg - output information about all Slurm
  *	partitions based upon message as loaded using slurm_load_partitions
@@ -384,8 +401,9 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	return out;
 }
 
-static int _load_partitions(slurm_msg_t *req_msg, partition_info_msg_t **resp,
-			    slurmdb_cluster_rec_t *cluster)
+static int _load_cluster_parts(slurm_msg_t *req_msg,
+			       partition_info_msg_t **resp,
+			       slurmdb_cluster_rec_t *cluster)
 {
 	slurm_msg_t resp_msg;
 	int rc;
@@ -414,6 +432,147 @@ static int _load_partitions(slurm_msg_t *req_msg, partition_info_msg_t **resp,
 	return SLURM_PROTOCOL_SUCCESS;
 }
 
+/* Maintain a consistent ordering of records */
+static int _sort_by_cluster_inx(void *x, void *y)
+{
+	load_part_resp_struct_t *resp_x = *(load_part_resp_struct_t **) x;
+	load_part_resp_struct_t *resp_y = *(load_part_resp_struct_t **) y;
+
+	if (resp_x->cluster_inx > resp_y->cluster_inx)
+		return -1;
+	if (resp_x->cluster_inx < resp_y->cluster_inx)
+		return 1;
+	return 0;
+}
+
+/* Thread to read partition information from some cluster */
+static void *_load_part_thread(void *args)
+{
+	load_part_req_struct_t *load_args = (load_part_req_struct_t *) args;
+	slurmdb_cluster_rec_t *cluster = load_args->cluster;
+	partition_info_msg_t *new_msg = NULL;
+	int i, rc;
+
+	if ((rc = _load_cluster_parts(load_args->req_msg, &new_msg, cluster)) ||
+	    !new_msg) {
+		verbose("Error reading partition information from cluster %s: %s",
+			cluster->name, slurm_strerror(rc));
+	} else {
+		load_part_resp_struct_t *part_resp;
+		for (i = 0; i < new_msg->record_count; i++) {
+			if (!new_msg->partition_array[i].cluster_name) {
+				new_msg->partition_array[i].cluster_name =
+					xstrdup(cluster->name);
+			}
+		}
+		part_resp = xmalloc(sizeof(load_part_resp_struct_t));
+		part_resp->cluster_inx = load_args->cluster_inx;
+		part_resp->new_msg = new_msg;
+		list_append(load_args->resp_msg_list, part_resp);
+	}
+	xfree(args);
+
+	return (void *) NULL;
+}
+
+static int _load_fed_parts(slurm_msg_t *req_msg,
+			   partition_info_msg_t **part_info_msg_pptr,
+			   uint16_t show_flags, char *cluster_name,
+			   slurmdb_federation_rec_t *fed)
+{
+	int cluster_inx = 0, i;
+	load_part_resp_struct_t *part_resp;
+	partition_info_msg_t *orig_msg = NULL, *new_msg = NULL;
+	uint32_t new_rec_cnt;
+	slurmdb_cluster_rec_t *cluster;
+	ListIterator iter;
+	pthread_attr_t load_attr;
+	int pthread_count = 0;
+	pthread_t *load_thread = 0;
+	load_part_req_struct_t *load_args;
+	List resp_msg_list;
+
+	*part_info_msg_pptr = NULL;
+
+	/* Spawn one pthread per cluster to collect partition information */
+	resp_msg_list = list_create(NULL);
+	load_thread = xmalloc(sizeof(pthread_attr_t) *
+			      list_count(fed->cluster_list));
+	iter = list_iterator_create(fed->cluster_list);
+	while ((cluster = (slurmdb_cluster_rec_t *) list_next(iter))) {
+		int retries = 0;
+		if ((cluster->control_host == NULL) ||
+		    (cluster->control_host[0] == '\0'))
+			continue;	/* Cluster down */
+
+		load_args = xmalloc(sizeof(load_part_req_struct_t));
+		load_args->cluster = cluster;
+		load_args->cluster_inx = cluster_inx++;
+		load_args->req_msg = req_msg;
+		load_args->resp_msg_list = resp_msg_list;
+		load_args->show_flags = show_flags;
+		slurm_attr_init(&load_attr);
+		if (pthread_attr_setdetachstate(&load_attr,
+						PTHREAD_CREATE_JOINABLE))
+			error("pthread_attr_setdetachstate error %m");
+		while (pthread_create(&load_thread[pthread_count], &load_attr,
+				      _load_part_thread, (void *) load_args)) {
+			error("pthread_create error %m");
+			if (++retries > MAX_RETRIES)
+				fatal("Can't create pthread");
+			usleep(10000);	/* sleep and retry */
+		}
+		pthread_count++;
+		slurm_attr_destroy(&load_attr);
+
+	}
+	list_iterator_destroy(iter);
+
+	/* Wait for all pthreads to complete */
+	for (i = 0; i < pthread_count; i++)
+		pthread_join(load_thread[i], NULL);
+	xfree(load_thread);
+
+	/* Maintain a consistent cluster/node ordering */
+	list_sort(resp_msg_list, _sort_by_cluster_inx);
+
+	/* Merge the responses into a single response message */
+	iter = list_iterator_create(resp_msg_list);
+	while ((part_resp = (load_part_resp_struct_t *) list_next(iter))) {
+		new_msg = part_resp->new_msg;
+		if (!orig_msg) {
+			orig_msg = new_msg;
+			*part_info_msg_pptr = orig_msg;
+		} else {
+			/* Merge the node records */
+			orig_msg->last_update = MIN(orig_msg->last_update,
+						    new_msg->last_update);
+			new_rec_cnt = orig_msg->record_count +
+				      new_msg->record_count;
+			orig_msg->partition_array = xrealloc(
+						orig_msg->partition_array,
+						sizeof(partition_info_t) *
+						new_rec_cnt);
+			(void) memcpy(orig_msg->partition_array +
+				      orig_msg->record_count,
+				      new_msg->partition_array,
+				      sizeof(partition_info_t) *
+				      new_msg->record_count);
+			orig_msg->record_count = new_rec_cnt;
+			xfree(new_msg->partition_array);
+			xfree(new_msg);
+		}
+		xfree(part_resp);
+	}
+	list_iterator_destroy(iter);
+	FREE_NULL_LIST(resp_msg_list);
+
+	if (!orig_msg)
+		slurm_seterrno_ret(SLURM_ERROR);
+
+	return SLURM_PROTOCOL_SUCCESS;
+}
+
 /*
  * slurm_load_partitions - issue RPC to get slurm all partition configuration
  *	information if changed since update_time
@@ -430,15 +589,47 @@ extern int slurm_load_partitions(time_t update_time,
 {
 	slurm_msg_t req_msg;
 	part_info_request_msg_t req;
+	char *cluster_name = NULL;
+	void *ptr = NULL;
+	slurmdb_federation_rec_t *fed;
+	int rc;
+
+	if (working_cluster_rec)
+		cluster_name = xstrdup(working_cluster_rec->name);
+	else
+		cluster_name = slurm_get_cluster_name();
+	if (!working_cluster_rec &&
+	    (show_flags & SHOW_GLOBAL) &&
+	    (slurm_load_federation(&ptr) == SLURM_SUCCESS) &&
+	    cluster_in_federation(ptr, cluster_name)) {
+		/* In federation. Need full info from all clusters */
+		update_time = (time_t) 0;
+		show_flags &= (~SHOW_LOCAL);
+	} else {
+		/* Report local cluster info only */
+		show_flags |= SHOW_LOCAL;
+		show_flags &= (~SHOW_GLOBAL);
+	}
 
 	slurm_msg_t_init(&req_msg);
-
 	req.last_update  = update_time;
 	req.show_flags   = show_flags;
 	req_msg.msg_type = REQUEST_PARTITION_INFO;
 	req_msg.data     = &req;
 
-	return _load_partitions(&req_msg, resp, working_cluster_rec);
+	if (show_flags & SHOW_GLOBAL) {
+		fed = (slurmdb_federation_rec_t *) ptr;
+		rc = _load_fed_parts(&req_msg, resp, show_flags, cluster_name,
+				     fed);
+	} else {
+		rc = _load_cluster_parts(&req_msg, resp, working_cluster_rec);
+	}
+
+	if (ptr)
+		slurm_destroy_federation_rec(ptr);
+	xfree(cluster_name);
+
+	return rc;
 }
 
 /*
@@ -460,5 +651,5 @@ extern int slurm_load_partitions2(time_t update_time,
 	req_msg.msg_type = REQUEST_PARTITION_INFO;
 	req_msg.data     = &req;
 
-	return _load_partitions(&req_msg, resp, cluster);
+	return _load_cluster_parts(&req_msg, resp, cluster);
 }

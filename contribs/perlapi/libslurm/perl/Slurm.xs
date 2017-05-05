@@ -1592,7 +1592,8 @@ slurm_load_node(slurm_t self, time_t update_time=0, uint16_t show_flags=0)
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-		rc = slurm_load_node(update_time, &ni_msg, show_flags | SHOW_MIXED);
+		rc = slurm_load_node(update_time, &ni_msg,
+				     show_flags | SHOW_MIXED);
 		if (rc == SLURM_SUCCESS) {
 			RETVAL = newHV();
 			sv_2mortal((SV*)RETVAL);
@@ -1898,8 +1899,9 @@ slurm_load_partitions(slurm_t self, time_t update_time=0, uint16_t show_flags=0)
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-		rc = slurm_load_partitions(update_time, &part_info_msg, show_flags);
-		if(rc == SLURM_SUCCESS) {
+		rc = slurm_load_partitions(update_time, &part_info_msg,
+					   show_flags);
+		if (rc == SLURM_SUCCESS) {
 			RETVAL = newHV();
 			sv_2mortal((SV*)RETVAL);
 			rc = partition_info_msg_to_hv(part_info_msg, RETVAL);

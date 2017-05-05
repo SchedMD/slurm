@@ -192,7 +192,7 @@ scontrol_print_completing (void)
 	 * from job's node_inx to node table to work */
 	/*if (all_flag)		Always set this flag */
 	show_flags |= SHOW_ALL;
-	error_code = scontrol_load_nodes (&node_info_msg, show_flags);
+	error_code = scontrol_load_nodes(&node_info_msg, show_flags);
 	if (error_code) {
 		exit_code = 1;
 		if (quiet_flag != 1)
@@ -202,11 +202,12 @@ scontrol_print_completing (void)
 
 	/* Scan the jobs for completing state */
 	job_info = job_info_msg->job_array;
-	for (i=0; i<job_info_msg->record_count; i++) {
+	for (i = 0; i < job_info_msg->record_count; i++) {
 		if (job_info[i].job_state & JOB_COMPLETING)
 			scontrol_print_completing_job(&job_info[i],
 						      node_info_msg);
 	}
+	slurm_free_node_info_msg(node_info_msg);
 }
 
 extern void
@@ -833,7 +834,7 @@ static int _blocks_dealloc(void)
 	}
 
 	if (error_code) {
-		error("slurm_load_partitions: %s",
+		error("slurm_load_block_info: %s",
 		      slurm_strerror(slurm_get_errno()));
 		return -1;
 	}

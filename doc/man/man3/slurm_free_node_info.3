@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "Slurm node informational functions" "April 2015" "Slurm node informational functions"
+.TH "Slurm API" "3" "Slurm node informational functions" "May 2017" "Slurm node informational functions"
 
 .SH "NAME"
 slurm_free_node_info_msg, slurm_load_node, slurm_load_node_single,
@@ -104,6 +104,8 @@ hidden and partitions that the user's group is unable to utilize
 are not reported by default.
 The \fBSHOW_ALL\fP flag will cause information about nodes in all
 partitions to be displayed.
+Only information about nodes on the local cluster will be returned unless
+the cluster is in a federation and the \fBSHOW_ALL\fP flag is set.
 
 .TP
 \fIupdate_time\fP
