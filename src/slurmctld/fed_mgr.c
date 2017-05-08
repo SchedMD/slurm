@@ -2110,9 +2110,10 @@ extern int fed_mgr_init(void *db_conn)
 		fed_cond.cluster_list = list_create(NULL);
 		list_append(fed_cond.cluster_list, slurmctld_conf.cluster_name);
 
-		fed_list = acct_storage_g_get_federations(db_conn,
-							  slurmctld_conf.slurm_user_id,
-							  &fed_cond);
+		fed_list = acct_storage_g_get_federations(
+						db_conn,
+						slurmctld_conf.slurm_user_id,
+						&fed_cond);
 		FREE_NULL_LIST(fed_cond.cluster_list);
 		if (!fed_list) {
 			error("failed to get a federation list");
