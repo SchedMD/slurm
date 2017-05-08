@@ -13725,9 +13725,9 @@ extern void job_completion_logger(struct job_record *job_ptr, bool requeue)
 		 * Fed Jobs: only signal the srun from where the job is running
 		 * or from the origin if the job wasn't running. */
 		if (!job_ptr->fed_details ||
-		    fed_mgr_job_is_self_owned(job_ptr->job_id) ||
+		    fed_mgr_job_is_self_owned(job_ptr) ||
 		    (fed_mgr_is_origin_job(job_ptr) &&
-		     !fed_mgr_job_is_locked(job_ptr->job_id)))
+		     !fed_mgr_job_is_locked(job_ptr)))
 			srun_job_complete(job_ptr);
 
 		/* mail out notifications of completion */

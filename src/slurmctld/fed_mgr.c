@@ -1663,8 +1663,6 @@ static void _handle_fed_job_start(fed_job_update_info_t *job_update_info)
 
 	_fed_job_start_revoke(job_info, job_ptr, job_update_info->start_time);
 
-	/* Let go of mutex now. fed_mgr_job_revoke->job_completion_logger can
-	 * lock the mutex to see if the job is locked or not. */
 	slurm_mutex_unlock(&fed_job_list_mutex);
 
 	if (job_info->cluster_lock != fed_mgr_cluster_rec->fed.id) {
@@ -3325,37 +3323,22 @@ extern int fed_mgr_job_lock_set(uint32_t job_id, uint32_t cluster_id)
 	return rc;
 }
 
-extern bool fed_mgr_job_is_self_owned(uint32_t job_id)
+extern bool fed_mgr_job_is_self_owned(struct job_record *job_ptr)
 {
-	bool rc = false;
-	fed_job_info_t *job_info;
+	if (!fed_mgr_cluster_rec || !job_ptr->fed_details ||
+	    (job_ptr->fed_details->cluster_lock == fed_mgr_cluster_rec->fed.id))
+		return true;
 
-	slurm_mutex_lock(&fed_job_list_mutex);
-
-	if (!fed_mgr_cluster_rec ||
-	    ((job_info = _find_fed_job_info(job_id)) &&
-	     (job_info->cluster_lock == fed_mgr_cluster_rec->fed.id)))
-		rc = true;
-
-	slurm_mutex_unlock(&fed_job_list_mutex);
-
-	return rc;
+	return false;
 }
 
-extern bool fed_mgr_job_is_locked(uint32_t job_id)
+extern bool fed_mgr_job_is_locked(struct job_record *job_ptr)
 {
-	bool rc = false;
-	fed_job_info_t *job_info;
+	if (!job_ptr->fed_details ||
+	    job_ptr->fed_details->cluster_lock)
+		return true;
 
-	slurm_mutex_lock(&fed_job_list_mutex);
-
-	if ((job_info = _find_fed_job_info(job_id)) &&
-	    job_info->cluster_lock)
-		rc = true;
-
-	slurm_mutex_unlock(&fed_job_list_mutex);
-
-	return rc;
+	return false;
 }
 
 static void _q_fed_job_start(uint32_t job_id, time_t start_time,

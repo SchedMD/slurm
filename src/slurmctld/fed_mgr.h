@@ -65,8 +65,8 @@ extern int       fed_mgr_job_cancel(struct job_record *job_ptr, uint16_t signal,
 				    uint16_t flags, uid_t uid);
 extern int       fed_mgr_job_complete(struct job_record *job_ptr,
 				      uint32_t return_code, time_t start_time);
-extern bool      fed_mgr_job_is_locked(uint32_t job_id);
-extern bool      fed_mgr_job_is_self_owned(uint32_t job_id);
+extern bool      fed_mgr_job_is_locked(struct job_record *job_ptr);
+extern bool      fed_mgr_job_is_self_owned(struct job_record *job_ptr);
 extern int       fed_mgr_job_lock(struct job_record *job_ptr,
 				  uint32_t cluster_id);
 extern int       fed_mgr_job_lock_set(uint32_t job_id, uint32_t cluster_id);
