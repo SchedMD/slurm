@@ -150,6 +150,8 @@ extern int _persist_load_jobs(slurmdb_cluster_rec_t *conn, List jobids,
 static uint64_t _get_all_sibling_bits();
 static int _validate_cluster_names(char *clusters, uint64_t *cluster_bitmap);
 static void _leave_federation(void);
+static slurmdb_federation_rec_t *_state_load(char *state_save_location,
+					     bool job_list_only);
 
 static char *_job_update_type_str(enum fed_job_update_type type)
 {
@@ -2093,14 +2095,17 @@ extern int fed_mgr_init(void *db_conn)
 
 	if (running_cache) {
 		debug("Database appears down, reading federations from state file.");
-		fed = fed_mgr_state_load(
-			slurmctld_conf.state_save_location);
+		fed = _state_load(
+			slurmctld_conf.state_save_location, false);
 		if (!fed) {
 			debug2("No federation state");
 			rc = SLURM_SUCCESS;
 			goto end_it;
 		}
 	} else {
+		/* Load fed_job_list */
+		_state_load(slurmctld_conf.state_save_location, true);
+
 		slurmdb_init_federation_cond(&fed_cond, 0);
 		fed_cond.cluster_list = list_create(NULL);
 		list_append(fed_cond.cluster_list, slurmctld_conf.cluster_name);
@@ -2227,6 +2232,117 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 	return SLURM_SUCCESS;
 }
 
+static void _pack_fed_job_info(fed_job_info_t *job_info, Buf buffer,
+			       uint16_t protocol_version)
+{
+	int i;
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		pack32(job_info->cluster_lock, buffer);
+		pack32(job_info->job_id, buffer);
+		pack64(job_info->siblings_active, buffer);
+		pack64(job_info->siblings_viable, buffer);
+
+		for (i = 0; i < MAX_FED_CLUSTERS; i++)
+			pack32(job_info->updating_sibs[i], buffer);
+		for (i = 0; i < MAX_FED_CLUSTERS; i++)
+			pack_time(job_info->updating_time[i], buffer);
+	} else {
+		error("%s: protocol_version %hu not supported.",
+		      __func__, protocol_version);
+	}
+}
+
+static int _unpack_fed_job_info(fed_job_info_t **job_info_pptr, Buf buffer,
+				 uint16_t protocol_version)
+{
+	int i;
+	fed_job_info_t *job_info = xmalloc(sizeof(fed_job_info_t));
+
+	*job_info_pptr = job_info;
+
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		safe_unpack32(&job_info->cluster_lock, buffer);
+		safe_unpack32(&job_info->job_id, buffer);
+		safe_unpack64(&job_info->siblings_active, buffer);
+		safe_unpack64(&job_info->siblings_viable, buffer);
+
+		for (i = 0; i < MAX_FED_CLUSTERS; i++)
+			safe_unpack32(&job_info->updating_sibs[i], buffer);
+		for (i = 0; i < MAX_FED_CLUSTERS; i++)
+			safe_unpack_time(&job_info->updating_time[i], buffer);
+	} else {
+		error("%s: protocol_version %hu not supported.",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	_destroy_fed_job_info(job_info);
+	*job_info_pptr = NULL;
+	return SLURM_ERROR;
+}
+
+static void _dump_fed_job_list(Buf buffer, uint16_t protocol_version)
+{
+	uint32_t count = NO_VAL;
+	fed_job_info_t *fed_job_info;
+
+	if (protocol_version <= SLURM_17_11_PROTOCOL_VERSION) {
+		if (fed_job_list)
+			count = list_count(fed_job_list);
+		else
+			count = NO_VAL;
+
+		pack32(count, buffer);
+		if (count && (count != NO_VAL)) {
+			ListIterator itr = list_iterator_create(fed_job_list);
+			while ((fed_job_info = list_next(itr))) {
+				_pack_fed_job_info(fed_job_info, buffer,
+						   protocol_version);
+			}
+			list_iterator_destroy(itr);
+		}
+	} else {
+		error("%s: protocol_version %hu not supported.",
+		      __func__, protocol_version);
+	}
+}
+
+static List _load_fed_job_list(Buf buffer, uint16_t protocol_version)
+{
+	int i;
+	uint32_t count;
+	fed_job_info_t *tmp_job_info = NULL;
+	List tmp_list = NULL;
+
+	if (protocol_version <= SLURM_17_11_PROTOCOL_VERSION) {
+		safe_unpack32(&count, buffer);
+		if (count > NO_VAL32)
+			goto unpack_error;
+		if (count != NO_VAL32) {
+			tmp_list = list_create(_destroy_fed_job_info);
+
+			for (i = 0; i < count; i++) {
+				if (_unpack_fed_job_info(&tmp_job_info, buffer,
+						     protocol_version))
+					goto unpack_error;
+				list_append(tmp_list, tmp_job_info);
+			}
+		}
+	} else {
+		error("%s: protocol_version %hu not supported.",
+		      __func__, protocol_version);
+	}
+
+	return tmp_list;
+
+unpack_error:
+	FREE_NULL_LIST(tmp_list);
+	return NULL;
+}
+
 extern int fed_mgr_state_save(char *state_save_location)
 {
 	int error_code = 0, log_fd;
@@ -2248,6 +2364,8 @@ extern int fed_mgr_state_save(char *state_save_location)
 	slurmdb_pack_federation_rec(fed_mgr_fed_rec, SLURM_PROTOCOL_VERSION,
 				    buffer);
 	unlock_slurmctld(fed_read_lock);
+
+	_dump_fed_job_list(buffer, SLURM_PROTOCOL_VERSION);
 
 	/* write the buffer to file */
 	reg_file = xstrdup_printf("%s/%s", state_save_location,
@@ -2299,7 +2417,8 @@ extern int fed_mgr_state_save(char *state_save_location)
 	return error_code;
 }
 
-extern slurmdb_federation_rec_t *fed_mgr_state_load(char *state_save_location)
+static slurmdb_federation_rec_t *_state_load(char *state_save_location,
+					     bool job_list_only)
 {
 	Buf buffer = NULL;
 	char *data = NULL, *state_file;
@@ -2309,6 +2428,7 @@ extern slurmdb_federation_rec_t *fed_mgr_state_load(char *state_save_location)
 	int state_fd;
 	int data_allocated, data_read = 0, error_code = SLURM_SUCCESS;
 	slurmdb_federation_rec_t *ret_fed = NULL;
+	List tmp_list = NULL;
 
 	state_file = xstrdup_printf("%s/%s", state_save_location,
 				    FED_MGR_STATE_FILE);
@@ -2362,11 +2482,13 @@ extern slurmdb_federation_rec_t *fed_mgr_state_load(char *state_save_location)
 						   buffer);
 	if (error_code != SLURM_SUCCESS)
 		goto unpack_error;
-	else if (!ret_fed || !ret_fed->name ||
+	else if (job_list_only || !ret_fed || !ret_fed->name ||
 		 !list_count(ret_fed->cluster_list)) {
 		slurmdb_destroy_federation_rec(ret_fed);
 		ret_fed = NULL;
-		debug("No feds to retrieve from state");
+
+		if (!job_list_only)
+			debug("No feds to retrieve from state");
 	} else {
 		/* We want to free the connections here since they don't exist
 		 * anymore, but they were packed when state was saved. */
@@ -2381,6 +2503,23 @@ extern slurmdb_federation_rec_t *fed_mgr_state_load(char *state_save_location)
 		}
 		list_iterator_destroy(itr);
 	}
+
+	/* Load in fed_job_list and transfer objects to actual fed_job_list only
+	 * if there is an actual job for the job */
+	if ((tmp_list = _load_fed_job_list(buffer, ver))) {
+		fed_job_info_t *tmp_info;
+
+		slurm_mutex_lock(&fed_job_list_mutex);
+		while ((tmp_info = list_pop(tmp_list))) {
+			if (find_job_record(tmp_info->job_id))
+				list_append(fed_job_list, tmp_info);
+			else
+				_destroy_fed_job_info(tmp_info);
+		}
+		slurm_mutex_unlock(&fed_job_list_mutex);
+
+	}
+	FREE_NULL_LIST(tmp_list);
 
 	free_buf(buffer);
 

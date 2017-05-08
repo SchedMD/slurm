@@ -104,7 +104,6 @@ extern void      fed_mgr_remove_fed_job_info(uint32_t job_id);
 extern int       fed_mgr_sib_will_run(slurm_msg_t *msg,
 				      job_desc_msg_t *job_desc, uid_t uid,
 				      will_run_response_msg_t **resp);
-extern slurmdb_federation_rec_t *fed_mgr_state_load(char *state_save_location);
 extern int       fed_mgr_state_save(char *state_save_location);
 extern int       fed_mgr_sync(const char *sib_name);
 extern int       fed_mgr_update_job(uint32_t job_id, job_desc_msg_t *job_specs,
