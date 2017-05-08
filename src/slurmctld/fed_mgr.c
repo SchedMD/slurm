@@ -2154,16 +2154,14 @@ extern int fed_mgr_fini(void)
 	slurm_mutex_unlock(&init_mutex);
 
 	lock_slurmctld(fed_write_lock);
-
 	/* Call _leave_federation() before slurm_persist_conn_recv_server_fini()
 	 * as this will NULL out the cluster's recv persistent connection before
 	 * _server_fini() actually destroy's it. That way the cluster's recv
 	 * connection won't be pointing to bad memory. */
 	_leave_federation();
+	unlock_slurmctld(fed_write_lock);
 
 	slurm_persist_conn_recv_server_fini();
-
-	unlock_slurmctld(fed_write_lock);
 
 	if (agent_thread_id)
 		pthread_join(agent_thread_id, NULL);
