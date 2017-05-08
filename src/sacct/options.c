@@ -54,6 +54,8 @@
 #define OPT_LONG_NOCONVERT 0x103
 #define OPT_LONG_UNITS     0x104
 
+#define JOB_HASH_SIZE 1000
+
 void _help_fields_msg(void);
 void _help_msg(void);
 void _usage(void);
@@ -448,6 +450,99 @@ void _init_params(void)
 	params.units = NO_VAL;
 }
 
+static int _sort_desc_submit_time(void *x, void *y)
+{
+	slurmdb_job_rec_t *j1 = *(slurmdb_job_rec_t **)x;
+	slurmdb_job_rec_t *j2 = *(slurmdb_job_rec_t **)y;
+
+	if (j1->submit < j2->submit)
+		return -1;
+	else if (j1->submit > j2->submit)
+		return 1;
+
+	return 0;
+}
+
+static int _sort_asc_submit_time(void *x, void *y)
+{
+	slurmdb_job_rec_t *j1 = *(slurmdb_job_rec_t **)x;
+	slurmdb_job_rec_t *j2 = *(slurmdb_job_rec_t **)y;
+
+	if (j1->submit < j2->submit)
+		return 1;
+	else if (j1->submit > j2->submit)
+		return -1;
+
+	return 0;
+}
+
+static void _remove_duplicate_fed_jobs(List jobs)
+{
+	int i, j;
+	uint32_t hash_inx;
+	bool found = false;
+	uint32_t *hash_tbl_size = NULL;
+	slurmdb_job_rec_t ***hash_job = NULL;
+	slurmdb_job_rec_t *job = NULL;
+	ListIterator itr = NULL;
+
+	xassert(jobs);
+
+	hash_tbl_size = xmalloc(sizeof(uint32_t) * JOB_HASH_SIZE);
+	hash_job = xmalloc(sizeof(slurmdb_job_rec_t *) * JOB_HASH_SIZE);
+
+	for (i = 0; i < JOB_HASH_SIZE; i++) {
+		hash_tbl_size[i] = 100;
+		hash_job[i] = xmalloc(sizeof(slurmdb_job_rec_t *) *
+				      hash_tbl_size[i]);
+	}
+
+	/* Put newest jobs at the front so that the later jobs can be removed
+	 * easily */
+	list_sort(jobs, _sort_asc_submit_time);
+
+	itr = list_iterator_create(jobs);
+	while((job = list_next(itr))) {
+		found = false;
+
+		hash_inx = job->jobid % JOB_HASH_SIZE;
+		for (j = 0; (j < hash_tbl_size[hash_inx] &&
+			     hash_job[hash_inx][j]); j++) {
+			if (job->jobid == hash_job[hash_inx][j]->jobid) {
+				found = true;
+				break;
+			}
+		}
+		if (found) {
+			/* Show sibling jobs that are related. e.g. when a
+			 * pending sibling job is cancelled all siblings have
+			 * the state as cancelled. Since jobids won't roll in a
+			 * day -- unless the system is amazing -- just remove
+			 * jobs that are older than a day. */
+			if (hash_job[hash_inx][j]->submit > (job->submit +
+							     86400))
+				list_delete_item(itr);
+		} else {
+			if (j >= hash_tbl_size[hash_inx]) {
+				hash_tbl_size[hash_inx] *= 2;
+				xrealloc(hash_job[hash_inx],
+					 sizeof(slurmdb_job_rec_t *) *
+					 hash_tbl_size[hash_inx]);
+			}
+			hash_job[hash_inx][j] = job;
+		}
+	}
+	list_iterator_destroy(itr);
+
+	/* Put jobs back in desc order */
+	list_sort(jobs, _sort_desc_submit_time);
+
+	for (i = 0; i < JOB_HASH_SIZE; i++)
+		xfree(hash_job[i]);
+	xfree(hash_tbl_size);
+	xfree(hash_job);
+}
+
 int get_data(void)
 {
 	slurmdb_job_rec_t *job = NULL;
@@ -466,8 +561,16 @@ int get_data(void)
 	if (!jobs)
 		return SLURM_ERROR;
 
+	/* Remove duplicate federated jobs. The db will remove duplicates for
+	 * one cluster but not when jobs for multiple clusters are requested.
+	 * Remove the current job if there were jobs with the same id submitted
+	 * in the future. */
+	if (params.cluster_name && !params.opt_dup)
+	    _remove_duplicate_fed_jobs(jobs);
+
 	itr = list_iterator_create(jobs);
 	while((job = list_next(itr))) {
+
 		if (job->user) {
 			struct	passwd *pw = NULL;
 			if ((pw=getpwnam(job->user)))
