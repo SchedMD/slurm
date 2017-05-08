@@ -105,13 +105,16 @@ enum fed_job_update_type {
 	FED_JOB_START,
 	FED_JOB_SUBMIT_BATCH,
 	FED_JOB_SUBMIT_INT,
+	FED_JOB_SYNC,
 	FED_JOB_UPDATE,
 	FED_JOB_UPDATE_RESPONSE,
+	FED_SEND_JOB_SYNC,
 };
 
 typedef struct {
 	uint32_t        cluster_lock;
 	uint32_t        job_id;
+	job_info_msg_t *job_info_msg;
 	bool            requeue;
 	uint32_t        return_code;
 	uint64_t        siblings_active;
@@ -140,18 +143,19 @@ typedef struct {
 	job_info_msg_t *job_info_msg;
 	uint32_t        sibling_id;
 	char           *sibling_name;
+	time_t          sync_time;
 } reconcile_sib_t;
 
 /* Local Prototypes */
 static int _is_fed_job(struct job_record *job_ptr, uint32_t *origin_id);
-extern int _persist_load_jobs(slurmdb_cluster_rec_t *conn, List jobids,
-			      time_t update_time,
-			      job_info_msg_t **job_info_msg_pptr);
 static uint64_t _get_all_sibling_bits();
 static int _validate_cluster_names(char *clusters, uint64_t *cluster_bitmap);
 static void _leave_federation(void);
+static int _q_send_job_sync(char *sib_name);
 static slurmdb_federation_rec_t *_state_load(char *state_save_location,
 					     bool job_list_only);
+static int _sync_jobs(const char *sib_name, job_info_msg_t *job_info_msg,
+		      time_t sync_time);
 
 static char *_job_update_type_str(enum fed_job_update_type type)
 {
@@ -168,10 +172,14 @@ static char *_job_update_type_str(enum fed_job_update_type type)
 		return "FED_JOB_SUBMIT_BATCH";
 	case FED_JOB_SUBMIT_INT:
 		return "FED_JOB_SUBMIT_INT";
+	case FED_JOB_SYNC:
+		return "FED_JOB_SYNC";
 	case FED_JOB_UPDATE:
 		return "FED_JOB_UPDATE";
 	case FED_JOB_UPDATE_RESPONSE:
 		return "FED_JOB_UPDATE_RESPONSE";
+	case FED_SEND_JOB_SYNC:
+		return "FED_SEND_JOB_SYNC";
 	default:
 		return "?";
 	}
@@ -222,6 +230,42 @@ static int _close_controller_conn(slurmdb_cluster_rec_t *cluster)
 	slurm_mutex_unlock(&cluster->lock);
 
 	return rc;
+}
+
+/* Get list of jobs that originated from this cluster and the remove sibling.
+ * Originating here: so that the remote can determine if the tracker job is gone
+ * Originating sib: so that the remote verify jobs are where they're supposed to
+ * be. If the sibling doesn't find a job, the sibling can resubmit the job or
+ * take other actions.
+ *
+ * Only get jobs that were submitted prior to sync_time
+ */
+static List _get_sync_jobid_list(uint32_t sib_id, time_t sync_time)
+{
+	List jobids = NULL;
+	ListIterator job_itr;
+	struct job_record *job_ptr;
+
+	jobids = list_create(slurm_destroy_uint32_ptr);
+
+	job_itr = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_itr))) {
+		uint32_t cluster_id = fed_mgr_get_cluster_id(job_ptr->job_id);
+		if (!(IS_JOB_COMPLETED(job_ptr) ||
+		      IS_JOB_COMPLETING(job_ptr)) &&
+		    (job_ptr->details &&
+		     (job_ptr->details->submit_time < sync_time)) &&
+		    ((cluster_id == sib_id) ||
+		     (cluster_id == fed_mgr_cluster_rec->fed.id))) {
+
+		    uint32_t *tmp = xmalloc(sizeof(uint32_t));
+		    *tmp = job_ptr->job_id;
+		    list_append(jobids, tmp);
+		}
+	}
+	list_iterator_destroy(job_itr);
+
+	return jobids;
 }
 
 static int _open_controller_conn(slurmdb_cluster_rec_t *cluster, bool locked)
@@ -1202,65 +1246,6 @@ static int _persist_fed_job_requeue(slurmdb_cluster_rec_t *conn,
 	return rc;
 }
 
-/*
- * Get job info from remote sibling.
- *
- * IN conn                  - cluster to communicate with
- * IN jobids                - optional list of jobids to request info abou.
- * IN update_time           - time of current configuration data
- * IN/OUT job_info_msg_pptr - place to store a job configuration pointer
- */
-extern int _persist_load_jobs(slurmdb_cluster_rec_t *conn, List jobids,
-			      time_t update_time,
-			      job_info_msg_t **job_info_msg_pptr)
-{
-	int rc = SLURM_SUCCESS;
-	slurm_msg_t resp_msg;
-	slurm_msg_t req_msg;
-	job_info_request_msg_t req = {0};
-
-	xassert(conn);
-
-	slurm_msg_t_init(&req_msg);
-	slurm_msg_t_init(&resp_msg);
-
-	req.last_update  = update_time;
-	req.show_flags   = SHOW_ALL;
-	req.job_ids      = jobids;
-	req_msg.msg_type = REQUEST_JOB_INFO;
-	req_msg.data     = &req;
-
-	if (_send_recv_msg(conn, &req_msg, &resp_msg, false)) {
-		rc = SLURM_PROTOCOL_ERROR;
-		goto end_it;
-	}
-
-	req.job_ids = NULL;
-
-	switch (resp_msg.msg_type) {
-	case RESPONSE_JOB_INFO:
-		*job_info_msg_pptr = (job_info_msg_t *)resp_msg.data;
-		resp_msg.data = NULL;
-		break;
-	case RESPONSE_SLURM_RC:
-		if ((rc = slurm_get_return_code(resp_msg.msg_type,
-						resp_msg.data))) {
-			slurm_seterrno(rc);
-			rc = SLURM_PROTOCOL_ERROR;
-		}
-		break;
-	default:
-		slurm_seterrno(SLURM_UNEXPECTED_MSG_ERROR);
-		rc = SLURM_PROTOCOL_ERROR;
-		break;
-	}
-
-end_it:
-	slurm_free_msg_members(&resp_msg);
-
-	return rc;
-}
-
 static int _find_sibling_by_id(void *x, void *key)
 {
 	slurmdb_cluster_rec_t *object = (slurmdb_cluster_rec_t *)x;
@@ -1340,6 +1325,7 @@ static void _destroy_fed_job_update_info(void *object)
 
 	if (job_update_info) {
 		xfree(job_update_info->submit_cluster);
+		slurm_free_job_info_msg(job_update_info->job_info_msg);
 		slurm_free_job_desc_msg(job_update_info->submit_desc);
 		xfree(job_update_info);
 	}
@@ -1792,6 +1778,86 @@ _handle_fed_job_update_response(fed_job_update_info_t *job_update_info)
 	unlock_slurmctld(fed_read_lock);
 }
 
+extern int _handle_fed_job_sync(fed_job_update_info_t *job_update_info)
+{
+	int rc = SLURM_SUCCESS;
+
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
+
+	lock_slurmctld(job_write_lock);
+
+	rc = _sync_jobs(job_update_info->submit_cluster,
+			job_update_info->job_info_msg,
+			job_update_info->start_time);
+
+	unlock_slurmctld(job_write_lock);
+
+	return rc;
+}
+
+/* Have to send the job sync from the job_update thread so that it can
+ * independently get the job read lock. */
+extern int _handle_fed_send_job_sync(fed_job_update_info_t *job_update_info)
+{
+        int rc = SLURM_PROTOCOL_SUCCESS;
+	List jobids;
+        slurm_msg_t req_msg, job_msg;
+	sib_msg_t sib_msg = {0};
+	char *dump = NULL;
+	int dump_size = 0;
+	slurmdb_cluster_rec_t *sibling;
+	Buf buffer;
+	time_t sync_time = 0;
+	char *sib_name = job_update_info->submit_cluster;
+
+	slurmctld_lock_t job_read_lock = {
+		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
+
+	lock_slurmctld(job_read_lock);
+
+	if (!(sibling = fed_mgr_get_cluster_by_name(sib_name))) {
+		error("%s: Invalid sibling name %s", __func__, sib_name);
+		unlock_slurmctld(job_read_lock);
+		return SLURM_ERROR;
+	}
+
+	sync_time = time(NULL);
+	jobids = _get_sync_jobid_list(sibling->fed.id, sync_time);
+	pack_spec_jobs(&dump, &dump_size, jobids, SHOW_ALL,
+		       slurmctld_conf.slurm_user_id, NO_VAL,
+		       sibling->rpc_version);
+	FREE_NULL_LIST(jobids);
+
+	unlock_slurmctld(job_read_lock);
+
+	if (jobids && !list_count(jobids))
+		return SLURM_SUCCESS;
+
+	slurm_msg_t_init(&job_msg);
+	job_msg.protocol_version = sibling->rpc_version;
+	job_msg.msg_type         = RESPONSE_JOB_INFO;
+	job_msg.data             = dump;
+	job_msg.data_size        = dump_size;
+
+	buffer = init_buf(BUF_SIZE);
+	pack_msg(&job_msg, buffer);
+
+	memset(&sib_msg, 0, sizeof(sib_msg_t));
+	sib_msg.data_buffer  = buffer;
+	sib_msg.data_type    = job_msg.msg_type;
+	sib_msg.data_version = job_msg.protocol_version;
+	sib_msg.start_time   = sync_time;
+
+	slurm_msg_t_init(&req_msg);
+	req_msg.msg_type = REQUEST_SIB_JOB_SYNC;
+	req_msg.data     = &sib_msg;
+
+	rc = _queue_rpc(sibling, &req_msg, 0, false);
+
+	return rc;
+}
+
 static int _foreach_fed_job_update_info(fed_job_update_info_t *job_update_info)
 {
 	if (!fed_mgr_cluster_rec) {
@@ -1821,11 +1887,17 @@ static int _foreach_fed_job_update_info(fed_job_update_info_t *job_update_info)
 	case FED_JOB_SUBMIT_INT:
 		_handle_fed_job_submission(job_update_info);
 		break;
+	case FED_JOB_SYNC:
+		_handle_fed_job_sync(job_update_info);
+		break;
 	case FED_JOB_UPDATE:
 		_handle_fed_job_update(job_update_info);
 		break;
 	case FED_JOB_UPDATE_RESPONSE:
 		_handle_fed_job_update_response(job_update_info);
+		break;
+	case FED_SEND_JOB_SYNC:
+		_handle_fed_send_job_sync(job_update_info);
 		break;
 	default:
 		error("Invalid fed_job type: %d jobid: %u",
@@ -2634,6 +2706,9 @@ extern int fed_mgr_add_sibling_conn(slurm_persist_conn_t *persist_conn,
 			persist_conn->cluster_name);
 		error("%s: %s", __func__, *out_buffer);
 	}
+
+	if (rc == SLURM_SUCCESS)
+		_q_send_job_sync(cluster->name);
 
 	return rc;
 }
@@ -4015,26 +4090,32 @@ static int _reconcile_fed_job(void *x, void *arg)
 {
 	int i;
 	bool found_job = false;
-	uint32_t job_id = *(uint32_t *)x;
-	struct job_record *job_ptr;
+	struct job_record *job_ptr = (struct job_record *)x;
 	reconcile_sib_t *rec_sib = (reconcile_sib_t *)arg;
 	job_info_msg_t *remote_jobs_ptr = rec_sib->job_info_msg;
 	uint32_t sibling_id   = rec_sib->sibling_id;
 	uint64_t sibling_bit  = FED_SIBLING_BIT(sibling_id);
 	char    *sibling_name = rec_sib->sibling_name;
 	slurm_job_info_t *remote_job  = NULL;
+	fed_job_info_t *job_info;
 
+	xassert(job_ptr);
 	xassert(remote_jobs_ptr);
 
-	if (!(job_ptr = find_job_record(job_id))) {
-		error("%s: couldn't find fed job %d",
-		      __func__, job_id);
-		return 0; /* 0 so that the list_for_each won't be stop */
+	/* Only look at jobs that originate from the remote sibling and if the
+	 * sibling could have the job */
+	if (!job_ptr->details ||
+	    (job_ptr->details->submit_time >= rec_sib->sync_time) ||
+	    IS_JOB_COMPLETED(job_ptr) || IS_JOB_COMPLETING(job_ptr) ||
+	    ((fed_mgr_get_cluster_id(job_ptr->job_id) != sibling_id) &&
+	     (!fed_mgr_is_origin_job(job_ptr) ||
+	      !(job_ptr->fed_details->siblings_viable & sibling_bit)))) {
+		return SLURM_SUCCESS;
 	}
 
 	for (i = 0; i < remote_jobs_ptr->record_count; i++) {
 		remote_job = &remote_jobs_ptr->job_array[i];
-		if (job_id == remote_job->job_id) {
+		if (job_ptr->job_id == remote_job->job_id) {
 			found_job = true;
 			break;
 		}
@@ -4047,16 +4128,16 @@ static int _reconcile_fed_job(void *x, void *arg)
 			 * completed. Could have been removed from a clean
 			 * start. */
 			info("%s: origin job %d is missing (or completed) from origin %s. Killing this copy of the job",
-			     __func__, job_id, sibling_name);
+			     __func__, job_ptr->job_id, sibling_name);
 			job_ptr->bit_flags |= SIB_JOB_FLUSH;
 			job_signal(job_ptr->job_id, SIGKILL, 0, 0, false);
 		} else {
 			info("%s: origin %s still has %d",
-			     __func__, sibling_name, job_id);
+			     __func__, sibling_name, job_ptr->job_id);
 		}
 	} else if (!found_job) {
 		info("%s: didn't find job %d on cluster %s",
-		     __func__, job_id, sibling_name);
+		     __func__, job_ptr->job_id, sibling_name);
 
 		/* Remove from active siblings */
 		job_ptr->fed_details->siblings_active &= ~sibling_bit;
@@ -4065,7 +4146,7 @@ static int _reconcile_fed_job(void *x, void *arg)
 			/* If the origin job isn't locked, then submit a sibling
 			 * to this cluster. */
 			info("%s: %s is a viable sibling of job %d, attempting to submit new sibling job to the cluster.",
-			     __func__, sibling_name, job_id);
+			     __func__, sibling_name, job_ptr->job_id);
 			_prepare_submit_siblings(job_ptr, sibling_bit);
 		} else if (job_ptr->fed_details->cluster_lock == sibling_id) {
 			/* The origin thinks that the sibling was running the
@@ -4073,7 +4154,7 @@ static int _reconcile_fed_job(void *x, void *arg)
 			 * down or the sibling removed it by clearing out jobs
 			 * (e.g. slurmctld -c). */
 			info("%s: origin job %d was running on sibling %s, but it's not there. Assuming that the job completed",
-			     __func__, job_id, sibling_name);
+			     __func__, job_ptr->job_id, sibling_name);
 			fed_mgr_job_revoke(job_ptr, true, 0,
 					   job_ptr->start_time);
 		} else {
@@ -4085,18 +4166,18 @@ static int _reconcile_fed_job(void *x, void *arg)
 			 * before the sibling before the sibling went down and
 			 * came back up (normal situation). */
 			info("%s: origin job %d is currently locked by sibling %d, this is ok",
-			     __func__, job_id,
+			     __func__, job_ptr->job_id,
 			     job_ptr->fed_details->cluster_lock);
 		}
 	} else if (remote_job) {
 		info("%s: job %d found on remote sibling %s state:%s",
-		     __func__, job_id, sibling_name,
+		     __func__, job_ptr->job_id, sibling_name,
 		     job_state_string(remote_job->job_state));
 
 		if (job_ptr->fed_details->cluster_lock == sibling_id) {
 			if (IS_JOB_COMPLETE(remote_job)) {
 				info("%s: job %d on sibling %s is already completed, completing the origin job",
-				     __func__, job_id, sibling_name);
+				     __func__, job_ptr->job_id, sibling_name);
 				fed_mgr_job_revoke(job_ptr, true,
 						   remote_job->exit_code,
 						   job_ptr->start_time);
@@ -4104,7 +4185,7 @@ static int _reconcile_fed_job(void *x, void *arg)
 				/* The job could be pending if it was requeued
 				 * due to node failure */
 				info("%s: job %d on sibling %s has job lock but job is not running (state:%s)",
-				     __func__, job_id, sibling_name,
+				     __func__, job_ptr->job_id, sibling_name,
 				     job_state_string(remote_job->job_state));
 			}
 		} else if (job_ptr->fed_details->cluster_lock) {
@@ -4112,12 +4193,12 @@ static int _reconcile_fed_job(void *x, void *arg)
 			 * went away and the origin started another job while it
 			 * was away. The remote job needs to be revoked. */
 			info("%s: job %d found on sibling %s but job is locked by cluster id %d",
-			     __func__, job_id, sibling_name,
+			     __func__, job_ptr->job_id, sibling_name,
 			     job_ptr->fed_details->cluster_lock);
 
 			if (IS_JOB_PENDING(remote_job)) {
 				info("%s: job %d is on %s in a pending state but cluster %d has the lock on it -- revoking the remote sibling job",
-				     __func__, job_id, sibling_name,
+				     __func__, job_ptr->job_id, sibling_name,
 				     job_ptr->fed_details->cluster_lock);
 				_revoke_sibling_jobs(
 						job_ptr->job_id,
@@ -4129,7 +4210,7 @@ static int _reconcile_fed_job(void *x, void *arg)
 				 * check cluster_lock before cancelling it to
 				 * make sure that it's not there. */
 				info("%s: job %d has a lock on sibling id %d, but found a job on sibling %s.",
-				     __func__, job_id,
+				     __func__, job_ptr->job_id,
 				     job_ptr->fed_details->cluster_lock,
 				     sibling_name);
 
@@ -4143,16 +4224,29 @@ static int _reconcile_fed_job(void *x, void *arg)
 			if (!(job_ptr->fed_details->siblings_active &
 			      sibling_bit)) {
 				info("%s: job %d on sibling %s but it wasn't in the active list. Adding to active list.",
-				     __func__, job_id, sibling_name);
+				     __func__, job_ptr->job_id, sibling_name);
 				job_ptr->fed_details->siblings_active |=
 					sibling_bit;
 			} else if (IS_JOB_RUNNING(remote_job)) {
 				info("%s: origin doesn't think that job %d should be running on sibling %s but it is. This shouldn't happen. Giving lock to sibling.",
-				     __func__, job_id, sibling_name);
+				     __func__, job_ptr->job_id, sibling_name);
 			}
 			/* else all good */
 		}
 	}
+
+	/* Update job_info with updated siblings */
+	slurm_mutex_lock(&fed_job_list_mutex);
+	if ((job_info = _find_fed_job_info(job_ptr->job_id))) {
+		job_info->siblings_viable =
+			job_ptr->fed_details->siblings_viable;
+		job_info->siblings_active =
+			job_ptr->fed_details->siblings_active;
+	} else {
+		error("%s: failed to find fed job info for fed job_id %d",
+		      __func__, job_ptr->job_id);
+	}
+	slurm_mutex_unlock(&fed_job_list_mutex);
 
 	return SLURM_SUCCESS;
 }
@@ -4162,73 +4256,23 @@ static int _reconcile_fed_job(void *x, void *arg)
  *
  * IN sib_name - name of the sibling to sync with.
  */
-extern int fed_mgr_sync(const char *sib_name)
+static int _sync_jobs(const char *sib_name, job_info_msg_t *job_info_msg,
+		      time_t sync_time)
 {
-	List jobids = NULL;
-	ListIterator job_itr;
-	struct job_record *job_ptr;
-	job_info_msg_t *job_info_msg = NULL;
 	reconcile_sib_t rec_sib = {0};
 	slurmdb_cluster_rec_t *sib;
 
-	slurmctld_lock_t job_read_lock = {
-		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
-	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
-
-	lock_slurmctld(job_read_lock);
-
 	if (!(sib = fed_mgr_get_cluster_by_name((char *)sib_name))) {
 		error("Couldn't find sibling by name '%s'", sib_name);
-		unlock_slurmctld(job_read_lock);
 		return SLURM_ERROR;
-	}
-
-	/* find "sib" jobs */
-	jobids = list_create(slurm_destroy_uint32_ptr);
-
-	/* Get list of jobs that originated from this cluster and that
-	 * could/should be on the remote sibling.
-	 * Also grab a list of jobs that originated from the sibling. If the
-	 * origin job is gone, this cluster should remove the job */
-	job_itr = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_itr))) {
-		if (!(IS_JOB_COMPLETED(job_ptr) ||
-		      IS_JOB_COMPLETING(job_ptr)) &&
-		    ((fed_mgr_get_cluster_id(job_ptr->job_id) == sib->fed.id) ||
-		     (fed_mgr_is_origin_job(job_ptr) &&
-		      job_ptr->fed_details &&
-		      (job_ptr->fed_details->siblings_viable &
-			FED_SIBLING_BIT(sib->fed.id))))) {
-
-		    uint32_t *tmp = xmalloc(sizeof(uint32_t));
-		    *tmp = job_ptr->job_id;
-		    list_append(jobids, tmp);
-		}
-	}
-	list_iterator_destroy(job_itr);
-	unlock_slurmctld(job_read_lock);
-
-	/* Ask the sibling for the jobs that we think should exist on it. */
-	if (_persist_load_jobs(sib, jobids, 0, &job_info_msg)) {
-		/* Can't recocile jobs with the sibling */
-		error("Failed to get jobs from sibling %s. Can't reconcile with it",
-		      sib_name);
-		goto end_it;
 	}
 
 	rec_sib.sibling_id   = sib->fed.id;
 	rec_sib.sibling_name = sib->name;
 	rec_sib.job_info_msg = job_info_msg;
+	rec_sib.sync_time    = sync_time;
 
-	lock_slurmctld(job_write_lock);
-	list_for_each(jobids, _reconcile_fed_job, &rec_sib);
-	unlock_slurmctld(job_write_lock);
-
-	slurm_free_job_info_msg(job_info_msg);
-
-end_it:
-	FREE_NULL_LIST(jobids);
+	list_for_each(job_list, _reconcile_fed_job, &rec_sib);
 
 	return SLURM_SUCCESS;
 }
@@ -4388,6 +4432,35 @@ extern int fed_mgr_q_job_requeue(uint32_t job_id, uid_t uid, uint32_t state) {
 	job_update_info->job_id = job_id;
 	job_update_info->state  = state;
 	job_update_info->uid    = uid;
+
+	_append_job_update(job_update_info);
+
+	return rc;
+}
+
+static int _q_send_job_sync(char *sib_name) {
+	int rc = SLURM_SUCCESS;
+	fed_job_update_info_t *job_update_info =
+		xmalloc(sizeof(fed_job_update_info_t));
+
+	job_update_info->type           = FED_SEND_JOB_SYNC;
+	job_update_info->submit_cluster = xstrdup(sib_name);
+
+	_append_job_update(job_update_info);
+
+	return rc;
+}
+
+extern int fed_mgr_q_job_sync(char *sib_name, job_info_msg_t *job_info_msg,
+			      time_t sync_time) {
+	int rc = SLURM_SUCCESS;
+	fed_job_update_info_t *job_update_info =
+		xmalloc(sizeof(fed_job_update_info_t));
+
+	job_update_info->type           = FED_JOB_SYNC;
+	job_update_info->submit_cluster = xstrdup(sib_name);
+	job_update_info->job_info_msg   = job_info_msg;
+	job_update_info->start_time     = sync_time;
 
 	_append_job_update(job_update_info);
 

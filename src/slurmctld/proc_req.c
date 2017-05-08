@@ -188,6 +188,7 @@ inline static void  _slurm_rpc_shutdown_controller_immediate(slurm_msg_t *msg);
 
 inline static int  _slurm_rpc_sib_job_start(uint32_t uid, slurm_msg_t *msg,
 					    bool send_resp);
+inline static int  _slurm_rpc_sib_job_sync(uint32_t uid, slurm_msg_t *msg);
 inline static int  _slurm_rpc_sib_job_cancel(uint32_t uid, slurm_msg_t *msg,
 					     bool send_resp);
 inline static int  _slurm_rpc_sib_job_requeue(uint32_t uid, slurm_msg_t *msg);
@@ -5962,9 +5963,6 @@ end_it:
 		      p_tmp.fd, uid);
 	}
 
-	if (!rc)
-		fed_mgr_sync(persist_conn->cluster_name);
-
 	xfree(comment);
 	free_buf(ret_buf);
 	END_TIMER;
@@ -5991,6 +5989,27 @@ static int _slurm_rpc_sib_job_start(uint32_t uid, slurm_msg_t *msg,
 
 	if (send_resp)
 		slurm_send_rc_msg(msg, rc);
+	return rc;
+}
+
+static int _slurm_rpc_sib_job_sync(uint32_t uid, slurm_msg_t *msg)
+{
+	int rc;
+	sib_msg_t *sib_msg = msg->data;
+	job_info_msg_t *job_info_msg = (job_info_msg_t *)sib_msg->data;
+
+	/* NULL out the data pointer because we are storing the pointer on the
+	 * fed job update queue to be handled later. */
+	sib_msg->data = NULL;
+
+	if (!msg->conn) {
+		error("Security violation, SIB_JOB_START RPC from uid=%d", uid);
+		return ESLURM_ACCESS_DENIED;
+	}
+
+	rc = fed_mgr_q_job_sync(msg->conn->cluster_name, job_info_msg,
+				sib_msg->start_time);
+
 	return rc;
 }
 
@@ -6285,6 +6304,10 @@ static void _proc_multi_msg(uint32_t rpc_uid, slurm_msg_t *msg)
 			break;
 		case REQUEST_SIB_JOB_START:
 			rc = _slurm_rpc_sib_job_start(rpc_uid, &sub_msg, false);
+			ret_buf = _build_rc_buf(rc, msg->protocol_version);
+			break;
+		case REQUEST_SIB_JOB_SYNC:
+			rc = _slurm_rpc_sib_job_sync(rpc_uid, &sub_msg);
 			ret_buf = _build_rc_buf(rc, msg->protocol_version);
 			break;
 		case REQUEST_SIB_JOB_UPDATE:

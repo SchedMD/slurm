@@ -85,10 +85,14 @@ extern int       fed_mgr_job_revoke(struct job_record *job_ptr,
 extern int       fed_mgr_job_revoke_sibs(struct job_record *job_ptr);
 extern int       fed_mgr_job_start(struct job_record *job_ptr,
 				   uint32_t cluster_id, time_t start_time);
+extern int       fed_mgr_send_job_sync(char *sib_name);
 extern int       fed_mgr_q_job_complete(uint32_t job_id, time_t start_time,
 					uint32_t return_code);
 extern int       fed_mgr_q_job_requeue(uint32_t job_id, uid_t uid,
 				       uint32_t state);
+extern int       fed_mgr_q_job_sync(char *sib_name,
+				    job_info_msg_t *job_info_msg,
+				    time_t sync_time);
 extern int       fed_mgr_q_job_update(char *cluster_name, uint32_t job_id,
 				      job_desc_msg_t *job_desc, uid_t uid);
 extern int       fed_mgr_q_sib_job_update_response(char *cluster_name,
@@ -105,7 +109,6 @@ extern int       fed_mgr_sib_will_run(slurm_msg_t *msg,
 				      job_desc_msg_t *job_desc, uid_t uid,
 				      will_run_response_msg_t **resp);
 extern int       fed_mgr_state_save(char *state_save_location);
-extern int       fed_mgr_sync(const char *sib_name);
 extern int       fed_mgr_update_job(uint32_t job_id, job_desc_msg_t *job_specs,
 				    uint64_t update_sibs, uid_t uid);
 extern int       fed_mgr_update_job_clusters(struct job_record *job_ptr,
