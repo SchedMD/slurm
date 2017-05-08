@@ -57,6 +57,8 @@ documents those changes that are of interest to users and administrators.
  -- MYSQL - Fix memory leak when loading archived jobs into the database.
  -- Fix potential race condition when starting the priority/multifactor plugin's
     decay thread.
+ -- Sanity check to make sure we have started a job in acct_policy.c before we
+    clear it as started.
 
 * Changes in Slurm 17.02.2
 ==========================

@@ -531,6 +531,13 @@ static void _qos_adjust_limit_usage(int type, struct job_record *job_ptr,
 		used_limits_a->jobs++;
 		break;
 	case ACCT_POLICY_JOB_FINI:
+		/*
+		 * If tres_alloc_cnt doesn't exist means ACCT_POLICY_JOB_BEGIN
+		 * was never called so no need to clean up that which was never
+		 * set up.
+		 */
+		if (!job_ptr->tres_alloc_cnt)
+			break;
 		qos_ptr->usage->grp_used_jobs--;
 		if ((int32_t)qos_ptr->usage->grp_used_jobs < 0) {
 			qos_ptr->usage->grp_used_jobs = 0;
