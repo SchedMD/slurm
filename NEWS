@@ -59,6 +59,7 @@ documents those changes that are of interest to users and administrators.
     decay thread.
  -- Sanity check to make sure we have started a job in acct_policy.c before we
     clear it as started.
+ -- Allow reboot program to use arguments.
 
 * Changes in Slurm 17.02.2
 ==========================
