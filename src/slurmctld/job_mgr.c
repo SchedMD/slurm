@@ -11346,6 +11346,15 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				} else
 					error_code = ESLURM_PRIO_RESET_FAIL;
 				job_ptr->priority = job_specs->priority;
+				if (job_ptr->part_ptr_list &&
+				    job_ptr->priority_array) {
+					int i, j = list_count(
+						job_ptr->part_ptr_list);
+					for (i = 0; i < j; i++) {
+						job_ptr->priority_array[i] =
+						job_specs->priority;
+					}
+				}
 			}
 			info("sched: update_job: setting priority to %u for "
 			     "job_id %u", job_ptr->priority,

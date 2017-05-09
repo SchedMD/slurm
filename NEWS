@@ -62,6 +62,7 @@ documents those changes that are of interest to users and administrators.
  -- Allow reboot program to use arguments.
  -- Message Aggr - Remove race condition on slurmd shutdown with respects to
     destroying a mutex.
+ -- Fix updating job priority on multiple partitions to be correct.
 
 * Changes in Slurm 17.02.2
 ==========================
