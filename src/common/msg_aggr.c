@@ -333,7 +333,6 @@ extern void msg_aggr_sender_fini(void)
 	FREE_NULL_LIST(msg_collection.msg_aggr_list);
 	slurm_mutex_unlock(&msg_collection.aggr_mutex);
 	FREE_NULL_LIST(msg_collection.msg_list);
-	slurm_mutex_destroy(&msg_collection.aggr_mutex);
 	slurm_mutex_destroy(&msg_collection.mutex);
 }
 
@@ -342,6 +341,7 @@ extern void msg_aggr_add_msg(slurm_msg_t *msg, bool wait,
 {
 	int count;
 	static uint16_t msg_index = 1;
+	static uint32_t wait_count = 0;
 
 	if (!msg_collection.running)
 		return;
@@ -388,12 +388,16 @@ extern void msg_aggr_add_msg(slurm_msg_t *msg, bool wait,
 		timeout.tv_sec = now.tv_sec + msg_timeout;
 		timeout.tv_nsec = now.tv_usec * 1000;
 
+		wait_count++;
 		if (pthread_cond_timedwait(&msg_aggr->wait_cond,
 					   &msg_collection.aggr_mutex,
 					   &timeout) == ETIMEDOUT)
 			_handle_msg_aggr_ret(msg_aggr->msg_index, 1);
+		wait_count--;
 		slurm_mutex_unlock(&msg_collection.aggr_mutex);
-
+;
+		if (!msg_collection.running && !wait_count)
+			slurm_mutex_destroy(&msg_collection.aggr_mutex);
 
 		_msg_aggr_free(msg_aggr);
 	}
