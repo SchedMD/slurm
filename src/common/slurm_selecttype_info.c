@@ -52,7 +52,6 @@ int parse_select_type_param(char *select_type_parameters, uint16_t *param)
 	int rc = SLURM_SUCCESS;
 	char *str_parameters, *st_str = NULL;
 	int param_cnt = 0;
-	bool one_task = false;
 
 	*param = 0;
 	st_str = xstrdup(select_type_parameters);
@@ -82,9 +81,6 @@ int parse_select_type_param(char *select_type_parameters, uint16_t *param)
 			*param |= CR_CPU;
 			*param |= CR_MEMORY;
 			param_cnt++;
-		} else if (!xstrcasecmp(str_parameters,
-					"CR_ONE_TASK_PER_CORE")) {
-			one_task = true;
 		} else if (!xstrcasecmp(str_parameters, "other_cons_res")) {
 			*param |= CR_OTHER_CONS_RES;
 		} else if (!xstrcasecmp(str_parameters,
@@ -119,7 +115,7 @@ int parse_select_type_param(char *select_type_parameters, uint16_t *param)
 			return rc;
 		}
 
-		if ((*param & CR_CPU) && one_task) {
+		if ((*param & CR_CPU) && (*param & CR_ONE_TASK_PER_CORE)) {
 			error("CR_ONE_TASK_PER_CORE is not compatible with CR_CPU*, please change to use CR_CORE* instead.");
 			rc = SLURM_ERROR;
 			xfree(st_str);
