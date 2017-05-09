@@ -64,7 +64,6 @@ documents those changes that are of interest to users and administrators.
     destroying a mutex.
  -- Fix updating job priority on multiple partitions to be correct.
  -- Don't remove admin comment when updating a job.
- -- Return error when bad separator is given for scontrol update job licenses.
 
 * Changes in Slurm 17.02.2
 ==========================

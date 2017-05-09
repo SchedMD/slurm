@@ -148,12 +148,9 @@ static List _build_license_list(char *licenses, bool *valid)
 			if ((token[i] == ':') || (token[i] == '*')) {
 				token[i++] = '\0';
 				num = (int32_t)strtol(&token[i], &end_num, 10);
-				if (*end_num != '\0')
-					 *valid = false;
-				break;
 			}
 		}
-		if (num < 0 || !(*valid)) {
+		if (num < 0) {
 			*valid = false;
 			break;
 		}
