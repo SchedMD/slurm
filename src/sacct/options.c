@@ -489,7 +489,7 @@ static void _remove_duplicate_fed_jobs(List jobs)
 	xassert(jobs);
 
 	hash_tbl_size = xmalloc(sizeof(uint32_t) * JOB_HASH_SIZE);
-	hash_job = xmalloc(sizeof(slurmdb_job_rec_t *) * JOB_HASH_SIZE);
+	hash_job = xmalloc(sizeof(slurmdb_job_rec_t **) * JOB_HASH_SIZE);
 
 	for (i = 0; i < JOB_HASH_SIZE; i++) {
 		hash_tbl_size[i] = 100;
