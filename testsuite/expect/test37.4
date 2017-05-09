@@ -52,6 +52,8 @@ set file_in     "test$test_id.in"
 set user_name   ""
 set srun_job_cnt 0
 
+array set job_counts {}
+
 set eol "\r\n"
 
 print_header $test_id
@@ -302,9 +304,11 @@ proc validate_fed_job { cname job_id expected_origin expected_sib submit_cluster
 				set match 1
 				if {$origin ne $expect_out(1,string)} {
 					log_error "origin not the same on $sibling"
+					end_it 1
 				}
-				if {$sibling ne $expect_out(2,string)} {
+				if {$expect_out(2,string) ne "NA" && $sibling ne $expect_out(2,string)} {
 					log_error "sibling not the same on $sibling"
+					end_it 1
 				}
 			}
 			timeout {
@@ -383,563 +387,280 @@ set node_count [expr [available_nodes "" ""] / 2]
 make_bash_script $file_in "env; $bin_sleep 300"
 
 
-
+# Test needs to change to count that it gets two job per cluster instead of making sure that it packs on each. Because it's not guaranteed that the cluster will pack because the job gets submitted to each cluster and it's a free for all.
 send_user "\n################################################################\n"
 send_user "Test packing across clusters with sbatch"
 send_user "\n################################################################\n"
 
-# Submit first job and get a sibling
-set first_sib [submit_fed_batch_job $fedc1 $fedc1 "" ""]
-# Second job should have same sibling as first
-submit_fed_batch_job $fedc1  $fedc1 $first_sib ""
+unset job_counts
 
+for {set i 0} {$i < 7} {incr i} {
+	set ret_sib [submit_fed_batch_job $fedc1 $fedc1 "" ""]
+	incr job_counts($ret_sib)
+}
 
-# Third job should get a different a sib
-set second_sib [submit_fed_batch_job $fedc1 $fedc1 "" ""]
-if {$second_sib eq $first_sib} {
-	log_error "$second_sib == $first_sib"
+parray job_counts
+
+if {$job_counts($fedc1) != 2} {
+	log_error "$fedc1 doesn't have 2 jobs running on it";
 	end_it 1
 }
-submit_fed_batch_job $fedc1  $fedc1 $second_sib ""
-
-
-# Fifth job should be on a different sib that the first two
-set third_sib [submit_fed_batch_job $fedc1 $fedc1 "" ""]
-if {($third_sib eq $first_sib) || ($third_sib eq $second_sib)} {
-	log_error "$third_sib == ($first_sib || $second_sib)"
+if {$job_counts($fedc2) != 2} {
+	log_error "$fedc2 doesn't have 2 jobs running on it";
 	end_it 1
 }
-submit_fed_batch_job $fedc1  $fedc1 $third_sib ""
-
-
-# last job should be submitted to all siblings
-submit_fed_batch_job $fedc1  $fedc1 "$fedc1,$fedc2,$fedc3" ""
+if {$job_counts($fedc3) != 2} {
+	log_error "$fedc3 doesn't have 2 jobs running on it";
+	end_it 1
+}
+if {$job_counts($fedc1,$fedc2,$fedc3) != 1} {
+	log_error "$fedc1,$fedc2,$fedc3 don't have a pending job on it"
+	end_it 1
+}
 
 
 send_user "\n################################################################\n"
 send_user "Test packing across clusters with srun"
 send_user "\n################################################################\n"
 cancel_all_jobs
+unset job_counts
 
-# Submit first job and get a sibling
-set first_sib [submit_fed_srun_job $fedc1 $fedc1 "" "" 0]
-# Second job should have same sibling as first
-submit_fed_srun_job $fedc1  $fedc1 $first_sib "" 1
+#FIXME: fix testing envrionment variable.
+for {set i 0} {$i < 6} {incr i} {
+	set ret_sib [submit_fed_srun_job $fedc1 $fedc1 "" "" 0]
+	incr job_counts($ret_sib)
+}
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 "" "" 0]
+incr job_counts($ret_sib)
 
+parray job_counts
 
-# Third job should get a different a sib
-set second_sib [submit_fed_srun_job $fedc1 $fedc1 "" "" 0]
-if {$second_sib eq $first_sib} {
-	log_error "$second_sib == $first_sib"
+if {$job_counts($fedc1) != 2} {
+	log_error "$fedc1 doesn't have 2 jobs running on it";
 	end_it 1
 }
-submit_fed_srun_job $fedc1  $fedc1 $second_sib "" 1
-
-
-# Fifth job should be on a different sib that the first two
-set third_sib [submit_fed_srun_job $fedc1 $fedc1 "" "" 0]
-if {($third_sib eq $first_sib) || ($third_sib eq $second_sib)} {
-	log_error "$third_sib == ($first_sib || $second_sib)"
+if {$job_counts($fedc2) != 2} {
+	log_error "$fedc2 doesn't have 2 jobs running on it";
 	end_it 1
 }
-submit_fed_srun_job $fedc1  $fedc1 $third_sib "" 1
-
-
-# last job should be submitted to all siblings
-submit_fed_srun_job $fedc1  $fedc1 "$fedc1,$fedc2,$fedc3" "" 0
-
+if {$job_counts($fedc3) != 2} {
+	log_error "$fedc3 doesn't have 2 jobs running on it";
+	end_it 1
+}
+if {$job_counts($fedc1,$fedc2,$fedc3) != 1} {
+	log_error "$fedc1,$fedc2,$fedc3 don't have a pending job on it"
+	end_it 1
+}
 
 send_user "\n################################################################\n"
 send_user "Test packing across clusters with salloc"
 send_user "\n################################################################\n"
 cancel_all_jobs
+unset job_counts
 
-# Submit first job and get a sibling
-set first_sib [submit_fed_salloc_job $fedc1 $fedc1 "" "" 0]
-# Second job should have same sibling as first
-submit_fed_salloc_job $fedc1  $fedc1 $first_sib "" 1
+for {set i 0} {$i < 6} {incr i} {
+	set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 "" "" 0]
+	incr job_counts($ret_sib)
+}
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 "" "" 0]
+incr job_counts($ret_sib)
 
+parray job_counts
 
-# Third job should get a different a sib
-set second_sib [submit_fed_salloc_job $fedc1 $fedc1 "" "" 0]
-if {$second_sib eq $first_sib} {
-	log_error "$second_sib == $first_sib"
+if {$job_counts($fedc1) != 2} {
+	log_error "$fedc1 doesn't have 2 jobs running on it";
 	end_it 1
 }
-submit_fed_salloc_job $fedc1  $fedc1 $second_sib "" 1
-
-
-# Fifth job should be on a different sib that the first two
-set third_sib [submit_fed_salloc_job $fedc1 $fedc1 "" "" 0]
-if {($third_sib eq $first_sib) || ($third_sib eq $second_sib)} {
-	log_error "$third_sib == ($first_sib || $second_sib)"
+if {$job_counts($fedc2) != 2} {
+	log_error "$fedc2 doesn't have 2 jobs running on it";
 	end_it 1
 }
-submit_fed_salloc_job $fedc1  $fedc1 $third_sib "" 1
-
-
-# last job should be submitted to all siblings
-submit_fed_salloc_job $fedc1  $fedc1 "$fedc1,$fedc2,$fedc3" "" 0
-
-
-
-send_user "\n################################################################\n"
-send_user "Test packing across clusters with weights with sbatch"
-# Set fed1's weight to 2. Should pack on fed2 and fed 3 before getting to fed1
-send_user "\n################################################################\n"
-cancel_all_jobs
-modify_cluster_weight $fedc1 2
-
-# Submit first job and get a sibling -- not fed1
-set first_sib [submit_fed_batch_job $fedc1 $fedc1 "" ""]
-if {$first_sib eq $fedc1} {
-	log_error "$first_sib == $fedc1"
+if {$job_counts($fedc3) != 2} {
+	log_error "$fedc3 doesn't have 2 jobs running on it";
 	end_it 1
 }
-# Second job should have same sibling as first
-submit_fed_batch_job $fedc1  $fedc1 $first_sib ""
-
-
-# Third job should get a different a sib
-set second_sib [submit_fed_batch_job $fedc1 $fedc1 "" ""]
-if {$second_sib eq $fedc1 || $second_sib eq $first_sib} {
-	log_error "$second_sib == $first_sib"
+if {$job_counts($fedc1,$fedc2,$fedc3) != 1} {
+	log_error "$fedc1,$fedc2,$fedc3 don't have a pending job on it"
 	end_it 1
 }
-submit_fed_batch_job $fedc1  $fedc1 $second_sib ""
-
-
-# Fifth job should be on fed1
-set third_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc1 ""]
-submit_fed_batch_job $fedc1  $fedc1 $third_sib ""
-
-
-# last job should be submitted to all siblings
-submit_fed_batch_job $fedc1  $fedc1 "$fedc1,$fedc2,$fedc3" ""
-
-
-send_user "\n################################################################\n"
-send_user "Test packing across clusters with weights with srun"
-# Set fed1's weight to 2. Should pack on fed2 and fed 3 before getting to fed1
-send_user "\n################################################################\n"
-cancel_all_jobs
-
-# Submit first job and get a sibling -- not fed1
-set first_sib [submit_fed_srun_job $fedc1 $fedc1 "" "" 0]
-if {$first_sib eq $fedc1} {
-	log_error "$first_sib == $fedc1"
-	end_it 1
-}
-# Second job should have same sibling as first
-submit_fed_srun_job $fedc1  $fedc1 $first_sib "" 1
-
-
-# Third job should get a different a sib
-set second_sib [submit_fed_srun_job $fedc1 $fedc1 "" "" 0]
-if {$second_sib eq $fedc1 || $second_sib eq $first_sib} {
-	log_error "$second_sib == $first_sib"
-	end_it 1
-}
-submit_fed_srun_job $fedc1  $fedc1 $second_sib "" 1
-
-
-# Fifth job should be on fed1
-set third_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc1 "" 0]
-submit_fed_srun_job $fedc1  $fedc1 $third_sib "" 1
-
-
-# last job should be submitted to all siblings
-submit_fed_srun_job $fedc1  $fedc1 "$fedc1,$fedc2,$fedc3" "" 0
-
-send_user "\n################################################################\n"
-send_user "Test packing across clusters with weights with salloc"
-# Set fed1's weight to 2. Should pack on fed2 and fed 3 before getting to fed1
-send_user "\n################################################################\n"
-cancel_all_jobs
-
-# Submit first job and get a sibling -- not fed1
-set first_sib [submit_fed_salloc_job $fedc1 $fedc1 "" "" 0]
-if {$first_sib eq $fedc1} {
-	log_error "$first_sib == $fedc1"
-	end_it 1
-}
-# Second job should have same sibling as first
-submit_fed_salloc_job $fedc1  $fedc1 $first_sib "" 1
-
-
-# Third job should get a different a sib
-set second_sib [submit_fed_salloc_job $fedc1 $fedc1 "" "" 0]
-if {$second_sib eq $fedc1 || $second_sib eq $first_sib} {
-	log_error "$second_sib == $first_sib"
-	end_it 1
-}
-submit_fed_salloc_job $fedc1  $fedc1 $second_sib "" 1
-
-
-# Fifth job should be on fed1
-set third_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc1 "" 0]
-submit_fed_salloc_job $fedc1  $fedc1 $third_sib "" 1
-
-
-# last job should be submitted to all siblings
-submit_fed_salloc_job $fedc1  $fedc1 "$fedc1,$fedc2,$fedc3" "" 0
-
-
-# reset fed1's weight
-modify_cluster_weight $fedc1 1
-
 
 send_user "\n################################################################\n"
 send_user "Test -M<clusters> with federated jobs with sbatch"
 send_user "\n################################################################\n"
 cancel_all_jobs
+unset job_counts
 
 # Submit job to only fed1
-submit_fed_batch_job $fedc1 $fedc1 $fedc1 "-M$fedc1"
-submit_fed_batch_job $fedc1 $fedc1 $fedc1 "-M$fedc1"
-submit_fed_batch_job $fedc1 $fedc1 $fedc1 "-M$fedc1"
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc1 "-M$fedc1"]
+incr job_counts($ret_sib);
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc1 "-M$fedc1"]
+incr job_counts($ret_sib);
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc1 "-M$fedc1"]
+incr job_counts($ret_sib);
 
 # Submit job to only fed1,fed2
 # Will go to fed2 since fed1 is full and third job should go to both
-submit_fed_batch_job $fedc1 $fedc1 $fedc2 "-M$fedc1,$fedc2"
-submit_fed_batch_job $fedc1 $fedc1 $fedc2 "-M$fedc1,$fedc2"
-submit_fed_batch_job $fedc1 $fedc1 "$fedc1,$fedc2" "-M$fedc1,$fedc2"
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc2 "-M$fedc1,$fedc2"]
+incr job_counts($ret_sib);
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc2 "-M$fedc1,$fedc2"]
+incr job_counts($ret_sib);
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 "$fedc1,$fedc2" "-M$fedc1,$fedc2"]
+incr job_counts($ret_sib);
 
 # Submit job to fed2,fed3.
 # Should choose fed2 to be origin and submit
-submit_fed_batch_job $fedc1 $fedc2 $fedc3 "-M$fedc2,$fedc3"
-submit_fed_batch_job $fedc1 $fedc2 $fedc3 "-M$fedc2,$fedc3"
-submit_fed_batch_job $fedc1 $fedc2 "$fedc2,$fedc3" "-M$fedc2,$fedc3"
+set ret_sib [submit_fed_batch_job $fedc1 $fedc2 $fedc3 "-M$fedc2,$fedc3"]
+incr job_counts($ret_sib);
+set ret_sib [submit_fed_batch_job $fedc1 $fedc2 $fedc3 "-M$fedc2,$fedc3"]
+incr job_counts($ret_sib);
+set ret_sib [submit_fed_batch_job $fedc1 $fedc2 "$fedc2,$fedc3" "-M$fedc2,$fedc3"]
+incr job_counts($ret_sib);
+
+parray job_counts
+
+if {$job_counts($fedc1) != 3} {
+	log_error "$fedc1 doesn't have 3 jobs running on it";
+	end_it 1
+}
+
+if {$job_counts($fedc2) != 2} {
+	log_error "$fedc2 doesn't have 2 jobs running on it";
+	end_it 1
+}
+
+if {$job_counts($fedc1,$fedc2) != 1} {
+	log_error "$fedc1,$fedc2 doesn't have 1 jobs running on it";
+	end_it 1
+}
+
+if {$job_counts($fedc3) != 2} {
+	log_error "$fedc1 doesn't have 2 jobs running on it";
+	end_it 1
+}
+
+if {$job_counts($fedc2,$fedc3) != 1} {
+	log_error "$fedc2,$fedc3 doesn't have 1 jobs running on it";
+	end_it 1
+}
 
 send_user "\n################################################################\n"
 send_user "Test -M<clusters> with federated jobs with srun"
 send_user "\n################################################################\n"
 cancel_all_jobs
+unset job_counts
 
 # Submit job to only fed1
-submit_fed_srun_job $fedc1 $fedc1 $fedc1 "-M$fedc1" 1
-submit_fed_srun_job $fedc1 $fedc1 $fedc1 "-M$fedc1" 1
-submit_fed_srun_job $fedc1 $fedc1 $fedc1 "-M$fedc1" 0
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc1 "-M$fedc1" 1]
+incr job_counts($ret_sib);
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc1 "-M$fedc1" 1]
+incr job_counts($ret_sib);
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc1 "-M$fedc1" 0]
+incr job_counts($ret_sib);
 
 # Submit job to only fed1,fed2
 # Will go to fed2 since fed1 is full and third job should go to both
-submit_fed_srun_job $fedc1 $fedc1 $fedc2 "-M$fedc1,$fedc2" 1
-submit_fed_srun_job $fedc1 $fedc1 $fedc2 "-M$fedc1,$fedc2" 1
-submit_fed_srun_job $fedc1 $fedc1 "$fedc1,$fedc2" "-M$fedc1,$fedc2" 0
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc2 "-M$fedc1,$fedc2" 1]
+incr job_counts($ret_sib);
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc2 "-M$fedc1,$fedc2" 1]
+incr job_counts($ret_sib);
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 "$fedc1,$fedc2" "-M$fedc1,$fedc2" 0]
+incr job_counts($ret_sib);
 
 # Submit job to fed2,fed3.
 # Should choose fed2 to be origin and submit
-submit_fed_srun_job $fedc1 $fedc2 $fedc3 "-M$fedc2,$fedc3" 1
-submit_fed_srun_job $fedc1 $fedc2 $fedc3 "-M$fedc2,$fedc3" 1
-submit_fed_srun_job $fedc2 $fedc2 "$fedc2,$fedc3" "-M$fedc2,$fedc3" 0
+set ret_sib [submit_fed_srun_job $fedc1 $fedc2 $fedc3 "-M$fedc2,$fedc3" 1]
+incr job_counts($ret_sib);
+set ret_sib [submit_fed_srun_job $fedc1 $fedc2 $fedc3 "-M$fedc2,$fedc3" 1]
+incr job_counts($ret_sib);
+set ret_sib [submit_fed_srun_job $fedc2 $fedc2 "$fedc2,$fedc3" "-M$fedc2,$fedc3" 0]
+incr job_counts($ret_sib);
+
+parray job_counts
+
+if {$job_counts($fedc1) != 3} {
+	log_error "$fedc1 doesn't have 3 jobs running on it";
+	end_it 1
+}
+
+if {$job_counts($fedc2) != 2} {
+	log_error "$fedc2 doesn't have 2 jobs running on it";
+	end_it 1
+}
+
+if {$job_counts($fedc1,$fedc2) != 1} {
+	log_error "$fedc1,$fedc2 doesn't have 1 jobs running on it";
+	end_it 1
+}
+
+if {$job_counts($fedc3) != 2} {
+	log_error "$fedc1 doesn't have 2 jobs running on it";
+	end_it 1
+}
+
+if {$job_counts($fedc2,$fedc3) != 1} {
+	log_error "$fedc2,$fedc3 doesn't have 1 jobs running on it";
+	end_it 1
+}
+
 
 send_user "\n################################################################\n"
 send_user "Test -M<clusters> with federated jobs with salloc"
 send_user "\n################################################################\n"
 cancel_all_jobs
+unset job_counts
 
 # Submit job to only fed1
-submit_fed_salloc_job $fedc1 $fedc1 $fedc1 "-M$fedc1" 1
-submit_fed_salloc_job $fedc1 $fedc1 $fedc1 "-M$fedc1" 1
-submit_fed_salloc_job $fedc1 $fedc1 $fedc1 "-M$fedc1" 0
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc1 "-M$fedc1" 1]
+incr job_counts($ret_sib);
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc1 "-M$fedc1" 1]
+incr job_counts($ret_sib);
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc1 "-M$fedc1" 0]
+incr job_counts($ret_sib);
 
 # Submit job to only fed1,fed2
 # Will go to fed2 since fed1 is full and third job should go to both
-submit_fed_salloc_job $fedc1 $fedc1 $fedc2 "-M$fedc1,$fedc2" 1
-submit_fed_salloc_job $fedc1 $fedc1 $fedc2 "-M$fedc1,$fedc2" 1
-submit_fed_salloc_job $fedc1 $fedc1 "$fedc1,$fedc2" "-M$fedc1,$fedc2" 0
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc2 "-M$fedc1,$fedc2" 1]
+incr job_counts($ret_sib);
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc2 "-M$fedc1,$fedc2" 1]
+incr job_counts($ret_sib);
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 "$fedc1,$fedc2" "-M$fedc1,$fedc2" 0]
+incr job_counts($ret_sib);
 
 # Submit job to fed2,fed3.
 # Should choose fed2 to be origin and submit
-submit_fed_salloc_job $fedc1 $fedc2 $fedc3 "-M$fedc2,$fedc3" 1
-submit_fed_salloc_job $fedc1 $fedc2 $fedc3 "-M$fedc2,$fedc3" 1
-submit_fed_salloc_job $fedc2 $fedc2 "$fedc2,$fedc3" "-M$fedc2,$fedc3" 0
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc2 $fedc3 "-M$fedc2,$fedc3" 1]
+incr job_counts($ret_sib);
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc2 $fedc3 "-M$fedc2,$fedc3" 1]
+incr job_counts($ret_sib);
+set ret_sib [submit_fed_salloc_job $fedc2 $fedc2 "$fedc2,$fedc3" "-M$fedc2,$fedc3" 0]
+incr job_counts($ret_sib);
 
+parray job_counts
 
-send_user "\n################################################################\n"
-send_user "Test spreading across clusters with LLC flag with sbatch"
-send_user "\n################################################################\n"
-cancel_all_jobs
-# Now make set the Federation to LLC and make sure that it spreads across the
-# cluster.
-modify_federation_flags $fed_name "=" "LLC"
-
-
-# Submit first job and get a sibling
-set sib1 [submit_fed_batch_job $fedc1 $fedc1 "" ""]
-
-# Second job shouldln't have same sibling as first
-set sib2 [submit_fed_batch_job $fedc1 $fedc1 "" ""]
-if {$sib2 eq $sib1} {
-	log_error "$sib1 == $sib2"
+if {$job_counts($fedc1) != 3} {
+	log_error "$fedc1 doesn't have 2 jobs running on it";
 	end_it 1
 }
 
-# Third job shouldln't have same sibling as first or second
-set sib3 [submit_fed_batch_job $fedc1 $fedc1 "" ""]
-if {$sib3 eq $sib1 || $sib3 eq $sib2} {
-	log_error "$sib1 == ($sib2 || $sib3)"
+if {$job_counts($fedc2) != 2} {
+	log_error "$fedc2 doesn't have 2 jobs running on it";
 	end_it 1
 }
 
-# Repeat
-# Fourth job could get any sib but I would expect it to get sib1
-set sib1 [submit_fed_batch_job $fedc1 $fedc1 $sib1 ""]
-
-# Second job shouldln't have same sibling as first
-set sib2 [submit_fed_batch_job $fedc1 $fedc1 "" ""]
-if {$sib2 eq $sib1} {
-	log_error "$sib1 == $sib2"
+if {$job_counts($fedc1,$fedc2) != 1} {
+	log_error "$fedc1 doesn't have 2 jobs running on it";
 	end_it 1
 }
 
-# Third job shouldln't have same sibling as first or second
-set sib3 [submit_fed_batch_job $fedc1 $fedc1 "" ""]
-if {$sib3 eq $sib1 || $sib3 eq $sib2} {
-	log_error "$sib1 == ($sib2 || $sib3)"
+if {$job_counts($fedc3) != 2} {
+	log_error "$fedc1 doesn't have 2 jobs running on it";
 	end_it 1
 }
 
-# last job should be submitted to all siblings
-submit_fed_batch_job $fedc1  $fedc1 "$fedc1,$fedc2,$fedc3" ""
-
-
-send_user "\n################################################################\n"
-send_user "Test spreading across clusters with LLC flag with srun"
-send_user "\n################################################################\n"
-cancel_all_jobs
-# Now make set the Federation to LLC and make sure that it spreads across the
-# cluster.
-modify_federation_flags $fed_name "=" "LLC"
-
-
-# Submit first job and get a sibling
-set sib1 [submit_fed_srun_job $fedc1 $fedc1 "" "" 0]
-
-# Second job shouldln't have same sibling as first
-set sib2 [submit_fed_srun_job $fedc1 $fedc1 "" "" 0]
-if {$sib2 eq $sib1} {
-	log_error "$sib1 == $sib2"
+if {$job_counts($fedc2,$fedc3) != 1} {
+	log_error "$fedc1 doesn't have 2 jobs running on it";
 	end_it 1
 }
-
-# Third job shouldln't have same sibling as first or second
-set sib3 [submit_fed_srun_job $fedc1 $fedc1 "" "" 0]
-if {$sib3 eq $sib1 || $sib3 eq $sib2} {
-	log_error "$sib1 == ($sib2 || $sib3)"
-	end_it 1
-}
-
-# Repeat
-# Fourth job could get any sib but I would expect it to get sib1
-set sib1 [submit_fed_srun_job $fedc1 $fedc1 $sib1 "" 1]
-
-# Second job shouldln't have same sibling as first
-set sib2 [submit_fed_srun_job $fedc1 $fedc1 "" "" 0]
-if {$sib2 eq $sib1} {
-	log_error "$sib1 == $sib2"
-	end_it 1
-}
-
-# Third job shouldln't have same sibling as first or second
-set sib3 [submit_fed_srun_job $fedc1 $fedc1 "" "" 0]
-if {$sib3 eq $sib1 || $sib3 eq $sib2} {
-	log_error "$sib1 == ($sib2 || $sib3)"
-	end_it 1
-}
-
-# last job should be submitted to all siblings
-submit_fed_srun_job $fedc1  $fedc1 "$fedc1,$fedc2,$fedc3" "" 0
-
-send_user "\n################################################################\n"
-send_user "Test spreading across clusters with LLC flag with salloc"
-send_user "\n################################################################\n"
-cancel_all_jobs
-# Now make set the Federation to LLC and make sure that it spreads across the
-# cluster.
-modify_federation_flags $fed_name "=" "LLC"
-
-
-# Submit first job and get a sibling
-set sib1 [submit_fed_salloc_job $fedc1 $fedc1 "" "" 0]
-
-# Second job shouldln't have same sibling as first
-set sib2 [submit_fed_salloc_job $fedc1 $fedc1 "" "" 0]
-if {$sib2 eq $sib1} {
-	log_error "$sib1 == $sib2"
-	end_it 1
-}
-
-# Third job shouldln't have same sibling as first or second
-set sib3 [submit_fed_salloc_job $fedc1 $fedc1 "" "" 0]
-if {$sib3 eq $sib1 || $sib3 eq $sib2} {
-	log_error "$sib1 == ($sib2 || $sib3)"
-	end_it 1
-}
-
-# Repeat
-# Fourth job could get any sib but I would expect it to get sib1
-set sib1 [submit_fed_salloc_job $fedc1 $fedc1 $sib1 "" 1]
-
-# Second job shouldln't have same sibling as first
-set sib2 [submit_fed_salloc_job $fedc1 $fedc1 "" "" 0]
-if {$sib2 eq $sib1} {
-	log_error "$sib1 == $sib2"
-	end_it 1
-}
-
-# Third job shouldln't have same sibling as first or second
-set sib3 [submit_fed_salloc_job $fedc1 $fedc1 "" "" 0]
-if {$sib3 eq $sib1 || $sib3 eq $sib2} {
-	log_error "$sib1 == ($sib2 || $sib3)"
-	end_it 1
-}
-
-# last job should be submitted to all siblings
-submit_fed_salloc_job $fedc1  $fedc1 "$fedc1,$fedc2,$fedc3" "" 0
-
-
-send_user "\n################################################################\n"
-send_user "Test spreading across clusters with LLC flag with weights with sbatch"
-# Set fed1's weight to 2. Should spread spread between fed2 and fed3 before
-# going to fed1
-send_user "\n################################################################\n"
-cancel_all_jobs
-modify_cluster_weight $fedc1 2
-
-# Submit first job and get a sibling
-set sib1 [submit_fed_batch_job $fedc1 $fedc1 "" ""]
-if {$sib1 eq $fedc1} {
-	log_error "$sib1 == $fedc1"
-	end_it 1
-}
-
-# Second job shouldln't have same sibling as first
-set sib2 [submit_fed_batch_job $fedc1 $fedc1 "" ""]
-if {$sib2 eq $fedc1 || $sib2 eq $sib1} {
-	log_error "$sib1 == $sib2"
-	end_it 1
-}
-
-# Repeat
-# job could get any sib but I would expect it to get sib1
-set sib1 [submit_fed_batch_job $fedc1 $fedc1 $sib1 ""]
-if {$sib1 eq $fedc1} {
-	log_error "$sib1 == $fedc1"
-	end_it 1
-}
-
-# Second job shouldln't have same sibling as first
-set sib2 [submit_fed_batch_job $fedc1 $fedc1 "" ""]
-if {$sib2 eq $fedc1 || $sib2 eq $sib1} {
-	log_error "$sib1 == $sib2"
-	end_it 1
-}
-
-# Third job shouldln't have same sibling as first or second
-set sib3 [submit_fed_batch_job $fedc1 $fedc1 $fedc1 ""]
-submit_fed_batch_job $fedc1  $fedc1 $sib3 ""
-
-# last job should be submitted to all siblings
-submit_fed_batch_job $fedc1  $fedc1 "$fedc1,$fedc2,$fedc3" ""
-
-# reset fed1's weight
-modify_cluster_weight $fedc1 1
-
-
-send_user "\n################################################################\n"
-send_user "Test spreading across clusters with LLC flag with weights with srun"
-# Set fed1's weight to 2. Should spread spread between fed2 and fed3 before
-# going to fed1
-send_user "\n################################################################\n"
-cancel_all_jobs
-modify_cluster_weight $fedc1 2
-
-# Submit first job and get a sibling
-set sib1 [submit_fed_srun_job $fedc1 $fedc1 "" "" 0]
-if {$sib1 eq $fedc1} {
-	log_error "$sib1 == $fedc1"
-	end_it 1
-}
-
-# Second job shouldln't have same sibling as first
-set sib2 [submit_fed_srun_job $fedc1 $fedc1 "" "" 0]
-if {$sib2 eq $fedc1 || $sib2 eq $sib1} {
-	log_error "$sib1 == $sib2"
-	end_it 1
-}
-
-# Repeat
-# job could get any sib but I would expect it to get sib1
-set sib1 [submit_fed_srun_job $fedc1 $fedc1 $sib1 "" 1]
-if {$sib1 eq $fedc1} {
-	log_error "$sib1 == $fedc1"
-	end_it 1
-}
-
-# Second job shouldln't have same sibling as first
-set sib2 [submit_fed_srun_job $fedc1 $fedc1 "" "" 0]
-if {$sib2 eq $fedc1 || $sib2 eq $sib1} {
-	log_error "$sib1 == $sib2"
-	end_it 1
-}
-
-# Third job shouldln't have same sibling as first or second
-set sib3 [submit_fed_srun_job $fedc1 $fedc1 $fedc1 "" 0]
-submit_fed_srun_job $fedc1  $fedc1 $sib3 "" 1
-
-# last job should be submitted to all siblings
-submit_fed_srun_job $fedc1  $fedc1 "$fedc1,$fedc2,$fedc3" "" 0
-
-# reset fed1's weight
-modify_cluster_weight $fedc1 1
-
-send_user "\n################################################################\n"
-send_user "Test spreading across clusters with LLC flag with weights with salloc"
-# Set fed1's weight to 2. Should spread spread between fed2 and fed3 before
-# going to fed1
-send_user "\n################################################################\n"
-cancel_all_jobs
-modify_cluster_weight $fedc1 2
-
-# Submit first job and get a sibling
-set sib1 [submit_fed_salloc_job $fedc1 $fedc1 "" "" 0]
-if {$sib1 eq $fedc1} {
-	log_error "$sib1 == $fedc1"
-	end_it 1
-}
-
-# Second job shouldln't have same sibling as first
-set sib2 [submit_fed_salloc_job $fedc1 $fedc1 "" "" 0]
-if {$sib2 eq $fedc1 || $sib2 eq $sib1} {
-	log_error "$sib1 == $sib2"
-	end_it 1
-}
-
-# Repeat
-# job could get any sib but I would expect it to get sib1
-set sib1 [submit_fed_salloc_job $fedc1 $fedc1 $sib1 "" 1]
-if {$sib1 eq $fedc1} {
-	log_error "$sib1 == $fedc1"
-	end_it 1
-}
-
-# Second job shouldln't have same sibling as first
-set sib2 [submit_fed_salloc_job $fedc1 $fedc1 "" "" 0]
-if {$sib2 eq $fedc1 || $sib2 eq $sib1} {
-	log_error "$sib1 == $sib2"
-	end_it 1
-}
-
-# Third job shouldln't have same sibling as first or second
-set sib3 [submit_fed_salloc_job $fedc1 $fedc1 $fedc1 "" 0]
-submit_fed_salloc_job $fedc1  $fedc1 $sib3 "" 1
-
-# last job should be submitted to all siblings
-submit_fed_salloc_job $fedc1  $fedc1 "$fedc1,$fedc2,$fedc3" "" 0
-
-# reset fed1's weight
-modify_cluster_weight $fedc1 1
 
 
 send_user "\n################################################################\n"
@@ -1049,41 +770,130 @@ if {$exit_code || $matches != 4} {
 send_user "\n################################################################\n"
 send_user "Test sbatch jobs with cluster features"
 send_user "\n################################################################\n"
+unset job_counts
 
-# --begin=now+2 makes sure that the job doesn't try to go to the fasted
-# cluster. Thus checking to see if the features works in this case as well.
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc --begin=now+2"]
+incr job_counts($ret_sib)
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc"]
+incr job_counts($ret_sib)
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb --begin=now+2"]
+incr job_counts($ret_sib)
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb"]
+incr job_counts($ret_sib)
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa --begin=now+2"]
+incr job_counts($ret_sib)
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa"]
+incr job_counts($ret_sib)
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 "$fedc1,$fedc2,$fedc3" "--cluster-constraint=fa,fb,fc"]
+incr job_counts($ret_sib)
 
-submit_fed_batch_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc --begin=now+2"
-submit_fed_batch_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc"
-submit_fed_batch_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb --begin=now+2"
-submit_fed_batch_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb"
-submit_fed_batch_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa --begin=now+2"
-submit_fed_batch_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa"
-submit_fed_batch_job $fedc1 $fedc1 "$fedc1,$fedc2,$fedc3" "--cluster-constraint=fa,fb,fc"
+parray job_counts
+
+if {$job_counts($fedc1) != 2} {
+	log_error "$fedc1 doesn't have 2 jobs running on it";
+	end_it 1
+}
+
+if {$job_counts($fedc2) != 2} {
+	log_error "$fedc2 doesn't have 2 jobs running on it";
+	end_it 1
+}
+
+if {$job_counts($fedc3) != 2} {
+	log_error "$fedc3 doesn't have 2 jobs running on it";
+	end_it 1
+}
+
+if {$job_counts($fedc1,$fedc2,$fedc3) != 1} {
+	log_error "$fedc1,$fedc2,$fedc3 doesn't have 2 jobs running on it";
+	end_it 1
+}
 
 send_user "\n################################################################\n"
 send_user "Test salloc jobs with cluster features"
 send_user "\n################################################################\n"
 cancel_all_jobs
-submit_fed_salloc_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc --begin=now+2" 1
-submit_fed_salloc_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc" 1
-submit_fed_salloc_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb --begin=now+2" 1
-submit_fed_salloc_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb" 1
-submit_fed_salloc_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa --begin=now+2" 1
-submit_fed_salloc_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa" 1
-submit_fed_salloc_job $fedc1 $fedc1 "$fedc1,$fedc2,$fedc3" "--cluster-constraint=fa,fb,fc" 0
+unset job_counts
+
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc" 0]
+incr job_counts($ret_sib)
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc" 0]
+incr job_counts($ret_sib)
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb" 0]
+incr job_counts($ret_sib)
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb" 0]
+incr job_counts($ret_sib)
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa" 0]
+incr job_counts($ret_sib)
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa" 0]
+incr job_counts($ret_sib)
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 "$fedc1,$fedc2,$fedc3" "--cluster-constraint=fa,fb,fc" 0]
+incr job_counts($ret_sib)
+
+parray job_counts
+
+if {$job_counts($fedc1) != 2} {
+	log_error "$fedc1 doesn't have 2 jobs running on it";
+	end_it 1
+}
+
+if {$job_counts($fedc2) != 2} {
+	log_error "$fedc2 doesn't have 2 jobs running on it";
+	end_it 1
+}
+
+if {$job_counts($fedc3) != 2} {
+	log_error "$fedc3 doesn't have 2 jobs running on it";
+	end_it 1
+}
+
+if {$job_counts($fedc1,$fedc2,$fedc3) != 1} {
+	log_error "$fedc1,$fedc2,$fedc3 doesn't have 2 jobs running on it";
+	end_it 1
+}
 
 send_user "\n################################################################\n"
 send_user "Test srun jobs with cluster features"
 send_user "\n################################################################\n"
 cancel_all_jobs
-submit_fed_srun_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc --begin=now+2" 1
-submit_fed_srun_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc" 1
-submit_fed_srun_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb --begin=now+2" 1
-submit_fed_srun_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb" 1
-submit_fed_srun_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa --begin=now+2" 1
-submit_fed_srun_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa" 1
-submit_fed_srun_job $fedc1 $fedc1 "$fedc1,$fedc2,$fedc3" "--cluster-constraint=fa,fb,fc" 0
+unset job_counts
+
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc" 0]
+incr job_counts($ret_sib)
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc" 0]
+incr job_counts($ret_sib)
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb" 0]
+incr job_counts($ret_sib)
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb" 0]
+incr job_counts($ret_sib)
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa" 0]
+incr job_counts($ret_sib)
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa" 0]
+incr job_counts($ret_sib)
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 "$fedc1,$fedc2,$fedc3" "--cluster-constraint=fa,fb,fc" 0]
+incr job_counts($ret_sib)
+
+parray job_counts
+
+if {$job_counts($fedc1) != 2} {
+	log_error "$fedc1 doesn't have 2 jobs running on it";
+	end_it 1
+}
+
+if {$job_counts($fedc2) != 2} {
+	log_error "$fedc2 doesn't have 2 jobs running on it";
+	end_it 1
+}
+
+if {$job_counts($fedc3) != 2} {
+	log_error "$fedc3 doesn't have 2 jobs running on it";
+	end_it 1
+}
+
+if {$job_counts($fedc1,$fedc2,$fedc3) != 1} {
+	log_error "$fedc1,$fedc2,$fedc3 doesn't have 2 jobs running on it";
+	end_it 1
+}
 
 send_user "\n################################################################\n"
 send_user "Test jobs with invalid cluster features"
