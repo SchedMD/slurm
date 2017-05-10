@@ -81,6 +81,9 @@ documents those changes that are of interest to users and administrators.
  -- Functions slurm_load_node() slurm_load_partitions() modified to show all
     nodes/partitions in a federation when the SHOW_GLOBAL flag is used.
 
+* Changes in Slurm 17.02.4
+==========================
+
 * Changes in Slurm 17.02.3
 ==========================
  -- Increase --cpu_bind and --mem_bind field length limits.
@@ -137,6 +140,14 @@ documents those changes that are of interest to users and administrators.
  -- MYSQL - Fix memory leak when loading archived jobs into the database.
  -- Fix potential race condition when starting the priority/multifactor plugin's
     decay thread.
+ -- Sanity check to make sure we have started a job in acct_policy.c before we
+    clear it as started.
+ -- Allow reboot program to use arguments.
+ -- Message Aggr - Remove race condition on slurmd shutdown with respects to
+    destroying a mutex.
+ -- Fix updating job priority on multiple partitions to be correct.
+ -- Don't remove admin comment when updating a job.
+ -- Return error when bad separator is given for scontrol update job licenses.
 
 * Changes in Slurm 17.02.2
 ==========================

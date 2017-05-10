@@ -10960,23 +10960,29 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	}
 
 	/* Always do this last just in case the assoc_ptr changed */
-	if (job_specs->admin_comment && !validate_super_user(uid)) {
-		error("Attempt to change admin_comment for job %u",
-		      job_ptr->job_id);
-		error_code = ESLURM_ACCESS_DENIED;
-	} else if (job_specs->admin_comment &&
-		   (job_specs->admin_comment[0] == '+') &&
-		   (job_specs->admin_comment[1] == '=')) {
-		if (job_ptr->admin_comment)
-			xstrcat(job_ptr->admin_comment, ",");
-		xstrcat(job_ptr->admin_comment, job_specs->admin_comment + 2);
-		info("update_job: setting admin_comment to %s for job_id %u",
-		     job_ptr->admin_comment, job_ptr->job_id);
-	} else {
-		xfree(job_ptr->admin_comment);
-		job_ptr->admin_comment = xstrdup(job_specs->admin_comment);
-		info("update_job: setting admin_comment to %s for job_id %u",
-		     job_ptr->admin_comment, job_ptr->job_id);
+	if (job_specs->admin_comment) {
+		if (!validate_super_user(uid)) {
+			error("Attempt to change admin_comment for job %u",
+			      job_ptr->job_id);
+			error_code = ESLURM_ACCESS_DENIED;
+		} else if ((job_specs->admin_comment[0] == '+') &&
+			   (job_specs->admin_comment[1] == '=')) {
+			if (job_ptr->admin_comment)
+				xstrcat(job_ptr->admin_comment, ",");
+			xstrcat(job_ptr->admin_comment,
+				job_specs->admin_comment + 2);
+			info("update_job: adding to admin_comment it is now %s for job_id %u",
+			     job_ptr->admin_comment, job_ptr->job_id);
+		} else if (!xstrcmp(job_ptr->admin_comment,
+				   job_specs->admin_comment)) {
+			info("update_job: admin_comment the same as before, not changing");
+		} else {
+			xfree(job_ptr->admin_comment);
+			job_ptr->admin_comment =
+				xstrdup(job_specs->admin_comment);
+			info("update_job: setting admin_comment to %s for job_id %u",
+			     job_ptr->admin_comment, job_ptr->job_id);
+		}
 	}
 
 	/* Always do this last just in case the assoc_ptr changed */
@@ -11472,6 +11478,15 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				} else
 					error_code = ESLURM_PRIO_RESET_FAIL;
 				job_ptr->priority = job_specs->priority;
+				if (job_ptr->part_ptr_list &&
+				    job_ptr->priority_array) {
+					int i, j = list_count(
+						job_ptr->part_ptr_list);
+					for (i = 0; i < j; i++) {
+						job_ptr->priority_array[i] =
+						job_specs->priority;
+					}
+				}
 			}
 			info("sched: update_job: setting priority to %u for "
 			     "job_id %u", job_ptr->priority,
