@@ -104,7 +104,7 @@ proc end_it { exit_code } {
 	exit $exit_code
 }
 
-proc submit_fed_batch_job { cname expected_origin expected_sib extra_args } {
+proc submit_fed_batch_job { cname expected_origin expected_sib extra_args expected_state } {
 	global fed_slurm_base file_in node_count number squeue
 
 	set submit_cluster ""
@@ -139,10 +139,18 @@ proc submit_fed_batch_job { cname expected_origin expected_sib extra_args } {
 		end_it 1
 	}
 
+	if {[string compare $expected_state ""]} {
+		set run_cluster [wait_for_fed_job $job_id $expected_state ""]
+		if {[string compare $run_cluster ""] == 0} {
+			log_error "Didn't find cluster with $expected_state job"
+				end_it 1
+		}
+	}
+
 	return [validate_fed_job $cname $job_id $expected_origin $expected_sib $submit_cluster]
 }
 
-proc submit_fed_srun_job { cname expected_origin expected_sib extra_args check_env } {
+proc submit_fed_srun_job { cname expected_origin expected_sib extra_args check_env expected_state } {
 	global fed_slurm_base file_in node_count number squeue test_id srun_job_cnt
 
 	set submit_cluster ""
@@ -166,6 +174,14 @@ proc submit_fed_srun_job { cname expected_origin expected_sib extra_args check_e
 		}
 		eof {
 			wait
+		}
+	}
+
+	if {[string compare $expected_state ""]} {
+		set run_cluster [wait_for_fed_job $job_id $expected_state ""]
+		if {[string compare $run_cluster ""] == 0} {
+			log_error "Didn't find cluster with $expected_state job"
+				end_it 1
 		}
 	}
 
@@ -198,7 +214,7 @@ proc submit_fed_srun_job { cname expected_origin expected_sib extra_args check_e
 	return [validate_fed_job $cname $job_id $expected_origin $expected_sib $submit_cluster]
 }
 
-proc submit_fed_salloc_job { cname expected_origin expected_sib extra_args check_env } {
+proc submit_fed_salloc_job { cname expected_origin expected_sib extra_args check_env expected_state } {
 	global fed_slurm_base file_in node_count number squeue test_id srun_job_cnt
 
 	set submit_cluster ""
@@ -226,6 +242,14 @@ proc submit_fed_salloc_job { cname expected_origin expected_sib extra_args check
 		}
 		eof {
 			wait
+		}
+	}
+
+	if {[string compare $expected_state ""]} {
+		set run_cluster [wait_for_fed_job $job_id $expected_state ""]
+		if {[string compare $run_cluster ""] == 0} {
+			log_error "Didn't find cluster with $expected_state job"
+				end_it 1
 		}
 	}
 
@@ -394,10 +418,12 @@ send_user "\n################################################################\n"
 
 unset job_counts
 
-for {set i 0} {$i < 7} {incr i} {
-	set ret_sib [submit_fed_batch_job $fedc1 $fedc1 "" ""]
+for {set i 0} {$i < 6} {incr i} {
+	set ret_sib [submit_fed_batch_job $fedc1 $fedc1 "" "" RUNNING]
 	incr job_counts($ret_sib)
 }
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 "" "" PENDING]
+incr job_counts($ret_sib)
 
 parray job_counts
 
@@ -425,12 +451,11 @@ send_user "\n################################################################\n"
 cancel_all_jobs
 unset job_counts
 
-#FIXME: fix testing envrionment variable.
 for {set i 0} {$i < 6} {incr i} {
-	set ret_sib [submit_fed_srun_job $fedc1 $fedc1 "" "" 0]
+	set ret_sib [submit_fed_srun_job $fedc1 $fedc1 "" "" 0 RUNNING]
 	incr job_counts($ret_sib)
 }
-set ret_sib [submit_fed_srun_job $fedc1 $fedc1 "" "" 0]
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 "" "" 0 PENDING]
 incr job_counts($ret_sib)
 
 parray job_counts
@@ -459,10 +484,10 @@ cancel_all_jobs
 unset job_counts
 
 for {set i 0} {$i < 6} {incr i} {
-	set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 "" "" 0]
+	set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 "" "" 0 RUNNING]
 	incr job_counts($ret_sib)
 }
-set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 "" "" 0]
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 "" "" 0 PENDING]
 incr job_counts($ret_sib)
 
 parray job_counts
@@ -491,29 +516,29 @@ cancel_all_jobs
 unset job_counts
 
 # Submit job to only fed1
-set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc1 "-M$fedc1"]
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc1 "-M$fedc1" RUNNING]
 incr job_counts($ret_sib);
-set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc1 "-M$fedc1"]
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc1 "-M$fedc1" RUNNING]
 incr job_counts($ret_sib);
-set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc1 "-M$fedc1"]
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc1 "-M$fedc1" PENDING]
 incr job_counts($ret_sib);
 
 # Submit job to only fed1,fed2
 # Will go to fed2 since fed1 is full and third job should go to both
-set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc2 "-M$fedc1,$fedc2"]
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc2 "-M$fedc1,$fedc2" RUNNING]
 incr job_counts($ret_sib);
-set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc2 "-M$fedc1,$fedc2"]
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc2 "-M$fedc1,$fedc2" RUNNING]
 incr job_counts($ret_sib);
-set ret_sib [submit_fed_batch_job $fedc1 $fedc1 "$fedc1,$fedc2" "-M$fedc1,$fedc2"]
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 "$fedc1,$fedc2" "-M$fedc1,$fedc2" PENDING]
 incr job_counts($ret_sib);
 
 # Submit job to fed2,fed3.
 # Should choose fed2 to be origin and submit
-set ret_sib [submit_fed_batch_job $fedc1 $fedc2 $fedc3 "-M$fedc2,$fedc3"]
+set ret_sib [submit_fed_batch_job $fedc1 $fedc2 $fedc3 "-M$fedc2,$fedc3" RUNNING]
 incr job_counts($ret_sib);
-set ret_sib [submit_fed_batch_job $fedc1 $fedc2 $fedc3 "-M$fedc2,$fedc3"]
+set ret_sib [submit_fed_batch_job $fedc1 $fedc2 $fedc3 "-M$fedc2,$fedc3" RUNNING]
 incr job_counts($ret_sib);
-set ret_sib [submit_fed_batch_job $fedc1 $fedc2 "$fedc2,$fedc3" "-M$fedc2,$fedc3"]
+set ret_sib [submit_fed_batch_job $fedc1 $fedc2 "$fedc2,$fedc3" "-M$fedc2,$fedc3" PENDING]
 incr job_counts($ret_sib);
 
 parray job_counts
@@ -550,29 +575,29 @@ cancel_all_jobs
 unset job_counts
 
 # Submit job to only fed1
-set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc1 "-M$fedc1" 1]
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc1 "-M$fedc1" 1 RUNNING]
 incr job_counts($ret_sib);
-set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc1 "-M$fedc1" 1]
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc1 "-M$fedc1" 1 RUNNING]
 incr job_counts($ret_sib);
-set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc1 "-M$fedc1" 0]
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc1 "-M$fedc1" 0 PENDING]
 incr job_counts($ret_sib);
 
 # Submit job to only fed1,fed2
 # Will go to fed2 since fed1 is full and third job should go to both
-set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc2 "-M$fedc1,$fedc2" 1]
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc2 "-M$fedc1,$fedc2" 1 RUNNING]
 incr job_counts($ret_sib);
-set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc2 "-M$fedc1,$fedc2" 1]
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc2 "-M$fedc1,$fedc2" 1 RUNNING]
 incr job_counts($ret_sib);
-set ret_sib [submit_fed_srun_job $fedc1 $fedc1 "$fedc1,$fedc2" "-M$fedc1,$fedc2" 0]
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 "$fedc1,$fedc2" "-M$fedc1,$fedc2" 0 PENDING]
 incr job_counts($ret_sib);
 
 # Submit job to fed2,fed3.
 # Should choose fed2 to be origin and submit
-set ret_sib [submit_fed_srun_job $fedc1 $fedc2 $fedc3 "-M$fedc2,$fedc3" 1]
+set ret_sib [submit_fed_srun_job $fedc1 $fedc2 $fedc3 "-M$fedc2,$fedc3" 1 RUNNING]
 incr job_counts($ret_sib);
-set ret_sib [submit_fed_srun_job $fedc1 $fedc2 $fedc3 "-M$fedc2,$fedc3" 1]
+set ret_sib [submit_fed_srun_job $fedc1 $fedc2 $fedc3 "-M$fedc2,$fedc3" 1 RUNNING]
 incr job_counts($ret_sib);
-set ret_sib [submit_fed_srun_job $fedc2 $fedc2 "$fedc2,$fedc3" "-M$fedc2,$fedc3" 0]
+set ret_sib [submit_fed_srun_job $fedc2 $fedc2 "$fedc2,$fedc3" "-M$fedc2,$fedc3" 0 PENDING]
 incr job_counts($ret_sib);
 
 parray job_counts
@@ -610,29 +635,29 @@ cancel_all_jobs
 unset job_counts
 
 # Submit job to only fed1
-set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc1 "-M$fedc1" 1]
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc1 "-M$fedc1" 1 RUNNING]
 incr job_counts($ret_sib);
-set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc1 "-M$fedc1" 1]
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc1 "-M$fedc1" 1 RUNNING]
 incr job_counts($ret_sib);
-set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc1 "-M$fedc1" 0]
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc1 "-M$fedc1" 0 PENDING]
 incr job_counts($ret_sib);
 
 # Submit job to only fed1,fed2
 # Will go to fed2 since fed1 is full and third job should go to both
-set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc2 "-M$fedc1,$fedc2" 1]
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc2 "-M$fedc1,$fedc2" 1 RUNNING]
 incr job_counts($ret_sib);
-set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc2 "-M$fedc1,$fedc2" 1]
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc2 "-M$fedc1,$fedc2" 1 RUNNING]
 incr job_counts($ret_sib);
-set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 "$fedc1,$fedc2" "-M$fedc1,$fedc2" 0]
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 "$fedc1,$fedc2" "-M$fedc1,$fedc2" 0 PENDING]
 incr job_counts($ret_sib);
 
 # Submit job to fed2,fed3.
 # Should choose fed2 to be origin and submit
-set ret_sib [submit_fed_salloc_job $fedc1 $fedc2 $fedc3 "-M$fedc2,$fedc3" 1]
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc2 $fedc3 "-M$fedc2,$fedc3" 1 RUNNING]
 incr job_counts($ret_sib);
-set ret_sib [submit_fed_salloc_job $fedc1 $fedc2 $fedc3 "-M$fedc2,$fedc3" 1]
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc2 $fedc3 "-M$fedc2,$fedc3" 1 RUNNING]
 incr job_counts($ret_sib);
-set ret_sib [submit_fed_salloc_job $fedc2 $fedc2 "$fedc2,$fedc3" "-M$fedc2,$fedc3" 0]
+set ret_sib [submit_fed_salloc_job $fedc2 $fedc2 "$fedc2,$fedc3" "-M$fedc2,$fedc3" 0 PENDING]
 incr job_counts($ret_sib);
 
 parray job_counts
@@ -772,19 +797,19 @@ send_user "Test sbatch jobs with cluster features"
 send_user "\n################################################################\n"
 unset job_counts
 
-set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc --begin=now+2"]
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc" PENDING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc"]
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc" PENDING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb --begin=now+2"]
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb" PENDING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb"]
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb" PENDING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa --begin=now+2"]
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa" PENDING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa"]
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa" PENDING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_batch_job $fedc1 $fedc1 "$fedc1,$fedc2,$fedc3" "--cluster-constraint=fa,fb,fc"]
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 "$fedc1,$fedc2,$fedc3" "--cluster-constraint=fa,fb,fc" PENDING]
 incr job_counts($ret_sib)
 
 parray job_counts
@@ -815,19 +840,19 @@ send_user "\n################################################################\n"
 cancel_all_jobs
 unset job_counts
 
-set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc" 0]
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc" 0 PENDING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc" 0]
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc" 0 PENDING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb" 0]
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb" 0 PENDING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb" 0]
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb" 0 PENDING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa" 0]
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa" 0 PENDING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa" 0]
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa" 0 PENDING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 "$fedc1,$fedc2,$fedc3" "--cluster-constraint=fa,fb,fc" 0]
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 "$fedc1,$fedc2,$fedc3" "--cluster-constraint=fa,fb,fc" 0 PENDING]
 incr job_counts($ret_sib)
 
 parray job_counts
@@ -858,19 +883,19 @@ send_user "\n################################################################\n"
 cancel_all_jobs
 unset job_counts
 
-set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc" 0]
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc" 0 PENDING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc" 0]
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc" 0 PENDING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb" 0]
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb" 0 PENDING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb" 0]
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb" 0 PENDING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa" 0]
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa" 0 PENDING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa" 0]
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa" 0 PENDING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_srun_job $fedc1 $fedc1 "$fedc1,$fedc2,$fedc3" "--cluster-constraint=fa,fb,fc" 0]
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 "$fedc1,$fedc2,$fedc3" "--cluster-constraint=fa,fb,fc" 0 PENDING]
 incr job_counts($ret_sib)
 
 parray job_counts
