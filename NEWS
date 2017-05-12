@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
     already many active threads.
  -- Job expansion example in FAQ enhanced to demonstrate operation in
     heterogeneous environments.
+ -- Prevent scontrol crash when operating on array and no-array jobs at once.
 
 * Changes in Slurm 17.02.3
 ==========================
