@@ -4435,7 +4435,8 @@ extern int fed_mgr_q_job_complete(uint32_t job_id, time_t start_time,
 
 extern int fed_mgr_q_sib_job_update_response(char *cluster_name,
 					     uint32_t job_id,
-					     uint32_t return_code) {
+					     uint32_t return_code)
+{
 	int rc = SLURM_SUCCESS;
 	fed_job_update_info_t *job_update_info =
 		xmalloc(sizeof(fed_job_update_info_t));
@@ -4450,7 +4451,8 @@ extern int fed_mgr_q_sib_job_update_response(char *cluster_name,
 	return rc;
 }
 
-extern int fed_mgr_q_job_requeue(uint32_t job_id, uid_t uid, uint32_t state) {
+extern int fed_mgr_q_job_requeue(uint32_t job_id, uid_t uid, uint32_t state)
+{
 	int rc = SLURM_SUCCESS;
 	fed_job_update_info_t *job_update_info =
 		xmalloc(sizeof(fed_job_update_info_t));
@@ -4465,7 +4467,8 @@ extern int fed_mgr_q_job_requeue(uint32_t job_id, uid_t uid, uint32_t state) {
 	return rc;
 }
 
-static int _q_send_job_sync(char *sib_name) {
+static int _q_send_job_sync(char *sib_name)
+{
 	int rc = SLURM_SUCCESS;
 	fed_job_update_info_t *job_update_info =
 		xmalloc(sizeof(fed_job_update_info_t));
@@ -4479,7 +4482,8 @@ static int _q_send_job_sync(char *sib_name) {
 }
 
 extern int fed_mgr_q_job_sync(char *sib_name, job_info_msg_t *job_info_msg,
-			      time_t sync_time) {
+			      time_t sync_time)
+{
 	int rc = SLURM_SUCCESS;
 	fed_job_update_info_t *job_update_info =
 		xmalloc(sizeof(fed_job_update_info_t));
