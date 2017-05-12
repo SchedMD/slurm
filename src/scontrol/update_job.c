@@ -428,6 +428,7 @@ scontrol_hold(char *op, char *job_str)
 							       error_code[i]));
 				}
 				slurm_free_job_array_resp(resp);
+				resp = NULL;
 			}
 			job_msg.job_id_str = _next_job_id();
 		}
@@ -514,6 +515,7 @@ scontrol_hold(char *op, char *job_str)
 					slurm_strerror(resp->error_code[j]));
 			}
 			slurm_free_job_array_resp(resp);
+			resp = NULL;
 		}
 		xfree(job_id_str);
 	}
@@ -569,6 +571,7 @@ scontrol_suspend(char *op, char *job_str)
 							       error_code[i]));
 				}
 				slurm_free_job_array_resp(resp);
+				resp = NULL;
 			}
 			job_id_str = _next_job_id();
 		}
@@ -629,6 +632,7 @@ scontrol_requeue(char *job_str)
 							       error_code[i]));
 				}
 				slurm_free_job_array_resp(resp);
+				resp = NULL;
 			}
 			job_id_str = _next_job_id();
 		}
@@ -677,6 +681,7 @@ scontrol_requeue_hold(uint32_t state_flag, char *job_str)
 							       error_code[i]));
 				}
 				slurm_free_job_array_resp(resp);
+				resp = NULL;
 			}
 			job_id_str = _next_job_id();
 		}
@@ -1315,6 +1320,7 @@ extern int scontrol_update_job(int argc, char **argv)
 							       error_code[i]));
 				}
 				slurm_free_job_array_resp(resp);
+				resp = NULL;
 			}
 			job_msg.job_id_str = _next_job_id();
 		}

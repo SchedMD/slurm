@@ -812,7 +812,7 @@ allocations is planned in the future to make this process both simpler and
 more flexible.</p>
 
 <pre>
-$ salloc -N4 bash
+$ salloc -N4 -C haswell bash
 salloc: Granted job allocation 65542
 $ srun hostname
 icrm1
@@ -820,10 +820,10 @@ icrm2
 icrm3
 icrm4
 
-$ salloc -N4 --dependency=expand:$SLURM_JOB_ID bash
+$ salloc -N4 -C knl,snc4,flat --dependency=expand:$SLURM_JOB_ID bash
 salloc: Granted job allocation 65543
 $ scontrol update jobid=$SLURM_JOB_ID NumNodes=0
-To rese. Slurm environment variables, execute
+To reset Slurm environment variables, execute
   For bash or sh shells:  . ./slurm_job_65543_resize.sh
   For csh shells:         source ./slurm_job_65543_resize.csh
 $ exit
@@ -831,7 +831,7 @@ exit
 salloc: Relinquishing job allocation 65543
 
 $ scontrol update jobid=$SLURM_JOB_ID NumNodes=ALL
-To rese. Slurm environment variables, execute
+To reset Slurm environment variables, execute
   For bash or sh shells:  . ./slurm_job_65542_resize.sh
   For csh shells:         source ./slurm_job_65542_resize.csh
 $ . ./slurm_job_$SLURM_JOB_ID_resize.sh
@@ -2194,6 +2194,6 @@ slurmctld for those changes to be recognized.
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 15 December 2016</p>
+<p style="text-align:center;">Last modified 12 May 2017</p>
 
 <!--#include virtual="footer.txt"-->
