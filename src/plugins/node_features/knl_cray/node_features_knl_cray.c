@@ -682,6 +682,8 @@ static void _json_parse_mcdram_cfg_object(json_object *jobj, mcdram_cfg_t *ent)
 			x = json_object_get_int64(iter.val);
 			if (xstrcmp(iter.key, "nid") == 0) {
 				ent->nid = x;
+			} else if (xstrcmp(iter.key, "mcdram_pct") == 0) {
+				ent->mcdram_pct = x;
 			}
 			break;
 		case json_type_string:
