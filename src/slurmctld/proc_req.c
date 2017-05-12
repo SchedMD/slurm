@@ -4045,8 +4045,9 @@ static void _slurm_rpc_update_powercap(slurm_msg_t * msg)
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
 		/* NOTE: These functions provide their own locks */
-		schedule(0);
-		save_all_state();
+		if (!LOTS_OF_AGENTS)
+			schedule(0);	/* Has own locking */
+		save_all_state();	/* Has own locking */
 	}
 }
 
