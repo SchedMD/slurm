@@ -5877,14 +5877,15 @@ static int _slurm_rpc_sib_job_sync(uint32_t uid, slurm_msg_t *msg)
 	sib_msg_t *sib_msg = msg->data;
 	job_info_msg_t *job_info_msg = (job_info_msg_t *)sib_msg->data;
 
-	/* NULL out the data pointer because we are storing the pointer on the
-	 * fed job update queue to be handled later. */
-	sib_msg->data = NULL;
-
 	if (!msg->conn) {
 		error("Security violation, SIB_JOB_START RPC from uid=%d", uid);
 		return ESLURM_ACCESS_DENIED;
 	}
+
+	/* NULL out the data pointer because we are storing the pointer on the
+	 * fed job update queue to be handled later. */
+	sib_msg->data = NULL;
+
 
 	rc = fed_mgr_q_job_sync(msg->conn->cluster_name, job_info_msg,
 				sib_msg->start_time);
@@ -5958,15 +5959,15 @@ static int _slurm_rpc_sib_job_update(uint32_t uid, slurm_msg_t *msg)
 	sib_msg_t *sib_msg       = msg->data;
 	job_desc_msg_t *job_desc = sib_msg->data;
 
-	/* NULL out the data pointer because we are storing the pointer on the
-	 * fed job update queue to be handled later. */
-	sib_msg->data = NULL;
-
 	if (!msg->conn) {
 		error("Security violation, SIB_JOB_UPDATE RPC from uid=%d",
 		      uid);
 		return ESLURM_ACCESS_DENIED;
 	}
+
+	/* NULL out the data pointer because we are storing the pointer on the
+	 * fed job update queue to be handled later. */
+	sib_msg->data = NULL;
 
 	rc = fed_mgr_q_job_update(msg->conn->cluster_name, sib_msg->job_id,
 				  job_desc, uid);
