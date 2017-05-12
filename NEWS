@@ -10,6 +10,7 @@ documents those changes that are of interest to users and administrators.
  -- Prevent scontrol crash when operating on array and no-array jobs at once.
  -- knl_cray plugin: Log incomplete capmc output for a node.
  -- knl_cray plugin: Change capmc parsing of mcdram_pct from string to number.
+ -- Remove log files from test20.12.
 
 * Changes in Slurm 17.02.3
 ==========================
