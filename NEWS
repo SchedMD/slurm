@@ -5,6 +5,8 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Do not attempt to schedule jobs after changing the power cap if there are
     already many active threads.
+ -- Job expansion example in FAQ enhanced to demonstrate operation in
+    heterogeneous environments.
 
 * Changes in Slurm 17.02.3
 ==========================
