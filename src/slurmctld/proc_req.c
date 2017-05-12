@@ -161,8 +161,7 @@ inline static void  _slurm_rpc_get_priority_factors(slurm_msg_t *msg);
 inline static void  _slurm_rpc_job_notify(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_ready(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg);
-inline static int   _slurm_rpc_job_step_kill(uint32_t uid, slurm_msg_t * msg,
-					     bool send_resp);
+inline static void  _slurm_rpc_job_step_kill(uint32_t uid, slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_step_create(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_step_get_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_will_run(slurm_msg_t * msg);
@@ -353,7 +352,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		_slurm_rpc_epilog_complete(msg, (bool *)&i, 0);
 		break;
 	case REQUEST_CANCEL_JOB_STEP:
-		(void) _slurm_rpc_job_step_kill(rpc_uid, msg, true);
+		_slurm_rpc_job_step_kill(rpc_uid, msg);
 		break;
 	case REQUEST_COMPLETE_JOB_ALLOCATION:
 		_slurm_rpc_complete_job_allocation(msg);
@@ -1875,116 +1874,22 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t *msg,
 
 /* _slurm_rpc_job_step_kill - process RPC to cancel an entire job or
  * an individual job step */
-static int _slurm_rpc_job_step_kill(uint32_t uid, slurm_msg_t * msg,
-				    bool send_resp)
+static void _slurm_rpc_job_step_kill(uint32_t uid, slurm_msg_t * msg)
 {
 	static int active_rpc_cnt = 0;
 	int error_code = SLURM_SUCCESS;
-	DEF_TIMERS;
 	job_step_kill_msg_t *job_step_kill_msg =
 		(job_step_kill_msg_t *) msg->data;
-	/* Locks: Read config, write job, write node */
-	slurmctld_lock_t job_write_lock = {
-		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
-	struct job_record *job_ptr;
 
-	START_TIMER;
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
 		info("Processing RPC: REQUEST_CANCEL_JOB_STEP uid=%d", uid);
 	_throttle_start(&active_rpc_cnt);
-	lock_slurmctld(job_write_lock);
-	job_ptr = find_job_record(job_step_kill_msg->job_id);
-	trace_job(job_ptr, __func__, "enter");
 
-	/* do RPC call */
-	if (job_step_kill_msg->job_step_id == SLURM_BATCH_SCRIPT) {
-		/* NOTE: SLURM_BATCH_SCRIPT == NO_VAL */
-		error_code = job_signal(job_step_kill_msg->job_id,
-					job_step_kill_msg->signal,
-					job_step_kill_msg->flags, uid,
-					false);
-		unlock_slurmctld(job_write_lock);
-		_throttle_fini(&active_rpc_cnt);
-		END_TIMER2("_slurm_rpc_job_step_kill");
+	error_code = kill_job_step(job_step_kill_msg, uid);
 
-		/* return result */
-		if (error_code) {
-			if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
-				info("Signal %u JobId=%u by UID=%u: %s",
-				     job_step_kill_msg->signal,
-				     job_step_kill_msg->job_id, uid,
-				     slurm_strerror(error_code));
-		} else {
-			if (job_step_kill_msg->signal == SIGKILL) {
-				if (slurmctld_conf.debug_flags &
-						DEBUG_FLAG_STEPS)
-					info("%s: Cancel of JobId=%u by "
-					     "UID=%u, %s",
-					     __func__,
-					     job_step_kill_msg->job_id, uid,
-					     TIME_STR);
-				slurmctld_diag_stats.jobs_canceled++;
-			} else {
-				if (slurmctld_conf.debug_flags &
-						DEBUG_FLAG_STEPS)
-					info("%s: Signal %u of JobId=%u by "
-					     "UID=%u, %s",
-					     __func__,
-					     job_step_kill_msg->signal,
-					     job_step_kill_msg->job_id, uid,
-					     TIME_STR);
-			}
+	_throttle_fini(&active_rpc_cnt);
 
-			/* Below function provides its own locking */
-			schedule_job_save();
-		}
-	} else {
-		error_code = job_step_signal(job_step_kill_msg->job_id,
-					     job_step_kill_msg->job_step_id,
-					     job_step_kill_msg->signal,
-					     job_step_kill_msg->flags,
-					     uid);
-		unlock_slurmctld(job_write_lock);
-		_throttle_fini(&active_rpc_cnt);
-		END_TIMER2("_slurm_rpc_job_step_kill");
-
-		/* return result */
-		if (error_code) {
-			if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
-				info("Signal %u of StepId=%u.%u by UID=%u: %s",
-				     job_step_kill_msg->signal,
-				     job_step_kill_msg->job_id,
-				     job_step_kill_msg->job_step_id, uid,
-				     slurm_strerror(error_code));
-		} else {
-			if (job_step_kill_msg->signal == SIGKILL) {
-				if (slurmctld_conf.debug_flags &
-						DEBUG_FLAG_STEPS)
-					info("%s: Cancel of StepId=%u.%u by "
-					     "UID=%u %s", __func__,
-					     job_step_kill_msg->job_id,
-					     job_step_kill_msg->job_step_id,
-					     uid, TIME_STR);
-			} else {
-				if (slurmctld_conf.debug_flags &
-						DEBUG_FLAG_STEPS)
-					info("%s: Signal %u of StepId=%u.%u "
-					     "by UID=%u %s",
-					     __func__,
-					     job_step_kill_msg->signal,
-					     job_step_kill_msg->job_id,
-					     job_step_kill_msg->job_step_id,
-					     uid, TIME_STR);
-			}
-
-			/* Below function provides its own locking */
-			schedule_job_save();
-		}
-	}
-	if (send_resp)
-		slurm_send_rc_msg(msg, error_code);
-	trace_job(job_ptr, __func__, "return");
-	return error_code;
+	slurm_send_rc_msg(msg, error_code);
 }
 
 /* _slurm_rpc_complete_job_allocation - process RPC to note the
@@ -5992,7 +5897,6 @@ static int _slurm_rpc_sib_job_cancel(uint32_t uid, slurm_msg_t *msg)
 	uint32_t req_uid;
 	sib_msg_t *sib_msg = msg->data;
 	job_step_kill_msg_t *kill_msg = (job_step_kill_msg_t *)sib_msg->data;
-	int rc;
 
 	if (!msg->conn) {
 		error("Security violation, SIB_JOB_CANCEL RPC from uid=%d",
@@ -6000,16 +5904,18 @@ static int _slurm_rpc_sib_job_cancel(uint32_t uid, slurm_msg_t *msg)
 		return ESLURM_ACCESS_DENIED;
 	}
 
+	/* NULL out the data pointer because we are storing the pointer on the
+	 * fed job update queue to be handled later. */
+	sib_msg->data = NULL;
+
 	if (sib_msg->req_uid)
 		req_uid = sib_msg->req_uid;
 	else
 		req_uid = uid;
 
-	msg->data = kill_msg;
-	rc = _slurm_rpc_job_step_kill(req_uid, msg, false);
-	msg->data = sib_msg;
+	fed_mgr_q_job_cancel(kill_msg, req_uid);
 
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 static int _slurm_rpc_sib_job_requeue(uint32_t uid, slurm_msg_t *msg)

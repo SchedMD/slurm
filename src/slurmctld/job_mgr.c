@@ -3034,6 +3034,114 @@ static void _rebuild_part_name_list(struct job_record  *job_ptr)
 }
 
 /*
+ * Kill job or job step
+ *
+ * IN job_step_kill_msg - msg with specs on which job/step to cancel.
+ * IN uid               - uid of user requesting job/step cancel.
+ */
+extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
+{
+	DEF_TIMERS;
+	/* Locks: Read config, write job, write node */
+	slurmctld_lock_t job_write_lock = {
+		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
+	struct job_record *job_ptr;
+	int error_code = SLURM_SUCCESS;
+
+	START_TIMER;
+	lock_slurmctld(job_write_lock);
+	job_ptr = find_job_record(job_step_kill_msg->job_id);
+	trace_job(job_ptr, __func__, "enter");
+
+	/* do RPC call */
+	if (job_step_kill_msg->job_step_id == SLURM_BATCH_SCRIPT) {
+		/* NOTE: SLURM_BATCH_SCRIPT == NO_VAL */
+		error_code = job_signal(job_step_kill_msg->job_id,
+					job_step_kill_msg->signal,
+					job_step_kill_msg->flags, uid,
+					false);
+		unlock_slurmctld(job_write_lock);
+		END_TIMER2("_slurm_rpc_job_step_kill");
+
+		/* return result */
+		if (error_code) {
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
+				info("Signal %u JobId=%u by UID=%u: %s",
+				     job_step_kill_msg->signal,
+				     job_step_kill_msg->job_id, uid,
+				     slurm_strerror(error_code));
+		} else {
+			if (job_step_kill_msg->signal == SIGKILL) {
+				if (slurmctld_conf.debug_flags &
+						DEBUG_FLAG_STEPS)
+					info("%s: Cancel of JobId=%u by "
+					     "UID=%u, %s",
+					     __func__,
+					     job_step_kill_msg->job_id, uid,
+					     TIME_STR);
+				slurmctld_diag_stats.jobs_canceled++;
+			} else {
+				if (slurmctld_conf.debug_flags &
+						DEBUG_FLAG_STEPS)
+					info("%s: Signal %u of JobId=%u by "
+					     "UID=%u, %s",
+					     __func__,
+					     job_step_kill_msg->signal,
+					     job_step_kill_msg->job_id, uid,
+					     TIME_STR);
+			}
+
+			/* Below function provides its own locking */
+			schedule_job_save();
+		}
+	} else {
+		error_code = job_step_signal(job_step_kill_msg->job_id,
+					     job_step_kill_msg->job_step_id,
+					     job_step_kill_msg->signal,
+					     job_step_kill_msg->flags,
+					     uid);
+		unlock_slurmctld(job_write_lock);
+		END_TIMER2("_slurm_rpc_job_step_kill");
+
+		/* return result */
+		if (error_code) {
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
+				info("Signal %u of StepId=%u.%u by UID=%u: %s",
+				     job_step_kill_msg->signal,
+				     job_step_kill_msg->job_id,
+				     job_step_kill_msg->job_step_id, uid,
+				     slurm_strerror(error_code));
+		} else {
+			if (job_step_kill_msg->signal == SIGKILL) {
+				if (slurmctld_conf.debug_flags &
+						DEBUG_FLAG_STEPS)
+					info("%s: Cancel of StepId=%u.%u by "
+					     "UID=%u %s", __func__,
+					     job_step_kill_msg->job_id,
+					     job_step_kill_msg->job_step_id,
+					     uid, TIME_STR);
+			} else {
+				if (slurmctld_conf.debug_flags &
+						DEBUG_FLAG_STEPS)
+					info("%s: Signal %u of StepId=%u.%u "
+					     "by UID=%u %s",
+					     __func__,
+					     job_step_kill_msg->signal,
+					     job_step_kill_msg->job_id,
+					     job_step_kill_msg->job_step_id,
+					     uid, TIME_STR);
+			}
+
+			/* Below function provides its own locking */
+			schedule_job_save();
+		}
+	}
+
+	trace_job(job_ptr, __func__, "return");
+	return error_code;
+}
+
+/*
  * kill_job_by_part_name - Given a partition name, deallocate resource for
  *	its jobs and kill them. All jobs associated with this partition
  *	will have their partition pointer cleared.

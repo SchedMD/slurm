@@ -1588,6 +1588,14 @@ extern void job_validate_mem(struct job_record *job_ptr);
 extern void check_job_step_time_limit (struct job_record *job_ptr, time_t now);
 
 /*
+ * Kill job or job step
+ *
+ * IN job_step_kill_msg - msg with specs on which job/step to cancel.
+ * IN uid               - uid of user requesting job/step cancel.
+ */
+extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid);
+
+/*
  * kill_job_by_part_name - Given a partition name, deallocate resource for
  *	its jobs and kill them
  * IN part_name - name of a partition

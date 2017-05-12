@@ -99,6 +99,7 @@ typedef struct {
 
 enum fed_job_update_type {
 	FED_JOB_NONE = 0,
+	FED_JOB_CANCEL,
 	FED_JOB_COMPLETE,
 	FED_JOB_REMOVE_ACTIVE_SIB_BIT,
 	FED_JOB_REQUEUE,
@@ -115,6 +116,7 @@ typedef struct {
 	uint32_t        cluster_lock;
 	uint32_t        job_id;
 	job_info_msg_t *job_info_msg;
+	job_step_kill_msg_t *kill_msg;
 	bool            requeue;
 	uint32_t        return_code;
 	uint64_t        siblings_active;
@@ -162,6 +164,8 @@ static char *_job_update_type_str(enum fed_job_update_type type)
 	switch (type) {
 	case FED_JOB_COMPLETE:
 		return "FED_JOB_COMPLETE";
+	case FED_JOB_CANCEL:
+		return "FED_JOB_CANCEL";
 	case FED_JOB_REMOVE_ACTIVE_SIB_BIT:
 		return "FED_JOB_REMOVE_ACTIVE_SIB_BIT";
 	case FED_JOB_REQUEUE:
@@ -1529,6 +1533,11 @@ static void _handle_fed_job_complete(fed_job_update_info_t *job_update_info)
 	unlock_slurmctld(job_write_lock);
 }
 
+static void _handle_fed_job_cancel(fed_job_update_info_t *job_update_info)
+{
+	kill_job_step(job_update_info->kill_msg, job_update_info->uid);
+}
+
 static void
 _handle_fed_job_remove_active_sib_bit(fed_job_update_info_t *job_update_info)
 {
@@ -1873,6 +1882,9 @@ static int _foreach_fed_job_update_info(fed_job_update_info_t *job_update_info)
 	switch (job_update_info->type) {
 	case FED_JOB_COMPLETE:
 		_handle_fed_job_complete(job_update_info);
+		break;
+	case FED_JOB_CANCEL:
+		_handle_fed_job_cancel(job_update_info);
 		break;
 	case FED_JOB_REMOVE_ACTIVE_SIB_BIT:
 		_handle_fed_job_remove_active_sib_bit(job_update_info);
@@ -4387,6 +4399,21 @@ extern int fed_mgr_q_job_update(char *cluster_name, uint32_t job_id,
 	_append_job_update(job_update_info);
 
 	return SLURM_SUCCESS;
+}
+
+extern int fed_mgr_q_job_cancel(job_step_kill_msg_t *kill_msg, uint32_t uid)
+{
+	int rc = SLURM_SUCCESS;
+	fed_job_update_info_t *job_update_info =
+		xmalloc(sizeof(fed_job_update_info_t));
+
+	job_update_info->type     = FED_JOB_CANCEL;
+	job_update_info->kill_msg = kill_msg;
+	job_update_info->uid      = uid;
+
+	_append_job_update(job_update_info);
+
+	return rc;
 }
 
 extern int fed_mgr_q_job_complete(uint32_t job_id, time_t start_time,
