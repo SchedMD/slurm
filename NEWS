@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
  -- Job expansion example in FAQ enhanced to demonstrate operation in
     heterogeneous environments.
  -- Prevent scontrol crash when operating on array and no-array jobs at once.
+ -- knl_cray plugin: Log incomplete capmc output for a node.
 
 * Changes in Slurm 17.02.3
 ==========================
