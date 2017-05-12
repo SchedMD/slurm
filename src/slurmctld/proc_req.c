@@ -186,14 +186,11 @@ inline static void  _slurm_rpc_set_schedlog_level(slurm_msg_t *msg);
 inline static void  _slurm_rpc_shutdown_controller(slurm_msg_t * msg);
 inline static void  _slurm_rpc_shutdown_controller_immediate(slurm_msg_t *msg);
 
-inline static int  _slurm_rpc_sib_job_start(uint32_t uid, slurm_msg_t *msg,
-					    bool send_resp);
+inline static int  _slurm_rpc_sib_job_start(uint32_t uid, slurm_msg_t *msg);
 inline static int  _slurm_rpc_sib_job_sync(uint32_t uid, slurm_msg_t *msg);
-inline static int  _slurm_rpc_sib_job_cancel(uint32_t uid, slurm_msg_t *msg,
-					     bool send_resp);
+inline static int  _slurm_rpc_sib_job_cancel(uint32_t uid, slurm_msg_t *msg);
 inline static int  _slurm_rpc_sib_job_requeue(uint32_t uid, slurm_msg_t *msg);
-inline static int  _slurm_rpc_sib_job_complete(uint32_t uid, slurm_msg_t *msg,
-					       bool send_resp);
+inline static int  _slurm_rpc_sib_job_complete(uint32_t uid, slurm_msg_t *msg);
 inline static int  _slurm_rpc_sib_job_update(uint32_t uid, slurm_msg_t *msg);
 inline static int  _slurm_rpc_sib_job_update_response(uint32_t uid,
 						      slurm_msg_t *msg);
@@ -378,29 +375,11 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 	case REQUEST_JOB_WILL_RUN:
 		_slurm_rpc_job_will_run(msg);
 		break;
-	case REQUEST_SIB_JOB_START:
-		(void) _slurm_rpc_sib_job_start(rpc_uid, msg, true);
-		break;
-	case REQUEST_SIB_JOB_CANCEL:
-		(void) _slurm_rpc_sib_job_cancel(rpc_uid, msg, true);
-		break;
-	case REQUEST_SIB_JOB_REQUEUE:
-		(void) _slurm_rpc_sib_job_requeue(rpc_uid, msg);
-		break;
-	case REQUEST_SIB_JOB_COMPLETE:
-		(void) _slurm_rpc_sib_job_complete(rpc_uid, msg, true);
-		break;
 	case REQUEST_SIB_JOB_LOCK:
 		_slurm_rpc_sib_job_lock(rpc_uid, msg);
 		break;
 	case REQUEST_SIB_JOB_UNLOCK:
 		_slurm_rpc_sib_job_unlock(rpc_uid, msg);
-		break;
-	case REQUEST_SIB_SUBMIT_BATCH_JOB:
-		_slurm_rpc_sib_submit_batch_job(rpc_uid, msg);
-		break;
-	case REQUEST_SIB_RESOURCE_ALLOCATION:
-		_slurm_rpc_sib_resource_allocation(rpc_uid, msg);
 		break;
 	case REQUEST_CTLD_MULT_MSG:
 		_proc_multi_msg(rpc_uid, msg);
@@ -5971,24 +5950,19 @@ end_it:
 	//slurm_persist_conn_destroy(persist_conn);
 }
 
-static int _slurm_rpc_sib_job_start(uint32_t uid, slurm_msg_t *msg,
-				    bool send_resp)
+static int _slurm_rpc_sib_job_start(uint32_t uid, slurm_msg_t *msg)
 {
 	int rc;
 	sib_msg_t *sib_msg = msg->data;
 
 	if (!msg->conn) {
 		error("Security violation, SIB_JOB_START RPC from uid=%d", uid);
-		if (send_resp)
-			slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
 		return ESLURM_ACCESS_DENIED;
 	}
 
 	rc = fed_mgr_job_lock_start(sib_msg->job_id, sib_msg->start_time,
 				    sib_msg->cluster_id, NULL);
 
-	if (send_resp)
-		slurm_send_rc_msg(msg, rc);
 	return rc;
 }
 
@@ -6013,8 +5987,7 @@ static int _slurm_rpc_sib_job_sync(uint32_t uid, slurm_msg_t *msg)
 	return rc;
 }
 
-static int _slurm_rpc_sib_job_cancel(uint32_t uid, slurm_msg_t *msg,
-				     bool send_resp)
+static int _slurm_rpc_sib_job_cancel(uint32_t uid, slurm_msg_t *msg)
 {
 	uint32_t req_uid;
 	sib_msg_t *sib_msg = msg->data;
@@ -6024,8 +5997,6 @@ static int _slurm_rpc_sib_job_cancel(uint32_t uid, slurm_msg_t *msg,
 	if (!msg->conn) {
 		error("Security violation, SIB_JOB_CANCEL RPC from uid=%d",
 		      uid);
-		if (send_resp)
-			slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
 		return ESLURM_ACCESS_DENIED;
 	}
 
@@ -6038,8 +6009,6 @@ static int _slurm_rpc_sib_job_cancel(uint32_t uid, slurm_msg_t *msg,
 	rc = _slurm_rpc_job_step_kill(req_uid, msg, false);
 	msg->data = sib_msg;
 
-	if (send_resp)
-		slurm_send_rc_msg(msg, rc);
 	return rc;
 }
 
@@ -6061,24 +6030,18 @@ static int _slurm_rpc_sib_job_requeue(uint32_t uid, slurm_msg_t *msg)
 }
 
 /* complete tracker job */
-static int _slurm_rpc_sib_job_complete(uint32_t uid, slurm_msg_t *msg,
-				       bool send_resp)
+static int _slurm_rpc_sib_job_complete(uint32_t uid, slurm_msg_t *msg)
 {
 	sib_msg_t *sib_msg = msg->data;
 
 	if (!msg->conn) {
 		error("Security violation, SIB_JOB_COMPLETE RPC from uid=%d",
 		      uid);
-		if (send_resp)
-			slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
 		return ESLURM_ACCESS_DENIED;
 	}
 
 	fed_mgr_q_job_complete(sib_msg->job_id, sib_msg->start_time,
 			       sib_msg->return_code);
-
-	if (send_resp)
-		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
 	return SLURM_SUCCESS;
 }
@@ -6289,13 +6252,11 @@ static void _proc_multi_msg(uint32_t rpc_uid, slurm_msg_t *msg)
 			ret_buf = _build_rc_buf(rc, msg->protocol_version);
 			break;
 		case REQUEST_SIB_JOB_CANCEL:
-			rc = _slurm_rpc_sib_job_cancel(rpc_uid, &sub_msg,
-						       false);
+			rc = _slurm_rpc_sib_job_cancel(rpc_uid, &sub_msg);
 			ret_buf = _build_rc_buf(rc, msg->protocol_version);
 			break;
 		case REQUEST_SIB_JOB_COMPLETE:
-			rc = _slurm_rpc_sib_job_complete(rpc_uid, &sub_msg,
-							 false);
+			rc = _slurm_rpc_sib_job_complete(rpc_uid, &sub_msg);
 			ret_buf = _build_rc_buf(rc, msg->protocol_version);
 			break;
 		case REQUEST_SIB_JOB_REQUEUE:
@@ -6303,7 +6264,7 @@ static void _proc_multi_msg(uint32_t rpc_uid, slurm_msg_t *msg)
 			ret_buf = _build_rc_buf(rc, msg->protocol_version);
 			break;
 		case REQUEST_SIB_JOB_START:
-			rc = _slurm_rpc_sib_job_start(rpc_uid, &sub_msg, false);
+			rc = _slurm_rpc_sib_job_start(rpc_uid, &sub_msg);
 			ret_buf = _build_rc_buf(rc, msg->protocol_version);
 			break;
 		case REQUEST_SIB_JOB_SYNC:
@@ -6316,7 +6277,7 @@ static void _proc_multi_msg(uint32_t rpc_uid, slurm_msg_t *msg)
 			break;
 		case RESPONSE_SIB_JOB_UPDATE:
 			rc = _slurm_rpc_sib_job_update_response(rpc_uid,
-							       &sub_msg);
+								&sub_msg);
 			ret_buf = _build_rc_buf(rc, msg->protocol_version);
 			break;
 		case REQUEST_SIB_RESOURCE_ALLOCATION:
