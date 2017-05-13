@@ -133,6 +133,8 @@
 #define PMIXP_PP_LITER "SLURM_PMIX_PP_ITER_LARGE"
 /* The bound after which message is considered large */
 #define PMIXP_PP_BOUND "SLURM_PMIX_PP_LARGE_PWR2"
+/* Send/receive from the same thread (like regular MPI p2p benchmarks) */
+#define PMIXP_PP_SAMETHR "SLURM_PMIX_PP_SAME_THR"
 
 typedef enum {
 	PMIXP_P2P_INLINE,
