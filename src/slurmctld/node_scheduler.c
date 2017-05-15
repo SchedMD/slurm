@@ -2571,6 +2571,10 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	if (select_g_job_begin(job_ptr) != SLURM_SUCCESS) {
 		/* Leave job queued, something is hosed */
 		error("select_g_job_begin(%u): %m", job_ptr->job_id);
+
+		/* Cancel previously started job */
+		(void) bb_g_job_revoke_alloc(job_ptr);
+
 		error_code = ESLURM_NODES_BUSY;
 		job_ptr->start_time = 0;
 		job_ptr->time_last_active = 0;
@@ -2590,6 +2594,10 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		error("Select plugin failed to set job resources, nodes");
 		/* Do not attempt to allocate the select_bitmap nodes since
 		 * select plugin failed to set job resources */
+
+		/* Cancel previously started job */
+		(void) bb_g_job_revoke_alloc(job_ptr);
+
 		error_code = ESLURM_NODES_BUSY;
 		job_ptr->start_time = 0;
 		job_ptr->time_last_active = 0;
@@ -2609,6 +2617,10 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		if (!job_ptr->job_resrcs) {
 			/* If we don't exit earlier the empty job_resrcs might
 			 * be dereferenced later */
+
+			/* Cancel previously started job */
+			(void) bb_g_job_revoke_alloc(job_ptr);
+
 			error_code = ESLURM_NODES_BUSY;
 			job_ptr->start_time = 0;
 			job_ptr->time_last_active = 0;
