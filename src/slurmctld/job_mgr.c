@@ -7623,6 +7623,8 @@ extern void job_config_fini(struct job_record *job_ptr)
  * RET true if ready */
 extern bool test_job_nodes_ready(struct job_record *job_ptr)
 {
+	if (!job_ptr->node_bitmap)	/* Revoked allocation */
+		return true;
 	if (bit_overlap(job_ptr->node_bitmap, power_node_bitmap))
 		return false;
 
