@@ -18,6 +18,9 @@ documents those changes that are of interest to users and administrators.
     requeue the job.
  -- node_features/knl_generic disable mode change unless RebootProgram
     configured.
+ -- Add new burst_buffer function bb_g_job_revoke_alloc() to be executed
+    if there was a failure after the initial resource allocation. Does not
+    release previously allocated resources.
 
 * Changes in Slurm 17.02.3
 ==========================

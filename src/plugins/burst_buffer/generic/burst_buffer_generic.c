@@ -222,6 +222,17 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 	return SLURM_SUCCESS;
 }
 
+/* Revoke allocation, but do not release resources.
+ * Executed after bb_p_job_begin() if there was an allocation failure.
+ * Does not release previously allocated resources.
+ *
+ * Returns a SLURM errno.
+ */
+extern int bb_p_job_revoke_alloc(struct job_record *job_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
 /*
  * Trigger a job's burst buffer stage-out to begin
  *

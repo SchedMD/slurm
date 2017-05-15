@@ -73,6 +73,7 @@ typedef struct slurm_bb_ops {
 	int		(*job_test_stage_in) (struct job_record *job_ptr,
 					      bool test_only);
 	int		(*job_begin) (struct job_record *job_ptr);
+	int		(*job_revoke_alloc) (struct job_record *job_ptr);
 	int		(*job_start_stage_out) (struct job_record *job_ptr);
 	int		(*job_test_post_run) (struct job_record *job_ptr);
 	int		(*job_test_stage_out) (struct job_record *job_ptr);
@@ -95,6 +96,7 @@ static const char *syms[] = {
 	"bb_p_job_try_stage_in",
 	"bb_p_job_test_stage_in",
 	"bb_p_job_begin",
+	"bb_p_job_revoke_alloc",
 	"bb_p_job_start_stage_out",
 	"bb_p_job_test_post_run",
 	"bb_p_job_test_stage_out",
@@ -521,6 +523,32 @@ extern int bb_g_job_begin(struct job_record *job_ptr)
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
 		rc2 = (*(ops[i].job_begin))(job_ptr);
+		if (rc2 != SLURM_SUCCESS)
+			rc = rc2;
+	}
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2(__func__);
+
+	return rc;
+}
+
+/* Revoke allocation, but do not release resources.
+ * Executed after bb_g_job_begin() if there was an allocation failure.
+ * Does not release previously allocated resources.
+ *
+ * Returns a SLURM errno.
+ */
+extern int bb_g_job_revoke_alloc(struct job_record *job_ptr)
+{
+	DEF_TIMERS;
+	int i, rc = SLURM_SUCCESS, rc2;
+
+	START_TIMER;
+	if (bb_g_init() != SLURM_SUCCESS)
+		rc = SLURM_ERROR;
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; i < g_context_cnt; i++) {
+		rc2 = (*(ops[i].job_revoke_alloc))(job_ptr);
 		if (rc2 != SLURM_SUCCESS)
 			rc = rc2;
 	}
