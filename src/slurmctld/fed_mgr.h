@@ -96,6 +96,4 @@ extern int       fed_mgr_update_job_clusters(struct job_record *job_ptr,
 extern int       fed_mgr_update_job_cluster_features(struct job_record *job_ptr,
 						     char *req_features);
 extern int       fed_mgr_update_feds(slurmdb_update_object_t *update);
-extern int       fed_mgr_validate_cluster_features(char *spec_features,
-						   uint64_t *cluster_bitmap);
 #endif /* _SLURM_FED_MGR_H */

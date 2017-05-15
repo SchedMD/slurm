@@ -152,6 +152,8 @@ typedef struct {
 /* Local Prototypes */
 static int _is_fed_job(struct job_record *job_ptr, uint32_t *origin_id);
 static uint64_t _get_all_sibling_bits();
+static int _validate_cluster_features(char *spec_features,
+				      uint64_t *cluster_bitmap);
 static int _validate_cluster_names(char *clusters, uint64_t *cluster_bitmap);
 static void _leave_federation(void);
 static int _q_send_job_sync(char *sib_name);
@@ -3007,8 +3009,8 @@ static void _add_remove_sibling_jobs(struct job_record *job_ptr)
 	 * new siblings. */
 	old_sibs = job_ptr->fed_details->siblings_active;
 
-	fed_mgr_validate_cluster_features(job_ptr->details->cluster_features,
-					  &feature_sibs);
+	_validate_cluster_features(job_ptr->details->cluster_features,
+				   &feature_sibs);
 
 	new_sibs = _get_viable_sibs(job_ptr->clusters, feature_sibs);
 	job_ptr->fed_details->siblings_viable = new_sibs;
@@ -3094,8 +3096,8 @@ static bool _job_has_pending_updates(fed_job_info_t *job_info)
  * RET SLURM_ERROR if no cluster has any of the requested features,
  *     SLURM_SUCESS otherwise.
  */
-extern int fed_mgr_validate_cluster_features(char *spec_features,
-					     uint64_t *cluster_bitmap)
+static int _validate_cluster_features(char *spec_features,
+				      uint64_t *cluster_bitmap)
 {
 	int rc = SLURM_SUCCESS;
 	uint64_t feature_sibs = 0;
@@ -3190,8 +3192,8 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		return SLURM_ERROR;
 	}
 
-	if (fed_mgr_validate_cluster_features(job_desc->cluster_features,
-					      &feature_sibs)) {
+	if (_validate_cluster_features(job_desc->cluster_features,
+				       &feature_sibs)) {
 		*alloc_code = ESLURM_INVALID_CLUSTER_FEATURE;
 		return SLURM_ERROR;
 	}
@@ -3879,8 +3881,8 @@ extern int fed_mgr_job_requeue(struct job_record *job_ptr)
 	/* Get new viable siblings since the job might just have one viable
 	 * sibling listed if the sibling was the cluster that could start the
 	 * job the soonest. */
-	fed_mgr_validate_cluster_features(job_ptr->details->cluster_features,
-					  &feature_sibs);
+	_validate_cluster_features(job_ptr->details->cluster_features,
+				   &feature_sibs);
 	job_ptr->fed_details->siblings_viable =
 		_get_viable_sibs(job_ptr->clusters, feature_sibs);
 
@@ -4052,7 +4054,7 @@ extern int fed_mgr_update_job_cluster_features(struct job_record *job_ptr,
 		info("sched: update_job: setting ClusterFeatures on a non-active federated cluster for job %u",
 		     job_ptr->job_id);
 		rc = ESLURM_JOB_NOT_FEDERATED;
-	} else if (fed_mgr_validate_cluster_features(req_features, NULL)) {
+	} else if (_validate_cluster_features(req_features, NULL)) {
 		info("sched: update_job: invalid ClusterFeatures for job %u",
 		     job_ptr->job_id);
 		rc = ESLURM_INVALID_CLUSTER_FEATURE;
