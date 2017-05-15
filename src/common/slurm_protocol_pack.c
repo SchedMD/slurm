@@ -932,18 +932,9 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 				   msg->data, buffer,
 				   msg->protocol_version);
 		break;
-	case REQUEST_SIB_JOB_START:
-	case REQUEST_SIB_JOB_CANCEL:
-	case REQUEST_SIB_JOB_REQUEUE:
-	case REQUEST_SIB_JOB_COMPLETE:
 	case REQUEST_SIB_JOB_LOCK:
 	case REQUEST_SIB_JOB_UNLOCK:
-	case REQUEST_SIB_JOB_WILL_RUN:
-	case REQUEST_SIB_SUBMIT_BATCH_JOB:
-	case REQUEST_SIB_RESOURCE_ALLOCATION:
-	case REQUEST_SIB_JOB_UPDATE:
-	case RESPONSE_SIB_JOB_UPDATE:
-	case REQUEST_SIB_JOB_SYNC:
+	case REQUEST_SIB_MSG:
 		_pack_sib_msg((sib_msg_t *)msg->data, buffer,
 			      msg->protocol_version);
 		break;
@@ -1005,7 +996,6 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 				   msg->protocol_version);
 		break;
 	case RESPONSE_SUBMIT_BATCH_JOB:
-	case RESPONSE_SIB_SUBMISSION:
 		_pack_submit_response_msg((submit_response_msg_t *)
 					  msg->data, buffer,
 					  msg->protocol_version);
@@ -1622,18 +1612,9 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 					  buffer,
 					  msg->protocol_version);
 		break;
-	case REQUEST_SIB_JOB_START:
-	case REQUEST_SIB_JOB_CANCEL:
-	case REQUEST_SIB_JOB_REQUEUE:
-	case REQUEST_SIB_JOB_COMPLETE:
 	case REQUEST_SIB_JOB_LOCK:
 	case REQUEST_SIB_JOB_UNLOCK:
-	case REQUEST_SIB_JOB_WILL_RUN:
-	case REQUEST_SIB_SUBMIT_BATCH_JOB:
-	case REQUEST_SIB_RESOURCE_ALLOCATION:
-	case REQUEST_SIB_JOB_UPDATE:
-	case RESPONSE_SIB_JOB_UPDATE:
-	case REQUEST_SIB_JOB_SYNC:
+	case REQUEST_SIB_MSG:
 		rc = _unpack_sib_msg((sib_msg_t **)&(msg->data), buffer,
 				     msg->protocol_version);
 		break;
@@ -1697,7 +1678,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 					  msg->protocol_version);
 		break;
 	case RESPONSE_SUBMIT_BATCH_JOB:
-	case RESPONSE_SIB_SUBMISSION:
 		rc = _unpack_submit_response_msg((submit_response_msg_t **)
 						 & (msg->data), buffer,
 						 msg->protocol_version);
@@ -7706,6 +7686,7 @@ _pack_sib_msg(sib_msg_t *sib_msg_ptr, Buf buffer, uint16_t protocol_version)
 		pack_time(sib_msg_ptr->start_time, buffer);
 		packstr(sib_msg_ptr->resp_host, buffer);
 		pack32(sib_msg_ptr->req_uid, buffer);
+		pack16(sib_msg_ptr->sib_msg_type, buffer);
 
 		/* add already packed data_buffer to buffer */
 		if (sib_msg_ptr->data_buffer &&
@@ -7786,6 +7767,7 @@ _unpack_sib_msg(sib_msg_t **sib_msg_buffer_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&sib_msg_ptr->resp_host, &tmp_uint32,
 				       buffer);
 		safe_unpack32(&sib_msg_ptr->req_uid, buffer);
+		safe_unpack16(&sib_msg_ptr->sib_msg_type, buffer);
 
 		safe_unpack16(&tmp_uint16, buffer);
 		if (tmp_uint16) {

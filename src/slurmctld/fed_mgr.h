@@ -71,9 +71,6 @@ extern int       fed_mgr_job_lock(struct job_record *job_ptr,
 				  uint32_t cluster_id);
 extern int       fed_mgr_job_lock_set(uint32_t job_id, uint32_t cluster_id);
 extern int       fed_mgr_job_lock_unset(uint32_t job_id, uint32_t cluster_id);
-extern int       fed_mgr_job_lock_start(uint32_t job_id, time_t start_time,
-					uint32_t cluster_id,
-					struct job_record *job_ptr);
 extern int       fed_mgr_job_unlock(struct job_record *job_ptr,
 				    uint32_t cluster_id);
 extern int       fed_mgr_job_requeue(struct job_record *job_ptr);
@@ -85,26 +82,7 @@ extern int       fed_mgr_job_revoke(struct job_record *job_ptr,
 extern int       fed_mgr_job_revoke_sibs(struct job_record *job_ptr);
 extern int       fed_mgr_job_start(struct job_record *job_ptr,
 				   uint32_t cluster_id, time_t start_time);
-extern int       fed_mgr_send_job_sync(char *sib_name);
-extern int       fed_mgr_q_job_cancel(job_step_kill_msg_t *kill_msg,
-				      uint32_t uid);
-extern int       fed_mgr_q_job_complete(uint32_t job_id, time_t start_time,
-					uint32_t return_code);
-extern int       fed_mgr_q_job_requeue(uint32_t job_id, uid_t uid,
-				       uint32_t state);
-extern int       fed_mgr_q_job_sync(char *sib_name,
-				    job_info_msg_t *job_info_msg,
-				    time_t sync_time);
-extern int       fed_mgr_q_job_update(char *cluster_name, uint32_t job_id,
-				      job_desc_msg_t *job_desc, uid_t uid);
-extern int       fed_mgr_q_sib_job_update_response(char *cluster_name,
-						   uint32_t job_id,
-						   uint32_t return_code);
-extern int       fed_mgr_q_sib_submit_response(slurm_msg_t *msg);
-extern int       fed_mgr_q_sib_submission(char *cluster_name,
-					  job_desc_msg_t *job_desc,
-					  uint16_t client_protocol_version,
-					  bool interactive_job);
+extern int       fed_mgr_q_sib_msg(slurm_msg_t *sib_msg, uint32_t rpc_uid);
 extern int       fed_mgr_remove_active_sibling(uint32_t job_id, char *sib_name);
 extern void      fed_mgr_remove_fed_job_info(uint32_t job_id);
 extern int       fed_mgr_sib_will_run(slurm_msg_t *msg,
