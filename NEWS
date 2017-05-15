@@ -13,6 +13,9 @@ documents those changes that are of interest to users and administrators.
  -- Remove log files from test20.12.
  -- When rebooting a node and using the PrologFlags=alloc make sure the
     prolog is ran after the reboot.
+ -- node_features/knl_generic - If a node is rebooted for a pending job, but
+    fails to enter the desired NUMA and/or MCDRAM mode then drain the node and
+    requeue the job.
 
 * Changes in Slurm 17.02.3
 ==========================
