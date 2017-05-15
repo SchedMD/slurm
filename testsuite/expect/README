@@ -802,4 +802,4 @@ test37.3   scontrol show federations
 test37.4   federated job submission
 test37.5   Federated Requeue
 test37.6   Federated Job Updates
-test37.6   Federated Cluster States
+test37.7   Federated Cluster States
