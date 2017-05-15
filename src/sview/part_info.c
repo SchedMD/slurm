@@ -2242,6 +2242,8 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 	}
 	last = now;
 
+	if (cluster_flags & CLUSTER_FLAG_FED)
+		show_flags |= SHOW_GLOBAL;
 	if (working_sview_config.show_hidden)
 		/*ignore 'AllowGroups, Hidden settings*/
 		show_flags |= SHOW_ALL;
@@ -3292,10 +3294,19 @@ extern void cluster_change_part(void)
 			default:
 				break;
 			}
+		} else if (cluster_flags & CLUSTER_FLAG_FED) {
+			switch(display_data->id) {
+			case SORTID_CLUSTER_NAME:
+				display_data->show = true;
+				break;
+			}
 		} else {
 			switch (display_data->id) {
 			case SORTID_NODELIST:
 				display_data->name = "NodeList";
+				break;
+			case SORTID_CLUSTER_NAME:
+				display_data->show = false;
 				break;
 			default:
 				break;

@@ -3618,7 +3618,8 @@ extern int get_new_info_job(job_info_msg_t **info_ptr,
 	}
 	last = now;
 
-	show_flags |= SHOW_GLOBAL;
+	if (cluster_flags & CLUSTER_FLAG_FED)
+		show_flags |= SHOW_GLOBAL;
 	if (working_sview_config.show_hidden)
 		show_flags |= SHOW_ALL;
 	if (g_job_info_ptr) {
@@ -5067,10 +5068,19 @@ extern void cluster_change_job(void)
 				display_data->name = "Image Ioload";
 				break;
 			}
+		} else if (cluster_flags & CLUSTER_FLAG_FED) {
+			switch(display_data->id) {
+			case SORTID_CLUSTER_NAME:
+				display_data->show = true;
+				break;
+			}
 		} else {
 			switch(display_data->id) {
 			case SORTID_BLOCK:
 				display_data->name = NULL;
+				break;
+			case SORTID_CLUSTER_NAME:
+				display_data->show = false;
 				break;
 			case SORTID_GEOMETRY:
 				display_data->name = NULL;

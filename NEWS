@@ -80,6 +80,7 @@ documents those changes that are of interest to users and administrators.
     SHOW_GLOBAL flag used.
  -- Functions slurm_load_node() slurm_load_partitions() modified to show all
     nodes/partitions in a federation when the SHOW_GLOBAL flag is used.
+ -- Add federated views to sview.
 
 * Changes in Slurm 17.02.4
 ==========================

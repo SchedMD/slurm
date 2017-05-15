@@ -647,6 +647,17 @@ extern void get_info_front_end(GtkTable *table, display_data_t *display_data)
 		display_data_front_end->set_menu = local_display_data->set_menu;
 		goto reset_curs;
 	}
+	if (cluster_flags & CLUSTER_FLAG_FED) {
+		view = ERROR_VIEW;
+		if (display_widget)
+			gtk_widget_destroy(display_widget);
+		label = gtk_label_new("Not available in a federated view");
+		gtk_table_attach_defaults(GTK_TABLE(table), label, 0, 1, 0, 1);
+		gtk_widget_show(label);
+		display_widget = gtk_widget_ref(label);
+		goto end_it;
+	}
+
 	if (display_widget && toggled) {
 		gtk_widget_destroy(display_widget);
 		display_widget = NULL;

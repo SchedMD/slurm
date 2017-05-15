@@ -1031,6 +1031,8 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 	}
 	last = now;
 
+	if (cluster_flags & CLUSTER_FLAG_FED)
+		show_flags |= SHOW_GLOBAL;
 	//if (working_sview_config.show_hidden)
 	show_flags |= SHOW_ALL;
 	if (g_node_info_ptr) {
@@ -2177,8 +2179,17 @@ extern void cluster_change_node(void)
 				display_data->name = "RackMidplane";
 				break;
 			}
+		} else if (cluster_flags & CLUSTER_FLAG_FED) {
+			switch(display_data->id) {
+			case SORTID_CLUSTER_NAME:
+				display_data->show = true;
+				break;
+			}
 		} else {
 			switch(display_data->id) {
+			case SORTID_CLUSTER_NAME:
+				display_data->show = false;
+				break;
 			case SORTID_RACK_MP:
 				display_data->name = NULL;
 				break;
