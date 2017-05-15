@@ -3,6 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2006-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2010-2017 SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Christopher J. Morrone <morrone2@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -205,7 +206,7 @@ int main(int argc, char **argv)
 		else
 			error("%s", msg);
 		sleep (++retries);
-        }
+	}
 
 	if (!opt.parsable){
 		printf("Submitted batch job %u", resp->job_id);
@@ -957,7 +958,7 @@ static int _set_rlimit_env(void)
 	 *  Now increase NOFILE to the max available for this srun
 	 */
 	if (getrlimit (RLIMIT_NOFILE, rlim) < 0)
-	 	return (error ("getrlimit (RLIMIT_NOFILE): %m"));
+		return (error ("getrlimit (RLIMIT_NOFILE): %m"));
 
 	if (rlim->rlim_cur < rlim->rlim_max) {
 		rlim->rlim_cur = rlim->rlim_max;
