@@ -2671,9 +2671,12 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	}
 
 	/* Request asynchronous launch of a prolog for a
-	 * non-batch job. */
-	if ((slurmctld_conf.prolog_flags & PROLOG_FLAG_ALLOC) ||
-	    (slurmctld_conf.prolog_flags & PROLOG_FLAG_CONTAIN))
+	 * non-batch job as long as the node is not configuring for
+	 * a reboot first.  Job state could be changed above so we need to
+	 * recheck its state to see if it's currently configuring.
+	 * PROLOG_FLAG_CONTAIN also turns on PROLOG_FLAG_ALLOC. */
+	if ((slurmctld_conf.prolog_flags & PROLOG_FLAG_ALLOC) &&
+	    (!IS_JOB_CONFIGURING(job_ptr)))
 		launch_prolog(job_ptr);
 
       cleanup:

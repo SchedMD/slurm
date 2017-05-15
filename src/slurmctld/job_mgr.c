@@ -7611,6 +7611,12 @@ extern void job_config_fini(struct job_record *job_ptr)
 				now + (job_ptr->time_limit * 60);
 		}
 	}
+
+	/* Request asynchronous launch of a prolog for a
+	 * non-batch job. PROLOG_FLAG_CONTAIN also turns on
+	 * PROLOG_FLAG_ALLOC. */
+	if (slurmctld_conf.prolog_flags & PROLOG_FLAG_ALLOC)
+		launch_prolog(job_ptr);
 }
 
 /* Determine of the nodes are ready to run a job

@@ -11,6 +11,8 @@ documents those changes that are of interest to users and administrators.
  -- knl_cray plugin: Log incomplete capmc output for a node.
  -- knl_cray plugin: Change capmc parsing of mcdram_pct from string to number.
  -- Remove log files from test20.12.
+ -- When rebooting a node and using the PrologFlags=alloc make sure the
+    prolog is ran after the reboot.
 
 * Changes in Slurm 17.02.3
 ==========================
