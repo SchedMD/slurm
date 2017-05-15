@@ -797,17 +797,17 @@ send_user "Test sbatch jobs with cluster features"
 send_user "\n################################################################\n"
 unset job_counts
 
-set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc" PENDING]
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc" RUNNING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc" PENDING]
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc" RUNNING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb" PENDING]
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb" RUNNING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb" PENDING]
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb" RUNNING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa" PENDING]
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa" RUNNING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa" PENDING]
+set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa" RUNNING]
 incr job_counts($ret_sib)
 set ret_sib [submit_fed_batch_job $fedc1 $fedc1 "$fedc1,$fedc2,$fedc3" "--cluster-constraint=fa,fb,fc" PENDING]
 incr job_counts($ret_sib)
@@ -840,17 +840,17 @@ send_user "\n################################################################\n"
 cancel_all_jobs
 unset job_counts
 
-set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc" 0 PENDING]
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc" 0 RUNNING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc" 0 PENDING]
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc" 0 RUNNING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb" 0 PENDING]
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb" 0 RUNNING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb" 0 PENDING]
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb" 0 RUNNING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa" 0 PENDING]
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa" 0 RUNNING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa" 0 PENDING]
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa" 0 RUNNING]
 incr job_counts($ret_sib)
 set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 "$fedc1,$fedc2,$fedc3" "--cluster-constraint=fa,fb,fc" 0 PENDING]
 incr job_counts($ret_sib)
@@ -883,17 +883,17 @@ send_user "\n################################################################\n"
 cancel_all_jobs
 unset job_counts
 
-set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc" 0 PENDING]
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc" 0 RUNNING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc" 0 PENDING]
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc3 "--cluster-constraint=fc" 0 RUNNING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb" 0 PENDING]
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb" 0 RUNNING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb" 0 PENDING]
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc2 "--cluster-constraint=fb" 0 RUNNING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa" 0 PENDING]
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa" 0 RUNNING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa" 0 PENDING]
+set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc1 "--cluster-constraint=fa" 0 RUNNING]
 incr job_counts($ret_sib)
 set ret_sib [submit_fed_srun_job $fedc1 $fedc1 "$fedc1,$fedc2,$fedc3" "--cluster-constraint=fa,fb,fc" 0 PENDING]
 incr job_counts($ret_sib)
