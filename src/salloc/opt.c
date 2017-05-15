@@ -177,6 +177,7 @@
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
 int error_exit = 1;
+bool first_pass = true;
 int immediate_exit = 1;
 
 /*---- forward declarations of static functions  ----*/
@@ -184,29 +185,29 @@ int immediate_exit = 1;
 typedef struct env_vars env_vars_t;
 
 static void  _help(void);
-
-/* fill in default options  */
-static void _opt_default(void);
-
-/* set options based upon env vars  */
-static void _opt_env(void);
-
-static void _opt_args(int argc, char **argv);
-
-/* list known options and their settings  */
+static void  _opt_default(void);
+static void  _opt_env(void);
+static void  _opt_args(int argc, char **argv);
 static void  _opt_list(void);
-
-/* verify options sanity  */
-static bool _opt_verify(void);
-static char *_read_file(char *fname);
+static bool  _opt_verify(void);
 static void  _proc_get_user_env(char *optarg);
-static void _process_env_var(env_vars_t *e, const char *val);
-
+static void  _process_env_var(env_vars_t *e, const char *val);
+static char *_read_file(char *fname);
+static void  _set_options(int argc, char **argv);
 static void  _usage(void);
 
 /*---[ end forward declarations of static functions ]---------------------*/
 
-int initialize_and_process_args(int argc, char **argv)
+/* process options:
+ * 1. set defaults
+ * 2. update options with env vars
+ * 3. update options with commandline args
+ * 4. perform some verification that options are reasonable
+ *
+ * argc IN - Count of elements in argv
+ * argv IN - Array of elements to parse
+ * argc_off OUT - Offset of first non-parsable element  */
+extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 {
 	/* initialize option defaults */
 	_opt_default();
@@ -216,9 +217,12 @@ int initialize_and_process_args(int argc, char **argv)
 
 	/* initialize options with argv */
 	_opt_args(argc, argv);
+	if (argc_off)
+		*argc_off = optind;
 
 	if (opt.verbose)
 		_opt_list();
+	first_pass = false;
 
 	return 1;
 
@@ -275,7 +279,7 @@ static void argerror(const char *msg, ...)
 /*
  * _opt_default(): used by initialize_and_process_args to set defaults
  */
-static void _opt_default()
+static void _opt_default(void)
 {
 	int i;
 	uid_t uid = getuid();
@@ -338,7 +342,6 @@ static void _opt_default()
 	opt.overcommit	= false;
 
 	opt.quiet = 0;
-	opt.verbose = 0;
 	opt.warn_flags  = 0;
 	opt.warn_signal = 0;
 	opt.warn_time   = 0;
@@ -357,7 +360,7 @@ static void _opt_default()
 	opt.nodelist	    = NULL;
 	opt.exc_nodes	    = NULL;
 
-	for (i=0; i<HIGHEST_DIMENSIONS; i++) {
+	for (i = 0; i < HIGHEST_DIMENSIONS; i++) {
 		opt.conn_type[i]    = (uint16_t) NO_VAL;
 		opt.geometry[i]	    = 0;
 	}
@@ -374,7 +377,6 @@ static void _opt_default()
 	opt.cpu_freq_max    = NO_VAL;
 	opt.cpu_freq_gov    = NO_VAL;
 	opt.delay_boot      = NO_VAL;
-	opt.no_shell	    = false;
 	opt.get_user_env_time = -1;
 	opt.get_user_env_mode = -1;
 	opt.reservation     = NULL;
@@ -386,6 +388,11 @@ static void _opt_default()
 
 	opt.nice = NO_VAL;
 	opt.priority = 0;
+
+	if (first_pass) {
+		opt.no_shell	= false;
+		opt.verbose	= 0;
+	}
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -457,7 +464,7 @@ env_vars_t env_vars[] = {
  *            environment variables. See comments above for how to
  *            extend srun to process different vars
  */
-static void _opt_env()
+static void _opt_env(void)
 {
 	char       *val = NULL;
 	env_vars_t *e   = env_vars;
@@ -667,7 +674,7 @@ _process_env_var(env_vars_t *e, const char *val)
 	}
 }
 
-void set_options(const int argc, char **argv)
+static void _set_options(int argc, char **argv)
 {
 	int opt_char, option_index = 0, max_val = 0, i;
 	char *tmp;
@@ -1430,21 +1437,26 @@ static void _opt_args(int argc, char **argv)
 	int i;
 	char **rest = NULL;
 
-	set_options(argc, argv);
+	_set_options(argc, argv);
 
-	command_argc = 0;
-	if (optind < argc) {
-		rest = argv + optind;
-		while (rest[command_argc] != NULL)
-			command_argc++;
+	if ((optind < argc) && !xstrcmp(argv[optind], ":")) {
+		debug("pack job separator");
+	} else {
+		command_argc = 0;
+		if (optind < argc) {
+			rest = argv + optind;
+			while (rest[command_argc] != NULL)
+				command_argc++;
+		}
+		command_argv = (char **) xmalloc((command_argc + 1) *
+						 sizeof(char *));
+		for (i = 0; i < command_argc; i++) {
+			if ((i == 0) && (rest == NULL))
+				break;	/* Fix for CLANG false positive */
+			command_argv[i] = xstrdup(rest[i]);
+		}
+		command_argv[i] = NULL;	/* End of argv's (for possible execv) */
 	}
-	command_argv = (char **) xmalloc((command_argc + 1) * sizeof(char *));
-	for (i = 0; i < command_argc; i++) {
-		if ((i == 0) && (rest == NULL))
-			break;	/* Fix for CLANG false positive */
-		command_argv[i] = xstrdup(rest[i]);
-	}
-	command_argv[i] = NULL;	/* End of argv's (for possible execv) */
 
 	if (!_opt_verify())
 		exit(error_exit);

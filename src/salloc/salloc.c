@@ -114,7 +114,7 @@ static struct termios saved_tty_attributes;
 
 static void _exit_on_signal(int signo);
 static int  _fill_job_desc_from_opts(job_desc_msg_t *desc);
-static pid_t  _fork_command(char **command);
+static pid_t _fork_command(char **command);
 static void _forward_signal(int signo);
 static void _job_complete_handler(srun_job_complete_msg_t *msg);
 static void _job_suspend_handler(suspend_msg_t *msg);
@@ -162,8 +162,9 @@ static void _reset_input_mode (void)
 
 int main(int argc, char **argv)
 {
+	static bool env_cache_set = false;
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
-	job_desc_msg_t desc;
+	job_desc_msg_t *desc = NULL;
 	resource_allocation_response_msg_t *alloc;
 	time_t before, after;
 	allocation_msg_thread_t *msg_thr;
@@ -174,6 +175,9 @@ int main(int argc, char **argv)
 	pid_t tpgid = 0;
 	pid_t rc_pid = 0;
 	int i, rc = 0;
+	bool pack_fini = false;
+	int pack_argc, pack_inx, pack_argc_off;
+	char **pack_argv;
 	static char *msg = "Slurm job queue full, sleeping and retrying.";
 	slurm_allocation_callbacks_t callbacks;
 
@@ -192,53 +196,79 @@ int main(int argc, char **argv)
 		error("Failed to register atexit handler for plugins: %m");
 
 
-	if (initialize_and_process_args(argc, argv) < 0) {
-		error("salloc parameter parsing");
-		exit(error_exit);
-	}
-	/* reinit log with new verbosity (if changed by command line) */
-	if (opt.verbose || opt.quiet) {
-		logopt.stderr_level += opt.verbose;
-		logopt.stderr_level -= opt.quiet;
-		logopt.prefix_level = 1;
-		log_alter(logopt, 0, NULL);
-	}
+	pack_argc = argc;
+	pack_argv = argv;
+	for (pack_inx = 0; !pack_fini; pack_inx++) {
+		pack_argc_off = -1;
+		if (initialize_and_process_args(pack_argc, pack_argv,
+						&pack_argc_off) < 0) {
+			error("salloc parameter parsing");
+			exit(error_exit);
+		}
+		if ((pack_argc_off >= 0) && (pack_argc_off < pack_argc) &&
+		    !xstrcmp(pack_argv[pack_argc_off], ":")) {
+			/* pack_argv[0] moves from "salloc" to ":" */
+			pack_argc -= pack_argc_off;
+			pack_argv += pack_argc_off;
+		} else
+			pack_fini = true;
 
-	if (spank_init_post_opt() < 0) {
-		error("Plugin stack post-option processing failed");
-		exit(error_exit);
-	}
+		/* reinit log with new verbosity (if changed by command line) */
+		if (opt.verbose || opt.quiet) {
+			logopt.stderr_level += opt.verbose;
+			logopt.stderr_level -= opt.quiet;
+			logopt.prefix_level = 1;
+			log_alter(logopt, 0, NULL);
+		}
 
-	_set_spank_env();
-	_set_submit_dir_env();
-	if (opt.cwd && chdir(opt.cwd)) {
-		error("chdir(%s): %m", opt.cwd);
-		exit(error_exit);
-	}
-
-	if (opt.get_user_env_time >= 0) {
-		bool no_env_cache = false;
-		char *sched_params;
-		char *user = uid_to_string(opt.uid);
-
-		if (xstrcmp(user, "nobody") == 0) {
-			error("Invalid user id %u: %m", (uint32_t)opt.uid);
+		if (spank_init_post_opt() < 0) {
+			error("Plugin stack post-option processing failed");
 			exit(error_exit);
 		}
 
-		sched_params = slurm_get_sched_params();
-		no_env_cache = (sched_params &&
-				strstr(sched_params, "no_env_cache"));
-		xfree(sched_params);
+		_set_spank_env();
+		if (pack_inx == 0)
+			_set_submit_dir_env();
+		if (opt.cwd && chdir(opt.cwd)) {
+			error("chdir(%s): %m", opt.cwd);
+			exit(error_exit);
+		}
 
-		env = env_array_user_default(user,
-					     opt.get_user_env_time,
-					     opt.get_user_env_mode,
-					     no_env_cache);
-		xfree(user);
-		if (env == NULL)
-			exit(error_exit);    /* error already logged */
-		_set_rlimits(env);
+		if ((opt.get_user_env_time >= 0) && !env_cache_set) {
+			bool no_env_cache = false;
+			char *sched_params;
+			char *user = uid_to_string(opt.uid);
+
+			env_cache_set = true;
+			if (xstrcmp(user, "nobody") == 0) {
+				error("Invalid user id %u: %m",
+				      (uint32_t)opt.uid);
+				exit(error_exit);
+			}
+
+			sched_params = slurm_get_sched_params();
+			no_env_cache = (sched_params &&
+					strstr(sched_params, "no_env_cache"));
+			xfree(sched_params);
+
+			env = env_array_user_default(user,
+						     opt.get_user_env_time,
+						     opt.get_user_env_mode,
+						     no_env_cache);
+			xfree(user);
+			if (env == NULL)
+				exit(error_exit);    /* error already logged */
+			_set_rlimits(env);
+		}
+
+		desc = xmalloc(sizeof(job_desc_msg_t));
+		slurm_init_job_desc_msg(desc);
+		if (_fill_job_desc_from_opts(desc) == -1)
+			exit(error_exit);
+	}
+	if (!desc) {
+		fatal("%s: desc is NULL", __func__);
+		exit(error_exit);    /* error already logged */
 	}
 
 	/*
@@ -290,15 +320,7 @@ int main(int argc, char **argv)
 	 * process died before properly resetting terminal.
 	 */
 	if (is_interactive)
-		atexit (_reset_input_mode);
-
-	/*
-	 * Request a job allocation
-	 */
-	slurm_init_job_desc_msg(&desc);
-	if (_fill_job_desc_from_opts(&desc) == -1) {
-		exit(error_exit);
-	}
+		atexit(_reset_input_mode);
 	if (opt.gid != (gid_t) -1) {
 		if (setgid(opt.gid) < 0) {
 			error("setgid: %m");
@@ -308,14 +330,14 @@ int main(int argc, char **argv)
 
 	/* If can run on multiple clusters find the earliest run time
 	 * and run it there */
-	desc.clusters = xstrdup(opt.clusters);
+	desc->clusters = xstrdup(opt.clusters);
 	if (opt.clusters &&
-	    slurmdb_get_first_avail_cluster(&desc, opt.clusters,
+	    slurmdb_get_first_avail_cluster(desc, opt.clusters,
 			&working_cluster_rec) != SLURM_SUCCESS) {
 		print_db_notok(opt.clusters, 0);
 		exit(error_exit);
 	}
-	desc.origin_cluster = xstrdup(slurmctld_conf.cluster_name);
+	desc->origin_cluster = xstrdup(slurmctld_conf.cluster_name);
 
 	callbacks.ping = _ping_handler;
 	callbacks.timeout = _timeout_handler;
@@ -324,7 +346,7 @@ int main(int argc, char **argv)
 	callbacks.user_msg = _user_msg_handler;
 	callbacks.node_fail = _node_fail_handler;
 	/* create message thread to handle pings and such from slurmctld */
-	msg_thr = slurm_allocation_msg_thr_create(&desc.other_port,
+	msg_thr = slurm_allocation_msg_thr_create(&desc->other_port,
 						  &callbacks);
 
 	/* NOTE: Do not process signals in separate pthread. The signal will
@@ -333,7 +355,7 @@ int main(int argc, char **argv)
 		xsignal(sig_array[i], _signal_while_allocating);
 
 	before = time(NULL);
-	while ((alloc = slurm_allocate_resources_blocking(&desc, opt.immediate,
+	while ((alloc = slurm_allocate_resources_blocking(desc, opt.immediate,
 					_pending_callback)) == NULL) {
 		if (((errno != ESLURM_ERROR_ON_DESC_TO_RECORD_COPY) &&
 		     (errno != EAGAIN)) || (retries >= MAX_RETRIES))
@@ -423,7 +445,7 @@ int main(int argc, char **argv)
 	/*
 	 * Run the user's command.
 	 */
-	if (env_array_for_job(&env, alloc, &desc) != SLURM_SUCCESS)
+	if (env_array_for_job(&env, alloc, desc) != SLURM_SUCCESS)
 		goto relinquish;
 
 	/* Add default task count for srun, if not already set */
@@ -586,7 +608,7 @@ relinquish:
 		}
 	}
 
-	xfree(desc.clusters);
+	xfree(desc->clusters);
 	return rc;
 }
 
@@ -617,7 +639,7 @@ static void _set_spank_env(void)
 {
 	int i;
 
-	for (i=0; i<opt.spank_job_env_size; i++) {
+	for (i = 0; i < opt.spank_job_env_size; i++) {
 		if (setenvfs("SLURM_SPANK_%s", opt.spank_job_env[i]) < 0) {
 			error("unable to set %s in environment",
 			      opt.spank_job_env[i]);
@@ -1026,7 +1048,7 @@ static void _set_rlimits(char **env)
 	//unsigned long env_num;
 	rlim_t env_num;
 
-	for (rli=get_slurm_rlimits_info(); rli->name; rli++) {
+	for (rli = get_slurm_rlimits_info(); rli->name; rli++) {
 		if (rli->propagate_flag != PROPAGATE_RLIMITS)
 			continue;
 		strcpy(&env_name[sizeof("SLURM_RLIMIT_")-1], rli->name);

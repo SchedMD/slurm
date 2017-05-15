@@ -186,8 +186,11 @@ extern int immediate_exit;	/* exit code for --imediate option & busy */
  * 2. update options with env vars
  * 3. update options with commandline args
  * 4. perform some verification that options are reasonable
- */
-int initialize_and_process_args(int argc, char **argv);
+ *
+ * argc IN - Count of elements in argv
+ * argv IN - Array of elements to parse
+ * argc_off OUT - Offset of first non-parsable element  */
+extern int initialize_and_process_args(int argc, char **argv, int *argc_off);
 
 /* set options based upon commandline args */
 void set_options(const int argc, char **argv);
