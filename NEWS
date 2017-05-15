@@ -16,6 +16,8 @@ documents those changes that are of interest to users and administrators.
  -- node_features/knl_generic - If a node is rebooted for a pending job, but
     fails to enter the desired NUMA and/or MCDRAM mode then drain the node and
     requeue the job.
+ -- node_features/knl_generic disable mode change unless RebootProgram
+    configured.
 
 * Changes in Slurm 17.02.3
 ==========================
