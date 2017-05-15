@@ -1,6 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: scontrol --local, --sibling options
+#          scancel --sibling=<jobid>
 #
 # Reqs:    1. Using slurmdbd accounting storage type and is up
 #          2. fed_slurm_base is defined in globals.local - set to directory that
@@ -148,13 +149,18 @@ proc sbatch { } {
 	return $job_id
 }
 
-proc squeue { job_id regex } {
-	global fed_slurm_base fedc1
+proc squeue { job_id regex args } {
+	global my_squeue
 
 	set matches 0
-	set my_squeue "${fed_slurm_base}/$fedc1/bin/squeue"
 	set command "$my_squeue --noheader -a --local -Ostatecompact:.5i\
-		-Mfed1,fed2,fed3 -j $job_id"
+		-j $job_id"
+
+	if {$args ne ""} {
+		append command " -M$args"
+	} else {
+		append command " -Mfed1,fed2,fed3"
+	}
 	spawn {*}$command
 	expect {
 		-re "$regex" {
@@ -192,8 +198,31 @@ proc verify { job_id output } {
 		scontrol --local $job_id "JobId.+" -Mfed3
 	}
 
+}
 
+proc scancel_mod { sibling job_id regex} {
+	global fed_slurm_base fedc1
 
+	set matches 0
+	set my_scancel "${fed_slurm_base}/$fedc1/bin/scancel"
+
+	spawn $my_scancel --sibling=$sibling $job_id
+	expect {
+		-re "$regex" {
+			incr matches
+		}
+		timeout {
+			log_error "scancel not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		log_error "scancel failure, expected $regex\n"
+		end_it 1
+	}
 }
 
 proc cancel_all_jobs { } {
@@ -387,6 +416,16 @@ set output [wait_for_fed_job $ji2 RUNNING $fedc1,$fedc2,$fedc3]
 
 verify $ji2 $output
 
+send_user "\n################################################################\n"
+send_user "scancel --sibling=<clustername><jobid> will remove on active pending"
+send_user "\n################################################################\n"
+
+cancel_all_jobs
+
+set ji0 [sbatch]
+set ji1 [sbatch]
+set ji2 [sbatch]
+
 set output [wait_for_fed_job $ji0 RUNNING $fedc1,$fedc2,$fedc3]
 
 verify $ji0 $output
@@ -398,6 +437,38 @@ verify $ji1 $output
 set output [wait_for_fed_job $ji2 RUNNING $fedc1,$fedc2,$fedc3]
 
 verify $ji2 $output
+
+scancel_mod $fedc1 $ji0 "scancel: error: Kill job error on job id $ji0: Job is\
+ no longer pending execution"
+
+scancel_mod $fedc1 $ji1 "scancel: error: Kill job error on job id $ji1: Job is\
+ no longer pending execution"
+
+scancel_mod $fedc1 $ji2 "scancel: error: Kill job error on job id $ji2: Job is\
+ no longer pending execution"
+
+set job_id [sbatch]
+
+squeue $job_id "\\s+PD\\s+" $fedc1
+squeue $job_id "\\s+PD\\s+" $fedc2
+squeue $job_id "\\s+PD\\s+" $fedc3
+
+scancel_mod $fedc1 $job_id ""
+
+squeue $job_id "\\s+RV\\s+" $fedc1
+squeue $job_id "\\s+PD\\s+" $fedc2
+
+scancel_mod $fedc2 $job_id ""
+
+squeue $job_id "\\s+RV\\s+" $fedc1
+squeue $job_id "slurm_load_jobs error: Invalid job id specified\\s+" $fedc2
+squeue $job_id "\\s+PD\\s+" $fedc3
+
+scancel_mod $fedc3 $job_id ""
+
+squeue $job_id "\\s+RV\\s+" $fedc1
+squeue $job_id "slurm_load_jobs error: Invalid job id specified\\s+" $fedc2
+squeue $job_id "slurm_load_jobs error: Invalid job id specified\\s+" $fedc3
 
 # All Done
 end_it 0

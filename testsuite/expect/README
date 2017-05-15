@@ -804,3 +804,4 @@ test37.5   Federated Requeue
 test37.6   Federated Job Updates
 test37.7   Federated Cluster States
 test37.8   scontrol --local, --sibling options
+           scancel --sibling=<jobid>
