@@ -111,7 +111,6 @@ static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 				 char **err_msg);
 
 static bool _first_array_task(struct job_record *job_ptr);
-static void _launch_prolog(struct job_record *job_ptr);
 static void _log_node_set(uint32_t job_id, struct node_set *node_set_ptr,
 			  int node_set_size);
 static int  _match_feature(char *seek, struct node_set *node_set_ptr,
@@ -2675,7 +2674,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	 * non-batch job. */
 	if ((slurmctld_conf.prolog_flags & PROLOG_FLAG_ALLOC) ||
 	    (slurmctld_conf.prolog_flags & PROLOG_FLAG_CONTAIN))
-		_launch_prolog(job_ptr);
+		launch_prolog(job_ptr);
 
       cleanup:
 	if (job_ptr->array_recs && job_ptr->array_recs->task_id_bitmap &&
@@ -2713,7 +2712,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
  * prolog at allocation stage. Then we ask slurmd to launch the prolog
  * asynchroniously and wait on REQUEST_COMPLETE_PROLOG message from slurmd.
  */
-static void _launch_prolog(struct job_record *job_ptr)
+extern void launch_prolog(struct job_record *job_ptr)
 {
 	prolog_launch_msg_t *prolog_msg_ptr;
 	agent_arg_t *agent_arg_ptr;

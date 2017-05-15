@@ -132,4 +132,9 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			bitstr_t **select_node_bitmap, char *unavail_node_str,
 			char **err_msg);
 
+/* launch_prolog - launch job prolog script by slurmd on allocated nodes
+ * IN job_ptr - pointer to the job record
+ */
+extern void launch_prolog(struct job_record *job_ptr);
+
 #endif /* !_HAVE_NODE_SCHEDULER_H */
