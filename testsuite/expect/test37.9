@@ -1,6 +1,6 @@
 #!/usr/bin/expect
 ############################################################################
-# Purpose: Test federated squeue, sinfo, sprio output
+# Purpose: Test federated squeue, sinfo, sprio, scontrol output
 #
 # Reqs:    1. Using slurmdbd accounting storage type and is up
 #          2. fed_slurm_base is defined in globals.local - set to directory that
@@ -56,6 +56,7 @@ set my_srun "${fed_slurm_base}/$fedc1/bin/srun"
 set my_sinfo "${fed_slurm_base}/$fedc1/bin/sinfo"
 set my_sprio "${fed_slurm_base}/$fedc1/bin/sprio"
 set my_squeue "${fed_slurm_base}/$fedc1/bin/squeue"
+set my_scontrol "${fed_slurm_base}/$fedc1/bin/scontrol"
 set min_job_age [expr {[get_min_job_age] + 65}]
 set file_in          "test$test_id.in"
 
@@ -188,6 +189,32 @@ proc sprio { options regex } {
 		log_error "unexpected error in sinfo. expected $regex"
 		end_it 1
 	}
+}
+
+proc scontrol_show { category tasks regex option } {
+	global my_scontrol bin_grep
+
+	set matches 0
+	set command "$my_scontrol "
+	append command $option
+	append command " show $category | $bin_grep \"$tasks\""
+
+	spawn bash -c $command
+	expect {
+		-re "$regex" {
+			incr matches
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		log_error "unexpected error in scontrol_show. expected $regex \
+			$matches matches"
+		end_it 1
+	}
+
 }
 
 proc cancel_all_jobs { } {
@@ -473,6 +500,82 @@ sprio "--local" "(\\s+($ji3|$ji4).+\\n){2}"
 sprio "-Mfed1" "(\\s+($ji3|$ji4).+\\n){2}"
 sprio "-Mfed2" "(\\s+($ji3|$ji5).+\\n){2}"
 sprio "-Mfed3" "(\\s+($ji3|$ji6).+\\n){2}"
+
+send_user "\n################################################################\n"
+send_user "verify federated scontrol show jobs output"
+send_user "\n################################################################\n"
+
+cancel_all_jobs
+
+set reg1 ""
+set reg2 ""
+set reg3 ""
+set reg4 ""
+set reg5 ""
+set reg6 ""
+
+
+set ji0 [sbatch]
+set o0 [wait_for_fed_job $ji0 RUNNING $fedc1,$fedc2,$fedc3]
+set ji1 [sbatch]
+set o1 [wait_for_fed_job $ji1 RUNNING $fedc1,$fedc2,$fedc3]
+set ji2 [sbatch]
+set o2 [wait_for_fed_job $ji2 RUNNING $fedc1,$fedc2,$fedc3]
+set ji3 [sbatch]
+
+$bin_sleep 2
+
+if { [string match $o0 $fedc1] } {
+	set reg1 "(JobId=($ji0|$ji3) JobName=test37\\.9\\.in\\s+\\n)"
+	set reg4 "(StepId=$ji0\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
+} elseif { [string match $o0 $fedc2] } {
+	set reg2 "(JobId=($ji0|$ji3) JobName=test37\\.9\\.in\\s+\\n)"
+	set reg5 "(StepId=$ji0\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
+} else {
+	set reg3 "(JobId=($ji0|$ji3) JobName=test37\\.9\\.in\\s+\\n)"
+	set reg6 "(StepId=$ji0\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
+}
+
+if { [string match $o1 $fedc1] } {
+	set reg1 "(JobId=($ji1|$ji3) JobName=test37\\.9\\.in\\s+\\n)"
+	set reg4 "(StepId=$ji1\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
+} elseif { [string match $o1 $fedc2] } {
+	set reg2 "(JobId=($ji1|$ji3) JobName=test37\\.9\\.in\\s+\\n)"
+	set reg5 "(StepId=$ji1\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
+} else {
+	set reg3 "(JobId=($ji1|$ji3) JobName=test37\\.9\\.in\\s+\\n)"
+	set reg6 "(StepId=$ji1\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
+}
+
+if { [string match $o2 $fedc1] } {
+	set reg1 "(JobId=($ji2|$ji3) JobName=test37\\.9\\.in\\s+\\n)"
+	set reg4 "(StepId=$ji2\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
+} elseif { [string match $o2 $fedc2] } {
+	set reg2 "(JobId=($ji2|$ji3) JobName=test37\\.9\\.in\\s+\\n)"
+	set reg5 "(StepId=$ji2\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
+} else {
+	set reg3 "(JobId=($ji2|$ji3) JobName=test37\\.9\\.in\\s+\\n)"
+	set reg6 "(StepId=$ji2\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
+}
+
+
+set tasks "\\($ji0\\|$ji1\\|$ji2\\|$ji3\\)"
+set regex_j "(JobId=($ji0|$ji1|$ji2|$ji3) JobName=test37\\.9\\.in\\s+\\n)"
+set regex_s "(StepId=($ji0|$ji1|$ji2)\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
+
+scontrol_show "jobs" $tasks "$regex_j{4}" ""
+scontrol_show "jobs" $tasks "$regex_j{6}" "--sibling"
+scontrol_show "jobs" $tasks "$reg1{2}" "--local"
+scontrol_show "jobs" $tasks "$reg1{2}" "-Mfed1"
+scontrol_show "jobs" $tasks "$reg2{2}" "-Mfed2"
+scontrol_show "jobs" $tasks "$reg3{2}" "-Mfed3"
+
+scontrol_show "steps" $tasks "$regex_s{6}" ""
+scontrol_show "steps" $tasks "$regex_s{6}" "--sibling"
+scontrol_show "steps" $tasks "$reg4{2}" "--local"
+scontrol_show "steps" $tasks "$reg4{2}" "-Mfed1"
+scontrol_show "steps" $tasks "$reg5{2}" "-Mfed2"
+scontrol_show "steps" $tasks "$reg6{2}" "-Mfed3"
 
 # All Done
 end_it 0
