@@ -491,7 +491,7 @@ set ji4 [sbatch "-M$fedc1"]
 set ji5 [sbatch "-M$fedc2"]
 set ji6 [sbatch "-M$fedc3"]
 
-squeue "" "(\\s+($ji6|$ji5|$ji4|$ji3).+\\n){4}\\s+$ji2.+\\n\\s+$ji1.+\\n\\s+$ji0.+\\n"
+squeue "" "(\\s+($ji6|$ji5|$ji4|$ji3).+PD.+\\n){4}(\\s+($ji0|$ji1|$ji2).+R.+\\n){3}"
 
 sprio "" "(\\s+($ji6|$ji5|$ji4|$ji3).+\\n){4}"
 
