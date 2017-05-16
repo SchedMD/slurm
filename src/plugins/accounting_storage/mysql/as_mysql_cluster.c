@@ -45,8 +45,6 @@
 #include "as_mysql_wckey.h"
 #include "src/common/node_select.h"
 
-#define MAX_FED_CLUSTERS 63
-
 extern int as_mysql_get_fed_cluster_id(mysql_conn_t *mysql_conn,
 				       const char *cluster,
 				       const char *federation,

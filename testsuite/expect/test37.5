@@ -45,6 +45,7 @@ set prologctl_script    "test$test_id\.prolog"
 set epilog_script       "test$test_id\.prolog"
 set fed_name            "feda"
 set long_running_job_id ""
+set long_running_job_id2 ""
 set job_id              0
 set user_name           ""
 set origin_cluster      ""
@@ -451,8 +452,49 @@ log_info "Origin: $origin_cluster non-origins: $non_origin_clusters"
 
 
 send_user "\n################################################################\n"
-send_user "Test requeue of a running job"
+send_user "Test requeue of a running job on origin cluster"
 send_user "\n################################################################\n"
+
+# Submit jobs that fill up fed2,fed3
+spawn $sbatch -N$node_count --exclusive -o /dev/null -e /dev/null -t999999 --requeue -M$fedc2 $long_script
+expect {
+	-re "Submitted batch job ($number)" {
+		set long_running_job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		log_error "sbatch is not responding"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+set run_cluster [wait_for_fed_job $long_running_job_id RUNNING ""]
+if {[string compare $run_cluster ""] == 0} {
+	log_error "Didn't find cluster with running job"
+	end_it 1
+}
+
+spawn $sbatch -N$node_count --exclusive -o /dev/null -e /dev/null -t999999 --requeue -M$fedc3 $long_script
+expect {
+	-re "Submitted batch job ($number)" {
+		set long_running_job_id2 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		log_error "sbatch is not responding"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+set run_cluster [wait_for_fed_job $long_running_job_id2 RUNNING ""]
+if {[string compare $run_cluster ""] == 0} {
+	log_error "Didn't find cluster with running job"
+	end_it 1
+}
 
 spawn $sbatch -N$node_count --exclusive -o /dev/null -e /dev/null -t1 --requeue $complete_script
 expect {
@@ -475,20 +517,24 @@ if { $job_id == 0 } {
 }
 
 # Wait for the job to be in the running state
-if {[wait_for_job $job_id RUNNING]} {
+set run_cluster [wait_for_fed_job $job_id RUNNING ""]
+if {[string compare $run_cluster ""] == 0} {
+	log_error "Didn't find cluster with running job"
 	end_it 1
 }
 
 # Requeue the job while it is running
 requeue_job $job_id
 
-if {[wait_for_job $job_id PENDING]} {
+set pend_cluster [wait_for_fed_job $job_id PENDING "$fedc2,$fedc3"]
+if {[string compare $pend_cluster ""] == 0} {
+	log_error "Didn't find cluster with pending job"
 	end_it 1
 }
 
 # Check to see if the job state is PENDING after the requeue
 # federation will requeue job on all clusters
-check_dbd_states $job_id REQUEUED $origin_cluster 1
+check_dbd_states $job_id REQUEUED $run_cluster 1
 check_ctl_state $job_id PENDING $fedc1
 check_ctl_state $job_id PENDING $fedc2
 check_ctl_state $job_id PENDING $fedc3
@@ -499,7 +545,7 @@ if {[cancel_job $job_id]} {
 
 
 send_user "\n################################################################\n"
-send_user "Test requeue of a completed job"
+send_user "Test requeue of a completed job on origin cluster"
 send_user "\n################################################################\n"
 
 spawn $sbatch -N$node_count --exclusive -o /dev/null -e /dev/null -t1 --requeue $complete_script
@@ -521,16 +567,31 @@ if { $job_id == 0 } {
 	log_error "sbatch did not submit job"
 	end_it 1
 }
+set run_cluster [wait_for_fed_job $job_id RUNNING ""]
+if {[string compare $run_cluster ""] == 0} {
+	log_error "Didn't find cluster with running job"
+	end_it 1
+}
 
 # Wait for the job to be in the complete state
-wait_for_job $job_id DONE
+set done_cluster [wait_for_fed_job $job_id DONE "$run_cluster"]
+if {[string compare $done_cluster ""] == 0} {
+	log_error "Didn't find cluster with completed job"
+	end_it 1
+}
 
 # Requeue the job when it is complete
 requeue_job $job_id
 
+set pend_cluster [wait_for_fed_job $job_id PENDING "$fedc2,$fedc3"]
+if {[string compare $pend_cluster ""] == 0} {
+	log_error "Didn't find cluster with pending job"
+	end_it 1
+}
+
 # Check to see if the job state is PENDING after the requeue
 # federation will requeue job on all clusters
-check_dbd_states $job_id REQUEUED $origin_cluster 1
+check_dbd_states $job_id REQUEUED $run_cluster 1
 check_ctl_state $job_id PENDING $fedc1
 check_ctl_state $job_id PENDING $fedc2
 check_ctl_state $job_id PENDING $fedc3
@@ -541,9 +602,8 @@ if {[cancel_job $job_id]} {
 
 
 send_user "\n################################################################\n"
-send_user "Test requeue of a failed job"
+send_user "Test requeue of a failed job on origin cluster"
 send_user "\n################################################################\n"
-
 set job_id 0
 spawn $sbatch -N1 -o /dev/null -e /dev/null -t 1 --requeue $fail_script
 expect {
@@ -566,63 +626,35 @@ if { $job_id == 0 } {
 }
 
 # Wait for the job to be in the complete state
-wait_for_job $job_id DONE
+set run_cluster [wait_for_fed_job $job_id DONE ""]
+if {[string compare $run_cluster ""] == 0} {
+	log_error "Didn't find cluster with running job"
+	end_it 1
+}
 
 # Requeue the job when it is complete
 requeue_job $job_id
 
-# Check to see if the job state is PENDING after the requeue
-# federation will requeue job on all clusters
-check_dbd_states $job_id REQUEUED $origin_cluster 1
-check_ctl_state $job_id PENDING $fedc1
-check_ctl_state $job_id PENDING $fedc2
-check_ctl_state $job_id PENDING $fedc3
-
-
-if {[cancel_job $job_id]} {
+set pend_cluster [wait_for_fed_job $job_id PENDING "$fedc2,$fedc3"]
+if {[string compare $pend_cluster ""] == 0} {
+	log_error "Didn't find cluster with pending job"
 	end_it 1
 }
 
-
-send_user "\n################################################################\n"
-send_user "Test requeue of a failed job"
-send_user "\n################################################################\n"
-
-set job_id 0
-spawn $sbatch -N1 -o /dev/null -e /dev/null -t 1 --requeue $fail_script
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
-		end_it 1
-	}
-	eof {
-		wait
-	}
-}
-
-if { $job_id == 0 } {
-	send_user "\nFAILURE: sbatch did not submit job\n"
-	end_it 1
-}
-
-# Wait for the job to be in the complete state
-wait_for_job $job_id DONE
-
-# Requeue the job when it is complete
-requeue_job $job_id
-
 # Check to see if the job state is PENDING after the requeue
 # federation will requeue job on all clusters
-check_dbd_states $job_id REQUEUED $origin_cluster 1
+check_dbd_states $job_id REQUEUED $run_cluster 1
 check_ctl_state $job_id PENDING $fedc1
 check_ctl_state $job_id PENDING $fedc2
 check_ctl_state $job_id PENDING $fedc3
 
 if {[cancel_job $job_id]} {
+	end_it 1
+}
+if {[cancel_job $long_running_job_id]} {
+	end_it 1
+}
+if {[cancel_job $long_running_job_id2]} {
 	end_it 1
 }
 
@@ -645,6 +677,11 @@ expect {
 	eof {
 		wait
 	}
+}
+set run_cluster [wait_for_fed_job $long_running_job_id RUNNING ""]
+if {[string compare $run_cluster ""] == 0} {
+	log_error "Didn't find cluster with running job"
+	end_it 1
 }
 
 spawn $sbatch -N$node_count --exclusive -o /dev/null -e /dev/null -t1 --requeue $complete_script
@@ -816,7 +853,12 @@ $bin_sleep $dbd_delay
 # federation will requeue job on all clusters
 check_dbd_states $job_id REVOKED $origin_cluster 1
 check_dbd_states $job_id PENDING $origin_cluster 1
+
+# A completed job on a sibling could already be gone from the controller and
+# the db_index could be lost so the dbd state will stay as completed.
 #check_dbd_states $job_id REQUEUED $run_cluster 1
+check_dbd_states $job_id COMPLETED $run_cluster 1
+
 check_dbd_states $job_id PENDING  $run_cluster 1
 check_ctl_state $job_id PENDING $fedc1
 check_ctl_state $job_id PENDING $fedc2
@@ -890,6 +932,12 @@ if {[string compare $run_cluster ""] == 0} {
 	log_error "Didn't find cluster with running job"
 	end_it 1
 }
+# Give time for origin to know that the job was started. If the cancel comes
+# before it knows that the job started then the origin will cancel the local
+# and remote job. If it knows that the job is running on the remote, then it
+# will only send the request to the remote and wait for it to report back that
+# the job is gone.
+$bin_sleep 2
 
 log_info "$run_cluster is running job"
 

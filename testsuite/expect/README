@@ -802,4 +802,10 @@ test37.3   scontrol show federations
 test37.4   federated job submission
 test37.5   Federated Requeue
 test37.6   Federated Job Updates
-test37.6   Federated Cluster States
+test37.7   Federated Cluster States
+test37.8   scontrol --local, --sibling options
+           scancel --sibling=<jobid>
+test37.9   Verify federated scontrol, squeue, sinfo and sprio output
+test37.10  Federated job cancellations
+test37.11  Federated sacct output
+test37.12  Federated sbatch|srun --test-only

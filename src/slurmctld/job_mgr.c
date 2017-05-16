@@ -3034,6 +3034,114 @@ static void _rebuild_part_name_list(struct job_record  *job_ptr)
 }
 
 /*
+ * Kill job or job step
+ *
+ * IN job_step_kill_msg - msg with specs on which job/step to cancel.
+ * IN uid               - uid of user requesting job/step cancel.
+ */
+extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
+{
+	DEF_TIMERS;
+	/* Locks: Read config, write job, write node */
+	slurmctld_lock_t job_write_lock = {
+		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
+	struct job_record *job_ptr;
+	int error_code = SLURM_SUCCESS;
+
+	START_TIMER;
+	lock_slurmctld(job_write_lock);
+	job_ptr = find_job_record(job_step_kill_msg->job_id);
+	trace_job(job_ptr, __func__, "enter");
+
+	/* do RPC call */
+	if (job_step_kill_msg->job_step_id == SLURM_BATCH_SCRIPT) {
+		/* NOTE: SLURM_BATCH_SCRIPT == NO_VAL */
+		error_code = job_signal(job_step_kill_msg->job_id,
+					job_step_kill_msg->signal,
+					job_step_kill_msg->flags, uid,
+					false);
+		unlock_slurmctld(job_write_lock);
+		END_TIMER2("_slurm_rpc_job_step_kill");
+
+		/* return result */
+		if (error_code) {
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
+				info("Signal %u JobId=%u by UID=%u: %s",
+				     job_step_kill_msg->signal,
+				     job_step_kill_msg->job_id, uid,
+				     slurm_strerror(error_code));
+		} else {
+			if (job_step_kill_msg->signal == SIGKILL) {
+				if (slurmctld_conf.debug_flags &
+						DEBUG_FLAG_STEPS)
+					info("%s: Cancel of JobId=%u by "
+					     "UID=%u, %s",
+					     __func__,
+					     job_step_kill_msg->job_id, uid,
+					     TIME_STR);
+				slurmctld_diag_stats.jobs_canceled++;
+			} else {
+				if (slurmctld_conf.debug_flags &
+						DEBUG_FLAG_STEPS)
+					info("%s: Signal %u of JobId=%u by "
+					     "UID=%u, %s",
+					     __func__,
+					     job_step_kill_msg->signal,
+					     job_step_kill_msg->job_id, uid,
+					     TIME_STR);
+			}
+
+			/* Below function provides its own locking */
+			schedule_job_save();
+		}
+	} else {
+		error_code = job_step_signal(job_step_kill_msg->job_id,
+					     job_step_kill_msg->job_step_id,
+					     job_step_kill_msg->signal,
+					     job_step_kill_msg->flags,
+					     uid);
+		unlock_slurmctld(job_write_lock);
+		END_TIMER2("_slurm_rpc_job_step_kill");
+
+		/* return result */
+		if (error_code) {
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
+				info("Signal %u of StepId=%u.%u by UID=%u: %s",
+				     job_step_kill_msg->signal,
+				     job_step_kill_msg->job_id,
+				     job_step_kill_msg->job_step_id, uid,
+				     slurm_strerror(error_code));
+		} else {
+			if (job_step_kill_msg->signal == SIGKILL) {
+				if (slurmctld_conf.debug_flags &
+						DEBUG_FLAG_STEPS)
+					info("%s: Cancel of StepId=%u.%u by "
+					     "UID=%u %s", __func__,
+					     job_step_kill_msg->job_id,
+					     job_step_kill_msg->job_step_id,
+					     uid, TIME_STR);
+			} else {
+				if (slurmctld_conf.debug_flags &
+						DEBUG_FLAG_STEPS)
+					info("%s: Signal %u of StepId=%u.%u "
+					     "by UID=%u %s",
+					     __func__,
+					     job_step_kill_msg->signal,
+					     job_step_kill_msg->job_id,
+					     job_step_kill_msg->job_step_id,
+					     uid, TIME_STR);
+			}
+
+			/* Below function provides its own locking */
+			schedule_job_save();
+		}
+	}
+
+	trace_job(job_ptr, __func__, "return");
+	return error_code;
+}
+
+/*
  * kill_job_by_part_name - Given a partition name, deallocate resource for
  *	its jobs and kill them. All jobs associated with this partition
  *	will have their partition pointer cleared.
@@ -3122,7 +3230,7 @@ extern int kill_job_by_part_name(char *part_name)
 			job_ptr->end_time	= now;
 			job_ptr->exit_code	= 1;
 			job_completion_logger(job_ptr, false);
-			fed_mgr_job_complete(job_ptr, 0, job_ptr->start_time);
+			fed_mgr_job_complete(job_ptr, 0, now);
 		}
 		job_ptr->part_ptr = NULL;
 		FREE_NULL_LIST(job_ptr->part_ptr_list);
@@ -4664,7 +4772,7 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 		 * after the job is is completed. This can happen when the
 		 * pending origin job is put into a hold state and the siblings
 		 * are removed or when the job is canceled from the origin. */
-		fed_mgr_job_complete(job_ptr, 0, job_ptr->start_time);
+		fed_mgr_job_complete(job_ptr, 0, now);
 		verbose("%s: of pending %s successful",
 			__func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)));
 		return SLURM_SUCCESS;
@@ -8324,6 +8432,9 @@ static void _list_delete_job(void *job_entry)
 	xassert(job_entry);
 	xassert (job_ptr->magic == JOB_MAGIC);
 	job_ptr->magic = 0;	/* make sure we don't delete record twice */
+
+	/* Remove record from fed_job_list */
+	fed_mgr_remove_fed_job_info(job_ptr->job_id);
 
 	/* Remove the record from job hash table */
 	job_pptr = &job_hash[JOB_HASH_INX(job_ptr->job_id)];
@@ -12344,9 +12455,10 @@ fini:
 		/* Send updates to sibling jobs */
 		/* Add the siblings_active to be updated. They could have been
 		 * updated if the job's ClusterFeatures were updated. */
-		job_specs->fed_siblings_viable = job_ptr->fed_details->siblings_viable;
-		fed_mgr_update_job(job_specs,
-				   job_ptr->fed_details->siblings_active);
+		job_specs->fed_siblings_viable =
+			job_ptr->fed_details->siblings_viable;
+		fed_mgr_update_job(job_ptr->job_id, job_specs,
+				   job_ptr->fed_details->siblings_active, uid);
 	}
 
 	return error_code;
@@ -12356,11 +12468,12 @@ fini:
  * update_job - update a job's parameters per the supplied specifications
  * IN msg - RPC to update job, including change specification
  * IN uid - uid of user issuing RPC
+ * IN send_msg - whether to send msg back or not
  * RET returns an error code from slurm_errno.h
  * global: job_list - global list of job entries
  *	last_job_update - time of last job table update
  */
-extern int update_job(slurm_msg_t *msg, uid_t uid)
+extern int update_job(slurm_msg_t *msg, uid_t uid, bool send_msg)
 {
 	job_desc_msg_t *job_specs = (job_desc_msg_t *) msg->data;
 	struct job_record *job_ptr;
@@ -12377,7 +12490,7 @@ extern int update_job(slurm_msg_t *msg, uid_t uid)
 	} else {
 		rc = _update_job(job_ptr, job_specs, uid);
 	}
-	if (rc != ESLURM_JOB_SETTING_DB_INX)
+	if (send_msg && rc != ESLURM_JOB_SETTING_DB_INX)
 		slurm_send_rc_msg(msg, rc);
 	xfree(job_specs->job_id_str);
 
@@ -13717,13 +13830,12 @@ extern void job_completion_logger(struct job_record *job_ptr, bool requeue)
 		job_ptr->job_state &= ~JOB_CONFIGURING;
 
 		/* make sure all parts of the job are notified
-		 * Fed Jobs: only signal the srun from where the was running or
-		 * from the origin if the job wasn't running. */
+		 * Fed Jobs: only signal the srun from where the job is running
+		 * or from the origin if the job wasn't running. */
 		if (!job_ptr->fed_details ||
-		    (fed_mgr_cluster_rec && (job_ptr->fed_details->cluster_lock
-					     == fed_mgr_cluster_rec->fed.id)) ||
+		    fed_mgr_job_is_self_owned(job_ptr) ||
 		    (fed_mgr_is_origin_job(job_ptr) &&
-		     !job_ptr->fed_details->cluster_lock))
+		     !fed_mgr_job_is_locked(job_ptr)))
 			srun_job_complete(job_ptr);
 
 		/* mail out notifications of completion */

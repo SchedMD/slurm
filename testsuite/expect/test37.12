@@ -1,0 +1,491 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test federated sbatch/srun --test-only option
+#
+# Reqs:    1. Using slurmdbd accounting storage type and is up
+#          2. fed_slurm_base is defined in globals.local - set to directory that
+#          has access to each federation configure (fedc1, fedc2, fedc3).
+#          Eg.
+#          fedr/slurm/ (src)
+#          fedr/fed1/bin
+#          fedr/fed1/sbin
+#          fedr/fed1/etc
+#          fedr/fed1/...
+#          fedr/fed2/...
+#          fedr/fed3/...
+#          3. controllers are up and running.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2017 SchedMD LLC.
+# Written by Isaac Hartung <ihartung@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+source ./globals
+source ./globals_accounting
+source ./globals_federation
+
+set test_id     "37.12"
+set exit_code   0
+set fed_name    "feda"
+set user_name   ""
+set srun_job_cnt 0
+set my_sbatch "${fed_slurm_base}/$fedc1/bin/sbatch"
+set my_srun "${fed_slurm_base}/$fedc1/bin/srun"
+set my_squeue "${fed_slurm_base}/$fedc1/bin/squeue"
+set min_job_age [expr {[get_min_job_age] + 65}]
+set file_in2         "test$test_id.in2"
+
+set eol "\r\n"
+
+print_header $test_id
+
+#
+# Check accounting config and bail if not found.
+#
+if { [test_account_storage] == 0 } {
+	log_warn "This test can't be run without a usable AccountStorageType"
+	exit 0
+}
+
+if { [string compare [check_accounting_admin_level] "Administrator"] } {
+	log_warn "This test can't be run without being an Accounting administrator.\n \
+	 	  Use: sacctmgr mod user \$USER set admin=admin."
+	exit 0
+}
+
+proc build_regex { list } {
+
+	set result ".+("
+
+	foreach f $list {
+		append result $f
+		append result "|"
+	}
+
+	set result [string trimright $result "|"]
+	append result ").+\\n"
+	return $result
+}
+
+proc lremove { list discard } {
+
+	return [lsearch -all -inline -not -exact $list $discard]
+
+}
+
+proc sbatch_to { options regex } {
+	global number bin_sleep node_count my_sbatch
+
+	set matches 0
+	set job_id 0
+	set command "$my_sbatch -N$node_count --exclusive --output=/dev/null "
+	append command $options
+	append command " --wrap \"sleep 900\""
+	spawn {*}$command
+	expect {
+		-re "$regex" {
+			incr matches
+			set job_id $expect_out(1,string)
+		}
+		timeout {
+			log_error "sbatch not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		log_error "batch submit failure: expected $regex"
+		end_it 1
+	}
+
+	sleep 2
+
+	return $job_id
+}
+
+proc srun { options regex } {
+	global number file_in2 bin_sleep node_count my_srun
+
+	set sleep_time 900
+	set matches 0
+	set job_id 0
+	set command "$my_srun -N$node_count --exclusive "
+	append command $options
+	append command " $file_in2"
+
+	spawn {*}$command
+	expect {
+		-re "$regex" {
+			incr matches
+			set job_id $expect_out(1,string)
+		}
+		timeout {
+			log_error "srun not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		log_error "srun failure: expected $regex"
+		end_it 1
+	}
+	return $job_id
+
+}
+
+proc cancel_all_jobs { } {
+	global scancel user_name fedc1 fedc2 fedc3
+
+	spawn $scancel -M$fedc1,$fedc2,$fedc3 --user $user_name
+	expect {
+		eof {
+			wait
+		}
+	}
+	sleep 5
+}
+
+proc cleanup { } {
+	global scancel fed_name user_name bin_rm file_in2 fedc1 fedc2 fedc3
+	global test_id bin_bash my_sacctmgr
+
+	cancel_all_jobs
+	exec $bin_rm -f $file_in2
+	exec $bin_bash -c "$bin_rm -f test$test_id*.out"
+
+	return [delete_federations $fed_name]
+}
+
+proc end_it { exit_code } {
+	global test_id my_squeue
+	cleanup
+	if {$exit_code == 0} {
+		print_success $test_id
+	}
+	exit $exit_code
+}
+
+#start test
+
+if {[test_federation_setup]} {
+	log_warn "WARNING: This test can't be run without fed_slurm_base,\
+		fedc1, fedc2, fedc3 setup in globals.local."
+	exit 0
+}
+
+if {[test_cluster_up $fedc1] ||
+    [test_cluster_up $fedc2] ||
+    [test_cluster_up $fedc3]} {
+	end_it 1
+}
+
+set user_name [get_my_user_name]
+
+# Remove existing setup
+if {[cleanup] != 0} {
+	log_error "failed to cleanup"
+	end_it 1
+}
+
+# add clusters to federation
+if {[setup_federation $fed_name]} {
+	log_error "failed to setup federation"
+	end_it 1
+}
+
+# get number of nodes per cluster
+set node_count [available_nodes "" ""]
+
+send_user "\n################################################################\n"
+send_user "Setup cluster features"
+send_user "\n################################################################\n"
+
+set matches 0
+set my_pid [spawn $sacctmgr -i modify cluster $fedc1 set features=fa]
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Feature\\s+=\\s+fa" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$fedc1$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr mod not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 4} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+set matches 0
+set my_pid [spawn $sacctmgr -i modify cluster $fedc2 set features=fb]
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Feature\\s+=\\s+fb" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$fedc2$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr mod not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 4} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+set matches 0
+set my_pid [spawn $sacctmgr -i modify cluster $fedc3 set features=fc]
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Feature\\s+=\\s+fc" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$fedc3$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr mod not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 4} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+make_bash_script $file_in2 "sleep 900"
+
+send_user "\n################################################################\n"
+send_user "verify federated sbatch/srun --test-only  output"
+send_user "\n################################################################\n"
+
+cancel_all_jobs
+
+set feds        "$fedc1 $fedc2 $fedc3"
+set regex       [build_regex $feds]
+set reg_default "Submitted batch job ($number).+"
+
+sbatch_to "--test-only" $regex
+
+set ji0   [sbatch_to "-t5" $reg_default]
+set f1    [wait_for_fed_job $ji0 RUNNING $fedc1,$fedc2,$fedc3]
+
+set feds  [lremove $feds $f1]
+set regex [build_regex $feds]
+sbatch_to "--test-only" $regex
+sbatch_to "--test-only" $regex
+sbatch_to "--test-only" $regex
+
+set ji1 [sbatch_to "-t10" $reg_default]
+set f2  [wait_for_fed_job $ji1 RUNNING $fedc1,$fedc2,$fedc3]
+
+set feds  [lremove $feds $f2]
+set regex [build_regex $feds]
+sbatch_to "--test-only" $regex
+sbatch_to "--test-only" $regex
+sbatch_to "--test-only" $regex
+
+set ji2 [sbatch_to "-t15" $reg_default]
+set f3  [wait_for_fed_job $ji2 RUNNING $fedc1,$fedc2,$fedc3]
+
+set regex [build_regex $f1]
+sbatch_to "--test-only" $regex
+sbatch_to "--test-only" $regex
+sbatch_to "--test-only" $regex
+
+sbatch_to "-M$f1 -t50" $reg_default
+
+set regex [build_regex $f2]
+sbatch_to "--test-only" $regex
+sbatch_to "--test-only" $regex
+sbatch_to "--test-only" $regex
+
+sbatch_to "-M$f2 -t50" $reg_default
+
+set regex [build_regex $f3]
+sbatch_to "--test-only" $regex
+sbatch_to "--test-only" $regex
+sbatch_to "--test-only" $regex
+
+sbatch_to "-M$f3 -t50" $reg_default
+
+set regex [build_regex $f1]
+sbatch_to "--test-only" $regex
+sbatch_to "--test-only" $regex
+sbatch_to "--test-only" $regex
+
+
+
+set matches 0
+spawn $my_sbatch -N11 --exclusive --output=/dev/null -t1 --wrap "sleep 30"\
+		--test-only
+expect {
+	-re "allocation failure: Requested node configuration is not\
+		available\\s+" {
+		incr matches
+	}
+	timeout {
+		log_error "sbatch not responding"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	log_error "batch submit failure"
+	end_it 1
+}
+
+cancel_all_jobs
+
+set feds        [list $fedc1 $fedc2 $fedc3]
+set regex       [build_regex $feds]
+set reg_default "srun: job ($number).+\\n"
+
+srun "--test-only" $regex
+
+set ji0 [srun "-t5" $reg_default]
+set f1  [wait_for_fed_job $ji0 RUNNING $fedc1,$fedc2,$fedc3]
+
+set fed   [lremove $feds $f1]
+set regex [build_regex $feds]
+
+srun "--test-only" $regex
+srun "--test-only" $regex
+srun "--test-only" $regex
+
+set ji1 [srun "-t10" $reg_default]
+set f2  [wait_for_fed_job $ji1 RUNNING $fedc1,$fedc2,$fedc3]
+
+set feds  [lremove $feds $f2]
+set regex [build_regex $feds]
+
+srun "--test-only" $regex
+srun "--test-only" $regex
+srun "--test-only" $regex
+
+set ji2   [srun "-t15" $reg_default]
+set f3    [wait_for_fed_job $ji2 RUNNING $fedc1,$fedc2,$fedc3]
+set regex [build_regex $f1]
+
+srun "--test-only" $regex
+srun "--test-only" $regex
+srun "--test-only" $regex
+srun "-M$f1 -t50"  $reg_default
+
+set regex [build_regex $f2]
+
+srun "--test-only" $regex
+srun "--test-only" $regex
+srun "--test-only" $regex
+srun "-M$f2 -t50"  $reg_default
+
+set regex [build_regex $f3]
+
+srun "--test-only" $regex
+srun "--test-only" $regex
+srun "--test-only" $regex
+srun "-M$f3 -t50"  $reg_default
+
+set regex [build_regex $f1]
+
+srun "--test-only" $regex
+srun "--test-only" $regex
+srun "--test-only" $regex
+
+set matches 0
+spawn $my_srun -N11 --exclusive --test-only sleep 30
+expect {
+	-re "allocation failure: Requested node configuration is not\
+		available\\s+" {
+		incr matches
+	}
+	timeout {
+		log_error "srun not responding"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	log_error "srun failure"
+	end_it 1
+}
+
+
+
+# All Done
+end_it 0

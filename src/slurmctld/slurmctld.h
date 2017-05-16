@@ -1588,6 +1588,14 @@ extern void job_validate_mem(struct job_record *job_ptr);
 extern void check_job_step_time_limit (struct job_record *job_ptr, time_t now);
 
 /*
+ * Kill job or job step
+ *
+ * IN job_step_kill_msg - msg with specs on which job/step to cancel.
+ * IN uid               - uid of user requesting job/step cancel.
+ */
+extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid);
+
+/*
  * kill_job_by_part_name - Given a partition name, deallocate resource for
  *	its jobs and kill them
  * IN part_name - name of a partition
@@ -2255,11 +2263,12 @@ extern void sync_job_priorities(void);
  * update_job - update a job's parameters per the supplied specifications
  * IN msg - RPC to update job, including change specification
  * IN uid - uid of user issuing RPC
+ * IN send_msg - whether to send msg back or not
  * RET returns an error code from slurm_errno.h
  * global: job_list - global list of job entries
  *	last_job_update - time of last job table update
  */
-extern int update_job(slurm_msg_t *msg, uid_t uid);
+extern int update_job(slurm_msg_t *msg, uid_t uid, bool send_msg);
 
 /*
  * IN msg - RPC to update job, including change specification

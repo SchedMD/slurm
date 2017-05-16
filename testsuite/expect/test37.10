@@ -1,0 +1,563 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Federated job cancellations
+#
+# Reqs:    1. Using slurmdbd accounting storage type and is up
+#          2. fed_slurm_base is defined in globals.local - set to directory that
+#          has access to each federation configure (fedc1, fedc2, fedc3).
+#          Eg.
+#          fedr/slurm/ (src)
+#          fedr/fed1/bin
+#          fedr/fed1/sbin
+#          fedr/fed1/etc
+#          fedr/fed1/...
+#          fedr/fed2/...
+#          fedr/fed3/...
+#          3. controllers are up and running.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2017 SchedMD LLC.
+# Written by Isaac Hartung <ihartung@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+source ./globals
+source ./globals_accounting
+source ./globals_federation
+
+set test_id     "37.10"
+set exit_code   0
+set fed_name    "feda"
+set user_name   ""
+set srun_job_cnt 0
+set my_scontrol "${fed_slurm_base}/$fedc1/bin/scontrol"
+set my_sbatch "${fed_slurm_base}/$fedc1/bin/sbatch"
+set my_srun "${fed_slurm_base}/$fedc1/bin/srun"
+set my_scancel "${fed_slurm_base}/$fedc1/bin/scancel"
+set my_squeue "${fed_slurm_base}/$fedc1/bin/squeue"
+set my_scontrol "${fed_slurm_base}/$fedc1/bin/scontrol"
+set min_job_age [expr {[get_min_job_age] + 65}]
+set file_in          "test$test_id.in"
+
+set eol "\r\n"
+
+print_header $test_id
+
+#
+# Check accounting config and bail if not found.
+#
+if { [test_account_storage] == 0 } {
+	log_warn "This test can't be run without a usable AccountStorageType"
+	exit 0
+}
+
+if { [string compare [check_accounting_admin_level] "Administrator"] } {
+	log_warn "This test can't be run without being an Accounting administrator.$eol \
+	 	  Use: sacctmgr mod user \$USER set admin=admin."
+	exit 0
+}
+
+proc mod_regex { olds str } {
+	global eol
+
+	foreach o $olds {
+		set o "\\$o$eol"
+		set str [string map [list $o {}] $str]
+		if { [string first "(|" $str] ne -1 } {
+			set str [string map {"(|" ""} $str]
+			set str [string map {"){2}"  ""} $str]
+		}
+		if { [string first "|)" $str] ne -1 } {
+			set str [string map {"|){2}" ""} $str]
+			set str [string map {"("  ""} $str]
+		}
+	}
+	return $str
+}
+
+proc find_reg { sub } {
+	global regs
+
+	set result ""
+
+	foreach r $regs {
+		if { [string first $sub $r] ne -1} {
+			append result "$r "
+		}
+	}
+
+	set result [string trimright $result " "]
+	return $result
+}
+
+proc lremove { list discard } {
+
+	return [lsearch -all -inline -not -exact $list $discard]
+
+}
+
+proc sbatch { args } {
+	global number bin_sleep node_count my_sbatch file_in
+
+	set matches 0
+	set job_id 0
+	set command "$my_sbatch -N$node_count --exclusive --output=/dev/null \
+		--error=/dev/null -t300 --requeue "
+	append command $args
+	append command " $file_in"
+	set regex "Submitted batch job ($number).+"
+
+	spawn {*}$command
+	expect {
+		-re "$regex" {
+			incr matches
+			set job_id $expect_out(1,string)
+		}
+		timeout {
+			log_error "sbatch not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		log_error "batch submit failure"
+		end_it 1
+	}
+	return $job_id
+}
+
+
+
+proc squeue { options regex } {
+	global my_squeue
+
+	set matches 0
+	set command "$my_squeue --noheader -a "
+	append command $options
+	spawn {*}$command
+	expect {
+		-re "$regex" {
+			incr matches
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		log_error "unexpected error in squeue. expected $regex"
+		end_it 1
+	}
+}
+
+proc scancel { options argument } {
+	global my_scancel
+
+	set matches 0
+	set command "$my_scancel "
+	append command $options
+	append command " $argument"
+	spawn {*}$command
+
+	sleep 2
+}
+
+
+proc cancel_all_jobs { } {
+	global scancel user_name fedc1 fedc2 fedc3
+
+	spawn $scancel -M$fedc1,$fedc2,$fedc3 --user $user_name
+	expect {
+		eof {
+			wait
+		}
+	}
+	sleep 5
+}
+
+proc cleanup { } {
+	global scancel fed_name user_name bin_rm file_in fedc1 fedc2 fedc3
+	global test_id bin_bash my_sacctmgr
+
+	cancel_all_jobs
+	exec $bin_rm -f $file_in
+	exec $bin_bash -c "$bin_rm -f test$test_id*.out"
+
+	return [delete_federations $fed_name]
+}
+
+proc end_it { exit_code } {
+	global test_id my_squeue
+	cleanup
+	if {$exit_code == 0} {
+		print_success $test_id
+	}
+	exit $exit_code
+}
+
+#start test
+
+if {[test_federation_setup]} {
+	log_warn "WARNING: This test can't be run without fed_slurm_base,\
+		fedc1, fedc2, fedc3 setup in globals.local."
+	exit 0
+}
+
+if {[test_cluster_up $fedc1] ||
+    [test_cluster_up $fedc2] ||
+    [test_cluster_up $fedc3]} {
+	end_it 1
+}
+
+set user_name [get_my_user_name]
+
+# Remove existing setup
+if {[cleanup] != 0} {
+	log_error "failed to cleanup"
+	end_it 1
+}
+
+# add clusters to federation
+if {[setup_federation $fed_name]} {
+	log_error "failed to setup federation"
+	end_it 1
+}
+
+# get number of nodes per cluster
+set node_count [available_nodes "" ""]
+
+send_user "$eol################################################################$eol"
+send_user "Setup cluster features"
+send_user "$eol################################################################$eol"
+
+set matches 0
+set my_pid [spawn $sacctmgr -i modify cluster $fedc1 set features=fa]
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Feature\\s+=\\s+fa" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$fedc1$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "$eolFAILURE: sacctmgr mod not responding$eol"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 4} {
+	send_user "$matches FAILURE: unexpected error.$eol"
+	end_it 1
+}
+
+set matches 0
+set my_pid [spawn $sacctmgr -i modify cluster $fedc2 set features=fb]
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Feature\\s+=\\s+fb" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$fedc2$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "$eolFAILURE: sacctmgr mod not responding$eol"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 4} {
+	send_user "$matches FAILURE: unexpected error.$eol"
+	end_it 1
+}
+
+set matches 0
+set my_pid [spawn $sacctmgr -i modify cluster $fedc3 set features=fc]
+expect {
+
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Feature\\s+=\\s+fc" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$fedc3$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "$eolFAILURE: sacctmgr mod not responding$eol"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 4} {
+	send_user "$matches FAILURE: unexpected error.$eol"
+	end_it 1
+}
+
+make_bash_script $file_in "sleep 900"
+
+send_user "$eol################################################################$eol"
+send_user "test scancel within federated clusters"
+send_user "$eol################################################################$eol"
+
+set ji0 [sbatch]
+set jid([wait_for_fed_job $ji0 RUNNING $fedc1,$fedc2,$fedc3]) $ji0
+set ji1 [sbatch]
+set jid([wait_for_fed_job $ji1 RUNNING $fedc1,$fedc2,$fedc3]) $ji1
+set ji2 [sbatch]
+set jid([wait_for_fed_job $ji2 RUNNING $fedc1,$fedc2,$fedc3]) $ji2
+set jid(PD) [sbatch]
+wait_for_fed_job $jid(PD) PENDING $fedc1,$fedc2,$fedc3
+
+set regpd "\\s+$jid(PD).+PD.+$eol"
+set reg1a "\\s+$jid($fedc1).+R.+$eol"
+set reg1b "\\s+$jid($fedc2).+RV.+$eol"
+set reg1c "\\s+$jid($fedc3).+RV.+$eol"
+set reg2 "\\s+$jid($fedc2).+R.+$eol"
+set reg3 "\\s+$jid($fedc3).+R.+$eol"
+
+set regs "$regpd $reg1a $reg1b $reg1c $reg2 $reg3"
+
+set regf1 "CLUSTER: $fedc1\\s+$regpd$reg1a\\s*($reg1b|$reg1c){2}$eol"
+set regf2 "CLUSTER: $fedc2\\s+$regpd$reg2$eol"
+set regf3 "CLUSTER: $fedc3\\s+$regpd$reg3"
+
+set regex "$regf1$regf2$regf3"
+
+squeue " -Mfed1,fed2,fed3 " $regex
+
+scancel "" $jid(PD)
+
+set rm [find_reg $jid(PD)]
+set regex [mod_regex $rm $regex]
+
+squeue " -Mfed1,fed2,fed3 " $regex
+
+scancel "" $jid($fedc1)
+
+set rm [find_reg $jid($fedc1)]
+set regex [mod_regex $rm $regex]
+
+squeue " -Mfed1,fed2,fed3 " $regex
+
+scancel "" $jid($fedc2)
+
+set rm [find_reg $jid($fedc2)]
+set regex [mod_regex $rm $regex]
+
+squeue " -Mfed1,fed2,fed3 " $regex
+
+scancel "" $jid($fedc3)
+
+set rm [find_reg $jid($fedc3)]
+set regex [mod_regex $rm $regex]
+
+squeue " -Mfed1,fed2,fed3 " $regex
+
+set ji0 [sbatch]
+set cid($ji0)  [wait_for_fed_job $ji0 RUNNING $fedc1,$fedc2,$fedc3]
+set jid($cid($ji0)) $ji0
+set ji1 [sbatch]
+set cid($ji1)  [wait_for_fed_job $ji1 RUNNING $fedc1,$fedc2,$fedc3]
+set jid($cid($ji1)) $ji1
+set ji2 [sbatch]
+set cid($ji2)  [wait_for_fed_job $ji2 RUNNING $fedc1,$fedc2,$fedc3]
+set jid($cid($ji2)) $ji2
+set ji3 [sbatch]
+set jid(PD) $ji3
+wait_for_fed_job $ji3 PENDING $fedc1,$fedc2,$fedc3
+
+set regpd "\\s+$jid(PD).+PD.+$eol"
+set reg1a "\\s+$jid($fedc1).+R.+$eol"
+set reg1b "\\s+$jid($fedc2).+RV.+$eol"
+set reg1c "\\s+$jid($fedc3).+RV.+$eol"
+set reg2 "\\s+$jid($fedc2).+R.+$eol"
+set reg3 "\\s+$jid($fedc3).+R.+$eol"
+
+set regs "$regpd $reg1a $reg1b $reg1c $reg2 $reg3"
+
+set regf1 "CLUSTER: $fedc1$eol$regpd$reg1a\\s*($reg1b|$reg1c){2}$eol"
+set regf2 "CLUSTER: $fedc2$eol$regpd$reg2$eol"
+set regf3 "CLUSTER: $fedc3$eol$regpd$reg3"
+
+set regex "$regf1$regf2$regf3"
+
+squeue " -Mfed1,fed2,fed3 " $regex
+
+scancel "-M$fedc3" $ji3
+
+set rm [find_reg $ji3]
+set regex [mod_regex $rm $regex]
+
+squeue " -Mfed1,fed2,fed3 " $regex
+
+scancel "-M$cid($ji0)" $ji0
+
+set rm [find_reg $ji0]
+set regex [mod_regex $rm $regex]
+
+squeue " -Mfed1,fed2,fed3 " $regex
+
+scancel "-M$cid($ji1)" $ji1
+
+set rm [find_reg $ji1]
+set regex [mod_regex $rm $regex]
+
+squeue " -Mfed1,fed2,fed3 " $regex
+
+scancel "-M$cid($ji2)" $ji2
+
+set rm [find_reg $ji2]
+set regex [mod_regex $rm $regex]
+
+squeue " -Mfed1,fed2,fed3 " $regex
+
+set ji0 [sbatch]
+set cid($ji0)  [wait_for_fed_job $ji0 RUNNING $fedc1,$fedc2,$fedc3]
+set jid($cid($ji0)) $ji0
+set ji1 [sbatch]
+set cid($ji1)  [wait_for_fed_job $ji1 RUNNING $fedc1,$fedc2,$fedc3]
+set jid($cid($ji1)) $ji1
+set ji2 [sbatch]
+set cid($ji2)  [wait_for_fed_job $ji2 RUNNING $fedc1,$fedc2,$fedc3]
+set jid($cid($ji2)) $ji2
+
+set reg1a "\\s+$jid($fedc1).+R.+$eol"
+set reg1b "\\s+$jid($fedc2).+RV.+$eol"
+set reg1c "\\s+$jid($fedc3).+RV.+$eol"
+set reg2 "\\s+$jid($fedc2).+R.+$eol"
+set reg3 "\\s+$jid($fedc3).+R.+$eol"
+
+set regs "$reg1a $reg1b $reg1c $reg2 $reg3"
+
+set regf1 "CLUSTER: $fedc1$eol$reg1a\\s*($reg1b|$reg1c){2}$eol"
+set regf2 "CLUSTER: $fedc2$eol$reg2$eol"
+set regf3 "CLUSTER: $fedc3$eol$reg3"
+
+set regex "$regf1$regf2$regf3"
+
+squeue " -Mfed1,fed2,fed3 " $regex
+
+scancel "-M$fedc3" $jid($fedc2)
+
+set rm [find_reg $jid($fedc2)]
+set regex [mod_regex $rm $regex]
+
+squeue " -Mfed1,fed2,fed3 " $regex
+
+scancel "-M$fedc2" $jid($fedc3)
+
+set rm [find_reg $jid($fedc3)]
+set regex [mod_regex $rm $regex]
+
+squeue " -Mfed1,fed2,fed3 " $regex
+
+scancel "-M$fedc2" $jid($fedc1)
+
+set rm [find_reg $jid($fedc1)]
+set regex [mod_regex $rm $regex]
+
+squeue " -Mfed1,fed2,fed3 " $regex
+
+set ji0 [sbatch]
+set cid($ji0)  [wait_for_fed_job $ji0 RUNNING $fedc1,$fedc2,$fedc3]
+set jid($cid($ji0)) $ji0
+set ji1 [sbatch]
+set cid($ji1)  [wait_for_fed_job $ji1 RUNNING $fedc1,$fedc2,$fedc3]
+set jid($cid($ji1)) $ji1
+set ji2 [sbatch]
+set cid($ji2)  [wait_for_fed_job $ji2 RUNNING $fedc1,$fedc2,$fedc3]
+set jid($cid($ji2)) $ji2
+set ji3 [sbatch]
+set jid(PD) $ji3
+wait_for_fed_job $ji3 PENDING $fedc1,$fedc2,$fedc3
+
+set regpd "\\s+$jid(PD).+PD.+$eol"
+set reg1a "\\s+$jid($fedc1).+R.+$eol"
+set reg1b "\\s+$jid($fedc2).+RV.+$eol"
+set reg1c "\\s+$jid($fedc3).+RV.+$eol"
+set reg2 "\\s+$jid($fedc2).+R.+$eol"
+set reg3 "\\s+$jid($fedc3).+R.+$eol"
+
+set regs "$regpd $reg1a $reg1b $reg1c $reg2 $reg3"
+
+set regf1 "CLUSTER: $fedc1$eol$regpd$reg1a\\s*($reg1b|$reg1c){2}$eol"
+set regf2 "CLUSTER: $fedc2$eol$regpd$reg2$eol"
+set regf3 "CLUSTER: $fedc3$eol$regpd$reg3"
+
+set regex "$regf1$regf2$regf3"
+
+squeue " -Mfed1,fed2,fed3 " $regex
+
+set my_scancel "${fed_slurm_base}/$fedc3/bin/scancel"
+
+spawn $my_scancel -u $user_name
+
+wait_for_fed_job $ji0 DONE $fedc1,$fedc2,$fedc2
+wait_for_fed_job $ji1 DONE $fedc1,$fedc2,$fedc2
+wait_for_fed_job $ji2 DONE $fedc1,$fedc2,$fedc2
+wait_for_fed_job $ji3 DONE $fedc1,$fedc2,$fedc2
+
+set regex [mod_regex $regs $regex]
+
+squeue " -Mfed1,fed2,fed3 " $regex
+
+# All Done
+end_it 0

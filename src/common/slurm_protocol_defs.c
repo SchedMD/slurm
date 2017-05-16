@@ -221,7 +221,7 @@ extern char *slurm_char_list_to_xstr(List char_list)
 
 static int _char_list_copy(void *item, void *dst)
 {
-	list_append((List)dst, item);
+	list_append((List)dst, xstrdup((char *)item));
 	return SLURM_SUCCESS;
 }
 
@@ -3987,15 +3987,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_UPDATE_JOB:
 		slurm_free_job_desc_msg(data);
 		break;
-	case REQUEST_SIB_JOB_START:
-	case REQUEST_SIB_JOB_CANCEL:
-	case REQUEST_SIB_JOB_REQUEUE:
-	case REQUEST_SIB_JOB_COMPLETE:
 	case REQUEST_SIB_JOB_LOCK:
 	case REQUEST_SIB_JOB_UNLOCK:
-	case REQUEST_SIB_JOB_WILL_RUN:
-	case REQUEST_SIB_SUBMIT_BATCH_JOB:
-	case REQUEST_SIB_RESOURCE_ALLOCATION:
+	case REQUEST_SIB_MSG:
 		slurm_free_sib_msg(data);
 		break;
 	case RESPONSE_JOB_WILL_RUN:
@@ -4640,28 +4634,17 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_JOB_SBCAST_CRED";
 	case RESPONSE_JOB_SBCAST_CRED:
 		return "RESPONSE_JOB_SBCAST_CRED";
-	case REQUEST_SIB_JOB_START:
-		return "REQUEST_SIB_JOB_START";
-	case REQUEST_SIB_JOB_CANCEL:
-		return "REQUEST_SIB_JOB_CANCEL";
-	case REQUEST_SIB_JOB_REQUEUE:
-		return "REQUEST_SIB_JOB_REQUEUE";
-	case REQUEST_SIB_JOB_COMPLETE:
-		return "REQUEST_SIB_JOB_COMPLETE";
-	case REQUEST_SIB_JOB_LOCK:
+
+	case REQUEST_SIB_JOB_LOCK:				/* 4050 */
 		return "REQUEST_SIB_JOB_LOCK";
-	case REQUEST_SIB_JOB_UNLOCK:				/* 4030 */
+	case REQUEST_SIB_JOB_UNLOCK:
 		return "REQUEST_SIB_JOB_UNLOCK";
-	case REQUEST_SIB_JOB_WILL_RUN:
-		return "REQUEST_SIB_JOB_WILL_RUN";
-	case REQUEST_SIB_SUBMIT_BATCH_JOB:
-		return "REQUEST_SIB_SUBMIT_BATCH_JOB";
-	case REQUEST_SIB_RESOURCE_ALLOCATION:
-		return "REQUEST_SIB_RESOURCE_ALLOCATION";
 	case REQUEST_CTLD_MULT_MSG:
 		return "REQUEST_CTLD_MULT_MSG";
 	case RESPONSE_CTLD_MULT_MSG:
 		return "RESPONSE_CTLD_MULT_MSG";
+	case REQUEST_SIB_MSG:
+		return "REQUEST_SIB_MSG";
 
 	case REQUEST_JOB_STEP_CREATE:				/* 5001 */
 		return "REQUEST_JOB_STEP_CREATE";

@@ -65,8 +65,12 @@ extern int       fed_mgr_job_cancel(struct job_record *job_ptr, uint16_t signal,
 				    uint16_t flags, uid_t uid);
 extern int       fed_mgr_job_complete(struct job_record *job_ptr,
 				      uint32_t return_code, time_t start_time);
+extern bool      fed_mgr_job_is_locked(struct job_record *job_ptr);
+extern bool      fed_mgr_job_is_self_owned(struct job_record *job_ptr);
 extern int       fed_mgr_job_lock(struct job_record *job_ptr,
 				  uint32_t cluster_id);
+extern int       fed_mgr_job_lock_set(uint32_t job_id, uint32_t cluster_id);
+extern int       fed_mgr_job_lock_unset(uint32_t job_id, uint32_t cluster_id);
 extern int       fed_mgr_job_unlock(struct job_record *job_ptr,
 				    uint32_t cluster_id);
 extern int       fed_mgr_job_requeue(struct job_record *job_ptr);
@@ -78,20 +82,15 @@ extern int       fed_mgr_job_revoke(struct job_record *job_ptr,
 extern int       fed_mgr_job_revoke_sibs(struct job_record *job_ptr);
 extern int       fed_mgr_job_start(struct job_record *job_ptr,
 				   uint32_t cluster_id, time_t start_time);
+extern int       fed_mgr_q_sib_msg(slurm_msg_t *sib_msg, uint32_t rpc_uid);
 extern int       fed_mgr_remove_active_sibling(uint32_t job_id, char *sib_name);
-extern int       fed_mgr_sib_will_run(slurm_msg_t *msg,
-				      job_desc_msg_t *job_desc, uid_t uid,
-				      will_run_response_msg_t **resp);
-extern slurmdb_federation_rec_t *fed_mgr_state_load(char *state_save_location);
+extern void      fed_mgr_remove_fed_job_info(uint32_t job_id);
 extern int       fed_mgr_state_save(char *state_save_location);
-extern int       fed_mgr_sync(const char *sib_name);
-extern int       fed_mgr_update_job(job_desc_msg_t *job_specs,
-				    uint64_t update_sibs);
+extern int       fed_mgr_update_job(uint32_t job_id, job_desc_msg_t *job_specs,
+				    uint64_t update_sibs, uid_t uid);
 extern int       fed_mgr_update_job_clusters(struct job_record *job_ptr,
 					     char *spec_clusters);
 extern int       fed_mgr_update_job_cluster_features(struct job_record *job_ptr,
 						     char *req_features);
 extern int       fed_mgr_update_feds(slurmdb_update_object_t *update);
-extern int       fed_mgr_validate_cluster_features(char *spec_features,
-						   uint64_t *cluster_bitmap);
 #endif /* _SLURM_FED_MGR_H */
