@@ -2243,7 +2243,7 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 	last = now;
 
 	if (cluster_flags & CLUSTER_FLAG_FED)
-		show_flags |= SHOW_GLOBAL;
+		show_flags |= SHOW_FEDERATION;
 	if (working_sview_config.show_hidden)
 		/*ignore 'AllowGroups, Hidden settings*/
 		show_flags |= SHOW_ALL;

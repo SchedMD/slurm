@@ -77,9 +77,9 @@ documents those changes that are of interest to users and administrators.
  -- Changed default ProctrackType to cgroup.
  -- Add "cluster_name" field to node_info_t and partition_info_t data structure.
     It is filled in only when the cluster is part of a federation and
-    SHOW_GLOBAL flag used.
+    SHOW_FEDERATION flag used.
  -- Functions slurm_load_node() slurm_load_partitions() modified to show all
-    nodes/partitions in a federation when the SHOW_GLOBAL flag is used.
+    nodes/partitions in a federation when the SHOW_FEDERATION flag is used.
  -- Add federated views to sview.
 
 * Changes in Slurm 17.02.4

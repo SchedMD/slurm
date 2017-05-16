@@ -1295,7 +1295,7 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 		cluster_name = xstrdup(working_cluster_rec->name);
 	else
 		cluster_name = slurm_get_cluster_name();
-	if ((show_flags & SHOW_GLOBAL) &&
+	if ((show_flags & SHOW_FEDERATION) &&
 	    (slurm_load_federation(&ptr) == SLURM_SUCCESS) &&
 	    cluster_in_federation(ptr, cluster_name)) {
 		/* In federation. Need full info from all clusters */
@@ -1304,7 +1304,7 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 	} else {
 		/* Report local cluster info only */
 		show_flags |= SHOW_LOCAL;
-		show_flags &= (~SHOW_GLOBAL);
+		show_flags &= (~SHOW_FEDERATION);
 	}
 
 	slurm_msg_t_init(&req_msg);
@@ -1313,7 +1313,7 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 	req_msg.msg_type = REQUEST_JOB_INFO;
 	req_msg.data     = &req;
 
-	if (show_flags & SHOW_GLOBAL) {
+	if (show_flags & SHOW_FEDERATION) {
 		fed = (slurmdb_federation_rec_t *) ptr;
 		rc = _load_fed_jobs(&req_msg, job_info_msg_pptr, show_flags,
 				    cluster_name, fed);

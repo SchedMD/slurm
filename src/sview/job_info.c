@@ -3619,7 +3619,7 @@ extern int get_new_info_job(job_info_msg_t **info_ptr,
 	last = now;
 
 	if (cluster_flags & CLUSTER_FLAG_FED)
-		show_flags |= SHOW_GLOBAL;
+		show_flags |= SHOW_FEDERATION;
 	if (working_sview_config.show_hidden)
 		show_flags |= SHOW_ALL;
 	if (g_job_info_ptr) {

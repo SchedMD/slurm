@@ -599,7 +599,7 @@ extern int slurm_load_partitions(time_t update_time,
 	else
 		cluster_name = slurm_get_cluster_name();
 	if (!working_cluster_rec &&
-	    (show_flags & SHOW_GLOBAL) &&
+	    (show_flags & SHOW_FEDERATION) &&
 	    (slurm_load_federation(&ptr) == SLURM_SUCCESS) &&
 	    cluster_in_federation(ptr, cluster_name)) {
 		/* In federation. Need full info from all clusters */
@@ -608,7 +608,7 @@ extern int slurm_load_partitions(time_t update_time,
 	} else {
 		/* Report local cluster info only */
 		show_flags |= SHOW_LOCAL;
-		show_flags &= (~SHOW_GLOBAL);
+		show_flags &= (~SHOW_FEDERATION);
 	}
 
 	slurm_msg_t_init(&req_msg);
@@ -617,7 +617,7 @@ extern int slurm_load_partitions(time_t update_time,
 	req_msg.msg_type = REQUEST_PARTITION_INFO;
 	req_msg.data     = &req;
 
-	if (show_flags & SHOW_GLOBAL) {
+	if (show_flags & SHOW_FEDERATION) {
 		fed = (slurmdb_federation_rec_t *) ptr;
 		rc = _load_fed_parts(&req_msg, resp, show_flags, cluster_name,
 				     fed);
