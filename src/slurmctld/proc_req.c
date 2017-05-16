@@ -124,6 +124,7 @@ static void         _throttle_start(int *active_rpc_cnt);
 inline static void  _slurm_rpc_accounting_first_reg(slurm_msg_t *msg);
 inline static void  _slurm_rpc_accounting_register_ctld(slurm_msg_t *msg);
 inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg);
+inline static void  _slurm_rpc_allocate_pack(slurm_msg_t * msg);
 inline static void  _slurm_rpc_allocate_resources(slurm_msg_t * msg,
 						  bool is_sib_job);
 inline static void  _slurm_rpc_block_info(slurm_msg_t * msg);
@@ -311,6 +312,9 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 	case REQUEST_RESOURCE_ALLOCATION:
 		_slurm_rpc_allocate_resources(msg, false);
 		break;
+	case REQUEST_JOB_PACK_ALLOCATION:
+		_slurm_rpc_allocate_pack(msg);
+		break;
 	case REQUEST_BUILD_INFO:
 		_slurm_rpc_dump_conf(msg);
 		break;
@@ -408,7 +412,6 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		_slurm_rpc_node_registration(msg, 0);
 		break;
 	case REQUEST_JOB_ALLOCATION_INFO:
-	case REQUEST_JOB_ALLOCATION_INFO_LITE:
 		_slurm_rpc_job_alloc_info(msg);
 		break;
 	case REQUEST_JOB_SBCAST_CRED:
@@ -1025,6 +1028,158 @@ static int _make_step_cred(struct step_record *step_ptr,
 	return SLURM_SUCCESS;
 }
 
+/* _slurm_rpc_allocate_pack: process RPC to allocate a pack resources for
+ *	a job
+ */
+static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
+{
+	static int active_rpc_cnt = 0;
+	int error_code = SLURM_SUCCESS;
+	DEF_TIMERS;
+	job_desc_msg_t *job_desc_msg;
+	List job_req_list = (List) msg->data;
+	/* Locks: Read config, write job, write node, read partition */
+	slurmctld_lock_t job_write_lock = {
+		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
+					 slurmctld_config.auth_info);
+	struct job_record *job_ptr;
+	char *err_msg = NULL;
+	ListIterator iter;
+	bool priv_user;
+
+	START_TIMER;
+
+	if (slurmctld_config.submissions_disabled) {
+		info("Submissions disabled on system");
+		error_code = ESLURM_SUBMISSIONS_DISABLED;
+		goto send_msg;
+	}
+
+	debug2("sched: Processing RPC: REQUEST_JOB_PACK_ALLOCATION from uid=%d",
+	       uid);
+	priv_user = validate_slurm_user(uid);
+	_throttle_start(&active_rpc_cnt);
+	lock_slurmctld(job_write_lock);
+	iter = list_iterator_create(job_req_list);
+	while ((job_desc_msg = (job_desc_msg_t *) list_next(iter))) {
+		if ((uid != job_desc_msg->user_id) && !priv_user) {
+			error_code = ESLURM_USER_ID_MISSING;
+			error("Security violation, REQUEST_JOB_PACK_ALLOCATION from uid=%d",
+			      uid);
+			break;
+		}
+
+		if ((job_desc_msg->alloc_node == NULL) ||
+		    (job_desc_msg->alloc_node[0] == '\0')) {
+			error_code = ESLURM_INVALID_NODE_NAME;
+			error("REQUEST_JOB_PACK_ALLOCATION lacks alloc_node from uid=%d",
+			      uid);
+			break;
+		}
+
+		if (job_desc_msg->immediate) {
+			error_code = ESLURM_CAN_NOT_START_IMMEDIATELY;
+			break;
+		}
+
+		/* Locks are for job_submit plugin use */
+		error_code = validate_job_create_req(job_desc_msg,uid,&err_msg);
+		if (error_code)
+			break;
+
+#if HAVE_ALPS_CRAY
+		/*
+		 * Catch attempts to nest salloc sessions. It is not possible to
+		 * use an ALPS session which has the same alloc_sid, it fails
+		 * even if PAGG container IDs are used.
+		 */
+		if (allocated_session_in_use(job_desc_msg)) {
+			error_code = ESLURM_RESERVATION_BUSY;
+			error("attempt to nest ALPS allocation on %s:%d by uid=%d",
+			      job_desc_msg->alloc_node, job_desc_msg->alloc_sid,
+			      uid);
+			break;
+		}
+#endif
+		dump_job_desc(job_desc_msg);
+
+//FIXME: Need to delay allocation, add pack ID, etc.
+		job_ptr = NULL;
+		error_code = job_allocate(job_desc_msg, false, false, NULL,
+					  true, uid, &job_ptr, &err_msg,
+					  msg->protocol_version);
+		if (error_code)
+info("ERR:%d", error_code);
+//			break;
+	}
+	list_iterator_destroy(iter);
+	unlock_slurmctld(job_write_lock);
+	_throttle_fini(&active_rpc_cnt);
+
+send_msg:
+	END_TIMER2("_slurm_rpc_allocate_pack");
+	info("%s: %s ", __func__, slurm_strerror(error_code));
+	if (err_msg)
+		slurm_send_rc_err_msg(msg, error_code, err_msg);
+	else
+		slurm_send_rc_msg(msg, error_code);
+	xfree(err_msg);
+//FIXME: Add federation support?
+#if 0
+	/* Zero out the record as not all fields may be set.
+	 */
+	memset(&alloc_msg, 0, sizeof(resource_allocation_response_msg_t));
+
+	if (error_code) {
+		reject_job = true;
+	} else if (!slurm_get_peer_addr(msg->conn_fd, &resp_addr)) {
+		/* resp_host could already be set from a federated cluster */
+		if (!job_desc_msg->resp_host) {
+			job_desc_msg->resp_host = xmalloc(16);
+			slurm_get_ip_str(&resp_addr, &port,
+					 job_desc_msg->resp_host, 16);
+		}
+		dump_job_desc(job_desc_msg);
+		do_unlock = true;
+
+		lock_slurmctld(job_write_lock);
+		if (fed_mgr_fed_rec) {
+			uint32_t job_id;
+			if (fed_mgr_job_allocate(msg, job_desc_msg, true, uid,
+						 msg->protocol_version, &job_id,
+						 &error_code, &err_msg)) {
+				reject_job = true;
+			} else if (!(job_ptr = find_job_record(job_id))) {
+				error("%s: can't find fed job that was just created. this should never happen",
+				      __func__);
+				reject_job = true;
+				error_code = SLURM_ERROR;
+			}
+		} else {
+			error_code = job_allocate(job_desc_msg, false,
+						  false, NULL, true, uid,
+						  &job_ptr, &err_msg,
+						  msg->protocol_version);
+			/* unlock after finished using the job structure
+			 * data */
+
+			/* return result */
+			if (!job_ptr ||
+			    (error_code && job_ptr->job_state == JOB_FAILED))
+				reject_job = true;
+		}
+		END_TIMER2("_slurm_rpc_allocate_resources");
+	} else {
+		reject_job = true;
+		if (errno)
+			error_code = errno;
+		else
+			error_code = SLURM_ERROR;
+	}
+#endif
+}
+
 /* _slurm_rpc_allocate_resources:  process RPC to allocate resources for
  *	a job
  *
@@ -1054,14 +1209,14 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg, bool is_sib_job)
 	slurm_addr_t resp_addr;
 	char *err_msg = NULL;
 
+	START_TIMER;
+
 	if (slurmctld_config.submissions_disabled) {
 		info("Submissions disabled on system");
 		error_code = ESLURM_SUBMISSIONS_DISABLED;
 		reject_job = true;
 		goto send_msg;
 	}
-
-	START_TIMER;
 
 	/* Zero out the record as not all fields may be set.
 	 */
@@ -1154,9 +1309,8 @@ send_msg:
 
 	if (!reject_job) {
 		xassert(job_ptr);
-		info("sched: _slurm_rpc_allocate_resources JobId=%u "
-		     "NodeList=%s %s",job_ptr->job_id,
-		     job_ptr->nodes, TIME_STR);
+		info("sched: %s JobId=%u NodeList=%s %s", __func__,
+		     job_ptr->job_id, job_ptr->nodes, TIME_STR);
 
 		/* send job_ID and node_name_ptr */
 		if (job_ptr->job_resrcs && job_ptr->job_resrcs->cpu_array_cnt) {
@@ -1265,8 +1419,7 @@ send_msg:
 			unlock_slurmctld(job_write_lock);
 			_throttle_fini(&active_rpc_cnt);
 		}
-		info("_slurm_rpc_allocate_resources: %s ",
-		     slurm_strerror(error_code));
+		info("%s: %s ", __func__, slurm_strerror(error_code));
 		if (err_msg)
 			slurm_send_rc_err_msg(msg, error_code, err_msg);
 		else
@@ -2900,12 +3053,7 @@ static void _slurm_rpc_job_alloc_info(slurm_msg_t * msg)
 		slurm_msg_t_init(&response_msg);
 		response_msg.flags = msg->flags;
 		response_msg.protocol_version = msg->protocol_version;
-		if (msg->msg_type == REQUEST_JOB_ALLOCATION_INFO_LITE) {
-			response_msg.msg_type =
-				RESPONSE_JOB_ALLOCATION_INFO_LITE;
-		} else {
-			response_msg.msg_type = RESPONSE_JOB_ALLOCATION_INFO;
-		}
+		response_msg.msg_type = RESPONSE_JOB_ALLOCATION_INFO;
 		response_msg.data        = &job_info_resp_msg;
 
 		slurm_send_node_msg(msg->conn_fd, &response_msg);

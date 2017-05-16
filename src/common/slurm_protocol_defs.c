@@ -744,7 +744,7 @@ extern void slurm_free_job_step_kill_msg(job_step_kill_msg_t * msg)
 extern void slurm_free_job_info_request_msg(job_info_request_msg_t *msg)
 {
 	if (msg) {
-		FREE_NULL_LIST(msg->job_ids);						//
+		FREE_NULL_LIST(msg->job_ids);
 		xfree(msg);
 	}
 }
@@ -4013,7 +4013,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case REQUEST_JOB_END_TIME:
 	case REQUEST_JOB_ALLOCATION_INFO:
-	case REQUEST_JOB_ALLOCATION_INFO_LITE:
 		slurm_free_job_alloc_info_msg(data);
 		break;
 	case REQUEST_JOB_SBCAST_CRED:
@@ -4297,6 +4296,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case RESPONSE_JOB_INFO:
 		slurm_free_job_info(data);
+		break;
+	case REQUEST_JOB_PACK_ALLOCATION:
+		FREE_NULL_LIST(data);
 		break;
 	default:
 		error("invalid type trying to be freed %u", type);
@@ -4622,8 +4624,8 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_JOB_ALLOCATION_INFO";
 	case RESPONSE_JOB_ALLOCATION_INFO:
 		return "RESPONSE_JOB_ALLOCATION_INFO";
-	case REQUEST_JOB_ALLOCATION_INFO_LITE:
-		return "REQUEST_JOB_ALLOCATION_INFO_LITE";
+	case REQUEST_JOB_PACK_ALLOCATION:
+		return "REQUEST_JOB_PACK_ALLOCATION";
 	case RESPONSE_JOB_ALLOCATION_INFO_LITE:
 		return "RESPONSE_JOB_ALLOCATION_INFO_LITE";
 	case REQUEST_UPDATE_JOB_TIME:

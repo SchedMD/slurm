@@ -338,7 +338,6 @@ static void _opt_default(void)
 	opt.kill_command_signal = SIGTERM;
 	opt.kill_command_signal_set = false;
 
-	opt.immediate	= 0;
 	opt.overcommit	= false;
 
 	opt.quiet = 0;
@@ -390,6 +389,7 @@ static void _opt_default(void)
 	opt.priority = 0;
 
 	if (first_pass) {
+		opt.immediate	= 0;
 		opt.no_shell	= false;
 		opt.verbose	= 0;
 	}

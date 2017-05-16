@@ -144,7 +144,6 @@ slurm_allocate_resources (job_desc_msg_t *req,
 	return SLURM_PROTOCOL_SUCCESS;
 }
 
-
 /*
  * slurm_allocate_resources_blocking
  *	allocate resources for a job request.  This call will block until
@@ -243,8 +242,8 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 		}
 		break;
 	case RESPONSE_RESOURCE_ALLOCATION:
-		/* Yay, the controller has acknowledged our request!  But did
-		   we really get an allocation yet? */
+		/* Yay, the controller has acknowledged our request!
+		 * Test if we have an allocation yet? */
 		resp = (resource_allocation_response_msg_t *) resp_msg.data;
 		if (resp->node_cnt > 0) {
 			/* yes, allocation has been granted */
@@ -278,6 +277,158 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 		_destroy_allocation_response_socket(listen);
 	xfree(req->alloc_node);
 	xfree(req);
+	errno = errnum;
+	return resp;
+}
+
+/*
+ * slurm_allocate_pack_job_blocking
+ *	allocate resources for a list of job requests.  This call will block
+ *	until the entire allocation is granted, or the specified timeout limit
+ *	is reached.
+ * IN req - List of resource allocation requests
+ * IN timeout - amount of time, in seconds, to wait for a response before
+ * 	giving up.
+ *	A timeout of zero will wait indefinitely.
+ * IN pending_callback - If the allocation cannot be granted immediately,
+ *      the controller will put the job in the PENDING state.  If
+ *      pending callback is not NULL, it will be called with the job_id
+ *      of the pending job as the sole parameter.
+ *
+ * RET List of allocation structures on success, NULL on error set errno to
+ *	indicate the error (errno will be ETIMEDOUT if the timeout is reached
+ *      with no allocation granted)
+ * NOTE: free the response using list_destroy()
+ */
+List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
+				      void(*pending_callback)(uint32_t job_id))
+{
+	int rc;
+	slurm_msg_t req_msg;
+	slurm_msg_t resp_msg;
+//resource_allocation_response_msg_t *resp = NULL;
+	List resp = NULL;
+	char *local_hostname = NULL;
+//uint32_t job_id;
+	job_desc_msg_t *req;
+	listen_t *listen = NULL;
+	int errnum = SLURM_SUCCESS;
+	ListIterator iter;
+	bool immediate_flag = false;
+	bool immediate_logged = false;
+
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
+
+	/*
+	 * set node name and session ID for this request
+	 */
+	local_hostname = xshort_hostname();
+	iter = list_iterator_create(job_req_list);
+	while ((req = (job_desc_msg_t *) list_next(iter))) {
+		if (req->alloc_sid == NO_VAL)
+			req->alloc_sid = getsid(0);
+
+		if (!req->alloc_node) {
+			if (local_hostname) {
+				req->alloc_node = local_hostname;
+			} else if (immediate_logged) {
+				req->immediate = 1;
+			} else {
+				req->immediate = 1;
+				error("Could not get local hostname, forcing "
+				      "immediate allocation mode");
+				immediate_logged = true;
+			}
+		}
+		if (req->immediate)
+			immediate_flag = true;
+	}
+	list_iterator_destroy(iter);
+
+	if (!immediate_flag) {
+		listen = _create_allocation_response_socket(local_hostname);
+		if (listen == NULL) {
+			xfree(local_hostname);
+			return NULL;
+		}
+
+		iter = list_iterator_create(job_req_list);
+		while ((req = (job_desc_msg_t *)list_next(iter)))
+			req->alloc_resp_port = listen->port;
+		list_iterator_destroy(iter);
+	}
+
+	req_msg.msg_type = REQUEST_JOB_PACK_ALLOCATION;
+	req_msg.data     = job_req_list;
+
+	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg,
+					    working_cluster_rec);
+
+	if (rc == SLURM_SOCKET_ERROR) {
+		int errnum = errno;
+		destroy_forward(&req_msg.forward);
+		destroy_forward(&resp_msg.forward);
+		if (!immediate_flag)
+			_destroy_allocation_response_socket(listen);
+		xfree(local_hostname);
+		errno = errnum;
+		return NULL;
+	}
+
+	switch (resp_msg.msg_type) {
+	case RESPONSE_SLURM_RC:
+		if (_handle_rc_msg(&resp_msg) < 0) {
+			/* will reach this when the allocation fails */
+			errnum = errno;
+		} else {
+			/* shouldn't get here */
+			errnum = -1;
+		}
+		break;
+#if 0
+//FIXME
+	case RESPONSE_JOB_PACK_ALLOCATION:
+		/* Yay, the controller has acknowledged our request!
+		 * Test if we have an allocation yet? */
+		resp = (resource_allocation_response_msg_t *) resp_msg.data;
+		if (resp->node_cnt > 0) {
+			/* yes, allocation has been granted */
+			errno = SLURM_PROTOCOL_SUCCESS;
+		} else if (!req->immediate) {
+			if (resp->error_code != SLURM_SUCCESS)
+				info("%s", slurm_strerror(resp->error_code));
+			/* no, we need to wait for a response */
+			job_id = resp->job_id;
+			slurm_free_resource_allocation_response_msg(resp);
+			if (pending_callback != NULL)
+				pending_callback(job_id);
+ 			resp = _wait_for_allocation_response(job_id, listen,
+							     timeout);
+			/* If NULL, we didn't get the allocation in
+			   the time desired, so just free the job id */
+			if ((resp == NULL) && (errno != ESLURM_ALREADY_DONE)) {
+				errnum = errno;
+				slurm_complete_job(job_id, -1);
+			}
+		}
+		break;
+#endif
+	default:
+		errnum = SLURM_UNEXPECTED_MSG_ERROR;
+	}
+
+	destroy_forward(&req_msg.forward);
+	destroy_forward(&resp_msg.forward);
+	if (!immediate_flag)
+		_destroy_allocation_response_socket(listen);
+	iter = list_iterator_create(job_req_list);
+	while ((req = (job_desc_msg_t *)list_next(iter))) {
+		if (req->alloc_node == local_hostname)
+			req->alloc_node = NULL;
+	}
+	list_iterator_destroy(iter);
+	xfree(local_hostname);
 	errno = errnum;
 	return resp;
 }

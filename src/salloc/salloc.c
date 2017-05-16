@@ -165,6 +165,7 @@ int main(int argc, char **argv)
 	static bool env_cache_set = false;
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	job_desc_msg_t *desc = NULL;
+	List job_req_list = NULL, job_resp_list;
 	resource_allocation_response_msg_t *alloc;
 	time_t before, after;
 	allocation_msg_thread_t *msg_thr;
@@ -261,10 +262,16 @@ int main(int argc, char **argv)
 			_set_rlimits(env);
 		}
 
+		if (desc && !job_req_list) {
+			job_req_list = list_create(NULL);
+			list_append(job_req_list, desc);
+		}
 		desc = xmalloc(sizeof(job_desc_msg_t));
 		slurm_init_job_desc_msg(desc);
 		if (_fill_job_desc_from_opts(desc) == -1)
 			exit(error_exit);
+		if (job_req_list)
+			list_append(job_req_list, desc);
 	}
 	if (!desc) {
 		fatal("%s: desc is NULL", __func__);
@@ -330,6 +337,7 @@ int main(int argc, char **argv)
 
 	/* If can run on multiple clusters find the earliest run time
 	 * and run it there */
+//FIXME: Caveat for federations??
 	desc->clusters = xstrdup(opt.clusters);
 	if (opt.clusters &&
 	    slurmdb_get_first_avail_cluster(desc, opt.clusters,
@@ -355,8 +363,19 @@ int main(int argc, char **argv)
 		xsignal(sig_array[i], _signal_while_allocating);
 
 	before = time(NULL);
-	while ((alloc = slurm_allocate_resources_blocking(desc, opt.immediate,
-					_pending_callback)) == NULL) {
+	while (true) {
+		if (job_req_list) {
+			job_resp_list = slurm_allocate_pack_job_blocking(
+					job_req_list, opt.immediate,
+					_pending_callback);
+			if (job_resp_list)
+				break;
+		} else {
+			alloc = slurm_allocate_resources_blocking(desc,
+					opt.immediate, _pending_callback);
+			if (alloc)
+				break;
+		}
 		if (((errno != ESLURM_ERROR_ON_DESC_TO_RECORD_COPY) &&
 		     (errno != EAGAIN)) || (retries >= MAX_RETRIES))
 			break;
@@ -364,7 +383,7 @@ int main(int argc, char **argv)
 			error("%s", msg);
 		else
 			debug("%s", msg);
-		sleep (++retries);
+		sleep(++retries);
 	}
 
 	/* become the user after the allocation has been requested. */

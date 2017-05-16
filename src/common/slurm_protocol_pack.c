@@ -453,6 +453,12 @@ static void _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 static int _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr,
 				Buf buffer,
 				uint16_t protocol_version);
+
+static void _pack_job_desc_list_msg(List job_req_list, Buf buffer,
+				    uint16_t protocol_version);
+static int _unpack_job_desc_list_msg(List *job_req_list, Buf buffer,
+				     uint16_t protocol_version);
+
 static int _unpack_job_info_msg(job_info_msg_t ** msg, Buf buffer,
 				uint16_t protocol_version);
 
@@ -928,9 +934,12 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case REQUEST_SUBMIT_BATCH_JOB:
 	case REQUEST_JOB_WILL_RUN:
 	case REQUEST_UPDATE_JOB:
-		_pack_job_desc_msg((job_desc_msg_t *)
-				   msg->data, buffer,
+		_pack_job_desc_msg((job_desc_msg_t *) msg->data, buffer,
 				   msg->protocol_version);
+		break;
+	case REQUEST_JOB_PACK_ALLOCATION:
+		_pack_job_desc_list_msg((List) msg->data, buffer,
+					msg->protocol_version);
 		break;
 	case REQUEST_SIB_JOB_START:
 	case REQUEST_SIB_JOB_CANCEL:
@@ -951,7 +960,6 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		break;
 	case REQUEST_JOB_END_TIME:
 	case REQUEST_JOB_ALLOCATION_INFO:
-	case REQUEST_JOB_ALLOCATION_INFO_LITE:
 		_pack_job_alloc_info_msg((job_alloc_info_msg_t *) msg->data,
 					 buffer,
 					 msg->protocol_version);
@@ -1006,7 +1014,6 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 					  msg->data, buffer,
 					  msg->protocol_version);
 		break;
-	case RESPONSE_JOB_ALLOCATION_INFO_LITE:
 	case RESPONSE_JOB_ALLOCATION_INFO:
 	case RESPONSE_RESOURCE_ALLOCATION:
 		_pack_resource_allocation_response_msg
@@ -1615,8 +1622,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case REQUEST_JOB_WILL_RUN:
 	case REQUEST_UPDATE_JOB:
 		rc = _unpack_job_desc_msg((job_desc_msg_t **) & (msg->data),
-					  buffer,
-					  msg->protocol_version);
+					  buffer, msg->protocol_version);
+		break;
+	case REQUEST_JOB_PACK_ALLOCATION:
+		rc = _unpack_job_desc_list_msg((List *) &(msg->data),
+					       buffer, msg->protocol_version);
 		break;
 	case REQUEST_SIB_JOB_START:
 	case REQUEST_SIB_JOB_CANCEL:
@@ -1637,7 +1647,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		break;
 	case REQUEST_JOB_END_TIME:
 	case REQUEST_JOB_ALLOCATION_INFO:
-	case REQUEST_JOB_ALLOCATION_INFO_LITE:
 		rc = _unpack_job_alloc_info_msg((job_alloc_info_msg_t **) &
 						(msg->data), buffer,
 						msg->protocol_version);
@@ -1694,7 +1703,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 						 & (msg->data), buffer,
 						 msg->protocol_version);
 		break;
-	case RESPONSE_JOB_ALLOCATION_INFO_LITE:
 	case RESPONSE_JOB_ALLOCATION_INFO:
 	case RESPONSE_RESOURCE_ALLOCATION:
 		rc = _unpack_resource_allocation_response_msg(
@@ -8876,6 +8884,68 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 unpack_error:
 	slurm_free_job_desc_msg(job_desc_ptr);
 	*job_desc_buffer_ptr = NULL;
+	return SLURM_ERROR;
+}
+
+/* _pack_job_desc_list_msg
+ * packs a list of job_desc structs
+ * IN job_desc_ptr - pointer to the job descriptor to pack
+ * IN/OUT buffer - destination of the pack, contains pointers that are
+ *			automatically updated
+ */
+static void
+_pack_job_desc_list_msg(List job_req_list, Buf buffer,
+			uint16_t protocol_version)
+{
+	job_desc_msg_t *req;
+	ListIterator iter;
+	uint16_t cnt = 0;
+ 
+	if (job_req_list)
+		cnt = list_count(job_req_list);
+	pack16(cnt, buffer);
+	if (cnt == 0)
+		return;
+
+	iter = list_iterator_create(job_req_list);
+	while ((req = (job_desc_msg_t *)list_next(iter))) {
+		_pack_job_desc_msg(req, buffer, protocol_version);
+	}
+	list_iterator_destroy(iter);
+}
+
+void _free_job_desc_list(void *x)
+{
+	job_desc_msg_t *job_desc_ptr = (job_desc_msg_t *) x;
+	slurm_free_job_desc_msg(job_desc_ptr);
+}
+
+static int
+_unpack_job_desc_list_msg(List *job_req_list, Buf buffer,
+			  uint16_t protocol_version)
+{
+	job_desc_msg_t *req;
+	uint16_t cnt = 0;
+	int i;
+ 
+	*job_req_list = NULL;
+
+	safe_unpack16(&cnt, buffer);
+	if (cnt == 0)
+		return SLURM_SUCCESS;
+
+	*job_req_list = list_create(_free_job_desc_list);
+	for (i = 0; i < cnt; i++) {
+		req = NULL;
+		if (_unpack_job_desc_msg(&req, buffer, protocol_version) !=
+		    SLURM_SUCCESS)
+			goto unpack_error;
+		list_append(*job_req_list, req);
+	}
+	return SLURM_SUCCESS;
+
+unpack_error:
+	FREE_NULL_LIST(*job_req_list);
 	return SLURM_ERROR;
 }
 
