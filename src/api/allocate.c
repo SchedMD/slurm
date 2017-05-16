@@ -371,6 +371,10 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
 		destroy_forward(&resp_msg.forward);
 		if (!immediate_flag)
 			_destroy_allocation_response_socket(listen);
+		while ((req = (job_desc_msg_t *)list_next(iter))) {
+			if (req->alloc_node == local_hostname)
+				req->alloc_node = NULL;
+		}
 		xfree(local_hostname);
 		errno = errnum;
 		return NULL;
