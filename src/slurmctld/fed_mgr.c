@@ -4092,7 +4092,8 @@ static int _reconcile_fed_job(void *x, void *arg)
 
 	/* Only look at jobs that originate from the remote sibling and if the
 	 * sibling could have the job */
-	if (!job_ptr->details ||
+	if (!job_ptr->fed_details ||
+	    !job_ptr->details ||
 	    (job_ptr->details->submit_time >= rec_sib->sync_time) ||
 	    IS_JOB_COMPLETED(job_ptr) || IS_JOB_COMPLETING(job_ptr) ||
 	    ((fed_mgr_get_cluster_id(job_ptr->job_id) != sibling_id) &&
