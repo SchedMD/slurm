@@ -53,6 +53,7 @@
 #define OPT_LONG_NAME      0x102
 #define OPT_LONG_NOCONVERT 0x103
 #define OPT_LONG_UNITS     0x104
+#define OPT_LONG_FEDR      0x105
 
 #define JOB_HASH_SIZE 1000
 
@@ -326,6 +327,7 @@ sacct [<OPTION>]                                                            \n \
                    Select jobs eligible before this time.  If states are    \n\
                    given with the -s option return jobs in this state before\n\
                    this period.                                             \n\
+         --federation: Report jobs from federation if a member of a one.    \n\
      -f, --file=file:                                                       \n\
 	           Read data from the specified file, rather than SLURM's   \n\
                    current accounting log file. (Only appliciable when      \n\
@@ -353,6 +355,8 @@ sacct [<OPTION>]                                                            \n \
                    Ignored by itself, but if timelimit_min is set this will \n\
                    be the maximum timelimit of the range.  Default is no    \n\
                    restriction.                                             \n\
+         --local   Report information only about jobs on the local cluster. \n\
+	           Overrides --federation.                                  \n\
      -l, --long:                                                            \n\
 	           Equivalent to specifying                                 \n\
 	           '--format=jobid,jobname,partition,maxvmsize,maxvmsizenode,\n\
@@ -633,6 +637,7 @@ void parse_command_line(int argc, char **argv)
                 {"completion",     no_argument,       0,    'c'},
                 {"delimiter",      required_argument, 0,    OPT_LONG_DELIMITER},
                 {"duplicates",     no_argument,       0,    'D'},
+                {"federation",     no_argument,       0,    OPT_LONG_FEDR},
                 {"helpformat",     no_argument,       0,    'e'},
                 {"help-fields",    no_argument,       0,    'e'},
                 {"endtime",        required_argument, 0,    'E'},
@@ -680,6 +685,8 @@ void parse_command_line(int argc, char **argv)
 	log_init("sacct", opts, SYSLOG_FACILITY_DAEMON, NULL);
 	opterr = 1;		/* Let getopt report problems to the user */
 
+	if (getenv("SACCT_FEDERATION"))
+		params.opt_federation = true;
 	if (getenv("SACCT_LOCAL"))
 		params.opt_local = true;
 
@@ -719,6 +726,7 @@ void parse_command_line(int argc, char **argv)
 				break;
 			}
 			all_clusters = false;
+			params.opt_local = true;
 			if (!job_cond->cluster_list)
 				job_cond->cluster_list =
 					list_create(slurm_destroy_char);
@@ -801,6 +809,10 @@ void parse_command_line(int argc, char **argv)
 			break;
 		case 'l':
 			long_output = true;
+			break;
+		case OPT_LONG_FEDR:
+			params.opt_federation = true;
+			all_clusters = false;
 			break;
 		case OPT_LONG_LOCAL:
 			params.opt_local = true;
@@ -1019,7 +1031,8 @@ void parse_command_line(int argc, char **argv)
 	}
 
 	/* specific clusters requested? */
-	if (!all_clusters && !job_cond->cluster_list && !params.opt_local) {
+	if (params.opt_federation && !all_clusters && !job_cond->cluster_list &&
+	    !params.opt_local) {
 		/* Test if in federated cluster and if so, get information from
 		 * all clusters in that federation */
 		slurmdb_federation_rec_t *fed = NULL;

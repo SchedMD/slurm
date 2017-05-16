@@ -80,6 +80,7 @@ extern int all_flag;	/* display even hidden partitions */
 extern int detail_flag;	/* display additional details */
 extern int exit_code;	/* scontrol's exit code, =1 on any error at any time */
 extern int exit_flag;	/* program to terminate if =1 */
+extern int federation_flag; /* show federated jobs */
 extern int input_words;	/* number of words of input permitted */
 extern int local_flag;	/* show only local jobs -- not remote remote sib jobs */
 extern int one_liner;	/* one record per line if =1 */

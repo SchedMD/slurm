@@ -49,6 +49,7 @@
 #define OPT_LONG_HIDE    0x102
 #define OPT_LONG_LOCAL   0x103
 #define OPT_LONG_SIBLING 0x104
+#define OPT_LONG_FEDR    0x105
 
 /* Global externs from scontrol.h */
 char *command_name;
@@ -57,6 +58,7 @@ int all_flag = 0;	/* display even hidden partitions */
 int detail_flag = 0;	/* display additional details */
 int exit_code = 0;	/* scontrol's exit code, =1 on any error at any time */
 int exit_flag = 0;	/* program to terminate if =1 */
+int federation_flag = 0;/* show federated jobs */
 int input_words = 128;	/* number of words of input permitted */
 int local_flag = 0;     /* show only local jobs -- not remote remote sib jobs */
 int one_liner = 0;	/* one record per line if =1 */
@@ -107,6 +109,7 @@ int main(int argc, char **argv)
 		{"cluster",  1, 0, 'M'},
 		{"clusters", 1, 0, 'M'},
 		{"details",  0, 0, 'd'},
+		{"federation",0, 0, OPT_LONG_FEDR},
 		{"help",     0, 0, 'h'},
 		{"hide",     0, 0, OPT_LONG_HIDE},
 		{"local",    0, 0, OPT_LONG_LOCAL},
@@ -132,7 +135,10 @@ int main(int argc, char **argv)
 			exit(1);
 		}
 		working_cluster_rec = list_peek(clusters);
+		local_flag = 1;
 	}
+	if (getenv("SCONTROL_FEDERATION"))
+		federation_flag = 1;
 	if (getenv("SCONTROL_LOCAL"))
 		local_flag = 1;
 	if (getenv("SCONTROL_SIB") || getenv("SCONTROL_SIBLING"))
@@ -160,6 +166,9 @@ int main(int argc, char **argv)
 		case (int)'h':
 			_usage ();
 			exit(exit_code);
+			break;
+		case OPT_LONG_FEDR:
+			federation_flag = 1;
 			break;
 		case OPT_LONG_HIDE:
 			all_flag = 0;
@@ -1940,15 +1949,18 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
     Valid <OPTION> values are:                                             \n\
      -a or --all: equivalent to \"all\" command                            \n\
      -d or --details: equivalent to \"details\" command                    \n\
+           --federation: Report federated job information if a member of a \n\
+	     one.                                                          \n\
      -h or --help: equivalent to \"help\" command                          \n\
            --hide: equivalent to \"hide\" command                          \n\
-           --local: Report information only about jobs on the local cluster\n\
-     -M or --cluster: equivalent to \"cluster\" command                    \n\
+           --local: Report information only about jobs on the local cluster.\n\
+	     Overrides --federation.                                       \n\
+     -M or --cluster: equivalent to \"cluster\" command. Implies --local.  \n\
              NOTE: SlurmDBD must be up.                                    \n\
      -o or --oneliner: equivalent to \"oneliner\" command                  \n\
      -Q or --quiet: equivalent to \"quiet\" command                        \n\
            --sibling: Report information about all sibling jobs on a       \n\
-	     federated cluster                                             \n\
+	     federated cluster. Implies --federation.                      \n\
      -u or --uid: Update job as user <uid> instead of the invoking user id.\n\
      -v or --verbose: equivalent to \"verbose\" command                    \n\
      -V or --version: equivalent to \"version\" command                    \n\

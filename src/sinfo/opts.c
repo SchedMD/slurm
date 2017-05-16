@@ -57,6 +57,7 @@
 #define OPT_LONG_HIDE      0x102
 #define OPT_LONG_LOCAL     0x103
 #define OPT_LONG_NOCONVERT 0x104
+#define OPT_LONG_FEDR      0x105
 
 /* FUNCTIONS */
 static List  _build_state_list( char* str );
@@ -93,6 +94,7 @@ extern void parse_command_line(int argc, char **argv)
 		{"bg",        no_argument,       0, 'b'},
 		{"dead",      no_argument,       0, 'd'},
 		{"exact",     no_argument,       0, 'e'},
+		{"federation",no_argument,       0, OPT_LONG_FEDR},
 		{"help",      no_argument,       0, OPT_LONG_HELP},
 		{"hide",      no_argument,       0, OPT_LONG_HIDE},
 		{"iterate",   required_argument, 0, 'i'},
@@ -125,9 +127,10 @@ extern void parse_command_line(int argc, char **argv)
 		env_a_set = true;
 		params.all_flag = true;
 	}
-	if (getenv("SINFO_LOCAL")) {
+	if (getenv("SINFO_FEDERATION"))
+		params.federation_flag = true;
+	if (getenv("SINFO_LOCAL"))
 		params.local = true;
-	}
 	if ( ( env_val = getenv("SINFO_PARTITION") ) ) {
 		env_p_set = true;
 		params.partition = xstrdup(env_val);
@@ -147,6 +150,7 @@ extern void parse_command_line(int argc, char **argv)
 			exit(1);
 		}
 		working_cluster_rec = list_peek(params.clusters);
+		params.local = true;
 	}
 
 	while ((opt_char = getopt_long(argc, argv,
@@ -204,6 +208,7 @@ extern void parse_command_line(int argc, char **argv)
 				exit(1);
 			}
 			working_cluster_rec = list_peek(params.clusters);
+			params.local = true;
 			break;
 		case OPT_LONG_NOCONVERT:
 			params.convert_flags |= CONVERT_NUM_UNIT_NO;
@@ -279,6 +284,9 @@ extern void parse_command_line(int argc, char **argv)
 		case (int) 'V':
 			print_slurm_version ();
 			exit(0);
+		case (int) OPT_LONG_FEDR:
+			params.federation_flag = true;
+			break;
 		case (int) OPT_LONG_HELP:
 			_help();
 			exit(0);
@@ -302,7 +310,7 @@ extern void parse_command_line(int argc, char **argv)
 
 	params.cluster_flags = slurmdb_setup_cluster_flags();
 
-	if (!params.clusters && !params.local) {
+	if (params.federation_flag && !params.clusters && !params.local) {
 		void *ptr = NULL;
 		char *cluster_name = slurm_get_cluster_name();
 		if (slurm_load_federation(&ptr) ||
@@ -1347,7 +1355,7 @@ static void _usage( void )
 {
 	printf("\
 Usage: sinfo [-abdelNRrsTv] [-i seconds] [-t states] [-p partition] [-n nodes]\n\
-             [-S fields] [-o format] [-O Format] [--local]\n");
+             [-S fields] [-o format] [-O Format] [--federation] [--local]\n");
 }
 
 static void _help( void )
@@ -1359,12 +1367,14 @@ Usage: sinfo [OPTIONS]\n\
   -b, --bg                   show bgblocks (on Blue Gene systems)\n\
   -d, --dead                 show only non-responding nodes\n\
   -e, --exact                group nodes only on exact match of configuration\n\
+      --federation           Report federated information if a member of one\n\
   -h, --noheader             no headers on output\n\
   --hide                     do not show hidden or non-accessible partitions\n\
   -i, --iterate=seconds      specify an iteration period\n\
-      --local                show only local cluster in a federation\n\
+      --local                show only local cluster in a federation.\n\
+                             Overrides --federation.\n\
   -l, --long                 long output - displays more information\n\
-  -M, --clusters=names       clusters to issue commands to.\n\
+  -M, --clusters=names       clusters to issue commands to. Implies --local.\n\
                              NOTE: SlurmDBD must be up.\n\
   -n, --nodes=NODES          report on specific node(s)\n\
   --noconvert                don't convert units from their original type\n\

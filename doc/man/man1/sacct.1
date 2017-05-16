@@ -177,6 +177,10 @@ YYYY\-MM\-DD[THH:MM[:SS]]
 .IP
 
 .TP
+\fB\-\-federation\fR
+Show jobs from the federation if a member of one.
+
+.TP
 \f3\-f \fP\f2file\fP\f3,\fP  \f3\-\-file\fP\f3=\fP\f2file\fP
 Causes the \f3sacct\fP command to read job accounting data from the
 named \f2file\fP instead of the current Slurm job accounting log
@@ -226,7 +230,7 @@ maximum timelimit of the range.  Default is no restriction.
 .TP
 \f3\-\-local\fP
 Show only jobs local to this cluster. Ignore other clusters in this federation
-(if any).
+(if any). Overrides \-\-federation.
 
 .TP
 \f3\-l\fP\f3,\fP \f3\-\-long\fP
@@ -255,6 +259,7 @@ in the \f2cluster_list\fP.
 A value of \(aq\fIall\fR' will query to run on all clusters.
 The default is current cluster you are executing the \f3sacct\fP command on or
 all clusters in the federation when executed on a federated cluster.
+This option implicitly sets the \fB\-\-local\fR option.
 
 .TP
 \f3\-n\fP\f3,\fP \f3\-\-noheader\fP
@@ -875,6 +880,9 @@ be set via environment variables. These environment variables,
 along with their corresponding options, are listed below. (Note:
 Commandline options will always override these settings.)
 .TP 20
+\fBSACCT_FEDERATION\fR
+Same as \fB\-\-federation\fR
+.TP
 \fBSACCT_LOCAL\fR
 Same as \fB\-\-local\fR
 .TP

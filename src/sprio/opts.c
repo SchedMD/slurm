@@ -57,6 +57,7 @@
 #define OPT_LONG_USAGE     0x101
 #define OPT_LONG_LOCAL     0x102
 #define OPT_LONG_SIBLING   0x103
+#define OPT_LONG_FEDR      0x104
 
 /* FUNCTIONS */
 static List  _build_job_list( char* str );
@@ -77,7 +78,10 @@ static void _opt_env(void)
 			print_db_notok(env_val, 1);
 			exit(1);
 		}
+		params.local = true;
 	}
+	if (getenv("SPRIO_FEDERATION"))
+		params.federation = true;
 	if (getenv("SPRIO_LOCAL"))
 		params.local = true;
 	if (getenv("SPRIO_SIBLING"))
@@ -106,6 +110,7 @@ parse_command_line( int argc, char* *argv )
 		{"verbose",    no_argument,       0, 'v'},
 		{"version",    no_argument,       0, 'V'},
 		{"weights",    no_argument,       0, 'w'},
+		{"federation", no_argument,       0, OPT_LONG_FEDR},
 		{"help",       no_argument,       0, OPT_LONG_HELP},
 		{"local",      no_argument,       0, OPT_LONG_LOCAL},
 		{"sib",        no_argument,       0, OPT_LONG_SIBLING},
@@ -144,6 +149,7 @@ parse_command_line( int argc, char* *argv )
 				print_db_notok(optarg, 0);
 				exit(1);
 			}
+			params.local = true;
 			break;
 		case (int) 'n':
 			params.normalized = true;
@@ -169,6 +175,9 @@ parse_command_line( int argc, char* *argv )
 			exit(0);
 		case (int) 'w':
 			params.weights = true;
+			break;
+		case OPT_LONG_FEDR:
+			params.federation = true;
 			break;
 		case OPT_LONG_HELP:
 			_help();
@@ -509,13 +518,14 @@ _build_user_list(char* str)
 static void _usage(void)
 {
 	printf("Usage: sprio [-j jid[s]] [-u user_name[s]] [-o format] [-p partitions]\n");
-	printf("   [--local] [--sibling] [--usage] [-hlnvVw]\n");
+	printf("   [--federation] [--local] [--sibling] [--usage] [-hlnvVw]\n");
 }
 
 static void _help(void)
 {
 	printf("\
 Usage: sprio [OPTIONS]\n\
+      --federation                display jobs in federation if a member of one\n\
   -h, --noheader                  no headers on output\n\
   -j, --jobs                      comma separated list of jobs\n\
                                   to view, default is all\n\

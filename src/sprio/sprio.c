@@ -115,10 +115,12 @@ int main (int argc, char **argv)
 	}
 	xfree(prio_type);
 
+	if (params.federation)
+		show_flags |= SHOW_FEDERATION;
 	if (params.clusters || params.local)
 		show_flags |= SHOW_LOCAL;
 	if (params.sibling)
-		show_flags |= SHOW_SIBLING;
+		show_flags |= SHOW_FEDERATION | SHOW_SIBLING;
 	error_code = slurm_load_job_prio(&resp_msg, params.job_list,
 					 params.parts, params.user_list,
 					 show_flags);

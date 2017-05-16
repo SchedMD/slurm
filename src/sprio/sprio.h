@@ -58,6 +58,7 @@
 #include "src/sprio/print.h"
 
 struct sprio_parameters {
+	bool federation;
 	bool job_flag;
 	bool local;
 	bool long_list;

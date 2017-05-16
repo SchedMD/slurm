@@ -34,6 +34,10 @@ with the minimum value followed by a "+" for nodes with the
 same partition and state (e.g., "250+").
 
 .TP
+\fB\-\-federation\fR
+Show all partitions from the federation if a member of one.
+
+.TP
 \fB\-h\fR, \fB\-\-noheader\fR
 Do not print a header on the output.
 
@@ -56,7 +60,7 @@ By default, prints a time stamp with the header.
 .TP
 \fB\-\-local\fR
 Show only jobs local to this cluster. Ignore other clusters in this federation
-(if any).
+(if any). Overrides \-\-federation.
 
 .TP
 \fB\-l\fR, \fB\-\-long\fR
@@ -742,6 +746,9 @@ Commandline options will always override these settings.)
 .TP 20
 \fBSINFO_ALL\fR
 \fB\-a, \-\-all\fR
+.TP
+\fBSINFO_FEDERATION\fR
+Same as \fB\-\-federation\fR
 .TP
 \fBSINFO_FORMAT\fR
 \fB\-o <output_format>, \-\-format=<output_format>\fR

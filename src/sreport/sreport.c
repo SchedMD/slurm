@@ -50,11 +50,13 @@
 
 #define BUFFER_SIZE		4096
 #define OPT_LONG_LOCAL		0x101
+#define OPT_LONG_FEDR		0x102
 
 char *command_name;
 int exit_code;		/* sreport's exit code, =1 on any error at any time */
 int exit_flag;		/* program to terminate if =1 */
 char *fed_name = NULL;	/* Operating in federation mode */
+bool federation_flag;	/* --federation option */
 int input_words;	/* number of words of input permitted */
 bool local_flag;	/* --local option */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
@@ -93,9 +95,10 @@ main (int argc, char **argv)
 	static struct option long_options[] = {
 		{"all_clusters", 0, 0, 'a'},
 		{"cluster",  1, 0, 'M'},
+		{"federation", no_argument, 0, OPT_LONG_FEDR},
 		{"help",     0, 0, 'h'},
 		{"immediate",0, 0, 'i'},
-		{"local",          no_argument,       0,    OPT_LONG_LOCAL},
+		{"local",    no_argument, 0, OPT_LONG_LOCAL},
 		{"noheader", 0, 0, 'n'},
 		{"parsable", 0, 0, 'p'},
 		{"parsable2",0, 0, 'P'},
@@ -111,6 +114,7 @@ main (int argc, char **argv)
 	command_name      = argv[0];
 	exit_code         = 0;
 	exit_flag         = 0;
+	federation_flag   = false;
 	input_field_count = 0;
 	local_flag        = false;
 	quiet_flag        = 0;
@@ -131,9 +135,12 @@ main (int argc, char **argv)
 	}
 	xfree(temp);
 
-	temp = getenv("SREPORT_CLUSTER");
-	if (temp)
+	if (getenv("SREPORT_CLUSTER")) {
 		cluster_flag = xstrdup(optarg);
+		local_flag = true;
+	}
+	if (getenv("SREPORT_FEDERATION"))
+		federation_flag = true;
 	if (getenv("SREPORT_LOCAL"))
 		local_flag = true;
 	temp = getenv("SREPORT_TRES");
@@ -155,11 +162,15 @@ main (int argc, char **argv)
 		case (int)'a':
 			all_clusters_flag = 1;
 			break;
+		case OPT_LONG_FEDR:
+			federation_flag = true;
+			break;
 		case OPT_LONG_LOCAL:
 			local_flag = true;
 			break;
 		case (int) 'M':
 			cluster_flag = xstrdup(optarg);
+			federation_flag = true;
 			break;
 		case (int)'n':
 			print_fields_have_header = 0;
@@ -223,7 +234,8 @@ main (int argc, char **argv)
 		}
 	}
 
-	if (!all_clusters_flag && !cluster_flag && !local_flag)
+	if (federation_flag && !all_clusters_flag && !cluster_flag &&
+	    !local_flag)
 		cluster_flag = _build_cluster_string();
 
 	my_uid = getuid();
@@ -812,6 +824,7 @@ void _usage (void) {
 sreport [<OPTION>] [<COMMAND>]                                             \n\
     Valid <OPTION> values are:                                             \n\
      -a or --all_clusters: Use all clusters instead of current             \n\
+     --federation: Generate reports for the federation if a member of one  \n\
      -h or --help: equivalent to \"help\" command                          \n\
      --local: Report local cluster, even when in federation of clusters    \n\
      -n or --noheader: equivalent to \"noheader\" command                  \n\

@@ -179,6 +179,7 @@ typedef struct {
 	slurmdb_job_cond_t *job_cond;
 	int opt_completion;	/* --completion */
 	int opt_dup;		/* --duplicates; +1 = explicitly set */
+	bool opt_federation;	/* --federation */
 	char *opt_field_list;	/* --fields= */
 	char *opt_filein;	/* --file */
 	int opt_gid;		/* running persons gid */

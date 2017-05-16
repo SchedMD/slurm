@@ -174,10 +174,12 @@ _print_job ( bool clear_old )
 
 	if (params.all_flag || (params.job_list && list_count(params.job_list)))
 		show_flags |= SHOW_ALL;
+	if (params.federation_flag)
+		show_flags |= SHOW_FEDERATION;
 	if (params.local_flag)
 		show_flags |= SHOW_LOCAL;
 	if (params.sibling_flag)
-		show_flags |= SHOW_SIBLING;
+		show_flags |= SHOW_FEDERATION | SHOW_SIBLING;
 
 	/* We require detail data when CPUs are requested */
 	if (params.format && strstr(params.format, "C"))

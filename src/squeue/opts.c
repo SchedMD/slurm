@@ -63,6 +63,7 @@
 #define OPT_LONG_ARRAY_UNIQUE 0x105
 #define OPT_LONG_LOCAL        0x106
 #define OPT_LONG_SIBLING      0x107
+#define OPT_LONG_FEDR         0x108
 
 /* FUNCTIONS */
 static List  _build_job_list( char* str );
@@ -100,6 +101,7 @@ parse_command_line( int argc, char* *argv )
 		{"array-unique",no_argument,      0, OPT_LONG_ARRAY_UNIQUE},
 		{"Format",     required_argument, 0, 'O'},
 		{"format",     required_argument, 0, 'o'},
+		{"federation", no_argument,       0, OPT_LONG_FEDR},
 		{"help",       no_argument,       0, OPT_LONG_HELP},
 		{"hide",       no_argument,       0, OPT_LONG_HIDE},
 		{"iterate",    required_argument, 0, 'i'},
@@ -149,7 +151,10 @@ parse_command_line( int argc, char* *argv )
 			exit(1);
 		}
 		working_cluster_rec = list_peek(params.clusters);
+		params.local_flag = true;
 	}
+	if (getenv("SQUEUE_FEDERATION"))
+		params.federation_flag = true;
 	if (getenv("SQUEUE_LOCAL"))
 		params.local_flag = true;
 	if (getenv("SQUEUE_PRIORITY"))
@@ -210,6 +215,7 @@ parse_command_line( int argc, char* *argv )
 				exit(1);
 			}
 			working_cluster_rec = list_peek(params.clusters);
+			params.local_flag = true;
 			break;
 		case (int) 'n':
 			xfree(params.names);
@@ -311,6 +317,9 @@ parse_command_line( int argc, char* *argv )
 		case OPT_LONG_HELP:
 			_help();
 			exit(0);
+		case OPT_LONG_FEDR:
+			params.federation_flag = true;
+			break;
 		case OPT_LONG_HIDE:
 			params.all_flag = false;
 			break;
@@ -1688,6 +1697,7 @@ _print_options(void)
 	printf( "-----------------------------\n" );
 	printf( "all         = %s\n", params.all_flag ? "true" : "false");
 	printf( "array       = %s\n", params.array_flag ? "true" : "false");
+	printf( "federation  = %s\n", params.federation_flag ? "true":"false");
 	printf( "format      = %s\n", params.format );
 	printf( "iterate     = %d\n", params.iterate );
 	printf( "job_flag    = %d\n", params.job_flag );
@@ -2015,7 +2025,8 @@ Usage: squeue [-A account] [--clusters names] [-i seconds] [--job jobid]\n\
               [-n name] [-o format] [-p partitions] [--qos qos]\n\
               [--reservation reservation] [--sort fields] [--start]\n\
               [--step step_id] [-t states] [-u user_name] [--usage]\n\
-              [-L licenses] [-w nodes] [--local] [--sibling] [-ahjlrsv]\n");
+              [-L licenses] [-w nodes] [--federation] [--local] [--sibling]\n\
+	      [-ahjlrsv]\n");
 }
 
 static void _help(void)
@@ -2027,18 +2038,20 @@ Usage: squeue [OPTIONS]\n\
   -a, --all                       display jobs in hidden partitions\n\
       --array-unique              display one unique pending job array\n\
                                   element per line\n\
+      --federation                Report federated information if a member\n\
+                                  of one\n\
   -h, --noheader                  no headers on output\n\
       --hide                      do not display jobs in hidden partitions\n\
   -i, --iterate=seconds           specify an interation period\n\
   -j, --job=job(s)                comma separated list of jobs IDs\n\
                                   to view, default is all\n\
       --local                     Report information only about jobs on the\n\
-                                  local cluster\n\
+                                  local cluster. Overrides --federation.\n\
   -l, --long                      long report\n\
   -L, --licenses=(license names)  comma separated list of license names to view\n\
   -M, --clusters=cluster_name     cluster to issue commands to.  Default is\n\
                                   current cluster.  cluster with no name will\n\
-                                  reset to default.\n\
+                                  reset to default. Implies --local.\n\
   -n, --name=job_name(s)          comma separated list of job names to view\n\
       --noconvert                 don't convert units from their original type\n\
                                   (e.g. 2048M won't be converted to 2G).\n\
@@ -2051,7 +2064,7 @@ Usage: squeue [OPTIONS]\n\
   -R, --reservation=name          reservation to view, default is all\n\
   -r, --array                     display one job array element per line\n\
       --sibling                   Report information about all sibling jobs\n\
-                                  on a federated cluster\n\
+                                  on a federated cluster. Implies --federation.\n\
   -s, --step=step(s)              comma separated list of job steps\n\
 				  to view, default is all\n\
   -S, --sort=fields               comma separated list of fields to sort on\n\

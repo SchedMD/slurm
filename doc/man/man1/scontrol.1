@@ -38,6 +38,9 @@ Causes the \fIshow\fR command to provide additional details where available.
 Repeating the option more than once (e.g., "\-dd") will cause the \fIshow job\fR
 command to also list the batch script, if the job was a batch job.
 .TP
+\fB\-\-federation\fR
+Report jobs from from federation if a member of one.
+.TP
 \fB\-h\fR, \fB\-\-help\fR
 Print a help message describing the usage of scontrol.
 .TP
@@ -47,12 +50,13 @@ By default, neither partitions that are configured as hidden nor those partition
 unavailable to user's group will be displayed (i.e. this is the default behavior).
 .TP
 \fB\-\-local\fR
-Show only jobs local to this cluster. Ignore other clusters in this federation
-(if any). This option implicitly sets the \fB\-\-local\fR option.
+Show only information local to this cluster. Ignore other clusters in the
+federated if a member of one. Overrides \-\-federation.
 .TP
 \fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
 The cluster to issue commands to. Only one cluster name may be specified.
 Note that the SlurmDBD must be up for this option to work properly.
+This option implicitly sets the \fB\-\-local\fR option.
 
 .TP
 \fB\-o\fR, \fB\-\-oneliner\fR
@@ -62,7 +66,7 @@ Print information one line per record.
 Print no warning or informational messages, only fatal error messages.
 .TP
 \fB\-\-sibling\fR
-Show all sibling jobs on a federated cluster.
+Show all sibling jobs on a federated cluster. Implies \-\-federation.
 .TP
 \fB\-u\fR, \fB\-\-uid\fR=<\fIuid\fR>
 Attempt to update a job as user <uid> instead of the invoking user id.
@@ -1802,6 +1806,9 @@ Commandline options will always override these settings.)
 .TP 20
 \fBSCONTROL_ALL\fR
 \fB\-a, \-\-all\fR
+.TP
+\fBSCONTROL_FEDERATION\fR
+\fB\-\-federation\fR
 .TP
 \fBSCONTROL_LOCAL\fR
 \fB\-\-local\fR

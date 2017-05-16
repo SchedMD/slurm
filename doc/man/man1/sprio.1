@@ -17,6 +17,10 @@ jobs by job ID and user name.
 .SH "OPTIONS"
 
 .TP
+\fB\-\-federation\fR
+Show jobs in federation if a member of one.
+
+.TP
 \fB\-h\fR, \fB\-\-noheader\fR
 Do not print a header on the output.
 
@@ -35,7 +39,7 @@ not "\-j 1008,1009".
 .TP
 \fB\-\-local\fR
 Show only jobs local to this cluster. Ignore other clusters in this federation
-(if any).
+(if any). Overrides \-\-federation.
 
 .TP
 \fB\-l\fR, \fB\-\-long\fR
@@ -188,6 +192,10 @@ Same as \fB\-\-clusters\fR
 .TP
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file.
+
+.TP
+\fBSPRIO_FEDERATION\fR
+Same as \fB\-\-federation\fR
 
 .TP
 \fBSPRIO_LOCAL\fR

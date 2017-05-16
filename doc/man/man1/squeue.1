@@ -38,6 +38,10 @@ optimize the display.  This can also be set with the environment variable
 SQUEUE_ARRAY_UNIQUE.
 
 .TP
+\fB\-\-federation\fR
+Show jobs from the federation if a member of one.
+
+.TP
 \fB\-h\fR, \fB\-\-noheader\fR
 Do not print a header on the output.
 
@@ -77,7 +81,7 @@ Use the environment variable SLURM_BITSTR_LEN to specify larger field sizes.
 .TP
 \fB\-\-local\fR
 Show only jobs local to this cluster. Ignore other clusters in this federation
-(if any).
+(if any). Overrides \-\-federation.
 
 .TP
 \fB\-l\fR, \fB\-\-long\fR
@@ -993,7 +997,7 @@ and not include a space between them. For example "\-s1008.0" and not
 
 .TP
 \fB\-\-sibling\fR
-Show all sibling jobs on a federated cluster.
+Show all sibling jobs on a federated cluster. Implies \-\-federation.
 
 .TP
 \fB\-S <sort_list>\fR, \fB\-\-sort=<sort_list>\fR
@@ -1288,6 +1292,9 @@ A valid strftime() format can also be specified. For example, a value of
 .TP
 \fBSQUEUE_NAMES\fR
 \fB\-\-name=<name_list>\fR
+.TP
+\fBSQUEUE_FEDERATION\fR
+\fB\-\-federation\fR
 .TP
 \fBSQUEUE_FORMAT\fR
 \fB\-o <output_format>, \-\-format=<output_format>\fR

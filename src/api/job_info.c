@@ -1295,7 +1295,7 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 		cluster_name = xstrdup(working_cluster_rec->name);
 	else
 		cluster_name = slurm_get_cluster_name();
-	if ((show_flags & SHOW_FEDERATION) &&
+	if ((show_flags & SHOW_FEDERATION) && !(show_flags & SHOW_LOCAL) &&
 	    (slurm_load_federation(&ptr) == SLURM_SUCCESS) &&
 	    cluster_in_federation(ptr, cluster_name)) {
 		/* In federation. Need full info from all clusters */
@@ -2174,12 +2174,15 @@ slurm_load_job_prio(priority_factors_response_msg_t **factors_resp,
 	int rc;
 
 	cluster_name = slurm_get_cluster_name();
-	if ((show_flags & SHOW_LOCAL) == 0) {
-		if (slurm_load_federation(&ptr) ||
-		    !cluster_in_federation(ptr, cluster_name)) {
-			/* Not in federation */
-			show_flags |= SHOW_LOCAL;
-		}
+	if ((show_flags & SHOW_FEDERATION) && !(show_flags & SHOW_LOCAL) &&
+	    (slurm_load_federation(&ptr) == SLURM_SUCCESS) &&
+	    cluster_in_federation(ptr, cluster_name)) {
+		/* In federation. Need full info from all clusters */
+		show_flags &= (~SHOW_LOCAL);
+	} else {
+		/* Report local cluster info only */
+		show_flags |= SHOW_LOCAL;
+		show_flags &= (~SHOW_FEDERATION);
 	}
 
 	memset(&factors_req, 0, sizeof(priority_factors_request_msg_t));
@@ -2193,13 +2196,13 @@ slurm_load_job_prio(priority_factors_response_msg_t **factors_resp,
 
 	/* With -M option, working_cluster_rec is set and  we only get
 	 * information for that cluster */
-	if (working_cluster_rec || !ptr || (show_flags & SHOW_LOCAL)) {
-		rc = _load_cluster_job_prio(&req_msg, factors_resp,
-					    working_cluster_rec);
-	} else {
+	if (show_flags & SHOW_FEDERATION) {
 		fed = (slurmdb_federation_rec_t *) ptr;
 		rc = _load_fed_job_prio(&req_msg, factors_resp, show_flags,
 					cluster_name, fed);
+	} else {
+		rc = _load_cluster_job_prio(&req_msg, factors_resp,
+					    working_cluster_rec);
 	}
 
 	if (ptr)

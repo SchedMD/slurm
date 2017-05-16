@@ -721,8 +721,7 @@ extern int slurm_load_node(time_t update_time, node_info_msg_t **resp,
 		cluster_name = xstrdup(working_cluster_rec->name);
 	else
 		cluster_name = slurm_get_cluster_name();
-	if (!working_cluster_rec &&
-	    (show_flags & SHOW_FEDERATION) &&
+	if ((show_flags & SHOW_FEDERATION) && !(show_flags & SHOW_LOCAL) &&
 	    (slurm_load_federation(&ptr) == SLURM_SUCCESS) &&
 	    cluster_in_federation(ptr, cluster_name)) {
 		/* In federation. Need full info from all clusters */

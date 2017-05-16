@@ -164,6 +164,7 @@ struct sinfo_parameters {
 	uint32_t convert_flags;
 	bool dead_nodes;
 	bool exact_match;
+	bool federation_flag;
 	bool filtering;
 	bool local;
 	bool long_output;
