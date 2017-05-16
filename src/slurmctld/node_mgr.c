@@ -299,6 +299,7 @@ extern int load_all_node_state ( bool state_only )
 	Buf buffer;
 	char *ver_str = NULL;
 	hostset_t hs = NULL;
+	hostlist_t down_nodes = NULL;
 	bool power_save_mode = false;
 	uint16_t protocol_version = (uint16_t)NO_VAL;
 
@@ -640,6 +641,15 @@ extern int load_all_node_state ( bool state_only )
 
 		if (node_ptr) {
 			node_cnt++;
+
+			if (IS_NODE_DOWN(node_ptr)) {
+				if (down_nodes)
+					hostlist_push(down_nodes, node_name);
+				else
+					down_nodes = hostlist_create(
+							node_name);
+			}
+
 			if (node_ptr->node_state & NODE_STATE_POWER_UP) {
 				/* last_response value not saved,
 				 * make best guess */
@@ -685,6 +695,15 @@ fini:	info("Recovered state of %d nodes", node_cnt);
 		info("Cleared POWER_SAVE flag from nodes %s", node_names);
 		hostset_destroy(hs);
 	}
+
+	if (down_nodes) {
+		char *down_host_str = NULL;
+		down_host_str = hostlist_ranged_string_xmalloc(down_nodes);
+		info("Down nodes: %s", down_host_str);
+		xfree(down_host_str);
+		hostlist_destroy(down_nodes);
+	}
+
 	free_buf (buffer);
 	return error_code;
 

@@ -86,6 +86,7 @@ documents those changes that are of interest to users and administrators.
  -- Add FederationParameters=fed_display slurm.conf option to configure status
     commands to display a federated view by default if the cluster is a member
     of a federation.
+ -- Log the down nodes whenever slurmctld restarts.
 
 * Changes in Slurm 17.02.4
 ==========================
