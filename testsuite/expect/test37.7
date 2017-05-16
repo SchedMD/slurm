@@ -403,12 +403,14 @@ sleep 10
 
 squeue ""
 
+log_info "Sleep $min_job_age seconds until system is drained"
 sleep $min_job_age
 
 scontrol jobs "No jobs in the system"
 
 scontrol fed ".+DRAIN.+ACTIVE.+"
 
+log_info "Sleep 35 more seconds until system is drained"
 sleep 35
 
 scontrol fed ".+DRAINED.+ACTIVE.+"
@@ -462,6 +464,7 @@ squeue ""
 
 scontrol jobs "JobId.+"
 
+log_info "Sleep $min_job_age seconds until system is drained"
 sleep $min_job_age
 
 scontrol jobs "No jobs in the system"
