@@ -136,7 +136,7 @@ int main (int argc, char **argv)
 					"%10j %10p %10q %20t";
 			} else {
 				params.format = xstrdup("%.15i %9r");
-				if (params.sibling)
+				if (params.sibling && !params.local)
 					xstrcat(params.format, " %.8c");
 				if (params.users)
 					xstrcat(params.format, " %.8u");
@@ -160,7 +160,7 @@ int main (int argc, char **argv)
 					"%.10J %.10P %.10Q %.11N %.20T";
 			} else {
 				params.format = xstrdup("%.15i %9r");
-				if (params.sibling)
+				if (params.sibling && !params.local)
 					xstrcat(params.format, " %.8c");
 				if (params.users)
 					xstrcat(params.format, " %.8u");
