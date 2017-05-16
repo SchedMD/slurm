@@ -137,6 +137,10 @@ parse_command_line( int argc, char* *argv )
 
 	params.convert_flags = CONVERT_NUM_UNIT_EXACT;
 
+	if (slurmctld_conf.fed_params &&
+	    strstr(slurmctld_conf.fed_params, "fed_display"))
+		params.federation_flag = true;
+
 	if (getenv("SQUEUE_ALL"))
 		params.all_flag = true;
 	if (getenv("SQUEUE_ARRAY"))

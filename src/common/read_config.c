@@ -212,6 +212,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"ExtSensorsFreq", S_P_UINT16},
 	{"FairShareDampeningFactor", S_P_UINT16},
 	{"FastSchedule", S_P_UINT16},
+	{"FederationParameters", S_P_STRING},
 	{"FirstJobId", S_P_UINT32},
 	{"GetEnvTimeout", S_P_UINT16},
 	{"GresTypes", S_P_STRING},
@@ -3203,6 +3204,9 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_uint16(&conf->fast_schedule, "FastSchedule", hashtbl))
 		conf->fast_schedule = DEFAULT_FAST_SCHEDULE;
+
+	(void) s_p_get_string(&conf->fed_params, "FederationParameters",
+			      hashtbl);
 
 	if (!s_p_get_uint32(&conf->first_job_id, "FirstJobId", hashtbl))
 		conf->first_job_id = DEFAULT_FIRST_JOB_ID;

@@ -685,6 +685,10 @@ void parse_command_line(int argc, char **argv)
 	log_init("sacct", opts, SYSLOG_FACILITY_DAEMON, NULL);
 	opterr = 1;		/* Let getopt report problems to the user */
 
+	if (slurmctld_conf.fed_params &&
+	    strstr(slurmctld_conf.fed_params, "fed_display"))
+		params.opt_federation = true;
+
 	if (getenv("SACCT_FEDERATION"))
 		params.opt_federation = true;
 	if (getenv("SACCT_LOCAL"))

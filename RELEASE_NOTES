@@ -64,6 +64,8 @@ RPMBUILD CHANGES
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
+Added FederationParameters=fed_display to display federated view by default if
+	the local cluster is a member of a federation. Defaults to 0.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

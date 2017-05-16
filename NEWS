@@ -83,6 +83,9 @@ documents those changes that are of interest to users and administrators.
  -- Add federated views to sview.
  -- Add --federation option to sacct, scontrol, sinfo, sprio, squeue, sreport to
     show a federated view. Will show local view by default.
+ -- Add FederationParameters=fed_display slurm.conf option to configure status
+    commands to display a federated view by default if the cluster is a member
+    of a federation.
 
 * Changes in Slurm 17.02.4
 ==========================

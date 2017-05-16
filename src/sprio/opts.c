@@ -73,6 +73,10 @@ static void _opt_env(void)
 {
 	char *env_val;
 
+	if (slurmctld_conf.fed_params &&
+	    strstr(slurmctld_conf.fed_params, "fed_display"))
+		params.federation = true;
+
 	if ((env_val = getenv("SLURM_CLUSTERS"))) {
 		if (!(params.clusters = slurmdb_get_info_cluster(env_val))) {
 			print_db_notok(env_val, 1);

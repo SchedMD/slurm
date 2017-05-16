@@ -868,6 +868,20 @@ This option is generally only useful for testing purposes.
 .RE
 
 .TP
+\fBFederationParameters\fR
+Used to define federation options. Multiple options may be comma separated.
+
+.RS
+.TP
+\fBfed_display\fR
+If set, then the client status commands (e.g. squeue, sinfo, sprio, etc.) will
+display infomation in a federated view by default. This option is functionaly
+equivalent to using the \-\-federation options on each command. Use the client's
+\-\-local option to override the federated view and get a local view of the
+given cluster.
+.RE
+
+.TP
 \fBFirstJobId\fR
 The job id to be used for the first submitted to Slurm without a
 specific requested value. Job id values generated will incremented by 1

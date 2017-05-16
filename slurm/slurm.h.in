@@ -2697,6 +2697,7 @@ typedef struct slurm_ctl_conf {
 	void *ext_sensors_conf; /* external sensors config file*/
 	uint16_t fast_schedule;	/* 1 to *not* check configurations by node
 				 * (only check configuration file, faster) */
+	char *fed_params;       /* Federation parameters */
 	uint32_t first_job_id;	/* first slurm generated job_id to assign */
 	uint16_t fs_dampening_factor; /* dampening for Fairshare factor */
 	uint16_t get_env_timeout; /* timeout for srun --get-user-env option */
