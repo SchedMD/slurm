@@ -932,6 +932,12 @@ if {[string compare $run_cluster ""] == 0} {
 	log_error "Didn't find cluster with running job"
 	end_it 1
 }
+# Give time for origin to know that the job was started. If the cancel comes
+# before it knows that the job started then the origin will cancel the local
+# and remote job. If it knows that the job is running on the remote, then it
+# will only send the request to the remote and wait for it to report back that
+# the job is gone.
+$bin_sleep 2
 
 log_info "$run_cluster is running job"
 
