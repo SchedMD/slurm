@@ -23,6 +23,7 @@ documents those changes that are of interest to users and administrators.
     release previously allocated resources.
  -- Test if the node_bitmap on a job is NULL when testing if the job's nodes
     are ready.  This will be NULL is a job was revoked while beginning.
+ -- Fix incorrect lock levels when testing when job will run or updating a job.
 
 * Changes in Slurm 17.02.3
 ==========================
