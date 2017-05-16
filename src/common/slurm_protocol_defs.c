@@ -221,7 +221,7 @@ extern char *slurm_char_list_to_xstr(List char_list)
 
 static int _char_list_copy(void *item, void *dst)
 {
-	list_append((List)dst, item);
+	list_append((List)dst, xstrdup((char *)item));
 	return SLURM_SUCCESS;
 }
 
