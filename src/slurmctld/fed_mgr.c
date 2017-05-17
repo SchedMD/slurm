@@ -1835,9 +1835,6 @@ extern int _handle_fed_send_job_sync(fed_job_update_info_t *job_update_info)
 
 	unlock_slurmctld(job_read_lock);
 
-	if (jobids && !list_count(jobids))
-		return SLURM_SUCCESS;
-
 	slurm_msg_t_init(&job_msg);
 	job_msg.protocol_version = sibling->rpc_version;
 	job_msg.msg_type         = RESPONSE_JOB_INFO;
