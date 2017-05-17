@@ -549,16 +549,18 @@ static int _load_fed_parts(slurm_msg_t *req_msg,
 						    new_msg->last_update);
 			new_rec_cnt = orig_msg->record_count +
 				      new_msg->record_count;
-			orig_msg->partition_array = xrealloc(
-						orig_msg->partition_array,
-						sizeof(partition_info_t) *
-						new_rec_cnt);
-			(void) memcpy(orig_msg->partition_array +
-				      orig_msg->record_count,
-				      new_msg->partition_array,
-				      sizeof(partition_info_t) *
-				      new_msg->record_count);
-			orig_msg->record_count = new_rec_cnt;
+			if (new_msg->record_count) {
+				orig_msg->partition_array =
+					xrealloc(orig_msg->partition_array,
+						 sizeof(partition_info_t) *
+						 new_rec_cnt);
+				(void) memcpy(orig_msg->partition_array +
+					      orig_msg->record_count,
+					      new_msg->partition_array,
+					      sizeof(partition_info_t) *
+					      new_msg->record_count);
+				orig_msg->record_count = new_rec_cnt;
+			}
 			xfree(new_msg->partition_array);
 			xfree(new_msg);
 		}

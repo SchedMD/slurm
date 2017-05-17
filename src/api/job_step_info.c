@@ -454,15 +454,18 @@ _load_fed_steps(slurm_msg_t *req_msg, job_step_info_response_msg_t **resp,
 						    new_msg->last_update);
 			new_rec_cnt = orig_msg->job_step_count +
 				      new_msg->job_step_count;
-			orig_msg->job_steps = xrealloc(orig_msg->job_steps,
-						sizeof(job_step_info_t) *
-						new_rec_cnt);
-			(void) memcpy(orig_msg->job_steps +
-				      orig_msg->job_step_count,
-				      new_msg->job_steps,
-				      sizeof(job_step_info_t) *
-				      new_msg->job_step_count);
-			orig_msg->job_step_count = new_rec_cnt;
+			if (new_msg->job_step_count) {
+				orig_msg->job_steps =
+					xrealloc(orig_msg->job_steps,
+						 sizeof(job_step_info_t) *
+						 new_rec_cnt);
+				(void) memcpy(orig_msg->job_steps +
+					      orig_msg->job_step_count,
+					      new_msg->job_steps,
+					      sizeof(job_step_info_t) *
+					      new_msg->job_step_count);
+				orig_msg->job_step_count = new_rec_cnt;
+			}
 			xfree(new_msg->job_steps);
 			xfree(new_msg);
 		}

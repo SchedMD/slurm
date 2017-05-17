@@ -1198,20 +1198,23 @@ static int _load_fed_jobs(slurm_msg_t *req_msg,
 				local_job_cnt = orig_msg->record_count;
 			*job_info_msg_pptr = orig_msg;
 		} else {
-			/* Merge the job records into a single response message */
+			/* Merge job records into a single response message */
 			orig_msg->last_update = MIN(orig_msg->last_update,
 						    new_msg->last_update);
 			new_rec_cnt = orig_msg->record_count +
 				      new_msg->record_count;
-			orig_msg->job_array = xrealloc(orig_msg->job_array,
-						sizeof(slurm_job_info_t) *
-						new_rec_cnt);
-			(void) memcpy(orig_msg->job_array +
-				      orig_msg->record_count,
-				      new_msg->job_array,
-				      sizeof(slurm_job_info_t) *
-				      new_msg->record_count);
-			orig_msg->record_count = new_rec_cnt;
+			if (new_msg->record_count) {
+				orig_msg->job_array =
+					xrealloc(orig_msg->job_array,
+						 sizeof(slurm_job_info_t) *
+						 new_rec_cnt);
+				(void) memcpy(orig_msg->job_array +
+					      orig_msg->record_count,
+					      new_msg->job_array,
+					      sizeof(slurm_job_info_t) *
+					      new_msg->record_count);
+				orig_msg->record_count = new_rec_cnt;
+			}
 			xfree(new_msg->job_array);
 			xfree(new_msg);
 		}

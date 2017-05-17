@@ -675,15 +675,18 @@ static int _load_fed_nodes(slurm_msg_t *req_msg,
 						    new_msg->last_update);
 			new_rec_cnt = orig_msg->record_count +
 				      new_msg->record_count;
-			orig_msg->node_array = xrealloc(orig_msg->node_array,
-						sizeof(node_info_t) *
-						new_rec_cnt);
-			(void) memcpy(orig_msg->node_array +
-				      orig_msg->record_count,
-				      new_msg->node_array,
-				      sizeof(node_info_t) *
-				      new_msg->record_count);
-			orig_msg->record_count = new_rec_cnt;
+			if (new_msg->record_count) {
+				orig_msg->node_array =
+					xrealloc(orig_msg->node_array,
+						 sizeof(node_info_t) *
+						 new_rec_cnt);
+				(void) memcpy(orig_msg->node_array +
+					      orig_msg->record_count,
+					      new_msg->node_array,
+					      sizeof(node_info_t) *
+					      new_msg->record_count);
+				orig_msg->record_count = new_rec_cnt;
+			}
 			xfree(new_msg->node_array);
 			xfree(new_msg);
 		}
