@@ -323,6 +323,19 @@ static int _job_rec_field(const struct job_record *job_ptr,
 			lua_pushnumber (L, job_ptr->details->min_cpus);
 		else
 			lua_pushnumber (L, 0);
+	} else if (!xstrcmp(name, "min_mem_per_node") &&
+		   !(job_ptr->details->pn_min_memory & MEM_PER_CPU)) {
+		if (job_ptr->details)
+			lua_pushnumber(L, job_ptr->details->pn_min_memory);
+		else
+			lua_pushnil(L);
+	} else if (!xstrcmp(name, "min_mem_per_cpu") &&
+		   (job_ptr->details->pn_min_memory & MEM_PER_CPU)) {
+		  if (job_ptr->details)
+			  lua_pushnumber(L, job_ptr->details->pn_min_memory &
+					 ~MEM_PER_CPU);
+		  else
+			  lua_pushnil(L);
 	} else if (!xstrcmp(name, "min_nodes")) {
 		if (job_ptr->details)
 			lua_pushnumber (L, job_ptr->details->min_nodes);
@@ -731,6 +744,12 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 		lua_pushnumber (L, job_desc->max_nodes);
 	} else if (!xstrcmp(name, "min_cpus")) {
 		lua_pushnumber (L, job_desc->min_cpus);
+	} else if (!xstrcmp(name, "min_mem_per_node") &&
+		   !(job_desc->pn_min_memory & MEM_PER_CPU)) {
+		lua_pushnumber (L, job_desc->pn_min_memory);
+	} else if (!xstrcmp(name, "min_mem_per_cpu") &&
+		   (job_desc->pn_min_memory & MEM_PER_CPU)) {
+		lua_pushnumber (L, (job_desc->pn_min_memory & (~MEM_PER_CPU)));
 	} else if (!xstrcmp(name, "min_nodes")) {
 		lua_pushnumber (L, job_desc->min_nodes);
 	} else if (!xstrcmp(name, "name")) {
@@ -946,6 +965,11 @@ static int _set_job_req_field(lua_State *L)
 		job_desc->max_nodes = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "min_cpus")) {
 		job_desc->min_cpus = luaL_checknumber(L, 3);
+	} else if (!xstrcmp(name, "min_mem_per_cpu")) {
+		job_desc->pn_min_memory = luaL_checknumber(L, 3);
+		job_desc->pn_min_memory |= MEM_PER_CPU;
+	} else if (!xstrcmp(name, "min_mem_per_node")) {
+		job_desc->pn_min_memory = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "min_nodes")) {
 		job_desc->min_nodes = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "name")) {
