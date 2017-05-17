@@ -137,8 +137,8 @@ typedef struct {
 	uint32_t        job_id;
 	uint64_t        siblings_active;
 	uint64_t        siblings_viable;
-	uint32_t        updating_sibs[MAX_FED_CLUSTERS];
-	time_t          updating_time[MAX_FED_CLUSTERS];
+	uint32_t        updating_sibs[MAX_FED_CLUSTERS + 1];
+	time_t          updating_time[MAX_FED_CLUSTERS + 1];
 } fed_job_info_t;
 
 /* Local Structs */
@@ -2321,9 +2321,9 @@ static void _pack_fed_job_info(fed_job_info_t *job_info, Buf buffer,
 		pack64(job_info->siblings_active, buffer);
 		pack64(job_info->siblings_viable, buffer);
 
-		for (i = 0; i < MAX_FED_CLUSTERS; i++)
+		for (i = 0; i <= MAX_FED_CLUSTERS; i++)
 			pack32(job_info->updating_sibs[i], buffer);
-		for (i = 0; i < MAX_FED_CLUSTERS; i++)
+		for (i = 0; i <= MAX_FED_CLUSTERS; i++)
 			pack_time(job_info->updating_time[i], buffer);
 	} else {
 		error("%s: protocol_version %hu not supported.",
@@ -2345,9 +2345,9 @@ static int _unpack_fed_job_info(fed_job_info_t **job_info_pptr, Buf buffer,
 		safe_unpack64(&job_info->siblings_active, buffer);
 		safe_unpack64(&job_info->siblings_viable, buffer);
 
-		for (i = 0; i < MAX_FED_CLUSTERS; i++)
+		for (i = 0; i <= MAX_FED_CLUSTERS; i++)
 			safe_unpack32(&job_info->updating_sibs[i], buffer);
-		for (i = 0; i < MAX_FED_CLUSTERS; i++)
+		for (i = 0; i <= MAX_FED_CLUSTERS; i++)
 			safe_unpack_time(&job_info->updating_time[i], buffer);
 	} else {
 		error("%s: protocol_version %hu not supported.",
