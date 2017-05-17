@@ -1028,9 +1028,23 @@ static int _make_step_cred(struct step_record *step_ptr,
 	return SLURM_SUCCESS;
 }
 
-/* _slurm_rpc_allocate_pack: process RPC to allocate a pack resources for
- *	a job
- */
+static int _pack_job_cancel(void *x, void *arg)
+{
+	struct job_record *job_ptr = (struct job_record *) x;
+	time_t now = time(NULL);
+
+	info("Cancelling aborted pack job submit: %u", job_ptr->job_id);
+	job_ptr->job_state	= JOB_CANCELLED;
+	job_ptr->start_time	= now;
+	job_ptr->end_time	= now;
+	job_ptr->exit_code	= 1;
+	job_completion_logger(job_ptr, false);
+	fed_mgr_job_complete(job_ptr, 0, now);
+
+	return 0;
+}
+
+/* _slurm_rpc_allocate_pack: process RPC to allocate a pack job resources */
 static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 {
 	static int active_rpc_cnt = 0;
@@ -1047,6 +1061,8 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 	char *err_msg = NULL;
 	ListIterator iter;
 	bool priv_user;
+	time_t min_begin = time(NULL) + 3;	/* Do not start immediately */
+	List submit_job_list = NULL;
 
 	START_TIMER;
 
@@ -1059,6 +1075,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 	debug2("sched: Processing RPC: REQUEST_JOB_PACK_ALLOCATION from uid=%d",
 	       uid);
 	priv_user = validate_slurm_user(uid);
+	submit_job_list = list_create(NULL);
 	_throttle_start(&active_rpc_cnt);
 	lock_slurmctld(job_write_lock);
 	iter = list_iterator_create(job_req_list);
@@ -1104,20 +1121,37 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 #endif
 		dump_job_desc(job_desc_msg);
 
-//FIXME: Need to delay allocation, add pack ID, etc.
 		job_ptr = NULL;
+		job_desc_msg->begin_time = MAX(job_desc_msg->begin_time,
+					       min_begin);
+//FIXME: NOTE: No federation support here
 		error_code = job_allocate(job_desc_msg, false, false, NULL,
 					  true, uid, &job_ptr, &err_msg,
 					  msg->protocol_version);
-		if (error_code)
-info("ERR:%d", error_code);
-//			break;
+		if (!job_ptr) {
+			if (error_code == SLURM_SUCCESS)
+				error_code = SLURM_ERROR;
+			break;
+		}
+		if (error_code && (job_ptr->job_state == JOB_FAILED))
+			break;
+		list_append(submit_job_list, job_ptr);
+		error_code = SLURM_SUCCESS;	/* Non-fatal error */
 	}
 	list_iterator_destroy(iter);
+
+	if (error_code) {
+//FIXME: We might want to eliminate "submit_job_list" and use other mechanism to identify jobs to cancel
+		/* Cancel remaining job records */
+		(void) list_for_each(submit_job_list, _pack_job_cancel, NULL);
+	} else {
+//FIXME: Validate limits on pack-job as a whole
+	}
 	unlock_slurmctld(job_write_lock);
 	_throttle_fini(&active_rpc_cnt);
 
 send_msg:
+	FREE_NULL_LIST(submit_job_list);
 	END_TIMER2("_slurm_rpc_allocate_pack");
 	info("%s: %s ", __func__, slurm_strerror(error_code));
 	if (err_msg)
@@ -1125,59 +1159,6 @@ send_msg:
 	else
 		slurm_send_rc_msg(msg, error_code);
 	xfree(err_msg);
-//FIXME: Add federation support?
-#if 0
-	/* Zero out the record as not all fields may be set.
-	 */
-	memset(&alloc_msg, 0, sizeof(resource_allocation_response_msg_t));
-
-	if (error_code) {
-		reject_job = true;
-	} else if (!slurm_get_peer_addr(msg->conn_fd, &resp_addr)) {
-		/* resp_host could already be set from a federated cluster */
-		if (!job_desc_msg->resp_host) {
-			job_desc_msg->resp_host = xmalloc(16);
-			slurm_get_ip_str(&resp_addr, &port,
-					 job_desc_msg->resp_host, 16);
-		}
-		dump_job_desc(job_desc_msg);
-		do_unlock = true;
-
-		lock_slurmctld(job_write_lock);
-		if (fed_mgr_fed_rec) {
-			uint32_t job_id;
-			if (fed_mgr_job_allocate(msg, job_desc_msg, true, uid,
-						 msg->protocol_version, &job_id,
-						 &error_code, &err_msg)) {
-				reject_job = true;
-			} else if (!(job_ptr = find_job_record(job_id))) {
-				error("%s: can't find fed job that was just created. this should never happen",
-				      __func__);
-				reject_job = true;
-				error_code = SLURM_ERROR;
-			}
-		} else {
-			error_code = job_allocate(job_desc_msg, false,
-						  false, NULL, true, uid,
-						  &job_ptr, &err_msg,
-						  msg->protocol_version);
-			/* unlock after finished using the job structure
-			 * data */
-
-			/* return result */
-			if (!job_ptr ||
-			    (error_code && job_ptr->job_state == JOB_FAILED))
-				reject_job = true;
-		}
-		END_TIMER2("_slurm_rpc_allocate_resources");
-	} else {
-		reject_job = true;
-		if (errno)
-			error_code = errno;
-		else
-			error_code = SLURM_ERROR;
-	}
-#endif
 }
 
 /* _slurm_rpc_allocate_resources:  process RPC to allocate resources for
