@@ -11424,15 +11424,23 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			 (job_ptr->details->nice == job_specs->nice))
 			debug("sched: update_job: new nice identical to "
 			      "old nice %u", job_ptr->job_id);
-		else if (authorized || (job_specs->nice >= NICE_OFFSET)) {
-			int64_t new_prio = job_ptr->priority;
-			new_prio += job_ptr->details->nice;
-			new_prio -= job_specs->nice;
-			job_ptr->priority = MAX(new_prio, 2);
-			job_ptr->details->nice = job_specs->nice;
-			info("sched: update_job: setting priority to %u for "
-			     "job_id %u", job_ptr->priority,
+		else if (job_ptr->direct_set_prio && job_ptr->priority != 0)
+			info("ignore nice set request on  job %u",
 			     job_ptr->job_id);
+		else if (authorized || (job_specs->nice >= NICE_OFFSET)) {
+			if (!xstrcmp(slurmctld_conf.priority_type,
+			             "priority/basic")) {
+				int64_t new_prio = job_ptr->priority;
+				new_prio += job_ptr->details->nice;
+				new_prio -= job_specs->nice;
+				job_ptr->priority = MAX(new_prio, 2);
+				info("sched: update_job: nice changed from %u to %u, setting priority to %u for job_id %u",
+				     job_ptr->details->nice,
+				     job_specs->nice,
+				     job_ptr->priority,
+				     job_ptr->job_id);
+			}
+			job_ptr->details->nice = job_specs->nice;
 			update_accounting = true;
 		} else {
 			error("sched: Attempt to modify nice for "
@@ -12232,11 +12240,13 @@ fini:
 		jobacct_storage_job_start_direct(acct_db_conn, job_ptr);
 	}
 
-	/* If job update is successful and priority is calculated (not only
-	 * based upon job submit order), recalculate the job priority, since
-	 * many factors of an update may affect priority considerations.
-	 * If job has a hold then do nothing */
-	if ((error_code == SLURM_SUCCESS) && (job_ptr->priority != 0) &&
+	/*
+	 * If job isn't held recalculate the priority when not using
+	 * priority/basic. Since many factors of an update may affect priority
+	 * considerations. Do this whether or not the update was successful or
+	 * not.
+	 */
+	if ((job_ptr->priority != 0) &&
 	    xstrcmp(slurmctld_conf.priority_type, "priority/basic"))
 		set_job_prio(job_ptr);
 

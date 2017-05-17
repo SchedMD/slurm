@@ -31,6 +31,7 @@ documents those changes that are of interest to users and administrators.
     not being able to deal with pn_min_memory being a uint64_t.  Scripts are
     urged to change to these new variables avoid issue.  If not set the
     variables will be 'nil'.
+ -- Calculate priority correctly when 'nice' is given.
 
 * Changes in Slurm 17.02.3
 ==========================
