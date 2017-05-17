@@ -13,9 +13,10 @@
 AC_DEFUN([X_AC_LUA],
 [
 	x_ac_lua_pkg_name="lua"
-	#check for 5.2 if that fails check for 5.1
-	PKG_CHECK_EXISTS([lua5.2], [x_ac_lua_pkg_name=lua5.2],
-		[PKG_CHECK_EXISTS([lua5.1], [x_ac_lua_pkg_name=lua5.1], [])])
+	#check for 5.3 then 5.2 then 5.1
+	PKG_CHECK_EXISTS([lua5.3], [x_ac_lua_pkg_name=lua5.3],
+		[PKG_CHECK_EXISTS([lua5.2], [x_ac_lua_pkg_name=lua5.2],
+		[PKG_CHECK_EXISTS([lua5.1], [x_ac_lua_pkg_name=lua5.1], [])])])
 	PKG_CHECK_MODULES([lua], ${x_ac_lua_pkg_name},
                 [x_ac_have_lua="yes"],
                 [x_ac_have_lua="no"])
@@ -23,8 +24,7 @@ AC_DEFUN([X_AC_LUA],
 	if test "x$x_ac_have_lua" = "xyes"; then
 	  saved_CFLAGS="$CFLAGS"
 	  saved_LIBS="$LIBS"
-	  # -DLUA_COMPAT_ALL is needed to support lua 5.2
-	  lua_CFLAGS="$lua_CFLAGS -DLUA_COMPAT_ALL"
+	  lua_CFLAGS="$lua_CFLAGS"
 	  CFLAGS="$CFLAGS $lua_CFLAGS"
 	  LIBS="$LIBS $lua_LIBS"
 	  AC_MSG_CHECKING([for whether we can link to liblua])
@@ -49,7 +49,9 @@ AC_DEFUN([X_AC_LUA],
 
 	AM_CONDITIONAL(HAVE_LUA, test "x$x_ac_have_lua" = "xyes")
 	if test "x$x_ac_have_lua" = "xyes" ; then
-		if test "x$x_ac_lua_pkg_name" = "xlua5.2" ; then
+		if test "x$x_ac_lua_pkg_name" = "xlua5.3" ; then
+			AC_DEFINE(HAVE_LUA_5_3, 1, [Compile with Lua 5.3])
+		elif test "x$x_ac_lua_pkg_name" = "xlua5.2" ; then
 			AC_DEFINE(HAVE_LUA_5_2, 1, [Compile with Lua 5.2])
 		elif test "x$x_ac_lua_pkg_name" = "xlua5.1"; then
 			AC_DEFINE(HAVE_LUA_5_1, 1, [Compile with Lua 5.1])

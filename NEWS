@@ -26,6 +26,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix incorrect lock levels when testing when job will run or updating a job.
  -- Add missing locks to job_submit/pbs plugin when updating a jobs
     dependencies.
+ -- Add support for lua5.3
 
 * Changes in Slurm 17.02.3
 ==========================
