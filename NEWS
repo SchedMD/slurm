@@ -27,6 +27,10 @@ documents those changes that are of interest to users and administrators.
  -- Add missing locks to job_submit/pbs plugin when updating a jobs
     dependencies.
  -- Add support for lua5.3
+ -- Add min_memory_per_node|cpu to the job_submit/lua plugin to deal with lua
+    not being able to deal with pn_min_memory being a uint64_t.  Scripts are
+    urged to change to these new variables avoid issue.  If not set the
+    variables will be 'nil'.
 
 * Changes in Slurm 17.02.3
 ==========================
