@@ -1356,7 +1356,7 @@ static GtkWidget *_create_cluster_combo(void)
 			continue;
 
 		if (!fed_list)
-			fed_list = list_create(slurm_destroy_char);
+			fed_list = list_create(NULL);
 
 		if (list_find_first(fed_list, slurm_find_char_in_list,
 				    cluster_rec->fed.name))
