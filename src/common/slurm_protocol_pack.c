@@ -5832,6 +5832,8 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpack32(&job->job_id,   buffer);
 		safe_unpack32(&job->user_id,  buffer);
 		safe_unpack32(&job->group_id, buffer);
+		safe_unpack32(&job->pack_job_id, buffer);
+		safe_unpack32(&job->pack_job_offset, buffer);
 		safe_unpack32(&job->profile,  buffer);
 
 		safe_unpack32(&job->job_state,    buffer);

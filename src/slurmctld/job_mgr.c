@@ -1176,6 +1176,8 @@ static int _dump_job_state(void *x, void *arg)
 	pack64(dump_job_ptr->db_index, buffer);
 	pack32(dump_job_ptr->resv_id, buffer);
 	pack32(dump_job_ptr->next_step_id, buffer);
+	pack32(dump_job_ptr->pack_job_id, buffer);
+	pack32(dump_job_ptr->pack_job_offset, buffer);
 	pack32(dump_job_ptr->qos_id, buffer);
 	pack32(dump_job_ptr->req_switch, buffer);
 	pack32(dump_job_ptr->wait4switch, buffer);
@@ -1308,6 +1310,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	uint32_t array_task_id = NO_VAL;
 	uint32_t array_flags = 0, max_run_tasks = 0, tot_run_tasks = 0;
 	uint32_t min_exit_code = 0, max_exit_code = 0, tot_comp_tasks = 0;
+	uint32_t pack_job_id = 0, pack_job_offset = 0;
 	uint16_t details, batch_flag, step_flag;
 	uint16_t kill_on_node_fail, direct_set_prio;
 	uint16_t alloc_resp_port, other_port, mail_type, state_reason;
@@ -1404,6 +1407,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack64(&db_index, buffer);
 		safe_unpack32(&resv_id, buffer);
 		safe_unpack32(&next_step_id, buffer);
+		safe_unpack32(&pack_job_id, buffer);
+		safe_unpack32(&pack_job_offset, buffer);
 		safe_unpack32(&qos_id, buffer);
 		safe_unpack32(&req_switch, buffer);
 		safe_unpack32(&wait4switch, buffer);
@@ -1951,8 +1956,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&tres_req_str, &name_len, buffer);
 		safe_unpackstr_xmalloc(&tres_fmt_req_str, &name_len, buffer);
 	} else {
-		error("_load_job_state: protocol_version "
-		      "%hu not supported", protocol_version);
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
 		goto unpack_error;
 	}
 
@@ -2076,6 +2081,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	}
 	job_ptr->other_port   = other_port;
 	job_ptr->power_flags  = power_flags;
+	job_ptr->pack_job_id     = pack_job_id;
+	job_ptr->pack_job_offset = pack_job_offset;
 	xfree(job_ptr->partition);
 	job_ptr->partition    = partition;
 	partition             = NULL;	/* reused, nothing left to free */
@@ -8891,6 +8898,8 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		pack32(dump_job_ptr->job_id,   buffer);
 		pack32(dump_job_ptr->user_id,  buffer);
 		pack32(dump_job_ptr->group_id, buffer);
+		pack32(dump_job_ptr->pack_job_id, buffer);
+		pack32(dump_job_ptr->pack_job_offset, buffer);
 		pack32(dump_job_ptr->profile,  buffer);
 
 		pack32(dump_job_ptr->job_state,    buffer);
@@ -16274,7 +16283,7 @@ extern void job_end_time_reset(struct job_record  *job_ptr)
 }
 
 /*
- * jobid2fmt() - print a job ID including job array information.
+ * jobid2fmt() - print a job ID including pack job and job array information.
  */
 extern char *jobid2fmt(struct job_record *job_ptr, char *buf, int buf_size)
 {
@@ -16283,7 +16292,11 @@ extern char *jobid2fmt(struct job_record *job_ptr, char *buf, int buf_size)
 	if (buf == NULL)
 		return "jobid2fmt: Invalid buf argument";
 
-	if (job_ptr->array_recs && (job_ptr->array_task_id == NO_VAL)) {
+	if (job_ptr->pack_job_id) {
+		snprintf(buf, buf_size, "JobID=%u+%u(%u)",
+			 job_ptr->pack_job_id, job_ptr->pack_job_offset,
+			 job_ptr->job_id);
+	} else if (job_ptr->array_recs && (job_ptr->array_task_id == NO_VAL)) {
 		snprintf(buf, buf_size, "JobID=%u_*",
 			 job_ptr->array_job_id);
 	} else if (job_ptr->array_task_id == NO_VAL) {
@@ -16309,7 +16322,11 @@ jobid2str(struct job_record *job_ptr, char *buf, int buf_size)
 	if (buf == NULL)
 		return "jobid2str: Invalid buf argument";
 
-	if (job_ptr->array_recs && (job_ptr->array_task_id == NO_VAL)) {
+	if (job_ptr->pack_job_id) {
+		snprintf(buf, buf_size, "JobID=%u+%u(%u) State=0x%x NodeCnt=%u",
+			job_ptr->pack_job_id, job_ptr->pack_job_offset,
+			job_ptr->job_id, job_ptr->job_state, job_ptr->node_cnt);
+	} else if (job_ptr->array_recs && (job_ptr->array_task_id == NO_VAL)) {
 		snprintf(buf, buf_size, "JobID=%u_* State=0x%x NodeCnt=%u",
 			job_ptr->array_job_id, job_ptr->job_state,
 			job_ptr->node_cnt);

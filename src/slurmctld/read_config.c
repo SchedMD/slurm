@@ -1071,6 +1071,7 @@ int read_slurm_conf(int recover, bool reconfig)
 		sync_job_priorities();
 	}
 
+//FIXME: Validate consistent pack job records
 	_sync_part_prio();
 	_build_bitmaps_pre_select();
 	if ((select_g_node_init(node_record_table_ptr, node_record_count)

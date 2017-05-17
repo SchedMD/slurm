@@ -699,6 +699,8 @@ struct job_record {
 	char *origin_cluster;		/* cluster name that the job was
 					 * submitted from */
 	uint16_t other_port;		/* port for client communications */
+	uint32_t pack_job_id;		/* lead job ID of pack job leader */
+	uint32_t pack_job_offset;	/* pack job index */
 	char *partition;		/* name of job partition(s) */
 	List part_ptr_list;		/* list of pointers to partition recs */
 	bool part_nodes_missing;	/* set if job's nodes removed from this
@@ -2432,7 +2434,7 @@ extern bool validate_operator(uid_t uid);
 extern void cleanup_completing(struct job_record *);
 
 /*
- * jobid2fmt() - print a job ID including job array information.
+ * jobid2fmt() - print a job ID including pack job and job array information.
  */
 extern char *jobid2fmt(struct job_record *job_ptr, char *buf, int buf_size);
 

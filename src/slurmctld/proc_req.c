@@ -1031,9 +1031,11 @@ static int _make_step_cred(struct step_record *step_ptr,
 static int _pack_job_cancel(void *x, void *arg)
 {
 	struct job_record *job_ptr = (struct job_record *) x;
+	char job_id_str[32];
 	time_t now = time(NULL);
 
-	info("Cancelling aborted pack job submit: %u", job_ptr->job_id);
+	(void) jobid2fmt(job_ptr, job_id_str, sizeof(job_id_str));
+	info("Cancelling aborted pack job submit: %s", job_id_str);
 	job_ptr->job_state	= JOB_CANCELLED;
 	job_ptr->start_time	= now;
 	job_ptr->end_time	= now;
@@ -1063,6 +1065,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 	bool priv_user;
 	time_t min_begin = time(NULL) + 3;	/* Do not start immediately */
 	List submit_job_list = NULL;
+	uint32_t pack_job_id = 0, pack_job_offset = 0;
 
 	START_TIMER;
 
@@ -1095,6 +1098,11 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 			break;
 		}
 
+		if (job_desc_msg->array_inx) {
+			error_code = ESLURM_INVALID_ARRAY;
+			break;
+		}
+
 		if (job_desc_msg->immediate) {
 			error_code = ESLURM_CAN_NOT_START_IMMEDIATELY;
 			break;
@@ -1124,7 +1132,6 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		job_ptr = NULL;
 		job_desc_msg->begin_time = MAX(job_desc_msg->begin_time,
 					       min_begin);
-//FIXME: NOTE: No federation support here
 		error_code = job_allocate(job_desc_msg, false, false, NULL,
 					  true, uid, &job_ptr, &err_msg,
 					  msg->protocol_version);
@@ -1135,6 +1142,10 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		}
 		if (error_code && (job_ptr->job_state == JOB_FAILED))
 			break;
+		if (pack_job_id == 0)
+			pack_job_id = job_ptr->job_id;
+		job_ptr->pack_job_id     = pack_job_id;
+		job_ptr->pack_job_offset = pack_job_offset++;
 		list_append(submit_job_list, job_ptr);
 		error_code = SLURM_SUCCESS;	/* Non-fatal error */
 	}

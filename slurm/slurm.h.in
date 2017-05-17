@@ -1632,6 +1632,8 @@ typedef struct job_info {
 	uint32_t num_cpus;	/* minimum number of cpus required by job */
 	uint32_t num_nodes;	/* minimum number of nodes required by job */
 	uint32_t num_tasks;	/* requested task count */
+	uint32_t pack_job_id;	/* lead job ID of pack job leader */
+	uint32_t pack_job_offset; /* pack job index */
 	char *partition;	/* name of assigned partition */
 	uint64_t pn_min_memory; /* minimum real memory per node, default=0 */
 	uint16_t pn_min_cpus;   /* minimum # CPUs per node, default=0 */
