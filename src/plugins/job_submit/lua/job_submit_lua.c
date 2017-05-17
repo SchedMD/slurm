@@ -354,6 +354,10 @@ static int _job_rec_field(const struct job_record *job_ptr,
 		else
 			lua_pushnumber (L, NO_VAL);
 	} else if (!xstrcmp(name, "pn_min_memory")) {
+		/*
+		 * FIXME: Remove this in the future, lua can't handle 64bit
+		 * numbers!!!.  Use min_mem_per_node|cpu instead.
+		 */
 		if (job_ptr->details)
 			lua_pushnumber (L, job_ptr->details->pn_min_memory);
 		else
@@ -773,6 +777,10 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 	} else if (!xstrcmp(name, "pn_min_cpus")) {
 		lua_pushnumber (L, job_desc->pn_min_cpus);
 	} else if (!xstrcmp(name, "pn_min_memory")) {
+		/*
+		 * FIXME: Remove this in the future, lua can't handle 64bit
+		 * numbers!!!.  Use min_mem_per_node|cpu instead.
+		 */
 		lua_pushnumber (L, job_desc->pn_min_memory);
 	} else if (!xstrcmp(name, "pn_min_tmp_disk")) {
 		lua_pushnumber (L, job_desc->pn_min_tmp_disk);
@@ -995,6 +1003,10 @@ static int _set_job_req_field(lua_State *L)
 	} else if (!xstrcmp(name, "pn_min_cpus")) {
 		job_desc->pn_min_cpus = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "pn_min_memory")) {
+		/*
+		 * FIXME: Remove this in the future, lua can't handle 64bit
+		 * numbers!!!.  Use min_mem_per_node|cpu instead.
+		 */
 		job_desc->pn_min_memory = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "pn_min_tmp_disk")) {
 		job_desc->pn_min_tmp_disk = luaL_checknumber(L, 3);
