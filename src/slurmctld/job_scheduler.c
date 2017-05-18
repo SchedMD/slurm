@@ -1819,12 +1819,8 @@ next_task:
 
 		/* get fed job lock from origin cluster */
 		if (fed_mgr_job_lock(job_ptr, INFINITE)) {
-			job_ptr->state_reason = WAIT_FED_JOB_LOCK;
-			xfree(job_ptr->state_desc);
-			info("sched: JobId=%u can't get fed job lock from origin cluster to start job",
-			     job_ptr->job_id);
-			last_job_update = now;
-			continue;
+			error_code = ESLURM_FED_JOB_LOCK;
+			goto skip_start;
 		}
 
 		error_code = select_nodes(job_ptr, false, NULL,
@@ -1840,6 +1836,8 @@ next_task:
 		} else {
 			fed_mgr_job_unlock(job_ptr, INFINITE);
 		}
+
+skip_start:
 
 		fail_by_part = false;
 		if ((error_code != SLURM_SUCCESS) && deadline_time_limit)
@@ -1890,6 +1888,17 @@ next_task:
 				       job_state_string(job_ptr->job_state),
 				       job_ptr->priority);
 			}
+		} else if (error_code == ESLURM_FED_JOB_LOCK) {
+			job_ptr->state_reason = WAIT_FED_JOB_LOCK;
+			xfree(job_ptr->state_desc);
+			last_job_update = now;
+			debug3("sched: JobId=%u. State=%s. Reason=%s. "
+			       "Priority=%u. Partition=%s.",
+			       job_ptr->job_id,
+			       job_state_string(job_ptr->job_state),
+			       job_reason_string(job_ptr->state_reason),
+			       job_ptr->priority, job_ptr->partition);
+			fail_by_part = true;
 		} else if (error_code == SLURM_SUCCESS) {
 			/* job initiated */
 			debug3("sched: JobId=%u initiated", job_ptr->job_id);

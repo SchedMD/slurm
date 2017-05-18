@@ -1742,13 +1742,12 @@ next_task:
 			int rc;
 
 			/* get fed job lock from origin cluster */
-			if (fed_mgr_job_lock(job_ptr, INFINITE)) {
-				xfree(job_ptr->state_desc);
-				job_ptr->state_reason = WAIT_FED_JOB_LOCK;
-				info("sched: JobId=%u can't get fed job lock from origin cluster to backfill job",
-				     job_ptr->job_id);
-				last_job_update = now;
-				continue;
+			if (fed_mgr_job_lock(job_ptr)) {
+				if (debug_flags & DEBUG_FLAG_BACKFILL)
+					info("backfill: JobId=%u can't get fed job lock from origin cluster to backfill job",
+					     job_ptr->job_id);
+				rc = ESLURM_FED_JOB_LOCK;
+				goto skip_start;
 			}
 
 			rc = _start_job(job_ptr, resv_bitmap);
@@ -1763,6 +1762,8 @@ next_task:
 			} else {
 				fed_mgr_job_unlock(job_ptr, INFINITE);
 			}
+
+skip_start:
 
 			if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE)) {
 				if (orig_time_limit == NO_VAL) {
