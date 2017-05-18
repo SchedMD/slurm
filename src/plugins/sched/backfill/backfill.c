@@ -1757,10 +1757,9 @@ next_task:
 				 * connectivity, the origin cluster should ask
 				 * when it comes back up if the cluster_lock
 				 * cluster actually started the job */
-				fed_mgr_job_start(job_ptr, INFINITE,
-						  job_ptr->start_time);
+				fed_mgr_job_start(job_ptr, job_ptr->start_time);
 			} else {
-				fed_mgr_job_unlock(job_ptr, INFINITE);
+				fed_mgr_job_unlock(job_ptr);
 			}
 
 skip_start:

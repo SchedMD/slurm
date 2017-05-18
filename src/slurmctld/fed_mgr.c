@@ -3327,22 +3327,19 @@ static int _is_fed_job(struct job_record *job_ptr, uint32_t *origin_id)
  * cluster can attempt to start to the job.
  *
  * IN job - job to lock
- * IN cluster_id - cluster id of cluster wanting to lock the job. If INFINITE,
- * 	the cluster cluster's fed id will be used.
  * RET returns SLURM_SUCCESS if the lock was granted, SLURM_ERROR otherwise
  */
-extern int fed_mgr_job_lock(struct job_record *job_ptr, uint32_t cluster_id)
+extern int fed_mgr_job_lock(struct job_record *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
-	uint32_t origin_id;
+	uint32_t origin_id, cluster_id;
 
 	xassert(job_ptr);
 
 	if (!_is_fed_job(job_ptr, &origin_id))
 		return SLURM_SUCCESS;
 
-	if (cluster_id == INFINITE)
-		cluster_id = fed_mgr_cluster_rec->fed.id;
+	cluster_id = fed_mgr_cluster_rec->fed.id;
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 		info("attempting fed job lock on %d by cluster_id %d",
@@ -3479,20 +3476,17 @@ extern int fed_mgr_job_lock_unset(uint32_t job_id, uint32_t cluster_id)
  * start the job.
  *
  * IN job        - job to unlock
- * IN cluster_id - cluster id of cluster wanting to unlock the job. If INFINITE,
- * 	the cluster cluster's fed id will be used.
  * RET returns SLURM_SUCCESS if the lock was released, SLURM_ERROR otherwise
  */
-extern int fed_mgr_job_unlock(struct job_record *job_ptr, uint32_t cluster_id)
+extern int fed_mgr_job_unlock(struct job_record *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
-	uint32_t origin_id;
+	uint32_t origin_id, cluster_id;
 
 	if (!_is_fed_job(job_ptr, &origin_id))
 		return SLURM_SUCCESS;
 
-	if (cluster_id == INFINITE)
-		cluster_id = fed_mgr_cluster_rec->fed.id;
+	cluster_id = fed_mgr_cluster_rec->fed.id;
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 		info("releasing fed job lock on %d by cluster_id %d",
@@ -3527,16 +3521,13 @@ extern int fed_mgr_job_unlock(struct job_record *job_ptr, uint32_t cluster_id)
  * Cancels remaining sibling jobs.
  *
  * IN job_ptr    - job_ptr of job to unlock
- * IN cluster_id - cluster id of cluster wanting to unlock the job. If INFINITE,
- * 	the cluster cluster's fed id will be used.
  * IN start_time - start_time of the job.
  * RET returns SLURM_SUCCESS if the lock was released, SLURM_ERROR otherwise
  */
-extern int fed_mgr_job_start(struct job_record *job_ptr, uint32_t cluster_id,
-			     time_t start_time)
+extern int fed_mgr_job_start(struct job_record *job_ptr, time_t start_time)
 {
 	int rc = SLURM_SUCCESS;
-	uint32_t origin_id;
+	uint32_t origin_id, cluster_id;
 	fed_job_info_t *job_info;
 
 	assert(job_ptr);
@@ -3544,8 +3535,7 @@ extern int fed_mgr_job_start(struct job_record *job_ptr, uint32_t cluster_id,
 	if (!_is_fed_job(job_ptr, &origin_id))
 		return SLURM_SUCCESS;
 
-	if (cluster_id == INFINITE)
-		cluster_id = fed_mgr_cluster_rec->fed.id;
+	cluster_id = fed_mgr_cluster_rec->fed.id;
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 		info("start fed job %d by cluster_id %d",
