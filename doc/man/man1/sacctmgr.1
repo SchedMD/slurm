@@ -756,16 +756,9 @@ configuration file for some Slurm\-managed cluster.
 Comma separated list of numeric RPC values.
 
 .TP
-\fIWeight\fP=#
-Weight of the cluster in a federation. When submitting sibling jobs, clusters
-that can run a job immediately will be prioritized and chosen according to their
-weight. Weights can be used to favor jobs starting on specific clusters. Default
-is 1.
-
-.TP
 \fIWithFed\fP
 Appends federation related columns to default format options
-(e.g. Federation,ID,Weight,Features,FedState).
+(e.g. Federation,ID,Features,FedState).
 
 .TP
 \fIWOLimits\fP
@@ -842,10 +835,6 @@ is running is placed here.
 \fITRES\fP
 Trackable RESources (BB (Burst buffer), CPU, Energy, GRES, License, Memory, and
 Node) this cluster is accounting for.
-
-.TP
-\fIWeight\fP
-The weight of the cluster when a member of a federation.
 
 .P
 NOTE: You can also view the information about the root association for
@@ -1059,10 +1048,6 @@ Numeric value of the name of the FedState.
 .TP
 \fIIndex\fP
 The index of the cluster in the federation.
-
-.TP
-\fIWeight\fP
-The weight of the cluster in the federation.
 
 
 .SH "SPECIFICATIONS FOR JOB"

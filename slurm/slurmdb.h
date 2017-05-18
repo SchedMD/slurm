@@ -605,7 +605,6 @@ typedef struct {
 	void *send; /* slurm_persist_conn_t we send information to this
 		     * cluster on. (We set this information) */
 	uint32_t state; /* state of cluster in federation */
-	uint32_t weight; /* weight of cluster in federation */
 } slurmdb_cluster_fed_t;
 
 struct slurmdb_cluster_rec {

@@ -245,10 +245,6 @@ static int _set_rec(int *start, int argc, char **argv,
 
 				rec_set = 1;
 			}
-		} else if (!strncasecmp(argv[i], "Weight",
-					 MAX(command_len, 2))) {
-			cluster->fed.weight = slurm_atoul(argv[i]+end);
-			rec_set = 1;
 		} else if (!strncasecmp(argv[i], "GrpCPURunMins",
 					 MAX(command_len, 7)) ||
 			   !strncasecmp(argv[i], "GrpTRESRunMins",
@@ -509,7 +505,7 @@ extern int sacctmgr_list_cluster(int argc, char **argv)
 		if (with_fed)
 			slurm_addto_char_list(
 				format_list,
-				"Federation,ID,Weight,Features,FedState");
+				"Federation,ID,Features,FedState");
 	}
 
 	cluster_cond->with_deleted = with_deleted;
@@ -591,10 +587,6 @@ extern int sacctmgr_list_cluster(int argc, char **argv)
 				break;
 			case PRINT_ID:
 				field->print_routine(field, cluster->fed.id,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_WEIGHT:
-				field->print_routine(field, cluster->fed.weight,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_TRES:

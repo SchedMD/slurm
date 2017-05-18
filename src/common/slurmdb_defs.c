@@ -1466,7 +1466,6 @@ extern void slurmdb_init_cluster_rec(slurmdb_cluster_rec_t *cluster,
 	memset(cluster, 0, sizeof(slurmdb_cluster_rec_t));
 	cluster->flags      = NO_VAL;
 	cluster->fed.state  = NO_VAL;
-	cluster->fed.weight = NO_VAL;
 	slurm_mutex_init(&cluster->lock);
 }
 
@@ -3120,7 +3119,6 @@ extern void slurmdb_copy_cluster_rec(slurmdb_cluster_rec_t *out,
 	out->fed.name         = xstrdup(in->fed.name);
 	out->fed.id           = in->fed.id;
 	out->fed.state        = in->fed.state;
-	out->fed.weight       = in->fed.weight;
 	out->flags            = in->flags;
 	xfree(out->name);
 	out->name             = xstrdup(in->name);

@@ -462,10 +462,10 @@ if {$exit_code || $matches != 2} {
 
 #####################################
 # TEST: add new cluster to existing federation
-# TEST: add new cluster with weight and state
+# TEST: add new cluster with state
 #####################################
 set matches 0
-set my_pid [spawn $sacctmgr -i add cluster $tc1 federation=$fed1 weight=9 fedstate=drain]
+set my_pid [spawn $sacctmgr -i add cluster $tc1 federation=$fed1 fedstate=drain]
 expect {
 	-re "Adding Cluster\\(s\\)$eol" {
 		incr matches
@@ -487,10 +487,6 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+Weight\\s+=\\s+9$eol" {
-		incr matches
-		exp_continue
-	}
 	timeout {
 		send_user "\nFAILURE: sacctmgr add not responding\n"
 		slow_kill $my_pid
@@ -500,7 +496,7 @@ expect {
 		wait
 	}
 }
-if {$exit_code || $matches != 6} {
+if {$exit_code || $matches != 5} {
 	send_user "$matches FAILURE: unexpected error.\n"
 	end_it 1
 }
@@ -583,19 +579,19 @@ if {$exit_code || $matches != 4} {
 set matches 0
 set my_pid [spawn $sacctmgr show cluster $tc1 $tc2 $tc3 WithFed]
 expect {
-	-re "Cluster\\s+.*?Federation\\s+ID\\s+Weight\\s+Features\\s+FedState $eol" {
+	-re "Cluster\\s+.*?Federation\\s+ID\\s+Features\\s+FedState $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$tc1\\s+.*?$fed1\\s+1\\s+9\\s+DRAIN $eol" {
+	-re "\\s+$tc1\\s+.*?$fed1\\s+1\\s+DRAIN $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$tc2\\s+.*?$fed2\\s+\\s+1\\s+1\\s+ACTIVE $eol" {
+	-re "\\s+$tc2\\s+.*?$fed2\\s+1\\s+ACTIVE $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$tc3\\s+.*?$fed2\\s+\\s+2\\s+1\\s+ACTIVE $eol" {
+	-re "\\s+$tc3\\s+.*?$fed2\\s+2\\s+ACTIVE $eol" {
 		incr matches
 		exp_continue
 	}
@@ -692,17 +688,13 @@ if {$exit_code || $matches != 6} {
 # TEST: modify clusters with fed options
 #####################################
 set matches 0
-set my_pid [spawn $sacctmgr -i modify cluster $tc1 $tc3 set weight=5 fedstate=DRAIN]
+set my_pid [spawn $sacctmgr -i modify cluster $tc1 $tc3 set fedstate=DRAIN]
 expect {
 	-re "Setting$eol" {
 		incr matches
 		exp_continue
 	}
 	-re "^\\s+FedState\\s+=\\s+DRAIN$eol" {
-		incr matches
-		exp_continue
-	}
-	-re "^\\s+Weight\\s+=\\s+5$eol" {
 		incr matches
 		exp_continue
 	}
@@ -727,23 +719,19 @@ expect {
 		wait
 	}
 }
-if {$exit_code || $matches != 6} {
+if {$exit_code || $matches != 5} {
 	send_user "$matches FAILURE: unexpected error.\n"
 	end_it 1
 }
 
 set matches 0
-set my_pid [spawn $sacctmgr -i modify cluster $tc2 set weight=9 fedstate=DRAIN+REMOVE]
+set my_pid [spawn $sacctmgr -i modify cluster $tc2 set fedstate=DRAIN+REMOVE]
 expect {
 	-re "Setting$eol" {
 		incr matches
 		exp_continue
 	}
 	-re "^\\s+FedState\\s+=\\s+DRAIN\\+REMOVE$eol" {
-		incr matches
-		exp_continue
-	}
-	-re "^\\s+Weight\\s+=\\s+9$eol" {
 		incr matches
 		exp_continue
 	}
@@ -764,7 +752,7 @@ expect {
 		wait
 	}
 }
-if {$exit_code || $matches != 5} {
+if {$exit_code || $matches != 4} {
 	send_user "$matches FAILURE: unexpected error.\n"
 	end_it 1
 }
@@ -803,21 +791,21 @@ if {$exit_code || $matches != 4} {
 }
 
 set matches 0
-set my_pid [spawn $sacctmgr show cluster $tc1 $tc2 $tc3 format="cluster%20,federation%20,fedstate%20,weight"]
+set my_pid [spawn $sacctmgr show cluster $tc1 $tc2 $tc3 format="cluster%20,federation%20,fedstate%20"]
 expect {
-	-re "Cluster\\s+Federation\\s+FedState\\s+Weight $eol" {
+	-re "Cluster\\s+Federation\\s+FedState $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$tc1\\s+$fed1\\s+ACTIVE\\s+5 $eol" {
+	-re "\\s+$tc1\\s+$fed1\\s+ACTIVE $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$tc2\\s+$fed2\\s+DRAIN\\+REMOVE\\s+9 $eol" {
+	-re "\\s+$tc2\\s+$fed2\\s+DRAIN\\+REMOVE $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$tc3\\s+$fed2\\s+DRAIN\\s+5 $eol" {
+	-re "\\s+$tc3\\s+$fed2\\s+DRAIN $eol" {
 		incr matches
 		exp_continue
 	}
@@ -876,21 +864,21 @@ if {$exit_code || $matches != 5} {
 }
 
 set matches 0
-set my_pid [spawn $sacctmgr show federation $fed1 $fed2 format="federation%20,flags,cluster%20,fedstate%20,weight"]
+set my_pid [spawn $sacctmgr show federation $fed1 $fed2 format="federation%20,flags,cluster%20,fedstate%20"]
 expect {
-	-re "Federation\\s+Flags\\s+Cluster\\s+FedState\\s+Weight $eol" {
+	-re "Federation\\s+Flags\\s+Cluster\\s+FedState $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$fed1\\s+LLC\\s+$tc1\\s+ACTIVE\\s+5 $eol" {
+	-re "\\s+$fed1\\s+LLC\\s+$tc1\\s+ACTIVE $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$fed2\\s+LLC\\s+$tc2\\s+DRAIN\\+REMOVE\\s+9 $eol" {
+	-re "\\s+$fed2\\s+LLC\\s+$tc2\\s+DRAIN\\+REMOVE $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$fed2\\s+LLC\\s+$tc3\\s+DRAIN\\s+5 $eol" {
+	-re "\\s+$fed2\\s+LLC\\s+$tc3\\s+DRAIN $eol" {
 		incr matches
 		exp_continue
 	}
@@ -909,9 +897,9 @@ if {$exit_code || $matches != 4} {
 }
 
 set matches 0
-set my_pid [spawn $sacctmgr show federation $fed1 $fed2 format="federation%20,flags,cluster%20,fedstate%20,weight" tree]
+set my_pid [spawn $sacctmgr show federation $fed1 $fed2 format="federation%20,flags,cluster%20,fedstate%20" tree]
 expect {
-	-re "Federation\\s+Flags\\s+Cluster\\s+FedState\\s+Weight $eol" {
+	-re "Federation\\s+Flags\\s+Cluster\\s+FedState $eol" {
 		incr matches
 		exp_continue
 	}
@@ -919,7 +907,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$tc1\\s+ACTIVE\\s+5 $eol" {
+	-re "\\s+$tc1\\s+ACTIVE $eol" {
 		incr matches
 		exp_continue
 	}
@@ -927,11 +915,11 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$tc2\\s+DRAIN\\+REMOVE\\s+9 $eol" {
+	-re "\\s+$tc2\\s+DRAIN\\+REMOVE $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$tc3\\s+DRAIN\\s+5 $eol" {
+	-re "\\s+$tc3\\s+DRAIN $eol" {
 		incr matches
 		exp_continue
 	}
@@ -1326,9 +1314,9 @@ if {$exit_code || $matches != 7} {
 }
 
 set matches 0
-set my_pid [spawn $sacctmgr show federation $fed1 $fed2 $fed3 format="federation%20,flags,cluster%20,fedstate%20,weight,id"]
+set my_pid [spawn $sacctmgr show federation $fed1 $fed2 $fed3 format="federation%20,flags,cluster%20,fedstate%20,id"]
 expect {
-	-re "Federation\\s+Flags\\s+Cluster\\s+FedState\\s+Weight\\s+ID $eol" {
+	-re "Federation\\s+Flags\\s+Cluster\\s+FedState\\s+ID $eol" {
 		incr matches
 		exp_continue
 	}
@@ -1336,15 +1324,15 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$fed2\\s+$tc3\\s+DRAIN\\s+5\\s+2 $eol" {
+	-re "\\s+$fed2\\s+$tc3\\s+DRAIN\\s+2 $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$fed3\\s+LLC\\s+$tc1\\s+ACTIVE\\s+5\\s+1 $eol" {
+	-re "\\s+$fed3\\s+LLC\\s+$tc1\\s+ACTIVE\\s+1 $eol" {
 		incr matches
 		exp_continue
 	}
-	-re "\\s+$fed3\\s+LLC\\s+$tc2\\s+ACTIVE\\s+9\\s+2 $eol" {
+	-re "\\s+$fed3\\s+LLC\\s+$tc2\\s+ACTIVE\\s+2 $eol" {
 		incr matches
 		exp_continue
 	}

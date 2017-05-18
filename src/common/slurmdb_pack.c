@@ -836,7 +836,6 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 		packstr(object->fed.name, buffer);
 		pack32(object->fed.id, buffer);
 		pack32(object->fed.state, buffer);
-		pack32(object->fed.weight, buffer);
 
 		pack32(object->flags, buffer);
 
@@ -906,7 +905,7 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 		packstr(object->fed.name, buffer);
 		pack32(object->fed.id, buffer);
 		pack32(object->fed.state, buffer);
-		pack32(object->fed.weight, buffer);
+		pack32(NO_VAL32, buffer);
 
 		pack32(object->flags, buffer);
 
@@ -1039,7 +1038,6 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->fed.id, buffer);
 		safe_unpack32(&object_ptr->fed.state, buffer);
-		safe_unpack32(&object_ptr->fed.weight, buffer);
 
 		safe_unpack32(&object_ptr->flags, buffer);
 
@@ -1097,7 +1095,7 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->fed.id, buffer);
 		safe_unpack32(&object_ptr->fed.state, buffer);
-		safe_unpack32(&object_ptr->fed.weight, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
 
 		safe_unpack32(&object_ptr->flags, buffer);
 
