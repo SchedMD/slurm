@@ -67,12 +67,10 @@ extern int       fed_mgr_job_complete(struct job_record *job_ptr,
 				      uint32_t return_code, time_t start_time);
 extern bool      fed_mgr_job_is_locked(struct job_record *job_ptr);
 extern bool      fed_mgr_job_is_self_owned(struct job_record *job_ptr);
-extern int       fed_mgr_job_lock(struct job_record *job_ptr,
-				  uint32_t cluster_id);
+extern int       fed_mgr_job_lock(struct job_record *job_ptr);
 extern int       fed_mgr_job_lock_set(uint32_t job_id, uint32_t cluster_id);
 extern int       fed_mgr_job_lock_unset(uint32_t job_id, uint32_t cluster_id);
-extern int       fed_mgr_job_unlock(struct job_record *job_ptr,
-				    uint32_t cluster_id);
+extern int       fed_mgr_job_unlock(struct job_record *job_ptr);
 extern int       fed_mgr_job_requeue(struct job_record *job_ptr);
 extern int       fed_mgr_job_requeue_test(struct job_record *job_ptr,
 					  uint32_t state);
@@ -81,7 +79,7 @@ extern int       fed_mgr_job_revoke(struct job_record *job_ptr,
 				    time_t start_time);
 extern int       fed_mgr_job_revoke_sibs(struct job_record *job_ptr);
 extern int       fed_mgr_job_start(struct job_record *job_ptr,
-				   uint32_t cluster_id, time_t start_time);
+				   time_t start_time);
 extern int       fed_mgr_q_sib_msg(slurm_msg_t *sib_msg, uint32_t rpc_uid);
 extern int       fed_mgr_remove_active_sibling(uint32_t job_id, char *sib_name);
 extern void      fed_mgr_remove_fed_job_info(uint32_t job_id);
