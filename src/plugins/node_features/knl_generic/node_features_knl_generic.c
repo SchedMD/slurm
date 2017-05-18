@@ -1452,7 +1452,22 @@ extern void node_features_p_step_config(bool mem_sort, bitstr_t *numa_bitmap)
  * features */
 extern bool node_features_p_user_update(uid_t uid)
 {
+	static int reboot_allowed = -1;
 	int i;
+
+	if (reboot_allowed == -1) {
+		char *reboot_program = slurm_get_reboot_program();
+		if (reboot_program && reboot_program[0])
+			reboot_allowed = 1;
+		else
+			reboot_allowed = 0;
+		xfree(reboot_program);
+	}
+
+	if (reboot_allowed != 1) {
+		info("Change in KNL mode not supported. No RebootProgram configured");
+		return false;
+	}
 
 	if (allowed_uid_cnt == 0)   /* Default is ALL users allowed to update */
 		return true;

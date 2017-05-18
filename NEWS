@@ -98,6 +98,28 @@ documents those changes that are of interest to users and administrators.
  -- knl_cray plugin: Log incomplete capmc output for a node.
  -- knl_cray plugin: Change capmc parsing of mcdram_pct from string to number.
  -- Remove log files from test20.12.
+ -- When rebooting a node and using the PrologFlags=alloc make sure the
+    prolog is ran after the reboot.
+ -- node_features/knl_generic - If a node is rebooted for a pending job, but
+    fails to enter the desired NUMA and/or MCDRAM mode then drain the node and
+    requeue the job.
+ -- node_features/knl_generic disable mode change unless RebootProgram
+    configured.
+ -- Add new burst_buffer function bb_g_job_revoke_alloc() to be executed
+    if there was a failure after the initial resource allocation. Does not
+    release previously allocated resources.
+ -- Test if the node_bitmap on a job is NULL when testing if the job's nodes
+    are ready.  This will be NULL is a job was revoked while beginning.
+ -- Fix incorrect lock levels when testing when job will run or updating a job.
+ -- Add missing locks to job_submit/pbs plugin when updating a jobs
+    dependencies.
+ -- Add support for lua5.3
+ -- Add min_memory_per_node|cpu to the job_submit/lua plugin to deal with lua
+    not being able to deal with pn_min_memory being a uint64_t.  Scripts are
+    urged to change to these new variables avoid issue.  If not set the
+    variables will be 'nil'.
+ -- Calculate priority correctly when 'nice' is given.
+ -- Fix minor typos in the documentation.
 
 * Changes in Slurm 17.02.3
 ==========================

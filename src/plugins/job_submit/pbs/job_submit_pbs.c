@@ -147,11 +147,16 @@ static void _decr_depend_cnt(struct job_record *job_ptr)
  * later. */
 static void *_dep_agent(void *args)
 {
+	/* Locks: Write job, read node, read partition */
+	slurmctld_lock_t job_write_lock = {
+		READ_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
+
 	struct job_record *job_ptr = (struct job_record *) args;
 	char *end_ptr = NULL, *tok;
 	int cnt = 0;
 
 	usleep(100000);
+	lock_slurmctld(job_write_lock);
 	if (job_ptr && job_ptr->details && (job_ptr->magic == JOB_MAGIC) &&
 	    job_ptr->comment && strstr(job_ptr->comment, "on:")) {
 		char *new_depend = job_ptr->details->dependency;
@@ -163,6 +168,8 @@ static void *_dep_agent(void *args)
 	}
 	if (cnt == 0)
 		set_job_prio(job_ptr);
+	unlock_slurmctld(job_write_lock);
+
 	return NULL;
 }
 

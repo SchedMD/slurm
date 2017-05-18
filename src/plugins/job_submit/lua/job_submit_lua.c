@@ -323,6 +323,19 @@ static int _job_rec_field(const struct job_record *job_ptr,
 			lua_pushnumber (L, job_ptr->details->min_cpus);
 		else
 			lua_pushnumber (L, 0);
+	} else if (!xstrcmp(name, "min_mem_per_node") &&
+		   !(job_ptr->details->pn_min_memory & MEM_PER_CPU)) {
+		if (job_ptr->details)
+			lua_pushnumber(L, job_ptr->details->pn_min_memory);
+		else
+			lua_pushnil(L);
+	} else if (!xstrcmp(name, "min_mem_per_cpu") &&
+		   (job_ptr->details->pn_min_memory & MEM_PER_CPU)) {
+		  if (job_ptr->details)
+			  lua_pushnumber(L, job_ptr->details->pn_min_memory &
+					 ~MEM_PER_CPU);
+		  else
+			  lua_pushnil(L);
 	} else if (!xstrcmp(name, "min_nodes")) {
 		if (job_ptr->details)
 			lua_pushnumber (L, job_ptr->details->min_nodes);
@@ -341,6 +354,10 @@ static int _job_rec_field(const struct job_record *job_ptr,
 		else
 			lua_pushnumber (L, NO_VAL);
 	} else if (!xstrcmp(name, "pn_min_memory")) {
+		/*
+		 * FIXME: Remove this in the future, lua can't handle 64bit
+		 * numbers!!!.  Use min_mem_per_node|cpu instead.
+		 */
 		if (job_ptr->details)
 			lua_pushnumber (L, job_ptr->details->pn_min_memory);
 		else
@@ -731,6 +748,12 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 		lua_pushnumber (L, job_desc->max_nodes);
 	} else if (!xstrcmp(name, "min_cpus")) {
 		lua_pushnumber (L, job_desc->min_cpus);
+	} else if (!xstrcmp(name, "min_mem_per_node") &&
+		   !(job_desc->pn_min_memory & MEM_PER_CPU)) {
+		lua_pushnumber (L, job_desc->pn_min_memory);
+	} else if (!xstrcmp(name, "min_mem_per_cpu") &&
+		   (job_desc->pn_min_memory & MEM_PER_CPU)) {
+		lua_pushnumber (L, (job_desc->pn_min_memory & (~MEM_PER_CPU)));
 	} else if (!xstrcmp(name, "min_nodes")) {
 		lua_pushnumber (L, job_desc->min_nodes);
 	} else if (!xstrcmp(name, "name")) {
@@ -754,6 +777,10 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 	} else if (!xstrcmp(name, "pn_min_cpus")) {
 		lua_pushnumber (L, job_desc->pn_min_cpus);
 	} else if (!xstrcmp(name, "pn_min_memory")) {
+		/*
+		 * FIXME: Remove this in the future, lua can't handle 64bit
+		 * numbers!!!.  Use min_mem_per_node|cpu instead.
+		 */
 		lua_pushnumber (L, job_desc->pn_min_memory);
 	} else if (!xstrcmp(name, "pn_min_tmp_disk")) {
 		lua_pushnumber (L, job_desc->pn_min_tmp_disk);
@@ -946,6 +973,11 @@ static int _set_job_req_field(lua_State *L)
 		job_desc->max_nodes = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "min_cpus")) {
 		job_desc->min_cpus = luaL_checknumber(L, 3);
+	} else if (!xstrcmp(name, "min_mem_per_cpu")) {
+		job_desc->pn_min_memory = luaL_checknumber(L, 3);
+		job_desc->pn_min_memory |= MEM_PER_CPU;
+	} else if (!xstrcmp(name, "min_mem_per_node")) {
+		job_desc->pn_min_memory = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "min_nodes")) {
 		job_desc->min_nodes = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "name")) {
@@ -971,6 +1003,10 @@ static int _set_job_req_field(lua_State *L)
 	} else if (!xstrcmp(name, "pn_min_cpus")) {
 		job_desc->pn_min_cpus = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "pn_min_memory")) {
+		/*
+		 * FIXME: Remove this in the future, lua can't handle 64bit
+		 * numbers!!!.  Use min_mem_per_node|cpu instead.
+		 */
 		job_desc->pn_min_memory = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "pn_min_tmp_disk")) {
 		job_desc->pn_min_tmp_disk = luaL_checknumber(L, 3);
@@ -1204,32 +1240,75 @@ static void _push_partition_list(uint32_t user_id, uint32_t submit_uid)
 	list_iterator_destroy(part_iterator);
 }
 
+static void _lua_table_register(lua_State *L, const char *libname,
+				const luaL_Reg *l)
+{
+#ifdef HAVE_LUA_5_1
+	luaL_register(L, libname, l);
+#else
+	luaL_setfuncs(L, l, 0);
+	if (libname)
+		lua_setglobal(L, libname);
+#endif
+}
+
 static void _register_lua_slurm_output_functions (void)
 {
+	char *unpack_str;
+	char tmp_string[100];
+
+#ifdef HAVE_LUA_5_1
+	unpack_str = "unpack";
+#else
+	unpack_str = "table.unpack";
+#endif
 	/*
 	 *  Register slurm output functions in a global "slurm" table
 	 */
 	lua_newtable (L);
-	luaL_register (L, NULL, slurm_functions);
-
+	_lua_table_register(L, NULL, slurm_functions);
 	/*
 	 *  Create more user-friendly lua versions of SLURM log functions.
 	 */
-	luaL_loadstring (L, "slurm.error (string.format(unpack({...})))");
+	snprintf(tmp_string, sizeof(tmp_string),
+		 "slurm.error (string.format(%s({...})))",
+		 unpack_str);
+	luaL_loadstring (L, tmp_string);
 	lua_setfield (L, -2, "log_error");
-	luaL_loadstring (L, "slurm.log (0, string.format(unpack({...})))");
+	snprintf(tmp_string, sizeof(tmp_string),
+		 "slurm.log (0, string.format(%s({...})))",
+		 unpack_str);
+	luaL_loadstring (L, tmp_string);
 	lua_setfield (L, -2, "log_info");
-	luaL_loadstring (L, "slurm.log (1, string.format(unpack({...})))");
+	snprintf(tmp_string, sizeof(tmp_string),
+		 "slurm.log (1, string.format(%s({...})))",
+		 unpack_str);
+	luaL_loadstring (L, tmp_string);
 	lua_setfield (L, -2, "log_verbose");
-	luaL_loadstring (L, "slurm.log (2, string.format(unpack({...})))");
+	snprintf(tmp_string, sizeof(tmp_string),
+		 "slurm.log (2, string.format(%s({...})))",
+		 unpack_str);
+	luaL_loadstring (L, tmp_string);
 	lua_setfield (L, -2, "log_debug");
-	luaL_loadstring (L, "slurm.log (3, string.format(unpack({...})))");
+	snprintf(tmp_string, sizeof(tmp_string),
+		 "slurm.log (3, string.format(%s({...})))",
+		 unpack_str);
+	luaL_loadstring (L, tmp_string);
 	lua_setfield (L, -2, "log_debug2");
-	luaL_loadstring (L, "slurm.log (4, string.format(unpack({...})))");
+	snprintf(tmp_string, sizeof(tmp_string),
+		 "slurm.log (4, string.format(%s({...})))",
+		 unpack_str);
+	luaL_loadstring (L, tmp_string);
 	lua_setfield (L, -2, "log_debug3");
-	luaL_loadstring (L, "slurm.log (5, string.format(unpack({...})))");
+	snprintf(tmp_string, sizeof(tmp_string),
+		 "slurm.log (5, string.format(%s({...})))",
+		 unpack_str);
+	luaL_loadstring (L, tmp_string);
 	lua_setfield (L, -2, "log_debug4");
-	luaL_loadstring (L, "slurm.user_msg (string.format(unpack({...})))");
+	snprintf(tmp_string, sizeof(tmp_string),
+		 "slurm.user_msg (string.format(%s({...})))",
+		 unpack_str);
+	luaL_loadstring (L, tmp_string);
 	lua_setfield (L, -2, "log_user");
 
 	/*

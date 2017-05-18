@@ -188,10 +188,10 @@ will increase the number of message by a factor of about 3.</li>
 <li><b>SlurmdLogFile</b>:
 Writing to local storage is recommended.</li>
 <li><b>TaskPlugin</b>:
-Avoid using <i>task/cgroup</i> it is slower than other
-alternatives. It is not as heavy as the cgroup proctrack
-plugin, but still added overhead.  On the same note <i>task/affinity</i> does
-not appear to add any measurable overhead.</li>
+Avoid using <i>task/cgroup</i> with the combination of <i>ConstrainRAMSpace</i>
+it is slower than other alternatives.  On the same note <i>task/affinity</i>
+does not appear to add any measurable overhead.  Using task/affinity for
+affinity is advised in any case.</li>
 <li><b>Other</b>: Configure logging, accounting and other overhead to a minimum
 appropriate for your environment.</li>
 </ul>
@@ -213,6 +213,9 @@ speedup can be achieved by setting the CommitDelay option in the
 <li><b>PurgeResvAfter</b>=2months</li>
 <li><b>PurgeStepAfter</b>=2months</li>
 <li><b>PurgeSuspendAfter</b>=1month</li>
+<li><b>PurgeTXNAfter</b>=12months</li>
+<li><b>PurgeUsageAfter</b>=12months</li>
+
 </ul>
 
 <p style="text-align:center;">Last modified 3 May 2017</p>

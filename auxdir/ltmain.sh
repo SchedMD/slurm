@@ -854,7 +854,7 @@ func_mkdir_p ()
       # While some portion of DIR does not yet exist...
       while test ! -d "$_G_directory_path"; do
         # ...make a list in topmost first order.  Use a colon delimited
-	# list in case some portion of path contains whitespace.
+	# list incase some portion of path contains whitespace.
         _G_dir_list=$_G_directory_path:$_G_dir_list
 
         # If the last portion added has no slash in it, the list is done

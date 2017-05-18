@@ -31,7 +31,7 @@ JOBID PARTITION   NAME   USER  ST   TIME NODES BP_LIST(REASON)
 option which provides the ability to communicate to and from a comma
 separated list of clusters:
 <ol><b>sacct, sbatch, scancel, scontrol, sinfo, smap, sprio, squeue,
-sshare,</b> and <b>sstrigger</b></ol>
+sshare,</b> and <b>strigger</b></ol>
 
 <b>salloc, srun,</b> and <b>sstat</b> are cluster specific commands
 and do not offer the "-M, --clusters=" option.</p>

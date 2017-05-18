@@ -114,6 +114,9 @@ which case the job's RAM limit will be set to its swap space limit if
 \fBConstrainSwapSpace\fR is set to "yes".
 Also see \fBAllowedSwapSpace\fR, \fBAllowedRAMSpace\fR and
 \fBConstrainSwapSpace\fR.
+NOTE: When ContrainRAMSpace is set there is a noticible slow down in
+performance.  It should probably be avoided in an HTC environment.
+
 
 .TP
 \fBConstrainSwapSpace\fR=<yes|no>

@@ -124,27 +124,65 @@ static const struct luaL_Reg slurm_functions [] = {
 	{ NULL,    NULL        }
 };
 
+static void _lua_table_register(lua_State *L, const char *libname,
+				const luaL_Reg *l)
+{
+#ifdef HAVE_LUA_5_1
+	luaL_register(L, NULL, l);
+#else
+	luaL_setfuncs(L, l, 0);
+	if (libname)
+		lua_setglobal(L, libname);
+#endif
+}
+
 static int lua_register_slurm_output_functions (void)
 {
+	char *unpack_str;
+	char tmp_string[100];
+
+#ifdef HAVE_LUA_5_1
+	unpack_str = "unpack";
+#else
+	unpack_str = "table.unpack";
+#endif
 	/*
 	 *  Register slurm output functions in a global "slurm" table
 	 */
 	lua_newtable (L);
-	luaL_register (L, NULL, slurm_functions);
+	_lua_table_register(L, NULL, slurm_functions);
 
 	/*
 	 *  Create more user-friendly lua versions of SLURM log functions.
 	 */
-	luaL_loadstring (L, "slurm.error (string.format(unpack({...})))");
+	snprintf(tmp_string, sizeof(tmp_string),
+		 "slurm.error (string.format(%s({...})))",
+		 unpack_str);
+	luaL_loadstring (L, tmp_string);
 	lua_setfield (L, -2, "log_error");
-	luaL_loadstring (L, "slurm.log (0, string.format(unpack({...})))");
+	snprintf(tmp_string, sizeof(tmp_string),
+		 "slurm.log (0, string.format(%s({...})))",
+		 unpack_str);
+	luaL_loadstring (L, tmp_string);
 	lua_setfield (L, -2, "log_info");
-	luaL_loadstring (L, "slurm.log (1, string.format(unpack({...})))");
+	snprintf(tmp_string, sizeof(tmp_string),
+		 "slurm.log (1, string.format(%s({...})))",
+		 unpack_str);
+	luaL_loadstring (L, tmp_string);
 	lua_setfield (L, -2, "log_verbose");
-	luaL_loadstring (L, "slurm.log (2, string.format(unpack({...})))");
+	snprintf(tmp_string, sizeof(tmp_string),
+		 "slurm.log (2, string.format(%s({...})))",
+		 unpack_str);
+	luaL_loadstring (L, tmp_string);
 	lua_setfield (L, -2, "log_debug");
-	luaL_loadstring (L, "slurm.log (3, string.format(unpack({...})))");
+	snprintf(tmp_string, sizeof(tmp_string),
+		 "slurm.log (3, string.format(%s({...})))",
+		 unpack_str);
+	luaL_loadstring (L, tmp_string);
 	lua_setfield (L, -2, "log_debug2");
+	snprintf(tmp_string, sizeof(tmp_string),
+		 "slurm.log (4, string.format(%s({...})))",
+		 unpack_str);
 
 	/*
 	 * slurm.SUCCESS, slurm.FAILURE and slurm.ERROR
@@ -552,7 +590,12 @@ int proctrack_p_get_pids (uint64_t cont_id, pid_t **pids, int *npids)
 	/*
 	 *  Get table size and create array for slurm
 	 */
+#ifdef HAVE_LUA_5_1
 	*npids = lua_objlen (L, t);
+#else
+	*npids = lua_rawlen(L, t);
+#endif
+
 	p = (pid_t *) xmalloc (*npids * sizeof (pid_t));
 
 	/*

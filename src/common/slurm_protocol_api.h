@@ -213,6 +213,11 @@ char *slurm_get_msg_aggr_params(void);
  */
 extern uint16_t slurm_get_msg_timeout(void);
 
+/* slurm_get_reboot_program
+ * RET char * - RebootProgram from slurm.conf, MUST be xfreed by caller
+ */
+extern char *slurm_get_reboot_program(void);
+
 /* slurm_get_tcp_timeout
  * get default tcp timeout value from slurmctld_conf object
  */

@@ -24066,8 +24066,16 @@ fi
 
 
 	x_ac_lua_pkg_name="lua"
-	#check for 5.2 if that fails check for 5.1
+	#check for 5.3 then 5.2 then 5.1
 	if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"lua5.3\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "lua5.3") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  x_ac_lua_pkg_name=lua5.3
+else
+  if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"lua5.2\""; } >&5
   ($PKG_CONFIG --exists --print-errors "lua5.2") 2>&5
   ac_status=$?
@@ -24082,6 +24090,7 @@ else
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
   x_ac_lua_pkg_name=lua5.1
+fi
 fi
 fi
 
@@ -24159,8 +24168,7 @@ fi
 	if test "x$x_ac_have_lua" = "xyes"; then
 	  saved_CFLAGS="$CFLAGS"
 	  saved_LIBS="$LIBS"
-	  # -DLUA_COMPAT_ALL is needed to support lua 5.2
-	  lua_CFLAGS="$lua_CFLAGS -DLUA_COMPAT_ALL"
+	  lua_CFLAGS="$lua_CFLAGS"
 	  CFLAGS="$CFLAGS $lua_CFLAGS"
 	  LIBS="$LIBS $lua_LIBS"
 	  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for whether we can link to liblua" >&5
@@ -24210,7 +24218,11 @@ else
 fi
 
 	if test "x$x_ac_have_lua" = "xyes" ; then
-		if test "x$x_ac_lua_pkg_name" = "xlua5.2" ; then
+		if test "x$x_ac_lua_pkg_name" = "xlua5.3" ; then
+
+$as_echo "#define HAVE_LUA_5_3 1" >>confdefs.h
+
+		elif test "x$x_ac_lua_pkg_name" = "xlua5.2" ; then
 
 $as_echo "#define HAVE_LUA_5_2 1" >>confdefs.h
 

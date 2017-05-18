@@ -48,6 +48,10 @@ int xlua_dlopen(void)
 	 *   by any lua scripts.
 	 */
 	if (!dlopen("liblua.so",       RTLD_NOW | RTLD_GLOBAL) &&
+	    !dlopen("liblua-5.3.so",   RTLD_NOW | RTLD_GLOBAL) &&
+	    !dlopen("liblua5.3.so",    RTLD_NOW | RTLD_GLOBAL) &&
+	    !dlopen("liblua5.3.so.0",  RTLD_NOW | RTLD_GLOBAL) &&
+	    !dlopen("liblua.so.5.3",   RTLD_NOW | RTLD_GLOBAL) &&
 	    !dlopen("liblua-5.2.so",   RTLD_NOW | RTLD_GLOBAL) &&
 	    !dlopen("liblua5.2.so",    RTLD_NOW | RTLD_GLOBAL) &&
 	    !dlopen("liblua5.2.so.0",  RTLD_NOW | RTLD_GLOBAL) &&

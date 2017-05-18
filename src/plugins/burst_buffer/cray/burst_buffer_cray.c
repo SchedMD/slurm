@@ -3815,7 +3815,7 @@ static void *_start_pre_run(void *x)
 	pre_run_args_t *pre_run_args = (pre_run_args_t *) x;
 	char *resp_msg = NULL;
 	char jobid_buf[64];
-	bb_job_t *bb_job;
+	bb_job_t *bb_job = NULL;
 	int status = 0;
 	struct job_record *job_ptr;
 	bool run_kill_job = false;
@@ -3886,7 +3886,10 @@ static void *_start_pre_run(void *x)
 				true);
 	} else if (bb_job) {
 		/* Pre-run success and the job's BB record exists */
-		bb_job->state = BB_STATE_RUNNING;
+		if (bb_job->state == BB_STATE_ALLOC_REVOKE)
+			bb_job->state = BB_STATE_STAGED_IN;
+		else
+			bb_job->state = BB_STATE_RUNNING;
 	}
 	if (job_ptr)
 		prolog_running_decr(job_ptr);
@@ -3899,6 +3902,33 @@ static void *_start_pre_run(void *x)
 	_free_script_argv(pre_run_args->args);
 	xfree(pre_run_args);
 	return NULL;
+}
+
+/* Revoke allocation, but do not release resources.
+ * Executed after bb_p_job_begin() if there was an allocation failure.
+ * Does not release previously allocated resources.
+ *
+ * Returns a SLURM errno.
+ */
+extern int bb_p_job_revoke_alloc(struct job_record *job_ptr)
+{
+	bb_job_t *bb_job;
+	int rc = SLURM_SUCCESS;
+
+	slurm_mutex_lock(&bb_state.bb_mutex);
+	if (job_ptr)
+		bb_job = _get_bb_job(job_ptr);
+	if (bb_job) {
+		if (bb_job->state == BB_STATE_RUNNING)
+			bb_job->state = BB_STATE_STAGED_IN;
+		else if (bb_job->state == BB_STATE_PRE_RUN)
+			bb_job->state = BB_STATE_ALLOC_REVOKE;
+	} else {
+		rc = SLURM_ERROR;
+	}
+	slurm_mutex_unlock(&bb_state.bb_mutex);
+
+	return rc;
 }
 
 /*

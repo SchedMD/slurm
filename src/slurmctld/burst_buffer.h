@@ -155,6 +155,14 @@ extern int bb_g_job_test_stage_in(struct job_record *job_ptr, bool test_only);
  */
 extern int bb_g_job_begin(struct job_record *job_ptr);
 
+/* Revoke allocation, but do not release resources.
+ * Executed after bb_g_job_begin() if there was an allocation failure.
+ * Does not release previously allocated resources.
+ *
+ * Returns a SLURM errno.
+ */
+extern int bb_g_job_revoke_alloc(struct job_record *job_ptr);
+
 /*
  * Trigger a job's burst buffer stage-out to begin
  *

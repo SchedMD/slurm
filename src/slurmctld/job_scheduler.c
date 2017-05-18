@@ -3804,6 +3804,10 @@ static void *_wait_boot(void *arg)
 	/* Locks: Write jobs; read nodes */
 	slurmctld_lock_t job_write_lock = {
 		READ_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+	/* Locks: Write jobs; write nodes */
+	slurmctld_lock_t node_write_lock = {
+		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+	bitstr_t *boot_node_bitmap;
 	uint16_t resume_timeout = slurm_get_resume_timeout();
 	struct node_record *node_ptr;
 	time_t start_time = time(NULL);
@@ -3853,10 +3857,23 @@ static void *_wait_boot(void *arg)
 		unlock_slurmctld(job_write_lock);
 	} while (wait_node_cnt);
 
-	lock_slurmctld(job_write_lock);
+	/* Validate the nodes have desired features */
+	lock_slurmctld(node_write_lock);
+	boot_node_bitmap = node_features_reboot(job_ptr);
+	if (boot_node_bitmap && bit_set_count(boot_node_bitmap)) {
+		char *node_list = bitmap2node_name(boot_node_bitmap);
+		error("Failed to reboot nodes %s into expected state for job %u",
+		      node_list, job_ptr->job_id);
+		(void) drain_nodes(node_list, "Node mode change failure",
+				   getuid());
+		xfree(node_list);
+		(void) job_requeue(getuid(), job_ptr->job_id, NULL, false, 0);
+	}
+	FREE_NULL_BITMAP(boot_node_bitmap);
+
 	prolog_running_decr(job_ptr);
 	job_validate_mem(job_ptr);
-	unlock_slurmctld(job_write_lock);
+	unlock_slurmctld(node_write_lock);
 
 	return NULL;
 }
