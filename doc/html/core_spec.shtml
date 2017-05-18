@@ -30,7 +30,7 @@ explicitly requested by the job. For example "salloc -n1 --core-spec=1 bash"
 will result in one entire node being reserved for the job, but only one CPU
 will be available for subsequent job steps. The remaining CPUs on the node
 (at least one core because of "--core-spec=1") will only be available for
-system use. The job will be changed for all CPUs on the node and the job's
+system use. The job will be charged for all CPUs on the node and the job's
 NumCPUs value reported by the <i>scontrol</i>, <i>sview</i> and <i>squeue</i>
 commands will reflect all CPUS on all allocated nodes as will the job's
 accounting.</p>

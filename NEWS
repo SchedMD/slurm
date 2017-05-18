@@ -32,6 +32,7 @@ documents those changes that are of interest to users and administrators.
     urged to change to these new variables avoid issue.  If not set the
     variables will be 'nil'.
  -- Calculate priority correctly when 'nice' is given.
+ -- Fix minor typos in the documentation.
 
 * Changes in Slurm 17.02.3
 ==========================

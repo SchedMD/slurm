@@ -114,7 +114,7 @@ Default value is 60 seconds.
 Larger values are appropriate if job time limits are imprecise and/or
 small delays in starting pending jobs in order to achieve higher system
 utilization is desired.</LI>
-<LI><B>bf_window=#</B> - How longin, in minutes, into the future to look when
+<LI><B>bf_window=#</B> - How long, in minutes, into the future to look when
 determining when and where jobs can start. Default value is one day.</LI>
 <LI><B>bf_yield_interval=#</B> - 
 The backfill scheduler will periodically relinquish locks in order for other
