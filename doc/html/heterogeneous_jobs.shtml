@@ -1,0 +1,84 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Heterogeneous Job Support</h1>
+
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#submitting">Submitting Jobs</a></li>
+<li><a href="#managing">Managing Jobs</a></li>
+<li><a href="#limitations">Limitations</a></li>
+</ul>
+
+<h2><a name="overview">Overviewe</a></h2>
+
+<p>Slurm version 17.11 and later supports the ability to submit and manage
+heterogeneous jobs, in which each component has virtually all job options
+available including partition, account and QOS (Quality Of Service).
+For example, part of a job might require four cores and 4 GB for each of 128
+tasks while another part of the job would require 16 GB of memory and one CPU.</p>
+
+<h2><a name="submitting">Submitting Jobs</a></h2>
+
+<p>The <i>salloc</i>, <i>sbatch</i> and <i>srun</i> commands can all be used
+to submit heterogeneous jobs.
+Resource specifications for each component of the heterogeneous should be
+separated with ":" character.
+For example:</p>
+<pre>
+$ sbatch --cpus-per-task=4 --mem-per-cpu=1  --ntasks=128 : \
+         --cpus-per-task=1 --mem-per-cpu=16 --ntasks=1 my.bash
+</pre>
+
+<p>Environment variables used to specify default options for the job submit
+command will be applied to every component of the heterogeneous job.</p>
+
+<h2><a name="managing">Managing Jobs</a></h2>
+
+<p>Information maintained in Slurm for a heterogeneous job includes:</p>
+<ul>
+<li><i>job_id</i>: Each component of a heterogeneous job will have its own
+unique <i>job_id</i>.</li>
+<li><i>pack_job_id</i>: This identification number applies to all components
+of the heterogeneous job. All components of the same job will have the same
+<i>pack_job_id</i> value and it will be equal to the <i>job_id</i> of the
+first component.</li>
+<li><i>pack_job_offset</i>: A unique sequence number applied to each component
+of the heterogeneous job. The first component will have a <i>>pack_job_offset</i>
+value of 0, the next a value of 1, etc.</li>
+</ul>
+
+<table width="100%" border=1 cellspacing=0 cellpadding=4>
+<tr>
+  <th width="33%"><b>job_id</b></th>
+  <th width="33%"><b>pack_job_id</b></th>
+  <th width="34%"><b>pack_job_offset</b></th>
+ </tr>
+
+<tr><td>123</td><td>123</td><td>0</td></tr>
+<tr><td>124</td><td>123</td><td>1</td></tr>
+<tr><td>125</td><td>123</td><td>2</td></tr>
+<tr><td>126</td><td>123</td><td>3</td></tr>
+<tr><td>127</td><td>123</td><td>4</td></tr>
+</table>
+<p>Table 1: Example job IDs</p>
+
+<p>The <i>smap</i>, <i>smap</i>, <i>squeue</i> and <i>sview</i> report the
+components of a heterogeneous job using the format
+"&lt;pack_job_id&gt;+&lt;pack_job_offset&gt;".
+For example "123+4" would represent heterogeneous job id 123 and it's fifth
+component (note: the first component has a <i>pack_job_offset</i>value of 0).</p>
+
+<h2><a name="limitations">Limitations</a></h2>
+
+<p>In a federation of clusters, a heterogeneous job will execute entirely on
+the cluster from which the job is submitted. The heterogeneous job will not
+be eligiable to migrate between clusters or to have different components of
+the job execute on different clusters in the federation.</p>
+
+<p>Job arrays of heterogeneous jobs are not supported.</p>
+
+<p class="footer"><a href="#top">top</a></p>
+
+<p style="text-align:center;">Last modified 18 May 2017</p>
+
+<!--#include virtual="footer.txt"-->

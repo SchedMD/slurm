@@ -17,6 +17,7 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="man_index.html">Man Pages</a></li>
 <li><a href="rosetta.html">Rosetta Stone of Workload Managers</a></li>
 <li><a href="job_array.html">Job Array Support</a></li>
+<li><a href="heterogeneous_jobs.html">Heterogeneous Job Support</a></li>
 <li><a href="cpu_management.html">CPU Management User and Administrator Guide</a></li>
 <li><a href="mpi_guide.html">MPI and UPC Users Guide</a></li>
 <li><a href="mc_support.html">Support for Multi-core/Multi-threaded Architectures</a></li>
@@ -138,6 +139,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 2 November 2016</p>
+<p style="text-align:center;">Last modified 18 May 2017</p>
 
 <!--#include virtual="footer.txt"-->
