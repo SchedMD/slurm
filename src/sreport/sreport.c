@@ -135,7 +135,8 @@ main (int argc, char **argv)
 	}
 	xfree(temp);
 
-	if (strstr(slurmctld_conf.fed_params, "fed_display"))
+	if (slurmctld_conf.fed_params &&
+	    strstr(slurmctld_conf.fed_params, "fed_display"))
 		federation_flag = true;
 
 	if (getenv("SREPORT_CLUSTER")) {
