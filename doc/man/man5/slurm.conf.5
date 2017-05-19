@@ -1255,6 +1255,12 @@ Identifies options to the job launch plugin.
 Acceptable values include:
 .RS
 .TP 24
+\fBcray_net_exclusive\fR
+Allow jobs on a Cray Native cluster exclusive access to network resources.
+This should only be set on clusters providing exclusive access to each
+node to a single job at once, and not using parallel steps within the job,
+otherwise resources on the node can be oversubscribed.
+.TP 24
 \fBmem_sort\fR
 Sort NUMA memory at step start. User can override this default with
 SLURM_MEM_BIND environment variable or \-\-mem_bind=nosort command line option.

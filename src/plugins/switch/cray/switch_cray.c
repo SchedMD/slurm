@@ -416,7 +416,8 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 	slurm_cray_jobinfo_t *sw_job = (slurm_cray_jobinfo_t *) job->switch_job;
 	int rc, num_ptags;
-	int mem_scaling, cpu_scaling;
+	char *launch_params;
+	int exclusive = 0, mem_scaling = 100, cpu_scaling = 100;
 	int *ptags = NULL;
 	char *err_msg = NULL;
 	uint64_t cont_id = job->cont_id;
@@ -484,29 +485,46 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	/*
 	 * Configure the network
 	 *
-	 * I'm setting exclusive flag to zero for now until we can figure out a
-	 * way to guarantee that the application not only has exclusive access
-	 * to the node but also will not be suspended.  This may not happen.
-	 *
 	 * Cray shmem still uses the network, even when it's using only one
 	 * node, so we must always configure the network.
 	 */
-	cpu_scaling = get_cpu_scaling(job);
-	if (cpu_scaling == -1) {
-		return SLURM_ERROR;
+	launch_params = slurm_get_launch_params();
+	if (launch_params && strstr(launch_params, "cray_net_exclusive")) {
+		/*
+		 * Grant exclusive access and all aries resources to the job.
+		 * Not recommended if you may run multiple steps within
+		 * the job, and will cause problems if you suspend or allow
+		 * nodes to be shared across multiple jobs.
+		 */
+		/*
+		 * TODO: determine if this can be managed per-job, rather
+		 * than globally across the cluster.
+		 */
+		exclusive = 1;
 	}
+	xfree(launch_params);
 
-	mem_scaling = get_mem_scaling(job);
-	if (mem_scaling == -1) {
-		return SLURM_ERROR;
+	if (!exclusive) {
+		/*
+		 * Calculate percentages of cpu and mem to assign to
+		 * non-exclusive jobs.
+		 */
+
+		cpu_scaling = get_cpu_scaling(job);
+		if (cpu_scaling == -1)
+			return SLURM_ERROR;
+
+		mem_scaling = get_mem_scaling(job);
+		if (mem_scaling == -1)
+			return SLURM_ERROR;
 	}
 
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
-		CRAY_INFO("Network Scaling: CPU %d Memory %d",
-			  cpu_scaling, mem_scaling);
+		CRAY_INFO("Network Scaling: Exclusive %d CPU %d Memory %d",
+			  exclusive, cpu_scaling, mem_scaling);
 	}
 
-	rc = alpsc_configure_nic(&err_msg, 0, cpu_scaling, mem_scaling,
+	rc = alpsc_configure_nic(&err_msg, exclusive, cpu_scaling, mem_scaling,
 				 cont_id, sw_job->num_cookies,
 				 (const char **) sw_job->cookies,
 				 &num_ptags, &ptags, NULL);
