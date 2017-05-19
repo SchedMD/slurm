@@ -1571,6 +1571,9 @@ next_part:			part_ptr = (struct part_record *)
 		if (job_ptr->preempt_in_progress)
 			continue;	/* scheduled in another partition */
 
+		if (job_ptr->pack_job_id)
+			goto fail_this_part;
+
 		if (job_ptr->array_recs && (job_ptr->array_task_id == NO_VAL))
 			is_job_array_head = true;
 		else
@@ -2023,7 +2026,8 @@ next_task:
 		if (fail_by_part && bf_min_prio_reserve &&
 		    (job_ptr->priority < bf_min_prio_reserve))
 			fail_by_part = false;
-		if (fail_by_part) {
+
+fail_this_part:	if (fail_by_part) {
 		 	/* do not schedule more jobs in this partition or on
 			 * nodes in this partition */
 			failed_parts[failed_part_cnt++] = job_ptr->part_ptr;

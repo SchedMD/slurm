@@ -75,6 +75,11 @@ the cluster from which the job is submitted. The heterogeneous job will not
 be eligiable to migrate between clusters or to have different components of
 the job execute on different clusters in the federation.</p>
 
+<p>Heterogeneous jobs are only scheduled by the backfill scheduler plugin.
+The more frequently executed scheduling logic only starts jobs on a first-in
+first-out (FIFO) basis and lacks logic for concurrently scheduling all
+components of a heterogeneous job.</p>
+
 <p>Job arrays of heterogeneous jobs are not supported.</p>
 
 <p class="footer"><a href="#top">top</a></p>
