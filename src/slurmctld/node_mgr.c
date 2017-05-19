@@ -83,8 +83,6 @@
 #include "src/slurmctld/trigger_mgr.h"
 #include "src/plugins/select/bluegene/bg_enums.h"
 
-#define _DEBUG		0
-
 /* No need to change we always pack SLURM_PROTOCOL_VERSION */
 #define NODE_STATE_VERSION        "PROTOCOL_VERSION"
 
