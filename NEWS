@@ -35,8 +35,6 @@ documents those changes that are of interest to users and administrators.
  -- Fix minor typos in the documentation.
  -- node_features/knl_cray: Preserve non-KNL active features if slurmctld
     reconfigured while node boot in progress.
- -- node_features/knl_generic: Do not repeatedly log errors when trying to read
-    KNL modes if not KNL system.
 
 * Changes in Slurm 17.02.3
 ==========================
