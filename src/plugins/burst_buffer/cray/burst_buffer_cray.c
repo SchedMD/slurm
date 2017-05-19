@@ -3926,7 +3926,7 @@ static void *_start_pre_run(void *x)
  */
 extern int bb_p_job_revoke_alloc(struct job_record *job_ptr)
 {
-	bb_job_t *bb_job;
+	bb_job_t *bb_job = NULL;
 	int rc = SLURM_SUCCESS;
 
 	slurm_mutex_lock(&bb_state.bb_mutex);
