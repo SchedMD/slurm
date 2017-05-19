@@ -33,6 +33,8 @@ documents those changes that are of interest to users and administrators.
     variables will be 'nil'.
  -- Calculate priority correctly when 'nice' is given.
  -- Fix minor typos in the documentation.
+ -- node_features/knl_cray: Preserve non-KNL active features if slurmctld
+    reconfigured while node boot in progress.
 
 * Changes in Slurm 17.02.3
 ==========================
