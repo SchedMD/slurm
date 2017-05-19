@@ -37,6 +37,7 @@ documents those changes that are of interest to users and administrators.
     reconfigured while node boot in progress.
  -- node_features/knl_generic: Do not repeatedly log errors when trying to read
     KNL modes if not KNL system.
+ -- Add missing QOS read lock to backfill scheduler.
 
 * Changes in Slurm 17.02.3
 ==========================

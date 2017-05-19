@@ -916,6 +916,11 @@ static int _attempt_backfill(void)
 	bool resv_overlap = false;
 	uint8_t save_share_res, save_whole_node;
 	int test_fini;
+	uint32_t qos_flags = 0;
+	/* QOS Read lock */
+	assoc_mgr_lock_t qos_read_lock =
+		{ NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
+		  NO_LOCK, NO_LOCK, NO_LOCK };
 
 	bf_sleep_usec = 0;
 #ifdef HAVE_ALPS_CRAY
@@ -1128,14 +1133,19 @@ static int _attempt_backfill(void)
 			}
 		}
 
+		assoc_mgr_lock(&qos_read_lock);
 		qos_ptr = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
+		if (qos_ptr)
+			qos_flags = qos_ptr->flags;
 		if (part_policy_valid_qos(job_ptr->part_ptr, qos_ptr) !=
 		    SLURM_SUCCESS) {
+			assoc_mgr_unlock(&qos_read_lock);
 			xfree(job_ptr->state_desc);
 			job_ptr->state_reason = WAIT_QOS;
 			last_job_update = now;
 			continue;
 		}
+		assoc_mgr_unlock(&qos_read_lock);
 
 		if (!assoc_limit_stop &&
 		    !acct_policy_job_runnable_pre_select(job_ptr)) {
@@ -1285,14 +1295,14 @@ next_task:
 		/* Determine minimum and maximum node counts */
 
 		/* check whether job is allowed to override partition limit */
-		if (qos_ptr && (qos_ptr->flags & QOS_FLAG_PART_MIN_NODE))
+		if (qos_flags & QOS_FLAG_PART_MIN_NODE)
 			min_nodes = job_ptr->details->min_nodes;
 		else
 			min_nodes = MAX(job_ptr->details->min_nodes,
 					part_ptr->min_nodes);
 		if (job_ptr->details->max_nodes == 0)
 			max_nodes = part_ptr->max_nodes;
-		else if (qos_ptr && (qos_ptr->flags & QOS_FLAG_PART_MAX_NODE))
+		else if (qos_flags & QOS_FLAG_PART_MAX_NODE)
 			max_nodes = job_ptr->details->max_nodes;
 		else
 			max_nodes = MIN(job_ptr->details->max_nodes,
@@ -1349,8 +1359,7 @@ next_task:
 			comp_time_limit = MIN(time_limit, deadline_time_limit);
 		else
 			comp_time_limit = time_limit;
-		qos_ptr = job_ptr->qos_ptr;
-		if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE) &&
+		if ((qos_flags & QOS_FLAG_NO_RESERVE) &&
 		    slurm_get_preempt_mode())
 			time_limit = job_ptr->time_limit = 1;
 		else if (job_ptr->time_min && (job_ptr->time_min < time_limit))
@@ -1660,7 +1669,7 @@ next_task:
 				fed_mgr_job_unlock(job_ptr, INFINITE);
 			}
 
-			if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE)) {
+			if (qos_flags & QOS_FLAG_NO_RESERVE) {
 				if (orig_time_limit == NO_VAL) {
 					acct_policy_alter_job(
 						job_ptr, comp_time_limit);
@@ -1895,7 +1904,7 @@ next_task:
 		}
 		if (debug_flags & DEBUG_FLAG_BACKFILL)
 			_dump_job_sched(job_ptr, end_reserve, avail_bitmap);
-		if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE))
+		if (qos_flags & QOS_FLAG_NO_RESERVE)
 			continue;
 		if (bf_job_part_count_reserve) {
 			bool do_reserve = true;
