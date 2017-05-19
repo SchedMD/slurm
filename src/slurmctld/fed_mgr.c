@@ -296,12 +296,19 @@ static int _open_controller_conn(slurmdb_cluster_rec_t *cluster, bool locked)
 
 	if (!cluster->control_host || !cluster->control_host[0] ||
 	    !cluster->control_port) {
-		if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-			info("%s: Sibling cluster %s doesn't appear to be up yet, skipping",
-			     __func__, cluster->name);
-		if (!locked)
-			slurm_mutex_unlock(&cluster->lock);
-		return SLURM_ERROR;
+		if (cluster->fed.recv) {
+			persist_conn = cluster->fed.recv;
+			cluster->control_port = persist_conn->rem_port;
+			xfree(cluster->control_host);
+			cluster->control_host = xstrdup(persist_conn->rem_host);
+		} else {
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+				info("%s: Sibling cluster %s doesn't appear to be up yet, skipping",
+				     __func__, cluster->name);
+			if (!locked)
+				slurm_mutex_unlock(&cluster->lock);
+			return SLURM_ERROR;
+		}
 	}
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
@@ -2686,19 +2693,21 @@ extern int fed_mgr_add_sibling_conn(slurm_persist_conn_t *persist_conn,
 	persist_conn->callback_fini = _persist_callback_fini;
 	persist_conn->flags |= PERSIST_FLAG_ALREADY_INITED;
 
-	slurm_mutex_lock(&cluster->lock);
-	cluster->control_port = persist_conn->rem_port;
-	xfree(cluster->control_host);
-	cluster->control_host = xstrdup(persist_conn->rem_host);
-
 	/* If this pointer exists it will be handled by the persist_conn code,
 	 * don't free
 	 */
 	//slurm_persist_conn_destroy(cluster->fed.recv);
 
+	/* Preserve the persist_conn so that the cluster can get the remote
+	 * side's hostname and port to talk back to if it doesn't have it yet.
+	 * See _open_controller_conn().
+	 * Don't lock the the cluster's lock here because a (almost)deadlock
+	 * could occur if this cluster is opening a connection to the remote
+	 * cluster at the same time the remote cluster is connecting to this
+	 * cluster since the both sides will have the mutex locked in order to
+	 * send/recv. If it did happen the the connection will eventually
+	 * timeout and resolved itself. */
 	cluster->fed.recv = persist_conn;
-
-	slurm_mutex_unlock(&cluster->lock);
 
 	unlock_slurmctld(fed_read_lock);
 
