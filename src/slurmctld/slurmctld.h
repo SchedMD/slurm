@@ -700,7 +700,10 @@ struct job_record {
 					 * submitted from */
 	uint16_t other_port;		/* port for client communications */
 	uint32_t pack_job_id;		/* lead job ID of pack job leader */
+	char *pack_job_id_set;		/* job IDs for all components */
 	uint32_t pack_job_offset;	/* pack job index */
+	List pack_job_list;		/* List of job pointers to all
+					 * components */
 	char *partition;		/* name of job partition(s) */
 	List part_ptr_list;		/* list of pointers to partition recs */
 	bool part_nodes_missing;	/* set if job's nodes removed from this

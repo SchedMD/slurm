@@ -418,7 +418,13 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	xstrfmtcat(out, "JobName=%s", job_ptr->name);
 	xstrcat(out, line_end);
 
-	/****** Line 2 ******/
+	/****** Line ******/
+	if (job_ptr->pack_job_id_set) {
+		xstrfmtcat(out, "PackJobIdSet=%s", job_ptr->pack_job_id_set);
+		xstrcat(out, line_end);
+	}
+
+	/****** Line ******/
 	user_name = uid_to_string((uid_t) job_ptr->user_id);
 	group_name = gid_to_string((gid_t) job_ptr->group_id);
 	xstrfmtcat(out, "UserId=%s(%u) GroupId=%s(%u) MCS_label=%s",

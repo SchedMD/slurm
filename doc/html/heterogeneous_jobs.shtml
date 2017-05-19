@@ -42,6 +42,8 @@ unique <i>job_id</i>.</li>
 of the heterogeneous job. All components of the same job will have the same
 <i>pack_job_id</i> value and it will be equal to the <i>job_id</i> of the
 first component.</li>
+<li><i>pack_job_id_set</i>: Regular expression identifying all <i>job_id</i>
+values associated with the job.</li>
 <li><i>pack_job_offset</i>: A unique sequence number applied to each component
 of the heterogeneous job. The first component will have a <i>>pack_job_offset</i>
 value of 0, the next a value of 1, etc.</li>
@@ -49,16 +51,17 @@ value of 0, the next a value of 1, etc.</li>
 
 <table width="100%" border=1 cellspacing=0 cellpadding=4>
 <tr>
-  <th width="33%"><b>job_id</b></th>
-  <th width="33%"><b>pack_job_id</b></th>
-  <th width="34%"><b>pack_job_offset</b></th>
+  <th width="25%"><b>job_id</b></th>
+  <th width="25%"><b>pack_job_id</b></th>
+  <th width="25%"><b>pack_job_offset</b></th>
+  <th width="25%"><b>pack_job_id_set</b></th>
  </tr>
 
-<tr><td>123</td><td>123</td><td>0</td></tr>
-<tr><td>124</td><td>123</td><td>1</td></tr>
-<tr><td>125</td><td>123</td><td>2</td></tr>
-<tr><td>126</td><td>123</td><td>3</td></tr>
-<tr><td>127</td><td>123</td><td>4</td></tr>
+<tr><td>123</td><td>123</td><td>0</td><td>123-127</td></tr>
+<tr><td>124</td><td>123</td><td>1</td><td>123-127</td></tr>
+<tr><td>125</td><td>123</td><td>2</td><td>123-127</td></tr>
+<tr><td>126</td><td>123</td><td>3</td><td>123-127</td></tr>
+<tr><td>127</td><td>123</td><td>4</td><td>123-127</td></tr>
 </table>
 <p>Table 1: Example job IDs</p>
 
@@ -84,6 +87,6 @@ components of a heterogeneous job.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 18 May 2017</p>
+<p style="text-align:center;">Last modified 19 May 2017</p>
 
 <!--#include virtual="footer.txt"-->

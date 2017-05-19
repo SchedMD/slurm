@@ -1177,6 +1177,7 @@ static int _dump_job_state(void *x, void *arg)
 	pack32(dump_job_ptr->resv_id, buffer);
 	pack32(dump_job_ptr->next_step_id, buffer);
 	pack32(dump_job_ptr->pack_job_id, buffer);
+	packstr(dump_job_ptr->pack_job_id_set, buffer);
 	pack32(dump_job_ptr->pack_job_offset, buffer);
 	pack32(dump_job_ptr->qos_id, buffer);
 	pack32(dump_job_ptr->req_switch, buffer);
@@ -1326,7 +1327,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	char *gres_alloc = NULL, *gres_req = NULL, *gres_used = NULL;
 	char *burst_buffer = NULL, *burst_buffer_state = NULL;
 	char *admin_comment = NULL, *task_id_str = NULL, *mcs_label = NULL;
-	char *clusters = NULL;
+	char *clusters = NULL, *pack_job_id_set = NULL;
 	uint32_t task_id_size = NO_VAL;
 	char **spank_job_env = (char **) NULL;
 	List gres_list = NULL, part_ptr_list = NULL;
@@ -1408,6 +1409,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack32(&resv_id, buffer);
 		safe_unpack32(&next_step_id, buffer);
 		safe_unpack32(&pack_job_id, buffer);
+		safe_unpackstr_xmalloc(&pack_job_id_set, &name_len, buffer);
 		safe_unpack32(&pack_job_offset, buffer);
 		safe_unpack32(&qos_id, buffer);
 		safe_unpack32(&req_switch, buffer);
@@ -2082,6 +2084,9 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->other_port   = other_port;
 	job_ptr->power_flags  = power_flags;
 	job_ptr->pack_job_id     = pack_job_id;
+	xfree(job_ptr->pack_job_id_set);
+	job_ptr->pack_job_id_set = pack_job_id_set;
+	pack_job_id_set       = NULL;	/* reused, nothing left to free */
 	job_ptr->pack_job_offset = pack_job_offset;
 	xfree(job_ptr->partition);
 	job_ptr->partition    = partition;
@@ -2298,10 +2303,11 @@ unpack_error:
 	xfree(name);
 	xfree(nodes);
 	xfree(nodes_completing);
+	xfree(pack_job_id_set);
 	xfree(partition);
 	FREE_NULL_LIST(part_ptr_list);
 	xfree(resv_name);
-	for (i=0; i<spank_job_env_size; i++)
+	for (i = 0; i < spank_job_env_size; i++)
 		xfree(spank_job_env[i]);
 	xfree(spank_job_env);
 	xfree(state_desc);
@@ -8416,6 +8422,8 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->nodes_completing);
 	xfree(job_ptr->origin_cluster);
+	xfree(job_ptr->pack_job_id_set);
+	FREE_NULL_LIST(job_ptr->pack_job_list);
 	xfree(job_ptr->partition);
 	FREE_NULL_LIST(job_ptr->part_ptr_list);
 	xfree(job_ptr->priority_array);
@@ -8899,6 +8907,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		pack32(dump_job_ptr->user_id,  buffer);
 		pack32(dump_job_ptr->group_id, buffer);
 		pack32(dump_job_ptr->pack_job_id, buffer);
+		packstr(dump_job_ptr->pack_job_id_set, buffer);
 		pack32(dump_job_ptr->pack_job_offset, buffer);
 		pack32(dump_job_ptr->profile,  buffer);
 

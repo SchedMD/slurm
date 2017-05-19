@@ -1046,6 +1046,15 @@ static int _pack_job_cancel(void *x, void *arg)
 	return 0;
 }
 
+static int _set_pack_job_id_set(void *x, void *arg)
+{
+	struct job_record *job_ptr = (struct job_record *) x;
+	char *pack_job_id_set = (char *) arg;
+
+	job_ptr->pack_job_id_set = xstrdup(pack_job_id_set);
+	return 0;
+}
+
 /* _slurm_rpc_allocate_pack: process RPC to allocate a pack job resources */
 static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 {
@@ -1059,13 +1068,15 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
-	struct job_record *job_ptr;
+	struct job_record *job_ptr, *first_job_ptr;
 	char *err_msg = NULL;
 	ListIterator iter;
 	bool priv_user;
 	time_t min_begin = time(NULL) + 3;	/* Do not start immediately */
 	List submit_job_list = NULL;
 	uint32_t pack_job_id = 0, pack_job_offset = 0;
+	hostset_t jobid_hostset = NULL;
+	char tmp_str[32];
 
 	START_TIMER;
 
@@ -1142,8 +1153,15 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		}
 		if (error_code && (job_ptr->job_state == JOB_FAILED))
 			break;
-		if (pack_job_id == 0)
+		if (pack_job_id == 0) {
 			pack_job_id = job_ptr->job_id;
+			first_job_ptr = job_ptr;
+		}
+		snprintf(tmp_str, sizeof(tmp_str), "%u", job_ptr->job_id);
+		if (jobid_hostset)
+			hostset_insert(jobid_hostset, tmp_str);
+		else
+			jobid_hostset = hostset_create(tmp_str);
 		job_ptr->pack_job_id     = pack_job_id;
 		job_ptr->pack_job_offset = pack_job_offset++;
 		list_append(submit_job_list, job_ptr);
@@ -1151,18 +1169,36 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 	}
 	list_iterator_destroy(iter);
 
+	if (error_code == SLURM_SUCCESS) {
+//FIXME: Validate limits on pack-job as a whole (to the extent possible)
+	}
+
 	if (error_code) {
-//FIXME: We might want to eliminate "submit_job_list" and use other mechanism to identify jobs to cancel
 		/* Cancel remaining job records */
 		(void) list_for_each(submit_job_list, _pack_job_cancel, NULL);
-	} else {
-//FIXME: Validate limits on pack-job as a whole
+		FREE_NULL_LIST(submit_job_list);
+	} else if (pack_job_id != 0) {
+		int buf_size = pack_job_offset * 16;
+		char *tmp_str = xmalloc(buf_size);
+		char *tmp_offset = tmp_str;
+		first_job_ptr->pack_job_list = submit_job_list;
+		hostset_ranged_string(jobid_hostset, buf_size, tmp_str);
+		if (tmp_str[0] == '[') {
+			tmp_offset = strchr(tmp_str, ']');
+			if (tmp_offset)
+				tmp_offset[0] = '\0';
+			tmp_offset = tmp_str + 1;
+		}
+		(void) list_for_each(submit_job_list, _set_pack_job_id_set,
+				     tmp_offset);
+		xfree(tmp_str);
 	}
 	unlock_slurmctld(job_write_lock);
 	_throttle_fini(&active_rpc_cnt);
 
 send_msg:
-	FREE_NULL_LIST(submit_job_list);
+	if (jobid_hostset)
+		hostset_destroy(jobid_hostset);
 	END_TIMER2("_slurm_rpc_allocate_pack");
 	info("%s: %s ", __func__, slurm_strerror(error_code));
 	if (err_msg)
