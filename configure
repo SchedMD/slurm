@@ -24167,21 +24167,10 @@ else
   HAVE_LUA_FALSE=
 fi
 
-	if test "x$x_ac_have_lua" = "xyes" ; then
-		if test "x$x_ac_lua_pkg_name" = "xlua5.3" ; then
 
-$as_echo "#define HAVE_LUA_5_3 1" >>confdefs.h
-
-		elif test "x$x_ac_lua_pkg_name" = "xlua5.2" ; then
-
-$as_echo "#define HAVE_LUA_5_2 1" >>confdefs.h
-
-		elif test "x$x_ac_lua_pkg_name" = "xlua5.1"; then
-
-$as_echo "#define HAVE_LUA_5_1 1" >>confdefs.h
-
-		fi
-	fi
+	# We can not define something here to determine version for systems
+	# that use just liblua we will not know what version we are using.
+	# Use LUA_VERSION_NUM as in lua.h it will always be right.
 
 
 

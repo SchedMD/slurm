@@ -1243,7 +1243,7 @@ static void _push_partition_list(uint32_t user_id, uint32_t submit_uid)
 static void _lua_table_register(lua_State *L, const char *libname,
 				const luaL_Reg *l)
 {
-#ifdef HAVE_LUA_5_1
+#if LUA_VERSION_NUM == 501
 	luaL_register(L, libname, l);
 #else
 	luaL_setfuncs(L, l, 0);
@@ -1257,7 +1257,7 @@ static void _register_lua_slurm_output_functions (void)
 	char *unpack_str;
 	char tmp_string[100];
 
-#ifdef HAVE_LUA_5_1
+#if LUA_VERSION_NUM == 501
 	unpack_str = "unpack";
 #else
 	unpack_str = "table.unpack";

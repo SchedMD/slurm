@@ -127,7 +127,7 @@ static const struct luaL_Reg slurm_functions [] = {
 static void _lua_table_register(lua_State *L, const char *libname,
 				const luaL_Reg *l)
 {
-#ifdef HAVE_LUA_5_1
+#if LUA_VERSION_NUM == 501
 	luaL_register(L, NULL, l);
 #else
 	luaL_setfuncs(L, l, 0);
@@ -141,7 +141,7 @@ static int lua_register_slurm_output_functions (void)
 	char *unpack_str;
 	char tmp_string[100];
 
-#ifdef HAVE_LUA_5_1
+#if LUA_VERSION_NUM == 501
 	unpack_str = "unpack";
 #else
 	unpack_str = "table.unpack";
@@ -590,7 +590,7 @@ int proctrack_p_get_pids (uint64_t cont_id, pid_t **pids, int *npids)
 	/*
 	 *  Get table size and create array for slurm
 	 */
-#ifdef HAVE_LUA_5_1
+#if LUA_VERSION_NUM == 501
 	*npids = lua_objlen (L, t);
 #else
 	*npids = lua_rawlen(L, t);
