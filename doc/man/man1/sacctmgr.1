@@ -1002,20 +1002,6 @@ member of one federation.
 The name of the federation.
 
 .TP
-\fIFlags\fP[+|\-]=<flags>
-Used by the slurmctld to provide different scheduling behavior in the
-federation.
-.br
-Valid options are:
-.RS
-.TP
-\fILLC\fP
-At submission time, favor starting sibling jobs that can run immediately on
-clusters that are least loaded (ie. spread jobs across clusters). By default,
-Slurm will pack jobs onto clusters in the federation.
-.RE
-
-.TP
 \fITree\fP
 Display federations in a hierarchical fashion.
 
@@ -1028,10 +1014,6 @@ The list of features on the cluster.
 .TP
 \fIFederation\fP
 The name of the federation.
-
-.TP
-\fIFlags\fP
-Flags for the federation.
 
 .TP
 \fICluster\fP

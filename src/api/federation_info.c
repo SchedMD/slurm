@@ -101,22 +101,20 @@ extern void slurm_print_federation(void *ptr)
 	slurmdb_cluster_rec_t *cluster;
 	int left_col_size;
 	char *cluster_name = NULL;
-	char *fed_flag_str = NULL;
 
 	slurmdb_federation_rec_t *fed = (slurmdb_federation_rec_t *)ptr;
 
 	if (!fed || !fed->name)
 		return;
 
-	fed_flag_str = slurmdb_federation_flags_str(fed->flags);
 	if (working_cluster_rec)
 		cluster_name = xstrdup(working_cluster_rec->name);
 	else
 		cluster_name = slurm_get_cluster_name();
 
 	left_col_size = strlen("federation:");
-	printf("%-*s %s Flags:%s\n", left_col_size, "Federation:",
-	       fed->name, (fed_flag_str) ? fed_flag_str : "None");
+	printf("%-*s %s\n", left_col_size, "Federation:",
+	       fed->name);
 	list_sort(fed->cluster_list, (ListCmpF)_sort_clusters_by_name);
 	itr = list_iterator_create(fed->cluster_list);
 
@@ -164,7 +162,6 @@ extern void slurm_print_federation(void *ptr)
 
 	list_iterator_destroy(itr);
 	xfree(cluster_name);
-	xfree(fed_flag_str);
 }
 
 /*

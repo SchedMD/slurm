@@ -148,7 +148,6 @@ typedef enum {
 #define	FEDERATION_FLAG_ADD            0x20000000
 #define	FEDERATION_FLAG_REMOVE         0x40000000
 
-#define	FEDERATION_FLAG_LLC            0x00000001
 
 /* SLURM CLUSTER FEDERATION STATES */
 enum cluster_fed_states {

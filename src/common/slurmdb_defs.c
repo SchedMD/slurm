@@ -1658,9 +1658,6 @@ extern char *slurmdb_federation_flags_str(uint32_t flags)
 	if (flags & FEDERATION_FLAG_NOTSET)
 		return xstrdup("NotSet");
 
-	if (flags & FEDERATION_FLAG_LLC)
-		xstrcat(federation_flags, "LLC,");
-
 	if (federation_flags)
 		federation_flags[strlen(federation_flags)-1] = '\0';
 
@@ -1669,9 +1666,6 @@ extern char *slurmdb_federation_flags_str(uint32_t flags)
 
 static uint32_t _str_2_federation_flags(char *flags)
 {
-	if (xstrcasestr(flags, "LLC"))
-		return FEDERATION_FLAG_LLC;
-
 	return 0;
 }
 

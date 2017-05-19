@@ -103,7 +103,7 @@ proc test_fed_status {cname fed_flags cluster_list} {
 			set line $expect_out(buffer)
 			send_user "line: $line\n"
 
-			if {[regexp "Federation: $fed_name Flags:$fed_flags" $line match]} {
+			if {[regexp "Federation: $fed_name" $line match]} {
 				send_user "matched: $match\n"
 				incr matches
 			} elseif {[regexp {Self:\s+(\S+):(\S+):(\d+) ID:(\d+) FedState:(\S*) Features:(\S*)} \
@@ -261,88 +261,88 @@ dict set clusters($fedc3) conn "Yes/Yes"
 test_fed_status $fedc1 $fed_flags [array get clusters]
 
 
-send_user "\n\nTest federation flags (LLC)\n"
-set matches 0
-set my_pid [spawn $sacctmgr -i modify federation $fed_name set flags+=LLC]
-expect {
-	-re "Setting$eol" {
-		incr matches
-		exp_continue
-	}
-	-re "^\\s+Flags\\s+\\+=\\s+LLC$eol" {
-		incr matches
-		exp_continue
-	}
-	-re "^\\s+Modified federation...$eol" {
-		incr matches
-		exp_continue
-	}
-	-re "^\\s+$fed_name$eol" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr add not responding\n"
-		slow_kill $my_pid
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if {$exit_code || $matches != 4} {
-	send_user "$matches FAILURE: setting LLC flag.\n"
-	end_it 1
-}
-
-set fed_flags "LLC"
-array set clusters [get_clusterfed_info $fed_name]
-dict set clusters($fedc1) conn Self
-dict set clusters($fedc2) conn "Yes/Yes"
-dict set clusters($fedc3) conn "Yes/Yes"
-test_fed_status $fedc1 $fed_flags [array get clusters]
-
-
-send_user "\n\nTest removal of federation flags (LLC)\n"
-set matches 0
-set my_pid [spawn $sacctmgr -i modify federation $fed_name set flags-=LLC]
-expect {
-	-re "Setting$eol" {
-		incr matches
-		exp_continue
-	}
-	-re "^\\s+Flags\\s+\\-=\\s+LLC$eol" {
-		incr matches
-		exp_continue
-	}
-	-re "^\\s+Modified federation...$eol" {
-		incr matches
-		exp_continue
-	}
-	-re "^\\s+$fed_name$eol" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr add not responding\n"
-		slow_kill $my_pid
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if {$exit_code || $matches != 4} {
-	send_user "$matches FAILURE: removing federation flags.\n"
-	end_it 1
-}
-
-set fed_flags "None"
-array set clusters [get_clusterfed_info $fed_name]
-dict set clusters($fedc1) conn Self
-dict set clusters($fedc2) conn "Yes/Yes"
-dict set clusters($fedc3) conn "Yes/Yes"
-test_fed_status $fedc1 $fed_flags [array get clusters]
+#send_user "\n\nTest federation flags (LLC)\n"
+#set matches 0
+#set my_pid [spawn $sacctmgr -i modify federation $fed_name set flags+=LLC]
+#expect {
+#	-re "Setting$eol" {
+#		incr matches
+#		exp_continue
+#	}
+#	-re "^\\s+Flags\\s+\\+=\\s+LLC$eol" {
+#		incr matches
+#		exp_continue
+#	}
+#	-re "^\\s+Modified federation...$eol" {
+#		incr matches
+#		exp_continue
+#	}
+#	-re "^\\s+$fed_name$eol" {
+#		incr matches
+#		exp_continue
+#	}
+#	timeout {
+#		send_user "\nFAILURE: sacctmgr add not responding\n"
+#		slow_kill $my_pid
+#		set exit_code 1
+#	}
+#	eof {
+#		wait
+#	}
+#}
+#if {$exit_code || $matches != 4} {
+#	send_user "$matches FAILURE: setting LLC flag.\n"
+#	end_it 1
+#}
+#
+#set fed_flags "LLC"
+#array set clusters [get_clusterfed_info $fed_name]
+#dict set clusters($fedc1) conn Self
+#dict set clusters($fedc2) conn "Yes/Yes"
+#dict set clusters($fedc3) conn "Yes/Yes"
+#test_fed_status $fedc1 $fed_flags [array get clusters]
+#
+#
+#send_user "\n\nTest removal of federation flags (LLC)\n"
+#set matches 0
+#set my_pid [spawn $sacctmgr -i modify federation $fed_name set flags-=LLC]
+#expect {
+#	-re "Setting$eol" {
+#		incr matches
+#		exp_continue
+#	}
+#	-re "^\\s+Flags\\s+\\-=\\s+LLC$eol" {
+#		incr matches
+#		exp_continue
+#	}
+#	-re "^\\s+Modified federation...$eol" {
+#		incr matches
+#		exp_continue
+#	}
+#	-re "^\\s+$fed_name$eol" {
+#		incr matches
+#		exp_continue
+#	}
+#	timeout {
+#		send_user "\nFAILURE: sacctmgr add not responding\n"
+#		slow_kill $my_pid
+#		set exit_code 1
+#	}
+#	eof {
+#		wait
+#	}
+#}
+#if {$exit_code || $matches != 4} {
+#	send_user "$matches FAILURE: removing federation flags.\n"
+#	end_it 1
+#}
+#
+#set fed_flags "None"
+#array set clusters [get_clusterfed_info $fed_name]
+#dict set clusters($fedc1) conn Self
+#dict set clusters($fedc2) conn "Yes/Yes"
+#dict set clusters($fedc3) conn "Yes/Yes"
+#test_fed_status $fedc1 $fed_flags [array get clusters]
 
 
 send_user "\n\nTest setting of cluster features\n"

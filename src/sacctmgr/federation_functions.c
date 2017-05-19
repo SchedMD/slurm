@@ -543,7 +543,7 @@ extern int sacctmgr_list_federation(int argc, char **argv)
 
 	if (!list_count(format_list)) {
 		slurm_addto_char_list(format_list,
-				      "Federation,Flags%10,Cluster,ID%2,"
+				      "Federation,Cluster,ID%2,"
 				      "Features,FedState");
 	}
 
