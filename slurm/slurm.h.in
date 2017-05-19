@@ -1027,6 +1027,7 @@ enum ctx_keys {
 #define TRES_STR_CALC      0x00000800   /* Avoid calculating TRES strings at the
 					 * end of a job. */
 #define SIB_JOB_FLUSH      0x00001000   /* Don't send complete to origin */
+#define JOB_PACK_FLAG      0x00002000	/* Heterogeneous job management flag */
 
 /*****************************************************************************\
  *      SLURM HOSTLIST FUNCTIONS
