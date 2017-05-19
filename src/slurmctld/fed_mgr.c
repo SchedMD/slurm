@@ -76,8 +76,7 @@ static pthread_mutex_t job_watch_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t       job_watch_thread_id = (pthread_t)0;
 static bool            stop_job_watch_thread = false;
 
-static pthread_t ping_thread  = 0;
-static bool      stop_pinging = false, inited = false;
+static bool inited = false;
 static pthread_mutex_t open_send_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t update_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -466,46 +465,6 @@ static int _queue_rpc(slurmdb_cluster_rec_t *cluster, slurm_msg_t *req,
 	return SLURM_SUCCESS;
 }
 
-static int _ping_controller(slurmdb_cluster_rec_t *cluster)
-{
-	int rc = SLURM_SUCCESS;
-	slurm_msg_t req_msg;
-	slurm_msg_t resp_msg;
-
-	slurm_msg_t_init(&req_msg);
-	req_msg.msg_type = REQUEST_PING;
-
-	slurm_mutex_lock(&cluster->lock);
-
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR) {
-		debug("pinging %s(%s:%d)", cluster->name, cluster->control_host,
-		      cluster->control_port);
-	}
-
-	if ((rc = _send_recv_msg(cluster, &req_msg, &resp_msg, true))) {
-		if (_comm_fail_log(cluster)) {
-			error("failed to ping %s(%s:%d)",
-			      cluster->name, cluster->control_host,
-			      cluster->control_port);
-		}
-	} else if ((rc = slurm_get_return_code(resp_msg.msg_type,
-					       resp_msg.data))) {
-		error("ping returned error from %s(%s:%d)",
-		      cluster->name, cluster->control_host,
-		      cluster->control_port);
-	}
-
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR) {
-		debug("finished pinging %s(%s:%d)", cluster->name,
-		      cluster->control_host, cluster->control_port);
-	}
-
-	slurm_mutex_unlock(&cluster->lock);
-	slurm_free_msg_members(&req_msg);
-	slurm_free_msg_members(&resp_msg);
-	return rc;
-}
-
 /*
  * close all sibling conns
  * must lock before entering.
@@ -528,74 +487,6 @@ static int _close_sibling_conns(void)
 
 fini:
 	return SLURM_SUCCESS;
-}
-
-static void *_ping_thread(void *arg)
-{
-	slurmctld_lock_t fed_read_lock = {
-		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
-
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "fed_ping", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m", __func__, "fed_ping");
-	}
-#endif
-	while (!stop_pinging &&
-	       !slurmctld_config.shutdown_time) {
-		ListIterator itr;
-		slurmdb_cluster_rec_t *cluster;
-
-		lock_slurmctld(fed_read_lock);
-		if (!fed_mgr_fed_rec || !fed_mgr_fed_rec->cluster_list)
-			goto next;
-
-		itr = list_iterator_create(fed_mgr_fed_rec->cluster_list);
-
-		while ((cluster = list_next(itr))) {
-			if (cluster == fed_mgr_cluster_rec)
-				continue;
-			_ping_controller(cluster);
-		}
-		list_iterator_destroy(itr);
-next:
-		unlock_slurmctld(fed_read_lock);
-
-		sleep(5);
-	}
-
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-		info("Exiting ping thread");
-
-	return NULL;
-}
-
-static void _create_ping_thread()
-{
-	pthread_attr_t attr;
-	slurm_attr_init(&attr);
-
-	stop_pinging = false;
-	if (!ping_thread &&
-	    (pthread_create(&ping_thread, &attr, _ping_thread, NULL) != 0)) {
-		error("pthread_create of message thread: %m");
-		slurm_attr_destroy(&attr);
-		ping_thread = 0;
-		return;
-	}
-	slurm_attr_destroy(&attr);
-}
-
-static void _destroy_ping_thread()
-{
-	stop_pinging = true;
-	if (ping_thread) {
-		/* can't wait for ping_thread to finish because it might be
-		 * holding the read lock and we are already in the write lock.
-		 * pthread_join(ping_thread, NULL);
-		 */
-		pthread_kill(ping_thread, SIGUSR1);
-		ping_thread = 0;
-	}
 }
 
 static void _mark_self_as_drained()
@@ -878,7 +769,6 @@ static void _leave_federation(void)
 		info("Leaving federation %s", fed_mgr_fed_rec->name);
 
 	_close_sibling_conns();
-	_destroy_ping_thread();
 	_remove_job_watch_thread();
 	slurmdb_destroy_federation_rec(fed_mgr_fed_rec);
 	fed_mgr_fed_rec = NULL;
@@ -947,7 +837,6 @@ static void _join_federation(slurmdb_federation_rec_t *fed,
 	lock_slurmctld(fed_read_lock);
 	_open_persist_sends();
 	unlock_slurmctld(fed_read_lock);
-	_create_ping_thread();
 }
 
 static int _persist_update_job(slurmdb_cluster_rec_t *conn, uint32_t job_id,
