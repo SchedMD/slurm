@@ -124,8 +124,7 @@ static void         _throttle_start(int *active_rpc_cnt);
 inline static void  _slurm_rpc_accounting_first_reg(slurm_msg_t *msg);
 inline static void  _slurm_rpc_accounting_register_ctld(slurm_msg_t *msg);
 inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg);
-inline static void  _slurm_rpc_allocate_resources(slurm_msg_t * msg,
-						  bool is_sib_job);
+inline static void  _slurm_rpc_allocate_resources(slurm_msg_t * msg);
 inline static void  _slurm_rpc_block_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_burst_buffer_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg);
@@ -193,8 +192,7 @@ inline static void  _slurm_rpc_step_complete(slurm_msg_t * msg,
 					     bool running_composite);
 inline static void  _slurm_rpc_step_layout(slurm_msg_t * msg);
 inline static void  _slurm_rpc_step_update(slurm_msg_t * msg);
-inline static void  _slurm_rpc_submit_batch_job(slurm_msg_t * msg,
-						bool is_sib_job);
+inline static void  _slurm_rpc_submit_batch_job(slurm_msg_t * msg);
 inline static void  _slurm_rpc_suspend(slurm_msg_t * msg);
 inline static void  _slurm_rpc_top_job(slurm_msg_t * msg);
 inline static void  _slurm_rpc_trigger_clear(slurm_msg_t * msg);
@@ -296,7 +294,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 
 	switch (msg->msg_type) {
 	case REQUEST_RESOURCE_ALLOCATION:
-		_slurm_rpc_allocate_resources(msg, false);
+		_slurm_rpc_allocate_resources(msg);
 		break;
 	case REQUEST_BUILD_INFO:
 		_slurm_rpc_dump_conf(msg);
@@ -399,7 +397,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		_slurm_rpc_shutdown_controller_immediate(msg);
 		break;
 	case REQUEST_SUBMIT_BATCH_JOB:
-		_slurm_rpc_submit_batch_job(msg, false);
+		_slurm_rpc_submit_batch_job(msg);
 		break;
 	case REQUEST_UPDATE_FRONT_END:
 		_slurm_rpc_update_front_end(msg);
@@ -993,10 +991,8 @@ static int _make_step_cred(struct step_record *step_ptr,
 
 /* _slurm_rpc_allocate_resources:  process RPC to allocate resources for
  *	a job
- *
- * IN is_sib_job - job is a federated sib job and already has a fed job_id.
  */
-static void _slurm_rpc_allocate_resources(slurm_msg_t * msg, bool is_sib_job)
+static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 {
 	static int active_rpc_cnt = 0;
 	int i, error_code = SLURM_SUCCESS;
@@ -1082,7 +1078,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg, bool is_sib_job)
 		_throttle_start(&active_rpc_cnt);
 
 		lock_slurmctld(job_write_lock);
-		if (!is_sib_job && fed_mgr_fed_rec) {
+		if (fed_mgr_fed_rec) {
 			uint32_t job_id;
 			if (fed_mgr_job_allocate(msg, job_desc_msg, true, uid,
 						 msg->protocol_version, &job_id,
@@ -3276,7 +3272,7 @@ static void _slurm_rpc_step_update(slurm_msg_t *msg)
 }
 
 /* _slurm_rpc_submit_batch_job - process RPC to submit a batch job */
-static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg, bool is_sib_job)
+static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 {
 	static int active_rpc_cnt = 0;
 	int error_code = SLURM_SUCCESS;
@@ -3344,7 +3340,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg, bool is_sib_job)
 	lock_slurmctld(job_write_lock);
 	START_TIMER;	/* Restart after we have locks */
 
-	if (!is_sib_job && fed_mgr_fed_rec) {
+	if (fed_mgr_fed_rec) {
 		if (fed_mgr_job_allocate(msg, job_desc_msg, false, uid,
 					 msg->protocol_version, &job_id,
 					 &error_code, &err_msg))
