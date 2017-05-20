@@ -197,12 +197,6 @@
 #define	log_fp			slurm_log_fp
 #define	log_has_data		slurm_log_has_data
 #define	log_flush		slurm_log_flush
-#define	dump_cleanup_list	slurm_dump_cleanup_list
-#define	fatal_add_cleanup	slurm_fatal_add_cleanup
-#define	fatal_add_cleanup_job	slurm_fatal_add_cleanup_job
-#define	fatal_remove_cleanup	slurm_fatal_remove_cleanup
-#define	fatal_remove_cleanup_job slurm_fatal_remove_cleanup_job
-#define	fatal_cleanup		slurm_fatal_cleanup
 #define	fatal			slurm_fatal
 #define	error			slurm_error
 #define	info			slurm_info

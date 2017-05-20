@@ -1203,8 +1203,6 @@ io_thread_start(stepd_step_rec_t *job)
 
 	slurm_attr_destroy(&attr);
 
-	/*fatal_add_cleanup(&_fatal_cleanup, (void *) job);*/
-
 	return rc;
 }
 
