@@ -75,7 +75,6 @@ extern void destroy_print_field(void *object);
 extern void print_fields_header(List print_fields_list);
 extern void print_fields_date(print_field_t *field, time_t value, int last);
 extern void print_fields_str(print_field_t *field, char *value, int last);
-extern void print_fields_int(print_field_t *field, int value, int last);
 extern void print_fields_double(print_field_t *field, double value, int last);
 /* print_fields_t->print_routine does not like uint16_t being passed
  * in so pass in a uint32_t and typecast.

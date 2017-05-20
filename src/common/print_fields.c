@@ -154,37 +154,6 @@ extern void print_fields_str(print_field_t *field, char *value, int last)
 	}
 }
 
-extern void print_fields_int(print_field_t *field, int value, int last)
-{
-	int abs_len = abs(field->len);
-	/* (value == unset)  || (value == cleared) */
-	if ((value == (int)NO_VAL) || (value == (int)INFINITE)) {
-		if (print_fields_parsable_print
-		   == PRINT_FIELDS_PARSABLE_NO_ENDING
-		   && last)
-			;
-		else if (print_fields_parsable_print && !fields_delimiter)
-			printf("|");
-		else if (print_fields_parsable_print && fields_delimiter)
-			printf("%s", fields_delimiter);
-		else
-			printf("%*s ", abs_len, " ");
-	} else {
-		if (print_fields_parsable_print
-		   == PRINT_FIELDS_PARSABLE_NO_ENDING
-		   && last)
-			printf("%d", value);
-		else if (print_fields_parsable_print && !fields_delimiter)
-			printf("%d|", value);
-		else if (print_fields_parsable_print && fields_delimiter)
-			printf("%d%s", value, fields_delimiter);
-		else if (field->len == abs_len)
-			printf("%*d ", abs_len, value);
-		else
-			printf("%-*d ", abs_len, value);
-	}
-}
-
 /* print_fields_t->print_routine does not like uint16_t being passed
  * in so pass in a uint32_t and typecast.
  */
