@@ -77,8 +77,6 @@ extern void print_fields_date(print_field_t *field, time_t value, int last);
 extern void print_fields_str(print_field_t *field, char *value, int last);
 extern void print_fields_int(print_field_t *field, int value, int last);
 extern void print_fields_double(print_field_t *field, double value, int last);
-extern void print_fields_long_double(
-	print_field_t *field, long double value, int last);
 /* print_fields_t->print_routine does not like uint16_t being passed
  * in so pass in a uint32_t and typecast.
  */
@@ -87,8 +85,6 @@ extern void print_fields_uint16(
 extern void print_fields_uint32(
 	print_field_t *field, uint32_t value, int last);
 extern void print_fields_uint64(
-	print_field_t *field, uint64_t value, int last);
-extern void print_fields_hex064(
 	print_field_t *field, uint64_t value, int last);
 extern void print_fields_time_from_mins(print_field_t *field,
 					uint32_t value, int last);
