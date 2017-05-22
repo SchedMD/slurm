@@ -268,7 +268,6 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	while ((object = list_next(itr))) {
 		int fed_id = 0;
 		uint16_t fed_state = CLUSTER_FED_STATE_NA;
-		uint32_t fed_weight = 1; /* default */
 		char *features = NULL;
 		xstrcat(cols, "creation_time, mod_time, acct");
 		xstrfmtcat(vals, "%ld, %ld, 'root'", now, now);
@@ -307,28 +306,22 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			has_feds = 1;
 		}
 
-		if (object->fed.weight != NO_VAL)
-			fed_weight = object->fed.weight;
-
 		xstrfmtcat(query,
 			   "insert into %s (creation_time, mod_time, "
 			   "name, classification, federation, fed_id, "
-			   "fed_state, fed_weight, features) "
-			   "values (%ld, %ld, '%s', %u, '%s', %d, %u, %u, '%s') "
+			   "fed_state, features) "
+			   "values (%ld, %ld, '%s', %u, '%s', %d, %u, '%s') "
 			   "on duplicate key update deleted=0, mod_time=%ld, "
 			   "control_host='', control_port=0, "
 			   "classification=%u, flags=0, federation='%s', "
-			   "fed_id=%d, fed_state=%u, fed_weight=%u, "
-			   "features='%s'",
+			   "fed_id=%d, fed_state=%u, features='%s'",
 			   cluster_table,
 			   now, now, object->name, object->classification,
 			   (object->fed.name) ? object->fed.name : "",
-			   fed_id, fed_state, fed_weight,
-			   (features) ? features : "",
+			   fed_id, fed_state, (features) ? features : "",
 			   now, object->classification,
 			   (object->fed.name) ? object->fed.name : "",
-			   fed_id, fed_state, fed_weight,
-			   (features) ? features : "");
+			   fed_id, fed_state, (features) ? features : "");
 		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
 			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
@@ -381,10 +374,9 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		/* Build up extra with cluster specfic values for txn table */
 		xstrfmtcat(extra, ", federation='%s', fed_id=%d, fed_state=%u, "
-				  "fed_weight=%u, features='%s'",
+				  "features='%s'",
 			   (object->fed.name) ? object->fed.name : "",
-			   fed_id, fed_state, fed_weight,
-			   (features) ? features : "");
+			   fed_id, fed_state, (features) ? features : "");
 		xfree(features);
 
 		/* we always have a ', ' as the first 2 chars */
@@ -569,11 +561,6 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if (cluster->fed.state != NO_VAL) {
 		xstrfmtcat(vals, ", fed_state=%u", cluster->fed.state);
-		fed_update = true;
-	}
-
-	if (cluster->fed.weight != NO_VAL) {
-		xstrfmtcat(vals, ", fed_weight=%d", cluster->fed.weight);
 		fed_update = true;
 	}
 
@@ -911,7 +898,6 @@ extern List as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 		"federation",
 		"fed_id",
 		"fed_state",
-		"fed_weight",
 		"rpc_version",
 		"dimensions",
 		"flags",
@@ -926,7 +912,6 @@ extern List as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 		CLUSTER_REQ_FEDR,
 		CLUSTER_REQ_FEDID,
 		CLUSTER_REQ_FEDSTATE,
-		CLUSTER_REQ_FEDWEIGHT,
 		CLUSTER_REQ_VERSION,
 		CLUSTER_REQ_DIMS,
 		CLUSTER_REQ_FLAGS,
@@ -1005,7 +990,6 @@ empty:
 		}
 		cluster->fed.id       = slurm_atoul(row[CLUSTER_REQ_FEDID]);
 		cluster->fed.state    = slurm_atoul(row[CLUSTER_REQ_FEDSTATE]);
-		cluster->fed.weight   = slurm_atoul(row[CLUSTER_REQ_FEDWEIGHT]);
 		cluster->rpc_version = slurm_atoul(row[CLUSTER_REQ_VERSION]);
 		cluster->dimensions = slurm_atoul(row[CLUSTER_REQ_DIMS]);
 		cluster->flags = slurm_atoul(row[CLUSTER_REQ_FLAGS]);

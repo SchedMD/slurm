@@ -716,11 +716,6 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("User");
 		field->len = 10;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("Weight", object, MAX(command_len, 3))) {
-		field->type = PRINT_WEIGHT;
-		field->name = xstrdup("Weight");
-		field->len = 10;
-		field->print_routine = print_fields_uint;
 	} else if (!strncasecmp("WCKeys", object, MAX(command_len, 2))) {
 		field->type = PRINT_WCKEYS;
 		field->name = xstrdup("WCKeys");
@@ -1860,8 +1855,6 @@ extern void sacctmgr_print_cluster(slurmdb_cluster_rec_t *cluster)
 						cluster->fed.state);
 		printf("  FedState       = %s\n", tmp_str);
 	}
-	if (cluster->fed.weight != NO_VAL)
-		printf("  Weight         = %u\n", cluster->fed.weight);
 }
 
 extern void sacctmgr_print_federation(slurmdb_federation_rec_t *fed)

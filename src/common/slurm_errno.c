@@ -456,6 +456,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Invalid cluster name"				},
 	{ ESLURM_FED_JOB_LOCK,
 	  "Job locked by another sibling"			},
+	{ ESLURM_FED_NO_VALID_CLUSTERS,
+	  "No eligible clusters for federated job"		},
 
 	/* plugin and custom errors */
 	{ ESLURM_MISSING_TIME_LIMIT,

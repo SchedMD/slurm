@@ -89,7 +89,7 @@ proc setup_federation { fed_name } {
 	set count 0
 	foreach cluster [list $fedc1 $fedc2 $fedc3] {
 		incr count
-		set my_pid [spawn $sacctmgr -i mod cluster $cluster set federation=$fed_name weight=1 features=]
+		set my_pid [spawn $sacctmgr -i mod cluster $cluster set federation=$fed_name features=]
 		set matches 0
 		expect {
 			-re "Setting$eol" {
@@ -101,10 +101,6 @@ proc setup_federation { fed_name } {
 				exp_continue
 			}
 			-re "^\\s+Federation\\s+=\\s+$fed_name$eol" {
-				incr matches
-				exp_continue
-			}
-			-re "^\\s+Weight\\s+=\\s+1$eol" {
 				incr matches
 				exp_continue
 			}
@@ -125,7 +121,7 @@ proc setup_federation { fed_name } {
 				wait
 			}
 		}
-		if {!$rc && $matches != 6} {
+		if {!$rc && $matches != 5} {
 			send_user "$matches FAILURE: failed to add $cluster to federation.\n"
 			set rc 1
 			break;
@@ -224,19 +220,18 @@ proc get_clusterfed_info { fed_name } {
 	set matches 0
 	array set clusters {}
 	set my_pid [spawn $sacctmgr show cluster federation=$fed_name \
-		    format="cluster%20,federation%20,id,controlhost,controlport,weight,features,fedstate"]
+		    format="cluster%20,federation%20,id,controlhost,controlport,features,fedstate"]
 	expect {
-		-re "Cluster\\s+Federation\\s+ID\\s+ControlHost\\s+ControlPort\\s+Weight\\s+Features\\s+FedState $eol" {
+		-re "Cluster\\s+Federation\\s+ID\\s+ControlHost\\s+ControlPort\\s+Features\\s+FedState $eol" {
 			incr matches
 			exp_continue
 		}
-		-re "\\s+(\\S+)\\s+$fed_name\\s+(\\d+)\\s+(\\S+)\\s+(\\d+)\\s+(\\d+)\\s+(\\S*)\\s+(\\S*) $eol" {
+		-re "\\s+(\\S+)\\s+$fed_name\\s+(\\d+)\\s+(\\S+)\\s+(\\d+)\\s+(\\S*)\\s+(\\S*) $eol" {
 			set clusters($expect_out(1,string)) [dict create id     $expect_out(2,string) \
 									 host   $expect_out(3,string) \
 									 port   $expect_out(4,string) \
-									 weight $expect_out(5,string) \
-									 features $expect_out(6,string) \
-									 state  $expect_out(7,string)]
+									 features $expect_out(5,string) \
+									 state  $expect_out(6,string)]
 			incr matches
 			exp_continue
 		}
@@ -385,43 +380,6 @@ proc modify_federation_flags {fed_name mode flags} {
 		end_it 1
 	}
 }
-
-proc modify_cluster_weight {cname weight} {
-	global sacctmgr eol
-	set matches 0
-	set my_pid [spawn $sacctmgr -i mod cluster $cname set weight=$weight]
-	expect {
-		-re "Setting$eol" {
-			incr matches
-			exp_continue
-		}
-		-re "^\\s+Weight\\s+=\\s+$weight$eol" {
-			incr matches
-			exp_continue
-		}
-		-re "Modified cluster...$eol" {
-			incr matches
-			exp_continue
-		}
-		-re "^\\s+$cname$eol" {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: sacctmgr add not responding\n"
-			slow_kill $my_pid
-			end_it 1
-		}
-		eof {
-			wait
-		}
-	}
-	if {$matches != 4} {
-		send_user "$matches FAILURE: failed to set weight for $cname\n"
-		end_it 1
-	}
-}
-
 
 proc log_error {msg} {
 	send_user "\nFAILURE: $msg\n"

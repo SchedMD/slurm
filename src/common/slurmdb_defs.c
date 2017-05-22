@@ -1466,7 +1466,6 @@ extern void slurmdb_init_cluster_rec(slurmdb_cluster_rec_t *cluster,
 	memset(cluster, 0, sizeof(slurmdb_cluster_rec_t));
 	cluster->flags      = NO_VAL;
 	cluster->fed.state  = NO_VAL;
-	cluster->fed.weight = NO_VAL;
 	slurm_mutex_init(&cluster->lock);
 }
 
@@ -1659,9 +1658,6 @@ extern char *slurmdb_federation_flags_str(uint32_t flags)
 	if (flags & FEDERATION_FLAG_NOTSET)
 		return xstrdup("NotSet");
 
-	if (flags & FEDERATION_FLAG_LLC)
-		xstrcat(federation_flags, "LLC,");
-
 	if (federation_flags)
 		federation_flags[strlen(federation_flags)-1] = '\0';
 
@@ -1670,9 +1666,6 @@ extern char *slurmdb_federation_flags_str(uint32_t flags)
 
 static uint32_t _str_2_federation_flags(char *flags)
 {
-	if (xstrcasestr(flags, "LLC"))
-		return FEDERATION_FLAG_LLC;
-
 	return 0;
 }
 
@@ -3120,7 +3113,6 @@ extern void slurmdb_copy_cluster_rec(slurmdb_cluster_rec_t *out,
 	out->fed.name         = xstrdup(in->fed.name);
 	out->fed.id           = in->fed.id;
 	out->fed.state        = in->fed.state;
-	out->fed.weight       = in->fed.weight;
 	out->flags            = in->flags;
 	xfree(out->name);
 	out->name             = xstrdup(in->name);

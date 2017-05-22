@@ -76,8 +76,7 @@ static pthread_mutex_t job_watch_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t       job_watch_thread_id = (pthread_t)0;
 static bool            stop_job_watch_thread = false;
 
-static pthread_t ping_thread  = 0;
-static bool      stop_pinging = false, inited = false;
+static bool inited = false;
 static pthread_mutex_t open_send_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t update_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -296,12 +295,19 @@ static int _open_controller_conn(slurmdb_cluster_rec_t *cluster, bool locked)
 
 	if (!cluster->control_host || !cluster->control_host[0] ||
 	    !cluster->control_port) {
-		if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-			info("%s: Sibling cluster %s doesn't appear to be up yet, skipping",
-			     __func__, cluster->name);
-		if (!locked)
-			slurm_mutex_unlock(&cluster->lock);
-		return SLURM_ERROR;
+		if (cluster->fed.recv) {
+			persist_conn = cluster->fed.recv;
+			cluster->control_port = persist_conn->rem_port;
+			xfree(cluster->control_host);
+			cluster->control_host = xstrdup(persist_conn->rem_host);
+		} else {
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+				info("%s: Sibling cluster %s doesn't appear to be up yet, skipping",
+				     __func__, cluster->name);
+			if (!locked)
+				slurm_mutex_unlock(&cluster->lock);
+			return SLURM_ERROR;
+		}
 	}
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
@@ -459,46 +465,6 @@ static int _queue_rpc(slurmdb_cluster_rec_t *cluster, slurm_msg_t *req,
 	return SLURM_SUCCESS;
 }
 
-static int _ping_controller(slurmdb_cluster_rec_t *cluster)
-{
-	int rc = SLURM_SUCCESS;
-	slurm_msg_t req_msg;
-	slurm_msg_t resp_msg;
-
-	slurm_msg_t_init(&req_msg);
-	req_msg.msg_type = REQUEST_PING;
-
-	slurm_mutex_lock(&cluster->lock);
-
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR) {
-		debug("pinging %s(%s:%d)", cluster->name, cluster->control_host,
-		      cluster->control_port);
-	}
-
-	if ((rc = _send_recv_msg(cluster, &req_msg, &resp_msg, true))) {
-		if (_comm_fail_log(cluster)) {
-			error("failed to ping %s(%s:%d)",
-			      cluster->name, cluster->control_host,
-			      cluster->control_port);
-		}
-	} else if ((rc = slurm_get_return_code(resp_msg.msg_type,
-					       resp_msg.data))) {
-		error("ping returned error from %s(%s:%d)",
-		      cluster->name, cluster->control_host,
-		      cluster->control_port);
-	}
-
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR) {
-		debug("finished pinging %s(%s:%d)", cluster->name,
-		      cluster->control_host, cluster->control_port);
-	}
-
-	slurm_mutex_unlock(&cluster->lock);
-	slurm_free_msg_members(&req_msg);
-	slurm_free_msg_members(&resp_msg);
-	return rc;
-}
-
 /*
  * close all sibling conns
  * must lock before entering.
@@ -521,74 +487,6 @@ static int _close_sibling_conns(void)
 
 fini:
 	return SLURM_SUCCESS;
-}
-
-static void *_ping_thread(void *arg)
-{
-	slurmctld_lock_t fed_read_lock = {
-		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
-
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "fed_ping", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m", __func__, "fed_ping");
-	}
-#endif
-	while (!stop_pinging &&
-	       !slurmctld_config.shutdown_time) {
-		ListIterator itr;
-		slurmdb_cluster_rec_t *cluster;
-
-		lock_slurmctld(fed_read_lock);
-		if (!fed_mgr_fed_rec || !fed_mgr_fed_rec->cluster_list)
-			goto next;
-
-		itr = list_iterator_create(fed_mgr_fed_rec->cluster_list);
-
-		while ((cluster = list_next(itr))) {
-			if (cluster == fed_mgr_cluster_rec)
-				continue;
-			_ping_controller(cluster);
-		}
-		list_iterator_destroy(itr);
-next:
-		unlock_slurmctld(fed_read_lock);
-
-		sleep(5);
-	}
-
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-		info("Exiting ping thread");
-
-	return NULL;
-}
-
-static void _create_ping_thread()
-{
-	pthread_attr_t attr;
-	slurm_attr_init(&attr);
-
-	stop_pinging = false;
-	if (!ping_thread &&
-	    (pthread_create(&ping_thread, &attr, _ping_thread, NULL) != 0)) {
-		error("pthread_create of message thread: %m");
-		slurm_attr_destroy(&attr);
-		ping_thread = 0;
-		return;
-	}
-	slurm_attr_destroy(&attr);
-}
-
-static void _destroy_ping_thread()
-{
-	stop_pinging = true;
-	if (ping_thread) {
-		/* can't wait for ping_thread to finish because it might be
-		 * holding the read lock and we are already in the write lock.
-		 * pthread_join(ping_thread, NULL);
-		 */
-		pthread_kill(ping_thread, SIGUSR1);
-		ping_thread = 0;
-	}
 }
 
 static void _mark_self_as_drained()
@@ -871,7 +769,6 @@ static void _leave_federation(void)
 		info("Leaving federation %s", fed_mgr_fed_rec->name);
 
 	_close_sibling_conns();
-	_destroy_ping_thread();
 	_remove_job_watch_thread();
 	slurmdb_destroy_federation_rec(fed_mgr_fed_rec);
 	fed_mgr_fed_rec = NULL;
@@ -927,8 +824,7 @@ static void _persist_callback_fini(void *arg)
 }
 
 static void _join_federation(slurmdb_federation_rec_t *fed,
-			     slurmdb_cluster_rec_t *cluster,
-			     bool update)
+			     slurmdb_cluster_rec_t *cluster)
 {
 	slurmctld_lock_t fed_read_lock = {
 		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
@@ -938,12 +834,9 @@ static void _join_federation(slurmdb_federation_rec_t *fed,
 	/* We must open the connections after we get out of the
 	 * write_lock or we will end up in deadlock.
 	 */
-	if (!update) {
-		lock_slurmctld(fed_read_lock);
-		_open_persist_sends();
-		unlock_slurmctld(fed_read_lock);
-	}
-	_create_ping_thread();
+	lock_slurmctld(fed_read_lock);
+	_open_persist_sends();
+	unlock_slurmctld(fed_read_lock);
 }
 
 static int _persist_update_job(slurmdb_cluster_rec_t *conn, uint32_t job_id,
@@ -2211,7 +2104,7 @@ extern int fed_mgr_init(void *db_conn)
 		if ((cluster = list_find_first(fed->cluster_list,
 					       slurmdb_find_cluster_in_list,
 					       slurmctld_conf.cluster_name))) {
-			_join_federation(fed, cluster, false);
+			_join_federation(fed, cluster);
 		} else {
 			error("failed to get cluster from federation that we requested");
 			rc = SLURM_ERROR;
@@ -2290,7 +2183,7 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 		    (cluster = list_find_first(fed->cluster_list,
 					       slurmdb_find_cluster_in_list,
 					       slurmctld_conf.cluster_name))) {
-			_join_federation(fed, cluster, true);
+			_join_federation(fed, cluster);
 			break;
 		}
 
@@ -2686,19 +2579,21 @@ extern int fed_mgr_add_sibling_conn(slurm_persist_conn_t *persist_conn,
 	persist_conn->callback_fini = _persist_callback_fini;
 	persist_conn->flags |= PERSIST_FLAG_ALREADY_INITED;
 
-	slurm_mutex_lock(&cluster->lock);
-	cluster->control_port = persist_conn->rem_port;
-	xfree(cluster->control_host);
-	cluster->control_host = xstrdup(persist_conn->rem_host);
-
 	/* If this pointer exists it will be handled by the persist_conn code,
 	 * don't free
 	 */
 	//slurm_persist_conn_destroy(cluster->fed.recv);
 
+	/* Preserve the persist_conn so that the cluster can get the remote
+	 * side's hostname and port to talk back to if it doesn't have it yet.
+	 * See _open_controller_conn().
+	 * Don't lock the the cluster's lock here because a (almost)deadlock
+	 * could occur if this cluster is opening a connection to the remote
+	 * cluster at the same time the remote cluster is connecting to this
+	 * cluster since the both sides will have the mutex locked in order to
+	 * send/recv. If it did happen the the connection will eventually
+	 * timeout and resolved itself. */
 	cluster->fed.recv = persist_conn;
-
-	slurm_mutex_unlock(&cluster->lock);
 
 	unlock_slurmctld(fed_read_lock);
 
@@ -2972,7 +2867,8 @@ static int _remove_inactive_sibs(void *object, void *arg)
 	return SLURM_SUCCESS;
 }
 
-static uint64_t _get_viable_sibs(char *req_clusters, uint64_t feature_sibs)
+static uint64_t _get_viable_sibs(char *req_clusters, uint64_t feature_sibs,
+				 bool is_array_job, char **err_msg)
 {
 	uint64_t viable_sibs = 0;
 
@@ -2987,6 +2883,18 @@ static uint64_t _get_viable_sibs(char *req_clusters, uint64_t feature_sibs)
 	/* filter out clusters that are inactive or draining */
 	list_for_each(fed_mgr_fed_rec->cluster_list, _remove_inactive_sibs,
 		      &viable_sibs);
+
+	if (is_array_job) { /* lock array jobs to local cluster */
+		uint32_t tmp_viable = viable_sibs & fed_mgr_cluster_rec->fed.id;
+		if (viable_sibs && !tmp_viable) {
+			info("federated job arrays must run on local cluster");
+			if (err_msg) {
+				xfree(*err_msg);
+				xstrfmtcat(*err_msg, "federated job arrays must run on local cluster");
+			}
+		}
+		viable_sibs = tmp_viable;
+	}
 
 	return viable_sibs;
 }
@@ -3009,7 +2917,8 @@ static void _add_remove_sibling_jobs(struct job_record *job_ptr)
 	_validate_cluster_features(job_ptr->details->cluster_features,
 				   &feature_sibs);
 
-	new_sibs = _get_viable_sibs(job_ptr->clusters, feature_sibs);
+	new_sibs = _get_viable_sibs(job_ptr->clusters, feature_sibs,
+				    job_ptr->array_recs ? true : false, NULL);
 	job_ptr->fed_details->siblings_viable = new_sibs;
 
 	add_sibs =  new_sibs & ~old_sibs;
@@ -3203,8 +3112,13 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	job_desc->job_id = get_next_job_id(false);
 
 	/* Set viable siblings */
-	job_desc->fed_siblings_viable = _get_viable_sibs(job_desc->clusters,
-							 feature_sibs);
+	job_desc->fed_siblings_viable =
+		_get_viable_sibs(job_desc->clusters, feature_sibs,
+				 (job_desc->array_inx) ? true : false, err_msg);
+	if (!job_desc->fed_siblings_viable) {
+		*alloc_code = ESLURM_FED_NO_VALID_CLUSTERS;
+		return SLURM_ERROR;
+	}
 
 	/* ensure that fed_siblings_active is clear since this is a new job */
 	job_desc->fed_siblings_active = 0;
@@ -3315,7 +3229,7 @@ static int _is_fed_job(struct job_record *job_ptr, uint32_t *origin_id)
 
 	if ((!job_ptr->fed_details) ||
 	    (!(*origin_id = fed_mgr_get_cluster_id(job_ptr->job_id)))) {
-		info("job %d not a federated job", job_ptr->job_id);
+		debug2("job %d not a federated job", job_ptr->job_id);
 		return false;
 	}
 
@@ -3871,7 +3785,8 @@ extern int fed_mgr_job_requeue(struct job_record *job_ptr)
 	_validate_cluster_features(job_ptr->details->cluster_features,
 				   &feature_sibs);
 	job_ptr->fed_details->siblings_viable =
-		_get_viable_sibs(job_ptr->clusters, feature_sibs);
+		_get_viable_sibs(job_ptr->clusters, feature_sibs,
+				 job_ptr->array_recs ? true : false, NULL);
 
 	_prepare_submit_siblings(job_ptr,
 				 job_ptr->fed_details->siblings_viable);

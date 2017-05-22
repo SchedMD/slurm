@@ -183,6 +183,7 @@ static void _dump_job_details(struct job_details *detail_ptr, Buf buffer);
 static int  _dump_job_state(void *x, void *y);
 static void _dump_job_fed_details(job_fed_details_t *fed_details_ptr,
 				  Buf buffer);
+static job_fed_details_t *_dup_job_fed_details(job_fed_details_t *src);
 static void _free_job_fed_details(job_fed_details_t **fed_details_pptr);
 static void _get_batch_job_dir_ids(List batch_dirs);
 static time_t _get_last_state_write_time(void);
@@ -4046,6 +4047,8 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 	job_ptr_pend->clusters = xstrdup(job_ptr->clusters);
 	job_ptr_pend->comment = xstrdup(job_ptr->comment);
 
+	job_ptr_pend->fed_details = _dup_job_fed_details(job_ptr->fed_details);
+
 	job_ptr_pend->front_end_ptr = NULL;
 	/* struct job_details *details;		*** NOTE: Copied below */
 	job_ptr_pend->gres = xstrdup(job_ptr->gres);
@@ -6741,9 +6744,6 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 	rc = _test_job_desc_fields(job_desc);
 	if (rc != SLURM_SUCCESS)
 		return rc;
-
-	if (job_desc->array_inx && fed_mgr_fed_rec)
-		return ESLURM_NOT_SUPPORTED;
 
 	if (!_valid_array_inx(job_desc))
 		return ESLURM_INVALID_ARRAY;
@@ -16569,6 +16569,22 @@ _kill_dependent(struct job_record *job_ptr)
 	job_completion_logger(job_ptr, false);
 	last_job_update = now;
 	srun_allocate_abort(job_ptr);
+}
+
+static job_fed_details_t *_dup_job_fed_details(job_fed_details_t *src)
+{
+	job_fed_details_t *dst = NULL;
+
+	if (!src)
+		return NULL;
+
+	dst = xmalloc(sizeof(job_fed_details_t));
+	memcpy(dst, src, sizeof(job_fed_details_t));
+	dst->origin_str          = xstrdup(src->origin_str);
+	dst->siblings_active_str = xstrdup(src->siblings_active_str);
+	dst->siblings_viable_str = xstrdup(src->siblings_viable_str);
+
+	return dst;
 }
 
 static void _free_job_fed_details(job_fed_details_t **fed_details_pptr)
