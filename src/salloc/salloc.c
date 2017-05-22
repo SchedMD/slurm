@@ -118,6 +118,7 @@ static pid_t _fork_command(char **command);
 static void _forward_signal(int signo);
 static void _job_complete_handler(srun_job_complete_msg_t *msg);
 static void _job_suspend_handler(suspend_msg_t *msg);
+static void _match_job_name(List job_req_list, char *job_name);
 static void _node_fail_handler(srun_node_fail_msg_t *msg);
 static void _pending_callback(uint32_t job_id);
 static void _ping_handler(srun_ping_msg_t *msg);
@@ -277,6 +278,7 @@ int main(int argc, char **argv)
 		fatal("%s: desc is NULL", __func__);
 		exit(error_exit);    /* error already logged */
 	}
+	_match_job_name(job_req_list, opt.job_name);
 
 	/*
 	 * Job control for interactive salloc sessions: only if ...
@@ -629,6 +631,32 @@ relinquish:
 
 	xfree(desc->clusters);
 	return rc;
+}
+
+/* Copy job name from last component to all pack job components unless
+ * explicitly set. The default value comes from _salloc_default_command()
+ * and is "sh". */
+static void _match_job_name(List job_req_list, char *job_name)
+{
+	int cnt, i = 1;
+	ListIterator iter;
+	job_desc_msg_t *desc = NULL;
+
+	if (!job_req_list)
+		return;
+
+	cnt = list_count(job_req_list);
+	if (cnt < 2)
+		return;
+
+	iter = list_iterator_create(job_req_list);
+	while ((desc = (job_desc_msg_t *) list_next(iter))) {
+		if ((i++ < cnt) && !xstrcmp(desc->name, "sh")) {
+			xfree(desc->name);
+			desc->name = xstrdup(job_name);
+		}
+	}
+	list_iterator_destroy(iter);
 }
 
 static void _set_exit_code(void)

@@ -1490,8 +1490,7 @@ static int _salloc_default_command (int *argcp, char **argvp[])
 		(*argvp)[1] = "-c";
 		(*argvp)[2] = xstrdup (cf->salloc_default_command);
 		(*argvp)[3] = NULL;
-	}
-	else {
+	} else {
 		*argcp = 1;
 		*argvp = xmalloc (sizeof (char *) * 2);
 		(*argvp)[0] = _get_shell ();
