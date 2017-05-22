@@ -734,8 +734,6 @@ static void _show_it(int argc, char **argv)
 		fprintf(stderr, "Input line must include ");
 		fprintf(stderr, "\"Account\", \"Association\", "
 			"\"Cluster\", \"Configuration\",\n\"Event\", "
-			"\"Problem\", \"QOS\", \"Resource\", \"Reservation\", "
-			"\"RunAwayJobs\", \"Stats\", \"Transaction\", "
 			"\"Federation\", \"Problem\", \"QOS\", \"Resource\", "
 			"\"Reservation\",\n\"RunAwayJobs\", \"Stats\", "
 			"\"Transaction\", \"TRES\", \"User\", or \"WCKey\"\n");
