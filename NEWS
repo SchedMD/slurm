@@ -41,6 +41,8 @@ documents those changes that are of interest to users and administrators.
  -- When doing a dlopen on liblua only attempt the version compiled against.
  -- Fix null-dereference in sreport cluster ulitization when configured with
     memory-leak-debug.
+ -- Fix Partition info in 'scontrol show node'. Previously duplicate partition
+    names, or Partitions the node did not belong to could be displayed.
 
 * Changes in Slurm 17.02.3
 ==========================
