@@ -110,8 +110,6 @@ int net_stream_listen(int *fd, uint16_t *port)
 		goto cleanup;
 
 	*port = _sock_bind_wild(*fd);
-#undef SOMAXCONN
-#define SOMAXCONN	1024
 	rc = listen(*fd, NET_DEFAULT_BACKLOG);
 	if (rc < 0)
 		goto cleanup;
@@ -220,8 +218,7 @@ net_stream_listen_ports(int *fd, uint16_t *port, uint16_t *ports)
 		return -1;
 	}
 	*port = cc;
-#undef SOMAXCONN
-#define SOMAXCONN	1024
+
 	cc = listen(*fd, NET_DEFAULT_BACKLOG);
 	if (cc < 0) {
 		close(*fd);
