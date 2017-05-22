@@ -3210,7 +3210,7 @@ static int _is_fed_job(struct job_record *job_ptr, uint32_t *origin_id)
 
 	if ((!job_ptr->fed_details) ||
 	    (!(*origin_id = fed_mgr_get_cluster_id(job_ptr->job_id)))) {
-		info("job %d not a federated job", job_ptr->job_id);
+		debug2("job %d not a federated job", job_ptr->job_id);
 		return false;
 	}
 
