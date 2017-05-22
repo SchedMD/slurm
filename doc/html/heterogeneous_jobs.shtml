@@ -41,7 +41,7 @@ unique <i>job_id</i>.</li>
 <li><i>pack_job_id</i>: This identification number applies to all components
 of the heterogeneous job. All components of the same job will have the same
 <i>pack_job_id</i> value and it will be equal to the <i>job_id</i> of the
-first component.</li>
+first component. We refer to this as the "pack leader".</li>
 <li><i>pack_job_id_set</i>: Regular expression identifying all <i>job_id</i>
 values associated with the job.</li>
 <li><i>pack_job_offset</i>: A unique sequence number applied to each component
@@ -72,14 +72,33 @@ For example "123+4" would represent heterogeneous job id 123 and it's fifth
 component (note: the first component has a <i>pack_job_offset</i>value of 0).</p>
 
 <p>A request for a specific job ID that identifes a ID of the first component
-of a heterogenous job will return information about all pack job components.
-For example:</p>
+of a heterogenous job (i.e. the "pack leader" will return information about
+all components of that job. For example:</p>
 <pre>
 $ squeue --job=93
 JOBID PARTITION  NAME  USER ST  TIME  NODES NODELIST
  93+0     debug  bash  adam  R 18:18      1 nid00001
  93+1     debug  bash  adam  R 18:18      1 nid00011
  93+2     debug  bash  adam  R 18:18      1 nid00021
+</pre>
+
+<p>A request to cancel or otherwise signal a pack leader will be applied to
+all components of that pack job. A request to cancel a specific component of
+the pack job using the "#+#" notation will apply on to that specific component.
+For example:</p>
+<pre>
+$ squeue --job=93
+JOBID PARTITION  NAME  USER ST  TIME  NODES NODELIST
+ 93+0     debug  bash  adam  R 19:18      1 nid00001
+ 93+1     debug  bash  adam  R 19:18      1 nid00011
+ 93+2     debug  bash  adam  R 19:18      1 nid00021
+$ scancel 93+1
+$ squeue --job=93
+JOBID PARTITION  NAME  USER ST  TIME  NODES NODELIST
+ 93+0     debug  bash  adam  R 19:38      1 nid00001
+ 93+2     debug  bash  adam  R 19:38      1 nid00021
+$ squeue --job=93
+JOBID PARTITION  NAME  USER ST  TIME  NODES NODELIST
 </pre>
 
 <h2><a name="limitations">Limitations</a></h2>

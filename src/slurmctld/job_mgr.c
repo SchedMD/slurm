@@ -4785,6 +4785,24 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t flags,
 	return _job_signal(job_ptr, signal, flags, uid, preempt);
 }
 
+/* Signal all components of a pack job */
+static int _pack_job_signal(struct job_record *job_ptr, uint16_t signal,
+			    uint16_t flags, uid_t uid, bool preempt)
+{
+	ListIterator iter;
+	int rc = SLURM_SUCCESS, rc1;
+	struct job_record *pack_job_ptr;
+
+	iter = list_iterator_create(job_ptr->pack_job_list);
+	while ((pack_job_ptr = (struct job_record *) list_next(iter))) {
+		rc1 = _job_signal(pack_job_ptr, signal, flags, uid, preempt);
+		rc = MAX(rc, rc1);
+	}
+	list_iterator_destroy(iter);
+
+	return rc;
+}
+
 /*
  * job_str_signal - signal the specified job
  * IN job_id_str - id of the job to be signaled, valid formats include "#"
@@ -4830,6 +4848,10 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		int jobs_done = 0, jobs_signalled = 0;
 		struct job_record *job_ptr_done = NULL;
 		job_ptr = find_job_record(job_id);
+		if (job_ptr && job_ptr->pack_job_list) {
+			return _pack_job_signal(job_ptr, signal, flags, uid,
+						preempt);
+		}
 		if (job_ptr && (job_ptr->array_task_id == NO_VAL) &&
 		    (job_ptr->array_recs == NULL)) {
 			/* This is a regular job, not a job array */
