@@ -2995,11 +2995,46 @@ extern struct job_record *find_job_array_rec(uint32_t array_job_id,
 }
 
 /*
+ * find_job_pack_record - return a pointer to the job record with the given ID
+ * IN job_id - requested job's ID
+ * in pack_id - pack job component ID
+ * RET pointer to the job's record, NULL on error
+ */
+extern struct job_record *find_job_pack_record(uint32_t job_id,
+					       uint32_t pack_id)
+{
+	struct job_record *job_ptr, *job_pack_ptr;
+	ListIterator iter;
+
+	job_ptr = job_hash[JOB_HASH_INX(job_id)];
+	while (job_ptr) {
+		if (job_ptr->job_id == job_id)
+			break;
+		job_ptr = job_ptr->job_next;
+	}
+	if (!job_ptr)
+		return NULL;
+	if (job_ptr->pack_job_offset == pack_id)
+		return job_ptr;
+
+	if (!job_ptr->pack_job_list)
+		return NULL;
+	iter = list_iterator_create(job_ptr->pack_job_list);
+	while ((job_pack_ptr = (struct job_record *) list_next(iter))) {
+		if (job_pack_ptr->pack_job_offset == pack_id)
+			break;
+	}
+	list_iterator_destroy(iter);
+
+	return job_pack_ptr;
+}
+
+/*
  * find_job_record - return a pointer to the job record with the given job_id
  * IN job_id - requested job's id
  * RET pointer to the job's record, NULL on error
  */
-struct job_record *find_job_record(uint32_t job_id)
+extern struct job_record *find_job_record(uint32_t job_id)
 {
 	struct job_record *job_ptr;
 
@@ -4835,12 +4870,27 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 
 	long_id = strtol(job_id_str, &end_ptr, 10);
 	if ((long_id <= 0) || (long_id == LONG_MAX) ||
-	    ((end_ptr[0] != '\0') && (end_ptr[0] != '_'))) {
-		info("%s: 1 invalid job id %s", __func__, job_id_str);
+	    ((end_ptr[0] != '\0') && (end_ptr[0] != '_') &&
+	     (end_ptr[0] != '+'))) {
+		info("%s(1): invalid job id %s", __func__, job_id_str);
 		return ESLURM_INVALID_JOB_ID;
 	}
 	if ((end_ptr[0] == '_') && (end_ptr[1] == '*'))
 		end_ptr += 2;	/* Defaults to full job array */
+
+	if (end_ptr[0] == '+') {	/* Signal pack job element */
+		job_id = (uint32_t) long_id;
+		long_id = strtol(end_ptr + 1, &end_ptr, 10);
+		if ((long_id <= 0) || (long_id == LONG_MAX) ||
+		    (end_ptr[0] != '\0')) {
+			info("%s(2): invalid job id %s", __func__, job_id_str);
+			return ESLURM_INVALID_JOB_ID;
+		}
+		job_ptr = find_job_pack_record(job_id, (uint32_t) long_id);
+		if (job_ptr)
+			return _job_signal(job_ptr, signal, flags, uid,preempt);
+		return ESLURM_ALREADY_DONE;
+	}
 
 	last_job_update = now;
 	job_id = (uint32_t) long_id;
@@ -4888,7 +4938,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		/* Signal all tasks of this job array */
 		job_ptr = job_array_hash_j[JOB_HASH_INX(job_id)];
 		if (!job_ptr && !job_ptr_done) {
-			info("%s: 2 invalid job id %u", __func__, job_id);
+			info("%s(3): invalid job id %u", __func__, job_id);
 			return ESLURM_INVALID_JOB_ID;
 		}
 		while (job_ptr) {
@@ -4931,7 +4981,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			valid = false;
 	}
 	if (!valid) {
-		info("%s: 3 invalid job id %s", __func__, job_id_str);
+		info("%s(4): invalid job id %s", __func__, job_id_str);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto endit;
 	}
@@ -4949,7 +4999,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 	if ((job_ptr == NULL) ||
 	    ((job_ptr->array_task_id == NO_VAL) &&
 	     (job_ptr->array_recs == NULL))) {
-		info("%s: 4 invalid job id %s", __func__, job_id_str);
+		info("%s(5): invalid job id %s", __func__, job_id_str);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto endit;
 	}
@@ -5024,7 +5074,8 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			continue;
 		job_ptr = find_job_array_rec(job_id, i);
 		if (job_ptr == NULL) {
-			info("%s: 5 invalid job id %u_%d", __func__, job_id, i);
+			info("%s(6): invalid job id %u_%d",
+			      __func__, job_id, i);
 			rc = ESLURM_INVALID_JOB_ID;
 			continue;
 		}

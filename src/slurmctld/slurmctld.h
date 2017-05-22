@@ -1085,11 +1085,20 @@ extern struct job_record *find_job_array_rec(uint32_t array_job_id,
 					     uint32_t array_task_id);
 
 /*
+ * find_job_pack_record - return a pointer to the job record with the given ID
+ * IN job_id - requested job's ID
+ * in pack_id - pack job component ID
+ * RET pointer to the job's record, NULL on error
+ */
+extern struct job_record *find_job_pack_record(uint32_t job_id,
+					       uint32_t pack_id);
+
+/*
  * find_job_record - return a pointer to the job record with the given job_id
  * IN job_id - requested job's id
  * RET pointer to the job's record, NULL on error
  */
-struct job_record *find_job_record(uint32_t job_id);
+extern struct job_record *find_job_record(uint32_t job_id);
 
 /*
  * find_first_node_record - find a record for first node in the bitmap
