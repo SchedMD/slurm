@@ -2592,6 +2592,10 @@ static int _filter_job(job_info_t * job)
 				filter = 0;
 				break;
 			}
+			if (job_step_id->job_id == job->pack_job_id) {
+				filter = 0;
+				break;
+			}
 		}
 		list_iterator_destroy(iterator);
 		if (filter == 1)

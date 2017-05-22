@@ -8763,6 +8763,29 @@ extern void pack_spec_jobs(char **buffer_ptr, int *buffer_size, List job_ids,
 	buffer_ptr[0] = xfer_buf_data(buffer);
 }
 
+static int _pack_hetero_job(struct job_record *job_ptr, uint16_t show_flags,
+			    Buf buffer, uint16_t protocol_version, uid_t uid)
+{
+	struct job_record *pack_ptr;
+	int job_cnt = 0;
+	ListIterator iter;
+
+	iter = list_iterator_create(job_ptr->pack_job_list);
+	while ((pack_ptr = (struct job_record *) list_next(iter))) {
+		if (pack_ptr->pack_job_id == job_ptr-> pack_job_id) {
+			pack_job(pack_ptr, show_flags, buffer, protocol_version,
+				 uid);
+			job_cnt++;
+		} else {
+			error("Pack job %u has bad pack_job_list",
+			      job_ptr->job_id);
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return job_cnt;
+}
+
 /*
  * pack_one_job - dump information for one jobs in
  *	machine independent form (for network transmission)
@@ -8794,8 +8817,16 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 	pack_time(time(NULL), buffer);
 
 	job_ptr = find_job_record(job_id);
-	if (job_ptr && (job_ptr->array_task_id == NO_VAL) &&
-	    !job_ptr->array_recs) {
+	if (job_ptr && job_ptr->pack_job_list) {
+		/* Pack heterogeneous job components */
+		if (!_hide_job(job_ptr, uid, show_flags)) {
+			jobs_packed = _pack_hetero_job(job_ptr, show_flags,
+						       buffer, protocol_version,
+						       uid);
+		}
+	} else if (job_ptr && (job_ptr->array_task_id == NO_VAL) &&
+		   !job_ptr->array_recs) {
+		/* Pack regular (not array) job */
 		if (!_hide_job(job_ptr, uid, show_flags)) {
 			pack_job(job_ptr, show_flags, buffer, protocol_version,
 				 uid);
