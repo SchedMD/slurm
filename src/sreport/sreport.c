@@ -290,7 +290,7 @@ static char *_build_cluster_string(void)
 	char *cluster_str = NULL;
 	slurmdb_federation_rec_t *fed = NULL;
 	slurmdb_federation_cond_t fed_cond;
-	List fed_list;
+	List fed_list = NULL;
 	List cluster_list = list_create(NULL);
 
 	list_append(cluster_list, slurmctld_conf.cluster_name);
@@ -307,6 +307,7 @@ static char *_build_cluster_string(void)
 	}
 	slurm_destroy_federation_rec(fed);
 	FREE_NULL_LIST(cluster_list);
+	FREE_NULL_LIST(fed_list);
 
 	return cluster_str;
 }
