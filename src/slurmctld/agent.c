@@ -990,7 +990,7 @@ static void *_thread_per_group_rpc(void *args)
 			unlock_slurmctld(job_write_lock);
 			continue;
 		} else if ((msg_type == RESPONSE_RESOURCE_ALLOCATION) &&
-		    (rc == SLURM_COMMUNICATIONS_CONNECTION_ERROR)) {
+			   (rc == SLURM_COMMUNICATIONS_CONNECTION_ERROR)) {
 			/* Communication issue to srun that launched the job
 			 * Cancel rather than leave a stray-but-empty job
 			 * behind on the allocated nodes. */

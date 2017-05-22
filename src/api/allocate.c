@@ -238,7 +238,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 			errnum = errno;
 		} else {
 			/* shouldn't get here */
-			errnum = -1;
+			errnum = SLURM_ERROR;
 		}
 		break;
 	case RESPONSE_RESOURCE_ALLOCATION:
@@ -387,7 +387,7 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
 			errnum = errno;
 		} else {
 			/* shouldn't get here */
-			errnum = -1;
+			errnum = SLURM_ERROR;
 		}
 		break;
 #if 0
@@ -410,7 +410,7 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
  			resp = _wait_for_allocation_response(job_id, listen,
 							     timeout);
 			/* If NULL, we didn't get the allocation in
-			   the time desired, so just free the job id */
+			 * the time desired, so just free the job id */
 			if ((resp == NULL) && (errno != ESLURM_ALREADY_DONE)) {
 				errnum = errno;
 				slurm_complete_job(job_id, -1);

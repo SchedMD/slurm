@@ -400,8 +400,7 @@ int main(int argc, char **argv)
 			/* cancelled by signal */
 			info("Job aborted due to signal");
 		} else if (errno == EINTR) {
-			error("Interrupted by signal."
-			      "  Allocation request rescinded.");
+			error("Interrupted by signal. Allocation request rescinded.");
 		} else if (opt.immediate &&
 			   ((errno == ETIMEDOUT) ||
 			    (errno == ESLURM_NOT_TOP_PRIORITY) ||
@@ -447,9 +446,9 @@ int main(int argc, char **argv)
 	}
 
 	after = time(NULL);
-	if (opt.bell == BELL_ALWAYS
-	    || (opt.bell == BELL_AFTER_DELAY
-		&& ((after - before) > DEFAULT_BELL_DELAY))) {
+	if ((opt.bell == BELL_ALWAYS) ||
+	     ((opt.bell == BELL_AFTER_DELAY) &&
+	      ((after - before) > DEFAULT_BELL_DELAY))) {
 		_ring_terminal_bell();
 	}
 	if (opt.no_shell)
