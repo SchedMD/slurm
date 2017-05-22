@@ -6745,9 +6745,6 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 	if (rc != SLURM_SUCCESS)
 		return rc;
 
-	if (job_desc->array_inx && fed_mgr_fed_rec)
-		return ESLURM_NOT_SUPPORTED;
-
 	if (!_valid_array_inx(job_desc))
 		return ESLURM_INVALID_ARRAY;
 

@@ -2867,7 +2867,8 @@ static int _remove_inactive_sibs(void *object, void *arg)
 	return SLURM_SUCCESS;
 }
 
-static uint64_t _get_viable_sibs(char *req_clusters, uint64_t feature_sibs)
+static uint64_t _get_viable_sibs(char *req_clusters, uint64_t feature_sibs,
+				 bool is_array_job, char **err_msg)
 {
 	uint64_t viable_sibs = 0;
 
@@ -2882,6 +2883,18 @@ static uint64_t _get_viable_sibs(char *req_clusters, uint64_t feature_sibs)
 	/* filter out clusters that are inactive or draining */
 	list_for_each(fed_mgr_fed_rec->cluster_list, _remove_inactive_sibs,
 		      &viable_sibs);
+
+	if (is_array_job) { /* lock array jobs to local cluster */
+		uint32_t tmp_viable = viable_sibs & fed_mgr_cluster_rec->fed.id;
+		if (viable_sibs && !tmp_viable) {
+			info("federated job arrays must run on local cluster");
+			if (err_msg) {
+				xfree(*err_msg);
+				xstrfmtcat(*err_msg, "federated job arrays must run on local cluster");
+			}
+		}
+		viable_sibs = tmp_viable;
+	}
 
 	return viable_sibs;
 }
@@ -2904,7 +2917,8 @@ static void _add_remove_sibling_jobs(struct job_record *job_ptr)
 	_validate_cluster_features(job_ptr->details->cluster_features,
 				   &feature_sibs);
 
-	new_sibs = _get_viable_sibs(job_ptr->clusters, feature_sibs);
+	new_sibs = _get_viable_sibs(job_ptr->clusters, feature_sibs,
+				    job_ptr->array_recs ? true : false, NULL);
 	job_ptr->fed_details->siblings_viable = new_sibs;
 
 	add_sibs =  new_sibs & ~old_sibs;
@@ -3098,8 +3112,13 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	job_desc->job_id = get_next_job_id(false);
 
 	/* Set viable siblings */
-	job_desc->fed_siblings_viable = _get_viable_sibs(job_desc->clusters,
-							 feature_sibs);
+	job_desc->fed_siblings_viable =
+		_get_viable_sibs(job_desc->clusters, feature_sibs,
+				 (job_desc->array_inx) ? true : false, err_msg);
+	if (!job_desc->fed_siblings_viable) {
+		*alloc_code = ESLURM_FED_NO_VALID_CLUSTERS;
+		return SLURM_ERROR;
+	}
 
 	/* ensure that fed_siblings_active is clear since this is a new job */
 	job_desc->fed_siblings_active = 0;
@@ -3766,7 +3785,8 @@ extern int fed_mgr_job_requeue(struct job_record *job_ptr)
 	_validate_cluster_features(job_ptr->details->cluster_features,
 				   &feature_sibs);
 	job_ptr->fed_details->siblings_viable =
-		_get_viable_sibs(job_ptr->clusters, feature_sibs);
+		_get_viable_sibs(job_ptr->clusters, feature_sibs,
+				 job_ptr->array_recs ? true : false, NULL);
 
 	_prepare_submit_siblings(job_ptr,
 				 job_ptr->fed_details->siblings_viable);
