@@ -421,7 +421,7 @@ int main(int argc, char **argv)
 		}
 		list_iterator_destroy(iter);
 exit(1);
-	} else if (allocation_interrupted) {
+	} else if (!allocation_interrupted) {
 		/*
 		 * Allocation granted!
 		 */
