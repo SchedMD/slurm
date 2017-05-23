@@ -75,13 +75,7 @@ proc inc22_1_4 {} {
 	}
 
 	if { $exit_code } {
-		incr exit_code [archive_load $sql_rem_clus1]
-		incr exit_code [archive_load $sql_rem_clus2]
-		remove_user "" "" $users
-		remove_acct "" $accounts
-		remove_cluster "$cluster1"
-		remove_cluster "$cluster2"
-		exit $exit_code
+		return $exit_code
 	}
 
 	# Test for job2
@@ -111,13 +105,7 @@ proc inc22_1_4 {} {
 	}
 
 	if { $exit_code } {
-		incr exit_code [archive_load $sql_rem_clus1]
-		incr exit_code [archive_load $sql_rem_clus2]
-		remove_user "" "" $users
-		remove_acct "" $accounts
-		remove_cluster "$cluster1"
-		remove_cluster "$cluster2"
-		exit $exit_code
+		return $exit_code
 	}
 
 	# Test for job3
@@ -147,13 +135,5 @@ proc inc22_1_4 {} {
 		incr exit_code 1
 	}
 
-	if { $exit_code } {
-		incr exit_code [archive_load $sql_rem_clus1]
-		incr exit_code [archive_load $sql_rem_clus2]
-		remove_user "" "" $users
-		remove_acct "" $accounts
-		remove_cluster "$cluster1"
-		remove_cluster "$cluster2"
-		exit $exit_code
-	}
+	return $exit_code
 }

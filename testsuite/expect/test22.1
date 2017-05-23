@@ -38,6 +38,7 @@ source ./inc22.1.1
 source ./inc22.1.2
 source ./inc22.1.3
 source ./inc22.1.4
+source ./inc22.1.fed
 
 set test_id     "22.1"
 set test_name   "test22.1"
@@ -329,6 +330,18 @@ if {!$user1wckey1 || !$user1wckey1} {
 	exit $exit_code
 }
 
+proc end_it {} {
+	global exit_code sql_rem_clus1 sql_rem_clus2 users accounts cluster cluster2
+
+	incr exit_code [archive_load $sql_rem_clus1]
+	incr exit_code [archive_load $sql_rem_clus2]
+	remove_user "" "" $users
+	remove_acct "" $accounts
+	remove_cluster "$cluster1"
+	remove_cluster "$cluster2"
+	exit $exit_code
+}
+
 proc create_sql {cluster sql_in sql_rem} {
 
 	global bin_rm cluster_cpus period_start period_end node_list exit_code
@@ -547,13 +560,23 @@ create_sql $cluster2 $sql_in_clus2 $sql_rem_clus2
 #
 # Execute sub-test
 #
-inc22_1_1
 
-inc22_1_2
-
-inc22_1_3
-
-inc22_1_4
+set exit_code [inc22_1_1]
+if {$exit_code ne 0} {
+	end_it
+}
+set exit_code [inc22_1_2]
+if {$exit_code ne 0} {
+	end_it
+}
+set exit_code [inc22_1_3]
+if {$exit_code ne 0} {
+	end_it
+}
+set exit_code [inc22_1_4]
+if {$exit_code ne 0} {
+	end_it
+}
 
 if {$exit_code == 0} {
 	incr exit_code [archive_load $sql_rem_clus1]
