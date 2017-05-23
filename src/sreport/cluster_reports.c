@@ -614,7 +614,7 @@ static List _get_cluster_list(int argc, char **argv, uint32_t *total_time,
 {
 	slurmdb_cluster_cond_t *cluster_cond =
 		xmalloc(sizeof(slurmdb_cluster_cond_t));
-	int i = 0;
+	int i = 0, fed_cluster_count = 1;
 	List cluster_list = NULL;
 
 	slurmdb_init_cluster_cond(cluster_cond, 0);
@@ -629,8 +629,10 @@ static List _get_cluster_list(int argc, char **argv, uint32_t *total_time,
 		fprintf(stderr, " Problem with cluster query.\n");
 		return NULL;
 	}
-	if (fed_name)
+	if (fed_name) {
+		fed_cluster_count = list_count(cluster_list);
 		_merge_cluster_recs(cluster_list);
+	}
 
 	if (print_fields_have_header) {
 		char start_char[20];
@@ -657,7 +659,13 @@ static List _get_cluster_list(int argc, char **argv, uint32_t *total_time,
 		printf("----------------------------------------"
 		       "----------------------------------------\n");
 	}
-	(*total_time) = cluster_cond->usage_end - cluster_cond->usage_start;
+
+	/* Mutliply the time range by fed_cluster_count since the federation
+	 * represents time for all clusters in the federation and not just one
+	 * cluster. This gives correct reported time for a federated utilization
+	 * report. */
+	(*total_time) = (cluster_cond->usage_end - cluster_cond->usage_start) *
+			fed_cluster_count;
 
 	slurmdb_destroy_cluster_cond(cluster_cond);
 
