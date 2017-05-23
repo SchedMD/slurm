@@ -145,7 +145,7 @@ _multi_cluster(List clusters)
 static int
 _proc_cluster(void)
 {
-	int rc;
+	int rc, rc2;
 
 	if (has_default_opt() && !has_job_steps()) {
 		rc = _signal_job_by_str();
@@ -165,7 +165,8 @@ _proc_cluster(void)
 	    (opt.wckey)) {
 		_filter_job_records();
 	}
-	rc = MAX(_cancel_jobs(), rc);
+	rc2 = _cancel_jobs();
+	rc = MAX(rc, rc2);
 	slurm_free_job_info_msg(job_buffer_ptr);
 
 	return rc;
