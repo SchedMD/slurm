@@ -2360,6 +2360,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->epilog_slurmctld);
 	FREE_NULL_LIST(ctl_conf_ptr->ext_sensors_conf);
 	xfree (ctl_conf_ptr->ext_sensors_type);
+	xfree (ctl_conf_ptr->fed_params);
 	xfree (ctl_conf_ptr->gres_plugins);
 	xfree (ctl_conf_ptr->health_check_program);
 	xfree (ctl_conf_ptr->job_acct_gather_freq);
@@ -2494,6 +2495,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->epilog);
 	ctl_conf_ptr->epilog_msg_time		= (uint32_t) NO_VAL;
 	ctl_conf_ptr->fast_schedule		= (uint16_t) NO_VAL;
+	xfree(ctl_conf_ptr->fed_params);
 	ctl_conf_ptr->first_job_id		= NO_VAL;
 	ctl_conf_ptr->get_env_timeout		= 0;
 	xfree(ctl_conf_ptr->gres_plugins);
