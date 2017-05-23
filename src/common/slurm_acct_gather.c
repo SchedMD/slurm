@@ -129,15 +129,19 @@ extern int acct_gather_conf_init(void)
 
 extern int acct_gather_conf_destroy(void)
 {
-	int rc;
+	int rc, rc2;
 
 	if (!inited)
 		return SLURM_SUCCESS;
 
 	rc = acct_gather_energy_fini();
-	rc = MAX(rc, acct_gather_filesystem_fini());
-	rc = MAX(rc, acct_gather_infiniband_fini());
-	rc = MAX(rc, acct_gather_profile_fini());
+	rc2 = acct_gather_filesystem_fini();
+	rc = MAX(rc, rc2);
+	rc2 = acct_gather_infiniband_fini();
+	rc = MAX(rc, rc2);
+	rc2 = acct_gather_profile_fini();
+	rc = MAX(rc, rc2);
+
 	return rc;
 }
 

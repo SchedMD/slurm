@@ -44,6 +44,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix Partition info in 'scontrol show node'. Previously duplicate partition
     names, or Partitions the node did not belong to could be displayed.
  -- Fix it so the backup slurmdbd will take control correctly.
+ -- Fix unsafe use of MAX() macro, which could result in problems cleaning up
+    accounting plugins in slurmd.
 
 * Changes in Slurm 17.02.3
 ==========================
