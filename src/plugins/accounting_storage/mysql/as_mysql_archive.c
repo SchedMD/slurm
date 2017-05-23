@@ -3004,10 +3004,10 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 		tmp_archive_period = purge_attr;
 
 		if (curr_end - record_start > MAX_ARCHIVE_AGE) {
+			time_t begin_next = _get_begin_next_month(record_start);
 			/* old stuff, catch up by archiving by month */
 			tmp_archive_period = SLURMDB_PURGE_MONTHS;
-			tmp_end = MIN(curr_end,
-				      _get_begin_next_month(record_start));
+			tmp_end = MIN(curr_end, begin_next);
 		} else
 			tmp_end = curr_end;
 
