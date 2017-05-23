@@ -43,6 +43,7 @@ documents those changes that are of interest to users and administrators.
     memory-leak-debug.
  -- Fix Partition info in 'scontrol show node'. Previously duplicate partition
     names, or Partitions the node did not belong to could be displayed.
+ -- Fix it so the backup slurmdbd will take control correctly.
 
 * Changes in Slurm 17.02.3
 ==========================

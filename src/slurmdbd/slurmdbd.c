@@ -284,10 +284,14 @@ int main(int argc, char **argv)
 		acct_storage_g_commit(db_conn, 1);
 
 		/* this is only ran if not backup */
-		if (rollup_handler_thread)
+		if (rollup_handler_thread) {
 			pthread_join(rollup_handler_thread, NULL);
-		if (rpc_handler_thread)
+			rollup_handler_thread = 0;
+		}
+		if (rpc_handler_thread) {
 			pthread_join(rpc_handler_thread, NULL);
+			rpc_handler_thread = 0;
+		}
 
 		if (backup && primary_resumed && !restart_backup) {
 			shutdown_time = 0;
