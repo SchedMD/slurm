@@ -53,7 +53,6 @@ START_TEST(pack_1605_null_rec)
 	ck_assert_uint_eq(pack_rec.dimensions,       unpack_rec->dimensions);
 	ck_assert_uint_eq(pack_rec.fed.id,           unpack_rec->fed.id);
 	ck_assert_uint_eq(pack_rec.fed.state,        unpack_rec->fed.state);
-	ck_assert_uint_eq(pack_rec.fed.weight,       unpack_rec->fed.weight);
 	ck_assert_uint_eq(pack_rec.flags,            unpack_rec->flags);
 	ck_assert_uint_eq(pack_rec.plugin_id_select, unpack_rec->plugin_id_select);
 	ck_assert_uint_eq(pack_rec.rpc_version,      unpack_rec->rpc_version);
@@ -81,7 +80,6 @@ START_TEST(pack_1605_rec)
 	pack_rec.fed.name         = xstrdup("fed_name");
 	pack_rec.fed.id           = 4;
 	pack_rec.fed.state        = 5;
-	pack_rec.fed.weight       = 6;
 	pack_rec.flags            = 7;
 	pack_rec.name             = xstrdup("name");
 	pack_rec.nodes            = xstrdup("nodes");
@@ -126,7 +124,6 @@ START_TEST(pack_1605_rec)
 	ck_assert(unpack_rec->fed.name == NULL);
 	ck_assert_uint_eq(empty_rec.fed.id,     unpack_rec->fed.id);
 	ck_assert_uint_eq(empty_rec.fed.state,  unpack_rec->fed.state);
-	ck_assert_uint_eq(empty_rec.fed.weight, unpack_rec->fed.weight);
 	/* 17.11 */
 	ck_assert(empty_rec.fed.feature_list == unpack_rec->fed.feature_list);
 
@@ -154,7 +151,6 @@ START_TEST(pack_1605_rec_null_ptrs)
 	pack_rec.fed.name         = NULL;
 	pack_rec.fed.id           = 4;
 	pack_rec.fed.state        = 5;
-	pack_rec.fed.weight       = 6;
 	pack_rec.flags            = 7;
 	pack_rec.name             = NULL;
 	pack_rec.nodes            = NULL;
@@ -191,7 +187,6 @@ START_TEST(pack_1605_rec_null_ptrs)
 	ck_assert(empty_rec.fed.name        == unpack_rec->fed.name);
 	ck_assert(empty_rec.fed.id          == unpack_rec->fed.id);
 	ck_assert(empty_rec.fed.state       == unpack_rec->fed.state);
-	ck_assert(empty_rec.fed.weight      == unpack_rec->fed.weight);
 	ck_assert(empty_rec.fed.recv        == unpack_rec->fed.recv);
 	ck_assert(empty_rec.fed.send        == unpack_rec->fed.send);
 	/* 17.11 */
@@ -211,7 +206,6 @@ START_TEST(pack_1702_null_rec)
 
 	slurmdb_init_cluster_rec(&pack_rec, false);
 	pack_rec.fed.state        = 0;
-	pack_rec.fed.weight       = 0;
 	pack_rec.dimensions       = 1;
 	pack_rec.plugin_id_select = NO_VAL;
 
@@ -238,7 +232,6 @@ START_TEST(pack_1702_null_rec)
 	ck_assert_uint_eq(pack_rec.dimensions,       unpack_rec->dimensions);
 	ck_assert_uint_eq(pack_rec.fed.id,           unpack_rec->fed.id);
 	ck_assert_uint_eq(pack_rec.fed.state,        unpack_rec->fed.state);
-	ck_assert_uint_eq(pack_rec.fed.weight,       unpack_rec->fed.weight);
 	ck_assert_uint_eq(pack_rec.flags,            unpack_rec->flags);
 	ck_assert_uint_eq(pack_rec.plugin_id_select, unpack_rec->plugin_id_select);
 	ck_assert_uint_eq(pack_rec.rpc_version,      unpack_rec->rpc_version);
@@ -265,7 +258,6 @@ START_TEST(pack_1702_rec)
 	pack_rec.fed.name         = xstrdup("fed_name");
 	pack_rec.fed.id           = 4;
 	pack_rec.fed.state        = 5;
-	pack_rec.fed.weight       = 6;
 	pack_rec.flags            = 7;
 	pack_rec.name             = xstrdup("name");
 	pack_rec.nodes            = xstrdup("nodes");
@@ -295,7 +287,6 @@ START_TEST(pack_1702_rec)
 	ck_assert_uint_eq(pack_rec.dimensions, unpack_rec->dimensions);
 	ck_assert_uint_eq(pack_rec.fed.id, unpack_rec->fed.id);
 	ck_assert_uint_eq(pack_rec.fed.state, unpack_rec->fed.state);
-	ck_assert_uint_eq(pack_rec.fed.weight, unpack_rec->fed.weight);
 	ck_assert_uint_eq(pack_rec.flags, unpack_rec->flags);
 	ck_assert_uint_eq(pack_rec.plugin_id_select, unpack_rec->plugin_id_select);
 	ck_assert_uint_eq(pack_rec.rpc_version, unpack_rec->rpc_version);
@@ -337,7 +328,6 @@ START_TEST(pack_1702_rec_null_ptrs)
 	pack_rec.fed.name         = NULL;
 	pack_rec.fed.id           = 4;
 	pack_rec.fed.state        = 5;
-	pack_rec.fed.weight       = 6;
 	pack_rec.flags            = 7;
 	pack_rec.name             = NULL;
 	pack_rec.nodes            = NULL;
@@ -362,7 +352,6 @@ START_TEST(pack_1702_rec_null_ptrs)
 	ck_assert(pack_rec.fed.name         == unpack_rec->fed.name);
 	ck_assert(pack_rec.fed.id           == unpack_rec->fed.id);
 	ck_assert(pack_rec.fed.state        == unpack_rec->fed.state);
-	ck_assert(pack_rec.fed.weight       == unpack_rec->fed.weight);
 	ck_assert(pack_rec.flags            == unpack_rec->flags);
 	ck_assert(pack_rec.name             == unpack_rec->name);
 	ck_assert(pack_rec.nodes            == unpack_rec->nodes);
@@ -390,7 +379,6 @@ START_TEST(pack_1711_null_rec)
 
 	slurmdb_init_cluster_rec(&pack_rec, false);
 	pack_rec.fed.state        = 0;
-	pack_rec.fed.weight       = 0;
 	pack_rec.dimensions       = 1;
 	pack_rec.plugin_id_select = NO_VAL;
 
@@ -417,7 +405,6 @@ START_TEST(pack_1711_null_rec)
 	ck_assert_uint_eq(pack_rec.dimensions,       unpack_rec->dimensions);
 	ck_assert_uint_eq(pack_rec.fed.id,           unpack_rec->fed.id);
 	ck_assert_uint_eq(pack_rec.fed.state,        unpack_rec->fed.state);
-	ck_assert_uint_eq(pack_rec.fed.weight,       unpack_rec->fed.weight);
 	ck_assert_uint_eq(pack_rec.flags,            unpack_rec->flags);
 	ck_assert_uint_eq(pack_rec.plugin_id_select, unpack_rec->plugin_id_select);
 	ck_assert_uint_eq(pack_rec.rpc_version,      unpack_rec->rpc_version);
@@ -444,7 +431,6 @@ START_TEST(pack_1711_rec)
 	pack_rec.fed.name         = xstrdup("fed_name");
 	pack_rec.fed.id           = 4;
 	pack_rec.fed.state        = 5;
-	pack_rec.fed.weight       = 6;
 	pack_rec.flags            = 7;
 	pack_rec.name             = xstrdup("name");
 	pack_rec.nodes            = xstrdup("nodes");
@@ -477,7 +463,6 @@ START_TEST(pack_1711_rec)
 	ck_assert_uint_eq(pack_rec.dimensions, unpack_rec->dimensions);
 	ck_assert_uint_eq(pack_rec.fed.id, unpack_rec->fed.id);
 	ck_assert_uint_eq(pack_rec.fed.state, unpack_rec->fed.state);
-	ck_assert_uint_eq(pack_rec.fed.weight, unpack_rec->fed.weight);
 	ck_assert_uint_eq(pack_rec.flags, unpack_rec->flags);
 	ck_assert_uint_eq(pack_rec.plugin_id_select, unpack_rec->plugin_id_select);
 	ck_assert_uint_eq(pack_rec.rpc_version, unpack_rec->rpc_version);
@@ -525,7 +510,6 @@ START_TEST(pack_1711_rec_null_ptrs)
 	pack_rec.fed.name         = NULL;
 	pack_rec.fed.id           = 4;
 	pack_rec.fed.state        = 5;
-	pack_rec.fed.weight       = 6;
 	pack_rec.flags            = 7;
 	pack_rec.name             = NULL;
 	pack_rec.nodes            = NULL;
@@ -550,7 +534,6 @@ START_TEST(pack_1711_rec_null_ptrs)
 	ck_assert(pack_rec.fed.name         == unpack_rec->fed.name);
 	ck_assert(pack_rec.fed.id           == unpack_rec->fed.id);
 	ck_assert(pack_rec.fed.state        == unpack_rec->fed.state);
-	ck_assert(pack_rec.fed.weight       == unpack_rec->fed.weight);
 	ck_assert(pack_rec.flags            == unpack_rec->flags);
 	ck_assert(pack_rec.name             == unpack_rec->name);
 	ck_assert(pack_rec.nodes            == unpack_rec->nodes);
