@@ -166,8 +166,8 @@ int main(int argc, char **argv)
 	static bool env_cache_set = false;
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	job_desc_msg_t *desc = NULL;
-	List job_req_list = NULL, job_resp_list;
-	resource_allocation_response_msg_t *alloc;
+	List job_req_list = NULL, job_resp_list = NULL;
+	resource_allocation_response_msg_t *alloc = NULL;
 	time_t before, after;
 	allocation_msg_thread_t *msg_thr;
 	char **env = NULL, *cluster_name;
@@ -395,7 +395,7 @@ int main(int argc, char **argv)
 			exit(error_exit);
 		}
 	}
-	if (alloc == NULL) {
+	if (!alloc && !job_resp_list) {
 		if (allocation_interrupted) {
 			/* cancelled by signal */
 			info("Job aborted due to signal");
@@ -412,7 +412,16 @@ int main(int argc, char **argv)
 		}
 		slurm_allocation_msg_thr_destroy(msg_thr);
 		exit(error_exit);
-	} else if (!allocation_interrupted) {
+	} else if (job_resp_list && !allocation_interrupted) {
+		ListIterator iter;
+		iter = list_iterator_create(job_resp_list);
+		while ((alloc = (resource_allocation_response_msg_t *)
+				list_next(iter))) {
+			info("Granted job allocation %u", alloc->job_id);
+		}
+		list_iterator_destroy(iter);
+exit(1);
+	} else if (allocation_interrupted) {
 		/*
 		 * Allocation granted!
 		 */

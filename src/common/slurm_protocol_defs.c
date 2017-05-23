@@ -4301,6 +4301,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_JOB_PACK_ALLOCATION:
 		FREE_NULL_LIST(data);
 		break;
+	case RESPONSE_JOB_PACK_ALLOCATION:
+		FREE_NULL_LIST(data);
+		break;
 	default:
 		error("invalid type trying to be freed %u", type);
 		break;
@@ -4627,8 +4630,8 @@ rpc_num2string(uint16_t opcode)
 		return "RESPONSE_JOB_ALLOCATION_INFO";
 	case REQUEST_JOB_PACK_ALLOCATION:
 		return "REQUEST_JOB_PACK_ALLOCATION";
-	case RESPONSE_JOB_ALLOCATION_INFO_LITE:
-		return "RESPONSE_JOB_ALLOCATION_INFO_LITE";
+	case RESPONSE_JOB_PACK_ALLOCATION:
+		return "RESPONSE_JOB_PACK_ALLOCATION";
 	case REQUEST_UPDATE_JOB_TIME:
 		return "REQUEST_UPDATE_JOB_TIME";
 	case REQUEST_JOB_READY:

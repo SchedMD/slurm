@@ -1046,13 +1046,88 @@ static int _pack_job_cancel(void *x, void *arg)
 	return 0;
 }
 
-static int _set_pack_job_id_set(void *x, void *arg)
+static void _build_alloc_msg(struct job_record *job_ptr,
+			     resource_allocation_response_msg_t *alloc_msg,
+			     int error_code)
 {
-	struct job_record *job_ptr = (struct job_record *) x;
-	char *pack_job_id_set = (char *) arg;
+	int i;
 
-	job_ptr->pack_job_id_set = xstrdup(pack_job_id_set);
-	return 0;
+	memset(alloc_msg, 0, sizeof(resource_allocation_response_msg_t));
+
+	/* send job_ID and node_name_ptr */
+	if (job_ptr->job_resrcs && job_ptr->job_resrcs->cpu_array_cnt) {
+		alloc_msg->num_cpu_groups = job_ptr->job_resrcs->cpu_array_cnt;
+		alloc_msg->cpu_count_reps = xmalloc(sizeof(uint32_t) *
+						    job_ptr->job_resrcs->
+						    cpu_array_cnt);
+		memcpy(alloc_msg->cpu_count_reps,
+		       job_ptr->job_resrcs->cpu_array_reps,
+		       (sizeof(uint32_t) * job_ptr->job_resrcs->cpu_array_cnt));
+		alloc_msg->cpus_per_node  = xmalloc(sizeof(uint16_t) *
+						    job_ptr->job_resrcs->
+						    cpu_array_cnt);
+		memcpy(alloc_msg->cpus_per_node,
+		       job_ptr->job_resrcs->cpu_array_value,
+		       (sizeof(uint16_t) * job_ptr->job_resrcs->cpu_array_cnt));
+	}
+
+	alloc_msg->error_code     = error_code;
+	alloc_msg->job_id         = job_ptr->job_id;
+	alloc_msg->node_cnt       = job_ptr->node_cnt;
+	alloc_msg->node_list      = xstrdup(job_ptr->nodes);
+	alloc_msg->partition      = xstrdup(job_ptr->partition);
+	alloc_msg->alias_list     = xstrdup(job_ptr->alias_list);
+	alloc_msg->select_jobinfo =
+		select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
+	if (job_ptr->details) {
+		alloc_msg->pn_min_memory = job_ptr->details->pn_min_memory;
+
+		if (job_ptr->details->mc_ptr) {
+			alloc_msg->ntasks_per_board =
+				job_ptr->details->mc_ptr->ntasks_per_board;
+			alloc_msg->ntasks_per_core =
+				job_ptr->details->mc_ptr->ntasks_per_core;
+			alloc_msg->ntasks_per_socket =
+				job_ptr->details->mc_ptr->ntasks_per_socket;
+		}
+
+		if (job_ptr->details->env_cnt) {
+			alloc_msg->env_size = job_ptr->details->env_cnt;
+			alloc_msg->environment =
+				xmalloc(sizeof(char *) * alloc_msg->env_size);
+			for (i = 0; i < alloc_msg->env_size; i++) {
+				alloc_msg->environment[i] =
+					xstrdup(job_ptr->details->env_sup[i]);
+			}
+		}
+	} else {
+		alloc_msg->pn_min_memory = 0;
+		alloc_msg->ntasks_per_board  = (uint16_t)NO_VAL;
+		alloc_msg->ntasks_per_core   = (uint16_t)NO_VAL;
+		alloc_msg->ntasks_per_socket = (uint16_t)NO_VAL;
+	}
+	if (job_ptr->account)
+		alloc_msg->account = xstrdup(job_ptr->account);
+	if (job_ptr->qos_ptr) {
+		slurmdb_qos_rec_t *qos;
+		qos = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
+		alloc_msg->qos = xstrdup(qos->name);
+	}
+	if (job_ptr->resv_name)
+		alloc_msg->resv_name = xstrdup(job_ptr->resv_name);
+
+	set_remote_working_response(alloc_msg, job_ptr,
+				    job_ptr->origin_cluster);
+}
+
+static void _del_alloc_pack_msg(void *x)
+{
+	resource_allocation_response_msg_t *alloc_msg;
+
+	alloc_msg = (resource_allocation_response_msg_t *) x;
+	/* NULL out working_cluster_rec since it's pointing to global memory */
+	alloc_msg->working_cluster_rec = NULL;
+	slurm_free_resource_allocation_response_msg_members(alloc_msg);
 }
 
 /* _slurm_rpc_allocate_pack: process RPC to allocate a pack job resources */
@@ -1077,12 +1152,19 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 	uint32_t pack_job_id = 0, pack_job_offset = 0;
 	hostset_t jobid_hostset = NULL;
 	char tmp_str[32];
+	List resp = NULL;
 
 	START_TIMER;
 
 	if (slurmctld_config.submissions_disabled) {
 		info("Submissions disabled on system");
 		error_code = ESLURM_SUBMISSIONS_DISABLED;
+		goto send_msg;
+	}
+	if (!job_req_list || (list_count(job_req_list) == 0)) {
+		info("REQUEST_JOB_PACK_ALLOCATION from uid=%d with empty job list",
+		     uid);
+		error_code = SLURM_ERROR;
 		goto send_msg;
 	}
 
@@ -1153,6 +1235,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		}
 		if (error_code && (job_ptr->job_state == JOB_FAILED))
 			break;
+		error_code = SLURM_SUCCESS;	/* Non-fatal error */
 		if (pack_job_id == 0) {
 			pack_job_id = job_ptr->job_id;
 			first_job_ptr = job_ptr;
@@ -1165,7 +1248,6 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		job_ptr->pack_job_id     = pack_job_id;
 		job_ptr->pack_job_offset = pack_job_offset++;
 		list_append(submit_job_list, job_ptr);
-		error_code = SLURM_SUCCESS;	/* Non-fatal error */
 	}
 	list_iterator_destroy(iter);
 
@@ -1177,7 +1259,12 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		/* Cancel remaining job records */
 		(void) list_for_each(submit_job_list, _pack_job_cancel, NULL);
 		FREE_NULL_LIST(submit_job_list);
-	} else if (pack_job_id != 0) {
+	} else if (pack_job_id == 0) {
+		error("%s: No error, but no pack_job_id", __func__);
+		error_code = SLURM_ERROR;
+	} else {
+		resource_allocation_response_msg_t *alloc_msg;
+		ListIterator iter;
 		int buf_size = pack_job_offset * 16;
 		char *tmp_str = xmalloc(buf_size);
 		char *tmp_offset = tmp_str;
@@ -1189,23 +1276,48 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 				tmp_offset[0] = '\0';
 			tmp_offset = tmp_str + 1;
 		}
-		(void) list_for_each(submit_job_list, _set_pack_job_id_set,
-				     tmp_offset);
+		iter = list_iterator_create(submit_job_list);
+		while ((job_ptr = (struct job_record *) list_next(iter))) {
+			job_ptr->pack_job_id_set = xstrdup(tmp_offset);
+			if (!resp)
+				resp = list_create(_del_alloc_pack_msg);
+			alloc_msg = xmalloc_nz(
+				sizeof(resource_allocation_response_msg_t));
+			_build_alloc_msg(job_ptr, alloc_msg, error_code);
+			list_append(resp, alloc_msg);
+		}
+		list_iterator_destroy(iter);
 		xfree(tmp_str);
 	}
 	unlock_slurmctld(job_write_lock);
 	_throttle_fini(&active_rpc_cnt);
+	END_TIMER2("_slurm_rpc_allocate_pack");
 
-send_msg:
+	if (resp) {
+		slurm_msg_t response_msg;
+		slurm_msg_t_init(&response_msg);
+		response_msg.conn = msg->conn;
+		response_msg.flags = msg->flags;
+		response_msg.protocol_version = msg->protocol_version;
+		response_msg.msg_type = RESPONSE_JOB_PACK_ALLOCATION;
+		response_msg.data = resp;
+
+		if (slurm_send_node_msg(msg->conn_fd, &response_msg) < 0)
+			_kill_job_on_msg_fail(job_ptr->job_id);
+		list_destroy(resp);
+	} else {
+send_msg:	info("%s: %s ", __func__, slurm_strerror(error_code));
+		if (err_msg)
+			slurm_send_rc_err_msg(msg, error_code, err_msg);
+		else
+			slurm_send_rc_msg(msg, error_code);
+		xfree(err_msg);
+	}
+
 	if (jobid_hostset)
 		hostset_destroy(jobid_hostset);
-	END_TIMER2("_slurm_rpc_allocate_pack");
-	info("%s: %s ", __func__, slurm_strerror(error_code));
-	if (err_msg)
-		slurm_send_rc_err_msg(msg, error_code, err_msg);
-	else
-		slurm_send_rc_msg(msg, error_code);
-	xfree(err_msg);
+
+	schedule_job_save();	/* has own locks */
 }
 
 /* _slurm_rpc_allocate_resources:  process RPC to allocate resources for
@@ -1216,7 +1328,7 @@ send_msg:
 static void _slurm_rpc_allocate_resources(slurm_msg_t * msg, bool is_sib_job)
 {
 	static int active_rpc_cnt = 0;
-	int i, error_code = SLURM_SUCCESS;
+	int error_code = SLURM_SUCCESS;
 	slurm_msg_t response_msg;
 	DEF_TIMERS;
 	job_desc_msg_t *job_desc_msg = (job_desc_msg_t *) msg->data;
@@ -1245,10 +1357,6 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg, bool is_sib_job)
 		reject_job = true;
 		goto send_msg;
 	}
-
-	/* Zero out the record as not all fields may be set.
-	 */
-	memset(&alloc_msg, 0, sizeof(resource_allocation_response_msg_t));
 
 	if ((uid != job_desc_msg->user_id) && (!validate_slurm_user(uid))) {
 		error_code = ESLURM_USER_ID_MISSING;
@@ -1340,79 +1448,7 @@ send_msg:
 		info("sched: %s JobId=%u NodeList=%s %s", __func__,
 		     job_ptr->job_id, job_ptr->nodes, TIME_STR);
 
-		/* send job_ID and node_name_ptr */
-		if (job_ptr->job_resrcs && job_ptr->job_resrcs->cpu_array_cnt) {
-			alloc_msg.num_cpu_groups = job_ptr->job_resrcs->
-				cpu_array_cnt;
-			alloc_msg.cpu_count_reps = xmalloc(sizeof(uint32_t) *
-							   job_ptr->job_resrcs->
-							   cpu_array_cnt);
-			memcpy(alloc_msg.cpu_count_reps,
-			       job_ptr->job_resrcs->cpu_array_reps,
-			       (sizeof(uint32_t) * job_ptr->job_resrcs->
-				cpu_array_cnt));
-			alloc_msg.cpus_per_node  = xmalloc(sizeof(uint16_t) *
-							   job_ptr->job_resrcs->
-							   cpu_array_cnt);
-			memcpy(alloc_msg.cpus_per_node,
-			       job_ptr->job_resrcs->cpu_array_value,
-			       (sizeof(uint16_t) * job_ptr->job_resrcs->
-				cpu_array_cnt));
-		}
-
-		alloc_msg.error_code     = error_code;
-		alloc_msg.job_id         = job_ptr->job_id;
-		alloc_msg.node_cnt       = job_ptr->node_cnt;
-		alloc_msg.node_list      = xstrdup(job_ptr->nodes);
-		alloc_msg.partition      = xstrdup(job_ptr->partition);
-		alloc_msg.alias_list     = xstrdup(job_ptr->alias_list);
-		alloc_msg.select_jobinfo =
-			select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
-		if (job_ptr->details) {
-			alloc_msg.pn_min_memory = job_ptr->details->
-						  pn_min_memory;
-
-			if (job_ptr->details->mc_ptr) {
-				alloc_msg.ntasks_per_board =
-					job_ptr->details->mc_ptr->
-					ntasks_per_board;
-				alloc_msg.ntasks_per_core =
-					job_ptr->details->mc_ptr->
-					ntasks_per_core;
-				alloc_msg.ntasks_per_socket =
-					job_ptr->details->mc_ptr->
-					ntasks_per_socket;
-			}
-
-			if (job_ptr->details->env_cnt) {
-				alloc_msg.env_size = job_ptr->details->env_cnt;
-				alloc_msg.environment =
-					xmalloc(sizeof(char *) *
-						alloc_msg.env_size);
-				for (i = 0; i < alloc_msg.env_size; i++) {
-					alloc_msg.environment[i] =
-						xstrdup(job_ptr->details->
-							env_sup[i]);
-				}
-			}
-		} else {
-			alloc_msg.pn_min_memory = 0;
-			alloc_msg.ntasks_per_board = (uint16_t)NO_VAL;
-			alloc_msg.ntasks_per_core = (uint16_t)NO_VAL;
-			alloc_msg.ntasks_per_socket = (uint16_t)NO_VAL;
-		}
-		if (job_ptr->account)
-			alloc_msg.account = xstrdup(job_ptr->account);
-		if (job_ptr->qos_ptr) {
-			slurmdb_qos_rec_t *qos;
-			qos = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
-			alloc_msg.qos = xstrdup(qos->name);
-		}
-		if (job_ptr->resv_name)
-			alloc_msg.resv_name = xstrdup(job_ptr->resv_name);
-
-		set_remote_working_response(&alloc_msg, job_ptr,
-					    job_ptr->origin_cluster);
+		_build_alloc_msg(job_ptr, &alloc_msg, error_code);
 
 		/* This check really isn't needed, but just doing it
 		 * to be more complete.

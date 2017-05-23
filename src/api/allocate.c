@@ -306,10 +306,8 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
 	int rc;
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
-//resource_allocation_response_msg_t *resp = NULL;
 	List resp = NULL;
 	char *local_hostname = NULL;
-//uint32_t job_id;
 	job_desc_msg_t *req;
 	listen_t *listen = NULL;
 	int errnum = SLURM_SUCCESS;
@@ -371,10 +369,12 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
 		destroy_forward(&resp_msg.forward);
 		if (!immediate_flag)
 			_destroy_allocation_response_socket(listen);
+		iter = list_iterator_create(job_req_list);
 		while ((req = (job_desc_msg_t *)list_next(iter))) {
 			if (req->alloc_node == local_hostname)
 				req->alloc_node = NULL;
 		}
+		list_iterator_destroy(iter);
 		xfree(local_hostname);
 		errno = errnum;
 		return NULL;
@@ -390,12 +390,12 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
 			errnum = SLURM_ERROR;
 		}
 		break;
-#if 0
-//FIXME
 	case RESPONSE_JOB_PACK_ALLOCATION:
 		/* Yay, the controller has acknowledged our request!
 		 * Test if we have an allocation yet? */
-		resp = (resource_allocation_response_msg_t *) resp_msg.data;
+		resp = (List) resp_msg.data;
+#if 0
+//FIXME: Update for a list
 		if (resp->node_cnt > 0) {
 			/* yes, allocation has been granted */
 			errno = SLURM_PROTOCOL_SUCCESS;
@@ -416,8 +416,8 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
 				slurm_complete_job(job_id, -1);
 			}
 		}
-		break;
 #endif
+		break;
 	default:
 		errnum = SLURM_UNEXPECTED_MSG_ERROR;
 	}
@@ -434,6 +434,7 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
 	list_iterator_destroy(iter);
 	xfree(local_hostname);
 	errno = errnum;
+
 	return resp;
 }
 
