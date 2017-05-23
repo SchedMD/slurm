@@ -53,22 +53,22 @@ set sql_rem_clus2    "$test_name-clus2-rem.sql"
 set sql_out    "$test_name-out.sql"
 set cluster1    [format "%s%s" $test_nu "clus1"]
 set cluster2    [format "%s%s" $test_nu "clus2"]
-set account1   [format "%s%s" $test_nu "acct1"]
-set account2   [format "%s%s" $test_nu "acct2"]
-set account3   [format "%s%s" $test_nu "acct3"]
-set accounts   [format "%s,%s,%s" $account1 $account2 $account3]
-set wckey1     [format "%s%s" $test_nu "wckey"]
-set user1      [format "%s%s" $test_nu "user1"]
-set user2      [format "%s%s" $test_nu "user2"]
-set users      [format "%s,%s" $user1 $user2]
-set node0      [format "%s%d" $cluster1 0]
-set node1      [format "%s%d" $cluster1 1]
-set node_list  [format "%s%s" $cluster1 "\[0-1\]"]
-set node0_cpus 2
-set node1_cpus 2
-set test_job1  "$test_name\_job1"
-set test_job2  "$test_name\_job2"
-set test_job3  "$test_name\_job3"
+set account1    [format "%s%s" $test_nu "acct1"]
+set account2    [format "%s%s" $test_nu "acct2"]
+set account3    [format "%s%s" $test_nu "acct3"]
+set accounts    [format "%s,%s,%s" $account1 $account2 $account3]
+set wckey1      [format "%s%s" $test_nu "wckey"]
+set user1       [format "%s%s" $test_nu "user1"]
+set user2       [format "%s%s" $test_nu "user2"]
+set users       [format "%s,%s" $user1 $user2]
+set node0       [format "%s%d" $cluster1 0]
+set node1       [format "%s%d" $cluster1 1]
+set node_list   [format "%s%s" $cluster1 "\[0-1\]"]
+set node0_cpus  2
+set node1_cpus  2
+set test_job1   "$test_name\_job1"
+set test_job2   "$test_name\_job2"
+set test_job3   "$test_name\_job3"
 set cluster_cpus [expr $node0_cpus + $node1_cpus]
 set access_err  0
 set uid [get_my_uid]
