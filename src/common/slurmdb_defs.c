@@ -1658,8 +1658,12 @@ extern char *slurmdb_federation_flags_str(uint32_t flags)
 	if (flags & FEDERATION_FLAG_NOTSET)
 		return xstrdup("NotSet");
 
+#if 0
+	/* Remove when there are actually flags since the flags will be
+	 * comma-separated. */
 	if (federation_flags)
 		federation_flags[strlen(federation_flags)-1] = '\0';
+#endif
 
 	return federation_flags;
 }
