@@ -313,6 +313,20 @@ scontrol_print_job (char * job_id_str)
 	char *end_ptr = NULL;
 
 	if (job_id_str) {
+		char *tmp_job_ptr = job_id_str;
+		/*
+		 * Check that the input is a valid job id (i.e. 123 or 123_456).
+		 */
+		while (*tmp_job_ptr) {
+			if (!isdigit(*tmp_job_ptr) && (*tmp_job_ptr != '_')) {
+				exit_code = 1;
+				slurm_seterrno(ESLURM_INVALID_JOB_ID);
+				if (quiet_flag != 1)
+					slurm_perror("scontrol_print_job error");
+				return;
+			}
+			++tmp_job_ptr;
+		}
 		job_id = (uint32_t) strtol (job_id_str, &end_ptr, 10);
 		if (end_ptr[0] == '_')
 			array_id = strtol( end_ptr + 1, &end_ptr, 10 );
