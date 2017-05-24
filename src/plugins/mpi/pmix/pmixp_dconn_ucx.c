@@ -296,7 +296,7 @@ void _ucx_process_msg(char *buffer, size_t len)
 	_direct_hdr.new_msg(_host_hdr, buf);
 }
 
-static void _ucx_progress()
+static bool _ucx_progress()
 {
 	pmixp_ucx_req_t *req = NULL;
 	ucp_tag_message_h msg_tag;
@@ -305,6 +305,7 @@ static void _ucx_progress()
 	pmixp_list_elem_t *elem;
 	bool new_msg = false;
 	size_t count, i;
+	int events_observed = 0;
 
 	/* protected progress of UCX */
 	slurm_mutex_lock(&_ucx_worker_lock);
@@ -316,6 +317,8 @@ static void _ucx_progress()
 		if( NULL == msg_tag ) {
 			break;
 		}
+		events_observed++;
+
 		char *msg = xmalloc(info_tag.length);
 		pmixp_ucx_req_t *req = (pmixp_ucx_req_t*)
 				ucp_tag_msg_recv_nb(ucp_worker, (void*)msg, info_tag.length,
@@ -338,7 +341,7 @@ static void _ucx_progress()
 	if (pmixp_rlist_empty(&_req_rcv) && pmixp_rlist_empty(&_req_snd)) {
 		/* early exit - nothing to do */
 		slurm_mutex_unlock(&_ucx_worker_lock);
-		return;
+		return false;
 	}
 
 	/* Temp lists to hold completed requests */
@@ -356,6 +359,7 @@ static void _ucx_progress()
 			/* grab this element for processing */
 			elem = pmixp_rlist_rem(&_req_rcv, elem);
 			pmixp_rlist_enq(&_rcv_done, req);
+			events_observed++;
 		}
 	}
 
@@ -369,6 +373,7 @@ static void _ucx_progress()
 			/* grab this element for processing */
 			elem = pmixp_rlist_rem(&_req_snd, elem);
 			pmixp_rlist_enq(&_snd_done, req);
+			events_observed++;
 		}
 	}
 	slurm_mutex_unlock(&_ucx_worker_lock);
@@ -421,28 +426,42 @@ static void _ucx_progress()
 	pmixp_rlist_fini(&_rcv_done);
 
 	slurm_mutex_unlock(&_ucx_worker_lock);
+	return !!(events_observed);
 }
+
+static bool _ucx_is_armed = false;
 
 static bool _epoll_readable(eio_obj_t *obj)
 {
-	ucs_status_t status;
+	ucs_status_t status = UCS_ERR_BUSY;
 
 	/* sanity check */
 	xassert(NULL != obj );
 	if( obj->shutdown ){
 		/* corresponding connection will be
-			 * cleaned up during plugin finalize
-			 */
+		 * cleaned up during plugin finalize
+		 */
 		return false;
 	}
-
-	slurm_mutex_lock(&_ucx_worker_lock);
-	status = ucp_worker_arm(ucp_worker);
-	slurm_mutex_unlock(&_ucx_worker_lock);
-
-	if (status == UCS_ERR_BUSY) { /* some events are arrived already */
-		_activate_progress();
+	if (_ucx_is_armed) {
+		/* no need to re-arm, ucx polling fd
+		 * hasn't delivered any events
+		 */
+		goto exit;
 	}
+
+	do {
+		slurm_mutex_lock(&_ucx_worker_lock);
+		status = ucp_worker_arm(ucp_worker);
+		slurm_mutex_unlock(&_ucx_worker_lock);
+
+		if (status == UCS_ERR_BUSY) {
+			/* some events have already arrived*/
+			while( _ucx_progress() );
+		}
+	} while (UCS_ERR_BUSY == status);
+	_ucx_is_armed = true;
+exit:
 	return true;
 }
 
@@ -454,7 +473,9 @@ static int _epoll_read(eio_obj_t *obj, List objs)
 		 */
 		return 0;
 	}
-	_ucx_progress();
+	_ucx_is_armed = false;
+	/* call progress untill all events are processed */
+	while( _ucx_progress() );
 	return 0;
 }
 
@@ -469,7 +490,14 @@ static bool _progress_readable(eio_obj_t *obj)
 		return false;
 	}
 
+	/* progress all pending events */
+	while( _ucx_progress() );
+
 	if( pmixp_rlist_count(&_req_rcv) || pmixp_rlist_count(&_req_snd)){
+		/* if we have more work to do - go to the poll
+		 * to progress other fd's, but make sure that we
+		 * won't block in the poll and can progress further
+		 */
 		_activate_progress();
 	}
 	return true;
@@ -491,7 +519,8 @@ static int _progress_read(eio_obj_t *obj, List objs)
 	/* empty pipe */
 	while( sizeof(buf) == read(_service_pipe[0], &buf, sizeof(buf)) );
 
-	_ucx_progress();
+	/* more progress */
+	while( _ucx_progress() );
 
 	return 0;
 }
