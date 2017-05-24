@@ -950,11 +950,8 @@ _accept_msg_connection(int listen_fd,
 /* Wait up to sleep_time for RPC from slurmctld indicating resource allocation
  * has occured.
  * IN sleep_time: delay in seconds (0 means unbounded wait)
- * OUT resp: resource allocation response message
- * RET 1 if resp is filled in, 0 otherwise */
-static int
-_wait_for_alloc_rpc(const listen_t *listen, int sleep_time,
-		    resource_allocation_response_msg_t **resp)
+ * RET -1: error, 0: timeout, 1:ready to read */
+static int _wait_for_alloc_rpc(const listen_t *listen, int sleep_time)
 {
 	struct pollfd fds[1];
 	int rc;
@@ -963,39 +960,37 @@ _wait_for_alloc_rpc(const listen_t *listen, int sleep_time,
 	if (listen == NULL) {
 		error("Listening port not found");
 		sleep(MAX(sleep_time, 1));
-		return SLURM_ERROR;
+		return -1;
 	}
 
 	fds[0].fd = listen->fd;
 	fds[0].events = POLLIN;
 
-	if (sleep_time != 0) {
+	if (sleep_time != 0)
 		timeout_ms = sleep_time * 1000;
-	} else {
+	else
 		timeout_ms = -1;
-	}
+
 	while ((rc = poll(fds, 1, timeout_ms)) < 0) {
 		switch (errno) {
-			case EAGAIN:
-			case EINTR:
-				*resp = NULL;
-				return -1;
-			case EBADF:
-			case ENOMEM:
-			case EINVAL:
-			case EFAULT:
-				error("poll: %m");
-				*resp = NULL;
-				return -1;
-			default:
-				error("poll: %m. Continuing...");
+		case EAGAIN:
+		case EINTR:
+			return -1;
+		case EBADF:
+		case ENOMEM:
+		case EINVAL:
+		case EFAULT:
+			error("poll: %m");
+			return -1;
+		default:
+			error("poll: %m. Continuing...");
 		}
 	}
 
 	if (rc == 0) { /* poll timed out */
 		errno = ETIMEDOUT;
 	} else if (fds[0].revents & POLLIN) {
-		return (_accept_msg_connection(listen->fd, resp));
+		return 1;
 	}
 
 	return 0;
@@ -1006,10 +1001,12 @@ _wait_for_allocation_response(uint32_t job_id, const listen_t *listen,
 			      int timeout)
 {
 	resource_allocation_response_msg_t *resp = NULL;
-	int errnum;
+	int errnum, rc;
 
 	info("job %u queued and waiting for resources", job_id);
-	if (_wait_for_alloc_rpc(listen, timeout, &resp) <= 0) {
+	if ((rc = _wait_for_alloc_rpc(listen, timeout)) == 1)
+		rc = _accept_msg_connection(listen->fd, &resp);
+	if (rc <= 0) {
 		errnum = errno;
 		/* Maybe the resource allocation response RPC got lost
 		 * in the mail; surely it should have arrived by now.
