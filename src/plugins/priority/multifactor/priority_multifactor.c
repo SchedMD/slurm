@@ -443,7 +443,7 @@ static double _get_fairshare_priority(struct job_record *job_ptr)
 
 	assoc_mgr_lock(&locks);
 
-	job_assoc = (slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
+	job_assoc = job_ptr->assoc_ptr;
 
 	if (!job_assoc) {
 		assoc_mgr_unlock(&locks);
@@ -887,7 +887,7 @@ static void _handle_tres_run_secs(uint64_t *tres_run_delta,
 				  struct job_record *job_ptr)
 {
 
-	slurmdb_assoc_rec_t *assoc = (slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
+	slurmdb_assoc_rec_t *assoc = job_ptr->assoc_ptr;
 
 	_handle_qos_tres_run_secs(NULL, tres_run_delta,
 				  job_ptr->job_id, job_ptr->qos_ptr);
@@ -1094,8 +1094,8 @@ static int _apply_new_usage(struct job_record *job_ptr,
 	   changed make sure we get it again
 	   here.
 	*/
-	qos = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
-	assoc = (slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
+	qos = job_ptr->qos_ptr;
+	assoc = job_ptr->assoc_ptr;
 
 	/* now apply the usage factor for this qos */
 	if (qos) {
@@ -1123,7 +1123,7 @@ static int _apply_new_usage(struct job_record *job_ptr,
 	/* sanity check, there should always be a part_ptr here, but only do
 	 * the qos if it isn't the same qos as the job is using */
 	if (job_ptr->part_ptr && (job_ptr->part_ptr->qos_ptr != qos))
-		qos = (slurmdb_qos_rec_t *)job_ptr->part_ptr->qos_ptr;
+		qos = job_ptr->part_ptr->qos_ptr;
 	else
 		qos = NULL;
 
@@ -2064,7 +2064,7 @@ extern void set_priority_factors(time_t start_time, struct job_record *job_ptr)
 		       sizeof(priority_factors_object_t));
 	}
 
-	qos_ptr = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
+	qos_ptr = job_ptr->qos_ptr;
 
 	if (weight_age) {
 		uint32_t diff = 0;

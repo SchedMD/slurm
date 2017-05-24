@@ -2193,7 +2193,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 				    accounting_enforce,
-				    (slurmdb_assoc_rec_t **)
 				    &job_ptr->assoc_ptr, true) &&
 	    (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
 	    && (!IS_JOB_FINISHED(job_ptr))) {
@@ -11037,7 +11036,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			if (assoc_mgr_fill_in_assoc(
 				    acct_db_conn, &assoc_rec,
 				    accounting_enforce,
-				    (slurmdb_assoc_rec_t **)
 				    &job_ptr->assoc_ptr, false)) {
 				info("job_update: invalid account %s "
 				     "for job %u",
@@ -11510,7 +11508,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				struct part_record *part_ptr =
 					job_ptr->part_ptr;
 				slurmdb_qos_rec_t *qos_ptr =
-					(slurmdb_qos_rec_t *)job_ptr->qos_ptr;
+					job_ptr->qos_ptr;
 
 				if (part_ptr
 				    && part_ptr->flags & PART_FLAG_REQ_RESV)
@@ -13890,7 +13888,6 @@ extern void job_completion_logger(struct job_record *job_ptr, bool requeue)
 
 		if (!(assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 					      accounting_enforce,
-					      (slurmdb_assoc_rec_t **)
 					      &job_ptr->assoc_ptr, false))) {
 			job_ptr->assoc_id = assoc_rec.id;
 			/* we have to call job start again because the
@@ -15321,12 +15318,10 @@ extern int job_hold_by_assoc_id(uint32_t assoc_id)
 			}
 
 			job_ptr->assoc_ptr =
-				((slurmdb_assoc_rec_t *)
-				 job_ptr->assoc_ptr)->usage->parent_assoc_ptr;
+				job_ptr->assoc_ptr->usage->parent_assoc_ptr;
 			if (job_ptr->assoc_ptr)
 				job_ptr->assoc_id =
-					((slurmdb_assoc_rec_t *)
-					 job_ptr->assoc_ptr)->id;
+					job_ptr->assoc_ptr->id;
 		}
 
 		if (IS_JOB_FINISHED(job_ptr))
@@ -15420,7 +15415,6 @@ extern int update_job_account(char *module, struct job_record *job_ptr,
 	assoc_rec.uid       = job_ptr->user_id;
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 				    accounting_enforce,
-				    (slurmdb_assoc_rec_t **)
 				    &job_ptr->assoc_ptr, false)) {
 		info("%s: invalid account %s for job_id %u",
 		     module, new_account, job_ptr->job_id);
@@ -15435,7 +15429,6 @@ extern int update_job_account(char *module, struct job_record *job_ptr,
 		assoc_rec.acct = NULL;
 		assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 					accounting_enforce,
-					(slurmdb_assoc_rec_t **)
 					&job_ptr->assoc_ptr, false);
 		if (!job_ptr->assoc_ptr) {
 			debug("%s: we didn't have an association for account "
@@ -15554,7 +15547,6 @@ extern int send_jobs_to_accounting(void)
 			if (assoc_mgr_fill_in_assoc(
 				   acct_db_conn, &assoc_rec,
 				   accounting_enforce,
-				   (slurmdb_assoc_rec_t **)
 				   &job_ptr->assoc_ptr, false) &&
 			    (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
 			    && (!IS_JOB_FINISHED(job_ptr))) {
@@ -15893,11 +15885,8 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->partition         = xstrdup(job_ptr->partition);
 	job_desc->plane_size        = details->plane_size;
 	job_desc->priority          = job_ptr->priority;
-	if (job_ptr->qos_ptr) {
-		slurmdb_qos_rec_t *qos_ptr =
-			(slurmdb_qos_rec_t *)job_ptr->qos_ptr;
-		job_desc->qos       = xstrdup(qos_ptr->name);
-	}
+	if (job_ptr->qos_ptr)
+		job_desc->qos       = xstrdup(job_ptr->qos_ptr->name);
 	job_desc->resp_host         = xstrdup(job_ptr->resp_host);
 	job_desc->req_nodes         = xstrdup(details->req_nodes);
 	job_desc->requeue           = details->requeue;

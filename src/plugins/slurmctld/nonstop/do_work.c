@@ -1249,11 +1249,8 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid,
 	job_alloc_req.network	= xstrdup(job_ptr->network);
 	job_alloc_req.partition	= xstrdup(job_ptr->partition);
 	job_alloc_req.priority	= NO_VAL - 1;
-	if (job_ptr->qos_ptr) {
-		slurmdb_qos_rec_t *qos_ptr;
-		qos_ptr = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
-		job_alloc_req.qos = xstrdup(qos_ptr->name);
-	}
+	if (job_ptr->qos_ptr)
+		job_alloc_req.qos = xstrdup(job_ptr->qos_ptr->name);
 
 	/* Without unlock, the job_begin_callback() function will deadlock.
 	 * Not a great solution, but perhaps the least bad solution. */

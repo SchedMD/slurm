@@ -351,11 +351,9 @@ struct part_record {
 	uint16_t priority_job_factor;	/* job priority weight factor */
 	uint16_t priority_tier;	/* tier for scheduling and preemption */
 	char *qos_char;         /* requested QOS from slurm.conf */
-	void *qos_ptr;          /* pointer to the quality of
-				 * service record attached to this
-				 * partition, it is void* because of
-				 * interdependencies in the header
-				 * files, confirm the value before use */
+	slurmdb_qos_rec_t *qos_ptr; /* pointer to the quality of
+				     * service record attached to this
+				     * partition confirm the value before use */
 	uint16_t state_up;	/* See PARTITION_* states in slurm.h */
 	uint32_t total_nodes;	/* total number of nodes in the partition */
 	uint32_t total_cpus;	/* total number of cpus in the partition */
@@ -589,9 +587,7 @@ struct job_record {
 	job_array_struct_t *array_recs;	/* job array details,
 					 * only in meta-job record */
 	uint32_t assoc_id;              /* used for accounting plugins */
-	void    *assoc_ptr;		/* job's assoc record ptr, it is
-					 * void* because of interdependencies
-					 * in the header files, confirm the
+	slurmdb_assoc_rec_t *assoc_ptr; /* job's assoc record ptr confirm the
 					 * value before use */
 	uint16_t batch_flag;		/* 1 or 2 if batch job (with script),
 					 * 2 indicates retry mode (one retry) */
@@ -718,11 +714,9 @@ struct job_record {
 						  * by sprio command */
 	uint32_t profile;		/* Acct_gather_profile option */
 	uint32_t qos_id;		/* quality of service id */
-	void *qos_ptr;			/* pointer to the quality of
+	slurmdb_qos_rec_t *qos_ptr;	/* pointer to the quality of
 					 * service record used for
-					 * this job, it is
-					 * void* because of interdependencies
-					 * in the header files, confirm the
+					 * this job, confirm the
 					 * value before use */
 	uint8_t reboot;			/* node reboot requested before start */
 	uint16_t restart_cnt;		/* count of restarts */

@@ -913,7 +913,6 @@ static int _attempt_backfill(void)
 	DEF_TIMERS;
 	List job_queue;
 	job_queue_rec_t *job_queue_rec;
-	slurmdb_qos_rec_t *qos_ptr = NULL;
 	int bb, i, j, k, node_space_recs, mcs_select = 0;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr, **bf_part_ptr = NULL;
@@ -1145,7 +1144,6 @@ static int _attempt_backfill(void)
 
 			if (!assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 						    accounting_enforce,
-						    (slurmdb_assoc_rec_t **)
 						     &job_ptr->assoc_ptr,
 						     false)) {
 				job_ptr->state_reason = WAIT_NO_REASON;
@@ -1163,17 +1161,15 @@ static int _attempt_backfill(void)
 		}
 
 		if (job_ptr->qos_id) {
-			slurmdb_assoc_rec_t *assoc_ptr;
 			assoc_mgr_lock_t locks = {
 				READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
 				NO_LOCK, NO_LOCK, NO_LOCK };
 
 			assoc_mgr_lock(&locks);
-			assoc_ptr = (slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
-			if (assoc_ptr
+			if (job_ptr->assoc_ptr
 			    && (accounting_enforce & ACCOUNTING_ENFORCE_QOS)
 			    && ((job_ptr->qos_id >= g_qos_count) ||
-				!bit_test(assoc_ptr->usage->valid_qos,
+				!bit_test(job_ptr->assoc_ptr->usage->valid_qos,
 					  job_ptr->qos_id))
 			    && !job_ptr->limit_set.qos) {
 				debug("backfill: JobId=%u has invalid QOS",
@@ -1192,11 +1188,10 @@ static int _attempt_backfill(void)
 		}
 
 		assoc_mgr_lock(&qos_read_lock);
-		qos_ptr = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
-		if (qos_ptr)
-			qos_flags = qos_ptr->flags;
-		if (part_policy_valid_qos(job_ptr->part_ptr, qos_ptr) !=
-		    SLURM_SUCCESS) {
+		if (job_ptr->qos_ptr)
+			qos_flags = job_ptr->qos_ptr->flags;
+		if (part_policy_valid_qos(job_ptr->part_ptr,
+					  job_ptr->qos_ptr) != SLURM_SUCCESS) {
 			assoc_mgr_unlock(&qos_read_lock);
 			xfree(job_ptr->state_desc);
 			job_ptr->state_reason = WAIT_QOS;

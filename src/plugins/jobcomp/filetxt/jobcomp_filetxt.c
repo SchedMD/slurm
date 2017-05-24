@@ -318,9 +318,7 @@ extern int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 		account = "";
 
 	if (job_ptr->qos_ptr != NULL) {
-		slurmdb_qos_rec_t *assoc =
-			(slurmdb_qos_rec_t *) job_ptr->qos_ptr;
-		qos = assoc->name;
+		qos = job_ptr->qos_ptr->name;
 	} else
 		qos = "";
 
@@ -330,7 +328,7 @@ extern int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 		wckey = "";
 
 	if (job_ptr->assoc_ptr != NULL)
-		cluster = ((slurmdb_assoc_rec_t *) job_ptr->assoc_ptr)->cluster;
+		cluster = job_ptr->assoc_ptr->cluster;
 	else
 		cluster = "unknown";
 

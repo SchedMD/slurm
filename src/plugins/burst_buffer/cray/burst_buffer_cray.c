@@ -491,11 +491,8 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 	bb_job->account = xstrdup(job_ptr->account);
 	if (job_ptr->part_ptr)
 		bb_job->partition = xstrdup(job_ptr->part_ptr->name);
-	if (job_ptr->qos_ptr) {
-		slurmdb_qos_rec_t *qos_ptr =
-			(slurmdb_qos_rec_t *)job_ptr->qos_ptr;
-		bb_job->qos = xstrdup(qos_ptr->name);
-	}
+	if (job_ptr->qos_ptr)
+		bb_job->qos = xstrdup(job_ptr->qos_ptr->name);
 	bb_job->state = BB_STATE_PENDING;
 	bb_job->user_id = job_ptr->user_id;
 	bb_specs = xstrdup(job_ptr->burst_buffer);
@@ -4492,8 +4489,7 @@ static void *_create_persistent(void *x)
 					",%u,", assoc->id);
 			}
 			if (job_ptr->qos_ptr) {
-				slurmdb_qos_rec_t *qos_ptr =
-					(slurmdb_qos_rec_t *)job_ptr->qos_ptr;
+				slurmdb_qos_rec_t *qos_ptr = job_ptr->qos_ptr;
 				bb_alloc->qos_ptr = qos_ptr;
 				bb_alloc->qos = xstrdup(qos_ptr->name);
 			}

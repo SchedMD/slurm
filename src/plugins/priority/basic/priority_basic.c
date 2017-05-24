@@ -180,8 +180,7 @@ extern void priority_p_job_end(struct job_record *job_ptr)
 
 	assoc_mgr_lock(&locks);
 	if (job_ptr->qos_ptr) {
-		slurmdb_qos_rec_t *qos_ptr =
-			(slurmdb_qos_rec_t *)job_ptr->qos_ptr;
+		slurmdb_qos_rec_t *qos_ptr = job_ptr->qos_ptr;
 		for (i=0; i<slurmctld_tres_cnt; i++) {
 			if (unused_tres_run_secs[i] >
 			    qos_ptr->usage->grp_used_tres_run_secs[i]) {
@@ -196,7 +195,7 @@ extern void priority_p_job_end(struct job_record *job_ptr)
 					unused_tres_run_secs[i];
 		}
 	}
-	assoc_ptr = (slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
+	assoc_ptr = job_ptr->assoc_ptr;
 	while (assoc_ptr) {
 		/* If the job finished early remove the extra time now. */
 		for (i=0; i<slurmctld_tres_cnt; i++) {

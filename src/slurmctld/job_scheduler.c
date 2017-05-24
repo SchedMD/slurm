@@ -793,7 +793,6 @@ next_part:		part_ptr = (struct part_record *)
 
 			if (!assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 						     accounting_enforce,
-						     (slurmdb_assoc_rec_t **)
 						     &job_ptr->assoc_ptr,
 						     false)) {
 				job_ptr->state_reason = WAIT_NO_REASON;
@@ -805,16 +804,14 @@ next_part:		part_ptr = (struct part_record *)
 			}
 		}
 		if (job_ptr->qos_id) {
-			slurmdb_assoc_rec_t *assoc_ptr =
-				(slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
 			assoc_mgr_lock_t locks = {
 				READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
 				NO_LOCK, NO_LOCK, NO_LOCK };
 
 			assoc_mgr_lock(&locks);
-			if (assoc_ptr &&
+			if (job_ptr->assoc_ptr &&
 			    ((job_ptr->qos_id >= g_qos_count) ||
-			     !bit_test(assoc_ptr->usage->valid_qos,
+			     !bit_test(job_ptr->assoc_ptr->usage->valid_qos,
 				       job_ptr->qos_id)) &&
 			    !job_ptr->limit_set.qos) {
 				info("sched: JobId=%u has invalid QOS",
@@ -1679,8 +1676,7 @@ next_task:
 			assoc_rec.uid       = job_ptr->user_id;
 
 			if (!assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-						    accounting_enforce,
-						    (slurmdb_assoc_rec_t **)
+						     accounting_enforce,
 						     &job_ptr->assoc_ptr,
 						     false)) {
 				job_ptr->state_reason = WAIT_NO_REASON;
@@ -1697,17 +1693,15 @@ next_task:
 			}
 		}
 		if (job_ptr->qos_id) {
-			slurmdb_assoc_rec_t *assoc_ptr;
 			assoc_mgr_lock_t locks = {
 				READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
 				NO_LOCK, NO_LOCK, NO_LOCK };
 
 			assoc_mgr_lock(&locks);
-			assoc_ptr = (slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
-			if (assoc_ptr
+			if (job_ptr->assoc_ptr
 			    && (accounting_enforce & ACCOUNTING_ENFORCE_QOS)
 			    && ((job_ptr->qos_id >= g_qos_count) ||
-				!bit_test(assoc_ptr->usage->valid_qos,
+				!bit_test(job_ptr->assoc_ptr->usage->valid_qos,
 					  job_ptr->qos_id))
 			    && !job_ptr->limit_set.qos) {
 				debug("sched: JobId=%u has invalid QOS",
@@ -2311,13 +2305,12 @@ extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr,
 		launch_msg_ptr->account = xstrdup(job_ptr->account);
 	}
 	if (job_ptr->qos_ptr) {
-		slurmdb_qos_rec_t *qos;
-
-		qos = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
-		if (xstrcmp(qos->description, "Normal QOS default") == 0)
+		if (!xstrcmp(job_ptr->qos_ptr->description,
+			     "Normal QOS default"))
 			launch_msg_ptr->qos = xstrdup("normal");
 		else
-			launch_msg_ptr->qos = xstrdup(qos->description);
+			launch_msg_ptr->qos = xstrdup(
+				job_ptr->qos_ptr->description);
 	}
 	if (job_ptr->resv_name) {
 		launch_msg_ptr->resv_name = xstrdup(job_ptr->resv_name);

@@ -215,9 +215,8 @@ static int _sort_by_youngest(void *x, void *y)
 
 extern uint16_t job_preempt_mode(struct job_record *job_ptr)
 {
-	if (job_ptr->qos_ptr &&
-	    ((slurmdb_qos_rec_t *)job_ptr->qos_ptr)->preempt_mode)
-		return ((slurmdb_qos_rec_t *)job_ptr->qos_ptr)->preempt_mode;
+	if (job_ptr->qos_ptr && job_ptr->qos_ptr->preempt_mode)
+		return job_ptr->qos_ptr->preempt_mode;
 
 	return (slurm_get_preempt_mode() & (~PREEMPT_MODE_GANG));
 }

@@ -1816,7 +1816,7 @@ extern void bg_record_hw_failure(bg_record_t *bg_record, List *ret_kill_list)
 		if (jobinfo->cleaning || !IS_JOB_RUNNING(found_job_ptr))
 			continue;
 
-		qos_ptr = (slurmdb_qos_rec_t *)found_job_ptr->qos_ptr;
+		qos_ptr = found_job_ptr->qos_ptr;
 		if (qos_ptr) {
 			/* If we ever get one that
 			   isn't set correctly then we

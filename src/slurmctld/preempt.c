@@ -115,9 +115,11 @@ extern int slurm_job_check_grace(struct job_record *job_ptr, uint32_t preemptor)
 	if (preempt_mode == 1)
 		grace_time = job_ptr->part_ptr->grace_time;
 	else if (preempt_mode == 2) {
-		slurmdb_qos_rec_t *qos_ptr = (slurmdb_qos_rec_t *)
-					     job_ptr->qos_ptr;
-		grace_time = qos_ptr->grace_time;
+		if (!job_ptr->qos_ptr)
+			error("%s: Job %u has no QOS ptr!  This should never happen",
+			      __func__, job_ptr->job_id);
+		else
+			grace_time = job_ptr->qos_ptr->grace_time;
 	}
 
 	if (grace_time) {

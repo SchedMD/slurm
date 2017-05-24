@@ -329,8 +329,7 @@ static void _set_qos_order(struct job_record *job_ptr,
 			 * partition then use that otherwise use the
 			 * partition's QOS as the king.
 			 */
-			if (((slurmdb_qos_rec_t *)job_ptr->qos_ptr)->flags
-			    & QOS_FLAG_OVER_PART_QOS) {
+			if (job_ptr->qos_ptr->flags & QOS_FLAG_OVER_PART_QOS) {
 				*qos_ptr_1 = job_ptr->qos_ptr;
 				*qos_ptr_2 = job_ptr->part_ptr->qos_ptr;
 			} else {
@@ -438,12 +437,11 @@ static slurmdb_used_limits_t *_get_user_used_limits(
 
 static bool _valid_job_assoc(struct job_record *job_ptr)
 {
-	slurmdb_assoc_rec_t assoc_rec, *assoc_ptr;
+	slurmdb_assoc_rec_t assoc_rec;
 
-	assoc_ptr = (slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
-	if ((assoc_ptr == NULL) ||
-	    (assoc_ptr->id  != job_ptr->assoc_id) ||
-	    (assoc_ptr->uid != job_ptr->user_id)) {
+	if ((job_ptr->assoc_ptr == NULL) ||
+	    (job_ptr->assoc_ptr->id  != job_ptr->assoc_id) ||
+	    (job_ptr->assoc_ptr->uid != job_ptr->user_id)) {
 		error("Invalid assoc_ptr for jobid=%u", job_ptr->job_id);
 		memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
 
@@ -454,7 +452,6 @@ static bool _valid_job_assoc(struct job_record *job_ptr)
 
 		if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 					    accounting_enforce,
-					    (slurmdb_assoc_rec_t **)
 					    &job_ptr->assoc_ptr, false)) {
 			info("_validate_job_assoc: invalid account or "
 			     "partition for uid=%u jobid=%u",
@@ -472,14 +469,13 @@ static void _qos_adjust_limit_usage(int type, struct job_record *job_ptr,
 				    uint32_t job_cnt)
 {
 	slurmdb_used_limits_t *used_limits = NULL, *used_limits_a = NULL;
-	slurmdb_assoc_rec_t *assoc_ptr = job_ptr->assoc_ptr;
 	int i;
 
-	if (!qos_ptr || !assoc_ptr)
+	if (!qos_ptr || !job_ptr->assoc_ptr)
 		return;
 
 	used_limits_a =	_get_acct_used_limits(&qos_ptr->usage->acct_limit_list,
-					      assoc_ptr->acct);
+					      job_ptr->assoc_ptr->acct);
 
 	used_limits = _get_user_used_limits(&qos_ptr->usage->user_limit_list,
 					    job_ptr->user_id);
@@ -661,7 +657,7 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 	_qos_adjust_limit_usage(type, job_ptr, qos_ptr_2,
 				used_tres_run_secs, job_cnt);
 
-	assoc_ptr = (slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
+	assoc_ptr = job_ptr->assoc_ptr;
 	while (assoc_ptr) {
 		switch(type) {
 		case ACCT_POLICY_ADD_SUBMIT:
@@ -2421,7 +2417,7 @@ extern void acct_policy_alter_job(struct job_record *job_ptr,
 	_qos_alter_job(job_ptr, qos_ptr_2,
 		       used_tres_run_secs, new_used_tres_run_secs);
 
-	assoc_ptr = (slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
+	assoc_ptr = job_ptr->assoc_ptr;
 	while (assoc_ptr) {
 		for (i=0; i<slurmctld_tres_cnt; i++) {
 			if (used_tres_run_secs[i] == new_used_tres_run_secs[i])
@@ -3648,7 +3644,7 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 
 	_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
 
-	assoc =	(slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
+	assoc =	job_ptr->assoc_ptr;
 
 	now = time(NULL);
 

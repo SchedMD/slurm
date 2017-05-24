@@ -366,9 +366,7 @@ static int _job_rec_field(const struct job_record *job_ptr,
 		lua_pushnumber (L, job_ptr->priority);
 	} else if (!xstrcmp(name, "qos")) {
 		if (job_ptr->qos_ptr) {
-			slurmdb_qos_rec_t *qos_ptr =
-				(slurmdb_qos_rec_t *)job_ptr->qos_ptr;
-			lua_pushstring (L, qos_ptr->name);
+			lua_pushstring (L, job_ptr->qos_ptr->name);
 		} else {
 			lua_pushnil (L);
 		}

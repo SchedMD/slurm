@@ -2186,8 +2186,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	time_t now = time(NULL);
 	bool configuring = false;
 	List preemptee_job_list = NULL;
-	slurmdb_qos_rec_t *qos_ptr = NULL;
-	slurmdb_assoc_rec_t *assoc_ptr = NULL;
 	uint32_t selected_node_cnt = NO_VAL;
 	uint64_t tres_req_cnt[slurmctld_tres_cnt];
 	bool can_reboot;
@@ -2217,11 +2215,10 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	/* Quick check to see if this QOS is allowed on this
 	 * partition. */
 	assoc_mgr_lock(&qos_read_lock);
-	qos_ptr = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
-	if (qos_ptr)
-		qos_flags = qos_ptr->flags;
+	if (job_ptr->qos_ptr)
+		qos_flags = job_ptr->qos_ptr->flags;
 	if ((error_code = part_policy_valid_qos(
-		     job_ptr->part_ptr, qos_ptr)) != SLURM_SUCCESS) {
+		     job_ptr->part_ptr, job_ptr->qos_ptr)) != SLURM_SUCCESS) {
 		assoc_mgr_unlock(&qos_read_lock);
 		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = WAIT_QOS;
@@ -2231,10 +2228,9 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 
 	/* Quick check to see if this account is allowed on
 	 * this partition. */
-	assoc_ptr = (slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
 	if ((error_code = part_policy_valid_acct(
 		     job_ptr->part_ptr,
-		     assoc_ptr ? assoc_ptr->acct : NULL))
+		     job_ptr->assoc_ptr ? job_ptr->assoc_ptr->acct : NULL))
 	    != SLURM_SUCCESS) {
 		assoc_mgr_unlock(&qos_read_lock);
 		xfree(job_ptr->state_desc);

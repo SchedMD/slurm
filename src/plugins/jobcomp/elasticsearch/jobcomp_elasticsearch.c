@@ -728,15 +728,12 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	}
 
 	if (job_ptr->assoc_ptr != NULL) {
-		cluster = ((slurmdb_assoc_rec_t *) job_ptr->assoc_ptr)->cluster;
-		xstrfmtcat(buffer, ",\"cluster\":\"%s\"", cluster);
+		xstrfmtcat(buffer, ",\"cluster\":\"%s\"",
+			   job_ptr->assoc_ptr->cluster);
 	}
 
 	if (job_ptr->qos_ptr != NULL) {
-		slurmdb_qos_rec_t *assoc =
-			(slurmdb_qos_rec_t *) job_ptr->qos_ptr;
-		qos = assoc->name;
-		xstrfmtcat(buffer, ",\"qos\":\"%s\"", qos);
+		xstrfmtcat(buffer, ",\"qos\":\"%s\"", job_ptr->qos_ptr->name);
 	}
 
 	if (job_ptr->details && (job_ptr->details->num_tasks != NO_VAL)) {

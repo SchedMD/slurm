@@ -107,10 +107,8 @@ static bool _account_preemptable(struct job_record *preemptor_job_ptr,
 	bool is_from_same_account = false;
 	int i;
 
-	preemptor_assoc =
-		(slurmdb_assoc_rec_t *)preemptor_job_ptr->assoc_ptr;
-	preemptee_assoc =
-		(slurmdb_assoc_rec_t *)preemptee_job_ptr->assoc_ptr;
+	preemptor_assoc = preemptor_job_ptr->assoc_ptr;
+	preemptee_assoc = preemptee_job_ptr->assoc_ptr;
 	if (!preemptor_assoc || !preemptee_assoc)
 		return false;
 
@@ -347,8 +345,7 @@ static int _get_nb_cpus(struct job_record *job_ptr)
 static slurmdb_assoc_rec_t *_get_job_fs_ass(char *job_type,
 					    struct job_record *job_ptr)
 {
-	slurmdb_assoc_rec_t *temp_fs_ass =
-		(slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
+	slurmdb_assoc_rec_t *temp_fs_ass = job_ptr->assoc_ptr;
 
 	if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
 		info("%s: Pre %s JobID:%u ParentAcct:%s MyAcct:%s "
@@ -407,8 +404,7 @@ static void _account_under_alloc(struct job_record *preemptor_job_ptr,
 	acct_usage_element_t *found_acct_usage_ptr = NULL;
 	char *share_type;
 
-	preemptor_assoc = (slurmdb_assoc_rec_t *)
-			  preemptor_job_ptr->assoc_ptr;
+	preemptor_assoc = preemptor_job_ptr->assoc_ptr;
 	preemptor_temp_fs_ass = _get_job_fs_ass("preemptor", preemptor_job_ptr);
 	preemptor_grp_used_cpu = preemptor_temp_fs_ass->usage->
 		grp_used_tres[TRES_ARRAY_CPU];
@@ -420,8 +416,7 @@ static void _account_under_alloc(struct job_record *preemptor_job_ptr,
 	}
 
 	while ((preemptee_job_ptr = (struct job_record *) list_next(it))) {
-		preemptee_assoc = ((slurmdb_assoc_rec_t *)
-				   preemptee_job_ptr->assoc_ptr);
+		preemptee_assoc = preemptee_job_ptr->assoc_ptr;
 		preemptee_assoc_id = preemptee_assoc->id;
 		preemptee_temp_fs_ass = _get_job_fs_ass("preemptee",
 							preemptee_job_ptr);
@@ -520,8 +515,7 @@ static void _account_under_alloc(struct job_record *preemptor_job_ptr,
 		preemptee_current_usage =
 			(long)(preemptee_acct_usage_ptr->current_usage*EPSILON);
 		if (((xstrcmp(preemptor_assoc->acct,
-			      ((slurmdb_assoc_rec_t *)
-			       preemptee_job_ptr->assoc_ptr)->acct) != 0) &&
+			      preemptee_job_ptr->assoc_ptr->acct) != 0) &&
 		    (preemptor_new_usage >= preemptee_acct_usage_ptr->current_usage ||
 		     preemptee_acct_usage_ptr->current_cpu_count <= 0)) &&
 		    (preemptee_acct_usage_ptr->current_usage > 0)) {
@@ -539,11 +533,9 @@ static void _account_under_alloc(struct job_record *preemptor_job_ptr,
 				      preemptor_new_usage,
 				      preemptee_current_usage,
 				      preemptor_new_usage_long,
-				      ((slurmdb_assoc_rec_t*)
-				       preemptee_job_ptr->assoc_ptr)->acct,
-				      ((slurmdb_assoc_rec_t*)
-				       preemptee_job_ptr->assoc_ptr)->
-				       parent_acct);
+				      preemptee_job_ptr->assoc_ptr->acct,
+				      preemptee_job_ptr->assoc_ptr->
+				      parent_acct);
 			}
 			preemptee_acct_usage_ptr->current_usage +=
 				((double)preemptee_cpu_cnt) /
@@ -582,8 +574,8 @@ static int _overalloc_test(struct job_record *preemptor,
 	cpu_cnt_preemptee = _get_nb_cpus(preemptee);
 	cpu_cnt_preemptor = _get_nb_cpus(preemptor);
 
-	assoc_preemptee = (slurmdb_assoc_rec_t *)preemptee->assoc_ptr;
-	assoc_preemptor = (slurmdb_assoc_rec_t *)preemptor->assoc_ptr;
+	assoc_preemptee = preemptee->assoc_ptr;
+	assoc_preemptor = preemptor->assoc_ptr;
 
 	if (!assoc_preemptee || !assoc_preemptee->usage ||
 	    !assoc_preemptor || !assoc_preemptor->usage) {
@@ -844,9 +836,8 @@ extern uint16_t job_preempt_mode(struct job_record *job_ptr)
 {
 	uint16_t mode;
 
-	if (job_ptr->qos_ptr &&
-	   ((slurmdb_qos_rec_t *)job_ptr->qos_ptr)->preempt_mode) {
-		mode = ((slurmdb_qos_rec_t *)job_ptr->qos_ptr)->preempt_mode;
+	if (job_ptr->qos_ptr && job_ptr->qos_ptr->preempt_mode) {
+		mode = job_ptr->qos_ptr->preempt_mode;
 		if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
 			info("%s: in job_preempt_mode return = %s",
 			     plugin_type, preempt_mode_string(mode));
