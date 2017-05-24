@@ -1070,8 +1070,6 @@ uninstall-am:
 
 .PRECIOUS: Makefile
 
-
-@HAVE_LUA_TRUE@	XLUA_SRC = xlua.c xlua.h
 libcommon.o$(EXEEXT) :  $(libcommon_la_OBJECTS) $(libcommon_la_DEPENDENCIES)
 	$(LINK)  $(libcommon_la_OBJECTS)
 libeio.o$(EXEEXT) :  $(libeio_la_OBJECTS) $(libeio_la_DEPENDENCIES)
