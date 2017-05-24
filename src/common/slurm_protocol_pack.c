@@ -9029,7 +9029,7 @@ _pack_job_info_list_msg(List job_resp_list, Buf buffer,
 	resource_allocation_response_msg_t *resp;
 	ListIterator iter;
 	uint16_t cnt = 0;
- 
+
 	if (job_resp_list)
 		cnt = list_count(job_resp_list);
 	pack16(cnt, buffer);
@@ -9058,7 +9058,7 @@ _unpack_job_info_list_msg(List *job_resp_list, Buf buffer,
 	resource_allocation_response_msg_t *resp;
 	uint16_t cnt = 0;
 	int i;
- 
+
 	*job_resp_list = NULL;
 
 	safe_unpack16(&cnt, buffer);
