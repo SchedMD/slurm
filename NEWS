@@ -64,6 +64,7 @@ documents those changes that are of interest to users and administrators.
  -- sacctmgr - prevent segfault in command when a request is denied due
     to a insufficient priviledges.
  -- Add warning about libcurl-devel not being installed during configure.
+ -- Streamline job purge by handling file deletion on a separate thread.
 
 * Changes in Slurm 17.02.3
 ==========================

@@ -146,6 +146,7 @@ typedef struct slurmctld_config {
 	pthread_t thread_id_save;
 	pthread_t thread_id_sig;
 	pthread_t thread_id_power;
+	pthread_t thread_id_purge_files;
 	pthread_t thread_id_rpc;
 } slurmctld_config_t;
 
@@ -206,6 +207,7 @@ extern int   association_based_accounting;
 extern uint32_t   cluster_cpus;
 extern bool  load_2_4_state;
 extern int   batch_sched_delay;
+extern pthread_cond_t purge_thread_cond;
 extern int   sched_interval;
 extern bool  slurmctld_init_db;
 extern int   slurmctld_primary;
@@ -881,6 +883,7 @@ struct 	step_record {
 };
 
 extern List job_list;			/* list of job_record entries */
+extern List purge_files_list;		/* list of job ids to purge files of */
 
 /*****************************************************************************\
  *  Consumable Resources parameters and data structures
@@ -1184,6 +1187,12 @@ extern bool is_node_down (char *name);
  * RET true if node exists and is responding, otherwise false
  */
 extern bool is_node_resp (char *name);
+
+/*
+ * delete_job_desc_files - remove the state files and directory
+ * for a given job_id from SlurmStateSaveLocation
+ */
+extern void delete_job_desc_files(uint32_t job_id);
 
 /*
  * job_alloc_info - get details about an existing job allocation
