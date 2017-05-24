@@ -869,6 +869,8 @@ static int _persist_update_job(slurmdb_cluster_rec_t *conn, uint32_t job_id,
 
 	rc = _queue_rpc(conn, &req_msg, 0, false);
 
+	free_buf(buffer);
+
 	return rc;
 }
 
@@ -1223,8 +1225,10 @@ static void _destroy_fed_job_update_info(void *object)
 		(fed_job_update_info_t *)object;
 
 	if (job_update_info) {
+		xfree(job_update_info->siblings_str);
 		xfree(job_update_info->submit_cluster);
 		slurm_free_job_info_msg(job_update_info->job_info_msg);
+		slurm_free_job_step_kill_msg(job_update_info->kill_msg);
 		slurm_free_job_desc_msg(job_update_info->submit_desc);
 		xfree(job_update_info);
 	}
@@ -1749,6 +1753,9 @@ extern int _handle_fed_send_job_sync(fed_job_update_info_t *job_update_info)
 	req_msg.data     = &sib_msg;
 
 	rc = _queue_rpc(sibling, &req_msg, 0, false);
+
+	free_buf(buffer);
+	xfree(dump);
 
 	return rc;
 }
