@@ -163,6 +163,7 @@ static int  _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 static char *_copy_nodelist_no_dup(char *node_list);
 static struct job_record *_create_job_record(int *error_code,
 					     uint32_t num_jobs);
+static void _delete_job_details(struct job_record *job_entry);
 static void _del_batch_list_rec(void *x);
 static void _delete_job_desc_files(uint32_t job_id);
 static slurmdb_qos_rec_t *_determine_and_validate_qos(
@@ -477,12 +478,10 @@ static struct job_record *_create_job_record(int *error_code, uint32_t num_jobs)
 
 
 /*
- * delete_job_details - delete a job's detail record and clear it's pointer
- *	this information can be deleted as soon as the job is allocated
- *	resources and running (could need to restart batch job)
+ * _delete_job_details - delete a job's detail record and clear it's pointer
  * IN job_entry - pointer to job_record to clear the record of
  */
-void delete_job_details(struct job_record *job_entry)
+static void _delete_job_details(struct job_record *job_entry)
 {
 	int i;
 
@@ -8351,7 +8350,7 @@ static void _list_delete_job(void *job_entry)
 			*job_pptr = job_ptr->job_array_next_t;
 	}
 
-	delete_job_details(job_ptr);
+	_delete_job_details(job_ptr);
 	xfree(job_ptr->account);
 	xfree(job_ptr->admin_comment);
 	xfree(job_ptr->alias_list);

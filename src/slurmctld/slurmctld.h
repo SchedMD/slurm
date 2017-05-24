@@ -976,14 +976,6 @@ extern int build_part_bitmap(struct part_record *part_ptr);
 extern int job_limits_check(struct job_record **job_pptr, bool check_min_time);
 
 /*
- * delete_job_details - delete a job's detail record and clear it's pointer
- *	this information can be deleted as soon as the job is allocated
- *	resources and running (could need to restart batch job)
- * IN job_entry - pointer to job_record to clear the record of
- */
-extern void  delete_job_details (struct job_record *job_entry);
-
-/*
  * delete_partition - delete the specified partition (actually leave
  *	the entry, just flag it as defunct)
  * IN job_specs - job specification from RPC
