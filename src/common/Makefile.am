@@ -22,6 +22,10 @@ noinst_LTLIBRARIES = 			\
 	libeio.la  			\
 	libspank.la
 
+if HAVE_LUA
+	XLUA_SRC = xlua.c xlua.h
+endif
+
 libcommon_la_SOURCES = 			\
 	assoc_mgr.c assoc_mgr.h 	\
 	cpu_frequency.c cpu_frequency.h \
@@ -120,17 +124,16 @@ libcommon_la_SOURCES = 			\
 	layouts_mgr.h layouts_mgr.c	\
 	mapping.c mapping.h		\
 	xcgroup_read_config.c xcgroup_read_config.h \
+	xlua.c xlua.h                   \
 	callerid.c callerid.h		\
 	slurm_persist_conn.c slurm_persist_conn.h
 
-if HAVE_LUA
-	libcommon_la_SOURCES += xlua.c xlua.h
-endif
 
 EXTRA_libcommon_la_SOURCES = 		\
 	uthash/LICENSE			\
 	uthash/README			\
 	uthash/uthash.h
+
 
 libdaemonize_la_SOURCES =  		\
 	daemonize.c       	 	\

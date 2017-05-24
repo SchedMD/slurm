@@ -136,6 +136,7 @@ documents those changes that are of interest to users and administrators.
     scancel.
  -- Fix 'scontrol update reservation duration=unlimited' to set the duration
     to 365-days (as is done elsewhere), rather than 49710 days.
+ -- Check if variable given to scontrol show job is a valid jobid.
 
 * Changes in Slurm 17.02.3
 ==========================

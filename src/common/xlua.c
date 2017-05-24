@@ -35,8 +35,12 @@
 \*****************************************************************************/
 
 #include "src/common/xlua.h"
-#include <lua.h>
 
+#ifdef HAVE_LUA
+# include <lua.h>
+#else
+# define LUA_VERSION_NUM 0
+#endif
 /*
  *  Common function to dlopen() the appropriate Lua libraries, and
  *   ensure the lua version matches what we compiled against.
@@ -48,22 +52,25 @@ int xlua_dlopen(void)
 	 *   ensure symbols from liblua are available to libs opened
 	 *   by any lua scripts.
 	 */
-	if (!dlopen("liblua.so",       RTLD_NOW | RTLD_GLOBAL) &&
+	if (!LUA_VERSION_NUM) {
+		fatal("Slurm wasn't configured against any LUA lib but you are trying to use it like it was.  Please check config.log and reconfigure against liblua.  Make sure you have lua devel installed.");
+		return SLURM_ERROR;
+	} else if (!dlopen("liblua.so",       RTLD_NOW | RTLD_GLOBAL) &&
 #if LUA_VERSION_NUM == 503
-	    !dlopen("liblua-5.3.so",   RTLD_NOW | RTLD_GLOBAL) &&
-	    !dlopen("liblua5.3.so",    RTLD_NOW | RTLD_GLOBAL) &&
-	    !dlopen("liblua5.3.so.0",  RTLD_NOW | RTLD_GLOBAL) &&
-	    !dlopen("liblua.so.5.3",   RTLD_NOW | RTLD_GLOBAL)
+		   !dlopen("liblua-5.3.so",   RTLD_NOW | RTLD_GLOBAL) &&
+		   !dlopen("liblua5.3.so",    RTLD_NOW | RTLD_GLOBAL) &&
+		   !dlopen("liblua5.3.so.0",  RTLD_NOW | RTLD_GLOBAL) &&
+		   !dlopen("liblua.so.5.3",   RTLD_NOW | RTLD_GLOBAL)
 #elif LUA_VERSION_NUM == 502
-	    !dlopen("liblua-5.2.so",   RTLD_NOW | RTLD_GLOBAL) &&
-	    !dlopen("liblua5.2.so",    RTLD_NOW | RTLD_GLOBAL) &&
-	    !dlopen("liblua5.2.so.0",  RTLD_NOW | RTLD_GLOBAL) &&
-	    !dlopen("liblua.so.5.2",   RTLD_NOW | RTLD_GLOBAL)
+		   !dlopen("liblua-5.2.so",   RTLD_NOW | RTLD_GLOBAL) &&
+		   !dlopen("liblua5.2.so",    RTLD_NOW | RTLD_GLOBAL) &&
+		   !dlopen("liblua5.2.so.0",  RTLD_NOW | RTLD_GLOBAL) &&
+		   !dlopen("liblua.so.5.2",   RTLD_NOW | RTLD_GLOBAL)
 #else
-	    !dlopen("liblua-5.1.so",   RTLD_NOW | RTLD_GLOBAL) &&
-	    !dlopen("liblua5.1.so",    RTLD_NOW | RTLD_GLOBAL) &&
-	    !dlopen("liblua5.1.so.0",  RTLD_NOW | RTLD_GLOBAL) &&
-	    !dlopen("liblua.so.5.1",   RTLD_NOW | RTLD_GLOBAL)
+		   !dlopen("liblua-5.1.so",   RTLD_NOW | RTLD_GLOBAL) &&
+		   !dlopen("liblua5.1.so",    RTLD_NOW | RTLD_GLOBAL) &&
+		   !dlopen("liblua5.1.so.0",  RTLD_NOW | RTLD_GLOBAL) &&
+		   !dlopen("liblua.so.5.1",   RTLD_NOW | RTLD_GLOBAL)
 #endif
 		) {
 		return error("Failed to open liblua.so: %s", dlerror());

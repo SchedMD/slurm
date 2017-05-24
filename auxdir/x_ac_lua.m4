@@ -40,16 +40,16 @@ AC_DEFUN([X_AC_LUA],
 	  AC_MSG_RESULT([$x_ac_have_lua $x_ac_lua_pkg_name])
 	  if test "x$x_ac_have_lua" = "xno"; then
 	    AC_MSG_WARN([unable to link against lua libraries])
+	  else
+	    AM_CONDITIONAL(HAVE_LUA, test "x$x_ac_have_lua" = "xyes")
+	    AC_DEFINE(HAVE_LUA, 1, [Define to 1 if we have the Lua library])
+	    # We can not define something here to determine version for systems
+	    # that use just liblua we will not know what version we are using.
+	    # Use LUA_VERSION_NUM as in lua.h it will always be right.
 	  fi
 	  CFLAGS="$saved_CFLAGS"
 	  LIBS="$saved_LIBS"
 	else
 	  AC_MSG_WARN([unable to locate lua package])
 	fi
-
-	AM_CONDITIONAL(HAVE_LUA, test "x$x_ac_have_lua" = "xyes")
-
-	# We can not define something here to determine version for systems
-	# that use just liblua we will not know what version we are using.
-	# Use LUA_VERSION_NUM as in lua.h it will always be right.
 ])
