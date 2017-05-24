@@ -144,7 +144,11 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 	slurmdb_update_object_t *update_object = NULL;
 	slurmdb_assoc_rec_t *assoc = object;
 	slurmdb_qos_rec_t *qos = object;
+	slurmdb_tres_rec_t *tres = object;
+	slurmdb_res_rec_t *res = object;
+	slurmdb_wckey_rec_t *wckey = object;
 	ListIterator itr = NULL;
+
 	if (!update_list) {
 		error("no update list given");
 		return SLURM_ERROR;
@@ -186,7 +190,7 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 		update_object->objects = list_create(slurmdb_destroy_user_rec);
 		break;
 	case SLURMDB_ADD_TRES:
-		xassert(((slurmdb_tres_rec_t *)object)->id);
+		xassert(tres->id);
 		update_object->objects = list_create(slurmdb_destroy_tres_rec);
 		break;
 	case SLURMDB_ADD_ASSOC:
@@ -209,7 +213,7 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 		/* fall through */
 	case SLURMDB_MODIFY_ASSOC:
 	case SLURMDB_REMOVE_ASSOC:
-		xassert(((slurmdb_assoc_rec_t *)object)->cluster);
+		xassert(assoc->cluster);
 		update_object->objects = list_create(
 			slurmdb_destroy_assoc_rec);
 		break;
@@ -239,7 +243,7 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 	case SLURMDB_ADD_WCKEY:
 	case SLURMDB_MODIFY_WCKEY:
 	case SLURMDB_REMOVE_WCKEY:
-		xassert(((slurmdb_wckey_rec_t *)object)->cluster);
+		xassert(wckey->cluster);
 		update_object->objects = list_create(
 			slurmdb_destroy_wckey_rec);
 		break;
@@ -251,12 +255,12 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 		update_object->objects = list_create(slurm_destroy_char);
 		break;
 	case SLURMDB_ADD_RES:
-		xassert(((slurmdb_res_rec_t *)object)->name);
-		xassert(((slurmdb_res_rec_t *)object)->server);
+		xassert(res->name);
+		xassert(res->server);
 		/* fall through */
 	case SLURMDB_MODIFY_RES:
 	case SLURMDB_REMOVE_RES:
-		xassert(((slurmdb_res_rec_t *)object)->id != NO_VAL);
+		xassert(res->id != NO_VAL);
 		update_object->objects = list_create(
 			slurmdb_destroy_res_rec);
 		break;
