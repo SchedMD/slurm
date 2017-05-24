@@ -3060,15 +3060,7 @@ end_features:
 	return rc;
 }
 
-/* Determine how to submit a federated a job.
- *
- * First tries to find a cluster that can start the job now. If a cluster can
- * start the job now, then a sibling job is submitted to that cluster. If no
- * cluster can start the job now, then siblings jobs are submitted to each
- * sibling.
- *
- * Does its own locking (job and fed). Doesn't have a job write lock when
- * communicating with siblings to prevent blocking on sibling communications.
+/* submit a federated job.
  *
  * IN msg - msg that contains packed job_desc msg to send to siblings.
  * IN job_desc - original job_desc msg.
