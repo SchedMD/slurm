@@ -54,7 +54,6 @@ int xlua_dlopen(void)
 	 */
 	if (!LUA_VERSION_NUM) {
 		fatal("Slurm wasn't configured against any LUA lib but you are trying to use it like it was.  Please check config.log and reconfigure against liblua.  Make sure you have lua devel installed.");
-		return SLURM_ERROR;
 	} else if (!dlopen("liblua.so",       RTLD_NOW | RTLD_GLOBAL) &&
 #if LUA_VERSION_NUM == 503
 		   !dlopen("liblua-5.3.so",   RTLD_NOW | RTLD_GLOBAL) &&
