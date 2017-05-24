@@ -948,6 +948,11 @@ static int _attempt_backfill(void)
 	int test_fini;
 	int user_part_inx1, user_part_inx2;
 	int part_inx, user_inx;
+	uint32_t qos_flags = 0;
+	/* QOS Read lock */
+	assoc_mgr_lock_t qos_read_lock =
+		{ NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
+		  NO_LOCK, NO_LOCK, NO_LOCK };
 
 	bf_sleep_usec = 0;
 #ifdef HAVE_ALPS_CRAY
@@ -981,7 +986,7 @@ static int _attempt_backfill(void)
 
 	job_queue = build_job_queue(true, true);
 	job_test_count = list_count(job_queue);
-	if (job_test_count == 0) {		
+	if (job_test_count == 0) {
 		if (debug_flags & DEBUG_FLAG_BACKFILL)
 			info("backfill: no jobs to backfill");
 		else
@@ -1186,14 +1191,19 @@ static int _attempt_backfill(void)
 			assoc_mgr_unlock(&locks);
 		}
 
+		assoc_mgr_lock(&qos_read_lock);
 		qos_ptr = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
+		if (qos_ptr)
+			qos_flags = qos_ptr->flags;
 		if (part_policy_valid_qos(job_ptr->part_ptr, qos_ptr) !=
 		    SLURM_SUCCESS) {
+			assoc_mgr_unlock(&qos_read_lock);
 			xfree(job_ptr->state_desc);
 			job_ptr->state_reason = WAIT_QOS;
 			last_job_update = now;
 			continue;
 		}
+		assoc_mgr_unlock(&qos_read_lock);
 
 		if (!assoc_limit_stop &&
 		    !acct_policy_job_runnable_pre_select(job_ptr)) {
@@ -1403,7 +1413,7 @@ next_task:
 		}
 
 		/* Determine minimum and maximum node counts */
-		error_code = get_node_cnts(job_ptr, qos_ptr, part_ptr,
+		error_code = get_node_cnts(job_ptr, qos_flags, part_ptr,
 					   &min_nodes, &req_nodes, &max_nodes);
 
 		if (error_code == ESLURM_ACCOUNTING_POLICY) {
@@ -1455,8 +1465,7 @@ next_task:
 			comp_time_limit = MIN(time_limit, deadline_time_limit);
 		else
 			comp_time_limit = time_limit;
-		qos_ptr = job_ptr->qos_ptr;
-		if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE) &&
+		if ((qos_flags & QOS_FLAG_NO_RESERVE) &&
 		    slurm_get_preempt_mode())
 			time_limit = job_ptr->time_limit = 1;
 		else if (job_ptr->time_min && (job_ptr->time_min < time_limit))
@@ -1763,8 +1772,7 @@ next_task:
 			}
 
 skip_start:
-
-			if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE)) {
+			if (qos_flags & QOS_FLAG_NO_RESERVE) {
 				if (orig_time_limit == NO_VAL) {
 					acct_policy_alter_job(
 						job_ptr, comp_time_limit);
@@ -1999,7 +2007,7 @@ skip_start:
 		}
 		if (debug_flags & DEBUG_FLAG_BACKFILL)
 			_dump_job_sched(job_ptr, end_reserve, avail_bitmap);
-		if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE))
+		if (qos_flags & QOS_FLAG_NO_RESERVE)
 			continue;
 		if (bf_job_part_count_reserve) {
 			bool do_reserve = true;

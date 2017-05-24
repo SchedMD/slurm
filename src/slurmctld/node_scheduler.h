@@ -135,7 +135,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 /*
  * get_node_cnts - determine the number of nodes for the requested job.
  * IN job_ptr - pointer to the job record.
- * IN qos_ptr - pointer to the job's qos.
+ * IN qos_flags - Flags of the job_ptr's qos.  This is so we don't have to send
+ *                in a pointer or lock the qos read lock before calling.
  * IN part_ptr - pointer to the job's partition.
  * OUT min_nodes - The minimum number of nodes for the job.
  * OUT req_nodes - The number of node the select plugin should target.
@@ -143,7 +144,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
  * RET SLURM_SUCCESS on success, ESLURM code from slurm_errno.h otherwise.
  */
 extern int get_node_cnts(struct job_record *job_ptr,
-			 slurmdb_qos_rec_t *qos_ptr,
+			 uint32_t qos_flags,
 			 struct part_record *part_ptr,
 			 uint32_t *min_nodes,
 			 uint32_t *req_nodes, uint32_t *max_nodes);

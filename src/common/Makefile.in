@@ -180,7 +180,7 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo cpu_frequency.lo \
 	parse_time.lo job_options.lo global_defaults.lo timers.lo \
 	stepd_api.lo write_labelled_message.lo proc_args.lo \
 	node_conf.lo gres.lo entity.lo layout.lo layouts_mgr.lo \
-	mapping.lo xcgroup_read_config.lo xlua.lo callerid.lo \
+	mapping.lo xcgroup_read_config.lo callerid.lo \
 	slurm_persist_conn.lo
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -536,7 +536,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-AM_CPPFLAGS = -I$(top_srcdir) $(BG_INCLUDES)
+AM_CPPFLAGS = -I$(top_srcdir) $(BG_INCLUDES) $(lua_CFLAGS)
 noinst_LTLIBRARIES = \
 	libcommon.la 			\
 	libdaemonize.la 		\
@@ -641,7 +641,6 @@ libcommon_la_SOURCES = \
 	layouts_mgr.h layouts_mgr.c	\
 	mapping.c mapping.h		\
 	xcgroup_read_config.c xcgroup_read_config.h \
-	xlua.c xlua.h			\
 	callerid.c callerid.h		\
 	slurm_persist_conn.c slurm_persist_conn.h
 
@@ -832,7 +831,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xassert.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xcgroup_read_config.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xhash.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xlua.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xmalloc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xsignal.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xstring.Plo@am__quote@
@@ -1070,6 +1068,8 @@ uninstall-am:
 
 .PRECIOUS: Makefile
 
+
+@HAVE_LUA_TRUE@	libcommon_la_SOURCES += xlua.c xlua.h
 libcommon.o$(EXEEXT) :  $(libcommon_la_OBJECTS) $(libcommon_la_DEPENDENCIES)
 	$(LINK)  $(libcommon_la_OBJECTS)
 libeio.o$(EXEEXT) :  $(libeio_la_OBJECTS) $(libeio_la_DEPENDENCIES)

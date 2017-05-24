@@ -1559,7 +1559,7 @@ extern int cluster_utilization(int argc, char **argv)
 				total_acct.tres_rec.alloc_secs,
 				accting->tres_rec.alloc_secs);
 		}
-		list_iterator_destroy(itr3);
+		list_iterator_destroy(itr2);
 	}
 
 	itr = list_iterator_create(print_fields_list);

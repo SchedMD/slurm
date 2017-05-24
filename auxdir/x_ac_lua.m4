@@ -48,13 +48,8 @@ AC_DEFUN([X_AC_LUA],
 	fi
 
 	AM_CONDITIONAL(HAVE_LUA, test "x$x_ac_have_lua" = "xyes")
-	if test "x$x_ac_have_lua" = "xyes" ; then
-		if test "x$x_ac_lua_pkg_name" = "xlua5.3" ; then
-			AC_DEFINE(HAVE_LUA_5_3, 1, [Compile with Lua 5.3])
-		elif test "x$x_ac_lua_pkg_name" = "xlua5.2" ; then
-			AC_DEFINE(HAVE_LUA_5_2, 1, [Compile with Lua 5.2])
-		elif test "x$x_ac_lua_pkg_name" = "xlua5.1"; then
-			AC_DEFINE(HAVE_LUA_5_1, 1, [Compile with Lua 5.1])
-		fi
-	fi
+
+	# We can not define something here to determine version for systems
+	# that use just liblua we will not know what version we are using.
+	# Use LUA_VERSION_NUM as in lua.h it will always be right.
 ])

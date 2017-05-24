@@ -10,7 +10,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-AM_CPPFLAGS     = -I$(top_srcdir) $(BG_INCLUDES)
+AM_CPPFLAGS     = -I$(top_srcdir) $(BG_INCLUDES) $(lua_CFLAGS)
 
 noinst_PROGRAMS = libcommon.o libeio.o libspank.o
 # This is needed if compiling on windows
@@ -120,9 +120,12 @@ libcommon_la_SOURCES = 			\
 	layouts_mgr.h layouts_mgr.c	\
 	mapping.c mapping.h		\
 	xcgroup_read_config.c xcgroup_read_config.h \
-	xlua.c xlua.h			\
 	callerid.c callerid.h		\
 	slurm_persist_conn.c slurm_persist_conn.h
+
+if HAVE_LUA
+	libcommon_la_SOURCES += xlua.c xlua.h
+endif
 
 EXTRA_libcommon_la_SOURCES = 		\
 	uthash/LICENSE			\

@@ -2373,15 +2373,19 @@ static int _update_node_state(char *node_list, bool set_locks)
 		time_t now = time(NULL);
 		for (i = 0, node_ptr = node_record_table_ptr;
 		     i < node_record_count; i++, node_ptr++) {
-			if (node_ptr->last_response > now)
-				continue;	/* Reboot in likely progress */
-			xfree(node_ptr->features_act);
 			_strip_knl_opts(&node_ptr->features);
-			if (node_ptr->features && !node_ptr->features_act) {
-				node_ptr->features_act =
-					xstrdup(node_ptr->features);
+			if (node_ptr->last_response > now) {
+				/* Reboot likely in progress.
+				 * Preserve active KNL features and merge
+				 * with configured non-KNL features */
+				_merge_strings(&node_ptr->features_act,
+					       node_ptr->features, 0);
 			} else {
-				_strip_knl_opts(&node_ptr->features_act);
+				xfree(node_ptr->features_act);
+				if (node_ptr->features) {
+					node_ptr->features_act =
+						xstrdup(node_ptr->features);
+				}
 			}
 		}
 		_update_all_node_features(mcdram_cap, mcdram_cap_cnt,

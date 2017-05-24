@@ -169,15 +169,6 @@
 /* Define to 1 if you have the <linux/sched.h> header file. */
 #undef HAVE_LINUX_SCHED_H
 
-/* Compile with Lua 5.1 */
-#undef HAVE_LUA_5_1
-
-/* Compile with Lua 5.2 */
-#undef HAVE_LUA_5_2
-
-/* Compile with Lua 5.3 */
-#undef HAVE_LUA_5_3
-
 /* Define to 1 if you have 'lz4' library (-llz4) */
 #undef HAVE_LZ4
 

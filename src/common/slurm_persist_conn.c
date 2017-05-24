@@ -351,6 +351,8 @@ extern void slurm_persist_conn_recv_server_init(void)
 {
 	int sigarray[] = {SIGUSR1, 0};
 
+	shutdown_time = 0;
+
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 

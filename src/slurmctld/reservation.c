@@ -2686,7 +2686,11 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		resv_ptr->end_time = resv_desc_ptr->end_time;
 		resv_ptr->duration = 0;
 	}
-	if (resv_desc_ptr->duration != NO_VAL) {
+
+	if (resv_desc_ptr->duration == INFINITE) {
+		resv_ptr->duration = ONE_YEAR / 60;
+		resv_ptr->end_time = resv_ptr->start_time_first + ONE_YEAR;
+	} else if (resv_desc_ptr->duration != NO_VAL) {
 		resv_ptr->duration = resv_desc_ptr->duration;
 		resv_ptr->end_time = resv_ptr->start_time_first +
 				     (resv_desc_ptr->duration * 60);

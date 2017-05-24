@@ -323,19 +323,19 @@ static int _job_rec_field(const struct job_record *job_ptr,
 			lua_pushnumber (L, job_ptr->details->min_cpus);
 		else
 			lua_pushnumber (L, 0);
-	} else if (!xstrcmp(name, "min_mem_per_node") &&
-		   !(job_ptr->details->pn_min_memory & MEM_PER_CPU)) {
-		if (job_ptr->details)
+	} else if (!xstrcmp(name, "min_mem_per_node")) {
+		if (job_ptr->details &&
+		    !(job_ptr->details->pn_min_memory & MEM_PER_CPU))
 			lua_pushnumber(L, job_ptr->details->pn_min_memory);
 		else
 			lua_pushnil(L);
-	} else if (!xstrcmp(name, "min_mem_per_cpu") &&
-		   (job_ptr->details->pn_min_memory & MEM_PER_CPU)) {
-		  if (job_ptr->details)
-			  lua_pushnumber(L, job_ptr->details->pn_min_memory &
-					 ~MEM_PER_CPU);
-		  else
-			  lua_pushnil(L);
+	} else if (!xstrcmp(name, "min_mem_per_cpu")) {
+		if (job_ptr->details &&
+		    (job_ptr->details->pn_min_memory & MEM_PER_CPU))
+			lua_pushnumber(L, job_ptr->details->pn_min_memory &
+				       ~MEM_PER_CPU);
+		else
+			lua_pushnil(L);
 	} else if (!xstrcmp(name, "min_nodes")) {
 		if (job_ptr->details)
 			lua_pushnumber (L, job_ptr->details->min_nodes);
@@ -1243,7 +1243,7 @@ static void _push_partition_list(uint32_t user_id, uint32_t submit_uid)
 static void _lua_table_register(lua_State *L, const char *libname,
 				const luaL_Reg *l)
 {
-#ifdef HAVE_LUA_5_1
+#if LUA_VERSION_NUM == 501
 	luaL_register(L, libname, l);
 #else
 	luaL_setfuncs(L, l, 0);
@@ -1257,7 +1257,7 @@ static void _register_lua_slurm_output_functions (void)
 	char *unpack_str;
 	char tmp_string[100];
 
-#ifdef HAVE_LUA_5_1
+#if LUA_VERSION_NUM == 501
 	unpack_str = "unpack";
 #else
 	unpack_str = "table.unpack";

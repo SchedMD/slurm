@@ -2191,6 +2191,11 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	uint32_t selected_node_cnt = NO_VAL;
 	uint64_t tres_req_cnt[slurmctld_tres_cnt];
 	bool can_reboot;
+	uint32_t qos_flags = 0;
+	/* QOS Read lock */
+	assoc_mgr_lock_t qos_read_lock =
+		{ READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
+		  NO_LOCK, NO_LOCK, NO_LOCK };
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
@@ -2199,8 +2204,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		return ESLURM_ACCOUNTING_POLICY;
 
 	part_ptr = job_ptr->part_ptr;
-	qos_ptr = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
-	assoc_ptr = (slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
 
 	/* identify partition */
 	if (part_ptr == NULL) {
@@ -2213,8 +2216,13 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 
 	/* Quick check to see if this QOS is allowed on this
 	 * partition. */
+	assoc_mgr_lock(&qos_read_lock);
+	qos_ptr = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
+	if (qos_ptr)
+		qos_flags = qos_ptr->flags;
 	if ((error_code = part_policy_valid_qos(
 		     job_ptr->part_ptr, qos_ptr)) != SLURM_SUCCESS) {
+		assoc_mgr_unlock(&qos_read_lock);
 		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = WAIT_QOS;
 		last_job_update = now;
@@ -2223,15 +2231,18 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 
 	/* Quick check to see if this account is allowed on
 	 * this partition. */
+	assoc_ptr = (slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
 	if ((error_code = part_policy_valid_acct(
 		     job_ptr->part_ptr,
-		     job_ptr->assoc_ptr ? assoc_ptr->acct : NULL))
+		     assoc_ptr ? assoc_ptr->acct : NULL))
 	    != SLURM_SUCCESS) {
+		assoc_mgr_unlock(&qos_read_lock);
 		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = WAIT_ACCOUNT;
 		last_job_update = now;
 		return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	}
+	assoc_mgr_unlock(&qos_read_lock);
 
 	if (job_ptr->priority == 0) {	/* user/admin hold */
 		if (job_ptr->state_reason != FAIL_BAD_CONSTRAINTS
@@ -2284,9 +2295,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	 * isn't set to override them */
 	/* info("req: %u-%u, %u", job_ptr->details->min_nodes, */
 	/*    job_ptr->details->max_nodes, part_ptr->max_nodes); */
-	error_code = get_node_cnts(job_ptr, qos_ptr, part_ptr,
+	error_code = get_node_cnts(job_ptr, qos_flags, part_ptr,
 				   &min_nodes, &req_nodes, &max_nodes);
-
 
 	if ((error_code == ESLURM_ACCOUNTING_POLICY) ||
 	    (error_code == ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE))
@@ -2482,8 +2492,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	job_ptr->start_time = job_ptr->time_last_active = now;
 	if ((job_ptr->time_limit == NO_VAL) ||
 	    ((job_ptr->time_limit > part_ptr->max_time) &&
-	     (!qos_ptr || (qos_ptr && !(qos_ptr->flags
-					& QOS_FLAG_PART_TIME_LIMIT))))) {
+	     !(qos_flags & QOS_FLAG_PART_TIME_LIMIT))) {
 		if (part_ptr->default_time != NO_VAL)
 			job_ptr->time_limit = part_ptr->default_time;
 		else
@@ -2664,7 +2673,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 /*
  * get_node_cnts - determine the number of nodes for the requested job.
  * IN job_ptr - pointer to the job record.
- * IN qos_ptr - pointer to the job's qos.
+ * IN qos_flags - Flags of the job_ptr's qos.  This is so we don't have to send
+ *                in a pointer or lock the qos read lock before calling.
  * IN part_ptr - pointer to the job's partition.
  * OUT min_nodes - The minimum number of nodes for the job.
  * OUT req_nodes - The number of node the select plugin should target.
@@ -2672,7 +2682,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
  * RET SLURM_SUCCESS on success, ESLURM code from slurm_errno.h otherwise.
  */
 extern int get_node_cnts(struct job_record *job_ptr,
-			 slurmdb_qos_rec_t *qos_ptr,
+			 uint32_t qos_flags,
 			 struct part_record *part_ptr,
 			 uint32_t *min_nodes,
 			 uint32_t *req_nodes, uint32_t *max_nodes)
@@ -2686,14 +2696,14 @@ extern int get_node_cnts(struct job_record *job_ptr,
 
 	/* On BlueGene systems don't adjust the min/max node limits
 	 * here.  We are working on midplane values. */
-	if (qos_ptr && (qos_ptr->flags & QOS_FLAG_PART_MIN_NODE))
+	if (qos_flags & QOS_FLAG_PART_MIN_NODE)
 		*min_nodes = job_ptr->details->min_nodes;
 	else
 		*min_nodes = MAX(job_ptr->details->min_nodes,
 				 part_ptr->min_nodes);
 	if (!job_ptr->details->max_nodes)
 		*max_nodes = part_ptr->max_nodes;
-	else if (qos_ptr && (qos_ptr->flags & QOS_FLAG_PART_MAX_NODE))
+	else if (qos_flags & QOS_FLAG_PART_MAX_NODE)
 		*max_nodes = job_ptr->details->max_nodes;
 	else
 		*max_nodes = MIN(job_ptr->details->max_nodes,
