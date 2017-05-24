@@ -22,10 +22,6 @@ noinst_LTLIBRARIES = 			\
 	libeio.la  			\
 	libspank.la
 
-if HAVE_LUA
-	XLUA_SRC = xlua.c xlua.h
-endif
-
 libcommon_la_SOURCES = 			\
 	assoc_mgr.c assoc_mgr.h 	\
 	cpu_frequency.c cpu_frequency.h \
