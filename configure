@@ -24151,15 +24151,8 @@ $as_echo "$x_ac_have_lua $x_ac_lua_pkg_name" >&6; }
 	  if test "x$x_ac_have_lua" = "xno"; then
 	    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to link against lua libraries" >&5
 $as_echo "$as_me: WARNING: unable to link against lua libraries" >&2;}
-	  fi
-	  CFLAGS="$saved_CFLAGS"
-	  LIBS="$saved_LIBS"
-	else
-	  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate lua package" >&5
-$as_echo "$as_me: WARNING: unable to locate lua package" >&2;}
-	fi
-
-	 if test "x$x_ac_have_lua" = "xyes"; then
+	  else
+	     if test "x$x_ac_have_lua" = "xyes"; then
   HAVE_LUA_TRUE=
   HAVE_LUA_FALSE='#'
 else
@@ -24168,9 +24161,18 @@ else
 fi
 
 
-	# We can not define something here to determine version for systems
-	# that use just liblua we will not know what version we are using.
-	# Use LUA_VERSION_NUM as in lua.h it will always be right.
+$as_echo "#define HAVE_LUA 1" >>confdefs.h
+
+	    # We can not define something here to determine version for systems
+	    # that use just liblua we will not know what version we are using.
+	    # Use LUA_VERSION_NUM as in lua.h it will always be right.
+	  fi
+	  CFLAGS="$saved_CFLAGS"
+	  LIBS="$saved_LIBS"
+	else
+	  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate lua package" >&5
+$as_echo "$as_me: WARNING: unable to locate lua package" >&2;}
+	fi
 
 
 

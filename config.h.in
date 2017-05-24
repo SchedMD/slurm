@@ -169,6 +169,9 @@
 /* Define to 1 if you have the <linux/sched.h> header file. */
 #undef HAVE_LINUX_SCHED_H
 
+/* Define to 1 if we have the Lua library */
+#undef HAVE_LUA
+
 /* Define to 1 if you have 'lz4' library (-llz4) */
 #undef HAVE_LZ4
 
