@@ -4393,6 +4393,10 @@ inline static void _slurm_rpc_requeue(slurm_msg_t * msg)
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 
+	if (!_route_msg_to_origin(msg, req_ptr->job_id_str, req_ptr->job_id,
+				  uid))
+		return;
+
 	START_TIMER;
 
 	info("%s: Processing RPC: REQUEST_JOB_REQUEUE from uid=%d", __func__,
