@@ -413,18 +413,19 @@ int main(int argc, char **argv)
 		slurm_allocation_msg_thr_destroy(msg_thr);
 		exit(error_exit);
 	} else if (job_resp_list && !allocation_interrupted) {
+		/* Allocation granted to regular job */
 		ListIterator iter;
 		iter = list_iterator_create(job_resp_list);
 		while ((alloc = (resource_allocation_response_msg_t *)
 				list_next(iter))) {
 			info("Granted job allocation %u", alloc->job_id);
+info("  Nodes %s", alloc->node_list);
 		}
 		list_iterator_destroy(iter);
+//FIXME, print one job ID
 exit(1);
 	} else if (!allocation_interrupted) {
-		/*
-		 * Allocation granted!
-		 */
+		/* Allocation granted to regular job */
 		info("Granted job allocation %u", alloc->job_id);
 		pending_job_id = alloc->job_id;
 

@@ -153,26 +153,47 @@ resource_allocation_response_msg_t *_build_alloc_msg(struct job_record *job_ptr)
 extern void srun_allocate (uint32_t job_id)
 {
 	struct job_record *job_ptr = find_job_record(job_id);
+	struct job_record *pack_job, *pack_leader;
+	resource_allocation_response_msg_t *msg_arg;
+	slurm_addr_t *addr;
+	ListIterator iter;
+	List job_resp_list = NULL;
 
 	xassert(job_ptr);
-	if (job_ptr && job_ptr->alloc_resp_port && job_ptr->alloc_node &&
-	    job_ptr->resp_host && job_ptr->job_resrcs &&
-	    job_ptr->job_resrcs->cpu_array_cnt) {
-		slurm_addr_t *addr;
-		resource_allocation_response_msg_t *msg_arg;
+	if (!job_ptr || !job_ptr->alloc_resp_port || !job_ptr->alloc_node ||
+	    !job_ptr->resp_host || !job_ptr->job_resrcs ||
+	    !job_ptr->job_resrcs->cpu_array_cnt)
+		return;
 
-		if (_pending_pack_jobs(job_ptr))
-			return;
-
+	if (job_ptr->pack_job_id == 0) {
 		addr = xmalloc(sizeof(struct sockaddr_in));
 		slurm_set_addr(addr, job_ptr->alloc_resp_port,
 			job_ptr->resp_host);
 		msg_arg = _build_alloc_msg(job_ptr);
 		set_remote_working_response(msg_arg, job_ptr,
 					    job_ptr->origin_cluster);
-
 		_srun_agent_launch(addr, job_ptr->alloc_node,
 				   RESPONSE_RESOURCE_ALLOCATION, msg_arg,
+				   job_ptr->start_protocol_ver);
+	} else if (_pending_pack_jobs(job_ptr)) {
+		return;
+	} else {
+		addr = xmalloc(sizeof(struct sockaddr_in));
+		pack_leader = find_job_record(job_ptr->pack_job_id);
+		slurm_set_addr(addr, pack_leader->alloc_resp_port,
+			       pack_leader->resp_host);
+//FIXME: Need destroy function
+		job_resp_list = list_create(NULL);
+		iter = list_iterator_create(pack_leader->pack_job_list);
+		while ((pack_job = (struct job_record *) list_next(iter))) {
+			msg_arg = _build_alloc_msg(pack_job);
+			set_remote_working_response(msg_arg, pack_job,
+						    pack_job->origin_cluster);
+			list_append(job_resp_list, msg_arg);
+		}
+		list_iterator_destroy(iter);
+		_srun_agent_launch(addr, job_ptr->alloc_node,
+				   RESPONSE_JOB_PACK_ALLOCATION, job_resp_list,
 				   job_ptr->start_protocol_ver);
 	}
 }

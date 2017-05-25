@@ -1153,6 +1153,9 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 	hostset_t jobid_hostset = NULL;
 	char tmp_str[32];
 	List resp = NULL;
+	slurm_addr_t resp_addr;
+	char resp_host[16];
+	uint16_t port;	/* dummy value */
 
 	START_TIMER;
 
@@ -1163,6 +1166,14 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 	}
 	if (!job_req_list || (list_count(job_req_list) == 0)) {
 		info("REQUEST_JOB_PACK_ALLOCATION from uid=%d with empty job list",
+		     uid);
+		error_code = SLURM_ERROR;
+		goto send_msg;
+	}
+	if (slurm_get_peer_addr(msg->conn_fd, &resp_addr) == 0) {
+		slurm_get_ip_str(&resp_addr, &port,resp_host,sizeof(resp_host));
+	} else {
+		info("REQUEST_JOB_PACK_ALLOCATION from uid=%d , can't get peer addr",
 		     uid);
 		error_code = SLURM_ERROR;
 		goto send_msg;
@@ -1225,6 +1236,8 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		job_ptr = NULL;
 		job_desc_msg->begin_time = MAX(job_desc_msg->begin_time,
 					       min_begin);
+		if (!job_desc_msg->resp_host)
+			job_desc_msg->resp_host = xstrdup(resp_host);
 		error_code = job_allocate(job_desc_msg, false, false, NULL,
 					  true, uid, &job_ptr, &err_msg,
 					  msg->protocol_version);

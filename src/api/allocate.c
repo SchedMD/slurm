@@ -78,8 +78,10 @@ typedef struct {
 static int _handle_rc_msg(slurm_msg_t *msg);
 static listen_t *_create_allocation_response_socket(char *interface_hostname);
 static void _destroy_allocation_response_socket(listen_t *listen);
-static resource_allocation_response_msg_t *_wait_for_allocation_response(
-	uint32_t job_id, const listen_t *listen, int timeout);
+static void _wait_for_allocation_response(uint32_t job_id,
+					  const listen_t *listen,
+					  uint16_t msg_type, int timeout,
+					  void **resp);
 
 /*
  * slurm_allocate_resources - allocate resources for a job request
@@ -256,8 +258,9 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 			slurm_free_resource_allocation_response_msg(resp);
 			if (pending_callback != NULL)
 				pending_callback(job_id);
- 			resp = _wait_for_allocation_response(job_id, listen,
-							     timeout);
+			_wait_for_allocation_response(job_id, listen,
+						RESPONSE_RESOURCE_ALLOCATION,
+						timeout, (void **) &resp);
 			/* If NULL, we didn't get the allocation in
 			   the time desired, so just free the job id */
 			if ((resp == NULL) && (errno != ESLURM_ALREADY_DONE)) {
@@ -279,6 +282,26 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 	xfree(req);
 	errno = errnum;
 	return resp;
+}
+
+/* Get total node cound and lead job ID from RESPONSE_JOB_PACK_ALLOCATION */
+static void _pack_alloc_test(List resp, uint32_t *node_cnt, uint32_t *job_id)
+{
+	resource_allocation_response_msg_t *alloc;
+	uint32_t pack_node_cnt = 0, pack_job_id = 0;
+	ListIterator iter;
+
+	xassert(resp);
+	iter = list_iterator_create(resp);
+	while ((alloc = (resource_allocation_response_msg_t *)list_next(iter))){
+		pack_node_cnt += alloc->node_cnt;
+		if (pack_job_id == 0)
+			pack_job_id = alloc->job_id;
+	}
+	list_iterator_destroy(iter);
+
+	*job_id   = pack_job_id;
+	*node_cnt = pack_node_cnt;
 }
 
 /*
@@ -314,6 +337,7 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
 	ListIterator iter;
 	bool immediate_flag = false;
 	bool immediate_logged = false;
+	uint32_t node_cnt = 0, job_id = 0;
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
@@ -321,11 +345,20 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
 	/*
 	 * set node name and session ID for this request
 	 */
+
+	if (!immediate_flag) {
+		listen = _create_allocation_response_socket(local_hostname);
+		if (listen == NULL)
+			return NULL;
+	}
+
 	local_hostname = xshort_hostname();
 	iter = list_iterator_create(job_req_list);
 	while ((req = (job_desc_msg_t *) list_next(iter))) {
 		if (req->alloc_sid == NO_VAL)
 			req->alloc_sid = getsid(0);
+		if (listen)
+			req->alloc_resp_port = listen->port;
 
 		if (!req->alloc_node) {
 			if (local_hostname) {
@@ -343,19 +376,6 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
 			immediate_flag = true;
 	}
 	list_iterator_destroy(iter);
-
-	if (!immediate_flag) {
-		listen = _create_allocation_response_socket(local_hostname);
-		if (listen == NULL) {
-			xfree(local_hostname);
-			return NULL;
-		}
-
-		iter = list_iterator_create(job_req_list);
-		while ((req = (job_desc_msg_t *)list_next(iter)))
-			req->alloc_resp_port = listen->port;
-		list_iterator_destroy(iter);
-	}
 
 	req_msg.msg_type = REQUEST_JOB_PACK_ALLOCATION;
 	req_msg.data     = job_req_list;
@@ -394,21 +414,20 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
 		/* Yay, the controller has acknowledged our request!
 		 * Test if we have an allocation yet? */
 		resp = (List) resp_msg.data;
-#if 0
-//FIXME: Update for a list
-		if (resp->node_cnt > 0) {
+		_pack_alloc_test(resp, &node_cnt, &job_id);
+		if (node_cnt > 0) {
 			/* yes, allocation has been granted */
 			errno = SLURM_PROTOCOL_SUCCESS;
-		} else if (!req->immediate) {
-			if (resp->error_code != SLURM_SUCCESS)
-				info("%s", slurm_strerror(resp->error_code));
+		} else if (immediate_flag) {
+			debug("Immediate allocation not granted");
+		} else {
 			/* no, we need to wait for a response */
-			job_id = resp->job_id;
-			slurm_free_resource_allocation_response_msg(resp);
+			FREE_NULL_LIST(resp);
 			if (pending_callback != NULL)
 				pending_callback(job_id);
- 			resp = _wait_for_allocation_response(job_id, listen,
-							     timeout);
+			_wait_for_allocation_response(job_id, listen,
+						RESPONSE_JOB_PACK_ALLOCATION,
+						timeout, (void **) &resp);
 			/* If NULL, we didn't get the allocation in
 			 * the time desired, so just free the job id */
 			if ((resp == NULL) && (errno != ESLURM_ALREADY_DONE)) {
@@ -416,7 +435,6 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
 				slurm_complete_job(job_id, -1);
 			}
 		}
-#endif
 		break;
 	default:
 		errnum = SLURM_UNEXPECTED_MSG_ERROR;
@@ -993,18 +1011,17 @@ static int _wait_for_alloc_rpc(const listen_t *listen, int sleep_time)
 	return 0;
 }
 
-static resource_allocation_response_msg_t *
-_wait_for_allocation_response(uint32_t job_id, const listen_t *listen,
-			      int timeout)
+static void _wait_for_allocation_response(uint32_t job_id,
+					  const listen_t *listen,
+					  uint16_t msg_type, int timeout,
+					  void **resp)
 {
-	resource_allocation_response_msg_t *resp = NULL;
 	int errnum, rc;
 
 	info("job %u queued and waiting for resources", job_id);
-	if ((rc = _wait_for_alloc_rpc(listen, timeout)) == 1) {
-		rc = _accept_msg_connection(listen->fd,
-				RESPONSE_RESOURCE_ALLOCATION, (void **) &resp);
-	}
+	*resp = NULL;
+	if ((rc = _wait_for_alloc_rpc(listen, timeout)) == 1)
+		rc = _accept_msg_connection(listen->fd, msg_type, resp);
 	if (rc <= 0) {
 		errnum = errno;
 		/* Maybe the resource allocation response RPC got lost
@@ -1012,19 +1029,20 @@ _wait_for_allocation_response(uint32_t job_id, const listen_t *listen,
 		 * Let's see if the controller thinks that the allocation
 		 * has been granted.
 		 */
-		if (slurm_allocation_lookup(job_id, &resp) >= 0) {
-			return resp;
-		}
+//FIXME
+//		if (slurm_allocation_lookup(job_id, resp) >= 0) {
+//			return resp;
+//		}
 		if (slurm_get_errno() == ESLURM_JOB_PENDING) {
 			debug3("Still waiting for allocation");
 			errno = errnum;
-			return NULL;
+			return;
 		} else {
 			debug3("Unable to confirm allocation for job %u: %m",
 			       job_id);
-			return NULL;
+			return;
 		}
 	}
 	info("job %u has been allocated resources", job_id);
-	return resp;
+	return;
 }
