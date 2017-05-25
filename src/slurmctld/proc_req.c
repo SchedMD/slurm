@@ -3404,14 +3404,20 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 	DEF_TIMERS;
 	job_desc_msg_t *job_desc_msg = (job_desc_msg_t *) msg->data;
 	/* Locks: Read config, write job, write node, read partition, read fed*/
+	slurmctld_lock_t fed_read_lock = {
+		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 	slurmctld_lock_t job_write_lock = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 
+	lock_slurmctld(fed_read_lock);
 	if (!_route_msg_to_origin(msg, job_desc_msg->job_id_str,
-				  job_desc_msg->job_id, uid))
+				  job_desc_msg->job_id, uid)) {
+		unlock_slurmctld(fed_read_lock);
 		return;
+	}
+	unlock_slurmctld(fed_read_lock);
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_UPDATE_JOB from uid=%d", uid);
@@ -4388,14 +4394,20 @@ inline static void _slurm_rpc_requeue(slurm_msg_t * msg)
 	DEF_TIMERS;
 	requeue_msg_t *req_ptr = (requeue_msg_t *)msg->data;
 	/* Locks: write job and node */
+	slurmctld_lock_t fed_read_lock = {
+		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 
+	lock_slurmctld(fed_read_lock);
 	if (!_route_msg_to_origin(msg, req_ptr->job_id_str, req_ptr->job_id,
-				  uid))
+				  uid)) {
+		unlock_slurmctld(fed_read_lock);
 		return;
+	}
+	unlock_slurmctld(fed_read_lock);
 
 	START_TIMER;
 
@@ -5965,13 +5977,9 @@ static void _proc_multi_msg(uint32_t rpc_uid, slurm_msg_t *msg)
 static int _route_msg_to_origin(slurm_msg_t *msg, char *src_job_id_str,
 				uint32_t src_job_id, uid_t uid)
 {
-	slurmctld_lock_t fed_read_lock = {
-		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
-
 	xassert(msg);
 
 	/* route msg to origin cluster if a federated job */
-	lock_slurmctld(fed_read_lock);
 	if (!msg->conn && fed_mgr_fed_rec) {
 		/* Don't send reroute if coming from a federated cluster (aka
 		 * has a msg->conn). */
@@ -5997,11 +6005,9 @@ static int _route_msg_to_origin(slurm_msg_t *msg, char *src_job_id_str,
 				     job_id, uid, dst->name);
 			}
 
-			unlock_slurmctld(fed_read_lock);
 			return SLURM_SUCCESS;
 		}
 	}
-	unlock_slurmctld(fed_read_lock);
 
 	return SLURM_ERROR;
 }
