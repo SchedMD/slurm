@@ -24152,14 +24152,6 @@ $as_echo "$x_ac_have_lua $x_ac_lua_pkg_name" >&6; }
 	    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to link against lua libraries" >&5
 $as_echo "$as_me: WARNING: unable to link against lua libraries" >&2;}
 	  else
-	     if test "x$x_ac_have_lua" = "xyes"; then
-  HAVE_LUA_TRUE=
-  HAVE_LUA_FALSE='#'
-else
-  HAVE_LUA_TRUE='#'
-  HAVE_LUA_FALSE=
-fi
-
 
 $as_echo "#define HAVE_LUA 1" >>confdefs.h
 
@@ -24173,6 +24165,15 @@ $as_echo "#define HAVE_LUA 1" >>confdefs.h
 	  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate lua package" >&5
 $as_echo "$as_me: WARNING: unable to locate lua package" >&2;}
 	fi
+
+	 if test "x$x_ac_have_lua" = "xyes"; then
+  HAVE_LUA_TRUE=
+  HAVE_LUA_FALSE='#'
+else
+  HAVE_LUA_TRUE='#'
+  HAVE_LUA_FALSE=
+fi
+
 
 
 
