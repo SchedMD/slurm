@@ -861,10 +861,10 @@ static void _destroy_allocation_response_socket(listen_t *listen)
 
 /* process RPC from slurmctld
  * IN msg: message received
- * OUT resp: resource allocation response message
+ * OUT resp: resource allocation response message or List of them
  * RET 1 if resp is filled in, 0 otherwise */
 static int
-_handle_msg(slurm_msg_t *msg, resource_allocation_response_msg_t **resp)
+_handle_msg(slurm_msg_t *msg, uint16_t msg_type, void **resp)
 {
 	char *auth_info = slurm_get_auth_info();
 	uid_t req_uid;
@@ -881,35 +881,32 @@ _handle_msg(slurm_msg_t *msg, resource_allocation_response_msg_t **resp)
 		return 0;
 	}
 
-	switch (msg->msg_type) {
-		case RESPONSE_RESOURCE_ALLOCATION:
-			debug2("resource allocation response received");
-			slurm_send_rc_msg(msg, SLURM_SUCCESS);
-			*resp = msg->data;    /* transfer payload to response */
-			msg->data = NULL;
-			rc = 1;
-			break;
-		case SRUN_JOB_COMPLETE:
-			info("Job has been cancelled");
-			break;
-		default:
-			error("%s: received spurious message type: %u",
-			      __func__, msg->msg_type);
+	if (msg->msg_type == msg_type) {
+		debug2("resource allocation response received");
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+		*resp = msg->data;    /* transfer payload to response */
+		msg->data = NULL;
+		rc = 1;
+	} else if (msg->msg_type == SRUN_JOB_COMPLETE) {
+		info("Job has been cancelled");
+	} else {
+		error("%s: received spurious message type: %u",
+		      __func__, msg->msg_type);
 	}
 	return rc;
 }
 
 /* Accept RPC from slurmctld and process it.
  * IN slurmctld_fd: file descriptor for slurmctld communications
- * OUT resp: resource allocation response message
+ * IN msg_type: RESPONSE_RESOURCE_ALLOCATION or RESPONSE_JOB_PACK_ALLOCATION
+ * OUT resp: resource allocation response message or List
  * RET 1 if resp is filled in, 0 otherwise */
 static int
-_accept_msg_connection(int listen_fd,
-		       resource_allocation_response_msg_t **resp)
+_accept_msg_connection(int listen_fd, uint16_t msg_type, void **resp)
 {
 	int	     conn_fd;
 	slurm_msg_t  *msg = NULL;
-	slurm_addr_t   cli_addr;
+	slurm_addr_t cli_addr;
 	char         host[256];
 	uint16_t     port;
 	int          rc = 0;
@@ -935,12 +932,12 @@ _accept_msg_connection(int listen_fd,
 			return 0;
 		}
 
-		error("_accept_msg_connection[%s]: %m", host);
+		error("%s[%s]: %m", __func__, host);
 		close(conn_fd);
 		return SLURM_ERROR;
 	}
 
-	rc = _handle_msg(msg, resp); /* _handle_msg transfers message payload */
+	rc = _handle_msg(msg, msg_type, resp); /* xfer payload */
 	slurm_free_msg(msg);
 
 	close(conn_fd);
@@ -1004,8 +1001,10 @@ _wait_for_allocation_response(uint32_t job_id, const listen_t *listen,
 	int errnum, rc;
 
 	info("job %u queued and waiting for resources", job_id);
-	if ((rc = _wait_for_alloc_rpc(listen, timeout)) == 1)
-		rc = _accept_msg_connection(listen->fd, &resp);
+	if ((rc = _wait_for_alloc_rpc(listen, timeout)) == 1) {
+		rc = _accept_msg_connection(listen->fd,
+				RESPONSE_RESOURCE_ALLOCATION, (void **) &resp);
+	}
 	if (rc <= 0) {
 		errnum = errno;
 		/* Maybe the resource allocation response RPC got lost
