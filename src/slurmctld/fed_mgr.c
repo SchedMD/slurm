@@ -559,11 +559,31 @@ static void _remove_self_from_federation()
 	_leave_federation();
 }
 
+static int _foreach_job_completed(void *object, void *arg)
+{
+	struct job_record *job_ptr = (struct job_record *)object;
+
+	if (IS_JOB_COMPLETED(job_ptr))
+		return SLURM_SUCCESS;
+
+	return SLURM_ERROR;
+}
+
+static int _foreach_job_no_requeue(void *object, void *arg)
+{
+	struct job_record *job_ptr = (struct job_record *)object;
+
+	if (job_ptr->details)
+		job_ptr->details->requeue = 0;
+
+	return SLURM_SUCCESS;
+}
+
 static void *_job_watch_thread(void *arg)
 {
 	struct timespec ts = {0, 0};
-	slurmctld_lock_t job_read_fed_write_lock = {
-		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
+	slurmctld_lock_t job_write_fed_write_lock = {
+		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
 
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_SET_NAME, "fed_jobw", NULL, NULL, NULL) < 0) {
@@ -574,11 +594,11 @@ static void *_job_watch_thread(void *arg)
 		info("%s: started job_watch thread", __func__);
 
 	while (!slurmctld_config.shutdown_time && !stop_job_watch_thread) {
-		int job_count = 0;
+		int tot_jobs, comp_jobs;
 
 		slurm_mutex_lock(&job_watch_mutex);
 		if (!slurmctld_config.shutdown_time && !stop_job_watch_thread) {
-			ts.tv_sec  = time(NULL) + 30;
+			ts.tv_sec  = time(NULL) + 5;
 			pthread_cond_timedwait(&job_watch_cond,
 					       &job_watch_mutex, &ts);
 		}
@@ -587,32 +607,41 @@ static void *_job_watch_thread(void *arg)
 		if (slurmctld_config.shutdown_time || stop_job_watch_thread)
 			break;
 
-		lock_slurmctld(job_read_fed_write_lock);
+		lock_slurmctld(job_write_fed_write_lock);
 
 		if (!fed_mgr_cluster_rec) {
 			/* not part of the federation anymore */
-			unlock_slurmctld(job_read_fed_write_lock);
+			unlock_slurmctld(job_write_fed_write_lock);
 			break;
 		}
 
-		if ((job_count = list_count(job_list))) {
-			if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-				info("%s: %d remaining jobs before being removed from the federation",
-				     __func__, job_count);
+		if ((tot_jobs = list_count(job_list)) !=
+		    (comp_jobs = list_for_each(job_list, _foreach_job_completed,
+					       NULL))) {
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR) {
+				/* list_for_each negates the count if failed. */
+				int remaining_jobs = tot_jobs + comp_jobs + 1;
+				info("%s: at least %d remaining jobs before being drained and/or removed from the federation",
+				     __func__, remaining_jobs);
+			}
 		} else {
 			if (fed_mgr_cluster_rec->fed.state &
-			    CLUSTER_FED_STATE_REMOVE)
+			    CLUSTER_FED_STATE_REMOVE) {
+				/* prevent federated jobs from being requeued */
+				list_for_each(job_list, _foreach_job_no_requeue,
+					      NULL);
 				_remove_self_from_federation();
-			else if (fed_mgr_cluster_rec->fed.state &
-				 CLUSTER_FED_STATE_DRAIN)
+			} else if (fed_mgr_cluster_rec->fed.state &
+				 CLUSTER_FED_STATE_DRAIN) {
 				_mark_self_as_drained();
+			}
 
-			unlock_slurmctld(job_read_fed_write_lock);
+			unlock_slurmctld(job_write_fed_write_lock);
 
 			break;
 		}
 
-		unlock_slurmctld(job_read_fed_write_lock);
+		unlock_slurmctld(job_write_fed_write_lock);
 	}
 
 	job_watch_thread_id = 0;
