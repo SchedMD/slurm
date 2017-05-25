@@ -51,8 +51,6 @@ documents those changes that are of interest to users and administrators.
     to 365-days (as is done elsewhere), rather than 49710 days.
  -- Check if variable given to scontrol show job is a valid jobid.
  -- Fix WithSubAccounts option to not include WithDeleted unless requested.
- -- Prevent a job tested on multiple partitions from being marked
-    WHOLE_NODE_USER.
 
 * Changes in Slurm 17.02.3
 ==========================
