@@ -98,6 +98,9 @@
 
 #include "src/plugins/select/bluegene/bg_enums.h"
 
+/* Delay start of pack job until all components are recorded */
+#define PACK_DELAY 2
+
 static pthread_mutex_t rpc_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int rpc_type_size = 0;	/* Size of rpc_type_* arrays */
 static uint16_t *rpc_type_id = NULL;
@@ -1130,6 +1133,28 @@ static void _del_alloc_pack_msg(void *x)
 	slurm_free_resource_allocation_response_msg_members(alloc_msg);
 }
 
+static void *_trigger_backfill_thread(void *args)
+{
+	sleep(PACK_DELAY);
+	last_job_update = time(NULL);
+	return (void *) NULL;
+}
+
+/* Set last_job_update after the job's begin_time is reached so the
+ * backfill scheduler can run immediately thereafter */
+static void _trigger_backfill(void)
+{
+	pthread_attr_t trigger_attr;
+	pthread_t trigger_thread;
+
+	slurm_attr_init(&trigger_attr);
+	if (pthread_attr_setdetachstate(&trigger_attr, PTHREAD_CREATE_DETACHED))
+		error("pthread_attr_setdetachstate error %m");
+	(void) pthread_create(&trigger_thread, &trigger_attr,
+			      _trigger_backfill_thread, NULL);
+	slurm_attr_destroy(&trigger_attr);
+}
+
 /* _slurm_rpc_allocate_pack: process RPC to allocate a pack job resources */
 static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 {
@@ -1147,7 +1172,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 	char *err_msg = NULL;
 	ListIterator iter;
 	bool priv_user;
-	time_t min_begin = time(NULL) + 3;	/* Do not start immediately */
+	time_t min_begin = time(NULL) + PACK_DELAY;	/* Delay start */
 	List submit_job_list = NULL;
 	uint32_t pack_job_id = 0, pack_job_offset = 0;
 	hostset_t jobid_hostset = NULL;
@@ -1301,6 +1326,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		}
 		list_iterator_destroy(iter);
 		xfree(tmp_str);
+		_trigger_backfill();
 	}
 	unlock_slurmctld(job_write_lock);
 	_throttle_fini(&active_rpc_cnt);
