@@ -1112,11 +1112,14 @@ static int _setup_assoc_cond_limits(
 	if (!assoc_cond)
 		return 0;
 
+	/*
+	 * Don't use prefix here, always use t1 or we could get extra "deleted"
+	 * entries we don't want.
+	 */
 	if (assoc_cond->with_deleted)
-		xstrfmtcat(*extra, " (%s.deleted=0 || %s.deleted=1)",
-			   prefix, prefix);
+		xstrfmtcat(*extra, " (t1.deleted=0 || t1.deleted=1)");
 	else
-		xstrfmtcat(*extra, " %s.deleted=0", prefix);
+		xstrfmtcat(*extra, " t1.deleted=0");
 
 	if (assoc_cond->only_defs) {
 		set = 1;
