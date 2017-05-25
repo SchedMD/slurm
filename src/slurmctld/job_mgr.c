@@ -5181,22 +5181,10 @@ extern int prolog_complete(uint32_t job_id,
 	return SLURM_SUCCESS;
 }
 
-/*
- * job_complete - note the normal termination the specified job
- * IN job_id - id of the job which completed
- * IN uid - user id of user issuing the RPC
- * IN requeue - job should be run again if possible
- * IN node_fail - true if job terminated due to node failure
- * IN job_return_code - job's return code, if set then set state to FAILED
- * RET - 0 on success, otherwise ESLURM error code
- * global: job_list - pointer global job list
- *	last_job_update - time of last job table update
- */
-extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
-			bool node_fail, uint32_t job_return_code)
+static int _job_complete(struct job_record *job_ptr, uid_t uid, bool requeue,
+			 bool node_fail, uint32_t job_return_code)
 {
 	struct node_record *node_ptr;
-	struct job_record *job_ptr;
 	time_t now = time(NULL);
 	uint32_t job_comp_flag = 0;
 	bool suspended = false;
@@ -5205,23 +5193,10 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	int use_cloud = false;
 	uint16_t over_time_limit;
 
-	job_ptr = find_job_record(job_id);
-	if (job_ptr == NULL) {
-		info("%s: invalid JobId=%u", __func__, job_id);
-		return ESLURM_INVALID_JOB_ID;
-	}
-
 	if (IS_JOB_FINISHED(job_ptr)) {
 		if (job_ptr->exit_code == 0)
 			job_ptr->exit_code = job_return_code;
 		return ESLURM_ALREADY_DONE;
-	}
-
-	if ((job_ptr->user_id != uid) && !validate_slurm_user(uid)) {
-		error("%s: Security violation, JOB_COMPLETE RPC for job %u "
-		      "from uid %u", __func__,
-		      job_ptr->job_id, (unsigned int) uid);
-		return ESLURM_USER_ID_MISSING;
 	}
 
 	if (IS_JOB_COMPLETING(job_ptr))
@@ -5385,6 +5360,56 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	info("%s: %s done", __func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)));
 
 	return SLURM_SUCCESS;
+}
+
+
+/*
+ * job_complete - note the normal termination the specified job
+ * IN job_id - id of the job which completed
+ * IN uid - user id of user issuing the RPC
+ * IN requeue - job should be run again if possible
+ * IN node_fail - true if job terminated due to node failure
+ * IN job_return_code - job's return code, if set then set state to FAILED
+ * RET - 0 on success, otherwise ESLURM error code
+ * global: job_list - pointer global job list
+ *	last_job_update - time of last job table update
+ */
+extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
+			bool node_fail, uint32_t job_return_code)
+{
+	struct job_record *job_ptr, *job_pack_ptr;
+	ListIterator iter;
+	int rc, rc1;
+
+	job_ptr = find_job_record(job_id);
+	if (job_ptr == NULL) {
+		info("%s: invalid JobId=%u", __func__, job_id);
+		return ESLURM_INVALID_JOB_ID;
+	}
+
+	if ((job_ptr->user_id != uid) && !validate_slurm_user(uid)) {
+		error("%s: Security violation, JOB_COMPLETE RPC for job %u "
+		      "from uid %u", __func__,
+		      job_ptr->job_id, (unsigned int) uid);
+		return ESLURM_USER_ID_MISSING;
+	}
+
+	if (job_ptr->pack_job_list) {
+		rc = SLURM_SUCCESS;
+		iter = list_iterator_create(job_ptr->pack_job_list);
+		while ((job_pack_ptr = (struct job_record *) list_next(iter))) {
+			rc1 = _job_complete(job_pack_ptr, uid, requeue,
+					    node_fail, job_return_code);
+			if (rc1 != SLURM_SUCCESS)
+				rc = rc1;
+		}
+		list_iterator_destroy(iter);
+	} else {
+		rc = _job_complete(job_ptr, uid, requeue, node_fail,
+				   job_return_code);
+	}
+
+	return rc;
 }
 
 static int _alt_part_test(struct part_record *part_ptr,

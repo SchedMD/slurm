@@ -2252,18 +2252,18 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t * msg)
 	job_ptr = find_job_record(comp_msg->job_id);
 	trace_job(job_ptr, __func__, "enter");
 
-	/* do RPC call */
 	/* Mark job and/or job step complete */
 	error_code = job_complete(comp_msg->job_id, uid,
 				  false, false, comp_msg->job_rc);
-	if (error_code)
+	if (error_code) {
 		info("%s: %s error %s ",
 		     __func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)),
 		     slurm_strerror(error_code));
-	else
+	} else {
 		debug2("%s: %s %s", __func__,
 		       jobid2str(job_ptr, jbuf, sizeof(jbuf)),
 		       TIME_STR);
+	}
 
 	unlock_slurmctld(job_write_lock);
 	_throttle_fini(&active_rpc_cnt);
