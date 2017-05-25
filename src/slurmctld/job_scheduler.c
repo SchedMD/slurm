@@ -593,12 +593,11 @@ extern bool job_is_completing(bitstr_t *eff_cg_bitmap)
 			/* can return after finding first completing job so long
 			 * as a map of nodes in partitions affected by
 			 * completing jobs is not required */
-			if (eff_cg_bitmap == NULL) {
+			if (!eff_cg_bitmap)
 				break;
-			} else {
+			else
 				bit_or(eff_cg_bitmap,
-					job_ptr->part_ptr->node_bitmap);
-			}
+				       job_ptr->part_ptr->node_bitmap);
 		}
 	}
 	list_iterator_destroy(job_iterator);
@@ -1475,25 +1474,31 @@ static int _schedule(uint32_t job_limit)
 
 	/* Avoid resource fragmentation if important */
 	eff_cg_bitmap = bit_alloc(node_record_count);
-	bit_clear_all(eff_cg_bitmap);
 	if (job_is_completing(eff_cg_bitmap)) {
 		ListIterator part_iterator = list_iterator_create(part_list);
 		struct part_record *part_ptr = NULL;
 		char *cg_part_str = NULL;
 
-		while ((part_ptr =
-		      (struct part_record *) list_next(part_iterator))) {
+		while ((part_ptr = list_next(part_iterator))) {
 			if (bit_overlap(eff_cg_bitmap, part_ptr->node_bitmap)) {
 				failed_parts[failed_part_cnt++] = part_ptr;
-				xstrfmtcat(cg_part_str, "%s,", part_ptr->name);
 				bit_and_not(avail_node_bitmap,
 					    part_ptr->node_bitmap);
+				if (slurmctld_conf.slurmctld_debug >=
+				    LOG_LEVEL_DEBUG) {
+					if (cg_part_str)
+						xstrcat(cg_part_str, ",");
+					xstrfmtcat(cg_part_str, "%s",
+						   part_ptr->name);
+				}
 			}
 		}
-		debug("sched: some job is still completing, skipping %s "
-		      "partitions", cg_part_str);
-		xfree(cg_part_str);
 		list_iterator_destroy(part_iterator);
+		if (cg_part_str) {
+			debug("sched: some job is still completing, skipping partitions '%s'",
+			      cg_part_str);
+			xfree(cg_part_str);
+		}
 	}
 	bit_free(eff_cg_bitmap);
 
