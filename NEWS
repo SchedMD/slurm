@@ -55,6 +55,8 @@ documents those changes that are of interest to users and administrators.
     WHOLE_NODE_USER.
  -- Prevent a race between completing jobs on a user-exclusive node from
     leaving the node owned.
+ -- When scheduling take the nodes in completing jobs out of the mix to reduce
+    fragmentation.
 
 * Changes in Slurm 17.02.3
 ==========================

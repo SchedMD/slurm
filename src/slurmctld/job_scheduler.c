@@ -564,12 +564,16 @@ extern List build_job_queue(bool clear_start, bool backfill)
 
 /*
  * job_is_completing - Determine if jobs are in the process of completing.
+ * IN/OUT  eff_cg_bitmap - optional bitmap of all relevent completing nodes,
+ *                         relevenace determined by filtering via CompleteWait
+ *                         if NULL, function will terminate at first completing
+ *                         job
  * RET - True of any job is in the process of completing AND
  *	 CompleteWait is configured non-zero
  * NOTE: This function can reduce resource fragmentation, which is a
  * critical issue on Elan interconnect based systems.
  */
-extern bool job_is_completing(void)
+extern bool job_is_completing(bitstr_t *eff_cg_bitmap)
 {
 	bool completing = false;
 	ListIterator job_iterator;
@@ -586,7 +590,15 @@ extern bool job_is_completing(void)
 		if (IS_JOB_COMPLETING(job_ptr) &&
 		    (job_ptr->end_time >= recent)) {
 			completing = true;
-			break;
+			/* can return after finding first completing job so long
+			 * as a map of nodes in partitions affected by
+			 * completing jobs is not required */
+			if (eff_cg_bitmap == NULL) {
+				break;
+			} else {
+				bit_or(eff_cg_bitmap,
+					job_ptr->part_ptr->node_bitmap);
+			}
 		}
 	}
 	list_iterator_destroy(job_iterator);
@@ -1176,6 +1188,7 @@ static int _schedule(uint32_t job_limit)
 	struct part_record *skip_part_ptr = NULL;
 	struct slurmctld_resv **failed_resv = NULL;
 	bitstr_t *save_avail_node_bitmap;
+	bitstr_t *eff_cg_bitmap = NULL;
 	struct part_record **sched_part_ptr = NULL;
 	int *sched_part_jobs = NULL, bb_wait_cnt = 0;
 	/* Locks: Read config, write job, write node, read partition */
@@ -1433,13 +1446,7 @@ static int _schedule(uint32_t job_limit)
 		      "available");
 		goto out;
 	}
-	/* Avoid resource fragmentation if important */
-	if (job_is_completing()) {
-		unlock_slurmctld(job_write_lock);
-		debug("sched: schedule() returning, some job is still "
-		      "completing");
-		goto out;
-	}
+
 
 #ifdef HAVE_ALPS_CRAY
 	/*
@@ -1465,6 +1472,37 @@ static int _schedule(uint32_t job_limit)
 	bit_not(booting_node_bitmap);
 	bit_and(avail_node_bitmap, booting_node_bitmap);
 	bit_not(booting_node_bitmap);
+
+	/* Avoid resource fragmentation if important */
+	eff_cg_bitmap = bit_alloc(node_record_count);
+	bit_clear_all(eff_cg_bitmap);
+	if (job_is_completing(eff_cg_bitmap)) {
+		ListIterator part_iterator = list_iterator_create(part_list);
+		struct part_record *part_ptr = NULL;
+		char *cg_part_str = NULL;
+
+		while ((part_ptr =
+		      (struct part_record *) list_next(part_iterator))) {
+
+			bitstr_t *working = bit_copy(eff_cg_bitmap);
+			bit_and(working, part_ptr->node_bitmap);
+			if (bit_set_count(working) > 0) {
+				failed_parts[failed_part_cnt++] = part_ptr;
+				bit_not(part_ptr->node_bitmap);
+				bit_and(avail_node_bitmap,
+				        part_ptr->node_bitmap);
+				bit_not(part_ptr->node_bitmap);
+				xstrfmtcat(cg_part_str, "%s,", part_ptr->name);
+			}
+			bit_free(working);
+		}
+		debug("sched: some job is still completing, skipping %s "
+		      "partitions", cg_part_str);
+		xfree(cg_part_str);
+		list_iterator_destroy(part_iterator);
+	}
+	bit_free(eff_cg_bitmap);
+
 
 	if (max_jobs_per_part) {
 		ListIterator part_iterator;

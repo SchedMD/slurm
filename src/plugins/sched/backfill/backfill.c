@@ -763,7 +763,7 @@ extern void *backfill_agent(void *args)
 		now = time(NULL);
 		wait_time = difftime(now, last_backfill_time);
 		if ((wait_time < backfill_interval) ||
-		    job_is_completing() || _many_pending_rpcs() ||
+		    job_is_completing(NULL) || _many_pending_rpcs() ||
 		    !avail_front_end(NULL) || !_more_work(last_backfill_time)) {
 			short_sleep = true;
 			continue;
