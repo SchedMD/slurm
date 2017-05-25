@@ -620,7 +620,6 @@ unlock:
 
 static void _process_server_request(pmixp_base_hdr_t *hdr, Buf buf)
 {
-	char *nodename = pmixp_info_job_host(hdr->nodeid);
 	int rc;
 
 	switch (hdr->type) {
@@ -633,14 +632,16 @@ static void _process_server_request(pmixp_base_hdr_t *hdr, Buf buf)
 
 		rc = pmixp_coll_unpack_ranges(buf, &type, &procs, &nprocs);
 		if (SLURM_SUCCESS != rc) {
+			char *nodename = pmixp_info_job_host(hdr->nodeid);
 			PMIXP_ERROR("Bad message header from node %s", nodename);
+			xfree(nodename);
 			goto exit;
 		}
 		coll = pmixp_state_coll_get(type, procs, nprocs);
 		xfree(procs);
 
-		PMIXP_DEBUG("FENCE collective message from node \"%s\", type = %s, seq = %d",
-			    nodename, (PMIXP_MSG_FAN_IN == hdr->type) ? "fan-in" : "fan-out",
+		PMIXP_DEBUG("FENCE collective message from nodeid = %u, type = %s, seq = %d",
+			    hdr->nodeid, (PMIXP_MSG_FAN_IN == hdr->type) ? "fan-in" : "fan-out",
 			    hdr->seq);
 		rc = pmixp_coll_check_seq(coll, hdr->seq);
 		if (PMIXP_COLL_REQ_FAILURE == rc) {
@@ -648,21 +649,22 @@ static void _process_server_request(pmixp_base_hdr_t *hdr, Buf buf)
 			 * really wrong or the state machine is incorrect.
 			 * This will 100% lead to application hang.
 			 */
+			char *nodename = pmixp_info_job_host(hdr->nodeid);
 			PMIXP_ERROR("Bad collective seq. #%d from %s, current is %d",
 				    hdr->seq, nodename, coll->seq);
 			pmixp_debug_hang(0); /* enable hang to debug this! */
 			slurm_kill_job_step(pmixp_info_jobid(), pmixp_info_stepid(),
 					    SIGKILL);
-
+			xfree(nodename);
 			break;
 		} else if (PMIXP_COLL_REQ_SKIP == rc) {
-			PMIXP_DEBUG("Wrong collective seq. #%d from %s, current is %d, skip this message",
-				    hdr->seq, nodename, coll->seq);
+			PMIXP_DEBUG("Wrong collective seq. #%d from nodeid %u, current is %d, skip this message",
+				    hdr->seq, hdr->nodeid, coll->seq);
 			goto exit;
 		}
 
 		if (PMIXP_MSG_FAN_IN == hdr->type) {
-			pmixp_coll_contrib_node(coll, nodename, buf);
+			pmixp_coll_contrib_node(coll, hdr->nodeid, buf);
 			goto exit;
 		} else {
 			coll->root_buf = buf;
@@ -720,9 +722,6 @@ static void _process_server_request(pmixp_base_hdr_t *hdr, Buf buf)
 
 exit:
 	free_buf(buf);
-	if( NULL != nodename ){
-		xfree(nodename);
-	}
 }
 
 void pmixp_server_sent_buf_cb(int rc, pmixp_p2p_ctx_t ctx, void *data)

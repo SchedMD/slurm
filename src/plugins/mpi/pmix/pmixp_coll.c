@@ -385,13 +385,22 @@ int pmixp_coll_contrib_local(pmixp_coll_t *coll, char *data, size_t size)
 	return SLURM_SUCCESS;
 }
 
-int pmixp_coll_contrib_node(pmixp_coll_t *coll, char *nodename, Buf buf)
+int pmixp_coll_contrib_node(pmixp_coll_t *coll, uint32_t glob_nodeid, Buf buf)
 {
-	int nodeid;
 	char *data = NULL;
 	uint32_t size;
 	char *state = NULL;
-
+	/* TODO: send remote nodeid for this collective to avoid this
+	 * heavy resolution
+	 */
+	char *nodename = pmixp_info_job_host(glob_nodeid);
+	int nodeid = hostlist_find(coll->ch_hosts, nodename);
+	xassert(0 <= nodeid);
+	if (0 > nodeid) {
+		/* protect ourselfs if we are running with no asserts */
+		PMIXP_ERROR("Contribution from the node not participating in this collective");
+		goto proceed;
+	}
 	PMIXP_DEBUG("%s:%d: get contribution from node %s",
 			pmixp_info_namespace(), pmixp_info_nodeid(), nodename);
 
@@ -420,13 +429,6 @@ int pmixp_coll_contrib_node(pmixp_coll_t *coll, char *nodename, Buf buf)
 	/* Because of possible timeouts/delays in transmission we
 	 * can receive a contribution second time. Avoid duplications
 	 * by checking our records. */
-	nodeid = hostlist_find(coll->ch_hosts, nodename);
-	xassert(0 <= nodeid);
-	if (0 > nodeid) {
-		/* protect ourselfs if we are running with no asserts */
-		goto proceed;
-	}
-
 	if (0 < coll->ch_contribs[nodeid]) {
 		/* May be 0 or 1. If grater - transmission skew, ignore. */
 		PMIXP_DEBUG("Multiple contributions from child_id=%d, hostname=%s",

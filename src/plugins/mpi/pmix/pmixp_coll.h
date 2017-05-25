@@ -197,7 +197,7 @@ static inline int pmixp_coll_check_seq(pmixp_coll_t *coll, uint32_t seq)
 
 int pmixp_coll_contrib_local(pmixp_coll_t *coll, char *data,
 			     size_t ndata);
-int pmixp_coll_contrib_node(pmixp_coll_t *coll, char *nodename, Buf buf);
+int pmixp_coll_contrib_node(pmixp_coll_t *coll, uint32_t nodeid, Buf buf);
 void pmixp_coll_bcast(pmixp_coll_t *coll);
 bool pmixp_coll_progress(pmixp_coll_t *coll, char *fwd_node,
 			 void **data, uint64_t size);
