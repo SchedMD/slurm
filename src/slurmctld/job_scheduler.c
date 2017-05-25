@@ -1483,18 +1483,12 @@ static int _schedule(uint32_t job_limit)
 
 		while ((part_ptr =
 		      (struct part_record *) list_next(part_iterator))) {
-
-			bitstr_t *working = bit_copy(eff_cg_bitmap);
-			bit_and(working, part_ptr->node_bitmap);
-			if (bit_set_count(working) > 0) {
+			if (bit_overlap(eff_cg_bitmap, part_ptr->node_bitmap)) {
 				failed_parts[failed_part_cnt++] = part_ptr;
-				bit_not(part_ptr->node_bitmap);
-				bit_and(avail_node_bitmap,
-				        part_ptr->node_bitmap);
-				bit_not(part_ptr->node_bitmap);
 				xstrfmtcat(cg_part_str, "%s,", part_ptr->name);
+				bit_and_not(avail_node_bitmap,
+					    part_ptr->node_bitmap);
 			}
-			bit_free(working);
 		}
 		debug("sched: some job is still completing, skipping %s "
 		      "partitions", cg_part_str);
