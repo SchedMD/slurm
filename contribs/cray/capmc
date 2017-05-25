@@ -440,8 +440,8 @@ do
             \"mcdram_cfg\": \"flat\",
             \"mcdram_pct\": \"0\",
             \"mcdram_size\": \"8192MB\",
-            \"nid\": $inx
-            \"dram_size\": \"96GB\",
+            \"nid\": $inx,
+            \"dram_size\": \"96GB\"
         },"
 	inx=$((inx+1))
 done
@@ -449,8 +449,8 @@ done
             \"mcdram_cfg\": \"flat\",
             \"mcdram_pct\": \"0\",
             \"mcdram_size\": \"8192MB\",
-            \"nid\": $inx
-            \"dram_size\": \"96GB\",
+            \"nid\": $inx,
+            \"dram_size\": \"96GB\"
         } "
 echo '    ],
     "err_msg": "Success; nids not eligible for numa operations were ignored",
