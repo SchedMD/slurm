@@ -167,6 +167,7 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 		       uint32_t min_nodes, uint32_t max_nodes,
 		       uint32_t req_nodes, bitstr_t *exc_core_bitmap);
 static int  _yield_locks(int usec);
+static int _clear_qos_blocked_times(void *x, void *arg);
 
 /* Log resources to be allocated to a pending job */
 static void _dump_job_sched(struct job_record *job_ptr, time_t end_time,
@@ -262,6 +263,14 @@ static int _num_feature_count(struct job_record *job_ptr, bool *has_xor)
 	list_iterator_destroy(feat_iter);
 
 	return rc;
+}
+
+static int _clear_qos_blocked_times(void *x, void *arg)
+{
+	slurmdb_qos_rec_t *qos_ptr = (slurmdb_qos_rec_t *) x;
+	qos_ptr->blocked_until = 0;
+
+	return 0;
 }
 
 /* Attempt to schedule a specific job on specific available nodes
@@ -879,7 +888,7 @@ static int _attempt_backfill(void)
 	DEF_TIMERS;
 	List job_queue;
 	job_queue_rec_t *job_queue_rec;
-	slurmdb_qos_rec_t *qos_ptr = NULL;
+	slurmdb_qos_rec_t *qos_ptr = NULL, *qos_part_ptr = NULL;;
 	int bb, i, j, node_space_recs, mcs_select = 0;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr, **bf_part_ptr = NULL;
@@ -1003,6 +1012,11 @@ static int _attempt_backfill(void)
 	if (max_backfill_job_per_user) {
 		uid = xmalloc(BF_MAX_USERS * sizeof(uint32_t));
 		njobs = xmalloc(BF_MAX_USERS * sizeof(uint16_t));
+	}
+	if (assoc_limit_stop) {
+		assoc_mgr_lock(&qos_read_lock);
+		list_for_each(part_list, _clear_qos_blocked_times, NULL);
+		assoc_mgr_unlock(&qos_read_lock);
 	}
 
 	sort_job_queue(job_queue);
@@ -1130,6 +1144,7 @@ static int _attempt_backfill(void)
 
 		assoc_mgr_lock(&qos_read_lock);
 		qos_ptr = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
+		qos_part_ptr = (slurmdb_qos_rec_t *)job_ptr->part_ptr->qos_ptr;
 		if (qos_ptr)
 			qos_flags = qos_ptr->flags;
 		if (part_policy_valid_qos(job_ptr->part_ptr, qos_ptr) !=
@@ -1361,6 +1376,27 @@ next_task:
 			time_limit = job_ptr->time_limit = job_ptr->time_min;
 
 		later_start = now;
+		if (qos_ptr && assoc_limit_stop) {
+			assoc_mgr_lock(&qos_read_lock);
+			if (qos_ptr->blocked_until > later_start) {
+				later_start = qos_ptr->blocked_until;
+				if (debug_flags & DEBUG_FLAG_BACKFILL)
+					info("QOS blocked_until move start_res to %ld",
+					     later_start);
+			}
+			assoc_mgr_unlock(&qos_read_lock);
+		}
+		if (qos_part_ptr && assoc_limit_stop) {
+			assoc_mgr_lock(&qos_read_lock);
+			if (qos_part_ptr->blocked_until > later_start) {
+				later_start = qos_part_ptr->blocked_until;
+				if (debug_flags & DEBUG_FLAG_BACKFILL)
+					info("Part QOS blocked_until move start_res to %ld",
+					     later_start);
+			}
+			assoc_mgr_unlock(&qos_read_lock);
+		}
+
  TRY_LATER:
 		if (slurmctld_config.shutdown_time ||
 		    (difftime(time(NULL), orig_sched_start) >=
@@ -1737,6 +1773,20 @@ next_task:
 					job_ptr->start_time = later_start;
 				else
 					job_ptr->start_time = now + 500;
+				if (job_ptr->qos_blocking_ptr &&
+				    (job_ptr->state_reason >=
+				     WAIT_QOS_GRP_CPU &&
+				     job_ptr->state_reason <=
+				     WAIT_QOS_GRP_WALL)) {
+					assoc_mgr_lock(&qos_read_lock);
+					qos_ptr = job_ptr->qos_blocking_ptr;
+					if (qos_ptr->blocked_until <
+					    job_ptr->start_time) {
+						qos_ptr->blocked_until =
+						job_ptr->start_time;
+					}
+					assoc_mgr_unlock(&qos_read_lock);
+				}
 			} else if (rc != SLURM_SUCCESS) {
 				if (debug_flags & DEBUG_FLAG_BACKFILL) {
 					info("backfill: planned start of job %u"
