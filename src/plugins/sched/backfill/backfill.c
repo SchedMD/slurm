@@ -1786,9 +1786,6 @@ next_task:
 			_set_job_time_limit(job_ptr, orig_time_limit);
 		}
 
-		if ((job_ptr->start_time > now) && (job_no_reserve != 0))
-			continue;
-
 		if ((job_ptr->start_time > now) && (job_no_reserve != 0)) {
 			if ((orig_start_time != 0) &&
 			    (orig_start_time < job_ptr->start_time)) {
