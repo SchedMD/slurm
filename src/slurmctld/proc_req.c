@@ -1323,6 +1323,12 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 				sizeof(resource_allocation_response_msg_t));
 			_build_alloc_msg(job_ptr, alloc_msg, error_code);
 			list_append(resp, alloc_msg);
+			if (slurmctld_conf.debug_flags &
+			    DEBUG_FLAG_HETERO_JOBS) {
+				char buf[24];
+				info("Submit %s",
+				     jobid2fmt(job_ptr, buf, sizeof(buf)));
+			}
 		}
 		list_iterator_destroy(iter);
 		xfree(tmp_str);
