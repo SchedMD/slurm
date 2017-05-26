@@ -91,13 +91,16 @@ Buf pmixp_server_buf_new(void)
 {
 	Buf buf = create_buf(xmalloc(PMIXP_BASE_HDR_MAX), PMIXP_BASE_HDR_MAX);
 #ifndef NDEBUG
+	xassert( PMIXP_BASE_HDR_MAX >= sizeof(uint32_t));
+
 	/* Makesure that we only use buffers allocated through
 	 * this call, because we reserve the space for the
 	 * header here
 	 */
-	xassert( PMIXP_BASE_HDR_MAX >= sizeof(uint32_t));
-	uint32_t tmp = PMIXP_SERVER_BUF_MAGIC;
-	pack32(tmp, buf);
+	size_t tsz = sizeof(uint32_t);
+	size_t goffs = (size_t)get_buf_data(buf);
+	uint32_t *chk_ptr = (uint32_t *)(((goffs + (tsz - 1)) / tsz) * tsz);
+	*chk_ptr = PMIXP_SERVER_BUF_MAGIC;
 #endif
 
 	/* Skip header. It will be filled right before the sending */
@@ -108,12 +111,16 @@ Buf pmixp_server_buf_new(void)
 size_t pmixp_server_buf_reset(Buf buf)
 {
 #ifndef NDEBUG
+	xassert( PMIXP_BASE_HDR_MAX >= sizeof(uint32_t));
 	xassert( PMIXP_BASE_HDR_MAX <= get_buf_offset(buf) );
-	set_buf_offset(buf,0);
-	/* Restore the protection magic number
+	/* Makesure that we only use buffers allocated through
+	 * this call, because we reserve the space for the
+	 * header here
 	 */
-	uint32_t tmp = PMIXP_SERVER_BUF_MAGIC;
-	pack32(tmp, buf);
+	size_t tsz = sizeof(uint32_t);
+	size_t goffs = (size_t)get_buf_data(buf);
+	uint32_t *chk_ptr = (uint32_t *)(((goffs + (tsz - 1)) / tsz) * tsz);
+	*chk_ptr = PMIXP_SERVER_BUF_MAGIC;
 #endif
 	set_buf_offset(buf, PMIXP_BASE_HDR_MAX);
 	return PMIXP_BASE_HDR_MAX;
@@ -126,14 +133,17 @@ static void *_buf_finalize(Buf buf, void *nhdr, size_t hsize,
 	char *ptr = get_buf_data(buf);
 	size_t offset = PMIXP_BASE_HDR_MAX - hsize;
 #ifndef NDEBUG
-	Buf tbuf = create_buf(ptr, get_buf_offset(buf));
 	xassert(PMIXP_BASE_HDR_MAX >= hsize);
 	xassert(PMIXP_BASE_HDR_MAX <= get_buf_offset(buf));
-	uint32_t tmp;
-	unpack32(&tmp, tbuf);
-	xassert(PMIXP_SERVER_BUF_MAGIC == tmp);
-	tbuf->head = NULL;
-	free_buf(tbuf);
+
+	/* Makesure that we only use buffers allocated through
+	 * this call, because we reserve the space for the
+	 * header here
+	 */
+	size_t tsz = sizeof(uint32_t);
+	size_t goffs = (size_t)get_buf_data(buf);
+	uint32_t *chk_ptr = (uint32_t *)(((goffs + (tsz - 1)) / tsz) * tsz);
+	xassert(PMIXP_SERVER_BUF_MAGIC == *chk_ptr);
 #endif
 	/* Enough space for any header was reserved at the
 	 * time of buffer initialization in `pmixp_server_new_buf`
