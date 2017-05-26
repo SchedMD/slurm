@@ -148,7 +148,7 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 			     node_space_map_t *node_space,
 			     int *node_space_recs);
 static int  _attempt_backfill(void);
-static void _clear_job_start_times(void);
+static int  _clear_job_start_times(void *x, void *arg);
 static void _do_diag_stats(struct timeval *tv1, struct timeval *tv2);
 static bool _job_part_valid(struct job_record *job_ptr,
 			    struct part_record *part_ptr);
@@ -781,17 +781,12 @@ extern void *backfill_agent(void *args)
 /* Clear the start_time for all pending jobs. This is used to ensure that a job which
  * can run in multiple partitions has its start_time set to the smallest
  * value in any of those partitions. */
-static void _clear_job_start_times(void)
+static int _clear_job_start_times(void *x, void *arg)
 {
-	ListIterator job_iterator;
-	struct job_record *job_ptr;
-
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (IS_JOB_PENDING(job_ptr))
-			job_ptr->start_time = 0;
-	}
-	list_iterator_destroy(job_iterator);
+	struct job_record *job_ptr = (struct job_record *) x;
+	if (IS_JOB_PENDING(job_ptr))
+		job_ptr->start_time = 0;
+	return SLURM_SUCCESS;
 }
 
 /* Return non-zero to break the backfill loop if change in job, node or
@@ -967,7 +962,7 @@ static int _attempt_backfill(void)
 	}
 
 	if (backfill_continue)
-		_clear_job_start_times();
+		list_for_each(job_list, _clear_job_start_times, NULL);
 
 	gettimeofday(&bf_time1, NULL);
 
