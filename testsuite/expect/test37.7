@@ -465,6 +465,18 @@ sacctmgr_show "\\s+ACTIVE\\s+"
 # Once the system is drained, the controller will mark all jobs as non-requeueable.
 scontrol jobs "Requeue=0.+"
 
+
+#Make sure we can submit to removed cluster.
+
+set job_id [sbatch 1 0]
+
+if {[expr $job_id >> 26]} {
+	send_user "Removed cluster still giving federated job id\n"
+	end_it 1
+}
+
+wait_for_fed_job $job_id DONE $fedc1
+
 set matches 0
 
 spawn $my_sacctmgr mod fed $fed_name set clusters+=$fedc1 -i
