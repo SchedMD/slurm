@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "December 2016" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "May 2017" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -2779,6 +2779,16 @@ By default if the Prolog exits with a non-zero value the job is requeued in
 held state. By specifying this parameter the job will be requeued but not
 held so that the scheduler can dispatch it to another host.
 .TP
+\fBreduce_completing_frag\fR
+Setting this option will attempt to avoid completing jobs nodes when scheduling
+thus reducing potential fragmentation. This option is to be used in
+conjunction with \fBCompleteWait\fR. By default if a job is found
+completing then no jobs are scheduled. If this parameter is used the node in
+a completing job are taken out of consideration.
+NOTE: With this set there may be a slight performance penality in scheduling
+depending on queue depth.
+NOTE: \fBCompleteWait\fR must be set for this to work.
+.TP
 \fBrequeue_setup_env_fail\fR
 By default if a job environment setup fails the job keeps running with
 a limited environment. By specifying this parameter the job will be
@@ -5286,7 +5296,7 @@ Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
 Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 .br
-Copyright (C) 2010-2016 SchedMD LLC.
+Copyright (C) 2010-2017 SchedMD LLC.
 .LP
 This file is part of Slurm, a resource management program.
 For details, see <https://slurm.schedmd.com/>.

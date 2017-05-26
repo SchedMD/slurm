@@ -56,7 +56,7 @@ documents those changes that are of interest to users and administrators.
  -- Prevent a race between completing jobs on a user-exclusive node from
     leaving the node owned.
  -- When scheduling take the nodes in completing jobs out of the mix to reduce
-    fragmentation.
+    fragmentation.  SchedulerParameters=reduce_completing_frag
  -- For jobs submited to multiple partitions, report the job's earliest start
     time for any partition.
 
