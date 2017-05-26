@@ -899,11 +899,8 @@ extern void filter_by_node_owner(struct job_record *job_ptr,
 	struct node_record *node_ptr;
 	int i;
 
-	if ((job_ptr->details->whole_node == 0) &&
-	    (job_ptr->part_ptr->flags & PART_FLAG_EXCLUSIVE_USER))
-		job_ptr->details->whole_node = WHOLE_NODE_USER;
-
-	if (job_ptr->details->whole_node == WHOLE_NODE_USER) {
+	if ((job_ptr->details->whole_node == WHOLE_NODE_USER) ||
+	    (job_ptr->part_ptr->flags & PART_FLAG_EXCLUSIVE_USER)) {
 		/* Need to remove all nodes allocated to any active job from
 		 * any other user */
 		job_iterator = list_iterator_create(job_list);

@@ -2158,8 +2158,10 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 		} else if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
 
-		if (job_ptr->details &&
-		    (job_ptr->details->whole_node == WHOLE_NODE_USER)) {
+		if ((job_ptr->details &&
+		     (job_ptr->details->whole_node == WHOLE_NODE_USER)) ||
+		    (job_ptr->part_ptr &&
+		     (job_ptr->part_ptr->flags & PART_FLAG_EXCLUSIVE_USER))) {
 			node_ptr->owner_job_cnt++;
 			node_ptr->owner = job_ptr->user_id;
 		}

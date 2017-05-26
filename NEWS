@@ -137,6 +137,15 @@ documents those changes that are of interest to users and administrators.
  -- Fix 'scontrol update reservation duration=unlimited' to set the duration
     to 365-days (as is done elsewhere), rather than 49710 days.
  -- Check if variable given to scontrol show job is a valid jobid.
+ -- Fix WithSubAccounts option to not include WithDeleted unless requested.
+ -- Prevent a job tested on multiple partitions from being marked
+    WHOLE_NODE_USER.
+ -- Prevent a race between completing jobs on a user-exclusive node from
+    leaving the node owned.
+ -- When scheduling take the nodes in completing jobs out of the mix to reduce
+    fragmentation.
+ -- For jobs submited to multiple partitions, report the job's earliest start
+    time for any partition.
 
 * Changes in Slurm 17.02.3
 ==========================

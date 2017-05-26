@@ -92,12 +92,16 @@ extern int epilog_slurmctld(struct job_record *job_ptr);
 
 /*
  * job_is_completing - Determine if jobs are in the process of completing.
+ * IN/OUT  eff_cg_bitmap - optional bitmap of all relevent completing nodes,
+ *                         relevenace determined by filtering via CompleteWait
+ *                         if NULL, function will terminate at first completing
+ *                         job
  * RET - True of any job is in the process of completing AND
  *	 CompleteWait is configured non-zero
  * NOTE: This function can reduce resource fragmentation, which is a
  * critical issue on Elan interconnect based systems.
  */
-extern bool job_is_completing(void);
+extern bool job_is_completing(bitstr_t *eff_cg_bitmap);
 
 /* Determine if a pending job will run using only the specified nodes
  * (in job_desc_msg->req_nodes), build response message and return

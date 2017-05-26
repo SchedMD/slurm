@@ -4490,7 +4490,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 
 	/* Avoid resource fragmentation if important */
 	if ((submit_uid || (job_specs->req_nodes == NULL)) &&
-	    independent && job_is_completing())
+	    independent && job_is_completing(NULL))
 		too_fragmented = true;	/* Don't pick nodes for job now */
 	/* FIXME: Ideally we only want to refuse the request if the
 	 * required node list is insufficient to satisfy the job's
