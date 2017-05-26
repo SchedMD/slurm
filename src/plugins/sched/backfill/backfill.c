@@ -1789,6 +1789,15 @@ next_task:
 		if ((job_ptr->start_time > now) && (job_no_reserve != 0))
 			continue;
 
+		if ((job_ptr->start_time > now) && (job_no_reserve != 0)) {
+			if ((orig_start_time != 0) &&
+			    (orig_start_time < job_ptr->start_time)) {
+				/* Can start earlier in different partition */
+				job_ptr->start_time = orig_start_time;
+			}
+			continue;
+		}
+
 		if (later_start && (job_ptr->start_time > later_start)) {
 			/* Try later when some nodes currently reserved for
 			 * pending jobs are free */

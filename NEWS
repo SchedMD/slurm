@@ -57,6 +57,8 @@ documents those changes that are of interest to users and administrators.
     leaving the node owned.
  -- When scheduling take the nodes in completing jobs out of the mix to reduce
     fragmentation.
+ -- For jobs submited to multiple partitions, report the job's earliest start
+    time for any partition.
 
 * Changes in Slurm 17.02.3
 ==========================
