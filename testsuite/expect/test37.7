@@ -57,7 +57,7 @@ set my_sbatch    "${fed_slurm_base}/$fedc1/bin/sbatch"
 set my_srun      "${fed_slurm_base}/$fedc1/bin/srun"
 set my_salloc    "${fed_slurm_base}/$fedc1/bin/salloc"
 set my_squeue    "${fed_slurm_base}/$fedc1/bin/squeue"
-set min_job_age  [expr {[get_min_job_age] + 65}]
+set drain_time   10
 
 set eol "\r\n"
 
@@ -403,15 +403,8 @@ sleep 10
 
 squeue ""
 
-log_info "Sleep $min_job_age seconds until system is drained"
-sleep $min_job_age
-
-scontrol jobs "No jobs in the system"
-
-scontrol fed ".+DRAIN.+ACTIVE.+"
-
-log_info "Sleep 35 more seconds until system is drained"
-sleep 35
+log_info "Sleep $drain_time seconds until system is drained"
+sleep $drain_time
 
 scontrol fed ".+DRAINED.+ACTIVE.+"
 
@@ -462,16 +455,15 @@ sbatch  1 1
 
 squeue ""
 
-scontrol jobs "JobId.+"
-
-log_info "Sleep $min_job_age seconds until system is drained"
-sleep $min_job_age
-
-scontrol jobs "No jobs in the system"
+log_info "Sleep $drain_time seconds until system is removed"
+sleep $drain_time
 
 scontrol fed ""
 
 sacctmgr_show "\\s+ACTIVE\\s+"
+
+# Once the system is drained, the controller will mark all jobs as non-requeueable.
+scontrol jobs "Requeue=0.+"
 
 set matches 0
 
