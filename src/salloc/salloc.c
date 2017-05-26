@@ -97,6 +97,7 @@ extern pid_t getpgid(pid_t pid);
 char **command_argv;
 int command_argc;
 pid_t command_pid = -1;
+uint64_t debug_flags = 0;
 char *work_dir = NULL;
 static int is_interactive;
 
@@ -182,8 +183,10 @@ int main(int argc, char **argv)
 	char **pack_argv;
 	static char *msg = "Slurm job queue full, sleeping and retrying.";
 	slurm_allocation_callbacks_t callbacks;
+	uint32_t pack_job_id = 0;
 
 	slurm_conf_init(NULL);
+	debug_flags = slurm_get_debug_flags();
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	_set_exit_code();
 
@@ -415,14 +418,23 @@ int main(int argc, char **argv)
 	} else if (job_resp_list && !allocation_interrupted) {
 		/* Allocation granted to regular job */
 		ListIterator iter;
+		i = 0;
 		iter = list_iterator_create(job_resp_list);
 		while ((alloc = (resource_allocation_response_msg_t *)
 				list_next(iter))) {
-			info("Granted job allocation %u", alloc->job_id);
-info("  Nodes %s", alloc->node_list);
+			if (pack_job_id == 0) {
+				pack_job_id = alloc->job_id;
+				info("Granted job allocation %u", pack_job_id);
+			}
+			if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
+				info("Pack job ID %u+%u (%u)", pack_job_id, i++,
+				     alloc->job_id);
+			} else {
+				break;
+			}
 		}
 		list_iterator_destroy(iter);
-//FIXME, print one job ID
+//FIXME: work through additional logic
 exit(1);
 	} else if (!allocation_interrupted) {
 		/* Allocation granted to regular job */
