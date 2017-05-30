@@ -86,7 +86,7 @@ typedef struct {
 #define CRAY_ERR(fmt, ...) error("(%s: %d: %s) "fmt, THIS_FILE, __LINE__, \
 				 __FUNCTION__, ##__VA_ARGS__);
 
-extern void ccm_get_config();
+extern void ccm_get_config(void);
 extern void spawn_ccm_thread(void *obj_ptr, void *(*start_routine) (void *));
 extern int ccm_check_partitions(struct job_record *job_ptr);
 extern void *ccm_begin(void *args);

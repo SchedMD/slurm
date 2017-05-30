@@ -469,7 +469,7 @@ static int _run_ccm_prolog_epilog(ccm_info_t *ccm_info, char *ccm_type,
  * Get the CCM configuration information.
  *
  */
-extern void ccm_get_config()
+extern void ccm_get_config(void)
 {
 	char *err_msg = NULL, *ccm_env;
 
@@ -489,7 +489,7 @@ extern void ccm_get_config()
 	ccm_config.ccm_enabled = 0;
 	err_msg = _get_ccm_partition(&ccm_config);
 	if (err_msg) {
-		info("CCM ssh launch disabled, %s", err_msg);
+		info("CCM ssh launch disabled: %s", err_msg);
 	} else {
 		if (ccm_config.num_ccm_partitions > 0) {
 			ccm_config.ccm_enabled = 1;
