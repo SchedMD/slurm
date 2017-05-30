@@ -606,7 +606,7 @@ static void _make_time_str(time_t * time, char *string, int size)
 extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 {
 	char usr_str[32], grp_str[32], start_str[32], end_str[32];
-	char time_str[32], *qos, *state_string;
+	char time_str[32], *state_string;
 	time_t elapsed_time;
 	enum job_states job_state;
 	uint32_t time_limit;
