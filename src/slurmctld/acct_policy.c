@@ -2220,6 +2220,8 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 	/* we don't need to check max_wall_pj here */
 
 end_it:
+	if (!rc)
+		job_ptr->qos_blocking_ptr = qos_ptr;
 
 	return rc;
 }
@@ -3072,6 +3074,8 @@ extern bool acct_policy_job_runnable_post_select(
 		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = WAIT_NO_REASON;
 	}
+
+	job_ptr->qos_blocking_ptr = NULL;
 
 	/* clang needs this memset to avoid a warning */
 	memset(tres_run_mins, 0, sizeof(tres_run_mins));

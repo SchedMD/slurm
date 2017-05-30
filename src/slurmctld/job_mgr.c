@@ -15359,6 +15359,10 @@ extern int job_hold_by_qos_id(uint32_t qos_id)
 	lock_slurmctld(job_write_lock);
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (job_ptr->qos_blocking_ptr &&
+		    ((slurmdb_qos_rec_t *)job_ptr->qos_blocking_ptr)->id
+		    != qos_id)
+			job_ptr->qos_blocking_ptr = NULL;
 		if (job_ptr->qos_id != qos_id)
 			continue;
 

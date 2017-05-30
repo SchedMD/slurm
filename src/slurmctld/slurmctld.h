@@ -718,6 +718,7 @@ struct job_record {
 					 * service record used for
 					 * this job, confirm the
 					 * value before use */
+	void *qos_blocking_ptr;		/* internal use only, DON'T PACK */
 	uint8_t reboot;			/* node reboot requested before start */
 	uint16_t restart_cnt;		/* count of restarts */
 	time_t resize_time;		/* time of latest size change */

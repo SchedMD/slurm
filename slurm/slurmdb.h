@@ -916,6 +916,7 @@ typedef struct {
 	double usage_thres; /* percent of effective usage of an
 			       association when breached will deny
 			       pending and new jobs */
+	time_t blocked_until; /* internal use only, DON'T PACK  */
 } slurmdb_qos_rec_t;
 
 typedef struct {

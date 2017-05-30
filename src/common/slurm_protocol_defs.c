@@ -1889,6 +1889,27 @@ extern char *job_reason_string(enum job_state_reason inx)
 	}
 }
 
+/* If the job is held up by a QOS GRP limit return true else return false. */
+extern bool job_state_qos_grp_limit(enum job_state_reason state_reason)
+{
+	if ((state_reason >= WAIT_QOS_GRP_CPU &&
+	     state_reason <= WAIT_QOS_GRP_WALL) ||
+	    (state_reason == WAIT_QOS_GRP_MEM_MIN) ||
+	    (state_reason == WAIT_QOS_GRP_MEM_RUN_MIN) ||
+	    (state_reason >= WAIT_QOS_GRP_ENERGY &&
+	     state_reason <= WAIT_QOS_GRP_ENERGY_RUN_MIN) ||
+	    (state_reason == WAIT_QOS_GRP_NODE_MIN) ||
+	    (state_reason == WAIT_QOS_GRP_NODE_RUN_MIN) ||
+	    (state_reason >= WAIT_QOS_GRP_GRES &&
+	     state_reason <= WAIT_QOS_GRP_GRES_RUN_MIN) ||
+	    (state_reason >= WAIT_QOS_GRP_LIC &&
+	     state_reason <= WAIT_QOS_GRP_LIC_RUN_MIN) ||
+	    (state_reason >= WAIT_QOS_GRP_BB &&
+	     state_reason <= WAIT_QOS_GRP_BB_RUN_MIN))
+		return true;
+	return false;
+}
+
 extern void slurm_free_get_kvs_msg(kvs_get_msg_t *msg)
 {
 	if (msg) {
