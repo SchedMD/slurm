@@ -1774,10 +1774,8 @@ next_task:
 				else
 					job_ptr->start_time = now + 500;
 				if (job_ptr->qos_blocking_ptr &&
-				    (job_ptr->state_reason >=
-				     WAIT_QOS_GRP_CPU &&
-				     job_ptr->state_reason <=
-				     WAIT_QOS_GRP_WALL)) {
+				    job_state_qos_grp_limit(
+					    job_ptr->state_reason)) {
 					assoc_mgr_lock(&qos_read_lock);
 					qos_ptr = job_ptr->qos_blocking_ptr;
 					if (qos_ptr->blocked_until <
