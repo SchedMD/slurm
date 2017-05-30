@@ -1204,11 +1204,16 @@ static int _attempt_backfill(void)
 		if (job_ptr->qos_ptr) {
 			qos_flags = job_ptr->qos_ptr->flags;
 			qos_blocked_until = job_ptr->qos_ptr->blocked_until;
+		} else {
+			qos_flags = 0;
+			qos_blocked_until = 0;
 		}
 
 		if (job_ptr->part_ptr->qos_ptr)
 			qos_part_blocked_until =
 				job_ptr->part_ptr->qos_ptr->blocked_until;
+		else
+			qos_part_blocked_until = 0;
 
 		if (part_policy_valid_qos(job_ptr->part_ptr,
 					  job_ptr->qos_ptr) != SLURM_SUCCESS) {
