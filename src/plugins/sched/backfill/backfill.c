@@ -1149,8 +1149,11 @@ static int _attempt_backfill(void)
 		if (qos_ptr) {
 			qos_flags = qos_ptr->flags;
 			qos_blocked_until = qos_ptr->blocked_until;
-			qos_part_blocked_until = qos_part_ptr->blocked_until;
 		}
+
+		if (qos_part_ptr)
+			qos_part_blocked_until = qos_part_ptr->blocked_until;
+
 		if (part_policy_valid_qos(job_ptr->part_ptr, qos_ptr) !=
 		    SLURM_SUCCESS) {
 			assoc_mgr_unlock(&qos_read_lock);
