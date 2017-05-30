@@ -1080,7 +1080,6 @@ _direct_send(pmixp_dconn_t *dconn, pmixp_ep_t *ep,
 		msg->sent_cb(rc, PMIXP_P2P_INLINE, msg->cbdata);
 		xfree( msg );
 	}
-	eio_signal_wakeup(pmixp_info_io());
 }
 
 /*

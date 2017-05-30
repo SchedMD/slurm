@@ -166,6 +166,7 @@ static int _tcp_send(void *_priv, void *msg)
 		xassert(pmixp_io_enqueue_ok(&priv->eng));
 		xfree(nodename);
 	}
+	eio_signal_wakeup(pmixp_info_io());
 	return rc;
 }
 
