@@ -3046,10 +3046,12 @@ extern int acct_storage_p_get_stats(void *db_conn, slurmdb_stats_rec_t **stats)
 			slurm_seterrno(msg->rc);
 			info("RC:%d %s", msg->rc, msg->comment);
 		}
+		rc = msg->rc;
 		slurm_persist_free_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_STATS) {
 		error("slurmdbd: response type not DBD_GOT_STATS: %u",
 		      resp.msg_type);
+		rc = SLURM_ERROR;
 	} else {
 		*stats = (slurmdb_stats_rec_t *) resp.data;
 	}
