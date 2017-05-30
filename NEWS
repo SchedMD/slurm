@@ -149,7 +149,9 @@ documents those changes that are of interest to users and administrators.
  -- For jobs submited to multiple partitions, report the job's earliest start
     time for any partition.
  -- Backfill partitions that use QOS Grp limits to "float" better.
- -- node_featurs/knl_cray plugin: Don't clear configured GRES from non-KNL node.
+ -- node_features/knl_cray: don't clear configured GRES from non-KNL node.
+ -- sacctmgr - prevent segfault in command when a request is denied due
+    to a insufficient priviledges.
 
 * Changes in Slurm 17.02.3
 ==========================
