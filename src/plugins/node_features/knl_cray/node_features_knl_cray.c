@@ -1423,6 +1423,10 @@ static void _update_all_node_features(
 			error("Removed KNL features from non-KNL node %s",
 			      node_ptr->name);
 		}
+		if (!node_ptr->gres) {
+			node_ptr->gres =
+				xstrdup(node_ptr->config_ptr->gres);
+		}
 		gres_plugin_node_feature(node_ptr->name, "hbm", 0,
 					 &node_ptr->gres, &node_ptr->gres_list);
 	}
@@ -1483,6 +1487,10 @@ static void _update_node_features(struct node_record *node_ptr,
 				node_ptr->gres =
 					xstrdup(node_ptr->config_ptr->gres);
 			}
+			if (!node_ptr->gres) {
+				node_ptr->gres =
+					xstrdup(node_ptr->config_ptr->gres);
+			}
 			gres_plugin_node_feature(node_ptr->name, "hbm",
 						 mcdram_size, &node_ptr->gres,
 						 &node_ptr->gres_list);
@@ -1518,6 +1526,10 @@ static void _update_node_features(struct node_record *node_ptr,
 		if (node_inx) {
 			error("Removed KNL features from non-KNL node %s",
 			      node_ptr->name);
+		}
+		if (!node_ptr->gres) {
+			node_ptr->gres =
+				xstrdup(node_ptr->config_ptr->gres);
 		}
 		gres_plugin_node_feature(node_ptr->name, "hbm", 0,
 					 &node_ptr->gres, &node_ptr->gres_list);
