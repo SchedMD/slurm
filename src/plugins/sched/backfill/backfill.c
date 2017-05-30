@@ -921,6 +921,7 @@ static int _attempt_backfill(void)
 	uint8_t save_share_res, save_whole_node;
 	int test_fini;
 	uint32_t qos_flags = 0;
+	time_t qos_blocked_until = 0, qos_part_blocked_until = 0;
 	/* QOS Read lock */
 	assoc_mgr_lock_t qos_read_lock =
 		{ NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
@@ -1145,8 +1146,11 @@ static int _attempt_backfill(void)
 		assoc_mgr_lock(&qos_read_lock);
 		qos_ptr = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
 		qos_part_ptr = (slurmdb_qos_rec_t *)job_ptr->part_ptr->qos_ptr;
-		if (qos_ptr)
+		if (qos_ptr) {
 			qos_flags = qos_ptr->flags;
+			qos_blocked_until = qos_ptr->blocked_until;
+			qos_part_blocked_until = qos_part_ptr->blocked_until;
+		}
 		if (part_policy_valid_qos(job_ptr->part_ptr, qos_ptr) !=
 		    SLURM_SUCCESS) {
 			assoc_mgr_unlock(&qos_read_lock);
@@ -1376,25 +1380,20 @@ next_task:
 			time_limit = job_ptr->time_limit = job_ptr->time_min;
 
 		later_start = now;
-		if (qos_ptr && assoc_limit_stop) {
-			assoc_mgr_lock(&qos_read_lock);
-			if (qos_ptr->blocked_until > later_start) {
-				later_start = qos_ptr->blocked_until;
+
+		if (assoc_limit_stop) {
+			if (qos_blocked_until > later_start) {
+				later_start = qos_blocked_until;
 				if (debug_flags & DEBUG_FLAG_BACKFILL)
 					info("QOS blocked_until move start_res to %ld",
 					     later_start);
 			}
-			assoc_mgr_unlock(&qos_read_lock);
-		}
-		if (qos_part_ptr && assoc_limit_stop) {
-			assoc_mgr_lock(&qos_read_lock);
-			if (qos_part_ptr->blocked_until > later_start) {
-				later_start = qos_part_ptr->blocked_until;
+			if (qos_part_blocked_until > later_start) {
+				later_start = qos_part_blocked_until;
 				if (debug_flags & DEBUG_FLAG_BACKFILL)
 					info("Part QOS blocked_until move start_res to %ld",
 					     later_start);
 			}
-			assoc_mgr_unlock(&qos_read_lock);
 		}
 
  TRY_LATER:
