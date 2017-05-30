@@ -175,6 +175,36 @@ static void _base_hdr_pack_full(Buf packbuf, pmixp_base_hdr_t *hdr)
 	}
 }
 
+#define WRITE_HDR_FIELD(dst, offset, field) {			\
+	memcpy((dst) + (offset), &(field), sizeof(field));	\
+	offset += sizeof(field);				\
+}
+
+static size_t _base_hdr_pack_full_samearch(pmixp_base_hdr_t *hdr, void *net)
+{
+	int offset = 0;
+
+	if (hdr->ext_flag) {
+		hdr->msgsize += PMIXP_BASE_HDR_EXT_SIZE(pmixp_dconn_ep_len());
+	}
+
+	WRITE_HDR_FIELD(net, offset, hdr->magic);
+	WRITE_HDR_FIELD(net, offset, hdr->type);
+	WRITE_HDR_FIELD(net, offset, hdr->seq);
+	WRITE_HDR_FIELD(net, offset, hdr->nodeid);
+	WRITE_HDR_FIELD(net, offset, hdr->msgsize);
+	WRITE_HDR_FIELD(net, offset, hdr->ext_flag);
+	if( hdr->ext_flag ){
+		Buf packbuf = create_buf(net + offset, PMIXP_BASE_HDR_MAX);
+		packmem(pmixp_dconn_ep_data(), pmixp_dconn_ep_len(), packbuf);
+		offset += get_buf_offset(packbuf);
+		packbuf->head = NULL;
+		free_buf(packbuf);
+	}
+	return offset;
+}
+
+
 static int _base_hdr_unpack_fixed(Buf packbuf, pmixp_base_hdr_t *hdr)
 {
 	if (unpack32(&hdr->magic, packbuf)) {
@@ -204,6 +234,27 @@ static int _base_hdr_unpack_fixed(Buf packbuf, pmixp_base_hdr_t *hdr)
 
 	return 0;
 }
+
+#define READ_HDR_FIELD(src, offset, field) {			\
+	memcpy(&(field), (src) + (offset), sizeof(field));	\
+	offset += sizeof(field);				\
+}
+
+static int _base_hdr_unpack_fixed_samearch(void *net, void *host)
+{
+	size_t offset = 0;
+	pmixp_base_hdr_t *hdr = (pmixp_base_hdr_t *)host;
+
+	READ_HDR_FIELD(net, offset, hdr->magic);
+	READ_HDR_FIELD(net, offset, hdr->type);
+	READ_HDR_FIELD(net, offset, hdr->seq);
+	READ_HDR_FIELD(net, offset, hdr->nodeid);
+	READ_HDR_FIELD(net, offset, hdr->msgsize);
+	READ_HDR_FIELD(net, offset, hdr->ext_flag);
+
+	return 0;
+}
+
 
 static int _base_hdr_unpack_ext(Buf packbuf, char **ep_data, uint32_t *ep_len)
 {
@@ -247,8 +298,13 @@ pmixp_p2p_data_t _slurm_proto = {
 
 /* direct protocol I/O header */
 static uint32_t _direct_paysize(void *hdr);
-static size_t _direct_hdr_pack(pmixp_base_hdr_t *hdr, void *net);
-static int _direct_hdr_unpack(void *net, void *host);
+static size_t _direct_hdr_pack_portable(pmixp_base_hdr_t *hdr, void *net);
+static int _direct_hdr_unpack_portable(void *net, void *host);
+static size_t _direct_hdr_pack_samearch(pmixp_base_hdr_t *hdr, void *net);
+static int _direct_hdr_unpack_samearch(void *net, void *host);
+typedef size_t (*_direct_hdr_pack_t)(pmixp_base_hdr_t *hdr, void *net);
+_direct_hdr_pack_t _direct_hdr_pack = _direct_hdr_pack_samearch;
+
 
 static void *_direct_msg_ptr(void *msg);
 static size_t _direct_msg_size(void *msg);
@@ -277,7 +333,7 @@ pmixp_p2p_data_t _direct_proto = {
 	.rhdr_net_size = PMIXP_BASE_HDR_SIZE,
 	.recv_padding = 0, /* no padding for the direct proto */
 	.payload_size_cb = _direct_paysize,
-	.hdr_unpack_cb = _direct_hdr_unpack,
+	.hdr_unpack_cb = _direct_hdr_unpack_samearch,
 	.new_msg = _direct_new_msg,
 	/* transmitter-related fields */
 	.send_on = 1,
@@ -319,6 +375,10 @@ int pmixp_stepd_init(const stepd_step_rec_t *job, char ***env)
 	pmixp_info_srv_usock_set(path, fd);
 
 
+	if (!pmixp_info_same_arch()){
+		_direct_proto.hdr_unpack_cb = _direct_hdr_unpack_portable;
+		_direct_hdr_pack = _direct_hdr_pack_portable;
+	}
 	pmixp_conn_init(_slurm_proto, _direct_proto);
 	pmixp_dconn_init(pmixp_info_nodes(), _direct_proto);
 
@@ -825,7 +885,7 @@ static uint32_t _direct_paysize(void *buf)
  * Unpack message header.
  * Returns 0 on success and -errno on failure
  */
-static int _direct_hdr_unpack(void *net, void *host)
+static int _direct_hdr_unpack_portable(void *net, void *host)
 {
 	pmixp_base_hdr_t *hdr = (pmixp_base_hdr_t *)host;
 	Buf packbuf = create_buf(net, PMIXP_BASE_HDR_SIZE);
@@ -840,10 +900,15 @@ static int _direct_hdr_unpack(void *net, void *host)
 	return 0;
 }
 
+static int _direct_hdr_unpack_samearch(void *net, void *host)
+{
+	return _base_hdr_unpack_fixed_samearch(net, host);
+}
+
 /*
  * Pack message header. Returns packed size
  */
-static size_t _direct_hdr_pack(pmixp_base_hdr_t *hdr, void *net)
+static size_t _direct_hdr_pack_portable(pmixp_base_hdr_t *hdr, void *net)
 {
 	Buf packbuf = create_buf(net, PMIXP_BASE_HDR_MAX);
 	int size = 0;
@@ -855,6 +920,11 @@ static size_t _direct_hdr_pack(pmixp_base_hdr_t *hdr, void *net)
 	packbuf->head = NULL;
 	free_buf(packbuf);
 	return size;
+}
+
+static size_t _direct_hdr_pack_samearch(pmixp_base_hdr_t *hdr, void *net)
+{
+	return _base_hdr_pack_full_samearch(hdr, net);
 }
 
 /* Get te pointer to the message bufer */

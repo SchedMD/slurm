@@ -44,6 +44,7 @@
 static char *_srv_usock_path = NULL;
 static int _srv_usock_fd = -1;
 static bool _srv_use_direct_conn = true;
+static bool _srv_same_arch = true;
 #ifdef HAVE_UCX
 static bool _srv_use_direct_conn_ucx = true;
 #else
@@ -75,6 +76,11 @@ int pmixp_info_srv_usock_fd(void)
 	xassert(0 <= _srv_usock_fd);
 	return _srv_usock_fd;
 }
+
+bool pmixp_info_same_arch(){
+	return _srv_same_arch;
+}
+
 
 bool pmixp_info_srv_direct_conn(){
 	return _srv_use_direct_conn;
@@ -359,6 +365,19 @@ static int _env_set(char ***env)
 		 * and stdout is muted.
 		 * One needs to check TMPDIR for the results */
 		setenv(PMIXP_PMIXLIB_DEBUG_REDIR, "file", 1);
+	}
+
+	/*------------- Flag controlling heterogeneous support ----------*/
+	/* NOTE: Heterogen support is not tested */
+	p = getenvp(*env, PMIXP_DIRECT_SAMEARCH);
+	if( NULL != p){
+		if( !strcmp("1",p) || !strcasecmp("true", p) ||
+		    !strcasecmp("yes", p)){
+			_srv_same_arch = true;
+		} else if( !strcmp("0",p) || !strcasecmp("false", p) ||
+		    !strcasecmp("no", p)){
+			_srv_same_arch = false;
+		}
 	}
 
 	/*------------- Direct connection setting ----------*/
