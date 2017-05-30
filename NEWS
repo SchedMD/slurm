@@ -59,6 +59,7 @@ documents those changes that are of interest to users and administrators.
     fragmentation.  SchedulerParameters=reduce_completing_frag
  -- For jobs submited to multiple partitions, report the job's earliest start
     time for any partition.
+ -- Backfill partitions that use QOS Grp limits to "float" better.
 
 * Changes in Slurm 17.02.3
 ==========================
