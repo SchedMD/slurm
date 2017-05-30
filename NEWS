@@ -87,6 +87,8 @@ documents those changes that are of interest to users and administrators.
     commands to display a federated view by default if the cluster is a member
     of a federation.
  -- Log the down nodes whenever slurmctld restarts.
+ -- Report that "CPUs" plus "Boards" in node configuration invalid only if the
+    CPUs value is not equal to the total thread count.
 
 * Changes in Slurm 17.02.4
 ==========================

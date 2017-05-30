@@ -640,6 +640,7 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		bool no_threads = false;
 		bool no_sockets_per_board = false;
 		uint16_t sockets_per_board = 0;
+		uint16_t calc_cpus;
 
 		n = xmalloc(sizeof(slurm_conf_node_t));
 		dflt = default_nodename_tbl;
@@ -816,11 +817,6 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			/* In this case Boards=# is used.
 			 * CPUs=# or Procs=# are ignored.
 			 */
-			if (!no_cpus) {
-				error("NodeNames=%s CPUs=# or Procs=# "
-				      "with Boards=# is invalid and "
-				      "is ignored.", n->nodenames);
-			}
 			if (n->boards == 0) {
 				/* make sure boards is non-zero */
 				error("NodeNames=%s Boards=0 is "
@@ -854,7 +850,13 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 				n->sockets = n->boards;
 			}
 			/* Node boards factored into sockets */
-			n->cpus = n->sockets * n->cores * n->threads;
+			calc_cpus = n->sockets * n->cores * n->threads;
+			if (!no_cpus && (n->cpus != calc_cpus)) {
+				error("NodeNames=%s CPUs=# or Procs=# "
+				      "with Boards=# is invalid and "
+				      "is ignored.", n->nodenames);
+			}
+			n->cpus = calc_cpus;
 		}
 
 		if (n->core_spec_cnt >= (n->sockets * n->cores)) {
