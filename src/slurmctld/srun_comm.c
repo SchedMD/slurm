@@ -146,6 +146,16 @@ resource_allocation_response_msg_t *_build_alloc_msg(struct job_record *job_ptr)
 	return msg_arg;
 }
 
+static void _free_srun_alloc(void *x)
+{
+	resource_allocation_response_msg_t *alloc_msg;
+
+	alloc_msg = (resource_allocation_response_msg_t *) x;
+	/* NULL working_cluster_rec because it's pointing to global memory */
+	alloc_msg->working_cluster_rec = NULL;
+	slurm_free_resource_allocation_response_msg(alloc_msg);
+}
+
 /*
  * srun_allocate - notify srun of a resource allocation
  * IN job_id - id of the job allocated resource
@@ -182,8 +192,7 @@ extern void srun_allocate (uint32_t job_id)
 		pack_leader = find_job_record(job_ptr->pack_job_id);
 		slurm_set_addr(addr, pack_leader->alloc_resp_port,
 			       pack_leader->resp_host);
-//FIXME: Need destroy function
-		job_resp_list = list_create(NULL);
+		job_resp_list = list_create(_free_srun_alloc);
 		iter = list_iterator_create(pack_leader->pack_job_list);
 		while ((pack_job = (struct job_record *) list_next(iter))) {
 			msg_arg = _build_alloc_msg(pack_job);

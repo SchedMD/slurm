@@ -8931,7 +8931,7 @@ _pack_job_desc_list_msg(List job_req_list, Buf buffer,
 	list_iterator_destroy(iter);
 }
 
-void _free_job_desc_list(void *x)
+static void _free_job_desc_list(void *x)
 {
 	job_desc_msg_t *job_desc_ptr = (job_desc_msg_t *) x;
 	slurm_free_job_desc_msg(job_desc_ptr);

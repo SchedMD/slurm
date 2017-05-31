@@ -1618,7 +1618,8 @@ static void _purge_agent_args(agent_arg_t *agent_arg_ptr)
 					agent_arg_ptr->msg_args);
 		} else if (agent_arg_ptr->msg_type ==
 				RESPONSE_JOB_PACK_ALLOCATION) {
-//FIXME: TBD
+			List alloc_list = agent_arg_ptr->msg_args;
+			FREE_NULL_LIST(alloc_list);
 		} else if ((agent_arg_ptr->msg_type == REQUEST_ABORT_JOB)    ||
 			 (agent_arg_ptr->msg_type == REQUEST_TERMINATE_JOB)  ||
 			 (agent_arg_ptr->msg_type == REQUEST_KILL_PREEMPTED) ||
