@@ -3068,6 +3068,7 @@ static int _validate_cluster_features(char *spec_features,
 				      uint64_t *cluster_bitmap)
 {
 	int rc = SLURM_SUCCESS;
+	bool negative_logic = false;
 	uint64_t feature_sibs = 0;
 	char *feature = NULL;
 	slurmdb_cluster_rec_t *sib;
@@ -3085,19 +3086,39 @@ static int _validate_cluster_features(char *spec_features,
 	feature_itr = list_iterator_create(req_features);
 	sib_itr = list_iterator_create(fed_mgr_fed_rec->cluster_list);
 
+	feature = list_peek(req_features);
+	if (feature && feature[0] == '!') {
+		feature_sibs = _get_all_sibling_bits();
+		negative_logic = true;
+	}
+
 	while ((feature = list_next(feature_itr))) {
+		if (negative_logic && feature[0] == '!')
+			feature++;
 		bool found = false;
 		while ((sib = list_next(sib_itr))) {
 			if (sib->fed.feature_list &&
 			    list_find_first(sib->fed.feature_list,
 					    slurm_find_char_in_list, feature)) {
-				feature_sibs |= FED_SIBLING_BIT(sib->fed.id);
+				if (negative_logic) {
+					feature_sibs &=
+						~FED_SIBLING_BIT(sib->fed.id);
+				} else {
+					feature_sibs |=
+						FED_SIBLING_BIT(sib->fed.id);
+				}
 				found = true;
 			}
 		}
 
 		if (!found) {
 			error("didn't find at least one cluster with the feature '%s'",
+			      feature);
+			rc = SLURM_ERROR;
+			goto end_features;
+		}
+		if (negative_logic && !feature_sibs) {
+			error("eliminated all viable clusters with constraint '%s'",
 			      feature);
 			rc = SLURM_ERROR;
 			goto end_features;

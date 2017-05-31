@@ -208,10 +208,12 @@ Checkpoint files will be of the form "<job_id>.ckpt" for jobs
 and "<job_id>.<step_id>.ckpt" for job steps.
 
 .TP
-\fB\-\-cluster\-constraint\fR=<\fIlist\fR>
+\fB\-\-cluster\-constraint\fR=[!]<\fIlist\fR>
 Specifies features that a federated cluster must have to have a sibling job
 submitted to it. Slurm will attempt to submit a sibling job to a cluster if it
-has at least one of the specified features.
+has at least one of the specified features. If the "!" option is included, Slurm
+will attempt to submit a sibling job to a cluster that has none of the specified
+features.
 
 .TP
 \fB\-\-comment\fR=<\fIstring\fR>
