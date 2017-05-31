@@ -337,9 +337,9 @@ set reg_D "^$runr1$runrv1$runrv2$runr2$runr3.+$eol"
 sacct ""    "$reg"
 sacct "-D"  "$reg_D"
 
-wait_for_fed_job $ji0 DONE $fedc1,$fedc2,$fedc2
-wait_for_fed_job $ji1 DONE $fedc1,$fedc2,$fedc2
-wait_for_fed_job $ji2 DONE $fedc1,$fedc2,$fedc2
+wait_for_fed_job $ji0 DONE $fedc1,$fedc2,$fedc3
+wait_for_fed_job $ji1 DONE $fedc1,$fedc2,$fedc3
+wait_for_fed_job $ji2 DONE $fedc1,$fedc2,$fedc3
 
 sleep 5
 
