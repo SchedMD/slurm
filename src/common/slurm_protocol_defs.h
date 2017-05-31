@@ -196,7 +196,7 @@ typedef enum {
 	RESPONSE_ACCT_GATHER_ENERGY,	/* 1020 */
 	REQUEST_LICENSE_INFO,
 	RESPONSE_LICENSE_INFO,
-	DBD_MESSAGES_START = 1400, /* We can't repalce this with
+	DBD_MESSAGES_START = 1400, /* We can't replace this with
 				    * REQUEST_PERSIST_INIT since DBD_INIT is
 				    * packed in a way we can't tell the
 				    * protocol_version without unpacking
