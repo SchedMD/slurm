@@ -3534,7 +3534,7 @@ static void _help(void)
 
 "\n"
 "Constraint options:\n"
-"      --cluster-constraint=list specify a list of cluster constraints\n"
+"      --cluster-constraint=[!]list specify a list of cluster constraints\n"
 "      --contiguous            demand a contiguous range of nodes\n"
 "  -C, --constraint=list       specify a list of constraints\n"
 "  -F, --nodefile=filename     request a specific list of hosts\n"
