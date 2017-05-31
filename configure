@@ -25183,6 +25183,8 @@ _ACEOF
   if test x$_libcurl_with = xno || test x$libcurl_cv_lib_curl_usable != xyes ; then
      # This is the IF-NO path
      :
+     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate/link against libcurl-devel installation" >&5
+$as_echo "$as_me: WARNING: unable to locate/link against libcurl-devel installation" >&2;}
   else
      # This is the IF-YES path
      :
