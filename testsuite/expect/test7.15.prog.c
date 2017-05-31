@@ -2,17 +2,19 @@
 #include <signal.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdlib.h>
 
 int main (int ac, char **av)
 {
-	char hostname[1024];
+	char *hostname = NULL;
 	int i, rc = 0;
 	struct sigaction act;
 
-	if (gethostname (hostname, sizeof (hostname)) < 0) {
+	if (!(hostname = getenv("SLURMD_NODENAME"))) {
 		fprintf (stderr, "Failed to get hostname on this node\n");
-		strcpy (hostname, "Unknown");
+		hostname = "Unknown";
 	}
+
 	for (i = 1; i < SIGRTMAX; i++) {
 		sigaction (i, NULL, &act);
 		if (act.sa_handler == SIG_IGN) {
