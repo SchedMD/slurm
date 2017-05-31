@@ -810,3 +810,4 @@ test37.10  Federated job cancellations
 test37.11  Federated sacct output
 test37.12  Federated sbatch|srun --test-only
 test37.13  Validate federated arrays
+test37.14  Validate federated scontrol notify
