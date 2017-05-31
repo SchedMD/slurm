@@ -645,7 +645,13 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 		job_id  = msg->job_id;
 		step_id = NO_VAL;
 	} else if (agent_ptr->msg_type == RESPONSE_JOB_PACK_ALLOCATION) {
-//FIXME: TBD
+		List pack_alloc_list = *agent_ptr->msg_args_pptr;
+		resource_allocation_response_msg_t *msg;
+		if (!pack_alloc_list || (list_count(pack_alloc_list) == 0))
+			return;
+		msg = list_peek(pack_alloc_list);
+		job_id  = msg->job_id;
+		step_id = NO_VAL;
 	} else if ((agent_ptr->msg_type == SRUN_JOB_COMPLETE)		||
 		   (agent_ptr->msg_type == SRUN_REQUEST_SUSPEND)	||
 		   (agent_ptr->msg_type == SRUN_STEP_MISSING)		||
@@ -656,8 +662,7 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 	} else if (agent_ptr->msg_type == SRUN_NODE_FAIL) {
 		return;		/* no need to note srun response */
 	} else {
-		error("_notify_slurmctld_jobs invalid msg_type %u",
-			agent_ptr->msg_type);
+		error("%s: invalid msg_type %u", __func__, agent_ptr->msg_type);
 		return;
 	}
 	lock_slurmctld(job_write_lock);
