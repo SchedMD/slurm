@@ -1022,7 +1022,6 @@ static int _wait_for_alloc_rpc(const listen_t *listen, int sleep_time)
 		return -1;
 	}
 
-return -1;
 	fds[0].fd = listen->fd;
 	fds[0].events = POLLIN;
 
