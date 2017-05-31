@@ -14378,15 +14378,15 @@ static int _job_resume_test(struct job_record *job_ptr)
 }
 
 /*
- * _job_suspend - perform some suspend/resume operation
- * job_ptr - job to operate upon
+ * _job_suspend_op - perform some suspend/resume operation on a job
  * op IN - operation: suspend/resume
  * indf_susp IN - set if job is being suspended indefinitely by user or admin
  *                and we should clear it's priority, otherwise suspended
  *		  temporarily for gang scheduling
  * RET 0 on success, otherwise ESLURM error code
  */
-static int _job_suspend(struct job_record *job_ptr, uint16_t op, bool indf_susp)
+static int _job_suspend_op(struct job_record *job_ptr, uint16_t op,
+			   bool indf_susp)
 {
 	int rc = SLURM_SUCCESS;
 	time_t now = time(NULL);
@@ -14400,9 +14400,6 @@ static int _job_suspend(struct job_record *job_ptr, uint16_t op, bool indf_susp)
 		return ESLURM_NOT_SUPPORTED;
 	if ((op == RESUME_JOB) && (rc = _job_resume_test(job_ptr)))
 		return rc;
-
-	/* Notify salloc/srun of suspend/resume */
-	srun_job_suspend(job_ptr, op);
 
 	/* perform the operation */
 	if (op == SUSPEND_JOB) {
@@ -14464,9 +14461,48 @@ static int _job_suspend(struct job_record *job_ptr, uint16_t op, bool indf_susp)
 	return rc;
 }
 
+
+/*
+ * _job_suspend - perform some suspend/resume operation, if the specified
+ *                job records is a pack leader, perform the operation on all
+ *                components of the pack job
+ * job_ptr - job to operate upon
+ * op IN - operation: suspend/resume
+ * indf_susp IN - set if job is being suspended indefinitely by user or admin
+ *                and we should clear it's priority, otherwise suspended
+ *		  temporarily for gang scheduling
+ * RET 0 on success, otherwise ESLURM error code
+ */
+static int _job_suspend(struct job_record *job_ptr, uint16_t op, bool indf_susp)
+{
+	struct job_record *pack_job;
+	int rc = SLURM_SUCCESS, rc1;
+	ListIterator iter;
+
+	if (job_ptr->pack_job_id && !job_ptr->pack_job_list)
+		return ESLURM_NOT_PACK_JOB_LEADER;
+
+	/* Notify salloc/srun of suspend/resume */
+	srun_job_suspend(job_ptr, op);
+
+	if (job_ptr->pack_job_list) {
+		iter = list_iterator_create(job_ptr->pack_job_list);
+		while ((pack_job = (struct job_record *) list_next(iter))) {
+			rc1 = _job_suspend_op(pack_job, op, indf_susp);
+			if (rc1 != SLURM_SUCCESS)
+				rc = rc1;
+		}
+		list_iterator_destroy(iter);
+	} else {
+		rc = _job_suspend_op(job_ptr, op, indf_susp);
+	}
+
+	return rc;
+}
+
 /*
  * job_suspend - perform some suspend/resume operation
- * NB job_suspend  - Uses the job_id field and ignores job_id_str
+ * NOTE: job_suspend  - Uses the job_id field and ignores job_id_str
  *
  * IN sus_ptr - suspend/resume request message
  * IN uid - user id of the user issuing the RPC
@@ -14693,14 +14729,14 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 }
 
 /*
- * _job_requeue - Requeue a running or pending batch job
+ * _job_requeue_op - Requeue a running or pending batch job
  * IN uid - user id of user issuing the RPC
  * IN job_ptr - job to be requeued
  * IN preempt - true if job being preempted
  * RET 0 on success, otherwise ESLURM error code
  */
-static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
-			uint32_t state)
+static int _job_requeue_op(uid_t uid, struct job_record *job_ptr, bool preempt,
+			   uint32_t state)
 {
 	bool is_running = false, is_suspended = false, is_completed = false;
 	bool is_completing = false;
@@ -14909,6 +14945,40 @@ reply:
 	      job_ptr->state_reason, job_ptr->priority);
 
 	return SLURM_SUCCESS;
+}
+
+/*
+ * _job_requeue - Requeue a running or pending batch job, if the specified
+ *		  job records is a pack leader, perform the operation on all
+ *		  components of the pack job
+ * IN uid - user id of user issuing the RPC
+ * IN job_ptr - job to be requeued
+ * IN preempt - true if job being preempted
+ * RET 0 on success, otherwise ESLURM error code
+ */
+static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
+			   uint32_t state)
+{
+	struct job_record *pack_job;
+	int rc = SLURM_SUCCESS, rc1;
+	ListIterator iter;
+
+	if (job_ptr->pack_job_id && !job_ptr->pack_job_list)
+		return ESLURM_NOT_PACK_JOB_LEADER;
+
+	if (job_ptr->pack_job_list) {
+		iter = list_iterator_create(job_ptr->pack_job_list);
+		while ((pack_job = (struct job_record *) list_next(iter))) {
+			rc1 = _job_requeue_op(uid, pack_job, preempt, state);
+			if (rc1 != SLURM_SUCCESS)
+				rc = rc1;
+		}
+		list_iterator_destroy(iter);
+	} else {
+		rc = _job_requeue_op(uid, job_ptr, preempt, state);
+	}
+
+	return rc;
 }
 
 /*

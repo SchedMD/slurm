@@ -69,7 +69,7 @@ value of 0, the next a value of 1, etc.</li>
 components of a heterogeneous job using the format
 "&lt;pack_job_id&gt;+&lt;pack_job_offset&gt;".
 For example "123+4" would represent heterogeneous job id 123 and it's fifth
-component (note: the first component has a <i>pack_job_offset</i>value of 0).</p>
+component (note: the first component has a <i>pack_job_offset</i> value of 0).</p>
 
 <p>A request for a specific job ID that identifes a ID of the first component
 of a heterogenous job (i.e. the "pack leader" will return information about
@@ -101,6 +101,16 @@ $ squeue --job=93
 JOBID PARTITION  NAME  USER ST  TIME  NODES NODELIST
 </pre>
 
+<p>Requests to perform the following operations a job can only be requested for
+a pack leader and will be applied to all components of that heterogeneous job.
+Requests to operate on individual components of the heterogeneous will return
+an error.</p>
+<ul>
+<li>requeue</li>
+<li>resume</li>
+<li>suspend</li>
+</ul>
+
 <h2><a name="limitations">Limitations</a></h2>
 
 <p>In a federation of clusters, a heterogeneous job will execute entirely on
@@ -117,6 +127,6 @@ components of a heterogeneous job.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 22 May 2017</p>
+<p style="text-align:center;">Last modified 31 May 2017</p>
 
 <!--#include virtual="footer.txt"-->
