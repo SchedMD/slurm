@@ -124,6 +124,7 @@ static void _match_job_name(List job_req_list, char *job_name);
 static void _node_fail_handler(srun_node_fail_msg_t *msg);
 static void _pending_callback(uint32_t job_id);
 static void _ping_handler(srun_ping_msg_t *msg);
+static int  _proc_alloc(resource_allocation_response_msg_t *alloc);
 static void _ring_terminal_bell(void);
 static void _set_exit_code(void);
 static void _set_rlimits(char **env);
@@ -426,48 +427,25 @@ int main(int argc, char **argv)
 				list_next(iter))) {
 			if (pack_job_id == 0) {
 				pack_job_id = alloc->job_id;
+				pending_job_id = alloc->job_id;
 				info("Granted job allocation %u", pack_job_id);
 			}
 			if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
 				info("Pack job ID %u+%u (%u) on nodes %s",
 				     pack_job_id, i++, alloc->job_id,
 				     alloc->node_list);
-			} else {
-				break;
 			}
+			if (_proc_alloc(alloc) != SLURM_SUCCESS)
+				goto relinquish;
 		}
 		list_iterator_destroy(iter);
-//FIXME: work through additional logic, including free of alloc
-exit(1);
 	} else if (!allocation_interrupted) {
 		/* Allocation granted to regular job */
 		info("Granted job allocation %u", alloc->job_id);
 		pending_job_id = alloc->job_id;
 
-		if (alloc->working_cluster_rec) {
-			slurm_setup_remote_working_cluster(alloc);
-
-			/* set env for srun's to find the right cluster */
-			setenvf(NULL, "SLURM_WORKING_CLUSTER", "%s:%s:%d:%d",
-				working_cluster_rec->name,
-				working_cluster_rec->control_host,
-				working_cluster_rec->control_port,
-				working_cluster_rec->rpc_version);
-		}
-
-#ifdef HAVE_BG
-		if (!_wait_bluegene_block_ready(alloc)) {
-			if (!allocation_interrupted)
-				error("Something is wrong with the boot of the block.");
+		if (_proc_alloc(alloc) != SLURM_SUCCESS)
 			goto relinquish;
-		}
-#else
-		if (!_wait_nodes_ready(alloc)) {
-			if (!allocation_interrupted)
-				error("Something is wrong with the boot of the nodes.");
-			goto relinquish;
-		}
-#endif
 	}
 
 	after = time(NULL);
@@ -486,6 +464,11 @@ exit(1);
 		 */
 		goto relinquish;
 	}
+
+if (job_resp_list) {
+//FIXME: work through additional logic, including free of alloc
+exit(1);
+}
 
 	/*
 	 * Run the user's command.
@@ -541,8 +524,8 @@ exit(1);
 	env_array_free(env);
 	slurm_mutex_lock(&allocation_state_lock);
 	if (allocation_state == REVOKED) {
-		error("Allocation was revoked for job %u before command could "
-		      "be run", alloc->job_id);
+		error("Allocation was revoked for job %u before command could be run",
+		      alloc->job_id);
 		slurm_cond_broadcast(&allocation_state_cond);
 		slurm_mutex_unlock(&allocation_state_lock);
 		if (slurm_complete_job(alloc->job_id, status) != 0) {
@@ -656,6 +639,41 @@ relinquish:
 	xfree(desc->clusters);
 	return rc;
 }
+
+/* Initial processing of resource allocation response, including waiting for
+ * compute nodes to be ready for use.
+ * Ret SLURM_SUCCESS on success */
+static int _proc_alloc(resource_allocation_response_msg_t *alloc)
+{
+	static int elem = 0;
+
+	if ((elem++ == 0) && alloc->working_cluster_rec) {
+		slurm_setup_remote_working_cluster(alloc);
+
+		/* set env for srun's to find the right cluster */
+		setenvf(NULL, "SLURM_WORKING_CLUSTER", "%s:%s:%d:%d",
+			working_cluster_rec->name,
+			working_cluster_rec->control_host,
+			working_cluster_rec->control_port,
+			working_cluster_rec->rpc_version);
+	}
+
+#ifdef HAVE_BG
+	if (!_wait_bluegene_block_ready(alloc)) {
+		if (!allocation_interrupted)
+			error("Something is wrong with the boot of the block.");
+		return SLURM_ERROR;
+	}
+#else
+	if (!_wait_nodes_ready(alloc)) {
+		if (!allocation_interrupted)
+			error("Something is wrong with the boot of the nodes.");
+		return SLURM_ERROR;
+	}
+#endif
+	return SLURM_SUCCESS;
+}
+
 
 /* Copy job name from last component to all pack job components unless
  * explicitly set. The default value comes from _salloc_default_command()
