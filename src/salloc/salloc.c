@@ -105,10 +105,11 @@ enum possible_allocation_states allocation_state = NOT_GRANTED;
 pthread_cond_t  allocation_state_cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t allocation_state_lock = PTHREAD_MUTEX_INITIALIZER;
 
-static bool exit_flag = false;
-static bool suspend_flag = false;
 static bool allocation_interrupted = false;
 static bool allocation_revoked = false;
+static bool exit_flag = false;
+static bool is_pack_job = false;
+static bool suspend_flag = false;
 static uint32_t pending_job_id = 0;
 static time_t last_timeout = 0;
 static struct termios saved_tty_attributes;
@@ -370,6 +371,7 @@ int main(int argc, char **argv)
 	before = time(NULL);
 	while (true) {
 		if (job_req_list) {
+			is_pack_job = true;
 			job_resp_list = slurm_allocate_pack_job_blocking(
 					job_req_list, opt.immediate,
 					_pending_callback);
@@ -427,14 +429,15 @@ int main(int argc, char **argv)
 				info("Granted job allocation %u", pack_job_id);
 			}
 			if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
-				info("Pack job ID %u+%u (%u)", pack_job_id, i++,
-				     alloc->job_id);
+				info("Pack job ID %u+%u (%u) on nodes %s",
+				     pack_job_id, i++, alloc->job_id,
+				     alloc->node_list);
 			} else {
 				break;
 			}
 		}
 		list_iterator_destroy(iter);
-//FIXME: work through additional logic
+//FIXME: work through additional logic, including free of alloc
 exit(1);
 	} else if (!allocation_interrupted) {
 		/* Allocation granted to regular job */
@@ -996,8 +999,13 @@ static void _signal_while_allocating(int signo)
 static void _job_complete_handler(srun_job_complete_msg_t *comp)
 {
 	if (pending_job_id && (pending_job_id != comp->job_id)) {
-		error("Ignoring bogus job_complete call: job %u is not "
-		      "job %u", pending_job_id, comp->job_id);
+		if (is_pack_job) {
+			/* Assume this is component of pack job */
+			verbose("Got job_complete for job %u", comp->job_id);
+		} else {
+			error("Ignoring job_complete for job %u because our job ID is %u",
+			      comp->job_id, pending_job_id);
+		}
 		return;
 	}
 

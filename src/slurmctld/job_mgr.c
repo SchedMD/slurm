@@ -16751,3 +16751,81 @@ set_remote_working_response(resource_allocation_response_msg_t *resp,
 		       (sizeof(slurm_addr_t) * job_ptr->node_cnt));
 	}
 }
+
+/* Build structure with job allocation details */
+extern resource_allocation_response_msg_t *
+		build_job_info_resp(struct job_record *job_ptr)
+{
+	resource_allocation_response_msg_t *job_info_resp_msg;
+	int i, j;
+
+	job_info_resp_msg = xmalloc(sizeof(resource_allocation_response_msg_t));
+
+
+	if (!job_ptr->job_resrcs) {
+		;
+	} else if (bit_equal(job_ptr->node_bitmap,
+			     job_ptr->job_resrcs->node_bitmap)) {
+		job_info_resp_msg->num_cpu_groups =
+			job_ptr->job_resrcs->cpu_array_cnt;
+		job_info_resp_msg->cpu_count_reps =
+			xmalloc(sizeof(uint32_t) *
+				job_ptr->job_resrcs->cpu_array_cnt);
+		memcpy(job_info_resp_msg->cpu_count_reps,
+		       job_ptr->job_resrcs->cpu_array_reps,
+		       (sizeof(uint32_t) * job_ptr->job_resrcs->cpu_array_cnt));
+		job_info_resp_msg->cpus_per_node  =
+			xmalloc(sizeof(uint16_t) *
+				job_ptr->job_resrcs->cpu_array_cnt);
+		memcpy(job_info_resp_msg->cpus_per_node,
+		       job_ptr->job_resrcs->cpu_array_value,
+		       (sizeof(uint16_t) * job_ptr->job_resrcs->cpu_array_cnt));
+	} else {
+		/* Job has changed size, rebuild CPU count info */
+		job_info_resp_msg->num_cpu_groups = job_ptr->node_cnt;
+		job_info_resp_msg->cpu_count_reps =
+			xmalloc(sizeof(uint32_t) * job_ptr->node_cnt);
+		job_info_resp_msg->cpus_per_node =
+			xmalloc(sizeof(uint32_t) * job_ptr->node_cnt);
+		for (i = 0, j = -1; i < job_ptr->job_resrcs->nhosts; i++) {
+			if (job_ptr->job_resrcs->cpus[i] == 0)
+				continue;
+			if ((j == -1) ||
+			    (job_info_resp_msg->cpus_per_node[j] !=
+			     job_ptr->job_resrcs->cpus[i])) {
+				j++;
+				job_info_resp_msg->cpus_per_node[j] =
+					job_ptr->job_resrcs->cpus[i];
+				job_info_resp_msg->cpu_count_reps[j] = 1;
+			} else {
+				job_info_resp_msg->cpu_count_reps[j]++;
+			}
+		}
+		job_info_resp_msg->num_cpu_groups = j + 1;
+	}
+	job_info_resp_msg->account        = xstrdup(job_ptr->account);
+	job_info_resp_msg->alias_list     = xstrdup(job_ptr->alias_list);
+	job_info_resp_msg->job_id         = job_ptr->job_id;
+	job_info_resp_msg->node_cnt       = job_ptr->node_cnt;
+	job_info_resp_msg->node_list      = xstrdup(job_ptr->nodes);
+	job_info_resp_msg->partition      = xstrdup(job_ptr->partition);
+	if (job_ptr->qos_ptr) {
+		slurmdb_qos_rec_t *qos;
+		qos = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
+		job_info_resp_msg->qos = xstrdup(qos->name);
+	}
+	job_info_resp_msg->resv_name      = xstrdup(job_ptr->resv_name);
+	job_info_resp_msg->select_jobinfo =
+		select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
+	if (job_ptr->details->env_cnt) {
+		job_info_resp_msg->env_size = job_ptr->details->env_cnt;
+		job_info_resp_msg->environment =
+			xmalloc(sizeof(char *) * job_info_resp_msg->env_size);
+		for (i = 0; i < job_info_resp_msg->env_size; i++) {
+			job_info_resp_msg->environment[i] =
+				xstrdup(job_ptr->details->env_sup[i]);
+		}
+	}
+
+	return job_info_resp_msg;
+}

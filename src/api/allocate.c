@@ -602,9 +602,8 @@ slurm_job_step_create (job_step_create_request_msg_t *req,
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free the response using slurm_free_resource_allocation_response_msg()
  */
-int
-slurm_allocation_lookup(uint32_t jobid,
-			resource_allocation_response_msg_t **info)
+extern int slurm_allocation_lookup(uint32_t jobid,
+				   resource_allocation_response_msg_t **info)
 {
 	job_alloc_info_msg_t req = {0};
 	slurm_msg_t req_msg;
@@ -623,7 +622,7 @@ slurm_allocation_lookup(uint32_t jobid,
 
 	req.req_cluster = NULL;
 
-	switch(resp_msg.msg_type) {
+	switch (resp_msg.msg_type) {
 	case RESPONSE_SLURM_RC:
 		if (_handle_rc_msg(&resp_msg) < 0)
 			return SLURM_ERROR;
@@ -631,6 +630,51 @@ slurm_allocation_lookup(uint32_t jobid,
 		break;
 	case RESPONSE_JOB_ALLOCATION_INFO:
 		*info = (resource_allocation_response_msg_t *) resp_msg.data;
+		return SLURM_PROTOCOL_SUCCESS;
+		break;
+	default:
+		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
+		break;
+	}
+
+	return SLURM_PROTOCOL_SUCCESS;
+}
+
+/*
+ * slurm_pack_job_lookup - retrieve info for an existing heterogeneous job
+ * 			   allocation without the addrs and such
+ * IN jobid - job allocation identifier
+ * OUT info - job allocation information
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * NOTE: free the response using slurm_free_resource_allocation_response_msg()
+ */
+extern int slurm_pack_job_lookup(uint32_t jobid, List *info)
+{
+	job_alloc_info_msg_t req = {0};
+	slurm_msg_t req_msg;
+	slurm_msg_t resp_msg;
+
+	req.job_id = jobid;
+	req.req_cluster  = slurmctld_conf.cluster_name;
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
+	req_msg.msg_type = REQUEST_JOB_PACK_ALLOC_INFO;
+	req_msg.data     = &req;
+
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,
+					   working_cluster_rec) < 0)
+		return SLURM_ERROR;
+
+	req.req_cluster = NULL;
+
+	switch (resp_msg.msg_type) {
+	case RESPONSE_SLURM_RC:
+		if (_handle_rc_msg(&resp_msg) < 0)
+			return SLURM_ERROR;
+		*info = NULL;
+		break;
+	case RESPONSE_JOB_PACK_ALLOCATION:
+		*info = (List) resp_msg.data;
 		return SLURM_PROTOCOL_SUCCESS;
 		break;
 	default:
@@ -978,6 +1022,7 @@ static int _wait_for_alloc_rpc(const listen_t *listen, int sleep_time)
 		return -1;
 	}
 
+return -1;
 	fds[0].fd = listen->fd;
 	fds[0].events = POLLIN;
 
@@ -1029,10 +1074,18 @@ static void _wait_for_allocation_response(uint32_t job_id,
 		 * Let's see if the controller thinks that the allocation
 		 * has been granted.
 		 */
-//FIXME
-//		if (slurm_allocation_lookup(job_id, resp) >= 0) {
-//			return resp;
-//		}
+		if (msg_type == RESPONSE_RESOURCE_ALLOCATION) {
+			if (slurm_allocation_lookup(job_id,
+					(resource_allocation_response_msg_t **)
+					resp) >= 0)
+				return;
+		} else if (msg_type == RESPONSE_JOB_PACK_ALLOCATION) {
+			if (slurm_pack_job_lookup(job_id, (List *) resp) >= 0)
+				return;
+		} else {
+			error("%s: Invalid msg_type (%u)", __func__, msg_type);
+		}
+
 		if (slurm_get_errno() == ESLURM_JOB_PENDING) {
 			debug3("Still waiting for allocation");
 			errno = errnum;

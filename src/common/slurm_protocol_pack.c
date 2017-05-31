@@ -967,16 +967,15 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 					  msg->data, buffer,
 					  msg->protocol_version);
 		break;
-	case REQUEST_JOB_END_TIME:
 	case REQUEST_JOB_ALLOCATION_INFO:
+	case REQUEST_JOB_END_TIME:
+	case REQUEST_JOB_PACK_ALLOC_INFO:
 		_pack_job_alloc_info_msg((job_alloc_info_msg_t *) msg->data,
-					 buffer,
-					 msg->protocol_version);
+					 buffer, msg->protocol_version);
 		break;
 	case REQUEST_JOB_SBCAST_CRED:
 		_pack_step_alloc_info_msg((step_alloc_info_msg_t *) msg->data,
-					  buffer,
-					  msg->protocol_version);
+					  buffer, msg->protocol_version);
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
 	case REQUEST_RECONFIGURE:
@@ -1658,8 +1657,9 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 			(step_update_request_msg_t **) & (msg->data),
 			buffer, msg->protocol_version);
 		break;
-	case REQUEST_JOB_END_TIME:
 	case REQUEST_JOB_ALLOCATION_INFO:
+	case REQUEST_JOB_END_TIME:
+	case REQUEST_JOB_PACK_ALLOC_INFO:
 		rc = _unpack_job_alloc_info_msg((job_alloc_info_msg_t **) &
 						(msg->data), buffer,
 						msg->protocol_version);

@@ -4012,8 +4012,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case MESSAGE_NODE_REGISTRATION_STATUS:
 		slurm_free_node_registration_status_msg(data);
 		break;
-	case REQUEST_JOB_END_TIME:
 	case REQUEST_JOB_ALLOCATION_INFO:
+	case REQUEST_JOB_END_TIME:
+	case REQUEST_JOB_PACK_ALLOC_INFO:
 		slurm_free_job_alloc_info_msg(data);
 		break;
 	case REQUEST_JOB_SBCAST_CRED:
@@ -4299,8 +4300,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		slurm_free_job_info(data);
 		break;
 	case REQUEST_JOB_PACK_ALLOCATION:
-		FREE_NULL_LIST(data);
-		break;
 	case RESPONSE_JOB_PACK_ALLOCATION:
 		FREE_NULL_LIST(data);
 		break;
@@ -4668,6 +4667,8 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_CTLD_MULT_MSG";
 	case RESPONSE_CTLD_MULT_MSG:
 		return "RESPONSE_CTLD_MULT_MSG";
+	case REQUEST_JOB_PACK_ALLOC_INFO:
+		return "REQUEST_JOB_PACK_ALLOC_INFO";
 
 	case REQUEST_JOB_STEP_CREATE:				/* 5001 */
 		return "REQUEST_JOB_STEP_CREATE";
