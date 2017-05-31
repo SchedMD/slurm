@@ -95,9 +95,12 @@ strong_alias(get_extra_conf_path, slurm_get_extra_conf_path);
 strong_alias(sort_key_pairs, slurm_sort_key_pairs);
 strong_alias(run_in_daemon, slurm_run_in_daemon);
 
-/* Instantiation of the "extern slurm_ctl_conf_t slurmcltd_conf"
- * found in slurmctld.h */
+/*
+ * Instantiation of the "extern slurm_ctl_conf_t slurmcltd_conf" and
+ * "bool ignore_state_errors" found in slurmctld.h
+ */
 slurm_ctl_conf_t slurmctld_conf;
+bool ignore_state_errors = false;
 
 static pthread_mutex_t conf_lock = PTHREAD_MUTEX_INITIALIZER;
 static s_p_hashtbl_t *conf_hashtbl = NULL;

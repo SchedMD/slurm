@@ -222,6 +222,7 @@ extern slurmdb_cluster_rec_t *response_cluster_rec;
 \*****************************************************************************/
 extern bool ping_nodes_now;		/* if set, ping nodes immediately */
 extern bool want_nodes_reboot;		/* if set, check for idle nodes */
+extern bool ignore_state_errors;
 
 typedef struct node_features {
 	uint32_t magic;		/* magic cookie to test data integrity */

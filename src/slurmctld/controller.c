@@ -2347,7 +2347,7 @@ static void _parse_commandline(int argc, char **argv)
 	bool bg_recover_override = 0;
 
 	opterr = 0;
-	while ((c = getopt(argc, argv, "BcdDf:hL:n:rRvV")) != -1)
+	while ((c = getopt(argc, argv, "BcdDf:hiL:n:rRvV")) != -1)
 		switch (c) {
 		case 'B':
 			bg_recover = 0;
@@ -2370,6 +2370,9 @@ static void _parse_commandline(int argc, char **argv)
 		case 'h':
 			_usage(argv[0]);
 			exit(0);
+			break;
+		case 'i':
+			ignore_state_errors = true;
 			break;
 		case 'L':
 			xfree(debug_logfile);
