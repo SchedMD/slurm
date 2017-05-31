@@ -854,6 +854,7 @@ static void *_thread_per_group_rpc(void *args)
 	/* Lock: Write node */
 	slurmctld_lock_t node_write_lock = {
 		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+	uint32_t job_id;
 
 	xassert(args != NULL);
 	xsignal(SIGUSR1, _sig_handler);
@@ -1004,7 +1005,7 @@ static void *_thread_per_group_rpc(void *args)
 			 * behind on the allocated nodes. */
 			resource_allocation_response_msg_t *msg_ptr =
 				task_ptr->msg_args_ptr;
-			uint32_t job_id = msg_ptr->job_id;
+			job_id = msg_ptr->job_id;
 			info("Killing interactive job %u: %s",
 			     job_id, slurm_strerror(rc));
 			thread_state = DSH_FAILED;
@@ -1018,7 +1019,20 @@ static void *_thread_per_group_rpc(void *args)
 			/* Communication issue to srun that launched the job
 			 * Cancel rather than leave a stray-but-empty job
 			 * behind on the allocated nodes. */
-//FIXME: TBD
+			List pack_alloc_list = task_ptr->msg_args_ptr;
+			resource_allocation_response_msg_t *msg_ptr;
+			if (!pack_alloc_list ||
+			    (list_count(pack_alloc_list) == 0))
+				continue;
+			msg_ptr = list_peek(pack_alloc_list);
+			job_id = msg_ptr->job_id;
+			info("Killing interactive job %u: %s",
+			     job_id, slurm_strerror(rc));
+			thread_state = DSH_FAILED;
+			lock_slurmctld(job_write_lock);
+			job_complete(job_id, slurmctld_conf.slurm_user_id,
+				     false, false, _wif_status());
+			unlock_slurmctld(job_write_lock);
 			continue;
 		}
 
