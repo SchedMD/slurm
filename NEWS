@@ -91,6 +91,7 @@ documents those changes that are of interest to users and administrators.
     CPUs value is not equal to the total thread count.
  -- Extend the output of the seff utility to also include the job's wall-clock
     time.
+ -- Add bf_max_time to SchedulerParameters.
 
 * Changes in Slurm 17.02.4
 ==========================

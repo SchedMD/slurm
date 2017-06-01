@@ -133,6 +133,7 @@ static pthread_mutex_t config_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool config_flag = false;
 static uint64_t debug_flags = 0;
 static int backfill_interval = BACKFILL_INTERVAL;
+static int bf_max_time = BACKFILL_INTERVAL;
 static int backfill_resolution = BACKFILL_RESOLUTION;
 static int backfill_window = BACKFILL_WINDOW;
 static int bf_job_part_count_reserve = 0;
@@ -517,6 +518,18 @@ static void _load_config(void)
 		}
 	} else {
 		backfill_interval = BACKFILL_INTERVAL;
+	}
+
+	if (sched_params &&
+	    (tmp_ptr = strstr(sched_params, "bf_max_time="))) {
+		bf_max_time = atoi(tmp_ptr + 12);
+		if (bf_max_time < 1 ) {
+			error("Invalid SchedulerParameters bf_max_time:"
+			      " %d", bf_max_time);
+			bf_max_time = backfill_interval;
+		}
+	} else {
+		bf_max_time = backfill_interval;
 	}
 
 	if (sched_params && (tmp_ptr = strstr(sched_params, "bf_window="))) {
@@ -1090,7 +1103,7 @@ static int _attempt_backfill(void)
 		xfree(job_queue_rec);
 
 		if (slurmctld_config.shutdown_time ||
-		    (difftime(time(NULL),orig_sched_start)>=backfill_interval)){
+		    (difftime(time(NULL),orig_sched_start) >= bf_max_time)){
 			break;
 		}
 		if (((defer_rpc_cnt > 0) &&
@@ -1511,7 +1524,7 @@ next_task:
  TRY_LATER:
 		if (slurmctld_config.shutdown_time ||
 		    (difftime(time(NULL), orig_sched_start) >=
-		     backfill_interval)) {
+		     bf_max_time)) {
 			_set_job_time_limit(job_ptr, orig_time_limit);
 			break;
 		}

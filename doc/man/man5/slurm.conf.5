@@ -2512,11 +2512,8 @@ of newly arrived higher priority jobs, but will permit more queued jobs to be
 considered for backfill scheduling.
 .TP
 \fBbf_interval=#\fR
-The number of seconds between iterations.
+The number of seconds between backfill iterations.
 Higher values result in less overhead and better responsiveness.
-The backfill scheduler will start over after reaching this time limit
-(including time spent sleeping), even if the maximum job counts have not
-been reached.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
 The default value is 30 seconds.
 
@@ -2582,6 +2579,15 @@ This option applies only to \fBSchedulerType=sched/backfill\fR.
 Also see the \fBbf_max_job_part\fR, \fBbf_max_job_test\fR and
 \fBbf_max_job_user_part=#\fR options.
 Set \fBbf_max_job_test\fR to a value much higher than \fBbf_max_job_user\fR.
+
+.TP
+\fBbf_max_time=#\fR
+The maximum time the backfill scheduler can spend (including time spent sleeping
+when locks are released) before discontinuing, even if maximum job counts have
+not been reached.
+This option applies only to \fBSchedulerType=sched/backfill\fR.
+The default value is the value of bf_interval (which defaults to 30 seconds).
+
 .TP
 \fBbf_max_job_user_part=#\fR
 The maximum number of jobs per user per partition to attempt starting with the
