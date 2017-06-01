@@ -55,48 +55,48 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 {
 	memset(job_desc_msg, 0, sizeof(job_desc_msg_t));
 	job_desc_msg->alloc_sid		= NO_VAL;
-	job_desc_msg->conn_type[0]	= (uint16_t) NO_VAL;
-	job_desc_msg->contiguous	= (uint16_t) NO_VAL;
-	job_desc_msg->core_spec		= (uint16_t) NO_VAL;
-	job_desc_msg->cores_per_socket	= (uint16_t) NO_VAL;
-	job_desc_msg->cpu_bind_type	= (uint16_t) NO_VAL;
+	job_desc_msg->conn_type[0]	= NO_VAL16;
+	job_desc_msg->contiguous	= NO_VAL16;
+	job_desc_msg->core_spec		= NO_VAL16;
+	job_desc_msg->cores_per_socket	= NO_VAL16;
+	job_desc_msg->cpu_bind_type	= NO_VAL16;
 	job_desc_msg->cpu_freq_min	= NO_VAL;
 	job_desc_msg->cpu_freq_max	= NO_VAL;
 	job_desc_msg->cpu_freq_gov	= NO_VAL;
-	job_desc_msg->cpus_per_task	= (uint16_t) NO_VAL;
+	job_desc_msg->cpus_per_task	= NO_VAL16;
 	job_desc_msg->delay_boot	= NO_VAL;
-	job_desc_msg->geometry[0]       = (uint16_t) NO_VAL;
+	job_desc_msg->geometry[0]       = NO_VAL16;
 	job_desc_msg->group_id		= NO_VAL;
 	job_desc_msg->job_id		= NO_VAL;
-	job_desc_msg->kill_on_node_fail = (uint16_t) NO_VAL;
+	job_desc_msg->kill_on_node_fail = NO_VAL16;
 	job_desc_msg->max_cpus		= NO_VAL;
 	job_desc_msg->max_nodes		= NO_VAL;
-	job_desc_msg->mem_bind_type	= (uint16_t) NO_VAL;
+	job_desc_msg->mem_bind_type	= NO_VAL16;
 	job_desc_msg->min_cpus		= NO_VAL;
 	job_desc_msg->min_nodes		= NO_VAL;
 	job_desc_msg->nice		= NO_VAL;
-	job_desc_msg->ntasks_per_core	= (uint16_t) NO_VAL;
-	job_desc_msg->ntasks_per_node	= (uint16_t) NO_VAL;
-	job_desc_msg->ntasks_per_socket	= (uint16_t) NO_VAL;
+	job_desc_msg->ntasks_per_core	= NO_VAL16;
+	job_desc_msg->ntasks_per_node	= NO_VAL16;
+	job_desc_msg->ntasks_per_socket	= NO_VAL16;
 	job_desc_msg->num_tasks		= NO_VAL;
-	job_desc_msg->overcommit	= (uint8_t) NO_VAL;
-	job_desc_msg->plane_size	= (uint16_t) NO_VAL;
-	job_desc_msg->pn_min_cpus	= (uint16_t) NO_VAL;
+	job_desc_msg->overcommit	= NO_VAL8;
+	job_desc_msg->plane_size	= NO_VAL16;
+	job_desc_msg->pn_min_cpus	= NO_VAL16;
 	job_desc_msg->pn_min_memory	= NO_VAL64;
 	job_desc_msg->pn_min_tmp_disk	= NO_VAL;
 	job_desc_msg->priority		= NO_VAL;
-	job_desc_msg->reboot		= (uint16_t) NO_VAL;
-	job_desc_msg->requeue		= (uint16_t) NO_VAL;
+	job_desc_msg->reboot		= NO_VAL16;
+	job_desc_msg->requeue		= NO_VAL16;
 	job_desc_msg->req_switch	= NO_VAL;
-	job_desc_msg->rotate		= (uint16_t) NO_VAL;
-	job_desc_msg->shared		= (uint16_t) NO_VAL;
-	job_desc_msg->sockets_per_node	= (uint16_t) NO_VAL;
+	job_desc_msg->rotate		= NO_VAL16;
+	job_desc_msg->shared		= NO_VAL16;
+	job_desc_msg->sockets_per_node	= NO_VAL16;
 	job_desc_msg->task_dist		= NO_VAL;
-	job_desc_msg->threads_per_core	= (uint16_t) NO_VAL;
+	job_desc_msg->threads_per_core	= NO_VAL16;
 	job_desc_msg->time_limit	= NO_VAL;
 	job_desc_msg->time_min		= NO_VAL;
 	job_desc_msg->user_id		= NO_VAL;
-	job_desc_msg->wait_all_nodes	= (uint16_t) NO_VAL;
+	job_desc_msg->wait_all_nodes	= NO_VAL16;
 	job_desc_msg->wait4switch	= NO_VAL;
 }
 
@@ -121,20 +121,20 @@ extern void slurm_init_update_step_msg (step_update_request_msg_t * step_msg)
 void slurm_init_part_desc_msg (update_part_msg_t * update_part_msg)
 {
 	memset(update_part_msg, 0, sizeof(update_part_msg_t));
-	update_part_msg->default_time   = (uint32_t) NO_VAL;
+	update_part_msg->default_time   = NO_VAL32;
 	update_part_msg->def_mem_per_cpu = NO_VAL64;
-	update_part_msg->grace_time     = (uint32_t) NO_VAL;
+	update_part_msg->grace_time     = NO_VAL32;
 	update_part_msg->max_cpus_per_node = NO_VAL;
 	update_part_msg->max_mem_per_cpu = NO_VAL64;
 	update_part_msg->max_nodes 	= NO_VAL;
-	update_part_msg->max_share 	= (uint16_t) NO_VAL;
+	update_part_msg->max_share 	= NO_VAL16;
 	update_part_msg->min_nodes 	= NO_VAL;
-	update_part_msg->max_time 	= (uint32_t) NO_VAL;
+	update_part_msg->max_time 	= NO_VAL32;
 	update_part_msg->over_time_limit = NO_VAL16;
-	update_part_msg->preempt_mode 	= (uint16_t) NO_VAL;
-	update_part_msg->priority_job_factor = (uint16_t) NO_VAL;
-	update_part_msg->priority_tier	= (uint16_t) NO_VAL;
-	update_part_msg->state_up 	= (uint16_t) NO_VAL;
+	update_part_msg->preempt_mode 	= NO_VAL16;
+	update_part_msg->priority_job_factor = NO_VAL16;
+	update_part_msg->priority_tier	= NO_VAL16;
+	update_part_msg->state_up 	= NO_VAL16;
 }
 
 /*
@@ -159,8 +159,8 @@ void slurm_init_resv_desc_msg (resv_desc_msg_t * resv_msg)
 void slurm_init_update_node_msg (update_node_msg_t * update_node_msg)
 {
 	memset(update_node_msg, 0, sizeof(update_node_msg_t));
-	update_node_msg->node_state = (uint32_t) NO_VAL;
-	update_node_msg->weight = (uint32_t) NO_VAL;
+	update_node_msg->node_state = NO_VAL32;
+	update_node_msg->weight = NO_VAL32;
 }
 
 /*
@@ -171,7 +171,7 @@ void slurm_init_update_front_end_msg (update_front_end_msg_t *
 				      update_front_end_msg)
 {
 	memset(update_front_end_msg, 0, sizeof(update_front_end_msg_t));
-	update_front_end_msg->node_state = (uint32_t)NO_VAL;
+	update_front_end_msg->node_state = NO_VAL32;
 }
 
 /*
@@ -181,10 +181,10 @@ void slurm_init_update_front_end_msg (update_front_end_msg_t *
 void slurm_init_update_block_msg (update_block_msg_t *update_block_msg)
 {
 	memset(update_block_msg, 0, sizeof(update_block_msg_t));
-	update_block_msg->conn_type[0] = (uint16_t)NO_VAL;
+	update_block_msg->conn_type[0] = NO_VAL16;
 	update_block_msg->cnode_cnt = NO_VAL;
-	update_block_msg->node_use = (uint16_t)NO_VAL;
-	update_block_msg->state = (uint16_t)NO_VAL;
+	update_block_msg->node_use = NO_VAL16;
+	update_block_msg->state = NO_VAL16;
 }
 
 /*
