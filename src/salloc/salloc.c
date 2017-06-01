@@ -490,32 +490,10 @@ int main(int argc, char **argv)
 		}
 		list_iterator_destroy(iter_resp);
 		list_iterator_destroy(iter_req);
-//FIXME: work through additional logic, including free of alloc
 	} else {
 		if (env_array_for_job(&env, alloc, desc, -1) != SLURM_SUCCESS)
 			goto relinquish;
 	}
-
-	/* Add default task count for srun, if not already set */
-	if (opt.ntasks_set) {
-		env_array_append_fmt(&env, "SLURM_NTASKS", "%d", opt.ntasks);
-		/* keep around for old scripts */
-		env_array_append_fmt(&env, "SLURM_NPROCS", "%d", opt.ntasks);
-	}
-	if (opt.cpus_set) {
-		env_array_append_fmt(&env, "SLURM_CPUS_PER_TASK", "%d",
-				     opt.cpus_per_task);
-	}
-	if (opt.overcommit) {
-		env_array_append_fmt(&env, "SLURM_OVERCOMMIT", "%d",
-			opt.overcommit);
-	}
-	if (opt.acctg_freq) {
-		env_array_append_fmt(&env, "SLURM_ACCTG_FREQ", "%s",
-			opt.acctg_freq);
-	}
-	if (opt.network)
-		env_array_append_fmt(&env, "SLURM_NETWORK", "%s", opt.network);
 
 	if (working_cluster_rec && working_cluster_rec->name) {
 		env_array_append_fmt(&env, "SLURM_CLUSTER_NAME", "%s",
@@ -524,20 +502,6 @@ int main(int argc, char **argv)
 		env_array_append_fmt(&env, "SLURM_CLUSTER_NAME", "%s",
 				     cluster_name);
 		xfree(cluster_name);
-	}
-	if (alloc->env_size) {	/* Used to set Burst Buffer environment */
-		char *key, *value, *tmp;
-		for (i = 0; i < alloc->env_size; i++) {
-			tmp = xstrdup(alloc->environment[i]);
-			key = tmp;
-			value = strchr(tmp, '=');
-			if (value) {
-				value[0] = '\0';
-				value++;
-				env_array_append(&env, key, value);
-			}
-			xfree(tmp);
-		}
 	}
 
 	env_array_set_environment(env);
@@ -843,7 +807,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 
 	if (opt.licenses)
 		desc->licenses = xstrdup(opt.licenses);
-	desc->network = opt.network;
+	desc->network = xstrdup(opt.network);
 	if (opt.nice != NO_VAL)
 		desc->nice = NICE_OFFSET + opt.nice;
 	if (opt.priority)
@@ -958,6 +922,10 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->mcs_label = xstrdup(opt.mcs_label);
 	if (opt.delay_boot != NO_VAL)
 		desc->delay_boot = opt.delay_boot;
+	if (opt.cpus_set)
+		desc->bitflags |= JOB_CPUS_SET;
+	if (opt.ntasks_set)
+		desc->bitflags |= JOB_NTASKS_SET;
 
 	return 0;
 }

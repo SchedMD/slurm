@@ -1127,10 +1127,43 @@ extern int env_array_for_job(char ***dest,
 			if (value) {
 				value[0] = '\0';
 				value++;
-				env_array_overwrite(dest, key, value);
+				env_array_overwrite_pack_fmt(dest, key,
+							     pack_offset, "%s",
+							     value);
 			}
 			xfree(tmp);
 		}
+	}
+
+	if (desc->acctg_freq) {
+		env_array_overwrite_pack_fmt(dest, "SLURM_ACCTG_FREQ",
+					     pack_offset, "%s",
+					     desc->acctg_freq);
+	};
+
+	if (desc->network) {
+		env_array_overwrite_pack_fmt(dest, "SLURM_NETWORK",
+					     pack_offset, "%s", desc->network);
+	}
+
+	if (desc->overcommit != NO_VAL8) {
+		env_array_overwrite_pack_fmt(dest, "SLURM_OVERCOMMIT",
+					     pack_offset, "%u",
+					     desc->overcommit);
+	}
+
+	/* Add default task counst for srun, if not already set */
+	if (desc->bitflags & JOB_NTASKS_SET) {
+		env_array_overwrite_pack_fmt(dest, "SLURM_NTASKS", pack_offset,
+					     "%d", desc->num_tasks);
+		/* maintain for old scripts */
+		env_array_overwrite_pack_fmt(dest, "SLURM_NPROCS", pack_offset,
+					     "%d", desc->num_tasks);
+	}
+	if (desc->bitflags & JOB_NTASKS_SET) {
+		env_array_overwrite_pack_fmt(dest, "SLURM_CPUS_PER_TASK",
+					     pack_offset, "%d",
+					     desc->cpus_per_task);
 	}
 
 	return rc;

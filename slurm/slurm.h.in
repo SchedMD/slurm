@@ -1029,6 +1029,8 @@ enum ctx_keys {
 					 * end of a job. */
 #define SIB_JOB_FLUSH      0x00001000   /* Don't send complete to origin */
 #define JOB_PACK_FLAG      0x00002000	/* Heterogeneous job management flag */
+#define JOB_NTASKS_SET     0x00004000	/* --ntasks explicitly set */
+#define JOB_CPUS_SET       0x00008000	/* --cpus-per-tasks explicitly set */
 
 /*****************************************************************************\
  *      SLURM HOSTLIST FUNCTIONS
