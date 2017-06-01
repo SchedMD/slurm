@@ -194,6 +194,7 @@ static bool select_state_initializing = true;
 static int select_node_cnt = 0;
 static int preempt_reorder_cnt = 1;
 static bool preempt_strict_order = false;
+static int  bf_window_scale      = 0;
 
 struct select_nodeinfo {
 	uint16_t magic;		/* magic number */
@@ -1927,7 +1928,10 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			}
 			if (!last_job_ptr)	/* Should never happen */
 				break;
-			time_window *= 2;
+			if (bf_window_scale)
+				time_window += bf_window_scale;
+			else
+				time_window *= 2;
 			rc = cr_job_test(job_ptr, bitmap, min_nodes,
 					 max_nodes, req_nodes,
 					 SELECT_MODE_WILL_RUN, tmp_cr_type,
@@ -2120,6 +2124,16 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 			      preempt_reorder_cnt);
 		}
 	}
+        if (sched_params &&
+            (tmp_ptr = strstr(sched_params, "bf_window_linear="))) {
+		bf_window_scale = atoi(tmp_ptr + 17);
+		if (bf_window_scale <= 0) {
+			fatal("Invalid SchedulerParameters bf_window_linear: %d",
+			      bf_window_scale);
+		}
+	} else
+		bf_window_scale = 0;
+
 	if (sched_params && strstr(sched_params, "pack_serial_at_end"))
 		pack_serial_at_end = true;
 	else
