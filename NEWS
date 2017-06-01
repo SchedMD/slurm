@@ -65,6 +65,8 @@ documents those changes that are of interest to users and administrators.
     to a insufficient priviledges.
  -- Add warning about libcurl-devel not being installed during configure.
  -- Streamline job purge by handling file deletion on a separate thread.
+ -- Always set RLIMIT_CORE to the maximum permitted for slurmd, to ensure
+    core files are created even on non-developer builds.
 
 * Changes in Slurm 17.02.3
 ==========================

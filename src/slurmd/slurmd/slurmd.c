@@ -1559,12 +1559,10 @@ _slurmd_init(void)
 		rlim.rlim_cur = rlim.rlim_max;
 		setrlimit(RLIMIT_NOFILE, &rlim);
 	}
-#ifndef NDEBUG
 	if (getrlimit(RLIMIT_CORE, &rlim) == 0) {
 		rlim.rlim_cur = rlim.rlim_max;
 		setrlimit(RLIMIT_CORE, &rlim);
 	}
-#endif /* !NDEBUG */
 
 	/*
 	 * Create a context for verifying slurm job credentials
