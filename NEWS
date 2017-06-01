@@ -67,6 +67,8 @@ documents those changes that are of interest to users and administrators.
  -- Streamline job purge by handling file deletion on a separate thread.
  -- Always set RLIMIT_CORE to the maximum permitted for slurmd, to ensure
     core files are created even on non-developer builds.
+ -- Fix --ntasks-per-core option/environment variable parsing to set
+    the requested value, instead of always setting one.
 
 * Changes in Slurm 17.02.3
 ==========================
