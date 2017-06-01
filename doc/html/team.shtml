@@ -97,6 +97,7 @@ Lead Slurm developers are:
 <li>Andrew Elwell</li>
 <li>Josh England (TGS Management Corporation)</li>
 <li>Kent Engstr&ouml;m  (National Supercomputer Centre, Sweden)</li>
+<li>Pablo Escobar (University of Basel, Switzerland)</li>
 <br>
 <li>Roland Fehrenbacher (Q-Leap Networks, Germany)</li>
 <li>Carles Fenoy (Barcelona Supercomputing Center, Spain)</li>
@@ -263,6 +264,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 1 March 2017</p>
+<p style="text-align:center;">Last modified 1 June 2017</p>
 
 <!--#include virtual="footer.txt"-->

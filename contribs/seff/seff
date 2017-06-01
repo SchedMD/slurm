@@ -166,6 +166,7 @@ if ($state ne "PENDING") {
     }
     printf("CPU Utilized: %s\n", time2str($cput));
     printf("CPU Efficiency: %.2f%% of %s core-walltime\n", $cpu_eff, time2str($corewalltime));
+    printf("Job Wall-clock time: %s\n", time2str($walltime));
     if ($ntasks == 1) {
         printf("Memory Utilized: %s\n", kbytes2str($mem));
     } else {
