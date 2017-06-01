@@ -453,6 +453,7 @@ top_srcdir = @top_srcdir@
 man3_MANS = slurm_hostlist_create.3 \
 	slurm_hostlist_destroy.3 \
 	slurm_hostlist_shift.3 \
+	slurm_allocate_pack_job_blocking.3 \
 	slurm_allocate_resources.3 \
 	slurm_allocate_resources_blocking.3 \
 	slurm_allocation_lookup.3 \
@@ -529,6 +530,7 @@ man3_MANS = slurm_hostlist_create.3 \
 	slurm_load_reservations.3 \
 	slurm_load_slurmd_status.3 \
 	slurm_notify_job.3 \
+	slurm_pack_job_lookup.3 \
 	slurm_perror.3 \
 	slurm_pid2jobid.3 \
 	slurm_ping.3 \

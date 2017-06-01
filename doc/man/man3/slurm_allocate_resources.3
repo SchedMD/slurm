@@ -1,9 +1,10 @@
-.TH "Slurm API" "3" "Slurm job initiation functions" "April 2015" "Slurm job initiation functions"
+.TH "Slurm API" "3" "Slurm job initiation functions" "June 2017" "Slurm job initiation functions"
 
 .SH "NAME"
+slurm_allocate_pack_job_blocking,
 slurm_allocate_resources, slurm_allocate_resources_blocking,
 slurm_allocation_msg_thr_create, slurm_allocation_msg_thr_destroy,
-slurm_allocation_lookup, slurm_confirm_allocation,
+slurm_allocation_lookup, slurm_pack_job_lookup, slurm_confirm_allocation,
 slurm_free_submit_response_response_msg, slurm_init_job_desc_msg,
 slurm_job_will_run, slurm_job_will_run2,
 slurm_read_hostfile, slurm_submit_batch_job
@@ -28,6 +29,14 @@ resource_allocation_response_msg_t *\fBslurm_allocate_resources_blocking\fR (
 .br
 );
 .LP
+List *\fBslurm_allocate_pack_job_blocking\fR (
+.br
+	List \fIjob_desc_msg_list\fP,
+.br
+	time_t \fItimeout\fP, void \fI(*pending_callback)(uint32_t job_id)\fP
+.br
+);
+.LP
 allocation_msg_thread_t *\fBslurm_allocation_msg_thr_create\fR (
 .br
 	uint16_t *\fIport\fP,
@@ -47,6 +56,14 @@ int \fBslurm_allocation_lookup\fR {
 	uint32_t \fIjobid\fP,
 .br
 	resource_allocation_response_msg_t **\fIslurm_alloc_msg_pptr\fP
+.br
+);
+.LP
+int \fBslurm_pack_job_lookup\fR {
+.br
+	uint32_t \fIjobid\fP,
+.br
+	List *\fIslurm_alloc_msg_list\fP
 .br
 );
 .LP
@@ -82,7 +99,7 @@ int \fBslurm_job_will_run\fR (
 .br
 );
 .LP
-int slurm_job_will_run2\fR (
+int \fBslurm_job_will_run2\fR (
 .br
 	job_desc_msg_t *\fIjob_desc_msg_ptr\fP,
 .br
@@ -106,6 +123,11 @@ int \fBslurm_submit_batch_job\fR (
 .SH "ARGUMENTS"
 .LP
 .TP
+\fIjob_desc_msg_list\fP
+List of job request specifications (of type job_desc_msg_t) for a heterogeneous
+job in an ordered list.
+See slurm.h for full details on the data structure's contents.
+.TP
 \fIjob_desc_msg_ptr\fP
 Specifies the pointer to a job request specification. See slurm.h for full details
 on the data structure's contents.
@@ -117,6 +139,10 @@ slurm.h for full details on the data structure's contents.
 \fIold_job_desc_msg_ptr\fP
 Specifies the pointer to a description of an existing job. See slurm.h for
 full details on the data structure's contents.
+.TP
+\fIslurm_alloc_msg_list\fP
+Specifies a pointer to a List structure to be created and filled with a list
+of pointers to resource allocation data (of type resource_allocation_response_msg_t).
 .TP
 \fIslurm_alloc_msg_pptr\fP
 Specifies the double pointer to the structure to be created and filled with a
@@ -152,7 +178,8 @@ Specifies when and where the specified job descriptor could be started.
 \fBslurm_allocate_resources\fR Request a resource allocation for a job. If
 successful, a job entry is created. Note that if the job's requested node
 count or time allocation are outside of the partition's limits then a job
-entry will be created, a warning indication will be placed in the \fIerror_code\fP field of the response message, and the job will be left
+entry will be created, a warning indication will be placed in the \fIerror_code\fP
+field of the response message, and the job will be left
 queued until the partition's limits are changed.
 Always release the response message when no longer required using
 the function \fBslurm_free_resource_allocation_response_msg\fR.  This
@@ -169,6 +196,16 @@ parameter will be called if the allocation is not available
 immediately and the immediate flag is not set in the request.  This can
 be used to get the jobid of the job while waiting for the allocation
 to become available.  On failure NULL is returned and errno is set.
+.LP
+\fBslurm_allocate_pack_job_blocking\fR Request a set of resource allocations
+for a heterogeneous job.
+This call will block until the allocation is granted, an error
+occurs, or the specified timeout limit is reached.  The \fIpending_callback\fP
+parameter will be called if the allocation is not available
+immediately and the immediate flag is not set in the request.  This can
+be used to get the jobid of the job while waiting for the allocation
+to become available.  On failure NULL is returned and errno is set.
+The returned list should be freed using the \fBlist_destroy\fP function.
 .LP
 \fBslurm_allocation_msg_thr_create\fR Startup a message handler
 talking with the controller dealing with messages from the controller
@@ -188,6 +225,14 @@ allocation.
 existing job allocation. \fBOBSOLETE FUNCTION: Use slurm_allocation_lookup
 instead.\fR This function may only be successfully executed by the job's
 owner or user root.
+.LP
+\fBslurm_allocation_lookup\fP Returns detailed information about an existing
+job allocation.
+.LP
+\fBslurm_pack_job_lookup\fP Returns detailed information about an existing
+heterogeneous job allocation. Each element in the list represents a component
+of the job in sequential order. The returned list should be freed using the
+\fBlist_destroy\fP function.
 .LP
 \fBslurm_free_resource_allocation_response_msg\fR Release the storage generated in response
 to a call of the function \fBslurm_allocate_resources\fR
@@ -245,6 +290,9 @@ On success, zero is returned. On error, \-1 is returned, and Slurm error code is
 \fBESLURM_DUPLICATE_JOB_ID\fR the requested job id is already in use.
 .LP
 \fBESLURM_NOT_TOP_PRIORITY\fR job can not be started immediately because higher priority jobs are waiting to use this partition.
+.LP
+\fBESLURM_NOT_PACK_JOB_LEADER\fR the job ID does not represent a pack job leader
+as required by the function.
 .LP
 \fBESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE\fR the requested node configuration is not available (at least not in sufficient quantity) to satisfy the request.
 .LP
@@ -427,7 +475,7 @@ which must be linked to your process for use
 (e.g. "cc \-lslurm myprog.c").
 
 .SH "COPYING"
-Copyright (C) 2010\-2014 SchedMD LLC.
+Copyright (C) 2010\-2017 SchedMD LLC.
 Copyright (C) 2002\-2006 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
