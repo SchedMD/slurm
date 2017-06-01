@@ -3086,6 +3086,11 @@ static void *_purge_files_thread(void *no_data)
 		debug2("%s: starting, %d jobs to purge", __func__,
 		       list_count(purge_files_list));
 
+		/*
+		 * Use list_dequeue here (instead of list_flush) as it will not
+		 * hold up the list lock when we try to enqueue jobs that need
+		 * to be freed.
+		 */
 		while ((job_id = list_dequeue(purge_files_list))) {
 			debug2("%s: purging files from job %d",
 			       __func__, *job_id);
