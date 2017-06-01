@@ -138,6 +138,8 @@ typedef struct {
 List   job_list = NULL;		/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
 
+List purge_files_list = NULL;	/* job files to delete */
+
 /* Local variables */
 static int      bf_min_age_reserve = 0;
 static uint32_t delay_boot = 0;
@@ -152,8 +154,6 @@ static struct   job_record **job_array_hash_t = NULL;
 static bool     kill_invalid_dep;
 static time_t   last_file_write_time = (time_t) 0;
 static uint32_t max_array_size = NO_VAL;
-static bool	purge_quit = false;
-static struct timeval purge_start_time = {0, 0};
 static bitstr_t *requeue_exit = NULL;
 static bitstr_t *requeue_exit_hold = NULL;
 static int	select_serial = -1;
@@ -173,8 +173,8 @@ static int  _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 					 bitstr_t ** req_bitmap);
 static char *_copy_nodelist_no_dup(char *node_list);
 static struct job_record *_create_job_record(uint32_t num_jobs);
+static void _delete_job_details(struct job_record *job_entry);
 static void _del_batch_list_rec(void *x);
-static void _delete_job_desc_files(uint32_t job_id);
 static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	char *resv_name, slurmdb_assoc_rec_t *assoc_ptr,
 	bool operator, slurmdb_qos_rec_t *qos_rec, int *error_code,
@@ -191,7 +191,6 @@ static void _job_array_comp(struct job_record *job_ptr, bool was_running);
 static int  _job_create(job_desc_msg_t * job_specs, int allocate, int will_run,
 			struct job_record **job_rec_ptr, uid_t submit_uid,
 			char **err_msg, uint16_t protocol_version);
-static void _job_purge_start(void);
 static void _job_timed_out(struct job_record *job_ptr);
 static void _kill_dependent(struct job_record *job_ptr);
 static void _list_delete_job(void *job_entry);
@@ -488,12 +487,10 @@ static struct job_record *_create_job_record(uint32_t num_jobs)
 
 
 /*
- * delete_job_details - delete a job's detail record and clear it's pointer
- *	this information can be deleted as soon as the job is allocated
- *	resources and running (could need to restart batch job)
+ * _delete_job_details - delete a job's detail record and clear it's pointer
  * IN job_entry - pointer to job_record to clear the record of
  */
-void delete_job_details(struct job_record *job_entry)
+static void _delete_job_details(struct job_record *job_entry)
 {
 	int i;
 
@@ -501,8 +498,17 @@ void delete_job_details(struct job_record *job_entry)
 		return;
 
 	xassert (job_entry->details->magic == DETAILS_MAGIC);
-	if (IS_JOB_FINISHED(job_entry))
-		_delete_job_desc_files(job_entry->job_id);
+
+	/*
+	 * Queue up job to have the batch script and environment deleted.
+	 * This is handled by a separate thread to limit the amount of
+	 * time purge_old_job needs to spend holding locks.
+	 */
+	if (IS_JOB_FINISHED(job_entry)) {
+		uint32_t *job_id = xmalloc(sizeof(uint32_t));
+		*job_id = job_entry->job_id;
+		list_enqueue(purge_files_list, job_id);
+	}
 
 	xfree(job_entry->details->acctg_freq);
 	for (i=0; i<job_entry->details->argc; i++)
@@ -533,8 +539,8 @@ void delete_job_details(struct job_record *job_entry)
 	xfree(job_entry->details);	/* Must be last */
 }
 
-/* _delete_job_desc_files - delete job descriptor related files */
-static void _delete_job_desc_files(uint32_t job_id)
+/* delete_job_desc_files - delete job descriptor related files */
+extern void delete_job_desc_files(uint32_t job_id)
 {
 	char *dir_name = NULL, *file_name = NULL;
 	struct stat sbuf;
@@ -3917,7 +3923,6 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 		debug3("   %s", buf);
 }
 
-
 /*
  * init_job_conf - initialize the job configuration tables and values.
  *	this should be called after creating node information, but
@@ -3936,6 +3941,11 @@ int init_job_conf(void)
 	}
 
 	last_job_update = time(NULL);
+
+	if (!purge_files_list) {
+		purge_files_list = list_create(slurm_destroy_uint32_ptr);
+	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -8491,7 +8501,7 @@ static void _list_delete_job(void *job_entry)
 			*job_pptr = job_ptr->job_array_next_t;
 	}
 
-	delete_job_details(job_ptr);
+	_delete_job_details(job_ptr);
 	xfree(job_ptr->account);
 	xfree(job_ptr->admin_comment);
 	xfree(job_ptr->alias_list);
@@ -8573,12 +8583,6 @@ extern int list_find_job_id(void *job_entry, void *key)
 		return 0;
 }
 
-static void _job_purge_start(void)
-{
-	purge_quit = false;
-	gettimeofday(&purge_start_time, NULL);
-}
-
 /*
  * _list_find_job_old - find old entries in the job list,
  *	see common/list.h for documentation, key is ignored
@@ -8589,19 +8593,6 @@ static int _list_find_job_old(void *job_entry, void *key)
 	time_t kill_age, min_age, now = time(NULL);;
 	struct job_record *job_ptr = (struct job_record *)job_entry;
 	uint16_t cleaning = 0;
-	struct timeval tv_now = {0, 0};
-	long delta_t;
-
-	if (purge_quit)
-		return 0;
-	gettimeofday(&tv_now, NULL);
-	delta_t  = (tv_now.tv_sec - purge_start_time.tv_sec) * 1000000;
-	delta_t += tv_now.tv_usec;
-	delta_t -= purge_start_time.tv_usec;
-	if (delta_t > 1000000) {
-		purge_quit = true;
-		return 0;
-	}
 
 	if (IS_JOB_COMPLETING(job_ptr) && !LOTS_OF_AGENTS) {
 		kill_age = now - (slurmctld_conf.kill_wait +
@@ -10021,7 +10012,11 @@ void purge_old_job(void)
 {
 	ListIterator job_iterator;
 	struct job_record  *job_ptr;
-	int i;
+	int i, purge_job_count;
+
+	if ((purge_job_count = list_count(purge_files_list)))
+		debug("%s: job file deletion is falling behind, "
+		      "%d left to remove", __func__, purge_job_count);
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
@@ -10067,11 +10062,11 @@ void purge_old_job(void)
 	}
 	list_iterator_destroy(job_iterator);
 
-	_job_purge_start();
 	i = list_delete_all(job_list, &_list_find_job_old, "");
 	if (i) {
 		debug2("purge_old_job: purged %d old job records", i);
 		last_job_update = time(NULL);
+		slurm_cond_signal(&purge_thread_cond);
 	}
 }
 
@@ -13452,7 +13447,7 @@ static void _remove_defunct_batch_dirs(List batch_dirs)
 	while ((job_id_ptr = list_next(batch_dir_inx))) {
 		info("Purged files for defunct batch job %u",
 		     *job_id_ptr);
-		_delete_job_desc_files(*job_id_ptr);
+		delete_job_desc_files(*job_id_ptr);
 	}
 	list_iterator_destroy(batch_dir_inx);
 }
@@ -13743,6 +13738,7 @@ void job_fini (void)
 	xfree(job_hash);
 	xfree(job_array_hash_j);
 	xfree(job_array_hash_t);
+	FREE_NULL_LIST(purge_files_list);
 	FREE_NULL_BITMAP(requeue_exit);
 	FREE_NULL_BITMAP(requeue_exit_hold);
 }

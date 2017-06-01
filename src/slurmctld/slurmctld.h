@@ -147,6 +147,7 @@ typedef struct slurmctld_config {
 	pthread_t thread_id_save;
 	pthread_t thread_id_sig;
 	pthread_t thread_id_power;
+	pthread_t thread_id_purge_files;
 	pthread_t thread_id_rpc;
 } slurmctld_config_t;
 
@@ -205,6 +206,7 @@ extern int   accounting_enforce;
 extern int   association_based_accounting;
 extern uint32_t   cluster_cpus;
 extern int   batch_sched_delay;
+extern pthread_cond_t purge_thread_cond;
 extern int   sched_interval;
 extern bool  slurmctld_init_db;
 extern int   slurmctld_primary;
@@ -875,6 +877,7 @@ struct 	step_record {
 };
 
 extern List job_list;			/* list of job_record entries */
+extern List purge_files_list;		/* list of job ids to purge files of */
 
 /*****************************************************************************\
  *  Consumable Resources parameters and data structures
@@ -971,14 +974,6 @@ extern int build_part_bitmap(struct part_record *part_ptr);
  * RET WAIT_NO_REASON on success, fail status otherwise.
  */
 extern int job_limits_check(struct job_record **job_pptr, bool check_min_time);
-
-/*
- * delete_job_details - delete a job's detail record and clear it's pointer
- *	this information can be deleted as soon as the job is allocated
- *	resources and running (could need to restart batch job)
- * IN job_entry - pointer to job_record to clear the record of
- */
-extern void  delete_job_details (struct job_record *job_entry);
 
 /*
  * delete_partition - delete the specified partition (actually leave
@@ -1189,6 +1184,12 @@ extern bool is_node_down (char *name);
  * RET true if node exists and is responding, otherwise false
  */
 extern bool is_node_resp (char *name);
+
+/*
+ * delete_job_desc_files - remove the state files and directory
+ * for a given job_id from SlurmStateSaveLocation
+ */
+extern void delete_job_desc_files(uint32_t job_id);
 
 /*
  * job_alloc_info - get details about an existing job allocation

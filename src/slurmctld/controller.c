@@ -168,6 +168,7 @@ int	bg_recover = DEFAULT_RECOVER;
 uint32_t cluster_cpus = 0;
 time_t	last_proc_req_start = 0;
 bool	ping_nodes_now = false;
+pthread_cond_t purge_thread_cond = PTHREAD_COND_INITIALIZER;
 int	sched_interval = 60;
 slurmctld_config_t slurmctld_config;
 diag_stats_t slurmctld_diag_stats;
@@ -188,6 +189,7 @@ static time_t	next_stats_reset = 0;
 static int	new_nice = 0;
 static char	node_name_short[MAX_SLURM_NAME];
 static char	node_name_long[MAX_SLURM_NAME];
+static pthread_mutex_t purge_thread_lock = PTHREAD_MUTEX_INITIALIZER;
 static int	recover   = DEFAULT_RECOVER;
 static pthread_mutex_t sched_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t server_thread_cond = PTHREAD_COND_INITIALIZER;
@@ -232,6 +234,7 @@ static void         _test_thread_limit(void);
 inline static void  _update_cred_key(void);
 static bool	    _verify_clustername(void);
 static void	    _create_clustername_file(void);
+static void *       _purge_files_thread(void *no_data);
 static void         _update_nice(void);
 inline static void  _usage(char *prog_name);
 static bool         _valid_controller(void);
@@ -584,6 +587,18 @@ int main(int argc, char **argv)
 		start_power_mgr(&slurmctld_config.thread_id_power);
 
 		/*
+		 * create attached thread for purging completed job files
+		 */
+		slurm_attr_init(&thread_attr);
+		while (pthread_create(&slurmctld_config.thread_id_purge_files,
+				      &thread_attr, _purge_files_thread,
+				      NULL)) {
+			error("pthread_create error %m");
+			sleep(1);
+		}
+		slurm_attr_destroy(&thread_attr);
+
+		/*
 		 * process slurm background activities, could run as pthread
 		 */
 		_slurmctld_background(NULL);
@@ -593,9 +608,12 @@ int main(int argc, char **argv)
 		slurm_priority_fini();
 		slurmctld_plugstack_fini();
 		shutdown_state_save();
+		slurm_cond_signal(&purge_thread_cond); /* wake up last time */
+		pthread_join(slurmctld_config.thread_id_purge_files, NULL);
 		pthread_join(slurmctld_config.thread_id_sig,  NULL);
 		pthread_join(slurmctld_config.thread_id_rpc,  NULL);
 		pthread_join(slurmctld_config.thread_id_save, NULL);
+		slurmctld_config.thread_id_purge_files = (pthread_t) 0;
 		slurmctld_config.thread_id_sig  = (pthread_t) 0;
 		slurmctld_config.thread_id_rpc  = (pthread_t) 0;
 		slurmctld_config.thread_id_save = (pthread_t) 0;
@@ -3015,4 +3033,58 @@ static void  _set_work_dir(void)
 		} else
 			info("chdir to /var/tmp");
 	}
+}
+
+/*
+ * _purge_files_thread - separate thread to remove job batch/environ files
+ * from the state directory. Runs async from purge_old_jobs to avoid
+ * holding locks while the files are removed, which can cause performance
+ * problems under high throughput conditions.
+ *
+ * Uses the purge_cond to wakeup on demand, then works through the global
+ * purge_files_list of job_ids and removes their files.
+ */
+static void *_purge_files_thread(void *no_data)
+{
+	int *job_id;
+
+	/*
+	 * Use the purge_files_list as a queue. _delete_job_details()
+	 * in job_mgr.c always enqueues (at the end), while
+	 *_purge_files_thread consumes off the front.
+	 *
+	 * There is a potential race condition if the job numbers have
+	 * wrapped between _purge_thread removing the state files and
+	 * get_next_job_id trying to re-assign it. This is mitigated
+	 * the the call to _dup_job_file_test() in job_mgr.c ensuring
+	 * there is no existing directory for an id before assigning it.
+	 */
+
+	/*
+	 * pthread_cond_wait requires a lock to release and reclaim.
+	 * the List structure is already handling locking for itself,
+	 * so this lock isn't actually useful, and the thread calling
+	 * pthread_cond_signal isn't required to have the lock. So
+	 * lock it once and hold it until slurmctld shuts down.
+	 */
+	slurm_mutex_lock(&purge_thread_lock);
+	while (!slurmctld_config.shutdown_time) {
+		slurm_cond_wait(&purge_thread_cond, &purge_thread_lock);
+		debug2("%s: starting, %d jobs to purge", __func__,
+		       list_count(purge_files_list));
+
+		/*
+		 * Use list_dequeue here (instead of list_flush) as it will not
+		 * hold up the list lock when we try to enqueue jobs that need
+		 * to be freed.
+		 */
+		while ((job_id = list_dequeue(purge_files_list))) {
+			debug2("%s: purging files from job %d",
+			       __func__, *job_id);
+			delete_job_desc_files(*job_id);
+			xfree(job_id);
+		}
+	}
+	slurm_mutex_unlock(&purge_thread_lock);
+	return NULL;
 }
