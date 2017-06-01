@@ -109,6 +109,11 @@ int	setup_env(env_t *env, bool preserve_env);
  * xmalloc'ed.  The array is terminated by a NULL pointer, and thus is
  * suitable for use by execle() and other env_array_* functions.
  *
+ * dest OUT - array in which to the set environment variables
+ * alloc IN - resource allocation response
+ * desc IN - job allocation request
+ * pack_offset IN - component offset into pack job, -1 if not pack job
+ *
  * Sets the variables:
  *	SLURM_JOB_ID
  *	SLURM_JOB_NUM_NODES
@@ -119,9 +124,9 @@ int	setup_env(env_t *env, bool preserve_env);
  * Sets OBSOLETE variables:
  *	? probably only needed for users...
  */
-int env_array_for_job(char ***dest,
-		      const resource_allocation_response_msg_t *alloc,
-		      const job_desc_msg_t *desc);
+extern int env_array_for_job(char ***dest,
+			     const resource_allocation_response_msg_t *alloc,
+			     const job_desc_msg_t *desc, int pack_offset);
 
 /*
  * Set in "dest" the environment variables relevant to a SLURM batch
@@ -274,6 +279,20 @@ int env_array_overwrite(char ***array_ptr, const char *name,
 int env_array_overwrite_fmt(char ***array_ptr, const char *name,
 			    const char *value_fmt, ...)
   __attribute__ ((format (printf, 3, 4)));
+
+/*
+ * Append a single environment variable to an environment variable array
+ * if a variable by that name does not already exist.  If a variable
+ * by the same name is found in the array, it is overwritten with the
+ * new value.  The "value_fmt" string may contain printf-style options.
+ *
+ * "value_fmt" supports printf-style formatting.
+ *
+ * Return 1 on success, and 0 on error.
+ */
+int env_array_overwrite_pack_fmt(char ***array_ptr, const char *name,
+				 int pack_offset, const char *value_fmt, ...)
+  __attribute__ ((format (printf, 4, 5)));
 
 /*
  * Set in the running process's environment all of the environment

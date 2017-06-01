@@ -110,7 +110,7 @@ static bool allocation_revoked = false;
 static bool exit_flag = false;
 static bool is_pack_job = false;
 static bool suspend_flag = false;
-static uint32_t pending_job_id = 0;
+static uint32_t my_job_id = 0;
 static time_t last_timeout = 0;
 static struct termios saved_tty_attributes;
 
@@ -179,13 +179,13 @@ int main(int argc, char **argv)
 	pid_t pid  = getpid();
 	pid_t tpgid = 0;
 	pid_t rc_pid = 0;
-	int i, rc = 0;
+	int i, j, rc = 0;
 	bool pack_fini = false;
 	int pack_argc, pack_inx, pack_argc_off;
 	char **pack_argv;
 	static char *msg = "Slurm job queue full, sleeping and retrying.";
 	slurm_allocation_callbacks_t callbacks;
-	uint32_t pack_job_id = 0;
+	ListIterator iter_req, iter_resp;
 
 	slurm_conf_init(NULL);
 	debug_flags = slurm_get_debug_flags();
@@ -420,29 +420,29 @@ int main(int argc, char **argv)
 		exit(error_exit);
 	} else if (job_resp_list && !allocation_interrupted) {
 		/* Allocation granted to regular job */
-		ListIterator iter;
 		i = 0;
-		iter = list_iterator_create(job_resp_list);
+		iter_resp = list_iterator_create(job_resp_list);
 		while ((alloc = (resource_allocation_response_msg_t *)
-				list_next(iter))) {
-			if (pack_job_id == 0) {
-				pack_job_id = alloc->job_id;
-				pending_job_id = alloc->job_id;
-				info("Granted job allocation %u", pack_job_id);
+				list_next(iter_resp))) {
+			if (my_job_id == 0) {
+				my_job_id = alloc->job_id;
+				info("Granted job allocation %u", my_job_id);
 			}
 			if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
 				info("Pack job ID %u+%u (%u) on nodes %s",
-				     pack_job_id, i++, alloc->job_id,
+				     my_job_id, i++, alloc->job_id,
 				     alloc->node_list);
 			}
-			if (_proc_alloc(alloc) != SLURM_SUCCESS)
+			if (_proc_alloc(alloc) != SLURM_SUCCESS) {
+				list_iterator_destroy(iter_resp);
 				goto relinquish;
+			}
 		}
-		list_iterator_destroy(iter);
+		list_iterator_destroy(iter_resp);
 	} else if (!allocation_interrupted) {
 		/* Allocation granted to regular job */
-		info("Granted job allocation %u", alloc->job_id);
-		pending_job_id = alloc->job_id;
+		my_job_id = alloc->job_id;
+		info("Granted job allocation %u", my_job_id);
 
 		if (_proc_alloc(alloc) != SLURM_SUCCESS)
 			goto relinquish;
@@ -465,16 +465,35 @@ int main(int argc, char **argv)
 		goto relinquish;
 	}
 
-if (job_resp_list) {
-//FIXME: work through additional logic, including free of alloc
-exit(1);
-}
-
 	/*
-	 * Run the user's command.
+	 * Set environment variables
 	 */
-	if (env_array_for_job(&env, alloc, desc) != SLURM_SUCCESS)
-		goto relinquish;
+	if (job_resp_list) {
+		i = list_count(job_req_list);
+		j = list_count(job_resp_list);
+		if (i != j) {
+			error("Job component count mismatch, submit/response "
+			      "count mismatch (%d != %d)", i, j);
+			goto relinquish;
+		}
+
+		i = 0;
+		iter_req = list_iterator_create(job_req_list);
+		iter_resp = list_iterator_create(job_resp_list);
+		while ((desc = (job_desc_msg_t *) list_next(iter_req))) {
+			alloc = (resource_allocation_response_msg_t *)
+				list_next(iter_resp);
+			if (env_array_for_job(&env, alloc, desc, i++) !=
+			    SLURM_SUCCESS)
+				goto relinquish;
+		}
+		list_iterator_destroy(iter_resp);
+		list_iterator_destroy(iter_req);
+//FIXME: work through additional logic, including free of alloc
+	} else {
+		if (env_array_for_job(&env, alloc, desc, -1) != SLURM_SUCCESS)
+			goto relinquish;
+	}
 
 	/* Add default task count for srun, if not already set */
 	if (opt.ntasks_set) {
@@ -525,12 +544,12 @@ exit(1);
 	slurm_mutex_lock(&allocation_state_lock);
 	if (allocation_state == REVOKED) {
 		error("Allocation was revoked for job %u before command could be run",
-		      alloc->job_id);
+		      my_job_id);
 		slurm_cond_broadcast(&allocation_state_cond);
 		slurm_mutex_unlock(&allocation_state_lock);
-		if (slurm_complete_job(alloc->job_id, status) != 0) {
+		if (slurm_complete_job(my_job_id, status) != 0) {
 			error("Unable to clean up allocation for job %u: %m",
-			      alloc->job_id);
+			      my_job_id);
 		}
 		return 1;
  	}
@@ -591,11 +610,11 @@ relinquish:
 	if (allocation_state != REVOKED) {
 		slurm_mutex_unlock(&allocation_state_lock);
 
-		info("Relinquishing job allocation %u", alloc->job_id);
-		if ((slurm_complete_job(alloc->job_id, status) != 0) &&
+		info("Relinquishing job allocation %u", my_job_id);
+		if ((slurm_complete_job(my_job_id, status) != 0) &&
 		    (slurm_get_errno() != ESLURM_ALREADY_DONE))
 			error("Unable to clean up job allocation %u: %m",
-			      alloc->job_id);
+			      my_job_id);
 		slurm_mutex_lock(&allocation_state_lock);
 		allocation_state = REVOKED;
 	}
@@ -611,7 +630,6 @@ relinquish:
 	 */
 	rc = 1;
 	if (rc_pid != -1) {
-
 		if (WIFEXITED(status)) {
 			rc = WEXITSTATUS(status);
 		} else if (WIFSTOPPED(status)) {
@@ -623,7 +641,7 @@ relinquish:
 			/* if we get these signals we return a normal
 			 * exit since this was most likely sent from the
 			 * user */
-			switch(WTERMSIG(status)) {
+			switch (WTERMSIG(status)) {
 			case SIGHUP:
 			case SIGINT:
 			case SIGQUIT:
@@ -636,7 +654,6 @@ relinquish:
 		}
 	}
 
-	xfree(desc->clusters);
 	return rc;
 }
 
@@ -990,7 +1007,7 @@ static pid_t _fork_command(char **command)
 static void _pending_callback(uint32_t job_id)
 {
 	info("Pending job allocation %u", job_id);
-	pending_job_id = job_id;
+	my_job_id = job_id;
 }
 
 static void _exit_on_signal(int signo)
@@ -1008,21 +1025,21 @@ static void _forward_signal(int signo)
 static void _signal_while_allocating(int signo)
 {
 	allocation_interrupted = true;
-	if (pending_job_id != 0) {
-		slurm_complete_job(pending_job_id, NO_VAL);
+	if (my_job_id != 0) {
+		slurm_complete_job(my_job_id, NO_VAL);
 	}
 }
 
 /* This typically signifies the job was cancelled by scancel */
 static void _job_complete_handler(srun_job_complete_msg_t *comp)
 {
-	if (pending_job_id && (pending_job_id != comp->job_id)) {
+	if (my_job_id && (my_job_id != comp->job_id)) {
 		if (is_pack_job) {
 			/* Assume this is component of pack job */
 			verbose("Got job_complete for job %u", comp->job_id);
 		} else {
 			error("Ignoring job_complete for job %u because our job ID is %u",
-			      comp->job_id, pending_job_id);
+			      comp->job_id, my_job_id);
 		}
 		return;
 	}
@@ -1180,12 +1197,12 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
 	int max_delay = BG_FREE_PREVIOUS_BLOCK + BG_MIN_BLOCK_BOOT +
 			(BG_INCR_BLOCK_BOOT * alloc->node_cnt);
 
-	pending_job_id = alloc->job_id;
+	my_job_id = alloc->job_id;
 	select_g_select_jobinfo_get(alloc->select_jobinfo,
 				    SELECT_JOBDATA_BLOCK_ID,
 				    &block_id);
 
-	for (i=0; (cur_delay < max_delay); i++) {
+	for (i = 0; (cur_delay < max_delay); i++) {
 		if (i == 1)
 			info("Waiting for block %s to become ready for job",
 			     block_id);
@@ -1220,7 +1237,6 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
 		is_ready = 0;
 
 	xfree(block_id);
-	pending_job_id = 0;
 
 	return is_ready;
 }
@@ -1283,7 +1299,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 		max_delay = 300;	/* Wait to 5 min for PrologSlurmctld */
 	}
 
-	pending_job_id = alloc->job_id;
+	my_job_id = alloc->job_id;
 
 	if (alloc->alias_list && !xstrcmp(alloc->alias_list, "TBD"))
 		opt.wait_all_nodes = 1;	/* Wait for boot & addresses */
@@ -1323,7 +1339,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 		if (i > 0)
      			info("Nodes %s are ready for job", alloc->node_list);
 		if (alloc->alias_list && !xstrcmp(alloc->alias_list, "TBD") &&
-		    (slurm_allocation_lookup(pending_job_id, &resp)
+		    (slurm_allocation_lookup(my_job_id, &resp)
 		     == SLURM_SUCCESS)) {
 			tmp_str = alloc->alias_list;
 			alloc->alias_list = resp->alias_list;
@@ -1339,8 +1355,6 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 			error("Nodes %s are still not ready", alloc->node_list);
 	} else	/* allocation_interrupted or slurmctld not responing */
 		is_ready = 0;
-
-	pending_job_id = 0;
 
 	return is_ready;
 }
