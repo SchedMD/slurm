@@ -99,7 +99,7 @@
 #define BACKFILL_INTERVAL	30
 #define BACKFILL_RESOLUTION	60
 #define BACKFILL_WINDOW		(24 * 60 * 60)
-#define BF_MAX_USERS		1000
+#define BF_MAX_USERS		5000
 #define BF_MAX_JOB_ARRAY_RESV	20
 
 #define SLURMCTLD_THREAD_LIMIT	5
@@ -141,6 +141,7 @@ static int bf_max_job_array_resv = BF_MAX_JOB_ARRAY_RESV;
 static int bf_min_age_reserve = 0;
 static uint32_t bf_min_prio_reserve = 0;
 static int max_backfill_job_cnt = 100;
+static int max_backfill_job_per_assoc = 0;
 static int max_backfill_job_per_part = 0;
 static int max_backfill_job_per_user = 0;
 static int max_backfill_job_per_user_part = 0;
@@ -655,6 +656,34 @@ static void _load_config(void)
 		     max_backfill_job_per_user_part, max_backfill_job_cnt);
 	}
 
+
+	if (sched_params &&
+	    (tmp_ptr = strstr(sched_params, "bf_max_job_assoc="))) {
+		max_backfill_job_per_assoc = atoi(tmp_ptr + 17);
+		if (max_backfill_job_per_assoc < 0) {
+			error("Invalid SchedulerParameters bf_max_job_assoc: %d",
+			      max_backfill_job_per_assoc);
+			max_backfill_job_per_assoc = 0;
+		}
+	} else {
+		max_backfill_job_per_assoc = 0;
+	}
+	if ((max_backfill_job_per_assoc != 0) &&
+	    (max_backfill_job_per_assoc > max_backfill_job_cnt)) {
+		info("warning: bf_max_job_assoc > bf_max_job_test (%u > %u)",
+		     max_backfill_job_per_assoc, max_backfill_job_cnt);
+	}
+	if ((max_backfill_job_per_assoc != 0) &&
+	    (max_backfill_job_per_user != 0)) {
+		error("Both bf_max_job_user and bf_max_job_assoc are set: "
+		      "bf_max_job_assoc taking precedence.");
+		max_backfill_job_per_user = 0;
+	}
+	if ((max_backfill_job_per_assoc != 0) &&
+	    (BF_MAX_USERS < g_user_assoc_count)) {
+		info("warning: BF_MAX_USERS < g_user_assoc_count(%u), consider increasing",
+		     g_user_assoc_count);
+	}
 	bf_min_age_reserve = 0;
 	if (sched_params &&
 	    (tmp_ptr = strstr(sched_params, "bf_min_age_reserve="))) {
@@ -1055,7 +1084,7 @@ static int _attempt_backfill(void)
 		}
 		list_iterator_destroy(part_iterator);
 	}
-	if (max_backfill_job_per_user) {
+	if (max_backfill_job_per_user || max_backfill_job_per_assoc) {
 		uid = xmalloc(BF_MAX_USERS * sizeof(uint32_t));
 		njobs = xmalloc(BF_MAX_USERS * sizeof(uint16_t));
 	}
@@ -1371,6 +1400,47 @@ next_task:
 				continue;
 			}
 		}
+
+		if (max_backfill_job_per_assoc) {
+			for (j = 0; j < nuser; j++) {
+				if (job_ptr->assoc_id == uid[j]) {
+					njobs[j]++;
+					if (debug_flags & DEBUG_FLAG_BACKFILL)
+						debug("backfill: user %u assoc %u: #jobs %u",
+						      job_ptr->user_id,
+						      uid[j], njobs[j]);
+					break;
+				}
+			}
+			if (j == nuser) { /* assoc not found */
+				static bool bf_max_user_msg = true;
+				if (nuser < BF_MAX_USERS) {
+					uid[j] = job_ptr->assoc_id;
+					njobs[j] = 1;
+					nuser++;
+				} else if (bf_max_user_msg) {
+					bf_max_user_msg = false;
+					error("backfill: too many associations in queue. Conside increasing BF_MAX_USERS from %u (g_user_assoc_count=%u)",
+					      nuser, g_user_assoc_count);
+				}
+				if (debug_flags & DEBUG_FLAG_BACKFILL)
+					debug2("backfill: found new user/assoc %u/%u.  Total #users/assoc now %u",
+					       job_ptr->user_id,
+					       job_ptr->assoc_id, nuser);
+			} else {
+				if (njobs[j] >= max_backfill_job_per_assoc) {
+					/* skip job */
+					if (debug_flags & DEBUG_FLAG_BACKFILL)
+						info("backfill: have already checked %u jobs for user %u, assoc %u; skipping job %u",
+						     max_backfill_job_per_assoc,
+						     job_ptr->user_id,
+						     job_ptr->assoc_id,
+						     job_ptr->job_id);
+					continue;
+				}
+			}
+		}
+
 		if (max_backfill_job_per_user) {
 			user_inx = -1;
 			for (j = 0; j < nuser; j++) {
@@ -2007,6 +2077,12 @@ skip_start:
 				    max_backfill_job_cnt)) {
 				info("warning: bf_max_job_user > bf_max_job_test (%u > %u)",
 				     max_backfill_job_per_user,
+				     max_backfill_job_cnt);
+			} else if  ((max_backfill_job_per_assoc != 0) &&
+				    (max_backfill_job_per_assoc >
+				     max_backfill_job_cnt)) {
+				info("warning: bf_max_job_assoc > bf_max_job_test (%u > %u)",
+				     max_backfill_job_per_assoc,
 				     max_backfill_job_cnt);
 			}
 			break;

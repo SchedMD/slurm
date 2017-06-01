@@ -92,6 +92,7 @@ documents those changes that are of interest to users and administrators.
  -- Extend the output of the seff utility to also include the job's wall-clock
     time.
  -- Add bf_max_time to SchedulerParameters.
+ -- Add bf_max_job_assoc to SchedulerParameters.
 
 * Changes in Slurm 17.02.4
 ==========================

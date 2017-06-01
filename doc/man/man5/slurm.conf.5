@@ -2542,6 +2542,20 @@ This has no impact upon the number of tasks from a job array that can be
 started immediately, only those tasks expected to start at some future time.
 The default value is 20 tasks.
 .TP
+\fBbf_max_job_assoc=#\fR
+The maximum number of jobs per user association to attempt starting with the
+backfill scheduler.
+This setting is similar to to \fBbf_max_job_user\fR but is handy if a user
+has multiple assocations equating to basically different users.
+One can set this limit to prevent users from flooding the backfill
+queue with jobs that cannot start and that prevent jobs from other users
+to start.
+The default value is 0, which means no limit.
+This option applies only to \fBSchedulerType=sched/backfill\fR.
+Also see the \fBbf_max_job_user\fR \fBbf_max_job_part\fR, \fBbf_max_job_test\fR
+and \fBbf_max_job_user_part=#\fR options.
+Set \fBbf_max_job_test\fR to a value much higher than \fBbf_max_job_assoc\fR.
+.TP
 \fBbf_max_job_part=#\fR
 The maximum number of jobs per partition to attempt starting with the backfill
 scheduler. This can be especially helpful for systems with large numbers of
