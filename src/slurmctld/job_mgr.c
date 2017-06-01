@@ -531,7 +531,7 @@ static void _delete_job_details(struct job_record *job_entry)
 }
 
 /* delete_job_desc_files - delete job descriptor related files */
-void delete_job_desc_files(uint32_t job_id)
+extern void delete_job_desc_files(uint32_t job_id)
 {
 	char *dir_name = NULL, *file_name = NULL;
 	struct stat sbuf;
