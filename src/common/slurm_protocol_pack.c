@@ -8950,6 +8950,8 @@ _unpack_job_desc_list_msg(List *job_req_list, Buf buffer,
 	safe_unpack16(&cnt, buffer);
 	if (cnt == 0)
 		return SLURM_SUCCESS;
+	if (cnt > NO_VAL16)
+		goto unpack_error;
 
 	*job_req_list = list_create(_free_job_desc_list);
 	for (i = 0; i < cnt; i++) {
@@ -9064,6 +9066,8 @@ _unpack_job_info_list_msg(List *job_resp_list, Buf buffer,
 	safe_unpack16(&cnt, buffer);
 	if (cnt == 0)
 		return SLURM_SUCCESS;
+	if (cnt > NO_VAL16)
+		goto unpack_error;
 
 	*job_resp_list = list_create(_free_job_info_list);
 	for (i = 0; i < cnt; i++) {

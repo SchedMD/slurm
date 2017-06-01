@@ -476,6 +476,7 @@ int main(int argc, char **argv)
 			      "count mismatch (%d != %d)", i, j);
 			goto relinquish;
 		}
+		env_array_append_fmt(&env, "SLURM_PACK_SIZE", "%d", i);
 
 		i = 0;
 		iter_req = list_iterator_create(job_req_list);

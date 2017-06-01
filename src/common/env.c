@@ -1572,7 +1572,7 @@ int env_array_overwrite_pack_fmt(char ***array_ptr, const char *name,
 	va_end(ap);
 	if (pack_offset != -1) {
 		char *pack_name = NULL;
-		xstrfmtcat(pack_name, "%s_PACK_OFFSET_%d", name, pack_offset);
+		xstrfmtcat(pack_name, "%s_PACK_GROUP_%d", name, pack_offset);
 		rc = env_array_overwrite(array_ptr, pack_name, value);
 		xfree(pack_name);
 

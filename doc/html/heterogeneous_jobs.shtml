@@ -6,6 +6,7 @@
 <li><a href="#overview">Overview</a></li>
 <li><a href="#submitting">Submitting Jobs</a></li>
 <li><a href="#managing">Managing Jobs</a></li>
+<li><a href="#env_var">Environment Variables</a></li>
 <li><a href="#limitations">Limitations</a></li>
 </ul>
 
@@ -21,7 +22,7 @@ tasks while another part of the job would require 16 GB of memory and one CPU.</
 
 <p>The <i>salloc</i>, <i>sbatch</i> and <i>srun</i> commands can all be used
 to submit heterogeneous jobs.
-Resource specifications for each component of the heterogeneous should be
+Resource specifications for each component of the heterogeneous job should be
 separated with ":" character.
 For example:</p>
 <pre>
@@ -111,6 +112,30 @@ an error.</p>
 <li>suspend</li>
 </ul>
 
+<h2><a name="env_var">Environment Variables</a></h2>
+
+<p>Slurm environment variables will be set independently for each component of
+the job by appending "_PACK_GROUP_" and a sequence number the the usual name.
+In addition, the "SLURM_JOB_ID" environment variable will contain the job ID
+of the pack leader and "SLURM_PACK_SIZE" will contain the number of components
+in the job. For example:</p>
+<pre>
+$  salloc -N1 : -N2 bash
+salloc: Pending job allocation 11741
+salloc: job 11741 queued and waiting for resources
+salloc: job 11741 has been allocated resources
+$ env | grep SLURM
+SLURM_JOB_ID=11741
+SLURM_PACK_SIZE=2
+SLURM_JOBID_PACK_GROUP_0=11741
+SLURM_JOBID_PACK_GROUP_1=11742
+SLURM_NNODES_PACK_GROUP_0=1
+SLURM_NNODES_PACK_GROUP_1=2
+SLURM_JOB_NODELIST_PACK_GROUP_0=nid00001
+SLURM_JOB_NODELIST_PACK_GROUP_1=nid[00011-00012]
+...
+</pre>
+
 <h2><a name="limitations">Limitations</a></h2>
 
 <p>In a federation of clusters, a heterogeneous job will execute entirely on
@@ -127,6 +152,6 @@ components of a heterogeneous job.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 31 May 2017</p>
+<p style="text-align:center;">Last modified 1 June 2017</p>
 
 <!--#include virtual="footer.txt"-->
