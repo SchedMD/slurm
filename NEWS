@@ -93,12 +93,6 @@ documents those changes that are of interest to users and administrators.
     time.
  -- Add bf_max_time to SchedulerParameters.
  -- Add bf_max_job_assoc to SchedulerParameters.
- -- Add new SchedulerParameters option bf_window_linear to control the rate at
-    which the backfill test window expands. This can be used on a system with
-    a modest number of running jobs (hundreds of jobs) to help prevent expected
-    start times of pending jobs to get pushed forward in time. On systems with
-    large numbers of running jobs, performance of the backfill scheduler will
-    suffer and fewer jobs will be evaluated.
 
 * Changes in Slurm 17.02.4
 ==========================

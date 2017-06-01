@@ -2651,27 +2651,6 @@ if the value of \fBbf_window\fR is increased, then it is generally advisable
 to also increase \fBbf_resolution\fR.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
 .TP
-\fBbf_window_linear=#\fR
-For performance reasons, the backfill scheduler will decrease precision in
-calculation of job expected termination times. By default, the precision starts
-at 30 seconds and that time interval doubles with each evaluation of currently
-executing jobs when trying to determine when a pending job can start. This
-algorithm can support an environment with many thousands of running jobs, but
-can result in the expected start time of pending jobs being gradually being
-deferred due to lack of precision. A value for bf_window_linear will cause
-the time interval to be increased by a constant amount on each iteration.
-The value is specified in units of seconds. For example, a value of 60 will
-cause the backfill scheduler on the first iteration to identify the job ending
-soonest and determine if the pending job can be started after that job plus
-all other jobs expected to end within 30 seconds (default initial value) of the
-first job. On the next iteration, the pending job will be evaluated for
-starting after the next job expected to end plus all jobs ending within
-90 seconds of that time (30 second default, plus the 60 second option value).
-The third iteration will have a 150 second window and the fourth 210 seconds.
-Without this option, the time windows will double on each iteration and thus
-be 30, 60, 120, 240 seconds, etc. The use of bf_window_linear is not recommended
-with more than a few hundred simultaneously executing jobs.
-.TP
 \fBbf_yield_interval=#\fR
 The backfill scheduler will periodically relinquish locks in order for other
 pending operations to take place.
