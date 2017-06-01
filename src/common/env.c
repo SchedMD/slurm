@@ -1160,7 +1160,7 @@ extern int env_array_for_job(char ***dest,
 		env_array_overwrite_pack_fmt(dest, "SLURM_NPROCS", pack_offset,
 					     "%d", desc->num_tasks);
 	}
-	if (desc->bitflags & JOB_NTASKS_SET) {
+	if (desc->bitflags & JOB_CPUS_SET) {
 		env_array_overwrite_pack_fmt(dest, "SLURM_CPUS_PER_TASK",
 					     pack_offset, "%d",
 					     desc->cpus_per_task);
