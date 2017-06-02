@@ -4300,6 +4300,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		slurm_free_job_info(data);
 		break;
 	case REQUEST_JOB_PACK_ALLOCATION:
+	case REQUEST_SUBMIT_BATCH_JOB_PACK:
 	case RESPONSE_JOB_PACK_ALLOCATION:
 		FREE_NULL_LIST(data);
 		break;

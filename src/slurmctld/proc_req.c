@@ -213,6 +213,7 @@ inline static void  _slurm_rpc_step_layout(slurm_msg_t * msg);
 inline static void  _slurm_rpc_step_update(slurm_msg_t * msg);
 inline static void  _slurm_rpc_submit_batch_job(slurm_msg_t * msg,
 						bool is_sib_job);
+inline static void  _slurm_rpc_submit_batch_pack_job(slurm_msg_t * msg);
 inline static void  _slurm_rpc_suspend(slurm_msg_t * msg);
 inline static void  _slurm_rpc_top_job(slurm_msg_t * msg);
 inline static void  _slurm_rpc_trigger_clear(slurm_msg_t * msg);
@@ -444,6 +445,9 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		break;
 	case REQUEST_SUBMIT_BATCH_JOB:
 		_slurm_rpc_submit_batch_job(msg, false);
+		break;
+	case REQUEST_SUBMIT_BATCH_JOB_PACK:
+		_slurm_rpc_submit_batch_pack_job(msg);
 		break;
 	case REQUEST_UPDATE_FRONT_END:
 		_slurm_rpc_update_front_end(msg);
@@ -3687,7 +3691,7 @@ static void _slurm_rpc_step_update(slurm_msg_t *msg)
 }
 
 /* _slurm_rpc_submit_batch_job - process RPC to submit a batch job */
-static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg, bool is_sib_job)
+static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg, bool is_sib_job)
 {
 	static int active_rpc_cnt = 0;
 	int error_code = SLURM_SUCCESS;
@@ -3710,15 +3714,13 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg, bool is_sib_job)
 	bool reject_job = false;
 
 	START_TIMER;
-
+	debug2("Processing RPC: REQUEST_SUBMIT_BATCH_JOB from uid=%d", uid);
 	if (slurmctld_config.submissions_disabled) {
 		info("Submissions disabled on system");
 		error_code = ESLURM_SUBMISSIONS_DISABLED;
 		reject_job = true;
 		goto send_msg;
 	}
-
-	debug2("Processing RPC: REQUEST_SUBMIT_BATCH_JOB from uid=%d", uid);
 
 	slurm_msg_t_init(&response_msg);
 	response_msg.flags = msg->flags;
@@ -3734,7 +3736,8 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg, bool is_sib_job)
 	if ((job_desc_msg->alloc_node == NULL) ||
 	    (job_desc_msg->alloc_node[0] == '\0')) {
 		error_code = ESLURM_INVALID_NODE_NAME;
-		error("REQUEST_SUBMIT_BATCH_JOB lacks alloc_node from uid=%d", uid);
+		error("REQUEST_SUBMIT_BATCH_JOB lacks alloc_node from uid=%d",
+		      uid);
 	}
 
 	dump_job_desc(job_desc_msg);
@@ -3786,15 +3789,13 @@ send_msg:
 	END_TIMER2("_slurm_rpc_submit_batch_job");
 
 	if (reject_job) {
-		info("_slurm_rpc_submit_batch_job: %s",
-		     slurm_strerror(error_code));
+		info("%s: %s", __func__, slurm_strerror(error_code));
 		if (err_msg)
 			slurm_send_rc_err_msg(msg, error_code, err_msg);
 		else
 			slurm_send_rc_msg(msg, error_code);
 	} else {
-		info("_slurm_rpc_submit_batch_job JobId=%u %s",
-		     job_id, TIME_STR);
+		info("%s: JobId=%u %s", __func__, job_id, TIME_STR);
 		/* send job_ID */
 		submit_msg.job_id     = job_id;
 		submit_msg.step_id    = step_id;
@@ -3811,6 +3812,41 @@ send_msg:
 	}
 
 	xfree(err_msg);
+}
+
+/* _slurm_rpc_submit_batch_pack_job - process RPC to submit a batch pack job */
+static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
+{
+	ListIterator iter;
+	int error_code = SLURM_SUCCESS;
+	job_desc_msg_t *job_desc_msg;
+	List job_req_list = (List) msg->data;
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
+					 slurmctld_config.auth_info);
+
+	info("Processing RPC: REQUEST_SUBMIT_BATCH_PACK_JOB from uid=%d", uid);
+	if (!job_req_list || (list_count(job_req_list) == 0)) {
+		info("REQUEST_SUBMIT_BATCH_PACK_JOB from uid=%d with empty job list",
+		     uid);
+		error_code = SLURM_ERROR;
+		goto send_msg;
+	}
+	if (slurmctld_config.submissions_disabled) {
+		info("Submissions disabled on system");
+		error_code = ESLURM_SUBMISSIONS_DISABLED;
+		goto send_msg;
+	}
+
+	iter = list_iterator_create(job_req_list);
+	while ((job_desc_msg = (job_desc_msg_t *) list_next(iter))) {
+//FIXME: FLesh out the logic here
+		dump_job_desc(job_desc_msg);
+	}
+	list_iterator_destroy(iter);
+
+error_code = SLURM_ERROR;
+send_msg:
+	slurm_send_rc_msg(msg, error_code);
 }
 
 /* _slurm_rpc_update_job - process RPC to update the configuration of a

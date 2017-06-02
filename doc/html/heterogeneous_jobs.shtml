@@ -46,7 +46,7 @@ A list of propogated options follows.</p>
 <li>--clusters</li>
 <li>--comment</li>
 <li>--deadline</li>
-<li>delay-boot</li>
+<li>--delay-boot</li>
 <li>--dependency</li>
 <li>--error</li>
 <li>--export</li>
