@@ -1016,7 +1016,8 @@ static int _attempt_backfill(void)
 	}
 	if (assoc_limit_stop) {
 		assoc_mgr_lock(&qos_read_lock);
-		list_for_each(part_list, _clear_qos_blocked_times, NULL);
+		list_for_each(assoc_mgr_qos_list,
+			      _clear_qos_blocked_times, NULL);
 		assoc_mgr_unlock(&qos_read_lock);
 	}
 
