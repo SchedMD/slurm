@@ -193,8 +193,13 @@ enum wrappers {
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
-int error_exit = 1;
-int ignore_pbs = 0;
+int   error_exit = 1;
+int   ignore_pbs = 0;
+bool  is_pack_job = false;
+
+/*---- local variables ----*/
+
+bool first_pass = true;
 
 /*---- forward declarations of static functions  ----*/
 
@@ -295,134 +300,127 @@ static void _opt_default(void)
 	int i;
 	uid_t uid = getuid();
 
-	opt.user = uid_to_string(uid);
-	if (xstrcmp(opt.user, "nobody") == 0)
-		fatal("Invalid user id: %u", uid);
-
-	opt.script_argc = 0;
-	opt.script_argv = NULL;
-
-	opt.uid = uid;
-	opt.gid = getgid();
-
-	if ((getcwd(buf, MAXPATHLEN)) == NULL) {
-		error("getcwd failed: %m");
-		exit(error_exit);
+	/* Some options will persist for all components of a heterogeneous job
+	 * once specified for one, but will be overwritten with new values if
+	 * specified on the command line */
+	if (first_pass) {
+		xfree(opt.account);
+		xfree(opt.acctg_freq);
+		opt.begin		= 0;
+		xfree(opt.c_constraints);
+		opt.ckpt_dir 		= slurm_get_checkpoint_dir();
+		opt.ckpt_interval	= 0;
+		xfree(opt.ckpt_interval_str);
+		xfree(opt.clusters);
+		xfree(opt.comment);
+		if ((getcwd(buf, MAXPATHLEN)) == NULL) {
+			error("getcwd failed: %m");
+			exit(error_exit);
+		}
+		opt.cwd			= xstrdup(buf);
+		opt.deadline		= 0;
+		opt.delay_boot		= NO_VAL;
+		xfree(opt.dependency);
+		opt.egid		= (gid_t) -1;
+		xfree(opt.efname);
+		xfree(opt.exc_nodes);
+		xfree(opt.export_env);
+		xfree(opt.export_file);
+		opt.euid		= (uid_t) -1;
+		opt.get_user_env_mode	= -1;
+		opt.get_user_env_time	= -1;
+		opt.gid			= getgid();
+		opt.hold		= false;
+		opt.ifname		= xstrdup("/dev/null");
+		opt.immediate		= false;
+		xfree(opt.job_name);
+		xfree(opt.mcs_label);
+		opt.nice		= NO_VAL;
+		opt.no_kill		= false;
+		xfree(opt.ofname);
+		opt.parsable		= false;
+		opt.priority		= 0;
+		opt.profile		= ACCT_GATHER_PROFILE_NOT_SET;
+		xfree(opt.progname);
+		xfree(opt.propagate); 	 /* propagate specific rlimits */
+		xfree(opt.qos);
+		opt.quiet		= 0;
+		opt.reboot		= false;
+		opt.requeue		= NO_VAL;
+		xfree(opt.reservation);
+		opt.script_argc		= 0;
+		xfree(opt.script_argv);
+		opt.test_only		= false;
+		opt.time_limit		= NO_VAL;
+		opt.time_min		= NO_VAL;
+		opt.uid			= uid;
+		opt.umask		= -1;
+		opt.user		= uid_to_string(uid);
+		if (xstrcmp(opt.user, "nobody") == 0)
+			fatal("Invalid user id: %u", uid);
+		opt.verbose		= 0;
+		opt.wait		= false;
+		opt.wait_all_nodes	= NO_VAL16;
+		opt.warn_flags		= 0;
+		opt.warn_signal		= 0;
+		opt.warn_time		= 0;
+		xfree(opt.wckey);
+//FIXME: Move first_pass set
+		first_pass = false;
 	}
-	opt.cwd = xstrdup(buf);
 
-	opt.clusters = NULL;
-	opt.progname = NULL;
-
-	opt.ntasks = 1;
-	opt.ntasks_set = false;
-	opt.cpu_freq_min = NO_VAL;
-	opt.cpu_freq_max = NO_VAL;
-	opt.cpu_freq_gov = NO_VAL;
-	opt.cpus_per_task = 0;
-	opt.cpus_set = false;
-	opt.hint_env = NULL;
-	opt.hint_set = false;
-	opt.min_nodes = 1;
-	opt.max_nodes = 0;
-	opt.nodes_set = false;
-	opt.sockets_per_node = NO_VAL; /* requested sockets */
-	opt.cores_per_socket = NO_VAL; /* requested cores */
-	opt.threads_per_core = NO_VAL; /* requested threads */
-	opt.threads_per_core_set = false;
-	opt.ntasks_per_node      = 0;  /* ntask max limits */
-	opt.ntasks_per_socket    = NO_VAL;
-	opt.ntasks_per_core      = NO_VAL;
-	opt.ntasks_per_core_set  = false;
-	opt.mem_bind_type = 0;
-	opt.mem_bind = NULL;
-	opt.core_spec = (uint16_t) NO_VAL;
-	opt.time_limit = NO_VAL;
-	opt.time_min = NO_VAL;
-	opt.partition = NULL;
-	opt.power_flags = 0;
-
-	opt.job_name = NULL;
-	opt.jobid    = NO_VAL;
-	opt.jobid_set = false;
-	opt.dependency = NULL;
-	opt.account  = NULL;
-	opt.comment  = NULL;
-	opt.qos      = NULL;
-
-	opt.distribution = SLURM_DIST_UNKNOWN;
-	opt.plane_size   = NO_VAL;
-
-	opt.shared = (uint16_t)NO_VAL;
-	opt.no_kill = false;
-
-	opt.immediate	= false;
-	opt.requeue	= NO_VAL;
-	opt.overcommit	= false;
-
-	opt.quiet = 0;
-	opt.verbose = 0;
-	opt.warn_flags = 0;
-	opt.warn_signal = 0;
-	opt.warn_time   = 0;
-	opt.wait_all_nodes = (uint16_t) NO_VAL;
-
-	/* constraint default (-1 is no constraint) */
-	opt.mincpus	    = -1;
-	opt.mem_per_cpu	    = -1;
-	opt.realmem	    = -1;
-	opt.tmpdisk	    = -1;
-
-	opt.hold	    = false;
-	opt.parsable	    = false;
-	opt.constraints	    = NULL;
-	opt.c_constraints   = NULL;
-	opt.gres	    = NULL;
-	opt.contiguous	    = false;
-	opt.nodelist	    = NULL;
-	opt.exc_nodes	    = NULL;
-
+	/* All other options must be specified individually for each component
+	 * of the job */
+	xfree(opt.constraints);
+	opt.contiguous			= false;
 	for (i = 0; i < HIGHEST_DIMENSIONS; i++) {
-		opt.conn_type[i]    = (uint16_t) NO_VAL;
-		opt.geometry[i]	    = 0;
+		opt.conn_type[i]	 = NO_VAL16;
+		opt.geometry[i]	 	= 0;
 	}
-	opt.reboot          = false;
-	opt.no_rotate	    = false;
-
-	opt.euid	    = (uid_t) -1;
-	opt.egid	    = (gid_t) -1;
-
-	opt.profile	    = ACCT_GATHER_PROFILE_NOT_SET;
-	opt.propagate	    = NULL;  /* propagate specific rlimits */
-
-	opt.ifname = xstrdup("/dev/null");
-	opt.ofname = NULL;
-	opt.efname = NULL;
-
-	opt.export_env        = NULL;
-	opt.export_file       = NULL;
-	opt.get_user_env_time = -1;
-	opt.get_user_env_mode = -1;
-	opt.acctg_freq        = NULL;
-	opt.reservation       = NULL;
-	opt.req_switch        = -1;
-	opt.umask             = -1;
-	opt.wait              = false;
-	opt.wait4switch       = -1;
-	opt.wckey             = NULL;
-
-	opt.ckpt_interval = 0;
-	opt.ckpt_interval_str = NULL;
-	opt.ckpt_dir = slurm_get_checkpoint_dir();
-
-	opt.nice = NO_VAL;
-	opt.priority = 0;
-
-	opt.test_only   = false;
-	opt.job_flags = 0;
-
-	opt.mcs_label		= NULL;
-	opt.delay_boot      = NO_VAL;
+	opt.core_spec			= NO_VAL16;
+	opt.cores_per_socket		= NO_VAL; /* requested cores */
+	opt.cpu_freq_gov		= NO_VAL;
+	opt.cpu_freq_max		= NO_VAL;
+	opt.cpu_freq_min		= NO_VAL;
+	opt.cpus_per_task		= 0;
+	opt.cpus_set			= false;
+	opt.distribution		= SLURM_DIST_UNKNOWN;
+	/* opt.geometry[i]	See above */
+	xfree(opt.gres);
+	opt.hint_env			= NULL;
+	opt.hint_set			= false;
+	opt.job_flags			= 0;
+	opt.jobid			= NO_VAL;
+	opt.jobid_set			= false;
+	opt.mail_type			= 0;
+	xfree(opt.mail_user);
+	opt.max_nodes			= 0;
+	xfree(opt.mem_bind);
+	opt.mem_bind_type		= 0;
+	opt.mem_per_cpu			= -1;
+	opt.mincpus			= -1;
+	opt.min_nodes			= 1;
+	opt.no_rotate			= false;
+	xfree(opt.nodelist);
+	opt.nodes_set			= false;
+	opt.ntasks			= 1;
+	opt.ntasks_per_core		= NO_VAL;
+	opt.ntasks_per_core_set		= false;
+	opt.ntasks_per_node		= 0;	/* ntask max limits */
+	opt.ntasks_per_socket		= NO_VAL;
+	opt.ntasks_set			= false;
+	opt.overcommit			= false;
+	xfree(opt.partition);
+	opt.plane_size			= NO_VAL;
+	opt.power_flags			= 0;
+	opt.realmem			= -1;
+	opt.req_switch			= -1;
+	opt.shared			= NO_VAL16;
+	opt.sockets_per_node		= NO_VAL; /* requested sockets */
+	opt.tmpdisk			= -1;
+	opt.threads_per_core		= NO_VAL; /* requested threads */
+	opt.threads_per_core_set	= false;
+	opt.wait4switch			= -1;
 }
 
 /* Read specified file's contents into a buffer.
@@ -901,11 +899,9 @@ char *pos_delimit;
  * line, otherwise return NULL, and the script will need to be read from
  * standard input.
  */
-char *process_options_first_pass(int argc, char **argv)
+extern char *process_options_first_pass(int argc, char **argv)
 {
 	int opt_char, option_index = 0;
-	char *str = NULL;
-
 	struct option *optz = spank_option_table_create(long_options);
 
 	if (!optz) {
@@ -919,46 +915,56 @@ char *process_options_first_pass(int argc, char **argv)
 	opt.progname = xbasename(argv[0]);
 	optind = 0;
 
-	while ((opt_char = getopt_long(argc, argv, opt_string,
-				       optz, &option_index)) != -1) {
-		switch (opt_char) {
-		case '?':
-			fprintf(stderr, "Try \"sbatch --help\" for more "
-				"information\n");
-			exit(error_exit);
-			break;
-		case 'h':
-			_help();
-			exit(0);
-			break;
-		case 'Q':
-			opt.quiet++;
-			break;
-		case 'u':
-			_usage();
-			exit(0);
-		case 'v':
-			opt.verbose++;
-			break;
-		case 'V':
-			print_slurm_version();
-			exit(0);
-			break;
-		case LONG_OPT_WRAP:
-			opt.wrap = xstrdup(optarg);
-			opt.job_name = xstrdup("wrap");
-			break;
-		default:
-			/* will be parsed in second pass function */
+	while (true) {
+		while ((opt_char = getopt_long(argc, argv, opt_string,
+					       optz, &option_index)) != -1) {
+			switch (opt_char) {
+			case '?':
+				fprintf(stderr, 
+				 	"Try \"sbatch --help\" for more information\n");
+				exit(error_exit);
+				break;
+			case 'h':
+				_help();
+				exit(0);
+				break;
+			case 'Q':
+				opt.quiet++;
+				break;
+			case 'u':
+				_usage();
+				exit(0);
+			case 'v':
+				opt.verbose++;
+				break;
+			case 'V':
+				print_slurm_version();
+				exit(0);
+				break;
+			case LONG_OPT_WRAP:
+				xfree(opt.job_name);
+				xfree(opt.wrap);
+				opt.job_name = xstrdup("wrap");
+				opt.wrap = xstrdup(optarg);
+				break;
+			default:
+				/* all others parsed in second pass function */
+				break;
+			}
+		}
+		if ((argc > optind) && !xstrcmp(argv[optind], ":")) {
+			is_pack_job = true;
+			argv += optind;
+			argc -= optind;
+			option_index = 0;
+		} else {
 			break;
 		}
 	}
-	xfree(str);
 	spank_option_table_destroy(optz);
 
-	if (argc > optind && opt.wrap != NULL) {
-		error("Script arguments are not permitted with the"
-		      " --wrap option.");
+	if ((argc > optind) && (opt.wrap != NULL)) {
+		error("Script arguments are not permitted with the --wrap option.");
 		exit(error_exit);
 	}
 	if (argc > optind) {
@@ -995,8 +1001,9 @@ char *process_options_first_pass(int argc, char **argv)
  * 3. update options with commandline args
  * 4. perform some verification that options are reasonable
  */
-int process_options_second_pass(int argc, char **argv, const char *file,
-				const void *script_body, int script_size)
+extern int process_options_second_pass(int argc, char **argv, const char *file,
+				       const void *script_body,
+				       int script_size)
 {
 	int i;
 
@@ -2794,8 +2801,7 @@ static bool _opt_verify(void)
 			opt.distribution &= SLURM_DIST_STATE_FLAGS;
 			opt.distribution |= SLURM_DIST_ARBITRARY;
 			if (!_valid_node_list(&opt.nodelist)) {
-				error("Failure getting NodeNames from "
-				      "hostfile");
+				error("Failure getting NodeNames from hostfile");
 				exit(error_exit);
 			} else {
 				debug("loaded nodes (%s) from hostfile",

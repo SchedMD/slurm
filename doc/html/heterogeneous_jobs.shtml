@@ -30,6 +30,61 @@ $ sbatch --cpus-per-task=4 --mem-per-cpu=1  --ntasks=128 : \
          --cpus-per-task=1 --mem-per-cpu=16 --ntasks=1 my.bash
 </pre>
 
+<p>Options specified for one component of a heterogeneous job will be
+used for subsequent components to the extent which is expected to be helpful.
+For example, <i>--immediate</i> and <i>--job-name</i> are propogated, while
+<i>--ntasks</i> and <i>--mem-per-cpu</i> are reset to default values for each
+component.
+A list of propogated options follows.</p>
+<ul>
+<li>--account</li>
+<li>--acctg-freq</li>
+<li>--begin</li>
+<li>--checkpoint</li>
+<li>--checkpoint-dir</li>
+<li>--cluster-constraint</li>
+<li>--clusters</li>
+<li>--comment</li>
+<li>--deadline</li>
+<li>delay-boot</li>
+<li>--dependency</li>
+<li>--error</li>
+<li>--export</li>
+<li>--export-file</li>
+<li>--exclude</li>
+<li>--get-user-env</li>
+<li>--gid</li>
+<li>--hold</li>
+<li>--ignore-pbs</li>
+<li>--immediate</li>
+<li>--input</li>
+<li>--job-name</li>
+<li>--mcs-label</li>
+<li>--no-requeue</li>
+<li>--nice</li>
+<li>--no-kill</li>
+<li>--output</li>
+<li>--parsable</li>
+<li>--priority</li>
+<li>--profile</li>
+<li>--propagate</li>
+<li>--qos</li>
+<li>--quiet</li>
+<li>--reboot</li>
+<li>--reservation</li>
+<li>--requeue</li>
+<li>--signal</li>
+<li>--time</li>
+<li>--test-only</li>
+<li>--time-min</li>
+<li>--uid</li>
+<li>--verbose</li>
+<li>--wait</li>
+<li>--wait-all-nodes</li>
+<li>--wckey</li>
+<li>--workdir</li>
+</ul>
+
 <p>Environment variables used to specify default options for the job submit
 command will be applied to every component of the heterogeneous job.</p>
 
@@ -152,6 +207,6 @@ components of a heterogeneous job.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 1 June 2017</p>
+<p style="text-align:center;">Last modified 2 June 2017</p>
 
 <!--#include virtual="footer.txt"-->

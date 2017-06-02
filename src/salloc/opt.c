@@ -284,115 +284,109 @@ static void _opt_default(void)
 	int i;
 	uid_t uid = getuid();
 
-	opt.user = uid_to_string(uid);
-	if (xstrcmp(opt.user, "nobody") == 0)
-		fatal("Invalid user id: %u", uid);
-
-	opt.uid = uid;
-	opt.gid = getgid();
-
-	opt.clusters = NULL;
-	opt.cwd = NULL;
-	opt.progname = NULL;
-
-	opt.ntasks = 1;
-	opt.ntasks_set = false;
-	opt.cpus_per_task = 0;
-	opt.cpus_set = false;
-	opt.hint_env = NULL;
-	opt.hint_set = false;
-	opt.min_nodes = 1;
-	opt.max_nodes = 0;
-	opt.nodes_set = false;
-	opt.sockets_per_node = NO_VAL; /* requested sockets */
-	opt.cores_per_socket = NO_VAL; /* requested cores */
-	opt.threads_per_core = NO_VAL; /* requested threads */
-	opt.threads_per_core_set = false;
-	opt.ntasks_per_node      = 0;  /* ntask max limits */
-	opt.ntasks_per_socket    = NO_VAL;
-	opt.ntasks_per_core      = NO_VAL;
-	opt.ntasks_per_core_set  = false;
-	opt.mem_bind_type = 0;
-	opt.mem_bind = NULL;
-	opt.core_spec = (uint16_t) NO_VAL;
-	opt.time_limit = NO_VAL;
-	opt.time_limit_str = NULL;
-	opt.time_min = NO_VAL;
-	opt.time_min_str = NULL;
-	opt.partition = NULL;
-	opt.profile   = ACCT_GATHER_PROFILE_NOT_SET;
-
-	opt.job_name = NULL;
-	opt.jobid = NO_VAL;
-	opt.dependency = NULL;
-	opt.account  = NULL;
-	opt.comment  = NULL;
-	opt.qos      = NULL;
-	opt.power_flags = 0;
-
-	opt.distribution = SLURM_DIST_UNKNOWN;
-	opt.plane_size   = NO_VAL;
-
-	opt.shared = (uint16_t)NO_VAL;
-	opt.no_kill = false;
-	opt.kill_command_signal = SIGTERM;
-	opt.kill_command_signal_set = false;
-
-	opt.overcommit	= false;
-
-	opt.quiet = 0;
-	opt.warn_flags  = 0;
-	opt.warn_signal = 0;
-	opt.warn_time   = 0;
-
-	/* constraint default (-1 is no constraint) */
-	opt.mincpus	    = -1;
-	opt.mem_per_cpu	    = -1;
-	opt.realmem	    = -1;
-	opt.tmpdisk	    = -1;
-
-	opt.hold	    = false;
-	opt.constraints	    = NULL;
-	opt.c_constraints   = NULL;
-	opt.gres            = NULL;
-	opt.contiguous	    = false;
-	opt.nodelist	    = NULL;
-	opt.exc_nodes	    = NULL;
-
-	for (i = 0; i < HIGHEST_DIMENSIONS; i++) {
-		opt.conn_type[i]    = (uint16_t) NO_VAL;
-		opt.geometry[i]	    = 0;
-	}
-	opt.reboot          = false;
-	opt.no_rotate	    = false;
-	opt.job_flags       = 0;
-
-	opt.euid	    = (uid_t) -1;
-	opt.egid	    = (gid_t) -1;
-
-	opt.bell            = BELL_AFTER_DELAY;
-	opt.acctg_freq      = NULL;
-	opt.cpu_freq_min    = NO_VAL;
-	opt.cpu_freq_max    = NO_VAL;
-	opt.cpu_freq_gov    = NO_VAL;
-	opt.delay_boot      = NO_VAL;
-	opt.get_user_env_time = -1;
-	opt.get_user_env_mode = -1;
-	opt.reservation     = NULL;
-	opt.wait_all_nodes  = (uint16_t) NO_VAL;
-	opt.wckey           = NULL;
-	opt.req_switch      = -1;
-	opt.wait4switch     = -1;
-	opt.mcs_label	    = NULL;
-
-	opt.nice = NO_VAL;
-	opt.priority = 0;
-
+	/* Some options will persist for all components of a heterogeneous job
+	 * once specified for one, but will be overwritten with new values if
+	 * specified on the command line */
 	if (first_pass) {
-		opt.immediate	= 0;
-		opt.no_shell	= false;
-		opt.verbose	= 0;
+		xfree(opt.account);
+		xfree(opt.acctg_freq);
+		opt.begin		= 0;
+		opt.bell		= BELL_AFTER_DELAY;
+		xfree(opt.c_constraints);
+		xfree(opt.clusters);
+		xfree(opt.comment);
+		xfree(opt.cwd);
+		opt.deadline		= 0;
+		opt.delay_boot		= NO_VAL;
+		xfree(opt.dependency);
+		opt.egid		= (gid_t) -1;
+		opt.euid		= (uid_t) -1;
+		xfree(opt.exc_nodes);
+		opt.get_user_env_mode	= -1;
+		opt.get_user_env_time	= -1;
+		opt.gid			= getgid();
+		opt.hold		= false;
+		opt.immediate		= 0;
+		xfree(opt.job_name);
+		opt.kill_command_signal	= SIGTERM;
+		opt.kill_command_signal_set = false;
+		xfree(opt.mcs_label);
+		opt.nice		= NO_VAL;
+		opt.no_kill		= false;
+		opt.no_shell		= false;
+		opt.power_flags		= 0;
+		opt.priority		= 0;
+		opt.profile		= ACCT_GATHER_PROFILE_NOT_SET;
+		xfree(opt.progname);
+		xfree(opt.qos);
+		opt.quiet		= 0;
+		opt.reboot		= false;
+		opt.time_limit		= NO_VAL;
+		opt.time_min		= NO_VAL;
+		xfree(opt.time_min_str);
+		opt.uid			= uid;
+		opt.user		= uid_to_string(uid);
+		if (xstrcmp(opt.user, "nobody") == 0)
+			fatal("Invalid user id: %u", uid);
+		opt.verbose		= 0;
+		opt.wait_all_nodes	= NO_VAL16;
+		opt.warn_flags		= 0;
+		opt.warn_signal		= 0;
+		opt.warn_time		= 0;
+		xfree(opt.wckey);
 	}
+
+	/* All other options must be specified individually for each component
+	 * of the job */
+	xfree(opt.burst_buffer);
+	xfree(opt.constraints);
+	opt.contiguous			= false;
+	for (i = 0; i < HIGHEST_DIMENSIONS; i++) {
+		opt.conn_type[i]	 = NO_VAL16;
+		opt.geometry[i] 	 = 0;
+	}
+	opt.core_spec			= NO_VAL16;
+	opt.cores_per_socket		= NO_VAL; /* requested cores */
+	opt.cpu_freq_max		= NO_VAL;
+	opt.cpu_freq_gov		= NO_VAL;
+	opt.cpu_freq_min		= NO_VAL;
+	opt.cpus_per_task		= 0;
+	opt.cpus_set			= false;
+	opt.distribution		= SLURM_DIST_UNKNOWN;
+	/* opt.geometry[i]		= 0;	See above */
+	xfree(opt.hint_env);
+	opt.hint_set			= false;
+	xfree(opt.gres);
+	opt.job_flags			= 0;
+	opt.jobid			= NO_VAL;
+	opt.max_nodes			= 0;
+	xfree(opt.mem_bind);
+	opt.mem_bind_type		= 0;
+	opt.mem_per_cpu			= -1;
+	opt.mincpus			= -1;
+	opt.min_nodes			= 1;
+	opt.no_rotate			= false;
+	opt.ntasks			= 1;
+	opt.ntasks_per_node		= 0;  /* ntask max limits */
+	opt.ntasks_per_socket		= NO_VAL;
+	opt.ntasks_per_core		= NO_VAL;
+	opt.ntasks_per_core_set		= false;
+	opt.nodes_set			= false;
+	xfree(opt.nodelist);
+	opt.ntasks_set			= false;
+	opt.overcommit			= false;
+	xfree(opt.partition);
+	opt.plane_size			= NO_VAL;
+	opt.realmem			= -1;
+	xfree(opt.reservation);
+	opt.req_switch			= -1;
+	opt.shared			= NO_VAL16;
+	opt.sockets_per_node		= NO_VAL; /* requested sockets */
+	opt.threads_per_core		= NO_VAL; /* requested threads */
+	opt.threads_per_core_set	= false;
+	opt.tmpdisk			= -1;
+	opt.wait4switch			= -1;
+
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -1032,7 +1026,8 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_MINCORES:
 			verbose("mincores option has been deprecated, use "
 				"cores-per-socket");
-			opt.cores_per_socket = parse_int("mincores", optarg, true);
+			opt.cores_per_socket = parse_int("mincores", optarg,
+							 true);
 			if (opt.cores_per_socket < 0) {
 				error("invalid mincores constraint %s",
 				      optarg);
@@ -1042,7 +1037,8 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_MINSOCKETS:
 			verbose("minsockets option has been deprecated, use "
 				"sockets-per-node");
-			opt.sockets_per_node = parse_int("minsockets", optarg, true);
+			opt.sockets_per_node = parse_int("minsockets", optarg,
+							 true);
 			if (opt.sockets_per_node < 0) {
 				error("invalid minsockets constraint %s",
 				      optarg);
@@ -1052,7 +1048,8 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_MINTHREADS:
 			verbose("minthreads option has been deprecated, use "
 				"threads-per-core");
-			opt.threads_per_core = parse_int("minthreads", optarg, true);
+			opt.threads_per_core = parse_int("minthreads", optarg,
+							 true);
 			if (opt.threads_per_core < 0) {
 				error("invalid minthreads constraint %s",
 				      optarg);

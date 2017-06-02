@@ -102,6 +102,7 @@ int main(int argc, char **argv)
 		error("Failed to register atexit handler for plugins: %m");
 
 	script_name = process_options_first_pass(argc, argv);
+
 	/* reinit log with new verbosity (if changed by command line) */
 	if (opt.verbose || opt.quiet) {
 		logopt.stderr_level += opt.verbose;

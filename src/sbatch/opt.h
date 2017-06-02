@@ -56,7 +56,6 @@
 #  define SYSTEM_DIMENSIONS 1
 #endif
 
-
 typedef struct sbatch_options {
 	char *clusters;		/* cluster to run this on. */
 	char *progname;		/* argv[0] of this program or   */
@@ -196,8 +195,9 @@ typedef struct sbatch_options {
 } opt_t;
 
 extern opt_t opt;
-extern int error_exit;
-extern int ignore_pbs;
+extern int   error_exit;
+extern int   ignore_pbs;
+extern bool  is_pack_job;
 
 /*
  * process_options_first_pass()
@@ -214,7 +214,7 @@ extern int ignore_pbs;
  * line, otherwise return NULL (in which case the script will need to be read
  * from standard input).
  */
-char *process_options_first_pass(int argc, char **argv);
+extern char *process_options_first_pass(int argc, char **argv);
 
 /* process options:
  * 1. update options with option set in the script
@@ -222,8 +222,9 @@ char *process_options_first_pass(int argc, char **argv);
  * 3. update options with commandline args
  * 4. perform some verification that options are reasonable
  */
-int process_options_second_pass(int argc, char **argv, const char *file,
-				const void *script_body, int script_size);
+extern int process_options_second_pass(int argc, char **argv, const char *file,
+				       const void *script_body,
+				       int script_size);
 
 /* external functions available for SPANK plugins to modify the environment
  * exported to the SLURM Prolog and Epilog programs */
