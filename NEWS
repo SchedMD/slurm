@@ -69,6 +69,8 @@ documents those changes that are of interest to users and administrators.
     core files are created even on non-developer builds.
  -- Fix --ntasks-per-core option/environment variable parsing to set
     the requested value, instead of always setting one.
+ -- If trying to cancel a step that hasn't started yet for some reason return
+    a good return code.
 
 * Changes in Slurm 17.02.3
 ==========================
