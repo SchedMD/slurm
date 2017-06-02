@@ -579,6 +579,7 @@ man3_MANS = slurm_hostlist_create.3 \
 	slurm_step_launch_wait_start.3 \
 	slurm_strerror.3 \
 	slurm_submit_batch_job.3 \
+	slurm_submit_batch_pack_job.3 \
 	slurm_suspend.3 \
 	slurm_suspend2.3 \
 	slurm_takeover.3 \

@@ -7,7 +7,7 @@ slurm_allocation_msg_thr_create, slurm_allocation_msg_thr_destroy,
 slurm_allocation_lookup, slurm_pack_job_lookup, slurm_confirm_allocation,
 slurm_free_submit_response_response_msg, slurm_init_job_desc_msg,
 slurm_job_will_run, slurm_job_will_run2,
-slurm_read_hostfile, slurm_submit_batch_job
+slurm_read_hostfile, slurm_submit_batch_job, slurm_submit_batch_pack_job
 \- Slurm job initiation functions
 .SH "SYNTAX"
 .LP
@@ -116,6 +116,14 @@ int \fBslurm_read_hostfile\fR (
 int \fBslurm_submit_batch_job\fR (
 .br
 	job_desc_msg_t *\fIjob_desc_msg_ptr\fP,
+.br
+	submit_response_msg_t **\fIslurm_submit_msg_pptr\fP
+.br
+);
+.LP
+int \fBslurm_submit_batch_pack_job\fR (
+.br
+	List \fIjob_desc_msg_list\fP,
 .br
 	submit_response_msg_t **\fIslurm_submit_msg_pptr\fP
 .br
@@ -256,8 +264,20 @@ of the file.  This is a helper function, it does not contact any Slurm
 daemons.
 .LP
 \fBslurm_submit_batch_job\fR Submit a job for later execution. Note that if
-the job's requested node count or time allocation are outside of the partition's limits then a job entry will be created, a warning indication will be placed in the \fIerror_code\fP field of the response message, and the job will be left queued until the partition's limits are changed and resources are available.  Always release the response message when no
-longer required using the function \fBslurm_free_submit_response_msg\fR.
+the job's requested node count or time allocation are outside of the partition's
+limits then a job entry will be created, a warning indication will be placed in
+the \fIerror_code\fP field of the response message, and the job will be left
+queued until the partition's limits are changed and resources are available.
+Always release the response message when no longer required using the function
+\fBslurm_free_submit_response_msg\fR.
+.LP
+\fBslurm_submit_batch_pack_job\fR Submit a heterogenous job for later execution. Note that if
+the job's requested node count or time allocation are outside of the partition's
+limits then a job entry will be created, a warning indication will be placed in
+the \fIerror_code\fP field of the response message, and the job will be left
+queued until the partition's limits are changed and resources are available.
+Always release the response message when no longer required using the function
+\fBslurm_free_submit_response_msg\fR.
 .SH "RETURN VALUE"
 .LP
 On success, zero is returned. On error, \-1 is returned, and Slurm error code is set appropriately.
