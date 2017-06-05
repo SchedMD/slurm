@@ -36,8 +36,17 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+
 #ifndef _HAVE_DAEMONIZE_H
 #define _HAVE_DAEMONIZE_H
+
+/* fork process into background and inherit new session
+ * if nochdir is 0, performs a chdir("/")
+ * if noclose is 0, closes all fds and dups stdout/err of daemon onto /dev/null
+ *
+ * returns -1 on error.
+ */
+extern int daemon(int nochdir, int noclose);
 
 /* Write pid into file pidfile if uid is not 0 change the owner of the
  * pidfile to that user.

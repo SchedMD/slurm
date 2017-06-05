@@ -50,6 +50,64 @@
 #include "src/common/macros.h"
 #include "src/common/xassert.h"
 
+/* detach and go into background.
+ * caller is responsible for umasks
+ *
+ * if nochdir == 0, will do a chdir to /
+ * if noclose == 0, will close all FDs
+ */
+int
+daemon(int nochdir, int noclose)
+{
+	switch (fork()) {
+		case  0 : break;        /* child */
+		case -1 : return -1;
+		default : _exit(0);     /* exit parent */
+	}
+
+	if (setsid() < 0)
+		return -1;
+
+	switch (fork()) {
+		case 0 : break;         /* child */
+		case -1: return -1;
+		default: _exit(0);      /* exit parent */
+	}
+
+	if (!nochdir && chdir("/") < 0) {
+		error("chdir(/): %m");
+		return -1;
+	}
+
+	/* Close all file descriptors if requested
+	 */
+	if (!noclose) {
+		closeall(0);
+		if (open("/dev/null", O_RDWR) != 0)
+			error("Unable to open /dev/null on stdin: %m");
+		dup2(0, STDOUT_FILENO);
+		dup2(0, STDERR_FILENO);
+	} else {
+		/*
+		 * Otherwise, dup stdin, stdout, and stderr onto /dev/null
+		 */
+		int devnull = open("/dev/null", O_RDWR);
+		if (devnull < 0)
+			error("Unable to open /dev/null: %m");
+		if (dup2(devnull, STDIN_FILENO) < 0)
+			error("Unable to dup /dev/null onto stdin: %m");
+		if (dup2(devnull, STDOUT_FILENO) < 0)
+			error("Unable to dup /dev/null onto stdout: %m");
+		if (dup2(devnull, STDERR_FILENO) < 0)
+			error("Unable to dup /dev/null onto stderr: %m");
+		if (close(devnull) < 0)
+			error("Unable to close /dev/null: %m");
+	}
+
+	return 0;
+
+}
+
 /*
  * Read and return pid stored in pidfile.
  * Returns 0 if file doesn't exist or pid cannot be read.
