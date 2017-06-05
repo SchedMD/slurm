@@ -5521,6 +5521,7 @@ static void  _slurm_rpc_composite_msg(slurm_msg_t *msg)
 	bool run_scheduler = false;
 	composite_msg_t *comp_msg, comp_resp_msg;
 	/* Locks: Read configuration, write job, write node */
+	/* Must match locks in _slurm_rpc_comp_msg_list */
 	slurmctld_lock_t job_write_lock = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 
@@ -5611,6 +5612,7 @@ static void  _slurm_rpc_comp_msg_list(composite_msg_t * comp_msg,
 	composite_msg_t *ncomp_msg;
 	composite_msg_t *comp_resp_msg;
 	/* Locks: Read configuration, write job, write node */
+	/* Must match locks in _slurm_rpc_composite_msg */
 	slurmctld_lock_t job_write_lock = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	DEF_TIMERS;
