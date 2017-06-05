@@ -80,12 +80,15 @@ static int   _set_umask_env(void);
 int main(int argc, char **argv)
 {
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
-	job_desc_msg_t desc;
+	job_desc_msg_t *desc = NULL;
 	submit_response_msg_t *resp;
 	char *script_name;
 	char *script_body;
-	int script_size = 0;
-	int rc = 0, retries = 0;
+	char **pack_argv;
+	int script_size = 0, pack_argc, pack_argc_off = 0, pack_inx;
+	int rc = SLURM_SUCCESS, retries = 0;
+	bool pack_fini = false;
+	List job_req_list = NULL;
 
 	slurm_conf_init(NULL);
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
@@ -119,80 +122,104 @@ int main(int argc, char **argv)
 	if (script_body == NULL)
 		exit(error_exit);
 
-	if (process_options_second_pass(
-				(argc - opt.script_argc),
-				argv,
-				script_name ? xbasename (script_name) : "stdin",
-				script_body, script_size) < 0) {
-		error("sbatch parameter parsing");
-		exit(error_exit);
+	pack_argc = argc - opt.script_argc;
+	pack_argv = argv;
+	for (pack_inx = 0; !pack_fini; pack_inx++) {
+		bool more_packs = false;
+		process_options_second_pass(pack_argc, pack_argv,
+					    &pack_argc_off, pack_inx,
+					    &more_packs, script_name ?
+					    xbasename (script_name) : "stdin",
+					    script_body, script_size);
+		if ((pack_argc_off >= 0) && (pack_argc_off < pack_argc) &&
+		    !xstrcmp(pack_argv[pack_argc_off], ":")) {
+			/* pack_argv[0] moves from "salloc" to ":" */
+			pack_argc -= pack_argc_off;
+			pack_argv += pack_argc_off;
+		} else if (!more_packs) {
+			pack_fini = true;
+
+		}
+
+		if (opt.burst_buffer_file)
+			_add_bb_to_script(&script_body, opt.burst_buffer_file);
+
+		if (spank_init_post_opt() < 0) {
+			error("Plugin stack post-option processing failed");
+			exit(error_exit);
+		}
+
+		if (opt.get_user_env_time < 0) {
+			/* Moab does not propage the user's resource limits, so
+			 * slurmd determines the values at the same time that it
+			 * gets the user's default environment variables. */
+			(void) _set_rlimit_env();
+		}
+
+		/*
+		 * if the environment is coming from a file, the
+		 * environment at execution startup, must be unset.
+		 */
+		if (opt.export_file != NULL)
+			env_unset_environment();
+
+		_set_prio_process_env();
+		_set_spank_env();
+		_set_submit_dir_env();
+		_set_umask_env();
+		if (desc && !job_req_list) {
+			job_req_list = list_create(NULL);
+			list_append(job_req_list, desc);
+		}
+		desc = xmalloc(sizeof(job_desc_msg_t));
+		slurm_init_job_desc_msg(desc);
+		if (_fill_job_desc_from_opts(desc) == -1)
+			exit(error_exit);
+		if (!job_req_list)
+			desc->script = (char *) script_body;
+		else
+			list_append(job_req_list, desc);
 	}
-
-	if (opt.burst_buffer_file)
-		_add_bb_to_script(&script_body, opt.burst_buffer_file);
-
-	if (spank_init_post_opt() < 0) {
-		error("Plugin stack post-option processing failed");
-		exit(error_exit);
-	}
-
-	if (opt.get_user_env_time < 0) {
-		/* Moab does not propage the user's resource limits, so
-		 * slurmd determines the values at the same time that it
-		 * gets the user's default environment variables. */
-		(void) _set_rlimit_env();
-	}
-
-	/*
-	 * if the environment is coming from a file, the
-	 * environment at execution startup, must be unset.
-	 */
-	if (opt.export_file != NULL)
-		env_unset_environment();
-
-	_set_prio_process_env();
-	_set_spank_env();
-	_set_submit_dir_env();
-	_set_umask_env();
-	slurm_init_job_desc_msg(&desc);
-	if (_fill_job_desc_from_opts(&desc) == -1) {
-		exit(error_exit);
-	}
-
-	desc.script = (char *)script_body;
 
 	/* If can run on multiple clusters find the earliest run time
 	 * and run it there */
-	desc.clusters = xstrdup(opt.clusters);
+//FIXME: Caveat for federations??
+	desc->clusters = xstrdup(opt.clusters);
 	if (opt.clusters &&
-	    slurmdb_get_first_avail_cluster(&desc, opt.clusters,
+	    slurmdb_get_first_avail_cluster(desc, opt.clusters,
 			&working_cluster_rec) != SLURM_SUCCESS) {
 		print_db_notok(opt.clusters, 0);
 		exit(error_exit);
 	}
 
-	if (_check_cluster_specific_settings(&desc) != SLURM_SUCCESS)
+	if (_check_cluster_specific_settings(desc) != SLURM_SUCCESS)
 		exit(error_exit);
 
+//FIXME: Implement will_run for pack jobs
 	if (opt.test_only) {
-		if (slurm_job_will_run(&desc) != SLURM_SUCCESS) {
+		if (slurm_job_will_run(desc) != SLURM_SUCCESS) {
 			slurm_perror("allocation failure");
-			exit (1);
+			exit(1);
 		}
-		exit (0);
+		exit(0);
 	}
 
-	while (slurm_submit_batch_job(&desc, &resp) < 0) {
+	while (true) {
 		static char *msg;
-
-		if (errno == ESLURM_ERROR_ON_DESC_TO_RECORD_COPY)
-			msg = "Slurm job queue full, sleeping and retrying.";
-		else if (errno == ESLURM_NODES_BUSY) {
+		if (job_req_list)
+			rc = slurm_submit_batch_pack_job(job_req_list, &resp);
+		else
+			rc = slurm_submit_batch_job(desc, &resp);
+		if (rc >= 0)
+			break;
+		if (errno == ESLURM_ERROR_ON_DESC_TO_RECORD_COPY) {
+			msg = "Slurm job queue full, sleeping and retrying";
+		} else if (errno == ESLURM_NODES_BUSY) {
 			msg = "Job step creation temporarily disabled, "
 			      "retrying";
 		} else if (errno == EAGAIN) {
 			msg = "Slurm temporarily unable to accept job, "
-			      "sleeping and retrying.";
+			      "sleeping and retrying";
 		} else
 			msg = NULL;
 		if ((msg == NULL) || (retries >= MAX_RETRIES)) {
@@ -680,7 +707,7 @@ static void _set_spank_env(void)
 {
 	int i;
 
-	for (i=0; i<opt.spank_job_env_size; i++) {
+	for (i = 0; i < opt.spank_job_env_size; i++) {
 		if (setenvfs("SLURM_SPANK_%s", opt.spank_job_env[i]) < 0) {
 			error("unable to set %s in environment",
 			      opt.spank_job_env[i]);

@@ -211,7 +211,8 @@ static void  _help(void);
 static void _opt_default(void);
 
 /* set options from batch script */
-static void _opt_batch_script(const char *file, const void *body, int size);
+static bool _opt_batch_script(const char *file, const void *body, int size,
+			      int pack_inx);
 
 /* set options from pbs batch script */
 static bool _opt_wrpr_batch_script(const char *file, const void *body, int size,
@@ -999,24 +1000,32 @@ extern char *process_options_first_pass(int argc, char **argv)
  * 2. update options with env vars
  * 3. update options with commandline args
  * 4. perform some verification that options are reasonable
+ *
+ * argc IN - Count of elements in argv
+ * argv IN - Array of elements to parse
+ * argc_off OUT - Offset of first non-parsable element
+ * pack_inx IN - pack job component ID, zero origin
+ * more_packs OUT - more packs job specifications in script to process
  */
-extern int process_options_second_pass(int argc, char **argv, const char *file,
-				       const void *script_body,
-				       int script_size)
+extern void process_options_second_pass(int argc, char **argv, int *argc_off,
+					int pack_inx, bool *more_packs,
+					const char *file,
+					const void *script_body,
+					int script_size)
 {
 	int i;
 
 	/* set options from batch script */
-	_opt_batch_script(file, script_body, script_size);
+	*more_packs = _opt_batch_script(file, script_body, script_size,
+				        pack_inx);
 
 	for (i = WRPR_START + 1; i < WRPR_CNT; i++) {
 		/* Convert command from batch script to sbatch command */
 		bool stop = _opt_wrpr_batch_script(file, script_body,
 						   script_size, argc, argv, i);
 
-		if (stop) {
+		if (stop)
 			break;
-		}
 	}
 
 	/* set options from env vars */
@@ -1024,14 +1033,13 @@ extern int process_options_second_pass(int argc, char **argv, const char *file,
 
 	/* set options from command line */
 	_set_options(argc, argv);
+	*argc_off = optind;
 
 	if (!_opt_verify())
 		exit(error_exit);
 
 	if (opt.verbose)
 		_opt_list();
-
-	return 1;
 }
 
 /*
@@ -1097,6 +1105,9 @@ _get_argument(const char *file, int lineno, const char *line, int *skipped)
 	ptr = line;
 	*skipped = 0;
 
+	if ((argument = strcasestr(line, "packjob")))
+		memcpy(argument, "       ", 7);
+
 	/* skip whitespace */
 	while (isspace(*ptr) && *ptr != '\0') {
 		ptr++;
@@ -1107,7 +1118,7 @@ _get_argument(const char *file, int lineno, const char *line, int *skipped)
 
 	/* copy argument into "argument" buffer, */
 	i = 0;
-	while ((quoted || !isspace(*ptr)) && *ptr != '\n' && *ptr != '\0') {
+	while ((quoted || !isspace(*ptr)) && (*ptr != '\n') && (*ptr != '\0')) {
 		if (escape_flag) {
 			escape_flag = false;
 		} else if (*ptr == '\\') {
@@ -1120,7 +1131,7 @@ _get_argument(const char *file, int lineno, const char *line, int *skipped)
 				ptr++;
 				continue;
 			}
-		} else if (*ptr == '"' || *ptr == '\'') {
+		} else if ((*ptr == '"') || (*ptr == '\'')) {
 			quoted = true;
 			q_char = *(ptr++);
 			continue;
@@ -1134,9 +1145,10 @@ _get_argument(const char *file, int lineno, const char *line, int *skipped)
 		argument[i++] = *(ptr++);
 	}
 
-	if (quoted) /* Unmatched quote */
+	if (quoted) {	/* Unmatched quote */
 		fatal("%s: line %d: Unmatched `%c` in [%s]",
 		      file, lineno, q_char, line);
+	}
 
 	*skipped = ptr - line;
 
@@ -1148,8 +1160,10 @@ _get_argument(const char *file, int lineno, const char *line, int *skipped)
  *
  * Build an argv-style array of options from the script "body",
  * then pass the array to _set_options for() further parsing.
+ * RET - True if more pack job specifications to process
  */
-static void _opt_batch_script(const char * file, const void *body, int size)
+static bool _opt_batch_script(const char * file, const void *body, int size,
+			      int pack_inx)
 {
 	char *magic_word1 = "#SBATCH";
 	char *magic_word2 = "#SLURM";
@@ -1161,7 +1175,8 @@ static void _opt_batch_script(const char * file, const void *body, int size)
 	char *option;
 	char *ptr;
 	int skipped = 0, warned = 0, lineno = 0;
-	int i;
+	int i, pack_scan_inx = 0;
+	bool more_packs = false;
 
 	magic_word_len1 = strlen(magic_word1);
 	magic_word_len2 = strlen(magic_word2);
@@ -1201,11 +1216,23 @@ static void _opt_batch_script(const char * file, const void *body, int size)
 		}
 
 		/* this line starts with the magic word */
+		if (strcasestr(line, "packjob"))
+			pack_scan_inx++;
+		if (pack_scan_inx < pack_inx) {
+			xfree(line);
+			continue;
+		}
+		if (pack_scan_inx > pack_inx) {
+			more_packs = true;
+			xfree(line);
+			break;
+		}
+
 		while ((option = _get_argument(file, lineno, ptr, &skipped))) {
-			debug2("Found in script, argument \"%s\"", option);
-			argc += 1;
-			xrealloc(argv, sizeof(char*) * argc);
-			argv[argc-1] = option;
+			info("Found in script, argument \"%s\"", option);
+			argc++;
+			xrealloc(argv, sizeof(char *) * argc);
+			argv[argc - 1] = option;
 			ptr += skipped;
 		}
 		xfree(line);
@@ -1217,6 +1244,8 @@ static void _opt_batch_script(const char * file, const void *body, int size)
 	for (i = 1; i < argc; i++)
 		xfree(argv[i]);
 	xfree(argv);
+
+	return more_packs;
 }
 
 /*
@@ -1313,7 +1342,7 @@ static bool _opt_wrpr_batch_script(const char *file, const void *body,
 		xfree(line);
 	}
 
-	if (argc > 0 && wrp_func != NULL)
+	if ((argc > 0) && (wrp_func != NULL))
 		wrp_func(argc, argv);
 
 	for (i = 1; i < argc; i++)
@@ -2078,11 +2107,6 @@ static void _set_options(int argc, char **argv)
 				exit(error_exit);
 			}
 		}
-	}
-
-	if (optind < argc) {
-		error("Invalid argument: %s", argv[optind]);
-		exit(error_exit);
 	}
 
 	spank_option_table_destroy (optz);

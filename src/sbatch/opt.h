@@ -221,10 +221,18 @@ extern char *process_options_first_pass(int argc, char **argv);
  * 2. update options with env vars
  * 3. update options with commandline args
  * 4. perform some verification that options are reasonable
+ *
+ * argc IN - Count of elements in argv
+ * argv IN - Array of elements to parse
+ * argc_off OUT - Offset of first non-parsable element
+ * pack_inx IN - pack job component ID, zero origin
+ * more_packs OUT - more packs job specifications in script to process
  */
-extern int process_options_second_pass(int argc, char **argv, const char *file,
-				       const void *script_body,
-				       int script_size);
+extern void process_options_second_pass(int argc, char **argv, int *argc_off,
+					int pack_inx, bool *more_packs,
+					const char *file,
+					const void *script_body,
+					int script_size);
 
 /* external functions available for SPANK plugins to modify the environment
  * exported to the SLURM Prolog and Epilog programs */
