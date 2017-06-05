@@ -328,7 +328,7 @@ static bool _ucx_progress()
 	ucp_tag_message_h msg_tag;
 	ucp_tag_recv_info_t info_tag;
 	pmixp_list_elem_t *elem;
-	bool new_msg = false;
+	bool more_progr = false, new_msg = false;
 	size_t count, i;
 	int events_observed = 0;
 
@@ -352,22 +352,25 @@ static bool _ucx_progress()
 			PMIXP_ERROR("ucp_tag_msg_recv_nb failed: %s", ucs_status_string(UCS_PTR_STATUS(req)));
 			continue;
 		}
+		new_msg = true;
 		req->buffer = msg;
 		req->len = info_tag.length;
-		pmixp_rlist_enq(&_rcv_pending, req);
 		if (PMIXP_UCX_ACTIVE == req->status) {
 			/* this message is long enough, so it makes
 			 * sense to do the progres one more timer */
-			new_msg = true;
+			more_progr = true;
+			pmixp_rlist_enq(&_rcv_pending, req);
+		} else {
+			pmixp_rlist_enq(&_rcv_complete, req);
 		}
 	}
 
-	if (new_msg) {
+	if (more_progr) {
 		/* do the progress if we have incomplete receives */
 		ucp_worker_progress(ucp_worker);
 	}
 	
-	if (pmixp_rlist_empty(&_rcv_pending) && pmixp_rlist_empty(&_snd_pending)) {
+	if (!new_msg && pmixp_rlist_empty(&_rcv_pending) && pmixp_rlist_empty(&_snd_pending)) {
 		/* early exit - nothing to do */
 		slurm_mutex_unlock(&_ucx_worker_lock);
 		return false;
