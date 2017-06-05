@@ -65,6 +65,8 @@ int pmixp_fixrights(char *path, uid_t uid, mode_t mode);
 int pmixp_mkdir(char *path, mode_t rights);
 
 /* lightweight pmix list of pointers */
+#define PMIXP_LIST_DEBUG 0
+
 typedef struct pmixp_list_elem_s {
 #ifndef NDEBUG
 	void *lptr;
@@ -94,13 +96,17 @@ typedef struct pmixp_list_s {
 
 static inline bool
 pmixp_list_empty(pmixp_list_t *l) {
+#if PMIXP_LIST_DEBUG
 	xassert(l->head && l->tail);
+#endif
 	return !(l->count);
 }
 
 static inline size_t
 pmixp_list_count(pmixp_list_t *l) {
+#if PMIXP_LIST_DEBUG
 	xassert(l->head && l->tail);
+#endif
 	return l->count;
 }
 
@@ -128,11 +134,14 @@ pmixp_list_fini_pre(pmixp_list_t *l,
 		    pmixp_list_elem_t **h,
 		    pmixp_list_elem_t **t)
 {
+#if PMIXP_LIST_DEBUG
 	/* list supposed to be empty */
 	xassert(l->head && l->tail);
 	xassert(l->head->next == l->tail);
 	xassert(l->head == l->tail->prev);
 	xassert(!l->count);
+#endif
+
 	*h = l->head;
 	*t = l->tail;
 
@@ -161,13 +170,14 @@ pmixp_list_fini(pmixp_list_t *l)
 static inline void
 pmixp_list_enq(pmixp_list_t *l, pmixp_list_elem_t *elem)
 {
+#if PMIXP_LIST_DEBUG
 	xassert(l->head && l->tail);
 	xassert(!l->head->data && !l->tail->data);
 	xassert(!l->tail->next && !l->head->prev);
-
 #ifndef NDEBUG
 	elem->lptr = l;
-#endif
+#endif /* NDEBUG */
+#endif /* PMIXP_LIST_DEBUG */
 
 	/* setup connection to the previous elem */
 	elem->prev = l->tail->prev;
@@ -185,15 +195,19 @@ static inline pmixp_list_elem_t *
 pmixp_list_deq(pmixp_list_t *l)
 {
 	pmixp_list_elem_t *ret;
+#if PMIXP_LIST_DEBUG
 	xassert(l->head && l->tail);
 	xassert(!l->head->data && !l->tail->data);
 	xassert(!l->tail->next && !l->head->prev);
 	xassert (!pmixp_list_empty(l));
-
+#endif
 	/* user is responsible to ensure that
 	 * list is not empty */
 	ret = l->head->next;
+
+#if PMIXP_LIST_DEBUG
 	xassert(ret->lptr == l);
+#endif
 
 	/* reconnect the list, removing element */
 	l->head->next = ret->next;
@@ -208,13 +222,14 @@ pmixp_list_deq(pmixp_list_t *l)
 static inline void
 pmixp_list_push(pmixp_list_t *l, pmixp_list_elem_t *elem)
 {
+#if PMIXP_LIST_DEBUG
 	xassert(l->head && l->tail);
 	xassert(!l->head->data && !l->tail->data);
 	xassert(!l->tail->next && !l->head->prev);
-
 #ifndef NDEBUG
 	elem->lptr = l;
 #endif
+#endif /* PMIXP_LIST_DEBUG */
 
 	/* setup connection with ex-first element */
 	elem->next = l->head->next;
@@ -232,15 +247,22 @@ static inline pmixp_list_elem_t *
 pmixp_list_pop(pmixp_list_t *l)
 {
 	pmixp_list_elem_t *ret = NULL;
+
+#if PMIXP_LIST_DEBUG
 	xassert(l->head && l->tail);
 	xassert(!l->head->data && !l->tail->data);
 	xassert(!l->tail->next && !l->head->prev);
 	xassert (!pmixp_list_empty(l));
+#endif
 
 	/* user is responsible to ensure that
 	 * list is not empty */
 	ret = l->tail->prev;
+
+#if PMIXP_LIST_DEBUG
 	xassert(ret->lptr == l);
+#endif
+
 	l->tail->prev = ret->prev;
 	ret->prev->next = l->tail;
 	l->count--;
@@ -253,6 +275,7 @@ pmixp_list_rem(pmixp_list_t *l, pmixp_list_elem_t *elem)
 {
 	pmixp_list_elem_t *next;
 
+#if PMIXP_LIST_DEBUG
 	xassert(elem && l);
 	xassert(l->head && l->tail);
 	xassert(!l->head->data && !l->tail->data);
@@ -260,6 +283,7 @@ pmixp_list_rem(pmixp_list_t *l, pmixp_list_elem_t *elem)
 	xassert(elem->next && elem->prev);
 	xassert((elem != l->head) && (elem != l->tail));
 	xassert(elem->lptr == l);
+#endif
 
 	next = elem->next;
 	elem->prev->next = elem->next;
@@ -274,30 +298,35 @@ pmixp_list_rem(pmixp_list_t *l, pmixp_list_elem_t *elem)
 static inline pmixp_list_elem_t*
 pmixp_list_begin(pmixp_list_t *l)
 {
+#if PMIXP_LIST_DEBUG
 	xassert(l->head && l->tail);
 	xassert(!l->head->data && !l->tail->data);
 	xassert(!l->tail->next && !l->head->prev);
+#endif
 	return l->head->next;
 }
 
 static inline pmixp_list_elem_t*
 pmixp_list_end(pmixp_list_t *l)
 {
+#if PMIXP_LIST_DEBUG
 	xassert(l->head && l->tail);
 	xassert(!l->head->data && !l->tail->data);
 	xassert(!l->tail->next && !l->head->prev);
+#endif
 	return l->tail;
 }
 
 static inline pmixp_list_elem_t *
 pmixp_list_next(pmixp_list_t *l, pmixp_list_elem_t *cur)
 {
+#if PMIXP_LIST_DEBUG
 	xassert(l->head && l->tail);
 	xassert(!l->head->data && !l->tail->data);
 	xassert(!l->tail->next && !l->head->prev);
 	xassert(cur);
 	xassert(cur->lptr == l);
-
+#endif
 	return cur->next;
 }
 
