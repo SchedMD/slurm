@@ -159,8 +159,6 @@ int main(int argc, char **argv)
 	 * (init_pidfile() exits if it can't initialize pid file).
 	 * On Linux we also need to make this setuid job explicitly
 	 * able to write a core dump.
-	 * This also has to happen after daemon(), which closes all fd's,
-	 * so we keep the write lock of the pidfile.
 	 */
 	_init_pidfile();
 	_become_slurm_user();
@@ -607,7 +605,7 @@ static void _init_pidfile(void)
  * "cd" to the LogFile directory (if one is configured) */
 static void _daemonize(void)
 {
-	if (daemon(1, 1))
+	if (xdaemon())
 		error("daemon(): %m");
 	log_alter(log_opts, LOG_DAEMON, slurmdbd_conf->log_file);
 }

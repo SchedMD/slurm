@@ -290,10 +290,9 @@ main (int argc, char **argv)
 
 	/*
 	 * Become a daemon if desired.
-	 * Do not chdir("/") or close all fd's
 	 */
 	if (conf->daemonize) {
-		if (daemon(1,1) == -1)
+		if (xdaemon())
 			error("Couldn't daemonize slurmd: %m");
 	}
 	test_core_limit();
@@ -348,8 +347,6 @@ main (int argc, char **argv)
 	_create_msg_socket();
 
 	conf->pid = getpid();
-	/* This has to happen after daemon(), which closes all fd's,
-	 * so we keep the write lock of the pidfile. */
 	pidfd = create_pidfile(conf->pidfile, 0);
 
 	rfc2822_timestamp(time_stamp, sizeof(time_stamp));

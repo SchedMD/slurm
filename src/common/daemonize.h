@@ -40,13 +40,12 @@
 #ifndef _HAVE_DAEMONIZE_H
 #define _HAVE_DAEMONIZE_H
 
-/* fork process into background and inherit new session
- * if nochdir is 0, performs a chdir("/")
- * if noclose is 0, closes all fds and dups stdout/err of daemon onto /dev/null
+/*
+ * Fork process into background and inherit new session.
  *
- * returns -1 on error.
+ * Returns -1 on error.
  */
-extern int daemon(int nochdir, int noclose);
+extern int xdaemon(void);
 
 /* Write pid into file pidfile if uid is not 0 change the owner of the
  * pidfile to that user.
