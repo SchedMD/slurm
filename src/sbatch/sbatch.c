@@ -64,10 +64,11 @@
 #define MAX_RETRIES 15
 
 static void  _add_bb_to_script(char **script_body, char *burst_buffer_file);
+static int   _check_cluster_specific_settings(job_desc_msg_t *desc);
 static void  _env_merge_filter(job_desc_msg_t *desc);
 static int   _fill_job_desc_from_opts(job_desc_msg_t *desc);
-static int   _check_cluster_specific_settings(job_desc_msg_t *desc);
 static void *_get_script_buffer(const char *filename, int *size);
+static int   _job_wait(uint32_t job_id);
 static char *_script_wrap(char *command_string);
 static void  _set_exit_code(void);
 static void  _set_prio_process_env(void);
@@ -75,7 +76,6 @@ static int   _set_rlimit_env(void);
 static void  _set_spank_env(void);
 static void  _set_submit_dir_env(void);
 static int   _set_umask_env(void);
-static int   _job_wait(uint32_t job_id);
 
 int main(int argc, char **argv)
 {
@@ -206,10 +206,10 @@ int main(int argc, char **argv)
 			info("%s", msg); /* Not an error, powering up nodes */
 		else
 			error("%s", msg);
-		sleep (++retries);
+		sleep(++retries);
 	}
 
-	if (!opt.parsable){
+	if (!opt.parsable) {
 		printf("Submitted batch job %u", resp->job_id);
 		if (working_cluster_rec)
 			printf(" on cluster %s", working_cluster_rec->name);
@@ -223,11 +223,6 @@ int main(int argc, char **argv)
 	if (opt.wait)
 		rc = _job_wait(resp->job_id);
 
-	xfree(desc.clusters);
-	xfree(desc.name);
-	xfree(desc.script);
-	env_array_free(desc.environment);
-	slurm_free_submit_response_response_msg(resp);
 	return rc;
 }
 

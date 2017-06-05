@@ -1018,7 +1018,6 @@ extern int process_options_second_pass(int argc, char **argv, const char *file,
 		if (stop) {
 			break;
 		}
-
 	}
 
 	/* set options from env vars */
@@ -1034,7 +1033,6 @@ extern int process_options_second_pass(int argc, char **argv, const char *file,
 		_opt_list();
 
 	return 1;
-
 }
 
 /*
@@ -2023,7 +2021,8 @@ static void _set_options(int argc, char **argv)
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
 			if (cpu_freq_verify_cmdline(optarg, &opt.cpu_freq_min,
-						    &opt.cpu_freq_max, &opt.cpu_freq_gov))
+						    &opt.cpu_freq_max,
+						    &opt.cpu_freq_gov))
 				error("Invalid --cpu-freq argument: %s. "
 				      "Ignored", optarg);
 			break;
