@@ -235,11 +235,11 @@ static void _process_env_var(env_vars_t *e, const char *val);
 
 static uint16_t _parse_pbs_mail_type(const char *arg);
 
-static void  _usage(void);
 static void _fullpath(char **filename, const char *cwd);
+static void _parse_pbs_resource_list(char *rl);
 static char *_read_file(char *fname);
 static void _set_options(int argc, char **argv);
-static void _parse_pbs_resource_list(char *rl);
+static void _usage(void);
 
 /*---[ end forward declarations of static functions ]---------------------*/
 
@@ -903,6 +903,8 @@ extern char *process_options_first_pass(int argc, char **argv)
 {
 	int opt_char, option_index = 0;
 	struct option *optz = spank_option_table_create(long_options);
+	int i, local_argc = 0;
+	char **local_argv, *script_file = NULL;
 
 	if (!optz) {
 		error("Unable to create options table");
@@ -912,67 +914,64 @@ extern char *process_options_first_pass(int argc, char **argv)
 	/* initialize option defaults */
 	_opt_default();
 
+	/* Remove pack job separator and capture all options of interest from
+	 * all job components (e.g. "sbatch -N1 -v : -N2 -v tmp" -> "-vv") */
+	local_argv = xmalloc(sizeof(char *) * argc);
+	for (i = 0; i < argc; i++) {
+		if (xstrcmp(argv[i], ":"))
+			local_argv[local_argc++] = argv[i];
+	}
+
 	opt.progname = xbasename(argv[0]);
 	optind = 0;
-
-	while (true) {
-		while ((opt_char = getopt_long(argc, argv, opt_string,
-					       optz, &option_index)) != -1) {
-			switch (opt_char) {
-			case '?':
-				fprintf(stderr, 
-				 	"Try \"sbatch --help\" for more information\n");
-				exit(error_exit);
-				break;
-			case 'h':
-				_help();
-				exit(0);
-				break;
-			case 'Q':
-				opt.quiet++;
-				break;
-			case 'u':
-				_usage();
-				exit(0);
-			case 'v':
-				opt.verbose++;
-				break;
-			case 'V':
-				print_slurm_version();
-				exit(0);
-				break;
-			case LONG_OPT_WRAP:
-				xfree(opt.job_name);
-				xfree(opt.wrap);
-				opt.job_name = xstrdup("wrap");
-				opt.wrap = xstrdup(optarg);
-				break;
-			default:
-				/* all others parsed in second pass function */
-				break;
-			}
-		}
-		if ((argc > optind) && !xstrcmp(argv[optind], ":")) {
-			is_pack_job = true;
-			argv += optind;
-			argc -= optind;
-			option_index = 0;
-		} else {
+	while ((opt_char = getopt_long(local_argc, local_argv, opt_string,
+				       optz, &option_index)) != -1) {
+		switch (opt_char) {
+		case '?':
+			fprintf(stderr,
+				"Try \"sbatch --help\" for more information\n");
+			exit(error_exit);
+			break;
+		case 'h':
+			_help();
+			exit(0);
+			break;
+		case 'Q':
+			opt.quiet++;
+			break;
+		case 'u':
+			_usage();
+			exit(0);
+		case 'v':
+			opt.verbose++;
+			break;
+		case 'V':
+			print_slurm_version();
+			exit(0);
+			break;
+		case LONG_OPT_WRAP:
+			xfree(opt.job_name);
+			xfree(opt.wrap);
+			opt.job_name = xstrdup("wrap");
+			opt.wrap = xstrdup(optarg);
+			break;
+		default:
+			/* all others parsed in second pass function */
 			break;
 		}
 	}
 	spank_option_table_destroy(optz);
 
-	if ((argc > optind) && (opt.wrap != NULL)) {
-		error("Script arguments are not permitted with the --wrap option.");
+	if ((local_argc > optind) && (opt.wrap != NULL)) {
+		error("Script arguments not permitted with --wrap option");
 		exit(error_exit);
 	}
-	if (argc > optind) {
+	if (local_argc > optind) {
 		int i;
 		char **leftover;
 
-		opt.script_argc = argc - optind;
-		leftover = argv + optind;
+		opt.script_argc = local_argc - optind;
+		leftover = local_argv + optind;
 		opt.script_argv = (char **) xmalloc((opt.script_argc + 1)
 						    * sizeof(char *));
 		for (i = 0; i < opt.script_argc; i++)
@@ -988,11 +987,11 @@ extern char *process_options_first_pass(int argc, char **argv)
 			xfree(opt.script_argv[0]);
 			opt.script_argv[0] = fullpath;
 		}
-
-		return opt.script_argv[0];
-	} else {
-		return NULL;
+		script_file = opt.script_argv[0];
 	}
+
+	xfree(local_argv);
+	return script_file;
 }
 
 /* process options:
