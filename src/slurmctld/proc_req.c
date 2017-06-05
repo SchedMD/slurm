@@ -3896,13 +3896,18 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	if (error_code != SLURM_SUCCESS)
 		goto send_msg;
 
+	/* Create new job allocations */
 	submit_job_list = list_create(NULL);
 	_throttle_start(&active_rpc_cnt);
 	lock_slurmctld(job_write_lock);
 	START_TIMER;	/* Restart after we have locks */
 	iter = list_iterator_create(job_req_list);
 	while ((job_desc_msg = (job_desc_msg_t *) list_next(iter))) {
-		/* Create new job allocation */
+		if (alloc_only && job_desc_msg->script) {
+			info("%s: Pack job %u offset %u has script, being ignord",
+			     __func__, pack_job_id, pack_job_offset);
+			xfree(job_desc_msg->script);
+		}
 		error_code = job_allocate(job_desc_msg,
 					  job_desc_msg->immediate, false,
 					  NULL, alloc_only, uid, &job_ptr,

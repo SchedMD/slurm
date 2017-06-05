@@ -95,9 +95,10 @@ containing the line "#SBATCH packjob" as shown below.</p>
 <pre>
 $ cat new.bash
 #!/bin/bash
-#SBATCH --cpus-per-task=4 --mem-per-cpu=1  --ntasks=128
+#SBATCH --cpus-per-task=4 --mem-per-cpu=16g --ntasks=1
 #SBATCH packjob
-#SBATCH --cpus-per-task=1 --mem-per-cpu=16 --ntasks=1
+#SBATCH --cpus-per-task=2 --mem-per-cpu=1g  --ntasks=8
+
 srun run.app
 
 $ sbatch new.pash
@@ -110,9 +111,13 @@ $ cat my.bash
 #!/bin/bash
 srun run.app
 
-$ sbatch --cpus-per-task=4 --mem-per-cpu=1  --ntasks=128 : \
-         --cpus-per-task=1 --mem-per-cpu=16 --ntasks=1 my.bash
+$ sbatch --cpus-per-task=4 --mem-per-cpu=16g --ntasks=1 : \
+         --cpus-per-task=2 --mem-per-cpu=1g  --ntasks=8 my.bash
 </pre>
+
+<p>The batch script will be executed in the first node in the first component
+of the heterogeneous job. For the above example, that will be the job component
+with 1 task, 4 CPUs and 64 GB of memory (16 GB for each of the 4 CPUs).</p>
 
 <h2><a name="managing">Managing Jobs</a></h2>
 
