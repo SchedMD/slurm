@@ -87,7 +87,7 @@ A list of propogated options follows.</p>
 
 <p>Environment variables used to specify default options for the job submit
 command will be applied to every component of the heterogeneous job
-(e.g. <i>SBATCH_ACCOUNT</i>.</p>
+(e.g. <i>SBATCH_ACCOUNT</i>).</p>
 
 <p>Batch job options can be included in the submitted script for multiple
 heterogeneous job components. Each component should be separated by a line

@@ -1229,7 +1229,7 @@ static bool _opt_batch_script(const char * file, const void *body, int size,
 		}
 
 		while ((option = _get_argument(file, lineno, ptr, &skipped))) {
-			info("Found in script, argument \"%s\"", option);
+			debug2("Found in script, argument \"%s\"", option);
 			argc++;
 			xrealloc(argv, sizeof(char *) * argc);
 			argv[argc - 1] = option;
