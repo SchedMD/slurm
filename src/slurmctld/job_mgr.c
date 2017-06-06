@@ -1981,8 +1981,12 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		lowest_prio  = MIN(lowest_prio,  priority);
 	}
 
-	/* base job_id_sequence on local job id */
-	local_job_id = fed_mgr_get_local_id(job_id);
+	/* Base job_id_sequence off of local job id but only if the job
+	 * originated from this cluster -- so that the local job id of a
+	 * different cluster isn't restored here. */
+	if (!job_fed_details ||
+	    !xstrcmp(job_fed_details->origin_str, slurmctld_conf.cluster_name))
+		local_job_id = fed_mgr_get_local_id(job_id);
 	if (job_id_sequence <= local_job_id)
 		job_id_sequence = local_job_id + 1;
 
