@@ -7772,7 +7772,8 @@ extern void job_config_fini(struct job_record *job_ptr)
  * RET true if ready */
 extern bool test_job_nodes_ready(struct job_record *job_ptr)
 {
-	if (bit_overlap(job_ptr->node_bitmap, power_node_bitmap))
+	if (!job_ptr->node_bitmap ||
+	    bit_overlap(job_ptr->node_bitmap, power_node_bitmap))
 		return false;
 
 	if (!job_ptr->batch_flag ||
