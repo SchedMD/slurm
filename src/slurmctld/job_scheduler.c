@@ -738,9 +738,10 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job, bool locked)
 		if (!job_ptr)
 			break;
 
-		if ((job_ptr == fini_job_ptr) ||
-		    (job_ptr->priority == 0)  ||
-		    (job_ptr->details == NULL) ||
+		if ((job_ptr == fini_job_ptr)   ||
+		    (job_ptr->priority == 0)    ||
+		    (job_ptr->pack_job_id != 0) ||
+		    (job_ptr->details == NULL)  ||
 		    !avail_front_end(job_ptr))
 			continue;
 
@@ -4035,8 +4036,9 @@ extern void prolog_running_decr(struct job_record *job_ptr)
 		return;
 
 	if (IS_JOB_CONFIGURING(job_ptr) && test_job_nodes_ready(job_ptr)) {
-		info("%s: Configuration for job %u is complete",
-		      __func__, job_ptr->job_id);
+		char job_id_buf[JBUFSIZ];
+		info("%s: Configuration for %s is complete", __func__,
+		     jobid2fmt(job_ptr, job_id_buf, sizeof(job_id_buf)));
 		job_config_fini(job_ptr);
 		if (job_ptr->batch_flag &&
 		    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {

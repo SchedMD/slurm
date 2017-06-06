@@ -1166,6 +1166,7 @@ static void _trigger_backfill(void)
 /* _slurm_rpc_allocate_pack: process RPC to allocate a pack job resources */
 static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 {
+	static int select_serial = -1;
 	static int active_rpc_cnt = 0;
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
@@ -1192,7 +1193,13 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 
 	START_TIMER;
 
-	if (slurmctld_config.submissions_disabled) {
+	if (select_serial == -1) {
+		if (xstrcmp(slurmctld_conf.select_type, "select/serial"))
+			select_serial = 0;
+		else
+			select_serial = 1;
+	}
+	if (slurmctld_config.submissions_disabled || (select_serial == 1)) {
 		info("Submissions disabled on system");
 		error_code = ESLURM_SUBMISSIONS_DISABLED;
 		goto send_msg;
@@ -3816,6 +3823,7 @@ send_msg:
 /* _slurm_rpc_submit_batch_pack_job - process RPC to submit a batch pack job */
 static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 {
+	static int select_serial = -1;
 	static int active_rpc_cnt = 0, alloc_only = 0;
 	ListIterator iter;
 	int error_code = SLURM_SUCCESS;
@@ -3849,7 +3857,13 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 		     uid);
 		error_code = SLURM_ERROR;
 	}
-	if (slurmctld_config.submissions_disabled) {
+	if (select_serial == -1) {
+		if (xstrcmp(slurmctld_conf.select_type, "select/serial"))
+			select_serial = 0;
+		else
+			select_serial = 1;
+	}
+	if (slurmctld_config.submissions_disabled || (select_serial == 1)) {
 		info("Submissions disabled on system");
 		error_code = ESLURM_SUBMISSIONS_DISABLED;
 	}
@@ -3929,6 +3943,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 				jobid_hostset = hostset_create(tmp_str);
 			job_ptr->pack_job_id     = pack_job_id;
 			job_ptr->pack_job_offset = pack_job_offset++;
+			job_ptr->batch_flag      = 1;
 			list_append(submit_job_list, job_ptr);
 		}
 

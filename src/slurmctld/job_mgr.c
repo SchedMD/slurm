@@ -7870,8 +7870,9 @@ void job_time_limit(void)
 			prolog = job_ptr->details->prolog_running;
 		if ((prolog == 0) && IS_JOB_CONFIGURING(job_ptr) &&
 		    test_job_nodes_ready(job_ptr)) {
-			info("%s: Configuration for job %u is complete",
-			      __func__, job_ptr->job_id);
+			char job_id_buf[JBUFSIZ];
+			info("%s: Configuration for %s complete", __func__,
+			     jobid2fmt(job_ptr, job_id_buf,sizeof(job_id_buf)));
 			job_config_fini(job_ptr);
 			if (job_ptr->bit_flags & NODE_REBOOT) {
 				job_ptr->bit_flags &= (~NODE_REBOOT);
