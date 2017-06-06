@@ -62,6 +62,7 @@
 <li><a href="#sbatch_srun">What is the difference between the sbatch
   and srun commands?</a></li>
 <li><a href="#squeue_color">Can squeue output be color coded?</a></li>
+<li><a href="#x11">Can Slurm export an X11 display on an allocated compute node?</a></li>
 </ol>
 
 <h2>For Administrators</h2>
@@ -1056,6 +1057,46 @@ regex white:default ^JOBID.*
 </pre>
 <img src="squeue_color.png" width=600>
 
+<p><a name="x11"><b>33. Can Slurm export an X11 display on an allocated compute node?</b></a><br>
+You will need to build and install an optional SPANK plugin for that functionality
+today. The functionality should be provided natively in Slurm soon. Instructions
+to build and install the plugin follow. Update the Slurm installation path as needed.</p>
+<pre>
+# Maybe obvious, but don't forget the -X on ssh
+$ ssh -X alex@testserver.com
+
+# Get the plugin
+$ mkdir git
+$ cd git
+$ git clone https://github.com/hautreux/slurm-spank-x11.git
+$ cd slurm-spank-x11
+
+# Manually edit the X11_LIBEXEC_PROG macro definition
+$ vi slurm-spank-x11.c
+$ vi slurm-spank-x11-plug.c
+$ grep "define X11_" slurm-spank-x11.c
+#define X11_LIBEXEC_PROG "/opt/slurm/17.02/libexec/slurm-spank-x11"
+$ grep "define X11_LIBEXEC_PROG" slurm-spank-x11-plug.c
+#define X11_LIBEXEC_PROG "/opt/slurm/17.02/libexec/slurm-spank-x11"
+
+
+# Compile
+$ gcc -g -o slurm-spank-x11 slurm-spank-x11.c
+$ gcc -g -I/opt/slurm/17.02/include -shared -fPIC -o x11.so slurm-spank-x11-plug.c
+
+# Install
+$ mkdir -p /opt/slurm/17.02/libexec
+$ install -m 755 slurm-spank-x11 /opt/slurm/17.02/libexec
+$ install -m 755 x11.so /opt/slurm/17.02/lib/slurm
+
+# Configure
+$ echo -e "optional\tx11.so" >> /opt/slurm/17.02/etc/plugstack.conf
+$ cd ~/tests
+
+# Run
+$ srun -n1 --pty --x11 xclock
+adam@node1's password:
+</pre>
 
 <p class="footer"><a href="#top">top</a></p>
 
@@ -2194,6 +2235,6 @@ slurmctld for those changes to be recognized.
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 12 May 2017</p>
+<p style="text-align:center;">Last modified 6 June 2017</p>
 
 <!--#include virtual="footer.txt"-->
