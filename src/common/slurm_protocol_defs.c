@@ -238,7 +238,7 @@ extern int slurm_char_list_copy(List dst, List src)
 /* returns number of objects added to list */
 extern int slurm_addto_char_list(List char_list, char *names)
 {
-	int i = 0, start = 0;
+	int i = 0, start = 0, cnt = 0;
 	char *name = NULL;
 	ListIterator itr = NULL;
 	char quote_c = '\0';
@@ -263,6 +263,7 @@ extern int slurm_addto_char_list(List char_list, char *names)
 			i++;
 		}
 		start = i;
+		cnt = list_count(char_list);
 		while (names[i]) {
 			//info("got %d - %d = %d", i, start, i-start);
 			if (quote && (names[i] == quote_c))
@@ -366,7 +367,8 @@ extern int slurm_addto_char_list(List char_list, char *names)
 			i++;
 		}
 
-		if (i-start) {
+		/* check for empty strings user='' etc */
+		if ((cnt == list_count(char_list)) || (i - start)) {
 			name = xstrndup(names+start, (i-start));
 			/* If we get a duplicate remove the
 			 * first one and tack this on the end.

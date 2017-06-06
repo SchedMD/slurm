@@ -130,6 +130,8 @@ static void *_monitor(void *arg)
 	if (rc == ETIMEDOUT) {
 		char entity[24], time_str[24];
 		time_t now = time(NULL);
+		int rc;
+
 		_call_external_program(job);
 
 		if (job->stepid == SLURM_BATCH_SCRIPT) {
@@ -144,16 +146,17 @@ static void *_monitor(void *arg)
 		}
 		slurm_make_time_str(&now, time_str, sizeof(time_str));
 
-		if (job->state != SLURMSTEPD_STEP_RUNNING) {
+		if (job->state < SLURMSTEPD_STEP_RUNNING) {
 			error("*** %s STEPD TERMINATED ON %s AT %s DUE TO JOB NOT RUNNING ***",
 			      entity, job->node_name, time_str);
+			rc = ESLURMD_JOB_NOTRUNNING;
 		} else {
 			error("*** %s STEPD TERMINATED ON %s AT %s DUE TO JOB NOT ENDING WITH SIGNALS ***",
 			      entity, job->node_name, time_str);
+			rc = ESLURMD_KILL_TASK_FAILED;
 		}
 
-		stepd_cleanup(NULL, job, NULL, NULL, SLURM_ERROR, 0);
-		abort();
+	        exit(stepd_cleanup(NULL, job, NULL, NULL, rc, 0));
 	} else if (rc != 0) {
 		error("Error waiting on condition in _monitor: %m");
 	}

@@ -164,6 +164,13 @@ documents those changes that are of interest to users and administrators.
     to a insufficient priviledges.
  -- Add warning about libcurl-devel not being installed during configure.
  -- Streamline job purge by handling file deletion on a separate thread.
+ -- Always set RLIMIT_CORE to the maximum permitted for slurmd, to ensure
+    core files are created even on non-developer builds.
+ -- Fix --ntasks-per-core option/environment variable parsing to set
+    the requested value, instead of always setting one.
+ -- If trying to cancel a step that hasn't started yet for some reason return
+    a good return code.
+ -- Fix issue with sacctmgr show where user=''
 
 * Changes in Slurm 17.02.3
 ==========================

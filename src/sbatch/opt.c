@@ -1856,7 +1856,7 @@ static void _set_options(int argc, char **argv)
 							optarg, true);
 			setenvf(NULL, "SLURM_NTASKS_PER_CORE", "%d",
 				opt.ntasks_per_core);
-			opt.ntasks_per_core = true;
+			opt.ntasks_per_core_set = true;
 			break;
 		case LONG_OPT_HINT:
 			if (!optarg)
@@ -1871,7 +1871,7 @@ static void _set_options(int argc, char **argv)
 				exit(error_exit);
 			}
 			opt.hint_set = true;
-			opt.ntasks_per_core = true;
+			opt.ntasks_per_core_set = true;
 			opt.threads_per_core_set = true;
 			break;
 		case LONG_OPT_BLRTS_IMAGE:
