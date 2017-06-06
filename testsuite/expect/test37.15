@@ -1,0 +1,409 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test federated scontrol suspend <joblist>
+#
+# Reqs:    1. Using slurmdbd accounting storage type and is up
+#          2. fed_slurm_base is defined in globals.local - set to directory that
+#          has access to each federation configure (fedc1, fedc2, fedc3).
+#          Eg.
+#          fedr/slurm/ (src)
+#          fedr/fed1/bin
+#          fedr/fed1/sbin
+#          fedr/fed1/etc
+#          fedr/fed1/...
+#          fedr/fed2/...
+#          fedr/fed3/...
+#          3. controllers are up and running.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2017 SchedMD LLC.
+# Written by Isaac Hartung <ihartung@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+source ./globals
+source ./globals_accounting
+source ./globals_federation
+
+set test_id      "37.15"
+set exit_code    0
+set fed_name     "feda"
+set user_name    ""
+set srun_job_cnt 0
+set my_sbatch    "${fed_slurm_base}/$fedc1/bin/sbatch"
+set my_squeue    "${fed_slurm_base}/$fedc1/bin/squeue"
+set my_scontrol  "${fed_slurm_base}/$fedc1/bin/scontrol"
+
+set eol "\r\n"
+
+print_header $test_id
+
+#
+# Check accounting config and bail if not found.
+#
+
+if { [test_account_storage] == 0 } {
+	log_warn "This test can't be run without a usable AccountStorageType"
+	exit 0
+}
+
+if { [string compare [check_accounting_admin_level] "Administrator"] } {
+	log_warn "This test can't be run without being an Accounting administrator.\n \
+	 	  Use: sacctmgr mod user \$USER set admin=admin."
+	exit 0
+}
+
+proc sbatch { options } {
+	global number bin_sleep my_sbatch fedc1 fedc2 fedc3
+
+	set matches 0
+	set job_id 0
+	set command "$my_sbatch -N10 --exclusive -o/dev/null "
+	append command $options
+	append command " --wrap \"sleep 300\""
+	set regex "Submitted batch job ($number).+"
+	spawn {*}$command
+	expect {
+		-re "$regex" {
+			incr matches
+			set job_id $expect_out(1,string)
+		}
+		timeout {
+			log_error "sbatch not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		log_error "batch submit failure: expected $regex"
+		end_it 1
+	}
+
+	return $job_id
+}
+
+proc squeue { fed regex } {
+	global my_squeue
+
+	set matches 0
+	set command "$my_squeue --noheader -a -M$fed"
+#	send_user [eval $command]
+#	send_user "\n\n"
+#	return
+	spawn {*}$command
+	expect {
+		-re "$regex" {
+			incr matches
+		}
+	}
+	if {$matches != 1} {
+		log_error "unexpected error in squeue. expected $regex"
+		end_it 1
+	}
+}
+
+proc scontrol { command job_id option regex } {
+	global my_scontrol
+
+	set matches 0
+	set command "$my_scontrol $command $job_id $option"
+	spawn {*}$command
+	expect {
+		-re "$regex" {
+			incr matches
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		log_error "unexpected error in scontrol. expected $regex"
+		end_it 1
+	}
+
+	sleep 2
+}
+
+proc cancel_all_jobs { } {
+	global scancel user_name fedc1 fedc2 fedc3
+
+	spawn $scancel -M$fedc1,$fedc2,$fedc3 --user $user_name
+	expect {
+		eof {
+			wait
+		}
+	}
+	sleep 5
+}
+
+proc cleanup { } {
+	global scancel fed_name user_name bin_rm file_in fedc1 fedc2 fedc3
+	global test_id bin_bash my_sacctmgr
+
+	cancel_all_jobs
+	exec $bin_bash -c "$bin_rm -f test$test_id*.out"
+
+	return [delete_federations $fed_name]
+}
+
+proc end_it { exit_code } {
+	global test_id my_squeue
+	cleanup
+	if {$exit_code == 0} {
+		print_success $test_id
+	}
+	exit $exit_code
+}
+
+#start test
+
+if {[test_federation_setup]} {
+	log_warn "WARNING: This test can't be run without fed_slurm_base,\
+		fedc1, fedc2, fedc3 setup in globals.local."
+	exit 0
+}
+
+if {[test_cluster_up $fedc1] ||
+    [test_cluster_up $fedc2] ||
+    [test_cluster_up $fedc3]} {
+	end_it 1
+}
+
+set user_name [get_my_user_name]
+
+# Remove existing setup
+if {[cleanup] != 0} {
+	log_error "failed to cleanup"
+	end_it 1
+}
+
+# add clusters to federation
+if {[setup_federation $fed_name]} {
+	log_error "failed to setup federation"
+	end_it 1
+}
+
+send_user "\n################################################################\n"
+send_user "Setup cluster features"
+send_user "\n################################################################\n"
+
+set matches 0
+set my_pid [spawn $sacctmgr -i modify cluster $fedc1 set features=fa]
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Feature\\s+=\\s+fa" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$fedc1$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr mod not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 4} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+set matches 0
+set my_pid [spawn $sacctmgr -i modify cluster $fedc2 set features=fb]
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Feature\\s+=\\s+fb" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$fedc2$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr mod not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 4} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+set matches 0
+set my_pid [spawn $sacctmgr -i modify cluster $fedc3 set features=fc]
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Feature\\s+=\\s+fc" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$fedc3$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr mod not responding\n"
+		slow_kill $my_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$exit_code || $matches != 4} {
+	send_user "$matches FAILURE: unexpected error.\n"
+	end_it 1
+}
+
+send_user "\n################################################################\n"
+send_user "Test scontrol suspend within federation"
+send_user "\n################################################################\n"
+
+cancel_all_jobs
+
+set jid(0) [sbatch "-M$fedc1"]
+set jid(1) [sbatch ""]
+set jid(2) [sbatch ""]
+
+wait_for_fed_job $jid(0) RUNNING $fedc1
+set job2_cluster [wait_for_fed_job $jid(1) RUNNING $fedc2,$fedc3]
+set job3_cluster [wait_for_fed_job $jid(2) RUNNING $fedc2,$fedc3]
+
+# Suspend from origin should get routed to $job2_cluster
+scontrol "suspend" $jid(1) "" ""
+squeue $job2_cluster "$jid(1).+S"
+scontrol "resume" $jid(1) "" ""
+squeue $job2_cluster "$jid(1).+R"
+
+# Suspend from cluster running the job, should just suspend it
+scontrol "suspend" $jid(1) "-M$job2_cluster" ""
+squeue $job2_cluster "$jid(1).+S"
+scontrol "resume" $jid(1) "-M$job2_cluster"  ""
+squeue $job2_cluster "$jid(1).+R"
+
+# Suspend from cluster that doesn't know about job. Should get routed to origin
+# then to the running cluster
+scontrol "suspend" $jid(1) "-M$job3_cluster" ""
+squeue $job2_cluster "$jid(1).+S"
+scontrol "resume" $jid(1) "-M$job3_cluster"  ""
+squeue $job2_cluster "$jid(1).+R"
+
+# Suspend origin job on origin cluster
+scontrol "suspend" $jid(0) "-M$fedc3" ""
+squeue $fedc1 "$jid(0).+S"
+scontrol "resume" $jid(0) "-M$fedc3"  ""
+squeue $fedc1 "$jid(0).+R"
+
+exec $scancel $jid(1)
+
+set matches 0
+set command "$my_sbatch -N10 --exclusive -a1-15 -o/dev/null "
+append command " -M$job2_cluster"
+append command " --wrap \"sleep 300\""
+set regex "Submitted batch job ($number).+"
+spawn {*}$command
+expect {
+	-re "$regex" {
+		incr matches
+		set jid(1) $expect_out(1,string)
+	}
+	timeout {
+		log_error "sbatch not responding"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	log_error "batch submit failure: expected $regex"
+	end_it 1
+}
+
+wait_for_fed_job $jid(1)_1 RUNNING $job2_cluster
+
+scontrol "suspend" "$jid(1)_\[2-15\]" "-M$fedc1" "pending"
+scontrol "suspend" "$jid(1)_\[2-15\]" "-M$fedc2" "pending"
+scontrol "suspend" "$jid(1)_\[2-15\]" "-M$fedc3" "pending"
+
+# Suspend from origin should get routed to $job2_cluster
+scontrol "suspend" "$jid(1)_1" "-M$fedc1" ""
+squeue $job2_cluster "$jid(1)_1.+S"
+
+wait_for_fed_job $jid(1)_2 RUNNING $job2_cluster
+
+# Suspend from cluster running the job, should just suspend it
+scontrol "suspend" "$jid(1)_2" "-M$job2_cluster" ""
+squeue $job2_cluster "$jid(1)_1.+S"
+
+wait_for_fed_job $jid(1)_3 RUNNING $job2_cluster
+
+# Suspend from cluster that doesn't know about job. Should get routed to origin
+# then to the running cluster
+scontrol "suspend" "$jid(1)_3" "-M$job3_cluster" ""
+squeue $job2_cluster "$jid(1)_3.+S"
+
+
+scontrol "resume"  "$jid(1)_1" "-M$fedc1" ""
+squeue $job2_cluster "$jid(1)_1.+R"
+scontrol "resume"  "$jid(1)_2" "-M$fedc2" ""
+squeue $job2_cluster "$jid(1)_2.+R"
+scontrol "resume"  "$jid(1)_3" "-M$fedc3" ""
+squeue $job2_cluster "$jid(1)_3.+R"
+
+
+# All Done
+end_it 0
