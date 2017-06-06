@@ -192,6 +192,10 @@ int main(int argc, char **argv)
 		exit(error_exit);
 	}
 
+	if (job_req_list && is_alps_cray_system()) {
+		info("Heterogeneous jobs not supported on Cray/ALPS systems");
+		exit(1);
+	}
 	if (_check_cluster_specific_settings(desc) != SLURM_SUCCESS)
 		exit(error_exit);
 

@@ -238,6 +238,8 @@ components of a heterogeneous job.</p>
 
 <p>Heterogeneous jobs are not supported with Slurm's select/serial plugin.</p>
 
+<p>Heterogeneous jobs are not supported Cray ALPS systems.</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 6 June 2017</p>
