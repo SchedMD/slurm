@@ -532,20 +532,21 @@ extern time_t parse_time(char *time_str, int past)
 			time_t later;
 			struct tm *later_tm;
 			for (i=(pos+3); ; i++) {
+				pos += 2;
+				if ((time_str[i] == '\0')
+				    || (time_str[i] == '\n')) {
+					break;
+				}
 				if (time_str[i] == '+') {
 					pos += i;
 					if (_get_delta(time_str, &pos, &delta))
 						goto prob;
 					break;
 				}
-				if (isblank((int)time_str[i]))
+				if (isblank((int)time_str[i])) {
+					pos += 1;
 					continue;
-				if ((time_str[i] == '\0')
-				    || (time_str[i] == '\n')) {
-					pos += (i-1);
-					break;
-				}
-				pos += i;
+                }
 				goto prob;
 			}
 			later    = time_now + delta;

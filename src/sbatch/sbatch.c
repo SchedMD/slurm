@@ -344,15 +344,15 @@ static char *_find_quote_token(char *tmp, char *sep, char **last)
 				quote_double++;
 		} else if (((start[i] == sep[0]) || (start[i] == '\0')) &&
 			   (quote_single == 0) && (quote_double == 0)) {
+			if (start[i] == '\0')
+				*last = &start[i];
+			else
+				*last = &start[i] + 1;
 			if (((start[0] == '\'') && (start[i-1] == '\'')) ||
 			    ((start[0] == '\"') && (start[i-1] == '\"'))) {
 				start++;
 				i -= 2;
 			}
-			if (start[i] == '\0')
-				*last = &start[i];
-			else
-				*last = &start[i] + 1;
 			start[i] = '\0';
 			return start;
 		} else if (start[i] == '\0') {
