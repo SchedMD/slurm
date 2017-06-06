@@ -479,12 +479,12 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.jobid_set)
 		desc->job_id = opt.jobid;
 	desc->contiguous = opt.contiguous ? 1 : 0;
-	if (opt.core_spec != (uint16_t) NO_VAL)
+	if (opt.core_spec != NO_VAL16)
 		desc->core_spec = opt.core_spec;
-	desc->features = opt.constraints;
-	desc->cluster_features = opt.c_constraints;
+	desc->features = xstrdup(opt.constraints);
+	desc->cluster_features = xstrdup(opt.c_constraints);
 	desc->immediate = opt.immediate;
-	desc->gres = opt.gres;
+	desc->gres = xstrdup(opt.gres);
 	if (opt.job_name != NULL)
 		desc->name = xstrdup(opt.job_name);
 	else
@@ -492,9 +492,9 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->reservation  = xstrdup(opt.reservation);
 	desc->wckey  = xstrdup(opt.wckey);
 
-	desc->req_nodes = opt.nodelist;
-	desc->exc_nodes = opt.exc_nodes;
-	desc->partition = opt.partition;
+	desc->req_nodes = xstrdup(opt.nodelist);
+	desc->exc_nodes = xstrdup(opt.exc_nodes);
+	desc->partition = xstrdup(opt.partition);
 	desc->profile = opt.profile;
 	if (opt.licenses)
 		desc->licenses = xstrdup(opt.licenses);
@@ -514,14 +514,14 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.array_inx)
 		desc->array_inx = xstrdup(opt.array_inx);
 	if (opt.mem_bind)
-		desc->mem_bind       = opt.mem_bind;
+		desc->mem_bind       = xstrdup(opt.mem_bind);
 	if (opt.mem_bind_type)
 		desc->mem_bind_type  = opt.mem_bind_type;
 	if (opt.plane_size != NO_VAL)
 		desc->plane_size     = opt.plane_size;
 	desc->task_dist  = opt.distribution;
 
-	desc->network = opt.network;
+	desc->network = xstrdup(opt.network);
 	if (opt.nice != NO_VAL)
 		desc->nice = NICE_OFFSET + opt.nice;
 	if (opt.priority)
@@ -549,7 +549,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.geometry[0] != (uint16_t) NO_VAL) {
 		int dims = slurmdb_setup_cluster_dims();
 
-		for (i=0; i<dims; i++)
+		for (i = 0; i < dims; i++)
 			desc->geometry[i] = opt.geometry[i];
 	}
 
@@ -610,7 +610,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->time_limit = opt.time_limit;
 	if (opt.time_min  != NO_VAL)
 		desc->time_min = opt.time_min;
-	if (opt.shared != (uint16_t) NO_VAL)
+	if (opt.shared != NO_VAL16)
 		desc->shared = opt.shared;
 
 	desc->wait_all_nodes = opt.wait_all_nodes;
@@ -628,9 +628,9 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 			exit(1);
 	}
 	if (opt.export_env == NULL) {
-		env_array_merge(&desc->environment, (const char **)environ);
+		env_array_merge(&desc->environment, (const char **) environ);
 	} else if (!xstrcasecmp(opt.export_env, "ALL")) {
-		env_array_merge(&desc->environment, (const char **)environ);
+		env_array_merge(&desc->environment, (const char **) environ);
 	} else if (!xstrcasecmp(opt.export_env, "NONE")) {
 		desc->environment = env_array_create();
 		env_array_merge_slurm(&desc->environment,
@@ -645,19 +645,22 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 				    "SLURM_GET_USER_ENV", "1");
 	}
 
-	if ((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_ARBITRARY) {
+	if ((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_ARBITRARY){
 		env_array_overwrite_fmt(&desc->environment,
 					"SLURM_ARBITRARY_NODELIST",
 					"%s", desc->req_nodes);
 	}
 
 	desc->env_size = envcount(desc->environment);
-	desc->argv = opt.script_argv;
-	desc->argc = opt.script_argc;
-	desc->std_err  = opt.efname;
-	desc->std_in   = opt.ifname;
-	desc->std_out  = opt.ofname;
-	desc->work_dir = opt.cwd;
+
+	desc->argc     = opt.script_argc;
+	desc->argv     = xmalloc(sizeof(char *) * opt.script_argc);
+	for (i = 0; i < opt.script_argc; i++)
+		desc->argv[i] = xstrdup(opt.script_argv[i]);
+	desc->std_err  = xstrdup(opt.efname);
+	desc->std_in   = xstrdup(opt.ifname);
+	desc->std_out  = xstrdup(opt.ofname);
+	desc->work_dir = xstrdup(opt.cwd);
 	if (opt.requeue != NO_VAL)
 		desc->requeue = opt.requeue;
 	if (opt.open_mode)
@@ -666,11 +669,14 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->acctg_freq = xstrdup(opt.acctg_freq);
 
 	desc->ckpt_dir = opt.ckpt_dir;
-	desc->ckpt_interval = (uint16_t)opt.ckpt_interval;
+	desc->ckpt_interval = (uint16_t) opt.ckpt_interval;
 
 	if (opt.spank_job_env_size) {
-		desc->spank_job_env      = opt.spank_job_env;
 		desc->spank_job_env_size = opt.spank_job_env_size;
+		desc->spank_job_env =
+			xmalloc(sizeof(char *) * opt.spank_job_env_size);
+		for (i = 0; i < opt.spank_job_env_size; i++)
+			desc->spank_job_env[i] = xstrdup(opt.spank_job_env[i]);
 	}
 
 	desc->cpu_freq_min = opt.cpu_freq_min;
