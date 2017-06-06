@@ -300,7 +300,7 @@ set jid(0) [sbatch "" ""]
 
 set jt "$jid(0)_1"
 
-wait_for_fed_job $jt RUNNING $fedc1,$fedc2,$fedc2
+wait_for_fed_job $jt RUNNING $fedc1,$fedc2,$fedc3
 
 set r0  "(\\s+($jid(0))_(\[1-9\]|10).+$eol)"
 set r1  "(\\s+($jid(0))_\\\[11-15\\\].+$eol)"
@@ -323,14 +323,14 @@ squeue "$regf1$regf2$regf3"
 
 set jt "$jid(0)_15"
 
-wait_for_fed_job $jt RUNNING $fedc1,$fedc2,$fedc2
+wait_for_fed_job $jt RUNNING $fedc1,$fedc2,$fedc3
 
 sbatch "--cluster-constraint=fb" "sbatch: error: federated job arrays must run on local cluster${eol}sbatch: error: Batch job submission failed: No eligible clusters for federated job${eol}"
 set jid(2) [sbatch "--cluster-constraint=fb -Mfed2" ""]
 
 set jt "$jid(2)_1"
 
-wait_for_fed_job $jt RUNNING $fedc1,$fedc2,$fedc2
+wait_for_fed_job $jt RUNNING $fedc1,$fedc2,$fedc3
 
 set r0  "(\\s+($jid(0))_1\[1-5\].+$eol)"
 set r1  "(\\s+($jid(1))_\[1-5\].+$eol)"
