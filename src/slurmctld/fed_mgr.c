@@ -2947,7 +2947,8 @@ static uint64_t _get_viable_sibs(char *req_clusters, uint64_t feature_sibs,
 		      &viable_sibs);
 
 	if (is_array_job) { /* lock array jobs to local cluster */
-		uint32_t tmp_viable = viable_sibs & fed_mgr_cluster_rec->fed.id;
+		uint32_t tmp_viable = viable_sibs &
+			FED_SIBLING_BIT(fed_mgr_cluster_rec->fed.id);
 		if (viable_sibs && !tmp_viable) {
 			info("federated job arrays must run on local cluster");
 			if (err_msg) {
