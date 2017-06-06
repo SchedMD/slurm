@@ -2383,6 +2383,147 @@ static struct job_record *_pack_job_ready(struct job_record *job_ptr)
 	return pack_leader;
 }
 
+/* No need for details about every allocation, just set pack job env vars */
+static void _set_pack_env(struct job_record *pack_leader,
+			  batch_job_launch_msg_t *launch_msg_ptr)
+{
+	struct job_record *pack_job;
+	int i, pack_offset = 0;
+	ListIterator iter;
+
+	if (pack_leader->pack_job_id == 0)
+		return;
+	if (!launch_msg_ptr->environment) {
+		error("Job %u lacks environment", pack_leader->pack_job_id);
+		return;
+	}
+	if (!pack_leader->pack_job_list) {
+		error("Job pack leader %u lacks pack_job_list",
+		      pack_leader->pack_job_id);
+		return;
+	}
+
+	/* "environment" needs NULL terminator */
+	xrealloc(launch_msg_ptr->environment,
+		 sizeof(char *) * (launch_msg_ptr->envc + 1));
+	iter = list_iterator_create(pack_leader->pack_job_list);
+	while ((pack_job = (struct job_record *) list_next(iter))) {
+		uint64_t tmp_mem = 0;
+		char *tmp_str = NULL;
+		if (pack_job->account) {
+			(void) env_array_overwrite_pack_fmt(
+					&launch_msg_ptr->environment,
+					"SLURM_JOB_ACCOUNT",
+					pack_offset, "%s", pack_job->account);
+		}
+
+		if (pack_job->job_resrcs) {
+			tmp_str = uint32_compressed_to_str(
+					pack_job->job_resrcs->cpu_array_cnt,
+					pack_job->job_resrcs->cpu_array_value,
+					pack_job->job_resrcs->cpu_array_reps);
+			(void) env_array_overwrite_pack_fmt(
+					&launch_msg_ptr->environment,
+					"SLURM_JOB_CPUS_PER_NODE",
+					pack_offset, "%s", tmp_str);
+			xfree(tmp_str);
+		}
+		(void) env_array_overwrite_pack_fmt(
+				&launch_msg_ptr->environment,
+				"SLURM_JOB_ID",
+				pack_offset, "%u", pack_job->job_id);
+		(void) env_array_overwrite_pack_fmt(
+				&launch_msg_ptr->environment,
+				"SLURM_JOB_NAME",
+				pack_offset, "%s", pack_job->name);
+		(void) env_array_overwrite_pack_fmt(
+				&launch_msg_ptr->environment,
+				"SLURM_JOB_NODELIST",
+				pack_offset, "%s", pack_job->nodes);
+		(void) env_array_overwrite_pack_fmt(
+				&launch_msg_ptr->environment,
+				"SLURM_JOB_NUM_NODES",
+				pack_offset, "%u", pack_job->node_cnt);
+		if (pack_job->partition) {
+			(void) env_array_overwrite_pack_fmt(
+					&launch_msg_ptr->environment,
+					"SLURM_JOB_PARTITION",
+					pack_offset, "%s", pack_job->partition);
+		}
+		if (pack_job->qos_ptr) {
+			slurmdb_qos_rec_t *qos;
+			char *qos_name;
+
+			qos = (slurmdb_qos_rec_t *) pack_job->qos_ptr;
+			if (!xstrcmp(qos->description, "Normal QOS default"))
+				qos_name = "normal";
+			else
+				qos_name = qos->description;
+			(void) env_array_overwrite_pack_fmt(
+					&launch_msg_ptr->environment,
+					"SLURM_JOB_QOS",
+					pack_offset, "%s", qos_name);
+		}
+		if (pack_job->resv_name) {
+			(void) env_array_overwrite_pack_fmt(
+					&launch_msg_ptr->environment,
+					"SLURM_JOB_RESERVATION",
+					pack_offset, "%s", pack_job->resv_name);
+		}
+		if (pack_job->details)
+			tmp_mem = pack_job->details->pn_min_memory;
+		if (tmp_mem & MEM_PER_CPU) {
+			tmp_mem &= (~MEM_PER_CPU);
+			(void) env_array_overwrite_pack_fmt(
+					&launch_msg_ptr->environment,
+					"SLURM_MEM_PER_CPU",
+					pack_offset, "%"PRIu64"", tmp_mem);
+		} else if (tmp_mem) {
+			(void) env_array_overwrite_pack_fmt(
+					&launch_msg_ptr->environment,
+					"SLURM_MEM_PER_NODE",
+					pack_offset, "%"PRIu64"", tmp_mem);
+		}
+		if (pack_job->alias_list) {
+			(void) env_array_overwrite_pack_fmt(
+					&launch_msg_ptr->environment,
+					"SLURM_NODE_ALIASES", pack_offset,
+					"%s", pack_job->alias_list);
+		}
+		if (pack_job->details) {
+			(void) env_array_overwrite_pack_fmt(
+					&launch_msg_ptr->environment,
+					"SLURM_NTASKS", pack_offset,
+					"%u", pack_job->details->num_tasks);
+		}
+//FIXME: Add these two env vars
+#if 0
+#if HAVE_BG
+		(void) env_array_overwrite_pack_fmt(
+				&launch_msg_ptr->environment,
+				"SLURM_BG_NUM_NODES", pack_offset,
+				"%u", step_layout_req.num_hosts);
+#endif
+		tmp_str = _uint16_array_to_str(step_layout->node_cnt,
+					   step_layout->tasks);
+		slurm_step_layout_destroy(step_layout);
+		(void) env_array_overwrite_pack_fmt(
+				&launch_msg_ptr->environment,
+				"SLURM_TASKS_PER_NODE", pack_offset,
+				"%s", tmp_str);
+		xfree(tmp_str);
+#endif
+		pack_offset++;
+	}
+	list_iterator_destroy(iter);
+	(void) env_array_overwrite_fmt(&launch_msg_ptr->environment,
+				       "SLURM_PACK_SIZE", "%d", pack_offset);
+
+	for (i = 0; launch_msg_ptr->environment[i]; i++)
+		;
+	launch_msg_ptr->envc = i;
+}
+
 /*
  * launch_job - send an RPC to a slurmd to initiate a batch job
  * IN job_ptr - pointer to job that will be initiated
@@ -2412,6 +2553,8 @@ extern void launch_job(struct job_record *job_ptr)
 	launch_msg_ptr = build_launch_job_msg(job_ptr, protocol_version);
 	if (launch_msg_ptr == NULL)
 		return;
+	if (job_ptr->pack_job_id)
+		_set_pack_env(job_ptr, launch_msg_ptr);
 
 	agent_arg_ptr = (agent_arg_t *) xmalloc(sizeof(agent_arg_t));
 	agent_arg_ptr->protocol_version = protocol_version;
