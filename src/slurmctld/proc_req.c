@@ -3443,7 +3443,7 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 		int db_inx_max_cnt = 5, i=0;
 		/* do RPC call */
 		dump_job_desc(job_desc_msg);
-		/* Insure everything that may be written to database is lower
+		/* Ensure everything that may be written to database is lower
 		 * case */
 		xstrtolower(job_desc_msg->account);
 		xstrtolower(job_desc_msg->wckey);
