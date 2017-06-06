@@ -3824,9 +3824,9 @@ send_msg:
 static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 {
 	static int select_serial = -1;
-	static int active_rpc_cnt = 0, alloc_only = 0;
+	static int active_rpc_cnt = 0;
 	ListIterator iter;
-	int error_code = SLURM_SUCCESS;
+	int error_code = SLURM_SUCCESS, alloc_only = 0;
 	DEF_TIMERS;
 	uint32_t pack_job_id = 0, pack_job_offset = 0;;
 	struct job_record *job_ptr = NULL, *first_job_ptr = NULL;

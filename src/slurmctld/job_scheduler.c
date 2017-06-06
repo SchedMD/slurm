@@ -2323,6 +2323,66 @@ extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr,
 	return launch_msg_ptr;
 }
 
+/* Validate the job is ready for launch
+ * RET pointer to batch job to launch or NULL if not ready yet */
+static struct job_record *_pack_job_ready(struct job_record *job_ptr)
+{
+	struct job_record *pack_leader, *pack_job;
+	ListIterator iter;
+
+	if (job_ptr->pack_job_id == 0)	/* Not a pack job */
+		return job_ptr;
+
+	pack_leader = find_job_record(job_ptr->pack_job_id);
+	if (!pack_leader) {
+		error("Job pack leader %u not found", job_ptr->pack_job_id);
+		return NULL;
+	}
+	if (!pack_leader->pack_job_list) {
+		error("Job pack leader %u lacks pack_job_list",
+		      job_ptr->pack_job_id);
+		return NULL;
+	}
+
+	iter = list_iterator_create(pack_leader->pack_job_list);
+	while ((pack_job = (struct job_record *) list_next(iter))) {
+#ifndef HAVE_BG
+		uint8_t prolog;
+		prolog = 0;
+		if (job_ptr->details)
+			prolog = pack_job->details->prolog_running;
+		else
+			prolog = 0;
+		if (prolog || IS_JOB_CONFIGURING(pack_job) ||
+		    !test_job_nodes_ready(pack_job)) {
+			pack_leader = NULL;
+			break;
+		}
+#endif
+		if ((job_ptr->batch_flag == 0) ||
+		    (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))) {
+			pack_leader = NULL;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_HETERO_JOBS) {
+		if (pack_leader) {
+			info("Batch pack job %u being launched",
+			     pack_leader->job_id);
+		} else if (pack_job) {
+			info("Batch pack job %u waiting for job %u to be ready",
+			     pack_leader->job_id, pack_job->job_id);
+		} else {
+			error("Batch pack leader %u has empty pack_job_list",
+			      pack_leader->job_id);
+		}
+	}
+
+	return pack_leader;
+}
+
 /*
  * launch_job - send an RPC to a slurmd to initiate a batch job
  * IN job_ptr - pointer to job that will be initiated
@@ -2332,6 +2392,7 @@ extern void launch_job(struct job_record *job_ptr)
 	batch_job_launch_msg_t *launch_msg_ptr;
 	uint16_t protocol_version = (uint16_t) NO_VAL;
 	agent_arg_t *agent_arg_ptr;
+	struct job_record *launch_job_ptr;
 
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr;
@@ -2344,6 +2405,9 @@ extern void launch_job(struct job_record *job_ptr)
 	if (node_ptr)
 		protocol_version = node_ptr->protocol_version;
 #endif
+	launch_job_ptr = _pack_job_ready(job_ptr);
+	if (!launch_job_ptr)
+		return;
 
 	launch_msg_ptr = build_launch_job_msg(job_ptr, protocol_version);
 	if (launch_msg_ptr == NULL)

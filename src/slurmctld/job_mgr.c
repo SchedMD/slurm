@@ -7865,9 +7865,10 @@ void job_time_limit(void)
 		 * power_node_bitmap so bit_overlap always returns 0
 		 * and erroneously removes the flag.
 		 */
-		prolog = 0;
 		if (job_ptr->details)
 			prolog = job_ptr->details->prolog_running;
+		else
+			prolog = 0;
 		if ((prolog == 0) && IS_JOB_CONFIGURING(job_ptr) &&
 		    test_job_nodes_ready(job_ptr)) {
 			char job_id_buf[JBUFSIZ];
