@@ -351,7 +351,6 @@ static void _opt_default(bool first_pass)
 		opt.user		= uid_to_string(uid);
 		if (xstrcmp(opt.user, "nobody") == 0)
 			fatal("Invalid user id: %u", uid);
-		opt.verbose		= 0;
 		opt.wait		= false;
 		opt.wait_all_nodes	= NO_VAL16;
 		opt.warn_flags		= 0;
@@ -1035,6 +1034,7 @@ extern void process_options_second_pass(int argc, char **argv, int *argc_off,
 
 	if (opt.verbose)
 		_opt_list();
+info("VERBOSE:%d", opt.verbose);
 }
 
 /*
