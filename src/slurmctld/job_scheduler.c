@@ -2606,18 +2606,18 @@ extern void launch_job(struct job_record *job_ptr)
 	if (!launch_job_ptr)
 		return;
 
-	launch_msg_ptr = build_launch_job_msg(job_ptr, protocol_version);
+	launch_msg_ptr = build_launch_job_msg(launch_job_ptr, protocol_version);
 	if (launch_msg_ptr == NULL)
 		return;
-	if (job_ptr->pack_job_id)
-		_set_pack_env(job_ptr, launch_msg_ptr);
+	if (launch_job_ptr->pack_job_id)
+		_set_pack_env(launch_job_ptr, launch_msg_ptr);
 
 	agent_arg_ptr = (agent_arg_t *) xmalloc(sizeof(agent_arg_t));
 	agent_arg_ptr->protocol_version = protocol_version;
 	agent_arg_ptr->node_count = 1;
 	agent_arg_ptr->retry = 0;
 	xassert(job_ptr->batch_host);
-	agent_arg_ptr->hostlist = hostlist_create(job_ptr->batch_host);
+	agent_arg_ptr->hostlist = hostlist_create(launch_job_ptr->batch_host);
 	agent_arg_ptr->msg_type = REQUEST_BATCH_JOB_LAUNCH;
 	agent_arg_ptr->msg_args = (void *) launch_msg_ptr;
 
