@@ -6778,13 +6778,13 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 	}
 
 	/* Only set min and max cpus if overcommit isn't set */
-	if ((job_desc->overcommit == (uint8_t) NO_VAL) &&
-	    (job_desc->min_cpus != NO_VAL) &&
+	if ((job_desc->overcommit == NO_VAL8) &&
+	    (job_desc->min_cpus   != NO_VAL)  &&
+	    (job_desc->num_tasks  != NO_VAL)  &&
 	    (job_desc->num_tasks > job_desc->min_cpus)) {
 		job_desc->min_cpus = job_desc->num_tasks;
-		if (job_desc->cpus_per_task != (uint16_t) NO_VAL)
+		if (job_desc->cpus_per_task != NO_VAL16)
 			job_desc->min_cpus *= job_desc->cpus_per_task;
-
 		/* This is just a sanity check as we wouldn't ever have a
 		 * max_cpus if we didn't have a min_cpus.
 		 */
