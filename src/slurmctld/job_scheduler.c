@@ -2347,12 +2347,16 @@ static struct job_record *_pack_job_ready(struct job_record *job_ptr)
 	iter = list_iterator_create(pack_leader->pack_job_list);
 	while ((pack_job = (struct job_record *) list_next(iter))) {
 #ifndef HAVE_BG
-		uint8_t prolog;
-		prolog = 0;
+		uint8_t prolog = 0;
+#endif
+		if (pack_leader->pack_job_id != pack_job->pack_job_id) {
+			error("%s: Bad pack_job_list for job %u",
+			      __func__, pack_leader->pack_job_id);
+			continue;
+		}
+#ifndef HAVE_BG
 		if (job_ptr->details)
 			prolog = pack_job->details->prolog_running;
-		else
-			prolog = 0;
 		if (prolog || IS_JOB_CONFIGURING(pack_job) ||
 		    !test_job_nodes_ready(pack_job)) {
 			pack_leader = NULL;
@@ -2415,6 +2419,12 @@ static void _set_pack_env(struct job_record *pack_leader,
 		uint32_t num_cpus = 0;
 		uint64_t tmp_mem = 0;
 		char *tmp_str = NULL;
+
+		if (pack_leader->pack_job_id != pack_job->pack_job_id) {
+			error("%s: Bad pack_job_list for job %u",
+			      __func__, pack_leader->pack_job_id);
+			continue;
+		}
 #if HAVE_BG
 		(void) env_array_overwrite_pack_fmt(
 				&launch_msg_ptr->environment,

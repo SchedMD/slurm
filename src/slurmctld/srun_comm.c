@@ -93,6 +93,11 @@ static bool _pending_pack_jobs(struct job_record *job_ptr)
 
 	iter = list_iterator_create(pack_leader->pack_job_list);
 	while ((pack_job = (struct job_record *) list_next(iter))) {
+		if (pack_leader->pack_job_id != pack_job->pack_job_id) {
+			error("%s: Bad pack_job_list for job %u",
+			      __func__, pack_leader->pack_job_id);
+			continue;
+		}
 		if (IS_JOB_PENDING(pack_job)) {
 			pending_job = true;
 			break;
@@ -195,6 +200,11 @@ extern void srun_allocate (uint32_t job_id)
 		job_resp_list = list_create(_free_srun_alloc);
 		iter = list_iterator_create(pack_leader->pack_job_list);
 		while ((pack_job = (struct job_record *) list_next(iter))) {
+			if (pack_leader->pack_job_id != pack_job->pack_job_id) {
+				error("%s: Bad pack_job_list for job %u",
+				      __func__, pack_leader->pack_job_id);
+				continue;
+			}
 			msg_arg = _build_alloc_msg(pack_job);
 			set_remote_working_response(msg_arg, pack_job,
 						    pack_job->origin_cluster);

@@ -3175,6 +3175,11 @@ static void _slurm_rpc_job_pack_alloc_info(slurm_msg_t * msg)
 		resp = list_create(_pack_alloc_list_del);
 		iter = list_iterator_create(job_ptr->pack_job_list);
 		while ((pack_job = (struct job_record *) list_next(iter))) {
+			if (job_ptr->pack_job_id != pack_job->pack_job_id) {
+				error("%s: Bad pack_job_list for job %u",
+				      __func__, job_ptr->pack_job_id);
+				continue;
+			}
 			job_info_resp_msg = build_job_info_resp(pack_job);
 			if (working_cluster_rec) {
 				job_info_resp_msg->working_cluster_rec =

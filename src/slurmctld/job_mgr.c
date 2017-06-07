@@ -3003,30 +3003,35 @@ extern struct job_record *find_job_array_rec(uint32_t array_job_id,
 extern struct job_record *find_job_pack_record(uint32_t job_id,
 					       uint32_t pack_id)
 {
-	struct job_record *job_ptr, *job_pack_ptr;
+	struct job_record *pack_leader, *pack_job;
 	ListIterator iter;
 
-	job_ptr = job_hash[JOB_HASH_INX(job_id)];
-	while (job_ptr) {
-		if (job_ptr->job_id == job_id)
+	pack_leader = job_hash[JOB_HASH_INX(job_id)];
+	while (pack_leader) {
+		if (pack_leader->job_id == job_id)
 			break;
-		job_ptr = job_ptr->job_next;
+		pack_leader = pack_leader->job_next;
 	}
-	if (!job_ptr)
+	if (!pack_leader)
 		return NULL;
-	if (job_ptr->pack_job_offset == pack_id)
-		return job_ptr;
+	if (pack_leader->pack_job_offset == pack_id)
+		return pack_leader;
 
-	if (!job_ptr->pack_job_list)
+	if (!pack_leader->pack_job_list)
 		return NULL;
-	iter = list_iterator_create(job_ptr->pack_job_list);
-	while ((job_pack_ptr = (struct job_record *) list_next(iter))) {
-		if (job_pack_ptr->pack_job_offset == pack_id)
+	iter = list_iterator_create(pack_leader->pack_job_list);
+	while ((pack_job = (struct job_record *) list_next(iter))) {
+		if (pack_leader->pack_job_id != pack_job->pack_job_id) {
+			error("%s: Bad pack_job_list for job %u",
+			      __func__, pack_leader->pack_job_id);
+			continue;
+		}
+		if (pack_job->pack_job_offset == pack_id)
 			break;
 	}
 	list_iterator_destroy(iter);
 
-	return job_pack_ptr;
+	return pack_job;
 }
 
 /*
@@ -4821,16 +4826,21 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t flags,
 }
 
 /* Signal all components of a pack job */
-static int _pack_job_signal(struct job_record *job_ptr, uint16_t signal,
+static int _pack_job_signal(struct job_record *pack_leader, uint16_t signal,
 			    uint16_t flags, uid_t uid, bool preempt)
 {
 	ListIterator iter;
 	int rc = SLURM_SUCCESS, rc1;
-	struct job_record *pack_job_ptr;
+	struct job_record *pack_job;
 
-	iter = list_iterator_create(job_ptr->pack_job_list);
-	while ((pack_job_ptr = (struct job_record *) list_next(iter))) {
-		rc1 = _job_signal(pack_job_ptr, signal, flags, uid, preempt);
+	iter = list_iterator_create(pack_leader->pack_job_list);
+	while ((pack_job = (struct job_record *) list_next(iter))) {
+		if (pack_leader->pack_job_id != pack_job->pack_job_id) {
+			error("%s: Bad pack_job_list for job %u",
+			      __func__, pack_leader->pack_job_id);
+			continue;
+		}
+		rc1 = _job_signal(pack_job, signal, flags, uid, preempt);
 		rc = MAX(rc, rc1);
 	}
 	list_iterator_destroy(iter);
@@ -5398,6 +5408,11 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		rc = SLURM_SUCCESS;
 		iter = list_iterator_create(job_ptr->pack_job_list);
 		while ((job_pack_ptr = (struct job_record *) list_next(iter))) {
+			if (job_ptr->pack_job_id != job_pack_ptr->pack_job_id) {
+				error("%s: Bad pack_job_list for job %u",
+				      __func__, job_ptr->pack_job_id);
+				continue;
+			}
 			rc1 = _job_complete(job_pack_ptr, uid, requeue,
 					    node_fail, job_return_code);
 			if (rc1 != SLURM_SUCCESS)
@@ -8867,13 +8882,13 @@ static int _pack_hetero_job(struct job_record *job_ptr, uint16_t show_flags,
 
 	iter = list_iterator_create(job_ptr->pack_job_list);
 	while ((pack_ptr = (struct job_record *) list_next(iter))) {
-		if (pack_ptr->pack_job_id == job_ptr-> pack_job_id) {
+		if (pack_ptr->pack_job_id == job_ptr->pack_job_id) {
 			pack_job(pack_ptr, show_flags, buffer, protocol_version,
 				 uid);
 			job_cnt++;
 		} else {
-			error("Pack job %u has bad pack_job_list",
-			      job_ptr->job_id);
+			error("%s: Bad pack_job_list for job %u",
+			      __func__, job_ptr->pack_job_id);
 		}
 	}
 	list_iterator_destroy(iter);
@@ -14485,6 +14500,11 @@ static int _job_suspend(struct job_record *job_ptr, uint16_t op, bool indf_susp)
 	if (job_ptr->pack_job_list) {
 		iter = list_iterator_create(job_ptr->pack_job_list);
 		while ((pack_job = (struct job_record *) list_next(iter))) {
+			if (job_ptr->pack_job_id != pack_job->pack_job_id) {
+				error("%s: Bad pack_job_list for job %u",
+				      __func__, job_ptr->pack_job_id);
+				continue;
+			}
 			rc1 = _job_suspend_op(pack_job, op, indf_susp);
 			if (rc1 != SLURM_SUCCESS)
 				rc = rc1;
@@ -14966,6 +14986,11 @@ static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
 	if (job_ptr->pack_job_list) {
 		iter = list_iterator_create(job_ptr->pack_job_list);
 		while ((pack_job = (struct job_record *) list_next(iter))) {
+			if (job_ptr->pack_job_id != pack_job->pack_job_id) {
+				error("%s: Bad pack_job_list for job %u",
+				      __func__, job_ptr->pack_job_id);
+				continue;
+			}
 			rc1 = _job_requeue_op(uid, pack_job, preempt, state);
 			if (rc1 != SLURM_SUCCESS)
 				rc = rc1;
