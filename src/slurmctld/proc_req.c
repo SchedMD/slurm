@@ -1278,6 +1278,11 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 					       min_begin);
 		if (!job_desc_msg->resp_host)
 			job_desc_msg->resp_host = xstrdup(resp_host);
+		if (pack_job_offset) {
+			/* Email notifications disable except for pack leader */
+			job_desc_msg->mail_type = 0;
+			xfree(job_desc_msg->mail_user);
+		}
 		error_code = job_allocate(job_desc_msg, false, false, NULL,
 					  true, uid, &job_ptr, &err_msg,
 					  msg->protocol_version);
@@ -3917,10 +3922,16 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	START_TIMER;	/* Restart after we have locks */
 	iter = list_iterator_create(job_req_list);
 	while ((job_desc_msg = (job_desc_msg_t *) list_next(iter))) {
-		if (alloc_only && job_desc_msg->script) {
+		if (pack_job_offset && job_desc_msg->script) {
 			info("%s: Pack job %u offset %u has script, being ignord",
 			     __func__, pack_job_id, pack_job_offset);
 			xfree(job_desc_msg->script);
+
+		}
+		if (pack_job_offset) {
+			/* Email notifications disable except for pack leader */
+			job_desc_msg->mail_type = 0;
+			xfree(job_desc_msg->mail_user);
 		}
 		error_code = job_allocate(job_desc_msg,
 					  job_desc_msg->immediate, false,
