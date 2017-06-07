@@ -5514,19 +5514,16 @@ static int _part_access_check(struct part_record *part_ptr,
 
 	if ((part_ptr->state_up & PARTITION_SCHED) &&
 	    (job_desc->min_cpus != NO_VAL)) {
-
 		if (job_desc->min_cpus > part_ptr->total_cpus) {
-			info("%s: Job requested too many "
-			     "cpus (%u) of partition %s(%u)", __func__,
-			     job_desc->min_cpus, part_ptr->name,
+			info("%s: Job requested too many CPUs (%u) of partition %s(%u)",
+			     __func__, job_desc->min_cpus, part_ptr->name,
 			     part_ptr->total_cpus);
 			return ESLURM_TOO_MANY_REQUESTED_CPUS;
 		} else if (job_desc->min_cpus >
 			   (part_ptr->max_cpus_per_node *
 			    part_ptr->total_nodes)) {
-			info("%s: Job requested too many "
-			     "cpus (%u) of partition %s(%u)", __func__,
-			     job_desc->min_cpus, part_ptr->name,
+			info("%s: Job requested too many CPUs (%u) of partition %s(%u)",
+			     __func__, job_desc->min_cpus, part_ptr->name,
 			     (part_ptr->max_cpus_per_node *
 			     part_ptr->total_nodes));
 			return ESLURM_TOO_MANY_REQUESTED_CPUS;
@@ -5918,26 +5915,23 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 				    sizeof(time_str_deadline));
 		slurm_make_time_str(&now, time_str_now, sizeof(time_str_now));
 		if (job_desc->deadline < now) {
-			info("_valid_job_part: job's deadline smaller than now "
-			     "(%s < %s)",
-			     time_str_deadline, time_str_now);
+			info("%s: job's deadline smaller than now (%s < %s)",
+			     __func__, time_str_deadline, time_str_now);
 			rc = ESLURM_INVALID_TIME_LIMIT;
 			goto fini;
 		}
 		if ((job_desc->time_min) && (job_desc->time_min != NO_VAL) &&
 		    (job_desc->deadline < (now + job_desc->time_min * 60))) {
-			info("_valid_job_part: job's min_time greater than "
-			     "deadline (%u > %s)",
-			     job_desc->time_min, time_str_deadline);
+			info("%s: job's min_time greater than deadline (%u > %s)",
+			     __func__, job_desc->time_min, time_str_deadline);
 			rc = ESLURM_INVALID_TIME_LIMIT;
 			goto fini;
 		}
 		if ((job_desc->time_min == 0) && (job_desc->time_limit) &&
 		    (job_desc->time_limit != NO_VAL) &&
 		    (job_desc->deadline < (now + job_desc->time_limit * 60))) {
-			info("_valid_job_part: job's time_limit greater than "
-			     "deadline (%u > %s)",
-			     job_desc->time_limit, time_str_deadline);
+			info("%s: job's time_limit greater than deadline (%u > %s)",
+			     __func__, job_desc->time_limit, time_str_deadline);
 			rc = ESLURM_INVALID_TIME_LIMIT;
 			goto fini;
 		}
