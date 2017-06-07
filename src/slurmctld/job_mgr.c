@@ -8589,11 +8589,12 @@ static void _job_purge_start(void)
 /*
  * _list_find_job_old - find old entries in the job list,
  *	see common/list.h for documentation, key is ignored
- * global- job_list - the global partition list
+ * job_entry IN - job pointer
+ * key IN - if not NULL, then skip pack jobs
  */
 static int _list_find_job_old(void *job_entry, void *key)
 {
-	time_t kill_age, min_age, now = time(NULL);;
+	time_t kill_age, min_age, now = time(NULL);
 	struct job_record *job_ptr = (struct job_record *)job_entry;
 	uint16_t cleaning = 0;
 	struct timeval tv_now = {0, 0};
@@ -8601,6 +8602,10 @@ static int _list_find_job_old(void *job_entry, void *key)
 
 	if (purge_quit)
 		return 0;
+
+	if (key && job_ptr->pack_job_id)
+		return 0;
+
 	gettimeofday(&tv_now, NULL);
 	delta_t  = (tv_now.tv_sec - purge_start_time.tv_sec) * 1000000;
 	delta_t += tv_now.tv_usec;
@@ -10051,6 +10056,50 @@ static void _pack_pending_job_details(struct job_details *detail_ptr,
 	}
 }
 
+static int _purge_pack_job_filter(void *x, void *key)
+{
+	struct job_record *job_ptr    = (struct job_record *) x;
+	struct job_record *job_filter = (struct job_record *) key;
+	if (job_ptr->pack_job_id == job_filter->pack_job_id)
+		return 1;
+	return 0;
+}
+
+/* If this is a pack job leader and all components are complete,
+ * then purge all job of its pack job records */
+static inline void _purge_complete_pack_job(struct job_record *pack_leader)
+{
+	struct job_record purge_job_rec;
+	struct job_record *pack_job;
+	ListIterator iter;
+	bool incomplete_job = false;
+
+	if (!pack_leader->pack_job_list)
+		return;		/* Not pack leader */
+	if (!IS_JOB_FINISHED(pack_leader))
+		return;		/* Pack leader incomplete */
+
+	iter = list_iterator_create(pack_leader->pack_job_list);
+	while ((pack_job = (struct job_record *) list_next(iter))) {
+		if (pack_leader->pack_job_id != pack_job->pack_job_id) {
+			error("%s: Bad pack_job_list for job %u",
+			      __func__, pack_leader->pack_job_id);
+			continue;
+		}
+		if (!_list_find_job_old(pack_job, NULL)) {
+			incomplete_job = true;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	if (incomplete_job)
+		return;
+
+	purge_job_rec.pack_job_id = pack_leader->pack_job_id;
+	list_delete_all(job_list, &_purge_pack_job_filter, &purge_job_rec);
+}
+
 /*
  * purge_old_job - purge old job records.
  *	The jobs must have completed at least MIN_JOB_AGE minutes ago.
@@ -10061,11 +10110,14 @@ static void _pack_pending_job_details(struct job_details *detail_ptr,
 void purge_old_job(void)
 {
 	ListIterator job_iterator;
-	struct job_record  *job_ptr;
+	struct job_record *job_ptr;
 	int i;
 
+	_job_purge_start();
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		_purge_complete_pack_job(job_ptr);
+
 		if (!IS_JOB_PENDING(job_ptr))
 			continue;
 		if (test_job_dependency(job_ptr) == 2) {
@@ -10108,7 +10160,6 @@ void purge_old_job(void)
 	}
 	list_iterator_destroy(job_iterator);
 
-	_job_purge_start();
 	i = list_delete_all(job_list, &_list_find_job_old, "");
 	if (i) {
 		debug2("purge_old_job: purged %d old job records", i);
