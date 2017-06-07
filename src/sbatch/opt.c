@@ -330,7 +330,6 @@ static void _opt_default(bool first_pass)
 		opt.hold		= false;
 		opt.ifname		= xstrdup("/dev/null");
 		opt.immediate		= false;
-		xfree(opt.job_name);
 		xfree(opt.mcs_label);
 		opt.nice		= NO_VAL;
 		opt.no_kill		= false;
@@ -344,8 +343,6 @@ static void _opt_default(bool first_pass)
 		opt.reboot		= false;
 		opt.requeue		= NO_VAL;
 		xfree(opt.reservation);
-		opt.script_argc		= 0;
-		xfree(opt.script_argv);
 		opt.test_only		= false;
 		opt.time_limit		= NO_VAL;
 		opt.time_min		= NO_VAL;

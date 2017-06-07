@@ -485,7 +485,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->cluster_features = xstrdup(opt.c_constraints);
 	desc->immediate = opt.immediate;
 	desc->gres = xstrdup(opt.gres);
-	if (opt.job_name != NULL)
+	if (opt.job_name)
 		desc->name = xstrdup(opt.job_name);
 	else
 		desc->name = xstrdup("sbatch");
