@@ -877,7 +877,7 @@ int setup_env(env_t *env, bool preserve_env)
  *
  * Returns an xmalloc'ed string.  Free with xfree().
  */
-static char *_uint16_array_to_str(int array_len, const uint16_t *array)
+extern char *uint16_array_to_str(int array_len, const uint16_t *array)
 {
 	int i;
 	int previous = 0;
@@ -888,10 +888,9 @@ static char *_uint16_array_to_str(int array_len, const uint16_t *array)
 		return str;
 
 	for (i = 0; i < array_len; i++) {
-		if ((i+1 < array_len)
-		    && (array[i] == array[i+1])) {
-				previous++;
-				continue;
+		if ((i+1 < array_len) && (array[i] == array[i+1])) {
+			previous++;
+			continue;
 		}
 
 		if (i == array_len-1) /* last time through loop */
@@ -1098,8 +1097,7 @@ extern int env_array_for_job(char ***dest,
 	if (!(step_layout = slurm_step_layout_create(&step_layout_req)))
 		return SLURM_ERROR;
 
-	tmp = _uint16_array_to_str(step_layout->node_cnt,
-				   step_layout->tasks);
+	tmp = uint16_array_to_str(step_layout->node_cnt, step_layout->tasks);
 	slurm_step_layout_destroy(step_layout);
 	env_array_overwrite_pack_fmt(dest, "SLURM_TASKS_PER_NODE", pack_offset,
 				     "%s", tmp);
@@ -1263,7 +1261,7 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	env_array_overwrite_fmt(dest, "SLURM_NODELIST", "%s", batch->nodes);
 
 	if ((batch->cpus_per_task != 0) &&
-	    (batch->cpus_per_task != (uint16_t) NO_VAL))
+	    (batch->cpus_per_task != NO_VAL16))
 		cpus_per_task = batch->cpus_per_task;
 	else
 		cpus_per_task = 1;	/* default value */
@@ -1299,13 +1297,12 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	step_layout_req.cpus_per_task = cpus_per_task_array;
 	step_layout_req.cpus_task_reps = cpus_task_reps;
 	step_layout_req.task_dist = task_dist;
-	step_layout_req.plane_size = (uint16_t)NO_VAL;
+	step_layout_req.plane_size = NO_VAL16;
 
 	if (!(step_layout = slurm_step_layout_create(&step_layout_req)))
 		return SLURM_ERROR;
 
-	tmp = _uint16_array_to_str(step_layout->node_cnt,
-				   step_layout->tasks);
+	tmp = uint16_array_to_str(step_layout->node_cnt, step_layout->tasks);
 	slurm_step_layout_destroy(step_layout);
 	env_array_overwrite_fmt(dest, "SLURM_TASKS_PER_NODE", "%s", tmp);
 	xfree(tmp);
@@ -1387,8 +1384,8 @@ env_array_for_step(char ***dest,
 	uint32_t node_cnt = step->step_layout->node_cnt;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
-	tpn = _uint16_array_to_str(step->step_layout->node_cnt,
-				   step->step_layout->tasks);
+	tpn = uint16_array_to_str(step->step_layout->node_cnt,
+				  step->step_layout->tasks);
 	env_array_overwrite_fmt(dest, "SLURM_STEP_ID", "%u", step->job_step_id);
 	env_array_overwrite_fmt(dest, "SLURM_STEP_NODELIST",
 				"%s", step->step_layout->node_list);

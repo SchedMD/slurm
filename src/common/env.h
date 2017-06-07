@@ -326,6 +326,20 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 			      bool no_cache);
 
 /*
+ * Return a string representation of an array of uint16_t elements.
+ * Each value in the array is printed in decimal notation and elements
+ * are separated by a comma.  If sequential elements in the array
+ * contain the same value, the value is written out just once followed
+ * by "(xN)", where "N" is the number of times the value is repeated.
+ *
+ * Example:
+ *   The array "1, 2, 1, 1, 1, 3, 2" becomes the string "1,2,1(x3),3,2"
+ *
+ * Returns an xmalloc'ed string.  Free with xfree().
+ */
+extern char *uint16_array_to_str(int array_len, const uint16_t *array);
+
+/*
  * The cpus-per-node representation in SLURM (and perhaps tasks-per-node
  * in the future) is stored in a compressed format comprised of two
  * equal-length arrays, and an integer holding the array length. In one

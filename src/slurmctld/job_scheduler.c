@@ -2368,7 +2368,10 @@ static struct job_record *_pack_job_ready(struct job_record *job_ptr)
 	list_iterator_destroy(iter);
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_HETERO_JOBS) {
-		if (pack_leader) {
+		if (!pack_leader) {
+			info("Batch pack job %u waiting for job %u to be ready",
+			     pack_job->job_id, pack_job->job_id);
+		} else if (pack_leader) {
 			info("Batch pack job %u being launched",
 			     pack_leader->job_id);
 		} else if (pack_job) {
@@ -2408,8 +2411,25 @@ static void _set_pack_env(struct job_record *pack_leader,
 		 sizeof(char *) * (launch_msg_ptr->envc + 1));
 	iter = list_iterator_create(pack_leader->pack_job_list);
 	while ((pack_job = (struct job_record *) list_next(iter))) {
+		uint16_t cpus_per_task = 1;
+		uint32_t num_cpus = 0;
 		uint64_t tmp_mem = 0;
 		char *tmp_str = NULL;
+#if HAVE_BG
+		(void) env_array_overwrite_pack_fmt(
+				&launch_msg_ptr->environment,
+				"SLURM_BG_NUM_NODES", pack_offset,
+				"%u", pack_job->node_cnt);
+#endif
+		if (pack_job->details &&
+		    (pack_job->details->cpus_per_task > 0) &&
+		    (pack_job->details->cpus_per_task != NO_VAL16)) {
+			cpus_per_task = pack_job->details->cpus_per_task;
+		}
+		(void) env_array_overwrite_pack_fmt(
+				&launch_msg_ptr->environment,
+				"SLURM_CPUS_PER_TASK", pack_offset,
+				"%u", cpus_per_task);
 		if (pack_job->account) {
 			(void) env_array_overwrite_pack_fmt(
 					&launch_msg_ptr->environment,
@@ -2496,23 +2516,59 @@ static void _set_pack_env(struct job_record *pack_leader,
 					"SLURM_NTASKS", pack_offset,
 					"%u", pack_job->details->num_tasks);
 		}
-//FIXME: Add these two env vars
-#if 0
-#if HAVE_BG
-		(void) env_array_overwrite_pack_fmt(
-				&launch_msg_ptr->environment,
-				"SLURM_BG_NUM_NODES", pack_offset,
-				"%u", step_layout_req.num_hosts);
-#endif
-		tmp_str = _uint16_array_to_str(step_layout->node_cnt,
-					   step_layout->tasks);
-		slurm_step_layout_destroy(step_layout);
-		(void) env_array_overwrite_pack_fmt(
-				&launch_msg_ptr->environment,
-				"SLURM_TASKS_PER_NODE", pack_offset,
-				"%s", tmp_str);
-		xfree(tmp_str);
-#endif
+		if (pack_job->details && pack_job->job_resrcs) {
+			/* Both should always be set for active jobs */
+			struct job_resources *resrcs_ptr = pack_job->job_resrcs;
+			slurm_step_layout_t *step_layout = NULL;
+			slurm_step_layout_req_t step_layout_req;
+			uint16_t cpus_per_task_array[1];
+			uint32_t cpus_task_reps[1], task_dist;
+			memset(&step_layout_req, 0,
+			       sizeof(slurm_step_layout_req_t));
+			for (i = 0; i < resrcs_ptr->cpu_array_cnt; i++) {
+				num_cpus += resrcs_ptr->cpu_array_value[i] *
+					    resrcs_ptr->cpu_array_reps[i];
+			}
+
+			if (pack_job->details->num_tasks) {
+				step_layout_req.num_tasks =
+					pack_job->details->num_tasks;
+			} else {
+				step_layout_req.num_tasks = num_cpus / cpus_per_task;
+			}
+			step_layout_req.num_hosts = pack_job->node_cnt;
+
+			if ((step_layout_req.node_list =
+			     getenvp(launch_msg_ptr->environment,
+				     "SLURM_ARBITRARY_NODELIST"))) {
+				task_dist = SLURM_DIST_ARBITRARY;
+			} else {
+				step_layout_req.node_list = pack_job->nodes;
+				task_dist = SLURM_DIST_BLOCK;
+			}
+			step_layout_req.cpus_per_node =
+				pack_job->job_resrcs->cpu_array_value;
+			step_layout_req.cpu_count_reps =
+				pack_job->job_resrcs->cpu_array_reps;
+			cpus_per_task_array[0] = cpus_per_task;
+			step_layout_req.cpus_per_task = cpus_per_task_array;
+			cpus_task_reps[0] = pack_job->node_cnt;
+			step_layout_req.cpus_task_reps = cpus_task_reps;
+			step_layout_req.task_dist = task_dist;
+			step_layout_req.plane_size = NO_VAL16;
+			step_layout = slurm_step_layout_create(&step_layout_req);
+			if (step_layout) {
+				tmp_str = uint16_array_to_str(
+							step_layout->node_cnt,
+							step_layout->tasks);
+				slurm_step_layout_destroy(step_layout);
+				(void) env_array_overwrite_pack_fmt(
+						&launch_msg_ptr->environment,
+						"SLURM_TASKS_PER_NODE",
+						 pack_offset,"%s", tmp_str);
+				xfree(tmp_str);
+			}
+		}
 		pack_offset++;
 	}
 	list_iterator_destroy(iter);
