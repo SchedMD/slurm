@@ -197,10 +197,6 @@ int   error_exit = 1;
 int   ignore_pbs = 0;
 bool  is_pack_job = false;
 
-/*---- local variables ----*/
-
-bool first_pass = true;
-
 /*---- forward declarations of static functions  ----*/
 
 typedef struct env_vars env_vars_t;
@@ -208,7 +204,7 @@ typedef struct env_vars env_vars_t;
 static void  _help(void);
 
 /* fill in default options  */
-static void _opt_default(void);
+static void _opt_default(bool first_pass);
 
 /* set options from batch script */
 static bool _opt_batch_script(const char *file, const void *body, int size,
@@ -295,7 +291,7 @@ static bool _valid_node_list(char **node_list_pptr)
 /*
  * _opt_default(): used by initialize_and_process_args to set defaults
  */
-static void _opt_default(void)
+static void _opt_default(bool first_pass)
 {
 	char buf[MAXPATHLEN + 1];
 	int i;
@@ -342,7 +338,6 @@ static void _opt_default(void)
 		opt.parsable		= false;
 		opt.priority		= 0;
 		opt.profile		= ACCT_GATHER_PROFILE_NOT_SET;
-		xfree(opt.progname);
 		xfree(opt.propagate); 	 /* propagate specific rlimits */
 		xfree(opt.qos);
 		opt.quiet		= 0;
@@ -366,8 +361,6 @@ static void _opt_default(void)
 		opt.warn_signal		= 0;
 		opt.warn_time		= 0;
 		xfree(opt.wckey);
-//FIXME: Move first_pass set
-		first_pass = false;
 	}
 
 	/* All other options must be specified individually for each component
@@ -913,7 +906,7 @@ extern char *process_options_first_pass(int argc, char **argv)
 	}
 
 	/* initialize option defaults */
-	_opt_default();
+	_opt_default(true);
 
 	/* Remove pack job separator and capture all options of interest from
 	 * all job components (e.g. "sbatch -N1 -v : -N2 -v tmp" -> "-vv") */
@@ -1013,7 +1006,12 @@ extern void process_options_second_pass(int argc, char **argv, int *argc_off,
 					const void *script_body,
 					int script_size)
 {
+	static bool first_pass = true;
 	int i;
+
+	/* initialize option defaults */
+	_opt_default(first_pass);
+	first_pass = false;
 
 	/* set options from batch script */
 	*more_packs = _opt_batch_script(file, script_body, script_size,
