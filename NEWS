@@ -100,6 +100,9 @@ documents those changes that are of interest to users and administrators.
     large numbers of running jobs, performance of the backfill scheduler will
     suffer and fewer jobs will be evaluated.
 
+* Changes in Slurm 17.02.5
+==========================
+
 * Changes in Slurm 17.02.4
 ==========================
  -- Do not attempt to schedule jobs after changing the power cap if there are
