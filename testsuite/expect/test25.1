@@ -200,7 +200,7 @@ proc sprio_opt { soption } {
 				set not_support 1
 				exp_continue
 			}
-			-re "Usage: sprio .-j jid.s.. .-u user_name.s.. .-o format. .-p partitions.\r\n   .--local. .--sibling. .--usage. .-hlnvVw." {
+			-re "Usage: sprio .-j jid.s.. .-u user_name.s.. .-o format. .-p partitions.\r\n   .--federation. .--local. .--sibling. .--usage. .-hlnvVw." {
 				if {$debug} {send_user "\nmatch5\n"}
 				incr matches
 				exp_continue
