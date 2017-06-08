@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 17.02.5
 ==========================
+ -- Prevent segfault if a job was blocked from running by a QOS that is then
+    deleted.
 
 * Changes in Slurm 17.02.4
 ==========================
