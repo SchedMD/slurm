@@ -401,6 +401,7 @@ int main(int argc, char **argv)
 			exit(error_exit);
 		}
 	}
+
 	if (!alloc && !job_resp_list) {
 		if (allocation_interrupted) {
 			/* cancelled by signal */
@@ -424,7 +425,7 @@ int main(int argc, char **argv)
 		iter_resp = list_iterator_create(job_resp_list);
 		while ((alloc = (resource_allocation_response_msg_t *)
 				list_next(iter_resp))) {
-			if (my_job_id == 0) {
+			if (i == 0) {
 				my_job_id = alloc->job_id;
 				info("Granted job allocation %u", my_job_id);
 			}
@@ -1166,7 +1167,6 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
 	int max_delay = BG_FREE_PREVIOUS_BLOCK + BG_MIN_BLOCK_BOOT +
 			(BG_INCR_BLOCK_BOOT * alloc->node_cnt);
 
-	my_job_id = alloc->job_id;
 	select_g_select_jobinfo_get(alloc->select_jobinfo,
 				    SELECT_JOBDATA_BLOCK_ID,
 				    &block_id);
@@ -1241,7 +1241,7 @@ static int _blocks_dealloc(void)
 		      slurm_strerror(slurm_get_errno()));
 		return -1;
 	}
-	for (i=0; i<new_bg_ptr->record_count; i++) {
+	for (i = 0; i<new_bg_ptr->record_count; i++) {
 		if (new_bg_ptr->block_array[i].state == BG_BLOCK_TERM) {
 			rc = 1;
 			break;
@@ -1268,14 +1268,12 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 		max_delay = 300;	/* Wait to 5 min for PrologSlurmctld */
 	}
 
-	my_job_id = alloc->job_id;
-
 	if (alloc->alias_list && !xstrcmp(alloc->alias_list, "TBD"))
 		opt.wait_all_nodes = 1;	/* Wait for boot & addresses */
 	if (opt.wait_all_nodes == (uint16_t) NO_VAL)
 		opt.wait_all_nodes = 0;
 
-	for (i=0; (cur_delay < max_delay); i++) {
+	for (i = 0; (cur_delay < max_delay); i++) {
 		if (i) {
 			if (i == 1)
 				info("Waiting for resource configuration");
@@ -1308,7 +1306,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 		if (i > 0)
      			info("Nodes %s are ready for job", alloc->node_list);
 		if (alloc->alias_list && !xstrcmp(alloc->alias_list, "TBD") &&
-		    (slurm_allocation_lookup(my_job_id, &resp)
+		    (slurm_allocation_lookup(alloc->job_id, &resp)
 		     == SLURM_SUCCESS)) {
 			tmp_str = alloc->alias_list;
 			alloc->alias_list = resp->alias_list;
