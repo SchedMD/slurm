@@ -1042,7 +1042,7 @@ static int _make_step_cred(struct step_record *step_ptr,
 static int _pack_job_cancel(void *x, void *arg)
 {
 	struct job_record *job_ptr = (struct job_record *) x;
-	char job_id_str[32];
+	char job_id_str[BUFSIZ];
 	time_t now = time(NULL);
 
 	(void) jobid2fmt(job_ptr, job_id_str, sizeof(job_id_str));
@@ -1348,7 +1348,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 			list_append(resp, alloc_msg);
 			if (slurmctld_conf.debug_flags &
 			    DEBUG_FLAG_HETERO_JOBS) {
-				char buf[24];
+				char buf[BUFSIZ];
 				info("Submit %s",
 				     jobid2fmt(job_ptr, buf, sizeof(buf)));
 			}
@@ -4000,7 +4000,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 			job_ptr->pack_job_id_set = xstrdup(tmp_offset);
 			if (slurmctld_conf.debug_flags &
 			    DEBUG_FLAG_HETERO_JOBS) {
-				char buf[24];
+				char buf[JBUFSIZ];
 				info("Submit %s",
 				     jobid2fmt(job_ptr, buf, sizeof(buf)));
 			}
