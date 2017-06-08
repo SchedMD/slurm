@@ -3119,7 +3119,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	static int gang_mode = -1;
 	int error_code = SLURM_SUCCESS;
 	bitstr_t *orig_map, *avail_cores, *free_cores, *part_core_map = NULL;
-	bitstr_t *tmpcore = NULL;
+	bitstr_t *tmpcore = NULL, *free_cores_tmp, *node_bitmap_tmp;
 	bool test_only;
 	uint32_t c, j, k, n, csize, total_cpus;
 	uint64_t save_mem = 0;
@@ -3128,6 +3128,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	struct job_details *details_ptr;
 	struct part_res_record *p_ptr, *jp_ptr;
 	uint16_t *cpu_count;
+	uint16_t *cpu_count_tmp;
 	int i, first, last;
 
 	if (gang_mode == -1) {
@@ -3447,8 +3448,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 			if (!p_ptr->row[i].row_bitmap)
 				continue;
 			bit_copybits(tmpcore, p_ptr->row[i].row_bitmap);
-			bit_not(tmpcore); /* set bits now "free" resources */
-			bit_and(free_cores, tmpcore);
+			bit_and_not(free_cores, tmpcore);
 		}
 	}
 
@@ -3459,6 +3459,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 				  node_bitmap, cr_node_cnt, free_cores,
 				  node_usage, cr_type, test_only,
 				  part_core_map, prefer_alloc_nodes);
+
 	if (cpu_count) {
 		/* jobs from low-priority partitions are the only thing left
 		 * in our way. for now we'll ignore them, but FIXME: we need
@@ -3469,6 +3470,44 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 			info("cons_res: cr_job_test: test 3 pass - "
 			     "found resources");
 		}
+		free_cores_tmp = bit_copy(free_cores);
+		node_bitmap_tmp = bit_copy(node_bitmap);
+		for (p_ptr = cr_part_ptr; p_ptr; p_ptr = p_ptr->next) {
+			if (p_ptr->part_ptr->priority_tier >=
+			    jp_ptr->part_ptr->priority_tier)
+				continue;
+			if (!p_ptr->row)
+				continue;
+			for (i = 0; i < p_ptr->num_rows; i++) {
+				if (!p_ptr->row[i].row_bitmap)
+					continue;
+				bit_and_not(free_cores_tmp,
+					    p_ptr->row[i].row_bitmap);
+			}
+			if (job_ptr->details->whole_node == 1) {
+				_block_whole_nodes(node_bitmap_tmp, avail_cores,
+						   free_cores_tmp);
+			}
+			cpu_count_tmp = _select_nodes(job_ptr, min_nodes,
+						max_nodes, req_nodes,
+						node_bitmap_tmp, cr_node_cnt,
+						free_cores_tmp, node_usage,
+						cr_type, test_only,
+						part_core_map,
+						prefer_alloc_nodes);
+			if (!cpu_count_tmp)
+				break;
+			if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+				info("cons_res: cr_job_test: remove low-priority partition %s",
+				     p_ptr->part_ptr->name);
+			}
+			bit_copybits(free_cores, free_cores_tmp);
+			bit_copybits(node_bitmap, node_bitmap_tmp);
+			xfree(cpu_count);
+			cpu_count = cpu_count_tmp;
+		}
+		FREE_NULL_BITMAP(free_cores_tmp);
+		FREE_NULL_BITMAP(node_bitmap_tmp);
 		goto alloc_job;
 	}
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {

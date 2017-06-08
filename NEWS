@@ -5,6 +5,8 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Prevent segfault if a job was blocked from running by a QOS that is then
     deleted.
+ -- Improve selection of jobs to preempt when there are multiple partitions
+    with jobs subject to preemption.
 
 * Changes in Slurm 17.02.4
 ==========================
