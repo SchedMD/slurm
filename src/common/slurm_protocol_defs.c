@@ -924,7 +924,6 @@ extern void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 		xfree(msg->qos);
 		xfree(msg->restart_dir);
 		xfree(msg->resv_name);
-		xfree(msg->resv_ports);
 		xfree(msg->script);
 		select_g_select_jobinfo_free(msg->select_jobinfo);
 		if (msg->spank_job_env) {
