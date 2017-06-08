@@ -903,44 +903,40 @@ extern void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 	if (msg) {
 		xfree(msg->account);
 		xfree(msg->acctg_freq);
-		xfree(msg->user_name);
 		xfree(msg->alias_list);
-		xfree(msg->nodes);
-		xfree(msg->partition);
-		xfree(msg->cpu_bind);
-		xfree(msg->cpus_per_node);
-		xfree(msg->cpu_count_reps);
-		xfree(msg->script);
-		xfree(msg->std_err);
-		xfree(msg->std_in);
-		xfree(msg->std_out);
-		xfree(msg->qos);
-		xfree(msg->work_dir);
-		xfree(msg->ckpt_dir);
-		xfree(msg->restart_dir);
-
 		if (msg->argv) {
 			for (i = 0; i < msg->argc; i++)
 				xfree(msg->argv[i]);
 			xfree(msg->argv);
 		}
-
-		if (msg->spank_job_env) {
-			for (i = 0; i < msg->spank_job_env_size; i++)
-				xfree(msg->spank_job_env[i]);
-			xfree(msg->spank_job_env);
-		}
-
+		xfree(msg->ckpt_dir);
+		xfree(msg->cpu_bind);
+		xfree(msg->cpus_per_node);
+		xfree(msg->cpu_count_reps);
+		slurm_cred_destroy(msg->cred);
 		if (msg->environment) {
 			for (i = 0; i < msg->envc; i++)
 				xfree(msg->environment[i]);
 			xfree(msg->environment);
 		}
-
+		xfree(msg->nodes);
+		xfree(msg->partition);
+		xfree(msg->qos);
+		xfree(msg->restart_dir);
+		xfree(msg->resv_name);
+		xfree(msg->resv_ports);
+		xfree(msg->script);
 		select_g_select_jobinfo_free(msg->select_jobinfo);
-		msg->select_jobinfo = NULL;
-
-		slurm_cred_destroy(msg->cred);
+		if (msg->spank_job_env) {
+			for (i = 0; i < msg->spank_job_env_size; i++)
+				xfree(msg->spank_job_env[i]);
+			xfree(msg->spank_job_env);
+		}
+		xfree(msg->std_err);
+		xfree(msg->std_in);
+		xfree(msg->std_out);
+		xfree(msg->user_name);
+		xfree(msg->work_dir);
 		xfree(msg);
 	}
 }
