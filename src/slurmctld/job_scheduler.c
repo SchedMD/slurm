@@ -106,6 +106,8 @@ typedef struct epilog_arg {
 } epilog_arg_t;
 
 static char **	_build_env(struct job_record *job_ptr, bool is_epilog);
+static batch_job_launch_msg_t *_build_launch_job_msg(struct job_record *job_ptr,
+						     uint16_t protocol_version);
 static void	_depend_list_del(void *dep_ptr);
 static void	_feature_list_delete(void *x);
 static void	_job_queue_append(List job_queue, struct job_record *job_ptr,
@@ -920,7 +922,7 @@ next_part:		part_ptr = (struct part_record *)
 				!IS_JOB_CONFIGURING(job_ptr)
 #endif
 				) {
-				launch_msg = build_launch_job_msg(job_ptr,
+				launch_msg = _build_launch_job_msg(job_ptr,
 							msg->protocol_version);
 			}
 		}
@@ -960,7 +962,7 @@ send_reply:
 			response_msg.msg_type = REQUEST_BATCH_JOB_LAUNCH;
 			response_msg.data = launch_msg;
 			slurm_send_node_msg(msg->conn_fd, &response_msg);
-			slurmctld_free_batch_job_launch_msg(launch_msg);
+			slurm_free_job_launch_msg(launch_msg);
 		}
 		return false;
 	}
@@ -2185,9 +2187,22 @@ extern int sort_job_queue2(void *x, void *y)
 	return -1;
 }
 
+/* The environment" variable is points to one big xmalloc. In order to
+ * manipulate the array for a pack job, we need to split it into an array
+ * containing multiple xmalloc variables */
+static void _split_env(batch_job_launch_msg_t *launch_msg_ptr)
+{
+	int i;
+
+	for (i = 1; i < launch_msg_ptr->envc; i++) {
+		launch_msg_ptr->environment[i] =
+			xstrdup(launch_msg_ptr->environment[i]);
+	}
+}
+
 /* Given a scheduled job, return a pointer to it batch_job_launch_msg_t data */
-extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr,
-						    uint16_t protocol_version)
+static batch_job_launch_msg_t *_build_launch_job_msg(struct job_record *job_ptr,
+						     uint16_t protocol_version)
 {
 	batch_job_launch_msg_t *launch_msg_ptr;
 	struct passwd pwd, *result;
@@ -2288,6 +2303,7 @@ extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr,
 			     false, true, 0);
 		return NULL;
 	}
+	_split_env(launch_msg_ptr);
 	launch_msg_ptr->job_mem = job_ptr->details->pn_min_memory;
 	launch_msg_ptr->num_cpu_groups = job_ptr->job_resrcs->cpu_array_cnt;
 	launch_msg_ptr->cpus_per_node  = xmalloc(sizeof(uint16_t) *
@@ -2616,7 +2632,7 @@ extern void launch_job(struct job_record *job_ptr)
 	if (!launch_job_ptr)
 		return;
 
-	launch_msg_ptr = build_launch_job_msg(launch_job_ptr, protocol_version);
+	launch_msg_ptr = _build_launch_job_msg(launch_job_ptr,protocol_version);
 	if (launch_msg_ptr == NULL)
 		return;
 	if (launch_job_ptr->pack_job_id)

@@ -1573,22 +1573,6 @@ static void _spawn_retry_agent(agent_arg_t * agent_arg_ptr)
 	slurm_attr_destroy(&attr_agent);
 }
 
-/* slurmctld_free_batch_job_launch_msg is a variant of
- *	slurm_free_job_launch_msg because all environment variables currently
- *	loaded in one xmalloc buffer (see get_job_env()), which is different
- *	from how slurmd assembles the data from a message
- */
-extern void slurmctld_free_batch_job_launch_msg(batch_job_launch_msg_t * msg)
-{
-	if (msg) {
-		if (msg->environment) {
-			xfree(msg->environment[0]);
-			xfree(msg->environment);
-		}
-		slurm_free_job_launch_msg(msg);
-	}
-}
-
 /* agent_purge - purge all pending RPC requests */
 extern void agent_purge(void)
 {
@@ -1624,8 +1608,7 @@ static void _purge_agent_args(agent_arg_t *agent_arg_ptr)
 	xfree(agent_arg_ptr->addr);
 	if (agent_arg_ptr->msg_args) {
 		if (agent_arg_ptr->msg_type == REQUEST_BATCH_JOB_LAUNCH) {
-			slurmctld_free_batch_job_launch_msg(agent_arg_ptr->
-							    msg_args);
+			slurm_free_job_launch_msg(agent_arg_ptr->msg_args);
 		} else if (agent_arg_ptr->msg_type ==
 				RESPONSE_RESOURCE_ALLOCATION) {
 			resource_allocation_response_msg_t *alloc_msg =

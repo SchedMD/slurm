@@ -10066,8 +10066,9 @@ static int _purge_pack_job_filter(void *x, void *key)
 }
 
 /* If this is a pack job leader and all components are complete,
- * then purge all job of its pack job records */
-static inline void _purge_complete_pack_job(struct job_record *pack_leader)
+ * then purge all job of its pack job records
+ * RET true if this record purged */
+static inline bool _purge_complete_pack_job(struct job_record *pack_leader)
 {
 	struct job_record purge_job_rec;
 	struct job_record *pack_job;
@@ -10075,9 +10076,9 @@ static inline void _purge_complete_pack_job(struct job_record *pack_leader)
 	bool incomplete_job = false;
 
 	if (!pack_leader->pack_job_list)
-		return;		/* Not pack leader */
+		return false;		/* Not pack leader */
 	if (!IS_JOB_FINISHED(pack_leader))
-		return;		/* Pack leader incomplete */
+		return false;		/* Pack leader incomplete */
 
 	iter = list_iterator_create(pack_leader->pack_job_list);
 	while ((pack_job = (struct job_record *) list_next(iter))) {
@@ -10094,10 +10095,11 @@ static inline void _purge_complete_pack_job(struct job_record *pack_leader)
 	list_iterator_destroy(iter);
 
 	if (incomplete_job)
-		return;
+		return false;
 
 	purge_job_rec.pack_job_id = pack_leader->pack_job_id;
 	list_delete_all(job_list, &_purge_pack_job_filter, &purge_job_rec);
+	return true;
 }
 
 /*
@@ -10116,8 +10118,8 @@ void purge_old_job(void)
 	_job_purge_start();
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		_purge_complete_pack_job(job_ptr);
-
+		if (_purge_complete_pack_job(job_ptr))
+			continue;
 		if (!IS_JOB_PENDING(job_ptr))
 			continue;
 		if (test_job_dependency(job_ptr) == 2) {

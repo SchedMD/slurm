@@ -1034,7 +1034,6 @@ extern void process_options_second_pass(int argc, char **argv, int *argc_off,
 
 	if (opt.verbose)
 		_opt_list();
-info("VERBOSE:%d", opt.verbose);
 }
 
 /*

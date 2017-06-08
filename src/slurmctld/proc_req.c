@@ -1139,6 +1139,7 @@ static void _del_alloc_pack_msg(void *x)
 	/* NULL out working_cluster_rec since it's pointing to global memory */
 	alloc_msg->working_cluster_rec = NULL;
 	slurm_free_resource_allocation_response_msg_members(alloc_msg);
+	xfree(alloc_msg);
 }
 
 static void *_trigger_backfill_thread(void *args)
@@ -6128,7 +6129,7 @@ static void _slurmctld_free_comp_msg_list(void *x)
 	slurm_msg_t *msg = (slurm_msg_t*)x;
 	if (msg) {
 		if (msg->msg_type == REQUEST_BATCH_JOB_LAUNCH) {
-			slurmctld_free_batch_job_launch_msg(msg->data);
+			slurm_free_job_launch_msg(msg->data);
 			msg->data = NULL;
 		}
 
