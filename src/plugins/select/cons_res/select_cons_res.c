@@ -446,9 +446,6 @@ static void _create_part_data(void)
 		return;
 	info("cons_res: preparing for %d partitions", num_parts);
 
-	select_part_record = xmalloc(sizeof(struct part_res_record));
-	this_ptr = select_part_record;
-
 	part_rec_list = list_create(NULL);
 	part_iterator = list_iterator_create(part_list);
 	while ((p_ptr = (struct part_record *) list_next(part_iterator))) {
