@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
     deleted.
  -- Improve selection of jobs to preempt when there are multiple partitions
     with jobs subject to preemption.
+ -- Only set kmem limit when ConstrainKmemSpace=yes is set in cgroup.conf.
 
 * Changes in Slurm 17.02.4
 ==========================
