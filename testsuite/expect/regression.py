@@ -153,6 +153,7 @@ def main(argv=None):
             sys.stdout.write('%d.%d'%(test[0], test[1]))
         sys.stdout.write('\n')
         sys.stdout.flush()
+        return 1
 
 def test_cmp(testA, testB):
     rc = cmp(testA[0], testB[0])
