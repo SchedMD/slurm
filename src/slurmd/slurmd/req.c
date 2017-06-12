@@ -253,7 +253,11 @@ static pthread_mutex_t job_limits_mutex = PTHREAD_MUTEX_INITIALIZER;
 static List job_limits_list = NULL;
 static bool job_limits_loaded = false;
 
-#define FINI_JOB_CNT 32
+/*
+ * To be fixed in 17.11 to match the count of cpus on a node instead of a hard
+ * code.
+ */
+#define FINI_JOB_CNT 256
 static pthread_mutex_t fini_mutex = PTHREAD_MUTEX_INITIALIZER;
 static uint32_t fini_job_id[FINI_JOB_CNT];
 static int next_fini_job_inx = 0;
@@ -5373,6 +5377,11 @@ _rpc_terminate_job(slurm_msg_t *msg)
 		return;
 	}
 
+	/*
+	 * Not the job is finishing to avoid a race condition for batch jobs
+	 * that finish before the slurmd knows it finished launching.
+	 */
+	_note_batch_job_finished(req->job_id);
 	/*
 	 * "revoke" all future credentials for this jobid
 	 */
