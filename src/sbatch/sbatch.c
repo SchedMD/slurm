@@ -199,9 +199,13 @@ int main(int argc, char **argv)
 	if (_check_cluster_specific_settings(desc) != SLURM_SUCCESS)
 		exit(error_exit);
 
-//FIXME: Implement will_run for pack jobs
 	if (opt.test_only) {
-		if (slurm_job_will_run(desc) != SLURM_SUCCESS) {
+		if (job_req_list)
+			rc = slurm_pack_job_will_run(job_req_list);
+		else
+			rc = slurm_job_will_run(desc);
+
+		if (rc != SLURM_SUCCESS) {
 			slurm_perror("allocation failure");
 			exit(1);
 		}
