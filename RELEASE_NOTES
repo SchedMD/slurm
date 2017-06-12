@@ -69,6 +69,8 @@ Added FederationParameters=fed_display to display federated view by default if
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
+The '-q' option to srun has changed from being the short form of
+	'--quit-on-interrupt' to '--qos'.
 
 OTHER CHANGES
 =============

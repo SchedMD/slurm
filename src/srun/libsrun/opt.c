@@ -158,7 +158,6 @@
 #define LONG_OPT_MEM_BIND    0x120
 #define LONG_OPT_MULTI       0x122
 #define LONG_OPT_COMMENT     0x124
-#define LONG_OPT_QOS             0x127
 #define LONG_OPT_BURST_BUFFER_SPEC  0x128
 #define LONG_OPT_BURST_BUFFER_FILE  0x129
 #define LONG_OPT_SOCKETSPERNODE  0x130
@@ -205,6 +204,7 @@
 #define LONG_OPT_DEADLINE        0x166
 #define LONG_OPT_DELAY_BOOT      0x167
 #define LONG_OPT_CLUSTER_CONSTRAINT 0x168
+#define LONG_OPT_QUIT_ON_INTR    0x169
 
 extern char **environ;
 
@@ -958,7 +958,7 @@ static void _set_options(const int argc, char **argv)
 		{"overcommit",    no_argument,       0, 'O'},
 		{"oversubscribe", no_argument,       0, 's'},
 		{"partition",     required_argument, 0, 'p'},
-		{"quit-on-interrupt", no_argument,   0, 'q'},
+		{"qos",		  required_argument, 0, 'q'},
 		{"quiet",            no_argument,    0, 'Q'},
 		{"relative",      required_argument, 0, 'r'},
 		{"no-rotate",     no_argument,       0, 'R'},
@@ -1035,7 +1035,7 @@ static void _set_options(const int argc, char **argv)
 		{"prolog",           required_argument, 0, LONG_OPT_PROLOG},
 		{"propagate",        optional_argument, 0, LONG_OPT_PROPAGATE},
 		{"pty",              no_argument,       0, LONG_OPT_PTY},
-		{"qos",		     required_argument, 0, LONG_OPT_QOS},
+		{"quit-on-interrupt",no_argument,       0, LONG_OPT_QUIT_ON_INTR},
 		{"ramdisk-image",    required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
 		{"reboot",           no_argument,       0, LONG_OPT_REBOOT},
 		{"reservation",      required_argument, 0, LONG_OPT_RESERVATION},
@@ -1285,8 +1285,11 @@ static void _set_options(const int argc, char **argv)
 			xfree(opt.dependency);
 			opt.dependency = xstrdup(optarg);
 			break;
-		case (int)'q':
-			opt.quit_on_intr = true;
+		case 'q':
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
+			xfree(opt.qos);
+			opt.qos = xstrdup(optarg);
 			break;
 		case (int) 'Q':
 			opt.quiet++;
@@ -1722,12 +1725,6 @@ static void _set_options(const int argc, char **argv)
 			xfree(opt.comment);
 			opt.comment = xstrdup(optarg);
 			break;
-		case LONG_OPT_QOS:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.qos);
-			opt.qos = xstrdup(optarg);
-			break;
 		case LONG_OPT_SOCKETSPERNODE:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
@@ -2007,6 +2004,9 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_USE_MIN_NODES:
 			opt.job_flags |= USE_MIN_NODES;
+			break;
+		case LONG_OPT_QUIT_ON_INTR:
+			opt.quit_on_intr = true;
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {

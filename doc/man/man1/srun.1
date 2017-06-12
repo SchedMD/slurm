@@ -1763,14 +1763,14 @@ Suppress informational messages from srun. Errors will still be displayed. This
 option applies to job and step allocations.
 
 .TP
-\fB\-q\fR, \fB\-\-quit\-on\-interrupt\fR
+\fB\-\-quit\-on\-interrupt\fR
 Quit immediately on single SIGINT (Ctrl\-C). Use of this option
 disables the status feature normally available when \fBsrun\fR receives
 a single Ctrl\-C and causes \fBsrun\fR to instead immediately terminate the
 running job. This option applies to step allocations.
 
 .TP
-\fB\-\-qos\fR=<\fIqos\fR>
+\fB\-q\fR, \fB\-\-qos\fR=<\fIqos\fR>
 Request a quality of service for the job.  QOS values can be defined
 for each user/cluster/account association in the Slurm database.
 Users will be limited to their association's defined set of qos's when
