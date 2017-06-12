@@ -5411,6 +5411,11 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	}
 
 	/*
+	 * Not the job is finishing to avoid a race condition for batch jobs
+	 * that finish before the slurmd knows it finished launching.
+	 */
+	_note_batch_job_finished(req->job_id);
+	/*
 	 * "revoke" all future credentials for this jobid
 	 */
 	if (slurm_cred_revoke(conf->vctx, req->job_id, req->time,
