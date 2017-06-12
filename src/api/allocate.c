@@ -462,19 +462,17 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
  * IN job_desc_msg - description of resource allocation request
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-int slurm_job_will_run (job_desc_msg_t *req)
+int slurm_job_will_run(job_desc_msg_t *req)
 {
 	will_run_response_msg_t *will_run_resp = NULL;
-	char buf[64];
-	bool host_set = false;
+	char buf[64], local_hostname[64];
 	int rc;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	char *type = "processors";
 
 	if ((req->alloc_node == NULL) &&
-	    (gethostname_short(buf, sizeof(buf)) == 0)) {
-		req->alloc_node = buf;
-		host_set = true;
+	    (gethostname_short(local_hostname, sizeof(local_hostname)) == 0)) {
+		req->alloc_node = local_hostname;
 	}
 
 	rc = slurm_job_will_run2(req, &will_run_resp);
@@ -508,8 +506,97 @@ int slurm_job_will_run (job_desc_msg_t *req)
 		slurm_free_will_run_response_msg(will_run_resp);
 	}
 
-	if (host_set)
+	if (req->alloc_node == local_hostname)
 		req->alloc_node = NULL;
+
+	return rc;
+}
+
+/*
+ * slurm_pack_job_will_run - determine if a heterogenous job would execute
+ *	immediately if submitted now
+ * IN job_req_list - List of job_desc_msg_t structures describing the resource
+ *		allocation request
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+extern int slurm_pack_job_will_run(List job_req_list)
+{
+	job_desc_msg_t *req;
+	will_run_response_msg_t *will_run_resp;
+	char buf[64], local_hostname[64] = "", *sep = "";
+	int rc = SLURM_SUCCESS;
+	char *type = "processors";
+	ListIterator iter, itr;
+	time_t first_start = (time_t) 0;
+	uint32_t first_job_id = 0, tot_proc_count = 0, *job_id_ptr;
+	hostset_t hs = NULL;
+	char *job_list = NULL;
+
+	if (!job_req_list || (list_count(job_req_list) == 0)) {
+		error("No job descriptors input");
+		return SLURM_ERROR;
+	}
+
+	(void) gethostname_short(local_hostname, sizeof(local_hostname));
+	iter = list_iterator_create(job_req_list);
+	while ((req = (job_desc_msg_t *) list_next(iter))) {
+		if ((req->alloc_node == NULL) && local_hostname[0])
+			req->alloc_node = local_hostname;
+
+		will_run_resp = NULL;
+		rc = slurm_job_will_run2(req, &will_run_resp);
+		if ((rc == SLURM_SUCCESS) && will_run_resp) {
+			if (first_job_id == 0)
+				first_job_id = will_run_resp->job_id;
+			if ((first_start == 0) ||
+			    (first_start < will_run_resp->start_time))
+				first_start = will_run_resp->start_time;
+			tot_proc_count += will_run_resp->proc_cnt;
+			if (hs)
+				hostset_insert(hs, will_run_resp->node_list);
+			else
+				hostset_create(will_run_resp->node_list);
+
+			if (will_run_resp->preemptee_job_id) {
+				itr = list_iterator_create(will_run_resp->
+							   preemptee_job_id);
+				while ((job_id_ptr = list_next(itr))) {
+					if (job_list)
+						sep = ",";
+					xstrfmtcat(job_list, "%s%u", sep,
+						   *job_id_ptr);
+				}
+				list_iterator_destroy(itr);
+			}
+
+			slurm_free_will_run_response_msg(will_run_resp);
+		}
+		if (req->alloc_node == local_hostname)
+			req->alloc_node = NULL;
+		if (rc != SLURM_SUCCESS)
+			break;
+	}
+	list_iterator_destroy(iter);
+
+
+	if (rc == SLURM_SUCCESS) {
+		uint32_t cluster_flags = slurmdb_setup_cluster_flags();
+		char node_list[1028] = "";
+
+		if (cluster_flags & CLUSTER_FLAG_BG)
+			type = "cnodes";
+		if (hs)
+			hostset_ranged_string(hs, sizeof(node_list), node_list);
+		slurm_make_time_str(&first_start, buf, sizeof(buf));
+		info("Job %u to start at %s using %u %s on %s",
+		     first_job_id, buf, tot_proc_count, type, node_list);
+		if (job_list)
+			info("  Preempts: %s", job_list);
+	}
+
+	if (hs)
+		hostset_destroy(hs);
+	xfree(job_list);
 
 	return rc;
 }

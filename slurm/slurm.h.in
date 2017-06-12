@@ -3286,6 +3286,16 @@ extern void slurm_free_submit_response_response_msg(submit_response_msg_t *msg);
 extern int slurm_job_will_run(job_desc_msg_t *job_desc_msg);
 
 /*
+ * slurm_pack_job_will_run - determine if a heterogenous job would execute
+ *	immediately if submitted now
+ * IN job_req_list - List of job_desc_msg_t structures describing the resource
+ *		allocation request
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+extern int slurm_pack_job_will_run(List job_req_list);
+
+
+/*
  * slurm_job_will_run2 - determine if a job would execute immediately if
  *      submitted now
  * IN job_desc_msg - description of resource allocation request

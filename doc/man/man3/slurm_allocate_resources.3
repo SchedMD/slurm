@@ -6,7 +6,7 @@ slurm_allocate_resources, slurm_allocate_resources_blocking,
 slurm_allocation_msg_thr_create, slurm_allocation_msg_thr_destroy,
 slurm_allocation_lookup, slurm_pack_job_lookup, slurm_confirm_allocation,
 slurm_free_submit_response_response_msg, slurm_init_job_desc_msg,
-slurm_job_will_run, slurm_job_will_run2,
+slurm_job_will_run, slurm_pack_job_will_run, slurm_job_will_run2,
 slurm_read_hostfile, slurm_submit_batch_job, slurm_submit_batch_pack_job
 \- Slurm job initiation functions
 .SH "SYNTAX"
@@ -96,6 +96,12 @@ void \fBslurm_init_job_desc_msg\fR (
 int \fBslurm_job_will_run\fR (
 .br
 	job_desc_msg_t *\fIjob_desc_msg_ptr\fP
+.br
+);
+.LP
+int \fBslurm_pack_job_will_run\fR (
+.br
+	List \fIjob_desc_msg_list\fP
 .br
 );
 .LP
@@ -252,7 +258,10 @@ to a call of the function \fBslurm_submit_batch_job\fR.
 \fBslurm_init_job_desc_msg\fR Initialize the contents of a job descriptor with default values.
 Execute this function before issuing a request to submit or modify a job.
 .LP
-\fBslurm_job_will_run\fR Determine if the supplied job description could be executed immediately.
+\fBslurm_job_will_run\fR Report when and where the supplied job description can be executed.
+.LP
+\fBslurm_pack_job_will_run\fR Report when and where the supplied heterogeneous
+job description can be executed.
 .LP
 \fBslurm_job_will_run2\fR Determine when and where the supplied job description can be executed.
 .LP
