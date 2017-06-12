@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
  -- Improve selection of jobs to preempt when there are multiple partitions
     with jobs subject to preemption.
  -- Only set kmem limit when ConstrainKmemSpace=yes is set in cgroup.conf.
+ -- Fix bug in task/affinity that could result in slurmd fatal error.
 
 * Changes in Slurm 17.02.4
 ==========================
