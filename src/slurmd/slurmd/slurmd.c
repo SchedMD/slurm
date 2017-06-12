@@ -125,6 +125,9 @@
 /* global, copied to STDERR_FILENO in tasks before the exec */
 int devnull = -1;
 slurmd_conf_t * conf = NULL;
+int fini_job_cnt = 0;
+uint32_t *fini_job_id = NULL;
+pthread_mutex_t fini_job_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /*
  * count of active threads
@@ -1506,7 +1509,8 @@ _slurmd_init(void)
 	 */
 	_read_config();
 
-	cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
+	fini_job_cnt = cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
+	fini_job_id = xmalloc(sizeof(uint32_t) * fini_job_cnt);
 
 	if ((gres_plugin_init() != SLURM_SUCCESS) ||
 	    (gres_plugin_node_config_load(cpu_cnt, conf->node_name, NULL)
@@ -1727,6 +1731,10 @@ _slurmd_fini(void)
 	acct_gather_conf_destroy();
 	fini_system_cgroup();
 	route_fini();
+	slurm_mutex_lock(&fini_job_mutex);
+	xfree(fini_job_id);
+	fini_job_cnt = 0;
+	slurm_mutex_unlock(&fini_job_mutex);
 
 	return SLURM_SUCCESS;
 }

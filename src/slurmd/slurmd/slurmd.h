@@ -170,6 +170,9 @@ typedef struct slurmd_config {
 } slurmd_conf_t;
 
 extern slurmd_conf_t * conf;
+extern int fini_job_cnt;
+extern uint32_t *fini_job_id;
+extern pthread_mutex_t fini_job_mutex;
 
 /* Send node registration message with status to controller
  * IN status - same values slurm error codes (for node shutdown)

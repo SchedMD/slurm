@@ -253,13 +253,6 @@ static pthread_mutex_t job_limits_mutex = PTHREAD_MUTEX_INITIALIZER;
 static List job_limits_list = NULL;
 static bool job_limits_loaded = false;
 
-/*
- * To be fixed in 17.11 to match the count of cpus on a node instead of a hard
- * code.
- */
-#define FINI_JOB_CNT 256
-static pthread_mutex_t fini_mutex = PTHREAD_MUTEX_INITIALIZER;
-static uint32_t fini_job_id[FINI_JOB_CNT];
 static int next_fini_job_inx = 0;
 
 /* NUM_PARALLEL_SUSP_JOBS controls the number of jobs that can be suspended or
@@ -1835,24 +1828,24 @@ static bool _is_batch_job_finished(uint32_t job_id)
 	bool found_job = false;
 	int i;
 
-	slurm_mutex_lock(&fini_mutex);
-	for (i = 0; i < FINI_JOB_CNT; i++) {
+	slurm_mutex_lock(&fini_job_mutex);
+	for (i = 0; i < fini_job_cnt; i++) {
 		if (fini_job_id[i] == job_id) {
 			found_job = true;
 			break;
 		}
 	}
-	slurm_mutex_unlock(&fini_mutex);
+	slurm_mutex_unlock(&fini_job_mutex);
 
 	return found_job;
 }
 static void _note_batch_job_finished(uint32_t job_id)
 {
-	slurm_mutex_lock(&fini_mutex);
+	slurm_mutex_lock(&fini_job_mutex);
 	fini_job_id[next_fini_job_inx] = job_id;
-	if (++next_fini_job_inx >= FINI_JOB_CNT)
+	if (++next_fini_job_inx >= fini_job_cnt)
 		next_fini_job_inx = 0;
-	slurm_mutex_unlock(&fini_mutex);
+	slurm_mutex_unlock(&fini_job_mutex);
 }
 
 /* Send notification to slurmctld we are finished running the prolog.
