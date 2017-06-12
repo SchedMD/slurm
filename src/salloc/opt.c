@@ -142,7 +142,6 @@
 #define LONG_OPT_NOSHELL         0x124
 #define LONG_OPT_GET_USER_ENV    0x125
 #define LONG_OPT_NETWORK         0x126
-#define LONG_OPT_QOS             0x127
 #define LONG_OPT_BURST_BUFFER_SPEC  0x128
 #define LONG_OPT_BURST_BUFFER_FILE  0x129
 #define LONG_OPT_SOCKETSPERNODE  0x130
@@ -698,6 +697,7 @@ void set_options(const int argc, char **argv)
 		{"overcommit",    no_argument,       0, 'O'},
 		{"oversubscribe", no_argument,       0, 's'},
 		{"partition",     required_argument, 0, 'p'},
+		{"qos",		  required_argument, 0, 'q'},
 		{"quiet",         no_argument,       0, 'Q'},
 		{"no-rotate",     no_argument,       0, 'R'},
 		{"share",         no_argument,       0, 's'},
@@ -753,7 +753,6 @@ void set_options(const int argc, char **argv)
 		{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
 		{"power",         required_argument, 0, LONG_OPT_POWER},
 		{"profile",       required_argument, 0, LONG_OPT_PROFILE},
-		{"qos",		  required_argument, 0, LONG_OPT_QOS},
 		{"ramdisk-image", required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
 		{"reboot",	  no_argument,       0, LONG_OPT_REBOOT},
 		{"reservation",   required_argument, 0, LONG_OPT_RESERVATION},
@@ -773,7 +772,7 @@ void set_options(const int argc, char **argv)
 		{NULL,            0,                 0, 0}
 	};
 	char *opt_string =
-		"+A:B:c:C:d:D:F:g:hHI::J:kK::L:m:M:n:N:Op:P:QRsS:t:uU:vVw:W:x:";
+		"+A:B:c:C:d:D:F:g:hHI::J:kK::L:m:M:n:N:Op:P:q:QRsS:t:uU:vVw:W:x:";
 	char *pos_delimit;
 
 	struct option *optz = spank_option_table_create(long_options);
@@ -925,6 +924,10 @@ void set_options(const int argc, char **argv)
 			verbose("-P option is deprecated, use -d instead");
 			xfree(opt.dependency);
 			opt.dependency = xstrdup(optarg);
+			break;
+		case 'q':
+			xfree(opt.qos);
+			opt.qos = xstrdup(optarg);
 			break;
 		case 'Q':
 			opt.quiet++;
@@ -1187,10 +1190,6 @@ void set_options(const int argc, char **argv)
 		case LONG_OPT_COMMENT:
 			xfree(opt.comment);
 			opt.comment = xstrdup(optarg);
-			break;
-		case LONG_OPT_QOS:
-			xfree(opt.qos);
-			opt.qos = xstrdup(optarg);
 			break;
 		case LONG_OPT_SOCKETSPERNODE:
 			if (!optarg)
@@ -2214,7 +2213,7 @@ static void _help(void)
 "                              value is all or none or any combination of\n"
 "                              energy, lustre, network or task\n"
 "  -p, --partition=partition   partition requested\n"
-"      --qos=qos               quality of service\n"
+"  -q, --qos=qos               quality of service\n"
 "  -Q, --quiet                 quiet mode (suppress informational messages)\n"
 "      --reboot                reboot compute nodes before starting job\n"
 "  -s, --oversubscribe         oversubscribe resources with other jobs\n"

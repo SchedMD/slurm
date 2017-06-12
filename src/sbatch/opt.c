@@ -146,7 +146,6 @@ enum wrappers {
 #define LONG_OPT_WRAP        0x118
 #define LONG_OPT_REQUEUE     0x119
 #define LONG_OPT_NETWORK     0x120
-#define LONG_OPT_QOS             0x127
 #define LONG_OPT_SOCKETSPERNODE  0x130
 #define LONG_OPT_CORESPERSOCKET  0x131
 #define LONG_OPT_THREADSPERCORE  0x132
@@ -798,6 +797,7 @@ static struct option long_options[] = {
 	{"overcommit",    no_argument,       0, 'O'},
 	{"oversubscribe", no_argument,       0, 's'},
 	{"partition",     required_argument, 0, 'p'},
+	{"qos",		  required_argument, 0, 'q'},
 	{"quiet",         no_argument,       0, 'Q'},
 	{"no-rotate",     no_argument,       0, 'R'},
 	{"share",         no_argument,       0, 's'},
@@ -858,7 +858,6 @@ static struct option long_options[] = {
 	{"propagate",     optional_argument, 0, LONG_OPT_PROPAGATE},
 	{"profile",       required_argument, 0, LONG_OPT_PROFILE},
 	{"priority",      required_argument, 0, LONG_OPT_PRIORITY},
-	{"qos",		  required_argument, 0, LONG_OPT_QOS},
 	{"ramdisk-image", required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
 	{"reboot",        no_argument,       0, LONG_OPT_REBOOT},
 	{"requeue",       no_argument,       0, LONG_OPT_REQUEUE},
@@ -882,7 +881,7 @@ static struct option long_options[] = {
 };
 
 static char *opt_string =
-	"+ba:A:B:c:C:d:D:e:F:g:hHi:IJ:kL:m:M:n:N:o:Op:P:QRsS:t:uU:vVw:Wx:";
+	"+ba:A:B:c:C:d:D:e:F:g:hHi:IJ:kL:m:M:n:N:o:Op:P:q:QRsS:t:uU:vVw:Wx:";
 char *pos_delimit;
 
 
@@ -1505,6 +1504,10 @@ static void _set_options(int argc, char **argv)
 			xfree(opt.dependency);
 			opt.dependency = xstrdup(optarg);
 			break;
+		case 'q':
+			xfree(opt.qos);
+			opt.qos = xstrdup(optarg);
+			break;
 		case 'Q':
 			/* handled in process_options_first_pass() */
 			break;
@@ -1793,10 +1796,6 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_COMMENT:
 			xfree(opt.comment);
 			opt.comment = xstrdup(optarg);
-			break;
-		case LONG_OPT_QOS:
-			xfree(opt.qos);
-			opt.qos = xstrdup(optarg);
 			break;
 		case LONG_OPT_SOCKETSPERNODE:
 			if (!optarg)
@@ -3511,7 +3510,7 @@ static void _help(void)
 "                              value is all or none or any combination of\n"
 "                              energy, lustre, network or task\n"
 "      --propagate[=rlimits]   propagate all [or specific list of] rlimits\n"
-"      --qos=qos               quality of service\n"
+"  -q, --qos=qos               quality of service\n"
 "  -Q, --quiet                 quiet mode (suppress informational messages)\n"
 "      --reboot                reboot compute nodes before starting job\n"
 "      --requeue               if set, permit the job to be requeued\n"
