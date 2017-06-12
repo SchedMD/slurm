@@ -165,12 +165,6 @@ static void _dump_trigger_msg(char *header, trigger_info_msg_t *msg)
 	}
 }
 
-
-static int _match_all_triggers(void *x, void *key)
-{
-	return 1;
-}
-
 /* Validate trigger program */
 static bool _validate_trigger(trig_mgr_info_t *trig_in)
 {
@@ -977,7 +971,7 @@ extern void trigger_state_restore(void)
 
 	safe_unpack_time(&buf_time, buffer);
 	if (trigger_list)
-		list_delete_all (trigger_list, _match_all_triggers, NULL);
+		list_flush(trigger_list);
 	while (remaining_buf(buffer) > 0) {
 		if (_load_trigger_state(buffer, protocol_version) !=
 		    SLURM_SUCCESS)
