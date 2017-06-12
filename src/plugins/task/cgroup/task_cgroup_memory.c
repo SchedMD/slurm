@@ -338,9 +338,9 @@ static int memcg_initialize (xcgroup_ns_t *ns, xcgroup_t *cg,
 	 * Also constrain kernel memory (if available).
 	 * See https://lwn.net/Articles/516529/
 	 */
-
-	xcgroup_set_uint64_param (cg, "memory.kmem.limit_in_bytes",
-				  kmem_limit_in_bytes(mlb));
+	if (constrain_kmem_space)
+		xcgroup_set_uint64_param (cg, "memory.kmem.limit_in_bytes",
+					  kmem_limit_in_bytes(mlb));
 
 	/* this limit has to be set only if ConstrainSwapSpace is set to yes */
 	if ( constrain_swap_space ) {

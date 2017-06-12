@@ -996,8 +996,7 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 					       (sizeof(int) *
 					        hw_sockets * hw_cores));
 					memset(socket_last_pu, 0,
-					       sizeof(hw_sockets
-						      * sizeof(int)));
+					       (sizeof(int) * hw_sockets));
 				}
 			}
 
