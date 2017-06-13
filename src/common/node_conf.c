@@ -91,8 +91,6 @@ static int	_delete_config_record (void);
 static void	_dump_hash (void);
 #endif
 static struct node_record *
-		_find_alias_node_record(char *name, bool log_missing);
-static struct node_record *
 		_find_node_record (char *name,bool test_alias,bool log_missing);
 static void	_list_delete_config (void *config_entry);
 static int	_list_find_config (void *config_entry, void *key);
@@ -313,61 +311,6 @@ static void _dump_hash (void)
 	xhash_walk(node_hash_table, xhash_walk_helper_cbk, NULL);
 }
 #endif
-
-/*
- * _find_alias_node_record - find a record for node with the alias of
- * the specified name supplied
- * IN: name - name to be aliased of the desired node
- * IN: log_missing - if set, then print an error message if the node is not found
- * OUT: return pointer to node record or NULL if not found
- */
-static struct node_record *_find_alias_node_record(char *name, bool log_missing)
-{
-	int i;
-	char *alias = NULL;
-
-	if ((name == NULL) || (name[0] == '\0')) {
-		info("%s: passed NULL name", __func__);
-		return NULL;
-	}
-	/* Get the alias we have just to make sure the user isn't
-	 * trying to use the real hostname to run on something that has
-	 * been aliased.
-	 */
-	alias = slurm_conf_get_nodename(name);
-
-	if (!alias)
-		return NULL;
-
-	/* try to find via hash table, if it exists */
-	if (node_hash_table) {
-		struct node_record *node_ptr;
-
-		node_ptr = (struct node_record*) xhash_get(node_hash_table,
-							   alias);
-		if (node_ptr) {
-			xassert(node_ptr->magic == NODE_MAGIC);
-			xfree(alias);
-			return node_ptr;
-		}
-
-		if (log_missing)
-			error("%s: lookup failure for %s", __func__, name);
-	}
-
-	/* revert to sequential search */
-	else {
-		for (i = 0; i < node_record_count; i++) {
-			if (!xstrcmp (alias, node_record_table_ptr[i].name)) {
-				xfree(alias);
-				return (&node_record_table_ptr[i]);
-			}
-		}
-	}
-
-	xfree(alias);
-	return (struct node_record *) NULL;
-}
 
 /* _list_delete_config - delete an entry from the config list,
  *	see list.h for documentation */
@@ -781,7 +724,6 @@ extern struct node_record *find_node_record_no_alias (char *name)
 static struct node_record *_find_node_record (char *name, bool test_alias,
 					      bool log_missing)
 {
-	int i;
 	struct node_record *node_ptr;
 
 	if ((name == NULL) || (name[0] == '\0')) {
@@ -789,36 +731,40 @@ static struct node_record *_find_node_record (char *name, bool test_alias,
 		return NULL;
 	}
 
+	/* nothing added yet */
+	if (!node_hash_table)
+		return NULL;
+
 	/* try to find via hash table, if it exists */
-	if (node_hash_table) {
-		node_ptr = (struct node_record*) xhash_get(node_hash_table,
-							   name);
-		if (node_ptr) {
-			xassert(node_ptr->magic == NODE_MAGIC);
-			return node_ptr;
-		}
-
-		if ((node_record_count == 1) &&
-		    (xstrcmp(node_record_table_ptr[0].name, "localhost") == 0))
-			return (&node_record_table_ptr[0]);
-
-		if (log_missing)
-			error ("find_node_record: lookup failure for %s", name);
+	if ((node_ptr =
+	     (struct node_record*) xhash_get(node_hash_table, name))) {
+		xassert(node_ptr->magic == NODE_MAGIC);
+		return node_ptr;
 	}
-	/* revert to sequential search */
-	else {
-		for (i = 0; i < node_record_count; i++) {
-			if (!xstrcmp (name, node_record_table_ptr[i].name)) {
-				return (&node_record_table_ptr[i]);
-			}
-		}
-	}
+
+	if ((node_record_count == 1) &&
+	    (xstrcmp(node_record_table_ptr[0].name, "localhost") == 0))
+		return (&node_record_table_ptr[0]);
+
+	if (log_missing)
+		error("%s(%d): lookup failure for %s",
+		      __func__, __LINE__, name);
 
 	if (test_alias) {
+		char *alias = slurm_conf_get_nodename(name);
 		/* look for the alias node record if the user put this in
 	 	 * instead of what slurm sees the node name as */
-		return _find_alias_node_record(name, log_missing);
+		if (!alias)
+			return NULL;
+
+		node_ptr = xhash_get(node_hash_table, alias);
+		if (log_missing)
+			error("%s(%d): lookup failure for %s alias %s",
+			      __func__, __LINE__, name, alias);
+		xfree(alias);
+		return node_ptr;
 	}
+
 	return NULL;
 }
 
