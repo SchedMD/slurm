@@ -96,6 +96,7 @@ static struct node_record *
 		_find_node_record (char *name,bool test_alias,bool log_missing);
 static void	_list_delete_config (void *config_entry);
 static int	_list_find_config (void *config_entry, void *key);
+static const char* _node_record_hash_identity (void* item);
 
 /*
  * _build_single_nodeline_info - From the slurm.conf reader, build table,
@@ -398,6 +399,16 @@ static int _list_find_config (void *config_entry, void *key)
 	if (key == NULL)
 		return 1;
 	return 0;
+}
+
+/*
+ * xhash helper function to index node_record per name field
+ * in node_hash_table
+ */
+static const char* _node_record_hash_identity (void* item)
+{
+	struct node_record *node_ptr = (struct node_record *) item;
+	return node_ptr->name;
 }
 
 /*
@@ -801,15 +812,6 @@ static struct node_record *_find_node_record (char *name, bool test_alias,
 }
 
 /*
- * xhash helper function to index node_record per name field
- * in node_hash_table
- */
-const char* node_record_hash_identity (void* item) {
-	struct node_record *node_ptr = (struct node_record *) item;
-	return node_ptr->name;
-}
-
-/*
  * init_node_conf - initialize the node configuration tables and values.
  *	this should be called before creating any node or configuration
  *	entries.
@@ -988,7 +990,7 @@ extern void rehash_node (void)
 	struct node_record *node_ptr = node_record_table_ptr;
 
 	xhash_free (node_hash_table);
-	node_hash_table = xhash_init(node_record_hash_identity,
+	node_hash_table = xhash_init(_node_record_hash_identity,
 				     NULL, NULL, 0);
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
 		if ((node_ptr->name == NULL) ||
