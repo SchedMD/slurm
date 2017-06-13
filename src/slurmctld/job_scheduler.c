@@ -137,7 +137,7 @@ static uint32_t max_array_size = NO_VAL;
 #ifdef HAVE_ALPS_CRAY
 static int sched_min_interval = 1000000;
 #else
-static int sched_min_interval = 0;
+static int sched_min_interval = 2;
 #endif
 
 static int bb_array_stage_cnt = 10;
@@ -1398,6 +1398,8 @@ static int _schedule(uint32_t job_limit)
 				error("Invalid sched_min_interval: %d", i);
 			else
 				sched_min_interval = i;
+		} else {
+			sched_min_interval = 2;
 		}
 
 		if (sched_params &&
