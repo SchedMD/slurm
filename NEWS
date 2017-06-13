@@ -112,6 +112,7 @@ documents those changes that are of interest to users and administrators.
     time.
  -- Note when a job finishes in the slurmd to avoid a race when launching a
     batch job takes longer than it takes to finish.
+ -- Improve slurmd startup on large systems (> 10000 nodes)
 
 * Changes in Slurm 17.02.4
 ==========================

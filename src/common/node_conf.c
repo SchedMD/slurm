@@ -96,6 +96,7 @@ static struct node_record *
 		_find_node_record (char *name,bool test_alias,bool log_missing);
 static void	_list_delete_config (void *config_entry);
 static int	_list_find_config (void *config_entry, void *key);
+static const char* _node_record_hash_identity (void* item);
 
 /*
  * _build_single_nodeline_info - From the slurm.conf reader, build table,
@@ -231,7 +232,7 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 		}
 		/* find_node_record locks this to get the
 		 * alias so we need to unlock */
-		node_rec = find_node_record(alias);
+		node_rec = find_node_record2(alias);
 
 		if (node_rec == NULL) {
 			node_rec = create_node_record(config_ptr, alias);
@@ -398,6 +399,16 @@ static int _list_find_config (void *config_entry, void *key)
 	if (key == NULL)
 		return 1;
 	return 0;
+}
+
+/*
+ * xhash helper function to index node_record per name field
+ * in node_hash_table
+ */
+static const char* _node_record_hash_identity (void* item)
+{
+	struct node_record *node_ptr = (struct node_record *) item;
+	return node_ptr->name;
 }
 
 /*
@@ -686,10 +697,21 @@ extern struct node_record *create_node_record (
 	if (!node_record_table_ptr) {
 		node_record_table_ptr =
 			(struct node_record *) xmalloc (new_buffer_size);
-	} else if (old_buffer_size != new_buffer_size)
+	} else if (old_buffer_size != new_buffer_size) {
 		xrealloc (node_record_table_ptr, new_buffer_size);
+		/*
+		 * You need to rehash the hash after we realloc or we will have
+		 * only bad memory references in the hash.
+		 */
+		rehash_node();
+	}
 	node_ptr = node_record_table_ptr + (node_record_count++);
 	node_ptr->name = xstrdup(node_name);
+	if (!node_hash_table)
+		node_hash_table = xhash_init(_node_record_hash_identity,
+					     NULL, NULL, 0);
+	xhash_add(node_hash_table, node_ptr);
+
 	node_ptr->config_ptr = config_ptr;
 	/* these values will be overwritten when the node actually registers */
 	node_ptr->cpus = config_ptr->cpus;
@@ -798,15 +820,6 @@ static struct node_record *_find_node_record (char *name, bool test_alias,
 		return _find_alias_node_record(name, log_missing);
 	}
 	return NULL;
-}
-
-/*
- * xhash helper function to index node_record per name field
- * in node_hash_table
- */
-const char* node_record_hash_identity (void* item) {
-	struct node_record *node_ptr = (struct node_record *) item;
-	return node_ptr->name;
 }
 
 /*
@@ -988,7 +1001,7 @@ extern void rehash_node (void)
 	struct node_record *node_ptr = node_record_table_ptr;
 
 	xhash_free (node_hash_table);
-	node_hash_table = xhash_init(node_record_hash_identity,
+	node_hash_table = xhash_init(_node_record_hash_identity,
 				     NULL, NULL, 0);
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
 		if ((node_ptr->name == NULL) ||
