@@ -141,7 +141,6 @@ typedef struct srun_options {
 	char *efname;		/* --error, -e filename         */
 
 	int  slurmd_debug;	/* --slurmd-debug, -D           */
-	bool join;		/* --join, 	    -j		*/
 
 	/* no longer need these, they are set globally : 	*/
 	/*int verbose;*/	/* -v, --verbose		*/

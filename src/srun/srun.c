@@ -112,7 +112,7 @@ static int   _file_bcast(void);
 static void  _pty_restore(void);
 static void  _set_exit_code(void);
 static void  _set_node_alias(void);
-static void  _setup_env_working_cluster();
+static void  _setup_env_working_cluster(void);
 static int   _slurm_debug_env_val (void);
 static char *_uint16_array_to_str(int count, const uint16_t *array);
 
@@ -422,7 +422,7 @@ static void _pty_restore(void)
 		fprintf(stderr, "tcsetattr: %s\n", strerror(errno));
 }
 
-static void _setup_env_working_cluster()
+static void _setup_env_working_cluster(void)
 {
 	char *working_env  = NULL;
 
