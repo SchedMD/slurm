@@ -14,6 +14,8 @@ documents those changes that are of interest to users and administrators.
  -- Note when a job finishes in the slurmd to avoid a race when launching a
     batch job takes longer than it takes to finish.
  -- Improve slurmd startup on large systems (> 10000 nodes)
+ -- Add LaunchParameters option of cray_net_exclusive to control whether all
+    jobs on the cluster have exclusive access to their assigned nodes.
 
 * Changes in Slurm 17.02.4
 ==========================
