@@ -213,6 +213,7 @@ int _verbose;
 opt_t opt;
 int error_exit = 1;
 int immediate_exit = 1;
+char *mpi_type = NULL;
 time_t srun_begin_time = 0;
 resource_allocation_response_msg_t *global_resp = NULL;
 bool first_pass = true;
@@ -429,7 +430,6 @@ static void _opt_default(void)
 		xfree(opt.mcs_label);
 		/* Default launch msg timeout           */
 		opt.msg_timeout		= slurm_get_msg_timeout();
-		xfree(opt.mpi_type);
 		opt.nice		= NO_VAL;
 		opt.no_kill		= false;
 		opt.no_alloc		= false;
@@ -872,8 +872,8 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 
 	case OPT_MPI:
-		xfree(opt.mpi_type);
-		opt.mpi_type = xstrdup(val);
+		xfree(mpi_type);
+		mpi_type = xstrdup(val);
 		if (mpi_hook_client_init((char *)val) == SLURM_ERROR) {
 			error("\"%s=%s\" -- invalid MPI type, "
 			      "--mpi=list for acceptable types.",
@@ -1501,8 +1501,8 @@ static void _set_options(const int argc, char **argv)
 		case LONG_OPT_MPI:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			xfree(opt.mpi_type);
-			opt.mpi_type = xstrdup(optarg);
+			xfree(mpi_type);
+			mpi_type = xstrdup(optarg);
 			if (mpi_hook_client_init((char *)optarg)
 			    == SLURM_ERROR) {
 				error("\"--mpi=%s\" -- long invalid MPI type, "
@@ -2580,7 +2580,7 @@ static bool _opt_verify(void)
 		exit(error_exit);
 
 	if (!mpi_initialized) {
-		opt.mpi_type = slurm_get_mpi_default();
+		mpi_type = slurm_get_mpi_default();
 		(void) mpi_hook_client_init(NULL);
 	}
 

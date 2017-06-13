@@ -129,7 +129,6 @@ typedef struct srun_options {
 	bool job_name_set_env;	/* true if job_name set by env var */
 	unsigned int jobid;     /* --jobid=jobid                */
 	bool jobid_set;		/* true if jobid explicitly set */
-	char *mpi_type;		/* --mpi=type			*/
 	char *dependency;	/* --dependency, -P type:jobid	*/
 	int nice;		/* --nice			*/
 	uint32_t priority;	/* --priority */
