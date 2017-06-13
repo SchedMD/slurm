@@ -232,7 +232,7 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 		}
 		/* find_node_record locks this to get the
 		 * alias so we need to unlock */
-		node_rec = find_node_record(alias);
+		node_rec = find_node_record2(alias);
 
 		if (node_rec == NULL) {
 			node_rec = create_node_record(config_ptr, alias);
@@ -697,10 +697,21 @@ extern struct node_record *create_node_record (
 	if (!node_record_table_ptr) {
 		node_record_table_ptr =
 			(struct node_record *) xmalloc (new_buffer_size);
-	} else if (old_buffer_size != new_buffer_size)
+	} else if (old_buffer_size != new_buffer_size) {
 		xrealloc (node_record_table_ptr, new_buffer_size);
+		/*
+		 * You need to rehash the hash after we realloc or we will have
+		 * only bad memory references in the hash.
+		 */
+		rehash_node();
+	}
 	node_ptr = node_record_table_ptr + (node_record_count++);
 	node_ptr->name = xstrdup(node_name);
+	if (!node_hash_table)
+		node_hash_table = xhash_init(_node_record_hash_identity,
+					     NULL, NULL, 0);
+	xhash_add(node_hash_table, node_ptr);
+
 	node_ptr->config_ptr = config_ptr;
 	/* these values will be overwritten when the node actually registers */
 	node_ptr->cpus = config_ptr->cpus;
