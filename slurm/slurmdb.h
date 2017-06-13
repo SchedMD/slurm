@@ -1555,12 +1555,33 @@ extern List slurmdb_get_info_cluster(char *cluster_names);
  * OUT: cluster_rec - record of selected cluster or NULL if none found or
  * 		      cluster_names is NULL
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
- * note cluster_rec needs to be freed with slurmdb_destroy_cluster_rec() when
+ *
+ * Note: Cluster_rec needs to be freed with slurmdb_destroy_cluster_rec() when
  * called
+ * Note: The will_runs are not threaded. Currently it relies on the
+ * working_cluster_rec to pack the job_desc's jobinfo. See previous commit for
+ * an example of how to thread this.
  */
 extern int slurmdb_get_first_avail_cluster(job_desc_msg_t *req,
 					   char *cluster_names,
 					   slurmdb_cluster_rec_t **cluster_rec);
+
+/*
+ * get the first cluster that will run a heterogeneous job
+ * IN: req - description of resource allocation request
+ * IN: cluster_names - comma separated string of cluster names
+ * OUT: cluster_rec - record of selected cluster or NULL if none found or
+ * 		      cluster_names is NULL
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ *
+ * Note: Cluster_rec needs to be freed with slurmdb_destroy_cluster_rec() when
+ * called
+ * Note: The will_runs are not threaded. Currently it relies on the
+ * working_cluster_rec to pack the job_desc's jobinfo. See previous commit for
+ * an example of how to thread this.
+ */
+extern int slurmdb_get_first_pack_cluster(List job_req_list,
+	char *cluster_names, slurmdb_cluster_rec_t **cluster_rec);
 
 /************** helper functions **************/
 extern void slurmdb_destroy_assoc_usage(void *object);

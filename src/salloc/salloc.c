@@ -126,6 +126,7 @@ static void _pending_callback(uint32_t job_id);
 static void _ping_handler(srun_ping_msg_t *msg);
 static int  _proc_alloc(resource_allocation_response_msg_t *alloc);
 static void _ring_terminal_bell(void);
+static int  _set_cluster_name(void *x, void *arg);
 static void _set_exit_code(void);
 static void _set_rlimits(char **env);
 static void _set_spank_env(void);
@@ -162,6 +163,12 @@ static void _reset_input_mode (void)
 	 * the parent pid before exiting */
 	if (is_interactive)
 		tcsetpgrp(STDIN_FILENO, getpgid(getppid()));
+}
+
+static int _set_cluster_name(void *x, void *arg)
+{	job_desc_msg_t *desc = (job_desc_msg_t *) x;
+	desc->origin_cluster = xstrdup(slurmctld_conf.cluster_name);
+	return 0;
 }
 
 int main(int argc, char **argv)
@@ -344,15 +351,23 @@ int main(int argc, char **argv)
 
 	/* If can run on multiple clusters find the earliest run time
 	 * and run it there */
-//FIXME: Caveat for federations??
-	desc->clusters = xstrdup(opt.clusters);
-	if (opt.clusters &&
-	    slurmdb_get_first_avail_cluster(desc, opt.clusters,
-			&working_cluster_rec) != SLURM_SUCCESS) {
-		print_db_notok(opt.clusters, 0);
-		exit(error_exit);
+	if (opt.clusters) {
+		if (job_req_list) {
+			rc = slurmdb_get_first_pack_cluster(job_req_list,
+					opt.clusters, &working_cluster_rec);
+		} else {
+			rc = slurmdb_get_first_avail_cluster(desc,
+					opt.clusters, &working_cluster_rec);
+		}
+		if (rc != SLURM_SUCCESS) {
+			print_db_notok(opt.clusters, 0);
+			exit(error_exit);
+		}
 	}
-	desc->origin_cluster = xstrdup(slurmctld_conf.cluster_name);
+	if (job_req_list)
+		(void) list_for_each(job_req_list, _set_cluster_name, NULL);
+	else
+		desc->origin_cluster = xstrdup(slurmctld_conf.cluster_name);
 
 	callbacks.ping = _ping_handler;
 	callbacks.timeout = _timeout_handler;

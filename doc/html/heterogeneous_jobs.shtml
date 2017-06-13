@@ -120,6 +120,11 @@ $ sbatch --cpus-per-task=4 --mem-per-cpu=16g --ntasks=1 : \
 of the heterogeneous job. For the above example, that will be the job component
 with 1 task, 4 CPUs and 64 GB of memory (16 GB for each of the 4 CPUs).</p>
 
+<p>If a heterogeneous job is submitted to run in multiple clusters <u>not</u>
+part of a federation (e.g. "sbatch --cluster=alpha,beta ...") then the entire
+job will be sent to the cluster expected to be able to start all components
+at the earliest time.</p>
+
 <h2><a name="managing">Managing Jobs</a></h2>
 
 <p>Information maintained in Slurm for a heterogeneous job includes:</p>
@@ -253,6 +258,6 @@ heterogeneous job.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 7 June 2017</p>
+<p style="text-align:center;">Last modified 13 June 2017</p>
 
 <!--#include virtual="footer.txt"-->

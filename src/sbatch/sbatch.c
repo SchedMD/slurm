@@ -183,13 +183,18 @@ int main(int argc, char **argv)
 
 	/* If can run on multiple clusters find the earliest run time
 	 * and run it there */
-//FIXME: Caveat for federations??
-	desc->clusters = xstrdup(opt.clusters);
-	if (opt.clusters &&
-	    slurmdb_get_first_avail_cluster(desc, opt.clusters,
-			&working_cluster_rec) != SLURM_SUCCESS) {
-		print_db_notok(opt.clusters, 0);
-		exit(error_exit);
+	if (opt.clusters) {
+		if (job_req_list) {
+			rc = slurmdb_get_first_pack_cluster(job_req_list,
+					opt.clusters, &working_cluster_rec);
+		} else {
+			rc = slurmdb_get_first_avail_cluster(desc,
+					opt.clusters, &working_cluster_rec);
+		}
+		if (rc != SLURM_SUCCESS) {
+			print_db_notok(opt.clusters, 0);
+			exit(error_exit);
+		}
 	}
 
 	if (job_req_list && is_alps_cray_system()) {
