@@ -3415,15 +3415,6 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 
 	step_ptr = find_step_record(job_ptr, req->job_step_id);
 
-	/* FIXME: It was changed in 16.05.3 to make the extern step
-	 * at the beginning of the job, so this isn't really needed
-	 * anymore, but just in case there were steps out on the nodes
-	 * during an upgrade this was left in.  It can probably be
-	 * taken out in future releases though.
-	 */
-	if ((step_ptr == NULL) && (req->job_step_id == SLURM_EXTERN_CONT))
-		step_ptr = build_extern_step(job_ptr);
-
 	if (step_ptr == NULL) {
 		info("step_partial_comp: StepID=%u.%u invalid",
 		     req->job_id, req->job_step_id);

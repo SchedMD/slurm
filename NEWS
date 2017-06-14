@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
     jobs on the cluster have exclusive access to their assigned nodes.
  -- Make sure srun inside an allocation gets --ntasks-per-[core|socket]
     set correctly.
+ -- Only make the extern step at job creation.
 
 * Changes in Slurm 17.02.4
 ==========================
