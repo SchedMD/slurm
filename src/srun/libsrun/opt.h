@@ -267,13 +267,18 @@ extern resource_allocation_response_msg_t *global_resp;
 			     (opt.pn_min_threads  != NO_VAL) || \
 			     (opt.contiguous))
 
-/* process options:
+/*
+ * process options:
  * 1. set defaults
  * 2. update options with env vars
  * 3. update options with commandline args
  * 4. perform some verification that options are reasonable
+ *
+ * argc IN - Count of elements in argv
+ * argv IN - Array of elements to parse
+ * argc_off OUT - Offset of first non-parsable element
  */
-int initialize_and_process_args(int argc, char **argv);
+extern int initialize_and_process_args(int argc, char **argv, int *argc_off);
 
 /* external functions available for SPANK plugins to modify the environment
  * exported to the SLURM Prolog and Epilog programs */

@@ -430,10 +430,14 @@ job_create_allocation(resource_allocation_response_msg_t *resp)
 	return (job);
 }
 
-extern void init_srun(int ac, char **av,
+extern void init_srun(int argc, char **argv,
 		      log_options_t *logopt, int debug_level,
 		      bool handle_signals)
 {
+	bool pack_fini = false;
+	int pack_argc, pack_inx, pack_argc_off;
+	char **pack_argv;
+
 	/* This must happen before we spawn any threads
 	 * which are not designed to handle arbitrary signals */
 	if (handle_signals) {
@@ -455,13 +459,26 @@ extern void init_srun(int ac, char **av,
 	if (atexit(_call_spank_fini) < 0)
 		error("Failed to register atexit handler for plugins: %m");
 
-	/* set default options, process commandline arguments, and
-	 * verify some basic values
-	 */
-	if (initialize_and_process_args(ac, av) < 0) {
-		error ("srun initialization failed");
-		exit (1);
+	pack_argc = argc;
+	pack_argv = argv;
+	for (pack_inx = 0; !pack_fini; pack_inx++) {
+		pack_argc_off = -1;
+		if (initialize_and_process_args(pack_argc, pack_argv,
+						&pack_argc_off) < 0) {
+			error("srun parameter parsing");
+			exit(1);
+		}
+		if ((pack_argc_off >= 0) && (pack_argc_off < pack_argc) &&
+		    !xstrcmp(pack_argv[pack_argc_off], ":")) {
+			/* pack_argv[0] moves from "srun" to ":" */
+			pack_argc -= pack_argc_off;
+			pack_argv += pack_argc_off;
+		} else
+			pack_fini = true;
 	}
+//FIXME: Need to flesh out pack job support
+if (pack_inx > 1) exit(0);
+
 	record_ppid();
 
 	if (spank_init_post_opt() < 0) {

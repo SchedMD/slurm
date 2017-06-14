@@ -216,7 +216,7 @@ int immediate_exit = 1;
 char *mpi_type = NULL;
 time_t srun_begin_time = 0;
 resource_allocation_response_msg_t *global_resp = NULL;
-bool first_pass = true;
+int pass_number = 0;
 
 /*---- forward declarations of static functions  ----*/
 static bool mpi_initialized = false;
@@ -251,8 +251,21 @@ static bool  _valid_node_list(char **node_list_pptr);
 
 /*---[ end forward declarations of static functions ]---------------------*/
 
-extern int initialize_and_process_args(int argc, char **argv)
+/*
+ * process options:
+ * 1. set defaults
+ * 2. update options with env vars
+ * 3. update options with commandline args
+ * 4. perform some verification that options are reasonable
+ *
+ * argc IN - Count of elements in argv
+ * argv IN - Array of elements to parse
+ * argc_off OUT - Offset of first non-parsable element
+ */
+extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 {
+	pass_number++;
+
 	/* initialize option defaults */
 	_opt_default();
 
@@ -261,6 +274,8 @@ extern int initialize_and_process_args(int argc, char **argv)
 
 	/* initialize options with argv */
 	_opt_args(argc, argv);
+	if (argc_off)
+		*argc_off = optind;
 
 	if (!_opt_verify())
 		exit(error_exit);
@@ -378,13 +393,12 @@ static void argerror(const char *msg, ...)
  */
 static void _opt_default(void)
 {
-	static bool first_pass = true;
 	char *launch_params;
 	char buf[MAXPATHLEN + 1];
 	int i;
 	uid_t uid = getuid();
 
-	if (first_pass) {
+	if (pass_number == 1) {
 		xfree(opt.account);
 		xfree(opt.acctg_freq);
 		opt.allocate		= false;
@@ -470,7 +484,6 @@ static void _opt_default(void)
 		opt.warn_time		= 0;
 		xfree(opt.wckey);
 		_verbose		= 0;
-//FIXME: Move first_pass variable
 	}
 
 	/* All other options must be specified individually for each component
@@ -685,11 +698,14 @@ env_vars_t env_vars[] = {
  */
 static void _opt_env(void)
 {
-	char       *val = NULL;
+	char       key[64], *val = NULL;
 	env_vars_t *e   = env_vars;
+	int pack_offset = pass_number - 1;
 
 	while (e->var) {
-		if ((val = getenv(e->var)) != NULL)
+		snprintf(key, sizeof(key), "%s_PACK_GROUP_%d",
+			 e->var, pack_offset);
+		if ((val = getenv(e->var)) || (val = getenv(key)))
 			_process_env_var(e, val);
 		e++;
 	}
@@ -1090,7 +1106,7 @@ static void _set_options(const int argc, char **argv)
 
 	if (opt.progname == NULL)
 		opt.progname = xbasename(argv[0]);
-	else
+	else if (pass_number <= 1)
 		error("opt.progname is already set.");
 	optind = 0;
 	while ((opt_char = getopt_long(argc, argv, opt_string,

@@ -131,7 +131,7 @@ extern srun_job_t *job_step_create_allocation(
 extern srun_job_t * job_create_allocation(
 	resource_allocation_response_msg_t *resp);
 
-extern void init_srun(int ac, char **av,
+extern void init_srun(int argc, char **argv,
 		      log_options_t *logopt, int debug_level,
 		      bool handle_signals);
 
