@@ -84,10 +84,11 @@ typedef struct {
 	void *priv;
 } pmixp_dconn_t;
 
-typedef void *(*pmixp_dconn_p2p_init_t)(int nodeid, pmixp_p2p_data_t direct_hdr);
+typedef void *(*pmixp_dconn_p2p_init_t)(int nodeid,
+					pmixp_p2p_data_t direct_hdr);
 typedef void (*pmixp_dconn_p2p_fini_t)(void *_priv);
-typedef int (*pmixp_dconn_p2p_connect_t)(void *_priv, void *ep_data, size_t ep_len,
-					 void *init_msg);
+typedef int (*pmixp_dconn_p2p_connect_t)(void *_priv, void *ep_data,
+					 size_t ep_len, void *init_msg);
 typedef int (*pmixp_dconn_p2p_send_nb_t)(void *_priv, void *msg);
 typedef pmixp_io_engine_t *(*pmixp_dconn_p2p_getio_t)(void *_priv);
 typedef void (*pmixp_dconn_p2p_regio_t)(eio_handle_t *h);
@@ -153,7 +154,8 @@ static inline void
 pmixp_dconn_req_sent(pmixp_dconn_t *dconn)
 {
 	if (PMIXP_DIRECT_INIT != dconn->state) {
-		PMIXP_ERROR("State machine violation, when transition to PORT_SENT from %d",
+		PMIXP_ERROR("State machine violation, when transition "
+			    "to PORT_SENT from %d",
 			    (int)dconn->state);
 		xassert(PMIXP_DIRECT_INIT == dconn->state);
 		abort();
@@ -172,7 +174,8 @@ static inline void pmixp_dconn_regio(eio_handle_t *h)
 	return _pmixp_dconn_h.regio(h);
 }
 
-int pmixp_dconn_connect_do(pmixp_dconn_t *dconn, void *ep_data, size_t ep_len, void *init_msg);
+int pmixp_dconn_connect_do(pmixp_dconn_t *dconn, void *ep_data,
+			   size_t ep_len, void *init_msg);
 
 /* Returns locked direct connection descriptor */
 
@@ -192,7 +195,8 @@ pmixp_dconn_require_connect(pmixp_dconn_t *dconn, bool *send_init)
 				return true;
 			} else {
 				/* just ignore this connection,
-				 * remote side will come with counter-connection
+				 * remote side will come with counter-
+				 * connection
 				 */
 				return false;
 			}
@@ -202,7 +206,8 @@ pmixp_dconn_require_connect(pmixp_dconn_t *dconn, bool *send_init)
 			return true;
 		default:
 			/* shouldn't happen */
-			PMIXP_ERROR("Unexpected direct connection semantics type: %d",
+			PMIXP_ERROR("Unexpected direct connection "
+				    "semantics type: %d",
 				    pmixp_dconn_connect_type());
 			xassert(0 && pmixp_dconn_connect_type());
 			abort();
@@ -214,7 +219,8 @@ pmixp_dconn_require_connect(pmixp_dconn_t *dconn, bool *send_init)
 		return false;
 	default:
 		/* shouldn't happen */
-		PMIXP_ERROR("Unexpected direct connection state: PMIXP_DIRECT_NONE");
+		PMIXP_ERROR("Unexpected direct connection state: "
+			    "PMIXP_DIRECT_NONE");
 		xassert(0 && pmixp_dconn_state(dconn));
 		abort();
 	}
@@ -222,7 +228,8 @@ pmixp_dconn_require_connect(pmixp_dconn_t *dconn, bool *send_init)
 }
 
 static inline int
-pmixp_dconn_connect(pmixp_dconn_t *dconn, void *ep_data, int ep_len, void *init_msg)
+pmixp_dconn_connect(pmixp_dconn_t *dconn, void *ep_data, int ep_len,
+		    void *init_msg)
 {
 	int rc;
 	/* establish the connection */
@@ -237,12 +244,13 @@ pmixp_dconn_connect(pmixp_dconn_t *dconn, void *ep_data, int ep_len, void *init_
 		char *nodename = pmixp_info_job_host(dconn->nodeid);
 		xassert(nodename);
 		if (NULL == nodename) {
-			PMIXP_ERROR("Bad nodeid = %d in the incoming message", dconn->nodeid);
+			PMIXP_ERROR("Bad nodeid = %d in the incoming message",
+				    dconn->nodeid);
 			abort();
 		}
 		dconn->state = PMIXP_DIRECT_INIT;
 		PMIXP_ERROR("Cannot establish direct connection to %s (%d)",
-			   nodename, dconn->nodeid);
+			    nodename, dconn->nodeid);
 		xfree(nodename);
 	}
 	return rc;
@@ -265,9 +273,11 @@ static inline pmixp_dconn_t *
 pmixp_dconn_accept(int nodeid, int fd)
 {
 	if( PMIXP_DCONN_PROGRESS_SW != pmixp_dconn_progress_type() ){
-		PMIXP_ERROR("Accept is not supported by direct connection of type %d",
+		PMIXP_ERROR("Accept is not supported by direct connection "
+			    "of type %d",
 			    (int)pmixp_dconn_progress_type());
-		xassert( PMIXP_DCONN_PROGRESS_SW == pmixp_dconn_progress_type());
+		xassert(PMIXP_DCONN_PROGRESS_SW ==
+			pmixp_dconn_progress_type());
 		return NULL;
 	}
 	pmixp_dconn_t *dconn = pmixp_dconn_lock(nodeid);
@@ -309,7 +319,8 @@ pmixp_dconn_disconnect(pmixp_dconn_t *dconn)
 	}
 	default:
 		/* shouldn't happen */
-		PMIXP_ERROR("Unexpected direct connection state: PMIXP_DIRECT_NONE");
+		PMIXP_ERROR("Unexpected direct connection state: "
+			    "PMIXP_DIRECT_NONE");
 		xassert(0 && pmixp_dconn_state(dconn));
 		abort();
 	}

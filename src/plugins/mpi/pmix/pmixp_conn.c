@@ -49,20 +49,20 @@ static List _conn_list, _empty_hndl_list;
 static pmixp_p2p_data_t _slurm_hdr, _direct_hdr;
 
 void pmixp_conn_init(pmixp_p2p_data_t slurm_hdr,
-			  pmixp_p2p_data_t direct_hdr)
+		     pmixp_p2p_data_t direct_hdr)
 {
-       _conn_list = list_create(_msg_handler_destruct);
-       _empty_hndl_list = list_create(_msg_handler_destruct);
-       _slurm_hdr = slurm_hdr;
-       _direct_hdr = direct_hdr;
-       _tmp_engines_init();
+	_conn_list = list_create(_msg_handler_destruct);
+	_empty_hndl_list = list_create(_msg_handler_destruct);
+	_slurm_hdr = slurm_hdr;
+	_direct_hdr = direct_hdr;
+	_tmp_engines_init();
 }
 
 void pmixp_conn_fini(void)
 {
-       list_destroy(_conn_list);
-       list_destroy(_empty_hndl_list);
-       _tmp_engines_fini();
+	list_destroy(_conn_list);
+	list_destroy(_empty_hndl_list);
+	_tmp_engines_fini();
 
 }
 
@@ -84,7 +84,8 @@ static void _msg_handler_destruct(void *obj)
 		break;
 	default:
 		/* this shouldn't happen! */
-		PMIXP_ERROR("Bad message handler connection type: %d", (int)conn->type);
+		PMIXP_ERROR("Bad message handler connection type: %d",
+			    (int)conn->type);
 		abort();
 	}
 	xfree(conn);
@@ -95,7 +96,7 @@ void pmixp_conn_cleanup(void)
 	ListIterator it = list_iterator_create(_conn_list);
 	pmixp_conn_t *hndl = NULL;
 	while (NULL != (hndl = list_next(it))) {
-		if( PMIXP_CONN_EMPTY == hndl->type ){
+		if (PMIXP_CONN_EMPTY == hndl->type) {
 			/* move this handler to the empty list */
 			list_remove(it);
 			list_append(_empty_hndl_list, hndl);
@@ -111,7 +112,7 @@ pmixp_conn_new_temp(pmixp_conn_proto_t proto, int fd,
 	xassert( proto == PMIXP_PROTO_SLURM || proto == PMIXP_PROTO_DIRECT);
 
 	pmixp_conn_t *conn = list_pop(_empty_hndl_list);
-	if( NULL == conn ){
+	if (NULL == conn) {
 		conn = xmalloc(sizeof(*conn));
 	}
 
@@ -144,14 +145,14 @@ pmixp_conn_new_temp(pmixp_conn_proto_t proto, int fd,
 
 pmixp_conn_t *
 pmixp_conn_new_persist(pmixp_conn_proto_t proto,
-		    pmixp_io_engine_t *eng, pmixp_conn_new_msg_cb_t nmsg_cb,
-		    pmixp_conn_ret_cb_t ret_cb, void *ret_data)
+		       pmixp_io_engine_t *eng, pmixp_conn_new_msg_cb_t nmsg_cb,
+		       pmixp_conn_ret_cb_t ret_cb, void *ret_data)
 {
 	xassert( proto == PMIXP_PROTO_SLURM || proto == PMIXP_PROTO_DIRECT);
 	xassert( NULL != eng );
 
 	pmixp_conn_t *conn = list_pop(_empty_hndl_list);
-	if( NULL == conn ){
+	if (NULL == conn) {
 		conn = xmalloc(sizeof(*conn));
 	}
 
@@ -184,7 +185,7 @@ pmixp_conn_return(pmixp_conn_t *conn)
 		/* corresponding I/O engine was allocated somewhere else */
 		break;
 	case PMIXP_CONN_TEMP: {
-		if( pmixp_io_conn_closed(conn->eng) ){
+		if (pmixp_io_conn_closed(conn->eng)) {
 			int fd = pmixp_io_detach(conn->eng);
 			close(fd);
 		}

@@ -158,7 +158,7 @@ static int _tcp_send(void *_priv, void *msg)
 {
 	pmixp_dconn_tcp_t *priv = (pmixp_dconn_tcp_t *)_priv;
 	int rc = pmixp_io_send_enqueue(&priv->eng, msg);
-	if( SLURM_SUCCESS != rc) {
+	if (SLURM_SUCCESS != rc) {
 		char *nodename = pmixp_info_job_host(priv->nodeid);
 		xassert(NULL != nodename);
 		PMIXP_ERROR("Fail to enqueue to engine, node: %s (%d)",

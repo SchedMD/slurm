@@ -46,7 +46,7 @@ static void _progress_fan_in(pmixp_coll_t *coll);
 static void _progres_fan_out(pmixp_coll_t *coll);
 
 static int _hostset_from_ranges(const pmix_proc_t *procs, size_t nprocs,
-		hostlist_t *hl_out)
+				hostlist_t *hl_out)
 {
 	int i;
 	hostlist_t hl = hostlist_create("");
@@ -130,7 +130,8 @@ static void _fan_out_finished(pmixp_coll_t *coll)
 		break;
 	default:
 		PMIXP_ERROR("Bad collective state = %d", coll->state);
-		xassert(PMIXP_COLL_FAN_OUT == coll->state || PMIXP_COLL_FAN_OUT_IN == coll->state);
+		xassert(PMIXP_COLL_FAN_OUT == coll->state ||
+			PMIXP_COLL_FAN_OUT_IN == coll->state);
 	}
 }
 
@@ -144,8 +145,7 @@ static void _reset_coll(pmixp_coll_t *coll)
 	case PMIXP_COLL_FAN_OUT:
 		coll->serv_offs = pmixp_server_buf_reset(coll->buf);
 		if (SLURM_SUCCESS != _pack_ranges(coll)) {
-			PMIXP_ERROR(
-					"Cannot pack ranges to coll message header!");
+			PMIXP_ERROR("Cannot pack ranges to message header!");
 		}
 		coll->state = PMIXP_COLL_SYNC;
 		memset(coll->ch_contribs, 0, sizeof(int) * coll->children_cnt);
@@ -161,7 +161,7 @@ static void _reset_coll(pmixp_coll_t *coll)
 }
 
 int pmixp_coll_unpack_ranges(Buf buf, pmixp_coll_type_t *type,
-		pmix_proc_t **r, size_t *nr)
+			     pmix_proc_t **r, size_t *nr)
 {
 	pmix_proc_t *procs = NULL;
 	uint32_t nprocs = 0;
@@ -190,7 +190,7 @@ int pmixp_coll_unpack_ranges(Buf buf, pmixp_coll_type_t *type,
 		rc = unpackmem(procs[i].nspace, &tmp, buf);
 		if (SLURM_SUCCESS != rc) {
 			PMIXP_ERROR("Cannot unpack namespace for process #%d",
-					i);
+				    i);
 			return rc;
 		}
 		procs[i].nspace[tmp] = '\0';
@@ -199,9 +199,9 @@ int pmixp_coll_unpack_ranges(Buf buf, pmixp_coll_type_t *type,
 		rc = unpack32(&tmp, buf);
 		procs[i].rank = tmp;
 		if (SLURM_SUCCESS != rc) {
-			PMIXP_ERROR(
-					"Cannot unpack ranks for process #%d, nsp=%s",
-					i, procs[i].nspace);
+			PMIXP_ERROR("Cannot unpack ranks for process #%d,"
+				    " nsp=%s",
+				    i, procs[i].nspace);
 			return rc;
 		}
 	}
@@ -225,7 +225,8 @@ int pmixp_coll_belong_chk(pmixp_coll_type_t type,
 		}
 	}
 	/* we don't participate in this collective! */
-	PMIXP_ERROR("Have collective that doesn't include this job's namespace");
+	PMIXP_ERROR("Have collective that doesn't include this job's "
+		    "namespace");
 	return -1;
 }
 
@@ -233,7 +234,7 @@ int pmixp_coll_belong_chk(pmixp_coll_type_t type,
  * Based on ideas provided by Hongjia Cao <hjcao@nudt.edu.cn> in PMI2 plugin
  */
 int pmixp_coll_init(pmixp_coll_t *coll, const pmix_proc_t *procs,
-		size_t nprocs, pmixp_coll_type_t type)
+		    size_t nprocs, pmixp_coll_type_t type)
 {
 	hostlist_t hl;
 	uint32_t nodeid = 0, nodes = 0;
@@ -262,7 +263,7 @@ int pmixp_coll_init(pmixp_coll_t *coll, const pmix_proc_t *procs,
 	nodes = hostlist_count(hl);
 	nodeid = hostlist_find(hl, pmixp_info_hostname());
 	reverse_tree_info(nodeid, nodes, width, &parent_id, &tmp, &depth,
-			&max_depth);
+			  &max_depth);
 	coll->children_cnt = tmp;
 	coll->nodeid = nodeid;
 
@@ -273,7 +274,7 @@ int pmixp_coll_init(pmixp_coll_t *coll, const pmix_proc_t *procs,
 	ch_nodeids = xmalloc(sizeof(int) * width);
 	coll->ch_contribs = xmalloc(sizeof(int) * width);
 	coll->children_cnt = reverse_tree_direct_children(nodeid, nodes, width,
-			depth, ch_nodeids);
+							  depth, ch_nodeids);
 
 	/* create the hostlist with extract direct children's hostnames */
 	coll->ch_hosts = hostlist_create("");
@@ -288,7 +289,8 @@ int pmixp_coll_init(pmixp_coll_t *coll, const pmix_proc_t *procs,
 	if (parent_id == -1) {
 		/* if we are the root of the tree:
 		 * - we don't have a parent;
-		 * - we have large list of all_childrens (we don't want ourselfs there)
+		 * - we have large list of all_childrens (we don't want
+		 * ourselfs there)
 		 */
 		coll->parent_host = NULL;
 		hostlist_delete_host(hl, pmixp_info_hostname());
@@ -348,7 +350,7 @@ void pmixp_coll_free(pmixp_coll_t *coll)
 int pmixp_coll_contrib_local(pmixp_coll_t *coll, char *data, size_t size)
 {
 	PMIXP_DEBUG("%s:%d: get local contribution", pmixp_info_namespace(),
-			pmixp_info_nodeid());
+		    pmixp_info_nodeid());
 
 	/* sanity check */
 	pmixp_coll_sanity_check(coll);
@@ -358,9 +360,9 @@ int pmixp_coll_contrib_local(pmixp_coll_t *coll, char *data, size_t size)
 
 	/* change the collective state if need */
 	if (PMIXP_COLL_SYNC == coll->state) {
-		PMIXP_DEBUG(
-				"%s:%d: get local contribution: switch to PMIXP_COLL_FAN_IN",
-				pmixp_info_namespace(), pmixp_info_nodeid());
+		PMIXP_DEBUG("%s:%d: get local contribution: "
+			    "switch to PMIXP_COLL_FAN_IN",
+			    pmixp_info_namespace(), pmixp_info_nodeid());
 		coll->state = PMIXP_COLL_FAN_IN;
 		coll->ts = time(NULL);
 	}
@@ -369,14 +371,15 @@ int pmixp_coll_contrib_local(pmixp_coll_t *coll, char *data, size_t size)
 	/* save & mark local contribution */
 	coll->contrib_local = true;
 	pmixp_server_buf_reserve(coll->buf, size);
-	memcpy(get_buf_data(coll->buf) + get_buf_offset(coll->buf), data, size);
+	memcpy(get_buf_data(coll->buf) + get_buf_offset(coll->buf),
+	       data, size);
 	set_buf_offset(coll->buf, get_buf_offset(coll->buf) + size);
 
 	/* check if the collective is ready to progress */
 	_progress_fan_in(coll);
 
 	PMIXP_DEBUG("%s:%d: get local contribution: finish",
-			pmixp_info_namespace(), pmixp_info_nodeid());
+		    pmixp_info_namespace(), pmixp_info_nodeid());
 
 	/* unlock the structure */
 	slurm_mutex_unlock(&coll->lock);
@@ -398,11 +401,12 @@ int pmixp_coll_contrib_node(pmixp_coll_t *coll, uint32_t glob_nodeid, Buf buf)
 	xassert(0 <= nodeid);
 	if (0 > nodeid) {
 		/* protect ourselfs if we are running with no asserts */
-		PMIXP_ERROR("Contribution from the node not participating in this collective");
+		PMIXP_ERROR("Contribution from the node not participating in "
+			    "this collective");
 		goto proceed;
 	}
 	PMIXP_DEBUG("%s:%d: get contribution from node %s",
-			pmixp_info_namespace(), pmixp_info_nodeid(), nodename);
+		    pmixp_info_namespace(), pmixp_info_nodeid(), nodename);
 
 	/* lock the structure */
 	slurm_mutex_lock(&coll->lock);
@@ -411,27 +415,30 @@ int pmixp_coll_contrib_node(pmixp_coll_t *coll, uint32_t glob_nodeid, Buf buf)
 
 	/* fix the collective status if need */
 	if (PMIXP_COLL_SYNC == coll->state) {
-		PMIXP_DEBUG("%s:%d: get contribution from node %s: switch to PMIXP_COLL_FAN_IN",
+		PMIXP_DEBUG("%s:%d: get contribution from node %s: switch"
+			    " to PMIXP_COLL_FAN_IN",
 			    pmixp_info_namespace(), pmixp_info_nodeid(),
 			    nodename);
 		coll->state = PMIXP_COLL_FAN_IN;
 		coll->ts = time(NULL);
 	} else if( PMIXP_COLL_FAN_OUT == coll->state) {
-		PMIXP_DEBUG("%s:%d: get contribution from node %s: switch to PMIXP_COLL_FAN_OUT_IN"
-			    " (next collective!)",
+		PMIXP_DEBUG("%s:%d: get contribution from node %s: switch"
+			    " to PMIXP_COLL_FAN_OUT_IN (next collective!)",
 			    pmixp_info_namespace(), pmixp_info_nodeid(),
 			    nodename);
 		coll->state = PMIXP_COLL_FAN_OUT_IN;
 		coll->ts_next = time(NULL);
 	}
-	xassert(PMIXP_COLL_FAN_IN == coll->state || PMIXP_COLL_FAN_OUT_IN == coll->state);
+	xassert(PMIXP_COLL_FAN_IN == coll->state ||
+		PMIXP_COLL_FAN_OUT_IN == coll->state);
 
 	/* Because of possible timeouts/delays in transmission we
 	 * can receive a contribution second time. Avoid duplications
 	 * by checking our records. */
 	if (0 < coll->ch_contribs[nodeid]) {
 		/* May be 0 or 1. If grater - transmission skew, ignore. */
-		PMIXP_DEBUG("Multiple contributions from child_id=%d, hostname=%s",
+		PMIXP_DEBUG("Multiple contributions from child_id=%d,"
+			    " hostname=%s",
 			    nodeid, nodename);
 		/* this is duplication, skip. */
 		goto proceed;
@@ -440,7 +447,8 @@ int pmixp_coll_contrib_node(pmixp_coll_t *coll, uint32_t glob_nodeid, Buf buf)
 	data = get_buf_data(buf) + get_buf_offset(buf);
 	size = remaining_buf(buf);
 	pmixp_server_buf_reserve(coll->buf, size);
-	memcpy(get_buf_data(coll->buf) + get_buf_offset(coll->buf), data, size);
+	memcpy(get_buf_data(coll->buf) + get_buf_offset(coll->buf),
+	       data, size);
 	set_buf_offset(coll->buf, get_buf_offset(coll->buf) + size);
 
 	/* increase number of individual contributions */
@@ -483,7 +491,8 @@ proceed:
 
 void pmixp_coll_bcast(pmixp_coll_t *coll)
 {
-	PMIXP_DEBUG("%s:%d: start", pmixp_info_namespace(), pmixp_info_nodeid());
+	PMIXP_DEBUG("%s:%d: start", pmixp_info_namespace(),
+		    pmixp_info_nodeid());
 
 	/* lock the structure */
 	slurm_mutex_lock(&coll->lock);
@@ -542,7 +551,8 @@ static void _sent_complete_cb(int rc, pmixp_p2p_ctx_t ctx, void *cb_data)
 		 * this callback), so we have to rely on buffering on the
 		 * SLURM side. Better not to do so. */
 		if (NULL == coll->parent_host) {
-			/* if I am the root - pass the data to PMIx and reset collective here */
+			/* if I am the root - pass the data to PMIx and
+			 * reset collective here */
 			/* copy payload excluding reserved server header */
 			_progres_fan_out(coll);
 		}
@@ -566,8 +576,8 @@ static void _progress_fan_in(pmixp_coll_t *coll)
 	ep.type = PMIXP_EP_NONE;
 
 	PMIXP_DEBUG("%s:%d: start, local=%d, child_cntr=%d",
-			pmixp_info_namespace(), pmixp_info_nodeid(),
-			coll->contrib_local, coll->contrib_cntr);
+		    pmixp_info_namespace(), pmixp_info_nodeid(),
+		    coll->contrib_local, coll->contrib_cntr);
 
 	/* lock the collective */
 	pmixp_coll_sanity_check(coll);
@@ -599,14 +609,16 @@ static void _progress_fan_in(pmixp_coll_t *coll)
 			type = PMIXP_MSG_FAN_OUT;
 			pmixp_debug_hang(0);
 		}
-		rc = _copy_payload(coll->buf, coll->serv_offs, &coll->root_buf);
+		rc = _copy_payload(coll->buf, coll->serv_offs,
+				   &coll->root_buf);
 		xassert(0 == rc);
-		PMIXP_DEBUG("%s:%d: finish with this collective (I am the root)",
+		PMIXP_DEBUG("%s:%d: finish with this collective "
+			    "(I am the root)",
 			    pmixp_info_namespace(), pmixp_info_nodeid());
 	}
 
 	PMIXP_DEBUG("%s:%d: send data to %s", pmixp_info_namespace(),
-			pmixp_info_nodeid(), hostlist);
+		    pmixp_info_nodeid(), hostlist);
 
 	/* Check for the singletone case */
 	if (PMIXP_EP_NONE != ep.type) {
@@ -614,13 +626,15 @@ static void _progress_fan_in(pmixp_coll_t *coll)
 					  _sent_complete_cb, coll);
 
 		if (SLURM_SUCCESS != rc) {
-			PMIXP_ERROR("Cannot send data (size = %lu), to hostlist:\n%s",
+			PMIXP_ERROR("Cannot send data (size = %lu), "
+				    "to hostlist:\n%s",
 				    (uint64_t) get_buf_offset(coll->buf),
 				    hostlist);
 			/* Notify local PMIx server about this failure
 			 * TODO: Find better error code
 			 */
-			coll->cbfunc(PMIX_ERROR, NULL, 0, coll->cbdata, NULL, NULL);
+			coll->cbfunc(PMIX_ERROR, NULL, 0, coll->cbdata,
+				     NULL, NULL);
 		}
 	}
 
@@ -637,20 +651,22 @@ static void _progress_fan_in(pmixp_coll_t *coll)
 void _progres_fan_out(pmixp_coll_t *coll)
 {
 	Buf buf = coll->root_buf;
-	PMIXP_DEBUG("%s:%d: start", pmixp_info_namespace(), pmixp_info_nodeid());
+	PMIXP_DEBUG("%s:%d: start", pmixp_info_namespace(),
+		    pmixp_info_nodeid());
 
 	pmixp_coll_sanity_check(coll);
 
-	xassert(PMIXP_COLL_FAN_OUT == coll->state || PMIXP_COLL_FAN_OUT_IN == coll->state);
+	xassert(PMIXP_COLL_FAN_OUT == coll->state ||
+		PMIXP_COLL_FAN_OUT_IN == coll->state);
 
 	/* update the database */
 	if (NULL != coll->cbfunc) {
 		void *data = get_buf_data(buf) + get_buf_offset(buf);
 		size_t size = remaining_buf(buf);
 		PMIXP_DEBUG("%s:%d: use the callback", pmixp_info_namespace(),
-				pmixp_info_nodeid());
+			    pmixp_info_nodeid());
 		coll->cbfunc(PMIX_SUCCESS, data, size, coll->cbdata,
-				pmixp_free_Buf, (void *)coll->root_buf);
+			     pmixp_free_Buf, (void *)coll->root_buf);
 		/* root buffer will be released by `pmixp_free_Buf()` */
 		coll->root_buf = NULL;
 	}
@@ -658,7 +674,7 @@ void _progres_fan_out(pmixp_coll_t *coll)
 	_fan_out_finished(coll);
 
 	PMIXP_DEBUG("%s:%d: collective is prepared for the next use",
-			pmixp_info_namespace(), pmixp_info_nodeid());
+		    pmixp_info_namespace(), pmixp_info_nodeid());
 }
 
 void pmixp_coll_reset_if_to(pmixp_coll_t *coll, time_t ts)
@@ -673,7 +689,7 @@ void pmixp_coll_reset_if_to(pmixp_coll_t *coll, time_t ts)
 	if (ts - coll->ts > pmixp_info_timeout()) {
 		/* respond to the libpmix */
 		coll->cbfunc(PMIX_ERR_TIMEOUT, NULL, 0, coll->cbdata, NULL,
-				NULL);
+			     NULL);
 		/* drop the collective */
 		_reset_coll(coll);
 		/* report the timeout event */

@@ -58,9 +58,9 @@ static pthread_mutex_t _flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void _run_flag_set(volatile bool *flag, bool val)
 {
-       slurm_mutex_lock(&_flag_mutex);
-       *flag = val;
-       slurm_mutex_unlock(&_flag_mutex);
+	slurm_mutex_lock(&_flag_mutex);
+	*flag = val;
+	slurm_mutex_unlock(&_flag_mutex);
 }
 
 static bool _run_flag_get(volatile bool *flag)
@@ -127,7 +127,9 @@ static int _server_conn_read(eio_obj_t *obj, List objs)
 			if (shutdown) {
 				obj->shutdown = true;
 				if (shutdown < 0) {
-					PMIXP_ERROR_NO(shutdown, "sd=%d failure", obj->fd);
+					PMIXP_ERROR_NO(shutdown,
+						       "sd=%d failure",
+						       obj->fd);
 				}
 			}
 			return 0;
@@ -141,16 +143,19 @@ static int _server_conn_read(eio_obj_t *obj, List objs)
 			if ((errno == ECONNABORTED) || (errno == EWOULDBLOCK)) {
 				return 0;
 			}
-			PMIXP_ERROR_STD("accept()ing connection sd=%d", obj->fd);
+			PMIXP_ERROR_STD("accept()ing connection sd=%d",
+					obj->fd);
 			return 0;
 		}
 
-		if( pmixp_info_srv_usock_fd() == obj->fd ){
-			PMIXP_DEBUG("SLURM PROTO: accepted connection: sd=%d", fd);
+		if (pmixp_info_srv_usock_fd() == obj->fd) {
+			PMIXP_DEBUG("SLURM PROTO: accepted connection: sd=%d",
+				    fd);
 			/* read command from socket and handle it */
 			pmixp_server_slurm_conn(fd);
-		} else if( pmixp_dconn_poll_fd() == obj->fd ){
-			PMIXP_DEBUG("DIRECT PROTO: accepted connection: sd=%d", fd);
+		} else if (pmixp_dconn_poll_fd() == obj->fd) {
+			PMIXP_DEBUG("DIRECT PROTO: accepted connection: sd=%d",
+				    fd);
 			/* read command from socket and handle it */
 			pmixp_server_direct_conn(fd);
 
@@ -255,7 +260,8 @@ static void *_agent_thread(void *unused)
 
 	_io_handle = eio_handle_create(0);
 
-	obj = eio_obj_create(pmixp_info_srv_usock_fd(), &srv_ops, (void *)(-1));
+	obj = eio_obj_create(pmixp_info_srv_usock_fd(), &srv_ops,
+			     (void *)(-1));
 	eio_new_initial_obj(_io_handle, obj);
 
 	obj = eio_obj_create(timer_data.work_in, &to_ops, (void *)(-1));
@@ -264,7 +270,8 @@ static void *_agent_thread(void *unused)
 	pmixp_info_io_set(_io_handle);
 
 	if (PMIXP_DCONN_PROGRESS_SW == pmixp_dconn_progress_type()) {
-		obj = eio_obj_create(pmixp_dconn_poll_fd(), &srv_ops, (void *)(-1));
+		obj = eio_obj_create(pmixp_dconn_poll_fd(), &srv_ops,
+				     (void *)(-1));
 		eio_new_initial_obj(_io_handle, obj);
 	} else {
 		pmixp_dconn_regio(_io_handle);
@@ -331,7 +338,8 @@ int pmixp_agent_start(void)
 
 	/* start agent thread */
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	while ((errno = pthread_create(&_agent_tid, &attr, _agent_thread, NULL))) {
+	while ((errno = pthread_create(&_agent_tid, &attr,
+					_agent_thread, NULL))) {
 		if (++retries > MAX_RETRIES) {
 			PMIXP_ERROR_STD("pthread_create error");
 			slurm_attr_destroy(&attr);
@@ -350,16 +358,16 @@ int pmixp_agent_start(void)
 	 * NOTE: enabled only if `--enable-debug` configuration
 	 * option was passed
 	 */
-	if( pmixp_server_want_pp() ){
+	if (pmixp_server_want_pp()) {
 		pmixp_server_run_pp();
 	}
 	
 	PMIXP_DEBUG("agent thread started: tid = %lu",
-			(unsigned long) _agent_tid);
+		    (unsigned long) _agent_tid);
 
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 	while ((errno = pthread_create(&_timer_tid, &attr, _pmix_timer_thread,
-			NULL))) {
+				       NULL))) {
 		if (++retries > MAX_RETRIES) {
 			PMIXP_ERROR_STD("pthread_create error");
 			slurm_attr_destroy(&attr);
@@ -377,7 +385,7 @@ int pmixp_agent_start(void)
 	slurm_attr_destroy(&attr);
 
 	PMIXP_DEBUG("timer thread started: tid = %lu",
-			(unsigned long) _timer_tid);
+		    (unsigned long) _timer_tid);
 
 	return SLURM_SUCCESS;
 }

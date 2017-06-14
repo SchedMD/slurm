@@ -59,12 +59,12 @@ typedef struct {
 	int magic;
 #endif
 	char name[PMIX_MAX_NSLEN];
-	uint32_t nnodes; /* number of nodes in this namespace              */
-	int node_id; /* relative position of this node in this step    */
-	uint32_t ntasks; /* total number of tasks in this namespace        */
-	uint32_t *task_cnts; /* Number of tasks on each node in this namespace */
-	char *task_map_packed; /* string represents packed task mapping information */
-	uint32_t *task_map; /* i'th task is located on task_map[i] node     */
+	uint32_t nnodes; /* number of nodes in this namespace */
+	int node_id; /* relative position of this node in this step */
+	uint32_t ntasks; /* total number of tasks in this namespace */
+	uint32_t *task_cnts; /* Number of tasks on each node of namespace */
+	char *task_map_packed; /* Packed task mapping information */
+	uint32_t *task_map; /* i'th task is located on task_map[i] node */
 	hostlist_t hl;
 } pmixp_namespace_t;
 

@@ -66,10 +66,10 @@ typedef enum {
 } pmixp_ucx_status_t;
 
 typedef struct {
-    volatile pmixp_ucx_status_t status;
-    void *buffer;
-    size_t len;
-    void *msg;
+	volatile pmixp_ucx_status_t status;
+	void *buffer;
+	size_t len;
+	void *msg;
 } pmixp_ucx_req_t;
 
 typedef struct {
@@ -84,7 +84,7 @@ typedef struct {
 
 static inline void _recv_req_release(pmixp_ucx_req_t *req)
 {
-	if( req->buffer ){
+	if (req->buffer) {
 		xfree(req->buffer);
 	}
 	memset(req, 0, sizeof(*req));
@@ -170,7 +170,8 @@ int pmixp_dconn_ucx_prepare(pmixp_dconn_handlers_t *handlers,
 
 	status = ucp_config_read(NULL, NULL, &config);
 	if (status != UCS_OK) {
-		PMIXP_ERROR("Fail to read UCX config: %s", ucs_status_string(status));
+		PMIXP_ERROR("Fail to read UCX config: %s",
+			    ucs_status_string(status));
 		return SLURM_ERROR;
 	}
 
@@ -184,10 +185,11 @@ int pmixp_dconn_ucx_prepare(pmixp_dconn_handlers_t *handlers,
 			UCP_PARAM_FIELD_REQUEST_CLEANUP;
 
 	status = ucp_init(&ucp_params, config, &ucp_context);
-	//    ucp_config_print(config, stdout, NULL, UCS_CONFIG_PRINT_CONFIG);
+
 	ucp_config_release(config);
 	if (status != UCS_OK) {
-		PMIXP_ERROR("Fail to init UCX: %s", ucs_status_string(status));
+		PMIXP_ERROR("Fail to init UCX: %s",
+			    ucs_status_string(status));
 		return SLURM_ERROR;
 	}
 
@@ -196,19 +198,22 @@ int pmixp_dconn_ucx_prepare(pmixp_dconn_handlers_t *handlers,
 
 	status = ucp_worker_create(ucp_context, &worker_params, &ucp_worker);
 	if (status != UCS_OK) {
-		PMIXP_ERROR("Fail to create UCX worker: %s", ucs_status_string(status));
+		PMIXP_ERROR("Fail to create UCX worker: %s",
+			    ucs_status_string(status));
 		goto err_worker;
 	}
 
 	status = ucp_worker_get_address(ucp_worker, &_ucx_addr, &_ucx_alen);
 	if (status != UCS_OK) {
-		PMIXP_ERROR("Fail to get UCX address: %s", ucs_status_string(status));
+		PMIXP_ERROR("Fail to get UCX address: %s",
+			    ucs_status_string(status));
 		goto err_addr;
 	}
 
 	status = ucp_worker_get_efd(ucp_worker, &_server_fd);
 	if (status != UCS_OK) {
-		PMIXP_ERROR("Fail to get UCX epoll fd: %s", ucs_status_string(status));
+		PMIXP_ERROR("Fail to get UCX epoll fd: %s",
+			    ucs_status_string(status));
 		goto err_efd;
 	}
 
@@ -239,13 +244,13 @@ static void _release_send_requests(pmixp_rlist_t *l)
 {
 	size_t count = pmixp_rlist_count(l);
 	size_t i;
-	for(i=0; i<count; i++) {
+	for (i=0; i<count; i++) {
 		pmixp_ucx_req_t *req;
 		req = (pmixp_ucx_req_t*)pmixp_rlist_deq(l);
 		xassert(req);
 
 		ucp_request_cancel(ucp_worker, req);
-		if( req->buffer ){
+		if (req->buffer) {
 			/* NOTE: since we are finalizing, we don't really care
 			 * about the status */
 			_direct_hdr.send_complete(req->msg, PMIXP_P2P_REGULAR,
@@ -260,7 +265,7 @@ static void _release_recv_requests(pmixp_rlist_t *l)
 	size_t count = pmixp_rlist_count(l);
 	size_t i;
 
-	for(i=0; i < count; i++){
+	for (i=0; i < count; i++) {
 		pmixp_ucx_req_t *req;
 		req = (pmixp_ucx_req_t*)pmixp_rlist_deq(l);
 		xassert(req);
@@ -290,7 +295,7 @@ void pmixp_dconn_ucx_finalize()
 	 * down in this free list now. Release it!
 	 */
 	count = pmixp_list_count(&_free_list);
-	for(i=0; i < count; i++){
+	for (i=0; i < count; i++) {
 		elem = pmixp_list_deq(&_free_list);
 		pmixp_list_elem_free(elem);
 	}
@@ -301,9 +306,9 @@ static int _activate_progress()
 {
 	char buf = 'c';
 	int rc = write(_service_pipe[1], &buf, sizeof(buf));
-	if( sizeof(buf) != rc ){
+	if (sizeof(buf) != rc) {
 		PMIXP_ERROR("Unable to activate UCX progress");
-		if( 0 > rc ){
+		if (0 > rc) {
 			return rc;
 		} else {
 			return SLURM_ERROR;
@@ -337,19 +342,23 @@ static bool _ucx_progress()
 	ucp_worker_progress(ucp_worker);
 
 	/* check for new messages */
-	while(1) {
-		msg_tag = ucp_tag_probe_nb(ucp_worker, 1, 0xffffffffffffffff, 1, &info_tag);
-		if( NULL == msg_tag ) {
+	while (1) {
+		msg_tag = ucp_tag_probe_nb(ucp_worker, 1, 0xffffffffffffffff,
+					   1, &info_tag);
+		if (NULL == msg_tag) {
 			break;
 		}
 		events_observed++;
 
 		char *msg = xmalloc(info_tag.length);
 		pmixp_ucx_req_t *req = (pmixp_ucx_req_t*)
-				ucp_tag_msg_recv_nb(ucp_worker, (void*)msg, info_tag.length,
-						    ucp_dt_make_contig(1), msg_tag, recv_handle);
+				ucp_tag_msg_recv_nb(ucp_worker, (void*)msg,
+						    info_tag.length,
+						    ucp_dt_make_contig(1),
+						    msg_tag, recv_handle);
 		if (UCS_PTR_IS_ERR(req)) {
-			PMIXP_ERROR("ucp_tag_msg_recv_nb failed: %s", ucs_status_string(UCS_PTR_STATUS(req)));
+			PMIXP_ERROR("ucp_tag_msg_recv_nb failed: %s",
+				    ucs_status_string(UCS_PTR_STATUS(req)));
 			continue;
 		}
 		new_msg = true;
@@ -370,7 +379,8 @@ static bool _ucx_progress()
 		ucp_worker_progress(ucp_worker);
 	}
 	
-	if (!new_msg && pmixp_rlist_empty(&_rcv_pending) && pmixp_rlist_empty(&_snd_pending)) {
+	if (!new_msg && pmixp_rlist_empty(&_rcv_pending) &&
+				pmixp_rlist_empty(&_snd_pending)) {
 		/* early exit - nothing to do */
 		slurm_mutex_unlock(&_ucx_worker_lock);
 		return false;
@@ -426,8 +436,9 @@ static bool _ucx_progress()
 			rc = SLURM_ERROR;
 		}
 		xassert(_direct_hdr_set);
-		if( req->buffer ){
-			_direct_hdr.send_complete(req->msg, PMIXP_P2P_REGULAR, rc);
+		if (req->buffer) {
+			_direct_hdr.send_complete(req->msg,
+						  PMIXP_P2P_REGULAR, rc);
 		}
 		elem = pmixp_rlist_next(&_snd_complete, elem);
 	}
@@ -462,7 +473,7 @@ static bool _epoll_readable(eio_obj_t *obj)
 
 	/* sanity check */
 	xassert(NULL != obj );
-	if( obj->shutdown ){
+	if (obj->shutdown) {
 		/* corresponding connection will be
 		 * cleaned up during plugin finalize
 		 */
@@ -482,7 +493,7 @@ static bool _epoll_readable(eio_obj_t *obj)
 
 		if (status == UCS_ERR_BUSY) {
 			/* some events have already arrived*/
-			while( _ucx_progress() );
+			while (_ucx_progress());
 		}
 	} while (UCS_ERR_BUSY == status);
 	_ucx_is_armed = true;
@@ -492,7 +503,7 @@ exit:
 
 static int _epoll_read(eio_obj_t *obj, List objs)
 {
-	if( obj->shutdown ){
+	if (obj->shutdown) {
 		/* corresponding connection will be
 		 * cleaned up during plugin finalize
 		 */
@@ -500,7 +511,7 @@ static int _epoll_read(eio_obj_t *obj, List objs)
 	}
 	_ucx_is_armed = false;
 	/* call progress untill all events are processed */
-	while( _ucx_progress() );
+	while (_ucx_progress());
 	return 0;
 }
 
@@ -508,7 +519,7 @@ static bool _progress_readable(eio_obj_t *obj)
 {
 	/* sanity check */
 	xassert(NULL != obj );
-	if( obj->shutdown ){
+	if (obj->shutdown) {
 		/* corresponding connection will be
 			 * cleaned up during plugin finalize
 			 */
@@ -516,9 +527,10 @@ static bool _progress_readable(eio_obj_t *obj)
 	}
 
 	/* progress all pending events */
-	while( _ucx_progress() );
+	while (_ucx_progress());
 
-	if( pmixp_rlist_count(&_rcv_pending) || pmixp_rlist_count(&_snd_pending)){
+	if (pmixp_rlist_count(&_rcv_pending) ||
+	    pmixp_rlist_count(&_snd_pending)){
 		/* if we have more work to do - go to the poll
 		 * to progress other fd's, but make sure that we
 		 * won't block in the poll and can progress further
@@ -542,10 +554,10 @@ static int _progress_read(eio_obj_t *obj, List objs)
 	}
 
 	/* empty pipe */
-	while( sizeof(buf) == read(_service_pipe[0], &buf, sizeof(buf)) );
+	while (sizeof(buf) == read(_service_pipe[0], &buf, sizeof(buf)));
 
 	/* more progress */
-	while( _ucx_progress() );
+	while (_ucx_progress());
 
 	return 0;
 }
@@ -577,14 +589,15 @@ static void _ucx_fini(void *_priv)
 		ucp_ep_destroy(priv->server_ep);
 	} else {
 		slurm_mutex_lock(&_ucx_worker_lock);
-		pmixp_rlist_init(&priv->pending, &_free_list, PMIXP_UCX_LIST_PREALLOC);
+		pmixp_rlist_init(&priv->pending, &_free_list,
+				 PMIXP_UCX_LIST_PREALLOC);
 		slurm_mutex_unlock(&_ucx_worker_lock);
 	}
 	xfree(priv);
 }
 
 static int _ucx_connect(void *_priv, void *ep_data, size_t ep_len,
-						void *init_msg)
+			void *init_msg)
 {
 	pmixp_dconn_ucx_t *priv = (pmixp_dconn_ucx_t *)_priv;
 	ucp_ep_params_t ep_params;
@@ -601,7 +614,8 @@ static int _ucx_connect(void *_priv, void *ep_data, size_t ep_len,
 	slurm_mutex_lock(&_ucx_worker_lock);
 	status = ucp_ep_create(ucp_worker, &ep_params, &priv->server_ep);
 	if (status != UCS_OK) {
-		PMIXP_ERROR("ucp_ep_create failed: %s", ucs_status_string(status));
+		PMIXP_ERROR("ucp_ep_create failed: %s",
+			    ucs_status_string(status));
 		rc = SLURM_ERROR;
 		goto exit;
 	}
@@ -653,19 +667,21 @@ static int _ucx_send(void *_priv, void *msg)
 	bool release = false;
 
 	slurm_mutex_lock(&_ucx_worker_lock);
-	if( !priv->connected ){
+	if (!priv->connected) {
 		pmixp_rlist_enq(&priv->pending, msg);
 	} else {
 		pmixp_ucx_req_t *req = NULL;
 		xassert(_direct_hdr_set);
 		char *mptr = _direct_hdr.buf_ptr(msg);
 		size_t msize = _direct_hdr.buf_size(msg);
-		req = (pmixp_ucx_req_t*)ucp_tag_send_nb(priv->server_ep,
-						(void*)mptr, msize,
-						ucp_dt_make_contig(1), 1,
-						send_handle);
+		req = (pmixp_ucx_req_t*)
+			ucp_tag_send_nb(priv->server_ep,
+					(void*)mptr, msize,
+					ucp_dt_make_contig(1),
+					1, send_handle);
 		if (UCS_PTR_IS_ERR(req)) {
-			PMIXP_ERROR("Unable to send UCX message: %s\n", ucs_status_string(UCS_PTR_STATUS(req)));
+			PMIXP_ERROR("Unable to send UCX message: %s\n",
+				    ucs_status_string(UCS_PTR_STATUS(req)));
 			goto exit;
 		} else if (UCS_OK == UCS_PTR_STATUS(req)) {
 			/* defer release until we unlock ucp worker */
@@ -683,7 +699,8 @@ exit:
 	slurm_mutex_unlock(&_ucx_worker_lock);
 
 	if (release){
-		_direct_hdr.send_complete(msg, PMIXP_P2P_INLINE, SLURM_SUCCESS);
+		_direct_hdr.send_complete(msg, PMIXP_P2P_INLINE,
+					  SLURM_SUCCESS);
 	}
 	return rc;
 }

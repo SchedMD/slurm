@@ -68,7 +68,7 @@ typedef struct {
 #define PMIXP_BASE_HDR_SIZE (5 * sizeof(uint32_t) + sizeof(uint8_t))
 #define PMIXP_BASE_HDR_EXT_SIZE(ep_len) (sizeof(uint32_t) + ep_len)
 #define PMIXP_BASE_HDR_MAX (PMIXP_BASE_HDR_SIZE + \
-				PMIXP_BASE_HDR_EXT_SIZE(pmixp_dconn_ep_len()))
+	PMIXP_BASE_HDR_EXT_SIZE(pmixp_dconn_ep_len()))
 
 typedef struct {
 	uint32_t size;		/* Has to be first (appended by SLURM API) */
@@ -76,14 +76,14 @@ typedef struct {
 } pmixp_slurm_rhdr_t;
 #define PMIXP_SAPI_RECV_HDR_SIZE (sizeof(uint32_t) + PMIXP_BASE_HDR_SIZE)
 
-#define PMIXP_BASE_HDR_SETUP(bhdr, mtype, mseq, buf)                 \
-{                                                                    \
-	bhdr.magic = PMIXP_SERVER_MSG_MAGIC;                         \
-	bhdr.type = mtype;                                           \
-	bhdr.msgsize = get_buf_offset(buf) - PMIXP_BASE_HDR_MAX;     \
-	bhdr.seq = mseq;                                             \
-	bhdr.nodeid = pmixp_info_nodeid_job();                       \
-	bhdr.ext_flag = 0;                                           \
+#define PMIXP_BASE_HDR_SETUP(bhdr, mtype, mseq, buf)			\
+{									\
+	bhdr.magic = PMIXP_SERVER_MSG_MAGIC;				\
+	bhdr.type = mtype;						\
+	bhdr.msgsize = get_buf_offset(buf) - PMIXP_BASE_HDR_MAX;	\
+	bhdr.seq = mseq;						\
+	bhdr.nodeid = pmixp_info_nodeid_job();				\
+	bhdr.ext_flag = 0;						\
 }
 
 #define PMIXP_SERVER_BUF_MAGIC 0xCA11CAFE
@@ -128,7 +128,7 @@ size_t pmixp_server_buf_reset(Buf buf)
 
 
 static void *_buf_finalize(Buf buf, void *nhdr, size_t hsize,
-			  size_t *dsize)
+			   size_t *dsize)
 {
 	char *ptr = get_buf_data(buf);
 	size_t offset = PMIXP_BASE_HDR_MAX - hsize;
@@ -149,7 +149,7 @@ static void *_buf_finalize(Buf buf, void *nhdr, size_t hsize,
 	 * time of buffer initialization in `pmixp_server_new_buf`
 	 * put the header in place and return proper pointer
 	 */
-	if( 0 != hsize ){
+	if (hsize) {
 		memcpy(ptr + offset, nhdr, hsize);
 	}
 	*dsize = get_buf_offset(buf) - offset;
@@ -167,7 +167,7 @@ static void _base_hdr_pack_full(Buf packbuf, pmixp_base_hdr_t *hdr)
 	pack32(hdr->nodeid, packbuf);
 	pack32(hdr->msgsize, packbuf);
 	pack8(hdr->ext_flag, packbuf);
-	if( hdr->ext_flag ){
+	if (hdr->ext_flag) {
 		uint32_t expected_size = PMIXP_BASE_HDR_SIZE +
 				PMIXP_BASE_HDR_EXT_SIZE(pmixp_dconn_ep_len());
 		packmem(pmixp_dconn_ep_data(), pmixp_dconn_ep_len(), packbuf);
@@ -194,7 +194,7 @@ static size_t _base_hdr_pack_full_samearch(pmixp_base_hdr_t *hdr, void *net)
 	WRITE_HDR_FIELD(net, offset, hdr->nodeid);
 	WRITE_HDR_FIELD(net, offset, hdr->msgsize);
 	WRITE_HDR_FIELD(net, offset, hdr->ext_flag);
-	if( hdr->ext_flag ){
+	if (hdr->ext_flag) {
 		Buf packbuf = create_buf(net + offset, PMIXP_BASE_HDR_MAX);
 		packmem(pmixp_dconn_ep_data(), pmixp_dconn_ep_len(), packbuf);
 		offset += get_buf_offset(packbuf);
@@ -258,7 +258,7 @@ static int _base_hdr_unpack_fixed_samearch(void *net, void *host)
 
 static int _base_hdr_unpack_ext(Buf packbuf, char **ep_data, uint32_t *ep_len)
 {
-	if( unpackmem_xmalloc(ep_data, ep_len, packbuf) ){
+	if (unpackmem_xmalloc(ep_data, ep_len, packbuf)) {
 		return -EINVAL;
 	}
 	return 0;
@@ -315,7 +315,7 @@ static void _direct_new_msg(void *hdr, Buf buf);
 static void _direct_new_msg_conn(pmixp_conn_t *conn, void *_hdr, void *msg);
 static void _direct_send(pmixp_dconn_t *dconn, pmixp_ep_t *ep,
 			 pmixp_base_hdr_t bhdr, Buf buf,
-			pmixp_server_sent_cb_t complete_cb, void *cb_data);
+			 pmixp_server_sent_cb_t complete_cb, void *cb_data);
 static void _direct_return_connection(pmixp_conn_t *conn);
 
 typedef struct {
@@ -492,7 +492,7 @@ static bool _serv_readable(eio_obj_t *obj)
 {
 	/* sanity check */
 	xassert(NULL != obj );
-	if( obj->shutdown ){
+	if (obj->shutdown) {
 		/* corresponding connection will be
 		 * cleaned up during plugin finalize
 		 */
@@ -505,7 +505,7 @@ static int _serv_read(eio_obj_t *obj, List objs)
 {
 	/* sanity check */
 	xassert(NULL != obj );
-	if( obj->shutdown ){
+	if (obj->shutdown) {
 		/* corresponding connection will be
 		 * cleaned up during plugin finalize
 		 */
@@ -521,10 +521,10 @@ static int _serv_read(eio_obj_t *obj, List objs)
 
 	/* Read and process all received messages */
 	while (proceed) {
-		if( !pmixp_conn_progress_rcv(conn) ){
+		if (!pmixp_conn_progress_rcv(conn)) {
 			proceed = 0;
 		}
-		if( !pmixp_conn_is_alive(conn) ){
+		if (!pmixp_conn_is_alive(conn)) {
 			obj->shutdown = true;
 			PMIXP_DEBUG("Connection closed fd = %d", obj->fd);
 			/* cleanup after this connection */
@@ -540,7 +540,7 @@ static bool _serv_writable(eio_obj_t *obj)
 {
 	/* sanity check */
 	xassert(NULL != obj );
-	if( obj->shutdown ){
+	if (obj->shutdown) {
 		/* corresponding connection will be
 		 * cleaned up during plugin finalize
 		 */
@@ -558,7 +558,7 @@ static bool _serv_writable(eio_obj_t *obj)
 	pmixp_io_send_cleanup(eng);
 
 	/* check if we have something to send */
-	if( pmixp_io_send_pending(eng) ){
+	if (pmixp_io_send_pending(eng)) {
 		return true;
 	}
 	return false;
@@ -568,7 +568,7 @@ static int _serv_write(eio_obj_t *obj, List objs)
 {
 	/* sanity check */
 	xassert(NULL != obj );
-	if( obj->shutdown ){
+	if (obj->shutdown) {
 		/* corresponding connection will be
 		 * cleaned up during plugin finalize
 		 */
@@ -585,7 +585,7 @@ static int _serv_write(eio_obj_t *obj, List objs)
 	pmixp_conn_progress_snd(conn);
 
 	/* if we are done with this connection - remove it */
-	if( !pmixp_conn_is_alive(conn) ){
+	if (!pmixp_conn_is_alive(conn)) {
 		obj->shutdown = true;
 		PMIXP_DEBUG("Connection finalized fd = %d", obj->fd);
 		/* cleanup after this connection */
@@ -635,7 +635,8 @@ static int _process_extended_hdr(pmixp_base_hdr_t *hdr, Buf buf)
 		init_msg->sent_cb = pmixp_server_sent_buf_cb;
 		init_msg->cbdata = buf_init;
 		init_msg->hdr = bhdr;
-		init_msg->buffer = _buf_finalize(buf_init, nhdr, hsize, &dsize);
+		init_msg->buffer = _buf_finalize(buf_init, nhdr, hsize,
+						 &dsize);
 		init_msg->buf_ptr = buf_init;
 	}
 
@@ -661,7 +662,7 @@ static int _process_extended_hdr(pmixp_base_hdr_t *hdr, Buf buf)
 					      _direct_new_msg_conn,
 					      _direct_return_connection,
 					      dconn);
-		if( NULL != conn ){
+		if (conn) {
 			eio_obj_t *obj;
 			obj = eio_obj_create(pmixp_io_fd(eng),
 					     &direct_peer_ops,
@@ -703,15 +704,19 @@ static void _process_server_request(pmixp_base_hdr_t *hdr, Buf buf)
 		rc = pmixp_coll_unpack_ranges(buf, &type, &procs, &nprocs);
 		if (SLURM_SUCCESS != rc) {
 			char *nodename = pmixp_info_job_host(hdr->nodeid);
-			PMIXP_ERROR("Bad message header from node %s", nodename);
+			PMIXP_ERROR("Bad message header from node %s",
+				    nodename);
 			xfree(nodename);
 			goto exit;
 		}
 		coll = pmixp_state_coll_get(type, procs, nprocs);
 		xfree(procs);
 
-		PMIXP_DEBUG("FENCE collective message from nodeid = %u, type = %s, seq = %d",
-			    hdr->nodeid, (PMIXP_MSG_FAN_IN == hdr->type) ? "fan-in" : "fan-out",
+		PMIXP_DEBUG("FENCE collective message from nodeid = %u, "
+			    "type = %s, seq = %d",
+			    hdr->nodeid,
+			    ((PMIXP_MSG_FAN_IN == hdr->type) ?
+				     "fan-in" : "fan-out"),
 			    hdr->seq);
 		rc = pmixp_coll_check_seq(coll, hdr->seq);
 		if (PMIXP_COLL_REQ_FAILURE == rc) {
@@ -720,15 +725,18 @@ static void _process_server_request(pmixp_base_hdr_t *hdr, Buf buf)
 			 * This will 100% lead to application hang.
 			 */
 			char *nodename = pmixp_info_job_host(hdr->nodeid);
-			PMIXP_ERROR("Bad collective seq. #%d from %s, current is %d",
+			PMIXP_ERROR("Bad collective seq. #%d from %s, current"
+				    " is %d",
 				    hdr->seq, nodename, coll->seq);
 			pmixp_debug_hang(0); /* enable hang to debug this! */
-			slurm_kill_job_step(pmixp_info_jobid(), pmixp_info_stepid(),
-					    SIGKILL);
+			slurm_kill_job_step(pmixp_info_jobid(),
+					    pmixp_info_stepid(), SIGKILL);
 			xfree(nodename);
 			break;
 		} else if (PMIXP_COLL_REQ_SKIP == rc) {
-			PMIXP_DEBUG("Wrong collective seq. #%d from nodeid %u, current is %d, skip this message",
+			PMIXP_DEBUG("Wrong collective seq. #%d from"
+				    " nodeid %u, current is %d, skip "
+				    "this message",
 				    hdr->seq, hdr->nodeid, coll->seq);
 			goto exit;
 		}
@@ -739,10 +747,11 @@ static void _process_server_request(pmixp_base_hdr_t *hdr, Buf buf)
 		} else {
 			coll->root_buf = buf;
 			pmixp_coll_bcast(coll);
-			/* buf will be free'd by the PMIx callback so protect the data by
-			 * voiding the buffer.
-			 * Use the statement below instead of (buf = NULL) to maintain
-			 * incapsulation - in general `buf` is not a pointer, but opaque type.
+			/* buf will be free'd by the PMIx callback so
+			 * protect the data by voiding the buffer.
+			 * Use the statement below instead of (buf = NULL)
+			 * to maintain incapsulation - in general `buf`is
+			 * not a pointer, but opaque type.
 			 */
 			buf = create_buf(NULL, 0);
 		}
@@ -751,10 +760,11 @@ static void _process_server_request(pmixp_base_hdr_t *hdr, Buf buf)
 	}
 	case PMIXP_MSG_DMDX: {
 		pmixp_dmdx_process(buf, hdr->nodeid, hdr->seq);
-		/* buf will be free'd by pmixp_dmdx_process or the PMIx callback so
+		/* buf will be free'd by the PMIx callback so
 		 * protect the data by voiding the buffer.
-		 * Use the statement below instead of (buf = NULL) to maintain
-		 * incapsulation - in general `buf` is not a pointer, but opaque type.
+		 * Use the statement below instead of (buf = NULL)
+		 * to maintain incapsulation - in general `buf`is
+		 * not a pointer, but opaque type.
 		 */
 		buf = create_buf(NULL, 0);
 		break;
@@ -764,19 +774,21 @@ static void _process_server_request(pmixp_base_hdr_t *hdr, Buf buf)
 		break;
 #ifndef NDEBUG
 	case PMIXP_MSG_PINGPONG: {
-		/* if the pingpong mode was activated - node 0 sends ping requests
+		/* if the pingpong mode was activated -
+		 * node 0 sends ping requests
 		 * and receiver assumed to respond back to node 0
 		 */
 		int msize = remaining_buf(buf);
 
-		if( pmixp_info_nodeid() ){
+		if (pmixp_info_nodeid()) {
 			pmixp_server_pp_send(0, msize);
 		} else {
 			if (pmixp_server_pp_same_thread()) {
-				if (pmixp_server_pp_count() == pmixp_server_pp_warmups()) {
+				if (pmixp_server_pp_count() ==
+				    pmixp_server_pp_warmups()) {
 					pmixp_server_pp_start();
 				}
-				if( !pmixp_server_pp_check_fini(msize) ){
+				if (!pmixp_server_pp_check_fini(msize)) {
 					pmixp_server_pp_send(1, msize);
 				}
 			}
@@ -842,7 +854,8 @@ int pmixp_server_send_nb(pmixp_ep_t *ep, pmixp_srv_cmd_t type,
 			/* this is a bug! */
 			pmixp_dconn_state_t state = pmixp_dconn_state(dconn);
 			pmixp_dconn_unlock(dconn);
-			PMIXP_ERROR("Bad direct connection state: %d", (int)state);
+			PMIXP_ERROR("Bad direct connection state: %d",
+				    (int)state);
 			xassert( (state == PMIXP_DIRECT_INIT) ||
 				 (state == PMIXP_DIRECT_EP_SENT) ||
 				 (state == PMIXP_DIRECT_CONNECTED) );
@@ -959,7 +972,7 @@ static void _direct_send_complete(void *_msg, pmixp_p2p_ctx_t ctx, int rc)
 static void _direct_new_msg(void *_hdr, Buf buf)
 {
 	pmixp_base_hdr_t *hdr = (pmixp_base_hdr_t*)_hdr;
-	if( hdr->ext_flag ){
+	if (hdr->ext_flag) {
 		/* Extra information was incorporated into this message.
 		 * This should be an endpoint data
 		 */
@@ -1006,19 +1019,22 @@ _direct_conn_establish(pmixp_conn_t *conn, void *_hdr, void *msg)
 	fd = pmixp_io_detach(eng);
 
 	dconn = pmixp_dconn_accept(hdr->nodeid, fd);
-	if( NULL == dconn ){
+	if (!dconn) {
 		/* connection was refused because we already
 		 * have established connection
 		 * It seems that some sort of race condition occured
 		 */
 		char *nodename = pmixp_info_job_host(hdr->nodeid);
 		close(fd);
-		PMIXP_ERROR("Failed to accept direct connection from %s", nodename);
+		PMIXP_ERROR("Failed to accept direct connection from %s",
+			    nodename);
 		xfree(nodename);
 		return;
 	}
-	new_conn = pmixp_conn_new_persist(PMIXP_PROTO_DIRECT, pmixp_dconn_engine(dconn),
-				      _direct_new_msg_conn, _direct_return_connection, dconn);
+	new_conn = pmixp_conn_new_persist(PMIXP_PROTO_DIRECT,
+					  pmixp_dconn_engine(dconn),
+					  _direct_new_msg_conn,
+					  _direct_return_connection, dconn);
 	pmixp_dconn_unlock(dconn);
 	obj = eio_obj_create(fd, &direct_peer_ops, (void *)new_conn);
 	eio_new_obj(pmixp_info_io(), obj);
@@ -1036,7 +1052,8 @@ void pmixp_server_direct_conn(int fd)
 	fd_set_nonblocking(fd);
 	fd_set_close_on_exec(fd);
 	pmixp_fd_set_nodelay(fd);
-	conn = pmixp_conn_new_temp(PMIXP_PROTO_DIRECT, fd, _direct_conn_establish);
+	conn = pmixp_conn_new_temp(PMIXP_PROTO_DIRECT, fd,
+				   _direct_conn_establish);
 
 	/* try to process right here */
 	pmixp_conn_progress_rcv(conn);
@@ -1056,8 +1073,8 @@ void pmixp_server_direct_conn(int fd)
 
 static void
 _direct_send(pmixp_dconn_t *dconn, pmixp_ep_t *ep,
-			 pmixp_base_hdr_t bhdr, Buf buf,
-			pmixp_server_sent_cb_t complete_cb, void *cb_data)
+	     pmixp_base_hdr_t bhdr, Buf buf,
+	     pmixp_server_sent_cb_t complete_cb, void *cb_data)
 {
 	char nhdr[PMIXP_BASE_HDR_SIZE];
 	size_t dsize = 0, hsize = 0;
@@ -1210,7 +1227,7 @@ static int _slurm_send(pmixp_ep_t *ep, pmixp_base_hdr_t bhdr, Buf buf)
 	case PMIXP_EP_HLIST:
 		hostlist = ep->ep.hostlist;
 		rc = pmixp_stepd_send(ep->ep.hostlist, addr,
-				 data, dsize, 500, 7, 0);
+				      data, dsize, 500, 7, 0);
 		break;
 	case PMIXP_EP_NOIDEID: {
 		char *nodename = pmixp_info_job_host(ep->ep.nodeid);
@@ -1225,7 +1242,8 @@ static int _slurm_send(pmixp_ep_t *ep, pmixp_base_hdr_t bhdr, Buf buf)
 	}
 
 	if (SLURM_SUCCESS != rc) {
-		PMIXP_ERROR("Cannot send message to %s, size = %u, hostlist:\n%s",
+		PMIXP_ERROR("Cannot send message to %s, size = %u, "
+			    "hostlist:\n%s",
 			    addr, (uint32_t) dsize, hostlist);
 	}
 	return rc;
@@ -1262,7 +1280,7 @@ static volatile int _pmixp_pp_count = 0;
 	clock_gettime(CLOCK_MONOTONIC, &ts);    \
 	ret = ts.tv_sec + 1E-9*ts.tv_nsec;      \
 	ret;                                    \
-})
+	})
 
 static volatile int _pmixp_pp_warmup = 0;
 static volatile int _pmixp_pp_iters = 0;
@@ -1296,7 +1314,8 @@ void pmixp_server_pp_start()
 
 bool pmixp_server_pp_check_fini(int size)
 {
-	if ( (pmixp_server_pp_count() + 1) >= (_pmixp_pp_warmup + _pmixp_pp_iters)){
+	if ( (pmixp_server_pp_count() + 1) >=
+	     (_pmixp_pp_warmup + _pmixp_pp_iters)){
 		slurm_mutex_lock(&_pmixp_pp_lock);
 		PMIXP_ERROR("latency: %d - %.9lf", size,
 			    (GET_TS() - _pmixp_pp_start) / _pmixp_pp_iters );
@@ -1385,7 +1404,7 @@ void pmixp_server_run_pp()
 	/* ping is initiated by the nodeid == 0
 	 * all the rest - just exit
 	 */
-	if( pmixp_info_nodeid() ){
+	if (pmixp_info_nodeid()) {
 		return;
 	}
 
@@ -1394,28 +1413,28 @@ void pmixp_server_run_pp()
 	end = 1 << _pmixp_pp_up;
 	bound = 1 << _pmixp_pp_bound;
 
-	for( i = start; i <= end; i *= 2) {
+	for (i = start; i <= end; i *= 2) {
 		int count, iters = _pmixp_pp_siter;
 		struct timeval tv1, tv2;
 		double time;
-		if( i >= bound ) {
+		if (i >= bound) {
 			iters = _pmixp_pp_liter;
 		}
 
 		if (!_pmixp_pp_same_thr) {
 			/* warmup - 10% of iters # */
 			count = pmixp_server_pp_count() + iters/10;
-			while( pmixp_server_pp_count() < count ){
+			while (pmixp_server_pp_count() < count) {
 				int cur_count = pmixp_server_pp_count();
 				pmixp_server_pp_send(1, i);
-				while( cur_count == pmixp_server_pp_count() ){
+				while (cur_count == pmixp_server_pp_count()) {
 					usleep(1);
 				}
 			}
 
 			count = pmixp_server_pp_count() + iters;
 			gettimeofday(&tv1, NULL);
-			while( pmixp_server_pp_count() < count ){
+			while (pmixp_server_pp_count() < count) {
 				int cur_count = pmixp_server_pp_count();
 				/* Send the message to the (nodeid == 1) */
 				pmixp_server_pp_send(1, i);
@@ -1440,8 +1459,6 @@ void pmixp_server_run_pp()
 			while (pmixp_server_pp_count() < count){
 				sched_yield();
 			}
-//			PMIXP_ERROR("latency: %d - %lf", i,
-//				    (GET_TS() - _pmixp_pp_start) / iters );
 		}
 	}
 }
@@ -1476,10 +1493,13 @@ int pmixp_server_pp_send(int nodeid, int size)
 	cbdata->size = size;
 	set_buf_offset(buf,get_buf_offset(buf) + size);
 	rc = pmixp_server_send_nb(&ep, PMIXP_MSG_PINGPONG,
-				  _pmixp_pp_count, buf, pingpong_complete, (void*)cbdata);
+				  _pmixp_pp_count, buf, pingpong_complete,
+				  (void*)cbdata);
 	if (SLURM_SUCCESS != rc) {
 		char *nodename = pmixp_info_job_host(nodeid);
-		PMIXP_ERROR("Was unable to wait for the parent %s to become alive", nodename);
+		PMIXP_ERROR("Was unable to wait for the parent %s to "
+			    "become alive",
+			    nodename);
 		xfree(nodename);
 	}
 	return rc;

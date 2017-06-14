@@ -65,7 +65,8 @@ typedef struct {
 	} ep;
 } pmixp_ep_t;
 
-typedef void (*pmixp_server_sent_cb_t)(int rc, pmixp_p2p_ctx_t ctx, void *cb_data);
+typedef void (*pmixp_server_sent_cb_t)(int rc, pmixp_p2p_ctx_t ctx,
+				       void *cb_data);
 /* convenience callback to just release sent buffer
  * expects an object of type `Buf` to be passed as `cb_data`
  */
@@ -86,7 +87,7 @@ size_t pmixp_server_buf_reset(Buf buf);
 static inline void
 pmixp_server_buf_reserve(Buf buf, uint32_t size)
 {
-	if( remaining_buf(buf) < size ){
+	if (remaining_buf(buf) < size) {
 		uint32_t to_reserve = size - remaining_buf(buf);
 		grow_buf(buf, to_reserve);
 	}

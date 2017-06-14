@@ -53,12 +53,12 @@ static void
 _verify_transceiver(pmixp_p2p_data_t header)
 {
 	/* sanity checks */
-	if (NULL == header.payload_size_cb){
+	if (!header.payload_size_cb){
 		PMIXP_ERROR("No payload size callback provided");
 		goto check_fail;
 	}
 
-	if( header.recv_on ){
+	if (header.recv_on) {
 		if (0 == header.rhdr_host_size){
 			PMIXP_ERROR("Bad host header size");
 			goto check_fail;
@@ -74,16 +74,16 @@ _verify_transceiver(pmixp_p2p_data_t header)
 	}
 
 	/* sanity checks */
-	if( header.send_on ){
-		if (NULL == header.buf_ptr){
+	if (header.send_on) {
+		if (!header.buf_ptr) {
 			PMIXP_ERROR("No message pointer callback provided");
 			goto check_fail;
 		}
-		if (NULL == header.buf_size){
+		if (!header.buf_size) {
 			PMIXP_ERROR("No message size callback provided");
 			goto check_fail;
 		}
-		if (NULL == header.send_complete){
+		if (!header.send_complete) {
 			PMIXP_ERROR("No message free callback provided");
 			goto check_fail;
 		}
@@ -94,7 +94,7 @@ check_fail:
 }
 
 void pmixp_io_init(pmixp_io_engine_t *eng,
-		  pmixp_p2p_data_t header)
+		   pmixp_p2p_data_t header)
 {
 	memset(eng, 0, sizeof(*eng));
 	/* Initialize general options */
@@ -108,7 +108,7 @@ void pmixp_io_init(pmixp_io_engine_t *eng,
 	_verify_transceiver(header);
 
 	/* Init receiver */
-	if( eng->h.recv_on ){
+	if (eng->h.recv_on) {
 		_rcvd_clear_counters(eng);
 		/* we are going to receive data */
 		eng->rcvd_hdr_net = xmalloc(eng->h.rhdr_net_size);
@@ -148,7 +148,7 @@ _pmixp_io_drop_messages(pmixp_io_engine_t *eng)
 		pmixp_io_send_cleanup(eng);
 
 		/* drop all outstanding messages */
-		while( (msg = list_dequeue(eng->send_queue) ) ){
+		while ((msg = list_dequeue(eng->send_queue))) {
 			eng->h.send_complete(msg, PMIXP_P2P_REGULAR,
 					     SLURM_SUCCESS);
 		}
@@ -187,7 +187,8 @@ void pmixp_io_finalize(pmixp_io_engine_t *eng, int err)
 	{
 	case PMIXP_IO_FINALIZED:
 		/* avoid double finalization */
-		PMIXP_ERROR("Attempt to finalize already finalized I/O engine");
+		PMIXP_ERROR("Attempt to finalize already finalized "
+			    "I/O engine");
 		return;
 	case PMIXP_IO_OPERATING:
 		close(eng->sd);
@@ -198,7 +199,7 @@ void pmixp_io_finalize(pmixp_io_engine_t *eng, int err)
 		_pmixp_io_drop_messages(eng);
 
 		/* Release all receiver resources*/
-		if( eng->h.recv_on ){
+		if (eng->h.recv_on) {
 			xfree(eng->rcvd_hdr_net);
 			xfree(eng->rcvd_hdr_host);
 			eng->rcvd_hdr_net = NULL;
@@ -206,7 +207,7 @@ void pmixp_io_finalize(pmixp_io_engine_t *eng, int err)
 		}
 
 		/* Release all sender resources*/
-		if( eng->h.send_on ){
+		if (eng->h.send_on) {
 			list_destroy(eng->send_queue);
 			list_destroy(eng->complete_queue);
 			eng->send_msg_size = eng->send_offs = 0;
@@ -216,7 +217,8 @@ void pmixp_io_finalize(pmixp_io_engine_t *eng, int err)
 		PMIXP_ERROR("Attempt to finalize non-initialized I/O engine");
 		break;
 	default:
-		PMIXP_ERROR("I/O engine was damaged, unknown state: %d", (int)eng->io_state);
+		PMIXP_ERROR("I/O engine was damaged, unknown state: %d",
+			    (int)eng->io_state);
 		break;
 	}
 
@@ -273,7 +275,8 @@ static inline bool _rcvd_have_padding(pmixp_io_engine_t *eng)
 	xassert(NULL != eng->rcvd_hdr_net);
 	xassert(pmixp_io_operating(eng));
 	xassert(eng->h.recv_on);
-	return eng->h.recv_padding && (eng->rcvd_pad_recvd < eng->h.recv_padding);
+	return eng->h.recv_padding &&
+		(eng->rcvd_pad_recvd < eng->h.recv_padding);
 }
 
 static inline bool _rcvd_need_header(pmixp_io_engine_t *eng)
@@ -318,13 +321,16 @@ void pmixp_io_rcvd_progress(pmixp_io_engine_t *eng)
 		size = eng->h.recv_padding;
 		remain = size - eng->rcvd_pad_recvd;
 		eng->rcvd_pad_recvd +=
-			pmixp_read_buf(fd, buf, remain, &shutdown, false);
+				pmixp_read_buf(fd, buf, remain,
+					       &shutdown, false);
 		if (shutdown) {
 			eng->io_state = PMIXP_IO_CONN_CLOSED;
 			return;
 		}
 		if (eng->rcvd_pad_recvd < size) {
-			/* normal return. receive another portion of header later */
+			/* normal return. receive another portion of
+			 * header later
+			 */
 			return;
 		}
 	}
@@ -335,16 +341,19 @@ void pmixp_io_rcvd_progress(pmixp_io_engine_t *eng)
 		remain = size - eng->rcvd_hdr_offs;
 		offs = eng->rcvd_hdr_net + eng->rcvd_hdr_offs;
 		eng->rcvd_hdr_offs +=
-			pmixp_read_buf(fd, offs, remain, &shutdown, false);
+				pmixp_read_buf(fd, offs, remain,
+					       &shutdown, false);
 		if (shutdown) {
 			eng->io_state = PMIXP_IO_CONN_CLOSED;
 			return;
 		}
 		if (_rcvd_need_header(eng)) {
-			/* normal return. receive another portion of header later */
+			/* normal return. receive another portion
+			 * of header later */
 			return;
 		}
-		/* if we are here then header is received and we can adjust buffer */
+		/* if we are here then header is received and we can
+		 * adjust buffer */
 		if ((shutdown = _rcvd_swithch_to_body(eng))) {
 			/* drop # of received bytes to identify that
 			 * message is not ready
@@ -358,14 +367,16 @@ void pmixp_io_rcvd_progress(pmixp_io_engine_t *eng)
 	/* we are receiving the body */
 	xassert(eng->rcvd_hdr_offs == eng->h.rhdr_net_size);
 	if (0 == eng->rcvd_pay_size) {
-		/* zero-byte message. Exit so we will hit pmixp_io_rcvd_ready */
+		/* zero-byte message. Exit so we will hit
+		 * pmixp_io_rcvd_ready */
 		return;
 	}
 	size = eng->rcvd_pay_size;
 	remain = size - eng->rcvd_pay_offs;
 	eng->rcvd_pay_offs +=
-		pmixp_read_buf(fd, eng->rcvd_payload + eng->rcvd_pay_offs,
-			remain, &shutdown, false);
+			pmixp_read_buf(fd,
+				       eng->rcvd_payload + eng->rcvd_pay_offs,
+				       remain, &shutdown, false);
 	if (shutdown) {
 		eng->io_state = PMIXP_IO_CONN_CLOSED;
 		return;
@@ -387,7 +398,7 @@ void *pmixp_io_rcvd_extract(pmixp_io_engine_t *eng, void *header)
 	xassert(eng->h.recv_on);
 	xassert(pmixp_io_rcvd_ready(eng));
 
-	if( !pmixp_io_operating(eng)){
+	if (!pmixp_io_operating(eng)) {
 		return NULL;
 	}
 	void *ptr = eng->rcvd_payload;
@@ -445,7 +456,7 @@ static inline int _send_msg_ok(pmixp_io_engine_t *eng)
 	xassert(eng->h.send_on);
 
 	return (eng->send_current != NULL)
-		&& (eng->send_offs == eng->send_msg_size);
+			&& (eng->send_offs == eng->send_msg_size);
 }
 
 static bool _send_pending(pmixp_io_engine_t *eng)
@@ -475,7 +486,8 @@ static bool _send_pending(pmixp_io_engine_t *eng)
 		void *msg = list_dequeue(eng->send_queue);
 		xassert(msg != NULL);
 		if ((rc = _send_set_current(eng, msg))) {
-			PMIXP_ERROR_NO(rc, "Cannot switch to the next message");
+			PMIXP_ERROR_NO(rc, "Cannot switch to the "
+				       "next message");
 			pmixp_io_finalize(eng, rc);
 		}
 	}
@@ -498,7 +510,8 @@ static void _send_progress(pmixp_io_engine_t *eng)
 
 	while (_send_pending(eng)) {
 		/* try to send everything untill fd became blockable
-		 * FIXME: maybe set some restriction on number of messages sended at once
+		 * FIXME: maybe set some restriction on number of
+		 * messages sended at once
 		 */
 		int shutdown = 0;
 		struct iovec iov[2];
@@ -509,14 +522,15 @@ static void _send_progress(pmixp_io_engine_t *eng)
 		iov[iovcnt].iov_len  = eng->send_msg_size;
 		iovcnt++;
 
-		written = pmixp_writev_buf(fd, iov, iovcnt, eng->send_offs, &shutdown);
+		written = pmixp_writev_buf(fd, iov, iovcnt,
+					   eng->send_offs, &shutdown);
 		if (shutdown) {
 			pmixp_io_finalize(eng, shutdown);
 			break;
 		}
 		
 		eng->send_offs += written;
-		if( 0 == written ){
+		if (!written) {
 			break;
 		}
 	}
@@ -534,7 +548,7 @@ int pmixp_io_send_enqueue(pmixp_io_engine_t *eng, void *msg)
 	/* We should be in the proper state
 	 * to accept new messages
 	 */
-	if( !pmixp_io_enqueue_ok(eng)){
+	if (!pmixp_io_enqueue_ok(eng)) {
 		PMIXP_ERROR("Trying to enqueue to unprepared engine");
 		return SLURM_ERROR;
 	}
@@ -561,7 +575,7 @@ int pmixp_io_send_urgent(pmixp_io_engine_t *eng, void *msg)
 	/* We should be in the proper state
 	 * to accept new messages
 	 */
-	if( !pmixp_io_enqueue_ok(eng)){
+	if (!pmixp_io_enqueue_ok(eng)) {
 		PMIXP_ERROR("Trying to enqueue to unprepared engine");
 		return SLURM_ERROR;
 	}
@@ -585,7 +599,7 @@ bool pmixp_io_send_pending(pmixp_io_engine_t *eng)
 void pmixp_io_send_cleanup(pmixp_io_engine_t *eng)
 {
 	void *msg = NULL;
-	while( (msg = list_dequeue(eng->complete_queue) ) ){
+	while ((msg = list_dequeue(eng->complete_queue))) {
 		eng->h.send_complete(msg, PMIXP_P2P_REGULAR, SLURM_SUCCESS);
 	}
 }

@@ -148,7 +148,8 @@ typedef void *(*pmixp_p2p_buf_ptr_cb_t)(void *msg);
 
 typedef uint32_t (*pmixp_2p2_payload_size_cb_t)(void *hdr);
 typedef size_t (*pmixp_p2p_buf_size_cb_t)(void *msg);
-typedef void (*pmixp_p2p_send_complete_cb_t)(void *msg, pmixp_p2p_ctx_t ctx, int rc);
+typedef void (*pmixp_p2p_send_complete_cb_t)(void *msg,
+					     pmixp_p2p_ctx_t ctx, int rc);
 typedef void (*pmixp_p2p_msg_return_cb_t)(void *hdr, Buf buf);
 
 typedef struct {

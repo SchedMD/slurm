@@ -48,18 +48,18 @@ size_t pmixp_read_buf(int fd, void *buf, size_t count, int *shutdown,
 size_t pmixp_write_buf(int fd, void *buf, size_t count, int *shutdown,
 		       bool blocking);
 size_t pmixp_writev_buf(int sd, struct iovec *iov, size_t iovcnt, 
-                        size_t offset, int *shutdown);
+			size_t offset, int *shutdown);
 
 int pmixp_fd_set_nodelay(int fd);
 bool pmixp_fd_read_ready(int fd, int *shutdown);
 bool pmixp_fd_write_ready(int fd, int *shutdown);
 int pmixp_srun_send(slurm_addr_t *addr, uint32_t len, char *data);
-int pmixp_stepd_send(const char *nodelist, const char *address, const char *data,
-		     uint32_t len, unsigned int start_delay, unsigned int retry_cnt,
-		     int silent);
-int pmixp_p2p_send(const char *nodename, const char *address, const char *data,
-		     uint32_t len, unsigned int start_delay,
+int pmixp_stepd_send(const char *nodelist, const char *address,
+		     const char *data, uint32_t len, unsigned int start_delay,
 		     unsigned int retry_cnt, int silent);
+int pmixp_p2p_send(const char *nodename, const char *address, const char *data,
+		   uint32_t len, unsigned int start_delay,
+		   unsigned int retry_cnt, int silent);
 int pmixp_rmdir_recursively(char *path);
 int pmixp_fixrights(char *path, uid_t uid, mode_t mode);
 int pmixp_mkdir(char *path, mode_t rights);
@@ -348,7 +348,6 @@ __pmixp_rlist_get_free(pmixp_list_t *l, size_t pre_alloc)
 		}
 	}
 	return pmixp_list_deq(l);
-;
 }
 
 static inline void

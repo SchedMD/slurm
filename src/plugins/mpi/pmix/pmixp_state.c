@@ -101,7 +101,7 @@ static pmixp_coll_t *_find_collective(pmixp_coll_type_t type,
 		if (coll->type != type) {
 			continue;
 		}
-		if (0 == coll->nprocs) {
+		if (!coll->nprocs) {
 			ret = coll;
 			goto exit;
 		}
@@ -127,7 +127,7 @@ pmixp_coll_t *pmixp_state_coll_get(pmixp_coll_type_t type,
 	 * exists.
 	 * First we try to find collective in the list without locking. */
 
-	if (NULL != (ret = _find_collective(type, procs, nprocs))) {
+	if ((ret = _find_collective(type, procs, nprocs))) {
 		return ret;
 	}
 
@@ -137,20 +137,20 @@ pmixp_coll_t *pmixp_state_coll_get(pmixp_coll_type_t type,
 	 * concurent thread already created it while we were doing the
 	 * first search */
 
-	if (0 != pmixp_coll_belong_chk(type, procs, nprocs)) {
+	if (pmixp_coll_belong_chk(type, procs, nprocs)) {
 		return NULL;
 	}
 
 	slurm_mutex_lock(&_pmixp_state.lock);
 
-	if (NULL == (ret = _find_collective(type, procs, nprocs))) {
+	if (!(ret = _find_collective(type, procs, nprocs))) {
 		/* 1. Create and insert unitialized but locked coll
 		 * structure into the list. We can release the state
 		 * structure right after that */
 		ret = xmalloc(sizeof(*ret));
 		/* initialize with unlocked list but locked element */
 		if (PMIX_SUCCESS != pmixp_coll_init(ret, procs, nprocs, type)) {
-			if (NULL != ret->procs) {
+			if (ret->procs) {
 				xfree(ret->procs);
 			}
 			xfree(ret);
@@ -172,7 +172,7 @@ void pmixp_state_coll_cleanup(void)
 
 	/* Walk through the list looking for the collective descriptor */
 	it = list_iterator_create(_pmixp_state.coll);
-	while (NULL != (coll = list_next(it))) {
+	while ((coll = list_next(it))) {
 		pmixp_coll_reset_if_to(coll, ts);
 	}
 	list_iterator_destroy(it);

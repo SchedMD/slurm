@@ -77,17 +77,17 @@ typedef void (*pmixp_conn_new_msg_cb_t)(pmixp_conn_t *conn,
 typedef void (*pmixp_conn_ret_cb_t)(pmixp_conn_t *conn);
 
 void pmixp_conn_init(pmixp_p2p_data_t slurm_hdr,
-			  pmixp_p2p_data_t direct_hdr);
+		     pmixp_p2p_data_t direct_hdr);
 void pmixp_conn_fini(void);
 void pmixp_conn_cleanup(void);
 
 pmixp_conn_t *
 pmixp_conn_new_temp(pmixp_conn_proto_t proto, int fd,
-		     pmixp_conn_new_msg_cb_t msg_cb);
+		    pmixp_conn_new_msg_cb_t msg_cb);
 pmixp_conn_t *
 pmixp_conn_new_persist(pmixp_conn_proto_t proto,
-			pmixp_io_engine_t *eng, pmixp_conn_new_msg_cb_t msg_cb,
-			pmixp_conn_ret_cb_t ret_cb, void *conn_data);
+		       pmixp_io_engine_t *eng, pmixp_conn_new_msg_cb_t msg_cb,
+		       pmixp_conn_ret_cb_t ret_cb, void *conn_data);
 void pmixp_conn_return(pmixp_conn_t *hndl);
 static inline bool
 pmixp_conn_is_alive(pmixp_conn_t *conn)

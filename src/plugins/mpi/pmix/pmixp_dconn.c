@@ -53,15 +53,17 @@ void pmixp_dconn_init(int node_cnt, pmixp_p2p_data_t direct_hdr)
 	int i;
 	memset(&_pmixp_dconn_h, 0, sizeof(_pmixp_dconn_h));
 
-	if( pmixp_info_srv_direct_conn_ucx() ){
+	if (pmixp_info_srv_direct_conn_ucx()) {
 		/* if UCX is disabled - it is always false */
 #ifdef HAVE_UCX
-		_poll_fd = pmixp_dconn_ucx_prepare(&_pmixp_dconn_h, &ep_data, &ep_len);
+		_poll_fd = pmixp_dconn_ucx_prepare(&_pmixp_dconn_h,
+						   &ep_data, &ep_len);
 		_progress_type = PMIXP_DCONN_PROGRESS_HW;
 		_conn_type = PMIXP_DCONN_CONN_TYPE_ONESIDE;
 #endif
 	} else {
-		_poll_fd = pmixp_dconn_tcp_prepare(&_pmixp_dconn_h, &ep_data, &ep_len);
+		_poll_fd = pmixp_dconn_tcp_prepare(&_pmixp_dconn_h,
+						   &ep_data, &ep_len);
 		_progress_type = PMIXP_DCONN_PROGRESS_SW;
 		_conn_type = PMIXP_DCONN_CONN_TYPE_TWOSIDE;
 	}
@@ -69,7 +71,7 @@ void pmixp_dconn_init(int node_cnt, pmixp_p2p_data_t direct_hdr)
 
 	_pmixp_dconn_conns = xmalloc(sizeof(*_pmixp_dconn_conns) * node_cnt);
 	_pmixp_dconn_conn_cnt = node_cnt;
-	for(i=0; i<_pmixp_dconn_conn_cnt; i++){
+	for (i=0; i<_pmixp_dconn_conn_cnt; i++) {
 		slurm_mutex_init(&_pmixp_dconn_conns[i].lock);
 		_pmixp_dconn_conns[i].nodeid = i;
 		_pmixp_dconn_conns[i].state = PMIXP_DIRECT_INIT;
@@ -80,7 +82,7 @@ void pmixp_dconn_init(int node_cnt, pmixp_p2p_data_t direct_hdr)
 void pmixp_dconn_fini()
 {
 	int i;
-	for(i=0; i<_pmixp_dconn_conn_cnt; i++){
+	for (i=0; i<_pmixp_dconn_conn_cnt; i++) {
 		slurm_mutex_destroy(&_pmixp_dconn_conns[i].lock);
 		_pmixp_dconn_h.fini(_pmixp_dconn_conns[i].priv);
 	}
@@ -89,7 +91,8 @@ void pmixp_dconn_fini()
 	_pmixp_dconn_conn_cnt = 0;
 }
 
-int pmixp_dconn_connect_do(pmixp_dconn_t *dconn, void *ep_data, size_t ep_len, void *init_msg)
+int pmixp_dconn_connect_do(pmixp_dconn_t *dconn, void *ep_data,
+			   size_t ep_len, void *init_msg)
 {
 	return _pmixp_dconn_h.connect(dconn->priv, ep_data, ep_len, init_msg);
 }

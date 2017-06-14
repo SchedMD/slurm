@@ -127,7 +127,7 @@ static inline int pmixp_io_error(pmixp_io_engine_t *eng)
  * to the operation mode
  */
 void pmixp_io_init(pmixp_io_engine_t *eng,
-		pmixp_p2p_data_t header);
+		   pmixp_p2p_data_t header);
 
 /* attach engine to the specific file descriptor */
 static inline void

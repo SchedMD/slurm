@@ -65,7 +65,7 @@ typedef struct {
 	char *hostname;
 	uint32_t node_tasks; /* number of tasks on *this* node */
 	uint32_t *gtids; /* global ids of tasks located on *this* node */
-	char *task_map_packed; /* string represents packed task mapping information */
+	char *task_map_packed; /* packed task mapping information */
 	int timeout;
 	char *cli_tmpdir, *cli_tmpdir_base;
 	char *lib_tmpdir;

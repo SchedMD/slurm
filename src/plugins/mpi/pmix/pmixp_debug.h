@@ -85,16 +85,16 @@
 		pmixp_info_stepid(), SIGKILL);			\
 }
 
-#define PMIXP_ERROR_NO(err, format, args...) {			\
-	char file[] = __FILE__;					\
-	char *file_base = strrchr(file, '/');			\
-	if (file_base == NULL) {				\
-		file_base = file;				\
-	}							\
-	error("%s [%d] %s:%d [%s] mpi/pmix: ERROR: " format ": %s (%d)", \
-		pmixp_info_hostname(), pmixp_info_nodeid(),	\
-		file_base, __LINE__, __func__,			\
-		## args, strerror(err), err);			\
+#define PMIXP_ERROR_NO(err, format, args...) {				\
+	char file[] = __FILE__;						\
+	char *file_base = strrchr(file, '/');				\
+	if (file_base == NULL) {					\
+		file_base = file;					\
+	}								\
+	error("%s [%d] %s:%d [%s] mpi/pmix: ERROR: " format ": %s (%d)",\
+		pmixp_info_hostname(), pmixp_info_nodeid(),		\
+		file_base, __LINE__, __func__,				\
+		## args, strerror(err), err);				\
 }
 
 #ifdef NDEBUG
