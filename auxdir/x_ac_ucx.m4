@@ -72,11 +72,10 @@ AC_DEFUN([X_AC_UCX],
     else
       UCX_CPPFLAGS="-I$x_ac_cv_ucx_dir/include"
       if test "$ac_with_rpath" = "yes"; then
-        UCX_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_ucx_libdir -L$x_ac_cv_ucx_libdir"
+        UCX_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_ucx_libdir"
       else
-        UCX_LDFLAGS="-L$x_ac_cv_ucx_libdir"
+        UCX_CPPFLAGS+=" -DPMIXP_UCX_LIBPATH=\\\"$x_ac_cv_ucx_libdir\\\""
       fi
-      UCX_LIBS="-lucp"
       AC_DEFINE(HAVE_UCX, 1, [Define to 1 if ucx library found])
     fi
 

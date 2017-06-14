@@ -87,7 +87,7 @@ bool pmixp_info_srv_direct_conn(){
 }
 
 bool pmixp_info_srv_direct_conn_ucx(){
-	return _srv_use_direct_conn_ucx;
+	return _srv_use_direct_conn_ucx && _srv_use_direct_conn;
 }
 
 /* Job information */

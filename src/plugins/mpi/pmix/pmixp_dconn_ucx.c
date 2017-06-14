@@ -37,6 +37,7 @@
 #include "pmixp_dconn.h"
 #include "pmixp_dconn_ucx.h"
 #include <unistd.h>
+#include <dlfcn.h>
 #include <ucp/api/ucp.h>
 
 /* local variables */
@@ -145,6 +146,51 @@ static int _ucx_connect(void *_priv, void *ep_data, size_t ep_len,
 			void *init_msg);
 static int _ucx_send(void *_priv, void *msg);
 static void _ucx_regio(eio_handle_t *h);
+static void *_ucx_lib_handler = NULL;
+
+static int _load_ucx_lib()
+{
+	/* At the time of writing this UCX doesn't support
+	 * fork() and it's memory hooks are causing memory
+	 * corruptions in the forked processes.
+	 * To avoid that we need to disable memory hooks before
+	 * loading UCX library.
+	 */
+	setenv("UCX_MEM_MALLOC_HOOKS", "no", 1);
+
+#ifdef PMIXP_UCX_LIBPATH
+	/* If this SLURM build doesn't allow RPATH's
+	 * try to open library by it's full path that
+	 * we have from autoconf
+	 */
+	char *full_path = NULL;
+	xstrfmtcat(full_path, "%s/libucp.so", PMIXP_UCX_LIBPATH);
+	_ucx_lib_handler = dlopen(full_path, RTLD_LAZY | RTLD_GLOBAL);
+	xfree(full_path);
+	if (_ucx_lib_handler) {
+		/* successful, exit now */
+		return SLURM_SUCCESS;
+	}
+	/* fall-thru to see if libucp.so is located in the location
+	 * known by dynamic linker.
+	 */
+#endif
+	_ucx_lib_handler = dlopen("libucp.so", RTLD_LAZY | RTLD_GLOBAL);
+	if (!_ucx_lib_handler) {
+		char *err = dlerror();
+		PMIXP_ERROR("Cannot open UCX lib: %s", (err) ? err : "unknown");
+		return SLURM_ERROR;
+	}
+	return SLURM_SUCCESS;
+}
+
+static void _unload_ucx_lib()
+{
+	xassert(_ucx_lib_handler);
+	if (_ucx_lib_handler) {
+		dlclose(_ucx_lib_handler);
+	}
+}
 
 int pmixp_dconn_ucx_prepare(pmixp_dconn_handlers_t *handlers,
 			    char **ep_data, size_t *ep_len)
@@ -153,6 +199,11 @@ int pmixp_dconn_ucx_prepare(pmixp_dconn_handlers_t *handlers,
 	ucs_status_t status;
 	ucp_params_t ucp_params;
 	ucp_worker_params_t worker_params;
+
+	/* By default UCX is not loaded until we explicitly
+	 * asked for that
+	 */
+	_load_ucx_lib();
 
 	slurm_mutex_init(&_ucx_worker_lock);
 
@@ -299,6 +350,9 @@ void pmixp_dconn_ucx_finalize()
 		elem = pmixp_list_deq(&_free_list);
 		pmixp_list_elem_free(elem);
 	}
+
+	/* unload UCX lib */
+	_unload_ucx_lib();
 }
 
 
