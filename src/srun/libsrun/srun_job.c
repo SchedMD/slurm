@@ -475,9 +475,15 @@ extern void init_srun(int argc, char **argv,
 			pack_argv += pack_argc_off;
 		} else
 			pack_fini = true;
+		if (!pack_fini || pack_inx) {
+			opt_t *opt_dup;
+			opt_dup = xmalloc(sizeof(opt_t));
+			memcpy(opt_dup, &opt, sizeof(opt_t));
+			if (!opt_list)
+				opt_list = list_create(NULL);
+			list_append(opt_list, opt_dup);
+		}
 	}
-//FIXME: Need to flesh out pack job support
-if (pack_inx > 1) exit(0);
 
 	record_ppid();
 
@@ -531,6 +537,8 @@ extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
 
 	} else if (opt.no_alloc) {
 		info("do not allocate resources");
+//FIXME: Need to flesh out pack job support
+if (opt_list) exit(0);
 		job = job_create_noalloc();
 		if (job == NULL) {
 			error("Job creation failure.");
@@ -540,7 +548,8 @@ extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
 			exit(error_exit);
 		}
 	} else if ((resp = existing_allocation())) {
-
+//FIXME: Need to flesh out pack job support
+if (opt_list) exit(0);
 		if (resp->working_cluster_rec)
 			slurm_setup_remote_working_cluster(resp);
 
@@ -609,27 +618,27 @@ extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
 			exit(error_exit);
 		}
 #endif
-		if (opt.relative_set && opt.relative) {
-			fatal("--relative option invalid for job allocation "
-			      "request");
-		}
-
 		if (!opt.job_name_set_env && opt.job_name_set_cmd)
 			setenvfs("SLURM_JOB_NAME=%s", opt.job_name);
 		else if (!opt.job_name_set_env && opt.argc)
 			setenvfs("SLURM_JOB_NAME=%s", opt.argv[0]);
 
-		if ( !(resp = allocate_nodes(handle_signals)) )
-			exit(error_exit);
-		global_resp = resp;
-		*got_alloc = true;
-		_print_job_information(resp);
-		_set_env_vars(resp);
-		if (_validate_relative(resp)) {
-			slurm_complete_job(resp->job_id, 1);
-			exit(error_exit);
+		if (opt_list) {
+//FIXME: Need to flesh out pack job support
+exit(0);
+		} else {
+			if (!(resp = allocate_nodes(handle_signals)))
+				exit(error_exit);
+			global_resp = resp;
+			*got_alloc = true;
+			_print_job_information(resp);
+			_set_env_vars(resp);
+			if (_validate_relative(resp)) {
+				slurm_complete_job(resp->job_id, 1);
+				exit(error_exit);
+			}
+			job = job_create_allocation(resp);
 		}
-		job = job_create_allocation(resp);
 
 		opt.time_limit = NO_VAL;/* not applicable for step, only job */
 		xfree(opt.constraints);	/* not applicable for this step */

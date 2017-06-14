@@ -48,6 +48,7 @@
 #include "src/common/env.h"
 #include "src/common/fd.h"
 #include "src/common/forward.h"
+#include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/proc_args.h"
@@ -93,6 +94,7 @@ static uint32_t pending_job_id = 0;
 /*
  * Static Prototypes
  */
+static job_desc_msg_t *_job_desc_msg_create_from_opts(opt_t *opt_local);
 static void _set_pending_job_id(uint32_t job_id);
 static void _signal_while_allocating(int signo);
 
@@ -427,28 +429,51 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 }
 #endif	/* HAVE_BG */
 
-int
-allocate_test(void)
+static int _allocate_test(opt_t *opt_local)
 {
+	job_desc_msg_t *j;
 	int rc;
-	job_desc_msg_t *j = job_desc_msg_create_from_opts();
-	if (!j)
+
+	if ((j = _job_desc_msg_create_from_opts(opt_local)) == NULL)
 		return SLURM_ERROR;
 
 	rc = slurm_job_will_run(j);
 	job_desc_msg_destroy(j);
 	return rc;
+
 }
 
-resource_allocation_response_msg_t *
-allocate_nodes(bool handle_signals)
+extern int allocate_test(void)
+{
+	int rc = SLURM_SUCCESS;
+	ListIterator iter;
+	opt_t *opt_local;
+
+	if (opt_list) {
+		iter = list_iterator_create(opt_list);
+		while ((opt_local = (opt_t *) list_next(iter))) {
+			if ((rc = _allocate_test(opt_local)) != SLURM_SUCCESS)
+				break;
+ 		}
+		list_iterator_destroy(iter);
+	} else {
+		rc = _allocate_test(&opt);
+	}
+
+	return rc;
+}
+
+resource_allocation_response_msg_t *allocate_nodes(bool handle_signals)
 {
 	resource_allocation_response_msg_t *resp = NULL;
-	job_desc_msg_t *j = job_desc_msg_create_from_opts();
+	job_desc_msg_t *j;
 	slurm_allocation_callbacks_t callbacks;
 	int i;
 
-	if (!j)
+	if (opt.relative_set && opt.relative)
+		fatal("--relative option invalid for job allocation request");
+
+	if ((j = _job_desc_msg_create_from_opts(&opt)) == NULL)
 		return NULL;
 
 	j->origin_cluster = xstrdup(slurmctld_conf.cluster_name);
@@ -646,14 +671,14 @@ int slurmctld_msg_init(void)
  * Create job description structure based off srun options
  * (see opt.h)
  */
-job_desc_msg_t *
-job_desc_msg_create_from_opts (void)
+static job_desc_msg_t *_job_desc_msg_create_from_opts(opt_t *opt_local)
 {
 	job_desc_msg_t *j = xmalloc(sizeof(*j));
 	hostlist_t hl = NULL;
 
 	slurm_init_job_desc_msg(j);
 #if defined HAVE_ALPS_CRAY && defined HAVE_REAL_CRAY
+	static bool sgi_err_logged = false;
 	uint64_t pagg_id = job_getjid(getpid());
 	/*
 	 * Interactive sessions require pam_job.so in /etc/pam.d/common-session
@@ -661,49 +686,50 @@ job_desc_msg_create_from_opts (void)
 	 * the only exception where we allow the fallback of using the SID to
 	 * confirm the reservation (caught later, in do_basil_confirm).
 	 */
-	if (pagg_id == (uint64_t)-1) {
-		error("No SGI job container ID detected - please enable the "
-		      "Cray job service via /etc/init.d/job");
-	} else {
+	if (pagg_id != (uint64_t) -1) {
 		if (!j->select_jobinfo)
 			j->select_jobinfo = select_g_select_jobinfo_alloc();
 
 		select_g_select_jobinfo_set(j->select_jobinfo,
 					    SELECT_JOBDATA_PAGG_ID, &pagg_id);
+	} else if (!sgi_err_logged) {
+		error("No SGI job container ID detected - please enable the "
+		      "Cray job service via /etc/init.d/job");
+		sgi_err_logged = true;
 	}
 #endif
 
-	j->contiguous     = opt.contiguous;
-	if (opt.core_spec != (uint16_t) NO_VAL)
-		j->core_spec      = opt.core_spec;
-	j->features       = opt.constraints;
-	j->cluster_features = opt.c_constraints;
-	if (opt.gres && xstrcasecmp(opt.gres, "NONE"))
-		j->gres   = opt.gres;
-	if (opt.immediate == 1)
-		j->immediate = opt.immediate;
-	if (opt.job_name)
-		j->name   = opt.job_name;
+	j->contiguous     = opt_local->contiguous;
+	if (opt_local->core_spec != NO_VAL16)
+		j->core_spec      = opt_local->core_spec;
+	j->features       = opt_local->constraints;
+	j->cluster_features = opt_local->c_constraints;
+	if (opt_local->gres && xstrcasecmp(opt_local->gres, "NONE"))
+		j->gres   = opt_local->gres;
+	if (opt_local->immediate == 1)
+		j->immediate = opt_local->immediate;
+	if (opt_local->job_name)
+		j->name   = opt_local->job_name;
 	else
-		j->name   = opt.cmd_name;
-	if (opt.argc > 0) {
+		j->name   = opt_local->cmd_name;
+	if (opt_local->argc > 0) {
 		j->argc    = 1;
 		j->argv    = (char **) xmalloc(sizeof(char *) * 2);
-		j->argv[0] = xstrdup(opt.argv[0]);
+		j->argv[0] = xstrdup(opt_local->argv[0]);
 	}
-	if (opt.acctg_freq)
-		j->acctg_freq     = xstrdup(opt.acctg_freq);
-	j->reservation    = opt.reservation;
-	j->wckey          = opt.wckey;
+	if (opt_local->acctg_freq)
+		j->acctg_freq     = xstrdup(opt_local->acctg_freq);
+	j->reservation    = opt_local->reservation;
+	j->wckey          = opt_local->wckey;
 
-	j->req_nodes      = xstrdup(opt.nodelist);
+	j->req_nodes      = xstrdup(opt_local->nodelist);
 
 	/* simplify the job allocation nodelist,
 	 * not laying out tasks until step */
 	if (j->req_nodes) {
 		hl = hostlist_create(j->req_nodes);
-		xfree(opt.nodelist);
-		opt.nodelist = hostlist_ranged_string_xmalloc(hl);
+		xfree(opt_local->nodelist);
+		opt_local->nodelist = hostlist_ranged_string_xmalloc(hl);
 		hostlist_uniq(hl);
 		xfree(j->req_nodes);
 		j->req_nodes = hostlist_ranged_string_xmalloc(hl);
@@ -711,186 +737,188 @@ job_desc_msg_create_from_opts (void)
 
 	}
 
-	if (((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_ARBITRARY)
-	   && !j->req_nodes) {
+	if (((opt_local->distribution & SLURM_DIST_STATE_BASE) ==
+	     SLURM_DIST_ARBITRARY) && !j->req_nodes) {
 		error("With Arbitrary distribution you need to "
 		      "specify a nodelist or hostfile with the -w option");
 		return NULL;
 	}
-	j->exc_nodes      = opt.exc_nodes;
-	j->partition      = opt.partition;
-	j->min_nodes      = opt.min_nodes;
-	if (opt.sockets_per_node != NO_VAL)
-		j->sockets_per_node    = opt.sockets_per_node;
-	if (opt.cores_per_socket != NO_VAL)
-		j->cores_per_socket      = opt.cores_per_socket;
-	if (opt.threads_per_core != NO_VAL) {
-		j->threads_per_core    = opt.threads_per_core;
+	j->exc_nodes      = opt_local->exc_nodes;
+	j->partition      = opt_local->partition;
+	j->min_nodes      = opt_local->min_nodes;
+	if (opt_local->sockets_per_node != NO_VAL)
+		j->sockets_per_node    = opt_local->sockets_per_node;
+	if (opt_local->cores_per_socket != NO_VAL)
+		j->cores_per_socket      = opt_local->cores_per_socket;
+	if (opt_local->threads_per_core != NO_VAL) {
+		j->threads_per_core    = opt_local->threads_per_core;
 		/* if 1 always make sure affinity knows about it */
 		if (j->threads_per_core == 1)
-			opt.cpu_bind_type |= CPU_BIND_ONE_THREAD_PER_CORE;
+			opt_local->cpu_bind_type |= CPU_BIND_ONE_THREAD_PER_CORE;
 	}
-	j->user_id        = opt.uid;
-	j->dependency     = opt.dependency;
-	if (opt.nice != NO_VAL)
-		j->nice   = NICE_OFFSET + opt.nice;
-	if (opt.priority)
-		j->priority = opt.priority;
-	if (opt.cpu_bind)
-		j->cpu_bind       = opt.cpu_bind;
-	if (opt.cpu_bind_type)
-		j->cpu_bind_type  = opt.cpu_bind_type;
-	if (opt.delay_boot != NO_VAL)
-		j->delay_boot = opt.delay_boot;
-	if (opt.mem_bind)
-		j->mem_bind       = opt.mem_bind;
-	if (opt.mem_bind_type)
-		j->mem_bind_type  = opt.mem_bind_type;
-	if (opt.plane_size != NO_VAL)
-		j->plane_size     = opt.plane_size;
-	j->task_dist      = opt.distribution;
+	j->user_id        = opt_local->uid;
+	j->dependency     = opt_local->dependency;
+	if (opt_local->nice != NO_VAL)
+		j->nice   = NICE_OFFSET + opt_local->nice;
+	if (opt_local->priority)
+		j->priority = opt_local->priority;
+	if (opt_local->cpu_bind)
+		j->cpu_bind       = opt_local->cpu_bind;
+	if (opt_local->cpu_bind_type)
+		j->cpu_bind_type  = opt_local->cpu_bind_type;
+	if (opt_local->delay_boot != NO_VAL)
+		j->delay_boot = opt_local->delay_boot;
+	if (opt_local->mem_bind)
+		j->mem_bind       = opt_local->mem_bind;
+	if (opt_local->mem_bind_type)
+		j->mem_bind_type  = opt_local->mem_bind_type;
+	if (opt_local->plane_size != NO_VAL)
+		j->plane_size     = opt_local->plane_size;
+	j->task_dist      = opt_local->distribution;
 
-	j->group_id       = opt.gid;
-	j->mail_type      = opt.mail_type;
+	j->group_id       = opt_local->gid;
+	j->mail_type      = opt_local->mail_type;
 
-	if (opt.ntasks_per_node != NO_VAL)
-		j->ntasks_per_node   = opt.ntasks_per_node;
-	if (opt.ntasks_per_socket != NO_VAL)
-		j->ntasks_per_socket = opt.ntasks_per_socket;
-	if (opt.ntasks_per_core != NO_VAL)
-		j->ntasks_per_core   = opt.ntasks_per_core;
+	if (opt_local->ntasks_per_node != NO_VAL)
+		j->ntasks_per_node   = opt_local->ntasks_per_node;
+	if (opt_local->ntasks_per_socket != NO_VAL)
+		j->ntasks_per_socket = opt_local->ntasks_per_socket;
+	if (opt_local->ntasks_per_core != NO_VAL)
+		j->ntasks_per_core   = opt_local->ntasks_per_core;
 
-	if (opt.mail_user)
-		j->mail_user = opt.mail_user;
-	if (opt.burst_buffer)
-		j->burst_buffer = opt.burst_buffer;
-	if (opt.begin)
-		j->begin_time = opt.begin;
-	if (opt.deadline)
-		j->deadline = opt.deadline;
-	if (opt.licenses)
-		j->licenses = opt.licenses;
-	if (opt.network)
-		j->network = opt.network;
-	if (opt.profile)
-		j->profile = opt.profile;
-	if (opt.account)
-		j->account = opt.account;
-	if (opt.comment)
-		j->comment = opt.comment;
-	if (opt.qos)
-		j->qos = opt.qos;
-	if (opt.cwd)
-		j->work_dir = opt.cwd;
+	if (opt_local->mail_user)
+		j->mail_user = opt_local->mail_user;
+	if (opt_local->burst_buffer)
+		j->burst_buffer = opt_local->burst_buffer;
+	if (opt_local->begin)
+		j->begin_time = opt_local->begin;
+	if (opt_local->deadline)
+		j->deadline = opt_local->deadline;
+	if (opt_local->licenses)
+		j->licenses = opt_local->licenses;
+	if (opt_local->network)
+		j->network = opt_local->network;
+	if (opt_local->profile)
+		j->profile = opt_local->profile;
+	if (opt_local->account)
+		j->account = opt_local->account;
+	if (opt_local->comment)
+		j->comment = opt_local->comment;
+	if (opt_local->qos)
+		j->qos = opt_local->qos;
+	if (opt_local->cwd)
+		j->work_dir = opt_local->cwd;
 
-	if (opt.hold)
+	if (opt_local->hold)
 		j->priority     = 0;
-	if (opt.jobid != NO_VAL)
-		j->job_id	= opt.jobid;
+	if (opt_local->jobid != NO_VAL)
+		j->job_id	= opt_local->jobid;
 #ifdef HAVE_BG
-	if (opt.geometry[0] > 0) {
+	if (opt_local->geometry[0] > 0) {
 		int i;
 		for (i = 0; i < SYSTEM_DIMENSIONS; i++)
-			j->geometry[i] = opt.geometry[i];
+			j->geometry[i] = opt_local->geometry[i];
 	}
 #endif
 
-	memcpy(j->conn_type, opt.conn_type, sizeof(j->conn_type));
+	memcpy(j->conn_type, opt_local->conn_type, sizeof(j->conn_type));
 
-	if (opt.reboot)
+	if (opt_local->reboot)
 		j->reboot = 1;
-	if (opt.no_rotate)
+	if (opt_local->no_rotate)
 		j->rotate = 0;
 
-	if (opt.blrtsimage)
-		j->blrtsimage = opt.blrtsimage;
-	if (opt.linuximage)
-		j->linuximage = opt.linuximage;
-	if (opt.mloaderimage)
-		j->mloaderimage = opt.mloaderimage;
-	if (opt.ramdiskimage)
-		j->ramdiskimage = opt.ramdiskimage;
+	if (opt_local->blrtsimage)
+		j->blrtsimage = opt_local->blrtsimage;
+	if (opt_local->linuximage)
+		j->linuximage = opt_local->linuximage;
+	if (opt_local->mloaderimage)
+		j->mloaderimage = opt_local->mloaderimage;
+	if (opt_local->ramdiskimage)
+		j->ramdiskimage = opt_local->ramdiskimage;
 
-	if (opt.max_nodes)
-		j->max_nodes    = opt.max_nodes;
-	else if (opt.nodes_set) {
+	if (opt_local->max_nodes)
+		j->max_nodes    = opt_local->max_nodes;
+	else if (opt_local->nodes_set) {
 		/* On an allocation if the max nodes isn't set set it
 		 * to do the same behavior as with salloc or sbatch.
 		 */
-		j->max_nodes    = opt.min_nodes;
+		j->max_nodes    = opt_local->min_nodes;
 	}
-	if (opt.pn_min_cpus != NO_VAL)
-		j->pn_min_cpus    = opt.pn_min_cpus;
-	if (opt.pn_min_memory != NO_VAL64)
-		j->pn_min_memory = opt.pn_min_memory;
-	else if (opt.mem_per_cpu != NO_VAL64)
-		j->pn_min_memory = opt.mem_per_cpu | MEM_PER_CPU;
-	if (opt.pn_min_tmp_disk != NO_VAL)
-		j->pn_min_tmp_disk = opt.pn_min_tmp_disk;
-	if (opt.overcommit) {
-		j->min_cpus    = opt.min_nodes;
-		j->overcommit  = opt.overcommit;
-	} else if (opt.cpus_set)
-		j->min_cpus    = opt.ntasks * opt.cpus_per_task;
+	if (opt_local->pn_min_cpus != NO_VAL)
+		j->pn_min_cpus    = opt_local->pn_min_cpus;
+	if (opt_local->pn_min_memory != NO_VAL64)
+		j->pn_min_memory = opt_local->pn_min_memory;
+	else if (opt_local->mem_per_cpu != NO_VAL64)
+		j->pn_min_memory = opt_local->mem_per_cpu | MEM_PER_CPU;
+	if (opt_local->pn_min_tmp_disk != NO_VAL)
+		j->pn_min_tmp_disk = opt_local->pn_min_tmp_disk;
+	if (opt_local->overcommit) {
+		j->min_cpus    = opt_local->min_nodes;
+		j->overcommit  = opt_local->overcommit;
+	} else if (opt_local->cpus_set)
+		j->min_cpus    = opt_local->ntasks * opt_local->cpus_per_task;
 	else
-		j->min_cpus    = opt.ntasks;
-	if (opt.ntasks_set)
-		j->num_tasks   = opt.ntasks;
+		j->min_cpus    = opt_local->ntasks;
+	if (opt_local->ntasks_set)
+		j->num_tasks   = opt_local->ntasks;
 
-	if (opt.cpus_set)
-		j->cpus_per_task = opt.cpus_per_task;
+	if (opt_local->cpus_set)
+		j->cpus_per_task = opt_local->cpus_per_task;
 
-	if (opt.no_kill)
+	if (opt_local->no_kill)
 		j->kill_on_node_fail   = 0;
-	if (opt.time_limit != NO_VAL)
-		j->time_limit          = opt.time_limit;
-	if (opt.time_min != NO_VAL)
-		j->time_min            = opt.time_min;
-	if (opt.shared != (uint16_t) NO_VAL)
-		j->shared = opt.shared;
+	if (opt_local->time_limit != NO_VAL)
+		j->time_limit          = opt_local->time_limit;
+	if (opt_local->time_min != NO_VAL)
+		j->time_min            = opt_local->time_min;
+	if (opt_local->shared != NO_VAL16)
+		j->shared = opt_local->shared;
 
-	if (opt.warn_signal)
-		j->warn_signal = opt.warn_signal;
-	if (opt.warn_time)
-		j->warn_time = opt.warn_time;
-	if (opt.job_flags)
-		j->bitflags = opt.job_flags;
+	if (opt_local->warn_signal)
+		j->warn_signal = opt_local->warn_signal;
+	if (opt_local->warn_time)
+		j->warn_time = opt_local->warn_time;
+	if (opt_local->job_flags)
+		j->bitflags = opt_local->job_flags;
 
-	if (opt.cpu_freq_min != NO_VAL)
-		j->cpu_freq_min = opt.cpu_freq_min;
-	if (opt.cpu_freq_max != NO_VAL)
-		j->cpu_freq_max = opt.cpu_freq_max;
-	if (opt.cpu_freq_gov != NO_VAL)
-		j->cpu_freq_gov = opt.cpu_freq_gov;
+	if (opt_local->cpu_freq_min != NO_VAL)
+		j->cpu_freq_min = opt_local->cpu_freq_min;
+	if (opt_local->cpu_freq_max != NO_VAL)
+		j->cpu_freq_max = opt_local->cpu_freq_max;
+	if (opt_local->cpu_freq_gov != NO_VAL)
+		j->cpu_freq_gov = opt_local->cpu_freq_gov;
 
-	if (opt.req_switch >= 0)
-		j->req_switch = opt.req_switch;
-	if (opt.wait4switch >= 0)
-		j->wait4switch = opt.wait4switch;
+	if (opt_local->req_switch >= 0)
+		j->req_switch = opt_local->req_switch;
+	if (opt_local->wait4switch >= 0)
+		j->wait4switch = opt_local->wait4switch;
 
 	/* srun uses the same listening port for the allocation response
 	 * message as all other messages */
 	j->alloc_resp_port = slurmctld_comm_addr.port;
 	j->other_port = slurmctld_comm_addr.port;
 
-	if (opt.spank_job_env_size) {
-		j->spank_job_env      = opt.spank_job_env;
-		j->spank_job_env_size = opt.spank_job_env_size;
+	if (opt_local->spank_job_env_size) {
+		j->spank_job_env      = opt_local->spank_job_env;
+		j->spank_job_env_size = opt_local->spank_job_env_size;
 	}
 
-	if (opt.power_flags)
-		j->power_flags = opt.power_flags;
-	if (opt.mcs_label)
-		j->mcs_label = opt.mcs_label;
+	if (opt_local->power_flags)
+		j->power_flags = opt_local->power_flags;
+	if (opt_local->mcs_label)
+		j->mcs_label = opt_local->mcs_label;
 	j->wait_all_nodes = 1;
 
 	/* If can run on multiple clusters find the earliest run time
 	 * and run it there */
-	j->clusters = xstrdup(opt.clusters);
-	if (opt.clusters &&
-	    slurmdb_get_first_avail_cluster(j, opt.clusters,
-				&working_cluster_rec) != SLURM_SUCCESS) {
-		print_db_notok(opt.clusters, 0);
+	j->clusters = xstrdup(opt_local->clusters);
+//FIXME: Modify for pack jobs
+	if (opt_local->clusters &&
+	    (slurmdb_get_first_avail_cluster(j, opt_local->clusters,
+					     &working_cluster_rec)
+	     != SLURM_SUCCESS)) {
+		print_db_notok(opt_local->clusters, 0);
 		exit(error_exit);
 	}
 

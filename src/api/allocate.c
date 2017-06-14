@@ -482,8 +482,7 @@ int slurm_job_will_run(job_desc_msg_t *req)
 			type = "cnodes";
 		slurm_make_time_str(&will_run_resp->start_time,
 				    buf, sizeof(buf));
-		info("Job %u to start at %s using %u %s"
-		     " on %s",
+		info("Job %u to start at %s using %u %s on %s",
 		     will_run_resp->job_id, buf,
 		     will_run_resp->proc_cnt, type,
 		     will_run_resp->node_list);

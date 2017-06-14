@@ -52,6 +52,7 @@
 
 #include "src/common/macros.h" /* true and false */
 #include "src/common/env.h"
+#include "src/common/list.h"
 
 #include "fname.h"
 
@@ -244,15 +245,15 @@ typedef struct srun_options {
 	uint32_t delay_boot;	/* --delay-boot			*/	
 } opt_t;
 
-extern opt_t opt;
-
-extern int error_exit;		/* exit code for slurm errors */
-extern int immediate_exit;	/* exit code for --imediate option & busy */
-extern bool srun_max_timer;
-extern bool srun_shutdown;
-extern time_t srun_begin_time;	/* begin time of srun process */
-extern int sig_array[];
+extern int	error_exit;	/* exit code for slurm errors */
 extern resource_allocation_response_msg_t *global_resp;
+extern int	immediate_exit;	/* exit code for --imediate option & busy */
+extern opt_t	opt;
+extern List	opt_list;
+extern int	sig_array[];
+extern time_t	srun_begin_time; /* begin time of srun process */
+extern bool	srun_max_timer;
+extern bool	srun_shutdown;
 
 /* return whether any constraints were specified by the user
  * (if new constraints are added above, might want to add them to this

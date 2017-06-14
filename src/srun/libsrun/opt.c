@@ -209,14 +209,15 @@
 extern char **environ;
 
 /*---- global variables, defined in opt.h ----*/
-int _verbose;
-opt_t opt;
-int error_exit = 1;
-int immediate_exit = 1;
-char *mpi_type = NULL;
-time_t srun_begin_time = 0;
+int	_verbose;
 resource_allocation_response_msg_t *global_resp = NULL;
-int pass_number = 0;
+int	error_exit = 1;
+int	immediate_exit = 1;
+char *	mpi_type = NULL;
+opt_t	opt;
+List 	opt_list = NULL;
+int	pass_number = 0;
+time_t	srun_begin_time = 0;
 
 /*---- forward declarations of static functions  ----*/
 static bool mpi_initialized = false;

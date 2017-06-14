@@ -69,17 +69,10 @@ int cleanup_allocation(void);
  * Test if an allocation would occur now given the job request.
  * Do not actually allocate resources
  */
-int allocate_test(void);
+extern int allocate_test(void);
 
 /* Set up port to handle messages from slurmctld */
 int slurmctld_msg_init(void);
-
-/*
- * Create a job_desc_msg_t object, filled in from the current srun options
- * (see opt.h)
- * The resulting memory must be freed with  job_desc_msg_destroy()
- */
-job_desc_msg_t *job_desc_msg_create_from_opts (void);
 
 /*
  * Destroy (free memory from) a job_desc_msg_t object allocated with
