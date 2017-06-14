@@ -11,7 +11,7 @@
 <li><a href="#sys_admin">System Administrator Information</a></li>
 </ul>
 
-<h2><a name="overview">Overviewe</a></h2>
+<h2><a name="overview">Overview</a></h2>
 
 <p>Slurm version 17.11 and later supports the ability to submit and manage
 heterogeneous jobs, in which each component has virtually all job options
@@ -31,12 +31,12 @@ $ sbatch --cpus-per-task=4 --mem-per-cpu=1  --ntasks=128 : \
          --cpus-per-task=1 --mem-per-cpu=16 --ntasks=1 my.bash
 </pre>
 
-<p>Options specified for one component of a heterogeneous job will be
-used for subsequent components to the extent which is expected to be helpful.
-For example, <i>--immediate</i> and <i>--job-name</i> are propogated, while
+<p>Options specified for one component of a heterogeneous job (or job step) will
+be used for subsequent components to the extent which is expected to be helpful.
+For example, <i>--immediate</i> and <i>--job-name</i> are propagated, while
 <i>--ntasks</i> and <i>--mem-per-cpu</i> are reset to default values for each
 component.
-A list of propogated options follows.</p>
+A list of propagated options follows.</p>
 <ul>
 <li>--account</li>
 <li>--acctg-freq</li>
@@ -49,6 +49,7 @@ A list of propogated options follows.</p>
 <li>--deadline</li>
 <li>--delay-boot</li>
 <li>--dependency</li>
+<li>--epilog            (option available only in srun)</li>
 <li>--error</li>
 <li>--export</li>
 <li>--export-file</li>
@@ -60,25 +61,38 @@ A list of propogated options follows.</p>
 <li>--immediate</li>
 <li>--input</li>
 <li>--job-name</li>
+<li>--kill-on-bad-exit  (option available only in srun)</li>
+<li>--label             (option available only in srun)</li>
+<li>--max-exit-timeout  (option available only in srun)</li>
 <li>--mcs-label</li>
+<li>--msg-timeout       (option available only in srun)</li>
+<li>--no-allocate       (option available only in srun)</li>
 <li>--no-requeue</li>
 <li>--nice</li>
 <li>--no-kill</li>
+<li>--open-mode         (option available only in srun)</li>
 <li>--output</li>
 <li>--parsable</li>
 <li>--priority</li>
 <li>--profile</li>
 <li>--propagate</li>
+<li>--prolog            (option available only in srun)</li>
+<li>--pty               (option available only in srun)</li>
 <li>--qos</li>
 <li>--quiet</li>
+<li>--quit-on-interrupt (option available only in srun)</li>
 <li>--reboot</li>
 <li>--reservation</li>
 <li>--requeue</li>
 <li>--signal</li>
+<li>--slurmd-debug      (option available only in srun)</li>
+<li>--task-epilog       (option available only in srun)</li>
+<li>--task-prolog       (option available only in srun)</li>
 <li>--time</li>
 <li>--test-only</li>
 <li>--time-min</li>
 <li>--uid</li>
+<li>--unbuffered        (option available only in srun)</li>
 <li>--verbose</li>
 <li>--wait</li>
 <li>--wait-all-nodes</li>
@@ -102,7 +116,7 @@ $ cat new.bash
 
 srun run.app
 
-$ sbatch new.pash
+$ sbatch new.bash
 </pre>
 
 <p>Is equivalent to the following:</p>
@@ -164,8 +178,8 @@ components of a heterogeneous job using the format
 For example "123+4" would represent heterogeneous job id 123 and it's fifth
 component (note: the first component has a <i>pack_job_offset</i> value of 0).</p>
 
-<p>A request for a specific job ID that identifes a ID of the first component
-of a heterogenous job (i.e. the "pack leader" will return information about
+<p>A request for a specific job ID that identifies a ID of the first component
+of a heterogeneous job (i.e. the "pack leader" will return information about
 all components of that job. For example:</p>
 <pre>
 $ squeue --job=93
@@ -236,7 +250,7 @@ SLURM_JOB_NODELIST_PACK_GROUP_1=nid[00011-00012]
 
 <p>In a federation of clusters, a heterogeneous job will execute entirely on
 the cluster from which the job is submitted. The heterogeneous job will not
-be eligiable to migrate between clusters or to have different components of
+be eligible to migrate between clusters or to have different components of
 the job execute on different clusters in the federation.</p>
 
 <p>Heterogeneous jobs are only scheduled by the backfill scheduler plugin.
@@ -258,6 +272,6 @@ heterogeneous job.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 13 June 2017</p>
+<p style="text-align:center;">Last modified 14 June 2017</p>
 
 <!--#include virtual="footer.txt"-->

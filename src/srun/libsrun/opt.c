@@ -390,16 +390,19 @@ static void _opt_default(void)
 		opt.allocate		= false;
 		opt.begin		= (time_t) 0;
 		xfree(opt.c_constraints);
+		xfree(opt.ckpt_dir);
+		opt.ckpt_dir			= slurm_get_checkpoint_dir();
+		opt.ckpt_interval		= 0;
+		xfree(opt.ckpt_interval_str);
 		xfree(opt.clusters);
 		xfree(opt.cmd_name);
 		xfree(opt.comment);
-		xfree(opt.cwd);
 		if ((getcwd(buf, MAXPATHLEN)) == NULL) {
 			error("getcwd failed: %m");
 			exit(error_exit);
 		}
-		opt.cwd = xstrdup(buf);
-		opt.cwd_set = false;
+		opt.cwd			= xstrdup(buf);
+		opt.cwd_set		= false;
 		opt.deadline		= 0;
 		opt.debugger_test	= false;
 		opt.delay_boot		= NO_VAL;
@@ -423,8 +426,6 @@ static void _opt_default(void)
 		opt.job_name_set_env	= false;
 		opt.kill_bad_exit	= NO_VAL;
 		opt.labelio		= false;
-		opt.mail_type		= 0;
-		xfree(opt.mail_user);
 		opt.max_exit_timeout	= 60; /* Warn user 60 sec after task exit */
 		opt.max_wait		= slurm_get_wait_time();
 		xfree(opt.mcs_label);
@@ -481,10 +482,6 @@ static void _opt_default(void)
 	opt.accel_bind_type		= 0;
 	xfree(opt.blrtsimage);
 	xfree(opt.burst_buffer);
-	xfree(opt.ckpt_dir);
-	opt.ckpt_dir			= slurm_get_checkpoint_dir();
-	opt.ckpt_interval		= 0;
-	xfree(opt.ckpt_interval_str);
 	for (i = 0; i < HIGHEST_DIMENSIONS; i++) {
 		opt.conn_type[i]	= NO_VAL16;
 		opt.geometry[i]		= 0;
@@ -521,6 +518,8 @@ static void _opt_default(void)
 		opt.mem_bind_type	|= MEM_BIND_SORT;
 	xfree(launch_params);
 	xfree(opt.licenses);
+	opt.mail_type			= 0;
+	xfree(opt.mail_user);
 	opt.max_threads			= MAX_THREADS;
 	pmi_server_max_threads(opt.max_threads);
 	opt.max_nodes			= 0;
