@@ -430,6 +430,31 @@ job_create_allocation(resource_allocation_response_msg_t *resp)
 	return (job);
 }
 
+/*
+ * Copy job name from last component to all pack job components unless
+ * explicitly set.
+ */
+static void _match_job_name(List opt_list, char *job_name)
+{
+	int cnt;
+	ListIterator iter;
+	opt_t *opt_local;
+
+	if (!opt_list)
+		return;
+
+	cnt = list_count(opt_list);
+	if (cnt < 2)
+		return;
+
+	iter = list_iterator_create(opt_list);
+	while ((opt_local = (opt_t *) list_next(iter))) {
+		if (!opt_local->job_name)
+			opt_local->job_name = xstrdup(job_name);
+	}
+	list_iterator_destroy(iter);
+}
+
 extern void init_srun(int argc, char **argv,
 		      log_options_t *logopt, int debug_level,
 		      bool handle_signals)
@@ -476,6 +501,8 @@ extern void init_srun(int argc, char **argv,
 		} else
 			pack_fini = true;
 		if (!pack_fini || pack_inx) {
+			/* Copy options, leaving original data intact so some
+			 * option can be preserved between job components */
 			opt_t *opt_dup;
 			opt_dup = xmalloc(sizeof(opt_t));
 			memcpy(opt_dup, &opt, sizeof(opt_t));
@@ -484,6 +511,9 @@ extern void init_srun(int argc, char **argv,
 			list_append(opt_list, opt_dup);
 		}
 	}
+	if (!opt.job_name)
+		opt.job_name = xstrdup(opt.cmd_name);
+	_match_job_name(opt_list, opt.job_name);
 
 	record_ppid();
 
@@ -522,6 +552,8 @@ extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
 			    bool slurm_started, bool handle_signals)
 {
 	resource_allocation_response_msg_t *resp;
+	List job_resp_list = NULL;
+	ListIterator resp_iter;
 	srun_job_t *job = NULL;
 
 	/* now global "opt" should be filled in and available,
@@ -624,13 +656,23 @@ if (opt_list) exit(0);
 			setenvfs("SLURM_JOB_NAME=%s", opt.argv[0]);
 
 		if (opt_list) {
+			job_resp_list = allocate_pack_nodes(handle_signals);
+			if (!job_resp_list)
+				exit(error_exit);
+//FIXME: global_resp = resp;
+			*got_alloc = true;
+			resp_iter = list_iterator_create(job_resp_list);
+			while ((resp = (resource_allocation_response_msg_t *)
+				       list_next(resp_iter))) {
+				_print_job_information(resp);
+			}
+			list_iterator_destroy(resp_iter);
 //FIXME: Need to flesh out pack job support
 exit(0);
 		} else {
 			if (!(resp = allocate_nodes(handle_signals)))
 				exit(error_exit);
 			global_resp = resp;
-			*got_alloc = true;
 			_print_job_information(resp);
 			_set_env_vars(resp);
 			if (_validate_relative(resp)) {

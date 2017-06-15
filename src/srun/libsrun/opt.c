@@ -2267,7 +2267,7 @@ static bool _opt_verify(void)
 	if (opt.cpus_set && (opt.pn_min_cpus < opt.cpus_per_task))
 		opt.pn_min_cpus = opt.cpus_per_task;
 
-	if (opt.argc > 0) {
+	if ((opt.argc > 0) && xstrcmp(opt.argv[0], ":")) {
 		xfree(opt.cmd_name);
 		opt.cmd_name = base_name(opt.argv[0]);
 	}

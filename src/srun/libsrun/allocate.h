@@ -59,6 +59,16 @@ slurmctld_comm_addr_t slurmctld_comm_addr;
  */
 resource_allocation_response_msg_t * allocate_nodes(bool handle_signals);
 
+/*
+ * Allocate nodes for heterogeneous/pack job from the slurm controller -- 
+ * retrying the attempt if the controller appears to be down, and optionally
+ * waiting for resources if none are currently available (see opt.immediate)
+ *
+ * Returns a pointer to a resource_allocation_response_msg which must
+ * be freed with slurm_free_resource_allocation_response_msg()
+ */
+List allocate_pack_nodes(bool handle_signals);
+
 /* dummy function to handle all signals we want to ignore */
 void ignore_signal(int signo);
 

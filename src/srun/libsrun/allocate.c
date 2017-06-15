@@ -160,8 +160,8 @@ static void _signal_while_allocating(int signo)
 static void _job_complete_handler(srun_job_complete_msg_t *msg)
 {
 	if (pending_job_id && (pending_job_id != msg->job_id)) {
-		error("Ignoring bogus job_complete call: job %u is not "
-		      "job %u", pending_job_id, msg->job_id);
+		error("Ignoring bogus job_complete call: job %u is not job %u",
+		      pending_job_id, msg->job_id);
 		return;
 	}
 
@@ -437,6 +437,14 @@ static int _allocate_test(opt_t *opt_local)
 	if ((j = _job_desc_msg_create_from_opts(opt_local)) == NULL)
 		return SLURM_ERROR;
 
+	if (opt_local->clusters &&
+	    (slurmdb_get_first_avail_cluster(j, opt_local->clusters,
+					     &working_cluster_rec)
+	     != SLURM_SUCCESS)) {
+		print_db_notok(opt_local->clusters, 0);
+		return SLURM_ERROR;
+	}
+
 	rc = slurm_job_will_run(j);
 	job_desc_msg_destroy(j);
 	return rc;
@@ -463,6 +471,14 @@ extern int allocate_test(void)
 	return rc;
 }
 
+/*
+ * Allocate nodes from the slurm controller -- retrying the attempt
+ * if the controller appears to be down, and optionally waiting for
+ * resources if none are currently available (see opt.immediate)
+ *
+ * Returns a pointer to a resource_allocation_response_msg which must
+ * be freed with slurm_free_resource_allocation_response_msg()
+ */
 resource_allocation_response_msg_t *allocate_nodes(bool handle_signals)
 {
 	resource_allocation_response_msg_t *resp = NULL;
@@ -475,6 +491,14 @@ resource_allocation_response_msg_t *allocate_nodes(bool handle_signals)
 
 	if ((j = _job_desc_msg_create_from_opts(&opt)) == NULL)
 		return NULL;
+
+	if (opt.clusters &&
+	    (slurmdb_get_first_avail_cluster(j, opt.clusters,
+					     &working_cluster_rec)
+	     != SLURM_SUCCESS)) {
+		print_db_notok(opt.clusters, 0);
+		return NULL;
+	}
 
 	j->origin_cluster = xstrdup(slurmctld_conf.cluster_name);
 
@@ -527,8 +551,10 @@ resource_allocation_response_msg_t *allocate_nodes(bool handle_signals)
 		 * pending so overwrite the request with what was
 		 * allocated so we don't have issues when we use them
 		 * in the step creation.
+		 *
+		 * NOTE: pn_min_memory here is an int64, not uint64. These
+		 * operations may have some bizarre side effects
 		 */
-//XXXX pn_min_memory here is an int, not uint. these bit operations may have some bizarre side effects
 		if (opt.pn_min_memory != NO_VAL64)
 			opt.pn_min_memory = (resp->pn_min_memory &
 					     (~MEM_PER_CPU));
@@ -585,6 +611,197 @@ relinquish:
 		if (!destroy_job)
 			slurm_complete_job(resp->job_id, 1);
 		slurm_free_resource_allocation_response_msg(resp);
+	}
+	exit(error_exit);
+	return NULL;
+}
+
+/*
+ * Allocate nodes for heterogeneous/pack job from the slurm controller -- 
+ * retrying the attempt if the controller appears to be down, and optionally
+ * waiting for resources if none are currently available (see opt.immediate)
+ *
+ * Returns a pointer to a resource_allocation_response_msg which must
+ * be freed with slurm_free_resource_allocation_response_msg()
+ */
+List allocate_pack_nodes(bool handle_signals)
+{
+	resource_allocation_response_msg_t *resp = NULL;
+	bool jobid_log = true;
+	job_desc_msg_t *j, *first_job = NULL;
+	slurm_allocation_callbacks_t callbacks;
+	ListIterator opt_iter, resp_iter;
+	opt_t *opt_local;
+	List job_req_list = NULL, job_resp_list = NULL;
+	uint32_t my_job_id = 0;
+	int i, k;
+
+	job_req_list = list_create(NULL);
+	opt_iter = list_iterator_create(opt_list);
+	while ((opt_local = (opt_t *) list_next(opt_iter))) {
+		if (opt_local->relative_set && opt_local->relative)
+			fatal("--relative option invalid for job allocation request");
+
+		if ((j = _job_desc_msg_create_from_opts(opt_local)) == NULL)
+			return NULL;
+		if (!first_job)
+			first_job = j;
+
+		j->origin_cluster = xstrdup(slurmctld_conf.cluster_name);
+
+		/* Do not re-use existing job id when submitting new job
+		 * from within a running job */
+		if ((j->job_id != NO_VAL) && !opt_local->jobid_set) {
+			if (jobid_log) {
+				jobid_log = false;	/* log once */
+				info("WARNING: Creating SLURM job allocation from within "
+				     "another allocation");
+				info("WARNING: You are attempting to initiate a second job");
+			}
+			if (!opt_local->jobid_set) /* Let slurmctld set jobid */
+				j->job_id = NO_VAL;
+		}
+
+		list_append(job_req_list, j);
+	}
+	list_iterator_destroy(opt_iter);
+
+	if (!first_job) {
+		error("%s: No job requests found", __func__);
+		return NULL;
+	}
+
+	if (opt.clusters &&
+	    (slurmdb_get_first_pack_cluster(job_req_list, opt.clusters,
+					    &working_cluster_rec)
+	     != SLURM_SUCCESS)) {
+		print_db_notok(opt_local->clusters, 0);
+		return NULL;
+	}
+
+	callbacks.ping = _ping_handler;
+	callbacks.timeout = _timeout_handler;
+	callbacks.job_complete = _job_complete_handler;
+	callbacks.job_suspend = NULL;
+	callbacks.user_msg = _user_msg_handler;
+	callbacks.node_fail = _node_fail_handler;
+
+	/* create message thread to handle pings and such from slurmctld */
+	msg_thr = slurm_allocation_msg_thr_create(&first_job->other_port,
+						  &callbacks);
+
+	/* NOTE: Do not process signals in separate pthread. The signal will
+	 * cause slurm_allocate_resources_blocking() to exit immediately. */
+	if (handle_signals) {
+		xsignal_unblock(sig_array);
+		for (i = 0; sig_array[i]; i++)
+			xsignal(sig_array[i], _signal_while_allocating);
+	}
+
+	while (!job_resp_list) {
+		job_resp_list = slurm_allocate_pack_job_blocking(job_req_list,
+				 opt.immediate, _set_pending_job_id);
+		if (destroy_job) {
+			/* cancelled by signal */
+			break;
+		} else if (!job_resp_list && !_retry()) {
+			break;
+		}
+	}
+
+	if (job_resp_list && !destroy_job) {
+		/*
+		 * Allocation granted!
+		 */
+
+		opt_iter  = list_iterator_create(opt_list);
+		resp_iter = list_iterator_create(job_resp_list);
+		while ((opt_local = (opt_t *) list_next(opt_iter))) {
+			resp = (resource_allocation_response_msg_t *)
+			       list_next(resp_iter);
+			if (!resp)
+				break;
+
+			if (pending_job_id == 0)
+				pending_job_id = resp->job_id;
+			if (my_job_id == 0) {
+				my_job_id = resp->job_id;
+				i = list_count(opt_list);
+				k = list_count(job_resp_list);
+				if (i != k) {
+					error("%s: request count != response count (%d != %d)",
+					      __func__, i, k);
+					goto relinquish;
+				}
+			}
+
+			/*
+			 * These values could be changed while the job was
+			 * pending so overwrite the request with what was
+			 * allocated so we don't have issues when we use them
+			 * in the step creation.
+			 *
+			 * NOTE: pn_min_memory here is an int64, not uint64.
+			 * These operations may have some bizarre side effects
+			 */
+			if (opt_local->pn_min_memory != NO_VAL64)
+				opt_local->pn_min_memory =
+					(resp->pn_min_memory & (~MEM_PER_CPU));
+			else if (opt_local->mem_per_cpu != NO_VAL64)
+				opt_local->mem_per_cpu =
+					(resp->pn_min_memory & (~MEM_PER_CPU));
+			/*
+			 * FIXME: timelimit should probably also be updated
+			 * here since it could also change.
+			 */
+
+#ifdef HAVE_BG
+			uint32_t node_cnt = 0;
+			select_g_select_jobinfo_get(resp->select_jobinfo,
+						    SELECT_JOBDATA_NODE_CNT,
+						    &node_cnt);
+			if ((node_cnt == 0) || (node_cnt == NO_VAL)) {
+				opt_local->min_nodes = node_cnt;
+				opt_local->max_nodes = node_cnt;
+			} /* else we just use the original request */
+
+			if (!_wait_bluegene_block_ready(resp)) {
+				if (!destroy_job)
+					error("Something is wrong with the "
+					      "boot of the block.");
+				goto relinquish;
+			}
+#else
+			opt_local->min_nodes = resp->node_cnt;
+			opt_local->max_nodes = resp->node_cnt;
+
+			if (resp->working_cluster_rec)
+				slurm_setup_remote_working_cluster(resp);
+
+			if (!_wait_nodes_ready(resp)) {
+				if (!destroy_job)
+					error("Something is wrong with the "
+					      "boot of the nodes.");
+				goto relinquish;
+			}
+#endif
+		}
+		list_iterator_destroy(resp_iter);
+		list_iterator_destroy(opt_iter);
+	} else if (destroy_job) {
+		goto relinquish;
+	}
+
+	if (handle_signals)
+		xsignal_block(sig_array);
+
+	return job_resp_list;
+
+relinquish:
+	if (job_resp_list) {
+		if (!destroy_job && my_job_id)
+			slurm_complete_job(my_job_id, 1);
+		list_destroy(job_resp_list);
 	}
 	exit(error_exit);
 	return NULL;
@@ -913,14 +1130,6 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(opt_t *opt_local)
 	/* If can run on multiple clusters find the earliest run time
 	 * and run it there */
 	j->clusters = xstrdup(opt_local->clusters);
-//FIXME: Modify for pack jobs
-	if (opt_local->clusters &&
-	    (slurmdb_get_first_avail_cluster(j, opt_local->clusters,
-					     &working_cluster_rec)
-	     != SLURM_SUCCESS)) {
-		print_db_notok(opt_local->clusters, 0);
-		exit(error_exit);
-	}
 
 	return j;
 }
