@@ -1665,7 +1665,7 @@ static void _set_options(const int argc, char **argv)
 			}
 			opt.hint_set = true;
 			opt.ntasks_per_core_set  = true;
-			opt.threads_per_core  = true;
+			opt.threads_per_core_set = true;
 			break;
 		case LONG_OPT_BLRTS_IMAGE:
 			xfree(opt.blrtsimage);

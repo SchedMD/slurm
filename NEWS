@@ -20,6 +20,8 @@ documents those changes that are of interest to users and administrators.
     set correctly.
  -- Only make the extern step at job creation.
  -- Fix for job step task layout with --cpus-per-task option.
+ -- Fix --ntasks-per-core option/environment variable parsing to set
+    the requested value, instead of always setting one (srun).
 
 * Changes in Slurm 17.02.4
 ==========================
