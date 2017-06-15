@@ -175,7 +175,7 @@ int main(int argc, char **argv)
 {
 	static bool env_cache_set = false;
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
-	job_desc_msg_t *desc = NULL;
+	job_desc_msg_t *desc = NULL, *first_job = NULL;
 	List job_req_list = NULL, job_resp_list = NULL;
 	resource_allocation_response_msg_t *alloc = NULL;
 	time_t before, after;
@@ -285,6 +285,8 @@ int main(int argc, char **argv)
 			exit(error_exit);
 		if (job_req_list)
 			list_append(job_req_list, desc);
+		if (!first_job)
+			first_job = desc;
 	}
 	if (!desc) {
 		fatal("%s: desc is NULL", __func__);
@@ -376,7 +378,7 @@ int main(int argc, char **argv)
 	callbacks.user_msg = _user_msg_handler;
 	callbacks.node_fail = _node_fail_handler;
 	/* create message thread to handle pings and such from slurmctld */
-	msg_thr = slurm_allocation_msg_thr_create(&desc->other_port,
+	msg_thr = slurm_allocation_msg_thr_create(&first_job->other_port,
 						  &callbacks);
 
 	/* NOTE: Do not process signals in separate pthread. The signal will
@@ -1019,13 +1021,8 @@ static void _signal_while_allocating(int signo)
 static void _job_complete_handler(srun_job_complete_msg_t *comp)
 {
 	if (my_job_id && (my_job_id != comp->job_id)) {
-		if (is_pack_job) {
-			/* Assume this is component of pack job */
-			verbose("Got job_complete for job %u", comp->job_id);
-		} else {
-			error("Ignoring job_complete for job %u because our job ID is %u",
-			      comp->job_id, my_job_id);
-		}
+		error("Ignoring job_complete for job %u because our job ID is %u",
+		      comp->job_id, my_job_id);
 		return;
 	}
 

@@ -160,8 +160,8 @@ static void _signal_while_allocating(int signo)
 static void _job_complete_handler(srun_job_complete_msg_t *msg)
 {
 	if (pending_job_id && (pending_job_id != msg->job_id)) {
-		error("Ignoring bogus job_complete call: job %u is not job %u",
-		      pending_job_id, msg->job_id);
+		error("Ignoring job_complete for job %u because our job ID is %u",
+		      msg->job_id, pending_job_id);
 		return;
 	}
 
