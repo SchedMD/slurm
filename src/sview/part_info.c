@@ -1851,6 +1851,23 @@ static int _sview_sub_part_sort(void *a, void *b)
 	return 0;
 }
 
+/* Find where cluster_name nodes start in the node_array */
+static int _get_cluster_node_offset(char *cluster_name,
+				    node_info_msg_t *node_info_ptr)
+{
+	int offset;
+
+	xassert(cluster_name);
+	xassert(node_info_ptr);
+
+	for (offset = 0; offset < node_info_ptr->record_count; offset++)
+		if (!xstrcmp(cluster_name,
+			     node_info_ptr->node_array[offset].cluster_name))
+			return offset;
+
+	return 0;
+}
+
 static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 				   node_info_msg_t *node_info_ptr)
 {
@@ -1881,6 +1898,7 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 	if (last_list)
 		last_list_itr = list_iterator_create(last_list);
 	for (i = 0; i < part_info_ptr->record_count; i++) {
+		int c_offset = 0;
 		part_ptr = &(part_info_ptr->partition_array[i]);
 
 		/* don't include configured excludes */
@@ -1912,14 +1930,21 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 		list_append(info_list, sview_part_info);
 		sview_part_info->color_inx = i % sview_colors_cnt;
 
+		if (cluster_flags & CLUSTER_FLAG_FED)
+			c_offset =
+				_get_cluster_node_offset(part_ptr->cluster_name,
+							 node_info_ptr);
+
 		j2 = 0;
 		while (part_ptr->node_inx[j2] >= 0) {
 			int i2 = 0;
-
 			for ((i2 = part_ptr->node_inx[j2]);
 			     (i2 <= part_ptr->node_inx[j2+1]);
 			     i2++) {
-				node_ptr = &(node_info_ptr->node_array[i2]);
+				node_info_t *node_array;
+				node_array = node_info_ptr->node_array;
+				node_ptr   = &(node_array[i2 + c_offset]);
+
 				_insert_sview_part_sub(sview_part_info,
 						       part_ptr,
 						       node_ptr,
