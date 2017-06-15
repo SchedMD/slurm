@@ -673,6 +673,7 @@ exit(0);
 			if (!(resp = allocate_nodes(handle_signals)))
 				exit(error_exit);
 			global_resp = resp;
+			*got_alloc = true;
 			_print_job_information(resp);
 			_set_env_vars(resp);
 			if (_validate_relative(resp)) {
