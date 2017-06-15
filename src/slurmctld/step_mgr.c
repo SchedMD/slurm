@@ -2157,6 +2157,7 @@ static int _calc_cpus_per_task(job_step_create_request_msg_t *step_specs,
 			       struct job_record  *job_ptr)
 {
 	int cpus_per_task = 0, i;
+	int num_tasks;
 
 	if ((step_specs->cpu_count == 0) ||
 	    (step_specs->cpu_count % step_specs->num_tasks))
@@ -2169,13 +2170,19 @@ static int _calc_cpus_per_task(job_step_create_request_msg_t *step_specs,
 	if (!job_ptr->job_resrcs)
 		return cpus_per_task;
 
+	num_tasks = step_specs->num_tasks;
 	for (i = 0; i < job_ptr->job_resrcs->cpu_array_cnt; i++) {
-		if ((cpus_per_task > job_ptr->job_resrcs->cpu_array_value[i]) ||
-		    (job_ptr->job_resrcs->cpu_array_value[i] % cpus_per_task)) {
+		if (cpus_per_task > job_ptr->job_resrcs->cpu_array_value[i]) {
 			cpus_per_task = 0;
 			break;
 		}
+		num_tasks -= (job_ptr->job_resrcs->cpu_array_value[i] /
+			      cpus_per_task) *
+			     job_ptr->job_resrcs->cpu_array_reps[i];
 	}
+
+	if (num_tasks > 0)
+		return 0;
 
 	return cpus_per_task;
 }

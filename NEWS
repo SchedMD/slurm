@@ -19,6 +19,7 @@ documents those changes that are of interest to users and administrators.
  -- Make sure srun inside an allocation gets --ntasks-per-[core|socket]
     set correctly.
  -- Only make the extern step at job creation.
+ -- Fix for job step task layout with --cpus-per-task option.
 
 * Changes in Slurm 17.02.4
 ==========================
