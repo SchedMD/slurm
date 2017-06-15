@@ -2693,6 +2693,7 @@ display_it:
 		display_widget = NULL;
 	}
 	if (!display_widget) {
+		int def_sort_col = SORTID_NAME;
 		tree_view = create_treeview(local_display_data,
 					    &grid_button_list);
 		/*set multiple capability here*/
@@ -2706,8 +2707,10 @@ display_it:
 		/* since this function sets the model of the tree_view
 		   to the treestore we don't really care about
 		   the return value */
-		create_treestore(tree_view, display_data_part,
-				 SORTID_CNT, SORTID_NAME, SORTID_COLOR);
+		if (cluster_flags & CLUSTER_FLAG_FED)
+			def_sort_col = SORTID_CLUSTER_NAME;
+		create_treestore(tree_view, display_data_part, SORTID_CNT,
+				 def_sort_col, SORTID_COLOR);
 	}
 
 	view = INFO_VIEW;
