@@ -1,0 +1,442 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Slurm Federated Scheduling Guide</h1>
+
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#configuration">Configuration</a></li>
+<li><a href="#jobids">Federated Job IDs</a></li>
+<li><a href="#jobsubmission">Job Submission</a></li>
+<li><a href="#jobscheduling">Job Scheduling</a></li>
+<li><a href="#jobrequeue">Job Requeue</a></li>
+<li><a href="#interactivejobs">Interactive Jobs</a></li>
+<li><a href="#jobcancel">Canceling Jobs</a></li>
+<li><a href="#jobmodify">Job Modification</a></li>
+<li><a href="#jobarrays">Job Arrays</a></li>
+<li><a href="#statuscmds">Status Commands</a></li>
+<li><a href="#glossary">Glossary</a></li>
+<li><a href="#limitations">Limitations</a></li>
+</ul>
+
+<h2><a name="overview">Overview</a></h2>
+<p>Slurm version 17.11 includes support for creating a federation of clusters
+and scheduling jobs in a peer-to-peer fashion between them. Jobs submitted to a
+federation receive a unique job ID that is unique among all clusters in the
+federation. A job is submitted to the local cluster (the cluster defined in the
+slurm.conf) and is then replicated across the clusters in the federation. Each
+cluster then independently attempts to the schedule the job based off of its own
+scheduling policies. The clusters coordinate with the "origin" cluster (cluster
+the job was submitted to) to schedule the job.
+
+<p>
+<b>NOTE:</b> This is not intended as a high-throughput environment. If
+scheduling more than 50,000 jobs a day, consider configuring fewer clusters that
+the sibling jobs can be submitted to or directing load
+to the local cluster only (e.g. --cluster-constraint= or -M submission options
+could be used to do this).
+</p>
+
+
+<h2><a name="configuration">Configuration</a></h2>
+<p>
+A federation is created using the sacctmgr command to create a federation in the
+database and by adding clusters to a federation.
+</p>
+
+<br>
+To create a federation use:
+<pre>
+sacctmgr add federation &lt;federation_name&gt; [clusters=&lt;list_of_clusters&gt;]
+</pre>
+
+Clusters can be added or removed from a federation using:
+<br>
+<b>NOTE:</b> A cluster can only be a member of one federation at a time.
+<pre>
+sacctmgr modify federation &lt;federation_name&gt; set clusters[+-]=&lt;list_of_clusters&gt;
+sacctmgr modify cluster &lt;cluster_name&gt; set federation=&lt;federation_name&gt;
+</pre>
+
+and can be cleared using the empty string:
+<pre>
+sacctmgr modify federation &lt;federation_name&gt; set clusters=
+sacctmgr modify cluster &lt;cluster_name&gt; set federation=
+</pre>
+
+Federations can be deleted using:
+<pre>
+sacctmgr delete federation &lt;federation_name&gt;
+</pre>
+
+
+Generic features can be assigned to clusters and can be requested at submission
+using the <b>--cluster-constraint=[!]&lt;feature_list&gt;</b> option:
+<pre>
+sacctmgr modify cluster &lt;cluster_name&gt; set features[+-]=&lt;feature_list&gt;
+</pre>
+
+A cluster's federated state can be set using:
+<pre>
+sacctmgr modify cluster &lt;cluster_name&gt; set fedstate=&lt;state&gt;
+</pre>
+where possible states are:
+<ul>
+	<li><b>ACTIVE:</b> Cluster will actively accept and schedule federated
+		jobs</li>
+	<li><b>INACTIVE:</b> Cluster will not schedule or accept any jobs</li>
+	<li><b>DRAIN:</b> Cluster will not accept any new jobs and will let
+		existing federated jobs complete</li>
+	<li><b>DRAIN+REMOVE:</b> Cluster will not accept any new jobs and will
+		remove itself from the federation once all federated jobs have
+		completed. When removed from the federation, the cluster will
+		accept jobs as a non-federated cluster</li>
+</ul>
+
+Federation configuration can be viewed used using:
+<pre>
+sacctmgr show federation [tree]
+sacctmgr show cluster withfed
+</pre>
+
+After clusters are added to a federation and the controllers are started their
+status can be viewed from the controller using:
+<pre>
+scontrol show federation
+</pre>
+
+
+By default the status commands will show a local view. A default federated view
+can be set by configuring the following parameter in the slurm.conf:
+<pre>
+FederationParameters=fed_display
+</pre>
+
+
+<h2><a name="jobids">Federated Job IDs</a></h2>
+When a job is submitted to a federation it gets a federated job id. Job ids in
+the federation are unique across all clusters in the federation. A federated
+job ID is made by utilizing an unsigned 32 bit integer to assign the cluster's
+ID and the cluster's local ID.
+
+<pre>
+Bits 0-25:  Local Job ID
+Bits 26-31: Cluster Origin ID
+</pre>
+
+Federated job IDs allow the controllers to know which cluster the job was
+submitted to by looking at the cluster origin id of the job.
+
+
+<h2><a name="jobsubmission">Job Submission</a></h2>
+<p>
+When a federated cluster receives a job submission, it will submit copies of the
+job (<b>sibling jobs</b>) to each eligible cluster. Each cluster will then
+independently attempt to schedule the job.
+</p>
+
+<p>
+Jobs can be directed to specific clusters in the federation using the
+<b>-M,--clusters=&lt;cluster_list&gt;</b> and the new
+<b>--cluster-constraint=[!]&lt;constraint_list&gt;</b> options.
+</p>
+
+<p>
+Using the <b>-M,--clusters=&lt;cluster_list&gt;</b> the submission command
+(sbatch, salloc, srun) will pick one cluster from the list of clusters to submit
+the job to and will also pass along the list of clusters with the job. The
+clusters in the list will be the only viable clusters that siblings jobs can be
+submitted to. For example the submission:
+<pre>
+cluster1$ sbatch -Mcluster2,cluster3 script.sh
+</pre>
+will submit the job to either cluster2 or cluster3 and will only submit sibling
+jobs to cluster2 and cluster3 even if there are more clusters in the federation.
+</p>
+
+<p>
+Using the <b>--cluster-constraint=[!]&lt;constraint_list&gt;</b> option will
+submit sibling jobs to only the clusters that have the requested cluster
+feature(s) -- or don't have the feature(s) if using <b>!</b>. Cluster features
+are added using the <b>sacctmgr modify cluster &lt;cluster_name&gt; set
+features[+-]=&lt;feature_list&gt;</b> option.
+</p>
+
+<p>
+<b>NOTE:</b> When using the <b>!</b> option, add quotes around the option to
+prevent the shell from interpreting the <b>!</b> (e.g
+--cluster-constraint='!highmem').
+</p>
+
+
+<p>
+When using both the <b>--cluster-constraint=</b> and
+<b>--clusters=</b> options together, the origin cluster will only submit
+sibling jobs to clusters that meet both requirements.
+</p>
+
+<h2><a name="jobscheduling">Job Scheduling</a></h2>
+<p>
+Each cluster in the federation independently attempts to schedule each job with
+the exception of coordinating with the <b>origin cluster</b> (cluster where the
+job was submitted to) to allocate resources to a federated job. When a cluster
+determines it can attempt to allocate resources for a job it communicates with
+the origin cluster to verify that no other cluster is attempting to allocate
+resources at the same time. If no other cluster is attempting to allocate
+resources the cluster will attempt to allocate resources for the job. If it
+succeeds then it will notify the origin cluster that it started the job and the
+origin cluster will notify the clusters with sibling jobs to remove the sibling
+jobs and put them in a <b>revoked</b> state. If the cluster was unable to
+allocate resources to the job then it lets the origin cluster know so that other
+clusters can attempt to schedule the job. If it was the main scheduler
+attempting to allocate resources then the main scheduler will stop looking at
+further jobs in the job's partition. If it was the backfill scheduler attempting
+to allocate resources then the resources will be reserved for the job.
+</p>
+
+<h2><a name="jobrequeue">Job Requeue</a></h2>
+<p>
+When a federated job is requeued the origin cluster is notified and the origin
+cluster will then submit new sibling jobs to viable clusters and the federated
+job is eligible to start on a different cluster than the one it ran on.
+</p>
+
+<p>
+slurm.conf options <b>RequeueExit</b> and <b>RequeueExitHold</b> are controlled
+by the origin cluster.
+</p>
+
+
+<h2><a name="interactivejobs">Interactive Jobs</a></h2>
+<p>
+Interactive jobs -- jobs submitted with srun and salloc -- can be submitted to
+the local cluster and get an allocation from a different cluster. When an salloc
+job allocation is granted by a cluster other than the local cluster, a new
+environment variable, SLURM_WORKING_CLUSTER, will be set with the remote sibling
+cluster's IP address, port and RPC version so that any sruns will know which
+cluster to communicate with.
+</p>
+
+<p>
+<b>NOTE:</b> It is required that all compute nodes must be accessible to all
+submission hosts for this to work.
+<br>
+<b>NOTE:</b> The current implementation of the MPI interfaces in Slurm require
+the SlurmdSpooldir to be the same on the host where the srun is being run as it
+is on the compute nodes in the allocation. If they aren’t, a workaround is to
+get an allocation that puts the user on the actual compute node. Then the sruns
+on the compute nodes will be using the slurm.conf that corresponds to the
+correct cluster. For example, putting <b>SallocDefaultCommand="srun -n1 -N1
+	--mem-per-cpu=0 --pty --preserve-env --mpi=none $SHELL"</b> in the
+slurm.conf will put the user on an actual compute node when using salloc.
+</p>
+
+
+<h2><a name="jobcancel">Canceling Jobs</a></h2>
+<p>
+Cancel requests in the federation will cancel the running sibling job or all
+pending sibling jobs. Specific pending sibling jobs can be removed by using
+<b>scancel</b>'s <b>--sibling=&lt;cluster_name&gt;</b> option to remove the
+sibling job from the job's active sibling list.
+</p>
+
+
+<h2><a name="jobmodify">Job Modification</a></h2>
+Job modifications are routed to the origin cluster where the origin cluster will
+push out the changes to each sibling job.
+
+
+<h2><a name="jobarrays">Job Arrays</a></h2>
+Currently, job arrays only run on the origin cluster.
+
+
+<h2><a name="statuscmds">Status Commands</a></h2>
+<p>
+By default, status commands, such as: squeue, sinfo, sprio, sacct, sreport, will
+show a view local to the local cluster. A unified view of the jobs in the
+federation can be viewed using the <b>--federation</b> option to each status
+command. The <b>--federation</b> command causes the status command to first
+check if the local cluster is part of a federation. If it is then the command
+will query each cluster in parallel for job info and will combine the
+information into one unified view.
+</p>
+
+<p>
+A new <b>FederationParameters=fed_display</b> slurm.conf parameter has been
+added so that all status commands will present a federated view by default --
+equivalent to setting the <b>--federation</b> option for each status command.
+The federated view can be overridden using the <b>--local</b> option. Using the
+<b>--clusters,-M</b> option will also override the federated view and give a
+local view for the given cluster(s).
+</p>
+
+<p>
+Using the existing <b>--clusters,-M option</b>, the status commands will output
+the information in the same format that exists today where each cluster’s
+information is listed separately.
+</p>
+
+<h3>squeue</h3>
+<p>
+squeue also has a new <b>--sibling</b> option that will show each sibling job
+rather than than merge them into one.
+</p>
+
+<p>
+Several new long format options have been added to display the job's federated
+information:
+<ul>
+	<li>
+		<b>cluster:</b> Name of the cluster that is running the job or
+		job step.
+	</li>
+	<li>
+		<b>siblingsactive:</b> Cluster names of where federated sibling
+		jobs exist.
+	</li>
+	<li>
+		<b>siblingsactiveraw:</b> Cluster IDs of where federated
+		sibling jobs exist.
+	</li>
+	<li>
+		<b>siblingsviable:</b> Cluster names of where federated sibling
+		jobs are viable to run.
+	</li>
+	<li>
+		<b>siblingsviableraw:</b> Cluster names of where federated
+		sibling jobs are viable to run.
+	</li>
+</ul>
+</p>
+
+<p>
+squeue output can be sorted using the <b>-S cluster</b> option.
+</p>
+
+
+<h3>sinfo</h3>
+<p>
+sinfo will show the partitions from each cluster in one view. In a federated
+view, the cluster name is displayed with each partition. The cluster name can be
+specified in the format options using the short format <b>%V</b> or the long
+format <b>cluster</b> options. The output can be sorted by cluster names using
+the <b>-S %[+-]V</b> option.
+</p>
+
+<h3>sprio</h3>
+<p>
+In a federated view, sprio displays the job information from the local cluster
+or from the first cluster to report the job. Since each sibling job could have a
+different priority on each cluster it may be helpful to use the <b>--sibling</b>
+option to show all records of a job to get a better picture of a job’s priority.
+The name of the cluster reporting the job record can be displayed using the
+<b>%c</b> format option. The cluster name is shown by default when using
+<b>--sibling</b> option.
+</p>
+
+<h3>sacct</h3>
+<p>
+By default, sacct will not display "revoked" jobs and will show the job from the
+cluster that ran the job. However, "revoked" jobs can be viewed using the
+<b>--duplicate/-D</b> option.
+</p>
+
+<h3>sreport</h3>
+<p>
+sreport will combine the reports from each cluster and display them as one.
+</p>
+
+<h3>scontrol</h3>
+<p>
+The following scontrol options will display a federated view:
+<ul>
+	<li>show [--federation|--sibling] jobs</li>
+	<li>show [--federation] steps</li>
+	<li>completing</li>
+</ul>
+</p>
+
+<p>
+The following scontrol options are handled in a federation. If the command is
+run from a cluster other than the federated cluster it will be routed to the
+origin cluster.
+<ul>
+	<li>hold</li>
+	<li>uhold</li>
+	<li>release</li>
+	<li>requeue</li>
+	<li>requeuehold</li>
+	<li>suspend</li>
+	<li>update job</li>
+</ul>
+</p>
+
+<p>
+All other scontrol options should be directed to the specific cluster either by
+issuing the command on the cluster or using the <b>--cluster/-M</b>  option.
+</p>
+
+
+
+
+<h2><a name="glossary">Glossary</a></h2>
+<ul>
+	<li>
+		<b>Federated Job:</b> A job that is submitted to the federated
+		cluster. It has a unique job ID across all clusters (Origin
+		Cluster ID + Local Job ID).
+	</li>
+	<li>
+		<b>Sibling Job:</b> A copy of the federated job that is
+		submitted to other federated clusters.
+	</li>
+	<li>
+		<b>Local Cluster:</b> The cluster found in the slurm.conf that
+		the commands will talk to by default.
+	</li>
+	<li>
+		<b>Origin Cluster:</b> The cluster that the federated job was
+		originally submitted to. The origin cluster submits sibling jobs
+		to other clusters in the federation. The origin cluster
+		determines whether a sibling job can run or not. Communications
+		for the federated job are routed through the origin cluster.
+	</li>
+	<li>
+		<b>Sibling Cluster:</b> The cluster that is associated with a
+		sibling job.
+	</li>
+	<li>
+		<b>Origin Job:</b> The federated job that resides on the cluster
+		that it was originally submitted to.
+	</li>
+	<li>
+		<b>Revoked (RV) State:</b> The state the origin sibling job is
+		in while one of the sibling jobs is running on a remote cluster.
+		Or the state that a remote sibling job is put in when another
+		sibling is allocated nodes.
+	</li>
+	<li>
+		<b>Viable Sibling:</b> a cluster that is eligible to run a
+		sibling job based off of the requested clusters, cluster
+		features and state of the cluster (e.g. active, draining, etc.).
+	</li>
+	<li>
+		<b>Active Sibling:</b> a sibling job that that actively has a
+		sibling job and is able to schedule the job.
+	</li>
+</ul>
+
+<h2><a name="limitations">Limitations</a></h2>
+<ul>
+	<li>A federated job that fails due to resources (partition, node counts,
+		etc.) on the local cluster will be rejected and won't be
+		submitted to other sibling clusters even if it could run on
+		them.</li>
+	<li>Job arrays only run on the cluster that they were submitted to.</li>
+	<li>Job dependencies are not supported across clusters.</li>
+	<li>Job modification must succeed on the origin cluster for the changes
+		to be pushed to the sibling jobs on remote clusters. </li>
+</ul>
+
+<p style="text-align:center;">Last modified 15 June 2017</p>
+
+<!--#include virtual="footer.txt"-->
