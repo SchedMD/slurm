@@ -2735,15 +2735,38 @@ static void _slurm_rpc_job_alloc_info(slurm_msg_t * msg)
 		job_info_resp_msg.resv_name      = xstrdup(job_ptr->resv_name);
 		job_info_resp_msg.select_jobinfo =
 			select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
-		if (job_ptr->details->env_cnt) {
-			job_info_resp_msg.env_size = job_ptr->details->env_cnt;
-			job_info_resp_msg.environment =
-				xmalloc(sizeof(char *) *
-				        job_info_resp_msg.env_size);
-			for (i = 0; i < job_info_resp_msg.env_size; i++) {
-				job_info_resp_msg.environment[i] =
-					xstrdup(job_ptr->details->env_sup[i]);
+		if (job_ptr->details) {
+			job_info_resp_msg.pn_min_memory =
+				job_ptr->details->pn_min_memory;
+
+			if (job_ptr->details->mc_ptr) {
+				job_info_resp_msg.ntasks_per_board =
+					job_ptr->details->mc_ptr->
+					ntasks_per_board;
+				job_info_resp_msg.ntasks_per_core =
+					job_ptr->details->mc_ptr->
+					ntasks_per_core;
+				job_info_resp_msg.ntasks_per_socket =
+					job_ptr->details->mc_ptr->
+					ntasks_per_socket;
 			}
+
+			if (job_ptr->details->env_cnt) {
+				job_info_resp_msg.env_size =
+					job_ptr->details->env_cnt;
+				job_info_resp_msg.environment =
+					xmalloc(sizeof(char *) *
+						job_info_resp_msg.env_size);
+				for (i = 0; i < job_info_resp_msg.env_size; i++)
+					job_info_resp_msg.environment[i] =
+						xstrdup(job_ptr->details->
+							env_sup[i]);
+			}
+		} else {
+			job_info_resp_msg.pn_min_memory = 0;
+			job_info_resp_msg.ntasks_per_board = (uint16_t)NO_VAL;
+			job_info_resp_msg.ntasks_per_core = (uint16_t)NO_VAL;
+			job_info_resp_msg.ntasks_per_socket = (uint16_t)NO_VAL;
 		}
 		unlock_slurmctld(job_read_lock);
 

@@ -376,8 +376,12 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 	ai->cpus_per_node  = resp->cpus_per_node;
 	ai->cpu_count_reps = resp->cpu_count_reps;
 	ai->ntasks_per_board = resp->ntasks_per_board;
-	ai->ntasks_per_core = resp->ntasks_per_core;
-	ai->ntasks_per_socket = resp->ntasks_per_socket;
+
+	/* Here let the srun options override the allocation resp */
+	ai->ntasks_per_core = (opt.ntasks_per_core != NO_VAL) ?
+		opt.ntasks_per_core : resp->ntasks_per_core;
+	ai->ntasks_per_socket = (opt.ntasks_per_socket != NO_VAL) ?
+		opt.ntasks_per_socket : resp->ntasks_per_socket;
 
 	ai->partition = resp->partition;
 
