@@ -122,7 +122,8 @@ static void _print_job_information(resource_allocation_response_msg_t *resp);
 static void _run_srun_epilog (srun_job_t *job);
 static void _run_srun_prolog (srun_job_t *job);
 static int _run_srun_script (srun_job_t *job, char *script);
-static void _set_env_vars(resource_allocation_response_msg_t *resp);
+static void _set_env_vars(resource_allocation_response_msg_t *resp,
+			  int pack_offset);
 static void  _set_prio_process_env(void);
 static int _set_rlimit_env(void);
 static void _set_submit_dir_env(void);
@@ -131,7 +132,8 @@ static void _shepherd_notify(int shepherd_fd);
 static int _shepherd_spawn(srun_job_t *job, bool got_alloc);
 static void *_srun_signal_mgr(void *no_data);
 static void _step_opt_exclusive(void);
-static int _validate_relative(resource_allocation_response_msg_t *resp);
+static int  _validate_relative(resource_allocation_response_msg_t *resp,
+			       opt_t *opt_local);
 
 
 /*
@@ -548,13 +550,38 @@ extern void init_srun(int argc, char **argv,
 	srun_begin_time = time(NULL);
 }
 
+/*
+ * Modify options for a job step (after job allocaiton is complete
+ */
+static void _set_step_opts(opt_t *opt_local)
+{
+	opt_local->time_limit = NO_VAL;/* not applicable for step, only job */
+	xfree(opt_local->constraints);	/* not applicable for this step */
+	if (!opt_local->job_name_set_cmd && opt_local->job_name_set_env) {
+		/* use SLURM_JOB_NAME env var */
+		opt.job_name_set_cmd = true;
+	}
+	if ((opt_local->core_spec_set || opt_local->exclusive) &&
+	    opt_local->cpus_set) {
+		/* Step gets specified CPU count, which may only part
+		 * of the job allocation. */
+		opt_local->exclusive = true;
+	} else {
+		/* Step gets all CPUs in the job allocation. */
+		opt_local->exclusive = false;
+	}
+}
+
 extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
 			    bool slurm_started, bool handle_signals)
 {
 	resource_allocation_response_msg_t *resp;
 	List job_resp_list = NULL;
-	ListIterator resp_iter;
+	ListIterator opt_iter, resp_iter;
 	srun_job_t *job = NULL;
+	int pack_offset = -1;
+	opt_t *opt_local;
+	uint32_t my_job_id = 0;
 
 	/* now global "opt" should be filled in and available,
 	 * create a job from opt
@@ -628,8 +655,8 @@ if (opt_list) exit(0);
 			opt.alloc_nodelist = xstrdup(resp->node_list);
 		if (opt.exclusive)
 			_step_opt_exclusive();
-		_set_env_vars(resp);
-		if (_validate_relative(resp))
+		_set_env_vars(resp, -1);
+		if (_validate_relative(resp, &opt))
 			exit(error_exit);
 		job = job_step_create_allocation(resp);
 		slurm_free_resource_allocation_response_msg(resp);
@@ -659,43 +686,43 @@ if (opt_list) exit(0);
 			job_resp_list = allocate_pack_nodes(handle_signals);
 			if (!job_resp_list)
 				exit(error_exit);
-//FIXME: global_resp = resp;
 			*got_alloc = true;
+			opt_iter  = list_iterator_create(opt_list);
 			resp_iter = list_iterator_create(job_resp_list);
 			while ((resp = (resource_allocation_response_msg_t *)
 				       list_next(resp_iter))) {
+				opt_local = (opt_t *) list_next(opt_iter);
+				if (!opt_local)
+					break;
+				if (my_job_id == 0)
+					my_job_id = resp->job_id;
+				if (!global_resp)	/* Used by Cray/ALPS */
+					global_resp = resp;
 				_print_job_information(resp);
+				_set_env_vars(resp, ++pack_offset);
+				if (_validate_relative(resp, opt_local)) {
+					slurm_complete_job(my_job_id, 1);
+					exit(error_exit);
+				}
+//FIXME: Need job list for pack jobs
+if (!job) job = job_create_allocation(resp);
+				_set_step_opts(opt_local);
 			}
+			list_iterator_destroy(opt_iter);
 			list_iterator_destroy(resp_iter);
-//FIXME: Need to flesh out pack job support
-exit(0);
 		} else {
 			if (!(resp = allocate_nodes(handle_signals)))
 				exit(error_exit);
 			global_resp = resp;
 			*got_alloc = true;
 			_print_job_information(resp);
-			_set_env_vars(resp);
-			if (_validate_relative(resp)) {
+			_set_env_vars(resp, -1);
+			if (_validate_relative(resp, &opt)) {
 				slurm_complete_job(resp->job_id, 1);
 				exit(error_exit);
 			}
 			job = job_create_allocation(resp);
-		}
-
-		opt.time_limit = NO_VAL;/* not applicable for step, only job */
-		xfree(opt.constraints);	/* not applicable for this step */
-		if (!opt.job_name_set_cmd && opt.job_name_set_env) {
-			/* use SLURM_JOB_NAME env var */
-			opt.job_name_set_cmd = true;
-		}
-		if ((opt.core_spec_set || opt.exclusive) && opt.cpus_set) {
-			/* Step gets specified CPU count, which may only part
-			 * of the job allocation. */
-			opt.exclusive = true;
-		} else {
-			/* Step gets all CPUs in the job allocation. */
-			opt.exclusive = false;
+			_set_step_opts(&opt);
 		}
 
 		/*
@@ -1229,30 +1256,43 @@ static int _run_srun_script (srun_job_t *job, char *script)
 	/* NOTREACHED */
 }
 
-static void _set_env_vars(resource_allocation_response_msg_t *resp)
+static char *_build_key(char *base, int pack_offset)
+{
+	char *key = NULL;
+
+	if (pack_offset == -1)
+		key = xstrdup(base);
+	else
+		xstrfmtcat(key, "%s_PACK_GROUP_%d", base, pack_offset);
+
+	return key;
+}
+
+static void _set_env_vars(resource_allocation_response_msg_t *resp,
+			  int pack_offset)
 {
 	char *key, *value, *tmp;
 	int i;
 
-	if (!getenv("SLURM_JOB_CPUS_PER_NODE")) {
+	key = _build_key("SLURM_JOB_CPUS_PER_NODE", pack_offset);
+	if (!getenv(key)) {
 		tmp = uint32_compressed_to_str(resp->num_cpu_groups,
 					       resp->cpus_per_node,
 					       resp->cpu_count_reps);
-		if (setenvf(NULL, "SLURM_JOB_CPUS_PER_NODE", "%s", tmp) < 0) {
-			error("unable to set SLURM_JOB_CPUS_PER_NODE in "
-			      "environment");
-		}
+		if (setenvf(NULL, key, "%s", tmp) < 0)
+			error("unable to set %s in environment", key);
 		xfree(tmp);
 	}
+	xfree(key);
 
+	key = _build_key("SLURM_NODE_ALIASES", pack_offset);
 	if (resp->alias_list) {
-		if (setenv("SLURM_NODE_ALIASES", resp->alias_list, 1) < 0) {
-			error("unable to set SLURM_NODE_ALIASES in "
-			      "environment");
-		}
+		if (setenv(key, resp->alias_list, 1) < 0)
+			error("unable to set %s in environment", key);
 	} else {
-		unsetenv("SLURM_NODE_ALIASES");
+		unsetenv(key);
 	}
+	xfree(key);
 
 	if (resp->env_size) {	/* Used to set Burst Buffer environment */
 		for (i = 0; i < resp->env_size; i++) {
@@ -1545,19 +1585,22 @@ static void _step_opt_exclusive(void)
 	}
 }
 
-static int _validate_relative(resource_allocation_response_msg_t *resp)
+static int _validate_relative(resource_allocation_response_msg_t *resp,
+			      opt_t *opt_local)
 {
 
-	if (opt.relative_set &&
-	    ((opt.relative + opt.min_nodes) > resp->node_cnt)) {
-		if (opt.nodes_set_opt) {  /* -N command line option used */
+	if (opt_local->relative_set &&
+	    ((opt_local->relative + opt_local->min_nodes) > resp->node_cnt)) {
+		if (opt_local->nodes_set_opt) {  /* -N command line option used */
 			error("--relative and --nodes option incompatible "
 			      "with count of allocated nodes (%d+%d>%d)",
-			      opt.relative, opt.min_nodes, resp->node_cnt);
+			      opt_local->relative, opt_local->min_nodes,
+			      resp->node_cnt);
 		} else {		/* SLURM_NNODES option used */
 			error("--relative and SLURM_NNODES option incompatible "
 			      "with count of allocated nodes (%d+%d>%d)",
-			      opt.relative, opt.min_nodes, resp->node_cnt);
+			      opt_local->relative, opt_local->min_nodes,
+			      resp->node_cnt);
 		}
 		return -1;
 	}
