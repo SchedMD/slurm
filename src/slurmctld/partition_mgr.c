@@ -602,7 +602,9 @@ int load_all_part_state(void)
 	if (state_fd < 0) {
 		info("No partition state file (%s) to recover",
 		     state_file);
-		error_code = ENOENT;
+		xfree(state_file);
+		unlock_state_files();
+		return ENOENT;
 	} else {
 		data_allocated = BUF_SIZE;
 		data = xmalloc(data_allocated);
@@ -636,6 +638,8 @@ int load_all_part_state(void)
 		safe_unpack16(&protocol_version, buffer);
 
 	if (protocol_version == (uint16_t)NO_VAL) {
+		if (!ignore_state_errors)
+			fatal("Can not recover partition state, data version incompatible, start with '-i' to ignore this");
 		error("**********************************************************");
 		error("Can not recover partition state, data version incompatible");
 		error("**********************************************************");
@@ -855,7 +859,9 @@ int load_all_part_state(void)
 	free_buf(buffer);
 	return error_code;
 
-      unpack_error:
+unpack_error:
+	if (!ignore_state_errors)
+		fatal("Incomplete partition data checkpoint file, start with '-i' to ignore this");
 	error("Incomplete partition data checkpoint file");
 	info("Recovered state of %d partitions", part_cnt);
 	free_buf(buffer);

@@ -930,6 +930,9 @@ extern void trigger_state_restore(void)
 	state_fd = _open_resv_state_file(&state_file);
 	if (state_fd < 0) {
 		info("No trigger state file (%s) to recover", state_file);
+		xfree(state_file);
+		unlock_state_files();
+		return;
 	} else {
 		data_allocated = BUF_SIZE;
 		data = xmalloc(data_allocated);
@@ -961,6 +964,8 @@ extern void trigger_state_restore(void)
 		safe_unpack16(&protocol_version, buffer);
 
 	if (protocol_version == (uint16_t) NO_VAL) {
+		if (!ignore_state_errors)
+			fatal("Can't recover trigger state, data version incompatible, start with '-i' to ignore this");
 		error("Can't recover trigger state, data version "
 		      "incompatible");
 		xfree(ver_str);
@@ -981,6 +986,8 @@ extern void trigger_state_restore(void)
 	goto fini;
 
 unpack_error:
+	if (!ignore_state_errors)
+		fatal("Incomplete trigger data checkpoint file, start with '-i' to ignore this");
 	error("Incomplete trigger data checkpoint file");
 fini:	verbose("State of %d triggers recovered", trigger_cnt);
 	free_buf(buffer);

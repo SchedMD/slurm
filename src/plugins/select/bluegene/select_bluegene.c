@@ -654,6 +654,8 @@ static int _load_state_file(List curr_block_list, char *dir_name)
 		safe_unpack16(&protocol_version, buffer);
 
 	if (protocol_version == (uint16_t)NO_VAL) {
+		if (!ignore_state_errors)
+			fatal("Can not recover block state, data version incompatible, start with '-i' to ignore this");
 		error("***********************************************");
 		error("Can not recover block state, "
 		      "data version incompatible");
@@ -809,9 +811,11 @@ static int _load_state_file(List curr_block_list, char *dir_name)
 	return SLURM_SUCCESS;
 
 unpack_error:
+	if (!ignore_state_errors)
+		fatal("Incomplete block data checkpoint file, start with '-i' to ignore this");
+	error("Incomplete block data checkpoint file");
 	FREE_NULL_BITMAP(usable_mp_bitmap);
 	slurm_mutex_unlock(&block_state_mutex);
-	error("Incomplete block data checkpoint file");
 	free_buf(buffer);
 
 	return SLURM_FAILURE;

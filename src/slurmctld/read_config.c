@@ -2485,6 +2485,8 @@ extern int load_config_state_lite(void)
 	state_fd = open(state_file, O_RDONLY);
 	if (state_fd < 0) {
 		debug2("No last_config_lite file (%s) to recover", state_file);
+		xfree(state_file);
+		return ENOENT;
 	} else {
 		data_allocated = BUF_SIZE;
 		data = xmalloc(data_allocated);
@@ -2514,6 +2516,10 @@ extern int load_config_state_lite(void)
 	safe_unpack16(&ver, buffer);
 	debug3("Version in last_conf_lite header is %u", ver);
 	if (ver > SLURM_PROTOCOL_VERSION || ver < SLURM_MIN_PROTOCOL_VERSION) {
+		if (!ignore_state_errors)
+			fatal("Can not recover last_conf_lite, incompatible version, (%u not between %d and %d), start with '-i' to ignore this",
+			      ver, SLURM_MIN_PROTOCOL_VERSION,
+			      SLURM_PROTOCOL_VERSION);
 		error("***********************************************");
 		error("Can not recover last_conf_lite, incompatible version, "
 		      "(%u not between %d and %d)",
@@ -2538,6 +2544,9 @@ extern int load_config_state_lite(void)
 	return SLURM_SUCCESS;
 
 unpack_error:
+	if (!ignore_state_errors)
+		fatal("Incomplete last_config_lite checkpoint file, start with '-i' to ignore this");
+	error("Incomplete last_config_lite checkpoint file");
 	if (buffer)
 		free_buf(buffer);
 

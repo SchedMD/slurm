@@ -931,6 +931,8 @@ static void _recover_bb_state(void)
 	buffer = create_buf(data, data_size);
 	safe_unpack16(&protocol_version, buffer);
 	if (protocol_version == (uint16_t)NO_VAL) {
+		if (!ignore_state_errors)
+			fatal("Can not recover burst_buffer/cray state, data version incompatible, start with '-i' to ignore this");
 		error("******************************************************************");
 		error("Can not recover burst_buffer/cray state, data version incompatible");
 		error("******************************************************************");
@@ -1002,6 +1004,8 @@ static void _recover_bb_state(void)
 	return;
 
 unpack_error:
+	if (!ignore_state_errors)
+		fatal("Incomplete burst buffer data checkpoint file, start with '-i' to ignore this");
 	error("Incomplete burst buffer data checkpoint file");
 	xfree(account);
 	xfree(name);

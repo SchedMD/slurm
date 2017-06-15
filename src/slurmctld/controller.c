@@ -2086,9 +2086,7 @@ extern void ctld_assoc_mgr_init(slurm_trigger_callbacks_t *callbacks)
 	}
 
 	/* Now load the usage from a flat file since it isn't kept in
-	   the database No need to check for an error since if this
-	   fails we will get an error message and we will go on our
-	   way.  If we get an error we can't do anything about it.
+	   the database
 	*/
 	load_assoc_usage(slurmctld_conf.state_save_location);
 	load_qos_usage(slurmctld_conf.state_save_location);

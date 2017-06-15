@@ -935,7 +935,9 @@ extern int load_all_job_state(void)
 	state_fd = _open_job_state_file(&state_file);
 	if (state_fd < 0) {
 		info("No job state file (%s) to recover", state_file);
-		error_code = ENOENT;
+		xfree(state_file);
+		unlock_state_files();
+		return ENOENT;
 	} else {
 		data_allocated = BUF_SIZE;
 		data = xmalloc(data_allocated);
@@ -973,6 +975,8 @@ extern int load_all_job_state(void)
 	xfree(ver_str);
 
 	if (protocol_version == (uint16_t)NO_VAL) {
+		if (!ignore_state_errors)
+			fatal("Can not recover job state, incompatible version, start with '-i' to ignore this");
 		error("***********************************************");
 		error("Can not recover job state, incompatible version");
 		error("***********************************************");
@@ -1002,6 +1006,8 @@ extern int load_all_job_state(void)
 
 unpack_error:
 	assoc_mgr_unlock(&locks);
+	if (!ignore_state_errors)
+		fatal("Incomplete job state save file, start with '-i' to ignore this");
 	error("Incomplete job state save file");
 	info("Recovered information about %d jobs", job_cnt);
 	free_buf(buffer);
@@ -1032,7 +1038,9 @@ extern int load_last_job_id( void )
 	state_fd = open(state_file, O_RDONLY);
 	if (state_fd < 0) {
 		debug("No job state file (%s) to recover", state_file);
-		error_code = ENOENT;
+		xfree(state_file);
+		unlock_state_files();
+		return ENOENT;
 	} else {
 		data_allocated = BUF_SIZE;
 		data = xmalloc(data_allocated);
@@ -1069,6 +1077,8 @@ extern int load_last_job_id( void )
 	xfree(ver_str);
 
 	if (protocol_version == (uint16_t)NO_VAL) {
+		if (!ignore_state_errors)
+			fatal("Can not recover last job ID, incompatible version, start with '-i' to ignore this");
 		debug("*************************************************");
 		debug("Can not recover last job ID, incompatible version");
 		debug("*************************************************");
@@ -1087,7 +1097,9 @@ extern int load_last_job_id( void )
 	return error_code;
 
 unpack_error:
-	debug("Invalid job data checkpoint file");
+	if (!ignore_state_errors)
+		fatal("Invalid job data checkpoint file, start with '-i' to ignore this");
+	error("Invalid job data checkpoint file");
 	xfree(ver_str);
 	free_buf(buffer);
 	return SLURM_FAILURE;

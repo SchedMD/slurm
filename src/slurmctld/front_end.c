@@ -789,8 +789,10 @@ extern int load_all_front_end_state(bool state_only)
 	lock_state_files ();
 	state_fd = _open_front_end_state_file(&state_file);
 	if (state_fd < 0) {
-		info ("No node state file (%s) to recover", state_file);
-		error_code = ENOENT;
+		info("No node state file (%s) to recover", state_file);
+		xfree(state_file);
+		unlock_state_files();
+		return ENOENT;
 	} else {
 		data_allocated = BUF_SIZE;
 		data = xmalloc(data_allocated);
@@ -823,6 +825,8 @@ extern int load_all_front_end_state(bool state_only)
 		safe_unpack16(&protocol_version, buffer);
 
 	if (protocol_version == (uint16_t) NO_VAL) {
+		if (!ignore_state_errors)
+			fatal("Can not recover front_end state, version incompatible, start with '-i' to ignore this");
 		error("*****************************************************");
 		error("Can not recover front_end state, version incompatible");
 		error("*****************************************************");
@@ -918,6 +922,8 @@ fini:	info("Recovered state of %d front_end nodes", node_cnt);
 	return error_code;
 
 unpack_error:
+	if (!ignore_state_errors)
+		fatal("Incomplete front_end node data checkpoint file, start with '-i' to ignore this");
 	error("Incomplete front_end node data checkpoint file");
 	error_code = EFAULT;
 	xfree (node_name);

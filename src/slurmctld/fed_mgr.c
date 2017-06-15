@@ -2481,6 +2481,10 @@ static slurmdb_federation_rec_t *_state_load(char *state_save_location,
 
 	debug3("Version in fed_mgr_state header is %u", ver);
 	if (ver > SLURM_PROTOCOL_VERSION || ver < SLURM_MIN_PROTOCOL_VERSION) {
+		if (!ignore_state_errors)
+			fatal("Can not recover fed_mgr state, incompatible version, got %u need > %u <= %u, start with '-i' to ignore this",
+			      ver, SLURM_MIN_PROTOCOL_VERSION,
+			      SLURM_PROTOCOL_VERSION);
 		error("***********************************************");
 		error("Can not recover fed_mgr state, incompatible version, "
 		      "got %u need > %u <= %u", ver,
@@ -2540,6 +2544,9 @@ static slurmdb_federation_rec_t *_state_load(char *state_save_location,
 	return ret_fed;
 
 unpack_error:
+	if (!ignore_state_errors)
+		fatal("Incomplete fed_mgr state file, start with '-i' to ignore this");
+	error("Incomplete fed_mgr state file");
 	free_buf(buffer);
 
 	return NULL;

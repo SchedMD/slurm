@@ -310,8 +310,10 @@ extern int load_all_node_state ( bool state_only )
 	lock_state_files ();
 	state_fd = _open_node_state_file(&state_file);
 	if (state_fd < 0) {
-		info ("No node state file (%s) to recover", state_file);
-		error_code = ENOENT;
+		info("No node state file (%s) to recover", state_file);
+		xfree(state_file);
+		unlock_state_files();
+		return ENOENT;
 	}
 	else {
 		data_allocated = BUF_SIZE;
@@ -345,6 +347,8 @@ extern int load_all_node_state ( bool state_only )
 		safe_unpack16(&protocol_version, buffer);
 
 	if (!protocol_version || (protocol_version == (uint16_t)NO_VAL)) {
+		if (!ignore_state_errors)
+			fatal("Can not recover node state, data version incompatible, start with '-i' to ignore this");
 		error("*****************************************************");
 		error("Can not recover node state, data version incompatible");
 		error("*****************************************************");
@@ -706,6 +710,8 @@ fini:	info("Recovered state of %d nodes", node_cnt);
 	return error_code;
 
 unpack_error:
+	if (!ignore_state_errors)
+		fatal("Incomplete node data checkpoint file, start with '-i' to ignore this");
 	error("Incomplete node data checkpoint file");
 	error_code = EFAULT;
 	xfree(features);

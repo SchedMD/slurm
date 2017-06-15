@@ -29,6 +29,9 @@ of Slurm will result in loss of state information.
 If using SPANK plugins that use the Slurm APIs, they should be recompiled when
 upgrading Slurm to a new major release.
 
+NOTE: The slurmctld is now set to fatal if there are any problems with
+      any state files.  To avoid this use the new '-i' flag.
+
 NOTE: systemd services files are installed automatically, but not enabled.
       You will need to manually enable them on the appropriate systems:
       - Controller: systemctl enable slurmctld
@@ -47,6 +50,8 @@ NOTE: If you are upgrading with any jobs from 14.03 or earlier
 NOTE: If you interact with any memory values in a job_submit plugin, you will
       need to test against NO_VAL64 instead of NO_VAL, and change your printf
       format as well.
+
+
 
 HIGHLIGHTS
 ==========

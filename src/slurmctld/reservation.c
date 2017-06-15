@@ -3547,7 +3547,9 @@ extern int load_all_resv_state(int recover)
 	if (state_fd < 0) {
 		info("No reservation state file (%s) to recover",
 		     state_file);
-		error_code = ENOENT;
+		xfree(state_file);
+		unlock_state_files();
+		return ENOENT;
 	} else {
 		data_allocated = BUF_SIZE;
 		data = xmalloc(data_allocated);
@@ -3581,6 +3583,8 @@ extern int load_all_resv_state(int recover)
 		safe_unpack16(&protocol_version, buffer);
 
 	if (protocol_version == (uint16_t) NO_VAL) {
+		if (!ignore_state_errors)
+			fatal("Can not recover reservation state, data version incompatible, start with '-i' to ignore this");
 		error("************************************************************");
 		error("Can not recover reservation state, data version incompatible");
 		error("************************************************************");
@@ -3607,10 +3611,11 @@ extern int load_all_resv_state(int recover)
 	free_buf(buffer);
 	return error_code;
 
-      unpack_error:
+unpack_error:
+	if (!ignore_state_errors)
+		fatal("Incomplete reservation data checkpoint file, start with '-i' to ignore this");
+	error("Incomplete reservation data checkpoint file");
 	_validate_all_reservations();
-	if (state_fd >= 0)
-		error("Incomplete reservation data checkpoint file");
 	info("Recovered state of %d reservations", list_count(resv_list));
 	if (resv_ptr)
 		_del_resv_rec(resv_ptr);

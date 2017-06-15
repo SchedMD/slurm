@@ -5366,7 +5366,9 @@ extern int load_assoc_usage(char *state_save_location)
 	state_fd = open(state_file, O_RDONLY);
 	if (state_fd < 0) {
 		debug2("No Assoc usage file (%s) to recover", state_file);
-		goto unpack_error;
+		xfree(state_file);
+		assoc_mgr_unlock(&locks);
+		return ENOENT;
 	} else {
 		data_allocated = BUF_SIZE;
 		data = xmalloc(data_allocated);
@@ -5396,9 +5398,13 @@ extern int load_assoc_usage(char *state_save_location)
 	safe_unpack16(&ver, buffer);
 	debug3("Version in assoc_usage header is %u", ver);
 	if (ver > SLURM_PROTOCOL_VERSION || ver < SLURM_MIN_PROTOCOL_VERSION) {
+		if (!ignore_state_errors)
+			fatal("Can not recover assoc_usage state, incompatible version, got %u need >= %u <= %u, start with '-i' to ignore this",
+			      ver, SLURM_MIN_PROTOCOL_VERSION,
+			      SLURM_PROTOCOL_VERSION);
 		error("***********************************************");
 		error("Can not recover assoc_usage state, "
-		      "incompatible version, got %u need > %u <= %u", ver,
+		      "incompatible version, got %u need >= %u <= %u", ver,
 		      SLURM_MIN_PROTOCOL_VERSION, SLURM_PROTOCOL_VERSION);
 		error("***********************************************");
 		free_buf(buffer);
@@ -5453,6 +5459,9 @@ extern int load_assoc_usage(char *state_save_location)
 	return SLURM_SUCCESS;
 
 unpack_error:
+	if (!ignore_state_errors)
+		fatal("Incomplete assoc usage state file, start with '-i' to ignore this");
+	error("Incomplete assoc usage state file");
 	if (buffer)
 		free_buf(buffer);
 	xfree(tmp_str);
@@ -5484,7 +5493,9 @@ extern int load_qos_usage(char *state_save_location)
 	state_fd = open(state_file, O_RDONLY);
 	if (state_fd < 0) {
 		debug2("No Qos usage file (%s) to recover", state_file);
-		goto unpack_error;
+		xfree(state_file);
+		assoc_mgr_unlock(&locks);
+		return ENOENT;
 	} else {
 		data_allocated = BUF_SIZE;
 		data = xmalloc(data_allocated);
@@ -5514,6 +5525,10 @@ extern int load_qos_usage(char *state_save_location)
 	safe_unpack16(&ver, buffer);
 	debug3("Version in qos_usage header is %u", ver);
 	if (ver > SLURM_PROTOCOL_VERSION || ver < SLURM_MIN_PROTOCOL_VERSION) {
+		if (!ignore_state_errors)
+			fatal("Can not recover qos_usage state, incompatible version, "
+			      "got %u need >= %u <= %u, start with '-i' to ignore this",
+			      ver, SLURM_MIN_PROTOCOL_VERSION, SLURM_PROTOCOL_VERSION);
 		error("***********************************************");
 		error("Can not recover qos_usage state, "
 		      "incompatible version, got %u need > %u <= %u", ver,
@@ -5559,6 +5574,9 @@ extern int load_qos_usage(char *state_save_location)
 	return SLURM_SUCCESS;
 
 unpack_error:
+	if (!ignore_state_errors)
+		fatal("Incomplete QOS usage state file, start with '-i' to ignore this");
+	error("Incomplete QOS usage state file");
 	if (buffer)
 		free_buf(buffer);
 	if (itr)
@@ -5591,7 +5609,9 @@ extern int load_assoc_mgr_state(char *state_save_location)
 	state_fd = open(state_file, O_RDONLY);
 	if (state_fd < 0) {
 		debug2("No association state file (%s) to recover", state_file);
-		goto unpack_error;
+		xfree(state_file);
+		assoc_mgr_unlock(&locks);
+		return ENOENT;
 	} else {
 		data_allocated = BUF_SIZE;
 		data = xmalloc(data_allocated);
@@ -5621,6 +5641,10 @@ extern int load_assoc_mgr_state(char *state_save_location)
 	safe_unpack16(&ver, buffer);
 	debug3("Version in assoc_mgr_state header is %u", ver);
 	if (ver > SLURM_PROTOCOL_VERSION || ver < SLURM_MIN_PROTOCOL_VERSION) {
+		if (!ignore_state_errors)
+			fatal("Can not recover assoc_mgr state, incompatible version, "
+			      "got %u need >= %u <= %u, start with '-i' to ignore this",
+			      ver, SLURM_MIN_PROTOCOL_VERSION, SLURM_PROTOCOL_VERSION);
 		error("***********************************************");
 		error("Can not recover assoc_mgr state, incompatible version, "
 		      "got %u need > %u <= %u", ver,
@@ -5759,6 +5783,9 @@ extern int load_assoc_mgr_state(char *state_save_location)
 	return SLURM_SUCCESS;
 
 unpack_error:
+	if (!ignore_state_errors)
+		fatal("Incomplete assoc mgr state file, start with '-i' to ignore this");
+	error("Incomplete assoc mgr state file");
 	if (buffer)
 		free_buf(buffer);
 	assoc_mgr_unlock(&locks);
