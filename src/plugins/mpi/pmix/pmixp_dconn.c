@@ -53,21 +53,20 @@ void pmixp_dconn_init(int node_cnt, pmixp_p2p_data_t direct_hdr)
 	int i;
 	memset(&_pmixp_dconn_h, 0, sizeof(_pmixp_dconn_h));
 
-	if (pmixp_info_srv_direct_conn_ucx()) {
-		/* if UCX is disabled - it is always false */
 #ifdef HAVE_UCX
+	if (pmixp_info_srv_direct_conn_ucx()) {
 		_poll_fd = pmixp_dconn_ucx_prepare(&_pmixp_dconn_h,
 						   &ep_data, &ep_len);
 		_progress_type = PMIXP_DCONN_PROGRESS_HW;
 		_conn_type = PMIXP_DCONN_CONN_TYPE_ONESIDE;
+	} else
 #endif
-	} else {
+	{
 		_poll_fd = pmixp_dconn_tcp_prepare(&_pmixp_dconn_h,
 						   &ep_data, &ep_len);
 		_progress_type = PMIXP_DCONN_PROGRESS_SW;
 		_conn_type = PMIXP_DCONN_CONN_TYPE_TWOSIDE;
 	}
-
 
 	_pmixp_dconn_conns = xmalloc(sizeof(*_pmixp_dconn_conns) * node_cnt);
 	_pmixp_dconn_conn_cnt = node_cnt;
@@ -82,11 +81,25 @@ void pmixp_dconn_init(int node_cnt, pmixp_p2p_data_t direct_hdr)
 void pmixp_dconn_fini()
 {
 	int i;
+#ifdef HAVE_UCX
+	if (pmixp_info_srv_direct_conn_ucx()) {
+		pmixp_dconn_ucx_stop();
+	}
+#endif
 	for (i=0; i<_pmixp_dconn_conn_cnt; i++) {
 		slurm_mutex_destroy(&_pmixp_dconn_conns[i].lock);
 		_pmixp_dconn_h.fini(_pmixp_dconn_conns[i].priv);
 	}
-	pmixp_dconn_tcp_finalize();
+
+#ifdef HAVE_UCX
+	if (pmixp_info_srv_direct_conn_ucx()) {
+		pmixp_dconn_ucx_finalize();
+	} else
+#endif
+	{
+		pmixp_dconn_tcp_finalize();
+	}
+
 	xfree(_pmixp_dconn_conns);
 	_pmixp_dconn_conn_cnt = 0;
 }

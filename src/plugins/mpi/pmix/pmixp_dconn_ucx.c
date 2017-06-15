@@ -325,21 +325,26 @@ static void _release_recv_requests(pmixp_rlist_t *l)
 	}
 }
 
+void pmixp_dconn_ucx_stop()
+{
+	slurm_mutex_lock(&_ucx_worker_lock);
+	_release_send_requests(&_snd_pending);
+	_release_send_requests(&_snd_complete);
+
+	_release_recv_requests(&_rcv_pending);
+	_release_recv_requests(&_rcv_complete);
+	slurm_mutex_unlock(&_ucx_worker_lock);
+}
+
 void pmixp_dconn_ucx_finalize()
 {
 	pmixp_list_elem_t *elem;
 	size_t count, i;
 	xassert(_direct_hdr_set);
 
-	_release_send_requests(&_snd_pending);
 	pmixp_rlist_fini(&_snd_pending);
-	_release_send_requests(&_snd_complete);
 	pmixp_rlist_fini(&_snd_complete);
-
-
-	_release_recv_requests(&_rcv_pending);
 	pmixp_rlist_fini(&_rcv_pending);
-	_release_recv_requests(&_rcv_complete);
 	pmixp_rlist_fini(&_rcv_complete);
 
 	/* All elements from the previous lists should settle
@@ -353,8 +358,8 @@ void pmixp_dconn_ucx_finalize()
 
 	/* unload UCX lib */
 	_unload_ucx_lib();
+	slurm_mutex_destroy(&_ucx_worker_lock);
 }
-
 
 static int _activate_progress()
 {
@@ -640,7 +645,9 @@ static void _ucx_fini(void *_priv)
 
 	if (priv->connected) {
 		xfree(priv->ucx_addr);
+		slurm_mutex_lock(&_ucx_worker_lock);
 		ucp_ep_destroy(priv->server_ep);
+		slurm_mutex_unlock(&_ucx_worker_lock);
 	} else {
 		slurm_mutex_lock(&_ucx_worker_lock);
 		pmixp_rlist_init(&priv->pending, &_free_list,
