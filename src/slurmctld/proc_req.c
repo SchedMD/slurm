@@ -1371,7 +1371,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		response_msg.data = resp;
 
 		if (slurm_send_node_msg(msg->conn_fd, &response_msg) < 0)
-			_kill_job_on_msg_fail(job_ptr->job_id);
+			_kill_job_on_msg_fail(pack_job_id);
 		list_destroy(resp);
 	} else {
 send_msg:	info("%s: %s ", __func__, slurm_strerror(error_code));
