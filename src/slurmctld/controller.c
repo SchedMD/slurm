@@ -2745,8 +2745,10 @@ static void *_assoc_cache_mgr(void *no_data)
 			slurm_mutex_unlock(&assoc_cache_mutex);
 			return NULL;
 		}
-		/* Make sure not to have job_write_lock or assoc_mgr locks when
-		 * refresh_lists is called or you may get deadlock.
+		/*
+		 * Make sure not to have the job_write_lock, assoc_mgr or the
+		 * slurmdbd_lock locked when refresh_lists is called or you may
+		 * get deadlock.
 		 */
 		assoc_mgr_refresh_lists(acct_db_conn, 0);
 		if (g_tres_count != slurmctld_tres_cnt) {
