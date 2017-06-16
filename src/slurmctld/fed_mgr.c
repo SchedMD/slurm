@@ -157,8 +157,7 @@ static int _validate_cluster_features(char *spec_features,
 static int _validate_cluster_names(char *clusters, uint64_t *cluster_bitmap);
 static void _leave_federation(void);
 static int _q_send_job_sync(char *sib_name);
-static slurmdb_federation_rec_t *_state_load(char *state_save_location,
-					     bool job_list_only);
+static slurmdb_federation_rec_t *_state_load(char *state_save_location);
 static int _sync_jobs(const char *sib_name, job_info_msg_t *job_info_msg,
 		      time_t sync_time);
 
@@ -1440,11 +1439,14 @@ static void _handle_removed_clusters(slurmdb_federation_rec_t *db_fed)
 
 	itr = list_iterator_create(fed_mgr_fed_rec->cluster_list);
 	while ((tmp_cluster = list_next(itr))) {
-		if(tmp_cluster->name &&
-		   !(list_find_first(db_fed->cluster_list,
-				     slurmdb_find_cluster_in_list,
-				     tmp_cluster->name)))
+		if (tmp_cluster->name &&
+		    !(list_find_first(db_fed->cluster_list,
+				      slurmdb_find_cluster_in_list,
+				      tmp_cluster->name))) {
+			info("cluster %s was removed from the federation",
+			     tmp_cluster->name);
 			_cleanup_removed_cluster_jobs(tmp_cluster);
+		}
 	}
 	list_iterator_destroy(itr);
 }
@@ -2212,7 +2214,8 @@ extern int fed_mgr_init(void *db_conn)
 	int rc = SLURM_SUCCESS;
 	slurmdb_federation_cond_t fed_cond;
 	List fed_list;
-	slurmdb_federation_rec_t *fed = NULL;
+	slurmdb_federation_rec_t *fed = NULL, *state_fed = NULL;
+	slurmdb_cluster_rec_t *state_cluster = NULL;
 
 	slurm_mutex_lock(&init_mutex);
 
@@ -2234,16 +2237,19 @@ extern int fed_mgr_init(void *db_conn)
 
 	if (running_cache) {
 		debug("Database appears down, reading federations from state file.");
-		fed = _state_load(
-			slurmctld_conf.state_save_location, false);
+		fed = _state_load(slurmctld_conf.state_save_location);
 		if (!fed) {
 			debug2("No federation state");
 			rc = SLURM_SUCCESS;
 			goto end_it;
 		}
 	} else {
-		/* Load fed_job_list */
-		_state_load(slurmctld_conf.state_save_location, true);
+		state_fed = _state_load(slurmctld_conf.state_save_location);
+		if (state_fed)
+			state_cluster = list_find_first(
+						state_fed->cluster_list,
+						slurmdb_find_cluster_in_list,
+						slurmctld_conf.cluster_name);
 
 		slurmdb_init_federation_cond(&fed_cond, 0);
 		fed_cond.cluster_list = list_create(NULL);
@@ -2271,16 +2277,39 @@ extern int fed_mgr_init(void *db_conn)
 
 	if (fed) {
 		slurmdb_cluster_rec_t *cluster = NULL;
+		slurmctld_lock_t fedr_jobw_lock = {
+			NO_LOCK, JOB_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
 
 		if ((cluster = list_find_first(fed->cluster_list,
 					       slurmdb_find_cluster_in_list,
 					       slurmctld_conf.cluster_name))) {
 			_join_federation(fed, cluster);
+
+			/* Find clusters that were removed from the federation
+			 * since the last time we got an update */
+			lock_slurmctld(fedr_jobw_lock);
+			if (state_fed && state_cluster && fed_mgr_fed_rec)
+				_handle_removed_clusters(state_fed);
+			unlock_slurmctld(fedr_jobw_lock);
 		} else {
 			error("failed to get cluster from federation that we requested");
 			rc = SLURM_ERROR;
 		}
+	} else if (state_fed && state_cluster) {
+		/* cluster has been removed from federation while it was down.
+		 * Need to clear up jobs */
+		slurmctld_lock_t fedw_jobw_lock = {
+			NO_LOCK, JOB_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
+
+		info("self was removed from federation since last start");
+		lock_slurmctld(fedw_jobw_lock);
+		fed_mgr_cluster_rec = state_cluster;
+		_cleanup_removed_origin_jobs();
+		fed_mgr_cluster_rec = NULL;
+		unlock_slurmctld(fedw_jobw_lock);
 	}
+
+	slurmdb_destroy_federation_rec(state_fed);
 
 end_it:
 	inited = true;
@@ -2565,8 +2594,7 @@ extern int fed_mgr_state_save(char *state_save_location)
 	return error_code;
 }
 
-static slurmdb_federation_rec_t *_state_load(char *state_save_location,
-					     bool job_list_only)
+static slurmdb_federation_rec_t *_state_load(char *state_save_location)
 {
 	Buf buffer = NULL;
 	char *data = NULL, *state_file;
@@ -2634,13 +2662,11 @@ static slurmdb_federation_rec_t *_state_load(char *state_save_location,
 						   buffer);
 	if (error_code != SLURM_SUCCESS)
 		goto unpack_error;
-	else if (job_list_only || !ret_fed || !ret_fed->name ||
+	else if (!ret_fed || !ret_fed->name ||
 		 !list_count(ret_fed->cluster_list)) {
 		slurmdb_destroy_federation_rec(ret_fed);
 		ret_fed = NULL;
-
-		if (!job_list_only)
-			debug("No feds to retrieve from state");
+		debug("No feds to retrieve from state");
 	} else {
 		/* We want to free the connections here since they don't exist
 		 * anymore, but they were packed when state was saved. */
