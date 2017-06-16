@@ -2292,6 +2292,7 @@ extern int fed_mgr_init(void *db_conn)
 				_handle_removed_clusters(state_fed);
 			unlock_slurmctld(fedr_jobw_lock);
 		} else {
+			slurmdb_destroy_federation_rec(fed);
 			error("failed to get cluster from federation that we requested");
 			rc = SLURM_ERROR;
 		}
