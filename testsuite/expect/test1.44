@@ -57,7 +57,7 @@ proc run_cat_backpressure { input_file output_file } {
 	set iter 0
 
 	set output [open $output_file w]
-	set srun_output [open "| $srun -e $file_err -N1 $bin_cat $input_file" r]
+	set srun_output [open "| $srun -e $file_err -N1 -t1 $bin_cat $input_file" r]
 	while {![eof $srun_output]} {
 		puts -nonewline $output [read $srun_output 1]
 		incr iter

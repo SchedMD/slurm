@@ -94,7 +94,7 @@ if {[test_select_type_params "CR_CORE"]} {
 }
 
 set got_node 0
-spawn $srun -N1 printenv SLURM_NODELIST
+spawn $srun -N1 -t1 printenv SLURM_NODELIST
 expect {
 	-re "($alpha_numeric_under)" {
 		set test_node $expect_out(1,string)
@@ -469,7 +469,7 @@ if {$job_id == 0} {
 # Spawn a job via srun using this account
 #
 set job_id 0
-spawn $srun -N1 -v --account=$ta $bin_id
+spawn $srun -N1 -v --account=$ta -t1 $bin_id
 expect {
 	-re "launching ($number)" {
 		set job_id $expect_out(1,string)

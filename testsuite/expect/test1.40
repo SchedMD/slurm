@@ -108,7 +108,7 @@ if {$match_acct == 0} {
 #
 make_bash_script $file_in "$bin_env | $bin_grep SLURM_ACCOUNT"
 set match_acct  0
-set srun_pid [spawn $srun -v ./$file_in]
+set srun_pid [spawn $srun -v -t1 ./$file_in]
 expect {
 	# needed for cray systems
 	-re "Granted job allocation ($number)" {

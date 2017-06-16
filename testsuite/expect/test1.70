@@ -51,7 +51,7 @@ if {[test_alps]} {
 exec $bin_rm -f $file_out
 
 set sub_match 0
-spawn $srun -n1 -v -i $file_in -o $file_out cat
+spawn $srun -n1 -v -i $file_in -o $file_out -t1 cat
 expect {
 	-re "launching" {
 		set sub_match 1

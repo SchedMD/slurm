@@ -67,7 +67,7 @@ if {[string compare $switch "none"]} {
 set host_0      ""
 set nodelist_name ""
 set timeout $max_job_delay
-set srun_pid [spawn $srun -v -N1 -l $bin_printenv SLURMD_NODENAME]
+set srun_pid [spawn $srun -v -N1 -l -t1 $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "on host ($alpha_numeric_under)," {
 		set nodelist_name $expect_out(1,string)
@@ -172,10 +172,10 @@ for {set inx 0} {$inx < $iterations} {incr inx} {
 	set srun_pid [spawn $srun -N1 --nodelist=$nodelist_name -t1 -l $bin_printenv SLURMD_NODENAME]
 	set   alloc $spawn_id
 
-	set srun_pid1 [spawn $srun -N1 --nodelist=$include_node -Z $bin_sleep 0.5]
+	set srun_pid1 [spawn $srun -N1 --nodelist=$include_node -t1 -Z $bin_sleep 0.5]
 	set   noalloc1 $spawn_id
 
-	set srun_pid2 [spawn $srun -N1 --nodelist=$include_node -Z $bin_sleep 0.25]
+	set srun_pid2 [spawn $srun -N1 --nodelist=$include_node -t1 -Z $bin_sleep 0.25]
 	set   noalloc2 $spawn_id
 
 	set timeout 20

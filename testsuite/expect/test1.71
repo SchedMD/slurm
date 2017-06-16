@@ -93,7 +93,7 @@ if {$error_match != 2} {
 # Expect seems to have some trouble exiting if the "exit_code" comes first
 set error_match 0
 set timeout $max_job_delay
-spawn $srun -n1 ./$script
+spawn $srun -n1 -t1 ./$script
 expect {
 	-re "(Segmentation|exit_code = $err_num_c)" {
 		incr error_match

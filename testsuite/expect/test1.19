@@ -233,7 +233,7 @@ if {[wait_for_file $file_out_J_glob] != 0} {
 # it is created
 #
 set job_id 0
-set srun_pid [spawn $srun --output=$file_out_u -v sleep 10]
+set srun_pid [spawn $srun --output=$file_out_u -v -t1 sleep 10]
 expect {
 	-re "jobid ($number)" {
 		set job_id $expect_out(1,string)
@@ -271,7 +271,7 @@ if {[wait_for_file $file_out_u_glob]==0} {
 # it is created
 #
 set job_id 0
-set srun_pid [spawn $srun --error=$file_err_u --output=/dev/null -v sleep aaa]
+set srun_pid [spawn $srun --error=$file_err_u --output=/dev/null -v -t1 sleep aaa]
 expect {
 	-re "jobid ($number)" {
 		set job_id $expect_out(1,string)
@@ -364,8 +364,8 @@ if {$file_cnt != 1} {
 #
 exec $bin_rm -f $file_in
 make_bash_script $file_in "
-  $srun -n4 -O --output=$file_out_s $bin_printenv $node_name_env
-  $srun -n4 -O --output=$file_out_s $bin_printenv $node_name_env
+  $srun -n4 -O --output=$file_out_s -t1 $bin_printenv $node_name_env
+  $srun -n4 -O --output=$file_out_s -t1 $bin_printenv $node_name_env
 "
 
 for {set step_id 0} {$step_id < 4} {incr step_id} {

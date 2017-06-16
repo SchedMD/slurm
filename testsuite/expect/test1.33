@@ -77,7 +77,7 @@ make_bash_script $exit_script "
 "
 
 make_bash_script $test_script "
-  $srun -N1 -n $task_cnt -O $exit_script
+  $srun -N1 -n $task_cnt -O -t1 $exit_script
   echo srun_exit_code_\$?
 "
 
@@ -87,7 +87,7 @@ make_bash_script $test_script "
 set sum 0
 set myexit 0
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -n $task_cnt -O $exit_script]
+set srun_pid [spawn $srun -N1 -n $task_cnt -O -t1 $exit_script]
 expect {
 	-re "exit code ($number)" {
 		send_user "This error is expected, no worries\n"
