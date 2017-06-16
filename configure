@@ -655,6 +655,7 @@ MUNGE_DIR
 MUNGE_LDFLAGS
 MUNGE_CPPFLAGS
 MUNGE_LIBS
+SYSTEMD_TASKSMAX_OPTION
 HAVE_OPENSSL
 HAVE_OPENSSL_FALSE
 HAVE_OPENSSL_TRUE
@@ -24586,6 +24587,56 @@ else
   HAVE_OPENSSL_TRUE='#'
   HAVE_OPENSSL_FALSE=
 fi
+
+
+
+
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for systemd presence" >&5
+$as_echo_n "checking for systemd presence... " >&6; }
+if ${_cv_systemd_presence+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"systemd\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "systemd") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  _cv_systemd_presence=yes
+else
+  _cv_systemd_presence=no
+fi
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $_cv_systemd_presence" >&5
+$as_echo "$_cv_systemd_presence" >&6; }
+
+	if test "x$_cv_systemd_presence" != "xno"; then
+
+$as_echo "#define HAVE_SYSTEMD 1" >>confdefs.h
+
+
+	    _cv_systemd_version=`$PKG_CONFIG --modversion systemd 2>/dev/null`
+
+	    SYSTEMD_TASKSMAX_OPTION=""
+	    if test "$_cv_systemd_version" -ge 227; then
+		    SYSTEMD_TASKSMAX_OPTION="TasksMax=infinity"
+	    fi
+
+
+	    # In the future we might want to enable the configure option
+	    #  --with-systemdsystemunitdir=DIR, so that users can specify
+	    # at configure time the directory to install the .service files.
+	    # https://www.freedesktop.org/software/systemd/man/daemon.html#Installing%20Systemd%20Service%20Files
+
+	    #AC_CACHE_CHECK([for systemd system unit dir],
+	    #		[_cv_systemd_systemunitdir],
+	    #		[PKG_CHECK_VAR([SYSTEMD_SYSTEM_UNIT_DIR],
+	    #				[systemd],
+	    #				[systemdsystemunitdir],
+	    #				[_cv_systemd_systemunitdir=$SYSTEMD_SYSTEM_UNIT_DIR],
+	    #				[_cv_systemd_systemunitdir=no])])
+	fi
 
 
 

@@ -323,6 +323,9 @@
 /* Define to 1 if you have the <sysint.h> header file. */
 #undef HAVE_SYSINT_H
 
+/* Define systemd presence */
+#undef HAVE_SYSTEMD
+
 /* Define to 1 if you have the <sys/dr.h> header file. */
 #undef HAVE_SYS_DR_H
 
