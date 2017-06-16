@@ -13,6 +13,7 @@ KillMode=process
 LimitNOFILE=51200
 LimitMEMLOCK=infinity
 LimitSTACK=infinity
+@SYSTEMD_TASKSMAX_OPTION@
 
 [Install]
 WantedBy=multi-user.target

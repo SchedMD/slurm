@@ -9,6 +9,7 @@ EnvironmentFile=-/etc/sysconfig/slurmctld
 ExecStart=@sbindir@/slurmctld $SLURMCTLD_OPTIONS
 ExecReload=/bin/kill -HUP $MAINPID
 PIDFile=/var/run/slurmctld.pid
+@SYSTEMD_TASKSMAX_OPTION@
 
 [Install]
 WantedBy=multi-user.target

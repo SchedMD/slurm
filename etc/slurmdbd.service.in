@@ -9,6 +9,7 @@ EnvironmentFile=-/etc/sysconfig/slurmdbd
 ExecStart=@sbindir@/slurmdbd $SLURMDBD_OPTIONS
 ExecReload=/bin/kill -HUP $MAINPID
 PIDFile=/var/run/slurmdbd.pid
+@SYSTEMD_TASKSMAX_OPTION@
 
 [Install]
 WantedBy=multi-user.target
