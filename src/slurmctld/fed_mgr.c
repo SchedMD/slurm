@@ -55,6 +55,7 @@
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/state_save.h"
 #include "src/slurmdbd/read_config.h"
 
@@ -1323,6 +1324,131 @@ next_job:
 	}
 }
 
+static int _remove_sibling_bit(struct job_record *job_ptr,
+			       slurmdb_cluster_rec_t *sibling)
+{
+	uint32_t origin_id;
+
+	if (!_is_fed_job(job_ptr, &origin_id))
+		return ESLURM_JOB_NOT_FEDERATED;
+
+	job_ptr->fed_details->siblings_active &=
+		~(FED_SIBLING_BIT(sibling->fed.id));
+	job_ptr->fed_details->siblings_viable &=
+		~(FED_SIBLING_BIT(sibling->fed.id));
+	update_job_fed_details(job_ptr);
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Remove all pending federated jobs from the origin cluster.
+ */
+static void _cleanup_removed_origin_jobs()
+{
+	ListIterator job_itr;
+	struct job_record *job_ptr;
+	time_t now = time(NULL);
+	uint32_t cluster_id = 0;
+
+	job_itr = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_itr))) {
+		bool running_remotely = false;
+		cluster_id = fed_mgr_get_cluster_id(job_ptr->job_id);
+
+		if (job_ptr->fed_details &&
+		    fed_mgr_cluster_rec->fed.id == cluster_id &&
+		    job_ptr->fed_details->cluster_lock)
+			running_remotely = true;
+
+		/* free fed_job_details so it can't call home. */
+		free_job_fed_details(&job_ptr->fed_details);
+
+		/* allow running/completing jobs to finish. */
+		if (IS_JOB_COMPLETED(job_ptr) ||
+		    IS_JOB_COMPLETING(job_ptr) ||
+		    IS_JOB_RUNNING(job_ptr))
+			continue;
+
+		/* Free the resp_host so that the srun doesn't get
+		 * signalled about the job going away. The job could
+		 * still run on another sibling. */
+		if (running_remotely ||
+		    (cluster_id != fed_mgr_cluster_rec->fed.id))
+			xfree(job_ptr->resp_host);
+
+		job_ptr->job_state  = JOB_CANCELLED|JOB_REVOKED;
+		job_ptr->start_time = now;
+		job_ptr->end_time   = now;
+		job_completion_logger(job_ptr, false);
+	}
+	list_iterator_destroy(job_itr);
+}
+
+/*
+ * Remove all pending jobs that originated from the given cluster.
+ */
+static void _cleanup_removed_cluster_jobs(slurmdb_cluster_rec_t *cluster)
+{
+	ListIterator job_itr;
+	struct job_record *job_ptr;
+	time_t now = time(NULL);
+	uint32_t cluster_id = 0;
+
+	job_itr = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_itr))) {
+
+		/* Remove cluster from viable,active siblings */
+		_remove_sibling_bit(job_ptr, cluster);
+
+		/* Remove jobs that originated from the removed cluster or
+		 * remove the origin tracking job that is tracking a job on the
+		 * cluster that has been removed. */
+		cluster_id = fed_mgr_get_cluster_id(job_ptr->job_id);
+		if (cluster_id == cluster->fed.id ||
+		    (job_ptr->fed_details &&
+		     cluster_id == fed_mgr_cluster_rec->fed.id &&
+		     job_ptr->fed_details->cluster_lock == cluster->fed.id)) {
+			/* free fed_job_details so it can't call home. */
+			free_job_fed_details(&job_ptr->fed_details);
+
+			if (!(IS_JOB_COMPLETED(job_ptr) ||
+			      IS_JOB_COMPLETING(job_ptr) ||
+			      IS_JOB_RUNNING(job_ptr))) {
+
+				/* Free the resp_host so that the srun doesn't
+				 * get signalled about the job going away. The
+				 * job could still run on another sibling. */
+				xfree(job_ptr->resp_host);
+
+				job_ptr->job_state  = JOB_CANCELLED|JOB_REVOKED;
+				job_ptr->start_time = now;
+				job_ptr->end_time   = now;
+				job_ptr->state_reason = WAIT_NO_REASON;
+				xfree(job_ptr->state_desc);
+				job_completion_logger(job_ptr, false);
+			}
+		}
+	}
+	list_iterator_destroy(job_itr);
+}
+
+static void _handle_removed_clusters(slurmdb_federation_rec_t *db_fed)
+{
+	ListIterator itr;
+	slurmdb_cluster_rec_t *tmp_cluster = NULL;
+
+	itr = list_iterator_create(fed_mgr_fed_rec->cluster_list);
+	while ((tmp_cluster = list_next(itr))) {
+		if(tmp_cluster->name &&
+		   !(list_find_first(db_fed->cluster_list,
+				     slurmdb_find_cluster_in_list,
+				     tmp_cluster->name)))
+			_cleanup_removed_cluster_jobs(tmp_cluster);
+	}
+	list_iterator_destroy(itr);
+}
+
 /* Parse a RESPONSE_CTLD_MULT_MSG message and return a bit set for every
  * successful operation */
 bitstr_t *_parse_resp_ctld_mult(slurm_msg_t *resp_msg)
@@ -2193,10 +2319,12 @@ extern int fed_mgr_fini(void)
 extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 {
 	List feds;
-	slurmdb_federation_rec_t *fed = NULL;
-	slurmdb_cluster_rec_t *cluster = NULL;
-	slurmctld_lock_t fed_write_lock = {
-		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
+	slurmdb_federation_rec_t *fed   = NULL;
+	slurmdb_cluster_rec_t *cluster  = NULL;
+	slurmctld_lock_t fedr_jobw_lock = {
+		NO_LOCK, JOB_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
+	slurmctld_lock_t fedw_jobw_lock    = {
+		NO_LOCK, JOB_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
 
 	if (!update->objects)
 		return SLURM_SUCCESS;
@@ -2228,19 +2356,25 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 		    (cluster = list_find_first(fed->cluster_list,
 					       slurmdb_find_cluster_in_list,
 					       slurmctld_conf.cluster_name))) {
+			/* Find clusters that were removed from the federation
+			 * since the last time we got an update */
+			lock_slurmctld(fedr_jobw_lock);
+			if (fed_mgr_fed_rec)
+				_handle_removed_clusters(fed);
+			unlock_slurmctld(fedr_jobw_lock);
 			_join_federation(fed, cluster);
 			break;
 		}
-
 		slurmdb_destroy_federation_rec(fed);
 	}
 
 	if (!fed) {
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 			info("Not part of any federation");
-		lock_slurmctld(fed_write_lock);
+		lock_slurmctld(fedw_jobw_lock);
+		_cleanup_removed_origin_jobs();
 		_leave_federation();
-		unlock_slurmctld(fed_write_lock);
+		unlock_slurmctld(fedw_jobw_lock);
 	}
 	slurm_mutex_unlock(&update_mutex);
 	return SLURM_SUCCESS;

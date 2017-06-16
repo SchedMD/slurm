@@ -184,7 +184,6 @@ static int  _dump_job_state(void *x, void *y);
 static void _dump_job_fed_details(job_fed_details_t *fed_details_ptr,
 				  Buf buffer);
 static job_fed_details_t *_dup_job_fed_details(job_fed_details_t *src);
-static void _free_job_fed_details(job_fed_details_t **fed_details_pptr);
 static void _get_batch_job_dir_ids(List batch_dirs);
 static time_t _get_last_state_write_time(void);
 static void _job_array_comp(struct job_record *job_ptr, bool was_running);
@@ -2298,7 +2297,7 @@ unpack_error:
 	xfree(gres_alloc);
 	xfree(gres_req);
 	xfree(gres_used);
-	_free_job_fed_details(&job_fed_details);
+	free_job_fed_details(&job_fed_details);
 	free_job_resources(&job_resources);
 	xfree(resp_host);
 	xfree(licenses);
@@ -8534,7 +8533,7 @@ static void _list_delete_job(void *job_entry)
 	checkpoint_free_jobinfo(job_ptr->check_job);
 	xfree(job_ptr->comment);
 	xfree(job_ptr->clusters);
-	_free_job_fed_details(&job_ptr->fed_details);
+	free_job_fed_details(&job_ptr->fed_details);
 	free_job_resources(&job_ptr->job_resrcs);
 	xfree(job_ptr->gres);
 	xfree(job_ptr->gres_alloc);
@@ -16603,7 +16602,7 @@ static job_fed_details_t *_dup_job_fed_details(job_fed_details_t *src)
 	return dst;
 }
 
-static void _free_job_fed_details(job_fed_details_t **fed_details_pptr)
+extern void free_job_fed_details(job_fed_details_t **fed_details_pptr)
 {
 	job_fed_details_t *fed_details_ptr = *fed_details_pptr;
 
@@ -16680,7 +16679,7 @@ static int _load_job_fed_details(job_fed_details_t **fed_details_pptr,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	_free_job_fed_details(fed_details_pptr);
+	free_job_fed_details(fed_details_pptr);
 	*fed_details_pptr = NULL;
 
 	return SLURM_ERROR;

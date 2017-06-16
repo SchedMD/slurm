@@ -2506,4 +2506,9 @@ set_remote_working_response(resource_allocation_response_msg_t *resp,
 			    struct job_record *job_ptr,
 			    const char *req_cluster);
 
+/*
+ * Free job's fed_details ptr.
+ */
+extern void free_job_fed_details(job_fed_details_t **fed_details_pptr);
+
 #endif /* !_HAVE_SLURMCTLD_H */

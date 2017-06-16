@@ -55,14 +55,18 @@ Clusters can be added or removed from a federation using:
 <pre>
 sacctmgr modify federation &lt;federation_name&gt; set clusters[+-]=&lt;list_of_clusters&gt;
 sacctmgr modify cluster &lt;cluster_name&gt; set federation=&lt;federation_name&gt;
-</pre>
-
-and can be cleared using the empty string:
-<pre>
 sacctmgr modify federation &lt;federation_name&gt; set clusters=
 sacctmgr modify cluster &lt;cluster_name&gt; set federation=
 </pre>
+<b>NOTE:</b> If a cluster is removed from a federation without first draining
+the cluster, running jobs on the removed cluster, or that originated from the
+removed cluster, will continue to run. Non-origin pending jobs will be removed
+from the cluster being removed and remaining pending sibling jobs will remain
+pending in the federation. If an origin cluster is removed, any pending jobs
+originating from the origin cluster will be removed.
 
+<br>
+<br>
 Federations can be deleted using:
 <pre>
 sacctmgr delete federation &lt;federation_name&gt;
