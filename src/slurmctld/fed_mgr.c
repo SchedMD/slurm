@@ -3968,8 +3968,8 @@ extern int fed_mgr_is_origin_job(struct job_record *job_ptr)
  *
  * Results in siblings being removed and added.
  *
- * IN job_ptr      - job to update.
- * IN req_features - comma-separated list of cluster names.
+ * IN job_ptr       - job to update.
+ * IN spec_clusters - comma-separated list of cluster names.
  * RET return SLURM_SUCCESS on sucess, error code otherwise.
  */
 extern int fed_mgr_update_job_clusters(struct job_record *job_ptr,
