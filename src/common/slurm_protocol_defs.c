@@ -969,6 +969,9 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->exc_nodes);
 		xfree(job->exc_node_inx);
 		xfree(job->features);
+		xfree(job->fed_origin_str);
+		xfree(job->fed_siblings_active_str);
+		xfree(job->fed_siblings_viable_str);
 		xfree(job->gres);
 		if (job->gres_detail_str) {
 			for (i = 0; i < job->gres_detail_cnt; i++)
