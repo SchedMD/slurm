@@ -777,11 +777,11 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	}
 #endif
 	desc->contiguous = opt.contiguous ? 1 : 0;
-	if (opt.core_spec != (uint16_t) NO_VAL)
+	if (opt.core_spec != NO_VAL16)
 		desc->core_spec = opt.core_spec;
-	desc->features = opt.constraints;
-	desc->cluster_features = opt.c_constraints;
-	desc->gres = opt.gres;
+	desc->features = xstrdup(opt.constraints);
+	desc->cluster_features = xstrdup(opt.c_constraints);
+	desc->gres = xstrdup(opt.gres);
 	if (opt.immediate == 1)
 		desc->immediate = 1;
 	desc->name = xstrdup(opt.job_name);
@@ -798,9 +798,9 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.wait4switch >= 0)
 		desc->wait4switch = opt.wait4switch;
 
-	desc->req_nodes = opt.nodelist;
-	desc->exc_nodes = opt.exc_nodes;
-	desc->partition = opt.partition;
+	desc->req_nodes = xstrdup(opt.nodelist);
+	desc->exc_nodes = xstrdup(opt.exc_nodes);
+	desc->partition = xstrdup(opt.partition);
 	desc->min_nodes = opt.min_nodes;
 
 	if (opt.max_nodes)
@@ -814,7 +814,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->dependency = xstrdup(opt.dependency);
 
 	if (opt.mem_bind)
-		desc->mem_bind       = opt.mem_bind;
+		desc->mem_bind       = xstrdup(opt.mem_bind);
 	if (opt.mem_bind_type)
 		desc->mem_bind_type  = opt.mem_bind_type;
 	if (opt.plane_size != NO_VAL)
@@ -930,6 +930,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->warn_time = opt.warn_time;
 
 	if (opt.spank_job_env_size) {
+		/* NOTE: Not copying array, but shared memory */
 		desc->spank_job_env      = opt.spank_job_env;
 		desc->spank_job_env_size = opt.spank_job_env_size;
 	}
