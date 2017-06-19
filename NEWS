@@ -24,6 +24,8 @@ documents those changes that are of interest to users and administrators.
     the requested value, instead of always setting one (srun).
  -- Correct error message when ClusterName in configuration files does not match
     the name in the slurmctld daemon's state save file.
+ -- Better checking when a job is finishing to avoid underflow on job's
+    submitted to a QOS/association.
 
 * Changes in Slurm 17.02.4
 ==========================
