@@ -5462,8 +5462,9 @@ unpack_error:
 	if (!ignore_state_errors)
 		fatal("Incomplete assoc usage state file, start with '-i' to ignore this");
 	error("Incomplete assoc usage state file");
-	if (buffer)
-		free_buf(buffer);
+
+	free_buf(buffer);
+
 	xfree(tmp_str);
 	assoc_mgr_unlock(&locks);
 	return SLURM_ERROR;
@@ -5577,8 +5578,9 @@ unpack_error:
 	if (!ignore_state_errors)
 		fatal("Incomplete QOS usage state file, start with '-i' to ignore this");
 	error("Incomplete QOS usage state file");
-	if (buffer)
-		free_buf(buffer);
+
+	free_buf(buffer);
+
 	if (itr)
 		list_iterator_destroy(itr);
 	xfree(tmp_str);
@@ -5786,8 +5788,9 @@ unpack_error:
 	if (!ignore_state_errors)
 		fatal("Incomplete assoc mgr state file, start with '-i' to ignore this");
 	error("Incomplete assoc mgr state file");
-	if (buffer)
-		free_buf(buffer);
+
+	free_buf(buffer);
+
 	assoc_mgr_unlock(&locks);
 	return SLURM_ERROR;
 }
