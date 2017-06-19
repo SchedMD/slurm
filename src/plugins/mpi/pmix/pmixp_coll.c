@@ -44,6 +44,7 @@
 
 static void _progress_fan_in(pmixp_coll_t *coll);
 static void _progres_fan_out(pmixp_coll_t *coll);
+static void _reset_coll(pmixp_coll_t *coll);
 
 static int _hostset_from_ranges(const pmix_proc_t *procs, size_t nprocs,
 				hostlist_t *hl_out)
@@ -119,7 +120,7 @@ static void _fan_out_finished(pmixp_coll_t *coll)
 	coll->seq++; /* move to the next collective */
 	switch (coll->state) {
 	case PMIXP_COLL_FAN_OUT:
-		coll->state = PMIXP_COLL_SYNC;
+		_reset_coll(coll);
 		break;
 	case PMIXP_COLL_FAN_OUT_IN:
 		/* we started to receive data for the new collective
@@ -688,8 +689,17 @@ void pmixp_coll_reset_if_to(pmixp_coll_t *coll, time_t ts)
 
 	if (ts - coll->ts > pmixp_info_timeout()) {
 		/* respond to the libpmix */
-		coll->cbfunc(PMIX_ERR_TIMEOUT, NULL, 0, coll->cbdata, NULL,
-			     NULL);
+		if (coll->contrib_local && coll->cbfunc) {
+			/* Call the callback only if:
+			 * - we were asked to do that (coll->cbfunc != NULL);
+			 * - local contribution was received.
+			 * TODO: we may want to mark this event to respond with
+			 * to the next local request immediately and with the
+			 * proper (status == PMIX_ERR_TIMEOUT)
+			 */
+			coll->cbfunc(PMIX_ERR_TIMEOUT, NULL, 0, coll->cbdata, NULL,
+				     NULL);
+		}
 		/* drop the collective */
 		_reset_coll(coll);
 		/* report the timeout event */
