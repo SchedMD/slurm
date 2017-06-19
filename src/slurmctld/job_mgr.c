@@ -10100,7 +10100,14 @@ void purge_old_job(void)
  */
 extern int purge_job_record(uint32_t job_id)
 {
-	return list_delete_all(job_list, &list_find_job_id, (void *) &job_id);
+	int count = 0;
+	count = list_delete_all(job_list, &list_find_job_id, (void *)&job_id);
+	if (count) {
+		last_job_update = time(NULL);
+		slurm_cond_signal(&purge_thread_cond);
+	}
+
+	return count;
 }
 
 
