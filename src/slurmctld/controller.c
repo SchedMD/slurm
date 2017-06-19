@@ -2639,8 +2639,8 @@ static bool _verify_clustername(void)
 			      "StateSaveLocation WILL CAUSE CORRUPTION.\n"
 			      "Remove %s to override this safety check if "
 			      "this is intentional (e.g., the ClusterName "
-			      "has changed).", name,
-			      slurmctld_conf.cluster_name, filename);
+			      "has changed).", slurmctld_conf.cluster_name,
+			      name, filename);
 			exit(1);
 		}
 	} else if (slurmctld_conf.cluster_name)
