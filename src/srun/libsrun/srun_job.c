@@ -572,11 +572,52 @@ static void _set_step_opts(opt_t *opt_local)
 	}
 }
 
+/*
+ * Create the job step(s). For a heterogeneous job, each step is requested in
+ * a separate RPC. create_job_step() references "opt", so we need to match up
+ * the job allocation request with its requested options.
+ */
+static int _create_job_step(srun_job_t *job, List srun_job_list)
+{
+	ListIterator opt_iter, job_iter;
+	opt_t *opt_local;
+	int rc = 0;
+
+	if (srun_job_list) {
+		if (!opt_list) {
+			fatal("%s: have srun_job_list, but no opt_list",
+			      __func__);
+		}
+		job_iter  = list_iterator_create(srun_job_list);
+		opt_iter  = list_iterator_create(opt_list);
+		while ((opt_local = (opt_t *) list_next(opt_iter))) {
+			job = (srun_job_t *) list_next(job_iter);
+			if (!job) {
+				fatal("%s: job allocation count does not match request count (%d != %d)",
+				      __func__, list_count(srun_job_list),
+				      list_count(opt_list));
+			}
+			memcpy(&opt, opt_local, sizeof(opt_t));
+			rc = create_job_step(job, true);
+			memcpy(opt_local, &opt, sizeof(opt_t));
+			if (rc < 0)
+				break;
+		}
+		list_iterator_destroy(job_iter);
+		list_iterator_destroy(opt_iter);
+		return rc;
+	} else if (job) {
+		return create_job_step(job, true);
+	} else {
+		return -1;
+	}
+}
+
 extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
 			    bool slurm_started, bool handle_signals)
 {
 	resource_allocation_response_msg_t *resp;
-	List job_resp_list = NULL;
+	List job_resp_list = NULL, srun_job_list = NULL;
 	ListIterator opt_iter, resp_iter;
 	srun_job_t *job = NULL;
 	int pack_offset = -1;
@@ -595,20 +636,20 @@ extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
 		exit (0);
 
 	} else if (opt.no_alloc) {
+		if (opt_list)
+			fatal("--no-allocation option not supported for heterogeneous jobs");
 		info("do not allocate resources");
-//FIXME: Need to flesh out pack job support
-if (opt_list) exit(0);
 		job = job_create_noalloc();
 		if (job == NULL) {
 			error("Job creation failure.");
 			exit(error_exit);
 		}
-		if (create_job_step(job, false) < 0) {
+		if (create_job_step(job, false) < 0)
 			exit(error_exit);
-		}
 	} else if ((resp = existing_allocation())) {
 //FIXME: Need to flesh out pack job support
 if (opt_list) exit(0);
+		my_job_id = resp->job_id;
 		if (resp->working_cluster_rec)
 			slurm_setup_remote_working_cluster(resp);
 
@@ -686,16 +727,18 @@ if (opt_list) exit(0);
 			job_resp_list = allocate_pack_nodes(handle_signals);
 			if (!job_resp_list)
 				exit(error_exit);
-			*got_alloc = true;
+			srun_job_list = list_create(NULL);
 			opt_iter  = list_iterator_create(opt_list);
 			resp_iter = list_iterator_create(job_resp_list);
 			while ((resp = (resource_allocation_response_msg_t *)
 				       list_next(resp_iter))) {
+				if (my_job_id == 0) {
+					my_job_id = resp->job_id;
+					*got_alloc = true;
+				}
 				opt_local = (opt_t *) list_next(opt_iter);
 				if (!opt_local)
 					break;
-				if (my_job_id == 0)
-					my_job_id = resp->job_id;
 				if (!global_resp)	/* Used by Cray/ALPS */
 					global_resp = resp;
 				_print_job_information(resp);
@@ -704,8 +747,8 @@ if (opt_list) exit(0);
 					slurm_complete_job(my_job_id, 1);
 					exit(error_exit);
 				}
-//FIXME: Need job list for pack jobs
-if (!job) job = job_create_allocation(resp);
+				job = job_create_allocation(resp);
+				list_append(srun_job_list, job);
 				_set_step_opts(opt_local);
 			}
 			list_iterator_destroy(opt_iter);
@@ -715,6 +758,7 @@ if (!job) job = job_create_allocation(resp);
 				exit(error_exit);
 			global_resp = resp;
 			*got_alloc = true;
+			my_job_id = resp->job_id;
 			_print_job_information(resp);
 			_set_env_vars(resp, -1);
 			if (_validate_relative(resp, &opt)) {
@@ -731,13 +775,23 @@ if (!job) job = job_create_allocation(resp);
 		if (_become_user () < 0)
 			info("Warning: Unable to assume uid=%u", opt.uid);
 
-		if (!job || create_job_step(job, true) < 0) {
-			slurm_complete_job(resp->job_id, 1);
+		if (_create_job_step(job, srun_job_list) < 0) {
+			slurm_complete_job(my_job_id, 1);
 			exit(error_exit);
 		}
 
 		global_resp = NULL;
-		slurm_free_resource_allocation_response_msg(resp);
+		if (opt_list) {
+			resp_iter = list_iterator_create(job_resp_list);
+			while ((resp = (resource_allocation_response_msg_t *)
+				       list_next(resp_iter))) {
+				slurm_free_resource_allocation_response_msg(
+									resp);
+			}
+			list_iterator_destroy(resp_iter);
+		} else {
+			slurm_free_resource_allocation_response_msg(resp);
+		}
 	}
 
 	/*
@@ -751,9 +805,11 @@ if (!job) job = job_create_allocation(resp);
 		 * Spawn process to insure clean-up of job and/or step
 		 * on abnormal termination
 		 */
+//FIXME: Pack job clean up?
 		shepherd_fd = _shepherd_spawn(job, *got_alloc);
 	}
 
+//FIXME: Return List?
 	*p_job = job;
 }
 

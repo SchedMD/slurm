@@ -487,26 +487,29 @@ static void _opt_default(void)
 		_verbose		= 0;
 	}
 
-	/* All other options must be specified individually for each component
-	 * of the job */
-	xfree(opt.alloc_nodelist);
+	/*
+	 * All other options must be specified individually for each component
+	 * of the job. Do not use xfree() as the pointers have been copied
+	 */
+	opt.alloc_nodelist		= NULL;
 	opt.accel_bind_type		= 0;
-	xfree(opt.bcast_file);
+	opt.bcast_file			= NULL;
 	opt.bcast_flag			= false;
 	opt.accel_bind_type		= 0;
-	xfree(opt.blrtsimage);
-	xfree(opt.burst_buffer);
+	opt.blrtsimage			= NULL;
+	opt.burst_buffer		= NULL;
 	for (i = 0; i < HIGHEST_DIMENSIONS; i++) {
 		opt.conn_type[i]	= NO_VAL16;
 		opt.geometry[i]		= 0;
 	}
 	opt.compress			= 0;
-	xfree(opt.constraints);
+
+	opt.constraints			= NULL;
 	opt.contiguous			= false;
 	opt.core_spec			= NO_VAL16;
 	opt.core_spec_set		= false;
 	opt.cores_per_socket		= NO_VAL; /* requested cores */
-	xfree(opt.cpu_bind);
+	opt.cpu_bind			= NULL;
 	opt.cpu_bind_type		= 0;
 	opt.cpu_bind_type_set		= false;
 	opt.exclusive			= false;
@@ -518,36 +521,36 @@ static void _opt_default(void)
 	opt.distribution		= SLURM_DIST_UNKNOWN;
 	opt.extra_set			= false;
 	/* opt.geometry[i]		= 0;	See above */
-	xfree(opt.gres);
-	xfree(opt.hint_env);
+	opt.gres			= NULL;
+	opt.hint_env			= NULL;
 	opt.hint_set			= false;
-	xfree(opt.hostfile);
+	opt.hostfile			= NULL;
 	opt.exclusive			= false;
 	opt.job_flags			= 0;
 	opt.launch_cmd			= false;
-	xfree(opt.launcher_opts);
-	xfree(opt.linuximage);
+	opt.launcher_opts		= NULL;
+	opt.linuximage			= NULL;
 	launch_params = slurm_get_launch_params();
 	if (launch_params && strstr(launch_params, "mem_sort"))
 		opt.mem_bind_type	|= MEM_BIND_SORT;
-	xfree(launch_params);
-	xfree(opt.licenses);
+	launch_params			= NULL;
+	opt.licenses			= NULL;
 	opt.mail_type			= 0;
-	xfree(opt.mail_user);
+	opt.mail_user			= NULL;
 	opt.max_threads			= MAX_THREADS;
 	pmi_server_max_threads(opt.max_threads);
 	opt.max_nodes			= 0;
-	xfree(opt.mem_bind);
+	opt.mem_bind			= NULL;
 	opt.mem_bind_type		= 0;
 	opt.mem_per_cpu			= NO_VAL64;
 	opt.min_nodes			= 1;
-	xfree(opt.mloaderimage);
+	opt.mloaderimage		= NULL;
 	opt.multi_prog			= false;
 	opt.multi_prog_cmds		= 0;
-	xfree(opt.network);
+	opt.network			= NULL;
 	opt.network_set_env		= false;
 	opt.no_rotate			= false;
-	xfree(opt.nodelist);
+	opt.nodelist			= NULL;
 	opt.nodes_set			= false;
 	opt.nodes_set_env		= false;
 	opt.nodes_set_opt		= false;
@@ -558,18 +561,18 @@ static void _opt_default(void)
 	opt.ntasks_per_socket		= NO_VAL;
 	opt.ntasks_set			= false;
 	opt.overcommit			= false;
-	xfree(opt.partition);
+	opt.partition			= NULL;
 	opt.plane_size			= NO_VAL;
 	opt.pn_min_cpus			= NO_VAL;
 	opt.pn_min_memory		= NO_VAL64;
 	opt.pn_min_tmp_disk		= NO_VAL;
 	opt.power_flags			= 0;
-	xfree(opt.ramdiskimage);
+	opt.ramdiskimage		= NULL;
 	opt.relative			= NO_VAL;
 	opt.relative_set		= false;
 	opt.req_switch			= -1;
 	opt.resv_port_cnt		= NO_VAL;
-	xfree(opt.restart_dir);
+	opt.restart_dir			= NULL;
 	opt.shared			= NO_VAL16;
 	opt.sockets_per_node		= NO_VAL; /* requested sockets */
 	opt.threads_per_core		= NO_VAL; /* requested threads */
