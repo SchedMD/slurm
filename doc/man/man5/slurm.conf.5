@@ -2614,6 +2614,10 @@ when locks are released) before discontinuing, even if maximum job counts have
 not been reached.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
 The default value is the value of bf_interval (which defaults to 30 seconds).
+NOTE: This needs to be high enough that scheduling isn't always disabled, and
+low enough that our interactive workload can get through in a reasonable period
+of time.  Certainly needs to be below 256 (the default RPC thread limit).
+Running around the middle (150) may give you good results.
 .TP
 \fBbf_min_age_reserve=#\fR
 The backfill and main scheduling logic will not reserve resources for pending
