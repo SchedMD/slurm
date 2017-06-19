@@ -197,6 +197,12 @@ further jobs in the job's partition. If it was the backfill scheduler attempting
 to allocate resources then the resources will be reserved for the job.
 </p>
 
+<p>
+If an origin cluster is down, then the remote siblings will cooridinate with a
+job's viable siblings to schedule the job. When the origin cluster comes back
+up, it will sync with the other siblings.
+</p>
+
 <h2><a name="jobrequeue">Job Requeue</a></h2>
 <p>
 When a federated job is requeued the origin cluster is notified and the origin

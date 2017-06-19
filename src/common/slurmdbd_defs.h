@@ -410,6 +410,9 @@ extern int slurm_open_slurmdbd_conn(const slurm_trigger_callbacks_t *callbacks);
 /* Close the SlurmDBD socket connection */
 extern int slurm_close_slurmdbd_conn(void);
 
+/* Return true if connection to slurmdbd is active, false otherwise. */
+extern bool slurmdbd_conn_active(void);
+
 /* Send an RPC to the SlurmDBD. Do not wait for the reply. The RPC
  * will be queued and processed later if the SlurmDBD is not responding.
  * NOTE: slurm_open_slurmdbd_conn() must have been called with make_agent set
