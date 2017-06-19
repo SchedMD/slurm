@@ -964,8 +964,6 @@ extern int load_all_job_state(void)
 	unlock_state_files();
 
 	job_id_sequence = MAX(job_id_sequence, slurmctld_conf.first_job_id);
-	if (error_code)
-		return error_code;
 
 	buffer = create_buf(data, data_size);
 	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
@@ -1021,7 +1019,7 @@ unpack_error:
  */
 extern int load_last_job_id( void )
 {
-	int data_allocated, data_read = 0, error_code = SLURM_SUCCESS;
+	int data_allocated, data_read = 0;
 	uint32_t data_size = 0;
 	int state_fd;
 	char *data = NULL, *state_file;
@@ -1066,9 +1064,6 @@ extern int load_last_job_id( void )
 	xfree(state_file);
 	unlock_state_files();
 
-	if (error_code)
-		return error_code;
-
 	buffer = create_buf(data, data_size);
 	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
 	debug3("Version string in job_state header is %s", ver_str);
@@ -1094,7 +1089,7 @@ extern int load_last_job_id( void )
 
 	xfree(ver_str);
 	free_buf(buffer);
-	return error_code;
+	return SLURM_SUCCESS;
 
 unpack_error:
 	if (!ignore_state_errors)
