@@ -1498,9 +1498,12 @@ More information about MPI use is available here
 .TP
 \fBMpiParams\fR
 MPI parameters.
-Used to identify ports used by OpenMPI only and the input format is
-"ports=12000\-12999" to identify a range of communication ports to be used.
-
+Used to identify ports used by older versions of OpenMPI and native
+Cray systems.  The input format is "ports=12000\-12999" to identify a range of
+communication ports to be used.
+NOTE: This is not needed for modern versions of OpenMPI, taking it out can cause
+a small boost in scheduling performance.
+NOTE: This is require for Cray's PMI.
 .TP
 \fBMsgAggregationParams\fR
 Message aggregation parameters. Message aggregation
