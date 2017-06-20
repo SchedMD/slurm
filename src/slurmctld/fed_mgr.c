@@ -2850,7 +2850,8 @@ static int _validate_cluster_names(char *clusters, uint64_t *cluster_bitmap)
 
 	xassert(clusters);
 
-	if (!xstrcasecmp(clusters, "all")) {
+	if (!xstrcasecmp(clusters, "all") ||
+	    (clusters && (*clusters == '\0'))) {
 		cluster_ids = _get_all_sibling_bits();
 		goto end_it;
 	}
@@ -3113,13 +3114,9 @@ static int _remove_inactive_sibs(void *object, void *arg)
 static uint64_t _get_viable_sibs(char *req_clusters, uint64_t feature_sibs,
 				 bool is_array_job, char **err_msg)
 {
-	uint64_t viable_sibs = 0;
-
+	uint64_t viable_sibs = _get_all_sibling_bits();
 	if (req_clusters)
 		_validate_cluster_names(req_clusters, &viable_sibs);
-	if (!viable_sibs)
-		/* viable sibs could be empty if req_clusters was cleared. */
-		viable_sibs = _get_all_sibling_bits();
 	if (feature_sibs)
 		viable_sibs &= feature_sibs;
 
@@ -3262,6 +3259,13 @@ static int _validate_cluster_features(char *spec_features,
 			*cluster_bitmap = feature_sibs;
 		return rc;
 	}
+
+	if (*spec_features == '\0') {
+		if (cluster_bitmap)
+			*cluster_bitmap = _get_all_sibling_bits();
+		return rc;
+	}
+
 	req_features = list_create(slurm_destroy_char);
 	slurm_addto_char_list(req_features, spec_features);
 
