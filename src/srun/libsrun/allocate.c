@@ -561,10 +561,6 @@ resource_allocation_response_msg_t *allocate_nodes(bool handle_signals)
 		else if (opt.mem_per_cpu != NO_VAL64)
 			opt.mem_per_cpu = (resp->pn_min_memory &
 					   (~MEM_PER_CPU));
-		/*
-		 * FIXME: timelimit should probably also be updated
-		 * here since it could also change.
-		 */
 
 #ifdef HAVE_BG
 		uint32_t node_cnt = 0;
@@ -750,10 +746,6 @@ List allocate_pack_nodes(bool handle_signals)
 			else if (opt_local->mem_per_cpu != NO_VAL64)
 				opt_local->mem_per_cpu =
 					(resp->pn_min_memory & (~MEM_PER_CPU));
-			/*
-			 * FIXME: timelimit should probably also be updated
-			 * here since it could also change.
-			 */
 
 #ifdef HAVE_BG
 			uint32_t node_cnt = 0;
