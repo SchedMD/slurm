@@ -581,7 +581,7 @@ static int _create_job_step(srun_job_t *job, List srun_job_list)
 {
 	ListIterator opt_iter, job_iter;
 	opt_t *opt_local;
-	int rc = 0;
+	int pack_offset = 0, rc = 0;
 
 	if (srun_job_list) {
 		if (!opt_list) {
@@ -597,17 +597,16 @@ static int _create_job_step(srun_job_t *job, List srun_job_list)
 				      __func__, list_count(srun_job_list),
 				      list_count(opt_list));
 			}
-			memcpy(&opt, opt_local, sizeof(opt_t));
-			rc = create_job_step(job, true);
-			memcpy(opt_local, &opt, sizeof(opt_t));
+			rc = create_job_step(job, true, opt_local, pack_offset);
 			if (rc < 0)
 				break;
+			pack_offset++;
 		}
 		list_iterator_destroy(job_iter);
 		list_iterator_destroy(opt_iter);
 		return rc;
 	} else if (job) {
-		return create_job_step(job, true);
+		return create_job_step(job, true, &opt, -1);
 	} else {
 		return -1;
 	}
@@ -644,7 +643,7 @@ extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
 			error("Job creation failure.");
 			exit(error_exit);
 		}
-		if (create_job_step(job, false) < 0)
+		if (create_job_step(job, false, &opt, -1) < 0)
 			exit(error_exit);
 	} else if ((resp = existing_allocation())) {
 //FIXME: Need to flesh out pack job support
@@ -706,7 +705,7 @@ if (opt_list) exit(0);
 			error("--begin is ignored because nodes"
 			      " are already allocated.");
 		}
-		if (!job || create_job_step(job, false) < 0)
+		if (!job || create_job_step(job, false, &opt, -1) < 0)
 			exit(error_exit);
 	} else {
 		/* Combined job allocation and job step launch */

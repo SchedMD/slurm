@@ -259,10 +259,12 @@ int srun(int ac, char **av)
 relaunch:
 	pre_launch_srun_job(job, 0, 1);
 
-	launch_common_set_stdio_fds(job, &cio_fds);
+	launch_common_set_stdio_fds(job, &cio_fds, &opt);
 
-	if (!launch_g_step_launch(job, &cio_fds, &global_rc, &step_callbacks)) {
-		if (launch_g_step_wait(job, got_alloc) == -1)
+	if (!launch_g_step_launch(job, &cio_fds, &global_rc, &step_callbacks,
+				  &opt)) {
+//FIXME: Needs pack job support
+		if (launch_g_step_wait(job, got_alloc, &opt, -1) == -1)
 			goto relaunch;
 	}
 

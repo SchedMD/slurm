@@ -168,95 +168,118 @@ static char *_get_cmd_protocol(char *cmd)
 	return protocol;
 }
 
+static void _setenv(const char *name, const char *value, int overwrite,
+		    int pack_offset)
+{
+	char *key = NULL;
+
+	if (pack_offset == -1) {
+		setenv(name, value, overwrite);
+	} else {
+		xstrfmtcat(key, "%s_PACK_GROUP_%d", name, pack_offset);
+		setenv(key, value, overwrite);
+		xfree(key);
+	}
+}
+
 /* Propagate srun options for use by POE by setting environment
  * variables, which are subsequently processed the libsrun/opt.c logic
  * as called from launch/slurm (by POE). */
-static void _propagate_srun_opts(uint32_t nnodes, uint32_t ntasks)
+static void _propagate_srun_opts(uint32_t nnodes, uint32_t ntasks,
+				 opt_t *opt_local, int pack_offset)
 {
 	char value[32];
 
-	if (opt.account)
-		setenv("SLURM_ACCOUNT", opt.account, 1);
-	if (opt.acctg_freq) {
-		snprintf(value, sizeof(value), "%s", opt.acctg_freq);
-		setenv("SLURM_ACCTG_FREQ", value, 1);
+	if (opt_local->account)
+		_setenv("SLURM_ACCOUNT", opt_local->account, 1, pack_offset);
+	if (opt_local->acctg_freq) {
+		snprintf(value, sizeof(value), "%s", opt_local->acctg_freq);
+		_setenv("SLURM_ACCTG_FREQ", value, 1, pack_offset);
 	}
-	if (opt.ckpt_dir)
-		setenv("SLURM_CHECKPOINT_DIR", opt.ckpt_dir, 1);
-	if (opt.ckpt_interval) {
-		snprintf(value, sizeof(value), "%d", opt.ckpt_interval);
-		setenv("SLURM_CHECKPOINT", value, 1);
+	if (opt_local->ckpt_dir)
+		_setenv("SLURM_CHECKPOINT_DIR", opt_local->ckpt_dir, 1,
+			pack_offset);
+	if (opt_local->ckpt_interval) {
+		snprintf(value, sizeof(value), "%d", opt_local->ckpt_interval);
+		_setenv("SLURM_CHECKPOINT", value, 1, pack_offset);
 	}
-	if (opt.cpus_per_task) {
-		snprintf(value, sizeof(value), "%d", opt.cpus_per_task);
-		setenv("SLURM_CPUS_PER_TASK", value, 1);
+	if (opt_local->cpus_per_task) {
+		snprintf(value, sizeof(value), "%d", opt_local->cpus_per_task);
+		_setenv("SLURM_CPUS_PER_TASK", value, 1, pack_offset);
 	}
-	if (opt.dependency)
-		setenv("SLURM_DEPENDENCY", opt.dependency, 1);
-	if (opt.distribution != SLURM_DIST_UNKNOWN) {
-		snprintf(value, sizeof(value), "%u", opt.distribution);
-		setenv("SLURM_DISTRIBUTION", value, 1);
+	if (opt_local->dependency)
+		_setenv("SLURM_DEPENDENCY", opt_local->dependency, 1,
+			pack_offset);
+	if (opt_local->distribution != SLURM_DIST_UNKNOWN) {
+		snprintf(value, sizeof(value), "%u", opt_local->distribution);
+		_setenv("SLURM_DISTRIBUTION", value, 1, pack_offset);
 	}
-	if (opt.exc_nodes)
-		setenv("SRUN_EXC_NODES", opt.exc_nodes, 1);
-	if (opt.exclusive)
-		setenv("SLURM_EXCLUSIVE", "1", 1);
-	if (opt.gres)
-		setenv("SLURM_GRES", opt.gres, 1);
-	if (opt.immediate)
-		setenv("SLURM_IMMEDIATE", "1", 1);
-	if (opt.job_name)
-		setenv("SLURM_JOB_NAME", opt.job_name, 1);
-	if (opt.mem_per_cpu > 0) {
-		snprintf(value, sizeof(value), "%"PRIu64, opt.mem_per_cpu);
-		setenv("SLURM_MEM_PER_CPU", value, 1);
+	if (opt_local->exc_nodes)
+		_setenv("SRUN_EXC_NODES", opt_local->exc_nodes, 1, pack_offset);
+	if (opt_local->exclusive)
+		_setenv("SLURM_EXCLUSIVE", "1", 1, pack_offset);
+	if (opt_local->gres)
+		_setenv("SLURM_GRES", opt_local->gres, 1, pack_offset);
+	if (opt_local->immediate)
+		_setenv("SLURM_IMMEDIATE", "1", 1, pack_offset);
+	if (opt_local->job_name)
+		_setenv("SLURM_JOB_NAME", opt_local->job_name, 1, pack_offset);
+	if (opt_local->mem_per_cpu > 0) {
+		snprintf(value, sizeof(value), "%"PRIu64,
+			 opt_local->mem_per_cpu);
+		_setenv("SLURM_MEM_PER_CPU", value, 1, pack_offset);
 	}
-	if (opt.pn_min_memory > 0) {
-		snprintf(value, sizeof(value), "%"PRIu64, opt.pn_min_memory);
-		setenv("SLURM_MEM_PER_NODE", value, 1);
+	if (opt_local->pn_min_memory > 0) {
+		snprintf(value, sizeof(value), "%"PRIu64,
+			 opt_local->pn_min_memory);
+		_setenv("SLURM_MEM_PER_NODE", value, 1, pack_offset);
 	}
-	if (opt.network)
-		setenv("SLURM_NETWORK", opt.network, 1);
+	if (opt_local->network)
+		_setenv("SLURM_NETWORK", opt_local->network, 1, pack_offset);
 	if (nnodes) {
 		snprintf(value, sizeof(value), "%u", nnodes);
-		setenv("SLURM_JOB_NUM_NODES", value, 1);
-		if (!opt.preserve_env)
-			setenv("SLURM_NNODES", value, 1);
+		_setenv("SLURM_JOB_NUM_NODES", value, 1, pack_offset);
+		if (!opt_local->preserve_env)
+			_setenv("SLURM_NNODES", value, 1, pack_offset);
 	}
-	if (opt.alloc_nodelist) {
-		setenv("SLURM_JOB_NODELIST", opt.alloc_nodelist, 1);
-		if (!opt.preserve_env)
-			setenv("SLURM_NODELIST", opt.alloc_nodelist, 1);
+	if (opt_local->alloc_nodelist) {
+		_setenv("SLURM_JOB_NODELIST", opt_local->alloc_nodelist, 1,
+			pack_offset);
+		if (!opt_local->preserve_env)
+			_setenv("SLURM_NODELIST", opt_local->alloc_nodelist, 1,
+				pack_offset);
 	}
-	if (!opt.preserve_env && ntasks) {
+	if (!opt_local->preserve_env && ntasks) {
 		snprintf(value, sizeof(value), "%u", ntasks);
-		setenv("SLURM_NTASKS", value, 1);
+		_setenv("SLURM_NTASKS", value, 1, pack_offset);
 	}
-	if (opt.overcommit)
-		setenv("SLURM_OVERCOMMIT", "1", 1);
-	if (opt.nodelist)
-		setenv("SRUN_WITH_NODES", opt.nodelist, 1);
-	if (opt.partition)
-		setenv("SLURM_PARTITION", opt.partition, 1);
-	if (opt.qos)
-		setenv("SLURM_QOS", opt.qos, 1);
-	if (opt.relative_set) {
-		snprintf(value, sizeof(value), "%u", opt.relative);
-		setenv("SRUN_RELATIVE", value, 1);
+	if (opt_local->overcommit)
+		_setenv("SLURM_OVERCOMMIT", "1", 1, pack_offset);
+	if (opt_local->nodelist)
+		_setenv("SRUN_WITH_NODES", opt_local->nodelist, 1, pack_offset);
+	if (opt_local->partition)
+		_setenv("SLURM_PARTITION", opt_local->partition, 1,
+			pack_offset);
+	if (opt_local->qos)
+		_setenv("SLURM_QOS", opt_local->qos, 1, pack_offset);
+	if (opt_local->relative_set) {
+		snprintf(value, sizeof(value), "%u", opt_local->relative);
+		_setenv("SRUN_RELATIVE", value, 1, pack_offset);
 	}
-	if (opt.resv_port_cnt >= 0) {
-		snprintf(value, sizeof(value), "%d", opt.resv_port_cnt);
-		setenv("SLURM_RESV_PORTS", value, 1);
+	if (opt_local->resv_port_cnt >= 0) {
+		snprintf(value, sizeof(value), "%d", opt_local->resv_port_cnt);
+		_setenv("SLURM_RESV_PORTS", value, 1, pack_offset);
 	}
-	if (opt.time_limit_str)
-		setenv("SLURM_TIMELIMIT", opt.time_limit_str, 1);
-	if (opt.wckey)
-		setenv("SLURM_WCKEY", opt.wckey, 1);
-	if (opt.cwd)
-		setenv("SLURM_WORKING_DIR", opt.cwd, 1);
-	if (opt.preserve_env) {
-		snprintf(value, sizeof(value), "%d", opt.preserve_env);
-		setenv("SLURM_PRESERVE_ENV", value, 1);
+	if (opt_local->time_limit_str)
+		_setenv("SLURM_TIMELIMIT", opt_local->time_limit_str, 1,
+			pack_offset);
+	if (opt_local->wckey)
+		_setenv("SLURM_WCKEY", opt_local->wckey, 1, pack_offset);
+	if (opt_local->cwd)
+		_setenv("SLURM_WORKING_DIR", opt_local->cwd, 1, pack_offset);
+	if (opt_local->preserve_env) {
+		snprintf(value, sizeof(value), "%d", opt_local->preserve_env);
+		_setenv("SLURM_PRESERVE_ENV", value, 1, pack_offset);
 	}
 }
 
@@ -293,39 +316,40 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern int launch_p_setup_srun_opt(char **rest)
+extern int launch_p_setup_srun_opt(char **rest, opt_t *opt_local)
 {
-	if (opt.test_only) {
+	if (opt_local->test_only) {
 		error("--test-only not supported with poe");
 		exit (1);
-	} else if (opt.no_alloc) {
+	} else if (opt_local->no_alloc) {
 		error("--no-allocate not supported with poe");
 		exit (1);
 	}
-	if (opt.slurmd_debug != LOG_LEVEL_QUIET) {
+	if (opt_local->slurmd_debug != LOG_LEVEL_QUIET) {
 		error("--slurmd-debug not supported with poe");
-		opt.slurmd_debug = LOG_LEVEL_QUIET;
+		opt_local->slurmd_debug = LOG_LEVEL_QUIET;
 	}
 
-	opt.argc++;
+	opt_local->argc++;
 
 	/* We need to do +2 here just in case multi-prog is needed (we
 	 * add an extra argv on so just make space for it).
 	 */
-	opt.argv = (char **) xmalloc((opt.argc + 2) * sizeof(char *));
+	opt_local->argv = (char **) xmalloc((opt_local->argc + 2) *
+					    sizeof(char *));
 
-	opt.argv[0] = xstrdup("poe");
+	opt_local->argv[0] = xstrdup("poe");
 	/* Set default job name to the executable name rather than
 	 * "poe" */
-	if (!opt.job_name_set_cmd && (1 < opt.argc)) {
-		opt.job_name_set_cmd = true;
-		opt.job_name = xstrdup(rest[0]);
+	if (!opt_local->job_name_set_cmd && (1 < opt_local->argc)) {
+		opt_local->job_name_set_cmd = true;
+		opt_local->job_name = xstrdup(rest[0]);
 	}
 
 	return 1;
 }
 
-extern int launch_p_handle_multi_prog_verify(int command_pos)
+extern int launch_p_handle_multi_prog_verify(int command_pos, opt_t *opt_local)
 {
 	return 0;
 }
@@ -333,19 +357,20 @@ extern int launch_p_handle_multi_prog_verify(int command_pos)
 
 extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 				    void (*signal_function)(int),
-				    sig_atomic_t *destroy_job)
+				    sig_atomic_t *destroy_job, opt_t *opt_local,
+				    int pack_offset)
 {
 	char dname[512], value[32];
 	char *protocol = "mpi";
-	uint32_t ntasks = opt.ntasks;
-	uint32_t nnodes = opt.min_nodes;
+	uint32_t ntasks = opt_local->ntasks;
+	uint32_t nnodes = opt_local->min_nodes;
 
-	if (opt.launch_cmd) {
+	if (opt_local->launch_cmd) {
 		int i;
 
-		xstrfmtcat(poe_cmd_line, "%s", opt.argv[0]);
-		for (i = 1; i < opt.argc; i++)
-			xstrfmtcat(poe_cmd_line, " %s", opt.argv[i]);
+		xstrfmtcat(poe_cmd_line, "%s", opt_local->argv[0]);
+		for (i = 1; i < opt_local->argc; i++)
+			xstrfmtcat(poe_cmd_line, " %s", opt_local->argv[i]);
 	}
 
 	if (job) {
@@ -386,17 +411,17 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 	 * 4) if only PAMI library is found (libpami.so) -> use 'pami'
 	 * 5) if only LAPI library is found (liblapi.so) -> use 'lapi'
 	 */
-	if (opt.multi_prog) {
+	if (opt_local->multi_prog) {
 		protocol = "multi";
 	} else {
-		protocol = _get_cmd_protocol(opt.argv[1]);
+		protocol = _get_cmd_protocol(opt_local->argv[1]);
 	}
-	debug("cmd:%s protocol:%s", opt.argv[1], protocol);
+	debug("cmd:%s protocol:%s", opt_local->argv[1], protocol);
 
-	if (opt.multi_prog) {
+	if (opt_local->multi_prog) {
 		int fd, k;
 
-		if (opt.launch_cmd) {
+		if (opt_local->launch_cmd) {
 			error("--launch_cmd not available "
 			      "when using a cmdfile");
 			return SLURM_ERROR;
@@ -422,44 +447,44 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 		 * the execute line. */
 		setenv("MP_NEWJOB", "parallel", 1);
 		setenv("MP_CMDFILE", cmd_fname, 1);
-		setenv("SLURM_CMDFILE", opt.argv[1], 1);
-		if (opt.argc) {
-			xfree(opt.argv[1]);
-			for (k = 1; k < opt.argc; k++)
-				opt.argv[k] = opt.argv[k + 1];
-			opt.argc--;
+		setenv("SLURM_CMDFILE", opt_local->argv[1], 1);
+		if (opt_local->argc) {
+			xfree(opt_local->argv[1]);
+			for (k = 1; k < opt_local->argc; k++)
+				opt_local->argv[k] = opt_local->argv[k + 1];
+			opt_local->argc--;
 		}
 	}
 
-	if (opt.shared != (uint16_t) NO_VAL) {
+	if (opt_local->shared != NO_VAL16) {
 		char *shared_cpu_use = "multiple";
 
-		if (opt.shared)
+		if (opt_local->shared)
 			shared_cpu_use = "unique";
 
 		setenv("MP_CPU_USE", shared_cpu_use, 1);
 
-		if (opt.launch_cmd)
+		if (opt_local->launch_cmd)
 			xstrfmtcat(poe_cmd_line, " -cpu_use %s",
 				   shared_cpu_use);
 	}
-	if (opt.network) {
+	if (opt_local->network) {
 		bool cau_set = false;
 		bool dev_type_set = false;
 		bool protocol_set = false;
 		char *type_ptr = NULL;
 		char *save_ptr = NULL, *token;
-		char *network_str = xstrdup(opt.network);
+		char *network_str = xstrdup(opt_local->network);
 		char *adapter_use = NULL;
 
-		if (strstr(opt.network, "dedicated"))
+		if (strstr(opt_local->network, "dedicated"))
 			adapter_use = "dedicated";
-		else if (strstr(opt.network, "shared"))
+		else if (strstr(opt_local->network, "shared"))
 			adapter_use = "shared";
 
 		if (adapter_use) {
 			setenv("MP_ADAPTER_USE", adapter_use, 1);
-			if (opt.launch_cmd)
+			if (opt_local->launch_cmd)
 				xstrfmtcat(poe_cmd_line, " -adapter_use %s",
 					   adapter_use);
 		}
@@ -469,7 +494,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 			/* bulk_xfer options */
 			if (!strncasecmp(token, "bulk_xfer", 9)) {
 				setenv("MP_USE_BULK_XFER", "yes", 1);
-				if (opt.launch_cmd)
+				if (opt_local->launch_cmd)
 					xstrfmtcat(poe_cmd_line,
 						   " -use_bulk_xfer yes");
 			/* device name options */
@@ -481,13 +506,13 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 				type_ptr = token + 8;
 				if (!xstrcasecmp(type_ptr, "ib")) {
 					setenv("MP_DEVTYPE", type_ptr, 1);
-					if (opt.launch_cmd)
+					if (opt_local->launch_cmd)
 						xstrfmtcat(poe_cmd_line,
 							   " -devtype %s",
 							   type_ptr);
 				} else if (!xstrcasecmp(type_ptr, "hfi")) {
 					setenv("MP_DEVTYPE", type_ptr, 1);
-					if (opt.launch_cmd)
+					if (opt_local->launch_cmd)
 						xstrfmtcat(poe_cmd_line,
 							   " -devtype %s",
 							   type_ptr);
@@ -499,7 +524,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 			} else if (!strncasecmp(token, "instances=", 10)) {
 				type_ptr = token + 10;
 				setenv("MP_INSTANCES", type_ptr, 1);
-				if (opt.launch_cmd) {
+				if (opt_local->launch_cmd) {
 					xstrfmtcat(poe_cmd_line,
 						   " -instances %s",
 						   type_ptr);
@@ -510,12 +535,12 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 				  !xstrcasecmp(token, "ipv4")  ||
 				  !xstrcasecmp(token, "ipv6")) {
 				setenv("MP_EUILIB", "ip", 1);
-				if (opt.launch_cmd)
+				if (opt_local->launch_cmd)
 					xstrfmtcat(poe_cmd_line,
 						   " -euilib ip");
 			} else if (!xstrcasecmp(token, "us")) {
 				setenv("MP_EUILIB", "us", 1);
-				if (opt.launch_cmd)
+				if (opt_local->launch_cmd)
 					xstrfmtcat(poe_cmd_line,
 						   " -euilib us");
 			/* protocol options
@@ -544,18 +569,18 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 			/* adapter options */
 			} else if (!xstrcasecmp(token, "sn_all")) {
 				setenv("MP_EUIDEVICE", "sn_all", 1);
-				if (opt.launch_cmd)
+				if (opt_local->launch_cmd)
 					xstrfmtcat(poe_cmd_line,
 						   " -euidevice sn_all");
 			} else if (!xstrcasecmp(token, "sn_single")) {
 				setenv("MP_EUIDEVICE", "sn_single", 1);
-				if (opt.launch_cmd)
+				if (opt_local->launch_cmd)
 					xstrfmtcat(poe_cmd_line,
 						   " -euidevice sn_single");
 			/* Collective Acceleration Units (CAU) */
 			} else if (!strncasecmp(token, "cau=", 4)) {
 				setenv("MP_COLLECTIVE_GROUPS", token + 4, 1);
-				if (opt.launch_cmd)
+				if (opt_local->launch_cmd)
 					xstrfmtcat(poe_cmd_line,
 						   " -collective_groups %s",
 						   token + 4);
@@ -564,7 +589,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 			/* Immediate Send Slots Per Window */
 			} else if (!strncasecmp(token, "immed=", 6)) {
 				setenv("MP_IMM_SEND_BUFFERS", token + 6, 1);
-				if (opt.launch_cmd)
+				if (opt_local->launch_cmd)
 					xstrfmtcat(poe_cmd_line,
 						   " -imm_send_buffers %s",
 						   token + 6);
@@ -583,11 +608,11 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 			 * error. User can always specify a devtype in the
 			 * --network option to avoid possible invalid value */
 			setenv("MP_DEVTYPE", type_ptr, 1);
-			if (opt.launch_cmd)
+			if (opt_local->launch_cmd)
 				xstrcat(poe_cmd_line, " -devtype hfi");
 		}
 
-		if (opt.launch_cmd)
+		if (opt_local->launch_cmd)
 			xstrfmtcat(poe_cmd_line, " -msg_api %s", protocol);
 		if (protocol_set)
 			xfree(protocol);
@@ -596,16 +621,17 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 	} else {
 		if (xstrcmp(protocol, "multi")) {
 			setenv("MP_MSG_API", protocol, 0);
-			if (opt.launch_cmd)
+			if (opt_local->launch_cmd)
 				xstrfmtcat(poe_cmd_line,
 					   " -msg_api %s", protocol);
 		}
 	}
 
-	if (opt.nodelist &&
-	    ((opt.distribution & SLURM_DIST_STATE_BASE)==SLURM_DIST_ARBITRARY)) {
+	if (opt_local->nodelist &&
+	    ((opt_local->distribution & SLURM_DIST_STATE_BASE) ==
+	     SLURM_DIST_ARBITRARY)) {
 		bool destroy_hostfile = 0;
-		if (!opt.hostfile) {
+		if (!opt_local->hostfile) {
 			char *host_name, *host_line;
 			pid_t pid = getpid();
 			hostlist_t hl;
@@ -613,13 +639,14 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 
 			destroy_hostfile = 1;
 
-			hl = hostlist_create(opt.nodelist);
+			hl = hostlist_create(opt_local->nodelist);
 			if (!hl)
-				fatal("Invalid nodelist: %s", opt.nodelist);
-			xstrfmtcat(opt.hostfile, "slurm_hostlist.%u",
+				fatal("Invalid nodelist: %s",
+				      opt_local->nodelist);
+			xstrfmtcat(opt_local->hostfile, "slurm_hostlist.%u",
 				   (uint32_t) pid);
-			if ((fd = creat(opt.hostfile, 0600)) < 0)
-				fatal("creat(%s): %m", opt.hostfile);
+			if ((fd = creat(opt_local->hostfile, 0600)) < 0)
+				fatal("creat(%s): %m", opt_local->hostfile);
 			host_line = NULL;
 			while ((host_name = hostlist_shift(hl))) {
 				if (host_line)
@@ -637,37 +664,39 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 					if ((errno == EAGAIN) ||
 					    (errno == EINTR))
 						continue;
-					fatal("write(%s): %m", opt.hostfile);
+					fatal("write(%s): %m",
+					      opt_local->hostfile);
 				}
 				offset += wrote;
 			}
 			xfree(host_line);
 			close(fd);
 		}
-		debug2("using hostfile %s", opt.hostfile);
-		setenv("MP_HOSTFILE", opt.hostfile, 1);
-		if (opt.launch_cmd) {
-			xstrfmtcat(poe_cmd_line, " -hfile %s", opt.hostfile);
+		debug2("using hostfile %s", opt_local->hostfile);
+		setenv("MP_HOSTFILE", opt_local->hostfile, 1);
+		if (opt_local->launch_cmd) {
+			xstrfmtcat(poe_cmd_line, " -hfile %s",
+				   opt_local->hostfile);
 			if (destroy_hostfile)
 				info("WARNING: hostlist file %s was created.  "
 				     "User is responsible to remove it when "
-				     "done.", opt.hostfile);
+				     "done.", opt_local->hostfile);
 		} else if (destroy_hostfile)
-			setenv("SRUN_DESTROY_HOSTFILE", opt.hostfile, 1);
+			setenv("SRUN_DESTROY_HOSTFILE", opt_local->hostfile, 1);
 
 		/* RESD has to be set to yes or for some reason poe
 		   thinks things are already set up and then we are
 		   screwed.
 		*/
 		setenv("MP_RESD", "yes", 1);
-		if (opt.launch_cmd)
+		if (opt_local->launch_cmd)
 			xstrcat(poe_cmd_line, " -resd yes");
 		/* FIXME: This next line is here just for debug
 		 * purpose.  It makes it so each task has a separate
 		 * line. */
 		setenv("MP_STDOUTMODE", "unordered", 1);
 		/* Just in case we didn't specify a file in srun. */
-		setenv("SLURM_ARBITRARY_NODELIST", opt.nodelist, 1);
+		setenv("SLURM_ARBITRARY_NODELIST", opt_local->nodelist, 1);
 	} else {
 		/* Since poe doesn't need to know about the partition and it
 		   really needs to have RMPOOL set just set it to something.
@@ -675,82 +704,82 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 		   hostlist like above.
 		*/
 		setenv("MP_RMPOOL", "SLURM", 1);
-		if (opt.launch_cmd)
+		if (opt_local->launch_cmd)
 			xstrfmtcat(poe_cmd_line, " -rmpool slurm");
 	}
 
-	if (opt.msg_timeout) {
-		snprintf(value, sizeof(value), "%d", opt.msg_timeout);
+	if (opt_local->msg_timeout) {
+		snprintf(value, sizeof(value), "%d", opt_local->msg_timeout);
 		setenv("MP_TIMEOUT", value, 1);
 		/* There is no equivelent cmd line option */
 	}
-	if (opt.immediate) {
+	if (opt_local->immediate) {
 		setenv("MP_RETRY", "0", 1);
-		if (opt.launch_cmd)
+		if (opt_local->launch_cmd)
 			xstrfmtcat(poe_cmd_line, " -retry 0");
 	}
-	if (opt.labelio) {
+	if (opt_local->labelio) {
 		setenv("MP_LABELIO", "yes", 0);
-		if (opt.launch_cmd)
+		if (opt_local->launch_cmd)
 			xstrfmtcat(poe_cmd_line, " -labelio yes");
 	}
 	if (nnodes) {
 		snprintf(value, sizeof(value), "%u", nnodes);
 		setenv("MP_NODES", value, 1);
-		if (opt.launch_cmd)
+		if (opt_local->launch_cmd)
 			xstrfmtcat(poe_cmd_line, " -nodes %s", value);
 	}
 	if (ntasks) {
 		snprintf(value, sizeof(value), "%u", ntasks);
 		setenv("MP_PROCS", value, 1);
-		if (opt.launch_cmd)
+		if (opt_local->launch_cmd)
 			xstrfmtcat(poe_cmd_line, " -procs %s", value);
 	}
-	if (opt.cpu_bind_type) {
+	if (opt_local->cpu_bind_type) {
 		/* POE supports a limited subset of CPU binding options */
-		opt.cpu_bind_type &= (CPU_BIND_TO_THREADS |
+		opt_local->cpu_bind_type &= (CPU_BIND_TO_THREADS |
 				      CPU_BIND_TO_CORES   |
 				      CPU_BIND_RANK);
 	}
-	if (opt.cpu_bind_type) {
+	if (opt_local->cpu_bind_type) {
 		char *units;
 		int count = 1;
 
-		if (opt.cpu_bind_type & CPU_BIND_TO_CORES)
+		if (opt_local->cpu_bind_type & CPU_BIND_TO_CORES)
 			units = "core";
 		else
 			units = "cpu";
 
-		if (opt.cpus_per_task)
-			count = MAX(opt.cpus_per_task, 1);
+		if (opt_local->cpus_per_task)
+			count = MAX(opt_local->cpus_per_task, 1);
 		snprintf(value, sizeof(value), "%s:%d", units, count);
 		setenv("MP_TASK_AFFINITY", value, 1);
 		setenv("MP_BINDPROC", "yes", 1);
-		if (opt.launch_cmd) {
+		if (opt_local->launch_cmd) {
 			xstrfmtcat(poe_cmd_line, " -task_affinity %s", value);
 			xstrfmtcat(poe_cmd_line, " -bindproc yes");
 		}
 	}
-	if (opt.ntasks_per_node != NO_VAL) {
-		snprintf(value, sizeof(value), "%u", opt.ntasks_per_node);
+	if (opt_local->ntasks_per_node != NO_VAL) {
+		snprintf(value, sizeof(value), "%u", opt_local->ntasks_per_node);
 		setenv("MP_TASKS_PER_NODE", value, 1);
-		if (opt.launch_cmd)
+		if (opt_local->launch_cmd)
 			xstrfmtcat(poe_cmd_line, " -tasks_per_node %s", value);
 	}
-	if (opt.unbuffered) {
+	if (opt_local->unbuffered) {
 		setenv("MP_STDOUTMODE", "unordered", 1);
-		if (opt.launch_cmd)
+		if (opt_local->launch_cmd)
 			xstrfmtcat(poe_cmd_line,
 				   " -stdoutmode unordered");
 	}
 
-	_propagate_srun_opts(nnodes, ntasks);
+	_propagate_srun_opts(nnodes, ntasks, opt_local, pack_offset);
 	setenv("SLURM_STARTED_STEP", "YES", 1);
-	//disable_status = opt.disable_status;
-	//quit_on_intr = opt.quit_on_intr;
-	//srun_jobid = xstrdup(opt.jobid);
+	//disable_status = opt_local->disable_status;
+	//quit_on_intr = opt_local->quit_on_intr;
+	//srun_jobid = xstrdup(opt_local->jobid);
 
-	if (opt.launch_cmd) {
+	if (opt_local->launch_cmd) {
 		printf("%s\n", poe_cmd_line);
 		xfree(poe_cmd_line);
 
@@ -759,11 +788,11 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
  	return SLURM_SUCCESS;
 }
 
-static void _build_user_env(void)
+static void _build_user_env(opt_t *opt_local)
 {
 	char *tmp_env, *tok, *save_ptr = NULL, *eq_ptr, *value;
 
-	tmp_env = xstrdup(opt.export_env);
+	tmp_env = xstrdup(opt_local->export_env);
 	tok = strtok_r(tmp_env, ",", &save_ptr);
 	while (tok) {
 		if (!xstrcasecmp(tok, "NONE"))
@@ -779,14 +808,15 @@ static void _build_user_env(void)
 	xfree(tmp_env);
 }
 
-extern int launch_p_step_launch(
-	srun_job_t *job, slurm_step_io_fds_t *cio_fds, uint32_t *global_rc,
-	slurm_step_launch_callbacks_t *step_callbacks)
+extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
+				uint32_t *global_rc,
+				slurm_step_launch_callbacks_t *step_callbacks,
+				opt_t *opt_local)
 {
 	int rc = 0;
 
-	if (opt.export_env)
-		_build_user_env();
+	if (opt_local->export_env)
+		_build_user_env(opt_local);
 
 	poe_pid = fork();
 	if (poe_pid < 0) {
@@ -811,7 +841,7 @@ extern int launch_p_step_launch(
 			return 1;
 		}
 
-		execvp(opt.argv[0], opt.argv);
+		execvp(opt_local->argv[0], opt_local->argv);
 		error("execv(poe) error: %m");
 		return 1;
 	}
@@ -819,7 +849,8 @@ extern int launch_p_step_launch(
 	return rc;
 }
 
-extern int launch_p_step_wait(srun_job_t *job, bool got_alloc)
+extern int launch_p_step_wait(srun_job_t *job, bool got_alloc, opt_t *opt_local,
+			      int pack_offset)
 {
 	return SLURM_SUCCESS;
 }

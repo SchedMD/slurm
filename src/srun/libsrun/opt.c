@@ -296,7 +296,7 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 		/* Massage ntasks value earlier than normal */
 		if (!opt.ntasks_set)
 			opt.ntasks = _get_task_count();
-		launch_g_create_job_step(NULL, 0, NULL, NULL);
+		launch_g_create_job_step(NULL, 0, NULL, NULL, &opt, -1);
 		exit(0);
 	}
 
@@ -2142,7 +2142,7 @@ static void _opt_args(int argc, char **argv)
 		fatal("Unable to load launch plugin, check LaunchType "
 		      "configuration");
 	}
-	command_pos = launch_g_setup_srun_opt(rest);
+	command_pos = launch_g_setup_srun_opt(rest, &opt);
 
 	/* Since this is needed on an emulated system don't put this code in
 	 * the launch plugin.
@@ -2186,7 +2186,7 @@ static void _opt_args(int argc, char **argv)
 	}
 #else
 	/* may exit() if an error with the multi_prog script */
-	(void) launch_g_handle_multi_prog_verify(command_pos);
+	(void) launch_g_handle_multi_prog_verify(command_pos, &opt);
 
 	if (!opt.multi_prog && (test_exec || opt.bcast_flag)) {
 		if ((fullpath = search_path(opt.cwd, opt.argv[command_pos],

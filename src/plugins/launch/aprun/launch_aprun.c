@@ -93,17 +93,17 @@ extern void launch_p_fwd_signal(int signal);
 /* Convert a SLURM hostlist expression into the equivalent node index
  * value expression.
  */
-static char *_get_nids(char *nodelist)
+static char *_get_nids(opt_t *opt_local)
 {
 	hostlist_t hl;
 	char *nids = NULL;
 	int node_cnt;
 
-	if (!nodelist)
+	if (!opt_local->nodelist)
 		return NULL;
-	hl = hostlist_create(nodelist);
+	hl = hostlist_create(opt_local->nodelist);
 	if (!hl) {
-		error("Invalid hostlist: %s", nodelist);
+		error("Invalid hostlist: %s", opt_local->nodelist);
 		return NULL;
 	}
 	//info("input hostlist: %s", nodelist);
@@ -113,13 +113,13 @@ static char *_get_nids(char *nodelist)
 	   So if it doesn't set it.
 	*/
 	node_cnt = hostlist_count(hl);
-	if (opt.nodes_set_opt && (node_cnt != opt.min_nodes)) {
+	if (opt_local->nodes_set_opt && (node_cnt != opt_local->min_nodes)) {
 		error("You requested %d nodes and %d hosts.  These numbers "
 		      "must be the same, so setting number of nodes to %d",
-		      opt.min_nodes, node_cnt, node_cnt);
+		      opt_local->min_nodes, node_cnt, node_cnt);
 	}
-	opt.min_nodes = node_cnt;
-	opt.nodes_set = 1;
+	opt_local->min_nodes = node_cnt;
+	opt_local->nodes_set = 1;
 
 	nids = cray_nodelist2nids(hl, NULL);
 
@@ -132,18 +132,19 @@ static char *_get_nids(char *nodelist)
 /*
  * Parse a multi-prog input file line
  * line IN - line to parse
- * command_pos IN/OUT - where in opt.argv we are
+ * command_pos IN/OUT - where in opt_local->argv we are
  * count IN - which command we are on
  * return 0 if empty line, 1 if added
  */
-static int _parse_prog_line(char *in_line, int *command_pos, int count)
+static int _parse_prog_line(char *in_line, int *command_pos, int count,
+			    opt_t *opt_local)
 {
 	int i, cmd_inx;
 	int first_task_inx, last_task_inx;
 	hostset_t hs = NULL;
 	char *tmp_str = NULL;
 
-	xassert(opt.ntasks);
+	xassert(opt_local->ntasks);
 
 	/* Get the task ID string */
 	for (i = 0; in_line[i]; i++)
@@ -177,14 +178,15 @@ static int _parse_prog_line(char *in_line, int *command_pos, int count)
 
 
 	if (count) {
-		opt.argc += 1;
-		xrealloc(opt.argv, opt.argc * sizeof(char *));
-		opt.argv[(*command_pos)++] = xstrdup(":");
+		opt_local->argc += 1;
+		xrealloc(opt_local->argv, opt_local->argc * sizeof(char *));
+		opt_local->argv[(*command_pos)++] = xstrdup(":");
 	}
-	opt.argc += 2;
-	xrealloc(opt.argv, opt.argc * sizeof(char *));
-	opt.argv[(*command_pos)++] = xstrdup("-n");
-	opt.argv[(*command_pos)++] = xstrdup_printf("%d", hostset_count(hs));
+	opt_local->argc += 2;
+	xrealloc(opt_local->argv, opt_local->argc * sizeof(char *));
+	opt_local->argv[(*command_pos)++] = xstrdup("-n");
+	opt_local->argv[(*command_pos)++] = xstrdup_printf("%d",
+							   hostset_count(hs));
 	hostset_destroy(hs);
 
 	/* Get the command */
@@ -203,9 +205,11 @@ static int _parse_prog_line(char *in_line, int *command_pos, int count)
 				char tmp_char[diff + 1];
 				snprintf(tmp_char, diff, "%s",
 					 in_line + cmd_inx);
-				opt.argc += 1;
-				xrealloc(opt.argv, opt.argc * sizeof(char *));
-				opt.argv[(*command_pos)++] = xstrdup(tmp_char);
+				opt_local->argc += 1;
+				xrealloc(opt_local->argv,
+					 opt_local->argc * sizeof(char *));
+				opt_local->argv[(*command_pos)++] =
+					xstrdup(tmp_char);
 			}
 			cmd_inx = i + 1;
 		} else if (in_line[i] == '\n')
@@ -220,14 +224,16 @@ bad_line:
 	return 0;
 }
 
-static void _handle_multi_prog(char *in_file, int *command_pos)
+static void _handle_multi_prog(char *in_file, int *command_pos,
+			       opt_t *opt_local)
 {
 	char in_line[512];
 	FILE *fp;
 	int count = 0;
 
-	if (verify_multi_name(in_file, &opt.ntasks, &opt.ntasks_set,
-			      &opt.multi_prog_cmds))
+	if (verify_multi_name(in_file, &opt_local->ntasks,
+			      &opt_local->ntasks_set,
+			      &opt_local->multi_prog_cmds))
 		exit(error_exit);
 
 	fp = fopen(in_file, "r");
@@ -237,7 +243,7 @@ static void _handle_multi_prog(char *in_file, int *command_pos)
 	}
 
 	while (fgets(in_line, sizeof(in_line), fp)) {
-		if (_parse_prog_line(in_line, command_pos, count))
+		if (_parse_prog_line(in_line, command_pos, count, opt_local))
 			count++;
 	}
 
@@ -430,149 +436,156 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern int launch_p_setup_srun_opt(char **rest)
+extern int launch_p_setup_srun_opt(char **rest, opt_t *opt_local)
 {
 	int command_pos = 0;
 
-	if (opt.test_only) {
+	if (opt_local->test_only) {
 		error("--test-only not supported with aprun");
 		exit (1);
-	} else if (opt.no_alloc) {
+	} else if (opt_local->no_alloc) {
 		error("--no-allocate not supported with aprun");
 		exit (1);
 	}
-	if (opt.slurmd_debug != LOG_LEVEL_QUIET) {
+	if (opt_local->slurmd_debug != LOG_LEVEL_QUIET) {
 		error("--slurmd-debug not supported with aprun");
-		opt.slurmd_debug = LOG_LEVEL_QUIET;
+		opt_local->slurmd_debug = LOG_LEVEL_QUIET;
 	}
 
-	opt.argc += 2;
+	opt_local->argc += 2;
 
-	opt.argv = (char **) xmalloc(opt.argc * sizeof(char *));
+	opt_local->argv = (char **) xmalloc(opt_local->argc * sizeof(char *));
 
-	opt.argv[command_pos++] = xstrdup("aprun");
+	opt_local->argv[command_pos++] = xstrdup("aprun");
 	/* Set default job name to the executable name rather than
 	 * "aprun" */
-	if (!opt.job_name_set_cmd && (1 < opt.argc)) {
-		opt.job_name_set_cmd = true;
-		opt.job_name = xstrdup(rest[0]);
+	if (!opt_local->job_name_set_cmd && (1 < opt_local->argc)) {
+		opt_local->job_name_set_cmd = true;
+		opt_local->job_name = xstrdup(rest[0]);
 	}
 
-	if (opt.cpus_per_task) {
-		opt.argc += 2;
-		xrealloc(opt.argv, opt.argc * sizeof(char *));
-		opt.argv[command_pos++] = xstrdup("-d");
-		opt.argv[command_pos++] = xstrdup_printf(
-			"%u", opt.cpus_per_task);
+	if (opt_local->cpus_per_task) {
+		opt_local->argc += 2;
+		xrealloc(opt_local->argv, opt_local->argc * sizeof(char *));
+		opt_local->argv[command_pos++] = xstrdup("-d");
+		opt_local->argv[command_pos++] = xstrdup_printf(
+			"%u", opt_local->cpus_per_task);
 	}
 
-	if (opt.exclusive) {
-		opt.argc += 2;
-		xrealloc(opt.argv, opt.argc * sizeof(char *));
-		opt.argv[command_pos++] = xstrdup("-F");
-		opt.argv[command_pos++] = xstrdup("exclusive");
-	} else if (opt.shared == 1) {
-		opt.argc += 2;
-		xrealloc(opt.argv, opt.argc * sizeof(char *));
-		opt.argv[command_pos++] = xstrdup("-F");
-		opt.argv[command_pos++] = xstrdup("share");
+	if (opt_local->exclusive) {
+		opt_local->argc += 2;
+		xrealloc(opt_local->argv, opt_local->argc * sizeof(char *));
+		opt_local->argv[command_pos++] = xstrdup("-F");
+		opt_local->argv[command_pos++] = xstrdup("exclusive");
+	} else if (opt_local->shared == 1) {
+		opt_local->argc += 2;
+		xrealloc(opt_local->argv, opt_local->argc * sizeof(char *));
+		opt_local->argv[command_pos++] = xstrdup("-F");
+		opt_local->argv[command_pos++] = xstrdup("share");
 	}
 
-	if (opt.cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE) {
-		opt.argc += 2;
-		xrealloc(opt.argv, opt.argc * sizeof(char *));
-		opt.argv[command_pos++] = xstrdup("-j");
-		opt.argv[command_pos++] = xstrdup("1");
+	if (opt_local->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE) {
+		opt_local->argc += 2;
+		xrealloc(opt_local->argv, opt_local->argc * sizeof(char *));
+		opt_local->argv[command_pos++] = xstrdup("-j");
+		opt_local->argv[command_pos++] = xstrdup("1");
 	}
 
-	if (opt.nodelist) {
-		char *nids = _get_nids(opt.nodelist);
+	if (opt_local->nodelist) {
+		char *nids = _get_nids(opt_local);
 		if (nids) {
-			opt.argc += 2;
-			xrealloc(opt.argv, opt.argc * sizeof(char *));
-			opt.argv[command_pos++] = xstrdup("-L");
-			opt.argv[command_pos++] = xstrdup(nids);
+			opt_local->argc += 2;
+			xrealloc(opt_local->argv,
+				 opt_local->argc * sizeof(char *));
+			opt_local->argv[command_pos++] = xstrdup("-L");
+			opt_local->argv[command_pos++] = xstrdup(nids);
 			xfree(nids);
 		}
 	}
 
-	if (opt.mem_per_cpu != NO_VAL64) {
-		opt.argc += 2;
-		xrealloc(opt.argv, opt.argc * sizeof(char *));
-		opt.argv[command_pos++] = xstrdup("-m");
-		opt.argv[command_pos++] = xstrdup_printf("%"PRIu64"", opt.mem_per_cpu);
+	if (opt_local->mem_per_cpu != NO_VAL64) {
+		opt_local->argc += 2;
+		xrealloc(opt_local->argv, opt_local->argc * sizeof(char *));
+		opt_local->argv[command_pos++] = xstrdup("-m");
+		opt_local->argv[command_pos++] = xstrdup_printf("%"PRIu64"",
+							opt_local->mem_per_cpu);
 	}
 
-	if (opt.ntasks_per_node != NO_VAL) {
-		opt.argc += 2;
-		xrealloc(opt.argv, opt.argc * sizeof(char *));
-		opt.argv[command_pos++] = xstrdup("-N");
-		opt.argv[command_pos++] = xstrdup_printf(
-			"%u", opt.ntasks_per_node);
-		if (!opt.ntasks && opt.min_nodes)
-			opt.ntasks = opt.ntasks_per_node *  opt.min_nodes;
-	} else if (opt.nodes_set && opt.min_nodes) {
+	if (opt_local->ntasks_per_node != NO_VAL) {
+		opt_local->argc += 2;
+		xrealloc(opt_local->argv, opt_local->argc * sizeof(char *));
+		opt_local->argv[command_pos++] = xstrdup("-N");
+		opt_local->argv[command_pos++] = xstrdup_printf(
+			"%u", opt_local->ntasks_per_node);
+		if (!opt_local->ntasks && opt_local->min_nodes)
+			opt_local->ntasks = opt_local->ntasks_per_node *
+					    opt_local->min_nodes;
+	} else if (opt_local->nodes_set && opt_local->min_nodes) {
 		uint32_t tasks_per_node;
-		opt.ntasks = MAX(opt.ntasks, opt.min_nodes);
-		tasks_per_node = (opt.ntasks + opt.min_nodes - 1) /
-			opt.min_nodes;
-		opt.argc += 2;
-		xrealloc(opt.argv, opt.argc * sizeof(char *));
-		opt.argv[command_pos++] = xstrdup("-N");
-		opt.argv[command_pos++] = xstrdup_printf("%u", tasks_per_node);
+		opt_local->ntasks = MAX(opt_local->ntasks,
+					opt_local->min_nodes);
+		tasks_per_node = (opt_local->ntasks + opt_local->min_nodes - 1) /
+			opt_local->min_nodes;
+		opt_local->argc += 2;
+		xrealloc(opt_local->argv, opt_local->argc * sizeof(char *));
+		opt_local->argv[command_pos++] = xstrdup("-N");
+		opt_local->argv[command_pos++] = xstrdup_printf("%u",
+								tasks_per_node);
 	}
 
-	if (opt.ntasks && !opt.multi_prog) {
-		opt.argc += 2;
-		xrealloc(opt.argv, opt.argc * sizeof(char *));
-		opt.argv[command_pos++] = xstrdup("-n");
-		opt.argv[command_pos++] = xstrdup_printf("%u", opt.ntasks);
+	if (opt_local->ntasks && !opt_local->multi_prog) {
+		opt_local->argc += 2;
+		xrealloc(opt_local->argv, opt_local->argc * sizeof(char *));
+		opt_local->argv[command_pos++] = xstrdup("-n");
+		opt_local->argv[command_pos++] = xstrdup_printf("%u",
+							opt_local->ntasks);
 	}
 
-	if ((_verbose < 3) || opt.quiet) {
-		opt.argc += 1;
-		xrealloc(opt.argv, opt.argc * sizeof(char *));
-		opt.argv[command_pos++] = xstrdup("-q");
+	if ((_verbose < 3) || opt_local->quiet) {
+		opt_local->argc += 1;
+		xrealloc(opt_local->argv, opt_local->argc * sizeof(char *));
+		opt_local->argv[command_pos++] = xstrdup("-q");
 	}
 
-	if (opt.ntasks_per_socket != NO_VAL) {
-		opt.argc += 2;
-		xrealloc(opt.argv, opt.argc * sizeof(char *));
-		opt.argv[command_pos++] = xstrdup("-S");
-		opt.argv[command_pos++] = xstrdup_printf(
-			"%u", opt.ntasks_per_socket);
+	if (opt_local->ntasks_per_socket != NO_VAL) {
+		opt_local->argc += 2;
+		xrealloc(opt_local->argv, opt_local->argc * sizeof(char *));
+		opt_local->argv[command_pos++] = xstrdup("-S");
+		opt_local->argv[command_pos++] = xstrdup_printf(
+			"%u", opt_local->ntasks_per_socket);
 	}
 
-	if (opt.sockets_per_node != NO_VAL) {
-		opt.argc += 2;
-		xrealloc(opt.argv, opt.argc * sizeof(char *));
-		opt.argv[command_pos++] = xstrdup("-sn");
-		opt.argv[command_pos++] = xstrdup_printf(
-			"%u", opt.sockets_per_node);
+	if (opt_local->sockets_per_node != NO_VAL) {
+		opt_local->argc += 2;
+		xrealloc(opt_local->argv, opt_local->argc * sizeof(char *));
+		opt_local->argv[command_pos++] = xstrdup("-sn");
+		opt_local->argv[command_pos++] = xstrdup_printf(
+			"%u", opt_local->sockets_per_node);
 	}
 
-	if (opt.mem_bind_type & MEM_BIND_LOCAL) {
-		opt.argc += 1;
-		xrealloc(opt.argv, opt.argc * sizeof(char *));
-		opt.argv[command_pos++] = xstrdup("-ss");
+	if (opt_local->mem_bind_type & MEM_BIND_LOCAL) {
+		opt_local->argc += 1;
+		xrealloc(opt_local->argv, opt_local->argc * sizeof(char *));
+		opt_local->argv[command_pos++] = xstrdup("-ss");
 	}
 
-	if (opt.time_limit_str) {
-		opt.argc += 2;
-		xrealloc(opt.argv, opt.argc * sizeof(char *));
-		opt.argv[command_pos++] = xstrdup("-t");
-		opt.argv[command_pos++] = xstrdup_printf(
-			"%d", time_str2secs(opt.time_limit_str));
+	if (opt_local->time_limit_str) {
+		opt_local->argc += 2;
+		xrealloc(opt_local->argv, opt_local->argc * sizeof(char *));
+		opt_local->argv[command_pos++] = xstrdup("-t");
+		opt_local->argv[command_pos++] = xstrdup_printf(
+			"%d", time_str2secs(opt_local->time_limit_str));
 	}
 
-	if (opt.launcher_opts) {
+	if (opt_local->launcher_opts) {
 		char *save_ptr = NULL, *tok;
-		char *tmp = xstrdup(opt.launcher_opts);
+		char *tmp = xstrdup(opt_local->launcher_opts);
 		tok = strtok_r(tmp, " ", &save_ptr);
 		while (tok) {
-			opt.argc++;
-			xrealloc(opt.argv, opt.argc * sizeof(char *));
-			opt.argv[command_pos++]  = xstrdup(tok);
+			opt_local->argc++;
+			xrealloc(opt_local->argv,
+				 opt_local->argc * sizeof(char *));
+			opt_local->argv[command_pos++]  = xstrdup(tok);
 			tok = strtok_r(NULL, " ", &save_ptr);
 		}
 		xfree(tmp);
@@ -582,12 +595,12 @@ extern int launch_p_setup_srun_opt(char **rest)
 	/* These are srun options that are not supported by aprun, but
 	   here just in case in the future they add them.
 
-	   if (opt.disable_status) {
+	   if (opt_local->disable_status) {
 	   xstrcat(cmd_line, " --disable-status");
 	   }
 
-	   if (opt.epilog) {
-	   xstrfmtcat(cmd_line, " --epilog=", opt.epilog);
+	   if (opt_local->epilog) {
+	   xstrfmtcat(cmd_line, " --epilog=", opt_local->epilog);
 	   }
 
 	   if (kill_on_bad_exit) {
@@ -598,20 +611,20 @@ extern int launch_p_setup_srun_opt(char **rest)
 	   xstrcat(cmd_line, " --label");
 	   }
 
-	   if (opt.mpi_type) {
-	   xstrfmtcat(cmd_line, " --mpi=", opt.mpi_type);
+	   if (opt_local->mpi_type) {
+	   xstrfmtcat(cmd_line, " --mpi=", opt_local->mpi_type);
 	   }
 
-	   if (opt.msg_timeout) {
-	   xstrfmtcat(cmd_line, " --msg-timeout=", opt.msg_timeout);
+	   if (opt_local->msg_timeout) {
+	   xstrfmtcat(cmd_line, " --msg-timeout=", opt_local->msg_timeout);
 	   }
 
 	   if (no_allocate) {
 	   xstrcat(cmd_line, " --no-allocate");
 	   }
 
-	   if (opt.open_mode) {
-	   xstrcat(cmd_line, " --open-mode=", opt.open_mode);
+	   if (opt_local->open_mode) {
+	   xstrcat(cmd_line, " --open-mode=", opt_local->open_mode);
 	   }
 
 	   if (preserve_env) {
@@ -619,13 +632,13 @@ extern int launch_p_setup_srun_opt(char **rest)
 	   }
 
 
-	   if (opt.prolog) {
-	   xstrcat(cmd_line, " --prolog=", opt.prolog );
+	   if (opt_local->prolog) {
+	   xstrcat(cmd_line, " --prolog=", opt_local->prolog );
 	   }
 
 
-	   if (opt.propagate) {
-	   xstrcat(cmd_line, " --propagate", opt.propagate );
+	   if (opt_local->propagate) {
+	   xstrcat(cmd_line, " --propagate", opt_local->propagate );
 	   }
 
 	   if (pty) {
@@ -637,12 +650,12 @@ extern int launch_p_setup_srun_opt(char **rest)
 	   }
 
 
-	   if (opt.relative) {
-	   xstrfmtcat(cmd_line, " --relative=", opt.relative);
+	   if (opt_local->relative) {
+	   xstrfmtcat(cmd_line, " --relative=", opt_local->relative);
 	   }
 
 	   if (restart_dir) {
-	   xstrfmtcat(cmd_line, " --restart-dir=", opt.restart_dir);
+	   xstrfmtcat(cmd_line, " --restart-dir=", opt_local->restart_dir);
 	   }
 
 
@@ -650,16 +663,16 @@ extern int launch_p_setup_srun_opt(char **rest)
 	   xstrcat(cmd_line, "--resv-port");
 	   }
 
-	   if (opt.slurm_debug) {
-	   xstrfmtcat(cmd_line, " --slurmd-debug=", opt.slurm_debug);
+	   if (opt_local->slurm_debug) {
+	   xstrfmtcat(cmd_line, " --slurmd-debug=", opt_local->slurm_debug);
 	   }
 
 	   if (opttask_epilog) {
-	   xstrfmtcat(cmd_line, " --task-epilog=", opt.task_epilog);
+	   xstrfmtcat(cmd_line, " --task-epilog=", opt_local->task_epilog);
 	   }
 
-	   if (opt.task_prolog) {
-	   xstrfmtcat(cmd_line, " --task-prolog", opt.task_prolog);
+	   if (opt_local->task_prolog) {
+	   xstrfmtcat(cmd_line, " --task-prolog", opt_local->task_prolog);
 	   }
 
 	   if (test_only) {
@@ -672,32 +685,33 @@ extern int launch_p_setup_srun_opt(char **rest)
 
 	*/
 
-	if (opt.multi_prog) {
-		_handle_multi_prog(rest[0], &command_pos);
+	if (opt_local->multi_prog) {
+		_handle_multi_prog(rest[0], &command_pos, opt_local);
 		/* just so we don't tack on the script to the aprun line */
-		command_pos = opt.argc;
+		command_pos = opt_local->argc;
 	}
 
 	return command_pos;
 }
 
-extern int launch_p_handle_multi_prog_verify(int command_pos)
+extern int launch_p_handle_multi_prog_verify(int command_pos, opt_t *opt_local)
 {
-	if (opt.multi_prog)
+	if (opt_local->multi_prog)
 		return 1;
 	return 0;
 }
 
 extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 				    void (*signal_function)(int),
-				    sig_atomic_t *destroy_job)
+				    sig_atomic_t *destroy_job, opt_t *opt_local,
+				    int pack_offset)
 {
-	if (opt.launch_cmd) {
+	if (opt_local->launch_cmd) {
 		int i = 0;
 		char *cmd_line = NULL;
 
-		while (opt.argv[i])
-			xstrfmtcat(cmd_line, "%s ", opt.argv[i++]);
+		while (opt_local->argv[i])
+			xstrfmtcat(cmd_line, "%s ", opt_local->argv[i++]);
 		printf("%s\n", cmd_line);
 		xfree(cmd_line);
 		exit(0);
@@ -705,17 +719,18 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 
 	/* You can only run 1 job per node on a cray so make the
 	   request exclusive every time. */
-	opt.exclusive = true;
-	opt.shared = 0;
+	opt_local->exclusive = true;
+	opt_local->shared = 0;
 
 	return launch_common_create_job_step(job, use_all_cpus,
 					     signal_function,
 					     destroy_job);
 }
 
-extern int launch_p_step_launch(
-	srun_job_t *job, slurm_step_io_fds_t *cio_fds, uint32_t *global_rc,
-	slurm_step_launch_callbacks_t *step_callbacks)
+extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
+				uint32_t *global_rc,
+				slurm_step_launch_callbacks_t *step_callbacks,
+				opt_t *opt_local)
 {
 	int rc = 0;
 
@@ -743,7 +758,7 @@ extern int launch_p_step_launch(
 			error("dup2: %m");
 			return 1;
 		}
-		execvp(opt.argv[0], opt.argv);
+		execvp(opt_local->argv[0], opt_local->argv);
 		error("execv(aprun) error: %m");
 		return 1;
 	}
@@ -758,7 +773,8 @@ extern int launch_p_step_launch(
 	return rc;
 }
 
-extern int launch_p_step_wait(srun_job_t *job, bool got_alloc)
+extern int launch_p_step_wait(srun_job_t *job, bool got_alloc, opt_t *opt_local,
+			      int pack_offset)
 {
 	return SLURM_SUCCESS;
 }
