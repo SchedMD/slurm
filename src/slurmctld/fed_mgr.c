@@ -1363,6 +1363,9 @@ static void _cleanup_removed_origin_jobs()
 	time_t now = time(NULL);
 	uint32_t cluster_id = 0;
 
+	if (!fed_mgr_cluster_rec)
+		return;
+
 	job_itr = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_itr))) {
 		bool running_remotely = false;
@@ -1406,6 +1409,9 @@ static void _cleanup_removed_cluster_jobs(slurmdb_cluster_rec_t *cluster)
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
 	uint32_t cluster_id = 0;
+
+	if (!fed_mgr_cluster_rec)
+		return;
 
 	job_itr = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_itr))) {
@@ -2411,7 +2417,7 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 		slurmdb_destroy_federation_rec(fed);
 	}
 
-	if (!fed) {
+	if (!fed && fed_mgr_fed_rec) {
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 			info("Not part of any federation");
 		lock_slurmctld(fedw_jobw_lock);
