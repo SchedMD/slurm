@@ -448,9 +448,10 @@ int main(int argc, char **argv)
 			}
 			if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
 				info("Pack job ID %u+%u (%u) on nodes %s",
-				     my_job_id, i++, alloc->job_id,
+				     my_job_id, i, alloc->job_id,
 				     alloc->node_list);
 			}
+			i++;
 			if (_proc_alloc(alloc) != SLURM_SUCCESS) {
 				list_iterator_destroy(iter_resp);
 				goto relinquish;
