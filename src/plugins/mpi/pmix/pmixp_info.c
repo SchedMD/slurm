@@ -379,11 +379,11 @@ static int _env_set(char ***env)
 	/* NOTE: Heterogen support is not tested */
 	p = getenvp(*env, PMIXP_DIRECT_SAMEARCH);
 	if (p) {
-		if (!strcmp("1",p) || !strcasecmp("true", p) ||
-		    !strcasecmp("yes", p)) {
+		if (!xstrcmp("1",p) || !xstrcasecmp("true", p) ||
+		    !xstrcasecmp("yes", p)) {
 			_srv_same_arch = true;
-		} else if (!strcmp("0",p) || !strcasecmp("false", p) ||
-			   !strcasecmp("no", p)) {
+		} else if (!xstrcmp("0",p) || !xstrcasecmp("false", p) ||
+			   !xstrcasecmp("no", p)) {
 			_srv_same_arch = false;
 		}
 	}
@@ -391,11 +391,11 @@ static int _env_set(char ***env)
 	/*------------- Direct connection setting ----------*/
 	p = getenvp(*env, PMIXP_DIRECT_CONN);
 	if (p) {
-		if (!strcmp("1",p) || !strcasecmp("true", p) ||
-		    !strcasecmp("yes", p)) {
+		if (!xstrcmp("1",p) || !xstrcasecmp("true", p) ||
+		    !xstrcasecmp("yes", p)) {
 			_srv_use_direct_conn = true;
-		} else if (!strcmp("0",p) || !strcasecmp("false", p) ||
-			   !strcasecmp("no", p)) {
+		} else if (!xstrcmp("0",p) || !xstrcasecmp("false", p) ||
+			   !xstrcasecmp("no", p)) {
 			_srv_use_direct_conn = false;
 		}
 	}
@@ -403,11 +403,11 @@ static int _env_set(char ***env)
 #ifdef HAVE_UCX
 	p = getenvp(*env, PMIXP_DIRECT_CONN_UCX);
 	if (p) {
-		if (!strcmp("1",p) || !strcasecmp("true", p) ||
-		    !strcasecmp("yes", p)) {
+		if (!xstrcmp("1",p) || !xstrcasecmp("true", p) ||
+		    !xstrcasecmp("yes", p)) {
 			_srv_use_direct_conn_ucx = true;
-		} else if (!strcmp("0",p) || !strcasecmp("false", p) ||
-			   !strcasecmp("no", p)) {
+		} else if (!xstrcmp("0",p) || !xstrcasecmp("false", p) ||
+			   !xstrcasecmp("no", p)) {
 			_srv_use_direct_conn_ucx = false;
 		}
 	}

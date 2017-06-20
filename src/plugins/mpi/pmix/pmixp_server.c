@@ -1343,12 +1343,12 @@ void pmixp_server_init_pp(char ***env)
 	if (!(env_ptr = getenvp(*env, PMIXP_PP_ON))) {
 		return;
 	}
-	if (!strcmp("1", env_ptr) || !strcmp("true", env_ptr)) {
+	if (!xstrcmp("1", env_ptr) || !xstrcmp("true", env_ptr)) {
 		_pmixp_pp_on = true;
 	}
 
 	if ((env_ptr = getenvp(*env, PMIXP_PP_SAMETHR))) {
-		if (!strcmp("1", env_ptr) || !strcmp("true", env_ptr)) {
+		if (!xstrcmp("1", env_ptr) || !xstrcmp("true", env_ptr)) {
 			_pmixp_pp_same_thr = true;
 		}
 	}
