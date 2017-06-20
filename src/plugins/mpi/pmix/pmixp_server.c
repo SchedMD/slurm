@@ -379,10 +379,15 @@ int pmixp_stepd_init(const stepd_step_rec_t *job, char ***env)
 		_direct_proto.hdr_unpack_cb = _direct_hdr_unpack_portable;
 		_direct_hdr_pack = _direct_hdr_pack_portable;
 	}
-	pmixp_conn_init(_slurm_proto, _direct_proto);
-	pmixp_dconn_init(pmixp_info_nodes(), _direct_proto);
 
-	if (SLURM_SUCCESS != (rc = pmixp_nspaces_init())) {
+	pmixp_conn_init(_slurm_proto, _direct_proto);
+
+	if((rc = pmixp_dconn_init(pmixp_info_nodes(), _direct_proto)) ){
+		PMIXP_ERROR("pmixp_dconn_init() failed");
+		goto err_dconn;
+	}
+
+	if ((rc = pmixp_nspaces_init())) {
 		PMIXP_ERROR("pmixp_nspaces_init() failed");
 		goto err_nspaces;
 	}
@@ -422,6 +427,9 @@ err_dmdx:
 err_state:
 	pmixp_nspaces_finalize();
 err_nspaces:
+	pmixp_dconn_fini();
+err_dconn:
+	pmixp_conn_fini();
 	close(pmixp_info_srv_usock_fd());
 err_usock:
 	xfree(path);

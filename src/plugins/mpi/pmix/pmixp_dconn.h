@@ -108,7 +108,7 @@ extern uint32_t _pmixp_dconn_conn_cnt;
 extern pmixp_dconn_t *_pmixp_dconn_conns;
 extern pmixp_dconn_handlers_t _pmixp_dconn_h;
 
-void pmixp_dconn_init(int node_cnt,
+int pmixp_dconn_init(int node_cnt,
 		      pmixp_p2p_data_t direct_hdr);
 void pmixp_dconn_fini();
 

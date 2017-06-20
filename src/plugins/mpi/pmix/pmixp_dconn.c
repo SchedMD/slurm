@@ -48,7 +48,7 @@ static int _poll_fd = -1;
 static char *ep_data = NULL;
 static size_t ep_len = 0;
 
-void pmixp_dconn_init(int node_cnt, pmixp_p2p_data_t direct_hdr)
+int pmixp_dconn_init(int node_cnt, pmixp_p2p_data_t direct_hdr)
 {
 	int i;
 	memset(&_pmixp_dconn_h, 0, sizeof(_pmixp_dconn_h));
@@ -68,6 +68,10 @@ void pmixp_dconn_init(int node_cnt, pmixp_p2p_data_t direct_hdr)
 		_conn_type = PMIXP_DCONN_CONN_TYPE_TWOSIDE;
 	}
 
+	if (SLURM_ERROR == _poll_fd) {
+		PMIXP_ERROR("Cannot get polling fd");
+		return SLURM_ERROR;
+	}
 	_pmixp_dconn_conns = xmalloc(sizeof(*_pmixp_dconn_conns) * node_cnt);
 	_pmixp_dconn_conn_cnt = node_cnt;
 	for (i=0; i<_pmixp_dconn_conn_cnt; i++) {
@@ -76,6 +80,7 @@ void pmixp_dconn_init(int node_cnt, pmixp_p2p_data_t direct_hdr)
 		_pmixp_dconn_conns[i].state = PMIXP_DIRECT_INIT;
 		_pmixp_dconn_conns[i].priv = _pmixp_dconn_h.init(i, direct_hdr);
 	}
+	return SLURM_SUCCESS;
 }
 
 void pmixp_dconn_fini()
