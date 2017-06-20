@@ -28,6 +28,7 @@ documents those changes that are of interest to users and administrators.
     submitted to a QOS/association.
  -- Handle partition QOS submit limits correctly when a job is submitted to
     more than 1 partition or when the partition is changed with scontrol.
+ -- Performance boost for when Slurm is dealing with credentials.
 
 * Changes in Slurm 17.02.4
 ==========================
