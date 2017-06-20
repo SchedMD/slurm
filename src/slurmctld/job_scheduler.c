@@ -4406,7 +4406,10 @@ cleanup_completing(struct job_record *job_ptr)
 	job_ptr->job_state &= (~JOB_COMPLETING);
 	job_hold_requeue(job_ptr);
 
-	fed_mgr_job_complete(job_ptr, job_ptr->exit_code, job_ptr->start_time);
+	/* Job could be pending if the job was requeued due to a node failure */
+	if (IS_JOB_COMPLETED(job_ptr))
+		fed_mgr_job_complete(job_ptr, job_ptr->exit_code,
+				     job_ptr->start_time);
 }
 
 /*
