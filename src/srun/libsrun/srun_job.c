@@ -108,28 +108,30 @@ static int pty_sigarray[] = { SIGWINCH, 0 };
 /*
  * Prototypes:
  */
-static void       _set_ntasks(allocation_info_t *info);
-static srun_job_t *_job_create_structure(allocation_info_t *info);
-static char *     _normalize_hostlist(const char *hostlist);
-static int _become_user(void);
+
+static int  _become_user(void);
 static void _call_spank_fini(void);
 static int  _call_spank_local_user(srun_job_t *job);
 static void _default_sigaction(int sig);
 static long _diff_tv_str(struct timeval *tv1, struct timeval *tv2);
 static void _handle_intr(srun_job_t *job);
 static void _handle_pipe(void);
+static srun_job_t *_job_create_structure(allocation_info_t *info);
+static char *_normalize_hostlist(const char *hostlist);
 static void _print_job_information(resource_allocation_response_msg_t *resp);
 static void _run_srun_epilog (srun_job_t *job);
 static void _run_srun_prolog (srun_job_t *job);
-static int _run_srun_script (srun_job_t *job, char *script);
+static int  _run_srun_script (srun_job_t *job, char *script);
 static void _set_env_vars(resource_allocation_response_msg_t *resp,
 			  int pack_offset);
-static void  _set_prio_process_env(void);
-static int _set_rlimit_env(void);
+static void _set_ntasks(allocation_info_t *info);
+static void _set_prio_process_env(void);
+static int  _set_rlimit_env(void);
 static void _set_submit_dir_env(void);
-static int _set_umask_env(void);
+static int  _set_umask_env(void);
 static void _shepherd_notify(int shepherd_fd);
-static int _shepherd_spawn(srun_job_t *job, bool got_alloc);
+static int  _shepherd_spawn(srun_job_t *job, List srun_job_list,
+			     bool got_alloc);
 static void *_srun_signal_mgr(void *no_data);
 static void _step_opt_exclusive(void);
 static int  _validate_relative(resource_allocation_response_msg_t *resp,
@@ -804,8 +806,7 @@ if (opt_list) exit(0);
 		 * Spawn process to insure clean-up of job and/or step
 		 * on abnormal termination
 		 */
-//FIXME: Pack job clean up?
-		shepherd_fd = _shepherd_spawn(job, *got_alloc);
+		shepherd_fd = _shepherd_spawn(job, srun_job_list, *got_alloc);
 	}
 
 //FIXME: Return List?
@@ -1526,7 +1527,7 @@ static void _shepherd_notify(int shepherd_fd)
 	close(shepherd_fd);
 }
 
-static int _shepherd_spawn(srun_job_t *job, bool got_alloc)
+static int _shepherd_spawn(srun_job_t *job, List srun_job_list, bool got_alloc)
 {
 	int shepherd_pipe[2], rc;
 	pid_t shepherd_pid;
@@ -1562,10 +1563,22 @@ static int _shepherd_spawn(srun_job_t *job, bool got_alloc)
 		}
 	}
 
-	(void) slurm_kill_job_step(job->jobid, job->stepid, SIGKILL);
+	if (srun_job_list) {
+		ListIterator job_iter;
+		job_iter  = list_iterator_create(srun_job_list);
+		while ((job = (srun_job_t *) list_next(job_iter))) {
+			(void) slurm_kill_job_step(job->jobid, job->stepid,
+						   SIGKILL);
+			if (got_alloc)
+				slurm_complete_job(job->jobid, NO_VAL);
+		}
+		list_iterator_destroy(job_iter);
+	} else {
+		(void) slurm_kill_job_step(job->jobid, job->stepid, SIGKILL);
+		if (got_alloc)
+			slurm_complete_job(job->jobid, NO_VAL);
+	}
 
-	if (got_alloc)
-		slurm_complete_job(job->jobid, NO_VAL);
 	exit(0);
 	return -1;
 }
