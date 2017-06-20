@@ -108,11 +108,17 @@ int sig_array[] = {
 /*
  * forward declaration of static funcs
  */
-static int   _file_bcast(void);
+static int   _file_bcast(opt_t *opt_local, srun_job_t *job);
+static void  _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc);
+static void  _launch_one_app(opt_t *opt_local, srun_job_t *job, bool got_alloc);
 static void  _pty_restore(void);
 static void  _set_exit_code(void);
 static void  _set_node_alias(void);
 static void  _setup_env_working_cluster(void);
+static void  _setup_job_env(srun_job_t *job, List srun_job_list,
+			    bool got_alloc);
+static void  _setup_one_job_env(opt_t *opt_local, srun_job_t *job,
+				bool got_alloc);
 static int   _slurm_debug_env_val (void);
 static char *_uint16_array_to_str(int count, const uint16_t *array);
 
@@ -139,19 +145,9 @@ void cfmakeraw(struct termios *attr)
 int srun(int ac, char **av)
 {
 	int debug_level;
-	env_t *env = xmalloc(sizeof(env_t));
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	bool got_alloc = false;
-	slurm_step_io_fds_t cio_fds = SLURM_STEP_IO_FDS_INITIALIZER;
-	slurm_step_launch_callbacks_t step_callbacks;
-
-	env->stepid = -1;
-	env->procid = -1;
-	env->localid = -1;
-	env->nodeid = -1;
-	env->cli = NULL;
-	env->env = NULL;
-	env->ckpt_dir = NULL;
+	List srun_job_list = NULL;
 
 	slurm_conf_init(NULL);
 	debug_level = _slurm_debug_env_val();
@@ -168,39 +164,107 @@ int srun(int ac, char **av)
 	_setup_env_working_cluster();
 
 	init_srun(ac, av, &logopt, debug_level, 1);
-	create_srun_job(&job, &got_alloc, 0, 1);
+	if (opt_list)
+		create_srun_job((void **) &srun_job_list, &got_alloc, 0, 1);
+	else
+		create_srun_job((void **) &job, &got_alloc, 0, 1);
 
-	/*
-	 *  Enhance environment for job
-	 */
-	if (opt.bcast_flag)
-		_file_bcast();
-	if (opt.cpus_set)
-		env->cpus_per_task = opt.cpus_per_task;
-	if (opt.ntasks_per_node != NO_VAL)
-		env->ntasks_per_node = opt.ntasks_per_node;
-	if (opt.ntasks_per_socket != NO_VAL)
-		env->ntasks_per_socket = opt.ntasks_per_socket;
-	if (opt.ntasks_per_core != NO_VAL)
-		env->ntasks_per_core = opt.ntasks_per_core;
-	env->distribution = opt.distribution;
-	if (opt.plane_size != NO_VAL)
-		env->plane_size = opt.plane_size;
-	env->cpu_bind_type = opt.cpu_bind_type;
-	env->cpu_bind = opt.cpu_bind;
+	_setup_job_env(job, srun_job_list, got_alloc);
+	_set_node_alias();
+	_launch_app(job, srun_job_list, got_alloc);
 
-	env->cpu_freq_min = opt.cpu_freq_min;
-	env->cpu_freq_max = opt.cpu_freq_max;
-	env->cpu_freq_gov = opt.cpu_freq_gov;
-	env->mem_bind_type = opt.mem_bind_type;
-	env->mem_bind = opt.mem_bind;
-	env->overcommit = opt.overcommit;
-	env->slurmd_debug = opt.slurmd_debug;
-	env->labelio = opt.labelio;
+	if ((global_rc & 0xff) == SIG_OOM)
+		global_rc = 1;	/* Exit code 1 */
+
+	return (int)global_rc;
+}
+
+static void _launch_one_app(opt_t *opt_local, srun_job_t *job, bool got_alloc)
+{
+	slurm_step_io_fds_t cio_fds = SLURM_STEP_IO_FDS_INITIALIZER;
+	slurm_step_launch_callbacks_t step_callbacks;
+
+	memset(&step_callbacks, 0, sizeof(step_callbacks));
+	step_callbacks.step_signal = launch_g_fwd_signal;
+
+relaunch:
+	pre_launch_srun_job(job, 0, 1);
+	launch_common_set_stdio_fds(job, &cio_fds, opt_local);
+
+	if (!launch_g_step_launch(job, &cio_fds, &global_rc, &step_callbacks,
+				  opt_local)) {
+		if (launch_g_step_wait(job, got_alloc, opt_local, -1) == -1)
+			goto relaunch;
+	}
+
+	fini_srun(job, got_alloc, &global_rc, 0);
+}
+
+static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
+{
+	ListIterator opt_iter, job_iter;
+	opt_t *opt_local;
+
+	if (srun_job_list) {
+		if (!opt_list) {
+			fatal("%s: have srun_job_list, but no opt_list",
+			      __func__);
+		}
+		job_iter  = list_iterator_create(srun_job_list);
+		opt_iter  = list_iterator_create(opt_list);
+		while ((opt_local = (opt_t *) list_next(opt_iter))) {
+			job = (srun_job_t *) list_next(job_iter);
+			if (!job) {
+				fatal("%s: job allocation count does not match request count (%d != %d)",
+				      __func__, list_count(srun_job_list),
+				      list_count(opt_list));
+			}
+			_launch_one_app(opt_local, job, got_alloc);
+		}
+		list_iterator_destroy(job_iter);
+		list_iterator_destroy(opt_iter);
+	} else {
+		_launch_one_app(&opt, job, got_alloc);
+	}
+}
+
+static void _setup_one_job_env(opt_t *opt_local, srun_job_t *job,
+			       bool got_alloc)
+{
+	env_t *env = xmalloc(sizeof(env_t));
+
+	env->localid = -1;
+	env->nodeid  = -1;
+	env->procid  = -1;
+	env->stepid  = -1;
+
+	if (opt_local->bcast_flag)
+		_file_bcast(opt_local, job);
+	if (opt_local->cpus_set)
+		env->cpus_per_task = opt_local->cpus_per_task;
+	if (opt_local->ntasks_per_node != NO_VAL)
+		env->ntasks_per_node = opt_local->ntasks_per_node;
+	if (opt_local->ntasks_per_socket != NO_VAL)
+		env->ntasks_per_socket = opt_local->ntasks_per_socket;
+	if (opt_local->ntasks_per_core != NO_VAL)
+		env->ntasks_per_core = opt_local->ntasks_per_core;
+	env->distribution = opt_local->distribution;
+	if (opt_local->plane_size != NO_VAL)
+		env->plane_size = opt_local->plane_size;
+	env->cpu_bind_type = opt_local->cpu_bind_type;
+	env->cpu_bind = opt_local->cpu_bind;
+
+	env->cpu_freq_min = opt_local->cpu_freq_min;
+	env->cpu_freq_max = opt_local->cpu_freq_max;
+	env->cpu_freq_gov = opt_local->cpu_freq_gov;
+	env->mem_bind_type = opt_local->mem_bind_type;
+	env->mem_bind = opt_local->mem_bind;
+	env->overcommit = opt_local->overcommit;
+	env->slurmd_debug = opt_local->slurmd_debug;
+	env->labelio = opt_local->labelio;
 	env->comm_port = slurmctld_comm_addr.port;
-	env->batch_flag = 0;
-	if (opt.job_name)
-		env->job_name = opt.job_name;
+	if (opt_local->job_name)
+		env->job_name = opt_local->job_name;
 	if (job) {
 		uint16_t *tasks = NULL;
 		slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_TASKS,
@@ -209,7 +273,8 @@ int srun(int ac, char **av)
 		env->select_jobinfo = job->select_jobinfo;
 		env->nodelist = job->nodelist;
 		env->partition = job->partition;
-		/* If we didn't get the allocation don't overwrite the
+		/*
+		 * If we didn't get the allocation don't overwrite the
 		 * previous info.
 		 */
 		if (got_alloc)
@@ -222,11 +287,11 @@ int srun(int ac, char **av)
 		env->qos = job->qos;
 		env->resv_name = job->resv_name;
 	}
-	if (opt.pty && (set_winsize(job) < 0)) {
+	if (opt_local->pty && (set_winsize(job) < 0)) {
 		error("Not using a pseudo-terminal, disregarding --pty option");
-		opt.pty = false;
+		opt_local->pty = false;
 	}
-	if (opt.pty) {
+	if (opt_local->pty) {
 		struct termios term;
 		int fd = STDIN_FILENO;
 
@@ -247,65 +312,70 @@ int srun(int ac, char **av)
 		env->ws_col   = job->ws_col;
 		env->ws_row   = job->ws_row;
 	}
-	setup_env(env, opt.preserve_env);
+	setup_env(env, opt_local->preserve_env);
 	xfree(env->task_count);
 	xfree(env);
-	_set_node_alias();
-
-	memset(&step_callbacks, 0, sizeof(step_callbacks));
-	step_callbacks.step_signal   = launch_g_fwd_signal;
-
-	/* re_launch: */
-relaunch:
-	pre_launch_srun_job(job, 0, 1);
-
-	launch_common_set_stdio_fds(job, &cio_fds, &opt);
-
-	if (!launch_g_step_launch(job, &cio_fds, &global_rc, &step_callbacks,
-				  &opt)) {
-//FIXME: Needs pack job support
-		if (launch_g_step_wait(job, got_alloc, &opt, -1) == -1)
-			goto relaunch;
-	}
-
-	fini_srun(job, got_alloc, &global_rc, 0);
-	if ((global_rc & 0xff) == SIG_OOM)
-		global_rc = 1;	/* Exit code 1 */
-
-	return (int)global_rc;
 }
 
-static int _file_bcast(void)
+static void _setup_job_env(srun_job_t *job, List srun_job_list, bool got_alloc)
+{
+	ListIterator opt_iter, job_iter;
+	opt_t *opt_local;
+
+	if (srun_job_list) {
+		if (!opt_list) {
+			fatal("%s: have srun_job_list, but no opt_list",
+			      __func__);
+		}
+		job_iter  = list_iterator_create(srun_job_list);
+		opt_iter  = list_iterator_create(opt_list);
+		while ((opt_local = (opt_t *) list_next(opt_iter))) {
+			job = (srun_job_t *) list_next(job_iter);
+			if (!job) {
+				fatal("%s: job allocation count does not match request count (%d != %d)",
+				      __func__, list_count(srun_job_list),
+				      list_count(opt_list));
+			}
+			_setup_one_job_env(opt_local, job, got_alloc);
+		}
+		list_iterator_destroy(job_iter);
+		list_iterator_destroy(opt_iter);
+	} else {
+		_setup_one_job_env(&opt, job, got_alloc);
+	}
+}
+
+static int _file_bcast(opt_t *opt_local, srun_job_t *job)
 {
 	struct bcast_parameters *params;
 	int rc;
 
-	if ((opt.argc == 0) || (opt.argv[0] == NULL)) {
+	if ((opt_local->argc == 0) || (opt_local->argv[0] == NULL)) {
 		error("No command name to broadcast");
 		return SLURM_ERROR;
 	}
 	params = xmalloc(sizeof(struct bcast_parameters));
 	params->block_size = 8 * 1024 * 1024;
-	params->compress = opt.compress;
-	if (opt.bcast_file) {
-		params->dst_fname = xstrdup(opt.bcast_file);
+	params->compress = opt_local->compress;
+	if (opt_local->bcast_file) {
+		params->dst_fname = xstrdup(opt_local->bcast_file);
 	} else {
 		xstrfmtcat(params->dst_fname, "%s/slurm_bcast_%u.%u",
-			   opt.cwd, job->jobid, job->stepid);
+			   opt_local->cwd, job->jobid, job->stepid);
 	}
 	params->fanout = 0;
 	params->job_id = job->jobid;
 	params->force = true;
 	params->preserve = true;
-	params->src_fname = opt.argv[0];
+	params->src_fname = opt_local->argv[0];
 	params->step_id = job->stepid;
 	params->timeout = 0;
 	params->verbose = 0;
 
 	rc = bcast_file(params);
 	if (rc == SLURM_SUCCESS) {
-		xfree(opt.argv[0]);
-		opt.argv[0] = params->dst_fname;
+		xfree(opt_local->argv[0]);
+		opt_local->argv[0] = params->dst_fname;
 	} else {
 		xfree(params->dst_fname);
 	}

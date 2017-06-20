@@ -629,15 +629,17 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	} else {
 		launch_params.parallel_debug = false;
 	}
-	/* Normally this isn't used, but if an outside process (other
-	   than srun (poe) is using this logic to launch tasks then we
-	   can use this to signal the step.
-	*/
+	/*
+	 * Normally this isn't used, but if an outside process (other
+	 * than srun (poe) is using this logic to launch tasks then we
+	 * can use this to signal the step.
+	 */
 	callbacks.task_start = _task_start;
-	/* If poe is using this code with multi-prog it always returns
-	   1 for each task which could be confusing since no real
-	   error happened.
-	*/
+	/*
+	 * If poe is using this code with multi-prog it always returns
+	 * 1 for each task which could be confusing since no real
+	 * error happened.
+	 */
 	if (!launch_params.multi_prog
 	    || (!callbacks.step_signal
 		|| (callbacks.step_signal == launch_g_fwd_signal))) {

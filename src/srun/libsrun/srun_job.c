@@ -438,9 +438,9 @@ job_create_allocation(resource_allocation_response_msg_t *resp)
  * Copy job name from last component to all pack job components unless
  * explicitly set.
  */
-static void _match_job_name(List opt_list, char *job_name)
+static void _match_job_name(List opt_list)
 {
-	int cnt;
+	int cnt, i;
 	ListIterator iter;
 	opt_t *opt_local;
 
@@ -454,7 +454,14 @@ static void _match_job_name(List opt_list, char *job_name)
 	iter = list_iterator_create(opt_list);
 	while ((opt_local = (opt_t *) list_next(iter))) {
 		if (!opt_local->job_name)
-			opt_local->job_name = xstrdup(job_name);
+			opt_local->job_name = xstrdup(opt.job_name);
+		if ((opt.argc != 0) && (opt_local->argc != opt.argc)) {
+			opt_local->argc = opt.argc;
+			xfree(opt_local->argv);
+			opt_local->argv = xmalloc(sizeof(char *) * opt.argc);
+			for (i = 0; i < opt.argc; i++)
+				opt_local->argv[i] = xstrdup(opt.argv[i]);
+		}
 	}
 	list_iterator_destroy(iter);
 }
@@ -517,7 +524,7 @@ extern void init_srun(int argc, char **argv,
 	}
 	if (!opt.job_name)
 		opt.job_name = xstrdup(opt.cmd_name);
-	_match_job_name(opt_list, opt.job_name);
+	_match_job_name(opt_list);
 
 	record_ppid();
 
@@ -614,7 +621,7 @@ static int _create_job_step(srun_job_t *job, List srun_job_list)
 	}
 }
 
-extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
+extern void create_srun_job(void **p_job, bool *got_alloc,
 			    bool slurm_started, bool handle_signals)
 {
 	resource_allocation_response_msg_t *resp;
@@ -809,8 +816,10 @@ if (opt_list) exit(0);
 		shepherd_fd = _shepherd_spawn(job, srun_job_list, *got_alloc);
 	}
 
-//FIXME: Return List?
-	*p_job = job;
+	if (opt_list)
+		*p_job = (void *) srun_job_list;
+	else
+		*p_job = (void *) job;
 }
 
 extern void pre_launch_srun_job(srun_job_t *job, bool slurm_started,

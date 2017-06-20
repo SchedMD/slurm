@@ -135,8 +135,9 @@ extern void init_srun(int argc, char **argv,
 		      log_options_t *logopt, int debug_level,
 		      bool handle_signals);
 
-extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
+extern void create_srun_job(void **p_job, bool *got_alloc,
 			    bool slurm_started, bool handle_signals);
+
 extern void pre_launch_srun_job(srun_job_t *job, bool slurm_started,
 				bool handle_signals);
 
