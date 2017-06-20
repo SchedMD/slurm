@@ -436,13 +436,12 @@ static bool _ucx_progress()
 	if (more_progr) {
 		/* do the progress if we have incomplete receives */
 		ucp_worker_progress(ucp_worker);
+		events_observed++;
 	}
 	
 	if (!new_msg && pmixp_rlist_empty(&_rcv_pending) &&
 				pmixp_rlist_empty(&_snd_pending)) {
-		/* early exit - nothing to do */
-		slurm_mutex_unlock(&_ucx_worker_lock);
-		return false;
+		goto exit;
 	}
 
 	/* Check pending requests */
@@ -520,11 +519,10 @@ static bool _ucx_progress()
 		ucp_request_release(req);
 	}
 
+exit:
 	slurm_mutex_unlock(&_ucx_worker_lock);
 	return !!(events_observed);
 }
-
-static bool _ucx_is_armed = false;
 
 static bool _epoll_readable(eio_obj_t *obj)
 {
@@ -538,25 +536,34 @@ static bool _epoll_readable(eio_obj_t *obj)
 		 */
 		return false;
 	}
-	if (_ucx_is_armed) {
-		/* no need to re-arm, ucx polling fd
-		 * hasn't delivered any events
+
+	/* process all outstanding events */
+	while (_ucx_progress());
+
+	if (pmixp_rlist_count(&_rcv_pending) ||
+	    pmixp_rlist_count(&_snd_pending)){
+		/* If we still have pending requests don't wait
+		 * on epoll, activate poll interuprtion through
+		 * the service pipe
 		 */
-		goto exit;
+		_activate_progress();
+		return false;
 	}
 
 	do {
+		/* arm the poll fd */
 		slurm_mutex_lock(&_ucx_worker_lock);
 		status = ucp_worker_arm(ucp_worker);
 		slurm_mutex_unlock(&_ucx_worker_lock);
 
 		if (status == UCS_ERR_BUSY) {
-			/* some events have already arrived*/
+			/* some events have already arrived
+			 * process all outstanding events
+			 */
 			while (_ucx_progress());
 		}
 	} while (UCS_ERR_BUSY == status);
-	_ucx_is_armed = true;
-exit:
+
 	return true;
 }
 
@@ -568,8 +575,7 @@ static int _epoll_read(eio_obj_t *obj, List objs)
 		 */
 		return 0;
 	}
-	_ucx_is_armed = false;
-	/* call progress untill all events are processed */
+	/* process all outstanding events */
 	while (_ucx_progress());
 	return 0;
 }
@@ -584,18 +590,9 @@ static bool _progress_readable(eio_obj_t *obj)
 			 */
 		return false;
 	}
-
-	/* progress all pending events */
-	while (_ucx_progress());
-
-	if (pmixp_rlist_count(&_rcv_pending) ||
-	    pmixp_rlist_count(&_snd_pending)){
-		/* if we have more work to do - go to the poll
-		 * to progress other fd's, but make sure that we
-		 * won't block in the poll and can progress further
-		 */
-		_activate_progress();
-	}
+	/* all the control is located in epoll_readable
+	 * here we only say that we are readable
+	 */
 	return true;
 }
 
@@ -612,10 +609,10 @@ static int _progress_read(eio_obj_t *obj, List objs)
 		return 0;
 	}
 
-	/* empty pipe */
+	/* empty the pipe */
 	while (sizeof(buf) == read(_service_pipe[0], &buf, sizeof(buf)));
 
-	/* more progress */
+	/* process all outstanding events */
 	while (_ucx_progress());
 
 	return 0;
