@@ -4998,3 +4998,21 @@ extern bool cluster_in_federation(void *ptr, char *cluster_name)
 	list_iterator_destroy(iter);
 	return status;
 }
+
+/* Find where cluster_name nodes start in the node_array */
+extern int get_cluster_node_offset(char *cluster_name,
+				   node_info_msg_t *node_info_ptr)
+{
+	int offset;
+
+	xassert(cluster_name);
+	xassert(node_info_ptr);
+
+	for (offset = 0; offset < node_info_ptr->record_count; offset++)
+		if (!xstrcmp(cluster_name,
+			     node_info_ptr->node_array[offset].cluster_name))
+			return offset;
+
+	return 0;
+}
+
