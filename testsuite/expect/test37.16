@@ -277,13 +277,13 @@ set f1      "\\s*$fedc1"
 set f2      "\\s*$fedc2"
 set f3      "\\s*$fedc3"
 set n       "\\s*NA"
-set sleep   "sleep.+"
+set srun_job "sleep\\s+\\d+"
 
 set sib "\\s*$fedc1,$fedc2,$fedc3"
 
-set r1 "$j(0)$f1$f1|$j(2)$sib$f3|$j(3)$sib$sib|$j(4)$sib$n|$j(5)$sib$n|$sleep$sib$n"
-set r2 "$j(1)$f2$f2|$j(3)$sib$n|$j(4)$sib$sib|$j(5)$sib$n|$sleep$sib$sib"
-set r3 "$j(2)$sib$f3|$j(3)$sib$n|$j(4)$sib$n|$j(5)$sib$sib|$sleep$sib$n"
+set r1 "$j(0)$f1$f1|$j(2)$sib$f3|$j(3)$sib$sib|$j(4)$sib$n|$j(5)$sib$n|$srun_job$sib$n"
+set r2 "$j(1)$f2$f2|$j(3)$sib$n|$j(4)$sib$sib|$j(5)$sib$n|$srun_job$sib$sib"
+set r3 "$j(2)$sib$f3|$j(3)$sib$n|$j(4)$sib$n|$j(5)$sib$sib|$srun_job$sib$n"
 
 squeue "$fedc1" "6" $r1
 squeue "$fedc2" "5" $r2
@@ -303,8 +303,8 @@ sleep 5
 set sib "\\s*$fedc2,$fedc3"
 
 set r1 "$j(0)$n$n"
-set r2 "$j(1)$f2$f2|$j(4)$sib$sib|$j(5)$sib$n|$sleep$sib$sib"
-set r3 "$j(2)$n$n|$j(4)$sib$n|$j(5)$sib$sib|$sleep$sib$n"
+set r2 "$j(1)$f2$f2|$j(4)$sib$sib|$j(5)$sib$n|$srun_job$sib$sib"
+set r3 "$j(2)$n$n|$j(4)$sib$n|$j(5)$sib$sib|$srun_job$sib$n"
 
 squeue "$fedc1" "1" $r1
 squeue "$fedc2" "4" $r2
