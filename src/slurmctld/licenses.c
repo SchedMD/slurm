@@ -602,9 +602,11 @@ extern void license_job_merge(struct job_record *job_ptr)
  * license_job_test - Test if the licenses required for a job are available
  * IN job_ptr - job identification
  * IN when    - time to check
+ * IN reboot    - true if node reboot required to start job
  * RET: SLURM_SUCCESS, EAGAIN (not available now), SLURM_ERROR (never runnable)
  */
-extern int license_job_test(struct job_record *job_ptr, time_t when)
+extern int license_job_test(struct job_record *job_ptr, time_t when,
+			    bool reboot)
 {
 	ListIterator iter;
 	licenses_t *license_entry, *match;
@@ -637,7 +639,7 @@ extern int license_job_test(struct job_record *job_ptr, time_t when)
 			 * selected the compute nodes yet */
 			resv_licenses = job_test_lic_resv(job_ptr,
 							  license_entry->name,
-							  when, true);
+							  when, reboot);
 			if ((license_entry->total + match->used +
 			     resv_licenses) > match->total) {
 				rc = EAGAIN;

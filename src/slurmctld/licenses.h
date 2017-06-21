@@ -107,9 +107,11 @@ extern int license_job_return(struct job_record *job_ptr);
  * license_job_test - Test if the licenses required for a job are available
  * IN job_ptr - job identification
  * IN when    - time to check
+ * IN reboot    - true if node reboot required to start job
  * RET: SLURM_SUCCESS, EAGAIN (not available now), SLURM_ERROR (never runnable)
  */
-extern int license_job_test(struct job_record *job_ptr, time_t when);
+extern int license_job_test(struct job_record *job_ptr, time_t when,
+			    bool reboot);
 
 /*
  * license_validate - Test if the required licenses are valid

@@ -862,7 +862,7 @@ next_part:		part_ptr = (struct part_record *)
 			continue;
 		}
 
-		if (license_job_test(job_ptr, now) != SLURM_SUCCESS) {
+		if (license_job_test(job_ptr, now, true) != SLURM_SUCCESS) {
 			job_ptr->state_reason = WAIT_LICENSES;
 			xfree(job_ptr->state_desc);
 			last_job_update = now;
@@ -1832,7 +1832,8 @@ next_task:
 			       job_ptr->partition);
 			continue;
 		}
-		if (license_job_test(job_ptr, time(NULL)) != SLURM_SUCCESS) {
+		if (license_job_test(job_ptr, time(NULL), true) !=
+		    SLURM_SUCCESS) {
 			job_ptr->state_reason = WAIT_LICENSES;
 			xfree(job_ptr->state_desc);
 			last_job_update = now;

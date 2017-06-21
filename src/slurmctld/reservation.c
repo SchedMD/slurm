@@ -5106,7 +5106,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 		list_iterator_destroy(iter);
 
 		if ((rc == SLURM_SUCCESS) && move_time) {
-			if (license_job_test(job_ptr, job_start_time)
+			if (license_job_test(job_ptr, job_start_time, reboot)
 			    == EAGAIN) {
 				/* Need to postpone for licenses. Time returned
 				 * is best case; first reservation with those

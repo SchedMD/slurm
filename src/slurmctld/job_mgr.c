@@ -4506,7 +4506,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		set_job_prio(job_ptr);
 
 	if (independent &&
-	    (license_job_test(job_ptr, time(NULL)) != SLURM_SUCCESS))
+	    (license_job_test(job_ptr, time(NULL), true) != SLURM_SUCCESS))
 		independent = false;
 
 	/* Avoid resource fragmentation if important */

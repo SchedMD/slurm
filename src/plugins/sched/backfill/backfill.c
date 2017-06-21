@@ -1509,7 +1509,8 @@ next_task:
 		}
 
 		if ((!job_independent(job_ptr, 0)) ||
-		    (license_job_test(job_ptr, time(NULL)) != SLURM_SUCCESS)) {
+		    (license_job_test(job_ptr, time(NULL), true) !=
+		     SLURM_SUCCESS)) {
 			if (debug_flags & DEBUG_FLAG_BACKFILL)
 				info("backfill: job %u not runable now",
 				     job_ptr->job_id);

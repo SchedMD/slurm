@@ -99,6 +99,7 @@ documents those changes that are of interest to users and administrators.
     start times of pending jobs to get pushed forward in time. On systems with
     large numbers of running jobs, performance of the backfill scheduler will
     suffer and fewer jobs will be evaluated.
+ -- Improve scheduling logic with respect to license use and node reboots.
 
 * Changes in Slurm 17.02.5
 ==========================
