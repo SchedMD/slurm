@@ -117,23 +117,7 @@ static void _fan_in_finished(pmixp_coll_t *coll)
 
 static void _fan_out_finished(pmixp_coll_t *coll)
 {
-	coll->seq++; /* move to the next collective */
-	switch (coll->state) {
-	case PMIXP_COLL_FAN_OUT:
-		_reset_coll(coll);
-		break;
-	case PMIXP_COLL_FAN_OUT_IN:
-		/* we started to receive data for the new collective
-		 * switch to the fan-in stage */
-		coll->state = PMIXP_COLL_FAN_IN;
-		/* set the right timestamp */
-		coll->ts = coll->ts_next;
-		break;
-	default:
-		PMIXP_ERROR("Bad collective state = %d", coll->state);
-		xassert(PMIXP_COLL_FAN_OUT == coll->state ||
-			PMIXP_COLL_FAN_OUT_IN == coll->state);
-	}
+	_reset_coll(coll);
 }
 
 static void _reset_coll(pmixp_coll_t *coll)
@@ -155,6 +139,15 @@ static void _reset_coll(pmixp_coll_t *coll)
 		coll->contrib_local = 0;
 		coll->cbdata = NULL;
 		coll->cbfunc = NULL;
+		break;
+	case PMIXP_COLL_FAN_OUT_IN:
+		/* we started to receive data for the new collective
+		 * switch to the fan-in stage */
+		coll->state = PMIXP_COLL_FAN_IN;
+		/* move to the next collective */
+		coll->seq++;
+		/* set the right timestamp */
+		coll->ts = coll->ts_next;
 		break;
 	default:
 		PMIXP_ERROR("Bad collective state = %d", coll->state);
