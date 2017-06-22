@@ -1811,25 +1811,26 @@ _pack_cred(slurm_cred_t *cred, Buf buffer, uint16_t protocol_version)
 	}
 }
 
+static int _list_find_cred_state(void *x, void *key)
+{
+	cred_state_t *s = (cred_state_t *) x;
+	slurm_cred_t *cred = (slurm_cred_t *) key;
+	if ((s->jobid  == cred->jobid)  &&
+	    (s->stepid == cred->stepid) &&
+	    (s->ctime  == cred->ctime))
+		return 1;
+	return 0;
+}
+
 
 static bool
 _credential_replayed(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 {
-	ListIterator  i = NULL;
 	cred_state_t *s = NULL;
 
 	_clear_expired_credential_states(ctx);
 
-	i = list_iterator_create(ctx->state_list);
-
-	while ((s = list_next(i))) {
-		if ((s->jobid  == cred->jobid)  &&
-		    (s->stepid == cred->stepid) &&
-		    (s->ctime  == cred->ctime))
-			break;
-	}
-
-	list_iterator_destroy(i);
+	s = list_find_first(ctx->state_list, _list_find_cred_state, cred);
 
 	/*
 	 * If we found a match, this credential is being replayed.
@@ -1915,19 +1916,20 @@ _credential_revoked(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 	return false;
 }
 
+static int _list_find_job_state(void *x, void *key)
+{
+	job_state_t *j = (job_state_t *) x;
+	uint32_t jobid = *(uint32_t *) key;
+	if (j->jobid == jobid)
+		return 1;
+	return 0;
+}
 
 static job_state_t *
 _find_job_state(slurm_cred_ctx_t ctx, uint32_t jobid)
 {
-	ListIterator  i = NULL;
-	job_state_t  *j = NULL;
-
-	i = list_iterator_create(ctx->job_list);
-	while ((j = list_next(i))) {
-		if (j->jobid == jobid)
-			break;
-	}
-	list_iterator_destroy(i);
+	job_state_t *j =
+		list_find_first(ctx->job_list, _list_find_job_state, &jobid);
 	return j;
 }
 
@@ -2012,25 +2014,27 @@ _clear_expired_job_states(slurm_cred_ctx_t ctx)
 	list_iterator_destroy(i);
 }
 
+static int _list_find_expired(void *x, void *key)
+{
+	cred_state_t *s = (cred_state_t *)x;
+	time_t curr_time = *(time_t *)key;
+
+	if (curr_time > s->expiration)
+		return 1;
+	return 0;
+}
 
 static void
 _clear_expired_credential_states(slurm_cred_ctx_t ctx)
 {
 	static time_t last_scan = 0;
 	time_t        now = time(NULL);
-	ListIterator  i   = NULL;
-	cred_state_t *s   = NULL;
 
 	if ((now - last_scan) < 2)	/* Reduces slurmd overhead */
 		return;
 	last_scan = now;
 
-	i = list_iterator_create(ctx->state_list);
-	while ((s = list_next(i))) {
-		if (now > s->expiration)
-			list_delete_item(i);
-	}
-	list_iterator_destroy(i);
+	list_delete_all(ctx->state_list, _list_find_expired, &now);
 }
 
 

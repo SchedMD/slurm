@@ -11072,6 +11072,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				&tmp_part_ptr, part_ptr_list,
 				job_ptr->assoc_ptr, job_ptr->qos_ptr);
 			if (!error_code) {
+				acct_policy_remove_job_submit(job_ptr);
 				xfree(job_ptr->partition);
 				job_ptr->partition =
 					xstrdup(job_specs->partition);
@@ -11085,6 +11086,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				     "job_id %u", job_specs->partition,
 				     job_ptr->job_id);
 				update_accounting = true;
+				acct_policy_add_job_submit(job_ptr);
 			}
 		}
 		FREE_NULL_LIST(part_ptr_list);	/* error clean-up */

@@ -1350,7 +1350,7 @@ static int _handle_add_extern_pid_internal(stepd_step_rec_t *job, pid_t pid)
 	/* track pid: add outside of the below thread so that the pam module
 	 * waits until the parent pid is added, before letting the parent spawn
 	 * any children. */
-	jobacct_id.taskid = job->nodeid;
+	jobacct_id.taskid = job->nodeid; /* Treat node ID as global task ID */
 	jobacct_id.nodeid = job->nodeid;
 	jobacct_id.job = job;
 

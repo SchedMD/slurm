@@ -487,28 +487,35 @@ static void _qos_adjust_limit_usage(int type, struct job_record *job_ptr,
 		used_limits_a->submit_jobs += job_cnt;
 		break;
 	case ACCT_POLICY_REM_SUBMIT:
-		if (qos_ptr->usage->grp_used_submit_jobs)
+		if (qos_ptr->usage->grp_used_submit_jobs >= job_cnt)
 			qos_ptr->usage->grp_used_submit_jobs -= job_cnt;
-		else
+		else {
+			qos_ptr->usage->grp_used_submit_jobs = 0;
 			debug2("acct_policy_remove_job_submit: "
 			       "grp_submit_jobs underflow for qos %s",
 			       qos_ptr->name);
+		}
 
-		if (used_limits->submit_jobs)
+		if (used_limits->submit_jobs >= job_cnt)
 			used_limits->submit_jobs -= job_cnt;
-		else
+		else {
+			used_limits->submit_jobs = 0;
 			debug2("acct_policy_remove_job_submit: "
 			       "used_submit_jobs underflow for "
 			       "qos %s user %d",
 			       qos_ptr->name, used_limits->uid);
+		}
 
-		if (used_limits_a->submit_jobs)
+		if (used_limits_a->submit_jobs >= job_cnt)
 			used_limits_a->submit_jobs -= job_cnt;
-		else
+		else {
+			used_limits_a->submit_jobs = 0;
 			debug2("acct_policy_remove_job_submit: "
 			       "used_submit_jobs underflow for "
 			       "qos %s account %s",
 			       qos_ptr->name, used_limits_a->acct);
+		}
+
 		break;
 	case ACCT_POLICY_JOB_BEGIN:
 		qos_ptr->usage->grp_used_jobs++;
@@ -617,9 +624,16 @@ static void _qos_adjust_limit_usage(int type, struct job_record *job_ptr,
 
 }
 
+static int _find_qos_part(void *x, void *key)
+{
+	if ((slurmdb_qos_rec_t *) x == (slurmdb_qos_rec_t *) key)
+		return 1;	/* match */
+
+	return 0;
+}
+
 static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 {
-	slurmdb_qos_rec_t *qos_ptr_1, *qos_ptr_2;
 	slurmdb_assoc_rec_t *assoc_ptr = NULL;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
@@ -650,12 +664,102 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 
 	assoc_mgr_lock(&locks);
 
-	_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
+	/*
+	 * If we have submitted to multiple partitions we need to handle all of
+	 * them on submit and remove if the job was cancelled before it ran
+	 * (!job_ptr->tres_alloc_str).
+	 */
+	if (((type == ACCT_POLICY_ADD_SUBMIT) ||
+	    (type == ACCT_POLICY_REM_SUBMIT)) &&
+	    job_ptr->part_ptr_list &&
+	    (IS_JOB_PENDING(job_ptr) || !job_ptr->tres_alloc_str)) {
+		bool job_first = false;
+		ListIterator part_itr;
+		struct part_record *part_ptr;
+		List part_qos_list = NULL;
 
-	_qos_adjust_limit_usage(type, job_ptr, qos_ptr_1,
-				used_tres_run_secs, job_cnt);
-	_qos_adjust_limit_usage(type, job_ptr, qos_ptr_2,
-				used_tres_run_secs, job_cnt);
+		if (job_ptr->qos_ptr &&
+		    (((slurmdb_qos_rec_t *)job_ptr->qos_ptr)->flags
+		     & QOS_FLAG_OVER_PART_QOS))
+			job_first = true;
+
+		if (job_first) {
+			_qos_adjust_limit_usage(type, job_ptr, job_ptr->qos_ptr,
+						used_tres_run_secs, job_cnt);
+			part_qos_list = list_create(NULL);
+			list_push(part_qos_list, job_ptr->qos_ptr);
+		}
+
+		part_itr = list_iterator_create(job_ptr->part_ptr_list);
+		while ((part_ptr = list_next(part_itr))) {
+			if (!part_ptr->qos_ptr)
+				continue;
+			if (!part_qos_list)
+				part_qos_list = list_create(NULL);
+			if (list_find_first(part_qos_list, _find_qos_part,
+					    part_ptr->qos_ptr))
+				continue;
+			list_push(part_qos_list, part_ptr->qos_ptr);
+			_qos_adjust_limit_usage(type, job_ptr,
+						part_ptr->qos_ptr,
+						used_tres_run_secs, job_cnt);
+		}
+		list_iterator_destroy(part_itr);
+
+		if (!job_first && (!part_qos_list ||
+		    !list_find_first(part_qos_list, _find_qos_part,
+				     job_ptr->qos_ptr)))
+			_qos_adjust_limit_usage(type, job_ptr, job_ptr->qos_ptr,
+						used_tres_run_secs, job_cnt);
+
+		FREE_NULL_LIST(part_qos_list);
+	} else {
+		slurmdb_qos_rec_t *qos_ptr_1, *qos_ptr_2;
+
+		/*
+		 * Here if the job is starting and we had a part_ptr_list before
+		 * hand we need to remove the submit from all partition qos
+		 * outside of the one we actually are going to run on.
+		 */
+		if ((type == ACCT_POLICY_JOB_BEGIN) &&
+		    job_ptr->part_ptr_list) {
+			ListIterator part_itr;
+			struct part_record *part_ptr;
+			List part_qos_list = list_create(NULL);
+
+			if (job_ptr->qos_ptr)
+				list_push(part_qos_list, job_ptr->qos_ptr);
+			if (job_ptr->part_ptr && job_ptr->part_ptr->qos_ptr &&
+			    job_ptr->qos_ptr != job_ptr->part_ptr->qos_ptr)
+				list_push(part_qos_list,
+					  job_ptr->part_ptr->qos_ptr);
+
+			part_itr = list_iterator_create(job_ptr->part_ptr_list);
+			while ((part_ptr = list_next(part_itr))) {
+				if (!part_ptr->qos_ptr)
+					continue;
+
+				if (list_find_first(part_qos_list,
+						    _find_qos_part,
+						    part_ptr->qos_ptr))
+					continue;
+				_qos_adjust_limit_usage(ACCT_POLICY_REM_SUBMIT,
+							job_ptr,
+							part_ptr->qos_ptr,
+							used_tres_run_secs,
+							job_cnt);
+			}
+			list_iterator_destroy(part_itr);
+			FREE_NULL_LIST(part_qos_list);
+		}
+
+		_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
+
+		_qos_adjust_limit_usage(type, job_ptr, qos_ptr_1,
+					used_tres_run_secs, job_cnt);
+		_qos_adjust_limit_usage(type, job_ptr, qos_ptr_2,
+					used_tres_run_secs, job_cnt);
+	}
 
 	assoc_ptr = job_ptr->assoc_ptr;
 	while (assoc_ptr) {

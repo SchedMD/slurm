@@ -124,6 +124,12 @@ documents those changes that are of interest to users and administrators.
     the requested value, instead of always setting one (srun).
  -- Correct error message when ClusterName in configuration files does not match
     the name in the slurmctld daemon's state save file.
+ -- Better checking when a job is finishing to avoid underflow on job's
+    submitted to a QOS/association.
+ -- Handle partition QOS submit limits correctly when a job is submitted to
+    more than 1 partition or when the partition is changed with scontrol.
+ -- Performance boost for when Slurm is dealing with credentials.
+ -- Fix race condition which could leave a stepd hung on shutdown.
 
 * Changes in Slurm 17.02.4
 ==========================
