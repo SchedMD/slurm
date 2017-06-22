@@ -366,7 +366,7 @@ main (int argc, char **argv)
 	if (slurmd_plugstack_init())
 		fatal("failed to initialize slurmd_plugstack");
 
-	/* Wait for a successfull health check if HealthCheckInterval != 0 */
+	/* Wait for a successful health check if HealthCheckInterval != 0 */
 	_wait_health_check();
 
 	_spawn_registration_engine();
@@ -2359,7 +2359,7 @@ static void _resource_spec_fini(void)
 /*
  * Wait for health check to execute successfully
  *
- * Return imediately if a shutdown has been requested or
+ * Return immediately if a shutdown has been requested or
  * if the HealthCheckInterval is 0.
  */
 static void _wait_health_check(void)

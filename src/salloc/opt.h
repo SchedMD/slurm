@@ -178,7 +178,7 @@ typedef struct salloc_options {
 
 extern opt_t opt;
 extern int error_exit;		/* exit code for slurm errors */
-extern int immediate_exit;	/* exit code for --imediate option & busy */
+extern int immediate_exit;	/* exit code for --immediate option & busy */
 
 /* process options:
  * 1. set defaults

@@ -248,7 +248,7 @@ typedef struct srun_options {
 extern opt_t opt;
 
 extern int error_exit;		/* exit code for slurm errors */
-extern int immediate_exit;	/* exit code for --imediate option & busy */
+extern int immediate_exit;	/* exit code for --immediate option & busy */
 extern bool srun_max_timer;
 extern bool srun_shutdown;
 extern time_t srun_begin_time;	/* begin time of srun process */
