@@ -121,8 +121,6 @@ proc sbatch_to { options regex } {
 		end_it 1
 	}
 
-	sleep 2
-
 	return $job_id
 }
 
@@ -340,6 +338,7 @@ sbatch_to "--test-only" $regex
 
 set ji0   [sbatch_to "-t5" $reg_default]
 set f1    [wait_for_fed_job $ji0 RUNNING $fedc1,$fedc2,$fedc3]
+sleep 2
 
 set feds  [lremove $feds $f1]
 set regex [build_regex $feds]
@@ -349,6 +348,7 @@ sbatch_to "--test-only" $regex
 
 set ji1 [sbatch_to "-t10" $reg_default]
 set f2  [wait_for_fed_job $ji1 RUNNING $fedc1,$fedc2,$fedc3]
+sleep 2
 
 set feds  [lremove $feds $f2]
 set regex [build_regex $feds]
@@ -358,6 +358,7 @@ sbatch_to "--test-only" $regex
 
 set ji2 [sbatch_to "-t15" $reg_default]
 set f3  [wait_for_fed_job $ji2 RUNNING $fedc1,$fedc2,$fedc3]
+sleep 2
 
 set regex [build_regex $f1]
 sbatch_to "--test-only" $regex
@@ -418,6 +419,7 @@ srun "--test-only" $regex
 
 set ji0 [srun "-t5" $reg_default]
 set f1  [wait_for_fed_job $ji0 RUNNING $fedc1,$fedc2,$fedc3]
+sleep 2
 
 set fed   [lremove $feds $f1]
 set regex [build_regex $feds]
@@ -428,6 +430,7 @@ srun "--test-only" $regex
 
 set ji1 [srun "-t10" $reg_default]
 set f2  [wait_for_fed_job $ji1 RUNNING $fedc1,$fedc2,$fedc3]
+sleep 2
 
 set feds  [lremove $feds $f2]
 set regex [build_regex $feds]
@@ -439,6 +442,7 @@ srun "--test-only" $regex
 set ji2   [srun "-t15" $reg_default]
 set f3    [wait_for_fed_job $ji2 RUNNING $fedc1,$fedc2,$fedc3]
 set regex [build_regex $f1]
+sleep 2
 
 srun "--test-only" $regex
 srun "--test-only" $regex
