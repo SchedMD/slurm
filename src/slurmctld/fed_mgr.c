@@ -1200,7 +1200,7 @@ static int _persist_fed_job_requeue(slurmdb_cluster_rec_t *conn,
 static int _find_sibling_by_id(void *x, void *key)
 {
 	slurmdb_cluster_rec_t *object = (slurmdb_cluster_rec_t *)x;
-	int id = (intptr_t)key;
+	uint32_t id = *(uint32_t *)key;
 
 	if (object->fed.id == id)
 		return 1;
@@ -1286,8 +1286,9 @@ static void _destroy_fed_job_update_info(void *object)
 
 extern slurmdb_cluster_rec_t *fed_mgr_get_cluster_by_id(uint32_t id)
 {
+	uint32_t key = id;
 	return list_find_first(fed_mgr_fed_rec->cluster_list,
-			       _find_sibling_by_id, (void *)(intptr_t)id);
+			       _find_sibling_by_id, &key);
 }
 
 extern slurmdb_cluster_rec_t *fed_mgr_get_cluster_by_name(char *sib_name)
