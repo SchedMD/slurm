@@ -741,6 +741,10 @@ static void _fed_mgr_ptr_init(slurmdb_federation_rec_t *db_fed,
 			tmp_cluster->fed.recv = NULL;
 			db_cluster->send_rpc = tmp_cluster->send_rpc;
 			tmp_cluster->send_rpc = NULL;
+			db_cluster->fed.sync_sent =
+				tmp_cluster->fed.sync_sent;
+			db_cluster->fed.sync_recvd =
+				tmp_cluster->fed.sync_recvd;
 			slurm_mutex_unlock(&tmp_cluster->lock);
 
 			list_delete_all(fed_mgr_fed_rec->cluster_list,
@@ -847,6 +851,8 @@ static void _persist_callback_fini(void *arg)
 		slurm_persist_conn_destroy(persist_conn);
 		cluster->fed.send = NULL;
 	}
+	cluster->fed.sync_recvd = false;
+	cluster->fed.sync_sent  = false;
 
 	slurm_mutex_unlock(&cluster->lock);
 	unlock_slurmctld(fed_write_lock);
@@ -1952,6 +1958,8 @@ extern int _handle_fed_send_job_sync(fed_job_update_info_t *job_update_info)
 	req_msg.msg_type         = REQUEST_SIB_MSG;
 	req_msg.protocol_version = job_msg.protocol_version;
 	req_msg.data             = &sib_msg;
+
+	sibling->fed.sync_sent = true;
 
 	rc = _queue_rpc(sibling, &req_msg, 0, false);
 
@@ -4613,6 +4621,8 @@ static int _sync_jobs(const char *sib_name, job_info_msg_t *job_info_msg,
 
 	list_for_each(job_list, _reconcile_fed_job, &rec_sib);
 
+	sib->fed.sync_recvd = true;
+
 	return SLURM_SUCCESS;
 }
 
@@ -4908,4 +4918,35 @@ extern int fed_mgr_q_sib_msg(slurm_msg_t *msg, uint32_t rpc_uid)
 	}
 
 	return SLURM_SUCCESS;
+}
+
+static int _list_find_not_synced_sib(void *x, void *key)
+{
+	slurmdb_cluster_rec_t *sib = x;
+
+	if (sib != fed_mgr_cluster_rec &&
+	    sib->fed.send &&
+	    (((slurm_persist_conn_t *)sib->fed.send)->fd >= 0) &&
+	    !sib->fed.sync_recvd)
+		return 1;
+
+	return 0;
+}
+
+extern bool fed_mgr_sibs_synced()
+{
+	slurmdb_cluster_rec_t *sib;
+	int dummy = 1;
+
+	if (!fed_mgr_fed_rec)
+		return true;
+
+	if ((sib = list_find_first(fed_mgr_fed_rec->cluster_list,
+				   _list_find_not_synced_sib, &dummy))) {
+		debug("%s: sibling %s up but not synced yet",
+		      __func__, sib->name);
+		return false;
+	}
+
+	return true;
 }

@@ -84,6 +84,7 @@ extern int       fed_mgr_job_start(struct job_record *job_ptr,
 extern int       fed_mgr_q_sib_msg(slurm_msg_t *sib_msg, uint32_t rpc_uid);
 extern int       fed_mgr_remove_active_sibling(uint32_t job_id, char *sib_name);
 extern void      fed_mgr_remove_fed_job_info(uint32_t job_id);
+extern bool      fed_mgr_sibs_synced();
 extern int       fed_mgr_state_save(char *state_save_location);
 extern int       fed_mgr_update_job(uint32_t job_id, job_desc_msg_t *job_specs,
 				    uint64_t update_sibs, uid_t uid);

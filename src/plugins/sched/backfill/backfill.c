@@ -1002,6 +1002,13 @@ static int _attempt_backfill(void)
 		  NO_LOCK, NO_LOCK, NO_LOCK };
 
 	bf_sleep_usec = 0;
+
+	if (!fed_mgr_sibs_synced()) {
+		debug("backfill: %s returning, federation siblings not synced yet",
+		      __func__);
+		return SLURM_SUCCESS;
+	}
+
 #ifdef HAVE_ALPS_CRAY
 	/*
 	 * Run a Basil Inventory immediately before setting up the schedule

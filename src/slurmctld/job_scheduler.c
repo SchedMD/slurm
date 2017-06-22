@@ -1430,6 +1430,11 @@ static int _schedule(uint32_t job_limit)
 		goto out;
 	}
 
+	if (!fed_mgr_sibs_synced()) {
+		debug("sched: schedule() returning, federation siblings not synced yet");
+		goto out;
+	}
+
 	if (job_limit == 0)
 		job_limit = def_job_limit;
 
