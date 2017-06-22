@@ -969,6 +969,9 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->exc_nodes);
 		xfree(job->exc_node_inx);
 		xfree(job->features);
+		xfree(job->fed_origin_str);
+		xfree(job->fed_siblings_active_str);
+		xfree(job->fed_siblings_viable_str);
 		xfree(job->gres);
 		if (job->gres_detail_str) {
 			for (i = 0; i < job->gres_detail_cnt; i++)
@@ -4995,3 +4998,21 @@ extern bool cluster_in_federation(void *ptr, char *cluster_name)
 	list_iterator_destroy(iter);
 	return status;
 }
+
+/* Find where cluster_name nodes start in the node_array */
+extern int get_cluster_node_offset(char *cluster_name,
+				   node_info_msg_t *node_info_ptr)
+{
+	int offset;
+
+	xassert(cluster_name);
+	xassert(node_info_ptr);
+
+	for (offset = 0; offset < node_info_ptr->record_count; offset++)
+		if (!xstrcmp(cluster_name,
+			     node_info_ptr->node_array[offset].cluster_name))
+			return offset;
+
+	return 0;
+}
+

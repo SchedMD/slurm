@@ -211,6 +211,7 @@ static int          _accounting_mark_all_nodes_down(char *reason);
 static void *       _assoc_cache_mgr(void *no_data);
 static void         _become_slurm_user(void);
 static void         _default_sigaction(int sig);
+static void         _get_fed_updates();
 static void         _init_config(void);
 static void         _init_pidfile(void);
 static void         _kill_old_slurmctld(void);
@@ -2745,8 +2746,10 @@ static void *_assoc_cache_mgr(void *no_data)
 			slurm_mutex_unlock(&assoc_cache_mutex);
 			return NULL;
 		}
-		/* Make sure not to have job_write_lock or assoc_mgr locks when
-		 * refresh_lists is called or you may get deadlock.
+		/*
+		 * Make sure not to have the job_write_lock, assoc_mgr or the
+		 * slurmdbd_lock locked when refresh_lists is called or you may
+		 * get deadlock.
 		 */
 		assoc_mgr_refresh_lists(acct_db_conn, 0);
 		if (g_tres_count != slurmctld_tres_cnt) {
@@ -2864,6 +2867,8 @@ end_it:
 	/* This needs to be after the lock and after we update the
 	   jobs so if we need to send them we are set. */
 	_accounting_cluster_ready();
+	_get_fed_updates();
+
 	return NULL;
 }
 
@@ -3086,4 +3091,27 @@ static void *_purge_files_thread(void *no_data)
 	}
 	slurm_mutex_unlock(&purge_thread_lock);
 	return NULL;
+}
+
+static void _get_fed_updates()
+{
+	List fed_list = NULL;
+	slurmdb_update_object_t update = {0};
+	slurmdb_federation_cond_t fed_cond;
+
+	slurmdb_init_federation_cond(&fed_cond, 0);
+	fed_cond.cluster_list = list_create(NULL);
+	list_append(fed_cond.cluster_list, slurmctld_conf.cluster_name);
+
+	fed_list = acct_storage_g_get_federations(acct_db_conn,
+						  slurmctld_conf.slurm_user_id,
+						  &fed_cond);
+	FREE_NULL_LIST(fed_cond.cluster_list);
+
+	if (fed_list) {
+		update.objects = fed_list;
+		fed_mgr_update_feds(&update);
+	}
+
+	FREE_NULL_LIST(fed_list);
 }

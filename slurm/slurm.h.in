@@ -3300,6 +3300,7 @@ typedef struct job_step_kill_msg {
 #define KILL_FED_REQUEUE 0x0010 /* Mark job as requeued when requeued */
 #define KILL_HURRY	 0x0020	/* Skip burst buffer stage out */
 #define KILL_OOM	 0x0040	/* Kill due to Out-Of-Memory */
+#define KILL_NO_SIBS	 0x0080	/* Don't kill other sibling jobs */
 
 /* Use top bit of uint16_t in conjuction with KILL_* flags to indicate signal
  * has been sent to job previously. Does not need to be passed to slurmd. */

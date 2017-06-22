@@ -49,31 +49,6 @@
 
 #define POLL_SLEEP	3	/* retry interval in seconds  */
 
-static bool	_in_node_bit_list(int inx, int *node_list_array);
-
-/*
- * Determine if a node index is in a node list pair array.
- * RET -  true if specified index is in the array
- */
-static bool
-_in_node_bit_list(int inx, int *node_list_array)
-{
-	int i;
-	bool rc = false;
-
-	for (i=0; ; i+=2) {
-		if (node_list_array[i] == -1)
-			break;
-		if ((inx >= node_list_array[i]) &&
-		    (inx <= node_list_array[i+1])) {
-			rc = true;
-			break;
-		}
-	}
-
-	return rc;
-}
-
 /* Load current job table information into *job_buffer_pptr */
 extern int
 scontrol_load_job(job_info_msg_t ** job_buffer_pptr, uint32_t job_id)
@@ -194,6 +169,10 @@ scontrol_print_completing (void)
 	 * from job's node_inx to node table to work */
 	/*if (all_flag)		Always set this flag */
 	show_flags |= SHOW_ALL;
+	if (federation_flag)
+		show_flags |= SHOW_FEDERATION;
+	if (local_flag)
+		show_flags |= SHOW_LOCAL;
 	error_code = scontrol_load_nodes(&node_info_msg, show_flags);
 	if (error_code) {
 		exit_code = 1;
@@ -216,23 +195,30 @@ extern void
 scontrol_print_completing_job(job_info_t *job_ptr,
 			      node_info_msg_t *node_info_msg)
 {
-	int i;
+	int i, c_offset = 0;
 	node_info_t *node_info;
-	hostlist_t all_nodes, comp_nodes, down_nodes;
+	hostlist_t comp_nodes, down_nodes;
 	char *node_buf;
 
-	all_nodes  = hostlist_create(job_ptr->nodes);
 	comp_nodes = hostlist_create(NULL);
 	down_nodes = hostlist_create(NULL);
 
-	for (i=0; i<node_info_msg->record_count; i++) {
-		node_info = &(node_info_msg->node_array[i]);
-		if (IS_NODE_COMPLETING(node_info) &&
-		    (_in_node_bit_list(i, job_ptr->node_inx)))
-			hostlist_push_host(comp_nodes, node_info->name);
-		else if (IS_NODE_DOWN(node_info) &&
-			 (hostlist_find(all_nodes, node_info->name) != -1))
-			hostlist_push_host(down_nodes, node_info->name);
+	if (job_ptr->cluster && federation_flag && !local_flag)
+		c_offset = get_cluster_node_offset(job_ptr->cluster,
+						   node_info_msg);
+
+	for (i = 0; job_ptr->node_inx[i] != -1; i+=2) {
+		int j = job_ptr->node_inx[i];
+		for (; j <= job_ptr->node_inx[i+1]; j++) {
+			int node_inx = j + c_offset;
+			if (node_inx >= node_info_msg->record_count)
+				break;
+			node_info = &(node_info_msg->node_array[node_inx]);
+			if (IS_NODE_COMPLETING(node_info))
+				hostlist_push_host(comp_nodes, node_info->name);
+			else if (IS_NODE_DOWN(node_info))
+				hostlist_push_host(down_nodes, node_info->name);
+		}
 	}
 
 	fprintf(stdout, "JobId=%u ", job_ptr->job_id);
@@ -248,7 +234,6 @@ scontrol_print_completing_job(job_info_t *job_ptr,
 	xfree(node_buf);
 	fprintf(stdout, "\n");
 
-	hostlist_destroy(all_nodes);
 	hostlist_destroy(comp_nodes);
 	hostlist_destroy(down_nodes);
 }

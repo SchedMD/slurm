@@ -184,7 +184,6 @@ static int  _dump_job_state(void *x, void *y);
 static void _dump_job_fed_details(job_fed_details_t *fed_details_ptr,
 				  Buf buffer);
 static job_fed_details_t *_dup_job_fed_details(job_fed_details_t *src);
-static void _free_job_fed_details(job_fed_details_t **fed_details_pptr);
 static void _get_batch_job_dir_ids(List batch_dirs);
 static time_t _get_last_state_write_time(void);
 static void _job_array_comp(struct job_record *job_ptr, bool was_running);
@@ -2298,7 +2297,7 @@ unpack_error:
 	xfree(gres_alloc);
 	xfree(gres_req);
 	xfree(gres_used);
-	_free_job_fed_details(&job_fed_details);
+	free_job_fed_details(&job_fed_details);
 	free_job_resources(&job_resources);
 	xfree(resp_host);
 	xfree(licenses);
@@ -4728,16 +4727,33 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 	/* If is origin job then cancel siblings -- if they exist.
 	 * origin job = because it knows where the siblings are
 	 * If the job is running locally then just do the normal signalling */
-	if (job_ptr->fed_details &&
-	    fed_mgr_cluster_rec &&
-	    fed_mgr_is_origin_job(job_ptr) &&
-	    job_ptr->fed_details->cluster_lock != fed_mgr_cluster_rec->fed.id) {
-		int rc = fed_mgr_job_cancel(job_ptr, signal, flags, uid);
-		/* If the job is running on a remote cluster then wait for the
-		 * job to report back that it's completed, otherwise just signal
-		 * the pending siblings and itself (by not returning). */
-		if (job_ptr->fed_details->cluster_lock)
-			return rc;
+	if (!(flags & KILL_NO_SIBS) && !IS_JOB_RUNNING(job_ptr) &&
+	    job_ptr->fed_details && fed_mgr_fed_rec) {
+		uint32_t origin_id = fed_mgr_get_cluster_id(job_ptr->job_id);
+		slurmdb_cluster_rec_t *origin =
+			fed_mgr_get_cluster_by_id(origin_id);
+
+		if (origin && (origin == fed_mgr_cluster_rec) &&
+		    job_ptr->fed_details->cluster_lock &&
+		    (job_ptr->fed_details->cluster_lock !=
+		     fed_mgr_cluster_rec->fed.id)) {
+			/* If the job is running on a remote cluster then wait
+			 * for the job to report back that it's completed,
+			 * otherwise just signal the pending siblings and itself
+			 * (by not returning). */
+			return fed_mgr_job_cancel(job_ptr, signal, flags, uid,
+						  false);
+		} else if (origin && (origin == fed_mgr_cluster_rec)) {
+			/* cancel origin job and revoke sibling jobs */
+			fed_mgr_job_revoke_sibs(job_ptr);
+		} else if (!origin ||
+			   !origin->fed.send ||
+			   (((slurm_persist_conn_t *)origin->fed.send)->fd
+			    == -1)) {
+			/* The origin is down just signal all of the viable
+			 * sibling jobs */
+			fed_mgr_job_cancel(job_ptr, signal, flags, uid, true);
+		}
 	}
 
 	/* let node select plugin do any state-dependent signalling actions */
@@ -8534,7 +8550,7 @@ static void _list_delete_job(void *job_entry)
 	checkpoint_free_jobinfo(job_ptr->check_job);
 	xfree(job_ptr->comment);
 	xfree(job_ptr->clusters);
-	_free_job_fed_details(&job_ptr->fed_details);
+	free_job_fed_details(&job_ptr->fed_details);
 	free_job_resources(&job_ptr->job_resrcs);
 	xfree(job_ptr->gres);
 	xfree(job_ptr->gres_alloc);
@@ -8627,6 +8643,19 @@ static int _list_find_job_old(void *job_entry, void *key)
 
 	if (slurmctld_conf.min_job_age == 0)
 		return 0;	/* No job record purging */
+
+	if (fed_mgr_fed_rec && job_ptr->fed_details) {
+		uint32_t origin_id = fed_mgr_get_cluster_id(job_ptr->job_id);
+		slurmdb_cluster_rec_t *origin =
+			fed_mgr_get_cluster_by_id(origin_id);
+
+		/* keep job around until origin comes back and is synced */
+		if (origin &&
+		    (!origin->fed.send ||
+		     (((slurm_persist_conn_t *)origin->fed.send)->fd == -1) ||
+		     !origin->fed.sync_sent))
+		    return 0;
+	}
 
 	min_age  = now - slurmctld_conf.min_job_age;
 	if (fed_mgr_is_origin_job(job_ptr) &&
@@ -16603,7 +16632,7 @@ static job_fed_details_t *_dup_job_fed_details(job_fed_details_t *src)
 	return dst;
 }
 
-static void _free_job_fed_details(job_fed_details_t **fed_details_pptr)
+extern void free_job_fed_details(job_fed_details_t **fed_details_pptr)
 {
 	job_fed_details_t *fed_details_ptr = *fed_details_pptr;
 
@@ -16680,7 +16709,7 @@ static int _load_job_fed_details(job_fed_details_t **fed_details_pptr,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	_free_job_fed_details(fed_details_pptr);
+	free_job_fed_details(fed_details_pptr);
 	*fed_details_pptr = NULL;
 
 	return SLURM_ERROR;

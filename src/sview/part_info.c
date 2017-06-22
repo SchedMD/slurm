@@ -1881,6 +1881,7 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 	if (last_list)
 		last_list_itr = list_iterator_create(last_list);
 	for (i = 0; i < part_info_ptr->record_count; i++) {
+		int c_offset = 0;
 		part_ptr = &(part_info_ptr->partition_array[i]);
 
 		/* don't include configured excludes */
@@ -1912,14 +1913,21 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 		list_append(info_list, sview_part_info);
 		sview_part_info->color_inx = i % sview_colors_cnt;
 
+		if (cluster_flags & CLUSTER_FLAG_FED)
+			c_offset =
+				get_cluster_node_offset(part_ptr->cluster_name,
+							node_info_ptr);
+
 		j2 = 0;
 		while (part_ptr->node_inx[j2] >= 0) {
 			int i2 = 0;
-
 			for ((i2 = part_ptr->node_inx[j2]);
 			     (i2 <= part_ptr->node_inx[j2+1]);
 			     i2++) {
-				node_ptr = &(node_info_ptr->node_array[i2]);
+				node_info_t *node_array;
+				node_array = node_info_ptr->node_array;
+				node_ptr   = &(node_array[i2 + c_offset]);
+
 				_insert_sview_part_sub(sview_part_info,
 						       part_ptr,
 						       node_ptr,
@@ -2693,6 +2701,7 @@ display_it:
 		display_widget = NULL;
 	}
 	if (!display_widget) {
+		int def_sort_col = SORTID_NAME;
 		tree_view = create_treeview(local_display_data,
 					    &grid_button_list);
 		/*set multiple capability here*/
@@ -2706,8 +2715,10 @@ display_it:
 		/* since this function sets the model of the tree_view
 		   to the treestore we don't really care about
 		   the return value */
-		create_treestore(tree_view, display_data_part,
-				 SORTID_CNT, SORTID_NAME, SORTID_COLOR);
+		if (cluster_flags & CLUSTER_FLAG_FED)
+			def_sort_col = SORTID_CLUSTER_NAME;
+		create_treestore(tree_view, display_data_part, SORTID_CNT,
+				 def_sort_col, SORTID_COLOR);
 	}
 
 	view = INFO_VIEW;

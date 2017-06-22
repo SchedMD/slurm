@@ -32,6 +32,7 @@ generated_html = \
 	elastic_computing.html \
 	ext_sensorsplugins.html \
 	faq.html \
+	federation.html \
 	gang_scheduling.html \
 	gres.html \
 	gres_design.html \

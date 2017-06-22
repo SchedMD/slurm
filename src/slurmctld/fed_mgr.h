@@ -62,7 +62,8 @@ extern int       fed_mgr_job_allocate(slurm_msg_t *msg,
 				      uint32_t *job_id_ptr, int *alloc_code,
 				      char **err_msg);
 extern int       fed_mgr_job_cancel(struct job_record *job_ptr, uint16_t signal,
-				    uint16_t flags, uid_t uid);
+				    uint16_t flags, uid_t uid,
+				    bool kill_viable);
 extern int       fed_mgr_job_complete(struct job_record *job_ptr,
 				      uint32_t return_code, time_t start_time);
 extern bool      fed_mgr_job_is_locked(struct job_record *job_ptr);
@@ -83,6 +84,7 @@ extern int       fed_mgr_job_start(struct job_record *job_ptr,
 extern int       fed_mgr_q_sib_msg(slurm_msg_t *sib_msg, uint32_t rpc_uid);
 extern int       fed_mgr_remove_active_sibling(uint32_t job_id, char *sib_name);
 extern void      fed_mgr_remove_fed_job_info(uint32_t job_id);
+extern bool      fed_mgr_sibs_synced();
 extern int       fed_mgr_state_save(char *state_save_location);
 extern int       fed_mgr_update_job(uint32_t job_id, job_desc_msg_t *job_specs,
 				    uint64_t update_sibs, uid_t uid);

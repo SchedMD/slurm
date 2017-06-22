@@ -604,6 +604,8 @@ typedef struct {
 	void *send; /* slurm_persist_conn_t we send information to this
 		     * cluster on. (We set this information) */
 	uint32_t state; /* state of cluster in federation */
+	bool sync_recvd; /* true sync jobs from sib has been processed. */
+	bool sync_sent;  /* true after sib sent sync jobs to sibling */
 } slurmdb_cluster_fed_t;
 
 struct slurmdb_cluster_rec {

@@ -5501,11 +5501,17 @@ _slurm_rpc_kill_job2(slurm_msg_t *msg)
 	if (fed_mgr_fed_rec) {
 		uint32_t job_id, origin_id;
 		struct job_record *job_ptr;
+		slurmdb_cluster_rec_t *origin;
 
 		job_id    = strtol(kill->sjob_id, NULL, 10);
 		origin_id = fed_mgr_get_cluster_id(job_id);
+		origin    = fed_mgr_get_cluster_by_id(origin_id);
 
-		if ((origin_id && (origin_id != fed_mgr_cluster_rec->fed.id)) &&
+		/* only reroute to the origin if the connection is up. If it
+		 * isn't then _signal_job will signal the sibling jobs */
+		if (origin && origin->fed.send &&
+		    (((slurm_persist_conn_t *)origin->fed.send)->fd != -1) &&
+		    (origin != fed_mgr_cluster_rec) &&
 		    (!(job_ptr = find_job_record(job_id)) ||
 		     (job_ptr && job_ptr->fed_details &&
 		      (job_ptr->fed_details->cluster_lock !=

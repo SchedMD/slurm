@@ -1,0 +1,467 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test removing clusters from federation
+#
+# Reqs:    1. Using slurmdbd accounting storage type and is up
+#          2. fed_slurm_base is defined in globals.local - set to directory that
+#          has access to each federation configure (fedc1, fedc2, fedc3).
+#          Eg.
+#          fedr/slurm/ (src)
+#          fedr/fed1/bin
+#          fedr/fed1/sbin
+#          fedr/fed1/etc
+#          fedr/fed1/...
+#          fedr/fed2/...
+#          fedr/fed3/...
+#          3. controllers are up and running.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2017 SchedMD LLC.
+# Written by Isaac Hartung <ihartung@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+source ./globals
+source ./globals_accounting
+source ./globals_federation
+
+set test_id      "37.16"
+set exit_code    0
+set fed_name     "feda"
+set user_name    ""
+set srun_job_cnt 0
+set my_sbatch    "${fed_slurm_base}/$fedc1/bin/sbatch"
+set my_squeue    "${fed_slurm_base}/$fedc1/bin/squeue"
+set my_sacctmgr  "${fed_slurm_base}/$fedc1/bin/sacctmgr"
+set my_srun      "${fed_slurm_base}/$fedc2/bin/srun"
+set my_sacct     "${fed_slurm_base}/$fedc1/bin/sacct"
+set my_scontrol  "${fed_slurm_base}/$fedc1/bin/scontrol"
+
+set eol "\r\n"
+
+print_header $test_id
+
+#
+# Check accounting config and bail if not found.
+#
+
+if { [test_account_storage] == 0 } {
+	log_warn "This test can't be run without a usable AccountStorageType"
+	exit 0
+}
+
+if { [string compare [check_accounting_admin_level] "Administrator"] } {
+	log_warn "This test can't be run without being an Accounting administrator.\n \
+	 	  Use: sacctmgr mod user \$USER set admin=admin."
+	exit 0
+}
+
+proc scontrol { fed job_id index regex } {
+	global my_scontrol eol srun_spawn_id
+
+	set matches 0
+
+	send_user "\nexecuting $my_scontrol -M$fed notify $job_id I'm Alive\n"
+	send_user "output: [exec $my_scontrol -M$fed notify $job_id I'm Alive]\n"
+
+	set spawn_id $srun_spawn_id($index)
+	expect {
+		-re "$regex" {
+			incr matches
+		}
+		timeout {
+			log_error "srun not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		log_error "srun failure: expected $regex"
+		end_it 1
+	}
+}
+
+proc sbatch { options } {
+	global number bin_sleep my_sbatch fedc1 fedc2 fedc3
+
+	set matches 0
+	set job_id 0
+	set command "$my_sbatch -N10 --exclusive -o/dev/null "
+	append command $options
+	append command " --wrap \"sleep 300\""
+	set regex "Submitted batch job ($number).+"
+	spawn {*}$command
+	expect {
+		-re "$regex" {
+			incr matches
+			set job_id $expect_out(1,string)
+		}
+		timeout {
+			log_error "sbatch not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		log_error "batch submit failure: expected $regex"
+		end_it 1
+	}
+
+	return $job_id
+}
+
+proc srun { options index } {
+	global number srun_spawn_id bin_sleep my_srun
+
+	set matches 0
+	set job_id 0
+	set command "$my_srun --exclusive -N10 "
+	append command $options
+	append command " sleep 300"
+	set regex "($number)"
+	spawn {*}$command
+	set srun_spawn_id($index) $spawn_id
+	expect {
+		-re "$regex" {
+			incr matches
+			set job_id $expect_out(1,string)
+		}
+		timeout {
+			log_error "srun not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		log_error "srun failure: expected $regex"
+		end_it 1
+	}
+
+	return $job_id
+}
+
+proc squeue { fed m regex } {
+	global my_squeue
+
+	set matches 0
+	set command "$my_squeue -Ostatecompact:.4,name:.10,jobid:.10,siblingsviable:.20,siblingsactive:.20 -a -M$fed"
+	spawn {*}$command
+	expect {
+		-re "$regex" {
+			incr matches
+			exp_continue
+		}
+	}
+	if {$matches != $m} {
+		log_error "unexpected error in squeue. expected $regex.  Matched $matches/$m times."
+		end_it 1
+	}
+}
+
+proc cancel_all_jobs { } {
+	global scancel user_name fedc1 fedc2 fedc3
+
+	spawn $scancel -M$fedc1,$fedc2,$fedc3 --user $user_name
+	expect {
+		eof {
+			wait
+		}
+	}
+	sleep 5
+}
+
+proc cleanup { } {
+	global scancel fed_name user_name bin_rm file_in fedc1 fedc2 fedc3
+	global test_id bin_bash my_sacctmgr
+
+	cancel_all_jobs
+	exec $bin_bash -c "$bin_rm -f test$test_id*.out"
+
+	return [delete_federations $fed_name]
+}
+
+proc end_it { exit_code } {
+	global test_id my_squeue
+	cleanup
+	if {$exit_code == 0} {
+		print_success $test_id
+	}
+	exit $exit_code
+}
+
+#start test
+
+if {[test_federation_setup]} {
+	log_warn "WARNING: This test can't be run without fed_slurm_base,\
+		fedc1, fedc2, fedc3 setup in globals.local."
+	exit 0
+}
+
+if {[test_cluster_up $fedc1] ||
+    [test_cluster_up $fedc2] ||
+    [test_cluster_up $fedc3]} {
+	end_it 1
+}
+
+set user_name [get_my_user_name]
+
+# Remove existing setup
+if {[cleanup] != 0} {
+	log_error "failed to cleanup"
+	end_it 1
+}
+
+# add clusters to federation
+if {[setup_federation $fed_name]} {
+	log_error "failed to setup federation"
+	end_it 1
+}
+
+send_user "\n################################################################\n"
+send_user "Test sacctmgr remove federation"
+send_user "\n################################################################\n"
+
+cancel_all_jobs
+
+sleep 5
+
+set srun_spawn_id(0) 0
+
+set j(0) [sbatch -M$fedc1]
+wait_for_fed_job $j(0) RUNNING $fedc1
+set j(1) [sbatch -M$fedc2]
+wait_for_fed_job $j(1) RUNNING $fedc2
+set j(2) [sbatch ""]
+wait_for_fed_job $j(2) RUNNING $fedc3
+
+set j(3) [sbatch ""]
+
+set my_sbatch "${fed_slurm_base}/$fedc2/bin/sbatch"
+set j(4) [sbatch ""]
+
+set my_sbatch "${fed_slurm_base}/$fedc3/bin/sbatch"
+set j(5) [sbatch ""]
+
+srun "" 0
+
+sleep 5
+
+# Verify jobs are where they should be
+set f1      "\\s*$fedc1"
+set f2      "\\s*$fedc2"
+set f3      "\\s*$fedc3"
+set n       "\\s*NA"
+set srun_job "sleep\\s+\\d+"
+
+set sib "\\s*$fedc1,$fedc2,$fedc3"
+
+set r1 "$j(0)$f1$f1|$j(2)$sib$f3|$j(3)$sib$sib|$j(4)$sib$n|$j(5)$sib$n|$srun_job$sib$n"
+set r2 "$j(1)$f2$f2|$j(3)$sib$n|$j(4)$sib$sib|$j(5)$sib$n|$srun_job$sib$sib"
+set r3 "$j(2)$sib$f3|$j(3)$sib$n|$j(4)$sib$n|$j(5)$sib$sib|$srun_job$sib$n"
+
+squeue "$fedc1" "6" $r1
+squeue "$fedc2" "5" $r2
+squeue "$fedc3" "5" $r3
+
+spawn $my_sacctmgr mod fed $fed_name set -i clusters-=$fedc1
+
+sleep 5
+
+# Verify:
+# 1. all non-running jobs are removed from the removed cluster
+# 2. origin tracking jobs are removed.
+# 3. non-origin jobs have the removed cluster removed from the viable and
+# active siblings
+# 4. non-origin running jobs are still running and don't have federation
+# information (e.g. viable and active siblings).
+set sib "\\s*$fedc2,$fedc3"
+
+set r1 "$j(0)$n$n"
+set r2 "$j(1)$f2$f2|$j(4)$sib$sib|$j(5)$sib$n|$srun_job$sib$sib"
+set r3 "$j(2)$n$n|$j(4)$sib$n|$j(5)$sib$sib|$srun_job$sib$n"
+
+squeue "$fedc1" "1" $r1
+squeue "$fedc2" "4" $r2
+squeue "$fedc3" "4" $r3
+
+#check db
+# Test that job4 is marked REVOKED on the the removed cluster (fed1) and still
+# pending on the other clusters.
+set matches 0
+
+set r1 "REVOKED$f1"
+set r2 "PENDING$f2"
+set r3 "PENDING$f3"
+
+spawn $my_sacct -o state,cluster -j $j(4) -M$fedc1,$fedc2,$fedc3 -D
+expect {
+	-re $r1 {
+		incr matches
+		exp_continue
+	}
+	-re $r2 {
+		incr matches
+		exp_continue
+	}
+	-re $r3 {
+		incr matches
+		exp_continue
+	}
+}
+if {$matches != 3} {
+	log_error "unexpected error in sacct. $matches/3"
+	end_it 1
+}
+
+# Test that pending jobs are marked as revoked since each cluster will revoke
+# any pending jobs when the origin cluster is removed.
+set matches 0
+
+set r1 "REVOKED$f1"
+set r2 "REVOKED$f2"
+set r3 "REVOKED$f3"
+
+spawn $my_sacct -o state,cluster -j $j(3) -M$fedc1,$fedc2,$fedc3 -D
+expect {
+	-re $r1 {
+		incr matches
+		exp_continue
+	}
+	-re $r2 {
+		incr matches
+		exp_continue
+	}
+	-re $r3 {
+		incr matches
+		exp_continue
+	}
+}
+if {$matches != 3} {
+	log_error "unexpected error in sacct."
+	end_it 1
+}
+
+
+spawn $my_sacctmgr mod fed $fed_name set -i clusters-=$fedc2
+
+sleep 5
+
+# Verify:
+# 1. all non-running jobs are removed from the removed cluster
+# 2. origin tracking jobs are removed.
+# 3. non-origin jobs have the removed cluster removed from the viable and
+# active siblings
+# 4. non-origin running jobs are still running and don't have federation
+# information (e.g. viable and active siblings).
+# 5. Verify that sruns are only terminated when it is not running and only when
+# the origin cluster is removed.
+
+set matches 0
+set spawn_id $srun_spawn_id(0)
+expect {
+	-re "srun: Force Terminated job $number" {
+		incr matches
+		exp_continue
+	}
+	eof {}
+}
+if {$matches != 1} {
+	log_error "unexpected error in srun. expected only one termination message."
+	end_it 1
+}
+
+set r1 "$j(0)$n$n"
+set r2 "$j(1)$n$n"
+set r3 "$j(2)$n$n|$j(5)$f3$f3"
+
+squeue "$fedc1" "1" $r1
+squeue "$fedc2" "1" $r2
+squeue "$fedc3" "2" $r3
+
+
+# Start from scratch
+# Start jobs on all clusters and remove non-origin clusters.
+# Remove non-origin clusters
+# Running jobs on the non-origin clusters should remain running.
+# Revoked tracking jobs on origin should go away.
+cancel_all_jobs
+
+exec $my_sacctmgr mod fed $fed_name set -i clusters+=$fedc1
+exec $my_sacctmgr mod fed $fed_name set -i clusters+=$fedc2
+
+#Test whether origin tracking jobs are removed when remote cluster is.
+
+set my_srun "${fed_slurm_base}/$fedc1/bin/srun"
+
+set j(0) [srun -M$fedc1 1]
+wait_for_fed_job $j(0) RUNNING $fedc1
+set j(1) [srun "" 2]
+set clus1 [wait_for_fed_job $j(1) RUNNING $fedc2,$fedc3]
+set j(2) [srun "" 3]
+set clus2 [wait_for_fed_job $j(2) RUNNING $fedc3,$fedc2]
+
+set f1      "\\s*$fedc1"
+set f2      "\\s*$clus1"
+set f3      "\\s*$clus2"
+set n       "\\s*NA"
+
+set sib "\\s*($fedc1,*|$clus1,*|$clus2,*){3}"
+
+set r1 "$j(0)$f1$f1|$j(1)$sib$f2|$j(2)$sib$f3"
+
+squeue "$fedc1" "3" $r1
+
+spawn $my_sacctmgr mod fed $fed_name set -i clusters-=$clus1
+
+sleep 5
+
+set sib "\\s*$fedc1,$clus2"
+
+set r1 "$j(0)$f1$f1|$j(2)$sib$f3"
+
+squeue "$fedc1" "2" $r1
+
+spawn $my_sacctmgr mod fed $fed_name set -i clusters-=$clus2
+
+sleep 5
+
+set r1 "$j(0)$f1$f1"
+
+squeue "$fedc1" "1" $r1
+
+spawn $my_sacctmgr mod fed $fed_name set -i clusters-=$fedc1
+
+#Make sure all of the jobs(sruns) have not terminated
+
+scontrol $fedc1 $j(0) 1 "srun: I'm Alive"
+scontrol $clus1 $j(1) 2 "srun: I'm Alive"
+scontrol $clus2 $j(2) 3 "srun: I'm Alive"
+
+# All Done
+end_it 0
