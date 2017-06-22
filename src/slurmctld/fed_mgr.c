@@ -240,11 +240,14 @@ static int _close_controller_conn(slurmdb_cluster_rec_t *cluster)
 	return rc;
 }
 
-/* Get list of jobs that originated from this cluster and the remove sibling.
+/* Get list of jobs that originated from this cluster and the remote sibling and
+ * that are viable between the two siblings.
  * Originating here: so that the remote can determine if the tracker job is gone
  * Originating sib: so that the remote verify jobs are where they're supposed to
  * be. If the sibling doesn't find a job, the sibling can resubmit the job or
  * take other actions.
+ * Viable sib: because the origin might be down and the job was started or
+ * cancelled while the origin was down.
  *
  * Only get jobs that were submitted prior to sync_time
  */
@@ -256,15 +259,22 @@ static List _get_sync_jobid_list(uint32_t sib_id, time_t sync_time)
 
 	jobids = list_create(slurm_destroy_uint32_ptr);
 
+	/*
+	 * Only look at jobs that:
+	 * 1. originate from the remote sibling
+	 * 2. originate from this cluster
+	 * 3. if the sibling is in the job's viable list.
+	 */
 	job_itr = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_itr))) {
 		uint32_t cluster_id = fed_mgr_get_cluster_id(job_ptr->job_id);
-		if (!(IS_JOB_COMPLETED(job_ptr) ||
-		      IS_JOB_COMPLETING(job_ptr)) &&
+		if (job_ptr->fed_details &&
 		    (job_ptr->details &&
 		     (job_ptr->details->submit_time < sync_time)) &&
 		    ((cluster_id == sib_id) ||
-		     (cluster_id == fed_mgr_cluster_rec->fed.id))) {
+		     (cluster_id == fed_mgr_cluster_rec->fed.id) ||
+		     (job_ptr->fed_details->siblings_viable &
+		      FED_SIBLING_BIT(sib_id)))) {
 
 		    uint32_t *tmp = xmalloc(sizeof(uint32_t));
 		    *tmp = job_ptr->job_id;
@@ -1590,6 +1600,21 @@ send_msg:
 	return SLURM_SUCCESS;
 }
 
+static void _do_fed_job_complete(struct job_record *job_ptr, uint32_t exit_code,
+				 time_t start_time)
+{
+	if (job_ptr->job_state & JOB_REQUEUE_FED) {
+		/* Remove JOB_REQUEUE_FED and JOB_COMPLETING once
+		 * sibling reports that sibling job is done. Leave other
+		 * state in place. JOB_SPECIAL_EXIT may be in the
+		 * states. */
+		job_ptr->job_state &= ~(JOB_PENDING | JOB_COMPLETING);
+		batch_requeue_fini(job_ptr);
+	} else {
+		fed_mgr_job_revoke(job_ptr, true, exit_code, start_time);
+	}
+}
+
 static void _handle_fed_job_complete(fed_job_update_info_t *job_update_info)
 {
 	struct job_record *job_ptr;
@@ -1610,17 +1635,9 @@ static void _handle_fed_job_complete(fed_job_update_info_t *job_update_info)
 		return;
 	}
 
-	if (job_ptr->job_state & JOB_REQUEUE_FED) {
-		/* Remove JOB_REQUEUE_FED and JOB_COMPLETING once
-		 * sibling reports that sibling job is done. Leave other
-		 * state in place. JOB_SPECIAL_EXIT may be in the
-		 * states. */
-		job_ptr->job_state &= ~(JOB_PENDING | JOB_COMPLETING);
-		batch_requeue_fini(job_ptr);
-	} else {
-		fed_mgr_job_revoke(job_ptr, true, job_update_info->return_code,
-				   job_update_info->start_time);
-	}
+	_do_fed_job_complete(job_ptr, job_update_info->return_code,
+			     job_update_info->start_time);
+
 	unlock_slurmctld(job_write_lock);
 }
 
@@ -4421,6 +4438,7 @@ static int _reconcile_fed_job(void *x, void *arg)
 	struct job_record *job_ptr = (struct job_record *)x;
 	reconcile_sib_t *rec_sib = (reconcile_sib_t *)arg;
 	job_info_msg_t *remote_jobs_ptr = rec_sib->job_info_msg;
+	uint32_t origin_id    = fed_mgr_get_cluster_id(job_ptr->job_id);
 	uint32_t sibling_id   = rec_sib->sibling_id;
 	uint64_t sibling_bit  = FED_SIBLING_BIT(sibling_id);
 	char    *sibling_name = rec_sib->sibling_name;
@@ -4430,15 +4448,19 @@ static int _reconcile_fed_job(void *x, void *arg)
 	xassert(job_ptr);
 	xassert(remote_jobs_ptr);
 
-	/* Only look at jobs that originate from the remote sibling and if the
-	 * sibling could have the job */
+	/*
+	 * Only look at jobs that:
+	 * 1. originate from the remote sibling
+	 * 2. originate from this cluster
+	 * 3. if the sibling is in the job's viable list.
+	 */
 	if (!job_ptr->fed_details ||
 	    !job_ptr->details ||
 	    (job_ptr->details->submit_time >= rec_sib->sync_time) ||
 	    IS_JOB_COMPLETED(job_ptr) || IS_JOB_COMPLETING(job_ptr) ||
 	    ((fed_mgr_get_cluster_id(job_ptr->job_id) != sibling_id) &&
-	     (!fed_mgr_is_origin_job(job_ptr) ||
-	      !(job_ptr->fed_details->siblings_viable & sibling_bit)))) {
+	     (!fed_mgr_is_origin_job(job_ptr)) &&
+	     (!(job_ptr->fed_details->siblings_viable & sibling_bit)))) {
 		return SLURM_SUCCESS;
 	}
 
@@ -4450,7 +4472,8 @@ static int _reconcile_fed_job(void *x, void *arg)
 		}
 	}
 
-	if (fed_mgr_get_cluster_id(job_ptr->job_id) == sibling_id) {
+	/* Jobs that originated on the remote sibling */
+	if (origin_id == sibling_id) {
 		if (!found_job ||
 		    (remote_job && IS_JOB_COMPLETED(remote_job))) {
 			/* origin job is missing on remote sibling or is
@@ -4459,24 +4482,67 @@ static int _reconcile_fed_job(void *x, void *arg)
 			info("%s: origin job %d is missing (or completed) from origin %s. Killing this copy of the job",
 			     __func__, job_ptr->job_id, sibling_name);
 			job_ptr->bit_flags |= SIB_JOB_FLUSH;
-			job_signal(job_ptr->job_id, SIGKILL, 0, 0, false);
+			job_signal(job_ptr->job_id, SIGKILL, KILL_NO_SIBS, 0,
+				   false);
 		} else {
 			info("%s: origin %s still has %d",
 			     __func__, sibling_name, job_ptr->job_id);
 		}
+	/* Jobs that are shared between two the siblings -- not originating from
+	 * either one */
+	} else if (origin_id != fed_mgr_cluster_rec->fed.id) {
+		if (!found_job) {
+			/* Only care about jobs that are currently there. */
+		} else if (IS_JOB_PENDING(job_ptr) && IS_JOB_CANCELLED(remote_job)) {
+			info("%s: job %d is cancelled on sibling %s, must have been cancelled while the origin and sibling were down",
+			     __func__, job_ptr->job_id, sibling_name);
+			job_ptr->job_state  = JOB_CANCELLED;
+			job_ptr->start_time = remote_job->start_time;
+			job_ptr->end_time   = remote_job->end_time;
+			job_ptr->state_reason = WAIT_NO_REASON;
+			xfree(job_ptr->state_desc);
+			job_completion_logger(job_ptr, false);
+		} else if (IS_JOB_PENDING(job_ptr) &&
+			   (IS_JOB_RUNNING(remote_job) ||
+			    IS_JOB_COMPLETING(remote_job))) {
+			info("%s: job %d is running on sibling %s, must have been started while the origin and sibling were down",
+			     __func__, job_ptr->job_id, sibling_name);
+
+			fed_mgr_job_revoke(job_ptr, true, remote_job->exit_code,
+					   job_ptr->start_time);
+		} else if (IS_JOB_PENDING(job_ptr) &&
+			   (IS_JOB_COMPLETED(remote_job))) {
+			info("%s: job %d is completed on sibling %s, must have been started and completed while the origin and sibling were down",
+			     __func__, job_ptr->job_id, sibling_name);
+
+			fed_mgr_job_revoke(job_ptr, true, remote_job->exit_code,
+					   job_ptr->start_time);
+		}
+
+	/* Origin Jobs */
 	} else if (!found_job) {
 		info("%s: didn't find job %d on cluster %s",
 		     __func__, job_ptr->job_id, sibling_name);
 
 		/* Remove from active siblings */
-		job_ptr->fed_details->siblings_active &= ~sibling_bit;
+		if (!(job_ptr->fed_details->cluster_lock & sibling_bit)) {
+			/* The sibling is a viable sibling but the sibling is
+			 * not active and there is no job there. This is ok. */
+			info("%s: %s is a viable but not active sibling of job %d. This is ok.",
+			     __func__, sibling_name, job_ptr->job_id);
 
-		if (!job_ptr->fed_details->cluster_lock) {
+#if 0
+/* Don't submit new sibling jobs if they're not found on the cluster. They could
+ * have been removed while the cluster was donw. */
+		} else if (!job_ptr->fed_details->cluster_lock) {
 			/* If the origin job isn't locked, then submit a sibling
 			 * to this cluster. */
-			info("%s: %s is a viable sibling of job %d, attempting to submit new sibling job to the cluster.",
+			/* Only do this if it was an active job. Could have been
+			 * removed with --cancel-sibling */
+			info("%s: %s is an active sibling of job %d, attempting to submit new sibling job to the cluster.",
 			     __func__, sibling_name, job_ptr->job_id);
 			_prepare_submit_siblings(job_ptr, sibling_bit);
+#endif
 		} else if (job_ptr->fed_details->cluster_lock == sibling_id) {
 			/* The origin thinks that the sibling was running the
 			 * job. It could have completed while this cluster was
@@ -4497,6 +4563,7 @@ static int _reconcile_fed_job(void *x, void *arg)
 			info("%s: origin job %d is currently locked by sibling %d, this is ok",
 			     __func__, job_ptr->job_id,
 			     job_ptr->fed_details->cluster_lock);
+			job_ptr->fed_details->siblings_active &= ~sibling_bit;
 		}
 	} else if (remote_job) {
 		info("%s: job %d found on remote sibling %s state:%s",
@@ -4556,7 +4623,26 @@ static int _reconcile_fed_job(void *x, void *arg)
 				     __func__, job_ptr->job_id, sibling_name);
 				job_ptr->fed_details->siblings_active |=
 					sibling_bit;
-			} else if (IS_JOB_RUNNING(remote_job)) {
+			}
+			if (IS_JOB_CANCELLED(remote_job)) {
+				info("%s: job %d is cancelled on sibling %s, must have been cancelled while the origin was down",
+				     __func__, job_ptr->job_id, sibling_name);
+				job_ptr->job_state  = JOB_CANCELLED;
+				job_ptr->start_time = remote_job->start_time;
+				job_ptr->end_time   = remote_job->end_time;
+				job_ptr->state_reason = WAIT_NO_REASON;
+				xfree(job_ptr->state_desc);
+				job_completion_logger(job_ptr, false);
+
+			} else if (IS_JOB_COMPLETED(remote_job)) {
+				info("%s: job %d is completed on sibling %s but the origin cluster wasn't part of starting the job, must have been started while the origin was down",
+				     __func__, job_ptr->job_id, sibling_name);
+				_do_fed_job_complete(job_ptr,
+						     remote_job->exit_code,
+						     remote_job->start_time);
+
+			} else if (IS_JOB_RUNNING(remote_job) ||
+				   IS_JOB_COMPLETING(remote_job)) {
 				info("%s: origin doesn't think that job %d should be running on sibling %s but it is. %s could have started the job while this cluster was down.",
 				     __func__, job_ptr->job_id, sibling_name,
 				     sibling_name);
