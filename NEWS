@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 17.02.6
+==========================
+
 * Changes in Slurm 17.02.5
 ==========================
  -- Prevent segfault if a job was blocked from running by a QOS that is then
