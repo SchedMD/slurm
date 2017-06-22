@@ -4727,16 +4727,33 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 	/* If is origin job then cancel siblings -- if they exist.
 	 * origin job = because it knows where the siblings are
 	 * If the job is running locally then just do the normal signalling */
-	if (job_ptr->fed_details &&
-	    fed_mgr_cluster_rec &&
-	    fed_mgr_is_origin_job(job_ptr) &&
-	    job_ptr->fed_details->cluster_lock != fed_mgr_cluster_rec->fed.id) {
-		int rc = fed_mgr_job_cancel(job_ptr, signal, flags, uid);
-		/* If the job is running on a remote cluster then wait for the
-		 * job to report back that it's completed, otherwise just signal
-		 * the pending siblings and itself (by not returning). */
-		if (job_ptr->fed_details->cluster_lock)
-			return rc;
+	if (!(flags & KILL_NO_SIBS) && !IS_JOB_RUNNING(job_ptr) &&
+	    job_ptr->fed_details && fed_mgr_fed_rec) {
+		uint32_t origin_id = fed_mgr_get_cluster_id(job_ptr->job_id);
+		slurmdb_cluster_rec_t *origin =
+			fed_mgr_get_cluster_by_id(origin_id);
+
+		if (origin && (origin == fed_mgr_cluster_rec) &&
+		    job_ptr->fed_details->cluster_lock &&
+		    (job_ptr->fed_details->cluster_lock !=
+		     fed_mgr_cluster_rec->fed.id)) {
+			/* If the job is running on a remote cluster then wait
+			 * for the job to report back that it's completed,
+			 * otherwise just signal the pending siblings and itself
+			 * (by not returning). */
+			return fed_mgr_job_cancel(job_ptr, signal, flags, uid,
+						  false);
+		} else if (origin && (origin == fed_mgr_cluster_rec)) {
+			/* cancel origin job and revoke sibling jobs */
+			fed_mgr_job_revoke_sibs(job_ptr);
+		} else if (!origin ||
+			   !origin->fed.send ||
+			   (((slurm_persist_conn_t *)origin->fed.send)->fd
+			    == -1)) {
+			/* The origin is down just signal all of the viable
+			 * sibling jobs */
+			fed_mgr_job_cancel(job_ptr, signal, flags, uid, true);
+		}
 	}
 
 	/* let node select plugin do any state-dependent signalling actions */

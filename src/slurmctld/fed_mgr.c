@@ -4223,10 +4223,20 @@ extern int fed_mgr_job_requeue(struct job_record *job_ptr)
 
 /* Cancel sibling jobs. Just send request to itself */
 static int _cancel_sibling_jobs(struct job_record *job_ptr, uint16_t signal,
-				uint16_t flags, uid_t uid)
+				uint16_t flags, uid_t uid, bool kill_viable)
 {
 	int id = 1;
-	uint64_t tmp_sibs = job_ptr->fed_details->siblings_active;
+	uint64_t tmp_sibs;
+	slurm_persist_conn_t *sib_conn;
+
+	if (kill_viable) {
+		tmp_sibs = job_ptr->fed_details->siblings_viable;
+		flags |= KILL_NO_SIBS;
+	} else {
+		tmp_sibs = job_ptr->fed_details->siblings_active;
+		flags &= ~KILL_NO_SIBS;
+	}
+
 	while (tmp_sibs) {
 		if ((tmp_sibs & 1) &&
 		    (id != fed_mgr_cluster_rec->fed.id)) {
@@ -4236,6 +4246,12 @@ static int _cancel_sibling_jobs(struct job_record *job_ptr, uint16_t signal,
 				error("couldn't find cluster rec by id %d", id);
 				goto next_job;
 			}
+
+			/* Don't send request to siblings that are down when
+			 * killing viables */
+			sib_conn = (slurm_persist_conn_t *)cluster->fed.send;
+			if (kill_viable && (!sib_conn || sib_conn->fd == -1))
+				goto next_job;
 
 			_persist_fed_job_cancel(cluster, job_ptr->job_id,
 						signal, flags, uid);
@@ -4255,9 +4271,10 @@ next_job:
  * IN signal  - signal to send to job
  * IN flags   - KILL_.* flags
  * IN uid     - uid making request
+ * IN kill_viable - if true cancel viable_sibs, if false cancel active_sibs
  */
 extern int fed_mgr_job_cancel(struct job_record *job_ptr, uint16_t signal,
-			      uint16_t flags, uid_t uid)
+			      uint16_t flags, uid_t uid, bool kill_viable)
 {
 	uint32_t origin_id;
 
@@ -4267,9 +4284,9 @@ extern int fed_mgr_job_cancel(struct job_record *job_ptr, uint16_t signal,
 		return SLURM_SUCCESS;
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-		info("cancel fed job %d by origin", job_ptr->job_id);
+		info("cancel fed job %d by local cluster", job_ptr->job_id);
 
-	_cancel_sibling_jobs(job_ptr, signal, flags, uid);
+	_cancel_sibling_jobs(job_ptr, signal, flags, uid, kill_viable);
 
 	return SLURM_SUCCESS;
 }
@@ -4747,6 +4764,7 @@ extern int _q_sib_job_cancel(slurm_msg_t *msg, uint32_t uid)
 		req_uid = uid;
 
 	job_update_info->type     = FED_JOB_CANCEL;
+	job_update_info->job_id   = kill_msg->job_id;
 	job_update_info->kill_msg = kill_msg;
 	job_update_info->uid      = req_uid;
 
