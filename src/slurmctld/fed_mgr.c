@@ -1592,6 +1592,11 @@ static void _handle_fed_job_complete(fed_job_update_info_t *job_update_info)
 		      __func__, job_update_info->job_id);
 		unlock_slurmctld(job_write_lock);
 		return;
+	} else if (!job_ptr->fed_details) {
+		debug2("%s: %d not federated anymore",
+		       __func__, job_ptr->job_id);
+		unlock_slurmctld(job_write_lock);
+		return;
 	}
 
 	if (job_ptr->job_state & JOB_REQUEUE_FED) {
@@ -1627,6 +1632,11 @@ _handle_fed_job_remove_active_sib_bit(fed_job_update_info_t *job_update_info)
 	if (!(job_ptr = find_job_record(job_update_info->job_id))) {
 		error("%s: failed to find job_record for fed job_id %d",
 		      __func__, job_update_info->job_id);
+		unlock_slurmctld(job_write_lock);
+		return;
+	} else if (!job_ptr->fed_details) {
+		debug2("%s: %d not federated anymore",
+		       __func__, job_ptr->job_id);
 		unlock_slurmctld(job_write_lock);
 		return;
 	}
@@ -1718,6 +1728,11 @@ static void _handle_fed_job_start(fed_job_update_info_t *job_update_info)
 	if (!(job_ptr = find_job_record(job_update_info->job_id))) {
 		error("%s: failed to find job_record for fed job_id %d",
 		      __func__, job_update_info->job_id);
+		unlock_slurmctld(job_write_lock);
+		return;
+	} else if (!job_ptr->fed_details) {
+		debug2("%s: %d not federated anymore",
+		       __func__, job_ptr->job_id);
 		unlock_slurmctld(job_write_lock);
 		return;
 	}
