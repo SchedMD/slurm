@@ -103,7 +103,7 @@ proc sub_job_or {nnode fail_test} {
 	set fail_node_config 0
 
 	if {$fail_test} {
-		spawn $sbatch -C "$feat1|$feat2" -p$test_part -N$nnode $file_in
+		spawn $sbatch -C "$feat1|$feat2" -p$test_part -N$nnode -t1 -o /dev/null $file_in
 		expect {
 			-re "Requested node configuration is not available" {
 				set fail_node_config 1
@@ -122,7 +122,7 @@ proc sub_job_or {nnode fail_test} {
 			send_user "\nThis error is expected do not worry\n"
 		}
 	} else {
-		spawn $sbatch -C "$feat1|$feat2" -p$test_part -N$nnode $file_in
+		spawn $sbatch -C "$feat1|$feat2" -p$test_part -N$nnode -t1 -o /dev/null $file_in
 		expect {
 			-re "Submitted batch job ($number)" {
 				set test_job $expect_out(1,string)
@@ -153,7 +153,7 @@ proc sub_job_xor {nnode fail_test} {
 	set fail_node_config 0
 
 	if {$fail_test} {
-		spawn $sbatch -C "\[$feat1|$feat2\]" -p$test_part -N$nnode $file_in
+		spawn $sbatch -C "\[$feat1|$feat2\]" -p$test_part -N$nnode -t1 -o /dev/null $file_in
 		expect {
 			-re "Requested node configuration is not available" {
 				set fail_node_config 1
@@ -172,7 +172,7 @@ proc sub_job_xor {nnode fail_test} {
 			send_user "\nThis error is expected do not worry\n"
 		}
 	} else {
-		spawn $sbatch -C "\[$feat1|$feat2\]" -p$test_part -N$nnode $file_in
+		spawn $sbatch -C "\[$feat1|$feat2\]" -p$test_part -N$nnode -t1 -o /dev/null $file_in
 		expect {
 			-re "Submitted batch job ($number)" {
 				set test_job $expect_out(1,string)
@@ -253,7 +253,7 @@ make_bash_script $file_in "
 #
 set err_msg     0
 set timeout $max_job_delay
-spawn $sbatch -N1 --constraint=invalid,constraint -t1 $file_in
+spawn $sbatch -N1 --constraint=invalid,constraint -t1 -o /dev/null $file_in
 expect {
 	-re "error:.*Invalid feature specification" {
 		send_user "This error is expected, no worries\n"
