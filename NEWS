@@ -101,6 +101,7 @@ documents those changes that are of interest to users and administrators.
     suffer and fewer jobs will be evaluated.
  -- Improve scheduling logic with respect to license use and node reboots.
  -- CRAY - Alter algorithm to come up with the SLURM_ID_HASH.
+ -- Implement federated scheduling and federated status outputs.
 
 * Changes in Slurm 17.02.5
 ==========================
