@@ -103,6 +103,9 @@ documents those changes that are of interest to users and administrators.
  -- CRAY - Alter algorithm to come up with the SLURM_ID_HASH.
  -- Implement federated scheduling and federated status outputs.
 
+* Changes in Slurm 17.02.6
+==========================
+
 * Changes in Slurm 17.02.5
 ==========================
  -- Prevent segfault if a job was blocked from running by a QOS that is then
@@ -132,6 +135,7 @@ documents those changes that are of interest to users and administrators.
     more than 1 partition or when the partition is changed with scontrol.
  -- Performance boost for when Slurm is dealing with credentials.
  -- Fix race condition which could leave a stepd hung on shutdown.
+ -- Add lua support for opensuse.
 
 * Changes in Slurm 17.02.4
 ==========================

@@ -24077,6 +24077,14 @@ fi
   x_ac_lua_pkg_name=lua5.3
 else
   if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"lua-5.3\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "lua-5.3") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  x_ac_lua_pkg_name=lua-5.3
+else
+  if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"lua5.2\""; } >&5
   ($PKG_CONFIG --exists --print-errors "lua5.2") 2>&5
   ac_status=$?
@@ -24085,12 +24093,31 @@ else
   x_ac_lua_pkg_name=lua5.2
 else
   if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"lua-5.2\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "lua-5.2") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  x_ac_lua_pkg_name=lua-5.2
+else
+  if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"lua5.1\""; } >&5
   ($PKG_CONFIG --exists --print-errors "lua5.1") 2>&5
   ac_status=$?
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
   x_ac_lua_pkg_name=lua5.1
+else
+  if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"lua-5.1\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "lua-5.1") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  x_ac_lua_pkg_name=lua-5.1
+fi
+fi
+fi
 fi
 fi
 fi
