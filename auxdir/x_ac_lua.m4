@@ -15,8 +15,12 @@ AC_DEFUN([X_AC_LUA],
 	x_ac_lua_pkg_name="lua"
 	#check for 5.3 then 5.2 then 5.1
 	PKG_CHECK_EXISTS([lua5.3], [x_ac_lua_pkg_name=lua5.3],
+		[PKG_CHECK_EXISTS([lua-5.3], [x_ac_lua_pkg_name=lua-5.3],
 		[PKG_CHECK_EXISTS([lua5.2], [x_ac_lua_pkg_name=lua5.2],
-		[PKG_CHECK_EXISTS([lua5.1], [x_ac_lua_pkg_name=lua5.1], [])])])
+		[PKG_CHECK_EXISTS([lua-5.2], [x_ac_lua_pkg_name=lua-5.2],
+		[PKG_CHECK_EXISTS([lua5.1], [x_ac_lua_pkg_name=lua5.1],
+		[PKG_CHECK_EXISTS([lua-5.1], [x_ac_lua_pkg_name=lua-5.1],
+	        [])])])])])])
 	PKG_CHECK_MODULES([lua], ${x_ac_lua_pkg_name},
                 [x_ac_have_lua="yes"],
                 [x_ac_have_lua="no"])
