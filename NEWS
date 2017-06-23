@@ -1,14 +1,14 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
- -- Initial work for heterogeneous job support:
+ -- Initial work for heterogeneous job support (complete solution in v17.11):
     * Modified salloc, sbatch and srun commands to parse command line, job
-      script and environment variables to recognize requests for heterogenous
+      script and environment variables to recognize requests for heterogeneous
       jobs. Same commands also modified to set environment variables describing
       each component of the heterogeneous job.
     * Modified job allocate, batch job submit and job "will-run" requests to
       pass a list of job specifications and get a list of responses.
-    * Modify slurmctld daemon to process a heterogenous job request and create
+    * Modify slurmctld daemon to process a heterogeneous job request and create
       multiple job records as needed.
     * Added new fields to job record: pack_job_id, pack_job_offset and
       pack_job_set (set of job IDs). Added to slurmctld state save/restore
@@ -17,20 +17,20 @@ documents those changes that are of interest to users and administrators.
     * Modify squeue command to display heterogeneous job records using "#+#"
       format. The squeue --job=# output lists all components of a heterogeneous
       job.
-    * Modify scancel logic to cancel all components of a heterogenous job with
+    * Modify scancel logic to cancel all components of a heterogeneous job with
       a single request/RPC.
     * Configuration parameter DebugFlags value of "HeteroJobs" added.
     * Job requeue and suspend/resume modified to operate on all components of
-      a heterogenous job with a single request/RPC.
-    * New web page added to describe heterogenous jobs.
+      a heterogeneous job with a single request/RPC.
+    * New web page added to describe heterogeneous jobs.
     * Descriptions of new API added to man pages.
     * Modified email notifications to only operate on the first job component.
-    * Purge heterogenous job records at the same time and not by individual
+    * Purge heterogeneous job records at the same time and not by individual
       components.
-    * Modified logic for heterogeneous jobs submitted to multple clusters
+    * Modified logic for heterogeneous jobs submitted to multiple clusters
       ("--clusters=...") so the job will be routed to the cluster that is
       expected to start all components earliest.
-    * Modified srun to create mulitple job steps for heterogeneous job
+    * Modified srun to create multiple job steps for heterogeneous job
       allocations.
     * Modified launch plugin to accept a pointer to job step options structure
       rather than work from a single/common data structure.
@@ -3295,7 +3295,7 @@ documents those changes that are of interest to users and administrators.
     subdirectory called "hash.#" based upon the last digit of the job ID.
  -- More gracefully handle missing batch script file. Just kill the job and do
     not drain the compute node.
- -- Add support for allocation of GRES by model type for heterogenous systems
+ -- Add support for allocation of GRES by model type for heterogeneous systems
     (e.g. request a Kepler GPU, a Tesla GPU, or a GPU of any type).
  -- Record and enable display of nodes anticipated to be used for pending jobs.
  -- Modify squeue --start option to print the nodes expected to be used for
@@ -4546,7 +4546,7 @@ documents those changes that are of interest to users and administrators.
     jobs in a space separated list.
  -- Minor debug error when a connection goes away at the end of a job.
  -- Validate return code from calls to slurm_get_peer_addr
- -- BGQ - Fix issues with making sure all cnodes are accounted for when mulitple
+ -- BGQ - Fix issues with making sure all cnodes are accounted for when multiple
     steps cause multiple cnodes in one allocation to go into error at the
     same time.
  -- scontrol show job - Correct NumNodes value calculated based upon job
@@ -6281,7 +6281,7 @@ documents those changes that are of interest to users and administrators.
     currently running job steps.
  -- Added an rpath if using the --with-munge option of configure.
  -- Add support for multiple sets of DEFAULT node, partition, and frontend
-    specifications in slurm.conf so that default values can be changed mulitple
+    specifications in slurm.conf so that default values can be changed multiple
     times as the configuration file is read.
  -- BLUEGENE - Improved logic to place small blocks in free space before freeing
     larger blocks.
