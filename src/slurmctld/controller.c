@@ -341,7 +341,7 @@ int main(int argc, char **argv)
 #endif /* PR_SET_DUMPABLE */
 
 	/* Warn if the stack size is not unlimited */
-	if (!getrlimit(RLIMIT_STACK, &rlim) == 0) &&
+	if ((getrlimit(RLIMIT_STACK, &rlim) == 0) &&
 	    (rlim.rlim_cur != RLIM_INFINITY))
 		info("Stack size set to %ld", rlim.rlim_max);
 
