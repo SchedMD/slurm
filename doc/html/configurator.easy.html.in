@@ -134,6 +134,7 @@ function displayfile()
    "FastSchedule=" + get_radio_value(document.config.fast_schedule) + "<br>" +
    "SchedulerType=sched/" + get_radio_value(document.config.sched_type) + "<br>" +
    "SelectType=select/" + get_radio_value(document.config.select_type) + "<br>" +
+   get_select_type_params() + "<br>" +
    "# <br>" +
    "# <br>" +
    "# LOGGING AND ACCOUNTING <br>" +
