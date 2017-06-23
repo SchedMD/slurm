@@ -247,6 +247,7 @@ int main(int argc, char **argv)
 	int cnt, error_code, i;
 	pthread_attr_t thread_attr;
 	struct stat stat_buf;
+	struct rlimit rlim;
 	/* Locks: Write configuration, job, node, and partition */
 	slurmctld_lock_t config_write_lock = {
 		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
@@ -338,6 +339,11 @@ int main(int argc, char **argv)
 	if (prctl(PR_SET_DUMPABLE, 1) < 0)
 		debug ("Unable to set dumpable to 1");
 #endif /* PR_SET_DUMPABLE */
+
+	/* Warn if the stack size is not unlimited */
+	if (!getrlimit(RLIMIT_STACK, &rlim) == 0) &&
+	    (rlim.rlim_cur != RLIM_INFINITY))
+		info("Stack size set to %ld", rlim.rlim_max);
 
 	/*
 	 * Create StateSaveLocation directory if necessary.
