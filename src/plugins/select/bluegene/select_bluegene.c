@@ -72,6 +72,7 @@ void *acct_db_conn  __attribute__((weak_import)) = NULL;
 slurmdb_cluster_rec_t *working_cluster_rec  __attribute__((weak_import)) = NULL;
 uint32_t g_qos_count __attribute__((weak_import));
 List assoc_mgr_qos_list __attribute__((weak_import)) = NULL;
+bool  ignore_state_errors __attribute__((weak_import)) = true;
 #else
 slurmctld_config_t slurmctld_config;
 slurm_ctl_conf_t slurmctld_conf;
@@ -86,6 +87,7 @@ void *acct_db_conn = NULL;
 slurmdb_cluster_rec_t *working_cluster_rec = NULL;
 uint32_t g_qos_count;
 List assoc_mgr_qos_list = NULL;
+bool ignore_state_errors = true;
 #endif
 
 /*

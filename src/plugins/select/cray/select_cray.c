@@ -140,6 +140,7 @@ int node_record_count __attribute__((weak_import));
 time_t last_node_update __attribute__((weak_import));
 int slurmctld_primary __attribute__((weak_import));
 void *acct_db_conn  __attribute__((weak_import)) = NULL;
+bool  ignore_state_errors __attribute__((weak_import)) = true;
 #else
 slurmctld_config_t slurmctld_config;
 slurm_ctl_conf_t slurmctld_conf;
@@ -150,6 +151,7 @@ int node_record_count;
 time_t last_node_update;
 int slurmctld_primary;
 void *acct_db_conn = NULL;
+bool ignore_state_errors = true;
 #endif
 
 static blade_info_t *blade_array = NULL;
