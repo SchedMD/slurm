@@ -61,6 +61,14 @@ if {![test_cpu_affinity]} {
 }
 send_user "\ntask affinity plugin installed\n"
 
+set task_params [string tolower [get_affinity_params]]
+if {[string first $task_params "boards"]  != -1 ||
+    [string first $task_params "sockets"] != -1 ||
+    [string first $task_params "cores"]   != -1} {
+	send_user "\nWARNING: TaskPluginParams=$task_params not supported\n"
+	exit 0
+}
+
 set force 0
 log_user 0
 spawn $scontrol show partition [default_partition]
