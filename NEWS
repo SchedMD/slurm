@@ -108,6 +108,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 17.02.6
 ==========================
+ -- Fix configurator.easy.html to output the SelectTypeParameters line.
 
 * Changes in Slurm 17.02.5
 ==========================
