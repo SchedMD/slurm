@@ -2175,7 +2175,7 @@ static void _opt_args(int argc, char **argv)
 	}
 #if defined HAVE_BG
 	/* BGQ's runjob command required a fully qualified path */
-	if (!launch_g_handle_multi_prog_verify(command_pos) &&
+	if (!launch_g_handle_multi_prog_verify(command_pos, &opt) &&
 	    (opt.argc > command_pos)) {
 		if ((fullpath = search_path(opt.cwd,
 					    opt.argv[command_pos],
