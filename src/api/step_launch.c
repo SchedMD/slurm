@@ -403,15 +403,15 @@ int slurm_step_launch_add (slurm_step_ctx_t *ctx,
 
 	debug("Entering slurm_step_launch_add");
 
-	if (ctx == NULL || ctx->magic != STEP_CTX_MAGIC) {
+	if ((ctx == NULL) || (ctx->magic != STEP_CTX_MAGIC)) {
 		error("%s: Not a valid slurm_step_ctx_t", __func__);
 		slurm_seterrno(EINVAL);
 		return SLURM_ERROR;
 	}
 
+//FIXME: Fails here for pack job step start
 	if (!ctx->launch_state->user_managed_io)
-		fatal("slurm_step_launch_add has only been tested "
-		      "with user managed io");
+		fatal("slurm_step_launch_add untested without user managed IO");
 
 	memset(&launch, 0, sizeof(launch));
 

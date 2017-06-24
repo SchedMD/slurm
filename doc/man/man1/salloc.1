@@ -1,11 +1,16 @@
-.TH salloc "1" "Slurm Commands" "March 2016" "Slurm Commands"
+.TH salloc "1" "Slurm Commands" "June 2017" "Slurm Commands"
 
 .SH "NAME"
 salloc \- Obtain a Slurm job allocation (a set of nodes), execute a command,
 and then release the allocation when the command is finished.
 
 .SH "SYNOPSIS"
-salloc [\fIoptions\fP] [<\fIcommand\fP> [\fIcommand args\fR]]
+\fBsalloc\fR [\fIOPTIONS(0)\fR...] \fR[ : \fR[\fIOPTIONS(n)\fR...]\fR] \fIscript(0) \fR[\fIargs(0)\fR...]
+
+Options(n) script(n) defines multiple jobs in a co-scheduled heterogeneous job.
+For more details about heterogeneous jobs see the document
+.br
+http://slurm.schedmd.com/heterogeneous_jobs.html
 
 .SH "DESCRIPTION"
 salloc is used to allocate a Slurm job allocation, which is a set of resources
@@ -1632,9 +1637,6 @@ the executed program:
 \fBBASIL_RESERVATION_ID\fR
 The reservation ID on Cray systems running ALPS/BASIL only.
 .TP
-\fBSLURM_CLUSTER_NAME\fR
-Name of the cluster on which the job is executing.
-.TP
 \fBMPIRUN_NOALLOCATE\fR
 Do not allocate a block on Blue Gene L/P systems only.
 .TP
@@ -1643,6 +1645,13 @@ Do not free a block on Blue Gene L/P systems only.
 .TP
 \fBMPIRUN_PARTITION\fR
 The block name on Blue Gene systems only.
+.TP
+\fBSLURM_*_PACK_GROUP_#\fR
+For a heterogenous job allocation, the environment variables are set separately
+for each component.
+.TP
+\fBSLURM_CLUSTER_NAME\fR
+Name of the cluster on which the job is executing.
 .TP
 \fBSLURM_CPUS_PER_TASK\fR
 Number of cpus requested per task.
@@ -1706,6 +1715,9 @@ Same as \fB\-\-mem\-per\-cpu\fR
 \fBSLURM_MEM_PER_NODE\fR
 Same as \fB\-\-mem\fR
 .TP
+\fBSLURM_PACK_SIZE\fR
+Set to count of components in heterogeneous job.
+.TP
 \fBSLURM_SUBMIT_DIR\fR
 The directory from which \fBsalloc\fR was invoked.
 .TP
@@ -1765,6 +1777,16 @@ To grab an allocation of nodes and launch a parallel application on one command
 line (See the \fBsalloc\fR man page for more examples):
 .IP
 salloc \-N5 srun \-n10 myprogram
+.LP
++To create a heterogeneous job with 3 components, each allocating a unique set of nodes:
+.IP
+salloc -w node[2-3] : -w node4 : -w node[5-7] bash
+.br
+salloc: job 32294 queued and waiting for resources
+.br
+salloc: job 32294 has been allocated resources
+.br
+salloc: Granted job allocation 32294
 
 .SH "COPYING"
 Copyright (C) 2006\-2007 The Regents of the University of California.

@@ -48,7 +48,7 @@ if { [test_alps] } {
 # job steps.
 #
 set timeout $max_job_delay
-set srun_alloc_pid [spawn $salloc -v -N1 -n1 $bin_sleep 600]
+set srun_alloc_pid [spawn $salloc -v -N1 -n1 -t2 $bin_sleep 600]
 set srun_alloc_sid $spawn_id
 expect {
 	-re "salloc: Granted job allocation ($number)" {

@@ -97,6 +97,7 @@ extern pid_t getpgid(pid_t pid);
 char **command_argv;
 int command_argc;
 pid_t command_pid = -1;
+uint64_t debug_flags = 0;
 char *work_dir = NULL;
 static int is_interactive;
 
@@ -104,24 +105,28 @@ enum possible_allocation_states allocation_state = NOT_GRANTED;
 pthread_cond_t  allocation_state_cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t allocation_state_lock = PTHREAD_MUTEX_INITIALIZER;
 
-static bool exit_flag = false;
-static bool suspend_flag = false;
 static bool allocation_interrupted = false;
 static bool allocation_revoked = false;
-static uint32_t pending_job_id = 0;
+static bool exit_flag = false;
+static bool is_pack_job = false;
+static bool suspend_flag = false;
+static uint32_t my_job_id = 0;
 static time_t last_timeout = 0;
 static struct termios saved_tty_attributes;
 
 static void _exit_on_signal(int signo);
 static int  _fill_job_desc_from_opts(job_desc_msg_t *desc);
-static pid_t  _fork_command(char **command);
+static pid_t _fork_command(char **command);
 static void _forward_signal(int signo);
 static void _job_complete_handler(srun_job_complete_msg_t *msg);
 static void _job_suspend_handler(suspend_msg_t *msg);
+static void _match_job_name(List job_req_list, char *job_name);
 static void _node_fail_handler(srun_node_fail_msg_t *msg);
 static void _pending_callback(uint32_t job_id);
 static void _ping_handler(srun_ping_msg_t *msg);
+static int  _proc_alloc(resource_allocation_response_msg_t *alloc);
 static void _ring_terminal_bell(void);
+static int  _set_cluster_name(void *x, void *arg);
 static void _set_exit_code(void);
 static void _set_rlimits(char **env);
 static void _set_spank_env(void);
@@ -160,11 +165,19 @@ static void _reset_input_mode (void)
 		tcsetpgrp(STDIN_FILENO, getpgid(getppid()));
 }
 
+static int _set_cluster_name(void *x, void *arg)
+{	job_desc_msg_t *desc = (job_desc_msg_t *) x;
+	desc->origin_cluster = xstrdup(slurmctld_conf.cluster_name);
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
+	static bool env_cache_set = false;
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
-	job_desc_msg_t desc;
-	resource_allocation_response_msg_t *alloc;
+	job_desc_msg_t *desc = NULL, *first_job = NULL;
+	List job_req_list = NULL, job_resp_list = NULL;
+	resource_allocation_response_msg_t *alloc = NULL;
 	time_t before, after;
 	allocation_msg_thread_t *msg_thr;
 	char **env = NULL, *cluster_name;
@@ -173,11 +186,16 @@ int main(int argc, char **argv)
 	pid_t pid  = getpid();
 	pid_t tpgid = 0;
 	pid_t rc_pid = 0;
-	int i, rc = 0;
+	int i, j, rc = 0;
+	bool pack_fini = false;
+	int pack_argc, pack_inx, pack_argc_off;
+	char **pack_argv;
 	static char *msg = "Slurm job queue full, sleeping and retrying.";
 	slurm_allocation_callbacks_t callbacks;
+	ListIterator iter_req, iter_resp;
 
 	slurm_conf_init(NULL);
+	debug_flags = slurm_get_debug_flags();
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	_set_exit_code();
 
@@ -192,54 +210,89 @@ int main(int argc, char **argv)
 		error("Failed to register atexit handler for plugins: %m");
 
 
-	if (initialize_and_process_args(argc, argv) < 0) {
-		error("salloc parameter parsing");
-		exit(error_exit);
-	}
-	/* reinit log with new verbosity (if changed by command line) */
-	if (opt.verbose || opt.quiet) {
-		logopt.stderr_level += opt.verbose;
-		logopt.stderr_level -= opt.quiet;
-		logopt.prefix_level = 1;
-		log_alter(logopt, 0, NULL);
-	}
+	pack_argc = argc;
+	pack_argv = argv;
+	for (pack_inx = 0; !pack_fini; pack_inx++) {
+		pack_argc_off = -1;
+		if (initialize_and_process_args(pack_argc, pack_argv,
+						&pack_argc_off) < 0) {
+			error("salloc parameter parsing");
+			exit(error_exit);
+		}
+		if ((pack_argc_off >= 0) && (pack_argc_off < pack_argc) &&
+		    !xstrcmp(pack_argv[pack_argc_off], ":")) {
+			/* pack_argv[0] moves from "salloc" to ":" */
+			pack_argc -= pack_argc_off;
+			pack_argv += pack_argc_off;
+		} else
+			pack_fini = true;
 
-	if (spank_init_post_opt() < 0) {
-		error("Plugin stack post-option processing failed");
-		exit(error_exit);
-	}
+		/* reinit log with new verbosity (if changed by command line) */
+		if (opt.verbose || opt.quiet) {
+			logopt.stderr_level += opt.verbose;
+			logopt.stderr_level -= opt.quiet;
+			logopt.prefix_level = 1;
+			log_alter(logopt, 0, NULL);
+		}
 
-	_set_spank_env();
-	_set_submit_dir_env();
-	if (opt.cwd && chdir(opt.cwd)) {
-		error("chdir(%s): %m", opt.cwd);
-		exit(error_exit);
-	}
-
-	if (opt.get_user_env_time >= 0) {
-		bool no_env_cache = false;
-		char *sched_params;
-		char *user = uid_to_string(opt.uid);
-
-		if (xstrcmp(user, "nobody") == 0) {
-			error("Invalid user id %u: %m", (uint32_t)opt.uid);
+		if (spank_init_post_opt() < 0) {
+			error("Plugin stack post-option processing failed");
 			exit(error_exit);
 		}
 
-		sched_params = slurm_get_sched_params();
-		no_env_cache = (sched_params &&
-				strstr(sched_params, "no_env_cache"));
-		xfree(sched_params);
+		_set_spank_env();
+		if (pack_inx == 0)
+			_set_submit_dir_env();
+		if (opt.cwd && chdir(opt.cwd)) {
+			error("chdir(%s): %m", opt.cwd);
+			exit(error_exit);
+		}
 
-		env = env_array_user_default(user,
-					     opt.get_user_env_time,
-					     opt.get_user_env_mode,
-					     no_env_cache);
-		xfree(user);
-		if (env == NULL)
-			exit(error_exit);    /* error already logged */
-		_set_rlimits(env);
+		if ((opt.get_user_env_time >= 0) && !env_cache_set) {
+			bool no_env_cache = false;
+			char *sched_params;
+			char *user = uid_to_string(opt.uid);
+
+			env_cache_set = true;
+			if (xstrcmp(user, "nobody") == 0) {
+				error("Invalid user id %u: %m",
+				      (uint32_t)opt.uid);
+				exit(error_exit);
+			}
+
+			sched_params = slurm_get_sched_params();
+			no_env_cache = (sched_params &&
+					strstr(sched_params, "no_env_cache"));
+			xfree(sched_params);
+
+			env = env_array_user_default(user,
+						     opt.get_user_env_time,
+						     opt.get_user_env_mode,
+						     no_env_cache);
+			xfree(user);
+			if (env == NULL)
+				exit(error_exit);    /* error already logged */
+			_set_rlimits(env);
+		}
+
+		if (desc && !job_req_list) {
+			job_req_list = list_create(NULL);
+			list_append(job_req_list, desc);
+		}
+		desc = xmalloc(sizeof(job_desc_msg_t));
+		slurm_init_job_desc_msg(desc);
+		if (_fill_job_desc_from_opts(desc) == -1)
+			exit(error_exit);
+		if (job_req_list)
+			list_append(job_req_list, desc);
+		if (!first_job)
+			first_job = desc;
 	}
+	if (!desc) {
+		fatal("%s: desc is NULL", __func__);
+		exit(error_exit);    /* error already logged */
+	}
+	_match_job_name(job_req_list, opt.job_name);
 
 	/*
 	 * Job control for interactive salloc sessions: only if ...
@@ -290,15 +343,7 @@ int main(int argc, char **argv)
 	 * process died before properly resetting terminal.
 	 */
 	if (is_interactive)
-		atexit (_reset_input_mode);
-
-	/*
-	 * Request a job allocation
-	 */
-	slurm_init_job_desc_msg(&desc);
-	if (_fill_job_desc_from_opts(&desc) == -1) {
-		exit(error_exit);
-	}
+		atexit(_reset_input_mode);
 	if (opt.gid != (gid_t) -1) {
 		if (setgid(opt.gid) < 0) {
 			error("setgid: %m");
@@ -308,14 +353,23 @@ int main(int argc, char **argv)
 
 	/* If can run on multiple clusters find the earliest run time
 	 * and run it there */
-	desc.clusters = xstrdup(opt.clusters);
-	if (opt.clusters &&
-	    slurmdb_get_first_avail_cluster(&desc, opt.clusters,
-			&working_cluster_rec) != SLURM_SUCCESS) {
-		print_db_notok(opt.clusters, 0);
-		exit(error_exit);
+	if (opt.clusters) {
+		if (job_req_list) {
+			rc = slurmdb_get_first_pack_cluster(job_req_list,
+					opt.clusters, &working_cluster_rec);
+		} else {
+			rc = slurmdb_get_first_avail_cluster(desc,
+					opt.clusters, &working_cluster_rec);
+		}
+		if (rc != SLURM_SUCCESS) {
+			print_db_notok(opt.clusters, 0);
+			exit(error_exit);
+		}
 	}
-	desc.origin_cluster = xstrdup(slurmctld_conf.cluster_name);
+	if (job_req_list)
+		(void) list_for_each(job_req_list, _set_cluster_name, NULL);
+	else
+		desc->origin_cluster = xstrdup(slurmctld_conf.cluster_name);
 
 	callbacks.ping = _ping_handler;
 	callbacks.timeout = _timeout_handler;
@@ -324,7 +378,7 @@ int main(int argc, char **argv)
 	callbacks.user_msg = _user_msg_handler;
 	callbacks.node_fail = _node_fail_handler;
 	/* create message thread to handle pings and such from slurmctld */
-	msg_thr = slurm_allocation_msg_thr_create(&desc.other_port,
+	msg_thr = slurm_allocation_msg_thr_create(&first_job->other_port,
 						  &callbacks);
 
 	/* NOTE: Do not process signals in separate pthread. The signal will
@@ -333,8 +387,20 @@ int main(int argc, char **argv)
 		xsignal(sig_array[i], _signal_while_allocating);
 
 	before = time(NULL);
-	while ((alloc = slurm_allocate_resources_blocking(&desc, opt.immediate,
-					_pending_callback)) == NULL) {
+	while (true) {
+		if (job_req_list) {
+			is_pack_job = true;
+			job_resp_list = slurm_allocate_pack_job_blocking(
+					job_req_list, opt.immediate,
+					_pending_callback);
+			if (job_resp_list)
+				break;
+		} else {
+			alloc = slurm_allocate_resources_blocking(desc,
+					opt.immediate, _pending_callback);
+			if (alloc)
+				break;
+		}
 		if (((errno != ESLURM_ERROR_ON_DESC_TO_RECORD_COPY) &&
 		     (errno != EAGAIN)) || (retries >= MAX_RETRIES))
 			break;
@@ -342,7 +408,7 @@ int main(int argc, char **argv)
 			error("%s", msg);
 		else
 			debug("%s", msg);
-		sleep (++retries);
+		sleep(++retries);
 	}
 
 	/* become the user after the allocation has been requested. */
@@ -352,13 +418,13 @@ int main(int argc, char **argv)
 			exit(error_exit);
 		}
 	}
-	if (alloc == NULL) {
+
+	if (!alloc && !job_resp_list) {
 		if (allocation_interrupted) {
 			/* cancelled by signal */
 			info("Job aborted due to signal");
 		} else if (errno == EINTR) {
-			error("Interrupted by signal."
-			      "  Allocation request rescinded.");
+			error("Interrupted by signal. Allocation request rescinded.");
 		} else if (opt.immediate &&
 			   ((errno == ETIMEDOUT) ||
 			    (errno == ESLURM_NOT_TOP_PRIORITY) ||
@@ -370,43 +436,41 @@ int main(int argc, char **argv)
 		}
 		slurm_allocation_msg_thr_destroy(msg_thr);
 		exit(error_exit);
+	} else if (job_resp_list && !allocation_interrupted) {
+		/* Allocation granted to regular job */
+		i = 0;
+		iter_resp = list_iterator_create(job_resp_list);
+		while ((alloc = (resource_allocation_response_msg_t *)
+				list_next(iter_resp))) {
+			if (i == 0) {
+				my_job_id = alloc->job_id;
+				info("Granted job allocation %u", my_job_id);
+			}
+			if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
+				info("Pack job ID %u+%u (%u) on nodes %s",
+				     my_job_id, i, alloc->job_id,
+				     alloc->node_list);
+			}
+			i++;
+			if (_proc_alloc(alloc) != SLURM_SUCCESS) {
+				list_iterator_destroy(iter_resp);
+				goto relinquish;
+			}
+		}
+		list_iterator_destroy(iter_resp);
 	} else if (!allocation_interrupted) {
-		/*
-		 * Allocation granted!
-		 */
-		info("Granted job allocation %u", alloc->job_id);
-		pending_job_id = alloc->job_id;
+		/* Allocation granted to regular job */
+		my_job_id = alloc->job_id;
+		info("Granted job allocation %u", my_job_id);
 
-		if (alloc->working_cluster_rec) {
-			slurm_setup_remote_working_cluster(alloc);
-
-			/* set env for srun's to find the right cluster */
-			setenvf(NULL, "SLURM_WORKING_CLUSTER", "%s:%s:%d:%d",
-				working_cluster_rec->name,
-				working_cluster_rec->control_host,
-				working_cluster_rec->control_port,
-				working_cluster_rec->rpc_version);
-		}
-
-#ifdef HAVE_BG
-		if (!_wait_bluegene_block_ready(alloc)) {
-			if (!allocation_interrupted)
-				error("Something is wrong with the boot of the block.");
+		if (_proc_alloc(alloc) != SLURM_SUCCESS)
 			goto relinquish;
-		}
-#else
-		if (!_wait_nodes_ready(alloc)) {
-			if (!allocation_interrupted)
-				error("Something is wrong with the boot of the nodes.");
-			goto relinquish;
-		}
-#endif
 	}
 
 	after = time(NULL);
-	if (opt.bell == BELL_ALWAYS
-	    || (opt.bell == BELL_AFTER_DELAY
-		&& ((after - before) > DEFAULT_BELL_DELAY))) {
+	if ((opt.bell == BELL_ALWAYS) ||
+	     ((opt.bell == BELL_AFTER_DELAY) &&
+	      ((after - before) > DEFAULT_BELL_DELAY))) {
 		_ring_terminal_bell();
 	}
 	if (opt.no_shell)
@@ -421,31 +485,34 @@ int main(int argc, char **argv)
 	}
 
 	/*
-	 * Run the user's command.
+	 * Set environment variables
 	 */
-	if (env_array_for_job(&env, alloc, &desc) != SLURM_SUCCESS)
-		goto relinquish;
+	if (job_resp_list) {
+		i = list_count(job_req_list);
+		j = list_count(job_resp_list);
+		if (i != j) {
+			error("Job component count mismatch, submit/response "
+			      "count mismatch (%d != %d)", i, j);
+			goto relinquish;
+		}
+		env_array_append_fmt(&env, "SLURM_PACK_SIZE", "%d", i);
 
-	/* Add default task count for srun, if not already set */
-	if (opt.ntasks_set) {
-		env_array_append_fmt(&env, "SLURM_NTASKS", "%d", opt.ntasks);
-		/* keep around for old scripts */
-		env_array_append_fmt(&env, "SLURM_NPROCS", "%d", opt.ntasks);
+		i = 0;
+		iter_req = list_iterator_create(job_req_list);
+		iter_resp = list_iterator_create(job_resp_list);
+		while ((desc = (job_desc_msg_t *) list_next(iter_req))) {
+			alloc = (resource_allocation_response_msg_t *)
+				list_next(iter_resp);
+			if (env_array_for_job(&env, alloc, desc, i++) !=
+			    SLURM_SUCCESS)
+				goto relinquish;
+		}
+		list_iterator_destroy(iter_resp);
+		list_iterator_destroy(iter_req);
+	} else {
+		if (env_array_for_job(&env, alloc, desc, -1) != SLURM_SUCCESS)
+			goto relinquish;
 	}
-	if (opt.cpus_set) {
-		env_array_append_fmt(&env, "SLURM_CPUS_PER_TASK", "%d",
-				     opt.cpus_per_task);
-	}
-	if (opt.overcommit) {
-		env_array_append_fmt(&env, "SLURM_OVERCOMMIT", "%d",
-			opt.overcommit);
-	}
-	if (opt.acctg_freq) {
-		env_array_append_fmt(&env, "SLURM_ACCTG_FREQ", "%s",
-			opt.acctg_freq);
-	}
-	if (opt.network)
-		env_array_append_fmt(&env, "SLURM_NETWORK", "%s", opt.network);
 
 	if (working_cluster_rec && working_cluster_rec->name) {
 		env_array_append_fmt(&env, "SLURM_CLUSTER_NAME", "%s",
@@ -455,32 +522,18 @@ int main(int argc, char **argv)
 				     cluster_name);
 		xfree(cluster_name);
 	}
-	if (alloc->env_size) {	/* Used to set Burst Buffer environment */
-		char *key, *value, *tmp;
-		for (i = 0; i < alloc->env_size; i++) {
-			tmp = xstrdup(alloc->environment[i]);
-			key = tmp;
-			value = strchr(tmp, '=');
-			if (value) {
-				value[0] = '\0';
-				value++;
-				env_array_append(&env, key, value);
-			}
-			xfree(tmp);
-		}
-	}
 
 	env_array_set_environment(env);
 	env_array_free(env);
 	slurm_mutex_lock(&allocation_state_lock);
 	if (allocation_state == REVOKED) {
-		error("Allocation was revoked for job %u before command could "
-		      "be run", alloc->job_id);
+		error("Allocation was revoked for job %u before command could be run",
+		      my_job_id);
 		slurm_cond_broadcast(&allocation_state_cond);
 		slurm_mutex_unlock(&allocation_state_lock);
-		if (slurm_complete_job(alloc->job_id, status) != 0) {
+		if (slurm_complete_job(my_job_id, status) != 0) {
 			error("Unable to clean up allocation for job %u: %m",
-			      alloc->job_id);
+			      my_job_id);
 		}
 		return 1;
  	}
@@ -541,11 +594,11 @@ relinquish:
 	if (allocation_state != REVOKED) {
 		slurm_mutex_unlock(&allocation_state_lock);
 
-		info("Relinquishing job allocation %u", alloc->job_id);
-		if ((slurm_complete_job(alloc->job_id, status) != 0) &&
+		info("Relinquishing job allocation %u", my_job_id);
+		if ((slurm_complete_job(my_job_id, status) != 0) &&
 		    (slurm_get_errno() != ESLURM_ALREADY_DONE))
 			error("Unable to clean up job allocation %u: %m",
-			      alloc->job_id);
+			      my_job_id);
 		slurm_mutex_lock(&allocation_state_lock);
 		allocation_state = REVOKED;
 	}
@@ -561,7 +614,6 @@ relinquish:
 	 */
 	rc = 1;
 	if (rc_pid != -1) {
-
 		if (WIFEXITED(status)) {
 			rc = WEXITSTATUS(status);
 		} else if (WIFSTOPPED(status)) {
@@ -573,7 +625,7 @@ relinquish:
 			/* if we get these signals we return a normal
 			 * exit since this was most likely sent from the
 			 * user */
-			switch(WTERMSIG(status)) {
+			switch (WTERMSIG(status)) {
 			case SIGHUP:
 			case SIGINT:
 			case SIGQUIT:
@@ -586,8 +638,68 @@ relinquish:
 		}
 	}
 
-	xfree(desc.clusters);
 	return rc;
+}
+
+/* Initial processing of resource allocation response, including waiting for
+ * compute nodes to be ready for use.
+ * Ret SLURM_SUCCESS on success */
+static int _proc_alloc(resource_allocation_response_msg_t *alloc)
+{
+	static int elem = 0;
+
+	if ((elem++ == 0) && alloc->working_cluster_rec) {
+		slurm_setup_remote_working_cluster(alloc);
+
+		/* set env for srun's to find the right cluster */
+		setenvf(NULL, "SLURM_WORKING_CLUSTER", "%s:%s:%d:%d",
+			working_cluster_rec->name,
+			working_cluster_rec->control_host,
+			working_cluster_rec->control_port,
+			working_cluster_rec->rpc_version);
+	}
+
+#ifdef HAVE_BG
+	if (!_wait_bluegene_block_ready(alloc)) {
+		if (!allocation_interrupted)
+			error("Something is wrong with the boot of the block.");
+		return SLURM_ERROR;
+	}
+#else
+	if (!_wait_nodes_ready(alloc)) {
+		if (!allocation_interrupted)
+			error("Something is wrong with the boot of the nodes.");
+		return SLURM_ERROR;
+	}
+#endif
+	return SLURM_SUCCESS;
+}
+
+
+/* Copy job name from last component to all pack job components unless
+ * explicitly set. The default value comes from _salloc_default_command()
+ * and is "sh". */
+static void _match_job_name(List job_req_list, char *job_name)
+{
+	int cnt, i = 1;
+	ListIterator iter;
+	job_desc_msg_t *desc = NULL;
+
+	if (!job_req_list)
+		return;
+
+	cnt = list_count(job_req_list);
+	if (cnt < 2)
+		return;
+
+	iter = list_iterator_create(job_req_list);
+	while ((desc = (job_desc_msg_t *) list_next(iter))) {
+		if ((i++ < cnt) && !xstrcmp(desc->name, "sh")) {
+			xfree(desc->name);
+			desc->name = xstrdup(job_name);
+		}
+	}
+	list_iterator_destroy(iter);
 }
 
 static void _set_exit_code(void)
@@ -617,7 +729,7 @@ static void _set_spank_env(void)
 {
 	int i;
 
-	for (i=0; i<opt.spank_job_env_size; i++) {
+	for (i = 0; i < opt.spank_job_env_size; i++) {
 		if (setenvfs("SLURM_SPANK_%s", opt.spank_job_env[i]) < 0) {
 			error("unable to set %s in environment",
 			      opt.spank_job_env[i]);
@@ -666,11 +778,11 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	}
 #endif
 	desc->contiguous = opt.contiguous ? 1 : 0;
-	if (opt.core_spec != (uint16_t) NO_VAL)
+	if (opt.core_spec != NO_VAL16)
 		desc->core_spec = opt.core_spec;
-	desc->features = opt.constraints;
-	desc->cluster_features = opt.c_constraints;
-	desc->gres = opt.gres;
+	desc->features = xstrdup(opt.constraints);
+	desc->cluster_features = xstrdup(opt.c_constraints);
+	desc->gres = xstrdup(opt.gres);
 	if (opt.immediate == 1)
 		desc->immediate = 1;
 	desc->name = xstrdup(opt.job_name);
@@ -687,9 +799,9 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.wait4switch >= 0)
 		desc->wait4switch = opt.wait4switch;
 
-	desc->req_nodes = opt.nodelist;
-	desc->exc_nodes = opt.exc_nodes;
-	desc->partition = opt.partition;
+	desc->req_nodes = xstrdup(opt.nodelist);
+	desc->exc_nodes = xstrdup(opt.exc_nodes);
+	desc->partition = xstrdup(opt.partition);
 	desc->min_nodes = opt.min_nodes;
 
 	if (opt.max_nodes)
@@ -703,7 +815,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->dependency = xstrdup(opt.dependency);
 
 	if (opt.mem_bind)
-		desc->mem_bind       = opt.mem_bind;
+		desc->mem_bind       = xstrdup(opt.mem_bind);
 	if (opt.mem_bind_type)
 		desc->mem_bind_type  = opt.mem_bind_type;
 	if (opt.plane_size != NO_VAL)
@@ -714,7 +826,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 
 	if (opt.licenses)
 		desc->licenses = xstrdup(opt.licenses);
-	desc->network = opt.network;
+	desc->network = xstrdup(opt.network);
 	if (opt.nice != NO_VAL)
 		desc->nice = NICE_OFFSET + opt.nice;
 	if (opt.priority)
@@ -819,6 +931,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->warn_time = opt.warn_time;
 
 	if (opt.spank_job_env_size) {
+		/* NOTE: Not copying array, but shared memory */
 		desc->spank_job_env      = opt.spank_job_env;
 		desc->spank_job_env_size = opt.spank_job_env_size;
 	}
@@ -829,6 +942,10 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->mcs_label = xstrdup(opt.mcs_label);
 	if (opt.delay_boot != NO_VAL)
 		desc->delay_boot = opt.delay_boot;
+	if (opt.cpus_set)
+		desc->bitflags |= JOB_CPUS_SET;
+	if (opt.ntasks_set)
+		desc->bitflags |= JOB_NTASKS_SET;
 
 	return 0;
 }
@@ -879,7 +996,7 @@ static pid_t _fork_command(char **command)
 static void _pending_callback(uint32_t job_id)
 {
 	info("Pending job allocation %u", job_id);
-	pending_job_id = job_id;
+	my_job_id = job_id;
 }
 
 static void _exit_on_signal(int signo)
@@ -897,17 +1014,17 @@ static void _forward_signal(int signo)
 static void _signal_while_allocating(int signo)
 {
 	allocation_interrupted = true;
-	if (pending_job_id != 0) {
-		slurm_complete_job(pending_job_id, NO_VAL);
+	if (my_job_id != 0) {
+		slurm_complete_job(my_job_id, NO_VAL);
 	}
 }
 
 /* This typically signifies the job was cancelled by scancel */
 static void _job_complete_handler(srun_job_complete_msg_t *comp)
 {
-	if (pending_job_id && (pending_job_id != comp->job_id)) {
-		error("Ignoring bogus job_complete call: job %u is not "
-		      "job %u", pending_job_id, comp->job_id);
+	if (my_job_id && (my_job_id != comp->job_id)) {
+		error("Ignoring job_complete for job %u because our job ID is %u",
+		      comp->job_id, my_job_id);
 		return;
 	}
 
@@ -1026,7 +1143,7 @@ static void _set_rlimits(char **env)
 	//unsigned long env_num;
 	rlim_t env_num;
 
-	for (rli=get_slurm_rlimits_info(); rli->name; rli++) {
+	for (rli = get_slurm_rlimits_info(); rli->name; rli++) {
 		if (rli->propagate_flag != PROPAGATE_RLIMITS)
 			continue;
 		strcpy(&env_name[sizeof("SLURM_RLIMIT_")-1], rli->name);
@@ -1064,12 +1181,11 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
 	int max_delay = BG_FREE_PREVIOUS_BLOCK + BG_MIN_BLOCK_BOOT +
 			(BG_INCR_BLOCK_BOOT * alloc->node_cnt);
 
-	pending_job_id = alloc->job_id;
 	select_g_select_jobinfo_get(alloc->select_jobinfo,
 				    SELECT_JOBDATA_BLOCK_ID,
 				    &block_id);
 
-	for (i=0; (cur_delay < max_delay); i++) {
+	for (i = 0; (cur_delay < max_delay); i++) {
 		if (i == 1)
 			info("Waiting for block %s to become ready for job",
 			     block_id);
@@ -1104,7 +1220,6 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
 		is_ready = 0;
 
 	xfree(block_id);
-	pending_job_id = 0;
 
 	return is_ready;
 }
@@ -1140,7 +1255,7 @@ static int _blocks_dealloc(void)
 		      slurm_strerror(slurm_get_errno()));
 		return -1;
 	}
-	for (i=0; i<new_bg_ptr->record_count; i++) {
+	for (i = 0; i<new_bg_ptr->record_count; i++) {
 		if (new_bg_ptr->block_array[i].state == BG_BLOCK_TERM) {
 			rc = 1;
 			break;
@@ -1167,14 +1282,12 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 		max_delay = 300;	/* Wait to 5 min for PrologSlurmctld */
 	}
 
-	pending_job_id = alloc->job_id;
-
 	if (alloc->alias_list && !xstrcmp(alloc->alias_list, "TBD"))
 		opt.wait_all_nodes = 1;	/* Wait for boot & addresses */
 	if (opt.wait_all_nodes == (uint16_t) NO_VAL)
 		opt.wait_all_nodes = 0;
 
-	for (i=0; (cur_delay < max_delay); i++) {
+	for (i = 0; (cur_delay < max_delay); i++) {
 		if (i) {
 			if (i == 1)
 				info("Waiting for resource configuration");
@@ -1207,7 +1320,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 		if (i > 0)
      			info("Nodes %s are ready for job", alloc->node_list);
 		if (alloc->alias_list && !xstrcmp(alloc->alias_list, "TBD") &&
-		    (slurm_allocation_lookup(pending_job_id, &resp)
+		    (slurm_allocation_lookup(alloc->job_id, &resp)
 		     == SLURM_SUCCESS)) {
 			tmp_str = alloc->alias_list;
 			alloc->alias_list = resp->alias_list;
@@ -1223,8 +1336,6 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 			error("Nodes %s are still not ready", alloc->node_list);
 	} else	/* allocation_interrupted or slurmctld not responing */
 		is_ready = 0;
-
-	pending_job_id = 0;
 
 	return is_ready;
 }

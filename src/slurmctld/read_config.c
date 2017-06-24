@@ -867,6 +867,120 @@ static void _sync_part_prio(void)
 	list_for_each(part_list, _reset_part_prio, NULL);
 }
 
+static void _abort_job(struct job_record *job_ptr, uint32_t job_state,
+		       uint16_t state_reason, char *reason_string)
+{
+	time_t now = time(NULL);
+
+	job_ptr->job_state = job_state | JOB_COMPLETING;
+	build_cg_bitmap(job_ptr);
+	job_ptr->end_time = MIN(job_ptr->end_time, now);
+	job_ptr->state_reason = state_reason;
+	xfree(job_ptr->state_desc);
+	job_ptr->state_desc = xstrdup(reason_string);
+	job_completion_logger(job_ptr, false);
+	if (job_ptr->job_state == JOB_NODE_FAIL) {
+		/* build_cg_bitmap() may clear JOB_COMPLETING */
+		epilog_slurmctld(job_ptr);
+	}
+}
+
+static int _mark_pack_unused(void *x, void *arg)
+{
+	struct job_record *job_ptr = (struct job_record *) x;
+	job_ptr->bit_flags &= (~JOB_PACK_FLAG);
+	return 0;
+}
+
+static int _mark_pack_used(void *x, void *arg)
+{
+	struct job_record *job_ptr = (struct job_record *) x;
+	job_ptr->bit_flags |= JOB_PACK_FLAG;
+	return 0;
+}
+
+static int _test_pack_used(void *x, void *arg)
+{
+	struct job_record *job_ptr = (struct job_record *) x;
+
+	if ((job_ptr->pack_job_id == 0) || IS_JOB_FINISHED(job_ptr))
+		return 0;
+	if (job_ptr->bit_flags & JOB_PACK_FLAG)
+		return 0;
+
+	error("Incomplete pack job being aborted %u+%u (%u)",
+	      job_ptr->pack_job_id, job_ptr->pack_job_offset, job_ptr->job_id);
+	_abort_job(job_ptr, JOB_FAILED, FAIL_SYSTEM, "incomplete pack_job");
+
+	return 0;
+}
+
+/* Validate heterogeneous jobs
+ * Make sure that every active (not yet complete) job has all of its components
+ * and they are all in the same state. Also rebuild pack_job_list */
+static void _validate_pack_jobs(void)
+{
+	ListIterator job_iterator;
+	struct job_record *job_ptr, *pack_job_ptr;
+	hostset_t hs;
+	char *job_id_str;
+	uint32_t job_id;
+	bool pack_job_valid;
+
+	list_for_each(job_list, _mark_pack_unused, NULL);
+
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if ((job_ptr->pack_job_id == 0) ||
+		    (job_ptr->pack_job_offset != 0) ||
+		    IS_JOB_FINISHED(job_ptr))
+			continue;
+		/* active pack job leader found */
+		FREE_NULL_LIST(job_ptr->pack_job_list);
+		job_id_str = NULL;
+		/* Need to wrap numbers with brackets for hostset functions */
+		xstrfmtcat(job_id_str, "[%s]", job_ptr->pack_job_id_set);
+		hs = hostset_create(job_id_str);
+		xfree(job_id_str);
+		if (!hs) {
+			error("Job %u has invalid pack_job_id_set(%s)",
+			      job_ptr->job_id, job_ptr->pack_job_id_set);
+			_abort_job(job_ptr, JOB_FAILED, FAIL_SYSTEM,
+				   "invalid pack_job_id_set");
+			continue;
+		}
+		job_ptr->pack_job_list = list_create(NULL);
+		pack_job_valid = true;	/* assume valid for now */
+		while (pack_job_valid && (job_id_str = hostset_shift(hs))) {
+			job_id = (uint32_t) strtoll(job_id_str, NULL, 10);
+			pack_job_ptr = find_job_record(job_id);
+			if (!pack_job_ptr) {
+				error("Could not find job %u, part of pack job %u",
+				      job_id, job_ptr->job_id);
+				pack_job_valid = false;
+			} else if (IS_JOB_FINISHED(pack_job_ptr) ||
+				   (pack_job_ptr->pack_job_id !=
+				    job_ptr->job_id)) {
+				error("Invalid state of job %u, part of pack job %u",
+				      job_id, job_ptr->job_id);
+				pack_job_valid = false;
+			} else {
+				list_append(job_ptr->pack_job_list,
+					    pack_job_ptr);
+			}
+			free(job_id_str);
+		}
+		hostset_destroy(hs);
+		if (pack_job_valid) {
+			list_for_each(job_ptr->pack_job_list, _mark_pack_used,
+				      NULL);
+		}
+	}
+	list_iterator_destroy(job_iterator);
+
+	list_for_each(job_list, _test_pack_used, NULL);
+}
+
 /*
  * read_slurm_conf - load the slurm configuration from the configured file.
  * read_slurm_conf can be called more than once if so desired.
@@ -1124,6 +1238,7 @@ int read_slurm_conf(int recover, bool reconfig)
 		build_feature_list_eq();
 	}
 
+	_validate_pack_jobs();
 	(void) _sync_nodes_to_comp_job();/* must follow select_g_node_init() */
 	load_part_uid_allow_list(1);
 
@@ -2199,19 +2314,10 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 			job_post_resize_acctg(job_ptr);
 			accounting_enforce = save_accounting_enforce;
 		} else if (IS_NODE_DOWN(node_ptr) && IS_JOB_RUNNING(job_ptr)) {
-			time_t now = time(NULL);
 			info("Killing job %u on DOWN node %s",
 			     job_ptr->job_id, node_ptr->name);
-			job_ptr->job_state = JOB_NODE_FAIL | JOB_COMPLETING;
-			build_cg_bitmap(job_ptr);
-			job_ptr->end_time = MIN(job_ptr->end_time, now);
-			job_ptr->state_reason = FAIL_DOWN_NODE;
-			xfree(job_ptr->state_desc);
-			job_completion_logger(job_ptr, false);
-			if (job_ptr->job_state == JOB_NODE_FAIL) {
-				/* build_cg_bitmap() may clear JOB_COMPLETING */
-				epilog_slurmctld(job_ptr);
-			}
+			_abort_job(job_ptr, JOB_NODE_FAIL, FAIL_DOWN_NODE,
+				   NULL);
 			cnt++;
 		} else if (IS_NODE_IDLE(node_ptr)) {
 			cnt++;

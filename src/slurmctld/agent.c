@@ -563,7 +563,8 @@ static void *_wdog(void *args)
 	     (agent_ptr->msg_type == SRUN_PING)				||
 	     (agent_ptr->msg_type == SRUN_TIMEOUT)			||
 	     (agent_ptr->msg_type == SRUN_USER_MSG)			||
-	     (agent_ptr->msg_type == RESPONSE_RESOURCE_ALLOCATION) )
+	     (agent_ptr->msg_type == RESPONSE_RESOURCE_ALLOCATION)	||
+	     (agent_ptr->msg_type == RESPONSE_JOB_PACK_ALLOCATION) )
 		srun_agent = true;
 
 	thd_comp.max_delay = 0;
@@ -643,6 +644,14 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 			*agent_ptr->msg_args_pptr;
 		job_id  = msg->job_id;
 		step_id = NO_VAL;
+	} else if (agent_ptr->msg_type == RESPONSE_JOB_PACK_ALLOCATION) {
+		List pack_alloc_list = *agent_ptr->msg_args_pptr;
+		resource_allocation_response_msg_t *msg;
+		if (!pack_alloc_list || (list_count(pack_alloc_list) == 0))
+			return;
+		msg = list_peek(pack_alloc_list);
+		job_id  = msg->job_id;
+		step_id = NO_VAL;
 	} else if ((agent_ptr->msg_type == SRUN_JOB_COMPLETE)		||
 		   (agent_ptr->msg_type == SRUN_REQUEST_SUSPEND)	||
 		   (agent_ptr->msg_type == SRUN_STEP_MISSING)		||
@@ -653,8 +662,7 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 	} else if (agent_ptr->msg_type == SRUN_NODE_FAIL) {
 		return;		/* no need to note srun response */
 	} else {
-		error("_notify_slurmctld_jobs invalid msg_type %u",
-			agent_ptr->msg_type);
+		error("%s: invalid msg_type %u", __func__, agent_ptr->msg_type);
 		return;
 	}
 	lock_slurmctld(job_write_lock);
@@ -846,6 +854,7 @@ static void *_thread_per_group_rpc(void *args)
 	/* Lock: Write node */
 	slurmctld_lock_t node_write_lock = {
 		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+	uint32_t job_id;
 
 	xassert(args != NULL);
 	xsignal(SIGUSR1, _sig_handler);
@@ -990,13 +999,33 @@ static void *_thread_per_group_rpc(void *args)
 			unlock_slurmctld(job_write_lock);
 			continue;
 		} else if ((msg_type == RESPONSE_RESOURCE_ALLOCATION) &&
-		    (rc == SLURM_COMMUNICATIONS_CONNECTION_ERROR)) {
+			   (rc == SLURM_COMMUNICATIONS_CONNECTION_ERROR)) {
 			/* Communication issue to srun that launched the job
 			 * Cancel rather than leave a stray-but-empty job
 			 * behind on the allocated nodes. */
 			resource_allocation_response_msg_t *msg_ptr =
 				task_ptr->msg_args_ptr;
-			uint32_t job_id = msg_ptr->job_id;
+			job_id = msg_ptr->job_id;
+			info("Killing interactive job %u: %s",
+			     job_id, slurm_strerror(rc));
+			thread_state = DSH_FAILED;
+			lock_slurmctld(job_write_lock);
+			job_complete(job_id, slurmctld_conf.slurm_user_id,
+				     false, false, _wif_status());
+			unlock_slurmctld(job_write_lock);
+			continue;
+		} else if ((msg_type == RESPONSE_JOB_PACK_ALLOCATION) &&
+			   (rc == SLURM_COMMUNICATIONS_CONNECTION_ERROR)) {
+			/* Communication issue to srun that launched the job
+			 * Cancel rather than leave a stray-but-empty job
+			 * behind on the allocated nodes. */
+			List pack_alloc_list = task_ptr->msg_args_ptr;
+			resource_allocation_response_msg_t *msg_ptr;
+			if (!pack_alloc_list ||
+			    (list_count(pack_alloc_list) == 0))
+				continue;
+			msg_ptr = list_peek(pack_alloc_list);
+			job_id = msg_ptr->job_id;
 			info("Killing interactive job %u: %s",
 			     job_id, slurm_strerror(rc));
 			thread_state = DSH_FAILED;
@@ -1544,22 +1573,6 @@ static void _spawn_retry_agent(agent_arg_t * agent_arg_ptr)
 	slurm_attr_destroy(&attr_agent);
 }
 
-/* slurmctld_free_batch_job_launch_msg is a variant of
- *	slurm_free_job_launch_msg because all environment variables currently
- *	loaded in one xmalloc buffer (see get_job_env()), which is different
- *	from how slurmd assembles the data from a message
- */
-extern void slurmctld_free_batch_job_launch_msg(batch_job_launch_msg_t * msg)
-{
-	if (msg) {
-		if (msg->environment) {
-			xfree(msg->environment[0]);
-			xfree(msg->environment);
-		}
-		slurm_free_job_launch_msg(msg);
-	}
-}
-
 /* agent_purge - purge all pending RPC requests */
 extern void agent_purge(void)
 {
@@ -1594,10 +1607,9 @@ static void _purge_agent_args(agent_arg_t *agent_arg_ptr)
 	hostlist_destroy(agent_arg_ptr->hostlist);
 	xfree(agent_arg_ptr->addr);
 	if (agent_arg_ptr->msg_args) {
-		if (agent_arg_ptr->msg_type == REQUEST_BATCH_JOB_LAUNCH)
-			slurmctld_free_batch_job_launch_msg(agent_arg_ptr->
-							    msg_args);
-		else if (agent_arg_ptr->msg_type ==
+		if (agent_arg_ptr->msg_type == REQUEST_BATCH_JOB_LAUNCH) {
+			slurm_free_job_launch_msg(agent_arg_ptr->msg_args);
+		} else if (agent_arg_ptr->msg_type ==
 				RESPONSE_RESOURCE_ALLOCATION) {
 			resource_allocation_response_msg_t *alloc_msg =
 				agent_arg_ptr->msg_args;
@@ -1606,7 +1618,11 @@ static void _purge_agent_args(agent_arg_t *agent_arg_ptr)
 			alloc_msg->working_cluster_rec = NULL;
 			slurm_free_resource_allocation_response_msg(
 					agent_arg_ptr->msg_args);
-		} else if ((agent_arg_ptr->msg_type == REQUEST_ABORT_JOB)      ||
+		} else if (agent_arg_ptr->msg_type ==
+				RESPONSE_JOB_PACK_ALLOCATION) {
+			List alloc_list = agent_arg_ptr->msg_args;
+			FREE_NULL_LIST(alloc_list);
+		} else if ((agent_arg_ptr->msg_type == REQUEST_ABORT_JOB)    ||
 			 (agent_arg_ptr->msg_type == REQUEST_TERMINATE_JOB)  ||
 			 (agent_arg_ptr->msg_type == REQUEST_KILL_PREEMPTED) ||
 			 (agent_arg_ptr->msg_type == REQUEST_KILL_TIMELIMIT))

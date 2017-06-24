@@ -176,6 +176,7 @@
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
 int error_exit = 1;
+bool first_pass = true;
 int immediate_exit = 1;
 
 /*---- forward declarations of static functions  ----*/
@@ -183,29 +184,29 @@ int immediate_exit = 1;
 typedef struct env_vars env_vars_t;
 
 static void  _help(void);
-
-/* fill in default options  */
-static void _opt_default(void);
-
-/* set options based upon env vars  */
-static void _opt_env(void);
-
-static void _opt_args(int argc, char **argv);
-
-/* list known options and their settings  */
+static void  _opt_default(void);
+static void  _opt_env(void);
+static void  _opt_args(int argc, char **argv);
 static void  _opt_list(void);
-
-/* verify options sanity  */
-static bool _opt_verify(void);
-static char *_read_file(char *fname);
+static bool  _opt_verify(void);
 static void  _proc_get_user_env(char *optarg);
-static void _process_env_var(env_vars_t *e, const char *val);
-
+static void  _process_env_var(env_vars_t *e, const char *val);
+static char *_read_file(char *fname);
+static void  _set_options(int argc, char **argv);
 static void  _usage(void);
 
 /*---[ end forward declarations of static functions ]---------------------*/
 
-int initialize_and_process_args(int argc, char **argv)
+/* process options:
+ * 1. set defaults
+ * 2. update options with env vars
+ * 3. update options with commandline args
+ * 4. perform some verification that options are reasonable
+ *
+ * argc IN - Count of elements in argv
+ * argv IN - Array of elements to parse
+ * argc_off OUT - Offset of first non-parsable element  */
+extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 {
 	/* initialize option defaults */
 	_opt_default();
@@ -215,9 +216,12 @@ int initialize_and_process_args(int argc, char **argv)
 
 	/* initialize options with argv */
 	_opt_args(argc, argv);
+	if (argc_off)
+		*argc_off = optind;
 
 	if (opt.verbose)
 		_opt_list();
+	first_pass = false;
 
 	return 1;
 
@@ -274,117 +278,114 @@ static void argerror(const char *msg, ...)
 /*
  * _opt_default(): used by initialize_and_process_args to set defaults
  */
-static void _opt_default()
+static void _opt_default(void)
 {
 	int i;
 	uid_t uid = getuid();
 
-	opt.user = uid_to_string(uid);
-	if (xstrcmp(opt.user, "nobody") == 0)
-		fatal("Invalid user id: %u", uid);
-
-	opt.uid = uid;
-	opt.gid = getgid();
-
-	opt.clusters = NULL;
-	opt.cwd = NULL;
-	opt.progname = NULL;
-
-	opt.ntasks = 1;
-	opt.ntasks_set = false;
-	opt.cpus_per_task = 0;
-	opt.cpus_set = false;
-	opt.hint_env = NULL;
-	opt.hint_set = false;
-	opt.min_nodes = 1;
-	opt.max_nodes = 0;
-	opt.nodes_set = false;
-	opt.sockets_per_node = NO_VAL; /* requested sockets */
-	opt.cores_per_socket = NO_VAL; /* requested cores */
-	opt.threads_per_core = NO_VAL; /* requested threads */
-	opt.threads_per_core_set = false;
-	opt.ntasks_per_node      = 0;  /* ntask max limits */
-	opt.ntasks_per_socket    = NO_VAL;
-	opt.ntasks_per_core      = NO_VAL;
-	opt.ntasks_per_core_set  = false;
-	opt.mem_bind_type = 0;
-	opt.mem_bind = NULL;
-	opt.core_spec = (uint16_t) NO_VAL;
-	opt.time_limit = NO_VAL;
-	opt.time_limit_str = NULL;
-	opt.time_min = NO_VAL;
-	opt.time_min_str = NULL;
-	opt.partition = NULL;
-	opt.profile   = ACCT_GATHER_PROFILE_NOT_SET;
-
-	opt.job_name = NULL;
-	opt.jobid = NO_VAL;
-	opt.dependency = NULL;
-	opt.account  = NULL;
-	opt.comment  = NULL;
-	opt.qos      = NULL;
-	opt.power_flags = 0;
-
-	opt.distribution = SLURM_DIST_UNKNOWN;
-	opt.plane_size   = NO_VAL;
-
-	opt.shared = (uint16_t)NO_VAL;
-	opt.no_kill = false;
-	opt.kill_command_signal = SIGTERM;
-	opt.kill_command_signal_set = false;
-
-	opt.immediate	= 0;
-	opt.overcommit	= false;
-
-	opt.quiet = 0;
-	opt.verbose = 0;
-	opt.warn_flags  = 0;
-	opt.warn_signal = 0;
-	opt.warn_time   = 0;
-
-	/* constraint default (-1 is no constraint) */
-	opt.mincpus	    = -1;
-	opt.mem_per_cpu	    = -1;
-	opt.realmem	    = -1;
-	opt.tmpdisk	    = -1;
-
-	opt.hold	    = false;
-	opt.constraints	    = NULL;
-	opt.c_constraints   = NULL;
-	opt.gres            = NULL;
-	opt.contiguous	    = false;
-	opt.nodelist	    = NULL;
-	opt.exc_nodes	    = NULL;
-
-	for (i=0; i<HIGHEST_DIMENSIONS; i++) {
-		opt.conn_type[i]    = (uint16_t) NO_VAL;
-		opt.geometry[i]	    = 0;
+	/* Some options will persist for all components of a heterogeneous job
+	 * once specified for one, but will be overwritten with new values if
+	 * specified on the command line */
+	if (first_pass) {
+		xfree(opt.account);
+		xfree(opt.acctg_freq);
+		opt.begin		= 0;
+		opt.bell		= BELL_AFTER_DELAY;
+		xfree(opt.c_constraints);
+		xfree(opt.clusters);
+		xfree(opt.comment);
+		xfree(opt.cwd);
+		opt.deadline		= 0;
+		opt.delay_boot		= NO_VAL;
+		xfree(opt.dependency);
+		opt.egid		= (gid_t) -1;
+		opt.euid		= (uid_t) -1;
+		xfree(opt.exc_nodes);
+		opt.get_user_env_mode	= -1;
+		opt.get_user_env_time	= -1;
+		opt.gid			= getgid();
+		opt.hold		= false;
+		opt.immediate		= 0;
+		xfree(opt.job_name);
+		opt.kill_command_signal	= SIGTERM;
+		opt.kill_command_signal_set = false;
+		xfree(opt.mcs_label);
+		opt.nice		= NO_VAL;
+		opt.no_kill		= false;
+		opt.no_shell		= false;
+		opt.power_flags		= 0;
+		opt.priority		= 0;
+		opt.profile		= ACCT_GATHER_PROFILE_NOT_SET;
+		xfree(opt.progname);
+		xfree(opt.qos);
+		opt.quiet		= 0;
+		opt.reboot		= false;
+		opt.time_limit		= NO_VAL;
+		opt.time_min		= NO_VAL;
+		xfree(opt.time_min_str);
+		opt.uid			= uid;
+		opt.user		= uid_to_string(uid);
+		if (xstrcmp(opt.user, "nobody") == 0)
+			fatal("Invalid user id: %u", uid);
+		opt.verbose		= 0;
+		opt.wait_all_nodes	= NO_VAL16;
+		opt.warn_flags		= 0;
+		opt.warn_signal		= 0;
+		opt.warn_time		= 0;
+		xfree(opt.wckey);
 	}
-	opt.reboot          = false;
-	opt.no_rotate	    = false;
-	opt.job_flags       = 0;
 
-	opt.euid	    = (uid_t) -1;
-	opt.egid	    = (gid_t) -1;
+	/* All other options must be specified individually for each component
+	 * of the job */
+	xfree(opt.burst_buffer);
+	xfree(opt.constraints);
+	opt.contiguous			= false;
+	for (i = 0; i < HIGHEST_DIMENSIONS; i++) {
+		opt.conn_type[i]	 = NO_VAL16;
+		opt.geometry[i] 	 = 0;
+	}
+	opt.core_spec			= NO_VAL16;
+	opt.cores_per_socket		= NO_VAL; /* requested cores */
+	opt.cpu_freq_max		= NO_VAL;
+	opt.cpu_freq_gov		= NO_VAL;
+	opt.cpu_freq_min		= NO_VAL;
+	opt.cpus_per_task		= 0;
+	opt.cpus_set			= false;
+	opt.distribution		= SLURM_DIST_UNKNOWN;
+	/* opt.geometry[i]		= 0;	See above */
+	xfree(opt.hint_env);
+	opt.hint_set			= false;
+	xfree(opt.gres);
+	opt.job_flags			= 0;
+	opt.jobid			= NO_VAL;
+	opt.max_nodes			= 0;
+	xfree(opt.mem_bind);
+	opt.mem_bind_type		= 0;
+	opt.mem_per_cpu			= -1;
+	opt.mincpus			= -1;
+	opt.min_nodes			= 1;
+	opt.no_rotate			= false;
+	opt.ntasks			= 1;
+	opt.ntasks_per_node		= 0;  /* ntask max limits */
+	opt.ntasks_per_socket		= NO_VAL;
+	opt.ntasks_per_core		= NO_VAL;
+	opt.ntasks_per_core_set		= false;
+	opt.nodes_set			= false;
+	xfree(opt.nodelist);
+	opt.ntasks_set			= false;
+	opt.overcommit			= false;
+	xfree(opt.partition);
+	opt.plane_size			= NO_VAL;
+	opt.realmem			= -1;
+	xfree(opt.reservation);
+	opt.req_switch			= -1;
+	opt.shared			= NO_VAL16;
+	opt.sockets_per_node		= NO_VAL; /* requested sockets */
+	opt.threads_per_core		= NO_VAL; /* requested threads */
+	opt.threads_per_core_set	= false;
+	opt.tmpdisk			= -1;
+	opt.wait4switch			= -1;
 
-	opt.bell            = BELL_AFTER_DELAY;
-	opt.acctg_freq      = NULL;
-	opt.cpu_freq_min    = NO_VAL;
-	opt.cpu_freq_max    = NO_VAL;
-	opt.cpu_freq_gov    = NO_VAL;
-	opt.delay_boot      = NO_VAL;
-	opt.no_shell	    = false;
-	opt.get_user_env_time = -1;
-	opt.get_user_env_mode = -1;
-	opt.reservation     = NULL;
-	opt.wait_all_nodes  = (uint16_t) NO_VAL;
-	opt.wckey           = NULL;
-	opt.req_switch      = -1;
-	opt.wait4switch     = -1;
-	opt.mcs_label	    = NULL;
-
-	opt.nice = NO_VAL;
-	opt.priority = 0;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -456,7 +457,7 @@ env_vars_t env_vars[] = {
  *            environment variables. See comments above for how to
  *            extend srun to process different vars
  */
-static void _opt_env()
+static void _opt_env(void)
 {
 	char       *val = NULL;
 	env_vars_t *e   = env_vars;
@@ -666,7 +667,7 @@ _process_env_var(env_vars_t *e, const char *val)
 	}
 }
 
-void set_options(const int argc, char **argv)
+static void _set_options(int argc, char **argv)
 {
 	int opt_char, option_index = 0, max_val = 0, i;
 	char *tmp;
@@ -1028,7 +1029,8 @@ void set_options(const int argc, char **argv)
 		case LONG_OPT_MINCORES:
 			verbose("mincores option has been deprecated, use "
 				"cores-per-socket");
-			opt.cores_per_socket = parse_int("mincores", optarg, true);
+			opt.cores_per_socket = parse_int("mincores", optarg,
+							 true);
 			if (opt.cores_per_socket < 0) {
 				error("invalid mincores constraint %s",
 				      optarg);
@@ -1038,7 +1040,8 @@ void set_options(const int argc, char **argv)
 		case LONG_OPT_MINSOCKETS:
 			verbose("minsockets option has been deprecated, use "
 				"sockets-per-node");
-			opt.sockets_per_node = parse_int("minsockets", optarg, true);
+			opt.sockets_per_node = parse_int("minsockets", optarg,
+							 true);
 			if (opt.sockets_per_node < 0) {
 				error("invalid minsockets constraint %s",
 				      optarg);
@@ -1048,7 +1051,8 @@ void set_options(const int argc, char **argv)
 		case LONG_OPT_MINTHREADS:
 			verbose("minthreads option has been deprecated, use "
 				"threads-per-core");
-			opt.threads_per_core = parse_int("minthreads", optarg, true);
+			opt.threads_per_core = parse_int("minthreads", optarg,
+							 true);
 			if (opt.threads_per_core < 0) {
 				error("invalid minthreads constraint %s",
 				      optarg);
@@ -1429,21 +1433,26 @@ static void _opt_args(int argc, char **argv)
 	int i;
 	char **rest = NULL;
 
-	set_options(argc, argv);
+	_set_options(argc, argv);
 
-	command_argc = 0;
-	if (optind < argc) {
-		rest = argv + optind;
-		while (rest[command_argc] != NULL)
-			command_argc++;
+	if ((optind < argc) && !xstrcmp(argv[optind], ":")) {
+		debug("pack job separator");
+	} else {
+		command_argc = 0;
+		if (optind < argc) {
+			rest = argv + optind;
+			while (rest[command_argc] != NULL)
+				command_argc++;
+		}
+		command_argv = (char **) xmalloc((command_argc + 1) *
+						 sizeof(char *));
+		for (i = 0; i < command_argc; i++) {
+			if ((i == 0) && (rest == NULL))
+				break;	/* Fix for CLANG false positive */
+			command_argv[i] = xstrdup(rest[i]);
+		}
+		command_argv[i] = NULL;	/* End of argv's (for possible execv) */
 	}
-	command_argv = (char **) xmalloc((command_argc + 1) * sizeof(char *));
-	for (i = 0; i < command_argc; i++) {
-		if ((i == 0) && (rest == NULL))
-			break;	/* Fix for CLANG false positive */
-		command_argv[i] = xstrdup(rest[i]);
-	}
-	command_argv[i] = NULL;	/* End of argv's (for possible execv) */
 
 	if (!_opt_verify())
 		exit(error_exit);
@@ -1477,8 +1486,7 @@ static int _salloc_default_command (int *argcp, char **argvp[])
 		(*argvp)[1] = "-c";
 		(*argvp)[2] = xstrdup (cf->salloc_default_command);
 		(*argvp)[3] = NULL;
-	}
-	else {
+	} else {
 		*argcp = 1;
 		*argvp = xmalloc (sizeof (char *) * 2);
 		(*argvp)[0] = _get_shell ();

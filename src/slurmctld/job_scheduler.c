@@ -106,6 +106,8 @@ typedef struct epilog_arg {
 } epilog_arg_t;
 
 static char **	_build_env(struct job_record *job_ptr, bool is_epilog);
+static batch_job_launch_msg_t *_build_launch_job_msg(struct job_record *job_ptr,
+						     uint16_t protocol_version);
 static void	_depend_list_del(void *dep_ptr);
 static void	_feature_list_delete(void *x);
 static void	_job_queue_append(List job_queue, struct job_record *job_ptr,
@@ -749,9 +751,10 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job, bool locked)
 		if (!job_ptr)
 			break;
 
-		if ((job_ptr == fini_job_ptr) ||
-		    (job_ptr->priority == 0)  ||
-		    (job_ptr->details == NULL) ||
+		if ((job_ptr == fini_job_ptr)   ||
+		    (job_ptr->priority == 0)    ||
+		    (job_ptr->pack_job_id != 0) ||
+		    (job_ptr->details == NULL)  ||
 		    !avail_front_end(job_ptr))
 			continue;
 
@@ -927,7 +930,7 @@ next_part:		part_ptr = (struct part_record *)
 				!IS_JOB_CONFIGURING(job_ptr)
 #endif
 				) {
-				launch_msg = build_launch_job_msg(job_ptr,
+				launch_msg = _build_launch_job_msg(job_ptr,
 							msg->protocol_version);
 			}
 		}
@@ -967,7 +970,7 @@ send_reply:
 			response_msg.msg_type = REQUEST_BATCH_JOB_LAUNCH;
 			response_msg.data = launch_msg;
 			slurm_send_node_msg(msg->conn_fd, &response_msg);
-			slurmctld_free_batch_job_launch_msg(launch_msg);
+			slurm_free_job_launch_msg(launch_msg);
 		}
 		return false;
 	}
@@ -1629,6 +1632,9 @@ next_part:			part_ptr = (struct part_record *)
 		if (job_ptr->preempt_in_progress)
 			continue;	/* scheduled in another partition */
 
+		if (job_ptr->pack_job_id)
+			goto fail_this_part;
+
 		if (job_ptr->array_recs && (job_ptr->array_task_id == NO_VAL))
 			is_job_array_head = true;
 		else
@@ -2087,7 +2093,8 @@ skip_start:
 		if (fail_by_part && bf_min_prio_reserve &&
 		    (job_ptr->priority < bf_min_prio_reserve))
 			fail_by_part = false;
-		if (fail_by_part) {
+
+fail_this_part:	if (fail_by_part) {
 		 	/* do not schedule more jobs in this partition or on
 			 * nodes in this partition */
 			failed_parts[failed_part_cnt++] = job_ptr->part_ptr;
@@ -2244,9 +2251,22 @@ extern int sort_job_queue2(void *x, void *y)
 	return -1;
 }
 
+/* The environment" variable is points to one big xmalloc. In order to
+ * manipulate the array for a pack job, we need to split it into an array
+ * containing multiple xmalloc variables */
+static void _split_env(batch_job_launch_msg_t *launch_msg_ptr)
+{
+	int i;
+
+	for (i = 1; i < launch_msg_ptr->envc; i++) {
+		launch_msg_ptr->environment[i] =
+			xstrdup(launch_msg_ptr->environment[i]);
+	}
+}
+
 /* Given a scheduled job, return a pointer to it batch_job_launch_msg_t data */
-extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr,
-						    uint16_t protocol_version)
+static batch_job_launch_msg_t *_build_launch_job_msg(struct job_record *job_ptr,
+						     uint16_t protocol_version)
 {
 	batch_job_launch_msg_t *launch_msg_ptr;
 	struct passwd pwd, *result;
@@ -2347,6 +2367,7 @@ extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr,
 			     false, true, 0);
 		return NULL;
 	}
+	_split_env(launch_msg_ptr);
 	launch_msg_ptr->job_mem = job_ptr->details->pn_min_memory;
 	launch_msg_ptr->num_cpu_groups = job_ptr->job_resrcs->cpu_array_cnt;
 	launch_msg_ptr->cpus_per_node  = xmalloc(sizeof(uint16_t) *
@@ -2381,6 +2402,273 @@ extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr,
 	return launch_msg_ptr;
 }
 
+/* Validate the job is ready for launch
+ * RET pointer to batch job to launch or NULL if not ready yet */
+static struct job_record *_pack_job_ready(struct job_record *job_ptr)
+{
+	struct job_record *pack_leader, *pack_job;
+	ListIterator iter;
+
+	if (job_ptr->pack_job_id == 0)	/* Not a pack job */
+		return job_ptr;
+
+	pack_leader = find_job_record(job_ptr->pack_job_id);
+	if (!pack_leader) {
+		error("Job pack leader %u not found", job_ptr->pack_job_id);
+		return NULL;
+	}
+	if (!pack_leader->pack_job_list) {
+		error("Job pack leader %u lacks pack_job_list",
+		      job_ptr->pack_job_id);
+		return NULL;
+	}
+
+	iter = list_iterator_create(pack_leader->pack_job_list);
+	while ((pack_job = (struct job_record *) list_next(iter))) {
+#ifndef HAVE_BG
+		uint8_t prolog = 0;
+#endif
+		if (pack_leader->pack_job_id != pack_job->pack_job_id) {
+			error("%s: Bad pack_job_list for job %u",
+			      __func__, pack_leader->pack_job_id);
+			continue;
+		}
+#ifndef HAVE_BG
+		if (job_ptr->details)
+			prolog = pack_job->details->prolog_running;
+		if (prolog || IS_JOB_CONFIGURING(pack_job) ||
+		    !test_job_nodes_ready(pack_job)) {
+			pack_leader = NULL;
+			break;
+		}
+#endif
+		if ((job_ptr->batch_flag == 0) ||
+		    (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))) {
+			pack_leader = NULL;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_HETERO_JOBS) {
+		if (!pack_leader) {
+			info("Batch pack job %u waiting for job %u to be ready",
+			     pack_job->job_id, pack_job->job_id);
+		} else if (pack_leader) {
+			info("Batch pack job %u being launched",
+			     pack_leader->job_id);
+		} else if (pack_job) {
+			info("Batch pack job %u waiting for job %u to be ready",
+			     pack_leader->job_id, pack_job->job_id);
+		} else {
+			error("Batch pack leader %u has empty pack_job_list",
+			      pack_leader->job_id);
+		}
+	}
+
+	return pack_leader;
+}
+
+/* No need for details about every allocation, just set pack job env vars */
+static void _set_pack_env(struct job_record *pack_leader,
+			  batch_job_launch_msg_t *launch_msg_ptr)
+{
+	struct job_record *pack_job;
+	int i, pack_offset = 0;
+	ListIterator iter;
+
+	if (pack_leader->pack_job_id == 0)
+		return;
+	if (!launch_msg_ptr->environment) {
+		error("Job %u lacks environment", pack_leader->pack_job_id);
+		return;
+	}
+	if (!pack_leader->pack_job_list) {
+		error("Job pack leader %u lacks pack_job_list",
+		      pack_leader->pack_job_id);
+		return;
+	}
+
+	/* "environment" needs NULL terminator */
+	xrealloc(launch_msg_ptr->environment,
+		 sizeof(char *) * (launch_msg_ptr->envc + 1));
+	iter = list_iterator_create(pack_leader->pack_job_list);
+	while ((pack_job = (struct job_record *) list_next(iter))) {
+		uint16_t cpus_per_task = 1;
+		uint32_t num_cpus = 0;
+		uint64_t tmp_mem = 0;
+		char *tmp_str = NULL;
+
+		if (pack_leader->pack_job_id != pack_job->pack_job_id) {
+			error("%s: Bad pack_job_list for job %u",
+			      __func__, pack_leader->pack_job_id);
+			continue;
+		}
+#if HAVE_BG
+		(void) env_array_overwrite_pack_fmt(
+				&launch_msg_ptr->environment,
+				"SLURM_BG_NUM_NODES", pack_offset,
+				"%u", pack_job->node_cnt);
+#endif
+		if (pack_job->details &&
+		    (pack_job->details->cpus_per_task > 0) &&
+		    (pack_job->details->cpus_per_task != NO_VAL16)) {
+			cpus_per_task = pack_job->details->cpus_per_task;
+		}
+		(void) env_array_overwrite_pack_fmt(
+				&launch_msg_ptr->environment,
+				"SLURM_CPUS_PER_TASK", pack_offset,
+				"%u", cpus_per_task);
+		if (pack_job->account) {
+			(void) env_array_overwrite_pack_fmt(
+					&launch_msg_ptr->environment,
+					"SLURM_JOB_ACCOUNT",
+					pack_offset, "%s", pack_job->account);
+		}
+
+		if (pack_job->job_resrcs) {
+			tmp_str = uint32_compressed_to_str(
+					pack_job->job_resrcs->cpu_array_cnt,
+					pack_job->job_resrcs->cpu_array_value,
+					pack_job->job_resrcs->cpu_array_reps);
+			(void) env_array_overwrite_pack_fmt(
+					&launch_msg_ptr->environment,
+					"SLURM_JOB_CPUS_PER_NODE",
+					pack_offset, "%s", tmp_str);
+			xfree(tmp_str);
+		}
+		(void) env_array_overwrite_pack_fmt(
+				&launch_msg_ptr->environment,
+				"SLURM_JOB_ID",
+				pack_offset, "%u", pack_job->job_id);
+		(void) env_array_overwrite_pack_fmt(
+				&launch_msg_ptr->environment,
+				"SLURM_JOB_NAME",
+				pack_offset, "%s", pack_job->name);
+		(void) env_array_overwrite_pack_fmt(
+				&launch_msg_ptr->environment,
+				"SLURM_JOB_NODELIST",
+				pack_offset, "%s", pack_job->nodes);
+		(void) env_array_overwrite_pack_fmt(
+				&launch_msg_ptr->environment,
+				"SLURM_JOB_NUM_NODES",
+				pack_offset, "%u", pack_job->node_cnt);
+		if (pack_job->partition) {
+			(void) env_array_overwrite_pack_fmt(
+					&launch_msg_ptr->environment,
+					"SLURM_JOB_PARTITION",
+					pack_offset, "%s", pack_job->partition);
+		}
+		if (pack_job->qos_ptr) {
+			slurmdb_qos_rec_t *qos;
+			char *qos_name;
+
+			qos = (slurmdb_qos_rec_t *) pack_job->qos_ptr;
+			if (!xstrcmp(qos->description, "Normal QOS default"))
+				qos_name = "normal";
+			else
+				qos_name = qos->description;
+			(void) env_array_overwrite_pack_fmt(
+					&launch_msg_ptr->environment,
+					"SLURM_JOB_QOS",
+					pack_offset, "%s", qos_name);
+		}
+		if (pack_job->resv_name) {
+			(void) env_array_overwrite_pack_fmt(
+					&launch_msg_ptr->environment,
+					"SLURM_JOB_RESERVATION",
+					pack_offset, "%s", pack_job->resv_name);
+		}
+		if (pack_job->details)
+			tmp_mem = pack_job->details->pn_min_memory;
+		if (tmp_mem & MEM_PER_CPU) {
+			tmp_mem &= (~MEM_PER_CPU);
+			(void) env_array_overwrite_pack_fmt(
+					&launch_msg_ptr->environment,
+					"SLURM_MEM_PER_CPU",
+					pack_offset, "%"PRIu64"", tmp_mem);
+		} else if (tmp_mem) {
+			(void) env_array_overwrite_pack_fmt(
+					&launch_msg_ptr->environment,
+					"SLURM_MEM_PER_NODE",
+					pack_offset, "%"PRIu64"", tmp_mem);
+		}
+		if (pack_job->alias_list) {
+			(void) env_array_overwrite_pack_fmt(
+					&launch_msg_ptr->environment,
+					"SLURM_NODE_ALIASES", pack_offset,
+					"%s", pack_job->alias_list);
+		}
+		if (pack_job->details) {
+			(void) env_array_overwrite_pack_fmt(
+					&launch_msg_ptr->environment,
+					"SLURM_NTASKS", pack_offset,
+					"%u", pack_job->details->num_tasks);
+		}
+		if (pack_job->details && pack_job->job_resrcs) {
+			/* Both should always be set for active jobs */
+			struct job_resources *resrcs_ptr = pack_job->job_resrcs;
+			slurm_step_layout_t *step_layout = NULL;
+			slurm_step_layout_req_t step_layout_req;
+			uint16_t cpus_per_task_array[1];
+			uint32_t cpus_task_reps[1], task_dist;
+			memset(&step_layout_req, 0,
+			       sizeof(slurm_step_layout_req_t));
+			for (i = 0; i < resrcs_ptr->cpu_array_cnt; i++) {
+				num_cpus += resrcs_ptr->cpu_array_value[i] *
+					    resrcs_ptr->cpu_array_reps[i];
+			}
+
+			if (pack_job->details->num_tasks) {
+				step_layout_req.num_tasks =
+					pack_job->details->num_tasks;
+			} else {
+				step_layout_req.num_tasks = num_cpus / cpus_per_task;
+			}
+			step_layout_req.num_hosts = pack_job->node_cnt;
+
+			if ((step_layout_req.node_list =
+			     getenvp(launch_msg_ptr->environment,
+				     "SLURM_ARBITRARY_NODELIST"))) {
+				task_dist = SLURM_DIST_ARBITRARY;
+			} else {
+				step_layout_req.node_list = pack_job->nodes;
+				task_dist = SLURM_DIST_BLOCK;
+			}
+			step_layout_req.cpus_per_node =
+				pack_job->job_resrcs->cpu_array_value;
+			step_layout_req.cpu_count_reps =
+				pack_job->job_resrcs->cpu_array_reps;
+			cpus_per_task_array[0] = cpus_per_task;
+			step_layout_req.cpus_per_task = cpus_per_task_array;
+			cpus_task_reps[0] = pack_job->node_cnt;
+			step_layout_req.cpus_task_reps = cpus_task_reps;
+			step_layout_req.task_dist = task_dist;
+			step_layout_req.plane_size = NO_VAL16;
+			step_layout = slurm_step_layout_create(&step_layout_req);
+			if (step_layout) {
+				tmp_str = uint16_array_to_str(
+							step_layout->node_cnt,
+							step_layout->tasks);
+				slurm_step_layout_destroy(step_layout);
+				(void) env_array_overwrite_pack_fmt(
+						&launch_msg_ptr->environment,
+						"SLURM_TASKS_PER_NODE",
+						 pack_offset,"%s", tmp_str);
+				xfree(tmp_str);
+			}
+		}
+		pack_offset++;
+	}
+	list_iterator_destroy(iter);
+	(void) env_array_overwrite_fmt(&launch_msg_ptr->environment,
+				       "SLURM_PACK_SIZE", "%d", pack_offset);
+
+	for (i = 0; launch_msg_ptr->environment[i]; i++)
+		;
+	launch_msg_ptr->envc = i;
+}
+
 /*
  * launch_job - send an RPC to a slurmd to initiate a batch job
  * IN job_ptr - pointer to job that will be initiated
@@ -2390,6 +2678,7 @@ extern void launch_job(struct job_record *job_ptr)
 	batch_job_launch_msg_t *launch_msg_ptr;
 	uint16_t protocol_version = (uint16_t) NO_VAL;
 	agent_arg_t *agent_arg_ptr;
+	struct job_record *launch_job_ptr;
 
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr;
@@ -2402,17 +2691,22 @@ extern void launch_job(struct job_record *job_ptr)
 	if (node_ptr)
 		protocol_version = node_ptr->protocol_version;
 #endif
+	launch_job_ptr = _pack_job_ready(job_ptr);
+	if (!launch_job_ptr)
+		return;
 
-	launch_msg_ptr = build_launch_job_msg(job_ptr, protocol_version);
+	launch_msg_ptr = _build_launch_job_msg(launch_job_ptr,protocol_version);
 	if (launch_msg_ptr == NULL)
 		return;
+	if (launch_job_ptr->pack_job_id)
+		_set_pack_env(launch_job_ptr, launch_msg_ptr);
 
 	agent_arg_ptr = (agent_arg_t *) xmalloc(sizeof(agent_arg_t));
 	agent_arg_ptr->protocol_version = protocol_version;
 	agent_arg_ptr->node_count = 1;
 	agent_arg_ptr->retry = 0;
 	xassert(job_ptr->batch_host);
-	agent_arg_ptr->hostlist = hostlist_create(job_ptr->batch_host);
+	agent_arg_ptr->hostlist = hostlist_create(launch_job_ptr->batch_host);
 	agent_arg_ptr->msg_type = REQUEST_BATCH_JOB_LAUNCH;
 	agent_arg_ptr->msg_args = (void *) launch_msg_ptr;
 
@@ -4111,8 +4405,9 @@ extern void prolog_running_decr(struct job_record *job_ptr)
 		return;
 
 	if (IS_JOB_CONFIGURING(job_ptr) && test_job_nodes_ready(job_ptr)) {
-		info("%s: Configuration for job %u is complete",
-		      __func__, job_ptr->job_id);
+		char job_id_buf[JBUFSIZ];
+		info("%s: Configuration for %s is complete", __func__,
+		     jobid2fmt(job_ptr, job_id_buf, sizeof(job_id_buf)));
 		job_config_fini(job_ptr);
 		if (job_ptr->batch_flag &&
 		    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {

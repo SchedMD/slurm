@@ -154,6 +154,7 @@ typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
 #define	INFINITE   (0xffffffff)
 #define	INFINITE32 (0xffffffff)
 #define	INFINITE64 (0xffffffffffffffff)
+#define NO_VAL8    (0xfe)
 #define NO_VAL16   (0xfffe)
 #define NO_VAL     (0xfffffffe)
 #define NO_VAL32   (0xfffffffe)
@@ -1020,6 +1021,9 @@ enum ctx_keys {
 #define TRES_STR_CALC      0x00000800   /* Avoid calculating TRES strings at the
 					 * end of a job. */
 #define SIB_JOB_FLUSH      0x00001000   /* Don't send complete to origin */
+#define JOB_PACK_FLAG      0x00002000	/* Heterogeneous job management flag */
+#define JOB_NTASKS_SET     0x00004000	/* --ntasks explicitly set */
+#define JOB_CPUS_SET       0x00008000	/* --cpus-per-tasks explicitly set */
 
 /*****************************************************************************\
  *      SLURM HOSTLIST FUNCTIONS
@@ -1625,6 +1629,9 @@ typedef struct job_info {
 	uint32_t num_cpus;	/* minimum number of cpus required by job */
 	uint32_t num_nodes;	/* minimum number of nodes required by job */
 	uint32_t num_tasks;	/* requested task count */
+	uint32_t pack_job_id;	/* lead job ID of pack job leader */
+	char *pack_job_id_set;	/* job IDs for all components */
+	uint32_t pack_job_offset; /* pack job index */
 	char *partition;	/* name of assigned partition */
 	uint64_t pn_min_memory; /* minimum real memory per node, default=0 */
 	uint16_t pn_min_cpus;   /* minimum # CPUs per node, default=0 */
@@ -2594,6 +2601,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_ESEARCH      0x0000400000000000 /* Elasticsearch debug */
 #define DEBUG_FLAG_NODE_FEATURES 0x0000800000000000 /* Node Features debug */
 #define DEBUG_FLAG_FEDR         0x0001000000000000 /* Federation debug */
+#define DEBUG_FLAG_HETERO_JOBS  0x0002000000000000 /* Heterogeneous job debug */
 
 #define GROUP_FORCE		0x8000	/* if set, update group membership
 					 * info even if no updates to
@@ -3154,6 +3162,28 @@ extern resource_allocation_response_msg_t *slurm_allocate_resources_blocking(
 extern void slurm_free_resource_allocation_response_msg(resource_allocation_response_msg_t *msg);
 
 /*
+ * slurm_allocate_pack_job_blocking
+ *	allocate resources for a list of job requests.  This call will block
+ *	until the entire allocation is granted, or the specified timeout limit
+ *	is reached.
+ * IN job_req_list - List of resource allocation requests, type job_desc_msg_t
+ * IN timeout - amount of time, in seconds, to wait for a response before
+ * 	giving up.
+ *	A timeout of zero will wait indefinitely.
+ * IN pending_callback - If the allocation cannot be granted immediately,
+ *      the controller will put the job in the PENDING state.  If
+ *      pending callback is not NULL, it will be called with the job_id
+ *      of the pending job as the sole parameter.
+ *
+ * RET List of allocation structures on success, NULL on error set errno to
+ *	indicate the error (errno will be ETIMEDOUT if the timeout is reached
+ *      with no allocation granted)
+ * NOTE: free the response using list_destroy()
+ */
+List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
+				      void(*pending_callback)(uint32_t job_id));
+
+/*
  * slurm_allocation_lookup - retrieve info for an existing resource
  *			     allocation
  * IN job_id - job allocation identifier
@@ -3162,7 +3192,18 @@ extern void slurm_free_resource_allocation_response_msg(resource_allocation_resp
  * NOTE: free the response using slurm_free_resource_allocation_response_msg()
  */
 extern int slurm_allocation_lookup(uint32_t job_id,
-				   resource_allocation_response_msg_t **info);
+				   resource_allocation_response_msg_t **resp);
+
+/*
+ * slurm_pack_job_lookup - retrieve info for an existing heterogeneous job
+ * 			   allocation without the addrs and such
+ * IN jobid - job allocation identifier
+ * OUT resp - list of job allocation information, type
+ *	      resource_allocation_response_msg_t
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * NOTE: free the response using list_destroy()
+ */
+extern int slurm_pack_job_lookup(uint32_t jobid, List *resp);
 
 /*
  * slurm_read_hostfile - Read a SLURM hostfile specified by "filename".
@@ -3190,7 +3231,7 @@ extern char *slurm_read_hostfile(char *filename, int n);
  * RET allocation_msg_thread_t * or NULL on failure
  */
 extern allocation_msg_thread_t *slurm_allocation_msg_thr_create(uint16_t *port,
-								const slurm_allocation_callbacks_t *callbacks);
+				const slurm_allocation_callbacks_t *callbacks);
 
 /*
  * slurm_allocation_msg_thr_destroy - shutdown the message handler talking
@@ -3212,6 +3253,17 @@ extern int slurm_submit_batch_job(job_desc_msg_t *job_desc_msg,
 				  submit_response_msg_t **slurm_alloc_msg);
 
 /*
+ * slurm_submit_batch_pack_job - issue RPC to submit a heterogeneous job for
+ *				 later execution
+ * NOTE: free the response using slurm_free_submit_response_response_msg
+ * IN job_req_list - List of resource allocation requests, type job_desc_msg_t
+ * OUT slurm_alloc_msg - response to request
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+extern int slurm_submit_batch_pack_job(List job_req_list,
+				       submit_response_msg_t **slurm_alloc_msg);
+
+/*
  * slurm_free_submit_response_response_msg - free slurm
  *	job submit response message
  * IN msg - pointer to job submit response message
@@ -3226,6 +3278,16 @@ extern void slurm_free_submit_response_response_msg(submit_response_msg_t *msg);
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 extern int slurm_job_will_run(job_desc_msg_t *job_desc_msg);
+
+/*
+ * slurm_pack_job_will_run - determine if a heterogenous job would execute
+ *	immediately if submitted now
+ * IN job_req_list - List of job_desc_msg_t structures describing the resource
+ *		allocation request
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+extern int slurm_pack_job_will_run(List job_req_list);
+
 
 /*
  * slurm_job_will_run2 - determine if a job would execute immediately if

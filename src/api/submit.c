@@ -49,27 +49,26 @@ extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
 
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 /*
  * slurm_submit_batch_job - issue RPC to submit a job for later execution
  * NOTE: free the response using slurm_free_submit_response_response_msg
  * IN job_desc_msg - description of batch job request
- * OUT slurm_alloc_msg - response to request
+ * OUT resp - response to request
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-int
-slurm_submit_batch_job (job_desc_msg_t *req,
-		        submit_response_msg_t **resp)
+extern int slurm_submit_batch_job(job_desc_msg_t *req,
+				  submit_response_msg_t **resp)
 {
-        int rc;
-        slurm_msg_t req_msg;
-        slurm_msg_t resp_msg;
-	bool host_set = false;
-	char host[64];
+	int rc;
+	slurm_msg_t req_msg;
+	slurm_msg_t resp_msg;
+	char *local_hostname = NULL;
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
-
 
 	/*
 	 * set Node and session id for this request
@@ -77,28 +76,79 @@ slurm_submit_batch_job (job_desc_msg_t *req,
 	if (req->alloc_sid == NO_VAL)
 		req->alloc_sid = getsid(0);
 
-	if ( (req->alloc_node == NULL)
-	    && (gethostname_short(host, sizeof(host)) == 0) ) {
-		req->alloc_node = host;
-		host_set  = true;
+	if (req->alloc_node == NULL) {
+		local_hostname = xshort_hostname();
+		req->alloc_node = local_hostname;
 	}
 
-	req_msg.msg_type = REQUEST_SUBMIT_BATCH_JOB ;
+	req_msg.msg_type = REQUEST_SUBMIT_BATCH_JOB;
 	req_msg.data     = req;
 
 	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg,
 					    working_cluster_rec);
-
-	/*
-	 *  Clear this hostname if set internally to this function
-	 *    (memory is on the stack)
-	 */
-	if (host_set)
-		req->alloc_node = NULL;
-
+	xfree(local_hostname);
 	if (rc == SLURM_SOCKET_ERROR)
 		return SLURM_ERROR;
 
+	switch (resp_msg.msg_type) {
+	case RESPONSE_SLURM_RC:
+		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		if (rc)
+			slurm_seterrno_ret(rc);
+		*resp = NULL;
+		break;
+	case RESPONSE_SUBMIT_BATCH_JOB:
+		*resp = (submit_response_msg_t *) resp_msg.data;
+		break;
+	default:
+		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
+	}
+
+	return SLURM_PROTOCOL_SUCCESS;
+}
+
+/*
+ * slurm_submit_batch_pack_job - issue RPC to submit a heterogeneous job for
+ *				 later execution
+ * NOTE: free the response using slurm_free_submit_response_response_msg
+ * IN job_req_list - List of resource allocation requests, type job_desc_msg_t
+ * OUT resp - response to request
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+extern int slurm_submit_batch_pack_job(List job_req_list,
+				       submit_response_msg_t **resp)
+{
+	int rc;
+	job_desc_msg_t *req;
+	slurm_msg_t req_msg;
+	slurm_msg_t resp_msg;
+	char *local_hostname = NULL;
+	ListIterator iter;
+
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
+
+	/*
+	 * set Node and session id for this request
+	 */
+	local_hostname = xshort_hostname();
+	iter = list_iterator_create(job_req_list);
+	while ((req = (job_desc_msg_t *) list_next(iter))) {
+		if (req->alloc_sid == NO_VAL)
+			req->alloc_sid = getsid(0);
+		if (!req->alloc_node)
+			req->alloc_node = local_hostname;
+	}
+	list_iterator_destroy(iter);
+
+	req_msg.msg_type = REQUEST_SUBMIT_BATCH_JOB_PACK;
+	req_msg.data     = job_req_list;
+
+	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg,
+					    working_cluster_rec);
+	xfree(local_hostname);
+	if (rc == SLURM_SOCKET_ERROR)
+		return SLURM_ERROR;
 	switch (resp_msg.msg_type) {
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;

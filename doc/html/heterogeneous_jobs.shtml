@@ -1,0 +1,279 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Heterogeneous Job Support</h1>
+
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#submitting">Submitting Jobs</a></li>
+<li><a href="#managing">Managing Jobs</a></li>
+<li><a href="#env_var">Environment Variables</a></li>
+<li><a href="#limitations">Limitations</a></li>
+<li><a href="#sys_admin">System Administrator Information</a></li>
+</ul>
+
+<h2><a name="overview">Overview</a></h2>
+
+<p>Slurm version 17.11 and later supports the ability to submit and manage
+heterogeneous jobs, in which each component has virtually all job options
+available including partition, account and QOS (Quality Of Service).
+For example, part of a job might require four cores and 4 GB for each of 128
+tasks while another part of the job would require 16 GB of memory and one CPU.</p>
+
+<h2><a name="submitting">Submitting Jobs</a></h2>
+
+<p>The <i>salloc</i>, <i>sbatch</i> and <i>srun</i> commands can all be used
+to submit heterogeneous jobs.
+Resource specifications for each component of the heterogeneous job should be
+separated with ":" character.
+For example:</p>
+<pre>
+$ sbatch --cpus-per-task=4 --mem-per-cpu=1  --ntasks=128 : \
+         --cpus-per-task=1 --mem-per-cpu=16 --ntasks=1 my.bash
+</pre>
+
+<p>Options specified for one component of a heterogeneous job (or job step) will
+be used for subsequent components to the extent which is expected to be helpful.
+For example, <i>--immediate</i> and <i>--job-name</i> are propagated, while
+<i>--ntasks</i> and <i>--mem-per-cpu</i> are reset to default values for each
+component.
+A list of propagated options follows.</p>
+<ul>
+<li>--account</li>
+<li>--acctg-freq</li>
+<li>--begin</li>
+<li>--checkpoint</li>
+<li>--checkpoint-dir</li>
+<li>--cluster-constraint</li>
+<li>--clusters</li>
+<li>--comment</li>
+<li>--deadline</li>
+<li>--delay-boot</li>
+<li>--dependency</li>
+<li>--epilog            (option available only in srun)</li>
+<li>--error</li>
+<li>--export</li>
+<li>--export-file</li>
+<li>--exclude</li>
+<li>--get-user-env</li>
+<li>--gid</li>
+<li>--hold</li>
+<li>--ignore-pbs</li>
+<li>--immediate</li>
+<li>--input</li>
+<li>--job-name</li>
+<li>--kill-on-bad-exit  (option available only in srun)</li>
+<li>--label             (option available only in srun)</li>
+<li>--max-exit-timeout  (option available only in srun)</li>
+<li>--mcs-label</li>
+<li>--msg-timeout       (option available only in srun)</li>
+<li>--no-allocate       (option available only in srun)</li>
+<li>--no-requeue</li>
+<li>--nice</li>
+<li>--no-kill</li>
+<li>--open-mode         (option available only in srun)</li>
+<li>--output</li>
+<li>--parsable</li>
+<li>--priority</li>
+<li>--profile</li>
+<li>--propagate</li>
+<li>--prolog            (option available only in srun)</li>
+<li>--pty               (option available only in srun)</li>
+<li>--qos</li>
+<li>--quiet</li>
+<li>--quit-on-interrupt (option available only in srun)</li>
+<li>--reboot</li>
+<li>--reservation</li>
+<li>--requeue</li>
+<li>--signal</li>
+<li>--slurmd-debug      (option available only in srun)</li>
+<li>--task-epilog       (option available only in srun)</li>
+<li>--task-prolog       (option available only in srun)</li>
+<li>--time</li>
+<li>--test-only</li>
+<li>--time-min</li>
+<li>--uid</li>
+<li>--unbuffered        (option available only in srun)</li>
+<li>--verbose</li>
+<li>--wait</li>
+<li>--wait-all-nodes</li>
+<li>--wckey</li>
+<li>--workdir</li>
+</ul>
+
+<p>Environment variables used to specify default options for the job submit
+command will be applied to every component of the heterogeneous job
+(e.g. <i>SBATCH_ACCOUNT</i>).</p>
+
+<p>Batch job options can be included in the submitted script for multiple
+heterogeneous job components. Each component should be separated by a line
+containing the line "#SBATCH packjob" as shown below.</p>
+<pre>
+$ cat new.bash
+#!/bin/bash
+#SBATCH --cpus-per-task=4 --mem-per-cpu=16g --ntasks=1
+#SBATCH packjob
+#SBATCH --cpus-per-task=2 --mem-per-cpu=1g  --ntasks=8
+
+srun run.app
+
+$ sbatch new.bash
+</pre>
+
+<p>Is equivalent to the following:</p>
+
+<pre>
+$ cat my.bash
+#!/bin/bash
+srun run.app
+
+$ sbatch --cpus-per-task=4 --mem-per-cpu=16g --ntasks=1 : \
+         --cpus-per-task=2 --mem-per-cpu=1g  --ntasks=8 my.bash
+</pre>
+
+<p>The batch script will be executed in the first node in the first component
+of the heterogeneous job. For the above example, that will be the job component
+with 1 task, 4 CPUs and 64 GB of memory (16 GB for each of the 4 CPUs).</p>
+
+<p>If a heterogeneous job is submitted to run in multiple clusters <u>not</u>
+part of a federation (e.g. "sbatch --cluster=alpha,beta ...") then the entire
+job will be sent to the cluster expected to be able to start all components
+at the earliest time.</p>
+
+<h2><a name="managing">Managing Jobs</a></h2>
+
+<p>Information maintained in Slurm for a heterogeneous job includes:</p>
+<ul>
+<li><i>job_id</i>: Each component of a heterogeneous job will have its own
+unique <i>job_id</i>.</li>
+<li><i>pack_job_id</i>: This identification number applies to all components
+of the heterogeneous job. All components of the same job will have the same
+<i>pack_job_id</i> value and it will be equal to the <i>job_id</i> of the
+first component. We refer to this as the "pack leader".</li>
+<li><i>pack_job_id_set</i>: Regular expression identifying all <i>job_id</i>
+values associated with the job.</li>
+<li><i>pack_job_offset</i>: A unique sequence number applied to each component
+of the heterogeneous job. The first component will have a <i>>pack_job_offset</i>
+value of 0, the next a value of 1, etc.</li>
+</ul>
+
+<table width="100%" border=1 cellspacing=0 cellpadding=4>
+<tr>
+  <th width="25%"><b>job_id</b></th>
+  <th width="25%"><b>pack_job_id</b></th>
+  <th width="25%"><b>pack_job_offset</b></th>
+  <th width="25%"><b>pack_job_id_set</b></th>
+ </tr>
+
+<tr><td>123</td><td>123</td><td>0</td><td>123-127</td></tr>
+<tr><td>124</td><td>123</td><td>1</td><td>123-127</td></tr>
+<tr><td>125</td><td>123</td><td>2</td><td>123-127</td></tr>
+<tr><td>126</td><td>123</td><td>3</td><td>123-127</td></tr>
+<tr><td>127</td><td>123</td><td>4</td><td>123-127</td></tr>
+</table>
+<p>Table 1: Example job IDs</p>
+
+<p>The <i>smap</i>, <i>smap</i>, <i>squeue</i> and <i>sview</i> report the
+components of a heterogeneous job using the format
+"&lt;pack_job_id&gt;+&lt;pack_job_offset&gt;".
+For example "123+4" would represent heterogeneous job id 123 and it's fifth
+component (note: the first component has a <i>pack_job_offset</i> value of 0).</p>
+
+<p>A request for a specific job ID that identifies a ID of the first component
+of a heterogeneous job (i.e. the "pack leader" will return information about
+all components of that job. For example:</p>
+<pre>
+$ squeue --job=93
+JOBID PARTITION  NAME  USER ST  TIME  NODES NODELIST
+ 93+0     debug  bash  adam  R 18:18      1 nid00001
+ 93+1     debug  bash  adam  R 18:18      1 nid00011
+ 93+2     debug  bash  adam  R 18:18      1 nid00021
+</pre>
+
+<p>A request to cancel or otherwise signal a pack leader will be applied to
+all components of that pack job. A request to cancel a specific component of
+the pack job using the "#+#" notation will apply on to that specific component.
+For example:</p>
+<pre>
+$ squeue --job=93
+JOBID PARTITION  NAME  USER ST  TIME  NODES NODELIST
+ 93+0     debug  bash  adam  R 19:18      1 nid00001
+ 93+1     debug  bash  adam  R 19:18      1 nid00011
+ 93+2     debug  bash  adam  R 19:18      1 nid00021
+$ scancel 93+1
+$ squeue --job=93
+JOBID PARTITION  NAME  USER ST  TIME  NODES NODELIST
+ 93+0     debug  bash  adam  R 19:38      1 nid00001
+ 93+2     debug  bash  adam  R 19:38      1 nid00021
+$ squeue --job=93
+JOBID PARTITION  NAME  USER ST  TIME  NODES NODELIST
+</pre>
+
+<p>Email notification for job state changes (the <i>--mail-type</i> option)
+is only supported for a pack leader. Requests for email notifications for other
+components of a heterogeneous job will be silently ignored.</p>
+
+<p>Requests to perform the following operations a job can only be requested for
+a pack leader and will be applied to all components of that heterogeneous job.
+Requests to operate on individual components of the heterogeneous will return
+an error.</p>
+<ul>
+<li>requeue</li>
+<li>resume</li>
+<li>suspend</li>
+</ul>
+
+<h2><a name="env_var">Environment Variables</a></h2>
+
+<p>Slurm environment variables will be set independently for each component of
+the job by appending "_PACK_GROUP_" and a sequence number the the usual name.
+In addition, the "SLURM_JOB_ID" environment variable will contain the job ID
+of the pack leader and "SLURM_PACK_SIZE" will contain the number of components
+in the job. For example:</p>
+<pre>
+$  salloc -N1 : -N2 bash
+salloc: Pending job allocation 11741
+salloc: job 11741 queued and waiting for resources
+salloc: job 11741 has been allocated resources
+$ env | grep SLURM
+SLURM_JOB_ID=11741
+SLURM_PACK_SIZE=2
+SLURM_JOB_ID_PACK_GROUP_0=11741
+SLURM_JOB_ID_PACK_GROUP_1=11742
+SLURM_NNODES_PACK_GROUP_0=1
+SLURM_NNODES_PACK_GROUP_1=2
+SLURM_JOB_NODELIST_PACK_GROUP_0=nid00001
+SLURM_JOB_NODELIST_PACK_GROUP_1=nid[00011-00012]
+...
+</pre>
+
+<h2><a name="limitations">Limitations</a></h2>
+
+<p>In a federation of clusters, a heterogeneous job will execute entirely on
+the cluster from which the job is submitted. The heterogeneous job will not
+be eligible to migrate between clusters or to have different components of
+the job execute on different clusters in the federation.</p>
+
+<p>Job arrays of heterogeneous jobs are not supported.</p>
+
+<p>The <i>srun</i> command's <i>--no-allocate</i> option is not supported
+for heterogeneous jobs.</p>
+
+<p>Heterogeneous jobs are only scheduled by the backfill scheduler plugin.
+The more frequently executed scheduling logic only starts jobs on a first-in
+first-out (FIFO) basis and lacks logic for concurrently scheduling all
+components of a heterogeneous job.</p>
+
+<p>Heterogeneous jobs are not supported with Slurm's select/serial plugin.</p>
+
+<p>Heterogeneous jobs are not supported Cray ALPS systems.</p>
+
+<h2><a name="sys_admin">System Administrator Information</a></h2>
+
+<p>The job submit plugin is invoked independently for each component of a
+heterogeneous job.</p>
+
+<p class="footer"><a href="#top">top</a></p>
+
+<p style="text-align:center;">Last modified 19 June 2017</p>
+
+<!--#include virtual="footer.txt"-->

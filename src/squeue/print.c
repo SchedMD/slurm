@@ -625,6 +625,10 @@ int _print_job_job_id(job_info_t * job, int width, bool right, char* suffix)
 		snprintf(id, FORMAT_STRING_SIZE, "%u_%u",
 			 job->array_job_id, job->array_task_id);
 		_print_str(id, width, right, true);
+	} else if (job->pack_job_id) {
+		snprintf(id, FORMAT_STRING_SIZE, "%u+%u",
+			 job->pack_job_id, job->pack_job_offset);
+		_print_str(id, width, right, true);
 	} else {
 		char id[FORMAT_STRING_SIZE];
 		snprintf(id, FORMAT_STRING_SIZE, "%u", job->job_id);
@@ -2585,6 +2589,10 @@ static int _filter_job(job_info_t * job)
 			      (job_step_id->job_id  == job->job_id)))      ||
 			    ((job_step_id->array_id == job->array_task_id)  &&
 			     (job_step_id->job_id   == job->array_job_id))) {
+				filter = 0;
+				break;
+			}
+			if (job_step_id->job_id == job->pack_job_id) {
 				filter = 0;
 				break;
 			}

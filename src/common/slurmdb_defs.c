@@ -2977,8 +2977,16 @@ extern char *slurmdb_get_selected_step_id(
 	return job_id_str;
 }
 
-/* Return the cluster with the fastest start_time.
+/*
+ * get the first cluster that will run a job
+ * IN: req - description of resource allocation request
+ * IN: cluster_names - comma separated string of cluster names
+ * OUT: cluster_rec - record of selected cluster or NULL if none found or
+ * 		      cluster_names is NULL
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
  *
+ * Note: Cluster_rec needs to be freed with slurmdb_destroy_cluster_rec() when
+ * called
  * Note: The will_runs are not threaded. Currently it relies on the
  * working_cluster_rec to pack the job_desc's jobinfo. See previous commit for
  * an example of how to thread this.
@@ -2988,8 +2996,7 @@ extern int slurmdb_get_first_avail_cluster(job_desc_msg_t *req,
 {
 	local_cluster_rec_t *local_cluster = NULL;
 	int rc = SLURM_SUCCESS;
-	char buf[64];
-	bool host_set = false;
+	char local_hostname[64];
 	ListIterator itr;
 	List cluster_list = NULL;
 	List ret_list = NULL;
@@ -3008,9 +3015,8 @@ extern int slurmdb_get_first_avail_cluster(job_desc_msg_t *req,
 	}
 
 	if ((req->alloc_node == NULL) &&
-	    (gethostname_short(buf, sizeof(buf)) == 0)) {
-		req->alloc_node = buf;
-		host_set = true;
+	    (gethostname_short(local_hostname, sizeof(local_hostname)) == 0)) {
+		req->alloc_node = local_hostname;
 	}
 
 	if (working_cluster_rec)
@@ -3019,7 +3025,6 @@ extern int slurmdb_get_first_avail_cluster(job_desc_msg_t *req,
 	ret_list = list_create(_destroy_local_cluster_rec);
 	itr = list_iterator_create(cluster_list);
 	while ((working_cluster_rec = list_next(itr))) {
-
 		/* only try one cluster from each federation */
 		if (working_cluster_rec->fed.id &&
 		    list_find_first(tried_feds, slurm_find_char_in_list,
@@ -3045,8 +3050,146 @@ extern int slurmdb_get_first_avail_cluster(job_desc_msg_t *req,
 		*cluster_rec = NULL;
 	}
 
-	if (host_set)
+	if (req->alloc_node == local_hostname)
 		req->alloc_node = NULL;
+
+	if (!list_count(ret_list)) {
+		error("Can't run on any of the specified clusters");
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+
+	/* sort the list so the first spot is on top */
+	local_cluster_name = slurm_get_cluster_name();
+	list_sort(ret_list, (ListCmpF)_sort_local_cluster);
+	xfree(local_cluster_name);
+	local_cluster = list_peek(ret_list);
+
+	/* prevent cluster_rec from being freed when cluster_list is destroyed */
+	itr = list_iterator_create(cluster_list);
+	while ((*cluster_rec = list_next(itr))) {
+		if (*cluster_rec == local_cluster->cluster_rec) {
+			list_remove(itr);
+			break;
+		}
+	}
+	list_iterator_destroy(itr);
+end_it:
+	FREE_NULL_LIST(ret_list);
+	FREE_NULL_LIST(cluster_list);
+
+	return rc;
+}
+
+/* Report the latest start time for any pack job component on this cluster.
+ * Return NULL if any component can not run here */
+static local_cluster_rec_t * _pack_job_will_run(List job_req_list)
+{
+	local_cluster_rec_t *local_cluster = NULL, *tmp_cluster;
+	job_desc_msg_t *req;
+	ListIterator iter;
+
+	iter = list_iterator_create(job_req_list);
+	while ((req = (job_desc_msg_t *) list_next(iter))) {
+		tmp_cluster = _job_will_run(req);
+		if (!tmp_cluster) {	/* Some pack job can't run here */
+			xfree(local_cluster);
+			break;
+		}
+		if (!local_cluster) {
+			local_cluster = tmp_cluster;
+			tmp_cluster = NULL;
+		} else if (local_cluster->start_time < tmp_cluster->start_time)
+			local_cluster->start_time = tmp_cluster->start_time;
+		xfree(tmp_cluster);
+	}
+	list_iterator_destroy(iter);
+
+	return local_cluster;
+}
+
+/*
+ * get the first cluster that will run a heterogeneous job
+ * IN: req - description of resource allocation request
+ * IN: cluster_names - comma separated string of cluster names
+ * OUT: cluster_rec - record of selected cluster or NULL if none found or
+ * 		      cluster_names is NULL
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ *
+ * Note: Cluster_rec needs to be freed with slurmdb_destroy_cluster_rec() when
+ * called
+ * Note: The will_runs are not threaded. Currently it relies on the
+ * working_cluster_rec to pack the job_desc's jobinfo. See previous commit for
+ * an example of how to thread this.
+ */
+extern int slurmdb_get_first_pack_cluster(List job_req_list,
+	char *cluster_names, slurmdb_cluster_rec_t **cluster_rec)
+{
+	job_desc_msg_t *req;
+	local_cluster_rec_t *local_cluster = NULL;
+	int rc = SLURM_SUCCESS;
+	char local_hostname[64] = "";
+	ListIterator itr;
+	List cluster_list = NULL;
+	List ret_list = NULL;
+	List tried_feds = list_create(NULL);
+
+	*cluster_rec = NULL;
+	cluster_list = slurmdb_get_info_cluster(cluster_names);
+
+	/* return if we only have 1 or less clusters here */
+	if (!cluster_list || !list_count(cluster_list)) {
+		rc = SLURM_ERROR;
+		goto end_it;
+	} else if (list_count(cluster_list) == 1) {
+		*cluster_rec = list_pop(cluster_list);
+		goto end_it;
+	}
+
+	(void) gethostname_short(local_hostname, sizeof(local_hostname));
+	itr = list_iterator_create(job_req_list);
+	while ((req = (job_desc_msg_t *) list_next(itr))) {
+		if ((req->alloc_node == NULL) && local_hostname[0])
+			req->alloc_node = local_hostname;
+	}
+	list_iterator_destroy(itr);
+
+	if (working_cluster_rec)
+		*cluster_rec = working_cluster_rec;
+
+	ret_list = list_create(_destroy_local_cluster_rec);
+	itr = list_iterator_create(cluster_list);
+	while ((working_cluster_rec = list_next(itr))) {
+		/* only try one cluster from each federation */
+		if (working_cluster_rec->fed.id &&
+		    list_find_first(tried_feds, slurm_find_char_in_list,
+				    working_cluster_rec->fed.name))
+			continue;
+		if ((local_cluster = _pack_job_will_run(job_req_list))) {
+			list_append(ret_list, local_cluster);
+			if (working_cluster_rec->fed.id)
+				list_append(tried_feds,
+					    working_cluster_rec->fed.name);
+		} else {
+			error("Problem with submit to cluster %s: %m",
+			      working_cluster_rec->name);
+		}
+	}
+	list_iterator_destroy(itr);
+	FREE_NULL_LIST(tried_feds);
+
+	/* restore working_cluster_rec in case it was already set */
+	if (*cluster_rec) {
+		working_cluster_rec = *cluster_rec;
+		*cluster_rec = NULL;
+	}
+
+	itr = list_iterator_create(job_req_list);
+	while ((req = (job_desc_msg_t *) list_next(itr))) {
+		if (req->alloc_node == local_hostname)
+			req->alloc_node = NULL;
+	}
+	list_iterator_destroy(itr);
 
 	if (!list_count(ret_list)) {
 		error("Can't run on any of the specified clusters");

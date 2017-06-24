@@ -41,7 +41,8 @@
 
 #include "slurm/slurm.h"
 
-#include "srun_job.h"
+#include "src/srun/libsrun/opt.h"
+#include "src/srun/libsrun/srun_job.h"
 
 typedef struct slurmctld_communication_addr {
 	uint16_t port;
@@ -59,6 +60,16 @@ slurmctld_comm_addr_t slurmctld_comm_addr;
  */
 resource_allocation_response_msg_t * allocate_nodes(bool handle_signals);
 
+/*
+ * Allocate nodes for heterogeneous/pack job from the slurm controller -- 
+ * retrying the attempt if the controller appears to be down, and optionally
+ * waiting for resources if none are currently available (see opt.immediate)
+ *
+ * Returns a pointer to a resource_allocation_response_msg which must
+ * be freed with slurm_free_resource_allocation_response_msg()
+ */
+List allocate_pack_nodes(bool handle_signals);
+
 /* dummy function to handle all signals we want to ignore */
 void ignore_signal(int signo);
 
@@ -69,17 +80,10 @@ int cleanup_allocation(void);
  * Test if an allocation would occur now given the job request.
  * Do not actually allocate resources
  */
-int allocate_test(void);
+extern int allocate_test(void);
 
 /* Set up port to handle messages from slurmctld */
 int slurmctld_msg_init(void);
-
-/*
- * Create a job_desc_msg_t object, filled in from the current srun options
- * (see opt.h)
- * The resulting memory must be freed with  job_desc_msg_destroy()
- */
-job_desc_msg_t *job_desc_msg_create_from_opts (void);
 
 /*
  * Destroy (free memory from) a job_desc_msg_t object allocated with
@@ -99,10 +103,13 @@ resource_allocation_response_msg_t *existing_allocation(void);
  * Create a job step given the job information stored in 'j'
  * After returning, 'j' is filled in with information for job step.
  * IN use_all_cpus - true to use every CPU allocated to the job
+ * IN opt_local - options used to create job step
+ * IN pack_offset - offset within a pack job, -1 if not part of pack job
  *
  * Returns -1 if job step creation failure, 0 otherwise
  */
-int create_job_step(srun_job_t *j, bool use_all_cpus);
+int create_job_step(srun_job_t *j, bool use_all_cpus, opt_t *opt_local,
+		    int pack_offset);
 
 /* set the job for debugging purpose */
 void set_allocate_job(srun_job_t *job);

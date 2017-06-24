@@ -38,6 +38,7 @@ generated_html = \
 	gres_design.html \
 	gres_plugins.html \
 	hdf5_profile_user_guide.html \
+	heterogeneous_jobs.html \
 	high_throughput.html \
 	ibm-pe.html \
 	intel_knl.html \

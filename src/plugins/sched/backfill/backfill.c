@@ -2373,6 +2373,7 @@ static bool _more_work (time_t last_backfill_time)
 		rc = true;
 	}
 	slurm_mutex_unlock( &thread_flag_mutex );
+
 	return rc;
 }
 

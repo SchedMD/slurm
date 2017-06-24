@@ -746,7 +746,7 @@ extern void slurm_free_job_step_kill_msg(job_step_kill_msg_t * msg)
 extern void slurm_free_job_info_request_msg(job_info_request_msg_t *msg)
 {
 	if (msg) {
-		FREE_NULL_LIST(msg->job_ids);						//
+		FREE_NULL_LIST(msg->job_ids);
 		xfree(msg);
 	}
 }
@@ -985,6 +985,7 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->node_inx);
 		xfree(job->nodes);
 		xfree(job->sched_nodes);
+		xfree(job->pack_job_id_set);
 		xfree(job->partition);
 		xfree(job->qos);
 		xfree(job->req_node_inx);
@@ -4026,9 +4027,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case MESSAGE_NODE_REGISTRATION_STATUS:
 		slurm_free_node_registration_status_msg(data);
 		break;
-	case REQUEST_JOB_END_TIME:
 	case REQUEST_JOB_ALLOCATION_INFO:
-	case REQUEST_JOB_ALLOCATION_INFO_LITE:
+	case REQUEST_JOB_END_TIME:
+	case REQUEST_JOB_PACK_ALLOC_INFO:
 		slurm_free_job_alloc_info_msg(data);
 		break;
 	case REQUEST_JOB_SBCAST_CRED:
@@ -4312,6 +4313,11 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case RESPONSE_JOB_INFO:
 		slurm_free_job_info(data);
+		break;
+	case REQUEST_JOB_PACK_ALLOCATION:
+	case REQUEST_SUBMIT_BATCH_JOB_PACK:
+	case RESPONSE_JOB_PACK_ALLOCATION:
+		FREE_NULL_LIST(data);
 		break;
 	default:
 		error("invalid type trying to be freed %u", type);
@@ -4637,10 +4643,10 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_JOB_ALLOCATION_INFO";
 	case RESPONSE_JOB_ALLOCATION_INFO:
 		return "RESPONSE_JOB_ALLOCATION_INFO";
-	case REQUEST_JOB_ALLOCATION_INFO_LITE:
-		return "REQUEST_JOB_ALLOCATION_INFO_LITE";
-	case RESPONSE_JOB_ALLOCATION_INFO_LITE:
-		return "RESPONSE_JOB_ALLOCATION_INFO_LITE";
+	case REQUEST_JOB_PACK_ALLOCATION:
+		return "REQUEST_JOB_PACK_ALLOCATION";
+	case RESPONSE_JOB_PACK_ALLOCATION:
+		return "RESPONSE_JOB_PACK_ALLOCATION";
 	case REQUEST_UPDATE_JOB_TIME:
 		return "REQUEST_UPDATE_JOB_TIME";
 	case REQUEST_JOB_READY:
@@ -4666,6 +4672,10 @@ rpc_num2string(uint16_t opcode)
 		return "RESPONSE_CTLD_MULT_MSG";
 	case REQUEST_SIB_MSG:
 		return "REQUEST_SIB_MSG";
+	case REQUEST_JOB_PACK_ALLOC_INFO:
+		return "REQUEST_JOB_PACK_ALLOC_INFO";
+	case REQUEST_SUBMIT_BATCH_JOB_PACK:
+		return "REQUEST_SUBMIT_BATCH_JOB_PACK";
 
 	case REQUEST_JOB_STEP_CREATE:				/* 5001 */
 		return "REQUEST_JOB_STEP_CREATE";

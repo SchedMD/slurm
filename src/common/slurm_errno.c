@@ -335,6 +335,10 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Reservation already started"				},
 	{ ESLURM_SUBMISSIONS_DISABLED,
 	  "System submissions disabled"				},
+	{ ESLURM_NOT_PACK_JOB,
+	  "Job not heterogeneous job"				},
+	{ ESLURM_NOT_PACK_JOB_LEADER,
+	  "Job not heterogeneous job leader"			},
 
 	/* slurmd error codes */
 	{ ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN,

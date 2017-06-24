@@ -63,29 +63,31 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 <span class="commandline">fini()</span> is called before the system's
 <span class="commandline">_fini()</span>.</p>
 
-<p class="commandline"> int launch_p_setup_srun_opt(char **rest)
+<p class="commandline"> int launch_p_setup_srun_opt(char **rest, opt_t *opt_local)
 <p style="margin-left:.2in"><b>Description</b>:<br>
   Sets up the srun operation.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
   <span class="commandline"> rest:</span> extra parameters on the
-  command line not processed by srun
+  command line not processed by srun<br>
+  <span class="commandline"> opt_local:</span> task launch options from srun command
 <p style="margin-left:.2in"><b>Returns</b>: <br>
   <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
   <span class="commandline">SLURM_ERROR</span> on failure.
 
-<p class="commandline"> int launch_p_handle_multi_prog_verify(int command_pos)
+<p class="commandline"> int launch_p_handle_multi_prog_verify(int command_pos, opt_t *opt_local)
 <p style="margin-left:.2in"><b>Description</b>:<br>
   Is called to verify a multi-prog file if verifying needs to be done.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
   <span class="commandline"> command_pos:</span> to be used with
-  global opt variable to tell which spot the command is in opt.argv.
+  global opt variable to tell which spot the command is in opt.argv.<br>
+  <span class="commandline"> opt_local:</span> task launch options from srun command
 <p style="margin-left:.2in"><b>Returns</b>: <br>
   <span class="commandline">1</span> if handled, or<br>
   <span class="commandline">0</span> if not.
 
 <p class="commandline"> int launch_p_create_job_step(srun_job_t *job,
   bool use_all_cpus, void (*signal_function)(int), sig_atomic_t
-  *destroy_job)
+  *destroy_job, opt_t *opt_local, int pack_offset)
 <p style="margin-left:.2in"><b>Description</b>:<br>
   Creates the job step.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
@@ -96,30 +98,37 @@ The system <span class="commandline">_init()</span> is called before the Slurm
   handles the signals coming in.<br>
   <span class="commandline"> destroy_job:</span> pointer to a global
   flag signifying if the job was canceled while allocating.
+  <span class="commandline"> opt_local:</span> task launch options from srun command<br>
+  <span class="commandline"> pack_offset:</span> zero-origin index into a
+  heterogeneous (pack) job allocation, -1 if not heterogeneous job
 <p style="margin-left:.2in"><b>Returns</b>: <br>
   <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
   <span class="commandline">SLURM_ERROR</span> on failure.
 
 <p class="commandline"> launch_p_step_launch(srun_job_t *job,
-  slurm_step_io_fds_t *cio_fds, uint32_t *global_rc)
+  slurm_step_io_fds_t *cio_fds, uint32_t *global_rc, opt_t *opt_local)
 <p style="margin-left:.2in"><b>Description</b>:<br>
   Launches the job step.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
   <span class="commandline"> job:</span> the job to launch.<br>
   <span class="commandline"> cio_fds:</span> filled in io descriptors<br>
-  <span class="commandline"> global_rc:</span> srun global return code.
+  <span class="commandline"> global_rc:</span> srun global return code.<br>
+  <span class="commandline"> opt_local:</span> task launch options from srun command
 <p style="margin-left:.2in"><b>Returns</b>: <br>
   <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
   <span class="commandline">SLURM_ERROR</span> on failure.
 
 <p class="commandline"> int launch_p_step_wait(srun_job_t *job, bool
-  got_alloc)
+  got_alloc, opt_t *opt_local, int pack_offset)
 <p style="margin-left:.2in"><b>Description</b>:<br>
   Waits for the job to be finished.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
   <span class="commandline"> job:</span> the job to wait for.<br>
   <span class="commandline"> got_alloc:</span> if the resource
-  allocation was created inside srun.
+  allocation was created inside srun.<br>
+  <span class="commandline"> opt_local:</span> task launch options from srun command<br>
+  <span class="commandline"> pack_offset:</span> zero-origin index into a
+  heterogeneous (pack) job allocation, -1 if not heterogeneous job
 <p style="margin-left:.2in"><b>Returns</b>: <br>
   <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
   <span class="commandline">SLURM_ERROR</span> on failure.
@@ -143,6 +152,6 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 11 February 2016</p>
+<p style="text-align:center;">Last modified 20 June 2017</p>
 
 <!--#include virtual="footer.txt"-->

@@ -209,13 +209,15 @@
 extern char **environ;
 
 /*---- global variables, defined in opt.h ----*/
-int _verbose;
-opt_t opt;
-int error_exit = 1;
-int immediate_exit = 1;
-char *mpi_type = NULL;
-time_t srun_begin_time = 0;
+int	_verbose;
 resource_allocation_response_msg_t *global_resp = NULL;
+int	error_exit = 1;
+int	immediate_exit = 1;
+char *	mpi_type = NULL;
+opt_t	opt;
+List 	opt_list = NULL;
+int	pass_number = 0;
+time_t	srun_begin_time = 0;
 
 /*---- forward declarations of static functions  ----*/
 static bool mpi_initialized = false;
@@ -250,8 +252,21 @@ static bool  _valid_node_list(char **node_list_pptr);
 
 /*---[ end forward declarations of static functions ]---------------------*/
 
-int initialize_and_process_args(int argc, char **argv)
+/*
+ * process options:
+ * 1. set defaults
+ * 2. update options with env vars
+ * 3. update options with commandline args
+ * 4. perform some verification that options are reasonable
+ *
+ * argc IN - Count of elements in argv
+ * argv IN - Array of elements to parse
+ * argc_off OUT - Offset of first non-parsable element
+ */
+extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 {
+	pass_number++;
+
 	/* initialize option defaults */
 	_opt_default();
 
@@ -260,6 +275,8 @@ int initialize_and_process_args(int argc, char **argv)
 
 	/* initialize options with argv */
 	_opt_args(argc, argv);
+	if (argc_off)
+		*argc_off = optind;
 
 	if (!_opt_verify())
 		exit(error_exit);
@@ -279,7 +296,7 @@ int initialize_and_process_args(int argc, char **argv)
 		/* Massage ntasks value earlier than normal */
 		if (!opt.ntasks_set)
 			opt.ntasks = _get_task_count();
-		launch_g_create_job_step(NULL, 0, NULL, NULL);
+		launch_g_create_job_step(NULL, 0, NULL, NULL, &opt, -1);
 		exit(0);
 	}
 
@@ -382,186 +399,194 @@ static void _opt_default(void)
 	int i;
 	uid_t uid = getuid();
 
-	opt.user = uid_to_string(uid);
-	if (xstrcmp(opt.user, "nobody") == 0)
-		fatal("Invalid user id: %u", uid);
-
-	opt.uid = uid;
-	opt.gid = getgid();
-
-	if ((getcwd(buf, MAXPATHLEN)) == NULL) {
-		error("getcwd failed: %m");
-		exit(error_exit);
+	if (pass_number == 1) {
+		xfree(opt.account);
+		xfree(opt.acctg_freq);
+		opt.allocate		= false;
+		opt.begin		= (time_t) 0;
+		xfree(opt.c_constraints);
+		xfree(opt.ckpt_dir);
+		opt.ckpt_dir			= slurm_get_checkpoint_dir();
+		opt.ckpt_interval		= 0;
+		xfree(opt.ckpt_interval_str);
+		xfree(opt.clusters);
+		xfree(opt.cmd_name);
+		xfree(opt.comment);
+		if ((getcwd(buf, MAXPATHLEN)) == NULL) {
+			error("getcwd failed: %m");
+			exit(error_exit);
+		}
+		opt.cwd			= xstrdup(buf);
+		opt.cwd_set		= false;
+		opt.deadline		= 0;
+		opt.debugger_test	= false;
+		opt.delay_boot		= NO_VAL;
+		xfree(opt.dependency);
+		opt.disable_status	= false;
+		opt.egid		= (gid_t) -1;
+		xfree(opt.efname);
+		xfree(opt.epilog);
+		opt.epilog		= slurm_get_srun_epilog();
+		xfree(opt.exc_nodes);
+		xfree(opt.export_env);
+		opt.euid		= (uid_t) -1;
+		opt.gid			= getgid();
+		opt.hold		= false;
+		xfree(opt.ifname);
+		opt.immediate		= 0;
+		opt.jobid		= NO_VAL;
+		opt.jobid_set		= false;
+		xfree(opt.job_name);
+		opt.job_name_set_cmd	= false;
+		opt.job_name_set_env	= false;
+		opt.kill_bad_exit	= NO_VAL;
+		opt.labelio		= false;
+		opt.max_exit_timeout	= 60; /* Warn user 60 sec after task exit */
+		opt.max_wait		= slurm_get_wait_time();
+		xfree(opt.mcs_label);
+		/* Default launch msg timeout           */
+		opt.msg_timeout		= slurm_get_msg_timeout();
+		opt.nice		= NO_VAL;
+		opt.no_kill		= false;
+		opt.no_alloc		= false;
+		opt.noshell		= false;
+		xfree(opt.ofname);
+		opt.open_mode		= 0;
+		opt.parallel_debug	= false;
+		opt.pty			= false;
+		opt.preserve_env	= false;
+		opt.priority		= 0;
+		opt.profile		= ACCT_GATHER_PROFILE_NOT_SET;
+		xfree(opt.progname);
+		xfree(opt.prolog);
+		opt.prolog		= slurm_get_srun_prolog();
+		xfree(opt.propagate); 	 /* propagate specific rlimits */
+		opt.quit_on_intr	= false;
+		xfree(opt.qos);
+		opt.quiet		= 0;
+		opt.reboot		= false;
+		xfree(opt.reservation);
+		opt.slurmd_debug	= LOG_LEVEL_QUIET;
+		xfree(opt.task_epilog);
+		xfree(opt.task_prolog);
+		opt.test_only		= false;
+		opt.time_limit		= NO_VAL;
+		xfree(opt.time_limit_str);
+		opt.time_min		= NO_VAL;
+		xfree(opt.time_min_str);
+		opt.uid			= uid;
+		opt.unbuffered		= false;
+		opt.user		= uid_to_string(uid);
+		opt.user_managed_io	= false;
+		if (xstrcmp(opt.user, "nobody") == 0)
+			fatal("Invalid user id: %u", uid);
+		opt.warn_flags		= 0;
+		opt.warn_signal		= 0;
+		opt.warn_time		= 0;
+		xfree(opt.wckey);
+		_verbose		= 0;
 	}
-	opt.cwd = xstrdup(buf);
-	opt.cwd_set = false;
 
-	opt.clusters = NULL;
-	opt.progname = NULL;
+	/*
+	 * All other options must be specified individually for each component
+	 * of the job. Do not use xfree() as the pointers have been copied
+	 */
+	opt.alloc_nodelist		= NULL;
+	opt.accel_bind_type		= 0;
+	opt.bcast_file			= NULL;
+	opt.bcast_flag			= false;
+	opt.accel_bind_type		= 0;
+	opt.blrtsimage			= NULL;
+	opt.burst_buffer		= NULL;
+	for (i = 0; i < HIGHEST_DIMENSIONS; i++) {
+		opt.conn_type[i]	= NO_VAL16;
+		opt.geometry[i]		= 0;
+	}
+	opt.compress			= 0;
 
-	opt.ntasks = 1;
-	opt.ntasks_set = false;
-	opt.cpus_per_task = 0;
-	opt.cpus_set = false;
-	opt.hint_env = NULL;
-	opt.hint_set = false;
-	opt.min_nodes = 1;
-	opt.max_nodes = 0;
-	opt.sockets_per_node = NO_VAL; /* requested sockets */
-	opt.cores_per_socket = NO_VAL; /* requested cores */
-	opt.threads_per_core = NO_VAL; /* requested threads */
-	opt.threads_per_core_set = false;
-	opt.ntasks_per_node      = NO_VAL; /* ntask max limits */
-	opt.ntasks_per_socket    = NO_VAL;
-	opt.ntasks_per_core      = NO_VAL;
-	opt.ntasks_per_core_set  = false;
-	opt.nodes_set = false;
-	opt.nodes_set_env = false;
-	opt.nodes_set_opt = false;
-	opt.cpu_bind_type = 0;
-	opt.cpu_bind_type_set = false;
-	opt.cpu_bind = NULL;
-
-	opt.mem_bind = NULL;
-	opt.mem_bind_type = 0;
+	opt.constraints			= NULL;
+	opt.contiguous			= false;
+	opt.core_spec			= NO_VAL16;
+	opt.core_spec_set		= false;
+	opt.cores_per_socket		= NO_VAL; /* requested cores */
+	opt.cpu_bind			= NULL;
+	opt.cpu_bind_type		= 0;
+	opt.cpu_bind_type_set		= false;
+	opt.exclusive			= false;
+	opt.cpu_freq_min		= NO_VAL;
+	opt.cpu_freq_max		= NO_VAL;
+	opt.cpu_freq_gov		= NO_VAL;
+	opt.cpus_per_task		= 0;
+	opt.cpus_set			= false;
+	opt.distribution		= SLURM_DIST_UNKNOWN;
+	opt.extra_set			= false;
+	/* opt.geometry[i]		= 0;	See above */
+	opt.gres			= NULL;
+	opt.hint_env			= NULL;
+	opt.hint_set			= false;
+	opt.hostfile			= NULL;
+	opt.exclusive			= false;
+	opt.job_flags			= 0;
+	opt.launch_cmd			= false;
+	opt.launcher_opts		= NULL;
+	opt.linuximage			= NULL;
 	launch_params = slurm_get_launch_params();
 	if (launch_params && strstr(launch_params, "mem_sort"))
-		opt.mem_bind_type |= MEM_BIND_SORT;
-	xfree(launch_params);
-
-	opt.accel_bind_type = 0;
-	opt.core_spec = (uint16_t) NO_VAL;
-	opt.core_spec_set = false;
-	opt.time_limit = NO_VAL;
-	opt.time_limit_str = NULL;
-	opt.time_min = NO_VAL;
-	opt.time_min_str = NULL;
-	opt.ckpt_interval = 0;
-	opt.ckpt_interval_str = NULL;
-	opt.ckpt_dir = slurm_get_checkpoint_dir();
-	opt.restart_dir = NULL;
-	opt.partition = NULL;
-	opt.max_threads = MAX_THREADS;
+		opt.mem_bind_type	|= MEM_BIND_SORT;
+	launch_params			= NULL;
+	opt.licenses			= NULL;
+	opt.mail_type			= 0;
+	opt.mail_user			= NULL;
+	opt.max_threads			= MAX_THREADS;
 	pmi_server_max_threads(opt.max_threads);
-
-	opt.relative = NO_VAL;
-	opt.relative_set = false;
-	opt.resv_port_cnt = NO_VAL;
-	opt.cmd_name = NULL;
-	opt.job_name = NULL;
-	opt.job_name_set_cmd = false;
-	opt.job_name_set_env = false;
-	opt.jobid    = NO_VAL;
-	opt.jobid_set = false;
-	opt.dependency = NULL;
-	opt.account  = NULL;
-	opt.comment  = NULL;
-	opt.qos      = NULL;
-
-	opt.distribution = SLURM_DIST_UNKNOWN;
-	opt.plane_size   = NO_VAL;
-
-	opt.ofname = NULL;
-	opt.ifname = NULL;
-	opt.efname = NULL;
-
-	opt.labelio = false;
-	opt.unbuffered = false;
-	opt.overcommit = false;
-	opt.shared = (uint16_t)NO_VAL;
-	opt.exclusive = false;
-	opt.export_env = NULL;
-	opt.bcast_flag = false;
-	opt.bcast_file = NULL;
-	opt.no_kill = false;
-	opt.kill_bad_exit = NO_VAL;
-
-	opt.immediate	= 0;
-
-	opt.join	= false;
-	opt.max_wait	= slurm_get_wait_time();
-
-	opt.quit_on_intr = false;
-	opt.disable_status = false;
-	opt.test_only   = false;
-	opt.preserve_env = false;
-
-	opt.quiet = 0;
-	_verbose = 0;
-	opt.slurmd_debug = LOG_LEVEL_QUIET;
-	opt.warn_flags  = 0;
-	opt.warn_signal = 0;
-	opt.warn_time   = 0;
-
-	opt.pn_min_cpus    = NO_VAL;
-	opt.pn_min_memory  = NO_VAL64;
-	opt.mem_per_cpu    = NO_VAL64;
-	opt.pn_min_tmp_disk= NO_VAL;
-
-	opt.hold	    = false;
-	opt.constraints	    = NULL;
-	opt.c_constraints   = NULL;
-	opt.gres	    = NULL;
-	opt.contiguous	    = false;
-	opt.hostfile	    = NULL;
-	opt.nodelist	    = NULL;
-	opt.exc_nodes	    = NULL;
-	opt.max_exit_timeout= 60; /* Warn user 60 seconds after task exit */
-	/* Default launch msg timeout           */
-	opt.msg_timeout     = slurm_get_msg_timeout();
-
-	for (i = 0; i < HIGHEST_DIMENSIONS; i++) {
-		opt.conn_type[i]    = (uint16_t) NO_VAL;
-		opt.geometry[i]	    = 0;
-	}
-	opt.reboot          = false;
-	opt.no_rotate	    = false;
-	opt.blrtsimage = NULL;
-	opt.linuximage = NULL;
-	opt.mloaderimage = NULL;
-	opt.ramdiskimage = NULL;
-	opt.job_flags = 0;
-
-	opt.euid	    = (uid_t) -1;
-	opt.egid	    = (gid_t) -1;
-
-	opt.propagate	    = NULL;  /* propagate specific rlimits */
-	opt.profile	    = ACCT_GATHER_PROFILE_NOT_SET;
-
-	opt.prolog = slurm_get_srun_prolog();
-	opt.epilog = slurm_get_srun_epilog();
-	opt.begin = (time_t)0;
-
-	opt.task_prolog     = NULL;
-	opt.task_epilog     = NULL;
+	opt.max_nodes			= 0;
+	opt.mem_bind			= NULL;
+	opt.mem_bind_type		= 0;
+	opt.mem_per_cpu			= NO_VAL64;
+	opt.min_nodes			= 1;
+	opt.mloaderimage		= NULL;
+	opt.multi_prog			= false;
+	opt.multi_prog_cmds		= 0;
+	opt.network			= NULL;
+	opt.network_set_env		= false;
+	opt.no_rotate			= false;
+	opt.nodelist			= NULL;
+	opt.nodes_set			= false;
+	opt.nodes_set_env		= false;
+	opt.nodes_set_opt		= false;
+	opt.ntasks			= 1;
+	opt.ntasks_per_core		= NO_VAL;
+	opt.ntasks_per_core_set 	= false;
+	opt.ntasks_per_node		= NO_VAL; /* ntask max limits */
+	opt.ntasks_per_socket		= NO_VAL;
+	opt.ntasks_set			= false;
+	opt.overcommit			= false;
+	opt.partition			= NULL;
+	opt.plane_size			= NO_VAL;
+	opt.pn_min_cpus			= NO_VAL;
+	opt.pn_min_memory		= NO_VAL64;
+	opt.pn_min_tmp_disk		= NO_VAL;
+	opt.power_flags			= 0;
+	opt.ramdiskimage		= NULL;
+	opt.relative			= NO_VAL;
+	opt.relative_set		= false;
+	opt.req_switch			= -1;
+	opt.resv_port_cnt		= NO_VAL;
+	opt.restart_dir			= NULL;
+	opt.shared			= NO_VAL16;
+	opt.sockets_per_node		= NO_VAL; /* requested sockets */
+	opt.threads_per_core		= NO_VAL; /* requested threads */
+	opt.threads_per_core_set	= false;
+	opt.wait4switch			= -1;
 
 	/*
 	 * Reset some default values if running under a parallel debugger
 	 */
 	if ((opt.parallel_debug = _under_parallel_debugger())) {
-		opt.max_threads     = 1;
+		opt.max_threads		= 1;
 		pmi_server_max_threads(opt.max_threads);
-		opt.msg_timeout     = 15;
+		opt.msg_timeout		= 15;
 	}
-
-	opt.pty = false;
-	opt.open_mode = 0;
-	opt.acctg_freq = NULL;
-	opt.cpu_freq_min = NO_VAL;
-	opt.cpu_freq_max = NO_VAL;
-	opt.cpu_freq_gov = NO_VAL;
-	opt.reservation = NULL;
-	opt.wckey = NULL;
-	opt.req_switch = -1;
-	opt.wait4switch = -1;
-	opt.launcher_opts = NULL;
-	opt.launch_cmd = false;
-
-	opt.nice = NO_VAL;
-	opt.priority = 0;
-	opt.power_flags = 0;
-	opt.mcs_label = NULL;
-	opt.delay_boot = NO_VAL;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -677,11 +702,14 @@ env_vars_t env_vars[] = {
  */
 static void _opt_env(void)
 {
-	char       *val = NULL;
+	char       key[64], *val = NULL;
 	env_vars_t *e   = env_vars;
+	int pack_offset = pass_number - 1;
 
 	while (e->var) {
-		if ((val = getenv(e->var)) != NULL)
+		snprintf(key, sizeof(key), "%s_PACK_GROUP_%d",
+			 e->var, pack_offset);
+		if ((val = getenv(e->var)) || (val = getenv(key)))
 			_process_env_var(e, val);
 		e++;
 	}
@@ -749,6 +777,7 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 
 	case OPT_CPU_BIND:
+		xfree(opt.cpu_bind);
 		if (slurm_verify_cpu_bind(val, &opt.cpu_bind,
 					  &opt.cpu_bind_type))
 			exit(error_exit);
@@ -760,9 +789,11 @@ _process_env_var(env_vars_t *e, const char *val)
 			error("Invalid --cpu-freq argument: %s. Ignored", val);
 		break;
 	case OPT_HINT:
+		xfree(opt.hint_env);
 		opt.hint_env = xstrdup(val);
 		break;
 	case OPT_MEM_BIND:
+		xfree(opt.mem_bind);
 		if (slurm_verify_mem_bind(val, &opt.mem_bind,
 					  &opt.mem_bind_type))
 			exit(error_exit);
@@ -1079,7 +1110,7 @@ static void _set_options(const int argc, char **argv)
 
 	if (opt.progname == NULL)
 		opt.progname = xbasename(argv[0]);
-	else
+	else if (pass_number <= 1)
 		error("opt.progname is already set.");
 	optind = 0;
 	while ((opt_char = getopt_long(argc, argv, opt_string,
@@ -1186,7 +1217,7 @@ static void _set_options(const int argc, char **argv)
 				opt.immediate = DEFAULT_IMMEDIATE;
 			break;
 		case (int)'j':
-			opt.join = true;
+			/* Vestigial option */
 			break;
 		case (int)'J':
 			if (!optarg)
@@ -1405,6 +1436,7 @@ static void _set_options(const int argc, char **argv)
                 case LONG_OPT_CPU_BIND:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
+			xfree(opt.cpu_bind);
 			if (slurm_verify_cpu_bind(optarg, &opt.cpu_bind,
 						  &opt.cpu_bind_type))
 				exit(error_exit);
@@ -1416,6 +1448,7 @@ static void _set_options(const int argc, char **argv)
 		case LONG_OPT_MEM_BIND:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
+			xfree(opt.mem_bind);
 			if (slurm_verify_mem_bind(optarg, &opt.mem_bind,
 						  &opt.mem_bind_type))
 				exit(error_exit);
@@ -2109,7 +2142,7 @@ static void _opt_args(int argc, char **argv)
 		fatal("Unable to load launch plugin, check LaunchType "
 		      "configuration");
 	}
-	command_pos = launch_g_setup_srun_opt(rest);
+	command_pos = launch_g_setup_srun_opt(rest, &opt);
 
 	/* Since this is needed on an emulated system don't put this code in
 	 * the launch plugin.
@@ -2153,7 +2186,7 @@ static void _opt_args(int argc, char **argv)
 	}
 #else
 	/* may exit() if an error with the multi_prog script */
-	(void) launch_g_handle_multi_prog_verify(command_pos);
+	(void) launch_g_handle_multi_prog_verify(command_pos, &opt);
 
 	if (!opt.multi_prog && (test_exec || opt.bcast_flag)) {
 		if ((fullpath = search_path(opt.cwd, opt.argv[command_pos],
@@ -2237,8 +2270,10 @@ static bool _opt_verify(void)
 	if (opt.cpus_set && (opt.pn_min_cpus < opt.cpus_per_task))
 		opt.pn_min_cpus = opt.cpus_per_task;
 
-	if (opt.argc > 0)
+	if ((opt.argc > 0) && xstrcmp(opt.argv[0], ":")) {
+		xfree(opt.cmd_name);
 		opt.cmd_name = base_name(opt.argv[0]);
+	}
 
 	if (!opt.nodelist) {
 		if ((opt.nodelist = xstrdup(getenv("SLURM_HOSTFILE")))) {
@@ -2253,6 +2288,7 @@ static bool _opt_verify(void)
 			}
 			opt.distribution &= SLURM_DIST_STATE_FLAGS;
 			opt.distribution |= SLURM_DIST_ARBITRARY;
+			xfree(opt.hostfile);
 			opt.hostfile = xstrdup(opt.nodelist);
 			if (!_valid_node_list(&opt.nodelist)) {
 				error("Failure getting NodeNames from "
@@ -2264,6 +2300,7 @@ static bool _opt_verify(void)
 			}
 		}
 	} else {
+		xfree(opt.hostfile);
 		if (strstr(opt.nodelist, "/"))
 			opt.hostfile = xstrdup(opt.nodelist);
 		if (!_valid_node_list(&opt.nodelist))
@@ -2565,7 +2602,6 @@ static bool _opt_verify(void)
 		mpi_type = slurm_get_mpi_default();
 		(void) mpi_hook_client_init(NULL);
 	}
-	xfree(mpi_type);
 
 	return verified;
 }

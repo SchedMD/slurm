@@ -42,9 +42,9 @@
 
 #include "src/common/xstring.h"
 
-#include "srun_job.h"
-#include "opt.h"
-#include "debugger.h"
+#include "src/srun/libsrun/srun_job.h"
+#include "src/srun/libsrun/opt.h"
+#include "src/srun/libsrun/debugger.h"
 
 /*
  * launch_common_get_slurm_step_layout() gets the slurm job step layout.
@@ -54,7 +54,7 @@
  * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
  */
 extern slurm_step_layout_t *launch_common_get_slurm_step_layout(
-	srun_job_t *job);
+					srun_job_t *job);
 
 /*
  * launch_common_create_job_step() creates the job step with the given info.
@@ -69,7 +69,8 @@ extern slurm_step_layout_t *launch_common_get_slurm_step_layout(
  */
 extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 					 void (*signal_function)(int),
-					 sig_atomic_t *destroy_job);
+					 sig_atomic_t *destroy_job,
+					 opt_t *opt_local);
 
 /*
  * launch_common_set_stdio_fds() sets the stdio_fds to given info.
@@ -78,7 +79,8 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
  * IN cio_fds - filling in io descriptors.
  */
 extern void launch_common_set_stdio_fds(srun_job_t *job,
-					slurm_step_io_fds_t *cio_fds);
+					slurm_step_io_fds_t *cio_fds,
+					opt_t *opt_local);
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -97,8 +99,9 @@ extern int launch_fini(void);
  * operation needs to be set up.
  *
  * IN rest - extra parameters on the command line not processed by srun
+ * IN opt_local - options used for step creation
  */
-extern int launch_g_setup_srun_opt(char **rest);
+extern int launch_g_setup_srun_opt(char **rest, opt_t *opt_local);
 
 /*
  * launch_g_handle_multi_prog_verify() is called to verify a
@@ -106,10 +109,11 @@ extern int launch_g_setup_srun_opt(char **rest);
  *
  * IN command_pos - to be used with global opt variable to tell which
  *                  spot the command is in opt.argv.
+ * IN opt_local - options used for step creation
  *
  * RET 0 if not handled, 1 if handled
  */
-extern int launch_g_handle_multi_prog_verify(int command_pos);
+extern int launch_g_handle_multi_prog_verify(int command_pos, opt_t *opt_local);
 
 /*
  * launch_g_create_job_step() creates the job step.
@@ -119,12 +123,15 @@ extern int launch_g_handle_multi_prog_verify(int command_pos);
  * IN signal_function - function that handles the signals coming in.
  * IN destroy_job - pointer to a global flag signifying if the job was
  *                  canceled while allocating.
+ * IN opt_local - options used for step creation
+ * IN pack_offset - offset within a pack job, -1 if not part of pack job
  *
  * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
  */
 extern int launch_g_create_job_step(srun_job_t *job, bool use_all_cpus,
 				    void (*signal_function)(int),
-				    sig_atomic_t *destroy_job);
+				    sig_atomic_t *destroy_job, opt_t *opt_local,
+				    int pack_offset);
 
 /*
  * launch_g_step_launch() is called to launch the job step that
@@ -134,21 +141,26 @@ extern int launch_g_create_job_step(srun_job_t *job, bool use_all_cpus,
  * IN cio_fds - filled in io descriptors.
  * IN/OUT global_rc - srun global return code.
  * IN step_callbacks - callbacks for various points in the life of the step.
+ * IN opt_local - options used for step creation
  * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
  */
-extern int launch_g_step_launch(
-	srun_job_t *job, slurm_step_io_fds_t *cio_fds,
-	uint32_t *global_rc, slurm_step_launch_callbacks_t *step_callbacks);
+extern int launch_g_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
+				uint32_t *global_rc,
+				slurm_step_launch_callbacks_t *step_callbacks,
+				opt_t *opt_local);
 
 /*
  * launch_g_step_wait() is called to wait for the job step to be finished.
  *
  * IN/OUT job - the job waiting to finish.
  * IN got_alloc - if the resource allocation was created inside srun
+ * IN opt_local - options used for step creation
+ * IN pack_offset - offset within a pack job, -1 if not part of pack job
  *
  * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
  */
-extern int launch_g_step_wait(srun_job_t *job, bool got_alloc);
+extern int launch_g_step_wait(srun_job_t *job, bool got_alloc, opt_t *opt_local,
+			      int pack_offset);
 
 /*
  * launch_g_step_terminate() is called to end the job step.

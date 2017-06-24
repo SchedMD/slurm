@@ -411,11 +411,20 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 				   job_ptr->array_job_id,
 				   job_ptr->array_task_id);
 		}
+	} else if (job_ptr->pack_job_id) {
+		xstrfmtcat(out, "PackJobId=%u PackJobOffset=%u ",
+			   job_ptr->pack_job_id, job_ptr->pack_job_offset);
 	}
 	xstrfmtcat(out, "JobName=%s", job_ptr->name);
 	xstrcat(out, line_end);
 
-	/****** Line 2 ******/
+	/****** Line ******/
+	if (job_ptr->pack_job_id_set) {
+		xstrfmtcat(out, "PackJobIdSet=%s", job_ptr->pack_job_id_set);
+		xstrcat(out, line_end);
+	}
+
+	/****** Line ******/
 	user_name = uid_to_string((uid_t) job_ptr->user_id);
 	group_name = gid_to_string((gid_t) job_ptr->group_id);
 	xstrfmtcat(out, "UserId=%s(%u) GroupId=%s(%u) MCS_label=%s",

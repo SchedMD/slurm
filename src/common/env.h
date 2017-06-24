@@ -109,6 +109,11 @@ int	setup_env(env_t *env, bool preserve_env);
  * xmalloc'ed.  The array is terminated by a NULL pointer, and thus is
  * suitable for use by execle() and other env_array_* functions.
  *
+ * dest OUT - array in which to the set environment variables
+ * alloc IN - resource allocation response
+ * desc IN - job allocation request
+ * pack_offset IN - component offset into pack job, -1 if not pack job
+ *
  * Sets the variables:
  *	SLURM_JOB_ID
  *	SLURM_JOB_NUM_NODES
@@ -119,9 +124,9 @@ int	setup_env(env_t *env, bool preserve_env);
  * Sets OBSOLETE variables:
  *	? probably only needed for users...
  */
-int env_array_for_job(char ***dest,
-		      const resource_allocation_response_msg_t *alloc,
-		      const job_desc_msg_t *desc);
+extern int env_array_for_job(char ***dest,
+			     const resource_allocation_response_msg_t *alloc,
+			     const job_desc_msg_t *desc, int pack_offset);
 
 /*
  * Set in "dest" the environment variables relevant to a SLURM batch
@@ -276,6 +281,20 @@ int env_array_overwrite_fmt(char ***array_ptr, const char *name,
   __attribute__ ((format (printf, 3, 4)));
 
 /*
+ * Append a single environment variable to an environment variable array
+ * if a variable by that name does not already exist.  If a variable
+ * by the same name is found in the array, it is overwritten with the
+ * new value.  The "value_fmt" string may contain printf-style options.
+ *
+ * "value_fmt" supports printf-style formatting.
+ *
+ * Return 1 on success, and 0 on error.
+ */
+int env_array_overwrite_pack_fmt(char ***array_ptr, const char *name,
+				 int pack_offset, const char *value_fmt, ...)
+  __attribute__ ((format (printf, 4, 5)));
+
+/*
  * Set in the running process's environment all of the environment
  * variables in a supplied environment variable array.
  */
@@ -305,6 +324,20 @@ char **env_array_from_file(const char *filename);
  */
 char **env_array_user_default(const char *username, int timeout, int mode,
 			      bool no_cache);
+
+/*
+ * Return a string representation of an array of uint16_t elements.
+ * Each value in the array is printed in decimal notation and elements
+ * are separated by a comma.  If sequential elements in the array
+ * contain the same value, the value is written out just once followed
+ * by "(xN)", where "N" is the number of times the value is repeated.
+ *
+ * Example:
+ *   The array "1, 2, 1, 1, 1, 3, 2" becomes the string "1,2,1(x3),3,2"
+ *
+ * Returns an xmalloc'ed string.  Free with xfree().
+ */
+extern char *uint16_array_to_str(int array_len, const uint16_t *array);
 
 /*
  * The cpus-per-node representation in SLURM (and perhaps tasks-per-node
