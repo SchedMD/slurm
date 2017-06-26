@@ -1974,34 +1974,40 @@ extern void slurm_free_ping_slurmd_resp(ping_slurmd_resp_msg_t *msg)
 	xfree(msg);
 }
 
+/*
+ * structured as a static lookup table, which allows this
+ * to be thread safe while avoiding any heap allocation
+ */
 extern char *preempt_mode_string(uint16_t preempt_mode)
 {
-	char *gang_str;
-	static char preempt_str[64];
-
 	if (preempt_mode == PREEMPT_MODE_OFF)
 		return "OFF";
 	if (preempt_mode == PREEMPT_MODE_GANG)
 		return "GANG";
 
 	if (preempt_mode & PREEMPT_MODE_GANG) {
-		gang_str = "GANG,";
 		preempt_mode &= (~PREEMPT_MODE_GANG);
-	} else
-		gang_str = "";
+		if (preempt_mode == PREEMPT_MODE_CANCEL)
+			return "GANG,CANCEL";
+		else if (preempt_mode == PREEMPT_MODE_CHECKPOINT)
+			return "GANG,CHECKPOINT";
+		else if (preempt_mode == PREEMPT_MODE_REQUEUE)
+			return "GANG,REQUEUE";
+		else if (preempt_mode == PREEMPT_MODE_SUSPEND)
+			return "GANG,SUSPEND";
+		return "GANG,UNKNOWN";
+	} else {
+		if (preempt_mode == PREEMPT_MODE_CANCEL)
+			return "CANCEL";
+		else if (preempt_mode == PREEMPT_MODE_CHECKPOINT)
+			return "CHECKPOINT";
+		else if (preempt_mode == PREEMPT_MODE_REQUEUE)
+			return "REQUEUE";
+		else if (preempt_mode == PREEMPT_MODE_SUSPEND)
+			return "SUSPEND";
+	}
 
-	if      (preempt_mode == PREEMPT_MODE_CANCEL)
-		sprintf(preempt_str, "%sCANCEL", gang_str);
-	else if (preempt_mode == PREEMPT_MODE_CHECKPOINT)
-		sprintf(preempt_str, "%sCHECKPOINT", gang_str);
-	else if (preempt_mode == PREEMPT_MODE_REQUEUE)
-		sprintf(preempt_str, "%sREQUEUE", gang_str);
-	else if (preempt_mode == PREEMPT_MODE_SUSPEND)
-		sprintf(preempt_str, "%sSUSPEND", gang_str);
-	else
-		sprintf(preempt_str, "%sUNKNOWN", gang_str);
-
-	return preempt_str;
+	return "UNKNOWN";
 }
 
 extern uint16_t preempt_mode_num(const char *preempt_mode)
