@@ -402,7 +402,7 @@ static char *_find_quote_token(char *tmp, char *sep, char **last)
 }
 
 /* Propagate select user environment variables to the job.
- * If ALL is among the specified variables propaagte
+ * If ALL is among the specified variables propagate
  * the entire user environment as well.
  */
 static void _env_merge_filter(job_desc_msg_t *desc)

@@ -4135,4 +4135,17 @@ proc get_prolog { } {
 	log_user 1
 
 	return $prolog
+
+}
+
+proc log_error {msg} {
+	send_user "\nFAILURE: $msg\n"
+}
+
+proc log_warn {msg} {
+	send_user "\nWARNING:    $msg\n"
+}
+
+proc log_info {msg} {
+	send_user "INFO:    $msg\n"
 }
