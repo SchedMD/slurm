@@ -35,6 +35,8 @@ documents those changes that are of interest to users and administrators.
  -- Performance boost for when Slurm is dealing with credentials.
  -- Fix race condition which could leave a stepd hung on shutdown.
  -- Add lua support for opensuse.
+ -- If a job requests a specific memory requirement then gets something else
+    from the slurmctld make sure the step allocation is made aware of it.
 
 * Changes in Slurm 17.02.4
 ==========================

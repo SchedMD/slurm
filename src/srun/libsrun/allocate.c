@@ -500,13 +500,15 @@ allocate_nodes(bool handle_signals)
 		 * allocated so we don't have issues when we use them
 		 * in the step creation.
 		 */
-//XXXX pn_min_memory here is an int, not uint. these bit operations may have some bizarre side effects
-		if (opt.pn_min_memory != NO_VAL64)
-			opt.pn_min_memory = (resp->pn_min_memory &
-					     (~MEM_PER_CPU));
-		else if (opt.mem_per_cpu != NO_VAL64)
-			opt.mem_per_cpu = (resp->pn_min_memory &
-					   (~MEM_PER_CPU));
+		opt.pn_min_memory = NO_VAL64;
+		opt.mem_per_cpu = NO_VAL64;
+		if (resp->pn_min_memory != NO_VAL64) {
+			if (resp->pn_min_memory & MEM_PER_CPU)
+				opt.mem_per_cpu = (resp->pn_min_memory &
+						   (~MEM_PER_CPU));
+			else
+				opt.pn_min_memory = resp->pn_min_memory;
+		}
 		/*
 		 * FIXME: timelimit should probably also be updated
 		 * here since it could also change.
