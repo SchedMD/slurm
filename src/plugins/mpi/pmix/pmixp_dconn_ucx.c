@@ -356,6 +356,10 @@ void pmixp_dconn_ucx_finalize()
 		pmixp_list_elem_free(elem);
 	}
 
+	/* cleanup UCX */
+	ucp_worker_destroy(ucp_worker);
+	ucp_cleanup(ucp_context);
+
 	/* unload UCX lib */
 	_unload_ucx_lib();
 	slurm_mutex_destroy(&_ucx_worker_lock);
