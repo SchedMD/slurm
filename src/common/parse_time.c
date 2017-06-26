@@ -68,8 +68,6 @@ strong_alias(secs2time_str, slurm_secs2time_str);
 strong_alias(mins2time_str, slurm_mins2time_str);
 strong_alias(mon_abbr, slurm_mon_abbr);
 
-#define _RUN_STAND_ALONE 0
-
 time_t     time_now;
 struct tm *time_now_tm;
 
@@ -644,23 +642,6 @@ extern time_t parse_time(char *time_str, int past)
 	errno = ESLURM_INVALID_TIME_VALUE;
 	return (time_t) 0;
 }
-
-#if _RUN_STAND_ALONE
-int main(int argc, char **argv)
-{
-	char in_line[128];
-	time_t when;
-
-	while (1) {
-		printf("time> ");
-		if ((fgets(in_line, sizeof(in_line), stdin) == NULL)
-		||  (in_line[0] == '\n'))
-			break;
-		when = parse_time(in_line);
-		printf("%s", slurm_asctime(slurm_localtime(&when)));
-	}
-}
-#endif
 
 /*
  * Smart date for @epoch, relative to current date.

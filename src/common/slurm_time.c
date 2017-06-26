@@ -53,26 +53,6 @@ inline static void _init(void)
 	}
 }
 
-extern char *slurm_asctime(const struct tm *tp)
-{
-	char *rc;
-	slurm_mutex_lock(&time_lock);
-	_init();
-	rc = asctime(tp);
-	slurm_mutex_unlock(&time_lock);
-	return rc;
-}
-
-extern char *slurm_asctime_r(const struct tm *tp, char *buf)
-{
-	char *rc;
-	slurm_mutex_lock(&time_lock);
-	_init();
-	rc = asctime_r(tp, buf);
-	slurm_mutex_unlock(&time_lock);
-	return rc;
-}
-
 extern char *slurm_ctime(const time_t *timep)
 {
 	char *rc;
