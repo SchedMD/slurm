@@ -413,9 +413,12 @@ extern int switch_g_pack_jobinfo(dynamic_plugin_data_t *jobinfo, Buf buffer,
 
 	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		pack32(*(ops[plugin_id].plugin_id), buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		/* no op, plugin id was not packed before */
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);
+		return SLURM_ERROR;
 	}
 
 	return (*(ops[plugin_id].pack_jobinfo))(data, buffer, protocol_version);
