@@ -8818,7 +8818,7 @@ static int _list_find_job_old(void *job_entry, void *key)
 }
 
 /* Determine if ALL partitions associated with a job are hidden */
-static bool _all_parts_hidden(struct job_record *job_ptr)
+static bool _all_parts_hidden(struct job_record *job_ptr, uid_t uid)
 {
 	bool rc;
 	ListIterator part_iterator;
@@ -8829,7 +8829,7 @@ static bool _all_parts_hidden(struct job_record *job_ptr)
 		part_iterator = list_iterator_create(job_ptr->part_ptr_list);
 		while ((part_ptr = (struct part_record *)
 				   list_next(part_iterator))) {
-			if (!(part_ptr->flags & PART_FLAG_HIDDEN)) {
+			if (part_is_visible(part_ptr, uid)) {
 				rc = false;
 				break;
 			}
@@ -8838,10 +8838,9 @@ static bool _all_parts_hidden(struct job_record *job_ptr)
 		return rc;
 	}
 
-	if ((job_ptr->part_ptr) &&
-	    (job_ptr->part_ptr->flags & PART_FLAG_HIDDEN))
-		return true;
-	return false;
+	if (job_ptr->part_ptr && part_is_visible(job_ptr->part_ptr, uid))
+		return false;
+	return true;
 }
 
 /* Determine if a given job should be seen by a specific user */
@@ -8870,7 +8869,7 @@ static void _pack_job(struct job_record *job_ptr,
 
 	if (((pack_info->show_flags & SHOW_ALL) == 0) &&
 	    (pack_info->uid != 0) &&
-	    _all_parts_hidden(job_ptr))
+	    _all_parts_hidden(job_ptr, pack_info->uid))
 		return;
 
 	if (_hide_job(job_ptr, pack_info->uid, pack_info->show_flags))
@@ -8941,8 +8940,6 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 	pack_time(time(NULL), buffer);
 
 	/* write individual job records */
-	part_filter_set(uid);
-
 	pack_info.buffer           = buffer;
 	pack_info.filter_uid       = filter_uid;
 	pack_info.jobs_packed      = &jobs_packed;
@@ -8951,8 +8948,6 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 	pack_info.uid              = uid;
 
 	list_for_each(job_list, _foreach_pack_job_ptr, &pack_info);
-
-	part_filter_clear();
 
 	/* put the real record count in the message body header */
 	tmp_offset = get_buf_offset(buffer);
@@ -8999,8 +8994,6 @@ extern void pack_spec_jobs(char **buffer_ptr, int *buffer_size, List job_ids,
 	pack_time(time(NULL), buffer);
 
 	/* write individual job records */
-	part_filter_set(uid);
-
 	pack_info.buffer           = buffer;
 	pack_info.filter_uid       = filter_uid;
 	pack_info.jobs_packed      = &jobs_packed;
@@ -9009,8 +9002,6 @@ extern void pack_spec_jobs(char **buffer_ptr, int *buffer_size, List job_ids,
 	pack_info.uid              = uid;
 
 	list_for_each(job_ids, _foreach_pack_jobid, &pack_info);
-
-	part_filter_clear();
 
 	/* put the real record count in the message body header */
 	tmp_offset = get_buf_offset(buffer);

@@ -3111,8 +3111,6 @@ extern int pack_ctld_job_step_info_response_msg(
 	pack_time(now, buffer);
 	pack32(steps_packed, buffer);	/* steps_packed placeholder */
 
-	part_filter_set(uid);
-
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
 		if ((job_id != NO_VAL) && (job_id != job_ptr->job_id) &&
@@ -3122,8 +3120,7 @@ extern int pack_ctld_job_step_info_response_msg(
 		valid_job = 1;
 
 		if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
-		    (job_ptr->part_ptr) &&
-		    (job_ptr->part_ptr->flags & PART_FLAG_HIDDEN))
+		    (job_ptr->part_ptr) && !part_is_visible(job_ptr->part_ptr, uid))
 			continue;
 
 		if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
@@ -3150,8 +3147,6 @@ extern int pack_ctld_job_step_info_response_msg(
 
 	if (list_count(job_list) && !valid_job && !steps_packed)
 		error_code = ESLURM_INVALID_JOB_ID;
-
-	part_filter_clear();
 
 	/* put the real record count in the message body header */
 	tmp_offset = get_buf_offset(buffer);
