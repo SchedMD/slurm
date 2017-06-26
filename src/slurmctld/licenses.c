@@ -857,20 +857,6 @@ extern uint32_t get_total_license_cnt(char *name)
 	return count;
 }
 
-/* Get how many of a given license are in a list */
-extern uint32_t license_get_total_cnt_from_list(List license_list, char *name)
-{
-	licenses_t *license_entry;
-	uint32_t total = 0;
-
-	license_entry = list_find_first(
-		license_list, _license_find_rec, name);
-
-	if(license_entry)
-		total = license_entry->total;
-	return total;
-}
-
 /* node_read should be locked before coming in here
  * returns 1 if change happened.
  */

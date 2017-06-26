@@ -147,14 +147,6 @@ get_all_license_info(char **buffer_ptr,
  */
 extern uint32_t get_total_license_cnt(char *name);
 
-/*
- * lic_get_value_by_type - Return count of named licenses used by job
- * IN licenses - list containing licenses_t records
- * IN name - name of the license
- * RET number of licenses of the particular type used
- */
-extern uint32_t license_get_total_cnt_from_list(List license_list, char *name);
-
 /* node_read should be locked before coming in here
  * returns tres_str of the license_list.
  */
