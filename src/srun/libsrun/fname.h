@@ -39,7 +39,7 @@
 #ifndef _FNAME_H
 #define _FNAME_H
 
-#include "srun_job.h"
+#include "src/srun/libsrun/srun_job.h"
 
 /*
  * Create an filename from a (probably user supplied) filename format.

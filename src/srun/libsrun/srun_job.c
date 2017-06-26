@@ -72,13 +72,13 @@
 
 #include "src/api/step_launch.h"
 
-#include "allocate.h"
-#include "srun_job.h"
-#include "opt.h"
-#include "fname.h"
-#include "debugger.h"
-#include "launch.h"
-#include "multi_prog.h"
+#include "src/srun/libsrun/allocate.h"
+#include "src/srun/libsrun/debugger.h"
+#include "src/srun/libsrun/fname.h"
+#include "src/srun/libsrun/launch.h"
+#include "src/srun/libsrun/opt.h"
+#include "src/srun/libsrun/multi_prog.h"
+#include "src/srun/libsrun/srun_job.h"
 
 /*
  * allocation information structure used to store general information
@@ -116,7 +116,8 @@ static void _default_sigaction(int sig);
 static long _diff_tv_str(struct timeval *tv1, struct timeval *tv2);
 static void _handle_intr(srun_job_t *job);
 static void _handle_pipe(void);
-static srun_job_t *_job_create_structure(allocation_info_t *info);
+static srun_job_t *_job_create_structure(allocation_info_t *ainfo,
+					 opt_t *opt_local);
 static char *_normalize_hostlist(const char *hostlist);
 static void _print_job_information(resource_allocation_response_msg_t *resp);
 static void _run_srun_epilog (srun_job_t *job);
@@ -174,7 +175,7 @@ job_create_noalloc(void)
 	/*
 	 * Create job, then fill in host addresses
 	 */
-	job = _job_create_structure(ai);
+	job = _job_create_structure(ai, &opt);
 
 	if (job != NULL)
 		job_update_io_fnames(job);
@@ -189,8 +190,9 @@ error:
  * Create an srun job structure for a step w/out an allocation response msg.
  * (i.e. inside an allocation)
  */
-srun_job_t *
-job_step_create_allocation(resource_allocation_response_msg_t *resp)
+extern srun_job_t *job_step_create_allocation(
+			resource_allocation_response_msg_t *resp,
+			opt_t *opt_local)
 {
 	uint32_t job_id = resp->job_id;
 	srun_job_t *job = NULL;
@@ -204,24 +206,23 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 	ai->jobid          = job_id;
 	ai->stepid         = NO_VAL;
 	ai->alias_list     = resp->alias_list;
-	ai->nodelist       = opt.alloc_nodelist;
+	ai->nodelist       = opt_local->alloc_nodelist;
 	hl = hostlist_create(ai->nodelist);
 	hostlist_uniq(hl);
 	alloc_count = hostlist_count(hl);
 	ai->nnodes = alloc_count;
 	hostlist_destroy(hl);
 
-	if (opt.exc_nodes) {
-		hostlist_t exc_hl = hostlist_create(opt.exc_nodes);
+	if (opt_local->exc_nodes) {
+		hostlist_t exc_hl = hostlist_create(opt_local->exc_nodes);
 		hostlist_t inc_hl = NULL;
 		char *node_name = NULL;
 
 		hl = hostlist_create(ai->nodelist);
-		if (opt.nodelist) {
-			inc_hl = hostlist_create(opt.nodelist);
-		}
+		if (opt_local->nodelist)
+			inc_hl = hostlist_create(opt_local->nodelist);
 		hostlist_uniq(hl);
-		//info("using %s or %s", opt.nodelist, ai->nodelist);
+		//info("using %s or %s", opt_local->nodelist, ai->nodelist);
 		while ((node_name = hostlist_shift(exc_hl))) {
 			int inx = hostlist_find(hl, node_name);
 			if (inx >= 0) {
@@ -250,22 +251,24 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 		 * straight. If there is no exclude list then we set
 		 * the vars then.
 		 */
-		if (!opt.nodes_set) {
+		if (!opt_local->nodes_set) {
 			/* we don't want to set the number of nodes =
 			 * to the number of requested processes unless we
 			 * know it is less than the number of nodes
 			 * in the allocation
 			 */
-			if (opt.ntasks_set && (opt.ntasks < ai->nnodes))
-				opt.min_nodes = opt.ntasks;
+			if (opt_local->ntasks_set &&
+			    (opt_local->ntasks < ai->nnodes))
+				opt_local->min_nodes = opt_local->ntasks;
 			else
-				opt.min_nodes = ai->nnodes;
-			opt.nodes_set = true;
+				opt_local->min_nodes = ai->nnodes;
+			opt_local->nodes_set = true;
 		}
-		if (!opt.max_nodes)
-			opt.max_nodes = opt.min_nodes;
-		if ((opt.max_nodes > 0) && (opt.max_nodes < ai->nnodes))
-			ai->nnodes = opt.max_nodes;
+		if (!opt_local->max_nodes)
+			opt_local->max_nodes = opt_local->min_nodes;
+		if ((opt_local->max_nodes > 0) &&
+		    (opt_local->max_nodes < ai->nnodes))
+			ai->nnodes = opt_local->max_nodes;
 
 		count = hostlist_count(hl);
 		if (!count) {
@@ -294,8 +297,8 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 			}
 			buf = hostlist_ranged_string_xmalloc(inc_hl);
 			hostlist_destroy(inc_hl);
-			xfree(opt.nodelist);
-			opt.nodelist = buf;
+			xfree(opt_local->nodelist);
+			opt_local->nodelist = buf;
 		} else {
 			if (count > ai->nnodes) {
 				/* remove more nodes than needed for
@@ -304,45 +307,47 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 				for (i = count; i >= ai->nnodes; i--)
 					hostlist_delete_nth(hl, i);
 			}
-			xfree(opt.nodelist);
-			opt.nodelist = hostlist_ranged_string_xmalloc(hl);
+			xfree(opt_local->nodelist);
+			opt_local->nodelist = hostlist_ranged_string_xmalloc(hl);
 		}
 
 		hostlist_destroy(hl);
 	} else {
-		if (!opt.nodes_set) {
+		if (!opt_local->nodes_set) {
 			/* we don't want to set the number of nodes =
 			 * to the number of requested processes unless we
 			 * know it is less than the number of nodes
 			 * in the allocation
 			 */
-			if (opt.ntasks_set && (opt.ntasks < ai->nnodes))
-				opt.min_nodes = opt.ntasks;
+			if (opt_local->ntasks_set &&
+			    (opt_local->ntasks < ai->nnodes))
+				opt_local->min_nodes = opt_local->ntasks;
 			else
-				opt.min_nodes = ai->nnodes;
-			opt.nodes_set = true;
+				opt_local->min_nodes = ai->nnodes;
+			opt_local->nodes_set = true;
 		}
-		if (!opt.max_nodes)
-			opt.max_nodes = opt.min_nodes;
-		if ((opt.max_nodes > 0) && (opt.max_nodes < ai->nnodes))
-			ai->nnodes = opt.max_nodes;
+		if (!opt_local->max_nodes)
+			opt_local->max_nodes = opt_local->min_nodes;
+		if ((opt_local->max_nodes > 0) &&
+		    (opt_local->max_nodes < ai->nnodes))
+			ai->nnodes = opt_local->max_nodes;
 		/* Don't reset the ai->nodelist because that is the
 		 * nodelist we want to say the allocation is under
-		 * opt.nodelist is what is used for the allocation.
+		 * opt_local->nodelist is what is used for the allocation.
 		 */
 		/* xfree(ai->nodelist); */
 		/* ai->nodelist = xstrdup(buf); */
 	}
 
 	/* get the correct number of hosts to run tasks on */
-	if (opt.nodelist)
-		step_nodelist = opt.nodelist;
-	else if (((opt.distribution & SLURM_DIST_STATE_BASE) ==
+	if (opt_local->nodelist)
+		step_nodelist = opt_local->nodelist;
+	else if (((opt_local->distribution & SLURM_DIST_STATE_BASE) ==
 		  SLURM_DIST_ARBITRARY) && (count == 0))
 		step_nodelist = getenv("SLURM_ARBITRARY_NODELIST");
 	if (step_nodelist) {
 		hl = hostlist_create(step_nodelist);
-		if ((opt.distribution & SLURM_DIST_STATE_BASE) !=
+		if ((opt_local->distribution & SLURM_DIST_STATE_BASE) !=
 		    SLURM_DIST_ARBITRARY)
 			hostlist_uniq(hl);
 		if (!hostlist_count(hl)) {
@@ -356,18 +361,18 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 		hostlist_destroy(hl);
 		/* Don't reset the ai->nodelist because that is the
 		 * nodelist we want to say the allocation is under
-		 * opt.nodelist is what is used for the allocation.
+		 * opt_local->nodelist is what is used for the allocation.
 		 */
 		/* xfree(ai->nodelist); */
 		/* ai->nodelist = xstrdup(buf); */
-		xfree(opt.nodelist);
-		opt.nodelist = buf;
+		xfree(opt_local->nodelist);
+		opt_local->nodelist = buf;
 	}
 
-	if (((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_ARBITRARY)
-	    && (count != opt.ntasks)) {
+	if (((opt_local->distribution & SLURM_DIST_STATE_BASE) ==
+	     SLURM_DIST_ARBITRARY) && (count != opt_local->ntasks)) {
 		error("You asked for %d tasks but hostlist specified %d nodes",
-		      opt.ntasks, count);
+		      opt_local->ntasks, count);
 		goto error;
 	}
 
@@ -390,11 +395,11 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 	ai->partition = resp->partition;
 
 /* 	info("looking for %d nodes out of %s with a must list of %s", */
-/* 	     ai->nnodes, ai->nodelist, opt.nodelist); */
+/* 	     ai->nnodes, ai->nodelist, opt_local->nodelist); */
 	/*
 	 * Create job
 	 */
-	job = _job_create_structure(ai);
+	job = _job_create_structure(ai, opt_local);
 error:
    	xfree(ai);
 	return (job);
@@ -404,8 +409,9 @@ error:
 /*
  * Create an srun job structure from a resource allocation response msg
  */
-extern srun_job_t *
-job_create_allocation(resource_allocation_response_msg_t *resp)
+extern srun_job_t *job_create_allocation(
+			resource_allocation_response_msg_t *resp,
+			opt_t *opt_local)
 {
 	srun_job_t *job;
 	allocation_info_t *i = xmalloc(sizeof(allocation_info_t));
@@ -425,7 +431,7 @@ job_create_allocation(resource_allocation_response_msg_t *resp)
 
 	i->select_jobinfo = select_g_select_jobinfo_copy(resp->select_jobinfo);
 
-	job = _job_create_structure(i);
+	job = _job_create_structure(i, opt_local);
 	if (job) {
 		job->account = xstrdup(resp->account);
 		job->qos = xstrdup(resp->qos);
@@ -711,7 +717,7 @@ if (opt_list) exit(0);
 		_set_env_vars(resp, -1);
 		if (_validate_relative(resp, &opt))
 			exit(error_exit);
-		job = job_step_create_allocation(resp);
+		job = job_step_create_allocation(resp, &opt);
 		slurm_free_resource_allocation_response_msg(resp);
 
 		if (opt.begin != 0) {
@@ -759,7 +765,7 @@ if (opt_list) exit(0);
 					slurm_complete_job(my_job_id, 1);
 					exit(error_exit);
 				}
-				job = job_create_allocation(resp);
+				job = job_create_allocation(resp, opt_local);
 				list_append(srun_job_list, job);
 				_set_step_opts(opt_local);
 			}
@@ -777,7 +783,7 @@ if (opt_list) exit(0);
 				slurm_complete_job(resp->job_id, 1);
 				exit(error_exit);
 			}
-			job = job_create_allocation(resp);
+			job = job_create_allocation(resp, &opt);
 			_set_step_opts(&opt);
 		}
 
@@ -965,14 +971,14 @@ _set_ntasks(allocation_info_t *ai)
 /*
  * Create an srun job structure from a resource allocation response msg
  */
-static srun_job_t *
-_job_create_structure(allocation_info_t *ainfo)
+static srun_job_t *_job_create_structure(allocation_info_t *ainfo,
+					 opt_t *opt_local)
 {
 	srun_job_t *job = xmalloc(sizeof(srun_job_t));
 	int i;
 
 	_set_ntasks(ainfo);
-	debug2("creating job with %d tasks", opt.ntasks);
+	debug2("creating job with %d tasks", opt_local->ntasks);
 
 	slurm_mutex_init(&job->state_mutex);
 	slurm_cond_init(&job->state_cond, NULL);
@@ -986,42 +992,45 @@ _job_create_structure(allocation_info_t *ainfo)
 #if defined HAVE_BG
 //#if defined HAVE_BGQ && defined HAVE_BG_FILES
 	/* Since the allocation will have the correct cnode count get
-	   it if it is available.  Else grab it from opt.min_nodes
+	   it if it is available.  Else grab it from opt_local->min_nodes
 	   (meaning the allocation happened before).
 	*/
-	if (ainfo->select_jobinfo)
+	if (ainfo->select_jobinfo) {
 		select_g_select_jobinfo_get(ainfo->select_jobinfo,
 					    SELECT_JOBDATA_NODE_CNT,
 					    &job->nhosts);
-	else
-		job->nhosts   = opt.min_nodes;
+	} else
+		job->nhosts   = opt_local->min_nodes;
 	/* If we didn't ask for nodes set it up correctly here so the
 	   step allocation does the correct thing.
 	*/
-	if (!opt.nodes_set) {
-		opt.min_nodes = opt.max_nodes = job->nhosts;
-		opt.nodes_set = true;
-		opt.ntasks_per_node = NO_VAL;
-		bg_figure_nodes_tasks(&opt.min_nodes, &opt.max_nodes,
-				      &opt.ntasks_per_node, &opt.ntasks_set,
-				      &opt.ntasks, opt.nodes_set,
-				      opt.nodes_set_opt, opt.overcommit, 1);
+	if (!opt_local->nodes_set) {
+		opt_local->min_nodes = opt_local->max_nodes = job->nhosts;
+		opt_local->nodes_set = true;
+		opt_local->ntasks_per_node = NO_VAL;
+		bg_figure_nodes_tasks(&opt_local->min_nodes,
+				      &opt_local->max_nodes,
+				      &opt_local->ntasks_per_node,
+				      &opt_local->ntasks_set,
+				      &opt_local->ntasks, opt_local->nodes_set,
+				      opt_local->nodes_set_opt,
+				      opt_local->overcommit, 1);
 
 #if defined HAVE_BG_FILES
 		/* Replace the runjob line with correct information. */
 		int i, matches = 0;
-		for (i = 0; i < opt.argc; i++) {
-			if (!xstrcmp(opt.argv[i], "-p")) {
+		for (i = 0; i < opt_local->argc; i++) {
+			if (!xstrcmp(opt_local->argv[i], "-p")) {
 				i++;
-				xfree(opt.argv[i]);
-				opt.argv[i]  = xstrdup_printf(
-					"%d", opt.ntasks_per_node);
+				xfree(opt_local->argv[i]);
+				opt_local->argv[i]  = xstrdup_printf(
+					"%d", opt_local->ntasks_per_node);
 				matches++;
-			} else if (!xstrcmp(opt.argv[i], "--np")) {
+			} else if (!xstrcmp(opt_local->argv[i], "--np")) {
 				i++;
-				xfree(opt.argv[i]);
-				opt.argv[i]  = xstrdup_printf(
-					"%d", opt.ntasks);
+				xfree(opt_local->argv[i]);
+				opt_local->argv[i]  = xstrdup_printf(
+					"%d", opt_local->ntasks);
 				matches++;
 			}
 			if (matches == 2)
@@ -1033,7 +1042,7 @@ _job_create_structure(allocation_info_t *ainfo)
 
 #elif defined HAVE_FRONT_END && !defined HAVE_ALPS_CRAY
 	/* Limited job step support */
-	opt.overcommit = true;
+	opt_local->overcommit = true;
 	job->nhosts = 1;
 #else
 	job->nhosts   = ainfo->nnodes;
@@ -1041,10 +1050,10 @@ _job_create_structure(allocation_info_t *ainfo)
 
 #if !defined HAVE_FRONT_END || (defined HAVE_BGQ)
 //#if !defined HAVE_FRONT_END || (defined HAVE_BGQ && defined HAVE_BG_FILES)
-	if (opt.min_nodes > job->nhosts) {
+	if (opt_local->min_nodes > job->nhosts) {
 		error("Only allocated %d nodes asked for %d",
-		      job->nhosts, opt.min_nodes);
-		if (opt.exc_nodes) {
+		      job->nhosts, opt_local->min_nodes);
+		if (opt_local->exc_nodes) {
 			/* When resources are pre-allocated and some nodes
 			 * are explicitly excluded, this error can occur. */
 			error("Are required nodes explicitly excluded?");
@@ -1062,7 +1071,7 @@ _job_create_structure(allocation_info_t *ainfo)
 	job->select_jobinfo = ainfo->select_jobinfo;
 	job->jobid   = ainfo->jobid;
 
-	job->ntasks  = opt.ntasks;
+	job->ntasks  = opt_local->ntasks;
 	job->ntasks_per_board = ainfo->ntasks_per_board;
 	job->ntasks_per_core = ainfo->ntasks_per_core;
 	job->ntasks_per_socket = ainfo->ntasks_per_socket;
@@ -1072,10 +1081,10 @@ _job_create_structure(allocation_info_t *ainfo)
 	   especially if --exclusive is used).  Else get the total for the
 	   allocation given.
 	*/
-	if (opt.cpus_set)
-		job->cpu_count = opt.ntasks * opt.cpus_per_task;
+	if (opt_local->cpus_set)
+		job->cpu_count = opt_local->ntasks * opt_local->cpus_per_task;
 	else {
-		for (i=0; i<ainfo->num_cpu_groups; i++) {
+		for (i = 0; i < ainfo->num_cpu_groups; i++) {
 			job->cpu_count += ainfo->cpus_per_node[i] *
 				ainfo->cpu_count_reps[i];
 		}
@@ -1091,6 +1100,7 @@ _job_create_structure(allocation_info_t *ainfo)
 void
 job_update_io_fnames(srun_job_t *job)
 {
+//FIXME: Look at all uses of "opt."
 	job->ifname = fname_create(job, opt.ifname);
 	job->ofname = fname_create(job, opt.ofname);
 	job->efname = opt.efname ? fname_create(job, opt.efname) : job->ofname;

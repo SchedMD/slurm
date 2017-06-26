@@ -50,7 +50,7 @@
 #include "src/common/slurm_protocol_defs.h"
 
 #include "src/api/step_io.h"
-
+#include "src/srun/libsrun/opt.h"
 
 typedef enum {
 	SRUN_JOB_INIT = 0,         /* Job's initial state                   */
@@ -126,10 +126,21 @@ void    job_force_termination(srun_job_t *job);
 srun_job_state_t job_state(srun_job_t *job);
 
 extern srun_job_t * job_create_noalloc(void);
+
+/*
+ * Create an srun job structure for a step w/out an allocation response msg.
+ * (i.e. inside an allocation)
+ */
 extern srun_job_t *job_step_create_allocation(
-	resource_allocation_response_msg_t *resp);
-extern srun_job_t * job_create_allocation(
-	resource_allocation_response_msg_t *resp);
+			resource_allocation_response_msg_t *resp,
+			opt_t *opt_local);
+
+/*
+ * Create an srun job structure from a resource allocation response msg
+ */
+extern srun_job_t *job_create_allocation(
+			resource_allocation_response_msg_t *resp,
+			opt_t *opt_local);
 
 extern void init_srun(int argc, char **argv,
 		      log_options_t *logopt, int debug_level,

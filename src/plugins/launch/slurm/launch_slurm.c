@@ -46,6 +46,7 @@
 #include "src/common/slurm_xlator.h"
 #include "src/api/pmi_server.h"
 #include "src/srun/libsrun/allocate.h"
+#include "src/srun/libsrun/fname.h"
 #include "src/srun/libsrun/launch.h"
 #include "src/srun/libsrun/multi_prog.h"
 
@@ -558,10 +559,10 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 				slurm_step_launch_callbacks_t *step_callbacks,
 				opt_t *opt_local)
 {
+	static srun_job_t *first_job = NULL;
 	slurm_step_launch_params_t launch_params;
 	slurm_step_launch_callbacks_t callbacks;
 	int rc = 0;
-	bool first_launch = 0;
 
 	slurm_step_launch_params_t_init(&launch_params);
 	memcpy(&callbacks, step_callbacks, sizeof(callbacks));
@@ -571,7 +572,6 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 		local_srun_job = job;
 		local_global_rc = global_rc;
 		*local_global_rc = NO_VAL;
-		first_launch = 1;
 	} else
 		task_state_alter(task_state, job->ntasks);
 
@@ -658,7 +658,10 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 
 	update_job_state(job, SRUN_JOB_LAUNCHING);
 	launch_start_time = time(NULL);
-	if (first_launch) {
+	if (!first_job) {
+//FIXME: Race condition for which step starts first. See _launch_one_app() in srun.c
+		first_job = job;
+} if (1) {
 		if (slurm_step_launch(job->step_ctx, &launch_params,
 				      &callbacks) != SLURM_SUCCESS) {
 			rc = errno;
@@ -669,8 +672,9 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 			goto cleanup;
 		}
 	} else {
-		if (slurm_step_launch_add(job->step_ctx, &launch_params,
-					  job->nodelist, job->fir_nodeid)
+		if (slurm_step_launch_add(job->step_ctx, first_job->step_ctx,
+					  &launch_params, job->nodelist,
+					  job->fir_nodeid)
 		    != SLURM_SUCCESS) {
 			rc = errno;
 			*local_global_rc = errno;
@@ -703,7 +707,6 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	}
 
 cleanup:
-
 	return rc;
 }
 
@@ -712,18 +715,21 @@ extern int launch_p_step_wait(srun_job_t *job, bool got_alloc, opt_t *opt_local,
 {
 	int rc = 0;
 
+//FIXME: can we create multiple steps in a single RPC or use threads?
 	slurm_step_launch_wait_finish(job->step_ctx);
 	if ((MPIR_being_debugged == 0) && retry_step_begin &&
 	    (retry_step_cnt < MAX_STEP_RETRIES)) {
 		retry_step_begin = false;
-		slurm_step_ctx_destroy(job->step_ctx);
+//FIXME: When to destroy?
+//		slurm_step_ctx_destroy(job->step_ctx);
 		if (got_alloc) 
 			rc = create_job_step(job, true, opt_local, pack_offset);
 		else
 			rc = create_job_step(job, false, opt_local,pack_offset);
 		if (rc < 0)
 			exit(error_exit);
-		task_state_destroy(task_state);
+//FIXME: When to destroy?
+//		task_state_destroy(task_state);
 		rc = -1;
 	}
 	return rc;

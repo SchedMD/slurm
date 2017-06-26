@@ -54,8 +54,6 @@
 #include "src/common/env.h"
 #include "src/common/list.h"
 
-#include "fname.h"
-
 #define DEFAULT_IMMEDIATE	1
 #define MAX_THREADS		60
 
