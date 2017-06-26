@@ -396,7 +396,7 @@ static bool _ucx_progress()
 	ucp_tag_message_h msg_tag;
 	ucp_tag_recv_info_t info_tag;
 	pmixp_list_elem_t *elem;
-	bool more_progr = false, new_msg = false;
+	bool new_msg = false;
 	size_t count, i;
 	int events_observed = 0;
 
@@ -430,19 +430,12 @@ static bool _ucx_progress()
 		if (PMIXP_UCX_ACTIVE == req->status) {
 			/* this message is long enough, so it makes
 			 * sense to do the progres one more timer */
-			more_progr = true;
 			pmixp_rlist_enq(&_rcv_pending, req);
 		} else {
 			pmixp_rlist_enq(&_rcv_complete, req);
 		}
 	}
 
-	if (more_progr) {
-		/* do the progress if we have incomplete receives */
-		ucp_worker_progress(ucp_worker);
-		events_observed++;
-	}
-	
 	if (!new_msg && pmixp_rlist_empty(&_rcv_pending) &&
 				pmixp_rlist_empty(&_snd_pending)) {
 		goto exit;
@@ -541,31 +534,24 @@ static bool _epoll_readable(eio_obj_t *obj)
 		return false;
 	}
 
-	/* process all outstanding events */
-	while (_ucx_progress());
-
-	if (pmixp_rlist_count(&_rcv_pending) ||
-	    pmixp_rlist_count(&_snd_pending)){
-		/* If we still have pending requests don't wait
-		 * on epoll, activate poll interuprtion through
-		 * the service pipe
-		 */
-		_activate_progress();
-		return false;
-	}
-
 	do {
+		/* process all outstanding events */
+		while (_ucx_progress());
+
+		if (pmixp_rlist_count(&_rcv_pending) ||
+		    pmixp_rlist_count(&_snd_pending)){
+			/* If we got pending requests don't wait
+			 * on epoll, activate poll interuprtion through
+			 * the service pipe
+			 */
+			_activate_progress();
+			return false;
+		}
+
 		/* arm the poll fd */
 		slurm_mutex_lock(&_ucx_worker_lock);
 		status = ucp_worker_arm(ucp_worker);
 		slurm_mutex_unlock(&_ucx_worker_lock);
-
-		if (status == UCS_ERR_BUSY) {
-			/* some events have already arrived
-			 * process all outstanding events
-			 */
-			while (_ucx_progress());
-		}
 	} while (UCS_ERR_BUSY == status);
 
 	return true;
