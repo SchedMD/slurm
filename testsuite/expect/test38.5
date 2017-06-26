@@ -1,6 +1,6 @@
 #!/usr/bin/expect
 ############################################################################
-# Purpose: Test Packjob: sbatch--job info
+# Purpose: Test Packjob: squeue
 #
 # Reqs:    1. Using slurmdbd accounting storage type and is up
 #          2. controllers are up and running.
@@ -34,29 +34,28 @@
 source ./globals
 source ./globals_hetero_jobs
 
-set test_id      "38.1"
+set test_id      "38.5"
 set exit_code    0
 set file_in      "test$test_id.in"
-set job_id       0
+set file_out     "test$test_id.out"
+set job_id 0
 
 set eol "\r\n"
 
 print_header $test_id
 
 proc sbatch {} {
-	global number sbatch file_in bin_sleep
+	global number sbatch file_in file_out bin_sleep
 
 	set matches 0
 	set job_id 0
-	set command "$sbatch -t1 -o /dev/null $file_in"
-	set regex "Submitted batch job ($number).+"
+	set command "$sbatch -o $file_out $file_in"
 
 	spawn {*}$command
 	expect {
-		-re "$regex" {
+		-re "Submitted batch job ($number)" {
 			incr matches
 			set job_id $expect_out(1,string)
-
 		}
 		timeout {
 			log_error "sbatch not responding"
@@ -83,10 +82,10 @@ proc cancel_all_jobs { } {
 }
 
 proc cleanup { } {
-	global scancel user_name bin_rm file_in
+	global scancel user_name bin_rm file_in file_out
 	global test_id bin_bash
 
-	exec $bin_rm -f $file_in test$test_id*.out
+	exec $bin_rm -f $file_in $file_out
 	return 0
 }
 
@@ -102,13 +101,13 @@ proc end_it { exit_code } {
 
 #start test
 
-make_bash_script $file_in "#SBATCH --cpus-per-task=4 --mem-per-cpu=10 --ntasks=1
+make_bash_script $file_in "#SBATCH --cpus-per-task=4 --mem-per-cpu=10 --ntasks=1 -t1
 #SBATCH packjob
 #SBATCH --cpus-per-task=2 --mem-per-cpu=2  --ntasks=1 -t1
 #SBATCH packjob
 #SBATCH --cpus-per-task=1 --mem-per-cpu=6  --ntasks=1 -t1
 
-$bin_sleep 300"
+$bin_sleep 10"
 
 send_user "\n################################################################\n"
 send_user "Submit packjob and verify output from scontrol show job"
@@ -120,44 +119,34 @@ set matches 0
 set id_set  0
 set id_regex "\[0-9,-\]+"
 
-# scontrol will show all components of the pack job, but we just look at the
-# first set (pack job leader).
-spawn $scontrol show job $job_id
+set format "jobid:.5,packjoboffset:.25,packjobid:.25,packjobidset:.25"
+set regex "$job_id\\s+0\\s+$job_id\\s+($id_regex)"
+set header "JOBID\\s+PACK_JOB_OFFSET\\s+PACK_JOB_ID\\s+PACK_JOB_ID_SET"
+
+spawn $squeue -j $job_id --Format=$format
 expect {
-	-re "JobId=$job_id\\s+PackJobId=$job_id" {
+	-re $header {
 		incr matches
 		exp_continue
 	}
-	-re "PackJobOffset=0" {
-		incr matches
-		exp_continue
-	}
-	-re "PackJobIdSet=($id_regex)" {
-		incr matches
-		if {$id_set == 0} {
-			set id_set $expect_out(1,string)
-		}
-		exp_continue
-	}
-	-re "CPUs/Task=4" {
-		incr matches
-		exp_continue
-	}
-	-re "MinMemoryCPU=10M" {
+	-re $regex {
+		set id_set $expect_out(1,string)
 		incr matches
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
+		log_error "squeue not responding"
 		end_it 1
 	}
 	eof {
 		wait
 	}
 }
-if {$matches != 7 } {
-	log_error "Problem with scontrol ($matches != 7)"
+if {$matches != 2 } {
+	log_error "Problem with squeue test 1 ($matches != 2)"
 	end_it 1
+} else {
+	send_user "Test 1 OK\n\n"
 }
 
 set js [parse_id_set $id_set $job_id]
@@ -166,77 +155,51 @@ set j2 [lindex $js 0]
 set j3 [lindex $js 1]
 
 set matches 0
+set regex "$j2\\s+1\\s+$job_id\\s+$id_set"
 
-spawn $scontrol show job $j2
+spawn $squeue --noheader -j $j2 --Format=$format
 expect {
-	-re "JobId=$j2\\s+PackJobId=$job_id" {
-		incr matches
-		exp_continue
-	}
-	-re "PackJobOffset=1" {
-		incr matches
-		exp_continue
-	}
-	-re "PackJobIdSet=$id_regex" {
-		incr matches
-		exp_continue
-	}
-	-re "CPUs/Task=2" {
-		incr matches
-		exp_continue
-	}
-	-re "MinMemoryCPU=2M" {
+	-re $regex {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
+		log_error "squeue not responding"
 		end_it 1
 	}
 	eof {
 		wait
 	}
 }
-if {$matches != 5} {
-	log_error "Problem with scontrol ($matches != 5)"
+if {$matches != 1 } {
+	log_error "Problem with squeue test 2 ($matches != 1)"
 	end_it 1
+} else {
+	send_user "Test 2 OK\n\n"
 }
 
 set matches 0
+set regex "$j3\\s+2\\s+$job_id\\s+$id_set"
 
-spawn $scontrol show job $j3
+spawn $squeue --noheader -j $j3 --Format=$format
 expect {
-	-re "JobId=$j3\\s+PackJobId=$job_id" {
-		incr matches
-		exp_continue
-	}
-	-re "PackJobOffset=2" {
-		incr matches
-		exp_continue
-	}
-	-re "PackJobIdSet=$id_regex" {
-		incr matches
-		exp_continue
-	}
-	-re "CPUs/Task=1" {
-		incr matches
-		exp_continue
-	}
-	-re "MinMemoryCPU=6M" {
+	-re $regex {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
+		log_error "squeue not responding"
 		end_it 1
 	}
 	eof {
 		wait
 	}
 }
-if {$matches != 5} {
-	log_error "Problem with scontrol ($matches != 5)"
+if {$matches != 1 } {
+	log_error "Problem with squeue test 3 ($matches != 1)"
 	end_it 1
+} else {
+	send_user "Test 3 OK\n\n"
 }
 
 # All Done

@@ -820,3 +820,4 @@ test38.1   sbatch job info.
 test38.2   sbatch env variables.
 test38.3   salloc job info.
 test38.4   salloc env variables.
+test38.5   squeue pack_job fields

@@ -124,6 +124,7 @@ set job_id [salloc]
 
 set matches 0
 set id_set  0
+set id_regex "\[0-9,-\]+"
 
 # scontrol will show all components of the pack job, but we just look at the
 # first set (pack job leader).
@@ -137,7 +138,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "PackJobIdSet=($job_id-[expr {$job_id+2}])" {
+	-re "PackJobIdSet=($id_regex)" {
 		incr matches
 		if {$id_set == 0} {
 			set id_set $expect_out(1,string)
@@ -182,7 +183,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "PackJobIdSet=$job_id-[expr {$job_id+2}]" {
+	-re "PackJobIdSet=$id_set" {
 		incr matches
 		exp_continue
 	}
@@ -216,7 +217,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "PackJobIdSet=$job_id-[expr {$job_id+2}]" {
+	-re "PackJobIdSet=$id_set" {
 		incr matches
 		exp_continue
 	}
