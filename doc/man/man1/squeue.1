@@ -262,6 +262,9 @@ In the case of job arrays, the job ID format will be of the form
 By default, the job array index field size will be limited to 64 bytes.
 Use the environment variable SLURM_BITSTR_LEN to specify larger field sizes.
 (Valid for jobs and job steps)
+In the case of heterogeneous (pack) job allocations, the job ID format will be
+of the form "#+#" where the first number is the "pack job leader" and the
+second number the zero origin offset for each component of the job.
 .TP
 \fB%I\fR
 Number of cores per socket requested by the job.
@@ -623,7 +626,8 @@ For non\-array jobs, this is the job ID.
 .TP
 \fBjobid\fR
 Job id.
-This will have a unique value for each element of job arrays.
+This will have a unique value for each element of job arrays and each
+component of pack jobs.
 (Valid for jobs only)
 .TP
 \fBlastschedeval\fR

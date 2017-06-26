@@ -327,9 +327,13 @@ static int _print_text_job(job_info_t * job_ptr)
 				  main_xcord, "%u_%u (%u)",
 				  job_ptr->array_job_id,
 				  job_ptr->array_task_id, job_ptr->job_id);
+		} else if (job_ptr->pack_job_id) {
+			mvwprintw(text_win, main_ycord, main_xcord, "%u+%u ",
+				  job_ptr->pack_job_id,
+				  job_ptr->pack_job_offset);
 		} else {
-			mvwprintw(text_win, main_ycord,
-				  main_xcord, "%u", job_ptr->job_id);
+			mvwprintw(text_win, main_ycord, main_xcord, "%u",
+				  job_ptr->job_id);
 		}
 		main_xcord += 19;
 		mvwprintw(text_win, main_ycord,
@@ -417,7 +421,12 @@ static int _print_text_job(job_info_t * job_ptr)
 		main_xcord = 1;
 		main_ycord++;
 	} else {
-		printf("%8d ", job_ptr->job_id);
+		if (job_ptr->pack_job_id) {
+			printf("%8u+%u ", job_ptr->pack_job_id,
+			       job_ptr->pack_job_offset);
+		} else
+			printf("%8u ", job_ptr->job_id);
+
 		printf("%9.9s ", job_ptr->partition);
 		if (params.cluster_flags & CLUSTER_FLAG_BG)
 			printf("%16.16s ",

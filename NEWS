@@ -44,6 +44,8 @@ documents those changes that are of interest to users and administrators.
     * Parallelize task launch for heterogeneous job allocations (initial work).
     * Make packjobid, packjoboffset, and packjobidset fields available in squeue
       output.
+    * Modify smap command to display heterogeneous job records using "#+#"
+      format.
 
 * Changes in Slurm 17.11.0pre1
 ==============================
