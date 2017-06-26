@@ -42,6 +42,8 @@ documents those changes that are of interest to users and administrators.
     * Add pointer to job option structure to job_step_create_allocation()
       function.
     * Parallelize task launch for heterogeneous job allocations (initial work).
+    * Make packjobid, packjoboffset, and packjobidset fields available in squeue
+      output.
 
 * Changes in Slurm 17.11.0pre1
 ==============================

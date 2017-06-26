@@ -162,7 +162,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	log_error "output of env incorrect matches: SLURM_PACK_SIZE ($matches != 1)"
+	log_error "output of env incorrect matches: SLURM_PACK_SIZE=3 ($matches != 1)"
 	end_it 1
 }
 
