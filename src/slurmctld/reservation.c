@@ -5086,6 +5086,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 				     "will not share nodes",
 				     resv_ptr->name, job_ptr->job_id);
 #endif
+				*resv_overlap = true;
 				bit_and_not(*node_bitmap, resv_ptr->node_bitmap);
 			} else {
 #if _DEBUG
@@ -5094,12 +5095,17 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 #endif
 				if (resv_ptr->core_bitmap == NULL) {
 					;
+				} else if (exc_core_bitmap == NULL) {
+					error("job_test_resv: exc_core_bitmap is NULL");
+					*resv_overlap = true;
 				} else if (*exc_core_bitmap == NULL) {
 					*exc_core_bitmap =
 						bit_copy(resv_ptr->core_bitmap);
+					*resv_overlap = true;
 				} else {
 					bit_or(*exc_core_bitmap,
 					       resv_ptr->core_bitmap);
+					*resv_overlap = true;
 				}
 			}
 		}
@@ -5150,8 +5156,7 @@ extern time_t find_resv_end(time_t start_time)
 
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
-		if ((start_time < resv_ptr->start_time) ||
-		    (start_time > resv_ptr->end_time))
+		if (start_time > resv_ptr->end_time)
 			continue;
 		if ((end_time == 0) || (resv_ptr->end_time < end_time))
 			end_time = resv_ptr->end_time;

@@ -36,6 +36,8 @@ documents those changes that are of interest to users and administrators.
       allocations.
     * Modified launch plugin to accept a pointer to job step options structure
       rather than work from a single/common data structure.
+ -- Improve backfill scheduling algorithm with respect to starting jobs as soon
+    as possible while avoiding advanced reservations.
 
 * Changes in Slurm 17.11.0pre1
 ==============================

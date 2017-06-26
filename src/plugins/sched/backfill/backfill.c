@@ -1665,6 +1665,7 @@ next_task:
 		FREE_NULL_BITMAP(avail_bitmap);
 		FREE_NULL_BITMAP(exc_core_bitmap);
 		start_res   = later_start;
+		resv_end = 0;
 		later_start = 0;
 		/* Determine impact of any advance reservations */
 		j = job_test_resv(job_ptr, &start_res, true, &avail_bitmap,
@@ -1682,7 +1683,8 @@ next_task:
 			end_time = (time_limit * 60) + now;
 		if (end_time < now)	/* Overflow 32-bits */
 			end_time = INFINITE;
-		resv_end = find_resv_end(start_res);
+		if (resv_overlap)
+			resv_end = find_resv_end(start_res);
 		/* Identify usable nodes for this job */
 		bit_and(avail_bitmap, part_ptr->node_bitmap);
 		bit_and(avail_bitmap, up_node_bitmap);
@@ -1786,9 +1788,16 @@ next_task:
 			       "Need to use features which can be made "
 			       "available after node reboot", job_ptr->job_id);
 			/* Determine impact of any advance reservations */
-			j = job_test_resv(job_ptr, &start_res, true,
+			resv_end = 0;
+			j = job_test_resv(job_ptr, &start_res, false,
 					  &tmp_node_bitmap, &tmp_core_bitmap,
 					  &resv_overlap, true);
+			if (resv_overlap)
+				resv_end = find_resv_end(start_res);
+			if (resv_end && (++resv_end < window_end) &&
+			    ((later_start == 0) || (resv_end < later_start))) {
+				later_start = resv_end;
+			}
 			if (j == SLURM_SUCCESS) {
 				FREE_NULL_BITMAP(exc_core_bitmap);
 				exc_core_bitmap = tmp_core_bitmap;
