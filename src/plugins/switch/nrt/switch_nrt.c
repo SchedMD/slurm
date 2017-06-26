@@ -795,7 +795,7 @@ static bool _nrt_version_ok(void)
 {
 	if ((NRT_VERSION >= 1100) && (NRT_VERSION <= 1300))
 		return true;
-	error("switch/nrt: Incompatable NRT version");
+	error("switch/nrt: Incompatible NRT version");
 	return false;
 }
 
