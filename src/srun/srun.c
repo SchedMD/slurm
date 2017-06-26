@@ -340,8 +340,10 @@ static void _setup_job_env(srun_job_t *job, List srun_job_list, bool got_alloc)
 		}
 		list_iterator_destroy(job_iter);
 		list_iterator_destroy(opt_iter);
-	} else {
+	} else if (job) {
 		_setup_one_job_env(&opt, job, got_alloc);
+	} else {
+		fatal("%s: No job information", __func__);
 	}
 }
 

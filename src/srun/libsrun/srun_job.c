@@ -661,7 +661,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 	} else if ((resp = existing_allocation())) {
 //FIXME: Need to flesh out pack job support
 if (opt_list) exit(0);
-		my_job_id = resp->job_id;
+//		my_job_id = resp->job_id;
 		if (resp->working_cluster_rec)
 			slurm_setup_remote_working_cluster(resp);
 
