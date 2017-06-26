@@ -267,7 +267,6 @@ static void _xmit_new_end_time(struct job_record *job_ptr);
 static void _resp_array_add(resp_array_struct_t **resp,
 			    struct job_record *job_ptr, uint32_t rc)
 {
-	slurm_ctl_conf_t *conf;
 	resp_array_struct_t *loc_resp;
 	int array_size;
 	int i;
@@ -280,9 +279,7 @@ static void _resp_array_add(resp_array_struct_t **resp,
 	}
 
 	if (max_array_size == NO_VAL) {
-		conf = slurm_conf_lock();
-		max_array_size = conf->max_array_sz;
-		slurm_conf_unlock();
+		max_array_size = slurmctld_conf.max_array_sz;
 	}
 
 	xassert(resp);
@@ -5008,7 +5005,6 @@ static int _pack_job_signal(struct job_record *pack_leader, uint16_t signal,
 extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			  uid_t uid, bool preempt)
 {
-	slurm_ctl_conf_t *conf;
 	struct job_record *job_ptr;
 	uint32_t job_id;
 	time_t now = time(NULL);
@@ -5020,9 +5016,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 	int rc = SLURM_SUCCESS, rc2, len;
 
 	if (max_array_size == NO_VAL) {
-		conf = slurm_conf_lock();
-		max_array_size = conf->max_array_sz;
-		slurm_conf_unlock();
+		max_array_size = slurmctld_conf.max_array_sz;
 	}
 
 	long_id = strtol(job_id_str, &end_ptr, 10);
@@ -6753,7 +6747,6 @@ static bool _valid_array_inx(job_desc_msg_t *job_desc)
 	static uint32_t max_task_cnt = NO_VAL;
 	char *sched_params, *key;
 	uint32_t task_cnt;
-	slurm_ctl_conf_t *conf;
 	bool valid = true;
 	char *tmp, *tok, *last = NULL;
 
@@ -6764,9 +6757,7 @@ static bool _valid_array_inx(job_desc_msg_t *job_desc)
 		return false;
 
 	if (max_array_size == NO_VAL) {
-		conf = slurm_conf_lock();
-		max_array_size = conf->max_array_sz;
-		slurm_conf_unlock();
+		max_array_size = slurmctld_conf.max_array_sz;
 	}
 	if (max_array_size == 0) {
 		verbose("Job arrays disabled, MaxArraySize=0");
@@ -12786,7 +12777,6 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 	slurm_msg_t resp_msg;
 	job_desc_msg_t *job_specs = (job_desc_msg_t *) msg->data;
 	struct job_record *job_ptr, *new_job_ptr;
-	slurm_ctl_conf_t *conf;
 	long int long_id;
 	uint32_t job_id = 0;
 	bitstr_t *array_bitmap = NULL, *tmp_bitmap;
@@ -12802,9 +12792,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 	job_id_str = job_specs->job_id_str;
 
 	if (max_array_size == NO_VAL) {
-		conf = slurm_conf_lock();
-		max_array_size = conf->max_array_sz;
-		slurm_conf_unlock();
+		max_array_size = slurmctld_conf.max_array_sz;
 	}
 
 	long_id = strtol(job_id_str, &end_ptr, 10);
@@ -14829,7 +14817,6 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 			int conn_fd, bool indf_susp,
 			uint16_t protocol_version)
 {
-	slurm_ctl_conf_t *conf;
 	int rc = SLURM_SUCCESS, rc2;
 	struct job_record *job_ptr = NULL;
 	long int long_id;
@@ -14849,9 +14836,7 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 #endif
 
 	if (max_array_size == NO_VAL) {
-		conf = slurm_conf_lock();
-		max_array_size = conf->max_array_sz;
-		slurm_conf_unlock();
+		max_array_size = slurmctld_conf.max_array_sz;
 	}
 
 	/* validate the request */
@@ -15273,7 +15258,6 @@ extern int job_requeue(uid_t uid, uint32_t job_id, slurm_msg_t *msg,
 extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
 			bool preempt)
 {
-	slurm_ctl_conf_t *conf;
 	int rc = SLURM_SUCCESS, rc2;
 	struct job_record *job_ptr = NULL;
 	long int long_id;
@@ -15290,9 +15274,7 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
 	job_array_resp_msg_t *resp_array_msg = NULL;
 
 	if (max_array_size == NO_VAL) {
-		conf = slurm_conf_lock();
-		max_array_size = conf->max_array_sz;
-		slurm_conf_unlock();
+		max_array_size = slurmctld_conf.max_array_sz;
 	}
 
 	long_id = strtol(job_id_str, &end_ptr, 10);
