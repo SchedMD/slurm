@@ -77,17 +77,6 @@ void fd_set_noclose_on_exec(int fd)
 	return;
 }
 
-int fd_is_blocking(int fd)
-{
-	int val = 0;
-
-	assert(fd >= 0);
-
-	if ((val = fcntl(fd, F_GETFL, 0)) < 0)
-		error("fnctl(F_GET_FL) failed: %m");
-	return (val & O_NONBLOCK) ? 0 : 1;
-}
-
 void fd_set_nonblocking(int fd)
 {
 	int fval;
@@ -114,13 +103,6 @@ void fd_set_blocking(int fd)
 	return;
 }
 
-
-int fd_get_read_lock(int fd)
-{
-	return(fd_get_lock(fd, F_SETLK, F_RDLCK));
-}
-
-
 int fd_get_readw_lock(int fd)
 {
 	return(fd_get_lock(fd, F_SETLKW, F_RDLCK));
@@ -132,13 +114,6 @@ int fd_get_write_lock(int fd)
 	return(fd_get_lock(fd, F_SETLK, F_WRLCK));
 }
 
-
-int fd_get_writew_lock(int fd)
-{
-	return(fd_get_lock(fd, F_SETLKW, F_WRLCK));
-}
-
-
 int fd_release_lock(int fd)
 {
 	return(fd_get_lock(fd, F_SETLK, F_UNLCK));
@@ -149,13 +124,6 @@ pid_t fd_is_read_lock_blocked(int fd)
 {
 	return(fd_test_lock(fd, F_RDLCK));
 }
-
-
-pid_t fd_is_write_lock_blocked(int fd)
-{
-	return(fd_test_lock(fd, F_WRLCK));
-}
-
 
 static int fd_get_lock(int fd, int cmd, int type)
 {
@@ -237,40 +205,6 @@ ssize_t fd_write_n(int fd, void *buf, size_t n)
 	}
 	return(n);
 }
-
-
-ssize_t fd_read_line(int fd, void *buf, size_t maxlen)
-{
-	ssize_t n, rc;
-	unsigned char c, *p;
-
-	n = 0;
-	p = buf;
-	while (n < maxlen - 1) {            /* reserve space for NUL-termination */
-
-		if ((rc = read(fd, &c, 1)) == 1) {
-			n++;
-			*p++ = c;
-			if (c == '\n')
-				break;                  /* store newline, like fgets() */
-		}
-		else if (rc == 0) {
-			if (n == 0)                 /* EOF, no data read */
-				return(0);
-			else                        /* EOF, some data read */
-				break;
-		}
-		else {
-			if (errno == EINTR)
-				continue;
-			return(-1);
-		}
-	}
-
-	*p = '\0';                          /* NUL-terminate, like fgets() */
-	return(n);
-}
-
 
 /* Wait for a file descriptor to be readable (up to time_limit seconds).
  * Return 0 when readable or -1 on error */
