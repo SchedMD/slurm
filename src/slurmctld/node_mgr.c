@@ -755,7 +755,6 @@ static bool _is_cloud_hidden(struct node_record *node_ptr)
 static bool _node_is_hidden(struct node_record *node_ptr, uid_t uid)
 {
 	int i;
-	bool shown = false;
 
 	if ((slurmctld_conf.private_data & PRIVATE_DATA_NODES)
 	    && (slurm_mcs_get_privatedata() == 1)
@@ -763,14 +762,15 @@ static bool _node_is_hidden(struct node_record *node_ptr, uid_t uid)
 	    && (mcs_g_check_mcs_label(uid, node_ptr->mcs_label) != 0))
 		return true;
 
-	for (i=0; i<node_ptr->part_cnt; i++) {
-		if (!(node_ptr->part_pptr[i]->flags & PART_FLAG_HIDDEN)) {
-			shown = true;
-			break;
+	if (!node_ptr->part_cnt)
+		return false;
+
+	for (i = 0; i < node_ptr->part_cnt; i++) {
+		/* return false if the node belongs to any visible partition */
+		if (part_is_visible(node_ptr->part_pptr[i], uid)) {
+			return false;
 		}
 	}
-	if (shown || (node_ptr->part_cnt == 0))
-		return false;
 
 	return true;
 }
@@ -799,7 +799,7 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 	bool hidden;
 
 	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
-	xassert(verify_lock(PART_LOCK, WRITE_LOCK));
+	xassert(verify_lock(PART_LOCK, READ_LOCK));
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
@@ -817,7 +817,6 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 		pack_time(now, buffer);
 
 		/* write node records */
-		part_filter_set(uid);
 		for (inx = 0; inx < node_record_count; inx++, node_ptr++) {
 			xassert (node_ptr->magic == NODE_MAGIC);
 			xassert (node_ptr->config_ptr->magic ==
@@ -851,7 +850,6 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 			}
 			nodes_packed++;
 		}
-		part_filter_clear();
 	} else {
 		error("select_g_select_jobinfo_pack: protocol_version "
 		      "%hu not supported", protocol_version);
@@ -891,7 +889,7 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 	bool hidden;
 
 	xassert(verify_lock(CONFIG_LOCK, READ_LOCK));
-	xassert(verify_lock(PART_LOCK, WRITE_LOCK));
+	xassert(verify_lock(PART_LOCK, READ_LOCK));
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
@@ -909,7 +907,6 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 		pack_time(now, buffer);
 
 		/* write node records */
-		part_filter_set(uid);
 		if (node_name)
 			node_ptr = find_node_record(node_name);
 		else
@@ -934,7 +931,6 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 				nodes_packed++;
 			}
 		}
-		part_filter_clear();
 	} else {
 		error("select_g_select_jobinfo_pack: protocol_version "
 		      "%hu not supported", protocol_version);

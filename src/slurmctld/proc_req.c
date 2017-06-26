@@ -1892,9 +1892,9 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
 	node_info_request_msg_t *node_req_msg =
 		(node_info_request_msg_t *) msg->data;
 	/* Locks: Read config, write node (reset allocated CPU count in some
-	 * select plugins), write part (for part_filter_set) */
+	 * select plugins), read part (for part_is_visible) */
 	slurmctld_lock_t node_write_lock = {
-		READ_LOCK, NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+		READ_LOCK, NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 
@@ -1951,9 +1951,9 @@ static void _slurm_rpc_dump_node_single(slurm_msg_t * msg)
 	slurm_msg_t response_msg;
 	node_info_single_msg_t *node_req_msg =
 		(node_info_single_msg_t *) msg->data;
-	/* Locks: Read config, read node, write part (for part_filter_set) */
+	/* Locks: Read config, read node, read part (for part_is_visible) */
 	slurmctld_lock_t node_write_lock = {
-		READ_LOCK, NO_LOCK, READ_LOCK, WRITE_LOCK, NO_LOCK };
+		READ_LOCK, NO_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 
