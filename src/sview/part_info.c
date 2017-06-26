@@ -956,7 +956,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 	partition_info_t *part_ptr = sview_part_info->part_ptr;
 	sview_part_sub_t *sview_part_sub = NULL;
 	char ind_cnt[1024];
-	char *temp_char = NULL;
+	const char *temp_char = NULL;
 	uint16_t temp_uint16 = 0;
 	int i;
 	int yes_no = -1;

@@ -1978,7 +1978,7 @@ extern void slurm_free_ping_slurmd_resp(ping_slurmd_resp_msg_t *msg)
  * structured as a static lookup table, which allows this
  * to be thread safe while avoiding any heap allocation
  */
-extern char *preempt_mode_string(uint16_t preempt_mode)
+extern const char *preempt_mode_string(uint16_t preempt_mode)
 {
 	if (preempt_mode == PREEMPT_MODE_OFF)
 		return "OFF";

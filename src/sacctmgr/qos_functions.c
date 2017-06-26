@@ -1192,15 +1192,18 @@ extern int sacctmgr_list_qos(int argc, char **argv)
 				break;
 			case PRINT_PREEM:
 			{
-				char *tmp_char = "cluster";
-				if (qos->preempt_mode)
-					tmp_char = xstrtolower(
+				char *tmp_char = xstrdup("cluster");
+				if (qos->preempt_mode) {
+					tmp_char = xstrdup(
 						preempt_mode_string(
 							qos->preempt_mode));
+					xstrtolower(tmp_char);
+				}
 				field->print_routine(
 					field,
 					tmp_char,
 					(curr_inx == field_count));
+				xfree(tmp_char);
 				break;
 			}
 			case PRINT_PRIO:

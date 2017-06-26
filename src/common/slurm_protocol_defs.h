@@ -1432,7 +1432,7 @@ extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data);
 extern void slurm_free_network_callerid_msg(network_callerid_msg_t *mesg);
 extern void slurm_free_network_callerid_resp(network_callerid_resp_t *resp);
 
-extern char *preempt_mode_string(uint16_t preempt_mode);
+extern const char *preempt_mode_string(uint16_t preempt_mode);
 extern uint16_t preempt_mode_num(const char *preempt_mode);
 
 extern char *log_num2string(uint16_t inx);

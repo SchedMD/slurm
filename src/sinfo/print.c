@@ -72,7 +72,7 @@ static int   _build_free_mem_min_max_64(char *buffer, int buf_size,
 					bool range);
 static void  _print_reservation(reserve_info_t *resv_ptr, int width);
 static int   _print_secs(long time, int width, bool right, bool cut_output);
-static int   _print_str(char *str, int width, bool right, bool cut_output);
+static int   _print_str(const char *str, int width, bool right, bool cut_output);
 static int   _resv_name_width(reserve_info_t *resv_ptr);
 static void  _set_node_field_size(List sinfo_list);
 static void  _set_part_field_size(List sinfo_list);
@@ -178,7 +178,7 @@ static void _print_reservation(reserve_info_t *resv_ptr, int width)
 	return;
 }
 
-static int _print_str(char *str, int width, bool right, bool cut_output)
+static int _print_str(const char *str, int width, bool right, bool cut_output)
 {
 	char format[64];
 	int printed = 0;

@@ -632,7 +632,8 @@ extern void display_edit_note(char *edit_note);
 extern void add_display_treestore_line(int update,
 				       GtkTreeStore *treestore,
 				       GtkTreeIter *iter,
-				       const char *name, char *value);
+				       const char *name,
+				       const char *value);
 extern void add_display_treestore_line_with_font(
 	int update,
 	GtkTreeStore *treestore,
