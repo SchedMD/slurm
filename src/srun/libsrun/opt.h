@@ -240,7 +240,9 @@ typedef struct srun_options {
 	char *mcs_label;	/* mcs label if mcs plugin in use */
 	time_t deadline; 	/* --deadline                   */
 	uint32_t job_flags;	/* --gres-flags */
-	uint32_t delay_boot;	/* --delay-boot			*/	
+	uint32_t delay_boot;	/* --delay-boot			*/
+	bool mpi_combine;	/* --mpi-combine		*/
+	char *pack_group;	/* --pack-group			*/
 } opt_t;
 
 extern int	error_exit;	/* exit code for slurm errors */

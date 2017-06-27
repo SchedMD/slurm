@@ -114,6 +114,7 @@
 #define OPT_POWER       0x1c
 #define OPT_THREAD_SPEC 0x1d
 #define OPT_BCAST       0x1e
+#define OPT_MPI_COMBINE	0x1f
 #define OPT_PROFILE     0x20
 #define OPT_EXPORT	0x21
 #define OPT_HINT	0x22
@@ -197,6 +198,8 @@
 #define LONG_OPT_PROFILE         0x157
 #define LONG_OPT_EXPORT          0x158
 #define LONG_OPT_SPREAD_JOB      0x159
+#define LONG_OPT_MPI_COMBINE     0x15a
+#define LONG_OPT_PACK_GROUP      0x15b
 #define LONG_OPT_PRIORITY        0x160
 #define LONG_OPT_ACCEL_BIND      0x161
 #define LONG_OPT_USE_MIN_NODES   0x162
@@ -444,6 +447,7 @@ static void _opt_default(void)
 		opt.max_exit_timeout	= 60; /* Warn user 60 sec after task exit */
 		opt.max_wait		= slurm_get_wait_time();
 		xfree(opt.mcs_label);
+		opt.mpi_combine		= true;
 		/* Default launch msg timeout           */
 		opt.msg_timeout		= slurm_get_msg_timeout();
 		opt.nice		= NO_VAL;
@@ -650,6 +654,7 @@ env_vars_t env_vars[] = {
 {"SLURM_MEM_PER_CPU",	OPT_INT64,	&opt.mem_per_cpu,   NULL             },
 {"SLURM_MEM_PER_NODE",	OPT_INT64,	&opt.pn_min_memory, NULL             },
 {"SLURM_MLOADER_IMAGE", OPT_STRING,     &opt.mloaderimage,  NULL             },
+{"SLURM_MPI_COMBINE",	OPT_MPI_COMBINE,NULL,               NULL             },
 {"SLURM_MPI_TYPE",      OPT_MPI,        NULL,               NULL             },
 {"SLURM_NCORES_PER_SOCKET",OPT_NCORES,  NULL,               NULL             },
 {"SLURM_NETWORK",       OPT_STRING,     &opt.network,    &opt.network_set_env},
@@ -902,6 +907,17 @@ _process_env_var(env_vars_t *e, const char *val)
 		mpi_initialized = true;
 		break;
 
+	case OPT_MPI_COMBINE:
+		if (!strcasecmp(val, "yes"))
+			opt.mpi_combine = true;
+		else if (!strcasecmp(val, "no"))
+			opt.mpi_combine = false;
+		else {
+			error("Invalid --mpi-combine=%s", val);
+			exit(error_exit);
+		}
+		break;
+
 	case OPT_SIGNAL:
 		if (get_signal_opts((char *)val, &opt.warn_signal,
 				    &opt.warn_time, &opt.warn_flags)) {
@@ -1052,6 +1068,7 @@ static void _set_options(const int argc, char **argv)
 		{"minthreads",       required_argument, 0, LONG_OPT_MINTHREADS},
 		{"mloader-image",    required_argument, 0, LONG_OPT_MLOADER_IMAGE},
 		{"mpi",              required_argument, 0, LONG_OPT_MPI},
+		{"mpi-combine",      required_argument, 0, LONG_OPT_MPI_COMBINE},
 		{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
 		{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
 		{"network",          required_argument, 0, LONG_OPT_NETWORK},
@@ -1060,6 +1077,7 @@ static void _set_options(const int argc, char **argv)
 		{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
 		{"open-mode",        required_argument, 0, LONG_OPT_OPEN_MODE},
+		{"pack-group",       required_argument, 0, LONG_OPT_PACK_GROUP},
 		{"power",            required_argument, 0, LONG_OPT_POWER},
 		{"priority",         required_argument, 0, LONG_OPT_PRIORITY},
 		{"profile",          required_argument, 0, LONG_OPT_PROFILE},
@@ -1533,6 +1551,22 @@ static void _set_options(const int argc, char **argv)
 				exit(error_exit);
 			}
 			mpi_initialized = true;
+			break;
+		case LONG_OPT_MPI_COMBINE:
+			if (!optarg)
+				break;	/* Fix for Coverity false positive */
+			if (!strcasecmp(optarg, "yes"))
+				opt.mpi_combine = true;
+			else if (!strcasecmp(optarg, "no"))
+				opt.mpi_combine = false;
+			else {
+				error("Invalid --mpi-combine=%s", optarg);
+				exit(error_exit);
+			}
+			break;
+		case LONG_OPT_PACK_GROUP:
+			xfree(opt.pack_group);
+			opt.pack_group = xstrdup(optarg);
 			break;
 		case LONG_OPT_RESV_PORTS:
 			if (optarg)
@@ -2897,7 +2931,7 @@ static void _opt_list(void)
 	info("ntasks-per-socket : %d", opt.ntasks_per_socket);
 	info("ntasks-per-core   : %d", opt.ntasks_per_core);
 	info("plane_size        : %u", opt.plane_size);
-	if (opt.core_spec == (uint16_t) NO_VAL)
+	if (opt.core_spec == NO_VAL16)
 		info("core-spec         : NA");
 	else if (opt.core_spec & CORE_SPEC_THREAD) {
 		info("thread-spec       : %d",
@@ -2911,6 +2945,9 @@ static void _opt_list(void)
 	info("remote command    : `%s'", str);
 	if (opt.mcs_label)
 		info("mcs-label         : %s",opt.mcs_label);
+	info("mpi_combine       : %s", opt.mpi_combine == true ? "YES" : "NO");
+	if (opt.pack_group)
+		info("pack_group        : %s",opt.pack_group);
 	xfree(str);
 
 }
@@ -2997,6 +3034,7 @@ static void _usage(void)
 "            [--bcast=<dest_path>] [--compress[=library]]\n"
 "            [--acctg-freq=<datatype>=<interval>] [--delay-boot=mins]\n"
 "            [-w hosts...] [-x hosts...] [--use-min-nodes]\n"
+"            [--mpi-combine=yes|no] [--pack-group=value]\n"
 "            executable [args...]\n");
 
 }
@@ -3063,6 +3101,7 @@ static void _help(void)
 "                              changes\n"
 "      --mcs-label=mcs         mcs label if mcs plugin mcs/group is used\n"
 "      --mpi=type              type of MPI being used\n"
+"      --mpi-combine=yes|no    launch all components as single MPI_COMM_WORLD\n"
 "      --multi-prog            if set the program name specified is the\n"
 "                              configuration specification for multiple programs\n"
 "  -n, --ntasks=ntasks         number of tasks to run\n"
@@ -3071,6 +3110,8 @@ static void _help(void)
 "  -N, --nodes=N               number of nodes on which to run (N = min[-max])\n"
 "  -o, --output=out            location of stdout redirection\n"
 "  -O, --overcommit            overcommit resources\n"
+"      --pack-group=value      pack job allocation(s) in which to launch\n"
+"                              application\n"
 "  -p, --partition=partition   partition requested\n"
 "      --power=flags           power management options\n"
 "      --priority=value        set the priority of the job to value\n"

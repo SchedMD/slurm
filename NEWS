@@ -46,6 +46,8 @@ documents those changes that are of interest to users and administrators.
       output.
     * Modify smap command to display heterogeneous job records using "#+#"
       format.
+    * Add srun --pack-group and --mpi-combine options to control job step
+      launch behaviour.
 
 * Changes in Slurm 17.11.0pre1
 ==============================
