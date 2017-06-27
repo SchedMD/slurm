@@ -2680,7 +2680,7 @@ extern int get_node_cnts(struct job_record *job_ptr,
 			 uint32_t *min_nodes,
 			 uint32_t *req_nodes, uint32_t *max_nodes)
 {
-	int error_code = SLURM_SUCCESS;
+	int error_code = SLURM_SUCCESS, i;
 	uint32_t acct_max_nodes;
 	uint32_t wait_reason = 0;
 
