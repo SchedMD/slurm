@@ -2221,27 +2221,6 @@ extern void refresh_part(GtkAction *action, gpointer user_data)
 }
 
 
-extern bool visible_part(char* part_name)
-{
-	static partition_info_msg_t *part_info_ptr = NULL;
-	partition_info_t *m_part_ptr = NULL;
-	int i;
-	int rc = false;
-
-	if (!g_part_info_ptr)
-		get_new_info_part(&part_info_ptr, force_refresh);
-	for (i = 0; i < g_part_info_ptr->record_count; i++) {
-		m_part_ptr = &(g_part_info_ptr->partition_array[i]);
-		if (!xstrcmp(m_part_ptr->name, part_name)) {
-			if (m_part_ptr->flags & PART_FLAG_HIDDEN)
-				rc =  false;
-			else
-				rc = true;
-		}
-	}
-	return rc;
-}
-
 extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 {
 	static partition_info_msg_t *new_part_ptr = NULL;
