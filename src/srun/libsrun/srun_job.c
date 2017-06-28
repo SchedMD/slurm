@@ -596,7 +596,8 @@ static void _set_step_opts(opt_t *opt_local)
  * a separate RPC. create_job_step() references "opt", so we need to match up
  * the job allocation request with its requested options.
  */
-static int _create_job_step(srun_job_t *job, List srun_job_list)
+static int _create_job_step(srun_job_t *job, bool use_all_cpus,
+			    List srun_job_list)
 {
 	ListIterator opt_iter = NULL, job_iter;
 	opt_t *opt_local = &opt;
@@ -612,7 +613,8 @@ static int _create_job_step(srun_job_t *job, List srun_job_list)
 				opt_local = (opt_t *) list_next(opt_iter);
 			if (!opt_local)
 				fatal("%s: opt_list too short", __func__);
-			rc = create_job_step(job, true, opt_local, pack_offset);
+			rc = create_job_step(job, use_all_cpus, opt_local,
+					     pack_offset);
 			if (rc < 0)
 				break;
 			pack_offset++;
@@ -622,7 +624,7 @@ static int _create_job_step(srun_job_t *job, List srun_job_list)
 			list_iterator_destroy(opt_iter);
 		return rc;
 	} else if (job) {
-		return create_job_step(job, true, &opt, -1);
+		return create_job_step(job, use_all_cpus, &opt, -1);
 	} else {
 		return -1;
 	}
@@ -764,7 +766,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		list_iterator_destroy(resp_iter);
 		if (opt_iter)
 			list_iterator_destroy(opt_iter);
-		if (_create_job_step(job, srun_job_list) < 0) {
+		if (_create_job_step(job, false, srun_job_list) < 0) {
 			slurm_complete_job(my_job_id, 1);
 			exit(error_exit);
 		}
@@ -835,7 +837,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		if (_become_user () < 0)
 			info("Warning: Unable to assume uid=%u", opt.uid);
 
-		if (_create_job_step(job, srun_job_list) < 0) {
+		if (_create_job_step(job, true, srun_job_list) < 0) {
 			slurm_complete_job(my_job_id, 1);
 			exit(error_exit);
 		}
