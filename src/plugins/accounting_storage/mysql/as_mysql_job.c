@@ -253,10 +253,10 @@ static char *_set_energy_tres(mysql_conn_t *mysql_conn,
 		NO_VAL64, job_ptr->db_index);
 	if (debug_flags & DEBUG_FLAG_DB_USAGE)
 		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
-	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
-		return NULL;
-	}
+	result = mysql_db_query_ret(mysql_conn, query, 0);
 	xfree(query);
+	if (!result)
+		return NULL;
 
 	row_cnt = mysql_num_rows(result);
 
