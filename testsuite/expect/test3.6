@@ -183,25 +183,6 @@ if {$hidden == 0} {
 }
 
 #
-# Confirm partition is hidden by default
-#
-spawn $scontrol show part $part_name
-expect {
-	-re "PartitionName" {
-		send_user "\nFAILURE: partition not hidden\n"
-		set exit_code 1
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-#
 # Now delete the partition
 #
 spawn $scontrol delete PartitionName=$part_name

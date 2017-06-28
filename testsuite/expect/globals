@@ -2163,10 +2163,8 @@ proc test_super_user { } {
 #
 #	Check if user root
 #
-	log_user 0
 	set uid [get_my_uid]
 	if {$uid == 0} {
-		log_user 1
 		set super_user 1
 		set super_user_set 1
 		return $super_user
@@ -2177,6 +2175,7 @@ proc test_super_user { } {
 #
 	set user [get_my_user_name]
 
+	log_user 0
 	spawn $scontrol show config
 	set slurm_user ""
 	expect {
