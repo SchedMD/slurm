@@ -484,6 +484,8 @@ extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg)
 		msg->trigger_array[i].program = NULL;
 		if (!_validate_trigger(trig_add)) {
 			rc = ESLURM_ACCESS_DENIED;
+			FREE_NULL_BITMAP(trig_add->nodes_bitmap);
+			FREE_NULL_BITMAP(trig_add->orig_bitmap);
 			xfree(trig_add->program);
 			xfree(trig_add->res_id);
 			xfree(trig_add);
