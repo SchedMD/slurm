@@ -1763,7 +1763,7 @@ int init ( void )
 				   _decay_thread, NULL))
 			fatal("pthread_create error %m");
 
-		pthread_cond_wait(&decay_init_cond, &decay_init_mutex);
+		slurm_cond_wait(&decay_init_cond, &decay_init_mutex);
 		slurm_mutex_unlock(&decay_init_mutex);
 
 		/* This is here to join the decay thread so we don't core

@@ -97,7 +97,7 @@ static void *_create_container_thread(void *args)
 		/* Wait around for something else to be added and then exit
 		   when that takes place.
 		*/
-		pthread_cond_wait(&notify, &notify_mutex);
+		slurm_cond_wait(&notify, &notify_mutex);
 
 	slurm_mutex_unlock(&notify_mutex);
 
