@@ -1632,8 +1632,10 @@ next_part:			part_ptr = (struct part_record *)
 		if (job_ptr->preempt_in_progress)
 			continue;	/* scheduled in another partition */
 
-		if (job_ptr->pack_job_id)
+		if (job_ptr->pack_job_id) {
+			fail_by_part = false;
 			goto fail_this_part;
+		}
 
 		if (job_ptr->array_recs && (job_ptr->array_task_id == NO_VAL))
 			is_job_array_head = true;
