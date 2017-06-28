@@ -957,9 +957,9 @@ extern int sacctmgr_list_qos(int argc, char **argv)
 
 	field_count = list_count(print_fields_list);
 
-	while((qos = list_next(itr))) {
+	while ((qos = list_next(itr))) {
 		int curr_inx = 1;
-		while((field = list_next(itr2))) {
+		while ((field = list_next(itr2))) {
 			switch(field->type) {
 			case PRINT_DESC:
 				field->print_routine(
@@ -1192,12 +1192,14 @@ extern int sacctmgr_list_qos(int argc, char **argv)
 				break;
 			case PRINT_PREEM:
 			{
-				char *tmp_char = xstrdup("cluster");
+				char *tmp_char;
 				if (qos->preempt_mode) {
 					tmp_char = xstrdup(
 						preempt_mode_string(
 							qos->preempt_mode));
 					xstrtolower(tmp_char);
+				} else {
+					tmp_char = xstrdup("cluster");
 				}
 				field->print_routine(
 					field,
