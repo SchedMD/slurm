@@ -97,7 +97,7 @@ void job_desc_msg_destroy (job_desc_msg_t *j);
  *
  * Returns NULL if SLURM_JOB_ID is not present or is invalid.
  */
-resource_allocation_response_msg_t *existing_allocation(void);
+extern List existing_allocation(void);
 
 /*
  * Create a job step given the job information stored in 'j'

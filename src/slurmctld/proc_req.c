@@ -3018,17 +3018,33 @@ static void _slurm_rpc_job_pack_alloc_info(slurm_msg_t * msg)
 
 	/* return result */
 	if ((error_code == SLURM_SUCCESS) && job_ptr &&
-	    (!job_ptr->pack_job_id || !job_ptr->pack_job_list))
+	    (job_ptr->pack_job_id && !job_ptr->pack_job_list))
 		error_code = ESLURM_NOT_PACK_JOB_LEADER;
 	if (error_code || (job_ptr == NULL) || (job_ptr->job_resrcs == NULL)) {
 		unlock_slurmctld(job_read_lock);
 		debug2("%s: JobId=%u, uid=%u: %s", __func__,
 		       job_info_msg->job_id, uid, slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
-	} else {
-		debug("%s: JobId=%u NodeList=%s %s", __func__,
-		      job_info_msg->job_id, job_ptr->nodes, TIME_STR);
+		return;
+	}
 
+	debug("%s: JobId=%u NodeList=%s %s", __func__,
+	      job_info_msg->job_id, job_ptr->nodes, TIME_STR);
+
+	if (!job_ptr->pack_job_list) {
+		resp = list_create(_pack_alloc_list_del);
+		job_info_resp_msg = build_job_info_resp(job_ptr);
+		if (working_cluster_rec) {
+			job_info_resp_msg->working_cluster_rec =
+				working_cluster_rec;
+		} else {
+			set_remote_working_response(job_info_resp_msg,
+					job_ptr, job_info_msg->req_cluster);
+			working_cluster_rec =
+				job_info_resp_msg->working_cluster_rec;
+		}
+		list_append(resp, job_info_resp_msg);
+	} else {
 		resp = list_create(_pack_alloc_list_del);
 		iter = list_iterator_create(job_ptr->pack_job_list);
 		while ((pack_job = (struct job_record *) list_next(iter))) {
@@ -3051,18 +3067,17 @@ static void _slurm_rpc_job_pack_alloc_info(slurm_msg_t * msg)
 			list_append(resp, job_info_resp_msg);
 		}
 		list_iterator_destroy(iter);
-		unlock_slurmctld(job_read_lock);
-
-		slurm_msg_t_init(&response_msg);
-		response_msg.msg_type = RESPONSE_JOB_PACK_ALLOCATION;
-		response_msg.data     = resp;
-		response_msg.flags    = msg->flags;
-		response_msg.protocol_version = msg->protocol_version;
-
-		slurm_send_node_msg(msg->conn_fd, &response_msg);
-
-		FREE_NULL_LIST(resp);
 	}
+	unlock_slurmctld(job_read_lock);
+
+	slurm_msg_t_init(&response_msg);
+	response_msg.msg_type = RESPONSE_JOB_PACK_ALLOCATION;
+	response_msg.data     = resp;
+	response_msg.flags    = msg->flags;
+	response_msg.protocol_version = msg->protocol_version;
+	slurm_send_node_msg(msg->conn_fd, &response_msg);
+	FREE_NULL_LIST(resp);
+
 }
 
 /* _slurm_rpc_job_sbcast_cred - process RPC to get details on existing job

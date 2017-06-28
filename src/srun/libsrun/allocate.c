@@ -812,31 +812,29 @@ cleanup_allocation(void)
 	return SLURM_SUCCESS;
 }
 
-resource_allocation_response_msg_t *
-existing_allocation(void)
+extern List existing_allocation(void)
 {
 	uint32_t old_job_id;
-        resource_allocation_response_msg_t *resp = NULL;
+	List job_resp_list = NULL;
 
-	if (opt.jobid != NO_VAL)
-		old_job_id = (uint32_t)opt.jobid;
-	else
-                return NULL;
+	if (opt.jobid == NO_VAL)
+		return NULL;
 
-        if (slurm_allocation_lookup(old_job_id, &resp) < 0) {
-                if (opt.parallel_debug || opt.jobid_set)
-                        return NULL;    /* create new allocation as needed */
-                if (errno == ESLURM_ALREADY_DONE)
-                        error ("SLURM job %u has expired.", old_job_id);
-                else
-                        error ("Unable to confirm allocation for job %u: %m",
-			       old_job_id);
-                info ("Check SLURM_JOB_ID environment variable "
-                      "for expired or invalid job.");
-                exit(error_exit);
-        }
+	old_job_id = (uint32_t) opt.jobid;
+	if (slurm_pack_job_lookup(old_job_id, &job_resp_list) < 0) {
+		if (opt.parallel_debug || opt.jobid_set)
+			return NULL;    /* create new allocation as needed */
+		if (errno == ESLURM_ALREADY_DONE)
+			error("SLURM job %u has expired", old_job_id);
+		else
+			error("Unable to confirm allocation for job %u: %m",
+			      old_job_id);
+		info("Check SLURM_JOB_ID environment variable. Expired or invalid job %u",
+		     old_job_id);
+		exit(error_exit);
+	}
 
-        return resp;
+	return job_resp_list;
 }
 
 /* Set up port to handle messages from slurmctld */

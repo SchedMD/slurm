@@ -134,7 +134,7 @@ static void _shepherd_notify(int shepherd_fd);
 static int  _shepherd_spawn(srun_job_t *job, List srun_job_list,
 			     bool got_alloc);
 static void *_srun_signal_mgr(void *no_data);
-static void _step_opt_exclusive(void);
+static void _step_opt_exclusive(opt_t *opt_local);
 static int  _validate_relative(resource_allocation_response_msg_t *resp,
 			       opt_t *opt_local);
 
@@ -598,31 +598,28 @@ static void _set_step_opts(opt_t *opt_local)
  */
 static int _create_job_step(srun_job_t *job, List srun_job_list)
 {
-	ListIterator opt_iter, job_iter;
-	opt_t *opt_local;
+	ListIterator opt_iter = NULL, job_iter;
+	opt_t *opt_local = &opt;
 	int pack_offset = 0, rc = 0;
 
+//FIXME: handle pack-group here when matching opt_local and resp values
 	if (srun_job_list) {
-		if (!opt_list) {
-			fatal("%s: have srun_job_list, but no opt_list",
-			      __func__);
-		}
-		job_iter  = list_iterator_create(srun_job_list);
-		opt_iter  = list_iterator_create(opt_list);
-		while ((opt_local = (opt_t *) list_next(opt_iter))) {
-			job = (srun_job_t *) list_next(job_iter);
-			if (!job) {
-				fatal("%s: job allocation count does not match request count (%d != %d)",
-				      __func__, list_count(srun_job_list),
-				      list_count(opt_list));
-			}
+		if (opt_list)
+			opt_iter = list_iterator_create(opt_list);
+		job_iter = list_iterator_create(srun_job_list);
+		while ((job = (srun_job_t *) list_next(job_iter))) {
+			if (opt_list)
+				opt_local = (opt_t *) list_next(opt_iter);
+			if (!opt_local)
+				fatal("%s: opt_list too short", __func__);
 			rc = create_job_step(job, true, opt_local, pack_offset);
 			if (rc < 0)
 				break;
 			pack_offset++;
 		}
 		list_iterator_destroy(job_iter);
-		list_iterator_destroy(opt_iter);
+		if (opt_iter)
+			list_iterator_destroy(opt_iter);
 		return rc;
 	} else if (job) {
 		return create_job_step(job, true, &opt, -1);
@@ -641,6 +638,11 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 	int pack_offset = -1;
 	opt_t *opt_local;
 	uint32_t my_job_id = 0;
+	bool begin_error_logged = false;
+	bool core_spec_error_logged = false;
+#ifdef HAVE_NATIVE_CRAY
+	bool network_error_logged = false;
+#endif
 
 	/* now global "opt" should be filled in and available,
 	 * create a job from opt
@@ -664,68 +666,108 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		}
 		if (create_job_step(job, false, &opt, -1) < 0)
 			exit(error_exit);
-	} else if ((resp = existing_allocation())) {
-//FIXME: Need to flesh out pack job support
-if (opt_list) exit(0);
-		my_job_id = resp->job_id;
-		if (resp->working_cluster_rec)
-			slurm_setup_remote_working_cluster(resp);
+	} else if ((job_resp_list = existing_allocation())) {
+		if (opt_list) {
+			opt_iter = list_iterator_create(opt_list);
+		} else {
+			opt_iter = NULL;
+			opt_local = &opt;
+		}
+		srun_job_list = list_create(NULL);
+		resp_iter = list_iterator_create(job_resp_list);
+		if (list_count(job_resp_list) > 1)
+			pack_offset = 0;
+		while ((resp = (resource_allocation_response_msg_t *)
+				list_next(resp_iter))) {
+			if (opt_list)
+				opt_local = (opt_t *) list_next(opt_iter);
+			if (my_job_id == 0) {
+				my_job_id = resp->job_id;
+				if (resp->working_cluster_rec)
+					slurm_setup_remote_working_cluster(resp);
+			}
+			_print_job_information(resp);
 
-		select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET,
-					&resp->node_cnt);
-		if (opt.nodes_set_env && !opt.nodes_set_opt &&
-		    (opt.min_nodes > resp->node_cnt)) {
-			/* This signifies the job used the --no-kill option
-			 * and a node went DOWN or it used a node count range
-			 * specification, was checkpointed from one size and
-			 * restarted at a different size */
-			error("SLURM_NNODES environment variable "
-			      "conflicts with allocated node count (%u!=%u).",
-			      opt.min_nodes, resp->node_cnt);
-			/* Modify options to match resource allocation.
-			 * NOTE: Some options are not supported */
-			opt.min_nodes = resp->node_cnt;
-			xfree(opt.alloc_nodelist);
-			if (!opt.ntasks_set)
-				opt.ntasks = opt.min_nodes;
-		}
-		if (opt.core_spec_set) {
-			/* NOTE: Silently ignore specialized core count set
-			 * with SLURM_CORE_SPEC environment variable */
-			error("Ignoring --core-spec value for a job step "
-			      "within an existing job. Set specialized cores "
-			      "at job allocation time.");
-		}
+			select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET,
+						&resp->node_cnt);
+//FIXME: handle pack-group here when matching opt_local and resp values
+			if (opt_local->nodes_set_env  &&
+			    !opt_local->nodes_set_opt &&
+			    (opt_local->min_nodes > resp->node_cnt)) {
+				/*
+				 * This signifies the job used the --no-kill
+				 * option and a node went DOWN or it used a node
+				 * count range specification, was checkpointed
+				 * from one size and restarted at a different
+				 * size
+				 */
+				error("SLURM_NNODES environment variable "
+				      "conflicts with allocated node count (%u != %u).",
+				      opt_local->min_nodes, resp->node_cnt);
+				/*
+				 * Modify options to match resource allocation.
+				 * NOTE: Some options are not supported
+				 */
+				opt_local->min_nodes = resp->node_cnt;
+				xfree(opt_local->alloc_nodelist);
+				if (!opt_local->ntasks_set) {
+					opt_local->ntasks =
+						opt_local->min_nodes;
+				}
+			}
+			if (opt_local->core_spec_set &&
+			    !core_spec_error_logged) {
+				/*
+				 * NOTE: Silently ignore specialized core count
+				 * set with SLURM_CORE_SPEC environment variable
+				 */
+				error("Ignoring --core-spec value for a job step "
+				      "within an existing job. Set specialized cores "
+				      "at job allocation time.");
+					core_spec_error_logged = true;
+			}
 #ifdef HAVE_NATIVE_CRAY
-		if (opt.network) {
-			if (opt.network_set_env)
-				debug2("Ignoring SLURM_NETWORK value for a "
-				       "job step within an existing job. "
-				       "Using what was set at job "
-				       "allocation time.  Most likely this "
-				       "variable was set by sbatch or salloc.");
-			else
-				error("Ignoring --network value for a job step "
-				      "within an existing job. Set network "
-				      "options at job allocation time.");
-		}
+			if (opt_local->network && !network_error_logged) {
+				if (opt_local->network_set_env) {
+					debug2("Ignoring SLURM_NETWORK value for a "
+					       "job step within an existing job. "
+					       "Using what was set at job "
+					       "allocation time.  Most likely this "
+					       "variable was set by sbatch or salloc.");
+				} else {
+					error("Ignoring --network value for a job step "
+					      "within an existing job. Set network "
+					      "options at job allocation time.");
+				}
+				network_error_logged = true;
+			}
 #endif
-		if (opt.alloc_nodelist == NULL)
-			opt.alloc_nodelist = xstrdup(resp->node_list);
-		if (opt.exclusive)
-			_step_opt_exclusive();
-		_set_env_vars(resp, -1);
-		if (_validate_relative(resp, &opt))
-			exit(error_exit);
-		job = job_step_create_allocation(resp, &opt);
-		slurm_free_resource_allocation_response_msg(resp);
-
-		if (opt.begin != 0) {
-			error("--begin is ignored because nodes"
-			      " are already allocated.");
+			if (!opt_local->alloc_nodelist) {
+				opt_local->alloc_nodelist =
+					xstrdup(resp->node_list);
+			}
+			if (opt_local->exclusive)
+				_step_opt_exclusive(opt_local);
+			_set_env_vars(resp, pack_offset);
+			if (_validate_relative(resp, opt_local))
+				exit(error_exit);
+			if (opt_local->begin && !begin_error_logged) {
+				error("--begin is ignored because nodes are already allocated.");
+				begin_error_logged = true;
+			}
+			job = job_step_create_allocation(resp, opt_local);
+			if (!job)
+				exit(error_exit);
+			list_append(srun_job_list, job);
+			pack_offset++;
 		}
-		if (!job || create_job_step(job, false, &opt, -1) < 0)
+		list_iterator_destroy(resp_iter);
+		if (opt_iter)
+			list_iterator_destroy(opt_iter);
+		if (_create_job_step(job, srun_job_list) < 0) {
+			slurm_complete_job(my_job_id, 1);
 			exit(error_exit);
+		}
 	} else {
 		/* Combined job allocation and job step launch */
 #if defined HAVE_FRONT_END && (!defined HAVE_BG || !defined HAVE_BG_FILES) && (!defined HAVE_REAL_CRAY)
@@ -1659,18 +1701,18 @@ static void *_srun_signal_mgr(void *job_ptr)
 	return NULL;
 }
 
-/* opt.exclusive is set, disable user task layout controls */
-static void _step_opt_exclusive(void)
+/* opt_local->exclusive is set, disable user task layout controls */
+static void _step_opt_exclusive(opt_t *opt_local)
 {
-	if (!opt.ntasks_set) {
+	if (!opt_local->ntasks_set) {
 		error("--ntasks must be set with --exclusive");
 		exit(error_exit);
 	}
-	if (opt.relative_set) {
+	if (opt_local->relative_set) {
 		error("--relative disabled, incompatible with --exclusive");
 		exit(error_exit);
 	}
-	if (opt.exc_nodes) {
+	if (opt_local->exc_nodes) {
 		error("--exclude is incompatible with --exclusive");
 		exit(error_exit);
 	}
