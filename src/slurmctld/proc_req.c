@@ -5456,7 +5456,7 @@ inline static void  _slurm_rpc_set_debug_level(slurm_msg_t *msg)
 		return;
 	}
 
-	/* NOTE: not offset by LOG_LEVEL_INFO, since it's inconveniet
+	/* NOTE: not offset by LOG_LEVEL_INFO, since it's inconvenient
 	 * to provide negative values for scontrol */
 	debug_level = MIN (request_msg->debug_level, (LOG_LEVEL_END - 1));
 	debug_level = MAX (debug_level, LOG_LEVEL_QUIET);
