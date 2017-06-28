@@ -445,6 +445,7 @@ issuing the command on the cluster or using the <b>--cluster/-M</b>  option.
 	<li>Job dependencies are not supported across clusters.</li>
 	<li>Job modification must succeed on the origin cluster for the changes
 		to be pushed to the sibling jobs on remote clusters. </li>
+	<li>Modifications to anything other than jobs are disabled in sview.</li>
 </ul>
 
 <p style="text-align:center;">Last modified 15 June 2017</p>

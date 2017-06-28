@@ -371,6 +371,7 @@ extern void change_refresh_popup(GtkAction *action, gpointer user_data);
 extern void change_grid_popup(GtkAction *action, gpointer user_data);
 extern void about_popup(GtkAction *action, gpointer user_data);
 extern void usage_popup(GtkAction *action, gpointer user_data);
+extern void display_fed_disabled_popup(const char *title);
 
 //grid.c
 extern void destroy_grid_button(void *arg);

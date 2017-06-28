@@ -1046,7 +1046,15 @@ static void _admin_front_end(GtkTreeModel *model, GtkTreeIter *iter, char *type,
 	int rc;
 	GtkWidget *label = NULL;
 	GtkWidget *entry = NULL;
-	GtkWidget *popup = gtk_dialog_new_with_buttons(
+	GtkWidget *popup = NULL;
+
+	if (cluster_flags & CLUSTER_FLAG_FED) {
+		display_fed_disabled_popup(type);
+		global_entry_changed = 0;
+		return;
+	}
+
+	popup = gtk_dialog_new_with_buttons(
 		type,
 		GTK_WINDOW(main_window),
 		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,

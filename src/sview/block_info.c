@@ -874,17 +874,26 @@ extern void admin_edit_block(GtkCellRendererText *cell,
 			     const char *new_text,
 			     gpointer data)
 {
-	GtkTreeStore *treestore = GTK_TREE_STORE(data);
-	GtkTreePath *path = gtk_tree_path_new_from_string(path_string);
+	GtkTreeStore *treestore = NULL;
+	GtkTreePath *path = NULL;
 	GtkTreeIter iter;
-	int column = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell),
-						       "column"));
+	int column;
 
 	char *blockid = NULL;
 	char *old_text = NULL;
+
+	if (cluster_flags & CLUSTER_FLAG_FED) {
+		display_fed_disabled_popup(new_text);
+		goto no_input;
+	}
+
 	if (!new_text || !xstrcmp(new_text, ""))
 		goto no_input;
 
+	column = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell), "column"));
+
+	treestore = GTK_TREE_STORE(data);
+	path = gtk_tree_path_new_from_string(path_string);
 	gtk_tree_model_get_iter(GTK_TREE_MODEL(treestore), &iter, path);
 	gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter,
 			   SORTID_BLOCK, &blockid,
@@ -900,8 +909,8 @@ extern void admin_edit_block(GtkCellRendererText *cell,
 
 	g_free(blockid);
 	g_free(old_text);
-no_input:
 	gtk_tree_path_free(path);
+no_input:
 	g_mutex_unlock(sview_mutex);
 }
 
@@ -1492,7 +1501,14 @@ extern void select_admin_block(GtkTreeModel *model, GtkTreeIter *iter,
 static void _admin_block(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 {
 	char *blockid = NULL;
-	GtkWidget *popup = gtk_dialog_new_with_buttons(
+	GtkWidget *popup = NULL;
+
+	if (cluster_flags & CLUSTER_FLAG_FED) {
+		display_fed_disabled_popup(type);
+		return;
+	}
+
+	popup = gtk_dialog_new_with_buttons(
 		type,
 		GTK_WINDOW(main_window),
 		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,

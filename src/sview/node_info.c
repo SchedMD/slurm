@@ -1584,16 +1584,25 @@ extern void admin_edit_node(GtkCellRendererText *cell,
 			    const char *new_text,
 			    gpointer data)
 {
-	GtkTreeStore *treestore = GTK_TREE_STORE(data);
-	GtkTreePath *path = gtk_tree_path_new_from_string(path_string);
+	GtkTreeStore *treestore = NULL;
+	GtkTreePath *path = NULL;
 	GtkTreeIter iter;
 	char *nodelist = NULL;
-	int column = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell),
-						       "column"));
+	int column;
+
 	if (!new_text || !xstrcmp(new_text, ""))
 		goto no_input;
 
+	if (cluster_flags & CLUSTER_FLAG_FED) {
+		display_fed_disabled_popup(new_text);
+		goto no_input;
+	}
+
+	treestore = GTK_TREE_STORE(data);
+	path = gtk_tree_path_new_from_string(path_string);
 	gtk_tree_model_get_iter(GTK_TREE_MODEL(treestore), &iter, path);
+
+	column = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell), "column"));
 	switch(column) {
 	case SORTID_STATE:
 		gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter,
@@ -1606,8 +1615,9 @@ extern void admin_edit_node(GtkCellRendererText *cell,
 	default:
 		break;
 	}
-no_input:
+
 	gtk_tree_path_free(path);
+no_input:
 	g_mutex_unlock(sview_mutex);
 }
 
@@ -2143,7 +2153,14 @@ extern void select_admin_nodes(GtkTreeModel *model,
 
 extern void admin_node_name(char *name, char *old_value, char *type)
 {
-	GtkWidget *popup = gtk_dialog_new_with_buttons(
+	GtkWidget *popup = NULL;
+
+	if (cluster_flags & CLUSTER_FLAG_FED) {
+		display_fed_disabled_popup(type);
+		return;
+	}
+
+	popup = gtk_dialog_new_with_buttons(
 		type,
 		GTK_WINDOW(main_window),
 		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,

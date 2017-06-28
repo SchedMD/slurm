@@ -2493,22 +2493,31 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 			    const char *new_text,
 			    gpointer data)
 {
-	GtkTreeStore *treestore = GTK_TREE_STORE(data);
-	GtkTreePath *path = gtk_tree_path_new_from_string(path_string);
+	GtkTreeStore *treestore = NULL;
+	GtkTreePath *path = NULL;
 	GtkTreeIter iter;
-	update_part_msg_t *part_msg = xmalloc(sizeof(update_part_msg_t));
+	update_part_msg_t *part_msg = NULL;
 
 	char *temp = NULL;
 	char *old_text = NULL;
 	const char *type = NULL;
-	int column = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell),
-						       "column"));
+	int column;
 
 	if (!new_text || !xstrcmp(new_text, ""))
 		goto no_input;
 
+	if (cluster_flags & CLUSTER_FLAG_FED) {
+		display_fed_disabled_popup(type);
+		goto no_input;
+	}
+
+	part_msg = xmalloc(sizeof(update_part_msg_t));
+
+	treestore = GTK_TREE_STORE(data);
+	path = gtk_tree_path_new_from_string(path_string);
 	gtk_tree_model_get_iter(GTK_TREE_MODEL(treestore), &iter, path);
 
+	column = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell), "column"));
 	if (column != SORTID_NODE_STATE) {
 		slurm_init_part_desc_msg(part_msg);
 		gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter,
@@ -2559,7 +2568,7 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 	}
 no_input:
 	slurm_free_update_part_msg(part_msg);
-	gtk_tree_path_free (path);
+	gtk_tree_path_free(path);
 	g_free(old_text);
 	g_mutex_unlock(sview_mutex);
 }
@@ -3124,14 +3133,21 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 {
 	char *nodelist = NULL;
 	char *partid = NULL;
-	update_part_msg_t *part_msg = xmalloc(sizeof(update_part_msg_t));
+	update_part_msg_t *part_msg = NULL;
 	int edit_type = 0;
 	int response = 0;
 	char tmp_char[100];
 	char *temp = NULL;
 	GtkWidget *label = NULL;
 	GtkWidget *entry = NULL;
-	GtkWidget *popup = gtk_dialog_new_with_buttons(
+	GtkWidget *popup = NULL;
+
+	if (cluster_flags & CLUSTER_FLAG_FED) {
+		display_fed_disabled_popup(type);
+		return;
+	}
+
+	popup = gtk_dialog_new_with_buttons(
 		type,
 		GTK_WINDOW(main_window),
 		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
@@ -3140,8 +3156,9 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 
 	gtk_tree_model_get(model, iter, SORTID_NAME, &partid, -1);
 	gtk_tree_model_get(model, iter, SORTID_NODELIST, &nodelist, -1);
-	slurm_init_part_desc_msg(part_msg);
 
+	part_msg = xmalloc(sizeof(update_part_msg_t));
+	slurm_init_part_desc_msg(part_msg);
 	part_msg->name = xstrdup(partid);
 
 	if (!xstrcasecmp("Change Partition State", type)) {
