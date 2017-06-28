@@ -8847,8 +8847,7 @@ static bool _all_parts_hidden(struct job_record *job_ptr, uid_t uid)
 static bool _hide_job(struct job_record *job_ptr, uid_t uid,
 		      uint16_t show_flags)
 {
-	if (!(show_flags & SHOW_ALL) &&
-	    job_ptr->fed_details && fed_mgr_is_tracker_only_job(job_ptr))
+	if (!(show_flags & SHOW_ALL) && IS_JOB_REVOKED(job_ptr))
 		return true;
 
 	if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
