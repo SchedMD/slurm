@@ -4477,6 +4477,15 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		g_print("jobs got id %d\n", id);
 	}
 
+	if (cluster_name && federation_name &&
+	    (cluster_flags & CLUSTER_FLAG_FED)) {
+		char *tmp_cname =
+			xstrdup_printf(" (%s:%s)",
+				       federation_name, cluster_name);
+		strncat(title, tmp_cname, sizeof(title) - strlen(title) - 1);
+		xfree(tmp_cname);
+	}
+
 	if (tmp_jobid)
 		g_free(tmp_jobid);
 

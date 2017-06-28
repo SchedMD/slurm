@@ -347,6 +347,7 @@ extern topo_info_response_msg_t *g_topo_info_msg_ptr;
 extern switch_record_bitmaps_t *g_switch_nodes_maps;
 extern popup_positioner_t main_popup_positioner[];
 extern popup_pos_t popup_pos;
+extern char *federation_name;
 
 extern void init_grid(node_info_msg_t *node_info_ptr);
 extern int set_grid(int start, int end, int count);

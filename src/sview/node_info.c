@@ -2058,6 +2058,15 @@ extern void popup_all_node_name(char *name, int id, char *cluster_name)
 		g_print("%s got %d\n", node, id);
 	}
 
+	if (cluster_name && federation_name &&
+	    (cluster_flags & CLUSTER_FLAG_FED)) {
+		char *tmp_cname =
+			xstrdup_printf(" (%s:%s)",
+				       federation_name, cluster_name);
+		strncat(title, tmp_cname, sizeof(title) - strlen(title) - 1);
+		xfree(tmp_cname);
+	}
+
 	itr = list_iterator_create(popup_list);
 	while ((popup_win = list_next(itr))) {
 		if (popup_win->spec_info)
