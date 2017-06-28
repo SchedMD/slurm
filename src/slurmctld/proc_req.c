@@ -6401,9 +6401,7 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg, connection_arg_t *arg)
 	persist_conn->version = persist_init->version;
 	memcpy(&p_tmp, persist_conn, sizeof(slurm_persist_conn_t));
 
-	if ((rc = fed_mgr_add_sibling_conn(persist_conn, &comment))
-	    != SLURM_SUCCESS)
-		slurm_persist_conn_destroy(persist_conn);
+	rc = fed_mgr_add_sibling_conn(persist_conn, &comment);
 end_it:
 
 	/* If people are really hammering the fed_mgr we could get into trouble
@@ -6415,6 +6413,11 @@ end_it:
 		      p_tmp.fd, uid);
 	}
 
+	if (rc) {
+		/* Free AFTER message has been sent back to remote */
+		persist_conn->fd = -1;
+		slurm_persist_conn_destroy(persist_conn);
+	}
 	xfree(comment);
 	free_buf(ret_buf);
 	END_TIMER;
