@@ -4050,11 +4050,6 @@ extern int fed_mgr_job_revoke(struct job_record *job_ptr, bool job_complete,
 	xfree(job_ptr->state_desc);
 	job_completion_logger(job_ptr, false);
 
-	/* remove JOB_REVOKED for completed jobs so that job shows completed on
-	 * controller. */
-	if (job_complete)
-		job_ptr->job_state &= ~JOB_REVOKED;
-
 	/* Don't remove the origin job */
 	if (origin_id == fed_mgr_cluster_rec->fed.id)
 		return SLURM_SUCCESS;
