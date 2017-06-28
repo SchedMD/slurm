@@ -63,6 +63,7 @@ typedef struct {
 	GtkTreeIter iter_ptr;
 	bool iter_set;
 	char *part_name;
+	char *cluster_name;
 	/* part_info contains partition, avail, max_time, job_size,
 	 * root, share, groups */
 	partition_info_t* part_ptr;
@@ -1647,6 +1648,7 @@ static void _update_info_part(List info_list,
 static void _part_info_free(sview_part_info_t *sview_part_info)
 {
 	if (sview_part_info) {
+		xfree(sview_part_info->cluster_name);
 		xfree(sview_part_info->part_name);
 		memset(&sview_part_info->sub_part_total, 0,
 		       sizeof(sview_part_sub_t));
@@ -1894,6 +1896,10 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 		if (last_list_itr) {
 			while ((sview_part_info =
 				list_next(last_list_itr))) {
+				if (sview_part_info->cluster_name &&
+				    xstrcmp(sview_part_info->cluster_name,
+					    part_ptr->cluster_name))
+					continue;
 				if (!xstrcmp(sview_part_info->part_name,
 					     part_ptr->name)) {
 					list_remove(last_list_itr);
@@ -1907,6 +1913,7 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 		if (!sview_part_info)
 			sview_part_info = xmalloc(sizeof(sview_part_info_t));
 		sview_part_info->part_name = xstrdup(part_ptr->name);
+		sview_part_info->cluster_name = xstrdup(part_ptr->cluster_name);
 		sview_part_info->part_ptr = part_ptr;
 		sview_part_info->sub_list = list_create(_destroy_part_sub);
 		sview_part_info->pos = i;
@@ -2017,6 +2024,7 @@ static void _display_info_part(List info_list,	popup_info_t *popup_win)
 {
 	specific_info_t *spec_info = popup_win->spec_info;
 	char *name = (char *)spec_info->search_info->gchar_data;
+	char *cluster_name = (char *)spec_info->search_info->cluster_name;
 	int found = 0;
 	partition_info_t *part_ptr = NULL;
 	GtkTreeView *treeview = NULL;
@@ -2044,6 +2052,11 @@ need_refresh:
 	itr = list_iterator_create(info_list);
 	while ((sview_part_info = (sview_part_info_t*) list_next(itr))) {
 		part_ptr = sview_part_info->part_ptr;
+
+		if (cluster_name &&
+		    xstrcmp(part_ptr->cluster_name, cluster_name))
+			continue;
+
 		if (!xstrcmp(part_ptr->name, name)) {
 			j = 0;
 			while (part_ptr->node_inx[j] >= 0) {
@@ -2885,6 +2898,12 @@ display_it:
 				if (xstrcmp(part_ptr->name,
 					    spec_info->search_info->gchar_data))
 					continue;
+
+				if (spec_info->search_info->cluster_name &&
+				    xstrcmp(
+					part_ptr->cluster_name,
+					spec_info->search_info->cluster_name))
+					continue;
 				break;
 			case SEARCH_PARTITION_STATE:
 				if (spec_info->search_info->int_data == NO_VAL)
@@ -2905,6 +2924,11 @@ display_it:
 
 			if (xstrcmp(part_ptr->name,
 				    spec_info->search_info->gchar_data))
+				continue;
+
+			if (spec_info->search_info->cluster_name &&
+			    xstrcmp(part_ptr->cluster_name,
+				    spec_info->search_info->cluster_name))
 				continue;
 			break;
 		default:
@@ -2979,6 +3003,7 @@ extern void set_menus_part(void *arg, void *arg2, GtkTreePath *path, int type)
 extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 {
 	char *name = NULL;
+	char *cluster_name = NULL;
 	char *state = NULL;
 	char title[100];
 	int only_line = 0;
@@ -2988,6 +3013,7 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	GtkTreeIter par_iter;
 
 	gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
+	gtk_tree_model_get(model, iter, SORTID_CLUSTER_NAME, &cluster_name, -1);
 
 	switch(id) {
 	case JOB_PAGE:
@@ -3052,6 +3078,7 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 			popup_win = create_popup_info(PART_PAGE, id, title);
 	} else {
 		g_free(name);
+		g_free(cluster_name);
 		g_free(state);
 		gtk_window_present(GTK_WINDOW(popup_win->popup));
 		return;
@@ -3063,6 +3090,12 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	popup_win->model = model;
 	popup_win->iter = *iter;
 	popup_win->node_inx_id = SORTID_NODE_INX;
+
+	if (cluster_flags & CLUSTER_FLAG_FED) {
+		popup_win->spec_info->search_info->cluster_name = cluster_name;
+		cluster_name = NULL;
+	}
+	g_free(cluster_name);
 
 	switch (id) {
 	case JOB_PAGE:

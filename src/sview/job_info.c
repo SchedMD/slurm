@@ -4277,6 +4277,11 @@ display_it:
 			if (xstrcmp(search_info->gchar_data,
 				    job_ptr->partition))
 				continue;
+
+			if (search_info->cluster_name &&
+			    xstrcmp(search_info->cluster_name,
+				    job_ptr->cluster))
+				continue;
 			break;
 		case RESV_PAGE:
 			if (!job_ptr->resv_name
@@ -4389,7 +4394,7 @@ extern void set_menus_job(void *arg, void *arg2, GtkTreePath *path, int type)
 
 extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 {
-	char *name = NULL;
+	char *name = NULL, *cluster_name = NULL;
 	char title[100];
 	ListIterator itr = NULL;
 	popup_info_t *popup_win = NULL;
@@ -4418,6 +4423,7 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	jobid = atoi(offset);
 	g_free(tmp_jobid);
 	gtk_tree_model_get(model, iter, SORTID_JOBID_FORMATTED, &tmp_jobid, -1);
+	gtk_tree_model_get(model, iter, SORTID_CLUSTER_NAME, &cluster_name, -1);
 
 	gtk_tree_model_get(model, iter, SORTID_ALLOC, &stepid, -1);
 
@@ -4490,6 +4496,7 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 			popup_win = create_popup_info(JOB_PAGE, id, title);
 	} else {
 		gtk_window_present(GTK_WINDOW(popup_win->popup));
+		g_free(cluster_name);
 		return;
 	}
 
@@ -4499,6 +4506,12 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	popup_win->model = model;
 	popup_win->iter = *iter;
 	popup_win->node_inx_id = SORTID_NODE_INX;
+
+	if (cluster_flags & CLUSTER_FLAG_FED) {
+		popup_win->spec_info->search_info->cluster_name = cluster_name;
+		cluster_name = NULL;
+	}
+	g_free(cluster_name);
 
 	switch(id) {
 	case NODE_PAGE:

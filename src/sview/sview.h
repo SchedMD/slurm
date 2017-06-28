@@ -225,6 +225,7 @@ struct popup_positioner {
 
 typedef struct {
 	sview_search_type_t search_type;
+	gchar *cluster_name;
 	gchar *gchar_data;
 	int  int_data;
 	int  int_data2;
@@ -515,7 +516,7 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data);
 extern void specific_info_node(popup_info_t *popup_win);
 extern void set_menus_node(void *arg, void *arg2, GtkTreePath *path, int type);
 extern void popup_all_node(GtkTreeModel *model, GtkTreeIter *iter, int id);
-extern void popup_all_node_name(char *name, int id);
+extern void popup_all_node_name(char *name, int id, char *cluster_name);
 extern void admin_menu_node_name(char *name, GdkEventButton *event);
 extern void admin_node(GtkTreeModel *model, GtkTreeIter *iter, char *type);
 extern void admin_node_name(char *name, char *old_value, char *type);

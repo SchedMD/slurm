@@ -120,7 +120,7 @@ static gboolean _open_node(GtkWidget *widget, GdkEventButton *event,
 			   grid_button_t *grid_button)
 {
 	if (event->button == 1) {
-		popup_all_node_name(grid_button->node_name, INFO_PAGE);
+		popup_all_node_name(grid_button->node_name, INFO_PAGE, NULL);
 	} else if (event->button == 3) {
 		/* right click */
 		admin_menu_node_name(grid_button->node_name, event);

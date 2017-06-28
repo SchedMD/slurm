@@ -1709,6 +1709,7 @@ extern void destroy_search_info(void *arg)
 {
 	sview_search_info_t *search_info = (sview_search_info_t *)arg;
 	if (search_info) {
+		g_free(search_info->cluster_name);
 		if (search_info->gchar_data)
 			g_free(search_info->gchar_data);
 		search_info->gchar_data = NULL;

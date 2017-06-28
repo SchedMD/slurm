@@ -837,7 +837,8 @@ static void _selected_page(GtkMenuItem *menuitem,
 {
 	switch(display_data->extra) {
 	case NODE_PAGE:
-		popup_all_node_name(display_data->user_data, display_data->id);
+		popup_all_node_name(display_data->user_data, display_data->id,
+				    NULL);
 		break;
 	case ADMIN_PAGE:
 		admin_node_name(display_data->user_data,
@@ -2009,17 +2010,19 @@ extern void set_menus_node(void *arg, void *arg2, GtkTreePath *path, int type)
 
 extern void popup_all_node(GtkTreeModel *model, GtkTreeIter *iter, int id)
 {
-	char *name = NULL;
+	char *name = NULL, *cluster_name = NULL;
 
 	gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
+	gtk_tree_model_get(model, iter, SORTID_CLUSTER_NAME, &cluster_name, -1);
 	if (_DEBUG)
 		g_print("popup_all_node: name = %s\n", name);
-	popup_all_node_name(name, id);
+	popup_all_node_name(name, id, cluster_name);
 	/* this name gets g_strdup'ed in the previous function */
 	g_free(name);
+	g_free(cluster_name);
 }
 
-extern void popup_all_node_name(char *name, int id)
+extern void popup_all_node_name(char *name, int id, char *cluster_name)
 {
 	char title[100];
 	ListIterator itr = NULL;
@@ -2070,6 +2073,10 @@ extern void popup_all_node_name(char *name, int id)
 		else
 			popup_win = create_popup_info(NODE_PAGE, id, title);
 		popup_win->spec_info->search_info->gchar_data = g_strdup(name);
+
+		if (cluster_flags & CLUSTER_FLAG_FED)
+			popup_win->spec_info->search_info->cluster_name =
+				g_strdup(cluster_name);
 		if (!sview_thread_new((gpointer)popup_thr, popup_win,
 				      false, &error)) {
 			g_printerr ("Failed to create node popup thread: "
