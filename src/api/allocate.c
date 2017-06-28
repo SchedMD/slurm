@@ -500,7 +500,7 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
 		int errnum = errno;
 		destroy_forward(&req_msg.forward);
 		destroy_forward(&resp_msg.forward);
-		if (!immediate_flag)
+		if (listen)
 			_destroy_allocation_response_socket(listen);
 		iter = list_iterator_create(job_req_list);
 		while ((req = (job_desc_msg_t *)list_next(iter))) {
@@ -555,7 +555,7 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
 
 	destroy_forward(&req_msg.forward);
 	destroy_forward(&resp_msg.forward);
-	if (!immediate_flag)
+	if (listen)
 		_destroy_allocation_response_socket(listen);
 	iter = list_iterator_create(job_req_list);
 	while ((req = (job_desc_msg_t *)list_next(iter))) {
