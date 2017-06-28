@@ -159,10 +159,8 @@ typedef struct slurmd_config {
 
 	List		starting_steps; /* steps that are starting but cannot
 					   receive RPCs yet */
-	pthread_mutex_t	starting_steps_lock;
 	pthread_cond_t	starting_steps_cond;
 	List		prolog_running_jobs;
-	pthread_mutex_t	prolog_running_lock;
 	pthread_cond_t	prolog_running_cond;
 	char         *plugstack;	/* path to SPANK config file	*/
 	uint16_t      kill_wait;	/* seconds between SIGXCPU to SIGKILL

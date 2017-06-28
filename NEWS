@@ -7,6 +7,8 @@ documents those changes that are of interest to users and administrators.
  -- If a job requests a specific memory requirement then gets something else
     from the slurmctld make sure the step allocation is made aware of it.
  -- Fix missing initialization in slurmd.
+ -- Fix potential degradation when running HTC (> 100 jobs a sec) like
+    workflows through the slurmd.
 
 * Changes in Slurm 17.02.5
 ==========================
