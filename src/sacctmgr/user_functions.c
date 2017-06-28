@@ -870,7 +870,9 @@ extern int sacctmgr_add_user(int argc, char **argv)
 			db_conn, my_uid, &query_assoc_cond);
 
 		if (!local_assoc_list) {
-			exit_code=1;
+			xfree(default_acct);
+			xfree(default_wckey);
+			exit_code = 1;
 			fprintf(stderr, " Problem getting assocs "
 				"from database.  Contact your admin.\n");
 			FREE_NULL_LIST(local_user_list);
