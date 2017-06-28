@@ -533,7 +533,7 @@ static void _opt_default(void)
 	launch_params = slurm_get_launch_params();
 	if (launch_params && strstr(launch_params, "mem_sort"))
 		opt.mem_bind_type	|= MEM_BIND_SORT;
-	launch_params			= NULL;
+	xfree(launch_params);
 	opt.licenses			= NULL;
 	opt.mail_type			= 0;
 	opt.mail_user			= NULL;
