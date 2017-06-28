@@ -112,7 +112,7 @@ void slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *job, int statval)
 	fprintf(stderr, "cpu_bind%s=%s - "
 			"%s, task %2u %2u [%u]: mask 0x%s%s%s\n",
 			units, bind_type,
-			conf->hostname,
+			conf->node_name,
 			task_gid,
 			task_lid,
 			mypid,
