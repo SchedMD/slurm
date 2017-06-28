@@ -258,7 +258,7 @@ static bool job_limits_loaded = false;
  */
 #define FINI_JOB_CNT 256
 static pthread_mutex_t fini_mutex = PTHREAD_MUTEX_INITIALIZER;
-static uint32_t fini_job_id[FINI_JOB_CNT];
+static uint32_t fini_job_id[FINI_JOB_CNT] = {0};
 static int next_fini_job_inx = 0;
 
 /* NUM_PARALLEL_SUSP_JOBS controls the number of jobs that can be suspended or
@@ -268,13 +268,13 @@ static int next_fini_job_inx = 0;
  * suspended at one time. */
 #define NUM_PARALLEL_SUSP_STEPS 8
 static pthread_mutex_t suspend_mutex = PTHREAD_MUTEX_INITIALIZER;
-static uint32_t job_suspend_array[NUM_PARALLEL_SUSP_JOBS];
+static uint32_t job_suspend_array[NUM_PARALLEL_SUSP_JOBS] = {0};
 static int job_suspend_size = 0;
 
 #define JOB_STATE_CNT 64
 static pthread_mutex_t job_state_mutex   = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  job_state_cond    = PTHREAD_COND_INITIALIZER;
-static uint32_t active_job_id[JOB_STATE_CNT];
+static uint32_t active_job_id[JOB_STATE_CNT] = {0};
 
 static pthread_mutex_t prolog_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t prolog_serial_mutex = PTHREAD_MUTEX_INITIALIZER;
