@@ -1559,7 +1559,7 @@ extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 
 extern popup_info_t *create_popup_info(int type, int dest_type, char *title)
 {
-	GtkScrolledWindow *window = NULL;
+	GtkScrolledWindow *window = NULL, *grid_window = NULL;
 	GtkBin *bin = NULL;
 	GtkViewport *view = NULL;
 	GtkWidget *label = NULL;
@@ -1631,11 +1631,11 @@ extern popup_info_t *create_popup_info(int type, int dest_type, char *title)
 	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup_win->popup)->vbox),
 			   popup_win->event_box, false, false, 0);
 
-	window = create_scrolled_window();
-	gtk_scrolled_window_set_policy(window,
+	grid_window = create_scrolled_window();
+	gtk_scrolled_window_set_policy(grid_window,
 				       GTK_POLICY_NEVER,
 				       GTK_POLICY_AUTOMATIC);
-	bin = GTK_BIN(&window->container);
+	bin = GTK_BIN(&grid_window->container);
 	view = GTK_VIEWPORT(bin->child);
 	bin = GTK_BIN(&view->bin);
 	popup_win->grid_table = GTK_TABLE(bin->child);
@@ -1643,7 +1643,7 @@ extern popup_info_t *create_popup_info(int type, int dest_type, char *title)
 
 	table = gtk_table_new(1, 2, false);
 
-	gtk_table_attach(GTK_TABLE(table), GTK_WIDGET(window), 0, 1, 0, 1,
+	gtk_table_attach(GTK_TABLE(table), GTK_WIDGET(grid_window), 0, 1, 0, 1,
 			 GTK_SHRINK, GTK_EXPAND | GTK_FILL,
 			 0, 0);
 
@@ -1671,6 +1671,10 @@ extern popup_info_t *create_popup_info(int type, int dest_type, char *title)
 	gtk_window_move(GTK_WINDOW(popup_win->popup),
 			popup_pos.x, popup_pos.y);
 	gtk_widget_show_all(popup_win->popup);
+
+	if (cluster_flags & CLUSTER_FLAG_FED)
+		gtk_widget_hide(GTK_WIDGET(grid_window));
+
 	return popup_win;
 }
 
