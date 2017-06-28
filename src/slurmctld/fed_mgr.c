@@ -609,8 +609,8 @@ static void *_job_watch_thread(void *arg)
 		slurm_mutex_lock(&job_watch_mutex);
 		if (!slurmctld_config.shutdown_time && !stop_job_watch_thread) {
 			ts.tv_sec  = time(NULL) + 5;
-			pthread_cond_timedwait(&job_watch_cond,
-					       &job_watch_mutex, &ts);
+			slurm_cond_timedwait(&job_watch_cond,
+					     &job_watch_mutex, &ts);
 		}
 		slurm_mutex_unlock(&job_watch_mutex);
 
@@ -2057,8 +2057,8 @@ static void *_fed_job_update_thread(void *arg)
 	while (!slurmctld_config.shutdown_time) {
 		slurm_mutex_lock(&job_update_mutex);
 		ts.tv_sec  = time(NULL) + 2;
-		pthread_cond_timedwait(&job_update_cond,
-				       &job_update_mutex, &ts);
+		slurm_cond_timedwait(&job_update_cond,
+				     &job_update_mutex, &ts);
 		slurm_mutex_unlock(&job_update_mutex);
 
 		if (slurmctld_config.shutdown_time)
@@ -2099,7 +2099,7 @@ static void *_agent_thread(void *arg)
 		slurm_mutex_lock(&agent_mutex);
 		if (!slurmctld_config.shutdown_time && !agent_queue_size) {
 			ts.tv_sec  = time(NULL) + 2;
-			pthread_cond_timedwait(&agent_cond, &agent_mutex, &ts);
+			slurm_cond_timedwait(&agent_cond, &agent_mutex, &ts);
 		}
 		agent_queue_size = 0;
 		slurm_mutex_unlock(&agent_mutex);
