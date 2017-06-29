@@ -226,7 +226,10 @@ time_t	srun_begin_time = 0;
 static bool mpi_initialized = false;
 typedef struct env_vars env_vars_t;
 
-static int _get_task_count(void);
+static opt_t *_get_first_opt(int pack_offset);
+static opt_t *_get_next_opt(int pack_offset, opt_t *opt_last);
+
+static int  _get_task_count(void);
 
 /* Get a decimal integer from arg */
 static int  _get_int(const char *arg, const char *what, bool positive);
@@ -254,6 +257,122 @@ static void  _usage(void);
 static bool  _valid_node_list(char **node_list_pptr);
 
 /*---[ end forward declarations of static functions ]---------------------*/
+
+/*
+ * Find first option structure for a given pack job offset
+ * pack_offset IN - Offset into pack job or -1 if regular job
+ * RET - Pointer to option structure or NULL if none found
+ */
+static opt_t *_get_first_opt(int pack_offset)
+{
+	ListIterator opt_iter;
+	opt_t *opt_local;
+
+	if (!opt_list) {
+		if (opt.pack_grp_bits &&
+		    (pack_offset < bit_size(opt.pack_grp_bits)) &&
+		    bit_test(opt.pack_grp_bits, pack_offset))
+			return &opt;
+		return NULL;
+	}
+
+	opt_iter = list_iterator_create(opt_list);
+	while ((opt_local = (opt_t *) list_next(opt_iter))) {
+		if (opt_local->pack_grp_bits &&
+		    (pack_offset < bit_size(opt_local->pack_grp_bits)) &&
+		    bit_test(opt_local->pack_grp_bits, pack_offset))
+			break;
+	}
+	list_iterator_destroy(opt_iter);
+
+	return opt_local;
+}
+
+/*
+ * Find next option structure for a given pack job offset
+ * pack_offset IN - Offset into pack job or -1 if regular job
+ * opt_last IN - past option structure found for this pack offset
+ * RET - Pointer to option structure or NULL if none found
+ */
+static opt_t *_get_next_opt(int pack_offset, opt_t *opt_last)
+{
+	ListIterator opt_iter;
+	opt_t *opt_local;
+	bool found_last = false;
+
+	if (!opt_list)
+		return NULL;
+
+	opt_iter = list_iterator_create(opt_list);
+	while ((opt_local = (opt_t *) list_next(opt_iter))) {
+		if (!found_last) {
+			if (opt_last == opt_local)
+				found_last = true;
+			continue;
+		}
+
+		if (opt_local->pack_grp_bits &&
+		    (pack_offset < bit_size(opt_local->pack_grp_bits)) &&
+		    bit_test(opt_local->pack_grp_bits, pack_offset))
+			break;
+	}
+	list_iterator_destroy(opt_iter);
+
+	return opt_local;
+}
+
+/*
+ * Find option structure for a given pack job offset
+ * pack_offset IN - Offset into pack job, -1 if regular job, -2 to reset
+ * RET - Pointer to next matching option structure or NULL if none found
+ */
+extern opt_t *get_next_opt(int pack_offset)
+{
+	static int offset_last = -2;
+	static opt_t *opt_last = NULL;
+
+	if (pack_offset == -2) {
+		offset_last = -2;
+		opt_last = NULL;
+		return NULL;
+	}
+
+	if (pack_offset < 0)
+		pack_offset = 0;
+	if (offset_last != pack_offset) {
+		offset_last = pack_offset;
+		opt_last = _get_first_opt(pack_offset);
+	} else {
+		opt_last = _get_next_opt(pack_offset, opt_last);
+	}
+	return opt_last;
+}
+
+/*
+ * Return maximum pack_group value for any step launch option request
+ */
+extern int get_max_pack_group(void)
+{
+	ListIterator opt_iter;
+	opt_t *opt_local;
+	int max_pack_offset = 0, pack_offset = 0;
+
+	if (opt_list) {
+		opt_iter = list_iterator_create(opt_list);
+		while ((opt_local = (opt_t *) list_next(opt_iter))) {
+			if (opt_local->pack_grp_bits)
+				pack_offset = bit_fls(opt_local->pack_grp_bits);
+			if (pack_offset >= max_pack_offset)
+				max_pack_offset = pack_offset;
+		}
+		list_iterator_destroy(opt_iter);
+	} else {
+		if (opt.pack_grp_bits)
+			max_pack_offset = bit_fls(opt.pack_grp_bits);
+	}
+
+	return max_pack_offset;
+}
 
 /*
  * process options:
@@ -2247,7 +2366,7 @@ static bool _opt_verify(void)
 {
 	bool verified = true;
 	hostlist_t hl = NULL;
-	int hl_cnt = 0;
+	int hl_cnt = 0, i;
 
 	/*
 	 *  Do not set slurmd debug level higher than DEBUG2,
@@ -2635,6 +2754,36 @@ static bool _opt_verify(void)
 	if (!mpi_initialized) {
 		mpi_type = slurm_get_mpi_default();
 		(void) mpi_hook_client_init(NULL);
+	}
+
+	opt.pack_grp_bits = bit_alloc(MAX_PACK_COUNT);
+	if (opt.pack_group) {
+		char *tmp = NULL;
+		if (opt.pack_group[0] == '[')
+			tmp = xstrdup(opt.pack_group);
+		else
+			xstrfmtcat(tmp, "[%s]", opt.pack_group);
+		hl = hostlist_create(tmp);
+		if (!hl) {
+			error("Invalid --pack-group value: %s", opt.pack_group);
+			exit(error_exit);
+		}
+		xfree(tmp);
+		while ((tmp = hostlist_shift(hl))) {
+			char *end_ptr = NULL;
+			i = strtol(tmp, &end_ptr, 10);
+			if ((i < 0) || (i >= MAX_PACK_COUNT) ||
+			    (end_ptr[0] != '\0')) {
+				error("Invalid --pack-group value: %s",
+				      opt.pack_group);
+				exit(error_exit);
+			}
+			bit_set(opt.pack_grp_bits, i);
+			free(tmp);
+		}
+		hostlist_destroy(hl);
+	} else {
+		bit_set(opt.pack_grp_bits, 0);
 	}
 
 	return verified;
