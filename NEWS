@@ -10,6 +10,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix potential degradation when running HTC (> 100 jobs a sec) like
     workflows through the slurmd.
  -- Fix race condition which could leave a stepd hung on shutdown.
+ -- CRAY - Add configuration for ATP to the ansible play script.
 
 * Changes in Slurm 17.02.5
 ==========================

@@ -13,6 +13,7 @@ noinst_DATA = slurm_playbook.yaml
 slurm_playbook.yaml: slurm_playbook.yaml.in Makefile
 	sed -e 's|@prefix[@]|$(prefix)|g' \
 	    -e 's|@bindir[@]|$(bindir)|g' \
+	    -e 's|@sysconfdir[@]|$(sysconfdir)|g' \
 	    ${abs_srcdir}/slurm_playbook.yaml.in >slurm_playbook.yaml
 
 clean-generic:
