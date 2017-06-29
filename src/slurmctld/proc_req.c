@@ -1278,7 +1278,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 	list_iterator_destroy(iter);
 
 	if (error_code == SLURM_SUCCESS) {
-//FIXME: Validate limits on pack-job as a whole (to the extent possible)
+//FIXME-PACK: Validate limits on pack-job as a whole (to the extent possible)
 	}
 
 
@@ -3846,7 +3846,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	list_iterator_destroy(iter);
 
 	if (!reject_job) {
-//FIXME: Validate limits on pack-job as a whole (to the extent possible)
+//FIXME-PACK: Validate limits on pack-job as a whole (to the extent possible)
 	}
 
 	if ((pack_job_id == 0) && !reject_job) {

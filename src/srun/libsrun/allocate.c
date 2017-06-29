@@ -479,24 +479,26 @@ extern int allocate_test(void)
  * Returns a pointer to a resource_allocation_response_msg which must
  * be freed with slurm_free_resource_allocation_response_msg()
  */
-resource_allocation_response_msg_t *allocate_nodes(bool handle_signals)
+extern resource_allocation_response_msg_t *
+	allocate_nodes(bool handle_signals, opt_t *opt_local)
+
 {
 	resource_allocation_response_msg_t *resp = NULL;
 	job_desc_msg_t *j;
 	slurm_allocation_callbacks_t callbacks;
 	int i;
 
-	if (opt.relative_set && opt.relative)
+	if (opt_local->relative_set && opt_local->relative)
 		fatal("--relative option invalid for job allocation request");
 
 	if ((j = _job_desc_msg_create_from_opts(&opt)) == NULL)
 		return NULL;
 
-	if (opt.clusters &&
-	    (slurmdb_get_first_avail_cluster(j, opt.clusters,
+	if (opt_local->clusters &&
+	    (slurmdb_get_first_avail_cluster(j, opt_local->clusters,
 					     &working_cluster_rec)
 	     != SLURM_SUCCESS)) {
-		print_db_notok(opt.clusters, 0);
+		print_db_notok(opt_local->clusters, 0);
 		return NULL;
 	}
 
@@ -504,11 +506,11 @@ resource_allocation_response_msg_t *allocate_nodes(bool handle_signals)
 
 	/* Do not re-use existing job id when submitting new job
 	 * from within a running job */
-	if ((j->job_id != NO_VAL) && !opt.jobid_set) {
+	if ((j->job_id != NO_VAL) && !opt_local->jobid_set) {
 		info("WARNING: Creating SLURM job allocation from within "
 		     "another allocation");
 		info("WARNING: You are attempting to initiate a second job");
-		if (!opt.jobid_set)	/* Let slurmctld set jobid */
+		if (!opt_local->jobid_set)	/* Let slurmctld set jobid */
 			j->job_id = NO_VAL;
 	}
 	callbacks.ping = _ping_handler;
@@ -530,7 +532,8 @@ resource_allocation_response_msg_t *allocate_nodes(bool handle_signals)
 	}
 
 	while (!resp) {
-		resp = slurm_allocate_resources_blocking(j, opt.immediate,
+		resp = slurm_allocate_resources_blocking(j,
+							 opt_local->immediate,
 							 _set_pending_job_id);
 		if (destroy_job) {
 			/* cancelled by signal */
@@ -555,12 +558,12 @@ resource_allocation_response_msg_t *allocate_nodes(bool handle_signals)
 		 * NOTE: pn_min_memory here is an int64, not uint64. These
 		 * operations may have some bizarre side effects
 		 */
-		if (opt.pn_min_memory != NO_VAL64)
-			opt.pn_min_memory = (resp->pn_min_memory &
-					     (~MEM_PER_CPU));
-		else if (opt.mem_per_cpu != NO_VAL64)
-			opt.mem_per_cpu = (resp->pn_min_memory &
-					   (~MEM_PER_CPU));
+		if (opt_local->pn_min_memory != NO_VAL64)
+			opt_local->pn_min_memory = (resp->pn_min_memory &
+						   (~MEM_PER_CPU));
+		else if (opt_local->mem_per_cpu != NO_VAL64)
+			opt_local->mem_per_cpu = (resp->pn_min_memory &
+						 (~MEM_PER_CPU));
 
 #ifdef HAVE_BG
 		uint32_t node_cnt = 0;
@@ -568,8 +571,8 @@ resource_allocation_response_msg_t *allocate_nodes(bool handle_signals)
 					    SELECT_JOBDATA_NODE_CNT,
 					    &node_cnt);
 		if ((node_cnt == 0) || (node_cnt == NO_VAL)) {
-			opt.min_nodes = node_cnt;
-			opt.max_nodes = node_cnt;
+			opt_local->min_nodes = node_cnt;
+			opt_local->max_nodes = node_cnt;
 		} /* else we just use the original request */
 
 		if (!_wait_bluegene_block_ready(resp)) {
@@ -579,8 +582,8 @@ resource_allocation_response_msg_t *allocate_nodes(bool handle_signals)
 			goto relinquish;
 		}
 #else
-		opt.min_nodes = resp->node_cnt;
-		opt.max_nodes = resp->node_cnt;
+		opt_local->min_nodes = resp->node_cnt;
+		opt_local->max_nodes = resp->node_cnt;
 
 		if (resp->working_cluster_rec)
 			slurm_setup_remote_working_cluster(resp);
@@ -667,8 +670,8 @@ List allocate_pack_nodes(bool handle_signals)
 		return NULL;
 	}
 
-	if (opt.clusters &&
-	    (slurmdb_get_first_pack_cluster(job_req_list, opt.clusters,
+	if (opt_local->clusters &&
+	    (slurmdb_get_first_pack_cluster(job_req_list, opt_local->clusters,
 					    &working_cluster_rec)
 	     != SLURM_SUCCESS)) {
 		print_db_notok(opt_local->clusters, 0);
@@ -696,7 +699,7 @@ List allocate_pack_nodes(bool handle_signals)
 
 	while (!job_resp_list) {
 		job_resp_list = slurm_allocate_pack_job_blocking(job_req_list,
-				 opt.immediate, _set_pending_job_id);
+				 opt_local->immediate, _set_pending_job_id);
 		if (destroy_job) {
 			/* cancelled by signal */
 			break;

@@ -42,13 +42,13 @@
 #include "src/srun/libsrun/srun_job.h"
 
 /*
- * Create an filename from a (probably user supplied) filename format.
- * fname_create() will expand the format as much as possible for srun,
- * leaving node or task specific format specifiers for the remote
- * slurmd to handle.
+ * Fill in as much of filename as possible from srun, update
+ * filename type to one of the io types ALL, NONE, PER_TASK, ONE
+ * These options should mirror those used with "sbatch" (parsed in
+ * _batch_path_check found in src/slurmd/common/fname.c)
  */
+extern fname_t *fname_create(srun_job_t *job, char *format, int task_count);
 
-fname_t *fname_create(srun_job_t *job, char *format);
 void fname_destroy(fname_t *fname);
 
 char * fname_remote_string (fname_t *fname);

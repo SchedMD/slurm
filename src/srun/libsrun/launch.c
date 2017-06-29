@@ -393,7 +393,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	/*
 	 * Recreate filenames which may depend upon step id
 	 */
-	job_update_io_fnames(job);
+	job_update_io_fnames(job, opt_local);
 
 	return SLURM_SUCCESS;
 }

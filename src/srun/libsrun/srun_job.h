@@ -150,7 +150,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 			    bool slurm_started, bool handle_signals);
 
 extern void pre_launch_srun_job(srun_job_t *job, bool slurm_started,
-				bool handle_signals);
+				bool handle_signals, opt_t *opt_local);
 
 extern void fini_srun(srun_job_t *job, bool got_alloc, uint32_t *global_rc,
 		      bool slurm_started);
@@ -158,7 +158,7 @@ extern void fini_srun(srun_job_t *job, bool got_alloc, uint32_t *global_rc,
 /*
  *  Update job filenames and modes for stderr, stdout, and stdin.
  */
-void    job_update_io_fnames(srun_job_t *j);
+extern void job_update_io_fnames(srun_job_t *job, opt_t *opt_local);
 
 /* Set up port to handle messages from slurmctld */
 int slurmctld_msg_init(void);

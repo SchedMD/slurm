@@ -58,7 +58,8 @@ slurmctld_comm_addr_t slurmctld_comm_addr;
  * Returns a pointer to a resource_allocation_response_msg which must
  * be freed with slurm_free_resource_allocation_response_msg()
  */
-resource_allocation_response_msg_t * allocate_nodes(bool handle_signals);
+extern resource_allocation_response_msg_t *
+	allocate_nodes(bool handle_signals, opt_t *opt_local);
 
 /*
  * Allocate nodes for heterogeneous/pack job from the slurm controller -- 

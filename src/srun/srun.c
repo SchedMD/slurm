@@ -110,6 +110,7 @@ typedef struct _launch_app_data
 	bool		got_alloc;
 	srun_job_t *	job;
 	opt_t *		opt_local;
+	int		pack_offset;
 	int *		step_cnt;
 	pthread_cond_t *step_cond;
 	pthread_mutex_t *step_mutex;
@@ -191,18 +192,34 @@ int srun(int ac, char **av)
 
 static void *_launch_one_app(void *data)
 {
+	static pthread_mutex_t launch_mutex = PTHREAD_MUTEX_INITIALIZER;
+	static pthread_cond_t  launch_cond  = PTHREAD_COND_INITIALIZER;
+	static bool            launch_fini  = false;
 	_launch_app_data_t *opts = (_launch_app_data_t *) data;
 	opt_t *opt_local = opts->opt_local;
 	srun_job_t *job  = opts->job;
 	bool got_alloc   = opts->got_alloc;
+	int pack_offset  = opts->pack_offset;
 	slurm_step_io_fds_t cio_fds = SLURM_STEP_IO_FDS_INITIALIZER;
 	slurm_step_launch_callbacks_t step_callbacks;
 
 	memset(&step_callbacks, 0, sizeof(step_callbacks));
 	step_callbacks.step_signal = launch_g_fwd_signal;
 
+	if (pack_offset < 1) {
+		pre_launch_srun_job(job, 0, 1, opt_local);
+		slurm_mutex_lock(&launch_mutex);
+		launch_fini = true;
+		slurm_cond_broadcast(&launch_cond);
+		slurm_mutex_unlock(&launch_mutex);
+	} else {
+		slurm_mutex_lock(&launch_mutex);
+		while (!launch_fini)
+			slurm_cond_wait(&launch_cond, &launch_mutex);
+		slurm_mutex_unlock(&launch_mutex);
+	}
+
 relaunch:
-	pre_launch_srun_job(job, 0, 1);
 	launch_common_set_stdio_fds(job, &cio_fds, opt_local);
 
 	if (!launch_g_step_launch(job, &cio_fds, &global_rc, &step_callbacks,
@@ -228,7 +245,7 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 	_launch_app_data_t *opts;
 	pthread_attr_t attr_steps;
 	pthread_t thread_steps = (pthread_t) 0;
-	int step_cnt = 0;
+	int step_cnt = 0, pack_offset = 0;
 	pthread_mutex_t step_mutex = PTHREAD_MUTEX_INITIALIZER;
 	pthread_cond_t step_cond   = PTHREAD_COND_INITIALIZER;
 	srun_job_t *first_job = NULL;
@@ -253,12 +270,13 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 			if (!first_job)
 				first_job = job;
 			opts = xmalloc(sizeof(_launch_app_data_t));
-			opts->got_alloc  = got_alloc;
-			opts->job        = job;
-			opts->opt_local  = opt_local;
-			opts->step_cond  = &step_cond;
-			opts->step_cnt   = &step_cnt;
-			opts->step_mutex = &step_mutex;
+			opts->got_alloc   = got_alloc;
+			opts->job         = job;
+			opts->opt_local   = opt_local;
+			opts->pack_offset = pack_offset++;
+			opts->step_cond   = &step_cond;
+			opts->step_cnt    = &step_cnt;
+			opts->step_mutex  = &step_mutex;
 			while (pthread_create(&thread_steps,
 					      &attr_steps, _launch_one_app,
 					      (void *) opts)) {
@@ -282,9 +300,10 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 			fini_srun(first_job, got_alloc, &global_rc, 0);
 	} else {
 		opts = xmalloc(sizeof(_launch_app_data_t));
-		opts->opt_local = &opt;
-		opts->job = job;
-		opts->got_alloc = got_alloc;
+		opts->got_alloc   = got_alloc;
+		opts->job         = job;
+		opts->opt_local   = &opt;
+		opts->pack_offset = -1;
 		_launch_one_app(opts);
 		fini_srun(job, got_alloc, &global_rc, 0);
 	}

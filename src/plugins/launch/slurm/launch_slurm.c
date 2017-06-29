@@ -645,6 +645,7 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 		|| (callbacks.step_signal == launch_g_fwd_signal))) {
 		callbacks.task_finish = _task_finish;
 		if (!opt_save) {
+//FIXME-PACK: Race condition for which step starts first
 			/*
 			 * Save opt_local paramters since _task_finish()
 			 * will lack the values
@@ -659,7 +660,7 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	update_job_state(job, SRUN_JOB_LAUNCHING);
 	launch_start_time = time(NULL);
 	if (!first_job) {
-//FIXME: Race condition for which step starts first. See _launch_one_app() in srun.c
+//FIXME-PACK: Race condition for which step starts first. See _launch_one_app() in srun.c
 		first_job = job;
 } if (1) {
 		if (slurm_step_launch(job->step_ctx, &launch_params,
@@ -715,12 +716,12 @@ extern int launch_p_step_wait(srun_job_t *job, bool got_alloc, opt_t *opt_local,
 {
 	int rc = 0;
 
-//FIXME: can we create multiple steps in a single RPC or use threads?
+//FIXME-PACK: can we create multiple steps in a single RPC or use threads?
 	slurm_step_launch_wait_finish(job->step_ctx);
 	if ((MPIR_being_debugged == 0) && retry_step_begin &&
 	    (retry_step_cnt < MAX_STEP_RETRIES)) {
 		retry_step_begin = false;
-//FIXME: When to destroy?
+//FIXME-PACK: When to destroy?
 //		slurm_step_ctx_destroy(job->step_ctx);
 		if (got_alloc) 
 			rc = create_job_step(job, true, opt_local, pack_offset);
@@ -728,7 +729,7 @@ extern int launch_p_step_wait(srun_job_t *job, bool got_alloc, opt_t *opt_local,
 			rc = create_job_step(job, false, opt_local,pack_offset);
 		if (rc < 0)
 			exit(error_exit);
-//FIXME: When to destroy?
+//FIXME-PACK: When to destroy?
 //		task_state_destroy(task_state);
 		rc = -1;
 	}
