@@ -144,9 +144,11 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 	slurmdb_update_object_t *update_object = NULL;
 	slurmdb_assoc_rec_t *assoc = object;
 	slurmdb_qos_rec_t *qos = object;
+#ifndef NDEBUG
 	slurmdb_tres_rec_t *tres = object;
 	slurmdb_res_rec_t *res = object;
 	slurmdb_wckey_rec_t *wckey = object;
+#endif
 	ListIterator itr = NULL;
 
 	if (!update_list) {
