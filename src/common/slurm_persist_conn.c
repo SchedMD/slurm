@@ -588,7 +588,7 @@ extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
 	} else {
 		Buf buffer = slurm_persist_recv_msg(persist_conn);
 		persist_msg_t msg;
-		uint16_t flags = persist_conn->flags;
+		slurm_persist_conn_t persist_conn_tmp;
 
 		if (!buffer) {
 			error("%s: No response to persist_init", __func__);
@@ -596,11 +596,12 @@ extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
 			goto end_it;
 		}
 		memset(&msg, 0, sizeof(persist_msg_t));
+		memcpy(&persist_conn_tmp, persist_conn,
+		       sizeof(slurm_persist_conn_t));
 		/* The first unpack is done the same way for dbd or normal
 		 * communication . */
-		persist_conn->flags &= (~PERSIST_FLAG_DBD);
-		rc = slurm_persist_msg_unpack(persist_conn, &msg, buffer);
-		persist_conn->flags = flags;
+		persist_conn_tmp.flags &= (~PERSIST_FLAG_DBD);
+		rc = slurm_persist_msg_unpack(&persist_conn_tmp, &msg, buffer);
 		free_buf(buffer);
 
 		resp = (persist_rc_msg_t *)msg.data;
@@ -937,7 +938,10 @@ extern Buf slurm_persist_msg_pack(slurm_persist_conn_t *persist_conn,
 		buffer = init_buf(BUF_SIZE);
 
 		pack16(req_msg->msg_type, buffer);
-		pack_msg(&msg, buffer);
+		if (pack_msg(&msg, buffer) != SLURM_SUCCESS) {
+			free_buf(buffer);
+			return NULL;
+                }
 	}
 
 	return buffer;
