@@ -731,29 +731,55 @@ extern int bb_pack_usage(uid_t uid, bb_state_t *state_ptr, Buf buffer,
 }
 
 /* Translate a burst buffer size specification in string form to numeric form,
- * recognizing various sufficies (MB, GB, TB, PB, and Nodes). Default units
- * are bytes. */
+ * recognizing various (case insensitive) sufficies:
+ * K/KiB, M/MiB, G/GiB, T/TiB, P/PiB for powers of 1024
+ * KB, MB, GB, TB, PB for powers of 1000
+ * N/Node/Nodes will consider the size in nodes
+ * Default units are bytes. */
 extern uint64_t bb_get_size_num(char *tok, uint64_t granularity)
 {
-	char *end_ptr = NULL;
-	int64_t bb_size_i;
+	char *unit = NULL;
+	uint64_t bb_size_i;
 	uint64_t bb_size_u = 0;
 
-	bb_size_i = (int64_t) strtoll(tok, &end_ptr, 10);
+	bb_size_i = (uint64_t) strtoull(tok, &unit, 10);
 	if (bb_size_i > 0) {
-		bb_size_u = (uint64_t) bb_size_i;
-		if ((end_ptr[0] == 'k') || (end_ptr[0] == 'K')) {
+		bb_size_u = bb_size_i;
+		strtok(unit, " ");
+		if (!xstrcasecmp(unit, "k") || !xstrcasecmp(unit, "kib")) {
 			bb_size_u *= 1024;
-		} else if ((end_ptr[0] == 'm') || (end_ptr[0] == 'M')) {
+		} else if (!xstrcasecmp(unit, "kb")) {
+			bb_size_u *= 1000;
+
+		} else if (!xstrcasecmp(unit, "m") ||
+			   !xstrcasecmp(unit, "mib")) {
 			bb_size_u *= ((uint64_t)1024 * 1024);
-		} else if ((end_ptr[0] == 'g') || (end_ptr[0] == 'G')) {
+		} else if (!xstrcasecmp(unit, "mb")) {
+			bb_size_u *= ((uint64_t)1000 * 1000);
+
+		} else if (!xstrcasecmp(unit, "g") ||
+			   !xstrcasecmp(unit, "gib")) {
 			bb_size_u *= ((uint64_t)1024 * 1024 * 1024);
-		} else if ((end_ptr[0] == 't') || (end_ptr[0] == 'T')) {
+		} else if (!xstrcasecmp(unit, "gb")) {
+			bb_size_u *= ((uint64_t)1000 * 1000 * 1000);
+
+		} else if (!xstrcasecmp(unit, "t") ||
+			   !xstrcasecmp(unit, "tib")) {
 			bb_size_u *= ((uint64_t)1024 * 1024 * 1024 * 1024);
-		} else if ((end_ptr[0] == 'p') || (end_ptr[0] == 'P')) {
+		} else if (!xstrcasecmp(unit, "tb")) {
+			bb_size_u *= ((uint64_t)1000 * 1000 * 1000 * 1000);
+
+		} else if (!xstrcasecmp(unit, "p") ||
+			   !xstrcasecmp(unit, "pib")) {
 			bb_size_u *= ((uint64_t)1024 * 1024 * 1024 * 1024
 				      * 1024);
-		} else if ((end_ptr[0] == 'n') || (end_ptr[0] == 'N')) {
+		} else if (!xstrcasecmp(unit, "pb")) {
+			bb_size_u *= ((uint64_t)1000 * 1000 * 1000 * 1000
+				      * 1000);
+
+		} else if (!xstrcasecmp(unit, "n") ||
+			   !xstrcasecmp(unit, "node") ||
+			   !xstrcasecmp(unit, "nodes")) {
 			bb_size_u |= BB_SIZE_IN_NODES;
 			granularity = 1;
 		}
@@ -768,7 +794,7 @@ extern uint64_t bb_get_size_num(char *tok, uint64_t granularity)
 }
 
 /* Translate a burst buffer size specification in numeric form to string form,
- * recognizing various sufficies (MB, GB, TB, PB, and Nodes). Default units
+ * appending various sufficies (KiB, MiB, GB, TB, PB, and Nodes). Default units
  * are bytes. */
 extern char *bb_get_size_str(uint64_t size)
 {
@@ -779,21 +805,42 @@ extern char *bb_get_size_str(uint64_t size)
 	} else if (size & BB_SIZE_IN_NODES) {
 		size &= (~BB_SIZE_IN_NODES);
 		snprintf(size_str, sizeof(size_str), "%"PRIu64"N", size);
+
 	} else if ((size % ((uint64_t)1024 * 1024 * 1024 * 1024 * 1024)) == 0) {
 		size /= ((uint64_t)1024 * 1024 * 1024 * 1024 * 1024);
+		snprintf(size_str, sizeof(size_str), "%"PRIu64"PiB", size);
+	} else if ((size % ((uint64_t)1000 * 1000 * 1000 * 1000 * 1000)) == 0) {
+		size /= ((uint64_t)1000 * 1000 * 1000 * 1000 * 1000);
 		snprintf(size_str, sizeof(size_str), "%"PRIu64"PB", size);
+
 	} else if ((size % ((uint64_t)1024 * 1024 * 1024 * 1024)) == 0) {
 		size /= ((uint64_t)1024 * 1024 * 1024 * 1024);
+		snprintf(size_str, sizeof(size_str), "%"PRIu64"TiB", size);
+	} else if ((size % ((uint64_t)1000 * 1000 * 1000 * 1000)) == 0) {
+		size /= ((uint64_t)1000 * 1000 * 1000 * 1000);
 		snprintf(size_str, sizeof(size_str), "%"PRIu64"TB", size);
+
 	} else if ((size % ((uint64_t)1024 * 1024 * 1024)) == 0) {
 		size /= ((uint64_t)1024 * 1024 * 1024);
+		snprintf(size_str, sizeof(size_str), "%"PRIu64"GiB", size);
+	} else if ((size % ((uint64_t)1000 * 1000 * 1000)) == 0) {
+		size /= ((uint64_t)1000 * 1000 * 1000);
 		snprintf(size_str, sizeof(size_str), "%"PRIu64"GB", size);
+
 	} else if ((size % ((uint64_t)1024 * 1024)) == 0) {
 		size /= ((uint64_t)1024 * 1024);
+		snprintf(size_str, sizeof(size_str), "%"PRIu64"MiB", size);
+	} else if ((size % ((uint64_t)1000 * 1000)) == 0) {
+		size /= ((uint64_t)1000 * 1000);
 		snprintf(size_str, sizeof(size_str), "%"PRIu64"MB", size);
+
 	} else if ((size % ((uint64_t)1024)) == 0) {
 		size /= ((uint64_t)1024);
+		snprintf(size_str, sizeof(size_str), "%"PRIu64"KiB", size);
+	} else if ((size % ((uint64_t)1000)) == 0) {
+		size /= ((uint64_t)1000);
 		snprintf(size_str, sizeof(size_str), "%"PRIu64"KB", size);
+
 	} else {
 		snprintf(size_str, sizeof(size_str), "%"PRIu64, size);
 	}
