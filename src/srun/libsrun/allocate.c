@@ -551,16 +551,16 @@ resource_allocation_response_msg_t *allocate_nodes(bool handle_signals)
 		 * pending so overwrite the request with what was
 		 * allocated so we don't have issues when we use them
 		 * in the step creation.
-		 *
-		 * NOTE: pn_min_memory here is an int64, not uint64. These
-		 * operations may have some bizarre side effects
 		 */
-		if (opt.pn_min_memory != NO_VAL64)
-			opt.pn_min_memory = (resp->pn_min_memory &
-					     (~MEM_PER_CPU));
-		else if (opt.mem_per_cpu != NO_VAL64)
-			opt.mem_per_cpu = (resp->pn_min_memory &
-					   (~MEM_PER_CPU));
+		opt.pn_min_memory = NO_VAL64;
+		opt.mem_per_cpu = NO_VAL64;
+		if (resp->pn_min_memory != NO_VAL64) {
+			if (resp->pn_min_memory & MEM_PER_CPU)
+				opt.mem_per_cpu = (resp->pn_min_memory &
+						   (~MEM_PER_CPU));
+			else
+				opt.pn_min_memory = resp->pn_min_memory;
+		}
 
 #ifdef HAVE_BG
 		uint32_t node_cnt = 0;

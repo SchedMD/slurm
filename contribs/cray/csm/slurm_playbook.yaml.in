@@ -15,6 +15,7 @@
       - persistent_data
       - simple_sync
 
+    atp_spank_plugin:       /opt/cray/pe/atp/libAtpSLaunch.so
     mcgroup_hierarchy_file: /sys/fs/cgroup/memory/memory.use_hierarchy
     scontrol:               @bindir@/scontrol
     slurm_default_dir:      /opt/slurm/default
@@ -26,6 +27,7 @@
     slurmd_pidfile:         /var/spool/slurmd/slurmd.pid
     slurmd_spooldir:        /var/spool/slurmd
     slurmd_service_file:    /usr/lib/systemd/system/slurmd.service
+    slurm_sysconfdir:       @sysconfdir@
 
   tasks:
     - name: Determine prefix availability
@@ -60,6 +62,19 @@
     - name: Create slurmctld spool directory
       file: path={{ slurmctld_spooldir }} state=directory owner=root mode=0755
       when: slurm_daemons.rc == 0 and "slurmctld" in slurm_daemons.stdout
+
+    - name: Determine sysconfdir availability
+      stat: path={{ slurm_sysconfdir }}
+      register: sysconfdir
+
+    # Remove this task if Cray PE is not installed on the system
+    - name: Configure ATP SPANK plugin
+      lineinfile:
+        dest={{ slurm_sysconfdir }}/plugstack.conf
+        line="optional {{ atp_spank_plugin }}"
+        regexp={{ atp_spank_plugin }}
+        create=yes backup=yes owner=root mode=0644
+      when: sysconfdir.stat.exists and sysconfdir.stat.isdir
 
     # Disable Slurm so it's started by cray-ansible, not systemd
     - name: Disable Slurm systemd startup

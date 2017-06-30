@@ -144,6 +144,13 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 17.02.6
 ==========================
  -- Fix configurator.easy.html to output the SelectTypeParameters line.
+ -- If a job requests a specific memory requirement then gets something else
+    from the slurmctld make sure the step allocation is made aware of it.
+ -- Fix missing initialization in slurmd.
+ -- Fix potential degradation when running HTC (> 100 jobs a sec) like
+    workflows through the slurmd.
+ -- Fix race condition which could leave a stepd hung on shutdown.
+ -- CRAY - Add configuration for ATP to the ansible play script.
 
 * Changes in Slurm 17.02.5
 ==========================

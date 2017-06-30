@@ -267,9 +267,6 @@ extern int acct_gather_profile_fini(void)
 		pthread_join(timer_thread_id, NULL);
 	}
 
-	for (i=0; i < PROFILE_CNT; i++)
-		pthread_cond_destroy(&acct_gather_profile_timer[i].notify);
-
 	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
 done:
