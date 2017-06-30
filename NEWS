@@ -11,6 +11,8 @@ documents those changes that are of interest to users and administrators.
     workflows through the slurmd.
  -- Fix race condition which could leave a stepd hung on shutdown.
  -- CRAY - Add configuration for ATP to the ansible play script.
+ -- burst_buffer logic modified to support sizes in both SI and EIC size units
+    (e.g. M/MiB for powers of 1024, MB for powers of 1000).
 
 * Changes in Slurm 17.02.5
 ==========================
