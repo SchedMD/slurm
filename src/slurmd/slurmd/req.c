@@ -3891,8 +3891,13 @@ static void _file_bcast_close_file(file_bcast_info_t *key)
 	_fb_wrunlock();
 }
 
-static void _free_file_bcast_info_t(file_bcast_info_t *f)
+static void _free_file_bcast_info_t(void *arg)
 {
+	file_bcast_info_t *f = (file_bcast_info_t *)arg;
+
+	if (!f)
+		return;
+
 	xfree(f->fname);
 	if (f->fd)
 		close(f->fd);
@@ -5652,12 +5657,15 @@ _waiter_create(uint32_t jobid)
 	return wp;
 }
 
-static int _find_waiter(struct waiter *w, uint32_t *jp)
+static int _find_waiter(void *x, void *y)
 {
+	struct waiter *w = (struct waiter *)x;
+	uint32_t *jp = (uint32_t *)y;
+
 	return (w->jobid == *jp);
 }
 
-static void _waiter_destroy(struct waiter *wp)
+static void _waiter_destroy(void *wp)
 {
 	xfree(wp);
 }
