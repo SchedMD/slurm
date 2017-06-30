@@ -22,6 +22,7 @@ START_TEST(pack_null_req)
 {
 	Buf buf = init_buf(1024);
 	slurm_msg_t msg = {0};
+	msg.protocol_version = SLURM_MIN_PROTOCOL_VERSION;
 	msg.msg_type = REQUEST_JOB_ALLOCATION_INFO;
 
 	pack_msg(&msg, buf);
