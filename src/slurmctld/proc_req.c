@@ -6475,6 +6475,7 @@ static Buf _build_rc_buf(int rc, uint16_t rpc_version)
 	return_code_msg_t data;
 
 	data.return_code = rc;
+	slurm_msg_t_init(&msg);
 	msg.msg_type = RESPONSE_SLURM_RC;
 	msg.data = &data;
 	buf = init_buf(128);
