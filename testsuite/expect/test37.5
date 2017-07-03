@@ -470,7 +470,7 @@ expect {
 		wait
 	}
 }
-set run_cluster [wait_for_fed_job $long_running_job_id RUNNING ""]
+set run_cluster [wait_for_fed_job $long_running_job_id RUNNING $fedc2]
 if {[string compare $run_cluster ""] == 0} {
 	log_error "Didn't find cluster with running job"
 	end_it 1
@@ -490,7 +490,7 @@ expect {
 		wait
 	}
 }
-set run_cluster [wait_for_fed_job $long_running_job_id2 RUNNING ""]
+set run_cluster [wait_for_fed_job $long_running_job_id2 RUNNING $fedc3]
 if {[string compare $run_cluster ""] == 0} {
 	log_error "Didn't find cluster with running job"
 	end_it 1
@@ -517,7 +517,7 @@ if { $job_id == 0 } {
 }
 
 # Wait for the job to be in the running state
-set run_cluster [wait_for_fed_job $job_id RUNNING ""]
+set run_cluster [wait_for_fed_job $job_id RUNNING $origin_cluster]
 if {[string compare $run_cluster ""] == 0} {
 	log_error "Didn't find cluster with running job"
 	end_it 1
@@ -526,7 +526,17 @@ if {[string compare $run_cluster ""] == 0} {
 # Requeue the job while it is running
 requeue_job $job_id
 
-set pend_cluster [wait_for_fed_job $job_id PENDING "$fedc2,$fedc3"]
+set pend_cluster [wait_for_fed_job $job_id PENDING $fedc1]
+if {[string compare $pend_cluster ""] == 0} {
+	log_error "Didn't find cluster with pending job"
+	end_it 1
+}
+set pend_cluster [wait_for_fed_job $job_id PENDING $fedc2]
+if {[string compare $pend_cluster ""] == 0} {
+	log_error "Didn't find cluster with pending job"
+	end_it 1
+}
+set pend_cluster [wait_for_fed_job $job_id PENDING $fedc3]
 if {[string compare $pend_cluster ""] == 0} {
 	log_error "Didn't find cluster with pending job"
 	end_it 1
@@ -574,7 +584,7 @@ if {[string compare $run_cluster ""] == 0} {
 }
 
 # Wait for the job to be in the complete state
-set done_cluster [wait_for_fed_job $job_id DONE "$run_cluster"]
+set done_cluster [wait_for_fed_job $job_id DONE $run_cluster]
 if {[string compare $done_cluster ""] == 0} {
 	log_error "Didn't find cluster with completed job"
 	end_it 1
@@ -583,7 +593,17 @@ if {[string compare $done_cluster ""] == 0} {
 # Requeue the job when it is complete
 requeue_job $job_id
 
-set pend_cluster [wait_for_fed_job $job_id PENDING "$fedc2,$fedc3"]
+set pend_cluster [wait_for_fed_job $job_id PENDING $fedc1]
+if {[string compare $pend_cluster ""] == 0} {
+	log_error "Didn't find cluster with pending job"
+	end_it 1
+}
+set pend_cluster [wait_for_fed_job $job_id PENDING $fedc2]
+if {[string compare $pend_cluster ""] == 0} {
+	log_error "Didn't find cluster with pending job"
+	end_it 1
+}
+set pend_cluster [wait_for_fed_job $job_id PENDING $fedc3]
 if {[string compare $pend_cluster ""] == 0} {
 	log_error "Didn't find cluster with pending job"
 	end_it 1
@@ -626,7 +646,7 @@ if { $job_id == 0 } {
 }
 
 # Wait for the job to be in the complete state
-set run_cluster [wait_for_fed_job $job_id DONE ""]
+set run_cluster [wait_for_fed_job $job_id DONE $origin_cluster]
 if {[string compare $run_cluster ""] == 0} {
 	log_error "Didn't find cluster with running job"
 	end_it 1
@@ -635,7 +655,17 @@ if {[string compare $run_cluster ""] == 0} {
 # Requeue the job when it is complete
 requeue_job $job_id
 
-set pend_cluster [wait_for_fed_job $job_id PENDING "$fedc2,$fedc3"]
+set pend_cluster [wait_for_fed_job $job_id PENDING $fedc1]
+if {[string compare $pend_cluster ""] == 0} {
+	log_error "Didn't find cluster with pending job"
+	end_it 1
+}
+set pend_cluster [wait_for_fed_job $job_id PENDING $fedc2]
+if {[string compare $pend_cluster ""] == 0} {
+	log_error "Didn't find cluster with pending job"
+	end_it 1
+}
+set pend_cluster [wait_for_fed_job $job_id PENDING $fedc3]
 if {[string compare $pend_cluster ""] == 0} {
 	log_error "Didn't find cluster with pending job"
 	end_it 1
@@ -678,7 +708,7 @@ expect {
 		wait
 	}
 }
-set run_cluster [wait_for_fed_job $long_running_job_id RUNNING ""]
+set run_cluster [wait_for_fed_job $long_running_job_id RUNNING $origin_cluster]
 if {[string compare $run_cluster ""] == 0} {
 	log_error "Didn't find cluster with running job"
 	end_it 1
@@ -712,10 +742,28 @@ if {[string compare $run_cluster ""] == 0} {
 
 log_info "$run_cluster is running job"
 
+# make sure that the origin has gotten word that the job is running and the
+# origin revokes the job.
+set rv_origin_cluster [wait_for_fed_job $job_id REVOKED $origin_cluster]
+if {[string compare $rv_origin_cluster ""] == 0} {
+	log_error "origin cluster hasn't revoked job"
+	end_it 1
+}
+
 # Requeue the job while it is running
 requeue_job $job_id
 
-set pend_cluster [wait_for_fed_job $job_id PENDING ""]
+set pend_cluster [wait_for_fed_job $job_id PENDING $fedc1]
+if {[string compare $pend_cluster ""] == 0} {
+	log_error "Didn't find cluster with pending job"
+	end_it 1
+}
+set pend_cluster [wait_for_fed_job $job_id PENDING $fedc2]
+if {[string compare $pend_cluster ""] == 0} {
+	log_error "Didn't find cluster with pending job"
+	end_it 1
+}
+set pend_cluster [wait_for_fed_job $job_id PENDING $fedc3]
 if {[string compare $pend_cluster ""] == 0} {
 	log_error "Didn't find cluster with pending job"
 	end_it 1
@@ -770,10 +818,23 @@ if {[string compare $run_cluster ""] == 0} {
 
 log_info "$run_cluster is running job"
 
+# make sure that the origin has gotten word that the job is running and the
+# origin revokes the job.
+set rv_origin_cluster [wait_for_fed_job $job_id REVOKED $origin_cluster]
+if {[string compare $rv_origin_cluster ""] == 0} {
+	log_error "origin cluster hasn't revoked job"
+	end_it 1
+}
+
 # Requeue the job while it is running
 requeue_job $job_id
 
-set pend_cluster [wait_for_fed_job $job_id PENDING ""]
+set pend_cluster [wait_for_fed_job $job_id PENDING $fedc1]
+if {[string compare $pend_cluster ""] == 0} {
+	log_error "Didn't find cluster with pending job"
+	end_it 1
+}
+set pend_cluster [wait_for_fed_job $job_id PENDING $fedc2]
 if {[string compare $pend_cluster ""] == 0} {
 	log_error "Didn't find cluster with pending job"
 	end_it 1
@@ -831,7 +892,7 @@ if {[string compare $run_cluster ""] == 0} {
 
 log_info "$run_cluster is running job"
 
-set ret_cluster [wait_for_fed_job $job_id DONE "$origin_cluster"]
+set ret_cluster [wait_for_fed_job $job_id DONE $run_cluster]
 if {[string compare $ret_cluster ""] == 0} {
 	log_error "Didn't find cluster with completed job"
 	end_it 1
@@ -840,7 +901,17 @@ if {[string compare $ret_cluster ""] == 0} {
 # Requeue the job when it is complete
 requeue_job $job_id
 
-set pend_cluster [wait_for_fed_job $job_id PENDING ""]
+set pend_cluster [wait_for_fed_job $job_id PENDING $fedc1]
+if {[string compare $pend_cluster ""] == 0} {
+	log_error "Didn't find cluster with pending job"
+	end_it 1
+}
+set pend_cluster [wait_for_fed_job $job_id PENDING $fedc2]
+if {[string compare $pend_cluster ""] == 0} {
+	log_error "Didn't find cluster with pending job"
+	end_it 1
+}
+set pend_cluster [wait_for_fed_job $job_id PENDING $fedc3]
 if {[string compare $pend_cluster ""] == 0} {
 	log_error "Didn't find cluster with pending job"
 	end_it 1
@@ -945,7 +1016,7 @@ if {[cancel_job $job_id]} {
 	end_it 1
 }
 
-set ret_cluster [wait_for_fed_job $job_id DONE "$origin_cluster"]
+set ret_cluster [wait_for_fed_job $job_id DONE $run_cluster]
 if {[string compare $ret_cluster ""] == 0} {
 	log_error "Didn't find cluster with completed job"
 	end_it 1
@@ -954,7 +1025,17 @@ if {[string compare $ret_cluster ""] == 0} {
 # Requeue the job when it is complete
 requeue_job $job_id
 
-set pend_cluster [wait_for_fed_job $job_id PENDING $non_origin_clusters]
+set pend_cluster [wait_for_fed_job $job_id PENDING $fedc1]
+if {[string compare $pend_cluster ""] == 0} {
+	log_error "Didn't find cluster with pending job"
+	end_it 1
+}
+set pend_cluster [wait_for_fed_job $job_id PENDING $fedc2]
+if {[string compare $pend_cluster ""] == 0} {
+	log_error "Didn't find cluster with pending job"
+	end_it 1
+}
+set pend_cluster [wait_for_fed_job $job_id PENDING $fedc3]
 if {[string compare $pend_cluster ""] == 0} {
 	log_error "Didn't find cluster with pending job"
 	end_it 1
@@ -1023,11 +1104,19 @@ if {[string compare $run_cluster ""] == 0} {
 
 log_info "$run_cluster is running job"
 
+# make sure that the origin has gotten word that the job is running and the
+# origin revokes the job.
+set rv_origin_cluster [wait_for_fed_job $job_id REVOKED $origin_cluster]
+if {[string compare $rv_origin_cluster ""] == 0} {
+	log_error "origin cluster hasn't revoked job"
+	end_it 1
+}
+
 # Requeue the job while it is running
 requeuehold_job $job_id
 
-set run_cluster [wait_for_fed_job $job_id PENDING $origin_cluster]
-if {[string compare $run_cluster ""] == 0} {
+set pend_cluster [wait_for_fed_job $job_id PENDING $origin_cluster]
+if {[string compare $pend_cluster ""] == 0} {
 	log_error "Didn't find cluster with running job"
 	end_it 1
 }
@@ -1045,9 +1134,19 @@ check_dbd_states $job_id PENDING $origin_cluster 1
 # release hold on job, siblings will be submitted to all clusters
 release_job $job_id
 
-set run_cluster [wait_for_fed_job $job_id PENDING $non_origin_clusters]
-if {[string compare $run_cluster ""] == 0} {
-	log_error "Didn't find cluster with running job"
+set pend_cluster [wait_for_fed_job $job_id PENDING $fedc1]
+if {[string compare $pend_cluster ""] == 0} {
+	log_error "Didn't find cluster with pending job"
+	end_it 1
+}
+set pend_cluster [wait_for_fed_job $job_id PENDING $fedc2]
+if {[string compare $pend_cluster ""] == 0} {
+	log_error "Didn't find cluster with pending job"
+	end_it 1
+}
+set pend_cluster [wait_for_fed_job $job_id PENDING $fedc3]
+if {[string compare $pend_cluster ""] == 0} {
+	log_error "Didn't find cluster with pending job"
 	end_it 1
 }
 
@@ -1074,7 +1173,7 @@ send_user "\n################################################################\n"
 
 # Just let previous job finish and then requeue it.
 
-set run_cluster [wait_for_fed_job $job_id DONE $origin_cluster]
+set run_cluster [wait_for_fed_job $job_id DONE $run_cluster]
 if {[string compare $run_cluster ""] == 0} {
 	log_error "Didn't find cluster with completed job"
 	end_it 1
@@ -1101,8 +1200,18 @@ check_dbd_states $job_id PENDING $origin_cluster 1
 # release hold on job, siblings will be submitted to all clusters
 release_job $job_id
 
-set run_cluster [wait_for_fed_job $job_id PENDING $non_origin_clusters]
-if {[string compare $run_cluster ""] == 0} {
+set pend_cluster [wait_for_fed_job $job_id PENDING $fedc1]
+if {[string compare $pend_cluster ""] == 0} {
+	log_error "Didn't find cluster with running job"
+	end_it 1
+}
+set pend_cluster [wait_for_fed_job $job_id PENDING $fedc2]
+if {[string compare $pend_cluster ""] == 0} {
+	log_error "Didn't find cluster with running job"
+	end_it 1
+}
+set pend_cluster [wait_for_fed_job $job_id PENDING $fedc3]
+if {[string compare $pend_cluster ""] == 0} {
 	log_error "Didn't find cluster with running job"
 	end_it 1
 }
@@ -1162,6 +1271,14 @@ if {[string compare $run_cluster ""] == 0} {
 
 log_info "$run_cluster is running job"
 
+# make sure that the origin has gotten word that the job is running and the
+# origin revokes the job.
+set rv_origin_cluster [wait_for_fed_job $job_id REVOKED $origin_cluster]
+if {[string compare $rv_origin_cluster ""] == 0} {
+	log_error "origin cluster hasn't revoked job"
+	end_it 1
+}
+
 # Requeue the job when it is complete
 requeuehold_se_job $job_id
 
@@ -1183,9 +1300,19 @@ check_dbd_states $job_id PENDING $origin_cluster 1
 # release hold on job, siblings will be submitted to all clusters
 release_job $job_id
 
-set run_cluster [wait_for_fed_job $job_id PENDING $non_origin_clusters]
-if {[string compare $run_cluster ""] == 0} {
-	log_error "Didn't find cluster with running job"
+set pend_cluster [wait_for_fed_job $job_id PENDING $fedc1]
+if {[string compare $pend_cluster ""] == 0} {
+	log_error "Didn't find cluster with pending job"
+	end_it 1
+}
+set pend_cluster [wait_for_fed_job $job_id PENDING $fedc2]
+if {[string compare $pend_cluster ""] == 0} {
+	log_error "Didn't find cluster with pending job"
+	end_it 1
+}
+set pend_cluster [wait_for_fed_job $job_id PENDING $fedc3]
+if {[string compare $pend_cluster ""] == 0} {
+	log_error "Didn't find cluster with pending job"
 	end_it 1
 }
 
@@ -1212,7 +1339,7 @@ send_user "\n################################################################\n"
 
 # Just let previous job finish and then requeue it.
 
-set run_cluster [wait_for_fed_job $job_id DONE $origin_cluster]
+set run_cluster [wait_for_fed_job $job_id DONE $run_cluster]
 if {[string compare $run_cluster ""] == 0} {
 	log_error "Didn't find cluster with completed job"
 	end_it 1
@@ -1239,9 +1366,19 @@ check_dbd_states $job_id PENDING $origin_cluster 1
 # release hold on job, siblings will be submitted to all clusters
 release_job $job_id
 
-set run_cluster [wait_for_fed_job $job_id PENDING $non_origin_clusters]
-if {[string compare $run_cluster ""] == 0} {
-	log_error "Didn't find cluster with running job"
+set pend_cluster [wait_for_fed_job $job_id PENDING $fedc1]
+if {[string compare $pend_cluster ""] == 0} {
+	log_error "Didn't find cluster with pending job"
+	end_it 1
+}
+set pend_cluster [wait_for_fed_job $job_id PENDING $fedc2]
+if {[string compare $pend_cluster ""] == 0} {
+	log_error "Didn't find cluster with pending job"
+	end_it 1
+}
+set pend_cluster [wait_for_fed_job $job_id PENDING $fedc3]
+if {[string compare $pend_cluster ""] == 0} {
+	log_error "Didn't find cluster with pending job"
 	end_it 1
 }
 
@@ -1304,8 +1441,18 @@ if {$requeue_exit_num} {
 
 	log_info "$run_cluster is running job"
 
-	set pend_cluster [wait_for_fed_job $job_id PENDING ""]
-	if {[string compare $run_cluster ""] == 0} {
+	set pend_cluster [wait_for_fed_job $job_id PENDING $fedc1]
+	if {[string compare $pend_cluster ""] == 0} {
+		log_error "Didn't find job in pending state"
+		end_it 1
+	}
+	set pend_cluster [wait_for_fed_job $job_id PENDING $fedc2]
+	if {[string compare $pend_cluster ""] == 0} {
+		log_error "Didn't find job in pending state"
+		end_it 1
+	}
+	set pend_cluster [wait_for_fed_job $job_id PENDING $fedc3]
+	if {[string compare $pend_cluster ""] == 0} {
 		log_error "Didn't find job in pending state"
 		end_it 1
 	}
@@ -1386,9 +1533,19 @@ if {$requeue_exit_num} {
 	# release hold on job, siblings will be submitted to all clusters
 	release_job $job_id
 
-	set run_cluster [wait_for_fed_job $job_id PENDING $non_origin_clusters]
-	if {[string compare $run_cluster ""] == 0} {
-		log_error "Didn't find cluster with running job"
+	set pend_cluster [wait_for_fed_job $job_id PENDING $fedc1]
+	if {[string compare $pend_cluster ""] == 0} {
+		log_error "Didn't find cluster with pending job"
+		end_it 1
+	}
+	set pend_cluster [wait_for_fed_job $job_id PENDING $fedc2]
+	if {[string compare $pend_cluster ""] == 0} {
+		log_error "Didn't find cluster with pending job"
+		end_it 1
+	}
+	set pend_cluster [wait_for_fed_job $job_id PENDING $fedc3]
+	if {[string compare $pend_cluster ""] == 0} {
+		log_error "Didn't find cluster with pending job"
 		end_it 1
 	}
 
