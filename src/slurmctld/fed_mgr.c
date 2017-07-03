@@ -1389,18 +1389,29 @@ static void _cleanup_removed_origin_jobs()
 	ListIterator job_itr;
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
-	uint32_t cluster_id = 0;
+	uint32_t origin_id, sibling_id;
+	uint64_t sibling_bit;
 
 	if (!fed_mgr_cluster_rec)
 		return;
 
+	sibling_id  = fed_mgr_cluster_rec->fed.id;
+	sibling_bit = FED_SIBLING_BIT(sibling_id);
+
 	job_itr = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_itr))) {
 		bool running_remotely = false;
-		cluster_id = fed_mgr_get_cluster_id(job_ptr->job_id);
+		uint64_t siblings_viable;
 
-		if (job_ptr->fed_details &&
-		    fed_mgr_cluster_rec->fed.id == cluster_id &&
+		if (IS_JOB_COMPLETED(job_ptr))
+			continue;
+
+		if (!_is_fed_job(job_ptr, &origin_id))
+			continue;
+
+		siblings_viable = job_ptr->fed_details->siblings_viable;
+
+		if (sibling_id == origin_id &&
 		    job_ptr->fed_details->cluster_lock)
 			running_remotely = true;
 
@@ -1413,11 +1424,25 @@ static void _cleanup_removed_origin_jobs()
 		    IS_JOB_RUNNING(job_ptr))
 			continue;
 
+		/* If this job is the only viable sibling then just let
+		 * it run as a non-federated job. The origin should remove the
+		 * tracking job. */
+		if (!(siblings_viable & ~sibling_bit))
+			continue;
+
+		/*
+		 * If a job is pending and not revoked on the origin cluster
+		 * leave it as a non-federated job.
+		 */
+		if ((origin_id == sibling_id) &&
+		    IS_JOB_PENDING(job_ptr) && !IS_JOB_REVOKED(job_ptr))
+			continue;
+
 		/* Free the resp_host so that the srun doesn't get
 		 * signalled about the job going away. The job could
 		 * still run on another sibling. */
 		if (running_remotely ||
-		    (cluster_id != fed_mgr_cluster_rec->fed.id))
+		    (origin_id != sibling_id))
 			xfree(job_ptr->resp_host);
 
 		job_ptr->job_state  = JOB_CANCELLED|JOB_REVOKED;
@@ -1436,27 +1461,68 @@ static void _cleanup_removed_cluster_jobs(slurmdb_cluster_rec_t *cluster)
 	ListIterator job_itr;
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
-	uint32_t cluster_id = 0;
+	uint32_t origin_id, sibling_id;
+	uint64_t origin_bit, sibling_bit;
 
 	if (!fed_mgr_cluster_rec)
 		return;
 
+	sibling_id  = fed_mgr_cluster_rec->fed.id;
+	sibling_bit = FED_SIBLING_BIT(sibling_id);
+
 	job_itr = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_itr))) {
+		uint64_t siblings_viable;
+
+		if (IS_JOB_COMPLETED(job_ptr))
+			continue;
+
+		if (!_is_fed_job(job_ptr, &origin_id))
+			continue;
+
+		origin_bit = FED_SIBLING_BIT(origin_id);
+		siblings_viable = job_ptr->fed_details->siblings_viable;
 
 		/* Remove cluster from viable,active siblings */
 		_remove_sibling_bit(job_ptr, cluster);
 
-		/* Remove jobs that originated from the removed cluster or
-		 * remove the origin tracking job that is tracking a job on the
-		 * cluster that has been removed. */
-		cluster_id = fed_mgr_get_cluster_id(job_ptr->job_id);
-		if (cluster_id == cluster->fed.id ||
+		/* Remove jobs that
+		 * 1. originated from the removed cluster
+		 * 2. origin jobs that are tracking the running job
+		 * 2. origin jobs that are tracking the pending job */
+		if (origin_id == cluster->fed.id ||
+
 		    (job_ptr->fed_details &&
-		     cluster_id == fed_mgr_cluster_rec->fed.id &&
-		     job_ptr->fed_details->cluster_lock == cluster->fed.id)) {
+		     origin_id == sibling_id &&
+		     job_ptr->fed_details->cluster_lock == cluster->fed.id) ||
+
+		    (siblings_viable & FED_SIBLING_BIT(cluster->fed.id) &&
+		     !(siblings_viable & ~FED_SIBLING_BIT(cluster->fed.id)))) {
+
+			/*
+			 * If this job originated from the origin (which is
+			 * being removed) and the origin is not a viable sibling
+			 * and there are more than one sibling then let the job
+			 * remain as a federated job to be scheduled amongst
+			 * it's siblings.
+			 */
+			if (IS_JOB_PENDING(job_ptr) &&
+			    (origin_id == cluster->fed.id) &&
+			    !(siblings_viable & origin_bit) &&
+			    (siblings_viable & ~sibling_bit))
+				continue;
+
 			/* free fed_job_details so it can't call home. */
 			free_job_fed_details(&job_ptr->fed_details);
+
+			/*
+			 * If this job originated from the origin (which is
+			 * being removed) and this sibling is the only viable
+			 * sibling then let it run/pend as a non-federated job.
+			 */
+			if ((origin_id == cluster->fed.id) &&
+			    !(siblings_viable & ~sibling_bit))
+				continue;
 
 			if (!(IS_JOB_COMPLETED(job_ptr) ||
 			      IS_JOB_COMPLETING(job_ptr) ||

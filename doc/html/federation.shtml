@@ -58,12 +58,17 @@ sacctmgr modify cluster &lt;cluster_name&gt; set federation=&lt;federation_name&
 sacctmgr modify federation &lt;federation_name&gt; set clusters=
 sacctmgr modify cluster &lt;cluster_name&gt; set federation=
 </pre>
-<b>NOTE:</b> If a cluster is removed from a federation without first draining
-the cluster, running jobs on the removed cluster, or that originated from the
-removed cluster, will continue to run. Non-origin pending jobs will be removed
-from the cluster being removed and remaining pending sibling jobs will remain
-pending in the federation. If an origin cluster is removed, any pending jobs
-originating from the origin cluster will be removed.
+<b>NOTE:</b> If a cluster is removed from a federation without first being
+drained, running jobs on the removed cluster, or that originated from the
+removed cluster, will continue to run as non-federated jobs. If a job is pending
+on the origin cluster, the job will remain pending on the origin cluster as a
+non-federated job and the remaining sibling jobs will be removed. If the origin
+cluster is being removed and the job is pending and is only viable on one
+cluster then it it will remain pending on the viable cluster as a non-federated
+job. If the origin cluster is being removed and the job is pending and viable on
+multiple clusters other than the origin cluster, then the remaining pending jobs
+will remain pending as a federated job and the remaining sibling clusters will
+schedule amongst themselves to start the job.
 
 <br>
 <br>
