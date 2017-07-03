@@ -8762,7 +8762,8 @@ static int _list_find_job_old(void *job_entry, void *key)
 	if (slurmctld_conf.min_job_age == 0)
 		return 0;	/* No job record purging */
 
-	if (fed_mgr_fed_rec && job_ptr->fed_details) {
+	if (fed_mgr_fed_rec && job_ptr->fed_details &&
+	    !fed_mgr_is_origin_job(job_ptr)) {
 		uint32_t origin_id = fed_mgr_get_cluster_id(job_ptr->job_id);
 		slurmdb_cluster_rec_t *origin =
 			fed_mgr_get_cluster_by_id(origin_id);
