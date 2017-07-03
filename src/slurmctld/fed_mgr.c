@@ -1369,6 +1369,13 @@ static int _remove_sibling_bit(struct job_record *job_ptr,
 		~(FED_SIBLING_BIT(sibling->fed.id));
 	job_ptr->fed_details->siblings_viable &=
 		~(FED_SIBLING_BIT(sibling->fed.id));
+
+	if (!(job_ptr->fed_details->siblings_viable &
+	      FED_SIBLING_BIT(fed_mgr_cluster_rec->fed.id)))
+		job_ptr->job_state |= JOB_REVOKED;
+	else if (!job_ptr->fed_details->cluster_lock)
+		job_ptr->job_state &= ~JOB_REVOKED;
+
 	update_job_fed_details(job_ptr);
 
 	return SLURM_SUCCESS;
@@ -1589,6 +1596,10 @@ send_msg:
 	if (reject_job)
 		_persist_fed_job_response(sibling, job_desc->job_id, error_code);
 	else {
+		if (!(job_ptr->fed_details->siblings_viable &
+		      FED_SIBLING_BIT(fed_mgr_cluster_rec->fed.id)))
+			job_ptr->job_state |= JOB_REVOKED;
+
 		_add_fed_job_info(job_ptr);
 		schedule_job_save();	/* Has own locks */
 		schedule_node_save();	/* Has own locks */
@@ -3475,6 +3486,11 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		job_desc->fed_siblings_active |=
 			FED_SIBLING_BIT(fed_mgr_cluster_rec->fed.id);
 
+	/* Job is not eligible on origin cluster - mark as revoked. */
+	if (!(job_ptr->fed_details->siblings_viable &
+	      FED_SIBLING_BIT(fed_mgr_cluster_rec->fed.id)))
+		job_ptr->job_state |= JOB_REVOKED;
+
 	*job_id_ptr = job_ptr->job_id;
 
 	if (job_held) {
@@ -4249,7 +4265,12 @@ extern int fed_mgr_job_requeue(struct job_record *job_ptr)
 	job_ptr->fed_details->cluster_lock = 0;
 
 	job_ptr->job_state &= (~JOB_REQUEUE_FED);
-	job_ptr->job_state &= (~JOB_REVOKED);
+
+	if (!(job_ptr->fed_details->siblings_viable &
+	      FED_SIBLING_BIT(fed_mgr_cluster_rec->fed.id)))
+		job_ptr->job_state |= JOB_REVOKED;
+	else
+		job_ptr->job_state &= ~JOB_REVOKED;
 
 	slurm_mutex_lock(&fed_job_list_mutex);
 	if ((job_info = _find_fed_job_info(job_ptr->job_id))) {
