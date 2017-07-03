@@ -664,7 +664,8 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		exit (0);
 
 	} else if (opt.no_alloc) {
-		if (opt_list)
+		if (opt_list ||
+		    (opt.pack_grp_bits && (bit_fls(opt.pack_grp_bits) > 0)))
 			fatal("--no-allocation option not supported for heterogeneous jobs");
 		info("do not allocate resources");
 		job = job_create_noalloc();
