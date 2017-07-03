@@ -3697,7 +3697,7 @@ static int _job_lock_all_sibs(struct job_record *job_ptr) {
 		if (!(tmp_sibs & 1))
 			goto next_lock;
 
-		if (fed_mgr_cluster_rec->fed.id == sib_id) {
+		if (cluster_id == sib_id) {
 			if (!fed_mgr_job_lock_set(job_ptr->job_id, cluster_id))
 				replied_sibs |= FED_SIBLING_BIT(sib_id);
 			else {
@@ -3725,9 +3725,14 @@ next_lock:
 		sib_id++;
 	}
 
-	/* Have to talk to at least one other sibling to start the job */
+	/*
+	 * Have to talk to at least one other sibling -- if there is one -- to
+	 * start the job
+	 */
 	if (all_said_yes &&
-	    (replied_sibs & ~(FED_SIBLING_BIT(fed_mgr_cluster_rec->fed.id))))
+	    (!(job_ptr->fed_details->siblings_viable &
+	       ~FED_SIBLING_BIT(cluster_id)) ||
+	     (replied_sibs & ~(FED_SIBLING_BIT(cluster_id)))))
 		return SLURM_SUCCESS;
 
 	/* have to release the lock on those that said yes */
@@ -3763,20 +3768,22 @@ extern int fed_mgr_job_lock(struct job_record *job_ptr)
 		slurm_persist_conn_t *origin_conn = NULL;
 		slurmdb_cluster_rec_t *origin_cluster;
 		if (!(origin_cluster = fed_mgr_get_cluster_by_id(origin_id))) {
-			error("Unable to find origin cluster for job %d from origin id %d",
-			      job_ptr->job_id, origin_id);
-			return SLURM_ERROR;
-		}
+			info("Unable to find origin cluster for job %d from origin id %d",
+			     job_ptr->job_id, origin_id);
+		} else
+			origin_conn = (slurm_persist_conn_t *)
+				       origin_cluster->fed.send;
 
-		origin_conn = (slurm_persist_conn_t *)origin_cluster->fed.send;
 		/* Check dbd is up to make sure ctld isn't on an island. */
 		if (acct_db_conn && slurmdbd_conn_active() &&
 		    (!origin_conn || (origin_conn->fd < 0))) {
 			rc = _job_lock_all_sibs(job_ptr);
-		} else {
+		} else if (origin_cluster) {
 			rc = _persist_fed_job_lock(origin_cluster,
 						   job_ptr->job_id,
 						   cluster_id);
+		} else {
+			rc = SLURM_FAILURE;
 		}
 
 		if (!rc) {
@@ -3920,12 +3927,13 @@ extern int fed_mgr_job_unlock(struct job_record *job_ptr)
 		slurm_persist_conn_t *origin_conn = NULL;
 		slurmdb_cluster_rec_t *origin_cluster;
 		if (!(origin_cluster = fed_mgr_get_cluster_by_id(origin_id))) {
-			error("Unable to find origin cluster for job %d from origin id %d",
-			      job_ptr->job_id, origin_id);
-			return SLURM_ERROR;
+			info("Unable to find origin cluster for job %d from origin id %d",
+			     job_ptr->job_id, origin_id);
+		} else {
+			origin_conn = (slurm_persist_conn_t *)
+				origin_cluster->fed.send;
 		}
 
-		origin_conn = (slurm_persist_conn_t *)origin_cluster->fed.send;
 		if (!origin_conn || (origin_conn->fd < 0)) {
 			uint64_t tmp_sibs;
 			tmp_sibs = job_ptr->fed_details->siblings_viable &
@@ -3981,12 +3989,13 @@ extern int fed_mgr_job_start(struct job_record *job_ptr, time_t start_time)
 		slurm_persist_conn_t *origin_conn = NULL;
 		slurmdb_cluster_rec_t *origin_cluster;
 		if (!(origin_cluster = fed_mgr_get_cluster_by_id(origin_id))) {
-			error("Unable to find origin cluster for job %d from origin id %d",
-			      job_ptr->job_id, origin_id);
-			return SLURM_ERROR;
+			info("Unable to find origin cluster for job %d from origin id %d",
+			     job_ptr->job_id, origin_id);
+		} else {
+			origin_conn = (slurm_persist_conn_t *)
+				origin_cluster->fed.send;
 		}
 
-		origin_conn = (slurm_persist_conn_t *)origin_cluster->fed.send;
 		if (!origin_conn || (origin_conn->fd < 0)) {
 			uint64_t viable_sibs;
 			viable_sibs = job_ptr->fed_details->siblings_viable;
@@ -4074,8 +4083,8 @@ extern int fed_mgr_job_complete(struct job_record *job_ptr,
 
 	slurmdb_cluster_rec_t *conn = fed_mgr_get_cluster_by_id(origin_id);
 	if (!conn) {
-		error("Unable to find origin cluster for job %d from origin id %d",
-		      job_ptr->job_id, origin_id);
+		info("Unable to find origin cluster for job %d from origin id %d",
+		     job_ptr->job_id, origin_id);
 		return SLURM_ERROR;
 	}
 
