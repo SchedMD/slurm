@@ -1792,6 +1792,16 @@ static void _handle_fed_job_start(fed_job_update_info_t *job_update_info)
 	unlock_slurmctld(job_write_lock);
 }
 
+static int _list_find_jobid(void *x, void *key)
+{
+	uint32_t src_jobid = *(uint32_t *)x;
+	uint32_t key_jobid = *(uint32_t *)key;
+
+	if (src_jobid == key_jobid)
+		return 1;
+	return 0;
+}
+
 static void _handle_fed_job_submission(fed_job_update_info_t *job_update_info)
 {
 	struct job_record *job_ptr;
@@ -1808,12 +1818,23 @@ static void _handle_fed_job_submission(fed_job_update_info_t *job_update_info)
 		     job_update_info->submit_desc->job_id,
 		     job_update_info->submit_cluster);
 
+
+	/* do this outside the job write lock */
+	delete_job_desc_files(job_update_info->job_id);
 	lock_slurmctld(job_write_lock);
 
 	if ((job_ptr = find_job_record(job_update_info->job_id))) {
 		info("Found existing fed job %d, going to requeue/kill it",
 		     job_update_info->job_id);
 		purge_job_record(job_ptr->job_id);
+		/*
+		 * Make sure that the file delete request is purged from list
+		 * -- added from purge_job_record() -- before job is allocated
+		 *  again.
+		 */
+		list_delete_all(purge_files_list, _list_find_jobid,
+				&job_update_info->job_id);
+
 	}
 
 	_fed_mgr_job_allocate_sib(job_update_info->submit_cluster,
