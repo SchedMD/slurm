@@ -51,6 +51,8 @@
 
 #include <pmix_server.h>
 
+#define PMIXP_DEBUG_SERVER 1
+
 /*
  * --------------------- I/O protocol -------------------
  */
@@ -69,6 +71,8 @@ typedef struct {
 #define PMIXP_BASE_HDR_EXT_SIZE(ep_len) (sizeof(uint32_t) + ep_len)
 #define PMIXP_BASE_HDR_MAX (PMIXP_BASE_HDR_SIZE + \
 	PMIXP_BASE_HDR_EXT_SIZE(pmixp_dconn_ep_len()))
+/* In the server buffer we have one service field of type uint32_t */
+#define PMIXP_SERVER_BUFFER_OFFS (PMIXP_BASE_HDR_MAX + sizeof(uint32_t))
 
 typedef struct {
 	uint32_t size;		/* Has to be first (appended by SLURM API) */
@@ -80,7 +84,7 @@ typedef struct {
 {									\
 	bhdr.magic = PMIXP_SERVER_MSG_MAGIC;				\
 	bhdr.type = mtype;						\
-	bhdr.msgsize = get_buf_offset(buf) - PMIXP_BASE_HDR_MAX;	\
+	bhdr.msgsize = get_buf_offset(buf) - PMIXP_SERVER_BUFFER_OFFS;	\
 	bhdr.seq = mseq;						\
 	bhdr.nodeid = pmixp_info_nodeid_job();				\
 	bhdr.ext_flag = 0;						\
@@ -89,68 +93,80 @@ typedef struct {
 #define PMIXP_SERVER_BUF_MAGIC 0xCA11CAFE
 Buf pmixp_server_buf_new(void)
 {
-	Buf buf = create_buf(xmalloc(PMIXP_BASE_HDR_MAX), PMIXP_BASE_HDR_MAX);
-#ifndef NDEBUG
+	size_t offset = PMIXP_SERVER_BUFFER_OFFS;
+	Buf buf = create_buf(xmalloc(offset), offset);
+	uint32_t *service = (uint32_t*)get_buf_data(buf);
+	/* Use the first size_t cell to identify the payload
+	 * offset. Value 0 is special meaning that buffer wasn't
+	 * yet finalized
+	 */
+	service[0] = 0;
+
+#ifdef PMIXP_DEBUG_SERVER
 	xassert( PMIXP_BASE_HDR_MAX >= sizeof(uint32_t));
 
 	/* Makesure that we only use buffers allocated through
 	 * this call, because we reserve the space for the
 	 * header here
 	 */
-	size_t tsz = sizeof(uint32_t);
-	size_t goffs = (size_t)get_buf_data(buf);
-	uint32_t *chk_ptr = (uint32_t *)(((goffs + (tsz - 1)) / tsz) * tsz);
-	*chk_ptr = PMIXP_SERVER_BUF_MAGIC;
+	service[1] = PMIXP_SERVER_BUF_MAGIC;
 #endif
 
 	/* Skip header. It will be filled right before the sending */
-	set_buf_offset(buf, PMIXP_BASE_HDR_MAX);
+	set_buf_offset(buf, offset);
 	return buf;
 }
 
 size_t pmixp_server_buf_reset(Buf buf)
 {
-#ifndef NDEBUG
+	uint32_t *service = (uint32_t*)get_buf_data(buf);
+	service[0] = 0;
+#ifdef PMIXP_DEBUG_SERVER
 	xassert( PMIXP_BASE_HDR_MAX >= sizeof(uint32_t));
 	xassert( PMIXP_BASE_HDR_MAX <= get_buf_offset(buf) );
 	/* Makesure that we only use buffers allocated through
 	 * this call, because we reserve the space for the
 	 * header here
 	 */
-	size_t tsz = sizeof(uint32_t);
-	size_t goffs = (size_t)get_buf_data(buf);
-	uint32_t *chk_ptr = (uint32_t *)(((goffs + (tsz - 1)) / tsz) * tsz);
-	*chk_ptr = PMIXP_SERVER_BUF_MAGIC;
+	service[1] = PMIXP_SERVER_BUF_MAGIC;
 #endif
-	set_buf_offset(buf, PMIXP_BASE_HDR_MAX);
-	return PMIXP_BASE_HDR_MAX;
+	set_buf_offset(buf, PMIXP_SERVER_BUFFER_OFFS);
+	return PMIXP_SERVER_BUFFER_OFFS;
 }
 
 
 static void *_buf_finalize(Buf buf, void *nhdr, size_t hsize,
 			   size_t *dsize)
 {
+	size_t offset;
+	uint32_t *service = (uint32_t*)get_buf_data(buf);
 	char *ptr = get_buf_data(buf);
-	size_t offset = PMIXP_BASE_HDR_MAX - hsize;
-#ifndef NDEBUG
-	xassert(PMIXP_BASE_HDR_MAX >= hsize);
-	xassert(PMIXP_BASE_HDR_MAX <= get_buf_offset(buf));
-
-	/* Makesure that we only use buffers allocated through
-	 * this call, because we reserve the space for the
-	 * header here
-	 */
-	size_t tsz = sizeof(uint32_t);
-	size_t goffs = (size_t)get_buf_data(buf);
-	uint32_t *chk_ptr = (uint32_t *)(((goffs + (tsz - 1)) / tsz) * tsz);
-	xassert(PMIXP_SERVER_BUF_MAGIC == *chk_ptr);
+	if (!service[0]) {
+		offset = PMIXP_SERVER_BUFFER_OFFS - hsize;
+#ifdef PMIXP_DEBUG_SERVER
+		xassert(PMIXP_BASE_HDR_MAX >= hsize);
+		xassert(PMIXP_BASE_HDR_MAX <= get_buf_offset(buf));
+		/* Makesure that we only use buffers allocated through
+		 * this call, because we reserve the space for the
+		 * header here
+		 */
+		xassert(PMIXP_SERVER_BUF_MAGIC == service[1]);
 #endif
-	/* Enough space for any header was reserved at the
-	 * time of buffer initialization in `pmixp_server_new_buf`
-	 * put the header in place and return proper pointer
-	 */
-	if (hsize) {
-		memcpy(ptr + offset, nhdr, hsize);
+		/* Enough space for any header was reserved at the
+		 * time of buffer initialization in `pmixp_server_new_buf`
+		 * put the header in place and return proper pointer
+		 */
+		if (hsize) {
+			memcpy(ptr + offset, nhdr, hsize);
+		}
+		service[0] = offset;
+	} else {
+		/* This buffer was already finalized */
+		offset = service[0];
+#ifdef PMIXP_DEBUG_SERVER
+		/* We expect header to be the same */
+		xassert(0 == memcmp(ptr+offset, nhdr, hsize));
+#endif
 	}
 	*dsize = get_buf_offset(buf) - offset;
 	return ptr + offset;
@@ -195,11 +211,11 @@ static size_t _base_hdr_pack_full_samearch(pmixp_base_hdr_t *hdr, void *net)
 	WRITE_HDR_FIELD(net, offset, hdr->msgsize);
 	WRITE_HDR_FIELD(net, offset, hdr->ext_flag);
 	if (hdr->ext_flag) {
-		Buf packbuf = create_buf(net + offset, PMIXP_BASE_HDR_MAX);
-		packmem(pmixp_dconn_ep_data(), pmixp_dconn_ep_len(), packbuf);
-		offset += get_buf_offset(packbuf);
-		packbuf->head = NULL;
-		free_buf(packbuf);
+		Buf buf = create_buf(net + offset, PMIXP_BASE_HDR_MAX);
+		packmem(pmixp_dconn_ep_data(), pmixp_dconn_ep_len(), buf);
+		offset += get_buf_offset(buf);
+		buf->head = NULL;
+		free_buf(buf);
 	}
 	return offset;
 }
@@ -708,8 +724,10 @@ static void _process_server_request(pmixp_base_hdr_t *hdr, Buf buf)
 		pmix_proc_t *procs = NULL;
 		size_t nprocs = 0;
 		pmixp_coll_type_t type = 0;
+		int c_nodeid;
 
-		rc = pmixp_coll_unpack_ranges(buf, &type, &procs, &nprocs);
+		rc = pmixp_coll_unpack_info(buf, &type, &c_nodeid,
+					    &procs, &nprocs);
 		if (SLURM_SUCCESS != rc) {
 			char *nodename = pmixp_info_job_host(hdr->nodeid);
 			PMIXP_ERROR("Bad message header from node %s",
@@ -750,18 +768,11 @@ static void _process_server_request(pmixp_base_hdr_t *hdr, Buf buf)
 		}
 
 		if (PMIXP_MSG_FAN_IN == hdr->type) {
-			pmixp_coll_contrib_node(coll, hdr->nodeid, buf);
-			goto exit;
+			pmixp_coll_contrib_child(coll, hdr->nodeid,
+						 hdr->seq, buf);
 		} else {
-			coll->root_buf = buf;
-			pmixp_coll_bcast(coll);
-			/* buf will be free'd by the PMIx callback so
-			 * protect the data by voiding the buffer.
-			 * Use the statement below instead of (buf = NULL)
-			 * to maintain incapsulation - in general `buf`is
-			 * not a pointer, but opaque type.
-			 */
-			buf = create_buf(NULL, 0);
+			pmixp_coll_contrib_parent(coll, hdr->nodeid,
+						  hdr->seq, buf);
 		}
 
 		break;
@@ -931,15 +942,15 @@ static int _direct_hdr_unpack_samearch(void *net, void *host)
  */
 static size_t _direct_hdr_pack_portable(pmixp_base_hdr_t *hdr, void *net)
 {
-	Buf packbuf = create_buf(net, PMIXP_BASE_HDR_MAX);
+	Buf buf = create_buf(net, PMIXP_BASE_HDR_MAX);
 	int size = 0;
-	_base_hdr_pack_full(packbuf, hdr);
-	size = get_buf_offset(packbuf);
+	_base_hdr_pack_full(buf, hdr);
+	size = get_buf_offset(buf);
 	xassert(size >= PMIXP_BASE_HDR_SIZE);
 	xassert(size <= PMIXP_BASE_HDR_MAX);
 	/* free the Buf packbuf, but not the memory it points to */
-	packbuf->head = NULL;
-	free_buf(packbuf);
+	buf->head = NULL;
+	free_buf(buf);
 	return size;
 }
 
@@ -1183,14 +1194,14 @@ static uint32_t _slurm_proto_msize(void *buf)
  */
 static int _slurm_pack_hdr(pmixp_base_hdr_t *hdr, void *net)
 {
-	Buf packbuf = create_buf(net, PMIXP_BASE_HDR_MAX);
+	Buf buf = create_buf(net, PMIXP_BASE_HDR_MAX);
 	int size = 0;
 
-	_base_hdr_pack_full(packbuf, hdr);
-	size = get_buf_offset(packbuf);
+	_base_hdr_pack_full(buf, hdr);
+	size = get_buf_offset(buf);
 	/* free the Buf packbuf, but not the memory it points to */
-	packbuf->head = NULL;
-	free_buf(packbuf);
+	buf->head = NULL;
+	free_buf(buf);
 	return size;
 }
 

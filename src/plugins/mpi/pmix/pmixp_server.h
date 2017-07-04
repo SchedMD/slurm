@@ -41,6 +41,7 @@
 #include "pmixp_common.h"
 
 typedef enum {
+	PMIXP_MSG_NONE,
 	PMIXP_MSG_FAN_IN,
 	PMIXP_MSG_FAN_OUT,
 	PMIXP_MSG_DMDX,

@@ -95,17 +95,17 @@ static pmixp_coll_t *_find_collective(pmixp_coll_type_t type,
 	/* Walk through the list looking for the collective descriptor */
 	it = list_iterator_create(_pmixp_state.coll);
 	while (NULL != (coll = list_next(it))) {
-		if (coll->nprocs != nprocs) {
+		if (coll->pset.nprocs != nprocs) {
 			continue;
 		}
 		if (coll->type != type) {
 			continue;
 		}
-		if (!coll->nprocs) {
+		if (!coll->pset.nprocs) {
 			ret = coll;
 			goto exit;
 		}
-		if (_compare_ranges(coll->procs, procs, nprocs)) {
+		if (_compare_ranges(coll->pset.procs, procs, nprocs)) {
 			ret = coll;
 			goto exit;
 		}
@@ -150,8 +150,8 @@ pmixp_coll_t *pmixp_state_coll_get(pmixp_coll_type_t type,
 		ret = xmalloc(sizeof(*ret));
 		/* initialize with unlocked list but locked element */
 		if (PMIX_SUCCESS != pmixp_coll_init(ret, procs, nprocs, type)) {
-			if (ret->procs) {
-				xfree(ret->procs);
+			if (ret->pset.procs) {
+				xfree(ret->pset.procs);
 			}
 			xfree(ret);
 			ret = NULL;

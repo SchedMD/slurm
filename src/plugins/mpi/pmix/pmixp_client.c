@@ -786,10 +786,11 @@ pmix_status_t fencenb_fn(const pmix_proc_t procs[], size_t nprocs,
 	pmixp_coll_t *coll;
 	pmixp_coll_type_t type = PMIXP_COLL_TYPE_FENCE;
 	pmix_status_t status = PMIX_SUCCESS;
+	int ret;
 
 	coll = pmixp_state_coll_get(type, procs, nprocs);
-	pmixp_coll_set_callback(coll, cbfunc, cbdata);
-	if (SLURM_SUCCESS != pmixp_coll_contrib_local(coll, data, ndata)) {
+	ret = pmixp_coll_contrib_local(coll, data, ndata, cbfunc, cbdata);
+	if (SLURM_SUCCESS != ret) {
 		goto error;
 	}
 	return PMIX_SUCCESS;
