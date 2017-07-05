@@ -212,7 +212,6 @@
 extern char **environ;
 
 /*---- global variables, defined in opt.h ----*/
-int	_verbose;
 resource_allocation_response_msg_t *global_resp = NULL;
 int	error_exit = 1;
 int	immediate_exit = 1;
@@ -221,6 +220,7 @@ opt_t	opt;
 List 	opt_list = NULL;
 int	pass_number = 0;
 time_t	srun_begin_time = 0;
+int	_verbose = 0;
 
 /*---- forward declarations of static variables and functions  ----*/
 static bool mpi_initialized = false;
@@ -539,7 +539,16 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 	for (i = i_first; i <= i_last; i++) {
 		if (!bit_test(pack_grp_bits, i))
 			continue;
-		pass_number++;
+
+		if (pass_number++ > 0) {
+			opt_t *opt_dup;
+			opt_dup = xmalloc(sizeof(opt_t));
+			memcpy(opt_dup, &opt, sizeof(opt_t));
+			if (!opt_list)
+				opt_list = list_create(NULL);
+			list_append(opt_list, opt_dup);
+		}
+
 		/* initialize option defaults */
 		_opt_default();
 
@@ -574,9 +583,15 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 			launch_g_create_job_step(NULL, 0, NULL, NULL, &opt, -1);
 			exit(0);
 		}
-//FIXME-PACK: Build opt_list here
 	}
 	bit_free(pack_grp_bits);
+
+	if (opt_list) {		/* Last record */
+		opt_t *opt_dup;
+		opt_dup = xmalloc(sizeof(opt_t));
+		memcpy(opt_dup, &opt, sizeof(opt_t));
+		list_append(opt_list, opt_dup);
+	}
 
 	return 1;
 
@@ -1317,6 +1332,7 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 static void _set_options(const int argc, char **argv)
 {
 	int opt_char, option_index = 0, max_val = 0, tmp_int;
+	int  max_verbose = 0;
 	struct utsname name;
 	char *pos_delimit;
 	bool ntasks_set_opt = false;
@@ -1582,7 +1598,7 @@ static void _set_options(const int argc, char **argv)
 			opt.unbuffered = true;
 			break;
 		case (int)'v':
-			_verbose++;
+			max_verbose++;
 			break;
 		case (int)'V':
 			print_slurm_version();
@@ -2285,6 +2301,8 @@ static void _set_options(const int argc, char **argv)
 		}
 	}
 
+	_verbose = MAX(_verbose, max_verbose);
+
 	/* This means --ntasks was read from the environment.  We will override
 	 * it with what the user specified in the hostlist. POE launched
 	 * jobs excluded (they have the SLURM_STARTED_STEP env var set). */
@@ -2453,7 +2471,7 @@ static bool _opt_verify(void)
 {
 	bool verified = true;
 	hostlist_t hl = NULL;
-	int hl_cnt = 0, i;
+	int hl_cnt = 0;
 
 	/*
 	 *  Do not set slurmd debug level higher than DEBUG2,
@@ -2843,35 +2861,8 @@ static bool _opt_verify(void)
 		(void) mpi_hook_client_init(NULL);
 	}
 
-	opt.pack_grp_bits = bit_alloc(MAX_PACK_COUNT);
-	if (opt.pack_group) {
-		char *tmp = NULL;
-		if (opt.pack_group[0] == '[')
-			tmp = xstrdup(opt.pack_group);
-		else
-			xstrfmtcat(tmp, "[%s]", opt.pack_group);
-		hl = hostlist_create(tmp);
-		if (!hl) {
-			error("Invalid --pack-group value: %s", opt.pack_group);
-			exit(error_exit);
-		}
-		xfree(tmp);
-		while ((tmp = hostlist_shift(hl))) {
-			char *end_ptr = NULL;
-			i = strtol(tmp, &end_ptr, 10);
-			if ((i < 0) || (i >= MAX_PACK_COUNT) ||
-			    (end_ptr[0] != '\0')) {
-				error("Invalid --pack-group value: %s",
-				      opt.pack_group);
-				exit(error_exit);
-			}
-			bit_set(opt.pack_grp_bits, i);
-			free(tmp);
-		}
-		hostlist_destroy(hl);
-	} else {
-		bit_set(opt.pack_grp_bits, 0);
-	}
+	if (!opt.job_name)
+		opt.job_name = xstrdup(opt.cmd_name);
 
 	return verified;
 }

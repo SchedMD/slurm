@@ -525,18 +525,6 @@ extern void init_srun(int argc, char **argv,
 			pack_argv += pack_argc_off;
 		} else
 			pack_fini = true;
-		if (!opt.job_name)
-			opt.job_name = xstrdup(opt.cmd_name);
-		if (!pack_fini || pack_inx) {
-			/* Copy options, leaving original data intact so some
-			 * option can be preserved between job components */
-			opt_t *opt_dup;
-			opt_dup = xmalloc(sizeof(opt_t));
-			memcpy(opt_dup, &opt, sizeof(opt_t));
-			if (!opt_list)
-				opt_list = list_create(NULL);
-			list_append(opt_list, opt_dup);
-		}
 	}
 	_match_job_name(opt_list);
 
@@ -607,7 +595,6 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 	opt_t *opt_local = &opt;
 	int pack_offset = 0, rc = 0;
 
-//FIXME-PACK: handle pack-group here when matching opt_local and resp values
 	if (srun_job_list) {
 		if (opt_list)
 			opt_iter = list_iterator_create(opt_list);
@@ -679,11 +666,11 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		srun_job_list = list_create(NULL);
 		if (list_count(job_resp_list) > 1)
 			pack_offset = 0;
-		(void) get_next_opt(-2);
 		resp_iter = list_iterator_create(job_resp_list);
 		while ((resp = (resource_allocation_response_msg_t *)
 				list_next(resp_iter))) {
 			_print_job_information(resp);
+			(void) get_next_opt(-2);
 			while ((opt_local = get_next_opt(pack_offset))) {
 				if (my_job_id == 0) {
 					my_job_id = resp->job_id;
