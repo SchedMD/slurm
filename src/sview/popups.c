@@ -1156,6 +1156,6 @@ extern void display_fed_disabled_popup(const char *title)
 	label = gtk_label_new(tmp_char);
 	gtk_box_pack_start(GTK_BOX(dialog->vbox), label, false, false, 0);
 	gtk_widget_show_all(GTK_WIDGET(dialog));
-	gtk_dialog_run(dialog);
+	(void) gtk_dialog_run(dialog);
 	gtk_widget_destroy(GTK_WIDGET(dialog));
 }
