@@ -427,7 +427,7 @@ extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg)
 	}
 
 	_dump_trigger_msg("trigger_set", msg);
-	for (i=0; i<msg->record_count; i++) {
+	for (i = 0; i < msg->record_count; i++) {
 		if (msg->trigger_array[i].res_type ==
 		    TRIGGER_RES_TYPE_JOB) {
 			job_id = (uint32_t) atol(
@@ -448,12 +448,14 @@ extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg)
 			    (msg->trigger_array[i].res_id[0] != '*') &&
 			    (node_name2bitmap(msg->trigger_array[i].res_id,
 					      false, &bitmap) != 0)) {
+				FREE_NULL_BITMAP(bitmap);
 				rc = ESLURM_INVALID_NODE_NAME;
 				continue;
 			}
 		}
 		msg->trigger_array[i].user_id = (uint32_t) uid;
 		if (_duplicate_trigger(&msg->trigger_array[i])) {
+			FREE_NULL_BITMAP(bitmap);
 			rc = ESLURM_TRIGGER_DUP;
 			continue;
 		}
