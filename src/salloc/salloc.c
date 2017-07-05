@@ -947,6 +947,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.ntasks_set)
 		desc->bitflags |= JOB_NTASKS_SET;
 
+	desc->clusters = xstrdup(opt.clusters);
+
 	return 0;
 }
 
