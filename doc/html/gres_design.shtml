@@ -19,7 +19,7 @@ Slurm Generic Resource (GRES) Plugin API</a>.</p>
 <p>GRES are associated with Slurm nodes, jobs and job steps. You will find
 a string variable named <b>gres</b> in those data structures which
 is used to store the GRES configured on a node or required by a job or step
-(e.g. "gpu:2,nic:1"). This string is also visible to variou. Slurm commands
+(e.g. "gpu:2,nic:1"). This string is also visible to various Slurm commands
 viewing information about those data structures (e.g. "scontrol show job").
 There is a second variable associated with each of those data structures on
 the <b>slurmctld</b> daemon

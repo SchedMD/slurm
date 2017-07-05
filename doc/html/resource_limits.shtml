@@ -121,7 +121,7 @@ specified then no limit will apply.</p>
 <p><b>NOTE:</b> Unless noted, if a job request breaches a given limit
 the job will pend unless the job's QOS has the DenyOnLimit
 flag set, which will cause the job to be denied at submission.  When
-Grp limits are considerd with respects to this flag the Grp limit
+Grp limits are considered with respects to this flag the Grp limit
 is treated as a Max limit.</p>
 
 <ul>
