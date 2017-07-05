@@ -1411,15 +1411,18 @@ If no plugin is specified, the reservation applies to all configured burst
 buffer plugins.
 "type" specifies a Cray generic burst buffer resource, for example "nodes".
 if "type" is not specified, the number is a measure of storage space.
-The "units" may be "N" (nodes), "GB" (gigabytes), "TB" (terabytes),
-"PB" (petabytes), etc. with the default units being gigabytes for reservations
-of storage space.
+The "units" may be "N" (nodes), "K|KiB", "M|MiB", "G|GiB", "T|TiB", "P|PiB"
+(for powers of 1024) and "KB", "MB", "GB", "TB", "PB" (for powers of 1000).
+The default units are bytes for reservations of storage space.
 For example "BurstBuffer=cray:2TB" (reserve 2TB of storage plus
 3 nodes from the Cray plugin) or
 "BurstBuffer=100GB" (reserve 100 GB of storage from all configured burst buffer
 plugins).
 Jobs using this reservation are not restricted to these burst buffer resources,
 but may use these reserved resources plus any which are generally available.
+NOTE: Usually Slurm interprets KB, MB, GB, TB, PB, TB units as powers of 1024,
+but for Burst Buffers size specifications Slurm supports both IEC/SI formats.
+This is because the CRAY API for managing DataWarps supports both formats.
 
 .TP
 \fICoreCnt\fP=<num>

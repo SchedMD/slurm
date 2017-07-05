@@ -141,6 +141,9 @@ documents those changes that are of interest to users and administrators.
  -- CRAY - Alter algorithm to come up with the SLURM_ID_HASH.
  -- Implement federated scheduling and federated status outputs.
 
+* Changes in Slurm 17.02.7
+==========================
+
 * Changes in Slurm 17.02.6
 ==========================
  -- Fix configurator.easy.html to output the SelectTypeParameters line.
