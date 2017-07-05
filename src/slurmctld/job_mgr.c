@@ -8762,7 +8762,8 @@ static int _list_find_job_old(void *job_entry, void *key)
 	if (slurmctld_conf.min_job_age == 0)
 		return 0;	/* No job record purging */
 
-	if (fed_mgr_fed_rec && job_ptr->fed_details) {
+	if (fed_mgr_fed_rec && job_ptr->fed_details &&
+	    !fed_mgr_is_origin_job(job_ptr)) {
 		uint32_t origin_id = fed_mgr_get_cluster_id(job_ptr->job_id);
 		slurmdb_cluster_rec_t *origin =
 			fed_mgr_get_cluster_by_id(origin_id);
@@ -8776,8 +8777,7 @@ static int _list_find_job_old(void *job_entry, void *key)
 	}
 
 	min_age  = now - slurmctld_conf.min_job_age;
-	if (fed_mgr_is_origin_job(job_ptr) &&
-	    (job_ptr->end_time > min_age))
+	if (job_ptr->end_time > min_age)
 		return 0;	/* Too new to purge */
 
 	if (!(IS_JOB_COMPLETED(job_ptr)))
@@ -8847,8 +8847,7 @@ static bool _all_parts_hidden(struct job_record *job_ptr, uid_t uid)
 static bool _hide_job(struct job_record *job_ptr, uid_t uid,
 		      uint16_t show_flags)
 {
-	if (!(show_flags & SHOW_ALL) &&
-	    job_ptr->fed_details && fed_mgr_is_tracker_only_job(job_ptr))
+	if (!(show_flags & SHOW_ALL) && IS_JOB_REVOKED(job_ptr))
 		return true;
 
 	if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&

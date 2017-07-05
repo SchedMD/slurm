@@ -701,13 +701,13 @@ sleep 5
 
 verify $fedc2 $jid(0) ".+Invalid.+" "Job found on wrong cluster"
 verify $fedc3 $jid(0) "PD\\s+$fedc3\\s+NA" "Job not running on designated cluster"
-verify $fedc1 $jid(0) "PD\\s+$fedc3\\s+$fedc3" "Job found on wrong cluster"
+verify $fedc1 $jid(0) "RV\\s+$fedc3\\s+$fedc3" "Job found on wrong cluster"
 
 set jid(0) [sbatch $my_sbatch $script !fc,fa]
 
 sleep 5
 
-verify $fedc1 $jid(0) "PD\\s+$fedc2\\s+$fedc2" "Job found on wrong cluster"
+verify $fedc1 $jid(0) "RV\\s+$fedc2\\s+$fedc2" "Job found on wrong cluster"
 verify $fedc2 $jid(0) "PD\\s+$fedc2\\s+NA" "Job not running on designated cluster"
 verify $fedc3 $jid(0) ".+Invalid.+" "Job found on wrong cluster"
 

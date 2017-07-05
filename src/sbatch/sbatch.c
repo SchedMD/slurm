@@ -704,6 +704,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.mcs_label)
 		desc->mcs_label = xstrdup(opt.mcs_label);
 
+	desc->clusters = xstrdup(opt.clusters);
+
 	return 0;
 }
 

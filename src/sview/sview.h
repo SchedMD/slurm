@@ -225,6 +225,7 @@ struct popup_positioner {
 
 typedef struct {
 	sview_search_type_t search_type;
+	gchar *cluster_name;
 	gchar *gchar_data;
 	int  int_data;
 	int  int_data2;
@@ -346,6 +347,7 @@ extern topo_info_response_msg_t *g_topo_info_msg_ptr;
 extern switch_record_bitmaps_t *g_switch_nodes_maps;
 extern popup_positioner_t main_popup_positioner[];
 extern popup_pos_t popup_pos;
+extern char *federation_name;
 
 extern void init_grid(node_info_msg_t *node_info_ptr);
 extern int set_grid(int start, int end, int count);
@@ -371,6 +373,7 @@ extern void change_refresh_popup(GtkAction *action, gpointer user_data);
 extern void change_grid_popup(GtkAction *action, gpointer user_data);
 extern void about_popup(GtkAction *action, gpointer user_data);
 extern void usage_popup(GtkAction *action, gpointer user_data);
+extern void display_fed_disabled_popup(const char *title);
 
 //grid.c
 extern void destroy_grid_button(void *arg);
@@ -406,7 +409,6 @@ extern void post_setup_popup_grid_list(popup_info_t *popup_win);
 // part_info.c
 extern GtkWidget *create_part_entry(update_part_msg_t *part_msg,
 				    GtkTreeModel *model, GtkTreeIter *iter);
-extern bool visible_part(char* part_name);
 extern bool check_part_includes_node(int node_dx);
 extern void refresh_part(GtkAction *action, gpointer user_data);
 extern GtkListStore *create_model_part(int type);
@@ -514,7 +516,7 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data);
 extern void specific_info_node(popup_info_t *popup_win);
 extern void set_menus_node(void *arg, void *arg2, GtkTreePath *path, int type);
 extern void popup_all_node(GtkTreeModel *model, GtkTreeIter *iter, int id);
-extern void popup_all_node_name(char *name, int id);
+extern void popup_all_node_name(char *name, int id, char *cluster_name);
 extern void admin_menu_node_name(char *name, GdkEventButton *event);
 extern void admin_node(GtkTreeModel *model, GtkTreeIter *iter, char *type);
 extern void admin_node_name(char *name, char *old_value, char *type);

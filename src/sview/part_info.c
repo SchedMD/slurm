@@ -63,6 +63,7 @@ typedef struct {
 	GtkTreeIter iter_ptr;
 	bool iter_set;
 	char *part_name;
+	char *cluster_name;
 	/* part_info contains partition, avail, max_time, job_size,
 	 * root, share, groups */
 	partition_info_t* part_ptr;
@@ -1647,6 +1648,7 @@ static void _update_info_part(List info_list,
 static void _part_info_free(sview_part_info_t *sview_part_info)
 {
 	if (sview_part_info) {
+		xfree(sview_part_info->cluster_name);
 		xfree(sview_part_info->part_name);
 		memset(&sview_part_info->sub_part_total, 0,
 		       sizeof(sview_part_sub_t));
@@ -1894,6 +1896,10 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 		if (last_list_itr) {
 			while ((sview_part_info =
 				list_next(last_list_itr))) {
+				if (sview_part_info->cluster_name &&
+				    xstrcmp(sview_part_info->cluster_name,
+					    part_ptr->cluster_name))
+					continue;
 				if (!xstrcmp(sview_part_info->part_name,
 					     part_ptr->name)) {
 					list_remove(last_list_itr);
@@ -1907,6 +1913,7 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 		if (!sview_part_info)
 			sview_part_info = xmalloc(sizeof(sview_part_info_t));
 		sview_part_info->part_name = xstrdup(part_ptr->name);
+		sview_part_info->cluster_name = xstrdup(part_ptr->cluster_name);
 		sview_part_info->part_ptr = part_ptr;
 		sview_part_info->sub_list = list_create(_destroy_part_sub);
 		sview_part_info->pos = i;
@@ -2017,6 +2024,7 @@ static void _display_info_part(List info_list,	popup_info_t *popup_win)
 {
 	specific_info_t *spec_info = popup_win->spec_info;
 	char *name = (char *)spec_info->search_info->gchar_data;
+	char *cluster_name = (char *)spec_info->search_info->cluster_name;
 	int found = 0;
 	partition_info_t *part_ptr = NULL;
 	GtkTreeView *treeview = NULL;
@@ -2044,6 +2052,11 @@ need_refresh:
 	itr = list_iterator_create(info_list);
 	while ((sview_part_info = (sview_part_info_t*) list_next(itr))) {
 		part_ptr = sview_part_info->part_ptr;
+
+		if (cluster_name &&
+		    xstrcmp(part_ptr->cluster_name, cluster_name))
+			continue;
+
 		if (!xstrcmp(part_ptr->name, name)) {
 			j = 0;
 			while (part_ptr->node_inx[j] >= 0) {
@@ -2207,27 +2220,6 @@ extern void refresh_part(GtkAction *action, gpointer user_data)
 	specific_info_part(popup_win);
 }
 
-
-extern bool visible_part(char* part_name)
-{
-	static partition_info_msg_t *part_info_ptr = NULL;
-	partition_info_t *m_part_ptr = NULL;
-	int i;
-	int rc = false;
-
-	if (!g_part_info_ptr)
-		get_new_info_part(&part_info_ptr, force_refresh);
-	for (i = 0; i < g_part_info_ptr->record_count; i++) {
-		m_part_ptr = &(g_part_info_ptr->partition_array[i]);
-		if (!xstrcmp(m_part_ptr->name, part_name)) {
-			if (m_part_ptr->flags & PART_FLAG_HIDDEN)
-				rc =  false;
-			else
-				rc = true;
-		}
-	}
-	return rc;
-}
 
 extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 {
@@ -2493,22 +2485,31 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 			    const char *new_text,
 			    gpointer data)
 {
-	GtkTreeStore *treestore = GTK_TREE_STORE(data);
-	GtkTreePath *path = gtk_tree_path_new_from_string(path_string);
+	GtkTreeStore *treestore = NULL;
+	GtkTreePath *path = NULL;
 	GtkTreeIter iter;
-	update_part_msg_t *part_msg = xmalloc(sizeof(update_part_msg_t));
+	update_part_msg_t *part_msg = NULL;
 
 	char *temp = NULL;
 	char *old_text = NULL;
 	const char *type = NULL;
-	int column = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell),
-						       "column"));
+	int column;
 
 	if (!new_text || !xstrcmp(new_text, ""))
 		goto no_input;
 
+	if (cluster_flags & CLUSTER_FLAG_FED) {
+		display_fed_disabled_popup(type);
+		goto no_input;
+	}
+
+	part_msg = xmalloc(sizeof(update_part_msg_t));
+
+	treestore = GTK_TREE_STORE(data);
+	path = gtk_tree_path_new_from_string(path_string);
 	gtk_tree_model_get_iter(GTK_TREE_MODEL(treestore), &iter, path);
 
+	column = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell), "column"));
 	if (column != SORTID_NODE_STATE) {
 		slurm_init_part_desc_msg(part_msg);
 		gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter,
@@ -2559,7 +2560,7 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 	}
 no_input:
 	slurm_free_update_part_msg(part_msg);
-	gtk_tree_path_free (path);
+	gtk_tree_path_free(path);
 	g_free(old_text);
 	g_mutex_unlock(sview_mutex);
 }
@@ -2876,6 +2877,12 @@ display_it:
 				if (xstrcmp(part_ptr->name,
 					    spec_info->search_info->gchar_data))
 					continue;
+
+				if (spec_info->search_info->cluster_name &&
+				    xstrcmp(
+					part_ptr->cluster_name,
+					spec_info->search_info->cluster_name))
+					continue;
 				break;
 			case SEARCH_PARTITION_STATE:
 				if (spec_info->search_info->int_data == NO_VAL)
@@ -2896,6 +2903,11 @@ display_it:
 
 			if (xstrcmp(part_ptr->name,
 				    spec_info->search_info->gchar_data))
+				continue;
+
+			if (spec_info->search_info->cluster_name &&
+			    xstrcmp(part_ptr->cluster_name,
+				    spec_info->search_info->cluster_name))
 				continue;
 			break;
 		default:
@@ -2970,6 +2982,7 @@ extern void set_menus_part(void *arg, void *arg2, GtkTreePath *path, int type)
 extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 {
 	char *name = NULL;
+	char *cluster_name = NULL;
 	char *state = NULL;
 	char title[100];
 	int only_line = 0;
@@ -2979,6 +2992,7 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	GtkTreeIter par_iter;
 
 	gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
+	gtk_tree_model_get(model, iter, SORTID_CLUSTER_NAME, &cluster_name, -1);
 
 	switch(id) {
 	case JOB_PAGE:
@@ -3027,6 +3041,14 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		g_print("part got %d\n", id);
 	}
 
+	if (cluster_name && federation_name &&
+	    (cluster_flags & CLUSTER_FLAG_FED)) {
+		char *tmp_cname = xstrdup_printf(" (%s:%s)",
+						 federation_name, cluster_name);
+		strncat(title, tmp_cname, sizeof(title) - strlen(title) - 1);
+		xfree(tmp_cname);
+	}
+
 	itr = list_iterator_create(popup_list);
 	while ((popup_win = list_next(itr))) {
 		if (popup_win->spec_info)
@@ -3043,6 +3065,7 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 			popup_win = create_popup_info(PART_PAGE, id, title);
 	} else {
 		g_free(name);
+		g_free(cluster_name);
 		g_free(state);
 		gtk_window_present(GTK_WINDOW(popup_win->popup));
 		return;
@@ -3054,6 +3077,12 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	popup_win->model = model;
 	popup_win->iter = *iter;
 	popup_win->node_inx_id = SORTID_NODE_INX;
+
+	if (cluster_flags & CLUSTER_FLAG_FED) {
+		popup_win->spec_info->search_info->cluster_name = cluster_name;
+		cluster_name = NULL;
+	}
+	g_free(cluster_name);
 
 	switch (id) {
 	case JOB_PAGE:
@@ -3124,14 +3153,21 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 {
 	char *nodelist = NULL;
 	char *partid = NULL;
-	update_part_msg_t *part_msg = xmalloc(sizeof(update_part_msg_t));
+	update_part_msg_t *part_msg = NULL;
 	int edit_type = 0;
 	int response = 0;
 	char tmp_char[100];
 	char *temp = NULL;
 	GtkWidget *label = NULL;
 	GtkWidget *entry = NULL;
-	GtkWidget *popup = gtk_dialog_new_with_buttons(
+	GtkWidget *popup = NULL;
+
+	if (cluster_flags & CLUSTER_FLAG_FED) {
+		display_fed_disabled_popup(type);
+		return;
+	}
+
+	popup = gtk_dialog_new_with_buttons(
 		type,
 		GTK_WINDOW(main_window),
 		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
@@ -3140,8 +3176,9 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 
 	gtk_tree_model_get(model, iter, SORTID_NAME, &partid, -1);
 	gtk_tree_model_get(model, iter, SORTID_NODELIST, &nodelist, -1);
-	slurm_init_part_desc_msg(part_msg);
 
+	part_msg = xmalloc(sizeof(update_part_msg_t));
+	slurm_init_part_desc_msg(part_msg);
 	part_msg->name = xstrdup(partid);
 
 	if (!xstrcasecmp("Change Partition State", type)) {

@@ -424,6 +424,7 @@ proc wait_for_fed_job { job_id desired_state clusters } {
 	switch $desired_state {
 		"DONE" {}
 		"PENDING" {}
+		"REVOKED" {}
 		"RUNNING" {}
 		"SUSPENDED" {}
 		"SPECIAL_EXIT" {}
@@ -485,6 +486,14 @@ proc wait_for_fed_job { job_id desired_state clusters } {
 				"PENDING" {
 					if {[string compare $desired_state "PENDING"] == 0} {
 						send_user "Job $job_id is PENDING on $cluster\n"
+						return $cluster
+					}
+					send_user "Job $job_id is in state $state, "
+					send_user "desire $desired_state\n"
+				}
+				"REVOKED" {
+					if {[string compare $desired_state "REVOKED"] == 0} {
+						send_user "Job $job_id is REVOKED on $cluster\n"
 						return $cluster
 					}
 					send_user "Job $job_id is in state $state, "

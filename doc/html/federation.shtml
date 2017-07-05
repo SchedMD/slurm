@@ -58,12 +58,17 @@ sacctmgr modify cluster &lt;cluster_name&gt; set federation=&lt;federation_name&
 sacctmgr modify federation &lt;federation_name&gt; set clusters=
 sacctmgr modify cluster &lt;cluster_name&gt; set federation=
 </pre>
-<b>NOTE:</b> If a cluster is removed from a federation without first draining
-the cluster, running jobs on the removed cluster, or that originated from the
-removed cluster, will continue to run. Non-origin pending jobs will be removed
-from the cluster being removed and remaining pending sibling jobs will remain
-pending in the federation. If an origin cluster is removed, any pending jobs
-originating from the origin cluster will be removed.
+<b>NOTE:</b> If a cluster is removed from a federation without first being
+drained, running jobs on the removed cluster, or that originated from the
+removed cluster, will continue to run as non-federated jobs. If a job is pending
+on the origin cluster, the job will remain pending on the origin cluster as a
+non-federated job and the remaining sibling jobs will be removed. If the origin
+cluster is being removed and the job is pending and is only viable on one
+cluster then it it will remain pending on the viable cluster as a non-federated
+job. If the origin cluster is being removed and the job is pending and viable on
+multiple clusters other than the origin cluster, then the remaining pending jobs
+will remain pending as a federated job and the remaining sibling clusters will
+schedule amongst themselves to start the job.
 
 <br>
 <br>
@@ -420,9 +425,10 @@ issuing the command on the cluster or using the <b>--cluster/-M</b>  option.
 	</li>
 	<li>
 		<b>Revoked (RV) State:</b> The state the origin sibling job is
-		in while one of the sibling jobs is running on a remote cluster.
-		Or the state that a remote sibling job is put in when another
-		sibling is allocated nodes.
+		in while it is not a viable sibling or one of the sibling jobs
+		is running on a remote cluster. The origin job stays in the
+		revoked state to track sibling jobs that are running or pending
+		on other sibling clusters.
 	</li>
 	<li>
 		<b>Viable Sibling:</b> a cluster that is eligible to run a
@@ -445,6 +451,8 @@ issuing the command on the cluster or using the <b>--cluster/-M</b>  option.
 	<li>Job dependencies are not supported across clusters.</li>
 	<li>Job modification must succeed on the origin cluster for the changes
 		to be pushed to the sibling jobs on remote clusters. </li>
+	<li>Modifications to anything other than jobs are disabled in sview.</li>
+	<li>sview grid is disabled in a federated view.</li>
 </ul>
 
 <p style="text-align:center;">Last modified 15 June 2017</p>

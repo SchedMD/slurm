@@ -76,6 +76,110 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 	exit 0
 }
 
+
+proc setup_cluster_features {} {
+	global sacctmgr fedc1 fedc2 fedc3 eol
+	set exit_code 0
+	set matches 0
+	set my_pid [spawn $sacctmgr -i modify cluster $fedc1 set features=fa]
+	expect {
+		-re "Setting$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "^\\s+Feature\\s+=\\s+fa" {
+			incr matches
+			exp_continue
+		}
+		-re "Modified cluster...$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "^\\s+$fedc1$eol" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr mod not responding\n"
+			slow_kill $my_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$exit_code || $matches != 4} {
+		send_user "$matches FAILURE: unexpected error.\n"
+		end_it 1
+	}
+
+	set matches 0
+	set my_pid [spawn $sacctmgr -i modify cluster $fedc2 set features=fb]
+	expect {
+		-re "Setting$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "^\\s+Feature\\s+=\\s+fb" {
+			incr matches
+			exp_continue
+		}
+		-re "Modified cluster...$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "^\\s+$fedc2$eol" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr mod not responding\n"
+			slow_kill $my_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$exit_code || $matches != 4} {
+		send_user "$matches FAILURE: unexpected error.\n"
+		end_it 1
+	}
+
+	set matches 0
+	set my_pid [spawn $sacctmgr -i modify cluster $fedc3 set features=fc]
+	expect {
+		-re "Setting$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "^\\s+Feature\\s+=\\s+fc" {
+			incr matches
+			exp_continue
+		}
+		-re "Modified cluster...$eol" {
+			incr matches
+			exp_continue
+		}
+		-re "^\\s+$fedc3$eol" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr mod not responding\n"
+			slow_kill $my_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$exit_code || $matches != 4} {
+		send_user "$matches FAILURE: unexpected error.\n"
+		end_it 1
+	}
+}
+
 proc scontrol { fed job_id index regex } {
 	global my_scontrol eol srun_spawn_id
 
@@ -195,6 +299,16 @@ proc cancel_all_jobs { } {
 	}
 	sleep 5
 }
+proc cancel_job { job_id options  } {
+	global scancel
+
+	spawn $scancel $options $job_id
+	expect {
+		eof {
+			wait
+		}
+	}
+}
 
 proc cleanup { } {
 	global scancel fed_name user_name bin_rm file_in fedc1 fedc2 fedc3
@@ -242,6 +356,8 @@ if {[setup_federation $fed_name]} {
 	log_error "failed to setup federation"
 	end_it 1
 }
+setup_cluster_features
+
 
 send_user "\n################################################################\n"
 send_user "Test sacctmgr remove federation"
@@ -260,6 +376,13 @@ wait_for_fed_job $j(1) RUNNING $fedc2
 set j(2) [sbatch ""]
 wait_for_fed_job $j(2) RUNNING $fedc3
 
+set j(6)  [sbatch "--cluster-constraint=fb,fc"]
+set j(7)  [sbatch "--cluster-constraint=fb,fc"]
+set j(8)  [sbatch "--cluster-constraint=fb,fc"]
+set j(9)  [sbatch "--cluster-constraint=fb"]
+set j(10) [sbatch "--cluster-constraint=fa"]
+
+
 set j(3) [sbatch ""]
 
 set my_sbatch "${fed_slurm_base}/$fedc2/bin/sbatch"
@@ -273,42 +396,93 @@ srun "" 0
 sleep 5
 
 # Verify jobs are where they should be
-set f1      "\\s*$fedc1"
-set f2      "\\s*$fedc2"
-set f3      "\\s*$fedc3"
-set n       "\\s*NA"
+# O: origin
+# R: running
+# PD: Pending
+# RV: Revoked
+# fed1        fed2       fed3
+# j(0)O:R
+#             j(1)O:R
+# j(2)O:RV               j(2)R
+# j(3)O:PD    j(3)PD     j(3)PD
+# j(4)PD      j(4)O:PD   j(4)PD
+# j(5)PD      j(5)PD     j(5)O:PD
+#
+# j(6)O:RV    j(6)PD     j(6)PD
+# j(7)O:RV    j(7)PD     j(7)PD
+# j(8)O:RV    j(8)PD     j(8)PD
+# j(9)O:RV    j(9)PD
+# j(10)O:PD
+#
+# srun:PD     srun:O:PD  srun:PD
+
+set f1      "\\s+$fedc1"
+set f2      "\\s+$fedc2"
+set f3      "\\s+$fedc3"
+set n       "\\s+NA"
 set srun_job "sleep\\s+\\d+"
 
-set sib "\\s*$fedc1,$fedc2,$fedc3"
+set sib  "\\s+$fedc1,$fedc2,$fedc3"
+set sib2 "\\s+$fedc2,$fedc3"
 
-set r1 "$j(0)$f1$f1|$j(2)$sib$f3|$j(3)$sib$sib|$j(4)$sib$n|$j(5)$sib$n|$srun_job$sib$n"
-set r2 "$j(1)$f2$f2|$j(3)$sib$n|$j(4)$sib$sib|$j(5)$sib$n|$srun_job$sib$sib"
+set r1 "$j(0)$f1$f1|$j(2)$sib$f3|$j(3)$sib$sib|$j(4)$sib$n|$j(5)$sib$n|$srun_job$sib$n|$j(6)$sib2$sib2|$j(7)$sib2$sib2|$j(8)$sib2$sib2|$j(9)$f2$f2|$j(10)$f1$f1"
+set r2 "$j(1)$f2$f2|$j(3)$sib$n|$j(4)$sib$sib|$j(5)$sib$n|$srun_job$sib$sib|$j(6)$sib2$n|$j(7)$sib2$n|$j(8)$sib2$n|$j(9)$f2$n"
 set r3 "$j(2)$sib$f3|$j(3)$sib$n|$j(4)$sib$n|$j(5)$sib$sib|$srun_job$sib$n"
 
-squeue "$fedc1" "6" $r1
-squeue "$fedc2" "5" $r2
+squeue "$fedc1" "11" $r1
+squeue "$fedc2" "9" $r2
 squeue "$fedc3" "5" $r3
 
+send_user "\n################################################################\n"
+send_user "Remove $fedc1"
+send_user "\n################################################################\n"
 spawn $my_sacctmgr mod fed $fed_name set -i clusters-=$fedc1
 
 sleep 5
 
 # Verify:
-# 1. all non-running jobs are removed from the removed cluster
-# 2. origin tracking jobs are removed.
-# 3. non-origin jobs have the removed cluster removed from the viable and
-# active siblings
+# 1. If origin is removed, that pending jobs are left on origin cluster and
+#    removed from non-origin clusters.
+# 2. If there is a sibling job that is on a non-origin sibling where that
+#    sibling is the only viable sibling then that job become non-federated and
+#    remain pending and the origin tracking job should be removed.
+# 3. If there is a job that has multiple viable siblings that and the origin is
+#    not a viable sibling then the non-origin jobs should stay as federated
+#    jobs and the origin tracking job should be removed. These jobs will
+#    schedule amongst themselves to start.
 # 4. non-origin running jobs are still running and don't have federation
-# information (e.g. viable and active siblings).
-set sib "\\s*$fedc2,$fedc3"
+#    information (e.g. viable and active siblings).
+# 5. non-origin jobs have the removed cluster removed from the viable and
+#    active siblings
+# 6. Verify that pending sruns don't get terminated message when siblings are
+#    revoked.
+# 7. Verify jobs schedule amongst the siblings when the origin is removed.
+# 7. Verify jobs run when the only viable sibling and the origin is removed.
+#
+# fed1        fed2       fed3
+# j(0)O:R
+#             j(1)O:R
+#                        j(2)R
+# j(3)O:PD
+#             j(4)O:PD   j(4)PD
+#             j(5)PD     j(5)O:PD
+#             srun:O:PD  srun:PD
+#
+#             j(6)PD     j(6)PD
+#             j(7)PD     j(7)PD
+#             j(8)PD     j(8)PD
+#             j(9)PD
+# j(10)O:PD
 
-set r1 "$j(0)$n$n"
-set r2 "$j(1)$f2$f2|$j(4)$sib$sib|$j(5)$sib$n|$srun_job$sib$sib"
-set r3 "$j(2)$n$n|$j(4)$sib$n|$j(5)$sib$sib|$srun_job$sib$n"
+set sib "\\s+$fedc2,$fedc3"
 
-squeue "$fedc1" "1" $r1
-squeue "$fedc2" "4" $r2
-squeue "$fedc3" "4" $r3
+set r1 "$j(0)$n$n|$j(3)$n$n|$j(10)$n$n"
+set r2 "$j(1)$f2$f2|$j(4)$sib$sib|$j(5)$sib$n|$srun_job$sib$sib|$j(6)$sib$n|$j(7)$sib$n|$j(8)$sib$n|$j(9)$n$n"
+set r3 "$j(2)$n$n|$j(4)$sib$n|$j(5)$sib$sib|$srun_job$sib$n|$j(6)$sib$n|$j(7)$sib$n|$j(8)$sib$n"
+
+squeue "$fedc1" "3" $r1
+squeue "$fedc2" "8" $r2
+squeue "$fedc3" "7" $r3
 
 #check db
 # Test that job4 is marked REVOKED on the the removed cluster (fed1) and still
@@ -321,15 +495,7 @@ set r3 "PENDING$f3"
 
 spawn $my_sacct -o state,cluster -j $j(4) -M$fedc1,$fedc2,$fedc3 -D
 expect {
-	-re $r1 {
-		incr matches
-		exp_continue
-	}
-	-re $r2 {
-		incr matches
-		exp_continue
-	}
-	-re $r3 {
+	-re "$r1|$r2|$f3" {
 		incr matches
 		exp_continue
 	}
@@ -339,25 +505,17 @@ if {$matches != 3} {
 	end_it 1
 }
 
-# Test that pending jobs are marked as revoked since each cluster will revoke
-# any pending jobs when the origin cluster is removed.
+# Test that job3 is marked REVOKED on the siblings clusters (fed2,fed3) and
+# pending on the origin cluster.
 set matches 0
 
-set r1 "REVOKED$f1"
+set r1 "PENDING$f1"
 set r2 "REVOKED$f2"
 set r3 "REVOKED$f3"
 
 spawn $my_sacct -o state,cluster -j $j(3) -M$fedc1,$fedc2,$fedc3 -D
 expect {
-	-re $r1 {
-		incr matches
-		exp_continue
-	}
-	-re $r2 {
-		incr matches
-		exp_continue
-	}
-	-re $r3 {
+	-re "$r1|$r2|$f3" {
 		incr matches
 		exp_continue
 	}
@@ -368,20 +526,42 @@ if {$matches != 3} {
 }
 
 
+# Cancel running job on fed2 so that j(6) will schedule amongst fed2 and fed3
+# to start the job.
+cancel_job $j(1) "-Mfed2"
+
+set run_cluster [wait_for_fed_job $j(6) RUNNING $fedc2]
+if {[string compare $run_cluster ""] == 0} {
+	log_error "Didn't find running job on cluster"
+	end_it 1
+}
+
+
+
+send_user "\n################################################################\n"
+send_user "Remove $fedc2"
+send_user "\n################################################################\n"
 spawn $my_sacctmgr mod fed $fed_name set -i clusters-=$fedc2
 
 sleep 5
 
 # Verify:
-# 1. all non-running jobs are removed from the removed cluster
-# 2. origin tracking jobs are removed.
-# 3. non-origin jobs have the removed cluster removed from the viable and
-# active siblings
-# 4. non-origin running jobs are still running and don't have federation
-# information (e.g. viable and active siblings).
-# 5. Verify that sruns are only terminated when it is not running and only when
-# the origin cluster is removed.
+# fed1        fed2       fed3
+# j(0)O:R
+#             j(6)R
+#                        j(2)R
+# j(3)O:PD
+#             j(4)O:PD
+#                        j(5)O:PD
+#             srun:O:PD
+#
+#                        j(7)PD
+#                        j(8)PD
+#             j(9)PD
+# j(10)O:PD
 
+set old_timeout $timeout
+set timeout 1
 set matches 0
 set spawn_id $srun_spawn_id(0)
 expect {
@@ -391,19 +571,62 @@ expect {
 	}
 	eof {}
 }
-if {$matches != 1} {
-	log_error "unexpected error in srun. expected only one termination message."
+if {$matches != 0} {
+	log_error "srun got signalled when it shouldn't have."
+	end_it 1
+}
+set timeout $old_timeout
+
+set r1 "$j(0)$n$n|$j(3)$n$n|$j(10)$n$n"
+set r2 "$j(6)$n$n|$j(4)$n$n|$srun_job$n$n|$j(9)$n$n"
+set r3 "$j(2)$n$n|$j(5)$f3$f3|$j(7)$f3$n|$j(8)$f3$n"
+
+squeue "$fedc1" "3" $r1
+squeue "$fedc2" "4" $r2
+squeue "$fedc3" "4" $r3
+
+
+# Cancel running job on fed3 so that j(7) will schedule be scheduled on fed3.
+# j(7) is still considered a federated job but only has one sibling.
+cancel_job $j(2) "-Mfed3"
+
+set run_cluster [wait_for_fed_job $j(7) RUNNING $fedc3]
+if {[string compare $run_cluster ""] == 0} {
+	log_error "Didn't find running job on cluster"
 	end_it 1
 }
 
-set r1 "$j(0)$n$n"
-set r2 "$j(1)$n$n"
-set r3 "$j(2)$n$n|$j(5)$f3$f3"
+send_user "\n################################################################\n"
+send_user "Remove $fedc3"
+send_user "\n################################################################\n"
+spawn $my_sacctmgr mod fed $fed_name set -i clusters-=$fedc3
 
-squeue "$fedc1" "1" $r1
-squeue "$fedc2" "1" $r2
-squeue "$fedc3" "2" $r3
+sleep 5
 
+# Verify:
+# fed1        fed2       fed3
+# j(0)O:R
+#             j(6)R
+# j(3)O:PD
+#             j(4)O:PD
+#                        j(5)O:PD
+#             srun:O:PD
+#
+#                        j(7)R
+#                        j(8)PD
+#             j(9)PD
+# j(10)O:PD
+set r1 "$j(0)$n$n|$j(3)$n$n|$j(10)$n$n"
+set r2 "$j(6)$n$n|$j(4)$n$n|$srun_job$n$n|$j(9)$n$n"
+set r3 "$j(5)$n$n|$j(7)$n$n|$j(8)$n$n"
+
+squeue "$fedc1" "3" $r1
+squeue "$fedc2" "4" $r2
+squeue "$fedc3" "3" $r3
+
+send_user "\n################################################################\n"
+send_user "Test revoked origin jobs are removed."
+send_user "\n################################################################\n"
 
 # Start from scratch
 # Start jobs on all clusters and remove non-origin clusters.
@@ -412,8 +635,7 @@ squeue "$fedc3" "2" $r3
 # Revoked tracking jobs on origin should go away.
 cancel_all_jobs
 
-exec $my_sacctmgr mod fed $fed_name set -i clusters+=$fedc1
-exec $my_sacctmgr mod fed $fed_name set -i clusters+=$fedc2
+exec $my_sacctmgr mod fed $fed_name set -i clusters=$fedc1,$fedc2,$fedc3
 
 #Test whether origin tracking jobs are removed when remote cluster is.
 
@@ -425,6 +647,12 @@ set j(1) [srun "" 2]
 set clus1 [wait_for_fed_job $j(1) RUNNING $fedc2,$fedc3]
 set j(2) [srun "" 3]
 set clus2 [wait_for_fed_job $j(2) RUNNING $fedc3,$fedc2]
+
+# fed1        fed2
+#             clus1     clus2
+# j(0)O:R
+#             j(1)O:R
+#             j(2)O:RV  j(2)R
 
 set f1      "\\s*$fedc1"
 set f2      "\\s*$clus1"

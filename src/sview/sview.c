@@ -87,6 +87,7 @@ List cluster_list = NULL;
 char *orig_cluster_name = NULL;
 switch_record_bitmaps_t *g_switch_nodes_maps = NULL;
 popup_pos_t popup_pos;
+char *federation_name = NULL;
 
 block_info_msg_t *g_block_info_ptr = NULL;
 front_end_info_msg_t *g_front_end_info_ptr;
@@ -367,6 +368,10 @@ static void _set_grid(GtkToggleAction *action)
 	if (action)
 		working_sview_config.show_grid
 			= gtk_toggle_action_get_active(action);
+
+	if (cluster_flags & CLUSTER_FLAG_FED)
+		return;
+
 	if (!working_sview_config.show_grid)
 		gtk_widget_hide(grid_window);
 	else
@@ -1162,8 +1167,15 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 	cluster_flags = slurmdb_setup_cluster_flags();
 
 	gtk_tree_model_get(model, &iter, 0, &selected_name, -1);
-	if (!xstrncmp(selected_name, "FED:", strlen("FED:")))
+	if (!xstrncmp(selected_name, "FED:", strlen("FED:"))) {
 		cluster_flags |= CLUSTER_FLAG_FED;
+		federation_name = xstrdup(selected_name + strlen("FED:"));
+		gtk_widget_hide(grid_window);
+	} else {
+		xfree(federation_name);
+		if (working_sview_config.show_grid)
+			gtk_widget_show(grid_window);
+	}
 
 	display_data = main_display_data;
 	while (display_data++) {

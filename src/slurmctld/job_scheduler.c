@@ -281,7 +281,7 @@ static bool _job_runnable_test1(struct job_record *job_ptr, bool sched_plugin)
 	if (!IS_JOB_PENDING(job_ptr) || IS_JOB_COMPLETING(job_ptr))
 		return false;
 
-	if (job_ptr->fed_details && fed_mgr_is_tracker_only_job(job_ptr))
+	if (IS_JOB_REVOKED(job_ptr))
 		return false;
 
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
@@ -3557,7 +3557,7 @@ static void _delayed_job_start_time(struct job_record *job_ptr)
 		    (job_q_ptr->part_ptr != job_ptr->part_ptr) ||
 		    (job_q_ptr->priority < job_ptr->priority) ||
 		    (job_q_ptr->job_id == job_ptr->job_id) ||
-		    (fed_mgr_is_tracker_only_job(job_q_ptr)))
+		    (IS_JOB_REVOKED(job_q_ptr)))
 			continue;
 		if (job_q_ptr->details->min_nodes == NO_VAL)
 			job_size_nodes = 1;
