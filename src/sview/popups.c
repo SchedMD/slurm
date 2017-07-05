@@ -67,7 +67,7 @@ static gboolean _delete_popup(GtkWidget *widget,
 void _search_entry(sview_search_info_t *sview_search_info)
 {
 	int id = 0;
-	char title[100];
+	char title[100] = {0};
 	ListIterator itr = NULL;
 	popup_info_t *popup_win = NULL;
 	GError *error = NULL;

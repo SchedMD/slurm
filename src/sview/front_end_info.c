@@ -936,7 +936,7 @@ extern void set_menus_front_end(void *arg, void *arg2, GtkTreePath *path,
 extern void popup_all_front_end(GtkTreeModel *model, GtkTreeIter *iter, int id)
 {
 	char *name = NULL;
-	char title[100];
+	char title[100] = {0};
 	ListIterator itr = NULL;
 	popup_info_t *popup_win = NULL;
 	GError *error = NULL;

@@ -4395,7 +4395,7 @@ extern void set_menus_job(void *arg, void *arg2, GtkTreePath *path, int type)
 extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 {
 	char *name = NULL, *cluster_name = NULL;
-	char title[100];
+	char title[100] = {0};
 	ListIterator itr = NULL;
 	popup_info_t *popup_win = NULL;
 	int jobid = NO_VAL;

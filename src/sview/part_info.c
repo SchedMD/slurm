@@ -2984,7 +2984,7 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	char *name = NULL;
 	char *cluster_name = NULL;
 	char *state = NULL;
-	char title[100];
+	char title[100] = {0};
 	int only_line = 0;
 	ListIterator itr = NULL;
 	popup_info_t *popup_win = NULL;

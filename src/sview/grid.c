@@ -133,7 +133,7 @@ static void _open_block(GtkWidget *widget, GdkEventButton *event,
 			grid_button_t *grid_button)
 {
 	GError *error = NULL;
-	char title[100];
+	char title[100] = {0};
 	ListIterator itr = NULL;
 	popup_info_t *popup_win = NULL;
 

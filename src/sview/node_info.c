@@ -2024,7 +2024,7 @@ extern void popup_all_node(GtkTreeModel *model, GtkTreeIter *iter, int id)
 
 extern void popup_all_node_name(char *name, int id, char *cluster_name)
 {
-	char title[100];
+	char title[100] = {0};
 	ListIterator itr = NULL;
 	popup_info_t *popup_win = NULL;
 	GError *error = NULL;
