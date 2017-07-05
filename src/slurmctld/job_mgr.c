@@ -14163,10 +14163,6 @@ extern bool job_independent(struct job_record *job_ptr, int will_run)
 	    || job_ptr->state_reason == WAIT_DEP_INVALID)
 		return false;
 
-	/* Check for maximum number of running tasks in a job array */
-	if (!job_array_start_test(job_ptr))
-		return false;
-
 	/* Test dependencies first so we can cancel jobs before dependent
 	 * job records get purged (e.g. afterok, afternotok) */
 	depend_rc = test_job_dependency(job_ptr);
@@ -14198,6 +14194,15 @@ extern bool job_independent(struct job_record *job_ptr, int will_run)
 		}
 		return false;
 	}
+	/* Job is eligible to start now */
+	if (job_ptr->state_reason == WAIT_DEPENDENCY) {
+		job_ptr->state_reason = WAIT_NO_REASON;
+		xfree(job_ptr->state_desc);
+	}
+
+	/* Check for maximum number of running tasks in a job array */
+	if (!job_array_start_test(job_ptr))
+		return false;
 
 	if (detail_ptr && (detail_ptr->begin_time > now)) {
 		job_ptr->state_reason = WAIT_TIME;
@@ -14211,11 +14216,6 @@ extern bool job_independent(struct job_record *job_ptr, int will_run)
 		return false;	/* not yet time */
 	}
 
-	/* Job is eligible to start now */
-	if (job_ptr->state_reason == WAIT_DEPENDENCY) {
-		job_ptr->state_reason = WAIT_NO_REASON;
-		xfree(job_ptr->state_desc);
-	}
 	if ((detail_ptr && (detail_ptr->begin_time == 0) &&
 	    (job_ptr->priority != 0))) {
 		detail_ptr->begin_time = now;
