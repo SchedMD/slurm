@@ -502,15 +502,10 @@ error:
 	return fstatus;
 }
 
-extern int task_cgroup_memory_attach_task(stepd_step_rec_t *job)
+extern int task_cgroup_memory_attach_task(stepd_step_rec_t *job, pid_t pid)
 {
 	int fstatus = SLURM_ERROR;
-	pid_t pid;
 
-	/*
-	 * Attach the current task to the step memory cgroup
-	 */
-	pid = getpid();
 	if (xcgroup_add_pids(&step_memory_cg, &pid, 1) != XCGROUP_SUCCESS) {
 		error("task/cgroup: unable to add task[pid=%u] to "
 		      "memory cg '%s'",pid,step_memory_cg.path);

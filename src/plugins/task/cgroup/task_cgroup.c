@@ -242,7 +242,7 @@ extern int task_p_pre_setuid (stepd_step_rec_t *job)
  * task_p_pre_launch_priv() is called prior to exec of application task.
  * in privileged mode, just after slurm_spank_task_init_privileged
  */
-extern int task_p_pre_launch_priv (stepd_step_rec_t *job)
+extern int task_p_pre_launch_priv(stepd_step_rec_t *job, pid_t pid)
 {
 
 	if (use_cpuset) {
@@ -252,7 +252,7 @@ extern int task_p_pre_launch_priv (stepd_step_rec_t *job)
 
 	if (use_memory) {
 		/* attach the task to the memory cgroup */
-		task_cgroup_memory_attach_task(job);
+		task_cgroup_memory_attach_task(job, pid);
 	}
 
 	if (use_devices) {
