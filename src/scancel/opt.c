@@ -82,6 +82,7 @@ struct signv {
 	{ "TERM",	SIGTERM },
 	{ "USR1",	SIGUSR1 },
 	{ "USR2",	SIGUSR2 },
+	{ "URG",	SIGURG  },
 	{ "CONT",	SIGCONT },
 	{ "STOP",	SIGSTOP },
 	{ "TSTP",	SIGTSTP },
