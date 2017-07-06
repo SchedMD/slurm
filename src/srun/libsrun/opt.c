@@ -411,7 +411,10 @@ static opt_t *_get_first_opt(int pack_offset)
 	opt_t *opt_local;
 
 	if (!opt_list) {
+		if (!opt.pack_grp_bits && (pack_offset == -1))
+			return &opt;
 		if (opt.pack_grp_bits &&
+		    (pack_offset >= 0) &&
 		    (pack_offset < bit_size(opt.pack_grp_bits)) &&
 		    bit_test(opt.pack_grp_bits, pack_offset))
 			return &opt;
@@ -454,6 +457,7 @@ static opt_t *_get_next_opt(int pack_offset, opt_t *opt_last)
 		}
 
 		if (opt_local->pack_grp_bits &&
+		    (pack_offset >= 0) &&
 		    (pack_offset < bit_size(opt_local->pack_grp_bits)) &&
 		    bit_test(opt_local->pack_grp_bits, pack_offset))
 			break;
@@ -479,8 +483,6 @@ extern opt_t *get_next_opt(int pack_offset)
 		return NULL;
 	}
 
-	if (pack_offset < 0)
-		pack_offset = 0;
 	if (offset_last != pack_offset) {
 		offset_last = pack_offset;
 		opt_last = _get_first_opt(pack_offset);
@@ -855,6 +857,8 @@ static void _opt_default(void)
 	opt.ntasks_per_socket		= NO_VAL;
 	opt.ntasks_set			= false;
 	opt.overcommit			= false;
+	opt.pack_group			= NULL;
+	opt.pack_grp_bits		= NULL;
 	opt.partition			= NULL;
 	opt.plane_size			= NO_VAL;
 	opt.pn_min_cpus			= NO_VAL;
@@ -1271,7 +1275,7 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 				 int default_pack_offset)
 {
 	int i, opt_char, option_index = 0;
-	char *pack_group = NULL, *tmp = NULL;
+	char *tmp = NULL;
 	bitstr_t *pack_grp_bits = bit_alloc(MAX_PACK_COUNT);
 	hostlist_t hl;
 	struct option *optz;
@@ -1287,21 +1291,21 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 				       optz, &option_index)) != -1) {
 		switch (opt_char) {
 		case LONG_OPT_PACK_GROUP:
-			xfree(pack_group);
-			pack_group = xstrdup(optarg);
+			xfree(opt.pack_group);
+			opt.pack_group = xstrdup(optarg);
 		}
 	}
 	spank_option_table_destroy(optz);
 
-	if (!pack_group) {
+	if (!opt.pack_group) {
 		bit_set(pack_grp_bits, default_pack_offset);
 		return pack_grp_bits;
 	}
 
-	if (pack_group[0] == '[')
-		tmp = xstrdup(pack_group);
+	if (opt.pack_group[0] == '[')
+		tmp = xstrdup(opt.pack_group);
 	else
-		xstrfmtcat(tmp, "[%s]", pack_group);
+		xstrfmtcat(tmp, "[%s]", opt.pack_group);
 	hl = hostlist_create(tmp);
 	if (!hl) {
 		error("Invalid --pack-group value: %s", opt.pack_group);
@@ -1313,7 +1317,7 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 		char *end_ptr = NULL;
 		i = strtol(tmp, &end_ptr, 10);
 		if ((i < 0) || (i >= MAX_PACK_COUNT) || (end_ptr[0] != '\0')) {
-			error("Invalid --pack-group value: %s", pack_group);
+			error("Invalid --pack-group value: %s", opt.pack_group);
 			exit(error_exit);
 		}
 		bit_set(pack_grp_bits, i);
@@ -1321,10 +1325,9 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 	}
 	hostlist_destroy(hl);
 	if (bit_ffs(pack_grp_bits) == -1) {	/* No bits set */
-		error("Invalid --pack-group value: %s", pack_group);
+		error("Invalid --pack-group value: %s", opt.pack_group);
 		exit(error_exit);
 	}
-	xfree(pack_group);
 
 	return pack_grp_bits;
 }
@@ -2329,8 +2332,6 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 
 	opt.pack_grp_bits = bit_alloc(MAX_PACK_COUNT);
 	bit_set(opt.pack_grp_bits, pack_offset);
-	xfree(opt.pack_group);
-	xstrfmtcat(opt.pack_group, "%d", pack_offset);
 
 	if ((opt.pn_min_memory > -1) && (opt.mem_per_cpu > -1)) {
 		if (opt.pn_min_memory < opt.mem_per_cpu) {

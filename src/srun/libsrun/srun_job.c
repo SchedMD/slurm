@@ -449,6 +449,39 @@ extern srun_job_t *job_create_allocation(
 }
 
 /*
+ * Build "pack_group" string. If set on execute line, it may need to be
+ * rebuilt for multiple option structures ("--pack-group=1,2" becomes two
+ * opt structures). Clear "pack_grp_bits".if determined to not be a pack job.
+ */
+static void _pack_grp_test(List opt_list)
+{
+	ListIterator iter;
+	opt_t *opt_local;
+	int pack_offset;
+
+	if (opt_list) {
+		iter = list_iterator_create(opt_list);
+		while ((opt_local = (opt_t *) list_next(iter))) {
+			xfree(opt_local->pack_group);
+			if (opt_local->pack_grp_bits &&
+			    ((pack_offset =
+			      bit_ffs(opt_local->pack_grp_bits)) >= 0)) {
+				xstrfmtcat(opt_local->pack_group, "%d",
+					   pack_offset);
+			}
+		}
+		list_iterator_destroy(iter);
+	} else if (!opt.pack_group && !getenv("SLURM_PACK_SIZE")) {
+		FREE_NULL_BITMAP(opt.pack_grp_bits);
+		/* pack_group is already NULL */
+	} else if (!opt.pack_group && opt.pack_grp_bits) {
+		if ((pack_offset = bit_ffs(opt.pack_grp_bits)) < 0)
+			pack_offset = 0;
+		xstrfmtcat(opt.pack_group, "%d", pack_offset);
+	}
+}
+
+/*
  * Copy job name from last component to all pack job components unless
  * explicitly set.
  */
@@ -478,6 +511,12 @@ static void _match_job_name(List opt_list)
 		}
 	}
 	list_iterator_destroy(iter);
+}
+
+static void _post_opts(List opt_list)
+{
+	_pack_grp_test(opt_list);
+	_match_job_name(opt_list);
 }
 
 extern void init_srun(int argc, char **argv,
@@ -526,8 +565,7 @@ extern void init_srun(int argc, char **argv,
 		} else
 			pack_fini = true;
 	}
-	_match_job_name(opt_list);
-
+	_post_opts(opt_list);
 	record_ppid();
 
 	if (spank_init_post_opt() < 0) {
