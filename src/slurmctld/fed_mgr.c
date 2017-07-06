@@ -4637,7 +4637,7 @@ static int _reconcile_fed_job(void *x, void *arg)
 		     __func__, job_ptr->job_id, sibling_name);
 
 		/* Remove from active siblings */
-		if (!(job_ptr->fed_details->cluster_lock & sibling_bit)) {
+		if (!(job_ptr->fed_details->siblings_active & sibling_bit)) {
 			/* The sibling is a viable sibling but the sibling is
 			 * not active and there is no job there. This is ok. */
 			info("%s: %s is a viable but not active sibling of job %d. This is ok.",
