@@ -4543,12 +4543,11 @@ extern int fed_mgr_update_job_cluster_features(struct job_record *job_ptr,
 	return rc;
 }
 
-static int _reconcile_fed_job(void *x, void *arg)
+static int _reconcile_fed_job(struct job_record *job_ptr,
+			      reconcile_sib_t *rec_sib)
 {
 	int i;
 	bool found_job = false;
-	struct job_record *job_ptr = (struct job_record *)x;
-	reconcile_sib_t *rec_sib = (reconcile_sib_t *)arg;
 	job_info_msg_t *remote_jobs_ptr = rec_sib->job_info_msg;
 	uint32_t origin_id    = fed_mgr_get_cluster_id(job_ptr->job_id);
 	uint32_t sibling_id   = rec_sib->sibling_id;
@@ -4622,6 +4621,8 @@ static int _reconcile_fed_job(void *x, void *arg)
 
 			fed_mgr_job_revoke(job_ptr, true, remote_job->exit_code,
 					   job_ptr->start_time);
+			/* return now because job_ptr have been free'd */
+			return SLURM_SUCCESS;
 		} else if (IS_JOB_PENDING(job_ptr) &&
 			   (IS_JOB_COMPLETED(remote_job))) {
 			info("%s: job %d is completed on sibling %s, must have been started and completed while the origin and sibling were down",
@@ -4629,6 +4630,8 @@ static int _reconcile_fed_job(void *x, void *arg)
 
 			fed_mgr_job_revoke(job_ptr, true, remote_job->exit_code,
 					   job_ptr->start_time);
+			/* return now because job_ptr have been free'd */
+			return SLURM_SUCCESS;
 		}
 
 	/* Origin Jobs */
@@ -4808,8 +4811,10 @@ static int _reconcile_fed_job(void *x, void *arg)
 static int _sync_jobs(const char *sib_name, job_info_msg_t *job_info_msg,
 		      time_t sync_time)
 {
+	ListIterator itr;
 	reconcile_sib_t rec_sib = {0};
 	slurmdb_cluster_rec_t *sib;
+	struct job_record *job_ptr;
 
 	if (!(sib = fed_mgr_get_cluster_by_name((char *)sib_name))) {
 		error("Couldn't find sibling by name '%s'", sib_name);
@@ -4821,7 +4826,10 @@ static int _sync_jobs(const char *sib_name, job_info_msg_t *job_info_msg,
 	rec_sib.job_info_msg = job_info_msg;
 	rec_sib.sync_time    = sync_time;
 
-	list_for_each(job_list, _reconcile_fed_job, &rec_sib);
+	itr = list_iterator_create(job_list);
+	while ((job_ptr = list_next(itr)))
+		_reconcile_fed_job(job_ptr, &rec_sib);
+	list_iterator_destroy(itr);
 
 	sib->fed.sync_recvd = true;
 
