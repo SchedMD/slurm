@@ -5086,7 +5086,8 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 					resv_ptr->node_bitmap) &&
 			    (!resv_ptr->tres_str ||
 			     job_ptr->details->whole_node == 1)) {
-				*when = resv_ptr->end_time;
+				if (move_time)
+					*when = resv_ptr->end_time;
 				rc = ESLURM_NODES_BUSY;
 				break;
 			}
