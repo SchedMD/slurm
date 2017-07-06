@@ -409,16 +409,16 @@ squeue "$regf1$regf2$regf3"
 scontrol $fedc1 $jid(0) ""
 scontrol $fedc2 $jid(0) ""
 scontrol $fedc3 $jid(0) ""
-
+sleep 2
 my_cat "slurm-$jid(0).out"
 
 scontrol $fedc1 $jid(1) ""
 scontrol $fedc2 $jid(1) ""
 scontrol $fedc3 $jid(1) ""
+sleep 2
 my_cat "slurm-$jid(0).out"
 
 set spawn_id $srun_spawn_id
-
 scontrol $fedc1 $jid(2) "srun: from $fedc1"
 scontrol $fedc2 $jid(2) "srun: from $fedc2"
 scontrol $fedc3 $jid(2) "srun: from $fedc3"
