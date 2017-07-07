@@ -578,7 +578,7 @@ static void _generate_resv_name(resv_desc_msg_t *resv_ptr)
 
 	xstrfmtcat(name, "_%d", top_suffix);
 	len++;
-
+	xfree(resv_ptr->name);
 	resv_ptr->name = name;
 }
 
