@@ -5,6 +5,8 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Fix deadlock if requesting to create more than 10000 reservations.
  -- Fix potential memory leak when creating partition name.
+ -- Execute the HealthCheckProgram once when the slurmd daemon starts rather
+    than executing repeatedly until an exit code of 0 is returned.
 
 * Changes in Slurm 17.02.6
 ==========================
