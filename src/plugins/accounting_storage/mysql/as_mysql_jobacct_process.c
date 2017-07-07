@@ -613,10 +613,12 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			if (job->start && (job->start < job_cond->usage_start))
 				job->start = job_cond->usage_start;
 
-			if (!job->end || job->end > job_cond->usage_end)
+			/* Only set an end time if the job started */
+			if ((job->start && !job->end) ||
+			    (job->end > job_cond->usage_end))
 				job->end = job_cond->usage_end;
 
-			if (!job->start)
+			if (!job->start && job->end)
 				job->start = job->end;
 
 			/*
