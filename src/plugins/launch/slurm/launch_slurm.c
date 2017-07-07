@@ -105,12 +105,12 @@ extern char **environ;
 static char *_hostset_to_string(hostset_t hs)
 {
 	size_t n = 1024;
-	size_t maxsize = 1024*64;
+	size_t maxsize = 1024 * 64;
 	char *str = NULL;
 
 	do {
 		str = xrealloc(str, n);
-	} while (hostset_ranged_string(hs, n*=2, str) < 0 && (n < maxsize));
+	} while ((hostset_ranged_string(hs, n*=2, str) < 0) && (n < maxsize));
 
 	/*
 	 *  If string was truncated, indicate this with a '+' suffix.
@@ -186,8 +186,8 @@ static char *_task_array_to_string(int ntasks, uint32_t taskids[])
 	return str;
 }
 
-static void _update_task_exit_state(
-	uint32_t ntasks, uint32_t taskids[], int abnormal)
+static void _update_task_exit_state(uint32_t ntasks, uint32_t *taskids,
+				    int abnormal)
 {
 	int i;
 	task_state_type_t t = abnormal ? TS_ABNORMAL_EXIT : TS_NORMAL_EXIT;
