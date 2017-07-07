@@ -1171,7 +1171,6 @@ _launch_handler(struct step_launch_state *sls, slurm_msg_t *resp)
 	slurm_mutex_lock(&sls->lock);
 	if ((msg->count_of_pids > 0) &&
 	    bit_test(sls->tasks_started, msg->task_ids[0])) {
-//FIXME-PACK: Problem here for pack jobs due to repeated use of task ID 0
 		error("duplicate launch response received from node %s. "
 		       "this is not an error", msg->node_name);
 		slurm_mutex_unlock(&sls->lock);
