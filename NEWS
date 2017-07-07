@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 17.02.7
 ==========================
+ -- Fix deadlock if requesting to create more than 10000 reservations.
 
 * Changes in Slurm 17.02.6
 ==========================
