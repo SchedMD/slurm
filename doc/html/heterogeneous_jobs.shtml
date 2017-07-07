@@ -319,6 +319,10 @@ the job execute on different clusters in the federation.</p>
 <p>The srun command's --no-allocate option is not supported
 for heterogeneous jobs.</p>
 
+<p>Only one job step per heterogeneous job component can be launched by a
+single srun command (e.g.
+"srun --pack-group=0 alpha : --pack-group=0 beta" is not supported).</p>
+
 <p>The sattach command can only be used to attach to a single component of
 a heterogeneous job at a time.</p>
 

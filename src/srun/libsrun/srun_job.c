@@ -458,6 +458,7 @@ static void _pack_grp_test(List opt_list)
 	ListIterator iter;
 	opt_t *opt_local;
 	int pack_offset;
+	bitstr_t *master_map = NULL;
 
 	if (opt_list) {
 		iter = list_iterator_create(opt_list);
@@ -469,7 +470,18 @@ static void _pack_grp_test(List opt_list)
 				xstrfmtcat(opt_local->pack_group, "%d",
 					   pack_offset);
 			}
+			if (!master_map) {
+				master_map = bit_copy(opt_local->pack_grp_bits);
+			} else {
+				if (bit_overlap(master_map,
+						opt_local->pack_grp_bits)) {
+					error("Duplicate pack groups in single srun not supported");
+					exit(error_exit);
+				}
+				bit_or(master_map, opt_local->pack_grp_bits);
+			}
 		}
+		FREE_NULL_BITMAP(master_map);
 		list_iterator_destroy(iter);
 	} else if (!opt.pack_group && !getenv("SLURM_PACK_SIZE")) {
 		FREE_NULL_BITMAP(opt.pack_grp_bits);
