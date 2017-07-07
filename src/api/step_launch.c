@@ -150,7 +150,7 @@ void slurm_step_launch_params_t_init (slurm_step_launch_params_t *ptr)
 {
 	static slurm_step_io_fds_t fds = SLURM_STEP_IO_FDS_INITIALIZER;
 
-	/* Set all values to zero (in other words, "NULL" for pointers) */
+	/* Initialize all values to zero ("NULL" for pointers) */
 	memset(ptr, 0, sizeof(slurm_step_launch_params_t));
 
 	ptr->buffered_stdio = true;
@@ -159,6 +159,7 @@ void slurm_step_launch_params_t_init (slurm_step_launch_params_t *ptr)
 	ptr->cpu_freq_min = NO_VAL;
 	ptr->cpu_freq_max = NO_VAL;
 	ptr->cpu_freq_gov = NO_VAL;
+	ptr->pack_offset  = NO_VAL;
 }
 
 /*
@@ -325,7 +326,8 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 						 ctx->step_req->num_tasks,
 						 launch.nnodes,
 						 ctx->step_resp->cred,
-						 params->labelio);
+						 params->labelio,
+						 params->pack_offset);
 		if (ctx->launch_state->io.normal == NULL) {
 			rc = SLURM_ERROR;
 			goto fail1;
@@ -515,7 +517,8 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 						 ctx->step_req->num_tasks,
 						 launch.nnodes,
 						 ctx->step_resp->cred,
-						 params->labelio);
+						 params->labelio,
+						 params->pack_offset);
 		if (ctx->launch_state->io.normal == NULL) {
 			rc = SLURM_ERROR;
 			goto fail1;

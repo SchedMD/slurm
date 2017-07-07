@@ -46,14 +46,32 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/log.h"
 
-static int _write_label(int fd, int taskid, int label_width);
+static int _write_label(int fd, int taskid, int taskid_width,
+			uint32_t pack_offset);
 static int _write_line(int fd, void *buf, int len);
 static int _write_newline(int fd);
 
-
-
-int write_labelled_message(int fd, void *buf, int len, int taskid,
-			   bool label, int label_width)
+/*
+ * fd           is the file descriptor to write to
+ * buf          is the char buffer to write
+ * len          is the buffer length in bytes
+ * taskid       is will be used in the label
+ * pack_offset  is the offset within a pack-job or NO_VAL
+ * label        if true, prepend each line of the buffer with a
+ *                label for the task id
+ * taskid_width is the number of digits to use for the task id
+ *
+ * Write as many lines from the message as possible.  Return
+ * the number of bytes from the message that have been written,
+ * or -1 on error.  If len==0, -1 will be returned.
+ *
+ * If the message ends in a partial line (line does not end
+ * in a '\n'), then add a newline to the output file, but only
+ * in label mode.
+ */
+extern int write_labelled_message(int fd, void *buf, int len, int taskid,
+				  uint32_t pack_offset, bool label,
+				  int taskid_width)
 {
 	void *start;
 	void *end;
@@ -66,7 +84,7 @@ int write_labelled_message(int fd, void *buf, int len, int taskid,
 		start = buf + written;
 		end = memchr(start, '\n', remaining);
 		if (label)
-			if (_write_label(fd, taskid, label_width)
+			if (_write_label(fd, taskid, taskid_width, pack_offset)
 			    != SLURM_SUCCESS)
 				goto done;
 		if (end == NULL) { /* no newline found */
@@ -99,15 +117,21 @@ done:
 		return rc;
 }
 
-
-static int _write_label(int fd, int taskid, int label_width)
+static int _write_label(int fd, int taskid, int taskid_width,
+			uint32_t pack_offset)
 {
-	int n;
-	int left = label_width + 2;
-	char buf[16];
+	int left, n;
+	char buf[32];
 	void *ptr = buf;
 
-	snprintf(buf, 16, "%0*d: ", label_width, taskid);
+	if (pack_offset == NO_VAL) {
+		snprintf(buf, sizeof(buf), "%*d: ", taskid_width, taskid);
+		left = taskid_width + 2;
+	} else {
+		snprintf(buf, sizeof(buf), "P%u %*d: ",
+			 pack_offset, taskid_width, taskid);
+		left = strlen(buf);
+	}
 	while (left > 0) {
 	again:
 		if ((n = write(fd, ptr, left)) < 0) {

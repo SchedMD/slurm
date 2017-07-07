@@ -1922,6 +1922,7 @@ typedef struct {
 	uint32_t gid;
 	bool multi_prog;
 	uint32_t slurmd_debug;  /* remote slurmd debug level */
+	uint32_t pack_offset;	/* Pack job offset or NO_VAL */
 	bool parallel_debug;
 	uint32_t profile;	/* Level of acct_gather_profile {all | none} */
 	char *task_prolog;

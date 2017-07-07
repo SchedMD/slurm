@@ -562,7 +562,7 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	static srun_job_t *first_job = NULL;
 	slurm_step_launch_params_t launch_params;
 	slurm_step_launch_callbacks_t callbacks;
-	int rc = 0;
+	int i, rc = 0;
 
 	slurm_step_launch_params_t_init(&launch_params);
 	memcpy(&callbacks, step_callbacks, sizeof(callbacks));
@@ -587,6 +587,12 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	launch_params.remote_output_filename =fname_remote_string(job->ofname);
 	launch_params.remote_input_filename = fname_remote_string(job->ifname);
 	launch_params.remote_error_filename = fname_remote_string(job->efname);
+	launch_params.pack_offset = NO_VAL;
+	if (opt_local->pack_grp_bits) {
+		i = bit_ffs(opt_local->pack_grp_bits);
+		if (i >= 0)
+			launch_params.pack_offset = i;
+	}
 	launch_params.partition = job->partition;
 	launch_params.profile = opt_local->profile;
 	launch_params.task_prolog = opt_local->task_prolog;

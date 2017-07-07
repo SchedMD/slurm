@@ -115,7 +115,7 @@ struct client_io_info {
 	   write for one task. -1 means accept output from any task. */
 	int  ltaskid_stdout, ltaskid_stderr;
 	bool labelio;
-	int  label_width;
+	int  taskid_width;
 
 	/* true if writing to a file, false if writing to a socket */
 	bool is_local_file;
@@ -558,8 +558,9 @@ _local_file_write(eio_obj_t *obj, List objs)
 		(client->out_msg->length - client->out_remaining);
 
 	n = write_labelled_message(obj->fd, buf, client->out_remaining,
-				   header.gtaskid, client->labelio,
-				   client->label_width);
+//FIXME-PACK Need to populate pack_offset
+				   header.gtaskid, client->job->pack_offset,
+				   client->labelio, client->taskid_width);
 	if (n < 0) {
 		client->out_eof = true;
 		_free_all_outgoing_msgs(client->msg_queue, client->job);
@@ -1535,10 +1536,10 @@ io_create_local_client(const char *filename, int file_flags,
 	client->labelio = labelio;
 	client->is_local_file = true;
 
-	client->label_width = 1;
-	tmp = job->node_tasks-1;
+	client->taskid_width = 1;
+	tmp = job->node_tasks - 1;
 	while ((tmp /= 10) > 0)
-		client->label_width++;
+		client->taskid_width++;
 
 
 	obj = eio_obj_create(fd, &local_file_ops, (void *)client);
@@ -1607,7 +1608,7 @@ io_initial_client_connect(srun_info_t *srun, stepd_step_rec_t *job,
 	client->ltaskid_stdout = stdout_tasks;
 	client->ltaskid_stderr = stderr_tasks;
 	client->labelio = false;
-	client->label_width = 0;
+	client->taskid_width = 0;
 	client->is_local_file = false;
 
 	obj = eio_obj_create(sock, &client_ops, (void *)client);
@@ -1667,7 +1668,7 @@ io_client_connect(srun_info_t *srun, stepd_step_rec_t *job)
 	client->ltaskid_stdout = -1;     /* accept from all tasks */
 	client->ltaskid_stderr = -1;     /* accept from all tasks */
 	client->labelio = false;
-	client->label_width = 0;
+	client->taskid_width = 0;
 	client->is_local_file = false;
 
 	/* client object adds itself to job->clients in _client_writable */

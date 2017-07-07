@@ -249,6 +249,17 @@ into one MPI_COMM_WORLD with non-overlapping task IDs. srun's "--mpi-combine=no"
 option will launch each component in the heterogeneous job in its own
 MPI_COMM_WORLD with a task ID starting at zero.</p>
 
+<p>srun's "--label" option will preceed every line with the letter "P" and
+pack job offset followed by the task rank if the "--mpi-combine=no" option is
+used or a the application is launched on a subset of pack groups
+For example:</p>
+<pre>
+$ srun --mpi-combine=no -n2 hostname : -n1 date
+P0 0: nid00012
+P0 1: nid00012
+P1 0: Wed Jul  5 16:23:07 MDT 2017
+</pre>
+
 <h2><a name="env_var">Environment Variables</a></h2>
 
 <p>Slurm environment variables will be set independently for each component of
@@ -305,8 +316,11 @@ the job execute on different clusters in the federation.</p>
 
 <p>Job arrays of heterogeneous jobs are not supported.</p>
 
-<p>The <i>srun</i> command's <i>--no-allocate</i> option is not supported
+<p>The srun command's --no-allocate option is not supported
 for heterogeneous jobs.</p>
+
+<p>The sattach command can only be used to attach to a single component of
+a heterogeneous job at a time.</p>
 
 <p>Heterogeneous jobs are only scheduled by the backfill scheduler plugin.
 The more frequently executed scheduling logic only starts jobs on a first-in
@@ -324,6 +338,6 @@ heterogeneous job.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 27 June 2017</p>
+<p style="text-align:center;">Last modified 7 July 2017</p>
 
 <!--#include virtual="footer.txt"-->

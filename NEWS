@@ -40,14 +40,16 @@ documents those changes that are of interest to users and administrators.
     as possible while avoiding advanced reservations.
  -- Work for heterogeneous job support (complete solution in v17.11):
     * Add pointer to job option structure to job_step_create_allocation()
-      function.
+      function used by srun.
     * Parallelize task launch for heterogeneous job allocations (initial work).
     * Make packjobid, packjoboffset, and packjobidset fields available in squeue
       output.
     * Modify smap command to display heterogeneous job records using "#+#"
       format.
     * Add srun --pack-group and --mpi-combine options to control job step
-      launch behaviour.
+      launch behaviour (not fully implemented).
+    * Add pack job component ID to srun --label output (e.g. "P0 1:" for
+      job component 0 and task 1).
 
 * Changes in Slurm 17.11.0pre1
 ==============================
