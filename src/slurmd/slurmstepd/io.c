@@ -556,9 +556,7 @@ _local_file_write(eio_obj_t *obj, List objs)
 	/* Write the message to the file. */
 	buf = client->out_msg->data +
 		(client->out_msg->length - client->out_remaining);
-
 	n = write_labelled_message(obj->fd, buf, client->out_remaining,
-//FIXME-PACK Need to populate pack_offset
 				   header.gtaskid, client->job->pack_offset,
 				   client->labelio, client->taskid_width);
 	if (n < 0) {

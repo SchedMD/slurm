@@ -587,7 +587,7 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	launch_params.remote_output_filename =fname_remote_string(job->ofname);
 	launch_params.remote_input_filename = fname_remote_string(job->ifname);
 	launch_params.remote_error_filename = fname_remote_string(job->efname);
-	launch_params.pack_offset = NO_VAL;
+	launch_params.pack_offset = job->pack_offset;
 	if (opt_local->pack_grp_bits) {
 		i = bit_ffs(opt_local->pack_grp_bits);
 		if (i >= 0)

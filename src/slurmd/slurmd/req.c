@@ -618,7 +618,7 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	cpu_freq_send_info(fd);
 
 	/* send req over to slurmstepd */
-	switch(type) {
+	switch (type) {
 	case LAUNCH_BATCH_JOB:
 		gid = (uid_t)((batch_job_launch_msg_t *)req)->gid;
 		uid = (uid_t)((batch_job_launch_msg_t *)req)->uid;

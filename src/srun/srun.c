@@ -110,7 +110,6 @@ typedef struct _launch_app_data
 	bool		got_alloc;
 	srun_job_t *	job;
 	opt_t *		opt_local;
-	int		pack_offset;
 	int *		step_cnt;
 	pthread_cond_t *step_cond;
 	pthread_mutex_t *step_mutex;
@@ -199,14 +198,13 @@ static void *_launch_one_app(void *data)
 	opt_t *opt_local = opts->opt_local;
 	srun_job_t *job  = opts->job;
 	bool got_alloc   = opts->got_alloc;
-	int pack_offset  = opts->pack_offset;
 	slurm_step_io_fds_t cio_fds = SLURM_STEP_IO_FDS_INITIALIZER;
 	slurm_step_launch_callbacks_t step_callbacks;
 
 	memset(&step_callbacks, 0, sizeof(step_callbacks));
 	step_callbacks.step_signal = launch_g_fwd_signal;
 
-	if (pack_offset < 1) {
+	if ((job->pack_offset == NO_VAL) || (job->pack_offset == 0)) {
 		pre_launch_srun_job(job, 0, 1, opt_local);
 		slurm_mutex_lock(&launch_mutex);
 		launch_fini = true;
@@ -269,11 +267,11 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 			}
 			if (!first_job)
 				first_job = job;
+			job->pack_offset  = pack_offset++;
 			opts = xmalloc(sizeof(_launch_app_data_t));
 			opts->got_alloc   = got_alloc;
 			opts->job         = job;
 			opts->opt_local   = opt_local;
-			opts->pack_offset = pack_offset++;
 			opts->step_cond   = &step_cond;
 			opts->step_cnt    = &step_cnt;
 			opts->step_mutex  = &step_mutex;
@@ -299,11 +297,11 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 		if (first_job)
 			fini_srun(first_job, got_alloc, &global_rc, 0);
 	} else {
+		job->pack_offset  = NO_VAL;
 		opts = xmalloc(sizeof(_launch_app_data_t));
 		opts->got_alloc   = got_alloc;
 		opts->job         = job;
 		opts->opt_local   = &opt;
-		opts->pack_offset = -1;
 		_launch_one_app(opts);
 		fini_srun(job, got_alloc, &global_rc, 0);
 	}

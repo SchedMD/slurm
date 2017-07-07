@@ -228,8 +228,8 @@ _task_info_destroy(stepd_step_task_info_t *t, uint16_t multi_prog)
 }
 
 /* create a slurmd job structure from a launch tasks message */
-extern stepd_step_rec_t *
-stepd_step_rec_create(launch_tasks_request_msg_t *msg, uint16_t protocol_version)
+extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
+					       uint16_t protocol_version)
 {
 	stepd_step_rec_t  *job = NULL;
 	srun_info_t   *srun = NULL;
@@ -295,6 +295,7 @@ stepd_step_rec_create(launch_tasks_request_msg_t *msg, uint16_t protocol_version
 	job->env     = _array_copy(msg->envc, msg->env);
 	job->array_job_id  = msg->job_id;
 	job->array_task_id = NO_VAL;
+	job->pack_offset = msg->pack_offset;	/* Used to set output labels */
 	for (i = 0; i < msg->envc; i++) {
 		/*                         1234567890123456789 */
 		if (!xstrncmp(msg->env[i], "SLURM_ARRAY_JOB_ID=", 19))
@@ -455,6 +456,7 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	job->stepid  = msg->step_id;
 	job->array_job_id  = msg->array_job_id;
 	job->array_task_id = msg->array_task_id;
+	job->pack_offset = NO_VAL;	/* Used to set output labels */
 	job->job_core_spec = msg->job_core_spec;
 
 	job->batch   = true;

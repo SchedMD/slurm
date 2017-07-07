@@ -246,6 +246,7 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 	launch.spank_job_env_size = params->spank_job_env_size;
 	launch.cred = ctx->step_resp->cred;
 	launch.job_step_id = ctx->step_resp->job_step_id;
+	launch.pack_offset = params->pack_offset;
 	if (params->env == NULL) {
 		/* if the user didn't specify an environment, grab the
 		 * environment of the running process */
@@ -439,6 +440,7 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	launch.spank_job_env_size = params->spank_job_env_size;
 	launch.cred = ctx->step_resp->cred;
 	launch.job_step_id = ctx->step_resp->job_step_id;
+	launch.pack_offset = params->pack_offset;
 	if (params->env == NULL) {
 		/* if the user didn't specify an environment, grab the
 		 * environment of the running process */
