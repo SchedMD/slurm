@@ -619,6 +619,13 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			if (!job->start)
 				job->start = job->end;
 
+			/*
+			 * Means the job was pending at the time requested but
+			 * started after the end time requested.
+			 */
+			if (job->start && job->end && (job->start > job->end))
+				job->start = job->end = 0;
+
 			job->elapsed = job->end - job->start;
 
 			if (row[JOB_REQ_SUSPENDED]) {
@@ -847,6 +854,10 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 				if (!step->end
 				    || (step->end > job_cond->usage_end))
 					step->end = job_cond->usage_end;
+
+				if (step->start && step->end &&
+				   (step->start > step->end))
+					step->start = step->end = 0;
 			}
 
 			/* figure this out by start stop */
