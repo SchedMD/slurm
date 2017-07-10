@@ -329,8 +329,8 @@ STUBL is a collection of supplemental tools and utility scripts for Slurm.<br>
 </dl></li><br>
 
 <li><b>pestat</b><br>
-pestat provides status information about compute nodes.<br>
-<a href="ftp://ftp.fysik.dtu.dk/pub/Slurm/pestat">pestat code</a></li><br>
+Prints a consolidated compute node status line, with one line per node including a list of jobs.<br>
+<a href="https://github.com/OleHolmNielsen/Slurm_tools/tree/master/pestat">Home page</a></li><br>
 <!-- It would be nice to provide our own perl-based version of pestat -->
 
 <li><b>Slurmmon</b><br>
