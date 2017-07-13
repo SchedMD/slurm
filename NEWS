@@ -53,6 +53,7 @@ documents those changes that are of interest to users and administrators.
  -- Performance boost for when Slurm is dealing with credentials.
  -- Fix race condition which could leave a stepd hung on shutdown.
  -- Add lua support for opensuse.
+ -- Make srun --pty option ignore EINTR allowing windows to resize.
 
 * Changes in Slurm 17.02.4
 ==========================
