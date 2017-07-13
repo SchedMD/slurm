@@ -10,7 +10,7 @@ documents those changes that are of interest to users and administrators.
  -- Set job/step start and end times to 0 when using --truncate and start > end.
  -- Make srun --pty option ignore EINTR allowing windows to resize.
  -- When resuming node only send one message to the slurmdbd.
- -- Modify srun --pty option to use configured SrunPorts range.
+ -- Modify srun --pty option to use configured SrunPortRange range.
 
 * Changes in Slurm 17.02.6
 ==========================
