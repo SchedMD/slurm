@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
  -- Make srun --pty option ignore EINTR allowing windows to resize.
  -- When resuming node only send one message to the slurmdbd.
  -- Modify srun --pty option to use configured SrunPortRange range.
+ -- Fix issue with whole gres not being printed out with Slurm tools.
 
 * Changes in Slurm 17.02.6
 ==========================
