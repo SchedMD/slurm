@@ -1057,7 +1057,7 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 		error("spank extern task post-fork failed");
 
 	while ((wait4(pid, &status, 0, &rusage) < 0) && (errno == EINTR)) {
-		;	       /* Wait until above processs exits from signal */
+		;	       /* Wait until above process exits from signal */
 	}
 
 	jobacct = jobacct_gather_remove_task(pid);
