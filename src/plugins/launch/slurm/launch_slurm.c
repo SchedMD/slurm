@@ -262,16 +262,17 @@ static void _task_start(launch_tasks_response_msg_t *msg)
 	int taskid;
 	int i;
 
-	if (msg->count_of_pids)
+	if (msg->count_of_pids) {
 		verbose("Node %s, %d tasks started",
 			msg->node_name, msg->count_of_pids);
-	else
-		/* This message should be displayed through the api,
-		   hense it is a debug2 instead of an error.
-		*/
+	} else {
+		/*
+		 * This message should be displayed through the api,
+		 * hense it is a debug2 instead of an error.
+		 */
 		debug2("No tasks started on node %s: %s",
-		      msg->node_name, slurm_strerror(msg->return_code));
-
+		       msg->node_name, slurm_strerror(msg->return_code));
+	}
 
 	for (i = 0; i < msg->count_of_pids; i++) {
 		taskid = msg->task_ids[i];
@@ -280,13 +281,10 @@ static void _task_start(launch_tasks_response_msg_t *msg)
 		/* table->executable_name is set elsewhere */
 		table->pid = msg->local_pids[i];
 
-		if (msg->return_code == 0) {
-			task_state_update(task_state,
-					  taskid, TS_START_SUCCESS);
-		} else {
-			task_state_update(task_state,
-					  taskid, TS_START_FAILURE);
-		}
+		if (msg->return_code == 0)
+			task_state_update(task_state, taskid, TS_START_SUCCESS);
+		else
+			task_state_update(task_state, taskid, TS_START_FAILURE);
 	}
 
 }

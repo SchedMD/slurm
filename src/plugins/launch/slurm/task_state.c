@@ -114,8 +114,7 @@ void task_state_update (task_state_t ts, int taskid, task_state_type_t t)
 	xassert (taskid >= 0);
 	xassert (taskid < ts->n_tasks);
 
-	debug3("task_state_update(taskid=%d, %s)",
-	       taskid, _task_state_type_str (t));
+	debug3("%s: taskid=%d, %s", __func__, taskid, _task_state_type_str(t));
 
 	switch (t) {
 	case TS_START_SUCCESS:
@@ -130,7 +129,7 @@ void task_state_update (task_state_t ts, int taskid, task_state_type_t t)
 		if (bit_test(ts->normal_exit, taskid) ||
 		    bit_test(ts->abnormal_exit, taskid)) {
 			error("Task %d reported exit for a second time.",
-			       taskid);
+			      taskid);
 		} else {
 			bit_set (ts->normal_exit, taskid);
 			ts->n_exited++;
