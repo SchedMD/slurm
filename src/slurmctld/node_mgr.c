@@ -1394,6 +1394,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
 		int err_code = 0;
+		bool acct_updated = false;
 
 		node_ptr = find_node_record (this_node_name);
 		node_inx = node_ptr - node_record_table_ptr;
@@ -1500,6 +1501,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 						acct_db_conn,
 						node_ptr,
 						now);
+					acct_updated = true;
 				}
 				node_ptr->node_state &= (~NODE_STATE_DRAIN);
 				node_ptr->node_state &= (~NODE_STATE_FAIL);
@@ -1547,6 +1549,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 						acct_db_conn,
 						node_ptr,
 						now);
+					acct_updated = true;
 				}
 				node_ptr->node_state &= (~NODE_STATE_DRAIN);
 				state_val = base_state;
@@ -1571,6 +1574,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 						acct_db_conn,
 						node_ptr,
 						now);
+					acct_updated = true;
 				} else if (IS_NODE_IDLE(node_ptr)   &&
 					   (IS_NODE_DRAIN(node_ptr) ||
 					    IS_NODE_FAIL(node_ptr))) {
@@ -1578,6 +1582,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 						acct_db_conn,
 						node_ptr,
 						now);
+					acct_updated = true;
 				}	/* else already fully available */
 				node_ptr->node_state &= (~NODE_STATE_DRAIN);
 				node_ptr->node_state &= (~NODE_STATE_FAIL);
@@ -1698,7 +1703,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 			}
 		}
 
-		if (!IS_NODE_DOWN(node_ptr) &&
+		if (!acct_updated && !IS_NODE_DOWN(node_ptr) &&
 		    !IS_NODE_DRAIN(node_ptr) && !IS_NODE_FAIL(node_ptr)) {
 			/* reason information is handled in
 			   clusteracct_storage_g_node_up()
@@ -2987,6 +2992,8 @@ extern int validate_nodes_via_front_end(
 					      node_record_table_ptr->name);
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
+		bool acct_updated = false;
+
 		config_ptr = node_ptr->config_ptr;
 		node_ptr->last_response = MAX(now, node_ptr->last_response);
 
@@ -3051,6 +3058,7 @@ extern int validate_nodes_via_front_end(
 					clusteracct_storage_g_node_up(
 						acct_db_conn,
 						node_ptr, now);
+					acct_updated = true;
 				}
 			} else if (IS_NODE_DOWN(node_ptr) &&
 				   ((slurmctld_conf.ret2service == 2) ||
@@ -3078,6 +3086,7 @@ extern int validate_nodes_via_front_end(
 					clusteracct_storage_g_node_up(
 						acct_db_conn,
 						node_ptr, now);
+					acct_updated = true;
 				}
 			} else if (IS_NODE_ALLOCATED(node_ptr) &&
 				   (node_ptr->run_job_cnt == 0)) {
@@ -3117,7 +3126,7 @@ extern int validate_nodes_via_front_end(
 			memcpy(node_ptr->energy, reg_msg->energy,
 			       sizeof(acct_gather_energy_t));
 
-		if (slurmctld_init_db &&
+		if (!acct_updated && slurmctld_init_db &&
 		    !IS_NODE_DOWN(node_ptr) &&
 		    !IS_NODE_DRAIN(node_ptr) && !IS_NODE_FAIL(node_ptr)) {
 			/* reason information is handled in
