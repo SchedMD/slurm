@@ -84,6 +84,8 @@
  * considering a reservation time specification being invalid */
 #define MAX_RESV_DELAY	600
 
+#define MAX_RESV_COUNT	9999
+
 /* No need to change we always pack SLURM_PROTOCOL_VERSION */
 #define RESV_STATE_VERSION          "PROTOCOL_VERSION"
 
@@ -144,7 +146,7 @@ static int  _find_resv_id(void *x, void *key);
 static int  _find_resv_name(void *x, void *key);
 static void *_fork_script(void *x);
 static void _free_script_arg(resv_thread_args_t *args);
-static void _generate_resv_id(void);
+static int  _generate_resv_id(void);
 static void _generate_resv_name(resv_desc_msg_t *resv_ptr);
 static int  _get_core_resrcs(slurmctld_resv_t *resv_ptr);
 static uint32_t _get_job_duration(struct job_record *job_ptr, bool reboot);
@@ -534,16 +536,23 @@ static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 	xfree(node_cnt_str);
 }
 
-static void _generate_resv_id(void)
+static int _generate_resv_id(void)
 {
-	while (1) {
-		if (top_suffix >= 9999)
-			top_suffix = 1;		/* wrap around */
+	int i;
+
+	for (i = 0; i < MAX_RESV_COUNT; i++) {
+		if (top_suffix >= MAX_RESV_COUNT)
+			top_suffix = 1;	/* wrap around */
 		else
 			top_suffix++;
 		if (!list_find_first(resv_list, _find_resv_id, &top_suffix))
-			break;
+			return SLURM_SUCCESS;
 	}
+
+	error("%s: Too many reservations in the system, can't create any more.",
+	      __func__);
+
+	return ESLURM_RESERVATION_INVALID;
 }
 
 static void _generate_resv_name(resv_desc_msg_t *resv_ptr)
@@ -569,7 +578,7 @@ static void _generate_resv_name(resv_desc_msg_t *resv_ptr)
 
 	xstrfmtcat(name, "_%d", top_suffix);
 	len++;
-
+	xfree(resv_ptr->name);
 	resv_ptr->name = name;
 }
 
@@ -2340,7 +2349,10 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		goto bad_parse;
 	}
 
-	_generate_resv_id();
+	rc = _generate_resv_id();
+	if (rc != SLURM_SUCCESS)
+		goto bad_parse;
+
 	if (resv_desc_ptr->name) {
 		resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list,
 				_find_resv_name, resv_desc_ptr->name);
@@ -2358,7 +2370,9 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 					_find_resv_name, resv_desc_ptr->name);
 			if (!resv_ptr)
 				break;
-			_generate_resv_id();	/* makes new suffix */
+			rc = _generate_resv_id();	/* makes new suffix */
+			if (rc != SLURM_SUCCESS)
+				goto bad_parse;
 			/* Same as previously created name, retry */
 		}
 	}

@@ -115,8 +115,6 @@
 #  define MAXHOSTNAMELEN	64
 #endif
 
-#define HEALTH_RETRY_DELAY 10
-
 #define MAX_THREADS		256
 
 #define _free_and_set(__dst, __src) \
@@ -206,7 +204,6 @@ static void      _update_nice(void);
 static void      _usage(void);
 static int       _validate_and_convert_cpu_list(void);
 static void      _wait_for_all_threads(int secs);
-static void      _wait_health_check(void);
 
 int
 main (int argc, char **argv)
@@ -366,10 +363,9 @@ main (int argc, char **argv)
 	if (slurmd_plugstack_init())
 		fatal("failed to initialize slurmd_plugstack");
 
-	/* Wait for a successful health check if HealthCheckInterval != 0 */
-	_wait_health_check();
-
+	run_script_health_check();
 	_spawn_registration_engine();
+
 	msg_aggr_sender_init(conf->hostname, conf->port,
 			     conf->msg_aggr_window_time,
 			     conf->msg_aggr_window_msgs);
@@ -2361,28 +2357,6 @@ static void _resource_spec_fini(void)
 }
 
 /*
- * Wait for health check to execute successfully
- *
- * Return immediately if a shutdown has been requested or
- * if the HealthCheckInterval is 0.
- */
-static void _wait_health_check(void)
-{
-	int last_check_time = 0;
-	while (!_shutdown && (conf->health_check_interval != 0) ) {
-		if (time(NULL) - last_check_time > HEALTH_RETRY_DELAY) {
-			if (run_script_health_check() == SLURM_SUCCESS) {
-				break;
-			}
-			last_check_time = time(NULL);
-			info ("Health Check failed, retrying in %ds...",
-				HEALTH_RETRY_DELAY);
-		}
-		usleep(10000);
-	}
-}
-
-/*
  * Run the configured health check program
  *
  * Returns the run result. If the health check program
@@ -2392,7 +2366,7 @@ extern int run_script_health_check(void)
 {
 	int rc = SLURM_SUCCESS;
 
-	if (conf->health_check_program) {
+	if (conf->health_check_program && (conf->health_check_interval != 0)) {
 		char *env[1] = { NULL };
 		rc = run_script("health_check", conf->health_check_program,
 				0, 60, env, 0);

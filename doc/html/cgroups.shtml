@@ -61,9 +61,6 @@ are common to all cgroup plugins, plus additional options that apply only to
 specific plugins.</li>
 <li>System-level resource specialization is enabled using node configuration 
 parameters.</li>
-<li>Additional configuration is required to enable automatic removal of Slurm
-cgroups when they are no longer in use.
-See <a href="#cleanup">Cleanup of Slurm Cgroups</a> below for details.</li>
 </ul>
 <a name="available"></a>
 
@@ -155,6 +152,6 @@ use more than one node will have a cgroup structure on each node.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 27 October 2016</p>
+<p style="text-align:center;">Last modified 6 July 2017</p>
 
 <!--#include virtual="footer.txt"-->

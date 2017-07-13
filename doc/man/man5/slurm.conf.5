@@ -980,10 +980,7 @@ Note that the \fBHealthCheckProgram\fR will be executed at the same time
 on all nodes to minimize its impact upon parallel programs.
 This program is will be killed if it does not terminate normally within
 60 seconds.
-When slurmd is first started, this program will be run repeatedly until
-it returns an exit code of 0, and will block slurmd from registering with
-slurmctld until this has been satisfied.
-The return code is otherwise ignored.
+This program will also be executed when the slurmd daemon is first started.
 By default, no program will be executed.
 
 .TP

@@ -145,6 +145,12 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 17.02.7
 ==========================
+ -- Fix deadlock if requesting to create more than 10000 reservations.
+ -- Fix potential memory leak when creating partition name.
+ -- Execute the HealthCheckProgram once when the slurmd daemon starts rather
+    than executing repeatedly until an exit code of 0 is returned.
+ -- Set job/step start and end times to 0 when using --truncate and start > end.
+ -- Make srun --pty option ignore EINTR allowing windows to resize.
 
 * Changes in Slurm 17.02.6
 ==========================
