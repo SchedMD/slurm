@@ -2067,7 +2067,7 @@ typedef struct node_info {
 	ext_sensors_data_t *ext_sensors; /* external sensor data */
 	power_mgmt_data_t *power;        /* power management data */
 	char *features;		/* list of a node's available features */
-	char *features_act;	/* list of a node's current acitve features,
+	char *features_act;	/* list of a node's current active features,
 				 * Same as "features" if NULL */
 	char *gres;		/* list of a node's generic resources */
 	char *gres_drain;	/* list of drained GRES */
