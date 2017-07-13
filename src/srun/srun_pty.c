@@ -157,7 +157,7 @@ static void *_pty_thread(void *arg)
 
 	while (job->state <= SRUN_JOB_RUNNING) {
 		debug2("waiting for SIGWINCH");
-		if ((poll(NULL, 0, -1) < 1) && (errno != EINTR)) {
+		if (poll(NULL, 0, -1) < 1) {
 			debug("%s: poll error %m", __func__);
 			continue;
 		}
