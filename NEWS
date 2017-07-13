@@ -51,6 +51,7 @@ documents those changes that are of interest to users and administrators.
     * Add pack job component ID to srun --label output (e.g. "P0 1:" for
       job component 0 and task 1).
     * jobcompp/elasticsearch: Add pack_job_id and pack_job_offset fields.
+    * sview: Modified to display pack job information.
 
 * Changes in Slurm 17.11.0pre1
 ==============================
