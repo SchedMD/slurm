@@ -3793,6 +3793,9 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 		persist_msg.data_size = msg->data_size;
 
 		buffer = slurm_persist_msg_pack(msg->conn, &persist_msg);
+		if (!buffer)    /* pack error */
+			return SLURM_ERROR;
+
 		rc = slurm_persist_send_msg(msg->conn, buffer);
 		free_buf(buffer);
 

@@ -834,6 +834,9 @@ extern int slurm_persist_send_msg(
 	if (persist_conn->fd < 0)
 		return EAGAIN;
 
+	if (!buffer)
+		return SLURM_ERROR;
+
 	rc = slurm_persist_conn_writeable(persist_conn);
 	if (rc == -1) {
 	re_open:

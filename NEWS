@@ -39,6 +39,7 @@ documents those changes that are of interest to users and administrators.
  -- Improve backfill scheduling algorithm with respect to starting jobs as soon
     as possible while avoiding advanced reservations.
  -- Add URG as an option to 'scancel --signal'.
+ -- Check if the buffer returned from slurm_persist_msg_pack() isn't NULL.
 
 * Changes in Slurm 17.11.0pre1
 ==============================
