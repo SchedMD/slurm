@@ -3051,7 +3051,7 @@ extern int gres_plugin_job_state_validate(char **req_config, List *gres_list)
 				break;
 			}
 			if (new_req_config != NULL)
-			    xstrcat(new_req_config, ",");
+				xstrcat(new_req_config, ",");
 			xstrcat(new_req_config, tok);
 			gres_ptr = xmalloc(sizeof(gres_state_t));
 			gres_ptr->plugin_id = gres_context[i].plugin_id;
