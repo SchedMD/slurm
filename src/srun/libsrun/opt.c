@@ -534,6 +534,7 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 	static int default_pack_offset = 0;
 	bitstr_t *pack_grp_bits;
 	int i, i_first, i_last;
+	bool pending_append = false;
 
 	pack_grp_bits = _get_pack_group(argc, argv, default_pack_offset++);
 	i_first = bit_ffs(pack_grp_bits);
@@ -541,14 +542,15 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 	for (i = i_first; i <= i_last; i++) {
 		if (!bit_test(pack_grp_bits, i))
 			continue;
-
-		if (pass_number++ > 0) {
+		pass_number++;
+		if (pending_append) {
 			opt_t *opt_dup;
 			opt_dup = xmalloc(sizeof(opt_t));
 			memcpy(opt_dup, &opt, sizeof(opt_t));
 			if (!opt_list)
 				opt_list = list_create(NULL);
 			list_append(opt_list, opt_dup);
+			pending_append = false;
 		}
 
 		/* initialize option defaults */
@@ -585,10 +587,11 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 			launch_g_create_job_step(NULL, 0, NULL, NULL, &opt, -1);
 			exit(0);
 		}
+		pending_append = true;
 	}
 	bit_free(pack_grp_bits);
 
-	if (opt_list) {		/* Last record */
+	if (opt_list && pending_append) {		/* Last record */
 		opt_t *opt_dup;
 		opt_dup = xmalloc(sizeof(opt_t));
 		memcpy(opt_dup, &opt, sizeof(opt_t));

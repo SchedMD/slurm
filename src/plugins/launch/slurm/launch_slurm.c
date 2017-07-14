@@ -582,11 +582,11 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 				slurm_step_launch_callbacks_t *step_callbacks,
 				opt_t *opt_local)
 {
-	static srun_job_t *first_job = NULL;
 	slurm_step_launch_params_t launch_params;
 	slurm_step_launch_callbacks_t callbacks;
 	int i, rc = 0;
 	task_state_t task_state;
+	bool first_launch = false;
 
 	slurm_step_launch_params_t_init(&launch_params);
 	memcpy(&callbacks, step_callbacks, sizeof(callbacks));
@@ -602,8 +602,11 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 		if (!task_state_list)
 			task_state_list = list_create(_task_state_del);
 		list_append(task_state_list, task_state);
-	} else
+		first_launch = true;
+	} else {
+		/* Launching extra POE tasks */
 		task_state_alter(task_state, job->ntasks);
+	}
 
 	launch_params.gid = opt_local->gid;
 	launch_params.alias_list = job->alias_list;
@@ -692,19 +695,12 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 		slurm_mutex_unlock(&launch_lock);
 	}
 
-//FIXME-PACK: Is this pack-job related?
+//FIXME-PACK: Need to configure all debugger environment for pack-jobs
 	mpir_init(job->ntasks);
 
 	update_job_state(job, SRUN_JOB_LAUNCHING);
-	slurm_mutex_lock(&launch_lock);
-	if (!first_job) {
-		launch_start_time = time(NULL);
-		first_job = job;
-	}
-	slurm_mutex_unlock(&launch_lock);
-	if (first_job == job) {
-//FIXME-PACK: Race condition for which step starts first. See _launch_one_app() in srun.c
-} if (1) {
+	launch_start_time = time(NULL);
+	if (first_launch) {
 		if (slurm_step_launch(job->step_ctx, &launch_params,
 				      &callbacks) != SLURM_SUCCESS) {
 			rc = errno;
@@ -715,10 +711,9 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 			goto cleanup;
 		}
 	} else {
-		if (slurm_step_launch_add(job->step_ctx, first_job->step_ctx,
+		if (slurm_step_launch_add(job->step_ctx, job->step_ctx,
 					  &launch_params, job->nodelist,
-					  job->fir_nodeid)
-		    != SLURM_SUCCESS) {
+					  job->fir_nodeid) != SLURM_SUCCESS) {
 			rc = errno;
 			*local_global_rc = errno;
 			error("Application launch add failed: %m");
@@ -763,16 +758,13 @@ extern int launch_p_step_wait(srun_job_t *job, bool got_alloc, opt_t *opt_local,
 	if ((MPIR_being_debugged == 0) && retry_step_begin &&
 	    (retry_step_cnt < MAX_STEP_RETRIES)) {
 		retry_step_begin = false;
-//FIXME-PACK: When to destroy?
-//		slurm_step_ctx_destroy(job->step_ctx);
+		slurm_step_ctx_destroy(job->step_ctx);
 		if (got_alloc) 
 			rc = create_job_step(job, true, opt_local, pack_offset);
 		else
 			rc = create_job_step(job, false, opt_local,pack_offset);
 		if (rc < 0)
 			exit(error_exit);
-//FIXME-PACK: When to destroy?
-//		task_state_destroy(task_state);
 		rc = -1;
 	}
 	return rc;

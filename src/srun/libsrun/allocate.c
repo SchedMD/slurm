@@ -630,7 +630,7 @@ List allocate_pack_nodes(bool handle_signals)
 	job_desc_msg_t *j, *first_job = NULL;
 	slurm_allocation_callbacks_t callbacks;
 	ListIterator opt_iter, resp_iter;
-	opt_t *opt_local;
+	opt_t *opt_local, *first_opt = NULL;
 	List job_req_list = NULL, job_resp_list = NULL;
 	uint32_t my_job_id = 0;
 	int i, k;
@@ -638,6 +638,8 @@ List allocate_pack_nodes(bool handle_signals)
 	job_req_list = list_create(NULL);
 	opt_iter = list_iterator_create(opt_list);
 	while ((opt_local = (opt_t *) list_next(opt_iter))) {
+		if (!first_opt)
+			first_opt = opt_local;
 		if (opt_local->relative_set && opt_local->relative)
 			fatal("--relative option invalid for job allocation request");
 
@@ -670,11 +672,11 @@ List allocate_pack_nodes(bool handle_signals)
 		return NULL;
 	}
 
-	if (opt_local->clusters &&
-	    (slurmdb_get_first_pack_cluster(job_req_list, opt_local->clusters,
+	if (first_opt && first_opt->clusters &&
+	    (slurmdb_get_first_pack_cluster(job_req_list, first_opt->clusters,
 					    &working_cluster_rec)
 	     != SLURM_SUCCESS)) {
-		print_db_notok(opt_local->clusters, 0);
+		print_db_notok(first_opt->clusters, 0);
 		return NULL;
 	}
 
@@ -697,9 +699,9 @@ List allocate_pack_nodes(bool handle_signals)
 			xsignal(sig_array[i], _signal_while_allocating);
 	}
 
-	while (!job_resp_list) {
+	while (first_opt && !job_resp_list) {
 		job_resp_list = slurm_allocate_pack_job_blocking(job_req_list,
-				 opt_local->immediate, _set_pending_job_id);
+				 first_opt->immediate, _set_pending_job_id);
 		if (destroy_job) {
 			/* cancelled by signal */
 			break;

@@ -470,7 +470,9 @@ static void _pack_grp_test(List opt_list)
 				xstrfmtcat(opt_local->pack_group, "%d",
 					   pack_offset);
 			}
-			if (!master_map) {
+			if (!opt_local->pack_grp_bits) {
+				error("%s: pack_grp_bits is NULL", __func__);
+			} else if (!master_map) {
 				master_map = bit_copy(opt_local->pack_grp_bits);
 			} else {
 				if (bit_overlap(master_map,

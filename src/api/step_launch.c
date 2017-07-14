@@ -653,7 +653,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 	bool time_set = false;
 	int errnum;
 
-	if (! ctx || ctx->magic != STEP_CTX_MAGIC)
+	if (!ctx || (ctx->magic != STEP_CTX_MAGIC))
 		return;
 
 	sls = ctx->launch_state;
