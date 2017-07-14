@@ -1373,17 +1373,22 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 	if (row && (node_ptr->node_state == slurm_atoul(row[0])) &&
 	    my_reason && row[1] &&
 	    !xstrcasecmp(my_reason, row[1])) {
-		debug("as_mysql_node_down: no change needed %u == %s "
-		      "and %s == %s",
-		     node_ptr->node_state, row[0], my_reason, row[1]);
+		if (debug_flags & DEBUG_FLAG_DB_EVENT)
+			DB_DEBUG(mysql_conn->conn,
+				 "no change needed %u == %s and %s == %s",
+				 node_ptr->node_state, row[0],
+				 my_reason, row[1]);
 		xfree(my_reason);
 		mysql_free_result(result);
 		return SLURM_SUCCESS;
 	}
 	mysql_free_result(result);
 
-	debug2("inserting %s(%s) with tres of '%s'",
-	       node_ptr->name, mysql_conn->cluster_name, node_ptr->tres_str);
+	if (debug_flags & DEBUG_FLAG_DB_EVENT)
+		DB_DEBUG(mysql_conn->conn,
+			 "inserting %s(%s) with tres of '%s'",
+			 node_ptr->name, mysql_conn->cluster_name,
+			 node_ptr->tres_str);
 
 	query = xstrdup_printf(
 		"update \"%s_%s\" set time_end=%ld where "
@@ -1407,8 +1412,8 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 		   mysql_conn->cluster_name, event_table,
 		   node_ptr->name, node_ptr->node_state,
 		   node_ptr->tres_str, event_time, my_reason, reason_uid);
-	debug2("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_EVENT)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
 	xfree(my_reason);
@@ -1435,8 +1440,8 @@ extern int as_mysql_node_up(mysql_conn_t *mysql_conn,
 		"time_end=0 and node_name='%s';",
 		mysql_conn->cluster_name, event_table,
 		event_time, node_ptr->name);
-	debug4("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (debug_flags & DEBUG_FLAG_DB_EVENT)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
 	return rc;
