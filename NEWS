@@ -43,6 +43,7 @@ documents those changes that are of interest to users and administrators.
  -- Modify all daemons to re-open log files on receipt of SIGUSR2 signal. This
     is much than using SIGHUP to re-read the configuration file and rebuild
     various tables.
+ -- Add PrivateData=events
 
 * Changes in Slurm 17.11.0pre1
 ==============================

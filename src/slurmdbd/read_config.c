@@ -303,6 +303,9 @@ extern int read_slurmdbd_conf(void)
 			if (xstrcasestr(temp_str, "job"))
 				slurmdbd_conf->private_data
 					|= PRIVATE_DATA_JOBS;
+			if (xstrcasestr(temp_str, "event"))
+				slurmdbd_conf->private_data
+					|= PRIVATE_DATA_EVENTS;
 			if (xstrcasestr(temp_str, "node"))
 				slurmdbd_conf->private_data
 					|= PRIVATE_DATA_NODES;

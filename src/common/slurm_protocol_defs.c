@@ -2927,7 +2927,7 @@ extern void private_data_string(uint16_t private_data, char *str, int str_len)
 {
 	if (str_len > 0)
 		str[0] = '\0';
-	if (str_len < 62) {
+	if (str_len < 69) {
 		error("private_data_string: output buffer too small");
 		return;
 	}
@@ -2941,6 +2941,11 @@ extern void private_data_string(uint16_t private_data, char *str, int str_len)
 		if (str[0])
 			strcat(str, ",");
 		strcat(str, "cloud"); //6 len
+	}
+	if (private_data & PRIVATE_DATA_EVENTS) {
+		if (str[0])
+			strcat(str, ",");
+		strcat(str, "events"); //7 len
 	}
 	if (private_data & PRIVATE_DATA_JOBS) {
 		if (str[0])
@@ -2973,7 +2978,7 @@ extern void private_data_string(uint16_t private_data, char *str, int str_len)
 		strcat(str, "users"); //6 len
 	}
 
-	// total len 62
+	// total len 69
 
 	if (str[0] == '\0')
 		strcat(str, "none");

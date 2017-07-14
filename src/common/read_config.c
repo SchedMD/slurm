@@ -3877,6 +3877,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->private_data |= PRIVATE_DATA_ACCOUNTS;
 		if (xstrcasestr(temp_str, "cloud"))
 			conf->private_data |= PRIVATE_CLOUD_NODES;
+		if (xstrcasestr(temp_str, "event"))
+			conf->private_data |= PRIVATE_DATA_EVENTS;
 		if (xstrcasestr(temp_str, "job"))
 			conf->private_data |= PRIVATE_DATA_JOBS;
 		if (xstrcasestr(temp_str, "node"))

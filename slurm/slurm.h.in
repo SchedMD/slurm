@@ -972,6 +972,7 @@ enum ctx_keys {
 #define PRIVATE_DATA_ACCOUNTS	  0x0020 /* accounting account data is private*/
 #define PRIVATE_DATA_RESERVATIONS 0x0040 /* reservation data is private */
 #define PRIVATE_CLOUD_NODES	  0x0080 /* hide powered down nodes in cloud */
+#define PRIVATE_DATA_EVENTS	  0x0100 /* events are private */
 
 #define PRIORITY_RESET_NONE	0x0000	/* never clear */
 #define PRIORITY_RESET_NOW	0x0001	/* clear now (when slurmctld restarts) */
