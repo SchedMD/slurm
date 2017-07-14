@@ -745,6 +745,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 	slurm_mutex_lock(&sls->lock);
 	pmi_kvs_free();
 
+//FIXME-PACK: Wait for all compnents to end before calling eio_handle_destroy()
 	if (sls->msg_handle) {
 		eio_handle_destroy(sls->msg_handle);
 		sls->msg_handle = NULL;

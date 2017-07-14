@@ -2314,6 +2314,8 @@ _send_launch_failure(launch_tasks_request_msg_t *msg, slurm_addr_t *cli, int rc,
 	resp_msg.msg_type = RESPONSE_LAUNCH_TASKS;
 	resp_msg.protocol_version = protocol_version;
 
+	resp.job_id        = msg->job_id;
+	resp.step_id       = msg->job_step_id;
 	resp.node_name     = name;
 	resp.return_code   = rc ? rc : -1;
 	resp.count_of_pids = 0;
@@ -2343,6 +2345,8 @@ _send_launch_resp(stepd_step_rec_t *job, int rc)
 	resp_msg.data		= &resp;
 	resp_msg.msg_type	= RESPONSE_LAUNCH_TASKS;
 
+	resp.job_id		= job->jobid;
+	resp.step_id		= job->stepid;
 	resp.node_name		= xstrdup(job->node_name);
 	resp.return_code	= rc;
 	resp.count_of_pids	= job->node_tasks;

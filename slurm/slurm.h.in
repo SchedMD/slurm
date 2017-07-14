@@ -1786,6 +1786,8 @@ typedef struct slurm_step_io_fds {
 		{2, (uint32_t)-1, (uint32_t)-1}}
 
 typedef struct launch_tasks_response_msg {
+	uint32_t job_id;
+	uint32_t step_id;
 	uint32_t return_code;
 	char    *node_name;
 	uint32_t srun_node_id;

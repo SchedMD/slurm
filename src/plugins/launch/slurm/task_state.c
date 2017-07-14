@@ -1,6 +1,7 @@
 /*****************************************************************************\
- * src/srun/task_state.c - task state container
+ *  src/srun/task_state.c - task state container
  *****************************************************************************
+ *  Portions copyright (C) 2017 SchedMD LLC.
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
@@ -46,55 +47,101 @@
 #include "src/plugins/launch/slurm/task_state.h"
 
 struct task_state_struct {
+	uint32_t job_id;
+	uint32_t step_id;
+	uint32_t pack_group;
 	int n_tasks;
 	int n_started;
 	int n_abnormal;
 	int n_exited;
-	unsigned int first_exit:1;
-	unsigned int first_abnormal_exit:1;
+	bool first_exit;
+	bool first_abnormal_exit;
 	bitstr_t *start_failed;
 	bitstr_t *running;
 	bitstr_t *normal_exit;
 	bitstr_t *abnormal_exit;
 };
 
-task_state_t task_state_create (int ntasks)
+/*
+ * Given a pack group and task count, return a task_state structure
+ * Free memory using task_state_destroy()
+ */
+extern task_state_t task_state_create(uint32_t job_id, uint32_t step_id,
+				      uint32_t pack_group, int ntasks)
 {
-	task_state_t ts = xmalloc (sizeof (*ts));
+	task_state_t ts = xmalloc(sizeof(*ts));
 
 	/* ts is zero filled by xmalloc() */
+	ts->job_id = job_id;
+	ts->step_id = step_id;
+	ts->pack_group = pack_group;
 	ts->n_tasks = ntasks;
-	ts->running = bit_alloc (ntasks);
-	ts->start_failed = bit_alloc (ntasks);
-	ts->normal_exit = bit_alloc (ntasks);
-	ts->abnormal_exit = bit_alloc (ntasks);
+	ts->running = bit_alloc(ntasks);
+	ts->start_failed = bit_alloc(ntasks);
+	ts->normal_exit = bit_alloc(ntasks);
+	ts->abnormal_exit = bit_alloc(ntasks);
 
-	return (ts);
+	return ts;
 }
 
-void task_state_alter (task_state_t ts, int ntasks)
+/*
+ * Find the task_state structure for a given job_id, step_id and/or pack group
+ * on a list. Specify values of NO_VAL for values that are not to be matched
+ * Returns NULL if not found
+ */
+extern task_state_t task_state_find(uint32_t job_id, uint32_t step_id,
+				    uint32_t pack_group, List task_state_list)
+{
+	task_state_t ts = NULL;
+	ListIterator iter;
+
+	if (!task_state_list)
+		return ts;
+
+	iter = list_iterator_create(task_state_list);
+	while ((ts = list_next(iter))) {
+		if (((job_id     == ts->job_id)     || (job_id  == NO_VAL)) &&
+		    ((step_id    == ts->step_id)    || (step_id == NO_VAL)) &&
+		    ((pack_group == ts->pack_group) || (pack_group == NO_VAL)))
+			break;
+	}
+	list_iterator_destroy(iter);
+
+	return ts;
+}
+
+/*
+ * Modify the task count for a previously created task_state structure
+ */
+extern void task_state_alter(task_state_t ts, int ntasks)
 {
 	xassert(ts);
 	ts->n_tasks = ntasks;
-	ts->running = bit_realloc (ts->running, ntasks);
-	ts->start_failed = bit_realloc (ts->start_failed, ntasks);
-	ts->normal_exit = bit_realloc (ts->normal_exit, ntasks);
-	ts->abnormal_exit = bit_realloc (ts->abnormal_exit, ntasks);
+	ts->running       = bit_realloc(ts->running, ntasks);
+	ts->start_failed  = bit_realloc(ts->start_failed, ntasks);
+	ts->normal_exit   = bit_realloc(ts->normal_exit, ntasks);
+	ts->abnormal_exit = bit_realloc(ts->abnormal_exit, ntasks);
 }
 
-void task_state_destroy (task_state_t ts)
+/*
+ * Destroy a task_state structure build by task_state_create()
+ */
+extern void task_state_destroy(task_state_t ts)
 {
 	if (ts == NULL)
 		return;
+
 	FREE_NULL_BITMAP(ts->start_failed);
 	FREE_NULL_BITMAP(ts->running);
 	FREE_NULL_BITMAP(ts->normal_exit);
 	FREE_NULL_BITMAP(ts->abnormal_exit);
-	xfree (ts);
+	xfree(ts);
 }
 
-static const char *_task_state_type_str (task_state_type_t t)
+static const char *_task_state_type_str(task_state_type_t t)
 {
+	static char buf[16];
+
 	switch (t) {
 	case TS_START_SUCCESS:
 		return ("TS_START_SUCCESS");
@@ -105,106 +152,204 @@ static const char *_task_state_type_str (task_state_type_t t)
 	case TS_ABNORMAL_EXIT:
 		return ("TS_ABNORMAL_EXIT");
 	}
-	return ("Unknown");
+
+	snprintf(buf, sizeof(buf), "%d", t);
+	return buf;
 }
 
-void task_state_update (task_state_t ts, int taskid, task_state_type_t t)
+/*
+ * Update the state of a specific task ID in a specific task_state structure
+ */
+extern void task_state_update(task_state_t ts, int task_id, task_state_type_t t)
 {
-	xassert (ts != NULL);
-	xassert (taskid >= 0);
-	xassert (taskid < ts->n_tasks);
+	xassert(ts != NULL);
+	xassert(task_id >= 0);
+	xassert(task_id < ts->n_tasks);
 
-	debug3("%s: taskid=%d, %s", __func__, taskid, _task_state_type_str(t));
+	if (ts->pack_group == NO_VAL) {
+		debug3("%s: step=%u.%u task_id=%d, %s", __func__,
+		       ts->job_id, ts->step_id, task_id,
+		       _task_state_type_str(t));
+	} else {
+		debug3("%s: step=%u.%u pack_group=%u task_id=%d, %s", __func__,
+		       ts->job_id, ts->step_id, ts->pack_group, task_id,
+		       _task_state_type_str(t));
+	}
 
 	switch (t) {
 	case TS_START_SUCCESS:
-		bit_set (ts->running, taskid);
+		bit_set (ts->running, task_id);
 		ts->n_started++;
 		break;
 	case TS_START_FAILURE:
-		bit_set (ts->start_failed, taskid);
+		bit_set (ts->start_failed, task_id);
 		break;
 	case TS_NORMAL_EXIT:
-		bit_clear (ts->running, taskid);
-		if (bit_test(ts->normal_exit, taskid) ||
-		    bit_test(ts->abnormal_exit, taskid)) {
+		bit_clear(ts->running, task_id);
+		if (bit_test(ts->normal_exit, task_id) ||
+		    bit_test(ts->abnormal_exit, task_id)) {
 			error("Task %d reported exit for a second time.",
-			      taskid);
+			      task_id);
 		} else {
-			bit_set (ts->normal_exit, taskid);
+			bit_set (ts->normal_exit, task_id);
 			ts->n_exited++;
 		}
 		break;
 	case TS_ABNORMAL_EXIT:
-		bit_clear (ts->running, taskid);
-		if (bit_test(ts->normal_exit, taskid) ||
-		    bit_test(ts->abnormal_exit, taskid)) {
+		bit_clear(ts->running, task_id);
+		if (bit_test(ts->normal_exit, task_id) ||
+		    bit_test(ts->abnormal_exit, task_id)) {
 			error("Task %d reported exit for a second time.",
-			      taskid);
+			      task_id);
 		} else {
-			bit_set (ts->abnormal_exit, taskid);
+			bit_set (ts->abnormal_exit, task_id);
 			ts->n_exited++;
 			ts->n_abnormal++;
 		}
 		break;
 	}
 
-	xassert ((bit_set_count(ts->abnormal_exit) +
-		  bit_set_count(ts->normal_exit)) == ts->n_exited);
+	xassert((bit_set_count(ts->abnormal_exit) +
+		 bit_set_count(ts->normal_exit)) == ts->n_exited);
 }
 
-int task_state_first_exit (task_state_t ts)
+/*
+ * Return TRUE if this is the first task exit for this job step (ALL pack jobs)
+ */
+extern bool task_state_first_exit(List task_state_list)
 {
-	if (!ts->first_exit && ts->n_exited) {
-		ts->first_exit = 1;
-		return (1);
+	task_state_t ts = NULL;
+	ListIterator iter;
+	bool is_first = true;
+	int n_exited = 0;
+
+	if (!task_state_list)
+		return true;
+
+	iter = list_iterator_create(task_state_list);
+	while ((ts = list_next(iter))) {
+		if (ts->first_exit) {
+			is_first = false;
+			break;
+		}
+		n_exited += ts->n_exited;
 	}
-	return (0);
-}
+	list_iterator_destroy(iter);
 
-int task_state_first_abnormal_exit (task_state_t ts)
-{
-	if (!ts->first_abnormal_exit && ts->n_abnormal) {
-		ts->first_abnormal_exit = 1;
-		return (1);
+	if (n_exited == 0)
+		is_first = false;
+
+	if (is_first) {
+		iter = list_iterator_create(task_state_list);
+		while ((ts = list_next(iter))) {
+			ts->first_exit = true;
+		}
+		list_iterator_destroy(iter);
 	}
-	return (0);
+
+	return is_first;
 }
 
-static void _do_log_msg (bitstr_t *b, log_f fn, const char *msg)
+/*
+ * Return TRUE if this is the first abnormal task exit for this job step
+ * (ALL pack jobs)
+ */
+extern bool task_state_first_abnormal_exit(List task_state_list)
 {
-	char buf [65536];
+	task_state_t ts = NULL;
+	ListIterator iter;
+	bool is_first = true;
+	int n_abnormal = 0;
+
+	if (!task_state_list)
+		return true;
+
+	iter = list_iterator_create(task_state_list);
+	while ((ts = list_next(iter))) {
+		if (ts->first_abnormal_exit) {
+			is_first = false;
+			break;
+		}
+		n_abnormal += ts->n_abnormal;
+	}
+	list_iterator_destroy(iter);
+
+	if (n_abnormal == 0)
+		is_first = false;
+
+	if (is_first) {
+		iter = list_iterator_create(task_state_list);
+		while ((ts = list_next(iter))) {
+			ts->first_abnormal_exit = true;
+		}
+		list_iterator_destroy(iter);
+	}
+
+	return is_first;
+}
+
+static void _do_log_msg(task_state_t ts, bitstr_t *b, log_f fn,
+			const char *msg)
+{
+	char buf[4096];
 	char *s = bit_set_count (b) == 1 ? "" : "s";
-	(*fn) ("task%s %s: %s", s, bit_fmt (buf, sizeof(buf), b), msg);
+	if (ts->pack_group == NO_VAL) {
+		(*fn) ("step:%u.%u task%s %s: %s",
+		       ts->job_id, ts->step_id,
+		       s, bit_fmt(buf, sizeof(buf), b), msg);
+	} else {
+		(*fn) ("step:%u.%u pack_group:%u task%s %s: %s",
+		       ts->job_id, ts->step_id, ts->pack_group,
+		       s, bit_fmt(buf, sizeof(buf), b), msg);
+	}
 }
 
-void task_state_print (task_state_t ts, log_f fn)
+static void _task_state_print(task_state_t ts, log_f fn)
 {
 	bitstr_t *unseen;
 
 	if (!ts)	/* Not built yet */
 		return;
 
-	unseen = bit_alloc (ts->n_tasks);
-	if (bit_set_count (ts->start_failed)) {
-		_do_log_msg (ts->start_failed, fn, "failed to start");
-		bit_or (unseen, ts->start_failed);
+	unseen = bit_alloc(ts->n_tasks);
+	if (bit_set_count(ts->start_failed)) {
+		_do_log_msg(ts, ts->start_failed, fn,
+			    "failed to start");
+		bit_or(unseen, ts->start_failed);
 	}
-	if (bit_set_count (ts->running)) {
-		_do_log_msg (ts->running, fn, "running");
-		bit_or (unseen, ts->running);
+	if (bit_set_count(ts->running)) {
+		_do_log_msg(ts, ts->running, fn, "running");
+		bit_or(unseen, ts->running);
 	}
-	if (bit_set_count (ts->abnormal_exit)) {
-		_do_log_msg (ts->abnormal_exit, fn, "exited abnormally");
-		bit_or (unseen, ts->abnormal_exit);
+	if (bit_set_count(ts->abnormal_exit)) {
+		_do_log_msg(ts, ts->abnormal_exit, fn,
+			    "exited abnormally");
+		bit_or(unseen, ts->abnormal_exit);
 	}
-	if (bit_set_count (ts->normal_exit)) {
-		_do_log_msg (ts->normal_exit, fn, "exited");
-		bit_or (unseen, ts->normal_exit);
+	if (bit_set_count(ts->normal_exit)) {
+		_do_log_msg(ts, ts->normal_exit, fn, "exited");
+		bit_or(unseen, ts->normal_exit);
 	}
-	bit_not (unseen);
-	if (bit_set_count (unseen))
-		_do_log_msg (unseen, fn, "unknown");
+	bit_not(unseen);
+	if (bit_set_count(unseen))
+		_do_log_msg(ts, unseen, fn, "unknown");
 	FREE_NULL_BITMAP(unseen);
 }
 
+/*
+ * Print summary of a task_state structure's contents
+ */
+extern void task_state_print(List task_state_list, log_f fn)
+{
+	task_state_t ts = NULL;
+	ListIterator iter;
+
+	if (!task_state_list)
+		return;
+
+	iter = list_iterator_create(task_state_list);
+	while ((ts = list_next(iter))) {
+		_task_state_print(ts, fn);
+	}
+	list_iterator_destroy(iter);
+}
