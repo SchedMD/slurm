@@ -506,7 +506,7 @@ static void _usage(char *prog_name)
 		"Print version information and exit.\n");
 }
 
-/* Reset slurmctld logging based upon configuration parameters */
+/* Reset slurmdbd logging based upon configuration parameters */
 static void _update_logging(bool startup)
 {
 	/* Preserve execute line arguments (if any) */
@@ -543,6 +543,8 @@ static void _update_logging(bool startup)
 			      (int) slurm_user_gid);
 		}
 	}
+
+	debug("Log file re-opened");
 }
 
 /* Reset slurmd nice value */
@@ -841,7 +843,7 @@ static int _send_slurmctld_register_req(slurmdb_cluster_rec_t *cluster_rec)
 static void *_signal_handler(void *no_data)
 {
 	int rc, sig;
-	int sig_array[] = {SIGINT, SIGTERM, SIGHUP, SIGABRT, 0};
+	int sig_array[] = {SIGINT, SIGTERM, SIGHUP, SIGABRT, SIGUSR2, 0};
 	sigset_t set;
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
@@ -852,6 +854,7 @@ static void *_signal_handler(void *no_data)
 	_default_sigaction(SIGTERM);
 	_default_sigaction(SIGHUP);
 	_default_sigaction(SIGABRT);
+	_default_sigaction(SIGUSR2);
 
 	while (1) {
 		xsignal_sigset_create(sig_array, &set);
@@ -873,6 +876,10 @@ static void *_signal_handler(void *no_data)
 			abort();	/* Should terminate here */
 			shutdown_threads();
 			return NULL;
+		case SIGUSR2:
+			info("Logrotate signal (SIGUSR2) received");
+			_update_logging(false);
+			break;
 		default:
 			error("Invalid signal (%d) received", sig);
 		}

@@ -55,7 +55,7 @@ pathname of the file (e.g.
 <i>JobCompLoc=/var/log/slurm/job_completions</i>).
 Use the <i>logrotate</i> or similar tool to prevent the
 log files from getting too large.
-Send a SIGHUP signal to the <i>slurmctld</i> daemon
+Send a SIGUSR2 signal to the <i>slurmctld</i> daemon
 after moving the files, but before compressing them so
 that new log files will be created.</p>
 

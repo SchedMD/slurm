@@ -202,6 +202,7 @@ static void      _term_handler(int);
 static void      _update_logging(void);
 static void      _update_nice(void);
 static void      _usage(void);
+static void      _usr_handler(int);
 static int       _validate_and_convert_cpu_list(void);
 static void      _wait_for_all_threads(int secs);
 
@@ -284,6 +285,7 @@ main (int argc, char **argv)
 	xsignal(SIGTERM, &_term_handler);
 	xsignal(SIGINT,  &_term_handler);
 	xsignal(SIGHUP,  &_hup_handler );
+	xsignal(SIGUSR2, &_usr_handler );
 	xsignal_block(blocked_signals);
 
 	debug3("slurmd initialization successful");
@@ -1831,6 +1833,14 @@ _hup_handler(int signum)
 	}
 }
 
+static void
+_usr_handler(int signum)
+{
+	if (signum == SIGUSR2) {
+		_update_logging();
+	}
+}
+
 
 static void
 _usage(void)
@@ -1942,6 +1952,9 @@ static void _update_logging(void)
 	 * MULTIPLE_SLURMD mode add my node_name
 	 * in the name tag for syslog.
 	 */
+
+	debug("Log file re-opened");
+
 #if defined(MULTIPLE_SLURMD)
 	if (conf->logfile == NULL) {
 		char buf[64];

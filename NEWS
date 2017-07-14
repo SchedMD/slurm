@@ -40,6 +40,9 @@ documents those changes that are of interest to users and administrators.
     as possible while avoiding advanced reservations.
  -- Add URG as an option to 'scancel --signal'.
  -- Check if the buffer returned from slurm_persist_msg_pack() isn't NULL.
+ -- Modify all daemons to re-open log files on receipt of SIGUSR2 signal. This
+    is much than using SIGHUP to re-read the configuration file and rebuild
+    various tables.
 
 * Changes in Slurm 17.11.0pre1
 ==============================

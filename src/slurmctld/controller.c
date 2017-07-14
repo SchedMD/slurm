@@ -858,7 +858,7 @@ static void *_slurmctld_signal_hand(void *no_data)
 {
 	int sig;
 	int i, rc;
-	int sig_array[] = {SIGINT, SIGTERM, SIGHUP, SIGABRT, 0};
+	int sig_array[] = {SIGINT, SIGTERM, SIGHUP, SIGABRT, SIGUSR2, 0};
 	sigset_t set;
 
 #if HAVE_SYS_PRCTL_H
@@ -895,6 +895,10 @@ static void *_slurmctld_signal_hand(void *no_data)
 			slurmctld_shutdown();
 			dump_core = true;
 			return NULL;
+		case SIGUSR2:
+			info("Logrotate signal (SIGUSR2) received");
+			update_logging();
+			break;
 		default:
 			error("Invalid signal (%d) received", sig);
 		}
@@ -2558,6 +2562,8 @@ void update_logging(void)
 		  slurmctld_conf.slurmctld_logfile);
 
 	log_set_timefmt(slurmctld_conf.log_fmt);
+
+	debug("Log file re-opened");
 
 	/*
 	 * SchedLogLevel restore
