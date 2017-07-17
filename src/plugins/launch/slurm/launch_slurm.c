@@ -703,9 +703,6 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 		slurm_mutex_unlock(&launch_lock);
 	}
 
-//FIXME-PACK: Need to configure all debugger environment for pack-jobs
-	mpir_init(job->ntasks);
-
 	update_job_state(job, SRUN_JOB_LAUNCHING);
 	launch_start_time = time(NULL);
 	if (first_launch) {

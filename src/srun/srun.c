@@ -255,18 +255,34 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 	_launch_app_data_t *opts;
 	pthread_attr_t attr_steps;
 	pthread_t thread_steps = (pthread_t) 0;
-	int step_cnt = 0;
+	int total_ntasks = 0, step_cnt = 0;
 	pthread_mutex_t step_mutex = PTHREAD_MUTEX_INITIALIZER;
 	pthread_cond_t step_cond   = PTHREAD_COND_INITIALIZER;
 	srun_job_t *first_job = NULL;
+	char *launch_type;
+	bool need_mpir = false;
+
+	launch_type = slurm_get_launch_type();
+	if (launch_type && strstr(launch_type, "slurm"))
+		need_mpir = true;
+	xfree(launch_type);
 
 	if (srun_job_list) {
 		if (!opt_list) {
 			fatal("%s: have srun_job_list, but no opt_list",
 			      __func__);
 		}
-		slurm_attr_init(&attr_steps);
+
 		job_iter = list_iterator_create(srun_job_list);
+		if (need_mpir) {
+			while ((job = (srun_job_t *) list_next(job_iter))) {
+				total_ntasks = job->ntasks;
+			}
+			list_iterator_reset(job_iter);
+			mpir_init(total_ntasks);
+		}
+
+		slurm_attr_init(&attr_steps);
 		opt_iter = list_iterator_create(opt_list);
 		step_cnt = list_count(opt_list);
 		while ((opt_local = (opt_t *) list_next(opt_iter))) {
@@ -309,6 +325,8 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 		if (first_job)
 			fini_srun(first_job, got_alloc, &global_rc, 0);
 	} else {
+		if (need_mpir)
+			mpir_init(job->ntasks);
 		opts = xmalloc(sizeof(_launch_app_data_t));
 		opts->got_alloc   = got_alloc;
 		opts->job         = job;
