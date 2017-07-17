@@ -259,7 +259,7 @@ _handle_openmpi_port_error(const char *tasks, const char *hosts,
 static void _task_start(launch_tasks_response_msg_t *msg)
 {
 	MPIR_PROCDESC *table;
-	int taskid;
+	int task_id;
 	int i;
 	task_state_t task_state;
 
@@ -282,19 +282,27 @@ static void _task_start(launch_tasks_response_msg_t *msg)
 		      __func__, msg->job_id, msg->step_id);
 	}
 	for (i = 0; i < msg->count_of_pids; i++) {
-		taskid = msg->task_ids[i];
-		table = &MPIR_proctable[taskid];
+		task_id = msg->task_ids[i];
+		if (task_id >= MPIR_proctable_size) {
+			error("%s: task_id too large (%d >= %d)", __func__,
+			      task_id, MPIR_proctable_size);
+			continue;
+		}
+		table = &MPIR_proctable[task_id];
 		table->host_name = xstrdup(msg->node_name);
 		/* table->executable_name is set elsewhere */
 		table->pid = msg->local_pids[i];
 
 		if (!task_state) {
 			error("%s: Could not update task state for task ID %u",
-			      __func__, taskid);
-		} else if (msg->return_code == 0)
-			task_state_update(task_state, taskid, TS_START_SUCCESS);
-		else
-			task_state_update(task_state, taskid, TS_START_FAILURE);
+			      __func__, task_id);
+		} else if (msg->return_code == 0) {
+			task_state_update(task_state, task_id,
+					  TS_START_SUCCESS);
+		} else {
+			task_state_update(task_state, task_id,
+					  TS_START_FAILURE);
+		}
 	}
 
 }

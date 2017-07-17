@@ -242,12 +242,19 @@ mpir_init(int num_tasks)
 	/* Use symbols from the runjob.so library provided by IBM.
 	 * Do NOT use debugger symbols local to the srun command */
 #else
+//FIXME-PACK: Need to call once per srun
+static pthread_mutex_t mpir_mutex = PTHREAD_MUTEX_INITIALIZER;
+num_tasks += 16;
+slurm_mutex_lock(&mpir_mutex);
+if (!MPIR_proctable) {
 	MPIR_proctable_size = num_tasks;
 	MPIR_proctable = xmalloc(sizeof(MPIR_PROCDESC) * num_tasks);
 	if (MPIR_proctable == NULL) {
 		error("Unable to initialize MPIR_proctable: %m");
 		exit(error_exit);
 	}
+}
+slurm_mutex_unlock(&mpir_mutex);
 #endif
 }
 
