@@ -86,7 +86,8 @@ extern int write_labelled_message(int fd, void *buf, int len, int taskid,
 		start = buf + written;
 		end = memchr(start, '\n', remaining);
 		if (end == NULL) { /* no newline found */
-			suffix = "\n";
+			if (label)
+				suffix = "\n";
 			rc = _write_line(fd, prefix, suffix, start, remaining);
 			if (rc <= 0) {
 				goto done;
@@ -150,7 +151,7 @@ static int _write_line(int fd, char *prefix, char *suffix, void *buf, int len)
 			memcpy(tmp, prefix, pre);
 		memcpy(tmp + pre, buf, len);
 		if (suffix)
-			memcpy(tmp + pre + len, suffix, pre);
+			memcpy(tmp + pre + len, suffix, post);
 		ptr = tmp;
 		left = pre + len + post;
 	} else {
