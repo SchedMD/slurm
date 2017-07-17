@@ -532,9 +532,9 @@ extern int get_max_pack_group(void)
 extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 {
 	static int default_pack_offset = 0;
+	static bool pending_append = false;
 	bitstr_t *pack_grp_bits;
 	int i, i_first, i_last;
-	bool pending_append = false;
 
 	pack_grp_bits = _get_pack_group(argc, argv, default_pack_offset++);
 	i_first = bit_ffs(pack_grp_bits);
