@@ -709,19 +709,19 @@ static int _file_read(eio_obj_t *obj, List objs)
 
 again:
 	if ((len = read(obj->fd, ptr, MAX_MSG_LEN)) < 0) {
-			if (errno == EINTR)
-				goto again;
-			if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
-				debug("_file_read returned %s",
-				      errno==EAGAIN?"EAGAIN":"EWOULDBLOCK");
-				slurm_mutex_lock(&info->cio->ioservers_lock);
-				list_enqueue(info->cio->free_incoming, msg);
-				slurm_mutex_unlock(&info->cio->ioservers_lock);
-				return SLURM_SUCCESS;
-			}
-			/* Any other errors, we pretend we got eof */
-			debug("Other error on _file_read: %m");
-			len = 0;
+		if (errno == EINTR)
+			goto again;
+		if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
+			debug("_file_read returned %s",
+			      errno==EAGAIN?"EAGAIN":"EWOULDBLOCK");
+			slurm_mutex_lock(&info->cio->ioservers_lock);
+			list_enqueue(info->cio->free_incoming, msg);
+			slurm_mutex_unlock(&info->cio->ioservers_lock);
+			return SLURM_SUCCESS;
+		}
+		/* Any other errors, we pretend we got eof */
+		debug("Other error on _file_read: %m");
+		len = 0;
 	}
 	if (len == 0) { /* got eof */
 		debug3("got eof on _file_read");
