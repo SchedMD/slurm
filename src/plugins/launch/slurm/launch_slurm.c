@@ -268,8 +268,8 @@ static void _task_start(launch_tasks_response_msg_t *msg)
 			msg->node_name, msg->count_of_pids);
 	} else {
 		/*
-		 * This message should be displayed through the api,
-		 * hense it is a debug2 instead of an error.
+		 * This message should be displayed through the API,
+		 * hence it is a debug2() instead of error().
 		 */
 		debug2("No tasks started on node %s: %s",
 		       msg->node_name, slurm_strerror(msg->return_code));
