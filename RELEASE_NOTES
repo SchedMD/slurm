@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 17.11
-6 February 2017
+28 July 2017
 
 IMPORTANT NOTES:
 THE MAXJOBID IS NOW 67,108,863. ANY PRE-EXISTING JOBS WILL CONTINUE TO RUN BUT
@@ -62,6 +62,14 @@ NOTE: The SLURM_ID_HASH used for Cray systems has changed to fully use the
 
 HIGHLIGHTS
 ==========
+ -- Added new advanced reservation flag of "flex", which permits jobs requesting
+    the reservation to begin prior to the reservation's start time and use
+    resources inside or outside of the reservation. A typical use case is to
+    prevent jobs not explicitly requesting the reservation from using those
+    reserved resources rather than forcing jobs requesting the reservation to
+    use those resources in the time frame reserved.
+ -- The sprio command has been modified to report a job's priority information
+    for every partition the job has been submitted to.
  -- Add the configure option --with-shared-libslurm which will link to
     libslurm.so instead of libslurm.o thus reducing the footprint of all the
     binaries.
@@ -76,16 +84,58 @@ RPMBUILD CHANGES
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
-Added FederationParameters=fed_display to display federated view by default if
-	the local cluster is a member of a federation. Defaults to 0.
+ -- Add FederationParameters=fed_display slurm.conf option to configure status
+    commands to display a federated view by default if the cluster is a member
+    of a federation.
+ -- Add PrivateData=events configuration option.
+ -- Change name of acct_gather_infiniband to acct_gather_interconnect.
+ -- Add NoDecay flag to QOS.
+ -- Add SchedulerParameters option of bf_max_job_user_part to specifiy the
+    maximum number of jobs per user for any single partition. This differs from
+    bf_max_job_user in that a separate counter is applied to each partition
+    rather than having a single counter per user applied to all partitions.
+ -- Changed default ProctrackType to cgroup.
+ -- Add bf_max_time to SchedulerParameters.
+ -- Add bf_max_job_assoc to SchedulerParameters.
+ -- Add new SchedulerParameters option bf_window_linear to control the rate at
+    which the backfill test window expands. This can be used on a system with
+    a modest number of running jobs (hundreds of jobs) to help prevent expected
+    start times of pending jobs to get pushed forward in time. On systems with
+    large numbers of running jobs, performance of the backfill scheduler will
+    suffer and fewer jobs will be evaluated.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
-The '-q' option to srun has changed from being the short form of
-	'--quit-on-interrupt' to '--qos'.
+ -- The '-q' option to srun has changed from being the short form of
+    '--quit-on-interrupt' to '--qos'.
+ -- Modify all daemons to re-open log files on receipt of SIGUSR2 signal. This
+    is much than using SIGHUP to re-read the configuration file and rebuild
+    various tables.
+ -- Add scancel "--hurry" option to avoid staging out any burst buffer data.
+ -- Add new advanced reservation flags of "weekday" (repeat on each weekday;
+    Monday through Friday) and "weekend" (repeat on each weekend day; Saturday
+    and Sunday).
+ -- Node "OS" field expanded from "sysname" to "sysname release version" (e.g.
+    change from "Linux" to
+    "Linux 4.8.0-28-generic #28-Ubuntu SMP Sat Feb 8 09:15:00 UTC 2017").
+ -- scontrol modified to report core IDs for reservation containing individual
+    cores.
+ -- Add ability to define features on clusters for directing federated jobs to
+    different clusters.
+ -- Modify slurm_load_jobs() function to load job information from all clusters
+    in a federation.
+ -- Add squeue --local and --sibling options to modify filtering of jobs on
+    federated clusters.
+ -- Add sprio -p/--partition option to filter jobs by partition name.
+ -- Add sprio --local and --sibling options for use in federation of clusters.
+ -- Add sprio "%c" format to print cluster name in federation mode.
+ -- Extend the output of the seff utility to also include the job's wall-clock
+    time.
 
 OTHER CHANGES
 =============
+ -- KNL features: Always keep active and available features in the same order:
+    first site-specific features, next MCDRAM modes, last NUMA modes.
 
 API CHANGES
 ===========
