@@ -2195,7 +2195,7 @@ static int _memory_spec_init(void)
 	pid_t pid;
 
 	if (conf->mem_spec_limit == 0) {
-		info ("Resource spec: Reserved system memory limit not "
+		debug("Resource spec: Reserved system memory limit not "
 		      "configured for this node");
 		return SLURM_SUCCESS;
 	}
