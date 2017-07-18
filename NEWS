@@ -55,6 +55,7 @@ documents those changes that are of interest to users and administrators.
     * Major re-write of task state container logic to support for list of
       containers rather than one container per srun command.
     * Add some regression tests.
+    * Add srun pack job environment variables when performing job allocation.
 
 * Changes in Slurm 17.11.0pre1
 ==============================

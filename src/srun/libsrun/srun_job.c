@@ -125,6 +125,8 @@ static void _run_srun_prolog (srun_job_t *job);
 static int  _run_srun_script (srun_job_t *job, char *script);
 static void _set_env_vars(resource_allocation_response_msg_t *resp,
 			  int pack_offset);
+static void _set_env_vars2(resource_allocation_response_msg_t *resp,
+			   int pack_offset);
 static void _set_ntasks(allocation_info_t *ai, opt_t *opt_local);
 static void _set_prio_process_env(void);
 static int  _set_rlimit_env(void);
@@ -862,6 +864,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 					global_resp = resp;
 				_print_job_information(resp);
 				_set_env_vars(resp, ++pack_offset);
+				_set_env_vars2(resp, pack_offset);
 				if (_validate_relative(resp, opt_local)) {
 					slurm_complete_job(my_job_id, 1);
 					exit(error_exit);
@@ -872,6 +875,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 			}
 			list_iterator_destroy(opt_iter);
 			list_iterator_destroy(resp_iter);
+			setenvfs("SLURM_PACK_SIZE=%d", pack_offset + 1);
 		} else {
 			if (!(resp = allocate_nodes(handle_signals, &opt)))
 				exit(error_exit);
@@ -1491,6 +1495,72 @@ static void _set_env_vars(resource_allocation_response_msg_t *resp,
 	}
 
 	return;
+}
+
+/*
+ * Set some pack-job environment variables for combined job & step allocation
+ */
+static void _set_env_vars2(resource_allocation_response_msg_t *resp,
+			   int pack_offset)
+{
+	char *key;
+
+	if (resp->account) {
+		key = _build_key("SLURM_JOB_ACCOUNT", pack_offset);
+		if (!getenv(key)) {
+			if (setenvf(NULL, key, "%u", resp->account) < 0)
+				error("unable to set %s in environment", key);
+		}
+		xfree(key);
+	}
+
+	key = _build_key("SLURM_JOB_ID", pack_offset);
+	if (!getenv(key)) {
+		if (setenvf(NULL, key, "%u", resp->job_id) < 0)
+			error("unable to set %s in environment", key);
+	}
+	xfree(key);
+
+	key = _build_key("SLURM_JOB_NODELIST", pack_offset);
+	if (!getenv(key)) {
+		if (setenvf(NULL, key, "%s", resp->node_list) < 0)
+			error("unable to set %s in environment", key);
+	}
+	xfree(key);
+
+	key = _build_key("SLURM_JOB_PARTITION", pack_offset);
+	if (!getenv(key)) {
+		if (setenvf(NULL, key, "%s", resp->partition) < 0)
+			error("unable to set %s in environment", key);
+	}
+	xfree(key);
+
+	if (resp->qos) {
+		key = _build_key("SLURM_JOB_QOS", pack_offset);
+		if (!getenv(key)) {
+			if (setenvf(NULL, key, "%u", resp->qos) < 0)
+				error("unable to set %s in environment", key);
+		}
+		xfree(key);
+	}
+
+	if (resp->resv_name) {
+		key = _build_key("SLURM_JOB_RESERVATION", pack_offset);
+		if (!getenv(key)) {
+			if (setenvf(NULL, key, "%u", resp->resv_name) < 0)
+				error("unable to set %s in environment", key);
+		}
+		xfree(key);
+	}
+
+	if (resp->alias_list) {
+		key = _build_key("SLURM_NODE_ALIASES", pack_offset);
+		if (!getenv(key)) {
+			if (setenvf(NULL, key, "%u", resp->alias_list) < 0)
+				error("unable to set %s in environment", key);
+		}
+		xfree(key);
+	}
 }
 
 /*
