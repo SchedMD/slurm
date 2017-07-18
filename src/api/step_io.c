@@ -571,7 +571,7 @@ static int _file_write(eio_obj_t *obj, List objs)
 	void *ptr;
 	int n;
 
-	debug2("Entering _file_write");
+	debug2("Entering %s", __func__);
 	/*
 	 * If we aren't already in the middle of sending a message, get the
 	 * next message from the queue.
@@ -579,7 +579,7 @@ static int _file_write(eio_obj_t *obj, List objs)
 	if (info->out_msg == NULL) {
 		info->out_msg = list_dequeue(info->msg_queue);
 		if (info->out_msg == NULL) {
-			debug3("_file_write: nothing in the queue");
+			debug3("%s: nothing in the queue", __func__);
 			return SLURM_SUCCESS;
 		}
 		info->out_remaining = info->out_msg->length;
@@ -588,8 +588,8 @@ static int _file_write(eio_obj_t *obj, List objs)
 	/*
 	 * Write message to file.
 	 */
-	if (info->taskid != (uint32_t)-1
-	    && info->out_msg->header.gtaskid != info->taskid) {
+	if ((info->taskid != (uint32_t) -1) &&
+	    (info->out_msg->header.gtaskid != info->taskid)) {
 		/* we are ignoring messages not from info->taskid */
 	} else if (!info->eof) {
 		ptr = info->out_msg->data + (info->out_msg->length
@@ -597,8 +597,9 @@ static int _file_write(eio_obj_t *obj, List objs)
 		if ((n = write_labelled_message(obj->fd, ptr,
 					        info->out_remaining,
 					        info->out_msg->header.gtaskid,
+					        info->cio->pack_offset,
 					        info->cio->label,
-					        info->cio->label_width)) < 0) {
+					        info->cio->taskid_width)) < 0) {
 			list_enqueue(info->cio->free_outgoing, info->out_msg);
 			info->eof = true;
 			return SLURM_ERROR;
@@ -616,7 +617,7 @@ static int _file_write(eio_obj_t *obj, List objs)
 	if (info->out_msg->ref_count == 0)
 		list_enqueue(info->cio->free_outgoing, info->out_msg);
 	info->out_msg = NULL;
-	debug2("Leaving  _file_write");
+	debug2("Leaving  %s", __func__);
 
 	return SLURM_SUCCESS;
 }
@@ -708,19 +709,19 @@ static int _file_read(eio_obj_t *obj, List objs)
 
 again:
 	if ((len = read(obj->fd, ptr, MAX_MSG_LEN)) < 0) {
-			if (errno == EINTR)
-				goto again;
-			if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
-				debug("_file_read returned %s",
-				      errno==EAGAIN?"EAGAIN":"EWOULDBLOCK");
-				slurm_mutex_lock(&info->cio->ioservers_lock);
-				list_enqueue(info->cio->free_incoming, msg);
-				slurm_mutex_unlock(&info->cio->ioservers_lock);
-				return SLURM_SUCCESS;
-			}
-			/* Any other errors, we pretend we got eof */
-			debug("Other error on _file_read: %m");
-			len = 0;
+		if (errno == EINTR)
+			goto again;
+		if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
+			debug("_file_read returned %s",
+			      errno==EAGAIN?"EAGAIN":"EWOULDBLOCK");
+			slurm_mutex_lock(&info->cio->ioservers_lock);
+			list_enqueue(info->cio->free_incoming, msg);
+			slurm_mutex_unlock(&info->cio->ioservers_lock);
+			return SLURM_SUCCESS;
+		}
+		/* Any other errors, we pretend we got eof */
+		debug("Other error on _file_read: %m");
+		len = 0;
 	}
 	if (len == 0) { /* got eof */
 		debug3("got eof on _file_read");
@@ -1066,12 +1067,9 @@ _estimate_nports(int nclients, int cli_per_port)
 	return d.rem > 0 ? d.quot + 1 : d.quot;
 }
 
-client_io_t *
-client_io_handler_create(slurm_step_io_fds_t fds,
-			 int num_tasks,
-			 int num_nodes,
-			 slurm_cred_t *cred,
-			 bool label)
+client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
+				      int num_nodes, slurm_cred_t *cred,
+				      bool label, uint32_t pack_offset)
 {
 	client_io_t *cio;
 	int i;
@@ -1084,17 +1082,18 @@ client_io_handler_create(slurm_step_io_fds_t fds,
 	if (cio == NULL)
 		return NULL;
 
-	cio->num_tasks = num_tasks;
-	cio->num_nodes = num_nodes;
+	cio->num_tasks   = num_tasks;
+	cio->num_nodes   = num_nodes;
+	cio->pack_offset = pack_offset;
 
 	cio->label = label;
 	if (cio->label)
-		cio->label_width = _wid(cio->num_tasks);
+		cio->taskid_width = _wid(cio->num_tasks);
 	else
-		cio->label_width = 0;
+		cio->taskid_width = 0;
 
 	if (slurm_cred_get_signature(cred, &sig, &siglen) < 0) {
-		error("client_io_handler_create, invalid credential");
+		error("%s: invalid credential", __func__);
 		return NULL;
 	}
 	cio->io_key = (char *)xmalloc(siglen);

@@ -141,6 +141,14 @@ int job_format_add_function(List list, int width, bool right_justify,
 #define job_format_add_time_limit(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,	\
 	                        _print_job_time_limit)
+#define job_format_add_pack_job_offset(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,\
+				_print_job_pack_job_offset)
+#define job_format_add_pack_job_id(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_pack_job_id)
+#define job_format_add_pack_job_id_set(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,\
+				_print_job_pack_job_id_set)
 #define job_format_add_time_used(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_time_used)
 #define job_format_add_time_submit(list,wid,right,suffix) \
@@ -519,6 +527,13 @@ int _print_job_tres(job_info_t * job, int width,
 		    bool right_justify, char *suffix);
 int _print_job_mcs_label(job_info_t * job, int width,
 			 bool right_justify, char* suffix);
+int _print_job_pack_job_id(job_info_t * job, int width,
+			 bool right_justify, char* suffix);
+int _print_job_pack_job_offset(job_info_t * job, int width,
+			 bool right_justify, char* suffix);
+int _print_job_pack_job_id_set(job_info_t * job, int width,
+			 bool right_justify, char* suffix);
+
 
 /*****************************************************************************
  * Step Print Format Functions

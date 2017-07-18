@@ -813,3 +813,11 @@ test37.13  Validate federated arrays
 test37.14  Validate federated scontrol notify
 test37.15  Validate federated scontrol suspend
 test37.16  Validate job cleanup when clusters are removed federation
+
+test38.#   Testing of heterogeneous jobs.
+=========================================
+test38.1   sbatch job info.
+test38.2   sbatch env variables.
+test38.3   salloc job info.
+test38.4   salloc env variables.
+test38.5   squeue pack_job fields

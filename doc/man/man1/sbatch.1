@@ -1,10 +1,15 @@
-.TH sbatch "1" "Slurm Commands" "March 2016" "Slurm Commands"
+.TH sbatch "1" "Slurm Commands" "June 2017" "Slurm Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to Slurm.
 
 .SH "SYNOPSIS"
-sbatch [\fIoptions\fP] \fIscript\fP [\fIargs\fP...]
+\fBsbatch\fR [\fIOPTIONS(0)\fR...] \fR[ : \fR[\fIOPTIONS(n)\fR...]\fR] \fIscript(0) \fR[\fIargs(0)\fR...]
+
+Option(s) define multiple jobs in a co-scheduled heterogeneous job.
+For more details about heterogeneous jobs see the document
+.br
+http://slurm.schedmd.com/heterogeneous_jobs.html
 
 .SH "DESCRIPTION"
 sbatch submits a batch script to Slurm.  The batch script may be given to
@@ -1916,6 +1921,10 @@ Possible values are "none", "rank", "map_map", "mask_mem" and "local".
 Set to "verbose" if the \-\-mem_bind\fR option includes the verbose option.
 Set to "quiet" otherwise.
 .TP
+\fBSLURM_*_PACK_GROUP_#\fR
+For a heterogenous job allocation, the environment variables are set separately
+for each component.
+.TP
 \fBSLURM_ARRAY_TASK_COUNT\fR
 Total number of tasks in a job array.
 .TP
@@ -2021,6 +2030,9 @@ Only set if the \fB\-\-ntasks\-per\-node\fR option is specified.
 \fBSLURM_NTASKS_PER_SOCKET\fR
 Number of tasks requested per socket.
 Only set if the \fB\-\-ntasks\-per\-socket\fR option is specified.
+.TP
+\fBSLURM_PACK_SIZE\fR
+Set to count of components in heterogeneous job.
 .TP
 \fBSLURM_PRIO_PROCESS\fR
 The  scheduling priority (nice value) at the time of job submission.
@@ -2128,13 +2140,20 @@ host3
 .br
 host4
 
+.LP
+To create a heterogeneous job with 3 components, each allocating a unique set of nodes:
+.IP
+sbatch -w node[2-3] : -w node4 : -w node[5-7] work.bash
+.br
+Submitted batch job 34987
+
 .SH "COPYING"
 Copyright (C) 2006\-2007 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
 Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 .br
-Copyright (C) 2010\-2015 SchedMD LLC.
+Copyright (C) 2010\-2017 SchedMD LLC.
 .LP
 This file is part of Slurm, a resource management program.
 For details, see <https://slurm.schedmd.com/>.

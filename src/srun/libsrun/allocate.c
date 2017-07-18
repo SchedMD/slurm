@@ -479,24 +479,26 @@ extern int allocate_test(void)
  * Returns a pointer to a resource_allocation_response_msg which must
  * be freed with slurm_free_resource_allocation_response_msg()
  */
-resource_allocation_response_msg_t *allocate_nodes(bool handle_signals)
+extern resource_allocation_response_msg_t *
+	allocate_nodes(bool handle_signals, opt_t *opt_local)
+
 {
 	resource_allocation_response_msg_t *resp = NULL;
 	job_desc_msg_t *j;
 	slurm_allocation_callbacks_t callbacks;
 	int i;
 
-	if (opt.relative_set && opt.relative)
+	if (opt_local->relative_set && opt_local->relative)
 		fatal("--relative option invalid for job allocation request");
 
 	if ((j = _job_desc_msg_create_from_opts(&opt)) == NULL)
 		return NULL;
 
-	if (opt.clusters &&
-	    (slurmdb_get_first_avail_cluster(j, opt.clusters,
+	if (opt_local->clusters &&
+	    (slurmdb_get_first_avail_cluster(j, opt_local->clusters,
 					     &working_cluster_rec)
 	     != SLURM_SUCCESS)) {
-		print_db_notok(opt.clusters, 0);
+		print_db_notok(opt_local->clusters, 0);
 		return NULL;
 	}
 
@@ -504,11 +506,11 @@ resource_allocation_response_msg_t *allocate_nodes(bool handle_signals)
 
 	/* Do not re-use existing job id when submitting new job
 	 * from within a running job */
-	if ((j->job_id != NO_VAL) && !opt.jobid_set) {
+	if ((j->job_id != NO_VAL) && !opt_local->jobid_set) {
 		info("WARNING: Creating SLURM job allocation from within "
 		     "another allocation");
 		info("WARNING: You are attempting to initiate a second job");
-		if (!opt.jobid_set)	/* Let slurmctld set jobid */
+		if (!opt_local->jobid_set)	/* Let slurmctld set jobid */
 			j->job_id = NO_VAL;
 	}
 	callbacks.ping = _ping_handler;
@@ -530,7 +532,8 @@ resource_allocation_response_msg_t *allocate_nodes(bool handle_signals)
 	}
 
 	while (!resp) {
-		resp = slurm_allocate_resources_blocking(j, opt.immediate,
+		resp = slurm_allocate_resources_blocking(j,
+							 opt_local->immediate,
 							 _set_pending_job_id);
 		if (destroy_job) {
 			/* cancelled by signal */
@@ -552,14 +555,15 @@ resource_allocation_response_msg_t *allocate_nodes(bool handle_signals)
 		 * allocated so we don't have issues when we use them
 		 * in the step creation.
 		 */
-		opt.pn_min_memory = NO_VAL64;
-		opt.mem_per_cpu = NO_VAL64;
+		opt_local->pn_min_memory = NO_VAL64;
+		opt_local->mem_per_cpu   = NO_VAL64;
 		if (resp->pn_min_memory != NO_VAL64) {
-			if (resp->pn_min_memory & MEM_PER_CPU)
-				opt.mem_per_cpu = (resp->pn_min_memory &
-						   (~MEM_PER_CPU));
-			else
-				opt.pn_min_memory = resp->pn_min_memory;
+			if (resp->pn_min_memory & MEM_PER_CPU) {
+				opt_local->mem_per_cpu = (resp->pn_min_memory &
+							 (~MEM_PER_CPU));
+			} else {
+				opt_local->pn_min_memory = resp->pn_min_memory;
+			}
 		}
 
 #ifdef HAVE_BG
@@ -568,8 +572,8 @@ resource_allocation_response_msg_t *allocate_nodes(bool handle_signals)
 					    SELECT_JOBDATA_NODE_CNT,
 					    &node_cnt);
 		if ((node_cnt == 0) || (node_cnt == NO_VAL)) {
-			opt.min_nodes = node_cnt;
-			opt.max_nodes = node_cnt;
+			opt_local->min_nodes = node_cnt;
+			opt_local->max_nodes = node_cnt;
 		} /* else we just use the original request */
 
 		if (!_wait_bluegene_block_ready(resp)) {
@@ -579,8 +583,8 @@ resource_allocation_response_msg_t *allocate_nodes(bool handle_signals)
 			goto relinquish;
 		}
 #else
-		opt.min_nodes = resp->node_cnt;
-		opt.max_nodes = resp->node_cnt;
+		opt_local->min_nodes = resp->node_cnt;
+		opt_local->max_nodes = resp->node_cnt;
 
 		if (resp->working_cluster_rec)
 			slurm_setup_remote_working_cluster(resp);
@@ -627,7 +631,7 @@ List allocate_pack_nodes(bool handle_signals)
 	job_desc_msg_t *j, *first_job = NULL;
 	slurm_allocation_callbacks_t callbacks;
 	ListIterator opt_iter, resp_iter;
-	opt_t *opt_local;
+	opt_t *opt_local, *first_opt = NULL;
 	List job_req_list = NULL, job_resp_list = NULL;
 	uint32_t my_job_id = 0;
 	int i, k;
@@ -635,6 +639,8 @@ List allocate_pack_nodes(bool handle_signals)
 	job_req_list = list_create(NULL);
 	opt_iter = list_iterator_create(opt_list);
 	while ((opt_local = (opt_t *) list_next(opt_iter))) {
+		if (!first_opt)
+			first_opt = opt_local;
 		if (opt_local->relative_set && opt_local->relative)
 			fatal("--relative option invalid for job allocation request");
 
@@ -667,11 +673,11 @@ List allocate_pack_nodes(bool handle_signals)
 		return NULL;
 	}
 
-	if (opt.clusters &&
-	    (slurmdb_get_first_pack_cluster(job_req_list, opt.clusters,
+	if (first_opt && first_opt->clusters &&
+	    (slurmdb_get_first_pack_cluster(job_req_list, first_opt->clusters,
 					    &working_cluster_rec)
 	     != SLURM_SUCCESS)) {
-		print_db_notok(opt_local->clusters, 0);
+		print_db_notok(first_opt->clusters, 0);
 		return NULL;
 	}
 
@@ -694,9 +700,9 @@ List allocate_pack_nodes(bool handle_signals)
 			xsignal(sig_array[i], _signal_while_allocating);
 	}
 
-	while (!job_resp_list) {
+	while (first_opt && !job_resp_list) {
 		job_resp_list = slurm_allocate_pack_job_blocking(job_req_list,
-				 opt.immediate, _set_pending_job_id);
+				 first_opt->immediate, _set_pending_job_id);
 		if (destroy_job) {
 			/* cancelled by signal */
 			break;
@@ -812,31 +818,29 @@ cleanup_allocation(void)
 	return SLURM_SUCCESS;
 }
 
-resource_allocation_response_msg_t *
-existing_allocation(void)
+extern List existing_allocation(void)
 {
 	uint32_t old_job_id;
-        resource_allocation_response_msg_t *resp = NULL;
+	List job_resp_list = NULL;
 
-	if (opt.jobid != NO_VAL)
-		old_job_id = (uint32_t)opt.jobid;
-	else
-                return NULL;
+	if (opt.jobid == NO_VAL)
+		return NULL;
 
-        if (slurm_allocation_lookup(old_job_id, &resp) < 0) {
-                if (opt.parallel_debug || opt.jobid_set)
-                        return NULL;    /* create new allocation as needed */
-                if (errno == ESLURM_ALREADY_DONE)
-                        error ("SLURM job %u has expired.", old_job_id);
-                else
-                        error ("Unable to confirm allocation for job %u: %m",
-			       old_job_id);
-                info ("Check SLURM_JOB_ID environment variable "
-                      "for expired or invalid job.");
-                exit(error_exit);
-        }
+	old_job_id = (uint32_t) opt.jobid;
+	if (slurm_pack_job_lookup(old_job_id, &job_resp_list) < 0) {
+		if (opt.parallel_debug || opt.jobid_set)
+			return NULL;    /* create new allocation as needed */
+		if (errno == ESLURM_ALREADY_DONE)
+			error("SLURM job %u has expired", old_job_id);
+		else
+			error("Unable to confirm allocation for job %u: %m",
+			      old_job_id);
+		info("Check SLURM_JOB_ID environment variable. Expired or invalid job %u",
+		     old_job_id);
+		exit(error_exit);
+	}
 
-        return resp;
+	return job_resp_list;
 }
 
 /* Set up port to handle messages from slurmctld */

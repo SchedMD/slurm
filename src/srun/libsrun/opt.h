@@ -50,14 +50,14 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "src/common/macros.h" /* true and false */
+#include "src/common/bitstring.h"
 #include "src/common/env.h"
 #include "src/common/list.h"
-
-#include "fname.h"
+#include "src/common/macros.h" /* true and false */
 
 #define DEFAULT_IMMEDIATE	1
 #define MAX_THREADS		60
+#define MAX_PACK_COUNT		128
 
 /* global variables relating to user options */
 extern int _verbose;
@@ -242,7 +242,10 @@ typedef struct srun_options {
 	char *mcs_label;	/* mcs label if mcs plugin in use */
 	time_t deadline; 	/* --deadline                   */
 	uint32_t job_flags;	/* --gres-flags */
-	uint32_t delay_boot;	/* --delay-boot			*/	
+	uint32_t delay_boot;	/* --delay-boot			*/
+	bool mpi_combine;	/* --mpi-combine		*/
+	char *pack_group;	/* --pack-group			*/
+	bitstr_t *pack_grp_bits;/* --pack-group	in bitmap form	*/
 } opt_t;
 
 extern int	error_exit;	/* exit code for slurm errors */
@@ -291,5 +294,17 @@ extern int   spank_unset_job_env(const char *name);
 /* Initialize the spank_job_env based upon environment variables set
  *	via salloc or sbatch commands */
 extern void init_spank_env(void);
+
+/*
+ * Find option structure for a given pack job offset
+ * pack_offset IN - Offset into pack job, -1 if regular job, -2 to reset
+ * RET - Pointer to next matching option structure or NULL if none found
+ */
+extern opt_t *get_next_opt(int pack_offset);
+
+/*
+ * Return maximum pack_group value for any step launch option request
+ */
+extern int get_max_pack_group(void);
 
 #endif	/* _HAVE_OPT_H */

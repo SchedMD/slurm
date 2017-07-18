@@ -1,0 +1,198 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test Packjob: salloc--env variables
+#
+# Reqs:    1. Using slurmdbd accounting storage type and is up
+#          2. controllers are up and running.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2017 SchedMD LLC.
+# Written by Isaac Hartung <ihartung@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+source ./globals
+
+set timeout 60
+
+set test_id      "38.4"
+set exit_code    0
+set file_out     "test$test_id.out"
+
+set eol "\r\n"
+
+print_header $test_id
+
+proc salloc {} {
+	global number salloc bin_sleep file_out
+
+	set file [open $file_out w]
+	set matches 0
+	set job_id  0
+	set command "$salloc --cpus-per-task=4 --mem-per-cpu=10 --ntasks=1 -t1 :\
+			     --cpus-per-task=2 --mem-per-cpu=2  --ntasks=1 -t1 :\
+			     --cpus-per-task=1 --mem-per-cpu=6  --ntasks=1 -t1 \
+				env"
+
+	spawn {*}$command
+	expect {
+		-re "Granted job allocation ($number)" {
+			incr matches
+			if {$job_id == 0} {
+				set job_id $expect_out(1,string)
+			}
+			puts $file $expect_out(buffer)
+			exp_continue
+		}
+
+		timeout {
+			log_error "salloc not responding"
+			end_it 1
+		}
+		eof {
+			puts $file $expect_out(buffer)
+		}
+	}
+
+	close $file
+	return $job_id
+}
+
+proc test_env {value} {
+	global bin_cat file_out
+
+	set matches 0
+	log_user 0
+	spawn $bin_cat $file_out
+	expect {
+		-re "$value" {
+			incr matches
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	if {$matches != 1} {
+		log_error "output of env incorrect matches: $value ($matches != 1)"
+		end_it 1
+	}
+}
+
+proc cancel_all_jobs { } {
+	global scancel job_id
+	exec $scancel $job_id
+	sleep 5
+}
+
+proc cleanup { } {
+	global bin_rm file_out
+	global test_id
+
+	exec $bin_rm -f $file_out test$test_id*.out
+	return 0
+}
+
+proc end_it { exit_code } {
+	global test_id job_id
+	cancel_all_jobs
+	if {$exit_code == 0} {
+		cleanup
+		print_success $test_id
+	}
+	exit $exit_code
+}
+
+#start test
+
+send_user "\n################################################################\n"
+send_user "Salloc packjob and verify output from scontrol show job"
+send_user "\n################################################################\n"
+
+set job_id 0
+
+set job_id [salloc]
+
+#
+# Check for desired output
+#
+if {[wait_for_file $file_out] != 0} {
+	send_user "\nFAILURE: Output file $file_out is missing\n"
+	exit 1
+}
+
+set matches 0
+spawn $bin_cat $file_out
+expect {
+	-re "SLURM_PACK_SIZE=3" {
+		#once
+		incr matches
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	log_error "output of env incorrect matches: SLURM_PACK_SIZE=3 ($matches != 1)"
+	end_it 1
+}
+
+set matches 0
+log_user 0
+spawn $bin_cat $file_out
+expect {
+	-re "SLURM_JOB_PARTITION_PACK_GROUP" {
+		#three
+		incr matches
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+if {$matches != 3} {
+	log_error "output of env incorrect matches: SLURM_JOB_PARTITION_PACK_GROUP ($matches != 3)"
+	end_it 1
+}
+
+test_env "SLURM_CPUS_PER_TASK_PACK_GROUP_0=4"
+test_env "SLURM_CPUS_PER_TASK_PACK_GROUP_1=2"
+test_env "SLURM_CPUS_PER_TASK_PACK_GROUP_2=1"
+
+test_env "SLURM_JOB_ID_PACK_GROUP_0=$job_id"
+test_env "SLURM_JOB_ID_PACK_GROUP_1="
+test_env "SLURM_JOB_ID_PACK_GROUP_2="
+
+test_env "SLURM_MEM_PER_CPU_PACK_GROUP_0=10"
+test_env "SLURM_MEM_PER_CPU_PACK_GROUP_1=2"
+test_env "SLURM_MEM_PER_CPU_PACK_GROUP_2=6"
+
+test_env "SLURM_NTASKS_PACK_GROUP_0=1"
+test_env "SLURM_NTASKS_PACK_GROUP_1=1"
+test_env "SLURM_NTASKS_PACK_GROUP_2=1"
+
+# All Done
+end_it 0

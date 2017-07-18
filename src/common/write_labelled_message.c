@@ -45,44 +45,59 @@
 #include "src/common/write_labelled_message.h"
 #include "slurm/slurm_errno.h"
 #include "src/common/log.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
-static int _write_label(int fd, int taskid, int label_width);
-static int _write_line(int fd, void *buf, int len);
-static int _write_newline(int fd);
+static char *_build_label(int taskid, int taskid_width, uint32_t pack_offset);
+static int _write_line(int fd, char *prefix, char *suffix, void *buf, int len);
 
-
-
-int write_labelled_message(int fd, void *buf, int len, int taskid,
-			   bool label, int label_width)
+/*
+ * fd           is the file descriptor to write to
+ * buf          is the char buffer to write
+ * len          is the buffer length in bytes
+ * taskid       is will be used in the label
+ * pack_offset  is the offset within a pack-job or NO_VAL
+ * label        if true, prepend each line of the buffer with a
+ *                label for the task id
+ * taskid_width is the number of digits to use for the task id
+ *
+ * Write as many lines from the message as possible.  Return
+ * the number of bytes from the message that have been written,
+ * or -1 on error.  If len==0, -1 will be returned.
+ *
+ * If the message ends in a partial line (line does not end
+ * in a '\n'), then add a newline to the output file, but only
+ * in label mode.
+ */
+extern int write_labelled_message(int fd, void *buf, int len, int taskid,
+				  uint32_t pack_offset, bool label,
+				  int taskid_width)
 {
-	void *start;
-	void *end;
+	void *start, *end;
+	char *prefix = NULL, *suffix = NULL;
 	int remaining = len;
 	int written = 0;
 	int line_len;
 	int rc = -1;
 
+	if (label)
+		prefix = _build_label(taskid, taskid_width, pack_offset);
 	while (remaining > 0) {
 		start = buf + written;
 		end = memchr(start, '\n', remaining);
-		if (label)
-			if (_write_label(fd, taskid, label_width)
-			    != SLURM_SUCCESS)
-				goto done;
 		if (end == NULL) { /* no newline found */
-			rc = _write_line(fd, start, remaining);
+			if (label)
+				suffix = "\n";
+			rc = _write_line(fd, prefix, suffix, start, remaining);
 			if (rc <= 0) {
 				goto done;
 			} else {
 				remaining -= rc;
 				written += rc;
 			}
-			if (label)
-				if (_write_newline(fd) != SLURM_SUCCESS)
-					goto done;
 		} else {
 			line_len = (int)(end - start) + 1;
-			rc = _write_line(fd, start, line_len);
+			rc = _write_line(fd, prefix, suffix, start, line_len);
 			if (rc <= 0) {
 				goto done;
 			} else {
@@ -93,71 +108,57 @@ int write_labelled_message(int fd, void *buf, int len, int taskid,
 
 	}
 done:
+	xfree(prefix);
 	if (written > 0)
 		return written;
 	else
 		return rc;
 }
 
-
-static int _write_label(int fd, int taskid, int label_width)
+/*
+ * Build line label. Call xfree() to release returned memory
+ */
+static char *_build_label(int taskid, int taskid_width, uint32_t pack_offset)
 {
-	int n;
-	int left = label_width + 2;
-	char buf[16];
-	void *ptr = buf;
+	char *buf = NULL;
 
-	snprintf(buf, 16, "%0*d: ", label_width, taskid);
-	while (left > 0) {
-	again:
-		if ((n = write(fd, ptr, left)) < 0) {
-			if (errno == EINTR)
-				goto again;
-			if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
-				debug3("  got EAGAIN in _write_label");
-				goto again;
-			}
-			error("In _write_label: %m");
-			return SLURM_ERROR;
-		}
-		left -= n;
-		ptr += n;
-	}
+	if (pack_offset == NO_VAL)
+		xstrfmtcat(buf, "%*d: ", taskid_width, taskid);
+	else
+		xstrfmtcat(buf, "P%u %*d: ", pack_offset, taskid_width, taskid);
 
-	return SLURM_SUCCESS;
+	return buf;
 }
-
-
-static int _write_newline(int fd)
-{
-	int n;
-
-	debug2("Called _write_newline");
-again:
-	if ((n = write(fd, "\n", 1)) < 0) {
-		if (errno == EINTR
-		    || errno == EAGAIN
-		    || errno == EWOULDBLOCK) {
-			goto again;
-		}
-		error("In _write_newline: %m");
-		return SLURM_ERROR;
-	}
-	return SLURM_SUCCESS;
-}
-
 
 /*
- * Blocks until write is complete, regardless of the file
- * descriptor being in non-blocking mode.
+ * Blocks until write is complete, regardless of the file descriptor being in
+ * non-blocking mode.
+ * I/O from multiple pack-jobs may be present, so add prefix/suffix to buffer
+ * before issuing write to avoid interleaved output from multiple components.
  */
-static int _write_line(int fd, void *buf, int len)
+static int _write_line(int fd, char *prefix, char *suffix, void *buf, int len)
 {
-	int n;
-	int left = len;
-	void *ptr = buf;
+	int left, n, pre = 0, post = 0;
+	void *ptr, *tmp = NULL;
 
-	debug2("Called _write_line");
+	if (prefix || suffix) {
+		if (prefix)
+			pre = strlen(prefix);
+		if (suffix)
+			post = strlen(suffix);
+		tmp = xmalloc(pre + len + post);
+		if (prefix)
+			memcpy(tmp, prefix, pre);
+		memcpy(tmp + pre, buf, len);
+		if (suffix)
+			memcpy(tmp + pre + len, suffix, post);
+		ptr = tmp;
+		left = pre + len + post;
+	} else {
+		ptr = buf;
+		left = len;
+	}
+
 	while (left > 0) {
 	again:
 		if ((n = write(fd, ptr, left)) < 0) {
@@ -167,11 +168,13 @@ static int _write_line(int fd, void *buf, int len)
 				debug3("  got EAGAIN in _write_line");
 				goto again;
 			}
-			return -1;
+			len = -1;
+			break;
 		}
 		left -= n;
 		ptr += n;
 	}
+	xfree(tmp);
 
 	return len;
 }

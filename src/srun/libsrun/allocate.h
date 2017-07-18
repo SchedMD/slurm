@@ -58,7 +58,8 @@ slurmctld_comm_addr_t slurmctld_comm_addr;
  * Returns a pointer to a resource_allocation_response_msg which must
  * be freed with slurm_free_resource_allocation_response_msg()
  */
-resource_allocation_response_msg_t * allocate_nodes(bool handle_signals);
+extern resource_allocation_response_msg_t *
+	allocate_nodes(bool handle_signals, opt_t *opt_local);
 
 /*
  * Allocate nodes for heterogeneous/pack job from the slurm controller -- 
@@ -97,7 +98,7 @@ void job_desc_msg_destroy (job_desc_msg_t *j);
  *
  * Returns NULL if SLURM_JOB_ID is not present or is invalid.
  */
-resource_allocation_response_msg_t *existing_allocation(void);
+extern List existing_allocation(void);
 
 /*
  * Create a job step given the job information stored in 'j'

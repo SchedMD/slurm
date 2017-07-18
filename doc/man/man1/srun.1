@@ -1,10 +1,15 @@
-.TH srun "1" "Slurm Commands" "October 2016" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "June 2017" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
 
 .SH "SYNOPSIS"
-\fBsrun\fR [\fIOPTIONS\fR...]  \fIexecutable \fR[\fIargs\fR...]
+\fBsrun\fR [\fIOPTIONS(0)\fR...] \fR[ : \fR[\fIOPTIONS(n)\fR...]\fR] \fIexecutable(0) \fR[\fIargs(0)\fR...]
+
+Option(s) define multiple jobs in a co-scheduled heterogeneous job.
+For more details about heterogeneous jobs see the document
+.br
+http://slurm.schedmd.com/heterogeneous_jobs.html
 
 .SH "DESCRIPTION"
 Run a parallel job on cluster managed by Slurm.  If necessary, srun will
@@ -1343,6 +1348,13 @@ This option applies to step allocations.
 .RE
 
 .TP
+\fB\-\-mpi\-combine\fR=\fIyes|no\fR
+Specify whether to combine applications launched by a single execution of the
+srun command (even for different components of the heterogenous job) into
+one MPI_COMM_WORLD (with non-overlapping task IDs) or a separate MPI_COMM_WORLD
+for each component. The default value is yes.
+
+.TP
 \fB\-\-multi\-prog\fR
 Run a job with different programs and different arguments for
 each task. In this case, the executable program specified is
@@ -1626,6 +1638,16 @@ option applies to job and step allocations.
 Open the output and error files using append or truncate mode as specified.
 The default value is specified by the system configuration parameter
 \fIJobFileAppend\fR. This option applies to job allocations.
+
+.TP
+\fB\-\-pack\-group\fR=<\fIexpr\fR>
+Identify each job in a heterogeneous (pack) job allocation for which a step is
+to be created. Applies only to srun commands issued inside a salloc allocation
+or sbatch script.
+\fR<\fIexpr\fR> is a set of integers corresponding to one or more options
+indexes on the salloc or sbatch command line.
+Examples: "\-\-pack\-group=2", "\-\-pack\-group=0,4", "\-\-pack\-group=1,3\-5".
+The default value is \-\-pack\-group=0.
 
 .TP
 \fB\-p\fR, \fB\-\-partition\fR=<\fIpartition_names\fR>
@@ -2528,6 +2550,9 @@ Same as \fB\-\-mloader\-image\fR
 \fBSLURM_MPI_TYPE\fR
 Same as \fB\-\-mpi\fR
 .TP
+\fBSLURM_MPI_COMBINE\fR
+Same as \fB\-\-mpi\-combine\fR
+.TP
 \fBSLURM_NETWORK\fR
 Same as \fB\-\-network\fR
 .TP
@@ -2669,6 +2694,10 @@ of the executing tasks on the remote compute nodes.
 These environment variables are:
 
 .TP 22
+\fBSLURM_*_PACK_GROUP_#\fR
+For a heterogenous job allocation, the environment variables are set separately
+for each component.
+.TP
 \fBSLURM_CHECKPOINT_IMAGE_DIR\fR
 Directory into which checkpoint images should be written
 if specified on the execute line.
@@ -2788,6 +2817,9 @@ List of nodes allocated to the job.
 .TP
 \fBSLURM_NTASKS\fR (and \fBSLURM_NPROCS\fR for backwards compatibility)
 Total number of processes in the current job.
+.TP
+\fBSLURM_PACK_SIZE\fR
+Set to count of components in heterogeneous job.
 .TP
 \fBSLURM_PRIO_PROCESS\fR
 The scheduling priority (nice value) at the time of job submission.
@@ -3113,6 +3145,15 @@ srun \-\-exclusive \-n1 prog4 &
 wait
 .fi
 
+.PP
+This example shows how to launch an application called "master" with one task,
+8 CPUs and and 16 GB of memory (2 GB per CPU) plus another application called
+"slave" with 16 tasks, 1 CPU per task (the default) and 1 GB of memory per task.
+
+.nf
+
+> srun \-n1 \-c16 \-\-mem\-per\-cpu=1gb master : \-n16 \-\-mem\-per\-cpu=1gb slave
+.fi
 
 .SH "COPYING"
 Copyright (C) 2006\-2007 The Regents of the University of California.

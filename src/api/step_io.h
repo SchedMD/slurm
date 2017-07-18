@@ -44,7 +44,8 @@ struct client_io {
 	int num_tasks;
 	int num_nodes;
 	bool label;
-	int label_width;
+	int taskid_width;	/* characters needed for task_id label */
+	uint32_t pack_offset;
 	char *io_key;
 
 	/* internal variables */
@@ -100,11 +101,9 @@ typedef struct client_io client_io_t;
  *	back to the client when it establishes the IO connection as a sort
  *	of validity check.
  */
-client_io_t *client_io_handler_create(slurm_step_io_fds_t fds,
-				      int num_tasks,
-				      int num_nodes,
-				      slurm_cred_t *cred,
-				      bool label);
+client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
+				      int num_nodes, slurm_cred_t *cred,
+				      bool label, uint32_t pack_offset);
 
 int client_io_handler_start(client_io_t *cio);
 

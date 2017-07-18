@@ -863,7 +863,8 @@ extern int slurm_allocation_lookup(uint32_t jobid,
  * IN jobid - job allocation identifier
  * OUT info - job allocation information
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
- * NOTE: free the response using slurm_free_resource_allocation_response_msg()
+ * NOTE: returns information an individual job as well
+ * NOTE: free the response using list_destroy()
  */
 extern int slurm_pack_job_lookup(uint32_t jobid, List *info)
 {

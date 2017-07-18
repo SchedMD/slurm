@@ -105,12 +105,22 @@ int sig_array[] = {
 	SIGINT,  SIGQUIT, SIGCONT, SIGTERM, SIGHUP,
 	SIGALRM, SIGUSR1, SIGUSR2, SIGPIPE, 0 };
 
+typedef struct _launch_app_data
+{
+	bool		got_alloc;
+	srun_job_t *	job;
+	opt_t *		opt_local;
+	int *		step_cnt;
+	pthread_cond_t *step_cond;
+	pthread_mutex_t *step_mutex;
+} _launch_app_data_t;
+
 /*
  * forward declaration of static funcs
  */
 static int   _file_bcast(opt_t *opt_local, srun_job_t *job);
 static void  _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc);
-static void  _launch_one_app(opt_t *opt_local, srun_job_t *job, bool got_alloc);
+static void *_launch_one_app(void *data);
 static void  _pty_restore(void);
 static void  _set_exit_code(void);
 static void  _set_node_alias(void);
@@ -179,16 +189,47 @@ int srun(int ac, char **av)
 	return (int)global_rc;
 }
 
-static void _launch_one_app(opt_t *opt_local, srun_job_t *job, bool got_alloc)
+static void *_launch_one_app(void *data)
 {
+	static pthread_mutex_t launch_mutex = PTHREAD_MUTEX_INITIALIZER;
+	static pthread_cond_t  launch_cond  = PTHREAD_COND_INITIALIZER;
+	static bool            launch_begin = false;
+	static bool            launch_fini  = false;
+	_launch_app_data_t *opts = (_launch_app_data_t *) data;
+	opt_t *opt_local = opts->opt_local;
+	srun_job_t *job  = opts->job;
+	bool got_alloc   = opts->got_alloc;
 	slurm_step_io_fds_t cio_fds = SLURM_STEP_IO_FDS_INITIALIZER;
 	slurm_step_launch_callbacks_t step_callbacks;
+
+	if (opt_local->pack_grp_bits)
+		job->pack_offset  = bit_ffs(opt_local->pack_grp_bits);
+	else
+		job->pack_offset  = NO_VAL;
 
 	memset(&step_callbacks, 0, sizeof(step_callbacks));
 	step_callbacks.step_signal = launch_g_fwd_signal;
 
+	/*
+	 * Run pre-launch once for entire pack job
+	 */
+	slurm_mutex_lock(&launch_mutex);
+	if (!launch_begin) {
+		launch_begin = true;
+		slurm_mutex_unlock(&launch_mutex);
+
+		pre_launch_srun_job(job, 0, 1, opt_local);
+
+		slurm_mutex_lock(&launch_mutex);
+		launch_fini = true;
+		slurm_cond_broadcast(&launch_cond);
+	} else {
+		while (!launch_fini)
+			slurm_cond_wait(&launch_cond, &launch_mutex);
+	}
+	slurm_mutex_unlock(&launch_mutex);
+
 relaunch:
-	pre_launch_srun_job(job, 0, 1);
 	launch_common_set_stdio_fds(job, &cio_fds, opt_local);
 
 	if (!launch_g_step_launch(job, &cio_fds, &global_rc, &step_callbacks,
@@ -197,34 +238,101 @@ relaunch:
 			goto relaunch;
 	}
 
-	fini_srun(job, got_alloc, &global_rc, 0);
+	if (opts->step_mutex) {
+		slurm_mutex_lock(opts->step_mutex);
+		(*opts->step_cnt)--;
+		slurm_cond_broadcast(opts->step_cond);
+		slurm_mutex_unlock(opts->step_mutex);
+	}
+	xfree(data);
+	return NULL;
 }
 
 static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 {
 	ListIterator opt_iter, job_iter;
-	opt_t *opt_local;
+	opt_t *opt_local = NULL;
+	_launch_app_data_t *opts;
+	pthread_attr_t attr_steps;
+	pthread_t thread_steps = (pthread_t) 0;
+	int total_ntasks = 0, step_cnt = 0;
+	pthread_mutex_t step_mutex = PTHREAD_MUTEX_INITIALIZER;
+	pthread_cond_t step_cond   = PTHREAD_COND_INITIALIZER;
+	srun_job_t *first_job = NULL;
+	char *launch_type;
+	bool need_mpir = false;
+
+	launch_type = slurm_get_launch_type();
+	if (launch_type && strstr(launch_type, "slurm"))
+		need_mpir = true;
+	xfree(launch_type);
 
 	if (srun_job_list) {
 		if (!opt_list) {
 			fatal("%s: have srun_job_list, but no opt_list",
 			      __func__);
 		}
-		job_iter  = list_iterator_create(srun_job_list);
-		opt_iter  = list_iterator_create(opt_list);
+
+		job_iter = list_iterator_create(srun_job_list);
+		if (need_mpir) {
+			while ((job = (srun_job_t *) list_next(job_iter))) {
+				total_ntasks += job->ntasks;
+			}
+			list_iterator_reset(job_iter);
+			mpir_init(total_ntasks);
+		}
+
+		slurm_attr_init(&attr_steps);
+		opt_iter = list_iterator_create(opt_list);
+		step_cnt = list_count(opt_list);
 		while ((opt_local = (opt_t *) list_next(opt_iter))) {
+			int retries = 0;
 			job = (srun_job_t *) list_next(job_iter);
 			if (!job) {
 				fatal("%s: job allocation count does not match request count (%d != %d)",
 				      __func__, list_count(srun_job_list),
 				      list_count(opt_list));
 			}
-			_launch_one_app(opt_local, job, got_alloc);
+
+			if (!first_job)
+				first_job = job;
+			opts = xmalloc(sizeof(_launch_app_data_t));
+			opts->got_alloc   = got_alloc;
+			opts->job         = job;
+			opts->opt_local   = opt_local;
+			opts->step_cond   = &step_cond;
+			opts->step_cnt    = &step_cnt;
+			opts->step_mutex  = &step_mutex;
+			while (pthread_create(&thread_steps,
+					      &attr_steps, _launch_one_app,
+					      (void *) opts)) {
+				error("%s: pthread_create error %m", __func__);
+				if (++retries > 4) {
+					fatal("%s: Can't create pthread",
+					      __func__);
+				}
+				usleep(10000);  /* sleep and retry */
+			}
 		}
+		slurm_attr_destroy(&attr_steps);
 		list_iterator_destroy(job_iter);
 		list_iterator_destroy(opt_iter);
+		slurm_mutex_lock(&step_mutex);
+		while (step_cnt > 0)
+			slurm_cond_wait(&step_cond, &step_mutex);
+		slurm_mutex_unlock(&step_mutex);
+
+		if (first_job)
+			fini_srun(first_job, got_alloc, &global_rc, 0);
 	} else {
-		_launch_one_app(&opt, job, got_alloc);
+		if (need_mpir)
+			mpir_init(job->ntasks);
+		opts = xmalloc(sizeof(_launch_app_data_t));
+		opts->got_alloc   = got_alloc;
+		opts->job         = job;
+		opts->opt_local   = &opt;
+		_launch_one_app(opts);
+		fini_srun(job, got_alloc, &global_rc, 0);
 	}
 }
 

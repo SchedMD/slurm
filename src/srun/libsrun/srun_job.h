@@ -50,7 +50,7 @@
 #include "src/common/slurm_protocol_defs.h"
 
 #include "src/api/step_io.h"
-
+#include "src/srun/libsrun/opt.h"
 
 typedef enum {
 	SRUN_JOB_INIT = 0,         /* Job's initial state                   */
@@ -81,6 +81,7 @@ typedef struct srun_job {
 	int fir_nodeid;
 	uint32_t jobid;		/* assigned job id 	                  */
 	uint32_t stepid;	/* assigned step id 	                  */
+	uint32_t pack_offset;	/* pack job offset */
 
 	uint32_t cpu_count;	/* allocated CPUs */
 	uint32_t nhosts;	/* node count */
@@ -126,10 +127,21 @@ void    job_force_termination(srun_job_t *job);
 srun_job_state_t job_state(srun_job_t *job);
 
 extern srun_job_t * job_create_noalloc(void);
+
+/*
+ * Create an srun job structure for a step w/out an allocation response msg.
+ * (i.e. inside an allocation)
+ */
 extern srun_job_t *job_step_create_allocation(
-	resource_allocation_response_msg_t *resp);
-extern srun_job_t * job_create_allocation(
-	resource_allocation_response_msg_t *resp);
+			resource_allocation_response_msg_t *resp,
+			opt_t *opt_local);
+
+/*
+ * Create an srun job structure from a resource allocation response msg
+ */
+extern srun_job_t *job_create_allocation(
+			resource_allocation_response_msg_t *resp,
+			opt_t *opt_local);
 
 extern void init_srun(int argc, char **argv,
 		      log_options_t *logopt, int debug_level,
@@ -139,7 +151,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 			    bool slurm_started, bool handle_signals);
 
 extern void pre_launch_srun_job(srun_job_t *job, bool slurm_started,
-				bool handle_signals);
+				bool handle_signals, opt_t *opt_local);
 
 extern void fini_srun(srun_job_t *job, bool got_alloc, uint32_t *global_rc,
 		      bool slurm_started);
@@ -147,7 +159,7 @@ extern void fini_srun(srun_job_t *job, bool got_alloc, uint32_t *global_rc,
 /*
  *  Update job filenames and modes for stderr, stdout, and stdin.
  */
-void    job_update_io_fnames(srun_job_t *j);
+extern void job_update_io_fnames(srun_job_t *job, opt_t *opt_local);
 
 /* Set up port to handle messages from slurmctld */
 int slurmctld_msg_init(void);

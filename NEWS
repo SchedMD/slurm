@@ -44,6 +44,24 @@ documents those changes that are of interest to users and administrators.
     is much than using SIGHUP to re-read the configuration file and rebuild
     various tables.
  -- Add PrivateData=events configuration parameter
+ -- Work for heterogeneous job support (complete solution in v17.11):
+    * Add pointer to job option structure to job_step_create_allocation()
+      function used by srun.
+    * Parallelize task launch for heterogeneous job allocations (initial work).
+    * Make packjobid, packjoboffset, and packjobidset fields available in squeue
+      output.
+    * Modify smap command to display heterogeneous job records using "#+#"
+      format.
+    * Add srun --pack-group and --mpi-combine options to control job step
+      launch behaviour (not fully implemented).
+    * Add pack job component ID to srun --label output (e.g. "P0 1:" for
+      job component 0 and task 1).
+    * jobcomp/elasticsearch: Add pack_job_id and pack_job_offset fields.
+    * sview: Modified to display pack job information.
+    * Major re-write of task state container logic to support for list of
+      containers rather than one container per srun command.
+    * Add some regression tests.
+    * Add srun pack job environment variables when performing job allocation.
 
 * Changes in Slurm 17.11.0pre1
 ==============================

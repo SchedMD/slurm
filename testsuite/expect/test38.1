@@ -1,0 +1,243 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test Packjob: sbatch--job info
+#
+# Reqs:    1. Using slurmdbd accounting storage type and is up
+#          2. controllers are up and running.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2017 SchedMD LLC.
+# Written by Isaac Hartung <ihartung@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+source ./globals
+source ./globals_hetero_jobs
+
+set test_id      "38.1"
+set exit_code    0
+set file_in      "test$test_id.in"
+set job_id       0
+
+set eol "\r\n"
+
+print_header $test_id
+
+proc sbatch {} {
+	global number sbatch file_in bin_sleep
+
+	set matches 0
+	set job_id 0
+	set command "$sbatch -t1 -o /dev/null $file_in"
+	set regex "Submitted batch job ($number).+"
+
+	spawn {*}$command
+	expect {
+		-re "$regex" {
+			incr matches
+			set job_id $expect_out(1,string)
+
+		}
+		timeout {
+			log_error "sbatch not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		log_error "batch submit failure"
+		end_it 1
+	}
+
+	return $job_id
+}
+
+proc cancel_all_jobs { } {
+	global scancel job_id
+
+	exec $scancel $job_id
+
+	sleep 5
+}
+
+proc cleanup { } {
+	global scancel user_name bin_rm file_in
+	global test_id bin_bash
+
+	exec $bin_rm -f $file_in test$test_id*.out
+	return 0
+}
+
+proc end_it { exit_code } {
+	global test_id
+	cancel_all_jobs
+	if {$exit_code == 0} {
+		cleanup
+		print_success $test_id
+	}
+	exit $exit_code
+}
+
+#start test
+
+make_bash_script $file_in "#SBATCH --cpus-per-task=4 --mem-per-cpu=10 --ntasks=1
+#SBATCH packjob
+#SBATCH --cpus-per-task=2 --mem-per-cpu=2  --ntasks=1 -t1
+#SBATCH packjob
+#SBATCH --cpus-per-task=1 --mem-per-cpu=6  --ntasks=1 -t1
+
+$bin_sleep 300"
+
+send_user "\n################################################################\n"
+send_user "Submit packjob and verify output from scontrol show job"
+send_user "\n################################################################\n"
+
+set job_id [sbatch]
+
+set matches 0
+set id_set  0
+set id_regex "\[0-9,-\]+"
+
+# scontrol will show all components of the pack job, but we just look at the
+# first set (pack job leader).
+spawn $scontrol show job $job_id
+expect {
+	-re "JobId=$job_id\\s+PackJobId=$job_id" {
+		incr matches
+		exp_continue
+	}
+	-re "PackJobOffset=0" {
+		incr matches
+		exp_continue
+	}
+	-re "PackJobIdSet=($id_regex)" {
+		incr matches
+		if {$id_set == 0} {
+			set id_set $expect_out(1,string)
+		}
+		exp_continue
+	}
+	-re "CPUs/Task=4" {
+		incr matches
+		exp_continue
+	}
+	-re "MinMemoryCPU=10M" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		log_error "scontrol not responding"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 7 } {
+	log_error "Problem with scontrol ($matches != 7)"
+	end_it 1
+}
+
+set js [parse_id_set $id_set $job_id]
+
+set j2 [lindex $js 0]
+set j3 [lindex $js 1]
+
+set matches 0
+
+spawn $scontrol show job $j2
+expect {
+	-re "JobId=$j2\\s+PackJobId=$job_id" {
+		incr matches
+		exp_continue
+	}
+	-re "PackJobOffset=1" {
+		incr matches
+		exp_continue
+	}
+	-re "PackJobIdSet=$id_regex" {
+		incr matches
+		exp_continue
+	}
+	-re "CPUs/Task=2" {
+		incr matches
+		exp_continue
+	}
+	-re "MinMemoryCPU=2M" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		log_error "scontrol not responding"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 5} {
+	log_error "Problem with scontrol ($matches != 5)"
+	end_it 1
+}
+
+set matches 0
+
+spawn $scontrol show job $j3
+expect {
+	-re "JobId=$j3\\s+PackJobId=$job_id" {
+		incr matches
+		exp_continue
+	}
+	-re "PackJobOffset=2" {
+		incr matches
+		exp_continue
+	}
+	-re "PackJobIdSet=$id_regex" {
+		incr matches
+		exp_continue
+	}
+	-re "CPUs/Task=1" {
+		incr matches
+		exp_continue
+	}
+	-re "MinMemoryCPU=6M" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		log_error "scontrol not responding"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 5} {
+	log_error "Problem with scontrol ($matches != 5)"
+	end_it 1
+}
+
+# All Done
+end_it 0

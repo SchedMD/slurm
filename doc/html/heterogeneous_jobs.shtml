@@ -6,7 +6,9 @@
 <li><a href="#overview">Overview</a></li>
 <li><a href="#submitting">Submitting Jobs</a></li>
 <li><a href="#managing">Managing Jobs</a></li>
+<li><a href="#job_steps">Launching Applications (Job Steps)</a></li>
 <li><a href="#env_var">Environment Variables</a></li>
+<li><a href="#examples">Examples</a></li>
 <li><a href="#limitations">Limitations</a></li>
 <li><a href="#sys_admin">System Administrator Information</a></li>
 </ul>
@@ -222,6 +224,42 @@ an error.</p>
 <li>suspend</li>
 </ul>
 
+<h2><a name="job_steps">Launching Applications (Job Steps)</a></h2>
+
+<p>The srun command is used to launch applications.
+By default, the application is launched only on the first component of a
+heterogeneous job, but options are available to support different behaviours.</p>
+
+<p>srun's "--pack-group" option defines which pack job component(s) are to have
+applications launched for them. The --pack-group option takes an expression
+defining which component(s) are to launch an application for an individual
+execution of the srun command. The expression can contain one or more component
+index values in a comma separated list. Ranges of index values can be specified
+in a hyphen separated list. By default, an application is launched only on
+component number zero. Some examples follow:</p>
+<ul>
+<li>--pack-group=2</li>
+<li>--pack-group=0,4</li>
+<li>--pack-group=1,3-5</li>
+</ul>
+
+<p>By default, the applications launched by a single execution of the srun
+command (even for different components of the heterogenous job) are combined
+into one MPI_COMM_WORLD with non-overlapping task IDs. srun's "--mpi-combine=no"
+option will launch each component in the heterogeneous job in its own
+MPI_COMM_WORLD with a task ID starting at zero.</p>
+
+<p>srun's "--label" option will preceed every line with the letter "P" and
+pack job offset followed by the task rank if the "--mpi-combine=no" option is
+used or a the application is launched on a subset of pack groups
+For example:</p>
+<pre>
+$ srun --mpi-combine=no -n2 hostname : -n1 date
+P0 0: nid00012
+P0 1: nid00012
+P1 0: Wed Jul  5 16:23:07 MDT 2017
+</pre>
+
 <h2><a name="env_var">Environment Variables</a></h2>
 
 <p>Slurm environment variables will be set independently for each component of
@@ -246,6 +284,29 @@ SLURM_JOB_NODELIST_PACK_GROUP_1=nid[00011-00012]
 ...
 </pre>
 
+<h2><a name="examples">Examples</a></h2>
+
+<p>Create a heterogeneous resource allocation containing one node with 256GB
+of memory and a feature of "haswell" plus 2176 cores on 32 nodes with a
+feature of "knl". Then launch a program called "master" on the "haswell" node
+and "slave" on the "knl" nodes. Each application will be in its own
+MPI_COMM_WORLD.</p>
+<pre>
+salloc -N1 --mem=256GB -C haswell : \
+       -n2176 -N32 --ntasks-per-core=1 -C knl bash
+srun master &
+srun --pack-group=1 slave &
+wait
+</pre>
+
+<p>This variation of the above example launches programs "master" and "slave"
+in a single MPI_COMM_WORLD.</p>
+<pre>
+salloc -N1 --mem=256GB -C haswell : \
+       -n2176 -N32 --ntasks-per-core=1 -C knl bash
+srun master : slave &
+</pre>
+
 <h2><a name="limitations">Limitations</a></h2>
 
 <p>In a federation of clusters, a heterogeneous job will execute entirely on
@@ -255,8 +316,15 @@ the job execute on different clusters in the federation.</p>
 
 <p>Job arrays of heterogeneous jobs are not supported.</p>
 
-<p>The <i>srun</i> command's <i>--no-allocate</i> option is not supported
+<p>The srun command's --no-allocate option is not supported
 for heterogeneous jobs.</p>
+
+<p>Only one job step per heterogeneous job component can be launched by a
+single srun command (e.g.
+"srun --pack-group=0 alpha : --pack-group=0 beta" is not supported).</p>
+
+<p>The sattach command can only be used to attach to a single component of
+a heterogeneous job at a time.</p>
 
 <p>Heterogeneous jobs are only scheduled by the backfill scheduler plugin.
 The more frequently executed scheduling logic only starts jobs on a first-in
@@ -274,6 +342,6 @@ heterogeneous job.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 19 June 2017</p>
+<p style="text-align:center;">Last modified 7 July 2017</p>
 
 <!--#include virtual="footer.txt"-->

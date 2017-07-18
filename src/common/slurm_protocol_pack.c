@@ -10104,17 +10104,29 @@ _pack_launch_tasks_response_msg(launch_tasks_response_msg_t * msg, Buf buffer,
 				uint16_t protocol_version)
 {
 	xassert(msg != NULL);
-	pack32((uint32_t)msg->return_code, buffer);
-	packstr(msg->node_name, buffer);
-	pack32((uint32_t)msg->count_of_pids, buffer);
-	pack32_array(msg->local_pids, msg->count_of_pids, buffer);
-	pack32_array(msg->task_ids, msg->count_of_pids, buffer);
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		pack32(msg->job_id, buffer);
+		pack32(msg->step_id, buffer);
+		pack32(msg->return_code, buffer);
+		packstr(msg->node_name, buffer);
+		pack32(msg->count_of_pids, buffer);
+		pack32_array(msg->local_pids, msg->count_of_pids, buffer);
+		pack32_array(msg->task_ids, msg->count_of_pids, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack32(msg->return_code, buffer);
+		packstr(msg->node_name, buffer);
+		pack32(msg->count_of_pids, buffer);
+		pack32_array(msg->local_pids, msg->count_of_pids, buffer);
+		pack32_array(msg->task_ids, msg->count_of_pids, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported", __func__,
+		      protocol_version);
+	}
 }
 
 static int
-_unpack_launch_tasks_response_msg(launch_tasks_response_msg_t **
-				  msg_ptr, Buf buffer,
-				  uint16_t protocol_version)
+_unpack_launch_tasks_response_msg(launch_tasks_response_msg_t **msg_ptr,
+				  Buf buffer, uint16_t protocol_version)
 {
 	uint32_t uint32_tmp;
 	launch_tasks_response_msg_t *msg;
@@ -10123,15 +10135,34 @@ _unpack_launch_tasks_response_msg(launch_tasks_response_msg_t **
 	msg = xmalloc(sizeof(launch_tasks_response_msg_t));
 	*msg_ptr = msg;
 
-	safe_unpack32(&msg->return_code, buffer);
-	safe_unpackstr_xmalloc(&msg->node_name, &uint32_tmp, buffer);
-	safe_unpack32(&msg->count_of_pids, buffer);
-	safe_unpack32_array(&msg->local_pids, &uint32_tmp, buffer);
-	if (msg->count_of_pids != uint32_tmp)
-		goto unpack_error;
-	safe_unpack32_array(&msg->task_ids, &uint32_tmp, buffer);
-	if (msg->count_of_pids != uint32_tmp)
-		goto unpack_error;
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->step_id, buffer);
+		safe_unpack32(&msg->return_code, buffer);
+		safe_unpackstr_xmalloc(&msg->node_name, &uint32_tmp, buffer);
+		safe_unpack32(&msg->count_of_pids, buffer);
+		safe_unpack32_array(&msg->local_pids, &uint32_tmp, buffer);
+		if (msg->count_of_pids != uint32_tmp)
+			goto unpack_error;
+		safe_unpack32_array(&msg->task_ids, &uint32_tmp, buffer);
+		if (msg->count_of_pids != uint32_tmp)
+			goto unpack_error;
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		msg->job_id = NO_VAL;
+		msg->step_id = NO_VAL;
+		safe_unpack32(&msg->return_code, buffer);
+		safe_unpackstr_xmalloc(&msg->node_name, &uint32_tmp, buffer);
+		safe_unpack32(&msg->count_of_pids, buffer);
+		safe_unpack32_array(&msg->local_pids, &uint32_tmp, buffer);
+		if (msg->count_of_pids != uint32_tmp)
+			goto unpack_error;
+		safe_unpack32_array(&msg->task_ids, &uint32_tmp, buffer);
+		if (msg->count_of_pids != uint32_tmp)
+			goto unpack_error;
+	} else {
+		error("%s: protocol_version %hu not supported", __func__,
+		      protocol_version);
+	}
 
 	return SLURM_SUCCESS;
 
@@ -10153,6 +10184,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
 		pack32(msg->job_step_id, buffer);
+		pack32(msg->pack_offset, buffer);
 		pack32(msg->ntasks, buffer);
 		pack16(msg->ntasks_per_board, buffer);
 		pack16(msg->ntasks_per_core, buffer);
@@ -10436,6 +10468,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpack32(&msg->job_step_id, buffer);
+		safe_unpack32(&msg->pack_offset, buffer);
 		safe_unpack32(&msg->ntasks, buffer);
 		safe_unpack16(&msg->ntasks_per_board, buffer);
 		safe_unpack16(&msg->ntasks_per_core, buffer);
@@ -10544,6 +10577,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		int rc;
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpack32(&msg->job_step_id, buffer);
+		msg->pack_offset = NO_VAL;
 		safe_unpack32(&uint32_tmp, buffer);
 		safe_unpack32(&uint32_tmp, buffer);
 		safe_unpack32(&uint32_tmp, buffer);
@@ -10671,6 +10705,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		uint8_t pty = 0, buffered_stdio = 0, labelio = 0;
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpack32(&msg->job_step_id, buffer);
+		msg->pack_offset = NO_VAL;
 		safe_unpack32(&msg->ntasks, buffer);
 		safe_unpack16(&msg->ntasks_per_board, buffer);
 		safe_unpack16(&msg->ntasks_per_core, buffer);

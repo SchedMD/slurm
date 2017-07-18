@@ -1538,7 +1538,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		step_spec->min_nodes = (i > step_spec->min_nodes) ?
 					i : step_spec->min_nodes ;
 		if (step_spec->max_nodes < step_spec->min_nodes) {
-			info("%s: Job step %u max node count incompatible with CPU count (%u < %u)",
+			info("%s: Job step %u max node less than min node count (%u < %u)",
 			     __func__, job_ptr->job_id, step_spec->max_nodes,
 			     step_spec->min_nodes);
 			*return_code = ESLURM_TOO_MANY_REQUESTED_CPUS;
