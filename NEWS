@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
  -- When resuming node only send one message to the slurmdbd.
  -- Modify srun --pty option to use configured SrunPortRange range.
  -- Fix issue with whole gres not being printed out with Slurm tools.
+ -- Fix issue with multiple jobs from an array to start.
 
 * Changes in Slurm 17.02.6
 ==========================

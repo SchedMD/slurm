@@ -6449,8 +6449,8 @@ _remove_starting_step(uint16_t type, void *req)
 		      starting_step.job_id,
 		      starting_step.step_id);
 		rc = SLURM_FAILURE;
-	} else
-		slurm_cond_broadcast(&conf->starting_steps_cond);
+	}
+	slurm_cond_broadcast(&conf->starting_steps_cond);
 fail:
 	return rc;
 }
@@ -6476,7 +6476,10 @@ static int _compare_starting_steps(void *listentry, void *key)
 
 static int _wait_for_starting_step(uint32_t job_id, uint32_t step_id)
 {
-	pthread_mutex_t dummy_lock = PTHREAD_MUTEX_INITIALIZER;
+	static pthread_mutex_t dummy_lock = PTHREAD_MUTEX_INITIALIZER;
+	struct timespec ts = {0, 0};
+	struct timeval now;
+
 	starting_step_t starting_step;
 	int num_passes = 0;
 
@@ -6496,8 +6499,13 @@ static int _wait_for_starting_step(uint32_t job_id, uint32_t step_id)
 		}
 		num_passes++;
 
+		gettimeofday(&now, NULL);
+		ts.tv_sec = now.tv_sec+1;
+		ts.tv_nsec = now.tv_usec * 1000;
+
 		slurm_mutex_lock(&dummy_lock);
-		slurm_cond_wait(&conf->starting_steps_cond, &dummy_lock);
+		slurm_cond_timedwait(&conf->starting_steps_cond,
+				     &dummy_lock, &ts);
 		slurm_mutex_unlock(&dummy_lock);
 	}
 	if (num_passes > 0) {
@@ -6560,8 +6568,7 @@ static void _remove_job_running_prolog(uint32_t job_id)
 	if (!list_delete_all(conf->prolog_running_jobs,
 			     _match_jobid, &job_id))
 		error("_remove_job_running_prolog: job not found");
-	else
-		slurm_cond_broadcast(&conf->prolog_running_cond);
+	slurm_cond_broadcast(&conf->prolog_running_cond);
 }
 
 static int _match_jobid(void *listentry, void *key)
@@ -6584,13 +6591,21 @@ static int _prolog_is_running (uint32_t jobid)
 /* Wait for the job's prolog to complete */
 static void _wait_for_job_running_prolog(uint32_t job_id)
 {
-	pthread_mutex_t dummy_lock = PTHREAD_MUTEX_INITIALIZER;
+	static pthread_mutex_t dummy_lock = PTHREAD_MUTEX_INITIALIZER;
+	struct timespec ts = {0, 0};
+	struct timeval now;
 
 	debug( "Waiting for job %d's prolog to complete", job_id);
 
 	while (_prolog_is_running (job_id)) {
+
+		gettimeofday(&now, NULL);
+		ts.tv_sec = now.tv_sec+1;
+		ts.tv_nsec = now.tv_usec * 1000;
+
 		slurm_mutex_lock(&dummy_lock);
-		slurm_cond_wait(&conf->prolog_running_cond, &dummy_lock);
+		slurm_cond_timedwait(&conf->prolog_running_cond,
+				     &dummy_lock, &ts);
 		slurm_mutex_unlock(&dummy_lock);
 	}
 
