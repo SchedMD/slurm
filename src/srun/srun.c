@@ -276,7 +276,7 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 		job_iter = list_iterator_create(srun_job_list);
 		if (need_mpir) {
 			while ((job = (srun_job_t *) list_next(job_iter))) {
-				total_ntasks = job->ntasks;
+				total_ntasks += job->ntasks;
 			}
 			list_iterator_reset(job_iter);
 			mpir_init(total_ntasks);
