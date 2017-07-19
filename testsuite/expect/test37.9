@@ -87,7 +87,7 @@ proc sbatch { args } {
 		--error=/dev/null -t300 --requeue "
 	append command $args
 	append command " $file_in"
-	set regex "Submitted batch job ($number).+"
+	set regex "Submitted batch job ($number)"
 
 	spawn {*}$command
 	expect {

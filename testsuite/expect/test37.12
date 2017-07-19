@@ -324,7 +324,7 @@ cancel_all_jobs
 
 set feds        [list $fedc1 $fedc2 $fedc3]
 set regex       [build_regex $feds]
-set reg_default "Submitted batch job ($number).+"
+set reg_default "Submitted batch job ($number)"
 
 sbatch_to "--test-only" $regex
 

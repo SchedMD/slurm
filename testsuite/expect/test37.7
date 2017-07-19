@@ -175,7 +175,7 @@ proc sbatch { mfed error } {
 	set job_id 0
 	set command "$my_sbatch -N$node_count --exclusive --output=/dev/null \
 		--error=/dev/null -t300 --requeue --wrap $script"
-	set regex "Submitted batch job ($number).+"
+	set regex "Submitted batch job ($number)"
 	set collect 1
 
 	if { $error } {
