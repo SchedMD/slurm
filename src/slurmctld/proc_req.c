@@ -3034,15 +3034,8 @@ static void _slurm_rpc_job_pack_alloc_info(slurm_msg_t * msg)
 	if (!job_ptr->pack_job_list) {
 		resp = list_create(_pack_alloc_list_del);
 		job_info_resp_msg = build_job_info_resp(job_ptr);
-		if (working_cluster_rec) {
-			job_info_resp_msg->working_cluster_rec =
-				working_cluster_rec;
-		} else {
-			set_remote_working_response(job_info_resp_msg,
-					job_ptr, job_info_msg->req_cluster);
-			working_cluster_rec =
-				job_info_resp_msg->working_cluster_rec;
-		}
+		set_remote_working_response(job_info_resp_msg, job_ptr,
+					    job_info_msg->req_cluster);
 		list_append(resp, job_info_resp_msg);
 	} else {
 		resp = list_create(_pack_alloc_list_del);

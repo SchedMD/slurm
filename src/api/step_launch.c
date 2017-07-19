@@ -551,10 +551,14 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 			 sizeof(int) * ctx->step_req->num_tasks);
 	}
 
-	launch.num_resp_port = first_ctx->launch_state->num_resp_port;
-	launch.resp_port = xmalloc(sizeof(uint16_t) * launch.num_resp_port);
-	memcpy(launch.resp_port, first_ctx->launch_state->resp_port,
-	       (sizeof(uint16_t) * launch.num_resp_port));
+	if (first_ctx->launch_state->num_resp_port &&
+	    first_ctx->launch_state->resp_port) {
+		launch.num_resp_port = first_ctx->launch_state->num_resp_port;
+		launch.resp_port = xmalloc(sizeof(uint16_t) *
+					  launch.num_resp_port);
+		memcpy(launch.resp_port, first_ctx->launch_state->resp_port,
+		       (sizeof(uint16_t) * launch.num_resp_port));
+	}
 
 	rc = _launch_tasks(ctx, &launch, params->msg_timeout,
 			   node_list, start_nodeid);
