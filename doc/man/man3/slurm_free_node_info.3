@@ -151,6 +151,8 @@ Slurm controller.
 .LP
 #include <stdio.h>
 .br
+#include <stdlib.h>
+.br
 #include <slurm/slurm.h>
 .br
 #include <slurm/slurm_errno.h>
@@ -161,11 +163,11 @@ int main (int argc, char *argv[])
 .br
 	int i, j, k;
 .br
-	partition_info_msg_t *part_info_ptr = NULL;
+	partition_info_msg_t *part_buffer_ptr = NULL;
 .br
 	partition_info_t *part_ptr;
 .br
-	node_info_msg_t *node_info_ptr = NULL;
+	node_info_msg_t *node_buffer_ptr = NULL;
 .br
 	node_info_t *node_ptr;
 .LP
@@ -191,13 +193,13 @@ int main (int argc, char *argv[])
 .br
 		node_ptr = &node_buffer_ptr\->node_array[i];
 .br
-		slurm_print_node_table(stdout, node_ptr, 0);
+		slurm_print_node_table(stdout, node_ptr, 0, 0);
 .br
 	}
 .LP
 	/* The hardest way. */
 .br
-	for (i = 0; i < node_buffer_ptr\->node_count; i++) {
+	for (i = 0; i < node_buffer_ptr\->record_count; i++) {
 .br
 		printf ("NodeName=%s CPUs=%u\\n",
 .br
@@ -217,7 +219,7 @@ int main (int argc, char *argv[])
 .br
 	if ( slurm_load_partitions ((time_t) NULL,
 .br
-	                            &part_buffer_ptr) ) {
+	                            &part_buffer_ptr, 0) ) {
 .br
 		slurm_perror ("slurm_load_partitions error");
 .br
@@ -227,7 +229,7 @@ int main (int argc, char *argv[])
 .br
 	for (i = 0; i < part_buffer_ptr\->record_count; i++) {
 .br
-		part_ptr = &part_info_ptr\->partition_array[i];
+		part_ptr = &part_buffer_ptr\->partition_array[i];
 .br
 		printf ("PartitionName=%s Nodes=",
 .br
@@ -259,7 +261,7 @@ int main (int argc, char *argv[])
 .br
 	slurm_free_node_info_msg (node_buffer_ptr);
 .br
-	slurm_free_partition_info (part_buffer_ptr);
+	slurm_free_partition_info_msg (part_buffer_ptr);
 .br
 	exit (0);
 .br

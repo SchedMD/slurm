@@ -2924,11 +2924,20 @@ static int _get_gres_req_cnt(
 		}
 
 		if (type && ((cnt == -1) || (type != num))) {
-			type[0] = '\0';
-			if (num && type != num)
+			char tmp_char = '\0';
+
+			if (num && type != num) {
+				tmp_char = num[0];
 				num[0] = '\0';
+			}
 			type++;
 			*type_out = xstrdup(type);
+			/*
+			 * Since we don't want to change the original char sent
+			 * in we want to set this back to the way it was.
+			 */
+			if (tmp_char)
+				num[0] = tmp_char;
 		}
 	} else {
 		/* Did not find this GRES name, check for zero value */
@@ -3044,7 +3053,7 @@ extern int gres_plugin_job_state_validate(char **req_config, List *gres_list)
 				break;
 			}
 			if (new_req_config != NULL)
-			    xstrcat(new_req_config, ",");
+				xstrcat(new_req_config, ",");
 			xstrcat(new_req_config, tok);
 			gres_ptr = xmalloc(sizeof(gres_state_t));
 			gres_ptr->plugin_id = gres_context[i].plugin_id;
