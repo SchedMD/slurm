@@ -15,6 +15,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue with multiple jobs from an array are prevented from starting.
  -- Fix for possible slurmctld abort with use of salloc/sbatch/srun
     --gres-flags=enforce-binding option.
+ -- Fix race condition when using jobacct_gather/cgroup where the memory of the
+    step wasn't always gathered correctly.
 
 * Changes in Slurm 17.02.6
 ==========================
