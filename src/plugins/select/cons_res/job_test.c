@@ -1061,8 +1061,8 @@ static uint32_t _gres_sock_job_test(List job_gres_list, List node_gres_list,
 	if ((s_p_n == NO_VAL) || (core_bitmap == NULL) ||
 	    (select_node_record == NULL) ||
 	    ((sock_cnt = select_node_record[node_i].sockets) < 2) ||
-	    (sock_cnt == s_p_n)) {
-		/* No socket filtering possible */
+	    (sock_cnt <= s_p_n)) {
+		/* No socket filtering possible, use all sockets */
 		return gres_plugin_job_test(job_gres_list, node_gres_list,
 					    use_total_gres, core_bitmap,
 					    core_start_bit, core_end_bit,
@@ -1095,8 +1095,8 @@ static uint32_t _gres_sock_job_test(List job_gres_list, List node_gres_list,
 	 * the overhead/time and complexity reasonable, we only consider
 	 * using consecutive sockets. */
 	avail_cores = xmalloc(sizeof(uint32_t) * sock_cnt);
-	if (s_p_n == 0)
-		s_p_n = 1;	/* job needs at least 1 socket */
+	s_p_n = MAX(s_p_n, 1);
+	s_p_n = MIN(s_p_n, sock_cnt);
 	for (i = 0; i <= (sock_cnt - s_p_n); i++) {
 		for (j = 1; j < s_p_n; j++)
 			bit_or(sock_core_bitmap[i], sock_core_bitmap[i+j]);
