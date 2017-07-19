@@ -107,7 +107,6 @@
 #define MAX_EXIT_VAL 255	/* Maximum value returned by WIFEXITED() */
 #define SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0 0
 #define TOP_PRIORITY 0xffff0000	/* large, but leave headroom for higher */
-#define ONE_YEAR	(365 * 24 * 60 * 60)
 
 #define JOB_HASH_INX(_job_id)	(_job_id % hash_table_size)
 #define JOB_ARRAY_HASH_INX(_job_id, _task_id) \
@@ -7995,7 +7994,7 @@ void job_time_limit(void)
 	uint32_t resv_over_run = slurmctld_conf.resv_over_run;
 
 	if (resv_over_run == (uint16_t) INFINITE)
-		resv_over_run = ONE_YEAR;
+		resv_over_run = YEAR_SECONDS;
 	else
 		resv_over_run *= 60;
 
@@ -8152,7 +8151,7 @@ void job_time_limit(void)
 					slurmctld_conf.over_time_limit;
 			}
 			if (over_time_limit == (uint16_t) INFINITE)
-				over_run = now - ONE_YEAR;
+				over_run = now - YEAR_SECONDS;
 			else
 				over_run = now - (over_time_limit  * 60);
 			if (job_ptr->end_time <= over_run) {

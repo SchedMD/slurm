@@ -77,7 +77,6 @@
 #include "src/slurmctld/state_save.h"
 
 #define _DEBUG		0
-#define ONE_YEAR	(365 * 24 * 60 * 60)
 #define RESV_MAGIC	0x3b82
 
 /* Permit sufficient time for slurmctld failover or other long delay before
@@ -1506,7 +1505,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 	if (!internal && (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT)) {
 		start_relative = resv_ptr->start_time + now;
 		if (resv_ptr->duration == INFINITE)
-			end_relative = start_relative + ONE_YEAR;
+			end_relative = start_relative + YEAR_SECONDS;
 		else if (resv_ptr->duration && (resv_ptr->duration != NO_VAL))
 			end_relative = start_relative + resv_ptr->duration * 60;
 		else {
@@ -2037,7 +2036,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			goto bad_parse;
 		}
 	} else if (resv_desc_ptr->duration == INFINITE) {
-		resv_desc_ptr->end_time = resv_desc_ptr->start_time + ONE_YEAR;
+		resv_desc_ptr->end_time = resv_desc_ptr->start_time + 
+					  YEAR_SECONDS;
 	} else if (resv_desc_ptr->duration) {
 		resv_desc_ptr->end_time = resv_desc_ptr->start_time +
 					  (resv_desc_ptr->duration * 60);
@@ -2702,8 +2702,8 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 	}
 
 	if (resv_desc_ptr->duration == INFINITE) {
-		resv_ptr->duration = ONE_YEAR / 60;
-		resv_ptr->end_time = resv_ptr->start_time_first + ONE_YEAR;
+		resv_ptr->duration = YEAR_SECONDS / 60;
+		resv_ptr->end_time = resv_ptr->start_time_first + YEAR_SECONDS;
 	} else if (resv_desc_ptr->duration != NO_VAL) {
 		resv_ptr->duration = resv_desc_ptr->duration;
 		resv_ptr->end_time = resv_ptr->start_time_first +
@@ -3786,7 +3786,7 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 				start_relative = resv_ptr->start_time + now;
 				if (resv_ptr->duration == INFINITE)
 					end_relative = start_relative +
-						ONE_YEAR;
+						       YEAR_SECONDS;
 				else if (resv_ptr->duration &&
 					 (resv_ptr->duration != NO_VAL)) {
 					end_relative = start_relative +
@@ -4456,18 +4456,18 @@ static uint32_t _get_job_duration(struct job_record *job_ptr, bool reboot)
 	uint16_t time_slices = 1;
 
 	if (job_ptr->time_limit == INFINITE)
-		duration = ONE_YEAR;
+		duration = YEAR_SECONDS;
 	else if (job_ptr->time_limit != NO_VAL)
 		duration = (job_ptr->time_limit * 60);
 	else {	/* partition time limit */
 		if (job_ptr->part_ptr->max_time == INFINITE)
-			duration = ONE_YEAR;
+			duration = YEAR_SECONDS;
 		else
 			duration = (job_ptr->part_ptr->max_time * 60);
 	}
 	if (job_ptr->part_ptr)
 		time_slices = job_ptr->part_ptr->max_share & ~SHARED_FORCE;
-	if ((duration != ONE_YEAR) && (time_slices > 1) &&
+	if ((duration != YEAR_SECONDS) && (time_slices > 1) &&
 	    (slurmctld_conf.preempt_mode & PREEMPT_MODE_GANG)) {
 		/* FIXME: Ideally we figure out how many jobs are actually
 		 * time-slicing on each node rather than using the maximum
@@ -5066,7 +5066,8 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT) {
 				start_relative = resv_ptr->start_time + now;
 				if (resv_ptr->duration == INFINITE)
-					end_relative = start_relative+ONE_YEAR;
+					end_relative = start_relative +
+						       YEAR_SECONDS;
 				else if (resv_ptr->duration &&
 					 (resv_ptr->duration != NO_VAL)) {
 					end_relative = start_relative +

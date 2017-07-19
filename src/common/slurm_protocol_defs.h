@@ -152,7 +152,8 @@
 #define INFO_LINE(fmt, ...) \
 	info("%s (%s:%d) "fmt, __func__, THIS_FILE, __LINE__, ##__VA_ARGS__);
 
-#define YEAR_MINUTES 365 * 24 * 60
+#define YEAR_MINUTES (365 * 24 * 60)
+#define YEAR_SECONDS (365 * 24 * 60 * 60)
 
 /* These defines have to be here to avoid circular dependancy with
  * switch.h

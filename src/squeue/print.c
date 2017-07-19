@@ -357,7 +357,7 @@ int _print_secs(long time, int width, bool right, bool cut_output)
 	hours   = (time / 3600) % 24;
 	days    =  time / 86400;
 
-	if ((time < 0) || (time > (365 * 24 * 3600)))
+	if ((time < 0) || (time > YEAR_SECONDS))
 		snprintf(str, FORMAT_STRING_SIZE, "INVALID");
 	else if (days)
 		snprintf(str, FORMAT_STRING_SIZE,
