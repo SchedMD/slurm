@@ -113,6 +113,24 @@ typedef struct node_space_map {
 	int next;	/* next record, by time, zero termination */
 } node_space_map_t;
 
+/*
+ * Pack job scheduling structures
+ * NOTE: An individial pack job component can be submitted to multiple
+ *       partitions and have different start times in each
+ */
+typedef struct pack_job_rec {
+	uint32_t job_id;
+	struct job_record *job_ptr;
+	time_t latest_start;
+	struct part_record *part_ptr;
+} pack_job_rec_t;
+
+typedef struct pack_job_map {
+	uint32_t pack_job_id;
+	List pack_job_list;	/* List of pack_job_rec_t */
+	time_t latest_start;
+} pack_job_map_t;
+
 typedef struct user_part_rec {
 	uint16_t *njobs;
 	struct part_record *part_ptr;
@@ -151,6 +169,7 @@ static bool assoc_limit_stop = false;
 static int defer_rpc_cnt = 0;
 static int sched_timeout = SCHED_TIMEOUT;
 static int yield_sleep   = YIELD_SLEEP;
+static List pack_job_list = NULL;
 
 /*********************** local functions *********************/
 static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
@@ -159,6 +178,7 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 			     int *node_space_recs);
 static int  _attempt_backfill(void);
 static int  _clear_job_start_times(void *x, void *arg);
+static int  _clear_qos_blocked_times(void *x, void *arg);
 static void _do_diag_stats(struct timeval *tv1, struct timeval *tv2);
 static bool _job_part_valid(struct job_record *job_ptr,
 			    struct part_record *part_ptr);
@@ -167,6 +187,14 @@ static bool _many_pending_rpcs(void);
 static bool _more_work(time_t last_backfill_time);
 static uint32_t _my_sleep(int usec);
 static int  _num_feature_count(struct job_record *job_ptr, bool *has_xor);
+static int  _pack_find_map(void *x, void *key);
+static void _pack_map_del(void *x);
+static void _pack_rec_del(void *x);
+static void _pack_reset_map_start(pack_job_map_t *map);
+static void _pack_start_clear(void);
+static time_t _pack_start_find(struct job_record *job_ptr);
+static void _pack_start_set(struct job_record *job_ptr, time_t latest_start);
+static void _pack_start_test(void);
 static void _reset_job_time_limit(struct job_record *job_ptr, time_t now,
 				  node_space_map_t *node_space);
 static int  _start_job(struct job_record *job_ptr, bitstr_t *avail_bitmap);
@@ -177,7 +205,6 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 		       uint32_t min_nodes, uint32_t max_nodes,
 		       uint32_t req_nodes, bitstr_t *exc_core_bitmap);
 static int  _yield_locks(int usec);
-static int _clear_qos_blocked_times(void *x, void *arg);
 
 /* Log resources to be allocated to a pending job */
 static void _dump_job_sched(struct job_record *job_ptr, time_t end_time,
@@ -811,6 +838,7 @@ extern void *backfill_agent(void *args)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	bool load_config;
 	bool short_sleep = false;
+	int backfill_cnt = 0;
 
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_SET_NAME, "bckfl", NULL, NULL, NULL) < 0) {
@@ -819,6 +847,7 @@ extern void *backfill_agent(void *args)
 #endif
 	_load_config();
 	last_backfill_time = time(NULL);
+	pack_job_list = list_create(_pack_map_del);
 	while (!stop_backfill) {
 		if (short_sleep)
 			_my_sleep(1000000);
@@ -849,12 +878,16 @@ extern void *backfill_agent(void *args)
 			continue;
 		}
 		lock_slurmctld(all_locks);
+		if ((backfill_cnt++ % 2) == 0)
+			_pack_start_clear();
 		(void) _attempt_backfill();
 		last_backfill_time = time(NULL);
 		(void) bb_g_job_try_stage_in();
 		unlock_slurmctld(all_locks);
 		short_sleep = false;
 	}
+	FREE_NULL_LIST(pack_job_list);
+
 	return NULL;
 }
 
@@ -970,7 +1003,7 @@ static int _attempt_backfill(void)
 	bitstr_t *active_bitmap = NULL, *avail_bitmap = NULL;
 	bitstr_t *exc_core_bitmap = NULL, *resv_bitmap = NULL;
 	time_t now, sched_start, later_start, start_res, resv_end, window_end;
-	time_t orig_sched_start, orig_start_time = (time_t) 0;
+	time_t pack_time, orig_sched_start, orig_start_time = (time_t) 0;
 	node_space_map_t *node_space;
 	user_part_rec_t *bf_user_part_ptr = NULL;
 	struct timeval bf_time1, bf_time2;
@@ -1196,6 +1229,7 @@ static int _attempt_backfill(void)
 		job_ptr->part_ptr = part_ptr;
 		job_ptr->priority = bf_job_priority;
 		mcs_select = slurm_mcs_get_select(job_ptr);
+		pack_time = _pack_start_find(job_ptr);
 
 		if (job_ptr->state_reason == FAIL_ACCOUNT) {
 			slurmdb_assoc_rec_t assoc_rec;
@@ -1664,7 +1698,7 @@ next_task:
 
 		FREE_NULL_BITMAP(avail_bitmap);
 		FREE_NULL_BITMAP(exc_core_bitmap);
-		start_res   = later_start;
+		start_res = MAX(later_start, pack_time);
 		resv_end = 0;
 		later_start = 0;
 		/* Determine impact of any advance reservations */
@@ -1881,7 +1915,8 @@ next_task:
 			later_start = 0;
 			if (bb == -1)
 				continue;
-		} else if (job_ptr->start_time <= now) { /* Can start now */
+		} else if ((job_ptr->pack_job_id == 0) &&
+			   (job_ptr->start_time <= now)) { /* Can start now */
 			uint32_t save_time_limit = job_ptr->time_limit;
 			uint32_t hard_limit;
 			bool reset_time = false;
@@ -2035,6 +2070,7 @@ skip_start:
 				continue;
 			}
 		} else {
+			_pack_start_set(job_ptr, job_ptr->start_time);
 			_set_job_time_limit(job_ptr, orig_time_limit);
 		}
 
@@ -2226,13 +2262,16 @@ skip_start:
 	FREE_NULL_BITMAP(exc_core_bitmap);
 	FREE_NULL_BITMAP(resv_bitmap);
 
-	for (i=0; ; ) {
+	for (i = 0; ; ) {
 		FREE_NULL_BITMAP(node_space[i].avail_bitmap);
 		if ((i = node_space[i].next) == 0)
 			break;
 	}
 	xfree(node_space);
 	FREE_NULL_LIST(job_queue);
+
+	_pack_start_test();
+
 	gettimeofday(&bf_time2, NULL);
 	_do_diag_stats(&bf_time1, &bf_time2);
 	if (debug_flags & DEBUG_FLAG_BACKFILL) {
@@ -2277,7 +2316,7 @@ static int _start_job(struct job_record *job_ptr, bitstr_t *resv_bitmap)
 					bit_copy(orig_exc_nodes);
 		}
 	}
-	if (job_ptr->details) { /* select_nodes() might cancel the job! */
+	if (job_ptr->details) { /* select_nodes() might reset exc_node_bitmap */
 		FREE_NULL_BITMAP(job_ptr->details->exc_node_bitmap);
 		job_ptr->details->exc_node_bitmap = orig_exc_nodes;
 	} else
@@ -2294,11 +2333,11 @@ static int _start_job(struct job_record *job_ptr, bitstr_t *resv_bitmap)
 			srun_allocate(job_ptr->job_id);
 		else if (
 #ifdef HAVE_BG
-				/* On a bluegene system we need to run the
-				 * prolog while the job is CONFIGURING so this
-				 * can't work off the CONFIGURING flag as done
-				 * elsewhere.
-				 */
+			/*
+			 * On a bluegene system we need to run the prolog
+			 * while the job is CONFIGURING so this can't work
+			 * off the CONFIGURING flag as done elsewhere.
+			 */
 			!job_ptr->details ||
 			!job_ptr->details->prolog_running
 #else
@@ -2504,4 +2543,310 @@ static bool _test_resv_overlap(node_space_map_t *node_space,
 			break;
 	}
 	return overlap;
+}
+
+/*
+ * Delete pack_job_map_t record from pack_job_list
+ */
+static void _pack_rec_del(void *x)
+{
+	pack_job_rec_t *rec = (pack_job_rec_t *) x;
+	xfree(rec);
+}
+
+/*
+ * Delete pack_job_map_t record from pack_job_list
+ */
+static void _pack_map_del(void *x)
+{
+	pack_job_map_t *map = (pack_job_map_t *) x;
+	FREE_NULL_LIST(map->pack_job_list);
+	xfree(map);
+}
+
+/*
+ * Return 1 if a pack_job_map_t record with a specific pack_job_id is found.
+ * Always return 1 if "key" is zero.
+ */
+static int _pack_find_map(void *x, void *key)
+{
+	pack_job_map_t *map = (pack_job_map_t *) x;
+	uint32_t *pack_job_id = (uint32_t *) key;
+
+	if ((pack_job_id == NULL) ||
+	    (map->pack_job_id == *pack_job_id))
+		return 1;
+	return 0;
+}
+
+/*
+ * Return 1 if a pack_job_rec_t record with a specific job_id is found.
+ * Always return 1 if "key" is zero.
+ */
+static int _pack_find_rec(void *x, void *key)
+{
+	pack_job_rec_t *rec = (pack_job_rec_t *) x;
+	uint32_t *job_id = (uint32_t *) key;
+
+	if ((job_id == NULL) ||
+	    (rec->job_id == *job_id))
+		return 1;
+	return 0;
+}
+
+/*
+ * Remove all elements from pack_job_list. This is used to periodically clear
+ * history so that heterogeneous/pack jobs do not keep getting deferred based
+ * upon old system state
+ */
+static void _pack_start_clear(void)
+{
+	(void) list_delete_all(pack_job_list, _pack_find_map, NULL);
+}
+
+/*
+ * Return the earliest that a job can start based upon other components of
+ * that same heterogeneous/pack job. Return 0 if no limitation.
+ */
+static time_t _pack_start_find(struct job_record *job_ptr)
+{
+	pack_job_map_t *map;
+	time_t latest_start = (time_t) 0;
+
+	if (job_ptr->pack_job_id) {
+		map = (pack_job_map_t *) list_find_first(pack_job_list,
+							 _pack_find_map,
+							 &job_ptr->pack_job_id);
+		if (map)
+			latest_start = map->latest_start;
+	}
+
+	return latest_start;
+}
+
+/*
+ * Re-compute the latest_start for a pack job based upon some pack job
+ * component being able to start earlier in a different partition
+ */
+static void _pack_reset_map_start(pack_job_map_t *map)
+{
+	time_t latest_start = 0;
+	pack_job_rec_t *rec;
+	ListIterator iter;
+
+	iter = list_iterator_create(map->pack_job_list);
+	while ((rec = (pack_job_rec_t *) list_next(iter)))
+		latest_start = MAX(latest_start, rec->latest_start);
+	list_iterator_destroy(iter);
+	map->latest_start = latest_start;
+}
+
+/*
+ * Record the earliest that a pack job component can start. If it can be
+ * started in multiple partitions, we only record the the earliest start time
+ * for the job in any partition.
+ */
+static void _pack_start_set(struct job_record *job_ptr, time_t latest_start)
+{
+	pack_job_map_t *map;
+	pack_job_rec_t *rec;
+
+	if (job_ptr->pack_job_id) {
+		map = (pack_job_map_t *) list_find_first(pack_job_list,
+							 _pack_find_map,
+							 &job_ptr->pack_job_id);
+		if (map) {
+			rec = list_find_first(map->pack_job_list,
+					      _pack_find_rec,
+					      &job_ptr->job_id);
+			if (rec && (rec->latest_start <= latest_start)) {
+				/*
+				 * This job can start an earlier time in
+				 * some other partition, so ignore new info
+				 */
+			} else if (rec) {
+				bool rebuild_times = false;
+				if (map->latest_start == rec->latest_start)
+					rebuild_times = true;
+				rec->latest_start = latest_start;
+				rec->part_ptr = job_ptr->part_ptr;
+				if (rebuild_times)
+					_pack_reset_map_start(map);
+			} else {
+				rec = xmalloc(sizeof(pack_job_rec_t));
+				rec->job_id = job_ptr->job_id;
+				rec->job_ptr = job_ptr;
+				rec->latest_start = latest_start;
+				rec->part_ptr = job_ptr->part_ptr;
+				list_append(map->pack_job_list, rec);
+				map->latest_start = MAX(map->latest_start,
+							latest_start);
+			}
+		} else {
+			rec = xmalloc(sizeof(pack_job_rec_t));
+			rec->job_id = job_ptr->job_id;
+			rec->job_ptr = job_ptr;
+			rec->latest_start = latest_start;
+			rec->part_ptr = job_ptr->part_ptr;
+
+			map = xmalloc(sizeof(pack_job_map_t));
+			map->latest_start = latest_start;
+			map->pack_job_id = job_ptr->pack_job_id;
+			map->pack_job_list = list_create(_pack_rec_del);
+			list_append(map->pack_job_list, rec);
+			list_append(pack_job_list, map);
+		}
+
+		if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
+			int delay = map->latest_start - time(NULL);
+			info("Job %u+%u (%u) in partition %s to start in %d secs",
+			     job_ptr->pack_job_id, job_ptr->pack_job_offset,
+			     job_ptr->job_id, job_ptr->part_ptr->name, delay);
+		}
+	}
+}
+
+/*
+ * Return TRUE if we have expected start times for all components of a pack job
+ * and all components are valid and runable
+ */
+static bool _pack_job_full(pack_job_map_t *map)
+{
+	struct job_record *pack_job_ptr, *job_ptr;
+	ListIterator iter;
+	bool rc = true;
+
+	/*
+	 * With bf_continue configured, the original job could have
+	 * been cancelled and purged. Validate job record here.
+	 */
+	pack_job_ptr = find_job_record(map->pack_job_id);
+	if (!pack_job_ptr || (pack_job_ptr->magic != JOB_MAGIC) ||
+	    (pack_job_ptr->pack_job_id != map->pack_job_id) ||
+	    (pack_job_ptr->priority == 0) ||
+	    !pack_job_ptr->pack_job_list ||
+	    !_job_runnable_now(pack_job_ptr)) {
+		return false;
+	}
+
+	iter = list_iterator_create(pack_job_ptr->pack_job_list);
+	while ((job_ptr = (struct job_record *) list_next(iter))) {
+		if (!list_find_first(map->pack_job_list, _pack_find_rec,
+				     &job_ptr->job_id) ||
+		    (job_ptr->magic != JOB_MAGIC) ||
+		    (job_ptr->pack_job_id != map->pack_job_id) ||
+		    (job_ptr->priority == 0) ||
+		    !_job_runnable_now(job_ptr)) {
+			rc = false;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return rc;
+}
+
+/*
+ * Start all components of a pack job now
+ */
+static void _pack_start_now(pack_job_map_t *map)
+{
+	struct job_record *job_ptr;
+	bitstr_t *avail_bitmap = NULL, *exc_core_bitmap = NULL;
+	bitstr_t *resv_bitmap = NULL;
+	pack_job_rec_t *rec;
+	ListIterator iter;
+	int j, mcs_select, rc;
+	bool resv_overlap = false;
+	time_t now = time(NULL), start_res;
+
+	iter = list_iterator_create(map->pack_job_list);
+	while ((rec = (pack_job_rec_t *) list_next(iter))) {
+		job_ptr = rec->job_ptr;
+		job_ptr->part_ptr = rec->part_ptr;
+
+		/*
+		 * Identify the nodes which this job can use
+		 */
+//FIXME-PACK - Flesh out this logic, times, min/max time limit, etc.
+		start_res = now;
+		j = job_test_resv(job_ptr, &start_res, true, &avail_bitmap,
+				  &exc_core_bitmap, &resv_overlap, false);
+		FREE_NULL_BITMAP(exc_core_bitmap);
+		if (j != SLURM_SUCCESS) {
+			error("Pack job %u failed to start", job_ptr->job_id);
+			continue;
+		}
+		bit_and(avail_bitmap, job_ptr->part_ptr->node_bitmap);
+		bit_and(avail_bitmap, up_node_bitmap);
+		filter_by_node_owner(job_ptr, avail_bitmap);
+		mcs_select = slurm_mcs_get_select(job_ptr);
+		filter_by_node_mcs(job_ptr, mcs_select, avail_bitmap);
+		if (job_ptr->details->exc_node_bitmap) {
+			bit_and_not(avail_bitmap,
+				job_ptr->details->exc_node_bitmap);
+		}
+		resv_bitmap = bit_copy(avail_bitmap);
+		bit_not(resv_bitmap);
+
+		if (fed_mgr_job_lock(job_ptr)) {
+			error("Pack job %u failed to start", job_ptr->job_id);
+			if (debug_flags & DEBUG_FLAG_BACKFILL)
+				info("backfill: JobId=%u can't get fed job lock from origin cluster to backfill job",
+				     job_ptr->job_id);
+			continue;
+		}
+		rc = _start_job(job_ptr, resv_bitmap);
+		if (rc == SLURM_SUCCESS) {
+			/* If the following fails because of network
+			 * connectivity, the origin cluster should ask
+			 * when it comes back up if the cluster_lock
+			 * cluster actually started the job */
+			fed_mgr_job_start(job_ptr, job_ptr->start_time);
+			if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
+				info("Pack job %u started",  job_ptr->job_id);
+			}
+		} else {
+			fed_mgr_job_unlock(job_ptr);
+			error("Pack job %u failed to start", job_ptr->job_id);
+		}
+	}
+	list_iterator_destroy(iter);
+}
+
+/*
+ * If all components of a pack job can start now, then do so
+ */
+static void _pack_start_test(void)
+{
+//FIXME-PACK - What about case where individual jobs can start, but not all jobs at once?
+//FIXME-PACK - Call _pack_start_set(LONG_TIME) for deferred jobs
+//FIXME-PACK - Log using pack job ID format
+	ListIterator iter;
+	pack_job_map_t *map;
+	time_t now = time(NULL);
+	
+	iter = list_iterator_create(pack_job_list);
+	while ((map = (pack_job_map_t *) list_next (iter))) {
+		if (map->latest_start > now) {
+			if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
+				info("Pack job %u should be able to start in %u seconds",
+				     map->pack_job_id,
+				     (uint32_t) (map->latest_start - now));
+			}
+		} else if (!_pack_job_full(map)) {
+			if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
+				info("Pack job %u has indefinite start time",
+				     map->pack_job_id);
+			}
+		} else {
+			if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
+				info("Attempting to start pack job %u",
+				     map->pack_job_id);
+			}
+			_pack_start_now(map);
+		}
+		(void) list_for_each(map->pack_job_list, _pack_find_rec, NULL);
+	}
+	list_iterator_destroy(iter);
 }

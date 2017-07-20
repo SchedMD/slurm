@@ -228,7 +228,7 @@ an error.</p>
 
 <p>The srun command is used to launch applications.
 By default, the application is launched only on the first component of a
-heterogeneous job, but options are available to support different behaviours.</p>
+heterogeneous job, but options are available to support different behaviors.</p>
 
 <p>srun's "--pack-group" option defines which pack job component(s) are to have
 applications launched for them. The --pack-group option takes an expression
@@ -244,12 +244,12 @@ component number zero. Some examples follow:</p>
 </ul>
 
 <p>By default, the applications launched by a single execution of the srun
-command (even for different components of the heterogenous job) are combined
+command (even for different components of the heterogeneous job) are combined
 into one MPI_COMM_WORLD with non-overlapping task IDs. srun's "--mpi-combine=no"
 option will launch each component in the heterogeneous job in its own
 MPI_COMM_WORLD with a task ID starting at zero.</p>
 
-<p>srun's "--label" option will preceed every line with the letter "P" and
+<p>srun's "--label" option will precede every line with the letter "P" and
 pack job offset followed by the task rank if the "--mpi-combine=no" option is
 used or a the application is launched on a subset of pack groups
 For example:</p>
@@ -340,8 +340,51 @@ components of a heterogeneous job.</p>
 <p>The job submit plugin is invoked independently for each component of a
 heterogeneous job.</p>
 
+<p>Scheduling of heterogeneous jobs is performed only by the sched/backfill
+plugin and all heterogeneous job components are either all scheduled at the same
+time or deferred.
+In order to insure the timely initiation of both heterogeneous and
+non-heterogeneous jobs, the backfill scheduler alternates between two different
+modes on each iteration.
+In the first mode, if a heterogeneous job component can not be initiated
+immediately, its expected start time is recorded and all subsequent components
+of that job will be considered for starting no earlier than the latest
+component's expected start time.
+In the second mode, all heterogeneous job components will be considered for
+starting no earlier than the latest component's expected start time.
+After completion of the second mode, all heterogeneous job expected start time
+data is cleared and the first mode will be used in the next backfill scheduler
+iteration.
+Regular (non-heterogeneous jobs) are scheduled independently on each iteration
+of the backfill scheduler.</p>
+
+<p> For example, consider a heterogeneous job with three components.
+When considered as independent jobs, the components could be initiated at times
+now (component 0), now plus 2 hour (component 1), and now plus 1 hours
+(component 2).
+When the backfill scheduler runs in the first mode:</p>
+<ol>
+<li>Component 0 will be noted to possible to start now, but not initiated due
+to the additional components to be initiated</li>
+<li>Component 1 will be noted to be possible to start in 2 hours</li>
+<li>Component 2 will not be considered for scheduling until 2 hours in the
+future, which leave some additional resources available for scheduling to other
+jobs</li>
+</ol>
+
+<p>When the backfill scheduler executes next, it will use the second mode and
+(assuming no other state changes) all three job components will be considered
+available for scheduling no earlier than 2 hours in the future, which may allow
+other jobs to be allocated resources before heterogeneous job component 0
+could be initiated.</p>
+
+<p>The heterogeneous job start time data will be cleared before the first
+mode is used in the next iteration in order to consider system status changes
+which might permit the heterogeneous to be initiated at an earlier time than
+previously determined.</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 7 July 2017</p>
+<p style="text-align:center;">Last modified 19 July 2017</p>
 
 <!--#include virtual="footer.txt"-->
