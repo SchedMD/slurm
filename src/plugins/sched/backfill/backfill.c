@@ -2751,6 +2751,8 @@ static bool _pack_job_full(pack_job_map_t *map)
  */
 static void _pack_start_now(pack_job_map_t *map)
 {
+//FIXME-PACK - Flesh out this logic, times, min/max time limit, qos/acct limits, accounting, etc.
+//FIXME-PACK - Add support for job "time_min" value
 	struct job_record *job_ptr;
 	bitstr_t *avail_bitmap = NULL, *exc_core_bitmap = NULL;
 	bitstr_t *resv_bitmap = NULL;
@@ -2768,13 +2770,14 @@ static void _pack_start_now(pack_job_map_t *map)
 		/*
 		 * Identify the nodes which this job can use
 		 */
-//FIXME-PACK - Flesh out this logic, times, min/max time limit, etc.
 		start_res = now;
 		j = job_test_resv(job_ptr, &start_res, true, &avail_bitmap,
 				  &exc_core_bitmap, &resv_overlap, false);
 		FREE_NULL_BITMAP(exc_core_bitmap);
 		if (j != SLURM_SUCCESS) {
-			error("Pack job %u failed to start", job_ptr->job_id);
+			error("Pack job %u+%u (%u) failed to start due to reservation",
+			      job_ptr->pack_job_id, job_ptr->pack_job_offset,
+			      job_ptr->job_id);
 			continue;
 		}
 		bit_and(avail_bitmap, job_ptr->part_ptr->node_bitmap);
@@ -2790,10 +2793,9 @@ static void _pack_start_now(pack_job_map_t *map)
 		bit_not(resv_bitmap);
 
 		if (fed_mgr_job_lock(job_ptr)) {
-			error("Pack job %u failed to start", job_ptr->job_id);
-			if (debug_flags & DEBUG_FLAG_BACKFILL)
-				info("backfill: JobId=%u can't get fed job lock from origin cluster to backfill job",
-				     job_ptr->job_id);
+			error("Pack job %u+%u (%u) failed to start due to fed job lock",
+			      job_ptr->pack_job_id, job_ptr->pack_job_offset,
+			      job_ptr->job_id);
 			continue;
 		}
 		rc = _start_job(job_ptr, resv_bitmap);
@@ -2804,11 +2806,16 @@ static void _pack_start_now(pack_job_map_t *map)
 			 * cluster actually started the job */
 			fed_mgr_job_start(job_ptr, job_ptr->start_time);
 			if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
-				info("Pack job %u started",  job_ptr->job_id);
+				info("Pack job %u+%u (%u) started",
+				     job_ptr->pack_job_id,
+				     job_ptr->pack_job_offset,
+				     job_ptr->job_id);
 			}
 		} else {
 			fed_mgr_job_unlock(job_ptr);
-			error("Pack job %u failed to start", job_ptr->job_id);
+			error("Pack job %u+%u (%u) failed to start",
+			      job_ptr->pack_job_id, job_ptr->pack_job_offset,
+			      job_ptr->job_id);
 		}
 	}
 	list_iterator_destroy(iter);
@@ -2819,9 +2826,6 @@ static void _pack_start_now(pack_job_map_t *map)
  */
 static void _pack_start_test(void)
 {
-//FIXME-PACK - What about case where individual jobs can start, but not all jobs at once?
-//FIXME-PACK - Call _pack_start_set(LONG_TIME) for deferred jobs
-//FIXME-PACK - Log using pack job ID format
 	ListIterator iter;
 	pack_job_map_t *map;
 	time_t now = time(NULL);
