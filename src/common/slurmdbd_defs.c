@@ -351,7 +351,8 @@ extern int slurm_send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 	    (difftime(time(NULL), syslog_time) > 120)) {
 		/* Record critical error every 120 seconds */
 		syslog_time = time(NULL);
-		error("slurmdbd: agent queue filling, RESTART SLURMDBD NOW");
+		error("slurmdbd: agent queue filling (%d), RESTART SLURMDBD NOW",
+		      cnt);
 		syslog(LOG_CRIT, "*** RESTART SLURMDBD NOW ***");
 		if (slurmdbd_conn->trigger_callbacks.dbd_fail)
 			(slurmdbd_conn->trigger_callbacks.dbd_fail)();
@@ -364,7 +365,10 @@ extern int slurm_send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 		if (list_enqueue(agent_list, buffer) == NULL)
 			fatal("list_enqueue: memory allocation failure");
 	} else {
-		error("slurmdbd: agent queue is full, discarding request");
+		error("slurmdbd: agent queue is full (%u), discarding %s:%u request",
+		      cnt,
+		      slurmdbd_msg_type_2_str(req->msg_type, 1),
+		      req->msg_type);
 		if (slurmdbd_conn->trigger_callbacks.acct_full)
 			(slurmdbd_conn->trigger_callbacks.acct_full)();
 		rc = SLURM_ERROR;

@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
     --gres-flags=enforce-binding option.
  -- Fix race condition when using jobacct_gather/cgroup where the memory of the
     step wasn't always gathered correctly.
+ -- Better debug when slurmdbd queue is filling up in the slurmctld.
 
 * Changes in Slurm 17.02.6
 ==========================
