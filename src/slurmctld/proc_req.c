@@ -3723,7 +3723,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	List submit_job_list = NULL;
 	hostset_t jobid_hostset = NULL;
 	char tmp_str[32];
-
+	time_t min_begin = time(NULL) + 3;	/* Do not start immediately */
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_SUBMIT_BATCH_PACK_JOB from uid=%d",
 	       uid);
@@ -3774,11 +3774,14 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 		}
 		dump_job_desc(job_desc_msg);
 
-		error_code = validate_job_create_req(job_desc_msg,uid,&err_msg);
+		error_code = validate_job_create_req(job_desc_msg, uid,
+						     &err_msg);
 		if (error_code != SLURM_SUCCESS) {
 			reject_job = true;
 			break;
 		}
+		job_desc_msg->begin_time = MAX(job_desc_msg->begin_time,
+					       min_begin);
 	}
 	list_iterator_destroy(iter);
 	unlock_slurmctld(job_read_lock);

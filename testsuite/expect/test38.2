@@ -137,12 +137,20 @@ send_user "Submit packjob and verify output from scontrol show job"
 send_user "\n################################################################\n"
 
 set job_id 0
-
 set job_id [sbatch]
+if {$job_id == 0} {
+	send_user "\nFAILURE: error submitting job $job_id\n"
+	exit 1
+}
 
 #
 # Check for desired output
 #
+if {[wait_for_job $job_id DONE] != 0} {
+	send_user "\nFAILURE: error completing job $job_id\n"
+	cancel_job $job_id
+	exit 1
+}
 if {[wait_for_file $file_out] != 0} {
 	send_user "\nFAILURE: Output file $file_out is missing\n"
 	exit 1

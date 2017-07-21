@@ -126,9 +126,10 @@ typedef struct pack_job_rec {
 } pack_job_rec_t;
 
 typedef struct pack_job_map {
+	uint32_t comp_time_limit;	/* Time limit for pack job */
 	uint32_t pack_job_id;
-	List pack_job_list;	/* List of pack_job_rec_t */
-	time_t latest_start;
+	List pack_job_list;		/* List of pack_job_rec_t */
+	time_t latest_start;		/* Start time of latest component */
 } pack_job_map_t;
 
 typedef struct user_part_rec {
@@ -193,7 +194,8 @@ static void _pack_rec_del(void *x);
 static void _pack_reset_map_start(pack_job_map_t *map);
 static void _pack_start_clear(void);
 static time_t _pack_start_find(struct job_record *job_ptr);
-static void _pack_start_set(struct job_record *job_ptr, time_t latest_start);
+static void _pack_start_set(struct job_record *job_ptr, time_t latest_start,
+			    uint32_t comp_time_limit);
 static void _pack_start_test(void);
 static void _reset_job_time_limit(struct job_record *job_ptr, time_t now,
 				  node_space_map_t *node_space);
@@ -2070,7 +2072,8 @@ skip_start:
 				continue;
 			}
 		} else {
-			_pack_start_set(job_ptr, job_ptr->start_time);
+			_pack_start_set(job_ptr, job_ptr->start_time,
+					comp_time_limit);
 			_set_job_time_limit(job_ptr, orig_time_limit);
 		}
 
@@ -2331,6 +2334,8 @@ static int _start_job(struct job_record *job_ptr, bitstr_t *resv_bitmap)
 		power_g_job_start(job_ptr);
 		if (job_ptr->batch_flag == 0)
 			srun_allocate(job_ptr->job_id);
+		else if (job_ptr->pack_job_offset != 0)
+			;	/* Nothing to do batch pack job components */
 		else if (
 #ifdef HAVE_BG
 			/*
@@ -2621,6 +2626,12 @@ static time_t _pack_start_find(struct job_record *job_ptr)
 			latest_start = map->latest_start;
 	}
 
+	if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
+		long int delay = MAX(0, latest_start - time(NULL));
+		info("Job %u+%u (%u) in partition %s expected to start in %ld secs",
+		     job_ptr->pack_job_id, job_ptr->pack_job_offset,
+		     job_ptr->job_id, job_ptr->part_ptr->name, delay);
+	}
 	return latest_start;
 }
 
@@ -2646,7 +2657,8 @@ static void _pack_reset_map_start(pack_job_map_t *map)
  * started in multiple partitions, we only record the the earliest start time
  * for the job in any partition.
  */
-static void _pack_start_set(struct job_record *job_ptr, time_t latest_start)
+static void _pack_start_set(struct job_record *job_ptr, time_t latest_start,
+			    uint32_t comp_time_limit)
 {
 	pack_job_map_t *map;
 	pack_job_rec_t *rec;
@@ -2656,6 +2668,8 @@ static void _pack_start_set(struct job_record *job_ptr, time_t latest_start)
 							 _pack_find_map,
 							 &job_ptr->pack_job_id);
 		if (map) {
+			map->comp_time_limit = MIN(map->comp_time_limit,
+						   comp_time_limit);
 			rec = list_find_first(map->pack_job_list,
 					      _pack_find_rec,
 					      &job_ptr->job_id);
@@ -2690,6 +2704,7 @@ static void _pack_start_set(struct job_record *job_ptr, time_t latest_start)
 			rec->part_ptr = job_ptr->part_ptr;
 
 			map = xmalloc(sizeof(pack_job_map_t));
+			map->comp_time_limit = comp_time_limit;
 			map->latest_start = latest_start;
 			map->pack_job_id = job_ptr->pack_job_id;
 			map->pack_job_list = list_create(_pack_rec_del);
@@ -2698,8 +2713,8 @@ static void _pack_start_set(struct job_record *job_ptr, time_t latest_start)
 		}
 
 		if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
-			int delay = map->latest_start - time(NULL);
-			info("Job %u+%u (%u) in partition %s to start in %d secs",
+			long int delay = MAX(0, map->latest_start - time(NULL));
+			info("Job %u+%u (%u) in partition %s set to start in %ld secs",
 			     job_ptr->pack_job_id, job_ptr->pack_job_offset,
 			     job_ptr->job_id, job_ptr->part_ptr->name, delay);
 		}
@@ -2751,6 +2766,8 @@ static bool _pack_job_full(pack_job_map_t *map)
  */
 static void _pack_start_now(pack_job_map_t *map)
 {
+//FIXME-PACK - sent time in future for non-startable jobs
+//FIXME-PACK - If start time too far in future, skip BF tests
 //FIXME-PACK - Flesh out this logic, times, min/max time limit, qos/acct limits, accounting, etc.
 //FIXME-PACK - Add support for job "time_min" value
 	struct job_record *job_ptr;
