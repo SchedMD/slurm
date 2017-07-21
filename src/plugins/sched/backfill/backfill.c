@@ -129,7 +129,6 @@ typedef struct pack_job_map {
 	uint32_t comp_time_limit;	/* Time limit for pack job */
 	uint32_t pack_job_id;
 	List pack_job_list;		/* List of pack_job_rec_t */
-	time_t latest_start;		/* Start time of latest component */
 } pack_job_map_t;
 
 typedef struct user_part_rec {
@@ -191,7 +190,6 @@ static int  _num_feature_count(struct job_record *job_ptr, bool *has_xor);
 static int  _pack_find_map(void *x, void *key);
 static void _pack_map_del(void *x);
 static void _pack_rec_del(void *x);
-static void _pack_reset_map_start(pack_job_map_t *map);
 static void _pack_start_clear(void);
 static time_t _pack_start_find(struct job_record *job_ptr);
 static void _pack_start_set(struct job_record *job_ptr, time_t latest_start,
@@ -1224,14 +1222,22 @@ static int _attempt_backfill(void)
 				continue;
 		}
 
+		/*
+		 * Establish baseline (worst case) start time for pack job
+		 * Update time once start time estimate established
+		 */
+		_pack_start_set(job_ptr, (now + YEAR_SECONDS), NO_VAL);
+
 		if (!_job_runnable_now(job_ptr))
 			continue;
 
-		job_ptr->last_sched_eval = time(NULL);
+		job_ptr->last_sched_eval = now;
 		job_ptr->part_ptr = part_ptr;
 		job_ptr->priority = bf_job_priority;
 		mcs_select = slurm_mcs_get_select(job_ptr);
 		pack_time = _pack_start_find(job_ptr);
+		if (pack_time > (now + backfill_window))
+			continue;
 
 		if (job_ptr->state_reason == FAIL_ACCOUNT) {
 			slurmdb_assoc_rec_t assoc_rec;
@@ -2335,7 +2341,7 @@ static int _start_job(struct job_record *job_ptr, bitstr_t *resv_bitmap)
 		if (job_ptr->batch_flag == 0)
 			srun_allocate(job_ptr->job_id);
 		else if (job_ptr->pack_job_offset != 0)
-			;	/* Nothing to do batch pack job components */
+			;     /* Nothing action for batch pack job components */
 		else if (
 #ifdef HAVE_BG
 			/*
@@ -2610,6 +2616,27 @@ static void _pack_start_clear(void)
 }
 
 /*
+ * For a given pack_job_map_t record, determine the earliest that it can start,
+ * which is the time at which it's latest starting component begins
+ */
+static time_t _pack_start_compute(pack_job_map_t *map, uint32_t exclude_job_id)
+{
+	ListIterator iter;
+	pack_job_rec_t *rec;
+	time_t latest_start = (time_t) 0;
+
+	iter = list_iterator_create(map->pack_job_list);
+	while ((rec = (pack_job_rec_t *) list_next(iter))) {
+		if (rec->job_id == exclude_job_id)
+			continue;
+		latest_start = MAX(latest_start, rec->latest_start);
+	}
+	list_iterator_destroy(iter);
+
+	return latest_start;
+}
+
+/*
  * Return the earliest that a job can start based upon other components of
  * that same heterogeneous/pack job. Return 0 if no limitation.
  */
@@ -2622,8 +2649,10 @@ static time_t _pack_start_find(struct job_record *job_ptr)
 		map = (pack_job_map_t *) list_find_first(pack_job_list,
 							 _pack_find_map,
 							 &job_ptr->pack_job_id);
-		if (map)
-			latest_start = map->latest_start;
+		if (map) {
+			latest_start = _pack_start_compute(map,
+							   job_ptr->job_id);
+		}
 	}
 
 	if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
@@ -2633,23 +2662,6 @@ static time_t _pack_start_find(struct job_record *job_ptr)
 		     job_ptr->job_id, job_ptr->part_ptr->name, delay);
 	}
 	return latest_start;
-}
-
-/*
- * Re-compute the latest_start for a pack job based upon some pack job
- * component being able to start earlier in a different partition
- */
-static void _pack_reset_map_start(pack_job_map_t *map)
-{
-	time_t latest_start = 0;
-	pack_job_rec_t *rec;
-	ListIterator iter;
-
-	iter = list_iterator_create(map->pack_job_list);
-	while ((rec = (pack_job_rec_t *) list_next(iter)))
-		latest_start = MAX(latest_start, rec->latest_start);
-	list_iterator_destroy(iter);
-	map->latest_start = latest_start;
 }
 
 /*
@@ -2663,13 +2675,19 @@ static void _pack_start_set(struct job_record *job_ptr, time_t latest_start,
 	pack_job_map_t *map;
 	pack_job_rec_t *rec;
 
+	if (comp_time_limit == NO_VAL)
+		comp_time_limit = job_ptr->time_limit;
 	if (job_ptr->pack_job_id) {
 		map = (pack_job_map_t *) list_find_first(pack_job_list,
 							 _pack_find_map,
 							 &job_ptr->pack_job_id);
 		if (map) {
-			map->comp_time_limit = MIN(map->comp_time_limit,
-						   comp_time_limit);
+			if (!map->comp_time_limit) {
+				map->comp_time_limit = comp_time_limit;
+			} else {
+				map->comp_time_limit = MIN(map->comp_time_limit,
+							   comp_time_limit);
+			}
 			rec = list_find_first(map->pack_job_list,
 					      _pack_find_rec,
 					      &job_ptr->job_id);
@@ -2679,13 +2697,8 @@ static void _pack_start_set(struct job_record *job_ptr, time_t latest_start,
 				 * some other partition, so ignore new info
 				 */
 			} else if (rec) {
-				bool rebuild_times = false;
-				if (map->latest_start == rec->latest_start)
-					rebuild_times = true;
 				rec->latest_start = latest_start;
 				rec->part_ptr = job_ptr->part_ptr;
-				if (rebuild_times)
-					_pack_reset_map_start(map);
 			} else {
 				rec = xmalloc(sizeof(pack_job_rec_t));
 				rec->job_id = job_ptr->job_id;
@@ -2693,8 +2706,6 @@ static void _pack_start_set(struct job_record *job_ptr, time_t latest_start,
 				rec->latest_start = latest_start;
 				rec->part_ptr = job_ptr->part_ptr;
 				list_append(map->pack_job_list, rec);
-				map->latest_start = MAX(map->latest_start,
-							latest_start);
 			}
 		} else {
 			rec = xmalloc(sizeof(pack_job_rec_t));
@@ -2705,7 +2716,6 @@ static void _pack_start_set(struct job_record *job_ptr, time_t latest_start,
 
 			map = xmalloc(sizeof(pack_job_map_t));
 			map->comp_time_limit = comp_time_limit;
-			map->latest_start = latest_start;
 			map->pack_job_id = job_ptr->pack_job_id;
 			map->pack_job_list = list_create(_pack_rec_del);
 			list_append(map->pack_job_list, rec);
@@ -2713,7 +2723,8 @@ static void _pack_start_set(struct job_record *job_ptr, time_t latest_start,
 		}
 
 		if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
-			long int delay = MAX(0, map->latest_start - time(NULL));
+			time_t latest_start = _pack_start_compute(map, 0);
+			long int delay = MAX(0, latest_start - time(NULL));
 			info("Job %u+%u (%u) in partition %s set to start in %ld secs",
 			     job_ptr->pack_job_id, job_ptr->pack_job_offset,
 			     job_ptr->job_id, job_ptr->part_ptr->name, delay);
@@ -2766,8 +2777,6 @@ static bool _pack_job_full(pack_job_map_t *map)
  */
 static void _pack_start_now(pack_job_map_t *map)
 {
-//FIXME-PACK - sent time in future for non-startable jobs
-//FIXME-PACK - If start time too far in future, skip BF tests
 //FIXME-PACK - Flesh out this logic, times, min/max time limit, qos/acct limits, accounting, etc.
 //FIXME-PACK - Add support for job "time_min" value
 	struct job_record *job_ptr;
@@ -2846,19 +2855,24 @@ static void _pack_start_test(void)
 	ListIterator iter;
 	pack_job_map_t *map;
 	time_t now = time(NULL);
-	
+	time_t latest_start;
+
 	iter = list_iterator_create(pack_job_list);
 	while ((map = (pack_job_map_t *) list_next (iter))) {
-		if (map->latest_start > now) {
-			if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
-				info("Pack job %u should be able to start in %u seconds",
-				     map->pack_job_id,
-				     (uint32_t) (map->latest_start - now));
-			}
-		} else if (!_pack_job_full(map)) {
+		if (!_pack_job_full(map)) {
 			if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
 				info("Pack job %u has indefinite start time",
 				     map->pack_job_id);
+			}
+			continue;
+		}
+
+		latest_start = _pack_start_compute(map, 0);
+		if (latest_start > now) {
+			if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
+				info("Pack job %u should be able to start in %u seconds",
+				     map->pack_job_id,
+				     (uint32_t) (latest_start - now));
 			}
 		} else {
 			if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {

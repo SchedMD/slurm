@@ -3723,7 +3723,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	List submit_job_list = NULL;
 	hostset_t jobid_hostset = NULL;
 	char tmp_str[32];
-	time_t min_begin = time(NULL) + 3;	/* Do not start immediately */
+	time_t min_begin = time(NULL) + PACK_DELAY;	/* Delay start */
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_SUBMIT_BATCH_PACK_JOB from uid=%d",
 	       uid);

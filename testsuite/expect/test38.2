@@ -43,7 +43,7 @@ set eol "\r\n"
 print_header $test_id
 
 proc sbatch {} {
-	global number sbatch file_in bin_sleep file_out
+	global number sbatch file_in bin_sleep file_out job_id
 
 	set matches 0
 	set job_id 0
@@ -69,8 +69,6 @@ proc sbatch {} {
 		log_error "batch submit failure"
 		end_it 1
 	}
-
-	return $job_id
 }
 
 proc test_env {value} {
@@ -98,9 +96,10 @@ proc test_env {value} {
 proc cancel_all_jobs { } {
 	global scancel job_id
 
-	exec $scancel $job_id
-
-	sleep 5
+	if {$job_id != 0} {
+		exec $scancel $job_id
+		sleep 5
+	}
 }
 
 proc cleanup { } {
@@ -137,7 +136,7 @@ send_user "Submit packjob and verify output from scontrol show job"
 send_user "\n################################################################\n"
 
 set job_id 0
-set job_id [sbatch]
+sbatch
 if {$job_id == 0} {
 	send_user "\nFAILURE: error submitting job $job_id\n"
 	exit 1
