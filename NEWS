@@ -19,6 +19,7 @@ documents those changes that are of interest to users and administrators.
     step wasn't always gathered correctly.
  -- Better debug when slurmdbd queue is filling up in the slurmctld.
  -- Fixed truncation on scontrol show config output.
+ -- Serialize updates from from the dbd to the slurmctld.
 
 * Changes in Slurm 17.02.6
 ==========================
