@@ -62,6 +62,9 @@ documents those changes that are of interest to users and administrators.
       containers rather than one container per srun command.
     * Add some regression tests.
     * Add srun pack job environment variables when performing job allocation.
+ -- Work for heterogeneous job support (complete solution in v17.11):
+    * Add support to sched/backfill for concurrent allocation of all pack job
+      components including support of --time-min option.
 
 * Changes in Slurm 17.11.0pre1
 ==============================

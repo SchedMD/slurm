@@ -180,6 +180,8 @@ static int  _attempt_backfill(void);
 static int  _clear_job_start_times(void *x, void *arg);
 static int  _clear_qos_blocked_times(void *x, void *arg);
 static void _do_diag_stats(struct timeval *tv1, struct timeval *tv2);
+static uint32_t _get_job_max_tl(struct job_record *job_ptr, time_t now,
+				node_space_map_t *node_space);
 static bool _job_part_valid(struct job_record *job_ptr,
 			    struct part_record *part_ptr);
 static void _load_config(void);
@@ -194,7 +196,7 @@ static void _pack_start_clear(void);
 static time_t _pack_start_find(struct job_record *job_ptr);
 static void _pack_start_set(struct job_record *job_ptr, time_t latest_start,
 			    uint32_t comp_time_limit);
-static void _pack_start_test(void);
+static void _pack_start_test(node_space_map_t *node_space);
 static void _reset_job_time_limit(struct job_record *job_ptr, time_t now,
 				  node_space_map_t *node_space);
 static int  _start_job(struct job_record *job_ptr, bitstr_t *avail_bitmap);
@@ -1981,11 +1983,11 @@ skip_start:
 			 * or else end_time will be small (ie. 1969). */
 			if (job_ptr->start_time) {
 				if (job_ptr->time_limit == INFINITE)
-					hard_limit = YEAR_MINUTES;
+					hard_limit = YEAR_SECONDS;
 				else
-					hard_limit = job_ptr->time_limit;
+					hard_limit = job_ptr->time_limit * 60;
 				job_ptr->end_time = job_ptr->start_time +
-					(hard_limit * 60);
+						    hard_limit;
 				/* Only set if start_time. end_time must be set
 				 * beforehand for _reset_job_time_limit. */
 				if (reset_time) {
@@ -2077,7 +2079,11 @@ skip_start:
 				}
 				continue;
 			}
-		} else {
+		} else if (job_ptr->start_time <= now) {
+			uint32_t max_time_limit;
+			max_time_limit =_get_job_max_tl(job_ptr, now,
+						        node_space);
+			comp_time_limit = MIN(comp_time_limit, max_time_limit);
 			_pack_start_set(job_ptr, job_ptr->start_time,
 					comp_time_limit);
 			_set_job_time_limit(job_ptr, orig_time_limit);
@@ -2255,6 +2261,9 @@ skip_start:
 				goto next_task;
 		}
 	}
+
+	_pack_start_test(node_space);
+
 	xfree(bf_part_jobs);
 	xfree(bf_part_resv);
 	xfree(bf_part_ptr);
@@ -2278,8 +2287,6 @@ skip_start:
 	}
 	xfree(node_space);
 	FREE_NULL_LIST(job_queue);
-
-	_pack_start_test();
 
 	gettimeofday(&bf_time2, NULL);
 	_do_diag_stats(&bf_time1, &bf_time2);
@@ -2382,10 +2389,49 @@ static int _start_job(struct job_record *job_ptr, bitstr_t *resv_bitmap)
 	return rc;
 }
 
-/* Reset a job's time limit (and end_time) as high as possible
+/*
+ * Compute a job's maximum time based upon conflicts in resources
+ * planned for use by other jobs and that job's min/max time limit
+ * Return NO_VAL if no restriction
+ */
+static uint32_t _get_job_max_tl(struct job_record *job_ptr, time_t now,
+				node_space_map_t *node_space)
+{
+	int32_t j;
+	time_t comp_time = 0;
+	uint32_t max_tl = NO_VAL;
+
+	if (job_ptr->time_min == 0)
+		return max_tl;
+
+	for (j = 0; ; ) {
+		if ((node_space[j].begin_time != now) && // No current conflicts
+		    (node_space[j].begin_time < job_ptr->end_time) &&
+		    (!bit_super_set(job_ptr->node_bitmap,
+				    node_space[j].avail_bitmap))) {
+			/* Job overlaps pending job's resource reservation */
+			if ((comp_time == 0) ||
+			    (comp_time > node_space[j].begin_time))
+				comp_time = node_space[j].begin_time;
+		}
+		if ((j = node_space[j].next) == 0)
+			break;
+	}
+
+	if (comp_time != 0) {
+		max_tl = (comp_time - now + 59) / 60;
+		comp_time = MAX(max_tl, job_ptr->time_min);
+	}
+
+	return max_tl;
+}
+
+/*
+ * Reset a job's time limit (and end_time) as high as possible
  *	within the range job_ptr->time_min and job_ptr->time_limit.
  *	Avoid using resources reserved for pending jobs or in resource
- *	reservations */
+ *	reservations
+ */
 static void _reset_job_time_limit(struct job_record *job_ptr, time_t now,
 				  node_space_map_t *node_space)
 {
@@ -2393,8 +2439,8 @@ static void _reset_job_time_limit(struct job_record *job_ptr, time_t now,
 	uint32_t orig_time_limit = job_ptr->time_limit;
 	uint32_t new_time_limit;
 
-	for (j=0; ; ) {
-		if ((node_space[j].begin_time != now) &&
+	for (j = 0; ; ) {
+		if ((node_space[j].begin_time != now) && // No current conflicts
 		    (node_space[j].begin_time < job_ptr->end_time) &&
 		    (!bit_super_set(job_ptr->node_bitmap,
 				    node_space[j].avail_bitmap))) {
@@ -2653,14 +2699,15 @@ static time_t _pack_start_find(struct job_record *job_ptr)
 			latest_start = _pack_start_compute(map,
 							   job_ptr->job_id);
 		}
+
+		if (latest_start && (debug_flags & DEBUG_FLAG_HETERO_JOBS)) {
+			long int delay = MAX(0, latest_start - time(NULL));
+			info("Job %u+%u (%u) in partition %s expected to start in %ld secs",
+			     job_ptr->pack_job_id, job_ptr->pack_job_offset,
+			     job_ptr->job_id, job_ptr->part_ptr->name, delay);
+		}
 	}
 
-	if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
-		long int delay = MAX(0, latest_start - time(NULL));
-		info("Job %u+%u (%u) in partition %s expected to start in %ld secs",
-		     job_ptr->pack_job_id, job_ptr->pack_job_offset,
-		     job_ptr->job_id, job_ptr->part_ptr->name, delay);
-	}
 	return latest_start;
 }
 
@@ -2775,10 +2822,9 @@ static bool _pack_job_full(pack_job_map_t *map)
 /*
  * Start all components of a pack job now
  */
-static void _pack_start_now(pack_job_map_t *map)
+static void _pack_start_now(pack_job_map_t *map, node_space_map_t *node_space)
 {
-//FIXME-PACK - Flesh out this logic, times, min/max time limit, qos/acct limits, accounting, etc.
-//FIXME-PACK - Add support for job "time_min" value
+//FIXME-PACK - Flesh out this logic, qos/acct limits, accounting, etc.
 	struct job_record *job_ptr;
 	bitstr_t *avail_bitmap = NULL, *exc_core_bitmap = NULL;
 	bitstr_t *resv_bitmap = NULL;
@@ -2787,9 +2833,11 @@ static void _pack_start_now(pack_job_map_t *map)
 	int j, mcs_select, rc;
 	bool resv_overlap = false;
 	time_t now = time(NULL), start_res;
+	uint32_t hard_limit;
 
 	iter = list_iterator_create(map->pack_job_list);
 	while ((rec = (pack_job_rec_t *) list_next(iter))) {
+		bool reset_time = false;
 		job_ptr = rec->job_ptr;
 		job_ptr->part_ptr = rec->part_ptr;
 
@@ -2843,6 +2891,23 @@ static void _pack_start_now(pack_job_map_t *map)
 			      job_ptr->pack_job_id, job_ptr->pack_job_offset,
 			      job_ptr->job_id);
 		}
+		if ((rc == SLURM_SUCCESS) && job_ptr->time_min) {
+			/* Set time limit as high as possible */
+			acct_policy_alter_job(job_ptr, map->comp_time_limit);
+			job_ptr->time_limit = map->comp_time_limit;
+			reset_time = true;
+		}
+		if (job_ptr->start_time) {
+			if (job_ptr->time_limit == INFINITE)
+				hard_limit = YEAR_SECONDS;
+			else
+				hard_limit = job_ptr->time_limit * 60;
+			job_ptr->end_time = job_ptr->start_time + hard_limit;
+			/* Only set if start_time. end_time must be set
+			 * beforehand for _reset_job_time_limit. */
+			if (reset_time)
+				_reset_job_time_limit(job_ptr, now, node_space);
+		} 
 	}
 	list_iterator_destroy(iter);
 }
@@ -2850,7 +2915,7 @@ static void _pack_start_now(pack_job_map_t *map)
 /*
  * If all components of a pack job can start now, then do so
  */
-static void _pack_start_test(void)
+static void _pack_start_test(node_space_map_t *node_space)
 {
 	ListIterator iter;
 	pack_job_map_t *map;
@@ -2879,7 +2944,7 @@ static void _pack_start_test(void)
 				info("Attempting to start pack job %u",
 				     map->pack_job_id);
 			}
-			_pack_start_now(map);
+			_pack_start_now(map, node_space);
 		}
 		(void) list_for_each(map->pack_job_list, _pack_find_rec, NULL);
 	}
