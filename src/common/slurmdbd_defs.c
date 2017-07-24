@@ -371,6 +371,7 @@ extern int slurm_send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 		      req->msg_type);
 		if (slurmdbd_conn->trigger_callbacks.acct_full)
 			(slurmdbd_conn->trigger_callbacks.acct_full)();
+		free_buf(buffer);
 		rc = SLURM_ERROR;
 	}
 

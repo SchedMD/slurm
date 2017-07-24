@@ -20,6 +20,7 @@ documents those changes that are of interest to users and administrators.
  -- Better debug when slurmdbd queue is filling up in the slurmctld.
  -- Fixed truncation on scontrol show config output.
  -- Serialize updates from from the dbd to the slurmctld.
+ -- Fix memory leak in slurmctld when agent queue to the DBD has filled up.
 
 * Changes in Slurm 17.02.6
 ==========================
