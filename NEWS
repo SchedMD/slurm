@@ -24,6 +24,7 @@ documents those changes that are of interest to users and administrators.
  -- CRAY - Throttle step creation if trying to create too many steps at once.
  -- If failing after switch_g_job_init happened make sure switch_g_job_fini is
     called.
+ -- Fix minor memory leak if launch fails in the slurmstepd.
 
 * Changes in Slurm 17.02.6
 ==========================

@@ -1866,8 +1866,8 @@ fail4:
 	}
 fail3:
 	_reclaim_privileges (&sprivs);
-	FREE_NULL_LIST (exec_wait_list);
 fail2:
+	FREE_NULL_LIST(exec_wait_list);
 	io_close_task_fds(job);
 fail1:
 	pam_finish();
