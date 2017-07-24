@@ -988,6 +988,24 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("LogTimeFormat");
+	if (slurm_ctl_conf_ptr->log_fmt == LOG_FMT_ISO8601_MS)
+		key_pair->value = xstrdup("iso8601_ms");
+	else if (slurm_ctl_conf_ptr->log_fmt == LOG_FMT_ISO8601)
+		key_pair->value = xstrdup("iso8601");
+	else if (slurm_ctl_conf_ptr->log_fmt == LOG_FMT_RFC5424_MS)
+		key_pair->value = xstrdup("rfc5424_ms");
+	else if (slurm_ctl_conf_ptr->log_fmt == LOG_FMT_RFC5424)
+		key_pair->value = xstrdup("rfc5424");
+	else if (slurm_ctl_conf_ptr->log_fmt == LOG_FMT_CLOCK)
+		key_pair->value = xstrdup("clock");
+	else if (slurm_ctl_conf_ptr->log_fmt == LOG_FMT_SHORT)
+		key_pair->value = xstrdup("short");
+	else if (slurm_ctl_conf_ptr->log_fmt == LOG_FMT_THREAD_ID)
+		key_pair->value = xstrdup("thread_id");
+	list_append(ret_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("MailDomain");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->mail_domain);
 	list_append(ret_list, key_pair);

@@ -3345,6 +3345,10 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	(void) s_p_get_string(&conf->licenses, "Licenses", hashtbl);
 
 	if (s_p_get_string(&temp_str, "LogTimeFormat", hashtbl)) {
+		/*
+		 * If adding to this please update src/api/config_log.c to do
+		 * the reverse translation.
+		 */
 		if (xstrcasestr(temp_str, "iso8601_ms"))
 			conf->log_fmt = LOG_FMT_ISO8601_MS;
 		else if (xstrcasestr(temp_str, "iso8601"))
