@@ -1392,7 +1392,8 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 	    !xstrcasecmp(my_reason, row[1])) {
 		if (debug_flags & DEBUG_FLAG_DB_EVENT)
 			DB_DEBUG(mysql_conn->conn,
-				 "no change needed %u == %s and %s == %s",
+				 "no change to %s(%s) needed %u == %s and %s == %s",
+				 node_ptr->name, mysql_conn->cluster_name,
 				 node_ptr->node_state, row[0],
 				 my_reason, row[1]);
 		xfree(my_reason);
