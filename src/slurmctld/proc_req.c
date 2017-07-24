@@ -3977,15 +3977,27 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 			unlock_slurmctld(job_write_lock);
 			if (error_code == ESLURM_JOB_SETTING_DB_INX) {
 				if (i >= db_inx_max_cnt) {
-					info("%s: can't update job, waited %d seconds for job %s to get a db_index, but it hasn't happened yet.  Giving up and letting the user know.",
-					      __func__, db_inx_max_cnt,
-					      job_desc_msg->job_id_str);
+					if (job_desc_msg->job_id_str) {
+						info("%s: can't update job, waited %d seconds for job %s to get a db_index, but it hasn't happened yet.  Giving up and informing the user",
+						      __func__, db_inx_max_cnt,
+						      job_desc_msg->job_id_str);
+					} else {
+						info("%s: can't update job, waited %d seconds for job %u to get a db_index, but it hasn't happened yet.  Giving up and informing the user",
+						      __func__, db_inx_max_cnt,
+						      job_desc_msg->job_id);
+					}
 					slurm_send_rc_msg(msg, error_code);
 					break;
 				}
 				i++;
-				debug("%s: We cannot update job %s at the moment, we are setting the db index, waiting",
-				      __func__, job_desc_msg->job_id_str);
+				if (job_desc_msg->job_id_str) {
+					debug("%s: We cannot update job %s at the moment, we are setting the db index, waiting",
+					      __func__,
+					      job_desc_msg->job_id_str);
+				} else {
+					debug("%s: We cannot update job %u at the moment, we are setting the db index, waiting",
+					      __func__, job_desc_msg->job_id);
+				}
 				sleep(1);
 			}
 		}
@@ -3994,11 +4006,23 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 
 	/* return result */
 	if (error_code) {
-		info("_slurm_rpc_update_job JobId=%s uid=%d: %s",
-		     job_desc_msg->job_id_str, uid, slurm_strerror(error_code));
+		if (job_desc_msg->job_id_str) {
+			info("%s: JobId=%s uid=%d: %s", __func__,
+			     job_desc_msg->job_id_str, uid,
+			     slurm_strerror(error_code));
+		} else {
+			info("%s: JobId=%u uid=%d: %s", __func__,
+			     job_desc_msg->job_id, uid,
+			     slurm_strerror(error_code));
+		}
 	} else {
-		info("_slurm_rpc_update_job complete JobId=%s uid=%d %s",
-		     job_desc_msg->job_id_str, uid, TIME_STR);
+		if (job_desc_msg->job_id_str) {
+			info("%s: complete JobId=%s uid=%d %s", __func__,
+			     job_desc_msg->job_id_str, uid, TIME_STR);
+		} else {
+			info("%s: complete JobId=%u uid=%d %s", __func__,
+			     job_desc_msg->job_id, uid, TIME_STR);
+		}
 		/* Below functions provide their own locking */
 		schedule_job_save();
 		schedule_node_save();
