@@ -426,7 +426,7 @@ static display_data_t display_data_job[] = {
 	{G_TYPE_STRING, SORTID_GRES, "Gres",
 	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_LAST_SCHED_EVAL, "Last Sched Eval",
-	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_LICENSES, "Licenses",
 	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_MCS_LABEL, "MCS_Label",
