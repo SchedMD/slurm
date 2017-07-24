@@ -1229,7 +1229,7 @@ job_manager(stepd_step_rec_t *job)
 		(void) log_ctld(LOG_LEVEL_ERROR, err_msg);
 		xfree(err_msg);
 		io_close_task_fds(job);
-		goto fail2;
+		goto fail3;
 	}
 
 	/* fork necessary threads for MPI */
@@ -1241,7 +1241,7 @@ job_manager(stepd_step_rec_t *job)
 			   job->jobid, job->stepid, conf->hostname);
 		(void) log_ctld(LOG_LEVEL_ERROR, err_msg);
 		xfree(err_msg);
-		goto fail2;
+		goto fail3;
 	}
 
 	if (!job->batch && job->accel_bind_type && (job->node_tasks <= 1))
@@ -1267,7 +1267,7 @@ job_manager(stepd_step_rec_t *job)
 	if ((rc = _fork_all_tasks(job, &io_initialized)) < 0) {
 		debug("_fork_all_tasks failed");
 		rc = ESLURMD_EXECVE_FAILED;
-		goto fail2;
+		goto fail3;
 	}
 
 	/*
@@ -1277,7 +1277,7 @@ job_manager(stepd_step_rec_t *job)
 	 * launch to happen.
 	 */
 	if ((rc != SLURM_SUCCESS) || !io_initialized)
-		goto fail2;
+		goto fail3;
 
 	io_close_task_fds(job);
 
@@ -1310,6 +1310,7 @@ job_manager(stepd_step_rec_t *job)
 
 	_set_job_state(job, SLURMSTEPD_STEP_ENDING);
 
+fail3:
 	if (!job->batch &&
 	    (switch_g_job_fini(job->switch_job) < 0)) {
 		error("switch_g_job_fini: %m");
