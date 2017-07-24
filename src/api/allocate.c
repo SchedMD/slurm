@@ -390,18 +390,28 @@ slurm_job_step_create (job_step_create_request_msg_t *req,
                        job_step_create_response_msg_t **resp)
 {
 	slurm_msg_t req_msg, resp_msg;
+	int delay, rc, retry = 0;
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 	req_msg.msg_type = REQUEST_JOB_STEP_CREATE;
 	req_msg.data     = req;
-
+re_send:
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {
 	case RESPONSE_SLURM_RC:
-		if (_handle_rc_msg(&resp_msg) < 0)
+		rc = _handle_rc_msg(&resp_msg);
+		if ((rc < 0) && (errno == EAGAIN)) {
+			if (retry++ == 0) {
+				verbose("Slurm is busy, step creation delayed");
+				delay = (getpid() % 10) + 10;	/* 10-19 secs */
+			}
+			sleep(delay);
+			goto re_send;
+		}
+		if (rc < 0)
 			return SLURM_PROTOCOL_ERROR;
 		*resp = NULL;
 		break;

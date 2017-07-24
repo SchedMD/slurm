@@ -21,6 +21,7 @@ documents those changes that are of interest to users and administrators.
  -- Fixed truncation on scontrol show config output.
  -- Serialize updates from from the dbd to the slurmctld.
  -- Fix memory leak in slurmctld when agent queue to the DBD has filled up.
+ -- CRAY - Throttle step creation if trying to create too many steps at once.
 
 * Changes in Slurm 17.02.6
 ==========================
