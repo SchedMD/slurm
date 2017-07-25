@@ -88,7 +88,7 @@ int xdaemon(void)
 	if (close(devnull) < 0)
 		error("Unable to close /dev/null: %m");
 
-	return -1;
+	return 0;
 }
 
 /*
