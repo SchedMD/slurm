@@ -13625,7 +13625,8 @@ static int _test_state_dir_flag(void *x, void *arg)
 		return 0;
 	}
 
-	if (!job_ptr->batch_flag || !IS_JOB_PENDING(job_ptr))
+	if (!job_ptr->batch_flag || !IS_JOB_PENDING(job_ptr) ||
+	    (job_ptr->pack_job_offset > 0))
 		return 0;	/* No files expected */
 
 	error("Script for job %u lost, state set to FAILED", job_ptr->job_id);
