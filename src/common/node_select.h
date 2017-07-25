@@ -596,9 +596,9 @@ extern int select_g_job_ready(struct job_record *job_ptr);
 extern int select_g_job_fini(struct job_record *job_ptr);
 
 /*
- * Pass job-step signal to plugin before signalling any job steps, so that
+ * Pass job-step signal to plugin before signaling any job steps, so that
  * any signal-dependent actions can be taken.
- * IN job_ptr - job to be signalled
+ * IN job_ptr - job to be signaled
  * IN signal  - signal(7) number
  */
 extern int select_g_job_signal(struct job_record *job_ptr, int signal);

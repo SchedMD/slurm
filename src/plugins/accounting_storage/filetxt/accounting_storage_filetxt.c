@@ -719,7 +719,7 @@ extern int jobacct_storage_p_job_complete(void *db_conn,
 
 	exit_code = job_ptr->exit_code;
 	if (exit_code == 1) {
-		/* This wasn't signalled, it was set by Slurm so don't
+		/* This wasn't signaled, it was set by Slurm so don't
 		 * treat it like a signal.
 		 */
 		exit_code = 256;

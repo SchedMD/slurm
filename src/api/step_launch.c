@@ -679,7 +679,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 				uint16_t kill_wait;
 				/* Only set the time once, because we only want
 				 * to wait STEP_ABORT_TIME, no matter how many
-				 * times the condition variable is signalled.
+				 * times the condition variable is signaled.
 				 */
 				kill_wait = slurm_get_kill_wait();
 				ts.tv_sec = time(NULL) + STEP_ABORT_TIME
@@ -897,7 +897,7 @@ void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 	list_iterator_destroy(itr);
 	FREE_NULL_LIST(ret_list);
 nothing_left:
-	debug2("All tasks have been signalled");
+	debug2("All tasks have been signaled");
 
 }
 

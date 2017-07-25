@@ -575,7 +575,7 @@ extern void srun_step_missing (struct step_record *step_ptr,
 }
 
 /*
- * srun_step_signal - notify srun that a job step should be signalled
+ * srun_step_signal - notify srun that a job step should be signaled
  * NOTE: Needed on BlueGene/Q to signal runjob process
  * IN step_ptr  - pointer to the slurmctld job step record
  * IN signal - signal number

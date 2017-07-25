@@ -4775,7 +4775,7 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 
 	/* If is origin job then cancel siblings -- if they exist.
 	 * origin job = because it knows where the siblings are
-	 * If the job is running locally then just do the normal signalling */
+	 * If the job is running locally then just do the normal signaling */
 	if (!(flags & KILL_NO_SIBS) && !IS_JOB_RUNNING(job_ptr) &&
 	    job_ptr->fed_details && fed_mgr_fed_rec) {
 		uint32_t origin_id = fed_mgr_get_cluster_id(job_ptr->job_id);
@@ -4805,7 +4805,7 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 		}
 	}
 
-	/* let node select plugin do any state-dependent signalling actions */
+	/* let node select plugin do any state-dependent signaling actions */
 	select_g_job_signal(job_ptr, signal);
 	last_job_update = now;
 
@@ -5045,7 +5045,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 	last_job_update = now;
 	job_id = (uint32_t) long_id;
 	if (end_ptr[0] == '\0') {	/* Single job (or full job array) */
-		int jobs_done = 0, jobs_signalled = 0;
+		int jobs_done = 0, jobs_signaled = 0;
 		struct job_record *job_ptr_done = NULL;
 		job_ptr = find_job_record(job_id);
 		if (job_ptr && job_ptr->pack_job_list) {
@@ -5078,7 +5078,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			rc = _job_signal(job_ptr, signal, flags, uid, preempt);
 			if (rc == ESLURM_ACCESS_DENIED)
 				return rc;
-			jobs_signalled++;
+			jobs_signaled++;
 			if (rc == ESLURM_ALREADY_DONE) {
 				jobs_done++;
 				rc = SLURM_SUCCESS;
@@ -5101,7 +5101,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			    (job_ptr != job_ptr_done)) {
 				rc2 = _job_signal(job_ptr, signal, flags, uid,
 						  preempt);
-				jobs_signalled++;
+				jobs_signaled++;
 				if (rc2 == ESLURM_ALREADY_DONE) {
 					jobs_done++;
 				} else {
@@ -5110,7 +5110,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			}
 			job_ptr = job_ptr->job_array_next_j;
 		}
-		if ((rc == SLURM_SUCCESS) && (jobs_done == jobs_signalled))
+		if ((rc == SLURM_SUCCESS) && (jobs_done == jobs_signaled))
 			return ESLURM_ALREADY_DONE;
 		return rc;
 
@@ -5136,7 +5136,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		goto endit;
 	}
 
-	/* Find some job record and validate the user signalling the job */
+	/* Find some job record and validate the user signaling the job */
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
 		job_ptr = job_array_hash_j[JOB_HASH_INX(job_id)];
@@ -5284,7 +5284,7 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal, uint16_t flags)
 	kill_tasks_msg->job_id      = job_ptr->job_id;
 	kill_tasks_msg->job_step_id = NO_VAL;
 
-	/* Encode the flags for slurm stepd to know what steps get signalled */
+	/* Encode the flags for slurm stepd to know what steps get signaled */
 	if (flags == KILL_FULL_JOB)
 		z = KILL_FULL_JOB << 24;
 	else if (flags == KILL_JOB_BATCH)
@@ -8065,7 +8065,7 @@ void job_time_limit(void)
 						  job_ptr->warn_flags, 0,
 						  false);
 
-				/* mark job as signalled */
+				/* mark job as signaled */
 				job_ptr->warn_flags |= WARN_SENT;
 			}
 			if (job_ptr->end_time <= now) {
@@ -8115,7 +8115,7 @@ void job_time_limit(void)
 						  job_ptr->warn_flags, 0,
 						  false);
 
-				/* mark job as signalled */
+				/* mark job as signaled */
 				job_ptr->warn_flags |= WARN_SENT;
 			}
 			if ((job_ptr->mail_type & MAIL_JOB_TIME100) &&

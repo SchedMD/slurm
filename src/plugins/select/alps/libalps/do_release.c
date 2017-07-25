@@ -76,7 +76,7 @@ int basil_signal_apids(int32_t rsvn_id, int signal, struct basil_inventory *inv)
 }
 
 /**
- * basil_safe_release  -  release reservation after signalling job steps
+ * basil_safe_release  -  release reservation after signaling job steps
  * @rsvn_id:	reservation to release
  * @inv:	recent Basil Inventory, or NULL to generate internally
  * Returns 0 if ok, a negative %basil_error otherwise.

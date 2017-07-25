@@ -177,7 +177,7 @@ See <b>doc/man/man5/slurm.conf.5</b> and the man pages for other configuration f
 for more details.
 <b>init.d.slurm</b> is a script that determines which
 Slurm daemon(s) should execute on any node based upon the configuration file contents.
-It will also manage these daemons: starting, signalling, restarting, and stopping them.</p>
+It will also manage these daemons: starting, signaling, restarting, and stopping them.</p>
 
 <h2>Test Suite</h2>
 <p>The <b>testsuite</b> files use a DejaGnu framework for testing. These tests

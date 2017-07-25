@@ -1439,7 +1439,7 @@ static void _cleanup_removed_origin_jobs()
 			continue;
 
 		/* Free the resp_host so that the srun doesn't get
-		 * signalled about the job going away. The job could
+		 * signaled about the job going away. The job could
 		 * still run on another sibling. */
 		if (running_remotely ||
 		    (origin_id != sibling_id))
@@ -1529,7 +1529,7 @@ static void _cleanup_removed_cluster_jobs(slurmdb_cluster_rec_t *cluster)
 			      IS_JOB_RUNNING(job_ptr))) {
 
 				/* Free the resp_host so that the srun doesn't
-				 * get signalled about the job going away. The
+				 * get signaled about the job going away. The
 				 * job could still run on another sibling. */
 				xfree(job_ptr->resp_host);
 

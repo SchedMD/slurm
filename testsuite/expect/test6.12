@@ -251,7 +251,7 @@ if {$exit_code != 0} {
 }
 
 #
-# Submit another job to be signalled with steps
+# Submit another job to be signaled with steps
 #
 set job_id      0
 file delete $file_out $file_err

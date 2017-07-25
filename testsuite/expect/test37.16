@@ -572,7 +572,7 @@ expect {
 	eof {}
 }
 if {$matches != 0} {
-	log_error "srun got signalled when it shouldn't have."
+	log_error "srun got signaled when it shouldn't have."
 	end_it 1
 }
 set timeout $old_timeout

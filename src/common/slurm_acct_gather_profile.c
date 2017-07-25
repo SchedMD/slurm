@@ -171,7 +171,7 @@ static void *_timer_thread(void *args)
 				continue;
 			if (!acct_gather_profile_test())
 				break;	/* Shutting down */
-			debug2("profile signalling type %s",
+			debug2("profile signaling type %s",
 			       acct_gather_profile_type_t_name(i));
 
 			/* signal poller to start */

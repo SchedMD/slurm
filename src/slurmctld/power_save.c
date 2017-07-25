@@ -494,7 +494,7 @@ static void _reap_procs(void)
 			} else
 				ping_nodes_now = true;
 		} else if (WIFSIGNALED(status)) {
-			error("power_save: program signalled: %s",
+			error("power_save: program signaled: %s",
 			      strsignal(WTERMSIG(status)));
 		}
 

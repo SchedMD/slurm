@@ -311,7 +311,7 @@ int eio_handle_mainloop(eio_handle_t *eio)
 			goto done;
 
 		/*
-		 *  Setup eio handle signalling fd
+		 *  Setup eio handle signaling fd
 		 */
 		pollfds[nfds].fd     = eio->fds[0];
 		pollfds[nfds].events = POLLIN;

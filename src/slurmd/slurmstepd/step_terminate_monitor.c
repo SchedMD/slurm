@@ -99,7 +99,7 @@ void step_terminate_monitor_stop(void)
 	}
 
 	stop_flag = 1;
-	debug("step_terminate_monitor_stop signalling condition");
+	debug("step_terminate_monitor_stop signaling condition");
 	slurm_cond_signal(&cond);
 	slurm_mutex_unlock(&lock);
 

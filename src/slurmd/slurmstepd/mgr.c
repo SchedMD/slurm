@@ -307,7 +307,7 @@ static uint32_t _get_exit_code(stepd_step_rec_t *job)
 			debug("get_exit_code task %u called abort", i);
 			break;
 		}
-		/* If signalled we need to cycle thru all the
+		/* If signaled we need to cycle thru all the
 		 * tasks in case one of them called abort
 		 */
 		if (WIFSIGNALED(job->task[i]->estatus)) {
@@ -938,7 +938,7 @@ _bit_getrange(int start, int size, int *first, int *last)
 /*
  * Send as many step completion messages as necessary to represent
  * all completed nodes in the job step.  There may be nodes that have
- * not yet signalled their completion, so there will be gaps in the
+ * not yet signaled their completion, so there will be gaps in the
  * completed node bitmap, requiring that more than one message be sent.
  */
 static void

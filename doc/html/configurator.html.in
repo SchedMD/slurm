@@ -752,7 +752,7 @@ from multiple Slurm-managed clusters.<br>
 
 <H2>Process ID Logging</H2>
 Define the location into which we can record the daemon's process ID.
-This is used for locate the appropriate daemon for signalling.
+This is used for locate the appropriate daemon for signaling.
 Specify a specify the fully qualified pathname for the file.
 <P>
 <input type="text" name="slurmctld_pid_file" value="/var/run/slurmctld.pid">

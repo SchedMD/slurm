@@ -4715,7 +4715,7 @@ _rpc_signal_job(slurm_msg_t *msg)
 		}
 
 		if (stepd->stepid == SLURM_BATCH_SCRIPT) {
-			debug2("batch script itself not signalled");
+			debug2("batch script itself not signaled");
 			continue;
 		}
 
@@ -5392,7 +5392,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	}
 
 	/*
-	 * Before signalling steps, if the job has any steps that are still
+	 * Before signaling steps, if the job has any steps that are still
 	 * in the process of fork/exec/check in with slurmd, wait on a condition
 	 * var for the start.  Otherwise a slow-starting step can miss the
 	 * job termination message and run indefinitely.

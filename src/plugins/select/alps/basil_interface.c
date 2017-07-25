@@ -1060,7 +1060,7 @@ extern int do_basil_confirm(struct job_record *job_ptr)
 
 /**
  * do_basil_signal  -  pass job signal on to any APIDs
- * IN job_ptr - job to be signalled
+ * IN job_ptr - job to be signaled
  * IN signal  - signal(7) number
  * Only signal job if an ALPS reservation exists (non-0 reservation ID).
  */
@@ -1099,7 +1099,7 @@ void *_sig_basil(void *args)
 
 /**
  * queue_basil_signal  -  queue job signal on to any APIDs
- * IN job_ptr - job to be signalled
+ * IN job_ptr - job to be signaled
  * IN signal  - signal(7) number
  * IN delay   - how long to delay the signal, in seconds
  * Only signal job if an ALPS reservation exists (non-0 reservation ID).

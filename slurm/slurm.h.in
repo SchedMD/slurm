@@ -2880,7 +2880,7 @@ typedef struct slurm_ctl_conf {
 	char *unkillable_program; /* program run by the slurmstepd when
 				   * processes in a job step are unkillable */
 	uint16_t unkillable_timeout; /* time in seconds, after processes in a
-				      * job step have been signalled, before
+				      * job step have been signaled, before
 				      * they are considered "unkillable". */
 	uint16_t use_pam;	/* enable/disable PAM support */
 	uint16_t use_spec_resources; /* enable/disable job control over
