@@ -65,6 +65,9 @@ documents those changes that are of interest to users and administrators.
  -- Work for heterogeneous job support (complete solution in v17.11):
     * Add support to sched/backfill for concurrent allocation of all pack job
       components including support of --time-min option.
+ -- Clear a job's "wait reason" value of BeginTime" after that time has passed.
+    Previously a readon of "BeginTime" could be reported long after the job's
+    requested begin time had passed.
 
 * Changes in Slurm 17.11.0pre1
 ==============================
