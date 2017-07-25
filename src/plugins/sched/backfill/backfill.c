@@ -121,12 +121,13 @@ typedef struct node_space_map {
 typedef struct pack_job_rec {
 	uint32_t job_id;
 	struct job_record *job_ptr;
-	time_t latest_start;
+	time_t latest_start;		/* Time when expected to start */
 	struct part_record *part_ptr;
 } pack_job_rec_t;
 
 typedef struct pack_job_map {
 	uint32_t comp_time_limit;	/* Time limit for pack job */
+	time_t prev_start;		/* Time when expected to start from last test */
 	uint32_t pack_job_id;
 	List pack_job_list;		/* List of pack_job_rec_t */
 } pack_job_map_t;
@@ -2079,11 +2080,13 @@ skip_start:
 				}
 				continue;
 			}
-		} else if (job_ptr->start_time <= now) {
+		} else if (job_ptr->pack_job_id != 0) {
 			uint32_t max_time_limit;
 			max_time_limit =_get_job_max_tl(job_ptr, now,
 						        node_space);
 			comp_time_limit = MIN(comp_time_limit, max_time_limit);
+			job_ptr->node_cnt_wag =
+					MAX(bit_set_count(avail_bitmap), 1);
 			_pack_start_set(job_ptr, job_ptr->start_time,
 					comp_time_limit);
 			_set_job_time_limit(job_ptr, orig_time_limit);
@@ -2652,24 +2655,40 @@ static int _pack_find_rec(void *x, void *key)
 }
 
 /*
- * Remove all elements from pack_job_list. This is used to periodically clear
+ * Remove vestigial elements from pack_job_list. For still active element,
+ * clear the previously computted start time. This is used to periodically clear
  * history so that heterogeneous/pack jobs do not keep getting deferred based
  * upon old system state
  */
 static void _pack_start_clear(void)
 {
-	(void) list_delete_all(pack_job_list, _pack_find_map, NULL);
+	pack_job_map_t *map;
+	ListIterator iter;
+
+	iter = list_iterator_create(pack_job_list);
+	while ((map = (pack_job_map_t *) list_next(iter))) {
+		if (map->prev_start == 0) {
+			list_remove(iter);
+		} else {
+			map->prev_start = 0;
+			(void) list_delete_all(map->pack_job_list,
+					       _pack_find_rec, NULL);
+		}
+	}
+	list_iterator_destroy(iter);
 }
 
 /*
  * For a given pack_job_map_t record, determine the earliest that it can start,
- * which is the time at which it's latest starting component begins
+ * which is the time at which it's latest starting component begins. The
+ * "exclude_job_id" is used to exclude a pack job component currntly being
+ * tested to start, presumably in a different partition.
  */
 static time_t _pack_start_compute(pack_job_map_t *map, uint32_t exclude_job_id)
 {
 	ListIterator iter;
 	pack_job_rec_t *rec;
-	time_t latest_start = (time_t) 0;
+	time_t latest_start = map->prev_start;
 
 	iter = list_iterator_create(map->pack_job_list);
 	while ((rec = (pack_job_rec_t *) list_next(iter))) {
@@ -2683,8 +2702,11 @@ static time_t _pack_start_compute(pack_job_map_t *map, uint32_t exclude_job_id)
 }
 
 /*
- * Return the earliest that a job can start based upon other components of
+ * Return the earliest that a job can start based upon _other_ components of
  * that same heterogeneous/pack job. Return 0 if no limitation.
+ *
+ * If the job's state reason is BeginTime (the way all pack jobs start) and that
+ * time is passed, then clear the reason field.
  */
 static time_t _pack_start_find(struct job_record *job_ptr)
 {
@@ -2820,11 +2842,76 @@ static bool _pack_job_full(pack_job_map_t *map)
 }
 
 /*
+ * Determine if all components of a pack job can be started now or are
+ * prevented from doing so because of association or QOS limits.
+ * Return true if they can all start.
+ */
+static bool _pack_job_limit_check(pack_job_map_t *map, time_t now)
+{
+	struct job_record *job_ptr;
+	pack_job_rec_t *rec;
+	ListIterator iter;
+	int begun_jobs = 0, slurmctld_tres_size;
+	bool runnable = true;
+	uint32_t selected_node_cnt;
+	uint64_t tres_req_cnt[slurmctld_tres_cnt];
+
+	slurmctld_tres_size = sizeof(uint64_t) * slurmctld_tres_cnt;
+	iter = list_iterator_create(map->pack_job_list);
+	while ((rec = (pack_job_rec_t *) list_next(iter))) {
+		job_ptr = rec->job_ptr;
+		job_ptr->part_ptr = rec->part_ptr;
+		selected_node_cnt = job_ptr->node_cnt_wag;
+		memcpy(tres_req_cnt, job_ptr->tres_req_cnt,
+		       slurmctld_tres_size);
+//FIXME-PACK - Can we set valid wait_reason values for the various components, esp BeginTime
+		tres_req_cnt[TRES_ARRAY_CPU] = (uint64_t)(job_ptr->total_cpus ?
+					       job_ptr->total_cpus :
+					       job_ptr->details->min_cpus);
+		tres_req_cnt[TRES_ARRAY_MEM] = job_get_tres_mem(
+					       job_ptr->details->pn_min_memory,
+					       tres_req_cnt[TRES_ARRAY_CPU],
+					       selected_node_cnt);
+		tres_req_cnt[TRES_ARRAY_NODE] = (uint64_t)selected_node_cnt;
+		gres_set_job_tres_cnt(job_ptr->gres_list, selected_node_cnt,
+				      tres_req_cnt, false);
+
+		if (acct_policy_job_runnable_pre_select(job_ptr) &&
+		    acct_policy_job_runnable_post_select(job_ptr,
+							 tres_req_cnt)) {
+			begun_jobs++;
+			xfree(job_ptr->tres_alloc_cnt);
+			job_ptr->tres_alloc_cnt = xmalloc(slurmctld_tres_size);
+			memcpy(job_ptr->tres_alloc_cnt, tres_req_cnt,
+			       slurmctld_tres_size);
+			acct_policy_job_begin(job_ptr);
+
+		} else {
+			runnable = false;
+			break;
+		}
+	}
+
+	list_iterator_reset(iter);
+	while ((rec = (pack_job_rec_t *) list_next(iter))) {
+		job_ptr = rec->job_ptr;
+		if (begun_jobs-- > 0) {
+			time_t end_time_exp = job_ptr->end_time_exp;
+			job_ptr->end_time_exp = now;
+			acct_policy_job_fini(job_ptr);
+			job_ptr->end_time_exp = end_time_exp;
+			xfree(job_ptr->tres_alloc_cnt);
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return runnable;
+}
+/*
  * Start all components of a pack job now
  */
 static void _pack_start_now(pack_job_map_t *map, node_space_map_t *node_space)
 {
-//FIXME-PACK - Flesh out this logic, qos/acct limits, accounting, etc.
 	struct job_record *job_ptr;
 	bitstr_t *avail_bitmap = NULL, *exc_core_bitmap = NULL;
 	bitstr_t *resv_bitmap = NULL;
@@ -2887,6 +2974,7 @@ static void _pack_start_now(pack_job_map_t *map, node_space_map_t *node_space)
 			}
 		} else {
 			fed_mgr_job_unlock(job_ptr);
+//FIXME-PACK - Make sure this can start independently later
 			error("Pack job %u+%u (%u) failed to start",
 			      job_ptr->pack_job_id, job_ptr->pack_job_offset,
 			      job_ptr->job_id);
@@ -2920,7 +3008,6 @@ static void _pack_start_test(node_space_map_t *node_space)
 	ListIterator iter;
 	pack_job_map_t *map;
 	time_t now = time(NULL);
-	time_t latest_start;
 
 	iter = list_iterator_create(pack_job_list);
 	while ((map = (pack_job_map_t *) list_next (iter))) {
@@ -2929,24 +3016,34 @@ static void _pack_start_test(node_space_map_t *node_space)
 				info("Pack job %u has indefinite start time",
 				     map->pack_job_id);
 			}
+			map->prev_start = now + YEAR_SECONDS;
 			continue;
 		}
 
-		latest_start = _pack_start_compute(map, 0);
-		if (latest_start > now) {
+		map->prev_start = _pack_start_compute(map, 0);
+		if (map->prev_start > now) {
 			if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
 				info("Pack job %u should be able to start in %u seconds",
 				     map->pack_job_id,
-				     (uint32_t) (latest_start - now));
+				     (uint32_t) (map->prev_start - now));
 			}
-		} else {
+			continue;
+		}
+
+		if (!_pack_job_limit_check(map, now)) {
 			if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
-				info("Attempting to start pack job %u",
+				info("Pack job %u prevented from starting by account/QOS limit",
 				     map->pack_job_id);
 			}
-			_pack_start_now(map, node_space);
+			map->prev_start = now + YEAR_SECONDS;
+			continue;
 		}
-		(void) list_for_each(map->pack_job_list, _pack_find_rec, NULL);
+
+		if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
+			info("Attempting to start pack job %u",
+			     map->pack_job_id);
+		}
+		_pack_start_now(map, node_space);
 	}
 	list_iterator_destroy(iter);
 }

@@ -383,8 +383,17 @@ mode is used in the next iteration in order to consider system status changes
 which might permit the heterogeneous to be initiated at an earlier time than
 previously determined.</p>
 
+<p>Each component of a heterogeneous job counts as a "job" with respect to
+resource limits.
+Also note that a heterogeneous job may be submitted to Slurm that can not be
+started with the current limits.
+For example, a user might have a limit of 2 concurrent running jobs and submit
+a heterogeneous job with 3 components.
+Such a situation will have an adverse effect upon scheduling other jobs,
+especially other heterogeneous jobs.</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 19 July 2017</p>
+<p style="text-align:center;">Last modified 25 July 2017</p>
 
 <!--#include virtual="footer.txt"-->
