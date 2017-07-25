@@ -194,7 +194,7 @@ static int  _pack_find_map(void *x, void *key);
 static void _pack_map_del(void *x);
 static void _pack_rec_del(void *x);
 static void _pack_start_clear(void);
-static time_t _pack_start_find(struct job_record *job_ptr);
+static time_t _pack_start_find(struct job_record *job_ptr, time_t now);
 static void _pack_start_set(struct job_record *job_ptr, time_t latest_start,
 			    uint32_t comp_time_limit);
 static void _pack_start_test(node_space_map_t *node_space);
@@ -1238,7 +1238,7 @@ static int _attempt_backfill(void)
 		job_ptr->part_ptr = part_ptr;
 		job_ptr->priority = bf_job_priority;
 		mcs_select = slurm_mcs_get_select(job_ptr);
-		pack_time = _pack_start_find(job_ptr);
+		pack_time = _pack_start_find(job_ptr, now);
 		if (pack_time > (now + backfill_window))
 			continue;
 
@@ -2708,7 +2708,7 @@ static time_t _pack_start_compute(pack_job_map_t *map, uint32_t exclude_job_id)
  * If the job's state reason is BeginTime (the way all pack jobs start) and that
  * time is passed, then clear the reason field.
  */
-static time_t _pack_start_find(struct job_record *job_ptr)
+static time_t _pack_start_find(struct job_record *job_ptr, time_t now)
 {
 	pack_job_map_t *map;
 	time_t latest_start = (time_t) 0;
@@ -2720,6 +2720,23 @@ static time_t _pack_start_find(struct job_record *job_ptr)
 		if (map) {
 			latest_start = _pack_start_compute(map,
 							   job_ptr->job_id);
+		}
+
+		/*
+		 * All pack jobs are submitted with a begin time in the future
+		 * so that all components can be submitted before any of them
+		 * are scheduled, but we want to clear the BeginTime reason
+		 * as soon as possible to avoid confusing users
+		 */
+		if (job_ptr->details->begin_time <= now) {
+			if (job_ptr->state_reason == WAIT_TIME) {
+				job_ptr->state_reason = WAIT_NO_REASON;
+				last_job_update = now;
+			}
+			if (job_ptr->state_reason_prev == WAIT_TIME) {
+				job_ptr->state_reason_prev = WAIT_NO_REASON;
+				last_job_update = now;
+			}
 		}
 
 		if (latest_start && (debug_flags & DEBUG_FLAG_HETERO_JOBS)) {
@@ -2864,7 +2881,6 @@ static bool _pack_job_limit_check(pack_job_map_t *map, time_t now)
 		selected_node_cnt = job_ptr->node_cnt_wag;
 		memcpy(tres_req_cnt, job_ptr->tres_req_cnt,
 		       slurmctld_tres_size);
-//FIXME-PACK - Can we set valid wait_reason values for the various components, esp BeginTime
 		tres_req_cnt[TRES_ARRAY_CPU] = (uint64_t)(job_ptr->total_cpus ?
 					       job_ptr->total_cpus :
 					       job_ptr->details->min_cpus);
