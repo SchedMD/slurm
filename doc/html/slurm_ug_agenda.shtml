@@ -16,7 +16,63 @@ the reception on Sunday evening, plus dinner on Monday evening.<br>
 
 <a name="hotels"><h1>Hotels</h1></a>
 
-<p>More information forthcoming.</p>
+<p>
+<h3>Berkeley Lab Guest House</h3>
+<ul>
+<li>One Cyclotron Road, Building 23</li>
+<li>Berkeley, CA 94720</li>
+<li>(510) 495-8000</li>
+<li><a href="http://berkeleylabguesthouse.org/index.html">http://berkeleylabguesthouse.org/index.html</a></li>
+<li>If you have a Lab, DOE, UC or Alumni email, you can self-sponsor and put your details for the Contact/Host. If you are a UC guest traveling on federal government per diem, please call us directly at (510) 495-8000 to book your room.</li>
+<li>Guests of the Guest House will get Site Access/parking via the Guest House.</li>
+</ul>
+</P>
+
+<p>
+<h3>Downtown Berkeley Inn</h3>
+<ul>
+<li>2001 Bancroft Way</li>
+<li>Berkeley, CA 94704</li>
+<li>Phone: (510) 843-4043</li>
+<li><a href="http://www.downtownberkeleyinn.com">http://www.downtownberkeleyinn.com</a></li>
+</ul>
+</p>
+
+<p>
+<h3>Berkeley Faculty Club</h3>
+<ul>
+<li>University of California</li>
+<li>Berkeley, CA 94720-6050</li>
+<li><a href="http://www.berkeleyfacultyclub.com/Default.aspx?p=DynamicModule&pageid=342625&ssid=243932&vnf=1">http://www.berkeleyfacultyclub.com</a></li>
+</ul>
+</p>
+
+<p>
+<h3>Hotel Durant</h3>
+<ul>
+<li>2600 Durant Avenue</li>
+<li>Berkeley, CA 94702</li>
+<li>Direct: (510) 845-8981</li>
+<li>Reservations: 800-238-7268</li>
+<li>Reservations@HotelDurant.com</li>
+<li><a href="http://hoteldurantberkeley.com">http://hoteldurantberkeley.com</a></li>
+</ul>
+</p>
+
+<p>
+<h3>Berkeley Marina DoubleTree</h3>
+<ul>
+<li><a href="http://doubletree3.hilton.com/en/hotels/california/doubletree-by-hilton-hotel-berkeley-marina-JBKCADT/index.html">http://doubletree3.hilton.com</a></li>
+</ul>
+</p>
+
+<p>
+<h3>Hotel Shattuck Plaza</h3>
+<ul>
+<li><a href="http://www.hotelshattuckplaza.com">http://www.hotelshattuckplaza.com</a></li>
+</ul>
+</p>
+
 
 <a name="agenda"><h1>Agenda</h1></a>
 
@@ -38,19 +94,6 @@ and site reports.</p>
 
 <h2>Monday, 25 September 2017</h2>
 
-<ul>
-<li>Technical Program</li>
-<li>Dinner</li>
-</ul>
-
-<h2>Tuesday, 26 September 2017</h2>
-
-<ul>
-<li>Technical Program</li>
-</ul>
-
-<!--
-
 <table width="100%" border=1 cellspacing=0 cellpadding=4>
 
 <tr>
@@ -61,31 +104,30 @@ and site reports.</p>
  </tr>
 
 <tr><td bgcolor="#F0F1C9">08:00 - 08:30</td><td colspan="3" bgcolor="#F0F1C9">Registration </td></tr>
-<tr><td nowrap>08:30 - 08:45</td><td>Welcome</td><td>Floros</td><td>Welcome</td></tr>
-<tr><td nowrap>08:45 - 09:30</td><td>Keynote</td><td>Cournia</td><td>Computer-aided drug design for novel anti-cancer agents</td></tr>
-<tr><td nowrap>09:30 - 10:00</td><td>Tutorial </td><td>Sanchez</td><td>Slurm Overview</td></tr>
+<tr><td nowrap>08:30 - 08:45</td><td>Welcome</td><td>TBD</td><td>Welcome</td></tr>
+<tr><td nowrap>08:45 - 09:30</td><td>Keynote</td><td>TBD</td><td>TBD</td></tr>
+<tr><td nowrap>09:30 - 10:00</td><td>Tutorial </td><td>Wickberg</td><td>Slurm Introduction</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">10:00 - 10:20</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
-<tr><td nowrap>10:20 - 10:50</td><td>Technical</td><td>Auble, Georgiou</td><td>Overview of Slurm Version 16.05</td></tr>
-<tr><td nowrap>10:50 - 11:20</td><td>Technical</td><td>Roy</td><td>MCS (Multi-Category Security) Plugin</td></tr>
-<tr><td nowrap>11:20 - 11:50</td><td>Technical</td><td>Paul</td><td>Burst Buffer Integration and Usage with Slurm</td></tr>
+<tr><td nowrap>10:20 - 10:50</td><td>Technical</td><td>Senator</td><td>A /resource-manager file system (rmfs)</td></tr>
+<tr><td nowrap>10:50 - 11:20</td><td>Technical</td><td>Christiansen, Auble</td><td>Federated Cluster Support</td></tr>
+<tr><td nowrap>11:20 - 11:50</td><td>Technical</td><td>Lalli, Quan</td><td>Utilizing Slurm and Passive Nagios Plugins for Scalable KNL Compute Node Monitoring</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">11:50 - 12:50</td><td colspan="3" bgcolor="#F0F1C9">Lunch</td></tr>
-<tr><td nowrap>12:50 - 13:20</td><td>Technical</td><td>Mor&iacute;&ntilde;igo</td><td>Slurm Configuration Impact on Benchmarking</td></tr>
-<tr><td nowrap>13:20 - 13:50</td><td>Technical</td><td>Fenoy</td><td>Real Time Performance Monitoring</td></tr>
-<tr><td nowrap>13:50 - 14:20</td><td>Technical</td><td>Alexandre</td><td>Optimising HPC resource allocation through monitoring</td></tr>
-<tr><td nowrap bgcolor="#F0F1C9">14:20 - 14:40</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
-<tr><td nowrap>14:40 - 15:10</td><td>Technical</td><td>Glesser</td><td>Simunix, a large scale platform simulator</td></tr>
-<tr><td nowrap>15:10 - 15:40</td><td>Site Report</td><td>Cardo</td><td>Swiss National Supercomputer Centre (CSCS) Site Report</td></tr>
-<tr><td nowrap>15:40 - 16:10</td><td>Technical</td><td>Guldmyr</td><td>Configure a Slurm cluster with Ansible</td></tr>
+<tr><td nowrap>12:50 - 13:40</td><td>Technical</td><td>Wickberg</td><td>Field Notes From the Frontlines of Slurm Support</td></tr>
+<tr><td nowrap>13:40 - 14:10</td><td>Technical</td><td>Brophy, Perry</td><td>TRES capability utilized to introduce luster and interconnect ofed accounting statistics</td></tr>
+<tr><td nowrap>14:10 - 14:40</td><td>Technical</td><td>Jette, Krause</td><td>Slurm as a Build Block for Modular Supercomputing with Heterogeneous Jobs</td></tr>
+<tr><td nowrap bgcolor="#F0F1C9">14:40 - 15:00</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
+<tr><td nowrap>15:00 - 15:40</td><td>Technical</td><td>Jacobsen</td><td>cli_filter - A new plugin for client-side job filtration and manipulation</td></tr>
+<tr><td nowrap>15:40 - 16:10</td><td>Technical</td><td>Kumar, Weinberg, Hill</td><td>Offloading HPC workload on preemptable OpenStack instances without explicit checkpointing</td></tr>
  
 <tr>
   <td bgcolor="#F0F1C9">19:00</td>
   <td bgcolor="#F0F1C9">Dinner</td>
-  <td bgcolor="#F0F1C9">Butchershop and Sardelles</td>
-  <td bgcolor="#F0F1C9">Persefonis 19, Athina 118 54, Greece</td>
+  <td bgcolor="#F0F1C9">TBD</td>
+  <td bgcolor="#F0F1C9"></td>
 </tr>
 </table>
 
-<h2>27 September 2016</h2>
+<h2>Tuesday, 26 September 2017</h2>
 
 <table width="100%" border=1 cellspacing=0 cellpadding=4>
 
@@ -96,52 +138,190 @@ and site reports.</p>
     <th width="45%">Title</th>
   </tr>
 
-<tr><td nowrap>08:30 - 09:00</td><td>Technical</td><td>Rodr&iacute;guez-Pascual</td><td>Checkpoint/restart in Slurm: current status and new developments</td></tr>
-<tr><td nowrap>09:00 - 09:30</td><td>Technical</td><td>Wickberg</td><td>Support for Intel Knights Landing (KNL)</td></tr>
-<tr><td nowrap>09:30 - 10:00</td><td>Technical</td><td>Perry</td><td>Support of heterogeneous resources and MPMD-MPI</td></tr>
+<tr><td nowrap>08:30 - 09:00</td><td>Technical</td><td>Blanc, Wiber, Bouaziz, Bozga</td><td>SELinux policy for Slurm services</td></tr>
+<tr><td nowrap>09:00 - 09:30</td><td>Site Report</td><td>Peltz, Fullop, Jennings, Senator, Grunau</td><td>From Moab to Slurm: 12 HPC Systems in 2 Months</td></tr>
+<tr><td nowrap>09:30 - 10:00</td><td>Site Report</td><td>Botts, Jacobsen</td><td>NERSC site report</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">10:00 - 10:20</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
-<tr><td nowrap>10:20 - 10:50</td><td>Technical</td><td>Rajagopal</td><td>Improving system utilization under strict power budget using the layouts</td></tr>
-<tr><td nowrap>10:50 - 11:20</td><td>Technical</td><td>Cadeau</td><td>High definition power and energy monitoring support</td></tr>
-<tr><td nowrap>11:20 - 11:50</td><td>Technical</td><td>Christiansen, Bartkiewicz</td><td>Federated Cluster Scheduling</td></tr>
+<tr><td nowrap>10:20 - 10:50</td><td>Technical</td><td>Auble</td><td>Slurm Roadmap - 17.11, 18.08 and beyond</td></tr>
+<tr><td nowrap>10:50 - 11:20</td><td>Technical</td><td>Hasan, Kuo, Zhang, Dombrowski, Masover, Schmitz, Muriki, Qin</td><td>Building a SLURM Banking System</td></tr>
+<tr><td nowrap>11:20 - 11:50</td><td>Technical</td><td>Beche</td><td>Enabling web-based interactive notebooks on geographically distributed HPC resources</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">11:50 - 12:50</td><td colspan="3" bgcolor="#F0F1C9">Lunch</td></tr>
-<tr><td nowrap>12:50 - 13:20</td><td>Technical</td><td>Auble, Georgiou</td><td>Slurm Roadmap</td></tr>
-<tr><td nowrap>13:20 - 13:50</td><td>Site Report</td><td>Yoshikawa</td><td>EDF Site Report</td></tr>
-<tr><td nowrap>13:50 - 14:20</td><td>Site Report</td><td>Pancorbo</td><td>LRZ Site Report</td></tr>
+<tr><td nowrap>12:50 - 13:20</td><td>Technical</td><td>Perry, Mehlberg</td><td>Slurm SPANK Plugin for Singularity Ease of Use</td></tr>
+<tr><td nowrap>13:20 - 13:50</td><td>Site Report</td><td>Edmon</td><td>A Slurm Odyssey: Slurm at Harvard Faculty of Arts and Sciences Research Computing</td></tr>
+<tr><td nowrap>13:50 - 14:20</td><td>Site Report</td><td>Byun</td><td>LLSC Adoption of Slurm for Managing Diverse Resources and Workloads</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">14:20 - 14:40</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
-<tr><td nowrap>14:40 - 15:10</td><td>Site Report</td><td>Jacobsen</td><td>NERSC Site Report</td></tr>
-<tr><td nowrap>15:10 - 15:40</td><td>Site Report</td><td>Nikoloutsakos</td><td>GRNET Site Report</td></tr>
-<tr><td nowrap>15:40 - 16:10</td><td>Closing</td><td>Wickberg</td><td>Closing discussions</td></tr>
+<tr><td nowrap>14:40 - 15:10</td><td>Site Report</td><td>Pawlik</td><td>Cyfronet site report</td></tr>
+<tr><td nowrap>15:10 - 15:40</td><td>Technical</td><td>Rodr&iacute;guez-Pascual, Mor&iacute;&#241;igo, Mayo-Garc&iacute;a</td><td>When you have a hammer, everything is a nail: Checkpoint/Restart in Slurm</td></tr>
+<tr><td nowrap>15:40 - 16:10</td><td>Closing</td><td>TBD</td><td>TBD</td></tr>
 
 </table>
 
 <br><br>
 <a name="abstracts"><h1>Abstracts</h1></a>
 
--->
+<h3>When you have a hammer, everything is a nail: Checkpoint/Restart in Slurm</h3>
+<p>Manuel Rodr&iacute;guez-Pascual (CIEMAT, Spain)<Br>Jose Antonio Mor&iacute;&#241;igo (CIEMAT, Spain)<Br>Rafael Mayo-Garc&iacute (CIEMAT, Spain)</p>
+<p>Counting with a robust and efficient checkpoint/restart mechanism in a slurm cluster can enable a wide set of possibilities. In this work we will first present our work on the support for DMTCP (a robust and efficient checkpoint library) on Slurm. Then, the rest of the talk will be devoted to show the new possibilites enabled by this integration: besides fault tolerance, being able to checkpoint a job and restart it somewhere else (thus "migrating" it) is of high interest on job preemption, scheduling and system administration. This talk will include both a small mathematical analysis of C/R based job migration and the demonstration of these new functionalities with a new set of tools developed and used at CIEMAT.</p>
 
-<!-- -------------------------------------------------------------------------- -->
+<h3>A Slurm Odyssey: Slurm at Harvard Faculty of Arts and Sciences Research Computing</h3>
+<p>Dr. Paul Edmon (ITC Research Computing Specialist, Faculty of Arts and Sciences Research Computing, Harvard University)</p>
+<p>The demands of the user base at Harvard University has produced a unique Slurm environment on the Odyssey computing cluster.  We will discuss the challenges of scheduling 60,000 daily jobs for 300 research groups to over 100 partitions of varying size and architecture on Odyssey. We will talk about the various strategies used to meet the demands of the users and faculty.  We will also show the tools we have used to gather scheduler and cluster statistics as well as discuss the performance testing we did to optimize the scheduler and maximize its responsiveness.</p>
 
-<!--
-<h3>Overview of Slurm Version 16.05</h3>
-<p>Danny Auble (SchedMD)<br>Yiannis Georgiou (Bull)</p>
-
-<p>This presentation will describe a multitude of new capabilities provided in
-Slurm version 16.05 (released May 2016) which are not covered in a separate
-talk. These enhancements include:</p>
+<h3>LLSC Adoption of Slurm for Managing Diverse Resources and Workloads</h3>
+<p>Byun, Chansup (LLSC - MITLL)</p>
+<p>The Lincoln Laboratory Supercomputing Center (LLSC) mission is to address supercomputing needs, develop new supercomputing capabilities and technologies, and collaborate across MIT. In order to achieve this mission, resource management and job scheduler software like Slurm plays an important role. Since the beginning of grid computing efforts at LLSC, we have used a number of job schedulers to meet our needs. Recently we have migrated to Slurm in order to manage much larger and diverse supercomputing resources to execute diverse workloads. In this talk, we are going to share our experience in transitioning our resource management and job scheduling functions from open-source Grid Engine to Slurm.</p>
+<p>When we switched the scheduler, the majority of our users did  not require any change in the way they run their jobs on LLSC  system nor did they recognize the change since they mostly  interacted with our LLSC software stack. LLSC software stack provides a unique on-demand, interactive supercomputing environment that enables users to launch their jobs from their desktop to the supercomputing resources. In addition, LLSC supports the traditional batch processing jobs as other HPC centers do. The key to the seamless transition from open-source Grid Engine to Slurm is that we have to come up with the same job submission and execution environment to the users when porting LLSC software stack to Slurm.</p>
+<p>The following list shows some of our major software stack components which interact with the scheduler under the hood:</p>
 <ul>
-<li>Deadline based job scheduling</li>
-<li>User ability to reorder priorities of pending jobs</li>
-<li>Forcing Generic Resources (GRES) and CPUs allocated to a job to be in the same NUMA domain</li>
-<li>Ability to establish per-task dependencies in a job array</li>
-<li>Added support for PMIx</li>
-<li>Added command wrappers for the LSF/OpenLava resource managers</li>
-<li>Added support for GridEngine options to the qsub command wrapper</li>
+  <li>The gridMatlab toolbox, which provides an interface between pMatlab and the resource manager</li>
+  <li>Portal services, which deliver on-demand big-data database and Jupyter notebook services</li>
+  <li>LMapReduce, which provides Map-Reduce parallel computing on a distributed parallel file system</li>
+  <li>Generalized scheduler commands including LLsub, LLstat and LLkill, which provide scheduler-agnostic scheduling and resource management commands</li>
 </ul>
+<p>The majority of our users use the Lincoln-developed pMatlab toolbox, which enables parallel execution of Matlab/Octave on LLSC system. The pMatlab toolbox dovetails with the gridMatlab toolbox (also Lincoln-developed) to dispatch pMatlab jobs to LLSC system by interacting with the job scheduler. For pMatlab users, the  scheduler transition was abstracted away with the gridMatlab  toolbox.</p>
+<p>We also provide a unique portal service that enables users to start/stop big-data database (DB) instances such as Accumulo and SciDB as well as a Jupyter notebook, all using a web browser. The portal service dispatchs the user request (via web browser) to the job scheduler, which starts a DB instance or a Jupyter notebook server on the LLSC resources allocated by the job scheduler. The portal service allows users to monitor the DB instances and access the Jupyter notebook through the browser.</p>
+<p>LLMapReduce is a one-line command to launch a map-reduce parallel processing of a set of data files which reside on a central storage filesystem. The tool scans the given data location and converts each data block into a compute task for the given  application for the job scheduler. LLMapReduce uses a small set of options that are commonly found on various advanced job  schedulers.</p>
+<p>Finally, we provide general, scheduler-agnostic commands to submit, monitor, and kill jobs from the login nodes for users who do not use the above mentioned software stack components. These general commands enabled a seamless transition to Slurm for those users to submit, check, and control jobs.</p>
+<p>During the Slurm migration, we encountered a number of issues, and we will explain how we resolved these issues. One of the Slurm features that we found very useful during the migration is the Slurm Lua job_submit script, which enables us to configure the LLSC system to provide the same, consistent user experience they had with other schedulers.</p>
+<p>Beyond the transition, we will also discuss other features that we have implemented with Slurm. We recently deployed the Slurm SPANK plug-in modules for trusted X11 forwarding, job-based name spaces, and /tmp mount points. This feature enables us to clean up any user-generated files left over on /tmp when the job completes. In addition, we have developed a set of scripts to launch a dynamic Mesos cluster as a job with the Slurm resource manager. This allows some of LLSC users to quickly set up a Mesos cluster and work on their big-data algorithm development. We will share some of challenges that we encountered when we were developing the script on our LLSC environment. Finally, we are looking forward to exploiting Slurm support for the second-generation Intel Xeon-Phi, Knights Landing, processor servers.</p>
 
--->
+<h3>A /resource-manager file system (rmfs)</h3>
+<p>Steven Senator (LANL)</p>
+<p>We would like to introduce a work in progress of a /resource-manager file system (rmfs), analogous to /proc for a single system. This file system is constructed of resource nodes ("rnodes"), representing datums associated with the resource manager state and externally-sourced state.</p>
+<p>This file system is mountable within the cluster, but presents differing views of the data depending upon the node on which it is mounted and the user's authority as the file system is traversed. The file system collects such state as cached values, representing truth at an instance in time. The cluster master node (the node which matches the "ControlMachine" slurm.conf parameter) has a complete view of the file system. Front-end nodes and compute nodes have a more restricted view. All interfaces to slurm are via published standardized APIs.</p>
+
+<h3>Field Notes From the Frontlines of Slurm Support</h3>
+<p>Tim Wickberg (SchedMD)</p>
+<p>Tips, tricks, suggested configuration options, under-used functionality, and other notes from two years of assisting SchedMD's wide range of customers.</p>
+
+<h3>From Moab to Slurm: 12 HPC Systems in 2 Months</h3>
+<p>Paul Peltz<br>Joseph Fullop<br>Michael Jennings<br>Steve Senator<br>Daryl Grunau (LANL)</p>
+<p>Los Alamos National Laboratory decided to move to Slurm as the default scheduler in 2017. There were a number of factors involved in this decision as it was a major change from Moab. Some of the motivating factors were user demand, unification of schedulers across the Tri-Lab community (LANL, SNL, LLNL), leveraging community knowledge and practices, and the features and support that Slurm provided to our users and administrators. The original schedule proposed by the HPC systems staff was to do the conversion over a 6 month timeframe, but the user community requested that this be compressed into as small of a window as possible. This paper will cover the transition plan, accounting integration efforts, implementation, lessons learned, scaling issues, processor affinity, and results of the transition.</p>
+
+<h3>Slurm SPANK Plugin for Singularity Ease of Use</h3>
+<p>Martin Perry (Atos) <br>Steve Mehlberg  (Atos)</p>
+<p>Singularity is a container technology designed to facilitate software development and distribution on linux clusters with a focus on portability, flexibility and security.  This presentation will provide details of a new SPANK plugin developed by Bull/Atos to provide an interface between Slurm and the Singularity framework. The plugin adds new options to the srun command to allow Slurm users to run programs inside Singularity containers without requiring detailed knowledge of Singularity commands. The plugin provides automated management of Singularity container images across a Slurm cluster using a centralized image repository, and supports multiple, concurrent srun commands that use the same container image, compute nodes and environment script. The presentation will also show the performance using Singularity in comparison to  bare-metal usage.</p>
+
+<h3>TRES capability utilized to introduce luster and interconnect ofed accounting statistics</h3>
+<p>Bill Brophy (Atos)<br>Martin Perry (Atos)</p>
+<p>Slurm contains functionality for saving job related information on a mysql database.  The addition of new statistics always involved making changes to logic in quite a number of source files and the modification to a large number of data structure definitions.  When a request was made to include lustre and interconnect ofed statistics a decision was made to utilize the TRES capability in order to reduce this effort.   Taking this approach will also reduce the complexity and time required to introduce additional statistics in the future.  One new static TRES, usage/disk was introduced to contain existing local disk I/O statistics.  For the new statistics two new dynamic TRES were defined: usage/lustre and usage/ic_ofed.  This presentation will describe this development effort, explain how to enable the collection of this data and information on how to access these new statistics.</p>
+
+<h3>SELinux policy for Slurm services</h3>
+<p>Mathieu Blanc (CEA)<br>Gilles Wiber(CEA)<br> M'hamed Bouaziz(ATOS)<br>Liana Bozga (ATOS)</p>
+<p>This presentation introduces a new SELinux module for the main Slurm daemons. SELinux provides service partitioning as a means to protect against security violations if a service is compromised. As any unconstrained service may gain unauthorized access to the system, it is mandatory to be able to confine all running services in order to benefit from the protection provided by SELinux. The SELinux policy provided in RHEL7 covers more than 700 services (domains) but, unfortunately, not any HPC specific services. To overcome this situation, ATOS and CEA have jointly developed a module to extend the SELinux policy with a selinux-slurm module allowing the ability to confine Slurm services. In this presentation, we explain how each service is restricted and how their configuration will limit the impact of remote attacks. More specifically, our module allows the ability to enhance the security of compute and login nodes by confining the slurmd, slurmdbd and slurmctld daemons.</p>
+
+<h3>Offloading HPC workload on preemptable OpenStack instances without explicit checkpointing</h3>
+<p>Rajul Kumar (Northeastern University)<br>Evan Weinberg (Boston University, Boston, MA)<br>Chris Hill (Massachusetts Institute of Technology, Cambridge, MA
+)</p>
+<p>Traditionally, HPC clusters are backfilled with short duration computational jobs to utilize the idle cycles. However, they are preempted and re-queued to make way for the actual workload. As a result, the clusters remain as good as idle with low effective utilization. On the other hand, Cloud by its model often is overprovisioned and can provide cost-effective preemptable instances to run these workloads [1-2]. The jobs are still required to be resilient to resource preemption.</p>
+<p>We propose an alternative to run these jobs on preemptable instances in collocated/private OpenStack [3] cloud that could be suspended and resumed as required. This keeps the state of the instance, the jobs intact, and releases acquired resources [4]. We don't need to explicitly checkpoint the jobs.</p>
+<p>We are building a hybrid HPC cluster [6-7] augmenting instances from collocated OpenStack cloud. Then we plan to run single-node HTC jobs from Open Science Grid [5] on these instances. On the HPC cluster, these low-priority jobs are terminated and requeued for resources. We developed a control daemon that communicates with Slurm and OpenStack to manage these instances. It uses predefined triggers such as resource utilization and job queues to modify the state of the instances. We made some minimal modifications to Slurm so it's notified when a node is temporarily unavailable. It will keep the states intact and resume, when notified that a node is restored.</p>
+<p>The above solution will help to complete the low priority jobs from HPC cluster that were otherwise preempted. Running these jobs on the instances from underutilized cloud will give a better utilization and throughput [1-2] without any explicit effort for resilience in the job.</p>
+<p><b>References:</b></p>
+<p>[1] P. Marshall, K. Keahey, and T. Freeman. Improving Utilization of Infrastructure Clouds, Proc. of 11th IEEE/ACM Intl. Symp. on Cluster, Cloud and Grid Computing (CCGRID 11), pp. 205-214.</p>
+<p>[2] Amanda Calatrava, Eloy Romero, Germán Moltó, Miguel Caballer, and Jose Miguel Alonso. Self-managed cost-efficient virtual elastic clusters on hybrid Cloud infrastructures. Future Generation Computer Systems, 61, C (August 2016), 13-25.</p>
+<p>[3] The Crossroads of Cloud and HPC: OpenStack for Scientific Research, retrieved on June 27, 2017 from: https://www.openstack.org/assets/science/OpenStack-CloudandHPC6x9Booklet-v4-online.pdf</p>
+<p>[4] OpenStack Nova Feature Support Matrix for various Hypervisors, retrieved on June 27, 2017 from: https://docs.openstack.org/developer/nova/support-matrix.html#operation_suspend</p>
+<p>[5] Open Science Grid, retrieved on June 27, 2017 from: https://www.opensciencegrid.org/</p>
+<p>[6] Ruben S. Montero, Rafael Moreno-Vozmediano, and Ignacio M. Llorente. An elasticity model for High Throughput Computing clusters. Journal of Parallel and Distributed Computing, 71, 6, 2011, 750-757.</p>
+<p>[7] Ju-Won Park, Jae Keun Yeom, Jinyong Jo, and Jaegyoon Hahm. Elastic Resource Provisioning to Expand the Capacity of Cluster in Hybrid Computing Infrastructure. In Proceedings of the 2014 IEEE/ACM 7th International Conference on Utility and Cloud Computing (UCC '14). pp. 780-785.</p>
+
+
+<h3>Building a SLURM Banking System</h3>
+<p>
+	Sahil Hasan (Berkeley Research Computing, University of California, Berkeley)<Br>
+	Harrison Kuo (Berkeley Research Computing, University of California, Berkeley)<Br>
+	Cassie Zhang (Berkeley Research Computing, University of California, Berkeley)<Br>
+	Quinn Dombrowski (Berkeley Research Computing, University of California, Berkeley)<Br>
+	Steve Masover (Berkeley Research Computing, University of California, Berkeley)<Br>
+	Patrick Schmitz (Berkeley Research Computing, University of California, Berkeley)<Br>
+	Krishna Muriki (Berkeley Research Computing, University of California, Berkeley, High Performance Computing Services, Lawrence Berkeley National Lab)<Br>
+	Yong Qin (Berkeley Research Computing, University of California, Berkeley, High Performance Computing Services, Lawrence Berkeley National Lab)
+</p>
+<p>SLURM's intrinsic accounting infrastructure is focused on establishing limits on Trackable Resource Minutes (TRES-minutes) used by a specific SLURM account. Unaddressed by this model are use cases in which an account owner wants to parcel out fixed portions of their allocation to other users associated with the account. For example, a professor teaching a class of two hundred students may have been granted two million TRES-minutes, and may want to give every student in her class a limit of ten thousand minutes each in order to  foreclose the possibility that a few super-consuming students might exhaust their fellow students' fair share of the class allocation. To address use cases such as this, we have designed a system of plugins that enable easy sub-allocation of TRES-minutes within an account, and to track usage (burndown) of sub-allocations by modelling jobs as credit card transactions. In addition, we have built a graphical Django-based dashboard to aid account owners in adding users, changing allocations, generating visualizations to monitor burndown rates, etc. Our talk will focus upon the architecture and design supporting both the plugins and Django dashboard, as well as give an overview of the functionality both features will provide.</p>
+
+<h3>Utilizing Slurm and Passive Nagios Plugins for Scalable KNL Compute Node Monitoring</h3>
+<p>Basil Lalli (SRE, NERSC)<br>Tony Quan (SRE, NERSC)</p>
+<p>Effective monitoring of our Cori system presents a unique set of challenges. KNL nodes
+routinely reboot to adjust CPU features, causing "false" alarms within Cray's provided node
+monitoring, and due to the scale of the system, these events can take well over 30 minutes
+each. Our preferred monitoring framework--Nagios--strains to scale when dealing with tens of
+thousands of active checks, and future systems will have many more. It is also desirable to not
+actively access the internal compute cluster when possible, and provide per-node monitoring.
+The solution we have implemented is centered around two new tools. A custom Nagios plugin
+draws upon Slurm and Cray's command-line tools, correlates this information, and retains its
+own internal state. Doing this allows us to report compute node events per-node in a scalable
+fashion to Nagios. Reporting changes only further increases scalability, and this setup avoids
+any processing on the cluster itself or any direct disturbance to the compute nodes. Including
+user/job information as well as slurm node state and reason strings allows our Operations team
+to easily identify related issues and provides a convenient point to automate ticket creation.
+Monitoring services across large numbers of hosts in this fashion has worked well for our
+organization and this "mass-passive" plugin approach has served as the basis for several other
+plugins.</P>
+<p>The second tool is a framework that provides a path for Slurm to directly report node events.
+Using Nginx and Gunicorn, we have implemented a web service that responds to RESTful
+queries to allow automation of system maintenance and job-initiated reboot activities.
+Software--such as Nagios--can thus be notified and appropriately handle intentional node-down
+events. This both drastically reduces human investigation necessary, and allows maintenance
+events to seamlessly inform Nagios (rather than an extra step of setting downtimes on nodes).
+Together, these tools enable efficient monitoring of our Slurm clusters and help NERSC utilize
+KNL technology at its most efficient state.</p>
+
+<h3>Enabling web-based interactive notebooks on geographically distributed HPC resources</h3>
+<p>Beche Alexandre (EPFL)</p>
+<p>High Performance Computing clusters can be used for various use cases ranging from interactive jobs with fast development cycles to long-running batch jobs. Focusing on the interactive use case, the python community has developed the Jupyter notebooks technology (formerly known as IPython notebooks) to lower the barrier to interactive computational environment by making it available through web browsers. </p>
+<p>This talk will present BBP's implementation of JupyterHub to allow scientists to run web-based interactive notebooks using their identities on geographically distributed Slurm clusters in a secure way as well as providing an abstraction layer to handle software complexity (order specific module loading) so that developers can focus exclusively on the application and no longer on the underlying infrastructure and environment.</p>
+
+<h3>Slurm as a Build Block for Modular Supercomputing with Heterogeneous Jobs</h3>
+<p>Moe Jette (SchedMD), Dorian Krause (J&uuml;lich Supercomputing Centre)</p>
+<p>As a supercomputing center with a diverse user community, the Jülich Supercomputing Centre (JSC) is challenged with optimally matching system architectures to the rich application portfolio. At the same time, the massive parallelism in upcoming leadership-class supercomputers is an obstacle even for today's best scalable simulation codes as lowly-scalable sub-portions may become dominant in the future. In order to address both challenges at one go, JSC is developing the modular supercomputing concept which, at its core, uses architecturally diverse modules with distinct hardware characteristics that are exposed via a homogeneous global software layer to enable optimal resource assignment. The combination of, e.g., a general purpose cluster module with multi-core processors and a highly-scalable many-core processor-based module allows application to assign lowly- and highly-scalable code portions to the best fitting architecture. This architecture has been successfully pioneered in the European Exascale projects DEEP and DEEP-ER and will be available in production at JSC in autumn with the augmentation of the existing JURECA cluster by a KNL-based booster module. As one of the core components of its workload manager Slurm plays a crucial role in this deployment. In the context of the upcoming DEEP-EST project, JSC and its consortium partners are looking towards modular systems incorporating components targeted at data-analytics workloads. Here, again, Slurm will be an important building block for the software stack.</p>
+<p>In this talk we will present the current activities in the context of the modular supercomputing concept with a focus on the role of Slurm in the endeavor.</p>
+
+<h3>Federated Cluster Support</h3>
+<p>Brian Christiansen (SchedMD)<br>Danny Auble (SchedMD)</p>
+<p>Federated cluster support in the 17.11 release.</p>
+
+<h3>Slurm Roadmap - 17.11, 18.08 and beyond</h3>
+<p>Danny Auble (SchedMD)</p>
+<p>Slurm Roadmap - 17.11, 18.08 and beyond</p>
+
+<h3>Slurm Introduction</h3>
+<p>Tim Wickberg (SchedMD)</p>
+<p>A condensed introduction to Slurm's architecture, commands, and components.</p>
+
+<h3>Cyfronet site report</h3>
+<p>Maciej Pawlik (Cyfronet)</p>
+<p> Academic Computer Centre Cyfronet AGH-UST is one of the five HPC centers located in Poland. Cyfronet is currently the leader in terms of supplied computing power, with the flagship Top500-ranked, liquid-cooled production supercomputer - Prometheus. Prometheus, based on HPE Apollo 8000 platform, is currently the most powerful and most power-efficient supercomputer installation in Poland and Central Europe, with over 2200 nodes providing 2.4 PFlops and 2.068 GFlops/W respectively. It's main purpose is to provide free HPC resources for the scientific and research community in Poland. Job management and scheduling is handled by SLURM 17.02, with addition of some custom patches, tools and monitoring.</P>
+<p>Our patching efforts include improvements such as:</p>
+<ul>
+  <li>Changes in power-saving procedure, e.g. hosts with DOWN state are not suspended (for diagnostic purposes)</li>
+  <li>Improvements in cgroup handling by jobacct_gather/cgroup plugin</li>
+  <li>Fixing some race conditions in slurmctld</li>
+  <li>Proper handling of longer account names</li>
+</ul>
+<p>Prometheus relies on SLURM's "power saving" features, as powering down idle nodes has a significant impact on the power bill. It was found that power cycling nodes has a side effect of revealing hardware failures, which doesn't make vendors happy, but from the user's point of view, the integration of power saving was seamless.</p>
+<p>One of common complaints from our users was that some of the command line tools available in SLURM are rather cryptic for non-IT people and often have inconsistent parameters. This was addressed by implementing in-house scripts which wrap functionality of tools like scontrol, squeue, sstat, sacct. Homebrew scripts utilize a more user-centric approach, where it is much easier to assess the state of the jobs and its properties like CPU usage, memory allocation and efficiency for current and past jobs. A centralized project-based grant system is used for allocations also many tools for the support of both the enablement and accounting of the process have been developed. Monitoring is one of the key challenges of running HPC system and Prometheus is no exception. Data gathered from SLURM was incorporated into a custom Redis/Graphite monitoring stack, which enabled us to design dashboards specific for the system. Dashboards are split into two types, a node-centric and job-centric. The first type allows for quick assessment of a cluster state, by integrating node logical state (allocated, mixed etc.) with it's physical location and attributes (e.g. power draw, temperatures). While the latter type of dasbhords allows for monitoring individual users or accounts as they consume resources.</p>
+<p>Work described above enabled us to provide a high quality service for our users, and in significant part will be shared with the HPC community. Prometheus has been running in production since 2015 and the software stack is still actively developed. With over 6 million finished jobs and over 330 supported scientific projects, enough experience has been gathered to present it and draw some plans for the future. </p>
+
+<h3>Site Report, NERSC.   Balancing the needs of thousands of users and many different workloads concurrently</h3>
+<p>James Botts (NERSC)<br>Douglas Jacobsen (NERSC)</p>
+<p>NERSC uses Slurm as its primary resource manager and scheduler on both capability-class machines and is migrating to Slurm on its more traditional linux clusters.  In this site report we will discuss our workload, the 7,500 active users accessing the system and how we support the variety of workloads operating on the system, ranging from thousands of single core jobs to large full scale 12,000 node jobs.  In this talk will we pay special attention to how we manage limits and accounting on the system, ensuring that all users have fair access to the system, and using a combination of our custom business logic database (NIM - NERSC Information Management) integrated with the slurm database.</p>
+
+<h3>cli_filter - A new plugin for client-side job filtration and manipulation.</h3>
+<p>Douglas Jacobsen (NERSC)</p>
+<p>cli_filter is a new plugin for slurm that allows data given to user-interface commands, like sbatch, salloc, and srun, to be examined, filtered, and modified.  This is especially focused on the explicit and implicit arguments provided to those applications.  The cli_filter is very much like a client side job_submit plugin.   In fact we provide cli_filter/lua which allows the same (carefully prepared) job_submit.lua code to be used by server side and client side.  This enables some interesting advantages:</p>
+<ul>
+  <li>Since cli_filter is client side it can prevent obviously wrong jobs from being submitted for evaluation by job_submit (which is executed server side while write locks are held), this can improve performance of slurmctld in some cases.</li>
+  <li>Since cli_filter has access to the user's stdout/stderr, it is possible to send information messages to the user, even in the case that a job is to be accepted (e.g., to inform them of an implicit modification being made)</li>
+  <li>Enables logging of user options being accessed without relying on command line argument parsing or wrapper scripts (which can be complicated by the multiple avenues of affecting user inputs)</li>
+  <li>Can run much longer checks than job_submit since no locks are held in slurmctld</li>
+</ul>
+<p>It is important to note that any cli_filter plugin should still be used with similar logic in job_submit to ensure that alternate means of submitting jobs (i.e., direct use of the slurm api) do not allow users to circumvent policy.</p>
+
+
 
 <!-- -------------------------------------------------------------------------- -->
 
-<p style="text-align:center;">Last modified 1 May 2017</p>
+<p style="text-align:center;">Last modified 25 July 2017</p>
 
 <!--#include virtual="footer.txt"-->

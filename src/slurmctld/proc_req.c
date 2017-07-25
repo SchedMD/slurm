@@ -2547,8 +2547,21 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 	}
 #endif
 
+#if defined HAVE_NATIVE_CRAY
+	if (LOTS_OF_AGENTS || (slurmctld_config.server_thread_count >= 128)) {
+		/*
+		 * Don't start more steps if system is very busy right now.
+		 * Getting cray network switch cookie is slow and happens
+		 * with job write lock set.
+		 */
+		slurm_send_rc_msg(msg, EAGAIN);
+		return;
+	}
+#endif
+
 	_throttle_start(&active_rpc_cnt);
 	lock_slurmctld(job_write_lock);
+
 	error_code = step_create(req_step_msg, &step_rec, false,
 				 msg->protocol_version);
 
@@ -5561,6 +5574,7 @@ static int _find_update_object_in_list(void *x, void *key)
 
 inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 {
+	static int active_rpc_cnt = 0;
 	int rc = SLURM_SUCCESS;
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
@@ -5586,6 +5600,18 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 
 	slurm_send_rc_msg(msg, rc);
 
+	/*
+	 * We only want one of these running at a time or we could get some
+	 * interesting locking scenarios.  Meaning we could get into a situation
+	 * if multiple were running to have both the assoc_mgr locks locked in
+	 * one threads as well as the slurmctld locks locked and then waiting of
+	 * the assoc_mgr locks in another.  Usually this wouldn't be an issue
+	 * though some systems looking up user names could be fairly heavy.  If
+	 * you are looking for hundreds you could make the slurmctld
+	 * unresponsive in the mean time.  Throttling this to only 1 update at a
+	 * time should minimize this situation.
+	 */
+	_throttle_start(&active_rpc_cnt);
 	if (update_ptr->update_list && list_count(update_ptr->update_list)) {
 		slurmdb_update_object_t *object;
 
@@ -5604,6 +5630,7 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 
 		rc = assoc_mgr_update(update_ptr->update_list, 0);
 	}
+	_throttle_fini(&active_rpc_cnt);
 
 	END_TIMER2("_slurm_rpc_accounting_update_msg");
 

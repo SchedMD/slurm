@@ -182,6 +182,13 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue with multiple jobs from an array are prevented from starting.
  -- Fix for possible slurmctld abort with use of salloc/sbatch/srun
     --gres-flags=enforce-binding option.
+ -- Fix race condition when using jobacct_gather/cgroup where the memory of the
+    step wasn't always gathered correctly.
+ -- Better debug when slurmdbd queue is filling up in the slurmctld.
+ -- Fixed truncation on scontrol show config output.
+ -- Serialize updates from from the dbd to the slurmctld.
+ -- Fix memory leak in slurmctld when agent queue to the DBD has filled up.
+ -- CRAY - Throttle step creation if trying to create too many steps at once.
 
 * Changes in Slurm 17.02.6
 ==========================

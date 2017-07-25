@@ -333,8 +333,10 @@ extern int slurm_send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 	static time_t syslog_time = 0;
 	static int max_agent_queue = 0;
 
-	/* Whatever our max job count is times that by 2 or
-	 * MAX_AGENT_QUEUE which ever is bigger */
+	/*
+	 * Whatever our max job count is multiplied by 2 plus node count
+	 * multiplied by 4 or MAX_AGENT_QUEUE which ever is bigger.
+	 */
 	if (!max_agent_queue)
 		max_agent_queue =
 			MAX(MAX_AGENT_QUEUE,
@@ -360,7 +362,8 @@ extern int slurm_send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 	    (difftime(time(NULL), syslog_time) > 120)) {
 		/* Record critical error every 120 seconds */
 		syslog_time = time(NULL);
-		error("slurmdbd: agent queue filling, RESTART SLURMDBD NOW");
+		error("slurmdbd: agent queue filling (%d), RESTART SLURMDBD NOW",
+		      cnt);
 		syslog(LOG_CRIT, "*** RESTART SLURMDBD NOW ***");
 		if (slurmdbd_conn->trigger_callbacks.dbd_fail)
 			(slurmdbd_conn->trigger_callbacks.dbd_fail)();
@@ -373,9 +376,13 @@ extern int slurm_send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 		if (list_enqueue(agent_list, buffer) == NULL)
 			fatal("list_enqueue: memory allocation failure");
 	} else {
-		error("slurmdbd: agent queue is full, discarding request");
+		error("slurmdbd: agent queue is full (%u), discarding %s:%u request",
+		      cnt,
+		      slurmdbd_msg_type_2_str(req->msg_type, 1),
+		      req->msg_type);
 		if (slurmdbd_conn->trigger_callbacks.acct_full)
 			(slurmdbd_conn->trigger_callbacks.acct_full)();
+		free_buf(buffer);
 		rc = SLURM_ERROR;
 	}
 

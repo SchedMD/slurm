@@ -1966,9 +1966,36 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 			      key_pair->name,
 			      key_pair->value);
 		} else {
-			/* Only write out values. Use strtok
-			 * to grab just the value (ie. "60 sec") */
-			temp = strtok(key_pair->value, " (");
+			if ((!xstrcasecmp(key_pair->name, "ChosLoc")) ||
+			    (!xstrcasecmp(key_pair->name, "Epilog")) ||
+			    (!xstrcasecmp(key_pair->name, "EpilogSlurmctld")) ||
+			    (!xstrcasecmp(key_pair->name,
+					  "HealthCheckProgram")) ||
+			    (!xstrcasecmp(key_pair->name, "MailProg")) ||
+			    (!xstrcasecmp(key_pair->name, "Prolog")) ||
+			    (!xstrcasecmp(key_pair->name, "PrologSlurmctld")) ||
+			    (!xstrcasecmp(key_pair->name, "RebootProgram")) ||
+			    (!xstrcasecmp(key_pair->name, "ResumeProgram")) ||
+			    (!xstrcasecmp(key_pair->name, "ResvEpilog")) ||
+			    (!xstrcasecmp(key_pair->name, "ResvProlog")) ||
+			    (!xstrcasecmp(key_pair->name,
+					  "SallocDefaultCommand")) ||
+			    (!xstrcasecmp(key_pair->name, "SrunEpilog")) ||
+			    (!xstrcasecmp(key_pair->name, "SrunProlog")) ||
+			    (!xstrcasecmp(key_pair->name, "SuspendProgram")) ||
+			    (!xstrcasecmp(key_pair->name, "TaskEpilog")) ||
+			    (!xstrcasecmp(key_pair->name, "TaskProlog")) ||
+			    (!xstrcasecmp(key_pair->name,
+					  "UnkillableStepProgram"))) {
+				/* Exceptions not be tokenized in the output */
+				temp = key_pair->value;
+			} else {
+				/*
+				 * Only write out values. Use strtok
+				 * to grab just the value (ie. "60 sec")
+				 */
+				temp = strtok(key_pair->value, " (");
+			}
 			temp = xstrdup_printf("%s=%s",
 					      key_pair->name, temp);
 		}

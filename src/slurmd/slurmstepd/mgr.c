@@ -1418,9 +1418,6 @@ _pre_task_privileged(stepd_step_rec_t *job, int taskid, struct priv_state *sp)
 	if (spank_task_privileged (job, taskid) < 0)
 		return error("spank_task_init_privileged failed");
 
-	if (task_g_pre_launch_priv(job) < 0)
-		return error("pre_launch_priv failed");
-
 	/* sp->gid_list should already be initialized */
 	return(_drop_privileges (job, true, sp, false));
 }
@@ -1821,6 +1818,12 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 		    (setpgid (job->task[i]->pid, job->pgid) < 0)) {
 			error("Unable to put task %d (pid %d) into pgrp %d: %m",
 			      i, job->task[i]->pid, job->pgid);
+		}
+
+		if (task_g_pre_launch_priv(job) < 0) {
+			error("task_g_pre_launch_priv: %m");
+			rc = SLURM_ERROR;
+			goto fail2;
 		}
 
 		if (proctrack_g_add(job, job->task[i]->pid)
