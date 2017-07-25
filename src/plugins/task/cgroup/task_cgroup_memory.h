@@ -49,7 +49,7 @@ extern int task_cgroup_memory_fini(slurm_cgroup_conf_t *slurm_cgroup_conf);
 extern int task_cgroup_memory_create(stepd_step_rec_t *job);
 
 /* create a task cgroup and attach the task to it */
-extern int task_cgroup_memory_attach_task(stepd_step_rec_t *job);
+extern int task_cgroup_memory_attach_task(stepd_step_rec_t *job, pid_t pid);
 
 /* detect if oom ran on a step or job and print notice of said event */
 extern int task_cgroup_memory_check_oom(stepd_step_rec_t *job);

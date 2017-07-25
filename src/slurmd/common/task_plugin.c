@@ -63,7 +63,7 @@ typedef struct slurmd_task_ops {
 	int	(*slurmd_release_resources) (uint32_t job_id);
 
 	int	(*pre_setuid)		    (stepd_step_rec_t *job);
-	int	(*pre_launch_priv)	    (stepd_step_rec_t *job);
+	int	(*pre_launch_priv)	    (stepd_step_rec_t *job, pid_t pid);
 	int	(*pre_launch)		    (stepd_step_rec_t *job);
 	int	(*post_term)		    (stepd_step_rec_t *job,
 					     stepd_step_task_info_t *task);
@@ -386,7 +386,7 @@ extern int task_g_pre_setuid(stepd_step_rec_t *job)
  *
  * RET - slurm error code
  */
-extern int task_g_pre_launch_priv(stepd_step_rec_t *job)
+extern int task_g_pre_launch_priv(stepd_step_rec_t *job, pid_t pid)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -395,7 +395,7 @@ extern int task_g_pre_launch_priv(stepd_step_rec_t *job)
 
 	slurm_mutex_lock( &g_task_context_lock );
 	for (i = 0; i < g_task_context_num; i++) {
-		rc = (*(ops[i].pre_launch_priv))(job);
+		rc = (*(ops[i].pre_launch_priv))(job, pid);
 		if (rc != SLURM_SUCCESS) {
 			debug("%s: %s: %s", __func__,
 			      g_task_context[i]->type, slurm_strerror(rc));
