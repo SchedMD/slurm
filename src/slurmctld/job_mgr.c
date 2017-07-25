@@ -13325,6 +13325,7 @@ static void _purge_missing_jobs(int node_inx, time_t now)
 			startup_time = batch_startup_time;
 
 		if ((job_ptr->batch_flag != 0)			&&
+		    (job_ptr->pack_job_offset == 0)		&&
 		    (job_ptr->time_last_active < startup_time)	&&
 		    (job_ptr->start_time       < startup_time)	&&
 		    (node_inx == bit_ffs(job_ptr->node_bitmap))) {
