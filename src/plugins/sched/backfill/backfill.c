@@ -2820,7 +2820,10 @@ static void _pack_start_set(struct job_record *job_ptr, time_t latest_start,
 
 /*
  * Return TRUE if we have expected start times for all components of a pack job
- * and all components are valid and runable
+ * and all components are valid and runable.
+ *
+ * NOTE: This should never happen, but we will also start the job if all of the
+ * other components are already running,
  */
 static bool _pack_job_full(pack_job_map_t *map)
 {
@@ -2835,19 +2838,23 @@ static bool _pack_job_full(pack_job_map_t *map)
 	pack_job_ptr = find_job_record(map->pack_job_id);
 	if (!pack_job_ptr || (pack_job_ptr->magic != JOB_MAGIC) ||
 	    (pack_job_ptr->pack_job_id != map->pack_job_id) ||
-	    (pack_job_ptr->priority == 0) ||
 	    !pack_job_ptr->pack_job_list ||
-	    !_job_runnable_now(pack_job_ptr)) {
+	    (!IS_JOB_RUNNING(pack_job_ptr) &&
+	     !_job_runnable_now(pack_job_ptr))) {
 		return false;
 	}
 
 	iter = list_iterator_create(pack_job_ptr->pack_job_list);
 	while ((job_ptr = (struct job_record *) list_next(iter))) {
+		if ((job_ptr->magic != JOB_MAGIC) ||
+		    (job_ptr->pack_job_id != map->pack_job_id)) {
+			rc = false;	/* bad job pointer */
+			break;
+		}
+		if (IS_JOB_RUNNING(job_ptr))
+			continue;
 		if (!list_find_first(map->pack_job_list, _pack_find_rec,
 				     &job_ptr->job_id) ||
-		    (job_ptr->magic != JOB_MAGIC) ||
-		    (job_ptr->pack_job_id != map->pack_job_id) ||
-		    (job_ptr->priority == 0) ||
 		    !_job_runnable_now(job_ptr)) {
 			rc = false;
 			break;
@@ -2975,6 +2982,7 @@ static void _pack_start_now(pack_job_map_t *map, node_space_map_t *node_space)
 			      job_ptr->job_id);
 			continue;
 		}
+
 		rc = _start_job(job_ptr, resv_bitmap);
 		if (rc == SLURM_SUCCESS) {
 			/* If the following fails because of network
@@ -2990,7 +2998,6 @@ static void _pack_start_now(pack_job_map_t *map, node_space_map_t *node_space)
 			}
 		} else {
 			fed_mgr_job_unlock(job_ptr);
-//FIXME-PACK - Make sure this can start independently later
 			error("Pack job %u+%u (%u) failed to start",
 			      job_ptr->pack_job_id, job_ptr->pack_job_offset,
 			      job_ptr->job_id);
