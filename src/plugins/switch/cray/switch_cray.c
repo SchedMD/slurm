@@ -415,7 +415,8 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 {
 
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
-	slurm_cray_jobinfo_t *sw_job = (slurm_cray_jobinfo_t *) job->switch_job;
+	slurm_cray_jobinfo_t *sw_job = job->switch_job ?
+		(slurm_cray_jobinfo_t *)job->switch_job->data : NULL;
 	int rc, num_ptags;
 	char *launch_params;
 	int exclusive = 0, mem_scaling = 100, cpu_scaling = 100;
@@ -949,7 +950,8 @@ extern int switch_p_job_step_pre_suspend(stepd_step_rec_t *job)
 		job->jobid, job->stepid);
 #endif
 #if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
-	slurm_cray_jobinfo_t *jobinfo = (slurm_cray_jobinfo_t *)job->switch_job;
+	slurm_cray_jobinfo_t *jobinfo = job->switch_job ?
+		(slurm_cray_jobinfo_t *)job->switch_job->data : NULL;
 	char *err_msg = NULL;
 	int rc;
 	DEF_TIMERS;
@@ -1001,7 +1003,8 @@ extern int switch_p_job_step_pre_resume(stepd_step_rec_t *job)
 		job->jobid, job->stepid);
 #endif
 #if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
-	slurm_cray_jobinfo_t *jobinfo = (slurm_cray_jobinfo_t *)job->switch_job;
+	slurm_cray_jobinfo_t *jobinfo = job->switch_job ?
+		(slurm_cray_jobinfo_t *)job->switch_job->data : NULL;
 	char *err_msg = NULL;
 	int rc;
 	DEF_TIMERS;
