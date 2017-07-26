@@ -706,7 +706,7 @@ extern int sacctmgr_add_user(int argc, char **argv)
 
 	wckey_cond->name_list = list_create(slurm_destroy_char);
 
-	for (i=0; i<argc; i++) {
+	for (i = 0; i < argc; i++) {
 		int end = parse_option_end(argv[i]);
 		if (!end)
 			command_len=strlen(argv[i]);
@@ -853,7 +853,7 @@ extern int sacctmgr_add_user(int argc, char **argv)
 			db_conn, my_uid, &account_cond);
 
 		if (!local_acct_list) {
-			exit_code=1;
+			exit_code = 1;
 			fprintf(stderr, " Problem getting accounts "
 				"from database.  Contact your admin.\n");
 			FREE_NULL_LIST(local_user_list);
