@@ -136,7 +136,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_zlib.m4 \
 	$(top_srcdir)/auxdir/x_ac_sgi_job.m4 \
 	$(top_srcdir)/auxdir/x_ac_slurm_ssl.m4 \
 	$(top_srcdir)/auxdir/x_ac_systemd.m4 \
-	$(top_srcdir)/configure.ac
+	$(top_srcdir)/auxdir/x_ac_ucx.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
@@ -437,6 +437,9 @@ SSL_LIBS = @SSL_LIBS@
 STRIP = @STRIP@
 SUCMD = @SUCMD@
 SYSTEMD_TASKSMAX_OPTION = @SYSTEMD_TASKSMAX_OPTION@
+UCX_CPPFLAGS = @UCX_CPPFLAGS@
+UCX_LDFLAGS = @UCX_LDFLAGS@
+UCX_LIBS = @UCX_LIBS@
 UTIL_LIBS = @UTIL_LIBS@
 VERSION = @VERSION@
 ZLIB_CPPFLAGS = @ZLIB_CPPFLAGS@

@@ -729,6 +729,11 @@ HAVE_SOME_CURSES
 HAVE_SOME_CURSES_FALSE
 HAVE_SOME_CURSES_TRUE
 NCURSES
+HAVE_UCX_FALSE
+HAVE_UCX_TRUE
+UCX_LIBS
+UCX_LDFLAGS
+UCX_CPPFLAGS
 BUILD_RRD_FALSE
 BUILD_RRD_TRUE
 RRDTOOL_LDFLAGS
@@ -1008,6 +1013,7 @@ with_hwloc
 with_pmix
 with_freeipmi
 with_rrdtool
+with_ucx
 enable_glibtest
 enable_gtktest
 with_alps_emulation
@@ -1774,6 +1780,7 @@ Optional Packages:
                           version directories can be ':' delimited.
   --with-freeipmi=PATH    Specify path to freeipmi installation
   --with-rrdtool=PATH     Specify path to rrdtool-devel installation
+  --with-ucx=PATH         Build with Unified Communication X library support
   --with-alps-emulation   Run SLURM against an emulated ALPS system - requires
                           option cray.conf [default=no]
   --with-cray_dir=PATH    Specify path to Cray file installation - /opt/cray
@@ -21912,6 +21919,110 @@ fi
 
 
 
+  _x_ac_ucx_dirs="/usr /usr/local"
+  _x_ac_ucx_libs="lib64 lib"
+
+
+# Check whether --with-ucx was given.
+if test "${with_ucx+set}" = set; then :
+  withval=$with_ucx; if test "x$with_ucx" != xno; then :
+  _x_ac_ucx_dirs="$with_ucx $_x_ac_ucx_dirs"
+fi
+fi
+
+
+  if test "x$with_ucx" = xno; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: support for ucx disabled" >&5
+$as_echo "$as_me: WARNING: support for ucx disabled" >&2;}
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ucx installation" >&5
+$as_echo_n "checking for ucx installation... " >&6; }
+if ${x_ac_cv_ucx_dir+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+        for d in $_x_ac_ucx_dirs; do
+          test -d "$d" || continue
+          test -d "$d/include" || continue
+          test -d "$d/include/ucp" || continue
+          test -d "$d/include/ucp/api" || continue
+          test -d "$d/include/uct" || continue
+          test -d "$d/include/uct/api" || continue
+          test -f "$d/include/ucp/api/ucp.h" || continue
+          test -f "$d/include/ucp/api/ucp_version.h" || continue
+          for bit in $_x_ac_ucx_libs; do
+            test -d "$d/$bit" || continue
+            _x_ac_ucx_cppflags_save="$CPPFLAGS"
+            CPPFLAGS="-I$d/include $CPPFLAGS"
+            _x_ac_ucx_libs_save="$LIBS"
+            LIBS="-L$d/$bit -lrrd $LIBS"
+
+            cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <ucp/api/ucp_version.h>
+int
+main ()
+{
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  x_ac_cv_ucx_dir=$d
+                x_ac_cv_ucx_libdir=$d/$bit
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+            if test -z "$x_ac_cv_ucx_dir" ||
+               test -z "$x_ac_cv_ucx_libdir"; then
+              { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate ucx installation" >&5
+$as_echo "$as_me: WARNING: unable to locate ucx installation" >&2;}
+              continue
+            fi
+
+            CPPFLAGS="$_x_ac_ucx_cppflags_save"
+            LIBS="$_x_ac_ucx_libs_save"
+            test -n "$x_ac_cv_ucx_dir" && break
+          done
+          test -n "$x_ac_cv_ucx_dir" && break
+        done
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_ucx_dir" >&5
+$as_echo "$x_ac_cv_ucx_dir" >&6; }
+
+    if test -z "$x_ac_cv_ucx_dir"; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate ucx installation" >&5
+$as_echo "$as_me: WARNING: unable to locate ucx installation" >&2;}
+    else
+      UCX_CPPFLAGS="-I$x_ac_cv_ucx_dir/include"
+      if test "$ac_with_rpath" = "yes"; then
+        UCX_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_ucx_libdir"
+      else
+        UCX_CPPFLAGS+=" -DPMIXP_UCX_LIBPATH=\\\"$x_ac_cv_ucx_libdir\\\""
+      fi
+
+$as_echo "#define HAVE_UCX 1" >>confdefs.h
+
+    fi
+
+
+
+
+  fi
+
+   if test -n "$x_ac_cv_ucx_dir"; then
+  HAVE_UCX_TRUE=
+  HAVE_UCX_FALSE='#'
+else
+  HAVE_UCX_TRUE='#'
+  HAVE_UCX_FALSE=
+fi
+
+
+
 
    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for initscr in -lncurses" >&5
 $as_echo_n "checking for initscr in -lncurses... " >&6; }
@@ -25571,6 +25682,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_RRD_TRUE}" && test -z "${BUILD_RRD_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_RRD\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${HAVE_UCX_TRUE}" && test -z "${HAVE_UCX_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_UCX\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_SOME_CURSES_TRUE}" && test -z "${HAVE_SOME_CURSES_FALSE}"; then
