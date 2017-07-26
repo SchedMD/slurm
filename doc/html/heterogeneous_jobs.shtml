@@ -141,6 +141,15 @@ part of a federation (e.g. "sbatch --cluster=alpha,beta ...") then the entire
 job will be sent to the cluster expected to be able to start all components
 at the earliest time.</p>
 
+<p>There is currently no test performed at job submit time to determine if all
+components of a heterogeneous job can be started at the same time with respect
+to account and quality of service (QOS) limits.
+Each component will be validated to be executable at job submit time and the
+heterogeneous job as a whole will only be validated with respect to limits
+when being considered for resource allocation (i.e. scheduling time).
+Each component of a heterogeneous job counts as a "job" with respect to
+resource limits.</p>
+
 <h2><a name="managing">Managing Jobs</a></h2>
 
 <p>Information maintained in Slurm for a heterogeneous job includes:</p>
@@ -382,6 +391,13 @@ could be initiated.</p>
 mode is used in the next iteration in order to consider system status changes
 which might permit the heterogeneous to be initiated at an earlier time than
 previously determined.</p>
+
+<p>There is currently no test performed at job submit time to determine if all
+components of a heterogeneous job can be started at the same time with respect
+to account and quality of service (QOS) limits.
+Each component will be validated to be executable at job submit time and the
+heterogeneous job as a whole will only be validated with respect to limits
+when being considered for resource allocation (i.e. scheduling time).</p>
 
 <p>Each component of a heterogeneous job counts as a "job" with respect to
 resource limits.
