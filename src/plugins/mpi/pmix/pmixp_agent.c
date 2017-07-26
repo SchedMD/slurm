@@ -361,7 +361,7 @@ int pmixp_agent_start(void)
 	if (pmixp_server_want_pp()) {
 		pmixp_server_run_pp();
 	}
-	
+
 	PMIXP_DEBUG("agent thread started: tid = %lu",
 		    (unsigned long) _agent_tid);
 

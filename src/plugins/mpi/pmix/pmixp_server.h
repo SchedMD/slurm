@@ -84,15 +84,6 @@ int pmixp_server_send_nb(pmixp_ep_t *ep, pmixp_srv_cmd_t type,
 			 void *cb_data);
 Buf pmixp_server_buf_new(void);
 size_t pmixp_server_buf_reset(Buf buf);
-static inline void
-pmixp_server_buf_reserve(Buf buf, uint32_t size)
-{
-	if (remaining_buf(buf) < size) {
-		uint32_t to_reserve = size - remaining_buf(buf);
-		grow_buf(buf, to_reserve);
-	}
-}
-
 
 #ifndef NDEBUG
 /* Debug tools used only if debug was enabled */
@@ -113,5 +104,13 @@ bool pmixp_server_pp_check_fini();
 #define pmixp_server_run_pp()
 #define pmixp_server_init_pp(env)
 #endif
+
+static inline void pmixp_server_buf_reserve(Buf buf, uint32_t size)
+{
+	if (remaining_buf(buf) < size) {
+		uint32_t to_reserve = size - remaining_buf(buf);
+		grow_buf(buf, to_reserve);
+	}
+}
 
 #endif /* PMIXP_SERVER_H */

@@ -226,13 +226,13 @@ static int _iov_shift(struct iovec *iov, size_t iovcnt, int offset)
 	return iovcnt - skip;
 }
 
-size_t pmixp_writev_buf(int sd, struct iovec *iov, size_t iovcnt, 
+size_t pmixp_writev_buf(int sd, struct iovec *iov, size_t iovcnt,
 			size_t offset, int *shutdown)
 {
 	ssize_t ret;
 	size_t size = 0, written = 0;
 	int i;
-	
+
 	for (i=0; i < iovcnt; i++) {
 		size += iov[i].iov_len;
 	}
@@ -306,7 +306,7 @@ bool pmixp_fd_write_ready(int fd, int *shutdown)
 	cur = start;
 	while ((cur - start) < 0.01) {
 		rc = poll(pfd, 1, 10);
-		
+
 		/* update current timestamp */
 		gettimeofday(&tv,NULL);
 		cur = tv.tv_sec + 1E-6*tv.tv_usec;

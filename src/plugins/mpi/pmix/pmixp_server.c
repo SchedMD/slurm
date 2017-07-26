@@ -1098,8 +1098,8 @@ _direct_send(pmixp_dconn_t *dconn, pmixp_ep_t *ep,
 	msg->hdr = bhdr;
 	msg->buffer = _buf_finalize(buf, nhdr, hsize, &dsize);
 	msg->buf_ptr = buf;
-	
-	
+
+
 	rc = pmixp_dconn_send(dconn, msg);
 	if (SLURM_SUCCESS != rc) {
 		msg->sent_cb(rc, PMIXP_P2P_INLINE, msg->cbdata);
@@ -1456,7 +1456,7 @@ void pmixp_server_run_pp()
 			PMIXP_ERROR("latency: %d - %.9lf", i, time / iters );
 		} else {
 			int count = iters + iters/10;
-			
+
 			slurm_mutex_lock(&_pmixp_pp_lock);
 			_pmixp_pp_warmup = iters/10;
 			_pmixp_pp_iters = iters;

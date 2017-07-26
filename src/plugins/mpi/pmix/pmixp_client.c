@@ -56,10 +56,7 @@
 #if (HAVE_PMIX_VER != PMIX_VERSION_MAJOR)
 #define VALUE_TO_STRING(x) #x
 #define VALUE(x) VALUE_TO_STRING(x)
-#pragma message "PMIx version mismatch: the major version seen during "		\
-	"configuration was " VALUE(HAVE_PMIX_VER) "L but found "		\
-	VALUE(PMIX_VERSION_MAJOR) " compilation will most likely fail."		\
-	" Please reconfigure against the new version."
+#pragma message "PMIx version mismatch: the major version seen during configuration was " VALUE(HAVE_PMIX_VER) "L but found " VALUE(PMIX_VERSION_MAJOR) " compilation will most likely fail.  Please reconfigure against the new version."
 #endif
 
 // define some additional keys
@@ -735,8 +732,7 @@ int pmixp_libpmix_job_set(void)
 						 _release_cb,
 						 &register_caddy[i + 1]);
 		if (PMIX_SUCCESS != rc) {
-			PMIXP_ERROR("Cannot register client %d(%d) in "
-				    "namespace %s",
+			PMIXP_ERROR("Cannot register client %d(%d) in namespace %s",
 				    pmixp_info_taskid(i), i,
 				    pmixp_info_namespace());
 			return SLURM_ERROR;
@@ -750,7 +746,7 @@ int pmixp_libpmix_job_set(void)
 		ts.tv_sec = 0;
 		ts.tv_nsec = 100;
 
-		for (i=0; i <  pmixp_info_tasks_loc() + 1; i++) {
+		for (i=0; i < pmixp_info_tasks_loc() + 1; i++) {
 			if (register_caddy[i].active) {
 				exit_flag = 0;
 			}

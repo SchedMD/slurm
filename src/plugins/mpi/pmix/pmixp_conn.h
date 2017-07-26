@@ -81,22 +81,21 @@ void pmixp_conn_init(pmixp_p2p_data_t slurm_hdr,
 void pmixp_conn_fini(void);
 void pmixp_conn_cleanup(void);
 
-pmixp_conn_t *
-pmixp_conn_new_temp(pmixp_conn_proto_t proto, int fd,
-		    pmixp_conn_new_msg_cb_t msg_cb);
-pmixp_conn_t *
-pmixp_conn_new_persist(pmixp_conn_proto_t proto,
-		       pmixp_io_engine_t *eng, pmixp_conn_new_msg_cb_t msg_cb,
-		       pmixp_conn_ret_cb_t ret_cb, void *conn_data);
+pmixp_conn_t *pmixp_conn_new_temp(pmixp_conn_proto_t proto, int fd,
+				  pmixp_conn_new_msg_cb_t msg_cb);
+pmixp_conn_t *pmixp_conn_new_persist(pmixp_conn_proto_t proto,
+				     pmixp_io_engine_t *eng,
+				     pmixp_conn_new_msg_cb_t msg_cb,
+				     pmixp_conn_ret_cb_t ret_cb,
+				     void *conn_data);
 void pmixp_conn_return(pmixp_conn_t *hndl);
-static inline bool
-pmixp_conn_is_alive(pmixp_conn_t *conn)
+
+static inline bool pmixp_conn_is_alive(pmixp_conn_t *conn)
 {
 	return pmixp_io_operating(conn->eng);
 }
 
-static inline bool
-pmixp_conn_progress_rcv(pmixp_conn_t *conn)
+static inline bool pmixp_conn_progress_rcv(pmixp_conn_t *conn)
 {
 	bool ret = false;
 	if (NULL == conn->hdr) {
@@ -114,23 +113,19 @@ pmixp_conn_progress_rcv(pmixp_conn_t *conn)
 	return ret;
 }
 
-static inline void
-pmixp_conn_progress_snd(pmixp_conn_t *conn)
+static inline void pmixp_conn_progress_snd(pmixp_conn_t *conn)
 {
 	pmixp_io_send_progress(conn->eng);
 }
 
-static inline pmixp_io_engine_t *
-pmixp_conn_get_eng(pmixp_conn_t *conn)
+static inline pmixp_io_engine_t *pmixp_conn_get_eng(pmixp_conn_t *conn)
 {
 	return conn->eng;
 }
 
-static inline void *
-pmixp_conn_get_data(pmixp_conn_t *conn)
+static inline void *pmixp_conn_get_data(pmixp_conn_t *conn)
 {
 	return conn->ret_data;
 }
-
 
 #endif // PMIXP_DIRECT_CONN_H

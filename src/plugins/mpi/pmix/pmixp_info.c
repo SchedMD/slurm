@@ -194,7 +194,7 @@ eio_handle_t *pmixp_info_io()
  cpus_per_node = getenvp(*env, PMIX_CPUS_PER_NODE_ENV);
  if (cpus_per_node == NULL) {
  PMIXP_ERROR_NO(0,"Cannot find %s environment variable",
-			PMIX_CPUS_PER_NODE_ENV);
+		PMIX_CPUS_PER_NODE_ENV);
  return SLURM_ERROR;
  }
  cpus_per_task_env = getenvp(*env, PMIX_CPUS_PER_TASK);
@@ -263,8 +263,8 @@ static int _resources_set(char ***env)
 		p = getenvp(*env, PMIXP_JOB_NODES_ENV_DEP);
 		if (!p) {
 			/* shouldn't happen if we are under SLURM! */
-			PMIXP_ERROR_NO(ENOENT, "Neither of nodelist environment"
-				       " variables: %s OR %s was found!",
+			PMIXP_ERROR_NO(ENOENT,
+				       "Neither of nodelist environment variables: %s OR %s was found!",
 				       PMIXP_JOB_NODES_ENV,
 				       PMIXP_JOB_NODES_ENV_DEP);
 			goto err_exit;

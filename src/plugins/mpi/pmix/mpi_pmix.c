@@ -97,9 +97,7 @@ extern int init(void)
 	 * found in the pmix source we are dynamically linking against.
 	 */
 	if (HAVE_PMIX_VER != PMIX_VERSION_MAJOR)
-		fatal("pmix_init: Slurm was compiled against PMIx v%d but "
-		      "we are now linking against v%ld."
-		      " Please check your install.",
+		fatal("pmix_init: Slurm was compiled against PMIx v%d but we are now linking against v%ld. Please check your install.",
 		      HAVE_PMIX_VER, PMIX_VERSION_MAJOR);
 
 	return SLURM_SUCCESS;

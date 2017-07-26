@@ -63,7 +63,6 @@ void pmixp_conn_fini(void)
 	list_destroy(_conn_list);
 	list_destroy(_empty_hndl_list);
 	_tmp_engines_fini();
-
 }
 
 static void _msg_handler_destruct(void *obj)
@@ -105,11 +104,10 @@ void pmixp_conn_cleanup(void)
 	}
 }
 
-pmixp_conn_t *
-pmixp_conn_new_temp(pmixp_conn_proto_t proto, int fd,
-		    pmixp_conn_new_msg_cb_t nmsg_cb)
+pmixp_conn_t *pmixp_conn_new_temp(pmixp_conn_proto_t proto, int fd,
+				  pmixp_conn_new_msg_cb_t nmsg_cb)
 {
-	xassert( proto == PMIXP_PROTO_SLURM || proto == PMIXP_PROTO_DIRECT);
+	xassert(proto == PMIXP_PROTO_SLURM || proto == PMIXP_PROTO_DIRECT);
 
 	pmixp_conn_t *conn = list_pop(_empty_hndl_list);
 	if (NULL == conn) {
@@ -143,13 +141,13 @@ pmixp_conn_new_temp(pmixp_conn_proto_t proto, int fd,
 	return conn;
 }
 
-pmixp_conn_t *
-pmixp_conn_new_persist(pmixp_conn_proto_t proto,
-		       pmixp_io_engine_t *eng, pmixp_conn_new_msg_cb_t nmsg_cb,
-		       pmixp_conn_ret_cb_t ret_cb, void *ret_data)
+pmixp_conn_t *pmixp_conn_new_persist(pmixp_conn_proto_t proto,
+				     pmixp_io_engine_t *eng,
+				     pmixp_conn_new_msg_cb_t nmsg_cb,
+				     pmixp_conn_ret_cb_t ret_cb, void *ret_data)
 {
-	xassert( proto == PMIXP_PROTO_SLURM || proto == PMIXP_PROTO_DIRECT);
-	xassert( NULL != eng );
+	xassert(proto == PMIXP_PROTO_SLURM || proto == PMIXP_PROTO_DIRECT);
+	xassert(NULL != eng);
 
 	pmixp_conn_t *conn = list_pop(_empty_hndl_list);
 	if (NULL == conn) {
@@ -170,8 +168,7 @@ pmixp_conn_new_persist(pmixp_conn_proto_t proto,
 	return conn;
 }
 
-void
-pmixp_conn_return(pmixp_conn_t *conn)
+void pmixp_conn_return(pmixp_conn_t *conn)
 {
 	/* if this is a temp connection - return I/O engine */
 	if (NULL != conn->ret_cb) {
@@ -224,15 +221,13 @@ pmixp_conn_return(pmixp_conn_t *conn)
 static void _temp_engine_destruct(void *obj);
 static List _slurm_engines, _direct_engines;
 
-static void
-_tmp_engines_init()
+static void _tmp_engines_init()
 {
 	_slurm_engines  = list_create(_temp_engine_destruct);
 	_direct_engines = list_create(_temp_engine_destruct);
 }
 
-static void
-_tmp_engines_fini()
+static void _tmp_engines_fini()
 {
 	list_destroy(_slurm_engines);
 	list_destroy(_direct_engines);
@@ -245,8 +240,7 @@ static void _temp_engine_destruct(void *obj)
 	xfree(eng);
 }
 
-static inline pmixp_io_engine_t*
-_tmp_engines_get_slurm()
+static inline pmixp_io_engine_t *_tmp_engines_get_slurm()
 {
 	pmixp_io_engine_t *eng = list_pop(_slurm_engines);
 	if (NULL == eng){
@@ -256,15 +250,13 @@ _tmp_engines_get_slurm()
 	return eng;
 }
 
-static inline void
-_tmp_engines_return_slurm(pmixp_io_engine_t *eng)
+static inline void _tmp_engines_return_slurm(pmixp_io_engine_t *eng)
 {
 	xassert(NULL != eng);
 	list_push(_slurm_engines, eng);
 }
 
-static inline pmixp_io_engine_t*
-_tmp_engines_get_direct()
+static inline pmixp_io_engine_t *_tmp_engines_get_direct()
 {
 	pmixp_io_engine_t *eng = list_pop(_direct_engines);
 	if (NULL == eng){
@@ -274,8 +266,7 @@ _tmp_engines_get_direct()
 	return eng;
 }
 
-static inline void
-_tmp_engines_return_direct(pmixp_io_engine_t *eng)
+static inline void _tmp_engines_return_direct(pmixp_io_engine_t *eng)
 {
 	xassert(NULL != eng);
 	list_push(_direct_engines, eng);

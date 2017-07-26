@@ -187,8 +187,7 @@ void pmixp_io_finalize(pmixp_io_engine_t *eng, int err)
 	{
 	case PMIXP_IO_FINALIZED:
 		/* avoid double finalization */
-		PMIXP_ERROR("Attempt to finalize already finalized "
-			    "I/O engine");
+		PMIXP_ERROR("Attempt to finalize already finalized I/O engine");
 		return;
 	case PMIXP_IO_OPERATING:
 		close(eng->sd);
@@ -486,8 +485,7 @@ static bool _send_pending(pmixp_io_engine_t *eng)
 		void *msg = list_dequeue(eng->send_queue);
 		xassert(msg != NULL);
 		if ((rc = _send_set_current(eng, msg))) {
-			PMIXP_ERROR_NO(rc, "Cannot switch to the "
-				       "next message");
+			PMIXP_ERROR_NO(rc, "Cannot switch to the next message");
 			pmixp_io_finalize(eng, rc);
 		}
 	}
@@ -528,7 +526,7 @@ static void _send_progress(pmixp_io_engine_t *eng)
 			pmixp_io_finalize(eng, shutdown);
 			break;
 		}
-		
+
 		eng->send_offs += written;
 		if (!written) {
 			break;
@@ -553,7 +551,7 @@ int pmixp_io_send_enqueue(pmixp_io_engine_t *eng, void *msg)
 		return SLURM_ERROR;
 	}
 	list_enqueue(eng->send_queue, msg);
-	
+
 	/* if we don't send anything now - try
 	 * to progress immediately
 	 */

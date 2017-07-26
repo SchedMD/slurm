@@ -108,9 +108,15 @@ extern uint32_t _pmixp_dconn_conn_cnt;
 extern pmixp_dconn_t *_pmixp_dconn_conns;
 extern pmixp_dconn_handlers_t _pmixp_dconn_h;
 
-int pmixp_dconn_init(int node_cnt,
-		      pmixp_p2p_data_t direct_hdr);
+int pmixp_dconn_init(int node_cnt, pmixp_p2p_data_t direct_hdr);
 void pmixp_dconn_fini();
+int pmixp_dconn_connect_do(pmixp_dconn_t *dconn, void *ep_data,
+			   size_t ep_len, void *init_msg);
+pmixp_dconn_progress_type_t pmixp_dconn_progress_type();
+pmixp_dconn_conn_type_t pmixp_dconn_connect_type();
+int pmixp_dconn_poll_fd();
+size_t pmixp_dconn_ep_len();
+char *pmixp_dconn_ep_data();
 
 #ifndef NDEBUG
 static void pmixp_dconn_verify(pmixp_dconn_t *dconn)
@@ -122,36 +128,26 @@ static void pmixp_dconn_verify(pmixp_dconn_t *dconn)
 #define pmixp_dconn_verify(dconn)
 #endif
 
-static inline pmixp_dconn_t *
-pmixp_dconn_lock(int nodeid)
+static inline pmixp_dconn_t *pmixp_dconn_lock(int nodeid)
 {
 	xassert(nodeid < _pmixp_dconn_conn_cnt);
 	slurm_mutex_lock(&_pmixp_dconn_conns[nodeid].lock);
 	return &_pmixp_dconn_conns[nodeid];
 }
 
-static inline void
-pmixp_dconn_unlock(pmixp_dconn_t *dconn)
+static inline void pmixp_dconn_unlock(pmixp_dconn_t *dconn)
 {
 	pmixp_dconn_verify(dconn);
 	slurm_mutex_unlock(&dconn->lock);
 }
 
-pmixp_dconn_progress_type_t pmixp_dconn_progress_type();
-pmixp_dconn_conn_type_t pmixp_dconn_connect_type();
-int pmixp_dconn_poll_fd();
-size_t pmixp_dconn_ep_len();
-char *pmixp_dconn_ep_data();
-
-static inline pmixp_dconn_state_t
-pmixp_dconn_state(pmixp_dconn_t *dconn)
+static inline pmixp_dconn_state_t pmixp_dconn_state(pmixp_dconn_t *dconn)
 {
 	pmixp_dconn_verify(dconn);
 	return dconn->state;
 }
 
-static inline void
-pmixp_dconn_req_sent(pmixp_dconn_t *dconn)
+static inline void pmixp_dconn_req_sent(pmixp_dconn_t *dconn)
 {
 	if (PMIXP_DIRECT_INIT != dconn->state) {
 		PMIXP_ERROR("State machine violation, when transition "
@@ -163,8 +159,7 @@ pmixp_dconn_req_sent(pmixp_dconn_t *dconn)
 	dconn->state = PMIXP_DIRECT_EP_SENT;
 }
 
-static inline int
-pmixp_dconn_send(pmixp_dconn_t *dconn, void *msg)
+static inline int pmixp_dconn_send(pmixp_dconn_t *dconn, void *msg)
 {
 	return _pmixp_dconn_h.send(dconn->priv, msg);
 }
@@ -174,13 +169,10 @@ static inline void pmixp_dconn_regio(eio_handle_t *h)
 	return _pmixp_dconn_h.regio(h);
 }
 
-int pmixp_dconn_connect_do(pmixp_dconn_t *dconn, void *ep_data,
-			   size_t ep_len, void *init_msg);
-
 /* Returns locked direct connection descriptor */
 
-static inline bool
-pmixp_dconn_require_connect(pmixp_dconn_t *dconn, bool *send_init)
+static inline bool pmixp_dconn_require_connect(
+	pmixp_dconn_t *dconn, bool *send_init)
 {
 	*send_init = false;
 	switch( pmixp_dconn_state(dconn) ){
@@ -227,9 +219,8 @@ pmixp_dconn_require_connect(pmixp_dconn_t *dconn, bool *send_init)
 	return false;
 }
 
-static inline int
-pmixp_dconn_connect(pmixp_dconn_t *dconn, void *ep_data, int ep_len,
-		    void *init_msg)
+static inline int pmixp_dconn_connect(
+	pmixp_dconn_t *dconn, void *ep_data, int ep_len, void *init_msg)
 {
 	int rc;
 	/* establish the connection */
@@ -257,8 +248,7 @@ pmixp_dconn_connect(pmixp_dconn_t *dconn, void *ep_data, int ep_len,
 }
 
 /* POLL-based specific API */
-static inline pmixp_io_engine_t*
-pmixp_dconn_engine(pmixp_dconn_t *dconn)
+static inline pmixp_io_engine_t *pmixp_dconn_engine(pmixp_dconn_t *dconn)
 {
 	pmixp_dconn_verify(dconn);
 	xassert( PMIXP_DCONN_PROGRESS_SW == pmixp_dconn_progress_type(dconn));
@@ -269,8 +259,7 @@ pmixp_dconn_engine(pmixp_dconn_t *dconn)
 }
 
 /* Returns locked direct connection descriptor */
-static inline pmixp_dconn_t *
-pmixp_dconn_accept(int nodeid, int fd)
+static inline pmixp_dconn_t *pmixp_dconn_accept(int nodeid, int fd)
 {
 	if( PMIXP_DCONN_PROGRESS_SW != pmixp_dconn_progress_type() ){
 		PMIXP_ERROR("Accept is not supported by direct connection "
@@ -304,8 +293,7 @@ pmixp_dconn_accept(int nodeid, int fd)
 }
 
 /* Returns locked direct connection descriptor */
-static inline void
-pmixp_dconn_disconnect(pmixp_dconn_t *dconn)
+static inline void pmixp_dconn_disconnect(pmixp_dconn_t *dconn)
 {
 	switch( pmixp_dconn_state(dconn) ){
 	case PMIXP_DIRECT_INIT:
