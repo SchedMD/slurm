@@ -2845,6 +2845,8 @@ typedef struct slurm_ctl_conf {
 	char *slurmctld_plugstack;/* generic slurmctld plugins */
 	uint32_t slurmctld_port;  /* default communications port to slurmctld */
 	uint16_t slurmctld_port_count; /* number of slurmctld comm ports */
+	uint16_t slurmctld_syslog_debug; /* slurmctld output to
+					  * local logfile and syslog*/
 	uint16_t slurmctld_timeout;/* seconds that backup controller waits
 				    * on non-responding primarly controller */
 	uint16_t slurmd_debug;	/* slurmd logging level */
@@ -2853,6 +2855,8 @@ typedef struct slurm_ctl_conf {
 	char *slurmd_plugstack; /* generic slurmd plugins */
 	uint32_t slurmd_port;	/* default communications port to slurmd */
 	char *slurmd_spooldir;	/* where slurmd put temporary state info */
+	uint16_t slurmd_syslog_debug; /* slurmd output to
+				       * local logfile and syslog*/
 	uint16_t slurmd_timeout;/* how long slurmctld waits for slurmd before
 				 * considering node DOWN */
 	char *srun_epilog;      /* srun epilog program */

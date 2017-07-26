@@ -1000,6 +1000,7 @@ _read_config(void)
 	_free_and_set(conf->pubkey,   path_pubkey);
 
 	conf->debug_flags = cf->debug_flags;
+	conf->syslog_debug = cf->slurmd_syslog_debug;
 	conf->propagate_prio = cf->propagate_prio_process;
 
 	_free_and_set(conf->job_acct_gather_freq,
@@ -1202,6 +1203,7 @@ _print_conf(void)
 	debug3("ChosLoc     = `%s'",     conf->chos_loc);
 	debug3("Slurmstepd  = `%s'",     conf->stepd_loc);
 	debug3("Spool Dir   = `%s'",     conf->spooldir);
+	debug3("Syslog Debug  = %d",     cf->slurmd_syslog_debug);
 	debug3("Pid File    = `%s'",     conf->pidfile);
 	debug3("Slurm UID   = %u",       conf->slurm_user_id);
 	debug3("TaskProlog  = `%s'",     conf->task_prolog);
@@ -1924,6 +1926,7 @@ static void _update_logging(void)
 	cf = slurm_conf_lock();
 	if (!conf->debug_level_set && (cf->slurmd_debug != (uint16_t) NO_VAL))
 		conf->debug_level = cf->slurmd_debug;
+	conf->syslog_debug = cf->slurmd_syslog_debug;
 	conf->log_fmt = cf->log_fmt;
 	slurm_conf_unlock();
 
@@ -1940,11 +1943,15 @@ static void _update_logging(void)
 	 */
 	if (conf->daemonize) {
 		o->stderr_level = LOG_LEVEL_QUIET;
-		if (conf->logfile)
-			o->syslog_level = LOG_LEVEL_FATAL;
+		if (!conf->logfile &&
+		    (conf->syslog_debug == LOG_LEVEL_QUIET)) {
+			/* Insure fatal errors get logged somewhere */
+ 			o->syslog_level = LOG_LEVEL_FATAL;
+		} else {
+			o->syslog_level = conf->syslog_debug;
+		}
 	} else
 		o->syslog_level  = LOG_LEVEL_QUIET;
-
 	log_alter(conf->log_opts, SYSLOG_FACILITY_DAEMON, conf->logfile);
 	log_set_timefmt(conf->log_fmt);
 

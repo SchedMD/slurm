@@ -111,6 +111,8 @@ typedef struct slurmd_config {
 	char         *node_topo_pattern;/* node's topology address pattern */
 	char         *conffile;		/* config filename                 */
 	char         *logfile;		/* slurmd logfile, if any          */
+	int          syslog_debug;	/* send output to both logfile and
+					 * syslog */
 	char         *spooldir;		/* SlurmdSpoolDir		   */
 	char         *pidfile;		/* PidFile location		   */
 	char         *health_check_program; /* run on RPC request or at start */

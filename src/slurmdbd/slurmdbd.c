@@ -520,12 +520,17 @@ static void _update_logging(bool startup)
 	log_opts.logfile_level = slurmdbd_conf->debug_level;
 	log_opts.syslog_level  = slurmdbd_conf->debug_level;
 
-	if (foreground)
+	if (foreground) {
 		log_opts.syslog_level = LOG_LEVEL_QUIET;
-	else {
+	} else {
 		log_opts.stderr_level = LOG_LEVEL_QUIET;
-		if (slurmdbd_conf->log_file)
-			log_opts.syslog_level = LOG_LEVEL_QUIET;
+		if (!slurmdbd_conf->log_file &&
+		    (slurmdbd_conf->syslog_debug == LOG_LEVEL_QUIET)) {
+			/* Insure fatal errors get logged somewhere */
+ 			log_opts.syslog_level = LOG_LEVEL_FATAL;
+		} else {
+			log_opts.syslog_level = slurmdbd_conf->syslog_debug;
+		}
 	}
 
 	log_alter(log_opts, SYSLOG_FACILITY_DAEMON, slurmdbd_conf->log_file);

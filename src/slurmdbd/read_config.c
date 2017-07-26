@@ -96,9 +96,10 @@ static void _clear_slurmdbd_conf(void)
 		xfree(slurmdbd_conf->dbd_host);
 		slurmdbd_conf->dbd_port = 0;
 		slurmdbd_conf->debug_flags = 0;
-		slurmdbd_conf->debug_level = 0;
+		slurmdbd_conf->debug_level = LOG_LEVEL_QUIET;
 		xfree(slurmdbd_conf->default_qos);
 		xfree(slurmdbd_conf->log_file);
+		slurmdbd_conf->syslog_debug = LOG_LEVEL_QUIET;
 		xfree(slurmdbd_conf->pid_file);
 		xfree(slurmdbd_conf->plugindir);
 		slurmdbd_conf->private_data = 0;
@@ -150,6 +151,7 @@ extern int read_slurmdbd_conf(void)
 		{"DbdPort", S_P_UINT16},
 		{"DebugFlags", S_P_STRING},
 		{"DebugLevel", S_P_STRING},
+		{"DebugLevelSyslog", S_P_STRING},
 		{"DefaultQOS", S_P_STRING},
 		{"JobPurge", S_P_UINT32},
 		{"LogFile", S_P_STRING},
@@ -265,6 +267,13 @@ extern int read_slurmdbd_conf(void)
 		}
 
 		s_p_get_string(&slurmdbd_conf->log_file, "LogFile", tbl);
+
+		if (s_p_get_string(&temp_str, "DebugLevelSyslog", tbl)) {
+			slurmdbd_conf->syslog_debug = log_string2num(temp_str);
+			if (slurmdbd_conf->syslog_debug == NO_VAL16)
+				fatal("Invalid DebugLevelSyslog %s", temp_str);
+			xfree(temp_str);
+		}
 
 		if (s_p_get_string(&temp_str, "LogTimeFormat", tbl)) {
 			if (xstrcasestr(temp_str, "iso8601_ms"))
@@ -622,6 +631,7 @@ extern void log_config(void)
 	debug2("DebugFlags        = %s", tmp_ptr);
 	xfree(tmp_ptr);
 	debug2("DebugLevel        = %u", slurmdbd_conf->debug_level);
+	debug2("DebugLevelSyslog  = %u", slurmdbd_conf->syslog_debug);
 	debug2("DefaultQOS        = %s", slurmdbd_conf->default_qos);
 
 	debug2("LogFile           = %s", slurmdbd_conf->log_file);
@@ -815,6 +825,11 @@ extern List dump_config(void)
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("DebugLevel");
 	key_pair->value = xstrdup(log_num2string(slurmdbd_conf->debug_level));
+	list_append(my_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("DebugLevelSyslog");
+	key_pair->value = xstrdup(log_num2string(slurmdbd_conf->syslog_debug));
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));

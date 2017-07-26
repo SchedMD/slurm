@@ -103,6 +103,11 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     start times of pending jobs to get pushed forward in time. On systems with
     large numbers of running jobs, performance of the backfill scheduler will
     suffer and fewer jobs will be evaluated.
+ -- Add slurm.conf configuration parameters SlurmctldSyslogDebug and
+    SlurmdSyslogDebug to control which messages from the slurmctld and slurmd
+    daemons get written to syslog.
+ -- Add slurmdbd.conf configuration parameter DebugLevelSyslog to control which
+    messages from the slurmdbd daemon get written to syslog.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

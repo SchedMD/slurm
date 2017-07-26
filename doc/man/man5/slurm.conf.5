@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "May 2017" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "July 2017" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -3245,6 +3245,52 @@ Configure SlurmctldPort to use a port outside of the configured SrunPortRange
 and RSIP's port range.
 
 .TP
+\fBSlurmctldSyslogDebug\fR
+The slurmctld daemon will log events to the syslog file at the specified
+level of detail (the \fBSlurmctldLogFile\fR file will include log messages
+at level of details specified be \fBSlurmctldDebug\fR configuration parameter).
+If the slurmctld daemon is run in the foreground (initialted with the \fB\-D\fR
+command line option) the \fBSlurmctldSyslogDebug\fR configuration parameter
+will be ignored.
+The default value is \fBquiet\fR unless there is no configured
+\fBSlurmctldLogFile\fR, in which case the default value will be \fBfatal\bR so
+that fatal errors are logged somewhere.
+
+.RS
+.TP 10
+\fBquiet\fR
+Log nothing
+.TP
+\fBfatal\fR
+Log only fatal errors
+.TP
+\fBerror\fR
+Log only errors
+.TP
+\fBinfo\fR
+Log errors and general informational messages
+.TP
+\fBverbose\fR
+Log errors and verbose informational messages
+.TP
+\fBdebug\fR
+Log errors and verbose informational messages and debugging messages
+.TP
+\fBdebug2\fR
+Log errors and verbose informational messages and more debugging messages
+.TP
+\fBdebug3\fR
+Log errors and verbose informational messages and even more debugging messages
+.TP
+\fBdebug4\fR
+Log errors and verbose informational messages and even more debugging messages
+.TP
+\fBdebug5\fR
+Log errors and verbose informational messages and even more debugging messages
+.RE
+
+
+.TP
 \fBSlurmctldTimeout\fR
 The interval, in seconds, that the backup controller waits for the
 primary controller to respond before assuming control.
@@ -3341,6 +3387,51 @@ Any "%h" within the name is replaced with the hostname on which the
 \fBslurmd\fR is running.
 Any "%n" within the name is replaced with the Slurm node name on which the
 \fBslurmd\fR is running.
+
+.TP
+\fBSlurmdSyslogDebug\fR
+The slurmd daemon will log events to the syslog file at the specified
+level of detail (the \fBSlurmdLogFile\fR file will include log messages
+at level of details specified be \fBSlurmdDebug\fR configuration parameter).
+If the slurmd daemon is run in the foreground (initialted with the \fB\-D\fR
+command line option) the \fBSlurmdSyslogDebug\fR configuration parameter
+will be ignored.
+The default value is \fBquiet\fR unless there is no configured
+\fBSlurmdLogFile\fR, in which case the default value will be \fBfatal\bR so
+that fatal errors are logged somewhere.
+
+.RS
+.TP 10
+\fBquiet\fR
+Log nothing
+.TP
+\fBfatal\fR
+Log only fatal errors
+.TP
+\fBerror\fR
+Log only errors
+.TP
+\fBinfo\fR
+Log errors and general informational messages
+.TP
+\fBverbose\fR
+Log errors and verbose informational messages
+.TP
+\fBdebug\fR
+Log errors and verbose informational messages and debugging messages
+.TP
+\fBdebug2\fR
+Log errors and verbose informational messages and more debugging messages
+.TP
+\fBdebug3\fR
+Log errors and verbose informational messages and even more debugging messages
+.TP
+\fBdebug4\fR
+Log errors and verbose informational messages and even more debugging messages
+.TP
+\fBdebug5\fR
+Log errors and verbose informational messages and even more debugging messages
+.RE
 
 .TP
 \fBSlurmdTimeout\fR

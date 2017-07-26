@@ -6536,6 +6536,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->slurmctld_plugstack, buffer);
 		pack32(build_ptr->slurmctld_port, buffer);
 		pack16(build_ptr->slurmctld_port_count, buffer);
+		pack16(build_ptr->slurmctld_syslog_debug, buffer);
 		pack16(build_ptr->slurmctld_timeout, buffer);
 
 		pack16(build_ptr->slurmd_debug, buffer);
@@ -6545,6 +6546,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack32(build_ptr->slurmd_port, buffer);
 
 		packstr(build_ptr->slurmd_spooldir, buffer);
+		pack16(build_ptr->slurmd_syslog_debug, buffer);
 		pack16(build_ptr->slurmd_timeout, buffer);
 		packstr(build_ptr->srun_epilog, buffer);
 		pack16(build_ptr->srun_port_range[0], buffer);
@@ -7501,6 +7503,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&build_ptr->slurmctld_port, buffer);
 		safe_unpack16(&build_ptr->slurmctld_port_count, buffer);
+		safe_unpack16(&build_ptr->slurmctld_syslog_debug, buffer);
 		safe_unpack16(&build_ptr->slurmctld_timeout, buffer);
 
 		safe_unpack16(&build_ptr->slurmd_debug, buffer);
@@ -7514,6 +7517,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 
 		safe_unpackstr_xmalloc(&build_ptr->slurmd_spooldir,
 				       &uint32_tmp, buffer);
+		safe_unpack16(&build_ptr->slurmd_syslog_debug, buffer);
 		safe_unpack16(&build_ptr->slurmd_timeout, buffer);
 
 		safe_unpackstr_xmalloc(&build_ptr->srun_epilog,

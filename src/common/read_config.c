@@ -96,7 +96,7 @@ strong_alias(sort_key_pairs, slurm_sort_key_pairs);
 strong_alias(run_in_daemon, slurm_run_in_daemon);
 
 /*
- * Instantiation of the "extern slurm_ctl_conf_t slurmcltd_conf" and
+ * Instantiation of the "extern slurm_ctl_conf_t slurmctld_conf" and
  * "bool ignore_state_errors" found in slurmctld.h
  */
 slurm_ctl_conf_t slurmctld_conf;
@@ -326,6 +326,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"SlurmctldPidFile", S_P_STRING},
 	{"SlurmctldPlugstack", S_P_STRING},
 	{"SlurmctldPort", S_P_STRING},
+	{"SlurmctldSyslogDebug", S_P_STRING},
 	{"SlurmctldTimeout", S_P_UINT16},
 	{"SlurmdDebug", S_P_STRING},
 	{"SlurmdLogFile", S_P_STRING},
@@ -333,6 +334,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"SlurmdPlugstack", S_P_STRING},
 	{"SlurmdPort", S_P_UINT32},
 	{"SlurmdSpoolDir", S_P_STRING},
+	{"SlurmdSyslogDebug", S_P_STRING},
 	{"SlurmdTimeout", S_P_UINT16},
 	{"SlurmSchedLogFile", S_P_STRING},
 	{"SlurmSchedLogLevel", S_P_UINT16},
@@ -2590,6 +2592,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->slurmd_user_name);
 	ctl_conf_ptr->slurmctld_debug		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->slurmctld_logfile);
+	ctl_conf_ptr->slurmctld_syslog_debug    = NO_VAL16;
 	xfree (ctl_conf_ptr->sched_logfile);
 	ctl_conf_ptr->sched_log_level		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->slurmctld_pidfile);
@@ -2599,6 +2602,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->slurmctld_timeout		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->slurmd_debug		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->slurmd_logfile);
+	ctl_conf_ptr->slurmd_syslog_debug       = NO_VAL16;
 	xfree (ctl_conf_ptr->slurmd_pidfile);
 	xfree (ctl_conf_ptr->slurmd_plugstack);
  	ctl_conf_ptr->slurmd_port		= (uint32_t) NO_VAL;
@@ -4095,6 +4099,17 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	(void )s_p_get_string(&conf->slurmctld_logfile, "SlurmctldLogFile",
 			      hashtbl);
 
+	if (s_p_get_string(&temp_str, "SlurmctldSyslogDebug", hashtbl)) {
+		conf->slurmctld_syslog_debug = log_string2num(temp_str);
+		if (conf->slurmctld_syslog_debug == NO_VAL16) {
+			error("Invalid SlurmctldSyslogDebug %s", temp_str);
+			return SLURM_ERROR;
+		}
+		xfree(temp_str);
+		_normalize_debug_level(&conf->slurmctld_syslog_debug);
+	} else
+		conf->slurmctld_syslog_debug = LOG_LEVEL_QUIET;
+
 	if (s_p_get_string(&temp_str, "SlurmctldPort", hashtbl)) {
 		char *end_ptr = NULL;
 		long port_long;
@@ -4167,6 +4182,17 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_string(&conf->slurmd_spooldir, "SlurmdSpoolDir", hashtbl))
 		conf->slurmd_spooldir = xstrdup(DEFAULT_SPOOLDIR);
+
+	if (s_p_get_string(&temp_str, "SlurmdSyslogDebug", hashtbl)) {
+		conf->slurmd_syslog_debug = log_string2num(temp_str);
+		if (conf->slurmd_syslog_debug == NO_VAL16) {
+			error("Invalid SlurmdSyslogDebug %s", temp_str);
+			return SLURM_ERROR;
+		}
+		xfree(temp_str);
+		_normalize_debug_level(&conf->slurmd_syslog_debug);
+	} else
+		conf->slurmd_syslog_debug = LOG_LEVEL_QUIET;
 
 	if (!s_p_get_uint16(&conf->slurmd_timeout, "SlurmdTimeout", hashtbl))
 		conf->slurmd_timeout = DEFAULT_SLURMD_TIMEOUT;

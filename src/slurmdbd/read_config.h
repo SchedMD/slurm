@@ -73,6 +73,7 @@ typedef struct slurm_dbd_conf {
 	char *	 	default_qos;	/* default qos setting when
 					 * adding clusters              */
 	char *		log_file;	/* Log file			*/
+	uint16_t	syslog_debug;	/* output to both logfile and syslog*/
 	uint16_t        log_fmt;        /* Log file timestamt format    */
 	uint16_t        msg_timeout;    /* message timeout		*/
 	char *		pid_file;	/* where to store current PID	*/
