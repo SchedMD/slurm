@@ -1870,6 +1870,17 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_PACK_JOB_ID),
 				   tmp_char);
 
+	if (job_ptr->pack_job_offset) {
+		snprintf(tmp_char, sizeof(tmp_char), "%u",
+			 job_ptr->pack_job_offset);
+	} else {
+		snprintf(tmp_char, sizeof(tmp_char), "N/A");
+	}
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_PACK_JOB_OFFSET),
+				   tmp_char);
+
 	if (job_ptr->pack_job_id_set) {
 		snprintf(tmp_char, sizeof(tmp_char), "%s",
 			 job_ptr->pack_job_id_set);
@@ -1879,17 +1890,6 @@ static void _layout_job_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
 						 SORTID_PACK_JOB_ID_SET),
-				   tmp_char);
-
-	if (job_ptr->pack_job_id) {
-		snprintf(tmp_char, sizeof(tmp_char), "%u",
-			 job_ptr->pack_job_offset);
-	} else {
-		snprintf(tmp_char, sizeof(tmp_char), "N/A");
-	}
-	add_display_treestore_line(update, treestore, &iter,
-				   find_col_name(display_data_job,
-						 SORTID_PACK_JOB_OFFSET),
 				   tmp_char);
 
 	add_display_treestore_line(update, treestore, &iter,
