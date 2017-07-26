@@ -6418,7 +6418,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	    (!acct_policy_validate(job_desc, part_ptr,
 				   assoc_ptr, qos_ptr, NULL,
 				   &acct_policy_limit_set, 0))) {
-		info("_job_create: exceeded association/qos's limit "
+		info("_job_create: exceeded association/QOS limit "
 		     "for user %u", job_desc->user_id);
 		error_code = ESLURM_ACCOUNTING_POLICY;
 		goto cleanup_fail;

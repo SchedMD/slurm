@@ -77,6 +77,7 @@
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
 
+#include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/burst_buffer.h"
 #include "src/slurmctld/fed_mgr.h"
@@ -1145,6 +1146,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
+	uint32_t job_uid = NO_VAL;
 	struct job_record *job_ptr, *first_job_ptr;
 	char *err_msg = NULL;
 	ListIterator iter;
@@ -1195,6 +1197,8 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 	lock_slurmctld(job_write_lock);
 	iter = list_iterator_create(job_req_list);
 	while ((job_desc_msg = (job_desc_msg_t *) list_next(iter))) {
+		if (job_uid == NO_VAL)
+			job_uid = job_desc_msg->user_id;
 		if ((uid != job_desc_msg->user_id) && !priv_user) {
 			error_code = ESLURM_USER_ID_MISSING;
 			error("Security violation, REQUEST_JOB_PACK_ALLOCATION from uid=%d",
@@ -1277,9 +1281,14 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 	}
 	list_iterator_destroy(iter);
 
-	if (error_code == SLURM_SUCCESS) {
-//FIXME-PACK: Validate limits on pack-job as a whole (to the extent possible)
-	}
+	/* Validate limits on pack-job as a whole */
+	if ((error_code == SLURM_SUCCESS) &&
+	    (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
+	    !acct_policy_validate_pack(submit_job_list)) {
+		info("Pack job %u exceeded association/QOS limit for user %u",
+		     pack_job_id, job_uid);
+		error_code = ESLURM_ACCOUNTING_POLICY;
+        }
 
 
 	if ((error_code == 0) && (pack_job_id == 0)) {
@@ -3717,6 +3726,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	List job_req_list = (List) msg->data;
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
+	uint32_t job_uid = NO_VAL;
 	char *err_msg = NULL;
 	bool reject_job = false;
 	bool is_super_user;
@@ -3753,11 +3763,13 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 		goto send_msg;
 	}
 
-	/* Validate the request */
+	/* Validate the individual request */
 	is_super_user = validate_super_user(uid);
 	lock_slurmctld(job_read_lock);     /* Locks for job_submit plugin use */
 	iter = list_iterator_create(job_req_list);
 	while ((job_desc_msg = (job_desc_msg_t *) list_next(iter))) {
+		if (job_uid == NO_VAL)
+			job_uid = job_desc_msg->user_id;
 		if ((uid != job_desc_msg->user_id) && !is_super_user) {
 			/* NOTE: Super root can submit a job for any user */
 			error("Security violation, REQUEST_SUBMIT_BATCH_PACK_JOB from uid=%d",
@@ -3841,8 +3853,14 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	}
 	list_iterator_destroy(iter);
 
-	if (!reject_job) {
-//FIXME-PACK: Validate limits on pack-job as a whole (to the extent possible)
+	/* Validate limits on pack-job as a whole */
+	if (!reject_job &&
+	    (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
+	    !acct_policy_validate_pack(submit_job_list)) {
+		info("Pack job %u exceeded association/QOS limit for user %u",
+		     pack_job_id, job_uid);
+		error_code = ESLURM_ACCOUNTING_POLICY;
+		reject_job = true;
 	}
 
 	if ((pack_job_id == 0) && !reject_job) {

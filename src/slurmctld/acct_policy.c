@@ -2549,6 +2549,19 @@ extern void acct_policy_alter_job(struct job_record *job_ptr,
 	assoc_mgr_unlock(&locks);
 }
 
+/*
+ * acct_policy_validate - validate that a job request can be satisfied without
+ * exceeding any association or QOS limit.
+ * job_desc IN - job descriptor being submitted
+ * part_ptr IN - pointer to (one) partition to which the job is being submitted
+ * assoc_in IN - pointer to assocation to which the job is being submitted
+ * qos_ptr IN - pointer to QOS to which the job is being submitted
+ * state_reason OUT - if non-NULL, set to reason for rejecting the job
+ * acct_policy_limit_set IN/OUT - limits set for the job, pre-allocated storage
+ *		is filled in by acct_policy_validate
+ * update_call IN - true if request to update existing job request
+ * RET true if valid
+ */
 extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 				 struct part_record *part_ptr,
 				 slurmdb_assoc_rec_t *assoc_in,
@@ -2885,6 +2898,20 @@ end_it:
 	slurmdb_free_qos_rec_members(&qos_rec);
 
 	return rc;
+}
+
+/*
+ * acct_policy_validate_pack - validate that a pack job as a whole (all
+ * components at once) can be satisfied without exceeding any association or
+ * QOS limit.
+ * submit_job_list IN - list of "struct job_record" entries (already created)
+ * RET true if valid
+ */
+extern bool acct_policy_validate_pack(List submit_job_list)
+{
+//FIXME-PACK: Validate limits on pack-job as a whole
+//SEE	memcpy(&job_ptr->limit_set, &acct_policy_limit_set, sizeof(acct_policy_limit_set_t));
+	return true;
 }
 
 /*
