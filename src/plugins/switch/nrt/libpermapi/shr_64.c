@@ -931,7 +931,7 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 		job->ntasks = 1 + task_num;
 	} else if (pm_type == PM_POE) {
 		debug("got pe_rm_connect called");
-		launch_common_set_stdio_fds(job, &cio_fds);
+		launch_common_set_stdio_fds(job, &cio_fds, &opt);
 	} else {
 		*error_msg = malloc(sizeof(char) * err_msg_len);
 		snprintf(*error_msg, err_msg_len,
@@ -1016,7 +1016,8 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 	step_callbacks.step_signal   = _self_signal;
 	step_callbacks.step_timeout  = _self_timeout;
 
-	if (launch_g_step_launch(job, &cio_fds, &global_rc, &step_callbacks)) {
+	if (launch_g_step_launch(job, &cio_fds, &global_rc,
+				 &step_callbacks, &opt)) {
 		*error_msg = malloc(sizeof(char) * err_msg_len);
 		snprintf(*error_msg, err_msg_len,
 			 "pe_rm_connect: problem with launch: %s",
@@ -1074,7 +1075,7 @@ extern void pe_rm_free(rmhandle_t *resource_mgr)
 		/* Since we can't relaunch the step here don't worry about the
 		   return code.
 		*/
-		launch_g_step_wait(job, got_alloc);
+		launch_g_step_wait(job, got_alloc, &opt, -1);
 		/* We are at the end so don't worry about freeing the
 		   srun_job_t pointer */
 		fini_srun(job, got_alloc, &rc, slurm_started);
@@ -1273,9 +1274,9 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 		      "pe_rm_submit_job was called.  I am guessing "
 		      "PE_RM_BATCH is set somehow.  It things don't work well "
 		      "using this mode unset the env var and retry.");
-		create_srun_job(&job, &got_alloc, slurm_started, 0);
+		create_srun_job((void **)&job, &got_alloc, slurm_started, 0);
 		/* make sure we set up a signal handler */
-		pre_launch_srun_job(job, slurm_started, 0);
+		pre_launch_srun_job(job, slurm_started, 0, &opt);
 	}
 
 	*job_info = ret_info;
@@ -1755,7 +1756,7 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 		job->stepid = step_id;
 
 		opt.ifname = opt.ofname = opt.efname = "/dev/null";
-		job_update_io_fnames(job);
+		job_update_io_fnames(job, &opt);
 	} else if (pm_type == PM_POE) {
 		/* Create agent thread to forward job credential needed for
 		 * PMD to fanout child processes on other nodes */
@@ -1929,12 +1930,12 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 		opt.ntasks = pe_job_req->total_tasks;
 	}
 
-	create_srun_job(&job, &got_alloc, slurm_started, 0);
+	create_srun_job((void **)&job, &got_alloc, slurm_started, 0);
 	_re_write_cmdfile(slurm_cmd_fname, poe_cmd_fname, job->stepid,
 			  pe_job_req->total_tasks);
 
 	/* make sure we set up a signal handler */
-	pre_launch_srun_job(job, slurm_started, 0);
+	pre_launch_srun_job(job, slurm_started, 0, &opt);
 
 	return 0;
 }
