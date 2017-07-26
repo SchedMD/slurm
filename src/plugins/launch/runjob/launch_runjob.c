@@ -458,7 +458,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 	}
 	return launch_common_create_job_step(job, use_all_cpus,
 					     signal_function,
-					     destroy_job);
+					     destroy_job, opt_local);
 }
 
 extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
