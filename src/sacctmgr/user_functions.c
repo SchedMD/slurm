@@ -857,6 +857,8 @@ extern int sacctmgr_add_user(int argc, char **argv)
 			fprintf(stderr, " Problem getting accounts "
 				"from database.  Contact your admin.\n");
 			FREE_NULL_LIST(local_user_list);
+			xfree(default_acct);
+			xfree(default_wckey);
 			slurmdb_destroy_wckey_cond(wckey_cond);
 			slurmdb_destroy_assoc_cond(assoc_cond);
 			return SLURM_ERROR;
