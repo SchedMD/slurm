@@ -110,7 +110,6 @@ _setup_stepd_job_info(const stepd_step_rec_t *job, char ***env)
 	for (i = 0; i < job->node_tasks; i ++) {
 		job_info.gtids[i] = job->task[i]->gtid;
 	}
-	job_info.switch_job = (void*)job->switch_job;
 
 	p = getenvp(*env, PMI2_PMI_DEBUGGED_ENV);
 	if (p) {
@@ -548,8 +547,6 @@ _setup_srun_job_info(const mpi_plugin_client_info_t *job)
 	job_info.ntasks = job->step_layout->task_cnt;
 	job_info.ltasks = 0;	/* not used */
 	job_info.gtids = NULL;	/* not used */
-	job_info.switch_job = NULL; /* not used */
-
 
 	p = getenv(PMI2_PMI_DEBUGGED_ENV);
 	if (p) {
