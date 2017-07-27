@@ -175,8 +175,7 @@ static int _call_external_program(stepd_step_rec_t *job)
 	int max_wait = 300; /* seconds */
 	int time_remaining;
 
-	if ((job->state != SLURMSTEPD_STEP_RUNNING) ||
-	    program_name == NULL || program_name[0] == '\0')
+	if (program_name == NULL || program_name[0] == '\0')
 		return 0;
 
 	debug("step_terminate_monitor: unkillable after %d sec, calling: %s",
