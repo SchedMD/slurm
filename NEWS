@@ -26,6 +26,7 @@ documents those changes that are of interest to users and administrators.
     called.
  -- Fix minor memory leak if launch fails in the slurmstepd.
  -- Fix issue where UnkillableStepProgram if step was in an ending state.
+ -- Fix bug when tracking multiple simultaneous spawned ping cycles.
 
 * Changes in Slurm 17.02.6
 ==========================
