@@ -3691,6 +3691,8 @@ The length of time, in seconds, that Slurm will wait before deciding that
 processes in a job step are unkillable (after they have been signaled with
 SIGKILL) and execute \fBUnkillableStepProgram\fR as described above.
 The default timeout value is 60 seconds.
+If exceeded, the compute node will be drained to prevent future jobs from being
+scheduled on the node.
 
 .TP
 \fBUsePAM\fR
