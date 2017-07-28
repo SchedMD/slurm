@@ -660,22 +660,29 @@ _print_cred(munge_ctx_t ctx)
 	cred_info_destroy(mi);
 }
 
-/* Convert AuthInfo to a socket path. Accepts "socket=<path>[,]"
+/*
+ * Convert AuthInfo to a socket path. Accepts two input formats:
+ * 1) <path>		(Old format)
+ * 2) socket=<path>[,]	(New format)
  * NOTE: Caller must xfree return value
  */
 static char *_auth_opts_to_socket(char *opts)
 {
 	char *socket = NULL, *sep, *tmp;
 
-	if (opts) {
-		tmp = strstr(opts, "socket=");
-		if (tmp) {	/* New format */
-			socket = xstrdup(tmp + 7);
-			sep = strchr(socket, ',');
-			if (sep)
-				sep[0] = '\0';
-		}
-	}
+	if (!opts)
+		return NULL;
+
+	tmp = strstr(opts, "socket=");
+	if (tmp) {	/* New format */
+		socket = xstrdup(tmp + 7);
+		sep = strchr(socket, ',');
+		if (sep)
+			sep[0] = '\0';
+	} else if (strchr(opts, '='))
+		;	/* New format, but socket not specified */
+	else
+		socket = xstrdup(opts);	/* Old format */
 
 	return socket;
 }

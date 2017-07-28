@@ -97,24 +97,34 @@ enum local_error_code {
 
 static uid_t slurm_user = 0;
 
-/* Convert AuthInfo to a socket path. Parses input format "socket=<path>[,]".
+/*
+ * Convert AuthInfo to a socket path. Accepts two input formats:
+ * 1) <path>		(Old format)
+ * 2) socket=<path>[,]	(New format)
  * NOTE: Caller must xfree return value
  */
 static char *_auth_opts_to_socket(void)
 {
 	char *socket = NULL, *sep, *tmp;
-	char *auth_info = slurm_get_auth_info();
+	char *opts = slurm_get_auth_info();
 
-	if (auth_info) {
-		tmp = strstr(auth_info, "socket=");
-		if (tmp) {	/* New format */
-			socket = xstrdup(tmp + 7);
-			sep = strchr(socket, ',');
-			if (sep)
-				sep[0] = '\0';
-		}
-		xfree(auth_info);
+	if (!opts)
+		return NULL;
+
+	tmp = strstr(opts, "socket=");
+	if (tmp) {	/* New format */
+		socket = xstrdup(tmp + 7);
+		sep = strchr(socket, ',');
+		if (sep)
+			sep[0] = '\0';
+	} else if (strchr(opts, '='))
+		;	/* New format, but socket not specified */
+	else {
+		socket = opts;	/* Old format */
+		opts = NULL;
 	}
+
+	xfree(opts);
 
 	return socket;
 }
