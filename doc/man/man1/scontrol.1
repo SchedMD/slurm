@@ -238,8 +238,8 @@ Most configuration parameters can be changed by just running this command,
 however, Slurm daemons should be shutdown and restarted if any of these
 parameters are to be changed: AuthType, BackupAddr, BackupController,
 ControlAddr, ControlMach, PluginDir, StateSaveLocation, SlurmctldPort
-or SlurmdPort. The slurmctld daemon must be restarted if nodes are added to
-or removed from the cluster.
+or SlurmdPort. The slurmctld daemon and all slurmd daemons must be
+restarted if nodes are added to or removed from the cluster.
 
 .TP
 \fBrelease\fP \fIjob_list\fP
