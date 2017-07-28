@@ -27,6 +27,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix minor memory leak if launch fails in the slurmstepd.
  -- Fix issue where UnkillableStepProgram if step was in an ending state.
  -- Fix bug when tracking multiple simultaneous spawned ping cycles.
+ -- jobcomp/elasticsearch plugin now saves state of pending requests on
+    slurmctld daemon shutdown so then can be recovered on restart.
 
 * Changes in Slurm 17.02.6
 ==========================
