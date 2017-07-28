@@ -14078,6 +14078,7 @@ extern void job_completion_logger(struct job_record *job_ptr, bool requeue)
 	_job_array_comp(job_ptr, true);
 
 	if (!IS_JOB_RESIZING(job_ptr) &&
+	    !IS_JOB_PENDING(job_ptr)  &&
 	    ((job_ptr->array_task_id == NO_VAL) ||
 	     (job_ptr->mail_type & MAIL_ARRAY_TASKS) ||
 	     test_job_array_finished(job_ptr->array_job_id))) {

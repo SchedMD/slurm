@@ -2942,14 +2942,14 @@ static bool _pack_job_limit_check(pack_job_map_t *map, time_t now)
 /*
  * Start all components of a pack job now
  */
-static void _pack_start_now(pack_job_map_t *map, node_space_map_t *node_space)
+static int _pack_start_now(pack_job_map_t *map, node_space_map_t *node_space)
 {
 	struct job_record *job_ptr;
 	bitstr_t *avail_bitmap = NULL, *exc_core_bitmap = NULL;
 	bitstr_t *resv_bitmap = NULL;
 	pack_job_rec_t *rec;
 	ListIterator iter;
-	int j, mcs_select, rc;
+	int mcs_select, rc;
 	bool resv_overlap = false;
 	time_t now = time(NULL), start_res;
 	uint32_t hard_limit;
@@ -2964,14 +2964,14 @@ static void _pack_start_now(pack_job_map_t *map, node_space_map_t *node_space)
 		 * Identify the nodes which this job can use
 		 */
 		start_res = now;
-		j = job_test_resv(job_ptr, &start_res, true, &avail_bitmap,
-				  &exc_core_bitmap, &resv_overlap, false);
+		rc = job_test_resv(job_ptr, &start_res, true, &avail_bitmap,
+				   &exc_core_bitmap, &resv_overlap, false);
 		FREE_NULL_BITMAP(exc_core_bitmap);
-		if (j != SLURM_SUCCESS) {
+		if (rc != SLURM_SUCCESS) {
 			error("Pack job %u+%u (%u) failed to start due to reservation",
 			      job_ptr->pack_job_id, job_ptr->pack_job_offset,
 			      job_ptr->job_id);
-			continue;
+			break;
 		}
 		bit_and(avail_bitmap, job_ptr->part_ptr->node_bitmap);
 		bit_and(avail_bitmap, up_node_bitmap);
@@ -3010,8 +3010,9 @@ static void _pack_start_now(pack_job_map_t *map, node_space_map_t *node_space)
 			error("Pack job %u+%u (%u) failed to start",
 			      job_ptr->pack_job_id, job_ptr->pack_job_offset,
 			      job_ptr->job_id);
+			break;
 		}
-		if ((rc == SLURM_SUCCESS) && job_ptr->time_min) {
+		if (job_ptr->time_min) {
 			/* Set time limit as high as possible */
 			acct_policy_alter_job(job_ptr, map->comp_time_limit);
 			job_ptr->time_limit = map->comp_time_limit;
@@ -3030,6 +3031,42 @@ static void _pack_start_now(pack_job_map_t *map, node_space_map_t *node_space)
 		} 
 	}
 	list_iterator_destroy(iter);
+
+	return rc;
+}
+
+/*
+ * Deallocate all components if failed pack job start
+ */
+static void _pack_kill_now(pack_job_map_t *map)
+{
+	struct job_record *job_ptr;
+	pack_job_rec_t *rec;
+	ListIterator iter;
+	time_t now = time(NULL);
+	int cred_lifetime = 1200;
+
+	(void) slurm_cred_ctx_get(slurmctld_config.cred_ctx,
+				  SLURM_CRED_OPT_EXPIRY_WINDOW,
+				  &cred_lifetime);
+	iter = list_iterator_create(map->pack_job_list);
+	while ((rec = (pack_job_rec_t *) list_next(iter))) {
+		job_ptr = rec->job_ptr;
+		if (IS_JOB_PENDING(job_ptr))
+			continue;
+		info("Deallocate job %u+%u (%u) due to pack job start failure",
+		     job_ptr->pack_job_id, job_ptr->pack_job_offset,
+		     job_ptr->job_id);
+		job_ptr->details->begin_time = now + cred_lifetime + 1;
+		job_ptr->end_time   = now;
+		job_ptr->job_state  = JOB_PENDING | JOB_COMPLETING;
+		last_job_update     = now;
+		build_cg_bitmap(job_ptr);
+		job_completion_logger(job_ptr, false);
+		deallocate_nodes(job_ptr, false, false, false);
+//FIXME-PACK - Other cleanup needed? Layouts, power, licenses, accounting, burst buffer, etc.
+	}
+	list_iterator_destroy(iter);
 }
 
 /*
@@ -3040,6 +3077,7 @@ static void _pack_start_test(node_space_map_t *node_space)
 	ListIterator iter;
 	pack_job_map_t *map;
 	time_t now = time(NULL);
+	int rc;
 
 	iter = list_iterator_create(pack_job_list);
 	while ((map = (pack_job_map_t *) list_next (iter))) {
@@ -3075,7 +3113,14 @@ static void _pack_start_test(node_space_map_t *node_space)
 			info("Attempting to start pack job %u",
 			     map->pack_job_id);
 		}
-		_pack_start_now(map, node_space);
+		rc = _pack_start_now(map, node_space);
+		if (rc != SLURM_SUCCESS) {
+			if (debug_flags & DEBUG_FLAG_HETERO_JOBS) {
+				info("Failed to start pack job %u",
+				     map->pack_job_id);
+			}
+			_pack_kill_now(map);
+		}
 	}
 	list_iterator_destroy(iter);
 }
