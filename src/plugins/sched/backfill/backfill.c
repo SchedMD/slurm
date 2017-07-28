@@ -1063,6 +1063,8 @@ static int _attempt_backfill(void)
 	/* The Basil inventory can take a long time to complete. Process
 	 * pending RPCs before starting the backfill scheduling logic */
 	_yield_locks(1000000);
+	if (stop_backfill)
+		return SLURM_SUCCESS;
 #endif
 	(void) bb_g_load_state(false);
 
@@ -1202,6 +1204,8 @@ static int _attempt_backfill(void)
 				rc = 1;
 				break;
 			}
+			if (stop_backfill)
+				break;
 			/* Reset backfill scheduling timers, resume testing */
 			sched_start = time(NULL);
 			gettimeofday(&start_tv, NULL);
@@ -1679,6 +1683,8 @@ next_task:
 				rc = 1;
 				break;
 			}
+			if (stop_backfill)
+				break;
 
 			/* Reset backfill scheduling timers, resume testing */
 			sched_start = time(NULL);
@@ -2668,7 +2674,7 @@ static void _pack_start_clear(void)
 	iter = list_iterator_create(pack_job_list);
 	while ((map = (pack_job_map_t *) list_next(iter))) {
 		if (map->prev_start == 0) {
-			list_remove(iter);
+			list_delete_item(iter);
 		} else {
 			map->prev_start = 0;
 			(void) list_delete_all(map->pack_job_list,
@@ -2930,6 +2936,7 @@ static bool _pack_job_limit_check(pack_job_map_t *map, time_t now)
 			job_ptr->end_time_exp = now;
 			acct_policy_job_fini(job_ptr);
 			job_ptr->end_time_exp = end_time_exp;
+			xfree(job_ptr->tres_alloc_cnt);
 			job_ptr->tres_alloc_cnt = tres_alloc_save[fini_jobs++];
 		}
 	}
@@ -2971,6 +2978,7 @@ static int _pack_start_now(pack_job_map_t *map, node_space_map_t *node_space)
 			error("Pack job %u+%u (%u) failed to start due to reservation",
 			      job_ptr->pack_job_id, job_ptr->pack_job_offset,
 			      job_ptr->job_id);
+			FREE_NULL_BITMAP(avail_bitmap);
 			break;
 		}
 		bit_and(avail_bitmap, job_ptr->part_ptr->node_bitmap);
@@ -2982,17 +2990,20 @@ static int _pack_start_now(pack_job_map_t *map, node_space_map_t *node_space)
 			bit_and_not(avail_bitmap,
 				job_ptr->details->exc_node_bitmap);
 		}
-		resv_bitmap = bit_copy(avail_bitmap);
-		bit_not(resv_bitmap);
 
 		if (fed_mgr_job_lock(job_ptr)) {
 			error("Pack job %u+%u (%u) failed to start due to fed job lock",
 			      job_ptr->pack_job_id, job_ptr->pack_job_offset,
 			      job_ptr->job_id);
+			FREE_NULL_BITMAP(avail_bitmap);
 			continue;
 		}
 
+		resv_bitmap = avail_bitmap;
+		avail_bitmap = NULL;
+		bit_not(resv_bitmap);
 		rc = _start_job(job_ptr, resv_bitmap);
+		FREE_NULL_BITMAP(resv_bitmap);
 		if (rc == SLURM_SUCCESS) {
 			/* If the following fails because of network
 			 * connectivity, the origin cluster should ask
