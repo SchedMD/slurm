@@ -1342,7 +1342,7 @@ static void _agent_retry(int min_wait, bool mail_too)
 	mail_info_t *mi = NULL;
 	/* Write lock on jobs */
 	slurmctld_lock_t job_write_lock =
-		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	lock_slurmctld(job_write_lock);
 	slurm_mutex_lock(&retry_mutex);
