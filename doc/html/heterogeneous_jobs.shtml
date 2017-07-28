@@ -392,17 +392,23 @@ mode is used in the next iteration in order to consider system status changes
 which might permit the heterogeneous to be initiated at an earlier time than
 previously determined.</p>
 
-<p>There is currently no test performed at job submit time to determine if all
-components of a heterogeneous job can be started at the same time with respect
-to account and quality of service (QOS) limits.
-Each component will be validated to be executable at job submit time and the
-heterogeneous job as a whole will only be validated with respect to limits
-when being considered for resource allocation (i.e. scheduling time).</p>
+<p>A resource limit test is performed when a heterogeneous job is submitted in
+order to immediately reject jobs that will not be able to start with current
+limits.
+The individual components of the heterogeneous job are validated, like all
+regular jobs.
+The heterogeneous job as a whole is also tested, but in a more limited
+fashion with respect to quality of service (QOS) limits.
+This is due to the complexity of each job component having up to three sets of
+limits (association, job QOS and partition QOS).
+Note that successful submission of any job (heterogeneous or otherwise) does
+not insure the job will be able to start without exceeding some limit.
+For example a job's CPU limit test does not consider that CPUs might not be
+allocated individually, but resource allocations might be performed by whole
+core, socket or node.
+Each component of a heterogeneous job counts as a "job" with respect to
+resource limits.</p>
 
-<p>Each component of a heterogeneous job counts as a "job" with respect to
-resource limits.
-Also note that a heterogeneous job may be submitted to Slurm that can not be
-started with the current limits.
 For example, a user might have a limit of 2 concurrent running jobs and submit
 a heterogeneous job with 3 components.
 Such a situation will have an adverse effect upon scheduling other jobs,
@@ -410,6 +416,6 @@ especially other heterogeneous jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 25 July 2017</p>
+<p style="text-align:center;">Last modified 28 July 2017</p>
 
 <!--#include virtual="footer.txt"-->
