@@ -70,6 +70,7 @@
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_ext_sensors.h"
+#include "src/common/slurm_jobcomp.h"
 #include "src/common/slurm_priority.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
@@ -3370,6 +3371,17 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 			error("REQUEST_CONTROL reply with %d active threads",
 			      slurmctld_config.server_thread_count);
 		/* save_all_state();	performed by _slurmctld_background */
+
+		/*
+		 * jobcomp/elasticsearch saves/loads the state to/from file
+		 * elasticsearch_state. Since the jobcomp API isn't designed
+		 * with save/load state operations, the jobcomp/elasticsearch
+		 * _save_state() is highly coupled to its fini() function. This
+		 * state doesn't follow the same execution path as the rest of
+		 * Slurm states, where in save_all_sate() they are all indepen-
+		 * dently scheduled. So we save it manually here.
+		 */
+		(void) g_slurm_jobcomp_fini();
 	}
 
 
