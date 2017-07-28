@@ -68,6 +68,8 @@ documents those changes that are of interest to users and administrators.
     * Defer initiation of a heterogeneous job until a components can be started
       at the same time, taking into consideration association and QOS limits
       for the job as a whole.
+    * Perform limit check on heterogeneous job as a whole at submit time to
+      reject jobs that will never be able to run.
  -- Clear a job's "wait reason" value of BeginTime" after that time has passed.
     Previously a readon of "BeginTime" could be reported long after the job's
     requested begin time had passed.
