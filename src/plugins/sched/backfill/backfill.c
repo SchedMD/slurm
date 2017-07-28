@@ -2869,17 +2869,25 @@ static bool _pack_job_full(pack_job_map_t *map)
  * Determine if all components of a pack job can be started now or are
  * prevented from doing so because of association or QOS limits.
  * Return true if they can all start.
+ *
+ * NOTE: That a pack job passes this test does not mean that it will be able
+ * to run. For example, this test assumues resource allocation at the CPU level.
+ * If each task is allocated one core, with 2 CPUs, then the CPU limit test
+ * would not be accurate.
  */
 static bool _pack_job_limit_check(pack_job_map_t *map, time_t now)
 {
 	struct job_record *job_ptr;
 	pack_job_rec_t *rec;
 	ListIterator iter;
-	int begun_jobs = 0, slurmctld_tres_size;
+	int begun_jobs = 0, fini_jobs = 0, slurmctld_tres_size;
 	bool runnable = true;
 	uint32_t selected_node_cnt;
 	uint64_t tres_req_cnt[slurmctld_tres_cnt];
+	uint64_t **tres_alloc_save = NULL;
 
+	tres_alloc_save = xmalloc(sizeof(uint64_t *) *
+				  list_count(map->pack_job_list));
 	slurmctld_tres_size = sizeof(uint64_t) * slurmctld_tres_cnt;
 	iter = list_iterator_create(map->pack_job_list);
 	while ((rec = (pack_job_rec_t *) list_next(iter))) {
@@ -2902,8 +2910,7 @@ static bool _pack_job_limit_check(pack_job_map_t *map, time_t now)
 		if (acct_policy_job_runnable_pre_select(job_ptr) &&
 		    acct_policy_job_runnable_post_select(job_ptr,
 							 tres_req_cnt)) {
-			begun_jobs++;
-			xfree(job_ptr->tres_alloc_cnt);
+			tres_alloc_save[begun_jobs++] = job_ptr->tres_alloc_cnt;
 			job_ptr->tres_alloc_cnt = xmalloc(slurmctld_tres_size);
 			memcpy(job_ptr->tres_alloc_cnt, tres_req_cnt,
 			       slurmctld_tres_size);
@@ -2918,18 +2925,20 @@ static bool _pack_job_limit_check(pack_job_map_t *map, time_t now)
 	list_iterator_reset(iter);
 	while ((rec = (pack_job_rec_t *) list_next(iter))) {
 		job_ptr = rec->job_ptr;
-		if (begun_jobs-- > 0) {
+		if (begun_jobs > fini_jobs) {
 			time_t end_time_exp = job_ptr->end_time_exp;
 			job_ptr->end_time_exp = now;
 			acct_policy_job_fini(job_ptr);
 			job_ptr->end_time_exp = end_time_exp;
-			xfree(job_ptr->tres_alloc_cnt);
+			job_ptr->tres_alloc_cnt = tres_alloc_save[fini_jobs++];
 		}
 	}
 	list_iterator_destroy(iter);
+	xfree(tres_alloc_save);
 
 	return runnable;
 }
+
 /*
  * Start all components of a pack job now
  */
