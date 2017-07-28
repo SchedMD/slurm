@@ -3039,7 +3039,9 @@ static int _pack_start_now(pack_job_map_t *map, node_space_map_t *node_space)
 			 * beforehand for _reset_job_time_limit. */
 			if (reset_time)
 				_reset_job_time_limit(job_ptr, now, node_space);
-		} 
+		}
+		if (reset_time)
+			jobacct_storage_job_start_direct(acct_db_conn, job_ptr);
 	}
 	list_iterator_destroy(iter);
 
