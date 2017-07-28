@@ -77,9 +77,10 @@ proc sbatch {} {
 proc cancel_all_jobs { } {
 	global scancel job_id
 
-	exec $scancel $job_id
-
-	sleep 5
+	if {$job_id != 0} {
+		exec $scancel $job_id
+		sleep 5
+	}
 }
 
 proc cleanup { } {
