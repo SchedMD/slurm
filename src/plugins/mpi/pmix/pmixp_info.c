@@ -77,16 +77,16 @@ int pmixp_info_srv_usock_fd(void)
 	return _srv_usock_fd;
 }
 
-bool pmixp_info_same_arch(){
+bool pmixp_info_same_arch(void){
 	return _srv_same_arch;
 }
 
 
-bool pmixp_info_srv_direct_conn(){
+bool pmixp_info_srv_direct_conn(void){
 	return _srv_use_direct_conn;
 }
 
-bool pmixp_info_srv_direct_conn_ucx(){
+bool pmixp_info_srv_direct_conn_ucx(void){
 	return _srv_use_direct_conn_ucx && _srv_use_direct_conn;
 }
 
@@ -167,7 +167,7 @@ void pmixp_info_io_set(eio_handle_t *h)
 	_io_handle = h;
 }
 
-eio_handle_t *pmixp_info_io()
+eio_handle_t *pmixp_info_io(void)
 {
 	xassert(_io_handle);
 	return _io_handle;

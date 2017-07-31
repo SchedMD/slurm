@@ -1295,27 +1295,27 @@ static volatile int _pmixp_pp_iters = 0;
 static volatile int _pmixp_pp_iter_count = 0;
 static double _pmixp_pp_start = 0;
 
-int pmixp_server_pp_count()
+int pmixp_server_pp_count(void)
 {
 	return _pmixp_pp_count;
 }
 
-int pmixp_server_pp_warmups()
+int pmixp_server_pp_warmups(void)
 {
 	return _pmixp_pp_warmup;
 }
 
-void pmixp_server_pp_inc()
+void pmixp_server_pp_inc(void)
 {
 	_pmixp_pp_count++;
 }
 
-int pmixp_server_pp_same_thread()
+int pmixp_server_pp_same_thread(void)
 {
 	return _pmixp_pp_same_thr;
 }
 
-void pmixp_server_pp_start()
+void pmixp_server_pp_start(void)
 {
 	_pmixp_pp_start = GET_TS();
 }
@@ -1392,7 +1392,7 @@ void pmixp_server_init_pp(char ***env)
 	}
 }
 
-bool pmixp_server_want_pp()
+bool pmixp_server_want_pp(void)
 {
 	return _pmixp_pp_on;
 }
@@ -1405,7 +1405,7 @@ bool pmixp_server_want_pp()
  * In this case communication exchange will be done between
  * the first two nodes.
  */
-void pmixp_server_run_pp()
+void pmixp_server_run_pp(void)
 {
 	int i;
 	size_t start, end, bound;

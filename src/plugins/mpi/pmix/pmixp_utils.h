@@ -88,7 +88,7 @@ typedef struct pmixp_rlist_s {
 	size_t pre_alloc;
 } pmixp_rlist_t;
 
-static inline pmixp_list_elem_t *pmixp_list_elem_new()
+static inline pmixp_list_elem_t *pmixp_list_elem_new(void)
 {
 	return xmalloc(sizeof(pmixp_list_elem_t));
 }

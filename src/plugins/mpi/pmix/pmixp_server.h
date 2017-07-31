@@ -88,15 +88,15 @@ size_t pmixp_server_buf_reset(Buf buf);
 #ifndef NDEBUG
 /* Debug tools used only if debug was enabled */
 void pmixp_server_init_pp(char ***env);
-bool pmixp_server_want_pp();
-void pmixp_server_run_pp();
+bool pmixp_server_want_pp(void);
+void pmixp_server_run_pp(void);
 int pmixp_server_pp_send(int nodeid, int size);
-int pmixp_server_pp_count();
-void pmixp_server_pp_inc();
-void pmixp_server_pp_start();
-int pmixp_server_pp_warmups();
-int pmixp_server_pp_same_thread();
-bool pmixp_server_pp_check_fini();
+int pmixp_server_pp_count(void);
+void pmixp_server_pp_inc(void);
+void pmixp_server_pp_start(void);
+int pmixp_server_pp_warmups(void);
+int pmixp_server_pp_same_thread(void);
+bool pmixp_server_pp_check_fini(int size);
 
 #else
 /* Stubs for the initialization code */

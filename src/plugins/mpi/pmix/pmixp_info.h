@@ -81,9 +81,9 @@ extern pmix_jobinfo_t _pmixp_job_info;
 void pmixp_info_srv_usock_set(char *path, int fd);
 const char *pmixp_info_srv_usock_path(void);
 int pmixp_info_srv_usock_fd(void);
-bool pmixp_info_same_arch();
-bool pmixp_info_srv_direct_conn();
-bool pmixp_info_srv_direct_conn_ucx();
+bool pmixp_info_same_arch(void);
+bool pmixp_info_srv_direct_conn(void);
+bool pmixp_info_srv_direct_conn_ucx(void);
 
 
 static inline int pmixp_info_timeout(void)
@@ -117,7 +117,7 @@ static inline char *pmixp_info_tmpdir_lib(void)
 
 /* Dealing with I/O */
 void pmixp_info_io_set(eio_handle_t *h);
-eio_handle_t *pmixp_info_io();
+eio_handle_t *pmixp_info_io(void);
 
 /* Job information */
 int pmixp_info_set(const stepd_step_rec_t *job, char ***env);

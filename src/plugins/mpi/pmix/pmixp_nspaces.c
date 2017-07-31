@@ -115,7 +115,7 @@ int pmixp_nspaces_add(char *name, uint32_t nnodes, int node_id,
 	return SLURM_SUCCESS;
 }
 
-pmixp_namespace_t *pmixp_nspaces_local()
+pmixp_namespace_t *pmixp_nspaces_local(void)
 {
 	xassert(_pmixp_nspaces.magic == PMIXP_NSPACE_DB_MAGIC);
 	return _pmixp_nspaces.local;
