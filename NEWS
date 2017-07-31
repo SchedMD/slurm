@@ -31,6 +31,7 @@ documents those changes that are of interest to users and administrators.
     slurmctld daemon shutdown so then can be recovered on restart.
  -- Fix issue when an alternate munge key when communicating on a persistent
     connection.
+ -- Document inconsistent behavior of GroupUpdateForce option.
 
 * Changes in Slurm 17.02.6
 ==========================
