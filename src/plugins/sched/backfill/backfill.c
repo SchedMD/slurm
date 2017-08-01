@@ -3058,6 +3058,7 @@ static void _pack_kill_now(pack_job_map_t *map)
 	ListIterator iter;
 	time_t now = time(NULL);
 	int cred_lifetime = 1200;
+	uint32_t save_bitflags;
 
 	(void) slurm_cred_ctx_get(slurmctld_config.cred_ctx,
 				  SLURM_CRED_OPT_EXPIRY_WINDOW,
@@ -3077,7 +3078,15 @@ static void _pack_kill_now(pack_job_map_t *map)
 		build_cg_bitmap(job_ptr);
 		job_completion_logger(job_ptr, false);
 		deallocate_nodes(job_ptr, false, false, false);
-//FIXME-PACK - Other cleanup needed? Layouts, power, licenses, accounting, burst buffer, etc.
+		/* Since the job_completion_logger() removes the submit,
+		 * we need to add it again, but don't stage-out burst buffer */
+		save_bitflags = job_ptr->bit_flags;
+		job_ptr->bit_flags |= JOB_KILL_HURRY;
+		acct_policy_add_job_submit(job_ptr);
+		job_ptr->bit_flags = save_bitflags;
+		if (!job_ptr->node_bitmap_cg ||
+		    (bit_set_count(job_ptr->node_bitmap_cg) == 0))
+			batch_requeue_fini(job_ptr);
 	}
 	list_iterator_destroy(iter);
 }
