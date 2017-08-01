@@ -32,6 +32,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue when an alternate munge key when communicating on a persistent
     connection.
  -- Document inconsistent behavior of GroupUpdateForce option.
+ -- Fix bug in selection of GRES bound to specific CPUs where the GRES count
+    is 2 or more. Previous logic could allocate CPUs not available to the job.
 
 * Changes in Slurm 17.02.6
 ==========================

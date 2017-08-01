@@ -3518,6 +3518,7 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 	uint32_t *cpus_avail = NULL;  /* CPUs initially avail from this GRES */
 	uint32_t cpu_cnt = 0;
 	bitstr_t *alloc_cpu_bitmap = NULL;
+	bitstr_t *avail_cpu_bitmap = NULL;
 
 	if (node_gres_ptr->no_consume)
 		use_total_gres = true;
@@ -3609,6 +3610,7 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 			bit_nset(alloc_cpu_bitmap, 0, cpus_ctld - 1);
 		}
 
+		avail_cpu_bitmap = bit_copy(alloc_cpu_bitmap);
 		cpus_addnt = xmalloc(sizeof(uint32_t)*node_gres_ptr->topo_cnt);
 		cpus_avail = xmalloc(sizeof(uint32_t)*node_gres_ptr->topo_cnt);
 		for (i = 0; i < node_gres_ptr->topo_cnt; i++) {
@@ -3684,6 +3686,9 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 				bit_or(alloc_cpu_bitmap,
 				       node_gres_ptr->
 				       topo_cpus_bitmap[top_inx]);
+				if (cpu_bitmap)
+					bit_and(alloc_cpu_bitmap,
+						avail_cpu_bitmap);
 			} else {
 				bit_and(alloc_cpu_bitmap,
 					node_gres_ptr->
@@ -3705,6 +3710,7 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 			}
 		}
 		FREE_NULL_BITMAP(alloc_cpu_bitmap);
+		FREE_NULL_BITMAP(avail_cpu_bitmap);
 		xfree(cpus_addnt);
 		xfree(cpus_avail);
 		return cpu_cnt;
