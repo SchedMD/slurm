@@ -3108,8 +3108,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->group_info = uint16_tmp;
 	} else
 		conf->group_info = DEFAULT_GROUP_INFO;
-	if (s_p_get_uint16(&uint16_tmp, "CacheGroups", hashtbl) && uint16_tmp)
-		conf->group_info |= GROUP_CACHE;
+	if (s_p_get_uint16(&uint16_tmp, "CacheGroups", hashtbl))
+		debug("Ignoring obsolete CacheGroups option.");
 
 	if (!s_p_get_string(&conf->core_spec_plugin, "CoreSpecPlugin",
 	    hashtbl)) {
