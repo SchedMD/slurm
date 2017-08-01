@@ -286,7 +286,7 @@ static int _is_a_lwp(uint32_t pid) {
  * and %39c is used instead. (except for embedded ')' "(%[^)]c)" would work.
  */
 static int _get_process_data_line(int in, jag_prec_t *prec) {
-	char sbuf[256], *tmp;
+	char sbuf[512], *tmp;
 	int num_read, nvals;
 	char cmd[40], state[1];
 	int ppid, pgrp, session, tty_nr, tpgid;

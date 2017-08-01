@@ -34,6 +34,9 @@ documents those changes that are of interest to users and administrators.
  -- Document inconsistent behavior of GroupUpdateForce option.
  -- Fix bug in selection of GRES bound to specific CPUs where the GRES count
     is 2 or more. Previous logic could allocate CPUs not available to the job.
+ -- Increase buffer to handle long /proc/<pid>/stat output so that Slurm can
+    read correct RSS value and take action on jobs using more memory than
+    requested.
 
 * Changes in Slurm 17.02.6
 ==========================
