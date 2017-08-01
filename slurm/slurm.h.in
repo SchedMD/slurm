@@ -1924,6 +1924,7 @@ typedef struct {
 
 	uint32_t gid;
 	bool multi_prog;
+	bool no_alloc;
 	uint32_t slurmd_debug;  /* remote slurmd debug level */
 	uint32_t pack_offset;	/* Pack job offset or NO_VAL */
 	bool parallel_debug;

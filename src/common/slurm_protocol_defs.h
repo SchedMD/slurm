@@ -760,6 +760,7 @@ typedef struct job_step_create_response_msg {
 #define LAUNCH_BUFFERED_IO	0x00000008
 #define LAUNCH_LABEL_IO		0x00000010
 #define LAUNCH_USER_MANAGED_IO	0x00000020
+#define LAUNCH_NO_ALLOC 	0x00000040
 
 typedef struct launch_tasks_request_msg {
 	uint32_t  job_id;

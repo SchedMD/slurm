@@ -290,6 +290,9 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 	launch.ntasks_per_core  = params->ntasks_per_core;
 	launch.ntasks_per_socket= params->ntasks_per_socket;
 
+	if (params->no_alloc)
+		launch.flags	|= LAUNCH_NO_ALLOC;
+
 	launch.task_dist	= params->task_dist;
 	launch.partition	= params->partition;
 	if (params->pty)

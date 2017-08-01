@@ -1006,6 +1006,14 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 	 * First call slurm_cred_verify() so that all valid
 	 * credentials are checked
 	 */
+	if (user_ok && (req->flags & LAUNCH_NO_ALLOC)) {
+		/* If we didn't allocate then the cred isn't valid, just skip
+		 * checking.  This is only cool for root or SlurmUser */
+		debug("%s: FYI, user %d is an authorized user running outside of an allocation.",
+		      __func__, uid);
+		return SLURM_SUCCESS;
+	}
+
 	rc = slurm_cred_verify(conf->vctx, cred, &arg, protocol_version);
 	if (rc < 0) {
 		verified = false;
