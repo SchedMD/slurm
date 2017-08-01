@@ -474,7 +474,7 @@ bracket: 	open_bracket = strchr(parse, '[');
 	}
 
 	/* nullify consecutive separators and push str beyond them */
-	while ((**str != '\0') && (strchr(sep, **str) != '\0'))
+	while ((**str != '\0') && (strchr(sep, **str) != NULL))
 		*(*str)++ = '\0';
 
 	return tok;
