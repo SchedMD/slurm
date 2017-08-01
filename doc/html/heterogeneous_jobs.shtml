@@ -141,12 +141,13 @@ part of a federation (e.g. "sbatch --cluster=alpha,beta ...") then the entire
 job will be sent to the cluster expected to be able to start all components
 at the earliest time.</p>
 
-<p>There is currently no test performed at job submit time to determine if all
-components of a heterogeneous job can be started at the same time with respect
-to account and quality of service (QOS) limits.
-Each component will be validated to be executable at job submit time and the
-heterogeneous job as a whole will only be validated with respect to limits
-when being considered for resource allocation (i.e. scheduling time).
+<p>A resource limit test is performed when a heterogeneous job is submitted in
+order to immediately reject jobs that will not be able to start with current
+limits.
+The individual components of the heterogeneous job are validated, like all
+regular jobs.
+The heterogeneous job as a whole is also tested, but in a more limited
+fashion with respect to quality of service (QOS) limits.
 Each component of a heterogeneous job counts as a "job" with respect to
 resource limits.</p>
 
@@ -416,6 +417,6 @@ especially other heterogeneous jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 28 July 2017</p>
+<p style="text-align:center;">Last modified 1 August 2017</p>
 
 <!--#include virtual="footer.txt"-->
