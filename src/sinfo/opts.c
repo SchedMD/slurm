@@ -390,7 +390,7 @@ _next_tok (char *sep, char **str)
 	char *tok;
 
 	/* push str past any leading separators */
-	while ((**str != '\0') && (strchr(sep, **str) != '\0'))
+	while ((**str != '\0') && (strchr(sep, **str) != NULL))
 		(*str)++;
 
 	if (**str == '\0')
@@ -400,11 +400,11 @@ _next_tok (char *sep, char **str)
 	tok = *str;
 
 	/* push str past token and leave pointing to first separator */
-	while ((**str != '\0') && (strchr(sep, **str) == '\0'))
+	while ((**str != '\0') && (strchr(sep, **str) == NULL))
 		(*str)++;
 
 	/* nullify consecutive separators and push str beyond them */
-	while ((**str != '\0') && (strchr(sep, **str) != '\0'))
+	while ((**str != '\0') && (strchr(sep, **str) != NULL))
 		*(*str)++ = '\0';
 
 	return (tok);
