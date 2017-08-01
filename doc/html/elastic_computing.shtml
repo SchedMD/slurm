@@ -37,7 +37,11 @@ Some general Slurm configuration parameters that are of interest include:
 <dl>
 <dt><b>ResumeProgram</b>
 <dd>The program executed when a node has been allocated and should be made
-available for use.
+available for use.If the <i>slurmd</i> daemon fails to respond within the
+configured <b>SlurmdTimeout</b> value with an updated BootTime, the node will
+be placed in a DOWN state and the job requesting the node will be requeued.
+If the node isn't actually rebooted (i.e. when multiple-slurmd is configured)
+starting slurmd with "-b" option might be useful.
 <dt><b>SelectType</b>
 <dd>Generally must be "select/linear".
 If Slurm is configured to allocate individual CPUs to jobs rather than whole

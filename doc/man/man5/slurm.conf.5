@@ -919,8 +919,10 @@ If set to a non\-zero value, then information about which users are members
 of groups allowed to use a partition will be updated periodically, even when
 there have been no changes to the /etc/group file.
 Otherwise group member information will be updated periodically only after the
-/etc/group file is updated
-The default value is 0.
+/etc/group file is updated. If GroupUpdateTime is set, the default is zero
+(disabled). If GroupUpdateTime is not set, GroupUpdateForce is always 1.
+This behavior will change in 17.11, where the GroupUpdateTime will always
+default to 1, unless explicitly set to 0.
 Also see the \fBGroupUpdateTime\fR parameter.
 
 .TP
@@ -2308,8 +2310,11 @@ the node down.
 in power save mode is assigned work to perform.
 For reasons of reliability, \fBResumeProgram\fR may execute more than once
 for a node when the \fBslurmctld\fR daemon crashes and is restarted.
-If \fBResumeProgram\fR is unable to restore a node to service, it should
-requeue any job associated with the node and set the node state to DRAIN.
+If \fBResumeProgram\fR is unable to restore a node to service with a responding
+slurmd and an updated BootTime, it should requeue any job associated with the
+node and set the node state to DOWN. If the node isn't actually rebooted
+(i.e. when multiple-slurmd is configured) starting slurmd with "-b" option
+might be useful.
 The program executes as \fBSlurmUser\fR.
 The argument to the program will be the names of nodes to
 be removed from power savings mode (using Slurm's hostlist

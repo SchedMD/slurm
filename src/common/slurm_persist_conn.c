@@ -588,6 +588,8 @@ extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
 	 */
 	req_msg.protocol_version = persist_conn->version;
 	req_msg.msg_type = REQUEST_PERSIST_INIT;
+
+	req_msg.flags |= SLURM_GLOBAL_AUTH_KEY;
 	if (persist_conn->flags & PERSIST_FLAG_DBD)
 		req_msg.flags |= SLURMDBD_CONNECTION;
 

@@ -201,6 +201,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix bug when tracking multiple simultaneous spawned ping cycles.
  -- jobcomp/elasticsearch plugin now saves state of pending requests on
     slurmctld daemon shutdown so then can be recovered on restart.
+ -- Fix issue when an alternate munge key when communicating on a persistent
+    connection.
+ -- Document inconsistent behavior of GroupUpdateForce option.
 
 * Changes in Slurm 17.02.6
 ==========================

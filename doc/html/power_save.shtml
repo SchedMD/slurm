@@ -71,9 +71,11 @@ This program may use the <i>scontrol show node</i> command
 to insure that a node has booted and the <i>slurmd</i>
 daemon started.
 If the <i>slurmd</i> daemon fails to respond within the
-configured <b>SlurmdTimeout</b> value, the node will be
-placed in a DOWN state and the job requesting the node
-will be requeued.
+configured <b>SlurmdTimeout</b> value with an updated BootTime,
+the node will be placed in a DOWN state and the job requesting
+the node will be requeued. If the node isn't actually rebooted
+(i.e. when multiple-slurmd is configured) starting slurmd with
+"-b" option might be useful.
 For reasons of reliability, <b>ResumeProgram</b> may execute
 more than once for a node when the <b>slurmctld</b> daemon
 crashes and is restarted.</li>
