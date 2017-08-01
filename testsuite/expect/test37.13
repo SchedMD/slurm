@@ -82,7 +82,7 @@ proc sbatch { options regex } {
 	append command " --wrap \"sleep 20\""
 	if {[string match $regex ""]} {
 		set capture 1
-		set regex "Submitted batch job ($number).+"
+		set regex "Submitted batch job ($number)"
 	}
 	spawn {*}$command
 	expect {

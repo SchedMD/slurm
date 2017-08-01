@@ -434,7 +434,7 @@ proc wait_for_fed_job { job_id desired_state clusters } {
 	if {[string compare $clusters ""]} {
 		set spec_clusters [split $clusters ","]
 	}
-	log_info "checking for $desired_state on [join $spec_clusters ,]"
+	log_info "checking for job '$job_id' in state '$desired_state' on [join $spec_clusters ,]"
 
 	while 1 {
 		foreach cluster $spec_clusters {

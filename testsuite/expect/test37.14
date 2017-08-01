@@ -114,7 +114,7 @@ proc sbatch { options } {
 	set command "$my_sbatch -N$node_count --exclusive "
 	append command $options
 	append command " --wrap \"sleep 900\""
-	set regex "Submitted batch job ($number).+"
+	set regex "Submitted batch job ($number)"
 	spawn {*}$command
 	expect {
 		-re "$regex" {

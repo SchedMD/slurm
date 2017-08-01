@@ -119,7 +119,7 @@ proc sbatch { } {
 	set command "$my_sbatch -N$node_count --exclusive --output=/dev/null \
 		--error=/dev/null -t300 --requeue --wrap $script \
 		-Mfed1,fed2,fed3"
-	set regex "Submitted batch job ($number).+"
+	set regex "Submitted batch job ($number)"
 	set collect 1
 
 	spawn {*}$command

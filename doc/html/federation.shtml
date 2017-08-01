@@ -424,11 +424,11 @@ issuing the command on the cluster or using the <b>--cluster/-M</b>  option.
 		that it was originally submitted to.
 	</li>
 	<li>
-		<b>Revoked (RV) State:</b> The state the origin sibling job is
-		in while it is not a viable sibling or one of the sibling jobs
-		is running on a remote cluster. The origin job stays in the
-		revoked state to track sibling jobs that are running or pending
-		on other sibling clusters.
+		<b>Revoked (RV) State:</b> The state that the origin job is in
+		while the origin job is not actively being scheduled on the
+		origin cluster (e.g. not a viable sibling or one of the sibling
+		jobs is running on a remote cluster). Or the state that a remote
+		sibling job is put in when another sibling is allocated nodes.
 	</li>
 	<li>
 		<b>Viable Sibling:</b> a cluster that is eligible to run a

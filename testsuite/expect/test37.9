@@ -87,7 +87,7 @@ proc sbatch { args } {
 		--error=/dev/null -t300 --requeue "
 	append command $args
 	append command " $file_in"
-	set regex "Submitted batch job ($number).+"
+	set regex "Submitted batch job ($number)"
 
 	spawn {*}$command
 	expect {
@@ -436,6 +436,9 @@ if {[string match $output $fedc1]} {
 	set c ($ji2\\s+$output\\s+)
 	set z1 ($ji2\\s+$ji2\\.0\\s+$output\\s+$ji2\\s+$ji2\\.1\\s+$output)
 }
+
+# Give time for steps to start.
+sleep 2
 
 squeue "-s " "$ji0\\.0.+$ji0\\.1.+$ji1\\.0.+$ji1\\.1.+$ji2\\.0.+$ji2\\.1.+"
 squeue "--local " "$local"
