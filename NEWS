@@ -68,6 +68,7 @@ documents those changes that are of interest to users and administrators.
     daemons get written to syslog.
  -- Add slurmdbd.conf configuration parameter DebugLevelSyslog to control which
     messages from the slurmdbd daemon get written to syslog.
+ -- Fix handling of GroupUpdateForce option.
 
 * Changes in Slurm 17.11.0pre1
 ==============================

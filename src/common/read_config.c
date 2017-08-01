@@ -2506,7 +2506,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->first_job_id		= NO_VAL;
 	ctl_conf_ptr->get_env_timeout		= 0;
 	xfree(ctl_conf_ptr->gres_plugins);
-	ctl_conf_ptr->group_info		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->group_info		= 0;
 	ctl_conf_ptr->hash_val			= (uint32_t) NO_VAL;
 	ctl_conf_ptr->health_check_interval	= 0;
 	xfree(ctl_conf_ptr->health_check_program);
@@ -3099,15 +3099,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	(void) s_p_get_string(&conf->bb_type, "BurstBufferType", hashtbl);
 
-	if (s_p_get_uint16(&uint16_tmp, "GroupUpdateTime", hashtbl)) {
-		if (uint16_tmp > GROUP_TIME_MASK) {
-			error("GroupUpdateTime exceeds limit of %u",
-			      GROUP_TIME_MASK);
-			return SLURM_ERROR;
-		}
-		conf->group_info = uint16_tmp;
-	} else
-		conf->group_info = DEFAULT_GROUP_INFO;
 	if (s_p_get_uint16(&uint16_tmp, "CacheGroups", hashtbl))
 		debug("Ignoring obsolete CacheGroups option.");
 
@@ -3116,9 +3107,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->core_spec_plugin =
 			xstrdup(DEFAULT_CORE_SPEC_PLUGIN);
 	}
-	if (s_p_get_uint16(&uint16_tmp, "GroupUpdateForce", hashtbl) &&
-	    uint16_tmp)
-		conf->group_info |= GROUP_FORCE;
 
 	if (!s_p_get_string(&conf->checkpoint_type, "CheckpointType", hashtbl))
 		conf->checkpoint_type = xstrdup(DEFAULT_CHECKPOINT_TYPE);
@@ -3223,6 +3211,23 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->first_job_id = DEFAULT_FIRST_JOB_ID;
 
 	(void) s_p_get_string(&conf->gres_plugins, "GresTypes", hashtbl);
+
+	if (s_p_get_uint16(&uint16_tmp, "GroupUpdateForce", hashtbl)) {
+		if (uint16_tmp)
+			conf->group_info |= GROUP_FORCE;
+	} else
+		conf->group_info |= GROUP_FORCE;
+
+	if (s_p_get_uint16(&uint16_tmp, "GroupUpdateTime", hashtbl)) {
+		if (uint16_tmp > GROUP_TIME_MASK) {
+			error("GroupUpdateTime exceeds limit of %u",
+			      GROUP_TIME_MASK);
+			return SLURM_ERROR;
+		}
+		conf->group_info |= uint16_tmp;
+	} else
+		conf->group_info |= DEFAULT_GROUP_TIME;
+
 
 	if (!s_p_get_uint16(&conf->inactive_limit, "InactiveLimit", hashtbl))
 		conf->inactive_limit = DEFAULT_INACTIVE_LIMIT;
