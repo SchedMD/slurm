@@ -310,6 +310,11 @@ int main(int argc, char **argv)
 	_init_pidfile();
 	_become_slurm_user();
 
+	/*
+	 * Create StateSaveLocation directory if necessary.
+	 */
+	set_slurmctld_state_loc();
+
 	if (create_clustername_file)
 		_create_clustername_file();
 
@@ -339,11 +344,6 @@ int main(int argc, char **argv)
 	if (prctl(PR_SET_DUMPABLE, 1) < 0)
 		debug ("Unable to set dumpable to 1");
 #endif /* PR_SET_DUMPABLE */
-
-	/*
-	 * Create StateSaveLocation directory if necessary.
-	 */
-	set_slurmctld_state_loc();
 
 	test_core_limit();
 	_test_thread_limit();

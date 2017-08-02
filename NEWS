@@ -40,6 +40,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix srun job jobs that can run immediately to run in the highest priority
     partion when multiple partitions are listed. scontrol show jobs can
     potentially show the partition list in priority order.
+ -- Fix starting controller if StateSaveLocation path didn't exist.
 
 * Changes in Slurm 17.02.6
 ==========================
