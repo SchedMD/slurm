@@ -137,6 +137,21 @@
 /* Send/receive from the same thread (like regular MPI p2p benchmarks) */
 #define PMIXP_PP_SAMETHR "SLURM_PMIX_PP_SAME_THR"
 
+/* Request a collective test to be executed
+ * before running a job
+ */
+#define PMIXP_CPERF_ON "SLURM_PMIX_WANT_COLL_PERF"
+/* Smallest message size (power of 2) */
+#define PMIXP_CPERF_LOW "SLURM_PMIX_COLL_PERF_LOW_PWR2"
+/* Largest message size (power of 2) */
+#define PMIXP_CPERF_UP "SLURM_PMIX_COLL_PERF_UP_PWR2"
+/* Number of repetitions for the small messages */
+#define PMIXP_CPERF_SITER "SLURM_PMIX_COLL_PERF_ITER_SMALL"
+/* Number of repetitions for the large messages */
+#define PMIXP_CPERF_LITER "SLURM_PMIX_COLL_PERF_ITER_LARGE"
+/* The bound after which message is considered large */
+#define PMIXP_CPERF_BOUND "SLURM_PMIX_COLL_PERF_LARGE_PWR2"
+
 typedef enum {
 	PMIXP_P2P_INLINE,
 	PMIXP_P2P_REGULAR

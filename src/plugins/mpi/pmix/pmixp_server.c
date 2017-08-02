@@ -429,6 +429,7 @@ int pmixp_stepd_init(const stepd_step_rec_t *job, char ***env)
 	}
 
 	pmixp_server_init_pp(env);
+	pmixp_server_init_cperf(env);
 
 	xfree(path);
 	_was_initialized = 1;
@@ -1269,7 +1270,7 @@ static int _slurm_send(pmixp_ep_t *ep, pmixp_base_hdr_t bhdr, Buf buf)
 }
 
 /*
- * ------------------- communication DEBUG tool -----------------------
+ * ------------------- communication DEBUG tools -----------------------
  */
 
 #ifndef NDEBUG
@@ -1522,6 +1523,174 @@ int pmixp_server_pp_send(int nodeid, int size)
 		xfree(nodename);
 	}
 	return rc;
+}
+
+
+
+static pthread_mutex_t _pmixp_pp_lock;
+
+static bool _pmixp_cperf_on = false;
+static int _pmixp_cperf_low = 0;
+static int _pmixp_cperf_up = 24;
+static int _pmixp_cperf_bound = 10;
+static int _pmixp_cperf_siter = 1000;
+static int _pmixp_cperf_liter = 100;
+
+static volatile int _pmixp_cperf_count = 0;
+
+static int _pmixp_server_cperf_count()
+{
+	return _pmixp_cperf_count;
+}
+
+static void _pmixp_server_cperf_inc()
+{
+	_pmixp_cperf_count++;
+}
+
+void pmixp_server_init_cperf(char ***env)
+{
+	char *env_ptr = NULL;
+
+	slurm_mutex_init(&_pmixp_pp_lock);
+
+	/* check if we want to run ping-pong */
+	if (!(env_ptr = getenvp(*env, PMIXP_CPERF_ON))) {
+		return;
+	}
+	if (!strcmp("1", env_ptr) || !strcmp("true", env_ptr)) {
+		_pmixp_cperf_on = true;
+	}
+
+	if ((env_ptr = getenvp(*env, PMIXP_CPERF_LOW))) {
+		if (_consists_from_digits(env_ptr)) {
+			_pmixp_cperf_low = atoi(env_ptr);
+		}
+	}
+
+	if ((env_ptr = getenvp(*env, PMIXP_CPERF_UP))) {
+		if (_consists_from_digits(env_ptr)) {
+			_pmixp_cperf_up = atoi(env_ptr);
+		}
+	}
+
+	if ((env_ptr = getenvp(*env, PMIXP_CPERF_SITER))) {
+		if (_consists_from_digits(env_ptr)) {
+			_pmixp_cperf_siter = atoi(env_ptr);
+		}
+	}
+
+	if ((env_ptr = getenvp(*env, PMIXP_CPERF_LITER))) {
+		if (_consists_from_digits(env_ptr)) {
+			_pmixp_cperf_liter = atoi(env_ptr);
+		}
+	}
+
+	if ((env_ptr = getenvp(*env, PMIXP_CPERF_BOUND))) {
+		if (_consists_from_digits(env_ptr)) {
+			_pmixp_cperf_bound = atoi(env_ptr);
+		}
+	}
+}
+
+bool pmixp_server_want_cperf()
+{
+	return _pmixp_cperf_on;
+}
+
+static void _pmixp_cperf_cbfunc(pmix_status_t status,
+				const char *data, size_t ndata,
+				void *cbdata,
+				pmix_release_cbfunc_t r_fn,
+				void *r_cbdata)
+{
+	/* small violation - we kinow what is the type of release
+	 * data and will use that knowledge to avoid the deadlock
+	 */
+	pmixp_coll_t *coll = pmixp_coll_from_cbdata(r_cbdata);
+	xassert(PMIX_SUCCESS == status);
+
+	/*
+	 * we will be called with mutex locked.
+	 * need to unlock it so that callback won't
+	 * deadlock
+	 */
+	slurm_mutex_unlock(&coll->lock);
+
+	/* invoke the callbak */
+	r_fn(r_cbdata);
+
+	/* lock it back before proceed */
+	slurm_mutex_lock(&coll->lock);
+
+	/* go to the next iteration */
+	_pmixp_server_cperf_inc();
+}
+
+
+static int _pmixp_server_cperf_iter(char *data, int ndata)
+{
+	pmixp_coll_t *coll;
+	pmix_proc_t procs;
+	int cur_count = _pmixp_server_cperf_count();
+
+	strncpy(procs.nspace, pmixp_info_namespace(), PMIX_MAX_NSLEN);
+	procs.rank = PMIX_RANK_WILDCARD;
+
+	coll = pmixp_state_coll_get(PMIXP_COLL_TYPE_FENCE, &procs, 1);
+	xassert(!pmixp_coll_contrib_local(coll, data, ndata,
+					  _pmixp_cperf_cbfunc, NULL));
+
+	while (cur_count == _pmixp_server_cperf_count()) {
+		usleep(1);
+	}
+	return 0;
+}
+
+/*
+ * For this to work the following conditions supposed to be
+ * satisfied:
+ * - SLURM has to be configured with `--enable-debug` option
+ * - jobstep needs to have at least two nodes
+ * In this case communication exchange will be done between
+ * the first two nodes.
+ */
+void pmixp_server_run_cperf()
+{
+	int size;
+	size_t start, end, bound;
+
+	pmixp_debug_hang(0);
+
+	start = 1 << _pmixp_cperf_low;
+	end = 1 << _pmixp_cperf_up;
+	bound = 1 << _pmixp_cperf_bound;
+
+	for (size = start; size <= end; size *= 2) {
+		int j, iters = _pmixp_cperf_siter;
+		struct timeval tv1, tv2;
+		if (size >= bound) {
+			iters = _pmixp_cperf_liter;
+		}
+		double times[iters];
+		char *data = xmalloc(size);
+
+		PMIXP_ERROR("coll perf %d", size);
+
+		for(j=0; j<iters; j++){
+			gettimeofday(&tv1, NULL);
+			_pmixp_server_cperf_iter(data, size);
+			gettimeofday(&tv2, NULL);
+			times[j] = tv2.tv_sec + 1E-6 * tv2.tv_usec -
+					(tv1.tv_sec + 1E-6 * tv1.tv_usec);
+		}
+
+		for(j=0; j<iters; j++){
+			/* Output measurements to the slurmd.log */
+			PMIXP_ERROR("\t%d %d: %.9lf", j, size, times[j]);
+		}
+		xfree(data);
+	}
 }
 
 #endif

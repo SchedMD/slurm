@@ -389,6 +389,17 @@ typedef struct {
 	volatile uint32_t refcntr;
 } pmixp_coll_cbdata_t;
 
+/*
+ * use it for internal collective
+ * performance evaluation tool.
+ */
+pmixp_coll_t *pmixp_coll_from_cbdata(void *cbdata)
+{
+	pmixp_coll_cbdata_t *ptr = (pmixp_coll_cbdata_t*)cbdata;
+	pmixp_coll_sanity_check(ptr->coll);
+	return ptr->coll;
+}
+
 static void _ufwd_sent_cb(int rc, pmixp_p2p_ctx_t ctx, void *_vcbdata)
 {
 	pmixp_coll_cbdata_t *cbdata = (pmixp_coll_cbdata_t*)_vcbdata;
