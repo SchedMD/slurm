@@ -742,6 +742,8 @@ typedef struct {
 	uint32_t lft;
 	char	*nodes;
 	char	*partition;
+	uint32_t pack_job_id;
+	uint32_t pack_job_offset;
 	uint32_t priority;
 	uint32_t qosid;
 	uint32_t req_cpus;
@@ -963,6 +965,7 @@ typedef struct {
 typedef struct {
 	uint32_t array_task_id;		/* task_id of a job array or NO_VAL */
 	uint32_t jobid;
+	uint32_t pack_job_offset;	/* pack_job_offset or NO_VAL */
 	uint32_t stepid;
 } slurmdb_selected_step_t;
 

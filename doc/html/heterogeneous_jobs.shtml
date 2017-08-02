@@ -216,6 +216,7 @@ $ squeue --job=93
 JOBID PARTITION  NAME  USER ST  TIME  NODES NODELIST
  93+0     debug  bash  adam  R 19:38      1 nid00001
  93+2     debug  bash  adam  R 19:38      1 nid00021
+$ scancel 93
 $ squeue --job=93
 JOBID PARTITION  NAME  USER ST  TIME  NODES NODELIST
 </pre>
@@ -233,6 +234,29 @@ an error.</p>
 <li>resume</li>
 <li>suspend</li>
 </ul>
+
+<h3>Accounting</h3>
+
+<p>Slurm's accounting database records the pack_job_id and pack_job_offset
+fields.
+The sacct command reports job's using the format
+"&lt;pack_job_id&gt;+&lt;pack_job_offset&gt;" and can accept a job ID
+specification for filtering using the same format.
+If a pack_job_id value is specified as a job filter, then information about
+all components of that job will be reported as shown below.</p>
+
+<pre>
+$ sacct -j 67767+1
+  JobID JobName Partition Account AllocCPUS     State ExitCode 
+------- ------- --------- ------- --------- --------- -------- 
+67767+0     foo     debug    test         2 COMPLETED      0:0 
+67767+1     foo     debug    test         4 COMPLETED      0:0 
+
+$  sacct -j 67767+1
+  JobID JobName Partition Account AllocCPUS     State ExitCode 
+------- ------- --------- ------- --------- --------- -------- 
+67767+1     foo     debug    test         4 COMPLETED      0:0 
+</pre>
 
 <h2><a name="job_steps">Launching Applications (Job Steps)</a></h2>
 
@@ -417,6 +441,6 @@ especially other heterogeneous jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 1 August 2017</p>
+<p style="text-align:center;">Last modified 2 August 2017</p>
 
 <!--#include virtual="footer.txt"-->

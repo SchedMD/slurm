@@ -541,6 +541,7 @@ no_rollup_change:
 		query = xstrdup_printf(
 			"insert into \"%s_%s\" "
 			"(id_job, mod_time, id_array_job, id_array_task, "
+			"pack_job_id, pack_job_offset, "
 			"id_assoc, id_qos, id_user, "
 			"id_group, nodelist, id_resv, timelimit, "
 			"time_eligible, time_submit, time_start, "
@@ -577,12 +578,13 @@ no_rollup_change:
 
 		xstrfmtcat(query,
 			   ") values (%u, UNIX_TIMESTAMP(), "
-			   "%u, %u, %u, %u, %u, %u, "
+			   "%u, %u, %u, %u, %u, %u, %u, %u, "
 			   "'%s', %u, %u, %ld, %ld, %ld, "
 			   "'%s', %u, %u, %u, %u, %u, %"PRIu64"",
-			   job_ptr->job_id, job_ptr->array_job_id,
-			   array_task_id, job_ptr->assoc_id,
-			   job_ptr->qos_id,
+			   job_ptr->job_id,
+			   job_ptr->array_job_id, array_task_id,
+			   job_ptr->pack_job_id, job_ptr->pack_job_offset,
+			   job_ptr->assoc_id, job_ptr->qos_id,
 			   job_ptr->user_id, job_ptr->group_id, nodes,
 			   job_ptr->resv_id, job_ptr->time_limit,
 			   begin_time, submit_time, start_time,
@@ -632,7 +634,8 @@ no_rollup_change:
 			   "job_name='%s', track_steps=%u, id_qos=%u, "
 			   "state=greatest(state, %u), priority=%u, "
 			   "cpus_req=%u, nodes_alloc=%u, "
-			   "mem_req=%"PRIu64", id_array_job=%u, id_array_task=%u",
+			   "mem_req=%"PRIu64", id_array_job=%u, id_array_task=%u, "
+			   "pack_job_id=%u, pack_job_offset=%u",
 			   job_ptr->assoc_id, job_ptr->user_id,
 			   job_ptr->group_id, nodes,
 			   job_ptr->resv_id, job_ptr->time_limit,
@@ -641,8 +644,8 @@ no_rollup_change:
 			   job_ptr->priority, job_ptr->details->min_cpus,
 			   node_cnt,
 			   job_ptr->details->pn_min_memory,
-			   job_ptr->array_job_id,
-			   array_task_id);
+			   job_ptr->array_job_id, array_task_id,
+			   job_ptr->pack_job_id, job_ptr->pack_job_offset);
 
 		if (wckeyid)
 			xstrfmtcat(query, ", id_wckey=%u", wckeyid);
@@ -740,6 +743,7 @@ no_rollup_change:
 			   "id_assoc=%u, id_resv=%u, "
 			   "timelimit=%u, mem_req=%"PRIu64", "
 			   "id_array_job=%u, id_array_task=%u, "
+			   "pack_job_id=%u, pack_job_offset=%u, "
 			   "time_eligible=%ld, mod_time=UNIX_TIMESTAMP() "
 			   "where job_db_inx=%"PRIu64,
 			   start_time, jname, job_state,
@@ -747,8 +751,8 @@ no_rollup_change:
 			   job_ptr->assoc_id,
 			   job_ptr->resv_id, job_ptr->time_limit,
 			   job_ptr->details->pn_min_memory,
-			   job_ptr->array_job_id,
-			   array_task_id,
+			   job_ptr->array_job_id, array_task_id,
+			   job_ptr->pack_job_id, job_ptr->pack_job_offset,
 			   begin_time, job_ptr->db_index);
 
 		if (debug_flags & DEBUG_FLAG_DB_JOB)

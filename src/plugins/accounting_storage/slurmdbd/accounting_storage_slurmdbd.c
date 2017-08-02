@@ -185,6 +185,13 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 	req->job_id        = job_ptr->job_id;
 	req->array_job_id  = job_ptr->array_job_id;
 	req->array_task_id = job_ptr->array_task_id;
+	if (job_ptr->pack_job_id) {
+		req->pack_job_id     = job_ptr->pack_job_id;
+		req->pack_job_offset = job_ptr->pack_job_offset;
+	} else {
+		//req->pack_job_id   = 0;
+		req->pack_job_offset = NO_VAL;
+	}
 
 	build_array_str(job_ptr);
 	if (job_ptr->array_recs && job_ptr->array_recs->task_id_str) {

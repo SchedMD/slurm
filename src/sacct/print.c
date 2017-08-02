@@ -897,15 +897,21 @@ extern void print_fields(type_t type, void *object)
 						 "%u_[%s]",
 						 job->array_job_id,
 						 job->array_task_str);
-				} else if (job->array_task_id != NO_VAL)
+				} else if (job->array_task_id != NO_VAL) {
 					snprintf(id, FORMAT_STRING_SIZE,
 						 "%u_%u",
 						 job->array_job_id,
 						 job->array_task_id);
-				else
+				} else if (job->pack_job_id) {
+					snprintf(id, FORMAT_STRING_SIZE,
+						 "%u+%u",
+						 job->pack_job_id,
+						 job->pack_job_offset);
+				} else {
 					snprintf(id, FORMAT_STRING_SIZE,
 						 "%u",
 						 job->jobid);
+				}
 			}
 
 			switch (type) {

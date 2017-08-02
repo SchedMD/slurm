@@ -85,7 +85,7 @@ const uint32_t plugin_version	= SLURM_VERSION_NUMBER;
 #define JOB_FORMAT "JobId=%lu UserId=%s(%lu) GroupId=%s(%lu) Name=%s JobState=%s Partition=%s "\
 		"TimeLimit=%s StartTime=%s EndTime=%s NodeList=%s NodeCnt=%u ProcCnt=%u "\
 		"WorkDir=%s ReservationName=%s Gres=%s Account=%s QOS=%s "\
-		"WcKey=%s Cluster=%s SubmitTime=%s EligibleTime=%s%s "\
+		"WcKey=%s Cluster=%s SubmitTime=%s EligibleTime=%s%s%s "\
 		"DerivedExitCode=%u ExitCode=%u %s\n"
 
 /* Type for error string table entries */
@@ -240,7 +240,7 @@ extern int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 	char job_rec[1024];
 	char usr_str[32], grp_str[32], start_str[32], end_str[32], lim_str[32];
 	char *resv_name, *gres, *account, *qos, *wckey, *cluster;
-	char submit_time[32], eligible_time[32], array_id[64];
+	char submit_time[32], eligible_time[32], array_id[64], pack_id[64];
 	char select_buf[128], *state_string, *work_dir;
 	size_t offset = 0, tot_size, wrote;
 	uint32_t job_state;
@@ -354,6 +354,14 @@ extern int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 		array_id[0] = '\0';
 	}
 
+	if (job_ptr->pack_job_id) {
+		snprintf(pack_id, sizeof(pack_id),
+			 " PackJobId=%u PackJobOffset=%u",
+			 job_ptr->pack_job_id, job_ptr->pack_job_offset);
+	} else {
+		pack_id[0] = '\0';
+	}
+
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 		select_buf, sizeof(select_buf), SELECT_PRINT_MIXED);
 
@@ -364,7 +372,7 @@ extern int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 		 state_string, job_ptr->partition, lim_str, start_str,
 		 end_str, job_ptr->nodes, job_ptr->node_cnt,
 		 job_ptr->total_cpus, work_dir, resv_name, gres, account, qos,
-		 wckey, cluster, submit_time, eligible_time, array_id,
+		 wckey, cluster, submit_time, eligible_time, array_id, pack_id,
 		 job_ptr->derived_ec, job_ptr->exit_code, select_buf);
 	tot_size = strlen(job_rec);
 

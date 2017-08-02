@@ -269,6 +269,8 @@ typedef struct dbd_job_start_msg {
 	char *   nodes;		/* hosts allocated to the job */
 	char *   node_inx;      /* ranged bitmap string of hosts
 				 * allocated to the job */
+	uint32_t pack_job_id;	/* ID of pack job leader or 0 */
+	uint32_t pack_job_offset; /* Pack job component ID, zero-origin */
 	char *   partition;	/* partition job is running on */
 	uint32_t priority;	/* job priority */
 	uint32_t qos_id;        /* qos job is running with */

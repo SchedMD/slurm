@@ -70,6 +70,9 @@ documents those changes that are of interest to users and administrators.
       for the job as a whole.
     * Perform limit check on heterogeneous job as a whole at submit time to
       reject jobs that will never be able to run.
+    * Add pack_job_id and pack_job_offset to accounting database.
+    * Modified sacct to accept pack job ID specification using "#+#" notation.
+    * Modified sstat to accept pack job ID specification using "#+#" notation.
  -- Clear a job's "wait reason" value of BeginTime" after that time has passed.
     Previously a readon of "BeginTime" could be reported long after the job's
     requested begin time had passed.
