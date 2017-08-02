@@ -39,6 +39,8 @@
 #ifndef _HAVE_ACCT_POLICY_H
 #define _HAVE_ACCT_POLICY_H
 
+#include "src/common/list.h"
+
 /*
  * acct_policy_add_job_submit - Note that a job has been submitted for
  *	accounting policy purposes.
@@ -75,6 +77,19 @@ extern void acct_policy_job_fini(struct job_record *job_ptr);
 extern void acct_policy_alter_job(struct job_record *job_ptr,
 				  uint32_t new_time_limit);
 
+/*
+ * acct_policy_validate - validate that a job request can be satisfied without
+ * exceeding any association or QOS limit.
+ * job_desc IN - job descriptor being submitted
+ * part_ptr IN - pointer to (one) partition to which the job is being submitted
+ * assoc_in IN - pointer to assocation to which the job is being submitted
+ * qos_ptr IN - pointer to QOS to which the job is being submitted
+ * state_reason OUT - if non-NULL, set to reason for rejecting the job
+ * acct_policy_limit_set IN/OUT - limits set for the job, pre-allocated storage
+ *		is filled in by acct_policy_validate
+ * update_call IN - true if request to update existing job request
+ * RET true if valid
+ */
 extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 				 struct part_record *part_ptr,
 				 slurmdb_assoc_rec_t *assoc_in,
@@ -82,6 +97,15 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 				 uint32_t *state_reason,
 				 acct_policy_limit_set_t *acct_policy_limit_set,
 				 bool update_call);
+
+/*
+ * acct_policy_validate_pack - validate that a pack job as a whole (all
+ * components at once) can be satisfied without exceeding any association or
+ * QOS limit.
+ * submit_job_list IN - list of "struct job_record" entries (already created)
+ * RET true if valid
+ */
+extern bool acct_policy_validate_pack(List submit_job_list);
 
 /*
  * acct_policy_job_runnable_pre_select - Determine of the specified

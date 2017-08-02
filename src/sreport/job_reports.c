@@ -350,6 +350,8 @@ static int _set_cond(int *start, int argc, char **argv,
 					selected_step->stepid = atoi(dot);
 				}
 				selected_step->jobid = atoi(start_char);
+				selected_step->array_task_id = NO_VAL;
+				selected_step->pack_job_offset = NO_VAL;
 				start_char = end_char + 1;
 			}
 

@@ -185,6 +185,13 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 	req->job_id        = job_ptr->job_id;
 	req->array_job_id  = job_ptr->array_job_id;
 	req->array_task_id = job_ptr->array_task_id;
+	if (job_ptr->pack_job_id) {
+		req->pack_job_id     = job_ptr->pack_job_id;
+		req->pack_job_offset = job_ptr->pack_job_offset;
+	} else {
+		//req->pack_job_id   = 0;
+		req->pack_job_offset = NO_VAL;
+	}
 
 	build_array_str(job_ptr);
 	if (job_ptr->array_recs && job_ptr->array_recs->task_id_str) {
@@ -2553,10 +2560,11 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 	 */
 	if ((req.db_index && !IS_JOB_RESIZING(job_ptr))
 	    || (!req.db_index && IS_JOB_FINISHED(job_ptr))) {
-		/* This is to ensure we don't do this multiple times for the
-		   same job.  This can happen when an account is being
-		   deleted and hense the associations dealing with it.
-		*/
+		/*
+		 * This is to ensure we don't do this multiple times for the
+		 * same job.  This can happen when an account is being
+		 * deleted and hense the associations dealing with it.
+		 */
 		if (!req.db_index)
 			job_ptr->db_index = NO_VAL64;
 

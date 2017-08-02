@@ -198,7 +198,7 @@ extern List filetxt_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 		jobid = 0;
 		partition = NULL;
 		job_info_list = list_create(_destroy_filetxt_jobcomp_info);
-		while(fptr) {
+		while (fptr) {
 			jobcomp_info =
 				xmalloc(sizeof(filetxt_jobcomp_info_t));
 			list_append(job_info_list, jobcomp_info);
@@ -233,7 +233,7 @@ extern List filetxt_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 			if (!jobid)
 				continue;
 			itr = list_iterator_create(job_cond->step_list);
-			while((selected_step = list_next(itr))) {
+			while ((selected_step = list_next(itr))) {
 				if (selected_step->jobid == jobid)
 					continue;
 				/* job matches */
@@ -250,7 +250,7 @@ extern List filetxt_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 			if (!partition)
 				continue;
 			itr = list_iterator_create(job_cond->partition_list);
-			while((selected_part = list_next(itr)))
+			while ((selected_part = list_next(itr)))
 				if (!xstrcasecmp(selected_part, partition)) {
 					list_iterator_destroy(itr);
 					goto foundp;

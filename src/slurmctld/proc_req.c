@@ -78,6 +78,7 @@
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
 
+#include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/burst_buffer.h"
 #include "src/slurmctld/fed_mgr.h"
@@ -1148,6 +1149,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
+	uint32_t job_uid = NO_VAL;
 	struct job_record *job_ptr, *first_job_ptr;
 	char *err_msg = NULL;
 	ListIterator iter;
@@ -1198,6 +1200,8 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 	lock_slurmctld(job_write_lock);
 	iter = list_iterator_create(job_req_list);
 	while ((job_desc_msg = (job_desc_msg_t *) list_next(iter))) {
+		if (job_uid == NO_VAL)
+			job_uid = job_desc_msg->user_id;
 		if ((uid != job_desc_msg->user_id) && !priv_user) {
 			error_code = ESLURM_USER_ID_MISSING;
 			error("Security violation, REQUEST_JOB_PACK_ALLOCATION from uid=%d",
@@ -1280,9 +1284,14 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 	}
 	list_iterator_destroy(iter);
 
-	if (error_code == SLURM_SUCCESS) {
-//FIXME-PACK: Validate limits on pack-job as a whole (to the extent possible)
-	}
+	/* Validate limits on pack-job as a whole */
+	if ((error_code == SLURM_SUCCESS) &&
+	    (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
+	    !acct_policy_validate_pack(submit_job_list)) {
+		info("Pack job %u exceeded association/QOS limit for user %u",
+		     pack_job_id, job_uid);
+		error_code = ESLURM_ACCOUNTING_POLICY;
+        }
 
 
 	if ((error_code == 0) && (pack_job_id == 0)) {
@@ -3744,13 +3753,14 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	List job_req_list = (List) msg->data;
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
+	uint32_t job_uid = NO_VAL;
 	char *err_msg = NULL;
 	bool reject_job = false;
 	bool is_super_user;
 	List submit_job_list = NULL;
 	hostset_t jobid_hostset = NULL;
 	char tmp_str[32];
-
+	time_t min_begin = time(NULL) + PACK_DELAY;	/* Delay start */
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_SUBMIT_BATCH_PACK_JOB from uid=%d",
 	       uid);
@@ -3780,11 +3790,13 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 		goto send_msg;
 	}
 
-	/* Validate the request */
+	/* Validate the individual request */
 	is_super_user = validate_super_user(uid);
 	lock_slurmctld(job_read_lock);     /* Locks for job_submit plugin use */
 	iter = list_iterator_create(job_req_list);
 	while ((job_desc_msg = (job_desc_msg_t *) list_next(iter))) {
+		if (job_uid == NO_VAL)
+			job_uid = job_desc_msg->user_id;
 		if ((uid != job_desc_msg->user_id) && !is_super_user) {
 			/* NOTE: Super root can submit a job for any user */
 			error("Security violation, REQUEST_SUBMIT_BATCH_PACK_JOB from uid=%d",
@@ -3801,11 +3813,14 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 		}
 		dump_job_desc(job_desc_msg);
 
-		error_code = validate_job_create_req(job_desc_msg,uid,&err_msg);
+		error_code = validate_job_create_req(job_desc_msg, uid,
+						     &err_msg);
 		if (error_code != SLURM_SUCCESS) {
 			reject_job = true;
 			break;
 		}
+		job_desc_msg->begin_time = MAX(job_desc_msg->begin_time,
+					       min_begin);
 	}
 	list_iterator_destroy(iter);
 	unlock_slurmctld(job_read_lock);
@@ -3865,8 +3880,14 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	}
 	list_iterator_destroy(iter);
 
-	if (!reject_job) {
-//FIXME-PACK: Validate limits on pack-job as a whole (to the extent possible)
+	/* Validate limits on pack-job as a whole */
+	if (!reject_job &&
+	    (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
+	    !acct_policy_validate_pack(submit_job_list)) {
+		info("Pack job %u exceeded association/QOS limit for user %u",
+		     pack_job_id, job_uid);
+		error_code = ESLURM_ACCOUNTING_POLICY;
+		reject_job = true;
 	}
 
 	if ((pack_job_id == 0) && !reject_job) {
@@ -4001,15 +4022,27 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 			unlock_slurmctld(job_write_lock);
 			if (error_code == ESLURM_JOB_SETTING_DB_INX) {
 				if (i >= db_inx_max_cnt) {
-					info("%s: can't update job, waited %d seconds for job %s to get a db_index, but it hasn't happened yet.  Giving up and letting the user know.",
-					      __func__, db_inx_max_cnt,
-					      job_desc_msg->job_id_str);
+					if (job_desc_msg->job_id_str) {
+						info("%s: can't update job, waited %d seconds for job %s to get a db_index, but it hasn't happened yet.  Giving up and informing the user",
+						      __func__, db_inx_max_cnt,
+						      job_desc_msg->job_id_str);
+					} else {
+						info("%s: can't update job, waited %d seconds for job %u to get a db_index, but it hasn't happened yet.  Giving up and informing the user",
+						      __func__, db_inx_max_cnt,
+						      job_desc_msg->job_id);
+					}
 					slurm_send_rc_msg(msg, error_code);
 					break;
 				}
 				i++;
-				debug("%s: We cannot update job %s at the moment, we are setting the db index, waiting",
-				      __func__, job_desc_msg->job_id_str);
+				if (job_desc_msg->job_id_str) {
+					debug("%s: We cannot update job %s at the moment, we are setting the db index, waiting",
+					      __func__,
+					      job_desc_msg->job_id_str);
+				} else {
+					debug("%s: We cannot update job %u at the moment, we are setting the db index, waiting",
+					      __func__, job_desc_msg->job_id);
+				}
 				sleep(1);
 			}
 		}
@@ -4018,11 +4051,23 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 
 	/* return result */
 	if (error_code) {
-		info("_slurm_rpc_update_job JobId=%s uid=%d: %s",
-		     job_desc_msg->job_id_str, uid, slurm_strerror(error_code));
+		if (job_desc_msg->job_id_str) {
+			info("%s: JobId=%s uid=%d: %s", __func__,
+			     job_desc_msg->job_id_str, uid,
+			     slurm_strerror(error_code));
+		} else {
+			info("%s: JobId=%u uid=%d: %s", __func__,
+			     job_desc_msg->job_id, uid,
+			     slurm_strerror(error_code));
+		}
 	} else {
-		info("_slurm_rpc_update_job complete JobId=%s uid=%d %s",
-		     job_desc_msg->job_id_str, uid, TIME_STR);
+		if (job_desc_msg->job_id_str) {
+			info("%s: complete JobId=%s uid=%d %s", __func__,
+			     job_desc_msg->job_id_str, uid, TIME_STR);
+		} else {
+			info("%s: complete JobId=%u uid=%d %s", __func__,
+			     job_desc_msg->job_id, uid, TIME_STR);
+		}
 		/* Below functions provide their own locking */
 		schedule_job_save();
 		schedule_node_save();

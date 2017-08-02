@@ -6418,7 +6418,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	    (!acct_policy_validate(job_desc, part_ptr,
 				   assoc_ptr, qos_ptr, NULL,
 				   &acct_policy_limit_set, 0))) {
-		info("_job_create: exceeded association/qos's limit "
+		info("_job_create: exceeded association/QOS limit "
 		     "for user %u", job_desc->user_id);
 		error_code = ESLURM_ACCOUNTING_POLICY;
 		goto cleanup_fail;
@@ -13325,6 +13325,7 @@ static void _purge_missing_jobs(int node_inx, time_t now)
 			startup_time = batch_startup_time;
 
 		if ((job_ptr->batch_flag != 0)			&&
+		    (job_ptr->pack_job_offset == 0)		&&
 		    (job_ptr->time_last_active < startup_time)	&&
 		    (job_ptr->start_time       < startup_time)	&&
 		    (node_inx == bit_ffs(job_ptr->node_bitmap))) {
@@ -13625,7 +13626,8 @@ static int _test_state_dir_flag(void *x, void *arg)
 		return 0;
 	}
 
-	if (!job_ptr->batch_flag || !IS_JOB_PENDING(job_ptr))
+	if (!job_ptr->batch_flag || !IS_JOB_PENDING(job_ptr) ||
+	    (job_ptr->pack_job_offset > 0))
 		return 0;	/* No files expected */
 
 	error("Script for job %u lost, state set to FAILED", job_ptr->job_id);
@@ -14076,6 +14078,7 @@ extern void job_completion_logger(struct job_record *job_ptr, bool requeue)
 	_job_array_comp(job_ptr, true);
 
 	if (!IS_JOB_RESIZING(job_ptr) &&
+	    !IS_JOB_PENDING(job_ptr)  &&
 	    ((job_ptr->array_task_id == NO_VAL) ||
 	     (job_ptr->mail_type & MAIL_ARRAY_TASKS) ||
 	     test_job_array_finished(job_ptr->array_job_id))) {

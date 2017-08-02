@@ -1293,9 +1293,7 @@ extern void slurmdb_destroy_hierarchical_rec(void *object)
 extern void slurmdb_destroy_selected_step(void *object)
 {
 	slurmdb_selected_step_t *step = (slurmdb_selected_step_t *)object;
-	if (step) {
-		xfree(step);
-	}
+	xfree(step);
 }
 
 extern void slurmdb_destroy_report_job_grouping(void *object)
@@ -2958,15 +2956,21 @@ extern char *slurmdb_get_selected_step_id(
 
 	xassert(selected_step);
 
-	if (selected_step->array_task_id != NO_VAL)
+	if (selected_step->array_task_id != NO_VAL) {
 		snprintf(id, FORMAT_STRING_SIZE,
 			 "%u_%u",
 			 selected_step->jobid,
 			 selected_step->array_task_id);
-	else
+	} else if (selected_step->pack_job_offset != NO_VAL) {
+		snprintf(id, FORMAT_STRING_SIZE,
+			 "%u+%u",
+			 selected_step->jobid,
+			 selected_step->pack_job_offset);
+	} else {
 		snprintf(id, FORMAT_STRING_SIZE,
 			 "%u",
 			 selected_step->jobid);
+	}
 
 	if (selected_step->stepid != NO_VAL)
 		snprintf(job_id_str, len, "%s.%u",
@@ -3895,7 +3899,8 @@ extern int slurmdb_find_selected_step_in_list(void *x, void *key)
 
 	if ((query_step->jobid == selected_step->jobid) &&
 	    (query_step->stepid == selected_step->stepid) &&
-	    (query_step->array_task_id == selected_step->array_task_id))
+	    (query_step->array_task_id == selected_step->array_task_id) &&
+	    (query_step->pack_job_offset == selected_step->pack_job_offset))
 		return 1;
 
 	return 0;

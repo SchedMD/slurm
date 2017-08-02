@@ -1224,6 +1224,8 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "id_array_task", "int unsigned default 0xfffffffe not null" },
 		{ "id_block", "tinytext" },
 		{ "id_job", "int unsigned not null" },
+		{ "pack_job_id", "int unsigned not null" },
+		{ "pack_job_offset", "int unsigned not null" },
 		{ "id_qos", "int unsigned default 0 not null" },
 		{ "id_resv", "int unsigned not null" },
 		{ "id_wckey", "int unsigned not null" },

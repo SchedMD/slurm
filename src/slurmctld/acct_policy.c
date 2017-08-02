@@ -62,6 +62,13 @@ typedef enum {
 	TRES_USAGE_REQ_NOT_SAFE_WITH_USAGE
 } acct_policy_tres_usage_t;
 
+typedef struct pack_limits {
+	slurmdb_assoc_rec_t *assoc_ptr;
+	struct job_record *job_ptr;
+	slurmdb_qos_rec_t *qos_ptr_1;
+	slurmdb_qos_rec_t *qos_ptr_2;
+} pack_limits_t;
+
 static int _get_tres_state_reason(int tres_pos, int unk_reason)
 {
 	switch (tres_pos) {
@@ -763,7 +770,7 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 
 	assoc_ptr = job_ptr->assoc_ptr;
 	while (assoc_ptr) {
-		switch(type) {
+		switch (type) {
 		case ACCT_POLICY_ADD_SUBMIT:
 			assoc_ptr->usage->used_submit_jobs += job_cnt;
 			break;
@@ -806,7 +813,7 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 				       "underflow for account %s",
 				       assoc_ptr->acct);
 
-			for (i=0; i<slurmctld_tres_cnt; i++) {
+			for (i = 0; i < slurmctld_tres_cnt; i++) {
 				if (i == TRES_ARRAY_ENERGY)
 					continue;
 				if (job_ptr->tres_alloc_cnt[i] >
@@ -820,9 +827,10 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 					       assoc_ptr->id, assoc_ptr->acct,
 					       assoc_ptr->user,
 					       assoc_ptr->partition);
-				} else
+				} else {
 					assoc_ptr->usage->grp_used_tres[i] -=
 						job_ptr->tres_alloc_cnt[i];
+				}
 			}
 
 			break;
@@ -2549,21 +2557,21 @@ extern void acct_policy_alter_job(struct job_record *job_ptr,
 	assoc_mgr_unlock(&locks);
 }
 
-extern bool acct_policy_validate(job_desc_msg_t *job_desc,
-				 struct part_record *part_ptr,
-				 slurmdb_assoc_rec_t *assoc_in,
-				 slurmdb_qos_rec_t *qos_ptr,
-				 uint32_t *reason,
-				 acct_policy_limit_set_t *acct_policy_limit_set,
-				 bool update_call)
+static bool _acct_policy_validate(job_desc_msg_t *job_desc,
+				  struct part_record *part_ptr,
+				  slurmdb_assoc_rec_t *assoc_in,
+				  slurmdb_qos_rec_t *qos_ptr_1,
+				  slurmdb_qos_rec_t *qos_ptr_2,
+				  uint32_t *reason,
+				  acct_policy_limit_set_t *
+					acct_policy_limit_set,
+				  bool update_call)
 {
-	slurmdb_qos_rec_t *qos_ptr_1, *qos_ptr_2;
 	slurmdb_qos_rec_t qos_rec;
 	slurmdb_assoc_rec_t *assoc_ptr = assoc_in;
 	int parent = 0, job_cnt = 1;
 	char *user_name = NULL;
 	bool rc = true;
-	struct job_record job_rec;
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
 	bool strict_checking;
@@ -2584,11 +2592,6 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 	assoc_mgr_lock(&locks);
 
 	assoc_mgr_set_qos_tres_cnt(&qos_rec);
-
-	job_rec.qos_ptr = qos_ptr;
-	job_rec.part_ptr = part_ptr;
-
-	_set_qos_order(&job_rec, &qos_ptr_1, &qos_ptr_2);
 
 	if (qos_ptr_1) {
 		strict_checking =
@@ -2883,6 +2886,164 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 end_it:
 	assoc_mgr_unlock(&locks);
 	slurmdb_free_qos_rec_members(&qos_rec);
+
+	return rc;
+}
+
+/*
+ * acct_policy_validate - validate that a job request can be satisfied without
+ * exceeding any association or QOS limit.
+ * job_desc IN - job descriptor being submitted
+ * part_ptr IN - pointer to (one) partition to which the job is being submitted
+ * assoc_in IN - pointer to assocation to which the job is being submitted
+ * qos_ptr IN - pointer to QOS to which the job is being submitted
+ * state_reason OUT - if non-NULL, set to reason for rejecting the job
+ * acct_policy_limit_set IN/OUT - limits set for the job, pre-allocated storage
+ *		is filled in by acct_policy_validate
+ * update_call IN - true if request to update existing job request
+ * RET true if valid
+ */
+extern bool acct_policy_validate(job_desc_msg_t *job_desc,
+				 struct part_record *part_ptr,
+				 slurmdb_assoc_rec_t *assoc_in,
+				 slurmdb_qos_rec_t *qos_ptr,
+				 uint32_t *reason,
+				 acct_policy_limit_set_t *acct_policy_limit_set,
+				 bool update_call)
+{
+	slurmdb_qos_rec_t *qos_ptr_1 = NULL, *qos_ptr_2 = NULL;
+	struct job_record job_rec;
+	bool rc;
+	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
+				   READ_LOCK, NO_LOCK, NO_LOCK };
+
+	assoc_mgr_lock(&locks);
+	job_rec.qos_ptr = qos_ptr;
+	job_rec.part_ptr = part_ptr;
+	_set_qos_order(&job_rec, &qos_ptr_1, &qos_ptr_2);
+	assoc_mgr_unlock(&locks);
+	rc = _acct_policy_validate(job_desc, part_ptr, assoc_in,
+				   qos_ptr_1, qos_ptr_2, reason,
+				   acct_policy_limit_set, update_call);
+	return rc;
+}
+
+static void _pack_list_del(void *x)
+{
+	xfree(x);
+}
+
+/*
+ * acct_policy_validate_pack - validate that a pack job as a whole (all
+ * components at once) can be satisfied without exceeding any association
+ * limit. Build a list of every job's assocation and QOS information then combine
+ * usage information for every job sharing an assocation and test that against
+ * the appropriate limit.
+ *
+ * NOTE: This test is imperfect. Each job actually has up to 3 sets of limits
+ * to test (assocation, job QOS and partition QOS). Ideally each would be tested
+ * independently, but that is complicated due to QOS limits overriding the
+ * assocation limits and the ability to have 3 sets of limits for each job.
+ * This only tests the association limit for each pack job component based
+ * upon that component's job and partition QOS.
+ *
+ * NOTE: That a pack job passes this test does not mean that it will be able
+ * to run. For example, this test assumues resource allocation at the CPU level.
+ * If each task is allocated one core, with 2 CPUs, then the CPU limit test
+ * would not be accurate.
+ *
+ * submit_job_list IN - list of "struct job_record" entries (already created)
+ * RET true if valid
+ */
+extern bool acct_policy_validate_pack(List submit_job_list)
+{
+	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
+				   READ_LOCK, NO_LOCK, NO_LOCK };
+	List pack_limit_list;
+	ListIterator iter1, iter2;
+	slurmdb_qos_rec_t *qos_ptr_1, *qos_ptr_2;
+	struct job_record *job_ptr1, *job_ptr2;
+	pack_limits_t *job_limit1, *job_limit2;
+	bool rc = true;
+	job_desc_msg_t job_desc;
+	bool build_job_desc = true;
+	acct_policy_limit_set_t acct_policy_limit_set;
+	int i, job_cnt;
+	uint32_t reason = 0;
+	int tres_req_size = sizeof(uint64_t) * g_tres_count;
+
+	memset(&acct_policy_limit_set, 0, sizeof(acct_policy_limit_set_t));
+	acct_policy_limit_set.tres =
+		xmalloc(sizeof(uint16_t) * slurmctld_tres_cnt);
+
+	/* Build list of QOS, assocation, and job pointers */
+	pack_limit_list = list_create(_pack_list_del);
+	iter1 = list_iterator_create(submit_job_list);
+	assoc_mgr_lock(&locks);
+	while ((job_ptr1 = (struct job_record *) list_next(iter1))) {
+		qos_ptr_1 = NULL;
+		qos_ptr_2 = NULL;
+		_set_qos_order(job_ptr1, &qos_ptr_1, &qos_ptr_2);
+		job_limit1 = xmalloc(sizeof(pack_limits_t));
+		job_limit1->assoc_ptr = job_ptr1->assoc_ptr;
+		job_limit1->job_ptr   = job_ptr1;
+		job_limit1->qos_ptr_1 = qos_ptr_1;
+		job_limit1->qos_ptr_2 = qos_ptr_2;
+		list_append(pack_limit_list, job_limit1);
+	}
+	assoc_mgr_unlock(&locks);
+	list_iterator_destroy(iter1);
+
+	iter1 = list_iterator_create(pack_limit_list);
+	while ((job_limit1 = (pack_limits_t *) list_next(iter1))) {
+		job_ptr1 = job_limit1->job_ptr;
+		if (build_job_desc) {
+			build_job_desc = false;
+			job_desc.time_limit = job_ptr1->time_limit;
+			job_desc.tres_req_cnt = xmalloc(tres_req_size);
+			job_desc.user_id = job_ptr1->user_id;
+		}
+		if (job_limit1->assoc_ptr) {
+			job_cnt = 1;
+			memcpy(job_desc.tres_req_cnt, job_ptr1->tres_req_cnt,
+			       tres_req_size);
+			iter2 = list_iterator_create(pack_limit_list);
+			while ((job_limit2 = (pack_limits_t *)
+					     list_next(iter2))) {
+				if ((job_limit2 == job_limit1) ||
+				    (job_limit2->assoc_ptr !=
+				     job_limit1->assoc_ptr))
+					continue;
+				job_ptr2 = job_limit2->job_ptr;
+				for (i = 0 ; i < g_tres_count; i++) {
+					job_desc.tres_req_cnt[i] +=
+						job_ptr2->tres_req_cnt[i];
+				}
+				job_cnt++;
+			}
+			list_iterator_destroy(iter2);
+			if (job_cnt > 1) {
+				job_desc.array_bitmap = bit_alloc(job_cnt);
+				bit_nset(job_desc.array_bitmap, 0, job_cnt - 1);
+				rc = _acct_policy_validate(&job_desc,
+						job_ptr1->part_ptr,
+						job_limit1->assoc_ptr,
+						job_limit1->qos_ptr_1,
+						job_limit1->qos_ptr_2,
+						&reason,
+						&acct_policy_limit_set,
+						false);
+				bit_free(job_desc.array_bitmap);
+				if (!rc)
+					break;
+			}
+		}
+	}
+	list_iterator_destroy(iter1);
+
+	xfree(job_desc.tres_req_cnt);
+	list_destroy(pack_limit_list);
+	xfree(acct_policy_limit_set.tres);
 
 	return rc;
 }

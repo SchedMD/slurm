@@ -1842,8 +1842,16 @@ static void _set_job_term_info(struct job_record *job_ptr, uint16_t mail_type,
 extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type)
 {
 	char job_time[128], term_msg[128];
-	mail_info_t *mi = _mail_alloc();
+	mail_info_t *mi;
 
+	/*
+	 * Send mail only for first component of a pack job,
+	 * not the individual job records
+	 */
+	if (job_ptr->pack_job_id && (job_ptr->pack_job_offset != 0))
+		return;
+
+	mi = _mail_alloc();
 	if (!job_ptr->mail_user) {
 		mi->user_name = uid_to_string((uid_t)job_ptr->user_id);
 		/* unqualified sender, append MailDomain if set */

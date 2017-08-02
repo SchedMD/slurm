@@ -196,9 +196,8 @@ static void _xlate_task_str(slurmdb_job_rec_t *job_ptr)
 	job_ptr->array_task_str = out_buf;
 }
 
-void print_fields(type_t type, void *object)
+extern void print_fields(type_t type, void *object)
 {
-
 	slurmdb_job_rec_t *job = (slurmdb_job_rec_t *)object;
 	slurmdb_step_rec_t *step = (slurmdb_step_rec_t *)object;
 	jobcomp_job_rec_t *job_comp = (jobcomp_job_rec_t *)object;
@@ -222,10 +221,11 @@ void print_fields(type_t type, void *object)
 		step = NULL;
 		if (!job->track_steps)
 			step = (slurmdb_step_rec_t *)job->first_step_ptr;
-		/* set this to avoid printing out info for things that
-		   don't mean anything.  Like an allocation that never
-		   ran anything.
-		*/
+		/*
+		 * set this to avoid printing out info for things that
+		 * don't mean anything.  Like an allocation that never
+		 * ran anything.
+		 */
 		if (!step)
 			job->track_steps = 1;
 		else
@@ -275,7 +275,7 @@ void print_fields(type_t type, void *object)
 		step_cpu_tres_rec_count = 0;
 
 	list_iterator_reset(print_fields_itr);
-	while((field = list_next(print_fields_itr))) {
+	while ((field = list_next(print_fields_itr))) {
 		char *tmp_char = NULL, id[FORMAT_STRING_SIZE];
 		int exit_code, tmp_int = NO_VAL, tmp_int2 = NO_VAL;
 		double tmp_dub = (double)NO_VAL; /* don't use NO_VAL64
@@ -287,7 +287,7 @@ void print_fields(type_t type, void *object)
 		uint64_t tmp_uint64 = NO_VAL64;
 
 		memset(&outbuf, 0, sizeof(outbuf));
-		switch(field->type) {
+		switch (field->type) {
 		case PRINT_ALLOC_CPUS:
 			switch(type) {
 			case JOB:
@@ -897,15 +897,21 @@ void print_fields(type_t type, void *object)
 						 "%u_[%s]",
 						 job->array_job_id,
 						 job->array_task_str);
-				} else if (job->array_task_id != NO_VAL)
+				} else if (job->array_task_id != NO_VAL) {
 					snprintf(id, FORMAT_STRING_SIZE,
 						 "%u_%u",
 						 job->array_job_id,
 						 job->array_task_id);
-				else
+				} else if (job->pack_job_id) {
+					snprintf(id, FORMAT_STRING_SIZE,
+						 "%u+%u",
+						 job->pack_job_id,
+						 job->pack_job_offset);
+				} else {
 					snprintf(id, FORMAT_STRING_SIZE,
 						 "%u",
 						 job->jobid);
+				}
 			}
 
 			switch (type) {
