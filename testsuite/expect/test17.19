@@ -194,7 +194,15 @@ if {$job_id == 0} {
 set matches 0
 spawn $scontrol show job $job_id
 expect {
+	#
+	# Check both orderings because one partition might have a higher
+	# priority than the other.  The string will be sorted based on priority.
+	#
 	-re "Partition=$part(0),$part(1)" {
+		incr matches
+		exp_continue
+	}
+	-re "Partition=$part(1),$part(0)" {
 		incr matches
 		exp_continue
 	}

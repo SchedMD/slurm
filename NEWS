@@ -37,6 +37,9 @@ documents those changes that are of interest to users and administrators.
  -- Increase buffer to handle long /proc/<pid>/stat output so that Slurm can
     read correct RSS value and take action on jobs using more memory than
     requested.
+ -- Fix srun job jobs that can run immediately to run in the highest priority
+    partion when multiple partitions are listed. scontrol show jobs can
+    potentially show the partition list in priority order.
 
 * Changes in Slurm 17.02.6
 ==========================
