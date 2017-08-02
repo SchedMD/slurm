@@ -37,4 +37,12 @@
 #ifndef _STATE_CONTROL_H
 #define _STATE_CONTROL_H
 
+#include "slurm/slurm.h"
+
+/*
+ * Parse reservation request option NodeCnt
+ */
+extern int _parse_resv_node_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
+				bool from_tres);
+
 #endif /* !_STATE_CONTROL_H */

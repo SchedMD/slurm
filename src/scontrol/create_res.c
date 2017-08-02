@@ -36,9 +36,10 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/proc_args.h"
+#include "src/common/state_control.h"
 #include "src/scontrol/scontrol.h"
 #include "src/slurmctld/reservation.h"
-#include "src/common/proc_args.h"
 
 /*
  *  _process_plus_minus is used to convert a string like
@@ -71,45 +72,6 @@ static char * _process_plus_minus(char plus_or_minus, char *src)
 	*dst = '\0';
 
 	return ret;
-}
-
-static int _parse_resv_node_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
-				bool from_tres)
-{
-	char *endptr = NULL, *node_cnt, *tok, *ptrptr = NULL;
-	int node_inx = 0;
-	node_cnt = xstrdup(val);
-	tok = strtok_r(node_cnt, ",", &ptrptr);
-	while (tok) {
-		xrealloc(resv_msg_ptr->node_cnt,
-			 sizeof(uint32_t) * (node_inx + 2));
-		resv_msg_ptr->node_cnt[node_inx] =
-			strtol(tok, &endptr, 10);
-		if ((endptr != NULL) &&
-		    ((endptr[0] == 'k') ||
-		     (endptr[0] == 'K'))) {
-			resv_msg_ptr->node_cnt[node_inx] *= 1024;
-		} else if ((endptr != NULL) &&
-			   ((endptr[0] == 'm') ||
-			    (endptr[0] == 'M'))) {
-			resv_msg_ptr->node_cnt[node_inx] *= 1024 * 1024;
-		} else if ((endptr == NULL) ||
-			   (endptr[0] != '\0') ||
-			   (tok[0] == '\0')) {
-			exit_code = 1;
-			if (from_tres)
-				error("Invalid TRES node count %s", val);
-			else
-				error("Invalid node count %s", val);
-			xfree(node_cnt);
-			return SLURM_ERROR;
-		}
-		node_inx++;
-		tok = strtok_r(NULL, ",", &ptrptr);
-	}
-
-	xfree(node_cnt);
-	return SLURM_SUCCESS;
 }
 
 static int _parse_resv_core_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
@@ -444,8 +406,10 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 			   strncasecmp(tag, "NodeCount", MAX(taglen,5)) == 0) {
 
 			if (_parse_resv_node_cnt(resv_msg_ptr, val, false)
-			    == SLURM_ERROR)
+			    == SLURM_ERROR) {
+				exit_code = 1;
 				return SLURM_ERROR;
+			}
 
 		} else if (strncasecmp(tag, "CoreCnt",   MAX(taglen,5)) == 0 ||
 		           strncasecmp(tag, "CoreCount", MAX(taglen,5)) == 0 ||

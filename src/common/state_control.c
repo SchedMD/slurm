@@ -35,3 +35,44 @@
 \*****************************************************************************/
 
 #include "src/common/state_control.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+
+extern int _parse_resv_node_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
+				bool from_tres)
+{
+	char *endptr = NULL, *node_cnt, *tok, *ptrptr = NULL;
+	int node_inx = 0;
+	node_cnt = xstrdup(val);
+	tok = strtok_r(node_cnt, ",", &ptrptr);
+	while (tok) {
+		xrealloc(resv_msg_ptr->node_cnt,
+			sizeof(uint32_t) * (node_inx + 2));
+		resv_msg_ptr->node_cnt[node_inx] =
+			strtol(tok, &endptr, 10);
+		if ((endptr != NULL) &&
+		    ((endptr[0] == 'k') ||
+		    (endptr[0] == 'K'))) {
+			resv_msg_ptr->node_cnt[node_inx] *= 1024;
+		} else if ((endptr != NULL) &&
+			   ((endptr[0] == 'm') ||
+			   (endptr[0] == 'M'))) {
+			resv_msg_ptr->node_cnt[node_inx] *= 1024 * 1024;
+		} else if ((endptr == NULL) ||
+			   (endptr[0] != '\0') ||
+			   (tok[0] == '\0')) {
+			if (from_tres)
+				error("Invalid TRES node count %s", val);
+			else
+				error("Invalid node count %s", val);
+			xfree(node_cnt);
+			return SLURM_ERROR;
+		}
+		node_inx++;
+		tok = strtok_r(NULL, ",", &ptrptr);
+	}
+
+	xfree(node_cnt);
+	return SLURM_SUCCESS;
+}
+
