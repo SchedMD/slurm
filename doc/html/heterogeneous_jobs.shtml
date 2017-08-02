@@ -35,6 +35,8 @@ $ sbatch --cpus-per-task=4 --mem-per-cpu=1  --ntasks=128 : \
 
 <p>Options specified for one component of a heterogeneous job (or job step) will
 be used for subsequent components to the extent which is expected to be helpful.
+Propagated options can be reset as desired for each component (e.g. a different
+account name could be specified for each job component.
 For example, <i>--immediate</i> and <i>--job-name</i> are propagated, while
 <i>--ntasks</i> and <i>--mem-per-cpu</i> are reset to default values for each
 component.
