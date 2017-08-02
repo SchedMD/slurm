@@ -4085,6 +4085,34 @@ extern uint64_t xlate_mem_old2new(uint32_t old_mem)
 	return new_mem;
 }
 
+#define OLD_GROUP_FORCE 0x8000
+#define OLD_GROUP_TIME_MASK 0x0fff
+
+extern uint16_t xlate_group_info_new2old(uint16_t group_time,
+					 uint16_t group_force)
+{
+	uint16_t group_info;
+
+	group_info = group_time;
+	if (group_force)
+		group_info |= OLD_GROUP_FORCE;
+
+	return group_info;
+}
+
+extern void xlate_group_info_old2new(uint16_t group_info,
+				     uint16_t *group_time_ptr,
+				     uint16_t *group_force_ptr)
+{
+	*group_time_ptr = group_info & OLD_GROUP_TIME_MASK;
+	if (group_info & OLD_GROUP_FORCE)
+		*group_force_ptr = 1;
+	else
+		*group_force_ptr = 0;
+
+	return;
+}
+
 static void
 _pack_update_partition_msg(update_part_msg_t * msg, Buf buffer,
 			   uint16_t protocol_version)
@@ -6389,7 +6417,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 
 		pack16(build_ptr->get_env_timeout, buffer);
 		packstr(build_ptr->gres_plugins, buffer);
-		pack16(build_ptr->group_info, buffer);
+		pack16(build_ptr->group_time, buffer);
+		pack16(build_ptr->group_force, buffer);
 
 		pack32(build_ptr->hash_val, buffer);
 
@@ -6672,7 +6701,9 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 
 		pack16(build_ptr->get_env_timeout, buffer);
 		packstr(build_ptr->gres_plugins, buffer);
-		pack16(build_ptr->group_info, buffer);
+		pack16(xlate_group_info_new2old(build_ptr->group_time,
+						build_ptr->group_force),
+						buffer);
 
 		pack32(build_ptr->hash_val, buffer);
 
@@ -6952,7 +6983,9 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 
 		pack16(build_ptr->get_env_timeout, buffer);
 		packstr(build_ptr->gres_plugins, buffer);
-		pack16(build_ptr->group_info, buffer);
+		pack16(xlate_group_info_new2old(build_ptr->group_time,
+						build_ptr->group_force),
+						buffer);
 
 		pack32(build_ptr->hash_val, buffer);
 
@@ -7292,7 +7325,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack16(&build_ptr->get_env_timeout, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->gres_plugins,
 				       &uint32_tmp, buffer);
-		safe_unpack16(&build_ptr->group_info, buffer);
+		safe_unpack16(&build_ptr->group_time, buffer);
+		safe_unpack16(&build_ptr->group_force, buffer);
 
 		safe_unpack32(&build_ptr->hash_val, buffer);
 
@@ -7577,6 +7611,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       buffer);
 	} else if (protocol_version >= SLURM_17_02_PROTOCOL_VERSION) {
 		/* unpack timestamp of snapshot */
+
 		safe_unpack_time(&build_ptr->last_update, buffer);
 
 		safe_unpack16(&build_ptr->accounting_storage_enforce, buffer);
@@ -7697,7 +7732,9 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack16(&build_ptr->get_env_timeout, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->gres_plugins,
 				       &uint32_tmp, buffer);
-		safe_unpack16(&build_ptr->group_info, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		xlate_group_info_old2new(uint16_tmp, &build_ptr->group_time,
+					 &build_ptr->group_time);
 
 		safe_unpack32(&build_ptr->hash_val, buffer);
 
@@ -8101,7 +8138,9 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack16(&build_ptr->get_env_timeout, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->gres_plugins,
 				       &uint32_tmp, buffer);
-		safe_unpack16(&build_ptr->group_info, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		xlate_group_info_old2new(uint16_tmp, &build_ptr->group_time,
+					 &build_ptr->group_time);
 
 		safe_unpack32(&build_ptr->hash_val, buffer);
 

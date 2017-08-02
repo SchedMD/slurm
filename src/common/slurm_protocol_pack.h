@@ -160,5 +160,10 @@ extern int slurm_unpack_block_info_msg(
 /* Remove when version 16.05 support is no longer required. */
 extern uint32_t xlate_mem_new2old(uint64_t new_mem);
 extern uint64_t xlate_mem_old2new(uint32_t old_mem);
+extern uint16_t xlate_group_info_new2old(uint16_t group_time,
+					 uint16_t group_force);
+extern void xlate_group_info_old2new(uint16_t group_info,
+				     uint16_t *group_time_ptr,
+				     uint16_t *group_force_ptr);
 
 #endif

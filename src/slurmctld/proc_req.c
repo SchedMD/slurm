@@ -712,7 +712,8 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->fs_dampening_factor = conf->fs_dampening_factor;
 
 	conf_ptr->gres_plugins        = xstrdup(conf->gres_plugins);
-	conf_ptr->group_info          = conf->group_info;
+	conf_ptr->group_time          = conf->group_time;
+	conf_ptr->group_force         = conf->group_force;
 
 	conf_ptr->inactive_limit      = conf->inactive_limit;
 

@@ -2608,13 +2608,6 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_FEDR         0x0001000000000000 /* Federation debug */
 #define DEBUG_FLAG_HETERO_JOBS  0x0002000000000000 /* Heterogeneous job debug */
 
-#define GROUP_FORCE		0x8000	/* if set, update group membership
-					 * info even if no updates to
-					 * /etc/group file */
-#define GROUP_CACHE		0x4000	/* UNUSED, kept for backwards compatibility. */
-#define GROUP_TIME_MASK		0x0fff	/* group membership update interval
-					 * in seconds */
-
 #define PREEMPT_MODE_OFF	0x0000	/* disable job preemption */
 #define PREEMPT_MODE_SUSPEND	0x0001	/* suspend jobs to preempt */
 #define PREEMPT_MODE_REQUEUE	0x0002	/* requeue or kill jobs to preempt */
@@ -2708,7 +2701,9 @@ typedef struct slurm_ctl_conf {
 	uint16_t fs_dampening_factor; /* dampening for Fairshare factor */
 	uint16_t get_env_timeout; /* timeout for srun --get-user-env option */
 	char * gres_plugins;	/* list of generic resource plugins */
-	uint16_t group_info;	/* see GROUP_* fields above */
+	uint16_t group_time;    /* update group time interval */
+	uint16_t group_force;   /* update group/partition info even if no change
+				 * detected */
 	uint32_t hash_val;      /* Hash value of the slurm.conf file */
 	uint16_t health_check_interval;	/* secs between health checks */
 	uint16_t health_check_node_state; /* Node states on which to execute

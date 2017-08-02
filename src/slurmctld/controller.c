@@ -1683,7 +1683,6 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_reboot_msg_time;
 	time_t now;
 	int no_resp_msg_interval, ping_interval, purge_job_interval;
-	int group_time, group_force;
 	int i;
 	uint32_t job_limit;
 	DEF_TIMERS;
@@ -1892,17 +1891,13 @@ static void *_slurmctld_background(void *no_data)
 		/* Process any pending agent work */
 		agent_trigger(RPC_RETRY_INTERVAL, true);
 
-		group_time  = slurmctld_conf.group_info & GROUP_TIME_MASK;
-		if (group_time &&
-		    (difftime(now, last_group_time) >= group_time)) {
-			if (slurmctld_conf.group_info & GROUP_FORCE)
-				group_force = 1;
-			else
-				group_force = 0;
+		if (slurmctld_conf.group_time &&
+		    (difftime(now, last_group_time)
+		     >= slurmctld_conf.group_time)) {
 			now = time(NULL);
 			last_group_time = now;
 			lock_slurmctld(part_write_lock);
-			load_part_uid_allow_list(group_force);
+			load_part_uid_allow_list(slurmctld_conf.group_force);
 			unlock_slurmctld(part_write_lock);
 		}
 

@@ -78,6 +78,9 @@ extern char *default_plugstack;
 #define DEFAULT_FIRST_JOB_ID        1
 #define DEFAULT_GET_ENV_TIMEOUT     2
 #define DEFAULT_GROUP_TIME          600
+#define DEFAULT_GROUP_FORCE         1	/* if set, update group membership
+					 * info even if no updates to
+					 * /etc/group file */
 /* NOTE: DEFAULT_INACTIVE_LIMIT must be 0 for Blue Gene/L systems */
 #define DEFAULT_INACTIVE_LIMIT      0
 #define DEFAULT_JOB_ACCT_GATHER_TYPE  "jobacct_gather/none"

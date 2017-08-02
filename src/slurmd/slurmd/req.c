@@ -6291,7 +6291,7 @@ static gids_t *_gids_cache_lookup(char *user, gid_t gid)
 	while (p) {
 		if (xstrcmp(p->user, user) == 0 && p->gid == gid) {
 			slurm_ctl_conf_t *cf = slurm_conf_lock();
-			int group_ttl = cf->group_info & GROUP_TIME_MASK;
+			int group_ttl = cf->group_time;
 			slurm_conf_unlock();
 			if (!group_ttl) {
 				ret_gids = _gids_dup(p->gids);
