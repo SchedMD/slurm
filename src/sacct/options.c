@@ -57,10 +57,10 @@
 
 #define JOB_HASH_SIZE 1000
 
-void _help_fields_msg(void);
-void _help_msg(void);
-void _usage(void);
-void _init_params(void);
+static void _help_fields_msg(void);
+static void _help_msg(void);
+static void _init_params(void);
+static void _usage(void);
 
 List selected_parts = NULL;
 List selected_steps = NULL;
@@ -72,7 +72,7 @@ int field_count = 0;
 List g_qos_list = NULL;
 List g_tres_list = NULL;
 
-List _build_cluster_list(slurmdb_federation_rec_t *fed)
+static List _build_cluster_list(slurmdb_federation_rec_t *fed)
 {
 	slurmdb_cluster_rec_t *cluster;
 	ListIterator iter;
@@ -87,7 +87,7 @@ List _build_cluster_list(slurmdb_federation_rec_t *fed)
 	return cluster_list;
 }
 
-void _help_fields_msg(void)
+static void _help_fields_msg(void)
 {
 	int i;
 
@@ -147,7 +147,7 @@ static int _addto_id_char_list(List char_list, char *names, bool gid)
 			i++;
 		}
 		start = i;
-		while(names[i]) {
+		while (names[i]) {
 			//info("got %d - %d = %d", i, start, i-start);
 			if (quote && names[i] == quote_c)
 				break;
@@ -160,7 +160,7 @@ static int _addto_id_char_list(List char_list, char *names, bool gid)
 					//info("got %s %d", name, i-start);
 					name = _convert_to_id( name, gid );
 
-					while((tmp_char = list_next(itr))) {
+					while ((tmp_char = list_next(itr))) {
 						if (!xstrcasecmp(tmp_char,
 								 name))
 							break;
@@ -189,7 +189,7 @@ static int _addto_id_char_list(List char_list, char *names, bool gid)
 			memcpy(name, names+start, (i-start));
 			name = _convert_to_id(name, gid);
 
-			while((tmp_char = list_next(itr))) {
+			while ((tmp_char = list_next(itr))) {
 				if (!xstrcasecmp(tmp_char, name))
 					break;
 			}
@@ -246,7 +246,7 @@ static int _addto_state_char_list(List char_list, char *names)
 					xfree(name);
 					name = xstrdup_printf("%d", c);
 
-					while((tmp_char = list_next(itr))) {
+					while ((tmp_char = list_next(itr))) {
 						if (!xstrcasecmp(tmp_char,
 								 name))
 							break;
@@ -295,7 +295,7 @@ static int _addto_state_char_list(List char_list, char *names)
 	return count;
 }
 
-void _help_msg(void)
+static void _help_msg(void)
 {
     printf("\
 sacct [<OPTION>]                                                            \n \
@@ -440,12 +440,12 @@ sacct [<OPTION>]                                                            \n \
 	return;
 }
 
-void _usage(void)
+static void _usage(void)
 {
 	printf("Usage: sacct [options]\n\tUse --help for help\n");
 }
 
-void _init_params(void)
+static void _init_params(void)
 {
 	memset(&params, 0, sizeof(sacct_parameters_t));
 	params.job_cond = xmalloc(sizeof(slurmdb_job_cond_t));
@@ -506,7 +506,7 @@ static void _remove_duplicate_fed_jobs(List jobs)
 	list_sort(jobs, _sort_asc_submit_time);
 
 	itr = list_iterator_create(jobs);
-	while((job = list_next(itr))) {
+	while ((job = list_next(itr))) {
 		found = false;
 
 		hash_inx = job->jobid % JOB_HASH_SIZE;
@@ -547,7 +547,7 @@ static void _remove_duplicate_fed_jobs(List jobs)
 	xfree(hash_job);
 }
 
-int get_data(void)
+extern int get_data(void)
 {
 	slurmdb_job_rec_t *job = NULL;
 	slurmdb_step_rec_t *step = NULL;
@@ -573,7 +573,7 @@ int get_data(void)
 	    _remove_duplicate_fed_jobs(jobs);
 
 	itr = list_iterator_create(jobs);
-	while((job = list_next(itr))) {
+	while ((job = list_next(itr))) {
 
 		if (job->user) {
 			struct	passwd *pw = NULL;
@@ -585,7 +585,7 @@ int get_data(void)
 			continue;
 
 		itr_step = list_iterator_create(job->steps);
-		while((step = list_next(itr_step)) != NULL) {
+		while ((step = list_next(itr_step)) != NULL) {
 			/* now aggregate the aggregatable */
 
 			if (step->state < JOB_COMPLETE)
@@ -611,7 +611,7 @@ int get_data(void)
 	return SLURM_SUCCESS;
 }
 
-void parse_command_line(int argc, char **argv)
+extern void parse_command_line(int argc, char **argv)
 {
 	extern int optind;
 	int c, i, optionIndex = 0;
@@ -1122,7 +1122,7 @@ void parse_command_line(int argc, char **argv)
 	if (job_cond->groupid_list && list_count(job_cond->groupid_list)) {
 		debug2("Groupids requested:");
 		itr = list_iterator_create(job_cond->groupid_list);
-		while((start = list_next(itr)))
+		while ((start = list_next(itr)))
 			debug2("\t: %s", start);
 		list_iterator_destroy(itr);
 	}
@@ -1131,7 +1131,7 @@ void parse_command_line(int argc, char **argv)
 	if (job_cond->partition_list && list_count(job_cond->partition_list)) {
 		debug2("Partitions requested:");
 		itr = list_iterator_create(job_cond->partition_list);
-		while((start = list_next(itr)))
+		while ((start = list_next(itr)))
 			debug2("\t: %s", start);
 		list_iterator_destroy(itr);
 	}
@@ -1147,7 +1147,7 @@ void parse_command_line(int argc, char **argv)
 	if (job_cond->step_list && list_count(job_cond->step_list)) {
 		debug2("Jobs requested:");
 		itr = list_iterator_create(job_cond->step_list);
-		while((selected_step = list_next(itr))) {
+		while ((selected_step = list_next(itr))) {
 			char id[FORMAT_STRING_SIZE];
 
 			debug2("\t: %s", slurmdb_get_selected_step_id(
@@ -1160,7 +1160,7 @@ void parse_command_line(int argc, char **argv)
 	if (job_cond->state_list && list_count(job_cond->state_list)) {
 		debug2("States requested:");
 		itr = list_iterator_create(job_cond->state_list);
-		while((start = list_next(itr))) {
+		while ((start = list_next(itr))) {
 			debug2("\t: %s",
 				job_state_string(atoi(start)));
 		}
@@ -1170,7 +1170,7 @@ void parse_command_line(int argc, char **argv)
 	if (job_cond->wckey_list && list_count(job_cond->wckey_list)) {
 		debug2("Wckeys requested:");
 		itr = list_iterator_create(job_cond->wckey_list);
-		while((start = list_next(itr)))
+		while ((start = list_next(itr)))
 			debug2("\t: %s\n", start);
 		list_iterator_destroy(itr);
 	}
@@ -1192,7 +1192,7 @@ void parse_command_line(int argc, char **argv)
 	if (job_cond->jobname_list && list_count(job_cond->jobname_list)) {
 		debug2("Jobnames requested:");
 		itr = list_iterator_create(job_cond->jobname_list);
-		while((start = list_next(itr))) {
+		while ((start = list_next(itr))) {
 			debug2("\t: %s", start);
 		}
 		list_iterator_destroy(itr);
@@ -1284,7 +1284,7 @@ void parse_command_line(int argc, char **argv)
 	return;
 }
 
-void do_help(void)
+extern void do_help(void)
 {
 	switch (params.opt_help) {
 	case 1:
@@ -1319,7 +1319,7 @@ static inline bool _test_local_job(uint32_t job_id)
  * At this point, we have already selected the desired data,
  * so we just need to print it for the user.
  */
-void do_list(void)
+extern void do_list(void)
 {
 	ListIterator itr = NULL;
 	ListIterator itr_step = NULL;
@@ -1373,7 +1373,7 @@ void do_list(void)
  * At this point, we have already selected the desired data,
  * so we just need to print it for the user.
  */
-void do_list_completion(void)
+extern void do_list_completion(void)
 {
 	ListIterator itr = NULL;
 	jobcomp_job_rec_t *job = NULL;
@@ -1388,14 +1388,14 @@ void do_list_completion(void)
 	list_iterator_destroy(itr);
 }
 
-void sacct_init(void)
+extern void sacct_init(void)
 {
 	_init_params();
 	print_fields_list = list_create(NULL);
 	print_fields_itr = list_iterator_create(print_fields_list);
 }
 
-void sacct_fini(void)
+extern void sacct_fini(void)
 {
 	if (print_fields_itr)
 		list_iterator_destroy(print_fields_itr);

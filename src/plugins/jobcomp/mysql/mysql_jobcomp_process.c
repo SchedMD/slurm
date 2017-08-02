@@ -69,10 +69,10 @@ extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 		set = 0;
 		xstrcat(extra, " where (");
 		itr = list_iterator_create(job_cond->step_list);
-		while((selected_step = list_next(itr))) {
+		while ((selected_step = list_next(itr))) {
 			if (set)
 				xstrcat(extra, " || ");
-			tmp = xstrdup_printf("jobid=%d",
+			tmp = xstrdup_printf("jobid=%u",
 					      selected_step->jobid);
 			xstrcat(extra, tmp);
 			set = 1;
@@ -90,7 +90,7 @@ extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 			xstrcat(extra, " where (");
 
 		itr = list_iterator_create(job_cond->partition_list);
-		while((selected_part = list_next(itr))) {
+		while ((selected_part = list_next(itr))) {
 			if (set)
 				xstrcat(extra, " || ");
 			tmp = xstrdup_printf("`partition`='%s'",
@@ -104,7 +104,7 @@ extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	}
 
 	i = 0;
-	while(jobcomp_table_fields[i].name) {
+	while (jobcomp_table_fields[i].name) {
 		if (i)
 			xstrcat(tmp, ", ");
 		xstrfmtcat(tmp, "`%s`", jobcomp_table_fields[i].name);

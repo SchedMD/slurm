@@ -143,7 +143,7 @@ void _init_params()
 /* returns number of objects added to list */
 static int _addto_job_list(List job_list, char *names)
 {
-	int i=0, start=0;
+	int i = 0, start = 0;
 	char *name = NULL, *dot = NULL;
 	slurmdb_selected_step_t *selected_step = NULL;
 	slurmdb_selected_step_t *curr_step = NULL;

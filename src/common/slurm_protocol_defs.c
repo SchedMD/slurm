@@ -529,7 +529,7 @@ static int _addto_step_list_internal(List step_list, char *names,
 				     int start, int end)
 {
 	int count = 0;
-	char *dot = NULL, *name;
+	char *dot, *name, *plus, *under;
 	slurmdb_selected_step_t *selected_step = NULL;
 
 	if ((end-start) <= 0)
@@ -546,10 +546,7 @@ static int _addto_step_list_internal(List step_list, char *names,
 
 	selected_step = xmalloc(sizeof(slurmdb_selected_step_t));
 
-	if (!(dot = strstr(name, "."))) {
-		debug2("No jobstep requested");
-		selected_step->stepid = NO_VAL;
-	} else {
+	if ((dot = strstr(name, "."))) {
 		*dot++ = 0;
 		/* can't use NO_VAL since that means all */
 		if (!xstrcmp(dot, "batch"))
@@ -558,20 +555,32 @@ static int _addto_step_list_internal(List step_list, char *names,
 			selected_step->stepid = atoi(dot);
 		else
 			fatal("Bad step specified: %s", name);
+	} else {
+		debug2("No jobstep requested");
+		selected_step->stepid = NO_VAL;
 	}
 
-	if (!(dot = strstr(name, "_"))) {
-		debug2("No jobarray requested");
-		selected_step->array_task_id = NO_VAL;
-	} else {
-		*dot++ = 0;
+	if ((under = strstr(name, "_"))) {
+		*under++ = 0;
 		/* INFINITE means give me all the tasks of the array */
-		if (!dot)
+		if (!under)
 			selected_step->array_task_id = INFINITE;
-		else if (isdigit(*dot))
-			selected_step->array_task_id = atoi(dot);
+		else if (isdigit(*under))
+			selected_step->array_task_id = atoi(under);
 		else
 			fatal("Bad job array element specified: %s", name);
+		selected_step->pack_job_offset = NO_VAL;
+	} else if ((plus = strstr(name, "+"))) {
+		selected_step->array_task_id = NO_VAL;
+		*plus++ = 0;
+		if (isdigit(*plus))
+			selected_step->pack_job_offset = atoi(plus);
+		else
+			fatal("Bad pack job offset specified: %s", name);
+	} else {
+		debug2("No jobarray or pack job requested");
+		selected_step->array_task_id = NO_VAL;
+		selected_step->pack_job_offset = NO_VAL;
 	}
 
 	selected_step->jobid = atoi(name);
@@ -591,7 +600,7 @@ static int _addto_step_list_internal(List step_list, char *names,
 /* returns number of objects added to list */
 extern int slurm_addto_step_list(List step_list, char *names)
 {
-	int i=0, start=0;
+	int i = 0, start = 0;
 	char quote_c = '\0';
 	int quote = 0;
 	int count = 0;

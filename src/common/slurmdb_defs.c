@@ -1293,9 +1293,7 @@ extern void slurmdb_destroy_hierarchical_rec(void *object)
 extern void slurmdb_destroy_selected_step(void *object)
 {
 	slurmdb_selected_step_t *step = (slurmdb_selected_step_t *)object;
-	if (step) {
-		xfree(step);
-	}
+	xfree(step);
 }
 
 extern void slurmdb_destroy_report_job_grouping(void *object)

@@ -4358,7 +4358,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 		if (count != NO_VAL) {
 			object_ptr->resv_list =
 				list_create(slurm_destroy_char);
-			for (i=0; i<count; i++) {
+			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
 				list_append(object_ptr->resv_list,
