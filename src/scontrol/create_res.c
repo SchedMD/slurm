@@ -156,7 +156,7 @@ static int _parse_resv_tres(char *val, resv_desc_msg_t  *resv_msg_ptr,
 		*tres_corecnt = NULL, *tres_nodecnt = NULL,
 		*token, *type = NULL, *saveptr1 = NULL,
 		*value_str = NULL, *name = NULL, *compound = NULL,
-		*tmp = NULL;
+		*tmp = NULL, *err_msg = NULL;
 	bool discard, first;
 
 	*free_tres_license = 0;
@@ -247,10 +247,14 @@ static int _parse_resv_tres(char *val, resv_desc_msg_t  *resv_msg_ptr,
 	}
 
 	if (tres_nodecnt && tres_nodecnt[0] != '\0') {
-		ret = _parse_resv_node_cnt(resv_msg_ptr, tres_nodecnt, true);
+		ret = _parse_resv_node_cnt(resv_msg_ptr, tres_nodecnt, true,
+					   &err_msg);
 		xfree(tres_nodecnt);
-		if (ret != SLURM_SUCCESS)
+		if (ret != SLURM_SUCCESS) {
+			error("%s", err_msg);
+			xfree(err_msg);
 			goto error;
+		}
 		*free_tres_nodecnt = 1;
 	}
 
@@ -297,6 +301,7 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 {
 	int i;
 	int duration = -3;   /* -1 == INFINITE, -2 == error, -3 == not set */
+	char *err_msg = NULL;
 
 	*free_user_str = 0;
 	*free_acct_str = 0;
@@ -405,8 +410,10 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 		} else if (strncasecmp(tag, "NodeCnt", MAX(taglen,5)) == 0 ||
 			   strncasecmp(tag, "NodeCount", MAX(taglen,5)) == 0) {
 
-			if (_parse_resv_node_cnt(resv_msg_ptr, val, false)
+			if (_parse_resv_node_cnt(resv_msg_ptr, val, false, &err_msg)
 			    == SLURM_ERROR) {
+				error("%s", err_msg);
+				xfree(err_msg);
 				exit_code = 1;
 				return SLURM_ERROR;
 			}

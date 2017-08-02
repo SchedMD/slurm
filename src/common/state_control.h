@@ -40,9 +40,14 @@
 #include "slurm/slurm.h"
 
 /*
- * Parse reservation request option NodeCnt
+ * Parse and process reservation request option NodeCnt= or TRES=node=
+ *
+ * IN/OUT resv_msg_ptr - msg where node_cnt member is modified
+ * IN val - NodeCnt value to parse
+ * IN from_tres - used to discern if the count comes from TRES= or NodeCnt=
+ * OUT err_msg - set to an explanation of failure, if any. Don't set if NULL
  */
 extern int _parse_resv_node_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
-				bool from_tres);
+				bool from_tres, char **err_msg);
 
 #endif /* !_STATE_CONTROL_H */

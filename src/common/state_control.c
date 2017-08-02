@@ -39,7 +39,7 @@
 #include "src/common/xstring.h"
 
 extern int _parse_resv_node_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
-				bool from_tres)
+				bool from_tres, char **err_msg)
 {
 	char *endptr = NULL, *node_cnt, *tok, *ptrptr = NULL;
 	int node_inx = 0;
@@ -61,10 +61,17 @@ extern int _parse_resv_node_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
 		} else if ((endptr == NULL) ||
 			   (endptr[0] != '\0') ||
 			   (tok[0] == '\0')) {
-			if (from_tres)
-				error("Invalid TRES node count %s", val);
-			else
-				error("Invalid node count %s", val);
+			if (err_msg) {
+				xfree(*err_msg);
+				if (from_tres)
+					xstrfmtcat(*err_msg,
+						   "Invalid TRES node count %s",
+						   val);
+				else
+					xstrfmtcat(*err_msg,
+						   "Invalid node count %s",
+						   val);
+			}
 			xfree(node_cnt);
 			return SLURM_ERROR;
 		}
