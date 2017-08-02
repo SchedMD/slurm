@@ -166,6 +166,8 @@ In job_fed_details_t: Rename siblings to siblings_active.
 In job_info_request_msg: Added job_ids to be able to request job info for
 		       specific jobs.
 In job_step_kill_msg_t: Added sibling string to remove active sibling job.
+In slurm_ctl_conf_t: Added group_force and group_time. (Were both in group_info
+		     previously.)
 
 Added the following struct definitions
 ======================================
@@ -175,6 +177,7 @@ Added reroute_msg_t to route a message to a different cluster.
 
 Removed members from the following struct definitions
 =====================================================
+In slurm_ctl_conf_t: Removed group_info.
 
 Changed the following enums and #defines
 ========================================

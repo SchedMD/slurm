@@ -83,6 +83,7 @@ documents those changes that are of interest to users and administrators.
  -- Clear a job's "wait reason" value of BeginTime" after that time has passed.
     Previously a readon of "BeginTime" could be reported long after the job's
     requested begin time had passed.
+ -- Split group_info in slurm_ctl_conf_t into group_force and group_time.
 
 * Changes in Slurm 17.11.0pre1
 ==============================

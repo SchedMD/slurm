@@ -386,18 +386,6 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =back
 
-=head3 Group cache
-
-=over 2
-
-=item * GROUP_FORCE                0x8000
-
-=item * GROUP_CACHE                0x4000
-
-=item * GROUP_TIME_MASK            0x0fff
-
-=back
-
 =head3 Preempt mode
 
 =over 2
