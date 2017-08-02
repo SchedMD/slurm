@@ -72,6 +72,7 @@ extern int _parse_resv_node_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
 						   "Invalid node count %s",
 						   val);
 			}
+			xfree(resv_msg_ptr->node_cnt);
 			xfree(node_cnt);
 			return SLURM_ERROR;
 		}
