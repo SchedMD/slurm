@@ -45,9 +45,9 @@ increases the speed of Slurm's scheduling algorithm.
 If any CPU can be effectively used with the resources, then do not specify the
 \fBCPUs\fR option for improved speed in the Slurm scheduling logic.
 
-Since Slurm must be able to perform resource management on heterogeneous
-clusters having various CPU ID numbering schemes, use the Slurm CPU index
-numbers here
+\fBNOTE:\fR Since Slurm must be able to perform resource management on heterogeneous
+clusters having various CPU ID numbering schemes, specify the Slurm CPU index
+numbers
 (CPU_ID = Board_ID x threads_per_board +
 Socket_ID x threads_per_socket +
 Core_ID x threads_per_core + Thread_ID).
