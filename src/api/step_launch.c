@@ -854,7 +854,7 @@ void slurm_step_launch_abort(slurm_step_ctx_t *ctx)
 /*
  * Forward a signal to all those nodes with running tasks
  */
-void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
+extern void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 {
 	int node_id, j, num_tasks;
 	slurm_msg_t req;
@@ -866,6 +866,8 @@ void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 	ret_data_info_t *ret_data_info = NULL;
 	int rc = SLURM_SUCCESS;
 	struct step_launch_state *sls = ctx->launch_state;
+	bool retry = false;
+	int retry_cnt = 0;
 
 	/* common to all tasks */
 	msg.job_id      = ctx->job_id;
@@ -907,50 +909,58 @@ void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 	slurm_mutex_unlock(&sls->lock);
 
 	if (!hostlist_count(hl)) {
-		verbose("no active tasks in job %u to send signal %d",
-		        ctx->job_id, signo);
+		verbose("no active tasks in step %u.%u to send signal %d",
+		        ctx->job_id, ctx->step_resp->job_step_id, signo);
 		hostlist_destroy(hl);
-		goto nothing_left;
+		return;
 	}
 	name = hostlist_ranged_string_xmalloc(hl);
 	hostlist_destroy(hl);
 
-	slurm_msg_t_init(&req);
+RESEND:	slurm_msg_t_init(&req);
 	req.msg_type = REQUEST_SIGNAL_TASKS;
 	req.data     = &msg;
 
 	if (ctx->step_resp->use_protocol_ver)
 		req.protocol_version = ctx->step_resp->use_protocol_ver;
 
-	debug2("sending signal %d to job %u on hosts %s",
-	       signo, ctx->job_id, name);
+	debug2("sending signal %d to step %u.%u on hosts %s",
+	       signo, ctx->job_id, ctx->step_resp->job_step_id, name);
 
 	if (!(ret_list = slurm_send_recv_msgs(name, &req, 0, false))) {
-		error("fwd_signal: slurm_send_recv_msgs really failed bad");
+		error("fwd_signal: slurm_send_recv_msgs really failed badly");
 		xfree(name);
 		return;
 	}
-	xfree(name);
+
 	itr = list_iterator_create(ret_list);
-	while((ret_data_info = list_next(itr))) {
+	while ((ret_data_info = list_next(itr))) {
 		rc = slurm_get_return_code(ret_data_info->type,
 					   ret_data_info->data);
 		/*
-		 *  Report error unless it is "Invalid job id" which
-		 *    probably just means the tasks exited in the meanwhile.
+		 * Report error unless it is "Invalid job id" which
+		 * probably just means the tasks exited in the meanwhile.
 		 */
-		if ((rc != 0) && (rc != ESLURM_INVALID_JOB_ID)
-		    &&  (rc != ESLURMD_JOB_NOTRUNNING) && (rc != ESRCH)) {
-			error("%s: signal: %s",
-			      ret_data_info->node_name,
-			      slurm_strerror(rc));
+		if ((rc != 0) && (rc != ESLURM_INVALID_JOB_ID) &&
+		    (rc != ESLURMD_JOB_NOTRUNNING) && (rc != ESRCH)&&
+		    (rc != EAGAIN)) {
+			error("Failure sending signal %d to step %u.%u on node %s: %s",
+			      signo, ctx->job_id, ctx->step_resp->job_step_id,
+			      ret_data_info->node_name, slurm_strerror(rc));
 		}
+		if (rc == EAGAIN)
+			retry = true;
 	}
 	list_iterator_destroy(itr);
 	FREE_NULL_LIST(ret_list);
-nothing_left:
-	debug2("All tasks have been signaled");
-
+	if (retry) {
+		retry = false;
+		if (retry_cnt++ < 4) {
+			sleep(retry_cnt);
+			goto RESEND;
+		}
+	}
+	xfree(name);
 }
 
 /**********************************************************************

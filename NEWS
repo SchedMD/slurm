@@ -87,6 +87,8 @@ documents those changes that are of interest to users and administrators.
  -- Work for heterogeneous job support (complete solution in v17.11):
     * Fix I/O race condition on step termination for srun launching multiple
       pack job groups.
+    * If prolog is running when attempting to signal a step, then return EAGAIN
+      and retry rather than simply returning SLURM_ERROR and aborting.
 
 * Changes in Slurm 17.11.0pre1
 ==============================
