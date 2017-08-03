@@ -31,6 +31,7 @@
 #include "src/sview/sview.h"
 #include "src/common/parse_time.h"
 #include "src/common/proc_args.h"
+#include "src/common/state_control.h"
 #include "src/common/xstring.h"
 
 #define _DEBUG 0
@@ -320,9 +321,9 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 				 const char *new_text,
 				 int column)
 {
-	char *type = "", *temp_str;
-	char *tmp_text, *last = NULL, *tok;
-	int block_inx, temp_int = 0;
+	char *type = "";
+	char *err_msg = NULL;
+	int temp_int = 0;
 	uint32_t f;
 
 	/* need to clear global_edit_error here (just in case) */
@@ -394,26 +395,12 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 			type = "Midplane Count";
 		else
 			type = "Node Count";
-		block_inx = 0;
-		tmp_text = xstrdup(new_text);
-		tok = strtok_r(tmp_text, ",", &last);
-		while (tok) {
-			temp_int = strtol(tok, &temp_str, 10);
-			if ((temp_str[0] == 'k') || (temp_str[0] == 'K'))
-				temp_int *= 1024;
-			if ((temp_str[0] == 'm') || (temp_str[0] == 'M'))
-				temp_int *= (1024 * 1024);
-			xrealloc(resv_msg->node_cnt,
-				 (sizeof(uint32_t) * (block_inx + 2)));
-			resv_msg->node_cnt[block_inx++] = temp_int;
-			if (temp_int <= 0) {
-				xfree(tmp_text);
-				xfree(resv_msg->node_cnt);
-				goto return_error;
-			}
-			tok = strtok_r(NULL, ",", &last);
+		if (_parse_resv_node_cnt(resv_msg, (char *)new_text, false,
+					 &err_msg) == SLURM_ERROR) {
+			global_edit_error_msg = xstrdup(err_msg);
+			xfree(err_msg);
+			goto return_error;
 		}
-		xfree(tmp_text);
 		break;
 	case SORTID_NODELIST:
 		resv_msg->node_list = xstrdup(new_text);
