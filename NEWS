@@ -89,6 +89,8 @@ documents those changes that are of interest to users and administrators.
       pack job groups.
     * If prolog is running when attempting to signal a step, then return EAGAIN
       and retry rather than simply returning SLURM_ERROR and aborting.
+    * Modify launch/slurm plugin to signal all components of a pack job rather
+      than just the one (modify to use a list of step context records).
 
 * Changes in Slurm 17.11.0pre1
 ==============================

@@ -90,8 +90,10 @@ const char plugin_type[]        = "launch/slurm";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 static srun_job_t *local_srun_job = NULL;
+static List local_job_list = NULL;
 static uint32_t *local_global_rc = NULL;
 static pthread_mutex_t launch_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t pack_lock = PTHREAD_MUTEX_INITIALIZER;
 static opt_t *opt_save = NULL;
 
 static List task_state_list = NULL;
@@ -604,11 +606,16 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	if (!task_state) {
 		task_state = task_state_create(job->jobid, job->stepid,
 					       job->pack_offset, job->ntasks);
+		slurm_mutex_lock(&pack_lock);
+		if (!local_job_list)
+			local_job_list = list_create(NULL);
+		if (!task_state_list)
+			task_state_list = list_create(_task_state_del);
+		slurm_mutex_unlock(&pack_lock);
 		local_srun_job = job;
 		local_global_rc = global_rc;
 		*local_global_rc = NO_VAL;
-		if (!task_state_list)
-			task_state_list = list_create(_task_state_del);
+		list_append(local_job_list, local_srun_job);
 		list_append(task_state_list, task_state);
 		first_launch = true;
 	} else {
@@ -792,6 +799,7 @@ extern int launch_p_step_terminate(void)
 
 static int _step_signal(int signal)
 {
+//FIXME-PACK - Modify local_srun_job references to use local_job_list
 	if (!local_srun_job) {
 		debug("%s: local_srun_job does not exist yet", __func__);
 		return SLURM_ERROR;
@@ -810,17 +818,24 @@ extern void launch_p_print_status(void)
 
 extern void launch_p_fwd_signal(int signal)
 {
-	if (!local_srun_job) {
-		debug("%s: local_srun_job does not exist yet", __func__);
+	srun_job_t *my_srun_job;
+	ListIterator iter;
+
+	if (!local_job_list) {
+		debug("%s: local_job_list does not exist yet", __func__);
 		return;
 	}
 
-	switch (signal) {
-	case SIGKILL:
-		slurm_step_launch_abort(local_srun_job->step_ctx);
-		break;
-	default:
-		slurm_step_launch_fwd_signal(local_srun_job->step_ctx, signal);
-		break;
+	iter = list_iterator_create(local_job_list);
+	while ((my_srun_job = (srun_job_t *) list_next(iter))) {
+		switch (signal) {
+		case SIGKILL:
+			slurm_step_launch_abort(my_srun_job->step_ctx);
+			break;
+		default:
+			slurm_step_launch_fwd_signal(my_srun_job->step_ctx, signal);
+			break;
+		}
 	}
+	list_iterator_destroy(iter);
 }
