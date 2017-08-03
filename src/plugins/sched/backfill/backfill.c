@@ -2427,10 +2427,8 @@ static uint32_t _get_job_max_tl(struct job_record *job_ptr, time_t now,
 			break;
 	}
 
-	if (comp_time != 0) {
+	if (comp_time != 0)
 		max_tl = (comp_time - now + 59) / 60;
-		comp_time = MAX(max_tl, job_ptr->time_min);
-	}
 
 	return max_tl;
 }
@@ -2956,7 +2954,7 @@ static int _pack_start_now(pack_job_map_t *map, node_space_map_t *node_space)
 	bitstr_t *resv_bitmap = NULL;
 	pack_job_rec_t *rec;
 	ListIterator iter;
-	int mcs_select, rc;
+	int mcs_select, rc = SLURM_SUCCESS;
 	bool resv_overlap = false;
 	time_t now = time(NULL), start_res;
 	uint32_t hard_limit;
