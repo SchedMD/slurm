@@ -3762,6 +3762,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	hostset_t jobid_hostset = NULL;
 	char tmp_str[32];
 	time_t min_begin = time(NULL) + PACK_DELAY;	/* Delay start */
+
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_SUBMIT_BATCH_PACK_JOB from uid=%d",
 	       uid);
@@ -3784,7 +3785,6 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 		info("REQUEST_SUBMIT_BATCH_PACK_JOB from uid=%d with empty job list",
 		     uid);
 		error_code = SLURM_ERROR;
-		goto send_msg;
 	}
 	if (error_code) {
 		reject_job = true;
@@ -3881,6 +3881,12 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	}
 	list_iterator_destroy(iter);
 
+	if ((pack_job_id == 0) && !reject_job) {
+		info("%s: No error, but no pack_job_id", __func__);
+		error_code = SLURM_ERROR;
+		reject_job = true;
+	}
+
 	/* Validate limits on pack-job as a whole */
 	if (!reject_job &&
 	    (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
@@ -3891,12 +3897,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 		reject_job = true;
 	}
 
-	if ((pack_job_id == 0) && !reject_job) {
-		error("%s: No error, but no pack_job_id", __func__);
-		error_code = SLURM_ERROR;
-		reject_job = true;
-		FREE_NULL_LIST(submit_job_list);
-	} else {
+	if (!reject_job) {
 		int buf_size = pack_job_offset * 16;
 		char *tmp_str = xmalloc(buf_size);
 		char *tmp_offset = tmp_str;
