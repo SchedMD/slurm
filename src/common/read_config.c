@@ -374,43 +374,20 @@ s_p_options_t slurm_conf_options[] = {
 	{NULL}
 };
 
-static bool _is_valid_path (char *path, char *msg)
+static bool _is_valid_path(char *path, char *msg)
 {
-	/*
-	 *  Allocate temporary space for walking the list of dirs:
-	 */
-	int pathlen;
-	char *buf = NULL, *p, *entry;
+	char *saveptr = NULL, *buf, *entry;
 
 	if (path == NULL) {
 		error ("is_valid_path: path is NULL!");
-		goto out_false;
+		return false;
 	}
 
-	pathlen = strlen (path);
-	buf = xmalloc (pathlen + 2);
+	buf = xstrdup(path);
+	entry = strtok_r(buf, ":", &saveptr);
 
-	if (strlcpy (buf, path, pathlen + 1) > pathlen + 1) {
-		error ("is_valid_path: Failed to copy path!");
-		goto out_false;
-	}
-
-	/*
-	*  Ensure the path ends with a ':'
-	*/
-	if (buf [pathlen - 1] != ':') {
-		buf [pathlen] = ':';
-		buf [pathlen + 1] = '\0';
-	}
-
-
-	entry = buf;
-	while ((p = strchr (entry, ':'))) {
+	do {
 		struct stat st;
-		/*
-		*  NUL terminate colon and advance p
-		*/
-		*(p++) = '\0';
 
 		/*
 		*  Check to see if current path element is a valid dir
@@ -418,22 +395,20 @@ static bool _is_valid_path (char *path, char *msg)
 		if (stat (entry, &st) < 0) {
 			error ("%s: %s: %m", msg, entry);
 			goto out_false;
-		}
-		else if (!S_ISDIR (st.st_mode)) {
+		} else if (!S_ISDIR (st.st_mode)) {
 			error ("%s: %s: Not a directory", msg, entry);
 			goto out_false;
 		}
 		/*
 		*  Otherwise path element is valid, continue..
 		*/
-		entry = p;
-	}
+	} while ((entry = strtok_r(NULL, ":", &saveptr)));
 
-	xfree (buf);
+	xfree(buf);
  	return true;
 
-  out_false:
-	xfree (buf);
+out_false:
+	xfree(buf);
 	return false;
 }
 
