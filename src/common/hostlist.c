@@ -777,7 +777,7 @@ static hostrange_t hostrange_delete_host(hostrange_t hr, unsigned long n)
 	hostrange_t new = NULL;
 
 	assert(hr != NULL);
-	assert(n >= hr->lo && n <= hr->hi);
+	assert((n >= hr->lo) && (n <= hr->hi));
 
 	if (n == hr->lo)
 		hr->lo++;
@@ -1426,7 +1426,7 @@ static void hostlist_delete_range(hostlist_t hl, int n)
 
 	assert(hl != NULL);
 	assert(hl->magic == HOSTLIST_MAGIC);
-	assert(n < hl->nranges && n >= 0);
+	assert((n < hl->nranges) && (n >= 0));
 
 	old = hl->hr[n];
 	for (i = n; i < hl->nranges - 1; i++)
