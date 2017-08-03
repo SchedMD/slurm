@@ -1684,7 +1684,7 @@ cpu_freq_debug(char* label, char* noval_str, char* freq_str, int freq_len,
 		strcpy(bfgov, "Governor=");
 		cpu_freq_to_string(&bfgov[9], (sizeof(bfgov)-9), gov);
 	} else if (noval_str) {
-		if (strlen(noval_str) >= sizeof(bfmax)) {
+		if (strlen(noval_str) >= sizeof(bfgov)) {
 			error("%s: max CPU governor string too large",
 			      __func__);
 		} else {

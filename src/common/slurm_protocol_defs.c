@@ -562,10 +562,7 @@ static int _addto_step_list_internal(List step_list, char *names,
 
 	if ((under = strstr(name, "_"))) {
 		*under++ = 0;
-		/* INFINITE means give me all the tasks of the array */
-		if (!under)
-			selected_step->array_task_id = INFINITE;
-		else if (isdigit(*under))
+		if (isdigit(*under))
 			selected_step->array_task_id = atoi(under);
 		else
 			fatal("Bad job array element specified: %s", name);
