@@ -1200,6 +1200,7 @@ again:
 		}
 	}
 	xfree(cpus);
+	xcgroup_destroy(&slurm_cg);
 
 	/* build user cgroup relative path if not set (should not be) */
 	if (*user_cgroup_path == '\0') {

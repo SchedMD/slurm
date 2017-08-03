@@ -572,6 +572,7 @@ stepd_step_rec_destroy(stepd_step_rec_t *job)
 		multi_prog = 1;
 	for (i = 0; i < job->node_tasks; i++)
 		_task_info_destroy(job->task[i], multi_prog);
+	xfree(job->task);
 	eio_handle_destroy(job->eio);
 	FREE_NULL_LIST(job->sruns);
 	FREE_NULL_LIST(job->clients);
@@ -580,12 +581,19 @@ stepd_step_rec_destroy(stepd_step_rec_t *job)
 	FREE_NULL_LIST(job->free_incoming);
 	FREE_NULL_LIST(job->free_outgoing);
 	FREE_NULL_LIST(job->outgoing_cache);
+	xfree(job->ckpt_dir);
+	xfree(job->cpu_bind);
+	xfree(job->cwd);
 	xfree(job->envtp);
+	xfree(job->gids);
+	xfree(job->mem_bind);
+	eio_handle_destroy(job->msg_handle);
 	xfree(job->node_name);
 	mpmd_free(job);
 	xfree(job->task_prolog);
 	xfree(job->task_epilog);
 	xfree(job->job_alloc_cores);
+	xfree(job->restart_dir);
 	xfree(job->step_alloc_cores);
 	xfree(job->task_cnts);
 	xfree(job->user_name);

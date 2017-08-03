@@ -213,11 +213,15 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *job,
 	xfree(conf->block_map);
 	xfree(conf->block_map_inv);
 	xfree(conf->hostname);
+	xfree(conf->job_acct_gather_freq);
+	xfree(conf->job_acct_gather_type);
 	xfree(conf->logfile);
 	xfree(conf->node_name);
 	xfree(conf->node_topo_addr);
 	xfree(conf->node_topo_pattern);
 	xfree(conf->spooldir);
+	xfree(conf->task_epilog);
+	xfree(conf->task_prolog);
 	xfree(conf);
 #endif
 	info("done with job");
