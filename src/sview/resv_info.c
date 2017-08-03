@@ -327,8 +327,6 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 
 	/* need to clear global_edit_error here (just in case) */
 	global_edit_error = 0;
-	if (global_edit_error_msg)
-		g_free(global_edit_error_msg);
 
 	if (!resv_msg)
 		return NULL;
