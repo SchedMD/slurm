@@ -1867,6 +1867,10 @@ _exec_prog(slurm_msg_t *msg)
 	child = fork();
 	if (child == 0) {
 		int fd = open("/dev/null", O_RDONLY);
+		if (fd < 0) {
+			error("%s: can not open /dev/null", __func__);
+			exit(1);
+		}
 		dup2(fd, 0);		/* stdin from /dev/null */
 		dup2(pfd[1], 1);	/* stdout to pipe */
 		dup2(pfd[1], 2);	/* stderr to pipe */
