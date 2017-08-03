@@ -189,7 +189,7 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 	char **mpi_env = NULL;
 	int rc = SLURM_SUCCESS;
 
-	debug("Entering slurm_step_launch");
+	debug("Entering %s", __func__);
 	memset(&launch, 0, sizeof(launch));
 
 	if ((ctx == NULL) || (ctx->magic != STEP_CTX_MAGIC)) {
@@ -410,7 +410,7 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	int rc = SLURM_SUCCESS;
 	uint16_t resp_port = 0;
 
-	debug("Entering slurm_step_launch_add");
+	debug("Entering %s", __func__);
 
 	if ((ctx == NULL) || (ctx->magic != STEP_CTX_MAGIC)) {
 		error("%s: Not a valid slurm_step_ctx_t", __func__);
@@ -732,13 +732,15 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 		info("Force Terminated job step %u.%u",
 		     ctx->job_id, ctx->step_resp->job_step_id);
 
-	/* task_exit_signal != 0 when srun receives a message that a task
+	/*
+	 * task_exit_signal != 0 when srun receives a message that a task
 	 * exited with a SIGTERM or SIGKILL.  Without this test, a hang in srun
 	 * might occur when a node gets a hard power failure, and TCP does not
 	 * indicate that the I/O connection closed.  The I/O thread could
 	 * block waiting for an EOF message, even though the remote process
 	 * has died.  In this case, use client_io_handler_abort to force the
-	 * I/O thread to stop listening for stdout or stderr and shutdown. */
+	 * I/O thread to stop listening for stdout or stderr and shutdown.
+	 */
 	if (task_exit_signal && !sls->user_managed_io) {
 		client_io_handler_abort(sls->io.normal);
 	}
