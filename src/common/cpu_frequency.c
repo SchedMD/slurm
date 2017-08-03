@@ -1643,7 +1643,7 @@ cpu_freq_debug(char* label, char* noval_str, char* freq_str, int freq_len,
 	} else {
 		sep1 = "";
 	}
-	if (min != NO_VAL && min != 0) {
+	if ((min != NO_VAL) && (min != 0)) {
 		rc = 1;
 		if (min & CPU_FREQ_RANGE_FLAG) {
 			strcpy(bfmin, "CPU_min_freq=");
@@ -1652,11 +1652,16 @@ cpu_freq_debug(char* label, char* noval_str, char* freq_str, int freq_len,
 			sprintf(bfmin, "CPU_min_freq=%u", min);
 		}
 	} else if (noval_str) {
-		strcpy(bfmin, noval_str);
+		if (strlen(noval_str) >= sizeof(bfmin)) {
+			error("%s: minimum CPU frequency string too large",
+			      __func__);
+		} else {
+			strncpy(bfmin, noval_str, sizeof(bfmin));
+		}
 	} else {
 		sep2 = "";
 	}
-	if (max != NO_VAL && max != 0) {
+	if ((max != NO_VAL) && (max != 0)) {
 		rc = 1;
 		if (max & CPU_FREQ_RANGE_FLAG) {
 			strcpy(bfmax, "CPU_max_freq=");
@@ -1665,7 +1670,12 @@ cpu_freq_debug(char* label, char* noval_str, char* freq_str, int freq_len,
 			sprintf(bfmax, "CPU_max_freq=%u", max);
 		}
 	} else if (noval_str) {
-		strcpy(bfmax, noval_str);
+		if (strlen(noval_str) >= sizeof(bfmax)) {
+			error("%s: maximum CPU frequency string too large",
+			      __func__);
+		} else {
+			strncpy(bfmax, noval_str, sizeof(bfmax));
+		}
 	} else {
 		sep3 = "";
 	}
@@ -1674,7 +1684,12 @@ cpu_freq_debug(char* label, char* noval_str, char* freq_str, int freq_len,
 		strcpy(bfgov, "Governor=");
 		cpu_freq_to_string(&bfgov[9], (sizeof(bfgov)-9), gov);
 	} else if (noval_str) {
-		strcpy(bfgov, noval_str);
+		if (strlen(noval_str) >= sizeof(bfmax)) {
+			error("%s: max CPU governor string too large",
+			      __func__);
+		} else {
+			strncpy(bfgov, noval_str, sizeof(bfgov));
+		}
 	}
 	if (rc) {
 		if (freq_str) {
