@@ -246,6 +246,7 @@ typedef struct srun_options {
 	bool mpi_combine;	/* --mpi-combine		*/
 	char *pack_group;	/* --pack-group			*/
 	bitstr_t *pack_grp_bits;/* --pack-group	in bitmap form	*/
+	int pack_step_cnt;	/* Total count of pack groups to launch */
 } opt_t;
 
 extern int	error_exit;	/* exit code for slurm errors */
