@@ -53,6 +53,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/log.h"
 #include "src/common/plugrack.h"
+#include "src/common/strlcpy.h"
 #include "src/common/xstring.h"
 #include "src/common/slurm_protocol_api.h"
 #include "slurm/slurm_errno.h"
@@ -115,7 +116,7 @@ plugin_peek( const char *fq_path,
 	}
 	if ( ( type = dlsym( plug, PLUGIN_TYPE ) ) != NULL ) {
 		if ( plugin_type != NULL ) {
-			strncpy( plugin_type, type, type_len );
+			strlcpy(plugin_type, type, type_len);
 		}
 	} else {
 		dlclose( plug );

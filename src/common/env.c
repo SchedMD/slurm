@@ -63,6 +63,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_step_layout.h"
 #include "src/common/slurmdb_defs.h"
+#include "src/common/strlcpy.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -1675,15 +1676,13 @@ static int _env_array_entry_splitter(const char *entry,
 	len = ptr - entry;
 	if (len > name_len-1)
 		return 0;
-	strncpy(name, entry, len);
-	name[len] = '\0';
+	strlcpy(name, entry, len);
 
 	ptr = ptr + 1;
 	len = strlen(ptr);
 	if (len > value_len-1)
 		return 0;
-	strncpy(value, ptr, len);
-	value[len] = '\0';
+	strlcpy(value, ptr, len);
 
 	return 1;
 }

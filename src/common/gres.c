@@ -78,6 +78,7 @@ typedef cpuset_t cpu_set_t;
 #include "src/common/plugrack.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/strlcpy.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/assoc_mgr.h"
@@ -1707,7 +1708,7 @@ extern int gres_gresid_to_gresname(uint32_t gres_id, char* gres_name,
 	while ((gres_slurmd_conf = (gres_slurmd_conf_t *) list_next(iter))) {
 		if (gres_slurmd_conf->plugin_id != gres_id)
 			continue;
-		strncpy(gres_name, gres_slurmd_conf->name, gres_name_len);
+		strlcpy(gres_name, gres_slurmd_conf->name, gres_name_len);
 		found = 1;
 		break;
 	}

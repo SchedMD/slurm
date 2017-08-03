@@ -41,6 +41,7 @@
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_resource_info.h"
+#include "src/common/strlcpy.h"
 #include "src/common/xmalloc.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
@@ -1327,9 +1328,8 @@ static void _lllp_generate_cpu_bind(launch_tasks_request_msg_t *req,
 
 		if (masks_len > 0)
 			masks_str[masks_len-1]=',';
-		strncpy(&masks_str[masks_len], str, curlen);
+		strlcpy(&masks_str[masks_len], str, curlen);
 		masks_len += curlen;
-		xassert(masks_str[masks_len] == '\0');
 		xfree(str);
 	}
 

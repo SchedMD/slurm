@@ -61,6 +61,7 @@
 #include "src/common/parse_time.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/strlcpy.h"
 #include "src/common/uid.h"
 #include "src/common/uthash/uthash.h"
 #include "src/common/xmalloc.h"
@@ -1876,7 +1877,7 @@ slurm_network_callerid (network_callerid_msg_t req, uint32_t *job_id,
 		case RESPONSE_NETWORK_CALLERID:
 			resp = (network_callerid_resp_t*)resp_msg.data;
 			*job_id = resp->job_id;
-			strncpy(node_name, resp->node_name, node_name_size);
+			strlcpy(node_name, resp->node_name, node_name_size);
 			break;
 		case RESPONSE_SLURM_RC:
 			rc = ((return_code_msg_t *) resp_msg.data)->return_code;

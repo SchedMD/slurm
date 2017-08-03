@@ -47,6 +47,7 @@
 #include "src/sreport/user_reports.h"
 #include "src/common/xsignal.h"
 #include "src/common/proc_args.h"
+#include "src/common/strlcpy.h"
 
 #define BUFFER_SIZE		4096
 #define OPT_LONG_LOCAL		0x101
@@ -379,7 +380,7 @@ static char *_getline(const char *prompt)
 	line = malloc(len * sizeof(char));
 	if (!line)
 		return NULL;
-	return strncpy(line, buf, len);
+	return strlcpy(line, buf, len);
 }
 #endif
 

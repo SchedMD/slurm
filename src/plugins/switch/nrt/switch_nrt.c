@@ -49,6 +49,7 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
 #include "src/common/macros.h"
+#include "src/common/strlcpy.h"
 #include "src/plugins/switch/nrt/slurm_nrt.h"
 
 #define NRT_BUF_SIZE 4096
@@ -1032,7 +1033,7 @@ static void *_state_save_thread(void *arg)
 {
 	char *dir_name = (char *)arg;
 
-	strncpy(local_dir_path, dir_name, sizeof(local_dir_path));
+	strlcpy(local_dir_path, dir_name, sizeof(local_dir_path));
 	xfree(dir_name);
 
 	while (1) {

@@ -85,6 +85,7 @@
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_mpi.h"
+#include "src/common/strlcpy.h"
 #include "src/common/switch.h"
 #include "src/common/util-net.h"
 #include "src/common/xmalloc.h"
@@ -2434,7 +2435,7 @@ _drop_privileges(stepd_step_rec_t *job, bool do_setuid,
 
 	if (!getcwd (ps->saved_cwd, sizeof (ps->saved_cwd))) {
 		error ("Unable to get current working directory: %m");
-		strncpy (ps->saved_cwd, "/tmp", sizeof (ps->saved_cwd));
+		strlcpy(ps->saved_cwd, "/tmp", sizeof(ps->saved_cwd));
 	}
 
 #ifdef HAVE_NATIVE_CRAY

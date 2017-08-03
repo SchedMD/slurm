@@ -48,6 +48,7 @@
 #include <stdlib.h>		/* for abort() */
 #include <string.h>		/* for strerror() */
 #include "src/common/log.h"	/* for error() */
+#include "src/common/strlcpy.h"
 
 #ifndef MAX
 #  define MAX(a,b) ((a) > (b) ? (a) : (b))
@@ -266,7 +267,7 @@ do {									\
 		if (strftime(tmp_string, sizeof(tmp_string), format, tm) == 0) \
 			memset(tmp_string, '#', max);			\
 		tmp_string[max-1] = 0;					\
-		strncpy(s, tmp_string, max);				\
+		strlcpy(s, tmp_string, max);				\
 	}								\
 } while (0)
 

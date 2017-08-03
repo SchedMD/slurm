@@ -64,6 +64,7 @@
 
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
+#include "src/common/strlcpy.h"
 #include "src/common/read_config.h"
 #include "src/common/node_conf.h"
 #include "src/plugins/switch/nrt/nrt_keys.h"
@@ -392,7 +393,7 @@ _fill_in_adapter_cache(void)
 			}
 			lid_cache[lid_cache_size].adapter_type = adapter_names.
 								 adapter_type;
-			strncpy(lid_cache[lid_cache_size].adapter_name,
+			strlcpy(lid_cache[lid_cache_size].adapter_name,
 				adapter_names.adapter_names[j],
 				NRT_MAX_ADAPTER_NAME_LEN);
 			lid_cache_size++;
@@ -857,7 +858,7 @@ _alloc_node(slurm_nrt_libstate_t *lp, char *name)
 			  sizeof(struct slurm_nrt_adapter));
 
 	if (name != NULL) {
-		strncpy(n->name, name, NRT_HOSTLEN);
+		strlcpy(n->name, name, NRT_HOSTLEN);
 		if (need_hash_rebuild || (lp->node_count > lp->hash_max))
 			_hash_rebuild(lp);
 		else
@@ -1197,7 +1198,7 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 					ib_table = (nrt_ib_task_info_t *)
 						   tableinfo[table_inx].table;
 					ib_table += task_id;
-					strncpy(ib_table->device_name,
+					strlcpy(ib_table->device_name,
 						adapter->adapter_name,
 						NRT_MAX_DEVICENAME_SIZE);
 					ib_table->base_lid = adapter->lid;
@@ -1240,14 +1241,14 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 					goto alloc_fail;
 				}
 
-				strncpy(tableinfo[table_inx].adapter_name,
+				strlcpy(tableinfo[table_inx].adapter_name,
 					adapter->adapter_name,
 					NRT_MAX_ADAPTER_NAME_LEN);
 				tableinfo[table_inx].adapter_type = adapter->
 								    adapter_type;
 				tableinfo[table_inx].network_id = adapter->
 								  network_id;
-				strncpy(tableinfo[table_inx].protocol_name,
+				strlcpy(tableinfo[table_inx].protocol_name,
 					protocol_table->
 					protocol_table[context_id].
 					protocol_name,
@@ -1393,7 +1394,7 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 				ib_table = (nrt_ib_task_info_t *)
 					   tableinfo[table_inx].table;
 				ib_table += task_id;
-				strncpy(ib_table->device_name, adapter_name,
+				strlcpy(ib_table->device_name, adapter_name,
 					NRT_MAX_DEVICENAME_SIZE);
 				ib_table->base_lid = adapter->lid;
 				ib_table->port_id  = 1;
@@ -1432,12 +1433,12 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 				goto alloc_fail;
 			}
 
-			strncpy(tableinfo[table_inx].adapter_name, adapter_name,
+			strlcpy(tableinfo[table_inx].adapter_name, adapter_name,
 				NRT_MAX_ADAPTER_NAME_LEN);
 			tableinfo[table_inx].adapter_type = adapter->
 							    adapter_type;
 			tableinfo[table_inx].network_id = adapter->network_id;
-			strncpy(tableinfo[table_inx].protocol_name,
+			strlcpy(tableinfo[table_inx].protocol_name,
 				protocol_table->protocol_table[context_id].
 				protocol_name,
 				NRT_MAX_PROTO_NAME_LEN);
@@ -2242,7 +2243,7 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 				_print_adapter_status(&adapter_status);
 			}
 			adapter_ptr = &n->adapter_list[n->adapter_count];
-			strncpy(adapter_ptr->adapter_name,
+			strlcpy(adapter_ptr->adapter_name,
 				adapter_status.adapter_name,
 				NRT_MAX_ADAPTER_NAME_LEN);
 			adapter_ptr->adapter_type = adapter_status.
@@ -2378,7 +2379,7 @@ nrt_build_nodeinfo(slurm_nrt_nodeinfo_t *n, char *name)
 	xassert(n->magic == NRT_NODEINFO_MAGIC);
 	xassert(name);
 
-	strncpy(n->name, name, NRT_HOSTLEN);
+	strlcpy(n->name, name, NRT_HOSTLEN);
 	slurm_mutex_lock(&global_lock);
 	err = _get_adapters(n);
 	slurm_mutex_unlock(&global_lock);
@@ -2452,13 +2453,13 @@ _copy_node(slurm_nrt_nodeinfo_t *dest, slurm_nrt_nodeinfo_t *src)
 		_print_nodeinfo(src);
 	}
 
-	strncpy(dest->name, src->name, NRT_HOSTLEN);
+	strlcpy(dest->name, src->name, NRT_HOSTLEN);
 	dest->node_number = src->node_number;
 	dest->adapter_count = src->adapter_count;
 	for (i = 0; i < dest->adapter_count; i++) {
 		sa = src->adapter_list + i;
 		da = dest->adapter_list +i;
-		strncpy(da->adapter_name, sa->adapter_name,
+		strlcpy(da->adapter_name, sa->adapter_name,
 			NRT_MAX_ADAPTER_NAME_LEN);
 		da->adapter_type = sa->adapter_type;
 		da->cau_indexes_avail = sa->cau_indexes_avail;
@@ -2620,7 +2621,7 @@ _fake_unpack_adapters(Buf buf, slurm_nrt_nodeinfo_t *n,
 				 sizeof(slurm_nrt_adapter_t) *
 				 n->adapter_count);
 			tmp_a = n->adapter_list + j;
-			strncpy(tmp_a->adapter_name, name_ptr,
+			strlcpy(tmp_a->adapter_name, name_ptr,
 				NRT_MAX_ADAPTER_NAME_LEN);
 			tmp_a->adapter_type = adapter_type;
 			/* tmp_a->block_count = 0 */
@@ -2969,7 +2970,7 @@ static nrt_protocol_table_t *_get_protocol_table(char *protocol)
 		if ((i >= protocol_table->protocol_table_cnt) &&
 		    (i < NRT_MAX_PROTO_CNT)) {
 			/* Need to add new protocol type */
-			strncpy(protocol_table->protocol_table[i].protocol_name,
+			strlcpy(protocol_table->protocol_table[i].protocol_name,
 				token, NRT_MAX_PROTO_NAME_LEN);
 			protocol_table->protocol_table_cnt++;
 		}
@@ -3856,12 +3857,12 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 				sep++;
 			else
 				sep = job_name;
-			strncpy(table_info.job_name, sep,
+			strlcpy(table_info.job_name, sep,
 				NRT_MAX_JOB_NAME_LEN);
 		} else {
 			table_info.job_name[0] = '\0';
 		}
-		strncpy(table_info.protocol_name,
+		strlcpy(table_info.protocol_name,
 			jp->tableinfo[i].protocol_name,
 			NRT_MAX_PROTO_NAME_LEN);
 		table_info.use_bulk_transfer = jp->bulk_xfer;

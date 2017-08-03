@@ -47,6 +47,7 @@
 #include <sys/stat.h>
 
 #include "src/common/slurm_xlator.h"
+#include "src/common/strlcpy.h"
 #include "filetxt_jobacct_process.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmdbd/read_config.h"
@@ -440,8 +441,7 @@ static char *_prefix_filename(char *path, char *prefix) {
 		}
 	i++;
 	*out = 0;
-	strncpy(out, path, i);
-	out[i] = 0;
+	strlcpy(out, path, i);
 	strcat(out, prefix);
 	strcat(out, path+i);
 	return(out);

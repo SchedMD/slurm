@@ -60,6 +60,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/log.h"
 #include "src/common/fd.h"
+#include "src/common/strlcpy.h"
 #include "src/common/xsignal.h"
 #include "src/common/xmalloc.h"
 #include "src/common/util-net.h"
@@ -670,11 +671,11 @@ extern void slurm_get_addr (slurm_addr_t *addr, uint16_t *port, char *host,
 
 	if (he != NULL) {
 		*port = ntohs(addr->sin_port);
-		strncpy(host, he->h_name, buflen);
+		strlcpy(host, he->h_name, buflen);
 	} else {
 		error("Lookup failed: %s", host_strerror(h_err));
 		*port = 0;
-		strncpy(host, "", buflen);
+		host[0] = '\0';
 	}
 	return;
 }

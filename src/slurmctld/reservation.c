@@ -64,6 +64,7 @@
 #include "src/common/parse_time.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_time.h"
+#include "src/common/strlcpy.h"
 #include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -573,7 +574,7 @@ static void _generate_resv_name(resv_desc_msg_t *resv_ptr)
 	else
 		len = strlen(key);
 	name = xmalloc(len + 16);
-	strncpy(name, key, len);
+	strlcpy(name, key, len);
 
 	xstrfmtcat(name, "_%d", top_suffix);
 	len++;

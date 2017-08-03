@@ -39,6 +39,7 @@
 \*****************************************************************************/
 
 #include "src/sacctmgr/sacctmgr.h"
+#include "src/common/strlcpy.h"
 #include "src/common/uid.h"
 
 typedef struct {
@@ -1686,7 +1687,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 				if (line[i-1] == ' ')
 					i--;
 				if (i<sizeof(object))
-					strncpy(object, line, i);
+					strlcpy(object, line, i);
 				break;
 			}
 		}

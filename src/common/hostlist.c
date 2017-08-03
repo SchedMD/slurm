@@ -57,6 +57,7 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/strnatcmp.h"
+#include "src/common/strlcpy.h"
 #include "src/common/timers.h"
 #include "src/common/working_cluster.h"
 #include "src/common/xassert.h"
@@ -1792,8 +1793,7 @@ _push_range_list(hostlist_t hl, char *prefix, struct _range *range,
 	char *p, *q;
 	char new_prefix[1024], tmp_prefix[1024];
 
-	strncpy(tmp_prefix, prefix, sizeof(tmp_prefix));
-	tmp_prefix[sizeof(tmp_prefix) - 1] = '\0';
+	strlcpy(tmp_prefix, prefix, sizeof(tmp_prefix));
 	if (((p = strrchr(tmp_prefix, '[')) != NULL) &&
 	    ((q = strrchr(p, ']')) != NULL)) {
 		struct _range *prefix_range = NULL;

@@ -53,6 +53,7 @@
 #include "src/common/log.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/strlcpy.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/read_config.h"
@@ -1398,15 +1399,12 @@ cpu_freq_govlist_to_string(char* buf, uint16_t bufsz, uint32_t govs)
 			xstrcat(list,"UserSpace");
 		}
 	}
-	if (list) {
-		if (strlen(list) < bufsz)
-			strcpy(buf, list);
-		else
-			strncpy(buf, list, bufsz-1);
 
+	if (list) {
+		strlcpy(buf, list, bufsz);
 		xfree(list);
 	} else {
-		strncpy(buf,"No Governors defined", bufsz-1);
+		strlcpy(buf, "No Governors defined", bufsz);
 	}
 }
 
@@ -1656,7 +1654,7 @@ cpu_freq_debug(char* label, char* noval_str, char* freq_str, int freq_len,
 			error("%s: minimum CPU frequency string too large",
 			      __func__);
 		} else {
-			strncpy(bfmin, noval_str, sizeof(bfmin));
+			strlcpy(bfmin, noval_str, sizeof(bfmin));
 		}
 	} else {
 		sep2 = "";
@@ -1674,7 +1672,7 @@ cpu_freq_debug(char* label, char* noval_str, char* freq_str, int freq_len,
 			error("%s: maximum CPU frequency string too large",
 			      __func__);
 		} else {
-			strncpy(bfmax, noval_str, sizeof(bfmax));
+			strlcpy(bfmax, noval_str, sizeof(bfmax));
 		}
 	} else {
 		sep3 = "";
@@ -1688,7 +1686,7 @@ cpu_freq_debug(char* label, char* noval_str, char* freq_str, int freq_len,
 			error("%s: max CPU governor string too large",
 			      __func__);
 		} else {
-			strncpy(bfgov, noval_str, sizeof(bfgov));
+			strlcpy(bfgov, noval_str, sizeof(bfgov));
 		}
 	}
 	if (rc) {

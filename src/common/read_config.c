@@ -1015,9 +1015,9 @@ int slurm_conf_frontend_array(slurm_conf_frontend_t **ptr_array[])
 					   "NodeName", conf_hashtbl) ||
 			    (node_count == 0))
 				fatal("No front end nodes configured");
-			strncpy(addresses, node_ptr[0]->addresses,
+			strlcpy(addresses, node_ptr[0]->addresses,
 				sizeof(addresses));
-			strncpy(hostnames, node_ptr[0]->hostnames,
+			strlcpy(hostnames, node_ptr[0]->hostnames,
 				sizeof(hostnames));
 			local_front_end.addresses = addresses;
 			local_front_end.frontends = hostnames;
