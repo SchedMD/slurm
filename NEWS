@@ -45,6 +45,8 @@ documents those changes that are of interest to users and administrators.
     the tree.
  -- Sort TRES id's on limits when getting them from the database.
  -- Fix issue with pmi[2|x] when TreeWidth=1.
+ -- Correct buffer size used in determining specialized cores to avoid possible
+    truncation of core specification and not reserving the specified cores.
 
 * Changes in Slurm 17.02.6
 ==========================
