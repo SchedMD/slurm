@@ -250,8 +250,8 @@ static ba_geo_combos_t *_build_geo_bitmap_arrays(int size)
 	combos->set_count_array = xmalloc(sizeof(int) * combos->elem_count);
 	combos->set_bits_array  = xmalloc(sizeof(bitstr_t *) *
 					  combos->elem_count);
-	combos->start_coord = xmalloc(sizeof(uint16_t *) * combos->elem_count);
-	combos->block_size  = xmalloc(sizeof(uint16_t *) * combos->elem_count);
+	combos->start_coord = xmalloc(sizeof(uint16_t) * combos->elem_count);
+	combos->block_size  = xmalloc(sizeof(uint16_t) * combos->elem_count);
 
 	for (i = 1; i <= combos->elem_count; i++) {
 		bool some_bit_set = false, some_gap_set = false;
