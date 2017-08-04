@@ -169,9 +169,6 @@ _is_valid_timespec(const char *s)
 		return false;
 
 	if (dash) {
-		if (colon == 0
-		    && digit < 1)
-			return false;
 		if (colon == 1
 		    && digit < 3)
 			return false;
