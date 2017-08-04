@@ -993,7 +993,6 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 	slurm_cred_arg_t arg;
 	hostset_t	s_hset = NULL;
 	bool		user_ok = _slurm_authorized_user(uid);
-	bool		verified = true;
 	int		host_index = -1;
 	int		rc;
 	slurm_cred_t    *cred = req->cred;
@@ -1016,24 +1015,13 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 
 	rc = slurm_cred_verify(conf->vctx, cred, &arg, protocol_version);
 	if (rc < 0) {
-		verified = false;
-		if ((!user_ok) || (errno != ESLURMD_INVALID_JOB_CREDENTIAL))
+		if ((!user_ok) || (errno != ESLURMD_INVALID_JOB_CREDENTIAL)) {
 			return SLURM_ERROR;
-		else {
+		} else {
 			debug("_check_job_credential slurm_cred_verify failed:"
 			      " %m, but continuing anyway.");
 		}
-	}
-
-	/* If uid is the SlurmUser or root and the credential is bad,
-	 * then do not attempt validating the credential */
-	if (!verified) {
 		*step_hset = NULL;
-		if (rc >= 0) {
-			if ((s_hset = hostset_create(arg.step_hostlist)))
-				*step_hset = s_hset;
-			slurm_cred_free_args(&arg);
-		}
 		return SLURM_SUCCESS;
 	}
 
