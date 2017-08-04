@@ -162,7 +162,7 @@ int main (int argc, char *argv[])
 	launch->mpi_plugin_name = "none"; /* Don't try to use PMI */
 	launch->cpus_per_task = 1;
 
-	if (slurm_step_launch(ctx, launch, NULL) != SLURM_SUCCESS) {
+	if (slurm_step_launch(ctx, launch, NULL, -1) != SLURM_SUCCESS) {
 		slurm_perror("slurm_step_launch");
 		rc = 1;
 		goto done;
