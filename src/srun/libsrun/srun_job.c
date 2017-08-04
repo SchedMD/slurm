@@ -826,7 +826,8 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		}
 
 		if (_create_job_step(job, false, srun_job_list) < 0) {
-			slurm_complete_job(my_job_id, 1);
+			if (*got_alloc)
+				slurm_complete_job(my_job_id, 1);
 			exit(error_exit);
 		}
 	} else {
