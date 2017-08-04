@@ -43,6 +43,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix starting controller if StateSaveLocation path didn't exist.
  -- Fix inherited association 'max' TRES limits combining multiple limits in
     the tree.
+ -- Sort TRES id's on limits when getting them from the database.
 
 * Changes in Slurm 17.02.6
 ==========================
