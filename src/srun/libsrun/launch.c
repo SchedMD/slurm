@@ -333,9 +333,10 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 						&job->ctx_params, step_wait);
 		}
 		if (job->step_ctx != NULL) {
-			if (i > 0)
-				info("Job step created");
-
+			if (i > 0) {
+				info("Step created for job %u",
+				     job->ctx_params.job_id);
+			}
 			break;
 		}
 		rc = slurm_get_errno();
@@ -349,7 +350,8 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		     (rc != SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT) &&
 		     (rc != ESLURM_INTERCONNECT_BUSY) &&
 		     (rc != ESLURM_DISABLED))) {
-			error ("Unable to create job step: %m");
+			error("Unable to create job %u step: %m",
+			      job->ctx_params.job_id);
 			return SLURM_ERROR;
 		}
 
@@ -359,14 +361,15 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 					"being configured, please wait",
 					job->ctx_params.job_id);
 			} else {
-				info("Job step creation temporarily disabled, "
-				     "retrying");
+				info("Job %u step creation temporarily disabled, retrying",
+				     job->ctx_params.job_id);
 			}
 			xsignal_unblock(sig_array);
 			for (j = 0; sig_array[j]; j++)
 				xsignal(sig_array[j], signal_function);
 		} else {
-			verbose("Job step creation still disabled, retrying");
+			verbose("Job %u step creation still disabled, retrying",
+				job->ctx_params.job_id);
 		}
 
 		if (*destroy_job) {
@@ -377,7 +380,8 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	if (i > 0) {
 		xsignal_block(sig_array);
 		if (*destroy_job) {
-			info("Cancelled pending job step");
+			info("Cancelled pending step for job %u",
+			     job->ctx_params.job_id);
 			return SLURM_ERROR;
 		}
 	}

@@ -278,7 +278,7 @@ extern srun_job_t *job_step_create_allocation(
 
 		count = hostlist_count(hl);
 		if (!count) {
-			error("Hostlist is now nothing!  Can't run job.");
+			error("Hostlist is empty!  Can't run job.");
 			hostlist_destroy(hl);
 			goto error;
 		}
@@ -357,7 +357,7 @@ extern srun_job_t *job_step_create_allocation(
 		    SLURM_DIST_ARBITRARY)
 			hostlist_uniq(hl);
 		if (!hostlist_count(hl)) {
-			error("Hostlist is now nothing!  Can not run job.");
+			error("Hostlist is empty!  Can not run job.");
 			hostlist_destroy(hl);
 			goto error;
 		}

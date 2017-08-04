@@ -123,23 +123,28 @@ static char *_hostset_to_string(hostset_t hs)
 	return str;
 }
 
-/* Convert an array of task IDs into a list of host names
- * RET: the string, caller must xfree() this value */
-static char *_task_ids_to_host_list(int ntasks, uint32_t *taskids)
+/*
+ * Convert an array of task IDs into a list of host names
+ * RET: the string, caller must xfree() this value
+ */
+static char *_task_ids_to_host_list(int ntasks, uint32_t *taskids,
+				    srun_job_t *my_srun_job)
 {
 	int i, task_cnt = 0;
 	hostset_t hs;
 	char *hosts;
 	slurm_step_layout_t *sl;
 
-	if ((sl = launch_common_get_slurm_step_layout(local_srun_job)) == NULL)
+	if ((sl = launch_common_get_slurm_step_layout(my_srun_job)) == NULL)
 		return (xstrdup("Unknown"));
 
-	/* If overhead of determining the hostlist is too high then srun
+	/*
+	 * If overhead of determining the hostlist is too high then srun
 	 * communications will timeout and fail, so return "Unknown" instead.
 	 *
 	 * See slurm_step_layout_host_id() in src/common/slurm_step_layout.c
-	 * for details. */
+	 * for details.
+	 */
 	for (i = 0; i < sl->node_cnt; i++) {
 		task_cnt += sl->tasks[i];
 	}
@@ -164,17 +169,20 @@ static char *_task_ids_to_host_list(int ntasks, uint32_t *taskids)
 	return (hosts);
 }
 
-/* Convert an array of task IDs into a string.
+/*
+ * Convert an array of task IDs into a string.
  * RET: the string, caller must xfree() this value
  * NOTE: the taskids array is not necessarily in numeric order,
- *       so we use existing bitmap functions to format */
-static char *_task_array_to_string(int ntasks, uint32_t taskids[])
+ *       so we use existing bitmap functions to format
+ */
+static char *_task_array_to_string(int ntasks, uint32_t *taskids,
+				   srun_job_t *my_srun_job)
 {
 	bitstr_t *tasks_bitmap = NULL;
 	char *str;
 	int i;
 
-	tasks_bitmap = bit_alloc(local_srun_job->ntasks);
+	tasks_bitmap = bit_alloc(my_srun_job->ntasks);
 	if (!tasks_bitmap) {
 		error("bit_alloc: memory allocation failure");
 		exit(error_exit);
@@ -200,14 +208,15 @@ static void _update_task_exit_state(task_state_t task_state, uint32_t ntasks,
 
 static int _kill_on_bad_exit(void)
 {
-	if (!opt_save || opt_save->kill_bad_exit == NO_VAL)
+	if (!opt_save || (opt_save->kill_bad_exit == NO_VAL))
 		return slurm_get_kill_on_bad_exit();
 	return opt_save->kill_bad_exit;
 }
 
 static void _setup_max_wait_timer(void)
 {
-	/*  If these are the first tasks to finish we need to
+	/*
+	 *  If these are the first tasks to finish we need to
 	 *   start a timer to kill off the job step if the other
 	 *   tasks don't finish within opt_save->max_wait seconds.
 	 */
@@ -319,6 +328,21 @@ static void _task_finish(task_exit_msg_t *msg)
 	static int msg_printed = 0, oom_printed = 0, last_task_exit_rc;
 	task_state_t task_state;
 	const char *task_str = _taskstr(msg->num_tasks);
+	srun_job_t *my_srun_job;
+	ListIterator iter;
+
+	iter = list_iterator_create(local_job_list);
+	while ((my_srun_job = (srun_job_t *) list_next(iter))) {
+		if ((my_srun_job->jobid  == msg->job_id) &&
+		    (my_srun_job->stepid == msg->step_id))
+			break;
+	}
+	list_iterator_destroy(iter);
+	if (!my_srun_job) {
+		error("Ignoring exit message from unrecognized step %u.%u",
+		      msg->job_id, msg->step_id);
+		return;
+	}
 
 	if (reduce_task_exit_msg == -1) {
 		char *ptr = getenv("SLURM_SRUN_REDUCE_TASK_EXIT_MSG");
@@ -328,11 +352,14 @@ static void _task_finish(task_exit_msg_t *msg)
 			reduce_task_exit_msg = 0;
 	}
 
-	verbose("Received task exit notification for %d %s (status=0x%04x).",
-		msg->num_tasks, task_str, msg->return_code);
+	verbose("Received task exit notification for %d %s of step %u.%u (status=0x%04x).",
+		msg->num_tasks, task_str, msg->job_id, msg->step_id,
+		msg->return_code);
 
-	/* Only build the "tasks" and "hosts" strings as needed. Buidling them
-	 * can take multiple milliseconds */
+	/*
+	 * Only build the "tasks" and "hosts" strings as needed.
+	 * Buidling them can take multiple milliseconds
+	 */
 	if (((msg->return_code & 0xff) == SIG_OOM) && !oom_printed) {
 		build_task_string = true;
 	} else if (WIFEXITED(msg->return_code)) {
@@ -344,7 +371,7 @@ static void _task_finish(task_exit_msg_t *msg)
 		}
 
 	} else if (WIFSIGNALED(msg->return_code)) {
-		if (local_srun_job->state >= SRUN_JOB_CANCELLED) {
+		if (my_srun_job->state >= SRUN_JOB_CANCELLED) {
 			if (get_log_level() >= LOG_LEVEL_VERBOSE)
 				build_task_string = true;
 		} else {
@@ -353,9 +380,9 @@ static void _task_finish(task_exit_msg_t *msg)
 	}
 	if (build_task_string) {
 		tasks = _task_array_to_string(msg->num_tasks,
-					      msg->task_id_list);
+					      msg->task_id_list, my_srun_job);
 		hosts = _task_ids_to_host_list(msg->num_tasks,
-					       msg->task_id_list);
+					       msg->task_id_list, my_srun_job);
 	}
 
 	slurm_mutex_lock(&launch_lock);
@@ -371,7 +398,7 @@ static void _task_finish(task_exit_msg_t *msg)
 			normal_exit = 1;
 		} else if (_is_openmpi_port_error(rc)) {
 			_handle_openmpi_port_error(tasks, hosts,
-						   local_srun_job->step_ctx);
+						   my_srun_job->step_ctx);
 		} else if ((reduce_task_exit_msg == 0) ||
 			   (msg_printed == 0) ||
 			   (msg->return_code != last_task_exit_rc)) {
@@ -385,12 +412,12 @@ static void _task_finish(task_exit_msg_t *msg)
 			*local_global_rc = msg->return_code;
 	} else if (WIFSIGNALED(msg->return_code)) {
 		const char *signal_str = strsignal(WTERMSIG(msg->return_code));
-		char * core_str = "";
+		char *core_str = "";
 #ifdef WCOREDUMP
 		if (WCOREDUMP(msg->return_code))
 			core_str = " (core dumped)";
 #endif
-		if (local_srun_job->state >= SRUN_JOB_CANCELLED) {
+		if (my_srun_job->state >= SRUN_JOB_CANCELLED) {
 			verbose("%s: %s %s: %s%s",
 				hosts, task_str, tasks, signal_str, core_str);
 		} else if ((reduce_task_exit_msg == 0) ||
@@ -418,7 +445,7 @@ static void _task_finish(task_exit_msg_t *msg)
 
 	if (task_state_first_abnormal_exit(task_state_list) &&
 	    _kill_on_bad_exit())
-		_step_signal(SIG_TERM_KILL);
+		(void) _step_signal(SIG_TERM_KILL);
 
 	if (task_state_first_exit(task_state_list) && opt_save &&
 	    (opt_save->max_wait > 0))
@@ -428,9 +455,11 @@ static void _task_finish(task_exit_msg_t *msg)
 	slurm_mutex_unlock(&launch_lock);
 }
 
-/* Load the multi_prog config file into argv, pass the  entire file contents
+/*
+ * Load the multi_prog config file into argv, pass the  entire file contents
  * in order to avoid having to read the file on every node. We could parse
- * the infomration here too for loading the MPIR records for TotalView */
+ * the infomration here too for loading the MPIR records for TotalView
+ */
 static void _load_multi(int *argc, char **argv)
 {
 	int config_fd, data_read = 0, i;
@@ -496,9 +525,10 @@ extern int launch_p_setup_srun_opt(char **rest, opt_t *opt_local)
 	if (opt_local->debugger_test && opt_local->parallel_debug)
 		MPIR_being_debugged  = 1;
 
-	/* We need to do +2 here just in case multi-prog is needed (we
-	   add an extra argv on so just make space for it).
-	*/
+	/*
+	 * We need to do +2 here just in case multi-prog is needed
+	 * (we add an extra argv on so just make space for it).
+	 */
 	opt_local->argv = (char **) xmalloc((opt_local->argc + 2) *
 					    sizeof(char *));
 
@@ -740,8 +770,9 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	update_job_state(job, SRUN_JOB_STARTING);
 	if (slurm_step_launch_wait_start(job->step_ctx) == SLURM_SUCCESS) {
 		update_job_state(job, SRUN_JOB_RUNNING);
-		/* Only set up MPIR structures if the step launched
-		 * correctly. */
+		/*
+		 * Only set up MPIR structures if the step launched correctly
+		 */
 		if (opt_local->multi_prog)
 			mpir_set_multi_name(job->ntasks,
 					    launch_params.argv[0]);
@@ -767,7 +798,7 @@ extern int launch_p_step_wait(srun_job_t *job, bool got_alloc, opt_t *opt_local,
 {
 	int rc = 0;
 
-//FIXME-PACK: can we create multiple steps in a single RPC or use threads?
+//FIXME-PACK: should we create multiple steps in a single RPC or use threads?
 	slurm_step_launch_wait_finish(job->step_ctx);
 	if ((MPIR_being_debugged == 0) && retry_step_begin &&
 	    (retry_step_cnt < MAX_STEP_RETRIES)) {
@@ -784,31 +815,33 @@ extern int launch_p_step_wait(srun_job_t *job, bool got_alloc, opt_t *opt_local,
 	return rc;
 }
 
-extern int launch_p_step_terminate(void)
-{
-	if (!local_srun_job) {
-		debug("%s: local_srun_job does not exist yet", __func__);
-		return SLURM_ERROR;
-	}
-
-	info("Terminating job step %u.%u",
-	     local_srun_job->jobid, local_srun_job->stepid);
-	return slurm_kill_job_step(local_srun_job->jobid,
-				   local_srun_job->stepid, SIGKILL);
-}
-
 static int _step_signal(int signal)
 {
-//FIXME-PACK - Modify local_srun_job references to use local_job_list
-	if (!local_srun_job) {
-		debug("%s: local_srun_job does not exist yet", __func__);
+	srun_job_t *my_srun_job;
+	ListIterator iter;
+	int rc = SLURM_SUCCESS, rc2;
+
+	if (!local_job_list) {
+		debug("%s: local_job_list does not exist yet", __func__);
 		return SLURM_ERROR;
 	}
 
-	info("Terminating job step %u.%u",
-	      local_srun_job->jobid, local_srun_job->stepid);
-	return slurm_kill_job_step(local_srun_job->jobid,
-				   local_srun_job->stepid, signal);
+	iter = list_iterator_create(local_job_list);
+	while ((my_srun_job = (srun_job_t *) list_next(iter))) {
+		info("Terminating job step %u.%u",
+		      my_srun_job->jobid, my_srun_job->stepid);
+		rc2 = slurm_kill_job_step(my_srun_job->jobid,
+					  my_srun_job->stepid, signal);
+		rc = MAX(rc, rc2);
+	}
+	list_iterator_destroy(iter);
+	return rc;
+}
+
+extern int launch_p_step_terminate(void)
+{
+	return _step_signal(SIGKILL);
+
 }
 
 extern void launch_p_print_status(void)
@@ -833,7 +866,8 @@ extern void launch_p_fwd_signal(int signal)
 			slurm_step_launch_abort(my_srun_job->step_ctx);
 			break;
 		default:
-			slurm_step_launch_fwd_signal(my_srun_job->step_ctx, signal);
+			slurm_step_launch_fwd_signal(my_srun_job->step_ctx,
+						     signal);
 			break;
 		}
 	}
