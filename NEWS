@@ -44,6 +44,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix inherited association 'max' TRES limits combining multiple limits in
     the tree.
  -- Sort TRES id's on limits when getting them from the database.
+ -- Fix issue with pmi[2|x] when TreeWidth=1.
 
 * Changes in Slurm 17.02.6
 ==========================
