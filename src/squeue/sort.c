@@ -419,7 +419,7 @@ static int _sort_job_by_id(void *void1, void *void2)
 		job_id1 = job1->array_job_id;
 
 	if (job2->pack_job_id)
-		job_id2 = job1->pack_job_id;
+		job_id2 = job2->pack_job_id;
 	else if (job2->array_task_id == NO_VAL)
 		job_id2 = job2->job_id;
 	else
