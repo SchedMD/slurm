@@ -41,6 +41,8 @@ documents those changes that are of interest to users and administrators.
     partion when multiple partitions are listed. scontrol show jobs can
     potentially show the partition list in priority order.
  -- Fix starting controller if StateSaveLocation path didn't exist.
+ -- Fix inherited association 'max' TRES limits combining multiple limits in
+    the tree.
 
 * Changes in Slurm 17.02.6
 ==========================
