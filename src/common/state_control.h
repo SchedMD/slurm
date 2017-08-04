@@ -40,6 +40,23 @@
 #include "slurm/slurm.h"
 
 /*
+ * RET SLURM_SUCCESS if SelectType includes select/cons_res or if
+ * SelectTypeParameters includes OTHER_CONS_RES on a Cray.
+ */
+extern int _is_corecnt_supported(void);
+
+/*
+ * Parse and process reservation request option CoreCnt= or TRES=cpu=
+ *
+ * IN/OUT resv_msg_ptr - msg where core_cnt member is modified
+ * IN val - CoreCnt value to parse
+ * IN from_tres - used to discern if the count comes from TRES= or CoreCnt=
+ * OUT err_msg - set to an explanation of failure, if any. Don't set if NULL
+ */
+extern int _parse_resv_core_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
+				bool from_tres, char **err_msg);
+
+/*
  * Parse and process reservation request option NodeCnt= or TRES=node=
  *
  * IN/OUT resv_msg_ptr - msg where node_cnt member is modified

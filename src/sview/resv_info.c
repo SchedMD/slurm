@@ -279,43 +279,6 @@ static uint32_t _parse_watts(char * watts_str)
 	return watts_num;
 }
 
-/* Inspired by same func in src/scontrol/create_res.c, without error msgs */
-static int _parse_resv_core_cnt(resv_desc_msg_t *resv_msg_ptr, const char *val)
-{
-
-        char *endptr = NULL, *core_cnt = NULL, *tok = NULL;
-	char *type = NULL, *ptrptr = NULL;
-        int node_inx = 0;
-	uint32_t select_type = slurmdb_setup_plugin_id_select();
-
-	/* only have this on a cons_res machine */
-	if (select_type != SELECT_PLUGIN_CONS_RES &&
-	    select_type != SELECT_PLUGIN_CRAY_CONS_RES)
-		return SLURM_ERROR;
-
-        xfree(type);
-        core_cnt = xstrdup(val);
-        tok = strtok_r(core_cnt, ",", &ptrptr);
-        while (tok) {
-                xrealloc(resv_msg_ptr->core_cnt,
-                         sizeof(uint32_t) * (node_inx + 2));
-                resv_msg_ptr->core_cnt[node_inx] =
-                        strtol(tok, &endptr, 10);
-                if ((endptr == NULL) ||
-                    (endptr[0] != '\0') ||
-                    (tok[0] == '\0')) {
-                        xfree(core_cnt);
-                        return SLURM_ERROR;
-                }
-                node_inx++;
-                tok = strtok_r(NULL, ",", &ptrptr);
-        }
-
-        xfree(core_cnt);
-        return SLURM_SUCCESS;
-}
-
-
 /* don't free this char */
 static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 				 const char *new_text,
@@ -353,10 +316,14 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 			type = "Cnode Count";
 		else
 			type = "Core Count";
-                if (_parse_resv_core_cnt(resv_msg, new_text) == SLURM_ERROR) {
-			global_edit_error_msg = g_strdup_printf(
-				"Can't use %s when system "
-				"is not running cons_res select plugin", type);
+		if (_is_corecnt_supported() != SLURM_SUCCESS) {
+			global_edit_error_msg = g_strdup_printf("CoreCnt or CPUCnt is only supported when SelectType includes select/cons_res or SelectTypeParameters includes OTHER_CONS_RES on a Cray.");
+			goto return_error;
+		}
+                if (_parse_resv_core_cnt(resv_msg, (char *)new_text, false,
+					 &err_msg) == SLURM_ERROR) {
+			global_edit_error_msg = xstrdup(err_msg);
+			xfree(err_msg);
 			goto return_error;
                 }
                 break;

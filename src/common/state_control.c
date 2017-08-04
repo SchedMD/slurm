@@ -38,6 +38,55 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+extern int _is_corecnt_supported(void)
+{
+	uint32_t select_type = slurmdb_setup_plugin_id_select();
+
+	if (select_type != SELECT_PLUGIN_CONS_RES &&
+	    select_type != SELECT_PLUGIN_CRAY_CONS_RES)
+		return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
+}
+
+extern int _parse_resv_core_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
+				bool from_tres, char **err_msg)
+{
+	char *endptr = NULL, *core_cnt, *tok, *ptrptr = NULL;
+	int node_inx = 0;
+
+	core_cnt = xstrdup(val);
+	tok = strtok_r(core_cnt, ",", &ptrptr);
+	while (tok) {
+		xrealloc(resv_msg_ptr->core_cnt,
+			 sizeof(uint32_t) * (node_inx + 2));
+		resv_msg_ptr->core_cnt[node_inx] =
+			strtol(tok, &endptr, 10);
+		if ((endptr == NULL) ||
+		    (endptr[0] != '\0') ||
+		    (tok[0] == '\0')) {
+			if (err_msg) {
+				if (from_tres)
+					xstrfmtcat(*err_msg,
+						   "Invalid TRES core count %s",
+						   val);
+				else
+					xstrfmtcat(*err_msg,
+						   "Invalid core count %s",
+						   val);
+			}
+			xfree(core_cnt);
+			return SLURM_ERROR;
+		}
+		node_inx++;
+		tok = strtok_r(NULL, ",", &ptrptr);
+	}
+
+	xfree(core_cnt);
+	return SLURM_SUCCESS;
+
+}
+
 extern int _parse_resv_node_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
 				bool from_tres, char **err_msg)
 {

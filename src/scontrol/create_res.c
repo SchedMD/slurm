@@ -38,6 +38,7 @@
 
 #include "src/common/proc_args.h"
 #include "src/common/state_control.h"
+#include "src/common/working_cluster.h"
 #include "src/scontrol/scontrol.h"
 #include "src/slurmctld/reservation.h"
 
@@ -72,50 +73,6 @@ static char * _process_plus_minus(char plus_or_minus, char *src)
 	*dst = '\0';
 
 	return ret;
-}
-
-static int _parse_resv_core_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
-				bool from_tres)
-{
-
-	char *endptr = NULL, *core_cnt, *tok, *ptrptr = NULL;
-	int node_inx = 0;
-	uint32_t select_type = slurmdb_setup_plugin_id_select();
-
-	/* only have this on a cons_res machine */
-	if (select_type != SELECT_PLUGIN_CONS_RES &&
-	    select_type != SELECT_PLUGIN_CRAY_CONS_RES) {
-		error("CoreCnt or CPUCnt is only "
-		      "supported when SelectType includes "
-		      "select/cons_res or SelectTypeParameters "
-		      "includes OTHER_CONS_RES on a Cray.");
-		return SLURM_ERROR;
-	}
-
-	core_cnt = xstrdup(val);
-	tok = strtok_r(core_cnt, ",", &ptrptr);
-	while (tok) {
-		xrealloc(resv_msg_ptr->core_cnt,
-			 sizeof(uint32_t) * (node_inx + 2));
-		resv_msg_ptr->core_cnt[node_inx] =
-			strtol(tok, &endptr, 10);
-		if ((endptr == NULL) ||
-		    (endptr[0] != '\0') ||
-		    (tok[0] == '\0')) {
-			exit_code = 1;
-			if (from_tres)
-				error("Invalid TRES core count %s", val);
-			else
-				error("Invalid core count %s", val);
-			xfree(core_cnt);
-			return SLURM_ERROR;
-		}
-		node_inx++;
-		tok = strtok_r(NULL, ",", &ptrptr);
-	}
-
-	xfree(core_cnt);
-	return SLURM_SUCCESS;
 }
 
 /* -1 = error, 0 = is configured, 1 = isn't configured */
@@ -239,10 +196,19 @@ static int _parse_resv_tres(char *val, resv_desc_msg_t  *resv_msg_ptr,
 	}
 
 	if (tres_corecnt && tres_corecnt[0] != '\0') {
-		ret = _parse_resv_core_cnt(resv_msg_ptr, tres_corecnt, true);
-		xfree(tres_corecnt);
-		if (ret != SLURM_SUCCESS)
+		/* only have this on a cons_res machine */
+		ret = _is_corecnt_supported();
+		if (ret != SLURM_SUCCESS) {
+			error("CoreCnt or CPUCnt is only supported when SelectType includes select/cons_res or SelectTypeParameters includes OTHER_CONS_RES on a Cray.");
 			goto error;
+		}
+		ret = _parse_resv_core_cnt(resv_msg_ptr, tres_corecnt, true,
+					   &err_msg);
+		if (ret != SLURM_SUCCESS) {
+			error("%s", err_msg);
+			xfree(err_msg);
+			goto error;
+		}
 		*free_tres_corecnt = 1;
 	}
 
@@ -423,9 +389,20 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 		           strncasecmp(tag, "CPUCnt",    MAX(taglen,5)) == 0 ||
 			   strncasecmp(tag, "CPUCount",  MAX(taglen,5)) == 0) {
 
-			if (_parse_resv_core_cnt(resv_msg_ptr, val, false)
-			    == SLURM_ERROR)
+			/* only have this on a cons_res machine */
+			if (_is_corecnt_supported() != SLURM_SUCCESS) {
+				error("CoreCnt or CPUCnt is only supported when SelectType includes select/cons_res or SelectTypeParameters includes OTHER_CONS_RES on a Cray.");
+				exit_code = 1;
 				return SLURM_ERROR;
+			}
+
+			if (_parse_resv_core_cnt(resv_msg_ptr, val, false,
+						 &err_msg) == SLURM_ERROR) {
+				error("%s", err_msg);
+				xfree(err_msg);
+				exit_code = 1;
+				return SLURM_ERROR;
+			}
 
 		} else if (strncasecmp(tag, "Nodes", MAX(taglen, 5)) == 0) {
 			resv_msg_ptr->node_list = val;
