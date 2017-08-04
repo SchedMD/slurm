@@ -225,6 +225,16 @@ documents those changes that are of interest to users and administrators.
  -- Increase buffer to handle long /proc/<pid>/stat output so that Slurm can
     read correct RSS value and take action on jobs using more memory than
     requested.
+ -- Fix srun job jobs that can run immediately to run in the highest priority
+    partion when multiple partitions are listed. scontrol show jobs can
+    potentially show the partition list in priority order.
+ -- Fix starting controller if StateSaveLocation path didn't exist.
+ -- Fix inherited association 'max' TRES limits combining multiple limits in
+    the tree.
+ -- Sort TRES id's on limits when getting them from the database.
+ -- Fix issue with pmi[2|x] when TreeWidth=1.
+ -- Correct buffer size used in determining specialized cores to avoid possible
+    truncation of core specification and not reserving the specified cores.
 
 * Changes in Slurm 17.02.6
 ==========================

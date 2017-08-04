@@ -2144,20 +2144,16 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		 */
 		slurmdb_combine_tres_strings(
 			&assoc->max_tres_pj, parent_mtpj,
-			TRES_STR_FLAG_NONE);
-		xfree(parent_mtpj);
+			TRES_STR_FLAG_SORT_ID);
 		slurmdb_combine_tres_strings(
 			&assoc->max_tres_pn, parent_mtpn,
-			TRES_STR_FLAG_NONE);
-		xfree(parent_mtpn);
+			TRES_STR_FLAG_SORT_ID);
 		slurmdb_combine_tres_strings(
 			&assoc->max_tres_mins_pj, parent_mtmpj,
-			TRES_STR_FLAG_NONE);
-		xfree(parent_mtmpj);
+			TRES_STR_FLAG_SORT_ID);
 		slurmdb_combine_tres_strings(
 			&assoc->max_tres_run_mins, parent_mtrm,
-			TRES_STR_FLAG_NONE);
-		xfree(parent_mtrm);
+			TRES_STR_FLAG_SORT_ID);
 
 		assoc->qos_list = list_create(slurm_destroy_char);
 
@@ -2244,6 +2240,10 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		//info("parent id is %d", assoc->parent_id);
 		//log_assoc_rec(assoc);
 	}
+	xfree(parent_mtpj);
+	xfree(parent_mtpn);
+	xfree(parent_mtmpj);
+	xfree(parent_mtrm);
 	mysql_free_result(result);
 
 	FREE_NULL_LIST(delta_qos_list);

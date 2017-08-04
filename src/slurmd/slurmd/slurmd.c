@@ -148,6 +148,7 @@ typedef struct connection {
 static bitstr_t	*res_core_bitmap;	/* reserved abstract cores bitmap */
 static bitstr_t	*res_cpu_bitmap;	/* reserved abstract CPUs bitmap */
 static char	*res_abs_cores = NULL;	/* reserved abstract cores list */
+static int32_t	res_abs_core_size = 0;	/* Length of res_abs_cores variable */
 static char	res_abs_cpus[MAX_CPUSTR]; /* reserved abstract CPUs list */
 static char	*res_mac_cpus = NULL;	/* reserved machine CPUs list */
 static int	ncores;			/* number of cores on this node */
@@ -2137,7 +2138,8 @@ static int _core_spec_init(void)
 
 	ncores = conf->sockets * conf->cores;
 	ncpus = ncores * conf->threads;
-	res_abs_cores = xmalloc(ncores * 4 * sizeof(char));
+	res_abs_core_size = ncores * 4;
+	res_abs_cores = xmalloc(res_abs_core_size);
 	res_core_bitmap = bit_alloc(ncores);
 	res_cpu_bitmap  = bit_alloc(ncpus);
 	res_abs_cpus[0] = '\0';
@@ -2316,7 +2318,7 @@ static void _select_spec_cores(void)
  */
 static int _convert_spec_cores(void)
 {
-	bit_fmt(res_abs_cores, sizeof(res_abs_cores), res_core_bitmap);
+	bit_fmt(res_abs_cores, res_abs_core_size, res_core_bitmap);
 	bit_fmt(res_abs_cpus, sizeof(res_abs_cpus), res_cpu_bitmap);
 	if (xcpuinfo_abs_to_mac(res_abs_cores, &res_mac_cpus) != SLURM_SUCCESS)
 		return SLURM_ERROR;
@@ -2350,7 +2352,7 @@ static int _validate_and_convert_cpu_list(void)
 		if (bit_test(res_cpu_bitmap, thread_off) == 1)
 			bit_set(res_core_bitmap, thread_off/(conf->threads));
 	}
-	bit_fmt(res_abs_cores, sizeof(res_abs_cores), res_core_bitmap);
+	bit_fmt(res_abs_cores, res_abs_core_size, res_core_bitmap);
 	/* create output abstract CPU list from core bitmap */
 	for (core_off = 0; core_off < ncores; core_off++) {
 		if (bit_test(res_core_bitmap, core_off) == 1) {

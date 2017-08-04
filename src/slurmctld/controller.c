@@ -310,6 +310,11 @@ int main(int argc, char **argv)
 	_init_pidfile();
 	_become_slurm_user();
 
+	/*
+	 * Create StateSaveLocation directory if necessary.
+	 */
+	set_slurmctld_state_loc();
+
 	if (create_clustername_file)
 		_create_clustername_file();
 
@@ -344,11 +349,6 @@ int main(int argc, char **argv)
 	if ((getrlimit(RLIMIT_STACK, &rlim) == 0) &&
 	    (rlim.rlim_cur != RLIM_INFINITY))
 		info("Stack size set to %ld", rlim.rlim_max);
-
-	/*
-	 * Create StateSaveLocation directory if necessary.
-	 */
-	set_slurmctld_state_loc();
 
 	test_core_limit();
 	_test_thread_limit();
