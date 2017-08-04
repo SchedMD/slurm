@@ -109,7 +109,7 @@ static pthread_mutex_t s_p_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static void _s_p_atfork_child(void)
 {
-	pthread_mutex_init(&s_p_lock, NULL);
+	slurm_mutex_init(&s_p_lock);
 	keyvalue_initialized = false;
 }
 
