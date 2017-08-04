@@ -76,6 +76,7 @@ extern int _parse_resv_core_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
 						   "Invalid core count %s",
 						   val);
 			}
+			xfree(resv_msg_ptr->core_cnt);
 			xfree(core_cnt);
 			return SLURM_ERROR;
 		}
