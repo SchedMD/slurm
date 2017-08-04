@@ -38,7 +38,6 @@
 
 #include "src/common/proc_args.h"
 #include "src/common/state_control.h"
-#include "src/common/working_cluster.h"
 #include "src/scontrol/scontrol.h"
 #include "src/slurmctld/reservation.h"
 
