@@ -350,7 +350,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		     (rc != SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT) &&
 		     (rc != ESLURM_INTERCONNECT_BUSY) &&
 		     (rc != ESLURM_DISABLED))) {
-			error("Unable to create job %u step: %m",
+			error("Unable to create step for job %u: %m",
 			      job->ctx_params.job_id);
 			return SLURM_ERROR;
 		}
