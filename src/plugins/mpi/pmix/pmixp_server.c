@@ -382,7 +382,7 @@ int pmixp_stepd_init(const stepd_step_rec_t *job, char ***env)
 
 	pmixp_conn_init(_slurm_proto, _direct_proto);
 
-	if((rc = pmixp_dconn_init(pmixp_info_nodes(), _direct_proto)) ){
+	if((rc = pmixp_dconn_init(pmixp_info_nodes_uni(), _direct_proto)) ){
 		PMIXP_ERROR("pmixp_dconn_init() failed");
 		goto err_dconn;
 	}
