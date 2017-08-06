@@ -8,7 +8,7 @@
 that can be allocated to jobs and steps. The most obvious example of
 GRES use would be GPUs. GRES are identified by a specific name and use an
 optional plugin to provide device-specific support. This document is meant
-to provide details abou. Slurm's implementation of GRES support including the
+to provide details about Slurm's implementation of GRES support including the
 relevant data structures. For an overview of GRES configuration and use, see
 <a href="gres.html">Generic Resource (GRES) Scheduling</a>. For details about
 the APIs provided by GRES plugins, see <a href="gres_plugins.html">
