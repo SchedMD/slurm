@@ -34,12 +34,21 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "config.h"
+
 #define _GNU_SOURCE
 #include <glob.h>
 #include <limits.h>
 #include <sched.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+
+#ifdef MAJOR_IN_MKDEV
+#  include <sys/mkdev.h>
+#endif
+#ifdef MAJOR_IN_SYSMACROS
+#  include <sys/sysmacros.h>
+#endif
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
