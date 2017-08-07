@@ -406,7 +406,7 @@ static bool _ucx_progress()
 
 	/* check for new messages */
 	while (1) {
-		msg_tag = ucp_tag_probe_nb(ucp_worker, 1, 0xffffffffffffffff,
+		msg_tag = ucp_tag_probe_nb(ucp_worker, 1, 0,
 					   1, &info_tag);
 		if (NULL == msg_tag) {
 			break;
@@ -726,7 +726,7 @@ static int _ucx_send(void *_priv, void *msg)
 			ucp_tag_send_nb(priv->server_ep,
 					(void*)mptr, msize,
 					ucp_dt_make_contig(1),
-					1, send_handle);
+					pmixp_info_nodeid(), send_handle);
 		if (UCS_PTR_IS_ERR(req)) {
 			PMIXP_ERROR("Unable to send UCX message: %s\n",
 				    ucs_status_string(UCS_PTR_STATUS(req)));
