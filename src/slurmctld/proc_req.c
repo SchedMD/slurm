@@ -5315,7 +5315,7 @@ inline static void  _slurm_rpc_set_debug_flags(slurm_msg_t *msg)
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 	slurmctld_lock_t config_write_lock =
-		{ WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
+		{ WRITE_LOCK, READ_LOCK, READ_LOCK, READ_LOCK, READ_LOCK };
 	set_debug_flags_msg_t *request_msg =
 		(set_debug_flags_msg_t *) msg->data;
 	uint64_t debug_flags;

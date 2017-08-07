@@ -47,6 +47,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue with pmi[2|x] when TreeWidth=1.
  -- Correct buffer size used in determining specialized cores to avoid possible
     truncation of core specification and not reserving the specified cores.
+ -- Close race condition on Slurm structures when setting DebugFlags.
 
 * Changes in Slurm 17.02.6
 ==========================
