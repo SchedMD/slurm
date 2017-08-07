@@ -286,6 +286,8 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 {
 	char *type = "";
 	char *err_msg = NULL;
+	int free_tres_corecnt = 0;
+	int free_tres_nodecnt = 0;
 	int temp_int = 0;
 	uint32_t f;
 
@@ -320,7 +322,8 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 			global_edit_error_msg = g_strdup_printf("CoreCnt or CPUCnt is only supported when SelectType includes select/cons_res or SelectTypeParameters includes OTHER_CONS_RES on a Cray.");
 			goto return_error;
 		}
-                if (_parse_resv_core_cnt(resv_msg, (char *)new_text, false,
+                if (_parse_resv_core_cnt(resv_msg, (char *)new_text,
+					 &free_tres_corecnt, false,
 					 &err_msg) == SLURM_ERROR) {
 			global_edit_error_msg = xstrdup(err_msg);
 			xfree(err_msg);
@@ -362,7 +365,8 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 			type = "Midplane Count";
 		else
 			type = "Node Count";
-		if (_parse_resv_node_cnt(resv_msg, (char *)new_text, false,
+		if (_parse_resv_node_cnt(resv_msg, (char *)new_text,
+					 &free_tres_nodecnt, false,
 					 &err_msg) == SLURM_ERROR) {
 			global_edit_error_msg = xstrdup(err_msg);
 			xfree(err_msg);

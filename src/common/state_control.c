@@ -51,16 +51,25 @@ extern int _is_corecnt_supported(void)
 }
 
 extern int _parse_resv_core_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
-				bool from_tres, char **err_msg)
+				int *free_tres_corecnt,	bool from_tres,
+				char **err_msg)
 {
 	char *endptr = NULL, *core_cnt, *tok, *ptrptr = NULL;
 	int node_inx = 0;
+
+	/*
+	 * CoreCnt and TRES=cpu= might appear within the same request,
+	 * so we free the first and realloc the second.
+	 */
+	if (*free_tres_corecnt)
+		xfree(resv_msg_ptr->core_cnt);
 
 	core_cnt = xstrdup(val);
 	tok = strtok_r(core_cnt, ",", &ptrptr);
 	while (tok) {
 		xrealloc(resv_msg_ptr->core_cnt,
 			 sizeof(uint32_t) * (node_inx + 2));
+		*free_tres_corecnt = 1;
 		resv_msg_ptr->core_cnt[node_inx] =
 			strtol(tok, &endptr, 10);
 		if ((endptr == NULL) ||
@@ -76,7 +85,6 @@ extern int _parse_resv_core_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
 						   "Invalid core count %s",
 						   val);
 			}
-			xfree(resv_msg_ptr->core_cnt);
 			xfree(core_cnt);
 			return SLURM_ERROR;
 		}
@@ -90,15 +98,25 @@ extern int _parse_resv_core_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
 }
 
 extern int _parse_resv_node_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
-				bool from_tres, char **err_msg)
+				int *free_tres_nodecnt, bool from_tres,
+				char **err_msg)
 {
 	char *endptr = NULL, *node_cnt, *tok, *ptrptr = NULL;
 	int node_inx = 0;
+
+	/*
+	 * NodeCnt and TRES=node= might appear within the same request,
+	 * so we free the first and realloc the second.
+	 */
+	if (*free_tres_nodecnt)
+		xfree(resv_msg_ptr->node_cnt);
+
 	node_cnt = xstrdup(val);
 	tok = strtok_r(node_cnt, ",", &ptrptr);
 	while (tok) {
 		xrealloc(resv_msg_ptr->node_cnt,
 			sizeof(uint32_t) * (node_inx + 2));
+		*free_tres_nodecnt = 1;
 		resv_msg_ptr->node_cnt[node_inx] =
 			strtol(tok, &endptr, 10);
 		if ((endptr != NULL) &&
@@ -123,7 +141,6 @@ extern int _parse_resv_node_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
 						   "Invalid node count %s",
 						   val);
 			}
-			xfree(resv_msg_ptr->node_cnt);
 			xfree(node_cnt);
 			return SLURM_ERROR;
 		}

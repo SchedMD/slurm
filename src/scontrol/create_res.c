@@ -201,18 +201,20 @@ static int _parse_resv_tres(char *val, resv_desc_msg_t  *resv_msg_ptr,
 			error("CoreCnt or CPUCnt is only supported when SelectType includes select/cons_res or SelectTypeParameters includes OTHER_CONS_RES on a Cray.");
 			goto error;
 		}
-		ret = _parse_resv_core_cnt(resv_msg_ptr, tres_corecnt, true,
+		ret = _parse_resv_core_cnt(resv_msg_ptr, tres_corecnt,
+					   free_tres_corecnt, true,
 					   &err_msg);
+		xfree(tres_corecnt);
 		if (ret != SLURM_SUCCESS) {
 			error("%s", err_msg);
 			xfree(err_msg);
 			goto error;
 		}
-		*free_tres_corecnt = 1;
 	}
 
 	if (tres_nodecnt && tres_nodecnt[0] != '\0') {
-		ret = _parse_resv_node_cnt(resv_msg_ptr, tres_nodecnt, true,
+		ret = _parse_resv_node_cnt(resv_msg_ptr, tres_nodecnt,
+					   free_tres_nodecnt, true,
 					   &err_msg);
 		xfree(tres_nodecnt);
 		if (ret != SLURM_SUCCESS) {
@@ -220,7 +222,6 @@ static int _parse_resv_tres(char *val, resv_desc_msg_t  *resv_msg_ptr,
 			xfree(err_msg);
 			goto error;
 		}
-		*free_tres_nodecnt = 1;
 	}
 
 	if (tres_license && tres_license[0] != '\0') {
@@ -375,8 +376,9 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 		} else if (strncasecmp(tag, "NodeCnt", MAX(taglen,5)) == 0 ||
 			   strncasecmp(tag, "NodeCount", MAX(taglen,5)) == 0) {
 
-			if (_parse_resv_node_cnt(resv_msg_ptr, val, false, &err_msg)
-			    == SLURM_ERROR) {
+			if (_parse_resv_node_cnt(resv_msg_ptr, val,
+						 free_tres_nodecnt, false,
+						 &err_msg) == SLURM_ERROR) {
 				error("%s", err_msg);
 				xfree(err_msg);
 				exit_code = 1;
@@ -395,7 +397,8 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 				return SLURM_ERROR;
 			}
 
-			if (_parse_resv_core_cnt(resv_msg_ptr, val, false,
+			if (_parse_resv_core_cnt(resv_msg_ptr, val,
+						 free_tres_corecnt, false,
 						 &err_msg) == SLURM_ERROR) {
 				error("%s", err_msg);
 				xfree(err_msg);
