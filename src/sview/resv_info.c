@@ -79,7 +79,7 @@ enum {
 };
 
 /* extra field here is for choosing the type of edit you that will
- * take place.  If you choose EDIT_MODEL (means only display a set of
+ * take place. If you choose EDIT_MODEL (means only display a set of
  * known options) create it in function create_model_*.
  */
 
@@ -92,11 +92,11 @@ static char *_initial_page_opts = "Name,Node_Count,Core_Count,NodeList,"
 static display_data_t display_data_resv[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, false, EDIT_NONE,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_NAME,       "Name", false, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_NAME, "Name", false, EDIT_NONE,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_COLOR,      NULL, true, EDIT_COLOR,
+	{G_TYPE_STRING, SORTID_COLOR, NULL, true, EDIT_COLOR,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_ACTION,     "Action", false, EDIT_MODEL,
+	{G_TYPE_STRING, SORTID_ACTION, "Action", false, EDIT_MODEL,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_NODE_CNT,
 #ifdef HAVE_BG
@@ -121,33 +121,33 @@ static display_data_t display_data_resv[] = {
 	 false, EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_TIME_START, "Time Start", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_TIME_END,   "Time End", false, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_TIME_END, "Time End", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_DURATION,   "Duration", false, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_DURATION, "Duration", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_ACCOUNTS,   "Accounts", false, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_ACCOUNTS, "Accounts", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_BURST_BUFFER,  "BurstBuffer", false,
+	{G_TYPE_STRING, SORTID_BURST_BUFFER, "BurstBuffer", false,
 	 EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_LICENSES,   "Licenses", true, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_LICENSES, "Licenses", true, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_USERS,      "Users", false, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_USERS, "Users", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_PARTITION,  "Partition", false, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_PARTITION, "Partition", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_FEATURES,   "Features", false, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_FEATURES, "Features", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_FLAGS,      "Flags", false, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_FLAGS, "Flags", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_POINTER, SORTID_NODE_INX,  NULL, false, EDIT_NONE,
+	{G_TYPE_POINTER, SORTID_NODE_INX, NULL, false, EDIT_NONE,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_INT, SORTID_COLOR_INX,  NULL, false, EDIT_NONE,
+	{G_TYPE_INT, SORTID_COLOR_INX, NULL, false, EDIT_NONE,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_TRES,   "TRES", false, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_TRES, "TRES", false, EDIT_NONE,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_INT,    SORTID_UPDATED,    NULL, false, EDIT_NONE,
+	{G_TYPE_INT, SORTID_UPDATED, NULL, false, EDIT_NONE,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_WATTS,    "Watts", false, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_WATTS, "Watts", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_NONE, -1, NULL, false, EDIT_NONE}
 };
@@ -155,7 +155,7 @@ static display_data_t display_data_resv[] = {
 static display_data_t create_data_resv[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, false, EDIT_NONE,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_NAME,  "Name", false, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_NAME, "Name", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_NODE_CNT,
 #ifdef HAVE_BG
@@ -182,19 +182,19 @@ static display_data_t create_data_resv[] = {
 	{G_TYPE_STRING, SORTID_TIME_START, "Time_Start",
 	 false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_TIME_END,   "Time_End", false, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_TIME_END, "Time_End", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_DURATION,   "Duration", false, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_DURATION, "Duration", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_ACCOUNTS,   "Accounts", false, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_ACCOUNTS, "Accounts", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_BURST_BUFFER,  "BurstBuffer", false,
+	{G_TYPE_STRING, SORTID_BURST_BUFFER, "BurstBuffer", false,
 	 EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_USERS,      "Users", false, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_USERS, "Users", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_PARTITION,  "Partition", false, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_PARTITION, "Partition", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_FEATURES,   "Features", false, EDIT_TEXTBOX,
+	{G_TYPE_STRING, SORTID_FEATURES, "Features", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_FLAGS, "Flags", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
@@ -313,7 +313,7 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		resv_msg->burst_buffer = xstrdup(new_text);
 		type = "burst_buffer";
 		break;
-        case SORTID_CORE_CNT:
+	case SORTID_CORE_CNT:
 		if (cluster_flags & CLUSTER_FLAG_BG)
 			type = "Cnode Count";
 		else
@@ -322,14 +322,14 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 			global_edit_error_msg = g_strdup_printf("CoreCnt or CPUCnt is only supported when SelectType includes select/cons_res or SelectTypeParameters includes OTHER_CONS_RES on a Cray.");
 			goto return_error;
 		}
-                if (_parse_resv_core_cnt(resv_msg, (char *)new_text,
+		if (_parse_resv_core_cnt(resv_msg, (char *)new_text,
 					 &free_tres_corecnt, false,
 					 &err_msg) == SLURM_ERROR) {
 			global_edit_error_msg = xstrdup(err_msg);
 			xfree(err_msg);
 			goto return_error;
-                }
-                break;
+		}
+		break;
 	case SORTID_DURATION:
 		temp_int = time_str2mins((char *)new_text);
 		if (temp_int <= 0)

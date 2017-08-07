@@ -103,7 +103,7 @@ static int _is_configured_tres(char *type)
 
 }
 
-static int _parse_resv_tres(char *val, resv_desc_msg_t  *resv_msg_ptr,
+static int _parse_resv_tres(char *val, resv_desc_msg_t *resv_msg_ptr,
 			    int *free_tres_license, int *free_tres_bb,
 			    int *free_tres_corecnt, int *free_tres_nodecnt)
 {
@@ -253,9 +253,7 @@ error:
  * IN argv - list of arguments
  * IN msg  - a string to append to any error message
  * OUT resv_msg_ptr - struct holding reservation parameters
- * OUT free_user_str - bool indicating that resv_msg_ptr->users should be freed
- * OUT free_acct_str - bool indicating that resv_msg_ptr->accounts should be
- *		       freed
+ * OUT free_* - bool indicating specific member needs to be freed
  * RET 0 on success, -1 on err and prints message
  */
 extern int
@@ -337,7 +335,8 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 			      "updating %.*s.  %s", taglen, tag, msg);
 			return SLURM_ERROR;
 
-		} else if (!strncasecmp(tag, "ReservationName", MAX(taglen, 1))) {
+		} else if (!strncasecmp(tag, "ReservationName",
+			   MAX(taglen, 1))) {
 			resv_msg_ptr->name = val;
 
 		} else if (strncasecmp(tag, "BurstBuffer", MAX(taglen, 2))
@@ -386,8 +385,8 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 			}
 
 		} else if (strncasecmp(tag, "CoreCnt",   MAX(taglen,5)) == 0 ||
-		           strncasecmp(tag, "CoreCount", MAX(taglen,5)) == 0 ||
-		           strncasecmp(tag, "CPUCnt",    MAX(taglen,5)) == 0 ||
+			   strncasecmp(tag, "CoreCount", MAX(taglen,5)) == 0 ||
+			   strncasecmp(tag, "CPUCnt",    MAX(taglen,5)) == 0 ||
 			   strncasecmp(tag, "CPUCount",  MAX(taglen,5)) == 0) {
 
 			/* only have this on a cons_res machine */
@@ -435,7 +434,7 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 			continue;
 		} else {
 			exit_code = 1;
-			error("Unknown parameter %s.  %s", argv[i], msg);
+			error("Unknown parameter %s. %s", argv[i], msg);
 			return SLURM_ERROR;
 		}
 	}
@@ -455,7 +454,7 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 extern int
 scontrol_update_res(int argc, char **argv)
 {
-	resv_desc_msg_t   resv_msg;
+	resv_desc_msg_t resv_msg;
 	int err, ret = 0;
 	int free_user_str = 0, free_acct_str = 0, free_tres_license = 0,
 		free_tres_bb = 0, free_tres_corecnt = 0, free_tres_nodecnt = 0;
@@ -471,7 +470,7 @@ scontrol_update_res(int argc, char **argv)
 
 	if (resv_msg.name == NULL) {
 		exit_code = 1;
-		error("Reservation must be given.  No reservation update.");
+		error("Reservation must be given. No reservation update.");
 		goto SCONTROL_UPDATE_RES_CLEANUP;
 	}
 
@@ -529,28 +528,28 @@ scontrol_create_res(int argc, char **argv)
 
 	if (resv_msg.start_time == (time_t)NO_VAL) {
 		exit_code = 1;
-		error("A start time must be given.  No reservation created.");
+		error("A start time must be given. No reservation created.");
 		goto SCONTROL_CREATE_RES_CLEANUP;
 	}
 	if (resv_msg.end_time == (time_t)NO_VAL &&
 	    resv_msg.duration == (uint32_t)NO_VAL) {
 		exit_code = 1;
-		error("An end time or duration must be given.  "
+		error("An end time or duration must be given. "
 		      "No reservation created.");
 		goto SCONTROL_CREATE_RES_CLEANUP;
 	}
 	if (resv_msg.end_time != (time_t)NO_VAL &&
 	    resv_msg.duration != (uint32_t)NO_VAL &&
-            resv_msg.start_time + resv_msg.duration*60 != resv_msg.end_time) {
+	    resv_msg.start_time + resv_msg.duration*60 != resv_msg.end_time) {
 		exit_code = 1;
-		error("StartTime + Duration does not equal EndTime.  "
+		error("StartTime + Duration does not equal EndTime. "
 		      "No reservation created.");
 		goto SCONTROL_CREATE_RES_CLEANUP;
 	}
 	if (resv_msg.start_time > resv_msg.end_time &&
 	    resv_msg.end_time != (time_t)NO_VAL) {
 		exit_code = 1;
-		error("Start time cannot be after end time.  "
+		error("Start time cannot be after end time. "
 		      "No reservation created.");
 		goto SCONTROL_CREATE_RES_CLEANUP;
 	}
