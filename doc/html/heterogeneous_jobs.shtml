@@ -369,7 +369,9 @@ components of a heterogeneous job.</p>
 
 <p>Heterogeneous jobs are not supported with Slurm's select/serial plugin.</p>
 
-<p>Heterogeneous jobs are not supported Cray ALPS systems.</p>
+<p>Heterogeneous jobs are not supported on Cray ALPS systems.</p>
+
+<p>Heterogeneous jobs are not supported on IBM PE systems.</p>
 
 <h2><a name="sys_admin">System Administrator Information</a></h2>
 
@@ -443,6 +445,6 @@ especially other heterogeneous jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 2 August 2017</p>
+<p style="text-align:center;">Last modified 7 August 2017</p>
 
 <!--#include virtual="footer.txt"-->

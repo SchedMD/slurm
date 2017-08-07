@@ -483,13 +483,13 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 		pthread_join(msg_thread, NULL);
 	}
 
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 extern int launch_p_step_wait(srun_job_t *job, bool got_alloc, opt_t *opt_local,
-			      int pack_offset)
+			      int pack_offset, uint32_t task_offset)
 {
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 extern int launch_p_step_terminate(void)

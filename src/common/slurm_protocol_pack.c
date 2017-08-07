@@ -4604,8 +4604,8 @@ pack_job_step_create_request_msg(job_step_create_request_msg_t * msg,
 		pack8(msg->no_kill, buffer);
 		pack8(msg->overcommit, buffer);
 	} else {
-		error("pack_job_step_create_request_msg: protocol_version "
-		      "%hu not supported", protocol_version);
+		error("%s: protocol_version %hu not supported",
+		      __func__,  protocol_version);
 	}
 
 }
@@ -4737,8 +4737,8 @@ unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 		safe_unpack8(&(tmp_ptr->no_kill), buffer);
 		safe_unpack8(&(tmp_ptr->overcommit), buffer);
 	} else {
-		error("unpack_job_step_create_request_msg: protocol_version "
-		      "%hu not supported", protocol_version);
+		error("%s: protocol_version %hu not supported",
+		      __func__,  protocol_version);
 		goto unpack_error;
 	}
 
