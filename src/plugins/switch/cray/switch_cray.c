@@ -123,6 +123,7 @@ int fini(void)
 
 extern int switch_p_reconfig(void)
 {
+	debug_flags = slurm_get_debug_flags();
 	return SLURM_SUCCESS;
 }
 
