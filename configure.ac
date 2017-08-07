@@ -124,7 +124,7 @@ AC_CHECK_HEADERS(mcheck.h values.h socket.h sys/socket.h  \
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
 AC_HEADER_STDC
-
+AC_HEADER_MAJOR
 
 dnl Checks for structures.
 dnl
