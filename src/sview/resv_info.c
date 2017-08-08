@@ -143,7 +143,7 @@ static display_data_t display_data_resv[] = {
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_INT, SORTID_COLOR_INX, NULL, false, EDIT_NONE,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_TRES, "TRES", false, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_TRES, "TRES", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_INT, SORTID_UPDATED, NULL, false, EDIT_NONE,
 	 refresh_resv, create_model_resv, admin_edit_resv},
@@ -197,6 +197,8 @@ static display_data_t create_data_resv[] = {
 	{G_TYPE_STRING, SORTID_FEATURES, "Features", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_FLAGS, "Flags", false, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_TRES, "TRES", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_WATTS, "Watts", false, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
@@ -286,6 +288,8 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 {
 	char *type = "";
 	char *err_msg = NULL;
+	int free_tres_license = 0;
+	int free_tres_bb = 0;
 	int free_tres_corecnt = 0;
 	int free_tres_nodecnt = 0;
 	int temp_int = 0;
@@ -391,6 +395,16 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 	case SORTID_USERS:
 		resv_msg->users = xstrdup(new_text);
 		type = "users";
+		break;
+	case SORTID_TRES:
+		if (_parse_resv_tres((char *)new_text, resv_msg,
+				     &free_tres_license, &free_tres_bb,
+				     &free_tres_corecnt, &free_tres_nodecnt,
+				     &err_msg) == SLURM_ERROR) {
+			global_edit_error_msg = xstrdup(err_msg);
+			xfree(err_msg);
+			goto return_error;
+		}
 		break;
 	case SORTID_WATTS:
 		resv_msg->resv_watts = _parse_watts((char *) new_text);
