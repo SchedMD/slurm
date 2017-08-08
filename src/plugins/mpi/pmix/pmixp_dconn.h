@@ -228,9 +228,9 @@ static inline int pmixp_dconn_connect(
 	if (SLURM_SUCCESS == rc){
 		dconn->state = PMIXP_DIRECT_CONNECTED;
 	} else {
-		/* drop the state to INIT so we will try again later
-		 * if it will always be failing - we will always use
-		 * SLURM's protocol
+		/*
+		 * Abort the application - we can't do what user requested.
+		 * Make sure to provide enough info
 		 */
 		char *nodename = pmixp_info_job_host(dconn->nodeid);
 		xassert(nodename);
@@ -239,10 +239,12 @@ static inline int pmixp_dconn_connect(
 				    dconn->nodeid);
 			abort();
 		}
-		dconn->state = PMIXP_DIRECT_INIT;
 		PMIXP_ERROR("Cannot establish direct connection to %s (%d)",
 			    nodename, dconn->nodeid);
 		xfree(nodename);
+		pmixp_debug_hang(0); /* enable hang to debug this! */
+		slurm_kill_job_step(pmixp_info_jobid(),
+				    pmixp_info_stepid(), SIGKILL);
 	}
 	return rc;
 }
