@@ -637,8 +637,7 @@ static void _ucx_fini(void *_priv)
 		slurm_mutex_unlock(&_ucx_worker_lock);
 	} else {
 		slurm_mutex_lock(&_ucx_worker_lock);
-		pmixp_rlist_init(&priv->pending, &_free_list,
-				 PMIXP_UCX_LIST_PREALLOC);
+		pmixp_rlist_fini(&priv->pending);
 		slurm_mutex_unlock(&_ucx_worker_lock);
 	}
 	xfree(priv);
@@ -664,8 +663,9 @@ static int _ucx_connect(void *_priv, void *ep_data, size_t ep_len,
 	if (status != UCS_OK) {
 		PMIXP_ERROR("ucp_ep_create failed: %s",
 			    ucs_status_string(status));
-		rc = SLURM_ERROR;
-		goto exit;
+		xfree(priv->ucx_addr);
+		slurm_mutex_unlock(&_ucx_worker_lock);
+		return SLURM_ERROR;
 	}
 	priv->connected = true;
 
@@ -673,7 +673,6 @@ static int _ucx_connect(void *_priv, void *ep_data, size_t ep_len,
 	if (init_msg) {
 		pmixp_rlist_push(&priv->pending, init_msg);
 	}
-exit:
 	slurm_mutex_unlock(&_ucx_worker_lock);
 
 	/* we need to send data while being unlocked */
