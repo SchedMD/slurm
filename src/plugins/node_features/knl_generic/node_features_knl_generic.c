@@ -2,8 +2,9 @@
  *  node_features_knl_generic.c - Plugin for managing Intel KNL state
  *  information on a generic Linux cluster
  *****************************************************************************
- *  Copyright (C) 2016 SchedMD LLC.
+ *  Copyright (C) 2016-2017 SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
+ *             Danny Auble <da@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -122,6 +123,12 @@ slurmctld_config_t slurmctld_config __attribute__((weak_import));
 slurmctld_config_t slurmctld_config;
 #endif
 
+typedef enum {
+	KNL_SYSTEM_TYPE_NOT_SET,
+	KNL_SYSTEM_TYPE_INTEL,
+	KNL_SYSTEM_TYPE_DELL,
+} knl_system_type_t;
+
 /*
  * These variables are required by the burst buffer plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -167,6 +174,7 @@ static bool reconfig = false;
 static time_t shutdown_time = 0;
 static int syscfg_found = -1;
 static char *syscfg_path = NULL;
+static knl_system_type_t knl_system_type = KNL_SYSTEM_TYPE_INTEL;
 static uint32_t ume_check_interval = 0;
 static pthread_mutex_t ume_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t ume_thread = 0;
@@ -186,6 +194,7 @@ static s_p_options_t knl_conf_file_options[] = {
 	{"McPath", S_P_STRING},
 	{"SyscfgPath", S_P_STRING},
 	{"SyscfgTimeout", S_P_UINT32},
+	{"SystemType", S_P_STRING},
 	{"UmeCheckInterval", S_P_UINT32},
 	{NULL}
 };
@@ -414,6 +423,41 @@ static uint16_t _knl_numa_token(char *token)
 		numa_num |= KNL_QUAD;
 
 	return numa_num;
+}
+
+/*
+ * Translate KNL System enum to equivalent string value
+ */
+static char *_knl_system_type_str(knl_system_type_t system_type)
+{
+	switch (system_type) {
+	case KNL_SYSTEM_TYPE_INTEL:
+		return "Intel";
+	case KNL_SYSTEM_TYPE_DELL:
+		return "Dell";
+	case KNL_SYSTEM_TYPE_NOT_SET:
+	default:
+		return "Unknown";
+	}
+}
+
+/*
+ * Given a KNL System token, return its equivalent enum value
+ * token IN - String to scan
+ * RET System enum value
+ */
+static knl_system_type_t _knl_system_type_token(char *token)
+{
+	knl_system_type_t system_type;
+
+	if (!xstrcasecmp("intel", token))
+		system_type = KNL_SYSTEM_TYPE_INTEL;
+	else if (!xstrcasecmp("dell", token))
+		system_type = KNL_SYSTEM_TYPE_DELL;
+	else
+		system_type = KNL_SYSTEM_TYPE_NOT_SET;
+
+	return system_type;
 }
 
 /*
@@ -731,6 +775,13 @@ extern int init(void)
 		}
 		(void) s_p_get_string(&mc_path, "McPath", tbl);
 		(void) s_p_get_string(&syscfg_path, "SyscfgPath", tbl);
+		if (s_p_get_string(&tmp_str, "SystemType", tbl)) {
+			if ((knl_system_type = _knl_system_type_token(tmp_str))
+			    == KNL_SYSTEM_TYPE_NOT_SET)
+				fatal("knl_generic.conf: Invalid SystemType=%s.",
+				      tmp_str);
+			xfree(tmp_str);
+		}
 		(void) s_p_get_uint32(&syscfg_timeout, "SyscfgTimeout", tbl);
 		(void) s_p_get_uint32(&ume_check_interval, "UmeCheckInterval",
 				      tbl);
@@ -775,6 +826,7 @@ extern int init(void)
 		info("McPath=%s", mc_path);
 		info("SyscfgPath=%s", syscfg_path);
 		info("SyscfgTimeout=%u msec", syscfg_timeout);
+		info("SystemType=%s", _knl_system_type_str(knl_system_type));
 		info("UmeCheckInterval=%u", ume_check_interval);
 		xfree(allow_mcdram_str);
 		xfree(allow_numa_str);

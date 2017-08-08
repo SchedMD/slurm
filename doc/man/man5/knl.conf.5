@@ -167,6 +167,13 @@ Timeout for \fBsyscfg\fR program in milliseconds.
 Default value is 1000 milliseconds.
 
 .TP
+\fBSystemType\fR
+Used to distinguish the flavor of knl we are dealing with.
+Possible options are "Dell" and "Intel".
+The default value is "Intel".
+This parameter is used only by the "knl_generic" plugin.
+
+.TP
 \fBUmeCheckInterval\fR
 Interval, in microseconds, between checks for Uncorrectable Memory Errors (UME).
 If such errors are detected, the node will be set to a DOWN state and the
