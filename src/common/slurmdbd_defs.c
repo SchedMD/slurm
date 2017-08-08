@@ -3702,6 +3702,7 @@ extern void slurmdbd_pack_list_msg(dbd_list_msg_t *msg,
 				   Buf buffer)
 {
 	uint32_t count = 0;
+	uint32_t header_position;
 	ListIterator itr = NULL;
 	void *object = NULL;
 	void (*my_function) (void *object, uint16_t rpc_version, Buf buffer);
@@ -3779,16 +3780,26 @@ extern void slurmdbd_pack_list_msg(dbd_list_msg_t *msg,
 	}
 
 	if (msg->my_list) {
+		header_position = get_buf_offset(buffer);
 		count = list_count(msg->my_list);
 		pack32(count, buffer);
 	} else {
 		// to let user know there wasn't a list (error)
-		pack32((uint32_t)-1, buffer);
+		pack32(NO_VAL, buffer);
 	}
+
 	if (count) {
 		itr = list_iterator_create(msg->my_list);
 		while ((object = list_next(itr))) {
 			(*(my_function))(object, rpc_version, buffer);
+			if (size_buf(buffer) > REASONABLE_BUF_SIZE) {
+				error("%s: size limit exceeded", __func__);
+				/* rewind buffer, pack NO_VAL as count instead */
+				set_buf_offset(buffer, header_position);
+				pack32(NO_VAL, buffer);
+				msg->return_code = ESLURM_RESULT_TOO_LARGE;
+				break;
+			}
 		}
 		list_iterator_destroy(itr);
 	}
@@ -3900,11 +3911,12 @@ extern int slurmdbd_unpack_list_msg(dbd_list_msg_t **msg, uint16_t rpc_version,
 	*msg = msg_ptr;
 
 	safe_unpack32(&count, buffer);
-	if ((int)count > -1) {
-		/* here we are looking to make the list if -1 or
-		   higher than 0.  If -1 we don't want to have the
-		   list be NULL meaning an error occured.
-		*/
+	if (count != NO_VAL) {
+		/*
+		 * Build the list for zero or more objects. If NO_VAL
+		 * was packed this indicates an error, and no list is
+		 * created.
+		 */
 		msg_ptr->my_list = list_create((*(my_destroy)));
 		for(i=0; i<count; i++) {
 			if (((*(my_function))(&object, rpc_version, buffer))
@@ -3916,7 +3928,7 @@ extern int slurmdbd_unpack_list_msg(dbd_list_msg_t **msg, uint16_t rpc_version,
 
 	safe_unpack32(&msg_ptr->return_code, buffer);
 
-	return SLURM_SUCCESS;
+	return msg_ptr->return_code;
 
 unpack_error:
 	slurmdbd_free_list_msg(msg_ptr);

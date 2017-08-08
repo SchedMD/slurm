@@ -446,6 +446,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Unacceptable name given. (No '.' in name allowed)"   },
 	{ ESLURM_OVER_ALLOCATE,
 	  "You can not allocate more than 100% of a resource"	},
+	{ ESLURM_RESULT_TOO_LARGE,
+	  "Query result exceeds size limit"			},
 
 	/* Federation Errors */
 	{ ESLURM_FED_CLUSTER_MAX_CNT,

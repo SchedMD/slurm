@@ -2889,7 +2889,7 @@ extern List jobacct_storage_p_get_jobs_cond(void *db_conn, uid_t uid,
 	rc = slurm_send_recv_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &req, &resp);
 
 	if (rc != SLURM_SUCCESS)
-		error("slurmdbd: DBD_GET_JOBS_COND failure: %m");
+		error("slurmdbd: DBD_GET_JOBS_COND failure: %s", slurm_strerror(rc));
 	else if (resp.msg_type == PERSIST_RC) {
 		persist_rc_msg_t *msg = resp.data;
 		if (msg->rc == SLURM_SUCCESS) {
