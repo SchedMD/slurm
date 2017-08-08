@@ -1481,7 +1481,7 @@ char **env_array_create(void)
 {
 	char **env_array;
 
-	env_array = (char **)xmalloc(sizeof(char **));
+	env_array = (char **)xmalloc(sizeof(char *));
 	env_array[0] = NULL;
 
 	return env_array;
