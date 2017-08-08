@@ -182,6 +182,9 @@ copied from the node's "Features" configuration in "slurm.conf" to both the
 available and active feature fields and not modified by the NodeFeatures
 plugin.</p>
 
+<p>NOTE: For Dell KNL systems you must also include the<i>SystemType=Dell</i>
+option for successful operation.</p>
+
 <p>Slurm version 16.05 does not support the concept of multiple NUMA nodes
 within a single socket. If a KNL node is booted with multiple NUMA, then each
 NUMA node will appear in Slurm as a separate socket.

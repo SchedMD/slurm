@@ -318,7 +318,8 @@ static uint16_t _knl_mcdram_token(char *token)
 		mcdram_num = KNL_CACHE;
 	else if (!xstrcasecmp(token, "hybrid"))
 		mcdram_num = KNL_HYBRID;
-	else if (!xstrcasecmp(token, "flat"))
+	else if (!xstrcasecmp(token, "flat") ||
+		 !xstrcasecmp(token, "memory"))
 		mcdram_num = KNL_FLAT;
 	else if (!xstrcasecmp(token, "equal"))
 		mcdram_num = KNL_EQUAL;
@@ -937,6 +938,11 @@ extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 		argv[3] = "Cluster Mode";
 		argv[4] = NULL;
 		break;
+	case KNL_SYSTEM_TYPE_DELL:
+		argv[0] = "syscfg";
+		argv[1] = "--SystemMemoryModel";
+		argv[2] = NULL;
+		break;
 	default:
 		/* This should never happen */
 		error("%s: Unknown SystemType. %d", __func__, knl_system_type);
@@ -958,6 +964,10 @@ extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 		case KNL_SYSTEM_TYPE_INTEL:
 			tok = strstr(resp_msg, "Current Value : ");
 			len = 16;
+			break;
+		case KNL_SYSTEM_TYPE_DELL:
+			tok = strstr(resp_msg, "SystemMemoryModel=");
+			len = 18;
 			break;
 		default:
 			/* already handled above, should never get here */
@@ -982,6 +992,27 @@ extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 				cur_sep = ",";
 			}
 		}
+
+		switch (knl_system_type) {
+		case KNL_SYSTEM_TYPE_DELL:
+			argv[0] = "syscfg";
+			argv[1] = "-h";
+			argv[2] = "--SystemMemoryModel";
+			argv[3] = NULL;
+
+			xfree(resp_msg);
+			resp_msg = _run_script(syscfg_path, argv, &status);
+			if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+				error("%s: syscfg (get cluster mode) status:%u response:%s",
+				      __func__, status, resp_msg);
+			}
+			if (resp_msg == NULL)
+				info("%s: syscfg -h --SystemMemoryModel returned no information", __func__);
+			break;
+		default:
+			break;
+		}
+
 		if (xstrcasestr(resp_msg, "All2All")) {
 			xstrfmtcat(avail_states, "%s%s", avail_sep, "a2a");
 			avail_sep = ",";
@@ -1013,6 +1044,11 @@ extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 		argv[3] = "Memory Mode";
 		argv[4] = NULL;
 		break;
+	case KNL_SYSTEM_TYPE_DELL:
+		argv[0] = "syscfg";
+		argv[1] = "--ProcEmbMemMode";
+		argv[2] = NULL;
+		break;
 	default:
 		/* already handled above, should never get here */
 		break;
@@ -1032,6 +1068,10 @@ extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 			tok = strstr(resp_msg, "Current Value : ");
 			len = 16;
 			break;
+		case KNL_SYSTEM_TYPE_DELL:
+			tok = strstr(resp_msg, "ProcEmbMemMode=");
+			len = 15;
+			break;
 		default:
 			/* already handled above, should never get here */
 			break;
@@ -1040,7 +1080,8 @@ extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 			tok += len;
 			if (!strncasecmp(tok, "Cache", 3)) {
 				xstrfmtcat(cur_state, "%s%s", cur_sep, "cache");
-			} else if (!strncasecmp(tok, "Flat", 3)) {
+			} else if (!strncasecmp(tok, "Flat", 3) ||
+				   !strncasecmp(tok, "Memory", 3)) {
 				xstrfmtcat(cur_state, "%s%s", cur_sep, "flat");
 			} else if (!strncasecmp(tok, "Hybrid", 3)) {
 				xstrfmtcat(cur_state, "%s%s", cur_sep, "hybrid");
@@ -1050,11 +1091,33 @@ extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 				xstrfmtcat(cur_state, "%s%s", cur_sep, "auto");
 			}
 		}
+
+		switch (knl_system_type) {
+		case KNL_SYSTEM_TYPE_DELL:
+			argv[0] = "syscfg";
+			argv[1] = "-h";
+			argv[2] = "--ProcEmbMemMode";
+			argv[3] = NULL;
+
+			xfree(resp_msg);
+			resp_msg = _run_script(syscfg_path, argv, &status);
+			if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+				error("%s: syscfg (get memory mode) status help:%u response:%s",
+				      __func__, status, resp_msg);
+			}
+			if (resp_msg == NULL)
+				info("%s: syscfg -h returned no information", __func__);
+			break;
+		default:
+			break;
+		}
+
 		if (xstrcasestr(resp_msg, "Cache")) {
 			xstrfmtcat(avail_states, "%s%s", avail_sep, "cache");
 			avail_sep = ",";
 		}
-		if (xstrcasestr(resp_msg, "Flat")) {
+		if (xstrcasestr(resp_msg, "Flat") ||
+		    xstrcasestr(resp_msg, "Memory")) {
 			xstrfmtcat(avail_states, "%s%s", avail_sep, "flat");
 			avail_sep = ",";
 		}
@@ -1213,7 +1276,7 @@ static char *_find_key_val(char *key, char *resp_msg)
  * RET error code */
 extern int node_features_p_node_set(char *active_features)
 {
-	char *resp_msg, *argv[10];
+	char *resp_msg, *argv[10], tmp[100];
 	char *key;
 	int error_code = SLURM_SUCCESS, status = 0;
 	char *mcdram_mode = NULL, *numa_mode = NULL;
@@ -1242,6 +1305,11 @@ extern int node_features_p_node_set(char *active_features)
 		argv[3] = "Cluster Mode";
 		argv[4] = NULL;
 		break;
+	case KNL_SYSTEM_TYPE_DELL:
+		argv[0] = "syscfg";
+		argv[1] = "--SystemMemoryModel";
+		argv[2] = NULL;
+		break;
 	default:
 		/* This should never happen */
 		error("%s: Unknown SystemType. %d", __func__, knl_system_type);
@@ -1269,7 +1337,15 @@ extern int node_features_p_node_set(char *active_features)
 			key = "SNC-4";
 		else
 			key = NULL;
-		numa_mode = _find_key_val(key, resp_msg);
+		switch (knl_system_type) {
+		case KNL_SYSTEM_TYPE_INTEL:
+			numa_mode = _find_key_val(key, resp_msg);
+			break;
+		case KNL_SYSTEM_TYPE_DELL:
+			numa_mode = xstrdup(key);
+		default:
+			break;
+		}
 		xfree(resp_msg);
 	}
 
@@ -1284,6 +1360,13 @@ extern int node_features_p_node_set(char *active_features)
 			argv[4] = "Cluster Mode";
 			argv[5] = numa_mode;
 			argv[6] = NULL;
+			break;
+		case KNL_SYSTEM_TYPE_DELL:
+			snprintf(tmp, sizeof(tmp),
+				 "--SystemMemoryModel=%s", numa_mode);
+			argv[0] = "syscfg";
+			argv[1] = tmp;
+			argv[2] = NULL;
 			break;
 		default:
 			/* already handled above, should never get here */
@@ -1310,6 +1393,11 @@ extern int node_features_p_node_set(char *active_features)
 		argv[3] = "Memory Mode";
 		argv[4] = NULL;
 		break;
+	case KNL_SYSTEM_TYPE_DELL:
+		argv[0] = "syscfg";
+		argv[1] = "--ProcEmbMemMode";
+		argv[2] = NULL;
+		break;
 	default:
 		/* already handled above, should never get here */
 		break;
@@ -1327,7 +1415,16 @@ extern int node_features_p_node_set(char *active_features)
 		if (strstr(active_features, "cache"))
 			key = "Cache";
 		else if (strstr(active_features, "flat"))
-			key = "Flat";
+			switch (knl_system_type) {
+			case KNL_SYSTEM_TYPE_INTEL:
+				key = "Flat";
+				break;
+			case KNL_SYSTEM_TYPE_DELL:
+				key = "Memory";
+				break;
+			default:
+				break;
+			}
 		else if (strstr(active_features, "hybrid"))
 			key = "Hybrid";
 		else if (strstr(active_features, "equal"))
@@ -1336,7 +1433,16 @@ extern int node_features_p_node_set(char *active_features)
 			key = "Auto";
 		else
 			key = NULL;
-		mcdram_mode = _find_key_val(key, resp_msg);
+
+		switch (knl_system_type) {
+		case KNL_SYSTEM_TYPE_INTEL:
+			mcdram_mode = _find_key_val(key, resp_msg);
+			break;
+		case KNL_SYSTEM_TYPE_DELL:
+			mcdram_mode = xstrdup(key);
+		default:
+			break;
+		}
 		xfree(resp_msg);
 	}
 
@@ -1351,6 +1457,13 @@ extern int node_features_p_node_set(char *active_features)
 			argv[4] = "Memory Mode";
 			argv[5] = mcdram_mode;
 			argv[6] = NULL;
+			break;
+		case KNL_SYSTEM_TYPE_DELL:
+			snprintf(tmp, sizeof(tmp),
+				 "--ProcEmbMemMode=%s", mcdram_mode);
+			argv[0] = "syscfg";
+			argv[1] = tmp;
+			argv[2] = NULL;
 			break;
 		default:
 			/* already handled above, should never get here */

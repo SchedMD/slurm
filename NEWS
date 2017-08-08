@@ -51,6 +51,8 @@ documents those changes that are of interest to users and administrators.
  -- Make it so the cray/switch plugin grabs new DebugFlags on a reconfigure.
  -- Fix incorrect lock levels when creating or updating a reservation.
  -- Fix overlapping reservation resize.
+ -- Add logic to help support Dell KNL systems where syscfg is different than
+    the normal Intel syscfg.
 
 * Changes in Slurm 17.02.6
 ==========================
