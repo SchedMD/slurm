@@ -912,6 +912,7 @@ extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 	char *avail_states = NULL, *cur_state = NULL;
 	char *resp_msg, *argv[10], *avail_sep = "", *cur_sep = "", *tok;
 	int status = 0;
+	int len;
 
 	if (!syscfg_path || !avail_modes || !current_mode)
 		return;
@@ -928,11 +929,21 @@ extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 		return;
 	}
 
-	argv[0] = "syscfg";
-	argv[1] = "/d";
-	argv[2] = "BIOSSETTINGS";
-	argv[3] = "Cluster Mode";
-	argv[4] = NULL;
+	switch (knl_system_type) {
+	case KNL_SYSTEM_TYPE_INTEL:
+		argv[0] = "syscfg";
+		argv[1] = "/d";
+		argv[2] = "BIOSSETTINGS";
+		argv[3] = "Cluster Mode";
+		argv[4] = NULL;
+		break;
+	default:
+		/* This should never happen */
+		error("%s: Unknown SystemType. %d", __func__, knl_system_type);
+		*avail_modes = NULL;
+		*current_mode = NULL;
+		return;
+	}
 	resp_msg = _run_script(syscfg_path, argv, &status);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 		error("%s: syscfg (get cluster mode) status:%u response:%s",
@@ -941,10 +952,19 @@ extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 	if (resp_msg == NULL) {
 		info("%s: syscfg returned no information", __func__);
 	} else {
+		tok = NULL;
 		_log_script_argv(argv, resp_msg);
-		tok = strstr(resp_msg, "Current Value : ");
+		switch (knl_system_type) {
+		case KNL_SYSTEM_TYPE_INTEL:
+			tok = strstr(resp_msg, "Current Value : ");
+			len = 16;
+			break;
+		default:
+			/* already handled above, should never get here */
+			break;
+		}
 		if (tok) {
-			tok += 16;
+			tok += len;
 			if (!strncasecmp(tok, "All2All", 3)) {
 				cur_state = xstrdup("a2a");
 				cur_sep = ",";
@@ -985,11 +1005,18 @@ extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 		xfree(resp_msg);
 	}
 
-	argv[0] = "syscfg";
-	argv[1] = "/d";
-	argv[2] = "BIOSSETTINGS";
-	argv[3] = "Memory Mode";
-	argv[4] = NULL;
+	switch (knl_system_type) {
+	case KNL_SYSTEM_TYPE_INTEL:
+		argv[0] = "syscfg";
+		argv[1] = "/d";
+		argv[2] = "BIOSSETTINGS";
+		argv[3] = "Memory Mode";
+		argv[4] = NULL;
+		break;
+	default:
+		/* already handled above, should never get here */
+		break;
+	}
 	resp_msg = _run_script(syscfg_path, argv, &status);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 		error("%s: syscfg (get memory mode) status:%u response:%s",
@@ -998,10 +1025,19 @@ extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 	if (resp_msg == NULL) {
 		info("%s: syscfg returned no information", __func__);
 	} else {
+		tok = NULL;
 		_log_script_argv(argv, resp_msg);
-		tok = strstr(resp_msg, "Current Value : ");
+		switch (knl_system_type) {
+		case KNL_SYSTEM_TYPE_INTEL:
+			tok = strstr(resp_msg, "Current Value : ");
+			len = 16;
+			break;
+		default:
+			/* already handled above, should never get here */
+			break;
+		}
 		if (tok) {
-			tok += 16;
+			tok += len;
 			if (!strncasecmp(tok, "Cache", 3)) {
 				xstrfmtcat(cur_state, "%s%s", cur_sep, "cache");
 			} else if (!strncasecmp(tok, "Flat", 3)) {
@@ -1074,7 +1110,7 @@ extern int node_features_p_job_valid(char *job_features)
 	    strchr(job_features, '|') ||
 	    strchr(job_features, '*'))
 		return ESLURM_INVALID_KNL;
-	
+
 	job_mcdram = _knl_mcdram_parse(job_features, "&,");
 	mcdram_cnt = _knl_mcdram_bits_cnt(job_mcdram);
 	if (mcdram_cnt > 1)			/* Multiple MCDRAM options */
@@ -1198,11 +1234,19 @@ extern int node_features_p_node_set(char *active_features)
 	}
 
 	/* Identify available Cluster/NUMA modes */
-	argv[0] = "syscfg";
-	argv[1] = "/d";
-	argv[2] = "BIOSSETTINGS";
-	argv[3] = "Cluster Mode";
-	argv[4] = NULL;
+	switch (knl_system_type) {
+	case KNL_SYSTEM_TYPE_INTEL:
+		argv[0] = "syscfg";
+		argv[1] = "/d";
+		argv[2] = "BIOSSETTINGS";
+		argv[3] = "Cluster Mode";
+		argv[4] = NULL;
+		break;
+	default:
+		/* This should never happen */
+		error("%s: Unknown SystemType. %d", __func__, knl_system_type);
+		return SLURM_ERROR;
+	}
 	resp_msg = _run_script(syscfg_path, argv, &status);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 		error("%s: syscfg (get cluster mode) status:%u response:%s",
@@ -1231,13 +1275,20 @@ extern int node_features_p_node_set(char *active_features)
 
 	/* Reset current Cluster/NUMA mode */
 	if (numa_mode) {
-		argv[0] = "syscfg";
-		argv[1] = "/bcs";
-		argv[2] = "";
-		argv[3] = "BIOSSETTINGS";
-		argv[4] = "Cluster Mode";
-		argv[5] = numa_mode;
-		argv[6] = NULL;
+		switch (knl_system_type) {
+		case KNL_SYSTEM_TYPE_INTEL:
+			argv[0] = "syscfg";
+			argv[1] = "/bcs";
+			argv[2] = "";
+			argv[3] = "BIOSSETTINGS";
+			argv[4] = "Cluster Mode";
+			argv[5] = numa_mode;
+			argv[6] = NULL;
+			break;
+		default:
+			/* already handled above, should never get here */
+			break;
+		}
 		resp_msg = _run_script(syscfg_path, argv, &status);
 		if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 			error("%s: syscfg (set cluster mode) status:%u response:%s",
@@ -1251,11 +1302,18 @@ extern int node_features_p_node_set(char *active_features)
 	}
 
 	/* Identify available Memory/MCDRAM modes */
-	argv[0] = "syscfg";
-	argv[1] = "/d";
-	argv[2] = "BIOSSETTINGS";
-	argv[3] = "Memory Mode";
-	argv[4] = NULL;
+	switch (knl_system_type) {
+	case KNL_SYSTEM_TYPE_INTEL:
+		argv[0] = "syscfg";
+		argv[1] = "/d";
+		argv[2] = "BIOSSETTINGS";
+		argv[3] = "Memory Mode";
+		argv[4] = NULL;
+		break;
+	default:
+		/* already handled above, should never get here */
+		break;
+	}
 	resp_msg = _run_script(syscfg_path, argv, &status);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 		error("%s: syscfg (get memory mode) status:%u response:%s",
@@ -1284,13 +1342,21 @@ extern int node_features_p_node_set(char *active_features)
 
 	/* Reset current Memory/MCDRAM mode */
 	if (mcdram_mode) {
-		argv[0] = "syscfg";
-		argv[1] = "/bcs";
-		argv[2] = "";
-		argv[3] = "BIOSSETTINGS";
-		argv[4] = "Memory Mode";
-		argv[5] = mcdram_mode;
-		argv[6] = NULL;
+		switch (knl_system_type) {
+		case KNL_SYSTEM_TYPE_INTEL:
+			argv[0] = "syscfg";
+			argv[1] = "/bcs";
+			argv[2] = "";
+			argv[3] = "BIOSSETTINGS";
+			argv[4] = "Memory Mode";
+			argv[5] = mcdram_mode;
+			argv[6] = NULL;
+			break;
+		default:
+			/* already handled above, should never get here */
+			break;
+		}
+
 		resp_msg = _run_script(syscfg_path, argv, &status);
 		if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 			error("%s: syscfg (set memory mode) status:%u response:%s",
