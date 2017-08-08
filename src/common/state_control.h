@@ -76,4 +76,17 @@ extern int _parse_resv_node_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
 				int *free_tres_nodecnt, bool from_tres,
 				char **err_msg);
 
+
+/*
+ * Parse and process reservation request option TRES=
+ * IN val - TRES value to parse
+ * IN/OUT resv_msg_ptr - msg whose members might be modified
+ * IN/OUT free_tres_* - set to 1 if caller needs to free the specific member
+ * OUT err_msg - set to an explanation of failure, if any. Don't set if NULL
+ */
+extern int _parse_resv_tres(char *val, resv_desc_msg_t *resv_msg_ptr,
+			    int *free_tres_license, int *free_tres_bb,
+			    int *free_tres_corecnt, int *free_tres_nodecnt,
+			    char **err_msg);
+
 #endif /* !_STATE_CONTROL_H */
