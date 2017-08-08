@@ -40,6 +40,11 @@
 #include "slurm/slurm.h"
 
 /*
+ * RET SLURM_SUCCESS if 'type' is a configured TRES.
+ */
+extern int _is_configured_tres(char *type);
+
+/*
  * RET SLURM_SUCCESS if SelectType includes select/cons_res or if
  * SelectTypeParameters includes OTHER_CONS_RES on a Cray.
  */

@@ -39,6 +39,32 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+extern int _is_configured_tres(char *type)
+{
+	int i, cc;
+	int rc = SLURM_ERROR;
+	assoc_mgr_info_request_msg_t req;
+	assoc_mgr_info_msg_t *msg = NULL;
+
+	memset(&req, 0, sizeof(assoc_mgr_info_request_msg_t));
+	cc = slurm_load_assoc_mgr_info(&req, &msg);
+	if (cc != SLURM_PROTOCOL_SUCCESS) {
+		slurm_perror("slurm_load_assoc_mgr_info error");
+		goto cleanup;
+	}
+
+	for (i = 0; i < msg->tres_cnt; ++i) {
+		if (!xstrcasecmp(msg->tres_names[i], type)) {
+			rc = SLURM_SUCCESS;
+			goto cleanup;
+		}
+	}
+
+cleanup:
+	slurm_free_assoc_mgr_info_msg(msg);
+	return rc;
+}
+
 extern int _is_corecnt_supported(void)
 {
 	uint32_t select_type = slurmdb_setup_plugin_id_select();

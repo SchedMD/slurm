@@ -74,35 +74,6 @@ static char * _process_plus_minus(char plus_or_minus, char *src)
 	return ret;
 }
 
-/* -1 = error, 0 = is configured, 1 = isn't configured */
-static int _is_configured_tres(char *type)
-{
-
-	int i, cc;
-	assoc_mgr_info_request_msg_t req;
-	assoc_mgr_info_msg_t *msg = NULL;
-
-	memset(&req, 0, sizeof(assoc_mgr_info_request_msg_t));
-	cc = slurm_load_assoc_mgr_info(&req, &msg);
-	if (cc != SLURM_PROTOCOL_SUCCESS) {
-		slurm_perror("slurm_load_assoc_mgr_info error");
-		slurm_free_assoc_mgr_info_msg(msg);
-		return SLURM_ERROR;
-	}
-
-	for (i = 0; i < msg->tres_cnt; ++i) {
-		if (!xstrcasecmp(msg->tres_names[i], type)) {
-			slurm_free_assoc_mgr_info_msg(msg);
-			return SLURM_SUCCESS;
-		}
-	}
-
-	error("'%s' is not a configured TRES", type);
-	slurm_free_assoc_mgr_info_msg(msg);
-	return SLURM_ERROR;
-
-}
-
 static int _parse_resv_tres(char *val, resv_desc_msg_t *resv_msg_ptr,
 			    int *free_tres_license, int *free_tres_bb,
 			    int *free_tres_corecnt, int *free_tres_nodecnt)
@@ -137,8 +108,11 @@ static int _parse_resv_tres(char *val, resv_desc_msg_t *resv_msg_ptr,
 		} else
 			type = compound;
 
-		if (_is_configured_tres(compound) < 0)
+		if (_is_configured_tres(compound) != SLURM_SUCCESS) {
+			error("couldn't identify configured TRES '%s'",
+			      compound);
 			goto error;
+		}
 
 		if (!xstrcasecmp(type, "license")) {
 			if (tres_license && tres_license[0] != '\0')
