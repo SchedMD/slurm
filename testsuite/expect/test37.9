@@ -257,10 +257,8 @@ if {[test_federation_setup]} {
 	exit 0
 }
 
-if {[test_cluster_up $fedc1] ||
-    [test_cluster_up $fedc2] ||
-    [test_cluster_up $fedc3]} {
-	end_it 1
+if {[test_all_up]} {
+	exit 0
 }
 
 set user_name [get_my_user_name]
@@ -446,7 +444,7 @@ squeue "-s -O jobid,stepid,cluster " "$x\\s+$y\\s+$z"
 squeue "-s -O jobid,stepid,cluster -Scluster " "$x1\\s+$y1\\s+$z1"
 squeue "-s -O jobid,stepid,cluster -S-cluster " "$z1\\s+$y1\\s+$x1"
 squeue "-O jobid,stepid,cluster -Scluster " "squeue: error: Invalid job format specification: stepid"
-squeue "-O jobid,cluster -Scluster " "$a$b$c"
+#squeue "-O jobid,cluster -Scluster " "$a$b$c"
 squeue "-O jobid,cluster -S-cluster " "$c$b$a"
 
 #verify that -M<cluster> implies --local

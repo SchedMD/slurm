@@ -224,10 +224,8 @@ if {[test_federation_setup]} {
 	exit 0
 }
 
-if {[test_cluster_up $fedc1] ||
-    [test_cluster_up $fedc2] ||
-    [test_cluster_up $fedc3]} {
-	end_it 1
+if {[test_all_up]} {
+	exit 0
 }
 
 set user_name [get_my_user_name]
@@ -258,7 +256,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "^\\s+Feature\\s+=\\s+fa" {
+	-re "^\\s*Feature\\s*=\\s*fa" {
 		incr matches
 		exp_continue
 	}
@@ -266,7 +264,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "^\\s+$fedc1$eol" {
+	-re "^\\s*$fedc1$eol" {
 		incr matches
 		exp_continue
 	}
@@ -291,7 +289,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "^\\s+Feature\\s+=\\s+fb" {
+	-re "^\\s*Feature\\s*=\\s*fb" {
 		incr matches
 		exp_continue
 	}
@@ -299,7 +297,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "^\\s+$fedc2$eol" {
+	-re "^\\s*$fedc2$eol" {
 		incr matches
 		exp_continue
 	}
@@ -325,7 +323,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "^\\s+Feature\\s+=\\s+fc" {
+	-re "^\\s*Feature\\s*=\\s*fc" {
 		incr matches
 		exp_continue
 	}
@@ -333,7 +331,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "^\\s+$fedc3$eol" {
+	-re "^\\s*$fedc3$eol" {
 		incr matches
 		exp_continue
 	}
@@ -366,18 +364,18 @@ set jid([wait_for_fed_job $ji2 RUNNING $fedc1,$fedc2,$fedc3]) $ji2
 set jid(PD) [sbatch]
 wait_for_fed_job $jid(PD) PENDING $fedc1,$fedc2,$fedc3
 
-set regpd "\\s+$jid(PD).+PD.+$eol"
-set reg1a "\\s+$jid($fedc1).+R.+$eol"
-set reg1b "\\s+$jid($fedc2).+RV.+$eol"
-set reg1c "\\s+$jid($fedc3).+RV.+$eol"
-set reg2 "\\s+$jid($fedc2).+R.+$eol"
-set reg3 "\\s+$jid($fedc3).+R.+$eol"
+set regpd "\\s*$jid(PD).+PD.+$eol"
+set reg1a "\\s*$jid($fedc1).+R.+$eol"
+set reg1b "\\s*$jid($fedc2).+RV.+$eol"
+set reg1c "\\s*$jid($fedc3).+RV.+$eol"
+set reg2 "\\s*$jid($fedc2).+R.+$eol"
+set reg3 "\\s*$jid($fedc3).+R.+$eol"
 
 set regs "$regpd $reg1a $reg1b $reg1c $reg2 $reg3"
 
-set regf1 "CLUSTER: $fedc1\\s+$regpd$reg1a\\s*($reg1b|$reg1c){2}$eol"
-set regf2 "CLUSTER: $fedc2\\s+$regpd$reg2$eol"
-set regf3 "CLUSTER: $fedc3\\s+$regpd$reg3"
+set regf1 "CLUSTER: $fedc1\\s*$regpd$reg1a\\s*($reg1b|$reg1c){2}$eol"
+set regf2 "CLUSTER: $fedc2\\s*$regpd$reg2$eol"
+set regf3 "CLUSTER: $fedc3\\s*$regpd$reg3"
 
 set regex "$regf1$regf2$regf3"
 
@@ -424,12 +422,12 @@ set ji3 [sbatch]
 set jid(PD) $ji3
 wait_for_fed_job $ji3 PENDING $fedc1,$fedc2,$fedc3
 
-set regpd "\\s+$jid(PD).+PD.+$eol"
-set reg1a "\\s+$jid($fedc1).+R.+$eol"
-set reg1b "\\s+$jid($fedc2).+RV.+$eol"
-set reg1c "\\s+$jid($fedc3).+RV.+$eol"
-set reg2 "\\s+$jid($fedc2).+R.+$eol"
-set reg3 "\\s+$jid($fedc3).+R.+$eol"
+set regpd "\\s*$jid(PD).+PD.+$eol"
+set reg1a "\\s*$jid($fedc1).+R.+$eol"
+set reg1b "\\s*$jid($fedc2).+RV.+$eol"
+set reg1c "\\s*$jid($fedc3).+RV.+$eol"
+set reg2 "\\s*$jid($fedc2).+R.+$eol"
+set reg3 "\\s*$jid($fedc3).+R.+$eol"
 
 set regs "$regpd $reg1a $reg1b $reg1c $reg2 $reg3"
 
@@ -479,11 +477,11 @@ set ji2 [sbatch]
 set cid($ji2)  [wait_for_fed_job $ji2 RUNNING $fedc1,$fedc2,$fedc3]
 set jid($cid($ji2)) $ji2
 
-set reg1a "\\s+$jid($fedc1).+R.+$eol"
-set reg1b "\\s+$jid($fedc2).+RV.+$eol"
-set reg1c "\\s+$jid($fedc3).+RV.+$eol"
-set reg2 "\\s+$jid($fedc2).+R.+$eol"
-set reg3 "\\s+$jid($fedc3).+R.+$eol"
+set reg1a "\\s*$jid($fedc1).+R.+$eol"
+set reg1b "\\s*$jid($fedc2).+RV.+$eol"
+set reg1c "\\s*$jid($fedc3).+RV.+$eol"
+set reg2 "\\s*$jid($fedc2).+R.+$eol"
+set reg3 "\\s*$jid($fedc3).+R.+$eol"
 
 set regs "$reg1a $reg1b $reg1c $reg2 $reg3"
 
@@ -529,12 +527,12 @@ set ji3 [sbatch]
 set jid(PD) $ji3
 wait_for_fed_job $ji3 PENDING $fedc1,$fedc2,$fedc3
 
-set regpd "\\s+$jid(PD).+PD.+$eol"
-set reg1a "\\s+$jid($fedc1).+R.+$eol"
-set reg1b "\\s+$jid($fedc2).+RV.+$eol"
-set reg1c "\\s+$jid($fedc3).+RV.+$eol"
-set reg2 "\\s+$jid($fedc2).+R.+$eol"
-set reg3 "\\s+$jid($fedc3).+R.+$eol"
+set regpd "\\s*$jid(PD).+PD.+$eol"
+set reg1a "\\s*$jid($fedc1).+R.+$eol"
+set reg1b "\\s*$jid($fedc2).+RV.+$eol"
+set reg1c "\\s*$jid($fedc3).+RV.+$eol"
+set reg2 "\\s*$jid($fedc2).+R.+$eol"
+set reg3 "\\s*$jid($fedc3).+R.+$eol"
 
 set regs "$regpd $reg1a $reg1b $reg1c $reg2 $reg3"
 

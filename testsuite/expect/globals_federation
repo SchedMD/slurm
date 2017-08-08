@@ -137,6 +137,7 @@ proc setup_federation { fed_name } {
 proc test_cluster_up { cname } {
 	set rc 0
 	set matches 0
+	set timeout 2
 	global fed_slurm_base fedc1 fedc2 fedc3
 	set my_scontrol "${fed_slurm_base}/$cname/bin/scontrol"
 	log_user 0
@@ -146,7 +147,7 @@ proc test_cluster_up { cname } {
 			incr matches
 		}
 		timeout {
-			send_user "\nFAILURE: $cname not responding\n"
+			send_user "\nWARNING: $cname not responding\n"
 			slow_kill $my_pid
 			set rc 1
 		}
@@ -159,6 +160,22 @@ proc test_cluster_up { cname } {
 		set rc 1
 	}
 	log_user 1
+	return $rc
+}
+
+
+proc test_all_up {} {
+	set rc 0
+	global fedc1 fedc2 fedc3
+
+	if {[test_cluster_up $fedc1] ||
+	    [test_cluster_up $fedc2] ||
+	    [test_cluster_up $fedc3]} {
+		log_warn "This test can't be run if any clusters--$fedc1,\
+			$fedc2, or $fedc3--are down."
+		set rc 1
+	}
+
 	return $rc
 }
 

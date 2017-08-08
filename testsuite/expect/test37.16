@@ -337,10 +337,8 @@ if {[test_federation_setup]} {
 	exit 0
 }
 
-if {[test_cluster_up $fedc1] ||
-    [test_cluster_up $fedc2] ||
-    [test_cluster_up $fedc3]} {
-	end_it 1
+if {[test_all_up]} {
+	exit 0
 }
 
 set user_name [get_my_user_name]

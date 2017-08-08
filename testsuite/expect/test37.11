@@ -76,7 +76,7 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 proc build_regex { jid cid state } {
 	global eol
 
-	return "(?=.*($jid.+$state\\s+$cid.*$eol))"
+	return "(.*($jid.+$state\\s+$cid.*$eol))"
 }
 
 proc sbatch { args } {
@@ -172,15 +172,13 @@ proc end_it { exit_code } {
 #start test
 
 if {[test_federation_setup]} {
-	log_warn "WARNING: This test can't be run without fed_slurm_base,\
+	log_warn "This test can't be run without fed_slurm_base,\
 		fedc1, fedc2, fedc3 setup in globals.local."
 	exit 0
 }
 
-if {[test_cluster_up $fedc1] ||
-    [test_cluster_up $fedc2] ||
-    [test_cluster_up $fedc3]} {
-	end_it 1
+if {[test_all_up]} {
+	exit 0
 }
 
 set user_name [get_my_user_name]
@@ -330,8 +328,8 @@ set runr3  [build_regex $jid($fedc3) $fedc3 RUNNING]
 set runrv1 [build_regex $jid($fedc2) $fedc1 REVOKED]
 set runrv2 [build_regex $jid($fedc3) $fedc1 REVOKED]
 
-set reg   "^$runr1$runr2$runr3.+$eol"
-set reg_D "^$runr1$runrv1$runrv2$runr2$runr3.+$eol"
+set reg   "^$runr1|$runr2|$runr3"
+set reg_D "$reg\\s*($runrv1|$runrv2){2}"
 
 
 sacct ""    "$reg"
@@ -349,8 +347,8 @@ set runr1 [build_regex $jid($fedc1) $fedc1 COMPLETED]
 set runr2 [build_regex $jid($fedc2) $fedc2 COMPLETED]
 set runr3 [build_regex $jid($fedc3) $fedc3 COMPLETED]
 
-set reg "^$runr1$runr2$runr3.+$eol"
-set reg_D "^$runr1$runrv1$runrv2$runr2$runr3.+$eol"
+set reg   "^$runr1|$runr2|$runr3"
+set reg_D "$reg\\s*($runrv1|$runrv2){2}"
 
 sacct ""    "$reg"
 sacct "-D"  "$reg_D"
