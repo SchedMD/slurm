@@ -385,8 +385,7 @@ static bool _is_valid_path(char *path, char *msg)
 
 	buf = xstrdup(path);
 	entry = strtok_r(buf, ":", &saveptr);
-
-	do {
+	while (entry) {
 		struct stat st;
 
 		/*
@@ -402,7 +401,8 @@ static bool _is_valid_path(char *path, char *msg)
 		/*
 		*  Otherwise path element is valid, continue..
 		*/
-	} while ((entry = strtok_r(NULL, ":", &saveptr)));
+		entry = strtok_r(NULL, ":", &saveptr);
+	}
 
 	xfree(buf);
  	return true;
