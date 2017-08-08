@@ -76,14 +76,15 @@ static char * _process_plus_minus(char plus_or_minus, char *src)
 
 static int _parse_resv_tres(char *val, resv_desc_msg_t *resv_msg_ptr,
 			    int *free_tres_license, int *free_tres_bb,
-			    int *free_tres_corecnt, int *free_tres_nodecnt)
+			    int *free_tres_corecnt, int *free_tres_nodecnt,
+			    char **err_msg)
 {
 	int i, ret, len;
 	char *tres_bb = NULL, *tres_license = NULL,
 		*tres_corecnt = NULL, *tres_nodecnt = NULL,
 		*token, *type = NULL, *saveptr1 = NULL,
 		*value_str = NULL, *name = NULL, *compound = NULL,
-		*tmp = NULL, *err_msg = NULL;
+		*tmp = NULL;
 	bool discard, first;
 
 	*free_tres_license = 0;
@@ -97,8 +98,7 @@ static int _parse_resv_tres(char *val, resv_desc_msg_t *resv_msg_ptr,
 		compound = strtok_r(token, "=", &value_str);
 
 		if (!compound || !value_str || !*value_str) {
-			error("TRES component '%s' has an invalid value '%s'",
-			      type, token);
+			xstrfmtcat(*err_msg, "invalid TRES '%s'", token);
 			goto error;
 		}
 
@@ -109,8 +109,9 @@ static int _parse_resv_tres(char *val, resv_desc_msg_t *resv_msg_ptr,
 			type = compound;
 
 		if (_is_configured_tres(compound) != SLURM_SUCCESS) {
-			error("couldn't identify configured TRES '%s'",
-			      compound);
+			xstrfmtcat(*err_msg,
+				   "couldn't identify configured TRES '%s'",
+				   compound);
 			goto error;
 		}
 
@@ -134,9 +135,9 @@ static int _parse_resv_tres(char *val, resv_desc_msg_t *resv_msg_ptr,
 				for (i = 0; i < len; i++) {
 					if (!isdigit(value_str[i])) {
 						if (first) {
-							error("TRES value '%s' "
-							      "is invalid",
-							      value_str);
+							xstrfmtcat(*err_msg,
+								   "invalid TRES cpu value '%s'",
+								   value_str);
 							goto error;
 						} else
 							discard = true;
@@ -161,8 +162,8 @@ static int _parse_resv_tres(char *val, resv_desc_msg_t *resv_msg_ptr,
 			xstrcat(tres_nodecnt, value_str);
 			token = strtok_r(NULL, ",", &saveptr1);
 		} else {
-			error("TRES type '%s' not supported with reservations",
-			      compound);
+			xstrfmtcat(*err_msg, "TRES type '%s' not supported with reservations",
+				   compound);
 			goto error;
 		}
 
@@ -172,30 +173,24 @@ static int _parse_resv_tres(char *val, resv_desc_msg_t *resv_msg_ptr,
 		/* only have this on a cons_res machine */
 		ret = _is_corecnt_supported();
 		if (ret != SLURM_SUCCESS) {
-			error("CoreCnt or CPUCnt is only supported when SelectType includes select/cons_res or SelectTypeParameters includes OTHER_CONS_RES on a Cray.");
+			xstrfmtcat(*err_msg, "CoreCnt or CPUCnt is only supported when SelectType includes select/cons_res or SelectTypeParameters includes OTHER_CONS_RES on a Cray.");
 			goto error;
 		}
 		ret = _parse_resv_core_cnt(resv_msg_ptr, tres_corecnt,
 					   free_tres_corecnt, true,
-					   &err_msg);
+					   err_msg);
 		xfree(tres_corecnt);
-		if (ret != SLURM_SUCCESS) {
-			error("%s", err_msg);
-			xfree(err_msg);
+		if (ret != SLURM_SUCCESS)
 			goto error;
-		}
 	}
 
 	if (tres_nodecnt && tres_nodecnt[0] != '\0') {
 		ret = _parse_resv_node_cnt(resv_msg_ptr, tres_nodecnt,
 					   free_tres_nodecnt, true,
-					   &err_msg);
+					   err_msg);
 		xfree(tres_nodecnt);
-		if (ret != SLURM_SUCCESS) {
-			error("%s", err_msg);
-			xfree(err_msg);
+		if (ret != SLURM_SUCCESS)
 			goto error;
-		}
 	}
 
 	if (tres_license && tres_license[0] != '\0') {
@@ -215,7 +210,6 @@ error:
 	xfree(tmp);
 	xfree(tres_nodecnt);
 	xfree(tres_corecnt);
-	exit_code = 1;
 	return SLURM_ERROR;
 }
 
@@ -396,8 +390,13 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 			if (_parse_resv_tres(val, resv_msg_ptr,
 					     free_tres_license, free_tres_bb,
 					     free_tres_corecnt,
-					     free_tres_nodecnt) == SLURM_ERROR)
+					     free_tres_nodecnt,
+					     &err_msg) == SLURM_ERROR) {
+				error("%s", err_msg);
+				xfree(err_msg);
+				exit_code = 1;
 				return SLURM_ERROR;
+			}
 
 		} else if (strncasecmp(tag, "Watts", MAX(taglen, 1)) == 0) {
 			if (parse_uint32(val, &(resv_msg_ptr->resv_watts))) {
