@@ -304,7 +304,8 @@ static char *_getline(const char *prompt)
 	line = malloc(len * sizeof(char));
 	if (!line)
 		return NULL;
-	return strlcpy(line, buf, len);
+	strlcpy(line, buf, len);
+	return line;
 }
 #endif
 
