@@ -121,7 +121,7 @@ typedef struct {
 	pmixp_coll_type_t type;
 	/* PMIx collective id */
 	struct {
-		pmix_proc_t *procs;
+		pmixp_proc_t *procs;
 		size_t nprocs;
 	} pset;
 	int my_peerid;
@@ -157,7 +157,7 @@ typedef struct {
 
 
 	/* libpmix callback data */
-	pmix_modex_cbfunc_t cbfunc;
+	void *cbfunc;
 	void *cbdata;
 
 	/* timestamp for stale collectives detection */
@@ -170,7 +170,7 @@ static inline void pmixp_coll_sanity_check(pmixp_coll_t *coll)
 	xassert(coll->magic == PMIXP_COLL_STATE_MAGIC);
 }
 
-int pmixp_coll_init(pmixp_coll_t *coll, const pmix_proc_t *procs,
+int pmixp_coll_init(pmixp_coll_t *coll, const pmixp_proc_t *procs,
 		    size_t nprocs, pmixp_coll_type_t type);
 void pmixp_coll_free(pmixp_coll_t *coll);
 
@@ -246,7 +246,7 @@ static inline int pmixp_coll_check_seq(pmixp_coll_t *coll, uint32_t seq)
 }
 
 int pmixp_coll_contrib_local(pmixp_coll_t *coll, char *data, size_t size,
-			     pmix_modex_cbfunc_t cbfunc, void *cbdata);
+			     void *cbfunc, void *cbdata);
 int pmixp_coll_contrib_child(pmixp_coll_t *coll, uint32_t nodeid,
 			     uint32_t seq, Buf buf);
 int pmixp_coll_contrib_parent(pmixp_coll_t *coll, uint32_t nodeid,
@@ -255,10 +255,10 @@ void pmixp_coll_bcast(pmixp_coll_t *coll);
 bool pmixp_coll_progress(pmixp_coll_t *coll, char *fwd_node,
 			 void **data, uint64_t size);
 int pmixp_coll_unpack_info(Buf buf, pmixp_coll_type_t *type,
-			   int *nodeid, pmix_proc_t **r,
+			   int *nodeid, pmixp_proc_t **r,
 			   size_t *nr);
 int pmixp_coll_belong_chk(pmixp_coll_type_t type,
-			  const pmix_proc_t *procs, size_t nprocs);
+			  const pmixp_proc_t *procs, size_t nprocs);
 void pmixp_coll_reset_if_to(pmixp_coll_t *coll, time_t ts);
 
 #endif /* PMIXP_COLL_H */

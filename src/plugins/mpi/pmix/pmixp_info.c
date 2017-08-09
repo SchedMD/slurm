@@ -163,7 +163,7 @@ int pmixp_info_set(const stepd_step_rec_t *job, char ***env)
 		return rc;
 	}
 
-	snprintf(_pmixp_job_info.nspace, PMIX_MAX_NSLEN, "slurm.pmix.%d.%d",
+	snprintf(_pmixp_job_info.nspace, PMIXP_MAX_NSLEN, "slurm.pmix.%d.%d",
 		 pmixp_info_jobid(), pmixp_info_stepid());
 
 	return SLURM_SUCCESS;

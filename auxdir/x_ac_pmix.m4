@@ -33,7 +33,7 @@ AC_DEFUN([X_AC_PMIX],
         for d in $_x_ac_pmix_dirs; do
           test -d "$d" || continue
           test -d "$d/include" || continue
-          test -f "$d/include/pmix/pmix_common.h" || continue
+          test -f "$d/include/pmix/pmix_common.h" || test -f $d/include/pmix_common.h || continue
           test -f "$d/include/pmix_server.h" || continue
           for d1 in $_x_ac_pmix_libs; do
             test -d "$d/$d1" || continue
@@ -77,7 +77,7 @@ AC_DEFUN([X_AC_PMIX],
               if test "$ac_with_rpath" = "yes"; then
                 PMIX_V1_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_pmix_libdir -L$x_ac_cv_pmix_libdir"
               else
-                PMIX_V1_LDFLAGS="-L$x_ac_cv_pmix_libdir"
+                PMIX_V1_CPPFLAGS+=" -DPMIXP_V1_LIBPATH=\\\"$x_ac_cv_pmix_libdir\\\""
               fi
 	      # We don't want to search the other lib after we found it in
 	      # one place or we might report a false duplicate if lib64 is a
@@ -95,7 +95,7 @@ AC_DEFUN([X_AC_PMIX],
               if test "$ac_with_rpath" = "yes"; then
                 PMIX_V2_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_pmix_libdir -L$x_ac_cv_pmix_libdir"
               else
-                PMIX_V2_LDFLAGS="-L$x_ac_cv_pmix_libdir"
+		PMIX_V2_CPPFLAGS+=" -DPMIXP_V2_LIBPATH=\\\"$x_ac_cv_pmix_libdir\\\""
               fi
 	      # We don't want to search the other lib after we found it in
 	      # one place or we might report a false duplicate if lib64 is a
@@ -106,10 +106,8 @@ AC_DEFUN([X_AC_PMIX],
         done
       ])
 
-    PMIX_LIBS="-lpmix"
     AC_DEFINE(HAVE_PMIX, 1, [Define to 1 if pmix library found])
 
-    AC_SUBST(PMIX_LIBS)
     AC_SUBST(PMIX_V1_CPPFLAGS)
     AC_SUBST(PMIX_V1_LDFLAGS)
     AC_SUBST(PMIX_V2_CPPFLAGS)

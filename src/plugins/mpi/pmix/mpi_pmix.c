@@ -38,15 +38,15 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <sys/types.h>
+#include <dlfcn.h>
 
 #include "pmixp_common.h"
 #include "pmixp_server.h"
 #include "pmixp_debug.h"
 #include "pmixp_agent.h"
 #include "pmixp_info.h"
-
-#include <pmix_server.h>
-#include <pmixp_client.h>
+#include "pmixp_dconn_ucx.h"
+#include "pmixp_client.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -85,7 +85,39 @@ const char plugin_type[] = "mpi/pmix_v2";
 
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-#include "pmixp_dconn_ucx.h"
+void *libpmix_plug = NULL;
+
+void libpmix_close(void *lib_plug)
+{
+	xassert(lib_plug);
+	dlclose(lib_plug);
+}
+
+void *libpmix_open(void)
+{
+	void *lib_plug = NULL;
+#ifdef PMIXP_V1_LIBPATH
+	char *full_path = NULL;
+	xstrfmtcat(full_path, "%s/libpmix.so", PMIXP_V1_LIBPATH);
+	lib_plug = dlopen("libpmix.so", RTLD_LAZY | RTLD_GLOBAL);
+	xfree(full_path);
+#elif PMIXP_V2_LIBPATH
+	xstrfmtcat(full_path, "%s/libpmix.so", PMIXP_V2_LIBPATH);
+	lib_plug = dlopen("libpmix.so", RTLD_LAZY | RTLD_GLOBAL);
+	xfree(full_path);
+#else
+	lib_plug = dlopen("libpmix.so", RTLD_LAZY | RTLD_GLOBAL);
+#endif
+
+	if (lib_plug && (HAVE_PMIX_VER != pmixp_lib_get_version())) {
+		PMIXP_ERROR("pmi/pmix: incorrect PMIx library version loaded %d was loaded, required %d version",
+			    pmixp_lib_get_version(), (int)HAVE_PMIX_VER);
+		libpmix_close(lib_plug);
+		lib_plug = NULL;
+	}
+
+	return lib_plug;
+}
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -93,13 +125,11 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
  */
 extern int init(void)
 {
-	/* HAVE_PMIX_VER is what we were compiled against PMIX_VERSION_MAJOR is
-	 * found in the pmix source we are dynamically linking against.
-	 */
-	if (HAVE_PMIX_VER != PMIX_VERSION_MAJOR)
-		fatal("pmix_init: Slurm was compiled against PMIx v%d but we are now linking against v%ld. Please check your install.",
-		      HAVE_PMIX_VER, PMIX_VERSION_MAJOR);
-
+	libpmix_plug = libpmix_open();
+	if ( libpmix_plug == NULL ) {
+		PMIXP_ERROR("pmi/pmix: can not load PMIx library");
+		return SLURM_FAILURE;
+	}
 	return SLURM_SUCCESS;
 }
 
@@ -131,14 +161,12 @@ err_ext:
 
 int p_mpi_hook_slurmstepd_task(const mpi_plugin_task_info_t *job, char ***env)
 {
-	pmix_proc_t proc;
 	char **tmp_env = NULL;
 	pmixp_debug_hang(0);
 
 	PMIXP_DEBUG("Patch environment for task %d", job->gtaskid);
-	proc.rank = job->gtaskid;
-	strncpy(proc.nspace, pmixp_info_namespace(), PMIX_MAX_NSLEN);
-	PMIx_server_setup_fork(&proc, &tmp_env);
+
+	pmixp_lib_setup_fork(job->gtaskid, pmixp_info_namespace(), &tmp_env);
 	if (NULL != tmp_env) {
 		int i;
 		for (i = 0; NULL != tmp_env[i]; i++) {
@@ -206,5 +234,6 @@ int fini(void)
 	PMIXP_DEBUG("%s: call fini()", pmixp_info_hostname());
 	pmixp_agent_stop();
 	pmixp_stepd_finalize();
+	libpmix_close(libpmix_plug);
 	return SLURM_SUCCESS;
 }

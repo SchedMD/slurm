@@ -41,11 +41,12 @@
 #include "pmixp_coll.h"
 #include "pmixp_nspaces.h"
 #include "pmixp_server.h"
+#include "pmixp_client.h"
 
 static void _progress_coll(pmixp_coll_t *coll);
 static void _reset_coll(pmixp_coll_t *coll);
 
-static int _hostset_from_ranges(const pmix_proc_t *procs, size_t nprocs,
+static int _hostset_from_ranges(const pmixp_proc_t *procs, size_t nprocs,
 				hostlist_t *hl_out)
 {
 	int i;
@@ -58,7 +59,7 @@ static int _hostset_from_ranges(const pmix_proc_t *procs, size_t nprocs,
 		if (NULL == nsptr) {
 			goto err_exit;
 		}
-		if (procs[i].rank == PMIX_RANK_WILDCARD) {
+		if (pmixp_lib_is_wildcard(procs[i].rank)) {
 			tmp = hostlist_copy(nsptr->hl);
 		} else {
 			tmp = pmixp_nspace_rankhosts(nsptr, &procs[i].rank, 1);
@@ -79,7 +80,7 @@ err_exit:
 
 static int _pack_coll_info(pmixp_coll_t *coll, Buf buf)
 {
-	pmix_proc_t *procs = coll->pset.procs;
+	pmixp_proc_t *procs = coll->pset.procs;
 	size_t nprocs = coll->pset.nprocs;
 	uint32_t size;
 	int i;
@@ -100,9 +101,9 @@ static int _pack_coll_info(pmixp_coll_t *coll, Buf buf)
 }
 
 int pmixp_coll_unpack_info(Buf buf, pmixp_coll_type_t *type,
-			   int *nodeid, pmix_proc_t **r, size_t *nr)
+			   int *nodeid, pmixp_proc_t **r, size_t *nr)
 {
-	pmix_proc_t *procs = NULL;
+	pmixp_proc_t *procs = NULL;
 	uint32_t nprocs = 0;
 	uint32_t tmp;
 	int i, rc;
@@ -121,7 +122,7 @@ int pmixp_coll_unpack_info(Buf buf, pmixp_coll_type_t *type,
 	}
 	*nr = nprocs;
 
-	procs = xmalloc(sizeof(pmix_proc_t) * nprocs);
+	procs = xmalloc(sizeof(pmixp_proc_t) * nprocs);
 	*r = procs;
 
 	for (i = 0; i < (int)nprocs; i++) {
@@ -147,7 +148,7 @@ int pmixp_coll_unpack_info(Buf buf, pmixp_coll_type_t *type,
 }
 
 int pmixp_coll_belong_chk(pmixp_coll_type_t type,
-			  const pmix_proc_t *procs, size_t nprocs)
+			  const pmixp_proc_t *procs, size_t nprocs)
 {
 	int i;
 	pmixp_namespace_t *nsptr = pmixp_nspaces_local();
@@ -156,7 +157,7 @@ int pmixp_coll_belong_chk(pmixp_coll_type_t type,
 		if (0 != xstrcmp(procs[i].nspace, nsptr->name)) {
 			continue;
 		}
-		if ((procs[i].rank == PMIX_RANK_WILDCARD))
+		if (pmixp_lib_is_wildcard(procs[i].rank))
 			return 0;
 		if (0 <= pmixp_info_taskid2localid(procs[i].rank)) {
 			return 0;
@@ -248,7 +249,7 @@ static void _reset_coll(pmixp_coll_t *coll)
 /*
  * Based on ideas provided by Hongjia Cao <hjcao@nudt.edu.cn> in PMI2 plugin
  */
-int pmixp_coll_init(pmixp_coll_t *coll, const pmix_proc_t *procs,
+int pmixp_coll_init(pmixp_coll_t *coll, const pmixp_proc_t *procs,
 		    size_t nprocs, pmixp_coll_type_t type)
 {
 	hostlist_t hl;
@@ -666,8 +667,8 @@ static int _progress_ufwd(pmixp_coll_t *coll)
 		 * notify libpmix about that and abort
 		 * collective */
 		if (coll->cbfunc) {
-			coll->cbfunc(PMIX_ERROR, NULL, 0, coll->cbdata,
-				     NULL, NULL);
+			pmixp_lib_modex_invoke(coll->cbfunc, SLURM_ERROR, NULL,
+					       0, coll->cbdata, NULL, NULL);
 		}
 		_reset_coll(coll);
 		/* Don't need to do anything else */
@@ -764,8 +765,8 @@ static int _progress_ufwd(pmixp_coll_t *coll)
 		size_t size = get_buf_offset(coll->dfwd_buf) -
 				coll->dfwd_offset;
 		coll->dfwd_cb_wait++;
-		coll->cbfunc(PMIX_SUCCESS, data, size, coll->cbdata,
-			     _libpmix_cb, (void *)cbdata);
+		pmixp_lib_modex_invoke(coll->cbfunc, SLURM_SUCCESS, data, size,
+				       coll->cbdata, _libpmix_cb, (void*)cbdata);
 #ifdef PMIXP_COLL_DEBUG
 		PMIXP_DEBUG("%p: local delivery, size = %lu",
 			    coll, (uint64_t)size);
@@ -787,8 +788,8 @@ static int _progress_ufwd_sc(pmixp_coll_t *coll)
 		 * notify libpmix about that and abort
 		 * collective */
 		if (coll->cbfunc) {
-			coll->cbfunc(PMIX_ERROR, NULL, 0, coll->cbdata,
-				     NULL, NULL);
+			pmixp_lib_modex_invoke(coll->cbfunc, SLURM_ERROR, NULL,
+					       0, coll->cbdata, NULL, NULL);
 		}
 		_reset_coll(coll);
 		/* Don't need to do anything else */
@@ -839,8 +840,8 @@ static int _progress_ufwd_wpc(pmixp_coll_t *coll)
 		char *data = get_buf_data(coll->dfwd_buf) + coll->dfwd_offset;
 		size_t size = get_buf_offset(coll->dfwd_buf) -
 				coll->dfwd_offset;
-		coll->cbfunc(PMIX_SUCCESS, data, size, coll->cbdata,
-			     _libpmix_cb, (void *)cbdata);
+		pmixp_lib_modex_invoke(coll->cbfunc, SLURM_SUCCESS, data, size,
+				       coll->cbdata, _libpmix_cb, (void *)cbdata);
 		coll->dfwd_cb_wait++;
 #ifdef PMIXP_COLL_DEBUG
 		PMIXP_DEBUG("%p: local delivery, size = %lu",
@@ -870,8 +871,8 @@ static int _progress_dfwd(pmixp_coll_t *coll)
 		 * collective */
 		PMIXP_ERROR("%p: failed to send, abort collective", coll);
 		if (coll->cbfunc) {
-			coll->cbfunc(PMIX_ERROR, NULL, 0, coll->cbdata,
-				     NULL, NULL);
+			pmixp_lib_modex_invoke(coll->cbfunc, SLURM_ERROR, NULL,
+					       0, coll->cbdata, NULL, NULL);
 		}
 		_reset_coll(coll);
 		/* Don't need to do anything else */
@@ -927,7 +928,7 @@ static void _progress_coll(pmixp_coll_t *coll)
 }
 
 int pmixp_coll_contrib_local(pmixp_coll_t *coll, char *data, size_t size,
-			     pmix_modex_cbfunc_t cbfunc, void *cbdata)
+			     void *cbfunc, void *cbdata)
 {
 	int ret = SLURM_SUCCESS;
 
@@ -1356,8 +1357,8 @@ void pmixp_coll_reset_if_to(pmixp_coll_t *coll, time_t ts)
 			 * to the next local request immediately and with the
 			 * proper (status == PMIX_ERR_TIMEOUT)
 			 */
-			coll->cbfunc(PMIX_ERR_TIMEOUT, NULL, 0, coll->cbdata,
-				     NULL, NULL);
+			pmixp_lib_modex_invoke(coll->cbfunc, PMIXP_ERR_TIMEOUT, NULL,
+					       0, coll->cbdata, NULL, NULL);
 		}
 		/* drop the collective */
 		_reset_coll(coll);

@@ -139,7 +139,7 @@ exit:
 	return nsptr;
 }
 
-hostlist_t pmixp_nspace_rankhosts(pmixp_namespace_t *nsptr, const int *ranks,
+hostlist_t pmixp_nspace_rankhosts(pmixp_namespace_t *nsptr, const uint32_t *ranks,
 				  size_t nranks)
 {
 	hostlist_t hl = hostlist_create("");
@@ -175,23 +175,4 @@ int pmixp_nspace_resolve(const char *name, int rank)
 	xassert(rank < nsptr->ntasks);
 
 	return nsptr->task_map[rank];
-}
-
-size_t pmixp_nspace_mdx_lsize(List l)
-{
-	ListIterator it = list_iterator_create(l);
-	pmix_modex_data_t *data;
-	size_t ret = 0;
-
-	while (NULL != (data = list_next(it))) {
-		/* we need to save:
-		 * - rank (uint32_t)
-		 * - scope (uint32_t)
-		 * - size of the blob (uint32_t)
-		 * - blob data (data->size)
-		 */
-		ret += data->size + 3 * sizeof(int);
-	}
-	list_iterator_destroy(it);
-	return ret;
 }

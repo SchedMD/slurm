@@ -62,13 +62,6 @@
 #include "src/common/fd.h"
 #include "src/common/net.h"
 
-/* PMIx library header */
-#include <pmix_server.h>
-
-#ifndef PMIX_VERSION_MAJOR
-#define PMIX_VERSION_MAJOR 1L
-#endif
-
 /* ----------------------------------------------------------
  * SLURM environment that influence us:
  * Job/step resource description
@@ -183,5 +176,17 @@ typedef struct {
 	pmixp_p2p_send_complete_cb_t send_complete;
 } pmixp_p2p_data_t;
 
+#define PMIXP_MAX_NSLEN     255
+#define PMIXP_MAX_KEYLEN    511
+
+
+#define PMIXP_ERR_TIMEOUT                      -24
+#define PMIXP_ERR_BAD_PARAM                    -27
+#define PMIXP_ERR_INVALID_NAMESPACE            -44
+
+typedef struct {
+    char nspace[PMIXP_MAX_NSLEN+1];
+    uint32_t rank;
+} pmixp_proc_t;
 
 #endif /* PMIXP_COMMON_H */

@@ -38,6 +38,7 @@
 #include "pmixp_common.h"
 #include "pmixp_dmdx.h"
 #include "pmixp_server.h"
+#include "pmixp_client.h"
 
 /* set default direct modex timeout to 10 sec */
 #define DMDX_DEFAULT_TIMEOUT 10
@@ -52,16 +53,16 @@ typedef struct {
 	time_t ts;
 #ifndef NDEBUG
 	/* we need this only for verification */
-	char nspace[PMIX_MAX_NSLEN];
+	char nspace[PMIXP_MAX_NSLEN];
 	int rank;
 #endif
-	pmix_modex_cbfunc_t cbfunc;
+	void *cbfunc;
 	void *cbdata;
 } dmdx_req_info_t;
 
 typedef struct {
 	uint32_t seq_num;
-	pmix_proc_t proc;
+	pmixp_proc_t proc;
 	char *sender_ns;
 	int sender_nodeid;
 	int rank;
@@ -202,7 +203,7 @@ static void _respond_with_error(int seq_num, int nodeid,
 	}
 }
 
-static void _dmdx_pmix_cb(pmix_status_t status, char *data, size_t sz,
+static void _dmdx_pmix_cb(int status, char *data, size_t sz,
 			  void *cbdata)
 {
 	dmdx_caddy_t *caddy = (dmdx_caddy_t *)cbdata;
@@ -232,7 +233,7 @@ static void _dmdx_pmix_cb(pmix_status_t status, char *data, size_t sz,
 }
 
 int pmixp_dmdx_get(const char *nspace, int rank,
-		   pmix_modex_cbfunc_t cbfunc, void *cbdata)
+		   void *cbfunc, void *cbdata)
 {
 	dmdx_req_info_t *req;
 	Buf buf;
@@ -258,7 +259,7 @@ int pmixp_dmdx_get(const char *nspace, int rank,
 	req->cbdata = cbdata;
 	req->ts = time(NULL);
 #ifndef NDEBUG
-	strncpy(req->nspace, nspace, PMIX_MAX_NSLEN);
+	strncpy(req->nspace, nspace, PMIXP_MAX_NSLEN);
 	req->rank = rank;
 #endif
 	list_append(_dmdx_requests, req);
@@ -273,7 +274,8 @@ int pmixp_dmdx_get(const char *nspace, int rank,
 		PMIXP_ERROR("Cannot send direct modex request to %s, size %d",
 			    nodename, get_buf_offset(buf));
 		xfree(nodename);
-		cbfunc(PMIX_ERROR, NULL, 0, cbdata, NULL, NULL);
+		pmixp_lib_modex_invoke(cbfunc, SLURM_ERROR, NULL, 0,
+				       cbdata, NULL, NULL);
 		rc = SLURM_ERROR;
 	}
 
@@ -306,7 +308,7 @@ static void _dmdx_req(Buf buf, int nodeid, uint32_t seq_num)
 		PMIXP_ERROR("Bad request from %s: asked for nspace = %s, mine is %s",
 			    nodename, ns, pmixp_info_namespace());
 		_respond_with_error(seq_num, nodeid, sender_ns,
-				    PMIX_ERR_INVALID_NAMESPACE);
+				    PMIXP_ERR_INVALID_NAMESPACE);
 		xfree(nodename);
 		goto exit;
 	}
@@ -317,7 +319,7 @@ static void _dmdx_req(Buf buf, int nodeid, uint32_t seq_num)
 		PMIXP_ERROR("Bad request from %s: nspace \"%s\" has only %d ranks, asked for %d",
 			    nodename, ns, nsptr->ntasks, rank);
 		_respond_with_error(seq_num, nodeid, sender_ns,
-				    PMIX_ERR_BAD_PARAM);
+				    PMIXP_ERR_BAD_PARAM);
 		xfree(nodename);
 		goto exit;
 	}
@@ -327,7 +329,7 @@ static void _dmdx_req(Buf buf, int nodeid, uint32_t seq_num)
 	caddy->seq_num = seq_num;
 
 	/* ns is a pointer inside incoming buffer */
-	strncpy(caddy->proc.nspace, ns, PMIX_MAX_NSLEN);
+	strncpy(caddy->proc.nspace, ns, PMIXP_MAX_NSLEN);
 	ns = NULL; /* protect the data */
 	caddy->proc.rank = rank;
 
@@ -338,9 +340,9 @@ static void _dmdx_req(Buf buf, int nodeid, uint32_t seq_num)
 	caddy->sender_ns = xstrdup(sender_ns);
 	sender_ns = NULL;
 
-	rc = PMIx_server_dmodex_request(&caddy->proc, _dmdx_pmix_cb,
-					(void *)caddy);
-	if (PMIX_SUCCESS != rc) {
+	rc = pmixp_lib_dmodex_request(&caddy->proc, (void *)_dmdx_pmix_cb,
+				      (void *)caddy);
+	if (SLURM_SUCCESS != rc) {
 		char *nodename = pmixp_info_job_host(nodeid);
 		PMIXP_ERROR("Can't request modex data from libpmix-server, requesting host = %s, nspace = %s, rank = %d, rc = %d",
 			    nodename, caddy->proc.nspace,
@@ -391,21 +393,22 @@ static void _dmdx_resp(Buf buf, int nodeid, uint32_t seq_num)
 	rc = _read_info(buf, &ns, &rank, &sender_ns, &status);
 	if (SLURM_SUCCESS != rc) {
 		/* notify libpmix about an error */
-		req->cbfunc(PMIX_ERROR, NULL, 0, req->cbdata, NULL, NULL);
+		pmixp_lib_modex_invoke(req->cbfunc, SLURM_ERROR, NULL, 0,
+				       req->cbdata, NULL, NULL);
 		goto exit;
 	}
 
 	/* get the modex blob */
 	if (SLURM_SUCCESS != (rc = unpackmem_ptr(&data, &size, buf))) {
 		/* notify libpmix about an error */
-		req->cbfunc(PMIX_ERROR, NULL, 0, req->cbdata, NULL,
-			    NULL);
+		pmixp_lib_modex_invoke(req->cbfunc, SLURM_ERROR, NULL, 0,
+				       req->cbdata, NULL, NULL);
 		goto exit;
 	}
 
 	/* call back to libpmix-server */
-	req->cbfunc(status, data, size, req->cbdata, pmixp_free_Buf,
-		    (void *)buf);
+	pmixp_lib_modex_invoke(req->cbfunc, status, data, size,
+			       req->cbdata, pmixp_free_Buf, (void *)buf);
 
 	/* release tracker & list iterator */
 	req = NULL;
@@ -465,8 +468,9 @@ void pmixp_dmdx_timeout_cleanup(void)
 				xfree(nodename);
 			}
 #endif
-			req->cbfunc(PMIX_ERR_TIMEOUT, NULL, 0, req->cbdata,
-				    NULL, NULL);
+			/* PMIX_ERR_TIMEOUT */
+			pmixp_lib_modex_invoke(req->cbfunc, SLURM_ERROR, NULL, 0,
+					       req->cbdata, NULL, NULL);
 			/* release tracker & list iterator */
 			list_delete_item(it);
 		}

@@ -70,7 +70,7 @@ void pmixp_state_finalize(void)
 	list_destroy(_pmixp_state.coll);
 }
 
-static bool _compare_ranges(const pmix_proc_t *r1, const pmix_proc_t *r2,
+static bool _compare_ranges(const pmixp_proc_t *r1, const pmixp_proc_t *r2,
 			    size_t nprocs)
 {
 	int i;
@@ -86,7 +86,7 @@ static bool _compare_ranges(const pmix_proc_t *r1, const pmix_proc_t *r2,
 }
 
 static pmixp_coll_t *_find_collective(pmixp_coll_type_t type,
-				      const pmix_proc_t *procs,
+				      const pmixp_proc_t *procs,
 				      size_t nprocs)
 {
 	pmixp_coll_t *coll = NULL, *ret = NULL;
@@ -116,7 +116,7 @@ exit:
 }
 
 pmixp_coll_t *pmixp_state_coll_get(pmixp_coll_type_t type,
-				   const pmix_proc_t *procs,
+				   const pmixp_proc_t *procs,
 				   size_t nprocs)
 {
 	pmixp_coll_t *ret = NULL;
@@ -149,7 +149,7 @@ pmixp_coll_t *pmixp_state_coll_get(pmixp_coll_type_t type,
 		 * structure right after that */
 		ret = xmalloc(sizeof(*ret));
 		/* initialize with unlocked list but locked element */
-		if (PMIX_SUCCESS != pmixp_coll_init(ret, procs, nprocs, type)) {
+		if (SLURM_SUCCESS != pmixp_coll_init(ret, procs, nprocs, type)) {
 			if (ret->pset.procs) {
 				xfree(ret->pset.procs);
 			}
