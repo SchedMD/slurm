@@ -202,8 +202,10 @@ static void *_launch_one_app(void *data)
 	slurm_step_io_fds_t cio_fds = SLURM_STEP_IO_FDS_INITIALIZER;
 	slurm_step_launch_callbacks_t step_callbacks;
 
+//FIXME-PACK - Perhaps we set pack_offset at some earlier point?
+//FIXME-PACK - Add support for overlapping rank IDs
 	if (opt_local->pack_grp_bits)
-		job->pack_offset  = bit_ffs(opt_local->pack_grp_bits);
+		job->pack_offset  = bit_ffs(opt_local->pack_grp_bits);	// SET HERE
 	else
 		job->pack_offset  = NO_VAL;
 
@@ -234,7 +236,7 @@ relaunch:
 
 	if (!launch_g_step_launch(job, &cio_fds, &global_rc, &step_callbacks,
 				  opt_local)) {
-		if (launch_g_step_wait(job, got_alloc, opt_local, -1) == -1)
+		if (launch_g_step_wait(job, got_alloc, opt_local) == -1)
 			goto relaunch;
 	}
 

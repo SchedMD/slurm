@@ -52,15 +52,15 @@ typedef struct {
 	int (*handle_multi_prog)   (int command_pos, opt_t *opt_local);
 	int (*create_job_step)     (srun_job_t *job, bool use_all_cpus,
 				    void (*signal_function)(int),
-				    sig_atomic_t *destroy_job, opt_t *opt_local,
-				    int pack_offset);
+				    sig_atomic_t *destroy_job,
+				    opt_t *opt_local);
 	int (*step_launch)         (srun_job_t *job,
 				    slurm_step_io_fds_t *cio_fds,
 				    uint32_t *global_rc,
 				    slurm_step_launch_callbacks_t *
 				    step_callbacks, opt_t *opt_local);
 	int (*step_wait)           (srun_job_t *job, bool got_alloc,
-				    opt_t *opt_local, int pack_offset);
+				    opt_t *opt_local);
 	int (*step_terminate)      (void);
 	void (*print_status)       (void);
 	void (*fwd_signal)         (int signal);
@@ -508,14 +508,13 @@ extern int launch_g_handle_multi_prog_verify(int command_pos, opt_t *opt_local)
 
 extern int launch_g_create_job_step(srun_job_t *job, bool use_all_cpus,
 				    void (*signal_function)(int),
-				    sig_atomic_t *destroy_job, opt_t *opt_local,
-				    int pack_offset)
+				    sig_atomic_t *destroy_job, opt_t *opt_local)
 {
 	if (launch_init() < 0)
 		return SLURM_ERROR;
 
 	return (*(ops.create_job_step))(job, use_all_cpus, signal_function,
-					destroy_job, opt_local, pack_offset);
+					destroy_job, opt_local);
 }
 
 extern int launch_g_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
@@ -530,13 +529,12 @@ extern int launch_g_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 				    opt_local);
 }
 
-extern int launch_g_step_wait(srun_job_t *job, bool got_alloc, opt_t *opt_local,
-			      int pack_offset)
+extern int launch_g_step_wait(srun_job_t *job, bool got_alloc, opt_t *opt_local)
 {
 	if (launch_init() < 0)
 		return SLURM_ERROR;
 
-	return (*(ops.step_wait))(job, got_alloc, opt_local, pack_offset);
+	return (*(ops.step_wait))(job, got_alloc, opt_local);
 }
 
 extern int launch_g_step_terminate(void)

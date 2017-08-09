@@ -165,6 +165,7 @@ void slurm_step_launch_params_t_init (slurm_step_launch_params_t *ptr)
 	ptr->cpu_freq_max = NO_VAL;
 	ptr->cpu_freq_gov = NO_VAL;
 	ptr->pack_offset  = NO_VAL;
+	ptr->task_offset  = NO_VAL;
 }
 
 /*
@@ -372,7 +373,8 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 						 launch.nnodes,
 						 ctx->step_resp->cred,
 						 params->labelio,
-						 params->pack_offset);
+						 params->pack_offset,
+						 params->task_offset);
 		if (ctx->launch_state->io.normal == NULL) {
 			rc = SLURM_ERROR;
 			goto fail1;
@@ -566,7 +568,8 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 						 launch.nnodes,
 						 ctx->step_resp->cred,
 						 params->labelio,
-						 params->pack_offset);
+						 params->pack_offset,
+						 params->task_offset);
 		if (ctx->launch_state->io.normal == NULL) {
 			rc = SLURM_ERROR;
 			goto fail1;

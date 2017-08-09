@@ -1927,6 +1927,7 @@ typedef struct {
 	bool no_alloc;
 	uint32_t slurmd_debug;  /* remote slurmd debug level */
 	uint32_t pack_offset;	/* Pack job offset or NO_VAL */
+	uint32_t task_offset;	/* Pack job tsk offset or NO_VAL */
 	bool parallel_debug;
 	uint32_t profile;	/* Level of acct_gather_profile {all | none} */
 	char *task_prolog;

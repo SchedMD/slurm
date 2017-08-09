@@ -584,7 +584,7 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 			/* Massage ntasks value earlier than normal */
 			if (!opt.ntasks_set)
 				opt.ntasks = _get_task_count();
-			launch_g_create_job_step(NULL, 0, NULL, NULL, &opt, -1);
+			launch_g_create_job_step(NULL, 0, NULL, NULL, &opt);
 			exit(0);
 		}
 		pending_append = true;

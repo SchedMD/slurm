@@ -647,7 +647,8 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 {
 	ListIterator opt_iter = NULL, job_iter;
 	opt_t *opt_local = &opt;
-	int pack_offset = 0, rc = 0;
+	uint32_t pack_offset = 0, task_offset = 0;
+	int rc = 0;
 
 	if (srun_job_list) {
 		if (opt_list)
@@ -658,18 +659,20 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 				opt_local = (opt_t *) list_next(opt_iter);
 			if (!opt_local)
 				fatal("%s: opt_list too short", __func__);
-			rc = create_job_step(job, use_all_cpus, opt_local,
-					     pack_offset);
+			job->pack_offset = pack_offset;
+			job->task_offset = task_offset;
+			rc = create_job_step(job, use_all_cpus, opt_local);
 			if (rc < 0)
 				break;
 			pack_offset++;
+			task_offset += job->ntasks;
 		}
 		list_iterator_destroy(job_iter);
 		if (opt_iter)
 			list_iterator_destroy(opt_iter);
 		return rc;
 	} else if (job) {
-		return create_job_step(job, use_all_cpus, &opt, -1);
+		return create_job_step(job, use_all_cpus, &opt);
 	} else {
 		return -1;
 	}
@@ -682,7 +685,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 	List job_resp_list = NULL, srun_job_list = NULL;
 	ListIterator opt_iter, resp_iter;
 	srun_job_t *job = NULL;
-	int max_pack_offset, pack_offset = -1;
+	int i, max_pack_offset, pack_offset = -1;
 	opt_t *opt_local;
 	uint32_t my_job_id = 0;
 	bool begin_error_logged = false;
@@ -714,7 +717,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 			error("Job creation failure.");
 			exit(error_exit);
 		}
-		if (create_job_step(job, false, &opt, -1) < 0)
+		if (create_job_step(job, false, &opt) < 0)
 			exit(error_exit);
 	} else if ((job_resp_list = existing_allocation())) {
 		srun_job_list = list_create(NULL);
@@ -812,11 +815,14 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		}	/* More pack job components */
 		list_iterator_destroy(resp_iter);
 
-		if (list_count(srun_job_list) == 0) {
+		i = list_count(srun_job_list);
+		if (i == 0) {
 			error("No directives to start application on any available "
 			      "pack job components");
 			exit(error_exit);
 		}
+		if (i == 1)
+			FREE_NULL_LIST(srun_job_list);	/* Just use "job" */
 		max_pack_offset = get_max_pack_group();
 		pack_offset = list_count(job_resp_list) - 1;
 		if (max_pack_offset > pack_offset) {
@@ -1094,6 +1100,8 @@ static srun_job_t *_job_create_structure(allocation_info_t *ainfo,
  	job->nodelist = xstrdup(ainfo->nodelist);
  	job->partition = xstrdup(ainfo->partition);
 	job->stepid  = ainfo->stepid;
+ 	job->pack_offset = NO_VAL;
+ 	job->task_offset = NO_VAL;
 
 #if defined HAVE_BG
 //#if defined HAVE_BGQ && defined HAVE_BG_FILES

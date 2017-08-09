@@ -174,7 +174,7 @@ int sattach(int argc, char **argv)
 
 	io = client_io_handler_create(opt.fds, layout->task_cnt,
 				      layout->node_cnt, fake_cred,
-				      opt.labelio, NO_VAL);
+				      opt.labelio, NO_VAL, NO_VAL);
 	client_io_handler_start(io);
 
 	if (opt.pty) {

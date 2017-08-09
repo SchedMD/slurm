@@ -555,8 +555,7 @@ extern int launch_p_handle_multi_prog_verify(int command_pos, opt_t *opt_local)
 
 extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 				    void (*signal_function)(int),
-				    sig_atomic_t *destroy_job, opt_t *opt_local,
-				    int pack_offset)
+				    sig_atomic_t *destroy_job, opt_t *opt_local)
 {
 	if (launch_common_create_job_step(job, use_all_cpus,
 					  signal_function, destroy_job,
@@ -666,6 +665,7 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	launch_params.remote_input_filename = fname_remote_string(job->ifname);
 	launch_params.remote_error_filename = fname_remote_string(job->efname);
 	launch_params.pack_offset = job->pack_offset;
+	launch_params.task_offset = job->task_offset;
 	launch_params.partition = job->partition;
 	launch_params.profile = opt_local->profile;
 	launch_params.task_prolog = opt_local->task_prolog;
@@ -788,8 +788,7 @@ cleanup:
 	return rc;
 }
 
-extern int launch_p_step_wait(srun_job_t *job, bool got_alloc, opt_t *opt_local,
-			      int pack_offset)
+extern int launch_p_step_wait(srun_job_t *job, bool got_alloc, opt_t *opt_local)
 {
 	int rc = 0;
 
@@ -800,9 +799,9 @@ extern int launch_p_step_wait(srun_job_t *job, bool got_alloc, opt_t *opt_local,
 		retry_step_begin = false;
 		slurm_step_ctx_destroy(job->step_ctx);
 		if (got_alloc) 
-			rc = create_job_step(job, true, opt_local, pack_offset);
+			rc = create_job_step(job, true, opt_local);
 		else
-			rc = create_job_step(job, false, opt_local,pack_offset);
+			rc = create_job_step(job, false, opt_local);
 		if (rc < 0)
 			exit(error_exit);
 		rc = -1;
