@@ -8502,7 +8502,7 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 			     submit_uid);
 			return ESLURM_INVALID_JOB_ID;
 		}
-		dup_job_ptr = find_job_record((uint32_t) job_desc_msg->job_id);
+		dup_job_ptr = find_job_record(job_desc_msg->job_id);
 		if (dup_job_ptr) {
 			info("attempt re-use active job_id %u",
 			     job_desc_msg->job_id);
