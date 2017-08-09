@@ -1398,9 +1398,15 @@ static void _update_job_size(uint32_t job_id)
 		fprintf(stderr, "Could not create file %s: %s\n", fname_sh,
 			strerror(errno));
 		goto fini;
+
 	}
-	chmod(fname_csh, 0700);	/* Make file executable */
-	chmod(fname_sh,  0700);
+	/*
+	 * Make files executable
+	 */
+	if (chmod(fname_csh, 0700) == -1)
+		error("%s: chmod(%s): %m", __func__, fname_csh);
+	if (chmod(fname_sh, 0700) == -1)
+		error("%s: chmod(%s): %m", __func__, fname_sh);
 
 	if (getenv("SLURM_NODELIST")) {
 		fprintf(resize_sh, "export SLURM_NODELIST=\"%s\"\n",
