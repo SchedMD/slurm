@@ -816,8 +816,8 @@ test37.16  Validate job cleanup when clusters are removed federation
 
 test38.#   Testing of heterogeneous jobs.
 =========================================
-test38.1   sbatch job info.
-test38.2   sbatch env variables.
-test38.3   salloc job info.
-test38.4   salloc env variables.
-test38.5   squeue pack_job fields
+test38.1   Validate sbatch pack job options.
+test38.2   Validate sbatch pack job environment variables.
+test38.3   Validate salloc pack job options.
+test38.4   Validate salloc pack job environment variables.
+test38.5   Validate squeue pack_job fields
