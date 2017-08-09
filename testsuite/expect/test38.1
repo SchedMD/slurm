@@ -53,6 +53,10 @@ proc sbatch {} {
 
 	spawn {*}$command
 	expect {
+		-re "Batch job submission failed" {
+			log_warn "Unable to execute test due to system configuration"
+			end_it 0
+		}
 		-re "$regex" {
 			incr matches
 			set job_id $expect_out(1,string)
