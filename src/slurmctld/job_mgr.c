@@ -12755,8 +12755,8 @@ extern int update_job(slurm_msg_t *msg, uid_t uid, bool send_msg)
 
 	job_ptr = find_job_record(job_specs->job_id);
 	if (job_ptr == NULL) {
-		error("update_job: job_id %u does not exist.",
-		      job_specs->job_id);
+		info("%s: job id %u does not exist",
+		     __func__, job_specs->job_id);
 		rc = ESLURM_INVALID_JOB_ID;
 	} else {
 		rc = _update_job(job_ptr, job_specs, uid);
