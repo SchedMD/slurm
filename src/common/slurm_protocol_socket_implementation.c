@@ -294,9 +294,10 @@ extern int slurm_send_timeout(int fd, char *buf, size_t size,
 
     done:
 	/* Reset fd flags to prior state, preserve errno */
-	if (fd_flags != SLURM_PROTOCOL_ERROR) {
+	if (fd_flags != -1) {
 		int slurm_err = slurm_get_errno();
-		fcntl(fd, F_SETFL, fd_flags);
+		if (fcntl(fd, F_SETFL, fd_flags) < 0)
+			error("%s: fcntl(F_SETFL) error: %m", __func__);
 		slurm_seterrno(slurm_err);
 	}
 
@@ -393,9 +394,10 @@ extern int slurm_recv_timeout(int fd, char *buffer, size_t size,
 
     done:
 	/* Reset fd flags to prior state, preserve errno */
-	if (fd_flags != SLURM_PROTOCOL_ERROR) {
+	if (fd_flags != -1) {
 		int slurm_err = slurm_get_errno();
-		fcntl(fd, F_SETFL, fd_flags);
+		if (fcntl(fd, F_SETFL, fd_flags) < 0)
+			error("%s: fcntl(F_SETFL) error: %m", __func__);
 		slurm_seterrno(slurm_err);
 	}
 
