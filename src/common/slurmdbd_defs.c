@@ -3928,7 +3928,7 @@ extern int slurmdbd_unpack_list_msg(dbd_list_msg_t **msg, uint16_t rpc_version,
 
 	safe_unpack32(&msg_ptr->return_code, buffer);
 
-	return msg_ptr->return_code;
+	return SLURM_SUCCESS;
 
 unpack_error:
 	slurmdbd_free_list_msg(msg_ptr);
