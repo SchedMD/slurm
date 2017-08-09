@@ -3441,7 +3441,7 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg, bool running_composite)
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
-	bool dump_job = false, dump_node = false;
+	bool dump_job = false;
 
 	/* init */
 	START_TIMER;
@@ -3519,8 +3519,6 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg, bool running_composite)
 	}
 	if (dump_job)
 		(void) schedule_job_save();	/* Has own locking */
-	if (dump_node)
-		(void) schedule_node_save();	/* Has own locking */
 }
 
 /* _slurm_rpc_step_layout - return the step layout structure for
