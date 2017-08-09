@@ -5810,8 +5810,10 @@ static void _xlate_task_str(job_info_t *job_ptr)
 		char *bitstr_len_str = getenv("SLURM_BITSTR_LEN");
 		if (bitstr_len_str)
 			bitstr_len = atoi(bitstr_len_str);
-		if (bitstr_len < 0)
+		if (bitstr_len <= 0)
 			bitstr_len = 64;
+		else
+			bitstr_len = MIN(bitstr_len, 4096);
 	}
 
 	if (bitstr_len > 0) {
@@ -5820,9 +5822,10 @@ static void _xlate_task_str(job_info_t *job_ptr)
 		out_buf = xmalloc(buf_size);
 		bit_fmt(out_buf, buf_size, task_bitmap);
 		len = strlen(out_buf);
-		if (len > (buf_size - 3))
-		for (i = 0; i < 3; i++)
-			out_buf[buf_size - 2 - i] = '.';
+		if (len > (buf_size - 3)) {
+			for (i = 0; i < 3; i++)
+				out_buf[buf_size - 2 - i] = '.';
+		}
 	} else {
 		/* Print the full bitmap's string representation.
 		 * For huge bitmaps this can take roughly one minute,
