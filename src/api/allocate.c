@@ -679,7 +679,7 @@ extern int slurm_pack_job_will_run(List job_req_list)
 			if (hs)
 				hostset_insert(hs, will_run_resp->node_list);
 			else
-				hostset_create(will_run_resp->node_list);
+				hs = hostset_create(will_run_resp->node_list);
 
 			if (will_run_resp->preemptee_job_id) {
 				itr = list_iterator_create(will_run_resp->
