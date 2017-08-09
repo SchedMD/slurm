@@ -4844,9 +4844,7 @@ static void  _slurm_rpc_block_info(slurm_msg_t * msg)
 		response_msg.data_size = get_buf_offset(buffer);
 		/* send message */
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
-
-		if (buffer)
-			free_buf(buffer);
+		free_buf(buffer);
 	}
 }
 
