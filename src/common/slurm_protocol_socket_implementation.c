@@ -530,16 +530,22 @@ static int _slurm_connect (int __fd, struct sockaddr const * __addr,
 	 * in serious problems for slurmctld. Making the connect call
 	 * non-blocking and polling seems to fix the problem. */
 	static int timeout = 0;
-	int rc, flags, err;
+	int rc, flags, flags_save, err;
 	socklen_t len;
 	struct pollfd ufds;
 
 	flags = fcntl(__fd, F_GETFL);
-	fcntl(__fd, F_SETFL, flags | O_NONBLOCK);
+	flags_save = flags;
+	if (flags == -1) {
+		error("%s: fcntl(F_GETFL) error: %m", __func__);
+		flags = 0;
+	}
+	if (fcntl(__fd, F_SETFL, flags | O_NONBLOCK) < 0)
+		error("%s: fcntl(F_SETFL) error: %m", __func__);
 
 	err = 0;
 	rc = connect(__fd , __addr , __len);
-	if (rc < 0 && errno != EINPROGRESS)
+	if ((rc < 0) && (errno != EINPROGRESS))
 		return -1;
 	if (rc == 0)
 		goto done;  /* connect completed immediately */
@@ -578,7 +584,10 @@ again:	rc = poll(&ufds, 1, timeout);
 	}
 
 done:
-	fcntl(__fd, F_SETFL, flags);
+	if (flags_save != -1) {
+		if (fcntl(__fd, F_SETFL, flags_save) < 0)
+			error("%s: fcntl(F_SETFL) error: %m", __func__);
+	}
 
 	/* NOTE: Connection refused is typically reported for
 	 * non-responsived nodes plus attempts to communicate
