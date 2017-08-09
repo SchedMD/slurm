@@ -5905,14 +5905,12 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 			 * currently can't deal with partition based
 			 * associations.
 			 */
-			memset(&assoc_rec, 0,
-			       sizeof(slurmdb_assoc_rec_t));
+			memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
 			if (assoc_ptr) {
 				assoc_rec.acct      = assoc_ptr->acct;
 				assoc_rec.partition = part_ptr_tmp->name;
 				assoc_rec.uid       = job_desc->user_id;
-
-				assoc_mgr_fill_in_assoc(
+				(void) assoc_mgr_fill_in_assoc(
 					acct_db_conn, &assoc_rec,
 					accounting_enforce, NULL, false);
 			}
@@ -6353,12 +6351,15 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	} else if (association_based_accounting &&
 		   !assoc_ptr &&
 		   !(accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
-		/* If not enforcing associations we want to look for the
+		/*
+		 * If not enforcing associations we want to look for the
 		 * default account and use it to avoid getting trash in the
-		 * accounting records. */
+		 * accounting records.
+		 */
 		assoc_rec.acct = NULL;
-		assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-					accounting_enforce, &assoc_ptr, false);
+		(void) assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
+					       accounting_enforce, &assoc_ptr,
+					       false);
 		if (assoc_ptr) {
 			info("_job_create: account '%s' has no association "
 			     "for user %u using default account '%s'",
@@ -15758,9 +15759,9 @@ extern int update_job_account(char *module, struct job_record *job_ptr,
 		 * trash in the accounting records.
 		 */
 		assoc_rec.acct = NULL;
-		assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-					accounting_enforce,
-					&job_ptr->assoc_ptr, false);
+		(void) assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
+					       accounting_enforce,
+					       &job_ptr->assoc_ptr, false);
 		if (!job_ptr->assoc_ptr) {
 			debug("%s: we didn't have an association for account "
 			      "'%s' and user '%u', and we can't seem to find "
