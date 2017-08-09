@@ -158,7 +158,7 @@ libslurmfull_la_LDFLAGS        = \
 # when running "make install", but removing it prevents essential slurm
 # symbols from being available in programs linking with libpmi
 #
-libpmi_la_SOURCES = pmi.c
+libpmi_la_SOURCES = pmi.c $(top_builddir)/src/common/strlcpy.c
 libpmi_la_LIBADD = $(top_builddir)/src/api/libslurm.la
 libpmi_la_LDFLAGS = $(LIB_LDFLAGS) \
         -version-info $(libpmi_current):$(libpmi_rev):$(libpmi_age) \
