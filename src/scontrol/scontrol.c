@@ -1151,8 +1151,9 @@ static int _process_command (int argc, char **argv)
 			}
 		}
 	}
-	else if (strncasecmp (tag, "fsdampeningfactor",
-			      MAX(tag_len, 3)) == 0) {
+	else if (!strncasecmp(tag, "fsdampeningfactor", MAX(tag_len, 3)) ||
+		 !strncasecmp(tag, "fairsharedampeningfactor",
+			      MAX(tag_len, 3))) {
 		if (argc > 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
