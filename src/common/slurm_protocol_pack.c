@@ -773,6 +773,14 @@ static int _unpack_buf_list_msg(ctld_list_msg_t **msg, Buf buffer,
 
 static void _priority_factors_resp_list_del(void *x);
 
+static int
+_unpack_set_fs_dampening_factor_msg(set_fs_dampening_factor_msg_t ** msg_ptr,
+				    Buf buffer,
+				    uint16_t protocol_version);
+static void
+_pack_set_fs_dampening_factor_msg(set_fs_dampening_factor_msg_t * msg,
+				  Buf buffer, uint16_t protocol_version);
+
 /* pack_header
  * packs a slurm protocol header that precedes every slurm message
  * IN header - the header structure to pack
@@ -1540,6 +1548,11 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_buf_list_msg((ctld_list_msg_t *) msg->data, buffer,
 				   msg->protocol_version);
 		break;
+	case REQUEST_SET_FS_DAMPENING_FACTOR:
+		_pack_set_fs_dampening_factor_msg(
+			(set_fs_dampening_factor_msg_t *)msg->data, buffer,
+			msg->protocol_version);
+		break;
 	default:
 		debug("No pack method for msg type %u", msg->msg_type);
 		return EINVAL;
@@ -2283,6 +2296,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case RESPONSE_CTLD_MULT_MSG:
 		rc = _unpack_buf_list_msg((ctld_list_msg_t **) &(msg->data),
 					  buffer, msg->protocol_version);
+		break;
+	case REQUEST_SET_FS_DAMPENING_FACTOR:
+		rc = _unpack_set_fs_dampening_factor_msg(
+			(set_fs_dampening_factor_msg_t **)&(msg->data), buffer,
+			msg->protocol_version);
 		break;
 	default:
 		debug("No unpack method for msg type %u", msg->msg_type);
@@ -15234,5 +15252,35 @@ static int _unpack_buf_list_msg(ctld_list_msg_t **msg, Buf buffer,
 unpack_error:
 	slurm_free_ctld_multi_msg(object_ptr);
 	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+static void
+_pack_set_fs_dampening_factor_msg(set_fs_dampening_factor_msg_t * msg,
+				  Buf buffer, uint16_t protocol_version)
+{
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION)
+		pack16(msg->dampening_factor, buffer);
+}
+
+
+static int
+_unpack_set_fs_dampening_factor_msg(set_fs_dampening_factor_msg_t ** msg_ptr,
+				    Buf buffer, uint16_t protocol_version)
+{
+	set_fs_dampening_factor_msg_t *msg;
+
+	msg = xmalloc(sizeof(set_fs_dampening_factor_msg_t));
+	*msg_ptr = msg;
+
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack16(&msg->dampening_factor, buffer);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_set_fs_dampening_factor_msg(msg);
+	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }

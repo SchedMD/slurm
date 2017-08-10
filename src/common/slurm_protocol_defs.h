@@ -197,6 +197,7 @@ typedef enum {
 	RESPONSE_ACCT_GATHER_ENERGY,	/* 1020 */
 	REQUEST_LICENSE_INFO,
 	RESPONSE_LICENSE_INFO,
+	REQUEST_SET_FS_DAMPENING_FACTOR,
 	DBD_MESSAGES_START = 1400, /* We can't replace this with
 				    * REQUEST_PERSIST_INIT since DBD_INIT is
 				    * packed in a way we can't tell the
@@ -873,6 +874,10 @@ typedef struct composite_msg {
 	List	 msg_list;
 } composite_msg_t;
 
+typedef struct set_fs_dampening_factor_msg {
+	uint16_t dampening_factor;
+} set_fs_dampening_factor_msg_t;
+
 /* Note: We include the node list here for reliable cleanup on XCPU systems.
  *
  * Note: We include select_jobinfo here in addition to the job launch
@@ -1434,6 +1439,8 @@ extern void slurm_free_license_info_request_msg(license_info_request_msg_t *msg)
 extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data);
 extern void slurm_free_network_callerid_msg(network_callerid_msg_t *mesg);
 extern void slurm_free_network_callerid_resp(network_callerid_resp_t *resp);
+extern void
+slurm_free_set_fs_dampening_factor_msg(set_fs_dampening_factor_msg_t *msg);
 
 extern const char *preempt_mode_string(uint16_t preempt_mode);
 extern uint16_t preempt_mode_num(const char *preempt_mode);

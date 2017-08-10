@@ -1151,6 +1151,42 @@ static int _process_command (int argc, char **argv)
 			}
 		}
 	}
+	else if (strncasecmp (tag, "fsdampeningfactor",
+			      MAX(tag_len, 3)) == 0) {
+		if (argc > 2) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr,
+					"too many arguments for keyword:%s\n",
+					tag);
+		} else if (argc < 2) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr,
+					"too few arguments for keyword:%s\n",
+					tag);
+		} else {
+			uint16_t factor = 0;
+			char *endptr;
+			factor = (uint16_t)strtoul(argv[1], &endptr, 10);
+			if (*endptr != '\0' || factor == 0) {
+				if (quiet_flag != 1)
+					fprintf(stderr, "invalid "
+						"dampening factor: %s\n",
+						argv[1]);
+			} else {
+				error_code = slurm_set_fs_dampeningfactor(
+						factor);
+				if (error_code) {
+					exit_code = 1;
+					if (quiet_flag != 1)
+						slurm_perror(
+							"slurm_set_fs_dampeningfactor "
+							"error");
+				}
+			}
+		}
+	}
 	else if (strncasecmp (tag, "setdebug", MAX(tag_len, 2)) == 0) {
 		if (argc > 2) {
 			exit_code = 1;

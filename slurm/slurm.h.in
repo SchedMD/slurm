@@ -4641,6 +4641,13 @@ extern int slurm_set_debug_level(uint32_t debug_level);
  */
 extern int slurm_set_schedlog_level(uint32_t schedlog_level);
 
+/*
+ * slurm_set_fs_dampeningfactor - issue RPC to set slurm fs dampening factor
+ * IN factor - requested fs dampening factor
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+extern int slurm_set_fs_dampeningfactor(uint16_t factor);
+
 /*****************************************************************************\
  *      SLURM JOB SUSPEND FUNCTIONS
 \*****************************************************************************/

@@ -192,6 +192,7 @@ inline static void  _slurm_rpc_set_debug_level(slurm_msg_t *msg);
 inline static void  _slurm_rpc_set_schedlog_level(slurm_msg_t *msg);
 inline static void  _slurm_rpc_shutdown_controller(slurm_msg_t * msg);
 inline static void  _slurm_rpc_shutdown_controller_immediate(slurm_msg_t *msg);
+inline static void  _slurm_rpc_set_fs_dampening_factor(slurm_msg_t *msg);
 
 inline static void _slurm_rpc_sib_job_lock(uint32_t uid, slurm_msg_t *msg);
 inline static void _slurm_rpc_sib_job_unlock(uint32_t uid, slurm_msg_t *msg);
@@ -565,6 +566,9 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		break;
 	case REQUEST_EVENT_LOG:
 		_slurm_rpc_event_log(msg);
+		break;
+	case REQUEST_SET_FS_DAMPENING_FACTOR:
+		_slurm_rpc_set_fs_dampening_factor(msg);
 		break;
 	default:
 		error("invalid RPC msg_type=%u", msg->msg_type);
@@ -6712,4 +6716,33 @@ static int _route_msg_to_origin(slurm_msg_t *msg, char *src_job_id_str,
 	}
 
 	return SLURM_ERROR;
+}
+
+inline static void  _slurm_rpc_set_fs_dampening_factor(slurm_msg_t *msg)
+{
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
+					 slurmctld_config.auth_info);
+	slurmctld_lock_t config_write_lock =
+		{ WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK, READ_LOCK };
+	set_fs_dampening_factor_msg_t *request_msg =
+		(set_fs_dampening_factor_msg_t *) msg->data;
+	uint16_t factor;
+
+	debug2("Processing RPC: REQUEST_SET_FS_DAMPENING_FACTOR from uid=%d", uid);
+	if (!validate_super_user(uid)) {
+		error("set FairShareDampeningFactor request from non-super user uid=%d",
+		      uid);
+		slurm_send_rc_msg(msg, EACCES);
+		return;
+	}
+	factor = request_msg->dampening_factor;
+
+	lock_slurmctld(config_write_lock);
+	slurm_set_fs_dampening_factor(factor);
+	slurmctld_conf.last_update = time(NULL);
+	priority_g_reconfig(false);
+	unlock_slurmctld(config_write_lock);
+
+	info("Set FairShareDampeningFactor to %u", factor);
+	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 }

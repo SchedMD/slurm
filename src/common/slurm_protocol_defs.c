@@ -3962,6 +3962,12 @@ extern void slurm_free_composite_msg(composite_msg_t *msg)
 	}
 }
 
+extern void
+slurm_free_set_fs_dampening_factor_msg(set_fs_dampening_factor_msg_t *msg)
+{
+	xfree(msg);
+}
+
 extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 {
 	/* this message was never loaded */
@@ -4336,6 +4342,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_JOB_PACK_ALLOCATION:
 		FREE_NULL_LIST(data);
 		break;
+	case REQUEST_SET_FS_DAMPENING_FACTOR:
+		slurm_free_set_fs_dampening_factor_msg(data);
+		break;
 	default:
 		error("invalid type trying to be freed %u", type);
 		break;
@@ -4502,6 +4511,8 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_LICENSE_INFO";
 	case RESPONSE_LICENSE_INFO:
 		return "RESPONSE_LICENSE_INFO";
+	case REQUEST_SET_FS_DAMPENING_FACTOR:
+		return "REQUEST_SET_FS_DAMPENING_FACTOR,";
 
 	case REQUEST_BUILD_INFO:				/* 2001 */
 		return "REQUEST_BUILD_INFO";
