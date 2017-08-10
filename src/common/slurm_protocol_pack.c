@@ -773,13 +773,13 @@ static int _unpack_buf_list_msg(ctld_list_msg_t **msg, Buf buffer,
 
 static void _priority_factors_resp_list_del(void *x);
 
-static int
-_unpack_set_fs_dampening_factor_msg(set_fs_dampening_factor_msg_t ** msg_ptr,
-				    Buf buffer,
-				    uint16_t protocol_version);
-static void
-_pack_set_fs_dampening_factor_msg(set_fs_dampening_factor_msg_t * msg,
-				  Buf buffer, uint16_t protocol_version);
+static int _unpack_set_fs_dampening_factor_msg(
+	set_fs_dampening_factor_msg_t ** msg_ptr,
+	Buf buffer,
+	uint16_t protocol_version);
+static void _pack_set_fs_dampening_factor_msg(
+	set_fs_dampening_factor_msg_t * msg,
+	Buf buffer, uint16_t protocol_version);
 
 /* pack_header
  * packs a slurm protocol header that precedes every slurm message
@@ -15255,18 +15255,18 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_set_fs_dampening_factor_msg(set_fs_dampening_factor_msg_t * msg,
-				  Buf buffer, uint16_t protocol_version)
+static void _pack_set_fs_dampening_factor_msg(
+	set_fs_dampening_factor_msg_t *msg,
+	Buf buffer, uint16_t protocol_version)
 {
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION)
 		pack16(msg->dampening_factor, buffer);
 }
 
 
-static int
-_unpack_set_fs_dampening_factor_msg(set_fs_dampening_factor_msg_t ** msg_ptr,
-				    Buf buffer, uint16_t protocol_version)
+static int _unpack_set_fs_dampening_factor_msg(
+	set_fs_dampening_factor_msg_t **msg_ptr,
+	Buf buffer, uint16_t protocol_version)
 {
 	set_fs_dampening_factor_msg_t *msg;
 

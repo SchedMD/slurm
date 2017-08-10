@@ -3962,8 +3962,8 @@ extern void slurm_free_composite_msg(composite_msg_t *msg)
 	}
 }
 
-extern void
-slurm_free_set_fs_dampening_factor_msg(set_fs_dampening_factor_msg_t *msg)
+extern void slurm_free_set_fs_dampening_factor_msg(
+	set_fs_dampening_factor_msg_t *msg)
 {
 	xfree(msg);
 }
