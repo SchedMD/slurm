@@ -209,14 +209,18 @@ int main (int argc, char **argv)
 			fprintf(stderr, "\t: %s\n", temp);
 		list_iterator_destroy(itr);
 	} else if (!req_msg.user_list || !list_count(req_msg.user_list)) {
-		struct passwd *pwd = getpwuid(getuid());
-		if (!req_msg.user_list)
-			req_msg.user_list = list_create(slurm_destroy_char);
-		temp = xstrdup(pwd->pw_name);
-		list_append(req_msg.user_list, temp);
-		if (verbosity) {
-			fprintf(stderr, "Users requested:\n");
-			fprintf(stderr, "\t: %s\n", temp);
+		struct passwd *pwd;
+		if ((pwd = getpwuid(getuid()))) {
+			if (!req_msg.user_list) {
+				req_msg.user_list =
+					list_create(slurm_destroy_char);
+			}
+			temp = xstrdup(pwd->pw_name);
+			list_append(req_msg.user_list, temp);
+			if (verbosity) {
+				fprintf(stderr, "Users requested:\n");
+				fprintf(stderr, "\t: %s\n", temp);
+			}
 		}
 	}
 
