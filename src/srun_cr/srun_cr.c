@@ -254,8 +254,10 @@ create_listen_socket(void)
 
 	unlink(sa.sun_path);	/* remove possible old socket */
 
-	setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR,
-		   (void*)&re_use_addr, sizeof(int));
+	if (setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR,
+		       (void*)&re_use_addr, sizeof(int)) == -1) {
+		error("%s: setsockopt: %m", __func__);
+	}
 
 	if (bind(listen_fd, (struct sockaddr *)&sa, sa_len) < 0) {
 		error("failed to bind listen socket: %m");
