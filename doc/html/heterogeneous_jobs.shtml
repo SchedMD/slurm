@@ -352,6 +352,18 @@ srun master : slave &
 
 <h2><a name="limitations">Limitations</a></h2>
 
+<p>The backfill scheduler has limiations in how it tracks usage of CPUs and
+memory in the future.
+This typically requires the backfill scheduler be able to allocate each
+component of a heterogeneous job on a different node in order to begin its
+resource allocation, even if multiple compoents of the job do actually get
+allocated resources on the same node.</p>
+
+<p>Use of a debugger requires that each srun command launch tasks in only
+one job component or the each launched task have a unique rank (i.e.
+"--mpi-combine=yes", the default).
+Otherwise duplicate ranks (task IDs) will not be recognized by the debugger.</p>
+
 <p>In a federation of clusters, a heterogeneous job will execute entirely on
 the cluster from which the job is submitted. The heterogeneous job will not
 be eligible to migrate between clusters or to have different components of
