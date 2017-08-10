@@ -2061,7 +2061,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      resume <jobid_list>      resume previously suspended job (see suspend)\n\
      setdebug <level>         set slurmctld debug level                    \n\
      setdebugflags [+|-]<flag>  add or remove slurmctld DebugFlags         \n\
-     schedloglevel <slevel>   set scheduler log level                      \n\
+     schedloglevel <level>    set scheduler log level                      \n\
      show <ENTITY> [<ID>]     display state of identified entity, default  \n\
 			      is all records.                              \n\
      shutdown <OPTS>          shutdown slurm daemons                       \n\
