@@ -4573,7 +4573,7 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	int jobid = NO_VAL;
 	int stepid = NO_VAL;
 	GError *error = NULL;
-	int i=0;
+	int i = 0;
 	char *type;
 	char *tmp_jobid = NULL, *offset;
 
@@ -4583,11 +4583,10 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		type = "Node";
 
 	gtk_tree_model_get(model, iter, SORTID_JOBID, &tmp_jobid, -1);
-	offset = strchr(tmp_jobid, '(');
-
 	if (!tmp_jobid)
 		return;
 
+	offset = strchr(tmp_jobid, '(');
 	if (offset)
 		offset++;
 	else
