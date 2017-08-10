@@ -2169,18 +2169,19 @@ extern bool check_part_includes_node(int node_dx)
 {
 	partition_info_t *part_ptr = NULL;
 	bool rc = false;
-	int i = 0;
+	int i;
 	static partition_info_msg_t *part_info_ptr = NULL;
 
 	if (working_sview_config.show_hidden)
 		return true;
 
-	if (!g_part_info_ptr)
+	if (!g_part_info_ptr) {
 		i = get_new_info_part(&part_info_ptr, true);
-	if (i && (i != SLURM_NO_CHANGE_IN_DATA)) {
-		if (_DEBUG)
-			g_print("check_part_includes_node : error %d ", i);
-		return false;
+		if (!g_part_info_ptr || (i && (i != SLURM_NO_CHANGE_IN_DATA))) {
+			if (_DEBUG)
+				g_print("%s : error %d ", __func__, i);
+			return false;
+		}
 	}
 
 	for (i = 0; i < g_part_info_ptr->record_count; i++) {
