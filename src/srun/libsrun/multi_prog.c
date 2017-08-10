@@ -300,8 +300,6 @@ mpir_dump_proctable(void)
 
 	for (i = 0; i < MPIR_proctable_size; i++) {
 		tv = &MPIR_proctable[i];
-		if (!tv)
-			break;
 		info("task:%d, host:%s, pid:%d, executable:%s",
 		     i, tv->host_name, tv->pid, tv->executable_name);
 	}
