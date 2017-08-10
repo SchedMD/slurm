@@ -303,7 +303,7 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		else
 			type = "Core Count";
 		if (_is_corecnt_supported() != SLURM_SUCCESS) {
-			global_edit_error_msg = g_strdup_printf("CoreCnt or CPUCnt is only supported when SelectType includes select/cons_res or SelectTypeParameters includes OTHER_CONS_RES on a Cray.");
+			xstrcat(global_edit_error_msg, "CoreCnt or CPUCnt is only supported when SelectType includes select/cons_res or SelectTypeParameters includes OTHER_CONS_RES on a Cray.");
 			goto return_error;
 		}
 		if (_parse_resv_core_cnt(resv_msg, (char *)new_text,
