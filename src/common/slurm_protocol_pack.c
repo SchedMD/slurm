@@ -15259,7 +15259,7 @@ static void _pack_set_fs_dampening_factor_msg(
 	set_fs_dampening_factor_msg_t *msg,
 	Buf buffer, uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION)
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION)
 		pack16(msg->dampening_factor, buffer);
 }
 
@@ -15273,9 +15273,8 @@ static int _unpack_set_fs_dampening_factor_msg(
 	msg = xmalloc(sizeof(set_fs_dampening_factor_msg_t));
 	*msg_ptr = msg;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION)
 		safe_unpack16(&msg->dampening_factor, buffer);
-	}
 
 	return SLURM_SUCCESS;
 
