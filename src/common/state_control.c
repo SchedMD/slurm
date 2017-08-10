@@ -58,7 +58,7 @@ extern char *watts_to_str(uint32_t watts)
 	return str;
 }
 
-extern uint32_t _parse_watts(char *watts_str, resv_desc_msg_t *resv_msg_ptr,
+extern uint32_t parse_resv_watts(char *watts_str, resv_desc_msg_t *resv_msg_ptr,
 			     char **err_msg)
 {
 	resv_msg_ptr->resv_watts = 0;
@@ -85,7 +85,7 @@ extern uint32_t _parse_watts(char *watts_str, resv_desc_msg_t *resv_msg_ptr,
 	return SLURM_SUCCESS;
 }
 
-extern int _is_configured_tres(char *type)
+extern int configured_tres(char *type)
 {
 	int i, cc;
 	int rc = SLURM_ERROR;
@@ -111,7 +111,7 @@ cleanup:
 	return rc;
 }
 
-extern int _is_corecnt_supported(void)
+extern int corecnt_supported(void)
 {
 	uint32_t select_type = slurmdb_setup_plugin_id_select();
 
@@ -122,9 +122,9 @@ extern int _is_corecnt_supported(void)
 	return SLURM_SUCCESS;
 }
 
-extern int _parse_resv_core_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
-				int *free_tres_corecnt,	bool from_tres,
-				char **err_msg)
+extern int parse_resv_corecnt(resv_desc_msg_t *resv_msg_ptr, char *val,
+			      int *free_tres_corecnt, bool from_tres,
+			      char **err_msg)
 {
 	char *endptr = NULL, *core_cnt, *tok, *ptrptr = NULL;
 	int node_inx = 0;
@@ -169,9 +169,9 @@ extern int _parse_resv_core_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
 
 }
 
-extern int _parse_resv_node_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
-				int *free_tres_nodecnt, bool from_tres,
-				char **err_msg)
+extern int parse_resv_nodecnt(resv_desc_msg_t *resv_msg_ptr, char *val,
+			      int *free_tres_nodecnt, bool from_tres,
+			      char **err_msg)
 {
 	char *endptr = NULL, *node_cnt, *tok, *ptrptr = NULL;
 	int node_inx = 0;
@@ -258,7 +258,7 @@ extern int _parse_resv_tres(char *val, resv_desc_msg_t *resv_msg_ptr,
 		} else
 			type = compound;
 
-		if (_is_configured_tres(compound) != SLURM_SUCCESS) {
+		if (configured_tres(compound) != SLURM_SUCCESS) {
 			xstrfmtcat(*err_msg,
 				   "couldn't identify configured TRES '%s'",
 				   compound);
@@ -321,23 +321,21 @@ extern int _parse_resv_tres(char *val, resv_desc_msg_t *resv_msg_ptr,
 
 	if (tres_corecnt && tres_corecnt[0] != '\0') {
 		/* only have this on a cons_res machine */
-		ret = _is_corecnt_supported();
+		ret = corecnt_supported();
 		if (ret != SLURM_SUCCESS) {
 			xstrfmtcat(*err_msg, "CoreCnt or CPUCnt is only supported when SelectType includes select/cons_res or SelectTypeParameters includes OTHER_CONS_RES on a Cray.");
 			goto error;
 		}
-		ret = _parse_resv_core_cnt(resv_msg_ptr, tres_corecnt,
-					   free_tres_corecnt, true,
-					   err_msg);
+		ret = parse_resv_corecnt(resv_msg_ptr, tres_corecnt,
+					 free_tres_corecnt, true, err_msg);
 		xfree(tres_corecnt);
 		if (ret != SLURM_SUCCESS)
 			goto error;
 	}
 
 	if (tres_nodecnt && tres_nodecnt[0] != '\0') {
-		ret = _parse_resv_node_cnt(resv_msg_ptr, tres_nodecnt,
-					   free_tres_nodecnt, true,
-					   err_msg);
+		ret = parse_resv_nodecnt(resv_msg_ptr, tres_nodecnt,
+					 free_tres_nodecnt, true, err_msg);
 		xfree(tres_nodecnt);
 		if (ret != SLURM_SUCCESS)
 			goto error;

@@ -302,13 +302,13 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 			type = "Cnode Count";
 		else
 			type = "Core Count";
-		if (_is_corecnt_supported() != SLURM_SUCCESS) {
+		if (corecnt_supported() != SLURM_SUCCESS) {
 			xstrcat(global_edit_error_msg, "CoreCnt or CPUCnt is only supported when SelectType includes select/cons_res or SelectTypeParameters includes OTHER_CONS_RES on a Cray.");
 			goto return_error;
 		}
-		if (_parse_resv_core_cnt(resv_msg, (char *)new_text,
-					 &free_tres_corecnt, false,
-					 &err_msg) == SLURM_ERROR) {
+		if (parse_resv_corecnt(resv_msg, (char *)new_text,
+				       &free_tres_corecnt, false,
+				       &err_msg) == SLURM_ERROR) {
 			global_edit_error_msg = xstrdup(err_msg);
 			xfree(err_msg);
 			goto return_error;
@@ -349,9 +349,9 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 			type = "Midplane Count";
 		else
 			type = "Node Count";
-		if (_parse_resv_node_cnt(resv_msg, (char *)new_text,
-					 &free_tres_nodecnt, false,
-					 &err_msg) == SLURM_ERROR) {
+		if (parse_resv_nodecnt(resv_msg, (char *)new_text,
+				       &free_tres_nodecnt, false,
+				       &err_msg) == SLURM_ERROR) {
 			global_edit_error_msg = xstrdup(err_msg);
 			xfree(err_msg);
 			goto return_error;
@@ -387,7 +387,7 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		}
 		break;
 	case SORTID_WATTS:
-		if (_parse_watts((char *) new_text, resv_msg, &err_msg)
+		if (parse_resv_watts((char *) new_text, resv_msg, &err_msg)
 		    == SLURM_ERROR) {
 			global_edit_error_msg = xstrdup(err_msg);
 			xfree(err_msg);

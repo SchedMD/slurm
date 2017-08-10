@@ -203,9 +203,9 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 		} else if (strncasecmp(tag, "NodeCnt", MAX(taglen,5)) == 0 ||
 			   strncasecmp(tag, "NodeCount", MAX(taglen,5)) == 0) {
 
-			if (_parse_resv_node_cnt(resv_msg_ptr, val,
-						 free_tres_nodecnt, false,
-						 &err_msg) == SLURM_ERROR) {
+			if (parse_resv_nodecnt(resv_msg_ptr, val,
+					       free_tres_nodecnt, false,
+					       &err_msg) == SLURM_ERROR) {
 				error("%s", err_msg);
 				xfree(err_msg);
 				exit_code = 1;
@@ -218,15 +218,15 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 			   strncasecmp(tag, "CPUCount",  MAX(taglen,5)) == 0) {
 
 			/* only have this on a cons_res machine */
-			if (_is_corecnt_supported() != SLURM_SUCCESS) {
+			if (corecnt_supported() != SLURM_SUCCESS) {
 				error("CoreCnt or CPUCnt is only supported when SelectType includes select/cons_res or SelectTypeParameters includes OTHER_CONS_RES on a Cray.");
 				exit_code = 1;
 				return SLURM_ERROR;
 			}
 
-			if (_parse_resv_core_cnt(resv_msg_ptr, val,
-						 free_tres_corecnt, false,
-						 &err_msg) == SLURM_ERROR) {
+			if (parse_resv_corecnt(resv_msg_ptr, val,
+					       free_tres_corecnt, false,
+					       &err_msg) == SLURM_ERROR) {
 				error("%s", err_msg);
 				xfree(err_msg);
 				exit_code = 1;
@@ -259,7 +259,7 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 			}
 
 		} else if (strncasecmp(tag, "Watts", MAX(taglen, 1)) == 0) {
-			if (_parse_watts(val, resv_msg_ptr, &err_msg)
+			if (parse_resv_watts(val, resv_msg_ptr, &err_msg)
 			    == SLURM_ERROR) {
 				error("%s", err_msg);
 				xfree(err_msg);
