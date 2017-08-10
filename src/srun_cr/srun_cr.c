@@ -120,11 +120,11 @@ signal_child (int sig, siginfo_t *siginfo, void *context)
 	}
 
 	if ((siginfo->si_code > 0) &&	/* si_code > 0 indicates sent by kernel */
-	    (sig == SIGILL || sig == SIGFPE ||
-	     sig == SIGBUS || sig == SIGSEGV )) {
+	    ((sig == SIGILL) || (sig == SIGFPE) ||
+	     (sig == SIGBUS) || (sig == SIGSEGV) )) {
 		/* This signal is OUR error, so we don't forward */
 		signal_self(sig);
-	} else if (sig == SIGTSTP || sig == SIGTTIN || sig == SIGTTOU) {
+	} else if ((sig == SIGTSTP) || (sig == SIGTTIN) || (sig == SIGTTOU)) {
 		/* The catchable stop signals go to child AND self */
 		(void)kill(srun_pid, sig);
 		signal_self(sig);
@@ -149,7 +149,7 @@ mimic_exit(int status)
 		/* now raise the signal */
 		signal_self(WTERMSIG(status));
 	} else {
-		error("Unexpected status from child");
+		error("%s: Unexpected status from child", __func__);
 		exit(-1);
 	}
 }
@@ -165,7 +165,8 @@ on_child_exit(int signum, siginfo_t *siginfo, void *arg)
 	 */
 	cr_enter_cs(cr_id);
 	if (waitpid(srun_pid, &status, WNOHANG) == srun_pid) {
-		verbose("srun(%d) exited, status: %d", srun_pid, status);
+		verbose("%s: srun(%d) exited, status: %d",
+			__func__, srun_pid, status);
 		mimic_exit(status);
 	}
 	kill(srun_pid, SIGKILL);
@@ -195,9 +196,8 @@ update_env(char *name, char *val)
 	char *buf = NULL;
 
 	xstrfmtcat (buf, "%s=%s", name, val);
-	if (putenv(buf)) {
-		fatal("failed to update env: %m");
-	}
+	if (putenv(buf))
+		fatal("%s: failed to update env: %m", __func__);
 }
 
 static int
@@ -244,7 +244,7 @@ create_listen_socket(void)
 
 	listen_fd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (listen_fd < 0) {
-		error("failed to create listen socket: %m");
+		error("%s: failed to create listen socket: %m", __func__);
 		return -1;
 	}
 
@@ -260,13 +260,13 @@ create_listen_socket(void)
 	}
 
 	if (bind(listen_fd, (struct sockaddr *)&sa, sa_len) < 0) {
-		error("failed to bind listen socket: %m");
+		error("%s: failed to bind listen socket: %m", __func__);
 		unlink(sa.sun_path);
 		return -1;
 	}
 
 	if (listen(listen_fd, 2) < 0) {
-		error("failed to listen: %m");
+		error("%s: failed to listen: %m", __func__);
 		unlink(sa.sun_path);
 		return -1;
 	}
