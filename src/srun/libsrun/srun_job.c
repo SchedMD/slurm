@@ -660,7 +660,8 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 			if (!opt_local)
 				fatal("%s: opt_list too short", __func__);
 			job->pack_offset = pack_offset;
-			job->task_offset = task_offset;
+			if (opt_local->mpi_combine)
+				job->task_offset = task_offset;
 			rc = create_job_step(job, use_all_cpus, opt_local);
 			if (rc < 0)
 				break;
