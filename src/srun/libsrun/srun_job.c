@@ -503,7 +503,7 @@ static void _pack_grp_test(List opt_list)
  */
 static void _match_job_name(List opt_list)
 {
-	int cnt, i;
+	int cnt;
 	ListIterator iter;
 	opt_t *opt_local;
 
@@ -518,13 +518,6 @@ static void _match_job_name(List opt_list)
 	while ((opt_local = (opt_t *) list_next(iter))) {
 		if (!opt_local->job_name)
 			opt_local->job_name = xstrdup(opt.job_name);
-		if ((opt.argc != 0) && (opt_local->argc != opt.argc)) {
-			opt_local->argc = opt.argc;
-			xfree(opt_local->argv);
-			opt_local->argv = xmalloc(sizeof(char *) * opt.argc);
-			for (i = 0; i < opt.argc; i++)
-				opt_local->argv[i] = xstrdup(opt.argv[i]);
-		}
 	}
 	list_iterator_destroy(iter);
 }
@@ -540,7 +533,7 @@ extern void init_srun(int argc, char **argv,
 		      bool handle_signals)
 {
 	bool pack_fini = false;
-	int pack_argc, pack_inx, pack_argc_off;
+	int i, pack_argc, pack_inx, pack_argc_off;
 	char **pack_argv;
 
 	/*
@@ -576,6 +569,14 @@ extern void init_srun(int argc, char **argv,
 						&pack_argc_off) < 0) {
 			error("srun parameter parsing");
 			exit(1);
+		}
+		if ((pack_argc_off >= 0) && (pack_argc_off < pack_argc)) {
+			for (i = pack_argc_off; i < pack_argc; i++) {
+				if (!xstrcmp(pack_argv[i], ":")) {
+					pack_argc_off = i;
+					break;
+				}
+			}
 		}
 		if ((pack_argc_off >= 0) && (pack_argc_off < pack_argc) &&
 		    !xstrcmp(pack_argv[pack_argc_off], ":")) {

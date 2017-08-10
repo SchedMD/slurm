@@ -2381,7 +2381,7 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 	opt.argc = 0;
 	if (optind < argc) {
 		rest = argv + optind;
-		while (rest[opt.argc] != NULL)
+		while ((rest[opt.argc] != NULL) && strcmp(rest[opt.argc], ":"))
 			opt.argc++;
 	}
 
