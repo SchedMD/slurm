@@ -1680,14 +1680,16 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 		memset(object, 0, sizeof(object));
 
 		/* first find the object */
-		start=0;
-		for(i=0; i<len; i++) {
+		start = 0;
+		for (i = 0; i < len; i++) {
 			if (line[i] == '-') {
 				start = i;
 				if (line[i-1] == ' ')
 					i--;
-				if (i<sizeof(object))
+				if (i < sizeof(object)) {
+					i++;	/* Append '\0' */
 					strlcpy(object, line, i);
+				}
 				break;
 			}
 		}
