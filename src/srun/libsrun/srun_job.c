@@ -543,15 +543,18 @@ extern void init_srun(int argc, char **argv,
 	int pack_argc, pack_inx, pack_argc_off;
 	char **pack_argv;
 
-	/* This must happen before we spawn any threads
-	 * which are not designed to handle arbitrary signals */
+	/*
+	 * This must happen before we spawn any threads
+	 * which are not designed to handle arbitrary signals
+	 */
 	if (handle_signals) {
 		if (xsignal_block(sig_array) < 0)
 			error("Unable to block signals");
 	}
 	xsignal_block(pty_sigarray);
 
-	/* Initialize plugin stack, read options from plugins, etc.
+	/*
+	 * Initialize plugin stack, read options from plugins, etc.
 	 */
 	init_spank_env();
 	if (spank_init(NULL) < 0) {
@@ -559,7 +562,8 @@ extern void init_srun(int argc, char **argv,
 		exit(error_exit);
 	}
 
-	/* Be sure to call spank_fini when srun exits.
+	/*
+	 * Be sure to call spank_fini when srun exits.
 	 */
 	if (atexit(_call_spank_fini) < 0)
 		error("Failed to register atexit handler for plugins: %m");
@@ -575,7 +579,9 @@ extern void init_srun(int argc, char **argv,
 		}
 		if ((pack_argc_off >= 0) && (pack_argc_off < pack_argc) &&
 		    !xstrcmp(pack_argv[pack_argc_off], ":")) {
-			/* pack_argv[0] moves from "srun" to ":" */
+			/*
+			 * move pack_argv[0] from "srun" to ":"
+			 */
 			pack_argc -= pack_argc_off;
 			pack_argv += pack_argc_off;
 		} else
@@ -589,11 +595,13 @@ extern void init_srun(int argc, char **argv,
 		exit(error_exit);
 	}
 
-	/* reinit log with new verbosity (if changed by command line)
+	/*
+	 * reinit log with new verbosity (if changed by command line)
 	 */
 	if (logopt && (_verbose || opt.quiet)) {
-		/* If log level is already increased, only increment the
-		 *   level to the difference of _verbose an LOG_LEVEL_INFO
+		/*
+		 * If log level is already increased, only increment the
+		 * level to the difference of _verbose an LOG_LEVEL_INFO
 		 */
 		if ((_verbose -= (logopt->stderr_level - LOG_LEVEL_INFO)) > 0)
 			logopt->stderr_level += _verbose;
@@ -608,10 +616,14 @@ extern void init_srun(int argc, char **argv,
 	(void) _set_umask_env();
 	_set_submit_dir_env();
 
-	/* Set up slurmctld message handler */
+	/*
+	 * Set up slurmctld message handler
+	 */
 	slurmctld_msg_init();
 
-	/* save process startup time to be used with -I<timeout> */
+	/*
+	 * save process startup time to be used with -I<timeout>
+	 */
 	srun_begin_time = time(NULL);
 }
 

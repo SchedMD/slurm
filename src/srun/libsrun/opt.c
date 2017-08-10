@@ -2424,6 +2424,7 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 		if (!rest || !rest[i-command_pos])
 			break;
 		opt.argv[i] = xstrdup(rest[i-command_pos]);
+		// info("argv[%d]='%s'", i, opt.argv[i]);
 	}
 	opt.argv[i] = NULL;	/* End of argv's (for possible execv) */
 
@@ -2459,11 +2460,6 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 			fatal("Can not execute %s", opt.argv[command_pos]);
 		}
 	}
-#endif
-
-#if 0
-	for (i=0; i<opt.argc; i++)
-		info("%d is '%s'", i, opt.argv[i]);
 #endif
 }
 
@@ -3172,14 +3168,16 @@ static void _opt_list(void)
 	if (opt.resv_port_cnt != NO_VAL)
 		info("resv_port_cnt     : %d", opt.resv_port_cnt);
 	info("power             : %s", power_flags_str(opt.power_flags));
+
 	str = print_commandline(opt.argc, opt.argv);
 	info("remote command    : `%s'", str);
+	xfree(str);
+
 	if (opt.mcs_label)
 		info("mcs-label         : %s",opt.mcs_label);
 	info("mpi_combine       : %s", opt.mpi_combine == true ? "YES" : "NO");
 	if (opt.pack_group)
 		info("pack_group        : %s",opt.pack_group);
-	xfree(str);
 
 }
 
