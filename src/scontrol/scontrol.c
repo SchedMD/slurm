@@ -1171,8 +1171,8 @@ static int _process_command (int argc, char **argv)
 			factor = (uint16_t)strtoul(argv[1], &endptr, 10);
 			if (*endptr != '\0' || factor == 0) {
 				if (quiet_flag != 1)
-					fprintf(stderr, "invalid "
-						"dampening factor: %s\n",
+					fprintf(stderr,
+						"invalid dampening factor: %s\n",
 						argv[1]);
 			} else {
 				error_code = slurm_set_fs_dampeningfactor(
@@ -1180,9 +1180,7 @@ static int _process_command (int argc, char **argv)
 				if (error_code) {
 					exit_code = 1;
 					if (quiet_flag != 1)
-						slurm_perror(
-							"slurm_set_fs_dampeningfactor "
-							"error");
+						slurm_perror("slurm_set_fs_dampeningfactor error");
 				}
 			}
 		}
