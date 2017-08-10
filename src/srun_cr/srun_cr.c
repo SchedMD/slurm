@@ -531,21 +531,17 @@ _read_info_from_srun(int srun_fd)
 {
 	int len;
 
-	if (read(srun_fd, &jobid, sizeof(uint32_t)) != sizeof(uint32_t)) {
-		fatal("failed to read jobid: %m");
-	}
+	if (read(srun_fd, &jobid, sizeof(uint32_t)) != sizeof(uint32_t))
+		fatal("%s: failed to read jobid: %m", __func__);
 
-	if (read(srun_fd, &stepid, sizeof(uint32_t)) != sizeof(uint32_t)) {
-		fatal("failed to read stepid: %m");
-	}
+	if (read(srun_fd, &stepid, sizeof(uint32_t)) != sizeof(uint32_t))
+		fatal("%s: failed to read stepid: %m", __func__);
 
-	if (read(srun_fd, &len, sizeof(int)) != sizeof(int)) {
-		fatal("failed to read nodelist length: %m");
-	}
+	if (read(srun_fd, &len, sizeof(int)) != sizeof(int))
+		fatal("%s: failed to read nodelist length: %m", __func__);
 
 	xfree(nodelist);
 	nodelist = (char *)xmalloc(len + 1);
-	if (read(srun_fd, nodelist, len + 1) != len + 1) {
-		fatal("failed to read nodelist: %m");
-	}
+	if (read(srun_fd, nodelist, len + 1) != len + 1)
+		fatal("%s: failed to read nodelist: %m", __func__);
 }
