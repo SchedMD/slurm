@@ -153,6 +153,7 @@ Lead Slurm developers are:
 <li>Roman Kurakin (Institute of Natural Science and Ecology, Russia)</li>
 <br>
 <li>Sam Lang</li>
+<li>Justin Lecher (Gentoo)</li>
 <li>Puenlap Lee (Bull)</li>
 <li>Dennis Leepow</li>
 <li>Veronique Legrand (Institut Pasteur, France)</li>
@@ -267,6 +268,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 1 June 2017</p>
+<p style="text-align:center;">Last modified 10 August 2017</p>
 
 <!--#include virtual="footer.txt"-->
