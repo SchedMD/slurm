@@ -871,7 +871,7 @@ display_it:
 		i++;
 		/* Since we will not use any of these pages we will */
 		/* leave them blank */
-		switch(spec_info->type) {
+		switch (spec_info->type) {
 		case PART_PAGE:
 		case BLOCK_PAGE:
 		case NODE_PAGE:
@@ -903,7 +903,7 @@ extern void set_menus_bb(void *arg, void *arg2, GtkTreePath *path, int type)
 	popup_info_t *popup_win = (popup_info_t *)arg;
 	GtkMenu *menu = (GtkMenu *)arg2;
 
-	switch(type) {
+	switch (type) {
 	case TAB_CLICKED:
 		make_fields_menu(NULL, menu, display_data_bb, SORTID_CNT);
 		break;
@@ -948,7 +948,7 @@ extern void popup_all_bb(GtkTreeModel *model, GtkTreeIter *iter, int id)
 
 	gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
 
-	switch(id) {
+	switch (id) {
 	case INFO_PAGE:
 		snprintf(title, 100, "Full info for Burst Buffer %s", name);
 		break;
@@ -984,7 +984,7 @@ extern void popup_all_bb(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	popup_win->iter = *iter;
 
 	/* Sets up right click information */
-	switch(id) {
+	switch (id) {
 	case JOB_PAGE:
 	case INFO_PAGE:
 		popup_win->spec_info->search_info->gchar_data = name;
