@@ -539,6 +539,8 @@ _read_info_from_srun(int srun_fd)
 
 	if (read(srun_fd, &len, sizeof(int)) != sizeof(int))
 		fatal("%s: failed to read nodelist length: %m", __func__);
+	if (len > (32 * 1024))
+		fatal("%s: nodelist length too large (%d)", __func__, len);
 
 	xfree(nodelist);
 	nodelist = (char *)xmalloc(len + 1);
