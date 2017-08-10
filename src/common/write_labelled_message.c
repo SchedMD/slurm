@@ -130,7 +130,7 @@ static char *_build_label(int task_id, int task_id_width,
 
 	if (pack_offset != NO_VAL) {
 		if (task_offset != NO_VAL) {
-			xstrfmtcat(buf, "P %*d: ", task_id_width,
+			xstrfmtcat(buf, "%*d: ", task_id_width,
 				   (task_id + task_offset));
 		} else {
 			xstrfmtcat(buf, "P%u %*d: ", pack_offset, task_id_width,
