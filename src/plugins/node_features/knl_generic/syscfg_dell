@@ -1,0 +1,37 @@
+#!/bin/bash
+# Emulate syscfg (Dell's MOBO interface) for testing purposes
+# Use cases:
+# syscfg -h --SystemMemoryModel"
+# syscfg -h --ProcEmbMemMode"
+# syscfg --SystemMemoryModel"
+# syscfg --ProcEmbMemMode"
+# syscfg --SystemMemoryModel="
+# syscfg --ProcEmbMemMode="
+#
+
+if [ "${1}" == "-h" -a "${2}" == "--SystemMemoryModel" ]; then
+   echo 'Arguments : All2All|SNC-2|SNC-4|Hemisphere|Quadrant'
+   exit 0
+fi
+
+if [ "${1}" == "-h" -a "${2}" == "--ProcEmbMemMode" ]; then
+   echo 'Arguments : Cache|Memory|Hybrid'
+   exit 0
+fi
+
+if [ "${1}" == "--SystemMemoryModel" ]; then
+   echo 'SystemMemoryModel=snc-4'
+   exit 0
+fi
+
+if [ "${1}" == "--ProcEmbMemMode" ]; then
+   echo 'ProcEmbMemMode=memory'
+   exit 0
+fi
+
+if [[ "${1}" == *=* ]]; then
+   exit 0
+fi
+
+echo 'Invalid argument'
+exit 1
