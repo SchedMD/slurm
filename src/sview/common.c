@@ -1855,10 +1855,6 @@ extern void *popup_thr(popup_info_t *popup_win)
 	/* when popup is killed running will be set to 0 */
 	while (running) {
 		gdk_threads_enter();
-		if (!running) {
-			gdk_threads_leave();
-			break;
-		}
 		(specifc_info)(popup_win);
 		gdk_threads_leave();
 		sleep(working_sview_config.refresh_delay);
