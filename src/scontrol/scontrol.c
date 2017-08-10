@@ -2032,6 +2032,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      errnumstr <ERRNO>        Given a Slurm error number, return a         \n\
                               descriptive string.                          \n\
      exit                     terminate scontrol                           \n\
+     fsdampeningfactor <factor> Set the FairShareDampeningFactor in slurmctld\n\
      help                     print this description of use.               \n\
      hold <job_list>          prevent specified job from starting. <job_list>\n\
 			      is either a space separate list of job IDs or\n\
