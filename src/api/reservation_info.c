@@ -44,6 +44,7 @@
 
 #include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/state_control.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -101,7 +102,7 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 {
 	char tmp1[32], tmp2[32], tmp3[32], *flag_str = NULL;
 	char *state="INACTIVE";
-	char *out = NULL;
+	char *out = NULL, *watts_str = NULL;
 	uint32_t duration;
 	time_t now = time(NULL);
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
@@ -151,16 +152,14 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 	xstrcat(out, line_end);
 
 	/****** Line ******/
-	if (resv_ptr->resv_watts != (time_t) NO_VAL) {
-		snprintf(tmp1, 32, "%u", resv_ptr->resv_watts);
-	} else
-		snprintf(tmp1, 32, "n/a");
+	watts_str = watts_to_str(resv_ptr->resv_watts);
 	if ((resv_ptr->start_time <= now) && (resv_ptr->end_time >= now))
 		state = "ACTIVE";
 	xstrfmtcat(out,
 		   "Users=%s Accounts=%s Licenses=%s State=%s BurstBuffer=%s "
 		   "Watts=%s", resv_ptr->users, resv_ptr->accounts,
-		   resv_ptr->licenses, state, resv_ptr->burst_buffer, tmp1);
+		   resv_ptr->licenses, state, resv_ptr->burst_buffer, watts_str);
+	xfree(watts_str);
 
 	if (one_liner)
 		xstrcat(out, "\n");

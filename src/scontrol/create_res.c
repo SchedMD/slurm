@@ -259,8 +259,11 @@ scontrol_parse_res_options(int argc, char **argv, const char *msg,
 			}
 
 		} else if (strncasecmp(tag, "Watts", MAX(taglen, 1)) == 0) {
-			if (parse_uint32(val, &(resv_msg_ptr->resv_watts))) {
-				error("Invalid Watts value: %s", val);
+			if (_parse_watts(val, resv_msg_ptr, &err_msg)
+			    == SLURM_ERROR) {
+				error("%s", err_msg);
+				xfree(err_msg);
+				exit_code = 1;
 				return SLURM_ERROR;
 			}
 		} else if (strncasecmp(tag, "res", 3) == 0) {

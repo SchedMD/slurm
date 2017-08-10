@@ -40,6 +40,20 @@
 #include "slurm/slurm.h"
 
 /*
+ * IN watts - resv_watts to convert to string format
+ */
+extern char *watts_to_str(uint32_t watts);
+
+/*
+ * Parse reservation request option Watts
+ * IN watts_str - value to parse
+ * IN/OUT resv_msg_ptr - msg where resv_watts member is modified
+ * OUT err_msg - set to an explanation of failure, if any. Don't set if NULL
+ */
+extern uint32_t _parse_watts(char * watts_str, resv_desc_msg_t *resv_msg_ptr,
+			     char **err_msg);
+
+/*
  * RET SLURM_SUCCESS if 'type' is a configured TRES.
  */
 extern int _is_configured_tres(char *type);

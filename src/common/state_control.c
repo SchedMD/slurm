@@ -40,6 +40,51 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+extern char *watts_to_str(uint32_t watts)
+{
+	char *str = NULL;
+
+	if ((watts == NO_VAL) || (watts == 0))
+		xstrcat(str, "n/a");
+	else if (watts == INFINITE)
+		xstrcat(str, "INFINITE");
+	else if ((watts % 1000000) == 0)
+		xstrfmtcat(str, "%uM", watts / 1000000);
+	else if ((watts % 1000) == 0)
+		xstrfmtcat(str, "%uK", watts / 1000);
+	else
+		xstrfmtcat(str, "%u", watts);
+
+	return str;
+}
+
+extern uint32_t _parse_watts(char *watts_str, resv_desc_msg_t *resv_msg_ptr,
+			     char **err_msg)
+{
+	resv_msg_ptr->resv_watts = 0;
+	char *end_ptr = NULL;
+
+	if (!xstrcasecmp(watts_str, "n/a") || !xstrcasecmp(watts_str, "none"))
+		return SLURM_SUCCESS;
+	if (!xstrcasecmp(watts_str, "INFINITE")) {
+		resv_msg_ptr->resv_watts = INFINITE;
+		return SLURM_SUCCESS;
+	}
+	resv_msg_ptr->resv_watts = (uint32_t)strtoul(watts_str, &end_ptr, 10);
+	if ((end_ptr[0] == 'k') || (end_ptr[0] == 'K')) {
+		resv_msg_ptr->resv_watts *= 1000;
+	} else if ((end_ptr[0] == 'm') || (end_ptr[0] == 'M')) {
+		resv_msg_ptr->resv_watts *= 1000000;
+	} else if (end_ptr[0] != '\0') {
+		if (err_msg)
+			xstrfmtcat(*err_msg, "Invalid Watts value: %s",
+				   watts_str);
+		resv_msg_ptr->resv_watts = NO_VAL;
+		return SLURM_ERROR;
+	}
+	return SLURM_SUCCESS;
+}
+
 extern int _is_configured_tres(char *type)
 {
 	int i, cc;
