@@ -270,7 +270,7 @@ _handle_openmpi_port_error(const char *tasks, const char *hosts,
 static void _task_start(launch_tasks_response_msg_t *msg)
 {
 	MPIR_PROCDESC *table;
-	int task_id;
+	uint32_t local_task_id, global_task_id;
 	int i;
 	task_state_t task_state;
 
@@ -293,26 +293,27 @@ static void _task_start(launch_tasks_response_msg_t *msg)
 		      __func__, msg->job_id, msg->step_id);
 	}
 	for (i = 0; i < msg->count_of_pids; i++) {
-		task_id = msg->task_ids[i];
-		if (task_id >= MPIR_proctable_size) {
-			error("%s: task_id too large (%d >= %d)", __func__,
-			      task_id, MPIR_proctable_size);
+		local_task_id = msg->task_ids[i];
+		global_task_id = task_state_global_id(task_state,local_task_id);
+		if (global_task_id >= MPIR_proctable_size) {
+			error("%s: task_id too large (%u >= %d)", __func__,
+			      global_task_id, MPIR_proctable_size);
 			continue;
 		}
-		table = &MPIR_proctable[task_id];
+		table = &MPIR_proctable[global_task_id];
 		table->host_name = xstrdup(msg->node_name);
-		/* table->executable_name is set elsewhere */
+		/* table->executable_name set in mpir_set_executable_names() */
 		table->pid = msg->local_pids[i];
-
 		if (!task_state) {
 			error("%s: Could not update task state for task ID %u",
-			      __func__, task_id);
+			      __func__, global_task_id);
 		} else if (msg->return_code == 0) {
-			task_state_update(task_state, task_id,
+			task_state_update(task_state, local_task_id,
 					  TS_START_SUCCESS);
 		} else {
-			task_state_update(task_state, task_id,
+			task_state_update(task_state, local_task_id,
 					  TS_START_FAILURE);
+
 		}
 	}
 
@@ -634,7 +635,8 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 				     task_state_list);
 	if (!task_state) {
 		task_state = task_state_create(job->jobid, job->stepid,
-					       job->pack_offset, job->ntasks);
+					       job->pack_offset, job->ntasks,
+					       job->task_offset);
 		slurm_mutex_lock(&pack_lock);
 		if (!local_job_list)
 			local_job_list = list_create(NULL);
@@ -768,10 +770,10 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 		/*
 		 * Only set up MPIR structures if the step launched correctly
 		 */
-		if (opt_local->multi_prog)
+		if (opt_local->multi_prog) {
 			mpir_set_multi_name(job->ntasks,
 					    launch_params.argv[0]);
-		else
+		} else
 			mpir_set_executable_names(launch_params.argv[0]);
 		MPIR_debug_state = MPIR_DEBUG_SPAWNED;
 

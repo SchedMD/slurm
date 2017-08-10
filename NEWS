@@ -92,6 +92,7 @@ documents those changes that are of interest to users and administrators.
     * Modify launch/slurm plugin to signal all components of a pack job rather
       than just the one (modify to use a list of step context records).
     * Add logic to support srun --mpi-combine option.
+    * Set up debugger data structures.
 
 * Changes in Slurm 17.11.0pre1
 ==============================
