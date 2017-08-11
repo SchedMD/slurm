@@ -223,6 +223,12 @@ $ squeue --job=93
 JOBID PARTITION  NAME  USER ST  TIME  NODES NODELIST
 </pre>
 
+<pWhile a heterogeneous job is in pending state, only the entire job can be
+cancelled rather than it's individual components.
+A request to cancel an individual component of a heterogeneous job not in
+pending state will return an error.
+After the job has begun execution, the individual component can be cancelled.</p>
+
 <p>Email notification for job state changes (the <i>--mail-type</i> option)
 is only supported for a pack leader. Requests for email notifications for other
 components of a heterogeneous job will be silently ignored.</p>
@@ -464,6 +470,6 @@ especially other heterogeneous jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 10 August 2017</p>
+<p style="text-align:center;">Last modified 11 August 2017</p>
 
 <!--#include virtual="footer.txt"-->
