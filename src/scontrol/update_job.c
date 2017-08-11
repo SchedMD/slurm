@@ -70,7 +70,7 @@ static char *local_job_str = NULL;
 /* Confirm that contents of job_str is valid comma delimited list of job IDs */
 static bool _is_job_id(char *job_str)
 {
-	bool have_under = false;
+	bool have_plus = false, have_under = false;
 	int bracket_cnt = 0;
 	int i;
 
@@ -79,7 +79,11 @@ static bool _is_job_id(char *job_str)
 
 	local_job_str = xstrdup(job_str);
 	for (i = 0; local_job_str[i]; i++) {
-		if (local_job_str[i] == '_') {
+		if (local_job_str[i] == '+') {
+			if (have_plus)
+				goto fail;	/* multiple '+' in name */
+			have_plus = true;
+		} else if (local_job_str[i] == '_') {
 			if (have_under)
 				goto fail;	/* multiple '_' in name */
 			have_under = true;
@@ -94,6 +98,7 @@ static bool _is_job_id(char *job_str)
 			   (local_job_str[i] == ' ')) {
 			if (bracket_cnt == 0) {
 				local_job_str[i] = '^';	/* New separator */
+				have_plus  = false;
 				have_under = false;
 			}
 		} else if ((local_job_str[i] < '0') || (local_job_str[i] > '9'))

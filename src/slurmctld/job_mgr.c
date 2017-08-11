@@ -14704,7 +14704,7 @@ static int _job_suspend(struct job_record *job_ptr, uint16_t op, bool indf_susp)
 	ListIterator iter;
 
 	if (job_ptr->pack_job_id && !job_ptr->pack_job_list)
-		return ESLURM_NOT_PACK_JOB_LEADER;
+		return ESLURM_NOT_PACK_WHOLE;
 
 	/* Notify salloc/srun of suspend/resume */
 	srun_job_suspend(job_ptr, op);
@@ -14843,12 +14843,16 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 	}
 
 	long_id = strtol(sus_ptr->job_id_str, &end_ptr, 10);
-	if ((long_id <= 0) || (long_id == LONG_MAX) ||
-	    ((end_ptr[0] != '\0') && (end_ptr[0] != '_'))) {
-		info("job_suspend2: invalid job id %s", sus_ptr->job_id_str);
+	if (end_ptr[0] == '+')
+		rc = ESLURM_NOT_PACK_WHOLE;
+	else if ((long_id <= 0) || (long_id == LONG_MAX) ||
+		 ((end_ptr[0] != '\0') && (end_ptr[0] != '_')))
 		rc = ESLURM_INVALID_JOB_ID;
+	if (rc != SLURM_SUCCESS) {
+		info("%s: invalid job id %s", __func__, sus_ptr->job_id_str);
 		goto reply;
 	}
+
 	job_id = (uint32_t) long_id;
 	if (end_ptr[0] == '\0') {	/* Single job (or full job array) */
 		struct job_record *job_ptr_done = NULL;
