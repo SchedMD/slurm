@@ -5031,12 +5031,14 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 	if (end_ptr[0] == '+') {	/* Signal pack job element */
 		job_id = (uint32_t) long_id;
 		long_id = strtol(end_ptr + 1, &end_ptr, 10);
-		if ((long_id <= 0) || (long_id == LONG_MAX) ||
+		if ((long_id < 0) || (long_id == LONG_MAX) ||
 		    (end_ptr[0] != '\0')) {
 			info("%s(2): invalid job id %s", __func__, job_id_str);
 			return ESLURM_INVALID_JOB_ID;
 		}
 		job_ptr = find_job_pack_record(job_id, (uint32_t) long_id);
+		if (IS_JOB_PENDING(job_ptr))
+			return ESLURM_NOT_PACK_WHOLE;
 		if (job_ptr)
 			return _job_signal(job_ptr, signal, flags, uid,preempt);
 		return ESLURM_ALREADY_DONE;
@@ -5048,16 +5050,6 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		int jobs_done = 0, jobs_signaled = 0;
 		struct job_record *job_ptr_done = NULL;
 		job_ptr = find_job_record(job_id);
-		if (job_ptr && job_ptr->pack_job_list) {
-			return _pack_job_signal(job_ptr, signal, flags, uid,
-						preempt);
-		}
-		if (job_ptr && (job_ptr->array_task_id == NO_VAL) &&
-		    (job_ptr->array_recs == NULL)) {
-			/* This is a regular job, not a job array */
-			return job_signal(job_id, signal, flags, uid, preempt);
-		}
-
 		if (job_ptr && (job_ptr->user_id != uid) &&
 		    !validate_operator(uid) &&
 		    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
@@ -5065,6 +5057,17 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			error("Security violation, REQUEST_KILL_JOB RPC for "
 			      "jobID %u from uid %d", job_ptr->job_id, uid);
 			return ESLURM_ACCESS_DENIED;
+		}
+		if (job_ptr && job_ptr->pack_job_list) {   /* Pack leader */
+			return _pack_job_signal(job_ptr, signal, flags, uid,
+						preempt);
+		}
+		if (job_ptr && job_ptr->pack_job_id && IS_JOB_PENDING(job_ptr))
+			return ESLURM_NOT_PACK_WHOLE;	/* Pack job child */
+		if (job_ptr && (job_ptr->array_task_id == NO_VAL) &&
+		    (job_ptr->array_recs == NULL)) {
+			/* This is a regular job, not a job array */
+			return job_signal(job_id, signal, flags, uid, preempt);
 		}
 
 		/* This will kill the meta record that holds all
