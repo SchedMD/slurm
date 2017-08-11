@@ -3730,6 +3730,8 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 	resv_desc.flags      = resv_ptr->flags;
 	resv_desc.node_cnt   = xmalloc(sizeof(uint32_t) * 2);
 	resv_desc.node_cnt[0]= 0 - delta_node_cnt;
+	tmp1_bitmap = bit_copy(resv_ptr->part_ptr->node_bitmap);
+	bit_and_not(tmp1_bitmap, resv_ptr->node_bitmap);
 	i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &tmp1_bitmap,
 			  &core_bitmap);
 	xfree(resv_desc.node_cnt);
