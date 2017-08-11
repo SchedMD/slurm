@@ -2440,7 +2440,7 @@ extern int fed_mgr_init(void *db_conn)
 	if (fed) {
 		slurmdb_cluster_rec_t *cluster = NULL;
 		slurmctld_lock_t fedr_jobw_lock = {
-			NO_LOCK, JOB_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
+			NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
 
 		if ((cluster = list_find_first(fed->cluster_list,
 					       slurmdb_find_cluster_in_list,
@@ -2462,7 +2462,7 @@ extern int fed_mgr_init(void *db_conn)
 		/* cluster has been removed from federation while it was down.
 		 * Need to clear up jobs */
 		slurmctld_lock_t fedw_jobw_lock = {
-			NO_LOCK, JOB_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
+			NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
 
 		info("self was removed from federation since last start");
 		lock_slurmctld(fedw_jobw_lock);
@@ -2514,9 +2514,9 @@ extern int fed_mgr_update_feds(slurmdb_update_object_t *update)
 	slurmdb_federation_rec_t *fed   = NULL;
 	slurmdb_cluster_rec_t *cluster  = NULL;
 	slurmctld_lock_t fedr_jobw_lock = {
-		NO_LOCK, JOB_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
+		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 	slurmctld_lock_t fedw_jobw_lock    = {
-		NO_LOCK, JOB_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
+		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
 
 	if (!update->objects)
 		return SLURM_SUCCESS;
