@@ -68,7 +68,6 @@ static void  _add_delay(void);
 static int   _cancel_jobs(void);
 static void *_cancel_job_id (void *cancel_info);
 static void *_cancel_step_id (void *cancel_info);
-
 static int  _confirmation(job_info_t *job_ptr, uint32_t step_id);
 static void _filter_job_records(void);
 static void _load_job_records (void);
@@ -778,7 +777,9 @@ _cancel_job_id (void *ci)
 		error_code = slurm_get_errno();
 		if ((opt.verbose > 0) ||
 		    ((error_code != ESLURM_ALREADY_DONE) &&
-		     (error_code != ESLURM_INVALID_JOB_ID))) {
+		     (error_code != ESLURM_INVALID_JOB_ID) &&
+		     ((error_code != ESLURM_NOT_PACK_WHOLE) ||
+		      (opt.job_cnt != 0)))) {
 			error("Kill job error on job id %s: %s",
 			      cancel_info->job_id_str,
 			      slurm_strerror(slurm_get_errno()));
