@@ -94,6 +94,8 @@ documents those changes that are of interest to users and administrators.
     * Add logic to support srun --mpi-combine option.
     * Set up debugger data structures.
     * Disable cancellation of individual component while the job is pending.
+    * Modify scontrol job hold/release and update to operate with heterogeneous
+      job id specification (e.g. "scontrol hold 123+4").
 
 * Changes in Slurm 17.11.0pre1
 ==============================

@@ -407,8 +407,7 @@ scontrol_hold(char *op, char *job_str)
 		job_msg.priority = INFINITE;
 
 	if (_is_job_id(job_str)) {
-		job_msg.job_id_str = _next_job_id();
-		while (job_msg.job_id_str) {
+		while ((job_msg.job_id_str = _next_job_id())) {
 			rc2 = slurm_update_job2(&job_msg, &resp);
 			if (rc2 != SLURM_SUCCESS) {
 				rc2 = slurm_get_errno();

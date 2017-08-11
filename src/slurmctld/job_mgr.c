@@ -11786,10 +11786,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	}
 
 	if (job_specs->priority != NO_VAL) {
-		/* If we are doing time slicing we could update the
-		   priority of the job while running to give better
-		   position (larger time slices) than competing jobs
-		*/
+		/*
+		 * If we are doing time slicing we could update the
+		 * priority of the job while running to give better
+		 * position (larger time slices) than competing jobs
+		 */
 		if (IS_JOB_FINISHED(job_ptr) || (detail_ptr == NULL))
 			error_code = ESLURM_JOB_FINISHED;
 		else if (job_ptr->priority == job_specs->priority) {
@@ -11808,10 +11809,10 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			    (job_ptr->state_reason == WAIT_HELD_USER))) {
 			job_ptr->direct_set_prio = 0;
 			set_job_prio(job_ptr);
-			info("sched: update_job: releasing hold for job_id %u "
-			     "uid %u",
+			info("sched: update_job: releasing hold for job_id %u by uid %u",
 			     job_ptr->job_id, uid);
 			job_ptr->state_reason = WAIT_NO_REASON;
+			job_ptr->state_reason_prev = WAIT_NO_REASON;
 			job_ptr->job_state &= ~JOB_SPECIAL_EXIT;
 			xfree(job_ptr->state_desc);
 			job_ptr->exit_code = 0;
@@ -12770,12 +12771,12 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 	job_desc_msg_t *job_specs = (job_desc_msg_t *) msg->data;
 	struct job_record *job_ptr, *new_job_ptr;
 	long int long_id;
-	uint32_t job_id = 0;
+	uint32_t job_id = 0, pack_offset;
 	bitstr_t *array_bitmap = NULL, *tmp_bitmap;
 	bool valid = true;
 	int32_t i, i_first, i_last;
 	int len, rc = SLURM_SUCCESS, rc2;
-	char *end_ptr, *tok, *tmp;
+	char *end_ptr, *tok, *tmp = NULL;
 	char *job_id_str;
 	resp_array_struct_t *resp_array = NULL;
 	job_array_resp_msg_t *resp_array_msg = NULL;
@@ -12783,14 +12784,14 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 
 	job_id_str = job_specs->job_id_str;
 
-	if (max_array_size == NO_VAL) {
+	if (max_array_size == NO_VAL)
 		max_array_size = slurmctld_conf.max_array_sz;
-	}
 
 	long_id = strtol(job_id_str, &end_ptr, 10);
 	if ((long_id <= 0) || (long_id == LONG_MAX) ||
-	    ((end_ptr[0] != '\0') && (end_ptr[0] != '_'))) {
-		info("update_job_str: invalid job id %s", job_id_str);
+	    ((end_ptr[0] != '\0') && (end_ptr[0] != '_') &&
+	     (end_ptr[0] != '+'))) {
+		info("%s: invalid job id %s", __func__, job_id_str);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto reply;
 	}
@@ -12822,7 +12823,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 		/* Update all tasks of this job array */
 		job_ptr = job_array_hash_j[JOB_HASH_INX(job_id)];
 		if (!job_ptr && !job_ptr_done) {
-			info("update_job_str: invalid job id %u", job_id);
+			info("%s: invalid job id %u", __func__, job_id);
 			rc = ESLURM_INVALID_JOB_ID;
 			goto reply;
 		}
@@ -12838,6 +12839,23 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			}
 			job_ptr = job_ptr->job_array_next_j;
 		}
+		goto reply;
+	} else if (end_ptr[0] == '+') {	/* Pack job element */
+		long_id = strtol(end_ptr+1, &tmp, 10);
+		if ((long_id <= 0) || (long_id == LONG_MAX) ||
+		    (tmp[0] != '\0')) {
+			info("%s: invalid job id %s", __func__, job_id_str);
+			rc = ESLURM_INVALID_JOB_ID;
+			goto reply;
+		}
+		pack_offset = (uint32_t) long_id;
+		job_ptr = find_job_pack_record(job_id, pack_offset);
+		if (!job_ptr) {
+			info("%s: invalid job id %u", __func__, job_id);
+			rc = ESLURM_INVALID_JOB_ID;
+			goto reply;
+		}
+		rc = _update_job(job_ptr, job_specs, uid);
 		goto reply;
 	}
 
@@ -12856,7 +12874,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			valid = false;
 	}
 	if (!valid) {
-		info("update_job_str: invalid job id %s", job_id_str);
+		info("%s: invalid job id %s", __func__, job_id_str);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto reply;
 	}
@@ -12904,9 +12922,8 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 				job_ptr->array_task_id = i;
 				new_job_ptr = job_array_split(job_ptr);
 				if (!new_job_ptr) {
-					error("update_job_str: Unable to copy "
-					      "record for job %u",
-					      job_ptr->job_id);
+					error("%s: Unable to copy record for job %u",
+					      __func__, job_ptr->job_id);
 				} else {
 					/* The array_recs structure is moved
 					 * to the new job record copy */
@@ -12928,7 +12945,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			continue;
 		job_ptr = find_job_array_rec(job_id, i);
 		if (job_ptr == NULL) {
-			info("update_job_str: invalid job id %u_%d", job_id, i);
+			info("%s: invalid job id %u_%d", __func__, job_id, i);
 			_resp_array_add_id(&resp_array, job_id, i,
 					   ESLURM_INVALID_JOB_ID);
 			continue;
