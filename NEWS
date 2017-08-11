@@ -49,6 +49,7 @@ documents those changes that are of interest to users and administrators.
     truncation of core specification and not reserving the specified cores.
  -- Close race condition on Slurm structures when setting DebugFlags.
  -- Make it so the cray/switch plugin grabs new DebugFlags on a reconfigure.
+ -- Fix incorrect lock levels when creating or updating a reservation.
 
 * Changes in Slurm 17.02.6
 ==========================
