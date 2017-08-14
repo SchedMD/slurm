@@ -53,7 +53,6 @@ documents those changes that are of interest to users and administrators.
  -- Fix overlapping reservation resize.
  -- Add logic to help support Dell KNL systems where syscfg is different than
     the normal Intel syscfg.
- -- CRAY - Fix BB to handle type= correctly, regression in 17.02.6.
 
 * Changes in Slurm 17.02.6
 ==========================

@@ -774,16 +774,14 @@ extern int bb_pack_usage(uid_t uid, bb_state_t *state_ptr, Buf buffer,
  * Default units are bytes. */
 extern uint64_t bb_get_size_num(char *tok, uint64_t granularity)
 {
-	char *tmp = NULL, *unit;
+	char *unit = NULL;
 	uint64_t bb_size_i;
 	uint64_t bb_size_u = 0;
 
-	bb_size_i = (uint64_t) strtoull(tok, &tmp, 10);
-	if ((bb_size_i > 0) && tmp) {
+	bb_size_i = (uint64_t) strtoull(tok, &unit, 10);
+	if (bb_size_i > 0) {
 		bb_size_u = bb_size_i;
-		unit = xstrdup(tmp);
 		strtok(unit, " ");
-		info("got '%s' and '%s'", unit, tmp);
 		if (!xstrcasecmp(unit, "k") || !xstrcasecmp(unit, "kib")) {
 			bb_size_u *= 1024;
 		} else if (!xstrcasecmp(unit, "kb")) {
@@ -821,7 +819,6 @@ extern uint64_t bb_get_size_num(char *tok, uint64_t granularity)
 			bb_size_u |= BB_SIZE_IN_NODES;
 			granularity = 1;
 		}
-		xfree(unit);
 	}
 
 	if (granularity > 1) {
