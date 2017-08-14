@@ -135,7 +135,7 @@ if {$got_config == 0} {
 #
 # Copy slurm.conf file
 #
-set cwd "[$bin_pwd]"
+set cwd [$bin_pwd]
 exec $bin_rm -fr $cwd/slurm.conf.orig
 spawn $bin_cp -v $config_dir/slurm.conf $cwd/slurm.conf.orig
 expect {
@@ -199,6 +199,18 @@ if {$match == 0} {
 
 cancel_job $job_id
 
+
+spawn $bin_cp -v $cwd/slurm.conf.orig $config_dir/slurm.conf
+expect {
+	timeout {
+		send_user "\nFAILURE: slurm.conf was not copied\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
 # Append Prolog config to the slurm.conf
 exec $bin_echo "prolog=$cwd/$bad_prolog" >> $config_dir/slurm.conf
 update_conf
@@ -230,7 +242,7 @@ sleep 10
 set match 0
 spawn $squeue -h -j$job_id -o%t|%r
 expect {
-	-re "PD.job requeued in held state" {
+	-re "PD.launch failed requeued held" {
 		set match 1
 		exp_continue
 	}
