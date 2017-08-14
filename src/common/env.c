@@ -346,13 +346,11 @@ int setup_env(env_t *env, bool preserve_env)
 
 	if (!preserve_env && env->ntasks) {
 		if (setenvf(&env->env, "SLURM_NTASKS", "%d", env->ntasks)) {
-			error("Unable to set SLURM_NTASKS "
-			      "environment variable");
+			error("Unable to set SLURM_NTASKS environment variable");
 			rc = SLURM_FAILURE;
 		}
 		if (setenvf(&env->env, "SLURM_NPROCS", "%d", env->ntasks)) {
-			error("Unable to set SLURM_NPROCS "
-			      "environment variable");
+			error("Unable to set SLURM_NPROCS environment variable");
 			rc = SLURM_FAILURE;
 		}
 	}
