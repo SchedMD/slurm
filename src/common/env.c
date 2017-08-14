@@ -400,8 +400,7 @@ int setup_env(env_t *env, bool preserve_env)
 	if ((env->distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE)
 		if (setenvf(&env->env, "SLURM_DIST_PLANESIZE", "%u",
 			    env->plane_size)) {
-			error("Can't set SLURM_DIST_PLANESIZE "
-			      "env variable");
+			error("Can't set SLURM_DIST_PLANESIZE env variable");
 			rc = SLURM_FAILURE;
 		}
 

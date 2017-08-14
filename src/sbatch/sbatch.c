@@ -86,9 +86,10 @@ int main(int argc, char **argv)
 	char *script_body;
 	char **pack_argv;
 	int script_size = 0, pack_argc, pack_argc_off = 0, pack_inx;
-	int rc = SLURM_SUCCESS, retries = 0;
+	int i, rc = SLURM_SUCCESS, retries = 0;
 	bool pack_fini = false;
-	List job_req_list = NULL;
+	List job_env_list = NULL, job_req_list = NULL;
+	sbatch_env_t *local_env = NULL;
 
 	slurm_conf_init(NULL);
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
@@ -126,6 +127,7 @@ int main(int argc, char **argv)
 	pack_argv = argv;
 	for (pack_inx = 0; !pack_fini; pack_inx++) {
 		bool more_packs = false;
+		init_envs(&pack_env);
 		process_options_second_pass(pack_argc, pack_argv,
 					    &pack_argc_off, pack_inx,
 					    &more_packs, script_name ?
@@ -138,7 +140,6 @@ int main(int argc, char **argv)
 			pack_argv += pack_argc_off;
 		} else if (!more_packs) {
 			pack_fini = true;
-
 		}
 
 		if (opt.burst_buffer_file)
@@ -167,18 +168,42 @@ int main(int argc, char **argv)
 		_set_spank_env();
 		_set_submit_dir_env();
 		_set_umask_env();
-		if (desc && !job_req_list) {
+		if (local_env && !job_env_list) {
+			job_env_list = list_create(NULL);
+			list_append(job_env_list, local_env);
 			job_req_list = list_create(NULL);
 			list_append(job_req_list, desc);
 		}
+		local_env = xmalloc(sizeof(sbatch_env_t));
+		memcpy(local_env, &pack_env, sizeof(sbatch_env_t));
 		desc = xmalloc(sizeof(job_desc_msg_t));
 		slurm_init_job_desc_msg(desc);
 		if (_fill_job_desc_from_opts(desc) == -1)
 			exit(error_exit);
-		if (!job_req_list)
+		if (!job_req_list) {
 			desc->script = (char *) script_body;
-		else
+		} else {
+			list_append(job_env_list, local_env);
 			list_append(job_req_list, desc);
+		}
+	}
+
+	if (job_env_list) {
+		ListIterator desc_iter, env_iter;
+		i = 0;
+		desc_iter = list_iterator_create(job_req_list);
+		env_iter  = list_iterator_create(job_env_list);
+		desc      = list_next(desc_iter);
+		while (desc && (local_env = list_next(env_iter))) {
+			set_envs(&desc->environment, local_env, i++);
+			desc->env_size = envcount(desc->environment);
+		}
+		list_iterator_destroy(env_iter);
+		list_iterator_destroy(desc_iter);
+
+	} else {
+		set_envs(&desc->environment, &pack_env, -1);
+		desc->env_size = envcount(desc->environment);
 	}
 
 	/* If can run on multiple clusters find the earliest run time

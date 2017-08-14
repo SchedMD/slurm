@@ -194,7 +194,22 @@ typedef struct sbatch_options {
 	uint32_t delay_boot;	/* --delay-boot			*/
 } opt_t;
 
+typedef struct sbatch_env_opts {
+	uint32_t cpus_per_task;
+	char *   dist;
+	char *   dist_lllp;
+	char *   mem_bind;
+	char *   mem_bind_sort;
+	char *   mem_bind_verbose;
+	uint32_t ntasks;
+	uint32_t ntasks_per_core;
+	uint32_t ntasks_per_node;
+	uint32_t ntasks_per_socket;
+	uint32_t plane_size;
+} sbatch_env_t;
+
 extern opt_t opt;
+extern sbatch_env_t pack_env;
 extern int   error_exit;
 extern int   ignore_pbs;
 extern bool  is_pack_job;
@@ -241,4 +256,8 @@ extern int   spank_set_job_env(const char *name, const char *value,
 			       int overwrite);
 extern int   spank_unset_job_env(const char *name);
 
+
+extern void init_envs(sbatch_env_t *local_env);
+extern void set_envs(char ***array_ptr, sbatch_env_t *local_env,
+		     int pack_offset);
 #endif	/* _HAVE_OPT_H */
