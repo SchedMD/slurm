@@ -757,6 +757,7 @@ test30.1   Validates that RPMs are built with the correct prefix.
 test31.#   Test of Slurm Epilog and Prolog.
 ===========================================
 test31.1   Validate proper epilog and prolog child process management.
+test31.2   Validate that job is set to requeue held state at prolog failure.
 
 
 test32.#   Test of sgather command and options.
