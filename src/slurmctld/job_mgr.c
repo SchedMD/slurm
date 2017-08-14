@@ -12767,9 +12767,11 @@ extern int update_job(slurm_msg_t *msg, uid_t uid, bool send_msg)
  */
 extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 {
+
 	slurm_msg_t resp_msg;
 	job_desc_msg_t *job_specs = (job_desc_msg_t *) msg->data;
-	struct job_record *job_ptr, *new_job_ptr;
+	struct job_record *job_ptr, *new_job_ptr, *pack_job;
+	ListIterator iter;
 	long int long_id;
 	uint32_t job_id = 0, pack_offset;
 	bitstr_t *array_bitmap = NULL, *tmp_bitmap;
@@ -12799,6 +12801,20 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 	if (end_ptr[0] == '\0') {	/* Single job (or full job array) */
 		struct job_record *job_ptr_done = NULL;
 		job_ptr = find_job_record(job_id);
+		if (job_ptr && job_ptr->pack_job_list) {
+			iter = list_iterator_create(job_ptr->pack_job_list);
+			while ((pack_job = list_next(iter))) {
+				if (job_ptr->pack_job_id !=
+				    pack_job->pack_job_id) {
+					error("%s: Bad pack_job_list for job %u",
+					      __func__, job_ptr->pack_job_id);
+					continue;
+				}
+				rc = _update_job(pack_job, job_specs, uid);
+			}
+			list_iterator_destroy(iter);
+			goto reply;
+		}
 		if (job_ptr &&
 		    (((job_ptr->array_task_id == NO_VAL) &&
 		      (job_ptr->array_recs == NULL)) ||
@@ -12842,7 +12858,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 		goto reply;
 	} else if (end_ptr[0] == '+') {	/* Pack job element */
 		long_id = strtol(end_ptr+1, &tmp, 10);
-		if ((long_id <= 0) || (long_id == LONG_MAX) ||
+		if ((long_id < 0) || (long_id == LONG_MAX) ||
 		    (tmp[0] != '\0')) {
 			info("%s: invalid job id %s", __func__, job_id_str);
 			rc = ESLURM_INVALID_JOB_ID;
