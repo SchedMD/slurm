@@ -1299,7 +1299,8 @@ static void *_wait_extern_pid(void *args)
 		if (!(stat_fp = fopen(proc_stat_file, "r")))
 			continue;  /* Assume the process went away */
 		fd = fileno(stat_fp);
-		fcntl(fd, F_SETFD, FD_CLOEXEC);
+		if (fcntl(fd, F_SETFD, FD_CLOEXEC) == -1)
+			error("%s: fcntl(%s): %m", __func__, proc_stat_file);
 
 		num_read = read(fd, sbuf, (sizeof(sbuf) - 1));
 
