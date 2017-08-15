@@ -14125,7 +14125,8 @@ static int  _unpack_kvs_data(kvs_comm_set_t **msg_ptr, Buf buffer,
 	safe_unpack16(&msg->kvs_comm_recs, buffer);
 	if (msg->kvs_comm_recs > NO_VAL16)
 		goto unpack_error;
-	msg->kvs_comm_ptr = xmalloc(sizeof(struct kvs_comm) *
+	msg->kvs_comm_ptr = (struct kvs_comm **)
+			    xmalloc(sizeof(struct kvs_comm) *
 				    msg->kvs_comm_recs);
 	for (i = 0; i < msg->kvs_comm_recs; i++) {
 		if (_unpack_kvs_rec(&msg->kvs_comm_ptr[i], buffer,
