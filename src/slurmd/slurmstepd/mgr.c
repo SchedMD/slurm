@@ -673,7 +673,8 @@ _random_sleep(stepd_step_rec_t *job)
 
 	delay = lrand48() % ( max + 1 );
 	debug3("delaying %ldms", delay);
-	poll(NULL, 0, delay);
+	if (poll(NULL, 0, delay) == -1)
+		error("%s: poll(): %m", __func__);
 #endif
 }
 
