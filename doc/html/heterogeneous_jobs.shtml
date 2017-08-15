@@ -306,10 +306,19 @@ MPI_COMM_WORLD with a task ID starting at zero.</p>
 
 <p>As with the salloc and sbatch commands, the ":" character is used to
 separate multiple components of a heterogeneous job.
+This convention means that the stand-alone ":" character can not be used as an
+argument to an application launched by srun.
 This includes the ability to execute different applications and arguments
 for each job component.
-This convention means that the stand-alone ":" character can not be used as an
-argument to an application launched by srun.</p>
+If some heterogeneous job component lacks an application specification, the next
+application specification provided will be used for earlier components lacking
+one as shown below.</p>
+<pre>
+$ srun --label --mpi-combine=yes -n2 : -n1 hostname
+0: nid00012
+1: nid00012
+2: nid00013
+</pre>
 
 <p>srun's "--label" option will precede every line with the letter "P" and
 pack job offset followed by the task rank if the "--mpi-combine=no" option is
@@ -483,6 +492,6 @@ especially other heterogeneous jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 14 August 2017</p>
+<p style="text-align:center;">Last modified 15 August 2017</p>
 
 <!--#include virtual="footer.txt"-->

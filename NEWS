@@ -96,6 +96,8 @@ documents those changes that are of interest to users and administrators.
     * Disable cancellation of individual component while the job is pending.
     * Modify scontrol job hold/release and update to operate with heterogeneous
       job id specification (e.g. "scontrol hold 123+4").
+    * If srun lacks application specification for some component, the next one
+      specified will be used for earlier components.
 
 * Changes in Slurm 17.11.0pre1
 ==============================

@@ -450,6 +450,23 @@ extern srun_job_t *job_create_allocation(
 	return (job);
 }
 
+static void _copy_args(List missing_argc_list, opt_t *opt_master)
+{
+	ListIterator iter;
+	opt_t *opt_local;
+	int i;
+
+	iter = list_iterator_create(missing_argc_list);
+	while ((opt_local = (opt_t *) list_next(iter))) {
+		opt_local->argc = opt_master->argc;
+		opt_local->argv = xmalloc(sizeof(char *) * (opt_local->argc + 1));
+		for (i = 0; i < opt_local->argc; i++)
+			opt_local->argv[i] = xstrdup(opt_master->argv[i]);
+		list_remove(iter);
+	}
+	list_iterator_destroy(iter);
+}
+
 /*
  * Build "pack_group" string. If set on execute line, it may need to be
  * rebuilt for multiple option structures ("--pack-group=1,2" becomes two
@@ -461,10 +478,16 @@ static void _pack_grp_test(List opt_list)
 	opt_t *opt_local;
 	int pack_offset;
 	bitstr_t *master_map = NULL;
+	List missing_argv_list = NULL;
 
 	if (opt_list) {
+		missing_argv_list = list_create(NULL);
 		iter = list_iterator_create(opt_list);
 		while ((opt_local = (opt_t *) list_next(iter))) {
+			if (opt_local->argc == 0)
+				list_append(missing_argv_list, opt_local);
+			else
+				_copy_args(missing_argv_list, opt_local);
 			xfree(opt_local->pack_group);
 			if (opt_local->pack_grp_bits &&
 			    ((pack_offset =
@@ -487,6 +510,7 @@ static void _pack_grp_test(List opt_list)
 		}
 		FREE_NULL_BITMAP(master_map);
 		list_iterator_destroy(iter);
+		list_destroy(missing_argv_list);
 	} else if (!opt.pack_group && !getenv("SLURM_PACK_SIZE")) {
 		FREE_NULL_BITMAP(opt.pack_grp_bits);
 		/* pack_group is already NULL */

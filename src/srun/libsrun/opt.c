@@ -596,6 +596,7 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 		opt_dup = xmalloc(sizeof(opt_t));
 		memcpy(opt_dup, &opt, sizeof(opt_t));
 		list_append(opt_list, opt_dup);
+		pending_append = false;
 	}
 
 	return 1;
@@ -2610,12 +2611,6 @@ static bool _opt_verify(void)
 			opt.nodelist = hostlist_ranged_string_xmalloc(hl);
 		}
 		hostlist_destroy(hl);
-	}
-
-
-	if ((opt.argc == 0) && (opt.test_only == false)) {
-		error("must supply remote command");
-		verified = false;
 	}
 
 	/* check for realistic arguments */
