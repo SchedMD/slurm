@@ -1310,14 +1310,16 @@ static void *_wait_extern_pid(void *args)
 
 		/* get to the end of cmd name */
 		tmp = strrchr(sbuf, ')');
-		*tmp = '\0';	/* replace trailing ')' with NULL */
-		/* skip space after ')' too */
-		sscanf(tmp + 2,	"%c %d ", state, &ppid);
+		if (tmp) {
+			*tmp = '\0';	/* replace trailing ')' with NULL */
+			/* skip space after ')' too */
+			sscanf(tmp + 2,	"%c %d ", state, &ppid);
 
-		if (ppid == 1) {
-			debug2("adding tracking of orphaned process %d",
-			       pids[i]);
-			_handle_add_extern_pid_internal(job, pids[i]);
+			if (ppid == 1) {
+				debug2("adding tracking of orphaned process %d",
+				       pids[i]);
+				_handle_add_extern_pid_internal(job, pids[i]);
+			}
 		}
 	next_pid:
 		fclose(stat_fp);
