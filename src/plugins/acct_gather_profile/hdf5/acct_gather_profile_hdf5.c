@@ -181,14 +181,16 @@ static int _create_directories(void)
 	else if (access(hdf5_conf.dir, R_OK|W_OK|X_OK) < 0)
 		fatal("Incorrect permissions on acct_gather_profile_dir: %s",
 		      hdf5_conf.dir);
-	chmod(hdf5_conf.dir, 0755);
+	if (chmod(hdf5_conf.dir, 0755) == -1)
+		error("%s: chmod(%s): %m", __func__, hdf5_conf.dir);
 
 	user_dir = xstrdup_printf("%s/%s", hdf5_conf.dir, g_job->user_name);
 	if (((rc = stat(user_dir, &st)) < 0) && (errno == ENOENT)) {
 		if (mkdir(user_dir, 0700) < 0)
 			fatal("mkdir(%s): %m", user_dir);
 	}
-	chmod(user_dir, 0700);
+	if (chmod(user_dir, 0700) == -1)
+		error("%s: chmod(%s): %m", __func__, user_dir);
 	if (chown(user_dir, (uid_t)g_job->uid,
 		  (gid_t)g_job->gid) < 0)
 		error("chown(%s): %m", user_dir);
