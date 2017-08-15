@@ -265,7 +265,7 @@ extern bool	srun_shutdown;
  */
 #define constraints_given() ((opt.pn_min_cpus     != NO_VAL) || \
 			     (opt.pn_min_memory   != NO_VAL64) || \
-			     (opt.job_max_memory   != NO_VAL64) || \
+			     (opt.job_max_memory  != NO_VAL64) || \
 			     (opt.pn_min_tmp_disk != NO_VAL) || \
 			     (opt.pn_min_sockets  != NO_VAL) || \
 			     (opt.pn_min_cores    != NO_VAL) || \
