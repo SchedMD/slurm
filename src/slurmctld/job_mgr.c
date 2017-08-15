@@ -5051,11 +5051,11 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			return ESLURM_INVALID_JOB_ID;
 		}
 		job_ptr = find_job_pack_record(job_id, (uint32_t) long_id);
+		if (!job_ptr)
+			return ESLURM_ALREADY_DONE;
 		if (IS_JOB_PENDING(job_ptr))
 			return ESLURM_NOT_PACK_WHOLE;
-		if (job_ptr)
-			return _job_signal(job_ptr, signal, flags, uid,preempt);
-		return ESLURM_ALREADY_DONE;
+		return _job_signal(job_ptr, signal, flags, uid,preempt);
 	}
 
 	last_job_update = now;
