@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 17.02.8
 ==========================
+ -- Add 'slurmdbd:' to the accounting plugin to notify message is from dbd
+    instead of local.
 
 * Changes in Slurm 17.02.7
 ==========================
