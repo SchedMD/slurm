@@ -283,7 +283,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 				errnum = errno;
 				slurm_complete_job(job_id, -1);
 			}
-			if ((resp == NULL) && (errno = ESLURM_ALREADY_DONE))
+			if ((resp == NULL) && (errno == ESLURM_ALREADY_DONE))
 				already_done = true;
 		}
 		break;
@@ -553,7 +553,7 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
 				errnum = errno;
 				slurm_complete_job(job_id, -1);
 			}
-			if ((resp == NULL) && (errno = ESLURM_ALREADY_DONE))
+			if ((resp == NULL) && (errno == ESLURM_ALREADY_DONE))
 				already_done = true;
 		}
 		break;
