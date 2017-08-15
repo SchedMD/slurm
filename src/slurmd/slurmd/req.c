@@ -3083,7 +3083,7 @@ _signal_jobstep(uint32_t jobid, uint32_t stepid, uid_t req_uid,
 	if (_prolog_is_running (jobid)) {
 		info ("signal %d req for %u.%u while prolog is running."
 		      " Returning failure.", signal, jobid, stepid);
-		return SLURM_FAILURE;
+		return EAGAIN;
 	}
 
 	fd = stepd_connect(conf->spooldir, conf->node_name, jobid, stepid,

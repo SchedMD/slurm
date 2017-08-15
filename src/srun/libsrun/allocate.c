@@ -1139,10 +1139,9 @@ job_desc_msg_destroy(job_desc_msg_t *j)
 	}
 }
 
-extern int create_job_step(srun_job_t *job, bool use_all_cpus, opt_t *opt_local,
-			   int pack_offset)
+extern int create_job_step(srun_job_t *job, bool use_all_cpus, opt_t *opt_local)
 {
 	return launch_g_create_job_step(job, use_all_cpus,
 					_signal_while_allocating,
-					&destroy_job, opt_local, pack_offset);
+					&destroy_job, opt_local);
 }

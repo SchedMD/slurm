@@ -2478,7 +2478,10 @@ static struct job_record *_pack_job_ready(struct job_record *job_ptr)
 	return pack_leader;
 }
 
-/* No need for details about every allocation, just set pack job env vars */
+/*
+ * Set some pack job environment variables. This will include information
+ * about multple job components (i.e. different slurmctld job records).
+ */
 static void _set_pack_env(struct job_record *pack_leader,
 			  batch_job_launch_msg_t *launch_msg_ptr)
 {
@@ -2524,10 +2527,6 @@ static void _set_pack_env(struct job_record *pack_leader,
 		    (pack_job->details->cpus_per_task != NO_VAL16)) {
 			cpus_per_task = pack_job->details->cpus_per_task;
 		}
-		(void) env_array_overwrite_pack_fmt(
-				&launch_msg_ptr->environment,
-				"SLURM_CPUS_PER_TASK", pack_offset,
-				"%u", cpus_per_task);
 		if (pack_job->account) {
 			(void) env_array_overwrite_pack_fmt(
 					&launch_msg_ptr->environment,
@@ -2607,12 +2606,6 @@ static void _set_pack_env(struct job_record *pack_leader,
 					&launch_msg_ptr->environment,
 					"SLURM_NODE_ALIASES", pack_offset,
 					"%s", pack_job->alias_list);
-		}
-		if (pack_job->details) {
-			(void) env_array_overwrite_pack_fmt(
-					&launch_msg_ptr->environment,
-					"SLURM_NTASKS", pack_offset,
-					"%u", pack_job->details->num_tasks);
 		}
 		if (pack_job->details && pack_job->job_resrcs) {
 			/* Both should always be set for active jobs */

@@ -105,12 +105,10 @@ extern List existing_allocation(void);
  * After returning, 'j' is filled in with information for job step.
  * IN use_all_cpus - true to use every CPU allocated to the job
  * IN opt_local - options used to create job step
- * IN pack_offset - offset within a pack job, -1 if not part of pack job
  *
  * Returns -1 if job step creation failure, 0 otherwise
  */
-int create_job_step(srun_job_t *j, bool use_all_cpus, opt_t *opt_local,
-		    int pack_offset);
+int create_job_step(srun_job_t *j, bool use_all_cpus, opt_t *opt_local);
 
 /* set the job for debugging purpose */
 void set_allocate_job(srun_job_t *job);

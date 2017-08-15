@@ -196,6 +196,7 @@ enum {
 	ESLURM_SUBMISSIONS_DISABLED,
 	ESLURM_NOT_PACK_JOB,
 	ESLURM_NOT_PACK_JOB_LEADER,
+	ESLURM_NOT_PACK_WHOLE,
 
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,

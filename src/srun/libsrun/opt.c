@@ -584,7 +584,7 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 			/* Massage ntasks value earlier than normal */
 			if (!opt.ntasks_set)
 				opt.ntasks = _get_task_count();
-			launch_g_create_job_step(NULL, 0, NULL, NULL, &opt, -1);
+			launch_g_create_job_step(NULL, 0, NULL, NULL, &opt);
 			exit(0);
 		}
 		pending_append = true;
@@ -596,6 +596,7 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 		opt_dup = xmalloc(sizeof(opt_t));
 		memcpy(opt_dup, &opt, sizeof(opt_t));
 		list_append(opt_list, opt_dup);
+		pending_append = false;
 	}
 
 	return 1;
@@ -2381,7 +2382,7 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 	opt.argc = 0;
 	if (optind < argc) {
 		rest = argv + optind;
-		while (rest[opt.argc] != NULL)
+		while ((rest[opt.argc] != NULL) && strcmp(rest[opt.argc], ":"))
 			opt.argc++;
 	}
 
@@ -2424,6 +2425,7 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 		if (!rest || !rest[i-command_pos])
 			break;
 		opt.argv[i] = xstrdup(rest[i-command_pos]);
+		// info("argv[%d]='%s'", i, opt.argv[i]);
 	}
 	opt.argv[i] = NULL;	/* End of argv's (for possible execv) */
 
@@ -2459,11 +2461,6 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 			fatal("Can not execute %s", opt.argv[command_pos]);
 		}
 	}
-#endif
-
-#if 0
-	for (i=0; i<opt.argc; i++)
-		info("%d is '%s'", i, opt.argv[i]);
 #endif
 }
 
@@ -2614,12 +2611,6 @@ static bool _opt_verify(void)
 			opt.nodelist = hostlist_ranged_string_xmalloc(hl);
 		}
 		hostlist_destroy(hl);
-	}
-
-
-	if ((opt.argc == 0) && (opt.test_only == false)) {
-		error("must supply remote command");
-		verified = false;
 	}
 
 	/* check for realistic arguments */
@@ -3172,14 +3163,16 @@ static void _opt_list(void)
 	if (opt.resv_port_cnt != NO_VAL)
 		info("resv_port_cnt     : %d", opt.resv_port_cnt);
 	info("power             : %s", power_flags_str(opt.power_flags));
+
 	str = print_commandline(opt.argc, opt.argv);
 	info("remote command    : `%s'", str);
+	xfree(str);
+
 	if (opt.mcs_label)
 		info("mcs-label         : %s",opt.mcs_label);
 	info("mpi_combine       : %s", opt.mpi_combine == true ? "YES" : "NO");
 	if (opt.pack_group)
 		info("pack_group        : %s",opt.pack_group);
-	xfree(str);
 
 }
 

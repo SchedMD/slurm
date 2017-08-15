@@ -347,13 +347,11 @@ int setup_env(env_t *env, bool preserve_env)
 
 	if (!preserve_env && env->ntasks) {
 		if (setenvf(&env->env, "SLURM_NTASKS", "%d", env->ntasks)) {
-			error("Unable to set SLURM_NTASKS "
-			      "environment variable");
+			error("Unable to set SLURM_NTASKS environment variable");
 			rc = SLURM_FAILURE;
 		}
 		if (setenvf(&env->env, "SLURM_NPROCS", "%d", env->ntasks)) {
-			error("Unable to set SLURM_NPROCS "
-			      "environment variable");
+			error("Unable to set SLURM_NPROCS environment variable");
 			rc = SLURM_FAILURE;
 		}
 	}
@@ -403,8 +401,7 @@ int setup_env(env_t *env, bool preserve_env)
 	if ((env->distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE)
 		if (setenvf(&env->env, "SLURM_DIST_PLANESIZE", "%u",
 			    env->plane_size)) {
-			error("Can't set SLURM_DIST_PLANESIZE "
-			      "env variable");
+			error("Can't set SLURM_DIST_PLANESIZE env variable");
 			rc = SLURM_FAILURE;
 		}
 

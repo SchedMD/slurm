@@ -59,6 +59,10 @@ proc salloc {} {
 
 	spawn {*}$command
 	expect {
+		-re "Job submit/allocate failed" {
+			log_warn "Unable to execute test due to system configuration"
+			end_it 0
+		}
 		-re "Pending job allocation ($number)" {
 			set job_id $expect_out(1,string)
 #			exp_continue
@@ -88,9 +92,10 @@ proc salloc {} {
 proc cancel_all_jobs { } {
 	global scancel job_id
 
-	exec $scancel $job_id
-
-	sleep 5
+	if {$job_id != 0} {
+		exec $scancel $job_id
+		sleep 5
+	}
 }
 
 proc cleanup { } {

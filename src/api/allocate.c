@@ -193,6 +193,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 	job_desc_msg_t *req;
 	listen_t *listen = NULL;
 	int errnum = SLURM_SUCCESS;
+	bool already_done = false;
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
@@ -282,6 +283,8 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 				errnum = errno;
 				slurm_complete_job(job_id, -1);
 			}
+			if ((resp == NULL) && (errno = ESLURM_ALREADY_DONE))
+				already_done = true;
 		}
 		break;
 	default:
@@ -295,6 +298,8 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 		_destroy_allocation_response_socket(listen);
 	xfree(req->alloc_node);
 	xfree(req);
+	if (!resp && already_done && (errnum == SLURM_SUCCESS))
+		errnum = ESLURM_ALREADY_DONE;
 	errno = errnum;
 	return resp;
 }
@@ -397,7 +402,7 @@ static int _fed_job_will_run(job_desc_msg_t *req,
 	return SLURM_SUCCESS;
 }
 
-/* Get total node cound and lead job ID from RESPONSE_JOB_PACK_ALLOCATION */
+/* Get total node count and lead job ID from RESPONSE_JOB_PACK_ALLOCATION */
 static void _pack_alloc_test(List resp, uint32_t *node_cnt, uint32_t *job_id)
 {
 	resource_allocation_response_msg_t *alloc;
@@ -451,6 +456,7 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
 	bool immediate_flag = false;
 	bool immediate_logged = false;
 	uint32_t node_cnt = 0, job_id = 0;
+	bool already_done = false;
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
@@ -547,6 +553,8 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
 				errnum = errno;
 				slurm_complete_job(job_id, -1);
 			}
+			if ((resp == NULL) && (errno = ESLURM_ALREADY_DONE))
+				already_done = true;
 		}
 		break;
 	default:
@@ -564,6 +572,8 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
 	}
 	list_iterator_destroy(iter);
 	xfree(local_hostname);
+	if (!resp && already_done && (errnum == SLURM_SUCCESS))
+		errnum = ESLURM_ALREADY_DONE;
 	errno = errnum;
 
 	return resp;

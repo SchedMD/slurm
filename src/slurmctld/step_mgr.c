@@ -2261,8 +2261,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 		return ESLURM_ACCESS_DENIED ;
 
 	if (batch_step) {
-		info("user %u attempting to run batch script within "
-			"an existing job", step_specs->user_id);
+		info("user %u attempting to run batch script within existing job %u",
+		     step_specs->user_id, step_specs->job_id);
 		/* This seems hazardous to allow, but LSF seems to
 		 * work this way, so don't treat it as an error. */
 	}
@@ -2673,8 +2673,8 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	if (step_ptr->pn_min_memory && _is_mem_resv() &&
 	    ((job_resrcs_ptr->memory_allocated == NULL) ||
 	     (job_resrcs_ptr->memory_used == NULL))) {
-		error("step_layout_create: lack memory allocation details "
-		      "to enforce memory limits for job %u", job_ptr->job_id);
+		error("%s: lack memory allocation details to enforce memory limits for job %u",
+		       __func__, job_ptr->job_id);
 		step_ptr->pn_min_memory = 0;
 	} else if (step_ptr->pn_min_memory == MEM_PER_CPU)
 		step_ptr->pn_min_memory = 0;	/* clear MEM_PER_CPU flag */
@@ -2735,7 +2735,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 			if (pos == -1)
 				return NULL;
 			if (pos >= job_resrcs_ptr->nhosts)
-				fatal("step_layout_create: node index bad");
+				fatal("%s: node index bad", __func__);
 
 			cpus = job_resrcs_ptr->cpus[pos];
 			cpus_used = job_resrcs_ptr->cpus_used[pos];
@@ -2830,7 +2830,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 							  step_ptr->step_id);
 			usable_cpus = MIN(usable_cpus, gres_cpus);
 			if (usable_cpus <= 0) {
-				error("step_layout_create no usable cpus");
+				error("%s: no usable CPUs", __func__);
 				return NULL;
 			}
 			debug3("step_layout cpus = %d pos = %d",

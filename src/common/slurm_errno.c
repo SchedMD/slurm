@@ -339,6 +339,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Job not heterogeneous job"				},
 	{ ESLURM_NOT_PACK_JOB_LEADER,
 	  "Job not heterogeneous job leader"			},
+	{ ESLURM_NOT_PACK_WHOLE,
+	  "Operation not permitted on individual component of heterogeneous job" },
 
 	/* slurmd error codes */
 	{ ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN,

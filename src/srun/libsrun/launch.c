@@ -52,15 +52,15 @@ typedef struct {
 	int (*handle_multi_prog)   (int command_pos, opt_t *opt_local);
 	int (*create_job_step)     (srun_job_t *job, bool use_all_cpus,
 				    void (*signal_function)(int),
-				    sig_atomic_t *destroy_job, opt_t *opt_local,
-				    int pack_offset);
+				    sig_atomic_t *destroy_job,
+				    opt_t *opt_local);
 	int (*step_launch)         (srun_job_t *job,
 				    slurm_step_io_fds_t *cio_fds,
 				    uint32_t *global_rc,
 				    slurm_step_launch_callbacks_t *
 				    step_callbacks, opt_t *opt_local);
 	int (*step_wait)           (srun_job_t *job, bool got_alloc,
-				    opt_t *opt_local, int pack_offset);
+				    opt_t *opt_local);
 	int (*step_terminate)      (void);
 	void (*print_status)       (void);
 	void (*fwd_signal)         (int signal);
@@ -333,9 +333,10 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 						&job->ctx_params, step_wait);
 		}
 		if (job->step_ctx != NULL) {
-			if (i > 0)
-				info("Job step created");
-
+			if (i > 0) {
+				info("Step created for job %u",
+				     job->ctx_params.job_id);
+			}
 			break;
 		}
 		rc = slurm_get_errno();
@@ -349,7 +350,8 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		     (rc != SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT) &&
 		     (rc != ESLURM_INTERCONNECT_BUSY) &&
 		     (rc != ESLURM_DISABLED))) {
-			error ("Unable to create job step: %m");
+			error("Unable to create step for job %u: %m",
+			      job->ctx_params.job_id);
 			return SLURM_ERROR;
 		}
 
@@ -359,14 +361,15 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 					"being configured, please wait",
 					job->ctx_params.job_id);
 			} else {
-				info("Job step creation temporarily disabled, "
-				     "retrying");
+				info("Job %u step creation temporarily disabled, retrying",
+				     job->ctx_params.job_id);
 			}
 			xsignal_unblock(sig_array);
 			for (j = 0; sig_array[j]; j++)
 				xsignal(sig_array[j], signal_function);
 		} else {
-			verbose("Job step creation still disabled, retrying");
+			verbose("Job %u step creation still disabled, retrying",
+				job->ctx_params.job_id);
 		}
 
 		if (*destroy_job) {
@@ -377,7 +380,8 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	if (i > 0) {
 		xsignal_block(sig_array);
 		if (*destroy_job) {
-			info("Cancelled pending job step");
+			info("Cancelled pending step for job %u",
+			     job->ctx_params.job_id);
 			return SLURM_ERROR;
 		}
 	}
@@ -504,14 +508,13 @@ extern int launch_g_handle_multi_prog_verify(int command_pos, opt_t *opt_local)
 
 extern int launch_g_create_job_step(srun_job_t *job, bool use_all_cpus,
 				    void (*signal_function)(int),
-				    sig_atomic_t *destroy_job, opt_t *opt_local,
-				    int pack_offset)
+				    sig_atomic_t *destroy_job, opt_t *opt_local)
 {
 	if (launch_init() < 0)
 		return SLURM_ERROR;
 
 	return (*(ops.create_job_step))(job, use_all_cpus, signal_function,
-					destroy_job, opt_local, pack_offset);
+					destroy_job, opt_local);
 }
 
 extern int launch_g_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
@@ -526,13 +529,12 @@ extern int launch_g_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 				    opt_local);
 }
 
-extern int launch_g_step_wait(srun_job_t *job, bool got_alloc, opt_t *opt_local,
-			      int pack_offset)
+extern int launch_g_step_wait(srun_job_t *job, bool got_alloc, opt_t *opt_local)
 {
 	if (launch_init() < 0)
 		return SLURM_ERROR;
 
-	return (*(ops.step_wait))(job, got_alloc, opt_local, pack_offset);
+	return (*(ops.step_wait))(job, got_alloc, opt_local);
 }
 
 extern int launch_g_step_terminate(void)

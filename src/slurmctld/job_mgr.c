@@ -5045,12 +5045,14 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 	if (end_ptr[0] == '+') {	/* Signal pack job element */
 		job_id = (uint32_t) long_id;
 		long_id = strtol(end_ptr + 1, &end_ptr, 10);
-		if ((long_id <= 0) || (long_id == LONG_MAX) ||
+		if ((long_id < 0) || (long_id == LONG_MAX) ||
 		    (end_ptr[0] != '\0')) {
 			info("%s(2): invalid job id %s", __func__, job_id_str);
 			return ESLURM_INVALID_JOB_ID;
 		}
 		job_ptr = find_job_pack_record(job_id, (uint32_t) long_id);
+		if (IS_JOB_PENDING(job_ptr))
+			return ESLURM_NOT_PACK_WHOLE;
 		if (job_ptr)
 			return _job_signal(job_ptr, signal, flags, uid,preempt);
 		return ESLURM_ALREADY_DONE;
@@ -5062,16 +5064,6 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		int jobs_done = 0, jobs_signaled = 0;
 		struct job_record *job_ptr_done = NULL;
 		job_ptr = find_job_record(job_id);
-		if (job_ptr && job_ptr->pack_job_list) {
-			return _pack_job_signal(job_ptr, signal, flags, uid,
-						preempt);
-		}
-		if (job_ptr && (job_ptr->array_task_id == NO_VAL) &&
-		    (job_ptr->array_recs == NULL)) {
-			/* This is a regular job, not a job array */
-			return job_signal(job_id, signal, flags, uid, preempt);
-		}
-
 		if (job_ptr && (job_ptr->user_id != uid) &&
 		    !validate_operator(uid) &&
 		    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
@@ -5079,6 +5071,17 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			error("Security violation, REQUEST_KILL_JOB RPC for "
 			      "jobID %u from uid %d", job_ptr->job_id, uid);
 			return ESLURM_ACCESS_DENIED;
+		}
+		if (job_ptr && job_ptr->pack_job_list) {   /* Pack leader */
+			return _pack_job_signal(job_ptr, signal, flags, uid,
+						preempt);
+		}
+		if (job_ptr && job_ptr->pack_job_id && IS_JOB_PENDING(job_ptr))
+			return ESLURM_NOT_PACK_WHOLE;	/* Pack job child */
+		if (job_ptr && (job_ptr->array_task_id == NO_VAL) &&
+		    (job_ptr->array_recs == NULL)) {
+			/* This is a regular job, not a job array */
+			return job_signal(job_id, signal, flags, uid, preempt);
 		}
 
 		/* This will kill the meta record that holds all
@@ -7942,6 +7945,8 @@ extern void job_config_fini(struct job_record *job_ptr)
  * RET true if ready */
 extern bool test_job_nodes_ready(struct job_record *job_ptr)
 {
+	if (IS_JOB_PENDING(job_ptr))
+		return false;
 	if (!job_ptr->node_bitmap)	/* Revoked allocation */
 		return true;
 	if (bit_overlap(job_ptr->node_bitmap, power_node_bitmap))
@@ -11798,10 +11803,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	}
 
 	if (job_specs->priority != NO_VAL) {
-		/* If we are doing time slicing we could update the
-		   priority of the job while running to give better
-		   position (larger time slices) than competing jobs
-		*/
+		/*
+		 * If we are doing time slicing we could update the
+		 * priority of the job while running to give better
+		 * position (larger time slices) than competing jobs
+		 */
 		if (IS_JOB_FINISHED(job_ptr) || (detail_ptr == NULL))
 			error_code = ESLURM_JOB_FINISHED;
 		else if (job_ptr->priority == job_specs->priority) {
@@ -11820,10 +11826,10 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			    (job_ptr->state_reason == WAIT_HELD_USER))) {
 			job_ptr->direct_set_prio = 0;
 			set_job_prio(job_ptr);
-			info("sched: update_job: releasing hold for job_id %u "
-			     "uid %u",
+			info("sched: update_job: releasing hold for job_id %u by uid %u",
 			     job_ptr->job_id, uid);
 			job_ptr->state_reason = WAIT_NO_REASON;
+			job_ptr->state_reason_prev = WAIT_NO_REASON;
 			job_ptr->job_state &= ~JOB_SPECIAL_EXIT;
 			xfree(job_ptr->state_desc);
 			job_ptr->exit_code = 0;
@@ -12778,16 +12784,18 @@ extern int update_job(slurm_msg_t *msg, uid_t uid, bool send_msg)
  */
 extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 {
+
 	slurm_msg_t resp_msg;
 	job_desc_msg_t *job_specs = (job_desc_msg_t *) msg->data;
-	struct job_record *job_ptr, *new_job_ptr;
+	struct job_record *job_ptr, *new_job_ptr, *pack_job;
+	ListIterator iter;
 	long int long_id;
-	uint32_t job_id = 0;
+	uint32_t job_id = 0, pack_offset;
 	bitstr_t *array_bitmap = NULL, *tmp_bitmap;
 	bool valid = true;
 	int32_t i, i_first, i_last;
 	int len, rc = SLURM_SUCCESS, rc2;
-	char *end_ptr, *tok, *tmp;
+	char *end_ptr, *tok, *tmp = NULL;
 	char *job_id_str;
 	resp_array_struct_t *resp_array = NULL;
 	job_array_resp_msg_t *resp_array_msg = NULL;
@@ -12795,14 +12803,14 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 
 	job_id_str = job_specs->job_id_str;
 
-	if (max_array_size == NO_VAL) {
+	if (max_array_size == NO_VAL)
 		max_array_size = slurmctld_conf.max_array_sz;
-	}
 
 	long_id = strtol(job_id_str, &end_ptr, 10);
 	if ((long_id <= 0) || (long_id == LONG_MAX) ||
-	    ((end_ptr[0] != '\0') && (end_ptr[0] != '_'))) {
-		info("update_job_str: invalid job id %s", job_id_str);
+	    ((end_ptr[0] != '\0') && (end_ptr[0] != '_') &&
+	     (end_ptr[0] != '+'))) {
+		info("%s: invalid job id %s", __func__, job_id_str);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto reply;
 	}
@@ -12810,6 +12818,20 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 	if (end_ptr[0] == '\0') {	/* Single job (or full job array) */
 		struct job_record *job_ptr_done = NULL;
 		job_ptr = find_job_record(job_id);
+		if (job_ptr && job_ptr->pack_job_list) {
+			iter = list_iterator_create(job_ptr->pack_job_list);
+			while ((pack_job = list_next(iter))) {
+				if (job_ptr->pack_job_id !=
+				    pack_job->pack_job_id) {
+					error("%s: Bad pack_job_list for job %u",
+					      __func__, job_ptr->pack_job_id);
+					continue;
+				}
+				rc = _update_job(pack_job, job_specs, uid);
+			}
+			list_iterator_destroy(iter);
+			goto reply;
+		}
 		if (job_ptr &&
 		    (((job_ptr->array_task_id == NO_VAL) &&
 		      (job_ptr->array_recs == NULL)) ||
@@ -12834,7 +12856,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 		/* Update all tasks of this job array */
 		job_ptr = job_array_hash_j[JOB_HASH_INX(job_id)];
 		if (!job_ptr && !job_ptr_done) {
-			info("update_job_str: invalid job id %u", job_id);
+			info("%s: invalid job id %u", __func__, job_id);
 			rc = ESLURM_INVALID_JOB_ID;
 			goto reply;
 		}
@@ -12850,6 +12872,23 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			}
 			job_ptr = job_ptr->job_array_next_j;
 		}
+		goto reply;
+	} else if (end_ptr[0] == '+') {	/* Pack job element */
+		long_id = strtol(end_ptr+1, &tmp, 10);
+		if ((long_id < 0) || (long_id == LONG_MAX) ||
+		    (tmp[0] != '\0')) {
+			info("%s: invalid job id %s", __func__, job_id_str);
+			rc = ESLURM_INVALID_JOB_ID;
+			goto reply;
+		}
+		pack_offset = (uint32_t) long_id;
+		job_ptr = find_job_pack_record(job_id, pack_offset);
+		if (!job_ptr) {
+			info("%s: invalid job id %u", __func__, job_id);
+			rc = ESLURM_INVALID_JOB_ID;
+			goto reply;
+		}
+		rc = _update_job(job_ptr, job_specs, uid);
 		goto reply;
 	}
 
@@ -12868,7 +12907,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			valid = false;
 	}
 	if (!valid) {
-		info("update_job_str: invalid job id %s", job_id_str);
+		info("%s: invalid job id %s", __func__, job_id_str);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto reply;
 	}
@@ -12916,9 +12955,8 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 				job_ptr->array_task_id = i;
 				new_job_ptr = job_array_split(job_ptr);
 				if (!new_job_ptr) {
-					error("update_job_str: Unable to copy "
-					      "record for job %u",
-					      job_ptr->job_id);
+					error("%s: Unable to copy record for job %u",
+					      __func__, job_ptr->job_id);
 				} else {
 					/* The array_recs structure is moved
 					 * to the new job record copy */
@@ -12940,7 +12978,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			continue;
 		job_ptr = find_job_array_rec(job_id, i);
 		if (job_ptr == NULL) {
-			info("update_job_str: invalid job id %u_%d", job_id, i);
+			info("%s: invalid job id %u_%d", __func__, job_id, i);
 			_resp_array_add_id(&resp_array, job_id, i,
 					   ESLURM_INVALID_JOB_ID);
 			continue;
@@ -14714,7 +14752,7 @@ static int _job_suspend(struct job_record *job_ptr, uint16_t op, bool indf_susp)
 	ListIterator iter;
 
 	if (job_ptr->pack_job_id && !job_ptr->pack_job_list)
-		return ESLURM_NOT_PACK_JOB_LEADER;
+		return ESLURM_NOT_PACK_WHOLE;
 
 	/* Notify salloc/srun of suspend/resume */
 	srun_job_suspend(job_ptr, op);
@@ -14853,12 +14891,16 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 	}
 
 	long_id = strtol(sus_ptr->job_id_str, &end_ptr, 10);
-	if ((long_id <= 0) || (long_id == LONG_MAX) ||
-	    ((end_ptr[0] != '\0') && (end_ptr[0] != '_'))) {
-		info("job_suspend2: invalid job id %s", sus_ptr->job_id_str);
+	if (end_ptr[0] == '+')
+		rc = ESLURM_NOT_PACK_WHOLE;
+	else if ((long_id <= 0) || (long_id == LONG_MAX) ||
+		 ((end_ptr[0] != '\0') && (end_ptr[0] != '_')))
 		rc = ESLURM_INVALID_JOB_ID;
+	if (rc != SLURM_SUCCESS) {
+		info("%s: invalid job id %s", __func__, sus_ptr->job_id_str);
 		goto reply;
 	}
+
 	job_id = (uint32_t) long_id;
 	if (end_ptr[0] == '\0') {	/* Single job (or full job array) */
 		struct job_record *job_ptr_done = NULL;

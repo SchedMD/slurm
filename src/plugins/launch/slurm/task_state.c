@@ -50,6 +50,7 @@ struct task_state_struct {
 	uint32_t job_id;
 	uint32_t step_id;
 	uint32_t pack_group;
+	uint32_t task_offset;
 	int n_tasks;
 	int n_started;
 	int n_abnormal;
@@ -67,7 +68,8 @@ struct task_state_struct {
  * Free memory using task_state_destroy()
  */
 extern task_state_t task_state_create(uint32_t job_id, uint32_t step_id,
-				      uint32_t pack_group, int ntasks)
+				      uint32_t pack_group, int ntasks,
+				      uint32_t task_offset)
 {
 	task_state_t ts = xmalloc(sizeof(*ts));
 
@@ -75,6 +77,7 @@ extern task_state_t task_state_create(uint32_t job_id, uint32_t step_id,
 	ts->job_id = job_id;
 	ts->step_id = step_id;
 	ts->pack_group = pack_group;
+	ts->task_offset = task_offset;
 	ts->n_tasks = ntasks;
 	ts->running = bit_alloc(ntasks);
 	ts->start_failed = bit_alloc(ntasks);
@@ -352,4 +355,16 @@ extern void task_state_print(List task_state_list, log_f fn)
 		_task_state_print(ts, fn);
 	}
 	list_iterator_destroy(iter);
+}
+
+/*
+ * Translate pack-job local task ID to a global task ID
+ */
+extern uint32_t task_state_global_id(task_state_t ts, uint32_t local_task_id)
+{
+	uint32_t global_task_id = local_task_id;
+
+	if (ts && (ts->task_offset != NO_VAL))
+		global_task_id += ts->task_offset;
+	return global_task_id;
 }

@@ -58,7 +58,8 @@ typedef void (*log_f) (const char *, ...);
  * Free memory using task_state_destroy()
  */
 extern task_state_t task_state_create(uint32_t job_id, uint32_t step_id,
-				      uint32_t pack_group, int ntasks);
+				      uint32_t pack_group, int ntasks,
+				      uint32_t task_offset);
 
 /*
  * Find the task_state structure for a given job_id, step_id and/or pack group
@@ -99,5 +100,10 @@ extern bool task_state_first_abnormal_exit(List task_state_list);
  * Print summary of a task_state structure's contents
  */
 extern void task_state_print(List task_state_list, log_f fn);
+
+/*
+ * Translate pack-job local task ID to a global task ID
+ */
+extern uint32_t task_state_global_id(task_state_t ts, uint32_t local_task_id);
 
 #endif /* !_HAVE_TASK_STATE_H */

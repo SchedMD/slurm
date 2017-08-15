@@ -545,7 +545,7 @@ static void _display_info_bb(List info_list, popup_info_t *popup_win)
 		bb_ptr = sview_bb_info->bb_ptr;
 
 		if (bb_ptr->name) {
-			strcpy(bb_name_id, bb_ptr->name);
+			strlcpy(bb_name_id, bb_ptr->name, sizeof(bb_name_id));
 		} else if (bb_ptr->array_task_id == NO_VAL) {
 			convert_num_unit(bb_ptr->job_id,
 					 bb_name_id,

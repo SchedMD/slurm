@@ -173,7 +173,7 @@ static void _setenv(const char *name, const char *value, int overwrite,
 {
 	char *key = NULL;
 
-	if (pack_offset == -1) {
+	if (pack_offset == NO_VAL) {
 		setenv(name, value, overwrite);
 	} else {
 		xstrfmtcat(key, "%s_PACK_GROUP_%d", name, pack_offset);
@@ -357,8 +357,7 @@ extern int launch_p_handle_multi_prog_verify(int command_pos, opt_t *opt_local)
 
 extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 				    void (*signal_function)(int),
-				    sig_atomic_t *destroy_job, opt_t *opt_local,
-				    int pack_offset)
+				    sig_atomic_t *destroy_job, opt_t *opt_local)
 {
 	char dname[512], value[32];
 	char *protocol = "mpi";
@@ -773,7 +772,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 				   " -stdoutmode unordered");
 	}
 
-	_propagate_srun_opts(nnodes, ntasks, opt_local, pack_offset);
+	_propagate_srun_opts(nnodes, ntasks, opt_local, job->pack_offset);
 	setenv("SLURM_STARTED_STEP", "YES", 1);
 	//disable_status = opt_local->disable_status;
 	//quit_on_intr = opt_local->quit_on_intr;
@@ -849,8 +848,7 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	return rc;
 }
 
-extern int launch_p_step_wait(srun_job_t *job, bool got_alloc, opt_t *opt_local,
-			      int pack_offset)
+extern int launch_p_step_wait(srun_job_t *job, bool got_alloc, opt_t *opt_local)
 {
 	return SLURM_SUCCESS;
 }

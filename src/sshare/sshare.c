@@ -101,7 +101,7 @@ int main (int argc, char **argv)
 	slurm_conf_init(NULL);
 	log_init("sshare", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-	while((opt_char = getopt_long(argc, argv, "aA:ehlM:no:pPqUu:t:vVm",
+	while ((opt_char = getopt_long(argc, argv, "aA:ehlM:no:pPqUu:t:vVm",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -205,18 +205,22 @@ int main (int argc, char **argv)
 	    && list_count(req_msg.user_list)) {
 		fprintf(stderr, "Users requested:\n");
 		ListIterator itr = list_iterator_create(req_msg.user_list);
-		while((temp = list_next(itr)))
+		while ((temp = list_next(itr)))
 			fprintf(stderr, "\t: %s\n", temp);
 		list_iterator_destroy(itr);
 	} else if (!req_msg.user_list || !list_count(req_msg.user_list)) {
-		struct passwd *pwd = getpwuid(getuid());
-		if (!req_msg.user_list)
-			req_msg.user_list = list_create(slurm_destroy_char);
-		temp = xstrdup(pwd->pw_name);
-		list_append(req_msg.user_list, temp);
-		if (verbosity) {
-			fprintf(stderr, "Users requested:\n");
-			fprintf(stderr, "\t: %s\n", temp);
+		struct passwd *pwd;
+		if ((pwd = getpwuid(getuid()))) {
+			if (!req_msg.user_list) {
+				req_msg.user_list =
+					list_create(slurm_destroy_char);
+			}
+			temp = xstrdup(pwd->pw_name);
+			list_append(req_msg.user_list, temp);
+			if (verbosity) {
+				fprintf(stderr, "Users requested:\n");
+				fprintf(stderr, "\t: %s\n", temp);
+			}
 		}
 	}
 
@@ -224,7 +228,7 @@ int main (int argc, char **argv)
 		if (verbosity) {
 			fprintf(stderr, "Accounts requested:\n");
 			ListIterator itr = list_iterator_create(req_msg.acct_list);
-			while((temp = list_next(itr)))
+			while ((temp = list_next(itr)))
 				fprintf(stderr, "\t: %s\n", temp);
 			list_iterator_destroy(itr);
 		}
@@ -344,7 +348,7 @@ static int _addto_name_char_list(List char_list, char *names, bool gid)
 			i++;
 		}
 		start = i;
-		while(names[i]) {
+		while (names[i]) {
 			//info("got %d - %d = %d", i, start, i-start);
 			if (quote && names[i] == quote_c)
 				break;
@@ -362,7 +366,7 @@ static int _addto_name_char_list(List char_list, char *names, bool gid)
 							id, gid);
 					}
 
-					while((tmp_char = list_next(itr))) {
+					while ((tmp_char = list_next(itr))) {
 						if (!xstrcasecmp(tmp_char,
 								 name))
 							break;
@@ -396,7 +400,7 @@ static int _addto_name_char_list(List char_list, char *names, bool gid)
 				name = _convert_to_name(id, gid);
 			}
 
-			while((tmp_char = list_next(itr))) {
+			while ((tmp_char = list_next(itr))) {
 				if (!xstrcasecmp(tmp_char, name))
 					break;
 			}

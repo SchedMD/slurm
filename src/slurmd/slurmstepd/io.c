@@ -533,8 +533,10 @@ _local_file_write(eio_obj_t *obj, List objs)
 					io_hdr_packed_size();
 	}
 
-	/* This code to make a buffer, fill it, unpack its contents, and free
-	   it is just used to read the header to get the global task id. */
+	/*
+	 * This code to make a buffer, fill it, unpack its contents, and free
+	 * it is just used to read the header to get the global task id.
+	 */
 	header_tmp_buf = create_buf(client->out_msg->data,
 				    client->out_msg->length);
 	if (!header_tmp_buf) {
@@ -545,8 +547,10 @@ _local_file_write(eio_obj_t *obj, List objs)
 	header_tmp_buf->head = NULL;	/* CLANG false positive bug here */
 	free_buf(header_tmp_buf);
 
-	/* A zero-length message indicates the end of a stream from one
-	   of the tasks.  Just free the message and return. */
+	/*
+	 * A zero-length message indicates the end of a stream from one
+	 * of the tasks.  Just free the message and return.
+	 */
 	if (header.length == 0) {
 		_free_outgoing_msg(client->out_msg, client->job);
 		client->out_msg = NULL;
@@ -558,7 +562,8 @@ _local_file_write(eio_obj_t *obj, List objs)
 		(client->out_msg->length - client->out_remaining);
 	n = write_labelled_message(obj->fd, buf, client->out_remaining,
 				   header.gtaskid, client->job->pack_offset,
-				   client->labelio, client->taskid_width);
+				   client->job->task_offset, client->labelio,
+				   client->taskid_width);
 	if (n < 0) {
 		client->out_eof = true;
 		_free_all_outgoing_msgs(client->msg_queue, client->job);

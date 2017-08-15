@@ -202,11 +202,6 @@ static void *_launch_one_app(void *data)
 	slurm_step_io_fds_t cio_fds = SLURM_STEP_IO_FDS_INITIALIZER;
 	slurm_step_launch_callbacks_t step_callbacks;
 
-	if (opt_local->pack_grp_bits)
-		job->pack_offset  = bit_ffs(opt_local->pack_grp_bits);
-	else
-		job->pack_offset  = NO_VAL;
-
 	memset(&step_callbacks, 0, sizeof(step_callbacks));
 	step_callbacks.step_signal = launch_g_fwd_signal;
 
@@ -234,7 +229,7 @@ relaunch:
 
 	if (!launch_g_step_launch(job, &cio_fds, &global_rc, &step_callbacks,
 				  opt_local)) {
-		if (launch_g_step_wait(job, got_alloc, opt_local, -1) == -1)
+		if (launch_g_step_wait(job, got_alloc, opt_local) == -1)
 			goto relaunch;
 	}
 
@@ -268,6 +263,7 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 	xfree(launch_type);
 
 	if (srun_job_list) {
+		int pack_step_cnt = list_count(srun_job_list);
 		if (!opt_list) {
 			fatal("%s: have srun_job_list, but no opt_list",
 			      __func__);
@@ -303,6 +299,7 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 			opts->step_cond   = &step_cond;
 			opts->step_cnt    = &step_cnt;
 			opts->step_mutex  = &step_mutex;
+			opt_local->pack_step_cnt = pack_step_cnt;
 			while (pthread_create(&thread_steps,
 					      &attr_steps, _launch_one_app,
 					      (void *) opts)) {
@@ -331,6 +328,7 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 		opts->got_alloc   = got_alloc;
 		opts->job         = job;
 		opts->opt_local   = &opt;
+		opt.pack_step_cnt = 1;
 		_launch_one_app(opts);
 		fini_srun(job, got_alloc, &global_rc, 0);
 	}

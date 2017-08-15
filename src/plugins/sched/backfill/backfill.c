@@ -2356,8 +2356,6 @@ static int _start_job(struct job_record *job_ptr, bitstr_t *resv_bitmap)
 		power_g_job_start(job_ptr);
 		if (job_ptr->batch_flag == 0)
 			srun_allocate(job_ptr->job_id);
-		else if (job_ptr->pack_job_offset != 0)
-			;     /* Nothing action for batch pack job components */
 		else if (
 #ifdef HAVE_BG
 			/*

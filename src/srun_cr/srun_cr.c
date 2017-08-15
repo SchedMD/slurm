@@ -120,11 +120,11 @@ signal_child (int sig, siginfo_t *siginfo, void *context)
 	}
 
 	if ((siginfo->si_code > 0) &&	/* si_code > 0 indicates sent by kernel */
-	    (sig == SIGILL || sig == SIGFPE ||
-	     sig == SIGBUS || sig == SIGSEGV )) {
+	    ((sig == SIGILL) || (sig == SIGFPE) ||
+	     (sig == SIGBUS) || (sig == SIGSEGV) )) {
 		/* This signal is OUR error, so we don't forward */
 		signal_self(sig);
-	} else if (sig == SIGTSTP || sig == SIGTTIN || sig == SIGTTOU) {
+	} else if ((sig == SIGTSTP) || (sig == SIGTTIN) || (sig == SIGTTOU)) {
 		/* The catchable stop signals go to child AND self */
 		(void)kill(srun_pid, sig);
 		signal_self(sig);
@@ -149,7 +149,7 @@ mimic_exit(int status)
 		/* now raise the signal */
 		signal_self(WTERMSIG(status));
 	} else {
-		error("Unexpected status from child");
+		error("%s: Unexpected status from child", __func__);
 		exit(-1);
 	}
 }
@@ -165,7 +165,8 @@ on_child_exit(int signum, siginfo_t *siginfo, void *arg)
 	 */
 	cr_enter_cs(cr_id);
 	if (waitpid(srun_pid, &status, WNOHANG) == srun_pid) {
-		verbose("srun(%d) exited, status: %d", srun_pid, status);
+		verbose("%s: srun(%d) exited, status: %d",
+			__func__, srun_pid, status);
 		mimic_exit(status);
 	}
 	kill(srun_pid, SIGKILL);
@@ -195,9 +196,8 @@ update_env(char *name, char *val)
 	char *buf = NULL;
 
 	xstrfmtcat (buf, "%s=%s", name, val);
-	if (putenv(buf)) {
-		fatal("failed to update env: %m");
-	}
+	if (putenv(buf))
+		fatal("%s: failed to update env: %m", __func__);
 }
 
 static int
@@ -244,7 +244,7 @@ create_listen_socket(void)
 
 	listen_fd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (listen_fd < 0) {
-		error("failed to create listen socket: %m");
+		error("%s: failed to create listen socket: %m", __func__);
 		return -1;
 	}
 
@@ -254,17 +254,19 @@ create_listen_socket(void)
 
 	unlink(sa.sun_path);	/* remove possible old socket */
 
-	setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR,
-		   (void*)&re_use_addr, sizeof(int));
+	if (setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR,
+		       (void*)&re_use_addr, sizeof(int)) == -1) {
+		error("%s: setsockopt: %m", __func__);
+	}
 
 	if (bind(listen_fd, (struct sockaddr *)&sa, sa_len) < 0) {
-		error("failed to bind listen socket: %m");
+		error("%s: failed to bind listen socket: %m", __func__);
 		unlink(sa.sun_path);
 		return -1;
 	}
 
 	if (listen(listen_fd, 2) < 0) {
-		error("failed to listen: %m");
+		error("%s: failed to listen: %m", __func__);
 		unlink(sa.sun_path);
 		return -1;
 	}
@@ -531,21 +533,19 @@ _read_info_from_srun(int srun_fd)
 {
 	int len;
 
-	if (read(srun_fd, &jobid, sizeof(uint32_t)) != sizeof(uint32_t)) {
-		fatal("failed to read jobid: %m");
-	}
+	if (read(srun_fd, &jobid, sizeof(uint32_t)) != sizeof(uint32_t))
+		fatal("%s: failed to read jobid: %m", __func__);
 
-	if (read(srun_fd, &stepid, sizeof(uint32_t)) != sizeof(uint32_t)) {
-		fatal("failed to read stepid: %m");
-	}
+	if (read(srun_fd, &stepid, sizeof(uint32_t)) != sizeof(uint32_t))
+		fatal("%s: failed to read stepid: %m", __func__);
 
-	if (read(srun_fd, &len, sizeof(int)) != sizeof(int)) {
-		fatal("failed to read nodelist length: %m");
-	}
+	if (read(srun_fd, &len, sizeof(int)) != sizeof(int))
+		fatal("%s: failed to read nodelist length: %m", __func__);
+	if (len > (32 * 1024))
+		fatal("%s: nodelist length too large (%d)", __func__, len);
 
 	xfree(nodelist);
 	nodelist = (char *)xmalloc(len + 1);
-	if (read(srun_fd, nodelist, len + 1) != len + 1) {
-		fatal("failed to read nodelist: %m");
-	}
+	if (read(srun_fd, nodelist, len + 1) != len + 1)
+		fatal("%s: failed to read nodelist: %m", __func__);
 }

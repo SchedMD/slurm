@@ -443,8 +443,7 @@ extern int launch_p_handle_multi_prog_verify(int command_posm, opt_t *opt_local)
 
 extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 				    void (*signal_function)(int),
-				    sig_atomic_t *destroy_job, opt_t *opt_local,
-				    int pack_offset)
+				    sig_atomic_t *destroy_job, opt_t *opt_local)
 {
 	if (opt_local->launch_cmd) {
 		int i = 0;
@@ -483,13 +482,12 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 		pthread_join(msg_thread, NULL);
 	}
 
-	return 0;
+	return SLURM_SUCCESS;
 }
 
-extern int launch_p_step_wait(srun_job_t *job, bool got_alloc, opt_t *opt_local,
-			      int pack_offset)
+extern int launch_p_step_wait(srun_job_t *job, bool got_alloc, opt_t *opt_local)
 {
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 extern int launch_p_step_terminate(void)

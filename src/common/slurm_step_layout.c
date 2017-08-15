@@ -204,7 +204,7 @@ slurm_step_layout_t *fake_slurm_step_layout_create(
 
 
 
-/* copys structure for step layout */
+/* copies structure for step layout */
 extern slurm_step_layout_t *slurm_step_layout_copy(
 	slurm_step_layout_t *step_layout)
 {
@@ -259,8 +259,8 @@ extern void pack_slurm_step_layout(slurm_step_layout_t *step_layout,
 				     buffer);
 		}
 	} else {
-		error("pack_slurm_step_layout: protocol_version "
-		      "%hu not supported", protocol_version);
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
 	}
 }
 

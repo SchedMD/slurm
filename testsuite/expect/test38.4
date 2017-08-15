@@ -56,6 +56,10 @@ proc salloc {} {
 
 	spawn {*}$command
 	expect {
+		-re "Job submit/allocate failed" {
+			log_warn "Unable to execute test due to system configuration"
+			end_it 0
+		}
 		-re "Granted job allocation ($number)" {
 			incr matches
 			if {$job_id == 0} {

@@ -1695,7 +1695,7 @@ extern void setup_popup_info(popup_info_t *popup_win,
 extern void redo_popup(GtkWidget *widget, GdkEventButton *event,
 		       popup_info_t *popup_win)
 {
-	if (event->button == 3) {
+	if (event && (event->button == 3)) {
 		GtkMenu *menu = GTK_MENU(gtk_menu_new());
 
 		(popup_win->display_data->set_menu)(popup_win, menu,
@@ -1703,8 +1703,7 @@ extern void redo_popup(GtkWidget *widget, GdkEventButton *event,
 						    POPUP_CLICKED);
 
 		gtk_widget_show_all(GTK_WIDGET(menu));
-		gtk_menu_popup(menu, NULL, NULL, NULL, NULL,
-			       event ? event->button : 0,
+		gtk_menu_popup(menu, NULL, NULL, NULL, NULL, event->button,
 			       gdk_event_get_time((GdkEvent*)event));
 	}
 }
@@ -1856,10 +1855,6 @@ extern void *popup_thr(popup_info_t *popup_win)
 	/* when popup is killed running will be set to 0 */
 	while (running) {
 		gdk_threads_enter();
-		if (!running) {
-			gdk_threads_leave();
-			break;
-		}
 		(specifc_info)(popup_win);
 		gdk_threads_leave();
 		sleep(working_sview_config.refresh_delay);

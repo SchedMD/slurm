@@ -246,6 +246,7 @@ typedef struct srun_options {
 	bool mpi_combine;	/* --mpi-combine		*/
 	char *pack_group;	/* --pack-group			*/
 	bitstr_t *pack_grp_bits;/* --pack-group	in bitmap form	*/
+	int pack_step_cnt;	/* Total count of pack groups to launch */
 } opt_t;
 
 extern int	error_exit;	/* exit code for slurm errors */
@@ -264,7 +265,7 @@ extern bool	srun_shutdown;
  */
 #define constraints_given() ((opt.pn_min_cpus     != NO_VAL) || \
 			     (opt.pn_min_memory   != NO_VAL64) || \
-			     (opt.job_max_memory   != NO_VAL64) || \
+			     (opt.job_max_memory  != NO_VAL64) || \
 			     (opt.pn_min_tmp_disk != NO_VAL) || \
 			     (opt.pn_min_sockets  != NO_VAL) || \
 			     (opt.pn_min_cores    != NO_VAL) || \

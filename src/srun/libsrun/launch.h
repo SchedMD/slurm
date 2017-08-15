@@ -124,14 +124,13 @@ extern int launch_g_handle_multi_prog_verify(int command_pos, opt_t *opt_local);
  * IN destroy_job - pointer to a global flag signifying if the job was
  *                  canceled while allocating.
  * IN opt_local - options used for step creation
- * IN pack_offset - offset within a pack job, -1 if not part of pack job
  *
  * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
  */
 extern int launch_g_create_job_step(srun_job_t *job, bool use_all_cpus,
 				    void (*signal_function)(int),
-				    sig_atomic_t *destroy_job, opt_t *opt_local,
-				    int pack_offset);
+				    sig_atomic_t *destroy_job,
+				    opt_t *opt_local);
 
 /*
  * launch_g_step_launch() is called to launch the job step that
@@ -155,12 +154,11 @@ extern int launch_g_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
  * IN/OUT job - the job waiting to finish.
  * IN got_alloc - if the resource allocation was created inside srun
  * IN opt_local - options used for step creation
- * IN pack_offset - offset within a pack job, -1 if not part of pack job
  *
  * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
  */
-extern int launch_g_step_wait(srun_job_t *job, bool got_alloc, opt_t *opt_local,
-			      int pack_offset);
+extern int launch_g_step_wait(srun_job_t *job, bool got_alloc,
+			      opt_t *opt_local);
 
 /*
  * launch_g_step_terminate() is called to end the job step.

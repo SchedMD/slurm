@@ -84,6 +84,20 @@ documents those changes that are of interest to users and administrators.
     Previously a readon of "BeginTime" could be reported long after the job's
     requested begin time had passed.
  -- Split group_info in slurm_ctl_conf_t into group_force and group_time.
+ -- Work for heterogeneous job support (complete solution in v17.11):
+    * Fix I/O race condition on step termination for srun launching multiple
+      pack job groups.
+    * If prolog is running when attempting to signal a step, then return EAGAIN
+      and retry rather than simply returning SLURM_ERROR and aborting.
+    * Modify launch/slurm plugin to signal all components of a pack job rather
+      than just the one (modify to use a list of step context records).
+    * Add logic to support srun --mpi-combine option.
+    * Set up debugger data structures.
+    * Disable cancellation of individual component while the job is pending.
+    * Modify scontrol job hold/release and update to operate with heterogeneous
+      job id specification (e.g. "scontrol hold 123+4").
+    * If srun lacks application specification for some component, the next one
+      specified will be used for earlier components.
 
 * Changes in Slurm 17.11.0pre1
 ==============================

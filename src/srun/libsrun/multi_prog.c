@@ -268,8 +268,9 @@ mpir_cleanup(void)
 #endif
 }
 
-extern void
-mpir_set_executable_names(const char *executable_name)
+extern void mpir_set_executable_names(const char *executable_name,
+				      uint32_t task_offset,
+				      uint32_t task_count)
 {
 #if defined HAVE_BG_FILES
 	/* Use symbols from the runjob.so library provided by IBM.
@@ -277,13 +278,12 @@ mpir_set_executable_names(const char *executable_name)
 #else
 	int i;
 
-	for (i = 0; i < MPIR_proctable_size; i++) {
+	if (task_offset == NO_VAL)
+		task_offset = 0;
+	xassert((task_offset + task_count) <= MPIR_proctable_size);
+	for (i = task_offset; i < (task_offset + task_count); i++) {
 		MPIR_proctable[i].executable_name = xstrdup(executable_name);
-		if (MPIR_proctable[i].executable_name == NULL) {
-			error("Unable to set MPI_proctable executable_name:"
-			      " %m");
-			exit(error_exit);
-		}
+		// info("NAME[%d]:%s", i, executable_name);
 	}
 #endif
 }
@@ -300,8 +300,6 @@ mpir_dump_proctable(void)
 
 	for (i = 0; i < MPIR_proctable_size; i++) {
 		tv = &MPIR_proctable[i];
-		if (!tv)
-			break;
 		info("task:%d, host:%s, pid:%d, executable:%s",
 		     i, tv->host_name, tv->pid, tv->executable_name);
 	}

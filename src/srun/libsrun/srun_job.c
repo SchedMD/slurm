@@ -278,7 +278,7 @@ extern srun_job_t *job_step_create_allocation(
 
 		count = hostlist_count(hl);
 		if (!count) {
-			error("Hostlist is now nothing!  Can't run job.");
+			error("Hostlist is empty!  Can't run job.");
 			hostlist_destroy(hl);
 			goto error;
 		}
@@ -357,7 +357,7 @@ extern srun_job_t *job_step_create_allocation(
 		    SLURM_DIST_ARBITRARY)
 			hostlist_uniq(hl);
 		if (!hostlist_count(hl)) {
-			error("Hostlist is now nothing!  Can not run job.");
+			error("Hostlist is empty!  Can not run job.");
 			hostlist_destroy(hl);
 			goto error;
 		}
@@ -450,6 +450,23 @@ extern srun_job_t *job_create_allocation(
 	return (job);
 }
 
+static void _copy_args(List missing_argc_list, opt_t *opt_master)
+{
+	ListIterator iter;
+	opt_t *opt_local;
+	int i;
+
+	iter = list_iterator_create(missing_argc_list);
+	while ((opt_local = (opt_t *) list_next(iter))) {
+		opt_local->argc = opt_master->argc;
+		opt_local->argv = xmalloc(sizeof(char *) * (opt_local->argc + 1));
+		for (i = 0; i < opt_local->argc; i++)
+			opt_local->argv[i] = xstrdup(opt_master->argv[i]);
+		list_remove(iter);
+	}
+	list_iterator_destroy(iter);
+}
+
 /*
  * Build "pack_group" string. If set on execute line, it may need to be
  * rebuilt for multiple option structures ("--pack-group=1,2" becomes two
@@ -461,10 +478,16 @@ static void _pack_grp_test(List opt_list)
 	opt_t *opt_local;
 	int pack_offset;
 	bitstr_t *master_map = NULL;
+	List missing_argv_list = NULL;
 
 	if (opt_list) {
+		missing_argv_list = list_create(NULL);
 		iter = list_iterator_create(opt_list);
 		while ((opt_local = (opt_t *) list_next(iter))) {
+			if (opt_local->argc == 0)
+				list_append(missing_argv_list, opt_local);
+			else
+				_copy_args(missing_argv_list, opt_local);
 			xfree(opt_local->pack_group);
 			if (opt_local->pack_grp_bits &&
 			    ((pack_offset =
@@ -487,6 +510,7 @@ static void _pack_grp_test(List opt_list)
 		}
 		FREE_NULL_BITMAP(master_map);
 		list_iterator_destroy(iter);
+		list_destroy(missing_argv_list);
 	} else if (!opt.pack_group && !getenv("SLURM_PACK_SIZE")) {
 		FREE_NULL_BITMAP(opt.pack_grp_bits);
 		/* pack_group is already NULL */
@@ -503,7 +527,7 @@ static void _pack_grp_test(List opt_list)
  */
 static void _match_job_name(List opt_list)
 {
-	int cnt, i;
+	int cnt;
 	ListIterator iter;
 	opt_t *opt_local;
 
@@ -518,13 +542,6 @@ static void _match_job_name(List opt_list)
 	while ((opt_local = (opt_t *) list_next(iter))) {
 		if (!opt_local->job_name)
 			opt_local->job_name = xstrdup(opt.job_name);
-		if ((opt.argc != 0) && (opt_local->argc != opt.argc)) {
-			opt_local->argc = opt.argc;
-			xfree(opt_local->argv);
-			opt_local->argv = xmalloc(sizeof(char *) * opt.argc);
-			for (i = 0; i < opt.argc; i++)
-				opt_local->argv[i] = xstrdup(opt.argv[i]);
-		}
 	}
 	list_iterator_destroy(iter);
 }
@@ -540,18 +557,21 @@ extern void init_srun(int argc, char **argv,
 		      bool handle_signals)
 {
 	bool pack_fini = false;
-	int pack_argc, pack_inx, pack_argc_off;
+	int i, pack_argc, pack_inx, pack_argc_off;
 	char **pack_argv;
 
-	/* This must happen before we spawn any threads
-	 * which are not designed to handle arbitrary signals */
+	/*
+	 * This must happen before we spawn any threads
+	 * which are not designed to handle arbitrary signals
+	 */
 	if (handle_signals) {
 		if (xsignal_block(sig_array) < 0)
 			error("Unable to block signals");
 	}
 	xsignal_block(pty_sigarray);
 
-	/* Initialize plugin stack, read options from plugins, etc.
+	/*
+	 * Initialize plugin stack, read options from plugins, etc.
 	 */
 	init_spank_env();
 	if (spank_init(NULL) < 0) {
@@ -559,7 +579,8 @@ extern void init_srun(int argc, char **argv,
 		exit(error_exit);
 	}
 
-	/* Be sure to call spank_fini when srun exits.
+	/*
+	 * Be sure to call spank_fini when srun exits.
 	 */
 	if (atexit(_call_spank_fini) < 0)
 		error("Failed to register atexit handler for plugins: %m");
@@ -573,9 +594,19 @@ extern void init_srun(int argc, char **argv,
 			error("srun parameter parsing");
 			exit(1);
 		}
+		if ((pack_argc_off >= 0) && (pack_argc_off < pack_argc)) {
+			for (i = pack_argc_off; i < pack_argc; i++) {
+				if (!xstrcmp(pack_argv[i], ":")) {
+					pack_argc_off = i;
+					break;
+				}
+			}
+		}
 		if ((pack_argc_off >= 0) && (pack_argc_off < pack_argc) &&
 		    !xstrcmp(pack_argv[pack_argc_off], ":")) {
-			/* pack_argv[0] moves from "srun" to ":" */
+			/*
+			 * move pack_argv[0] from "srun" to ":"
+			 */
 			pack_argc -= pack_argc_off;
 			pack_argv += pack_argc_off;
 		} else
@@ -589,11 +620,13 @@ extern void init_srun(int argc, char **argv,
 		exit(error_exit);
 	}
 
-	/* reinit log with new verbosity (if changed by command line)
+	/*
+	 * reinit log with new verbosity (if changed by command line)
 	 */
 	if (logopt && (_verbose || opt.quiet)) {
-		/* If log level is already increased, only increment the
-		 *   level to the difference of _verbose an LOG_LEVEL_INFO
+		/*
+		 * If log level is already increased, only increment the
+		 * level to the difference of _verbose an LOG_LEVEL_INFO
 		 */
 		if ((_verbose -= (logopt->stderr_level - LOG_LEVEL_INFO)) > 0)
 			logopt->stderr_level += _verbose;
@@ -608,10 +641,14 @@ extern void init_srun(int argc, char **argv,
 	(void) _set_umask_env();
 	_set_submit_dir_env();
 
-	/* Set up slurmctld message handler */
+	/*
+	 * Set up slurmctld message handler
+	 */
 	slurmctld_msg_init();
 
-	/* save process startup time to be used with -I<timeout> */
+	/*
+	 * save process startup time to be used with -I<timeout>
+	 */
 	srun_begin_time = time(NULL);
 }
 
@@ -647,7 +684,8 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 {
 	ListIterator opt_iter = NULL, job_iter;
 	opt_t *opt_local = &opt;
-	int pack_offset = 0, rc = 0;
+	uint32_t pack_offset = 0, task_offset = 0;
+	int rc = 0;
 
 	if (srun_job_list) {
 		if (opt_list)
@@ -658,18 +696,21 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 				opt_local = (opt_t *) list_next(opt_iter);
 			if (!opt_local)
 				fatal("%s: opt_list too short", __func__);
-			rc = create_job_step(job, use_all_cpus, opt_local,
-					     pack_offset);
+			job->pack_offset = pack_offset;
+			if (opt_local->mpi_combine)
+				job->task_offset = task_offset;
+			rc = create_job_step(job, use_all_cpus, opt_local);
 			if (rc < 0)
 				break;
 			pack_offset++;
+			task_offset += job->ntasks;
 		}
 		list_iterator_destroy(job_iter);
 		if (opt_iter)
 			list_iterator_destroy(opt_iter);
 		return rc;
 	} else if (job) {
-		return create_job_step(job, use_all_cpus, &opt, -1);
+		return create_job_step(job, use_all_cpus, &opt);
 	} else {
 		return -1;
 	}
@@ -682,7 +723,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 	List job_resp_list = NULL, srun_job_list = NULL;
 	ListIterator opt_iter, resp_iter;
 	srun_job_t *job = NULL;
-	int max_pack_offset, pack_offset = -1;
+	int i, max_pack_offset, pack_offset = -1;
 	opt_t *opt_local;
 	uint32_t my_job_id = 0;
 	bool begin_error_logged = false;
@@ -714,7 +755,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 			error("Job creation failure.");
 			exit(error_exit);
 		}
-		if (create_job_step(job, false, &opt, -1) < 0)
+		if (create_job_step(job, false, &opt) < 0)
 			exit(error_exit);
 	} else if ((job_resp_list = existing_allocation())) {
 		srun_job_list = list_create(NULL);
@@ -812,11 +853,14 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		}	/* More pack job components */
 		list_iterator_destroy(resp_iter);
 
-		if (list_count(srun_job_list) == 0) {
+		i = list_count(srun_job_list);
+		if (i == 0) {
 			error("No directives to start application on any available "
 			      "pack job components");
 			exit(error_exit);
 		}
+		if (i == 1)
+			FREE_NULL_LIST(srun_job_list);	/* Just use "job" */
 		max_pack_offset = get_max_pack_group();
 		pack_offset = list_count(job_resp_list) - 1;
 		if (max_pack_offset > pack_offset) {
@@ -826,7 +870,8 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		}
 
 		if (_create_job_step(job, false, srun_job_list) < 0) {
-			slurm_complete_job(my_job_id, 1);
+			if (*got_alloc)
+				slurm_complete_job(my_job_id, 1);
 			exit(error_exit);
 		}
 	} else {
@@ -1093,6 +1138,8 @@ static srun_job_t *_job_create_structure(allocation_info_t *ainfo,
  	job->nodelist = xstrdup(ainfo->nodelist);
  	job->partition = xstrdup(ainfo->partition);
 	job->stepid  = ainfo->stepid;
+ 	job->pack_offset = NO_VAL;
+ 	job->task_offset = NO_VAL;
 
 #if defined HAVE_BG
 //#if defined HAVE_BGQ && defined HAVE_BG_FILES

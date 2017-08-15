@@ -220,7 +220,7 @@ expect {
 		set exit_code 1
 		exp_continue
 	}
-	-re "Unable to create job step" {
+	-re "Unable to create " {
 		send_user "This error was expected, no worries\n"
 		incr matches
 		exp_continue

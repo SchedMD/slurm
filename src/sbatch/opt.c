@@ -192,6 +192,7 @@ enum wrappers {
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
+sbatch_env_t pack_env;
 int   error_exit = 1;
 int   ignore_pbs = 0;
 bool  is_pack_job = false;
@@ -1864,24 +1865,21 @@ static void _set_options(int argc, char **argv)
 			opt.ntasks_per_node = parse_int("ntasks-per-node",
 							optarg, true);
 			if (opt.ntasks_per_node > 0)
-				setenvf(NULL, "SLURM_NTASKS_PER_NODE", "%d",
-					opt.ntasks_per_node);
+				pack_env.ntasks_per_node = opt.ntasks_per_node;
 			break;
 		case LONG_OPT_NTASKSPERSOCKET:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
 			opt.ntasks_per_socket = parse_int("ntasks-per-socket",
 							  optarg, true);
-			setenvf(NULL, "SLURM_NTASKS_PER_SOCKET", "%d",
-				opt.ntasks_per_socket);
+			pack_env.ntasks_per_socket = opt.ntasks_per_socket;
 			break;
 		case LONG_OPT_NTASKSPERCORE:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
 			opt.ntasks_per_core = parse_int("ntasks-per-core",
 							optarg, true);
-			setenvf(NULL, "SLURM_NTASKS_PER_CORE", "%d",
-				opt.ntasks_per_core);
+			pack_env.ntasks_per_core = opt.ntasks_per_core;
 			opt.ntasks_per_core_set = true;
 			break;
 		case LONG_OPT_HINT:
@@ -2770,7 +2768,7 @@ static void _parse_pbs_resource_list(char *rl)
 static bool _opt_verify(void)
 {
 	bool verified = true;
-	char *dist = NULL, *lllp_dist = NULL;
+	char *dist = NULL, *dist_lllp = NULL;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	hostlist_t hl = NULL;
 	int hl_cnt = 0;
@@ -2793,10 +2791,8 @@ static bool _opt_verify(void)
 		}
 	}
 
-	if (opt.ntasks_set && (opt.ntasks > 0)) {
-		setenvf(NULL, "SLURM_NPROCS", "%d", opt.ntasks);
-		setenvf(NULL, "SLURM_NTASKS", "%d", opt.ntasks);
-	}
+	if (opt.ntasks_set && (opt.ntasks > 0))
+		pack_env.ntasks = opt.ntasks;
 
 	_fullpath(&opt.efname, opt.cwd);
 	_fullpath(&opt.ifname, opt.cwd);
@@ -2933,25 +2929,16 @@ static bool _opt_verify(void)
 		}
 	}
 
-	if (opt.cpus_set &&
-	    setenvf(NULL, "SLURM_CPUS_PER_TASK", "%d", opt.cpus_per_task)) {
-		error("Can't set SLURM_CPUS_PER_TASK env variable");
-	}
+	if (opt.cpus_set)
+		 pack_env.cpus_per_task = opt.cpus_per_task;
 
-	set_distribution(opt.distribution, &dist, &lllp_dist);
-	if (dist &&
-	    setenvf(NULL, "SLURM_DISTRIBUTION", "%s", dist)) {
-		error("Can't set SLURM_DISTRIBUTION env variable");
-	}
-
-	if (((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE) &&
-	    setenvf(NULL, "SLURM_DIST_PLANESIZE", "%d", opt.plane_size)) {
-		error("Can't set SLURM_DIST_PLANESIZE env variable");
-	}
-
-	if (lllp_dist && setenvf(NULL, "SLURM_DIST_LLLP", "%s", lllp_dist)) {
-		error("Can't set SLURM_DIST_LLLP env variable");
-	}
+	set_distribution(opt.distribution, &dist, &dist_lllp);
+	if (dist)
+		 pack_env.dist = xstrdup(dist);
+	if ((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE)
+		 pack_env.plane_size = opt.plane_size;
+	if (dist_lllp)
+		 pack_env.dist_lllp = xstrdup(dist_lllp);
 
 	/* massage the numbers */
 	if ((opt.nodes_set || opt.extra_set)				&&
@@ -3099,22 +3086,22 @@ static bool _opt_verify(void)
 		char tmp[64];
 		slurm_sprint_mem_bind_type(tmp, opt.mem_bind_type);
 		if (opt.mem_bind) {
-			setenvf(NULL, "SBATCH_MEM_BIND", "%s:%s",
-				tmp, opt.mem_bind);
+			xstrfmtcat(pack_env.mem_bind, "%s:%s",
+				   tmp, opt.mem_bind);
 		} else {
-			setenvf(NULL, "SBATCH_MEM_BIND", "%s", tmp);
+			pack_env.mem_bind = xstrdup(tmp);
 		}
 	}
 	if (opt.mem_bind_type && (getenv("SLURM_MEM_BIND_SORT") == NULL) &&
 	    (opt.mem_bind_type & MEM_BIND_SORT)) {
-		setenvf(NULL, "SLURM_MEM_BIND_SORT", "sort");
+		pack_env.mem_bind_sort = xstrdup("sort");
 	}
 
 	if (opt.mem_bind_type && (getenv("SLURM_MEM_BIND_VERBOSE") == NULL)) {
 		if (opt.mem_bind_type & MEM_BIND_VERBOSE) {
-			setenvf(NULL, "SLURM_MEM_BIND_VERBOSE", "verbose");
+			pack_env.mem_bind_verbose = xstrdup("verbose");
 		} else {
-			setenvf(NULL, "SLURM_MEM_BIND_VERBOSE", "quiet");
+			pack_env.mem_bind_verbose = xstrdup("quiet");
 		}
 	}
 
@@ -3633,4 +3620,94 @@ static void _help(void)
 "\n"
 		);
 
+}
+
+extern void init_envs(sbatch_env_t *local_env)
+{
+	local_env->cpus_per_task	= NO_VAL;
+	local_env->dist			= NULL;
+	local_env->dist_lllp		= NULL;
+	local_env->mem_bind		= NULL;
+	local_env->mem_bind_sort	= NULL;
+	local_env->mem_bind_verbose	= NULL;
+	local_env->ntasks		= NO_VAL;
+	local_env->ntasks_per_core	= NO_VAL;
+	local_env->ntasks_per_node	= NO_VAL;
+	local_env->ntasks_per_socket	= NO_VAL;
+	local_env->plane_size		= NO_VAL;
+}
+
+extern void set_envs(char ***array_ptr, sbatch_env_t *local_env,
+		     int pack_offset)
+{
+	if ((local_env->cpus_per_task != NO_VAL) &&
+	    !env_array_overwrite_pack_fmt(array_ptr, "SLURM_CPUS_PER_TASK",
+					  pack_offset, "%u",
+					  local_env->cpus_per_task)) {
+		error("Can't set SLURM_CPUS_PER_TASK env variable");
+	}
+	if (local_env->dist &&
+	    !env_array_overwrite_pack_fmt(array_ptr, "SLURM_DISTRIBUTION",
+					  pack_offset, "%s",
+					  local_env->dist)) {
+		error("Can't set SLURM_DISTRIBUTION env variable");
+	}
+	if (local_env->mem_bind &&
+	    !env_array_overwrite_pack_fmt(array_ptr, "SLURM_MEM_BIND",
+					  pack_offset, "%s",
+					  local_env->mem_bind)) {
+		error("Can't set SLURM_MEM_BIND env variable");
+	}
+	if (local_env->mem_bind_sort &&
+	    !env_array_overwrite_pack_fmt(array_ptr, "SLURM_MEM_BIND_SORT",
+					  pack_offset, "%s",
+					  local_env->mem_bind_sort)) {
+		error("Can't set SLURM_MEM_BIND_SORT env variable");
+	}
+	if (local_env->mem_bind_verbose &&
+	    !env_array_overwrite_pack_fmt(array_ptr, "SLURM_MEM_BIND_VERBOSE",
+					  pack_offset, "%s",
+					  local_env->mem_bind_verbose)) {
+		error("Can't set SLURM_MEM_BIND_VERBOSE env variable");
+	}
+	if (local_env->dist_lllp &&
+	    !env_array_overwrite_pack_fmt(array_ptr, "SLURM_DIST_LLLP",
+					  pack_offset, "%s",
+					  local_env->dist_lllp)) {
+		error("Can't set SLURM_DIST_LLLP env variable");
+	}
+	if (local_env->ntasks != NO_VAL) {
+		if (!env_array_overwrite_pack_fmt(array_ptr, "SLURM_NPROCS",
+						  pack_offset, "%u",
+						  local_env->ntasks))
+			error("Can't set SLURM_NPROCS env variable");
+		if (!env_array_overwrite_pack_fmt(array_ptr, "SLURM_NTASKS",
+						  pack_offset, "%u",
+						  local_env->ntasks))
+			error("Can't set SLURM_NTASKS env variable");
+	}
+	if ((local_env->ntasks_per_core != NO_VAL) &&
+	    !env_array_overwrite_pack_fmt(array_ptr, "SLURM_NTASKS_PER_CORE",
+					  pack_offset, "%u",
+					  local_env->ntasks_per_core)) {
+		error("Can't set SLURM_NTASKS_PER_CORE env variable");
+	}
+	if ((local_env->ntasks_per_node != NO_VAL) &&
+	    !env_array_overwrite_pack_fmt(array_ptr, "SLURM_NTASKS_PER_NODE",
+					  pack_offset, "%u",
+					  local_env->ntasks_per_node)) {
+		error("Can't set SLURM_NTASKS_PER_NODE env variable");
+	}
+	if ((local_env->ntasks_per_socket != NO_VAL) &&
+	    !env_array_overwrite_pack_fmt(array_ptr, "SLURM_NTASKS_PER_SOCKET",
+					  pack_offset, "%u",
+					  local_env->ntasks_per_socket)) {
+		error("Can't set SLURM_NTASKS_PER_SOCKET env variable");
+	}
+	if ((local_env->plane_size != NO_VAL) &&
+	    !env_array_overwrite_pack_fmt(array_ptr, "SLURM_DIST_PLANESIZE",
+					  pack_offset, "%u",
+					  local_env->plane_size)) {
+		error("Can't set SLURM_DIST_PLANESIZE env variable");
+	}
 }
