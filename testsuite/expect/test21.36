@@ -51,14 +51,6 @@ set acct_req(cluster) $cluster
 set user_req(account) $account
 set user_req(cluster) $cluster
 
-exec $bin_rm -f $sql_query $sql_query_rem
-
-# Make SQL file to remove the inserted job
-set file [open $sql_query_rem "w"]
-# This SQL statement is correct for our purposes (missing && infront of cluster)
-puts $file "delete from job_table where alloc_nodes=\'test21.36_node\' cluster=\'$cluster\';"
-close $file
-
 # Remove pre-existing items
 proc cleanup { } {
 	global cluster account user sql_query_rem
@@ -93,6 +85,14 @@ if {[string compare [check_accounting_admin_level] "Administrator"]} {
 	send_user "\nThis test can't be run without being an Accounting administrator.\n"
 	exit 0
 }
+
+exec $bin_rm -f $sql_query $sql_query_rem
+
+# Make SQL file to remove the inserted job
+set file [open $sql_query_rem "w"]
+# This SQL statement is correct for our purposes (missing && infront of cluster)
+puts $file "delete from job_table where alloc_nodes=\'test21.36_node\' cluster=\'$cluster\';"
+close $file
 
 # Remove pre-existing items
 cleanup
