@@ -218,7 +218,8 @@ _domain_socket_create(const char *dir, const char *nodename,
 	if (fd < 0)
 		fatal("Could not create domain socket: %m");
 
-	chmod(name, 0777);
+	if (chmod(name, 0777) == -1)
+		error("%s: chmod(%s): %m", __func__, name);
 	socket_name = name;
 	return fd;
 }
