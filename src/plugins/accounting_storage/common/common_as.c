@@ -684,7 +684,6 @@ extern int archive_run_script(slurmdb_archive_cond_t *arch_cond,
 	time_t curr_end;
 
 	if (stat(arch_cond->archive_script, &st) < 0) {
-		errno = errno;
 		error("archive_run_script: failed to stat %s: %m",
 		      arch_cond->archive_script);
 		return SLURM_ERROR;
