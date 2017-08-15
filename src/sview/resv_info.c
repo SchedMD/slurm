@@ -1638,48 +1638,17 @@ extern void select_admin_resv(GtkTreeModel *model, GtkTreeIter *iter,
 			      display_data_t *display_data,
 			      GtkTreeView *treeview)
 {
-	if (!treeview)
-		return;
-
-	if (display_data->extra & EXTRA_NODES) {
-		select_admin_nodes(model, iter, display_data,
-				   SORTID_NODELIST, treeview);
-		return;
+	if (treeview) {
+		if (display_data->extra & EXTRA_NODES) {
+			select_admin_nodes(model, iter, display_data,
+					   SORTID_NODELIST, treeview);
+			return;
+		}
+		global_multi_error = false;
+		gtk_tree_selection_selected_foreach(
+			gtk_tree_view_get_selection(treeview),
+			_process_each_resv, display_data->name);
 	}
-	global_multi_error = false;
-
-	GtkTreePath *path;
-	GtkTreeRowReference *ref;
-	GtkTreeSelection *selection;
-	GList *selected_rows, *list, *row_references = NULL;
-
-	selection = gtk_tree_view_get_selection(treeview);
-
-	selected_rows = gtk_tree_selection_get_selected_rows(selection,
-							     &model);
-
-	for (list = selected_rows; list; list = g_list_next(list)) {
-		path = list->data;
-		ref = gtk_tree_row_reference_new(model, path);
-		row_references = g_list_append(row_references, ref);
-	}
-
-	for (list = row_references; list; list = g_list_next(list)) {
-		path = gtk_tree_row_reference_get_path((GtkTreeRowReference *)
-						       (list->data));
-		gtk_tree_model_get_iter(model, iter, path);
-		_process_each_resv(model, path, iter, display_data->name);
-		gtk_tree_path_free(path);
-	}
-
-	/*
-	 * g_list_free_full(selected_rows, (GDestroyNotify)gtk_tree_path_free);
-	 * g_list_free_full since 2.28
-	 */
-	g_list_foreach (selected_rows, (GFunc)gtk_tree_path_free, NULL);
-	g_list_free(selected_rows);
-	g_list_free(row_references);
-	g_list_free(list);
 }
 
 static void _admin_resv(GtkTreeModel *model, GtkTreeIter *iter, char *type)
