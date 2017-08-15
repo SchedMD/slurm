@@ -128,7 +128,7 @@ _sub_expression(char *args_spec, int task_rank, int task_offset)
 	if (args_spec[0] == '%') {
 		if (args_spec[1] == 't') {
 			/* task rank */
-			strcpy(tmp, &args_spec[2]);
+			strlcpy(tmp, &args_spec[2], sizeof(tmp));
 			sprintf(args_spec, "%d%s", task_rank, tmp);
 		} else if (args_spec[1] == 'o') {
 			/* task offset */
