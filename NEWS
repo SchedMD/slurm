@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 17.11.0pre3
+==============================
+
 * Changes in Slurm 17.11.0pre2
 ==============================
  -- Initial work for heterogeneous job support (complete solution in v17.11):
