@@ -51,6 +51,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include "src/common/log.h"
+#include "src/common/strlcpy.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -131,7 +132,7 @@ _sub_expression(char *args_spec, int task_rank, int task_offset)
 			sprintf(args_spec, "%d%s", task_rank, tmp);
 		} else if (args_spec[1] == 'o') {
 			/* task offset */
-			strcpy(tmp, &args_spec[2]);
+			strlcpy(tmp, &args_spec[2], sizeof(tmp));
 			sprintf(args_spec, "%d%s", task_offset, tmp);
 		}
 	}
