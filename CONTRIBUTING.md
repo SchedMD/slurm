@@ -11,8 +11,8 @@ bugs under "Contributions" category.
 CODING GUIDELINES
 -----------------
 Slurm loosely follows the Linux Kernel style guidelines
-(https://www.kernel.org/doc/Documentation/CodingStyle). If in doubt, please
-follow their example.
+(https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/Documentation/process/coding-style.rst).
+If in doubt, please follow their example.
 
 A brief overview, with some notable exceptions:
 - Tabs not spaces, tabs are 8-spaces wide.

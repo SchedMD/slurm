@@ -4447,9 +4447,9 @@ static void _slurm_rpc_resv_create(slurm_msg_t * msg)
 	DEF_TIMERS;
 	resv_desc_msg_t *resv_desc_ptr = (resv_desc_msg_t *)
 		msg->data;
-	/* Locks: write node, read partition */
+	/* Locks: read config, read job, write node, read partition */
 	slurmctld_lock_t node_write_lock = {
-		NO_LOCK, NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
+		READ_LOCK, READ_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 
@@ -4505,9 +4505,9 @@ static void _slurm_rpc_resv_update(slurm_msg_t * msg)
 	DEF_TIMERS;
 	resv_desc_msg_t *resv_desc_ptr = (resv_desc_msg_t *)
 		msg->data;
-	/* Locks: write node, read partition */
+	/* Locks: read config, read job, write node, read partition */
 	slurmctld_lock_t node_write_lock = {
-		NO_LOCK, NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
+		READ_LOCK, READ_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 

@@ -191,6 +191,9 @@ documents those changes that are of interest to users and administrators.
  -- The '-q' option to srun has changed from being the short form of
     '--quit-on-interrupt' to '--qos'.
 
+* Changes in Slurm 17.02.8
+==========================
+
 * Changes in Slurm 17.02.7
 ==========================
  -- Fix deadlock if requesting to create more than 10000 reservations.
@@ -239,6 +242,11 @@ documents those changes that are of interest to users and administrators.
     truncation of core specification and not reserving the specified cores.
  -- Close race condition on Slurm structures when setting DebugFlags.
  -- Make it so the cray/switch plugin grabs new DebugFlags on a reconfigure.
+ -- Fix incorrect lock levels when creating or updating a reservation.
+ -- Fix overlapping reservation resize.
+ -- Add logic to help support Dell KNL systems where syscfg is different than
+    the normal Intel syscfg.
+ -- CRAY - Fix BB to handle type= correctly, regression in 17.02.6.
 
 * Changes in Slurm 17.02.6
 ==========================
