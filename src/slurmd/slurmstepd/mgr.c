@@ -2448,12 +2448,16 @@ _drop_privileges(stepd_step_rec_t *job, bool do_setuid,
 	}
 #else
 	ps->ngids = getgroups(0, NULL);
+	if (ps->ngids == -1) {
+		error("%s: getgroups(): %m", __func__);
+		return -1;
+	}
 	if (get_list) {
 		ps->gid_list = (gid_t *) xmalloc(ps->ngids * sizeof(gid_t));
 
 		if (getgroups(ps->ngids, ps->gid_list) == -1) {
-			error("_drop_privileges: couldn't get %d groups: %m",
-			      ps->ngids);
+			error("%s: couldn't get %d groups: %m",
+			      __func__, ps->ngids);
 			xfree(ps->gid_list);
 			return -1;
 		}
