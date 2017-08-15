@@ -134,7 +134,7 @@ static int _restore_state(char *dir_name)
 {
 	char *data = NULL, *file_name = NULL;
 	int error_code = SLURM_SUCCESS;
-	int state_fd, data_allocated = 0, data_read = 0, data_size = 0;
+	int state_fd, data_allocated = 0, data_read = 0, data_offset = 0;
 
 	if (!dir_name) {
 		error("job_container state directory is NULL");
@@ -147,7 +147,7 @@ static int _restore_state(char *dir_name)
 		data_allocated = JOB_BUF_SIZE;
 		data = xmalloc(data_allocated);
 		while (1) {
-			data_read = read(state_fd, &data[data_size],
+			data_read = read(state_fd, data + data_offset,
 					 JOB_BUF_SIZE);
 			if ((data_read < 0) && (errno == EINTR))
 				continue;
@@ -157,7 +157,7 @@ static int _restore_state(char *dir_name)
 				break;
 			} else if (data_read == 0)
 				break;
-			data_size      += data_read;
+			data_offset    += data_read;
 			data_allocated += data_read;
 			xrealloc(data, data_allocated);
 		}
@@ -173,7 +173,7 @@ static int _restore_state(char *dir_name)
 
 	if (error_code == SLURM_SUCCESS) {
 		job_id_array = (uint32_t *) data;
-		job_id_count = data_size / sizeof(uint32_t);
+		job_id_count = data_offset / sizeof(uint32_t);
 	}
 
 	return error_code;
