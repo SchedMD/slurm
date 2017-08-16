@@ -1976,10 +1976,10 @@ _wait_for_any_task(stepd_step_rec_t *job, bool waitflag)
 	jobacctinfo_t *jobacct = NULL;
 	struct rusage rusage;
 	char **tmp_env;
-	uint32_t pack_offset = 0;
+	uint32_t task_offset = 0;
 
-	if (job->pack_offset != NO_VAL)
-		pack_offset = job->pack_offset;
+	if (job->task_offset != NO_VAL)
+		task_offset = job->task_offset;
 	do {
 		pid = wait3(&status, waitflag ? 0 : WNOHANG, &rusage);
 		if (pid == -1) {
@@ -2028,7 +2028,7 @@ _wait_for_any_task(stepd_step_rec_t *job, bool waitflag)
 			_log_task_exit(t->gtid, pid, status);
 			t->exited  = true;
 			t->estatus = status;
-			job->envtp->procid = t->gtid + pack_offset;
+			job->envtp->procid = t->gtid + task_offset;
 			job->envtp->localid = t->id;
 			job->envtp->distribution = -1;
 			job->envtp->batch_flag = job->batch;
@@ -2038,7 +2038,8 @@ _wait_for_any_task(stepd_step_rec_t *job, bool waitflag)
 			 * place or concurrent searches of the environment can
 			 * generate invalid memory references.
 			 */
-			job->envtp->env = env_array_copy((const char **) job->env);
+			job->envtp->env =
+				env_array_copy((const char **) job->env);
 			setup_env(job->envtp, false);
 			tmp_env = job->env;
 			job->env = job->envtp->env;

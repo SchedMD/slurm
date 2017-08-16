@@ -292,6 +292,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	launch.job_step_id = ctx->step_resp->job_step_id;
 	launch.pack_ntasks = params->pack_ntasks;
 	launch.pack_offset = params->pack_offset;
+	launch.task_offset = params->task_offset;
 	if (params->env == NULL) {
 		/* if the user didn't specify an environment, grab the
 		 * environment of the running process */
@@ -495,6 +496,7 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	launch.job_step_id = ctx->step_resp->job_step_id;
 	launch.pack_ntasks = params->pack_ntasks;
 	launch.pack_offset = params->pack_offset;
+	launch.task_offset = params->task_offset;
 	if (params->env == NULL) {
 		/* if the user didn't specify an environment, grab the
 		 * environment of the running process */

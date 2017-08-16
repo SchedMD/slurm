@@ -343,10 +343,10 @@ exec_task(stepd_step_rec_t *job, int i)
 	stepd_step_task_info_t *task = job->task[i];
 	char **tmp_env;
 	int saved_errno;
-	uint32_t pack_offset = 0;
+	uint32_t task_offset = 0;
 
-	if (job->pack_offset != NO_VAL)
-		pack_offset = job->pack_offset;
+	if (job->task_offset != NO_VAL)
+		task_offset = job->task_offset;
 	if (i == 0)
 		_make_tmpdir(job);
 
@@ -360,7 +360,7 @@ exec_task(stepd_step_rec_t *job, int i)
 	job->envtp->stepid = job->stepid;
 	job->envtp->nodeid = job->nodeid;
 	job->envtp->cpus_on_node = job->cpus;
-	job->envtp->procid = task->gtid + pack_offset;
+	job->envtp->procid = task->gtid + task_offset;
 	job->envtp->localid = task->id;
 	job->envtp->task_pid = getpid();
 	job->envtp->distribution = job->task_dist;
