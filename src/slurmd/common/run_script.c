@@ -82,7 +82,7 @@ int waitpid_timeout (const char *name, pid_t pid, int *pstatus, int timeout)
 			killpg(pid, SIGKILL);
 			options = 0;
 		} else {
-			poll(NULL, 0, delay);
+			(void) poll(NULL, 0, delay);
 			timeout_ms -= delay;
 			delay = MIN (timeout_ms, MIN(max_delay, delay*2));
 		}
