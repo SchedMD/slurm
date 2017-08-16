@@ -4481,8 +4481,8 @@ extern int slurmdbd_unpack_usage_msg(dbd_usage_msg_t **msg,
 	if ((*(my_rec))(&msg_ptr->rec, rpc_version, buffer) == SLURM_ERROR)
 		goto unpack_error;
 
-	unpack_time(&msg_ptr->start, buffer);
-	unpack_time(&msg_ptr->end, buffer);
+	safe_unpack_time(&msg_ptr->start, buffer);
+	safe_unpack_time(&msg_ptr->end, buffer);
 
 
 	return SLURM_SUCCESS;
