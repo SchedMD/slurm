@@ -110,7 +110,8 @@ static uint64_t _get_latest_stats(int type)
 	}
 
 	fd = fileno(fp);
-	fcntl(fd, F_SETFD, FD_CLOEXEC);
+	if (fcntl(fd, F_SETFD, FD_CLOEXEC) == -1)
+		error("%s: fcntl: %m", __func__);
 	num_read = read(fd, sbuf, (sizeof(sbuf) - 1));
 	if (num_read > 0) {
 		sbuf[num_read] = '\0';
