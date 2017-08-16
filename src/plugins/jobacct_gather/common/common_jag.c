@@ -507,7 +507,8 @@ static void _handle_stats(List prec_list, char *proc_stat_file, char *proc_io_fi
 
 	if ((io_fp = fopen(proc_io_file, "r"))) {
 		fd2 = fileno(io_fp);
-		fcntl(fd2, F_SETFD, FD_CLOEXEC);
+		if (fcntl(fd2, F_SETFD, FD_CLOEXEC) == -1)
+			error("%s: fcntl: %m", __func__);
 		_get_process_io_data_line(fd2, prec);
 		fclose(io_fp);
 	}
