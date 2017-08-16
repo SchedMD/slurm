@@ -378,6 +378,11 @@ salloc -N1 --mem=256GB -C haswell : \
 srun master : slave &
 </pre>
 
+<p>The SLURM_PROCID and SLURM_TASKID environment variables will be set to
+reflect a global task rank.
+With --mpi-combine=no each job component will have a SLURM_PROCID set to 0.
+With --mpi-combine=yes each spawned process will have a unique SLURM_PROCID.</p>
+
 <h2><a name="limitations">Limitations</a></h2>
 
 <p>The backfill scheduler has limiations in how it tracks usage of CPUs and
@@ -492,6 +497,6 @@ especially other heterogeneous jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 15 August 2017</p>
+<p style="text-align:center;">Last modified 16 August 2017</p>
 
 <!--#include virtual="footer.txt"-->

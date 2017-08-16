@@ -3,6 +3,9 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 17.11.0pre3
 ==============================
+ -- Work for heterogeneous job support (complete solution in v17.11):
+    * Set SLURM_PROCID environment variable to reflect global task rank (needed
+      by MPI).
 
 * Changes in Slurm 17.11.0pre2
 ==============================

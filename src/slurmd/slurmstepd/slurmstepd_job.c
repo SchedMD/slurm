@@ -72,11 +72,14 @@ static bool already_validated_uid = true;
 static bool already_validated_uid = false;
 #endif
 
-static char ** _array_copy(int n, char **src);
+static char **_array_copy(int n, char **src);
 static void _array_free(char ***array);
-static void _srun_info_destructor(void *arg);
 static void _job_init_task_info(stepd_step_rec_t *job, uint32_t **gtid,
 				char *ifname, char *ofname, char *efname);
+static void _srun_info_destructor(void *arg);
+static stepd_step_task_info_t *_task_info_create(int taskid, int gtaskid,
+						 char *ifname, char *ofname,
+						 char *efname);
 static void _task_info_destroy(stepd_step_task_info_t *t, uint16_t multi_prog);
 
 /*
@@ -134,12 +137,16 @@ _job_init_task_info(stepd_step_rec_t *job, uint32_t **gtid,
 {
 	int          i, node_id = job->nodeid;
 	char        *in, *out, *err;
+	uint32_t     pack_offset = 0;
 
 	if (job->node_tasks == 0) {
 		error("User requested launch of zero tasks!");
 		job->task = NULL;
 		return;
 	}
+
+	if (job->pack_offset != NO_VAL)
+		pack_offset = job->pack_offset;
 
 #if defined(HAVE_NATIVE_CRAY)
 	for (i = 0; i < job->nnodes; i++) {
@@ -157,11 +164,17 @@ _job_init_task_info(stepd_step_rec_t *job, uint32_t **gtid,
 		xmalloc(job->node_tasks * sizeof(stepd_step_task_info_t *));
 
 	for (i = 0; i < job->node_tasks; i++) {
-		in = _expand_stdio_filename(ifname, gtid[node_id][i], job);
-		out = _expand_stdio_filename(ofname, gtid[node_id][i], job);
-		err = _expand_stdio_filename(efname, gtid[node_id][i], job);
-		job->task[i] = task_info_create(i, gtid[node_id][i], in, out,
-						err);
+		in  = _expand_stdio_filename(ifname,
+					     gtid[node_id][i] + pack_offset,
+					     job);
+		out = _expand_stdio_filename(ofname,
+					     gtid[node_id][i] + pack_offset,
+					     job);
+		err = _expand_stdio_filename(efname,
+					     gtid[node_id][i] + pack_offset,
+					     job);
+		job->task[i] = _task_info_create(i, gtid[node_id][i], in, out,
+						 err);
 		if ((job->flags & LAUNCH_MULTI_PROG) == 0) {
 			job->task[i]->argc = job->argc;
 			job->task[i]->argv = job->argv;
@@ -544,10 +557,9 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	else
 		in_name = fname_create(job, msg->std_in, 0);
 
-	job->task[0] = task_info_create(0, 0,
-					in_name,
-					_batchfilename(job, msg->std_out),
-					_batchfilename(job, msg->std_err));
+	job->task[0] = _task_info_create(0, 0, in_name,
+					 _batchfilename(job, msg->std_out),
+					 _batchfilename(job, msg->std_err));
 	job->task[0]->argc = job->argc;
 	job->task[0]->argv = job->argv;
 
@@ -646,9 +658,9 @@ srun_info_destroy(srun_info_t *srun)
 	xfree(srun);
 }
 
-extern stepd_step_task_info_t *
-task_info_create(int taskid, int gtaskid,
-		 char *ifname, char *ofname, char *efname)
+static stepd_step_task_info_t *_task_info_create(int taskid, int gtaskid,
+						 char *ifname, char *ofname,
+						 char *efname)
 {
 	stepd_step_task_info_t *t = xmalloc(sizeof(stepd_step_task_info_t));
 
