@@ -2028,7 +2028,7 @@ _wait_for_any_task(stepd_step_rec_t *job, bool waitflag)
 			_log_task_exit(t->gtid, pid, status);
 			t->exited  = true;
 			t->estatus = status;
-			job->envtp->procid = t->gtid  +pack_offset;
+			job->envtp->procid = t->gtid + pack_offset;
 			job->envtp->localid = t->id;
 			job->envtp->distribution = -1;
 			job->envtp->batch_flag = job->batch;

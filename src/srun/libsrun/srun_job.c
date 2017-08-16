@@ -684,13 +684,18 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 {
 	ListIterator opt_iter = NULL, job_iter;
 	opt_t *opt_local = &opt;
-	uint32_t pack_offset = 0, task_offset = 0;
+	uint32_t pack_offset = 0, pack_ntasks = 0, task_offset = 0;
 	int rc = 0;
 
 	if (srun_job_list) {
 		if (opt_list)
 			opt_iter = list_iterator_create(opt_list);
 		job_iter = list_iterator_create(srun_job_list);
+		while ((job = (srun_job_t *) list_next(job_iter))) {
+			pack_ntasks += job->ntasks;
+		}
+
+		list_iterator_reset(job_iter);
 		while ((job = (srun_job_t *) list_next(job_iter))) {
 			if (opt_list)
 				opt_local = (opt_t *) list_next(opt_iter);
@@ -699,6 +704,7 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 			job->pack_offset = pack_offset;
 			if (opt.mpi_combine) {
 				pack_offset++;
+				job->pack_ntasks = pack_ntasks;
 				job->task_offset = task_offset;
 			}
 			rc = create_job_step(job, use_all_cpus, opt_local);
@@ -1139,6 +1145,7 @@ static srun_job_t *_job_create_structure(allocation_info_t *ainfo,
  	job->nodelist = xstrdup(ainfo->nodelist);
  	job->partition = xstrdup(ainfo->partition);
 	job->stepid  = ainfo->stepid;
+ 	job->pack_ntasks = NO_VAL;
  	job->pack_offset = NO_VAL;
  	job->task_offset = NO_VAL;
 

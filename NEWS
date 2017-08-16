@@ -6,6 +6,8 @@ documents those changes that are of interest to users and administrators.
  -- Work for heterogeneous job support (complete solution in v17.11):
     * Set SLURM_PROCID environment variable to reflect global task rank (needed
       by MPI).
+    * Set SLURM_NTASKS environment variable to reflect global task count (needed
+      by MPI).
 
 * Changes in Slurm 17.11.0pre2
 ==============================

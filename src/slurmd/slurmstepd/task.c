@@ -377,9 +377,11 @@ exec_task(stepd_step_rec_t *job, int i)
 	job->envtp->uid = job->uid;
 	job->envtp->user_name = xstrdup(job->user_name);
 
-	/* Modify copy of job's environment. Do not alter in place or
+	/*
+	 * Modify copy of job's environment. Do not alter in place or
 	 * concurrent searches of the environment can generate invalid memory
-	 * references. */
+	 * references.
+	 */
 	job->envtp->env = env_array_copy((const char **) job->env);
 	setup_env(job->envtp, false);
 	setenvf(&job->envtp->env, "SLURM_JOB_GID", "%d", job->gid);

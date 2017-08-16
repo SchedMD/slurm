@@ -308,7 +308,8 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	job->env     = _array_copy(msg->envc, msg->env);
 	job->array_job_id  = msg->job_id;
 	job->array_task_id = NO_VAL;
-	job->pack_offset = msg->pack_offset;	/* Used to set output labels */
+	job->pack_ntasks = msg->pack_ntasks;	/* Used for env vars */
+	job->pack_offset = msg->pack_offset;	/* Used for env vars & labels */
 	for (i = 0; i < msg->envc; i++) {
 		/*                         1234567890123456789 */
 		if (!xstrncmp(msg->env[i], "SLURM_ARRAY_JOB_ID=", 19))

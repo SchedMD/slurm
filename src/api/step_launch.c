@@ -164,6 +164,7 @@ void slurm_step_launch_params_t_init (slurm_step_launch_params_t *ptr)
 	ptr->cpu_freq_min = NO_VAL;
 	ptr->cpu_freq_max = NO_VAL;
 	ptr->cpu_freq_gov = NO_VAL;
+	ptr->pack_ntasks  = NO_VAL;
 	ptr->pack_offset  = NO_VAL;
 	ptr->task_offset  = NO_VAL;
 }
@@ -222,6 +223,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	char **env = NULL;
 	char **mpi_env = NULL;
 	int rc = SLURM_SUCCESS;
+	bool preserve_env = params->preserve_env;
 
 	debug("Entering %s", __func__);
 	memset(&launch, 0, sizeof(launch));
@@ -288,6 +290,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	launch.spank_job_env_size = params->spank_job_env_size;
 	launch.cred = ctx->step_resp->cred;
 	launch.job_step_id = ctx->step_resp->job_step_id;
+	launch.pack_ntasks = params->pack_ntasks;
 	launch.pack_offset = params->pack_offset;
 	if (params->env == NULL) {
 		/* if the user didn't specify an environment, grab the
@@ -296,9 +299,10 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	} else {
 		env_array_merge(&env, (const char **)params->env);
 	}
+	if (params->pack_ntasks != NO_VAL)
+		preserve_env = true;
 	env_array_for_step(&env, ctx->step_resp,
-			   ctx->launch_state->resp_port[0],
-			   params->preserve_env);
+			   ctx->launch_state->resp_port[0], preserve_env);
 	env_array_merge(&env, (const char **)mpi_env);
 	env_array_free(mpi_env);
 
@@ -454,6 +458,7 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	char **mpi_env = NULL;
 	int rc = SLURM_SUCCESS;
 	uint16_t resp_port = 0;
+	bool preserve_env = params->preserve_env;
 
 	debug("Entering %s", __func__);
 
@@ -488,6 +493,7 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	launch.spank_job_env_size = params->spank_job_env_size;
 	launch.cred = ctx->step_resp->cred;
 	launch.job_step_id = ctx->step_resp->job_step_id;
+	launch.pack_ntasks = params->pack_ntasks;
 	launch.pack_offset = params->pack_offset;
 	if (params->env == NULL) {
 		/* if the user didn't specify an environment, grab the
@@ -498,8 +504,9 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	}
 	if (first_ctx->launch_state->resp_port)
 		resp_port = first_ctx->launch_state->resp_port[0];
-	env_array_for_step(&env, ctx->step_resp, resp_port,
-			   params->preserve_env);
+	if (params->pack_ntasks != NO_VAL)
+		preserve_env = true;
+	env_array_for_step(&env, ctx->step_resp, resp_port, preserve_env);
 	env_array_merge(&env, (const char **)mpi_env);
 	env_array_free(mpi_env);
 

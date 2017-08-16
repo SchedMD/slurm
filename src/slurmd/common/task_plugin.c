@@ -224,8 +224,8 @@ extern int task_g_slurmd_batch_request(uint32_t job_id,
  * RET - slurm error code
  */
 extern int task_g_slurmd_launch_request(uint32_t job_id,
-				 launch_tasks_request_msg_t *req,
-				 uint32_t node_id)
+					launch_tasks_request_msg_t *req,
+					uint32_t node_id)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -253,8 +253,8 @@ extern int task_g_slurmd_launch_request(uint32_t job_id,
  * RET - slurm error code
  */
 extern int task_g_slurmd_reserve_resources(uint32_t job_id,
-				    launch_tasks_request_msg_t *req,
-				    uint32_t node_id )
+					   launch_tasks_request_msg_t *req,
+					   uint32_t node_id )
 {
 	int i, rc = SLURM_SUCCESS;
 

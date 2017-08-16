@@ -379,9 +379,19 @@ srun master : slave &
 </pre>
 
 <p>The SLURM_PROCID and SLURM_TASKID environment variables will be set to
-reflect a global task rank.
-With --mpi-combine=no each job component will have a SLURM_PROCID set to 0.
+reflect a global task rank (both environment variables will have the same value).
+With --mpi-combine=no,- each job component will have a SLURM_PROCID set to 0.
 With --mpi-combine=yes each spawned process will have a unique SLURM_PROCID.</p>
+
+<p>Similarly, the SLURM_NPROCS and SLURM_NTASKS environment variables will be set
+to reflect a global task count (both environment variables will have the same
+value).
+With --mpi-combine=no each job component will have SLURM_NTASKS set to the task
+count in that component.
+With --mpi-combine=yes SLURM_NTASKS will be set to the total count of tasks in
+all components.
+Note that the task rank and count values are needed by MPI and typically
+determined by examining Slurm environment variables.</p>
 
 <h2><a name="limitations">Limitations</a></h2>
 
