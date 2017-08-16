@@ -461,8 +461,8 @@ again:
 	if (mp->counter == 0) {
 		int j = 0;
 
-		memset (mp->fds, 0, sizeof (st->nprocs * sizeof (struct pollfd)));
-		memset (mp->mvmap, 0, sizeof (st->nprocs * sizeof (*mp->mvmap)));
+		memset(mp->fds,   0, st->nprocs * sizeof(struct pollfd));
+		memset(mp->mvmap, 0, st->nprocs * sizeof(struct mvapich_info *));
 		mp->nfds = 0;
 
 		for (i = 0; i < st->nprocs; i++) {
