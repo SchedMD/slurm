@@ -692,6 +692,7 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 			opt_iter = list_iterator_create(opt_list);
 		job_iter = list_iterator_create(srun_job_list);
 		while ((job = (srun_job_t *) list_next(job_iter))) {
+			job->stepid = NO_VAL;
 			pack_ntasks += job->ntasks;
 		}
 
