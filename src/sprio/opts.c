@@ -246,9 +246,7 @@ extern int parse_format( char* format )
 		job_format_add_prefix( params.format_list, 0, 0, prefix);
 	}
 
-	field_size = strlen( format );
-	tmp_format = xmalloc( field_size + 1 );
-	strcpy( tmp_format, format );
+	tmp_format = xstrdup(format);
 
 	token = strtok_r( tmp_format, "%", &tmp_char);
 	if (token && (format[0] != '%'))	/* toss header */
