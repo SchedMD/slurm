@@ -66,6 +66,7 @@
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/stepd_api.h"
+#include "src/common/strlcpy.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -164,7 +165,7 @@ _step_connect(const char *directory, const char *nodename,
 
 	xstrfmtcat(name, "%s/%s_%u.%u", directory, nodename, jobid, stepid);
 
-	strcpy(addr.sun_path, name);
+	strlcpy(addr.sun_path, name, sizeof(addr.sun_path));
 	len = strlen(addr.sun_path) + 1 + sizeof(addr.sun_family);
 
 	if (connect(fd, (struct sockaddr *) &addr, len) < 0) {
