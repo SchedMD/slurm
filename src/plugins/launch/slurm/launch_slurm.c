@@ -798,7 +798,6 @@ extern int launch_p_step_wait(srun_job_t *job, bool got_alloc, opt_t *opt_local)
 {
 	int rc = 0;
 
-//FIXME-PACK: should we create multiple steps in a single RPC or use threads?
 	slurm_step_launch_wait_finish(job->step_ctx);
 	if ((MPIR_being_debugged == 0) && retry_step_begin &&
 	    (retry_step_cnt < MAX_STEP_RETRIES)) {

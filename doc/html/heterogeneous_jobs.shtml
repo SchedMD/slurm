@@ -331,6 +331,17 @@ P0 1: nid00012
 P1 0: Wed Jul  5 16:23:07 MDT 2017
 </pre>
 
+<p>If multiple srun commands are executed concurrently, this may result in resource
+contention (e.g. memory limits preventing some job steps components from being
+allocated resources because of two srun commands executing at the same time).
+If the srun --pack-group option is used to create multiple job steps (for the
+different components of a heterogeneous job), those job steps will be created
+sequentially.
+When multiple srun commmands execute at the same time, this may result in some
+step allocations taking place, while others are delayed.
+Only after all job step allocations have been granted will the application
+being launched.</p>
+
 <h2><a name="env_var">Environment Variables</a></h2>
 
 <p>Slurm environment variables will be set independently for each component of
@@ -507,6 +518,6 @@ especially other heterogeneous jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 16 August 2017</p>
+<p style="text-align:center;">Last modified 17 August 2017</p>
 
 <!--#include virtual="footer.txt"-->
