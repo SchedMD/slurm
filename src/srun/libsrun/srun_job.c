@@ -723,6 +723,37 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 	}
 }
 
+static void _cancel_steps(List srun_job_list)
+{
+	srun_job_t *job;
+	ListIterator job_iter;
+	slurm_msg_t req;
+	step_complete_msg_t msg;
+	int rc = 0;
+
+	if (!srun_job_list)
+		return;
+
+	slurm_msg_t_init(&req);
+	req.msg_type = REQUEST_STEP_COMPLETE;
+	req.data = &msg;
+	memset(&msg, 0, sizeof(step_complete_msg_t));
+	msg.step_rc = 0;
+
+	job_iter = list_iterator_create(srun_job_list);
+	while ((job = (srun_job_t *) list_next(job_iter))) {
+		if (job->stepid == NO_VAL)
+			continue;
+		msg.job_id	= job->jobid;
+		msg.job_step_id	= job->stepid;
+		msg.range_first	= 0;
+		msg.range_last	= job->nhosts - 1;
+		(void) slurm_send_recv_controller_rc_msg(&req, &rc,
+							 working_cluster_rec);
+	}
+	list_iterator_destroy(job_iter);
+}
+
 extern void create_srun_job(void **p_job, bool *got_alloc,
 			    bool slurm_started, bool handle_signals)
 {
@@ -879,6 +910,8 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		if (_create_job_step(job, false, srun_job_list) < 0) {
 			if (*got_alloc)
 				slurm_complete_job(my_job_id, 1);
+			else
+				_cancel_steps(srun_job_list);
 			exit(error_exit);
 		}
 	} else {

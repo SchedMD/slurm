@@ -8,6 +8,8 @@ documents those changes that are of interest to users and administrators.
       by MPI).
     * Set SLURM_NTASKS environment variable to reflect global task count (needed
       by MPI).
+    * In srun, if only some steps are allocated and one step allocation fails,
+      then delete all allocated steps.
 
 * Changes in Slurm 17.11.0pre2
 ==============================
