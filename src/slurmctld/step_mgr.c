@@ -242,6 +242,26 @@ static void _build_pending_step(struct job_record *job_ptr,
 
 }
 
+/*
+ * Invoke post_job_step except if select/cray is used. In that plugin
+ * post_job_step() is invoked after Node Health Check completes
+ */
+static void _post_job_step(struct step_record *step_ptr)
+{
+#if !defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
+	static int select_cray_plugin = -1;
+
+	if (select_cray_plugin == -1) {
+		if (!xstrcmp(slurmctld_conf.select_type, "select/cray"))
+			select_cray_plugin = 1;
+		else
+			select_cray_plugin = 0;
+	}
+	if (select_cray_plugin == 0)
+		post_job_step(step_ptr);
+#endif
+}
+
 static void _internal_step_complete(struct job_record *job_ptr,
 				    struct step_record *step_ptr)
 {
@@ -279,11 +299,7 @@ static void _internal_step_complete(struct job_record *job_ptr,
 
 	step_ptr->state |= JOB_COMPLETING;
 	select_g_step_finish(step_ptr, false);
-#if !defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
-	/* On native Cray, post_job_step is called after NHC completes.
-	 * IF SIMULATING A CRAY THIS NEEDS TO BE COMMENTED OUT!!!! */
-	post_job_step(step_ptr);
-#endif
+	_post_job_step(step_ptr);
 }
 
 /*
