@@ -296,8 +296,9 @@ extern int container_p_create(uint32_t job_id)
 	if (debug_flags & DEBUG_FLAG_TIME_CRAY) {
 		END_TIMER;
 		INFO_LINE("call took: %s", TIME_STR);
-	} else
+	} else {
 		END_TIMER3("container_p_create: saving state took", 3000000);
+	}
 #ifdef HAVE_NATIVE_CRAY
 	START_TIMER;
 	rc = job_create_reservation(resv_id, CREATE_FLAGS);
