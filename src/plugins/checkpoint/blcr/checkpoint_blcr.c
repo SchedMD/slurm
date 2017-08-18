@@ -413,13 +413,13 @@ extern int slurm_ckpt_stepd_prefork(stepd_step_rec_t *job)
 	/* set LD_PRELOAD for batch script shell */
 	old_env = getenvp(job->env, "LD_PRELOAD");
 	if (old_env) {
-		/* search and replace all libcr_run and libcr_omit
+		/*
+		 * search and replace all libcr_run and libcr_omit
 		 * the old env value is messed up --
-		 * it will be replaced */
+		 * it will be replaced
+		 */
 		while ((ptr = strtok_r(old_env, " :", &save_ptr))) {
 			old_env = NULL;
-			if (!ptr)
-				break;
 			if (!xstrncmp(ptr, "libcr_run.so", 12) ||
 			    !xstrncmp(ptr, "libcr_omit.so", 13))
 				continue;
