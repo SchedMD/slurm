@@ -257,11 +257,16 @@ make_bash_script $file_in "
     $bin_cp $orig_spank_conf $spank_conf_file
   fi
 "
+set job_id 0
 set matches 0
 spawn $sbatch --test_suite_reg=4 -N1 -t1 -o $file_out $file_in
 expect {
 	-re "_test_opt_process: test_suite: opt_arg=4" {
 		incr matches
+		exp_continue
+	}
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	-re "slurm_spank_exit: opt_arg=4" {
@@ -276,8 +281,21 @@ expect {
 		wait
 	}
 }
+if {$job_id == 0} {
+	send_user "\nFAILURE: batch submit failure\n"
+	set exit_code 1
+}
 if {$matches != 2} {
 	send_user "\nFAILURE: spank options not processed by sbatch\n"
+	set exit_code 1
+}
+
+#
+# Wait for job to complete and check for files
+#
+if {[wait_for_job $job_id "DONE"] != 0} {
+	send_user "\nFAILURE: waiting for job to complete\n"
+	[cancel_job $job_id]
 	set exit_code 1
 }
 
