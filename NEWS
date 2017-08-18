@@ -10,6 +10,8 @@ documents those changes that are of interest to users and administrators.
       by MPI).
     * In srun, if only some steps are allocated and one step allocation fails,
       then delete all allocated steps.
+    * Get SPANK plungins working with heterogeneous jobs. The
+      spank_init_post_opt() function is executed once per job component.
 
 * Changes in Slurm 17.11.0pre2
 ==============================

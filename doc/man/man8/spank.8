@@ -1,4 +1,4 @@
-.TH SPANK "8" "Slurm Component" "April 2015" "Slurm Component"
+.TH SPANK "8" "Slurm Component" "August 2017" "Slurm Component"
 
 .SH "NAME"
 \fBSPANK\fR \- Slurm Plug\-in Architecture for Node and job (K)control
@@ -86,6 +86,8 @@ user options to the plugin have been processed. The reason that the
 plugins can process system-wide options specified in plugstack.conf in
 the \fBinit\fR callback, then process user options, and finally take some
 action in \fBslurm_spank_init_post_opt\fR if necessary.
+In the case of a heterogeneous job, \fBslurm_spank_init\fR is invoked once
+per job component.
 .TP
 \fBslurm_spank_local_user_init\fR
 Called in local (\fBsrun\fR) context only after all
@@ -608,6 +610,7 @@ static int _renice_opt_process (int val,
 .fi
 
 .SH "COPYING"
+Portions copyright (C) 2010-1027 SchedMD LLC.
 Copyright (C) 2006 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.

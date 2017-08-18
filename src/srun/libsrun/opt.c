@@ -587,6 +587,10 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 			launch_g_create_job_step(NULL, 0, NULL, NULL, &opt);
 			exit(0);
 		}
+		if (spank_init_post_opt() < 0) {
+			error("Plugin stack post-option processing failed.");
+			exit(error_exit);
+		}
 		pending_append = true;
 	}
 	bit_free(pack_grp_bits);
@@ -877,6 +881,8 @@ static void _opt_default(void)
 	opt.restart_dir			= NULL;
 	opt.shared			= NO_VAL16;
 	opt.sockets_per_node		= NO_VAL; /* requested sockets */
+	opt.spank_job_env_size		= 0;
+	opt.spank_job_env		= NULL;
 	opt.threads_per_core		= NO_VAL; /* requested threads */
 	opt.threads_per_core_set	= false;
 	opt.wait4switch			= -1;
@@ -3024,6 +3030,7 @@ static char *print_constraints(void)
 static void _opt_list(void)
 {
 	char *str;
+	int i;
 
 	info("defined options for program `%s'", opt.progname);
 	info("--------------- ---------------------");
@@ -3173,6 +3180,9 @@ static void _opt_list(void)
 	info("mpi_combine       : %s", opt.mpi_combine == true ? "YES" : "NO");
 	if (opt.pack_group)
 		info("pack_group        : %s",opt.pack_group);
+
+	for (i = 0; i < opt.spank_job_env_size; i++)
+		info("spank_job_env[%d] : %s", i, opt.spank_job_env[i]);
 
 }
 

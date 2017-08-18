@@ -451,6 +451,10 @@ components of a heterogeneous job.</p>
 <p>The job submit plugin is invoked independently for each component of a
 heterogeneous job.</p>
 
+<p>The spank_init_post_opt() function is invoked once for each component of a
+heterogeneous job. This permits site defined options on a per job component
+basis.</p>
+
 <p>Scheduling of heterogeneous jobs is performed only by the sched/backfill
 plugin and all heterogeneous job components are either all scheduled at the same
 time or deferred.
@@ -518,6 +522,6 @@ especially other heterogeneous jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 17 August 2017</p>
+<p style="text-align:center;">Last modified 18 August 2017</p>
 
 <!--#include virtual="footer.txt"-->

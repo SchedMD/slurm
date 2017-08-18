@@ -150,8 +150,9 @@ expect {
 #       directly, so we build a script containing a pipe to tail
 #
 
-make_bash_script $file_in "$srun --help | $bin_grep test"
+send_user "\n\nTesting srun help message..........\n\n"
 
+make_bash_script $file_in "$srun --help | $bin_grep test"
 set matches 0
 set srun_pid [spawn $file_in]
 expect {
@@ -178,14 +179,15 @@ if {$matches != 2} {
 }
 
 #
-# Test of alloc help message
+# Test of salloc help message
 #
 # NOTE: Expect parsing failures have been noted running "$salloc --help"
 #       directly, so we build a script containing a pipe to tail
 #
 
-make_bash_script $file_in "$salloc --help | $bin_grep test"
+send_user "\n\nTesting salloc help message..........\n\n"
 
+make_bash_script $file_in "$salloc --help | $bin_grep test"
 set matches 0
 set srun_pid [spawn $file_in]
 expect {
@@ -214,8 +216,9 @@ if {$matches != 1} {
 #       directly, so we build a script containing a pipe to tail
 #
 
-make_bash_script $file_in "$sbatch --help | $bin_grep test"
+send_user "\n\nTesting sbatch help message..........\n\n"
 
+make_bash_script $file_in "$sbatch --help | $bin_grep test"
 set matches 0
 set srun_pid [spawn $file_in]
 expect {
@@ -243,6 +246,9 @@ exec $bin_rm -f $file_in
 # We update the plugstatck.conf in this script since NFS delays may
 # prevent it from having the same state as the submit host.
 #
+
+send_user "\n\nTest locally logged messages..........\n\n"
+
 make_bash_script $file_in "
   $bin_cp $new_spank_conf $spank_conf_file
   $srun --test_suite=5 $bin_uname

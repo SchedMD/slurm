@@ -459,7 +459,7 @@ static void _copy_args(List missing_argc_list, opt_t *opt_master)
 	iter = list_iterator_create(missing_argc_list);
 	while ((opt_local = (opt_t *) list_next(iter))) {
 		opt_local->argc = opt_master->argc;
-		opt_local->argv = xmalloc(sizeof(char *) * (opt_local->argc + 1));
+		opt_local->argv = xmalloc(sizeof(char *) * (opt_local->argc+1));
 		for (i = 0; i < opt_local->argc; i++)
 			opt_local->argv[i] = xstrdup(opt_master->argv[i]);
 		list_remove(iter);
@@ -614,11 +614,6 @@ extern void init_srun(int argc, char **argv,
 	}
 	_post_opts(opt_list);
 	record_ppid();
-
-	if (spank_init_post_opt() < 0) {
-		error("Plugin stack post-option processing failed.");
-		exit(error_exit);
-	}
 
 	/*
 	 * reinit log with new verbosity (if changed by command line)
