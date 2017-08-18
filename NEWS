@@ -6,6 +6,7 @@ documents those changes that are of interest to users and administrators.
  -- Added the following jobcomp/script environment variables: CLUSTER,
     DEPENDENCY, DERIVED_EC, EXITCODE, GROUPNAME, QOS, RESERVATION, USERNAME.
     The format of LIMIT (job time limit) has been modified to D-HH:MM:SS.
+ -- Fix QOS usage factor applying to individual TRES run minute usage.
 
 * Changes in Slurm 17.11.0pre2
 ==============================

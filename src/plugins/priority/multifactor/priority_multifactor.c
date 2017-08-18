@@ -1072,6 +1072,17 @@ static int _apply_new_usage(struct job_record *job_ptr,
 	memset(tres_run_decay, 0, sizeof(tres_run_decay));
 	memset(tres_run_nodecay, 0, sizeof(tres_run_nodecay));
 	memset(tres_run_delta, 0, sizeof(tres_run_delta));
+	assoc_mgr_lock(&locks);
+
+	billable_tres = _calc_billable_tres(job_ptr, start_period);
+	real_decay    = run_decay * billable_tres;
+	real_nodecay  = run_delta * billable_tres;
+
+	qos = job_ptr->qos_ptr;
+	if (qos && (qos->usage_factor >= 0)) {
+		real_decay *= qos->usage_factor;
+		run_decay  *= qos->usage_factor;
+	}
 	if (job_ptr->tres_alloc_cnt) {
 		for (i=0; i<slurmctld_tres_cnt; i++) {
 			if (!job_ptr->tres_alloc_cnt[i])
@@ -1085,26 +1096,10 @@ static int _apply_new_usage(struct job_record *job_ptr,
 		}
 	}
 
-	assoc_mgr_lock(&locks);
-
-	billable_tres = _calc_billable_tres(job_ptr, start_period);
-	real_decay = run_decay * billable_tres;
-	real_nodecay = run_delta * billable_tres;
-
-	/* Just to make sure we don't make a
-	   window where the qos_ptr could of
-	   changed make sure we get it again
-	   here.
-	*/
-	qos = job_ptr->qos_ptr;
 	assoc = job_ptr->assoc_ptr;
 
 	/* now apply the usage factor for this qos */
 	if (qos) {
-		if (qos->usage_factor >= 0) {
-			real_decay *= qos->usage_factor;
-			run_decay *= qos->usage_factor;
-		}
 		if (qos->flags & QOS_FLAG_NO_DECAY) {
 			qos->usage->grp_used_wall += run_delta;
 			qos->usage->usage_raw += (long double)real_nodecay;
