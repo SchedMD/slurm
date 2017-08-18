@@ -141,7 +141,8 @@ static int _get_pss(char *proc_smaps_file, jag_prec_t *prec)
                 return -1;
         }
 
-	fcntl(fileno(fp), F_SETFD, FD_CLOEXEC);
+	if (fcntl(fileno(fp), F_SETFD, FD_CLOEXEC) == -1)
+		error("%s: fcntl(%s): %m", __func__, proc_smaps_file);
 	pss = 0;
 
         while (fgets(line,sizeof(line),fp)) {
@@ -202,7 +203,8 @@ static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
 	if ((sys_fp = fopen(freq_file, "r"))!= NULL) {
 		/* frequency scaling enabled */
 		fd = fileno(sys_fp);
-		fcntl(fd, F_SETFD, FD_CLOEXEC);
+		if (fcntl(fd, F_SETFD, FD_CLOEXEC) == -1)
+			error("%s: fcntl(%s): %m", __func__, freq_file);
 		num_read = read(fd, sbuf, (sizeof(sbuf) - 1));
 		if (num_read > 0) {
 			sbuf[num_read] = '\0';
@@ -395,7 +397,8 @@ static int _remove_share_data(char *proc_stat_file, jag_prec_t *prec)
 	if (!(statm_fp = fopen(proc_statm_file, "r")))
 		return rc;  /* Assume the process went away */
 	fd = fileno(statm_fp);
-	fcntl(fd, F_SETFD, FD_CLOEXEC);
+	if (fcntl(fd, F_SETFD, FD_CLOEXEC) == -1)
+		error("%s: fcntl(%s): %m", __func__, proc_statm_file);
 	rc = _get_process_memory_line(fd, prec);
 	fclose(statm_fp);
 	return rc;
@@ -477,7 +480,8 @@ static void _handle_stats(List prec_list, char *proc_stat_file, char *proc_io_fi
 	 * problem in practice.
 	 */
 	fd = fileno(stat_fp);
-	fcntl(fd, F_SETFD, FD_CLOEXEC);
+	if (fcntl(fd, F_SETFD, FD_CLOEXEC) == -1)
+		error("%s: fcntl(%s): %m", __func__, proc_stat_file);
 
 	prec = try_xmalloc(sizeof(jag_prec_t));
 	if (prec == NULL) {	/* Avoid killing slurmstepd on malloc failure */
