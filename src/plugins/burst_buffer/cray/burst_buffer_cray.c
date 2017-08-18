@@ -658,7 +658,7 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 				} else {
 					bb_job->swap_nodes = 1;
 				}
-				tmp_cnt = bb_job->swap_size *
+				tmp_cnt = (uint64_t) bb_job->swap_size *
 					  bb_job->swap_nodes;
 				if ((sub_tok = strstr(tok, "pool="))) {
 					xfree(bb_job->job_pool);
