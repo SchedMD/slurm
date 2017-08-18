@@ -1106,10 +1106,9 @@ static void _set_assoc_mgr_ptrs(bb_alloc_t *bb_alloc)
 
 	memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
 	qos_rec.name = bb_alloc->qos;
-	assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
-			      accounting_enforce,
-			      &bb_alloc->qos_ptr,
-			      true);
+	if (assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec, accounting_enforce,
+				  &bb_alloc->qos_ptr, true) != SLURM_SUCCESS)
+		verbose("%s: Invalid QOS name: %s", __func__, bb_alloc->qos);
 
 	assoc_mgr_unlock(&assoc_locks);
 }
