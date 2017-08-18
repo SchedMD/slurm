@@ -46,7 +46,7 @@ This module has the following options (* = default):
     action_no_jobs - The action to perform if the user has no jobs on the node
 
         ignore = Do nothing. Fall through to the next pam module
-        deny* = Deny the connection
+        deny*  = Deny the connection
 
 
     action_unknown - The action to perform when the user has multiple jobs on
@@ -76,15 +76,16 @@ This module has the following options (* = default):
                            in this action being taken.
 
         allow* = Let the connection through without adoption
-        deny = Deny the connection
+        deny   = Deny the connection
 
-    action_generic_failure - The action to perform it there certain failures
-                             such as inability to talk to the local slurmd or
-                             if the kernel doesn't offer the correct facilities
+    action_generic_failure - The action to perform if there are certain failures
+			     such as the inability to talk to the local slurmd
+			     or if the kernel doesn't offer the correct
+			     facilities.
 
         ignore* = Do nothing. Fall through to the next pam module
-        allow = Let the connection through without adoption
-        deny = Deny the connection
+        allow   = Let the connection through without adoption
+        deny    = Deny the connection
 
     log_level - See SlurmdDebug in slurm.conf(5) for available options. The
                 default log_level is info.
