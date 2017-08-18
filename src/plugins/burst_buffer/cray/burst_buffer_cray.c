@@ -1944,8 +1944,13 @@ static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry)
 		if (stat(job_script, &buf) == -1) {
 			fd = creat(job_script, 0755);
 			if (fd >= 0) {
+				int len;
 				char *dummy_script = "#!/bin/bash\nexit 0\n";
-				write(fd, dummy_script, strlen(dummy_script)+1);
+				len = strlen(dummy_script) + 1;
+				if (write(fd, dummy_script, len) != len) {
+					verbose("%s: write(%s): %m",
+						__func__, job_script);
+				}
 				close(fd);
 			}
 		}
