@@ -2443,8 +2443,8 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 	char *bb_script, *save_ptr = NULL;
 	char *bb_name = NULL, *bb_pool, *capacity;
 	char *end_ptr = NULL, *sub_tok, *tok;
-	uint64_t tmp_cnt;
-	int rc = SLURM_SUCCESS, swap_cnt = 0;
+	uint64_t tmp_cnt, swap_cnt = 0;
+	int rc = SLURM_SUCCESS;
 	bool enable_persist = false, have_bb = false, have_stage_out = false;
 
 	xassert(bb_size);
