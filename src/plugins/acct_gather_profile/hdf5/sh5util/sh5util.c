@@ -508,8 +508,10 @@ _check_params(void)
 	return 0;
 }
 
-/* Copy the group "/{NodeName}" of the hdf5 file file_name into the location
- * jgid_nodes */
+/*
+ * Copy the group "/{NodeName}" of the hdf5 file file_name into the location
+ * jgid_nodes
+ */
 static int _merge_node_step_data(char* file_name, hid_t jgid_nodes,
 				 sh5util_file_t *sh5util_file)
 {
@@ -536,8 +538,10 @@ static int _merge_node_step_data(char* file_name, hid_t jgid_nodes,
 		goto endit;
 	}
 
-	if (!params.keepfiles)
-		remove(file_name);
+	if (!params.keepfiles &&
+	    (remove(file_name) == -1))
+		error("%s: remove(%s): %m", __func__, file_name);
+
 endit:
 	xfree(group_name);
 	H5Fclose(fid_nodestep);
