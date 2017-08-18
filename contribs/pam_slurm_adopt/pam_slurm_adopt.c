@@ -102,7 +102,7 @@ static void _init_opts(void)
 	opts.action_no_jobs = CALLERID_ACTION_DENY;
 	opts.action_unknown = CALLERID_ACTION_NEWEST;
 	opts.action_adopt_failure = CALLERID_ACTION_ALLOW;
-	opts.action_generic_failure = CALLERID_ACTION_ALLOW;
+	opts.action_generic_failure = CALLERID_ACTION_IGNORE;
 	opts.log_level = LOG_LEVEL_INFO;
 	opts.node_name = NULL;
 }
