@@ -303,8 +303,14 @@ static int _get_process_data_line(int in, jag_prec_t *prec) {
 		return 0;
 	sbuf[num_read] = '\0';
 
-	tmp = strrchr(sbuf, ')');	/* split into "PID (cmd" and "<rest>" */
-	*tmp = '\0';			/* replace trailing ')' with NUL */
+	/*
+	 * split into "PID (cmd" and "<rest>" replace trailing ')' with NULL
+	 */
+	tmp = strrchr(sbuf, ')');
+	if (!tmp)
+		return 0;
+	*tmp = '\0';
+
 	/* parse these two strings separately, skipping the leading "(". */
 	nvals = sscanf(sbuf, "%d (%39c", &prec->pid, cmd);
 	if (nvals < 2)
