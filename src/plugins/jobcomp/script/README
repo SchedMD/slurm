@@ -5,7 +5,11 @@ The JobCompType is jobcomp/script and the JobCompLoc is the pathname of the scri
 The plugin sets up the environment for the program to contain the following variables:
 ACCOUNT:   Job's account value
 BATCH:     Was the job submitted as a batch job ("yes" or "no")
+CLUSTER:   The name of the cluster
+DEPENDENCY:Original list of jobids dependencies
+DERIVEDEC: Highest exit code of the job and after a semicolon ":" the signal number
 END:       The end time of the job (seconds since Epoch)
+EXITCODE:  The exit code of the job and after a semicolon ":" the signal number
 JOBID:     The job id of the slurm job
 JOBNAME:   The name of the job
 JOBSTATE:  The state of the job when it ended
@@ -14,6 +18,8 @@ NODES:     The nodes the job ran on or an empty string if it wasn't assigned
 PARTITION: The partiton the job ran on
 PROCS:     Number of processors allocated to the job
 PATH:      Sets to the standard path
+QOS:       The QOS of the job
+RESERVATION: The reservation name of the job
 START:     The start time of the job (seconds since Epoch)
 SUBMIT:    The submit time of the job (seconds since Epoch)
 UID:       The uid of the user the job was run for
