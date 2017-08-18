@@ -616,12 +616,18 @@ static void _requeue_when_finished(uint32_t job_id)
 	while (1) {
 		lock_slurmctld(job_write_lock);
 		job_ptr = find_job_record(job_id);
-		if (IS_JOB_FINISHED(job_ptr)) {
+		if (!job_ptr) {
+			error("%s: Job %u not found", __func__, job_id);
+			unlock_slurmctld(job_write_lock);
+			break;
+		} else if (IS_JOB_FINISHED(job_ptr)) {
 			job_ptr->job_state = JOB_PENDING;
 			job_ptr->details->submit_time = time(NULL);
 			job_ptr->restart_cnt++;
-			/* Since the job completion logger
-			 * removes the submit we need to add it again. */
+			/*
+			 * Since the job completion logger
+			 * removes the submit we need to add it again.
+			 */
 			acct_policy_add_job_submit(job_ptr);
 			unlock_slurmctld(job_write_lock);
 			break;
