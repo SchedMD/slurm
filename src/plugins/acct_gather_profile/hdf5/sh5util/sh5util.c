@@ -288,18 +288,20 @@ static void _remove_empty_output(void)
 	struct stat sb;
 
 	if (stat(params.output, &sb) == -1) {
-		/* Ignore the error as the file may have
-		 * not been created yet.
+		/*
+		 * Ignore the error as the file may have not been created yet.
 		 */
 		return;
 	}
 
-	/* Remove the file if 0 size which means
+	/*
+	 * Remove the file if 0 size which means
 	 * the program failed somewhere along the
 	 * way and the file is just left hanging...
 	 */
-	if (sb.st_size == 0)
-		remove(params.output);
+	if ((sb.st_size == 0) &&
+	    (remove(params.output) == -1))
+		error("%s: remove(%s): %m", __func__, params.output);
 }
 
 static void _init_opts(void)
