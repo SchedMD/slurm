@@ -266,7 +266,7 @@ static char* _cat(char* dest, const char* src, size_t n)
 	return r;
 }
 
-static char* trim(char* str)
+static char* _trim(char* str)
 {
 	char* str_modifier;
 	if (!str)
@@ -898,14 +898,14 @@ static void _layouts_mgr_parse_global_conf(layouts_mgr_t* mgr)
 	while (parser) {
 		nspec = (layouts_conf_spec_t*)xmalloc(
 			sizeof(layouts_conf_spec_t));
-		nspec->whole_name = xstrdup(trim(parser));
+		nspec->whole_name = xstrdup(_trim(parser));
 		slash = strchr(parser, '/');
 		if (slash) {
 			*slash = 0;
-			nspec->type = xstrdup(trim(parser));
-			nspec->name = xstrdup(trim(slash+1));
+			nspec->type = xstrdup(_trim(parser));
+			nspec->name = xstrdup(_trim(slash+1));
 		} else {
-			nspec->type = xstrdup(trim(parser));
+			nspec->type = xstrdup(_trim(parser));
 			nspec->name = xstrdup("default");
 		}
 		list_append(mgr->layouts_desc, nspec);
@@ -1148,10 +1148,10 @@ static int _layouts_read_config_post(layout_plugin_t* plugin,
 			xfree(root_nodename);
 			return SLURM_ERROR;
 		}
-		e = xhash_get(mgr->entities, trim(root_nodename));
+		e = xhash_get(mgr->entities, _trim(root_nodename));
 		if (!e) {
 			error("layouts: unable to find specified root "
-			      "entity `%s'", trim(root_nodename));
+			      "entity `%s'", _trim(root_nodename));
 			xfree(root_nodename);
 			return SLURM_ERROR;
 		}
