@@ -4838,6 +4838,8 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_FRONT_END;
 		else if (xstrcasecmp(tok, "Gang") == 0)
 			(*flags_out) |= DEBUG_FLAG_GANG;
+		else if (xstrcasecmp(tok, "Gres") == 0)
+			(*flags_out) |= DEBUG_FLAG_GRES;
 		else if (xstrcasecmp(tok, "HeteroJobs") == 0)
 			(*flags_out) |= DEBUG_FLAG_HETERO_JOBS;
 		else if (xstrcasecmp(tok, "Federation") == 0)
