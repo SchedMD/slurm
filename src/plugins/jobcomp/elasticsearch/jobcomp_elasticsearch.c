@@ -105,8 +105,8 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 	"\"@start\":\"%s\",\"@end\":\"%s\",\"elapsed\":%ld,"		\
 	"\"partition\":\"%s\",\"alloc_node\":\"%s\","			\
 	"\"nodes\":\"%s\",\"total_cpus\":%u,\"total_nodes\":%u,"	\
-	"\"derived_exitcode\":%u,\"exitcode\":%u,\"state\":\"%s\""      \
-	",\"cpu_hours\":%.6f"
+	"\"derived_ec\":\"%s\",\"exit_code\":\"%s\","		\
+	"\"state\":\"%s\",\"cpu_hours\":%.6f"
 
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
@@ -611,8 +611,9 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	enum job_states job_state;
 	uint32_t time_limit;
 	uint16_t ntasks_per_node;
-	int i;
+	int i, tmp_int, tmp_int2;
 	char *buffer, *script_str, *script;
+	char *exit_code_str = NULL, *derived_ec_str = NULL;
 	struct job_node *jnode;
 
 	if (list_count(jobslist) > MAX_JOBS) {
@@ -663,6 +664,25 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 
 	elapsed_time = job_ptr->end_time - job_ptr->start_time;
 
+	tmp_int = tmp_int2 = 0;
+	if (job_ptr->derived_ec == NO_VAL)
+		;
+	else if (WIFSIGNALED(job_ptr->derived_ec))
+		tmp_int2 = WTERMSIG(job_ptr->derived_ec);
+	else if (WIFEXITED(job_ptr->derived_ec))
+		tmp_int = WEXITSTATUS(job_ptr->derived_ec);
+	xstrfmtcat(derived_ec_str, "%d:%d", tmp_int, tmp_int2);
+
+	tmp_int = tmp_int2 = 0;
+	if (job_ptr->exit_code == NO_VAL)
+		;
+	else if (WIFSIGNALED(job_ptr->exit_code))
+		tmp_int2 = WTERMSIG(job_ptr->exit_code);
+	else if (WIFEXITED(job_ptr->exit_code))
+		tmp_int = WEXITSTATUS(job_ptr->exit_code);
+	xstrfmtcat(exit_code_str, "%d:%d", tmp_int, tmp_int2);
+
+
 	buffer = xstrdup_printf(JOBCOMP_DATA_FORMAT,
 				job_ptr->job_id, usr_str,
 				job_ptr->user_id, grp_str,
@@ -671,8 +691,8 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 				job_ptr->partition, job_ptr->alloc_node,
 				job_ptr->nodes, job_ptr->total_cpus,
 				job_ptr->total_nodes,
-				job_ptr->derived_ec,
-				job_ptr->exit_code, state_string,
+				derived_ec_str,
+				exit_code_str, state_string,
 				((float) elapsed_time *
 				 (float) job_ptr->total_cpus) /
 				(float) 3600);
@@ -848,6 +868,8 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		assoc_mgr_unlock(&locks);
 	}
 
+	xfree(derived_ec_str);
+	xfree(exit_code_str);
 	xstrcat(buffer, "}");
 	jnode = xmalloc(sizeof(struct job_node));
 	jnode->serialized_job = xstrdup(buffer);
