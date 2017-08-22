@@ -42,6 +42,7 @@
 
 #include <dirent.h>
 #include <fcntl.h>
+#include <grp.h>
 #include <pwd.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -335,6 +336,11 @@ int main(int argc, char **argv)
 
 	/* become the user after the allocation has been requested. */
 	if (opt.uid != (uid_t) -1) {
+		/* drop groups before changing uid per POSIX POS36-C */
+		if ((setgroups(0, NULL) < 0) && (errno != EPERM)) {
+			error("setgroups: %m");
+			exit(error_exit);
+		}
 		if (setuid(opt.uid) < 0) {
 			error("setuid: %m");
 			exit(error_exit);
