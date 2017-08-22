@@ -218,6 +218,7 @@ documents those changes that are of interest to users and administrators.
     instead of local.
  -- mpi/mvapich - Buffer being only partially cleared. No failures observed.
  -- Fix for job --switch option on dragonfly network.
+ -- In salloc with --uid option, drop supplementary groups before changing UID.
 
 * Changes in Slurm 17.02.7
 ==========================

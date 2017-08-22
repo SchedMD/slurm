@@ -1677,7 +1677,7 @@ extern void node_features_p_step_config(bool mem_sort, bitstr_t *numa_bitmap)
 // insmod /home/tim/kmod/xppsl-addons/zonesort_module.ko
 		struct stat sb;
 		int buf_len, fd, i, len;
-		char buf[8];
+		char buf[16];
 
 		if (stat(ZONE_SORT_PATH, &sb) == -1)
 			(void) system(MODPROBE_PATH " zonesort_module");

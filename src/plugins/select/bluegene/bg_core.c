@@ -701,7 +701,7 @@ extern int node_already_down(char *node_name)
  */
 extern const char *bg_err_str(int inx)
 {
-	static char tmp_char[10];
+	static char tmp_char[32];
 
 	switch (inx) {
 	case SLURM_SUCCESS:
