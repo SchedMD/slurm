@@ -10227,6 +10227,7 @@ static inline bool _purge_complete_pack_job(struct job_record *pack_leader)
 	struct job_record *pack_job;
 	ListIterator iter;
 	bool incomplete_job = false;
+	int i;
 
 	if (!pack_leader->pack_job_list)
 		return false;		/* Not pack leader */
@@ -10251,7 +10252,12 @@ static inline bool _purge_complete_pack_job(struct job_record *pack_leader)
 		return false;
 
 	purge_job_rec.pack_job_id = pack_leader->pack_job_id;
-	list_delete_all(job_list, &_purge_pack_job_filter, &purge_job_rec);
+	i = list_delete_all(job_list, &_purge_pack_job_filter, &purge_job_rec);
+	if (i) {
+		debug2("%s: purged %d old job records", __func__, i);
+		last_job_update = time(NULL);
+		slurm_cond_signal(&purge_thread_cond);
+	}
 	return true;
 }
 
