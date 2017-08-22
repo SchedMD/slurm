@@ -1075,7 +1075,7 @@ extern void pe_rm_free(rmhandle_t *resource_mgr)
 		/* Since we can't relaunch the step here don't worry about the
 		   return code.
 		*/
-		launch_g_step_wait(job, got_alloc, &opt, -1);
+		launch_g_step_wait(job, got_alloc, &opt);
 		/* We are at the end so don't worry about freeing the
 		   srun_job_t pointer */
 		fini_srun(job, got_alloc, &rc, slurm_started);
