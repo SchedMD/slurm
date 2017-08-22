@@ -354,7 +354,7 @@ int	slurm_memset_available(void)
 int	slurm_set_memset(char *path, nodemask_t *new_mask)
 {
 	char file_path[PATH_MAX];
-	char mstr[1 + CPU_SETSIZE * 4], tmp[10];
+	char mstr[1 + CPU_SETSIZE * 4], tmp[16];
 	int fd, i, max_node;
 	ssize_t rc;
 
