@@ -219,6 +219,8 @@ documents those changes that are of interest to users and administrators.
  -- mpi/mvapich - Buffer being only partially cleared. No failures observed.
  -- Fix for job --switch option on dragonfly network.
  -- In salloc with --uid option, drop supplementary groups before changing UID.
+ -- jobcomp/elasticsearch - strip any trailing slashes from JobCompLoc.
+ -- jobcomp/elasticsearch - fix memory leak when transferring generated buffer. 
 
 * Changes in Slurm 17.02.7
 ==========================

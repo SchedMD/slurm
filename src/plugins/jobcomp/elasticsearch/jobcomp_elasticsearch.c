@@ -345,13 +345,10 @@ static int _index_job(const char *jobcomp)
 	}
 
 	if (curl_handle) {
-		char *url = xstrdup(log_url);
-		xstrcat(url, index_type);
-
 		chunk.message = xmalloc(1);
 		chunk.size = 0;
 
-		curl_easy_setopt(curl_handle, CURLOPT_URL, url);
+		curl_easy_setopt(curl_handle, CURLOPT_URL, log_url);
 		curl_easy_setopt(curl_handle, CURLOPT_POST, 1);
 		curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, jobcomp);
 		curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE,
@@ -366,7 +363,7 @@ static int _index_job(const char *jobcomp)
 		if (res != CURLE_OK) {
 			if (slurm_get_debug_flags() & DEBUG_FLAG_ESEARCH)
 				info("%s: Could not connect to: %s , reason: %s"
-				     , plugin_type, url,
+				     , plugin_type, log_url,
 				     curl_easy_strerror(res));
 			rc = SLURM_ERROR;
 		} else {
@@ -376,7 +373,7 @@ static int _index_job(const char *jobcomp)
 			if (token == NULL) {
 				error("%s: Could not receive the HTTP response"
 				      " status code from %s", plugin_type, 
-					url);
+					log_url);
 				rc = SLURM_ERROR;
 			} else {
 				token = strtok(NULL, " ");
@@ -390,7 +387,8 @@ static int _index_job(const char *jobcomp)
 					    DEBUG_FLAG_ESEARCH) {
 						info("%s: HTTP status code %s "
 						     "received from %s",
-						     plugin_type, token, url);
+						     plugin_type, token,
+						     log_url);
 						info("%s: HTTP response:\n%s",
 						     plugin_type, response);
 					}
@@ -412,7 +410,6 @@ static int _index_job(const char *jobcomp)
 		}
 		xfree(chunk.message);
 		curl_easy_cleanup(curl_handle);
-		xfree(url);
 	}
 	curl_global_cleanup();
 
@@ -872,8 +869,9 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	xfree(exit_code_str);
 	xstrcat(buffer, "}");
 	jnode = xmalloc(sizeof(struct job_node));
-	jnode->serialized_job = xstrdup(buffer);
+	jnode->serialized_job = buffer;
 	list_enqueue(jobslist, jnode);
+	buffer = NULL;
 
 	return SLURM_SUCCESS;
 }
@@ -970,7 +968,11 @@ extern int slurm_jobcomp_set_location(char *location)
 		return SLURM_ERROR;
 	}
 
-	log_url = xstrdup(location);
+	/* Strip any trailing slashes. */
+	while (location[strlen(location) - 1] == '/')
+		location[strlen(location) - 1] = '\0';
+
+	log_url = xstrdup_printf("%s%s", location, index_type);
 
 	curl_global_init(CURL_GLOBAL_ALL);
 	curl_handle = curl_easy_init();

@@ -176,7 +176,6 @@ static char *capmc_path = NULL;
 static uint32_t capmc_poll_freq = 45;	/* capmc state polling frequency */
 static uint32_t capmc_retries = DEFAULT_CAPMC_RETRIES;
 static uint32_t capmc_timeout = 0;	/* capmc command timeout in msec */
-static bitstr_t *capmc_node_bitmap = NULL;	/* Nodes found by capmc */
 static char *cnselect_path = NULL;
 static bool debug_flag = false;
 static uint16_t default_mcdram = KNL_CACHE;
@@ -1829,7 +1828,6 @@ extern int fini(void)
 	xfree(mc_path);
 	xfree(mcdram_per_node);
 	xfree(syscfg_path);
-	FREE_NULL_BITMAP(capmc_node_bitmap);
 	FREE_NULL_BITMAP(knl_node_bitmap);
 
 	return SLURM_SUCCESS;
@@ -1854,6 +1852,7 @@ static void _check_node_status(void)
 	char *resp_msg, **script_argv;
 	int i, nid, num_ent, retry, status = 0;
 	struct node_record *node_ptr;
+	bitstr_t *capmc_node_bitmap = NULL;
 	DEF_TIMERS;
 
 	script_argv = xmalloc(sizeof(char *) * 4); /* NULL terminated */
@@ -1897,7 +1896,6 @@ static void _check_node_status(void)
 	}
 	xfree(resp_msg);
 
-	FREE_NULL_BITMAP(capmc_node_bitmap);
 	capmc_node_bitmap = bit_alloc(100000);
 	json_object_object_foreachC(j_obj, iter) {
 		/* NOTE: The error number "e" and message "err_msg"
@@ -1948,6 +1946,7 @@ static void _check_node_status(void)
 		if (avail_node_bitmap)
 			bit_clear(avail_node_bitmap, i);
 	}
+	FREE_NULL_BITMAP(capmc_node_bitmap);
 }
 
 /* Put any disabled nodes into DRAIN state */
