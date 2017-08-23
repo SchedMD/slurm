@@ -2907,6 +2907,10 @@ extern List jobacct_storage_p_get_jobs_cond(void *db_conn, uid_t uid,
 		got_msg = (dbd_list_msg_t *) resp.data;
 		my_job_list = got_msg->my_list;
 		got_msg->my_list = NULL;
+		if (!my_job_list) {
+			slurm_seterrno(got_msg->return_code);
+			error("slurmdbd: %s", slurm_strerror(got_msg->return_code));
+		}
 		slurmdbd_free_list_msg(got_msg);
 	}
 
