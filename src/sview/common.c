@@ -2330,6 +2330,11 @@ extern void select_admin_common(GtkTreeModel *model, GtkTreeIter *iter,
 						     GtkTreeIter *iter,
 						     gpointer userdata))
 {
+	GtkTreePath *path;
+	GtkTreeRowReference *ref;
+	GtkTreeSelection *selection;
+	GList *list = NULL, *selected_rows = NULL;
+
 	if (!treeview)
 		return;
 
@@ -2338,10 +2343,22 @@ extern void select_admin_common(GtkTreeModel *model, GtkTreeIter *iter,
 				   node_col, treeview);
 		return;
 	}
+
 	global_multi_error = false;
-	gtk_tree_selection_selected_foreach(
-		gtk_tree_view_get_selection(treeview),
-		process_each, display_data->name);
+
+	selection = gtk_tree_view_get_selection(treeview);
+	selected_rows =	gtk_tree_selection_get_selected_rows(selection, &model);
+
+	for (list = selected_rows; list; list = g_list_next(list)) {
+		ref = gtk_tree_row_reference_new(model, list->data);
+		path = gtk_tree_row_reference_get_path(ref);
+		(*(process_each))(model, path, iter, display_data->name);
+		gtk_tree_path_free(path);
+		gtk_tree_row_reference_free(ref);
+	}
+
+	g_list_foreach(selected_rows, (GFunc)gtk_tree_path_free, NULL);
+	g_list_free(selected_rows);
 
 	return;
 }
