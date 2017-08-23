@@ -837,8 +837,9 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 
 	xstrcat(buffer, "}");
 	jnode = xmalloc(sizeof(struct job_node));
-	jnode->serialized_job = xstrdup(buffer);
+	jnode->serialized_job = buffer;
 	list_enqueue(jobslist, jnode);
+	buffer = NULL;
 
 	return SLURM_SUCCESS;
 }
