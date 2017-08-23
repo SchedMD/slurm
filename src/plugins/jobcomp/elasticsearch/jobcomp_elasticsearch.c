@@ -67,31 +67,31 @@
 #define MAX_JOBS 1000000
 
 /*
- * These variables are required by the generic plugin interface.  If they
+ * These variables are required by the generic plugin interface. If they
  * are not found in the plugin, the plugin loader will ignore it.
  *
  * plugin_name - a string giving a human-readable description of the
- * plugin.  There is no maximum length, but the symbol must refer to
+ * plugin. There is no maximum length, but the symbol must refer to
  * a valid string.
  *
  * plugin_type - a string suggesting the type of the plugin or its
  * applicability to a particular form of data or method of data handling.
  * If the low-level plugin API is used, the contents of this string are
- * unimportant and may be anything.  SLURM uses the higher-level plugin
+ * unimportant and may be anything. SLURM uses the higher-level plugin
  * interface which requires this string to be of the form
  *
  *	<application>/<method>
  *
  * where <application> is a description of the intended application of
  * the plugin (e.g., "jobcomp" for SLURM job completion logging) and <method>
- * is a description of how this plugin satisfies that application.  SLURM will
+ * is a description of how this plugin satisfies that application. SLURM will
  * only load job completion logging plugins if the plugin_type string has a
  * prefix of "jobcomp/".
  *
  * plugin_version - an unsigned 32-bit integer giving the version number
- * of the plugin.  If major and minor revisions are desired, the major
+ * of the plugin. If major and minor revisions are desired, the major
  * version number may be multiplied by a suitable magnitude constant such
- * as 100 or 1000.  Various SLURM versions will likely require a certain
+ * as 100 or 1000. Various SLURM versions will likely require a certain
  * minimum version for their plugins as the job completion logging API
  * matures.
  */
@@ -101,20 +101,20 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 #define INDEX_RETRY_INTERVAL 30
 #define JOBCOMP_DATA_FORMAT "{\"jobid\":%u,\"username\":\"%s\","	\
-	"\"user_id\":%u,\"groupname\":\"%s\",\"group_id\":%u,"  	\
+	"\"user_id\":%u,\"groupname\":\"%s\",\"group_id\":%u,"		\
 	"\"@start\":\"%s\",\"@end\":\"%s\",\"elapsed\":%ld,"		\
 	"\"partition\":\"%s\",\"alloc_node\":\"%s\","			\
 	"\"nodes\":\"%s\",\"total_cpus\":%u,\"total_nodes\":%u,"	\
-	"\"derived_ec\":\"%s\",\"exit_code\":\"%s\","		\
+	"\"derived_ec\":\"%s\",\"exit_code\":\"%s\","			\
 	"\"state\":\"%s\",\"cpu_hours\":%.6f"
 
 /* These are defined here so when we link with something other than
- * the slurmctld we will have these symbols defined.  They will get
+ * the slurmctld we will have these symbols defined. They will get
  * overwritten when linking with the slurmctld.
  */
 #if defined (__APPLE__)
 int accounting_enforce __attribute__((weak_import)) = 0;
-void *acct_db_conn  __attribute__((weak_import)) = NULL;
+void *acct_db_conn __attribute__((weak_import)) = NULL;
 #else
 int accounting_enforce = 0;
 void *acct_db_conn = NULL;
@@ -246,8 +246,8 @@ static uint32_t _read_file(const char *file, char **data)
 	}
 	close(fd);
 	if (data_size != fsize) {
-		error("%s: Could not read entire jobcomp state file %s (%d of"
-		      " %d)", plugin_type, file, data_size, fsize);
+		error("%s: Could not read entire jobcomp state file %s (%d of %d)",
+		      plugin_type, file, data_size, fsize);
 	}
 	return data_size;
 }
@@ -316,6 +316,13 @@ static size_t _write_callback(void *contents, size_t size, size_t nmemb,
 
 	mem->message = xrealloc(mem->message, mem->size + realsize + 1);
 
+	if (mem->message == NULL) {
+		/* out of memory! */
+		error("%s: not enough memory (realloc returned NULL)",
+		      __func__);
+		return 0;
+	}
+
 	memcpy(&(mem->message[mem->size]), contents, realsize);
 	mem->size += realsize;
 	mem->message[mem->size] = 0;
@@ -330,6 +337,7 @@ static int _index_job(const char *jobcomp)
 	CURLcode res;
 	struct http_response chunk;
 	int rc = SLURM_SUCCESS;
+	char *token = NULL;
 
 	if (log_url == NULL) {
 		error("%s: JobCompLoc parameter not configured", plugin_type);
@@ -339,80 +347,77 @@ static int _index_job(const char *jobcomp)
 	if (curl_global_init(CURL_GLOBAL_ALL) != 0) {
 		error("%s: curl_global_init: %m", plugin_type);
 		rc = SLURM_ERROR;
+		goto cleanup_global_init;
 	} else if ((curl_handle = curl_easy_init()) == NULL) {
 		error("%s: curl_easy_init: %m", plugin_type);
 		rc = SLURM_ERROR;
+		goto cleanup_easy_init;
 	}
 
-	if (curl_handle) {
-		chunk.message = xmalloc(1);
-		chunk.size = 0;
+	if (!curl_handle || (rc != SLURM_SUCCESS))
+		goto cleanup_easy_init;
 
-		curl_easy_setopt(curl_handle, CURLOPT_URL, log_url);
-		curl_easy_setopt(curl_handle, CURLOPT_POST, 1);
-		curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, jobcomp);
-		curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE,
-				 strlen(jobcomp));
-		curl_easy_setopt(curl_handle, CURLOPT_HEADER, 1);
-		curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION,
-				 _write_callback);
-		curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA,
-				 (void *) &chunk);
+	chunk.message = xmalloc(1);
+	chunk.size = 0;
 
-		res = curl_easy_perform(curl_handle);
-		if (res != CURLE_OK) {
-			if (slurm_get_debug_flags() & DEBUG_FLAG_ESEARCH)
-				info("%s: Could not connect to: %s , reason: %s"
-				     , plugin_type, log_url,
-				     curl_easy_strerror(res));
-			rc = SLURM_ERROR;
-		} else {
-			char *token, *response;
-			response = xstrdup(chunk.message);
-			token = strtok(chunk.message, " ");
-			if (token == NULL) {
-				error("%s: Could not receive the HTTP response"
-				      " status code from %s", plugin_type, 
-					log_url);
-				rc = SLURM_ERROR;
-			} else {
-				token = strtok(NULL, " ");
-				if ((xstrcmp(token, "100") == 0)) {
-					(void)  strtok(NULL, " ");
-					token = strtok(NULL, " ");
-				}
-				if ((xstrcmp(token, "200") != 0)
-				    && (xstrcmp(token, "201") != 0)) {
-					if (slurm_get_debug_flags() &
-					    DEBUG_FLAG_ESEARCH) {
-						info("%s: HTTP status code %s "
-						     "received from %s",
-						     plugin_type, token,
-						     log_url);
-						info("%s: HTTP response:\n%s",
-						     plugin_type, response);
-					}
-					rc = SLURM_ERROR;
-				} else {
-					token = strtok((char *)jobcomp, ",");
-					(void)  strtok(token, ":");
-					token = strtok(NULL, ":");
-					if (slurm_get_debug_flags() &
-					    DEBUG_FLAG_ESEARCH) {
-						info("%s: Job with jobid %s "
- 						     "indexed into "
-						     "elasticsearch",
-						     plugin_type, token);
-					}
-				}
-				xfree(response);
-			}
+	curl_easy_setopt(curl_handle, CURLOPT_URL, log_url);
+	curl_easy_setopt(curl_handle, CURLOPT_POST, 1);
+	curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, jobcomp);
+	curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE, strlen(jobcomp));
+	curl_easy_setopt(curl_handle, CURLOPT_HEADER, 1);
+	curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, _write_callback);
+	curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *) &chunk);
+
+	if ((res = curl_easy_perform(curl_handle)) != CURLE_OK) {
+		if (slurm_get_debug_flags() & DEBUG_FLAG_ESEARCH)
+			info("%s: Could not connect to: %s , reason: %s"
+			     ,plugin_type, log_url, curl_easy_strerror(res));
+		rc = SLURM_ERROR;
+		goto cleanup_chunk;
+	}
+
+	token = strtok(chunk.message, " ");
+	if (token == NULL) {
+		error("%s: Could not receive the HTTP response status code from %s",
+		      plugin_type, log_url);
+		rc = SLURM_ERROR;
+		goto cleanup_chunk;
+	}
+	token = strtok(NULL, " ");
+
+	/* HTTP 100 (Continue). */
+	if ((xstrcmp(token, "100") == 0)) {
+		(void)  strtok(NULL, " ");
+		token = strtok(NULL, " ");
+	}
+
+	/*
+	 * HTTP 200 (OK)	- request succeed.
+	 * HTTP 201 (Created)	- request succeed and resource created.
+	 */
+	if ((xstrcmp(token, "200") != 0) && (xstrcmp(token, "201") != 0)) {
+		if (slurm_get_debug_flags() & DEBUG_FLAG_ESEARCH) {
+			info("%s: HTTP status code %s received from %s",
+			     plugin_type, token, log_url);
+			info("%s: HTTP response:\n%s", plugin_type,
+			     chunk.message);
 		}
-		xfree(chunk.message);
-		curl_easy_cleanup(curl_handle);
+		rc = SLURM_ERROR;
+	} else {
+		token = strtok((char *)jobcomp, ",");
+		(void)  strtok(token, ":");
+		token = strtok(NULL, ":");
+		if (slurm_get_debug_flags() & DEBUG_FLAG_ESEARCH)
+			info("%s: Job with jobid %s indexed into elasticsearch",
+			     plugin_type, token);
 	}
-	curl_global_cleanup();
 
+cleanup_chunk:
+	xfree(chunk.message);
+cleanup_easy_init:
+	curl_easy_cleanup(curl_handle);
+cleanup_global_init:
+	curl_global_cleanup();
 	return rc;
 }
 
@@ -602,21 +607,19 @@ static void _make_time_str(time_t * time, char *string, int size)
 
 extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 {
-	char usr_str[32], grp_str[32], start_str[32], end_str[32];
-	char time_str[32], *state_string;
-	time_t elapsed_time;
+	char usr_str[32], grp_str[32], start_str[32], end_str[32], time_str[32];
+	char *json_str = NULL, *script_str = NULL, *state_string = NULL;
+	char *exit_code_str = NULL, *derived_ec_str = NULL, *script = NULL;
 	enum job_states job_state;
+	int i, tmp_int, tmp_int2;
+	time_t elapsed_time;
 	uint32_t time_limit;
 	uint16_t ntasks_per_node;
-	int i, tmp_int, tmp_int2;
-	char *buffer, *script_str, *script;
-	char *exit_code_str = NULL, *derived_ec_str = NULL;
 	struct job_node *jnode;
 
 	if (list_count(jobslist) > MAX_JOBS) {
-		error("%s: Limit of %d enqueued jobs in memory waiting to be "
-		      "indexed reached. Job %lu discarded", plugin_type,
-		      MAX_JOBS, (unsigned long)job_ptr->job_id);
+		error("%s: Limit of %d enqueued jobs in memory waiting to be indexed reached. Job %lu discarded",
+		      plugin_type, MAX_JOBS, (unsigned long)job_ptr->job_id);
 		return SLURM_ERROR;
 	}
 
@@ -679,8 +682,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		tmp_int = WEXITSTATUS(job_ptr->exit_code);
 	xstrfmtcat(exit_code_str, "%d:%d", tmp_int, tmp_int2);
 
-
-	buffer = xstrdup_printf(JOBCOMP_DATA_FORMAT,
+	json_str = xstrdup_printf(JOBCOMP_DATA_FORMAT,
 				job_ptr->job_id, usr_str,
 				job_ptr->user_id, grp_str,
 				job_ptr->group_id, start_str,
@@ -692,138 +694,139 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 				exit_code_str, state_string,
 				((float) elapsed_time *
 				 (float) job_ptr->total_cpus) /
-				(float) 3600);
+				 (float) 3600);
 
 	if (job_ptr->array_task_id != NO_VAL) {
-		xstrfmtcat(buffer, ",\"array_job_id\":%lu",
+		xstrfmtcat(json_str, ",\"array_job_id\":%lu",
 			   (unsigned long) job_ptr->array_job_id);
-		xstrfmtcat(buffer, ",\"array_task_id\":%lu",
+		xstrfmtcat(json_str, ",\"array_task_id\":%lu",
 			   (unsigned long) job_ptr->array_task_id);
 	}
 
 	if (job_ptr->pack_job_id != NO_VAL) {
-		xstrfmtcat(buffer, ",\"pack_job_id\":%lu",
+		xstrfmtcat(json_str, ",\"pack_job_id\":%lu",
 			   (unsigned long) job_ptr->pack_job_id);
-		xstrfmtcat(buffer, ",\"pack_job_offset\":%lu",
+		xstrfmtcat(json_str, ",\"pack_job_offset\":%lu",
 			   (unsigned long) job_ptr->pack_job_offset);
 	}
 
 	if (job_ptr->details && job_ptr->details->submit_time) {
 		_make_time_str(&job_ptr->details->submit_time,
 			       time_str, sizeof(time_str));
-		xstrfmtcat(buffer, ",\"@submit\":\"%s\"", time_str);
+		xstrfmtcat(json_str, ",\"@submit\":\"%s\"", time_str);
 	}
 
 	if (job_ptr->details && job_ptr->details->begin_time) {
 		_make_time_str(&job_ptr->details->begin_time,
 			       time_str, sizeof(time_str));
-		xstrfmtcat(buffer, ",\"@eligible\":\"%s\"", time_str);
+		xstrfmtcat(json_str, ",\"@eligible\":\"%s\"", time_str);
 		if (job_ptr->start_time) {
 			int64_t queue_wait = (int64_t)difftime(
 				job_ptr->start_time,
 				job_ptr->details->begin_time);
-			xstrfmtcat(buffer, ",\"queue_wait\":%"PRIi64,
+			xstrfmtcat(json_str, ",\"queue_wait\":%"PRIi64,
 				   queue_wait);
 		}
 	}
 
 	if (job_ptr->details
 	    && (job_ptr->details->work_dir && job_ptr->details->work_dir[0])) {
-		xstrfmtcat(buffer, ",\"work_dir\":\"%s\"",
+		xstrfmtcat(json_str, ",\"work_dir\":\"%s\"",
 			   job_ptr->details->work_dir);
 	}
 
 	if (job_ptr->details
 	    && (job_ptr->details->std_err && job_ptr->details->std_err[0])) {
-		xstrfmtcat(buffer, ",\"std_err\":\"%s\"",
+		xstrfmtcat(json_str, ",\"std_err\":\"%s\"",
 			   job_ptr->details->std_err);
 	}
 
 	if (job_ptr->details
 	    && (job_ptr->details->std_in && job_ptr->details->std_in[0])) {
-		xstrfmtcat(buffer, ",\"std_in\":\"%s\"",
+		xstrfmtcat(json_str, ",\"std_in\":\"%s\"",
 			   job_ptr->details->std_in);
 	}
 
 	if (job_ptr->details
 	    && (job_ptr->details->std_out && job_ptr->details->std_out[0])) {
-		xstrfmtcat(buffer, ",\"std_out\":\"%s\"",
+		xstrfmtcat(json_str, ",\"std_out\":\"%s\"",
 			   job_ptr->details->std_out);
 	}
 
 	if (job_ptr->assoc_ptr != NULL) {
-		xstrfmtcat(buffer, ",\"cluster\":\"%s\"",
+		xstrfmtcat(json_str, ",\"cluster\":\"%s\"",
 			   job_ptr->assoc_ptr->cluster);
 	}
 
 	if (job_ptr->qos_ptr != NULL) {
-		xstrfmtcat(buffer, ",\"qos\":\"%s\"", job_ptr->qos_ptr->name);
+		xstrfmtcat(json_str, ",\"qos\":\"%s\"", job_ptr->qos_ptr->name);
 	}
 
 	if (job_ptr->details && (job_ptr->details->num_tasks != NO_VAL)) {
-		xstrfmtcat(buffer, ",\"ntasks\":%u",
+		xstrfmtcat(json_str, ",\"ntasks\":%u",
 			   job_ptr->details->num_tasks);
 	}
 
 	if (job_ptr->details
 	    && (job_ptr->details->ntasks_per_node != (uint16_t) NO_VAL)) {
 		ntasks_per_node = job_ptr->details->ntasks_per_node;
-		xstrfmtcat(buffer, ",\"ntasks_per_node\":%hu", ntasks_per_node);
+		xstrfmtcat(json_str, ",\"ntasks_per_node\":%hu",
+			   ntasks_per_node);
 	}
 
 	if (job_ptr->details
 	    && (job_ptr->details->cpus_per_task != (uint16_t) NO_VAL)) {
-		xstrfmtcat(buffer, ",\"cpus_per_task\":%hu",
+		xstrfmtcat(json_str, ",\"cpus_per_task\":%hu",
 			   job_ptr->details->cpus_per_task);
 	}
 
 	if (job_ptr->details
 	    && (job_ptr->details->orig_dependency
 		&& job_ptr->details->orig_dependency[0])) {
-		xstrfmtcat(buffer, ",\"orig_dependency\":\"%s\"",
+		xstrfmtcat(json_str, ",\"orig_dependency\":\"%s\"",
 			   job_ptr->details->orig_dependency);
 	}
 
 	if (job_ptr->details
 	    && (job_ptr->details->exc_nodes
 		&& job_ptr->details->exc_nodes[0])) {
-		xstrfmtcat(buffer, ",\"excluded_nodes\":\"%s\"",
+		xstrfmtcat(json_str, ",\"excluded_nodes\":\"%s\"",
 			   job_ptr->details->exc_nodes);
 	}
 
 	if (time_limit != INFINITE) {
-		xstrfmtcat(buffer, ",\"time_limit\":%lu",
+		xstrfmtcat(json_str, ",\"time_limit\":%lu",
 			   (unsigned long) time_limit * 60);
 	}
 
 	if (job_ptr->name && job_ptr->name[0])
-		xstrfmtcat(buffer, ",\"job_name\":\"%s\"", job_ptr->name);
+		xstrfmtcat(json_str, ",\"job_name\":\"%s\"", job_ptr->name);
 
 	if (job_ptr->resv_name && job_ptr->resv_name[0]) {
-		xstrfmtcat(buffer, ",\"reservation_name\":\"%s\"",
+		xstrfmtcat(json_str, ",\"reservation_name\":\"%s\"",
 			   job_ptr->resv_name);
 	}
 
 	if (job_ptr->wckey && job_ptr->wckey[0])
-		xstrfmtcat(buffer, ",\"wc_key\":\"%s\"", job_ptr->wckey);
+		xstrfmtcat(json_str, ",\"wc_key\":\"%s\"", job_ptr->wckey);
 
 	if (job_ptr->gres_req && job_ptr->gres_req[0]) {
-		xstrfmtcat(buffer, ",\"gres_req\":\"%s\"", job_ptr->gres_req);
+		xstrfmtcat(json_str, ",\"gres_req\":\"%s\"", job_ptr->gres_req);
 	}
 
 	if (job_ptr->gres_alloc && job_ptr->gres_alloc[0]) {
-		xstrfmtcat(buffer, ",\"gres_alloc\":\"%s\"",
+		xstrfmtcat(json_str, ",\"gres_alloc\":\"%s\"",
 			   job_ptr->gres_alloc);
 	}
 
 	if (job_ptr->account && job_ptr->account[0]) {
-		xstrfmtcat(buffer, ",\"account\":\"%s\"", job_ptr->account);
+		xstrfmtcat(json_str, ",\"account\":\"%s\"", job_ptr->account);
 	}
 
 	script = get_job_script(job_ptr);
 	if (script && script[0]) {
 		script_str = _json_escape(script);
-		xstrfmtcat(buffer, ",\"script\":\"%s\"", script_str);
+		xstrfmtcat(json_str, ",\"script\":\"%s\"", script_str);
 		xfree(script_str);
 	}
 	xfree(script);
@@ -838,7 +841,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 
 		assoc_mgr_lock(&locks);
 
-		/* Start at the first parent and go up.  When studying
+		/* Start at the first parent and go up. When studying
 		 * this code it was slightly faster to do 2 loops on
 		 * the association linked list and only 1 xmalloc but
 		 * we opted for cleaner looking code and going with a
@@ -857,7 +860,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 			xstrfmtcat(parent_accounts, "/%s", acc_aux[i]);
 		xfree(acc_aux);
 
-		xstrfmtcat(buffer, ",\"parent_accounts\":\"%s\"",
+		xstrfmtcat(json_str, ",\"parent_accounts\":\"%s\"",
 			   parent_accounts);
 
 		xfree(parent_accounts);
@@ -867,11 +870,11 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 
 	xfree(derived_ec_str);
 	xfree(exit_code_str);
-	xstrcat(buffer, "}");
+	xstrcat(json_str, "}");
 	jnode = xmalloc(sizeof(struct job_node));
-	jnode->serialized_job = buffer;
+	jnode->serialized_job = json_str;
 	list_enqueue(jobslist, jnode);
-	buffer = NULL;
+	json_str = NULL;
 
 	return SLURM_SUCCESS;
 }
