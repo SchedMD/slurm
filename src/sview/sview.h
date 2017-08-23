@@ -650,6 +650,14 @@ extern char *page_to_str(int page);
 extern char *tab_pos_to_str(int tab_pos);
 extern char *visible_to_str(sview_config_t *sview_config);
 extern gboolean entry_changed(GtkWidget *widget, void *msg);
+extern void select_admin_common(GtkTreeModel *model, GtkTreeIter *iter,
+				display_data_t *display_data,
+				GtkTreeView *treeview,
+				uint32_t node_col,
+				void (*process_each)(GtkTreeModel *model,
+						     GtkTreePath *path,
+						     GtkTreeIter *iter,
+						     gpointer userdata));
 
 // defaults.c
 extern int load_defaults(void);

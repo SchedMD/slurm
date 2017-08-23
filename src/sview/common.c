@@ -2320,3 +2320,28 @@ extern gboolean entry_changed(GtkWidget *widget, void *msg)
 	global_entry_changed = 1;
 	return false;
 }
+
+extern void select_admin_common(GtkTreeModel *model, GtkTreeIter *iter,
+				display_data_t *display_data,
+				GtkTreeView *treeview,
+				uint32_t node_col,
+				void (*process_each)(GtkTreeModel *model,
+						     GtkTreePath *path,
+						     GtkTreeIter *iter,
+						     gpointer userdata))
+{
+	if (!treeview)
+		return;
+
+	if (display_data->extra & EXTRA_NODES) {
+		select_admin_nodes(model, iter, display_data,
+				   node_col, treeview);
+		return;
+	}
+	global_multi_error = false;
+	gtk_tree_selection_selected_foreach(
+		gtk_tree_view_get_selection(treeview),
+		process_each, display_data->name);
+
+	return;
+}

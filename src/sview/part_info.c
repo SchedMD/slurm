@@ -3136,17 +3136,8 @@ extern void select_admin_partitions(GtkTreeModel *model,
 				    display_data_t *display_data,
 				    GtkTreeView *treeview)
 {
-	if (treeview) {
-		if (display_data->extra & EXTRA_NODES) {
-			select_admin_nodes(model, iter, display_data,
-					   SORTID_NODELIST, treeview);
-			return;
-		}
-		global_multi_error = false;
-		gtk_tree_selection_selected_foreach(
-			gtk_tree_view_get_selection(treeview),
-			_process_each_partition, display_data->name);
-	}
+	select_admin_common(model, iter, display_data, treeview,
+			    SORTID_NODELIST, _process_each_partition);
 } /*select_admin_partitions ^^^*/
 
 

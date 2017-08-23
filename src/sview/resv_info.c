@@ -1638,17 +1638,8 @@ extern void select_admin_resv(GtkTreeModel *model, GtkTreeIter *iter,
 			      display_data_t *display_data,
 			      GtkTreeView *treeview)
 {
-	if (treeview) {
-		if (display_data->extra & EXTRA_NODES) {
-			select_admin_nodes(model, iter, display_data,
-					   SORTID_NODELIST, treeview);
-			return;
-		}
-		global_multi_error = false;
-		gtk_tree_selection_selected_foreach(
-			gtk_tree_view_get_selection(treeview),
-			_process_each_resv, display_data->name);
-	}
+	select_admin_common(model, iter, display_data, treeview,
+			    SORTID_NODELIST, _process_each_resv);
 }
 
 static void _admin_resv(GtkTreeModel *model, GtkTreeIter *iter, char *type)
