@@ -354,9 +354,6 @@ static int _index_job(const char *jobcomp)
 		goto cleanup_easy_init;
 	}
 
-	if (!curl_handle || (rc != SLURM_SUCCESS))
-		goto cleanup_easy_init;
-
 	chunk.message = xmalloc(1);
 	chunk.size = 0;
 
