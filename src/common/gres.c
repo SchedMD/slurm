@@ -799,7 +799,8 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 			}
 		} else
 			local_cpus = xstrdup(p->cpus);
-		if (bit_unfmt(p->cpus_bitmap, local_cpus) != 0) {
+		if ((bit_size(p->cpus_bitmap) == 0) ||
+		    bit_unfmt(p->cpus_bitmap, local_cpus) != 0) {
 			fatal("Invalid gres data for %s, CPUs=%s (only %u CPUs"
 			      " are available)",
 			      p->name, p->cpus, gres_cpu_cnt);
