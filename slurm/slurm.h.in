@@ -2175,8 +2175,9 @@ typedef struct update_layout_msg {
 } update_layout_msg_t;
 
 typedef struct step_alloc_info_msg {
-	uint32_t job_id;	/* job ID */
-	uint32_t step_id;	/* step ID */
+	uint32_t job_id;		/* job ID (or pack job ID) */
+	uint32_t pack_job_offset;	/* pack job index (or NO_VAL) */
+	uint32_t step_id;		/* step ID (or NO_VAL for whole job) */
 } step_alloc_info_msg_t;
 
 typedef struct powercap_info_msg {
@@ -3310,15 +3311,15 @@ extern int slurm_job_will_run2(job_desc_msg_t *req,
 /*
  * slurm_sbcast_lookup - retrieve info for an existing resource allocation
  *	including a credential needed for sbcast
- * IN job_id - job allocation identifier
+ * IN job_id - job allocation identifier (or pack job ID)
+ * IN pack_job_offset - pack job index (or NO_VAL if not pack job)
  * IN step_id - step allocation identifier (or NO_VAL for entire job)
  * OUT info - job allocation information including a credential for sbcast
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free the "resp" using slurm_free_sbcast_cred_msg
  */
-extern int slurm_sbcast_lookup(uint32_t job_id,
-			       uint32_t step_id,
-			       job_sbcast_cred_msg_t **info);
+extern int slurm_sbcast_lookup(uint32_t job_id, uint32_t pack_job_offset,
+			       uint32_t step_id, job_sbcast_cred_msg_t **info);
 
 extern void slurm_free_sbcast_cred_msg(job_sbcast_cred_msg_t *msg);
 

@@ -256,6 +256,18 @@ an error.</p>
 <li>suspend</li>
 </ul>
 
+<p>The sbcast command supports heterogeneous job allocations. By default,
+sbcast will will copy files to all nodes in the job allocation. The -j/--jobid
+option can be used to copy files to individual components as shown below.</p>
+<pre>
+$ sbcast --jobid=123   data /tmp/data
+$ sbcast --jobid=123.0 app0 /tmp/app0
+$ sbcast --jobid=123.1 app1 /tmp/app1
+</pre>
+
+<p>The srun commands --bcast option will transfer files to the nodes associated
+with the application to be launched as specified by the --pack-group option.</p>
+
 <h3>Accounting</h3>
 
 <p>Slurm's accounting database records the pack_job_id and pack_job_offset
@@ -522,6 +534,6 @@ especially other heterogeneous jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 18 August 2017</p>
+<p style="text-align:center;">Last modified 24 August 2017</p>
 
 <!--#include virtual="footer.txt"-->

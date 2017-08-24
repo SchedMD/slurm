@@ -134,16 +134,30 @@ static int _get_job_info(struct bcast_parameters *params)
 
 	xassert(params->job_id != NO_VAL);
 
-	rc = slurm_sbcast_lookup(params->job_id, params->step_id, &sbcast_cred);
+	rc = slurm_sbcast_lookup(params->job_id, params->pack_job_offset,
+				 params->step_id, &sbcast_cred);
 	if (rc != SLURM_SUCCESS) {
 		if (params->step_id == NO_VAL) {
-			error("Slurm job ID %u lookup error: %s",
-			      params->job_id,
-			      slurm_strerror(slurm_get_errno()));
+			if (params->pack_job_offset == NO_VAL) {
+				error("Slurm job ID %u lookup error: %s",
+				      params->job_id,
+				      slurm_strerror(slurm_get_errno()));
+			} else {
+				error("Slurm job ID %u+%u lookup error: %s",
+				      params->job_id, params->pack_job_offset,
+				      slurm_strerror(slurm_get_errno()));
+			}
 		} else {
-			error("Slurm step ID %u.%u lookup error: %s",
-			      params->job_id, params->step_id,
-			      slurm_strerror(slurm_get_errno()));
+			if (params->pack_job_offset == NO_VAL) {
+				error("Slurm step ID %u.%u lookup error: %s",
+				      params->job_id, params->step_id,
+				      slurm_strerror(slurm_get_errno()));
+			} else {
+				error("Slurm step ID %u+%u.%u lookup error: %s",
+				      params->job_id, params->pack_job_offset,
+				      params->step_id,
+				      slurm_strerror(slurm_get_errno()));
+			}
 		}
 		return rc;
 	}

@@ -927,30 +927,33 @@ extern int slurm_pack_job_lookup(uint32_t jobid, List *info)
 /*
  * slurm_sbcast_lookup - retrieve info for an existing resource allocation
  *	including a credential needed for sbcast
- * IN job_id - job allocation identifier
+ * IN job_id - job allocation identifier (or pack job ID)
+ * IN pack_job_offset - pack job  index (or NO_VAL if not pack job)
  * IN step_id - step allocation identifier (or NO_VAL for entire job)
  * OUT info - job allocation information including a credential for sbcast
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free the "resp" using slurm_free_sbcast_cred_msg
  */
-int slurm_sbcast_lookup(uint32_t job_id, uint32_t step_id,
-			job_sbcast_cred_msg_t **info)
+extern int slurm_sbcast_lookup(uint32_t job_id, uint32_t pack_job_offset,
+			       uint32_t step_id, job_sbcast_cred_msg_t **info)
 {
 	step_alloc_info_msg_t req;
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
 
 	req.job_id = job_id;
+	req.pack_job_offset = pack_job_offset;
 	req.step_id = step_id;
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 	req_msg.msg_type = REQUEST_JOB_SBCAST_CRED;
 	req_msg.data     = &req;
 
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,working_cluster_rec) < 0)
+	if (slurm_send_recv_controller_msg(&req_msg,
+					   &resp_msg,working_cluster_rec) < 0)
 		return SLURM_ERROR;
 
-	switch(resp_msg.msg_type) {
+	switch (resp_msg.msg_type) {
 	case RESPONSE_SLURM_RC:
 		if (_handle_rc_msg(&resp_msg) < 0)
 			return SLURM_ERROR;

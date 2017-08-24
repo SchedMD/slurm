@@ -476,6 +476,10 @@ static int _file_bcast(opt_t *opt_local, srun_job_t *job)
 	params->fanout = 0;
 	params->job_id = job->jobid;
 	params->force = true;
+	if (opt_local->pack_grp_bits)
+		params->pack_job_offset = bit_ffs(opt_local->pack_grp_bits);
+	else
+		params->pack_job_offset = NO_VAL;
 	params->preserve = true;
 	params->src_fname = opt_local->argv[0];
 	params->step_id = job->stepid;

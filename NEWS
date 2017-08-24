@@ -12,6 +12,8 @@ documents those changes that are of interest to users and administrators.
       then delete all allocated steps.
     * Get SPANK plungins working with heterogeneous jobs. The
       spank_init_post_opt() function is executed once per job component.
+    * Modify sbcast command and srun's --bcast option to support heterogeneous
+      jobs.
 
 * Changes in Slurm 17.11.0pre2
 ==============================
