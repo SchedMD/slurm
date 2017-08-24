@@ -281,11 +281,12 @@ static void argerror(const char *msg, ...)
 static void _opt_default(void)
 {
 	int i;
-	uid_t uid = getuid();
 
-	/* Some options will persist for all components of a heterogeneous job
+	/*
+	 * Some options will persist for all components of a heterogeneous job
 	 * once specified for one, but will be overwritten with new values if
-	 * specified on the command line */
+	 * specified on the command line
+	 */
 	if (first_pass) {
 		xfree(opt.account);
 		xfree(opt.acctg_freq);
@@ -323,10 +324,10 @@ static void _opt_default(void)
 		opt.time_limit		= NO_VAL;
 		opt.time_min		= NO_VAL;
 		xfree(opt.time_min_str);
-		opt.uid			= uid;
-		opt.user		= uid_to_string(uid);
+		opt.uid			= getuid();
+		opt.user		= uid_to_string(opt.uid);
 		if (xstrcmp(opt.user, "nobody") == 0)
-			fatal("Invalid user id: %u", uid);
+			fatal("Invalid user id: %u", (uint32_t) opt.uid);
 		opt.verbose		= 0;
 		opt.wait_all_nodes	= NO_VAL16;
 		opt.warn_flags		= 0;
@@ -2028,8 +2029,8 @@ static void _opt_list(void)
 	info("--------------- ---------------------");
 
 	info("user           : `%s'", opt.user);
-	info("uid            : %ld", (long) opt.uid);
-	info("gid            : %ld", (long) opt.gid);
+	info("uid            : %u", (uint32_t) opt.uid);
+	info("gid            : %u", (uint32_t) opt.gid);
 	info("ntasks         : %d %s", opt.ntasks,
 		opt.ntasks_set ? "(set)" : "(default)");
 	info("cpus_per_task  : %d %s", opt.cpus_per_task,

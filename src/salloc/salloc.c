@@ -257,7 +257,7 @@ int main(int argc, char **argv)
 			env_cache_set = true;
 			if (xstrcmp(user, "nobody") == 0) {
 				error("Invalid user id %u: %m",
-				      (uint32_t)opt.uid);
+				      (uint32_t) opt.uid);
 				exit(error_exit);
 			}
 
