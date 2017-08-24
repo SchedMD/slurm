@@ -2052,11 +2052,11 @@ static void *_agent(void *x)
 
 		slurm_mutex_lock(&agent_lock);
 		if (agent_list && (rc == SLURM_SUCCESS)) {
-			/* If we sent a mult_msg we just need to free
-			   buffer, we don't need to requeue, just mark
-			   list_msg.my_list as NULL as that is the
-			   sign we sent a mult_msg.
-			*/
+			/*
+			 * If we sent a mult_msg we just need to free buffer,
+			 * we don't need to requeue, just mark list_msg.my_list
+			 * as NULL as that is the sign we sent a mult_msg.
+			 */
 			if (list_msg.my_list) {
 				if (list_msg.my_list != agent_list)
 					FREE_NULL_LIST(list_msg.my_list);
@@ -2067,9 +2067,7 @@ static void *_agent(void *x)
 			free_buf(buffer);
 			fail_time = 0;
 		} else {
-			/* We still need to free a mult_msg even if we
-			   got a failure.
-			*/
+			/* We need to free a mult_msg even on failure */
 			if (list_msg.my_list) {
 				if (list_msg.my_list != agent_list)
 					FREE_NULL_LIST(list_msg.my_list);
@@ -2084,10 +2082,10 @@ static void *_agent(void *x)
 		/* info("at the end with %s", TIME_STR); */
 		if (need_to_register) {
 			need_to_register = 0;
-			/* This is going to be always using the
-			   SlurmDBD plugin so sending NULL as the
-			   connection should be ok.
-			*/
+			/*
+			 * This is going to be always using the SlurmDBD plugin
+			 * so sending NULL as the connection should be ok.
+			 */
 			clusteracct_storage_g_register_ctld(
 				NULL, slurmctld_conf.slurmctld_port);
 		}
@@ -2126,19 +2124,19 @@ static void _save_dbd_state(void)
 			goto end_it;
 
 		while ((buffer = list_dequeue(agent_list))) {
-			/* We do not want to store registration
-			   messages.  If an admin puts in an incorrect
-			   cluster name we can get a deadlock unless
-			   they add the bogus cluster name to the
-			   accounting system.
-			*/
+			/*
+			 * We do not want to store registration messages. If an
+			 * admin puts in an incorrect cluster name we can get a
+			 * deadlock unless they add the bogus cluster name to
+			 * the accounting system.
+			 */
 			offset = get_buf_offset(buffer);
 			if (offset < 2) {
 				free_buf(buffer);
 				continue;
 			}
 			set_buf_offset(buffer, 0);
-			unpack16(&msg_type, buffer);
+			(void) unpack16(&msg_type, buffer);  /* checked by offset */
 			set_buf_offset(buffer, offset);
 			if (msg_type == DBD_REGISTER_CTLD) {
 				free_buf(buffer);
@@ -2307,7 +2305,7 @@ static Buf _load_dbd_rec(int fd)
 	size = msg_size;
 	while (size) {
 		rd_size = read(fd, msg, size);
-		if (rd_size > 0) {
+		if ((rd_size > 0) && (rd_size <= size)) {
 			msg += rd_size;
 			size -= rd_size;
 		} else if ((rd_size == -1) && (errno == EINTR))
@@ -2350,7 +2348,7 @@ static int _purge_step_req(void)
 		if (offset < 2)
 			continue;
 		set_buf_offset(buffer, 0);
-		unpack16(&msg_type, buffer);
+		(void) unpack16(&msg_type, buffer);	/* checked by offset */
 		set_buf_offset(buffer, offset);
 		if ((msg_type == DBD_STEP_START) ||
 		    (msg_type == DBD_STEP_COMPLETE)) {
@@ -2379,7 +2377,7 @@ static int _purge_job_start_req(void)
 		if (offset < 2)
 			continue;
 		set_buf_offset(buffer, 0);
-		unpack16(&msg_type, buffer);
+		(void) unpack16(&msg_type, buffer);	/* checked by offset */
 		set_buf_offset(buffer, offset);
 		if (msg_type == DBD_JOB_START) {
 			list_remove(iter);
