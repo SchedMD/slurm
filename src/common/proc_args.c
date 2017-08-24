@@ -1423,18 +1423,17 @@ extern int parse_uint64(char *aval, uint64_t *ival)
  *  Get a decimal integer from arg.
  *
  *  Returns the integer on success, exits program on failure.
- *
  */
 extern int parse_int(const char *name, const char *val, bool positive)
 {
 	char *p = NULL;
-	int result = 0;
+	long int result = 0;
 
 	if (val)
 		result = strtol(val, &p, 10);
 
-	if ((p == NULL) || (p[0] != '\0') || (result < 0L)
-	||  (positive && (result <= 0L))) {
+	if ((p == NULL) || (p[0] != '\0') || (result < 0L) ||
+	    (positive && (result <= 0L))) {
 		error ("Invalid numeric value \"%s\" for %s.", val, name);
 		exit(1);
 	} else if (result > INT_MAX) {
